@@ -1,0 +1,38 @@
+[gd_scene load_steps=10 format=3 uid="uid://cncmsf4tlmj1r"]
+
+[ext_resource type="Script" uid="uid://b13qbdw0hgavi" path="res://features/battle_sim/BattleSim.gd" id="1_er2wg"]
+[ext_resource type="Script" path="res://features/battle_sim/combat/SimulationCore.gd" id="2_simcore"]
+[ext_resource type="Script" path="res://features/battle_sim/combat/MinionSystem.gd" id="3_minion"]
+[ext_resource type="Script" path="res://features/battle_sim/combat/RecallSystem.gd" id="4_recall"]
+[ext_resource type="Script" path="res://features/battle_sim/combat/Pathfinding.gd" id="5_pathfind"]
+[ext_resource type="Script" path="res://features/battle_sim/rendering/BattleRenderer.gd" id="6_render"]
+[ext_resource type="Script" path="res://features/battle_sim/card_phase/CardPhaseManager.gd" id="7_card"]
+[ext_resource type="Script" path="res://features/battle_sim/gambit/GambitPhaseManager.gd" id="8_gambit"]
+[ext_resource type="Script" path="res://features/battle_sim/ui/HudBuilder.gd" id="9_hud"]
+
+[node name="BattleSim" type="Node2D"]
+script = ExtResource("1_er2wg")
+
+[node name="SimulationCore" type="Node" parent="."]
+script = ExtResource("2_simcore")
+
+[node name="MinionSystem" type="Node" parent="."]
+script = ExtResource("3_minion")
+
+[node name="RecallSystem" type="Node" parent="."]
+script = ExtResource("4_recall")
+
+[node name="Pathfinding" type="Node" parent="."]
+script = ExtResource("5_pathfind")
+
+[node name="BattleRenderer" type="Node2D" parent="."]
+script = ExtResource("6_render")
+
+[node name="CardPhaseManager" type="Node" parent="."]
+script = ExtResource("7_card")
+
+[node name="GambitPhaseManager" type="Node" parent="."]
+script = ExtResource("8_gambit")
+
+[node name="HudBuilder" type="Node" parent="."]
+script = ExtResource("9_hud")

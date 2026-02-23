@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__godot-mcp__project",
+      "mcp__godot-mcp__editor",
+      "mcp__godot-mcp__scene",
+      "mcp__godot-mcp__node",
+      "mcp__godot-mcp__input"
+    ]
+  }
+}

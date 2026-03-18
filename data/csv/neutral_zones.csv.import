@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://5dihf0asol5a"
+
+[deps]
+
+files=["res://data/csv/neutral_zones.zone.translation", "res://data/csv/neutral_zones.col.translation", "res://data/csv/neutral_zones.row.translation"]
+
+source_file="res://data/csv/neutral_zones.csv"
+dest_files=["res://data/csv/neutral_zones.zone.translation", "res://data/csv/neutral_zones.col.translation", "res://data/csv/neutral_zones.row.translation"]
+
+[params]
+
+compress=true
+delimiter=0

@@ -137,3 +137,49 @@ Each `.tscn` file references its script by UID. When moving scripts, update both
 3. Read `features/<feature>/README.md`
 4. For battle_sim: also read the relevant module's README in its subfolder
 5. Make focused changes only in that feature's folder
+
+---
+
+## Godot-SQLite Addon
+
+**Addon**: `addons/godot-sqlite/` — GDNative SQLite3 wrapper for Godot 4.0+
+**Platforms**: Windows, Linux, Mac, Android, iOS, HTML5
+
+### Core API (class `SQLite`)
+```gdscript
+var db := SQLite.new()
+db.path = "res://data/game.db"       # read-only (packaged)
+db.path = "user://data/game.db"      # read-write (runtime)
+db.open_db()
+db.close_db()
+db.query("SELECT * FROM pilots")
+db.query_with_bindings("SELECT * FROM pilots WHERE role = ?", [role_id])
+db.create_table("pilots", { "id": {"data_type":"int","primary_key":true}, ... })
+db.insert_row("pilots", {"id":1, "role":"Tank", "hp":200, "atk":8})
+db.select_rows("pilots", "hp > 100", ["role","hp"])  # returns Array of Dicts
+db.update_rows("pilots", "id = 1", {"hp": 210})
+db.delete_rows("pilots", "id = 1")
+```
+
+### Data Types
+`int` → INTEGER, `real` → REAL, `text`/`char(n)` → TEXT, `blob` → BLOB (PackedByteArray)
+
+### Important Constraints
+- Column/table **names cannot be bound** — interpolate them directly into query strings
+- **No encryption** support
+- Read-only DBs: package inside `.pck` at `res://`; Read-write DBs: copy to `user://` at runtime
+- Foreign keys must be enabled **before** `open_db()`
+
+### Import / Export
+```gdscript
+db.export_to_json("user://backup.json")
+db.import_from_json("res://data/seed.json")
+db.backup_to("user://save.db")
+db.restore_from("user://save.db")
+```
+
+### CSV → DB Workflow Pattern
+CSV files live in `data/csv/`. An **EditorPlugin tool script** (`tools/CsvToDb.gd`) reads each
+CSV at editor time and writes `data/game.db` using `create_table` + `insert_rows`.
+At runtime, `GameManager` opens `game.db` once, loads tables into Dictionaries keyed by ID,
+then closes the DB. All in-game access goes through those Dictionaries — not live DB queries.

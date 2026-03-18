@@ -11,7 +11,7 @@ func build_gambit_ui() -> void:
 	var bg := StyleBoxFlat.new()
 	bg.bg_color = Color(0.05, 0.05, 0.12, 0.97)
 	_bs._panel_gambit.add_theme_stylebox_override("panel", bg)
-	_bs._canvas.add_child(_bs._panel_gambit)
+	_bs.canvas.add_child(_bs._panel_gambit)
 
 	_mk_label(_bs._panel_gambit, "GAMBIT PHASE", 52, Color(1.0, 0.85, 0.2),
 			Vector2(0.0, 60.0), Vector2(1080.0, 70.0), HORIZONTAL_ALIGNMENT_CENTER)
@@ -34,7 +34,7 @@ func build_gambit_ui() -> void:
 		btn.add_theme_font_size_override("font_size", 20)
 		btn.pressed.connect(on_gambit_pilot_selected.bind(i))
 		_bs._panel_gambit.add_child(btn)
-		_bs._gambit_pilot_btns.append(btn)
+		_bs.gambit_pilot_btns.append(btn)
 
 	_mk_label(_bs._panel_gambit, "ASSIGN TO LANE:", 24, Color(0.8, 0.8, 0.8),
 			Vector2(40.0, 385.0), Vector2(400.0, 35.0))
@@ -73,7 +73,7 @@ func build_gambit_ui() -> void:
 		al.position = Vector2(15.0, 60.0)
 		al.size     = Vector2(650.0, 35.0)
 		sp.add_child(al)
-		_bs._gambit_slot_labels.append(al)
+		_bs.gambit_slot_labels.append(al)
 
 		var ab := Button.new()
 		ab.text = "Assign Here"
@@ -100,14 +100,14 @@ func build_gambit_ui() -> void:
 	btn_auto.pressed.connect(on_gambit_auto_assign_pressed)
 	_bs._panel_gambit.add_child(btn_auto)
 
-	_bs._btn_launch = Button.new()
-	_bs._btn_launch.text     = "Launch Battle"
-	_bs._btn_launch.position = Vector2(290.0, 1260.0)
-	_bs._btn_launch.size     = Vector2(500.0, 100.0)
-	_bs._btn_launch.add_theme_font_size_override("font_size", 36)
-	_bs._btn_launch.disabled = true
-	_bs._btn_launch.pressed.connect(on_launch_battle_pressed)
-	_bs._panel_gambit.add_child(_bs._btn_launch)
+	_bs.btn_launch = Button.new()
+	_bs.btn_launch.text     = "Launch Battle"
+	_bs.btn_launch.position = Vector2(290.0, 1260.0)
+	_bs.btn_launch.size     = Vector2(500.0, 100.0)
+	_bs.btn_launch.add_theme_font_size_override("font_size", 36)
+	_bs.btn_launch.disabled = true
+	_bs.btn_launch.pressed.connect(on_launch_battle_pressed)
+	_bs._panel_gambit.add_child(_bs.btn_launch)
 
 
 func refresh_gambit_ui() -> void:
@@ -116,7 +116,7 @@ func refresh_gambit_ui() -> void:
 		GameEnums.Role.SUPPORT, GameEnums.Role.SNIPER,
 	]
 	for i in range(5):
-		var btn: Button = _bs._gambit_pilot_btns[i]
+		var btn: Button = _bs.gambit_pilot_btns[i]
 		var lid: int    = _bs._gambit_lanes[i]
 		var suffix      := "\n→ %s" % _bs.LANE_NAMES[lid] if lid != -1 else ""
 		btn.text = "%s\n%s%s" % [_bs.ROLE_FULL_NAMES[roles[i]], _bs.role_stats_str(roles[i]), suffix]
@@ -132,11 +132,11 @@ func refresh_gambit_ui() -> void:
 		for i in range(5):
 			if _bs._gambit_lanes[i] == slot:
 				names.append(_bs.ROLE_FULL_NAMES[roles[i]])
-		(_bs._gambit_slot_labels[slot] as Label).text = \
+		(_bs.gambit_slot_labels[slot] as Label).text = \
 				" | ".join(names) if not names.is_empty() else "(empty)"
 
 	var all_done: bool = _bs._gambit_lanes.all(func(l): return l != -1)
-	_bs._btn_launch.disabled = not all_done
+	_bs.btn_launch.disabled = not all_done
 	if all_done:
 		_bs._lbl_gambit_status.text = "All pilots assigned!  Ready to launch."
 	elif _bs._gambit_selected != -1:
@@ -167,11 +167,11 @@ func on_gambit_slot_pressed(slot: int) -> void:
 
 
 func on_gambit_auto_assign_pressed() -> void:
-	var base_lanes: Array = [GameEnums.Lane.LEFT, GameEnums.Lane.CENTER, GameEnums.Lane.RIGHT]
+	var base_lanes: Array = [GameEnums.LanePosition.LEFT, GameEnums.LanePosition.CENTER, GameEnums.LanePosition.RIGHT]
 	var extra: int = base_lanes[randi() % 3]
 	var assignment: Array = [
-		GameEnums.Lane.LEFT, GameEnums.Lane.CENTER, GameEnums.Lane.RIGHT,
-		extra, GameEnums.Lane.GUERRILLA,
+		GameEnums.LanePosition.LEFT, GameEnums.LanePosition.CENTER, GameEnums.LanePosition.RIGHT,
+		extra, GameEnums.LanePosition.GUERRILLA,
 	]
 	assignment.shuffle()
 	_bs._gambit_lanes    = assignment
@@ -182,9 +182,9 @@ func on_gambit_auto_assign_pressed() -> void:
 func on_launch_battle_pressed() -> void:
 	_bs._panel_gambit.visible = false
 	_bs._minions = []
-	_bs._sim_core.spawn_pilots_with_lanes()
-	_bs._sim_core.spawn_turrets()
-	_bs._sim_core.init_neutral_zones()
+	_bs.sim_core.spawn_pilots_with_lanes()
+	_bs.sim_core.spawn_turrets()
+	_bs.sim_core.init_neutral_zones()
 	_bs.game_phase = GameEnums.BattlePhase.BATTLE
 	_bs._renderer.queue_redraw()
 	_bs._hud.update_hud()
@@ -198,6 +198,6 @@ func _mk_label(parent: Control, text: String, font_size: int, color: Color,
 	l.add_theme_color_override("font_color", color)
 	l.position = pos
 	l.size     = sz
-	l.horizontal_alignment = align
+	l.horizontal_alignment = align as HorizontalAlignment
 	parent.add_child(l)
 	return l

@@ -5,7 +5,14 @@
       "mcp__godot-mcp__editor",
       "mcp__godot-mcp__scene",
       "mcp__godot-mcp__node",
-      "mcp__godot-mcp__input"
+      "mcp__godot-mcp__input",
+      "Bash(python:)",
+      "Bash(python:*)",
+      "Bash(echo sqlite3 not found:)",
+      "Bash(python3:*)",
+      "Bash(python --version 2>&1 || python3 --version 2>&1 || where python 2>&1)",
+      "Bash(echo:*)",
+      "Bash(where sqlite3:*)"
     ]
   }
 }

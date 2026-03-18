@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://d0a6cfju174gw"
+
+[deps]
+
+files=["res://data/csv/lane_config.name.translation", "res://data/csv/lane_config.max.translation", "res://data/csv/lane_config.mid.translation", "res://data/csv/lane_config.mid.translation"]
+
+source_file="res://data/csv/lane_config.csv"
+dest_files=["res://data/csv/lane_config.name.translation", "res://data/csv/lane_config.max.translation", "res://data/csv/lane_config.mid.translation", "res://data/csv/lane_config.mid.translation"]
+
+[params]
+
+compress=true
+delimiter=0

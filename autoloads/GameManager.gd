@@ -1,10 +1,11 @@
 extends Node
 
 # ── Battle Sim State ──────────────────────────────────────────────────────────
+# Note: HQ HP is owned by BattleSim; these track it for cross-scene use only.
 var battle_phase: int  = GameEnums.BattlePhase.GAMBIT
 var battle_turn: int   = 0
-var player_hq_hp: int  = 500
-var enemy_hq_hp: int   = 500
+var player_hq_hp: int  = 0
+var enemy_hq_hp: int   = 0
 var battle_over: bool  = false
 
 signal battle_phase_changed(new_phase: int)
@@ -21,9 +22,12 @@ func advance_battle_turn() -> void:
 func reset_battle_state() -> void:
 	battle_phase = GameEnums.BattlePhase.GAMBIT
 	battle_turn  = 0
-	player_hq_hp = 500
-	enemy_hq_hp  = 500
+	player_hq_hp = 0
+	enemy_hq_hp  = 0
 	battle_over  = false
+
+# ── Card Pool (used by CardPhaseManager in battle sim) ────────────────────────
+var card_pool_bs: Array = []  # Array of {id, name, cost, effect_type, value}
 
 # ── Card Draw State ───────────────────────────────────────────────────────────
 signal phase_changed(new_phase: int)
@@ -54,9 +58,30 @@ var ai_mana: int = 0
 
 
 func _ready() -> void:
+	_load_card_pool()
 	_build_decks()
 	_shuffle_deck(player_deck)
 	_shuffle_deck(ai_deck)
+
+
+func _load_card_pool() -> void:
+	var db := SQLite.new()
+	db.path = "res://data/game.db"
+	db.verbosity_level = SQLite.QUIET
+	if not db.open_db():
+		push_error("GameManager: cannot open data/game.db")
+		return
+	db.query("SELECT * FROM cards ORDER BY id")
+	for row in db.query_result:
+		card_pool_bs.append({
+			"id":          int(row["id"]),
+			"name":        row["name"],
+			"cost":        int(row["cost"]),
+			"effect_type": row["effect_type"],
+			"value":       int(row["value"]),
+		})
+	db.close_db()
+	print("GameManager: card pool loaded — %d cards" % card_pool_bs.size())
 
 
 func _build_decks() -> void:

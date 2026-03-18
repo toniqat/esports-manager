@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://btj7pivk7sff2"
+
+[deps]
+
+files=["res://data/csv/pilots.name.translation", "res://data/csv/pilots.abbrev.translation", "res://data/csv/pilots.hp.translation", "res://data/csv/pilots.atk.translation", "res://data/csv/pilots.heal.translation"]
+
+source_file="res://data/csv/pilots.csv"
+dest_files=["res://data/csv/pilots.name.translation", "res://data/csv/pilots.abbrev.translation", "res://data/csv/pilots.hp.translation", "res://data/csv/pilots.atk.translation", "res://data/csv/pilots.heal.translation"]
+
+[params]
+
+compress=true
+delimiter=0

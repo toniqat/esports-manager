@@ -5,14 +5,11 @@ extends Node2D
 
 
 func _draw() -> void:
-	_draw_grid()
-	_draw_lane_dividers()
 	if _bs.game_phase == GameEnums.BattlePhase.GAMBIT:
 		return
 	_draw_lane_lines()
-	_draw_lane_midpoints()
-	_draw_hqs()
-	_draw_turrets()
+	_draw_hq_hp_bars()
+	_draw_turret_hp_bars()
 	_draw_minions()
 
 	# Build per-cell occupancy split by team
@@ -40,8 +37,8 @@ func _draw() -> void:
 		var t0: Array = cell_team0.get(pv, []) as Array
 		var t1: Array = cell_team1.get(pv, []) as Array
 		var has_combat := not t0.is_empty() and not t1.is_empty()
-		var siege_t0   := not has_combat and not t0.is_empty() and _bs._sim_core.has_enemy_turret_at(pv, 0)
-		var siege_t1   := not has_combat and not t1.is_empty() and _bs._sim_core.has_enemy_turret_at(pv, 1)
+		var siege_t0   := not has_combat and not t0.is_empty() and _bs.sim_core.has_enemy_turret_at(pv, 0)
+		var siege_t1   := not has_combat and not t1.is_empty() and _bs.sim_core.has_enemy_turret_at(pv, 1)
 		for i in range(t1.size()):
 			_draw_pilot_zoned(t1[i] as PilotData, i, t1.size(), has_combat, true, siege_t1)
 		for i in range(t0.size()):
@@ -51,59 +48,22 @@ func _draw() -> void:
 			_draw_cell_badge_new(pv, t0.size(), t1.size())
 
 
-func _draw_grid() -> void:
-	var bg_neutral    := Color(0.1, 0.25, 0.1)
-	var bg_nz_gray    := Color(0.3, 0.3, 0.35, 0.9)
-	var bg_player     := Color(0.12, 0.28, 0.72, 0.75)
-	var bg_enemy      := Color(0.72, 0.12, 0.12, 0.75)
-	var line_color    := Color(1.0, 1.0, 1.0, 0.20)
-	var line_nz_color := Color(0.55, 0.55, 0.65, 0.9)
-	for row in range(_bs.GRID_ROWS):
-		for col in range(_bs.GRID_COLS):
-			var pos  := Vector2i(col, row)
-			var rect := _bs.cell_rect(pos)
-			var fill:   Color
-			var border: Color
-			if _bs._neutral_zone_cells.has(pos):
-				var nz_owner: int = _bs._neutral_zone_cells[pos] as int
-				if nz_owner == 0:   fill = bg_player
-				elif nz_owner == 1: fill = bg_enemy
-				else:               fill = bg_nz_gray
-				border = line_nz_color
-			else:
-				fill   = bg_neutral
-				border = line_color
-			draw_rect(rect, fill)
-			draw_rect(rect, border, false, 1.0)
-
-
-func _draw_lane_dividers() -> void:
-	var col := Color(1.0, 1.0, 1.0, 0.18)
-	for cx in [3, 6]:
-		var x: float = _bs.GRID_ORIGIN.x + cx * _bs.CELL_SIZE
-		draw_line(Vector2(x, _bs.GRID_ORIGIN.y),
-				Vector2(x, _bs.GRID_ORIGIN.y + _bs.GRID_ROWS * _bs.CELL_SIZE), col, 3.0)
-
-
 func _draw_lane_lines() -> void:
 	var bg_col := Color(1.0, 1.0, 1.0, 0.12)
 	for lane in range(3):
-		var pts := PackedVector2Array([
-			_bs.cell_center(_bs.PLAYER_HQ_POS),
-			_bs.cell_center(Vector2i(_bs.TURRET_COLS_T2[lane], _bs.TURRET_ROW_T2_TEAM0)),
-			_bs.cell_center(Vector2i(_bs.TURRET_COLS_T1[lane], _bs.TURRET_ROW_T1_TEAM0)),
-			_bs.cell_center(_bs.LANE_MIDPOINTS[lane] as Vector2i),
-			_bs.cell_center(Vector2i(_bs.TURRET_COLS_T1[lane], _bs.TURRET_ROW_T1_TEAM1)),
-			_bs.cell_center(Vector2i(_bs.TURRET_COLS_T2[lane], _bs.TURRET_ROW_T2_TEAM1)),
-			_bs.cell_center(_bs.ENEMY_HQ_POS),
-		])
+		var path: Array = _bs.LANE_PATHS_TEAM0[lane]
+		if path.size() < 2:
+			continue
+		var pts := PackedVector2Array()
+		for wp in path:
+			pts.append(_bs.cell_center(wp as Vector2i))
 		draw_polyline(pts, bg_col, 2.0)
 
 	var ally_col  := Color(0.2, 0.5, 0.9,  1.0)
 	var enemy_col := Color(0.9, 0.25, 0.25, 1.0)
 	for lane in range(3):
 		for team in range(2):
-			var best = _bs._minion_sys.furthest_minion_in_lane(lane, team)
+			var best = _bs.minion_sys.furthest_minion_in_lane(lane, team)
 			if best == null:
 				continue
 			var m := best as MinionData
@@ -118,64 +78,40 @@ func _draw_lane_lines() -> void:
 				draw_polyline(pts, ally_col if team == 0 else enemy_col, 6.0)
 
 
-func _draw_lane_midpoints() -> void:
-	var col := Color(1.0, 0.9, 0.0, 0.65)
-	for mp in _bs.LANE_MIDPOINTS:
-		draw_arc(_bs.cell_center(mp as Vector2i), 14.0, 0.0, TAU, 16, col, 2.5)
+func _draw_hq_hp_bars() -> void:
+	var enemy_locked  := not _bs.sim_core.any_t2_destroyed(1)
+	var player_locked := not _bs.sim_core.any_t2_destroyed(0)
+	if not player_locked:
+		_draw_hq_hp_bar(_bs.PLAYER_HQ_POS, _bs.player_hq_hp)
+	if not enemy_locked:
+		_draw_hq_hp_bar(_bs.ENEMY_HQ_POS, _bs.enemy_hq_hp)
 
 
-func _draw_hqs() -> void:
-	var enemy_locked  := not _bs._sim_core.any_t2_destroyed(1)
-	var player_locked := not _bs._sim_core.any_t2_destroyed(0)
-	_draw_hq_cell(_bs.PLAYER_HQ_POS, Color(0.1, 0.3, 0.8, 0.6), _bs.player_hq_hp, "P-HQ", player_locked)
-	_draw_hq_cell(_bs.ENEMY_HQ_POS,  Color(0.8, 0.1, 0.1, 0.6), _bs.enemy_hq_hp,  "E-HQ", enemy_locked)
+func _draw_hq_hp_bar(pos: Vector2i, hp: int) -> void:
+	var center := _bs.cell_center(pos)
+	var bw := 60.0; var bh := 8.0
+	var bx := center.x - bw * 0.5; var by_ := center.y + 16.0
+	draw_rect(Rect2(bx, by_, bw, bh), Color(0.2, 0.2, 0.2))
+	draw_rect(Rect2(bx, by_, bw * float(hp) / float(_bs.HQ_MAX_HP), bh), Color(0.2, 0.9, 0.2))
 
 
-func _draw_hq_cell(pos: Vector2i, color: Color, hp: int, label: String, locked: bool = false) -> void:
-	var rect := _bs.cell_rect(pos)
-	draw_rect(rect, color)
-	draw_rect(rect, color.lightened(0.3), false, 2.0)
-	if not locked:
-		var bar_rect := Rect2(rect.position.x + 5.0, rect.position.y + 4.0, 90.0, 10.0)
-		draw_rect(bar_rect, Color(0.2, 0.2, 0.2))
-		var fill_w: float = bar_rect.size.x * float(hp) / float(_bs.HQ_MAX_HP)
-		draw_rect(Rect2(bar_rect.position, Vector2(fill_w, bar_rect.size.y)), Color(0.2, 0.9, 0.2))
-	draw_string(ThemeDB.fallback_font, _bs.cell_center(pos) + Vector2(-14.0, 6.0), label,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
-
-
-func _draw_turrets() -> void:
+func _draw_turret_hp_bars() -> void:
 	for t in _bs.turrets:
-		_draw_turret(t as TurretData)
+		_draw_turret_hp_bar(t as TurretData)
 
 
-func _draw_turret(td: TurretData) -> void:
+func _draw_turret_hp_bar(td: TurretData) -> void:
 	if not td.alive:
 		return
-	var rect   := _bs.cell_rect(td.grid_pos)
+	if td.tier == 2 and _bs.sim_core.t1_alive_in_lane(td.team, td.lane):
+		return
 	var center := _bs.cell_center(td.grid_pos)
-	var color  := Color(0.1, 0.72, 0.35) if td.team == 0 else Color(0.88, 0.52, 0.1)
-	var half   := 26.0
-	var pts := PackedVector2Array([
-		center + Vector2(0.0, -half),
-		center + Vector2(half, 0.0),
-		center + Vector2(0.0, half),
-		center + Vector2(-half, 0.0),
-	])
-	draw_colored_polygon(pts, color.darkened(0.2))
-	draw_polyline(PackedVector2Array([pts[0], pts[1], pts[2], pts[3], pts[0]]),
-			color.lightened(0.3), 2.5)
-	var font   := ThemeDB.fallback_font
-	var tlabel := "T%d" % td.tier
-	var tsz    := font.get_string_size(tlabel, HORIZONTAL_ALIGNMENT_LEFT, -1, 15)
-	draw_string(font, center - tsz * 0.5 + Vector2(0.0, tsz.y * 0.35), tlabel,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color.WHITE)
-	if not (td.tier == 2 and _bs._sim_core.t1_alive_in_lane(td.team, td.lane)):
-		var bw := 88.0; var bh := 6.0
-		var bx := rect.position.x + 6.0; var by_ := rect.position.y + 2.0
-		draw_rect(Rect2(bx, by_, bw, bh), Color(0.15, 0.15, 0.15))
-		draw_rect(Rect2(bx, by_, bw * float(td.hp) / float(td.max_hp), bh),
-				Color(0.92, 0.68, 0.1))
+	var hg: HexGrid = _bs._hex_grid
+	var bw: float = hg.hex_size * 1.1; var bh := 6.0
+	var bx: float = center.x - bw * 0.5; var by_: float = center.y - hg.hex_height * 0.38
+	draw_rect(Rect2(bx, by_, bw, bh), Color(0.15, 0.15, 0.15))
+	draw_rect(Rect2(bx, by_, bw * float(td.hp) / float(td.max_hp), bh),
+			Color(0.92, 0.68, 0.1))
 
 
 func _draw_minions() -> void:
@@ -219,13 +155,12 @@ func _draw_minion_solo(m: MinionData) -> void:
 
 
 func _draw_minion_combat(pos: Vector2i, count0: int, count1: int) -> void:
-	var rect   := _bs.cell_rect(pos)
-	var center := _bs.cell_center(pos)
-	var ally_pos  := Vector2(rect.position.x + 2.0, center.y - 9.0)
+	var center    := _bs.cell_center(pos)
+	var ally_pos  := Vector2(center.x - 44.0, center.y - 9.0)
 	draw_rect(Rect2(ally_pos, Vector2(28.0, 18.0)), Color(0.1, 0.72, 0.35, 0.92))
 	draw_string(ThemeDB.fallback_font, ally_pos + Vector2(2.0, 14.0), str(count0),
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.WHITE)
-	var enemy_pos := Vector2(rect.position.x + rect.size.x - 30.0, center.y - 9.0)
+	var enemy_pos := Vector2(center.x + 16.0, center.y - 9.0)
 	draw_rect(Rect2(enemy_pos, Vector2(28.0, 18.0)), Color(0.88, 0.52, 0.1, 0.92))
 	draw_string(ThemeDB.fallback_font, enemy_pos + Vector2(2.0, 14.0), str(count1),
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.WHITE)
@@ -244,8 +179,8 @@ func _zone_x_positions(count: int, cx: float) -> Array:
 
 func _draw_pilot_zoned(pilot: PilotData, team_idx: int, team_total: int,
 		has_combat: bool, is_top: bool, is_siege: bool) -> void:
-	var cell_rect_v := _bs.cell_rect(pilot.grid_pos)
-	var cell_cx     := _bs.cell_center(pilot.grid_pos).x
+	var center_cell := _bs.cell_center(pilot.grid_pos)
+	var cell_cx     := center_cell.x
 	var center:  Vector2
 	var radius:  float
 	var fsize:   int
@@ -254,7 +189,7 @@ func _draw_pilot_zoned(pilot: PilotData, team_idx: int, team_total: int,
 	if has_combat or is_siege:
 		if team_idx >= 3:
 			return
-		var zone_y: float = cell_rect_v.position.y + (25.0 if is_top else 75.0)
+		var zone_y: float = center_cell.y + (-20.0 if is_top else 20.0)
 		radius = 16.0 if has_combat else 14.0
 		fsize  = 11
 		var vis := mini(team_total, 3)
@@ -273,7 +208,7 @@ func _draw_pilot_zoned(pilot: PilotData, team_idx: int, team_total: int,
 					txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.WHITE)
 			return
 	else:
-		var base := _bs.cell_center(pilot.grid_pos)
+		var base := center_cell
 		radius  = 35.0
 		fsize   = 18
 		show_hp = team_total == 1
@@ -283,6 +218,7 @@ func _draw_pilot_zoned(pilot: PilotData, team_idx: int, team_total: int,
 			var cols: int = mini(team_total, 3)
 			var rows: int = int(ceil(float(team_total) / float(cols)))
 			var ci:   int = team_idx % cols
+			@warning_ignore("integer_division")
 			var ri:   int = team_idx / cols
 			var margin := 46.0 - radius
 			var spc_x  := margin * 2.0 / float(cols - 1) if cols > 1 else 0.0
@@ -318,7 +254,7 @@ func _draw_pilot_zoned(pilot: PilotData, team_idx: int, team_total: int,
 	draw_string(font, center - tsz * 0.5 + Vector2(0.0, float(fsize) * 0.35), rs,
 			HORIZONTAL_ALIGNMENT_LEFT, -1, fsize, Color.WHITE)
 	if show_hp:
-		var bw  := 70.0; var bh := 8.0
+		var bw  := 60.0; var bh := 8.0
 		var bx  := center.x - bw * 0.5; var by_ := center.y + 38.0
 		draw_rect(Rect2(bx, by_, bw, bh), Color(0.2, 0.2, 0.2))
 		draw_rect(Rect2(bx, by_, bw * float(pilot.hp) / float(pilot.max_hp), bh),
@@ -337,8 +273,8 @@ func _draw_cell_badge_new(cell: Vector2i, c0: int, c1: int) -> void:
 	else:
 		text   = "x%d" % c1
 		bg_col = Color(0.55, 0.1, 0.1, 0.88)
-	var rect := _bs.cell_rect(cell)
-	var bpos := rect.position + Vector2(rect.size.x - 34.0, 2.0)
+	var center := _bs.cell_center(cell)
+	var bpos   := center + Vector2(12.0, -22.0)
 	draw_rect(Rect2(bpos, Vector2(32.0, 18.0)), bg_col)
 	draw_string(ThemeDB.fallback_font, bpos + Vector2(2.0, 14.0), text,
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color.WHITE)

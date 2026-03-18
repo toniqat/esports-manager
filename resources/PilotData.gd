@@ -10,7 +10,7 @@ var grid_pos: Vector2i
 var alive: bool           = true
 var respawn_timer: int    = 0
 var heal_amount: int      = 0
-var lane: int             = GameEnums.Lane.GUERRILLA
+var lane: int             = GameEnums.LanePosition.GUERRILLA
 var is_guerrilla: bool    = false
 var recall_state: int     = GameEnums.RecallState.NONE
 var channel_timer: int    = 0

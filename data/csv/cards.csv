@@ -1,0 +1,7 @@
+id,name,cost,effect_type,value
+0,Strike,1,damage,20
+1,Mend,1,heal,25
+2,Reinforce,2,minions,15
+3,Focus Fire,2,focus_damage,35
+4,Rally,3,buff_atk,5
+5,Overcharge,4,buff_atk,10

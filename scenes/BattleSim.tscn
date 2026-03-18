@@ -1,17 +1,28 @@
-[gd_scene load_steps=10 format=3 uid="uid://cncmsf4tlmj1r"]
+[gd_scene load_steps=15 format=3 uid="uid://cncmsf4tlmj1r"]
 
 [ext_resource type="Script" uid="uid://b13qbdw0hgavi" path="res://features/battle_sim/BattleSim.gd" id="1_er2wg"]
-[ext_resource type="Script" path="res://features/battle_sim/combat/SimulationCore.gd" id="2_simcore"]
-[ext_resource type="Script" path="res://features/battle_sim/combat/MinionSystem.gd" id="3_minion"]
-[ext_resource type="Script" path="res://features/battle_sim/combat/RecallSystem.gd" id="4_recall"]
-[ext_resource type="Script" path="res://features/battle_sim/combat/Pathfinding.gd" id="5_pathfind"]
-[ext_resource type="Script" path="res://features/battle_sim/rendering/BattleRenderer.gd" id="6_render"]
-[ext_resource type="Script" path="res://features/battle_sim/card_phase/CardPhaseManager.gd" id="7_card"]
-[ext_resource type="Script" path="res://features/battle_sim/gambit/GambitPhaseManager.gd" id="8_gambit"]
-[ext_resource type="Script" path="res://features/battle_sim/ui/HudBuilder.gd" id="9_hud"]
+[ext_resource type="Script" uid="uid://cymupnm1scc1g" path="res://features/battle_sim/combat/SimulationCore.gd" id="2_simcore"]
+[ext_resource type="Script" uid="uid://d33yg3j0cpph7" path="res://features/battle_sim/combat/MinionSystem.gd" id="3_minion"]
+[ext_resource type="Script" uid="uid://osd135fkhqie" path="res://features/battle_sim/combat/RecallSystem.gd" id="4_recall"]
+[ext_resource type="Script" uid="uid://d4kktrxqcq5tq" path="res://features/battle_sim/combat/Pathfinding.gd" id="5_pathfind"]
+[ext_resource type="Script" uid="uid://bhkoljc3e5uo5" path="res://features/battle_sim/rendering/BattleRenderer.gd" id="6_render"]
+[ext_resource type="Script" uid="uid://ch5iiktb3vymd" path="res://features/battle_sim/card_phase/CardPhaseManager.gd" id="7_card"]
+[ext_resource type="Script" uid="uid://coytjfryxkrom" path="res://features/battle_sim/gambit/GambitPhaseManager.gd" id="8_gambit"]
+[ext_resource type="Script" uid="uid://bdhc8dxsuwcdx" path="res://features/battle_sim/ui/HudBuilder.gd" id="9_hud"]
+[ext_resource type="Script" uid="uid://df0xghy23445a" path="res://features/battle_sim/data/DataLoader.gd" id="10_dataloader"]
+[ext_resource type="Script" uid="uid://d3o8xtsfw0cpf" path="res://features/battle_sim/combat/HexGrid.gd" id="11_hexgrid"]
+[ext_resource type="Script" uid="uid://dd65y42igdnoc" path="res://features/battle_sim/data/FieldLoader.gd" id="12_fieldloader"]
+[ext_resource type="PackedScene" uid="uid://c6kqcu4wt31im" path="res://scenes/BattleField.tscn" id="13_battlefield"]
+[ext_resource type="Script" uid="uid://dw4saf2kx7m3n" path="res://features/battle_sim/buildings/BuildingRegistry.gd" id="14_buildingreg"]
 
 [node name="BattleSim" type="Node2D"]
 script = ExtResource("1_er2wg")
+
+[node name="DataLoader" type="Node" parent="."]
+script = ExtResource("10_dataloader")
+
+[node name="FieldLoader" type="Node" parent="."]
+script = ExtResource("12_fieldloader")
 
 [node name="SimulationCore" type="Node" parent="."]
 script = ExtResource("2_simcore")
@@ -22,8 +33,14 @@ script = ExtResource("3_minion")
 [node name="RecallSystem" type="Node" parent="."]
 script = ExtResource("4_recall")
 
+[node name="HexGrid" type="Node" parent="."]
+script = ExtResource("11_hexgrid")
+
 [node name="Pathfinding" type="Node" parent="."]
 script = ExtResource("5_pathfind")
+
+[node name="BattleField" parent="." instance=ExtResource("13_battlefield")]
+position = Vector2(0, 0)
 
 [node name="BattleRenderer" type="Node2D" parent="."]
 script = ExtResource("6_render")
@@ -36,3 +53,6 @@ script = ExtResource("8_gambit")
 
 [node name="HudBuilder" type="Node" parent="."]
 script = ExtResource("9_hud")
+
+[node name="BuildingRegistry" type="Node" parent="."]
+script = ExtResource("14_buildingreg")

@@ -54,7 +54,7 @@ func move_minions(_log_lines: Array) -> void:
 		var goal: Vector2i = path[mini(m.waypoint_idx, max_wp)] as Vector2i
 		if m.grid_pos == goal:
 			continue
-		var next := _bs._pathfinder.bfs_next_step(m.grid_pos, goal, null, null, 0, -1)
+		var next := _bs.pathfinder.bfs_next_step(m.grid_pos, goal, null, null, 0, -1)
 		if next != m.grid_pos:
 			m.grid_pos = next
 
@@ -90,8 +90,8 @@ func process_minion_combat(minion_dmg: Dictionary, log_lines: Array) -> void:
 			continue
 		var m0 := cell_m0[pos] as MinionData
 		var m1 := cell_m1[pos] as MinionData
-		var dmg_to_m0 := m1.count / 2
-		var dmg_to_m1 := m0.count / 2
+		var dmg_to_m0 := m1.count >> 1
+		var dmg_to_m1 := m0.count >> 1
 		minion_dmg[m0] = minion_dmg.get(m0, 0) + dmg_to_m0
 		minion_dmg[m1] = minion_dmg.get(m1, 0) + dmg_to_m1
 		log_lines.append("Minion clash: A%d↔E%d" % [m0.count, m1.count])

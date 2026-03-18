@@ -1,0 +1,5 @@
+lane_id,name,max_pilots,mid_col,mid_row
+0,Left,2,0,5
+1,Center,2,4,5
+2,Right,2,8,5
+3,Guerrilla,1,-1,-1

@@ -1,0 +1,6 @@
+id,name,abbrev,hp,atk,heal
+0,Tank,T,200,8,0
+1,Fighter,F,120,15,0
+2,Assassin,A,80,25,0
+3,Support,Su,100,10,5
+4,Sniper,Sn,70,20,0

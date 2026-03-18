@@ -24,14 +24,14 @@ GameManager="res://autoloads/GameManager.gd"
 
 window/size/viewport_width=1080
 window/size/viewport_height=1920
-window/size/window_width_override=540
-window/size/window_height_override=960
+window/size/window_width_override=702
+window/size/window_height_override=1248
 window/stretch/mode="canvas_items"
 window/handheld/orientation="portrait"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/godot_mcp/plugin.cfg")
+enabled=PackedStringArray("res://addons/csv_to_db/plugin.cfg", "res://addons/godot-sqlite/plugin.cfg", "res://addons/godot_mcp/plugin.cfg")
 
 [godot_mcp]
 

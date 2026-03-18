@@ -15,11 +15,11 @@ func compute_recall_safe_pos(pilot: PilotData) -> Vector2i:
 	var best_dist   := 999999
 
 	# Prefer same-lane turret for non-guerrilla pilots
-	if not pilot.is_guerrilla and pilot.lane < _bs.LANE_COLS.size():
+	if not pilot.is_guerrilla and pilot.lane != GameEnums.LanePosition.GUERRILLA:
 		for t in friendly_turrets:
 			var td := t as TurretData
 			if td.lane == pilot.lane:
-				var d := _bs._pathfinder.manhattan(pilot.grid_pos, td.grid_pos)
+				var d := _bs.pathfinder.manhattan(pilot.grid_pos, td.grid_pos)
 				if d < best_dist:
 					best_dist   = d
 					best_turret = td
@@ -28,7 +28,7 @@ func compute_recall_safe_pos(pilot: PilotData) -> Vector2i:
 	if best_turret == null:
 		for t in friendly_turrets:
 			var td := t as TurretData
-			var d := _bs._pathfinder.manhattan(pilot.grid_pos, td.grid_pos)
+			var d := _bs.pathfinder.manhattan(pilot.grid_pos, td.grid_pos)
 			if d < best_dist:
 				best_dist   = d
 				best_turret = td

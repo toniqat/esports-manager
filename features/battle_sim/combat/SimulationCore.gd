@@ -27,11 +27,11 @@ func simulate_turn() -> void:
 				buffed_pilots.append(bp)
 
 	var log_lines: Array = []
-	_bs._recall_sys.check_danger_state(log_lines)
-	_bs._recall_sys.process_channeling(log_lines)
-	_bs._minion_sys.spawn_minions()
-	_bs._minion_sys.move_minions(log_lines)
-	_bs._minion_sys.merge_minions()
+	_bs.recall_sys.check_danger_state(log_lines)
+	_bs.recall_sys.process_channeling(log_lines)
+	_bs.minion_sys.spawn_minions()
+	_bs.minion_sys.move_minions(log_lines)
+	_bs.minion_sys.merge_minions()
 
 	var damage_map:    Dictionary = {}  # PilotData  → int
 	var turret_dmg:    Dictionary = {}  # TurretData → int
@@ -40,7 +40,7 @@ func simulate_turn() -> void:
 	var hq_damage_p:   int        = 0
 	var hq_damage_e:   int        = 0
 
-	_bs._minion_sys.process_minion_combat(minion_dmg, log_lines)
+	_bs.minion_sys.process_minion_combat(minion_dmg, log_lines)
 
 	for raw_pilot in _bs.pilots:
 		var pilot := raw_pilot as PilotData
@@ -49,7 +49,7 @@ func simulate_turn() -> void:
 
 		# RETREATING: move toward safe pos, no combat
 		if pilot.recall_state == GameEnums.RecallState.RETREATING:
-			var next := _bs._pathfinder.bfs_next_step(pilot.grid_pos, pilot.recall_safe_pos,
+			var next: Vector2i = _bs.pathfinder.bfs_next_step(pilot.grid_pos, pilot.recall_safe_pos,
 					pilot, null, 0, -1)
 			if next != pilot.grid_pos:
 				pilot.grid_pos = next
@@ -73,7 +73,7 @@ func simulate_turn() -> void:
 			for te in etrs:
 				if (te as TurretData).tier < td.tier:
 					td = te as TurretData
-			if _bs._minion_sys.get_friendly_minions_at(td.grid_pos, pilot.team):
+			if _bs.minion_sys.get_friendly_minions_at(td.grid_pos, pilot.team):
 				attackable_turret = td
 
 		if not enemies.is_empty():
@@ -88,7 +88,7 @@ func simulate_turn() -> void:
 			if not turret_dmg.has(td): turret_dmg[td] = 0
 			turret_dmg[td] += pilot.atk
 			if not turret_minion_atk_applied.has(td):
-				var shield: MinionData = _bs._minion_sys.get_minions_at_cell(td.grid_pos, pilot.team)
+				var shield: MinionData = _bs.minion_sys.get_minions_at_cell(td.grid_pos, pilot.team)
 				if shield != null:
 					turret_dmg[td] += int(ceil(float((shield as MinionData).count) / float(_bs.MINION_SIEGE_ATK_DIVISOR)))
 					turret_minion_atk_applied[td] = true
@@ -105,20 +105,20 @@ func simulate_turn() -> void:
 			else:
 				var defending_team := 1 if pilot.team == 0 else 0
 				var ehq := _bs.ENEMY_HQ_POS if pilot.team == 0 else _bs.PLAYER_HQ_POS
-				if _bs._pathfinder.manhattan(pilot.grid_pos, ehq) <= 1 and any_t2_destroyed(defending_team):
+				if pilot.grid_pos == ehq and any_t2_destroyed(defending_team):
 					if pilot.team == 0: hq_damage_e += pilot.atk
 					else:               hq_damage_p += pilot.atk
 					log_lines.append("%s→HQ:%d" % [_bs.pilot_label(pilot), pilot.atk])
-				elif _bs._pathfinder.manhattan(pilot.grid_pos, ehq) > 1:
+				elif pilot.grid_pos != ehq:
 					move_pilot(pilot)
 		else:
 			var defending_team := 1 if pilot.team == 0 else 0
 			var ehq := _bs.ENEMY_HQ_POS if pilot.team == 0 else _bs.PLAYER_HQ_POS
-			if _bs._pathfinder.manhattan(pilot.grid_pos, ehq) <= 1 and any_t2_destroyed(defending_team):
+			if pilot.grid_pos == ehq and any_t2_destroyed(defending_team):
 				if pilot.team == 0: hq_damage_e += pilot.atk
 				else:               hq_damage_p += pilot.atk
 				log_lines.append("%s→HQ:%d" % [_bs.pilot_label(pilot), pilot.atk])
-			elif _bs._pathfinder.manhattan(pilot.grid_pos, ehq) > 1:
+			elif pilot.grid_pos != ehq:
 				move_pilot(pilot)
 
 	# Turrets retaliate — minions absorb all damage; pilots immune while minions present
@@ -126,7 +126,7 @@ func simulate_turn() -> void:
 		var td := t as TurretData
 		if not td.alive:
 			continue
-		var shield: MinionData = _bs._minion_sys.get_minions_at_cell(td.grid_pos, 1 - td.team)
+		var shield: MinionData = _bs.minion_sys.get_minions_at_cell(td.grid_pos, 1 - td.team)
 		if shield != null:
 			minion_dmg[shield] = minion_dmg.get(shield, 0) + td.atk
 		else:
@@ -205,7 +205,7 @@ func get_allies_in_range(pilot: PilotData) -> Array:
 	for raw in _bs.pilots:
 		var o := raw as PilotData
 		if o.alive and o.team == pilot.team and o != pilot \
-				and _bs._pathfinder.manhattan(pilot.grid_pos, o.grid_pos) == 1:
+				and _bs.pathfinder.manhattan(pilot.grid_pos, o.grid_pos) == 1:
 			result.append(o)
 	return result
 
@@ -230,9 +230,9 @@ func pick_target(attacker: PilotData, candidates: Array):
 			for c in candidates:
 				if (c as PilotData).hp > (best as PilotData).hp: best = c
 		_:
-			var bd: int = _bs._pathfinder.chebyshev(attacker.grid_pos, (best as PilotData).grid_pos)
+			var bd: int = _bs.pathfinder.chebyshev(attacker.grid_pos, (best as PilotData).grid_pos)
 			for c in candidates:
-				var d: int = _bs._pathfinder.chebyshev(attacker.grid_pos, (c as PilotData).grid_pos)
+				var d: int = _bs.pathfinder.chebyshev(attacker.grid_pos, (c as PilotData).grid_pos)
 				if d < bd: best = c; bd = d
 	return best
 
@@ -254,7 +254,7 @@ func move_pilot(pilot: PilotData) -> void:
 				stop_dist = 0
 			else:
 				goal      = _bs.ENEMY_HQ_POS if pilot.team == 0 else _bs.PLAYER_HQ_POS
-				stop_dist = 1
+				stop_dist = 0
 	elif pilot.role == GameEnums.Role.SUPPORT:
 		var w = weak_ally_target(pilot)
 		if w != null:
@@ -262,16 +262,46 @@ func move_pilot(pilot: PilotData) -> void:
 			stop_dist = 1
 		else:
 			goal      = current_waypoint(pilot)
-			var ehq   := _bs.ENEMY_HQ_POS if pilot.team == 0 else _bs.PLAYER_HQ_POS
-			stop_dist = 1 if goal == ehq else 0
+			stop_dist = 0
 	else:
 		goal      = current_waypoint(pilot)
-		var ehq   := _bs.ENEMY_HQ_POS if pilot.team == 0 else _bs.PLAYER_HQ_POS
-		stop_dist = 1 if goal == ehq else 0
+		stop_dist = 0
 
-	var next := _bs._pathfinder.bfs_next_step(pilot.grid_pos, goal, pilot, null, stop_dist, -1)
+	# Gate all pilots at any blocking enemy turret that lies between them and goal
+	var gate := lane_turret_gate(pilot, goal)
+	if gate != Vector2i(-1, -1):
+		goal      = gate
+		stop_dist = 0
+
+	var next: Vector2i = _bs.pathfinder.bfs_next_step(pilot.grid_pos, goal, pilot, null, stop_dist, -1)
 	if next != pilot.grid_pos:
 		pilot.grid_pos = next
+
+
+# Returns the position of the nearest live enemy turret in the pilot's lane that
+# lies between the pilot and goal (closer to goal than pilot is), or (-1,-1) if none.
+func lane_turret_gate(pilot: PilotData, goal: Vector2i) -> Vector2i:
+	var pilot_to_goal := _bs._hex_grid.hex_distance(pilot.grid_pos, goal)
+	if pilot_to_goal == 0:
+		return Vector2i(-1, -1)
+	var best_pos  := Vector2i(-1, -1)
+	var best_dist := pilot_to_goal + 1
+	for t in _bs.turrets:
+		var td := t as TurretData
+		if not td.alive or td.team == pilot.team:
+			continue
+		if td.tier == 2 and t1_alive_in_lane(td.team, td.lane):
+			continue
+		# Lane pilots: only turrets in their lane; guerrilla: any enemy turret
+		if not pilot.is_guerrilla and td.lane != pilot.lane:
+			continue
+		var turret_to_goal  := _bs._hex_grid.hex_distance(td.grid_pos, goal)
+		var pilot_to_turret := _bs._hex_grid.hex_distance(pilot.grid_pos, td.grid_pos)
+		# Turret is "between" pilot and goal, or pilot is already on the turret's cell
+		if turret_to_goal <= pilot_to_goal and pilot_to_turret < best_dist:
+			best_dist = pilot_to_turret
+			best_pos  = td.grid_pos
+	return best_pos
 
 
 func get_lane_turret(lane: int, team: int, tier: int):
@@ -305,15 +335,15 @@ func enemy_turret_blocking_at(pos: Vector2i, friendly_team: int) -> bool:
 
 
 func nearest_uncaptured_zone(pilot: PilotData) -> Vector2i:
-	var own_zones: Array = _bs.NEUTRAL_ZONE_FRIENDLY_LEFT + _bs.NEUTRAL_ZONE_FRIENDLY_RIGHT \
+	var own_zones: Array = _bs.NEUTRAL_ZONES[0] + _bs.NEUTRAL_ZONES[1] \
 			if pilot.team == 0 \
-			else _bs.NEUTRAL_ZONE_ENEMY_LEFT + _bs.NEUTRAL_ZONE_ENEMY_RIGHT
+			else _bs.NEUTRAL_ZONES[2] + _bs.NEUTRAL_ZONES[3]
 	var best      := Vector2i(-1, -1)
 	var best_dist := 999999
 	for raw_cell in own_zones:
 		var cv := raw_cell as Vector2i
-		if _bs._neutral_zone_cells.get(cv, -1) != pilot.team:
-			var d := _bs._pathfinder.manhattan(pilot.grid_pos, cv)
+		if _bs.neutral_zone_cells.get(cv, -1) != pilot.team:
+			var d: int = _bs.pathfinder.manhattan(pilot.grid_pos, cv)
 			if d < best_dist:
 				best_dist = d
 				best      = cv
@@ -378,24 +408,15 @@ func process_respawns() -> void:
 				p.waypoint_idx  = 0
 
 
-# ─── Ownership & Spawn ───────────────────────────────────────────────────────
-func init_ownership_map() -> void:
-	_bs.ownership_map.resize(_bs.GRID_COLS * _bs.GRID_ROWS)
-	_bs.ownership_map.fill(-1)
-	_bs.ownership_map[_bs.PLAYER_HQ_POS.x + _bs.PLAYER_HQ_POS.y * _bs.GRID_COLS] = 0
-	_bs.ownership_map[_bs.ENEMY_HQ_POS.x  + _bs.ENEMY_HQ_POS.y  * _bs.GRID_COLS] = 1
-
-
+# ─── Neutral Zones & Spawn ───────────────────────────────────────────────────
 func init_neutral_zones() -> void:
-	_bs._neutral_zone_cells.clear()
-	for cell in _bs.NEUTRAL_ZONE_FRIENDLY_LEFT:
-		_bs._neutral_zone_cells[cell as Vector2i] = -1
-	for cell in _bs.NEUTRAL_ZONE_FRIENDLY_RIGHT:
-		_bs._neutral_zone_cells[cell as Vector2i] = -1
-	for cell in _bs.NEUTRAL_ZONE_ENEMY_LEFT:
-		_bs._neutral_zone_cells[cell as Vector2i] = -1
-	for cell in _bs.NEUTRAL_ZONE_ENEMY_RIGHT:
-		_bs._neutral_zone_cells[cell as Vector2i] = -1
+	_bs.neutral_zone_cells.clear()
+	for zone in _bs.NEUTRAL_ZONES:
+		for cell in zone:
+			var cv := cell as Vector2i
+			_bs.neutral_zone_cells[cv] = -1
+			# Reset TileMapLayer tile to NZ atlas tile (source=0, atlas=(3,0), alt=0)
+			_bs._tiles_layer.set_cell(cv, 0, Vector2i(3, 0), 0)
 
 
 func process_neutral_zone_captures() -> void:
@@ -403,37 +424,28 @@ func process_neutral_zone_captures() -> void:
 		var p := raw as PilotData
 		if not p.alive or not p.is_guerrilla:
 			continue
-		if _bs._neutral_zone_cells.has(p.grid_pos):
-			_bs._neutral_zone_cells[p.grid_pos] = p.team
-
-
-func capture_tile(pos: Vector2i, team: int) -> void:
-	if pos == _bs.PLAYER_HQ_POS or pos == _bs.ENEMY_HQ_POS:
-		return
-	_bs.ownership_map[pos.x + pos.y * _bs.GRID_COLS] = team
-
-
-func update_ownership() -> void:
-	var cell_teams: Dictionary = {}
-	for raw in _bs.pilots:
-		var p := raw as PilotData
-		if not p.alive: continue
-		if not cell_teams.has(p.grid_pos):
-			cell_teams[p.grid_pos] = {}
-		(cell_teams[p.grid_pos] as Dictionary)[p.team] = true
-
-	for cell in cell_teams.keys():
-		var cv: Vector2i = cell as Vector2i
-		if cv == _bs.PLAYER_HQ_POS or cv == _bs.ENEMY_HQ_POS: continue
-		var teams: Dictionary = cell_teams[cell] as Dictionary
-		if teams.size() == 1:
-			var team: int = teams.keys()[0] as int
-			_bs.ownership_map[cv.x + cv.y * _bs.GRID_COLS] = team
+		if not _bs.neutral_zone_cells.has(p.grid_pos):
+			continue
+		# Block capture if any enemy pilot is on the same cell
+		var enemy_present := false
+		for other_raw in _bs.pilots:
+			var o := other_raw as PilotData
+			if o.alive and o.team != p.team and o.grid_pos == p.grid_pos:
+				enemy_present = true
+				break
+		if enemy_present:
+			continue
+		# Skip if already owned by this team
+		if _bs.neutral_zone_cells[p.grid_pos] == p.team:
+			continue
+		_bs.neutral_zone_cells[p.grid_pos] = p.team
+		# atlas (1,0) = player-team color (owner_id=1), atlas (2,0) = enemy-team color (owner_id=2)
+		var atlas_x := 1 if p.team == 0 else 2
+		_bs._tiles_layer.set_cell(p.grid_pos, 0, Vector2i(atlas_x, 0), 0)
 
 
 func spawn_pilots_with_lanes() -> void:
 	_bs.pilots.clear()
-	init_ownership_map()
 	var roles: Array[int] = [
 		GameEnums.Role.TANK, GameEnums.Role.FIGHTER, GameEnums.Role.ASSASSIN,
 		GameEnums.Role.SUPPORT, GameEnums.Role.SNIPER,
@@ -443,15 +455,15 @@ func spawn_pilots_with_lanes() -> void:
 		var lid: int = _bs._gambit_lanes[i]
 		var pilot := PilotData.new(roles[i], 0, _bs.PLAYER_HQ_POS, _bs.ROLE_STATS[roles[i]])
 		pilot.lane         = lid
-		pilot.is_guerrilla = (lid == GameEnums.Lane.GUERRILLA)
+		pilot.is_guerrilla = (lid == GameEnums.LanePosition.GUERRILLA)
 		pilot.waypoint_idx = 0
 		_bs.pilots.append(pilot)
 
-	var base_lanes: Array = [GameEnums.Lane.LEFT, GameEnums.Lane.CENTER, GameEnums.Lane.RIGHT]
+	var base_lanes: Array = [GameEnums.LanePosition.LEFT, GameEnums.LanePosition.CENTER, GameEnums.LanePosition.RIGHT]
 	var extra: int = base_lanes[randi() % 3]
 	var e_assign: Array = [
-		GameEnums.Lane.LEFT, GameEnums.Lane.CENTER, GameEnums.Lane.RIGHT,
-		extra, GameEnums.Lane.GUERRILLA,
+		GameEnums.LanePosition.LEFT, GameEnums.LanePosition.CENTER, GameEnums.LanePosition.RIGHT,
+		extra, GameEnums.LanePosition.GUERRILLA,
 	]
 	e_assign.shuffle()
 	var e_roles: Array = roles.duplicate()
@@ -461,47 +473,39 @@ func spawn_pilots_with_lanes() -> void:
 		var lid: int = e_assign[i]
 		var pilot := PilotData.new(e_roles[i], 1, _bs.ENEMY_HQ_POS, _bs.ROLE_STATS[e_roles[i]])
 		pilot.lane         = lid
-		pilot.is_guerrilla = (lid == GameEnums.Lane.GUERRILLA)
+		pilot.is_guerrilla = (lid == GameEnums.LanePosition.GUERRILLA)
 		pilot.waypoint_idx = 0
 		_bs.pilots.append(pilot)
 
 
 func spawn_turrets() -> void:
 	_bs.turrets.clear()
-	var e_t1 := [
-		Vector2i(_bs.TURRET_COLS_T1[0], _bs.TURRET_ROW_T1_TEAM1),
-		Vector2i(_bs.TURRET_COLS_T1[1], _bs.TURRET_ROW_T1_TEAM1),
-		Vector2i(_bs.TURRET_COLS_T1[2], _bs.TURRET_ROW_T1_TEAM1),
-	]
-	var e_t2 := [
-		Vector2i(_bs.TURRET_COLS_T2[0], _bs.TURRET_ROW_T2_TEAM1),
-		Vector2i(_bs.TURRET_COLS_T2[1], _bs.TURRET_ROW_T2_TEAM1),
-		Vector2i(_bs.TURRET_COLS_T2[2], _bs.TURRET_ROW_T2_TEAM1),
-	]
-	var p_t1 := [
-		Vector2i(_bs.TURRET_COLS_T1[0], _bs.TURRET_ROW_T1_TEAM0),
-		Vector2i(_bs.TURRET_COLS_T1[1], _bs.TURRET_ROW_T1_TEAM0),
-		Vector2i(_bs.TURRET_COLS_T1[2], _bs.TURRET_ROW_T1_TEAM0),
-	]
-	var p_t2 := [
-		Vector2i(_bs.TURRET_COLS_T2[0], _bs.TURRET_ROW_T2_TEAM0),
-		Vector2i(_bs.TURRET_COLS_T2[1], _bs.TURRET_ROW_T2_TEAM0),
-		Vector2i(_bs.TURRET_COLS_T2[2], _bs.TURRET_ROW_T2_TEAM0),
-	]
+	var tp: Dictionary = _bs.TURRET_POSITIONS
 	for lane_idx in range(3):
-		_bs.turrets.append(TurretData.new(1, e_t1[lane_idx] as Vector2i, 1, lane_idx, _bs.TURRET_HP, _bs.TURRET_ATK))
-		_bs.turrets.append(TurretData.new(1, e_t2[lane_idx] as Vector2i, 2, lane_idx, _bs.TURRET_HP, _bs.TURRET_ATK))
-		_bs.turrets.append(TurretData.new(0, p_t1[lane_idx] as Vector2i, 1, lane_idx, _bs.TURRET_HP, _bs.TURRET_ATK))
-		_bs.turrets.append(TurretData.new(0, p_t2[lane_idx] as Vector2i, 2, lane_idx, _bs.TURRET_HP, _bs.TURRET_ATK))
+		for team in range(2):
+			for tier in [1, 2]:
+				var pos: Vector2i
+				if not tp.is_empty() and tp.has(lane_idx) and \
+						tp[lane_idx].has(team) and tp[lane_idx][team].has(tier):
+					pos = tp[lane_idx][team][tier] as Vector2i
+				else:
+					# Fallback for hex grid: T1=outer, T2=inner
+					var cols := [1, 4, 7]
+					var _rows_t1: Array = [6, 4]   # team0 T1 outer=row6, team1 T1 outer=row4
+					var row_t1: int = _rows_t1[team]
+					var _rows_t2: Array = [8, 2]   # team0 T2 inner=row8, team1 T2 inner=row2
+					var row_t2: int = _rows_t2[team]
+					pos = Vector2i(cols[lane_idx], row_t1 if tier == 1 else row_t2)
+				_bs.turrets.append(TurretData.new(team, pos, tier, lane_idx, _bs.TURRET_HP, _bs.TURRET_ATK))
 
 
 # ─── Win Condition ────────────────────────────────────────────────────────────
 func check_win_condition() -> void:
 	if _bs.enemy_hq_hp <= 0:
 		_bs.game_over = true
-		_bs._lbl_victory.text  = "Player Team Wins!"
+		_bs.lbl_victory.text  = "Player Team Wins!"
 		_bs._panel_victory.visible = true
 	elif _bs.player_hq_hp <= 0:
 		_bs.game_over = true
-		_bs._lbl_victory.text  = "Opponent Team Wins!"
+		_bs.lbl_victory.text  = "Opponent Team Wins!"
 		_bs._panel_victory.visible = true

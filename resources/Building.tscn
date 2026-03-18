@@ -1,0 +1,18 @@
+[gd_scene load_steps=5 format=3 uid="uid://bm68m1eo4b750"]
+
+[ext_resource type="Script" uid="uid://dcqrbm7pnx2e1" path="res://features/battle_sim/buildings/Building.gd" id="1_buildscript"]
+[ext_resource type="Script" uid="uid://bvt8p3njq6e5c" path="res://resources/BuildingData.gd" id="2_8bnb8"]
+[ext_resource type="Texture2D" uid="uid://bkxgiskn2123w" path="res://resources/images/tiles/hexa-tileset.png" id="3_2hoj2"]
+
+[sub_resource type="Resource" id="Resource_hm104"]
+script = ExtResource("2_8bnb8")
+metadata/_custom_type_script = "uid://bvt8p3njq6e5c"
+
+[node name="Building" type="Node2D"]
+script = ExtResource("1_buildscript")
+data = SubResource("Resource_hm104")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("3_2hoj2")
+region_enabled = true
+region_rect = Rect2(0, 192, 64, 64)

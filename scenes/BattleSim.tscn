@@ -40,7 +40,6 @@ script = ExtResource("11_hexgrid")
 script = ExtResource("5_pathfind")
 
 [node name="BattleField" parent="." instance=ExtResource("13_battlefield")]
-position = Vector2(0, 0)
 
 [node name="BattleRenderer" type="Node2D" parent="."]
 script = ExtResource("6_render")

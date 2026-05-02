@@ -28,11 +28,44 @@ Minion lifecycle: spawn, move, merge, combat.
 
 ## SimulationCore.gd
 Main turn loop and all combat/movement/spawn logic.
-- `simulate_turn()` — full turn: respawns → danger → channeling → minions → pilots → turrets → damage → zone captures → win check
+
+### Turn loop
+- `simulate_turn()` — full turn: respawns → danger → channeling → minions →
+  pilots → turrets → damage → zone captures → win check
+
+### Targeting
 - `get_enemies_in_range`, `get_turrets_in_range`, `get_allies_in_range`
-- `find_weakest_ally`, `pick_target`, `move_pilot`
-- `current_waypoint`, `enemy_turret_blocking_at`, `nearest_uncaptured_zone`
+- `find_weakest_ally`, `pick_target`
+
+### Movement
+- `move_pilot(pilot)` — calls `_step_pilot_once` up to `pilot.move_range` times
+  (stops early on no-progress). `move_range` is set from the assigned mech.
+- `_step_pilot_once(pilot)` — single-cell advance: chooses goal (waypoint /
+  weak ally / capture target / lowest-HP enemy), applies turret gating, then
+  asks Pathfinding for one step.
+- `current_waypoint`, `lane_turret_gate`, `enemy_turret_blocking_at`
+
+### Neutral zones (jungle)
+- `nearest_uncaptured_zone(pilot)` — biases the assassin toward the zone
+  matching `pilot.jungle_start_pref`; falls back to the other own-side zone
+  once the preferred one is captured. With pref = -1 it returns nearest across
+  both own-side zones (legacy behavior).
+- `_nearest_in_cells(pilot, cells)` — helper used by the function above.
+- `init_neutral_zones`, `process_neutral_zone_captures`
+
+### Spawning
+- `spawn_pilots_with_lanes()` — builds 5 player + 5 enemy `PilotData` using the
+  fixed role→lane mapping from `GambitPhaseManager.ROLE_TO_LANE`. Stats come
+  from `_stats_for(...)`.
+- `_stats_for(ctx_active, roster, idx, role_id)` — returns `{hp, atk, heal, move_range}`.
+  When `match_ctx.active`, pulls from `roster[idx].assigned_mech`. Otherwise
+  falls back to `ROLE_STATS` defaults (move_range = 1).
+- The assassin (GUERRILLA) gets `jungle_start_pref` set from `match_ctx.jungle_start_dir`
+  (player team) or randomly (enemy team).
+- `spawn_turrets()` — reads `TURRET_POSITIONS` from FieldLoader, falls back to
+  hardcoded coordinates if missing.
+
+### Misc
 - `t1_alive_in_lane`, `any_t2_destroyed`, `has_enemy_turret_at`
-- `process_respawns`, `init_ownership_map`, `init_neutral_zones`
-- `process_neutral_zone_captures`, `spawn_pilots_with_lanes`, `spawn_turrets`
+- `process_respawns`, `lowest_hp_enemy`, `weak_ally_target`
 - `check_win_condition`

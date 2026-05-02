@@ -41,8 +41,24 @@ func setup(card_data: CardData, player_card: bool, start_face_up: bool = false) 
 	is_player_card = player_card
 	face_up = start_face_up
 	_apply_data()
+	_apply_back_style()
 	card_front.visible = start_face_up
 	card_back.visible = not start_face_up
+
+
+func _apply_back_style() -> void:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.08, 0.05, 0.18, 1.0)
+	style.corner_radius_top_left     = 10
+	style.corner_radius_top_right    = 10
+	style.corner_radius_bottom_left  = 10
+	style.corner_radius_bottom_right = 10
+	style.border_color = Color(0.4, 0.3, 0.6, 1.0)
+	style.border_width_bottom = 2
+	style.border_width_top    = 2
+	style.border_width_left   = 2
+	style.border_width_right  = 2
+	card_back.add_theme_stylebox_override("panel", style)
 
 
 func _apply_data() -> void:

@@ -20,7 +20,7 @@ metadata/_custom_type_script = "uid://bvt8p3njq6e5c"
 
 [node name="Tiles" type="TileMapLayer" parent="."]
 position = Vector2(30, 52)
-tile_map_data = PackedByteArray("AAD/////AAAAAAAAAAD//wAAAAAAAAAAAAD///7/AAAAAAAAAAD//wEAAAAAAAAAAAD+/wAAAAADAAAAAAD9/wAAAAADAAAAAAD9////AAAAAAAAAAD9//7/AAADAAAAAAD+//3/AAADAAAAAAD///3/AAAAAAAAAAAAAP3/AAADAAAAAAABAP7/AAADAAAAAAABAP//AAAAAAAAAAABAAAAAAADAAAAAAAAAAAAAAADAAAAAAD//wIAAAAAAAAAAAD+/wEAAAADAAAAAAD9/wEAAAADAAAAAAD8/wAAAAADAAAAAAD8//3/AAADAAAAAAD9//3/AAADAAAAAAD+//z/AAADAAAAAAD///z/AAAAAAAAAAAAAAEAAAADAAAAAAABAAEAAAADAAAAAAACAAAAAAADAAAAAAACAP3/AAADAAAAAAABAP3/AAADAAAAAAAAAPz/AAADAAAAAAD//wMAAAAAAAAAAAABAAIAAAADAAAAAAACAAEAAAADAAAAAAD9/wIAAAADAAAAAAD//wQAAAAAAAAAAAAAAAMAAAAAAAAAAAD+/wMAAAAAAAAAAAD9/wMAAAAAAAAAAAD8/wIAAAAAAAAAAAD8/wEAAAADAAAAAAABAAMAAAAAAAAAAAACAAIAAAAAAAAAAAD///r/AAAAAAAAAAD9//z/AAADAAAAAAABAPz/AAADAAAAAAACAPz/AAADAAAAAAACAPv/AAAAAAAAAAD8//z/AAADAAAAAAADAAIAAAAAAAAAAAADAAEAAAAAAAAAAAADAAAAAAAAAAAAAAADAP//AAAAAAAAAAADAP7/AAAAAAAAAAADAP3/AAAAAAAAAAADAPz/AAAAAAAAAAD7//z/AAAAAAAAAAD7//3/AAAAAAAAAAD7//7/AAAAAAAAAAD7////AAAAAAAAAAD7/wAAAAAAAAAAAAD7/wEAAAAAAAAAAAD7/wIAAAAAAAAAAAACAP//AAAAAAAAAAAAAP7/AAAAAAAAAAD+////AAAAAAAAAAD+//7/AAAAAAAAAAD+/wIAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAP//AAAAAAAAAAACAP7/AAAAAAAAAAD+//v/AAAAAAAAAAAAAPr/AAAAAAAAAAD8//v/AAAAAAAAAAD9//v/AAAAAAAAAAD8////AAAAAAAAAAAAAPv/AAAAAAAAAAABAPv/AAAAAAAAAAD///v/AAAAAAAAAAD+//r/AAAAAAAAAAD8//7/AAAAAAAAAAA=")
+tile_map_data = PackedByteArray("AAD/////AAAAAAAAAAD//wAAAAAAAAAAAAD///7/AAAAAAAAAAD//wEAAAAAAAAAAAD+/wAAAAABAAAAAAD9/wAAAAABAAAAAAD9////AAADAAAAAAD9//7/AAACAAAAAAD+//3/AAACAAAAAAD///3/AAAAAAAAAAAAAP3/AAACAAAAAAAAAAAAAAABAAAAAAD//wIAAAAAAAAAAAD+/wEAAAAAAAAAAAD9/wEAAAAAAAAAAAD8/wAAAAAAAAAAAAD8//3/AAAAAAAAAAD9//3/AAAAAAAAAAD+//z/AAAAAAAAAAD///z/AAAAAAAAAAAAAAEAAAAAAAAAAAABAAEAAAAAAAAAAAACAAAAAAAAAAAAAAABAP3/AAAAAAAAAAAAAPz/AAAAAAAAAAACAP//AAAAAAAAAAAAAP7/AAACAAAAAAD+////AAABAAAAAAD+//7/AAACAAAAAAAAAP//AAABAAAAAAACAP7/AAAAAAAAAAD8////AAAAAAAAAAD8//7/AAAAAAAAAAABAAAAAAABAAAAAAABAP//AAADAAAAAAABAP7/AAACAAAAAAACAP3/AAAAAAAAAAA=")
 tile_set = ExtResource("1_5euyt")
 
 [node name="WaypointLayer" type="Node2D" parent="."]
@@ -28,89 +28,88 @@ z_index = 2
 script = ExtResource("6_wplayer")
 
 [node name="Waypoint" parent="WaypointLayer" instance=ExtResource("4_uju6j")]
-position = Vector2(-30, 468)
-tile_coords = Vector2i(-1, 4)
+position = Vector2(0, 312)
+tile_coords = Vector2i(-1, 2)
 lane = 0
 data = SubResource("Resource_wpdata")
 
 [node name="Waypoint2" parent="WaypointLayer" instance=ExtResource("4_uju6j")]
-position = Vector2(-390, 260)
-tile_coords = Vector2i(-5, 2)
+position = Vector2(-270, 156)
+tile_coords = Vector2i(-4, 0)
 lane = 0
 waypoint_id = 1
 data = SubResource("Resource_wpdata")
 
 [node name="Waypoint3" parent="WaypointLayer" instance=ExtResource("4_uju6j")]
-position = Vector2(-390, -52)
-tile_coords = Vector2i(-5, -1)
+position = Vector2(-270, -52)
+tile_coords = Vector2i(-4, -2)
 lane = 0
 waypoint_id = 2
 data = SubResource("Resource_wpdata")
 
 [node name="Waypoint4" parent="WaypointLayer" instance=ExtResource("4_uju6j")]
-position = Vector2(-390, -364)
-tile_coords = Vector2i(-5, -4)
+position = Vector2(-270, -156)
+tile_coords = Vector2i(-4, -3)
 lane = 0
 waypoint_id = 3
 data = SubResource("Resource_wpdata")
 
 [node name="Waypoint5" parent="WaypointLayer" instance=ExtResource("4_uju6j")]
-position = Vector2(-30, -572)
-tile_coords = Vector2i(-1, -6)
+position = Vector2(0, -312)
+tile_coords = Vector2i(-1, -4)
 lane = 0
 waypoint_id = 4
 data = SubResource("Resource_wpdata")
 
 [node name="Waypoint6" parent="WaypointLayer" instance=ExtResource("4_uju6j")]
-position = Vector2(-30, 468)
-tile_coords = Vector2i(-1, 4)
+position = Vector2(0, 312)
+tile_coords = Vector2i(-1, 2)
 lane = 1
 data = SubResource("Resource_wpdata")
 
 [node name="Waypoint7" parent="WaypointLayer" instance=ExtResource("4_uju6j")]
-position = Vector2(-30, -52)
 tile_coords = Vector2i(-1, -1)
 lane = 1
 waypoint_id = 1
 data = SubResource("Resource_wpdata")
 
 [node name="Waypoint8" parent="WaypointLayer" instance=ExtResource("4_uju6j")]
-position = Vector2(-30, -572)
-tile_coords = Vector2i(-1, -6)
+position = Vector2(0, -312)
+tile_coords = Vector2i(-1, -4)
 lane = 1
 waypoint_id = 2
 data = SubResource("Resource_wpdata")
 
 [node name="Waypoint9" parent="WaypointLayer" instance=ExtResource("4_uju6j")]
-position = Vector2(-30, 468)
-tile_coords = Vector2i(-1, 4)
+position = Vector2(0, 312)
+tile_coords = Vector2i(-1, 2)
 lane = 2
 data = SubResource("Resource_wpdata")
 
 [node name="Waypoint10" parent="WaypointLayer" instance=ExtResource("4_uju6j")]
-position = Vector2(330, 260)
-tile_coords = Vector2i(3, 2)
+position = Vector2(270, 156)
+tile_coords = Vector2i(2, 0)
 lane = 2
 waypoint_id = 1
 data = SubResource("Resource_wpdata")
 
 [node name="Waypoint11" parent="WaypointLayer" instance=ExtResource("4_uju6j")]
-position = Vector2(330, -52)
-tile_coords = Vector2i(3, -1)
+position = Vector2(270, 52)
+tile_coords = Vector2i(2, -1)
 lane = 2
 waypoint_id = 2
 data = SubResource("Resource_wpdata")
 
 [node name="Waypoint12" parent="WaypointLayer" instance=ExtResource("4_uju6j")]
-position = Vector2(330, -364)
-tile_coords = Vector2i(3, -4)
+position = Vector2(270, -156)
+tile_coords = Vector2i(2, -3)
 lane = 2
 waypoint_id = 3
 data = SubResource("Resource_wpdata")
 
 [node name="Waypoint13" parent="WaypointLayer" instance=ExtResource("4_uju6j")]
-position = Vector2(-30, -572)
-tile_coords = Vector2i(-1, -6)
+position = Vector2(0, -312)
+tile_coords = Vector2i(-1, -4)
 lane = 2
 waypoint_id = 4
 data = SubResource("Resource_wpdata")
@@ -119,92 +118,92 @@ data = SubResource("Resource_wpdata")
 script = ExtResource("5_blayer")
 
 [node name="Building" parent="BuildingLayer" instance=ExtResource("4_0skqn")]
-position = Vector2(-30, 468)
-tile_coords = Vector2i(-1, 4)
+position = Vector2(0, 312)
+tile_coords = Vector2i(-1, 2)
 data = SubResource("Resource_hm104")
 
 [node name="Building2" parent="BuildingLayer" instance=ExtResource("4_0skqn")]
-position = Vector2(-390, 260)
-tile_coords = Vector2i(-5, 2)
+position = Vector2(-90, 260)
+tile_coords = Vector2i(-2, 1)
 tower_level = 1
 lane = 0
 data = SubResource("Resource_hm104")
 
 [node name="Building3" parent="BuildingLayer" instance=ExtResource("4_0skqn")]
-position = Vector2(-30, 260)
-tile_coords = Vector2i(-1, 2)
+position = Vector2(0, 208)
+tile_coords = Vector2i(-1, 1)
 tower_level = 1
 lane = 1
 data = SubResource("Resource_hm104")
 
 [node name="Building4" parent="BuildingLayer" instance=ExtResource("4_0skqn")]
-position = Vector2(330, 260)
-tile_coords = Vector2i(3, 2)
+position = Vector2(90, 260)
+tile_coords = Vector2i(0, 1)
 tower_level = 1
 lane = 2
 data = SubResource("Resource_hm104")
 
 [node name="Building5" parent="BuildingLayer" instance=ExtResource("4_0skqn")]
-position = Vector2(-390, 52)
-tile_coords = Vector2i(-5, 0)
+position = Vector2(-270, 156)
+tile_coords = Vector2i(-4, 0)
 tower_level = 2
 lane = 0
 data = SubResource("Resource_hm104")
 
 [node name="Building6" parent="BuildingLayer" instance=ExtResource("4_0skqn")]
-position = Vector2(-30, 52)
+position = Vector2(0, 104)
 tile_coords = Vector2i(-1, 0)
 tower_level = 2
 lane = 1
 data = SubResource("Resource_hm104")
 
 [node name="Building7" parent="BuildingLayer" instance=ExtResource("4_0skqn")]
-position = Vector2(330, 52)
-tile_coords = Vector2i(3, 0)
+position = Vector2(270, 156)
+tile_coords = Vector2i(2, 0)
 tower_level = 2
 lane = 2
 data = SubResource("Resource_hm104")
 
 [node name="Building8" parent="BuildingLayer" instance=ExtResource("4_0skqn")]
-position = Vector2(-30, -572)
-tile_coords = Vector2i(-1, -6)
+position = Vector2(0, -312)
+tile_coords = Vector2i(-1, -4)
 team = 2
 data = SubResource("Resource_hm104")
 
 [node name="Building9" parent="BuildingLayer" instance=ExtResource("4_0skqn")]
-position = Vector2(-390, -364)
-tile_coords = Vector2i(-5, -4)
+position = Vector2(-90, -260)
+tile_coords = Vector2i(-2, -4)
 tower_level = 1
 team = 2
 lane = 0
 data = SubResource("Resource_hm104")
 
 [node name="Building10" parent="BuildingLayer" instance=ExtResource("4_0skqn")]
-position = Vector2(-30, -364)
-tile_coords = Vector2i(-1, -4)
+position = Vector2(0, -208)
+tile_coords = Vector2i(-1, -3)
 tower_level = 1
 team = 2
 lane = 1
 data = SubResource("Resource_hm104")
 
 [node name="Building11" parent="BuildingLayer" instance=ExtResource("4_0skqn")]
-position = Vector2(330, -364)
-tile_coords = Vector2i(3, -4)
+position = Vector2(90, -260)
+tile_coords = Vector2i(0, -4)
 tower_level = 1
 team = 2
 lane = 2
 data = SubResource("Resource_hm104")
 
 [node name="Building12" parent="BuildingLayer" instance=ExtResource("4_0skqn")]
-position = Vector2(-390, -156)
-tile_coords = Vector2i(-5, -2)
+position = Vector2(-270, -156)
+tile_coords = Vector2i(-4, -3)
 tower_level = 2
 team = 2
 lane = 0
 data = SubResource("Resource_hm104")
 
 [node name="Building13" parent="BuildingLayer" instance=ExtResource("4_0skqn")]
-position = Vector2(-30, -156)
+position = Vector2(0, -104)
 tile_coords = Vector2i(-1, -2)
 tower_level = 2
 team = 2
@@ -212,8 +211,16 @@ lane = 1
 data = SubResource("Resource_hm104")
 
 [node name="Building14" parent="BuildingLayer" instance=ExtResource("4_0skqn")]
-position = Vector2(330, -156)
-tile_coords = Vector2i(3, -2)
+position = Vector2(270, -156)
+tile_coords = Vector2i(2, -3)
+tower_level = 2
+team = 2
+lane = 2
+data = SubResource("Resource_hm104")
+
+[node name="Building15" parent="BuildingLayer" instance=ExtResource("4_0skqn")]
+position = Vector2(180, 0)
+tile_coords = Vector2i(1, -1)
 tower_level = 2
 team = 2
 lane = 2

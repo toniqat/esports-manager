@@ -26,6 +26,66 @@ func reset_battle_state() -> void:
 	enemy_hq_hp  = 0
 	battle_over  = false
 
+# ── Match Context (populated by MatchFlow, consumed by BattleSim) ─────────────
+# Empty (active=false) when running BattleSim standalone — BattleSim falls back
+# to ROLE_STATS in that case.
+var match_ctx: Dictionary = {
+	"active": false,
+	"player_roster": [],       # Array[PlayerData], one per role 0..4 (assigned_mech set)
+	"enemy_roster":  [],       # Array[PlayerData], one per role 0..4 (assigned_mech set)
+	"jungle_start_dir": GameEnums.JungleStartDir.LEFT,
+	"player_side":   GameEnums.DraftSide.BLUE,
+	"banned_mech_ids": [],     # Array[int]
+	"all_mechs":      [],      # Array[MechData]
+}
+
+
+func reset_match_ctx() -> void:
+	match_ctx = {
+		"active": false,
+		"player_roster": [],
+		"enemy_roster":  [],
+		"jungle_start_dir": GameEnums.JungleStartDir.LEFT,
+		"player_side":   GameEnums.DraftSide.BLUE,
+		"banned_mech_ids": [],
+		"all_mechs":      [],
+	}
+
+
+# Loads players + mechs from game.db. Returns {"players": Array[PlayerData], "mechs": Array[MechData]}.
+# On failure returns {"error": String}.
+func load_match_data() -> Dictionary:
+	var db := SQLite.new()
+	db.path = "res://data/game.db"
+	db.verbosity_level = SQLite.QUIET
+	if not db.open_db():
+		return {"error": "Cannot open res://data/game.db"}
+
+	db.query("SELECT * FROM players ORDER BY team_id, role")
+	if db.query_result.is_empty():
+		db.close_db()
+		return {"error": "players table empty — rebuild game.db"}
+	var players: Array = []
+	for row in db.query_result:
+		players.append(PlayerData.new(
+			int(row["id"]), row["name"], int(row["role"]), int(row["team_id"]),
+			int(row["laning"]), int(row["mechanics"]), int(row["gamesense"]),
+			int(row["teamfight"]), int(row["mental"])))
+
+	db.query("SELECT * FROM mechs ORDER BY id")
+	if db.query_result.is_empty():
+		db.close_db()
+		return {"error": "mechs table empty — rebuild game.db"}
+	var mechs: Array = []
+	for row in db.query_result:
+		mechs.append(MechData.new(
+			int(row["id"]), row["name"],
+			int(row["hp"]), int(row["atk"]), int(row["heal"]), int(row["move_range"])))
+
+	db.close_db()
+	return {"players": players, "mechs": mechs}
+
+
 # ── Card Pool (used by CardPhaseManager in battle sim) ────────────────────────
 var card_pool_bs: Array = []  # Array of {id, name, cost, effect_type, value}
 

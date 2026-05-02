@@ -239,6 +239,15 @@ func pick_target(attacker: PilotData, candidates: Array):
 
 # ─── Movement ─────────────────────────────────────────────────────────────────
 func move_pilot(pilot: PilotData) -> void:
+	var steps: int = max(1, pilot.move_range)
+	for _i in range(steps):
+		var prev := pilot.grid_pos
+		_step_pilot_once(pilot)
+		if pilot.grid_pos == prev:
+			return  # blocked or at goal
+
+
+func _step_pilot_once(pilot: PilotData) -> void:
 	var goal:     Vector2i
 	var stop_dist := 0
 
@@ -335,12 +344,41 @@ func enemy_turret_blocking_at(pos: Vector2i, friendly_team: int) -> bool:
 
 
 func nearest_uncaptured_zone(pilot: PilotData) -> Vector2i:
+	# Jungle start preference biases the assassin toward one zone first.
+	# Team 0 own zones: NZ index 0 (left) and 1 (right).
+	# Team 1 own zones: NZ index 2 (left) and 3 (right).
+	var pref_idx := -1
+	var alt_idx  := -1
+	if pilot.team == 0:
+		if pilot.jungle_start_pref == GameEnums.JungleStartDir.LEFT:
+			pref_idx = 0; alt_idx = 1
+		elif pilot.jungle_start_pref == GameEnums.JungleStartDir.RIGHT:
+			pref_idx = 1; alt_idx = 0
+	else:
+		if pilot.jungle_start_pref == GameEnums.JungleStartDir.LEFT:
+			pref_idx = 2; alt_idx = 3
+		elif pilot.jungle_start_pref == GameEnums.JungleStartDir.RIGHT:
+			pref_idx = 3; alt_idx = 2
+
+	if pref_idx != -1:
+		var best := _nearest_in_cells(pilot, _bs.NEUTRAL_ZONES[pref_idx])
+		if best != Vector2i(-1, -1):
+			return best
+		if alt_idx != -1:
+			return _nearest_in_cells(pilot, _bs.NEUTRAL_ZONES[alt_idx])
+		return Vector2i(-1, -1)
+
+	# No preference — fall back to combined own zones (existing behavior).
 	var own_zones: Array = _bs.NEUTRAL_ZONES[0] + _bs.NEUTRAL_ZONES[1] \
 			if pilot.team == 0 \
 			else _bs.NEUTRAL_ZONES[2] + _bs.NEUTRAL_ZONES[3]
+	return _nearest_in_cells(pilot, own_zones)
+
+
+func _nearest_in_cells(pilot: PilotData, cells: Array) -> Vector2i:
 	var best      := Vector2i(-1, -1)
 	var best_dist := 999999
-	for raw_cell in own_zones:
+	for raw_cell in cells:
 		var cv := raw_cell as Vector2i
 		if _bs.neutral_zone_cells.get(cv, -1) != pilot.team:
 			var d: int = _bs.pathfinder.manhattan(pilot.grid_pos, cv)
@@ -450,32 +488,48 @@ func spawn_pilots_with_lanes() -> void:
 		GameEnums.Role.TANK, GameEnums.Role.FIGHTER, GameEnums.Role.ASSASSIN,
 		GameEnums.Role.SUPPORT, GameEnums.Role.SNIPER,
 	]
+	var ctx: Dictionary = _bs.gm.match_ctx
+	var ctx_active: bool   = bool(ctx.get("active", false))
+	var p_roster: Array    = ctx.get("player_roster", [])
+	var e_roster: Array    = ctx.get("enemy_roster", [])
+	var jungle_dir: int    = int(ctx.get("jungle_start_dir", GameEnums.JungleStartDir.LEFT))
 
 	for i in range(5):
 		var lid: int = _bs._gambit_lanes[i]
-		var pilot := PilotData.new(roles[i], 0, _bs.PLAYER_HQ_POS, _bs.ROLE_STATS[roles[i]])
+		var stats: Dictionary = _stats_for(ctx_active, p_roster, i, roles[i])
+		var pilot := PilotData.new(roles[i], 0, _bs.PLAYER_HQ_POS, stats)
 		pilot.lane         = lid
 		pilot.is_guerrilla = (lid == GameEnums.LanePosition.GUERRILLA)
 		pilot.waypoint_idx = 0
+		if pilot.is_guerrilla:
+			pilot.jungle_start_pref = jungle_dir
 		_bs.pilots.append(pilot)
 
-	var base_lanes: Array = [GameEnums.LanePosition.LEFT, GameEnums.LanePosition.CENTER, GameEnums.LanePosition.RIGHT]
-	var extra: int = base_lanes[randi() % 3]
-	var e_assign: Array = [
-		GameEnums.LanePosition.LEFT, GameEnums.LanePosition.CENTER, GameEnums.LanePosition.RIGHT,
-		extra, GameEnums.LanePosition.GUERRILLA,
-	]
-	e_assign.shuffle()
-	var e_roles: Array = roles.duplicate()
-	e_roles.shuffle()
-
+	# Enemy team uses the same role→lane mapping (no random scramble).
+	var e_lanes: Array = GambitPhaseManager.ROLE_TO_LANE
 	for i in range(5):
-		var lid: int = e_assign[i]
-		var pilot := PilotData.new(e_roles[i], 1, _bs.ENEMY_HQ_POS, _bs.ROLE_STATS[e_roles[i]])
+		var lid: int = e_lanes[i]
+		var stats: Dictionary = _stats_for(ctx_active, e_roster, i, roles[i])
+		var pilot := PilotData.new(roles[i], 1, _bs.ENEMY_HQ_POS, stats)
 		pilot.lane         = lid
 		pilot.is_guerrilla = (lid == GameEnums.LanePosition.GUERRILLA)
 		pilot.waypoint_idx = 0
+		if pilot.is_guerrilla:
+			# Enemy jungle pref is random for now (no AI lane pre-game choice).
+			pilot.jungle_start_pref = randi() % 2
 		_bs.pilots.append(pilot)
+
+
+# Returns a stats dict {hp, atk, heal, move_range} from the assigned mech if
+# match_ctx is active, otherwise falls back to the role baseline (move_range=1).
+func _stats_for(ctx_active: bool, roster: Array, idx: int, role_id: int) -> Dictionary:
+	if ctx_active and idx < roster.size():
+		var pd := roster[idx] as PlayerData
+		var m: MechData = pd.assigned_mech
+		if m != null:
+			return {"hp": m.hp, "atk": m.atk, "heal": m.heal, "move_range": m.move_range}
+	var base: Dictionary = _bs.ROLE_STATS[role_id]
+	return {"hp": base["hp"], "atk": base["atk"], "heal": base.get("heal", 0), "move_range": 1}
 
 
 func spawn_turrets() -> void:

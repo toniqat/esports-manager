@@ -1,0 +1,11 @@
+id,team_id,name,role,laning,mechanics,gamesense,teamfight,mental
+0,0,Zeus,0,72,68,75,82,85
+1,0,Oner,1,80,82,78,85,72
+2,0,Faker,2,95,95,98,95,98
+3,0,Keria,3,88,85,92,90,85
+4,0,Gumayusi,4,85,87,85,80,82
+5,1,Doran,0,72,68,70,75,70
+6,1,Kingen,1,78,75,72,80,68
+7,1,ShowMaker,2,90,88,92,88,85
+8,1,BeryL,3,82,80,85,85,82
+9,1,Ruler,4,92,90,88,85,88

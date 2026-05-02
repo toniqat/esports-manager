@@ -10,7 +10,7 @@ const AUTO_PLAY_INTERVAL := 0.5
 # Card phase UI constants (not DB scope)
 # Hand centers X is computed dynamically from viewport in _ready.
 var BS_HAND_CENTER:    Vector2 = Vector2(540.0, 1750.0)
-var BS_AI_HAND_CENTER: Vector2 = Vector2(540.0, 200.0)
+var BS_AI_HAND_CENTER: Vector2 = Vector2(540.0, -154.0)
 const BS_FAN_RADIUS   := 1400.0
 const BS_FAN_HALF_DEG := 36.0
 const BS_FAN_CARD_DEG := 5.5
@@ -99,26 +99,17 @@ var _pending_atk_buff_ai: int   = 0
 var _draw_counter:         int   = 0  # shared draw interval counter
 var _cost_counter:         int   = 0  # shared cost recovery interval counter
 
-# Gambit state
-var _gambit_selected: int  = -1
+# Gambit state — _gambit_lanes is filled by GambitPhaseManager.auto_assign_lanes()
 var _gambit_lanes: Array   = [-1, -1, -1, -1, -1]
 var _recall_pulse_t: float = 0.0
 
-# ─── HUD refs (set by HudBuilder / GambitPhaseManager) ───────────────────────
+# ─── HUD refs (set by HudBuilder) ────────────────────────────────────────────
 var canvas: CanvasLayer
-var lbl_enemy_hq: Label
-var lbl_player_hq: Label
-var lbl_turn: Label
 var lbl_log: Label
 var btn_next: Button
 var _btn_auto: Button
 var _panel_victory: Panel
 var lbl_victory: Label
-var _panel_gambit: Panel
-var gambit_pilot_btns: Array  = []
-var gambit_slot_labels: Array = []
-var btn_launch: Button
-var _lbl_gambit_status: Label
 var lbl_cost_bs: Label        = null
 var btn_end_card_phase: Button = null
 
@@ -157,18 +148,19 @@ func _ready() -> void:
 
 	_field_loader.load_field(_tiles_layer, _building_layer, _wp_layer)
 	var _vp_size := get_viewport().get_visible_rect().size
-	$BattleField.position = _hex_grid.init_from_tilemap(_tiles_layer, _vp_size)
+	var _bf_pos := _hex_grid.init_from_tilemap(_tiles_layer, _vp_size)
+	_bf_pos.y -= 100.0
+	$BattleField.position = _bf_pos
+	_hex_grid.grid_top   -= 100.0  # keep hex_to_screen() aligned with the shifted TileMap
 	_populate_from_data_loader()
 	player_hq_hp = HQ_MAX_HP
 	enemy_hq_hp  = HQ_MAX_HP
 	_hud.build_ui()
-	_gambit.build_gambit_ui()
 	_card_phase.build_starter_decks()
-	_gambit_lanes = [-1, -1, -1, -1, -1]
-	_gambit.refresh_gambit_ui()
-	_panel_gambit.visible = true
-	_renderer.queue_redraw()
-	_hud.update_hud()
+	# Lane assignment is fixed by role; jungle direction comes from MatchFlow
+	# (or default LEFT when running BattleSim standalone).
+	_gambit.auto_assign_lanes()
+	_gambit.launch_battle()
 
 
 func _on_data_load_failed(reason: String) -> void:
@@ -313,9 +305,8 @@ func _on_restart_pressed() -> void:
 	player_hq_hp = HQ_MAX_HP; enemy_hq_hp = HQ_MAX_HP
 	turn_count = 0; game_over = false; auto_play = false
 	last_log = ""; auto_play_timer = 0.0
-	game_phase       = GameEnums.BattlePhase.GAMBIT
-	_gambit_selected = -1
-	_gambit_lanes    = [-1, -1, -1, -1, -1]
+	game_phase    = GameEnums.BattlePhase.GAMBIT
+	_gambit_lanes = [-1, -1, -1, -1, -1]
 	_btn_auto.text   = "Auto Play ▶"
 	_panel_victory.visible = false
 	pilots.clear()
@@ -334,8 +325,5 @@ func _on_restart_pressed() -> void:
 			node.queue_free()
 	_ai_card_nodes.clear()
 	_card_phase.build_starter_decks()
-	_gambit.refresh_gambit_ui()
-	_lbl_gambit_status.text = "Click a pilot to select, then click a lane to assign."
-	_panel_gambit.visible   = true
-	_renderer.queue_redraw()
-	_hud.update_hud()
+	_gambit.auto_assign_lanes()
+	_gambit.launch_battle()

@@ -8,8 +8,8 @@
 ## Project Overview
 - **Engine**: Godot 4.5-stable, GDScript
 - **Target**: 2D Mobile Portrait 1080×1920
-- **Main scene**: `res://scenes/CardDraw.tscn` (card draw prototype — secondary)
-- **Primary focus**: `res://scenes/BattleSim.tscn` (battle mechanics)
+- **Main scene**: `res://scenes/MatchFlow.tscn` (BAN_PICK → ASSIGN → JUNGLE_START → BattleSim)
+- **Primary focus**: match flow + `res://scenes/BattleSim.tscn` (battle mechanics)
 
 ---
 
@@ -24,6 +24,13 @@ esports-manager/
 │   │   ├── README.md            ← Read before editing card draw code
 │   │   ├── CardDraw.gd          ← Scene controller (was Main.gd)
 │   │   └── Card.gd              ← Card visual node
+│   │
+│   ├── match_flow/              ← Pre-battle pipeline (PRIMARY entry)
+│   │   ├── README.md            ← Read before editing match flow code
+│   │   ├── MatchFlow.gd         ← class_name MatchFlow — orchestrator
+│   │   ├── ban_pick/            ← LoL-international ban/pick + random AI
+│   │   ├── assign/              ← Mech↔player slot manual assignment
+│   │   └── jungle_start/        ← Assassin jungle start direction (LEFT/RIGHT)
 │   │
 │   └── battle_sim/              ← Battle simulation (PRIMARY FOCUS)
 │       ├── README.md            ← Read before editing battle sim code
@@ -57,12 +64,15 @@ esports-manager/
 │   ├── GameEnums.gd             ← class_name GameEnums (all shared enums)
 │   ├── PilotData.gd             ← class_name PilotData (pilot runtime state)
 │   ├── TurretData.gd            ← class_name TurretData (turret state)
-│   └── MinionData.gd            ← class_name MinionData (minion group state)
+│   ├── MinionData.gd            ← class_name MinionData (minion group state)
+│   ├── PlayerData.gd            ← class_name PlayerData (out-game persona + assigned mech)
+│   └── MechData.gd              ← class_name MechData (mech stats — no role)
 │
 ├── scenes/
+│   ├── MatchFlow.tscn           ← MAIN scene — pre-battle pipeline (uses features/match_flow/)
+│   ├── BattleSim.tscn           ← Battle sim scene (entered from MatchFlow)
 │   ├── CardDraw.tscn            ← Card draw scene (uses features/card_draw/)
-│   ├── Card.tscn                ← Card prefab (instantiated at runtime)
-│   └── BattleSim.tscn           ← Battle sim scene (PRIMARY — uses features/battle_sim/)
+│   └── Card.tscn                ← Card prefab (instantiated at runtime)
 │
 └── addons/godot_mcp/            ← MCP editor plugin (do not modify)
 ```
@@ -73,8 +83,16 @@ esports-manager/
 
 | Feature | Scene | Script | Status |
 |---|---|---|---|
-| Battle Sim | `scenes/BattleSim.tscn` | `features/battle_sim/BattleSim.gd` | **Primary focus** |
+| Match Flow | `scenes/MatchFlow.tscn` | `features/match_flow/MatchFlow.gd` | **Main entry** — pre-battle pipeline |
+| Battle Sim | `scenes/BattleSim.tscn` | `features/battle_sim/BattleSim.gd` | **Primary focus** — consumes match_ctx |
 | Card Draw | `scenes/CardDraw.tscn` | `features/card_draw/CardDraw.gd` | Prototype complete |
+
+### Match Flow → Battle Sim handoff
+`MatchFlow` populates `GameManager.match_ctx` (player_roster, enemy_roster,
+jungle_start_dir, banned_mech_ids, …) then `change_scene_to_file` to BattleSim.
+`BattleSim.spawn_pilots_with_lanes()` injects each `PlayerData.assigned_mech`'s
+hp/atk/heal/move_range into `PilotData`. If `match_ctx.active` is false (running
+BattleSim standalone), it falls back to `ROLE_STATS` defaults.
 
 ### Battle Sim — Module Architecture
 `BattleSim.gd` is a **thin orchestrator** (`class_name BattleSim extends Node2D`).
@@ -94,7 +112,7 @@ Each child module has `@onready var _bs: BattleSim = get_parent() as BattleSim` 
 ### Battle Sim — Active Systems
 | System | Description |
 |---|---|
-| Gambit Phase | Full-screen overlay; player assigns 5 pilots to Left / Center / Right / Guerrilla before battle |
+| Gambit Phase | **UI removed.** Lane is now fixed by role (TANK→LEFT, FIGHTER→CENTER, ASSASSIN→GUERRILLA, SUPPORT/SNIPER→RIGHT). Pre-battle choices live in `features/match_flow/`. |
 | 3-Lane System | Waypoint paths through T2→T1→midpoint→T1→T2→HQ; unconstrained BFS between waypoints |
 | Lane Midpoints | Left=(1,7), Center=(4,7), Right=(7,7) |
 | Guerrilla AI | Captures neutral zones first; then pursues lowest-HP enemy |
@@ -123,8 +141,9 @@ _bs._renderer.queue_redraw()
 
 ### Enums
 All shared enums live in `resources/GameEnums.gd` with `class_name GameEnums`.
-Battle sim enums: `GameEnums.BattlePhase`, `GameEnums.Role`, `GameEnums.Lane`, `GameEnums.RecallState`
-Card draw enums: `GameEnums.Phase`
+- Battle sim: `BattlePhase`, `Role`, `LanePosition`, `Lane`, `RecallState`
+- Card draw: `Phase`
+- Match flow: `MatchPhase`, `JungleStartDir`, `DraftSide`
 
 ### Scene → Script Relationship
 Each `.tscn` file references its script by UID. When moving scripts, update both the `.uid` file and the `path=` in the `.tscn` file.
@@ -133,10 +152,11 @@ Each `.tscn` file references its script by UID. When moving scripts, update both
 
 ## Session Checklist
 1. Read `CLAUDE.md` (this file)
-2. Identify the target feature (`battle_sim` or `card_draw`)
+2. Identify the target feature (`match_flow`, `battle_sim`, or `card_draw`)
 3. Read `features/<feature>/README.md`
-4. For battle_sim: also read the relevant module's README in its subfolder
+4. For battle_sim and match_flow: also read the relevant module's README in its subfolder
 5. Make focused changes only in that feature's folder
+6. After adding tables/columns to CSV: run **Project → Tools → Rebuild game.db**
 
 ---
 
@@ -179,7 +199,22 @@ db.restore_from("user://save.db")
 ```
 
 ### CSV → DB Workflow Pattern
-CSV files live in `data/csv/`. An **EditorPlugin tool script** (`tools/CsvToDb.gd`) reads each
-CSV at editor time and writes `data/game.db` using `create_table` + `insert_rows`.
-At runtime, `GameManager` opens `game.db` once, loads tables into Dictionaries keyed by ID,
-then closes the DB. All in-game access goes through those Dictionaries — not live DB queries.
+CSV files live in `data/csv/`. The **EditorPlugin** at `addons/csv_to_db/plugin.gd`
+reads each CSV at editor time (menu: **Project → Tools → Rebuild game.db**) and
+writes `res://data/game.db` using `create_table` + `insert_row`. Adding a new
+table = add a CSV under `data/csv/` and add an entry to both `SCHEMAS` and
+`TABLE_DEFS` in the plugin.
+
+### Tables (current)
+| Table | CSV | Read at | Purpose |
+|---|---|---|---|
+| `pilots` | `pilots.csv` | BattleSim startup | Per-role baseline stats (used as fallback when match_ctx is inactive) |
+| `cards` | `cards.csv` | GameManager startup | Card pool for the BattleSim card phase |
+| `game_config` | `game_config.csv` | BattleSim startup | Tunable knobs (HP, turns, thresholds) |
+| `lane_config` | `lane_config.csv` | BattleSim startup | LANE_NAMES, LANE_MAX, midpoints |
+| `players` | `players.csv` | MatchFlow startup | 10 hardcoded out-game players (5 per team), `PlayerData` fields |
+| `mechs` | `mechs.csv` | MatchFlow startup | 30 mech pool (no role); drives PilotData stats when picked |
+
+At runtime, `GameManager` and BattleSim's `DataLoader` open the DB once, load
+tables into Dictionaries / Arrays keyed by ID, then close the DB. All in-game
+access goes through those structures — not live DB queries.

@@ -16,6 +16,8 @@ var recall_state: int     = GameEnums.RecallState.NONE
 var channel_timer: int    = 0
 var recall_safe_pos: Vector2i = Vector2i(-1, -1)
 var waypoint_idx: int     = 0
+var move_range: int       = 1                # cells advanced per turn
+var jungle_start_pref: int = -1              # GameEnums.JungleStartDir or -1 (none)
 
 func _init(p_role: int, p_team: int, p_pos: Vector2i, stats: Dictionary) -> void:
 	role     = p_role
@@ -26,3 +28,5 @@ func _init(p_role: int, p_team: int, p_pos: Vector2i, stats: Dictionary) -> void
 	atk      = stats["atk"]
 	if stats.has("heal"):
 		heal_amount = stats["heal"]
+	if stats.has("move_range"):
+		move_range = max(1, int(stats["move_range"]))

@@ -3,20 +3,27 @@
 ## GambitPhaseManager.gd
 `extends Node` — child of BattleSim.
 
-Builds and manages the pre-battle pilot lane assignment overlay.
+The old in-battle lane-assignment overlay has been **removed**. Lane assignment
+is now fixed by role; the only pre-battle choice (jungle start direction) lives
+in `features/match_flow/jungle_start/`.
 
-### UI building
-- `build_gambit_ui()` — creates full-screen overlay Panel, 5 pilot buttons, 4 lane slot panels, status label, Auto-Assign and Launch Battle buttons. Stores all refs on `_bs`.
+### Role → Lane mapping (constant `ROLE_TO_LANE`)
+| Role | Lane |
+|---|---|
+| TANK | LEFT |
+| FIGHTER | CENTER |
+| ASSASSIN | GUERRILLA |
+| SUPPORT | RIGHT |
+| SNIPER | RIGHT |
 
-### Refresh
-- `refresh_gambit_ui()` — updates pilot button text/colour, slot labels, launch button enabled state, and status text.
+LANE_MAX (from `lane_config.csv`) tolerates this distribution: 1 LEFT, 1 CENTER,
+2 RIGHT, 1 GUERRILLA = 5 pilots.
 
-### Callbacks
-- `on_gambit_pilot_selected(idx)` — toggles pilot selection highlight
-- `on_gambit_slot_pressed(slot)` — assigns selected pilot to slot (respects LANE_MAX)
-- `on_gambit_auto_assign_pressed()` — random 2-1-1-1 + 1 Guerrilla assignment
-- `on_launch_battle_pressed()` — hides overlay, spawns pilots + turrets + neutral zones, transitions to BATTLE
+### Public API
+- `auto_assign_lanes()` — fills `_bs._gambit_lanes[0..4]` from `ROLE_TO_LANE`
+- `launch_battle()` — spawns pilots/turrets/neutral zones and sets
+  `game_phase = BATTLE`. Equivalent to the old "Launch Battle" button click.
 
-### Constraints
-- Max 2 pilots per lane (LEFT / CENTER / RIGHT), max 1 Guerrilla
-- "Launch Battle" is disabled until all 5 pilots are assigned
+Both run from `BattleSim._ready()` and `_on_restart_pressed()`. There is no
+overlay, no buttons, no manual assignment — the BattleSim scene transitions
+directly into BATTLE.

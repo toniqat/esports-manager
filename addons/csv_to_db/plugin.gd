@@ -10,6 +10,8 @@ const SCHEMAS: Dictionary = {
 	"cards":       {"req": ["id","name","cost","effect_type","value"],          "pk": "id"},
 	"game_config": {"req": ["key","value"],                                     "pk": "key"},
 	"lane_config": {"req": ["lane_id","name","max_pilots","mid_col","mid_row"], "pk": "lane_id"},
+	"players":     {"req": ["id","team_id","name","role","laning","mechanics","gamesense","teamfight","mental"], "pk": "id"},
+	"mechs":       {"req": ["id","name","hp","atk","heal","move_range"],        "pk": "id"},
 }
 
 # SQLite column definitions per table
@@ -39,6 +41,25 @@ const TABLE_DEFS: Dictionary = {
 		"max_pilots": {"data_type": "int",  "not_null": true},
 		"mid_col":    {"data_type": "int",  "not_null": true},
 		"mid_row":    {"data_type": "int",  "not_null": true},
+	},
+	"players": {
+		"id":        {"data_type": "int",  "primary_key": true, "not_null": true},
+		"team_id":   {"data_type": "int",  "not_null": true},
+		"name":      {"data_type": "text", "not_null": true},
+		"role":      {"data_type": "int",  "not_null": true},
+		"laning":    {"data_type": "int",  "not_null": true},
+		"mechanics": {"data_type": "int",  "not_null": true},
+		"gamesense": {"data_type": "int",  "not_null": true},
+		"teamfight": {"data_type": "int",  "not_null": true},
+		"mental":    {"data_type": "int",  "not_null": true},
+	},
+	"mechs": {
+		"id":         {"data_type": "int",  "primary_key": true, "not_null": true},
+		"name":       {"data_type": "text", "not_null": true},
+		"hp":         {"data_type": "int",  "not_null": true},
+		"atk":        {"data_type": "int",  "not_null": true},
+		"heal":       {"data_type": "int",  "not_null": true},
+		"move_range": {"data_type": "int",  "not_null": true},
 	},
 }
 
@@ -81,7 +102,8 @@ func _rebuild_db() -> void:
 		return
 
 	for table_name in SCHEMAS.keys():
-		db.drop_table(table_name)
+		# IF EXISTS keeps the first run quiet when a new table was just added.
+		db.query("DROP TABLE IF EXISTS " + table_name)
 		db.create_table(table_name, TABLE_DEFS[table_name])
 		var rows: Array = all_data[table_name]
 		for row in rows:

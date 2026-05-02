@@ -1,7 +1,24 @@
 # Feature: Battle Sim
 
 ## Purpose
-Turn-based tactical battle simulator on a 9×15 grid. Five pilot roles per team (Tank, Fighter, Assassin, Support, Sniper) fight toward the enemy HQ through a 3-lane turret system. Includes Gambit Phase (pre-battle lane assignment) and Card Phase (tactical card overlay).
+Turn-based tactical battle simulator on a hex grid. Five pilot roles per team
+(Tank, Fighter, Assassin, Support, Sniper) fight toward the enemy HQ through a
+3-lane turret system. Includes Card Phase (tactical card overlay).
+
+## Entry point
+Normally entered from `scenes/MatchFlow.tscn` via `change_scene_to_file`.
+Standalone launch of `BattleSim.tscn` also works — falls back to `ROLE_STATS`
+defaults and a default jungle direction (LEFT).
+
+## Match Context handoff
+On `_ready()`, BattleSim reads `GameManager.match_ctx`:
+
+| match_ctx field | Used by |
+|---|---|
+| `player_roster[i].assigned_mech` | `SimulationCore._stats_for()` → `PilotData` hp/atk/heal/move_range |
+| `enemy_roster[i].assigned_mech` | same, for team 1 |
+| `jungle_start_dir` | `PilotData.jungle_start_pref` on the player-team assassin |
+| `active = false` | Triggers fallback to `ROLE_STATS` (no MatchFlow ran) |
 
 ---
 
@@ -22,7 +39,7 @@ And accesses shared state via `_bs.pilots`, `_bs.turn_count`, etc.
 | Pathfinding | Node | `combat/Pathfinding.gd` | BFS + greedy movement |
 | BattleRenderer | Node2D | `rendering/BattleRenderer.gd` | All `_draw()` logic |
 | CardPhaseManager | Node | `card_phase/CardPhaseManager.gd` | Card turn flow, deck, hand, card effects |
-| GambitPhaseManager | Node | `gambit/GambitPhaseManager.gd` | Gambit overlay UI and lane assignment |
+| GambitPhaseManager | Node | `gambit/GambitPhaseManager.gd` | Auto role→lane mapping + launch (UI removed; replaced by `features/match_flow/`) |
 | HudBuilder | Node | `ui/HudBuilder.gd` | HUD construction and update |
 
 Cross-module calls go through `_bs`:
@@ -38,10 +55,12 @@ _bs._renderer.queue_redraw()
 
 Responsibilities:
 - Declares all **constants** (grid, HQ, turret, card phase, lane paths, neutral zones)
-- Declares all **state vars** (pilots, turrets, _minions, game_phase, HUD refs, card state, gambit state)
-- Holds `@onready` refs to all 8 child modules
-- Public **coordinate helpers**: `cell_center(pos)`, `cell_rect(pos)`, `pilot_label(p)`, `role_stats_str(role)`
+- Declares all **state vars** (pilots, turrets, _minions, game_phase, HUD refs, card state, `_gambit_lanes`)
+- Holds `@onready` refs to all child modules
+- Public **coordinate helpers**: `cell_center(pos)`, `pilot_label(p)`, `role_stats_str(role)`
 - **Lifecycle**: `_ready()`, `_process(delta)`, `_unhandled_key_input(event)`
+  - `_ready` calls `_gambit.auto_assign_lanes()` then `_gambit.launch_battle()` —
+    no overlay, scene transitions straight into BATTLE.
 - **Button callbacks**: `_on_next_turn_pressed()`, `_on_auto_play_pressed()`, `_on_restart_pressed()`
 
 ---
@@ -50,9 +69,11 @@ Responsibilities:
 
 | File | class_name | Description |
 |---|---|---|
-| `resources/PilotData.gd` | PilotData | Pilot runtime state: role, hp, team, grid_pos, lane, recall_state, waypoint_idx |
+| `resources/PilotData.gd` | PilotData | Pilot runtime state: role, hp, team, grid_pos, lane, recall_state, waypoint_idx, **move_range**, **jungle_start_pref** |
 | `resources/TurretData.gd` | TurretData | Turret state: team, grid_pos, hp, tier, lane, alive |
 | `resources/MinionData.gd` | MinionData | Minion group: team, lane, count (default 30), grid_pos, waypoint_idx |
+| `resources/PlayerData.gd` | PlayerData | Out-game persona — id, name, role, team_id, 5 stats, `assigned_mech` |
+| `resources/MechData.gd` | MechData | Mech (no role) — id, name, hp, atk, heal, move_range |
 
 ---
 
@@ -62,8 +83,10 @@ Responsibilities:
 |---|---|
 | `GameEnums.BattlePhase` | GAMBIT, CARD_PHASE, BATTLE |
 | `GameEnums.Role` | TANK, FIGHTER, ASSASSIN, SUPPORT, SNIPER |
-| `GameEnums.Lane` | LEFT=0, CENTER=1, RIGHT=2, GUERRILLA=3 |
+| `GameEnums.LanePosition` | LEFT=0, CENTER=1, RIGHT=2, GUERRILLA=3 |
+| `GameEnums.Lane` | LEFT=0, CENTER=1, RIGHT=2 (waypoint/building lanes) |
 | `GameEnums.RecallState` | NONE, RETREATING, CHANNELING |
+| `GameEnums.JungleStartDir` | LEFT, RIGHT (assassin start preference) |
 
 ---
 

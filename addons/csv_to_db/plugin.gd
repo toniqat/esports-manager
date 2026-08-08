@@ -7,11 +7,14 @@ const DB_PATH = "res://data/game.db"
 # Required columns and primary key per table
 const SCHEMAS: Dictionary = {
 	"pilots":      {"req": ["id","name","abbrev","hp","atk","heal"],           "pk": "id"},
-	"cards":       {"req": ["id","name","cost","effect_type","value"],          "pk": "id"},
+	"cards":       {"req": ["id","name","cost","uses","cast_method","target","cast_range","area","keyword","effect","description"], "pk": "id"},
 	"game_config": {"req": ["key","value"],                                     "pk": "key"},
 	"lane_config": {"req": ["lane_id","name","max_pilots","mid_col","mid_row"], "pk": "lane_id"},
 	"players":     {"req": ["id","team_id","name","role","laning","mechanics","gamesense","teamfight","mental"], "pk": "id"},
-	"mechs":       {"req": ["id","name","hp","atk","heal","move_range"],        "pk": "id"},
+	"mechs":       {"req": ["id","name","hp","atk","presence"],                 "pk": "id"},
+	"teams":       {"req": ["id","name","short_name"],                          "pk": "id"},
+	"intl_teams":   {"req": ["id","name","short_name"],                         "pk": "id"},
+	"intl_players": {"req": ["id","team_id","name","role","laning","mechanics","gamesense","teamfight","mental"], "pk": "id"},
 }
 
 # SQLite column definitions per table
@@ -28,8 +31,14 @@ const TABLE_DEFS: Dictionary = {
 		"id":          {"data_type": "int",  "primary_key": true, "not_null": true},
 		"name":        {"data_type": "text", "not_null": true},
 		"cost":        {"data_type": "int",  "not_null": true},
-		"effect_type": {"data_type": "text", "not_null": true},
-		"value":       {"data_type": "int",  "not_null": true},
+		"uses":        {"data_type": "int",  "not_null": true},
+		"cast_method": {"data_type": "text", "not_null": true},
+		"target":      {"data_type": "text", "not_null": true},
+		"cast_range":  {"data_type": "int",  "not_null": true},
+		"area":        {"data_type": "int",  "not_null": true},
+		"keyword":     {"data_type": "text", "not_null": true},
+		"effect":      {"data_type": "text", "not_null": true},
+		"description": {"data_type": "text", "not_null": true},
 	},
 	"game_config": {
 		"key":   {"data_type": "text", "primary_key": true, "not_null": true},
@@ -54,12 +63,33 @@ const TABLE_DEFS: Dictionary = {
 		"mental":    {"data_type": "int",  "not_null": true},
 	},
 	"mechs": {
+		"id":       {"data_type": "int",  "primary_key": true, "not_null": true},
+		"name":     {"data_type": "text", "not_null": true},
+		"hp":       {"data_type": "int",  "not_null": true},
+		"atk":      {"data_type": "int",  "not_null": true},
+		# 존재감 — 전투 개시 시 공격 우선순위 / 피격 가중치. 근접 메크 4, 원거리 메크 2.
+		"presence": {"data_type": "int",  "not_null": true},
+	},
+	"teams": {
 		"id":         {"data_type": "int",  "primary_key": true, "not_null": true},
 		"name":       {"data_type": "text", "not_null": true},
-		"hp":         {"data_type": "int",  "not_null": true},
-		"atk":        {"data_type": "int",  "not_null": true},
-		"heal":       {"data_type": "int",  "not_null": true},
-		"move_range": {"data_type": "int",  "not_null": true},
+		"short_name": {"data_type": "text", "not_null": true},
+	},
+	"intl_teams": {
+		"id":         {"data_type": "int",  "primary_key": true, "not_null": true},
+		"name":       {"data_type": "text", "not_null": true},
+		"short_name": {"data_type": "text", "not_null": true},
+	},
+	"intl_players": {
+		"id":        {"data_type": "int",  "primary_key": true, "not_null": true},
+		"team_id":   {"data_type": "int",  "not_null": true},
+		"name":      {"data_type": "text", "not_null": true},
+		"role":      {"data_type": "int",  "not_null": true},
+		"laning":    {"data_type": "int",  "not_null": true},
+		"mechanics": {"data_type": "int",  "not_null": true},
+		"gamesense": {"data_type": "int",  "not_null": true},
+		"teamfight": {"data_type": "int",  "not_null": true},
+		"mental":    {"data_type": "int",  "not_null": true},
 	},
 }
 
@@ -121,7 +151,7 @@ func _parse_csv(path: String, table_name: String, schema: Dictionary) -> Variant
 		return "Missing CSV: %s" % path
 
 	var header_line: String = file.get_line().strip_edges()
-	var headers: Array = header_line.split(",")
+	var headers: Array = _split_csv_line(header_line)
 	# Trim whitespace from header names
 	for i in headers.size():
 		headers[i] = (headers[i] as String).strip_edges()
@@ -143,7 +173,7 @@ func _parse_csv(path: String, table_name: String, schema: Dictionary) -> Variant
 		var line: String = file.get_line().strip_edges()
 		if line.is_empty():
 			continue
-		var values: Array = line.split(",")
+		var values: Array = _split_csv_line(line)
 		# Pad or trim to match header count
 		while values.size() < headers.size():
 			values.append("")
@@ -173,3 +203,41 @@ func _parse_csv(path: String, table_name: String, schema: Dictionary) -> Variant
 
 	file.close()
 	return rows
+
+
+# Splits one CSV line into fields. Handles double-quoted fields (so descriptions
+# may contain commas) and the standard "" escape for an embedded quote.
+# Whitespace inside fields is preserved; outer trimming happens at the call site.
+func _split_csv_line(line: String) -> Array:
+	var result: Array = []
+	var i: int = 0
+	var n: int = line.length()
+	while i <= n:
+		var field: String = ""
+		if i < n and line[i] == "\"":
+			i += 1
+			while i < n:
+				if line[i] == "\"":
+					if i + 1 < n and line[i + 1] == "\"":
+						field += "\""
+						i += 2
+					else:
+						i += 1
+						break
+				else:
+					field += line[i]
+					i += 1
+		else:
+			while i < n and line[i] != ",":
+				field += line[i]
+				i += 1
+		result.append(field)
+		if i < n and line[i] == ",":
+			i += 1
+			if i == n:
+				# Trailing comma → empty final field.
+				result.append("")
+				break
+		else:
+			break
+	return result

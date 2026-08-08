@@ -12,7 +12,14 @@
       "Bash(python3:*)",
       "Bash(python --version 2>&1 || python3 --version 2>&1 || where python 2>&1)",
       "Bash(echo:*)",
-      "Bash(where sqlite3:*)"
+      "Bash(where sqlite3:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(Get-ChildItem *)",
+      "Bash(git -C \"D:/Projects/Godot Project/esports-manager\" log --oneline -- resources/images/tiles/tiles-base.tres)",
+      "Bash(git -C \"D:/Projects/Godot Project/esports-manager\" diff HEAD -- resources/images/tiles/tiles-base.tres)",
+      "Bash(git *)",
+      "PowerShell(Get-Content *)",
+      "Bash(tasklist /FI \"IMAGENAME eq node.exe\" /FO TABLE)"
     ]
   }
 }

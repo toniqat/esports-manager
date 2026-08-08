@@ -1,9 +1,11 @@
 # Feature: Battle Sim
 
 ## Purpose
-Turn-based tactical battle simulator on a hex grid. Five pilot roles per team
-(Tank, Fighter, Assassin, Support, Sniper) fight toward the enemy HQ through a
-3-lane turret system. Includes Card Phase (tactical card overlay).
+Tactical battle simulator on a hex grid. Five pilot roles per team
+(Tank, Fighter, Assassin, Support, Sniper) push down a 3-lane map flanked by
+jungle. **BATTLE auto-progresses** in 1-minute (`AUTO_PLAY_INTERVAL`) ticks;
+players intervene during the threshold-gated **작전 단계** (CARD_PHASE) to spend
+작전 점수 on cards.
 
 ## Entry point
 Normally entered from `scenes/MatchFlow.tscn` via `change_scene_to_file`.
@@ -15,10 +17,12 @@ On `_ready()`, BattleSim reads `GameManager.match_ctx`:
 
 | match_ctx field | Used by |
 |---|---|
-| `player_roster[i].assigned_mech` | `SimulationCore._stats_for()` → `PilotData` hp/atk/heal/move_range |
-| `enemy_roster[i].assigned_mech` | same, for team 1 |
-| `jungle_start_dir` | `PilotData.jungle_start_pref` on the player-team assassin |
-| `active = false` | Triggers fallback to `ROLE_STATS` (no MatchFlow ran) |
+| `player_roster[i].assigned_mech` | `SimulationCore._stats_for()` → PilotData hp/atk |
+| `player_roster[i].mechanics` | PilotData.hit (combat 명중률) |
+| `player_roster[i].gamesense` | PilotData.evasion (combat 회피율) |
+| `enemy_roster[i].assigned_mech` / stats | same, for team 1 |
+| `jungle_start_dir` | PilotData.jungle_start_pref on the player-team assassin |
+| `active = false` | Triggers fallback to ROLE_STATS (no MatchFlow ran) |
 
 ---
 
@@ -33,20 +37,20 @@ And accesses shared state via `_bs.pilots`, `_bs.turn_count`, etc.
 ### Child nodes (in scene order)
 | Node | Type | Script | Purpose |
 |---|---|---|---|
-| SimulationCore | Node | `combat/SimulationCore.gd` | Main turn loop, targeting, movement, spawn, win condition |
-| MinionSystem | Node | `combat/MinionSystem.gd` | Minion lifecycle (spawn/move/merge/combat) |
-| RecallSystem | Node | `combat/RecallSystem.gd` | Safe recall (RETREATING → CHANNELING → teleport) |
-| Pathfinding | Node | `combat/Pathfinding.gd` | BFS + greedy movement |
-| BattleRenderer | Node2D | `rendering/BattleRenderer.gd` | All `_draw()` logic |
-| CardPhaseManager | Node | `card_phase/CardPhaseManager.gd` | Card turn flow, deck, hand, card effects |
-| GambitPhaseManager | Node | `gambit/GambitPhaseManager.gd` | Auto role→lane mapping + launch (UI removed; replaced by `features/match_flow/`) |
-| HudBuilder | Node | `ui/HudBuilder.gd` | HUD construction and update |
+| SimulationCore | Node | `combat/SimulationCore.gd` | Turn loop, paired combat, movement, push, T1→jungle capture, win condition |
+| RecallSystem   | Node | `combat/RecallSystem.gd`   | Instant HQ teleport at HP ≤ threshold; phase-end out-of-position recheck |
+| Pathfinding    | Node | `combat/Pathfinding.gd`    | BFS + greedy fallback (hex distance) |
+| BattleRenderer | Node2D | `rendering/BattleRenderer.gd` | HQ/turret HP bars + per-cell pilot rendering |
+| CardPhaseManager | Node | `card_phase/CardPhaseManager.gd` | 작전 단계 turn flow, deck, fanned hand layout, phase-end gating |
+| GambitPhaseManager | Node | `gambit/GambitPhaseManager.gd` | Auto role→lane mapping + launch (UI removed; pre-battle choices live in `features/match_flow/`) |
+| EngagePhaseManager | Node | `engage/EngagePhaseManager.gd` | 전투 개시(engage) modal — turn-based combat triggered by `engage:N` cards. Lazily added in `_ready()`. |
+| HudBuilder     | Node | `ui/HudBuilder.gd`         | HUD construction; 전략 포인트 도넛 (`ui/CostDonut.gd`) is the only interactive in-battle widget |
 
 Cross-module calls go through `_bs`:
 ```gdscript
-_bs._sim_core.simulate_turn()
-_bs._pathfinder.bfs_next_step(...)
-_bs._renderer.queue_redraw()
+_bs.sim_core.simulate_turn()
+_bs.pathfinder.bfs_next_step(...)
+_bs.renderer.queue_redraw()
 ```
 
 ---
@@ -54,14 +58,15 @@ _bs._renderer.queue_redraw()
 ## BattleSim.gd (thin orchestrator)
 
 Responsibilities:
-- Declares all **constants** (grid, HQ, turret, card phase, lane paths, neutral zones)
-- Declares all **state vars** (pilots, turrets, _minions, game_phase, HUD refs, card state, `_gambit_lanes`)
+- Declares all DB-driven config vars and **state vars** (pilots, turrets, neutral_zone_cells, game_phase, HUD refs, card state, `gambit_lanes`, `card_phase_entry_cost`)
 - Holds `@onready` refs to all child modules
 - Public **coordinate helpers**: `cell_center(pos)`, `pilot_label(p)`, `role_stats_str(role)`
-- **Lifecycle**: `_ready()`, `_process(delta)`, `_unhandled_key_input(event)`
+- **Lifecycle**: `_ready()`, `_process(delta)`
   - `_ready` calls `_gambit.auto_assign_lanes()` then `_gambit.launch_battle()` —
     no overlay, scene transitions straight into BATTLE.
-- **Button callbacks**: `_on_next_turn_pressed()`, `_on_auto_play_pressed()`, `_on_restart_pressed()`
+  - `_process` auto-ticks `card_phase.do_battle_turn()` every `AUTO_PLAY_INTERVAL`
+    seconds while `game_phase == BATTLE`. CARD_PHASE pauses the tick.
+- **Button callbacks**: `_on_restart_pressed()` (the only manual entry point left).
 
 ---
 
@@ -69,11 +74,10 @@ Responsibilities:
 
 | File | class_name | Description |
 |---|---|---|
-| `resources/PilotData.gd` | PilotData | Pilot runtime state: role, hp, team, grid_pos, lane, recall_state, waypoint_idx, **move_range**, **jungle_start_pref** |
-| `resources/TurretData.gd` | TurretData | Turret state: team, grid_pos, hp, tier, lane, alive |
-| `resources/MinionData.gd` | MinionData | Minion group: team, lane, count (default 30), grid_pos, waypoint_idx |
-| `resources/PlayerData.gd` | PlayerData | Out-game persona — id, name, role, team_id, 5 stats, `assigned_mech` |
-| `resources/MechData.gd` | MechData | Mech (no role) — id, name, hp, atk, heal, move_range |
+| `resources/PilotData.gd` | PilotData | role, hp/max_hp, atk, team, grid_pos, lane, waypoint_idx, **move_range**, **hit**, **evasion**, **jungle_start_pref** |
+| `resources/TurretData.gd` | TurretData | team, grid_pos, hp, tier, lane, alive |
+| `resources/PlayerData.gd` | PlayerData | id, name, role, team_id, 5 stats (laning / mechanics / gamesense / teamfight / mental), `assigned_mech` |
+| `resources/MechData.gd` | MechData | id, name, hp, atk, **presence** (4=melee/2=ranged; engage-only) |
 
 ---
 
@@ -81,67 +85,146 @@ Responsibilities:
 
 | Enum | Values |
 |---|---|
-| `GameEnums.BattlePhase` | GAMBIT, CARD_PHASE, BATTLE |
-| `GameEnums.Role` | TANK, FIGHTER, ASSASSIN, SUPPORT, SNIPER |
-| `GameEnums.LanePosition` | LEFT=0, CENTER=1, RIGHT=2, GUERRILLA=3 |
-| `GameEnums.Lane` | LEFT=0, CENTER=1, RIGHT=2 (waypoint/building lanes) |
-| `GameEnums.RecallState` | NONE, RETREATING, CHANNELING |
+| `GameEnums.BattlePhase` | GAMBIT, CARD_PHASE, BATTLE, **ENGAGE** |
+| `GameEnums.Role`        | TANK, FIGHTER, ASSASSIN, SUPPORT, SNIPER |
+| `GameEnums.LanePosition`| LEFT=0, CENTER=1, RIGHT=2, GUERRILLA=3 |
+| `GameEnums.Lane`        | NONE=-1, LEFT=0, CENTER=1, RIGHT=2 (waypoint/building lanes) |
 | `GameEnums.JungleStartDir` | LEFT, RIGHT (assassin start preference) |
 
 ---
 
-## Grid
+## Active Systems
 
-- 9 columns × 15 rows, `CELL_SIZE=100`, `GRID_ORIGIN=(90,130)`
-- Code coordinates: (0,0) = top-left (enemy HQ side), (4,14) = player HQ, (4,0) = enemy HQ
+### Combat
+- Combat happens **only between pilots in the same cell** — there is no
+  adjacent-cell engagement and no concept of attack range.
+- Same-cell pilots are paired 1:1 (lowest HP first) and roll
+  `hit / (hit + evasion)` independently each minute.
+- **Junglers and lane pilots run on separate engagement scopes**: a jungler
+  never fights a lane enemy, never deals damage to enemy turrets, and is
+  never paired against attackers as a turret defender. Junglers only fight
+  other junglers.
+- One-sided hit → winner advances 1 cell, loser retreats 1 cell.
+- Both hit / both miss → no movement.
+- Damage accrues regardless of push.
+- A pilot mid-move stops as soon as it enters a same-scope enemy cell
+  (`_move_pilot` re-checks before each step). Cross-scope contacts (jungler
+  vs lane pilot) are ignored, so a jungler crossing a lane never freezes on
+  a lane enemy.
+- **Pilots are not attacked by turrets.**
+- At an enemy turret cell: only **same-lane** lane pilots interact with the
+  turret. Same-lane attacker(s) deal 100% damage to the turret; same-lane
+  defenders roll on same-lane attackers, and any successful defender hit
+  forces all attackers in the cell to retreat. Attackers do NOT counter-attack
+  defenders during turret combat. Off-lane lane pilots in the same cell ignore
+  the turret entirely; if both teams have off-lane lane pilots in the cell
+  they may still fight each other as pilot-vs-pilot. Junglers are always
+  spectators at turret cells.
+- **Lane pilots cannot move past an alive enemy turret cell.** Both natural
+  movement and push-advance bail once a lane pilot stands on an alive enemy
+  turret — the pilot must wait out turret destruction (same-lane case) or be
+  recalled / displaced out (off-lane case). Push-retreat is unaffected.
+- When a turret is destroyed, the matching `Building` node in
+  `BattleField/BuildingLayer` is unregistered and `queue_free`'d so the
+  sprite disappears from the field.
 
-## 3-Lane System
+### Recall
+- HP ≤ `RECALL_HP_THRESHOLD` → instant HQ teleport at full HP.
+- During CARD_PHASE the recall check is paused; it runs again at end of phase
+  via `process_phase_end_recalls`, which also recalls pilots whose
+  card-effect placement put them outside their lane / own jungle.
 
-| Lane | Team 0 waypoints (HQ→enemy HQ) | Midpoint |
+### Lanes / movement
+- Pilots follow waypoint lane paths (Left / Center / Right) loaded from `BattleField/WaypointLayer`.
+- The old "minion line" / "lane strength" concept is gone. Lane pilots simply
+  step toward `current_waypoint(p)` each minute.
+- **Lane pilots are forbidden from entering jungle/neutral cells AND alive
+  enemy off-lane turret cells.** Pathfinding receives the union of the
+  jungle-cell set and every alive enemy turret in a lane other than the
+  pilot's own. Same-lane enemy turret cells remain reachable so the pilot can
+  step on them to engage. This prevents e.g. right-lane pilots from being
+  routed through the still-alive center T2 cell after their own-lane turrets
+  fall, then freezing on it because of the "cannot pass past alive enemy
+  turret" rule. SUPPORT pilots also refuse to chase a weak ally that is
+  currently sitting in a jungle cell.
+- **SUPPORT defensive fall-back**: when a SUPPORT pilot's same-lane SNIPER
+  teammate is dead (respawning) or sitting at own HQ (instant recall), the
+  support's per-tick goal becomes the forward-most alive own-team turret cell
+  on their lane (turret hugging) instead of the next waypoint. As soon as the
+  sniper is alive on lane again, the support resumes normal pushing. Falls
+  back to `current_waypoint(p)` if every own-lane turret is down.
+- Junglers move freely (no forbidden cells) — they can transit through lane
+  cells when crossing between own-captured jungle clusters, but they never
+  engage in lane combat or attack turrets along the way.
+- TANK→LEFT, FIGHTER→CENTER, ASSASSIN→GUERRILLA, SUPPORT→RIGHT, SNIPER→RIGHT.
+
+### Jungle
+- Map starts with both jungles fully captured; only `(-3,-1)` and `(1,-1)`
+  start neutral. The roaming jungler can capture neutrals by stepping on them.
+- Junglers do not push lanes. They roam own-captured cells and contest neutrals.
+- Jungler-vs-jungler combat in a contested cell uses the same hit/evasion roll.
+  A loser is pushed to the nearest own-captured jungle cell.
+- T1 destruction triggers per-lane "취약지점" (vuln cell) flips. The vuln
+  cells per team/lane live in `VULN_TEAM{0,1}_{LEFT,CENTER,RIGHT}` in
+  `combat/SimulationCore.gd`: side lanes have 1 vuln cell, mid has 2 (the
+  flanking cells). When a team's same-lane T1 falls, three branches in priority:
+  (1) **Restoration** — if any of the capturer's own same-lane vuln cells are
+  owned by the loser, those flip back to the capturer and nothing else moves.
+  (2) **Side-neutral override (LEFT/RIGHT only)** — if `(-3,-1)`/`(1,-1)` is
+  owned by the loser, the capturer takes the neutral instead of the loser's
+  vuln. (3) **Default** — the loser's same-lane vuln cell(s) flip to the
+  capturer. Mid T1 has no side-neutral override.
+
+### Card Phase (작전 단계)
+- Triggered when `player_cost >= PHASE_THRESHOLD`.
+- Ending the phase goes through the player's 전략 포인트 도넛: tap it once to
+  flip it into a circular 턴 넘기기 button, tap again to end. The 턴 넘기기
+  face stays disabled until the player spends at least 1 작전 점수 (tracked
+  via `card_phase_entry_cost`); tapping anywhere else flips it back to the
+  point readout.
+- AI auto-plays affordable cards on phase end. Phase end also re-runs recalls
+  (HP threshold + out-of-position card displacement).
+
+### Engage (전투 개시)
+Card-driven sub-phase: `engage:N` triggers a full-screen turn-based combat
+modal during CARD_PHASE. Returns to CARD_PHASE on close — see
+[`engage/README.md`](engage/README.md) for details. Key contract:
+- Participants = pilots in radius-1 hex from caster (caster cell + 6 neighbors).
+- `exclude_lane` flag drops lane pilots that are still on their lane row;
+  junglers and displaced-into-jungle lane pilots stay in.
+- Initiator side attacks first each round; within a side, presence DESC
+  (random tie-break). Targets picked weighted-random by presence.
+- Damage uses the same `hit/(hit+evasion)` + shield-first formula as the
+  battlefield. KO sets `respawn_timer = RESPAWN_TURNS` (battlefield-equivalent).
+- Dashboard shows per-pilot dealt / taken / kills before resuming.
+
+### Pilot Animations (UI-only, additive on top of logical state)
+Pilot logical state (grid_pos, hp, alive…) updates instantly when the sim
+ticks; the renderer reads animation timers from `PilotData` to soften the
+visual transitions. All durations fit inside the 0.5s `AUTO_PLAY_INTERVAL`.
+
+| Trigger | Site | Visual |
 |---|---|---|
-| Left (0) | (4,14)→(1,11)→(1,8)→(1,7)→(1,6)→(1,3)→(4,0) | (1,7) |
-| Center (1) | (4,14)→(4,11)→(4,8)→(4,7)→(4,6)→(4,3)→(4,0) | (4,7) |
-| Right (2) | (4,14)→(7,11)→(7,8)→(7,7)→(7,6)→(7,3)→(4,0) | (7,7) |
-| Guerrilla (3) | Unconstrained — captures neutral zones then chases lowest-HP enemy | — |
-Team 1 paths are exact reverses of Team 0.
+| Combat / card damage | `SimulationCore` damage_map apply, `CardPhaseManager.apply_card_effect` | `anim_pilot_shake` → 0.18s horizontal jitter (decaying) |
+| Movement (free + push advance + push retreat) | `_move_pilot` / `_push_advance` / `_push_retreat` | `anim_pilot_move(p, orig)` → 0.30s ease-out tween from `orig` cell to `grid_pos` |
+| Recall (HP-threshold or phase-end out-of-position) | `RecallSystem._teleport_home` | `anim_pilot_recall(p, orig)` → 0.20s fade-out + rise at `orig`, then 0.25s fade-in + descend at HQ |
+| Respawn | `SimulationCore.process_respawns` | `anim_pilot_respawn` → fade-in + descend at HQ only (skip phase 1) |
 
-## Turret Positions
+`BattleSim._process` runs `_advance_pilot_animations(delta)` every frame and
+calls `renderer.queue_redraw()` while any timer is active. Constants live on
+`BattleSim`: `ANIM_MOVE_DUR`, `ANIM_SHAKE_DUR`, `ANIM_SHAKE_AMP_PX`,
+`ANIM_RECALL_FADE_OUT_DUR`, `ANIM_RECALL_FADE_IN_DUR`, `ANIM_RECALL_RISE_PX`.
 
-| Team | Tier | Left | Center | Right |
-|---|---|---|---|---|
-| 1 (enemy) | T1 | (1,6) | (4,6) | (7,6) |
-| 1 (enemy) | T2 | (1,3) | (4,3) | (7,3) |
-| 0 (player) | T1 | (1,8) | (4,8) | (7,8) |
-| 0 (player) | T2 | (1,11) | (4,11) | (7,11) |
-
-T2 is invulnerable while its lane T1 is alive. HQ is only attackable after a T2 is destroyed.
-Turrets require friendly minions present (acting as siege shields) before pilots can attack them.
-
-## Neutral Zone Ownership
-
-4 rectangular zones (2 friendly-side, 2 enemy-side). Only the Guerrilla pilot can capture them by stepping on their cells. Gray = uncaptured; blue = team 0; red = team 1.
-
-## Recall System
-
-At 20% HP, a pilot enters RETREATING: moves to a safe cell behind their nearest friendly turret.
-Once there, 3-turn CHANNELING countdown begins. If interrupted by an enemy in the same cell, restart RETREATING. On completion, teleport to own HQ at full HP.
-
-## Minion System
-
-- Spawn: 1 group per lane per team every 3 turns at own HQ
-- Move: stops at first enemy in cell (turret, pilot, or opposing minion group)
-- Turret gating: pilot can only attack a turret if friendly minions are in the same cell
-- Minion combat: floor(N/2) mutual damage per turn when opposing groups meet
-
-## Card Phase
-
-Triggered when `_player_cost >= PHASE_THRESHOLD (8)`. Player plays cards from fan hand; AI auto-plays affordable cards on End Phase. Cards draw 1/side/turn. Cost carries over unspent.
+`BattleRenderer` groups pilots by `_render_cell(p)` (= `anim_recall_orig`
+during fade-out, otherwise `grid_pos`) and applies per-pilot pixel offset and
+alpha via `_pilot_anim_offset` / `_pilot_anim_alpha`.
 
 ---
 
 ## Dependencies
 
 - `resources/GameEnums.gd` — shared enums
-- `resources/PilotData.gd`, `TurretData.gd`, `MinionData.gd` — data classes
-- `autoloads/GameManager.gd` — battle phase signals (infrastructure, optional sync)
-- `scenes/Card.tscn` / `features/card_draw/Card.gd` — card visual nodes
+- `resources/PilotData.gd`, `TurretData.gd` — data classes
+- `autoloads/GameManager.gd` — match_ctx + cards table loader
+- `scenes/Card.tscn` (script: `features/battle_sim/card_phase/Card.gd`) — card visual node
+- `scenes/BattleField.tscn` — TileMapLayer + Building/Waypoint child scenes

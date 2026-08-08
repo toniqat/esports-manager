@@ -3,31 +3,329 @@
 ## CardPhaseManager.gd
 `extends Node` — child of BattleSim.
 
-Manages the card draw/play overlay that gates each battle turn.
+Manages the **작전 단계** (card draw / play overlay) that gates each battle turn.
+The cost label is surfaced as "작전 점수" in the HUD; one tick of `simulate_turn`
+is referred to as "1분".
 
 ### Turn flow
-- `do_battle_turn()` — calls `_bs._sim_core.simulate_turn()`, accumulates cost, draws cards, enters CARD_PHASE when cost ≥ PHASE_THRESHOLD
-- `start_card_phase()` — transitions to CARD_PHASE, highlights affordable cards
-- `end_card_phase()` — AI plays affordable cards, returns to BATTLE
+- `do_battle_turn()` — calls `_bs.sim_core.simulate_turn()`, accumulates 작전 점수,
+  draws cards, enters CARD_PHASE when 점수 ≥ PHASE_THRESHOLD. After the AI
+  draws, `_bs.hud.update_ai_hand_visuals()` reflows the face-down peek row
+  under the score panel.
+- `start_card_phase()` — transitions to CARD_PHASE, snapshots `card_phase_entry_cost`
+  so the 턴 넘기기 face of the 전략 포인트 도넛 stays disabled until the
+  player spends ≥ 1 점수.
+  Awaits `HudBuilder.play_turn_announce(true)` so the "당신의 차례" banner
+  sweeps in / holds / fades out before the player can interact; the player
+  hand stays dimmed for that whole interval via `_apply_hand_dim_state()`.
+- `can_end_card_phase()` → bool — true once `player_cost < card_phase_entry_cost`.
+  Also blocked while `_player_turn_announce_in_progress`, while overlays own
+  the screen, and while the AI play loop is in flight.
+- `end_card_phase()` — sets `_ai_play_in_progress = true`, awaits
+  `play_turn_announce(false)` (the "상대 차례" banner), then runs the AI
+  card loop, runs `recall_sys.process_phase_end_recalls()`
+  (HP threshold + out-of-position card-displaced pilots), returns to BATTLE.
+
+### Hand dim driver
+`_apply_hand_dim_state()` toggles `Card.set_dimmed(true|false)` on every
+player hand node based on `_is_player_input_blocked() or game_phase != CARD_PHASE`.
+That covers BATTLE auto-tick, the player turn-start banner, the AI run loop,
+and any active modal overlay. `Card.set_dimmed(true)` darkens the modulate,
+suppresses hover brighten, and ignores `_gui_input` clicks; `set_dimmed(false)`
+restores `Color.WHITE`. `highlight_affordable_cards()` always tail-calls
+`_apply_hand_dim_state()` so every overlay-close path that funnels through it
+re-evaluates the dim state.
 
 ### Card management
-- `build_starter_decks()` — 10-card decks from a 6-card pool (Strike / Mend / Reinforce / Focus Fire / Rally / Overcharge)
-- `draw_card(is_player)` → CardData — pops from deck, reshuffles discard if empty
-- `spawn_card_node(cd)` / `spawn_ai_card_node()` — instantiates Card.tscn into _bs._canvas
-- `relayout_hand(nodes, center, flip)` — fan arc layout; `fan_slot(index, total, center, flip)` → position/rotation dict
-- `highlight_affordable_cards()` — marks affordable player cards
+- `build_starter_decks()` — 10-card decks built from `cards` table; calls
+  `update_deck_discard_labels()` to seed the visible counters.
+- `draw_card(is_player)` → CardData — pops from deck. If the deck is empty it
+  shuffles the discard pile back in *first*. For the player, draws update the
+  Deck / Discard labels: a normal draw snaps; a reshuffle draw kicks off a
+  parallel tween (`_animate_reshuffle_counts`) that drains the discard count
+  to 0 while the deck count grows over `BS_RESHUFFLE_TWEEN_DUR` (~0.55s).
+- `spawn_card_node(cd)` — instantiates a player Card.tscn into `_bs.canvas`. The
+  AI hand is logical-only — no card backs are spawned for the enemy.
+- `slot_position(index, total)` — returns the top-left global_position for the
+  card at `index` in a hand of size `total`. Spacing is
+  `Card.CARD_W + BS_HAND_CARD_GAP` until the natural span exceeds
+  `BS_HAND_WIDTH`; from then on it compresses uniformly so the hand always
+  fits the fixed-width row centered on `BS_HAND_CENTER`.
+- `slot_rotation(index, total)` — the hand's shallow fan. Card `index` is
+  rotated `(index − (total−1)/2) × BS_HAND_FAN_STEP_DEG` (0.8° per step,
+  declared on `BattleSim`), so a 12-card hand splays only ±4.4°. Cards pivot
+  around their own centre (`pivot_offset` set in `spawn_card_node`), so the
+  slot X positions are unaffected.
+- `relayout_hand(nodes, skip = null)` — tweens every card to its
+  `slot_position` / `slot_rotation`.
+- `update_deck_discard_labels()` / `_refresh_count_labels()` — snap visible
+  counts to current player_deck / player_discard sizes.
+- `highlight_affordable_cards()` — marks affordable player cards.
 
-### Card interaction
-- `on_player_card_clicked(card)` — first click selects, second click plays
-- `select_card` / `deselect_card` — tween to selected position or back to fan
-- `play_player_card(card)` — deducts cost, removes from hand, applies effect
+### Card interaction (click-to-select + description box)
+- Hand row: cards span ~y=1500..1720 at-rest (CARD_H=220), centred on the
+  viewport. `BS_HAND_AREA_MARGIN` (130px) on each side is reserved for the
+  Deck / Discard count labels and shrinks the inner `BS_HAND_WIDTH`.
+- **Hover** (`on_card_hovered` / `on_card_unhovered`): face-up player cards
+  brighten via a `modulate` tween (handled inside `Card.gd` —
+  `HOVER_BRIGHTEN`, `HOVER_TWEEN_DURATION`). The hovered card is also moved
+  to the **top of the scene-tree** so it draws above its neighbours; on
+  unhover the canonical hand order is restored. Hover is suppressed while a
+  card is selected so the lifted card stays on top.
+- **Select** (`on_card_clicked` → `_select_card`): pressing a card pops it
+  upward by `Card.PRESS_LIFT` (40px), straightens it out of the fan
+  (rotation 0), pins it to the top of the hand, and spawns the description
+  box. The other cards stay in their slots — the gap where the selected card
+  sat remains visible. **Re-clicking the selected card deselects it** (same
+  path as an outside click; blocked only while a 전투 개시 PREVIEW is
+  pending, which must be resolved through the overlay's 취소 button).
+  Clicking a different card swaps the selection — the previous one drops back
+  into its slot and picks its fan rotation up again.
+- **Description box** (`_show_description_box`): a `Panel` placed on either
+  side of the lifted card (`DESC_BOX_W` × `DESC_BOX_H` = 320×220 px,
+  `DESC_BOX_GAP` = 12 px). The side with more screen space wins; the box is
+  clamped to the viewport. Contents: header row with card name on the left
+  and the effective cost number on the right (white / green / red mirroring
+  the card's top-left cost, no 시전자 tag), full description, and the
+  **카드 내기** button. The button is disabled when the card is unaffordable
+  OR when `card_has_valid_targets()` returns false (e.g. 결투 with no enemies
+  in `cast_range`).
+- **Outside-click dismiss** (`_unhandled_input`): any mouse press / screen
+  touch that lands outside the card, the description panel, and the play
+  button calls `deselect_current_card()`. Card.`_gui_input` calls
+  `accept_event()` so the same press that selects a card never doubles back
+  to deselect it; `Panel` and `Button` consume their own events via
+  `MOUSE_FILTER_STOP`.
+- **카드 내기 button** (`_on_play_selected_pressed` → `_play_card_direct`):
+  hides the box, clears `_selected_card`, deducts cost, applies the effect,
+  removes the card from `player_card_nodes`, queue_frees the node, and
+  reflows the hand. Card is only consumed via this button — there is no
+  longer a drag-to-play path.
+- `deselect_current_card()` is also called from `end_card_phase()` and
+  `build_starter_decks()` so the lifted-card / description-box state never
+  leaks across phase transitions or game restarts.
 - `apply_card_effect(cd, is_player)` → String log message
 
-### Effect types
-| effect_type | Behaviour |
-|---|---|
-| damage | Random enemy pilot -N HP |
-| focus_damage | Lowest-HP enemy -N HP |
-| heal | Lowest-HP ally +N HP |
-| buff_atk | All ally pilots +N ATK next simulate_turn() |
-| minions | +N minions to random ally lane |
+### Per-pilot decks (시전자 rule)
+- `build_starter_decks()` — for each pilot on each side, draws
+  `CARDS_PER_PILOT` (= 6) random `CardData` copies from the DB pool and tags
+  each with that pilot as 시전자 (`owner_pilot`). All 5 stacks shuffle into
+  the team deck. Player and AI sides build identically; AI hand is logical-only
+  but its cards still carry an enemy-pilot owner.
+- `make_card_copy(src)` — copies every CSV column AND `owner_pilot`. Use this
+  any time you need a deck-safe duplicate.
+- Card front layout:
+  - **Top-left**: 작전 점수 (cost) label, large outlined text on the
+    cost-coloured card body. `Card.update_displayed_cost(eff)` recolours the
+    number — white when matched, green when reduced by an active modifier
+    (사전 준비 / 전투 준비 / 집중), red when increased (정밀 이동).
+    `CardPhaseManager.highlight_affordable_cards` calls it for every visible
+    card so the four cost-modifier effects stay in sync with the card art.
+  - **Top-center**: card name (auto-truncates with `clip_text`).
+  - **Center / body**: **owner face image** filling the card
+    (`PilotImages.face_for(owner.pilot_id)`, 140×170 `TextureRect` inside a
+    `CenterContainer`, `STRETCH_KEEP_ASPECT_COVERED`). Empty when no face is
+    available — the cost-coloured panel shows through.
+  - **No description on the card itself.** The full description is surfaced
+    only in the side description box that appears when the player selects
+    the card (`_show_description_box`).
+  - **No role badge.** Role is conveyed solely by the owner face image; the
+    description box still surfaces "시전자 <Role><team>" in the header line.
+
+### Effect chain encoding (cards.csv `effect` column)
+The DB column is a `;`-separated chain of clauses. Each clause is
+`name[:value][|flag[:value]]…`. Examples:
+- `draw:2;discard:2`            — two clauses run in order
+- `attack:1|pierce|min_range:2` — one clause + two modifier flags
+- `engage:3|exclude_lane`       — engage with lane-exclusion modifier
+
+`apply_card_effect()` parses the chain, dispatches each clause through
+`_apply_single_effect`, and returns one log line of the form
+`<시전자> [<카드명>] · <효과 요약>, <효과 요약>…`.
+
+### Effect handlers
+| name | Implemented | Behaviour |
+|---|---|---|
+| `draw:N` | yes | Pull N from deck (reshuffles discard if empty); spawns visual node for the player |
+| `search:N` | yes | **Player**: opens CardSelectOverlay search grid — pick exactly N from the deck via 확인. **AI**: same as `draw:N` (random top-of-deck). |
+| `discard:N` | yes | **Player**: opens CardSelectOverlay discard pick — pick exactly N via the desc-box "버리기" button, then press 확인 to commit. The played 버리기 card is non-cancellable (no 버리기 취소 button). **AI**: random N from hand. |
+| `strategy:N` | yes | +N 작전 점수 to playing side |
+| `attack:N` | yes | **Player**: opens CardTargetingOverlay PILOT mode — battle tiles dim, valid enemy pilots ringed, click an enemy to commit. **AI**: random valid pilot (range-aware). Damage = `caster.atk × N`. `pierce` flag annotates 필중; `min_range:N` filters out pilots closer than N. 보호막 absorbs first. |
+| `shield_pct:N` | yes | **Player**: PILOT mode → click an ally; gains shield = N% of max_hp. **AI**: random ally. Cleared on 본진 복귀. |
+| `recall_ally` | yes | **Player**: PILOT mode → click an ally; teleports to HQ at full HP, shield reset, waypoint reset. **AI**: random ally. |
+| `exhaust_choice:N` | yes (random) | Random N from hand → removed (소멸) |
+| `engage:N` | yes | **Player**: opens CardTargetingOverlay PREVIEW mode — caster cell + 6 neighbours highlighted, side panel lists participants, 확인 launches the engage modal. **AI**: same modal flow via AiCardPlayer (no longer silent). `exclude_lane` flag propagates. |
+| `duel` | yes | **Player**: PILOT mode → click an enemy in range; opens an engage modal restricted to caster + target with the round counter hidden, runs to first KO. **AI**: random enemy in range. Routes through `EngagePhaseManager.start_duel`. |
+| `capture_jungle:N` | yes | **Player**: LOCATION mode restricted to enemy-owned jungle/neutral cells in range; flips the picked cell to caster's team for N turns. **AI**: random valid cell. SimulationCore.process_temp_zone_expiries restores the previous owner once `turn_count >= expires_turn`. |
+| `move` | yes | **Player**: LOCATION mode → click any cell in `cast_range` (jungle cells included; the lane-pilot displacement recall pulls them back at phase end if needed). **AI**: random valid cell. Caster's `grid_pos` snaps to the picked cell and `BattleSim.anim_pilot_move` plays the tween. `return_left` / `cost_inc_phase` decorators on the same chain run separately. |
+| `cost_reduce_engage:N` | yes | One-shot pending discount on the side's next engage card. Stored on `_bs.engage_discount_p/ai`; consumed in `_play_card_direct` / `AiCardPlayer.run_ai_plays`. |
+| `cost_reduce_hand:N` | yes | Mutates every card currently in hand — `cost = max(0, cost - N)`. The played card is already gone from hand by the time this fires. |
+| `cost_reduce_draw_phase:N` | yes | Phase-bound draw discount; `draw_card` mutates each drawn `CardData.cost` while `_bs.phase_draw_discount_*` is active. Reset on `start_card_phase`. |
+| `cost_inc_phase:N` | yes | Phase-bound additive cost bump on every card play during this 작전 단계. Stored on `_bs.phase_cost_inc_*`; consumed by `effective_cost_for`. Reset on `start_card_phase`. |
+| `advance:N` | yes | Caster runs `N` mini-ticks of lane-push action through `SimulationCore.advance_pilot`: at each step, resolves combat at the caster's current cell (pilot-vs-pilot or same-lane turret damage) and then either pushes/retreats the caster from the result or steps them one cell along their lane if uncontested. Other pilots in the cell take damage but don't move — the card advances one pilot, not the whole team. |
+| `strategy_on_kill` | log only | Stub — emits 예약 log line until the supporting system lands. |
+
+#### Effective cost & affordability
+`BattleSim.effective_cost_for(cd, is_player)` is the single source of truth
+for "what does this card cost right now?". It applies `phase_cost_inc_*`
+(additive) and the one-shot `engage_discount_*` (only when the card has
+an `engage` clause), clamped at 0. The affordability highlight in
+`highlight_affordable_cards`, the description-box "카드 내기" enable check,
+the cost subtraction in `_play_card_direct`, and `AiCardPlayer.run_ai_plays`
+all consult this helper so the four cost-modifier effects stay in sync.
+
+### 사용 횟수 / 소멸 routing
+`_dispose_used_card(cd, is_player)` runs after every play:
+- `keyword == "exhaust"` → removed permanently (소멸)
+- `uses > 0` → decrement `remaining_uses`; remove when it hits 0
+- `uses == 0` (unlimited) or remaining > 0 → returns to discard pile
+
+### 대상 지정 (CardTargetingOverlay)
+- `CardTargetingOverlay.gd` — sibling of `CardPhaseManager`, owns a CanvasLayer
+  at layer 11 (above the search/discard overlay's layer 10) that hosts the
+  cancel and 확인 buttons plus PREVIEW 모드의 좌/우 팀 패널.
+- **Selection preview** (non-modal, `Mode.SELECTION_PREVIEW`): kicked off
+  from `CardPhaseManager._select_card` via `start_selection_preview(card)`
+  the moment a card is lifted in the hand. It populates the same
+  `range_caster` / `range_radius` / `valid_pilots` / `valid_cells` /
+  `area_cells` state the modal uses, so BattleRenderer paints the yellow
+  range fill and (LOCATION) green outlines exactly as it would during
+  targeting — but no buttons are built and no input is captured. The
+  black out-of-range dim is suppressed in this mode so the rest of the
+  battlefield stays readable. `clear_selection_preview()` runs on
+  `deselect_current_card`; `start_*_target` resets the preview before
+  setting up the modal.
+- **Confirm step** (PILOT / LOCATION modal): a click on a valid pilot or
+  cell now stores it as `pending_pick` instead of firing immediately.
+  `BattleRenderer._draw_pending_pick_highlight()` paints a cyan ring on the
+  picked pilot marker (or a thicker cyan outline on the picked cell) so the
+  player can confirm or pick a different valid target. The 확인 button is
+  built next to 취소 from the start and stays disabled until `pending_pick`
+  is set; pressing 확인 finally fires `_on_complete(pending_pick)`. PREVIEW
+  mode keeps the previous behaviour — 확인 launches engage immediately
+  because the area is already determined by the caster's cell.
+- Driven by `CardData.cast_method` / `target` fields (see `_targeting_kind`):
+  - `cast_method == "target"` (target=enemy/ally/pilot) → **PILOT** mode.
+    BattleRenderer paints a soft yellow fill on every cell within
+    `cast_range` and a black overlay on every cell outside it. Pilots not in
+    `valid_pilots` get a per-marker black overlay. There is no per-pilot
+    ring on the tile — the visible pilot marker IS the click target.
+    Range honours `cd.cast_range` and the `min_range:N` flag (저격).
+  - `cast_method == "location"` → **LOCATION** mode. Same yellow range fill
+    + black out-of-range dim as PILOT. Valid cells (subset, e.g. 약탈's
+    enemy-jungle filter) get an extra green outline. All pilots dim via
+    BattleRenderer's per-marker dim.
+  - `cast_method == "range" and target == "caster"` → **PREVIEW** mode
+    (engage cards only; 전진은 target=enemy 라 PREVIEW 가 아니라 즉시 발동).
+    The caster cell and 6 neighbours show a soft yellow fill with full outline.
+    Two side panels — **좌측 = 아군 팀, 우측 = 적군 팀** — list each
+    alive participant with the pilot face image (`PilotImages.face_for`),
+    role/팀 라벨, HP 텍스트, HP 프로그레스 바. PREVIEW 동안 카드와
+    설명 박스(`_show_description_box`)는 그대로 화면에 남으며, 핸드의
+    "카드 내기" 버튼은 비활성화되어 overlay 의 확인/취소 버튼이 유일한
+    종료 경로가 된다. 확인 → `_play_card_direct(card, true)` 가 비용
+    차감/카드 파괴/effect chain 실행을 한꺼번에 수행한다. 취소 → 카드는
+    핸드에 남고 SELECTION_PREVIEW 시각화가 다시 켜진다. Cells outside
+    the engage area also get the black out-of-range dim.
+- Hit-testing:
+  - **PILOT mode** uses `_hit_test_pilot` — for each valid pilot it probes
+    both the tile centre and the team-direction marker offset position
+    (returned by `BattleSim.pilot_marker_pos_solo`) and picks the closest
+    pilot whose marker is within `hex_size * 0.85` of the click.
+  - **LOCATION mode** keeps the cell-centred hit test (`_hit_test_cell`).
+- The 확인 / 취소 buttons hover at the **top-right of the hand area**
+  (`BS_HAND_CENTER.y - BTN_HAND_GAP - BTN_H`) so the player's eye stays
+  near where the cards were when committing the pick. Cancel is wired to
+  the same snapshot rollback as the search/discard overlay — a cancelled
+  play refunds cost, returns the card to the hand, restores deck/discard
+  counts, AND restores `engage_discount_p` (so a cancelled engage card
+  doesn't burn the pending discount).
+- `_disable_phase_button()` calls `_bs.cost_donut.set_locked(true)` while
+  targeting is active — the 전략 포인트 도넛 stays visible but can't be
+  flipped into 턴 넘기기 (and `can_end_card_phase()` short-circuits to false
+  on `targeting_overlay.is_active()`) so the phase can't end mid-pick.
+  The donut sits above this button row, so the two never overlap.
+
+### AI 카드 사용 애니메이션 (AiCardPlayer)
+- `AiCardPlayer.gd` — sibling of `CardPhaseManager`, runs the AI's hand
+  one card at a time inside `end_card_phase()`'s `await` chain.
+- Each play pops the rightmost card-back from the AI hand peek
+  (`HudBuilder.pop_ai_hand_card_node()`), reparents it onto `_bs.canvas`
+  preserving world position+scale, then tweens it from the hand row to
+  viewport centre (`540, 760`) over `FLY_FROM_HAND_SEC` while still
+  showing the back. A snap-flip (`scale.x → 0` then `→ SCALE_BIG`) swaps
+  to the played card's face via `setup(cd, false, true)`. Holds for
+  `SHOW_DURATION_SEC`, fades + scales back out, queue_free.
+- When the AI hand peek is empty (rare — stray plays after wholesale
+  hand wipes), it falls back to the legacy "spawn fresh card at centre"
+  fade-in animation.
+- After the visual completes, `apply_and_dispose_ai_card(pick)` runs the
+  effect chain. `engage` cards now route through
+  `EngagePhaseManager.start_engage()` (no longer `resolve_silent`); the
+  loop `await`s the new `engage_finished` signal so the modal fully
+  resolves before the next AI play starts.
+- `_ai_play_in_progress` blocks re-entry of `end_card_phase` and disables
+  the donut's 턴 넘기기 face (via `can_end_card_phase`). It also gates
+  `on_card_clicked` / `on_card_hovered` so the player can't pop the
+  description box mid-AI animation.
+
+### 버리기 / 찾기 modal pick (player only)
+- `CardSelectOverlay.gd` (sibling of `CardPhaseManager`, instantiated from
+  `BattleSim._ready` once the HUD canvas exists). Owns one
+  `CanvasLayer` (`layer = 10`) and rebuilds its UI on every `start_*()`.
+  AI plays bypass this overlay and keep the synchronous `apply_card_effect`
+  path (random discard, search aliased to draw).
+- **Async chain pattern** in `CardPhaseManager._play_card_direct`:
+  1. Snapshot `player_hand` / `player_deck` / `player_discard` /
+     `player_cost` BEFORE deducting cost or removing the played card. Stored
+     on `_pending_play.snapshot`.
+  2. `_process_pending_chain()` walks `_pending_play.clauses` via
+     `pop_front`. Synchronous clauses dispatch through `_apply_single_effect`
+     and append a log line. `discard:N` / `search:N` parks the remaining
+     clauses on `_pending_play` and starts the overlay, returning early.
+  3. The overlay's complete callback (`_on_discard_overlay_complete` /
+     `_on_search_overlay_complete`) writes the picks to the discard pile or
+     hand respectively, then calls `_process_pending_chain()` again to
+     continue the chain.
+  4. When the chain drains, `_finalize_pending_play()` disposes the played
+     card (사용 횟수 / 소멸 routing) and writes the combined log line.
+- **Cancel = full refund** (`_on_overlay_cancel` → `_restore_from_snapshot`):
+  freezes any active selection, frees every player card node, restores
+  hand/deck/discard/cost from the snapshot verbatim, and respawns nodes for
+  every CardData now back in `player_hand`. This rolls back even prior
+  clauses in a chain (e.g. cancelling 교환 returns the 2 drawn cards to the
+  deck along with refunding the 교환 card itself).
+- **Discard mode UI** (`Mode.DISCARD`):
+  - **Battle dim** = `ColorRect` covering y=0..BS_HAND_CENTER.y, parented
+    into `_bs.canvas` and moved to child position 0 so HUD + hand still
+    draw on top of it.
+  - Hand stays clickable; clicking a card opens the standard description
+    box, but `_show_description_box` swaps the action button to "버리기"
+    while `card_select_overlay.can_pick_for_discard()` is true.
+  - Picked cards are reparented to a centered fan above the dim
+    (`TO_DISCARD_CENTER_Y = 700`, fan width = `BS_HAND_WIDTH`, same spacing
+    rules as the hand row). Once parked there their `mouse_filter` is set
+    to `IGNORE` so the fan can't be re-clicked while the player commits.
+  - **No auto-commit and no cancel.** A 버리기:N card is non-cancellable:
+    the only top-right button is **확인**, disabled until exactly
+    `target_count` cards are in the to-discard fan. `target_count` is
+    clamped to `min(N, hand.size())`. Pressing 확인 is the sole exit.
+  - Bottom-left **숨김** (toggles `hidden_state`; relabels to **표시** while
+    hidden, drops any active card selection on press) is still available
+    so the player can peek at the battle before committing.
+- **Search mode UI** (`Mode.SEARCH`):
+  - **Full dim** covers the whole viewport on the high-priority overlay
+    layer, dimming both battle and hand.
+  - `ScrollContainer` at (`SEARCH_GRID_SIDE_PAD`, 220) holds a 5-column
+    layout of all `player_deck` cards. Cards are spawned with
+    `is_player_card=false` so `Card._on_mouse_entered` short-circuits and
+    its hover-brighten tween doesn't fight the `SELECTED_TINT` modulate; a
+    transparent flat `Button` child captures clicks ahead of `Card._gui_input`.
+  - Bottom-left **숨김**, bottom-right **찾기 취소**, **확인** to its left.
+    확인 stays disabled until exactly `target_count` cards are selected
+    (`target_count = min(N, deck.size())`); on commit, picks move from
+    `player_deck` to `player_hand` (capped at `MAX_HAND_SIZE`) and visual
+    nodes spawn via `spawn_card_node`.
+- **Phase-end gate**: `can_end_card_phase()` returns false while
+  `card_select_overlay.is_active()` so the player can't 단계 넘기기 their
+  way out of an unfinished pick.

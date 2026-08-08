@@ -4,7 +4,7 @@ extends Node2D
 const _BUILDING_SCENE := preload("res://resources/Building.tscn")
 
 @export_tool_button("Add Building")
-var _add_btn: Callable = _add_building
+var add_btn: Callable = _add_building
 
 
 func _add_building() -> void:

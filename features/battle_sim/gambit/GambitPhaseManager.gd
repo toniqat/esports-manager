@@ -25,17 +25,16 @@ const ROLE_TO_LANE: Array = [
 
 
 func auto_assign_lanes() -> void:
-	# Fills _bs._gambit_lanes for the player team in role order (0..4).
+	# Fills _bs.gambit_lanes for the player team in role order (0..4).
 	for i in range(5):
-		_bs._gambit_lanes[i] = ROLE_TO_LANE[i]
+		_bs.gambit_lanes[i] = ROLE_TO_LANE[i]
 
 
 # Runs the same flow that the old "Launch Battle" button performed.
 func launch_battle() -> void:
-	_bs._minions = []
 	_bs.sim_core.spawn_pilots_with_lanes()
 	_bs.sim_core.spawn_turrets()
 	_bs.sim_core.init_neutral_zones()
 	_bs.game_phase = GameEnums.BattlePhase.BATTLE
-	_bs._renderer.queue_redraw()
-	_bs._hud.update_hud()
+	_bs.renderer.queue_redraw()
+	_bs.hud.update_hud()

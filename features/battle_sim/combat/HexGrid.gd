@@ -5,6 +5,11 @@ extends Node
 const COLS := 9
 const ROWS := 11
 
+# Multiplier applied to the BattleField sprite render and to hex geometry. All
+# pilot/HUD draw sizes that should track tile size derive from `hex_size`, so
+# changing this value scales the whole battlefield display in lockstep.
+const DISPLAY_SCALE := 1.5
+
 # ─── Layout vars (computed in _ready) ────────────────────────────────────────
 var hex_size:      float  # circumradius of each flat-top hex
 var hex_height:    float  # sqrt(3) * hex_size  (distance between parallel flat edges)
@@ -36,17 +41,29 @@ func _ready() -> void:
 
 
 ## Derives hex geometry from the TileMapLayer's actual map_to_local() output,
-## computes the pixel bounding box of all used tiles, and centres that bounding
-## box on screen. Returns the position BattleField must be set to.
+## applies DISPLAY_SCALE to the BattleField parent so tiles/buildings/waypoints
+## render at the chosen scale, computes the pixel bounding box of all used
+## tiles, and centres that bounding box on screen. Returns the position
+## BattleField must be set to.
 ## Call this from BattleSim._ready() after load_field(), passing the current viewport size.
 func init_from_tilemap(tm: TileMapLayer, vp_size: Vector2) -> Vector2:
+	# 0. Apply DISPLAY_SCALE to the BattleField parent so tile sprites,
+	#    buildings, and waypoints all render at the same enlarged size. The
+	#    hex geometry below is computed against this scale so pilot positions
+	#    (drawn outside BattleField by BattleRenderer) line up with tile centres.
+	var bf := tm.get_parent() as Node2D
+	if bf != null:
+		bf.scale = Vector2(DISPLAY_SCALE, DISPLAY_SCALE)
+
 	# 1. Sample hex geometry from TileMap output.
 	#    Use two even-col cells 2 apart for a clean x-delta, and adjacent rows for y-delta.
 	var p00 := tm.map_to_local(Vector2i(0, 0))
 	var p20 := tm.map_to_local(Vector2i(2, 0))
 	var p01 := tm.map_to_local(Vector2i(0, 1))
-	hex_size   = (p20.x - p00.x) / 3.0  # circumradius; col pitch = hex_size * 1.5
-	hex_height = p01.y - p00.y           # row pitch = tile height
+	# Multiply by DISPLAY_SCALE because tm.map_to_local() returns unscaled
+	# tilemap-local positions; the world distances are scaled by the parent.
+	hex_size   = (p20.x - p00.x) / 3.0 * DISPLAY_SCALE  # circumradius; col pitch = hex_size * 1.5
+	hex_height = (p01.y - p00.y) * DISPLAY_SCALE        # row pitch = tile height
 
 	# 2. Compute the pixel bounding box of all placed tile centres (TileMapLayer local space).
 	var min_local := Vector2(INF, INF)
@@ -58,17 +75,19 @@ func init_from_tilemap(tm: TileMapLayer, vp_size: Vector2) -> Vector2:
 		if lp.x > max_local.x: max_local.x = lp.x
 		if lp.y > max_local.y: max_local.y = lp.y
 	# Expand cell centres by half-tile to reach the true pixel edges.
-	min_local -= Vector2(hex_size, hex_height * 0.5)
-	max_local += Vector2(hex_size, hex_height * 0.5)
+	# `hex_size` / `hex_height` are already scaled, so undo that here for
+	# the unscaled local-space bounds.
+	min_local -= Vector2(hex_size, hex_height * 0.5) / DISPLAY_SCALE
+	max_local += Vector2(hex_size, hex_height * 0.5) / DISPLAY_SCALE
 
-	# 3. Centre the tile bounding box on screen.
+	# 3. Centre the SCALED tile bounding box on screen.
+	#    World pos of a local point p = bf_pos + (tm.position + p) * DISPLAY_SCALE.
 	var grid_center_local := (min_local + max_local) * 0.5
-	var bf_pos := vp_size * 0.5 - tm.position - grid_center_local
+	var bf_pos := vp_size * 0.5 - (tm.position + grid_center_local) * DISPLAY_SCALE
 
-	# 4. Derive grid_origin_x / grid_top so hex_to_screen() aligns with the TileMap.
-	#    For any cell, its screen pos = bf_pos + tm.position + map_to_local(cell).
-	#    Anchoring on cell (0,0): hex_to_screen(0,0) = bf_pos + tm.position + p00.
-	var screen_00 := bf_pos + tm.position + p00
+	# 4. Derive grid_origin_x / grid_top so hex_to_screen() aligns with the SCALED TileMap.
+	#    Anchoring on cell (0,0): hex_to_screen(0,0) = bf_pos + (tm.position + p00) * DISPLAY_SCALE.
+	var screen_00 := bf_pos + (tm.position + p00) * DISPLAY_SCALE
 	grid_origin_x = screen_00.x - hex_size
 	grid_top      = screen_00.y - hex_height * 0.5
 
@@ -162,4 +181,5 @@ func offset_to_cube(col: int, row: int) -> Vector3i:
 func hex_distance(a: Vector2i, b: Vector2i) -> int:
 	var ca := offset_to_cube(a.x, a.y)
 	var cb := offset_to_cube(b.x, b.y)
+	@warning_ignore("integer_division")
 	return (abs(ca.x - cb.x) + abs(ca.y - cb.y) + abs(ca.z - cb.z)) / 2

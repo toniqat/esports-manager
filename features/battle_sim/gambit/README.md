@@ -20,9 +20,11 @@ LANE_MAX (from `lane_config.csv`) tolerates this distribution: 1 LEFT, 1 CENTER,
 2 RIGHT, 1 GUERRILLA = 5 pilots.
 
 ### Public API
-- `auto_assign_lanes()` — fills `_bs._gambit_lanes[0..4]` from `ROLE_TO_LANE`
+- `auto_assign_lanes()` — fills `_bs.gambit_lanes[0..4]` from `ROLE_TO_LANE`
 - `launch_battle()` — spawns pilots/turrets/neutral zones and sets
   `game_phase = BATTLE`. Equivalent to the old "Launch Battle" button click.
+  Initialises the jungle ownership map via `init_neutral_zones()` (both jungles
+  pre-captured, only `(-3,-1)` and `(1,-1)` start neutral).
 
 Both run from `BattleSim._ready()` and `_on_restart_pressed()`. There is no
 overlay, no buttons, no manual assignment — the BattleSim scene transitions

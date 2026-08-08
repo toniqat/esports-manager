@@ -4,7 +4,7 @@ extends Node2D
 const _WAYPOINT_SCENE := preload("res://resources/Waypoint.tscn")
 
 @export_tool_button("Add Waypoint")
-var _add_btn: Callable = _add_waypoint
+var add_btn: Callable = _add_waypoint
 
 
 func _add_waypoint() -> void:

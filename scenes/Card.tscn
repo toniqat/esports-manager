@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://bxhvekawvf1gg"]
 
-[ext_resource type="Script" uid="uid://cjaiacoxkqcxn" path="res://features/card_draw/Card.gd" id="1_yiag5"]
+[ext_resource type="Script" uid="uid://cjaiacoxkqcxn" path="res://features/battle_sim/card_phase/Card.gd" id="1_yiag5"]
 
 [node name="Card" type="Control"]
 custom_minimum_size = Vector2(160, 220)
@@ -45,25 +45,46 @@ theme_override_constants/margin_bottom = 5
 
 [node name="VBox" type="VBoxContainer" parent="CardFront/MarginContainer"]
 layout_mode = 2
+theme_override_constants/separation = 4
 
-[node name="CostLabel" type="Label" parent="CardFront/MarginContainer/VBox"]
+[node name="HeaderRow" type="Control" parent="CardFront/MarginContainer/VBox"]
+custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
+
+[node name="CostLabel" type="Label" parent="CardFront/MarginContainer/VBox/HeaderRow"]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_right = 30.0
+grow_vertical = 2
 text = "0"
-
-[node name="NameLabel" type="Label" parent="CardFront/MarginContainer/VBox"]
-layout_mode = 2
-size_flags_vertical = 3
-text = "Card Name"
-horizontal_alignment = 1
-autowrap_mode = 2
-
-[node name="DescLabel" type="Label" parent="CardFront/MarginContainer/VBox"]
-layout_mode = 2
-size_flags_vertical = 3
-text = "Description"
 horizontal_alignment = 1
 vertical_alignment = 1
-autowrap_mode = 2
+
+[node name="NameLabel" type="Label" parent="CardFront/MarginContainer/VBox/HeaderRow"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 30.0
+offset_right = -30.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Card Name"
+horizontal_alignment = 1
+vertical_alignment = 1
+clip_text = true
+
+[node name="OwnerFaceWrap" type="CenterContainer" parent="CardFront/MarginContainer/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="OwnerFace" type="TextureRect" parent="CardFront/MarginContainer/VBox/OwnerFaceWrap"]
+custom_minimum_size = Vector2(150, 150)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
 
 [connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
 [connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]

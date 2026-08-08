@@ -24,6 +24,7 @@ tile_map_data = PackedByteArray("AAD/////AAAAAAAAAAD//wAAAAAAAAAAAAD///7/AAAAAAA
 tile_set = ExtResource("1_5euyt")
 
 [node name="WaypointLayer" type="Node2D" parent="."]
+visible = false
 z_index = 2
 script = ExtResource("6_wplayer")
 
@@ -213,14 +214,6 @@ data = SubResource("Resource_hm104")
 [node name="Building14" parent="BuildingLayer" instance=ExtResource("4_0skqn")]
 position = Vector2(270, -156)
 tile_coords = Vector2i(2, -3)
-tower_level = 2
-team = 2
-lane = 2
-data = SubResource("Resource_hm104")
-
-[node name="Building15" parent="BuildingLayer" instance=ExtResource("4_0skqn")]
-position = Vector2(180, 0)
-tile_coords = Vector2i(1, -1)
 tower_level = 2
 team = 2
 lane = 2

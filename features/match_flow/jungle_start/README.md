@@ -22,5 +22,6 @@ Emits `phase_finished({dir})` where `dir` is `GameEnums.JungleStartDir.LEFT` or
 ### Where it's consumed
 `MatchFlow` writes the value into `GameManager.match_ctx.jungle_start_dir`.
 `SimulationCore.spawn_pilots_with_lanes()` copies it onto the assassin's
-`PilotData.jungle_start_pref`. `SimulationCore.nearest_uncaptured_zone()` then
-prefers cells from the matching neutral zone before falling back to the other.
+`PilotData.jungle_start_pref`. `SimulationCore._nearest_uncaptured_neutral()`
+then prefers cells from the matching neutral side before falling back to the
+other.

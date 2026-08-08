@@ -72,7 +72,7 @@ func _build_ui() -> void:
 	_mf.canvas.add_child(_panel)
 
 	# Title
-	_mk_label(_panel, "BAN / PICK PHASE", 46, Color(1.0, 0.85, 0.2),
+	UiHelpers.mk_label(_panel, "BAN / PICK PHASE", 46, Color(1.0, 0.85, 0.2),
 			Vector2(0.0, 30.0), Vector2(1080.0, 60.0), HORIZONTAL_ALIGNMENT_CENTER)
 
 	# Sequence indicator (14 boxes)
@@ -103,9 +103,9 @@ func _build_ui() -> void:
 		b.add_child(l)
 
 	# Bans row labels (top of grid)
-	_lbl_blue_bans = _mk_label(_panel, "Blue Bans:", 22, Color(0.55, 0.75, 1.0),
+	_lbl_blue_bans = UiHelpers.mk_label(_panel, "Blue Bans:", 22, Color(0.55, 0.75, 1.0),
 			Vector2(40.0, 180.0), Vector2(500.0, 30.0))
-	_lbl_red_bans  = _mk_label(_panel, "Red Bans:", 22, Color(1.0, 0.55, 0.55),
+	_lbl_red_bans  = UiHelpers.mk_label(_panel, "Red Bans:", 22, Color(1.0, 0.55, 0.55),
 			Vector2(540.0, 180.0), Vector2(500.0, 30.0), HORIZONTAL_ALIGNMENT_RIGHT)
 
 	# Mech grid: 5 cols × 6 rows of MechData
@@ -118,9 +118,10 @@ func _build_ui() -> void:
 	for i in range(_all_mechs.size()):
 		var m := _all_mechs[i] as MechData
 		var col: int = i % 5
+		@warning_ignore("integer_division")
 		var row: int = i / 5
 		var btn := Button.new()
-		btn.text = "%s\nHP %d  ATK %d\nHEAL %d  MOVE %d" % [m.name, m.hp, m.atk, m.heal, m.move_range]
+		btn.text = "%s\nHP %d  ATK %d" % [m.name, m.hp, m.atk]
 		btn.add_theme_font_size_override("font_size", 18)
 		btn.position = Vector2(grid_x0 + col * (card_w + gx), grid_y0 + row * (card_h + gy))
 		btn.size     = Vector2(card_w, card_h)
@@ -130,13 +131,13 @@ func _build_ui() -> void:
 
 	# Pick rosters (under grid)
 	var picks_y := grid_y0 + 6 * (card_h + gy) + 30.0
-	_lbl_blue_picks = _mk_label(_panel, "Blue Picks: —", 24, Color(0.55, 0.75, 1.0),
+	_lbl_blue_picks = UiHelpers.mk_label(_panel, "Blue Picks: —", 24, Color(0.55, 0.75, 1.0),
 			Vector2(40.0, picks_y), Vector2(500.0, 40.0))
-	_lbl_red_picks  = _mk_label(_panel, "Red Picks: —", 24, Color(1.0, 0.55, 0.55),
+	_lbl_red_picks  = UiHelpers.mk_label(_panel, "Red Picks: —", 24, Color(1.0, 0.55, 0.55),
 			Vector2(540.0, picks_y), Vector2(500.0, 40.0), HORIZONTAL_ALIGNMENT_RIGHT)
 
 	# Status / current action
-	_lbl_status = _mk_label(_panel, "", 30, Color(1.0, 1.0, 0.9),
+	_lbl_status = UiHelpers.mk_label(_panel, "", 30, Color(1.0, 1.0, 0.9),
 			Vector2(0.0, picks_y + 60.0), Vector2(1080.0, 50.0), HORIZONTAL_ALIGNMENT_CENTER)
 
 
@@ -301,14 +302,3 @@ func _find_mech(id: int) -> MechData:
 	return null
 
 
-func _mk_label(parent: Control, text: String, font_size: int, color: Color,
-		pos: Vector2, sz: Vector2, align: int = HORIZONTAL_ALIGNMENT_LEFT) -> Label:
-	var l := Label.new()
-	l.text = text
-	l.add_theme_font_size_override("font_size", font_size)
-	l.add_theme_color_override("font_color", color)
-	l.position = pos
-	l.size     = sz
-	l.horizontal_alignment = align as HorizontalAlignment
-	parent.add_child(l)
-	return l

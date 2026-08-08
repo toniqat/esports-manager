@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3 uid="uid://b2qmkvxcntmf3"]
+[gd_scene load_steps=6 format=3 uid="uid://b2qmkvxcntmf3"]
 
 [ext_resource type="Script" path="res://features/match_flow/MatchFlow.gd" id="1_mflow"]
 [ext_resource type="Script" path="res://features/match_flow/ban_pick/BanPickController.gd" id="2_banpick"]
 [ext_resource type="Script" path="res://features/match_flow/assign/AssignController.gd" id="3_assign"]
 [ext_resource type="Script" path="res://features/match_flow/jungle_start/JungleStartController.gd" id="4_jungle"]
+[ext_resource type="Script" path="res://features/match_flow/match_prep/MatchPrepController.gd" id="5_prep"]
 
 [node name="MatchFlow" type="Node2D"]
 script = ExtResource("1_mflow")
@@ -14,6 +15,9 @@ offset_bottom = 1920.0
 color = Color(0.05, 0.05, 0.12, 1)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="MatchPrepController" type="Node" parent="."]
+script = ExtResource("5_prep")
 
 [node name="BanPickController" type="Node" parent="."]
 script = ExtResource("2_banpick")

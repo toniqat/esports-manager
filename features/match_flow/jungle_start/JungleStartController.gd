@@ -30,9 +30,9 @@ func _build_ui() -> void:
 	_panel.add_theme_stylebox_override("panel", bg)
 	_mf.canvas.add_child(_panel)
 
-	_mk_label(_panel, "JUNGLE START", 56, Color(1.0, 0.85, 0.2),
+	UiHelpers.mk_label(_panel, "JUNGLE START", 56, Color(1.0, 0.85, 0.2),
 			Vector2(0.0, 80.0), Vector2(1080.0, 80.0), HORIZONTAL_ALIGNMENT_CENTER)
-	_mk_label(_panel, "Where does your Assassin start the jungle route?", 26, Color(0.7, 0.7, 0.7),
+	UiHelpers.mk_label(_panel, "Where does your Assassin start the jungle route?", 26, Color(0.7, 0.7, 0.7),
 			Vector2(0.0, 180.0), Vector2(1080.0, 40.0), HORIZONTAL_ALIGNMENT_CENTER)
 
 	_btn_left = Button.new()
@@ -51,7 +51,7 @@ func _build_ui() -> void:
 	_btn_right.pressed.connect(_on_dir_pressed.bind(GameEnums.JungleStartDir.RIGHT))
 	_panel.add_child(_btn_right)
 
-	_lbl_status = _mk_label(_panel, "", 26, Color(0.85, 0.95, 0.85),
+	_lbl_status = UiHelpers.mk_label(_panel, "", 26, Color(0.85, 0.95, 0.85),
 			Vector2(0.0, 1180.0), Vector2(1080.0, 50.0), HORIZONTAL_ALIGNMENT_CENTER)
 
 	_btn_launch = Button.new()
@@ -83,14 +83,3 @@ func _on_launch_pressed() -> void:
 	phase_finished.emit({"dir": _selected_dir})
 
 
-func _mk_label(parent: Control, text: String, font_size: int, color: Color,
-		pos: Vector2, sz: Vector2, align: int = HORIZONTAL_ALIGNMENT_LEFT) -> Label:
-	var l := Label.new()
-	l.text = text
-	l.add_theme_font_size_override("font_size", font_size)
-	l.add_theme_color_override("font_color", color)
-	l.position = pos
-	l.size     = sz
-	l.horizontal_alignment = align as HorizontalAlignment
-	parent.add_child(l)
-	return l

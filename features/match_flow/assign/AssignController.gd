@@ -55,19 +55,19 @@ func _build_ui() -> void:
 	_panel.add_theme_stylebox_override("panel", bg)
 	_mf.canvas.add_child(_panel)
 
-	_mk_label(_panel, "ASSIGN MECHS TO PLAYERS", 44, Color(1.0, 0.85, 0.2),
+	UiHelpers.mk_label(_panel, "ASSIGN MECHS TO PLAYERS", 44, Color(1.0, 0.85, 0.2),
 			Vector2(0.0, 30.0), Vector2(1080.0, 60.0), HORIZONTAL_ALIGNMENT_CENTER)
-	_mk_label(_panel, "Tap a mech, then tap a player slot. Tap an assigned slot to clear.",
+	UiHelpers.mk_label(_panel, "Tap a mech, then tap a player slot. Tap an assigned slot to clear.",
 			22, Color(0.65, 0.65, 0.65),
 			Vector2(0.0, 100.0), Vector2(1080.0, 30.0), HORIZONTAL_ALIGNMENT_CENTER)
 
 	# Picked mechs row
-	_mk_label(_panel, "Your Picks:", 26, Color(0.55, 0.75, 1.0),
+	UiHelpers.mk_label(_panel, "Your Picks:", 26, Color(0.55, 0.75, 1.0),
 			Vector2(40.0, 150.0), Vector2(400.0, 30.0))
 	for i in range(_player_mechs.size()):
 		var m := _player_mechs[i] as MechData
 		var btn := Button.new()
-		btn.text = "%s\nHP %d  ATK %d\nHEAL %d  MOVE %d" % [m.name, m.hp, m.atk, m.heal, m.move_range]
+		btn.text = "%s\nHP %d  ATK %d" % [m.name, m.hp, m.atk]
 		btn.add_theme_font_size_override("font_size", 18)
 		btn.position = Vector2(40.0 + i * 204.0, 195.0)
 		btn.size     = Vector2(196.0, 170.0)
@@ -76,23 +76,28 @@ func _build_ui() -> void:
 		_mech_buttons[m.id] = btn
 
 	# Player slots (5 rows)
-	_mk_label(_panel, "Your Roster:", 26, Color(0.55, 0.75, 1.0),
+	UiHelpers.mk_label(_panel, "Your Roster:", 26, Color(0.55, 0.75, 1.0),
 			Vector2(40.0, 405.0), Vector2(400.0, 30.0))
 	var slot_y0 := 450.0
 	var slot_h  := 200.0
 	var slot_gap := 18.0
 	for i in range(5):
-		var p := _player_roster[i] as PlayerData
 		var btn := Button.new()
 		btn.add_theme_font_size_override("font_size", 22)
 		btn.position = Vector2(40.0, slot_y0 + i * (slot_h + slot_gap))
 		btn.size     = Vector2(1000.0, slot_h)
+		btn.alignment    = HORIZONTAL_ALIGNMENT_LEFT
+		btn.expand_icon  = true
+		btn.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		var p: PlayerData = _player_roster[i]
+		if p != null:
+			btn.icon = PilotImages.face_for(p.id)
 		btn.pressed.connect(_on_slot_pressed.bind(i))
 		_panel.add_child(btn)
 		_slot_buttons.append(btn)
 
 	# Status + confirm
-	_lbl_status = _mk_label(_panel, "", 24, Color(1.0, 1.0, 0.9),
+	_lbl_status = UiHelpers.mk_label(_panel, "", 24, Color(1.0, 1.0, 0.9),
 			Vector2(0.0, 1610.0), Vector2(1080.0, 40.0), HORIZONTAL_ALIGNMENT_CENTER)
 	_btn_confirm = Button.new()
 	_btn_confirm.text     = "Confirm Assignment"
@@ -121,7 +126,7 @@ func _refresh_ui() -> void:
 
 	# Slot buttons: show role + assigned mech
 	for i in range(5):
-		var p := _player_roster[i] as PlayerData
+		var p: PlayerData = _player_roster[i]
 		var slot_btn := _slot_buttons[i] as Button
 		var mech_id: int = _slot_to_mech[i]
 		var role_name: String = ROLE_NAMES_KR[p.role] if p.role >= 0 and p.role < ROLE_NAMES_KR.size() else "?"
@@ -130,8 +135,8 @@ func _refresh_ui() -> void:
 			slot_btn.modulate = Color(0.7, 0.7, 0.75)
 		else:
 			var m := _find_mech(mech_id)
-			slot_btn.text = "[%s]  %s\nMech: %s   HP %d  ATK %d  HEAL %d  MOVE %d" % \
-					[role_name, p.name, m.name, m.hp, m.atk, m.heal, m.move_range]
+			slot_btn.text = "[%s]  %s\nMech: %s   HP %d  ATK %d" % \
+					[role_name, p.name, m.name, m.hp, m.atk]
 			slot_btn.modulate = Color(0.55, 0.85, 0.55)
 
 	# Status + confirm gate
@@ -199,14 +204,3 @@ func _find_mech(id: int) -> MechData:
 	return null
 
 
-func _mk_label(parent: Control, text: String, font_size: int, color: Color,
-		pos: Vector2, sz: Vector2, align: int = HORIZONTAL_ALIGNMENT_LEFT) -> Label:
-	var l := Label.new()
-	l.text = text
-	l.add_theme_font_size_override("font_size", font_size)
-	l.add_theme_color_override("font_color", color)
-	l.position = pos
-	l.size     = sz
-	l.horizontal_alignment = align as HorizontalAlignment
-	parent.add_child(l)
-	return l

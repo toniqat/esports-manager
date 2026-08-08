@@ -11,7 +11,7 @@ auto-assigned by shuffling its 5 picks onto its 5 roster slots.
 **None.** Mechs have no role. Any picked mech may be assigned to any slot.
 
 ### UI
-- Top row: 5 picked mech cards (HP/ATK/HEAL/MOVE)
+- Top row: 5 picked mech cards (HP/ATK)
 - Below: 5 player slot rows (role + player name + assigned mech, or `— empty —`)
 - Confirm button — disabled until all 5 slots are filled
 

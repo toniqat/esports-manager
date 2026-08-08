@@ -6,10 +6,10 @@ uid="uid://cygokwi6y4j0o"
 
 [deps]
 
-files=["res://data/csv/cards.name.translation", "res://data/csv/cards.cost.translation", "res://data/csv/cards.effect.translation", "res://data/csv/cards.value.translation"]
+files=["res://data/csv/cards.name.translation", "res://data/csv/cards.cost.translation", "res://data/csv/cards.uses.translation", "res://data/csv/cards.cast.translation", "res://data/csv/cards.target.translation", "res://data/csv/cards.cast.translation", "res://data/csv/cards.area.translation", "res://data/csv/cards.keyword.translation", "res://data/csv/cards.effect.translation", "res://data/csv/cards.description.translation"]
 
 source_file="res://data/csv/cards.csv"
-dest_files=["res://data/csv/cards.name.translation", "res://data/csv/cards.cost.translation", "res://data/csv/cards.effect.translation", "res://data/csv/cards.value.translation"]
+dest_files=["res://data/csv/cards.name.translation", "res://data/csv/cards.cost.translation", "res://data/csv/cards.uses.translation", "res://data/csv/cards.cast.translation", "res://data/csv/cards.target.translation", "res://data/csv/cards.cast.translation", "res://data/csv/cards.area.translation", "res://data/csv/cards.keyword.translation", "res://data/csv/cards.effect.translation", "res://data/csv/cards.description.translation"]
 
 [params]
 

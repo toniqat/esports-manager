@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://bwy07f0ey4u1n"
+
+[deps]
+
+files=["res://data/card-example.코스트.translation", "res://data/card-example.사용 횟수.translation", "res://data/card-example.시전 방식.translation", "res://data/card-example.사거리.translation", "res://data/card-example.대상.translation", "res://data/card-example.범위.translation", "res://data/card-example.키워드.translation", "res://data/card-example.효과.translation"]
+
+source_file="res://data/card-example.csv"
+dest_files=["res://data/card-example.코스트.translation", "res://data/card-example.사용 횟수.translation", "res://data/card-example.시전 방식.translation", "res://data/card-example.사거리.translation", "res://data/card-example.대상.translation", "res://data/card-example.범위.translation", "res://data/card-example.키워드.translation", "res://data/card-example.효과.translation"]
+
+[params]
+
+compress=true
+delimiter=0

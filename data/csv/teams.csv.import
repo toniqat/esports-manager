@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://dws2wra5werpa"
+
+[deps]
+
+files=["res://data/csv/teams.name.translation", "res://data/csv/teams.short.translation"]
+
+source_file="res://data/csv/teams.csv"
+dest_files=["res://data/csv/teams.name.translation", "res://data/csv/teams.short.translation"]
+
+[params]
+
+compress=true
+delimiter=0

@@ -1,0 +1,255 @@
+class_name LeagueView
+extends Control
+
+# Phase 5 — League standings screen. 8 rows ranked by W-L. Player team row is
+# tinted; the top PLAYOFF_TEAMS rows are flagged as playoff-bound. Top of the
+# screen surfaces the current phase and the player's next scheduled match.
+# Bottom button returns to the HUB.
+
+const PHASE_NAMES: Dictionary = {
+	GameEnums.SeasonPhase.PRESEASON:      "프리시즌",
+	GameEnums.SeasonPhase.PRESEASON_INTL: "프리시즌 국제대회",
+	GameEnums.SeasonPhase.MIDSEASON:      "미드시즌",
+	GameEnums.SeasonPhase.MIDSEASON_INTL: "미드시즌 국제대회",
+	GameEnums.SeasonPhase.REGULAR:        "정규시즌",
+	GameEnums.SeasonPhase.REGULAR_INTL:   "정규시즌 국제대회",
+}
+const WEEKDAY_NAMES: Array = ["월", "화", "수", "목", "금", "토", "일"]
+
+const ROW_W: float = 1020.0
+const ROW_H: float = 110.0
+const ROW_GAP: float = 8.0
+
+@onready var _hub: SeasonHub = get_parent() as SeasonHub
+@onready var _gm: Node = get_node("/root/GameManager")
+
+var _league: LeagueManager = null
+var _phase_lbl: Label
+var _next_match_lbl: Label
+var _row_widgets: Array = []   # 8 dicts of {panel, stylebox, rank, name, wl, pct, po}
+var _next_btn: Button
+var _back_btn: Button
+var _built: bool = false
+
+
+func _ready() -> void:
+	set_anchors_preset(Control.PRESET_FULL_RECT)
+	mouse_filter = Control.MOUSE_FILTER_PASS
+	if not _built:
+		_build()
+		_built = true
+	_resolve_league()
+	refresh()
+
+
+# Idempotent — SeasonHub calls this each time it routes to LEAGUE.
+func ensure_view() -> void:
+	if not _built:
+		_build()
+		_built = true
+	_resolve_league()
+	refresh()
+
+
+func _resolve_league() -> void:
+	if _league != null or _hub == null:
+		return
+	_league = _hub.get_node_or_null("LeagueManager") as LeagueManager
+
+
+# ── Build ────────────────────────────────────────────────────────────────────
+func _build() -> void:
+	var bg := ColorRect.new()
+	bg.color = Color(0.07, 0.08, 0.14, 1.0)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(bg)
+
+	UiHelpers.mk_label(self, "리그 순위", 36, Color(1.0, 0.85, 0.20),
+			Vector2(0, 18), Vector2(1080, 44), HORIZONTAL_ALIGNMENT_CENTER)
+
+	_phase_lbl = UiHelpers.mk_label(self, "", 24, Color(0.55, 0.85, 1.0),
+			Vector2(0, 70), Vector2(1080, 30), HORIZONTAL_ALIGNMENT_CENTER)
+	_next_match_lbl = UiHelpers.mk_label(self, "", 22, Color(1.0, 0.85, 0.40),
+			Vector2(0, 104), Vector2(1080, 28), HORIZONTAL_ALIGNMENT_CENTER)
+
+	_build_header()
+	_build_rows()
+	_build_back_button()
+
+
+func _build_header() -> void:
+	var header_y: float = 168.0
+	var x0: float = (1080.0 - ROW_W) / 2.0
+	UiHelpers.mk_label(self, "순위", 22, Color(0.7, 0.8, 0.95),
+			Vector2(x0, header_y), Vector2(100, 28), HORIZONTAL_ALIGNMENT_CENTER)
+	UiHelpers.mk_label(self, "팀", 22, Color(0.7, 0.8, 0.95),
+			Vector2(x0 + 110, header_y), Vector2(370, 28), HORIZONTAL_ALIGNMENT_LEFT)
+	UiHelpers.mk_label(self, "승-패", 22, Color(0.7, 0.8, 0.95),
+			Vector2(x0 + 480, header_y), Vector2(220, 28), HORIZONTAL_ALIGNMENT_CENTER)
+	UiHelpers.mk_label(self, "승률", 22, Color(0.7, 0.8, 0.95),
+			Vector2(x0 + 700, header_y), Vector2(160, 28), HORIZONTAL_ALIGNMENT_CENTER)
+	UiHelpers.mk_label(self, "PO", 22, Color(0.7, 0.8, 0.95),
+			Vector2(x0 + 860, header_y), Vector2(160, 28), HORIZONTAL_ALIGNMENT_CENTER)
+
+
+func _build_rows() -> void:
+	var grid_y: float = 210.0
+	var x0: float = (1080.0 - ROW_W) / 2.0
+	for r in 8:
+		var y: float = grid_y + r * (ROW_H + ROW_GAP)
+		var panel := Panel.new()
+		panel.position = Vector2(x0, y)
+		panel.size     = Vector2(ROW_W, ROW_H)
+		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var sty := StyleBoxFlat.new()
+		sty.bg_color     = Color(0.10, 0.12, 0.18, 1.0)
+		sty.border_color = Color(0.20, 0.22, 0.30, 1.0)
+		sty.border_width_left = 1; sty.border_width_right = 1
+		sty.border_width_top  = 1; sty.border_width_bottom = 1
+		sty.corner_radius_top_left     = 6
+		sty.corner_radius_top_right    = 6
+		sty.corner_radius_bottom_left  = 6
+		sty.corner_radius_bottom_right = 6
+		panel.add_theme_stylebox_override("panel", sty)
+		add_child(panel)
+
+		var rank_lbl := UiHelpers.mk_label(panel, "", 30, Color(1, 1, 1),
+				Vector2(0, (ROW_H - 36) / 2.0), Vector2(100, 36),
+				HORIZONTAL_ALIGNMENT_CENTER)
+		var name_lbl := UiHelpers.mk_label(panel, "", 26, Color(1, 1, 1),
+				Vector2(110, (ROW_H - 32) / 2.0), Vector2(370, 32),
+				HORIZONTAL_ALIGNMENT_LEFT)
+		var wl_lbl := UiHelpers.mk_label(panel, "", 26, Color(1, 1, 1),
+				Vector2(480, (ROW_H - 32) / 2.0), Vector2(220, 32),
+				HORIZONTAL_ALIGNMENT_CENTER)
+		var pct_lbl := UiHelpers.mk_label(panel, "", 26, Color(1, 1, 1),
+				Vector2(700, (ROW_H - 32) / 2.0), Vector2(160, 32),
+				HORIZONTAL_ALIGNMENT_CENTER)
+		var po_lbl := UiHelpers.mk_label(panel, "", 26, Color(0.55, 0.95, 0.55),
+				Vector2(860, (ROW_H - 32) / 2.0), Vector2(160, 32),
+				HORIZONTAL_ALIGNMENT_CENTER)
+
+		_row_widgets.append({
+			"panel": panel, "stylebox": sty,
+			"rank": rank_lbl, "name": name_lbl,
+			"wl": wl_lbl, "pct": pct_lbl, "po": po_lbl,
+		})
+
+
+func _build_back_button() -> void:
+	var w: float = 320.0
+	var h: float = 100.0
+	var gap: float = 30.0
+	var total: float = w * 2 + gap
+	var x0: float = (1080.0 - total) / 2.0
+	var y: float = 1740.0
+
+	_back_btn = Button.new()
+	_back_btn.text = "돌아가기"
+	_back_btn.position = Vector2(x0, y)
+	_back_btn.size     = Vector2(w, h)
+	_back_btn.add_theme_font_size_override("font_size", 30)
+	_back_btn.pressed.connect(_on_back_pressed)
+	add_child(_back_btn)
+
+	_next_btn = Button.new()
+	_next_btn.text = "다음 주 →"
+	_next_btn.position = Vector2(x0 + w + gap, y)
+	_next_btn.size     = Vector2(w, h)
+	_next_btn.add_theme_font_size_override("font_size", 30)
+	_next_btn.pressed.connect(_on_next_week_pressed)
+	add_child(_next_btn)
+
+
+# ── Refresh ──────────────────────────────────────────────────────────────────
+func refresh() -> void:
+	if not _built:
+		return
+	if _league == null:
+		_resolve_league()
+	if _league == null:
+		return
+
+	var phase: int = int(_gm.season_state["current_phase"])
+	_phase_lbl.text = "현재 페이즈: %s" % PHASE_NAMES.get(phase, "—")
+
+	var pid: int = int(_gm.season_state["player_team_id"])
+	var nxt = _league.next_unplayed_player_match()
+	if nxt == null:
+		_next_match_lbl.text = "다음 매치 없음"
+	else:
+		var opp: int = int(nxt["team_b"]) if int(nxt["team_a"]) == pid else int(nxt["team_a"])
+		_next_match_lbl.text = "다음 매치: %d주차 vs %s" % [
+			int(nxt["phase_week"]),
+			_league.team_name(opp),
+		]
+	_refresh_buttons()
+
+	var ranked: Array = _league.standings_ranked()
+	var po_count: int = int(_gm.PLAYOFF_TEAMS)
+	for r in 8:
+		var w: Dictionary = _row_widgets[r]
+		var sty: StyleBoxFlat = w["stylebox"]
+		if r >= ranked.size():
+			w["rank"].text = ""
+			w["name"].text = ""
+			w["wl"].text   = ""
+			w["pct"].text  = ""
+			w["po"].text   = ""
+			sty.bg_color = Color(0.07, 0.08, 0.14, 1.0)
+			sty.border_color = Color(0.20, 0.22, 0.30, 1.0)
+			continue
+
+		var row: Dictionary = ranked[r]
+		var tid: int = int(row["team_id"])
+		var wins: int = int(row["wins"])
+		var losses: int = int(row["losses"])
+		var played: int = wins + losses
+		var pct_s: String = "—" if played == 0 else "%.3f" % (float(wins) / float(played))
+		var is_player: bool = (tid == pid)
+		var made_po: bool = r < po_count
+
+		w["rank"].text = "%d위" % (r + 1)
+		w["name"].text = "%s  (%s)" % [_league.team_name(tid), _league.team_short_name(tid)]
+		w["wl"].text   = "%d승 %d패" % [wins, losses]
+		w["pct"].text  = pct_s
+		w["po"].text   = "PO" if made_po else ""
+
+		# Tint player team's row; promote-zone gets a green-ish bg.
+		if is_player:
+			sty.bg_color     = Color(0.20, 0.32, 0.55, 1.0)
+			sty.border_color = Color(1.0, 0.85, 0.20, 1.0)
+			sty.border_width_left = 3; sty.border_width_right = 3
+			sty.border_width_top  = 3; sty.border_width_bottom = 3
+		elif made_po:
+			sty.bg_color     = Color(0.12, 0.20, 0.16, 1.0)
+			sty.border_color = Color(0.40, 0.65, 0.45, 1.0)
+			sty.border_width_left = 2; sty.border_width_right = 2
+			sty.border_width_top  = 2; sty.border_width_bottom = 2
+		else:
+			sty.bg_color     = Color(0.10, 0.12, 0.18, 1.0)
+			sty.border_color = Color(0.20, 0.22, 0.30, 1.0)
+			sty.border_width_left = 1; sty.border_width_right = 1
+			sty.border_width_top  = 1; sty.border_width_bottom = 1
+
+		w["po"].add_theme_color_override("font_color",
+				Color(0.55, 0.95, 0.55) if made_po else Color(0.4, 0.4, 0.45))
+
+
+# ── Button handlers ─────────────────────────────────────────────────────────
+# Disable "다음 주" while the player still has an unplayed match this week.
+func _refresh_buttons() -> void:
+	if _next_btn == null or _hub == null:
+		return
+	_next_btn.disabled = _hub.has_player_match_this_week()
+
+
+func _on_back_pressed() -> void:
+	if _hub != null:
+		_hub.goto(SeasonHub.Screen.HUB)
+
+
+func _on_next_week_pressed() -> void:
+	if _hub != null and _hub.has_method("on_proceed_to_next_week"):
+		_hub.on_proceed_to_next_week()

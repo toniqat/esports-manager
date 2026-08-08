@@ -1,0 +1,70 @@
+[gd_scene load_steps=8 format=3 uid="uid://b8sf4ksesnhub"]
+
+[ext_resource type="Script" path="res://features/season/SeasonHub.gd" id="1_hub"]
+[ext_resource type="Script" path="res://features/season/calendar/CalendarSystem.gd" id="2_cal"]
+[ext_resource type="Script" path="res://features/season/draft/TeamDraft.gd" id="3_draft"]
+[ext_resource type="Script" path="res://features/season/training/TrainingScheduler.gd" id="4_train"]
+[ext_resource type="Script" path="res://features/season/league/LeagueManager.gd" id="5_league"]
+[ext_resource type="Script" path="res://features/season/tournament/TournamentManager.gd" id="6_tour"]
+[ext_resource type="Script" path="res://features/season/tournament/InternationalTournament.gd" id="7_intl"]
+
+[node name="SeasonHub" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_hub")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.07, 0.08, 0.14, 1)
+
+[node name="Placeholder" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -40.0
+offset_right = 200.0
+offset_bottom = 40.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Season Hub (Phase 1 placeholder)
+UI screens land in Phase 2+"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CalendarSystem" type="Node" parent="."]
+script = ExtResource("2_cal")
+
+[node name="TeamDraft" type="Control" parent="."]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("3_draft")
+
+[node name="TrainingScheduler" type="Node" parent="."]
+script = ExtResource("4_train")
+
+[node name="LeagueManager" type="Node" parent="."]
+script = ExtResource("5_league")
+
+[node name="TournamentManager" type="Node" parent="."]
+script = ExtResource("6_tour")
+
+[node name="InternationalTournament" type="Node" parent="."]
+script = ExtResource("7_intl")

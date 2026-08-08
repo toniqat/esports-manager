@@ -1,6 +1,11 @@
 class_name PilotData
 extends RefCounted
 
+# Source pilot id from the players.csv pool (0..39), or 100..119 for INTL
+# pilots. -1 when the battle was launched standalone (no match_ctx) — in that
+# case the renderer falls back to a placeholder circle. Currently consumed by
+# BattleRenderer to look up the pilot's circle portrait.
+var pilot_id: int = -1
 var role: int
 var hp: int
 var max_hp: int
@@ -9,15 +14,36 @@ var team: int
 var grid_pos: Vector2i
 var alive: bool           = true
 var respawn_timer: int    = 0
-var heal_amount: int      = 0
 var lane: int             = GameEnums.LanePosition.GUERRILLA
 var is_guerrilla: bool    = false
-var recall_state: int     = GameEnums.RecallState.NONE
-var channel_timer: int    = 0
-var recall_safe_pos: Vector2i = Vector2i(-1, -1)
 var waypoint_idx: int     = 0
-var move_range: int       = 1                # cells advanced per turn
+var move_range: int       = 1                # cells advanced per minute
 var jungle_start_pref: int = -1              # GameEnums.JungleStartDir or -1 (none)
+# Hit/evasion drive paired combat rolls (PlayerData.mechanics → hit, gamesense → evasion).
+var hit: int              = 50
+var evasion: int          = 50
+# 존재감 — 전투 개시(engage)에서만 참조. 근접 메크 4, 원거리 메크 2.
+# 공격 순서(높을수록 먼저)와 피격 가중치(높을수록 자주 표적이 됨).
+var presence: int         = 4
+# 보호막. Granted by the 보호 card; removed on 본진 복귀 (RecallSystem clears it).
+# Damage absorption isn't wired into SimulationCore yet — this field is the
+# data hook for future integration so card effects can build up the value now.
+var shield: int           = 0
+
+# ─── Animation state (UI-only; SimulationCore does NOT read these) ────────────
+# Move tween: cell-to-cell pixel interpolation from anim_prev_grid_pos to grid_pos.
+var anim_prev_grid_pos: Vector2i = Vector2i.ZERO
+var anim_move_t: float    = 0.0
+var anim_move_dur: float  = 0.0
+# Damage shake: short horizontal jitter.
+var anim_shake_t: float   = 0.0
+var anim_shake_dur: float = 0.0
+# Recall sequence: 0 = none, 1 = fade-out + rise at anim_recall_orig,
+# 2 = fade-in + descend at grid_pos (HQ). Respawn skips straight to phase 2.
+var anim_recall_phase: int   = 0
+var anim_recall_t: float     = 0.0
+var anim_recall_dur: float   = 0.0
+var anim_recall_orig: Vector2i = Vector2i.ZERO
 
 func _init(p_role: int, p_team: int, p_pos: Vector2i, stats: Dictionary) -> void:
 	role     = p_role
@@ -26,7 +52,11 @@ func _init(p_role: int, p_team: int, p_pos: Vector2i, stats: Dictionary) -> void
 	hp       = stats["hp"]
 	max_hp   = stats["hp"]
 	atk      = stats["atk"]
-	if stats.has("heal"):
-		heal_amount = stats["heal"]
 	if stats.has("move_range"):
 		move_range = max(1, int(stats["move_range"]))
+	if stats.has("hit"):
+		hit = int(stats["hit"])
+	if stats.has("evasion"):
+		evasion = int(stats["evasion"])
+	if stats.has("presence"):
+		presence = int(stats["presence"])

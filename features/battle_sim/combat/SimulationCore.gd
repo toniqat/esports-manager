@@ -32,6 +32,8 @@ func simulate_turn() -> void:
 	if _bs.game_over or _bs.game_phase != GameEnums.BattlePhase.BATTLE:
 		return
 	_bs.turn_count += 1
+	_bs.blog.begin_turn()
+	_bs.blog.stage("1-respawn")
 	process_respawns()
 
 	# Apply pending ATK buffs from card plays this turn (kept from old design).
@@ -49,16 +51,18 @@ func simulate_turn() -> void:
 
 	var log_lines: Array = []
 	# 1. Recall (instant teleport) for any pilot under HP threshold.
+	_bs.blog.stage("2-recall")
 	_bs.recall_sys.process_recalls(log_lines)
 
-	# 2. Per-cell engagement resolution. Engaged pilots fight; non-engaged are
-	#    free to move in step 3.
+	# 2. Per-cell engagement resolution. Engaged pilots fight; the sets it fills
+	#    feed the single movement pass in step 4.
 	var damage_map: Dictionary = {}    # PilotData → int
 	var turret_dmg: Dictionary = {}    # TurretData → int
 	var advance_set: Dictionary = {}   # PilotData → true
 	var retreat_set: Dictionary = {}   # PilotData → true
 	var engaged: Dictionary = {}       # PilotData → true (cannot move this turn)
 
+	_bs.blog.stage("3-engage")
 	var by_cell: Dictionary = _group_pilots_by_cell()
 	for pos in by_cell.keys():
 		var bucket: Dictionary = by_cell[pos] as Dictionary
@@ -66,30 +70,35 @@ func simulate_turn() -> void:
 		var t1: Array = (bucket.get("t1", []) as Array).duplicate()
 		_resolve_cell(pos as Vector2i, t0, t1,
 				damage_map, turret_dmg, advance_set, retreat_set, engaged, log_lines)
+	_bs.blog.log_event("SETS", "engaged=%s advance=%s retreat=%s" % [
+			_labels(engaged.keys()), _labels(advance_set.keys()),
+			_labels(retreat_set.keys())])
 
-	# 3. Movement for non-engaged, alive pilots. Pilots in the middle of an
-	#    advance/retreat from combat will move via step 5 below instead.
-	for raw in _bs.pilots:
-		var p := raw as PilotData
-		if not p.alive: continue
-		if engaged.has(p): continue
-		if advance_set.has(p) or retreat_set.has(p): continue
-		_move_pilot(p)
-
-	# 4. Apply combat damage (pilots first, then turrets).
+	# 3. Apply combat damage (pilots first, then turrets) — BEFORE any movement.
+	# The damage/push sets were all computed from the pre-movement positions, so
+	# resolving their consequences first means the single movement pass below
+	# sees one consistent world: pilots killed this turn never move, and a
+	# turret destroyed this turn is already gone for everyone's pathfinding.
 	# 보호막 sits on top of HP — battlefield hits bleed it down before HP, same
 	# rule the 공격 card uses. 본진 복귀 (RecallSystem) zeroes the shield.
+	_bs.blog.stage("4-damage")
 	for k in damage_map.keys():
 		var p := k as PilotData
 		var dmg: int = damage_map[k]
+		var shield_before: int = p.shield
 		if dmg > 0 and p.shield > 0:
 			var absorbed: int = min(p.shield, dmg)
 			p.shield -= absorbed
 			dmg -= absorbed
 		p.hp -= dmg
+		_bs.blog.log_event("DMG", "%-4s -%d (shield %d→%d) hp→%d @%s" % [
+				_bs.pilot_label(p), int(damage_map[k]), shield_before, p.shield,
+				maxi(p.hp, 0), str(p.grid_pos)])
 		if p.hp <= 0:
 			p.hp = 0; p.alive = false; p.respawn_timer = _bs.RESPAWN_TURNS
 			log_lines.append("%s died" % _bs.pilot_label(p))
+			_bs.blog.log_event("DEATH", "%-4s died @%s (respawn in %d)" % [
+					_bs.pilot_label(p), str(p.grid_pos), p.respawn_timer])
 		elif damage_map[k] > 0:
 			_bs.anim_pilot_shake(p)
 
@@ -97,9 +106,14 @@ func simulate_turn() -> void:
 		var td := k as TurretData
 		var was_alive := td.alive
 		td.hp -= turret_dmg[k]
+		_bs.blog.log_event("TURRET", "T%d[%s] team%d -%d hp→%d @%s" % [
+				td.tier, _bs.LANE_NAMES[td.lane], td.team, int(turret_dmg[k]),
+				maxi(td.hp, 0), str(td.grid_pos)])
 		if td.hp <= 0:
 			td.hp = 0; td.alive = false
 			log_lines.append("T%d %s turret destroyed!" % [td.tier, _bs.LANE_NAMES[td.lane]])
+			_bs.blog.log_event("TURRET", "T%d[%s] team%d DESTROYED @%s" % [
+					td.tier, _bs.LANE_NAMES[td.lane], td.team, str(td.grid_pos)])
 			if was_alive:
 				var b: Building = _bs.building_registry.get_at(td.grid_pos)
 				if b != null:
@@ -108,15 +122,13 @@ func simulate_turn() -> void:
 			if was_alive and td.tier == 1:
 				_on_t1_destroyed(td, log_lines)
 
-	# 5. Resolve push movements (advance / retreat). Skip dead pilots.
-	for k in advance_set.keys():
-		var p := k as PilotData
-		if p.alive: _push_advance(p)
-	for k in retreat_set.keys():
-		var p := k as PilotData
-		if p.alive: _push_retreat(p)
+	# 4. ONE movement pass for everybody — free movers and combat pushes alike.
+	# See `resolve_movement` for why they cannot be two separate passes.
+	_bs.blog.stage("5-move")
+	resolve_movement(advance_set, retreat_set, engaged)
 
-	# 6. HQ damage: any pilot sitting on enemy HQ once any T2 is down.
+	# 5. HQ damage: any pilot sitting on enemy HQ once any T2 is down.
+	_bs.blog.stage("6-hq")
 	var hq_damage_p := 0
 	var hq_damage_e := 0
 	for raw in _bs.pilots:
@@ -128,6 +140,8 @@ func simulate_turn() -> void:
 			if p.team == 0: hq_damage_e += p.atk
 			else:           hq_damage_p += p.atk
 			log_lines.append("%s→HQ:%d" % [_bs.pilot_label(p), p.atk])
+			_bs.blog.log_event("HQ", "%-4s hits team%d HQ for %d" % [
+					_bs.pilot_label(p), defending_team, p.atk])
 	_bs.enemy_hq_hp  = max(0, _bs.enemy_hq_hp  - hq_damage_e)
 	_bs.player_hq_hp = max(0, _bs.player_hq_hp - hq_damage_p)
 
@@ -139,12 +153,25 @@ func simulate_turn() -> void:
 	_bs.pending_atk_buff_p  = 0
 	_bs.pending_atk_buff_ai = 0
 
+	_bs.blog.stage("7-zones")
 	process_neutral_zone_captures()
 	process_temp_zone_expiries()
 	if not log_lines.is_empty(): _bs.last_log = log_lines[0]
 	check_win_condition()
+	_bs.blog.end_turn()
 	_bs.renderer.queue_redraw()
 	_bs.hud.update_hud()
+
+
+# Compact "T0 F1 A0" style list of pilot labels — used for the per-turn
+# engaged / advance / retreat set dump.
+func _labels(pilot_list: Array) -> String:
+	if pilot_list.is_empty():
+		return "-"
+	var parts: Array = []
+	for raw in pilot_list:
+		parts.append(_bs.pilot_label(raw as PilotData))
+	return ",".join(parts)
 
 
 # ─── Engagement helpers ───────────────────────────────────────────────────────
@@ -185,6 +212,12 @@ func _resolve_cell(pos: Vector2i, t0: Array, t1: Array,
 
 	var enemy_turret_for_t0: TurretData = _enemy_turret_at(pos, 0)
 	var enemy_turret_for_t1: TurretData = _enemy_turret_at(pos, 1)
+	if not (t0.is_empty() or t1.is_empty()):
+		_bs.blog.log_event("CELL", "%s  t0[lane=%s jung=%s] vs t1[lane=%s jung=%s] turret=%s" % [
+				str(pos), _labels(t0_lane), _labels(t0_jung),
+				_labels(t1_lane), _labels(t1_jung),
+				"none" if (enemy_turret_for_t0 == null and enemy_turret_for_t1 == null)
+					else "yes"])
 
 	# Case A: team-0 lane attackers on team-1 turret cell.
 	if enemy_turret_for_t0 != null:
@@ -266,6 +299,10 @@ func _resolve_pilot_combat(t0: Array, t1: Array,
 			t0_uni_wins += 1
 		elif hit_b and not hit_a:
 			t1_uni_wins += 1
+	_bs.blog.log_event("FIGHT", "pairs=%d  uni-wins t0=%d t1=%d  →%s" % [
+			pairs, t0_uni_wins, t1_uni_wins,
+			"t0 sweeps" if t0_uni_wins > t1_uni_wins
+				else ("t1 sweeps" if t1_uni_wins > t0_uni_wins else "no push")])
 	if t0_uni_wins > t1_uni_wins:
 		for raw in t0: advance_set[raw as PilotData] = true
 		for raw in t1: retreat_set[raw as PilotData] = true
@@ -336,29 +373,331 @@ func _enemy_turret_at(pos: Vector2i, friendly_team: int) -> TurretData:
 	return null
 
 
-# ─── Movement (non-engaged & push) ───────────────────────────────────────────
+# ─── Movement — one simultaneous pass for free moves AND combat pushes ───────
+#
+# Free movement and push movement used to be two separate passes with the damage
+# application wedged between them, and neither looked at where it was sending a
+# pilot. That let two same-lane enemies trade cells inside one turn: a pilot that
+# was not engaged walked into an enemy's cell, and that enemy — queued to advance
+# from a fight it had just won — pushed out into the cell just vacated. Both
+# moves were individually legal, so nothing caught it, and the pair passed
+# through each other without ever engaging.
+#
+# The fix is structural: there is exactly one movement pass, and inside it every
+# pilot's intent is visible at once.
+#
+#  • Every alive pilot gets one intent — `push-adv` / `push-ret` if combat
+#    decided one, nothing at all if it is locked in melee, otherwise `free`.
+#  • The pass runs in **lockstep rounds**: in each round every still-moving
+#    pilot names its next cell against the *same* snapshot, conflicts are
+#    resolved, and the survivors commit together. A pilot with `move_range` > 1
+#    simply takes part in more rounds; a push takes part in exactly one.
+#  • Because every step inside a round is decided before any of them lands, no
+#    pilot can ever walk into space another pilot is about to leave.
+#
+# Two conflicts have to be arbitrated inside a round:
+#
+#  • **Push follow-through** — the winner of a fight advances toward the enemy
+#    HQ and the loser retreats toward its own, which is the same direction, so
+#    both used to land on one cell again and nothing was ever pushed. The
+#    advance gives way: the loser is expelled, the winner keeps the cell. See
+#    `_veto_push_followthrough`.
+#  • **Head-on exchange** — A aiming at B's cell while B aims at A's. Vetoing
+#    both would leave them adjacent and deadlocked forever, so the
+#    higher-priority mover takes the step and the other holds — they finish in
+#    the same cell and fight next turn, which is the outcome the engagement
+#    rules want. Priority is push over free (a combat result outranks a stroll),
+#    then team 0 over team 1 as a deterministic tie-break.
 
-func _move_pilot(p: PilotData) -> void:
-	var orig := p.grid_pos
-	var steps: int = maxi(1, p.move_range)
-	for _i in steps:
-		# Stop further stepping once an *engaging* enemy occupies our current
-		# cell — combat resolves next turn via same-cell engagement. Junglers
-		# and lane pilots ignore each other (they never engage), so a jungler
-		# crossing through a lane cell will not freeze on a lane enemy.
-		if _has_engaging_enemy_at(p.grid_pos, p):
+const MOVE_KIND_FREE    := "free"
+const MOVE_KIND_ADVANCE := "push-adv"
+const MOVE_KIND_RETREAT := "push-ret"
+## Safety cap on lockstep rounds; `move_range` is 1–2 in practice.
+const MAX_MOVE_ROUNDS   := 8
+
+
+## Resolves this turn's movement for every alive pilot in one pass.
+## `advance_set` / `retreat_set` / `engaged` come from `_resolve_cell`.
+func resolve_movement(advance_set: Dictionary, retreat_set: Dictionary,
+		engaged: Dictionary) -> void:
+	var movers: Array = []
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		if not p.alive:
+			continue
+		var kind: String = MOVE_KIND_FREE
+		if advance_set.has(p):
+			kind = MOVE_KIND_ADVANCE
+		elif retreat_set.has(p):
+			kind = MOVE_KIND_RETREAT
+		elif engaged.has(p):
+			continue   # locked in melee with no push result — stays put
+		movers.append({
+			"pilot":      p,
+			"kind":       kind,
+			"orig":       p.grid_pos,
+			"steps_left": maxi(1, p.move_range) if kind == MOVE_KIND_FREE else 1,
+			"active":     true,
+			"moved":      false,
+		})
+	for _round in MAX_MOVE_ROUNDS:
+		if not _run_movement_round(movers):
 			break
-		# Lane pilots cannot move past an alive enemy turret cell — they must
-		# destroy it first. Junglers don't interact with turrets so they pass
-		# freely.
-		if not p.is_guerrilla and _enemy_turret_at(p.grid_pos, p.team) != null:
+	for raw_m in movers:
+		var m: Dictionary = raw_m
+		if bool(m["moved"]):
+			_bs.anim_pilot_move(m["pilot"] as PilotData, m["orig"] as Vector2i)
+
+
+# One lockstep round: collect intents, arbitrate head-on exchanges, commit.
+# Returns false once nothing is left to do so the caller can stop early.
+func _run_movement_round(movers: Array) -> bool:
+	# 1. Every still-active mover names its next cell, all against the same
+	#    board state — nothing has moved yet this round.
+	var wants: Array = []
+	for raw_m in movers:
+		var m: Dictionary = raw_m
+		if not bool(m["active"]) or int(m["steps_left"]) <= 0:
+			continue
+		var p := m["pilot"] as PilotData
+		var dest: Vector2i = p.grid_pos
+		match m["kind"]:
+			MOVE_KIND_ADVANCE: dest = _desired_push_advance_cell(p)
+			MOVE_KIND_RETREAT: dest = _desired_push_retreat_cell(p)
+			_:                 dest = _desired_free_cell(p)
+		if dest == p.grid_pos:
+			m["active"] = false
+			continue
+		wants.append({"m": m, "dest": dest, "ok": true})
+	if wants.is_empty():
+		return false
+
+	_veto_push_followthrough(wants)
+	_veto_head_on_exchanges(wants)
+
+	# 2. Commit the survivors together.
+	var committed: Array = []
+	for raw_w in wants:
+		var w: Dictionary = raw_w
+		if not bool(w["ok"]):
+			continue
+		var m2: Dictionary = w["m"]
+		var p2 := m2["pilot"] as PilotData
+		committed.append({"p": p2, "prev": p2.grid_pos, "kind": m2["kind"]})
+		p2.grid_pos = w["dest"] as Vector2i
+		m2["steps_left"] = int(m2["steps_left"]) - 1
+		m2["moved"] = true
+		if m2["kind"] == MOVE_KIND_RETREAT:
+			_rollback_waypoint(p2)
+	# Logged only after every commit lands, so "enemies on dest" reflects the
+	# settled board rather than a half-applied round.
+	for raw_c in committed:
+		var c: Dictionary = raw_c
+		var cp := c["p"] as PilotData
+		_bs.blog.log_move(cp, c["prev"] as Vector2i, cp.grid_pos,
+				c["kind"] as String,
+				"enemies on dest: %s" % _enemies_on_cell_str(cp))
+
+	# 3. Contact ends a pilot's turn: sharing a cell with a same-scope enemy
+	#    means combat, which resolves next turn, so no further steps.
+	for raw_m2 in movers:
+		var m3: Dictionary = raw_m2
+		if not bool(m3["active"]):
+			continue
+		var p3 := m3["pilot"] as PilotData
+		if _has_engaging_enemy_at(p3.grid_pos, p3):
+			m3["active"] = false
+	return not committed.is_empty()
+
+
+# Push follow-through veto — a push has to expel the loser, not escort it.
+#
+# `_desired_push_advance_cell` walks toward the enemy HQ and
+# `_desired_push_retreat_cell` walks toward the retreater's own HQ — and for the
+# two sides of one fight those are the *same* direction. So both sides of a push
+# used to step onto the same cell, land together again, and re-engage there next
+# turn, forever: the tank pair in a logged battle rode from (-4,-2) all the way
+# to the enemy HQ locked in the same cell for twenty turns, with `push-adv` and
+# `push-ret` naming an identical destination every time.
+#
+# When an advancer and a same-cell, same-scope enemy retreater name the same
+# destination, the **advance** is the one that gives way: the loser is thrown out
+# of the contested cell and the winner keeps the ground it just won. Whole teams
+# resolve correctly — every advancer out of that cell is vetoed, so a 2v1 sweep
+# also holds as a unit.
+func _veto_push_followthrough(wants: Array) -> void:
+	for raw_wa in wants:
+		var wa: Dictionary = raw_wa
+		if not bool(wa["ok"]):
+			continue
+		var ma: Dictionary = wa["m"]
+		if ma["kind"] != MOVE_KIND_ADVANCE:
+			continue
+		var a := ma["pilot"] as PilotData
+		for raw_wb in wants:
+			var wb: Dictionary = raw_wb
+			if not bool(wb["ok"]):
+				continue
+			var mb: Dictionary = wb["m"]
+			if mb["kind"] != MOVE_KIND_RETREAT:
+				continue
+			var b := mb["pilot"] as PilotData
+			if a.team == b.team or a.is_guerrilla != b.is_guerrilla:
+				continue
+			# Only the pair that came out of one contested cell — an advancer
+			# that merely happens to share a destination with some unrelated
+			# retreater elsewhere is not a follow-through.
+			if b.grid_pos != a.grid_pos:
+				continue
+			# Both sides parenthesised: `x as Vector2i != y as Vector2i` parses
+			# the second cast into the comparison and blows up at runtime.
+			var adv_dest: Vector2i = wa["dest"]
+			var ret_dest: Vector2i = wb["dest"]
+			if adv_dest != ret_dest:
+				continue
+			wa["ok"] = false
+			ma["active"] = false
+			_bs.blog.log_block(a, "push-advance held — %s retreats onto %s, %s keeps the cell"
+					% [_bs.pilot_label(b), str(ret_dest), _bs.pilot_label(a)])
 			break
-		var prev := p.grid_pos
-		_step_pilot_once(p)
-		if p.grid_pos == prev:
+
+
+# Head-on exchange arbitration — see the block comment above `resolve_movement`.
+# Mutates `wants` in place: the losing entry's "ok" flag is cleared and its
+# mover is deactivated so it holds for the rest of the turn.
+func _veto_head_on_exchanges(wants: Array) -> void:
+	for i in range(wants.size()):
+		var wa: Dictionary = wants[i]
+		if not bool(wa["ok"]):
+			continue
+		var a := (wa["m"] as Dictionary)["pilot"] as PilotData
+		for j in range(i + 1, wants.size()):
+			var wb: Dictionary = wants[j]
+			if not bool(wb["ok"]):
+				continue
+			var b := (wb["m"] as Dictionary)["pilot"] as PilotData
+			if a.team == b.team:
+				continue
+			# Junglers and lane pilots never engage, so they are allowed to
+			# slide past each other — that is not a pass-through bug.
+			if a.is_guerrilla != b.is_guerrilla:
+				continue
+			if wa["dest"] as Vector2i != b.grid_pos:
+				continue
+			if wb["dest"] as Vector2i != a.grid_pos:
+				continue
+			var loser_idx: int = j
+			if _move_priority(wa) < _move_priority(wb):
+				loser_idx = i
+			var winner_idx: int = i if loser_idx == j else j
+			var wl: Dictionary = wants[loser_idx]
+			var ml: Dictionary = wl["m"]
+			wl["ok"] = false
+			ml["active"] = false
+			var lp := ml["pilot"] as PilotData
+			var wp := ((wants[winner_idx] as Dictionary)["m"]
+					as Dictionary)["pilot"] as PilotData
+			_bs.blog.log_block(lp, "head-on exchange with %s — %s takes %s, %s holds"
+					% [_bs.pilot_label(wp), _bs.pilot_label(wp),
+						str((wants[winner_idx] as Dictionary)["dest"]),
+						_bs.pilot_label(lp)])
+			if loser_idx == i:
+				break   # `a` is out of the running; stop pairing it
+
+
+# Higher wins a head-on exchange. A combat push (+10) outranks a free move so
+# the side that just won a fight keeps its advance; team 0 (+1) breaks the
+# remaining tie, matching the old sequential order where team-0 pilots moved
+# first.
+func _move_priority(w: Dictionary) -> int:
+	var m: Dictionary = w["m"]
+	var pri: int = 0
+	if m["kind"] != MOVE_KIND_FREE:
+		pri += 10
+	if (m["pilot"] as PilotData).team == 0:
+		pri += 1
+	return pri
+
+
+# ─── Desired-destination helpers (pure: never mutate grid_pos) ───────────────
+# Each returns the pilot's own cell when it must hold, so callers can treat
+# "no move" and "blocked" identically.
+
+func _desired_free_cell(p: PilotData) -> Vector2i:
+	# Already sharing a cell with a same-scope enemy → hold and fight next turn.
+	# Junglers and lane pilots ignore each other, so a jungler crossing a lane
+	# cell does not freeze on a lane enemy.
+	if _has_engaging_enemy_at(p.grid_pos, p):
+		_bs.blog.log_block(p, "engaging enemy on current cell")
+		return p.grid_pos
+	# Lane pilots cannot move past an alive enemy turret cell — they must
+	# destroy it first. Junglers don't interact with turrets so they pass freely.
+	if not p.is_guerrilla and _enemy_turret_at(p.grid_pos, p.team) != null:
+		_bs.blog.log_block(p, "standing on alive enemy turret")
+		return p.grid_pos
+	return _next_step_for(p)
+
+
+func _desired_push_advance_cell(p: PilotData) -> Vector2i:
+	var fbd: Dictionary = _movement_forbidden_for(p)
+	if p.is_guerrilla:
+		var jg_goal := _jungle_goal_for(p)
+		if jg_goal == Vector2i(-1, -1):
+			return p.grid_pos
+		return _bs.pathfinder.bfs_next_step(p.grid_pos, jg_goal, fbd)
+	# Lane pilots cannot push past an alive enemy turret cell.
+	if _enemy_turret_at(p.grid_pos, p.team) != null:
+		_bs.blog.log_block(p, "push-advance denied — alive enemy turret here")
+		return p.grid_pos
+	return _bs.pathfinder.bfs_next_step(p.grid_pos, current_waypoint(p), fbd)
+
+
+func _desired_push_retreat_cell(p: PilotData) -> Vector2i:
+	var fbd: Dictionary = _movement_forbidden_for(p)
+	if p.is_guerrilla:
+		# Retreat toward nearest own-captured jungle cell.
+		var dest := Vector2i(-1, -1)
+		var best_d := 999999
+		for c in _own_captured_jungle_cells(p.team):
+			if c == p.grid_pos: continue
+			var d: int = _bs.hex_grid.hex_distance(p.grid_pos, c as Vector2i)
+			if d < best_d:
+				best_d = d; dest = c
+		if dest == Vector2i(-1, -1):
+			dest = _bs.PLAYER_HQ_POS if p.team == 0 else _bs.ENEMY_HQ_POS
+		return _bs.pathfinder.bfs_next_step(p.grid_pos, dest, fbd)
+	# Lane pilots retreat one step along their lane toward own HQ.
+	var home := _bs.PLAYER_HQ_POS if p.team == 0 else _bs.ENEMY_HQ_POS
+	return _bs.pathfinder.bfs_next_step(p.grid_pos, home, fbd)
+
+
+# After a retreat step, walk `waypoint_idx` back if the pilot fell behind an
+# earlier waypoint on its lane path.
+func _rollback_waypoint(p: PilotData) -> void:
+	if p.is_guerrilla:
+		return
+	var path: Array = _bs.LANE_PATHS_TEAM0[p.lane] if p.team == 0 \
+			else _bs.LANE_PATHS_TEAM1[p.lane]
+	while p.waypoint_idx > 0:
+		var wp := path[p.waypoint_idx] as Vector2i
+		if _bs.hex_grid.hex_distance(p.grid_pos, wp) > _bs.hex_grid.hex_distance(
+				p.grid_pos, path[p.waypoint_idx - 1] as Vector2i):
+			p.waypoint_idx -= 1
+		else:
 			break
-	if p.grid_pos != orig:
-		_bs.anim_pilot_move(p, orig)
+
+
+# Debug helper: which enemies are standing on `p`'s current cell right now, and
+# whether they share `p`'s engagement scope. "-" when the cell is clear.
+func _enemies_on_cell_str(p: PilotData) -> String:
+	var parts: Array = []
+	for raw in _bs.pilots:
+		var o := raw as PilotData
+		if not o.alive or o.team == p.team or o.grid_pos != p.grid_pos:
+			continue
+		parts.append("%s%s" % [_bs.pilot_label(o),
+				"" if o.is_guerrilla == p.is_guerrilla else "(x-scope)"])
+	return "-" if parts.is_empty() else ",".join(parts)
 
 
 # True only if the cell contains an enemy that would actually engage `p`.
@@ -374,12 +713,14 @@ func _has_engaging_enemy_at(cell: Vector2i, p: PilotData) -> bool:
 	return false
 
 
-func _step_pilot_once(p: PilotData) -> void:
+# Raw lane/jungle pathfinding step, ignoring occupancy. `_desired_free_cell`
+# wraps it with the contact / turret hold rules.
+func _next_step_for(p: PilotData) -> Vector2i:
 	var goal: Vector2i
 	if p.is_guerrilla:
 		goal = _jungle_goal_for(p)
 		if goal == Vector2i(-1, -1):
-			return
+			return p.grid_pos
 	elif p.role == GameEnums.Role.SUPPORT and _supporter_should_fall_back(p):
 		# Same-lane sniper is dead or has recalled to HQ → hug own forward turret.
 		var hug: Vector2i = _own_forward_turret_cell(p)
@@ -387,9 +728,7 @@ func _step_pilot_once(p: PilotData) -> void:
 	else:
 		goal = current_waypoint(p)
 	var fbd: Dictionary = _movement_forbidden_for(p)
-	var next: Vector2i = _bs.pathfinder.bfs_next_step(p.grid_pos, goal, fbd)
-	if next != p.grid_pos:
-		p.grid_pos = next
+	return _bs.pathfinder.bfs_next_step(p.grid_pos, goal, fbd)
 
 
 # Goal selection for jungler: nearest uncaptured neutral, else a random
@@ -412,65 +751,6 @@ func _jungle_goal_for(p: PilotData) -> Vector2i:
 	return best
 
 
-func _push_advance(p: PilotData) -> void:
-	var orig := p.grid_pos
-	var fbd: Dictionary = _movement_forbidden_for(p)
-	if p.is_guerrilla:
-		var jg_goal := _jungle_goal_for(p)
-		if jg_goal == Vector2i(-1, -1): return
-		var jg_next: Vector2i = _bs.pathfinder.bfs_next_step(p.grid_pos, jg_goal, fbd)
-		if jg_next != p.grid_pos: p.grid_pos = jg_next
-		if p.grid_pos != orig:
-			_bs.anim_pilot_move(p, orig)
-		return
-	# Lane pilots cannot push past an alive enemy turret cell.
-	if _enemy_turret_at(p.grid_pos, p.team) != null:
-		return
-	var goal := current_waypoint(p)
-	var next: Vector2i = _bs.pathfinder.bfs_next_step(p.grid_pos, goal, fbd)
-	if next != p.grid_pos:
-		p.grid_pos = next
-	if p.grid_pos != orig:
-		_bs.anim_pilot_move(p, orig)
-
-
-func _push_retreat(p: PilotData) -> void:
-	var orig := p.grid_pos
-	var fbd: Dictionary = _movement_forbidden_for(p)
-	if p.is_guerrilla:
-		# Retreat toward nearest own-captured jungle cell.
-		var captured := _own_captured_jungle_cells(p.team)
-		var dest := Vector2i(-1, -1)
-		var best_d := 999999
-		for c in captured:
-			if c == p.grid_pos: continue
-			var d: int = _bs.hex_grid.hex_distance(p.grid_pos, c as Vector2i)
-			if d < best_d:
-				best_d = d; dest = c
-		if dest == Vector2i(-1, -1):
-			dest = _bs.PLAYER_HQ_POS if p.team == 0 else _bs.ENEMY_HQ_POS
-		var jg_nxt: Vector2i = _bs.pathfinder.bfs_next_step(p.grid_pos, dest, fbd)
-		if jg_nxt != p.grid_pos: p.grid_pos = jg_nxt
-		if p.grid_pos != orig:
-			_bs.anim_pilot_move(p, orig)
-		return
-	# Lane pilots retreat one step along their lane toward own HQ.
-	var home := _bs.PLAYER_HQ_POS if p.team == 0 else _bs.ENEMY_HQ_POS
-	var nxt: Vector2i = _bs.pathfinder.bfs_next_step(p.grid_pos, home, fbd)
-	if nxt != p.grid_pos:
-		p.grid_pos = nxt
-	# Roll the waypoint index back if the retreat crossed an earlier waypoint.
-	var path: Array = _bs.LANE_PATHS_TEAM0[p.lane] if p.team == 0 else _bs.LANE_PATHS_TEAM1[p.lane]
-	while p.waypoint_idx > 0:
-		var wp := path[p.waypoint_idx] as Vector2i
-		if _bs.hex_grid.hex_distance(p.grid_pos, wp) > _bs.hex_grid.hex_distance(p.grid_pos, path[p.waypoint_idx - 1] as Vector2i):
-			p.waypoint_idx -= 1
-		else:
-			break
-	if p.grid_pos != orig:
-		_bs.anim_pilot_move(p, orig)
-
-
 # ─── Card-driven single-pilot lane push (전진) ───────────────────────────────
 # Triggered by the 전진 (advance:N) card. Runs `steps` mini-ticks for `caster`
 # only — at each step, resolves combat at the caster's current cell using the
@@ -483,6 +763,9 @@ func _push_retreat(p: PilotData) -> void:
 func advance_pilot(caster: PilotData, steps: int, log_lines: Array) -> void:
 	if caster == null or steps <= 0:
 		return
+	_bs.blog.stage("card-adv")
+	_bs.blog.log_event("CARD", "전진 — %s runs %d mini-ticks from %s"
+			% [_bs.pilot_label(caster), steps, str(caster.grid_pos)])
 	for _i in steps:
 		if not caster.alive:
 			break
@@ -506,9 +789,14 @@ func advance_pilot(caster: PilotData, steps: int, log_lines: Array) -> void:
 				dp.shield -= absorbed
 				dmg -= absorbed
 			dp.hp -= dmg
+			_bs.blog.log_event("DMG", "%-4s -%d hp→%d @%s" % [
+					_bs.pilot_label(dp), int(damage_map[k]), maxi(dp.hp, 0),
+					str(dp.grid_pos)])
 			if dp.hp <= 0:
 				dp.hp = 0; dp.alive = false; dp.respawn_timer = _bs.RESPAWN_TURNS
 				log_lines.append("%s died" % _bs.pilot_label(dp))
+				_bs.blog.log_event("DEATH", "%-4s died @%s"
+						% [_bs.pilot_label(dp), str(dp.grid_pos)])
 			elif damage_map[k] > 0:
 				_bs.anim_pilot_shake(dp)
 		# Apply turret damage; on T1 destruction, fire jungle capture.
@@ -530,16 +818,32 @@ func advance_pilot(caster: PilotData, steps: int, log_lines: Array) -> void:
 			break
 		# Move only the caster — push results from the cell apply to them, but
 		# teammates / opposing pilots in the cell stay put (the card moves one
-		# pilot, not the whole bracket).
+		# pilot, not the whole bracket). Only one pilot moves, so there is no
+		# simultaneity to arbitrate: the same destination helpers the turn's
+		# movement pass uses are enough on their own.
+		var kind: String = ""
 		if advance_set.has(caster):
-			_push_advance(caster)
+			kind = MOVE_KIND_ADVANCE
 		elif retreat_set.has(caster):
-			_push_retreat(caster)
+			kind = MOVE_KIND_RETREAT
 		elif not engaged.has(caster):
-			var orig := caster.grid_pos
-			_step_pilot_once(caster)
-			if caster.grid_pos != orig:
-				_bs.anim_pilot_move(caster, orig)
+			kind = MOVE_KIND_FREE
+		if kind == "":
+			continue
+		var orig := caster.grid_pos
+		var dest: Vector2i = orig
+		match kind:
+			MOVE_KIND_ADVANCE: dest = _desired_push_advance_cell(caster)
+			MOVE_KIND_RETREAT: dest = _desired_push_retreat_cell(caster)
+			_:                 dest = _desired_free_cell(caster)
+		if dest == orig:
+			continue
+		caster.grid_pos = dest
+		if kind == MOVE_KIND_RETREAT:
+			_rollback_waypoint(caster)
+		_bs.blog.log_move(caster, orig, caster.grid_pos, kind,
+				"enemies on dest: %s" % _enemies_on_cell_str(caster))
+		_bs.anim_pilot_move(caster, orig)
 	check_win_condition()
 	_bs.renderer.queue_redraw()
 	_bs.hud.update_hud()
@@ -587,11 +891,13 @@ func process_respawns() -> void:
 		if not p.alive:
 			p.respawn_timer -= 1
 			if p.respawn_timer <= 0:
+				var orig := p.grid_pos
 				p.grid_pos     = _bs.PLAYER_HQ_POS if p.team == 0 else _bs.ENEMY_HQ_POS
 				p.hp           = p.max_hp
 				p.shield       = 0   # 본진 복귀 = 보호막 제거
 				p.alive        = true
 				p.waypoint_idx = 0
+				_bs.blog.log_move(p, orig, p.grid_pos, "respawn")
 				_bs.anim_pilot_respawn(p)
 
 
@@ -659,6 +965,8 @@ func process_neutral_zone_captures() -> void:
 				enemy_present = true; break
 		if enemy_present: continue
 		_set_zone_cell(p.grid_pos, p.team)
+		_bs.blog.log_event("ZONE", "%-4s captured neutral %s"
+				% [_bs.pilot_label(p), str(p.grid_pos)])
 
 
 # Used by RecallSystem to decide if a card-displaced jungler is in enemy territory.
@@ -675,7 +983,7 @@ func _own_captured_jungle_cells(team: int) -> Array:
 #  - Lane pilots are blocked from entering jungle/neutral cells AND alive enemy
 #    turret cells in lanes other than their own. The same-lane enemy turret cell
 #    is intentionally NOT forbidden so a lane pilot can engage their own turret;
-#    the "cannot pass past alive enemy turret" rule in `_move_pilot` then keeps
+#    the "cannot pass past alive enemy turret" rule in `_desired_free_cell` keeps
 #    them stationary on that cell until the turret falls. Off-lane enemy turrets
 #    used to stop lane pilots dead (e.g. right-lane pilots routing toward enemy
 #    HQ would freeze on the still-alive center T2 cell), so we route around them.

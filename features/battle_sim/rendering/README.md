@@ -76,13 +76,19 @@ them each `_draw()`:
 The 5+ overflow circle and the cell badge (`NvN` / `xN`) are drawn at full
 alpha — they're aggregate visuals, not per-pilot.
 
-### Targeting emphasis pulse
-Targeting overlay (`CardTargetingOverlay`)가 visualizing 중일 때, 타겟
-가능한 파일럿 마커는 `_pilot_emphasis_scale(p)`가 반환하는 펄스 배율
+### Targeting dim + emphasis pulse
+**딤은 카드를 드는 순간 올라간다.** 예전에는 모달 대상 지정이 열려야
+(`is_active()`) 사거리 밖 타일이 어두워졌지만, 이제 카드 선택 자체가 대상
+지정이므로 `_draw()` 의 `draw_dim` 조건은 `targeting_overlay.is_visualizing()`
+하나뿐이다. `is_visualizing()` 은 PILOT / LOCATION / PREVIEW 에서만 참이라
+사거리 개념이 없는 INSTANT 카드(드로우 / 전략 점수 등)를 들었을 때는 전장이
+전혀 어두워지지 않는다.
+
+타겟 가능한 파일럿 마커는 `_pilot_emphasis_scale(p)`가 반환하는 펄스 배율
 (`EMPHASIS_SCALE_MIN..MAX`, 기본 1.06..1.14)로 약간 커진다. `_process(delta)`
-가 targeting 활성 동안 `_emphasis_time` 을 누적하고 매 프레임 `queue_redraw()`
+가 visualizing 동안 `_emphasis_time` 을 누적하고 매 프레임 `queue_redraw()`
 를 호출해 sin 펄스가 돌아간다. 강조 대상은 모드별로 다음과 같다:
 - **PILOT**: `valid_pilots` 의 모든 파일럿
-- **PREVIEW** / **SELECTION_PREVIEW**: `preview_participants`
+- **PREVIEW**: `preview_participants`
 - 클릭하여 `pending_pick` 으로 잠긴 파일럿은 시안 링이 별도 강조이므로
   펄스에서 제외된다.

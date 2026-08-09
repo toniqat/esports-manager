@@ -35,11 +35,11 @@ func _draw() -> void:
 	# Out-of-range tile dim is drawn BEFORE HQ/turret/pilot graphics so a
 	# pilot marker that visually overlaps an adjacent out-of-range tile (the
 	# marker is offset above/below its own tile) is not obscured by the dim.
-	# SELECTION_PREVIEW skips the dim — it would obscure the rest of the
-	# battlefield while the player is just inspecting a card in their hand.
+	# The dim now goes up the moment a card is lifted in hand — selecting IS
+	# targeting. is_visualizing() is false for INSTANT cards (no range to show),
+	# so a 드로우 / 전략 점수 card leaves the battlefield untouched.
 	var draw_dim: bool = _bs.targeting_overlay != null \
-			and _bs.targeting_overlay.mode != CardTargetingOverlay.Mode.SELECTION_PREVIEW \
-			and _bs.targeting_overlay.is_active()
+			and _bs.targeting_overlay.is_visualizing()
 	var range_set: Dictionary = {}
 	if draw_dim:
 		range_set = _build_range_set()
@@ -352,9 +352,7 @@ func _draw_targeting_underlays() -> void:
 		return
 	var hg: HexGrid = _bs.hex_grid
 	var range_set: Dictionary = {}
-	if to.mode == CardTargetingOverlay.Mode.PREVIEW \
-			or (to.mode == CardTargetingOverlay.Mode.SELECTION_PREVIEW \
-					and not to.area_cells.is_empty()):
+	if to.mode == CardTargetingOverlay.Mode.PREVIEW:
 		for raw in to.area_cells.keys():
 			range_set[raw as Vector2i] = true
 	elif to.range_caster != null and to.range_radius > 0:
@@ -375,9 +373,7 @@ func _draw_targeting_underlays() -> void:
 		draw_polyline(_close_polygon(pts),
 				Color(1.0, 0.85, 0.30, 0.85), 3.0, true)
 	# LOCATION valid cells — green outline on top of the range fill.
-	if to.mode == CardTargetingOverlay.Mode.LOCATION \
-			or (to.mode == CardTargetingOverlay.Mode.SELECTION_PREVIEW \
-					and not to.valid_cells.is_empty()):
+	if to.mode == CardTargetingOverlay.Mode.LOCATION:
 		for raw in to.valid_cells.keys():
 			var c := raw as Vector2i
 			var ctr := _bs.cell_center(c)
@@ -484,9 +480,9 @@ func _pilot_marker_pos(p: PilotData) -> Vector2:
 
 
 # 타겟 가능한 파일럿(=강조)에는 약간 커지는 펄스 배율을 반환한다. 대상이
-# 아니면 1.0. PILOT 모드는 valid_pilots, PREVIEW/SELECTION_PREVIEW는
-# preview_participants 가 강조 대상이다. Pending pick(이미 선택된 대상)은
-# 별도의 시안 링으로 강조되므로 펄스에서 제외해 시각이 겹치지 않게 한다.
+# 아니면 1.0. PILOT 모드는 valid_pilots, PREVIEW 는 preview_participants 가
+# 강조 대상이다. Pending pick(이미 찍은 대상)은 별도의 시안 링으로 강조되므로
+# 펄스에서 제외해 시각이 겹치지 않게 한다.
 func _pilot_emphasis_scale(p: PilotData) -> float:
 	var to: CardTargetingOverlay = _bs.targeting_overlay
 	if to == null or not to.is_visualizing():
@@ -499,12 +495,6 @@ func _pilot_emphasis_scale(p: PilotData) -> float:
 			emphasized = to.valid_pilots.has(p)
 		CardTargetingOverlay.Mode.PREVIEW:
 			emphasized = p in to.preview_participants
-		CardTargetingOverlay.Mode.SELECTION_PREVIEW:
-			# 선택 미리보기는 PILOT/PREVIEW 양쪽 모두를 흉내내므로 둘 다 본다.
-			if not to.valid_pilots.is_empty():
-				emphasized = to.valid_pilots.has(p)
-			elif not to.preview_participants.is_empty():
-				emphasized = p in to.preview_participants
 	if not emphasized:
 		return 1.0
 	# sin 펄스를 0..1 정규화 후 [MIN, MAX] 사이로 매핑.

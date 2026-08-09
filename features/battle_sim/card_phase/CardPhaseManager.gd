@@ -79,12 +79,6 @@ var _ai_play_in_progress: bool = false
 # can't pre-empt the announcement.
 var _player_turn_announce_in_progress: bool = false
 
-# 전투 개시(PREVIEW) 중 카드/설명 박스를 그대로 유지하기 위해, 카드 파괴와
-# 비용 차감을 확인 시점까지 미룬다. preview 모드 동안 보류 중인 hand Card
-# 노드 참조를 보관해 두었다가 _on_preview_play_confirm 에서 실제로 처리한다.
-var _preview_pending_card: Card = null
-
-
 # ─── Deck setup ───────────────────────────────────────────────────────────────
 # Per-pilot 6-card draw: every pilot pulls 6 random cards from the DB pool and
 # tags them with itself as the 시전자. All 5 pilots' stacks shuffle together
@@ -197,24 +191,58 @@ func do_battle_turn() -> void:
 	_bs.draw_counter += 1
 	if _bs.draw_counter >= _bs.CARD_DRAW_INTERVAL:
 		_bs.draw_counter = 0
-		if _bs.player_hand.size() < _bs.MAX_HAND_SIZE:
-			var drawn := draw_card(true)
-			if drawn != null:
-				spawn_card_node(drawn)
-		if _bs.ai_hand.size() < _bs.MAX_HAND_SIZE:
-			# AI hand visuals (face-down card backs) live in HudBuilder; the
-			# row reflows after the draw so the count peek matches state.
-			draw_card(false)
-			_bs.hud.update_ai_hand_visuals()
+		# These are the "waiting for my turn" draws — the ones that tick by while
+		# 작전 점수 climbs back to PHASE_THRESHOLD. They always draw, even on a
+		# full hand, and the overflow is paid for by discarding the OLDEST cards.
+		# Skipping the draw instead (the old rule) stalled the deck and left the
+		# same dead hand sitting there for the whole wait.
+		var drawn := draw_card(true)
+		if drawn != null:
+			spawn_card_node(drawn)
+		_trim_hand_overflow(true)
+		# AI hand visuals (face-down card backs) live in HudBuilder; the row
+		# reflows after the draw so the count peek matches state.
+		draw_card(false)
+		_trim_hand_overflow(false)
+		_bs.hud.update_ai_hand_visuals()
 	if _bs.player_cost >= _bs.PHASE_THRESHOLD:
 		start_card_phase()
 	else:
+		# Respawn countdowns on the hand cards tick with the battle turn, so the
+		# card faces have to be re-read every tick, not just on phase entry.
+		highlight_affordable_cards()
 		_bs.renderer.queue_redraw()
 		_bs.hud.update_hud()
 
 
+## Discards from the **front** of `hand` (oldest first) until it is back down to
+## MAX_HAND_SIZE, returning how many were dropped.
+##
+## Only the BATTLE-phase auto-draw calls this. Cards drawn by a card effect
+## during 작전 단계 are the player's own turn and are left alone even when they
+## push the hand over the cap — the next auto-draw after the turn ends is what
+## trims the excess.
+func _trim_hand_overflow(is_player: bool) -> int:
+	var hand:    Array = _bs.player_hand    if is_player else _bs.ai_hand
+	var discard: Array = _bs.player_discard if is_player else _bs.ai_discard
+	var dropped: int = 0
+	while hand.size() > _bs.MAX_HAND_SIZE:
+		var oldest := hand.pop_front() as CardData
+		discard.append(oldest)
+		if is_player:
+			_despawn_player_card_node(oldest)
+		dropped += 1
+	if dropped > 0 and is_player:
+		relayout_hand(_bs.player_card_nodes)
+		update_deck_discard_labels()
+	return dropped
+
+
 func start_card_phase() -> void:
 	_bs.game_phase = GameEnums.BattlePhase.CARD_PHASE
+	_bs.blog.stage("card-phase")
+	_bs.blog.log_event("PHASE", "작전 단계 시작 — player %d / ai %d 점"
+			% [_bs.player_cost, _bs.ai_cost])
 	# Snapshot the player's cost on phase entry so the "단계 넘기기" button can
 	# require >= 1 point spent before becoming clickable.
 	_bs.card_phase_entry_cost = _bs.player_cost
@@ -261,8 +289,6 @@ func can_end_card_phase() -> bool:
 		return false
 	if _bs.card_select_overlay != null and _bs.card_select_overlay.is_active():
 		return false
-	if _bs.targeting_overlay != null and _bs.targeting_overlay.is_active():
-		return false
 	if _ai_play_in_progress:
 		return false
 	if _player_turn_announce_in_progress:
@@ -294,11 +320,13 @@ func end_card_phase() -> void:
 	if _bs.ai_cost >= _bs.PHASE_THRESHOLD and _bs.ai_card_player != null:
 		await _bs.ai_card_player.run_ai_plays()
 	# Phase end: re-evaluate recalls (HP threshold + out-of-position from card effects).
+	_bs.blog.stage("phase-end")
 	var log_lines: Array = []
 	_bs.recall_sys.process_phase_end_recalls(log_lines)
 	if not log_lines.is_empty():
 		_bs.last_log = log_lines[-1]
 	_bs.game_phase = GameEnums.BattlePhase.BATTLE
+	_bs.blog.log_event("PHASE", "작전 단계 종료 → BATTLE")
 	_bs.renderer.queue_redraw()
 	_bs.hud.update_hud()
 	_ai_play_in_progress = false
@@ -822,6 +850,9 @@ func highlight_affordable_cards() -> void:
 			continue
 		var eff: int = _bs.effective_cost_for(c.data, true)
 		c.set_affordable(eff <= _bs.player_cost)
+		# 시전자가 쓰러져 있으면 카드도 같이 잠긴다 — 카드 전체가 어두워지고
+		# 부활까지 남은 턴이 한가운데 크게 찍힌다.
+		c.set_respawn_turns(respawn_turns_for(c.data))
 		# Reflect any active cost modifier (사전 준비 / 전투 준비 / 집중 /
 		# 정밀 이동) on the card's top-left cost number — green when reduced
 		# below the printed cost, red when increased, white when matched.
@@ -830,6 +861,45 @@ func highlight_affordable_cards() -> void:
 	# same "is it the player's turn to act?" question — overlay close paths
 	# all funnel through here, so this single call covers them.
 	_apply_hand_dim_state()
+	# A cost change (or a 시전자 dying mid-selection) can flip the lifted card
+	# between playable and not, so the 확인 button re-reads it here too.
+	_refresh_confirm_button()
+
+
+## Turns left until `cd`'s 시전자 respawns, or 0 while they're alive (or the
+## card has no owner). A downed owner always reports at least 1 so the card
+## stays visibly locked even if the timer has already been decremented to 0
+## on the tick the pilot is about to come back.
+func respawn_turns_for(cd: CardData) -> int:
+	if cd == null:
+		return 0
+	var owner: PilotData = cd.owner_pilot
+	if owner == null or owner.alive:
+		return 0
+	return max(1, owner.respawn_timer)
+
+
+## Can the player commit `cd` right now? Cost, 시전자 생존, and target
+## availability all have to hold. Drives the 확인 button's enable state.
+func card_is_playable(cd: CardData) -> bool:
+	if cd == null:
+		return false
+	if respawn_turns_for(cd) > 0:
+		return false
+	if _bs.effective_cost_for(cd, true) > _bs.player_cost:
+		return false
+	return card_has_valid_targets(cd)
+
+
+## Pushes the "is the lifted card playable?" verdict into the targeting
+## overlay, which ANDs it with "has a target been picked yet?" to decide
+## whether 확인 is clickable.
+func _refresh_confirm_button() -> void:
+	if _bs.targeting_overlay == null:
+		return
+	if _selected_card == null or not is_instance_valid(_selected_card):
+		return
+	_bs.targeting_overlay.set_play_allowed(card_is_playable(_selected_card.data))
 
 
 # ─── Click-to-select interaction ──────────────────────────────────────────────
@@ -900,27 +970,25 @@ func on_card_clicked(card: Card) -> void:
 	if not is_instance_valid(card) or not _bs.player_card_nodes.has(card):
 		return
 	if _selected_card == card:
-		# Re-clicking the selected card toggles the selection off — same result
-		# as clicking outside it. 전투 개시 PREVIEW 진행 중에는 overlay 의
-		# 취소 버튼만이 유일한 탈출구이므로 토글을 막는다.
-		if _preview_pending_card != null:
-			return
+		# Re-clicking the selected card toggles the selection off — the same
+		# thing the 취소 button does, and the escape hatch for the targeting
+		# kinds whose battlefield clicks the overlay swallows.
 		deselect_current_card()
 		return
 	_select_card(card)
 
 
-# Player can't pick / hover hand cards while another modal owns the screen
-# (search pick, targeting overlay) or while the AI's async play loop is in
-# flight. Discard mode is the exception — the overlay's whole job is to let
-# the player click hand cards and pick which ones to throw away, so we let
-# input through and rely on the desc-box "버리기" button to route the pick.
+# Player can't pick / hover hand cards while the search-pick modal owns the
+# screen or while the AI's async play loop is in flight. The targeting overlay
+# is deliberately NOT in this list any more: card selection *is* targeting now,
+# so the hand has to stay live for the player to switch to a different card
+# mid-pick. Discard mode is the other exception — the overlay's whole job is to
+# let the player click hand cards and choose which to throw away, so input goes
+# through and the desc-box "버리기" button routes the pick.
 func _is_player_input_blocked() -> bool:
 	if _ai_play_in_progress:
 		return true
 	if _player_turn_announce_in_progress:
-		return true
-	if _bs.targeting_overlay != null and _bs.targeting_overlay.is_active():
 		return true
 	if _bs.card_select_overlay != null and _bs.card_select_overlay.is_active():
 		if _bs.card_select_overlay.is_discard_mode():
@@ -931,13 +999,16 @@ func _is_player_input_blocked() -> bool:
 
 func _unhandled_input(event: InputEvent) -> void:
 	# Outside-click / outside-touch dismisses the active selection. Card,
-	# description box, and button each accept their own events, so anything
+	# description box, and buttons each accept their own events, so anything
 	# reaching this handler is by definition outside all of them.
+	#
+	# PILOT / LOCATION selections never get here: CardTargetingOverlay runs its
+	# _unhandled_input first (it is added to BattleSim after CardPhaseManager,
+	# and unhandled input walks the tree back-to-front) and marks every
+	# battlefield press handled, hit or miss — otherwise a tap 5 px off a pilot
+	# marker would silently throw away the pick. Those kinds exit via 취소, a
+	# re-click on the card, or by selecting a different card.
 	if _selected_card == null:
-		return
-	# 전투 개시 PREVIEW 진행 중에는 외부 클릭으로 카드가 해제되지 않도록 차단.
-	# overlay 의 취소 버튼을 통해서만 빠져나갈 수 있다.
-	if _preview_pending_card != null:
 		return
 	var pressed: bool = false
 	if event is InputEventMouseButton:
@@ -985,11 +1056,15 @@ func _select_card(card: Card) -> void:
 			_bs.BS_HAND_SPRING_DURATION,
 			_bs.BS_HAND_TWEEN_EASE, _bs.BS_HAND_TWEEN_TRANS)
 	_show_description_box(card)
-	# Pre-show the cast range / engage area on the battlefield so the player
-	# can judge the play before pressing 카드 내기. Non-modal — does not
-	# disable hand input or 단계 넘기기.
-	if _bs.targeting_overlay != null:
-		_bs.targeting_overlay.start_selection_preview(card.data)
+	# Selecting a card IS the targeting step: the cast range lights up, out-of-
+	# range tiles dim, and 확인 / 취소 appear bottom-left. Still non-modal — the
+	# hand and 턴 넘기기 stay live. Skipped while a 버리기 overlay owns the hand,
+	# where the desc-box "버리기" button is the only action a card can take.
+	if _bs.targeting_overlay != null and not _in_discard_pick_mode():
+		_bs.targeting_overlay.start_card_selection(card.data,
+				Callable(self, "_on_selection_confirm"),
+				Callable(self, "_on_selection_cancel"))
+		_refresh_confirm_button()
 
 
 # Public so end_card_phase / restart can drop any pending selection.
@@ -1007,9 +1082,45 @@ func deselect_current_card() -> void:
 	# fresh hover, and _reorder_hand_nodes (inside relayout_hand) re-raises it
 	# above its right-hand neighbours.
 	relayout_hand(_bs.player_card_nodes)
-	# Clear the range / area visualization that _select_card kicked off.
+	# Drop the range / area visualization and the 확인 / 취소 row that
+	# _select_card put up. Nothing to refund — no cost was spent yet.
 	if _bs.targeting_overlay != null:
-		_bs.targeting_overlay.clear_selection_preview()
+		_bs.targeting_overlay.clear_selection()
+
+
+## True while a 버리기:N pick overlay owns the hand. In that state a card click
+## opens the description box with a "버리기" button instead of entering the
+## normal targeting/확인 flow.
+func _in_discard_pick_mode() -> bool:
+	return _bs.card_select_overlay != null \
+			and _bs.card_select_overlay.is_discard_mode()
+
+
+# ─── Selection confirm / cancel (from CardTargetingOverlay) ──────────────────
+## 확인 pressed. `picked` is the resolved target — PilotData for PILOT,
+## Vector2i for LOCATION, null for PREVIEW / INSTANT cards. Only now is the
+## cost deducted and the card consumed.
+func _on_selection_confirm(picked: Variant) -> void:
+	if _selected_card == null or not is_instance_valid(_selected_card):
+		return
+	var card := _selected_card
+	# Re-check rather than trusting the button state: a battle tick can't fire
+	# during 작전 단계, but an engage resolved from an earlier card in the same
+	# phase can have killed the 시전자 or drained the points since.
+	if not card_is_playable(card.data):
+		return
+	# Tear down selection state BEFORE handing the node to the play path, which
+	# frees it — the dangling reference must never escape this function.
+	_hide_description_box()
+	_selected_card = null
+	_play_card_direct(card, picked)
+
+
+## 취소 pressed. The card is still in hand and no cost has moved, so this is
+## just a deselect. The overlay has already torn itself down by this point;
+## clear_selection() inside deselect_current_card is a no-op.
+func _on_selection_cancel() -> void:
+	deselect_current_card()
 
 
 # ─── Description box ─────────────────────────────────────────────────────────
@@ -1095,27 +1206,21 @@ func _show_description_box(card: Card) -> void:
 	desc_lbl.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(desc_lbl)
 
-	_play_button = Button.new()
-	_play_button.add_theme_font_size_override("font_size", 22)
-	_play_button.custom_minimum_size = Vector2(0.0, 52.0)
-	# When a 버리기:N overlay is active, every hand card's desc-box surfaces a
-	# "버리기" button instead of 카드 내기. We key off is_discard_mode() (not
-	# can_pick_for_discard) so the button still shows "버리기" while
-	# hidden_state is on — disabled, but consistent with the active mode.
-	if _bs.card_select_overlay != null and _bs.card_select_overlay.is_discard_mode():
+	# The old "카드 내기" button is gone — committing a card is now the 확인
+	# button that CardTargetingOverlay parks at the bottom-left, so the play
+	# action lives in one place whether or not the card needs a target. The
+	# only button this box still owns is the 버리기:N pick action, which has
+	# nothing to do with playing a card. is_discard_mode() (not
+	# can_pick_for_discard) decides whether it appears, so the button stays
+	# visible-but-disabled while the overlay's 숨김 state is on.
+	if _in_discard_pick_mode():
+		_play_button = Button.new()
+		_play_button.add_theme_font_size_override("font_size", 22)
+		_play_button.custom_minimum_size = Vector2(0.0, 52.0)
 		_play_button.text = "버리기"
 		_play_button.disabled = not _bs.card_select_overlay.can_pick_for_discard()
 		_play_button.pressed.connect(_on_discard_selected_pressed)
-	else:
-		_play_button.text = "카드 내기"
-		# Disabled when unaffordable OR when the card needs a target (pilot /
-		# location / engage participants) and none are in range — 결투 with
-		# no enemies in cast_range is the canonical case.
-		var unaffordable: bool = eff_cost > _bs.player_cost
-		var no_targets: bool = not card_has_valid_targets(card.data)
-		_play_button.disabled = unaffordable or no_targets
-		_play_button.pressed.connect(_on_play_selected_pressed)
-	vbox.add_child(_play_button)
+		vbox.add_child(_play_button)
 
 	_bs.canvas.add_child(box)
 	_description_box = box
@@ -1126,78 +1231,6 @@ func _hide_description_box() -> void:
 		_description_box.queue_free()
 	_description_box = null
 	_play_button = null
-
-
-func _on_play_selected_pressed() -> void:
-	if _selected_card == null or not is_instance_valid(_selected_card):
-		return
-	var card := _selected_card
-	if card.data == null or _bs.effective_cost_for(card.data, true) > _bs.player_cost:
-		return
-	# 전투 개시(PREVIEW) 카드는 카드 노드/설명 박스를 그대로 유지한 채 좌/우
-	# 참여 파일럿 패널을 띄운다. 확인 시점까지 비용 차감 / 카드 제거를 미룬다.
-	if _targeting_kind(card.data) == "preview":
-		_start_preview_play(card)
-		return
-	# Tear down selection state BEFORE freeing the card so the dangling
-	# reference never escapes this function.
-	_hide_description_box()
-	_selected_card = null
-	_play_card_direct(card)
-
-
-# PREVIEW 카드 전용: 카드/설명 박스를 살려둔 채 targeting overlay 의 PREVIEW
-# 모드를 띄운다. 확인하면 _on_preview_play_confirm 이 비용 차감과 카드 파괴를
-# 거쳐 본래 _play_card_direct 의 chain 단계로 합류한다.
-func _start_preview_play(card: Card) -> void:
-	var cd := card.data
-	var caster: PilotData = cd.owner_pilot
-	if caster == null:
-		# Owner 가 없으면 미리보기 의미가 없으니 즉시 파괴 경로로 폴백.
-		_hide_description_box()
-		_selected_card = null
-		_play_card_direct(card)
-		return
-	if not card_has_valid_targets(cd):
-		# Should be blocked by the desc-box button disable, but guard anyway.
-		return
-	_preview_pending_card = card
-	# 카드 내기 버튼은 PREVIEW 동안 비활성화 — 확정은 overlay 의 확인 버튼으로.
-	if _play_button != null and is_instance_valid(_play_button):
-		_play_button.disabled = true
-	var area := _compute_engage_area(caster)
-	var exclude_lane: bool = _has_clause_flag(cd.effect, "engage", "exclude_lane")
-	var participants := _compute_engage_participants(caster, area, exclude_lane)
-	_bs.targeting_overlay.start_preview(caster, area, participants,
-			cd.card_name,
-			Callable(self, "_on_preview_play_confirm"),
-			Callable(self, "_on_preview_play_cancel"))
-
-
-func _on_preview_play_confirm() -> void:
-	var card := _preview_pending_card
-	_preview_pending_card = null
-	if card == null or not is_instance_valid(card):
-		return
-	# 이제 실제 파괴 경로로 합류 — _play_card_direct 가 PREVIEW 분기를
-	# 건너뛰고 chain 으로 직행하도록 skip_preview_modal=true 를 전달한다.
-	_hide_description_box()
-	_selected_card = null
-	_play_card_direct(card, true)
-
-
-func _on_preview_play_cancel() -> void:
-	_preview_pending_card = null
-	# 카드는 그대로 핸드에 남아있고 설명 박스도 건재하니 카드 내기 버튼만
-	# 다시 살린다. SELECTION_PREVIEW 시각화도 다시 켜서 사거리 표시를 복원.
-	if _selected_card != null and is_instance_valid(_selected_card):
-		if _play_button != null and is_instance_valid(_play_button):
-			var eff_cost: int = _bs.effective_cost_for(_selected_card.data, true)
-			var unaffordable: bool = eff_cost > _bs.player_cost
-			var no_targets: bool = not card_has_valid_targets(_selected_card.data)
-			_play_button.disabled = unaffordable or no_targets
-		if _bs.targeting_overlay != null:
-			_bs.targeting_overlay.start_selection_preview(_selected_card.data)
 
 
 # Description-box "버리기" button handler: hands the currently-selected hand
@@ -1219,13 +1252,18 @@ func _on_discard_selected_pressed() -> void:
 	_bs.card_select_overlay.add_card_to_discard(card)
 
 
-# Player play path. Snapshots the pre-play state up front so a 버리기 / 찾기
-# clause inside the effect chain can fully roll back on cancel — even when
-# earlier clauses (e.g. draw:2 inside a draw:2;discard:2 card) already mutated
-# the hand. The chain runs to completion synchronously unless it hits a clause
-# that hands off to CardSelectOverlay, in which case _process_pending_chain
-# returns early and the overlay's complete / cancel callback resumes us.
-func _play_card_direct(card: Card, skip_preview_modal: bool = false) -> void:
+# Player play path, entered only from 확인 — by which point the target (if the
+# card wanted one) is already resolved, so nothing here opens a picker.
+#
+# Snapshots the pre-play state up front so a 버리기 / 찾기 clause inside the
+# effect chain can fully roll back on cancel — even when earlier clauses (e.g.
+# draw:2 inside a draw:2;discard:2 card) already mutated the hand. The chain
+# runs to completion synchronously unless it hits a clause that hands off to
+# CardSelectOverlay, in which case _process_pending_chain returns early and the
+# overlay's complete / cancel callback resumes us.
+#
+# `pre_target` is PilotData (PILOT), Vector2i (LOCATION), or null.
+func _play_card_direct(card: Card, pre_target: Variant = null) -> void:
 	var cd := card.data
 	# Snapshot BEFORE any mutation so refund-on-cancel is exact.
 	# Shallow copies are correct: we only ever compare CardData identity.
@@ -1239,6 +1277,8 @@ func _play_card_direct(card: Card, skip_preview_modal: bool = false) -> void:
 		"engage_discount_p": _bs.engage_discount_p,
 	}
 	var eff_cost: int = _bs.effective_cost_for(cd, true)
+	_bs.blog.log_event("CARD", "PLAYER plays [%s] cost=%d effect=%s target=%s" % [
+			cd.card_name, eff_cost, cd.effect, _target_str(pre_target)])
 	_bs.player_cost -= eff_cost
 	# Consume the engage discount on use so it doesn't double-dip onto a
 	# follow-up engage. If this card is later cancelled, the snapshot
@@ -1258,56 +1298,11 @@ func _play_card_direct(card: Card, skip_preview_modal: bool = false) -> void:
 		"clauses":    _parse_effect_chain(cd.effect),
 		"log_lines":  [],
 		"snapshot":   snapshot,
-		# Set after the targeting overlay resolves; remains null for cards that
-		# don't need a target. Effect handlers consult this when wiring damage /
-		# heals / location effects.
-		"target":     null,
+		# Resolved during the selection step; null for cards that don't need a
+		# target. Effect handlers consult this when wiring damage / heals /
+		# location effects.
+		"target":     pre_target,
 	}
-	# Targeting branch: cards whose cast_method designates a pilot, cell or
-	# caster-area open the targeting overlay before the chain runs. The
-	# overlay either returns a target (→ continue chain) or fires cancel
-	# (→ snapshot rollback, identical to the search/discard cancel path).
-	var kind := _targeting_kind(cd)
-	if kind == "pilot":
-		var caster: PilotData = cd.owner_pilot
-		var team_filter: int = _pending_play["enemy_team"] if cd.target == "enemy" \
-				else _pending_play["ally_team"]
-		var valid_pilots := _compute_valid_pilot_targets(cd, caster, team_filter)
-		if valid_pilots.is_empty():
-			# No legal target — refund and abort silently.
-			_on_targeting_cancel()
-			return
-		_bs.targeting_overlay.start_pilot_target(valid_pilots,
-				caster, max(0, cd.cast_range),
-				Callable(self, "_on_targeting_pilot"),
-				Callable(self, "_on_targeting_cancel"))
-		return
-	if kind == "location":
-		var caster_loc: PilotData = cd.owner_pilot
-		var valid_cells := _compute_valid_location_targets(cd, caster_loc)
-		if valid_cells.is_empty():
-			_on_targeting_cancel()
-			return
-		_bs.targeting_overlay.start_location_target(valid_cells,
-				caster_loc, max(1, cd.cast_range),
-				Callable(self, "_on_targeting_location"),
-				Callable(self, "_on_targeting_cancel"))
-		return
-	if kind == "preview" and not skip_preview_modal:
-		var caster_p: PilotData = cd.owner_pilot
-		if caster_p == null:
-			# Legacy fallback path — no caster means no preview is meaningful.
-			_process_pending_chain()
-			return
-		var area := _compute_engage_area(caster_p)
-		var exclude_lane: bool = _has_clause_flag(cd.effect, "engage", "exclude_lane")
-		var participants := _compute_engage_participants(caster_p, area, exclude_lane)
-		_bs.targeting_overlay.start_preview(caster_p, area, participants,
-				cd.card_name,
-				Callable(self, "_on_targeting_preview_confirm"),
-				Callable(self, "_on_targeting_cancel"))
-		return
-	# No targeting required (instant cards) — straight to the chain.
 	_process_pending_chain()
 
 
@@ -1320,24 +1315,24 @@ func card_has_valid_targets(cd: CardData) -> bool:
 	if cd == null:
 		return false
 	var caster: PilotData = cd.owner_pilot
-	match _targeting_kind(cd):
+	match targeting_kind(cd):
 		"pilot":
 			if caster == null:
 				return false
 			var team_filter: int = 1 if cd.target == "enemy" else 0
-			return not _compute_valid_pilot_targets(cd, caster, team_filter).is_empty()
+			return not compute_valid_pilot_targets(cd, caster, team_filter).is_empty()
 		"location":
 			if caster == null:
 				return false
-			return not _compute_valid_location_targets(cd, caster).is_empty()
+			return not compute_valid_location_targets(cd, caster).is_empty()
 		"preview":
 			# engage — require at least one alive participant from each
 			# side inside the caster's area so start_engage doesn't no-op.
 			if caster == null:
 				return false
-			var area := _compute_engage_area(caster)
-			var exclude_lane: bool = _has_clause_flag(cd.effect, "engage", "exclude_lane")
-			var participants := _compute_engage_participants(caster, area, exclude_lane)
+			var area := compute_engage_area(caster)
+			var exclude_lane: bool = has_clause_flag(cd.effect, "engage", "exclude_lane")
+			var participants := compute_engage_participants(caster, area, exclude_lane)
 			var has_p: bool = false
 			var has_e: bool = false
 			for raw in participants:
@@ -1357,7 +1352,7 @@ func card_has_valid_targets(cd: CardData) -> bool:
 #   "location" — pick a cell
 #   "preview"  — caster-centred area; player confirms or cancels
 #   "none"     — instant / no targeting
-func _targeting_kind(cd: CardData) -> String:
+func targeting_kind(cd: CardData) -> String:
 	if cd == null:
 		return "none"
 	# 전투 개시류 (engage) 만 시전자 셀+인접 6칸을 PREVIEW 로 띄운다.
@@ -1376,7 +1371,7 @@ func _targeting_kind(cd: CardData) -> String:
 # Pilots within hex range of caster, on the requested team, alive. Honours the
 # `min_range` flag (e.g. 저격: range 6 with min_range:2 → cells 2..6 hexes
 # from caster). Returns an Array of PilotData.
-func _compute_valid_pilot_targets(cd: CardData, caster: PilotData,
+func compute_valid_pilot_targets(cd: CardData, caster: PilotData,
 		team: int) -> Array:
 	var out: Array = []
 	if caster == null:
@@ -1399,7 +1394,7 @@ func _compute_valid_pilot_targets(cd: CardData, caster: PilotData,
 # Cells within hex range of caster (alive cells only). For 약탈
 # (capture_jungle), restrict further to neutral_zone_cells currently owned by
 # the enemy team.
-func _compute_valid_location_targets(cd: CardData, caster: PilotData) -> Array:
+func compute_valid_location_targets(cd: CardData, caster: PilotData) -> Array:
 	var out: Array = []
 	if caster == null:
 		return out
@@ -1433,7 +1428,7 @@ func _compute_valid_location_targets(cd: CardData, caster: PilotData) -> Array:
 
 
 # Caster cell + all 6 neighbours, mirroring EngagePhaseManager._gather_participants.
-func _compute_engage_area(caster: PilotData) -> Array:
+func compute_engage_area(caster: PilotData) -> Array:
 	var out: Array = [caster.grid_pos]
 	for n in _bs.hex_grid.get_neighbors(caster.grid_pos.x, caster.grid_pos.y):
 		out.append(n)
@@ -1442,7 +1437,7 @@ func _compute_engage_area(caster: PilotData) -> Array:
 
 # Pilots in the engage area that would actually fight. Mirrors EngagePhaseManager
 # rules including the exclude_lane filter for the 교전 card.
-func _compute_engage_participants(caster: PilotData, area: Array,
+func compute_engage_participants(caster: PilotData, area: Array,
 		exclude_lane: bool) -> Array:
 	var area_set: Dictionary = {}
 	for c in area:
@@ -1462,7 +1457,7 @@ func _compute_engage_participants(caster: PilotData, area: Array,
 
 # Returns true if any clause in `effect_chain` named `clause_name` carries
 # `flag_name` as a modifier (e.g. has_clause_flag("attack:1|pierce", "attack", "pierce")).
-func _has_clause_flag(effect_chain: String, clause_name: String,
+func has_clause_flag(effect_chain: String, clause_name: String,
 		flag_name: String) -> bool:
 	for clause in _parse_effect_chain(effect_chain):
 		if String(clause["name"]) != clause_name:
@@ -1486,42 +1481,6 @@ func _clause_int_flag(effect_chain: String, flag_name: String,
 			if fs.begins_with(flag_name + ":"):
 				return int(fs.substr(flag_name.length() + 1))
 	return default
-
-
-# ─── Targeting completion / cancel callbacks ────────────────────────────────
-func _on_targeting_pilot(picked: PilotData) -> void:
-	if _pending_play.is_empty():
-		return
-	_pending_play["target"] = picked
-	_process_pending_chain()
-
-
-func _on_targeting_location(cell: Vector2i) -> void:
-	if _pending_play.is_empty():
-		return
-	_pending_play["target"] = cell
-	_process_pending_chain()
-
-
-func _on_targeting_preview_confirm() -> void:
-	if _pending_play.is_empty():
-		return
-	# No explicit target stored — engage's effect handler reads from the card's
-	# 시전자 field which is always set on the pending play.
-	_process_pending_chain()
-
-
-# Targeting cancel — same restore semantics as the discard/search overlay
-# cancel path. Refunds cost, returns the played card to hand.
-func _on_targeting_cancel() -> void:
-	if _pending_play.is_empty():
-		return
-	var snap: Dictionary = _pending_play["snapshot"]
-	_pending_play.clear()
-	_restore_from_snapshot(snap)
-	_bs.last_log = "[취소]"
-	_bs.hud.update_hud()
-	_bs.renderer.queue_redraw()
 
 
 # Drains _pending_play.clauses one clause at a time. discard:N / search:N
@@ -1574,15 +1533,14 @@ func _on_discard_overlay_complete(picks: Array) -> void:
 	_process_pending_chain()
 
 
-# Search complete: the picks are still in the deck — move them to the hand
-# (capped at MAX_HAND_SIZE) and resume the chain.
+# Search complete: the picks are still in the deck — move them to the hand and
+# resume the chain. Like 드로우:N, a 찾기 resolved during 작전 단계 may overfill
+# the hand; the next BATTLE auto-draw trims it back to MAX_HAND_SIZE.
 func _on_search_overlay_complete(picks: Array) -> void:
 	if _pending_play.is_empty():
 		return
 	var taken: int = 0
 	for pick_raw in picks:
-		if _bs.player_hand.size() >= _bs.MAX_HAND_SIZE:
-			break
 		var cd: CardData = pick_raw as CardData
 		_bs.player_deck.erase(cd)
 		_bs.player_hand.append(cd)
@@ -1712,6 +1670,10 @@ func apply_card_effect(cd: CardData, is_player: bool) -> String:
 	# don't have to branch on null. Returns null for cards that don't target.
 	var target: Variant = _ai_pick_target(cd, caster, ally_team, enemy_team)
 
+	_bs.blog.log_event("CARD", "%s plays [%s] effect=%s target=%s" % [
+			"PLAYER" if is_player else "AI", cd.card_name, cd.effect,
+			_target_str(target)])
+
 	var clauses: Array = _parse_effect_chain(cd.effect)
 	var lines: Array = []
 	for clause in clauses:
@@ -1725,6 +1687,19 @@ func apply_card_effect(cd: CardData, is_player: bool) -> String:
 	return "%s · %s" % [prefix, ", ".join(lines)]
 
 
+# Debug-log helper: renders a resolved card target (PilotData / Vector2i / null)
+# as a short string for BattleLogger.
+func _target_str(target: Variant) -> String:
+	if target == null:
+		return "-"
+	if target is Vector2i:
+		return str(target)
+	if target is PilotData:
+		var p := target as PilotData
+		return "%s@%s" % [_bs.pilot_label(p), str(p.grid_pos)]
+	return str(target)
+
+
 # Picks a target for an AI-played card. Mirrors the player-side targeting
 # overlay rules but resolves to a random valid pick instead of opening UI.
 # Returns PilotData (target=enemy/ally), Vector2i (target=location), or null.
@@ -1732,15 +1707,15 @@ func _ai_pick_target(cd: CardData, caster: PilotData,
 		ally_team: int, enemy_team: int) -> Variant:
 	if cd == null:
 		return null
-	match _targeting_kind(cd):
+	match targeting_kind(cd):
 		"pilot":
 			var team: int = enemy_team if cd.target == "enemy" else ally_team
-			var valid := _compute_valid_pilot_targets(cd, caster, team)
+			var valid := compute_valid_pilot_targets(cd, caster, team)
 			if valid.is_empty():
 				return null
 			return valid[randi() % valid.size()]
 		"location":
-			var valid_cells := _compute_valid_location_targets(cd, caster)
+			var valid_cells := compute_valid_location_targets(cd, caster)
 			if valid_cells.is_empty():
 				return null
 			return valid_cells[randi() % valid_cells.size()]
@@ -1805,11 +1780,12 @@ func _apply_single_effect(e: Dictionary, is_player: bool, caster: PilotData,
 
 
 func _effect_draw(is_player: bool, n: int) -> String:
-	var hand: Array = _bs.player_hand if is_player else _bs.ai_hand
+	# No MAX_HAND_SIZE guard: a 드로우:N played during 작전 단계 is the side's own
+	# turn, so it is allowed to overfill the hand. The overflow survives until
+	# the turn ends — the first BATTLE auto-draw afterwards trims it back down
+	# via _trim_hand_overflow. Only an exhausted deck+discard stops the draw.
 	var drew: int = 0
 	for i in n:
-		if hand.size() >= _bs.MAX_HAND_SIZE:
-			break
 		var c := draw_card(is_player)
 		if c == null:
 			break
@@ -1971,6 +1947,7 @@ func _effect_recall_ally(ally_team: int,
 	t.hp       = t.max_hp
 	t.shield   = 0   # 본진 복귀 시 보호막 제거
 	t.waypoint_idx = 0
+	_bs.blog.log_move(t, orig, t.grid_pos, "card-recall")
 	_bs.anim_pilot_recall(t, orig)
 	return "복귀 %s" % _bs.pilot_label(t)
 
@@ -1990,7 +1967,7 @@ func _effect_duel(caster: PilotData, picked: PilotData,
 
 
 # 이동 — teleports the caster onto the picked cell. The location overlay's
-# _compute_valid_location_targets already validates the cell against
+# compute_valid_location_targets already validates the cell against
 # cast_range; we just commit the new grid_pos and play the tween. If the
 # pilot lands inside a jungle/neutral cell, RecallSystem.process_phase_end_recalls
 # will pull them back to HQ at end of 작전 단계 — that's the existing
@@ -2003,6 +1980,7 @@ func _effect_move(caster: PilotData, picked: Variant) -> String:
 		return "이동 %s (제자리)" % _bs.pilot_label(caster)
 	var orig := caster.grid_pos
 	caster.grid_pos = cell
+	_bs.blog.log_move(caster, orig, cell, "card-move")
 	_bs.anim_pilot_move(caster, orig)
 	return "이동 %s → (%d,%d)" % [_bs.pilot_label(caster), cell.x, cell.y]
 
@@ -2105,6 +2083,13 @@ func _despawn_player_card_node(cd: CardData) -> void:
 	for node in _bs.player_card_nodes:
 		var c := node as Card
 		if c.data == cd:
+			# The node is about to be freed, so any selection pointing at it has
+			# to go first — otherwise _selected_card dangles and the description
+			# box / 확인 row outlive the card they belong to. (Reachable from
+			# _trim_hand_overflow, whose auto-draw can fire on a card the player
+			# left selected when the phase ended.)
+			if _selected_card == c:
+				deselect_current_card()
 			_bs.player_card_nodes.erase(c)
 			c.queue_free()
 			return

@@ -40,19 +40,40 @@ const SCORE_H          := 16.0
 const PLACEHOLDER_SCORE := "1.0k"
 
 # ── AI hand peek (below score panel) ─────────────────────────────────────────
-# AI hand is shown as a row of card-back nodes whose tops are tucked behind
-# the score panel — only ~AI_HAND_PEEK_PX of each card protrudes below the
-# panel, giving an "edge of the cards" look that just conveys hand size.
+# AI hand is shown as a fan of card-back nodes whose tops are tucked behind the
+# score panel — only the bottom strip of each card protrudes, giving an "edge of
+# the cards" look that conveys hand size.
+#
+# The fan is the player hand's fan **flipped top-to-bottom**: every card centre
+# rides one circle whose pivot sits *above* the row, so the middle card reaches
+# the lowest point of the arc (it protrudes furthest down past the panel) and
+# both ends curl back up under it. Card tilt is the negated arc angle, which
+# mirrors the player fan's lean without standing the cards on their heads.
+#
+# Geometry, per card i of n (θ measured from straight-down at the pivot):
+#   θ_i    = (i − (n−1)/2) · step
+#   centre = pivot + R·(sin θ, cos θ)          ← +cos, so θ=0 is the LOWEST point
+#   tilt   = −θ_i
+# Adjacent centres therefore sit R·sin(step) apart; at the values below that is
+# ~34.6 px against a 72 px card, i.e. the cards overlap by a bit over half.
 const AI_HAND_SCALE  := 0.45
-const AI_HAND_TOP_Y  := 80.0   # most of the card hides behind the score panel
-const AI_HAND_GAP    := 6.0    # px gap between adjacent card backs at full spread
+const AI_HAND_TOP_Y  := 80.0   # top of the MIDDLE card; the rest ride higher
+## Circle radius (px) the card centres ride. Larger = flatter arc.
+const AI_HAND_FAN_RADIUS := 620.0
+## Angular step (deg) per card. Sets the horizontal overlap via R·sin(step).
+const AI_HAND_FAN_STEP_DEG := 3.2
+## Hard cap on the fan's total angular width. Without it a full hand would swing
+## its end cards so far up the arc that they vanish behind the score panel — at
+## 28° the outermost card rides only R·(1−cos 14°) ≈ 18 px above the middle one.
+const AI_HAND_FAN_MAX_SPREAD_DEG := 28.0
 
 # ── 전략 포인트 도넛 (cost gauges) ────────────────────────────────────────────
 # The old bottom cell-bar stack and the rectangular 단계 넘기기 button are gone.
-# Both sides now read out on a ring gauge in the right-hand gutter:
-#   player — above the Discard counter, top-right of the hand row; doubles as
+# Both sides now read out on a ring gauge in the **left-hand** gutter (the
+# targeting overlay's 확인 / 취소 row owns the bottom-right corner):
+#   player — above the Deck counter, top-left of the hand row; doubles as
 #            the 턴 넘기기 button once tapped (see CostDonut).
-#   enemy  — top-right of the screen, just under the AI hand peek.
+#   enemy  — top-left of the screen, just under the AI hand peek.
 const DONUT_FILL_PLAYER := Color(0.25, 0.60, 1.00)
 const DONUT_FILL_ENEMY  := Color(0.95, 0.35, 0.25)
 ## Vertical gap between the player donut and the targeting overlay's
@@ -250,25 +271,34 @@ func pop_ai_hand_card_node() -> Card:
 	return card
 
 
-# Adaptive horizontal fan: target gap between cards is AI_HAND_GAP, but if the
-# hand wouldn't fit inside the inner width, spacing compresses uniformly.
-# Inner width matches the player hand gutter so the deck/discard counters
-# never collide with the AI cards.
+# Lays the AI card backs out on the inverted fan described above. The step
+# angle shrinks once the hand is wide enough to hit AI_HAND_FAN_MAX_SPREAD_DEG,
+# so the row redistributes instead of growing — the same "fixed width, tighter
+# overlap" rule the player hand follows.
 func _layout_ai_hand() -> void:
 	var n: int = _ai_card_back_nodes.size()
 	if n == 0:
 		return
-	var card_w_scaled: float = Card.CARD_W * AI_HAND_SCALE
-	var inner_w: float = 1080.0 - 2.0 * _bs.BS_HAND_AREA_MARGIN
-	var ideal_total: float = float(n) * card_w_scaled + float(max(n - 1, 0)) * AI_HAND_GAP
-	var spacing: float = card_w_scaled + AI_HAND_GAP
-	if n > 1 and ideal_total > inner_w:
-		spacing = (inner_w - card_w_scaled) / float(n - 1)
-	var total_w: float = card_w_scaled + spacing * float(n - 1)
-	var start_x: float = (1080.0 - total_w) * 0.5
+	var step_deg: float = AI_HAND_FAN_STEP_DEG
+	if n > 1:
+		step_deg = min(step_deg, AI_HAND_FAN_MAX_SPREAD_DEG / float(n - 1))
+	# The pivot sits directly above the middle card by exactly one radius, so
+	# θ=0 lands that card's centre at AI_HAND_TOP_Y + half its scaled height.
+	var half_card := Vector2(Card.CARD_W, Card.CARD_H) * 0.5
+	var mid_center_y: float = AI_HAND_TOP_Y + Card.CARD_H * AI_HAND_SCALE * 0.5
+	var pivot := Vector2(1080.0 * 0.5, mid_center_y - AI_HAND_FAN_RADIUS)
 	for i in n:
 		var card := _ai_card_back_nodes[i] as Card
-		card.position = Vector2(start_x + spacing * float(i), AI_HAND_TOP_Y)
+		var theta: float = deg_to_rad((float(i) - float(n - 1) * 0.5) * step_deg)
+		var centre: Vector2 = pivot \
+				+ Vector2(sin(theta), cos(theta)) * AI_HAND_FAN_RADIUS
+		# Rotation and scale both pivot around `pivot_offset`, and a Control's
+		# visual centre is `position + pivot_offset` — unscaled, unrotated (see
+		# card_phase/README.md). So the top-left we want is centre − half_card,
+		# with no scale correction.
+		card.pivot_offset = half_card
+		card.rotation = -theta
+		card.position = centre - half_card
 
 
 # ── Turn announcer ───────────────────────────────────────────────────────────
@@ -352,13 +382,13 @@ func play_turn_announce(is_player: bool) -> void:
 		child.queue_free()
 
 
-# 전략 포인트 도넛 두 개를 화면 우측 거터에 배치한다.
-#  - player: 핸드 우측 상단 (Discard 카운터 바로 위). 탭하면 뒤집혀 턴 넘기기
+# 전략 포인트 도넛 두 개를 화면 **좌측** 거터에 배치한다. 대상 지정 확인/취소
+# 버튼이 우하단으로 옮겨 갔으므로 도넛 열은 반대편(좌측)을 차지한다.
+#  - player: 핸드 좌측 상단 (Deck 카운터 바로 위). 탭하면 뒤집혀 턴 넘기기
 #    원형 버튼이 되고, 바깥을 탭하면 다시 도넛으로 돌아온다.
-#  - enemy: 화면 우측 상단 (상대 핸드 peek 바로 아래). 표시 전용.
+#  - enemy: 화면 좌측 상단 (상대 핸드 peek 바로 아래). 표시 전용.
 func _build_cost_donuts() -> void:
-	var screen_w: float = get_viewport().get_visible_rect().size.x
-	var cx: float = screen_w - _bs.BS_HAND_AREA_MARGIN * 0.5
+	var cx: float = _bs.BS_HAND_AREA_MARGIN * 0.5
 
 	_bs.cost_donut_enemy = CostDonut.new()
 	_bs.cost_donut_enemy.name = "CostDonutEnemy"

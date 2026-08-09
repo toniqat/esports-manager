@@ -200,6 +200,10 @@ var engage_phase: EngagePhaseManager = null
 # AI가 카드를 사용할 때 화면 중앙에 띄우는 카드 애니메이션 오버레이.
 # end_card_phase 안에서 await로 한 장씩 차례대로 보여 준다. lazy-add.
 var ai_card_player: AiCardPlayer = null
+# 전투 행동 로거 — 모든 좌표 변화 / 교전 / 카드 사용을 콘솔 + user:// 파일에
+# 남기고, 턴 경계에서 적 파일럿 간 교차(cross-over)를 자동 감지한다.
+# `debug/BattleLogger.gd` 참고. lazy-add in _ready() after pilots spawn.
+var blog: BattleLogger = null
 
 # ─── TileMapLayer refs (set after BattleField.tscn is added as child) ────────
 @onready var tiles_layer:    TileMapLayer = $BattleField/Tiles
@@ -264,6 +268,11 @@ func _ready() -> void:
 	# (or default LEFT when running BattleSim standalone).
 	_gambit.auto_assign_lanes()
 	_gambit.launch_battle()
+	# Action logger — bound AFTER pilots spawn so its header can dump the roster.
+	blog = BattleLogger.new()
+	blog.name = "BattleLogger"
+	add_child(blog)
+	blog.bind(self)
 	# Build the per-team deck AFTER pilots spawn — each pilot owns 6 random cards
 	# from the pool (시전자 rule) and all 5 stacks shuffle into the team deck.
 	card_phase.build_starter_decks()

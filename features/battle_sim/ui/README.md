@@ -14,15 +14,38 @@ Builds the battle HUD and updates it via `update_hud()` (per-turn) and
 ### build_ui()
 Creates UI inside `_bs.canvas` (a CanvasLayer added to BattleSim):
 
-- **AI hand peek** — row of face-down `Card.tscn` instances scaled to
-  `AI_HAND_SCALE` (0.45) sitting at `AI_HAND_TOP_Y` (80 px). Built BEFORE
-  the top panel so the panel z-orders above and clips the cards' top
-  portion — only the bottom ~50 px protrude below the panel, just enough
-  to convey hand size without revealing card data. Synced via
-  `update_ai_hand_visuals()` from `CardPhaseManager.do_battle_turn`,
-  `_effect_draw`, `_effect_discard`, and `_effect_exhaust_choice`.
-  `pop_ai_hand_card_node()` reparents the rightmost back to `_bs.canvas`
-  for `AiCardPlayer`'s fly-to-centre animation.
+- **AI hand peek** — overlapping **fan** of face-down `Card.tscn` instances
+  scaled to `AI_HAND_SCALE` (0.45). Built BEFORE the top panel so the panel
+  z-orders above and clips the cards' top portion — only the bottom strip
+  protrudes below the panel, just enough to convey hand size without revealing
+  card data. Synced via `update_ai_hand_visuals()` from
+  `CardPhaseManager.do_battle_turn`, `_effect_draw`, `_effect_discard`, and
+  `_effect_exhaust_choice`. `pop_ai_hand_card_node()` reparents the rightmost
+  back to `_bs.canvas` for `AiCardPlayer`'s fly-to-centre animation.
+
+  **The fan is the player hand's fan flipped top-to-bottom.** Every card centre
+  rides one circle whose pivot sits *above* the row, so θ=0 is the **lowest**
+  point of the arc — the middle card protrudes furthest down past the panel and
+  both ends curl back up under it. Per card *i* of *n*:
+
+  | | |
+  |---|---|
+  | `θ_i` | `(i − (n−1)/2) · step` |
+  | centre | `pivot + R·(sin θ, cos θ)` — note `+cos`, which is what inverts the arc |
+  | tilt | `−θ_i` (mirrors the player fan's lean without standing the cards on their heads) |
+  | pivot | `(540, AI_HAND_TOP_Y + CARD_H·AI_HAND_SCALE/2 − R)` |
+
+  `AI_HAND_FAN_RADIUS` = 620, `AI_HAND_FAN_STEP_DEG` = 3.2, and
+  `AI_HAND_FAN_MAX_SPREAD_DEG` = 28 caps the total angular width, so the row
+  redistributes rather than growing — the same rule the player hand follows.
+  Adjacent centres land `R·sin(step)` apart: **34.6 px against a 72 px card**
+  (uncapped, ≤ 9 cards) tightening to 26.9 px at the 12-card end, i.e. always
+  overlapping. Measured spans: 5 cards → 210 px, 8 → 313 px, 12 → 372 px, with
+  the outermost card riding 3.9 / 11.6 / 18.3 px above the middle one.
+  `position` is `centre − CARD_W,CARD_H/2` with **no scale correction** — a
+  Control's visual centre is `position + pivot_offset`, invariant under both
+  rotation and scale (see `card_phase/README.md`), and `pivot_offset` must be
+  set explicitly or the cards rotate about their top-left corner.
 - **Top panel** (y=10, h=120) — Pilot status board with **all 10 pilots**:
   5 player slots on the LEFT, center column (time + total score), 5 enemy
   slots on the RIGHT. Has an explicit opaque dark `StyleBoxFlat` so the AI
@@ -36,7 +59,7 @@ Creates UI inside `_bs.canvas` (a CanvasLayer added to BattleSim):
   as `min(BS_HAND_AREA_MARGIN, (screen_w − BS_HAND_WIDTH) / 2)` (89px at 1080)
   and the font shrinks with it (22 → 20) so "Discard" still fits and no card
   ever overlaps a label.
-- **전략 포인트 도넛 ×2** — `CostDonut` ring gauges in the right-hand gutter
+- **전략 포인트 도넛 ×2** — `CostDonut` ring gauges in the **left-hand** gutter
   (see below). Built by `_build_cost_donuts()`.
 - **Bottom strip** (y≈1790..1920) — empty. The old dual cost bars and the
   rectangular 단계 넘기기 button that used to live here are gone; the bottom
@@ -62,13 +85,19 @@ Connections:
 - Play Again button → `_bs._on_restart_pressed`
 
 ### 전략 포인트 도넛 (`CostDonut.gd`)
-Both sides' 작전 점수 read out on a ring gauge in the right-hand gutter
-(`x = screen_w − BS_HAND_AREA_MARGIN / 2`, i.e. 1015 on a 1080-wide screen):
+Both sides' 작전 점수 read out on a ring gauge in the **left-hand** gutter
+(`x = BS_HAND_AREA_MARGIN / 2`, i.e. 65 on a 1080-wide screen). The donut column
+and the targeting overlay's 확인 / 취소 row sit on **opposite** sides of the
+screen: donuts left, buttons bottom-right.
 
 | Donut | Position | Interactive |
 |---|---|---|
-| `_bs.cost_donut` (player, blue) | above the Discard counter, clear of the targeting overlay's 취소/확인 row → centre (1015, 1354) | yes |
-| `_bs.cost_donut_enemy` (enemy, red) | top-right, under the AI hand peek → centre (1015, 255) | no |
+| `_bs.cost_donut` (player, blue) | above the Deck counter, one button-band above the hand row → centre (65, 1354) | yes |
+| `_bs.cost_donut_enemy` (enemy, red) | top-left, under the AI hand peek → centre (65, 255) | no |
+
+Measured headlessly at 1080×1920: player (65, 1354), enemy (65, 255); the Deck
+label sits at x=8 in the y-band 1500..1720, so the donut (x 9..121, y 1298..1410)
+clears it vertically.
 
 - Ring is full at `PHASE_THRESHOLD` (8); the number in the middle is the raw
   point total, so boost cards read as "9 on a full ring".
@@ -90,9 +119,11 @@ outside tap. Presses landing inside the donut are consumed with
 
 State setters driven from `HudBuilder._update_cost_donuts()`:
 `set_value(cost, PHASE_THRESHOLD)`, `set_flip_allowed(in_card_phase)` (turning
-it off un-flips), `set_end_enabled(can_end_card_phase())`.
-`set_locked(true/false)` is called by `CardTargetingOverlay` while a targeting
-modal owns the screen — the readout stays visible but the flip is blocked.
+it off un-flips), `set_end_enabled(can_end_card_phase())`. `set_locked(…)`
+still exists on `CostDonut` but **nothing calls it any more** — targeting stopped
+being modal, so there is no state that needs the flip blocked. The donut's y is
+still derived from `CardTargetingOverlay.BTN_HAND_GAP + BTN_H` so it keeps the
+same vertical band the 확인/취소 row occupies on the far side of the screen.
 
 ### Pilot Slots (top panel, both teams)
 Each slot has a **face portrait** with a **horizontal HP bar directly under

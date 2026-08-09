@@ -358,24 +358,38 @@ func set_affordable(affordable: bool) -> void:
 	card_front.add_theme_stylebox_override("panel", style)
 
 
-func _on_mouse_entered() -> void:
-	if not face_up or not is_player_card or _is_dimmed:
+## Drives the hover reaction (brighten + enlarge + taller shadow) and fires the
+## card_hovered / card_unhovered signals.
+##
+## Player hand cards are `MOUSE_FILTER_IGNORE` and never pick the mouse for
+## themselves — `CardPhaseManager`'s hand hit layer decides which card the cursor
+## is on and calls this. The cards overlap far more than they are wide and the
+## hovered one is drawn on top at 1.2×, so letting each card claim its own rect
+## meant the hovered card swallowed its neighbour's only reachable pixels. The
+## remaining `mouse_entered` / `mouse_exited` wiring below still serves the AI
+## peek row and the 찾기 grid, which are flat and don't overlap.
+func set_hovered(hovered: bool) -> void:
+	if not face_up or not is_player_card:
 		return
-	if not _is_hovered:
-		_is_hovered = true
-		_tween_hover_brightness(true)
-		_refresh_float_state()
+	if hovered and _is_dimmed:
+		return
+	if _is_hovered == hovered:
+		return
+	_is_hovered = hovered
+	_tween_hover_brightness(hovered)
+	_refresh_float_state()
+	if hovered:
 		card_hovered.emit(self)
+	else:
+		card_unhovered.emit(self)
+
+
+func _on_mouse_entered() -> void:
+	set_hovered(true)
 
 
 func _on_mouse_exited() -> void:
-	if not face_up or not is_player_card:
-		return
-	if _is_hovered:
-		_is_hovered = false
-		_tween_hover_brightness(false)
-		_refresh_float_state()
-		card_unhovered.emit(self)
+	set_hovered(false)
 
 
 func _tween_hover_brightness(active: bool) -> void:

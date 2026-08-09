@@ -23,7 +23,8 @@ covers the rest of the screen for the duration of the modal, including
 the dashboard step where the 확인 button dismisses it.
 
 ## Trigger flow
-1. Player plays an engage card (`engage:3`, `engage:4`, `engage:3|exclude_lane`)
+1. Player plays an engage card (`engage:3` 전투 개시, `engage:4` 완벽한 기회;
+   `engage:N|exclude_lane` is still supported but no card carries it today)
    or the 결투 card (`duel`).
 2. `CardPhaseManager._effect_engage()` → `EngagePhaseManager.start_engage(...)`,
    or `CardPhaseManager._effect_duel()` → `EngagePhaseManager.start_duel(...)`.
@@ -45,7 +46,13 @@ Both teams' alive pilots in any of those 7 cells participate. Junglers and
 lane pilots may face off across normal engagement-scope rules — engage
 explicitly bridges them.
 
-### `exclude_lane` flag (card 4 — 교전)
+### `exclude_lane` flag (currently unused by any card)
+The 교전 card (id 4) that carried this flag was **removed from `cards.csv`**, so
+nothing in the shipped pool sets it today. The flag itself is still parsed and
+honoured end-to-end (`CardPhaseManager` → `CardTargetingOverlay` preview →
+`start_engage`), so a future card can pick it back up by appending
+`|exclude_lane` to its `engage:N` clause.
+
 Filters out lane pilots that are currently on their lane (i.e., not in a
 jungle/neutral cell). Junglers stay in. Lane pilots displaced into a jungle
 cell by a card effect (e.g., `move`) also stay in. The design intent is to

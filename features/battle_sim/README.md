@@ -191,7 +191,8 @@ modal during CARD_PHASE. Returns to CARD_PHASE on close — see
 [`engage/README.md`](engage/README.md) for details. Key contract:
 - Participants = pilots in radius-1 hex from caster (caster cell + 6 neighbors).
 - `exclude_lane` flag drops lane pilots that are still on their lane row;
-  junglers and displaced-into-jungle lane pilots stay in.
+  junglers and displaced-into-jungle lane pilots stay in. Still supported, but
+  the only card that used it (교전) has been removed from the pool.
 - Initiator side attacks first each round; within a side, presence DESC
   (random tie-break). Targets picked weighted-random by presence.
 - Damage uses the same `hit/(hit+evasion)` + shield-first formula as the

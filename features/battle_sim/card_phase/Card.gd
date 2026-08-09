@@ -16,7 +16,39 @@ const PRESS_LIFT     := 40.0
 ## player card. Above 1.0 → brighter (Godot canvas modulate supports values
 ## > 1 for an additive-feeling brighten).
 const HOVER_BRIGHTEN := 1.25
-const HOVER_TWEEN_DURATION := 0.08
+const HOVER_TWEEN_DURATION := 0.04
+## Scale applied to a hovered face-up player card — the card comes closer to
+## the screen, so it reads slightly bigger (and casts a bigger shadow).
+const HOVER_SCALE := 1.2
+## Hover / selection reactions snap out fast and settle slow (cubic EASE_OUT)
+## so the card feels like it jumps to the cursor rather than drifting to it.
+const HOVER_EASE  : int = Tween.EASE_OUT
+const HOVER_TRANS : int = Tween.TRANS_CUBIC
+
+# ── Floating shadow ───────────────────────────────────────────────────────────
+# Hand cards hover above the table rather than lying on it. The gap between a
+# card and its shadow encodes that height: at rest the card sits close to the
+# surface (short offset, tight and dark shadow); hovering pulls it toward the
+# screen (offset pushed out, shadow spread wider and lightened); a selected
+# card floats highest of all. The shadow is a Panel child at draw index 0, so
+# it inherits the card's fan rotation and hover scale for free.
+const SHADOW_REST_OFFSET     := Vector2(2.0, 10.0)
+const SHADOW_HOVER_OFFSET    := Vector2(5.0, 24.0)
+const SHADOW_SELECTED_OFFSET := Vector2(6.0, 32.0)
+## StyleBoxFlat.shadow_size — blur radius bleeding out of the shadow slab.
+const SHADOW_REST_BLUR      := 6
+const SHADOW_HOVER_BLUR     := 26
+const SHADOW_SELECTED_BLUR  := 32
+## Shadow darkness. The further a shadow falls from its caster, the more it
+## spreads and the lighter it reads.
+const SHADOW_REST_ALPHA     := 0.50
+const SHADOW_HOVER_ALPHA    := 0.36
+const SHADOW_SELECTED_ALPHA := 0.32
+## Extra spread of the shadow slab itself (multiplied on top of the card scale).
+const SHADOW_REST_SPREAD     := 1.0
+const SHADOW_HOVER_SPREAD    := 1.06
+const SHADOW_SELECTED_SPREAD := 1.08
+const SHADOW_TWEEN_DURATION  := 0.05
 
 var data: CardData = null
 var face_up: bool = false
@@ -34,6 +66,13 @@ var _active_tween: Tween  = null
 var _stored_base_y: float = 0.0
 var _hover_tween:  Tween  = null
 
+# Layout scale requested by the last tween_to() — the hover enlargement is
+# multiplied on top of this instead of overwriting it.
+var _base_scale: Vector2 = Vector2.ONE
+var _shadow: Panel = null
+var _shadow_tween: Tween = null
+var _float_tween: Tween  = null
+
 const DIM_MODULATE: Color = Color(0.42, 0.42, 0.48, 1.0)
 
 @onready var card_front: Panel = $CardFront
@@ -45,6 +84,10 @@ const DIM_MODULATE: Color = Color(0.42, 0.42, 0.48, 1.0)
 @onready var owner_face: TextureRect = $CardFront/MarginContainer/VBox/OwnerFaceWrap/OwnerFace
 
 
+func _ready() -> void:
+	_build_shadow()
+
+
 func setup(card_data: CardData, player_card: bool, start_face_up: bool = false) -> void:
 	data = card_data
 	is_player_card = player_card
@@ -53,6 +96,86 @@ func setup(card_data: CardData, player_card: bool, start_face_up: bool = false) 
 	_apply_back_style()
 	card_front.visible = start_face_up
 	card_back.visible = not start_face_up
+	# setup() may run before or after _ready() depending on the caller's
+	# add_child ordering, so both paths re-assert the shadow visibility.
+	if _shadow != null:
+		_shadow.visible = player_card
+
+
+# ── Floating shadow ───────────────────────────────────────────────────────────
+
+## Builds the drop shadow slab and parks it at draw index 0 so both CardBack
+## and CardFront cover it. Only player cards cast one — the AI hand peek and
+## the 찾기 grid are flat rows where a shadow would only add noise.
+func _build_shadow() -> void:
+	if _shadow != null:
+		return
+	_shadow = Panel.new()
+	_shadow.name = "DropShadow"
+	_shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_shadow.size = Vector2(CARD_W, CARD_H)
+	_shadow.pivot_offset = Vector2(CARD_W, CARD_H) * 0.5
+	_shadow.position = SHADOW_REST_OFFSET
+	_shadow.modulate = Color(1.0, 1.0, 1.0, SHADOW_REST_ALPHA)
+	_shadow.visible = is_player_card
+	add_child(_shadow)
+	move_child(_shadow, 0)
+	_apply_shadow_blur(SHADOW_REST_BLUR)
+
+
+func _apply_shadow_blur(blur: int) -> void:
+	if _shadow == null:
+		return
+	var sb := StyleBoxFlat.new()
+	# The slab core lightens as it blurs out, so a high-lift shadow reads as a
+	# soft pool rather than a hard black rectangle trailing the card.
+	sb.bg_color = Color(0.0, 0.0, 0.0, 0.8 if blur <= SHADOW_REST_BLUR else 0.55)
+	sb.corner_radius_top_left     = 10
+	sb.corner_radius_top_right    = 10
+	sb.corner_radius_bottom_left  = 10
+	sb.corner_radius_bottom_right = 10
+	sb.shadow_color = Color(0.0, 0.0, 0.0, 0.6)
+	sb.shadow_size  = blur
+	_shadow.add_theme_stylebox_override("panel", sb)
+
+
+## Re-poses the card and its shadow for the current hover / selected state.
+## Card scale grows on hover only; the shadow drops further away (and softens)
+## for both hover and selection, since either state lifts the card off the table.
+func _refresh_float_state() -> void:
+	var target_scale: Vector2 = _base_scale * (HOVER_SCALE if _is_hovered else 1.0)
+	if _float_tween != null and _float_tween.is_running():
+		_float_tween.kill()
+	_float_tween = create_tween()
+	(_float_tween.tween_property(self, "scale", target_scale, SHADOW_TWEEN_DURATION)
+			.set_ease(HOVER_EASE).set_trans(HOVER_TRANS))
+
+	if _shadow == null:
+		return
+	var offset: Vector2 = SHADOW_REST_OFFSET
+	var alpha: float    = SHADOW_REST_ALPHA
+	var spread: float   = SHADOW_REST_SPREAD
+	var blur: int       = SHADOW_REST_BLUR
+	if is_selected:
+		offset = SHADOW_SELECTED_OFFSET
+		alpha  = SHADOW_SELECTED_ALPHA
+		spread = SHADOW_SELECTED_SPREAD
+		blur   = SHADOW_SELECTED_BLUR
+	elif _is_hovered:
+		offset = SHADOW_HOVER_OFFSET
+		alpha  = SHADOW_HOVER_ALPHA
+		spread = SHADOW_HOVER_SPREAD
+		blur   = SHADOW_HOVER_BLUR
+	_apply_shadow_blur(blur)
+	if _shadow_tween != null and _shadow_tween.is_running():
+		_shadow_tween.kill()
+	_shadow_tween = create_tween().set_parallel() \
+			.set_ease(HOVER_EASE).set_trans(HOVER_TRANS)
+	_shadow_tween.tween_property(_shadow, "position", offset, SHADOW_TWEEN_DURATION)
+	_shadow_tween.tween_property(_shadow, "scale", Vector2(spread, spread),
+			SHADOW_TWEEN_DURATION)
+	_shadow_tween.tween_property(_shadow, "modulate",
+			Color(1.0, 1.0, 1.0, alpha), SHADOW_TWEEN_DURATION)
 
 
 func _apply_back_style() -> void:
@@ -133,8 +256,34 @@ func _cost_color(cost: int) -> Color:
 
 # ── Layout Tween ──────────────────────────────────────────────────────────────
 
+## Converts a viewport-space layout slot into the raw `position` this card must
+## hold to land there.
+##
+## Do NOT tween `global_position` on these cards. `Control.global_position` is
+## the *rotated-and-scaled top-left corner*, not the card's anchor: its getter
+## returns `position + pivot − R·S·pivot` and its setter inverts that using
+## whatever rotation/scale the node happens to have at the instant of the write.
+## Once hover scaling entered the picture that made the landing spot depend on
+## the live scale — a card written at scale 1.2 settles ~15px right and ~22px
+## below the same card written at scale 1.0, which is exactly how the lifted
+## card drifted up-right and the deselected card sank below its slot. `position`
+## has no such coupling (the card's visual centre is always `position + pivot`),
+## so all layout goes through it.
+func layout_position_from_global(target_global: Vector2) -> Vector2:
+	var parent_ci := get_parent() as CanvasItem
+	if parent_ci == null:
+		return target_global
+	return parent_ci.get_global_transform_with_canvas().affine_inverse() * target_global
+
+
 ## Smoothly move this card to target slot position / rotation / scale.
+## `target_pos` is the viewport-space slot (same convention as before — the
+## card's unrotated top-left); it is converted through
+## `layout_position_from_global` so rotation and hover scale never bend it.
 ## Kills any in-progress layout tween first to prevent conflicts.
+## `target_scale` is the card's *layout* scale — the hover enlargement is
+## multiplied on top of it, so a relayout mid-hover doesn't snap the card back
+## down to 1.0.
 ## ease_type / trans_type accept Tween.EaseType / Tween.TransitionType int values.
 func tween_to(target_pos: Vector2, target_rot: float, target_scale: Vector2,
 		duration: float,
@@ -142,19 +291,39 @@ func tween_to(target_pos: Vector2, target_rot: float, target_scale: Vector2,
 		trans_type: int = Tween.TRANS_SPRING) -> void:
 	if _active_tween != null and _active_tween.is_running():
 		_active_tween.kill()
+	# `scale` has exactly one owner at a time. Unless the caller is actually
+	# changing the layout scale (nobody does today — every caller passes ONE),
+	# the layout tween keeps its hands off it and `_refresh_float_state` stays
+	# the sole driver. Two tweens racing over `scale` is what used to strand a
+	# hovered card at 1.0: a relayout fired mid-hover captured the hover factor
+	# from a transient `_is_hovered` and killed the hover tween on its way past.
+	var takes_scale: bool = not _base_scale.is_equal_approx(target_scale)
+	_base_scale = target_scale
 	_active_tween = create_tween().set_parallel()
-	(_active_tween.tween_property(self, "global_position", target_pos, duration)
+	(_active_tween.tween_property(self, "position",
+			layout_position_from_global(target_pos), duration)
 			.set_ease(ease_type).set_trans(trans_type))
 	(_active_tween.tween_property(self, "rotation", target_rot, duration)
 			.set_ease(ease_type).set_trans(trans_type))
-	(_active_tween.tween_property(self, "scale", target_scale, duration)
-			.set_ease(ease_type).set_trans(trans_type))
+	if takes_scale:
+		if _float_tween != null and _float_tween.is_running():
+			_float_tween.kill()
+		var scale_goal: Vector2 = _base_scale * (HOVER_SCALE if _is_hovered else 1.0)
+		(_active_tween.tween_property(self, "scale", scale_goal, duration)
+				.set_ease(ease_type).set_trans(trans_type))
 
 
 # ── Interaction ───────────────────────────────────────────────────────────────
 
 func store_base_y() -> void:
 	_stored_base_y = position.y
+
+
+## True while the cursor is on this card and the hover reaction is showing.
+## CardPhaseManager reads it to decide which card the hand row spreads around
+## and which card sits on top of the z-order.
+func is_hovered() -> bool:
+	return _is_hovered
 
 
 ## Updates the top-left cost number to reflect any active cost modifier
@@ -195,6 +364,7 @@ func _on_mouse_entered() -> void:
 	if not _is_hovered:
 		_is_hovered = true
 		_tween_hover_brightness(true)
+		_refresh_float_state()
 		card_hovered.emit(self)
 
 
@@ -204,6 +374,7 @@ func _on_mouse_exited() -> void:
 	if _is_hovered:
 		_is_hovered = false
 		_tween_hover_brightness(false)
+		_refresh_float_state()
 		card_unhovered.emit(self)
 
 
@@ -213,7 +384,8 @@ func _tween_hover_brightness(active: bool) -> void:
 	var target: Color = (Color(HOVER_BRIGHTEN, HOVER_BRIGHTEN, HOVER_BRIGHTEN, 1.0)
 			if active else Color.WHITE)
 	_hover_tween = create_tween()
-	_hover_tween.tween_property(self, "modulate", target, HOVER_TWEEN_DURATION)
+	(_hover_tween.tween_property(self, "modulate", target, HOVER_TWEEN_DURATION)
+			.set_ease(HOVER_EASE).set_trans(HOVER_TRANS))
 
 
 # Toggle the player-hand "dim" state. CardPhaseManager calls this whenever the
@@ -227,6 +399,18 @@ func set_dimmed(dim: bool) -> void:
 		_hover_tween.kill()
 	_is_hovered = false
 	modulate = DIM_MODULATE if dim else Color.WHITE
+	# Dropping the hover state also drops the hover enlargement / big shadow.
+	_refresh_float_state()
+
+
+## Marks this card as the hand's lifted selection. CardPhaseManager owns the
+## lift itself (position / rotation); the card only owns how far its shadow
+## falls, which grows because a selected card floats highest above the table.
+func set_selected(selected: bool) -> void:
+	if is_selected == selected:
+		return
+	is_selected = selected
+	_refresh_float_state()
 
 
 func _gui_input(event: InputEvent) -> void:

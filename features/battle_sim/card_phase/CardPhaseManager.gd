@@ -15,6 +15,20 @@ extends Node
 var _selected_card: Card = null
 var _description_box: Panel = null
 var _play_button: Button = null
+# Card currently under the cursor. Drives hover_push_offset (neighbours slide
+# clear of the enlarged card) and the z-order raise in _reorder_hand_nodes.
+var _hovered_card: Card = null
+# Hover reflow bookkeeping. Reordering the hand re-evaluates mouse focus and
+# makes the engine emit mouse_entered / mouse_exited *synchronously, from
+# inside move_child* — so a reflow run straight out of a hover signal
+# re-enters itself, fails its own move_child ("parent busy setting up
+# children") and leaves half-applied tweens behind. Reflows are therefore
+# deferred to idle and coalesced: `_hand_reflow_queued` collapses a whole
+# enter/exit storm into one pass, `_reflow_hover` makes a pass that wouldn't
+# change anything a true no-op, and `_reordering` stops re-entry outright.
+var _hand_reflow_queued: bool = false
+var _reflow_hover: Card = null
+var _reordering: bool = false
 
 # Description box layout (next to the selected card).
 const DESC_BOX_W   := 320.0
@@ -399,7 +413,58 @@ func slot_position(index: int, total: int) -> Vector2:
 		spacing = (_bs.BS_HAND_WIDTH - Card.CARD_W) / float(total - 1)
 	var first_top_left_x: float = visual_cx \
 			- float(total - 1) * spacing * 0.5 - Card.CARD_W * 0.5
-	return Vector2(first_top_left_x + float(index) * spacing, hand_top_left_y)
+	return Vector2(first_top_left_x + float(index) * spacing
+			+ hover_push_offset(index, total), hand_top_left_y)
+
+
+## Horizontal offset (px) card `index` takes on while some *other* card in the
+## hand is hovered, so the enlarged card doesn't cover its neighbours.
+##
+## Cards left of the hovered one slide left, cards right of it slide right, and
+## the displacement ramps linearly from the full `BS_HAND_HOVER_PUSH` on the
+## immediate neighbour down to **exactly 0 on the outermost card of each side**
+## — so the row's left and right edges never move and the hand keeps its width.
+## The hovered card itself never moves.
+##
+## e.g. 8 cards, index 2 hovered: index 0 → 0, index 1 → −PUSH, index 3 → +PUSH,
+## index 4 → +0.75·PUSH, 5 → +0.5, 6 → +0.25, index 7 → 0.
+func hover_push_offset(index: int, total: int) -> float:
+	if total <= 2:
+		return 0.0
+	var hovered := _hovered_hand_card()
+	if hovered == null:
+		return 0.0
+	var h := _bs.player_card_nodes.find(hovered)
+	if h < 0 or index == h:
+		return 0.0
+	var push: float = _bs.BS_HAND_HOVER_PUSH
+	if index > h:
+		# Ramp: full push at h+1 → 0 at the last card.
+		var right_span: float = float(total - 1 - (h + 1))
+		if right_span <= 0.0:
+			return 0.0
+		return push * float(total - 1 - index) / right_span
+	# Ramp: full push at h-1 → 0 at the first card.
+	var left_span: float = float(h - 1)
+	if left_span <= 0.0:
+		return 0.0
+	return -push * float(index) / left_span
+
+
+## The hand card currently under the cursor, or null. `_hovered_card` is the
+## fast path; it's validated against the card's own hover flag (and the array)
+## so a stale pointer — freed card, hover that arrived while a modal owned the
+## screen — can never keep the row pushed open.
+func _hovered_hand_card() -> Card:
+	if _hovered_card != null and is_instance_valid(_hovered_card) \
+			and _bs.player_card_nodes.has(_hovered_card) \
+			and _hovered_card.is_hovered():
+		return _hovered_card
+	for node in _bs.player_card_nodes:
+		var c := node as Card
+		if c.is_hovered():
+			return c
+	return null
 
 
 ## Rotation (radians) for card `index` in a hand of `total` cards. The hand
@@ -427,16 +492,55 @@ func relayout_hand(nodes: Array, skip: Variant = null) -> void:
 				_bs.BS_HAND_TWEEN_EASE, _bs.BS_HAND_TWEEN_TRANS)
 		node.store_base_y()
 	if nodes == _bs.player_card_nodes:
+		# Whatever triggered this pass, the row now matches the current hover,
+		# so record it — a queued hover reflow that would repeat this layout
+		# can then bail instead of restarting every card's tween.
+		_reflow_hover = _hovered_hand_card()
 		_reorder_hand_nodes()
 
 
 ## Reorder player card nodes in the scene tree so that draw order matches hand order.
 ## Index 0 (oldest) is lowest; last index (newest) draws on top of all others.
+## The selected card — or, failing that, the card under the cursor — is then
+## raised above all of them, so a card the player is pointing at is never
+## covered by its right-hand neighbours (including right after a deselect,
+## while the cursor is still sitting on it).
 func _reorder_hand_nodes() -> void:
+	if _reordering:
+		return
+	var top: Card = _selected_card
+	if top == null:
+		top = _hovered_hand_card()
+	if top != null and (not is_instance_valid(top)
+			or not _bs.player_card_nodes.has(top)):
+		top = null
+	# Desired draw order: hand order, with `top` lifted above all of it.
+	var order: Array[Card] = []
 	for node in _bs.player_card_nodes:
-		# move_child to last puts each successive card on top of the previous.
 		var card := node as Card
+		if card != top:
+			order.append(card)
+	if top != null:
+		order.append(top)
+	# Bail when the tree already draws them in that order. move_child re-runs
+	# mouse picking and fires enter/exit on the very cards being sorted, so a
+	# reorder that changes nothing must touch nothing — otherwise every reflow
+	# kicks off another hover storm and the hand never settles.
+	var prev: int = -1
+	var sorted := true
+	for card in order:
+		var ci: int = card.get_index()
+		if ci <= prev:
+			sorted = false
+			break
+		prev = ci
+	if sorted:
+		return
+	_reordering = true
+	for card in order:
+		# move_child to last puts each successive card on top of the previous.
 		card.get_parent().move_child(card, card.get_parent().get_child_count() - 1)
+	_reordering = false
 
 
 func highlight_affordable_cards() -> void:
@@ -462,6 +566,9 @@ func highlight_affordable_cards() -> void:
 # outside-click dismissal.
 
 func on_card_hovered(card: Card) -> void:
+	# Tracked before the guards so the pointer stays accurate even when the
+	# hover arrives while a card is selected or a modal owns the screen.
+	_hovered_card = card
 	if _bs.game_phase != GameEnums.BattlePhase.CARD_PHASE:
 		return
 	if _is_player_input_blocked():
@@ -469,14 +576,43 @@ func on_card_hovered(card: Card) -> void:
 	# Selection takes priority — don't reorder under the selected card.
 	if _selected_card != null:
 		return
-	# Bring the hovered card to the top of the hand z-order.
-	card.get_parent().move_child(card, card.get_parent().get_child_count() - 1)
+	_queue_hand_reflow()
 
 
-func on_card_unhovered(_card: Card) -> void:
+func on_card_unhovered(card: Card) -> void:
+	if _hovered_card == card:
+		_hovered_card = null
 	if _selected_card != null:
 		return
-	_reorder_hand_nodes()
+	_queue_hand_reflow()
+
+
+## Schedules one hand reflow at idle. Never reflow straight out of a hover
+## signal: those signals are emitted from inside move_child while the parent is
+## locked, and moving from one card to its neighbour fires an exit and an enter
+## in the same frame — running both immediately means two overlapping relayouts
+## whose tweens kill each other. Deferring collapses the pair into one pass.
+func _queue_hand_reflow() -> void:
+	if _hand_reflow_queued:
+		return
+	_hand_reflow_queued = true
+	_apply_hand_reflow.call_deferred()
+
+
+func _apply_hand_reflow() -> void:
+	_hand_reflow_queued = false
+	if _bs == null or not is_instance_valid(_bs):
+		return
+	if _selected_card != null:
+		return
+	var hovered := _hovered_hand_card()
+	# Nothing to do when the row already matches the hover — this is what stops
+	# the enter/exit churn a reorder provokes from looping forever.
+	if hovered == _reflow_hover:
+		return
+	# The hovered card is skipped: its own slot never moves (its push is 0) and
+	# the slow layout spring would only fight its fast hover tween.
+	relayout_hand(_bs.player_card_nodes, hovered)
 
 
 func on_card_clicked(card: Card) -> void:
@@ -546,11 +682,16 @@ func _select_card(card: Card) -> void:
 	# Bring to top of scene tree and lift upward by Card.PRESS_LIFT.
 	card.get_parent().move_child(card, card.get_parent().get_child_count() - 1)
 	var idx := _bs.player_card_nodes.find(card)
-	var slot := slot_position(idx, _bs.player_card_nodes.size())
-	var lifted := slot - Vector2(0.0, Card.PRESS_LIFT)
-	# The lifted card straightens up (rotation 0) so its face reads flat while
-	# the description box is open; _return_selected_to_slot restores the fan.
-	card.tween_to(lifted, 0.0, Vector2.ONE,
+	var total := _bs.player_card_nodes.size()
+	var slot := slot_position(idx, total)
+	var rot := slot_rotation(idx, total)
+	# The card keeps its fan tilt and slides out along its OWN up-axis rather
+	# than along screen-up: a card on the left half of the fan leans left, so it
+	# travels up-left; one on the right half travels up-right. Sideways travel
+	# is PRESS_LIFT × sin(fan angle), so it scales with BS_HAND_FAN_STEP_DEG.
+	var lifted := slot + Vector2(0.0, -Card.PRESS_LIFT).rotated(rot)
+	card.set_selected(true)
+	card.tween_to(lifted, rot, Vector2.ONE,
 			_bs.BS_HAND_SPRING_DURATION,
 			_bs.BS_HAND_TWEEN_EASE, _bs.BS_HAND_TWEEN_TRANS)
 	_show_description_box(card)
@@ -565,10 +706,15 @@ func _select_card(card: Card) -> void:
 func deselect_current_card() -> void:
 	if _selected_card == null:
 		return
+	var card := _selected_card
 	_return_selected_to_slot()
 	_hide_description_box()
 	_selected_card = null
-	_reorder_hand_nodes()
+	# Reflow the whole row rather than just dropping the card back: if the
+	# cursor is still on it, it stays enlarged, so its neighbours must slide
+	# away exactly as they do on a fresh hover — and _reorder_hand_nodes (inside
+	# relayout_hand) re-raises it above its right-hand neighbours.
+	relayout_hand(_bs.player_card_nodes, card)
 	# Clear the range / area visualization that _select_card kicked off.
 	if _bs.targeting_overlay != null:
 		_bs.targeting_overlay.clear_selection_preview()
@@ -577,6 +723,7 @@ func deselect_current_card() -> void:
 func _return_selected_to_slot() -> void:
 	if _selected_card == null or not is_instance_valid(_selected_card):
 		return
+	_selected_card.set_selected(false)
 	if not _bs.player_card_nodes.has(_selected_card):
 		return
 	var idx := _bs.player_card_nodes.find(_selected_card)
@@ -786,6 +933,9 @@ func _on_discard_selected_pressed() -> void:
 	var card := _selected_card
 	_hide_description_box()
 	_selected_card = null
+	# The card survives (it moves into the to-discard fan), so drop the lifted
+	# shadow pose with it — otherwise it keeps casting a floating shadow there.
+	card.set_selected(false)
 	_bs.card_select_overlay.add_card_to_discard(card)
 
 

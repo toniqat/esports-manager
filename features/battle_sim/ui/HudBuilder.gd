@@ -110,14 +110,22 @@ const HAND_INDICATOR_TITLE_COL  := Color(0.85, 0.85, 0.85)
 func _build_hand_indicators() -> void:
 	var hand_y: float = _bs.BS_HAND_CENTER.y
 	var hand_h: float = Card.CARD_H
-	var margin: float = _bs.BS_HAND_AREA_MARGIN
+	var screen_w0 := get_viewport().get_visible_rect().size.x
+	# BS_HAND_WIDTH_SCALE widens the card row past the nominal margin, so the
+	# real gutter is whatever is left beside the hand — never wider than the
+	# nominal margin, and never overlapped by the outermost card.
+	var margin: float = min(_bs.BS_HAND_AREA_MARGIN,
+			(screen_w0 - _bs.BS_HAND_WIDTH) * 0.5)
 	# Inset the labels a few px so they don't kiss the screen edge.
 	var inset: float  = 8.0
-	var w: float      = margin - inset * 2.0
+	var w: float      = max(1.0, margin - inset * 2.0)
+	# Shrink the font when the gutter is tighter than nominal so "Discard"
+	# still fits inside it (~3.5 px of glyph per point of font size).
+	var font_size: int = clampi(int(w / 3.5), 12, HAND_INDICATOR_FONT)
 
 	_bs.lbl_deck_count = Label.new()
 	_bs.lbl_deck_count.text = "Deck\n0"
-	_bs.lbl_deck_count.add_theme_font_size_override("font_size", HAND_INDICATOR_FONT)
+	_bs.lbl_deck_count.add_theme_font_size_override("font_size", font_size)
 	_bs.lbl_deck_count.add_theme_color_override("font_color", HAND_INDICATOR_TITLE_COL)
 	_bs.lbl_deck_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_bs.lbl_deck_count.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
@@ -128,7 +136,7 @@ func _build_hand_indicators() -> void:
 	var screen_w := get_viewport().get_visible_rect().size.x
 	_bs.lbl_discard_count = Label.new()
 	_bs.lbl_discard_count.text = "Discard\n0"
-	_bs.lbl_discard_count.add_theme_font_size_override("font_size", HAND_INDICATOR_FONT)
+	_bs.lbl_discard_count.add_theme_font_size_override("font_size", font_size)
 	_bs.lbl_discard_count.add_theme_color_override("font_color", HAND_INDICATOR_TITLE_COL)
 	_bs.lbl_discard_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_bs.lbl_discard_count.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER

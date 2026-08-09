@@ -21,7 +21,17 @@ const BS_HAND_AREA_MARGIN := 130.0
 # this — see CardPhaseManager.slot_position().
 const BS_HAND_CARD_GAP    := 12.0
 # Available inner width of the hand row (set in _ready from viewport size).
-var BS_HAND_WIDTH: float  = 820.0
+var BS_HAND_WIDTH: float  = 902.0
+# The hand row is widened past the margin-derived width by this factor so the
+# cards overlap each other less. It eats into the Deck / Discard gutters, so
+# HudBuilder._build_hand_indicators re-derives its gutter from the real hand
+# edge instead of BS_HAND_AREA_MARGIN.
+const BS_HAND_WIDTH_SCALE := 1.10
+# How far (px) the card immediately beside a hovered card slides away from it,
+# so the 1.2x-enlarged card never covers its neighbours. The push falls off
+# linearly to 0 at each end of the row, so the hand's total width is unchanged
+# — see CardPhaseManager.hover_push_offset().
+const BS_HAND_HOVER_PUSH  := 28.0
 # Per-card rotation step (degrees) of the hand fan. Card i is rotated
 # (i - (total-1)/2) * this, so the hand splays very slightly like a real fan
 # without hurting readability — see CardPhaseManager.slot_rotation().
@@ -201,8 +211,9 @@ func _ready() -> void:
 	var vp_cx := vp_w * 0.5
 	BS_HAND_CENTER.x = vp_cx - Card.CARD_W * 0.5
 	# Inner hand width = total width minus the two side margins reserved for
-	# the Deck / Discard count labels.
-	BS_HAND_WIDTH = max(Card.CARD_W, vp_w - 2.0 * BS_HAND_AREA_MARGIN)
+	# the Deck / Discard count labels, widened by BS_HAND_WIDTH_SCALE.
+	BS_HAND_WIDTH = max(Card.CARD_W,
+			(vp_w - 2.0 * BS_HAND_AREA_MARGIN) * BS_HAND_WIDTH_SCALE)
 
 	_field_loader.load_field(tiles_layer, _building_layer, _wp_layer)
 	var _vp_size := get_viewport().get_visible_rect().size

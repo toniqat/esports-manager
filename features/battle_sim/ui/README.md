@@ -27,11 +27,15 @@ Creates UI inside `_bs.canvas` (a CanvasLayer added to BattleSim):
   5 player slots on the LEFT, center column (time + total score), 5 enemy
   slots on the RIGHT. Has an explicit opaque dark `StyleBoxFlat` so the AI
   hand peek behind it stays visually clipped regardless of theme.
-- **Hand indicators** (in the BS_HAND_AREA_MARGIN gutters either side of the
-  card row) — `lbl_deck_count` (left, "Deck\n10") and `lbl_discard_count`
-  (right, "Discard\n0"). CardPhaseManager updates the text on every draw /
-  play and tweens the counts during a deck/discard reshuffle. Built by
-  `_build_hand_indicators()`.
+- **Hand indicators** (in the gutters either side of the card row) —
+  `lbl_deck_count` (left, "Deck\n10") and `lbl_discard_count` (right,
+  "Discard\n0"). CardPhaseManager updates the text on every draw / play and
+  tweens the counts during a deck/discard reshuffle. Built by
+  `_build_hand_indicators()`. The gutter is **not** `BS_HAND_AREA_MARGIN` —
+  `BS_HAND_WIDTH_SCALE` widens the card row past it, so the gutter is derived
+  as `min(BS_HAND_AREA_MARGIN, (screen_w − BS_HAND_WIDTH) / 2)` (89px at 1080)
+  and the font shrinks with it (22 → 20) so "Discard" still fits and no card
+  ever overlaps a label.
 - **전략 포인트 도넛 ×2** — `CostDonut` ring gauges in the right-hand gutter
   (see below). Built by `_build_cost_donuts()`.
 - **Bottom strip** (y≈1790..1920) — empty. The old dual cost bars and the

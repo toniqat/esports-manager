@@ -4,8 +4,8 @@ extends Node
 # AI-side card play presentation layer. While the player phase ends, AI plays
 # its affordable cards one by one — this node owns the brief central card
 # animation that shows what the AI just played, plus the per-step pacing
-# delays. Engage cards routed through here also trigger the same EngageOverlay
-# the player would see, so the AI's combat is fully visible.
+# delays. Engage cards routed through here also open the same real-time
+# EngageArena the player would see, so the AI's combat is fully visible.
 #
 # Lifecycle:
 #   • CardPhaseManager.end_card_phase() awaits run_ai_plays(), which loops the
@@ -58,16 +58,16 @@ func run_ai_plays() -> void:
 			_bs.engage_discount_ai = 0
 		_bs.ai_hand.erase(pick)
 		await _show_card_centre(pick)
-		var has_engage := _bs.card_phase.card_has_engage(pick)
 		var log_msg := _bs.card_phase.apply_and_dispose_ai_card(pick)
 		if log_msg != "":
 			_bs.last_log = log_msg
 		_bs.hud.update_hud()
 		_bs.renderer.queue_redraw()
-		# Engage routes through start_engage for AI now (vs the legacy
-		# resolve_silent path); wait for the EngagePhaseManager to emit
-		# engage_finished before moving on so the modal pacing isn't stomped.
-		if has_engage and _bs.engage_phase.is_active():
+		# The AI's engage / 결투 cards open the same real-time arena the player
+		# would see. Gate on is_active() rather than on the card's effect chain
+		# so 결투 (whose clause is `duel`, not `engage:N`) is awaited too —
+		# otherwise the next AI play stomps the open arena.
+		if _bs.engage_phase.is_active():
 			await _bs.engage_phase.engage_finished
 		await _bs.get_tree().create_timer(POST_GAP_SEC).timeout
 

@@ -256,8 +256,8 @@ The DB column is a `;`-separated chain of clauses. Each clause is
 | `shield_pct:N` | yes | **Player**: PILOT mode → click an ally; gains shield = N% of max_hp. **AI**: random ally. Cleared on 본진 복귀. |
 | `recall_ally` | yes | **Player**: PILOT mode → click an ally; teleports to HQ at full HP, shield reset, waypoint reset. **AI**: random ally. |
 | `exhaust_choice:N` | yes (random) | Random N from hand → removed (소멸) |
-| `engage:N` | yes | **Player**: opens CardTargetingOverlay PREVIEW mode — caster cell + 6 neighbours highlighted, side panel lists participants, 확인 launches the engage modal. **AI**: same modal flow via AiCardPlayer (no longer silent). `exclude_lane` flag propagates. |
-| `duel` | yes | **Player**: PILOT mode → click an enemy in range; opens an engage modal restricted to caster + target with the round counter hidden, runs to first KO. **AI**: random enemy in range. Routes through `EngagePhaseManager.start_duel`. |
+| `engage:N` | yes | **Player**: opens CardTargetingOverlay PREVIEW mode — caster cell + 6 neighbours highlighted, side panel lists participants, 확인 launches the engage arena. **AI**: same flow via AiCardPlayer. `exclude_lane` flag propagates. **N 은 라운드가 아니라 초로 환산된다** — `N × RealtimeEngageSim.SEC_PER_ROUND` (현재 3.0 → `engage:3` = 9초). |
+| `duel` | yes | **Player**: PILOT mode → click an enemy in range; opens the real-time arena restricted to caster + target with the timer running up instead of down, ends on first KO / 이탈 (`DUEL_MAX_SEC` cap). **AI**: random enemy in range. Routes through `EngagePhaseManager.start_duel`. |
 | `capture_jungle:N` | yes | **Player**: LOCATION mode restricted to enemy-owned jungle/neutral cells in range; flips the picked cell to caster's team for N turns. **AI**: random valid cell. SimulationCore.process_temp_zone_expiries restores the previous owner once `turn_count >= expires_turn`. |
 | `move` | yes | **Player**: LOCATION mode → click any cell in `cast_range` (jungle cells included; the lane-pilot displacement recall pulls them back at phase end if needed). **AI**: random valid cell. Caster's `grid_pos` snaps to the picked cell and `BattleSim.anim_pilot_move` plays the tween. `return_left` / `cost_inc_phase` decorators on the same chain run separately. |
 | `cost_reduce_engage:N` | yes | One-shot pending discount on the side's next engage card. Stored on `_bs.engage_discount_p/ai`; consumed in `_play_card_direct` / `AiCardPlayer.run_ai_plays`. |
@@ -362,9 +362,10 @@ all consult this helper so the four cost-modifier effects stay in sync.
   hand wipes), it falls back to the legacy "spawn fresh card at centre"
   fade-in animation.
 - After the visual completes, `apply_and_dispose_ai_card(pick)` runs the
-  effect chain. `engage` cards now route through
-  `EngagePhaseManager.start_engage()` (no longer `resolve_silent`); the
-  loop `await`s the new `engage_finished` signal so the modal fully
+  effect chain. `engage` / `duel` cards route through
+  `EngagePhaseManager.start_engage()` / `start_duel()`; the loop gates on
+  `engage_phase.is_active()` (not on the effect chain, so 결투 is covered
+  too) and `await`s the `engage_finished` signal so the arena fully
   resolves before the next AI play starts.
 - `_ai_play_in_progress` blocks re-entry of `end_card_phase` and disables
   the donut's 턴 넘기기 face (via `can_end_card_phase`). It also gates

@@ -1636,7 +1636,16 @@ func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 			Callable(self, "_on_engage_finished"))
 	var tag: String = " (레인 제외)" if exclude_lane else ""
 	var who: String = "" if is_player else " (AI)"
-	return "전투 개시 %d라운드%s%s" % [rounds, tag, who]
+	# engage:N 의 N 은 실시간 교전 지속 초로 환산된다 (RealtimeEngageSim.SEC_PER_ROUND).
+	var secs: float = float(rounds) * RealtimeEngageSim.SEC_PER_ROUND
+	return "전투 개시 %s초%s%s" % [_fmt_secs(secs), tag, who]
+
+
+# 9.0 → "9", 4.5 → "4.5". 카드 로그의 초 표기 전용.
+static func _fmt_secs(secs: float) -> String:
+	if is_equal_approx(secs, round(secs)):
+		return str(int(round(secs)))
+	return "%.1f" % secs
 
 
 # Engage 모달이 닫힌 직후 호출. 사망자가 생겼을 수 있고, 보호막/HP 가
@@ -1686,9 +1695,9 @@ func _effect_recall_ally(ally_team: int,
 	return "복귀 %s" % _bs.pilot_label(t)
 
 
-# 결투 — opens an engage modal restricted to caster + picked enemy. Runs to
-# the first KO (engage stops as soon as one side is empty; we set
-# rounds_total to a large value so the round cap effectively never matters).
+# 결투 — opens a real-time engage arena restricted to caster + picked enemy.
+# No round/time limit is shown: the fight ends as soon as one side is out
+# (KO or successful 이탈). RealtimeEngageSim.DUEL_MAX_SEC is only a runaway cap.
 func _effect_duel(caster: PilotData, picked: PilotData,
 		is_player: bool) -> String:
 	if caster == null or picked == null:

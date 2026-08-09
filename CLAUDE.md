@@ -83,6 +83,11 @@ esports-manager/
 │       │   ├── CardSelectOverlay.gd      ← 버리기:N / 찾기:N modal pick UI
 │       │   ├── CardTargetingOverlay.gd   ← 대상 지정 (PILOT/LOCATION/PREVIEW)
 │       │   └── AiCardPlayer.gd           ← AI 카드 사용 시 중앙 애니메이션
+│       ├── engage/
+│       │   ├── README.md
+│       │   ├── EngagePhaseManager.gd   ← 실시간 교전 오케스트레이터 (engage:N / duel)
+│       │   ├── RealtimeEngageSim.gd    ← 헤드리스 실시간 MOBA 교전 시뮬레이터
+│       │   └── EngageArena.gd          ← 풀스크린 아레나 렌더러 + 결과 대시보드
 │       ├── gambit/
 │       │   ├── README.md
 │       │   └── GambitPhaseManager.gd ← Pre-battle lane assignment UI
@@ -255,6 +260,7 @@ Each child module has `@onready var _bs: BattleSim = get_parent() as BattleSim` 
 | BattleRenderer | `rendering/BattleRenderer.gd` | All `_draw()` logic (extends Node2D) |
 | CardPhaseManager | `card_phase/CardPhaseManager.gd` | Card turn flow, deck, hand, card effects |
 | GambitPhaseManager | `gambit/GambitPhaseManager.gd` | Auto role→lane mapping + battle launch |
+| EngagePhaseManager | `engage/EngagePhaseManager.gd` | 실시간 교전 오케스트레이터 — `engage/RealtimeEngageSim.gd`(헤드리스 시뮬)와 `engage/EngageArena.gd`(렌더러)를 잇는다 |
 | HudBuilder | `ui/HudBuilder.gd` | HUD construction and update (incl. `ui/CostDonut.gd` 전략 포인트 도넛 ×2) |
 
 ### Battle Sim — Active Systems
@@ -262,6 +268,7 @@ Each child module has `@onready var _bs: BattleSim = get_parent() as BattleSim` 
 |---|---|
 | Gambit Phase | **UI removed.** Lane is fixed by role (TANK→LEFT, FIGHTER→CENTER, ASSASSIN→GUERRILLA, SUPPORT/SNIPER→RIGHT). Pre-battle choices live in `features/match_flow/`. |
 | Auto BATTLE | BATTLE auto-ticks every 0.5s (1 tick = "1분"). No Next-Turn or Auto-Play buttons. CARD_PHASE pauses the tick. |
+| 교전 (ENGAGE) | `engage:N` / `duel` 카드가 여는 **실시간 MOBA 교전 아레나** (관전 전용, 플레이어 입력 없음). **`engage:N` 의 N 은 라운드가 아니라 `N × RealtimeEngageSim.SEC_PER_ROUND` 초** (현재 3.0 → `engage:3` = 9초 + 후퇴 연출 1.8초). 전장 육각 셀을 확대 매핑해 파일럿이 서 있던 자리에서 시작하고, 같은 셀의 아군은 붙어서 시작한다. 근접은 붙어서 때리고(이동속도 ×1.1, 시전자가 근접이면 개전 1회 대쉬), 원거리는 사거리 밴드를 유지하며 카이팅한다. 공격 시 짧은 경직. 반경 2칸 안의 포탑이 아레나에 등장하며 **전장과 달리 파일럿을 공격한다**; AI는 적 포탑 사거리를 피하되 "버티고·잡고·빠져나올 수 있다"는 계산이 서면 다이브한다. HP<30% 자발 후퇴 → 아레나 밖 이탈 성공 = 생존. 데미지 공식(`hit/(hit+evasion)`, atk 1회분, 보호막 우선)은 전장과 공유하고, `grid_pos` 는 교전으로 바뀌지 않는다. 자세한 내용과 튜닝 상수는 `engage/README.md`. |
 | 작전 단계 (CARD_PHASE) | Triggered at `player_cost ≥ PHASE_THRESHOLD`. 작전 점수 read out on the 전략 포인트 donut gauges (player: top-right of the hand row; enemy: top-right of the screen). Tapping the player donut flips it into a circular 턴 넘기기 button — disabled until ≥ 1 작전 점수 is spent; tapping elsewhere flips it back. |
 | 핸드 레이아웃 | Row is `BS_HAND_WIDTH` = (viewport − 2×`BS_HAND_AREA_MARGIN`) × `BS_HAND_WIDTH_SCALE` (1.10) = 902px wide; the Deck/Discard labels re-derive their gutter from the real hand edge. Cards fan by `BS_HAND_FAN_STEP_DEG` (0.8°) per index step around their own centre. Clicking the selected card again deselects it. Each player card casts a `DropShadow` child whose offset/blur grows with height — rest 10px → hover 24px → selected 32px. Hovering scales the card to `Card.HOVER_SCALE` (1.2×, cubic EASE_OUT in 0.04s) and spreads its neighbours apart by `hover_push_offset` (`BS_HAND_HOVER_PUSH` 28px on the immediate neighbour, ramping to 0 at each end so the row width holds); selecting lifts it by `Card.PRESS_LIFT` **along its own up-axis, keeping its fan rotation**. `_reorder_hand_nodes` raises the selected — else hovered — card above all others. Hover reflows are **deferred + coalesced** (`move_child` re-fires mouse_entered/exited synchronously — see card_phase/README.md), and `scale` is owned solely by `Card._refresh_float_state`. Card layout tweens `position`, never `global_position` (the latter is scale-coupled — see card_phase/README.md). |
 | Combat | **Same-cell only** — no adjacent-cell engagement, no attack range. Lane pilots paired 1:1 by HP against enemy lane pilots; each rolls `hit/(hit+evasion)` for damage. **Push is team-level**: tally unilateral wins per team across all pairs in the cell; the side with strictly more unilateral wins sweeps — every pilot of that side in the cell (including unpaired pilots in e.g. 2v1) advances, every opposing pilot retreats. Tie/0-0 → no push. `_move_pilot` aborts further multi-step movement only when a *same-scope* enemy enters the cell (jungler-vs-jungler or lane-vs-lane); cross-scope contacts never freeze movement. |

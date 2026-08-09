@@ -43,7 +43,7 @@ And accesses shared state via `_bs.pilots`, `_bs.turn_count`, etc.
 | BattleRenderer | Node2D | `rendering/BattleRenderer.gd` | HQ/turret HP bars + per-cell pilot rendering |
 | CardPhaseManager | Node | `card_phase/CardPhaseManager.gd` | 작전 단계 turn flow, deck, fanned hand layout, phase-end gating |
 | GambitPhaseManager | Node | `gambit/GambitPhaseManager.gd` | Auto role→lane mapping + launch (UI removed; pre-battle choices live in `features/match_flow/`) |
-| EngagePhaseManager | Node | `engage/EngagePhaseManager.gd` | 전투 개시(engage) modal — turn-based combat triggered by `engage:N` cards. Lazily added in `_ready()`. |
+| EngagePhaseManager | Node | `engage/EngagePhaseManager.gd` | 전투 개시(engage) modal — **실시간** MOBA 교전 아레나 (`engage/RealtimeEngageSim.gd` + `engage/EngageArena.gd`) triggered by `engage:N` / `duel` cards. Lazily added in `_ready()`. |
 | HudBuilder     | Node | `ui/HudBuilder.gd`         | HUD construction; 전략 포인트 도넛 (`ui/CostDonut.gd`) is the only interactive in-battle widget |
 
 Cross-module calls go through `_bs`:
@@ -77,7 +77,7 @@ Responsibilities:
 | `resources/PilotData.gd` | PilotData | role, hp/max_hp, atk, team, grid_pos, lane, waypoint_idx, **move_range**, **hit**, **evasion**, **jungle_start_pref** |
 | `resources/TurretData.gd` | TurretData | team, grid_pos, hp, tier, lane, alive |
 | `resources/PlayerData.gd` | PlayerData | id, name, role, team_id, 5 stats (laning / mechanics / gamesense / teamfight / mental), `assigned_mech` |
-| `resources/MechData.gd` | MechData | id, name, hp, atk, **presence** (4=melee/2=ranged; engage-only) |
+| `resources/MechData.gd` | MechData | id, name, hp, atk, **presence** (4=melee/2=ranged; engage 아레나의 타겟 어그로 가중치로만 사용) |
 
 ---
 
@@ -185,17 +185,27 @@ Responsibilities:
 - AI auto-plays affordable cards on phase end. Phase end also re-runs recalls
   (HP threshold + out-of-position card displacement).
 
-### Engage (전투 개시)
-Card-driven sub-phase: `engage:N` triggers a full-screen turn-based combat
-modal during CARD_PHASE. Returns to CARD_PHASE on close — see
-[`engage/README.md`](engage/README.md) for details. Key contract:
+### Engage (전투 개시) — 실시간 MOBA 교전
+Card-driven sub-phase: `engage:N` opens a full-screen **real-time** arena
+during CARD_PHASE (관전 전용 — no player input). Returns to CARD_PHASE on
+close — see [`engage/README.md`](engage/README.md) for details. Key contract:
 - Participants = pilots in radius-1 hex from caster (caster cell + 6 neighbors).
-- `exclude_lane` flag drops lane pilots that are still on their lane row;
-  junglers and displaced-into-jungle lane pilots stay in.
-- Initiator side attacks first each round; within a side, presence DESC
-  (random tie-break). Targets picked weighted-random by presence.
+  `exclude_lane` drops lane pilots still on their lane row; junglers and
+  displaced-into-jungle lane pilots stay in.
+- **`engage:N` = `N × RealtimeEngageSim.SEC_PER_ROUND` 초** (현재 3.0 → 9초),
+  not N rounds. `duel` runs to first KO / 이탈 with a `DUEL_MAX_SEC` cap.
+- Battlefield hex positions map 1:1 into arena coordinates, so pilots start
+  where they stood. Same-cell allies spawn clumped together.
+- Per-pilot AI: 근접은 붙어서 때리고(원거리보다 이동속도 1.1배, 시전자 근접이면
+  개전 1회 대쉬), 원거리는 사거리 밴드를 유지하며 카이팅. 공격 시 짧은 경직.
+- Turrets within 2 hexes appear in the arena and **do attack pilots** (unlike
+  on the battlefield). AI avoids enemy turret range unless a survive-kill-escape
+  계산 approves a dive. Turret HP is not damaged in the arena.
+- HP < 30% → 자발적 후퇴; 아레나 밖으로 나가면 이탈 성공(생존). 제한 시간
+  만료 시 전원 후퇴.
 - Damage uses the same `hit/(hit+evasion)` + shield-first formula as the
   battlefield. KO sets `respawn_timer = RESPAWN_TURNS` (battlefield-equivalent).
+  `grid_pos` is never modified by an engage.
 - Dashboard shows per-pilot dealt / taken / kills before resuming.
 
 ### Pilot Animations (UI-only, additive on top of logical state)

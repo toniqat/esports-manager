@@ -92,6 +92,8 @@ var _cam_min_zoom: float = 1.0
 
 var _time_lbl: Label = null
 var _phase_lbl: Label = null
+## 종료 유예 동안 상단에 띄우는 배너(빈 문자열 = 아직 전투 중).
+var _end_banner: String = ""
 ## row_data[PilotData] = {row, name, hp_bg, hp_fill, shield_fill}
 var _row_data: Dictionary = {}
 var _dashboard: Panel = null
@@ -323,7 +325,30 @@ func _refresh_header() -> void:
 		_time_lbl.add_theme_color_override("font_color",
 				TIME_LOW if left <= 3.0 else TIME_COLOR)
 	if _phase_lbl != null:
-		_phase_lbl.text = "교전 종료" if _sim.finished else ""
+		if _end_banner != "":
+			_phase_lbl.text = _end_banner
+		else:
+			_phase_lbl.text = "교전 종료" if _sim.finished else ""
+
+
+# 매니저가 종료 판정 직후(대시보드가 뜨기 END_HOLD_SEC 전에) 부른다.
+# 상태 라벨을 종료 사유 배너로 승격시키고 한 번 튕겨 준다 — 유예 시간 자체가
+# "지금 뭔가 끝났다"를 알아채라는 연출이므로 시선을 한 번 끌어 줘야 한다.
+func mark_engage_over(reason: String) -> void:
+	_end_banner = reason
+	if _phase_lbl == null:
+		return
+	_phase_lbl.text = reason
+	_phase_lbl.add_theme_font_size_override("font_size", 28)
+	_phase_lbl.add_theme_color_override("font_color", TITLE_COLOR)
+	_phase_lbl.position = Vector2(0, TIME_BAR_Y + TIME_BAR_H + 2.0)
+	_phase_lbl.size = Vector2(VP_W, 40)
+	_phase_lbl.pivot_offset = _phase_lbl.size * 0.5
+	var tw := create_tween()
+	tw.tween_property(_phase_lbl, "scale", Vector2(1.18, 1.18), 0.12) \
+			.set_ease(Tween.EASE_OUT)
+	tw.tween_property(_phase_lbl, "scale", Vector2.ONE, 0.18) \
+			.set_ease(Tween.EASE_IN_OUT)
 
 
 static func _fmt_time(secs: float) -> String:

@@ -16,9 +16,9 @@
 ## Files
 | File | Purpose |
 |---|---|
-| `EngagePhaseManager.gd` | `class_name EngagePhaseManager extends Node` — 오케스트레이터. 참가자를 모으고, `RealtimeEngageSim` 을 만들고, `_process` 에서 고정 스텝으로 굴리고, 종료 시 대시보드를 띄운다. 공개 API는 이전과 동일: `start_engage(caster, rounds, exclude_lane, on_done)` / `start_duel(caster, target, on_done)` / `is_active()` / `engage_finished` 시그널. |
+| `EngagePhaseManager.gd` | `class_name EngagePhaseManager extends Node` — 오케스트레이터. 참가자를 모으고, `RealtimeEngageSim` 을 만들고, `_process` 에서 고정 스텝으로 굴리고, 종료 판정 후 `END_HOLD_SEC`(2.0초) 유예를 두고 대시보드를 띄운다. 공개 API는 이전과 동일: `start_engage(caster, rounds, exclude_lane, on_done)` / `start_duel(caster, target, on_done)` / `is_active()` / `engage_finished` 시그널. |
 | `RealtimeEngageSim.gd` | `class_name RealtimeEngageSim extends RefCounted` — **헤드리스 시뮬레이터**. 노드를 하나도 만들지 않는다. 유닛 AI, 포탑, 데미지, 종료 판정 전부 여기. 튜닝 상수도 전부 여기 상단에 모여 있다. |
-| `EngageArena.gd` | `class_name EngageArena extends Control` — 시뮬레이터 상태를 그리기만 하는 렌더러. 바닥 / 셀 육각 / 포탑 사거리원 / 유닛 / 투사체를 **클리핑 창 + 카메라** 아래에 그리고, Label 노드로 타이틀·타이머·로스터·데미지 팝업을 담당한다. 결과 대시보드도 여기. |
+| `EngageArena.gd` | `class_name EngageArena extends Control` — 시뮬레이터 상태를 그리기만 하는 렌더러. 바닥 / 셀 육각 / 포탑 사거리원 / 유닛 / 투사체를 **클리핑 창 + 카메라** 아래에 그리고, Label 노드로 타이틀·타이머·로스터·데미지 팝업을 담당한다. 종료 사유 배너(`mark_engage_over`)와 결과 대시보드도 여기. |
 
 매니저는 `BattleSim._ready()` 에서 자식으로 붙고 `_bs.engage_phase` 에 잡힌다.
 매니저가 소유한 전용 `CanvasLayer`(`ENGAGE_OVERLAY_LAYER = 12`)에 아레나가
@@ -36,8 +36,9 @@
    카드 hover/click 과 턴 넘기기도 `CARD_PHASE` 가드 때문에 차단된다.
 4. 아레나가 열리고 매니저의 `_process` 가 시뮬레이터를 고정 스텝
    (`FIXED_DT = 1/60`, 프레임당 최대 `MAX_STEPS_PER_FRAME = 8` 스텝)으로 굴린다.
-5. 종료 → 대시보드(준 딜량 / 받은 딜량 / 처치 수) → `확인` → 아레나 제거,
-   `phase = CARD_PHASE`, `on_done` 호출, `engage_finished` emit.
+5. 종료 판정 → **`END_HOLD_SEC`(2.0초) 유예** → 대시보드(준 딜량 / 받은 딜량 /
+   처치 수) → `확인` → 아레나 제거, `phase = CARD_PHASE`, `on_done` 호출,
+   `engage_finished` emit.
 
 AI 플레이도 같은 아레나를 탄다. `AiCardPlayer.run_ai_plays()` 는 매 플레이
 후 `engage_phase.is_active()` 면 `engage_finished` 를 `await` 한다 — 카드의
@@ -57,8 +58,9 @@ effect chain 이 아니라 `is_active()` 로 판정하므로 clause 가 `duel` �
 `data/csv/cards.csv` 의 description 도 초 표기로 갱신되어 있다. CSV 를 만졌으면
 **Project → Tools → Rebuild game.db** 를 돌려야 게임에 반영된다.
 
-제한 시간이 끝나면 **그 프레임에 곧바로 종료**된다(후퇴 연출 없음). 그래서
-`engage:3` 의 모달 시간은 정확히 9초다.
+제한 시간이 끝나면 **그 프레임에 곧바로 전투가 멈춘다**(후퇴 연출 없음). 그래서
+`engage:3` 의 전투 시간은 정확히 9초다. 다만 대시보드는 그 뒤 `END_HOLD_SEC`
+(2.0초) 유예를 두고 뜨므로 모달 전체는 약 11초다 — 아래 [종료](#종료) 참고.
 
 ## 화면 구성 — 클리핑 창 · 카메라 · 딤
 아레나 그래픽은 **`VIEW_RECT`(24, 236, 1032×1184) 한 사각형 안에서만** 보인다.
@@ -195,11 +197,27 @@ arena = ARENA_CENTER + (hex_to_screen(cell) - hex_to_screen(origin_cell))
 수 없다.
 
 - **제한 시간 만료**: `elapsed >= duration` 인 프레임에 `finished = true`.
-  연출 유예 없음.
-- **한쪽 전멸**: `active_count(team) == 0` 이면 즉시 종료.
+- **한쪽 전멸**: `active_count(team) == 0` 이면 즉시 `finished = true`.
 - **저HP**: 아무 일도 일어나지 않는다. 빈사 유닛도 평소와 똑같이 붙고/카이팅
   하며 끝까지 싸운다. HP 30% 미만은 로스터 HP 바 색(`EngageArena.LOW_HP_RATIO`)
   으로만 표시되며 게임플레이 의미는 없다.
+
+### 종료 유예 (`END_HOLD_SEC` = 2.0초)
+`finished` 가 서자마자 대시보드를 띄우면 **마지막 처치가 결과창에 먹혀** "방금
+누가 죽은 거지?" 가 된다. 그래서 매니저는 종료 판정과 대시보드 사이에
+`EngagePhaseManager.END_HOLD_SEC`(2.0초) 유예를 둔다.
+
+- 유예 동안 `_process` 는 `step()` 대신 **`RealtimeEngageSim.step_afterglow(dt)`**
+  를 부른다 — 투사체 위치 / `hit_flash` / `swing_t` 만 흐르고 전투 판정(이동,
+  공격, 포탑, 종료)은 일절 돌지 않는다. `elapsed` 도 멈추므로 **대시보드의
+  교전 시간은 실제 전투 시간 그대로**(engage:3 = 9.0초)다.
+- 아레나는 계속 `_process` 를 돌리므로 카메라도 살아 있다. 마지막 생존자
+  쪽으로 프레이밍이 마저 붙는다.
+- 매니저가 `EngageArena.mark_engage_over(reason)` 로 상단 상태 라벨을 종료
+  사유 배너(`교전 종료 — 적군 전멸` / `아군 전멸` / `양측 전멸` / `시간 종료`)
+  로 승격시키고 한 번 튕겨(scale 1.18 → 1.0) 시선을 끈다. 배너 문자열은
+  `_end_banner_text()` 가 `active_count(0/1)` 로 판정한다.
+- 유예 값을 0 으로 두면 예전(즉시 대시보드) 동작으로 돌아간다.
 
 > 이탈이 사라진 대가: 적 포탑 사거리에 갇힌 파일럿은 빠져나갈 수단이 없다.
 > `_desired_move_dir` 의 포탑 회피(`TURRET_AVOID_WEIGHT`)가 유일한 방어선이고,
@@ -214,14 +232,36 @@ arena = ARENA_CENTER + (hex_to_screen(cell) - hex_to_screen(origin_cell))
   저HP 파일럿은 작전 단계 종료 시 `RecallSystem.process_phase_end_recalls()`
   의 HP 임계 복귀가 어차피 본진으로 데려간다.
 
-## 데미지 모델 (전장과 동일)
+## 데미지 모델 — 피해는 전장과 동일, **명중률은 별개**
 ```
-명중 = randf() < hit / (hit + evasion)
-피해 = attacker.atk        (보호막부터 흡수, 그 다음 HP)
+base   = hit / (hit + evasion)                      # 전장과 같은 기준값
+명중   = randf() < base + (1 - base) * ENGAGE_HIT_LERP
+피해   = attacker.atk        (보호막부터 흡수, 그 다음 HP)
 ```
+피해 공식은 전장(`SimulationCore._hit_roll` / `_apply_damage`)과 공유하지만
+**명중 굴림만 교전 전용**이다 — `_hit_chance()` 가 전장 확률을
+`ENGAGE_HIT_LERP`(현재 **0.7**)만큼 1.0 쪽으로 끌어올린다. 교전은 몇 초 안에
+끝나는 짧은 창이라 전장 명중률(55vs45 → 55%)을 그대로 쓰면 MISS 가 너무
+자주 떠서 아무 일도 안 일어난 것처럼 보인다.
+
+| hit vs evasion | 전장 | 교전 (lerp 0.7) |
+|---|---|---|
+| 55 vs 45 | 0.550 | **0.865** |
+| 50 vs 60 | 0.455 | **0.836** |
+| 60 vs 40 | 0.600 | **0.880** |
+
+보정은 단조 증가라 **스탯 우열 순서는 그대로 보존**된다(명중 높은 파일럿이
+여전히 더 잘 맞힌다). `0.0` 으로 두면 전장과 완전히 동일해지고, `1.0` 이면
+무조건 명중. 전장 명중률을 바꾸고 싶으면 `SimulationCore._hit_roll` 쪽을
+건드려야 하며, 두 값은 서로 영향을 주지 않는다.
+
 포탑 사격만 예외로 명중 굴림 없이 `TURRET_ATK` 를 넣는다.
 
-### 처리량 — 실측 (이탈 제거 후, 헤드리스 5v5 ×5, hp 220 / atk 8 / hit 55 / evasion 45)
+### 처리량 — 실측 (`ENGAGE_HIT_LERP` 도입 **이전**, 헤드리스 5v5 ×5, hp 220 / atk 8 / hit 55 / evasion 45)
+> 아래 수치는 명중률이 전장과 같던(0.55) 시절의 실측이다. 지금은 명중률이
+> 0.865 로 올라갔으므로 딜량·처치 모두 대략 **1.57배** 수준으로 늘어난다고
+> 보면 된다. 재측정 전까지는 상대적인 비율(근접 vs 원거리 피해)만 참고할 것.
+
 9초 교전에서 파일럿당 준 딜량 **16~80**, 한 명이 받은 최대 누적 딜량
 **160~220**, 처치는 5판 중 1판에서 1건. 이탈이 없어진 만큼 빈사 유닛이
 끝까지 맞아 주므로 턴제/이탈 시절보다 처치가 나기 쉬워졌지만 여전히 드물다.
@@ -230,9 +270,10 @@ arena = ARENA_CENTER + (hex_to_screen(cell) - hex_to_screen(origin_cell))
 40~144)로 갈린다 — 카이팅이 실제로 먹히고 있다는 신호. 근접 쪽 피해가 이보다
 줄면 `KITE_MELEE_MARGIN` 이 너무 커서 원거리가 안 잡히는 것이다.
 
-처치가 더 자주 나오길 원하면 **`ATK_INTERVAL_MELEE` / `ATK_INTERVAL_RANGED`
-를 줄이는 것이 유일한 튜닝 지점**이다. 데미지 공식 자체(atk 1회분)는 전장
-룰과 공유하므로 손대면 전장 밸런스까지 같이 움직인다.
+처치 빈도를 조절하는 교전 전용 노브는 둘이다: **`ATK_INTERVAL_MELEE` /
+`ATK_INTERVAL_RANGED`**(공격 빈도)와 **`ENGAGE_HIT_LERP`**(명중률). 둘 다
+교전에만 적용되므로 전장 밸런스를 건드리지 않는다. 반면 **피해량(atk 1회분)은
+전장 룰과 공유**하므로 손대면 전장까지 같이 움직인다.
 
 ## 참가자 수집 (변경 없음)
 시전자 셀 + 인접 6칸(반경 1 육각). 시전자는 항상 포함. 양 팀의 생존

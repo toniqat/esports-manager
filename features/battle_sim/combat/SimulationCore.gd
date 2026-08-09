@@ -317,6 +317,10 @@ func _resolve_turret_combat(attackers: Array, defenders: Array, td: TurretData,
 
 
 # Hit chance = attacker.hit / (attacker.hit + defender.evasion). Pure roll.
+#
+# 이건 **전장 전용** 명중률이다. 교전(RealtimeEngageSim)은 이 값을 기준으로
+# `ENGAGE_HIT_LERP` 만큼 1.0 쪽으로 끌어올린 별도 확률을 쓴다 — 여기를 고쳐도
+# 교전 보정폭은 그대로이고, 그 반대도 마찬가지다.
 func _hit_roll(attacker: PilotData, defender: PilotData) -> bool:
 	var num := float(attacker.hit)
 	var den := float(attacker.hit + defender.evasion)

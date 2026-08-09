@@ -81,6 +81,15 @@ const TURRET_GATHER_DIST: int = 2
 
 const PROJECTILE_SPEED: float = 1400.0
 
+# ─── 명중 보정 ───────────────────────────────────────────────────────────────
+## 교전 명중률은 전장(SimulationCore._hit_roll)과 **별개**로 계산한다.
+## 전장 확률 `hit/(hit+evasion)` 을 1.0 쪽으로 이만큼 끌어올린다:
+##     chance = base + (1.0 - base) * ENGAGE_HIT_LERP
+## 전장 룰은 건드리지 않고 교전에서만 MISS 가 줄어든다. 스탯 우열 순서는
+## 그대로 보존되므로(단조 증가) 명중이 높은 파일럿이 여전히 더 잘 맞힌다.
+## 0.0 = 전장과 동일, 1.0 = 무조건 명중.
+const ENGAGE_HIT_LERP: float = 0.7
+
 ## 교전이 끝날 때까지 아무도 전장을 뜰 수 없다 — 이탈/후퇴 상태는 없다.
 enum State { COMBAT, DASH, DEAD }
 
@@ -282,8 +291,21 @@ func step(dt: float) -> void:
 	_check_end()
 
 
-# 종료는 두 가지뿐이다 — 제한 시간 만료(연출 없이 즉시)와 한 쪽 전멸.
-# 교전 도중 이탈이 없으므로 engage:3 의 모달 시간은 정확히 9초다.
+# 종료 판정이 난 뒤의 유예(EngagePhaseManager.END_HOLD_SEC) 동안 굴리는 스텝.
+# 전투는 완전히 멈춘 상태에서 날아가던 투사체를 착탄시키고 피격 플래시 /
+# 공격 모션만 마저 감쇠시킨다. `elapsed` 는 건드리지 않으므로 대시보드에
+# 찍히는 교전 시간은 실제 전투 시간 그대로다.
+func step_afterglow(dt: float) -> void:
+	for raw in units:
+		var u := raw as EUnit
+		u.hit_flash = max(0.0, u.hit_flash - dt)
+		u.swing_t = max(0.0, u.swing_t - dt)
+	_update_projectiles(dt)
+
+
+# 종료는 두 가지뿐이다 — 제한 시간 만료와 한 쪽 전멸. 둘 다 그 프레임에
+# finished 가 서고, 대시보드는 매니저의 유예 시간만큼 늦게 뜬다.
+# 교전 도중 이탈이 없으므로 engage:3 의 전투 시간은 정확히 9초다.
 func _check_end() -> void:
 	if elapsed >= duration:
 		finished = true
@@ -519,7 +541,8 @@ func _pick_target(u: EUnit) -> EUnit:
 
 
 # ─── 전투 해상도 ─────────────────────────────────────────────────────────────
-# 전장 룰과 동일: hit/(hit+evasion) 굴림, 명중 시 dmg = atk, 보호막부터 흡수.
+# 데미지는 전장과 동일(명중 시 dmg = atk, 보호막부터 흡수)하지만 **명중률만은
+# 전장과 별개**다 — `_hit_chance` 가 ENGAGE_HIT_LERP 로 끌어올린 확률을 준다.
 func _resolve_attack(u: EUnit, target: EUnit) -> void:
 	u.cooldown = u.atk_interval
 	u.lock_t = u.atk_lock
@@ -533,8 +556,7 @@ func _resolve_attack(u: EUnit, target: EUnit) -> void:
 
 	var a: PilotData = u.pilot
 	var d: PilotData = target.pilot
-	var hit_total: float = float(max(1, a.hit + d.evasion))
-	if randf() >= float(a.hit) / hit_total:
+	if randf() >= _hit_chance(a, d):
 		popups.append({"pos": target.pos, "text": "MISS",
 				"color": Color(0.85, 0.85, 0.85)})
 		return
@@ -551,6 +573,15 @@ func _resolve_attack(u: EUnit, target: EUnit) -> void:
 	else:
 		popups.append({"pos": target.pos, "text": "-%d" % dealt,
 				"color": Color(1.0, 0.45, 0.45)})
+
+
+# 교전 전용 명중 확률. 전장의 `hit/(hit+evasion)` 을 기준으로 삼되
+# ENGAGE_HIT_LERP 만큼 1.0 쪽으로 끌어올린다. 전장 굴림은
+# `SimulationCore._hit_roll` 에 그대로 남아 있고 여기와 서로 영향을 주지 않는다.
+func _hit_chance(a: PilotData, d: PilotData) -> float:
+	var total: float = float(max(1, a.hit + d.evasion))
+	var base: float = clampf(float(a.hit) / total, 0.0, 1.0)
+	return base + (1.0 - base) * ENGAGE_HIT_LERP
 
 
 func _apply_damage(d: PilotData, amount: int) -> int:

@@ -60,7 +60,10 @@ Per cell with at least one pilot:
 - **Lane scope (lane pilots only)**:
   - **Pilot vs pilot** (`_resolve_pilot_combat`): teams paired 1:1 by ascending HP
     *for damage rolls*. Each pair rolls hit independently. Hit chance =
-    `attacker.hit / (attacker.hit + defender.evasion)`. Damage from successful
+    `attacker.hit / (attacker.hit + defender.evasion)` — **battlefield-only**;
+    the engage arena boosts this toward 1.0 via its own `ENGAGE_HIT_LERP`
+    (see `engage/README.md`), and the two are tuned independently.
+    Damage from successful
     hits is applied at step 4 of the loop and only affects paired pilots.
     Push, however, is decided **at the team level for the whole bracket**:
     - Tally unilateral-hit wins per team across all pairs.

@@ -38,6 +38,10 @@ signal engage_finished
 const FIXED_DT: float = 1.0 / 60.0
 ## 한 프레임에 몰아서 굴릴 수 있는 스텝 상한(프레임 드랍 시 나선형 방지).
 const MAX_STEPS_PER_FRAME: int = 8
+## 종료 판정 → 결과 대시보드 사이의 유예(초). 마지막 처치나 시간 만료를 눈으로
+## 확인할 틈을 준다. 이 동안 전투는 완전히 멈추고(시뮬레이터는 `step_afterglow`
+## 로 잔여 연출만 굴린다) 아레나 상단에 종료 사유 배너가 뜬다.
+const END_HOLD_SEC: float = 2.0
 
 # ─── Engage state (cleared in start_engage / start_duel) ─────────────────────
 var _active: bool = false
@@ -45,6 +49,8 @@ var _is_duel: bool = false
 var _team_pilots: Array = [[], []]   # team_pilots[t] = Array[PilotData]
 var _sim: RealtimeEngageSim = null
 var _accum: float = 0.0
+## 종료 유예 잔여 시간. 음수 = 유예 중이 아님(아직 전투 중).
+var _hold_left: float = -1.0
 
 # Hand-off back to CardPhaseManager for UI refresh after engage closes.
 var _on_done: Callable = Callable()
@@ -137,6 +143,7 @@ func _begin(caster: PilotData, t0: Array, t1: Array, duel: bool,
 	_team_pilots[1] = t1
 	_on_done = on_done
 	_accum = 0.0
+	_hold_left = -1.0
 
 	_sim = RealtimeEngageSim.new()
 	_sim.setup(_bs, caster, t0, t1, secs, duel)
@@ -155,6 +162,15 @@ func _begin(caster: PilotData, t0: Array, t1: Array, duel: bool,
 func _process(delta: float) -> void:
 	if not _active or _sim == null:
 		return
+	# 종료 유예 중 — 전투는 멈춘 채 잔여 연출만 흐른다.
+	if _hold_left >= 0.0:
+		_sim.step_afterglow(delta)
+		_hold_left -= delta
+		if _hold_left <= 0.0:
+			_hold_left = -1.0
+			set_process(false)
+			_finish_engage()
+		return
 	# 고정 스텝 누적. 프레임이 크게 튀어도 MAX_STEPS_PER_FRAME 로 잘라서
 	# 한 프레임에 교전이 통째로 끝나 버리는 일을 막는다.
 	_accum += min(delta, FIXED_DT * float(MAX_STEPS_PER_FRAME))
@@ -164,8 +180,30 @@ func _process(delta: float) -> void:
 		_accum -= FIXED_DT
 		steps += 1
 	if _sim.finished:
-		set_process(false)
-		_finish_engage()
+		_begin_end_hold()
+
+
+# 종료 판정 직후 — 대시보드를 바로 띄우지 않고 END_HOLD_SEC 만큼 아레나를
+# 그대로 보여 준다. 마지막 처치가 대시보드에 먹혀 "언제 죽었지?" 가 되는 걸
+# 막는 게 목적이라, 배너로 종료 사유(전멸 / 시간 종료)도 같이 알려 준다.
+func _begin_end_hold() -> void:
+	_hold_left = END_HOLD_SEC
+	if _arena != null:
+		_arena.mark_engage_over(_end_banner_text())
+
+
+func _end_banner_text() -> String:
+	if _sim == null:
+		return "교전 종료"
+	var t0_out: bool = _sim.active_count(0) == 0
+	var t1_out: bool = _sim.active_count(1) == 0
+	if t0_out and t1_out:
+		return "교전 종료 — 양측 전멸"
+	if t1_out:
+		return "교전 종료 — 적군 전멸"
+	if t0_out:
+		return "교전 종료 — 아군 전멸"
+	return "교전 종료 — 시간 종료"
 
 
 # ─── Participant gathering ───────────────────────────────────────────────────
@@ -221,6 +259,7 @@ func _on_dashboard_confirmed() -> void:
 	_close_overlay()
 	_active = false
 	_sim = null
+	_hold_left = -1.0
 	# Return to CARD_PHASE — player can keep playing cards or press 턴 넘기기.
 	_bs.game_phase = GameEnums.BattlePhase.CARD_PHASE
 	if _on_done.is_valid():

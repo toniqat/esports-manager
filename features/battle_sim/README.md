@@ -198,8 +198,13 @@ close — see [`engage/README.md`](engage/README.md) for details. Key contract:
 - Battlefield hex positions map 1:1 into arena coordinates, so pilots start
   where they stood. Same-cell allies spawn clumped together.
 - **교전 중 이탈은 없다** — 아무도 아레나를 뜰 수 없고, 시간이 끝나면 그
-  프레임에 즉시 종료된다(engage:3 = 정확히 9초). 종료는 시간 만료 또는 한 쪽
-  전멸뿐. 빈사(HP<30%)여도 후퇴하지 않는다.
+  프레임에 전투가 멈춘다(engage:3 = 전투 시간 정확히 9초). 종료는 시간 만료
+  또는 한 쪽 전멸뿐. 빈사(HP<30%)여도 후퇴하지 않는다.
+- **종료 → 대시보드 사이에 `EngagePhaseManager.END_HOLD_SEC`(2.0초) 유예**가
+  있다. 마지막 처치가 결과창에 먹히지 않도록 전투만 멈춘 아레나를 2초 더
+  보여 주고(잔여 연출은 `RealtimeEngageSim.step_afterglow`), 상단에 종료
+  사유 배너(`적군 전멸` / `시간 종료` …)를 띄운다. 유예 동안 `elapsed` 는
+  멈추므로 대시보드의 교전 시간은 실제 전투 시간 그대로다.
 - Per-pilot AI: 근접은 사거리에 들 때까지 계속 쫓고(원거리보다 이동속도 1.1배,
   시전자 근접이면 개전 1회 대쉬), 원거리는 자기 사거리 안에서 붙은 적과 거리를
   벌리며 계속 쏜다(사거리 끝에 닿으면 후진 대신 타겟 주위를 선회). 공격 시
@@ -207,8 +212,10 @@ close — see [`engage/README.md`](engage/README.md) for details. Key contract:
 - Turrets within 2 hexes appear in the arena and **do attack pilots** (unlike
   on the battlefield). AI avoids enemy turret range unless a survive-kill-escape
   계산 approves a dive. Turret HP is not damaged in the arena.
-- Damage uses the same `hit/(hit+evasion)` + shield-first formula as the
-  battlefield. KO sets `respawn_timer = RESPAWN_TURNS` (battlefield-equivalent).
+- Damage (atk 1회분 + shield-first) matches the battlefield, but **명중률은
+  별개**: 교전은 전장 확률을 `base + (1-base) × ENGAGE_HIT_LERP` (0.7) 로
+  끌어올려 MISS 가 훨씬 덜 난다 (55 vs 45 → 55% → 86.5%). KO sets
+  `respawn_timer = RESPAWN_TURNS` (battlefield-equivalent).
   `grid_pos` is never modified by an engage.
 - Dashboard shows per-pilot dealt / taken / kills before resuming.
 

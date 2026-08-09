@@ -46,30 +46,84 @@ re-evaluates the dim state.
   to 0 while the deck count grows over `BS_RESHUFFLE_TWEEN_DUR` (~0.55s).
 - `spawn_card_node(cd)` — instantiates a player Card.tscn into `_bs.canvas`. The
   AI hand is logical-only — no card backs are spawned for the enemy.
-- `slot_position(index, total)` — returns the top-left viewport position for the
-  card at `index` in a hand of size `total`. Spacing is
+- **The fan is one circle.** Every card centre rides a circle of radius
+  `BS_HAND_FAN_RADIUS` (3200px) whose pivot sits directly *below* the row, and
+  both readings of the fan come off it: a card's tilt is its angle on the circle
+  (`_fan_angle`), its vertical offset is how far the circle has dropped from its
+  apex at that angle (`_fan_arc_drop`). The apex is the middle of the row, so
+  **the centre card is the highest and the hand curves down toward both ends** —
+  a hand held from underneath, not a valley. Measured at the 12-card cap: the
+  outermost cards tilt ±6.7° and hang 21.4px below the middle pair; a 5-card
+  hand splays ±6.2° / 18.5px (its spacing is uncompressed, so it's just as wide).
+  Shrink the radius for a deeper curve.
+- `slot_spacing(total)` — uniform centre-to-centre spacing.
   `Card.CARD_W + BS_HAND_CARD_GAP` until the natural span exceeds
-  `BS_HAND_WIDTH`; from then on it compresses uniformly so the hand always
-  fits the fixed-width row centered on `BS_HAND_CENTER`. `hover_push_offset`
-  is added to the X.
-- `hover_push_offset(index, total)` — the spread that keeps a hovered card's
-  1.2× enlargement from covering its neighbours. Cards left of the hovered one
-  slide left, cards right of it slide right, ramping linearly from the full
-  `BS_HAND_HOVER_PUSH` (28px) on the immediate neighbour down to **exactly 0 on
-  the outermost card of each side** — so the row's edges never move and the hand
-  keeps its width. The hovered card itself stays put. Verified for 8 cards with
-  index 2 hovered: `[0, −28, 0, +28, +21, +14, +7, 0]`, span unchanged at 902px.
-  `_hovered_hand_card()` resolves which card that is — a `_hovered_card` fast
-  path validated against `Card.is_hovered()` and the hand array, so a freed card
-  or a hover that arrived while a modal owned the screen can't leave the row
-  stuck open.
-- `slot_rotation(index, total)` — the hand's shallow fan. Card `index` is
-  rotated `(index − (total−1)/2) × BS_HAND_FAN_STEP_DEG` (0.8° per step,
-  declared on `BattleSim`), so a 12-card hand splays only ±4.4°. Cards pivot
-  around their own centre (`pivot_offset` set in `spawn_card_node`), so the
-  slot X positions are unaffected.
+  `BS_HAND_WIDTH`; from then on it compresses so the row always fits the
+  fixed-width slot (172px up to 5 cards → 67.5px at 12).
+- `slot_center_dx(index, total)` — signed distance from
+  the middle of the row to the card's centre. Everything else (X slot, tilt, arc
+  drop) is derived from this one number, so the three can never disagree.
+  **There is no push-free variant.** A card has exactly one slot; the focus
+  card's own push is 0 by construction, so the lifted-card poses read the same
+  slot as everyone else (see 핸드 포커스 below).
+- `slot_position(index, total)` — top-left viewport
+  position: `BS_HAND_CENTER + (dx, _fan_arc_drop(dx))`. `BS_HAND_CENTER.x` is
+  set in `BattleSim._ready` to *the top-left a centred card would take*
+  (`viewport_cx − CARD_W/2`), which is why a centre-to-centre `dx` adds to it
+  directly. Resting row for ≥8 cards: x=89..991.
+- `slot_rotation(index, total)` — `_fan_angle` of the
+  same `dx`. Cards pivot around their own centre (`pivot_offset` set in
+  `spawn_card_node`), so the slot X positions are unaffected.
+
+##### 핸드 포커스 — who does the row spread around?
+- `_push_focus_card()` — **the single home of that question**: the *selected*
+  card if there is one, else the card under the cursor. A selected card is the
+  hand's focus in exactly the same way a hovered one is, so it opens the row the
+  same way and keeps it open while the cursor walks over to the description box.
+  Every other guard reads this one accessor instead of testing `_selected_card`
+  itself. `_hovered_hand_card()` supplies the cursor half — a `_hovered_card`
+  fast path validated against `Card.is_hovered()` and the hand array, so a freed
+  card or a hover that arrived while a modal owned the screen can't leave the
+  row stuck open.
+- `hover_push_offset(index, total)` / `_hover_push_amount(total)` — the spread
+  that keeps the focus card's 1.2× enlargement from covering its neighbours.
+  **The hand's overall width never changes.** The two outermost cards are
+  anchors and hold still; everything between them slides away from the focus by
+  `_hover_push_amount` scaled by a falloff that reaches exactly 0 at the end of
+  its own side, so the row doesn't grow — it *redistributes*. Each side ramps
+  against its own distance to the end of the row, so an off-centre focus still
+  pushes both of its neighbours nearly the full amount.
+  `ramp = 1 − (steps / steps_to_end) ^ BS_HAND_HOVER_FALLOFF_POW` (2.0): the
+  squared curve holds the near neighbours close to full push and concentrates
+  the give-way in the outer cards, rather than bleeding it evenly across the
+  block (a linear ramp would rob the immediate neighbours, which is exactly the
+  clearance a packed hand needs most). The amount itself is *solved*, not fixed:
+  the focus card covers `CARD_W × HOVER_SCALE / 2` = 96px to either side, so its
+  neighbour's centre has to sit 96 + `BS_HAND_HOVER_MIN_STRIP` (32) = 128px away
+  to leave a clickable sliver. The resting spacing pays part of that and pays
+  less the more cards the hand holds, so the push is the shortfall — **it grows
+  with the hand size**: `BS_HAND_HOVER_PUSH` (28px) floor up to 8 cards, 60.5px
+  at the 12-card cap. No edge clamp is needed, since anchored ends can't reach
+  the screen edge. Measured at 12 cards with the focus in the middle: the row
+  spans 89..831 whether open or closed, the two neighbours take ∓58.9 / ±58.1px,
+  the falloff runs 58.9 → 53.8 → 45.4 → 33.6 → 18.5 → 0, and the tightest
+  adjacent gap anywhere in the row is 45.7px — nothing crosses.
 - `relayout_hand(nodes, skip = null)` — tweens every card to its
-  `slot_position` / `slot_rotation`.
+  `slot_position` / `slot_rotation`, then records the focus it laid out for in
+  `_reflow_focus`.
+- **A hover reflow lays out the incoming focus card too** — `_apply_hand_reflow`
+  skips only `_selected_card` (whose lifted pose `_select_card` owns), never the
+  hovered card. The hovered card's slot under the *new* focus is its resting slot
+  (own push = 0), but it is almost never already sitting there: the *previous*
+  focus had pushed it aside. Skipping it left it stranded at that stale offset,
+  so a card hovered right after its neighbour sat displaced by up to a full push
+  (+26.9px at 8 cards, +59.8px at the 12-card cap) and then slid sideways on its
+  way up when clicked — the same card hovered with no prior focus did neither.
+  Skipping was safe for `scale` (`tween_to` doesn't touch it) but never for
+  `position`. Verified: hovering B directly and hovering B right after A now
+  agree to 0.0px, as do selecting B along either path, selecting a card while
+  another is already selected, and clicking in the same frame as the hover
+  (before the deferred reflow has run).
 - **Never tween `global_position` on a Card.** `Control.global_position` is the
   *rotated-and-scaled top-left corner*: the getter returns
   `position + pivot − R·S·pivot` and the setter inverts that with whatever
@@ -106,7 +160,8 @@ re-evaluates the dim state.
   rectangle trailing the card. Non-player cards (AI hand peek, 찾기 grid)
   keep the shadow hidden — `setup()` gates `_shadow.visible` on
   `is_player_card`.
-- **Hover** (`on_card_hovered` / `on_card_unhovered`): face-up player cards
+- **Hover** (`on_card_hovered` / `on_card_unhovered`, driven by the hand hit
+  layer — see 핸드 히트 레이어 below): face-up player cards
   brighten via a `modulate` tween and scale up to `Card.HOVER_SCALE` (1.2×)
   around their own centre, coming "closer to the screen" — the shadow drops
   to its hover pose at the same time. All three reactions run on
@@ -114,10 +169,13 @@ re-evaluates the dim state.
   over `HOVER_TWEEN_DURATION` 0.04s / `SHADOW_TWEEN_DURATION` 0.05s. The
   hovered card is also
   moved to the **top of the scene-tree** so it draws above its neighbours; on
-  unhover the canonical hand order is restored. Hover reflow is
-  suppressed while a card is selected so the lifted card stays on top (the
-  `_hovered_card` pointer is still tracked in that state, ahead of the guards,
-  so the row is correct the moment the selection drops). `Card.tween_to` treats
+  unhover the canonical hand order is restored. Moving the cursor from one card
+  to another re-spreads the row around the new one every time. While a card is
+  selected the hover has no effect on the layout — not through a special-case
+  guard, but because `_push_focus_card()` keeps answering the selected card, so
+  `_apply_hand_reflow` finds nothing changed and no-ops (the `_hovered_card`
+  pointer is still tracked throughout, ahead of every guard, so the row is
+  correct the instant the selection drops). `Card.tween_to` treats
   its `target_scale` argument as the *layout* scale (`_base_scale`) and leaves
   `scale` **entirely alone** unless that layout scale actually changes (no
   caller changes it today). `scale` therefore has exactly one owner —
@@ -128,20 +186,41 @@ re-evaluates the dim state.
   by `Card.PRESS_LIFT` (40px) **along its own up-axis while keeping its fan
   rotation** — `slot + Vector2(0, -PRESS_LIFT).rotated(slot_rotation(...))`, so
   a card on the left half of the fan travels up-left and one on the right half
-  travels up-right, like a card drawn out of a real fan. Sideways travel is
-  `PRESS_LIFT × sin(fan angle)`, i.e. ±1.1px in a 5-card hand and ±3.1px in a
-  12-card hand at the current `BS_HAND_FAN_STEP_DEG` of 0.8° — raise that
-  constant if the splay should read more strongly. It also pins to the top of the
-  hand, flips `Card.set_selected(true)` (→ tallest shadow), and spawns the
-  description box. The other cards stay in their slots — the gap where the
-  selected card sat remains visible. **Re-clicking the selected card
-  deselects it** (same path as an outside click; blocked only while a 전투
-  개시 PREVIEW is pending, which must be resolved through the overlay's 취소
-  button). Clicking a different card swaps the selection — the previous one
-  drops back into its slot via `_return_selected_to_slot`, which also clears
-  the selected shadow pose. `deselect_current_card` reflows the **whole** row
-  (not just the dropped card): if the cursor is still on it, it stays enlarged,
-  so its neighbours have to spread exactly as they do on a fresh hover.
+  travels up-right: straight out of the fan, the way a card is drawn from a real
+  hand, never plain screen-up-and-right. Sideways travel is
+  `PRESS_LIFT × sin(fan angle)` = ±4.6px on the outermost card of a 12-card hand;
+  tighten `BS_HAND_FAN_RADIUS` if the splay should read more strongly.
+  **Selecting makes the card the row's focus, so `_select_card` reflows the whole
+  row around it before posing the lift** — the neighbours give way exactly as they
+  would on a hover, and because the focus card's own push is 0, its pushed slot
+  *is* its resting slot: lift and drop are exact opposites with no push-free
+  special case anywhere. `_select_card` and `_show_description_box` read that one
+  slot.
+
+  > This is the fix for a real bug. The lifted pose used to be computed
+  > *push-free* while the row on screen was still spread around whichever card
+  > the cursor had opened it with — hover reflow is deferred to idle, so a click
+  > landing in the same frame as the `mouse_entered` posed the card off a layout
+  > that had not happened yet. The card visibly slid sideways on the way up
+  > (toward the first-hovered card, ~48–60px in a 12-card hand), and since
+  > deselect reflowed off the *new* focus, the sideways travel never came back —
+  > the card only dropped vertically. Reflowing inside `_select_card` closes the
+  > gap: both orderings end at the same layout.
+
+  Selecting also pins the card to the top of the hand (via the
+  `relayout_hand` → `_reorder_hand_nodes` pass), flips `Card.set_selected(true)`
+  (→ tallest shadow), and spawns the description box.
+  **Re-clicking the selected card deselects it** (same path as
+  an outside click; blocked only while a 전투 개시 PREVIEW is pending, which must
+  be resolved through the overlay's 취소 button). Clicking a different card swaps
+  the selection — the previous one is dropped out of its lifted pose and re-seated
+  by that same row-wide reflow, now spread around the new focus.
+  `deselect_current_card` reflows the **whole** row, the dropped card included
+  (it does *not* skip it): one pass places every card off the same focus state,
+  so the returning card can't land on a slot that disagrees with the row it's
+  landing in. If the cursor is still on it, it stays enlarged and becomes the
+  focus, so its neighbours hold the spread they already had — the card just
+  comes straight back down.
 - **Hand z-order** (`_reorder_hand_nodes`): canonical order is oldest-lowest /
   newest-on-top, then the **selected card — or, failing that, the card under the
   cursor — is raised above all of them**. That last clause is what keeps a
@@ -158,9 +237,11 @@ re-evaluates the dim state.
   1. `_hand_reflow_queued` + `call_deferred` — the exit on the old card and the
      enter on the new one arrive in the same frame and collapse into one pass
      that runs at idle, outside the locked move.
-  2. `_reflow_hover` — a pass whose hovered card matches the layout already on
+  2. `_reflow_focus` — a pass whose focus card matches the layout already on
      screen returns without touching anything, so the enter/exit churn a
-     reorder provokes can't loop forever.
+     reorder provokes can't loop forever. This doubles as the "selection
+     outranks the cursor" rule: with a card selected the focus never moves, so
+     hovering around reflows nothing.
   3. `_reordering` + an "already sorted?" check in `_reorder_hand_nodes` — a
      reorder that would change nothing moves no children at all.
 
@@ -218,6 +299,54 @@ re-evaluates the dim state.
   - **No role badge.** Role is conveyed solely by the owner face image; the
     description box still surfaces "시전자 <Role><team>" in the header line.
 
+#### 핸드 히트 레이어 — draw order must not decide hit-testing
+Player hand cards do **not** pick the mouse. `spawn_card_node` runs
+`_set_subtree_mouse_ignore(node)` over the card and every descendant, and one
+transparent `Control` (`HandHitLayer`, built by `_fit_hit_layer`) sits over the
+whole row and routes hover and clicks itself.
+
+Letting each card claim its own rect is what made a packed hand unclickable.
+The cards overlap far more than they are wide — 160px cards on a 67.5px stride
+at the 12-card cap — and the focus card is drawn on top at 1.2×, so it ate the
+only pixels its right-hand neighbour had left. Measured across every focus
+position of a 12-card hand: the card immediately right of the hovered one kept
+**5–17px**, and **0px** with card 8 focused — that neighbour could not be
+hovered at all, which is why moving the cursor one card to the right appeared to
+do nothing or to skip a card. Every other card kept 40–110px, so the damage was
+specific to the right-hand neighbour: the fan overlaps rightward, so each card's
+only exposed strip is its left edge, and that is exactly the strip the enlarged
+focus card covers.
+
+- `_apply_hit_bands(total)` — cuts the row into `_hit_bands[i]`, one
+  viewport-space `[left, right]` per card, at the **midpoints between
+  neighbouring card centres**. They tile the row exactly (no overlap to fight
+  over, no gap to fall through), so every card owns ~`slot_spacing` px no matter
+  who is drawn over it. The two end cards extend their band out to their own
+  edge so the ends of the row stay clickable. Runs from `relayout_hand`, so the
+  bands always match the layout that is on screen.
+- `_hand_card_at(p)` — band lookup plus **one hysteresis rule: the focus card
+  holds the cursor while it is anywhere on its enlarged face.** Without it the
+  hand walks away from the cursor: hovering a card re-spreads the row, which
+  slides the bands under a stationary cursor, which hands the hover to the next
+  card along, which re-spreads again. That cascade was real and measured — one
+  step from card 0 toward card 1 ran the focus 0 → 2 → 4 → 6 → 8 → 10 → 11.
+- `_on_hit_layer_gui_input` — motion drives `_update_hover_at`; a press routes
+  to `on_card_clicked`, or to `deselect_current_card()` when it lands on the
+  layer's padding rather than a card. `accept_event()` keeps that press out of
+  the outside-click handler, exactly as `Card._gui_input` used to.
+- `Card.set_hovered(bool)` is the hover entry point. `_on_mouse_entered` /
+  `_on_mouse_exited` still forward to it for the AI peek row and the 찾기 grid,
+  which are flat and don't overlap.
+- The layer is sized to the band the cards already occupy (row span + hover
+  enlargement, plus the lift only while a card is selected), so it can't swallow
+  anything the cards weren't covering. It clears the player 전략 포인트 도넛
+  (bottom 1410 vs layer top 1438) and sits below the description box, which is
+  added to the canvas later and so still out-picks it.
+
+Verified at both hand sizes: 0 sweep mismatches, 0 bad neighbour steps, the play
+button still fires through the description box, and the worst reachable strip
+anywhere is **28px at 12 cards** (was 0px) / **73px at 8 cards**.
+
 #### Every decorative child in Card.tscn must be IGNORE or PASS
 Hover and click both live on the `Card` root (`mouse_entered` / `_gui_input`).
 Any descendant left on `MOUSE_FILTER_STOP` swallows the mouse over its own rect,
@@ -234,12 +363,24 @@ set to `mouse_filter = 2` explicitly. `CardBack`, `CardFront`, `HeaderRow` and
 `OwnerFace` all carry that override. Verified: 218 sample points down and up the
 full card rect, 0 dead.
 
+**For hand cards, PASS is not good enough either** — hence
+`_set_subtree_mouse_ignore`. A PASS control is still *returned by picking*; it
+only forwards the event to its parent afterwards. So Card.tscn's
+`MarginContainer` / `VBoxContainer` / `CenterContainer`, which are PASS by class
+default, kept answering for the card's whole rect: the hit layer underneath
+never saw a single event, and because Godot also walks a mouse-enter up the
+parent chain, the Card still lit up — which reads exactly like the hit layer
+working and made this a slow one to find. Same defaults as above, opposite
+direction.
+
 ### Effect chain encoding (cards.csv `effect` column)
 The DB column is a `;`-separated chain of clauses. Each clause is
 `name[:value][|flag[:value]]…`. Examples:
 - `draw:2;discard:2`            — two clauses run in order
 - `attack:1|pierce|min_range:2` — one clause + two modifier flags
 - `engage:3|exclude_lane`       — engage with lane-exclusion modifier
+                                 (parsed and honoured, but no card in the pool
+                                  carries it since 교전 was removed)
 
 `apply_card_effect()` parses the chain, dispatches each clause through
 `_apply_single_effect`, and returns one log line of the form

@@ -24,11 +24,20 @@ var _hovered_card: Card = null
 # re-enters itself, fails its own move_child ("parent busy setting up
 # children") and leaves half-applied tweens behind. Reflows are therefore
 # deferred to idle and coalesced: `_hand_reflow_queued` collapses a whole
-# enter/exit storm into one pass, `_reflow_hover` makes a pass that wouldn't
+# enter/exit storm into one pass, `_reflow_focus` makes a pass that wouldn't
 # change anything a true no-op, and `_reordering` stops re-entry outright.
 var _hand_reflow_queued: bool = false
-var _reflow_hover: Card = null
+# Which card the layout currently on screen was computed around (see
+# _push_focus_card) — NOT necessarily the hovered one, since a selection
+# outranks the cursor.
+var _reflow_focus: Card = null
 var _reordering: bool = false
+
+# Mouse picking for the hand is owned by one transparent Control over the whole
+# row rather than by the cards themselves — see _apply_hit_bands for why.
+# `_hit_bands[i]` is the viewport-space [left, right] strip card `i` answers for.
+var _hand_hit_layer: Control = null
+var _hit_bands: Array[Vector2] = []
 
 # Description box layout (next to the selected card).
 const DESC_BOX_W   := 320.0
@@ -380,6 +389,10 @@ func spawn_card_node(cd: CardData) -> void:
 	var node := _bs.CARD_SCENE.instantiate() as Card
 	node.pivot_offset = Vector2(80.0, 110.0)
 	_bs.canvas.add_child(node)
+	# The hand's hit layer picks the mouse for every card in the row, so the
+	# cards themselves must not — an overlapping card that claims its own rect
+	# steals its neighbour's only clickable pixels (see _apply_hit_bands).
+	_set_subtree_mouse_ignore(node)
 	node.global_position = _bs.BS_HAND_CENTER  # start at hand center for spring-in
 	node.setup(cd, true, true)
 	# Hover brings the card to the top of the hand z-order; click selects it
@@ -396,59 +409,151 @@ func spawn_card_node(cd: CardData) -> void:
 	_apply_hand_dim_state()
 
 
-## Compute the slot position (top-left global_position) for card `index` in a
-## hand of `total` cards. Spacing is BS_HAND_CARD_GAP-based until the natural
-## span exceeds BS_HAND_WIDTH; from then on it compresses uniformly so the hand
-## always fits inside the fixed-width row. Rotation comes from slot_rotation().
-func slot_position(index: int, total: int) -> Vector2:
-	var hand_top_left_y: float = _bs.BS_HAND_CENTER.y
-	var visual_cx: float       = _bs.BS_HAND_CENTER.x + Card.CARD_W * 0.5
-	if total <= 0:
-		return Vector2(_bs.BS_HAND_CENTER.x, hand_top_left_y)
+## Uniform centre-to-centre spacing (px) between adjacent cards in a hand of
+## `total`. Cards sit `BS_HAND_CARD_GAP` apart until the natural span outgrows
+## BS_HAND_WIDTH; from then on the spacing compresses uniformly so the row always
+## fits the fixed-width slot the Deck / Discard indicators are measured against.
+func slot_spacing(total: int) -> float:
 	var ideal_spacing: float = Card.CARD_W + _bs.BS_HAND_CARD_GAP
-	var ideal_total: float   = float(total) * Card.CARD_W \
-			+ float(max(total - 1, 0)) * _bs.BS_HAND_CARD_GAP
-	var spacing: float = ideal_spacing
-	if total > 1 and ideal_total > _bs.BS_HAND_WIDTH:
-		spacing = (_bs.BS_HAND_WIDTH - Card.CARD_W) / float(total - 1)
-	var first_top_left_x: float = visual_cx \
-			- float(total - 1) * spacing * 0.5 - Card.CARD_W * 0.5
-	return Vector2(first_top_left_x + float(index) * spacing
-			+ hover_push_offset(index, total), hand_top_left_y)
+	if total <= 1:
+		return ideal_spacing
+	var ideal_total: float = float(total) * Card.CARD_W \
+			+ float(total - 1) * _bs.BS_HAND_CARD_GAP
+	if ideal_total <= _bs.BS_HAND_WIDTH:
+		return ideal_spacing
+	return (_bs.BS_HAND_WIDTH - Card.CARD_W) / float(total - 1)
+
+
+## Signed horizontal distance (px) from the middle of the hand row to the centre
+## of card `index` — the single input every other piece of fan geometry derives
+## from (X slot, tilt, arc drop all read off it).
+##
+## Folds in the spread that opens the row around the focus card. There is no
+## push-free variant: a card's slot is a single number, and the focus card's own
+## push is 0 by construction, so the lifted-card poses read the same slot as
+## everyone else. (An opt-out parameter used to exist for exactly that case and
+## was the bug — a card selected while a *different* card had opened the row got
+## posed at its unpushed slot and visibly slid sideways on the way up.)
+func slot_center_dx(index: int, total: int) -> float:
+	if total <= 0:
+		return 0.0
+	var dx: float = (float(index) - float(total - 1) * 0.5) * slot_spacing(total)
+	return dx + hover_push_offset(index, total)
+
+
+# ── Hand fan ──────────────────────────────────────────────────────────────────
+# The hand is a real fan, not a flat row. Every card centre rides a circle of
+# radius BS_HAND_FAN_RADIUS whose pivot sits directly *below* the row, and both
+# readings of the fan come off that one circle: a card's tilt is its angle on the
+# circle, and its vertical offset is how far the circle has fallen away from its
+# apex at that angle. The apex is the middle of the row, so the centre card is
+# the highest and the hand curves *down* toward both ends — the way a hand of
+# cards splays when it's held from underneath.
+
+## Tilt (radians) of a card whose centre sits `dx` px sideways of the hand
+## centre. Negative (counter-clockwise, leaning left) on the left half of the
+## fan, positive (leaning right) on the right half.
+func _fan_angle(dx: float) -> float:
+	var radius: float = _bs.BS_HAND_FAN_RADIUS
+	if radius <= 0.0:
+		return 0.0
+	return asin(clampf(dx / radius, -1.0, 1.0))
+
+
+## How far (px) *below* the fan's apex a card at horizontal offset `dx` hangs.
+## Always ≥ 0 and 0 only at the middle of the row, so the centre card is the
+## highest one and the ends drop away symmetrically.
+func _fan_arc_drop(dx: float) -> float:
+	var radius: float = _bs.BS_HAND_FAN_RADIUS
+	if radius <= 0.0:
+		return 0.0
+	var d: float = clampf(absf(dx), 0.0, radius)
+	return radius - sqrt(radius * radius - d * d)
+
+
+## Compute the slot position (top-left, viewport space) for card `index` in a
+## hand of `total` cards. X follows slot_center_dx; Y rides the fan arc, so a
+## card near either end of the row sits lower than the middle one. Rotation for
+## the same slot comes from slot_rotation().
+func slot_position(index: int, total: int) -> Vector2:
+	if total <= 0:
+		return _bs.BS_HAND_CENTER
+	# BS_HAND_CENTER is the top-left a card centred in the row would take (see
+	# BattleSim._ready), so a centre-to-centre distance adds to it directly.
+	var dx: float = slot_center_dx(index, total)
+	return Vector2(_bs.BS_HAND_CENTER.x + dx,
+			_bs.BS_HAND_CENTER.y + _fan_arc_drop(dx))
 
 
 ## Horizontal offset (px) card `index` takes on while some *other* card in the
-## hand is hovered, so the enlarged card doesn't cover its neighbours.
+## hand is the focus, so the enlarged card doesn't cover its neighbours.
 ##
-## Cards left of the hovered one slide left, cards right of it slide right, and
-## the displacement ramps linearly from the full `BS_HAND_HOVER_PUSH` on the
-## immediate neighbour down to **exactly 0 on the outermost card of each side**
-## — so the row's left and right edges never move and the hand keeps its width.
-## The hovered card itself never moves.
+## **The hand keeps its resting width the whole time.** The two outermost cards
+## are anchors and never move; everything between them slides away from the focus
+## by `_hover_push_amount` scaled by a falloff that reaches exactly 0 at the end
+## of its own side. So the row does not grow — it redistributes: the cards next
+## to the focus take almost the whole push, and each card further out takes less,
+## the outermost taking none. `BS_HAND_HOVER_FALLOFF_POW` (2.0) is what keeps the
+## near neighbours close to full push instead of bleeding the give-way evenly
+## across the block, which is the clearance a packed hand needs most.
 ##
-## e.g. 8 cards, index 2 hovered: index 0 → 0, index 1 → −PUSH, index 3 → +PUSH,
-## index 4 → +0.75·PUSH, 5 → +0.5, 6 → +0.25, index 7 → 0.
+## Note the two sides are ramped independently against their own distance to the
+## end of the row, so a focus card sitting off-centre still pushes both of its
+## neighbours by nearly the full amount.
 func hover_push_offset(index: int, total: int) -> float:
-	if total <= 2:
+	if total <= 1:
 		return 0.0
-	var hovered := _hovered_hand_card()
-	if hovered == null:
+	var focus := _push_focus_card()
+	if focus == null:
 		return 0.0
-	var h := _bs.player_card_nodes.find(hovered)
+	var h := _bs.player_card_nodes.find(focus)
 	if h < 0 or index == h:
 		return 0.0
-	var push: float = _bs.BS_HAND_HOVER_PUSH
-	if index > h:
-		# Ramp: full push at h+1 → 0 at the last card.
-		var right_span: float = float(total - 1 - (h + 1))
-		if right_span <= 0.0:
-			return 0.0
-		return push * float(total - 1 - index) / right_span
-	# Ramp: full push at h-1 → 0 at the first card.
-	var left_span: float = float(h - 1)
-	if left_span <= 0.0:
+	# Cards remaining between the focus and the anchored end on this side.
+	var steps_to_end: int = (total - 1 - h) if index > h else h
+	if steps_to_end <= 0:
 		return 0.0
-	return -push * float(index) / left_span
+	var t: float = float(absi(index - h)) / float(steps_to_end)
+	var ramp: float = 1.0 - pow(t, _bs.BS_HAND_HOVER_FALLOFF_POW)
+	var push: float = _hover_push_amount(total) * ramp
+	return push if index > h else -push
+
+
+## How far (px) the card immediately beside the focus slides away from it. Cards
+## further out get a fraction of this — see hover_push_offset.
+##
+## Solved from the coverage it has to prevent rather than fixed: the focus card
+## is drawn at `Card.HOVER_SCALE` around its own centre, so it covers
+## `CARD_W × HOVER_SCALE / 2` to either side, and its neighbour only stays
+## clickable while its centre sits that far off plus `BS_HAND_HOVER_MIN_STRIP`.
+## The resting spacing already pays part of that bill and pays less the more
+## cards the hand holds, so the push is whatever is still missing — **it grows
+## with the hand size**: 0 extra up to 6 cards, ~16px at 8, ~61px at the 12-card
+## cap. It never falls below `BS_HAND_HOVER_PUSH` so even a small, roomy hand
+## still visibly opens around the focus. No edge clamp is needed: the row's
+## outermost cards are anchored, so it can never grow past its resting span.
+func _hover_push_amount(total: int) -> float:
+	if total <= 1:
+		return 0.0
+	var clearance: float = Card.CARD_W * Card.HOVER_SCALE * 0.5 \
+			+ _bs.BS_HAND_HOVER_MIN_STRIP
+	return maxf(_bs.BS_HAND_HOVER_PUSH, clearance - slot_spacing(total))
+
+
+## The card the row currently spreads around: the **selected** card if there is
+## one, otherwise the card under the cursor.
+##
+## A selected card is the hand's focus in exactly the same way a hovered one is —
+## the row must open around it and stay open while the player walks the cursor
+## over to the description box. Routing both states through this one accessor is
+## also what makes the lift reversible: the focus card's own push offset is 0, so
+## its pushed slot *is* its resting slot, and select → deselect can't leave it
+## displaced by a stale push from whichever card happened to be hovered first.
+func _push_focus_card() -> Card:
+	if _selected_card != null and is_instance_valid(_selected_card) \
+			and _bs.player_card_nodes.has(_selected_card):
+		return _selected_card
+	return _hovered_hand_card()
 
 
 ## The hand card currently under the cursor, or null. `_hovered_card` is the
@@ -467,15 +572,15 @@ func _hovered_hand_card() -> Card:
 	return null
 
 
-## Rotation (radians) for card `index` in a hand of `total` cards. The hand
-## splays as a very shallow fan: BS_HAND_FAN_STEP_DEG per card step, centred so
-## the middle card stays upright. Cards rotate around their own centre
-## (pivot_offset set in spawn_card_node), so the slot X positions still hold.
+## Rotation (radians) for card `index` in a hand of `total` cards: its angle on
+## the fan circle, so the tilt always agrees with the arc drop in slot_position.
+## The middle card stays upright, the left half leans left and the right half
+## leans right. Cards rotate around their own centre (pivot_offset set in
+## spawn_card_node), so the slot X positions still hold.
 func slot_rotation(index: int, total: int) -> float:
 	if total <= 1:
 		return 0.0
-	var centered: float = float(index) - float(total - 1) * 0.5
-	return deg_to_rad(centered * _bs.BS_HAND_FAN_STEP_DEG)
+	return _fan_angle(slot_center_dx(index, total))
 
 
 ## Animate all hand cards to their slot positions and fan rotations.
@@ -492,11 +597,178 @@ func relayout_hand(nodes: Array, skip: Variant = null) -> void:
 				_bs.BS_HAND_TWEEN_EASE, _bs.BS_HAND_TWEEN_TRANS)
 		node.store_base_y()
 	if nodes == _bs.player_card_nodes:
-		# Whatever triggered this pass, the row now matches the current hover,
-		# so record it — a queued hover reflow that would repeat this layout
-		# can then bail instead of restarting every card's tween.
-		_reflow_hover = _hovered_hand_card()
+		# Whatever triggered this pass, the row now matches the current focus,
+		# so record it — a queued reflow that would repeat this layout can then
+		# bail instead of restarting every card's tween.
+		_reflow_focus = _push_focus_card()
+		_apply_hit_bands(total)
 		_reorder_hand_nodes()
+
+
+## Takes a hand card and everything inside it out of mouse picking.
+##
+## This has to be the **whole subtree**, not just the Card root. Godot's
+## per-class defaults are the trap: `Container` subclasses default to
+## `MOUSE_FILTER_PASS`, and a PASS control is still returned by picking — it only
+## forwards the *event* to its parent afterwards. So Card.tscn's
+## MarginContainer / VBoxContainer / CenterContainer kept answering for the
+## card's full rect, the hit layer underneath never saw a single event, and
+## because Godot also walks a mouse-enter up the parent chain, the Card itself
+## still lit up. Same defaults, opposite direction, as the note in this folder's
+## README about decorative children needing IGNORE or PASS.
+func _set_subtree_mouse_ignore(node: Node) -> void:
+	var ct := node as Control
+	if ct != null:
+		ct.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for child in node.get_children():
+		_set_subtree_mouse_ignore(child)
+
+
+## Recomputes the hand's hit bands and re-fits the hit layer over the row.
+##
+## Draw order and hit-testing are two different questions, and letting the first
+## answer the second is what made a packed hand unclickable. The cards overlap
+## far more than they are wide (160px on a 67.5px stride at the 12-card cap) and
+## the focus card is drawn on top at 1.2×, so per-card rect picking let it eat
+## the only pixels its right-hand neighbour had left — measured at 5–17px across
+## most focus positions and **0px** with the row's 9th card focused, i.e. that
+## neighbour could not be hovered at all. So the cards stop picking the mouse
+## (`MOUSE_FILTER_IGNORE`) and one layer over the row answers instead, splitting
+## it into bands cut at the midpoints between neighbouring card *centres*. The
+## bands tile the row exactly — no overlap to fight over, no gap to fall
+## through — so every card owns roughly `slot_spacing` px regardless of who is
+## drawn on top of it.
+func _apply_hit_bands(total: int) -> void:
+	_hit_bands.clear()
+	if total <= 0:
+		if _hand_hit_layer != null:
+			_hand_hit_layer.visible = false
+		return
+	var centers: Array[float] = []
+	for i in total:
+		centers.append(_bs.BS_HAND_CENTER.x + slot_center_dx(i, total)
+				+ Card.CARD_W * 0.5)
+	for i in total:
+		# The outermost cards extend their band out to their own edge instead of
+		# stopping half a stride short, so the ends of the row stay clickable.
+		var left: float = centers[i] - Card.CARD_W * 0.5
+		if i > 0:
+			left = (centers[i - 1] + centers[i]) * 0.5
+		var right: float = centers[i] + Card.CARD_W * 0.5
+		if i < total - 1:
+			right = (centers[i] + centers[i + 1]) * 0.5
+		_hit_bands.append(Vector2(left, right))
+	_fit_hit_layer(total)
+
+
+## Builds (once) and re-fits the transparent Control that owns mouse picking for
+## the whole hand row. It is deliberately sized to the band the cards already
+## occupy — the row's span plus the hover enlargement, and the lift only while a
+## card is actually selected — so it can't swallow anything the cards weren't
+## covering anyway. The player 전략 포인트 도넛 clears its top edge by 28px.
+func _fit_hit_layer(total: int) -> void:
+	if _hand_hit_layer == null:
+		_hand_hit_layer = Control.new()
+		_hand_hit_layer.name = "HandHitLayer"
+		_hand_hit_layer.mouse_filter = Control.MOUSE_FILTER_STOP
+		_bs.canvas.add_child(_hand_hit_layer)
+		_hand_hit_layer.gui_input.connect(_on_hit_layer_gui_input)
+		_hand_hit_layer.mouse_exited.connect(_on_hit_layer_mouse_exited)
+	var grow_x: float = Card.CARD_W * (Card.HOVER_SCALE - 1.0) * 0.5
+	var grow_y: float = Card.CARD_H * (Card.HOVER_SCALE - 1.0) * 0.5
+	var lift: float = Card.PRESS_LIFT if _selected_card != null else 0.0
+	var left: float  = _bs.BS_HAND_CENTER.x + slot_center_dx(0, total) - grow_x
+	var right: float = _bs.BS_HAND_CENTER.x + slot_center_dx(total - 1, total) \
+			+ Card.CARD_W + grow_x
+	# The row's ends hang lowest on the fan arc, so the deepest card sets the
+	# bottom edge.
+	var drop: float = _fan_arc_drop(slot_center_dx(0, total))
+	drop = maxf(drop, _fan_arc_drop(slot_center_dx(total - 1, total)))
+	var top: float = _bs.BS_HAND_CENTER.y - grow_y - lift
+	_hand_hit_layer.position = Vector2(left, top)
+	_hand_hit_layer.size = Vector2(right - left,
+			_bs.BS_HAND_CENTER.y + drop + Card.CARD_H + grow_y - top)
+	_hand_hit_layer.visible = true
+
+
+## The hand card at viewport point `p`, or null.
+##
+## Band lookup with one hysteresis rule: **the focus card holds the cursor while
+## it is anywhere on its enlarged face.** Without that, the hand walks away from
+## the cursor — hovering a card re-spreads the row, which slides the bands
+## sideways under a stationary cursor, which hands the hover to the next card
+## along, which re-spreads again. That cascade is real and was measured: a single
+## step from card 0 toward card 1 ran the focus 0 → 2 → 4 → 6 → 8 → 10 → 11.
+func _hand_card_at(p: Vector2) -> Card:
+	var total := _bs.player_card_nodes.size()
+	if total == 0 or _hit_bands.size() != total:
+		return null
+	var focus := _push_focus_card()
+	if focus != null and _card_rect(focus).has_point(p):
+		return focus
+	for i in total:
+		var band: Vector2 = _hit_bands[i]
+		if p.x < band.x or p.x > band.y:
+			continue
+		var card := _bs.player_card_nodes[i] as Card
+		return card if _card_rect(card).has_point(p) else null
+	return null
+
+
+## A card's on-screen rect. Scale is applied around `pivot_offset`, so the
+## visual top-left is `position + pivot − pivot·scale`. The fan tilt (≤6.7°) is
+## ignored — this is a hit rect, not a drawing bound.
+func _card_rect(card: Card) -> Rect2:
+	return Rect2(card.position + card.pivot_offset - card.pivot_offset * card.scale,
+			Vector2(Card.CARD_W, Card.CARD_H) * card.scale)
+
+
+func _on_hit_layer_gui_input(event: InputEvent) -> void:
+	var local: Vector2
+	if event is InputEventMouse:
+		local = (event as InputEventMouse).position
+	elif event is InputEventScreenTouch:
+		local = (event as InputEventScreenTouch).position
+	elif event is InputEventScreenDrag:
+		local = (event as InputEventScreenDrag).position
+	else:
+		return
+	var p: Vector2 = _hand_hit_layer.get_global_transform_with_canvas() * local
+	_update_hover_at(p)
+	var pressed: bool = false
+	if event is InputEventMouseButton:
+		var mb := event as InputEventMouseButton
+		pressed = mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed
+	elif event is InputEventScreenTouch:
+		pressed = (event as InputEventScreenTouch).pressed
+	if not pressed:
+		return
+	# accept_event() mirrors what Card._gui_input used to do: the press that
+	# selects a card must not double back into the outside-click deselect.
+	_hand_hit_layer.accept_event()
+	var card := _hand_card_at(p)
+	if card != null:
+		on_card_clicked(card)
+	else:
+		# A press inside the layer's padding but on no card reads as "outside".
+		deselect_current_card()
+
+
+func _on_hit_layer_mouse_exited() -> void:
+	_update_hover_at(Vector2(-1e9, -1e9))
+
+
+## Makes exactly the card under `p` (if any) the hovered one. Unhovers first so
+## `_hovered_card` can't be left pointing at a card that has already dropped its
+## hover state.
+func _update_hover_at(p: Vector2) -> void:
+	var want := _hand_card_at(p)
+	for node in _bs.player_card_nodes:
+		var c := node as Card
+		if c != want:
+			c.set_hovered(false)
+	if want != null:
+		want.set_hovered(true)
 
 
 ## Reorder player card nodes in the scene tree so that draw order matches hand order.
@@ -573,17 +845,15 @@ func on_card_hovered(card: Card) -> void:
 		return
 	if _is_player_input_blocked():
 		return
-	# Selection takes priority — don't reorder under the selected card.
-	if _selected_card != null:
-		return
+	# No selection check here: _push_focus_card is the single home of the
+	# "selection outranks the cursor" rule, and _apply_hand_reflow no-ops when
+	# the focus hasn't actually moved.
 	_queue_hand_reflow()
 
 
 func on_card_unhovered(card: Card) -> void:
 	if _hovered_card == card:
 		_hovered_card = null
-	if _selected_card != null:
-		return
 	_queue_hand_reflow()
 
 
@@ -603,16 +873,23 @@ func _apply_hand_reflow() -> void:
 	_hand_reflow_queued = false
 	if _bs == null or not is_instance_valid(_bs):
 		return
-	if _selected_card != null:
+	var focus := _push_focus_card()
+	# Nothing to do when the row already matches the focus — this is what stops
+	# the enter/exit churn a reorder provokes from looping forever, and it is
+	# also what makes hovering around while a card is selected a no-op (the
+	# selection stays the focus, so `focus` never changes).
+	if focus == _reflow_focus:
 		return
-	var hovered := _hovered_hand_card()
-	# Nothing to do when the row already matches the hover — this is what stops
-	# the enter/exit churn a reorder provokes from looping forever.
-	if hovered == _reflow_hover:
-		return
-	# The hovered card is skipped: its own slot never moves (its push is 0) and
-	# the slow layout spring would only fight its fast hover tween.
-	relayout_hand(_bs.player_card_nodes, hovered)
+	# The **new** focus card must be laid out with everyone else. Its slot under
+	# the new focus is its resting slot (own push = 0), but it is almost never
+	# sitting there: the previous focus had pushed it aside, and skipping it left
+	# it stranded at that stale offset — a card hovered right after its neighbour
+	# stayed displaced by up to a full push (+26.9px at 8 cards, ~60px at the
+	# 12-card cap), so it read as mis-hovered and then slid sideways on its way
+	# up when clicked. Only the *selected* card is skipped, because
+	# `_select_card` owns its lifted pose; the hovered card's scale is untouched
+	# by `tween_to`, so the layout spring can't fight the hover tween.
+	relayout_hand(_bs.player_card_nodes, _selected_card)
 
 
 func on_card_clicked(card: Card) -> void:
@@ -673,22 +950,35 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _select_card(card: Card) -> void:
-	if _selected_card != null and _selected_card != card:
-		# Lower the previous selection back into the hand row before raising
-		# this one — otherwise two cards would float in the lifted pose.
-		_return_selected_to_slot()
+	var previous: Card = _selected_card
+	if previous != null and previous != card:
+		# Drop the previous selection out of its lifted pose — otherwise two
+		# cards would float at once. Its slot is rewritten by the row-wide
+		# reflow below, off the NEW focus.
+		if is_instance_valid(previous):
+			previous.set_selected(false)
 		_hide_description_box()
 	_selected_card = card
-	# Bring to top of scene tree and lift upward by Card.PRESS_LIFT.
-	card.get_parent().move_child(card, card.get_parent().get_child_count() - 1)
+	# Selecting makes this card the row's focus, exactly as hovering it would,
+	# so the whole row re-spreads around it here: the neighbours give way, the
+	# previous selection settles back in, and the anchored end cards hold the
+	# hand's width. The focus card itself is skipped — its lifted pose follows.
+	# relayout_hand → _reorder_hand_nodes also raises it above every other card.
+	relayout_hand(_bs.player_card_nodes, card)
 	var idx := _bs.player_card_nodes.find(card)
 	var total := _bs.player_card_nodes.size()
+	# The focus card's own push offset is 0, so this pushed slot IS its resting
+	# slot — lift and drop are exact opposites without a push-free special case,
+	# and the card can't inherit a sideways shift from whichever card the cursor
+	# happened to open the row around before this one was clicked.
 	var slot := slot_position(idx, total)
 	var rot := slot_rotation(idx, total)
 	# The card keeps its fan tilt and slides out along its OWN up-axis rather
-	# than along screen-up: a card on the left half of the fan leans left, so it
-	# travels up-left; one on the right half travels up-right. Sideways travel
-	# is PRESS_LIFT × sin(fan angle), so it scales with BS_HAND_FAN_STEP_DEG.
+	# than along screen-up — straight out of the fan, the way a card is drawn
+	# from a real hand. A card on the left half of the fan leans left, so it
+	# travels up-left; one on the right half travels up-right. Sideways travel is
+	# PRESS_LIFT × sin(fan angle): ±4.6px on the outermost card of a 12-card hand,
+	# and it grows if BS_HAND_FAN_RADIUS is tightened.
 	var lifted := slot + Vector2(0.0, -Card.PRESS_LIFT).rotated(rot)
 	card.set_selected(true)
 	card.tween_to(lifted, rot, Vector2.ONE,
@@ -706,32 +996,20 @@ func _select_card(card: Card) -> void:
 func deselect_current_card() -> void:
 	if _selected_card == null:
 		return
-	var card := _selected_card
-	_return_selected_to_slot()
+	if is_instance_valid(_selected_card):
+		_selected_card.set_selected(false)
 	_hide_description_box()
 	_selected_card = null
-	# Reflow the whole row rather than just dropping the card back: if the
-	# cursor is still on it, it stays enlarged, so its neighbours must slide
-	# away exactly as they do on a fresh hover — and _reorder_hand_nodes (inside
-	# relayout_hand) re-raises it above its right-hand neighbours.
-	relayout_hand(_bs.player_card_nodes, card)
+	# Reflow the whole row — the dropped card INCLUDED. One pass places every
+	# card off the same hover state, so the returning card can't land on a slot
+	# that disagrees with the row it's landing in. If the cursor is still on it
+	# it stays enlarged, so its neighbours slide away exactly as they do on a
+	# fresh hover, and _reorder_hand_nodes (inside relayout_hand) re-raises it
+	# above its right-hand neighbours.
+	relayout_hand(_bs.player_card_nodes)
 	# Clear the range / area visualization that _select_card kicked off.
 	if _bs.targeting_overlay != null:
 		_bs.targeting_overlay.clear_selection_preview()
-
-
-func _return_selected_to_slot() -> void:
-	if _selected_card == null or not is_instance_valid(_selected_card):
-		return
-	_selected_card.set_selected(false)
-	if not _bs.player_card_nodes.has(_selected_card):
-		return
-	var idx := _bs.player_card_nodes.find(_selected_card)
-	var slot := slot_position(idx, _bs.player_card_nodes.size())
-	_selected_card.tween_to(slot, slot_rotation(idx, _bs.player_card_nodes.size()),
-			Vector2.ONE,
-			_bs.BS_HAND_SPRING_DURATION,
-			_bs.BS_HAND_TWEEN_EASE, _bs.BS_HAND_TWEEN_TRANS)
 
 
 # ─── Description box ─────────────────────────────────────────────────────────
@@ -755,6 +1033,8 @@ func _show_description_box(card: Card) -> void:
 
 	# Position next to the card. Pick the side with more room; clamp to screen.
 	var screen_w: float = _bs.canvas.get_viewport().get_visible_rect().size.x
+	# Same slot the lift in _select_card poses from (the selected card is the
+	# focus, so its own push is 0), so the box stays glued to the lifted card.
 	var slot := slot_position(_bs.player_card_nodes.find(card),
 			_bs.player_card_nodes.size())
 	var card_left: float  = slot.x

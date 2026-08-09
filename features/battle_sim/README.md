@@ -191,7 +191,8 @@ during CARD_PHASE (관전 전용 — no player input). Returns to CARD_PHASE on
 close — see [`engage/README.md`](engage/README.md) for details. Key contract:
 - Participants = pilots in radius-1 hex from caster (caster cell + 6 neighbors).
   `exclude_lane` drops lane pilots still on their lane row; junglers and
-  displaced-into-jungle lane pilots stay in.
+  displaced-into-jungle lane pilots stay in. Still supported end-to-end, but
+  the only card that used it (교전, id 4) has been removed from the pool.
 - **`engage:N` = `N × RealtimeEngageSim.SEC_PER_ROUND` 초** (현재 3.0 → 9초),
   not N rounds. `duel` runs to first KO with a `DUEL_MAX_SEC` cap.
 - Battlefield hex positions map 1:1 into arena coordinates, so pilots start

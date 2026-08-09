@@ -27,15 +27,27 @@ var BS_HAND_WIDTH: float  = 902.0
 # HudBuilder._build_hand_indicators re-derives its gutter from the real hand
 # edge instead of BS_HAND_AREA_MARGIN.
 const BS_HAND_WIDTH_SCALE := 1.10
-# How far (px) the card immediately beside a hovered card slides away from it,
-# so the 1.2x-enlarged card never covers its neighbours. The push falls off
-# linearly to 0 at each end of the row, so the hand's total width is unchanged
-# — see CardPhaseManager.hover_push_offset().
+# Minimum distance (px) the card *next to* the hovered card slides away from it.
+# The real push is usually larger — it grows with the hand size so a tightly
+# packed row still leaves its neighbours clickable — see
+# CardPhaseManager._hover_push_amount().
 const BS_HAND_HOVER_PUSH  := 28.0
-# Per-card rotation step (degrees) of the hand fan. Card i is rotated
-# (i - (total-1)/2) * this, so the hand splays very slightly like a real fan
-# without hurting readability — see CardPhaseManager.slot_rotation().
-const BS_HAND_FAN_STEP_DEG := 0.8
+# Sliver (px) of the neighbouring card that must stay uncovered by the
+# 1.2x-enlarged hovered card. This is what the push size is solved for.
+const BS_HAND_HOVER_MIN_STRIP := 32.0
+# Shape of the falloff that carries the push from "full" next to the hovered
+# card down to exactly 0 on the outermost card, which is what keeps the hand's
+# overall width fixed while the row opens. ramp = 1 − (steps/steps_to_end)^POW,
+# so a value > 1 holds the near neighbours near full push and concentrates the
+# whole give-way in the outer cards. 1.0 would be a plain linear ramp.
+const BS_HAND_HOVER_FALLOFF_POW := 2.0
+# Radius (px) of the virtual circle the hand fans along. Every card centre rides
+# that circle, whose pivot sits directly below the hand row, so the middle card
+# is the highest point and the row curves down toward both ends. Smaller radius
+# = deeper curve and stronger card tilt — see CardPhaseManager._fan_angle() /
+# _fan_arc_drop(). At the 12-card cap the outermost cards tilt ~6.7° and hang
+# ~22px below the middle one.
+const BS_HAND_FAN_RADIUS := 3200.0
 
 # ─── Pilot battlefield animation consts (fit within AUTO_PLAY_INTERVAL=0.5s) ─
 ## Move tween: cell-to-cell ease-out interpolation.

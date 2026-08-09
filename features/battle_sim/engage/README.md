@@ -27,8 +27,9 @@
 남아 있는 타게팅 UI 위에 그려진다.
 
 ## Trigger flow
-1. 플레이어(또는 AI)가 engage 카드(`engage:3`, `engage:4`,
-   `engage:3|exclude_lane`) 또는 결투(`duel`)를 낸다.
+1. 플레이어(또는 AI)가 engage 카드(`engage:3` 전투 개시, `engage:4` 완벽한
+   기회) 또는 결투(`duel`)를 낸다. `engage:N|exclude_lane` 도 그대로
+   동작하지만 현재 이 플래그를 다는 카드는 없다.
 2. `CardPhaseManager._effect_engage()` → `EngagePhaseManager.start_engage(...)`,
    `_effect_duel()` → `start_duel(...)`.
 3. 매니저가 `_bs.game_phase = ENGAGE` 로 전환. BATTLE 자동 틱은 멈추고,
@@ -51,7 +52,6 @@ effect chain 이 아니라 `is_active()` 로 판정하므로 clause 가 `duel` �
 |---|---|---|
 | 전투 개시 | `engage:3` | 9초 |
 | 완벽한 기회 | `engage:4` | 12초 |
-| 교전 | `engage:3\|exclude_lane` | 9초 |
 | 결투 | `duel` | 한 쪽 처치까지 (상한 `DUEL_MAX_SEC` 15초) |
 
 `data/csv/cards.csv` 의 description 도 초 표기로 갱신되어 있다. CSV 를 만졌으면
@@ -239,9 +239,17 @@ arena = ARENA_CENTER + (hex_to_screen(cell) - hex_to_screen(origin_cell))
 파일럿이 그 7칸 안에 있으면 참여한다. 정글러/레인 파일럿의 교전 스코프
 구분은 여기서 적용되지 않는다 — engage 는 그 경계를 명시적으로 넘는다.
 
-### `exclude_lane` 플래그 (카드 4 — 교전)
-자기 lane 위에 정상적으로 서 있는 lane 파일럿을 제외한다. 정글러는 항상
-포함, 카드 효과(`move` 등)로 jungle 셀에 변위된 lane 파일럿도 포함.
+### `exclude_lane` 플래그 (현재 이 플래그를 쓰는 카드는 없음)
+이 플래그를 달고 있던 **교전(id 4) 카드는 `cards.csv` 에서 제거**되어, 지금
+카드 풀에는 이 플래그를 세우는 카드가 하나도 없다. 플래그 자체는
+`CardPhaseManager` → `CardTargetingOverlay` 프리뷰 → `start_engage` 까지
+그대로 파싱·처리되므로, 앞으로 어떤 카드든 `engage:N` 절에 `|exclude_lane`
+을 붙이면 다시 살아난다.
+
+자기 lane 위에 정상적으로 서 있는(= jungle/neutral 셀에 있지 않은) lane
+파일럿을 제외한다. 정글러는 항상 포함, 카드 효과(`move` 등)로 jungle 셀에
+변위된 lane 파일럿도 포함. 아군 정글러나 변위된 아군 lane 파일럿을 범위에
+밀어 넣어 적 정글러 하나를 2:1 로 잡는 설계 의도다.
 
 ```gdscript
 # inclusion rule under exclude_lane:

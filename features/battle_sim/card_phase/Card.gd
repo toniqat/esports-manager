@@ -50,6 +50,17 @@ const SHADOW_HOVER_SPREAD    := 1.06
 const SHADOW_SELECTED_SPREAD := 1.08
 const SHADOW_TWEEN_DURATION  := 0.05
 
+# ── 사용 불가 오버레이 ────────────────────────────────────────────────────────
+# 마나(작전 점수) 부족 / 시전자 부활 대기 상태를 **카드 전체를 덮는 반투명
+# 판**으로 표현한다. card_front 의 배경색만 회색으로 칠하면 그 위에 얹힌 파일럿
+# 일러스트는 밝은 채로 남아 "쓸 수 있는 카드"처럼 읽히므로, 일러스트·이름·비용
+# 까지 한꺼번에 어두워지도록 최상위 자식에 슬래브를 깐다. 카드 모서리가
+# 둥글기 때문에 ColorRect 가 아니라 corner_radius 를 준 Panel 을 쓴다.
+const BLOCKED_OVERLAY_COLOR := Color(0.0, 0.0, 0.0, 0.58)
+## 시전자 부활까지 남은 턴 수 — 카드 한가운데 크게 찍힌다.
+const RESPAWN_FONT_SIZE     := 76
+const RESPAWN_FONT_COLOR    := Color(1.0, 0.86, 0.86)
+
 var data: CardData = null
 var face_up: bool = false
 var is_player_card: bool = true
@@ -73,6 +84,13 @@ var _shadow: Panel = null
 var _shadow_tween: Tween = null
 var _float_tween: Tween  = null
 
+# 사용 불가 표시 상태. `set_affordable` / `set_respawn_turns` 가 갱신하고
+# `_refresh_block_overlay` 가 두 값을 합쳐 슬래브와 숫자를 켜고 끈다.
+var _affordable: bool = true
+var _respawn_turns: int = 0
+var _block_overlay: Panel = null
+var _respawn_label: Label = null
+
 const DIM_MODULATE: Color = Color(0.42, 0.42, 0.48, 1.0)
 
 @onready var card_front: Panel = $CardFront
@@ -86,6 +104,7 @@ const DIM_MODULATE: Color = Color(0.42, 0.42, 0.48, 1.0)
 
 func _ready() -> void:
 	_build_shadow()
+	_build_block_overlay()
 
 
 func setup(card_data: CardData, player_card: bool, start_face_up: bool = false) -> void:
@@ -100,6 +119,7 @@ func setup(card_data: CardData, player_card: bool, start_face_up: bool = false) 
 	# add_child ordering, so both paths re-assert the shadow visibility.
 	if _shadow != null:
 		_shadow.visible = player_card
+	_refresh_block_overlay()
 
 
 # ── Floating shadow ───────────────────────────────────────────────────────────
@@ -137,6 +157,57 @@ func _apply_shadow_blur(blur: int) -> void:
 	sb.shadow_color = Color(0.0, 0.0, 0.0, 0.6)
 	sb.shadow_size  = blur
 	_shadow.add_theme_stylebox_override("panel", sb)
+
+
+# ── 사용 불가 오버레이 ────────────────────────────────────────────────────────
+
+## Builds the "can't play this" slab and its countdown number, both parked at
+## the END of the child list so they cover CardFront (owner face included).
+## Both must be MOUSE_FILTER_IGNORE: hover and click live on the `Card` root,
+## and a `Panel` / `Label` left on the default filter would punch a dead hole
+## across the whole card — see the module README.
+func _build_block_overlay() -> void:
+	if _block_overlay != null:
+		return
+	_block_overlay = Panel.new()
+	_block_overlay.name = "BlockOverlay"
+	_block_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_block_overlay.size = Vector2(CARD_W, CARD_H)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = BLOCKED_OVERLAY_COLOR
+	sb.corner_radius_top_left     = 10
+	sb.corner_radius_top_right    = 10
+	sb.corner_radius_bottom_left  = 10
+	sb.corner_radius_bottom_right = 10
+	_block_overlay.add_theme_stylebox_override("panel", sb)
+	_block_overlay.visible = false
+	add_child(_block_overlay)
+
+	_respawn_label = Label.new()
+	_respawn_label.name = "RespawnCountdown"
+	_respawn_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_respawn_label.size = Vector2(CARD_W, CARD_H)
+	_respawn_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_respawn_label.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
+	_respawn_label.add_theme_font_size_override("font_size", RESPAWN_FONT_SIZE)
+	_respawn_label.add_theme_color_override("font_color", RESPAWN_FONT_COLOR)
+	_respawn_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_respawn_label.add_theme_constant_override("outline_size", 10)
+	_respawn_label.visible = false
+	add_child(_respawn_label)
+
+
+## Turns the slab / countdown on or off from the two independent reasons a card
+## can be unplayable. Face-down cards (AI hand peek, 찾기 grid) never show it —
+## there is no cost or 시전자 to read on a card back.
+func _refresh_block_overlay() -> void:
+	if _block_overlay == null or not is_instance_valid(_block_overlay):
+		return
+	var showable: bool = face_up and is_player_card
+	_block_overlay.visible = showable and (_respawn_turns > 0 or not _affordable)
+	_respawn_label.visible = showable and _respawn_turns > 0
+	if _respawn_turns > 0:
+		_respawn_label.text = str(_respawn_turns)
 
 
 ## Re-poses the card and its shadow for the current hover / selected state.
@@ -343,19 +414,41 @@ func update_displayed_cost(effective_cost: int) -> void:
 	cost_label.add_theme_color_override("font_color", col)
 
 
+## Marks whether the player can currently pay for this card. The card body
+## keeps its cost colour either way — an unaffordable card is conveyed by the
+## full-card dim slab (`_refresh_block_overlay`), not by repainting the panel
+## grey, because the grey panel sits *under* the owner face and left the
+## portrait reading as bright/playable.
 func set_affordable(affordable: bool) -> void:
+	_affordable = affordable
 	var style := StyleBoxFlat.new()
-	style.bg_color = _cost_color(data.cost) if affordable else Color(0.25, 0.25, 0.25)
-	style.border_color = Color(1.0, 0.9, 0.1, 1.0) if affordable else Color(0.15, 0.15, 0.15)
-	style.border_width_bottom = 4 if affordable else 1
-	style.border_width_top    = 4 if affordable else 1
-	style.border_width_left   = 4 if affordable else 1
-	style.border_width_right  = 4 if affordable else 1
+	style.bg_color = _cost_color(data.cost)
+	style.border_color = Color(1.0, 0.9, 0.1, 1.0) if affordable else Color(0.45, 0.42, 0.22, 1.0)
+	style.border_width_bottom = 4 if affordable else 2
+	style.border_width_top    = 4 if affordable else 2
+	style.border_width_left   = 4 if affordable else 2
+	style.border_width_right  = 4 if affordable else 2
 	style.corner_radius_top_left     = 10
 	style.corner_radius_top_right    = 10
 	style.corner_radius_bottom_left  = 10
 	style.corner_radius_bottom_right = 10
 	card_front.add_theme_stylebox_override("panel", style)
+	_refresh_block_overlay()
+
+
+## Turns (>0) until this card's 시전자 respawns, 0 while they're alive. A card
+## whose owner is down is dimmed like an unaffordable one and additionally
+## carries the countdown number across its face; CardPhaseManager refuses to
+## play it while this is non-zero.
+func set_respawn_turns(turns: int) -> void:
+	_respawn_turns = max(0, turns)
+	_refresh_block_overlay()
+
+
+## True when neither reason blocks this card. Read by CardPhaseManager to gate
+## the 확인 button.
+func is_playable() -> bool:
+	return _affordable and _respawn_turns == 0
 
 
 func _on_mouse_entered() -> void:

@@ -1,27 +1,34 @@
 class_name CardTargetingOverlay
 extends Node
 
-# Modal targeting UI for cards that pick a pilot, a cell, or confirm a
-# caster-centred area (engage). Owned by BattleSim; activated from
-# CardPhaseManager._play_card_direct after the played card's CardData is
-# inspected for a target requirement. While active:
-#   • PILOT mode      — battlefield tiles are dimmed; only valid pilots stay
-#                       at full brightness. Click on a valid pilot's cell
-#                       resolves the target.
-#   • LOCATION mode   — pilots are dimmed; tiles stay normal and valid cells
-#                       are outlined. Click on a valid cell resolves it.
-#   • PREVIEW mode    — engage card pre-flight. The caster's hex area is
-#                       highlighted, the participating pilots are listed in
-#                       a side panel, and the player presses 확인 to launch
-#                       the engage modal (or 취소 to refund).
-# Cancel always restores the pre-play snapshot via the on_cancel callback.
+# 핸드에서 카드를 고르는 순간 켜지는 **대상 지정 오버레이**.
+#
+# 예전에는 카드를 고른 뒤 설명 상자의 "카드 내기"를 눌러야 비로소 모달 대상
+# 지정이 열렸다. 지금은 **카드 선택 자체가 대상 지정 단계**다 — 카드를 드는
+# 순간 사거리 밖 타일이 딤드되고, 대상을 찍은 뒤 좌하단 확인을 눌러야 카드가
+# 소비된다. 모달이 아니므로 핸드 클릭(다른 카드로 갈아타기)과 턴 넘기기는
+# 그대로 살아 있다.
+#
+#   • PILOT    — 사거리 안 타일은 노란 채움, 그 밖은 검은 딤. 유효 대상이
+#                아닌 파일럿은 마커 단위로 딤드된다. 파일럿 초상(마커)을
+#                눌러 대상을 지정하면 시안 링이 붙는다.
+#   • LOCATION — 같은 사거리 표시 + 유효 셀에 초록 외곽선. 셀을 눌러 지정.
+#   • PREVIEW  — 전투 개시류. 시전자 셀 + 인접 6칸이 영역이고 좌/우에 참여
+#                파일럿 패널이 뜬다. 따로 찍을 대상이 없으므로 확인은 처음부터
+#                활성.
+#   • INSTANT  — 대상이 없는 카드. 전장 표시는 하나도 없고 확인만 뜬다.
+#
+# 확인 / 취소는 화면 **좌하단**(Deck 카운터 바로 위)에 나란히 뜬다. 확인을
+# 누르기 전까지는 비용도 빠지지 않고 카드도 핸드에 그대로 있으므로, 취소는
+# 되돌릴 게 없다 — 그냥 선택 해제다. (버리기 / 찾기 카드의 스냅샷 환불 경로는
+# CardSelectOverlay 쪽에 그대로 남아 있다.)
 
-enum Mode { NONE, PILOT, LOCATION, PREVIEW, SELECTION_PREVIEW }
+enum Mode { NONE, INSTANT, PILOT, LOCATION, PREVIEW }
 
 # ─── State ────────────────────────────────────────────────────────────────────
 var mode: int = Mode.NONE
 
-# Public read-only state read by BattleRenderer / tiles_layer modulate.
+# Public read-only state read by BattleRenderer.
 var valid_pilots: Dictionary = {}    # PilotData    → true
 var valid_cells:  Dictionary = {}    # Vector2i     → true
 var area_cells:   Dictionary = {}    # Vector2i     → true (PREVIEW area)
@@ -33,25 +40,27 @@ var range_caster: PilotData = null
 var range_radius: int = 0
 
 # PILOT / LOCATION pending pick — set when the player clicks a valid target
-# but has not yet pressed 확인. Fires _on_complete only after confirmation.
-# Holds either PilotData (PILOT mode) or Vector2i (LOCATION mode).
+# but has not yet pressed 확인. Holds either PilotData or Vector2i.
 var pending_pick: Variant = null
 
 var _bs: BattleSim = null
-var _on_complete: Callable = Callable()
-var _on_cancel:   Callable = Callable()
+var _on_confirm: Callable = Callable()
+var _on_cancel:  Callable = Callable()
+# CardPhaseManager 가 "비용/시전자 생존/유효 대상"을 판정해 내려주는 값.
+# 확인 버튼은 이 값 AND 대상 지정 완료일 때만 활성화된다.
+var _play_allowed: bool = false
 
 # ─── UI consts ───────────────────────────────────────────────────────────────
 const BTN_W            := 180.0
 const BTN_H            := 56.0
-# Buttons sit just above the hand row's top edge (BS_HAND_CENTER.y), aligned
-# right so they hover at the top-right corner of the hand area.
+# 버튼 행은 핸드 행 바로 위에 뜬다. HudBuilder 가 이 두 상수로 전략 포인트
+# 도넛의 세로 위치를 잡으므로(도넛이 버튼 띠를 덮지 않도록) 이름을 유지한다.
 const BTN_HAND_GAP     := 10.0
 const BTN_SIDE_MARGIN  := 24.0
 const CONFIRM_BTN_GAP  := 12.0
 # 좌/우 팀 패널 — 좌측에 플레이어 팀, 우측에 적 팀.
-# 패널 하단(=TEAM_PANEL_Y + TEAM_PANEL_H)이 핸드 위 cancel/confirm 버튼
-# 상단(BS_HAND_CENTER.y - BTN_HAND_GAP - BTN_H ≈ 1434)을 침범하지 않도록
+# 패널 하단(=TEAM_PANEL_Y + TEAM_PANEL_H)이 확인/취소 버튼 상단
+# (BS_HAND_CENTER.y - BTN_HAND_GAP - BTN_H ≈ 1434)을 침범하지 않도록
 # 1200 까지만 확장한다. 행 16개 정도까지는 안전.
 const TEAM_PANEL_W     := 300.0
 const TEAM_PANEL_H     := 1200.0
@@ -70,8 +79,8 @@ var _team_panels: Array = [null, null]
 
 
 func _ready() -> void:
-	# Layer above HUD (CardSelectOverlay uses 10) so cancel/confirm sit on top
-	# of cost bars and the description box.
+	# Layer above HUD (CardSelectOverlay uses 10) so 확인/취소 sit on top of the
+	# cost donut and the description box.
 	_ui_layer = CanvasLayer.new()
 	_ui_layer.layer = 11
 	add_child(_ui_layer)
@@ -82,24 +91,17 @@ func bind(bs: BattleSim) -> void:
 	_bs = bs
 
 
-# ─── State accessors (read by renderer / tiles_layer / play path) ────────────
-# A modal targeting session blocks input and gates can_end_card_phase. The
-# non-modal SELECTION_PREVIEW mode (shown while a card is selected in hand)
-# only affects the renderer — the player can still click hand cards and
-# 단계 넘기기. is_active() therefore reports modal-only; renderers read
-# is_visualizing() to decide whether to draw range overlays.
-func is_active() -> bool:
-	return mode != Mode.NONE and mode != Mode.SELECTION_PREVIEW
-
-
+# ─── State accessors (read by renderer / play path) ──────────────────────────
+# There is no modal state any more: selecting a card never blocks the hand or
+# 턴 넘기기. BattleRenderer asks is_visualizing() to decide whether to paint
+# the range fill and the out-of-range dim — INSTANT cards have neither.
 func is_visualizing() -> bool:
+	return mode == Mode.PILOT or mode == Mode.LOCATION or mode == Mode.PREVIEW
+
+
+## True while a card is lifted in hand with this overlay live (any kind).
+func is_selecting() -> bool:
 	return mode != Mode.NONE
-
-
-# Tiles are no longer dimmed via the global tilemap modulate — BattleRenderer
-# now draws per-cell black overlays on cells outside the cast range.
-func should_dim_tiles() -> bool:
-	return false
 
 
 # Non-valid pilots are dimmed in PILOT mode; ALL pilots are dimmed in LOCATION.
@@ -141,141 +143,81 @@ func is_area_cell(cell: Vector2i) -> bool:
 	return mode == Mode.PREVIEW and area_cells.has(cell)
 
 
-# ─── Entry points ────────────────────────────────────────────────────────────
-func start_pilot_target(valid: Array, caster: PilotData, max_r: int,
-		on_complete: Callable, on_cancel: Callable) -> void:
-	if valid.is_empty():
-		# Nothing to pick — fall through as cancel; caller refunds.
-		on_cancel.call()
-		return
+## 대상 지정이 끝났는가. PILOT / LOCATION 만 실제로 찍어야 하고, PREVIEW 와
+## INSTANT 는 고른 즉시 확정 가능하다.
+func has_required_pick() -> bool:
+	if mode == Mode.PILOT or mode == Mode.LOCATION:
+		return pending_pick != null
+	return mode != Mode.NONE
+
+
+# ─── Entry point ─────────────────────────────────────────────────────────────
+## 핸드에서 카드를 고른 순간 CardPhaseManager._select_card 가 호출한다.
+## `on_confirm` 은 확인 시 `Variant`(PilotData / Vector2i / null) 하나를 받고,
+## `on_cancel` 은 인자 없이 호출된다. 둘 다 오버레이가 스스로 정리된 뒤에
+## 불리므로 콜백 안에서 다시 선택을 걸어도 안전하다.
+func start_card_selection(cd: CardData, on_confirm: Callable,
+		on_cancel: Callable) -> void:
 	_clear_visual_state()
-	mode = Mode.PILOT
-	valid_pilots.clear()
-	for raw in valid:
-		valid_pilots[raw as PilotData] = true
-	range_caster = caster
-	range_radius = max_r
-	pending_pick = null
-	_on_complete = on_complete
-	_on_cancel   = on_cancel
-	_build_cancel_button()
-	# Confirm sits next to Cancel from the start; disabled until a valid
-	# target is clicked. Lets the player see both buttons up front so the
-	# 확인 step doesn't surprise them.
-	_build_confirm_button()
-	_btn_confirm.disabled = true
-	_disable_phase_button()
-	_request_redraw()
-
-
-func start_location_target(valid: Array, caster: PilotData, max_r: int,
-		on_complete: Callable, on_cancel: Callable) -> void:
-	if valid.is_empty():
-		on_cancel.call()
-		return
-	_clear_visual_state()
-	mode = Mode.LOCATION
-	valid_cells.clear()
-	for c in valid:
-		valid_cells[c as Vector2i] = true
-	range_caster = caster
-	range_radius = max_r
-	pending_pick = null
-	_on_complete = on_complete
-	_on_cancel   = on_cancel
-	_build_cancel_button()
-	_build_confirm_button()
-	_btn_confirm.disabled = true
-	_disable_phase_button()
-	_request_redraw()
-
-
-# ─── Selection preview (non-modal) ───────────────────────────────────────────
-# Called by CardPhaseManager._select_card so the same yellow range fill /
-# engage area shown in modal targeting also appears while the player is just
-# inspecting the card in their hand. No buttons are built and no input is
-# captured — the player can still click 카드 내기 / 단계 넘기기 / outside.
-func start_selection_preview(cd: CardData) -> void:
-	clear_selection_preview()
+	_free_ui()
 	if cd == null:
 		return
 	var caster: PilotData = cd.owner_pilot
 	var kind: String = ""
 	if _bs.card_phase != null:
-		kind = _bs.card_phase._targeting_kind(cd)
-	if kind == "" or kind == "none" or caster == null:
+		kind = _bs.card_phase.targeting_kind(cd)
+	# 시전자가 없는 레거시 카드는 대상 지정 자체가 성립하지 않으므로 INSTANT
+	# 취급 — 확인 버튼만 뜬다.
+	if caster == null:
+		kind = "none"
+	match kind:
+		"pilot":
+			mode = Mode.PILOT
+			range_caster = caster
+			range_radius = max(0, cd.cast_range)
+			var team_filter: int = 1 if cd.target == "enemy" else 0
+			for raw in _bs.card_phase.compute_valid_pilot_targets(cd, caster, team_filter):
+				valid_pilots[raw as PilotData] = true
+		"location":
+			mode = Mode.LOCATION
+			range_caster = caster
+			range_radius = max(1, cd.cast_range)
+			for c in _bs.card_phase.compute_valid_location_targets(cd, caster):
+				valid_cells[c as Vector2i] = true
+		"preview":
+			mode = Mode.PREVIEW
+			preview_caster = caster
+			var area := _bs.card_phase.compute_engage_area(caster)
+			for c in area:
+				area_cells[c as Vector2i] = true
+			var exclude_lane: bool = _bs.card_phase.has_clause_flag(
+					cd.effect, "engage", "exclude_lane")
+			preview_participants = _bs.card_phase.compute_engage_participants(
+					caster, area, exclude_lane)
+			_build_team_panels()
+		_:
+			mode = Mode.INSTANT
+	_on_confirm = on_confirm
+	_on_cancel  = on_cancel
+	_play_allowed = false
+	_build_buttons()
+	_request_redraw()
+
+
+## 선택 해제 — 아직 비용도 카드도 건드리지 않았으므로 되돌릴 상태가 없다.
+## 콜백은 부르지 않는다(호출 측이 이미 정리 중일 때 재진입하지 않도록).
+## 이미 꺼져 있으면 no-op.
+func clear_selection() -> void:
+	if mode == Mode.NONE and _btn_confirm == null:
 		return
-	mode = Mode.SELECTION_PREVIEW
-	range_caster = caster
-	range_radius = max(0, cd.cast_range)
-	preview_caster = caster
-	if kind == "pilot":
-		var team_filter: int = 1 if cd.target == "enemy" else 0
-		var valid := _bs.card_phase._compute_valid_pilot_targets(cd, caster, team_filter)
-		for raw in valid:
-			valid_pilots[raw as PilotData] = true
-	elif kind == "location":
-		var valid_cells_arr := _bs.card_phase._compute_valid_location_targets(cd, caster)
-		for c in valid_cells_arr:
-			valid_cells[c as Vector2i] = true
-	elif kind == "preview":
-		var area := _bs.card_phase._compute_engage_area(caster)
-		for c in area:
-			area_cells[c as Vector2i] = true
-		var exclude_lane: bool = _bs.card_phase._has_clause_flag(
-				cd.effect, "engage", "exclude_lane")
-		preview_participants = _bs.card_phase._compute_engage_participants(
-				caster, area, exclude_lane)
-	_request_redraw()
+	_teardown()
 
 
-# Drops the non-modal preview state. Called when the player deselects a card
-# (or selects a different one). No-op when a modal session is active —
-# start_*_target clears state on entry.
-func clear_selection_preview() -> void:
-	if mode != Mode.SELECTION_PREVIEW:
-		return
-	_clear_visual_state()
-	_request_redraw()
-
-
-# Common reset helper used by start_pilot_target / start_location_target /
-# start_preview / clear_selection_preview before stamping new state. Does
-# NOT touch button refs — the modal entry points decide whether to rebuild.
-func _clear_visual_state() -> void:
-	mode = Mode.NONE
-	valid_pilots.clear()
-	valid_cells.clear()
-	area_cells.clear()
-	preview_caster = null
-	preview_participants.clear()
-	range_caster = null
-	range_radius = 0
-	pending_pick = null
-
-
-# Engage preview — caster cell + radius-1 neighbours are the area, the listed
-# `participants` are the pilots that would actually fight. The player must
-# 확인 to launch the engage, or 취소 to refund.
-# `card_label`는 좌/우 팀 패널 디자인으로 바뀌면서 더 이상 표시하지 않지만,
-# 호출 측 호환을 위해 시그니처에 남겨둔다.
-func start_preview(caster: PilotData, area: Array, participants: Array,
-		_card_label: String,
-		on_complete: Callable, on_cancel: Callable) -> void:
-	_clear_visual_state()
-	mode = Mode.PREVIEW
-	preview_caster = caster
-	area_cells.clear()
-	for c in area:
-		area_cells[c as Vector2i] = true
-	preview_participants = participants.duplicate()
-	_on_complete = on_complete
-	_on_cancel   = on_cancel
-	_build_cancel_button()
-	_build_confirm_button()
-	_build_team_panels()
-	_disable_phase_button()
-	_request_redraw()
+## CardPhaseManager 가 "비용 / 시전자 생존 / 유효 대상" 판정 결과를 내려준다.
+## 확인 버튼은 이 값과 has_required_pick() 이 둘 다 참일 때만 눌린다.
+func set_play_allowed(allowed: bool) -> void:
+	_play_allowed = allowed
+	_refresh_confirm_disabled()
 
 
 # ─── Cancel / confirm handlers ───────────────────────────────────────────────
@@ -287,30 +229,23 @@ func _on_cancel_pressed() -> void:
 
 
 func _on_confirm_pressed() -> void:
-	if mode == Mode.PREVIEW:
-		var cb := _on_complete
-		_teardown()
-		if cb.is_valid():
-			cb.call()
+	if not _play_allowed or not has_required_pick():
 		return
-	if mode == Mode.PILOT or mode == Mode.LOCATION:
-		# Confirm only fires once a target was clicked — button is otherwise
-		# disabled in start_*_target / _set_pending_pick.
-		if pending_pick == null:
-			return
-		var picked: Variant = pending_pick
-		var cb_ploc := _on_complete
-		_teardown()
-		if cb_ploc.is_valid():
-			cb_ploc.call(picked)
+	var picked: Variant = pending_pick
+	var cb := _on_confirm
+	_teardown()
+	if cb.is_valid():
+		cb.call(picked)
 
 
-# Click hit-testing for PILOT and LOCATION modes. Skipped if a Button or other
-# Control consumed the event. Clicking a valid target now stores it as the
-# pending pick (highlighted by BattleRenderer); the play only fires when the
-# player presses 확인.
+# Click hit-testing for PILOT and LOCATION modes. A press anywhere on the
+# battlefield is consumed while one of those two kinds is live: a hit sets the
+# pending pick, a miss is simply swallowed. Swallowing the miss is deliberate —
+# CardPhaseManager._unhandled_input would otherwise read a slightly-off tap as
+# "clicked outside" and drop the selection (and the pick with it). Getting out
+# is the 취소 button, a re-click on the card, or picking another card.
 func _unhandled_input(event: InputEvent) -> void:
-	if mode == Mode.NONE or mode == Mode.PREVIEW or mode == Mode.SELECTION_PREVIEW:
+	if mode != Mode.PILOT and mode != Mode.LOCATION:
 		return
 	var pressed: bool = false
 	var pos: Vector2 = Vector2.ZERO
@@ -323,6 +258,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		pos = (event as InputEventScreenTouch).position
 	if not pressed:
 		return
+	get_viewport().set_input_as_handled()
 	if mode == Mode.PILOT:
 		# Click lands on the pilot's drawn marker (offset above/below the
 		# tile). _hit_test_pilot inspects the marker positions directly so a
@@ -332,7 +268,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if picked == null:
 			return
 		_set_pending_pick(picked)
-	elif mode == Mode.LOCATION:
+	else:
 		var cell := _hit_test_cell(pos)
 		if cell == Vector2i(-2147483648, -2147483648):
 			return
@@ -341,13 +277,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		_set_pending_pick(cell)
 
 
-# Stores the clicked target as the pending pick, enables the 확인 button,
+# Stores the clicked target as the pending pick, re-evaluates the 확인 button,
 # and triggers a redraw so the renderer can highlight the chosen pilot/cell.
 func _set_pending_pick(target: Variant) -> void:
 	pending_pick = target
-	if _btn_confirm != null and is_instance_valid(_btn_confirm):
-		_btn_confirm.disabled = false
+	_refresh_confirm_disabled()
 	_request_redraw()
+
+
+func _refresh_confirm_disabled() -> void:
+	if _btn_confirm != null and is_instance_valid(_btn_confirm):
+		_btn_confirm.disabled = not (_play_allowed and has_required_pick())
 
 
 # Closest cell whose centre is within hex_size of `pos`. Returns a sentinel
@@ -368,9 +308,9 @@ func _hit_test_cell(pos: Vector2) -> Vector2i:
 
 # PILOT mode hit test — picks the valid pilot whose drawn marker is closest
 # to the click position. We probe both the tile centre (solo render position)
-# and the team-direction offset position (offset render when stacked) so a
-# tap on the visible marker always resolves regardless of how
-# BattleRenderer ended up laying out the cell.
+# and the team-direction offset position (returned by
+# BattleSim.pilot_marker_pos_solo) so a tap on the visible marker always
+# resolves regardless of how BattleRenderer ended up laying out the cell.
 func _hit_test_pilot(pos: Vector2) -> PilotData:
 	var best: PilotData = null
 	var best_d: float = INF
@@ -395,28 +335,24 @@ func _hit_test_pilot(pos: Vector2) -> PilotData:
 
 
 # ─── UI construction ─────────────────────────────────────────────────────────
-# Buttons hover at the top-right of the hand area so they sit next to where
-# the player's eye already is when picking a card. The y is computed from
-# BS_HAND_CENTER.y (top of the hand row) so the layout follows any future
-# hand-row movement automatically.
+# 확인 / 취소는 화면 **좌하단**, Deck 카운터 바로 위에 나란히 뜬다. y 는
+# BS_HAND_CENTER.y(핸드 행 상단)에서 역산하므로 핸드 행이 움직이면 따라간다.
 func _btn_top_y() -> float:
 	return _bs.BS_HAND_CENTER.y - BTN_HAND_GAP - BTN_H
 
 
-func _build_cancel_button() -> void:
-	_btn_cancel = _make_btn("취소")
-	var cancel_x: float = 1080.0 - BTN_SIDE_MARGIN - BTN_W
-	_btn_cancel.position = Vector2(cancel_x, _btn_top_y())
-	_btn_cancel.pressed.connect(_on_cancel_pressed)
-	_ui_layer.add_child(_btn_cancel)
-
-
-func _build_confirm_button() -> void:
+func _build_buttons() -> void:
 	_btn_confirm = _make_btn("확인")
-	var cancel_x: float = 1080.0 - BTN_SIDE_MARGIN - BTN_W
-	_btn_confirm.position = Vector2(cancel_x - CONFIRM_BTN_GAP - BTN_W, _btn_top_y())
+	_btn_confirm.position = Vector2(BTN_SIDE_MARGIN, _btn_top_y())
+	_btn_confirm.disabled = true
 	_btn_confirm.pressed.connect(_on_confirm_pressed)
 	_ui_layer.add_child(_btn_confirm)
+
+	_btn_cancel = _make_btn("취소")
+	_btn_cancel.position = Vector2(
+			BTN_SIDE_MARGIN + BTN_W + CONFIRM_BTN_GAP, _btn_top_y())
+	_btn_cancel.pressed.connect(_on_cancel_pressed)
+	_ui_layer.add_child(_btn_cancel)
 
 
 func _make_btn(label: String) -> Button:
@@ -429,7 +365,7 @@ func _make_btn(label: String) -> Button:
 
 # 좌/우 팀 패널을 빌드한다. 좌측에 플레이어팀(0), 우측에 적팀(1) 참여
 # 파일럿을 파일럿 이미지 + HP 텍스트 + HP 프로그레스 바로 표시한다.
-# PREVIEW 모드 전용 (SELECTION_PREVIEW에서는 호출하지 않음).
+# PREVIEW 모드 전용.
 func _build_team_panels() -> void:
 	# 참여자 팀별 그룹화 + 역할 정렬.
 	var by_team: Array = [[], []]
@@ -566,24 +502,23 @@ func _build_pilot_row(p: PilotData, accent: Color) -> Control:
 	return row
 
 
-# Locks the 전략 포인트 도넛 while targeting owns the screen so the player
-# can't flip it into 턴 넘기기 and bypass the pending play. The donut stays
-# visible — the point readout is still useful while picking a target.
-func _disable_phase_button() -> void:
-	if _bs.cost_donut == null:
-		return
-	_bs.cost_donut.set_locked(true)
-
-
-func _restore_phase_button() -> void:
-	if _bs.cost_donut == null:
-		return
-	_bs.cost_donut.set_locked(false)
-
-
 # ─── Teardown ────────────────────────────────────────────────────────────────
-func _teardown() -> void:
-	_clear_visual_state()
+# Common reset helper used by start_card_selection / _teardown before stamping
+# new state. Does NOT touch button refs — the entry point rebuilds them.
+func _clear_visual_state() -> void:
+	mode = Mode.NONE
+	valid_pilots.clear()
+	valid_cells.clear()
+	area_cells.clear()
+	preview_caster = null
+	preview_participants.clear()
+	range_caster = null
+	range_radius = 0
+	pending_pick = null
+	_play_allowed = false
+
+
+func _free_ui() -> void:
 	if _btn_cancel != null and is_instance_valid(_btn_cancel):
 		_btn_cancel.queue_free()
 	_btn_cancel = null
@@ -595,15 +530,19 @@ func _teardown() -> void:
 		if pn != null and is_instance_valid(pn):
 			(pn as Panel).queue_free()
 		_team_panels[i] = null
-	_on_complete = Callable()
-	_on_cancel   = Callable()
-	_restore_phase_button()
+
+
+func _teardown() -> void:
+	_clear_visual_state()
+	_free_ui()
+	_on_confirm = Callable()
+	_on_cancel  = Callable()
 	_request_redraw()
 
 
 # Force tile + battlefield redraws so dim state takes effect immediately.
 # The tilemap modulate stays at the default (WHITE) — per-cell black dim is
-# now drawn by BattleRenderer for cells outside the targeting range.
+# drawn by BattleRenderer for cells outside the cast range.
 func _request_redraw() -> void:
 	if _bs.tiles_layer != null:
 		_bs.tiles_layer.modulate = Color.WHITE

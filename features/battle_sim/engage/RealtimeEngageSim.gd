@@ -18,17 +18,13 @@ extends RefCounted
 # ─── 시간 / 종료 ─────────────────────────────────────────────────────────────
 ## engage:N 의 N 을 초로 환산하는 계수. engage:3 → 9초.
 const SEC_PER_ROUND: float = 3.0
-## 제한 시간이 끝난 뒤 전원 후퇴를 연출할 여유 시간.
-const RETREAT_GRACE: float = 1.8
-## 이 비율 아래로 HP 가 떨어지면 후퇴 AI 로 전환.
-const FLEE_HP_RATIO: float = 0.30
-## 결투(1:1)는 처치되거나 이탈할 때까지 — 다만 원거리 vs 원거리 미러는 서로
-## 카이팅만 하며 한참 버티기 때문에 관전 페이싱용 상한을 둔다.
+## 결투(1:1)는 한 쪽이 처치될 때까지 — 다만 서로 못 잡고 버티는 조합(원거리
+## 미러 등)이 있으므로 관전 페이싱용 상한을 둔다.
 const DUEL_MAX_SEC: float = 15.0
 
 # ─── 아레나 지오메트리 (뷰포트 픽셀) ─────────────────────────────────────────
 const ARENA_CENTER: Vector2 = Vector2(540.0, 880.0)
-## 아레나 반경(가로/세로). 이 밖으로 나가면 이탈 성공으로 친다.
+## 아레나 반경(가로/세로). 유닛은 항상 이 안에 갇힌다 — 교전 중 이탈은 없다.
 const ARENA_HALF: Vector2 = Vector2(480.0, 560.0)
 ## 전장 육각 1행 피치를 아레나에서 몇 px 로 확대할지.
 const CELL_PITCH: float = 380.0
@@ -49,13 +45,17 @@ const ATK_INTERVAL_RANGED: float = 1.05
 ## 공격 시 제자리에 묶이는 시간. 원거리가 더 길어서 카이팅 리듬이 생긴다.
 const ATTACK_LOCK_MELEE: float = 0.30
 const ATTACK_LOCK_RANGED: float = 0.45
-## 원거리가 이 비율(사거리 대비)보다 가까워지면 물러난다 = 카이팅.
+## 원거리 카이팅 밴드. 원거리 적이 자기 사거리의 이 비율보다 가까워지면 물러난다.
 const KITE_INNER_RATIO: float = 0.72
+## 근접 적에게 허용하는 최소 거리 = 그 적의 사거리 + 이 여유. 근접이 붙는
+## 순간 바로 밀려나야 "카이팅당하는 근접"이 성립한다.
+const KITE_MELEE_MARGIN: float = 70.0
+## 사거리의 이 비율보다 멀어지면 타겟에게 다시 붙는다. 카이팅으로 물러날 때도
+## 이 선을 넘지 않는다 — 넘을 상황이면 뒤로 빼는 대신 타겟 주위를 돈다.
+const KITE_OUTER_RATIO: float = 0.95
 const RETARGET_SEC: float = 1.6
 const SEPARATION_RADIUS: float = 72.0
 const SEPARATION_PUSH: float = 130.0
-## 후퇴 중에는 조금 더 빠르게 빠진다.
-const RETREAT_SPEED_MULT: float = 1.15
 
 # ─── 대쉬 (교전을 시작한 근접 파일럿 1회) ────────────────────────────────────
 const DASH_SPEED: float = 900.0
@@ -81,7 +81,8 @@ const TURRET_GATHER_DIST: int = 2
 
 const PROJECTILE_SPEED: float = 1400.0
 
-enum State { COMBAT, DASH, RETREAT, FLED, DEAD }
+## 교전이 끝날 때까지 아무도 전장을 뜰 수 없다 — 이탈/후퇴 상태는 없다.
+enum State { COMBAT, DASH, DEAD }
 
 
 # ─── 유닛 ────────────────────────────────────────────────────────────────────
@@ -105,9 +106,6 @@ class EUnit extends RefCounted:
 	var has_dash: bool = false
 	var dive_ok: bool = false
 	var dive_eval_t: float = 0.0
-	## 제한 시간 만료로 다 같이 물러난 것이 아니라, 스스로 저HP 이탈을 택했는가.
-	## 결과 대시보드의 "이탈" 표기는 이 쪽만 센다 — 종료 후퇴는 이탈이 아니다.
-	var fled_low_hp: bool = false
 	## 마지막으로 바라본 방향 — 렌더러가 공격 연출 방향으로 쓴다.
 	var facing: Vector2 = Vector2.DOWN
 	## 피격 플래시 잔여 시간(렌더러 전용).
@@ -116,7 +114,7 @@ class EUnit extends RefCounted:
 	var swing_t: float = 0.0
 
 	func is_active() -> bool:
-		return state != State.DEAD and state != State.FLED
+		return state != State.DEAD
 
 	func hp_ratio() -> float:
 		if pilot == null or pilot.max_hp <= 0:
@@ -157,8 +155,6 @@ var cell_radius: float = CELL_PITCH / sqrt(3.0)
 
 var _bs: BattleSim = null
 var _origin_cell: Vector2i = Vector2i.ZERO
-var _retreat_all: bool = false
-var _retreat_started_at: float = 0.0
 
 
 # 참가자 목록을 받아 아레나를 구성한다.
@@ -277,9 +273,6 @@ func step(dt: float) -> void:
 		return
 	elapsed += dt
 
-	if not _retreat_all and elapsed >= duration:
-		_begin_global_retreat()
-
 	for raw in turrets:
 		_update_turret(raw as ETurret, dt)
 	for raw in units:
@@ -289,26 +282,14 @@ func step(dt: float) -> void:
 	_check_end()
 
 
+# 종료는 두 가지뿐이다 — 제한 시간 만료(연출 없이 즉시)와 한 쪽 전멸.
+# 교전 도중 이탈이 없으므로 engage:3 의 모달 시간은 정확히 9초다.
 func _check_end() -> void:
-	var a0 := active_count(0)
-	var a1 := active_count(1)
-	if not _retreat_all and (a0 == 0 or a1 == 0):
-		_begin_global_retreat()
-	if _retreat_all:
-		if a0 + a1 == 0 or elapsed - _retreat_started_at >= RETREAT_GRACE:
-			finished = true
-
-
-func _begin_global_retreat() -> void:
-	if _retreat_all:
+	if elapsed >= duration:
+		finished = true
 		return
-	_retreat_all = true
-	_retreat_started_at = elapsed
-	for raw in units:
-		var u := raw as EUnit
-		if u.is_active():
-			u.state = State.RETREAT
-			u.target = null
+	if active_count(0) == 0 or active_count(1) == 0:
+		finished = true
 
 
 func active_count(team: int) -> int:
@@ -324,7 +305,7 @@ func active_count(team: int) -> int:
 func _update_unit(u: EUnit, dt: float) -> void:
 	u.hit_flash = max(0.0, u.hit_flash - dt)
 	u.swing_t = max(0.0, u.swing_t - dt)
-	if u.state == State.DEAD or u.state == State.FLED:
+	if u.state == State.DEAD:
 		return
 	if not u.pilot.alive:
 		u.state = State.DEAD
@@ -335,15 +316,7 @@ func _update_unit(u: EUnit, dt: float) -> void:
 	u.retarget_t = max(0.0, u.retarget_t - dt)
 	u.dive_eval_t = max(0.0, u.dive_eval_t - dt)
 
-	# 저HP 이탈 판정 — 전역 후퇴가 아니어도 스스로 빠진다.
-	if u.state != State.RETREAT and u.hp_ratio() < FLEE_HP_RATIO:
-		u.state = State.RETREAT
-		u.target = null
-		u.fled_low_hp = true
-
-	if u.state == State.RETREAT:
-		_update_retreat(u, dt)
-		return
+	# 저HP 이탈 판정은 없다 — 빈사 유닛도 끝까지 싸운다.
 
 	# 대쉬는 상태 갱신보다 먼저 — 교전 시작 직후 1회만 발동한다.
 	if u.has_dash and u.state == State.COMBAT:
@@ -395,22 +368,17 @@ func _update_unit(u: EUnit, dt: float) -> void:
 		u.pos = _clamp_to_arena(u.pos + desired.normalized() * u.speed * dt)
 
 
-# 전투 의도(접근/카이팅) + 포탑 회피를 합성한 이동 방향.
+# 전투 의도(추격/카이팅) + 포탑 회피를 합성한 이동 방향.
 func _desired_move_dir(u: EUnit, dist: float) -> Vector2:
-	var to_target: Vector2 = u.target.pos - u.pos
 	var dir := Vector2.ZERO
 	if dist > 0.001:
-		var n: Vector2 = to_target / dist
+		var n: Vector2 = (u.target.pos - u.pos) / dist
 		if u.is_melee:
-			# 근접 — 사거리에 들어갈 때까지 붙는다.
+			# 근접 — 사거리에 들어갈 때까지 계속 쫓는다.
 			if dist > u.atk_range * 0.9:
 				dir = n
 		else:
-			# 원거리 — 사거리 끝자락을 유지하며 거리를 벌린다(카이팅).
-			if dist < u.atk_range * KITE_INNER_RATIO:
-				dir = -n
-			elif dist > u.atk_range * 0.95:
-				dir = n
+			dir = _kite_dir(u, dist, n)
 	# 적 포탑 회피. 다이브 판정이 서면 무시한다.
 	if not u.dive_ok:
 		for raw in turrets:
@@ -425,6 +393,63 @@ func _desired_move_dir(u: EUnit, dist: float) -> Vector2:
 				var w: float = TURRET_AVOID_WEIGHT * (1.0 - d / danger)
 				dir += (away / d) * w
 	return dir
+
+
+# ─── 카이팅 (원거리 전용) ────────────────────────────────────────────────────
+# 원거리는 이탈이 없으므로 교전 내내 "붙은 적에게서 물러나되 타겟 사거리는
+# 유지한다". 기준은 자기 타겟이 아니라 **자기 카이팅 반경을 가장 깊이 파고든
+# 적** 이다 — 근접이 달라붙었는데 멀리 있는 타겟 쪽으로 걸어 들어가는(= 근접
+# 품으로 들어가는) 짓을 막는다.
+#
+#   1) 위협이 없다        → 사거리 끝자락(KITE_OUTER_RATIO)까지만 접근
+#   2) 위협이 있다        → 그 적의 반대 방향으로 후진
+#   3) 후진하면 타겟이 사거리 밖으로 나간다 → 후진 대신 타겟을 중심으로 선회
+func _kite_dir(u: EUnit, dist: float, n: Vector2) -> Vector2:
+	var threat := _kite_threat(u)
+	var flee := Vector2.ZERO
+	if threat != null:
+		var off: Vector2 = u.pos - threat.pos
+		var d: float = off.length()
+		if d > 0.001:
+			flee = off / d
+		else:
+			flee = -n
+	if flee == Vector2.ZERO:
+		return n if dist > u.atk_range * KITE_OUTER_RATIO else Vector2.ZERO
+	# 뒤로 빼면 타겟이 사거리 밖으로 나가는 상황이면, 물러나는 대신 타겟
+	# 주위를 도는 접선 성분만 남긴다("최대 사거리 안에서" 거리를 벌린다).
+	if dist >= u.atk_range * KITE_OUTER_RATIO and flee.dot(n) < 0.0:
+		var tangent: Vector2 = n.orthogonal()
+		if tangent.dot(flee) < 0.0:
+			tangent = -tangent
+		return tangent
+	return flee
+
+
+# 카이팅 기준이 되는 적. 각 적마다 "이 거리 안으로는 들이지 않는다"는 선을
+# 두고, 그 선을 가장 깊이 넘어온 적을 고른다.
+func _kite_threat(u: EUnit) -> EUnit:
+	var best: EUnit = null
+	var worst: float = 0.0
+	for raw in units:
+		var e := raw as EUnit
+		if e.team == u.team or not e.is_active():
+			continue
+		var intrusion: float = _kite_inner_dist(u, e) - u.pos.distance_to(e.pos)
+		if intrusion > worst:
+			worst = intrusion
+			best = e
+	return best
+
+
+# 원거리 `u` 가 적 `e` 에게 허용하는 최소 거리.
+#   근접 적 — 그 적의 사거리 + 여유(붙자마자 밀려난다)
+#   원거리 적 — 자기 사거리의 KITE_INNER_RATIO (기존 밴드)
+# 어느 쪽이든 자기 사거리 밖까지 물러나지는 않는다 — 그러면 영영 못 쏜다.
+func _kite_inner_dist(u: EUnit, e: EUnit) -> float:
+	var inner: float = (e.atk_range + KITE_MELEE_MARGIN) if e.is_melee \
+			else (u.atk_range * KITE_INNER_RATIO)
+	return minf(inner, u.atk_range * KITE_OUTER_RATIO)
 
 
 # "버티고 잡고 빠져나올 수 있는가" 계산. 적 포탑 사거리 안으로 들어가야만
@@ -455,48 +480,6 @@ func _turret_dps_against(team: int, at: Vector2) -> float:
 		if at.distance_to(t.pos) <= TURRET_RANGE:
 			total += float(t.atk) / TURRET_INTERVAL
 	return total
-
-
-func _update_retreat(u: EUnit, dt: float) -> void:
-	# 자기 진영 방향(팀0 = 아래, 팀1 = 위)으로 빠지되, 가장 가까운 적에게서도
-	# 멀어지는 쪽으로 합성한다.
-	var home := Vector2(0.0, 1.0 if u.team == 0 else -1.0)
-	var dir := home
-	var nearest := _nearest_enemy(u)
-	if nearest != null:
-		var away: Vector2 = u.pos - nearest.pos
-		if away.length() > 0.001:
-			dir += away.normalized() * 0.8
-	for raw in turrets:
-		var t := raw as ETurret
-		if t.team == u.team:
-			continue
-		var off: Vector2 = u.pos - t.pos
-		var d: float = off.length()
-		if d < TURRET_RANGE + TURRET_SAFE_MARGIN and d > 0.001:
-			dir += (off / d) * TURRET_AVOID_WEIGHT
-	if dir.length_squared() > 0.0001:
-		u.pos += dir.normalized() * u.speed * RETREAT_SPEED_MULT * dt
-		u.facing = dir.normalized()
-
-	# 아레나 밖으로 완전히 빠져나오면 이탈 성공 — 살아서 전장으로 돌아간다.
-	var off_c: Vector2 = u.pos - ARENA_CENTER
-	if absf(off_c.y) > ARENA_HALF.y or absf(off_c.x) > ARENA_HALF.x:
-		u.state = State.FLED
-
-
-func _nearest_enemy(u: EUnit) -> EUnit:
-	var best: EUnit = null
-	var best_d: float = INF
-	for raw in units:
-		var e := raw as EUnit
-		if e.team == u.team or not e.is_active():
-			continue
-		var d: float = u.pos.distance_squared_to(e.pos)
-		if d < best_d:
-			best_d = d
-			best = e
-	return best
 
 
 # 타겟 선정 — 거리 기반이되 존재감이 높은 쪽을 선호하고(어그로 가중),
@@ -658,8 +641,8 @@ func _apply_separation(dt: float) -> void:
 			b.pos += push * strength
 	for raw in units:
 		var u := raw as EUnit
-		# 후퇴/이탈 중에는 아레나 밖으로 나가야 하므로 가두지 않는다.
-		if u.is_active() and u.state != State.RETREAT:
+		# 교전이 끝날 때까지 아무도 아레나 밖으로 나갈 수 없다.
+		if u.is_active():
 			u.pos = _clamp_to_arena(u.pos)
 
 
@@ -681,7 +664,7 @@ func _clamp_to_arena(p: Vector2) -> Vector2:
 				ARENA_CENTER.y + ARENA_HALF.y - UNIT_RADIUS))
 
 
-# 남은 시간(초). 후퇴 구간에서는 0 에 고정된다.
+# 남은 시간(초). 0 이 되는 순간이 곧 종료다.
 func time_left() -> float:
 	return max(0.0, duration - elapsed)
 

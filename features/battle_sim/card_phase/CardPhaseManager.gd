@@ -1696,8 +1696,8 @@ func _effect_recall_ally(ally_team: int,
 
 
 # 결투 — opens a real-time engage arena restricted to caster + picked enemy.
-# No round/time limit is shown: the fight ends as soon as one side is out
-# (KO or successful 이탈). RealtimeEngageSim.DUEL_MAX_SEC is only a runaway cap.
+# No round/time limit is shown: neither side can disengage, so the fight runs
+# until one of them is KO'd. RealtimeEngageSim.DUEL_MAX_SEC is only a runaway cap.
 func _effect_duel(caster: PilotData, picked: PilotData,
 		is_player: bool) -> String:
 	if caster == null or picked == null:

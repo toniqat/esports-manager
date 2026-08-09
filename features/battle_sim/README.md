@@ -193,16 +193,19 @@ close — see [`engage/README.md`](engage/README.md) for details. Key contract:
   `exclude_lane` drops lane pilots still on their lane row; junglers and
   displaced-into-jungle lane pilots stay in.
 - **`engage:N` = `N × RealtimeEngageSim.SEC_PER_ROUND` 초** (현재 3.0 → 9초),
-  not N rounds. `duel` runs to first KO / 이탈 with a `DUEL_MAX_SEC` cap.
+  not N rounds. `duel` runs to first KO with a `DUEL_MAX_SEC` cap.
 - Battlefield hex positions map 1:1 into arena coordinates, so pilots start
   where they stood. Same-cell allies spawn clumped together.
-- Per-pilot AI: 근접은 붙어서 때리고(원거리보다 이동속도 1.1배, 시전자 근접이면
-  개전 1회 대쉬), 원거리는 사거리 밴드를 유지하며 카이팅. 공격 시 짧은 경직.
+- **교전 중 이탈은 없다** — 아무도 아레나를 뜰 수 없고, 시간이 끝나면 그
+  프레임에 즉시 종료된다(engage:3 = 정확히 9초). 종료는 시간 만료 또는 한 쪽
+  전멸뿐. 빈사(HP<30%)여도 후퇴하지 않는다.
+- Per-pilot AI: 근접은 사거리에 들 때까지 계속 쫓고(원거리보다 이동속도 1.1배,
+  시전자 근접이면 개전 1회 대쉬), 원거리는 자기 사거리 안에서 붙은 적과 거리를
+  벌리며 계속 쏜다(사거리 끝에 닿으면 후진 대신 타겟 주위를 선회). 공격 시
+  짧은 경직.
 - Turrets within 2 hexes appear in the arena and **do attack pilots** (unlike
   on the battlefield). AI avoids enemy turret range unless a survive-kill-escape
   계산 approves a dive. Turret HP is not damaged in the arena.
-- HP < 30% → 자발적 후퇴; 아레나 밖으로 나가면 이탈 성공(생존). 제한 시간
-  만료 시 전원 후퇴.
 - Damage uses the same `hit/(hit+evasion)` + shield-first formula as the
   battlefield. KO sets `respawn_timer = RESPAWN_TURNS` (battlefield-equivalent).
   `grid_pos` is never modified by an engage.

@@ -3,8 +3,12 @@
 ## Purpose
 `engage:N` / `duel` 카드 효과로 발동되는 **실시간 교전**. 전장(BattleSim)이
 셀 단위 턴제로 굴러가는 것과 달리, 교전은 전용 풀스크린 아레나에서 각
-파일럿이 자기 AI로 접근 / 카이팅 / 공격 / 포탑 회피 / 다이브 / 후퇴를
-연속 시간 위에서 수행한다. **플레이어 입력은 없다 — 관전 전용.**
+파일럿이 자기 AI로 추격 / 카이팅 / 공격 / 포탑 회피 / 다이브를 연속 시간
+위에서 수행한다. **플레이어 입력은 없다 — 관전 전용.**
+
+> **교전 중 이탈은 없다.** 제한 시간이 끝날 때까지 아무도 아레나를 뜨지
+> 못한다. 근접은 사거리에 들 때까지 계속 쫓고, 원거리는 자기 사거리 안에서
+> 거리를 벌리며 계속 쏜다. 빈사(HP<30%)여도 후퇴하지 않는다.
 
 > 2026-08 이전의 N 라운드 턴제 루프(`EngageOverlay.gd` + `EngagePhaseManager`
 > 의 `_run_engage` / `resolve_silent`)는 제거되었다. 되살리지 말 것.
@@ -14,7 +18,7 @@
 |---|---|
 | `EngagePhaseManager.gd` | `class_name EngagePhaseManager extends Node` — 오케스트레이터. 참가자를 모으고, `RealtimeEngageSim` 을 만들고, `_process` 에서 고정 스텝으로 굴리고, 종료 시 대시보드를 띄운다. 공개 API는 이전과 동일: `start_engage(caster, rounds, exclude_lane, on_done)` / `start_duel(caster, target, on_done)` / `is_active()` / `engage_finished` 시그널. |
 | `RealtimeEngageSim.gd` | `class_name RealtimeEngageSim extends RefCounted` — **헤드리스 시뮬레이터**. 노드를 하나도 만들지 않는다. 유닛 AI, 포탑, 데미지, 종료 판정 전부 여기. 튜닝 상수도 전부 여기 상단에 모여 있다. |
-| `EngageArena.gd` | `class_name EngageArena extends Control` — 시뮬레이터 상태를 그리기만 하는 렌더러. `_draw()` 로 바닥 / 셀 육각 / 포탑 사거리원 / 유닛 / 투사체를, Label 노드로 타이틀·타이머·로스터·데미지 팝업을 담당한다. 결과 대시보드도 여기. |
+| `EngageArena.gd` | `class_name EngageArena extends Control` — 시뮬레이터 상태를 그리기만 하는 렌더러. 바닥 / 셀 육각 / 포탑 사거리원 / 유닛 / 투사체를 **클리핑 창 + 카메라** 아래에 그리고, Label 노드로 타이틀·타이머·로스터·데미지 팝업을 담당한다. 결과 대시보드도 여기. |
 
 매니저는 `BattleSim._ready()` 에서 자식으로 붙고 `_bs.engage_phase` 에 잡힌다.
 매니저가 소유한 전용 `CanvasLayer`(`ENGAGE_OVERLAY_LAYER = 12`)에 아레나가
@@ -48,14 +52,67 @@ effect chain 이 아니라 `is_active()` 로 판정하므로 clause 가 `duel` �
 | 전투 개시 | `engage:3` | 9초 |
 | 완벽한 기회 | `engage:4` | 12초 |
 | 교전 | `engage:3\|exclude_lane` | 9초 |
-| 결투 | `duel` | 처치/이탈까지 (상한 `DUEL_MAX_SEC` 15초) |
+| 결투 | `duel` | 한 쪽 처치까지 (상한 `DUEL_MAX_SEC` 15초) |
 
 `data/csv/cards.csv` 의 description 도 초 표기로 갱신되어 있다. CSV 를 만졌으면
 **Project → Tools → Rebuild game.db** 를 돌려야 게임에 반영된다.
 
-제한 시간이 끝나면 곧바로 끝나는 게 아니라 전원이 `RETREAT` 로 전환되고
-`RETREAT_GRACE`(1.8초) 동안 물러나는 연출이 붙는다. 그래서 `engage:3` 의
-실제 모달 시간은 9 + 1.8 = 10.8초다.
+제한 시간이 끝나면 **그 프레임에 곧바로 종료**된다(후퇴 연출 없음). 그래서
+`engage:3` 의 모달 시간은 정확히 9초다.
+
+## 화면 구성 — 클리핑 창 · 카메라 · 딤
+아레나 그래픽은 **`VIEW_RECT`(24, 236, 1032×1184) 한 사각형 안에서만** 보인다.
+그 밖(전장 · 핸드 행 · HUD)은 풀스크린 딤(`DIM_COLOR`, 검정 α 0.82)으로 눌린다.
+
+```
+EngageArena (Control, 풀스크린, MOUSE_FILTER_STOP)
+├─ dim        ColorRect 풀스크린            ← 아레나 밖을 눌러 준다
+├─ _clip      Control  VIEW_RECT, clip_contents = true   ← 여기서 잘린다
+│   ├─ backdrop  ColorRect (레터박스 색)
+│   └─ _world    DrawProxy(Node2D)  position/scale = 카메라
+│        └─ 데미지 팝업 Label 들 (아레나 좌표계)
+├─ _hud       DrawProxy(Node2D) 화면 좌표계 — 뷰 테두리 · 남은 시간 바
+├─ 타이틀 / 타이머 / 상태 / 로스터 Label·Panel
+└─ 대시보드 Panel (종료 시)
+```
+
+**왜 `_draw()` 를 자기 자신에 안 쓰는가**: Control 은 자기 그림을 먼저 그리고
+그 위에 자식을 그린다. 딤 ColorRect 가 자식이므로 자기 `_draw` 로 그린 아레나는
+딤 **아래**에 깔려 통째로 어두워진다. 딤보다 뒤에 붙은 프록시 노드에 그려야
+"아레나 밖만 딤드"가 성립한다.
+
+**왜 `DrawProxy` 가 Control 이 아니라 Node2D 인가**: Control 은 DRAW 통지마다
+자기 크기로 `custom_rect` 를 다시 박는다. 크기 0 인 Control 은 빈 사각형으로
+**컬링되어 `_draw` 안의 그림이 통째로 사라진다**(자식 Label 은 자기 rect 가
+있으니 멀쩡히 보여서 더 헷갈린다). Node2D 는 실제 draw 커맨드에서 rect 를
+잡으므로 카메라 변환(scale/position) 아래에서도 안전하다.
+
+### 카메라 워킹
+`_update_camera()` 가 매 프레임 **생존(미처치) 유닛 전원**의 바운딩 박스를
+잡아 프레이밍한다.
+
+```gdscript
+target_zoom   = clamp(min(VIEW/span.x, VIEW/span.y), _cam_min_zoom, CAM_MAX_ZOOM)
+target_center = 바운딩 박스 중심
+```
+
+| 상수 | 값 | 의미 |
+|---|---|---|
+| `_cam_min_zoom` | 런타임 계산 ≈ **1.06** | 아레나 전체(960×1120)가 뷰에 딱 들어가는 배율. 이보다 축소해 봐야 빈 여백만 는다. |
+| `CAM_MAX_ZOOM` | 2.4 | 유닛이 뭉쳤을 때의 상한 |
+| `CAM_PAD` | 120 | 바운딩 박스 바깥 여백(아레나 px). `UNIT_RADIUS` 는 별도로 더해진다 |
+| `CAM_POS_RATE` / `CAM_ZOOM_RATE` | 4.0 / 2.6 | 지수 감쇠 계수(1/s). 줌이 더 느린 이유는 유닛 하나가 튀었다고 배율이 출렁이면 멀미가 나기 때문 |
+
+`_clamp_cam_center()` 가 매 프레임 카메라를 아레나 사각형 안에 가둔다 —
+**뷰는 절대 아레나 밖을 비추지 않는다.** 뷰가 아레나보다 넓은 축(최소 배율
+근처)은 그냥 아레나 중앙에 고정한다. `setup()` 은 첫 프레임을 보간 없이
+스냅한다(중앙에서 스르륵 밀려오면 개전 순간을 놓친다).
+
+실측(5v5, engage:3): 같은 셀에서 시작 → **2.1×**, 흩어져 교전 → **1.85×**.
+
+데미지 팝업은 `_world` 의 자식이라 카메라를 따라 움직이고 뷰 밖에서 잘린다.
+대신 월드 스케일까지 먹으므로 글자 크기가 배율에 휘둘리지 않도록 `1/zoom` 을
+되먹여 화면상 크기를 고정한다.
 
 ## 아레나 좌표계
 교전 참여 셀(시전자 셀 + 인접 6칸)의 전장 화면 좌표를 그대로 확대해서
@@ -95,10 +152,22 @@ arena = ARENA_CENTER + (hex_to_screen(cell) - hex_to_screen(origin_cell))
 | 근접 (TANK / FIGHTER / ASSASSIN) | `_is_melee_role` | 86px | 209px/s (×1.1) | 0.85s | 0.30s |
 | 원거리 (SUPPORT / SNIPER) | — | 300px | 190px/s | 1.05s | 0.45s |
 
-- **근접**: 사거리(86px) 안에 들어갈 때까지 붙는다. 원거리보다 이동속도가
-  `MELEE_SPEED_MULT`(1.1)배 빠르다.
-- **원거리(카이팅)**: 사거리의 `KITE_INNER_RATIO`(0.72)보다 가까워지면
-  물러나고, 0.95배보다 멀면 접근한다. 그 사이 밴드에서는 멈춰서 쏜다.
+- **근접**: 사거리(86px) 안에 들어갈 때까지 계속 쫓는다(이탈이 없으므로 교전
+  내내). 원거리보다 이동속도가 `MELEE_SPEED_MULT`(1.1)배 빠르다.
+- **원거리(카이팅)** — `_kite_dir`. 기준은 자기 타겟이 아니라 **자기 카이팅
+  반경을 가장 깊이 파고든 적**(`_kite_threat`)이다. 근접이 달라붙었는데 멀리
+  있는 타겟 쪽으로 걸어 들어가는(= 근접 품으로 들어가는) 짓을 막기 위함.
+
+  | 적 종류 | 허용 최소 거리 (`_kite_inner_dist`) |
+  |---|---|
+  | 근접 | 그 적의 사거리 + `KITE_MELEE_MARGIN`(70) = 156px |
+  | 원거리 | 자기 사거리 × `KITE_INNER_RATIO`(0.72) = 216px |
+
+  둘 다 자기 사거리 × `KITE_OUTER_RATIO`(0.95)로 상한이 걸린다 — 그보다 멀리
+  물러나면 영영 못 쏜다. 아무도 그 선을 넘지 않았으면 사거리 끝자락(0.95배)
+  까지만 접근한다. **뒤로 빼면 타겟이 사거리 밖으로 나가는 상황**에서는 후진
+  대신 타겟을 중심으로 도는 접선 방향으로 움직인다 — "최대 사거리 안에서"
+  거리를 벌리라는 요구가 이 분기다.
 - **공격 경직**: 공격을 넣으면 `atk_lock` 동안 이동 입력이 무시된다.
   원거리 경직이 더 길어서 "쏘고 빠지는" 리듬이 생긴다.
 - **대쉬**: `has_dash` 는 **시전자가 근접일 때만** 켜진다. 교전 시작 직후
@@ -120,26 +189,28 @@ arena = ARENA_CENTER + (hex_to_screen(cell) - hex_to_screen(origin_cell))
   즉 "버티고, 잡고, 빠져나올 수 있다"는 계산이 서면 회피를 끄고 들어간다.
   타겟이 포탑 사거리 밖이면 다이브라는 개념 자체가 없으므로 항상 false.
 
-## 이탈 / 후퇴 / 종료
-- **저HP 이탈**: HP 가 `FLEE_HP_RATIO`(0.30) 아래로 떨어지면 스스로
-  `RETREAT` 로 전환하고 `fled_low_hp = true` 를 남긴다. 자기 진영 방향
-  (팀0 아래 / 팀1 위) + 최근접 적 반대 방향 + 포탑 회피를 합성해
-  `RETREAT_SPEED_MULT`(1.15)배 속도로 빠진다. 후퇴 중에는 공격하지 않지만
-  **맞을 수는 있다.**
-- **이탈 성공**: 아레나 사각형 밖으로 나가면 `FLED`. 살아서 전장으로
-  돌아간다.
-- **제한 시간 만료**: 전원이 `RETREAT` 로 전환(`_begin_global_retreat`)되고
-  `RETREAT_GRACE` 뒤 종료. 이건 이탈이 아니라 정리 후퇴이므로
-  `fled_low_hp` 가 붙지 않고, 대시보드의 "이탈" 표기에도 잡히지 않는다.
-  (안 그러면 시작 위치가 자기 진영 쪽에 가까웠던 팀만 전원 "이탈"로 찍힌다.)
-- **한쪽 전멸/전원 이탈**: 활성 인원(생존 && 미이탈)이 0이 되면 즉시
-  전역 후퇴 → 종료.
+## 종료
+`State` 는 `COMBAT / DASH / DEAD` 셋뿐이다. **RETREAT / FLED 는 없다** —
+`_clamp_to_arena` 가 매 프레임 전원을 아레나 안에 가두므로 물리적으로도 나갈
+수 없다.
+
+- **제한 시간 만료**: `elapsed >= duration` 인 프레임에 `finished = true`.
+  연출 유예 없음.
+- **한쪽 전멸**: `active_count(team) == 0` 이면 즉시 종료.
+- **저HP**: 아무 일도 일어나지 않는다. 빈사 유닛도 평소와 똑같이 붙고/카이팅
+  하며 끝까지 싸운다. HP 30% 미만은 로스터 HP 바 색(`EngageArena.LOW_HP_RATIO`)
+  으로만 표시되며 게임플레이 의미는 없다.
+
+> 이탈이 사라진 대가: 적 포탑 사거리에 갇힌 파일럿은 빠져나갈 수단이 없다.
+> `_desired_move_dir` 의 포탑 회피(`TURRET_AVOID_WEIGHT`)가 유일한 방어선이고,
+> 아레나 전체가 포탑 사거리에 덮인 배치(예: 시전자 셀이 곧 포탑 셀)에서는
+> 교전 시간 내내 포탑에 맞아 죽을 수 있다.
 
 ### 전장 상태 반영
 - 데미지는 `PilotData.hp` / `.shield` 에 **직접** 적용된다. 교전이 끝나면
   전장에 그대로 반영된다(턴제 시절과 동일).
 - 처치 → `alive = false` + `respawn_timer = _bs.RESPAWN_TURNS`.
-- **`grid_pos` 는 건드리지 않는다.** 이탈한 파일럿도 원래 셀에 그대로 남는다.
+- **`grid_pos` 는 건드리지 않는다.** 살아남은 파일럿은 원래 셀에 그대로 남는다.
   저HP 파일럿은 작전 단계 종료 시 `RecallSystem.process_phase_end_recalls()`
   의 HP 임계 복귀가 어차피 본진으로 데려간다.
 
@@ -150,11 +221,14 @@ arena = ARENA_CENTER + (hex_to_screen(cell) - hex_to_screen(origin_cell))
 ```
 포탑 사격만 예외로 명중 굴림 없이 `TURRET_ATK` 를 넣는다.
 
-### 처리량 — 실측 (2026-08-09, 헤드리스 5v5, hp 220 / atk 8 / hit 55 / evasion 45)
-9초 교전에서 파일럿당 준 딜량은 **16~72**, 한 명이 받은 최대 누적 딜량은
-**~184**. 즉 현재 메크 스탯에서 교전 한 번으로 처치가 나는 일은 드물고
-(샘플 전원 생존), 저HP 이탈은 팀당 1~2명 발생한다. 턴제 시절(3라운드 =
-파일럿당 3회 공격)보다는 2~3배 많은 딜이 오간다.
+### 처리량 — 실측 (이탈 제거 후, 헤드리스 5v5 ×5, hp 220 / atk 8 / hit 55 / evasion 45)
+9초 교전에서 파일럿당 준 딜량 **16~80**, 한 명이 받은 최대 누적 딜량
+**160~220**, 처치는 5판 중 1판에서 1건. 이탈이 없어진 만큼 빈사 유닛이
+끝까지 맞아 주므로 턴제/이탈 시절보다 처치가 나기 쉬워졌지만 여전히 드물다.
+
+팀 단위로 보면 **원거리가 받는 딜이 근접의 1/5~1/10**(근접 464~604 vs 원거리
+40~144)로 갈린다 — 카이팅이 실제로 먹히고 있다는 신호. 근접 쪽 피해가 이보다
+줄면 `KITE_MELEE_MARGIN` 이 너무 커서 원거리가 안 잡히는 것이다.
 
 처치가 더 자주 나오길 원하면 **`ATK_INTERVAL_MELEE` / `ATK_INTERVAL_RANGED`
 를 줄이는 것이 유일한 튜닝 지점**이다. 데미지 공식 자체(atk 1회분)는 전장

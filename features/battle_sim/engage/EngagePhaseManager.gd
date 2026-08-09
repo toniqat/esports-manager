@@ -15,16 +15,16 @@ extends Node
 #   3) _bs.game_phase = ENGAGE 로 전환 → 자동 BATTLE 틱은 BATTLE 가드에 의해
 #      멈추고, 카드 클릭 / 턴 넘기기도 ENGAGE 에서는 차단된다.
 #   4) 제한 시간(rounds × RealtimeEngageSim.SEC_PER_ROUND 초) 동안 각 파일럿이
-#      자기 AI 로 접근 / 카이팅 / 공격 / 포탑 회피 / 다이브 / 후퇴를 실시간
-#      수행한다. 플레이어 입력은 없다(관전 전용).
-#   5) 종료 조건: 제한 시간 만료(전원 후퇴 연출 후) OR 한 쪽 진영의 활성
-#      인원 0(처치 + 이탈 합산).
+#      자기 AI 로 추격 / 카이팅 / 공격 / 포탑 회피 / 다이브를 실시간 수행한다.
+#      플레이어 입력은 없다(관전 전용).
+#   5) 종료 조건: 제한 시간 만료(연출 없이 즉시) OR 한 쪽 진영 전멸.
+#      **교전 중 이탈은 없다** — 시간이 끝날 때까지 아무도 아레나를 뜨지 못한다.
 #   6) 종료 후 딜량 대시보드(준 딜량 / 받은 딜량 / 처치 수) → "확인" 버튼 →
 #      CARD_PHASE 로 복귀.
 #
-# 이탈(FLED)한 파일럿은 살아서 원래 셀에 그대로 남는다. grid_pos 는 건드리지
-# 않는다 — 저HP 파일럿은 작전 단계 종료 시 RecallSystem 의 HP 임계 복귀가
-# 어차피 본진으로 데려간다.
+# 살아남은 파일럿은 원래 셀에 그대로 남는다. grid_pos 는 건드리지 않는다 —
+# 저HP 파일럿은 작전 단계 종료 시 RecallSystem 의 HP 임계 복귀가 어차피
+# 본진으로 데려간다.
 
 # Emitted from _on_dashboard_confirmed once the engage modal has closed and
 # game phase is back at CARD_PHASE. AiCardPlayer awaits this so back-to-back
@@ -107,7 +107,7 @@ func start_engage(caster: PilotData, rounds_total: int, exclude_lane: bool,
 
 # 결투 — 1:1 실시간 교전. _gather_participants 를 우회해 시전자와 target 만
 # 참여시키고, 제한 시간 대신 DUEL_MAX_SEC 상한만 둔다(실질적으로 한 쪽이
-# 처치되거나 이탈할 때까지). start_engage 와 같은 모달 생명주기를 타고
+# 처치될 때까지). start_engage 와 같은 모달 생명주기를 타고
 # engage_finished 로 끝나므로 AiCardPlayer 는 동일하게 await 하면 된다.
 func start_duel(caster: PilotData, target: PilotData,
 		on_done: Callable = Callable()) -> void:
@@ -202,23 +202,10 @@ func _is_engage_eligible_under_exclude_lane(p: PilotData) -> bool:
 func _finish_engage() -> void:
 	_bs.last_log = _result_log()
 	if _arena != null:
-		_arena.mark_fled(_fled_pilots())
 		_arena.show_dashboard(_team_pilots[0], _team_pilots[1], _sim.stats,
 				Callable(self, "_on_dashboard_confirmed"))
 	else:
 		_on_dashboard_confirmed()
-
-
-# 저HP 로 스스로 빠져 이탈에 성공한 파일럿 목록. 제한 시간 만료로 양 팀이
-# 함께 물러난 경우는 이탈이 아니므로 세지 않는다 — 안 그러면 시작 위치가
-# 자기 진영 쪽에 가까웠던 팀만 전원 "이탈"로 표기되는 착시가 생긴다.
-func _fled_pilots() -> Array:
-	var out: Array = []
-	for raw in _sim.units:
-		var u := raw as RealtimeEngageSim.EUnit
-		if u.state == RealtimeEngageSim.State.FLED and u.fled_low_hp:
-			out.append(u.pilot)
-	return out
 
 
 func _result_log() -> String:

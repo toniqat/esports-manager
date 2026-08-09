@@ -1,7 +1,7 @@
 id,name,cost,uses,cast_method,target,cast_range,area,keyword,effect,description
 1,전투 개시,6,1,range,caster,0,1,,engage:3,전투 개시: 9초
 2,완벽한 기회,8,1,range,caster,0,1,,engage:4,전투 개시: 12초
-3,결투,6,1,target,enemy,1,0,,duel,결투: 한 명이 처치되거나 이탈할 때까지
+3,결투,6,1,target,enemy,1,0,,duel,결투: 한 명이 처치될 때까지 (최대 15초)
 4,교전,4,1,range,caster,0,1,,engage:3|exclude_lane,"전투 개시: 9초, 레인에 있는 대상 제외"
 5,전투 준비,2,1,location,location,3,0,,move;cost_reduce_engage:1,"지정 위치로 이동. 다음 전투 개시 카드 비용 감소: 1"
 6,정밀 이동,0,1,location,location,1,0,,move;return_left;cost_inc_phase:1,"지정 위치로 이동. 사용 후 손패 맨 왼쪽으로 돌아오며, 이번 전투 단계에서 카드 비용 증가: 1"

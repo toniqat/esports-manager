@@ -4,9 +4,18 @@ extends Control
 # 실시간 교전 아레나 — RealtimeEngageSim 의 상태를 그리기만 한다.
 # 게임 상태 변경은 전부 시뮬레이터/매니저 쪽에서 일어난다.
 #
-# 텍스트는 전부 Label 노드로 만든다(_draw 의 draw_string 은 한글 폴백 폰트를
-# 태우기 어렵다). _draw 는 아레나 그래픽 — 바닥, 셀 육각, 포탑 사거리원,
-# 유닛, 투사체 — 만 담당한다.
+# 텍스트는 전부 Label 노드로 만든다(draw_string 은 한글 폴백 폰트를 태우기
+# 어렵다). 그래픽 — 바닥, 셀 육각, 포탑 사거리원, 유닛, 투사체 — 은 두 개의
+# DrawProxy 노드가 나눠 그린다:
+#
+#   _clip (clip_contents=true, VIEW_RECT)   ← 아레나 밖은 여기서 잘린다
+#     └ _world (position/scale = 카메라)     ← draw_world() : 아레나 좌표계
+#   _hud  (풀스크린)                          ← draw_hud()   : 화면 좌표계
+#
+# 자기 자신(_draw)에 그리지 않는 이유: Control 은 자기 그림을 먼저 그리고 그
+# 위에 자식을 그린다. 풀스크린 딤 ColorRect 가 자식이므로 자기 _draw 로 그린
+# 아레나는 딤 아래에 깔려 버린다. 딤보다 뒤에 붙은 프록시 노드에 그려야
+# "아레나 밖만 딤드"가 성립한다.
 
 const VP_W: float = 1080.0
 const VP_H: float = 1920.0
@@ -28,7 +37,9 @@ const HP_BAR_FILL   := Color(0.30, 0.85, 0.45, 1.0)
 const SHIELD_FILL   := Color(0.85, 0.85, 0.30, 0.85)
 const ROW_BG        := Color(0.10, 0.12, 0.18, 0.92)
 const ROW_BG_DEAD   := Color(0.18, 0.10, 0.10, 0.92)
-const ROW_BG_FLED   := Color(0.11, 0.14, 0.11, 0.92)
+## HP 바가 경고색으로 바뀌는 비율. 게임플레이 의미는 없다(이탈이 없으므로) —
+## 순수하게 "이 유닛 위험하다"를 관전자에게 알리는 표시.
+const LOW_HP_RATIO: float = 0.30
 
 ## 하단 팀 로스터 스트립.
 const ROSTER_TOP: float = 1470.0
@@ -42,27 +53,103 @@ const TIME_BAR_W: float = 560.0
 const TIME_BAR_H: float = 12.0
 const TIME_BAR_Y: float = 176.0
 
+# ─── 아레나 뷰 (클리핑 창) ───────────────────────────────────────────────────
+## 교전 그래픽이 그려지는 유일한 사각형. 이 밖으로 나간 것은 잘린다.
+## 위로는 타이머 바(+ 상태 라벨 226px), 아래로는 로스터 헤더(1438px)를 피한다.
+const VIEW_RECT := Rect2(24.0, 236.0, 1032.0, 1184.0)
+## 뷰 안에서 아레나 바닥 바깥으로 남는 여백(레터박스)의 색.
+const VIEW_BACKDROP := Color(0.03, 0.04, 0.07, 1.0)
+const VIEW_FRAME    := Color(0.45, 0.53, 0.72, 0.90)
+## 아레나 밖 화면(전장 · 핸드 행 등)을 덮는 딤.
+const DIM_COLOR     := Color(0.0, 0.0, 0.0, 0.82)
+
+# ─── 카메라 워킹 ─────────────────────────────────────────────────────────────
+## 최대 확대 배율. 최소 배율은 "아레나 전체가 뷰에 들어가는 배율"로 계산한다
+## (VIEW_RECT / 아레나 크기 → 약 1.06) — 그보다 더 축소해 봐야 빈 여백만 는다.
+const CAM_MAX_ZOOM: float = 2.4
+## 프레이밍 여백 — 유닛 바운딩 박스 바깥으로 이만큼(아레나 px) 더 잡는다.
+const CAM_PAD: float = 120.0
+## 지수 감쇠 추종 계수(1/s). 클수록 즉각적이고 딱딱하다. 줌이 더 느린 이유는
+## 유닛 하나가 잠깐 튀었다고 화면 배율이 출렁이면 멀미가 나기 때문.
+const CAM_POS_RATE: float = 4.0
+const CAM_ZOOM_RATE: float = 2.6
+
 var _bs: BattleSim = null
 var _sim: RealtimeEngageSim = null
 var _is_duel: bool = false
+
+## 아레나 뷰 노드 — _ready 에서 만든다.
+var _clip: Control = null
+var _world: DrawProxy = null
+var _hud: DrawProxy = null
+
+## 카메라 상태 (아레나 좌표계 기준).
+var _cam_center: Vector2 = RealtimeEngageSim.ARENA_CENTER
+var _cam_zoom: float = 1.0
+var _cam_target_center: Vector2 = RealtimeEngageSim.ARENA_CENTER
+var _cam_target_zoom: float = 1.0
+var _cam_min_zoom: float = 1.0
 
 var _time_lbl: Label = null
 var _phase_lbl: Label = null
 ## row_data[PilotData] = {row, name, hp_bg, hp_fill, shield_fill}
 var _row_data: Dictionary = {}
 var _dashboard: Panel = null
-## 이탈에 성공한 파일럿 집합 — 매니저가 대시보드 직전에 mark_fled 로 채운다.
-var _fled_pilots: Dictionary = {}
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP   # 뒤쪽 입력 차단
+	# 크기를 직접 박는다. CanvasLayer 밑의 Control 은 PRESET_FULL_RECT 만으로는
+	# 사이즈가 잡히지 않아 (0,0) 으로 남는다 — 그러면 자식 ColorRect 의
+	# 풀스크린 앵커도 0 이 되어 딤이 아예 안 그려지고, MOUSE_FILTER_STOP 도
+	# 뒤쪽 입력을 못 막는다. 아레나 UI 는 어차피 1080×1920 절대 좌표계다.
 	set_anchors_preset(Control.PRESET_FULL_RECT)
+	position = Vector2.ZERO
+	size = Vector2(VP_W, VP_H)
+
+	# 1) 풀스크린 딤 — 아레나 밖(전장 · 핸드 행)을 눌러 준다.
 	var dim := ColorRect.new()
-	dim.color = Color(0, 0, 0, 0.72)
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.color = DIM_COLOR
+	dim.position = Vector2.ZERO
+	dim.size = Vector2(VP_W, VP_H)
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(dim)
+
+	# 2) 아레나 뷰 — clip_contents 가 이 사각형 밖을 전부 잘라 낸다.
+	_clip = Control.new()
+	_clip.name = "ArenaView"
+	_clip.position = VIEW_RECT.position
+	_clip.size = VIEW_RECT.size
+	_clip.clip_contents = true
+	_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_clip)
+
+	var backdrop := ColorRect.new()
+	backdrop.color = VIEW_BACKDROP
+	backdrop.position = Vector2.ZERO
+	backdrop.size = VIEW_RECT.size
+	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_clip.add_child(backdrop)
+
+	# 3) 월드 — position/scale 이 곧 카메라 변환. 데미지 팝업도 여기 자식으로
+	#    붙어서 카메라를 따라 움직이고 뷰 밖에서 함께 잘린다.
+	_world = DrawProxy.new()
+	_world.name = "ArenaWorld"
+	_world.draw_fn = Callable(self, "draw_world")
+	_clip.add_child(_world)
+
+	# 4) 화면 좌표계 그래픽(뷰 테두리 · 남은 시간 바) — 딤과 클립 위.
+	_hud = DrawProxy.new()
+	_hud.name = "ArenaHud"
+	_hud.draw_fn = Callable(self, "draw_hud")
+	_hud.position = Vector2.ZERO
+	add_child(_hud)
+
+	_cam_min_zoom = minf(
+			VIEW_RECT.size.x / (RealtimeEngageSim.ARENA_HALF.x * 2.0),
+			VIEW_RECT.size.y / (RealtimeEngageSim.ARENA_HALF.y * 2.0))
+	_cam_zoom = _cam_min_zoom
+	_cam_target_zoom = _cam_min_zoom
 
 
 func setup(bs: BattleSim, sim: RealtimeEngageSim, title_text: String,
@@ -71,6 +158,9 @@ func setup(bs: BattleSim, sim: RealtimeEngageSim, title_text: String,
 	_sim = sim
 	_is_duel = is_duel
 	_build_ui(title_text)
+	# 첫 프레임은 보간 없이 딱 맞춰 잡는다 — 아레나 중앙에서 스르륵 밀려오는
+	# 연출은 교전 시작 순간을 놓치게 만든다.
+	_update_camera(0.0, true)
 	set_process(true)
 
 
@@ -145,13 +235,82 @@ func _build_roster_row(u: RealtimeEngageSim.EUnit, x: float, y: float,
 	}
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if _sim == null:
 		return
 	_refresh_header()
 	_refresh_rows()
+	_update_camera(delta, false)
 	_drain_popups()
-	queue_redraw()
+	_world.queue_redraw()
+	_hud.queue_redraw()
+
+
+# ─── 카메라 워킹 ─────────────────────────────────────────────────────────────
+# 생존(= 미처치) 유닛 전원을 담는 바운딩 박스를 프레이밍한다. 흩어지면
+# 축소되고 뭉치면 확대된다. 아레나 밖은 절대 보여 주지 않는다 —
+# _clamp_cam_center 가 뷰를 아레나 사각형 안에 가둔다.
+func _update_camera(delta: float, snap: bool) -> void:
+	var pts := _focus_positions()
+	if not pts.is_empty():
+		var mn: Vector2 = pts[0]
+		var mx: Vector2 = pts[0]
+		for raw in pts:
+			var p: Vector2 = raw
+			mn = Vector2(minf(mn.x, p.x), minf(mn.y, p.y))
+			mx = Vector2(maxf(mx.x, p.x), maxf(mx.y, p.y))
+		var pad: float = RealtimeEngageSim.UNIT_RADIUS + CAM_PAD
+		mn -= Vector2(pad, pad)
+		mx += Vector2(pad, pad)
+		var span: Vector2 = mx - mn
+		_cam_target_zoom = clampf(minf(
+					VIEW_RECT.size.x / maxf(1.0, span.x),
+					VIEW_RECT.size.y / maxf(1.0, span.y)),
+				_cam_min_zoom, CAM_MAX_ZOOM)
+		_cam_target_center = (mn + mx) * 0.5
+	# 유닛이 하나도 안 남았으면 마지막 타겟을 그대로 유지한다(화면이 튀지 않게).
+
+	if snap:
+		_cam_zoom = _cam_target_zoom
+		_cam_center = _cam_target_center
+	else:
+		_cam_zoom = lerpf(_cam_zoom, _cam_target_zoom,
+				1.0 - exp(-CAM_ZOOM_RATE * delta))
+		_cam_center = _cam_center.lerp(_cam_target_center,
+				1.0 - exp(-CAM_POS_RATE * delta))
+	# 줌이 보간 중이어도 매 프레임 다시 가둔다 — 축소되는 동안 아레나 밖이
+	# 잠깐 노출되는 것을 막는다.
+	_cam_center = _clamp_cam_center(_cam_center, _cam_zoom)
+
+	_world.scale = Vector2(_cam_zoom, _cam_zoom)
+	_world.position = VIEW_RECT.size * 0.5 - _cam_center * _cam_zoom
+
+
+func _focus_positions() -> Array:
+	var out: Array = []
+	for raw in _sim.units:
+		var u := raw as RealtimeEngageSim.EUnit
+		if u.is_active():
+			out.append(u.pos)
+	return out
+
+
+# 뷰가 아레나 사각형 밖을 비추지 않도록 카메라 중심을 가둔다. 뷰가 아레나보다
+# 넓은 축(= 최소 배율 근처)은 그냥 아레나 중앙에 고정한다.
+static func _clamp_cam_center(c: Vector2, zoom: float) -> Vector2:
+	var half: Vector2 = VIEW_RECT.size / (2.0 * maxf(0.01, zoom))
+	var ac: Vector2 = RealtimeEngageSim.ARENA_CENTER
+	var ah: Vector2 = RealtimeEngageSim.ARENA_HALF
+	var out := c
+	if half.x >= ah.x:
+		out.x = ac.x
+	else:
+		out.x = clampf(c.x, ac.x - ah.x + half.x, ac.x + ah.x - half.x)
+	if half.y >= ah.y:
+		out.y = ac.y
+	else:
+		out.y = clampf(c.y, ac.y - ah.y + half.y, ac.y + ah.y - half.y)
+	return out
 
 
 func _refresh_header() -> void:
@@ -164,12 +323,7 @@ func _refresh_header() -> void:
 		_time_lbl.add_theme_color_override("font_color",
 				TIME_LOW if left <= 3.0 else TIME_COLOR)
 	if _phase_lbl != null:
-		if _sim.finished:
-			_phase_lbl.text = "교전 종료"
-		elif _sim.time_left() <= 0.0 and not _is_duel:
-			_phase_lbl.text = "전원 후퇴"
-		else:
-			_phase_lbl.text = ""
+		_phase_lbl.text = "교전 종료" if _sim.finished else ""
 
 
 static func _fmt_time(secs: float) -> String:
@@ -188,7 +342,7 @@ func _refresh_rows() -> void:
 		var fill := row["hp_fill"] as ColorRect
 		var ratio: float = u.hp_ratio()
 		fill.size = Vector2(bg.size.x * ratio, bg.size.y)
-		fill.color = HP_BAR_FILL if ratio >= RealtimeEngageSim.FLEE_HP_RATIO \
+		fill.color = HP_BAR_FILL if ratio >= LOW_HP_RATIO \
 				else Color(0.90, 0.55, 0.25)
 		var shield_fill := row["shield_fill"] as ColorRect
 		var shield_w: float = 0.0
@@ -199,18 +353,12 @@ func _refresh_rows() -> void:
 		var panel := row["row"] as Panel
 		if u.state == RealtimeEngageSim.State.DEAD:
 			panel.add_theme_stylebox_override("panel", _row_style(ROW_BG_DEAD))
-		elif u.state == RealtimeEngageSim.State.FLED:
-			panel.add_theme_stylebox_override("panel", _row_style(ROW_BG_FLED))
 
 
 static func _state_tag(u: RealtimeEngageSim.EUnit) -> String:
 	match u.state:
 		RealtimeEngageSim.State.DEAD:
 			return "   (처치됨)"
-		RealtimeEngageSim.State.FLED:
-			return "   (이탈)"
-		RealtimeEngageSim.State.RETREAT:
-			return "   (후퇴 중)"
 		RealtimeEngageSim.State.DASH:
 			return "   (대쉬)"
 	return ""
@@ -224,71 +372,84 @@ func _drain_popups() -> void:
 	_sim.popups.clear()
 
 
+# 팝업은 _world 의 자식(= 아레나 좌표계)이다. 카메라를 따라 움직이고 뷰 밖에서
+# 잘린다. 대신 월드 스케일까지 같이 먹으므로 글자 크기가 배율에 휘둘리지
+# 않도록 1/zoom 을 되먹여 화면상 크기를 고정한다.
 func _spawn_popup(at: Vector2, text: String, color: Color) -> void:
 	var lbl := _make_label(text, 30, color, HORIZONTAL_ALIGNMENT_CENTER)
 	lbl.size = Vector2(240, 40)
-	lbl.position = Vector2(at.x - 120.0, at.y - 78.0)
+	lbl.pivot_offset = lbl.size * 0.5
+	lbl.scale = Vector2.ONE / maxf(0.01, _cam_zoom)
+	lbl.position = Vector2(at.x - 120.0, at.y - 98.0)
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(lbl)
+	_world.add_child(lbl)
+	var rise: float = 54.0 / maxf(0.01, _cam_zoom)
 	var tw := create_tween().set_parallel()
-	tw.tween_property(lbl, "position:y", lbl.position.y - 54.0, 0.55) \
+	tw.tween_property(lbl, "position:y", lbl.position.y - rise, 0.55) \
 			.set_ease(Tween.EASE_OUT)
 	tw.tween_property(lbl, "modulate:a", 0.0, 0.55).set_ease(Tween.EASE_IN)
 	tw.chain().tween_callback(Callable(lbl, "queue_free"))
 
 
-# ─── 아레나 렌더링 ───────────────────────────────────────────────────────────
-func _draw() -> void:
+# ─── 아레나 렌더링 (아레나 좌표계 · _world 에 그린다) ────────────────────────
+func draw_world(c: CanvasItem) -> void:
 	if _sim == null:
 		return
-	_draw_floor()
-	_draw_cells()
-	_draw_turrets()
-	_draw_projectiles()
-	_draw_units()
-	_draw_time_bar()
+	_draw_floor(c)
+	_draw_cells(c)
+	_draw_turrets(c)
+	_draw_projectiles(c)
+	_draw_units(c)
 
 
-func _draw_floor() -> void:
-	var c: Vector2 = RealtimeEngageSim.ARENA_CENTER
+# ─── 화면 좌표계 렌더링 (_hud 에 그린다) ─────────────────────────────────────
+func draw_hud(c: CanvasItem) -> void:
+	if _sim == null:
+		return
+	_draw_view_frame(c)
+	_draw_time_bar(c)
+
+
+func _draw_floor(c: CanvasItem) -> void:
+	var ac: Vector2 = RealtimeEngageSim.ARENA_CENTER
 	var h: Vector2 = RealtimeEngageSim.ARENA_HALF
-	var rect := Rect2(c - h, h * 2.0)
-	draw_rect(rect, FLOOR_BG, true)
-	draw_rect(rect, FLOOR_EDGE, false, 2.0)
+	var rect := Rect2(ac - h, h * 2.0)
+	c.draw_rect(rect, FLOOR_BG, true)
+	c.draw_rect(rect, FLOOR_EDGE, false, 2.0)
 
 
 # 교전에 참여한 전장 셀을 육각 외곽선으로 깔아 준다 — 아레나 좌표가 전장
 # 배치를 그대로 확대한 것임을 시각적으로 알려 주는 역할.
-func _draw_cells() -> void:
+func _draw_cells(c: CanvasItem) -> void:
 	var r: float = _sim.cell_radius
 	for raw in _sim.area_cell_positions:
-		var c: Vector2 = raw
+		var at: Vector2 = raw
 		var pts := PackedVector2Array()
 		for i in range(6):
 			var a: float = TAU * float(i) / 6.0
-			pts.append(c + Vector2(cos(a), sin(a)) * r)
+			pts.append(at + Vector2(cos(a), sin(a)) * r)
 		pts.append(pts[0])
-		draw_polyline(pts, CELL_LINE, 2.0)
+		c.draw_polyline(pts, CELL_LINE, 2.0)
 
 
-func _draw_turrets() -> void:
+func _draw_turrets(c: CanvasItem) -> void:
 	for raw in _sim.turrets:
 		var t := raw as RealtimeEngageSim.ETurret
 		var col: Color = TEAM_COLORS[t.team]
 		# 사거리원 — 회피/다이브 판단의 근거를 화면에 그대로 노출한다.
-		draw_circle(t.pos, RealtimeEngageSim.TURRET_RANGE, TURRET_ZONE)
-		draw_arc(t.pos, RealtimeEngageSim.TURRET_RANGE, 0.0, TAU, 64,
+		c.draw_circle(t.pos, RealtimeEngageSim.TURRET_RANGE, TURRET_ZONE)
+		c.draw_arc(t.pos, RealtimeEngageSim.TURRET_RANGE, 0.0, TAU, 64,
 				TURRET_EDGE, 2.0)
 		# 포탑 본체 — 팀색 사각 + 밝은 코어.
 		var s := 26.0
-		draw_rect(Rect2(t.pos - Vector2(s, s), Vector2(s * 2.0, s * 2.0)),
+		c.draw_rect(Rect2(t.pos - Vector2(s, s), Vector2(s * 2.0, s * 2.0)),
 				Color(0.10, 0.11, 0.16, 0.95), true)
-		draw_rect(Rect2(t.pos - Vector2(s, s), Vector2(s * 2.0, s * 2.0)),
+		c.draw_rect(Rect2(t.pos - Vector2(s, s), Vector2(s * 2.0, s * 2.0)),
 				col, false, 3.0)
-		draw_circle(t.pos, 9.0, col)
+		c.draw_circle(t.pos, 9.0, col)
 
 
-func _draw_projectiles() -> void:
+func _draw_projectiles(c: CanvasItem) -> void:
 	for raw in _sim.projectiles:
 		var p: Dictionary = raw
 		var f: float = clampf(float(p["t"]) / max(0.001, float(p["dur"])), 0.0, 1.0)
@@ -298,91 +459,87 @@ func _draw_projectiles() -> void:
 		var col: Color = TEAM_COLORS[int(p["team"])]
 		if bool(p["is_turret"]):
 			col = Color(1.0, 0.72, 0.30)
-			draw_line(from.lerp(to, max(0.0, f - 0.22)), at, col * Color(1, 1, 1, 0.55), 3.0)
-			draw_circle(at, 9.0, col)
+			c.draw_line(from.lerp(to, max(0.0, f - 0.22)), at,
+					col * Color(1, 1, 1, 0.55), 3.0)
+			c.draw_circle(at, 9.0, col)
 		else:
-			draw_line(from.lerp(to, max(0.0, f - 0.18)), at, col * Color(1, 1, 1, 0.5), 2.5)
-			draw_circle(at, 6.0, col)
+			c.draw_line(from.lerp(to, max(0.0, f - 0.18)), at,
+					col * Color(1, 1, 1, 0.5), 2.5)
+			c.draw_circle(at, 6.0, col)
 
 
-func _draw_units() -> void:
+func _draw_units(c: CanvasItem) -> void:
 	for raw in _sim.units:
 		var u := raw as RealtimeEngageSim.EUnit
-		if u.state == RealtimeEngageSim.State.FLED:
-			continue
 		var dead: bool = (u.state == RealtimeEngageSim.State.DEAD)
 		var alpha: float = 0.30 if dead else 1.0
 		var col: Color = TEAM_COLORS[u.team]
 		var r: float = RealtimeEngageSim.UNIT_RADIUS
 
 		# 접지 그림자.
-		draw_circle(u.pos + Vector2(0, r * 0.72),
+		c.draw_circle(u.pos + Vector2(0, r * 0.72),
 				r * 0.72, Color(0, 0, 0, 0.30 * alpha))
 
 		# 사거리 표시 — 살아 있고 근접이 아닌 유닛만(원거리 카이팅 가독성).
 		if not dead and not u.is_melee:
-			draw_arc(u.pos, u.atk_range, 0.0, TAU, 48,
+			c.draw_arc(u.pos, u.atk_range, 0.0, TAU, 48,
 					Color(col.r, col.g, col.b, 0.12), 1.5)
 
 		# 대쉬 트레일.
 		if u.state == RealtimeEngageSim.State.DASH:
-			draw_line(u.pos - u.dash_dir * 70.0, u.pos,
+			c.draw_line(u.pos - u.dash_dir * 70.0, u.pos,
 					Color(1.0, 0.95, 0.6, 0.55), 6.0)
 
 		# 초상.
 		var portrait: Texture2D = PilotImages.circle_for(u.pilot.pilot_id)
 		if portrait != null:
-			draw_texture_rect(portrait,
+			c.draw_texture_rect(portrait,
 					Rect2(u.pos - Vector2(r, r), Vector2(r * 2.0, r * 2.0)),
 					false, Color(1, 1, 1, alpha))
 		else:
-			draw_circle(u.pos, r, Color(col.r, col.g, col.b, alpha))
+			c.draw_circle(u.pos, r, Color(col.r, col.g, col.b, alpha))
 
 		# 피격 플래시.
 		if u.hit_flash > 0.0:
-			draw_circle(u.pos, r + 3.0,
+			c.draw_circle(u.pos, r + 3.0,
 					Color(1.0, 0.35, 0.35, 0.45 * (u.hit_flash / 0.22)))
 
 		# 공격 모션 — 바라보는 방향으로 짧은 호를 튀긴다.
 		if u.swing_t > 0.0 and u.is_melee:
 			var a0: float = u.facing.angle() - 0.6
-			draw_arc(u.pos, r + 14.0, a0, a0 + 1.2, 16,
+			c.draw_arc(u.pos, r + 14.0, a0, a0 + 1.2, 16,
 					Color(1.0, 0.95, 0.6, 0.85), 5.0)
 
 		# 팀색 HP 링.
 		var ring_w := 7.0
 		var ring_r: float = r + ring_w * 0.5 + 1.0
-		draw_arc(u.pos, ring_r, 0.0, TAU, 36,
+		c.draw_arc(u.pos, ring_r, 0.0, TAU, 36,
 				Color(0.15, 0.15, 0.15, alpha), ring_w)
 		if not dead:
 			var frac: float = u.hp_ratio()
 			var start_a: float = -PI * 0.5
-			draw_arc(u.pos, ring_r, start_a, start_a + TAU * frac, 36,
+			c.draw_arc(u.pos, ring_r, start_a, start_a + TAU * frac, 36,
 					col, ring_w)
 
-		# 후퇴 화살표 — 이탈 방향을 짧은 삼각형으로.
-		if u.state == RealtimeEngageSim.State.RETREAT:
-			var tip: Vector2 = u.pos + u.facing * (r + 26.0)
-			var side: Vector2 = u.facing.orthogonal() * 9.0
-			draw_colored_polygon(
-					PackedVector2Array([tip,
-						u.pos + u.facing * (r + 12.0) + side,
-						u.pos + u.facing * (r + 12.0) - side]),
-					Color(0.95, 0.95, 0.55, 0.9))
+
+# 뷰 테두리 — "여기까지가 아레나, 밖은 잘려 있다"를 명시한다.
+func _draw_view_frame(c: CanvasItem) -> void:
+	c.draw_rect(VIEW_RECT.grow(2.0), Color(0.0, 0.0, 0.0, 0.55), false, 6.0)
+	c.draw_rect(VIEW_RECT, VIEW_FRAME, false, 2.0)
 
 
-func _draw_time_bar() -> void:
+func _draw_time_bar(c: CanvasItem) -> void:
 	if _is_duel:
 		return
 	var x: float = (VP_W - TIME_BAR_W) * 0.5
-	draw_rect(Rect2(x, TIME_BAR_Y, TIME_BAR_W, TIME_BAR_H),
+	c.draw_rect(Rect2(x, TIME_BAR_Y, TIME_BAR_W, TIME_BAR_H),
 			Color(0.10, 0.11, 0.16, 0.95), true)
 	var frac: float = 0.0
 	if _sim.duration > 0.0:
 		frac = clampf(_sim.time_left() / _sim.duration, 0.0, 1.0)
-	draw_rect(Rect2(x, TIME_BAR_Y, TIME_BAR_W * frac, TIME_BAR_H),
+	c.draw_rect(Rect2(x, TIME_BAR_Y, TIME_BAR_W * frac, TIME_BAR_H),
 			TIME_LOW if frac <= 0.25 else Color(0.45, 0.80, 0.95), true)
-	draw_rect(Rect2(x, TIME_BAR_Y, TIME_BAR_W, TIME_BAR_H),
+	c.draw_rect(Rect2(x, TIME_BAR_Y, TIME_BAR_W, TIME_BAR_H),
 			Color(0.4, 0.45, 0.6, 0.8), false, 1.5)
 
 
@@ -465,11 +622,7 @@ func _dashboard_header_row(y: float, _dash_w: float) -> void:
 
 
 func _dashboard_row(p: PilotData, s: Dictionary, y: float, _dash_w: float) -> void:
-	var suffix := ""
-	if not p.alive:
-		suffix = "  (처치됨)"
-	elif _fled_pilots.has(p):
-		suffix = "  (이탈)"
+	var suffix := "  (처치됨)" if not p.alive else ""
 	var name_lbl := _make_label(
 			"%s  (HP %d/%d)%s" % [_bs.pilot_label(p), p.hp, p.max_hp, suffix],
 			20, TEAM_COLORS[p.team], HORIZONTAL_ALIGNMENT_LEFT)
@@ -483,12 +636,6 @@ func _dashboard_row(p: PilotData, s: Dictionary, y: float, _dash_w: float) -> vo
 
 	if not p.alive:
 		name_lbl.modulate = Color(0.7, 0.5, 0.5)
-
-
-func mark_fled(pilots: Array) -> void:
-	_fled_pilots.clear()
-	for p in pilots:
-		_fled_pilots[p] = true
 
 
 func _stat_cell(value: int, x: float, y: float, w: float) -> Label:
@@ -520,3 +667,19 @@ static func _row_style(bg: Color) -> StyleBoxFlat:
 	sb.corner_radius_bottom_left = 8
 	sb.corner_radius_bottom_right = 8
 	return sb
+
+
+# _draw 를 바깥으로 위임하기만 하는 껍데기 노드. draw_* 는 그 CanvasItem 이
+# 그리기 상태일 때만 유효하므로, 아레나가 draw_fn 안에서 이 노드를 받아
+# c.draw_*() 로 그린다.
+#
+# Control 이 아니라 Node2D 인 이유: Control 은 매 DRAW 통지마다 자기 크기로
+# custom_rect 를 다시 박는다. 크기 0 인 Control 은 빈 사각형으로 컬링되어
+# _draw 안의 그림이 통째로 사라진다. Node2D 는 실제 그린 커맨드에서 rect 를
+# 잡으므로 카메라 변환 아래에서도 안전하다.
+class DrawProxy extends Node2D:
+	var draw_fn: Callable = Callable()
+
+	func _draw() -> void:
+		if draw_fn.is_valid():
+			draw_fn.call(self)

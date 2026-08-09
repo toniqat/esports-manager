@@ -18,7 +18,7 @@ extends Node
 #                활성.
 #   • INSTANT  — 대상이 없는 카드. 전장 표시는 하나도 없고 확인만 뜬다.
 #
-# 확인 / 취소는 화면 **좌하단**(Deck 카운터 바로 위)에 나란히 뜬다. 확인을
+# 확인 / 취소는 화면 **우하단**(Discard 카운터 바로 위)에 나란히 뜬다. 확인을
 # 누르기 전까지는 비용도 빠지지 않고 카드도 핸드에 그대로 있으므로, 취소는
 # 되돌릴 게 없다 — 그냥 선택 해제다. (버리기 / 찾기 카드의 스냅샷 환불 경로는
 # CardSelectOverlay 쪽에 그대로 남아 있다.)
@@ -335,22 +335,31 @@ func _hit_test_pilot(pos: Vector2) -> PilotData:
 
 
 # ─── UI construction ─────────────────────────────────────────────────────────
-# 확인 / 취소는 화면 **좌하단**, Deck 카운터 바로 위에 나란히 뜬다. y 는
+# 확인 / 취소는 화면 **우하단**, Discard 카운터 바로 위에 나란히 뜬다. y 는
 # BS_HAND_CENTER.y(핸드 행 상단)에서 역산하므로 핸드 행이 움직이면 따라간다.
+# 좌우 순서는 CardSelectOverlay 와 동일하게 확인(왼쪽) / 취소(오른쪽).
 func _btn_top_y() -> float:
 	return _bs.BS_HAND_CENTER.y - BTN_HAND_GAP - BTN_H
 
 
+## 뷰포트 실제 폭. 팀 패널 / 버튼 배치가 모두 이 값을 기준으로 우측 정렬된다.
+func _screen_w() -> float:
+	return get_viewport().get_visible_rect().size.x
+
+
 func _build_buttons() -> void:
+	# 우측 끝에서 역산: [확인][gap][취소] 순으로 붙여 오른쪽 여백에 맞춘다.
+	var cancel_x: float = _screen_w() - BTN_SIDE_MARGIN - BTN_W
+	var confirm_x: float = cancel_x - CONFIRM_BTN_GAP - BTN_W
+
 	_btn_confirm = _make_btn("확인")
-	_btn_confirm.position = Vector2(BTN_SIDE_MARGIN, _btn_top_y())
+	_btn_confirm.position = Vector2(confirm_x, _btn_top_y())
 	_btn_confirm.disabled = true
 	_btn_confirm.pressed.connect(_on_confirm_pressed)
 	_ui_layer.add_child(_btn_confirm)
 
 	_btn_cancel = _make_btn("취소")
-	_btn_cancel.position = Vector2(
-			BTN_SIDE_MARGIN + BTN_W + CONFIRM_BTN_GAP, _btn_top_y())
+	_btn_cancel.position = Vector2(cancel_x, _btn_top_y())
 	_btn_cancel.pressed.connect(_on_cancel_pressed)
 	_ui_layer.add_child(_btn_cancel)
 
@@ -382,7 +391,7 @@ func _build_team_panels() -> void:
 		Color(0.95, 0.40, 0.32),
 	]
 	# 화면 X 좌표: 좌측 패널 = MARGIN, 우측 패널 = 화면 폭 - PANEL_W - MARGIN
-	var screen_w: float = 1080.0
+	var screen_w: float = _screen_w()
 	var xs: Array = [
 		TEAM_PANEL_MARGIN,
 		screen_w - TEAM_PANEL_W - TEAM_PANEL_MARGIN,

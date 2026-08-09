@@ -59,7 +59,7 @@ Creates UI inside `_bs.canvas` (a CanvasLayer added to BattleSim):
   as `min(BS_HAND_AREA_MARGIN, (screen_w − BS_HAND_WIDTH) / 2)` (89px at 1080)
   and the font shrinks with it (22 → 20) so "Discard" still fits and no card
   ever overlaps a label.
-- **전략 포인트 도넛 ×2** — `CostDonut` ring gauges in the right-hand gutter
+- **전략 포인트 도넛 ×2** — `CostDonut` ring gauges in the **left-hand** gutter
   (see below). Built by `_build_cost_donuts()`.
 - **Bottom strip** (y≈1790..1920) — empty. The old dual cost bars and the
   rectangular 단계 넘기기 button that used to live here are gone; the bottom
@@ -85,13 +85,19 @@ Connections:
 - Play Again button → `_bs._on_restart_pressed`
 
 ### 전략 포인트 도넛 (`CostDonut.gd`)
-Both sides' 작전 점수 read out on a ring gauge in the right-hand gutter
-(`x = screen_w − BS_HAND_AREA_MARGIN / 2`, i.e. 1015 on a 1080-wide screen):
+Both sides' 작전 점수 read out on a ring gauge in the **left-hand** gutter
+(`x = BS_HAND_AREA_MARGIN / 2`, i.e. 65 on a 1080-wide screen). The donut column
+and the targeting overlay's 확인 / 취소 row sit on **opposite** sides of the
+screen: donuts left, buttons bottom-right.
 
 | Donut | Position | Interactive |
 |---|---|---|
-| `_bs.cost_donut` (player, blue) | above the Discard counter, clear of the targeting overlay's button band → centre (1015, 1354) | yes |
-| `_bs.cost_donut_enemy` (enemy, red) | top-right, under the AI hand peek → centre (1015, 255) | no |
+| `_bs.cost_donut` (player, blue) | above the Deck counter, one button-band above the hand row → centre (65, 1354) | yes |
+| `_bs.cost_donut_enemy` (enemy, red) | top-left, under the AI hand peek → centre (65, 255) | no |
+
+Measured headlessly at 1080×1920: player (65, 1354), enemy (65, 255); the Deck
+label sits at x=8 in the y-band 1500..1720, so the donut (x 9..121, y 1298..1410)
+clears it vertically.
 
 - Ring is full at `PHASE_THRESHOLD` (8); the number in the middle is the raw
   point total, so boost cards read as "9 on a full ring".
@@ -116,8 +122,8 @@ State setters driven from `HudBuilder._update_cost_donuts()`:
 it off un-flips), `set_end_enabled(can_end_card_phase())`. `set_locked(…)`
 still exists on `CostDonut` but **nothing calls it any more** — targeting stopped
 being modal, so there is no state that needs the flip blocked. The donut's y is
-still derived from `CardTargetingOverlay.BTN_HAND_GAP + BTN_H` so it clears the
-확인/취소 band, even though those buttons now sit on the opposite (left) side.
+still derived from `CardTargetingOverlay.BTN_HAND_GAP + BTN_H` so it keeps the
+same vertical band the 확인/취소 row occupies on the far side of the screen.
 
 ### Pilot Slots (top panel, both teams)
 Each slot has a **face portrait** with a **horizontal HP bar directly under

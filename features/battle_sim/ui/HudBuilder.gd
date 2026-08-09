@@ -69,10 +69,11 @@ const AI_HAND_FAN_MAX_SPREAD_DEG := 28.0
 
 # ── 전략 포인트 도넛 (cost gauges) ────────────────────────────────────────────
 # The old bottom cell-bar stack and the rectangular 단계 넘기기 button are gone.
-# Both sides now read out on a ring gauge in the right-hand gutter:
-#   player — above the Discard counter, top-right of the hand row; doubles as
+# Both sides now read out on a ring gauge in the **left-hand** gutter (the
+# targeting overlay's 확인 / 취소 row owns the bottom-right corner):
+#   player — above the Deck counter, top-left of the hand row; doubles as
 #            the 턴 넘기기 button once tapped (see CostDonut).
-#   enemy  — top-right of the screen, just under the AI hand peek.
+#   enemy  — top-left of the screen, just under the AI hand peek.
 const DONUT_FILL_PLAYER := Color(0.25, 0.60, 1.00)
 const DONUT_FILL_ENEMY  := Color(0.95, 0.35, 0.25)
 ## Vertical gap between the player donut and the targeting overlay's
@@ -381,13 +382,13 @@ func play_turn_announce(is_player: bool) -> void:
 		child.queue_free()
 
 
-# 전략 포인트 도넛 두 개를 화면 우측 거터에 배치한다.
-#  - player: 핸드 우측 상단 (Discard 카운터 바로 위). 탭하면 뒤집혀 턴 넘기기
+# 전략 포인트 도넛 두 개를 화면 **좌측** 거터에 배치한다. 대상 지정 확인/취소
+# 버튼이 우하단으로 옮겨 갔으므로 도넛 열은 반대편(좌측)을 차지한다.
+#  - player: 핸드 좌측 상단 (Deck 카운터 바로 위). 탭하면 뒤집혀 턴 넘기기
 #    원형 버튼이 되고, 바깥을 탭하면 다시 도넛으로 돌아온다.
-#  - enemy: 화면 우측 상단 (상대 핸드 peek 바로 아래). 표시 전용.
+#  - enemy: 화면 좌측 상단 (상대 핸드 peek 바로 아래). 표시 전용.
 func _build_cost_donuts() -> void:
-	var screen_w: float = get_viewport().get_visible_rect().size.x
-	var cx: float = screen_w - _bs.BS_HAND_AREA_MARGIN * 0.5
+	var cx: float = _bs.BS_HAND_AREA_MARGIN * 0.5
 
 	_bs.cost_donut_enemy = CostDonut.new()
 	_bs.cost_donut_enemy.name = "CostDonutEnemy"

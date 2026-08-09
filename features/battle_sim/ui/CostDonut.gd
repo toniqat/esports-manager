@@ -2,10 +2,10 @@ class_name CostDonut
 extends Control
 
 ## Donut (ring) gauge for 전략 포인트 (작전 점수). One instance per side:
-##  - player: sits at the top-right of the hand row, above the Discard counter,
+##  - player: sits at the top-left of the hand row, above the Deck counter,
 ##    and doubles as the 턴 넘기기 button (see below).
-##  - enemy: mirrors the same look at the top-right of the screen, under the
-##    right edge of the AI hand peek. Never interactive.
+##  - enemy: mirrors the same look at the top-left of the screen, under the
+##    left edge of the AI hand peek. Never interactive.
 ##
 ## Player interaction (BattleSim spec):
 ##   1. tap the donut during 작전 단계 → the ring unwinds and re-winds in the

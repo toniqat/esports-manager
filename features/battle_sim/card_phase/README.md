@@ -200,7 +200,7 @@ re-evaluates the dim state.
   and the effective cost number on the right (white / green / red mirroring
   the card's top-left cost, no 시전자 tag) and the full description.
   **There is no 카드 내기 button** — playing a card is the 확인 button that
-  `CardTargetingOverlay` parks at the bottom-left, so the commit action lives
+  `CardTargetingOverlay` parks at the bottom-right, so the commit action lives
   in one place whether or not the card needs a target. The only button this
   box still owns is **버리기**, shown while a 버리기:N pick overlay is active
   (`_in_discard_pick_mode()`), which is not a card play at all.
@@ -357,12 +357,14 @@ all consult this helper so the four cost-modifier effects stay in sync.
   engage earlier in the same phase disables 확인 on the lifted card.
   `_on_selection_confirm` re-checks `card_is_playable` rather than trusting the
   button state.
-- **Buttons live at the bottom-left**, just above the Deck counter:
-  확인 at `(BTN_SIDE_MARGIN, BS_HAND_CENTER.y − BTN_HAND_GAP − BTN_H)` =
-  (24, 1434), 취소 one `BTN_W + CONFIRM_BTN_GAP` to its right at (216, 1434).
-  They used to sit at the top-**right** of the hand row; `HudBuilder` still
-  derives the 전략 포인트 도넛's y from `BTN_HAND_GAP + BTN_H`, so the donut
-  keeps clearing the button band.
+- **Buttons live at the bottom-right**, just above the Discard counter, and are
+  laid out by counting back from the right edge (`_screen_w()`), matching
+  `CardSelectOverlay`'s order of 확인 then 취소:
+  취소 at `(screen_w − BTN_SIDE_MARGIN − BTN_W, BS_HAND_CENTER.y − BTN_HAND_GAP
+  − BTN_H)` = (876, 1434), 확인 one `BTN_W + CONFIRM_BTN_GAP` to its **left** at
+  (684, 1434). The 전략 포인트 도넛 column now owns the opposite (left) gutter;
+  `HudBuilder` still derives the donut's y from `BTN_HAND_GAP + BTN_H` so both
+  sit in the same horizontal band.
 - **Battlefield clicks are swallowed** in PILOT / LOCATION mode — hit *or*
   miss. `_unhandled_input` calls `get_viewport().set_input_as_handled()`
   unconditionally, because `CardPhaseManager._unhandled_input` would otherwise

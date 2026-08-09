@@ -231,6 +231,9 @@ func _trim_hand_overflow(is_player: bool) -> int:
 
 func start_card_phase() -> void:
 	_bs.game_phase = GameEnums.BattlePhase.CARD_PHASE
+	_bs.blog.stage("card-phase")
+	_bs.blog.log_event("PHASE", "작전 단계 시작 — player %d / ai %d 점"
+			% [_bs.player_cost, _bs.ai_cost])
 	# Snapshot the player's cost on phase entry so the "단계 넘기기" button can
 	# require >= 1 point spent before becoming clickable.
 	_bs.card_phase_entry_cost = _bs.player_cost
@@ -308,11 +311,13 @@ func end_card_phase() -> void:
 	if _bs.ai_cost >= _bs.PHASE_THRESHOLD and _bs.ai_card_player != null:
 		await _bs.ai_card_player.run_ai_plays()
 	# Phase end: re-evaluate recalls (HP threshold + out-of-position from card effects).
+	_bs.blog.stage("phase-end")
 	var log_lines: Array = []
 	_bs.recall_sys.process_phase_end_recalls(log_lines)
 	if not log_lines.is_empty():
 		_bs.last_log = log_lines[-1]
 	_bs.game_phase = GameEnums.BattlePhase.BATTLE
+	_bs.blog.log_event("PHASE", "작전 단계 종료 → BATTLE")
 	_bs.renderer.queue_redraw()
 	_bs.hud.update_hud()
 	_ai_play_in_progress = false
@@ -992,6 +997,8 @@ func _play_card_direct(card: Card, pre_target: Variant = null) -> void:
 		"engage_discount_p": _bs.engage_discount_p,
 	}
 	var eff_cost: int = _bs.effective_cost_for(cd, true)
+	_bs.blog.log_event("CARD", "PLAYER plays [%s] cost=%d effect=%s target=%s" % [
+			cd.card_name, eff_cost, cd.effect, _target_str(pre_target)])
 	_bs.player_cost -= eff_cost
 	# Consume the engage discount on use so it doesn't double-dip onto a
 	# follow-up engage. If this card is later cancelled, the snapshot
@@ -1383,6 +1390,10 @@ func apply_card_effect(cd: CardData, is_player: bool) -> String:
 	# don't have to branch on null. Returns null for cards that don't target.
 	var target: Variant = _ai_pick_target(cd, caster, ally_team, enemy_team)
 
+	_bs.blog.log_event("CARD", "%s plays [%s] effect=%s target=%s" % [
+			"PLAYER" if is_player else "AI", cd.card_name, cd.effect,
+			_target_str(target)])
+
 	var clauses: Array = _parse_effect_chain(cd.effect)
 	var lines: Array = []
 	for clause in clauses:
@@ -1394,6 +1405,19 @@ func apply_card_effect(cd: CardData, is_player: bool) -> String:
 	if lines.is_empty():
 		return prefix
 	return "%s · %s" % [prefix, ", ".join(lines)]
+
+
+# Debug-log helper: renders a resolved card target (PilotData / Vector2i / null)
+# as a short string for BattleLogger.
+func _target_str(target: Variant) -> String:
+	if target == null:
+		return "-"
+	if target is Vector2i:
+		return str(target)
+	if target is PilotData:
+		var p := target as PilotData
+		return "%s@%s" % [_bs.pilot_label(p), str(p.grid_pos)]
+	return str(target)
 
 
 # Picks a target for an AI-played card. Mirrors the player-side targeting
@@ -1634,6 +1658,7 @@ func _effect_recall_ally(ally_team: int,
 	t.hp       = t.max_hp
 	t.shield   = 0   # 본진 복귀 시 보호막 제거
 	t.waypoint_idx = 0
+	_bs.blog.log_move(t, orig, t.grid_pos, "card-recall")
 	_bs.anim_pilot_recall(t, orig)
 	return "복귀 %s" % _bs.pilot_label(t)
 
@@ -1666,6 +1691,7 @@ func _effect_move(caster: PilotData, picked: Variant) -> String:
 		return "이동 %s (제자리)" % _bs.pilot_label(caster)
 	var orig := caster.grid_pos
 	caster.grid_pos = cell
+	_bs.blog.log_move(caster, orig, cell, "card-move")
 	_bs.anim_pilot_move(caster, orig)
 	return "이동 %s → (%d,%d)" % [_bs.pilot_label(caster), cell.x, cell.y]
 

@@ -420,6 +420,8 @@ func _pick_target(attacker: PilotData) -> PilotData:
 
 # ─── End / dashboard / teardown ──────────────────────────────────────────────
 func _finish_engage() -> void:
+	_bs.blog.log_event("ENGAGE", "전투 개시 종료 — t0=%s t1=%s"
+			% [_engage_side_str(0), _engage_side_str(1)])
 	if _overlay != null:
 		_overlay.show_dashboard(_team_pilots[0], _team_pilots[1], _stats,
 				Callable(self, "_on_dashboard_confirmed"))
@@ -454,6 +456,16 @@ func _open_overlay() -> void:
 	var title: String = "결투" if _is_duel else "전투 개시"
 	(_overlay as EngageOverlay).setup(_bs, _team_pilots[0], _team_pilots[1],
 			_initiator_team, _rounds_total, title, _is_duel)
+
+
+# Debug-log helper: "TANK0(hp120) SNPR0(dead)" for one side of the engage.
+func _engage_side_str(team: int) -> String:
+	var parts: Array = []
+	for raw in (_team_pilots[team] as Array):
+		var p := raw as PilotData
+		parts.append("%s(%s)" % [_bs.pilot_label(p),
+				("hp%d" % p.hp) if p.alive else "dead"])
+	return "-" if parts.is_empty() else ",".join(parts)
 
 
 func _close_overlay() -> void:

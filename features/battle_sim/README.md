@@ -45,6 +45,7 @@ And accesses shared state via `_bs.pilots`, `_bs.turn_count`, etc.
 | GambitPhaseManager | Node | `gambit/GambitPhaseManager.gd` | Auto role→lane mapping + launch (UI removed; pre-battle choices live in `features/match_flow/`) |
 | EngagePhaseManager | Node | `engage/EngagePhaseManager.gd` | 전투 개시(engage) modal — turn-based combat triggered by `engage:N` cards. Lazily added in `_ready()`. |
 | HudBuilder     | Node | `ui/HudBuilder.gd`         | HUD construction; 전략 포인트 도넛 (`ui/CostDonut.gd`) is the only interactive in-battle widget |
+| BattleLogger   | Node | `debug/BattleLogger.gd`    | Full action log (console + `user://battle_logs/`) and enemy cross-over detector. Lazily added in `_ready()` after pilots spawn; reachable as `_bs.blog`. |
 
 Cross-module calls go through `_bs`:
 ```gdscript
@@ -107,10 +108,13 @@ Responsibilities:
 - One-sided hit → winner advances 1 cell, loser retreats 1 cell.
 - Both hit / both miss → no movement.
 - Damage accrues regardless of push.
-- A pilot mid-move stops as soon as it enters a same-scope enemy cell
-  (`_move_pilot` re-checks before each step). Cross-scope contacts (jungler
-  vs lane pilot) are ignored, so a jungler crossing a lane never freezes on
-  a lane enemy.
+- **Free movement and combat pushes resolve in one simultaneous pass**
+  (`SimulationCore.resolve_movement`), so two same-scope enemies can never
+  trade cells or move through each other. A pilot mid-move stops as soon as it
+  shares a cell with a same-scope enemy; a head-on exchange is arbitrated so
+  one side takes the cell and the two meet there. Cross-scope contacts
+  (jungler vs lane pilot) are ignored, so a jungler crossing a lane never
+  freezes on — or is blocked by — a lane enemy.
 - **Pilots are not attacked by turrets.**
 - At an enemy turret cell: only **same-lane** lane pilots interact with the
   turret. Same-lane attacker(s) deal 100% damage to the turret; same-lane
@@ -198,6 +202,19 @@ modal during CARD_PHASE. Returns to CARD_PHASE on close — see
   battlefield. KO sets `respawn_timer = RESPAWN_TURNS` (battlefield-equivalent).
 - Dashboard shows per-pilot dealt / taken / kills before resuming.
 
+### Action logging (`debug/BattleLogger.gd`)
+Every turn writes a full transcript to the console **and** to
+`user://battle_logs/battle_<timestamp>.log`: before/after position snapshots,
+per-cell engagement brackets, the engaged / advance / retreat sets, every
+`grid_pos` mutation tagged with the sim pass that caused it, damage, deaths,
+turret HP, HQ chip, jungle captures and card plays. `end_turn()` also diffs the
+snapshots and flags `!!SWAP` / `!!CROSS` when two same-lane enemies trade
+places without engaging. Defaults to on — flip `blog.enabled` in
+`BattleSim._ready()` to silence it. Full format in
+[`debug/README.md`](debug/README.md); the pass-through bug it surfaced (and the
+single-pass movement rewrite that fixed it) is written up in
+[`combat/README.md`](combat/README.md).
+
 ### Pilot Animations (UI-only, additive on top of logical state)
 Pilot logical state (grid_pos, hp, alive…) updates instantly when the sim
 ticks; the renderer reads animation timers from `PilotData` to soften the
@@ -206,7 +223,7 @@ visual transitions. All durations fit inside the 0.5s `AUTO_PLAY_INTERVAL`.
 | Trigger | Site | Visual |
 |---|---|---|
 | Combat / card damage | `SimulationCore` damage_map apply, `CardPhaseManager.apply_card_effect` | `anim_pilot_shake` → 0.18s horizontal jitter (decaying) |
-| Movement (free + push advance + push retreat) | `_move_pilot` / `_push_advance` / `_push_retreat` | `anim_pilot_move(p, orig)` → 0.30s ease-out tween from `orig` cell to `grid_pos` |
+| Movement (free + push advance + push retreat) | `resolve_movement` (once per pilot per turn) | `anim_pilot_move(p, orig)` → 0.30s ease-out tween from `orig` cell to `grid_pos` |
 | Recall (HP-threshold or phase-end out-of-position) | `RecallSystem._teleport_home` | `anim_pilot_recall(p, orig)` → 0.20s fade-out + rise at `orig`, then 0.25s fade-in + descend at HQ |
 | Respawn | `SimulationCore.process_respawns` | `anim_pilot_respawn` → fade-in + descend at HQ only (skip phase 1) |
 

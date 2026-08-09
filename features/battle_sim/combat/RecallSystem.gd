@@ -54,5 +54,6 @@ func _teleport_home(p: PilotData, log_lines: Array, reason: String) -> void:
 	p.hp            = p.max_hp
 	p.shield        = 0   # 보호막 is consumed on 본진 복귀
 	p.waypoint_idx  = 0
+	_bs.blog.log_move(p, orig_pos, p.grid_pos, "recall", reason)
 	_bs.anim_pilot_recall(p, orig_pos)
 	log_lines.append("%s recalled (%s)" % [_bs.pilot_label(p), reason])

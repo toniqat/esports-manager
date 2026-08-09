@@ -8,10 +8,11 @@ extends Node
 
 # ─── Click-to-select state ────────────────────────────────────────────────────
 # When a card is clicked it pops up by Card.PRESS_LIFT, gets brought to the top
-# of the scene tree, and a description box with a "카드 내기" button appears
-# next to it. Other hand cards stay in their slots (gap remains where the
-# selected card was). Clicking anywhere outside the card / box / button
-# dismisses the box and returns the card to its slot.
+# of the scene tree, and a description box appears next to it. Selecting IS the
+# targeting step — there is no "카드 내기" button any more; the card is committed
+# by 확인 in CardTargetingOverlay (see _on_selection_confirm). The rest of the
+# row reflows around the selected card, and clicking outside the card / box
+# deselects it.
 var _selected_card: Card = null
 var _description_box: Panel = null
 var _play_button: Button = null

@@ -68,10 +68,14 @@ re-evaluates the dim state.
   (`_fan_angle`), its vertical offset is how far the circle has dropped from its
   apex at that angle (`_fan_arc_drop`). The apex is the middle of the row, so
   **the centre card is the highest and the hand curves down toward both ends** —
-  a hand held from underneath, not a valley. Measured at the 12-card cap: the
+  a hand held from underneath, not a valley. Measured at 12 cards: the
   outermost cards tilt ±6.7° and hang 21.4px below the middle pair; a 5-card
   hand splays ±6.2° / 18.5px (its spacing is uncompressed, so it's just as wide).
   Shrink the radius for a deeper curve.
+  > The 12-card figures quoted throughout this section were measured when
+  > `MAX_HAND_SIZE` was 12. The cap is **8** now, so a real hand never reaches
+  > them — they're kept as the worst case the geometry was solved against, and
+  > the row still has to hold if the cap is ever raised again.
 - `slot_spacing(total)` — uniform centre-to-centre spacing.
   `Card.CARD_W + BS_HAND_CARD_GAP` until the natural span exceeds
   `BS_HAND_WIDTH`; from then on it compresses so the row always fits the
@@ -119,7 +123,7 @@ re-evaluates the dim state.
   to leave a clickable sliver. The resting spacing pays part of that and pays
   less the more cards the hand holds, so the push is the shortfall — **it grows
   with the hand size**: `BS_HAND_HOVER_PUSH` (28px) floor up to 8 cards, 60.5px
-  at the 12-card cap. No edge clamp is needed, since anchored ends can't reach
+  at 12 cards. No edge clamp is needed, since anchored ends can't reach
   the screen edge. Measured at 12 cards with the focus in the middle: the row
   spans 89..831 whether open or closed, the two neighbours take ∓58.9 / ±58.1px,
   the falloff runs 58.9 → 53.8 → 45.4 → 33.6 → 18.5 → 0, and the tightest
@@ -133,7 +137,7 @@ re-evaluates the dim state.
   (own push = 0), but it is almost never already sitting there: the *previous*
   focus had pushed it aside. Skipping it left it stranded at that stale offset,
   so a card hovered right after its neighbour sat displaced by up to a full push
-  (+26.9px at 8 cards, +59.8px at the 12-card cap) and then slid sideways on its
+  (+26.9px at 8 cards, +59.8px at 12 cards) and then slid sideways on its
   way up when clicked — the same card hovered with no prior focus did neither.
   Skipping was safe for `scale` (`tween_to` doesn't touch it) but never for
   `position`. Verified: hovering B directly and hovering B right after A now
@@ -349,7 +353,7 @@ whole row and routes hover and clicks itself.
 
 Letting each card claim its own rect is what made a packed hand unclickable.
 The cards overlap far more than they are wide — 160px cards on a 67.5px stride
-at the 12-card cap — and the focus card is drawn on top at 1.2×, so it ate the
+at 12 cards — and the focus card is drawn on top at 1.2×, so it ate the
 only pixels its right-hand neighbour had left. Measured across every focus
 position of a 12-card hand: the card immediately right of the hovered one kept
 **5–17px**, and **0px** with card 8 focused — that neighbour could not be

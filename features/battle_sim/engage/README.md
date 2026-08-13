@@ -227,7 +227,9 @@ arena = ARENA_CENTER + (hex_to_screen(cell) - hex_to_screen(origin_cell))
 ### 전장 상태 반영
 - 데미지는 `PilotData.hp` / `.shield` 에 **직접** 적용된다. 교전이 끝나면
   전장에 그대로 반영된다(턴제 시절과 동일).
-- 처치 → `alive = false` + `respawn_timer = _bs.RESPAWN_TURNS`.
+- 처치 → `_bs.mark_pilot_dead(pilot)`. 전장과 같은 사망 경로라 리스폰 턴
+  스케일링(`respawn_turns_now()` = 5 + 경과 턴/10)과 전사 연출이 아레나
+  처치에도 그대로 걸린다.
 - **`grid_pos` 는 건드리지 않는다.** 살아남은 파일럿은 원래 셀에 그대로 남는다.
   저HP 파일럿은 작전 단계 종료 시 `RecallSystem.process_phase_end_recalls()`
   의 HP 임계 복귀가 어차피 본진으로 데려간다.
@@ -238,7 +240,7 @@ base   = hit / (hit + evasion)                      # 전장과 같은 기준값
 명중   = randf() < base + (1 - base) * ENGAGE_HIT_LERP
 피해   = attacker.atk        (보호막부터 흡수, 그 다음 HP)
 ```
-피해 공식은 전장(`SimulationCore._hit_roll` / `_apply_damage`)과 공유하지만
+피해 공식은 전장(`SimulationCore.roll_hit` / `_apply_damage`)과 공유하지만
 **명중 굴림만 교전 전용**이다 — `_hit_chance()` 가 전장 확률을
 `ENGAGE_HIT_LERP`(현재 **0.7**)만큼 1.0 쪽으로 끌어올린다. 교전은 몇 초 안에
 끝나는 짧은 창이라 전장 명중률(55vs45 → 55%)을 그대로 쓰면 MISS 가 너무
@@ -252,7 +254,7 @@ base   = hit / (hit + evasion)                      # 전장과 같은 기준값
 
 보정은 단조 증가라 **스탯 우열 순서는 그대로 보존**된다(명중 높은 파일럿이
 여전히 더 잘 맞힌다). `0.0` 으로 두면 전장과 완전히 동일해지고, `1.0` 이면
-무조건 명중. 전장 명중률을 바꾸고 싶으면 `SimulationCore._hit_roll` 쪽을
+무조건 명중. 전장 명중률을 바꾸고 싶으면 `SimulationCore.roll_hit` 쪽을
 건드려야 하며, 두 값은 서로 영향을 주지 않는다.
 
 포탑 사격만 예외로 명중 굴림 없이 `TURRET_ATK` 를 넣는다.

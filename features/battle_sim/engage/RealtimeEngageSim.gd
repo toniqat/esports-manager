@@ -599,8 +599,9 @@ func _apply_damage(d: PilotData, amount: int) -> int:
 
 
 func _kill(target: EUnit) -> void:
-	target.pilot.alive = false
-	target.pilot.respawn_timer = _bs.RESPAWN_TURNS
+	# 전장과 같은 사망 경로를 탄다 — 리스폰 턴 스케일링(`respawn_turns_now`)이
+	# 아레나 처치에도 그대로 걸린다.
+	_bs.mark_pilot_dead(target.pilot)
 	target.state = State.DEAD
 	target.target = null
 

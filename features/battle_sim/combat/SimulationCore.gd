@@ -70,6 +70,8 @@ func simulate_turn() -> void:
 		var t1: Array = (bucket.get("t1", []) as Array).duplicate()
 		_resolve_cell(pos as Vector2i, t0, t1,
 				damage_map, turret_dmg, advance_set, retreat_set, engaged, log_lines)
+	# 인접 공성은 없다 — 전진하는 파일럿은 적 포탑 칸에 **실제로 올라선다**.
+	# 포탑 피해는 그 칸에 서서 맞는 **다음 턴**의 `_resolve_cell` 이 넣는다.
 	_bs.blog.log_event("SETS", "engaged=%s advance=%s retreat=%s" % [
 			_labels(engaged.keys()), _labels(advance_set.keys()),
 			_labels(retreat_set.keys())])
@@ -95,7 +97,7 @@ func simulate_turn() -> void:
 				_bs.pilot_label(p), int(damage_map[k]), shield_before, p.shield,
 				maxi(p.hp, 0), str(p.grid_pos)])
 		if p.hp <= 0:
-			p.hp = 0; p.alive = false; p.respawn_timer = _bs.RESPAWN_TURNS
+			_bs.mark_pilot_dead(p)
 			log_lines.append("%s died" % _bs.pilot_label(p))
 			_bs.blog.log_event("DEATH", "%-4s died @%s (respawn in %d)" % [
 					_bs.pilot_label(p), str(p.grid_pos), p.respawn_timer])
@@ -109,6 +111,8 @@ func simulate_turn() -> void:
 		_bs.blog.log_event("TURRET", "T%d[%s] team%d -%d hp→%d @%s" % [
 				td.tier, _bs.LANE_NAMES[td.lane], td.team, int(turret_dmg[k]),
 				maxi(td.hp, 0), str(td.grid_pos)])
+		if td.hp > 0 and int(turret_dmg[k]) > 0:
+			_bs.anim_turret_hit(td)
 		if td.hp <= 0:
 			td.hp = 0; td.alive = false
 			log_lines.append("T%d %s turret destroyed!" % [td.tier, _bs.LANE_NAMES[td.lane]])
@@ -287,14 +291,16 @@ func _resolve_pilot_combat(t0: Array, t1: Array,
 		var a := t0[i] as PilotData
 		var b := t1[i] as PilotData
 		engaged[a] = true; engaged[b] = true
-		var hit_a := _hit_roll(a, b)
-		var hit_b := _hit_roll(b, a)
+		var hit_a := roll_hit(a, b)
+		var hit_b := roll_hit(b, a)
 		if hit_a:
-			damage_map[b] = damage_map.get(b, 0) + a.atk
-			log_lines.append("%s→%s:%d" % [_bs.pilot_label(a), _bs.pilot_label(b), a.atk])
+			var dmg_a := _pilot_hit_damage(a)
+			damage_map[b] = damage_map.get(b, 0) + dmg_a
+			log_lines.append("%s→%s:%d" % [_bs.pilot_label(a), _bs.pilot_label(b), dmg_a])
 		if hit_b:
-			damage_map[a] = damage_map.get(a, 0) + b.atk
-			log_lines.append("%s→%s:%d" % [_bs.pilot_label(b), _bs.pilot_label(a), b.atk])
+			var dmg_b := _pilot_hit_damage(b)
+			damage_map[a] = damage_map.get(a, 0) + dmg_b
+			log_lines.append("%s→%s:%d" % [_bs.pilot_label(b), _bs.pilot_label(a), dmg_b])
 		if hit_a and not hit_b:
 			t0_uni_wins += 1
 		elif hit_b and not hit_a:
@@ -311,27 +317,57 @@ func _resolve_pilot_combat(t0: Array, t1: Array,
 		for raw in t0: retreat_set[raw as PilotData] = true
 
 
+## 적 포탑 칸 **위에 서 있는** 공격자들의 공성. 전진이 포탑 칸까지 들어가므로
+## 모든 공성이 여기를 지난다 — 평범한 전진, 교전 승리 후 따라 들어간 무리,
+## 카드 이동으로 떨어진 경우 전부.
+##
+## **넉백은 수비자가 있을 때만이다.** 포탑에 무판정 피해를 넣고 → 그 칸의 같은
+## 레인 공격자와 수비자가 **서로** 명중 판정을 굴리고 → **명중 여부와 무관하게**
+## 공격자는 직전 칸으로 밀려난다. 수비자가 없으면 밀어낼 주체가 없으므로
+## 공격자는 그 자리에 남아 매 턴 포탑을 갈아 낸다 — 무방비 포탑은 그대로
+## 무너진다.
+##
+## 예외 하나: **때릴 수 없는 포탑**(같은 레인 T1 이 살아 있는 T2)이면 갈아 낼
+## 것이 없으므로 붙잡아 두지 않는다 — 무조건 물러난다. 걸어서는 닿을 수 없는
+## 칸이지만 이동 카드가 떨어뜨릴 수 있고, 그때 영원히 얼어붙으면 안 된다.
 func _resolve_turret_combat(attackers: Array, defenders: Array, td: TurretData,
 		damage_map: Dictionary, turret_dmg: Dictionary,
 		retreat_set: Dictionary, engaged: Dictionary, log_lines: Array) -> void:
-	# T2 invulnerable while T1 in same lane is alive.
-	var turret_attackable: bool = not (td.tier == 2 and t1_alive_in_lane(td.team, td.lane))
-
 	# Mark all attackers and defenders as engaged (no free movement this turn).
 	for raw in attackers: engaged[raw as PilotData] = true
 	for raw in defenders: engaged[raw as PilotData] = true
+	var attackable: bool = _turret_attackable(td)
+	var pushed_out: bool = not defenders.is_empty() or not attackable
+	_bs.blog.log_event("SIEGE", "T%d[%s] team%d @%s ← %s  (수비 %s → %s)" % [
+			td.tier, _bs.LANE_NAMES[td.lane], td.team, str(td.grid_pos),
+			_labels(attackers), _labels(defenders),
+			"공격자 후퇴" if pushed_out else "눌러앉음"])
+	_apply_turret_siege(attackers, defenders, td, damage_map, turret_dmg, log_lines)
+	if not pushed_out:
+		return
+	for raw in attackers:
+		retreat_set[raw as PilotData] = true
 
-	# Each attacker hits the turret (100% hit) when attackable.
-	if turret_attackable:
+
+## 공성 1회 판정 — 한 포탑 칸에 올라선 같은 레인 공격자 묶음에 대해 돌린다.
+##  • 공격자는 포탑에 **명중 판정 없이** 100% 피해를 넣는다(같은 레인 T2 는
+##    T1 이 살아 있는 동안 무적). 이게 먼저다 — 포탑 피해는 수비자가 농성하든
+##    말든 **반드시** 들어간다.
+##  • 그 다음, 포탑 칸에서 맞붙은 공격자와 수비자가 **서로** 명중 판정을 굴린다
+##    (HP 오름차순 1:1 페어링, 피해는 `_pilot_hit_damage` = 전장 배율 적용).
+##    예전에는 공격자의 공격이 전부 포탑으로만 가서 농성 중인 수비자는 공격자를
+##    일방적으로 두들길 수 있었다 — 이제 포탑을 갈아 내는 것과 별개로 눈앞의
+##    수비자에게도 명중 판정만큼 피해가 들어간다.
+## 후퇴 처리는 호출자(`_resolve_turret_combat`)가 한다 — 수비자가 있을 때만.
+func _apply_turret_siege(attackers: Array, defenders: Array, td: TurretData,
+		damage_map: Dictionary, turret_dmg: Dictionary, log_lines: Array) -> void:
+	if _turret_attackable(td):
 		for raw in attackers:
 			var a := raw as PilotData
 			turret_dmg[td] = turret_dmg.get(td, 0) + a.atk
 			log_lines.append("%s→T%d[%s]:%d" % [
 					_bs.pilot_label(a), td.tier, _bs.LANE_NAMES[td.lane], a.atk])
 
-	# Defenders roll on attackers (lowest-HP pairing). Damage stays per-pair,
-	# but retreat is team-wide: ANY successful defender hit forces every
-	# attacker in the cell (paired or not) to retreat together.
 	if defenders.is_empty():
 		return
 	var atk_sorted := attackers.duplicate()
@@ -339,18 +375,19 @@ func _resolve_turret_combat(attackers: Array, defenders: Array, td: TurretData,
 	var def_sorted := defenders.duplicate()
 	def_sorted.sort_custom(func(a: PilotData, b: PilotData) -> bool: return a.hp < b.hp)
 	var pairs := mini(atk_sorted.size(), def_sorted.size())
-	var any_def_hit := false
 	for i in pairs:
 		var a := atk_sorted[i] as PilotData
 		var d := def_sorted[i] as PilotData
-		if _hit_roll(d, a):
-			damage_map[a] = damage_map.get(a, 0) + d.atk
-			any_def_hit = true
+		if roll_hit(a, d):
+			var dmg_a := _pilot_hit_damage(a)
+			damage_map[d] = damage_map.get(d, 0) + dmg_a
+			log_lines.append("%s→%s:%d (attacker)" % [
+					_bs.pilot_label(a), _bs.pilot_label(d), dmg_a])
+		if roll_hit(d, a):
+			var dmg_d := _pilot_hit_damage(d)
+			damage_map[a] = damage_map.get(a, 0) + dmg_d
 			log_lines.append("%s→%s:%d (defender)" % [
-					_bs.pilot_label(d), _bs.pilot_label(a), d.atk])
-	if any_def_hit:
-		for raw in attackers:
-			retreat_set[raw as PilotData] = true
+					_bs.pilot_label(d), _bs.pilot_label(a), dmg_d])
 
 
 # Hit chance = attacker.hit / (attacker.hit + defender.evasion). Pure roll.
@@ -358,11 +395,48 @@ func _resolve_turret_combat(attackers: Array, defenders: Array, td: TurretData,
 # 이건 **전장 전용** 명중률이다. 교전(RealtimeEngageSim)은 이 값을 기준으로
 # `ENGAGE_HIT_LERP` 만큼 1.0 쪽으로 끌어올린 별도 확률을 쓴다 — 여기를 고쳐도
 # 교전 보정폭은 그대로이고, 그 반대도 마찬가지다.
-func _hit_roll(attacker: PilotData, defender: PilotData) -> bool:
+#
+# 공개 함수 — 카드 공격(`CardPhaseManager._effect_attack`)도 같은 판정을 쓴다.
+# 전장 교전과 공격 카드의 명중률이 갈라지지 않도록 여기 한 곳만 고치면 된다.
+func roll_hit(attacker: PilotData, defender: PilotData) -> bool:
 	var num := float(attacker.hit)
 	var den := float(attacker.hit + defender.evasion)
 	if den <= 0.0: return false
 	return randf() < (num / den)
+
+
+# 명중 1회가 **파일럿에게** 넣는 전장 피해. `BattleSim.BATTLE_PILOT_DMG_MULT`
+# (기본 0.5)를 곱하고 반올림하되 최소 1 은 보장한다 — 배율 때문에 명중이
+# 무의미해지는 일은 없어야 한다.
+#
+# 이 배율은 **파일럿이 받는 피해 전용**이다. 파일럿 → 포탑 / HQ 피해는 원래
+# `atk` 그대로이고(공성 속도 = 경기 길이라 건드리지 않는다), 공격 카드와 교전
+# 아레나도 각자 자기 계산을 쓴다. 전장 교전만 절반이다.
+#
+# 원래는 `damage_map` 에 `atk` 를 그대로 더했다. atk 28 짜리 상대와 max_hp 75
+# 인 스나이퍼가 붙으면 한 대가 최대 체력의 37% 라, 복귀선(20%) 위에서 곧장
+# 0 으로 떨어져 **복귀할 구간 자체가 존재하지 않았다**.
+func _pilot_hit_damage(attacker: PilotData) -> int:
+	return maxi(1, roundi(float(attacker.atk) * _bs.BATTLE_PILOT_DMG_MULT))
+
+
+## 지금 이 포탑을 때릴 수 있는가. T2 는 같은 레인 T1 이 살아 있는 동안 무적이다.
+func _turret_attackable(td: TurretData) -> bool:
+	return not (td.tier == 2 and t1_alive_in_lane(td.team, td.lane))
+
+
+## 포탑 칸에 서 있는 **같은 레인** 수비 파일럿들. 정글러는 포탑을 지키지 않는다.
+## 넉백 여부를 가르는 유일한 기준이므로 `_resolve_lane_at_turret` 의 분류와 같은
+## 조건(팀 = 포탑 팀, 레인 = 포탑 레인, 위치 = 포탑 칸)을 쓴다.
+func _same_lane_defenders_at(td: TurretData) -> Array:
+	var out: Array = []
+	for raw in _bs.pilots:
+		var d := raw as PilotData
+		if not d.alive or d.is_guerrilla:
+			continue
+		if d.team == td.team and d.lane == td.lane and d.grid_pos == td.grid_pos:
+			out.append(d)
+	return out
 
 
 func _enemy_turret_at(pos: Vector2i, friendly_team: int) -> TurretData:
@@ -397,11 +471,13 @@ func _enemy_turret_at(pos: Vector2i, friendly_team: int) -> TurretData:
 #
 # Two conflicts have to be arbitrated inside a round:
 #
-#  • **Push follow-through** — the winner of a fight advances toward the enemy
-#    HQ and the loser retreats toward its own, which is the same direction, so
-#    both used to land on one cell again and nothing was ever pushed. The
-#    advance gives way: the loser is expelled, the winner keeps the cell. See
-#    `_veto_push_followthrough`.
+#  • **Advance over a stuck enemy** — the winner of a fight advances toward the
+#    enemy HQ and the loser retreats toward its own, which is the same
+#    direction, so the winner follows the loser into the next cell and the whole
+#    fight slides one tile up the lane. That is the lane push, and it is only
+#    called off when the loser has nowhere to retreat to: nobody walks past a
+#    pilot still standing in the contested cell. See
+#    `_veto_advance_over_stuck_enemy`.
 #  • **Head-on exchange** — A aiming at B's cell while B aims at A's. Vetoing
 #    both would leave them adjacent and deadlocked forever, so the
 #    higher-priority mover takes the step and the other holds — they finish in
@@ -424,6 +500,12 @@ func resolve_movement(advance_set: Dictionary, retreat_set: Dictionary,
 	for raw in _bs.pilots:
 		var p := raw as PilotData
 		if not p.alive:
+			continue
+		# 이번 턴에 본진으로 복귀한 파일럿은 HQ 에 서 있기만 한다. 플래그는 여기서
+		# 소비되므로 다음 턴에는 평소처럼 자기 레인을 걸어 나간다.
+		if p.recall_hold:
+			p.recall_hold = false
+			_bs.blog.log_block(p, "본진 복귀 — 이번 턴 대기")
 			continue
 		var kind: String = MOVE_KIND_FREE
 		if advance_set.has(p):
@@ -472,8 +554,11 @@ func _run_movement_round(movers: Array) -> bool:
 	if wants.is_empty():
 		return false
 
-	_veto_push_followthrough(wants)
 	_veto_head_on_exchanges(wants)
+	# 버티고 선 적을 지나치는 전진만 걸러 낸다. 순서 주의 — 정면 충돌 중재가
+	# 누군가의 이동을 취소하면 그 파일럿은 "칸을 비우지 않는" 쪽이 되므로,
+	# 반드시 그 뒤에 본다.
+	_veto_advance_over_stuck_enemy(wants)
 
 	# 2. Commit the survivors together.
 	var committed: Array = []
@@ -510,22 +595,22 @@ func _run_movement_round(movers: Array) -> bool:
 	return not committed.is_empty()
 
 
-# Push follow-through veto — a push has to expel the loser, not escort it.
+# 전진은 밀어낸 자리를 **따라 들어간다** — 버티고 선 적을 지나치지만 않는다.
 #
-# `_desired_push_advance_cell` walks toward the enemy HQ and
-# `_desired_push_retreat_cell` walks toward the retreater's own HQ — and for the
-# two sides of one fight those are the *same* direction. So both sides of a push
-# used to step onto the same cell, land together again, and re-engage there next
-# turn, forever: the tank pair in a logged battle rode from (-4,-2) all the way
-# to the enemy HQ locked in the same cell for twenty turns, with `push-adv` and
-# `push-ret` naming an identical destination every time.
+# 예전에는 정반대였다. 전진 목적지가 같은 칸에서 나온 적의 후퇴 목적지와
+# 겹치면 **전진 쪽을 취소**해, 패자만 쫓겨나고 승자는 그 칸을 지켰다. 그런데
+# `_desired_push_advance_cell` 은 적 HQ 쪽, `_desired_push_retreat_cell` 은
+# 후퇴자의 자기 HQ 쪽이고 레인은 일직선이라 **두 목적지는 언제나 같은 칸**이다.
+# 결과적으로 교전에 이겨도 승자는 한 칸도 나아가지 못했다 — 라인이 밀리지 않고
+# 패자만 뒤로 흘러갔다.
 #
-# When an advancer and a same-cell, same-scope enemy retreater name the same
-# destination, the **advance** is the one that gives way: the loser is thrown out
-# of the contested cell and the winner keeps the ground it just won. Whole teams
-# resolve correctly — every advancer out of that cell is vetoed, so a 2v1 sweep
-# also holds as a unit.
-func _veto_push_followthrough(wants: Array) -> void:
+# 지금 규칙: 같은 칸의 적이 이번 라운드에 그 칸을 **비우면** 승자는 따라 들어가
+# 다음 턴에 다시 붙는다. 이게 한 턴에 한 칸씩 밀리는 라인 푸시다. 적이 밀려날
+# 곳이 없어 그 자리에 남으면 전진을 취소한다 — 서 있는 적을 옆으로 스쳐
+# 지나가는 일은 만들지 않는다. 적 포탑 칸은 **막지 않는다**: 밀려난 패자가 자기
+# 포탑 칸으로 들어가면 승자도 그 칸까지 따라 들어가고, 포탑 공성은 다음 턴
+# `_resolve_turret_combat` 이 이어받는다.
+func _veto_advance_over_stuck_enemy(wants: Array) -> void:
 	for raw_wa in wants:
 		var wa: Dictionary = raw_wa
 		if not bool(wa["ok"]):
@@ -534,32 +619,42 @@ func _veto_push_followthrough(wants: Array) -> void:
 		if ma["kind"] != MOVE_KIND_ADVANCE:
 			continue
 		var a := ma["pilot"] as PilotData
-		for raw_wb in wants:
-			var wb: Dictionary = raw_wb
-			if not bool(wb["ok"]):
-				continue
-			var mb: Dictionary = wb["m"]
-			if mb["kind"] != MOVE_KIND_RETREAT:
-				continue
-			var b := mb["pilot"] as PilotData
-			if a.team == b.team or a.is_guerrilla != b.is_guerrilla:
-				continue
-			# Only the pair that came out of one contested cell — an advancer
-			# that merely happens to share a destination with some unrelated
-			# retreater elsewhere is not a follow-through.
-			if b.grid_pos != a.grid_pos:
-				continue
-			# Both sides parenthesised: `x as Vector2i != y as Vector2i` parses
-			# the second cast into the comparison and blows up at runtime.
-			var adv_dest: Vector2i = wa["dest"]
-			var ret_dest: Vector2i = wb["dest"]
-			if adv_dest != ret_dest:
-				continue
-			wa["ok"] = false
-			ma["active"] = false
-			_bs.blog.log_block(a, "push-advance held — %s retreats onto %s, %s keeps the cell"
-					% [_bs.pilot_label(b), str(ret_dest), _bs.pilot_label(a)])
-			break
+		var blocker: PilotData = _stuck_enemy_on_cell(a, wants)
+		if blocker == null:
+			continue
+		wa["ok"] = false
+		ma["active"] = false
+		_bs.blog.log_block(a, "push-advance held — %s 가 %s 에서 밀려나지 못했다"
+				% [_bs.pilot_label(blocker), str(a.grid_pos)])
+
+
+## `a` 와 같은 칸·같은 교전 스코프에 있으면서 이번 라운드에 그 칸을 떠나지
+## **않는** 적. 없으면 null.
+func _stuck_enemy_on_cell(a: PilotData, wants: Array) -> PilotData:
+	for raw in _bs.pilots:
+		var o := raw as PilotData
+		if not o.alive or o.team == a.team:
+			continue
+		if o.grid_pos != a.grid_pos or o.is_guerrilla != a.is_guerrilla:
+			continue
+		if not _is_leaving_cell(o, wants):
+			return o
+	return null
+
+
+## `p` 가 이번 라운드에 살아남은 이동 의사를 갖고 있는가. `wants` 에는 제자리
+## 목적지가 애초에 들어오지 않으므로, 취소되지 않은 항목이 곧 "칸을 비운다"다.
+func _is_leaving_cell(p: PilotData, wants: Array) -> bool:
+	for raw_w in wants:
+		var w: Dictionary = raw_w
+		if not bool(w["ok"]):
+			continue
+		if ((w["m"] as Dictionary)["pilot"] as PilotData) != p:
+			continue
+		# 캐스트는 반드시 괄호로 — `x as Vector2i != y` 는 두 번째 피연산자를
+		# 캐스트 안으로 끌고 들어가 런타임에 터진다.
+		return (w["dest"] as Vector2i) != p.grid_pos
+	return false
 
 
 # Head-on exchange arbitration — see the block comment above `resolve_movement`.
@@ -630,14 +725,13 @@ func _desired_free_cell(p: PilotData) -> Vector2i:
 	if _has_engaging_enemy_at(p.grid_pos, p):
 		_bs.blog.log_block(p, "engaging enemy on current cell")
 		return p.grid_pos
-	# Lane pilots cannot move past an alive enemy turret cell — they must
-	# destroy it first. Junglers don't interact with turrets so they pass freely.
-	if not p.is_guerrilla and _enemy_turret_at(p.grid_pos, p.team) != null:
-		_bs.blog.log_block(p, "standing on alive enemy turret")
-		return p.grid_pos
 	return _next_step_for(p)
 
 
+## 전진은 적 포탑 칸에서 **멈추지 않는다** — 다음 걸음이 같은 레인 적 포탑이면
+## 그 칸에 올라선다. 포탑 피해와 넉백은 다음 턴의 `_resolve_turret_combat` 몫.
+## (다른 레인의 살아 있는 적 포탑 칸은 `_movement_forbidden_for` 가 BFS 단계에서
+## 이미 막으므로 여기까지 후보로 올라오지 않는다.)
 func _desired_push_advance_cell(p: PilotData) -> Vector2i:
 	var fbd: Dictionary = _movement_forbidden_for(p)
 	if p.is_guerrilla:
@@ -645,10 +739,6 @@ func _desired_push_advance_cell(p: PilotData) -> Vector2i:
 		if jg_goal == Vector2i(-1, -1):
 			return p.grid_pos
 		return _bs.pathfinder.bfs_next_step(p.grid_pos, jg_goal, fbd)
-	# Lane pilots cannot push past an alive enemy turret cell.
-	if _enemy_turret_at(p.grid_pos, p.team) != null:
-		_bs.blog.log_block(p, "push-advance denied — alive enemy turret here")
-		return p.grid_pos
 	return _bs.pathfinder.bfs_next_step(p.grid_pos, current_waypoint(p), fbd)
 
 
@@ -721,45 +811,82 @@ func _next_step_for(p: PilotData) -> Vector2i:
 		goal = _jungle_goal_for(p)
 		if goal == Vector2i(-1, -1):
 			return p.grid_pos
-	elif p.role == GameEnums.Role.SUPPORT and _supporter_should_fall_back(p):
-		# Same-lane sniper is dead or has recalled to HQ → hug own forward turret.
-		var hug: Vector2i = _own_forward_turret_cell(p)
-		goal = hug if hug != Vector2i(-1, -1) else current_waypoint(p)
 	else:
+		# 레인 파일럿의 목표는 **언제나** 다음 웨이포인트 하나뿐이다. 아군 포탑이
+		# 맞고 있다고 수비하러 돌아오는 개념은 없다 — 파일럿은 자기 HQ 에서
+		# 출발해 레인 길을 따라가고, 그러다 상대 라이너와 마주치는 것이 설계다.
 		goal = current_waypoint(p)
 	var fbd: Dictionary = _movement_forbidden_for(p)
 	return _bs.pathfinder.bfs_next_step(p.grid_pos, goal, fbd)
 
 
-# Goal selection for jungler: nearest uncaptured neutral, else a random
-# own-captured tile to roam.
+# Goal selection for jungler: nearest uncaptured neutral, else a **sticky** roam
+# target held on the pilot until it is actually reached.
+#
+# The roam target used to be recomputed every turn as "the own-captured cell
+# farthest from where I am standing right now". That is a coin that flips the
+# instant the jungler takes a step: moving one cell toward the far side makes
+# the side it just left the farthest one, so it turned around and walked back.
+# In a logged battle A0 rode (-1,0) ↔ (-1,-1) from turn 31 to the end of the
+# match — and those are *mid-lane* cells on the corridor between the two
+# jungles, so it read as the jungler loitering in front of its own mid T1 while
+# the enemy sieged it. Holding the target makes the jungler finish its tour and
+# come to rest only on a jungle cell; lane cells are crossed, never idled on.
 func _jungle_goal_for(p: PilotData) -> Vector2i:
 	var nearest_neutral := _nearest_uncaptured_neutral(p)
 	if nearest_neutral != Vector2i(-1, -1):
+		p.jungle_roam_target = Vector2i(-1, -1)   # an open neutral outranks roaming
 		return nearest_neutral
-	# Roam: pick the captured tile with the largest distance from current pos
-	# so the jungler doesn't sit still.
 	var captured := _own_captured_jungle_cells(p.team)
 	if captured.is_empty():
+		p.jungle_roam_target = Vector2i(-1, -1)
 		return _bs.PLAYER_HQ_POS if p.team == 0 else _bs.ENEMY_HQ_POS
-	var best := captured[0] as Vector2i
-	var best_d := _bs.hex_grid.hex_distance(p.grid_pos, best)
-	for c in captured:
-		var d: int = _bs.hex_grid.hex_distance(p.grid_pos, c as Vector2i)
+	# Keep the standing target unless it was reached, was never set, or stopped
+	# belonging to us (a lost T1 can flip a jungle cell to the other team).
+	var target: Vector2i = p.jungle_roam_target
+	if target != Vector2i(-1, -1) and target != p.grid_pos \
+			and int(_bs.neutral_zone_cells.get(target, -2)) == p.team:
+		return target
+	p.jungle_roam_target = _farthest_captured_cell(p.grid_pos, captured)
+	return p.jungle_roam_target
+
+
+# Farthest cell of `captured` from `from`, excluding `from` itself. Returns
+# `from` when there is nowhere else to go, which makes the caller hold.
+func _farthest_captured_cell(from: Vector2i, captured: Array) -> Vector2i:
+	var best := from
+	var best_d := -1
+	for raw in captured:
+		var c := raw as Vector2i
+		if c == from:
+			continue
+		var d: int = _bs.hex_grid.hex_distance(from, c)
 		if d > best_d:
 			best_d = d; best = c
 	return best
 
 
-# ─── Card-driven single-pilot lane push (전진) ───────────────────────────────
-# Triggered by the 전진 (advance:N) card. Runs `steps` mini-ticks for `caster`
-# only — at each step, resolves combat at the caster's current cell using the
-# normal lane push rules (pilot vs pilot, same-lane turret attack/defend),
-# applies damage, then either pushes the caster (if their team won/lost the
-# cell) or steps them one cell along their lane (if uncontested). Other pilots
-# in the same cell take damage from the engagement but do not move — only the
-# caster's position is advanced/retreated, since the card is a single-pilot
-# action rather than a full battle tick.
+# ─── Card-driven lane push (전진) ─────────────────────────────────────────────
+# 전진 (advance:N) 카드. `steps` 번의 미니틱을 돌리며, 한 틱이 라인을 한 칸
+# 밀어 올린다. 규칙은 턴 전투와 같은 헬퍼를 쓰되 판정 하나를 강제한다.
+#
+#  • **판정 강제** — 전진을 낸 쪽은 그 칸의 교전에서 **이긴 것으로 확정**된다.
+#    피해 교환은 평소 그대로(`_resolve_cell` 의 명중 판정)라 맞을 건 맞지만,
+#    밀려나는 쪽은 언제나 상대다. 예전에는 일방 명중 우세를 그대로 읽어서,
+#    주사위가 나쁘면 전진 카드가 시전자를 자기 HQ 쪽으로 되돌려 보냈다 —
+#    전진 카드가 후퇴 카드로 동작했다.
+#  • **무리 단위** — 시전자와 **같은 칸·같은 팀·같은 교전 스코프**의 아군이
+#    함께 전진하고, 같은 칸의 적은 함께 밀려난다. 예전에는 "카드는 한 명만
+#    움직인다"며 시전자만 옮겨서, 진 적이 제자리에 남고 시전자 혼자 그 옆을
+#    스쳐 지나갔다(= 밀어내기가 눈에 보이지 않았다).
+#  • **포탑** — 다음 걸음이 같은 레인 적 포탑 칸이면 무리는 전장 규칙 그대로
+#    **그 칸에 올라선다**. 그 틱에는 포탑 피해가 없다 — 포탑은 칸 위에 서서
+#    맞는 다음 틱/턴에 맞는다.
+#  • 시전자가 **이미** 적 포탑 칸 위라면(전 틱에 올라섰거나 이동 카드로 올라간
+#    경우) 포탑 규칙이 이긴다: 포탑에 무판정 피해를 넣고, 그 칸에 같은 레인
+#    **수비자가 서 있으면** 그 명중 판정을 맞은 뒤 한 칸 후퇴한다. 전진 카드가
+#    뒤로 가는 경우는 이것뿐이다. 수비자가 없으면 물러나지 않고 눌러앉아 계속
+#    갈아 낸다.
 func advance_pilot(caster: PilotData, steps: int, log_lines: Array) -> void:
 	if caster == null or steps <= 0:
 		return
@@ -769,84 +896,187 @@ func advance_pilot(caster: PilotData, steps: int, log_lines: Array) -> void:
 	for _i in steps:
 		if not caster.alive:
 			break
-		var damage_map: Dictionary = {}
-		var turret_dmg: Dictionary = {}
-		var advance_set: Dictionary = {}
-		var retreat_set: Dictionary = {}
-		var engaged: Dictionary = {}
-		var by_cell: Dictionary = _group_pilots_by_cell()
-		var bucket: Dictionary = by_cell.get(caster.grid_pos, {"t0": [], "t1": []})
-		var t0: Array = (bucket.get("t0", []) as Array).duplicate()
-		var t1: Array = (bucket.get("t1", []) as Array).duplicate()
-		_resolve_cell(caster.grid_pos, t0, t1,
-				damage_map, turret_dmg, advance_set, retreat_set, engaged, log_lines)
-		# Apply pilot damage (보호막 first, then HP). Mirrors simulate_turn.
-		for k in damage_map.keys():
-			var dp := k as PilotData
-			var dmg: int = damage_map[k]
-			if dmg > 0 and dp.shield > 0:
-				var absorbed: int = min(dp.shield, dmg)
-				dp.shield -= absorbed
-				dmg -= absorbed
-			dp.hp -= dmg
-			_bs.blog.log_event("DMG", "%-4s -%d hp→%d @%s" % [
-					_bs.pilot_label(dp), int(damage_map[k]), maxi(dp.hp, 0),
-					str(dp.grid_pos)])
-			if dp.hp <= 0:
-				dp.hp = 0; dp.alive = false; dp.respawn_timer = _bs.RESPAWN_TURNS
-				log_lines.append("%s died" % _bs.pilot_label(dp))
-				_bs.blog.log_event("DEATH", "%-4s died @%s"
-						% [_bs.pilot_label(dp), str(dp.grid_pos)])
-			elif damage_map[k] > 0:
-				_bs.anim_pilot_shake(dp)
-		# Apply turret damage; on T1 destruction, fire jungle capture.
-		for k in turret_dmg.keys():
-			var td := k as TurretData
-			var was_alive := td.alive
-			td.hp -= turret_dmg[k]
-			if td.hp <= 0:
-				td.hp = 0; td.alive = false
-				log_lines.append("T%d %s turret destroyed!" % [td.tier, _bs.LANE_NAMES[td.lane]])
-				if was_alive:
-					var b: Building = _bs.building_registry.get_at(td.grid_pos)
-					if b != null:
-						_bs.building_registry.unregister(b)
-						b.queue_free()
-				if was_alive and td.tier == 1:
-					_on_t1_destroyed(td, log_lines)
-		if not caster.alive:
-			break
-		# Move only the caster — push results from the cell apply to them, but
-		# teammates / opposing pilots in the cell stay put (the card moves one
-		# pilot, not the whole bracket). Only one pilot moves, so there is no
-		# simultaneity to arbitrate: the same destination helpers the turn's
-		# movement pass uses are enough on their own.
-		var kind: String = ""
-		if advance_set.has(caster):
-			kind = MOVE_KIND_ADVANCE
-		elif retreat_set.has(caster):
-			kind = MOVE_KIND_RETREAT
-		elif not engaged.has(caster):
-			kind = MOVE_KIND_FREE
-		if kind == "":
-			continue
-		var orig := caster.grid_pos
-		var dest: Vector2i = orig
-		match kind:
-			MOVE_KIND_ADVANCE: dest = _desired_push_advance_cell(caster)
-			MOVE_KIND_RETREAT: dest = _desired_push_retreat_cell(caster)
-			_:                 dest = _desired_free_cell(caster)
-		if dest == orig:
-			continue
-		caster.grid_pos = dest
-		if kind == MOVE_KIND_RETREAT:
-			_rollback_waypoint(caster)
-		_bs.blog.log_move(caster, orig, caster.grid_pos, kind,
-				"enemies on dest: %s" % _enemies_on_cell_str(caster))
-		_bs.anim_pilot_move(caster, orig)
+		_advance_tick(caster, log_lines)
 	check_win_condition()
 	_bs.renderer.queue_redraw()
 	_bs.hud.update_hud()
+
+
+## 전진 미니틱 한 번 — 판정 → 공성 → 피해 → 이동. 블록 주석의 규칙을 그대로
+## 옮긴 것이므로 순서를 바꾸지 말 것: 피해는 이동보다 **앞**이라야 이번 틱에
+## 쓰러진 파일럿이 움직이지 않고, 공성은 피해 적용보다 앞이라야 포탑 피해와
+## 수비자 반격이 같은 묶음으로 들어간다(`simulate_turn` 과 같은 순서).
+func _advance_tick(caster: PilotData, log_lines: Array) -> void:
+	var cell: Vector2i = caster.grid_pos
+	var cell_turret: TurretData = _enemy_turret_at(cell, caster.team)
+	# 포탑 규칙은 **같은 레인 레인 파일럿**에게만 걸린다 — 정글러나 카드로 남의
+	# 레인 포탑 칸에 떨어진 파일럿은 포탑을 무시하고 평소대로 전진한다.
+	var on_enemy_turret: bool = cell_turret != null \
+			and not caster.is_guerrilla and cell_turret.lane == caster.lane
+	# 포탑 칸 위에서 물러나는 것은 **수비자가 있을 때만**이다. 무방비 포탑 위라면
+	# 무리는 그 자리에 눌러앉아 계속 갈아 낸다(전진도 후퇴도 하지 않는다).
+	var turret_defended: bool = on_enemy_turret \
+			and not _same_lane_defenders_at(cell_turret).is_empty()
+	var squad: Array = [caster]
+	squad.append_array(_same_scope_allies_at(cell, caster))
+	var foes: Array = _same_scope_enemies_at(cell, caster)
+
+	var damage_map: Dictionary = {}
+	var turret_dmg: Dictionary = {}
+	var advance_set: Dictionary = {}
+	var retreat_set: Dictionary = {}
+	var engaged: Dictionary = {}
+	var by_cell: Dictionary = _group_pilots_by_cell()
+	var bucket: Dictionary = by_cell.get(cell, {"t0": [], "t1": []})
+	var t0: Array = (bucket.get("t0", []) as Array).duplicate()
+	var t1: Array = (bucket.get("t1", []) as Array).duplicate()
+	_resolve_cell(cell, t0, t1,
+			damage_map, turret_dmg, advance_set, retreat_set, engaged, log_lines)
+
+	# 판정 강제 — 주사위가 어떻게 나왔든 무리가 이 칸을 가져간다. 이미 적 포탑
+	# 칸 위에 서 있을 때만 포탑 규칙이 우선한다: 수비자가 있으면 때리고 한 칸
+	# 후퇴, 없으면 때리며 제자리.
+	for raw_m in squad:
+		var m := raw_m as PilotData
+		advance_set.erase(m)
+		retreat_set.erase(m)
+		if turret_defended:
+			retreat_set[m] = true
+		elif not on_enemy_turret:
+			advance_set[m] = true
+	if not on_enemy_turret:
+		for raw_f in foes:
+			var f := raw_f as PilotData
+			advance_set.erase(f)
+			retreat_set[f] = true
+	var verdict := "전진 확정"
+	if turret_defended:      verdict = "포탑 칸 수비자 → 후퇴"
+	elif on_enemy_turret:    verdict = "무방비 포탑 칸 → 제자리"
+	_bs.blog.log_event("CARD", "전진 판정 — %s %s / 밀려남 %s" % [
+			_labels(squad), verdict, _labels(foes)])
+
+	_apply_card_damage(damage_map, turret_dmg, log_lines)
+	if not caster.alive:
+		return
+
+	# 밀려나는 적 먼저 — 무리가 들어갈 칸을 비운다. `retreat_set` 을 거치는 것이
+	# 중요하다: 시전자가 적 포탑 칸 위에 서서 튕겨 나가는 틱에는 그 칸의
+	# 수비자를 밀어낼 자격이 없다(무리가 물러나는 쪽이다).
+	for raw_f2 in foes:
+		var f2 := raw_f2 as PilotData
+		if not f2.alive or not retreat_set.has(f2):
+			continue
+		_step_pilot(f2, _desired_push_retreat_cell(f2), MOVE_KIND_RETREAT)
+	# 밀려날 곳이 없어 적이 칸에 남았다면 무리도 전진하지 않는다 — 적을 두고
+	# 옆으로 스쳐 지나가는 일은 만들지 않는다.
+	var still_contested: bool = false
+	for raw_f3 in foes:
+		var f3 := raw_f3 as PilotData
+		if f3.alive and f3.grid_pos == cell:
+			still_contested = true
+			break
+	for raw_m2 in squad:
+		var m2 := raw_m2 as PilotData
+		if not m2.alive:
+			continue
+		if retreat_set.has(m2):
+			_step_pilot(m2, _desired_push_retreat_cell(m2), MOVE_KIND_RETREAT)
+		elif not advance_set.has(m2):
+			# 무방비 적 포탑 칸 위 — 때리며 눌러앉는다.
+			_bs.blog.log_block(m2, "전진 — 적 포탑 칸을 점거 중이라 제자리")
+		elif still_contested:
+			_bs.blog.log_block(m2, "전진 — 밀려나지 못한 적이 칸에 남아 제자리")
+		else:
+			_step_pilot(m2, _desired_push_advance_cell(m2), MOVE_KIND_ADVANCE)
+
+
+## 카드 한 틱의 피해 적용 — 파일럿(보호막 먼저) → 포탑(T1 파괴 시 정글 획득).
+## `simulate_turn` 의 4단계와 같은 규칙을 카드용으로 뽑아 둔 것이다.
+func _apply_card_damage(damage_map: Dictionary, turret_dmg: Dictionary,
+		log_lines: Array) -> void:
+	for k in damage_map.keys():
+		var dp := k as PilotData
+		var dmg: int = damage_map[k]
+		if dmg > 0 and dp.shield > 0:
+			var absorbed: int = min(dp.shield, dmg)
+			dp.shield -= absorbed
+			dmg -= absorbed
+		dp.hp -= dmg
+		_bs.blog.log_event("DMG", "%-4s -%d hp→%d @%s" % [
+				_bs.pilot_label(dp), int(damage_map[k]), maxi(dp.hp, 0),
+				str(dp.grid_pos)])
+		if dp.hp <= 0:
+			_bs.mark_pilot_dead(dp)
+			log_lines.append("%s died" % _bs.pilot_label(dp))
+			_bs.blog.log_event("DEATH", "%-4s died @%s"
+					% [_bs.pilot_label(dp), str(dp.grid_pos)])
+		elif damage_map[k] > 0:
+			_bs.anim_pilot_shake(dp)
+	for k in turret_dmg.keys():
+		var td := k as TurretData
+		var was_alive := td.alive
+		td.hp -= turret_dmg[k]
+		_bs.blog.log_event("TURRET", "T%d[%s] team%d -%d hp→%d @%s" % [
+				td.tier, _bs.LANE_NAMES[td.lane], td.team, int(turret_dmg[k]),
+				maxi(td.hp, 0), str(td.grid_pos)])
+		if td.hp > 0 and int(turret_dmg[k]) > 0:
+			_bs.anim_turret_hit(td)
+		if td.hp <= 0:
+			td.hp = 0; td.alive = false
+			log_lines.append("T%d %s turret destroyed!" % [td.tier, _bs.LANE_NAMES[td.lane]])
+			if was_alive:
+				var b: Building = _bs.building_registry.get_at(td.grid_pos)
+				if b != null:
+					_bs.building_registry.unregister(b)
+					b.queue_free()
+			if was_alive and td.tier == 1:
+				_on_t1_destroyed(td, log_lines)
+
+
+## 카드 이동 한 걸음. 목적지가 제자리면 아무것도 하지 않는다(호출자는 "막힘"과
+## "안 움직임"을 구분할 필요가 없다).
+func _step_pilot(p: PilotData, dest: Vector2i, kind: String) -> void:
+	if dest == p.grid_pos:
+		return
+	var orig := p.grid_pos
+	p.grid_pos = dest
+	if kind == MOVE_KIND_RETREAT:
+		_rollback_waypoint(p)
+	_bs.blog.log_move(p, orig, p.grid_pos, kind,
+			"enemies on dest: %s" % _enemies_on_cell_str(p))
+	_bs.anim_pilot_move(p, orig)
+
+
+## `cell` 위에서 `p` 와 같은 교전 스코프(레인끼리 / 정글러끼리)인 아군.
+## `p` 자신은 빠진다.
+func _same_scope_allies_at(cell: Vector2i, p: PilotData) -> Array:
+	var out: Array = []
+	for raw in _bs.pilots:
+		var o := raw as PilotData
+		if o == p or not o.alive:
+			continue
+		if o.team != p.team or o.grid_pos != cell:
+			continue
+		if o.is_guerrilla != p.is_guerrilla:
+			continue
+		out.append(o)
+	return out
+
+
+## `cell` 위에서 `p` 와 실제로 교전하는 적(같은 스코프). 정글러와 레인 파일럿은
+## 서로를 무시하므로 여기서도 섞이지 않는다.
+func _same_scope_enemies_at(cell: Vector2i, p: PilotData) -> Array:
+	var out: Array = []
+	for raw in _bs.pilots:
+		var o := raw as PilotData
+		if not o.alive or o.team == p.team:
+			continue
+		if o.grid_pos != cell:
+			continue
+		if o.is_guerrilla != p.is_guerrilla:
+			continue
+		out.append(o)
+	return out
 
 
 # ─── Targeting / waypoint helpers (used by movement) ─────────────────────────
@@ -885,20 +1115,30 @@ func has_enemy_turret_at(pos: Vector2i, pilot_team: int) -> bool:
 
 # ─── Respawn ─────────────────────────────────────────────────────────────────
 
+# 전장 밖에 있는 파일럿을 매 턴 한 번씩 훑는다. **사망만이 파일럿을 전장에서
+# 치우므로** 여기는 `respawn_timer` 카운트다운 하나뿐이다 — 복귀(본진 귀환)는
+# 전장에 선 채로 처리된다(`RecallSystem.return_to_hq`).
 func process_respawns() -> void:
 	for raw in _bs.pilots:
 		var p := raw as PilotData
-		if not p.alive:
-			p.respawn_timer -= 1
-			if p.respawn_timer <= 0:
-				var orig := p.grid_pos
-				p.grid_pos     = _bs.PLAYER_HQ_POS if p.team == 0 else _bs.ENEMY_HQ_POS
-				p.hp           = p.max_hp
-				p.shield       = 0   # 본진 복귀 = 보호막 제거
-				p.alive        = true
-				p.waypoint_idx = 0
-				_bs.blog.log_move(p, orig, p.grid_pos, "respawn")
-				_bs.anim_pilot_respawn(p)
+		if p.alive:
+			continue
+		p.respawn_timer -= 1
+		if p.respawn_timer <= 0:
+			_return_to_field(p)
+
+
+func _return_to_field(p: PilotData) -> void:
+	var orig := p.grid_pos
+	p.grid_pos      = _bs.PLAYER_HQ_POS if p.team == 0 else _bs.ENEMY_HQ_POS
+	p.hp            = p.max_hp
+	p.shield        = 0   # 본진 복귀 = 보호막 제거
+	p.alive         = true
+	p.respawn_timer = 0
+	p.waypoint_idx  = 0
+	p.recall_hold   = false   # 부활은 나오는 턴에 바로 걸어 나간다
+	_bs.blog.log_move(p, orig, p.grid_pos, "respawn")
+	_bs.anim_pilot_respawn(p)
 
 
 # ─── Neutral zones / jungle ──────────────────────────────────────────────────
@@ -982,9 +1222,9 @@ func _own_captured_jungle_cells(team: int) -> Array:
 #  - Junglers move freely (no forbidden cells).
 #  - Lane pilots are blocked from entering jungle/neutral cells AND alive enemy
 #    turret cells in lanes other than their own. The same-lane enemy turret cell
-#    is intentionally NOT forbidden so a lane pilot can engage their own turret;
-#    the "cannot pass past alive enemy turret" rule in `_desired_free_cell` keeps
-#    them stationary on that cell until the turret falls. Off-lane enemy turrets
+#    is intentionally NOT forbidden — a lane pilot **steps onto it** and besieges
+#    from there (`_resolve_turret_combat`), held in place by `engaged` until the
+#    turret falls or a defender pushes it back out. Off-lane enemy turrets
 #    used to stop lane pilots dead (e.g. right-lane pilots routing toward enemy
 #    HQ would freeze on the still-alive center T2 cell), so we route around them.
 # A fresh dictionary is built — never mutate `_bs.neutral_zone_cells`.
@@ -1001,44 +1241,56 @@ func _movement_forbidden_for(p: PilotData) -> Dictionary:
 	return fbd
 
 
-# Forward-most alive own-team turret cell in the pilot's lane. Tier-1 (closer to
-# enemy) is preferred; falls back to tier-2; returns (-1,-1) when both are down.
-func _own_forward_turret_cell(p: PilotData) -> Vector2i:
-	var tier1: TurretData = null
-	var tier2: TurretData = null
-	for t in _bs.turrets:
-		var td := t as TurretData
-		if td.team != p.team: continue
-		if td.lane != p.lane: continue
-		if not td.alive: continue
-		if td.tier == 1: tier1 = td
-		elif td.tier == 2: tier2 = td
-	if tier1 != null: return tier1.grid_pos
-	if tier2 != null: return tier2.grid_pos
-	return Vector2i(-1, -1)
+# ─── Lane corridors ──────────────────────────────────────────────────────────
+# lane → {cell: true}. 한 레인의 웨이포인트를 BFS 로 이어 붙인 통로 셀 집합.
+# 카드 이동이 파일럿을 **다른 레인**에 떨어뜨렸는지 판정하는 데만 쓰인다
+# (`RecallSystem._is_out_of_position`). 팀1 의 경로는 팀0 경로의 역순이라
+# 통로 셀 집합은 양 팀이 같으므로 레인당 하나만 만든다.
+var _lane_corridors: Array = []
 
 
-# A SUPPORT pilot falls back defensively when their same-lane SNIPER teammate is
-# either dead (respawning) or has recalled to own HQ. Without the harassment
-# pressure of the sniper, the supporter retreats to their forward turret instead
-# of pushing alone.
-func _supporter_should_fall_back(p: PilotData) -> bool:
-	if p.role != GameEnums.Role.SUPPORT:
-		return false
-	var sniper: PilotData = null
-	for raw in _bs.pilots:
-		var o := raw as PilotData
-		if o == p: continue
-		if o.team != p.team: continue
-		if o.role != GameEnums.Role.SNIPER: continue
-		if o.lane != p.lane: continue
-		sniper = o; break
-	if sniper == null:
-		return false
-	if not sniper.alive:
-		return true
-	var own_hq: Vector2i = _bs.PLAYER_HQ_POS if sniper.team == 0 else _bs.ENEMY_HQ_POS
-	return sniper.grid_pos == own_hq
+## 통로가 만들어진 레인 수. `LANE_NAMES` 는 GUERRILLA 슬롯까지 세므로 레인을
+## 훑는 쪽은 반드시 이 값을 쓴다.
+func lane_corridor_count() -> int:
+	if _lane_corridors.is_empty():
+		_build_lane_corridors()
+	return _lane_corridors.size()
+
+
+## `lane` 번 레인의 통로 셀 집합. 최초 호출 때 한 번만 만들어 캐시한다.
+func lane_corridor(lane: int) -> Dictionary:
+	if _lane_corridors.is_empty():
+		_build_lane_corridors()
+	if lane < 0 or lane >= _lane_corridors.size():
+		return {}
+	return _lane_corridors[lane] as Dictionary
+
+
+func _build_lane_corridors() -> void:
+	# 재진입 방지 — 아래 루프가 `lane_corridor*` 를 다시 부르지는 않지만, 빈
+	# 배열이 "아직 안 만들었다" 의 신호라서 자리부터 채워 둔다.
+	_lane_corridors = []
+	# 레인 파일럿은 정글에 못 들어가므로 통로도 정글을 우회해야 한다.
+	var jungle_fbd: Dictionary = _bs.neutral_zone_cells.duplicate()
+	for lane in _bs.LANE_PATHS_TEAM0.size():
+		var cells: Dictionary = {}
+		var path: Array = _bs.LANE_PATHS_TEAM0[lane] as Array
+		if path.is_empty():
+			_lane_corridors.append(cells)
+			continue
+		var cur: Vector2i = path[0] as Vector2i
+		cells[cur] = true
+		for i in range(1, path.size()):
+			var wp: Vector2i = path[i] as Vector2i
+			var guard: int = 0
+			while cur != wp and guard < 64:
+				var nxt: Vector2i = _bs.pathfinder.bfs_next_step(cur, wp, jungle_fbd)
+				if nxt == cur:
+					break
+				cur = nxt
+				cells[cur] = true
+				guard += 1
+		_lane_corridors.append(cells)
 
 
 func _nearest_uncaptured_neutral(p: PilotData) -> Vector2i:

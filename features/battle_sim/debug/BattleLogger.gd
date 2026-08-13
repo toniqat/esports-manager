@@ -284,11 +284,15 @@ func _positions_line() -> String:
 		var p := raw as PilotData
 		var tag: String = "%s@%s" % [_bs.pilot_label(p), str(p.grid_pos)]
 		if not p.alive:
-			tag += "(dead:%d)" % p.respawn_timer
+			# 전장을 비우는 사유는 사망뿐. 남은 턴 수는 타이머를 직접 읽지 말고
+			# 헬퍼를 거친다.
+			tag += "(dead:%d)" % _bs.turns_until_return(p)
 		else:
 			tag += "(hp%d" % p.hp
 			if p.shield > 0:
 				tag += "+s%d" % p.shield
+			if p.recall_hold:
+				tag += ",복귀대기"
 			tag += ")"
 		parts.append(tag)
 	return " ".join(parts)

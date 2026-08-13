@@ -15,27 +15,64 @@ never filtered, so a displaced pilot can always step out of an otherwise-forbidd
 region. SimulationCore uses this to keep lane pilots out of jungle cells.
 
 ## RecallSystem.gd
-Simplified recall: at HP ≤ `RECALL_HP_THRESHOLD`, the pilot is **instantly**
-teleported to their HQ at full HP. No retreat march, no channeling.
+**복귀 = 본진 귀환.** Two triggers, one shared path:
+
+- **저HP 복귀** — at HP ≤ `RECALL_HP_THRESHOLD` the pilot goes home.
+- **위치 이탈 복귀** — a card effect dropped the pilot on a jungle cell or on
+  **another lane's corridor**.
+
+Both call `return_to_hq(p, log_lines, reason)`, which snaps `grid_pos` to the
+HQ, **restores HP to full**, clears `shield`, and resets `waypoint_idx` to 0.
+`alive` is not touched: **the only thing that takes a pilot off the field is
+death.** A recalled pilot is standing in its own HQ, in play, targetable, and
+counted by every sweep in the sim.
+
+**The cost of a recall is the walk back, not a heal timer.** `return_to_hq`
+sets `PilotData.recall_hold`, and `resolve_movement` spends that flag to skip
+the pilot for exactly one movement pass (logged as a `BLOCK`). So the pilot
+stands at the HQ on the turn it recalls and starts walking its lane from
+waypoint 0 **the next turn** — however low it dropped, the absence is however
+many turns the walk to the front takes. The old model (leave the field, heal
+`RECALL_HEAL_RATIO` per turn, return the turn after hitting full) is gone
+together with that config key.
+
+Because recalls never leave the field, `respawn_timer` and
+`BattleSim.turns_until_return(p)` are now **death-only**. Anything that needs
+"turns left" — the card lock overlay, BattleLogger's `dead:N` tag — still goes
+through `turns_until_return` rather than reading the timer directly.
+
+The 복귀 card (`recall_ally`, `CardPhaseManager._effect_recall_ally`) does the
+same thing minus the hold: instant HQ teleport at full HP, free to walk out the
+same turn.
 
 - `process_recalls(log_lines)` — runs each BATTLE turn; called from
-  `SimulationCore.simulate_turn()` before combat.
-- `process_phase_end_recalls(log_lines)` — runs at end of CARD_PHASE; recalls
-  any pilot under threshold OR any pilot whose grid_pos is outside their lane
-  path / own-team jungle (covers card-effect displacement).
-- `_teleport_home(p, log_lines, reason)` — internal helper.
+  `SimulationCore.simulate_turn()` before combat. Low-HP rule only.
+- `process_phase_end_recalls(log_lines)` — runs at end of CARD_PHASE and at the
+  end of the AI turn; applies the low-HP rule OR the out-of-position rule.
+- `_is_out_of_position(p)` — jungler on enemy-owned jungle, lane pilot on any
+  jungle cell, or lane pilot standing on another lane's corridor
+  (`SimulationCore.lane_corridor`). The lane test requires **positive membership
+  in a different lane**, never mere absence from its own: corridors are rebuilt
+  with BFS, and a tie-break that differs by one cell from the route a pilot
+  actually walked must never exile a correctly-positioned pilot. A deep jump
+  along the pilot's *own* lane is legal by design — that is a split push.
 
 ## SimulationCore.gd
 Main turn loop and all combat / movement / spawn logic. Each `simulate_turn`
 counts as **1 minute** of in-game time.
 
 ### Turn loop (`simulate_turn`)
-1. `process_respawns` — count down respawn timers, return at full HP.
+1. `process_respawns` — one sweep over everyone off the field, which now means
+   the dead and only the dead: count `respawn_timer` down, return at own HQ at
+   full HP when it hits 0.
 2. Apply pending card-driven ATK buffs (existing flow).
-3. `recall_sys.process_recalls` — instant HQ teleport for HP ≤ threshold.
+3. `recall_sys.process_recalls` — HP ≤ threshold → home at full HP, holding
+   still for this turn's movement pass.
 4. **Same-cell engagement resolution** — see "Combat" section below. Fills
    `damage_map` / `turret_dmg` / `advance_set` / `retreat_set` / `engaged`
-   from the pre-movement positions.
+   from the pre-movement positions. Turret sieges are part of it: an attacker
+   is a pilot **standing on** the enemy turret cell, so there is no separate
+   adjacent-siege pass.
 5. Apply collected pilot / turret damage. T1 destruction triggers
    `_on_t1_destroyed` (jungle capture). Any destroyed turret also frees the
    corresponding `Building` node from `BuildingLayer`.
@@ -66,10 +103,20 @@ Per cell with at least one pilot:
 - **Lane scope (lane pilots only)**:
   - **Pilot vs pilot** (`_resolve_pilot_combat`): teams paired 1:1 by ascending HP
     *for damage rolls*. Each pair rolls hit independently. Hit chance =
-    `attacker.hit / (attacker.hit + defender.evasion)` — **battlefield-only**;
+    `attacker.hit / (attacker.hit + defender.evasion)` (`roll_hit`, public —
+    card attacks share it, see `card_phase/README.md`) — **battlefield-only**;
     the engage arena boosts this toward 1.0 via its own `ENGAGE_HIT_LERP`
     (see `engage/README.md`), and the two are tuned independently.
-    Damage from successful
+    Damage per landed hit is `_pilot_hit_damage(attacker)` =
+    `atk × BATTLE_PILOT_DMG_MULT` (game_config, **0.5**), rounded, floored at 1.
+    That multiplier covers **only damage pilots take from battlefield
+    engagement** — the same helper is used by the turret-siege defender rolls.
+    Pilot → turret and pilot → HQ damage stay at raw `atk` (siege speed is match
+    length), and attack cards / the engage arena run their own numbers. It exists
+    because a single unmitigated hit could exceed the whole recall window: an
+    atk-28 opponent against a max_hp-75 sniper takes 37% per hit, so the sniper
+    fell from above the 20% recall line straight to 0 and **the low-HP recall had
+    no interval to fire in**. Damage from successful
     hits is applied at step 4 of the loop and only affects paired pilots.
     Push, however, is decided **at the team level for the whole bracket**:
     - Tally unilateral-hit wins per team across all pairs.
@@ -78,20 +125,49 @@ Per cell with at least one pilot:
       advances, **every** opposing pilot in the cell retreats.
     - Tie (including 0-0) → no push.
     - Unpaired pilots take no damage this turn but ride the team push.
-    - The *net* result on the board is that the losers are expelled and the
-      winners hold the contested cell — the movement pass vetoes an advance that
-      would follow the retreat into the same cell. See "Movement" step 3.
-  - **Pilot vs enemy turret** (`_resolve_lane_at_turret` → `_resolve_turret_combat`):
-    only **same-lane** lane pilots interact with the turret. The cell's lane
-    pilots are split by `pilot.lane == td.lane`:
-    - Same-lane attackers damage the turret at 100% hit. Same-lane defenders
-      roll on same-lane attackers (paired by HP). Damage from a defender hit
-      stays per-pair, but retreat is **team-wide**: any successful defender hit
-      forces every same-lane attacker in the cell (paired or not) to retreat
-      together. Attackers do NOT retaliate against defenders during turret
-      combat. T2 is invulnerable while own-lane T1 is alive. Turret destruction
-      also frees the matching `Building` node via
+    - The *net* result on the board is that **the whole cell slides one tile
+      toward the loser's HQ**: the losers retreat and the winners follow them
+      in, so the fight continues next turn one cell further up the lane. That
+      is the lane push. The follow-up is only cancelled when the loser has
+      nowhere to retreat to, or when the tile ahead is an enemy turret — see
+      "Movement" step 3.
+  - **Pilot vs enemy turret** — a lane pilot **occupies** the same-lane enemy
+    turret cell. Advancing into it is an ordinary move (nothing bounces it back
+    at destination-selection time), so the sequence is *enter this turn, attack
+    next turn*. There is exactly one entry point, `_resolve_turret_combat`,
+    reached from `_resolve_cell` → `_resolve_lane_at_turret` whenever a lane
+    pilot stands on an enemy turret cell — walked in, pushed in behind a beaten
+    enemy, or dropped there by a card. `resolve_turret_sieges` /
+    `_apply_sieges_for` (the old adjacent-siege pass) are **gone**.
+    - Judgement (`_apply_turret_siege`), in this order:
+      1. **Turret damage is unconditional** — same-lane attackers put their full
+         `atk` into the turret **with no hit roll** (`BATTLE_PILOT_DMG_MULT` is
+         pilot-damage only). A defender camping the tile does not shield it.
+      2. **Then attackers and defenders trade hit rolls**, paired by ascending
+         HP, both directions dealing the halved `_pilot_hit_damage`. Attackers
+         used to deal *nothing* to defenders — their whole attack went into the
+         turret — so a defender sitting on its turret beat on the attacker for
+         free. Now the attacker grinds the turret *and* still rolls on whoever
+         is standing on it.
+
+      T2 is invulnerable while own-lane T1 is alive (`_turret_attackable`), and
+      the pilot-vs-pilot exchange runs regardless of that (the attackers are
+      still in the cell with the defenders). Turret
+      destruction frees the matching `Building` node via
       `building_registry.unregister(b); b.queue_free()` so the visual disappears.
+    - **Knockback needs a defender.** After the judgement the attackers go into
+      `retreat_set` **only if a same-lane defender stands on the cell**, and then
+      unconditionally — the defender's roll may miss and the attacker still
+      falls back to the tile it came from. With no defender there is nobody to
+      push the attacker out: it stays on the turret and grinds it every turn.
+      The single exception is an **unattackable** turret (T2 behind a live T1):
+      there is nothing to grind, so the attacker always retreats and can never
+      be frozen on it by card displacement.
+    - Everyone on the cell is `engaged`, so an attacker with no defender holds
+      its ground instead of walking on, and a defender is pinned only for as
+      long as attackers stand on its turret.
+    - Net cadence: turret damage **every turn** when undefended, **every other
+      turn** when defended (enter → hit + pushed out → re-enter).
     - Off-lane lane pilots (e.g. a RIGHT pilot pushed into a CENTER turret cell
       by card displacement) are bystanders to the turret. If both teams have
       off-lane pilots in the cell they fight each other as pilot-vs-pilot;
@@ -134,22 +210,29 @@ inside it.**
 1. **Intent** — every alive pilot gets one: `push-adv` / `push-ret` when combat
    decided one, *nothing at all* when it is in `engaged` without a push result
    (locked in melee), otherwise `free`. Push outranks `engaged`, matching the
-   old two-pass behaviour.
+   old two-pass behaviour. A pilot carrying `recall_hold` is skipped before any
+   of that and the flag is cleared on the spot — that one skipped pass is the
+   whole cost of a 본진 복귀, and clearing it here is what makes it exactly one.
 2. **Lockstep rounds** — in each round, every still-moving pilot names its next
    cell against the *same* snapshot; conflicts are arbitrated; the survivors
    commit together. A `move_range` > 1 pilot takes part in more rounds, a push
    in exactly one. Because destinations are all chosen before any of them
    lands, nobody can walk into space another pilot is about to leave.
-3. **Push follow-through arbitration** (`_veto_push_followthrough`) — advance
-   walks toward the *enemy* HQ and retreat walks toward the retreater's *own*
-   HQ, and for the two sides of one fight those are **the same direction**. Both
-   halves of a push therefore named the same cell, landed together again and
-   re-engaged there next turn, forever — a logged tank pair rode locked in one
-   cell from (-4,-2) to the enemy HQ for twenty turns. When an advancer and a
-   same-cell, same-scope enemy retreater name the same destination, the
-   **advance** gives way: the loser is expelled from the contested cell and the
-   winner holds the ground it just won. Every advancer out of that cell is
-   vetoed, so a 2v1 sweep holds as a unit.
+3. **Advance-over-a-stuck-enemy veto** (`_veto_advance_over_stuck_enemy`) —
+   advance walks toward the *enemy* HQ and retreat walks toward the retreater's
+   *own* HQ, and for the two sides of one fight those are **the same
+   direction**, so both halves of a push name the same cell. That is intended:
+   the winner follows the loser in and the lane moves one tile. This used to be
+   inverted (`_veto_push_followthrough` cancelled the *advance* so the winner
+   "held the ground"), and because the two destinations always coincide on a
+   straight lane, a pilot that won its fight could never move forward — the
+   loser drifted back and the line never advanced. The only thing vetoed now is
+   an advance **over an enemy that is not leaving the cell** (`_stuck_enemy_on_cell`
+   / `_is_leaving_cell`): nobody walks past a pilot still standing in the
+   contested tile. Runs *after* head-on arbitration, since a move cancelled
+   there turns that pilot into a stuck one. **An enemy turret cell is not a
+   veto**: when the beaten side retreats onto its own turret the winner follows
+   it in, and the siege takes over from that cell next turn.
 4. **Head-on arbitration** (`_veto_head_on_exchanges`) — A aiming at B's cell
    while B aims at A's would be a pass-through. Vetoing *both* would leave them
    adjacent and deadlocked forever, so the higher-priority mover takes the step
@@ -165,35 +248,50 @@ inside it.**
 Destination helpers are pure — they compute a cell and never touch `grid_pos`,
 so the resolver can veto a move after asking for it:
 - `_desired_free_cell(p)` — holds (returns `p.grid_pos`) when a same-scope
-  enemy already shares the cell, or when a lane pilot stands on an alive enemy
-  turret (it must destroy the turret before advancing; junglers are exempt).
-  Otherwise defers to `_next_step_for(p)`.
+  enemy already shares the cell. Otherwise defers to `_next_step_for(p)`, which
+  may well name a same-lane enemy turret cell: the pilot walks onto it.
 - `_next_step_for(p)` — raw goal + BFS, ignoring occupancy:
-  - Jungler → `_jungle_goal_for(p)` (uncaptured neutral, else farthest own-captured cell to roam).
-  - Support whose same-lane SNIPER is dead or sitting at own HQ
-    (`_supporter_should_fall_back`) → forward-most alive own-team turret cell on
-    the support's lane (`_own_forward_turret_cell`); falls back to
-    `current_waypoint(p)` if every own-lane turret is down.
-  - All other lane pilots (including Support with sniper alive on lane) → `current_waypoint(p)`.
-    SUPPORT no longer chases weak allies — the right-lane SNIPER/SUPPORT pair
-    stays coupled because both follow the same lane path every turn.
+  - Jungler → `_jungle_goal_for(p)` (uncaptured neutral, else a **sticky** roam
+    target — see "Jungler roaming" below).
+  - **Every lane pilot → `current_waypoint(p)`, with no exceptions.** There is
+    no defensive behaviour: a pilot does not turn around because its own turret
+    is being hit. Pilots leave their HQ, walk their lane, and run into the enemy
+    laner — that collision *is* the design. (An earlier SUPPORT fall-back that
+    hugged the forward own turret when its same-lane SNIPER was down has been
+    removed. It also had to be careful never to skip the `current_waypoint`
+    call, since that call is what advances `waypoint_idx` — a trap that no
+    longer exists now that there is only one goal.)
 - `_desired_push_advance_cell(p)` — toward the lane goal (jungle goal for
-  junglers). Holds for a lane pilot already on an alive enemy turret cell, so
-  push wins cannot punt a pilot past an undefeated turret.
+  junglers). Nothing filters enemy turret cells out any more: a push win lands
+  the winner **on** the turret, which is where the siege happens. (The old
+  `_bounce_off_enemy_turret`, which turned such a step into a hold and paired
+  with the adjacent-siege pass, is gone.)
 - `_desired_push_retreat_cell(p)` — toward own HQ for lane pilots, toward the
   nearest own-captured cell for junglers. Never blocked by a turret —
   retreating away from one is always allowed. `_rollback_waypoint(p)` runs
   after the commit. **This is the same physical direction as the winner's
-  advance**, which is why step 3 exists — read the two helpers as a pair.
+  advance** — read the two helpers as a pair: they are what makes a won fight
+  slide the whole cell one tile up the lane.
 - All pathfinding calls pass `_movement_forbidden_for(p)` to `bfs_next_step`:
   - Junglers receive `{}` (no restrictions).
   - Lane pilots receive jungle/neutral cells **plus alive enemy turret cells in
-    lanes other than their own**. The same-lane enemy turret stays reachable
-    (so the pilot can engage and damage it). This stops e.g. right-lane pilots
-    from routing through the still-alive center T2 cell on their way to the
-    enemy HQ after their own-lane turrets are down.
+    lanes other than their own**. The same-lane enemy turret stays reachable —
+    BFS must be willing to name it as the next step, because the pilot is meant
+    to stand on it and besiege from there. This
+    also stops e.g. right-lane pilots from routing through the still-alive
+    center T2 cell on their way to the enemy HQ after their own turrets fall.
   - The forbidden dict is rebuilt fresh per call — `_bs.neutral_zone_cells` is
     never mutated.
+
+### Lane corridors (`lane_corridor` / `lane_corridor_count`)
+The per-lane set of cells the lane actually runs through, built once by
+BFS-chaining that lane's waypoints with jungle cells forbidden, then cached in
+`_lane_corridors`. Team 1's path is team 0's reversed, so the cell *set* is
+shared and there is one entry per lane. Note `LANE_NAMES` also counts a
+GUERRILLA slot — iterate with `lane_corridor_count()`, not `LANE_NAMES.size()`.
+
+Its only consumer is `RecallSystem._is_out_of_position`, which asks "did a card
+drop this lane pilot on somebody else's lane?".
 - `current_waypoint(p)` — auto-advances `waypoint_idx` when pilot stands on the
   current waypoint cell. Safe to call more than once per turn (idempotent while
   `grid_pos` is unchanged), which the lockstep rounds rely on.
@@ -219,6 +317,24 @@ TileMap negative-coord system:
 - `init_neutral_zones()` — paints the initial owner of each cell.
 - `process_neutral_zone_captures()` — a jungler standing alone on a neutral
   cell (no enemy in same cell) flips it to their team.
+
+#### Jungler roaming (`_jungle_goal_for`)
+An uncaptured neutral always wins. Once both neutrals are taken the jungler
+roams to a **sticky** target parked on `PilotData.jungle_roam_target`, and the
+target is only recomputed when it has been reached, was never set, or has
+stopped belonging to the jungler's team (a lost T1 can flip a jungle cell). The
+replacement is `_farthest_captured_cell(grid_pos, own_captured)` — the
+own-captured cell farthest from where the jungler is standing *at that moment*.
+
+The target used to be recomputed from scratch every turn, which is the same
+coin flipped repeatedly: one step toward the far side makes the side just left
+the farthest one, so the jungler turned around. In a logged battle A0 rode
+`(-1,0) ↔ (-1,-1)` from turn 31 to the end of the match — and those are
+**mid-lane** cells on the corridor between the two jungles, so it read as the
+jungler loitering in front of its own mid T1 while the enemy sieged it. With a
+sticky target the jungler completes the tour and comes to rest only on a jungle
+cell; lane cells are crossed, never idled on. It still does not engage lane
+pilots or turrets — see "Engagement scopes".
 - `_on_t1_destroyed(td, log_lines)` — three priority branches keyed off
   per-lane "취약지점" (vulnerable cell) sets in `VULN_TEAM{0,1}_{LEFT,CENTER,RIGHT}`.
   A vulnerable point is the jungle cell in a team's own territory closest to
@@ -255,23 +371,52 @@ TileMap negative-coord system:
 - `spawn_turrets()` — reads from `FieldLoader.turret_pos`, falls back to
   hardcoded coordinates.
 
-### Card-driven single-pilot push (`advance_pilot`)
-- Public entry point used by the 전진 (advance:N) card. Runs `N` mini-ticks
-  for `caster` only — at each step it groups pilots by cell, calls
-  `_resolve_cell` on the caster's current cell (so pilot-vs-pilot combat and
-  same-lane turret damage / retreat use the standard rules), applies pilot
-  HP / turret HP / T1 jungle capture exactly as `simulate_turn` does, and
-  then either pushes/retreats the caster from the cell's `advance_set` /
-  `retreat_set` membership or steps them once toward their lane goal when
-  the cell was uncontested. Other pilots in the same cell take damage but do
-  not move — the card is a single-pilot push, not a full battle tick. It uses
-  the same `_desired_*_cell` helpers as `resolve_movement` but skips the
-  lockstep machinery: only one pilot moves, so there is no simultaneity to
-  arbitrate and no way to pass through anybody.
-- Skips `process_respawns` / `process_neutral_zone_captures` /
-  `process_temp_zone_expiries` and does **not** bump `turn_count`. Win
-  condition is rechecked at the end so a turret-destruction kill via 전진
-  resolves immediately.
+### Card-driven lane push (`advance_pilot` / `_advance_tick`)
+Public entry point used by the 전진 (advance:N) card. Runs `N` mini-ticks; one
+tick = `_advance_tick`, which pushes the lane one cell. It reuses the turn
+loop's helpers (`_resolve_cell`, `_desired_push_*_cell`, `_apply_turret_siege`)
+and changes exactly one thing about them: **the caster's side is declared the
+winner of its cell.**
+
+Order inside a tick — the same order `simulate_turn` uses, and it matters:
+
+1. **`_resolve_cell` on the caster's cell** — damage rolls run untouched, so
+   the caster can still get hit hard on the way in.
+2. **Forced judgement** — every member of the caster's *group* (the caster plus
+   every alive same-team, **same-scope** pilot on that cell,
+   `_same_scope_allies_at`) is moved into `advance_set`, and every same-scope
+   enemy on the cell (`_same_scope_enemies_at`) into `retreat_set`, whatever the
+   dice said. Reading the unilateral-hit tally instead meant a bad roll turned
+   the 전진 card into a retreat card — the caster walked back toward its own HQ.
+   The exception is a caster **already standing on a same-lane enemy turret
+   cell**: the turret rule wins, and it now splits by defender —
+   - **defender on the cell** → the group hits the turret and falls back one
+     tile. That is the only backwards move 전진 can produce.
+   - **no defender** → the group hits the turret and **holds the cell** (in
+     neither set). It keeps the turret pinned instead of walking off it.
+
+   A caster that is a jungler, or on an *off-lane* enemy turret cell, ignores the
+   turret entirely and advances as usual.
+3. **`_apply_card_damage`** — pilots (보호막 first) then turrets, with T1
+   destruction firing `_on_t1_destroyed`, exactly as step 5 of `simulate_turn`.
+   A caster that died here stops the tick before anything moves.
+4. **Movement** — enemies are pushed out first so the group has somewhere to
+   land, then the group steps (`_step_pilot`). If an enemy could **not** be
+   pushed (nowhere to retreat) the group holds: nobody walks past a pilot that
+   is still standing in the contested cell.
+
+Because the group and the pushed enemies move in the same physical direction,
+the group normally lands on the cell the loser was just expelled to and the two
+meet again one cell further up the lane — that is the lane push. In front of a
+turret the loser ends up **on** the turret cell and the group follows it in;
+the siege then runs from that cell on the next tick or turn. There is no
+adjacent siege — a tick that only moves the group onto the turret deals no
+turret damage.
+
+Skips `process_respawns` / `process_neutral_zone_captures` /
+`process_temp_zone_expiries` and does **not** bump `turn_count`. Win condition
+is rechecked at the end so a turret-destruction kill via 전진 resolves
+immediately.
 
 ### Misc helpers
 - `t1_alive_in_lane`, `any_t2_destroyed`, `has_enemy_turret_at`
@@ -288,11 +433,20 @@ logical state so the renderer can soften the transition:
   rounds. `advance_pilot` does the same per mini-tick.
 - The damage_map application loop calls `_bs.anim_pilot_shake(p)` for surviving
   pilots that took damage > 0.
-- `process_respawns` calls `_bs.anim_pilot_respawn(p)` after reviving the pilot
-  at HQ.
-- `RecallSystem._teleport_home` calls `_bs.anim_pilot_recall(p, orig_pos)`
-  after snapping `grid_pos` to HQ — visuals fade out at `orig_pos` first,
-  then fade in at HQ.
+- The `turret_dmg` application loop calls `_bs.anim_turret_hit(td)` for turrets
+  that took damage > 0 **and survived** — both in `simulate_turn` step 5 and in
+  `_apply_card_damage`. A killing blow is skipped: the `Building` node is freed
+  on the same line, so there would be nothing left to shake.
+- `process_respawns` calls `_bs.anim_pilot_respawn(p)` after returning a **dead**
+  pilot to HQ; that call also clears any leftover 전사 연출.
+- `RecallSystem.return_to_hq` calls `_bs.anim_pilot_recall(p, orig_pos)` after
+  snapping `grid_pos` to HQ — visuals fade out at `orig_pos`, then fade in at
+  HQ. Both halves always play now (there is no "stay hidden for N turns" split
+  any more), and the pilot is standing still that turn anyway, so the fade-in
+  is anchored at the HQ for its whole duration.
+- Every death goes through `_bs.mark_pilot_dead(p)`, which stamps the scaled
+  respawn timer and starts `anim_pilot_death` — dimmed in place for
+  `ANIM_DEATH_HOLD_DUR`, then fading upward off the field.
 
 Logical state is unaffected: the sim never reads animation fields on
 `PilotData`. Animation timing constants live on `BattleSim`.

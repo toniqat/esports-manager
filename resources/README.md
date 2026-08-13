@@ -45,14 +45,35 @@ Shared enum definitions:
 In-battle pilot state: role, hp/max_hp, atk, team, grid_pos, lane, waypoint_idx,
 `move_range` (cells per minute), `jungle_start_pref` (GameEnums.JungleStartDir
 or -1), plus combat dice stats `hit` and `evasion` populated from PlayerData
-(`mechanics` → hit, `gamesense` → evasion). Recall is now an instant teleport,
-so there is no recall_state / channel_timer field.
+(`mechanics` → hit, `gamesense` → evasion).
+
+`respawn_timer: int` is the off-field clock and **death is the only thing that
+puts a pilot off the field**. It counts down from `BattleSim.respawn_turns_now()`
+in `SimulationCore.process_respawns` while `alive = false`. **Never read it
+directly to show "turns left"** — call `BattleSim.turns_until_return(p)`, which
+also floors the answer at 1 for a downed pilot so a card doesn't flicker
+unlocked on the tick before the return.
+
+`recall_hold: bool` is the 본진 복귀 cost. A recall (`RecallSystem.return_to_hq`)
+lands the pilot in its HQ at full HP **without touching `alive`** — it is in
+play the whole time — and sets this flag; `SimulationCore.resolve_movement`
+spends it to skip the pilot for exactly one movement pass, so the lane walk
+restarts from waypoint 0 the next turn. Nothing else reads it. (The former
+model — off the field, healing `RECALL_HEAL_RATIO` per turn until full — and its
+`is_recalling` flag are both gone.)
+
+`jungle_roam_target: Vector2i` ((-1,-1) = none) is the jungler's sticky roam
+destination, held across turns by `SimulationCore._jungle_goal_for` so the
+target cannot flip mid-route and bounce the jungler between two cells. Only
+that function writes it; nothing else on `PilotData` reads it.
 
 `shield: int` is the 보호막 pool granted by the 보호 card. Both card attacks
 and battlefield damage (the `damage_map` apply step in `SimulationCore.simulate_turn`)
 subtract from `shield` first, then `hp`. Cleared on every 본진 복귀 path:
-`RecallSystem._teleport_home` (HP threshold / out-of-position / 복귀 card) and
-`SimulationCore.process_respawns` (death respawn).
+`RecallSystem.return_to_hq` (저HP / 위치 이탈 복귀),
+`CardPhaseManager._effect_recall_ally` (복귀 card),
+`SimulationCore.process_respawns` (부활) and
+`BattleSim.mark_pilot_dead` (death).
 `BattleRenderer._draw_pilot_circle` paints a cyan ring just outside the HP ring
 sized by `shield / max_hp` so the buff is visible on the field.
 

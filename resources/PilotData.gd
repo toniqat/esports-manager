@@ -13,12 +13,22 @@ var atk: int
 var team: int
 var grid_pos: Vector2i
 var alive: bool           = true
+# Turns until the pilot walks back out of their HQ. **사망 전용** — counts down
+# in SimulationCore.process_respawns. 복귀(본진 귀환)는 전장을 비우지 않으므로
+# 이 타이머를 쓰지 않는다: 죽지 않는 한 파일럿은 항상 전장 위에 있다.
 var respawn_timer: int    = 0
+# 본진 복귀한 그 턴에는 HQ 에 서 있기만 하고 움직이지 않는다는 표시.
+# RecallSystem.return_to_hq 가 켜고, 다음 이동 패스(SimulationCore.resolve_movement)
+# 가 한 턴을 걸러 내면서 스스로 끈다 — 그래서 "복귀 → 다음 턴부터 레인으로".
+var recall_hold: bool     = false
 var lane: int             = GameEnums.LanePosition.GUERRILLA
 var is_guerrilla: bool    = false
 var waypoint_idx: int     = 0
 var move_range: int       = 1                # cells advanced per minute
 var jungle_start_pref: int = -1              # GameEnums.JungleStartDir or -1 (none)
+# Sticky roam destination for junglers, (-1,-1) = none yet. Held across turns by
+# SimulationCore._jungle_goal_for so the roam target cannot flip mid-route.
+var jungle_roam_target: Vector2i = Vector2i(-1, -1)
 # Hit/evasion drive paired combat rolls (PlayerData.mechanics → hit, gamesense → evasion).
 var hit: int              = 50
 var evasion: int          = 50

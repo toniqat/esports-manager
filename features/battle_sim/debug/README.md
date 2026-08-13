@@ -83,26 +83,29 @@ vacated, so the pair traded places without engaging. Two `!!SWAP`s in a
 the single lockstep pass `resolve_movement`; zero reports in 241 turns
 afterwards.
 
-**2 — pushes that pushed nothing** *(fixed)*. Not a cross-detector hit — this
-one is only visible by reading `MOVE` lines side by side, which is exactly what
-the per-stage log is for:
+**2 — 밀어내도 라인이 밀리지 않던 문제** *(fixed)*. Not a cross-detector hit —
+this one is only visible by reading `MOVE` lines side by side, which is exactly
+what the per-stage log is for. A push looks like this, and it is **correct**:
 
 ```
 [T0006][5-move][MOVE] T0  (-4, -2) → (-4, -1)  [push-ret]  (enemies on dest: T1)
 [T0006][5-move][MOVE] T1  (-4, -2) → (-4, -1)  [push-adv]  (enemies on dest: T0)
 ```
 
-Winner and loser of a push landed on **the same cell**, because advance heads
-for the enemy HQ and retreat heads for the retreater's own HQ — the same
-direction. Every push in every logged battle did this, so the losing pilot was
-escorted rather than expelled and the pair re-engaged in the same cell every
-turn (one tank pair rode locked together from (-4,-2) to the enemy HQ over
-twenty turns). Fixed by `_veto_push_followthrough`: an advance that names the
-same destination as a same-cell enemy's retreat is vetoed, so the loser is
-expelled and the winner holds the cell. Post-fix the collision emits
+Winner and loser land on the same cell because advance heads for the enemy HQ
+and retreat heads for the retreater's own HQ — the same direction — so the pair
+slides one tile up the lane and fights again there. For a while this was read as
+a bug and `_veto_push_followthrough` cancelled the *advance* so the loser was
+"expelled" and the winner held the cell. On a straight lane those two
+destinations **always** coincide, so the winner of a fight could then never move
+forward at all: the line never pushed. The veto now only fires when the loser
+cannot retreat (`_veto_advance_over_stuck_enemy`), and reads
 
 ```
-[T0006][5-move][BLOCK] T1  @(-4, -2) halted — push-advance held — T0 retreats onto (-4, -1), T1 keeps the cell
+[T0006][5-move][BLOCK] T1  @(-4, -2) halted — push-advance held — T0 가 (-4, -2) 에서 밀려나지 못했다
 ```
+
+A push that stops because the tile ahead is an enemy turret logs the siege
+bounce instead (`공성 — … 적 포탑 칸에 진입 후 한 칸 후퇴`).
 
 Details for both in [`../combat/README.md`](../combat/README.md) → "Movement".

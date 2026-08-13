@@ -75,7 +75,7 @@ Responsibilities:
 
 | File | class_name | Description |
 |---|---|---|
-| `resources/PilotData.gd` | PilotData | role, hp/max_hp, atk, team, grid_pos, lane, waypoint_idx, **move_range**, **hit**, **evasion**, **jungle_start_pref** |
+| `resources/PilotData.gd` | PilotData | role, hp/max_hp, atk, team, grid_pos, lane, waypoint_idx, **move_range**, **hit**, **evasion**, **jungle_start_pref**, **respawn_timer** (death-only off-field clock — see `BattleSim.turns_until_return`), **recall_hold** (본진 복귀한 턴의 이동 1회 스킵) |
 | `resources/TurretData.gd` | TurretData | team, grid_pos, hp, tier, lane, alive |
 | `resources/PlayerData.gd` | PlayerData | id, name, role, team_id, 5 stats (laning / mechanics / gamesense / teamfight / mental), `assigned_mech` |
 | `resources/MechData.gd` | MechData | id, name, hp, atk, **presence** (4=melee/2=ranged; engage 아레나의 타겟 어그로 가중치로만 사용) |
@@ -116,27 +116,67 @@ Responsibilities:
   (jungler vs lane pilot) are ignored, so a jungler crossing a lane never
   freezes on — or is blocked by — a lane enemy.
 - **Pilots are not attacked by turrets.**
-- At an enemy turret cell: only **same-lane** lane pilots interact with the
-  turret. Same-lane attacker(s) deal 100% damage to the turret; same-lane
-  defenders roll on same-lane attackers, and any successful defender hit
-  forces all attackers in the cell to retreat. Attackers do NOT counter-attack
-  defenders during turret combat. Off-lane lane pilots in the same cell ignore
-  the turret entirely; if both teams have off-lane lane pilots in the cell
-  they may still fight each other as pilot-vs-pilot. Junglers are always
-  spectators at turret cells.
-- **Lane pilots cannot move past an alive enemy turret cell.** Both natural
-  movement and push-advance bail once a lane pilot stands on an alive enemy
-  turret — the pilot must wait out turret destruction (same-lane case) or be
-  recalled / displaced out (off-lane case). Push-retreat is unaffected.
+- **전진 = 라인 푸쉬, 그리고 포탑 칸에 실제로 올라선다.** A lane pilot whose next
+  lane step is a same-lane enemy turret **occupies that cell** — free walk-ups,
+  engagement winners following the losers in, and the 전진 card alike. There is
+  no adjacent "step in and bounce out" siege any more; entering costs a turn and
+  deals no damage.
+- **A pilot standing on an enemy turret cell attacks it that turn, with no hit
+  roll** — full `atk` straight into the turret (`_resolve_turret_combat`). Then:
+  - a same-lane **defender on that cell** and the attacker **trade hit rolls**
+    (paired by HP, halved `_pilot_hit_damage` both ways), and the attacker is
+    pushed back to the tile it came from — **hit or miss, the knockback
+    happens**;
+  - **no defender → no knockback.** The attacker stays on the turret and grinds
+    it every turn. An undefended turret simply falls.
+  - The one extra bounce: an **unattackable** turret (T2 while its own-lane T1
+    stands) never holds an attacker — nothing to grind, so it retreats. Only
+    card displacement can put a pilot there.
+- **농성 중인 수비자도 맞는다** — the turret takes its damage first and
+  unconditionally, and *on top of that* the attacker rolls on the defender
+  standing on it. Camping a turret used to be a free beating of the attacker
+  (attackers dealt zero to defenders); now it is a mutual exchange. A defender is
+  `engaged` only while attackers stand on its turret.
+- Turret damage cadence follows from the above: **every turn** on an undefended
+  turret, **every other turn** on a defended one (enter → hit + get pushed out →
+  re-enter).
+- Off-lane lane pilots in a turret cell ignore the turret entirely; if both
+  teams have off-lane lane pilots there they may still fight each other as
+  pilot-vs-pilot. Junglers are always spectators at turret cells. T2 is
+  invulnerable while its own-lane T1 stands.
 - When a turret is destroyed, the matching `Building` node in
   `BattleField/BuildingLayer` is unregistered and `queue_free`'d so the
   sprite disappears from the field.
 
-### Recall
-- HP ≤ `RECALL_HP_THRESHOLD` → instant HQ teleport at full HP.
+### Recall / Respawn
+- **복귀 = 본진 귀환.** Two triggers, one path (`RecallSystem.return_to_hq`):
+  HP ≤ `RECALL_HP_THRESHOLD`, **or** a card effect that dropped the pilot on a
+  jungle cell / on **another lane's corridor**.
+- **복귀는 전장을 비우지 않는다.** The pilot lands in its own HQ **at full HP**
+  on the spot, `alive` untouched — a pilot only ever leaves the field by dying.
+  The cost is the walk back: `return_to_hq` sets `PilotData.recall_hold`, and
+  the next `resolve_movement` spends it to hold the pilot still for exactly one
+  pass, so it starts down its lane from waypoint 0 **the following turn**.
+- The old model — leave the field, heal `RECALL_HEAL_RATIO` of `max_hp` per
+  turn, come back the turn after hitting full — is gone, and so is that
+  game_config key.
+- A deep jump along the pilot's **own** lane is legal, however far into enemy
+  territory it lands. That is a split push, not a displacement.
+- The 복귀 (`recall_ally`) card is the same teleport minus the hold: instant
+  full-HP HQ landing, free to walk out the same turn.
+- **Only the dead are off the field** (`alive = false`), so `respawn_timer` and
+  **`BattleSim.turns_until_return(p)`** are death-only clocks. Anything needing
+  "turns left" still calls the helper rather than reading the timer.
+- **Respawn length scales with match time**: `BattleSim.respawn_turns_now()` =
+  `RESPAWN_TURNS` (game_config, default **5**) + `turn_count / 10`. An early
+  death costs 5 turns, a late one grows with the clock. The DB value used to be
+  a flat 16, which meant one death in the opening minutes erased the whole
+  laning phase. **`BattleSim.mark_pilot_dead(p)` is the only place a pilot
+  dies** — battlefield combat, 전진, 공격 카드 and the engage arena all funnel
+  through it, so the scaling and the 전사 연출 can never be wired into one path
+  and forgotten in another.
 - During CARD_PHASE the recall check is paused; it runs again at end of phase
-  via `process_phase_end_recalls`, which also recalls pilots whose
-  card-effect placement put them outside their lane / own jungle.
+  via `process_phase_end_recalls`.
 
 ### Lanes / movement
 - Pilots follow waypoint lane paths (Left / Center / Right) loaded from `BattleField/WaypointLayer`.
@@ -145,18 +185,15 @@ Responsibilities:
 - **Lane pilots are forbidden from entering jungle/neutral cells AND alive
   enemy off-lane turret cells.** Pathfinding receives the union of the
   jungle-cell set and every alive enemy turret in a lane other than the
-  pilot's own. Same-lane enemy turret cells remain reachable so the pilot can
-  step on them to engage. This prevents e.g. right-lane pilots from being
-  routed through the still-alive center T2 cell after their own-lane turrets
-  fall, then freezing on it because of the "cannot pass past alive enemy
-  turret" rule. SUPPORT pilots also refuse to chase a weak ally that is
-  currently sitting in a jungle cell.
-- **SUPPORT defensive fall-back**: when a SUPPORT pilot's same-lane SNIPER
-  teammate is dead (respawning) or sitting at own HQ (instant recall), the
-  support's per-tick goal becomes the forward-most alive own-team turret cell
-  on their lane (turret hugging) instead of the next waypoint. As soon as the
-  sniper is alive on lane again, the support resumes normal pushing. Falls
-  back to `current_waypoint(p)` if every own-lane turret is down.
+  pilot's own. Same-lane enemy turret cells remain reachable — BFS has to be
+  willing to name one as the next step, since that is exactly what the siege
+  check reads. This prevents e.g. right-lane pilots from being routed through
+  the still-alive center T2 cell after their own-lane turrets fall.
+- **There is no defensive behaviour.** A lane pilot's goal is always
+  `current_waypoint(p)`; nobody turns around because an own turret is under
+  attack. Pilots leave their HQ, follow their lane, and run into the enemy
+  laner — that collision is the design. (The old SUPPORT fall-back that hugged
+  the forward own turret while its same-lane SNIPER was down is removed.)
 - Junglers move freely (no forbidden cells) — they can transit through lane
   cells when crossing between own-captured jungle clusters, but they never
   engage in lane combat or attack turrets along the way.
@@ -218,8 +255,9 @@ close — see [`engage/README.md`](engage/README.md) for details. Key contract:
   계산 approves a dive. Turret HP is not damaged in the arena.
 - Damage (atk 1회분 + shield-first) matches the battlefield, but **명중률은
   별개**: 교전은 전장 확률을 `base + (1-base) × ENGAGE_HIT_LERP` (0.7) 로
-  끌어올려 MISS 가 훨씬 덜 난다 (55 vs 45 → 55% → 86.5%). KO sets
-  `respawn_timer = RESPAWN_TURNS` (battlefield-equivalent).
+  끌어올려 MISS 가 훨씬 덜 난다 (55 vs 45 → 55% → 86.5%). KO routes through
+  `BattleSim.mark_pilot_dead`, so an arena kill gets the same scaled respawn
+  timer (`respawn_turns_now()`) a battlefield kill does.
   `grid_pos` is never modified by an engage.
 - Dashboard shows per-pilot dealt / taken / kills before resuming.
 

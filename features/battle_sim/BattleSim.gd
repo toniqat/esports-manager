@@ -81,6 +81,9 @@ var RESPAWN_TURNS:           int   = 0
 var TURRET_HP:               int   = 0
 var TURRET_ATK:              int   = 0
 var RECALL_HP_THRESHOLD:     float = 0.0
+## 전장 교전이 **파일럿에게** 넣는 피해에 곱하는 배율. 포탑 / HQ 피해와
+## 공격 카드 · 교전 아레나는 이 배율을 타지 않는다.
+var BATTLE_PILOT_DMG_MULT:   float = 1.0
 var MAX_HAND_SIZE:           int   = 0
 var COST_RECOVERY:           int   = 0
 var CARD_DRAW_INTERVAL:      int   = 1
@@ -306,10 +309,11 @@ func _populate_from_data_loader() -> void:
 	GRID_COLS               = int(cfg.get("GRID_COLS", "9"))
 	GRID_ROWS               = int(cfg.get("GRID_ROWS", "11"))
 	HQ_MAX_HP               = int(cfg.get("HQ_MAX_HP", "500"))
-	RESPAWN_TURNS           = int(cfg.get("RESPAWN_TURNS", "10"))
+	RESPAWN_TURNS           = int(cfg.get("RESPAWN_TURNS", "5"))
 	TURRET_HP               = int(cfg.get("TURRET_HP", "150"))
 	TURRET_ATK              = int(cfg.get("TURRET_ATK", "8"))
 	RECALL_HP_THRESHOLD     = float(cfg.get("RECALL_HP_THRESHOLD", "0.2"))
+	BATTLE_PILOT_DMG_MULT   = float(cfg.get("BATTLE_PILOT_DMG_MULT", "0.5"))
 	MAX_HAND_SIZE           = int(cfg.get("MAX_HAND_SIZE", "7"))
 	COST_RECOVERY           = int(cfg.get("COST_RECOVERY", "1"))
 	CARD_DRAW_INTERVAL      = max(1, int(cfg.get("CARD_DRAW_INTERVAL", "1")))
@@ -385,6 +389,47 @@ func get_elapsed_ingame_seconds() -> int:
 		return base
 	var frac: float = clamp(1.0 - auto_play_timer / AUTO_PLAY_INTERVAL, 0.0, 1.0)
 	return base + int(frac * 60.0)
+
+
+# ─── Respawn timing ──────────────────────────────────────────────────────────
+## 이번 사망에 걸리는 리스폰 턴 수. 초반 사망은 싸게, 후반 사망은 비싸게 —
+## `RESPAWN_TURNS`(기본 5) 에 경과 턴의 1/10 을 더한다. 예전에는 DB 값 하나가
+## 전 구간에 그대로 쓰여서(16턴) 개전 직후 한 번 죽으면 초반 라인전이 통째로
+## 날아갔다.
+##
+## **모든 사망 판정은 이 함수를 통과해야 한다** — 전장 교전, 공격 카드, 교전
+## 아레나가 각자 `RESPAWN_TURNS` 를 직접 읽으면 스케일링이 한쪽에만 붙는다.
+const RESPAWN_TURN_SCALE_DIV: int = 10
+
+func respawn_turns_now() -> int:
+	@warning_ignore("integer_division")
+	var scaled: int = turn_count / RESPAWN_TURN_SCALE_DIV
+	return max(1, RESPAWN_TURNS + scaled)
+
+
+## 전장 밖 파일럿이 나오기까지 남은 턴 수. 살아 있으면 0.
+##
+## 파일럿이 전장을 비우는 사유는 **사망뿐**이므로 이 값은 곧 `respawn_timer` 다
+## (복귀는 HQ 에 선 채로 처리되어 `alive` 를 건드리지 않는다). UI(카드 잠금
+## 표시)와 로그는 타이머를 직접 읽지 말고 이 함수를 거친다 — 돌아오기 직전
+## 틱에도 최소 1 을 돌려줘서 카드가 깜빡이며 풀리지 않게 한다.
+func turns_until_return(p: PilotData) -> int:
+	if p == null or p.alive:
+		return 0
+	return maxi(1, p.respawn_timer)
+
+
+## The one place a pilot dies. Zeroes HP, takes them off the field, stamps the
+## scaled respawn timer and starts the 전사 연출. Every damage source funnels
+## through here so the respawn scaling and the death animation can never be
+## wired into one path and forgotten in another.
+func mark_pilot_dead(p: PilotData) -> void:
+	p.hp            = 0
+	p.alive         = false
+	p.recall_hold   = false   # 복귀 대기 중 죽으면 대기도 함께 사라진다
+	p.shield        = 0
+	p.respawn_timer = respawn_turns_now()
+	anim_pilot_death(p)
 
 
 # ─── Pilot animation driver ──────────────────────────────────────────────────

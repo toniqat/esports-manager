@@ -557,7 +557,14 @@ func _refresh_count_labels() -> void:
 
 
 # ─── Card node helpers ────────────────────────────────────────────────────────
-func spawn_card_node(cd: CardData) -> void:
+## Builds the visual node for a card that just entered the player's hand.
+##
+## `at_left` puts it at the **head** of `player_card_nodes` instead of the tail,
+## i.e. the leftmost slot of the fan — `relayout_hand` reads position purely
+## from the array index, so this one flag is the whole "손패 맨 왼쪽" rule
+## (정밀 이동 / `return_left`). Callers must insert into `_bs.player_hand` at the
+## matching end; the two arrays are kept in the same order.
+func spawn_card_node(cd: CardData, at_left: bool = false) -> void:
 	var node := _bs.CARD_SCENE.instantiate() as Card
 	node.pivot_offset = Vector2(80.0, 110.0)
 	_bs.canvas.add_child(node)
@@ -572,7 +579,10 @@ func spawn_card_node(cd: CardData) -> void:
 	node.card_clicked.connect(on_card_clicked)
 	node.card_hovered.connect(on_card_hovered)
 	node.card_unhovered.connect(on_card_unhovered)
-	_bs.player_card_nodes.append(node)
+	if at_left:
+		_bs.player_card_nodes.insert(0, node)
+	else:
+		_bs.player_card_nodes.append(node)
 	relayout_hand(_bs.player_card_nodes)
 	highlight_affordable_cards()
 	update_deck_discard_labels()
@@ -998,8 +1008,10 @@ func highlight_affordable_cards() -> void:
 		# 부활까지 남은 턴이 한가운데 크게 찍힌다.
 		c.set_respawn_turns(respawn_turns_for(c.data))
 		# Reflect any active cost modifier (사전 준비 / 전투 준비 / 집중 /
-		# 정밀 이동) on the card's top-left cost number — green when reduced
-		# below the printed cost, red when increased, white when matched.
+		# cost_inc_phase) on the card's top-left cost number — green when
+		# reduced below the printed cost, red when increased, white when
+		# matched. 정밀 이동's +1 is baked into cd.cost by return_left, so a
+		# returned card reads white at its new printed price.
 		c.update_displayed_cost(eff)
 	# Re-evaluate hand dim alongside affordability since both keys off the
 	# same "is it the player's turn to act?" question — overlay close paths
@@ -1788,18 +1800,56 @@ func _finalize_pending_play() -> void:
 
 
 # Routes a played card by 키워드:
-#  - keyword == "exhaust" → removed (소멸), never re-enters the deck
-#  - anything else        → returns to the discard pile
+#  - `return_left[:N]` clause → back to the **손패 맨 왼쪽** (정밀 이동)
+#  - keyword == "exhaust"     → removed (소멸), never re-enters the deck
+#  - anything else            → returns to the discard pile
 #
 # 소멸은 `exhaust` 키워드 **하나로만** 결정된다. 예전에는 `uses > 0` 인 카드가
 # 사용 횟수를 다 쓰면 사라졌는데, cards.csv 는 exhaust 가 아닌 카드도 거의 전부
 # `uses = 1` 이라 전투 개시를 포함한 대부분의 카드가 한 번 내면 그대로 소멸했다
 # (덱이 돌지 않고 매치 내내 줄어들기만 했다).
+#
+# 손패 복귀가 세 갈래 중 **가장 먼저**다 — 되돌아오는 카드는 discard 로도
+# 소멸로도 가지 않는다.
 func _dispose_used_card(cd: CardData, is_player: bool) -> void:
+	var bump: int = _return_left_bump(cd)
+	if bump >= 0:
+		_return_card_to_hand_left(cd, is_player, bump)
+		return
 	if cd.keyword == "exhaust":
 		return
 	var discard: Array = _bs.player_discard if is_player else _bs.ai_discard
 	discard.append(cd)
+
+
+# `return_left[:N]` 절의 비용 증가분. 절이 없으면 -1 (= 손패로 돌아가지 않는다).
+# 값이 없는 맨 `return_left` 는 0 — 비용은 그대로 두고 자리만 되돌린다.
+func _return_left_bump(cd: CardData) -> int:
+	if cd == null:
+		return -1
+	for clause in _parse_effect_chain(cd.effect):
+		if String(clause["name"]) == "return_left":
+			return max(0, int(clause.get("value", 0)))
+	return -1
+
+
+# 정밀 이동 (`return_left:N`) — 쓴 카드가 discard 를 건너뛰고 **손패 맨 왼쪽**
+# 으로 돌아오며, 돌아온 그 카드의 비용만 N 오른다. `cd` 는 스타터 덱을 돌릴 때
+# `make_card_copy` 로 뜬 시전자 전용 사본이므로, 이 증가는 그 한 장에만 남고
+# 쓸 때마다 누적된다(0 → 1 → 2 …). 다른 카드는 건드리지 않는다 — 단계 전체에
+# 비용을 얹는 `cost_inc_phase` 와는 별개의 노브다.
+#
+# 손패 상한은 보지 않는다. 이 카드는 손패를 나갔다가 되돌아오는 것이라 크기가
+# 늘지 않고, 애초에 자기 차례에 들어온 카드는 `MAX_HAND_SIZE` 를 넘겨도
+# 버리지 않는 것이 규칙이다(README: Hand overflow).
+func _return_card_to_hand_left(cd: CardData, is_player: bool, bump: int) -> void:
+	cd.cost = max(0, cd.cost + bump)
+	if is_player:
+		_bs.player_hand.insert(0, cd)
+		spawn_card_node(cd, true)
+	else:
+		_bs.ai_hand.insert(0, cd)
+		_bs.hud.update_ai_hand_visuals()
 
 
 # ─── Card effects ─────────────────────────────────────────────────────────────
@@ -1943,7 +1993,11 @@ func _apply_single_effect(e: Dictionary, is_player: bool, caster: PilotData,
 		"advance":                 return _effect_advance(value, caster)
 		# Stubbed — landing log only until the supporting systems exist.
 		"strategy_on_kill":        return "처치 시 전략 점수 +%d (예약)" % value
-		"return_left":             return ""   # decorator on move; no standalone log
+		# 자리 되돌리기 / 비용 누적은 카드를 다 쓴 뒤 _dispose_used_card 가
+		# 처리한다(chain 이 도는 동안은 카드가 손패 밖에 있으므로). 여기서는
+		# 로그 한 줄만 남긴다.
+		"return_left":             return "손패 복귀" if value <= 0 \
+				else "손패 복귀 · 비용 +%d" % value
 		_: return ""
 
 

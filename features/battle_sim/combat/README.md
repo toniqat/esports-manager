@@ -105,8 +105,9 @@ Per cell with at least one pilot:
     *for damage rolls*. Each pair rolls hit independently. Hit chance =
     `attacker.hit / (attacker.hit + defender.evasion)` (`roll_hit`, public —
     card attacks share it, see `card_phase/README.md`) — **battlefield-only**;
-    the engage arena boosts this toward 1.0 via its own `ENGAGE_HIT_LERP`
-    (see `engage/README.md`), and the two are tuned independently.
+    the 교전 무대 remaps this into its own 80~100% band
+    (`ENGAGE_HIT_MIN` / `ENGAGE_HIT_MAX`, see `engage/README.md`), and the two
+    are tuned independently.
     Damage per landed hit is `_pilot_hit_damage(attacker)` =
     `atk × BATTLE_PILOT_DMG_MULT` (game_config, **0.5**), rounded, floored at 1.
     That multiplier covers **only damage pilots take from battlefield

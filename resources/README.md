@@ -52,6 +52,12 @@ In-battle pilot state: role, hp/max_hp, atk, team, grid_pos, lane, waypoint_idx,
 or -1), plus combat dice stats `hit` and `evasion` populated from PlayerData
 (`mechanics` → hit, `gamesense` → evasion).
 
+`presence` and `speed` are copied from the assigned mech and are **read only by
+the 교전 무대** (`RealtimeEngageSim`) — presence as target aggro weight, speed as
+the ATB fill rate. The turn-based battlefield ignores both. Fallbacks when no
+mech is assigned (standalone battle): presence 4 / 2 and speed 78 / 82 by
+melee / ranged.
+
 `respawn_timer: int` is the off-field clock and **death is the only thing that
 puts a pilot off the field**. It counts down from `BattleSim.respawn_turns_now()`
 in `SimulationCore.process_respawns` while `alive = false`. **Never read it
@@ -116,6 +122,12 @@ Loaded from the `players` table (CSV-seeded via `addons/csv_to_db`).
 Mech with **no role/position** — any mech is assignable to any player slot:
 - `id, name`
 - Combat stats `hp, atk` — drive PilotData stats when piloted
+- `presence` (4 = melee / 2 = ranged) — **교전 무대 전용**. 타겟 어그로 가중치
+  (높을수록 자주 표적이 된다)
+- `speed` (40~100) — **교전 무대 전용**. ATB 게이지 충전 속도. 높을수록 자기
+  차례가 자주 돌아오고, 느린 메크가 한 번 행동할 때 두 번 행동하기도 한다.
+  전장(턴제)은 이 값을 읽지 않는다 — 전장 이동은 `PilotData.move_range` 소관.
+  `mechs.csv` 에서는 hp 와 역상관으로 채워져 있다(무거운 탱커가 느리다).
 
 Loaded from the `mechs` table.
 

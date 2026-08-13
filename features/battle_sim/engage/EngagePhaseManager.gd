@@ -1,9 +1,10 @@
 class_name EngagePhaseManager
 extends Node
 
-# 전투 개시(engage) 모듈 — engage:N / duel 카드 효과로 발동되는 **실시간 MOBA
-# 교전**을 구동한다. 해상도는 RealtimeEngageSim(헤드리스), 시각화는
-# EngageArena(Control) 가 담당하고 이 매니저는 둘을 잇는 오케스트레이터다.
+# 전투 개시(engage) 모듈 — engage:N / duel 카드 효과로 발동되는 **실시간
+# 사이드뷰 벨트 교전**을 구동한다. 해상도는 RealtimeEngageSim(헤드리스),
+# 시각화는 EngageArena(Control) 가 담당하고 이 매니저는 둘을 잇는
+# 오케스트레이터다.
 #
 # 흐름:
 #   1) CardPhaseManager._apply_single_effect 가 engage clause 를 만나면
@@ -15,7 +16,8 @@ extends Node
 #   3) _bs.game_phase = ENGAGE 로 전환 → 자동 BATTLE 틱은 BATTLE 가드에 의해
 #      멈추고, 카드 클릭 / 턴 넘기기도 ENGAGE 에서는 차단된다.
 #   4) 제한 시간(rounds × RealtimeEngageSim.SEC_PER_ROUND 초) 동안 각 파일럿이
-#      자기 AI 로 추격 / 카이팅 / 공격 / 포탑 회피 / 다이브를 실시간 수행한다.
+#      메크 speed 스탯으로 채워지는 보이지 않는 ATB 게이지를 굴리며
+#      접근 → 공격 → **그 자리에 눌러앉기**를 반복한다(원위치 복귀 없음).
 #      플레이어 입력은 없다(관전 전용).
 #   5) 종료 조건: 제한 시간 만료(연출 없이 즉시) OR 한 쪽 진영 전멸.
 #      **교전 중 이탈은 없다** — 시간이 끝날 때까지 아무도 아레나를 뜨지 못한다.
@@ -84,8 +86,8 @@ func _ready() -> void:
 
 
 # Public entry point. Called from CardPhaseManager when an engage:N clause fires.
-# `caster`       — the casting PilotData (시전자); the area centre, and the pilot
-#                  that gets the one-shot 대쉬 when it's a melee mech.
+# `caster`       — the casting PilotData (시전자); defines the participant area
+#                  and starts with a partly-filled ATB gauge (선공권).
 # `rounds_total` — the card's engage:N value. Converted to seconds via
 #                  RealtimeEngageSim.SEC_PER_ROUND (engage:3 → 9초).
 # `exclude_lane` — true for the 교전 card; filters out lane pilots that are on

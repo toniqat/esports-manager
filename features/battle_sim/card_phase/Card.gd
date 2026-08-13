@@ -401,7 +401,9 @@ func is_hovered() -> bool:
 ## (effective_cost) and colours it: green when reduced below printed cost,
 ## red when increased, white when unchanged. CardPhaseManager calls this
 ## from highlight_affordable_cards so every modifier (사전 준비 / 전투 준비
-## / 집중 / 정밀 이동) repaints the cost in sync with affordability.
+## / 집중 / cost_inc_phase) repaints the cost in sync with affordability.
+## 정밀 이동's +1 is NOT a modifier — `return_left:1` bumps the card's own
+## `cost`, so a returned card reads white at its new printed price.
 func update_displayed_cost(effective_cost: int) -> void:
 	if data == null:
 		return

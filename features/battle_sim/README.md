@@ -43,7 +43,7 @@ And accesses shared state via `_bs.pilots`, `_bs.turn_count`, etc.
 | BattleRenderer | Node2D | `rendering/BattleRenderer.gd` | HQ/turret HP bars + per-cell pilot rendering |
 | CardPhaseManager | Node | `card_phase/CardPhaseManager.gd` | 작전 단계 turn flow, deck, fanned hand layout, phase-end gating |
 | GambitPhaseManager | Node | `gambit/GambitPhaseManager.gd` | Auto role→lane mapping + launch (UI removed; pre-battle choices live in `features/match_flow/`) |
-| EngagePhaseManager | Node | `engage/EngagePhaseManager.gd` | 전투 개시(engage) modal — **실시간** MOBA 교전 아레나 (`engage/RealtimeEngageSim.gd` + `engage/EngageArena.gd`) triggered by `engage:N` / `duel` cards. Lazily added in `_ready()`. |
+| EngagePhaseManager | Node | `engage/EngagePhaseManager.gd` | 전투 개시(engage) modal — **실시간 사이드뷰 벨트 교전** (`engage/RealtimeEngageSim.gd` ATB 시뮬 + `engage/EngageArena.gd` 렌더러) triggered by `engage:N` / `duel` cards. Lazily added in `_ready()`. |
 | HudBuilder     | Node | `ui/HudBuilder.gd`         | HUD construction; 전략 포인트 도넛 (`ui/CostDonut.gd`) is the only interactive in-battle widget |
 | BattleLogger   | Node | `debug/BattleLogger.gd`    | Full action log (console + `user://battle_logs/`) and enemy cross-over detector. Lazily added in `_ready()` after pilots spawn; reachable as `_bs.blog`. |
 
@@ -81,7 +81,7 @@ Responsibilities:
 | `resources/PilotData.gd` | PilotData | role, hp/max_hp, atk, team, grid_pos, lane, waypoint_idx, **move_range**, **hit**, **evasion**, **jungle_start_pref**, **respawn_timer** (death-only off-field clock — see `BattleSim.turns_until_return`), **recall_hold** (본진 복귀한 턴의 이동 1회 스킵) |
 | `resources/TurretData.gd` | TurretData | team, grid_pos, hp, tier, lane, alive |
 | `resources/PlayerData.gd` | PlayerData | id, name, role, team_id, 5 stats (laning / mechanics / gamesense / teamfight / mental), `assigned_mech` |
-| `resources/MechData.gd` | MechData | id, name, hp, atk, **presence** (4=melee/2=ranged; engage 아레나의 타겟 어그로 가중치로만 사용) |
+| `resources/MechData.gd` | MechData | id, name, hp, atk, **presence** (4=melee/2=ranged; engage 무대의 타겟 어그로 가중치로만 사용), **speed** (40~100; engage 무대의 ATB 충전 속도로만 사용 — 전장은 읽지 않는다) |
 
 ---
 
@@ -235,41 +235,51 @@ Responsibilities:
   It runs inside BATTLE with the auto-tick held, then runs the same recall
   sweep. See [`card_phase/README.md`](card_phase/README.md).
 
-### Engage (전투 개시) — 실시간 MOBA 교전
-Card-driven sub-phase: `engage:N` opens a full-screen **real-time** arena
-(관전 전용 — no player input). On close it returns to the phase that opened it
-— CARD_PHASE for a player card, BATTLE for an AI card played during 상대 차례
-— see [`engage/README.md`](engage/README.md) for details. Key contract:
+### Engage (전투 개시) — 사이드뷰 벨트 교전 (ATB)
+Card-driven sub-phase: `engage:N` opens a **real-time side-view belt-scroll
+stage** (관전 전용 — no player input). On close it returns to the phase that
+opened it — CARD_PHASE for a player card, BATTLE for an AI card played during
+상대 차례 — see [`engage/README.md`](engage/README.md) for details. Key contract:
 - Participants = pilots in radius-1 hex from caster (caster cell + 6 neighbors).
   `exclude_lane` drops lane pilots still on their lane row; junglers and
   displaced-into-jungle lane pilots stay in. Still supported end-to-end, but
   the only card that used it (교전, id 4) has been removed from the pool.
 - **`engage:N` = `N × RealtimeEngageSim.SEC_PER_ROUND` 초** (현재 3.0 → 9초),
   not N rounds. `duel` runs to first KO with a `DUEL_MAX_SEC` cap.
-- Battlefield hex positions map 1:1 into arena coordinates, so pilots start
-  where they stood. Same-cell allies spawn clumped together.
-- **교전 중 이탈은 없다** — 아무도 아레나를 뜰 수 없고, 시간이 끝나면 그
+- **전장 셀 위치는 배치에 반영되지 않는다.** 무대는 팀0 왼쪽 / 팀1 오른쪽으로
+  마주 선 평면 벨트이고, 자리는 역할이 정한다 — 근접은 앞줄, 원거리는 뒷줄.
+- **ATB**: 각 유닛이 메크 `speed` 스탯(mechs.csv, 40~100)에 비례해 차오르는
+  **보이지 않는 게이지**를 굴린다. 만충되면 대상에게 **접근 → 공격 → 원위치
+  복귀**. 게이지는 행동 중에도 차므로 빠른 메크는 느린 메크가 한 번 움직일 때
+  두 번 움직인다. 근접은 밀착(88px)까지, 원거리는 **최대 사거리의 90%**(270px)
+  까지 파고든 다음 때린다. 사거리 판정에는 `STRIKE_DIST_EPSILON` 여유가 붙는다
+  — 없으면 사거리에 딱 맞춰 선 유닛이 부동소수 오차로 판정을 통과하지 못해
+  공격이 아예 성립하지 않는다. 명중하면 대상이 넉백되고 **밀려난 자리가 새
+  앵커가 된다**(피해에는 얹히지 않고 위치와 재접근 거리만 바꾼다).
+- **교전 중 이탈은 없다** — 아무도 무대를 뜰 수 없고, 시간이 끝나면 그
   프레임에 전투가 멈춘다(engage:3 = 전투 시간 정확히 9초). 종료는 시간 만료
   또는 한 쪽 전멸뿐. 빈사(HP<30%)여도 후퇴하지 않는다.
 - **종료 → 대시보드 사이에 `EngagePhaseManager.END_HOLD_SEC`(2.0초) 유예**가
-  있다. 마지막 처치가 결과창에 먹히지 않도록 전투만 멈춘 아레나를 2초 더
+  있다. 마지막 처치가 결과창에 먹히지 않도록 전투만 멈춘 무대를 2초 더
   보여 주고(잔여 연출은 `RealtimeEngageSim.step_afterglow`), 상단에 종료
   사유 배너(`적군 전멸` / `시간 종료` …)를 띄운다. 유예 동안 `elapsed` 는
   멈추므로 대시보드의 교전 시간은 실제 전투 시간 그대로다.
-- Per-pilot AI: 근접은 사거리에 들 때까지 계속 쫓고(원거리보다 이동속도 1.1배,
-  시전자 근접이면 개전 1회 대쉬), 원거리는 자기 사거리 안에서 붙은 적과 거리를
-  벌리며 계속 쏜다(사거리 끝에 닿으면 후진 대신 타겟 주위를 선회). 공격 시
-  짧은 경직.
-- Turrets within 2 hexes appear in the arena and **do attack pilots** (unlike
-  on the battlefield). AI avoids enemy turret range unless a survive-kill-escape
-  계산 approves a dive. Turret HP is not damaged in the arena.
+- **암살자는 적 뒷줄(원거리)을 우선 타겟으로 삼는다** (`DIVE_FOCUS`). 이
+  분기가 없으면 앞줄이 더 가깝고 존재감도 두 배라 원거리 메크가 교전 내내
+  한 대도 맞지 않는다 — 실측으로 확인된 구멍이다.
+- **포탑은 사거리 존이 아니라 참가자다**: 참가 파일럿이 자기 팀 포탑 칸 위에
+  서 있으면 그 포탑이 교전에 가담해 **자기 ATB(`game_config.TURRET_SPEED`)로
+  적 파일럿을 공격한다**(사거리 제한 없음, 명중 판정은 굴린다). 무대에서
+  포탑 HP 는 깎이지 않는다.
 - Damage (atk 1회분 + shield-first) matches the battlefield, but **명중률은
-  별개**: 교전은 전장 확률을 `base + (1-base) × ENGAGE_HIT_LERP` (0.7) 로
-  끌어올려 MISS 가 훨씬 덜 난다 (55 vs 45 → 55% → 86.5%). KO routes through
-  `BattleSim.mark_pilot_dead`, so an arena kill gets the same scaled respawn
-  timer (`respawn_turns_now()`) a battlefield kill does.
+  별개**: 교전은 전장 확률 `base` 를 **80~100% 구간**으로 리맵한다
+  (`ENGAGE_HIT_MIN` 0.80 / `ENGAGE_HIT_MAX` 1.00 → 스탯이 대등하면 90%).
+  KO routes through `BattleSim.mark_pilot_dead`, so an arena kill gets the same
+  scaled respawn timer (`respawn_turns_now()`) a battlefield kill does.
   `grid_pos` is never modified by an engage.
-- Dashboard shows per-pilot dealt / taken / kills before resuming.
+- 화면은 가로로 납작한 **시네마 밴드** 하나(1032×500)와 그 **아래 참가자
+  초상화 + 체력 바 스트립**으로 구성된다. Dashboard shows per-pilot dealt /
+  taken / kills before resuming.
 
 ### Action logging (`debug/BattleLogger.gd`)
 Every turn writes a full transcript to the console **and** to

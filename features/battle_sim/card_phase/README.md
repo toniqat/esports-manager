@@ -401,9 +401,12 @@ re-evaluates the dim state.
   - **Top-left**: 작전 점수 (cost) label, large outlined text on the
     cost-coloured card body. `Card.update_displayed_cost(eff)` recolours the
     number — white when matched, green when reduced by an active modifier
-    (사전 준비 / 전투 준비 / 집중), red when increased (정밀 이동).
+    (사전 준비 / 전투 준비 / 집중), red when increased (`cost_inc_phase`, which
+    no card in the pool currently carries). **정밀 이동's +1 is not a modifier** —
+    `return_left:1` writes it into the card's own `cost`, so the returned card
+    reads white at its new, genuinely higher price.
     `CardPhaseManager.highlight_affordable_cards` calls it for every visible
-    card so the four cost-modifier effects stay in sync with the card art.
+    card so the cost-modifier effects stay in sync with the card art.
   - **Top-center**: card name (auto-truncates with `clip_text`).
   - **Center / body**: **owner face image** filling the card
     (`PilotImages.face_for(owner.pilot_id)`, 140×170 `TextureRect` inside a
@@ -548,11 +551,12 @@ The DB column is a `;`-separated chain of clauses. Each clause is
 | `engage:N` | yes | **Player**: opens CardTargetingOverlay PREVIEW mode — caster cell + 6 neighbours highlighted, side panel lists participants, 확인 launches the engage arena. **AI**: same flow via AiCardPlayer. `exclude_lane` flag propagates. **N 은 라운드가 아니라 초로 환산된다** — `N × RealtimeEngageSim.SEC_PER_ROUND` (현재 3.0 → `engage:3` = 9초). |
 | `duel` | yes | **Player**: PILOT mode → click an enemy in range; opens the real-time arena restricted to caster + target with the timer running up instead of down, ends on first KO — 이탈이 없으므로 KO 아니면 `DUEL_MAX_SEC`(15초) 상한까지 간다. **AI**: random enemy in range. Routes through `EngagePhaseManager.start_duel`. **결투 (id 3) is `pool = 0`** — fully implemented but no longer dealt at random; it is reserved as a future mech-unique card. |
 | `capture_jungle:N` | yes | **Player**: LOCATION mode over `compute_capture_jungle_targets` — **enemy-owned jungle cells adjacent to a cell the caster's team already owns**, anywhere on the map (`cast_range` 99 = 사거리 무시). Flips the picked cell to the caster's team for N turns, so each play pushes the jungle border one cell further. **AI**: random valid cell. SimulationCore.process_temp_zone_expiries restores the previous owner once `turn_count >= expires_turn`. |
-| `move` | yes | **Player**: LOCATION mode → click any cell in `cast_range` (jungle cells included; the lane-pilot displacement recall pulls them back at phase end if needed). **AI**: random valid cell. Caster's `grid_pos` snaps to the picked cell and `BattleSim.anim_pilot_move` plays the tween. `return_left` / `cost_inc_phase` decorators on the same chain run separately. |
+| `move` | yes | **Player**: LOCATION mode → click any cell in `cast_range` (jungle cells included; the lane-pilot displacement recall pulls them back at phase end if needed). **AI**: random valid cell. Caster's `grid_pos` snaps to the picked cell and `BattleSim.anim_pilot_move` plays the tween. Decorators on the same chain (`return_left:N`, `cost_reduce_engage:N`) run separately. |
+| `return_left[:N]` | yes | Decorator, **resolved at disposal time, not in the chain** — the card is out of hand while the chain runs, so `_apply_single_effect` only writes the log line and `_dispose_used_card` does the work. Sends the played card back to the **leftmost slot of the hand** instead of the discard pile and raises **that copy's own** `cost` by N, cumulatively. See 손패 복귀 below. Carried by 정밀 이동 (`move;return_left:1`). |
 | `cost_reduce_engage:N` | yes | One-shot pending discount on the side's next engage card. Stored on `_bs.engage_discount_p/ai`; consumed in `_play_card_direct` / `AiCardPlayer.run_ai_plays`. |
 | `cost_reduce_hand:N` | yes | Mutates every card currently in hand — `cost = max(0, cost - N)`. The played card is already gone from hand by the time this fires. |
 | `cost_reduce_draw_phase:N` | yes | Phase-bound draw discount; `draw_card` mutates each drawn `CardData.cost` while `_bs.phase_draw_discount_*` is active. Reset on `start_card_phase`. |
-| `cost_inc_phase:N` | yes | Phase-bound additive cost bump on every card play during this 작전 단계. Stored on `_bs.phase_cost_inc_*`; consumed by `effective_cost_for`. Reset on `start_card_phase`. |
+| `cost_inc_phase:N` | yes | Phase-bound additive cost bump on every card play during this 작전 단계. Stored on `_bs.phase_cost_inc_*`; consumed by `effective_cost_for`. Reset on `start_card_phase`. **No card in the pool carries it** — 정밀 이동 used to, but its +1 is now self-only (`return_left:1`). The clause is parsed and honoured, so any future card can take it. |
 | `advance:N` | yes | Caster runs `N` mini-ticks of lane push through `SimulationCore.advance_pilot`. Each tick resolves combat at the caster's cell as usual **but forces the push result: the caster's side always wins the cell** (damage rolls are untouched — only who gets pushed is fixed). The caster **plus every same-cell, same-scope ally** steps forward and every same-cell enemy is pushed back one cell. If the next cell is a **same-lane enemy turret** the group holds one tile short and sieges it instead (turret takes `atk`, defenders on the turret cell roll back at the attackers, no knockback) — the siege waits a tick when the group just pushed an enemy onto that cell. A caster already standing on an enemy turret cell hits it and falls back one tile; that is the only way 전진 ever moves backwards. |
 | `strategy_on_kill` | log only | Stub — emits 예약 log line until the supporting system lands. |
 
@@ -565,11 +569,47 @@ an `engage` clause), clamped at 0. The affordability highlight in
 the cost subtraction in `_play_card_direct`, and `AiCardPlayer.run_ai_plays`
 all consult this helper so the four cost-modifier effects stay in sync.
 
-### 소멸 routing
-`_dispose_used_card(cd, is_player)` runs after every play and asks **one**
-question:
+### 소멸 / 손패 복귀 routing
+`_dispose_used_card(cd, is_player)` runs after every play and routes the card
+three ways, **손패 복귀 first**:
+- a `return_left[:N]` clause → back to the **leftmost slot of the hand**
+  (정밀 이동). Never reaches the discard pile and is never 소멸.
 - `keyword == "exhaust"` → removed permanently (소멸)
 - anything else → returns to the discard pile
+
+#### 손패 복귀 (`return_left[:N]`)
+`_return_left_bump(cd)` re-parses the played card's effect chain and returns the
+clause's value, or `-1` when the clause is absent. A hit routes into
+`_return_card_to_hand_left(cd, is_player, bump)`:
+
+- **`cd.cost += bump`, and it sticks.** `cd` is the 시전자-tagged copy
+  `build_starter_decks` minted with `make_card_copy`, so the bump lands on that
+  one physical card and **accumulates across plays** (정밀 이동: 0 → 1 → 2 …).
+  No other card is touched — this is deliberately *not* `cost_inc_phase`, which
+  taxes every card played in the 작전 단계. 정밀 이동 carries only
+  `move;return_left:1` now.
+- Player side: `player_hand.insert(0, cd)` + `spawn_card_node(cd, true)`.
+  The `at_left` flag puts the node at the **head** of `player_card_nodes`;
+  `relayout_hand` derives every slot from the array index, so that one flag is
+  the whole "맨 왼쪽" rule. The two arrays must be inserted at the same end.
+- AI side: `ai_hand.insert(0, cd)` + `HudBuilder.update_ai_hand_visuals()`,
+  which re-adds a card back to match the hand count. Safe to call here because
+  `AiCardPlayer` has already finished (and freed) its fly-to-centre node by the
+  time `apply_and_dispose_ai_card` runs.
+- **No `MAX_HAND_SIZE` guard.** The card left the hand and came back, so the
+  hand can't grow past where it started; and a card that arrives during the
+  side's own turn is exempt from the cap by the rule above (Hand overflow).
+- The returned card sits at index 0, which is exactly where `_trim_hand_overflow`
+  pops from — so once its accumulated cost makes it dead weight, the first
+  BATTLE auto-draw that overfills the hand discards it. That is the intended
+  self-limiting end state, not a leak.
+
+> **A `return_left` card must raise its own cost (or already cost > 0).**
+> `AiCardPlayer.run_ai_plays` loops while it can afford *something* in
+> `ai_hand`; a 0-cost card that returns to hand at 0 cost would never leave the
+> affordable set and the loop would never terminate. `return_left:1` on a
+> 0-cost 정밀 이동 escalates 0 → 1 → 2 …, so the AI's 작전 점수 bounds the
+> chain. Keep that property if another card ever takes this clause.
 
 > **`uses` no longer decides anything.** The rule used to be "`uses > 0` →
 > decrement `remaining_uses`, remove at 0", but `cards.csv` gives **every**

@@ -6,10 +6,10 @@ uid="uid://rrgvkssxht0k"
 
 [deps]
 
-files=["res://data/csv/mechs.name.translation", "res://data/csv/mechs.hp.translation", "res://data/csv/mechs.atk.translation", "res://data/csv/mechs.presence.translation"]
+files=["res://data/csv/mechs.name.translation", "res://data/csv/mechs.hp.translation", "res://data/csv/mechs.atk.translation", "res://data/csv/mechs.presence.translation", "res://data/csv/mechs.speed.translation"]
 
 source_file="res://data/csv/mechs.csv"
-dest_files=["res://data/csv/mechs.name.translation", "res://data/csv/mechs.hp.translation", "res://data/csv/mechs.atk.translation", "res://data/csv/mechs.presence.translation"]
+dest_files=["res://data/csv/mechs.name.translation", "res://data/csv/mechs.hp.translation", "res://data/csv/mechs.atk.translation", "res://data/csv/mechs.presence.translation", "res://data/csv/mechs.speed.translation"]
 
 [params]
 

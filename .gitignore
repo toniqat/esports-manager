@@ -5,3 +5,4 @@
 # Windows temp/lock leftovers from GDExtension binaries
 ~*.TMP
 ~*.tmp
+~*.dll

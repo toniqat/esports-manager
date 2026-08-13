@@ -33,8 +33,11 @@ var jungle_roam_target: Vector2i = Vector2i(-1, -1)
 var hit: int              = 50
 var evasion: int          = 50
 # 존재감 — 전투 개시(engage)에서만 참조. 근접 메크 4, 원거리 메크 2.
-# 공격 순서(높을수록 먼저)와 피격 가중치(높을수록 자주 표적이 됨).
+# 피격 가중치(높을수록 자주 표적이 됨).
 var presence: int         = 4
+# 속도 — 교전 아레나의 ATB 충전 속도(mechs.csv → MechData.speed). 전장은 읽지
+# 않는다. 폴백은 근접 78 / 원거리 82.
+var speed: int            = 70
 # 보호막. Granted by the 보호 card; removed on 본진 복귀 (RecallSystem clears it).
 # Damage absorption isn't wired into SimulationCore yet — this field is the
 # data hook for future integration so card effects can build up the value now.
@@ -78,3 +81,5 @@ func _init(p_role: int, p_team: int, p_pos: Vector2i, stats: Dictionary) -> void
 		evasion = int(stats["evasion"])
 	if stats.has("presence"):
 		presence = int(stats["presence"])
+	if stats.has("speed"):
+		speed = int(stats["speed"])

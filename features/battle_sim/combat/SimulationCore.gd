@@ -392,9 +392,9 @@ func _apply_turret_siege(attackers: Array, defenders: Array, td: TurretData,
 
 # Hit chance = attacker.hit / (attacker.hit + defender.evasion). Pure roll.
 #
-# 이건 **전장 전용** 명중률이다. 교전(RealtimeEngageSim)은 이 값을 기준으로
-# `ENGAGE_HIT_LERP` 만큼 1.0 쪽으로 끌어올린 별도 확률을 쓴다 — 여기를 고쳐도
-# 교전 보정폭은 그대로이고, 그 반대도 마찬가지다.
+# 이건 **전장 전용** 명중률이다. 교전(RealtimeEngageSim)은 이 값을 기준값으로만
+# 삼아 [ENGAGE_HIT_MIN, ENGAGE_HIT_MAX] = 80~100% 구간으로 리맵한 별도 확률을
+# 쓴다 — 여기를 고쳐도 교전 구간은 그대로이고, 그 반대도 마찬가지다.
 #
 # 공개 함수 — 카드 공격(`CardPhaseManager._effect_attack`)도 같은 판정을 쓴다.
 # 전장 교전과 공격 카드의 명중률이 갈라지지 않도록 여기 한 곳만 고치면 된다.
@@ -1423,12 +1423,15 @@ func _pilot_id_from_roster(ctx_active: bool, roster: Array, idx: int,
 	return fallback_id
 
 
-# Returns a stats dict {hp, atk, hit, evasion, presence}.
-# hp/atk/presence come from the assigned mech (or ROLE_STATS fallback).
+# Returns a stats dict {hp, atk, hit, evasion, presence, speed}.
+# hp/atk/presence/speed come from the assigned mech (or ROLE_STATS fallback).
 # hit/evasion come from PlayerData (mechanics → hit, gamesense → evasion).
-# presence drives 전투 개시(engage) attack order and target weighting only.
+# presence drives 전투 개시(engage) target weighting, speed the engage ATB —
+# neither is read by the turn-based battlefield.
 # Fallback presence: melee roles (TANK/FIGHTER/ASSASSIN) → 4, ranged
-# (SUPPORT/SNIPER) → 2, matching the mech CSV convention.
+# (SUPPORT/SNIPER) → 2, matching the mech CSV convention. Fallback speed sits
+# mid-table (melee 78 / ranged 82) so a standalone battle still shows an ATB
+# spread between the two archetypes.
 func _stats_for(ctx_active: bool, roster: Array, idx: int, role_id: int) -> Dictionary:
 	if ctx_active and idx < roster.size():
 		var pd := roster[idx] as PlayerData
@@ -1437,14 +1440,15 @@ func _stats_for(ctx_active: bool, roster: Array, idx: int, role_id: int) -> Dict
 			return {
 				"hp": m.hp, "atk": m.atk,
 				"hit": pd.mechanics, "evasion": pd.gamesense,
-				"presence": m.presence,
+				"presence": m.presence, "speed": m.speed,
 			}
 	var base: Dictionary = _bs.ROLE_STATS[role_id]
-	var fallback_presence: int = 4 if role_id <= GameEnums.Role.ASSASSIN else 2
+	var melee: bool = role_id <= GameEnums.Role.ASSASSIN
 	return {
 		"hp": base["hp"], "atk": base["atk"],
 		"hit": 50, "evasion": 50,
-		"presence": fallback_presence,
+		"presence": 4 if melee else 2,
+		"speed": 78 if melee else 82,
 	}
 
 

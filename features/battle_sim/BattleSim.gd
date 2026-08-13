@@ -103,6 +103,9 @@ var HQ_MAX_HP:               int   = 0
 var RESPAWN_TURNS:           int   = 0
 var TURRET_HP:               int   = 0
 var TURRET_ATK:              int   = 0
+## 교전 아레나에서 포탑이 쓰는 ATB 속도. 전장에서는 포탑이 파일럿을 공격하지
+## 않으므로 이 값은 교전 전용이다 — RealtimeEngageSim 만 읽는다.
+var TURRET_SPEED:            int   = 55
 var RECALL_HP_THRESHOLD:     float = 0.0
 ## 전장 교전이 **파일럿에게** 넣는 피해에 곱하는 배율. 포탑 / HQ 피해와
 ## 공격 카드 · 교전 아레나는 이 배율을 타지 않는다.
@@ -160,13 +163,15 @@ var draw_counter:         int   = 0  # shared draw interval counter
 var cost_counter:         int   = 0  # shared cost recovery interval counter
 
 # ─── Card cost-modifier state ────────────────────────────────────────────────
-# Set by 비용 카드 효과들 (사전 준비 / 전투 준비 / 집중 / 정밀 이동 …) and
-# consumed at card-play / card-draw time. The phase-bound pair resets when
+# Set by 비용 카드 효과들 (사전 준비 / 전투 준비 / 집중 …) and consumed at
+# card-play / card-draw time. The phase-bound pair resets when
 # CardPhaseManager.start_card_phase()/end_card_phase() flips back to BATTLE.
 # engage_discount_*: one-shot discount applied to the next engage:N card the
 #   side plays (전투 준비). Consumed on use.
 # phase_cost_inc_*: add-on applied to every card play during the current
-#   작전 단계 (정밀 이동 cost_inc_phase). Reset on phase entry.
+#   작전 단계 (cost_inc_phase). Reset on phase entry. **No card in the pool
+#   carries that clause right now** — 정밀 이동 used to, but its +1 is now
+#   self-only and lands on the card's own cost via return_left:1.
 # phase_draw_discount_*: discount applied to every card drawn during the
 #   current 작전 단계 (집중 cost_reduce_draw_phase). Mutates the drawn
 #   CardData.cost directly so the cheaper cost survives even if the draw
@@ -348,6 +353,7 @@ func _populate_from_data_loader() -> void:
 	RESPAWN_TURNS           = int(cfg.get("RESPAWN_TURNS", "5"))
 	TURRET_HP               = int(cfg.get("TURRET_HP", "150"))
 	TURRET_ATK              = int(cfg.get("TURRET_ATK", "8"))
+	TURRET_SPEED            = int(cfg.get("TURRET_SPEED", "55"))
 	RECALL_HP_THRESHOLD     = float(cfg.get("RECALL_HP_THRESHOLD", "0.2"))
 	BATTLE_PILOT_DMG_MULT   = float(cfg.get("BATTLE_PILOT_DMG_MULT", "0.5"))
 	MAX_HAND_SIZE           = int(cfg.get("MAX_HAND_SIZE", "7"))
@@ -682,7 +688,7 @@ func role_stats_str(role: int) -> String:
 
 
 # Effective cost of a card for the given side, after applying:
-#  • phase_cost_inc_* (정밀 이동) — additive, can push cost up.
+#  • phase_cost_inc_* (cost_inc_phase) — additive, can push cost up.
 #  • engage_discount_* (전투 준비) — applied only if the card carries an
 #    engage clause (engage:N). Does NOT consume the discount; consumption
 #    happens in CardPhaseManager._play_card_direct after the cost is paid.

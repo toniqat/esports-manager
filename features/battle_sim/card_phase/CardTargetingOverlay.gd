@@ -38,6 +38,15 @@ var preview_participants: Array = []  # PilotData (engage participants)
 # and the out-of-range black dim drawn by BattleRenderer.
 var range_caster: PilotData = null
 var range_radius: int = 0
+# 사거리 제한이 사실상 없는 카드(복귀 / 보호 / 약탈 — cast_range ≥
+# UNLIMITED_RANGE)는 전장 전체가 사거리다. 노란 사거리 채움으로 전장을 통째로
+# 덮으면 유효 대상 표시만 묻히므로, 이 플래그가 켜지면 채움도 딤도 그리지
+# 않는다 (LOCATION 의 초록 유효 셀 외곽선은 그대로).
+var range_unlimited: bool = false
+
+# 이 값 이상의 cast_range 는 "제한 없음"으로 읽는다. cards.csv 가 무제한을
+# 99 로 적어 두는 관례를 한 곳에 모아 둔 것.
+const UNLIMITED_RANGE: int = 99
 
 # PILOT / LOCATION pending pick — set when the player clicks a valid target
 # but has not yet pressed 확인. Holds either PilotData or Vector2i.
@@ -125,6 +134,8 @@ func should_dim_pilot(p: PilotData) -> bool:
 func is_in_range_cell(cell: Vector2i) -> bool:
 	if mode == Mode.PREVIEW:
 		return area_cells.has(cell)
+	if range_unlimited:
+		return true
 	if range_caster == null or range_radius <= 0:
 		return false
 	if cell == range_caster.grid_pos:
@@ -175,6 +186,7 @@ func start_card_selection(cd: CardData, on_confirm: Callable,
 			mode = Mode.PILOT
 			range_caster = caster
 			range_radius = max(0, cd.cast_range)
+			range_unlimited = cd.cast_range >= UNLIMITED_RANGE
 			var team_filter: int = 1 if cd.target == "enemy" else 0
 			for raw in _bs.card_phase.compute_valid_pilot_targets(cd, caster, team_filter):
 				valid_pilots[raw as PilotData] = true
@@ -182,6 +194,7 @@ func start_card_selection(cd: CardData, on_confirm: Callable,
 			mode = Mode.LOCATION
 			range_caster = caster
 			range_radius = max(1, cd.cast_range)
+			range_unlimited = cd.cast_range >= UNLIMITED_RANGE
 			for c in _bs.card_phase.compute_valid_location_targets(cd, caster):
 				valid_cells[c as Vector2i] = true
 		"preview":
@@ -306,14 +319,29 @@ func _hit_test_cell(pos: Vector2) -> Vector2i:
 	return best
 
 
-# PILOT mode hit test — picks the valid pilot whose drawn marker is closest
-# to the click position. We probe both the tile centre (solo render position)
-# and the team-direction offset position (returned by
-# BattleSim.pilot_marker_pos_solo) so a tap on the visible marker always
-# resolves regardless of how BattleRenderer ended up laying out the cell.
+# PILOT mode hit test — picks the valid pilot whose **drawn** marker is closest
+# to the click position.
+#
+# The marker position comes from `BattleRenderer.pilot_marker_positions()`, the
+# same per-cell stack solve `_draw()` uses, so a cell holding several pilots
+# resolves to the one actually under the finger. Probing
+# `BattleSim.pilot_marker_pos_solo` instead (as this used to) gave *every*
+# pilot in a shared cell the identical probe point, so the first key in
+# `valid_pilots` — the leftmost drawn marker — always won no matter which
+# portrait was tapped. Pilots with no drawn slot (the >5 overflow circle) still
+# fall back to the solo offset.
+#
+# A click that lands on no marker but inside a pilot's own tile still resolves,
+# ranked by marker distance — that keeps taps on the tile itself working while
+# leaving a stacked cell unambiguous.
 func _hit_test_pilot(pos: Vector2) -> PilotData:
+	var markers: Dictionary = {}
+	if _bs.renderer != null:
+		markers = _bs.renderer.pilot_marker_positions()
 	var best: PilotData = null
 	var best_d: float = INF
+	var tile_best: PilotData = null
+	var tile_best_d: float = INF
 	var hex_size: float = (_bs.hex_grid as HexGrid).hex_size
 	# Slightly looser than half a tile so the click area covers the visible
 	# marker circle (~31.5 px radius at default scale).
@@ -322,16 +350,20 @@ func _hit_test_pilot(pos: Vector2) -> PilotData:
 		var p := raw as PilotData
 		if not p.alive:
 			continue
-		var probes: Array = [
-			_bs.cell_center(p.grid_pos),
-			_bs.pilot_marker_pos_solo(p),
-		]
-		for probe_v in probes:
-			var d := (probe_v as Vector2).distance_to(pos)
-			if d < best_d and d <= max_r:
+		var marker: Vector2 = _bs.pilot_marker_pos_solo(p)
+		if markers.has(p):
+			marker = markers[p] as Vector2
+		var d: float = marker.distance_to(pos)
+		if d <= max_r:
+			if d < best_d:
 				best_d = d
 				best = p
-	return best
+			continue
+		var tile_d: float = _bs.cell_center(p.grid_pos).distance_to(pos)
+		if tile_d <= max_r and d < tile_best_d:
+			tile_best_d = d
+			tile_best = p
+	return best if best != null else tile_best
 
 
 # ─── UI construction ─────────────────────────────────────────────────────────
@@ -523,6 +555,7 @@ func _clear_visual_state() -> void:
 	preview_participants.clear()
 	range_caster = null
 	range_radius = 0
+	range_unlimited = false
 	pending_pick = null
 	_play_allowed = false
 

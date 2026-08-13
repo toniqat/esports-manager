@@ -59,14 +59,17 @@ _bs.renderer.queue_redraw()
 ## BattleSim.gd (thin orchestrator)
 
 Responsibilities:
-- Declares all DB-driven config vars and **state vars** (pilots, turrets, neutral_zone_cells, game_phase, HUD refs, card state, `gambit_lanes`, `card_phase_entry_cost`)
+- Declares all DB-driven config vars and **state vars** (pilots, turrets, neutral_zone_cells, game_phase, HUD refs, card state, `gambit_lanes`, `cards_played_this_phase`)
 - Holds `@onready` refs to all child modules
 - Public **coordinate helpers**: `cell_center(pos)`, `pilot_label(p)`, `role_stats_str(role)`
 - **Lifecycle**: `_ready()`, `_process(delta)`
   - `_ready` calls `_gambit.auto_assign_lanes()` then `_gambit.launch_battle()` —
     no overlay, scene transitions straight into BATTLE.
   - `_process` auto-ticks `card_phase.do_battle_turn()` every `AUTO_PLAY_INTERVAL`
-    seconds while `game_phase == BATTLE`. CARD_PHASE pauses the tick.
+    seconds while `game_phase == BATTLE`. CARD_PHASE pauses the tick, and so does
+    the 상대 차례 — that one runs *inside* BATTLE, so the guard also reads
+    `_ai_turn_active()` (`card_phase.is_ai_turn_active()`). The same flag freezes
+    `get_elapsed_ingame_seconds()`.
 - **Button callbacks**: `_on_restart_pressed()` (the only manual entry point left).
 
 ---
@@ -220,16 +223,23 @@ Responsibilities:
 - Triggered when `player_cost >= PHASE_THRESHOLD`.
 - Ending the phase goes through the player's 전략 포인트 도넛: tap it once to
   flip it into a circular 턴 넘기기 button, tap again to end. The 턴 넘기기
-  face stays disabled until the player spends at least 1 작전 점수 (tracked
-  via `card_phase_entry_cost`); tapping anywhere else flips it back to the
-  point readout.
-- AI auto-plays affordable cards on phase end. Phase end also re-runs recalls
-  (HP threshold + out-of-position card displacement).
+  face stays disabled until the player **plays at least one card** this phase
+  (tracked via `cards_played_this_phase`) — or until the hand holds nothing
+  playable at all, which passes straight through so the phase can't deadlock.
+  Tapping anywhere else flips it back to the point readout.
+- Phase end re-runs recalls (HP threshold + out-of-position card displacement)
+  and drops straight back to BATTLE.
+- **The AI's turn is its own**, no longer stapled to the player's phase end:
+  it fires from the BATTLE tick when `ai_cost >= PHASE_THRESHOLD` *and* the AI
+  holds a card it can pay for, and only then does the "상대 차례" banner show.
+  It runs inside BATTLE with the auto-tick held, then runs the same recall
+  sweep. See [`card_phase/README.md`](card_phase/README.md).
 
 ### Engage (전투 개시) — 실시간 MOBA 교전
 Card-driven sub-phase: `engage:N` opens a full-screen **real-time** arena
-during CARD_PHASE (관전 전용 — no player input). Returns to CARD_PHASE on
-close — see [`engage/README.md`](engage/README.md) for details. Key contract:
+(관전 전용 — no player input). On close it returns to the phase that opened it
+— CARD_PHASE for a player card, BATTLE for an AI card played during 상대 차례
+— see [`engage/README.md`](engage/README.md) for details. Key contract:
 - Participants = pilots in radius-1 hex from caster (caster cell + 6 neighbors).
   `exclude_lane` drops lane pilots still on their lane row; junglers and
   displaced-into-jungle lane pilots stay in. Still supported end-to-end, but

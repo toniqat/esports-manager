@@ -20,15 +20,16 @@ extends Node
 #   5) 종료 조건: 제한 시간 만료(연출 없이 즉시) OR 한 쪽 진영 전멸.
 #      **교전 중 이탈은 없다** — 시간이 끝날 때까지 아무도 아레나를 뜨지 못한다.
 #   6) 종료 후 딜량 대시보드(준 딜량 / 받은 딜량 / 처치 수) → "확인" 버튼 →
-#      CARD_PHASE 로 복귀.
+#      **아레나에 들어오기 직전의 페이즈**로 복귀(플레이어 카드면 CARD_PHASE,
+#      상대 차례에 AI가 낸 카드면 BATTLE).
 #
 # 살아남은 파일럿은 원래 셀에 그대로 남는다. grid_pos 는 건드리지 않는다 —
 # 저HP 파일럿은 작전 단계 종료 시 RecallSystem 의 HP 임계 복귀가 어차피
 # 본진으로 데려간다.
 
-# Emitted from _on_dashboard_confirmed once the engage modal has closed and
-# game phase is back at CARD_PHASE. AiCardPlayer awaits this so back-to-back
-# AI plays don't stomp each other's modals.
+# Emitted from _on_dashboard_confirmed once the engage modal has closed and the
+# game phase is back at whatever opened it (_phase_before). AiCardPlayer awaits
+# this so back-to-back AI plays don't stomp each other's modals.
 signal engage_finished
 
 @onready var _bs: BattleSim = get_parent() as BattleSim
@@ -51,6 +52,11 @@ var _sim: RealtimeEngageSim = null
 var _accum: float = 0.0
 ## 종료 유예 잔여 시간. 음수 = 유예 중이 아님(아직 전투 중).
 var _hold_left: float = -1.0
+## 아레나에 들어오기 직전의 game_phase. 플레이어 카드로 열린 교전이면
+## CARD_PHASE, AI 차례(BATTLE 안에서 도는 상대 턴)로 열린 교전이면 BATTLE 이다.
+## 끝나고 이 값으로 되돌린다 — 예전처럼 CARD_PHASE 로 못박으면 상대 턴이 끝난
+## 뒤 전장이 작전 단계에 갇힌다.
+var _phase_before: int = GameEnums.BattlePhase.CARD_PHASE
 
 # Hand-off back to CardPhaseManager for UI refresh after engage closes.
 var _on_done: Callable = Callable()
@@ -153,6 +159,7 @@ func _begin(caster: PilotData, t0: Array, t1: Array, duel: bool,
 	if _bs.card_phase != null:
 		_bs.card_phase.deselect_current_card()
 
+	_phase_before = _bs.game_phase
 	_bs.game_phase = GameEnums.BattlePhase.ENGAGE
 	_open_overlay()
 	set_process(true)
@@ -262,8 +269,10 @@ func _on_dashboard_confirmed() -> void:
 	_active = false
 	_sim = null
 	_hold_left = -1.0
-	# Return to CARD_PHASE — player can keep playing cards or press 턴 넘기기.
-	_bs.game_phase = GameEnums.BattlePhase.CARD_PHASE
+	# Return to whichever phase opened the arena: CARD_PHASE for a player card
+	# (player can keep playing cards or press 턴 넘기기), BATTLE for an AI card
+	# played during 상대 차례 (the tick stays held by is_ai_turn_active()).
+	_bs.game_phase = _phase_before
 	if _on_done.is_valid():
 		_on_done.call()
 		_on_done = Callable()

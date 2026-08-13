@@ -116,9 +116,10 @@ var game_over: bool              = false
 var auto_play_timer: float       = AUTO_PLAY_INTERVAL
 var last_log: String             = ""
 var game_phase: int              = GameEnums.BattlePhase.GAMBIT
-# Snapshot of player cost when entering CARD_PHASE — drives the "단계 넘기기"
-# enable rule (must spend at least 1 점수 before passing the phase).
-var card_phase_entry_cost: int  = 0
+# How many cards the player has resolved during the current CARD_PHASE —
+# drives the 턴 넘기기 enable rule (play at least one card before passing).
+# Reset on phase entry by CardPhaseManager.start_card_phase().
+var cards_played_this_phase: int = 0
 
 # Card phase state
 var player_hand:    Array = []
@@ -196,12 +197,18 @@ var card_select_overlay: CardSelectOverlay = null
 # CardPhaseManager가 이 오버레이를 띄워 PILOT/LOCATION/PREVIEW 모드에서
 # 클릭으로 대상을 고르거나 취소할 수 있게 한다. lazy-add in _ready().
 var targeting_overlay: CardTargetingOverlay = null
-# 전투 개시(engage) — 카드의 engage:N 효과가 발동되면 CARD_PHASE에서
-# 잠시 ENGAGE 페이즈로 전환되어 턴제 전투 모달을 띄운다. 전투가 끝나면
-# CARD_PHASE로 복귀. 모듈은 _ready()에서 lazy-add.
+# Deck / Discard 목록 열람 오버레이 (읽기 전용). 핸드 행 양옆의 카운터를 누르면
+# 해당 더미의 카드를 이름순 그리드로 펼쳐 보여 준다. 작전 단계에서만 열린다.
+# lazy-add in _ready().
+var card_pile_viewer: CardPileViewer = null
+# 전투 개시(engage) — 카드의 engage:N 효과가 발동되면 잠시 ENGAGE 페이즈로
+# 전환되어 실시간 교전 아레나를 띄운다. 전투가 끝나면 아레나를 연 페이즈로
+# 복귀한다(플레이어 카드면 CARD_PHASE, 상대 차례의 AI 카드면 BATTLE).
+# 모듈은 _ready()에서 lazy-add.
 var engage_phase: EngagePhaseManager = null
 # AI가 카드를 사용할 때 화면 중앙에 띄우는 카드 애니메이션 오버레이.
-# end_card_phase 안에서 await로 한 장씩 차례대로 보여 준다. lazy-add.
+# 상대 차례(CardPhaseManager._run_ai_turn) 안에서 await로 한 장씩 차례대로
+# 보여 준다. lazy-add.
 var ai_card_player: AiCardPlayer = null
 # 전투 행동 로거 — 모든 좌표 변화 / 교전 / 카드 사용을 콘솔 + user:// 파일에
 # 남기고, 턴 경계에서 적 파일럿 간 교차(cross-over)를 자동 감지한다.
@@ -258,6 +265,12 @@ func _ready() -> void:
 	targeting_overlay.name = "CardTargetingOverlay"
 	add_child(targeting_overlay)
 	targeting_overlay.bind(self)
+	# Deck / Discard 열람 오버레이 — HUD 의 카운터 버튼이 열고 닫는다. 자기
+	# CanvasLayer(12) 위에 그리므로 다른 오버레이보다 뒤에 만들어도 상관없다.
+	card_pile_viewer = CardPileViewer.new()
+	card_pile_viewer.name = "CardPileViewer"
+	add_child(card_pile_viewer)
+	card_pile_viewer.bind(self)
 	# Engage manager owns the turn-based 전투 modal lifecycle.
 	engage_phase = EngagePhaseManager.new()
 	engage_phase.name = "EngagePhaseManager"
@@ -365,8 +378,10 @@ func _populate_from_data_loader() -> void:
 
 func _process(delta: float) -> void:
 	# BATTLE auto-ticks every AUTO_PLAY_INTERVAL seconds. CARD_PHASE pauses the
-	# tick until the player presses "단계 넘기기".
-	if not game_over and game_phase == GameEnums.BattlePhase.BATTLE:
+	# tick until the player presses "단계 넘기기"; the AI's own turn runs *inside*
+	# BATTLE (CardPhaseManager._run_ai_turn) and holds the tick the same way.
+	if not game_over and game_phase == GameEnums.BattlePhase.BATTLE \
+			and not _ai_turn_active():
 		auto_play_timer -= delta
 		if auto_play_timer <= 0.0:
 			auto_play_timer = AUTO_PLAY_INTERVAL
@@ -380,12 +395,20 @@ func _process(delta: float) -> void:
 		renderer.queue_redraw()
 
 
+# True while the opponent is taking its 작전 단계. That turn runs inside the
+# BATTLE phase (game_phase never changes), so every "is the sim running?" check
+# has to consult it on top of game_phase.
+func _ai_turn_active() -> bool:
+	return card_phase != null and card_phase.is_ai_turn_active()
+
+
 # Smooth in-game seconds, derived from completed turns + fractional progress
 # through the current 0.5s real-time tick. 1 turn = 1 in-game minute = 60 sec.
-# Frozen during CARD_PHASE / game_over so the clock matches the paused sim.
+# Frozen during CARD_PHASE / 상대 차례 / game_over so the clock matches the
+# paused sim.
 func get_elapsed_ingame_seconds() -> int:
 	var base: int = turn_count * 60
-	if game_over or game_phase != GameEnums.BattlePhase.BATTLE:
+	if game_over or game_phase != GameEnums.BattlePhase.BATTLE or _ai_turn_active():
 		return base
 	var frac: float = clamp(1.0 - auto_play_timer / AUTO_PLAY_INTERVAL, 0.0, 1.0)
 	return base + int(frac * 60.0)
@@ -569,7 +592,7 @@ func _on_restart_pressed() -> void:
 	player_discard.clear(); ai_discard.clear()
 	player_cost = 0;        ai_cost = 0
 	pending_atk_buff_p = 0; pending_atk_buff_ai = 0
-	card_phase_entry_cost = 0
+	cards_played_this_phase = 0
 	engage_discount_p = 0; engage_discount_ai = 0
 	phase_cost_inc_p = 0; phase_cost_inc_ai = 0
 	phase_draw_discount_p = 0; phase_draw_discount_ai = 0

@@ -19,6 +19,11 @@ One row from the `cards` SQLite table, plus a few runtime fields:
 - `effect: String` — semicolon-chain dispatched by `CardPhaseManager`
   (e.g. `"draw:2;discard:2"`, `"attack:1|pierce"`)
 - `description: String` — text shown on the card front + description box
+- `scope: String` — `any` / `lane` / `jungle` (`SCOPE_*` consts). 시전자 제약;
+  read once, at deal time, by `CardPhaseManager._pool_for_pilot` via
+  `allowed_for_guerrilla(is_guerrilla)`. `lane` cards never reach a 정글러 and
+  `jungle` cards never reach a 레인 파일럿. Unknown values = unrestricted.
+- `pool: int` — `1` = in the random starter-deck pool, `0` = excluded (결투).
 - `owner_pilot: PilotData` (runtime, **not** `@export`) — the 시전자, set
   by `CardPhaseManager.build_starter_decks()`
 - `remaining_uses: int` (runtime) — per-instance charges left this match

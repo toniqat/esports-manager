@@ -296,7 +296,11 @@ func _make_btn(label: String) -> Button:
 
 
 func _build_search_grid() -> void:
-	var deck: Array = _bs.player_deck
+	# 이름 오름차순으로 펼친다 — 실제 player_deck 순서를 그대로 보여 주면
+	# 그리드가 곧 "다음에 뽑을 순서" 표가 되어 버린다. 정렬은 표시용 복사본에만
+	# 하고 원본 덱은 건드리지 않는다 (picks 는 CardData 참조라 순서와 무관).
+	# CardPileViewer 의 열람 목록도 같은 규칙을 쓴다.
+	var deck: Array = _sorted_for_display(_bs.player_deck)
 	if deck.is_empty():
 		return
 	var grid_w: float = 1080.0 - 2.0 * SEARCH_GRID_SIDE_PAD
@@ -341,6 +345,16 @@ func _build_search_grid() -> void:
 		node.position = Vector2(x, y)
 		_attach_search_pick_overlay(node, cd)
 		search_grid_nodes.append(node)
+
+
+# 이름(오름차순) → 비용 순 정렬본. 원본 배열은 그대로 둔다.
+func _sorted_for_display(src: Array) -> Array:
+	var out: Array = src.duplicate()
+	out.sort_custom(func(a: CardData, b: CardData) -> bool:
+		if a.card_name == b.card_name:
+			return a.cost < b.cost
+		return a.card_name.naturalnocasecmp_to(b.card_name) < 0)
+	return out
 
 
 func _attach_search_pick_overlay(node: Card, cd: CardData) -> void:

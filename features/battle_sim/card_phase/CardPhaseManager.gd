@@ -71,14 +71,20 @@ var _reshuffle_tween:   Tween = null
 #   "snapshot"    — Dictionary used by _restore_from_snapshot on cancel
 var _pending_play: Dictionary = {}
 
-# Set during end_card_phase()'s async AI play loop so a stray button press
-# can't re-enter the routine. Cleared once the await chain unwinds.
+# Set for the whole "상대 차례" — the banner sweep plus AiCardPlayer's async
+# play loop (_run_ai_turn) — so the BATTLE auto-tick is held, the player hand
+# stays dimmed and a stray button press can't re-enter the routine. Cleared
+# once the await chain unwinds.
 var _ai_play_in_progress: bool = false
 
 # True while the "당신의 차례" banner is sweeping in / holding / fading out.
 # The hand stays dimmed and clicks are blocked until it clears so the player
 # can't pre-empt the announcement.
 var _player_turn_announce_in_progress: bool = false
+
+# 연속 공격(`attack:N|repeat`)이 명중을 이어갈 때 한 번의 사용으로 허용되는
+# 최대 타수. 확률상 거의 닿지 않지만 무한 루프를 구조적으로 막는 상한이다.
+const MAX_ATTACK_REPEATS: int = 5
 
 # ─── Deck setup ───────────────────────────────────────────────────────────────
 # Per-pilot 6-card draw: every pilot pulls 6 random cards from the DB pool and
@@ -108,16 +114,37 @@ func build_starter_decks() -> void:
 
 # Pulls CARDS_PER_PILOT random copies from `pool` for every pilot in `pilots`,
 # stamping each copy with that pilot as 시전자. Appends all copies to `out_deck`.
+#
+# The pool is filtered per pilot by `CardData.scope`: a 정글러 never draws a
+# lane-only card (전진 …) and a 레인 파일럿 never draws a jungle-only one
+# (약탈 …). Filtering here rather than at play time is what keeps the rule
+# invisible — a card that can't be used by its 시전자 would otherwise sit in the
+# hand permanently locked, since the 시전자 never changes after the deal.
 func _deal_team_deck(pool: Array, pilots: Array, out_deck: Array) -> void:
 	if pool.is_empty():
 		return
 	for raw in pilots:
 		var p := raw as PilotData
+		var eligible := _pool_for_pilot(pool, p)
+		if eligible.is_empty():
+			continue
 		for i in CARDS_PER_PILOT:
-			var src := pool[randi() % pool.size()] as CardData
+			var src := eligible[randi() % eligible.size()] as CardData
 			var copy := make_card_copy(src)
 			copy.owner_pilot = p
 			out_deck.append(copy)
+
+
+## Subset of `pool` this pilot is allowed to own. Falls back to the unfiltered
+## pool if the scope filter leaves nothing at all, so a mis-tagged CSV can never
+## hand a pilot an empty mini-deck.
+func _pool_for_pilot(pool: Array, p: PilotData) -> Array:
+	var out: Array = []
+	for raw in pool:
+		var cd := raw as CardData
+		if cd.allowed_for_guerrilla(p.is_guerrilla):
+			out.append(cd)
+	return out if not out.is_empty() else pool
 
 
 func _team_pilots(team: int) -> Array:
@@ -129,13 +156,20 @@ func _team_pilots(team: int) -> Array:
 	return out
 
 
+# Every card the random starter-deck deal may draw from. Rows flagged
+# `pool = 0` in cards.csv are skipped here: they exist in the DB (and stay
+# playable through whatever future path grants them — 결투 is slated to become a
+# mech-unique card) but nothing hands them out at random.
 func _build_pool_from_db() -> Array:
 	var gm: Node = _bs.gm
 	if gm != null and not gm.card_pool_bs.is_empty():
 		var pool: Array = []
 		for card_def in gm.card_pool_bs:
+			if int(card_def.get("pool", 1)) == 0:
+				continue
 			pool.append(_make_card_from_def(card_def))
-		return pool
+		if not pool.is_empty():
+			return pool
 	# Minimal one-card fallback so the demo still runs before Rebuild game.db.
 	return [_make_card_from_def({
 		"name": "공격", "cost": 1, "uses": 1,
@@ -157,12 +191,12 @@ func _make_card_from_def(def: Dictionary) -> CardData:
 	cd.area        = int(def.get("area", 0))
 	cd.keyword     = String(def.get("keyword", ""))
 	cd.effect      = String(def.get("effect", ""))
-	cd.remaining_uses = max(1, cd.uses) if cd.uses > 0 else 0
+	cd.scope       = String(def.get("scope", CardData.SCOPE_ANY))
+	cd.pool        = int(def.get("pool", 1))
 	return cd
 
 
-# Copies a CardData (so each draw is a unique instance) including 시전자 tag and
-# resetting the per-instance use counter.
+# Copies a CardData (so each draw is a unique instance) including the 시전자 tag.
 func make_card_copy(src: CardData) -> CardData:
 	var cd := CardData.new(src.card_name, src.cost, src.description)
 	cd.uses        = src.uses
@@ -172,14 +206,20 @@ func make_card_copy(src: CardData) -> CardData:
 	cd.area        = src.area
 	cd.keyword     = src.keyword
 	cd.effect      = src.effect
+	cd.scope       = src.scope
+	cd.pool        = src.pool
 	cd.owner_pilot = src.owner_pilot
-	cd.remaining_uses = max(1, src.uses) if src.uses > 0 else 0
 	return cd
 
 
 # ─── Turn flow ────────────────────────────────────────────────────────────────
 func do_battle_turn() -> void:
 	if _bs.game_over or _bs.game_phase != GameEnums.BattlePhase.BATTLE:
+		return
+	# An AI turn unfolds *inside* BATTLE (see _run_ai_turn) and awaits its card
+	# animations, so the auto-tick has to stay out until it unwinds. BattleSim
+	# already holds the tick via is_ai_turn_active(); this is the backstop.
+	if _ai_play_in_progress:
 		return
 	_bs.sim_core.simulate_turn()
 	if _bs.game_over:
@@ -206,7 +246,17 @@ func do_battle_turn() -> void:
 		draw_card(false)
 		_trim_hand_overflow(false)
 		_bs.hud.update_ai_hand_visuals()
-	if _bs.player_cost >= _bs.PHASE_THRESHOLD:
+	# Whose turn is it now? Each side gets its turn the moment *its own* 작전
+	# 점수 reaches PHASE_THRESHOLD — the AI's turn is no longer bolted onto the
+	# end of the player's, so the "상대 차례" banner only ever shows when the AI
+	# actually acts.
+	#
+	# The AI is checked first on purpose: a player who ends their 작전 단계 on
+	# 0-cost cards alone keeps player_cost >= PHASE_THRESHOLD and would re-enter
+	# their own phase on every tick, starving the AI out of its turn forever.
+	if _ai_turn_ready():
+		await _run_ai_turn()
+	elif _bs.player_cost >= _bs.PHASE_THRESHOLD:
 		start_card_phase()
 	else:
 		# Respawn countdowns on the hand cards tick with the battle turn, so the
@@ -244,9 +294,10 @@ func start_card_phase() -> void:
 	_bs.blog.stage("card-phase")
 	_bs.blog.log_event("PHASE", "작전 단계 시작 — player %d / ai %d 점"
 			% [_bs.player_cost, _bs.ai_cost])
-	# Snapshot the player's cost on phase entry so the "단계 넘기기" button can
-	# require >= 1 point spent before becoming clickable.
-	_bs.card_phase_entry_cost = _bs.player_cost
+	# The 턴 넘기기 gate counts *cards played*, not points spent — see
+	# can_end_card_phase(). Reset it on entry so last phase's plays don't
+	# unlock this one.
+	_bs.cards_played_this_phase = 0
 	# Phase-bound cost modifiers (정밀 이동 / 집중) only live for one
 	# 작전 단계; reset on entry so a leftover from a previous phase doesn't
 	# persist. engage_discount_* is intentionally NOT reset — 전투 준비 was
@@ -282,44 +333,79 @@ func _apply_hand_dim_state() -> void:
 			c.set_dimmed(dim)
 
 
-# Returns true once the player has spent at least 1 강 점수 this 작전 단계.
+# Returns true once the player has played at least one card this 작전 단계.
 # Also blocked while a discard / search overlay is mid-resolution so the
-# player can't 단계 넘기기 their way out of an unfinished pick.
+# player can't 턴 넘기기 their way out of an unfinished pick.
+#
+# The gate used to be "player_cost dropped below the phase-entry snapshot",
+# which deadlocked the phase outright: 8 of the 20 cards cost 0 (임기응변 /
+# 정밀 이동 / 복귀 …), so a hand whose only playable cards were free could
+# never lower the cost, the 턴 넘기기 face never enabled, and BATTLE stays
+# paused during 작전 단계 — nothing could ever unstick it. Counting *plays*
+# keeps the "do something on your turn" intent without the trap.
+#
+# Second escape hatch: a hand with nothing playable at all (시전자 전멸,
+# every card unaffordable, no legal targets) can't satisfy the play rule
+# either, and the hand can't change because draws only tick in BATTLE. That
+# state passes straight through.
 func can_end_card_phase() -> bool:
 	if _bs.game_phase != GameEnums.BattlePhase.CARD_PHASE:
 		return false
 	if _bs.card_select_overlay != null and _bs.card_select_overlay.is_active():
 		return false
+	# Deck / Discard 목록을 펼쳐 놓은 동안에는 턴을 넘길 수 없다 — 도넛은
+	# 열람 딤 아래에 있고, CostDonut._input 은 GUI 픽보다 먼저 돌아 딤을
+	# 뚫고 눌리기 때문이다.
+	if _bs.card_pile_viewer != null and _bs.card_pile_viewer.is_active():
+		return false
 	if _ai_play_in_progress:
 		return false
 	if _player_turn_announce_in_progress:
 		return false
-	return _bs.player_cost < _bs.card_phase_entry_cost
+	if _bs.cards_played_this_phase > 0:
+		return true
+	return not _has_any_playable_card()
 
 
+## True while the player may open the Deck / Discard 목록 (HudBuilder wires the
+## two counter buttons to this). 작전 단계 전용 — BATTLE 자동 진행 중이거나
+## 차례 배너 / 상대 차례 / 버리기·찾기 오버레이 / 교전 아레나가 화면을 잡고
+## 있을 때는 열리지 않는다. 이미 열려 있는 상태는 여기서 보지 않는다 — 열람
+## 딤이 카운터 버튼을 덮으므로 그 경로로 다시 눌릴 수가 없다.
+func can_browse_piles() -> bool:
+	if _bs.game_phase != GameEnums.BattlePhase.CARD_PHASE:
+		return false
+	if _ai_play_in_progress or _player_turn_announce_in_progress:
+		return false
+	if _bs.card_select_overlay != null and _bs.card_select_overlay.is_active():
+		return false
+	if _bs.engage_phase != null and _bs.engage_phase.is_active():
+		return false
+	return true
+
+
+# True while at least one card in the player's hand could be committed right
+# now (cost, 시전자 생존 and target availability all hold) — i.e. the player
+# still has a move to make.
+func _has_any_playable_card() -> bool:
+	for raw in _bs.player_hand:
+		if card_is_playable(raw as CardData):
+			return true
+	return false
+
+
+# Ends the *player's* 작전 단계 and hands control straight back to BATTLE.
+#
+# It does NOT hand over to the AI. The opponent takes its own turn when its own
+# 작전 점수 reaches PHASE_THRESHOLD (see _run_ai_turn, driven from
+# do_battle_turn), so passing the turn no longer fires a "상대 차례" banner for
+# an opponent that has nothing to spend.
 func end_card_phase() -> void:
 	if not can_end_card_phase():
 		return
 	# Drop any active card selection so the description box and lifted-card
 	# state don't survive across the phase transition.
 	deselect_current_card()
-	# Block re-entry while AI plays unfold async — the button is also disabled
-	# in HUD update via can_end_card_phase, but a quick double-press could
-	# still race here. The flag clears once the await chain completes.
-	if _ai_play_in_progress:
-		return
-	_ai_play_in_progress = true
-	_apply_hand_dim_state()
-	_bs.hud.update_hud()
-	# Announce the AI's turn before any plays unfold, regardless of whether
-	# the AI actually has anything to play this phase — the banner marks the
-	# handover so the player knows the action has flipped to the opponent.
-	await _bs.hud.play_turn_announce(false)
-	# AI plays go through AiCardPlayer which awaits the central card animation
-	# (and engage modal, when applicable) between plays. The HUD's
-	# 단계 넘기기 button is disabled while is_active() in EngagePhaseManager.
-	if _bs.ai_cost >= _bs.PHASE_THRESHOLD and _bs.ai_card_player != null:
-		await _bs.ai_card_player.run_ai_plays()
 	# Phase end: re-evaluate recalls (HP threshold + out-of-position from card effects).
 	_bs.blog.stage("phase-end")
 	var log_lines: Array = []
@@ -330,8 +416,65 @@ func end_card_phase() -> void:
 	_bs.blog.log_event("PHASE", "작전 단계 종료 → BATTLE")
 	_bs.renderer.queue_redraw()
 	_bs.hud.update_hud()
-	_ai_play_in_progress = false
 	_apply_hand_dim_state()
+
+
+# ─── 상대 차례 ────────────────────────────────────────────────────────────────
+# True while the AI turn's await chain is in flight. BattleSim reads this to
+# hold the BATTLE auto-tick (and the in-game clock) for the duration.
+func is_ai_turn_active() -> bool:
+	return _ai_play_in_progress
+
+
+# The AI gets a turn only when it can actually do something with it: 작전 점수
+# at the threshold AND at least one card it can pay for. Without the second
+# half an AI sitting on a full score with an empty / unaffordable hand would
+# re-announce "상대 차례" every single tick and play nothing — the mirror of the
+# deadlock `_has_any_playable_card` covers on the player side. The affordability
+# test is deliberately the same one AiCardPlayer.run_ai_plays uses, so a turn
+# that starts is guaranteed to consume at least one card.
+func _ai_turn_ready() -> bool:
+	if _bs.ai_card_player == null:
+		return false
+	if _bs.ai_cost < _bs.PHASE_THRESHOLD:
+		return false
+	for raw in _bs.ai_hand:
+		if _bs.effective_cost_for(raw as CardData, false) <= _bs.ai_cost:
+			return true
+	return false
+
+
+# The AI's own 작전 단계. Unlike the player's it never switches game_phase —
+# it runs inside BATTLE with the auto-tick held — but it is a real turn: the
+# "상대 차례" banner marks its start, AiCardPlayer walks the affordable hand one
+# card at a time (awaiting the centre animation and any engage arena), and the
+# same phase-end recall sweep the player's turn gets runs on the way out.
+func _run_ai_turn() -> void:
+	if _ai_play_in_progress:
+		return
+	_ai_play_in_progress = true
+	# The player shouldn't be holding a lifted card here (BATTLE dims the hand),
+	# but deselect is idempotent and keeps stray state from crossing the turn.
+	deselect_current_card()
+	_apply_hand_dim_state()
+	_bs.blog.stage("ai-turn")
+	_bs.blog.log_event("PHASE", "상대 차례 시작 — ai %d 점" % _bs.ai_cost)
+	_bs.hud.update_hud()
+	await _bs.hud.play_turn_announce(false)
+	await _bs.ai_card_player.run_ai_plays()
+	if not _bs.game_over:
+		# Same sweep end_card_phase runs: HP threshold + pilots the AI's cards
+		# displaced out of position.
+		_bs.blog.stage("ai-turn-end")
+		var log_lines: Array = []
+		_bs.recall_sys.process_phase_end_recalls(log_lines)
+		if not log_lines.is_empty():
+			_bs.last_log = log_lines[-1]
+	_bs.blog.log_event("PHASE", "상대 차례 종료 → BATTLE")
+	_ai_play_in_progress = false
+	highlight_affordable_cards()
+	_bs.renderer.queue_redraw()
+	_bs.hud.update_hud()
 
 
 # ─── Card draw ────────────────────────────────────────────────────────────────
@@ -867,17 +1010,15 @@ func highlight_affordable_cards() -> void:
 	_refresh_confirm_button()
 
 
-## Turns left until `cd`'s 시전자 respawns, or 0 while they're alive (or the
-## card has no owner). A downed owner always reports at least 1 so the card
-## stays visibly locked even if the timer has already been decremented to 0
-## on the tick the pilot is about to come back.
+## Turns left until `cd`'s 시전자 comes back on the field, or 0 while they're
+## alive (or the card has no owner). 전장을 비우는 사유는 사망뿐이므로 이건 곧
+## 부활까지 남은 턴이다 — 본진 복귀한 파일럿은 계속 `alive` 라 카드가 잠기지
+## 않는다. `BattleSim.turns_until_return` 은 돌아오기 직전 틱에도 최소 1 을
+## 돌려주므로 카드가 깜빡이며 풀리지 않는다.
 func respawn_turns_for(cd: CardData) -> int:
 	if cd == null:
 		return 0
-	var owner: PilotData = cd.owner_pilot
-	if owner == null or owner.alive:
-		return 0
-	return max(1, owner.respawn_timer)
+	return _bs.turns_until_return(cd.owner_pilot)
 
 
 ## Can the player commit `cd` right now? Cost, 시전자 생존, and target
@@ -990,6 +1131,9 @@ func _is_player_input_blocked() -> bool:
 	if _ai_play_in_progress:
 		return true
 	if _player_turn_announce_in_progress:
+		return true
+	# Deck / Discard 열람 중 — 목록이 화면을 덮고 있으므로 핸드는 딤 상태로.
+	if _bs.card_pile_viewer != null and _bs.card_pile_viewer.is_active():
 		return true
 	if _bs.card_select_overlay != null and _bs.card_select_overlay.is_active():
 		if _bs.card_select_overlay.is_discard_mode():
@@ -1392,21 +1536,17 @@ func compute_valid_pilot_targets(cd: CardData, caster: PilotData,
 	return out
 
 
-# Cells within hex range of caster (alive cells only). For 약탈
-# (capture_jungle), restrict further to neutral_zone_cells currently owned by
-# the enemy team.
+# Cells within hex range of caster (alive cells only). 약탈 (capture_jungle)
+# runs on its own rule set — see compute_capture_jungle_targets.
 func compute_valid_location_targets(cd: CardData, caster: PilotData) -> Array:
 	var out: Array = []
 	if caster == null:
 		return out
-	var max_r: int = max(1, cd.cast_range)
 	# Inspect the effect chain for clauses that constrain the legal set.
-	var require_enemy_jungle: bool = false
 	for clause in _parse_effect_chain(cd.effect):
 		if String(clause.get("name", "")) == "capture_jungle":
-			require_enemy_jungle = true
-			break
-	var enemy_team: int = 1 - caster.team
+			return compute_capture_jungle_targets(caster)
+	var max_r: int = max(1, cd.cast_range)
 	var seen: Dictionary = {}
 	for col in range(-8, 8):
 		for row in range(-8, 8):
@@ -1419,12 +1559,35 @@ func compute_valid_location_targets(cd: CardData, caster: PilotData) -> Array:
 			var d: int = _bs.hex_grid.hex_distance(caster.grid_pos, c)
 			if d == 0 or d > max_r:
 				continue
-			if require_enemy_jungle:
-				if not _bs.neutral_zone_cells.has(c):
-					continue
-				if int(_bs.neutral_zone_cells[c]) != enemy_team:
-					continue
 			out.append(c)
+	return out
+
+
+# 약탈의 유효 대상 — **적 팀이 소유한 정글 셀 중, 시전자 팀이 소유한 정글 셀과
+# 인접한 것**. 시전자 사거리는 보지 않는다(카드의 cast_range 는 99).
+#
+# 예전에는 "사거리(1) 안의 적 소유 정글 셀"이었는데, 정글은 레인에서 떨어져
+# 있고 레인 파일럿은 정글 셀에 들어가지도 못하므로 유효 대상이 사실상 항상
+# 비어 있었다 — card_has_valid_targets 가 false 를 돌려주니 카드가 영영
+# 사용 불가였다. 전선을 자기 정글에서 한 칸씩 밀어 나가는 규칙으로 바꾸면
+# 시전자가 어디 있든 최소한 한 칸은 열려 있다.
+func compute_capture_jungle_targets(caster: PilotData) -> Array:
+	var out: Array = []
+	if caster == null:
+		return out
+	var zones: Dictionary = _bs.neutral_zone_cells
+	var enemy_team: int = 1 - caster.team
+	for raw_cell in zones.keys():
+		var cell := raw_cell as Vector2i
+		if int(zones[cell]) != enemy_team:
+			continue
+		for n in _bs.hex_grid.get_neighbors(cell.x, cell.y):
+			var nb := n as Vector2i
+			if not zones.has(nb):
+				continue
+			if int(zones[nb]) == caster.team:
+				out.append(cell)
+				break
 	return out
 
 
@@ -1611,6 +1774,11 @@ func _finalize_pending_play() -> void:
 	# pile or is removed from the match entirely.
 	_dispose_used_card(cd, true)
 	_bs.last_log = log_msg
+	# Counted here rather than in _play_card_direct so a card cancelled out of a
+	# 버리기 / 찾기 overlay (which rolls the whole play back via the snapshot in
+	# _on_overlay_cancel) doesn't unlock 턴 넘기기 on a play that never happened.
+	if bool(_pending_play.get("is_player", false)):
+		_bs.cards_played_this_phase += 1
 	_pending_play.clear()
 	relayout_hand(_bs.player_card_nodes)
 	highlight_affordable_cards()
@@ -1619,19 +1787,18 @@ func _finalize_pending_play() -> void:
 	_bs.renderer.queue_redraw()
 
 
-# Routes a played card by 키워드 / 사용 횟수 rules:
-#  - keyword == "exhaust"     → removed (소멸), never re-enters the deck
-#  - uses == 0                → unlimited; always returns to the discard pile
-#  - uses > 0                 → decrement remaining_uses; remove when it hits 0
-#  - else                     → returns to the discard pile
+# Routes a played card by 키워드:
+#  - keyword == "exhaust" → removed (소멸), never re-enters the deck
+#  - anything else        → returns to the discard pile
+#
+# 소멸은 `exhaust` 키워드 **하나로만** 결정된다. 예전에는 `uses > 0` 인 카드가
+# 사용 횟수를 다 쓰면 사라졌는데, cards.csv 는 exhaust 가 아닌 카드도 거의 전부
+# `uses = 1` 이라 전투 개시를 포함한 대부분의 카드가 한 번 내면 그대로 소멸했다
+# (덱이 돌지 않고 매치 내내 줄어들기만 했다).
 func _dispose_used_card(cd: CardData, is_player: bool) -> void:
-	var discard: Array = _bs.player_discard if is_player else _bs.ai_discard
 	if cd.keyword == "exhaust":
 		return
-	if cd.uses > 0:
-		cd.remaining_uses -= 1
-		if cd.remaining_uses <= 0:
-			return
+	var discard: Array = _bs.player_discard if is_player else _bs.ai_discard
 	discard.append(cd)
 
 
@@ -1839,10 +2006,57 @@ func _effect_attack(n: int, flags: Array, caster: PilotData, enemy_team: int,
 		if targets.is_empty():
 			return "공격 (대상 없음)"
 		t = targets[randi() % targets.size()] as PilotData
-	# Damage = 시전자 ATK × value (value is the design unit, e.g. 공격:1 → 1×ATK).
-	# Mech ATK was scaled ×20 in the DB so a 1×ATK card hit lands at a meaningful
-	# share of pilot HP without a separate placeholder multiplier. Caster falls
-	# back to a flat 100 only when the card has no owner_pilot (legacy paths).
+	# 공격 카드도 전장과 같은 명중 판정(hit/(hit+evasion))을 굴린다 —
+	# `SimulationCore.roll_hit`. 빗나가면 데미지가 아예 없다.
+	#   • pierce (필중)  — 판정을 건너뛰고 무조건 명중.
+	#   • repeat (연속 공격) — 명중할 때마다 같은 공격을 한 번 더 굴린다.
+	#     빗나가거나 대상이 쓰러지면 멈추고, 무한 루프 방지로
+	#     MAX_ATTACK_REPEATS 타에서 끊는다.
+	# 시전자가 없는 레거시 카드는 굴릴 스탯이 없으므로 항상 명중 처리.
+	var pierce: bool = "pierce" in flags
+	var repeat: bool = "repeat" in flags
+	var hits: int = 0
+	var total_dmg: int = 0
+	# 판정 결과는 대상 파일럿 위에 그대로 떠오른다 — 빗나가면 MISS, 명중하면
+	# 그 타격의 피해량. 연속 공격은 타수마다 하나씩, 조금씩 늦게 뜬다.
+	var swings: int = 0
+	while hits < MAX_ATTACK_REPEATS:
+		var landed: bool = pierce or caster == null \
+				or _bs.sim_core.roll_hit(caster, t)
+		var delay: float = float(swings) * _bs.DMG_POPUP_STAGGER
+		swings += 1
+		if not landed:
+			_bs.renderer.spawn_pilot_popup(t, "MISS", BattleRenderer.POPUP_MISS_COLOR, delay)
+			break
+		hits += 1
+		var dealt: int = _apply_attack_damage(t, caster, n)
+		total_dmg += dealt
+		# dealt 는 보호막을 지나 HP 에 실제로 들어간 양이다. 보호막이 전부
+		# 먹었으면 "-0" 대신 흡수로 읽히게 한다.
+		if dealt > 0:
+			_bs.renderer.spawn_pilot_popup(t, "-%d" % dealt,
+					BattleRenderer.POPUP_DAMAGE_COLOR, delay)
+		else:
+			_bs.renderer.spawn_pilot_popup(t, "흡수",
+					BattleRenderer.POPUP_SHIELD_COLOR, delay)
+		if not repeat or not t.alive:
+			break
+	var tag: String = " (필중)" if pierce else ""
+	if hits == 0:
+		return "공격%s %s 빗나감" % [tag, _bs.pilot_label(t)]
+	var hit_tag: String = " x%d" % hits if hits > 1 else ""
+	return "공격%s%s %s -%d HP" % [tag, hit_tag, _bs.pilot_label(t), total_dmg]
+
+
+# One landed swing of an attack card. Returns the **HP** damage dealt (what is
+# left after 보호막 absorption, matching what the log line has always shown) so
+# the caller can total it across a 연속 공격 chain.
+#
+# Damage = 시전자 ATK × value (value is the design unit, e.g. 공격:1 → 1×ATK).
+# Mech ATK was scaled ×20 in the DB so a 1×ATK card hit lands at a meaningful
+# share of pilot HP without a separate placeholder multiplier. Caster falls
+# back to a flat 100 only when the card has no owner_pilot (legacy paths).
+func _apply_attack_damage(t: PilotData, caster: PilotData, n: int) -> int:
 	var atk_value: int = caster.atk if caster != null else 100
 	var dmg: int = max(1, atk_value * n)
 	# 보호막 absorbs first, HP next.
@@ -1853,13 +2067,10 @@ func _effect_attack(n: int, flags: Array, caster: PilotData, enemy_team: int,
 	if dmg > 0:
 		t.hp = max(0, t.hp - dmg)
 	if t.hp <= 0:
-		t.alive = false
-		t.respawn_timer = _bs.RESPAWN_TURNS
+		_bs.mark_pilot_dead(t)
 	elif dmg > 0:
 		_bs.anim_pilot_shake(t)
-	var pierce: bool = "pierce" in flags
-	var tag: String = " (필중)" if pierce else ""
-	return "공격%s %s -%d HP" % [tag, _bs.pilot_label(t), dmg]
+	return dmg
 
 
 func _effect_advance(steps: int, caster: PilotData) -> String:
@@ -1969,10 +2180,11 @@ func _effect_duel(caster: PilotData, picked: PilotData,
 
 # 이동 — teleports the caster onto the picked cell. The location overlay's
 # compute_valid_location_targets already validates the cell against
-# cast_range; we just commit the new grid_pos and play the tween. If the
-# pilot lands inside a jungle/neutral cell, RecallSystem.process_phase_end_recalls
-# will pull them back to HQ at end of 작전 단계 — that's the existing
-# displacement rule, not a move-card bug.
+# cast_range; we just commit the new grid_pos and play the tween.
+#
+# 착지점이 **정글이거나 다른 레인의 통로**면 `RecallSystem.process_phase_end_recalls`
+# 가 작전 단계 끝에 그 파일럿을 전장에서 이탈시킨다(만피가 될 때까지 복귀 대기).
+# 자기 레인 위라면 아무리 깊어도 합법이다 — 스플릿 푸시는 살려 둔 설계다.
 func _effect_move(caster: PilotData, picked: Variant) -> String:
 	if not (picked is Vector2i) or caster == null:
 		return "이동 (대상 없음)"

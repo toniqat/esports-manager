@@ -32,13 +32,20 @@
    동작하지만 현재 이 플래그를 다는 카드는 없다.
 2. `CardPhaseManager._effect_engage()` → `EngagePhaseManager.start_engage(...)`,
    `_effect_duel()` → `start_duel(...)`.
-3. 매니저가 `_bs.game_phase = ENGAGE` 로 전환. BATTLE 자동 틱은 멈추고,
+3. 매니저가 **들어오기 직전의 페이즈를 `_phase_before` 에 적어 두고**
+   `_bs.game_phase = ENGAGE` 로 전환. BATTLE 자동 틱은 멈추고,
    카드 hover/click 과 턴 넘기기도 `CARD_PHASE` 가드 때문에 차단된다.
 4. 아레나가 열리고 매니저의 `_process` 가 시뮬레이터를 고정 스텝
    (`FIXED_DT = 1/60`, 프레임당 최대 `MAX_STEPS_PER_FRAME = 8` 스텝)으로 굴린다.
 5. 종료 판정 → **`END_HOLD_SEC`(2.0초) 유예** → 대시보드(준 딜량 / 받은 딜량 /
-   처치 수) → `확인` → 아레나 제거, `phase = CARD_PHASE`, `on_done` 호출,
+   처치 수) → `확인` → 아레나 제거, **`phase = _phase_before`**, `on_done` 호출,
    `engage_finished` emit.
+
+복귀 페이즈를 `CARD_PHASE` 로 못박지 않는 이유: 상대 차례
+(`CardPhaseManager._run_ai_turn`)는 `game_phase` 를 바꾸지 않고 **BATTLE 안에서**
+도므로, AI 가 낸 engage 카드가 끝날 때 CARD_PHASE 로 되돌리면 상대 턴이 끝난
+뒤 전장이 작전 단계에 갇힌 채 남는다. 플레이어 카드로 열린 교전은 어차피
+`_phase_before == CARD_PHASE` 라 동작이 같다.
 
 AI 플레이도 같은 아레나를 탄다. `AiCardPlayer.run_ai_plays()` 는 매 플레이
 후 `engage_phase.is_active()` 면 `engage_finished` 를 `await` 한다 — 카드의

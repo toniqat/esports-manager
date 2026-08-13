@@ -1,5 +1,14 @@
 # Card Phase Module
 
+| File | class_name | Role |
+|---|---|---|
+| `Card.gd` | Card | 카드 한 장의 시각 노드 |
+| `CardPhaseManager.gd` | CardPhaseManager | 작전 단계 전체 — 덱 / 핸드 / 카드 효과 |
+| `CardSelectOverlay.gd` | CardSelectOverlay | 버리기:N / 찾기:N 모달 픽 |
+| `CardTargetingOverlay.gd` | CardTargetingOverlay | 카드 선택 = 대상 지정 오버레이 |
+| `CardPileViewer.gd` | CardPileViewer | Deck / Discard 목록 열람 (읽기 전용) |
+| `AiCardPlayer.gd` | AiCardPlayer | AI 카드 사용 애니메이션 |
+
 ## CardPhaseManager.gd
 `extends Node` — child of BattleSim.
 
@@ -9,10 +18,28 @@ is referred to as "1분".
 
 ### Turn flow
 - `do_battle_turn()` — calls `_bs.sim_core.simulate_turn()`, accumulates 작전 점수,
-  draws cards, enters CARD_PHASE when 점수 ≥ PHASE_THRESHOLD. After the AI
+  draws cards, then hands the tick to whichever side's own 점수 has reached
+  `PHASE_THRESHOLD`. After the AI
   draws, `_bs.hud.update_ai_hand_visuals()` reflows the face-down peek row
   under the score panel. It also re-runs `highlight_affordable_cards()` every
   tick so the 부활 countdown printed on each card face stays current.
+
+#### 두 쪽이 각자 자기 점수로 턴을 갖는다
+The two sides' turns are **independent**. `do_battle_turn` closes with:
+
+1. `_ai_turn_ready()` → `await _run_ai_turn()` — the 상대 차례.
+2. else `player_cost >= PHASE_THRESHOLD` → `start_card_phase()`.
+3. else refresh the hand / HUD and keep ticking.
+
+The AI is checked **first**, and that ordering is load-bearing: a player who
+ends their 작전 단계 on 0-cost cards alone still has
+`player_cost >= PHASE_THRESHOLD` on the next tick, would re-enter their own
+phase immediately, and would starve the AI out of its turn forever.
+
+The AI turn used to be bolted onto the end of the player's — `end_card_phase`
+announced "상대 차례" and ran the AI loop unconditionally, so passing the turn
+flashed the banner even when the opponent was at 0 점 and did nothing. Now the
+banner marks a real handover.
 
 ### Hand overflow (BATTLE auto-draw only)
 `MAX_HAND_SIZE` is **8**. The auto-draws that tick by while 작전 점수 climbs
@@ -28,19 +55,63 @@ player's own turn, so the hand is allowed over the cap and nothing is thrown
 away mid-turn. `_effect_draw` and `_on_search_overlay_complete` therefore carry
 **no** `MAX_HAND_SIZE` guard (only an exhausted deck+discard stops them); the
 first auto-draw after the turn ends is what trims the excess.
-- `start_card_phase()` — transitions to CARD_PHASE, snapshots `card_phase_entry_cost`
-  so the 턴 넘기기 face of the 전략 포인트 도넛 stays disabled until the
-  player spends ≥ 1 점수.
+- `start_card_phase()` — transitions to CARD_PHASE, resets
+  `_bs.cards_played_this_phase` so the 턴 넘기기 face of the 전략 포인트 도넛
+  starts disabled for the new turn.
   Awaits `HudBuilder.play_turn_announce(true)` so the "당신의 차례" banner
   sweeps in / holds / fades out before the player can interact; the player
   hand stays dimmed for that whole interval via `_apply_hand_dim_state()`.
-- `can_end_card_phase()` → bool — true once `player_cost < card_phase_entry_cost`.
+- `can_end_card_phase()` → bool — true once **`cards_played_this_phase > 0`**,
+  i.e. the player has resolved at least one card this 작전 단계.
+  `_has_any_playable_card()` is a second escape hatch: a hand with nothing
+  playable at all (every card unaffordable, 시전자 down, or no legal target)
+  passes straight through, because BATTLE is paused during 작전 단계 so the
+  hand can never change on its own.
   Also blocked while `_player_turn_announce_in_progress`, while overlays own
   the screen, and while the AI play loop is in flight.
-- `end_card_phase()` — sets `_ai_play_in_progress = true`, awaits
-  `play_turn_announce(false)` (the "상대 차례" banner), then runs the AI
-  card loop, runs `recall_sys.process_phase_end_recalls()`
-  (HP threshold + out-of-position card-displaced pilots), returns to BATTLE.
+
+  **Why plays and not points.** The gate used to be
+  `player_cost < card_phase_entry_cost` (a cost snapshot taken on entry), which
+  deadlocked the phase outright: 8 of the 20 cards cost 0 (임기응변 / 정밀 이동 /
+  복귀 / 집중 …) and 조정 *raises* the total, so a hand whose only playable
+  cards were free could never lower the cost, the 턴 넘기기 face never enabled,
+  and nothing could unstick it — BATTLE does not tick during 작전 단계, so no
+  new card ever arrives. Counting resolved plays keeps the "do something on
+  your turn" intent without the trap. `card_phase_entry_cost` is gone.
+- The counter is bumped in `_finalize_pending_play()`, not `_play_card_direct()`,
+  so a card rolled back out of a 버리기 / 찾기 overlay (`_on_overlay_cancel`
+  restores the pre-play snapshot) doesn't unlock 턴 넘기기 on a play that never
+  happened. AI plays never touch it — `_pending_play.is_player` gates the bump.
+- `end_card_phase()` — the player's turn only: drops the selection, runs
+  `recall_sys.process_phase_end_recalls()` (HP threshold + out-of-position
+  card-displaced pilots) and returns to BATTLE. **No banner, no AI plays** —
+  it is fully synchronous now. The opponent takes its turn on its own schedule
+  (see 상대 차례 below).
+
+### 상대 차례 (`_run_ai_turn`)
+- `_ai_turn_ready()` — `ai_cost >= PHASE_THRESHOLD` **and** at least one card
+  in `ai_hand` the AI can pay for, tested with the same
+  `effective_cost_for(cd, false) <= ai_cost` filter
+  `AiCardPlayer.run_ai_plays` uses. The second half is the mirror of the
+  player's `_has_any_playable_card` escape hatch: an AI sitting on a full score
+  with an empty or unaffordable hand would otherwise re-announce "상대 차례"
+  every tick and play nothing. Because the filter matches, a turn that starts
+  always consumes at least one card, so the condition can't hold twice in a row
+  without a draw in between.
+- `_run_ai_turn()` — sets `_ai_play_in_progress`, awaits
+  `play_turn_announce(false)` (the "상대 차례" banner), awaits
+  `AiCardPlayer.run_ai_plays()`, then runs the same
+  `process_phase_end_recalls()` sweep the player's turn gets.
+  **It never changes `game_phase`** — the AI turn runs *inside* BATTLE.
+- `is_ai_turn_active()` — public read of `_ai_play_in_progress`. Because
+  `game_phase` stays BATTLE, every "is the sim running?" check has to consult
+  it too: `BattleSim._process` holds the auto-tick, and
+  `get_elapsed_ingame_seconds` freezes the MM:SS clock. `do_battle_turn` also
+  early-returns on the flag as a backstop.
+- An AI `engage` / `duel` card opens the arena from BATTLE, so
+  `EngagePhaseManager` restores **the phase it captured on entry**
+  (`_phase_before`) instead of hard-coding CARD_PHASE — otherwise the field
+  would be stranded in 작전 단계 once the AI's turn ended.
 
 ### Hand dim driver
 `_apply_hand_dim_state()` toggles `Card.set_dimmed(true|false)` on every
@@ -311,8 +382,21 @@ re-evaluates the dim state.
   each with that pilot as 시전자 (`owner_pilot`). All 5 stacks shuffle into
   the team deck. Player and AI sides build identically; AI hand is logical-only
   but its cards still carry an enemy-pilot owner.
-- `make_card_copy(src)` — copies every CSV column AND `owner_pilot`. Use this
-  any time you need a deck-safe duplicate.
+- **`pool = 0` cards never enter the random pool.** `_build_pool_from_db()`
+  drops them while copying `GameManager.card_pool_bs`. 결투 is the first one:
+  it still exists in the DB and every effect handler still supports it, but
+  nothing hands it out — it is slated to become a mech-unique card. (If the
+  filter were ever to empty the pool entirely the unfiltered list is used, so a
+  mis-tagged CSV can't produce a deckless match.)
+- **`scope` decides who may own a card.** `_pool_for_pilot(pool, p)` narrows the
+  pool per pilot before the 6 draws: a 정글러 gets `any` + `jungle` (약탈 …), a
+  레인 파일럿 gets `any` + `lane` (전진 …). Filtering at *deal* time rather than
+  at play time is the whole point — a card's 시전자 never changes after the
+  deal, so a lane card in a jungler's deck would just sit in hand permanently
+  locked with no way for the player to act on it. Unknown `scope` strings read
+  as unrestricted (`CardData.allowed_for_guerrilla`).
+- `make_card_copy(src)` — copies every CSV column (including `scope` / `pool`)
+  AND `owner_pilot`. Use this any time you need a deck-safe duplicate.
 - Card front layout:
   - **Top-left**: 작전 점수 (cost) label, large outlined text on the
     cost-coloured card body. `Card.update_displayed_cost(eff)` recolours the
@@ -419,11 +503,23 @@ parent chain, the Card still lit up — which reads exactly like the hit layer
 working and made this a slow one to find. Same defaults as above, opposite
 direction.
 
+### cards.csv 컬럼 — `scope` / `pool`
+Two columns drive who gets a card and whether it is dealt at all. Both flow
+`cards.csv` → `addons/csv_to_db/plugin.gd` (SCHEMAS + TABLE_DEFS) →
+`GameManager.card_pool_bs` → `CardData`. **Adding a column means running
+Project → Tools → Rebuild game.db**; until then `GameManager` reads them with
+defaults (`any` / `1`) so an older game.db still loads.
+
+| Column | Values | Meaning |
+|---|---|---|
+| `scope` | `any` / `lane` / `jungle` | 시전자 제약. `lane` = 레인 파일럿만 (전진), `jungle` = 정글러만 (약탈), `any` = 제약 없음. Enforced once, at deal time. |
+| `pool`  | `1` / `0` | `0` = 랜덤 스타터 덱에 절대 들어가지 않음 (결투). |
+
 ### Effect chain encoding (cards.csv `effect` column)
 The DB column is a `;`-separated chain of clauses. Each clause is
 `name[:value][|flag[:value]]…`. Examples:
 - `draw:2;discard:2`            — two clauses run in order
-- `attack:1|pierce|min_range:2` — one clause + two modifier flags
+- `attack:1|pierce`             — one clause + one modifier flag
 - `engage:3|exclude_lane`       — engage with lane-exclusion modifier
                                  (parsed and honoured, but no card in the pool
                                   carries it since 교전 was removed)
@@ -445,19 +541,19 @@ The DB column is a `;`-separated chain of clauses. Each clause is
 | `search:N` | yes | **Player**: opens CardSelectOverlay search grid — pick exactly N from the deck via 확인. **AI**: same as `draw:N` (random top-of-deck). |
 | `discard:N` | yes | **Player**: opens CardSelectOverlay discard pick — pick exactly N via the desc-box "버리기" button, then press 확인 to commit. The played 버리기 card is non-cancellable (no 버리기 취소 button). **AI**: random N from hand. |
 | `strategy:N` | yes | +N 작전 점수 to playing side |
-| `attack:N` | yes | **Player**: opens CardTargetingOverlay PILOT mode — battle tiles dim, valid enemy pilots ringed, click an enemy to commit. **AI**: random valid pilot (range-aware). Damage = `caster.atk × N`. `pierce` flag annotates 필중; `min_range:N` filters out pilots closer than N. 보호막 absorbs first. |
+| `attack:N` | yes | **Player**: opens CardTargetingOverlay PILOT mode — battle tiles dim, valid enemy pilots ringed, click an enemy to commit. **AI**: random valid pilot (range-aware). **Rolls `SimulationCore.roll_hit` (`hit/(hit+evasion)`, the same roll the battlefield uses) — a miss deals nothing.** Damage on a hit = `caster.atk × N`; 보호막 absorbs first. `pierce` (필중) skips the roll; `repeat` (연속 공격) re-rolls the same attack after every landed hit, stopping on a miss, on the target's death, or at `MAX_ATTACK_REPEATS` (5). `min_range:N` filters out pilots closer than N (parsed, but no card in the pool carries it since 저격 was removed). **Every swing floats its verdict over the target** via `BattleRenderer.spawn_pilot_popup`: `MISS` on a miss, `-N` on a hit, `흡수` when 보호막 ate the whole hit (the handler returns HP damage, so that case would otherwise read `-0`). 연속 공격 staggers its popups by `DMG_POPUP_STAGGER`. |
 | `shield_pct:N` | yes | **Player**: PILOT mode → click an ally; gains shield = N% of max_hp. **AI**: random ally. Cleared on 본진 복귀. |
 | `recall_ally` | yes | **Player**: PILOT mode → click an ally; teleports to HQ at full HP, shield reset, waypoint reset. **AI**: random ally. |
-| `exhaust_choice:N` | yes (random) | Random N from hand → removed (소멸) |
+| `exhaust_choice:N` | yes (random) | Random N from hand → removed (소멸). Parsed and honoured, but no card in the pool carries it since 차선책 was removed. |
 | `engage:N` | yes | **Player**: opens CardTargetingOverlay PREVIEW mode — caster cell + 6 neighbours highlighted, side panel lists participants, 확인 launches the engage arena. **AI**: same flow via AiCardPlayer. `exclude_lane` flag propagates. **N 은 라운드가 아니라 초로 환산된다** — `N × RealtimeEngageSim.SEC_PER_ROUND` (현재 3.0 → `engage:3` = 9초). |
-| `duel` | yes | **Player**: PILOT mode → click an enemy in range; opens the real-time arena restricted to caster + target with the timer running up instead of down, ends on first KO — 이탈이 없으므로 KO 아니면 `DUEL_MAX_SEC`(15초) 상한까지 간다. **AI**: random enemy in range. Routes through `EngagePhaseManager.start_duel`. |
-| `capture_jungle:N` | yes | **Player**: LOCATION mode restricted to enemy-owned jungle/neutral cells in range; flips the picked cell to caster's team for N turns. **AI**: random valid cell. SimulationCore.process_temp_zone_expiries restores the previous owner once `turn_count >= expires_turn`. |
+| `duel` | yes | **Player**: PILOT mode → click an enemy in range; opens the real-time arena restricted to caster + target with the timer running up instead of down, ends on first KO — 이탈이 없으므로 KO 아니면 `DUEL_MAX_SEC`(15초) 상한까지 간다. **AI**: random enemy in range. Routes through `EngagePhaseManager.start_duel`. **결투 (id 3) is `pool = 0`** — fully implemented but no longer dealt at random; it is reserved as a future mech-unique card. |
+| `capture_jungle:N` | yes | **Player**: LOCATION mode over `compute_capture_jungle_targets` — **enemy-owned jungle cells adjacent to a cell the caster's team already owns**, anywhere on the map (`cast_range` 99 = 사거리 무시). Flips the picked cell to the caster's team for N turns, so each play pushes the jungle border one cell further. **AI**: random valid cell. SimulationCore.process_temp_zone_expiries restores the previous owner once `turn_count >= expires_turn`. |
 | `move` | yes | **Player**: LOCATION mode → click any cell in `cast_range` (jungle cells included; the lane-pilot displacement recall pulls them back at phase end if needed). **AI**: random valid cell. Caster's `grid_pos` snaps to the picked cell and `BattleSim.anim_pilot_move` plays the tween. `return_left` / `cost_inc_phase` decorators on the same chain run separately. |
 | `cost_reduce_engage:N` | yes | One-shot pending discount on the side's next engage card. Stored on `_bs.engage_discount_p/ai`; consumed in `_play_card_direct` / `AiCardPlayer.run_ai_plays`. |
 | `cost_reduce_hand:N` | yes | Mutates every card currently in hand — `cost = max(0, cost - N)`. The played card is already gone from hand by the time this fires. |
 | `cost_reduce_draw_phase:N` | yes | Phase-bound draw discount; `draw_card` mutates each drawn `CardData.cost` while `_bs.phase_draw_discount_*` is active. Reset on `start_card_phase`. |
 | `cost_inc_phase:N` | yes | Phase-bound additive cost bump on every card play during this 작전 단계. Stored on `_bs.phase_cost_inc_*`; consumed by `effective_cost_for`. Reset on `start_card_phase`. |
-| `advance:N` | yes | Caster runs `N` mini-ticks of lane-push action through `SimulationCore.advance_pilot`: at each step, resolves combat at the caster's current cell (pilot-vs-pilot or same-lane turret damage) and then either pushes/retreats the caster from the result or steps them one cell along their lane if uncontested. Other pilots in the cell take damage but don't move — the card advances one pilot, not the whole team. |
+| `advance:N` | yes | Caster runs `N` mini-ticks of lane push through `SimulationCore.advance_pilot`. Each tick resolves combat at the caster's cell as usual **but forces the push result: the caster's side always wins the cell** (damage rolls are untouched — only who gets pushed is fixed). The caster **plus every same-cell, same-scope ally** steps forward and every same-cell enemy is pushed back one cell. If the next cell is a **same-lane enemy turret** the group holds one tile short and sieges it instead (turret takes `atk`, defenders on the turret cell roll back at the attackers, no knockback) — the siege waits a tick when the group just pushed an enemy onto that cell. A caster already standing on an enemy turret cell hits it and falls back one tile; that is the only way 전진 ever moves backwards. |
 | `strategy_on_kill` | log only | Stub — emits 예약 log line until the supporting system lands. |
 
 #### Effective cost & affordability
@@ -469,11 +565,24 @@ an `engage` clause), clamped at 0. The affordability highlight in
 the cost subtraction in `_play_card_direct`, and `AiCardPlayer.run_ai_plays`
 all consult this helper so the four cost-modifier effects stay in sync.
 
-### 사용 횟수 / 소멸 routing
-`_dispose_used_card(cd, is_player)` runs after every play:
+### 소멸 routing
+`_dispose_used_card(cd, is_player)` runs after every play and asks **one**
+question:
 - `keyword == "exhaust"` → removed permanently (소멸)
-- `uses > 0` → decrement `remaining_uses`; remove when it hits 0
-- `uses == 0` (unlimited) or remaining > 0 → returns to discard pile
+- anything else → returns to the discard pile
+
+> **`uses` no longer decides anything.** The rule used to be "`uses > 0` →
+> decrement `remaining_uses`, remove at 0", but `cards.csv` gives **every**
+> non-exhaust card `uses = 1`, so a single play destroyed it — 전투 개시
+> included. The deck never cycled: it only shrank, the discard pile only ever
+> filled from 버리기 clauses, and the reshuffle path in `draw_card` was
+> effectively dead. `CardData.remaining_uses` is gone; the `uses` column is
+> still loaded and copied (it stays available for a future "N charges then
+> 소멸" mechanic) but nothing reads it.
+
+Note that the five `exhaust` cards (조정 / 임기응변 / 재빠른 사고 / 집중 /
+아드레날린) carry `uses = 3` in the CSV. That has never meant anything — the
+keyword check has always fired first, so they are 소멸 on their first play.
 
 ### 대상 지정 (CardTargetingOverlay)
 - `CardTargetingOverlay.gd` — sibling of `CardPhaseManager`, owns a CanvasLayer
@@ -528,11 +637,17 @@ all consult this helper so the four cost-modifier effects stay in sync.
     `cast_range` and a black overlay on every cell outside it. Pilots not in
     `valid_pilots` get a per-marker black overlay. There is no per-pilot
     ring on the tile — the visible pilot marker IS the click target.
-    Range honours `cd.cast_range` and the `min_range:N` flag (저격).
+    Range honours `cd.cast_range` and the `min_range:N` flag.
   - `cast_method == "location"` → **LOCATION** mode. Same yellow range fill
     + black out-of-range dim as PILOT. Valid cells (subset, e.g. 약탈's
-    enemy-jungle filter) get an extra green outline. All pilots dim via
-    BattleRenderer's per-marker dim.
+    enemy-jungle-adjacent-to-own filter) get an extra green outline. All pilots
+    dim via BattleRenderer's per-marker dim.
+  - **`cast_range ≥ CardTargetingOverlay.UNLIMITED_RANGE` (99) = 사거리 무시**
+    (복귀 / 보호 / 약탈). `range_unlimited` goes up, `is_in_range_cell` answers
+    true everywhere, and BattleRenderer draws **neither the yellow fill nor the
+    out-of-range dim** — flooding the whole battlefield yellow just buried the
+    thing the player actually has to read (the green valid cells / the
+    undimmed pilot markers).
   - `cast_method == "range" and target == "caster"` → **PREVIEW** mode
     (engage cards only; 전진은 target=enemy 라 PREVIEW 가 아니라 즉시 발동).
     The caster cell and 6 neighbours show a soft yellow fill with full outline.
@@ -547,10 +662,18 @@ all consult this helper so the four cost-modifier effects stay in sync.
     battlefield (`is_visualizing()` is false, so BattleRenderer skips the dim
     entirely) — only the 확인 / 취소 row appears.
 - Hit-testing:
-  - **PILOT mode** uses `_hit_test_pilot` — for each valid pilot it probes
-    both the tile centre and the team-direction marker offset position
-    (returned by `BattleSim.pilot_marker_pos_solo`) and picks the closest
-    pilot whose marker is within `hex_size * 0.85` of the click.
+  - **PILOT mode** uses `_hit_test_pilot`, which aims at the pilot's **drawn**
+    marker: it reads `BattleRenderer.pilot_marker_positions()` — a fresh run of
+    the same per-cell stack solve `_draw()` uses — and picks the valid pilot
+    whose marker is closest to the click, within `hex_size * 0.85`. A click that
+    lands on no marker but inside a pilot's own tile still resolves, ranked by
+    marker distance, so tapping the tile itself keeps working.
+    > This is the fix for a real bug. The probes used to be the tile centre and
+    > `BattleSim.pilot_marker_pos_solo`, both of which depend only on
+    > `grid_pos` — so every pilot sharing a cell had the *same* probe point and
+    > the first one in `valid_pilots` (the leftmost drawn portrait) won every
+    > click, whichever face the player tapped. Pilots with no drawn slot (the
+    > `>5` overflow circle) still fall back to the solo offset.
   - **LOCATION mode** keeps the cell-centred hit test (`_hit_test_cell`).
 - The 전략 포인트 도넛 is **no longer locked** while a card is selected — with
   the modal gone there is nothing to protect: 턴 넘기기 during a selection just
@@ -559,7 +682,7 @@ all consult this helper so the four cost-modifier effects stay in sync.
 
 ### AI 카드 사용 애니메이션 (AiCardPlayer)
 - `AiCardPlayer.gd` — sibling of `CardPhaseManager`, runs the AI's hand
-  one card at a time inside `end_card_phase()`'s `await` chain.
+  one card at a time inside `_run_ai_turn()`'s `await` chain.
 - Each play pops the rightmost card-back from the AI hand peek
   (`HudBuilder.pop_ai_hand_card_node()`), reparents it onto `_bs.canvas`
   preserving world position+scale, then tweens it from the hand row to
@@ -576,10 +699,11 @@ all consult this helper so the four cost-modifier effects stay in sync.
   `engage_phase.is_active()` (not on the effect chain, so 결투 is covered
   too) and `await`s the `engage_finished` signal so the arena fully
   resolves before the next AI play starts.
-- `_ai_play_in_progress` blocks re-entry of `end_card_phase` and disables
-  the donut's 턴 넘기기 face (via `can_end_card_phase`). It also gates
-  `on_card_clicked` / `on_card_hovered` so the player can't pop the
-  description box mid-AI animation.
+- `_ai_play_in_progress` blocks re-entry of `_run_ai_turn`, holds the BATTLE
+  auto-tick (via `is_ai_turn_active()`) and disables the donut's 턴 넘기기
+  face (via `can_end_card_phase`). It also gates `on_card_clicked` /
+  `on_card_hovered` so the player can't pop the description box mid-AI
+  animation.
 
 ### 버리기 / 찾기 modal pick (player only)
 - `CardSelectOverlay.gd` (sibling of `CardPhaseManager`, instantiated from
@@ -629,7 +753,13 @@ all consult this helper so the four cost-modifier effects stay in sync.
   - **Full dim** covers the whole viewport on the high-priority overlay
     layer, dimming both battle and hand.
   - `ScrollContainer` at (`SEARCH_GRID_SIDE_PAD`, 220) holds a 5-column
-    layout of all `player_deck` cards. Cards are spawned with
+    layout of all `player_deck` cards, **sorted by card name** via
+    `_sorted_for_display()` (ties broken by cost) — the live `player_deck`
+    order is the draw order, and laying the grid out in it would turn the
+    tutor screen into a "what comes next" table. The sort runs on a duplicate;
+    picks are `CardData` references, so display order never affects the commit
+    (`_on_search_overlay_complete` erases by identity). `CardPileViewer` sorts
+    the same way. Cards are spawned with
     `is_player_card=false` so `Card._on_mouse_entered` short-circuits and
     its hover-brighten tween doesn't fight the `SELECTED_TINT` modulate; a
     transparent flat `Button` child captures clicks ahead of `Card._gui_input`.
@@ -639,5 +769,43 @@ all consult this helper so the four cost-modifier effects stay in sync.
     `player_deck` to `player_hand` (capped at `MAX_HAND_SIZE`) and visual
     nodes spawn via `spawn_card_node`.
 - **Phase-end gate**: `can_end_card_phase()` returns false while
-  `card_select_overlay.is_active()` so the player can't 단계 넘기기 their
+  `card_select_overlay.is_active()` so the player can't 턴 넘기기 their
   way out of an unfinished pick.
+
+### Deck / Discard 목록 열람 (CardPileViewer)
+`CardPileViewer.gd` — sibling of `CardPhaseManager`, created in
+`BattleSim._ready()` and owning a `CanvasLayer` at **layer 12** (above the
+버리기/찾기 overlay's 10 and the targeting overlay's 11, so a list opened over
+either of them covers both).
+
+- **Entry point**: the two hand-row counters. `HudBuilder._build_hand_indicators`
+  lays a transparent flat `Button` over each `Deck` / `Discard` label
+  (`_make_pile_button`) — a `Label` is `MOUSE_FILTER_IGNORE` by class default
+  and can't take a click itself — and the press calls
+  `CardPileViewer.open(Pile.DECK | Pile.DISCARD)`.
+- **When it opens**: `CardPhaseManager.can_browse_piles()` — 작전 단계 only, and
+  not while the turn banner, the AI's play loop, a 버리기/찾기 overlay or the
+  engage arena owns the screen. `HudBuilder._update_pile_buttons()` (called from
+  `update_hud`) disables both buttons and fades the labels to
+  `PILE_LABEL_DIM_ALPHA` whenever the answer is no, so "you can't open this
+  right now" is visible rather than a dead tap.
+- **Contents**: the same 5-column `ScrollContainer` grid the 찾기 overlay uses,
+  **sorted by card name** (`_sorted_cards()`, ties broken by cost) on a
+  *duplicate* — the live pile order is never touched, and the deck's real draw
+  order is never revealed. Cards are spawned `is_player_card = false` +
+  `MOUSE_FILTER_IGNORE`: nothing in the list is selectable. An empty pile shows
+  "비어 있음" instead of a grid.
+- **Exits**: the 닫기 button (same bottom-right band as 확인/취소) or a press
+  anywhere on the dim.
+- **What it locks while open.** Three gates read `is_active()`, because the
+  overlay's dim alone is not enough:
+  `_is_player_input_blocked()` (hand dims and stops taking clicks),
+  `can_end_card_phase()` and `HudBuilder._update_cost_donuts`'s
+  `set_flip_allowed` — `CostDonut` listens on `_input`, which runs **before**
+  GUI picking, so a tap on the donut would otherwise flip and end the turn
+  straight through the dim. `open()` / `close()` call
+  `highlight_affordable_cards()` (which tail-calls `_apply_hand_dim_state()`)
+  and `hud.update_hud()` so all three re-evaluate on both edges.
+- A card selected in hand **stays selected** through a browse — peeking at what
+  is left in the deck before committing is the point, and the targeting
+  overlay's 확인/취소 row simply sits under the dim until the list closes.

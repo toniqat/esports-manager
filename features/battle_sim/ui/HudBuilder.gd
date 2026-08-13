@@ -89,6 +89,12 @@ const DONUT_DEFAULT_MAX := 8
 var _player_slots: Array = []   # team 0, on the left
 var _enemy_slots:  Array = []   # team 1, on the right
 
+# ── Deck / Discard 카운터 히트 버튼 ───────────────────────────────────────────
+# 카운터 라벨 위에 얹힌 투명 버튼. 누르면 CardPileViewer 가 그 더미의 카드를
+# 목록으로 펼친다 (작전 단계 한정 — _update_pile_buttons 가 활성 상태를 관리).
+var _btn_deck_view:    Button = null
+var _btn_discard_view: Button = null
+
 # ── Center labels ────────────────────────────────────────────────────────────
 var _lbl_time: Label = null
 var _lbl_total_score: Label = null
@@ -128,6 +134,8 @@ func build_ui() -> void:
 # so we centre the labels vertically across that same band.
 const HAND_INDICATOR_FONT       := 22
 const HAND_INDICATOR_TITLE_COL  := Color(0.85, 0.85, 0.85)
+## 목록을 열 수 없는 상태에서 카운터 라벨에 씌우는 알파.
+const PILE_LABEL_DIM_ALPHA      := 0.45
 func _build_hand_indicators() -> void:
 	var hand_y: float = _bs.BS_HAND_CENTER.y
 	var hand_h: float = Card.CARD_H
@@ -164,6 +172,52 @@ func _build_hand_indicators() -> void:
 	_bs.lbl_discard_count.position = Vector2(screen_w - margin + inset, hand_y)
 	_bs.lbl_discard_count.size     = Vector2(w, hand_h)
 	_bs.canvas.add_child(_bs.lbl_discard_count)
+
+	# 두 카운터는 눌러서 해당 더미의 카드 목록을 펼치는 버튼이기도 하다.
+	# Label 은 기본 MOUSE_FILTER_IGNORE 라 클릭을 받지 못하므로, 라벨 rect 를
+	# 그대로 덮는 투명 Button 을 얹어 입력만 가져간다.
+	_btn_deck_view = _make_pile_button(_bs.lbl_deck_count,
+			CardPileViewer.Pile.DECK)
+	_btn_discard_view = _make_pile_button(_bs.lbl_discard_count,
+			CardPileViewer.Pile.DISCARD)
+	_update_pile_buttons()
+
+
+# 카운터 라벨 위에 얹는 투명 히트 버튼. flat + alpha 0 이라 라벨의 생김새는
+# 그대로 두고 클릭만 가로챈다.
+func _make_pile_button(anchor: Label, which: int) -> Button:
+	var b := Button.new()
+	b.flat = true
+	b.focus_mode = Control.FOCUS_NONE
+	b.modulate = Color(1, 1, 1, 0)
+	b.position = anchor.position
+	b.size = anchor.size
+	b.pressed.connect(func() -> void: _on_pile_button_pressed(which))
+	_bs.canvas.add_child(b)
+	return b
+
+
+func _on_pile_button_pressed(which: int) -> void:
+	if _bs.card_pile_viewer == null:
+		return
+	if _bs.card_phase == null or not _bs.card_phase.can_browse_piles():
+		return
+	_bs.card_pile_viewer.open(which)
+
+
+# 열람이 불가능한 상태(BATTLE 진행 중, 상대 차례, 다른 오버레이 활성)에서는
+# 버튼을 비활성화하고 라벨을 흐리게 해 "지금은 못 연다"를 보여 준다.
+func _update_pile_buttons() -> void:
+	var can: bool = _bs.card_phase != null and _bs.card_phase.can_browse_piles()
+	var label_alpha: float = 1.0 if can else PILE_LABEL_DIM_ALPHA
+	if _btn_deck_view != null:
+		_btn_deck_view.disabled = not can
+	if _btn_discard_view != null:
+		_btn_discard_view.disabled = not can
+	if _bs.lbl_deck_count != null:
+		_bs.lbl_deck_count.modulate = Color(1, 1, 1, label_alpha)
+	if _bs.lbl_discard_count != null:
+		_bs.lbl_discard_count.modulate = Color(1, 1, 1, label_alpha)
 
 
 # ── Top panel: 5 player slots | center (time + total score) | 5 enemy slots ──
@@ -515,6 +569,7 @@ func update_hud() -> void:
 	# updated by effect handlers for diagnostics but renders nowhere.
 	var in_card_phase := _bs.game_phase == GameEnums.BattlePhase.CARD_PHASE
 	_update_cost_donuts(in_card_phase)
+	_update_pile_buttons()
 	_update_pilot_boards()
 	update_time_label()
 
@@ -527,8 +582,12 @@ func _update_cost_donuts(in_card_phase: bool) -> void:
 	if _bs.cost_donut_enemy != null:
 		_bs.cost_donut_enemy.set_value(_bs.ai_cost, maxv)
 	if _bs.cost_donut != null:
+		# Deck / Discard 목록이 열려 있으면 플립도 막는다 — CostDonut._input 은
+		# GUI 픽보다 먼저 돌아 열람 딤을 뚫고 눌린다.
+		var browsing: bool = _bs.card_pile_viewer != null \
+				and _bs.card_pile_viewer.is_active()
 		_bs.cost_donut.set_value(_bs.player_cost, maxv)
-		_bs.cost_donut.set_flip_allowed(in_card_phase)
+		_bs.cost_donut.set_flip_allowed(in_card_phase and not browsing)
 		_bs.cost_donut.set_end_enabled(in_card_phase
 				and _bs.card_phase.can_end_card_phase())
 

@@ -54,7 +54,14 @@ Creates UI inside `_bs.canvas` (a CanvasLayer added to BattleSim):
   `lbl_deck_count` (left, "Deck\n10") and `lbl_discard_count` (right,
   "Discard\n0"). CardPhaseManager updates the text on every draw / play and
   tweens the counts during a deck/discard reshuffle. Built by
-  `_build_hand_indicators()`. The gutter is **not** `BS_HAND_AREA_MARGIN` —
+  `_build_hand_indicators()`. **Both counters are also buttons**: a transparent
+  flat `Button` (`_make_pile_button`) covers each label — a `Label` is
+  `MOUSE_FILTER_IGNORE` by class default and takes no clicks of its own — and
+  opens `CardPileViewer` on that pile. `_update_pile_buttons()` runs from
+  `update_hud()` and gates both on `CardPhaseManager.can_browse_piles()`
+  (작전 단계 only), fading the labels to `PILE_LABEL_DIM_ALPHA` while disabled.
+  See `card_phase/README.md` → Deck / Discard 목록 열람. The gutter is
+  **not** `BS_HAND_AREA_MARGIN` —
   `BS_HAND_WIDTH_SCALE` widens the card row past it, so the gutter is derived
   as `min(BS_HAND_AREA_MARGIN, (screen_w − BS_HAND_WIDTH) / 2)` (89px at 1080)
   and the font shrinks with it (22 → 20) so "Discard" still fits and no card
@@ -69,10 +76,12 @@ Creates UI inside `_bs.canvas` (a CanvasLayer added to BattleSim):
   `play_turn_announce(is_player)` sweeps a 110-px-tall coloured bar in
   from the centre with the message "당신의 차례" (blue) or "상대 차례"
   (red), holds, then fades out. Awaitable; `CardPhaseManager.start_card_phase`
-  blocks the player hand on the player banner, `end_card_phase` runs the
-  enemy banner before any AI plays unfold. The on-screen battle log was
-  removed; `_bs.last_log` is still updated by effect handlers but renders
-  nowhere.
+  blocks the player hand on the player banner, and
+  `CardPhaseManager._run_ai_turn` runs the enemy banner **when the AI's own
+  작전 점수 reaches `PHASE_THRESHOLD`** — not when the player passes the turn.
+  Passing the turn (`end_card_phase`) shows no banner at all. The on-screen
+  battle log was removed; `_bs.last_log` is still updated by effect handlers
+  but renders nowhere.
 
 Buttons removed: **Next Turn**, **Auto Play** and the rectangular
 **단계 넘기기** button are all gone — BATTLE auto-ticks every
@@ -108,7 +117,10 @@ clears it vertically.
    re-winds counter-clockwise (`_sweep` tweens `ratio*TAU → -TAU`) while the
    face swaps from the number to "턴 넘기기".
 2. tap it again → `end_turn_pressed` fires (only while `set_end_enabled(true)`;
-   a disabled face renders grey and swallows the press).
+   a disabled face renders grey and swallows the press). `set_end_enabled`
+   repaints the caption as well as the ring — playing a 0-cost card arms the
+   button without changing the value, so a redraw alone would leave a white
+   ring under a grey "턴 넘기기".
 3. tap anywhere else → flips straight back to the point readout. That press is
    deliberately left unhandled so whatever was actually clicked still reacts.
 
@@ -118,8 +130,13 @@ outside tap. Presses landing inside the donut are consumed with
 `set_input_as_handled()`.
 
 State setters driven from `HudBuilder._update_cost_donuts()`:
-`set_value(cost, PHASE_THRESHOLD)`, `set_flip_allowed(in_card_phase)` (turning
-it off un-flips), `set_end_enabled(can_end_card_phase())`. `set_locked(…)`
+`set_value(cost, PHASE_THRESHOLD)`,
+`set_flip_allowed(in_card_phase and not card_pile_viewer.is_active())` (turning
+it off un-flips — the pile-viewer clause is load-bearing because `CostDonut`
+listens on `_input`, which runs ahead of GUI picking and would otherwise be
+tappable straight through the 열람 dim), `set_end_enabled(can_end_card_phase())` — which is true once
+the player has played **one card** this 작전 단계, or immediately when nothing
+in hand is playable (see `card_phase/README.md`). `set_locked(…)`
 still exists on `CostDonut` but **nothing calls it any more** — targeting stopped
 being modal, so there is no state that needs the flip blocked. The donut's y is
 still derived from `CardTargetingOverlay.BTN_HAND_GAP + BTN_H` so it keeps the

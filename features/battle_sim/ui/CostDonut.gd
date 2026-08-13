@@ -111,6 +111,10 @@ func set_end_enabled(enabled: bool) -> void:
 	if _end_enabled == enabled:
 		return
 	_end_enabled = enabled
+	# The caption's colour is part of the enabled/disabled read, and playing a
+	# 0-cost card flips this without touching the value — so the label has to be
+	# repainted here or the face stays grey on an armed button.
+	_refresh_label()
 	queue_redraw()
 
 

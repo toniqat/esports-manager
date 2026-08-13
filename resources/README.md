@@ -83,11 +83,22 @@ subtract from `shield` first, then `hp`. Cleared on every 본진 복귀 path:
 sized by `shield / max_hp` so the buff is visible on the field.
 
 UI animation fields (`anim_prev_grid_pos`, `anim_move_t/dur`, `anim_shake_t/dur`,
-`anim_recall_phase/t/dur/orig`) are mutated by `BattleSim.anim_pilot_*` helpers
-and read only by `BattleRenderer` — the simulation never reads them.
+`anim_recall_phase/t/dur/orig`, `anim_death_phase/t/dur/cell`) are mutated by
+`BattleSim.anim_pilot_*` helpers and read only by `BattleRenderer` — the
+simulation never reads them. The recall sequence always plays both halves
+(fade-out at the old cell → fade-in at HQ), since a 복귀 never removes the pilot
+from the field; the `anim_death_*` group is what keeps a killed pilot on screen
+(dimmed, then fading upward) after `alive` has already flipped to false.
 
 ### TurretData.gd
 In-battle turret state — see `features/battle_sim/README.md`.
+
+`anim_hit_t` / `anim_hit_dur` are the 피격 연출 timer, set by
+`BattleSim.anim_turret_hit` and consumed by `BattleSim._advance_turret_animations`.
+Like the `PilotData.anim_*` group the simulation never reads them, but the
+consumer differs: the shake/flash is written onto the turret's `Building` node
+(BattleSim owns that), and only the HP-bar offset goes through `BattleRenderer`
+via `BattleSim.turret_hit_offset(td)`.
 
 ### PlayerData.gd
 `class_name PlayerData`, extends `Resource`.

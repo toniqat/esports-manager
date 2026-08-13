@@ -62,6 +62,29 @@ const ANIM_RECALL_FADE_IN_DUR  := 0.25
 const ANIM_RECALL_RISE_PX      := 110.0
 ## Damage shake horizontal amplitude in px (decays linearly to 0 across the duration).
 const ANIM_SHAKE_AMP_PX        := 6.0
+## 사망 연출 1단계 — 쓰러진 자리에서 딤드된 채 버티는 시간.
+const ANIM_DEATH_HOLD_DUR      := 1.0
+## 사망 연출 2단계 — 투명해지며 위로 떠오르는 시간.
+const ANIM_DEATH_FADE_DUR      := 0.45
+## 사망 연출 2단계에서 떠오르는 높이(px).
+const ANIM_DEATH_RISE_PX       := 90.0
+## 사망 연출 1단계의 딤드 색 배율 (초상 / 링에 함께 곱해진다).
+const ANIM_DEATH_TINT          := Color(0.34, 0.34, 0.40, 1.0)
+## 포탑 피격 연출 — 흔들림 + 붉은 섬광이 감쇠하며 사라지기까지의 시간(s).
+const ANIM_TURRET_HIT_DUR      := 0.26
+## 포탑 피격 흔들림의 좌우 진폭(px). 파일럿보다 크게 흔들어 준다 —
+## 포탑 스프라이트가 타일만 하기 때문에 6px 로는 눈에 띄지 않는다.
+const ANIM_TURRET_HIT_AMP_PX   := 9.0
+## 피격 순간 포탑 스프라이트에 곱하는 색. 연출이 끝나면 흰색으로 돌아온다.
+const ANIM_TURRET_HIT_TINT     := Color(1.0, 0.42, 0.36, 1.0)
+
+# ─── 피해 수치 팝업 (공격 카드 전용) ─────────────────────────────────────────
+## 팝업이 화면에 머무는 시간(s).
+const DMG_POPUP_DUR      := 0.95
+## 팝업이 떠오르는 총 높이(px).
+const DMG_POPUP_RISE_PX  := 46.0
+## 연속 공격처럼 한 번에 여러 번 터질 때 팝업 사이에 주는 시작 지연(s).
+const DMG_POPUP_STAGGER  := 0.18
 
 # ─── Animation timing & easing consts ─────────────────────────────────────────
 ## Duration (s) for normal hand relayout (draw, play).
@@ -391,7 +414,9 @@ func _process(delta: float) -> void:
 		hud.update_time_label()
 	# Drive pilot UI animations (move tween, damage shake, recall fade) every
 	# frame regardless of phase so animations finish during CARD_PHASE too.
-	if _advance_pilot_animations(delta):
+	var pilot_anim: bool = _advance_pilot_animations(delta)
+	var turret_anim: bool = _advance_turret_animations(delta)
+	if pilot_anim or turret_anim:
 		renderer.queue_redraw()
 
 
@@ -461,6 +486,19 @@ func _advance_pilot_animations(delta: float) -> bool:
 	var any_active := false
 	for raw in pilots:
 		var p := raw as PilotData
+		if p.anim_death_phase != 0:
+			p.anim_death_t += delta
+			if p.anim_death_t >= p.anim_death_dur:
+				if p.anim_death_phase == 1:
+					# 딤드 대기 끝 → 투명해지며 상승.
+					p.anim_death_phase = 2
+					p.anim_death_t     = 0.0
+					p.anim_death_dur   = ANIM_DEATH_FADE_DUR
+				else:
+					p.anim_death_phase = 0
+					p.anim_death_t     = 0.0
+					p.anim_death_dur   = 0.0
+			any_active = true
 		if p.anim_move_dur > 0.0:
 			p.anim_move_t += delta
 			if p.anim_move_t >= p.anim_move_dur:
@@ -507,22 +545,127 @@ func anim_pilot_shake(p: PilotData) -> void:
 
 
 # Recall sequence: fade out + rise at orig_cell, then fade in + descend at HQ.
+#
+# 복귀는 전장을 비우지 않으므로 두 반쪽이 늘 이어 붙는다 — 저HP / 위치 이탈
+# 복귀와 복귀 card 가 같은 연출을 쓴다. (파일럿이 전장에서 사라지는 사유는
+# 사망뿐이고, 그건 anim_pilot_death 가 맡는다.)
 func anim_pilot_recall(p: PilotData, orig_cell: Vector2i) -> void:
-	p.anim_move_dur     = 0.0
-	p.anim_move_t       = 0.0
-	p.anim_recall_orig  = orig_cell
-	p.anim_recall_phase = 1
-	p.anim_recall_t     = 0.0
-	p.anim_recall_dur   = ANIM_RECALL_FADE_OUT_DUR
+	p.anim_move_dur       = 0.0
+	p.anim_move_t         = 0.0
+	p.anim_recall_orig    = orig_cell
+	p.anim_recall_phase   = 1
+	p.anim_recall_t       = 0.0
+	p.anim_recall_dur     = ANIM_RECALL_FADE_OUT_DUR
 
 
 # Respawn: skip phase 1; just fade in + descend at the pilot's HQ cell.
 func anim_pilot_respawn(p: PilotData) -> void:
-	p.anim_move_dur     = 0.0
-	p.anim_move_t       = 0.0
-	p.anim_recall_phase = 2
-	p.anim_recall_t     = 0.0
-	p.anim_recall_dur   = ANIM_RECALL_FADE_IN_DUR
+	p.anim_move_dur       = 0.0
+	p.anim_move_t         = 0.0
+	p.anim_recall_phase   = 2
+	p.anim_recall_t       = 0.0
+	p.anim_recall_dur     = ANIM_RECALL_FADE_IN_DUR
+	# 쓰러진 자리에 남아 있던 시신 연출은 부활과 함께 걷는다.
+	anim_pilot_death_clear(p)
+
+
+# 전사 연출 — 쓰러진 셀에서 ANIM_DEATH_HOLD_DUR 동안 딤드된 채 남아 있다가
+# 투명해지며 위로 떠올라 전장에서 사라진다. 로직상 파일럿은 이미 alive == false
+# 이므로 이 연출은 순수 UI다: 렌더러가 anim_death_phase 를 보고 계속 그려 준다.
+#
+# 사망 판정을 내리는 모든 경로(전장 교전 / 전진 카드 / 공격 카드 / 교전 아레나)
+# 에서 불러야 한다 — 안 부르면 예전처럼 파일럿이 그 프레임에 툭 사라진다.
+func anim_pilot_death(p: PilotData) -> void:
+	p.anim_move_dur       = 0.0
+	p.anim_move_t         = 0.0
+	p.anim_recall_phase   = 0
+	p.anim_death_cell     = p.grid_pos
+	p.anim_death_phase    = 1
+	p.anim_death_t        = 0.0
+	p.anim_death_dur      = ANIM_DEATH_HOLD_DUR
+
+
+func anim_pilot_death_clear(p: PilotData) -> void:
+	p.anim_death_phase = 0
+	p.anim_death_t     = 0.0
+	p.anim_death_dur   = 0.0
+
+
+# ─── Turret animation driver ─────────────────────────────────────────────────
+# 포탑 스프라이트는 렌더러가 그리는 게 아니라 BattleField/BuildingLayer 아래의
+# `Building` 노드다. 그래서 피격 연출은 여기서 직접 그 노드의 position/modulate
+# 를 흔든다 — 렌더러는 같은 `TurretData.anim_hit_*` 를 읽어 HP 바만 함께 흔든다.
+# 파괴는 예전대로 `Building.queue_free()` 라 살아 있는 피격에만 연출이 붙는다.
+
+## Building 노드의 기본 위치(셀 좌표 → 흔들리기 전 position). 연출 도중 다시
+## 맞으면 진행 중인 오프셋을 기준으로 삼지 않도록 **처음 한 번만** 채운다.
+var _turret_home_pos: Dictionary = {}
+
+
+## 포탑이 피해를 입었을 때 호출한다 (파괴된 타격은 제외 — 스프라이트가 사라진다).
+func anim_turret_hit(td: TurretData) -> void:
+	if td == null:
+		return
+	td.anim_hit_t   = 0.0
+	td.anim_hit_dur = ANIM_TURRET_HIT_DUR
+
+
+# Returns true while at least one turret is still playing its hit reaction.
+func _advance_turret_animations(delta: float) -> bool:
+	var any_active := false
+	for raw in turrets:
+		var td := raw as TurretData
+		if td == null or td.anim_hit_dur <= 0.0:
+			continue
+		td.anim_hit_t += delta
+		var finished: bool = td.anim_hit_t >= td.anim_hit_dur
+		if finished:
+			td.anim_hit_t   = 0.0
+			td.anim_hit_dur = 0.0
+		_apply_turret_hit_visual(td, finished)
+		any_active = true
+	return any_active
+
+
+# Pushes the current frame of the hit reaction onto the Building node: a
+# decaying horizontal jitter plus a red flash that fades back to white.
+func _apply_turret_hit_visual(td: TurretData, finished: bool) -> void:
+	if building_registry == null:
+		return
+	var b: Building = building_registry.get_at(td.grid_pos)
+	if b == null:
+		return
+	if not _turret_home_pos.has(td.grid_pos):
+		_turret_home_pos[td.grid_pos] = b.position
+	var home: Vector2 = _turret_home_pos[td.grid_pos] as Vector2
+	if finished:
+		b.position = home
+		b.modulate = Color.WHITE
+		return
+	var t: float = clampf(td.anim_hit_t / td.anim_hit_dur, 0.0, 1.0)
+	var decay: float = 1.0 - t
+	b.position = home + Vector2(sin(t * TAU * 3.0) * ANIM_TURRET_HIT_AMP_PX * decay, 0.0)
+	b.modulate = Color.WHITE.lerp(ANIM_TURRET_HIT_TINT, decay)
+
+
+## 재시작 — 연출 도중이었던 포탑 스프라이트를 기본 위치 / 흰색으로 되돌린다.
+## `turrets` 는 곧바로 비워지므로 남은 연출을 소모해 줄 주체가 사라진다.
+func _clear_turret_hit_visuals() -> void:
+	for raw in turrets:
+		var td := raw as TurretData
+		if td == null:
+			continue
+		td.anim_hit_t   = 0.0
+		td.anim_hit_dur = 0.0
+		_apply_turret_hit_visual(td, true)
+
+
+## 포탑 피격 오프셋 — 렌더러가 HP 바를 스프라이트와 같이 흔들 때 읽는다.
+func turret_hit_offset(td: TurretData) -> Vector2:
+	if td == null or td.anim_hit_dur <= 0.0:
+		return Vector2.ZERO
+	var t: float = clampf(td.anim_hit_t / td.anim_hit_dur, 0.0, 1.0)
+	return Vector2(sin(t * TAU * 3.0) * ANIM_TURRET_HIT_AMP_PX * (1.0 - t), 0.0)
 
 # ─── Public helpers (used by modules) ────────────────────────────────────────
 func cell_center(pos: Vector2i) -> Vector2:
@@ -597,6 +740,9 @@ func _on_restart_pressed() -> void:
 	phase_cost_inc_p = 0; phase_cost_inc_ai = 0
 	phase_draw_discount_p = 0; phase_draw_discount_ai = 0
 	temp_zone_overrides.clear()
+	_clear_turret_hit_visuals()
+	if renderer != null:
+		renderer.clear_popups()
 	for node in player_card_nodes:
 		if is_instance_valid(node):
 			node.queue_free()

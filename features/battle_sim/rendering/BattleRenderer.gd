@@ -11,6 +11,19 @@ const EMPHASIS_SCALE_MIN: float      = 1.06   # 최소 확대 배율
 const EMPHASIS_SCALE_MAX: float      = 1.14   # 최대 확대 배율
 
 
+# ─── 피해 수치 팝업 (공격 카드 전용) ─────────────────────────────────────────
+# 공격 카드가 대상 파일럿 위에 남기는 짧은 플로팅 텍스트. 각 항목은
+#   {"pos": Vector2, "text": String, "color": Color, "t": float, "delay": float}
+# 이고 `pos` 는 **띄운 순간의 마커 좌표를 그대로 고정**한다 — 대상이 그 사이
+# 쓰러지거나 밀려나도 숫자가 따라다니지 않게 하기 위함.
+var _popups: Array = []
+
+const POPUP_MISS_COLOR   := Color(0.78, 0.80, 0.86)
+const POPUP_DAMAGE_COLOR := Color(1.00, 0.42, 0.36)
+const POPUP_SHIELD_COLOR := Color(0.45, 0.85, 1.00)
+const POPUP_FONT_SIZE_BASE := 26
+
+
 func _process(delta: float) -> void:
 	# Targeting/Selection-preview 중 강조 마커가 살아있는 동안만 펄스가 돌도록
 	# 시간을 누적하고 매 프레임 재draw 한다. 비활성 상태에서는 시간을 0으로
@@ -21,6 +34,78 @@ func _process(delta: float) -> void:
 		queue_redraw()
 	else:
 		_emphasis_time = 0.0
+	if _advance_popups(delta):
+		queue_redraw()
+
+
+## Ticks every live popup and drops the expired ones. Returns true while at
+## least one is still on screen so the caller keeps redrawing.
+func _advance_popups(delta: float) -> bool:
+	if _popups.is_empty():
+		return false
+	var keep: Array = []
+	for raw in _popups:
+		var e: Dictionary = raw
+		e["t"] = float(e["t"]) + delta
+		if float(e["t"]) < float(e["delay"]) + _bs.DMG_POPUP_DUR:
+			keep.append(e)
+	_popups = keep
+	return true
+
+
+## Floats `text` above `p`'s currently-drawn marker. `delay` staggers the
+## members of a 연속 공격 chain so several numbers off the same swing don't
+## stack on one pixel.
+func spawn_pilot_popup(p: PilotData, text: String, color: Color,
+		delay: float = 0.0) -> void:
+	if p == null:
+		return
+	var markers: Dictionary = _build_pilot_render_layout()
+	var pos: Vector2 = markers[p] as Vector2 if markers.has(p) \
+			else _bs.pilot_marker_pos_solo(p)
+	_popups.append({
+		"pos":   pos,
+		"text":  text,
+		"color": color,
+		"t":     0.0,
+		"delay": max(0.0, delay),
+	})
+	queue_redraw()
+
+
+## Drops every in-flight popup. Called on restart so numbers from the previous
+## match don't float over the fresh board.
+func clear_popups() -> void:
+	_popups.clear()
+	queue_redraw()
+
+
+func _draw_pilot_popups() -> void:
+	if _popups.is_empty():
+		return
+	var font := ThemeDB.fallback_font
+	var fsz: int = int(round(POPUP_FONT_SIZE_BASE * HexGrid.DISPLAY_SCALE))
+	for raw in _popups:
+		var e: Dictionary = raw
+		var local_t: float = float(e["t"]) - float(e["delay"])
+		if local_t < 0.0:
+			continue
+		var k: float = clampf(local_t / _bs.DMG_POPUP_DUR, 0.0, 1.0)
+		# 위로 갈수록 감속하며 떠오르고, 뒷부분에서만 흐려진다.
+		var rise: float = _bs.DMG_POPUP_RISE_PX * (1.0 - pow(1.0 - k, 2.0))
+		var alpha: float = 1.0 if k < 0.6 else 1.0 - (k - 0.6) / 0.4
+		var txt: String = String(e["text"])
+		var tsz := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz)
+		var base: Vector2 = (e["pos"] as Vector2) \
+				+ Vector2(-tsz.x * 0.5, -PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE - rise)
+		# 검은 외곽선 먼저 — 전장 타일 위에서도 숫자가 읽히도록.
+		var outline := _alpha_mul(Color(0.0, 0.0, 0.0), alpha * 0.85)
+		for ox in [-2.0, 2.0]:
+			for oy in [-2.0, 2.0]:
+				draw_string(font, base + Vector2(ox, oy), txt,
+						HORIZONTAL_ALIGNMENT_LEFT, -1, fsz, outline)
+		draw_string(font, base, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz,
+				_alpha_mul(e["color"] as Color, alpha))
 
 
 func _draw() -> void:
@@ -58,6 +143,8 @@ func _draw() -> void:
 	# marker disc stacked on each other.
 	if draw_dim:
 		_draw_targeting_pilot_dim()
+	# 피해 수치 / MISS 는 무엇에도 가려지면 안 되므로 맨 마지막.
+	_draw_pilot_popups()
 
 
 # ─── Per-frame pilot render layout cache ─────────────────────────────────────
@@ -108,15 +195,15 @@ func _draw_pilot_groups() -> void:
 			_draw_cell_badge(pv, t0.size(), t1.size())
 
 
-# Group alive pilots by their *render* cell (not grid_pos): a pilot in recall
-# fade-out is drawn at the cell they came from, so they don't crowd the HQ
-# layout until the fade-in phase starts. Returns [team0_dict, team1_dict].
+# Group renderable pilots by their *render* cell (not grid_pos): a pilot in
+# recall fade-out is drawn at the cell they came from, so they don't crowd the
+# HQ layout until the fade-in phase starts. Returns [team0_dict, team1_dict].
 func _group_pilots_by_render_cell() -> Array:
 	var cell_team0: Dictionary = {}
 	var cell_team1: Dictionary = {}
 	for raw in _bs.pilots:
 		var p := raw as PilotData
-		if not p.alive:
+		if not _is_renderable(p):
 			continue
 		var rcell := _render_cell(p)
 		if p.team == 0:
@@ -197,7 +284,9 @@ func _draw_turret_hp_bar(td: TurretData) -> void:
 		return
 	if td.tier == 2 and _bs.sim_core.t1_alive_in_lane(td.team, td.lane):
 		return
-	var center := _bs.cell_center(td.grid_pos)
+	# 피격 중에는 HP 바도 스프라이트와 **같은 오프셋**으로 흔들린다 — 둘이
+	# 어긋나면 바만 제자리에 붙어 있어 연출이 겉돈다.
+	var center := _bs.cell_center(td.grid_pos) + _bs.turret_hit_offset(td)
 	var hg: HexGrid = _bs.hex_grid
 	var bw: float = hg.hex_size * 1.1; var bh: float = 6.0 * HexGrid.DISPLAY_SCALE
 	var bx: float = center.x - bw * 0.5; var by_: float = center.y - hg.hex_height * 0.38
@@ -284,23 +373,41 @@ func _draw_pilot_team(cell: Vector2i, pilots: Array, is_enemy: bool) -> void:
 			var off := _pilot_anim_offset(pilot)
 			var alpha := _pilot_anim_alpha(pilot)
 			var pos := base_pos + off
-			_draw_arrow_to_tile(pos, tile_center, radius, team_color, alpha)
+			# 쓰러진 파일럿은 팀 색까지 함께 죽여 딤드로 읽히게 한다. 초상 자체의
+			# 딤은 _draw_pilot_circle 이 같은 배율로 건다.
+			var marker_color: Color = team_color
+			if pilot.anim_death_phase != 0:
+				marker_color = team_color * _bs.ANIM_DEATH_TINT
+			_draw_arrow_to_tile(pos, tile_center, radius, marker_color, alpha)
 			_draw_pilot_circle(pilot, pos, radius, fsize,
-					team_color, is_enemy, alpha)
+					marker_color, is_enemy, alpha)
 
 
 # ─── Animation helpers ───────────────────────────────────────────────────────
+
+## A pilot is drawn while they are alive **or** while the 전사 연출 (dim → fade
+## + rise at the cell they fell on) is still playing. That animation runs after
+## `alive` has already flipped to false, which is exactly why this is not a
+## plain `p.alive` test — without it a killed pilot vanished on the same frame
+## the damage landed. 복귀 연출은 여기 걸릴 일이 없다: 복귀한 파일럿은 전장을
+## 뜨지 않으므로 계속 `alive` 다.
+func _is_renderable(p: PilotData) -> bool:
+	return p.alive or p.anim_death_phase != 0
+
 
 # Render cell: where this pilot should be drawn this frame. During recall
 # phase 1 (fade-out) the pilot still appears at the cell they came from even
 # though grid_pos has already been snapped to HQ. During phase 2 (fade-in)
 # the pilot is drawn at their HQ even if the sim has already advanced them
 # away — phase 2 is the "arrive at HQ" descent and must visually anchor there.
+# A pilot playing the 전사 연출 stays on the cell they fell on.
 func _render_cell(p: PilotData) -> Vector2i:
 	if p.anim_recall_phase == 1:
 		return p.anim_recall_orig
 	if p.anim_recall_phase == 2:
 		return _bs.PLAYER_HQ_POS if p.team == 0 else _bs.ENEMY_HQ_POS
+	if p.anim_death_phase != 0:
+		return p.anim_death_cell
 	return p.grid_pos
 
 
@@ -308,6 +415,13 @@ func _render_cell(p: PilotData) -> Vector2i:
 # damage shake. Applied on top of the per-cell layout position.
 func _pilot_anim_offset(p: PilotData) -> Vector2:
 	var off := Vector2.ZERO
+	if p.anim_death_phase == 2:
+		# 전사 2단계 — 시신이 투명해지며 위로 떠오른다.
+		var td: float = clamp(p.anim_death_t / p.anim_death_dur, 0.0, 1.0)
+		off.y -= _bs.ANIM_DEATH_RISE_PX * td
+		return off
+	if p.anim_death_phase == 1:
+		return off   # 딤드 대기 중에는 제자리
 	if p.anim_recall_phase == 1:
 		var t: float = clamp(p.anim_recall_t / p.anim_recall_dur, 0.0, 1.0)
 		off.y -= _bs.ANIM_RECALL_RISE_PX * t
@@ -329,6 +443,10 @@ func _pilot_anim_offset(p: PilotData) -> Vector2:
 
 func _pilot_anim_alpha(p: PilotData) -> float:
 	var alpha: float = 1.0
+	if p.anim_death_phase == 1:
+		return 1.0
+	if p.anim_death_phase == 2:
+		return 1.0 - clamp(p.anim_death_t / p.anim_death_dur, 0.0, 1.0)
 	if p.anim_recall_phase == 1:
 		var t: float = clamp(p.anim_recall_t / p.anim_recall_dur, 0.0, 1.0)
 		alpha = 1.0 - t
@@ -355,6 +473,11 @@ func _draw_targeting_underlays() -> void:
 	if to.mode == CardTargetingOverlay.Mode.PREVIEW:
 		for raw in to.area_cells.keys():
 			range_set[raw as Vector2i] = true
+	elif to.range_unlimited:
+		# 사거리 제한 없음(복귀 / 보호 / 약탈) — 전장 전체를 노랗게 덮으면
+		# 유효 대상 표시가 묻히므로 채움 자체를 생략한다. 딤도 없다
+		# (_build_range_set 이 전 셀을 in-range 로 돌려준다).
+		pass
 	elif to.range_caster != null and to.range_radius > 0:
 		# Same shape as CardTargetingOverlay.is_in_range_cell — duplicated here
 		# so the renderer doesn't need to call into the overlay per cell.
@@ -418,6 +541,10 @@ func _build_range_set() -> Dictionary:
 	if to.mode == CardTargetingOverlay.Mode.PREVIEW:
 		for raw in to.area_cells.keys():
 			range_set[raw as Vector2i] = true
+	elif to.range_unlimited:
+		# 전장 전체가 사거리 — 딤이 하나도 올라가지 않도록 전 셀을 넣는다.
+		for raw in _bs.tiles_layer.get_used_cells():
+			range_set[raw as Vector2i] = true
 	elif to.range_caster != null and to.range_radius > 0:
 		var caster_cell: Vector2i = to.range_caster.grid_pos
 		var max_r: int = to.range_radius
@@ -477,6 +604,16 @@ func _pilot_marker_pos(p: PilotData) -> Vector2:
 	if _pilot_render_layout.has(p):
 		return _pilot_render_layout[p] as Vector2
 	return _bs.pilot_marker_pos_solo(p)
+
+
+## Fresh `PilotData → Vector2` marker map — the same per-cell stack solve
+## `_draw()` runs. Public because CardTargetingOverlay's PILOT hit test needs
+## the *drawn* marker of each pilot: several pilots sharing a cell each get
+## their own slot, and aiming at the tile centre instead can only ever resolve
+## to one of them. Rebuilt on call (10 pilots) so a click never reads a layout
+## from before the last move.
+func pilot_marker_positions() -> Dictionary:
+	return _build_pilot_render_layout()
 
 
 # 타겟 가능한 파일럿(=강조)에는 약간 커지는 펄스 배율을 반환한다. 대상이
@@ -549,10 +686,13 @@ func _draw_pilot_circle(pilot: PilotData, pos: Vector2, radius: float,
 	# portrait) is now the sole faction marker — the previous ring directly on
 	# the portrait edge has been removed to avoid the double outline.
 	var portrait: Texture2D = PilotImages.circle_for(pilot.pilot_id)
+	# 쓰러진 파일럿의 초상은 마커 색과 같은 배율로 어두워진다.
+	var portrait_tint: Color = _bs.ANIM_DEATH_TINT if pilot.anim_death_phase != 0 \
+			else Color.WHITE
 	if portrait != null:
 		var rect := Rect2(pos.x - draw_radius, pos.y - draw_radius,
 				draw_radius * 2.0, draw_radius * 2.0)
-		draw_texture_rect(portrait, rect, false, _alpha_mul(Color.WHITE, alpha))
+		draw_texture_rect(portrait, rect, false, _alpha_mul(portrait_tint, alpha))
 	else:
 		draw_circle(pos, draw_radius, _alpha_mul(color, alpha))
 	# Circular HP ring hugging the outside of the pilot circle. Width is

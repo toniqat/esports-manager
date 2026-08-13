@@ -55,6 +55,14 @@ var anim_recall_t: float     = 0.0
 var anim_recall_dur: float   = 0.0
 var anim_recall_orig: Vector2i = Vector2i.ZERO
 
+# 사망 연출: 0 = 없음, 1 = 제자리에서 딤드된 채 대기, 2 = 투명해지며 위로 상승.
+# 로직상 파일럿은 이미 alive == false 지만, 이 타이머가 도는 동안에는 렌더러가
+# anim_death_cell 에 계속 그려 준다.
+var anim_death_phase: int    = 0
+var anim_death_t: float      = 0.0
+var anim_death_dur: float    = 0.0
+var anim_death_cell: Vector2i = Vector2i.ZERO
+
 func _init(p_role: int, p_team: int, p_pos: Vector2i, stats: Dictionary) -> void:
 	role     = p_role
 	team     = p_team

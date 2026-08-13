@@ -293,17 +293,37 @@ visual transitions. All durations fit inside the 0.5s `AUTO_PLAY_INTERVAL`.
 |---|---|---|
 | Combat / card damage | `SimulationCore` damage_map apply, `CardPhaseManager.apply_card_effect` | `anim_pilot_shake` → 0.18s horizontal jitter (decaying) |
 | Movement (free + push advance + push retreat) | `resolve_movement` (once per pilot per turn) | `anim_pilot_move(p, orig)` → 0.30s ease-out tween from `orig` cell to `grid_pos` |
-| Recall (HP-threshold or phase-end out-of-position) | `RecallSystem._teleport_home` | `anim_pilot_recall(p, orig)` → 0.20s fade-out + rise at `orig`, then 0.25s fade-in + descend at HQ |
-| Respawn | `SimulationCore.process_respawns` | `anim_pilot_respawn` → fade-in + descend at HQ only (skip phase 1) |
+| Recall — 저HP / 위치 이탈 | `RecallSystem.return_to_hq` | `anim_pilot_recall(p, orig)` → 0.20s fade-out + rise at `orig`, then 0.25s fade-in + descend at HQ. Both halves always play — the pilot never leaves the field, and it is holding still that turn, so the fade-in stays anchored at the HQ |
+| Recall — 복귀 카드 | `CardPhaseManager._effect_recall_ally` | same `anim_pilot_recall(p, orig)` sequence |
+| Respawn (사망 후 부활) | `SimulationCore.process_respawns` | `anim_pilot_respawn` → fade-in + descend at HQ only (skip phase 1); also clears any leftover 전사 연출 |
+| 사망 | `BattleSim.mark_pilot_dead` | `anim_pilot_death` → `ANIM_DEATH_HOLD_DUR` (1.0s) dimmed-in-place at the cell they fell on, then `ANIM_DEATH_FADE_DUR` (0.45s) fading out while rising `ANIM_DEATH_RISE_PX`, then off the field |
+| 공격 카드 명중 / 빗나감 | `CardPhaseManager._effect_attack` | `BattleRenderer.spawn_pilot_popup` → `-N` / `MISS` / `흡수` floating over the target's marker |
+| 포탑 피격 | `SimulationCore` turret_dmg apply (`simulate_turn` + `_apply_card_damage`), survivors only | `anim_turret_hit(td)` → `ANIM_TURRET_HIT_DUR` (0.26s) of decaying horizontal jitter (`ANIM_TURRET_HIT_AMP_PX` 9px) plus an `ANIM_TURRET_HIT_TINT` red flash fading back to white |
 
-`BattleSim._process` runs `_advance_pilot_animations(delta)` every frame and
-calls `renderer.queue_redraw()` while any timer is active. Constants live on
+`BattleSim._process` runs `_advance_pilot_animations(delta)` **and**
+`_advance_turret_animations(delta)` every frame (both, never short-circuited)
+and calls `renderer.queue_redraw()` while any timer is active. Constants live on
 `BattleSim`: `ANIM_MOVE_DUR`, `ANIM_SHAKE_DUR`, `ANIM_SHAKE_AMP_PX`,
-`ANIM_RECALL_FADE_OUT_DUR`, `ANIM_RECALL_FADE_IN_DUR`, `ANIM_RECALL_RISE_PX`.
+`ANIM_RECALL_FADE_OUT_DUR`, `ANIM_RECALL_FADE_IN_DUR`, `ANIM_RECALL_RISE_PX`,
+`ANIM_DEATH_HOLD_DUR`, `ANIM_DEATH_FADE_DUR`, `ANIM_DEATH_RISE_PX`,
+`ANIM_DEATH_TINT`, the turret trio `ANIM_TURRET_HIT_DUR` /
+`ANIM_TURRET_HIT_AMP_PX` / `ANIM_TURRET_HIT_TINT`, and the popup trio
+`DMG_POPUP_DUR` / `DMG_POPUP_RISE_PX` / `DMG_POPUP_STAGGER`.
 
-`BattleRenderer` groups pilots by `_render_cell(p)` (= `anim_recall_orig`
-during fade-out, otherwise `grid_pos`) and applies per-pilot pixel offset and
-alpha via `_pilot_anim_offset` / `_pilot_anim_alpha`.
+**포탑 연출만 렌더러 밖에 있다.** A turret's sprite is a `Building` node under
+`BattleField/BuildingLayer`, not something `BattleRenderer._draw()` paints, so
+`BattleSim._apply_turret_hit_visual` writes the shake/flash straight onto that
+node's `position` / `modulate` (base position cached per cell in
+`_turret_home_pos`, restored on the last frame and on restart via
+`_clear_turret_hit_visuals`). The renderer only mirrors the same offset onto the
+turret HP bar by reading `BattleSim.turret_hit_offset(td)`.
+
+`BattleRenderer` decides *whether* to draw a pilot with `_is_renderable(p)`
+(alive, or mid-death, or mid-recall-fade-out — the last two run after `alive`
+is already false), groups them by `_render_cell(p)` (`anim_recall_orig` during
+fade-out, `anim_death_cell` during the 전사 연출, otherwise `grid_pos`) and
+applies per-pilot pixel offset and alpha via `_pilot_anim_offset` /
+`_pilot_anim_alpha`.
 
 ---
 

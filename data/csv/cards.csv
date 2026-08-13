@@ -1,23 +1,21 @@
-id,name,cost,uses,cast_method,target,cast_range,area,keyword,effect,description
-1,전투 개시,6,1,range,caster,0,1,,engage:3,전투 개시: 9초
-2,완벽한 기회,8,1,range,caster,0,1,,engage:4,전투 개시: 12초
-3,결투,6,1,target,enemy,1,0,,duel,결투: 한 명이 처치될 때까지 (최대 15초)
-5,전투 준비,2,1,location,location,3,0,,move;cost_reduce_engage:1,"지정 위치로 이동. 다음 전투 개시 카드 비용 감소: 1"
-6,정밀 이동,0,1,location,location,1,0,,move;return_left;cost_inc_phase:1,"지정 위치로 이동. 사용 후 손패 맨 왼쪽으로 돌아오며, 이번 전투 단계에서 카드 비용 증가: 1"
-7,공격,1,1,target,enemy,1,0,,attack:1,공격: 1
-8,필중,2,1,target,enemy,1,0,,attack:1|pierce,"공격: 1, 필중"
-9,연속 공격,3,1,target,enemy,1,0,,attack:1|repeat,"공격: 1, 명중 시 이 카드 효과를 반복"
-10,저격,1,1,target,enemy,6,0,,attack:1|min_range:2,"공격: 1. 1칸 이내에 적이 있으면 사용 불가"
-11,전진,1,1,range,enemy,0,1,,advance:1,전진: 1
-12,교환,0,1,instant,hand,0,0,,draw:2;discard:2,"드로우: 2, 버리기: 2"
-13,조정,0,3,instant,hand,0,0,exhaust,draw:1;strategy:1,"드로우: 1, 전략 점수: 1"
-14,임기응변,0,3,instant,hand,0,0,exhaust,search:1,찾기: 1
-15,재빠른 사고,0,3,instant,hand,0,0,exhaust,draw:2,드로우: 2
-16,집중,0,3,instant,hand,0,0,exhaust,cost_reduce_draw_phase:1,이번 작전 단계에서 드로우하는 카드 비용 감소: 1
-17,사전 준비,2,1,instant,hand,0,0,,cost_reduce_hand:1,핸드 내에 있는 모든 카드 비용 감소: 1
-18,아드레날린,0,1,instant,hand,0,0,exhaust,draw:3;strategy:4,"드로우: 3, 전략 점수: 4"
-19,계획 살인,2,1,instant,hand,0,0,,strategy_on_kill:4,"사용 후, 이번 작전 단계에서 적을 처치했다면 전략 점수: 4"
-20,차선책,2,1,instant,hand,0,0,exhaust,exhaust_choice:2,"핸드 내 카드 두 장 선택, 해당 카드 소멸"
-21,복귀,0,1,target,ally,99,0,,recall_ally,아군을 본진으로 귀환
-22,보호,2,1,target,ally,99,0,,shield_pct:20,보호막: 아군 체력의 20%
-23,약탈,1,1,location,location,1,0,,capture_jungle:10,상대 정글 타일을 10턴 동안 점령
+id,name,cost,uses,cast_method,target,cast_range,area,keyword,effect,description,scope,pool
+1,전투 개시,6,1,range,caster,0,1,,engage:3,전투 개시: 9초,any,1
+2,완벽한 기회,8,1,range,caster,0,1,,engage:4,전투 개시: 12초,any,1
+3,결투,6,1,target,enemy,1,0,,duel,결투: 한 명이 처치될 때까지 (최대 15초),any,0
+5,전투 준비,2,1,location,location,3,0,,move;cost_reduce_engage:1,"지정 위치로 이동. 다음 전투 개시 카드 비용 감소: 1",any,1
+6,정밀 이동,0,1,location,location,1,0,,move;return_left;cost_inc_phase:1,"지정 위치로 이동. 사용 후 손패 맨 왼쪽으로 돌아오며, 이번 전투 단계에서 카드 비용 증가: 1",any,1
+7,공격,1,1,target,enemy,1,0,,attack:1,공격: 1,any,1
+8,필중,2,1,target,enemy,1,0,,attack:1|pierce,"공격: 1, 필중",any,1
+9,연속 공격,3,1,target,enemy,1,0,,attack:1|repeat,"공격: 1, 명중 시 이 카드 효과를 반복",any,1
+11,전진,1,1,range,enemy,0,1,,advance:1,전진: 1,lane,1
+12,교환,0,1,instant,hand,0,0,,draw:2;discard:2,"드로우: 2, 버리기: 2",any,1
+13,조정,0,3,instant,hand,0,0,exhaust,draw:1;strategy:1,"드로우: 1, 전략 점수: 1",any,1
+14,임기응변,0,3,instant,hand,0,0,exhaust,search:1,찾기: 1,any,1
+15,재빠른 사고,0,3,instant,hand,0,0,exhaust,draw:2,드로우: 2,any,1
+16,집중,0,3,instant,hand,0,0,exhaust,cost_reduce_draw_phase:1,이번 작전 단계에서 드로우하는 카드 비용 감소: 1,any,1
+17,사전 준비,2,1,instant,hand,0,0,,cost_reduce_hand:1,핸드 내에 있는 모든 카드 비용 감소: 1,any,1
+18,아드레날린,0,1,instant,hand,0,0,exhaust,draw:3;strategy:4,"드로우: 3, 전략 점수: 4",any,1
+19,계획 살인,2,1,instant,hand,0,0,,strategy_on_kill:4,"사용 후, 이번 작전 단계에서 적을 처치했다면 전략 점수: 4",any,1
+21,복귀,0,1,target,ally,99,0,,recall_ally,아군을 본진으로 귀환,any,1
+22,보호,2,1,target,ally,99,0,,shield_pct:20,보호막: 아군 체력의 20%,any,1
+23,약탈,1,1,location,location,99,0,,capture_jungle:10,"아군 정글과 인접한 상대 정글 타일을 10턴 동안 점령",jungle,1

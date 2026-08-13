@@ -7,7 +7,7 @@ const DB_PATH = "res://data/game.db"
 # Required columns and primary key per table
 const SCHEMAS: Dictionary = {
 	"pilots":      {"req": ["id","name","abbrev","hp","atk","heal"],           "pk": "id"},
-	"cards":       {"req": ["id","name","cost","uses","cast_method","target","cast_range","area","keyword","effect","description"], "pk": "id"},
+	"cards":       {"req": ["id","name","cost","uses","cast_method","target","cast_range","area","keyword","effect","description","scope","pool"], "pk": "id"},
 	"game_config": {"req": ["key","value"],                                     "pk": "key"},
 	"lane_config": {"req": ["lane_id","name","max_pilots","mid_col","mid_row"], "pk": "lane_id"},
 	"players":     {"req": ["id","team_id","name","role","laning","mechanics","gamesense","teamfight","mental"], "pk": "id"},
@@ -39,6 +39,11 @@ const TABLE_DEFS: Dictionary = {
 		"keyword":     {"data_type": "text", "not_null": true},
 		"effect":      {"data_type": "text", "not_null": true},
 		"description": {"data_type": "text", "not_null": true},
+		# 시전자 제약: any = 누구나, lane = 레인 파일럿 전용, jungle = 정글러 전용.
+		# CardPhaseManager._deal_team_deck 가 스타터 덱을 돌릴 때 참조한다.
+		"scope":       {"data_type": "text", "not_null": true},
+		# 1 = 랜덤 카드풀에 포함, 0 = 제외(메크 고유 카드 등 별도 경로로만 지급).
+		"pool":        {"data_type": "int",  "not_null": true},
 	},
 	"game_config": {
 		"key":   {"data_type": "text", "primary_key": true, "not_null": true},

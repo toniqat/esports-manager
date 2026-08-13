@@ -313,7 +313,7 @@ var active_save_slot: int = -1
 # Each entry mirrors a row from the cards table. CardPhaseManager pulls 6 random
 # entries per pilot at match start, wraps each in a CardData instance, and tags
 # it with the owning PilotData (시전자 rule).
-var card_pool_bs: Array = []  # Array of {id,name,cost,uses,cast_method,target,cast_range,area,keyword,effect,description}
+var card_pool_bs: Array = []  # Array of {id,name,cost,uses,cast_method,target,cast_range,area,keyword,effect,description,scope,pool}
 
 
 func _ready() -> void:
@@ -341,6 +341,10 @@ func _load_card_pool_bs() -> void:
 			"keyword":     String(row["keyword"]),
 			"effect":      String(row["effect"]),
 			"description": String(row["description"]),
+			# scope / pool are read with defaults so a game.db built before these
+			# columns existed still loads — every card just reads as "any / in pool".
+			"scope":       String(row.get("scope", "any")),
+			"pool":        int(row.get("pool", 1)),
 		})
 	db.close_db()
 	print("GameManager: card pool loaded — %d cards" % card_pool_bs.size())

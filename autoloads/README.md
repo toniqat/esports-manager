@@ -14,6 +14,11 @@ quirk) — access at runtime via `get_node("/root/GameManager")`.
 #### BattleSim card pool
 - `card_pool_bs: Array` — loaded once on `_ready()` from the `cards` table via
   `_load_card_pool_bs()`. CardPhaseManager copies entries into starter decks.
+  `scope` and `pool` are read with `row.get(…, default)` so a game.db built
+  before those columns existed still loads (every card reads as `any` / in
+  pool). `pool = 0` rows are dropped from the random deal;
+  `scope` restricts which pilots may own a card — see
+  `features/battle_sim/card_phase/README.md`.
 
 ---
 

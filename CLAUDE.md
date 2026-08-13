@@ -401,8 +401,8 @@ table = add a CSV under `data/csv/` and add an entry to both `SCHEMAS` and
 | Table | CSV | Read at | Purpose |
 |---|---|---|---|
 | `pilots` | `pilots.csv` | BattleSim startup | Per-role baseline stats (used as fallback when match_ctx is inactive) |
-| `cards` | `cards.csv` | GameManager startup | Card pool for the BattleSim card phase |
-| `game_config` | `game_config.csv` | BattleSim startup | Tunable knobs (HP, turns, thresholds) |
+| `cards` | `cards.csv` | GameManager startup | Card pool for the BattleSim card phase. `scope` (`any`/`lane`/`jungle`) restricts who may be a card's 시전자; `pool` (1/0) keeps a card out of the random starter deck. |
+| `game_config` | `game_config.csv` | BattleSim startup | Tunable knobs (HP, turns, thresholds). `BATTLE_PILOT_DMG_MULT`(0.5) 는 **전장 교전이 파일럿에게 넣는 피해**에만 곱해진다 — 포탑/HQ 피해·공격 카드·교전 아레나는 제외. 복귀는 이제 즉시 만피 + 1턴 대기라 회복/대기 관련 키가 없다 — `RECALL_HEAL_RATIO` 와 `RECALL_RETURN_TURNS` 둘 다 제거됐다. |
 | `lane_config` | `lane_config.csv` | BattleSim startup | LANE_NAMES, LANE_MAX, midpoints |
 | `players` | `players.csv` | Season + MatchFlow startup | 40 pilots (8 teams × 5 roles), `PlayerData` fields. Player drafts 5 from this pool in Season. |
 | `mechs` | `mechs.csv` | MatchFlow startup | 30 mech pool (no role); drives PilotData stats when picked |

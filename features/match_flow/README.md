@@ -61,6 +61,21 @@ GameManager.match_ctx = {
 `BattleSim.gd` reads `match_ctx.active` to decide whether to inject mech stats
 into pilots; otherwise it falls back to `ROLE_STATS` defaults.
 
+### 진영 (`player_side`) — 지금은 항상 BLUE
+`player_side` 는 밴픽 순서와 인게임 선을 **동시에** 정하는 한 값이다:
+
+| 진영 | 밴픽 | 인게임 |
+|---|---|---|
+| RED  | 선밴 / 선픽 | — |
+| BLUE | 후밴 / 후픽 | 전략 포인트 `BLUE_COST_HEAD_START` 선점 + 같은 점수일 때 선턴 |
+
+`_ready()` 의 fresh-entry 경로는 예전에 매 경기 이 값을 랜덤으로 뽑았지만,
+지금은 **플레이어를 항상 `DraftSide.BLUE` 로 고정**한다 — 두 축(밴픽 이득 /
+인게임 이득)이 균형을 갖출 때까지 한쪽으로 못 박아 둔 것이다. 되살릴 때는 그 한
+줄만 되돌리면 되고, 아래 흐름과 `BattleSim.seed_side_costs()` 는 이미
+`match_ctx.player_side` 를 그대로 읽어 진영을 판정한다. 재개(resume) 경로는
+저장된 `player_side` 를 그대로 복원하므로 이 고정과 무관하다.
+
 ---
 
 ## Data flow into BattleSim

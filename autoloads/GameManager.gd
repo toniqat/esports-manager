@@ -345,6 +345,10 @@ func _load_card_pool_bs() -> void:
 			# columns existed still loads — every card just reads as "any / in pool".
 			"scope":       String(row.get("scope", "any")),
 			"pool":        int(row.get("pool", 1)),
+			# card_type / card_cat 도 같은 이유로 기본값과 함께 읽는다. 옛 game.db
+			# 는 전부 "메크 카드 / 분류 없음"으로 읽혀 덱 구성이 폴백 경로를 탄다.
+			"card_type":   String(row.get("card_type", CardData.TYPE_MECH)),
+			"card_cat":    String(row.get("card_cat", CardData.CAT_NONE)),
 		})
 	db.close_db()
 	print("GameManager: card pool loaded — %d cards" % card_pool_bs.size())

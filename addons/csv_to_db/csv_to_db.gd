@@ -20,7 +20,7 @@ const DB_PATH = "res://data/game.db"
 # Required columns and primary key per table
 const SCHEMAS: Dictionary = {
 	"pilots":      {"req": ["id","name","abbrev","hp","atk","heal"],           "pk": "id"},
-	"cards":       {"req": ["id","name","cost","uses","cast_method","target","cast_range","area","keyword","effect","description","scope","pool"], "pk": "id"},
+	"cards":       {"req": ["id","name","cost","uses","cast_method","target","cast_range","area","keyword","effect","description","scope","pool","card_type","card_cat"], "pk": "id"},
 	"game_config": {"req": ["key","value"],                                     "pk": "key"},
 	"lane_config": {"req": ["lane_id","name","max_pilots","mid_col","mid_row"], "pk": "lane_id"},
 	"players":     {"req": ["id","team_id","name","role","laning","mechanics","gamesense","teamfight","mental"], "pk": "id"},
@@ -57,6 +57,12 @@ const TABLE_DEFS: Dictionary = {
 		"scope":       {"data_type": "text", "not_null": true},
 		# 1 = 랜덤 카드풀에 포함, 0 = 제외(메크 고유 카드 등 별도 경로로만 지급).
 		"pool":        {"data_type": "int",  "not_null": true},
+		# 카드가 메크에 붙는가(mech) 파일럿에 붙는가(pilot). 파일럿마다 메크 3장
+		# + 파일럿 3장을 받는 덱 구성의 1차 분류다.
+		"card_type":   {"data_type": "text", "not_null": true},
+		# 파일럿 카드의 하위 분류 — lane / draw / jungle / common. 메크 카드는 "-".
+		# common 은 라인전 슬롯과 정글 슬롯 **양쪽** 후보에 들어간다(복귀).
+		"card_cat":    {"data_type": "text", "not_null": true},
 	},
 	"game_config": {
 		"key":   {"data_type": "text", "primary_key": true, "not_null": true},

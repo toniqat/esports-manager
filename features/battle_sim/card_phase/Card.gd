@@ -61,6 +61,14 @@ const BLOCKED_OVERLAY_COLOR := Color(0.0, 0.0, 0.0, 0.58)
 const RESPAWN_FONT_SIZE     := 76
 const RESPAWN_FONT_COLOR    := Color(1.0, 0.86, 0.86)
 
+# ── 보존 표시 (계획 중시) ────────────────────────────────────────────────────
+# 상한 초과 자동 버리기로부터 보호되는 카드에 붙는 테두리. 사용 불가 슬래브와
+# 달리 카드를 어둡게 하지 않는다 — 보존은 제약이 아니라 보증이므로, 카드는
+# 평소대로 밝게 두고 테두리만 얹는다. 슬래브와 겹쳐도 서로를 가리지 않도록
+# 배경 없는(투명) Panel 이다.
+const PRESERVE_BORDER_COLOR := Color(0.45, 0.95, 1.0, 1.0)
+const PRESERVE_BORDER_WIDTH := 5
+
 var data: CardData = null
 var face_up: bool = false
 var is_player_card: bool = true
@@ -90,6 +98,9 @@ var _affordable: bool = true
 var _respawn_turns: int = 0
 var _block_overlay: Panel = null
 var _respawn_label: Label = null
+# 계획 중시로 보존된 카드인가. `set_preserved` 가 갱신한다.
+var _preserved: bool = false
+var _preserve_mark: Panel = null
 
 const DIM_MODULATE: Color = Color(0.42, 0.42, 0.48, 1.0)
 
@@ -196,6 +207,25 @@ func _build_block_overlay() -> void:
 	_respawn_label.visible = false
 	add_child(_respawn_label)
 
+	_preserve_mark = Panel.new()
+	_preserve_mark.name = "PreserveMark"
+	_preserve_mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_preserve_mark.size = Vector2(CARD_W, CARD_H)
+	var pm := StyleBoxFlat.new()
+	pm.draw_center = false
+	pm.border_color = PRESERVE_BORDER_COLOR
+	pm.border_width_top    = PRESERVE_BORDER_WIDTH
+	pm.border_width_bottom = PRESERVE_BORDER_WIDTH
+	pm.border_width_left   = PRESERVE_BORDER_WIDTH
+	pm.border_width_right  = PRESERVE_BORDER_WIDTH
+	pm.corner_radius_top_left     = 10
+	pm.corner_radius_top_right    = 10
+	pm.corner_radius_bottom_left  = 10
+	pm.corner_radius_bottom_right = 10
+	_preserve_mark.add_theme_stylebox_override("panel", pm)
+	_preserve_mark.visible = false
+	add_child(_preserve_mark)
+
 
 ## Turns the slab / countdown on or off from the two independent reasons a card
 ## can be unplayable. Face-down cards (AI hand peek, 찾기 grid) never show it —
@@ -208,6 +238,8 @@ func _refresh_block_overlay() -> void:
 	_respawn_label.visible = showable and _respawn_turns > 0
 	if _respawn_turns > 0:
 		_respawn_label.text = str(_respawn_turns)
+	if _preserve_mark != null and is_instance_valid(_preserve_mark):
+		_preserve_mark.visible = showable and _preserved
 
 
 ## Re-poses the card and its shadow for the current hover / selected state.
@@ -444,6 +476,15 @@ func set_affordable(affordable: bool) -> void:
 ## play it while this is non-zero.
 func set_respawn_turns(turns: int) -> void:
 	_respawn_turns = max(0, turns)
+	_refresh_block_overlay()
+
+
+## 계획 중시로 보존된 카드인지 표시한다. 순수 시각 표시로, 플레이 가능 여부에는
+## 영향을 주지 않는다 — 보존은 `_trim_hand_overflow` 만 읽는 규칙이다.
+func set_preserved(preserved: bool) -> void:
+	if _preserved == preserved:
+		return
+	_preserved = preserved
 	_refresh_block_overlay()
 
 

@@ -77,20 +77,38 @@ var _pending_play: Dictionary = {}
 # once the await chain unwinds.
 var _ai_play_in_progress: bool = false
 
+# 완벽한 마무리(`end_phase`)가 세워 놓는 요청 플래그. 한 번에 한 쪽만 자기
+# 작전 단계를 갖고 있으므로 양 팀이 공유해도 충돌하지 않는다 — 세운 쪽이
+# 그 턴 안에 `consume_end_phase_request()` 로 받아 간다.
+var _end_phase_requested: bool = false
+
 # True while the "당신의 차례" banner is sweeping in / holding / fading out.
 # The hand stays dimmed and clicks are blocked until it clears so the player
 # can't pre-empt the announcement.
 var _player_turn_announce_in_progress: bool = false
+
+# 마지막으로 차례를 잡은 팀 (0 = 플레이어, 1 = AI, -1 = 아직 아무도 안 잡음).
+# 양 팀이 동시에 문턱 위에 있을 때 교대를 강제하는 유일한 상태 — 자세한 규칙은
+# _next_turn_side() 주석 참조. 새 판마다 build_starter_decks 가 -1 로 되돌린다.
+var _last_turn_side: int = -1
 
 # 연속 공격(`attack:N|repeat`)이 명중을 이어갈 때 한 번의 사용으로 허용되는
 # 최대 타수. 확률상 거의 닿지 않지만 무한 루프를 구조적으로 막는 상한이다.
 const MAX_ATTACK_REPEATS: int = 5
 
 # ─── Deck setup ───────────────────────────────────────────────────────────────
-# Per-pilot 6-card draw: every pilot pulls 6 random cards from the DB pool and
-# tags them with itself as the 시전자. All 5 pilots' stacks shuffle together
-# into the team deck — same logic for player and AI sides.
-const CARDS_PER_PILOT: int = 6
+# Per-pilot 6-card draw: every pilot pulls 6 cards from the DB pool and tags them
+# with itself as the 시전자. All 5 pilots' stacks shuffle together into the team
+# deck — same logic for player and AI sides. Deck size is 5 × 6 = 30 per side.
+#
+# The 6 split into two halves that are drawn from different pools:
+#   • 메크 카드 3장 — `card_type = mech` (공격 / 전진 / 전투 개시 / 보호 …)
+#   • 파일럿 카드 3장 — `card_type = pilot`, and *which* 3 depends on the role:
+#       정글러      → 정글 2 + 드로우 1
+#       서포터      → 라인전 1 + 드로우 2
+#       그 외 3인   → 라인전 2 + 드로우 1
+const MECH_CARDS_PER_PILOT:  int = 3
+const PILOT_CARDS_PER_PILOT: int = 3
 
 
 func build_starter_decks() -> void:
@@ -110,16 +128,29 @@ func build_starter_decks() -> void:
 	_bs.ai_deck.shuffle()
 	# Sync the visible Deck / Discard counters with the freshly-built deck.
 	update_deck_discard_labels()
+	# 개시 손패를 돌리기 전에 이전 판의 손패를 확실히 비운다. 재시작 경로는
+	# 이미 비우고 들어오지만, 여기서 손패가 비어 있다는 것이 개시 배분의 전제다.
+	_clear_hands()
+	# 차례 교대 기록도 새 판에서는 백지 — 첫 선은 블루가 잡는다.
+	_last_turn_side = -1
+	_deal_initial_hands()
 
 
-# Pulls CARDS_PER_PILOT random copies from `pool` for every pilot in `pilots`,
-# stamping each copy with that pilot as 시전자. Appends all copies to `out_deck`.
+# Deals every pilot in `pilots` its 6-card stack out of `pool`, stamping each
+# copy with that pilot as 시전자. Appends all copies to `out_deck`.
 #
-# The pool is filtered per pilot by `CardData.scope`: a 정글러 never draws a
-# lane-only card (전진 …) and a 레인 파일럿 never draws a jungle-only one
-# (약탈 …). Filtering here rather than at play time is what keeps the rule
-# invisible — a card that can't be used by its 시전자 would otherwise sit in the
-# hand permanently locked, since the 시전자 never changes after the deal.
+# Two filters stack here and they answer different questions:
+#   • `CardData.scope` — **who may own this card**. A 정글러 never draws a
+#     lane-only card (전진 …) and a 레인 파일럿 never draws a jungle-only one
+#     (약탈 …). Filtering at deal time rather than at play time is what keeps the
+#     rule invisible: the 시전자 never changes after the deal, so a mis-owned card
+#     would sit in the hand permanently locked.
+#   • `CardData.card_cat` — **which deck slot this card can fill**. That is the
+#     role-dependent 라인전 / 드로우 / 정글 split above.
+#
+# Each slot pool is sampled **without replacement**, unlike the old flat random
+# draw. The 라인전 pool holds 3 cards and the slot asks for 2 of them; with
+# replacement the same card came up twice more often than not.
 func _deal_team_deck(pool: Array, pilots: Array, out_deck: Array) -> void:
 	if pool.is_empty():
 		return
@@ -128,11 +159,102 @@ func _deal_team_deck(pool: Array, pilots: Array, out_deck: Array) -> void:
 		var eligible := _pool_for_pilot(pool, p)
 		if eligible.is_empty():
 			continue
-		for i in CARDS_PER_PILOT:
-			var src := eligible[randi() % eligible.size()] as CardData
-			var copy := make_card_copy(src)
+		var picks: Array = _sample(_cards_of_type(eligible, CardData.TYPE_MECH),
+				MECH_CARDS_PER_PILOT, eligible)
+		for slot in _pilot_slots_for(p):
+			var cat: String = String(slot[0])
+			var count: int  = int(slot[1])
+			picks.append_array(_sample(
+					_cards_in_category(eligible, cat), count, eligible))
+		for src_raw in picks:
+			var copy := make_card_copy(src_raw as CardData)
 			copy.owner_pilot = p
 			out_deck.append(copy)
+
+
+## The 파일럿 카드 slot table for one pilot: `[[category, count], …]` summing to
+## `PILOT_CARDS_PER_PILOT`. Role is read the same way the rest of the sim reads
+## it — `is_guerrilla` for the jungler, `role` for the supporter.
+func _pilot_slots_for(p: PilotData) -> Array:
+	if p.is_guerrilla:
+		return [[CardData.CAT_JUNGLE, 2], [CardData.CAT_DRAW, 1]]
+	if p.role == GameEnums.Role.SUPPORT:
+		return [[CardData.CAT_LANE, 1], [CardData.CAT_DRAW, 2]]
+	return [[CardData.CAT_LANE, 2], [CardData.CAT_DRAW, 1]]
+
+
+func _cards_of_type(pool: Array, card_type: String) -> Array:
+	var out: Array = []
+	for raw in pool:
+		if (raw as CardData).card_type == card_type:
+			out.append(raw)
+	return out
+
+
+## Pilot cards eligible for the `cat` slot. `CAT_COMMON` cards (복귀) answer for
+## both the 라인전 and the 정글 slot — see `CardData.fits_category`.
+func _cards_in_category(pool: Array, cat: String) -> Array:
+	var out: Array = []
+	for raw in pool:
+		var cd := raw as CardData
+		if cd.card_type == CardData.TYPE_PILOT and cd.fits_category(cat):
+			out.append(cd)
+	return out
+
+
+## `n` distinct cards out of `src`, order randomised.
+##
+## Two fallbacks keep a thin CSV from ever producing a short deck: an empty
+## `src` falls back to `fallback` (the pilot's whole scope-filtered pool), and a
+## pool smaller than `n` is topped up with repeats. Deck size is a hard invariant
+## — 5 pilots × 6 cards — and a mis-tagged `card_cat` must not silently break it.
+func _sample(src: Array, n: int, fallback: Array) -> Array:
+	if n <= 0:
+		return []
+	var bag: Array = (src if not src.is_empty() else fallback).duplicate()
+	if bag.is_empty():
+		return []
+	bag.shuffle()
+	var out: Array = []
+	while out.size() < n:
+		if bag.is_empty():
+			# Pool smaller than the slot asks for — refill and allow repeats.
+			bag = (src if not src.is_empty() else fallback).duplicate()
+			bag.shuffle()
+		out.append(bag.pop_back())
+	return out
+
+
+## Empties both hands and frees the player's card nodes, so `_deal_initial_hands`
+## can assume it is dealing into an empty hand. `_on_restart_pressed` already
+## does this on its way in; this keeps the precondition local to the deal.
+func _clear_hands() -> void:
+	for node in _bs.player_card_nodes:
+		if is_instance_valid(node):
+			node.queue_free()
+	_bs.player_card_nodes.clear()
+	_bs.player_hand.clear()
+	_bs.ai_hand.clear()
+
+
+## 개시 손패 — 양 팀에 `INITIAL_HAND_SIZE` 장씩 미리 돌린다.
+##
+## 이게 없으면 양 팀 다 **빈 손**으로 시작해, 첫 차례가 오는 시점의 손패가
+## 그때까지 지나간 자동 드로우 횟수(CARD_DRAW_INTERVAL 에 묶인 수)로만
+## 결정된다 — 상한 `MAX_HAND_SIZE` 에 한참 못 미치는 손으로 첫 작전 단계를
+## 맞게 된다는 뜻이다. 개시 배분은 그 격차를 메워, 첫 차례를 거의 꽉 찬 손으로
+## 시작하게 한다.
+##
+## `MAX_HAND_SIZE` 보다 훨씬 작은 장수이므로 `_trim_hand_overflow` 는 돌리지
+## 않는다. 덱이 마르면 `draw_card` 가 null 을 돌려주고 그 자리에서 멈춘다.
+func _deal_initial_hands() -> void:
+	for _i in range(_bs.INITIAL_HAND_SIZE):
+		var drawn := draw_card(true)
+		if drawn != null:
+			spawn_card_node(drawn)
+		draw_card(false)
+	if _bs.hud != null:
+		_bs.hud.update_ai_hand_visuals()
 
 
 ## Subset of `pool` this pilot is allowed to own. Falls back to the unfiltered
@@ -193,6 +315,8 @@ func _make_card_from_def(def: Dictionary) -> CardData:
 	cd.effect      = String(def.get("effect", ""))
 	cd.scope       = String(def.get("scope", CardData.SCOPE_ANY))
 	cd.pool        = int(def.get("pool", 1))
+	cd.card_type   = String(def.get("card_type", CardData.TYPE_MECH))
+	cd.card_cat    = String(def.get("card_cat", CardData.CAT_NONE))
 	return cd
 
 
@@ -208,6 +332,8 @@ func make_card_copy(src: CardData) -> CardData:
 	cd.effect      = src.effect
 	cd.scope       = src.scope
 	cd.pool        = src.pool
+	cd.card_type   = src.card_type
+	cd.card_cat    = src.card_cat
 	cd.owner_pilot = src.owner_pilot
 	return cd
 
@@ -224,39 +350,48 @@ func do_battle_turn() -> void:
 	_bs.sim_core.simulate_turn()
 	if _bs.game_over:
 		return
-	_bs.cost_counter += 1
-	if _bs.cost_counter >= _bs.COST_RECOVERY_INTERVAL:
-		_bs.cost_counter = 0
-		_bs.player_cost += _bs.COST_RECOVERY
-		_bs.ai_cost     += _bs.COST_RECOVERY
-	_bs.draw_counter += 1
-	if _bs.draw_counter >= _bs.CARD_DRAW_INTERVAL:
-		_bs.draw_counter = 0
-		# These are the "waiting for my turn" draws — the ones that tick by while
-		# 작전 점수 climbs back to PHASE_THRESHOLD. They always draw, even on a
-		# full hand, and the overflow is paid for by discarding the OLDEST cards.
-		# Skipping the draw instead (the old rule) stalled the deck and left the
-		# same dead hand sitting there for the whole wait.
-		var drawn := draw_card(true)
-		if drawn != null:
-			spawn_card_node(drawn)
-		_trim_hand_overflow(true)
-		# AI hand visuals (face-down card backs) live in HudBuilder; the row
-		# reflows after the draw so the count peek matches state.
-		draw_card(false)
-		_trim_hand_overflow(false)
-		_bs.hud.update_ai_hand_visuals()
+	# 카드 경제 게이트. `ECONOMY_START_TURN` 전까지는 전략 점수도 자동 드로우도
+	# 멈춰 있다 — 개시 손패 5장과 블루 선점 1점만 들고 초반 몇 턴을 라인전으로
+	# 보내라는 규칙이다. 카운터 자체를 굴리지 않으므로 게이트가 풀리는 턴에
+	# 밀린 회복이 한꺼번에 터지지도 않는다.
+	#
+	# `simulate_turn()` 이 자기 초입에서 `turn_count` 를 올리므로, 이 시점의
+	# `turn_count` 는 **방금 끝난 턴의 번호**(1-based)다. 카운터는 개시 시
+	# `INTERVAL - 1` 로 놓여 있어 게이트가 열리는 첫 턴에 곧바로 발동한다 —
+	# ECONOMY_START_TURN = 4 면 4턴째에 첫 회복 / 첫 드로우가 들어간다.
+	if _bs.turn_count >= _bs.ECONOMY_START_TURN:
+		_bs.cost_counter += 1
+		if _bs.cost_counter >= _bs.COST_RECOVERY_INTERVAL:
+			_bs.cost_counter = 0
+			_bs.player_cost += _bs.COST_RECOVERY
+			_bs.ai_cost     += _bs.COST_RECOVERY
+		_bs.draw_counter += 1
+		if _bs.draw_counter >= _bs.CARD_DRAW_INTERVAL:
+			_bs.draw_counter = 0
+			# These are the "waiting for my turn" draws — the ones that tick by
+			# while 작전 점수 climbs back to PHASE_THRESHOLD. They always draw,
+			# even on a full hand, and the overflow is paid for by discarding the
+			# OLDEST cards. Skipping the draw instead (the old rule) stalled the
+			# deck and left the same dead hand sitting there for the whole wait.
+			var drawn := draw_card(true)
+			if drawn != null:
+				spawn_card_node(drawn)
+			_trim_hand_overflow(true)
+			# AI hand visuals (face-down card backs) live in HudBuilder; the row
+			# reflows after the draw so the count peek matches state.
+			draw_card(false)
+			_trim_hand_overflow(false)
+			_bs.hud.update_ai_hand_visuals()
 	# Whose turn is it now? Each side gets its turn the moment *its own* 작전
 	# 점수 reaches PHASE_THRESHOLD — the AI's turn is no longer bolted onto the
 	# end of the player's, so the "상대 차례" banner only ever shows when the AI
-	# actually acts.
-	#
-	# The AI is checked first on purpose: a player who ends their 작전 단계 on
-	# 0-cost cards alone keeps player_cost >= PHASE_THRESHOLD and would re-enter
-	# their own phase on every tick, starving the AI out of its turn forever.
-	if _ai_turn_ready():
+	# actually acts. `_next_turn_side` owns the arbitration when both are ready.
+	var turn_side := _next_turn_side()
+	if turn_side == 1:
+		_last_turn_side = 1
 		await _run_ai_turn()
-	elif _bs.player_cost >= _bs.PHASE_THRESHOLD:
+	elif turn_side == 0:
+		_last_turn_side = 0
 		start_card_phase()
 	else:
 		# Respawn countdowns on the hand cards tick with the battle turn, so the
@@ -266,6 +401,43 @@ func do_battle_turn() -> void:
 		_bs.hud.update_hud()
 
 
+## 이번 틱에 차례를 가져갈 팀 — 0 = 플레이어, 1 = AI, -1 = 아무도 준비되지 않음.
+##
+## 규칙은 두 줄이다.
+##   1. 한 쪽만 준비됐으면 그 쪽이 잡는다.
+##   2. 양쪽 다 준비됐으면 **직전에 차례를 잡지 않은 쪽**이 잡고, 아직 아무도
+##      잡은 적이 없으면 블루(`_bs.blue_team`)가 잡는다.
+##
+## 두 번째 줄이 두 가지를 한꺼번에 책임진다.
+##
+## **같은 점수면 블루 먼저.** 개시 직후에는 `_last_turn_side` 가 -1 이라 블루가
+## 무조건 선을 잡는다. 점수 선점(`BattleSim.BLUE_COST_HEAD_START`)만으로도
+## 보통은 블루가 문턱에 먼저 닿지만, 카드로 점수를 쓴 뒤 양쪽이 같은 틱에
+## 다시 닿는 경우의 타이브레이크는 이 규칙이 맡는다.
+##
+## **굶주림 방지.** 예전 코드는 이 자리에서 AI 를 **무조건 먼저** 검사해
+## 굶주림을 막았다 — 0코스트 카드만 내고 턴을 넘긴 플레이어는 다음 틱에도
+## 점수가 문턱 위로 남아 자기 단계에 재진입하고, 그렇게 AI 를 영원히 굶길 수
+## 있기 때문이다. 블루 우선으로 뒤집으면 그 방어가 사라지므로, 대신 교대
+## 규칙이 그 자리를 메운다: 방금 차례를 잡은 쪽은 상대가 한 번 잡기 전까지
+## 다시 잡지 못한다. 상대가 문턱 아래라면 교대할 상대가 없으므로 연속 진입이
+## 그대로 허용된다(규칙 1).
+##
+## 준비 판정이 양쪽 비대칭인 것은 의도된 기존 동작이다. AI 는 낼 수 있는 카드가
+## 손에 있어야 준비된 것으로 치고(`_ai_turn_ready`), 플레이어는 점수만 차면
+## 진입한다 — 낼 게 없는 손은 `can_end_card_phase` 의 탈출구가 통과시킨다.
+func _next_turn_side() -> int:
+	var player_ready: bool = _bs.player_cost >= _bs.PHASE_THRESHOLD
+	var ai_ready: bool = _ai_turn_ready()
+	if player_ready and ai_ready:
+		return _bs.blue_team if _last_turn_side == -1 else 1 - _last_turn_side
+	if player_ready:
+		return 0
+	if ai_ready:
+		return 1
+	return -1
+
+
 ## Discards from the **front** of `hand` (oldest first) until it is back down to
 ## MAX_HAND_SIZE, returning how many were dropped.
 ##
@@ -273,12 +445,23 @@ func do_battle_turn() -> void:
 ## during 작전 단계 are the player's own turn and are left alone even when they
 ## push the hand over the cap — the next auto-draw after the turn ends is what
 ## trims the excess.
+##
+## 계획 중시(`preserve:N`)로 보존된 카드는 **건너뛴다** — 그게 그 카드의 유일한
+## 효과다. 손패가 통째로 보존되는 경우(최대 2장이라 실제로는 불가능)에도
+## 루프가 멈추도록 인덱스 스캔으로 돈다: 상한 초과가 남아도 무한 루프는 없다.
 func _trim_hand_overflow(is_player: bool) -> int:
 	var hand:    Array = _bs.player_hand    if is_player else _bs.ai_hand
 	var discard: Array = _bs.player_discard if is_player else _bs.ai_discard
+	_prune_preserved(is_player)
+	var preserved: Array = _bs.preserved_cards_p if is_player else _bs.preserved_cards_ai
 	var dropped: int = 0
-	while hand.size() > _bs.MAX_HAND_SIZE:
-		var oldest := hand.pop_front() as CardData
+	var i: int = 0
+	while hand.size() > _bs.MAX_HAND_SIZE and i < hand.size():
+		var oldest := hand[i] as CardData
+		if preserved.has(oldest):
+			i += 1
+			continue
+		hand.remove_at(i)
 		discard.append(oldest)
 		if is_player:
 			_despawn_player_card_node(oldest)
@@ -287,6 +470,19 @@ func _trim_hand_overflow(is_player: bool) -> int:
 		relayout_hand(_bs.player_card_nodes)
 		update_deck_discard_labels()
 	return dropped
+
+
+## Drops preserve entries whose card has already left the hand (played, forced
+## into the discard by another card, trimmed away before it was preserved …).
+## Without this the list accumulates dangling CardData and a *different* card
+## drawn later could never collide with it — but the list would keep growing for
+## the rest of the match. Cheap enough to run on every trim.
+func _prune_preserved(is_player: bool) -> void:
+	var hand:      Array = _bs.player_hand      if is_player else _bs.ai_hand
+	var preserved: Array = _bs.preserved_cards_p if is_player else _bs.preserved_cards_ai
+	for i in range(preserved.size() - 1, -1, -1):
+		if not hand.has(preserved[i]):
+			preserved.remove_at(i)
 
 
 func start_card_phase() -> void:
@@ -307,6 +503,7 @@ func start_card_phase() -> void:
 	_bs.phase_cost_inc_ai = 0
 	_bs.phase_draw_discount_p = 0
 	_bs.phase_draw_discount_ai = 0
+	_apply_phase_entry_carryovers(true)
 	_bs.renderer.queue_redraw()
 	_bs.hud.update_hud()
 	# Announce the player's turn. The hand stays dimmed during the banner
@@ -318,6 +515,25 @@ func start_card_phase() -> void:
 	highlight_affordable_cards()
 	_apply_hand_dim_state()
 	_bs.hud.update_hud()
+
+
+## 작전 단계 진입 시 정산되는 **지연 효과 세 가지**를 한 곳에서 처리한다.
+## 플레이어는 `start_card_phase`, AI 는 `_run_ai_turn` 이 부른다.
+##
+##  1. 계획 중시의 보존 — 한 번의 BATTLE 구간만 버티는 효과이므로 여기서 걷는다.
+##  2. 아드레날린의 다음 단계 전략 점수(음수 가능) — 점수는 0 아래로 안 내려간다.
+##  3. 완벽한 마무리의 성장 배율 — "다음 작전 단계까지"가 여기서 끝난다.
+func _apply_phase_entry_carryovers(is_player: bool) -> void:
+	var team: int = 0 if is_player else 1
+	if is_player:
+		_bs.preserved_cards_p.clear()
+		_bs.player_cost = maxi(0, _bs.player_cost + _bs.next_phase_strategy_p)
+		_bs.next_phase_strategy_p = 0
+	else:
+		_bs.preserved_cards_ai.clear()
+		_bs.ai_cost = maxi(0, _bs.ai_cost + _bs.next_phase_strategy_ai)
+		_bs.next_phase_strategy_ai = 0
+	_bs.sim_core.clear_growth_until_phase(team)
 
 
 # Hand-dim driver: cards stay bright only while it's actually the player's
@@ -413,10 +629,22 @@ func end_card_phase() -> void:
 	if not log_lines.is_empty():
 		_bs.last_log = log_lines[-1]
 	_bs.game_phase = GameEnums.BattlePhase.BATTLE
+	# 계획 살인의 예약은 그 작전 단계 안에서만 유효하다 — 안 터졌으면 사라진다.
+	_bs.kill_bounty_p = 0
 	_bs.blog.log_event("PHASE", "작전 단계 종료 → BATTLE")
 	_bs.renderer.queue_redraw()
 	_bs.hud.update_hud()
 	_apply_hand_dim_state()
+
+
+## Reads and clears the `end_phase` request. Public so `AiCardPlayer` can break
+## its play loop on the same flag the player path consumes in
+## `_finalize_pending_play`.
+func consume_end_phase_request() -> bool:
+	if not _end_phase_requested:
+		return false
+	_end_phase_requested = false
+	return true
 
 
 # ─── 상대 차례 ────────────────────────────────────────────────────────────────
@@ -458,6 +686,7 @@ func _run_ai_turn() -> void:
 	deselect_current_card()
 	_apply_hand_dim_state()
 	_bs.blog.stage("ai-turn")
+	_apply_phase_entry_carryovers(false)
 	_bs.blog.log_event("PHASE", "상대 차례 시작 — ai %d 점" % _bs.ai_cost)
 	_bs.hud.update_hud()
 	await _bs.hud.play_turn_announce(false)
@@ -470,6 +699,7 @@ func _run_ai_turn() -> void:
 		_bs.recall_sys.process_phase_end_recalls(log_lines)
 		if not log_lines.is_empty():
 			_bs.last_log = log_lines[-1]
+	_bs.kill_bounty_ai = 0
 	_bs.blog.log_event("PHASE", "상대 차례 종료 → BATTLE")
 	_ai_play_in_progress = false
 	highlight_affordable_cards()
@@ -1007,6 +1237,9 @@ func highlight_affordable_cards() -> void:
 		# 시전자가 쓰러져 있으면 카드도 같이 잠긴다 — 카드 전체가 어두워지고
 		# 부활까지 남은 턴이 한가운데 크게 찍힌다.
 		c.set_respawn_turns(respawn_turns_for(c.data))
+		# 계획 중시로 보존된 카드는 시안 테두리를 두른다 — 사용 가능 여부와는
+		# 무관한 별개의 표시라 슬래브와 겹쳐 떠도 서로를 가리지 않는다.
+		c.set_preserved(_bs.preserved_cards_p.has(c.data))
 		# Reflect any active cost modifier (사전 준비 / 전투 준비 / 집중 /
 		# cost_inc_phase) on the card's top-left cost number — green when
 		# reduced below the printed cost, red when increased, white when
@@ -1432,6 +1665,8 @@ func _play_card_direct(card: Card, pre_target: Variant = null) -> void:
 		"discard": _bs.player_discard.duplicate(),
 		"cost":    _bs.player_cost,
 		"engage_discount_p": _bs.engage_discount_p,
+		# 계획 중시가 체인 중간에서 취소되면 이미 올라간 보존 표시도 되돌린다.
+		"preserved": _bs.preserved_cards_p.duplicate(),
 	}
 	var eff_cost: int = _bs.effective_cost_for(cd, true)
 	_bs.blog.log_event("CARD", "PLAYER plays [%s] cost=%d effect=%s target=%s" % [
@@ -1556,8 +1791,11 @@ func compute_valid_location_targets(cd: CardData, caster: PilotData) -> Array:
 		return out
 	# Inspect the effect chain for clauses that constrain the legal set.
 	for clause in _parse_effect_chain(cd.effect):
-		if String(clause.get("name", "")) == "capture_jungle":
+		var cname: String = String(clause.get("name", ""))
+		if cname == "capture_jungle":
 			return compute_capture_jungle_targets(caster)
+		if cname == "move" and "own_jungle" in (clause.get("flags", []) as Array):
+			return compute_own_jungle_targets(caster)
 	var max_r: int = max(1, cd.cast_range)
 	var seen: Dictionary = {}
 	for col in range(-8, 8):
@@ -1600,6 +1838,28 @@ func compute_capture_jungle_targets(caster: PilotData) -> Array:
 			if int(zones[nb]) == caster.team:
 				out.append(cell)
 				break
+	return out
+
+
+# 정글 파밍(`move|own_jungle`)의 유효 대상 — **시전자 팀이 소유한 정글 셀**
+# 전부. 약탈과 마찬가지로 `cast_range` 는 보지 않는다(카드의 cast_range 는 99):
+# 정글러는 자기 정글 어디로든 붙을 수 있어야 하고, 사거리로 묶으면 정글 반대편
+# 캠프가 영영 닿지 않는다. 제자리 셀은 뺀다 — 이동이 no-op 이 되기 때문.
+#
+# 소유 판정은 `neutral_zone_cells` 를 그대로 읽으므로 약탈이 걸어 둔 임시 점령
+# (`temp_zone_overrides`)도 자동으로 반영된다 — 그 카드가 소유 맵 자체를 바꾼다.
+func compute_own_jungle_targets(caster: PilotData) -> Array:
+	var out: Array = []
+	if caster == null:
+		return out
+	var zones: Dictionary = _bs.neutral_zone_cells
+	for raw_cell in zones.keys():
+		var cell := raw_cell as Vector2i
+		if int(zones[cell]) != caster.team:
+			continue
+		if cell == caster.grid_pos:
+			continue
+		out.append(cell)
 	return out
 
 
@@ -1683,6 +1943,12 @@ func _process_pending_chain() -> void:
 					_on_search_overlay_complete,
 					_on_overlay_cancel)
 			return
+		if ename == "preserve":
+			_pending_play["clauses"] = clauses
+			_bs.card_select_overlay.start_preserve(n,
+					_on_preserve_overlay_complete,
+					_on_overlay_cancel)
+			return
 		var msg := _apply_single_effect(clause, true,
 				_pending_play["caster"],
 				int(_pending_play["ally_team"]),
@@ -1729,6 +1995,25 @@ func _on_search_overlay_complete(picks: Array) -> void:
 	_process_pending_chain()
 
 
+# 계획 중시 complete: the picks never left the hand — the overlay only showed
+# them — so all we do is file them in the preserve list. From here until the
+# player's next 작전 단계 they are skipped by `_trim_hand_overflow`.
+func _on_preserve_overlay_complete(picks: Array) -> void:
+	if _pending_play.is_empty():
+		return
+	var marked: int = 0
+	for raw in picks:
+		var cd := raw as CardData
+		if _bs.preserved_cards_p.has(cd):
+			continue
+		_bs.preserved_cards_p.append(cd)
+		marked += 1
+	(_pending_play["log_lines"] as Array).append("보존 %d" % marked)
+	highlight_affordable_cards()
+	_bs.hud.update_hud()
+	_process_pending_chain()
+
+
 # Cancel button handler — restores the entire pre-play state from the
 # snapshot so the played card returns to hand, cost is refunded, and any
 # interim mutations (draws, picked-for-discard cards still parked in the
@@ -1762,6 +2047,10 @@ func _restore_from_snapshot(snap: Dictionary) -> void:
 	_bs.player_cost    = int(snap["cost"])
 	if snap.has("engage_discount_p"):
 		_bs.engage_discount_p = int(snap["engage_discount_p"])
+	if snap.has("preserved"):
+		_bs.preserved_cards_p = (snap["preserved"] as Array).duplicate()
+	# 취소된 카드가 세워 둔 단계 종료 요청도 함께 되돌린다.
+	_end_phase_requested = false
 	for raw_cd in _bs.player_hand:
 		spawn_card_node(raw_cd as CardData)
 	relayout_hand(_bs.player_card_nodes)
@@ -1797,6 +2086,12 @@ func _finalize_pending_play() -> void:
 	update_deck_discard_labels()
 	_bs.hud.update_hud()
 	_bs.renderer.queue_redraw()
+	# 완벽한 마무리 — 체인이 다 돌고 `_dispose_used_card` 까지 끝난 **뒤**라야
+	# 단계를 닫을 수 있다. 체인 도중에 닫으면 카드가 손패 밖에 떠 있는 채로
+	# 문이 닫혀 discard 로도 소멸로도 가지 못한다. `cards_played_this_phase` 도
+	# 바로 위에서 이미 올라갔으므로 `can_end_card_phase()` 의 게이트를 통과한다.
+	if consume_end_phase_request():
+		end_card_phase()
 
 
 # Routes a played card by 키워드:
@@ -1991,8 +2286,20 @@ func _apply_single_effect(e: Dictionary, is_player: bool, caster: PilotData,
 		"cost_reduce_draw_phase":  return _effect_cost_reduce_draw_phase(value, is_player)
 		"cost_inc_phase":          return _effect_cost_inc_phase(value, is_player)
 		"advance":                 return _effect_advance(value, caster)
-		# Stubbed — landing log only until the supporting systems exist.
-		"strategy_on_kill":        return "처치 시 전략 점수 +%d (예약)" % value
+		"strategy_on_kill":        return _effect_strategy_on_kill(value, is_player)
+		"lane_stat":               return _effect_lane_stat(value, flags, caster)
+		"growth":                  return _effect_growth_rate(value, flags, caster)
+		"growth_until_phase":      return _effect_growth_until_phase(value, ally_team)
+		"discard_hand":            return _effect_discard_hand(is_player)
+		"discard_hand_draw":       return _effect_discard_hand_draw(is_player)
+		"discard_right":           return _effect_discard_right(is_player, value)
+		"discard_other_pilots":    return _effect_discard_other_pilots(flags,
+				is_player, caster)
+		"strategy_next_phase":     return _effect_strategy_next_phase(value, is_player)
+		# 플레이어의 preserve 는 _process_pending_chain 이 오버레이로 가로채므로
+		# 여기 오는 것은 AI(또는 오버레이가 없는 폴백)뿐이다.
+		"preserve":                return _effect_preserve_random(is_player, value)
+		"end_phase":               return _effect_end_phase()
 		# 자리 되돌리기 / 비용 누적은 카드를 다 쓴 뒤 _dispose_used_card 가
 		# 처리한다(chain 이 도는 동안은 카드가 손패 밖에 있으므로). 여기서는
 		# 로그 한 줄만 남긴다.
@@ -2325,6 +2632,213 @@ func _effect_cost_inc_phase(n: int, is_player: bool) -> String:
 	else:
 		_bs.phase_cost_inc_ai += n
 	return "이번 단계 비용 +%d" % n
+
+
+# ─── 성장 / 라인전 스탯 카드 ─────────────────────────────────────────────────
+# 안전한 파밍 / 공격적인 라인전. 둘 다 **시전자 한 명**에게만 걸리고, 같은
+# 필드를 두 번 건드리면 **덮어쓴다**(합산 아님). 3종짜리 라인전 풀에서 2장을
+# 뽑는 구조라 같은 카드가 겹치기 쉬운데, 합산을 허용하면 +30% 스노볼이 그냥
+# 운으로 굴러 나온다.
+
+## `lane_stat:N|turns:T` — 시전자의 전장 명중 판정(hit / evasion)에 N% 배율.
+## 만료는 SimulationCore.tick_growth_and_expiries 가 매 턴 확인한다.
+func _effect_lane_stat(pct: int, flags: Array, caster: PilotData) -> String:
+	if caster == null:
+		return "라인전 스탯 (시전자 없음)"
+	var turns: int = _flag_int(flags, "turns", 0)
+	caster.lane_stat_mod = float(pct) / 100.0
+	caster.lane_stat_expire_turn = (_bs.turn_count + turns) if turns > 0 else -1
+	return "%s 라인전 스탯 %+d%% (%d턴)" % [_bs.pilot_label(caster), pct, turns]
+
+
+## `growth:N|turns:T` — 시전자의 성장 **획득 배율**을 N% 올린다(성장률 자체가
+## 아니라 그 배수다: +10% → 턴당 +1%p 가 +1.1%p 가 된다). 작전 단계 만료형
+## (완벽한 마무리)과 같은 필드를 쓰므로 그쪽 표시는 함께 꺼 준다.
+func _effect_growth_rate(pct: int, flags: Array, caster: PilotData) -> String:
+	if caster == null:
+		return "성장 (시전자 없음)"
+	var turns: int = _flag_int(flags, "turns", 0)
+	caster.growth_rate_mult        = 1.0 + float(pct) / 100.0
+	caster.growth_rate_expire_turn = (_bs.turn_count + turns) if turns > 0 else -1
+	caster.growth_until_phase      = false
+	return "%s 성장 %+d%% (%d턴)" % [_bs.pilot_label(caster), pct, turns]
+
+
+## `growth_until_phase:N` — 완벽한 마무리. 시전자 **팀 전원**의 성장 획득 배율을
+## 올리고, 그 팀의 다음 작전 단계 진입 시 `_apply_phase_entry_carryovers` 가 걷는다.
+func _effect_growth_until_phase(pct: int, ally_team: int) -> String:
+	var count: int = 0
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		if p.team != ally_team:
+			continue
+		p.growth_rate_mult        = 1.0 + float(pct) / 100.0
+		p.growth_rate_expire_turn = -1
+		p.growth_until_phase      = true
+		count += 1
+	return "아군 %d명 성장 %+d%% (다음 작전 단계까지)" % [count, pct]
+
+
+# ─── 손패 조작 카드 ──────────────────────────────────────────────────────────
+# 아래 강제 버리기들은 **계획 중시의 보존을 무시한다** — 보존은 상한 초과
+# 자동 버리기(`_trim_hand_overflow`)로부터만 지켜 준다.
+
+## Moves the whole hand to the discard pile. Returns how many cards moved.
+func _discard_whole_hand(is_player: bool) -> int:
+	var hand:    Array = _bs.player_hand    if is_player else _bs.ai_hand
+	var discard: Array = _bs.player_discard if is_player else _bs.ai_discard
+	var moved: int = hand.size()
+	for raw in hand.duplicate():
+		var cd := raw as CardData
+		discard.append(cd)
+		if is_player:
+			_despawn_player_card_node(cd)
+	hand.clear()
+	return moved
+
+
+## 완벽한 마무리의 첫 절 — 손패 전부 버리기.
+func _effect_discard_hand(is_player: bool) -> String:
+	var moved: int = _discard_whole_hand(is_player)
+	_refresh_hand_after_bulk_change(is_player)
+	return "손패 %d장 버리기" % moved
+
+
+## 재고 — 손패를 전부 버리고 **버린 장수만큼** 새로 뽑는다. 손패 크기는 그대로고
+## 내용만 갈린다(덱이 마르면 뽑은 만큼만).
+func _effect_discard_hand_draw(is_player: bool) -> String:
+	var moved: int = _discard_whole_hand(is_player)
+	var drew: int = 0
+	for _i in moved:
+		var c := draw_card(is_player)
+		if c == null:
+			break
+		if is_player:
+			spawn_card_node(c)
+		drew += 1
+	_refresh_hand_after_bulk_change(is_player)
+	return "손패 %d장 버리고 %d장 드로우" % [moved, drew]
+
+
+## 과감한 정리 — 손패 **오른쪽**(가장 최근에 들어온 쪽) N장을 버린다.
+func _effect_discard_right(is_player: bool, n: int) -> String:
+	var hand:    Array = _bs.player_hand    if is_player else _bs.ai_hand
+	var discard: Array = _bs.player_discard if is_player else _bs.ai_discard
+	var moved: int = 0
+	for _i in n:
+		if hand.is_empty():
+			break
+		var cd := hand.pop_back() as CardData
+		discard.append(cd)
+		if is_player:
+			_despawn_player_card_node(cd)
+		moved += 1
+	_refresh_hand_after_bulk_change(is_player)
+	return "오른쪽 %d장 버리기" % moved
+
+
+## 솔로 퍼포먼스 — 시전자 **본인 것이 아닌** 손패 카드를 전부 버리고, 버린 장당
+## `strategy_each` 만큼 전략 점수를 받는다. 시전자가 없으면 "본인 카드"를 가릴
+## 수 없으므로 아무것도 하지 않는다(손패 전멸 사고 방지).
+func _effect_discard_other_pilots(flags: Array, is_player: bool,
+		caster: PilotData) -> String:
+	if caster == null:
+		return "솔로 퍼포먼스 (시전자 없음)"
+	var per: int = _flag_int(flags, "strategy_each", 0)
+	var hand:    Array = _bs.player_hand    if is_player else _bs.ai_hand
+	var discard: Array = _bs.player_discard if is_player else _bs.ai_discard
+	var moved: int = 0
+	for raw in hand.duplicate():
+		var cd := raw as CardData
+		if cd.owner_pilot == caster:
+			continue
+		hand.erase(cd)
+		discard.append(cd)
+		if is_player:
+			_despawn_player_card_node(cd)
+		moved += 1
+	var gained: int = per * moved
+	if gained > 0:
+		if is_player:
+			_bs.player_cost += gained
+		else:
+			_bs.ai_cost += gained
+	_refresh_hand_after_bulk_change(is_player)
+	return "다른 파일럿 카드 %d장 버리기 · 전략 점수 +%d" % [moved, gained]
+
+
+## 계획 중시의 **AI / 폴백 경로** — 손패에서 무작위 N장을 보존 목록에 올린다.
+## 플레이어는 `_process_pending_chain` 이 CardSelectOverlay 로 가로채므로 여기
+## 오지 않는다.
+func _effect_preserve_random(is_player: bool, n: int) -> String:
+	var hand:      Array = _bs.player_hand      if is_player else _bs.ai_hand
+	var preserved: Array = _bs.preserved_cards_p if is_player else _bs.preserved_cards_ai
+	var bag: Array = hand.duplicate()
+	bag.shuffle()
+	var marked: int = 0
+	for raw in bag:
+		if marked >= n:
+			break
+		var cd := raw as CardData
+		if preserved.has(cd):
+			continue
+		preserved.append(cd)
+		marked += 1
+	if is_player:
+		highlight_affordable_cards()
+	return "보존 %d장" % marked
+
+
+## Repaints the hand after a clause moved several cards at once.
+func _refresh_hand_after_bulk_change(is_player: bool) -> void:
+	if is_player:
+		relayout_hand(_bs.player_card_nodes)
+		highlight_affordable_cards()
+		update_deck_discard_labels()
+	else:
+		_bs.hud.update_ai_hand_visuals()
+
+
+# ─── 지연 효과 카드 ──────────────────────────────────────────────────────────
+## 아드레날린의 뒷절 — 다음 작전 단계 진입 시 정산될 전략 점수(음수 가능).
+func _effect_strategy_next_phase(n: int, is_player: bool) -> String:
+	if is_player:
+		_bs.next_phase_strategy_p += n
+	else:
+		_bs.next_phase_strategy_ai += n
+	return "다음 작전 단계 전략 점수 %+d" % n
+
+
+## 계획 살인 — **선불 예약형**. 카드를 낸 시점에 현상금을 심어 두고,
+## `BattleSim.mark_pilot_dead` 가 상대 팀 사망을 볼 때 한 번 지급하고 소모한다.
+## 같은 단계에 두 장을 내도 큰 쪽 하나만 남는다(현상금은 처치 한 번분이다).
+func _effect_strategy_on_kill(n: int, is_player: bool) -> String:
+	if is_player:
+		_bs.kill_bounty_p = maxi(_bs.kill_bounty_p, n)
+	else:
+		_bs.kill_bounty_ai = maxi(_bs.kill_bounty_ai, n)
+	return "이번 단계 처치 시 전략 점수 +%d (예약)" % n
+
+
+## 완벽한 마무리의 마지막 절 — 자기 작전 단계를 강제 종료한다. 실제 종료는
+## 여기서 하지 않는다: 효과 체인이 도는 동안 카드는 손패 밖에 떠 있어서, 지금
+## 단계를 닫으면 카드 소멸 / discard 라우팅 전에 문이 닫힌다. 플레이어는
+## `_finalize_pending_play` 말미가, AI 는 `AiCardPlayer` 의 플레이 루프가
+## `consume_end_phase_request()` 로 이 요청을 받아 간다.
+func _effect_end_phase() -> String:
+	_end_phase_requested = true
+	return "작전 단계 종료"
+
+
+## Pulls an int off a `flag:value` modifier attached to **this** clause.
+## `_clause_int_flag` scans the whole chain instead and is kept for min_range,
+## where the flag can only appear once anyway.
+func _flag_int(flags: Array, flag_name: String, default_value: int) -> int:
+	for f in flags:
+		var fs: String = f as String
+		if fs.begins_with(flag_name + ":"):
+			return int(fs.substr(flag_name.length() + 1))
+	return default_value
 
 
 func _effect_exhaust_choice(is_player: bool, n: int) -> String:

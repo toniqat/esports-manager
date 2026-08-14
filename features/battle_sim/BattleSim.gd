@@ -111,10 +111,24 @@ var RECALL_HP_THRESHOLD:     float = 0.0
 ## 공격 카드 · 교전 아레나는 이 배율을 타지 않는다.
 var BATTLE_PILOT_DMG_MULT:   float = 1.0
 var MAX_HAND_SIZE:           int   = 0
+## 개시 직후 양 팀이 미리 받는 손패 장수. 전투 시작 시 한 번만 배분된다 —
+## 이후의 보충은 BATTLE 자동 드로우가 맡는다.
+var INITIAL_HAND_SIZE:       int   = 0
+## 블루 진영이 개시 시점에 선점하는 전략 포인트. 밴픽에서 후밴/후픽을 하는
+## 대가로 인게임 선을 잡게 하는 노브다 (see `blue_team`).
+var BLUE_COST_HEAD_START:    int   = 0
 var COST_RECOVERY:           int   = 0
 var CARD_DRAW_INTERVAL:      int   = 1
 var COST_RECOVERY_INTERVAL:  int   = 1
 var PHASE_THRESHOLD:         int   = 0
+## 카드 경제(전략 점수 회복 + 자동 드로우)가 처음 도는 턴. 그 전 턴들에는
+## 회복도 드로우도 없다 — 개시 손패(`INITIAL_HAND_SIZE`)와 블루 선점
+## (`BLUE_COST_HEAD_START`)만 0턴에 들어가 있고 거기서 멈춰 있다. 성장은 이
+## 게이트를 타지 않는다(1턴부터 돈다).
+var ECONOMY_START_TURN:      int   = 1
+## 턴당 누적 성장률. 살아 있는 파일럿의 `atk` / `max_hp` 가 매 턴 이만큼
+## 원본 대비 늘어난다 (0.01 = +1%p/턴). SimulationCore.tick_growth_and_expiries.
+var GROWTH_PER_TURN:         float = 0.0
 
 # Derived after DB load
 var PLAYER_HQ_POS: Vector2i = Vector2i.ZERO
@@ -162,6 +176,17 @@ var pending_atk_buff_ai: int   = 0
 var draw_counter:         int   = 0  # shared draw interval counter
 var cost_counter:         int   = 0  # shared cost recovery interval counter
 
+# ─── 진영 (블루 / 레드) ───────────────────────────────────────────────────────
+# 어느 팀이 블루인가. 0 = 플레이어 팀, 1 = AI 팀. `match_ctx.player_side`
+# (GameEnums.DraftSide) 에서 유도되며, MatchFlow 를 거치지 않은 단독 실행에서는
+# 플레이어가 블루다.
+#
+# 블루는 밴픽에서 **후밴 / 후픽**을 하는 대신 인게임에서 두 가지를 가져간다:
+#   1. 개시 시점에 전략 포인트를 `BLUE_COST_HEAD_START` 만큼 선점한다.
+#   2. 양 팀이 같은 점수로 문턱에 닿았을 때 **먼저 차례를 잡는다**
+#      (CardPhaseManager.do_battle_turn 의 우선순위 규칙).
+var blue_team: int = 0
+
 # ─── Card cost-modifier state ────────────────────────────────────────────────
 # Set by 비용 카드 효과들 (사전 준비 / 전투 준비 / 집중 …) and consumed at
 # card-play / card-draw time. The phase-bound pair resets when
@@ -182,6 +207,23 @@ var phase_cost_inc_p:         int = 0
 var phase_cost_inc_ai:        int = 0
 var phase_draw_discount_p:    int = 0
 var phase_draw_discount_ai:   int = 0
+
+# ─── 카드 지연 효과 상태 ─────────────────────────────────────────────────────
+# 계획 중시 (`preserve:N`) — 상한 초과 자동 버리기로부터 보호되는 손패 카드들.
+# `CardPhaseManager._trim_hand_overflow` 만 이 목록을 본다: 카드 효과에 의한
+# **강제** 버리기(재고 / 완벽한 마무리 / 과감한 정리 / 솔로 퍼포먼스)는 보존을
+# 무시한다. 보존은 그 팀의 **다음 작전 단계 시작 시** 통째로 해제된다.
+var preserved_cards_p:  Array = []   # Array[CardData]
+var preserved_cards_ai: Array = []
+# 아드레날린 (`strategy_next_phase:N`) — 다음 작전 단계 진입 시 전략 점수에
+# 더해질 값(음수 가능). 적용 후 0으로 리셋되며 점수는 0 아래로 내려가지 않는다.
+var next_phase_strategy_p:  int = 0
+var next_phase_strategy_ai: int = 0
+# 계획 살인 (`strategy_on_kill:N`) — **선불 예약형** 현상금. 카드를 낸 시점에
+# 심어 두고, `mark_pilot_dead` 가 상대 팀 파일럿의 사망을 볼 때 한 번 지급하고
+# 소모한다. 그 작전 단계가 끝나면 미사용분은 사라진다.
+var kill_bounty_p:  int = 0
+var kill_bounty_ai: int = 0
 
 # ─── Temporary jungle captures (약탈) ────────────────────────────────────────
 # Each entry: {cell: Vector2i, prev_owner: int, expires_turn: int}. SimulationCore
@@ -344,6 +386,26 @@ func _on_data_load_failed(reason: String) -> void:
 	lbl.set_anchors_preset(Control.PRESET_CENTER)
 
 
+## Reads `match_ctx.player_side` into `blue_team` and seeds both sides' 전략
+## 포인트 from it: 블루가 `BLUE_COST_HEAD_START` 만큼 앞선 채로 시작한다.
+##
+## 선점은 순전히 **선을 잡기 위한** 장치다 — COST_RECOVERY 는 양 팀에 같은
+## 틱에 같은 양이 들어가므로, 개시 시점의 차이가 그대로 유지되어 블루가 항상
+## 문턱에 먼저 닿는다. 같은 점수로 동시에 닿는 경우(카드로 점수를 쓴 뒤 등)의
+## 타이브레이크는 CardPhaseManager 의 차례 우선순위가 따로 책임진다.
+##
+## MatchFlow 를 거치지 않은 단독 실행에서는 match_ctx 가 비어 있어 플레이어가
+## 블루가 된다.
+func seed_side_costs() -> void:
+	var side: int = GameEnums.DraftSide.BLUE
+	if gm != null and bool(gm.match_ctx.get("active", false)):
+		side = int(gm.match_ctx.get("player_side", GameEnums.DraftSide.BLUE))
+	# player_side 는 "플레이어 팀의 진영"이므로, 플레이어가 BLUE 면 블루 팀은 0.
+	blue_team = 0 if side == GameEnums.DraftSide.BLUE else 1
+	player_cost = BLUE_COST_HEAD_START if blue_team == 0 else 0
+	ai_cost     = BLUE_COST_HEAD_START if blue_team == 1 else 0
+
+
 func _populate_from_data_loader() -> void:
 	var cfg: Dictionary = _data_loader.game_cfg
 
@@ -356,14 +418,19 @@ func _populate_from_data_loader() -> void:
 	TURRET_SPEED            = int(cfg.get("TURRET_SPEED", "55"))
 	RECALL_HP_THRESHOLD     = float(cfg.get("RECALL_HP_THRESHOLD", "0.2"))
 	BATTLE_PILOT_DMG_MULT   = float(cfg.get("BATTLE_PILOT_DMG_MULT", "0.5"))
-	MAX_HAND_SIZE           = int(cfg.get("MAX_HAND_SIZE", "7"))
+	MAX_HAND_SIZE           = int(cfg.get("MAX_HAND_SIZE", "12"))
+	INITIAL_HAND_SIZE       = int(cfg.get("INITIAL_HAND_SIZE", "5"))
+	BLUE_COST_HEAD_START    = int(cfg.get("BLUE_COST_HEAD_START", "1"))
 	COST_RECOVERY           = int(cfg.get("COST_RECOVERY", "1"))
 	CARD_DRAW_INTERVAL      = max(1, int(cfg.get("CARD_DRAW_INTERVAL", "1")))
 	COST_RECOVERY_INTERVAL  = max(1, int(cfg.get("COST_RECOVERY_INTERVAL", "1")))
 	PHASE_THRESHOLD         = int(cfg.get("PHASE_THRESHOLD", "8"))
+	ECONOMY_START_TURN      = max(1, int(cfg.get("ECONOMY_START_TURN", "1")))
+	GROWTH_PER_TURN         = float(cfg.get("GROWTH_PER_TURN", "0.0"))
 	# Init counters so first event fires on turn 1
 	draw_counter = CARD_DRAW_INTERVAL - 1
 	cost_counter = COST_RECOVERY_INTERVAL - 1
+	seed_side_costs()
 
 	# Pilot stats
 	ROLE_STATS      = _data_loader.pilot_stats.duplicate(true)
@@ -484,6 +551,20 @@ func mark_pilot_dead(p: PilotData) -> void:
 	p.shield        = 0
 	p.respawn_timer = respawn_turns_now()
 	anim_pilot_death(p)
+	_award_kill_bounty(p.team)
+
+
+## 계획 살인의 지급 지점. 전장에는 제3세력이 없으므로 "누가 죽였는가"를 따로
+## 넘겨받을 필요가 없다 — 쓰러진 파일럿의 **반대 팀**이 처치자다. 예약해 둔
+## 현상금이 있으면 한 번 지급하고 곧바로 소모한다(카드 한 장 = 처치 한 번).
+func _award_kill_bounty(dead_team: int) -> void:
+	if dead_team == 1:
+		if kill_bounty_p > 0:
+			player_cost += kill_bounty_p
+			kill_bounty_p = 0
+	elif kill_bounty_ai > 0:
+		ai_cost += kill_bounty_ai
+		kill_bounty_ai = 0
 
 
 # ─── Pilot animation driver ──────────────────────────────────────────────────
@@ -739,12 +820,18 @@ func _on_restart_pressed() -> void:
 	turrets.clear()
 	player_hand.clear();    ai_hand.clear()
 	player_discard.clear(); ai_discard.clear()
-	player_cost = 0;        ai_cost = 0
+	# 진영 선점 포인트를 다시 심는다 — _populate_from_data_loader 가 이미
+	# seed_side_costs() 를 돌렸지만, 여기서 0 으로 밀어 버리면 재시작한 판에서만
+	# 블루의 선이 사라진다.
+	seed_side_costs()
 	pending_atk_buff_p = 0; pending_atk_buff_ai = 0
 	cards_played_this_phase = 0
 	engage_discount_p = 0; engage_discount_ai = 0
 	phase_cost_inc_p = 0; phase_cost_inc_ai = 0
 	phase_draw_discount_p = 0; phase_draw_discount_ai = 0
+	preserved_cards_p.clear(); preserved_cards_ai.clear()
+	next_phase_strategy_p = 0; next_phase_strategy_ai = 0
+	kill_bounty_p = 0; kill_bounty_ai = 0
 	temp_zone_overrides.clear()
 	_clear_turret_hit_visuals()
 	if renderer != null:

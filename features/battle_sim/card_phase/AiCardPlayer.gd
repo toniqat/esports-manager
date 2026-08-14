@@ -27,6 +27,15 @@ const SCALE_SMALL       := Vector2(0.85, 0.85)
 const FLY_FROM_HAND_SEC := 0.32
 const FLIP_HALF_SEC     := 0.10
 
+# 한 차례에 AI 가 낼 수 있는 최대 카드 수.
+#
+# 루프의 종료 조건은 "낼 수 있는 카드가 없을 때"인데, 비용을 쓰지 않으면서
+# 손패를 회전시키는 카드가 그 조건을 영원히 미룰 수 있다 — 재고(비용 0, 손패를
+# 전부 버리고 같은 수를 다시 뽑는다)가 대표적으로, 덱 + discard 가 마르기
+# 전까지 무한히 다시 뽑힌다. 이 상한은 그 구조적 루프를 끊는 백스톱이지
+# 밸런스 노브가 아니다 — 정상적인 손패라면 절대 닿지 않는다.
+const MAX_PLAYS_PER_TURN := 12
+
 var _bs: BattleSim = null
 
 
@@ -41,7 +50,11 @@ func bind(bs: BattleSim) -> void:
 func run_ai_plays() -> void:
 	if _bs.ai_cost < _bs.PHASE_THRESHOLD:
 		return
+	var plays: int = 0
 	while not _bs.ai_hand.is_empty():
+		if plays >= MAX_PLAYS_PER_TURN:
+			break
+		plays += 1
 		var affordable: Array = []
 		for raw in _bs.ai_hand:
 			var cd := raw as CardData
@@ -69,6 +82,11 @@ func run_ai_plays() -> void:
 		# otherwise the next AI play stomps the open arena.
 		if _bs.engage_phase.is_active():
 			await _bs.engage_phase.engage_finished
+		# 완벽한 마무리 — 그 카드의 `end_phase` 절이 이 루프를 끝낸다. 아레나를
+		# 기다린 **뒤**에 확인하는 것이 중요하다: 먼저 끊으면 카드가 연 교전이
+		# 화면에 뜬 채로 상대 차례가 닫힌다.
+		if _bs.card_phase.consume_end_phase_request():
+			break
 		await _bs.get_tree().create_timer(POST_GAP_SEC).timeout
 
 

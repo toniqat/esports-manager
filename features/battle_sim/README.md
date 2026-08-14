@@ -22,7 +22,8 @@ On `_ready()`, BattleSim reads `GameManager.match_ctx`:
 | `player_roster[i].gamesense` | PilotData.evasion (combat 회피율) |
 | `enemy_roster[i].assigned_mech` / stats | same, for team 1 |
 | `jungle_start_dir` | PilotData.jungle_start_pref on the player-team assassin |
-| `active = false` | Triggers fallback to ROLE_STATS (no MatchFlow ran) |
+| `player_side` | `BattleSim.blue_team` via `seed_side_costs()` — 블루 진영의 전략 포인트 선점 + 선턴 |
+| `active = false` | Triggers fallback to ROLE_STATS (no MatchFlow ran); 진영도 플레이어=블루로 떨어진다 |
 
 ---
 
@@ -177,7 +178,10 @@ Responsibilities:
   laning phase. **`BattleSim.mark_pilot_dead(p)` is the only place a pilot
   dies** — battlefield combat, 전진, 공격 카드 and the engage arena all funnel
   through it, so the scaling and the 전사 연출 can never be wired into one path
-  and forgotten in another.
+  and forgotten in another. It is also where **계획 살인** pays out: the
+  reserved `kill_bounty_p/ai` goes to the *opposite* team of the pilot who
+  fell (`_award_kill_bounty`). No killer argument was added — the battlefield
+  has no third faction, so "the other team did it" is exact.
 - During CARD_PHASE the recall check is paused; it runs again at end of phase
   via `process_phase_end_recalls`.
 
@@ -221,6 +225,12 @@ Responsibilities:
 
 ### Card Phase (작전 단계)
 - Triggered when `player_cost >= PHASE_THRESHOLD`.
+- **개시 상태는 진영이 정한다.** `BattleSim.blue_team` (match_ctx.player_side
+  에서 유도; MatchFlow 는 지금 플레이어를 항상 BLUE 로 고정) 쪽이
+  `BLUE_COST_HEAD_START`(1) 만큼 전략 포인트를 선점한 채 시작하므로 문턱에 먼저
+  닿는다 — 밴픽에서 후밴/후픽을 하는 대가다. 양 팀 모두 개시 손패
+  `INITIAL_HAND_SIZE`(5)장을 들고 시작해, 첫 차례에는 손패가 상한
+  `MAX_HAND_SIZE`(12)에 딱 맞게 찬다.
 - Ending the phase goes through the player's 전략 포인트 도넛: tap it once to
   flip it into a circular 턴 넘기기 button, tap again to end. The 턴 넘기기
   face stays disabled until the player **plays at least one card** this phase
@@ -233,7 +243,11 @@ Responsibilities:
   it fires from the BATTLE tick when `ai_cost >= PHASE_THRESHOLD` *and* the AI
   holds a card it can pay for, and only then does the "상대 차례" banner show.
   It runs inside BATTLE with the auto-tick held, then runs the same recall
-  sweep. See [`card_phase/README.md`](card_phase/README.md).
+  sweep. When **both** sides are over the threshold on the same tick,
+  `CardPhaseManager._next_turn_side()` arbitrates: 블루 먼저, 그 다음부터는
+  직전에 잡지 않은 쪽이 잡는 **교대**. 교대가 굶주림 방지를 맡으므로 예전의
+  "AI 를 무조건 먼저 검사한다" 규칙은 사라졌다.
+  See [`card_phase/README.md`](card_phase/README.md).
 
 ### Engage (전투 개시) — 사이드뷰 벨트 교전 (ATB)
 Card-driven sub-phase: `engage:N` opens a **real-time side-view belt-scroll

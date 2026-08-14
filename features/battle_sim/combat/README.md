@@ -62,6 +62,10 @@ Main turn loop and all combat / movement / spawn logic. Each `simulate_turn`
 counts as **1 minute** of in-game time.
 
 ### Turn loop (`simulate_turn`)
+0. **`tick_growth_and_expiries`** — 성장 누적 + 턴 만료형 버프 회수. 턴의 맨
+   앞이라야 이번 턴의 교전이 갱신된 스탯으로 굴러가고, 바로 뒤에 붙었다
+   떼어지는 `pending_atk_buff` 가 성장 재계산에 지워지지 않는다. 아래
+   "성장 / 라인전 스탯" 참조.
 1. `process_respawns` — one sweep over everyone off the field, which now means
    the dead and only the dead: count `respawn_timer` down, return at own HQ at
    full HP when it hits 0.
@@ -89,6 +93,33 @@ free movement saw the pre-damage world and pushes saw the post-damage one.
 A single movement pass is what makes the pass-through bug structurally
 impossible; the two-pass split is described under "Movement".
 
+### 성장 / 라인전 스탯 (`tick_growth_and_expiries`)
+두 시스템이 같은 훅에서 돌지만 **건드리는 스탯이 겹치지 않는다** — 성장은
+`atk` / `max_hp`, 라인전 스탯은 `hit` / `evasion`.
+
+**성장** — 살아 있는 파일럿의 `atk` / `max_hp` 가 매 턴 `GROWTH_PER_TURN`
+(game_config, **0.01** = +1%p) 만큼 원본 대비 늘어난다.
+- **1턴부터 돈다.** `ECONOMY_START_TURN`(4턴) 게이트는 전략 점수 / 자동 드로우
+  같은 **카드 경제** 전용이고 성장에는 걸리지 않는다.
+- 스탯은 매 턴 곱해 나가는 대신 `PilotData.base_atk` / `base_max_hp` 에서
+  **다시 계산**한다 — 매 턴 반올림이 끼면 오차가 누적돼 실제 성장률을 갉아먹는다.
+  두 원본은 `PilotData._init` 이 채우므로 메크 스탯 주입(`_stats_for`)을 포함한
+  모든 스폰 경로에서 비지 않는다.
+- 최대 체력이 오른 만큼 현재 체력도 같이 올린다(`hp += new_max - max_hp`).
+- **죽어 있는 파일럿은 성장하지 않는다.** 누적치(`growth`)는 그대로 남으므로
+  부활하면 죽기 전 성장을 들고 돌아온다 — 사망의 비용에 "성장이 멈춘 시간"이
+  포함되는 셈이다.
+- 획득 배율(`growth_rate_mult`)은 안전한 파밍(턴 만료형)과 완벽한 마무리
+  (작전 단계 만료형)가 건드린다. **같은 필드라 나중에 건 쪽이 덮어쓴다.**
+  후자의 해제는 `clear_growth_until_phase(team)` 를 `CardPhaseManager` 가
+  그 팀의 다음 작전 단계 진입 시 부른다.
+
+**라인전 스탯** (`lane_stat_mod`, ±0.10) — `roll_hit` **하나에만** 걸린다.
+전장 자동 교전과 공격 카드가 그 함수를 공유하므로 둘 다 반영되고, 교전 무대는
+자기 확률 구간을 쓰므로 반영되지 않는다. 포탑 / HQ 피해는 명중 판정 자체가
+없으므로 무관하다. 만료(`lane_stat_expire_turn`)는 성장 만료와 같은 훅에서
+처리하며, **죽어 있어도 돈다** — 버프의 수명은 전장에 서 있는지와 무관하다.
+
 ### Combat (`_resolve_cell`)
 Combat happens **only between pilots in the same cell**. There is no
 adjacent-cell engagement and no concept of attack range.
@@ -107,9 +138,11 @@ Per cell with at least one pilot:
     card attacks share it, see `card_phase/README.md`) — **battlefield-only**;
     the 교전 무대 remaps this into its own 80~100% band
     (`ENGAGE_HIT_MIN` / `ENGAGE_HIT_MAX`, see `engage/README.md`), and the two
-    are tuned independently.
+    are tuned independently. **라인전 스탯**(`lane_stat_mod`)이 붙는 유일한
+    지점도 여기다 — `lane_adjusted()` 가 공격자의 `hit` 과 방어자의 `evasion` 에
+    각자 자기 배율을 곱한다.
     Damage per landed hit is `_pilot_hit_damage(attacker)` =
-    `atk × BATTLE_PILOT_DMG_MULT` (game_config, **0.5**), rounded, floored at 1.
+    `atk × BATTLE_PILOT_DMG_MULT` (game_config, **0.35**), rounded, floored at 1.
     That multiplier covers **only damage pilots take from battlefield
     engagement** — the same helper is used by the turret-siege defender rolls.
     Pilot → turret and pilot → HQ damage stay at raw `atk` (siege speed is match

@@ -33,6 +33,10 @@ func simulate_turn() -> void:
 		return
 	_bs.turn_count += 1
 	_bs.blog.begin_turn()
+	# 성장 / 지속 효과 만료가 턴의 맨 앞이다. 이 자리라야 이번 턴의 교전이
+	# 갱신된 스탯으로 굴러가고, 뒤이어 붙는 pending_atk_buff 가 성장 재계산에
+	# 지워지지 않는다(버프는 같은 simulate_turn 안에서 붙었다 떼어진다).
+	tick_growth_and_expiries()
 	_bs.blog.stage("1-respawn")
 	process_respawns()
 
@@ -165,6 +169,52 @@ func simulate_turn() -> void:
 	_bs.blog.end_turn()
 	_bs.renderer.queue_redraw()
 	_bs.hud.update_hud()
+
+
+# ─── 성장 / 지속 효과 만료 ───────────────────────────────────────────────────
+## 매 턴 한 번, 살아 있는 파일럿의 누적 성장을 굴리고 턴 만료형 버프를 걷는다.
+##
+## **성장은 1턴부터 돈다.** `ECONOMY_START_TURN`(4턴) 게이트는 전략 점수 회복과
+## 자동 드로우 — 즉 카드 경제 — 에만 걸리는 규칙이라 여기에는 적용하지 않는다.
+##
+## 스탯은 매 턴 곱해 나가는 대신 **원본에서 다시 계산**한다. 반올림이 매 턴
+## 끼어들면 누적 오차가 실제 성장률을 갉아먹기 때문이다. 최대 체력이 오른 만큼
+## 현재 체력도 같이 올려 주므로, 성장이 만피 파일럿을 상대적으로 다치게 하지
+## 않는다.
+##
+## 죽어 있는 파일럿은 성장하지 않는다 — 누적치(`growth`)는 그대로 남으므로
+## 부활하면 죽기 전 성장을 그대로 들고 돌아온다. 사망의 비용에 "성장이 멈춘
+## 시간"이 포함되는 셈이다.
+func tick_growth_and_expiries() -> void:
+	var turn: int = _bs.turn_count
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		# 만료는 죽어 있어도 돈다 — 버프의 수명은 전장에 서 있는지와 무관하다.
+		if p.growth_rate_expire_turn >= 0 and turn >= p.growth_rate_expire_turn:
+			p.growth_rate_mult        = 1.0
+			p.growth_rate_expire_turn = -1
+		if p.lane_stat_expire_turn >= 0 and turn >= p.lane_stat_expire_turn:
+			p.lane_stat_mod        = 0.0
+			p.lane_stat_expire_turn = -1
+		if not p.alive:
+			continue
+		p.growth += _bs.GROWTH_PER_TURN * p.growth_rate_mult
+		p.atk = maxi(1, roundi(float(p.base_atk) * (1.0 + p.growth)))
+		var new_max: int = maxi(1, roundi(float(p.base_max_hp) * (1.0 + p.growth)))
+		p.hp     = maxi(1, p.hp + (new_max - p.max_hp))
+		p.max_hp = new_max
+
+
+## 작전 단계 만료형 성장 배율(완벽한 마무리)을 `team` 전원에게서 걷는다.
+## CardPhaseManager 가 그 팀의 **다음 작전 단계 진입 시** 부른다.
+func clear_growth_until_phase(team: int) -> void:
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		if p.team != team or not p.growth_until_phase:
+			continue
+		p.growth_until_phase      = false
+		p.growth_rate_mult        = 1.0
+		p.growth_rate_expire_turn = -1
 
 
 # Compact "T0 F1 A0" style list of pilot labels — used for the per-turn
@@ -398,11 +448,24 @@ func _apply_turret_siege(attackers: Array, defenders: Array, td: TurretData,
 #
 # 공개 함수 — 카드 공격(`CardPhaseManager._effect_attack`)도 같은 판정을 쓴다.
 # 전장 교전과 공격 카드의 명중률이 갈라지지 않도록 여기 한 곳만 고치면 된다.
+#
+# **라인전 스탯**(`PilotData.lane_stat_mod`)이 붙는 유일한 지점이기도 하다.
+# 공격자의 `hit` 과 방어자의 `evasion` 에 **각자 자기 배율**이 곱해지므로,
+# 공격적인 라인전(+10%)을 건 파일럿은 때릴 때 더 잘 맞히고 맞을 때 더 잘 피한다.
+# `atk` / `max_hp` 는 여기서 손대지 않는다 — 그쪽은 성장이 담당한다.
 func roll_hit(attacker: PilotData, defender: PilotData) -> bool:
-	var num := float(attacker.hit)
-	var den := float(attacker.hit + defender.evasion)
+	var num := float(lane_adjusted(attacker.hit, attacker))
+	var den := num + float(lane_adjusted(defender.evasion, defender))
 	if den <= 0.0: return false
 	return randf() < (num / den)
+
+
+## 라인전 스탯 배율을 먹인 hit / evasion 값. 최소 1 을 보장해 −100% 같은 값이
+## 판정을 0으로 무너뜨리지 않게 한다.
+func lane_adjusted(stat_value: int, p: PilotData) -> int:
+	if p == null or is_zero_approx(p.lane_stat_mod):
+		return stat_value
+	return maxi(1, roundi(float(stat_value) * (1.0 + p.lane_stat_mod)))
 
 
 # 명중 1회가 **파일럿에게** 넣는 전장 피해. `BattleSim.BATTLE_PILOT_DMG_MULT`

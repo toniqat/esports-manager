@@ -1,15 +1,22 @@
 class_name CardSelectOverlay
 extends Node
 
-# Modal UI used by 버리기:N (discard) and 찾기:N (search/tutor) card effects.
-# Owns a high-priority CanvasLayer and an ad-hoc set of Buttons / ColorRects
-# that get rebuilt every time start_*() is called and freed in _teardown().
-# CardPhaseManager pauses its effect-chain processing while is_active() is
-# true; the configured callbacks resume or revert the chain.
+# Modal UI used by 버리기:N (discard), 찾기:N (search/tutor) and 보존:N
+# (preserve) card effects. Owns a high-priority CanvasLayer and an ad-hoc set of
+# Buttons / ColorRects that get rebuilt every time start_*() is called and freed
+# in _teardown(). CardPhaseManager pauses its effect-chain processing while
+# is_active() is true; the configured callbacks resume or revert the chain.
+#
+# SEARCH and PRESERVE share the whole grid UI and differ only in **where the
+# cards come from and what the caller does with the picks**: SEARCH lists the
+# deck and the caller moves the picks into the hand, PRESERVE lists the hand and
+# the caller only marks the picks. Neither mode mutates a pile itself, which is
+# what makes the sharing safe — DISCARD is the odd one out because it pulls the
+# picked cards out of the live hand as they are chosen.
 
 var _bs: BattleSim = null
 
-enum Mode { NONE, DISCARD, SEARCH }
+enum Mode { NONE, DISCARD, SEARCH, PRESERVE }
 
 const DIM_COLOR             := Color(0.0, 0.0, 0.0, 0.55)
 # Vertical center of the to-discard row inside the dimmed battle area
@@ -44,8 +51,8 @@ var target_count: int = 0
 var to_discard_cards: Array = []   # CardData refs in the order they were picked
 var to_discard_nodes: Array = []   # Card visual nodes (live in _bs.canvas)
 
-# Search mode
-var search_selected: Array = []    # CardData refs (deck picks)
+# Search / preserve mode (shared grid state)
+var search_selected: Array = []    # CardData refs (deck picks / hand picks)
 var search_grid_nodes: Array = []  # Card visual nodes inside the scroll grid
 
 # Callbacks (CardPhaseManager binds these to its resume / cancel handlers).
@@ -127,7 +134,28 @@ func start_search(n: int, on_complete: Callable, on_cancel: Callable) -> void:
 		_finish_with_picks([])
 		return
 	_build_full_dim()
-	_build_search_grid()
+	_build_search_grid(_bs.player_deck)
+	_build_buttons(false)
+	_refresh_visibility()
+	_update_confirm_button()
+
+
+## 계획 중시 (`preserve:N`) — 손패를 찾기와 같은 그리드로 펼쳐 N장을 고르게 한다.
+## 찾기와 다른 점은 **어느 더미를 펼치느냐** 하나뿐이고, 고른 카드는 손패에서
+## 빠지지 않는다: 이 오버레이는 픽만 돌려주고, 보존 목록 등록은
+## `CardPhaseManager._on_preserve_overlay_complete` 가 한다.
+func start_preserve(n: int, on_complete: Callable, on_cancel: Callable) -> void:
+	mode = Mode.PRESERVE
+	target_count = max(0, min(n, _bs.player_hand.size()))
+	hidden_state = false
+	search_selected.clear()
+	_on_complete = on_complete
+	_on_cancel = on_cancel
+	if target_count <= 0:
+		_finish_with_picks([])
+		return
+	_build_full_dim()
+	_build_search_grid(_bs.player_hand)
 	_build_buttons(false)
 	_refresh_visibility()
 	_update_confirm_button()
@@ -164,7 +192,7 @@ func add_card_to_discard(node: Card) -> void:
 # Toggles the highlight + selection state of a deck card in the search grid.
 # Clamps to target_count selections at most.
 func _toggle_search_pick(cd: CardData, node: Card) -> void:
-	if mode != Mode.SEARCH or hidden_state:
+	if not _is_grid_mode() or hidden_state:
 		return
 	if cd in search_selected:
 		search_selected.erase(cd)
@@ -194,6 +222,11 @@ func _commit_search() -> void:
 	var picks := search_selected.duplicate()
 	_teardown()
 	_finish_with_picks(picks)
+
+
+## SEARCH 와 PRESERVE 는 같은 스크롤 그리드 UI 를 쓴다.
+func _is_grid_mode() -> bool:
+	return mode == Mode.SEARCH or mode == Mode.PRESERVE
 
 
 func _finish_with_picks(picks: Array) -> void:
@@ -275,7 +308,7 @@ func _build_buttons(is_discard: bool) -> void:
 		_btn_confirm.disabled = true
 		_overlay_layer.add_child(_btn_confirm)
 	else:
-		_btn_cancel = _make_btn("찾기 취소")
+		_btn_cancel = _make_btn("보존 취소" if mode == Mode.PRESERVE else "찾기 취소")
 		_btn_cancel.position = Vector2(right_x, top_y)
 		_btn_cancel.pressed.connect(_on_cancel_pressed)
 		_overlay_layer.add_child(_btn_cancel)
@@ -295,12 +328,14 @@ func _make_btn(label: String) -> Button:
 	return b
 
 
-func _build_search_grid() -> void:
-	# 이름 오름차순으로 펼친다 — 실제 player_deck 순서를 그대로 보여 주면
-	# 그리드가 곧 "다음에 뽑을 순서" 표가 되어 버린다. 정렬은 표시용 복사본에만
-	# 하고 원본 덱은 건드리지 않는다 (picks 는 CardData 참조라 순서와 무관).
+## Lays `source` out as the 5-column scroll grid both SEARCH and PRESERVE pick
+## from. `source` is never mutated — the picks come back as CardData refs.
+func _build_search_grid(source: Array) -> void:
+	# 이름 오름차순으로 펼친다 — 실제 더미 순서를 그대로 보여 주면 그리드가 곧
+	# "다음에 뽑을 순서" 표가 되어 버린다. 정렬은 표시용 복사본에만 하고 원본은
+	# 건드리지 않는다 (picks 는 CardData 참조라 순서와 무관).
 	# CardPileViewer 의 열람 목록도 같은 규칙을 쓴다.
-	var deck: Array = _sorted_for_display(_bs.player_deck)
+	var deck: Array = _sorted_for_display(source)
 	if deck.is_empty():
 		return
 	var grid_w: float = 1080.0 - 2.0 * SEARCH_GRID_SIDE_PAD
@@ -406,7 +441,7 @@ func _refresh_visibility() -> void:
 			_battle_dim.visible = show
 		for node in to_discard_nodes:
 			(node as Card).visible = show
-	elif mode == Mode.SEARCH:
+	elif _is_grid_mode():
 		if _full_dim != null:
 			_full_dim.visible = show
 		if _scroll_root != null:

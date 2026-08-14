@@ -43,6 +43,33 @@ var speed: int            = 70
 # data hook for future integration so card effects can build up the value now.
 var shield: int           = 0
 
+# ─── 성장 (인게임 누적) ───────────────────────────────────────────────────────
+# 파일럿은 매 턴 `BattleSim.GROWTH_PER_TURN` 만큼 `atk` 와 `max_hp` 가 늘어난다.
+# 누적치는 배율 하나(`growth`)로 들고 있고, 실제 스탯은 매 턴 **원본에서 다시
+# 계산**한다 — 매 턴 곱해 나가면 반올림 오차가 누적되기 때문.
+#
+# `base_atk` / `base_max_hp` 는 `_init` 이 채운다. 스폰 시점의 메크 스탯 주입
+# (`SimulationCore._stats_for`)이 생성자를 거치므로, 성장 이전의 원본은 언제나
+# 여기 남는다. 성장은 파일럿에 붙어 있으므로 **사망·리스폰으로 초기화되지 않는다**.
+var base_atk: int         = 0
+var base_max_hp: int      = 0
+var growth: float         = 0.0
+# 성장 획득 배율. 안전한 파밍(+10% → 1.10) / 완벽한 마무리(+25% → 1.25) 가 건다.
+# 두 카드는 같은 필드를 쓰므로 **나중에 건 쪽이 덮어쓴다**(합산 아님).
+var growth_rate_mult: float = 1.0
+# 턴 만료형 성장 배율의 만료 턴. -1 = 없음. (안전한 파밍)
+var growth_rate_expire_turn: int = -1
+# 작전 단계 만료형 성장 배율 표시. (완벽한 마무리) — 다음 작전 단계 진입 시 해제.
+var growth_until_phase: bool = false
+
+# ─── 라인전 스탯 ──────────────────────────────────────────────────────────────
+# **전장 명중 판정 전용** 배율 (+0.10 / −0.10). `SimulationCore.roll_hit` 이
+# 공격자의 `hit` 과 방어자의 `evasion` 에 각각 곱한다. `atk` / `max_hp` 는 건드리지
+# 않는다 — 그쪽은 성장이 담당한다. 교전 무대(RealtimeEngageSim)는 자기 명중률
+# 구간을 따로 쓰므로 이 값을 읽지 않는다.
+var lane_stat_mod: float  = 0.0
+var lane_stat_expire_turn: int = -1   # -1 = 없음
+
 # ─── Animation state (UI-only; SimulationCore does NOT read these) ────────────
 # Move tween: cell-to-cell pixel interpolation from anim_prev_grid_pos to grid_pos.
 var anim_prev_grid_pos: Vector2i = Vector2i.ZERO
@@ -83,3 +110,7 @@ func _init(p_role: int, p_team: int, p_pos: Vector2i, stats: Dictionary) -> void
 		presence = int(stats["presence"])
 	if stats.has("speed"):
 		speed = int(stats["speed"])
+	# 성장 계산의 원본. 생성자에서 잡아 두는 것이 요점이다 — 메크 스탯 주입은
+	# 이 생성자를 통해 들어오므로 어떤 스폰 경로를 타도 원본이 비지 않는다.
+	base_atk    = atk
+	base_max_hp = max_hp

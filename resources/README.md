@@ -24,9 +24,15 @@ One row from the `cards` SQLite table, plus a few runtime fields:
   `allowed_for_guerrilla(is_guerrilla)`. `lane` cards never reach a 정글러 and
   `jungle` cards never reach a 레인 파일럿. Unknown values = unrestricted.
 - `pool: int` — `1` = in the random starter-deck pool, `0` = excluded (결투).
+- `card_type: String` — `mech` / `pilot` (`TYPE_*` consts). 덱 구성의 1차 분류:
+  파일럿마다 `mech` 3장 + `pilot` 3장을 받는다.
+- `card_cat: String` — `-` / `lane` / `draw` / `jungle` / `common` (`CAT_*`
+  consts). 파일럿 카드의 슬롯 분류. `fits_category(cat)` 가 매칭을 답하고,
+  **`common` 은 라인전 슬롯과 정글 슬롯 양쪽에 든다** — 복귀(id 21) 하나뿐이며,
+  라인전 카드이면서 정글러도 뽑을 수 있어야 하기 때문. `scope` 와 역할이
+  다르다: `scope` 는 *누가 가질 수 있는가*, `card_cat` 은 *어느 슬롯을 채우는가*.
 - `owner_pilot: PilotData` (runtime, **not** `@export`) — the 시전자, set
   by `CardPhaseManager.build_starter_decks()`
-- `remaining_uses: int` (runtime) — per-instance charges left this match
 
 Instantiated at runtime by `CardPhaseManager.build_starter_decks()` from the
 `cards` SQLite table (loaded into `GameManager.card_pool_bs`). Not saved to disk.
@@ -72,6 +78,24 @@ spends it to skip the pilot for exactly one movement pass, so the lane walk
 restarts from waypoint 0 the next turn. Nothing else reads it. (The former
 model — off the field, healing `RECALL_HEAL_RATIO` per turn until full — and its
 `is_recalling` flag are both gone.)
+
+**성장 필드 6개** — `base_atk` / `base_max_hp` / `growth` / `growth_rate_mult` /
+`growth_rate_expire_turn` / `growth_until_phase`. 매 턴
+`SimulationCore.tick_growth_and_expiries` 가 살아 있는 파일럿의 `growth` 를
+`BattleSim.GROWTH_PER_TURN × growth_rate_mult` 만큼 올리고, `atk` / `max_hp` 를
+**원본에서 다시 계산**한다(매 턴 곱하면 반올림 오차가 누적된다). 두 원본은
+`_init` 이 채운다 — 메크 스탯 주입(`SimulationCore._stats_for`)이 생성자를
+거치므로 어떤 스폰 경로에서도 비지 않는다. `growth` 는 파일럿에 붙어 있어
+**사망·리스폰으로 초기화되지 않는다**(죽어 있는 동안 성장이 멈출 뿐).
+`growth_rate_mult` 는 안전한 파밍(턴 만료)과 완벽한 마무리(작전 단계 만료)가
+공유하므로 나중에 건 쪽이 덮어쓴다.
+
+**라인전 스탯 2개** — `lane_stat_mod` (±0.10) / `lane_stat_expire_turn`.
+`SimulationCore.roll_hit` **한 곳에서만** 읽히며, 공격자의 `hit` 과 방어자의
+`evasion` 에 각자 자기 배율이 곱해진다(`lane_adjusted`). `atk` / `max_hp` 는
+건드리지 않는다 — 그쪽은 성장 담당이다. 전장 자동 교전과 공격 카드가 같은
+`roll_hit` 을 쓰므로 둘 다 반영되고, 교전 무대는 자기 확률 구간을 쓰므로
+반영되지 않는다.
 
 `jungle_roam_target: Vector2i` ((-1,-1) = none) is the jungler's sticky roam
 destination, held across turns by `SimulationCore._jungle_goal_for` so the
@@ -135,6 +159,30 @@ Loaded from the `mechs` table.
 Optional inspector-set blueprint resources for `Building` / `Waypoint` nodes
 under `BattleField/BuildingLayer` and `BattleField/WaypointLayer`.
 
+### PilotImages.gd
+`class_name PilotImages`, extends `RefCounted`. Static lookup for the pilot
+portraits under `resources/images/pilot/{faces,circle}/`.
+
+**id ↔ file ↔ 이름은 한 줄로 묶여 있다.** `players.csv` 의 pilot id `N` 은
+`N+1_rect.png` / `N+1_circle.png` 를 쓰고(파일명은 1-based, id 는 0-based),
+그 그림이 **어떤 젠레스 존 제로 에이전트인지**가 곧 `players.csv` 의 `name`
+이다 — 40장 전부 공식 에이전트 아이콘 아트와 1:1로 대조해 붙인 이름이다.
+그러므로 **`players.csv` 의 행 순서나 id 를 바꾸면 이름과 초상화가 어긋난다.**
+스탯을 옮기고 싶으면 id 는 고정한 채 스탯 열만 옮길 것.
+
+네 자리는 같은 캐릭터의 **대체 코스튬 아트**라 원래 이름을 쓸 수 없어 별도 태그를
+붙였다 — id 6 `Soldier 0`(Soldier 0 - Anby, id 13 `Anby` 와 동일 인물의 별개
+에이전트), id 26 `Chandelier`(Astra Yao / Chandelier, id 25 `Astra`),
+id 28 `Teatime`(Sunna / Afternoon Tea Break, id 27 `Sunna`),
+id 36 `Ink`(Yixuan / Trails of Ink, id 35 `Yixuan`).
+
+INTL 파일럿(id ≥ 100)은 초상화가 없다 — `has_image()` 가 false 를 돌려주고
+호출자가 플레이스홀더로 대체한다. `intl_players.csv` 의 이름은 그래서 초상화
+제약 없이 **남은 에이전트 중에서** 골라 붙였다.
+
+`prime_into(parent)` 는 반드시 `BattleSim._ready()` 같은 진입 시점에 한 번
+불러야 한다 — 안 부르면 `draw_texture_rect` 가 흰 사각형을 그린다.
+
 ### UiHelpers.gd
 `class_name UiHelpers`, extends `RefCounted`. Static helpers for
 procedurally-built UI panels — currently `mk_label(...)` shared by MatchFlow
@@ -149,7 +197,7 @@ GameEnums.MatchPhase.BAN_PICK
 var card = CardData.new("Strike", 1, "A basic attack.")
 
 # Match-flow data
-var p := PlayerData.new(0, "Faker", GameEnums.Role.ASSASSIN, 0, 95, 95, 98, 95, 98)
+var p := PlayerData.new(0, "Corin", GameEnums.Role.ASSASSIN, 0, 95, 95, 98, 95, 98)
 var m := MechData.new(12, "Phantom-S1", 90, 26, 0, 2)
 p.assigned_mech = m
 ```

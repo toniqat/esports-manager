@@ -66,8 +66,13 @@ func _ready() -> void:
 		# player_side, idempotent).
 		player_side = int((resume as Dictionary).get("player_side", GameEnums.DraftSide.BLUE))
 	else:
-		# Fresh entry — randomize sides.
-		player_side = GameEnums.DraftSide.BLUE if randi() % 2 == 0 else GameEnums.DraftSide.RED
+		# Fresh entry — 플레이어는 **항상 블루**다. 진영은 밴픽 순서(레드 =
+		# 선밴/선픽, 블루 = 후밴/후픽)와 인게임 선(블루 = 전략 포인트 선점 +
+		# 선턴, BattleSim.seed_side_costs)을 동시에 결정하는데, 두 축이 다
+		# 갖춰지기 전까지는 한쪽으로 고정해 둔다. 진영 추첨을 되살릴 때는 이
+		# 한 줄만 되돌리면 된다 — 아래 흐름은 이미 player_side 를 그대로 타고
+		# 내려가고, BattleSim 도 match_ctx.player_side 를 읽어 블루를 정한다.
+		player_side = GameEnums.DraftSide.BLUE
 
 	# Wire signals
 	_prep.phase_finished.connect(_on_prep_finished)

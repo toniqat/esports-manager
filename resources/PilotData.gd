@@ -34,10 +34,10 @@ var hit: int              = 50
 var evasion: int          = 50
 # 존재감 — 전투 개시(engage)에서만 참조. 근접 메크 4, 원거리 메크 2.
 # 피격 가중치(높을수록 자주 표적이 됨).
+#
+# **속도(speed)는 삭제됐다** — 교전이 라운드 기반 턴제가 되면서 라운드마다
+# 전원이 한 번씩 행동하므로 행동 빈도를 가르는 스탯이 없다. 되살리지 말 것.
 var presence: int         = 4
-# 속도 — 교전 아레나의 ATB 충전 속도(mechs.csv → MechData.speed). 전장은 읽지
-# 않는다. 폴백은 근접 78 / 원거리 82.
-var speed: int            = 70
 # 보호막. Granted by the 보호 card; removed on 본진 복귀 (RecallSystem clears it).
 # Damage absorption isn't wired into SimulationCore yet — this field is the
 # data hook for future integration so card effects can build up the value now.
@@ -62,10 +62,19 @@ var growth_rate_expire_turn: int = -1
 # 작전 단계 만료형 성장 배율 표시. (완벽한 마무리) — 다음 작전 단계 진입 시 해제.
 var growth_until_phase: bool = false
 
+# ─── 성장치 (파일럿 점수) ─────────────────────────────────────────────────────
+# 개시 1.00k 에서 시작해 처치 / 사망 / 준 피해 / 포탑 · HQ 피해로 누적되는 종합
+# 지표. 파일럿 스트립에 숫자로 찍히고 팀 점수는 팀원 합산이다. 상한이 없다.
+#
+# **바로 위의 `growth` 와는 다른 것이다.** `growth` 는 스탯을 밀어 올리는 배율,
+# `score` 는 스탯에 아무 영향이 없는 기여 지표다. 적립 규칙과 상수는 전부
+# `BattleSim` 의 `SCORE_*` 절에 있고, 변동은 `BattleSim.add_score` 한 곳만 지난다.
+var score: float          = 1.0   # = BattleSim.SCORE_START
+
 # ─── 라인전 스탯 ──────────────────────────────────────────────────────────────
 # **전장 명중 판정 전용** 배율 (+0.10 / −0.10). `SimulationCore.roll_hit` 이
 # 공격자의 `hit` 과 방어자의 `evasion` 에 각각 곱한다. `atk` / `max_hp` 는 건드리지
-# 않는다 — 그쪽은 성장이 담당한다. 교전 무대(RealtimeEngageSim)는 자기 명중률
+# 않는다 — 그쪽은 성장이 담당한다. 교전 무대(TurnEngageSim)는 자기 명중률
 # 구간을 따로 쓰므로 이 값을 읽지 않는다.
 var lane_stat_mod: float  = 0.0
 var lane_stat_expire_turn: int = -1   # -1 = 없음
@@ -108,8 +117,6 @@ func _init(p_role: int, p_team: int, p_pos: Vector2i, stats: Dictionary) -> void
 		evasion = int(stats["evasion"])
 	if stats.has("presence"):
 		presence = int(stats["presence"])
-	if stats.has("speed"):
-		speed = int(stats["speed"])
 	# 성장 계산의 원본. 생성자에서 잡아 두는 것이 요점이다 — 메크 스탯 주입은
 	# 이 생성자를 통해 들어오므로 어떤 스폰 경로를 타도 원본이 비지 않는다.
 	base_atk    = atk

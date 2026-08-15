@@ -2420,6 +2420,7 @@ func _effect_attack(n: int, flags: Array, caster: PilotData, enemy_team: int,
 func _apply_attack_damage(t: PilotData, caster: PilotData, n: int) -> int:
 	var atk_value: int = caster.atk if caster != null else 100
 	var dmg: int = max(1, atk_value * n)
+	var rolled: int = dmg
 	# 보호막 absorbs first, HP next.
 	if t.shield > 0:
 		var absorbed: int = min(t.shield, dmg)
@@ -2427,8 +2428,11 @@ func _apply_attack_damage(t: PilotData, caster: PilotData, n: int) -> int:
 		dmg -= absorbed
 	if dmg > 0:
 		t.hp = max(0, t.hp - dmg)
+	# 성장치는 **굴린 피해 전체**로 적립한다 — 보호막에 먹힌 몫도 기여다
+	# (전장 · 교전 무대의 집계와 같은 규칙).
+	_bs.score_pilot_damage(caster, rolled)
 	if t.hp <= 0:
-		_bs.mark_pilot_dead(t)
+		_bs.mark_pilot_dead(t, caster)
 	elif dmg > 0:
 		_bs.anim_pilot_shake(t)
 	return dmg
@@ -2465,16 +2469,8 @@ func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 			Callable(self, "_on_engage_finished"))
 	var tag: String = " (레인 제외)" if exclude_lane else ""
 	var who: String = "" if is_player else " (AI)"
-	# engage:N 의 N 은 실시간 교전 지속 초로 환산된다 (RealtimeEngageSim.SEC_PER_ROUND).
-	var secs: float = float(rounds) * RealtimeEngageSim.SEC_PER_ROUND
-	return "전투 개시 %s초%s%s" % [_fmt_secs(secs), tag, who]
-
-
-# 9.0 → "9", 4.5 → "4.5". 카드 로그의 초 표기 전용.
-static func _fmt_secs(secs: float) -> String:
-	if is_equal_approx(secs, round(secs)):
-		return str(int(round(secs)))
-	return "%.1f" % secs
+	# engage:N 의 N 은 **라운드 수** 그대로다 — 초로 환산하던 예전 규칙은 삭제됐다.
+	return "전투 개시 %d라운드%s%s" % [rounds, tag, who]
 
 
 # Engage 모달이 닫힌 직후 호출. 사망자가 생겼을 수 있고, 보호막/HP 가
@@ -2525,9 +2521,9 @@ func _effect_recall_ally(ally_team: int,
 	return "복귀 %s" % _bs.pilot_label(t)
 
 
-# 결투 — opens a real-time engage arena restricted to caster + picked enemy.
-# No round/time limit is shown: neither side can disengage, so the fight runs
-# until one of them is KO'd. RealtimeEngageSim.DUEL_MAX_SEC is only a runaway cap.
+# 결투 — opens a turn-based engage arena restricted to caster + picked enemy.
+# No round budget is shown: neither side can disengage, so the fight runs until
+# one of them is KO'd. TurnEngageSim.DUEL_MAX_ROUNDS is only a runaway cap.
 func _effect_duel(caster: PilotData, picked: PilotData,
 		is_player: bool) -> String:
 	if caster == null or picked == null:

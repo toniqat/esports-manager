@@ -44,8 +44,9 @@ And accesses shared state via `_bs.pilots`, `_bs.turn_count`, etc.
 | BattleRenderer | Node2D | `rendering/BattleRenderer.gd` | HQ/turret HP bars + per-cell pilot rendering |
 | CardPhaseManager | Node | `card_phase/CardPhaseManager.gd` | 작전 단계 turn flow, deck, fanned hand layout, phase-end gating |
 | GambitPhaseManager | Node | `gambit/GambitPhaseManager.gd` | Auto role→lane mapping + launch (UI removed; pre-battle choices live in `features/match_flow/`) |
-| EngagePhaseManager | Node | `engage/EngagePhaseManager.gd` | 전투 개시(engage) modal — **실시간 사이드뷰 벨트 교전** (`engage/RealtimeEngageSim.gd` ATB 시뮬 + `engage/EngageArena.gd` 렌더러) triggered by `engage:N` / `duel` cards. Lazily added in `_ready()`. |
-| HudBuilder     | Node | `ui/HudBuilder.gd`         | HUD construction; 전략 포인트 도넛 (`ui/CostDonut.gd`) is the only interactive in-battle widget |
+| EngagePhaseManager | Node | `engage/EngagePhaseManager.gd` | 전투 개시(engage) modal — **라운드 턴제 사이드뷰 벨트 교전** (`engage/TurnEngageSim.gd` 헤드리스 시뮬 + `engage/EngageArena.gd` 렌더러) triggered by `engage:N` / `duel` cards. Lazily added in `_ready()`. |
+| HudBuilder     | Node | `ui/HudBuilder.gd`         | HUD construction; 전략 포인트 도넛 (`ui/CostDonut.gd`) 과 **하단 아군 파일럿 스트립** (`ui/PilotStrip.gd`) 이 유일한 상호작용 위젯 |
+| PilotDetailPanel | Node | `ui/PilotDetailPanel.gd` | 파일럿 상세 모달 — 하단 스트립의 얼굴을 누르면 열린다(작전 단계 한정). Lazily added in `_ready()`. |
 | BattleLogger   | Node | `debug/BattleLogger.gd`    | Full action log (console + `user://battle_logs/`) and enemy cross-over detector. Lazily added in `_ready()` after pilots spawn; reachable as `_bs.blog`. |
 
 Cross-module calls go through `_bs`:
@@ -82,7 +83,7 @@ Responsibilities:
 | `resources/PilotData.gd` | PilotData | role, hp/max_hp, atk, team, grid_pos, lane, waypoint_idx, **move_range**, **hit**, **evasion**, **jungle_start_pref**, **respawn_timer** (death-only off-field clock — see `BattleSim.turns_until_return`), **recall_hold** (본진 복귀한 턴의 이동 1회 스킵) |
 | `resources/TurretData.gd` | TurretData | team, grid_pos, hp, tier, lane, alive |
 | `resources/PlayerData.gd` | PlayerData | id, name, role, team_id, 5 stats (laning / mechanics / gamesense / teamfight / mental), `assigned_mech` |
-| `resources/MechData.gd` | MechData | id, name, hp, atk, **presence** (4=melee/2=ranged; engage 무대의 타겟 어그로 가중치로만 사용), **speed** (40~100; engage 무대의 ATB 충전 속도로만 사용 — 전장은 읽지 않는다) |
+| `resources/MechData.gd` | MechData | id, name, hp, atk, **presence** (4=melee/2=ranged; engage 무대의 타겟 어그로 가중치로만 사용). **`speed` 는 삭제됐다** — 교전이 라운드 턴제가 되면서 행동 빈도 개념이 사라졌다 |
 
 ---
 
@@ -249,51 +250,91 @@ Responsibilities:
   "AI 를 무조건 먼저 검사한다" 규칙은 사라졌다.
   See [`card_phase/README.md`](card_phase/README.md).
 
-### Engage (전투 개시) — 사이드뷰 벨트 교전 (ATB)
-Card-driven sub-phase: `engage:N` opens a **real-time side-view belt-scroll
-stage** (관전 전용 — no player input). On close it returns to the phase that
-opened it — CARD_PHASE for a player card, BATTLE for an AI card played during
-상대 차례 — see [`engage/README.md`](engage/README.md) for details. Key contract:
+### Engage (전투 개시) — 사이드뷰 벨트 교전 (라운드 턴제)
+Card-driven sub-phase: `engage:N` opens a **turn-based side-view belt stage**
+(관전 전용 — no player input). On close it returns to the phase that opened it —
+CARD_PHASE for a player card, BATTLE for an AI card played during 상대 차례 —
+see [`engage/README.md`](engage/README.md) for details. Key contract:
 - Participants = pilots in radius-1 hex from caster (caster cell + 6 neighbors).
   `exclude_lane` drops lane pilots still on their lane row; junglers and
   displaced-into-jungle lane pilots stay in. Still supported end-to-end, but
   the only card that used it (교전, id 4) has been removed from the pool.
-- **`engage:N` = `N × RealtimeEngageSim.SEC_PER_ROUND` 초** (현재 3.0 → 9초),
-  not N rounds. `duel` runs to first KO with a `DUEL_MAX_SEC` cap.
+- **`engage:N` 의 N 은 라운드 수다** (engage:3 = 3라운드). 예전의
+  "N × 3초" 환산은 삭제됐다. `duel` 은 첫 처치까지 돌고 `DUEL_MAX_ROUNDS`(10)
+  상한만 둔다.
+- **한 라운드 = 참가자 전원이 정확히 한 번씩 행동.** 무대에는 언제나 **한 명만**
+  나와 있고(`current_actor`), 그 한 차례(접근 → 공격 → 정착)가 끝나면 다음
+  순서로 넘어간다. 순서 끝에 닿으면 라운드가 오르고 **다시 시전자부터**.
+- **행동 순서는 개시 시 한 번 정해지고 매 라운드 반복된다** — 시전자 팀부터
+  한 명씩 **팀 교대**, 팀 안에서는 **역할 고정**(암살자 → 격투가 → 탱커 →
+  스나이퍼 → 서포터), 단 **시전자는 자기 팀 맨 앞으로 당겨진다**. 포탑은 파일럿
+  전원이 돈 뒤 시전자 팀 포탑부터 한 번씩. 죽은 행동자는 건너뛴다.
+- **메크 `speed` 스탯은 삭제됐다** — 라운드마다 전원이 한 번씩 행동하므로 행동
+  빈도를 가르는 스탯이 없다. `game_config.TURRET_SPEED` 도 함께 사라졌다.
 - **전장 셀 위치는 배치에 반영되지 않는다.** 무대는 팀0 왼쪽 / 팀1 오른쪽으로
   마주 선 평면 벨트이고, 자리는 역할이 정한다 — 근접은 앞줄, 원거리는 뒷줄.
-- **ATB**: 각 유닛이 메크 `speed` 스탯(mechs.csv, 40~100)에 비례해 차오르는
-  **보이지 않는 게이지**를 굴린다. 만충되면 대상에게 **접근 → 공격 → 원위치
-  복귀**. 게이지는 행동 중에도 차므로 빠른 메크는 느린 메크가 한 번 움직일 때
-  두 번 움직인다. 근접은 밀착(88px)까지, 원거리는 **최대 사거리의 90%**(270px)
-  까지 파고든 다음 때린다. 사거리 판정에는 `STRIKE_DIST_EPSILON` 여유가 붙는다
-  — 없으면 사거리에 딱 맞춰 선 유닛이 부동소수 오차로 판정을 통과하지 못해
-  공격이 아예 성립하지 않는다. 명중하면 대상이 넉백되고 **밀려난 자리가 새
-  앵커가 된다**(피해에는 얹히지 않고 위치와 재접근 거리만 바꾼다).
-- **교전 중 이탈은 없다** — 아무도 무대를 뜰 수 없고, 시간이 끝나면 그
-  프레임에 전투가 멈춘다(engage:3 = 전투 시간 정확히 9초). 종료는 시간 만료
-  또는 한 쪽 전멸뿐. 빈사(HP<30%)여도 후퇴하지 않는다.
+- 근접은 밀착(88px)까지, 원거리는 **최대 사거리의 90%**(270px)까지 파고든 다음
+  때린다. 사거리 판정에는 `STRIKE_DIST_EPSILON` 여유가 붙는다 — 없으면 사거리에
+  딱 맞춰 선 유닛이 부동소수 오차로 판정을 통과하지 못해 공격이 아예 성립하지
+  않는다. **원위치 복귀는 없다** — 공격을 끝낸 자리가 새 앵커다. 명중하면 대상이
+  넉백되고 **밀려난 자리도 새 앵커가 된다**(피해에는 얹히지 않고 위치와 재접근
+  거리만 바꾼다).
+- **교전 중 이탈은 없다** — 아무도 무대를 뜰 수 없다. 종료는 라운드 소진 또는
+  한 쪽 전멸뿐. 빈사(HP<30%)여도 후퇴하지 않는다.
 - **종료 → 대시보드 사이에 `EngagePhaseManager.END_HOLD_SEC`(2.0초) 유예**가
   있다. 마지막 처치가 결과창에 먹히지 않도록 전투만 멈춘 무대를 2초 더
-  보여 주고(잔여 연출은 `RealtimeEngageSim.step_afterglow`), 상단에 종료
-  사유 배너(`적군 전멸` / `시간 종료` …)를 띄운다. 유예 동안 `elapsed` 는
-  멈추므로 대시보드의 교전 시간은 실제 전투 시간 그대로다.
+  보여 주고(잔여 연출은 `TurnEngageSim.step_afterglow`), 상단에 종료
+  사유 배너(`적군 전멸` / `N라운드 완료` …)를 띄운다. 유예 동안 `round_index` 는
+  멈추므로 대시보드의 라운드 수는 실제로 싸운 라운드 수 그대로다.
 - **암살자는 적 뒷줄(원거리)을 우선 타겟으로 삼는다** (`DIVE_FOCUS`). 이
   분기가 없으면 앞줄이 더 가깝고 존재감도 두 배라 원거리 메크가 교전 내내
   한 대도 맞지 않는다 — 실측으로 확인된 구멍이다.
 - **포탑은 사거리 존이 아니라 참가자다**: 참가 파일럿이 자기 팀 포탑 칸 위에
-  서 있으면 그 포탑이 교전에 가담해 **자기 ATB(`game_config.TURRET_SPEED`)로
-  적 파일럿을 공격한다**(사거리 제한 없음, 명중 판정은 굴린다). 무대에서
-  포탑 HP 는 깎이지 않는다.
+  서 있으면 그 포탑이 교전에 가담해 **라운드마다 한 번 적 파일럿을 공격한다**
+  (사거리 제한 없음, 명중 판정은 굴린다). 무대에서 포탑 HP 는 깎이지 않는다.
 - Damage (atk 1회분 + shield-first) matches the battlefield, but **명중률은
   별개**: 교전은 전장 확률 `base` 를 **80~100% 구간**으로 리맵한다
   (`ENGAGE_HIT_MIN` 0.80 / `ENGAGE_HIT_MAX` 1.00 → 스탯이 대등하면 90%).
-  KO routes through `BattleSim.mark_pilot_dead`, so an arena kill gets the same
-  scaled respawn timer (`respawn_turns_now()`) a battlefield kill does.
-  `grid_pos` is never modified by an engage.
+  KO routes through `BattleSim.mark_pilot_dead(victim, killer)`, so an arena kill
+  gets the same scaled respawn timer (`respawn_turns_now()`) and the same
+  성장치 정산 a battlefield kill does. `grid_pos` is never modified by an engage.
 - 화면은 가로로 납작한 **시네마 밴드** 하나(1032×500)와 그 **아래 참가자
-  초상화 + 체력 바 스트립**으로 구성된다. Dashboard shows per-pilot dealt /
-  taken / kills before resuming.
+  초상화 + 체력 바 스트립**으로 구성된다. 상단 헤더는 **라운드 카운터
+  (`라운드 2 / 3`) + 라운드 칸 + "누구의 차례"** 두 줄이다(실시간 시절의 남은
+  시간 바는 삭제). Dashboard shows per-pilot dealt / taken / kills before resuming.
+- 실측(헤드리스 5v5 ×8, engage:3): **13.3초 · 처치 1.0건**. ATB 시절(9초에
+  처치 2.75건)보다 훨씬 온건하다 — 라운드마다 한 명이 한 번씩만 때리므로
+  3라운드 = 최대 30타다.
+
+### 성장치 (파일럿 점수)
+파일럿마다 **개시 1.00k** 에서 시작해 경기 내내 누적되는 종합 기여 지표.
+파일럿 스트립의 체력 바 아래에 숫자로 찍히고, 상단 중앙의 팀 점수는 그 팀
+다섯 명의 **합산**이다(개시 `5.00k - 5.00k`). 상한이 없으므로 게이지가 아니다.
+
+**`PilotData.growth`(스탯 성장 배율)와는 다른 것이다** — 성장치는 스탯에 아무
+영향을 주지 않는다. 필드도 `growth` / `score` 로 갈라져 있다.
+
+| 사건 | 적립 |
+|---|---|
+| 적 처치 | +0.20k |
+| 사망 | −0.10k (하한 `SCORE_MIN` 0.10k) |
+| 적에게 준 피해 | 100당 +0.01k |
+| 포탑 피해 | 100당 +0.02k |
+| 포탑 파괴 | +0.15k |
+| HQ 피해 | 100당 +0.03k |
+
+상수는 전부 `BattleSim` 의 `SCORE_*` 절에 모여 있고, 모든 변동은
+`BattleSim.add_score` 한 곳을 지난다(하한을 한 자리에서만 지키기 위해서).
+
+**처치 귀속의 배선**: 전장 피해는 판정 단계(`_resolve_*` 가 `damage_map` 에 양만
+쌓는다)와 적용 단계(그걸 소진하며 HP 를 깎는다)로 갈라져 있고, 적용 단계에는
+**누가 때렸는지가 남아 있지 않다**. 그래서 `SimulationCore` 가
+`_credit_pilot_damage` / `_credit_turret_damage` 에서 "마지막으로 이 대상을 때린
+자"를 `_last_hitter` / `_last_turret_hitter` 에 적어 두고, 적용 단계가 그것을
+`mark_pilot_dead(victim, killer)` / `score_turret_kill` 에 넘긴다. 두 dict 는
+**매 턴과 매 전진 카드 시작 시 비운다** — 턴을 넘겨 살아남으면 엉뚱한 사람에게
+처치가 붙는다. 교전 무대와 공격 카드는 공격자를 손에 들고 있으므로 이 우회가
+필요 없다.
 
 ### Action logging (`debug/BattleLogger.gd`)
 Every turn writes a full transcript to the console **and** to

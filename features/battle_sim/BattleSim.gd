@@ -103,9 +103,6 @@ var HQ_MAX_HP:               int   = 0
 var RESPAWN_TURNS:           int   = 0
 var TURRET_HP:               int   = 0
 var TURRET_ATK:              int   = 0
-## 교전 아레나에서 포탑이 쓰는 ATB 속도. 전장에서는 포탑이 파일럿을 공격하지
-## 않으므로 이 값은 교전 전용이다 — RealtimeEngageSim 만 읽는다.
-var TURRET_SPEED:            int   = 55
 var RECALL_HP_THRESHOLD:     float = 0.0
 ## 전장 교전이 **파일럿에게** 넣는 피해에 곱하는 배율. 포탑 / HQ 피해와
 ## 공격 카드 · 교전 아레나는 이 배율을 타지 않는다.
@@ -271,6 +268,10 @@ var targeting_overlay: CardTargetingOverlay = null
 # 해당 더미의 카드를 이름순 그리드로 펼쳐 보여 준다. 작전 단계에서만 열린다.
 # lazy-add in _ready().
 var card_pile_viewer: CardPileViewer = null
+# 파일럿 상세 패널 — 하단 아군 스트립의 얼굴을 누르면 열리는 모달. 좌측에 전신
+# 아트, 우측에 아웃게임 / 인게임 / 메크 스탯. **자기 작전 단계에서만** 열리며
+# 단계를 벗어나면 HudBuilder 가 닫는다. lazy-add in _ready().
+var pilot_detail: PilotDetailPanel = null
 # 전투 개시(engage) — 카드의 engage:N 효과가 발동되면 잠시 ENGAGE 페이즈로
 # 전환되어 실시간 교전 아레나를 띄운다. 전투가 끝나면 아레나를 연 페이즈로
 # 복귀한다(플레이어 카드면 CARD_PHASE, 상대 차례의 AI 카드면 BATTLE).
@@ -341,6 +342,11 @@ func _ready() -> void:
 	card_pile_viewer.name = "CardPileViewer"
 	add_child(card_pile_viewer)
 	card_pile_viewer.bind(self)
+	# 파일럿 상세 패널 — 하단 아군 스트립을 누르면 열린다(작전 단계 한정).
+	pilot_detail = PilotDetailPanel.new()
+	pilot_detail.name = "PilotDetailPanel"
+	add_child(pilot_detail)
+	pilot_detail.bind(self)
 	# Engage manager owns the turn-based 전투 modal lifecycle.
 	engage_phase = EngagePhaseManager.new()
 	engage_phase.name = "EngagePhaseManager"
@@ -415,7 +421,6 @@ func _populate_from_data_loader() -> void:
 	RESPAWN_TURNS           = int(cfg.get("RESPAWN_TURNS", "5"))
 	TURRET_HP               = int(cfg.get("TURRET_HP", "150"))
 	TURRET_ATK              = int(cfg.get("TURRET_ATK", "8"))
-	TURRET_SPEED            = int(cfg.get("TURRET_SPEED", "55"))
 	RECALL_HP_THRESHOLD     = float(cfg.get("RECALL_HP_THRESHOLD", "0.2"))
 	BATTLE_PILOT_DMG_MULT   = float(cfg.get("BATTLE_PILOT_DMG_MULT", "0.5"))
 	MAX_HAND_SIZE           = int(cfg.get("MAX_HAND_SIZE", "12"))
@@ -544,7 +549,12 @@ func turns_until_return(p: PilotData) -> int:
 ## scaled respawn timer and starts the 전사 연출. Every damage source funnels
 ## through here so the respawn scaling and the death animation can never be
 ## wired into one path and forgotten in another.
-func mark_pilot_dead(p: PilotData) -> void:
+##
+## `killer` 는 **성장치 정산 전용**이다. 계획 살인 현상금은 예나 지금이나
+## "쓰러진 파일럿의 반대 팀"으로 충분하지만(전장에 제3세력이 없다), 성장치는
+## 개인 지표라 실제로 마지막 타격을 넣은 파일럿을 알아야 한다. 모르면 null 을
+## 넘긴다 — 포탑 처치가 그런 경우다.
+func mark_pilot_dead(p: PilotData, killer: PilotData = null) -> void:
 	p.hp            = 0
 	p.alive         = false
 	p.recall_hold   = false   # 복귀 대기 중 죽으면 대기도 함께 사라진다
@@ -552,6 +562,9 @@ func mark_pilot_dead(p: PilotData) -> void:
 	p.respawn_timer = respawn_turns_now()
 	anim_pilot_death(p)
 	_award_kill_bounty(p.team)
+	add_score(p, SCORE_DEATH)
+	if killer != null:
+		add_score(killer, SCORE_KILL)
 
 
 ## 계획 살인의 지급 지점. 전장에는 제3세력이 없으므로 "누가 죽였는가"를 따로
@@ -565,6 +578,75 @@ func _award_kill_bounty(dead_team: int) -> void:
 	elif kill_bounty_ai > 0:
 		ai_cost += kill_bounty_ai
 		kill_bounty_ai = 0
+
+
+# ─── 성장치 (파일럿 점수) ────────────────────────────────────────────────────
+# 파일럿마다 개시 1.00k 에서 출발해 경기 내내 누적되는 종합 지표. 파일럿
+# 스트립의 체력 바 아래에 찍히고, 상단 중앙의 팀 점수는 그 팀 다섯 명의 **합산**
+# 이다(개시 5.00k - 5.00k). 상한이 없으므로 게이지가 아니라 숫자로만 보여 준다.
+#
+# **성장(`PilotData.growth`)과는 다른 것이다.** 성장은 매 턴 `atk`/`max_hp` 를
+# 밀어 올리는 스탯 배율이고, 성장치는 전투 기여를 읽는 점수라 스탯에 아무
+# 영향을 주지 않는다. 이름이 비슷해 헷갈리기 쉬우니 필드도 `growth` 와
+# `score` 로 갈라 두었다.
+#
+# 적립은 **피해가 굴려지는 그 지점**에서 한다 — 실제로 깎인 양이 아니라 굴린
+# 양이다. 오버킬 몇 점이 지표를 흔들지는 않고, 반대로 적용 지점(damage_map
+# 소진 루프)에서 잡으려면 공격자를 거기까지 들고 가야 해서 배선이 훨씬 는다.
+## 개시값.
+const SCORE_START: float = 1.0
+## 아무리 죽어도 여기 아래로는 내려가지 않는다.
+const SCORE_MIN: float = 0.10
+const SCORE_KILL: float = 0.20
+const SCORE_DEATH: float = -0.10
+## 피해 1 당 적립량 (= 100 당 0.01 / 0.02 / 0.03).
+const SCORE_PER_PILOT_DMG: float  = 0.01 / 100.0
+const SCORE_PER_TURRET_DMG: float = 0.02 / 100.0
+const SCORE_PER_HQ_DMG: float     = 0.03 / 100.0
+const SCORE_TURRET_KILL: float = 0.15
+
+
+## 모든 성장치 변동이 지나는 한 지점. 하한만 지킨다(상한 없음).
+func add_score(p: PilotData, delta: float) -> void:
+	if p == null or is_zero_approx(delta):
+		return
+	p.score = maxf(SCORE_MIN, p.score + delta)
+
+
+func score_pilot_damage(attacker: PilotData, amount: int) -> void:
+	if amount > 0:
+		add_score(attacker, float(amount) * SCORE_PER_PILOT_DMG)
+
+
+func score_turret_damage(attacker: PilotData, amount: int) -> void:
+	if amount > 0:
+		add_score(attacker, float(amount) * SCORE_PER_TURRET_DMG)
+
+
+func score_hq_damage(attacker: PilotData, amount: int) -> void:
+	if amount > 0:
+		add_score(attacker, float(amount) * SCORE_PER_HQ_DMG)
+
+
+func score_turret_kill(attacker: PilotData) -> void:
+	add_score(attacker, SCORE_TURRET_KILL)
+
+
+## 팀 합산 성장치. 상단 중앙 점수표가 읽는다 — 죽어 있는 파일럿도 포함한다
+## (점수는 전장에 서 있는지와 무관한 누적 기록이다).
+func team_score(team: int) -> float:
+	var total: float = 0.0
+	for raw in pilots:
+		var p := raw as PilotData
+		if p.team == team:
+			total += p.score
+	return total
+
+
+## 성장치 표기. 1.0 → "1.00k". 소수 둘째 자리까지 — 피해 100 이 0.01k 라
+## 한 자리로 자르면 한참을 싸워도 숫자가 안 움직이는 것처럼 보인다.
+static func fmt_score(v: float) -> String:
+	return "%.2fk" % v
 
 
 # ─── Pilot animation driver ──────────────────────────────────────────────────
@@ -761,6 +843,27 @@ func cell_center(pos: Vector2i) -> Vector2:
 
 func pilot_label(p: PilotData) -> String:
 	return "%s%d" % [ROLE_NAMES[p.role], p.team]
+
+
+## 이 파일럿의 아웃게임 페르소나(`PlayerData`). 없으면 null — 단독 실행이나
+## 초상화 없는 INTL 파일럿이 그렇다.
+##
+## `pilots` 는 스폰 순서가 곧 역할 순서다(0..4 = 팀0, 5..9 = 팀1). match_ctx 의
+## 두 로스터도 같은 역할 순서라 인덱스가 그대로 대응한다 — 스폰 이후 배열이
+## 재정렬되지 않는다는 것이 이 대응의 전제이므로, `pilots` 를 정렬하고 싶으면
+## 사본을 정렬할 것(HudBuilder 가 그렇게 한다).
+func player_data_for(p: PilotData) -> PlayerData:
+	if p == null or gm == null or not bool(gm.match_ctx.get("active", false)):
+		return null
+	var idx: int = pilots.find(p)
+	if idx < 0:
+		return null
+	var roster: Array = gm.match_ctx.get(
+			"player_roster" if idx < 5 else "enemy_roster", [])
+	var slot: int = idx if idx < 5 else idx - 5
+	if slot >= roster.size():
+		return null
+	return roster[slot] as PlayerData
 
 
 func role_stats_str(role: int) -> String:

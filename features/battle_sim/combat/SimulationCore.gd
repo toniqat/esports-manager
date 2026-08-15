@@ -26,11 +26,23 @@ const VULN_TEAM1_LEFT   := [Vector2i(-3, -2)]
 const VULN_TEAM1_CENTER := [Vector2i(-2, -2), Vector2i( 0, -2)]
 const VULN_TEAM1_RIGHT  := [Vector2i( 1, -2)]
 
+# ─── 성장치 귀속 (턴 안에서만 산다) ──────────────────────────────────────────
+# 전장 피해는 두 단계로 처리된다: 판정 단계(`_resolve_*`)가 `damage_map` /
+# `turret_dmg` 에 양만 쌓고, 적용 단계가 그걸 소진하며 HP 를 깎는다. 적용
+# 단계에는 **누가 때렸는지가 남아 있지 않아** 처치 성장치를 귀속할 수 없다.
+# 그래서 판정 단계에서 "마지막으로 이 대상을 때린 자"를 여기 적어 두고, 적용
+# 단계가 `mark_pilot_dead(victim, killer)` / `score_turret_kill` 에 넘긴다.
+# 매 턴 `simulate_turn` 첫머리에서 비운다 — 턴을 넘겨 살아남으면 안 되는 정보다.
+var _last_hitter: Dictionary = {}         # PilotData victim  → PilotData attacker
+var _last_turret_hitter: Dictionary = {}  # TurretData victim → PilotData attacker
+
 
 # ─── Main turn (== 1 minute) loop ─────────────────────────────────────────────
 func simulate_turn() -> void:
 	if _bs.game_over or _bs.game_phase != GameEnums.BattlePhase.BATTLE:
 		return
+	_last_hitter.clear()
+	_last_turret_hitter.clear()
 	_bs.turn_count += 1
 	_bs.blog.begin_turn()
 	# 성장 / 지속 효과 만료가 턴의 맨 앞이다. 이 자리라야 이번 턴의 교전이
@@ -101,7 +113,7 @@ func simulate_turn() -> void:
 				_bs.pilot_label(p), int(damage_map[k]), shield_before, p.shield,
 				maxi(p.hp, 0), str(p.grid_pos)])
 		if p.hp <= 0:
-			_bs.mark_pilot_dead(p)
+			_bs.mark_pilot_dead(p, _last_hitter.get(p, null) as PilotData)
 			log_lines.append("%s died" % _bs.pilot_label(p))
 			_bs.blog.log_event("DEATH", "%-4s died @%s (respawn in %d)" % [
 					_bs.pilot_label(p), str(p.grid_pos), p.respawn_timer])
@@ -123,6 +135,7 @@ func simulate_turn() -> void:
 			_bs.blog.log_event("TURRET", "T%d[%s] team%d DESTROYED @%s" % [
 					td.tier, _bs.LANE_NAMES[td.lane], td.team, str(td.grid_pos)])
 			if was_alive:
+				_bs.score_turret_kill(_last_turret_hitter.get(td, null) as PilotData)
 				var b: Building = _bs.building_registry.get_at(td.grid_pos)
 				if b != null:
 					_bs.building_registry.unregister(b)
@@ -147,6 +160,7 @@ func simulate_turn() -> void:
 		if p.grid_pos == ehq and any_t2_destroyed(defending_team):
 			if p.team == 0: hq_damage_e += p.atk
 			else:           hq_damage_p += p.atk
+			_bs.score_hq_damage(p, p.atk)
 			log_lines.append("%s→HQ:%d" % [_bs.pilot_label(p), p.atk])
 			_bs.blog.log_event("HQ", "%-4s hits team%d HQ for %d" % [
 					_bs.pilot_label(p), defending_team, p.atk])
@@ -345,11 +359,11 @@ func _resolve_pilot_combat(t0: Array, t1: Array,
 		var hit_b := roll_hit(b, a)
 		if hit_a:
 			var dmg_a := _pilot_hit_damage(a)
-			damage_map[b] = damage_map.get(b, 0) + dmg_a
+			_credit_pilot_damage(a, b, dmg_a, damage_map)
 			log_lines.append("%s→%s:%d" % [_bs.pilot_label(a), _bs.pilot_label(b), dmg_a])
 		if hit_b:
 			var dmg_b := _pilot_hit_damage(b)
-			damage_map[a] = damage_map.get(a, 0) + dmg_b
+			_credit_pilot_damage(b, a, dmg_b, damage_map)
 			log_lines.append("%s→%s:%d" % [_bs.pilot_label(b), _bs.pilot_label(a), dmg_b])
 		if hit_a and not hit_b:
 			t0_uni_wins += 1
@@ -414,7 +428,7 @@ func _apply_turret_siege(attackers: Array, defenders: Array, td: TurretData,
 	if _turret_attackable(td):
 		for raw in attackers:
 			var a := raw as PilotData
-			turret_dmg[td] = turret_dmg.get(td, 0) + a.atk
+			_credit_turret_damage(a, td, a.atk, turret_dmg)
 			log_lines.append("%s→T%d[%s]:%d" % [
 					_bs.pilot_label(a), td.tier, _bs.LANE_NAMES[td.lane], a.atk])
 
@@ -430,19 +444,19 @@ func _apply_turret_siege(attackers: Array, defenders: Array, td: TurretData,
 		var d := def_sorted[i] as PilotData
 		if roll_hit(a, d):
 			var dmg_a := _pilot_hit_damage(a)
-			damage_map[d] = damage_map.get(d, 0) + dmg_a
+			_credit_pilot_damage(a, d, dmg_a, damage_map)
 			log_lines.append("%s→%s:%d (attacker)" % [
 					_bs.pilot_label(a), _bs.pilot_label(d), dmg_a])
 		if roll_hit(d, a):
 			var dmg_d := _pilot_hit_damage(d)
-			damage_map[a] = damage_map.get(a, 0) + dmg_d
+			_credit_pilot_damage(d, a, dmg_d, damage_map)
 			log_lines.append("%s→%s:%d (defender)" % [
 					_bs.pilot_label(d), _bs.pilot_label(a), dmg_d])
 
 
 # Hit chance = attacker.hit / (attacker.hit + defender.evasion). Pure roll.
 #
-# 이건 **전장 전용** 명중률이다. 교전(RealtimeEngageSim)은 이 값을 기준값으로만
+# 이건 **전장 전용** 명중률이다. 교전(TurnEngageSim)은 이 값을 기준값으로만
 # 삼아 [ENGAGE_HIT_MIN, ENGAGE_HIT_MAX] = 80~100% 구간으로 리맵한 별도 확률을
 # 쓴다 — 여기를 고쳐도 교전 구간은 그대로이고, 그 반대도 마찬가지다.
 #
@@ -481,6 +495,25 @@ func lane_adjusted(stat_value: int, p: PilotData) -> int:
 # 0 으로 떨어져 **복귀할 구간 자체가 존재하지 않았다**.
 func _pilot_hit_damage(attacker: PilotData) -> int:
 	return maxi(1, roundi(float(attacker.atk) * _bs.BATTLE_PILOT_DMG_MULT))
+
+
+## 판정 단계에서 나온 파일럿 피해 한 건을 `damage_map` 에 쌓고, 같은 자리에서
+## 성장치 적립 + 처치 귀속용 마지막 타격자 기록까지 끝낸다. 전장의 모든 파일럿
+## 피해가 여기 한 곳을 지나야 한 경로만 점수를 놓치는 일이 없다.
+func _credit_pilot_damage(attacker: PilotData, victim: PilotData, dmg: int,
+		damage_map: Dictionary) -> void:
+	damage_map[victim] = damage_map.get(victim, 0) + dmg
+	_last_hitter[victim] = attacker
+	_bs.score_pilot_damage(attacker, dmg)
+
+
+## 포탑 피해 한 건. 파괴 귀속(`SCORE_TURRET_KILL`)은 적용 단계가
+## `_last_turret_hitter` 를 보고 준다.
+func _credit_turret_damage(attacker: PilotData, td: TurretData, dmg: int,
+		turret_dmg: Dictionary) -> void:
+	turret_dmg[td] = turret_dmg.get(td, 0) + dmg
+	_last_turret_hitter[td] = attacker
+	_bs.score_turret_damage(attacker, dmg)
 
 
 ## 지금 이 포탑을 때릴 수 있는가. T2 는 같은 레인 T1 이 살아 있는 동안 무적이다.
@@ -953,6 +986,10 @@ func _farthest_captured_cell(from: Vector2i, captured: Array) -> Vector2i:
 func advance_pilot(caster: PilotData, steps: int, log_lines: Array) -> void:
 	if caster == null or steps <= 0:
 		return
+	# 전진은 작전 단계에서 도는 별도 경로다 — 지난 턴의 마지막 타격자가 남아
+	# 있으면 여기서 나온 처치가 엉뚱한 사람에게 귀속된다.
+	_last_hitter.clear()
+	_last_turret_hitter.clear()
 	_bs.blog.stage("card-adv")
 	_bs.blog.log_event("CARD", "전진 — %s runs %d mini-ticks from %s"
 			% [_bs.pilot_label(caster), steps, str(caster.grid_pos)])
@@ -1069,7 +1106,7 @@ func _apply_card_damage(damage_map: Dictionary, turret_dmg: Dictionary,
 				_bs.pilot_label(dp), int(damage_map[k]), maxi(dp.hp, 0),
 				str(dp.grid_pos)])
 		if dp.hp <= 0:
-			_bs.mark_pilot_dead(dp)
+			_bs.mark_pilot_dead(dp, _last_hitter.get(dp, null) as PilotData)
 			log_lines.append("%s died" % _bs.pilot_label(dp))
 			_bs.blog.log_event("DEATH", "%-4s died @%s"
 					% [_bs.pilot_label(dp), str(dp.grid_pos)])
@@ -1088,6 +1125,7 @@ func _apply_card_damage(damage_map: Dictionary, turret_dmg: Dictionary,
 			td.hp = 0; td.alive = false
 			log_lines.append("T%d %s turret destroyed!" % [td.tier, _bs.LANE_NAMES[td.lane]])
 			if was_alive:
+				_bs.score_turret_kill(_last_turret_hitter.get(td, null) as PilotData)
 				var b: Building = _bs.building_registry.get_at(td.grid_pos)
 				if b != null:
 					_bs.building_registry.unregister(b)
@@ -1486,15 +1524,14 @@ func _pilot_id_from_roster(ctx_active: bool, roster: Array, idx: int,
 	return fallback_id
 
 
-# Returns a stats dict {hp, atk, hit, evasion, presence, speed}.
-# hp/atk/presence/speed come from the assigned mech (or ROLE_STATS fallback).
+# Returns a stats dict {hp, atk, hit, evasion, presence}.
+# hp/atk/presence come from the assigned mech (or ROLE_STATS fallback).
 # hit/evasion come from PlayerData (mechanics → hit, gamesense → evasion).
-# presence drives 전투 개시(engage) target weighting, speed the engage ATB —
-# neither is read by the turn-based battlefield.
-# Fallback presence: melee roles (TANK/FIGHTER/ASSASSIN) → 4, ranged
-# (SUPPORT/SNIPER) → 2, matching the mech CSV convention. Fallback speed sits
-# mid-table (melee 78 / ranged 82) so a standalone battle still shows an ATB
-# spread between the two archetypes.
+# presence drives 전투 개시(engage) target weighting and is not read by the
+# battlefield. Fallback presence: melee roles (TANK/FIGHTER/ASSASSIN) → 4,
+# ranged (SUPPORT/SNIPER) → 2, matching the mech CSV convention.
+# (예전의 `speed` 는 삭제됐다 — 교전이 라운드 기반 턴제가 되면서 행동 빈도
+#  개념이 사라졌다.)
 func _stats_for(ctx_active: bool, roster: Array, idx: int, role_id: int) -> Dictionary:
 	if ctx_active and idx < roster.size():
 		var pd := roster[idx] as PlayerData
@@ -1503,7 +1540,7 @@ func _stats_for(ctx_active: bool, roster: Array, idx: int, role_id: int) -> Dict
 			return {
 				"hp": m.hp, "atk": m.atk,
 				"hit": pd.mechanics, "evasion": pd.gamesense,
-				"presence": m.presence, "speed": m.speed,
+				"presence": m.presence,
 			}
 	var base: Dictionary = _bs.ROLE_STATS[role_id]
 	var melee: bool = role_id <= GameEnums.Role.ASSASSIN
@@ -1511,7 +1548,6 @@ func _stats_for(ctx_active: bool, roster: Array, idx: int, role_id: int) -> Dict
 		"hp": base["hp"], "atk": base["atk"],
 		"hit": 50, "evasion": 50,
 		"presence": 4 if melee else 2,
-		"speed": 78 if melee else 82,
 	}
 
 

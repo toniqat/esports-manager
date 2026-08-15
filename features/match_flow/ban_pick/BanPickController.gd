@@ -121,7 +121,7 @@ func _build_ui() -> void:
 		@warning_ignore("integer_division")
 		var row: int = i / 5
 		var btn := Button.new()
-		btn.text = "%s\nHP %d  ATK %d\nSPD %d" % [m.name, m.hp, m.atk, m.speed]
+		btn.text = "%s\nHP %d  ATK %d\nPRS %d" % [m.name, m.hp, m.atk, m.presence]
 		btn.add_theme_font_size_override("font_size", 18)
 		btn.position = Vector2(grid_x0 + col * (card_w + gx), grid_y0 + row * (card_h + gy))
 		btn.size     = Vector2(card_w, card_h)

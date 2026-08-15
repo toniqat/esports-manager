@@ -1,8 +1,8 @@
 class_name EngagePhaseManager
 extends Node
 
-# 전투 개시(engage) 모듈 — engage:N / duel 카드 효과로 발동되는 **실시간
-# 사이드뷰 벨트 교전**을 구동한다. 해상도는 RealtimeEngageSim(헤드리스),
+# 전투 개시(engage) 모듈 — engage:N / duel 카드 효과로 발동되는 **라운드 기반
+# 턴제 사이드뷰 벨트 교전**을 구동한다. 해상도는 TurnEngageSim(헤드리스),
 # 시각화는 EngageArena(Control) 가 담당하고 이 매니저는 둘을 잇는
 # 오케스트레이터다.
 #
@@ -15,12 +15,12 @@ extends Node
 #      파일럿은 포함한다.
 #   3) _bs.game_phase = ENGAGE 로 전환 → 자동 BATTLE 틱은 BATTLE 가드에 의해
 #      멈추고, 카드 클릭 / 턴 넘기기도 ENGAGE 에서는 차단된다.
-#   4) 제한 시간(rounds × RealtimeEngageSim.SEC_PER_ROUND 초) 동안 각 파일럿이
-#      메크 speed 스탯으로 채워지는 보이지 않는 ATB 게이지를 굴리며
-#      접근 → 공격 → **그 자리에 눌러앉기**를 반복한다(원위치 복귀 없음).
+#   4) **engage:N 의 N 은 라운드 수다**(초가 아니다). 한 라운드 안에서 참가자
+#      전원이 정확히 한 번씩, **한 명씩 순서대로** 접근 → 공격 → 그 자리에
+#      눌러앉기를 수행한다(원위치 복귀 없음). 매 라운드 시전자부터 시작한다.
 #      플레이어 입력은 없다(관전 전용).
-#   5) 종료 조건: 제한 시간 만료(연출 없이 즉시) OR 한 쪽 진영 전멸.
-#      **교전 중 이탈은 없다** — 시간이 끝날 때까지 아무도 아레나를 뜨지 못한다.
+#   5) 종료 조건: 라운드 소진 OR 한 쪽 진영 전멸.
+#      **교전 중 이탈은 없다** — 끝날 때까지 아무도 아레나를 뜨지 못한다.
 #   6) 종료 후 딜량 대시보드(준 딜량 / 받은 딜량 / 처치 수) → "확인" 버튼 →
 #      **아레나에 들어오기 직전의 페이즈**로 복귀(플레이어 카드면 CARD_PHASE,
 #      상대 차례에 AI가 낸 카드면 BATTLE).
@@ -50,7 +50,7 @@ const END_HOLD_SEC: float = 2.0
 var _active: bool = false
 var _is_duel: bool = false
 var _team_pilots: Array = [[], []]   # team_pilots[t] = Array[PilotData]
-var _sim: RealtimeEngageSim = null
+var _sim: TurnEngageSim = null
 var _accum: float = 0.0
 ## 종료 유예 잔여 시간. 음수 = 유예 중이 아님(아직 전투 중).
 var _hold_left: float = -1.0
@@ -87,9 +87,9 @@ func _ready() -> void:
 
 # Public entry point. Called from CardPhaseManager when an engage:N clause fires.
 # `caster`       — the casting PilotData (시전자); defines the participant area
-#                  and starts with a partly-filled ATB gauge (선공권).
-# `rounds_total` — the card's engage:N value. Converted to seconds via
-#                  RealtimeEngageSim.SEC_PER_ROUND (engage:3 → 9초).
+#                  and acts **first in every round** (선공권).
+# `rounds_total` — the card's engage:N value, used verbatim as the round count
+#                  (engage:3 → 3 라운드).
 # `exclude_lane` — true for the 교전 card; filters out lane pilots that are on
 #                  their lane (i.e., not displaced into a jungle cell).
 # `on_done`      — optional Callable invoked once the modal closes and game
@@ -115,13 +115,12 @@ func start_engage(caster: PilotData, rounds_total: int, exclude_lane: bool,
 			on_done.call()
 		return
 
-	_begin(caster, t0, t1, false,
-			float(rounds_total) * RealtimeEngageSim.SEC_PER_ROUND, on_done)
+	_begin(caster, t0, t1, false, rounds_total, on_done)
 
 
-# 결투 — 1:1 실시간 교전. _gather_participants 를 우회해 시전자와 target 만
-# 참여시키고, 제한 시간 대신 DUEL_MAX_SEC 상한만 둔다(실질적으로 한 쪽이
-# 처치될 때까지). start_engage 와 같은 모달 생명주기를 타고
+# 결투 — 1:1 턴제 교전. _gather_participants 를 우회해 시전자와 target 만
+# 참여시키고, 카드가 정한 라운드 수 대신 DUEL_MAX_ROUNDS 상한만 둔다(실질적으로
+# 한 쪽이 처치될 때까지). start_engage 와 같은 모달 생명주기를 타고
 # engage_finished 로 끝나므로 AiCardPlayer 는 동일하게 await 하면 된다.
 func start_duel(caster: PilotData, target: PilotData,
 		on_done: Callable = Callable()) -> void:
@@ -139,12 +138,12 @@ func start_duel(caster: PilotData, target: PilotData,
 		t0 = [caster]; t1 = [target]
 	else:
 		t0 = [target]; t1 = [caster]
-	_begin(caster, t0, t1, true, RealtimeEngageSim.DUEL_MAX_SEC, on_done)
+	_begin(caster, t0, t1, true, TurnEngageSim.DUEL_MAX_ROUNDS, on_done)
 
 
 # 공통 진입 — 시뮬레이터 구성 + 아레나 오픈 + _process 구동 시작.
 func _begin(caster: PilotData, t0: Array, t1: Array, duel: bool,
-		secs: float, on_done: Callable) -> void:
+		rounds: int, on_done: Callable) -> void:
 	_active = true
 	_is_duel = duel
 	_team_pilots[0] = t0
@@ -153,8 +152,8 @@ func _begin(caster: PilotData, t0: Array, t1: Array, duel: bool,
 	_accum = 0.0
 	_hold_left = -1.0
 
-	_sim = RealtimeEngageSim.new()
-	_sim.setup(_bs, caster, t0, t1, secs, duel)
+	_sim = TurnEngageSim.new()
+	_sim.setup(_bs, caster, t0, t1, rounds, duel)
 
 	# Drop any lifted-card / description-box selection so the modal sits cleanly
 	# over the table. CardPhaseManager.deselect_current_card is idempotent.
@@ -212,7 +211,7 @@ func _end_banner_text() -> String:
 		return "교전 종료 — 적군 전멸"
 	if t0_out:
 		return "교전 종료 — 아군 전멸"
-	return "교전 종료 — 시간 종료"
+	return "교전 종료 — %d라운드 완료" % _sim.total_rounds
 
 
 # ─── Participant gathering ───────────────────────────────────────────────────
@@ -262,8 +261,8 @@ func _result_log() -> String:
 	for p in _sim.stats:
 		var s: Dictionary = _sim.stats[p]
 		kills[(p as PilotData).team] += int(s["kills"])
-	return "[교전] %.1f초 · 아군 처치 %d / 적군 처치 %d" % [
-		_sim.elapsed, kills[0], kills[1]]
+	return "[교전] %d라운드 · 아군 처치 %d / 적군 처치 %d" % [
+		_sim.round_index, kills[0], kills[1]]
 
 
 func _on_dashboard_confirmed() -> void:

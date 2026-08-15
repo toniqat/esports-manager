@@ -189,7 +189,7 @@ func load_match_data() -> Dictionary:
 		mechs.append(MechData.new(
 			int(row["id"]), row["name"],
 			int(row["hp"]), int(row["atk"]),
-			int(row.get("presence", 4)), int(row.get("speed", 70))))
+			int(row.get("presence", 4))))
 
 	db.close_db()
 	return {"players": players, "mechs": mechs}

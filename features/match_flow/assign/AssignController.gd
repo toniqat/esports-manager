@@ -67,7 +67,7 @@ func _build_ui() -> void:
 	for i in range(_player_mechs.size()):
 		var m := _player_mechs[i] as MechData
 		var btn := Button.new()
-		btn.text = "%s\nHP %d  ATK %d\nSPD %d" % [m.name, m.hp, m.atk, m.speed]
+		btn.text = "%s\nHP %d  ATK %d\nPRS %d" % [m.name, m.hp, m.atk, m.presence]
 		btn.add_theme_font_size_override("font_size", 18)
 		btn.position = Vector2(40.0 + i * 204.0, 195.0)
 		btn.size     = Vector2(196.0, 170.0)
@@ -135,8 +135,8 @@ func _refresh_ui() -> void:
 			slot_btn.modulate = Color(0.7, 0.7, 0.75)
 		else:
 			var m := _find_mech(mech_id)
-			slot_btn.text = "[%s]  %s\nMech: %s   HP %d  ATK %d  SPD %d" % \
-					[role_name, p.name, m.name, m.hp, m.atk, m.speed]
+			slot_btn.text = "[%s]  %s\nMech: %s   HP %d  ATK %d  PRS %d" % \
+					[role_name, p.name, m.name, m.hp, m.atk, m.presence]
 			slot_btn.modulate = Color(0.55, 0.85, 0.55)
 
 	# Status + confirm gate

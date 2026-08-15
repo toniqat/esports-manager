@@ -24,7 +24,7 @@ const SCHEMAS: Dictionary = {
 	"game_config": {"req": ["key","value"],                                     "pk": "key"},
 	"lane_config": {"req": ["lane_id","name","max_pilots","mid_col","mid_row"], "pk": "lane_id"},
 	"players":     {"req": ["id","team_id","name","role","laning","mechanics","gamesense","teamfight","mental"], "pk": "id"},
-	"mechs":       {"req": ["id","name","hp","atk","presence","speed"],         "pk": "id"},
+	"mechs":       {"req": ["id","name","hp","atk","presence"],                 "pk": "id"},
 	"teams":       {"req": ["id","name","short_name"],                          "pk": "id"},
 	"intl_teams":   {"req": ["id","name","short_name"],                         "pk": "id"},
 	"intl_players": {"req": ["id","team_id","name","role","laning","mechanics","gamesense","teamfight","mental"], "pk": "id"},
@@ -93,9 +93,6 @@ const TABLE_DEFS: Dictionary = {
 		"atk":      {"data_type": "int",  "not_null": true},
 		# 존재감 — 전투 개시 시 타겟 어그로 가중치. 근접 메크 4, 원거리 메크 2.
 		"presence": {"data_type": "int",  "not_null": true},
-		# 속도(40~100) — 교전 아레나의 ATB 게이지 충전 속도. 높을수록 자기 차례가
-		# 빨리 돌아온다. 전장(턴제)에서는 읽지 않는다.
-		"speed":    {"data_type": "int",  "not_null": true},
 	},
 	"teams": {
 		"id":         {"data_type": "int",  "primary_key": true, "not_null": true},

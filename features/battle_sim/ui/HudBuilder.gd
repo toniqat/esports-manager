@@ -3,41 +3,38 @@ extends Node
 
 @onready var _bs: BattleSim = get_parent() as BattleSim
 
-# ── Role → portrait background color ─────────────────────────────────────────
-const ROLE_COLORS := [
-	Color(0.2, 0.4, 0.9),   # TANK
-	Color(0.9, 0.5, 0.1),   # FIGHTER
-	Color(0.6, 0.1, 0.8),   # ASSASSIN
-	Color(0.1, 0.7, 0.3),   # SUPPORT
-	Color(0.8, 0.2, 0.1),   # SNIPER
-]
+# ── 상단 패널 (시간 + 팀 점수 + 적 파일럿 스트립) ─────────────────────────────
+# 예전에는 이 패널 하나가 열 명 전부를 84px 슬롯으로 담았다(아군 좌 / 점수 중앙 /
+# 적 우). 지금은 **적 다섯만** 여기 있고, 아군 다섯은 핸드 행 아래로 내려갔다.
+#
+# 패널 높이 130 은 협상 불가에 가깝다: 이 패널이 상대 핸드 peek 의 윗부분을
+# 가리는 가림막이고, peek 카드 아래 끝(y 179)에서 `DONUT_AI_HAND_GAP` 만큼 띄운
+# 자리가 적 도넛이며, 그 도넛 아래가 곧 전장 픽셀 상단(y 314)이다. 패널을
+# 키우면 그 사슬이 통째로 밀려 도넛이 전장을 덮는다.
+const TOP_PANEL_Y      := 0.0
+const TOP_PANEL_H      := 130.0
+## 시간 · 팀 점수 한 줄.
+const HEADER_ROW_Y     := 4.0
+const HEADER_ROW_H     := 34.0
+const TIME_FONT        := 18
+const TOTAL_SCORE_FONT := 26
+## 적 스트립 — 패널 로컬 좌표. 아군 스트립보다 작다(내 팀이 아니므로 정보
+## 밀도를 낮춘다).
+const ENEMY_STRIP_RECT := Rect2(175.0, 42.0, 730.0, 84.0)
+const ENEMY_SCORE_FONT := 15
+const ENEMY_HP_H       := 6.0
 
-# ── Top panel layout ─────────────────────────────────────────────────────────
-const TOP_PANEL_Y      := 10.0
-const TOP_PANEL_H      := 120.0
-const SIDE_MARGIN      := 10.0
-const SLOT_W           := 84.0
-const SLOT_H           := 108.0
-# 5 slots + 5 slots + center => center width is whatever's left.
-const PILOTS_PER_SIDE  := 5
-const PILOT_BLOCK_W    := SLOT_W * PILOTS_PER_SIDE  # 420
-const CENTER_W         := 1080.0 - SIDE_MARGIN * 2.0 - PILOT_BLOCK_W * 2.0  # 220
-
-# Slot internals — vertical HP bar removed; face image takes the freed space and
-# a horizontal HP bar sits directly under the face.
-const PORTRAIT_X       := 4.0
-const PORTRAIT_Y       := 0.0
-const PORTRAIT_W       := SLOT_W - PORTRAIT_X * 2.0  # 76
-const PORTRAIT_H       := 76.0
-const HBAR_X           := PORTRAIT_X
-const HBAR_Y           := PORTRAIT_Y + PORTRAIT_H + 2.0  # 78
-const HBAR_W           := PORTRAIT_W                       # 76
-const HBAR_H           := 6.0
-const SCORE_Y          := HBAR_Y + HBAR_H + 4.0            # 88
-const SCORE_H          := 16.0
-
-# Placeholder score (real scoring system not implemented yet).
-const PLACEHOLDER_SCORE := "1.0k"
+# ── 하단 아군 스트립 (핸드 행 아래) ───────────────────────────────────────────
+# 핸드 행은 y 1500..1720, 그 아래가 통째로 비어 있었다(예전 하단 코스트 바 자리).
+#
+# y 1766 은 카드 밑단에서 계산해 나온 값이다. 부채꼴의 **양 끝 카드는 가운데보다
+# 21.4px 아래로 처지고**(12장 기준), 호버/선택 시 `Card.HOVER_SCALE`(1.2)로
+# 커지므로 최악의 경우 카드 밑단이 y ≈ 1763 까지 내려온다. 1724 에 두었더니
+# 카드가 초상화 윗부분을 덮었다(실측 확인). 아이폰 홈 바를 위해 바닥 ~32px 도
+# 남긴다 — 위아래가 다 막힌 122px 안에 초상화 · 체력 바 · 성장치가 들어간다.
+const PLAYER_STRIP_RECT := Rect2(25.0, 1766.0, 1030.0, 122.0)
+const PLAYER_SCORE_FONT := 20
+const PLAYER_HP_H       := 10.0
 
 # ── AI hand peek (below score panel) ─────────────────────────────────────────
 # AI hand is shown as a fan of card-back nodes whose tops are tucked behind the
@@ -85,9 +82,9 @@ const DONUT_AI_HAND_GAP := 20.0
 ## Fallback 100% mark used before DataLoader fills PHASE_THRESHOLD.
 const DONUT_DEFAULT_MAX := 8
 
-# ── Pilot slot refs (internal to HudBuilder) ─────────────────────────────────
-var _player_slots: Array = []   # team 0, on the left
-var _enemy_slots:  Array = []   # team 1, on the right
+# ── 파일럿 스트립 refs ────────────────────────────────────────────────────────
+var _enemy_strip:  PilotStrip = null   # team 1, 화면 상단
+var _player_strip: PilotStrip = null   # team 0, 핸드 행 아래
 
 # ── Deck / Discard 카운터 히트 버튼 ───────────────────────────────────────────
 # 카운터 라벨 위에 얹힌 투명 버튼. 누르면 CardPileViewer 가 그 더미의 카드를
@@ -121,6 +118,7 @@ func build_ui() -> void:
 	# background covers the cards' top portion (sibling z-order = child index).
 	_build_ai_hand_peek()
 	_build_top_panel()
+	_build_player_strip()
 	_build_hand_indicators()
 	_build_cost_donuts()
 	_build_victory_panel()
@@ -220,7 +218,7 @@ func _update_pile_buttons() -> void:
 		_bs.lbl_discard_count.modulate = Color(1, 1, 1, label_alpha)
 
 
-# ── Top panel: 5 player slots | center (time + total score) | 5 enemy slots ──
+# ── 상단 패널: 시간 · 팀 점수 한 줄 + 그 아래 적 파일럿 스트립 ────────────────
 func _build_top_panel() -> void:
 	var tp := Panel.new()
 	tp.position = Vector2(0.0, TOP_PANEL_Y)
@@ -237,28 +235,50 @@ func _build_top_panel() -> void:
 	tp.add_theme_stylebox_override("panel", tp_style)
 	_bs.canvas.add_child(tp)
 
-	var slot_y := (TOP_PANEL_H - SLOT_H) * 0.5  # vertical centering inside panel
-
-	# Player slots — leftmost block
-	for i in range(PILOTS_PER_SIDE):
-		var sx := SIDE_MARGIN + i * SLOT_W
-		_player_slots.append(_build_slot(tp, sx, slot_y))
-
-	# Center column
-	var center_x := SIDE_MARGIN + PILOT_BLOCK_W
-	_lbl_time = UiHelpers.mk_label(tp, "00:00", 18, Color(0.85, 0.85, 0.85),
-			Vector2(center_x, slot_y + 2.0), Vector2(CENTER_W, 22.0),
-			HORIZONTAL_ALIGNMENT_CENTER)
-	_lbl_total_score = UiHelpers.mk_label(tp, "%s - %s" % [PLACEHOLDER_SCORE, PLACEHOLDER_SCORE],
-			28, Color(1.0, 0.95, 0.6),
-			Vector2(center_x, slot_y + 30.0), Vector2(CENTER_W, 50.0),
+	# 시계는 왼쪽 끝, 팀 점수는 가운데. 둘이 같은 줄에 앉는다.
+	_lbl_time = UiHelpers.mk_label(tp, "00:00", TIME_FONT,
+			Color(0.85, 0.85, 0.85),
+			Vector2(20.0, HEADER_ROW_Y), Vector2(220.0, HEADER_ROW_H),
+			HORIZONTAL_ALIGNMENT_LEFT)
+	_lbl_total_score = UiHelpers.mk_label(tp, "", TOTAL_SCORE_FONT,
+			Color(1.0, 0.95, 0.6),
+			Vector2(0.0, HEADER_ROW_Y), Vector2(1080.0, HEADER_ROW_H),
 			HORIZONTAL_ALIGNMENT_CENTER)
 
-	# Enemy slots — rightmost block
-	var enemy_block_x := SIDE_MARGIN + PILOT_BLOCK_W + CENTER_W
-	for i in range(PILOTS_PER_SIDE):
-		var sx := enemy_block_x + i * SLOT_W
-		_enemy_slots.append(_build_slot(tp, sx, slot_y))
+	# 적 스트립은 패널의 자식이라 패널 배경 위에 그려진다(= 상대 핸드 peek 을
+	# 가리는 가림막의 일부).
+	_enemy_strip = PilotStrip.new()
+	_enemy_strip.name = "EnemyPilotStrip"
+	tp.add_child(_enemy_strip)
+	_enemy_strip.setup(_bs, 1, ENEMY_STRIP_RECT, false,
+			ENEMY_SCORE_FONT, ENEMY_HP_H)
+
+
+# ── 하단 아군 스트립 ─────────────────────────────────────────────────────────
+# 핸드 행 아래. 누르면 파일럿 상세 패널이 열린다 — 다만 **자기 작전 단계에만**
+# 눌린다(`_update_pilot_strips` 가 버튼 활성 상태를 관리).
+func _build_player_strip() -> void:
+	_player_strip = PilotStrip.new()
+	_player_strip.name = "PlayerPilotStrip"
+	_bs.canvas.add_child(_player_strip)
+	_player_strip.setup(_bs, 0, PLAYER_STRIP_RECT, true,
+			PLAYER_SCORE_FONT, PLAYER_HP_H)
+	_player_strip.pilot_pressed.connect(_on_pilot_strip_pressed)
+
+
+func _on_pilot_strip_pressed(p: PilotData) -> void:
+	if _bs.pilot_detail == null:
+		return
+	if _bs.game_phase != GameEnums.BattlePhase.CARD_PHASE:
+		return
+	_bs.pilot_detail.open(p)
+
+
+## 상세 패널이 열려 있는 동안 아군 스트립을 치운다 — 딤 위에 남으면 지금 무엇을
+## 보고 있는지가 흐려지고, 딤 아래로 넣으면 방금 누른 얼굴이 어두워진다.
+func set_player_strip_visible(on: bool) -> void:
+	if _player_strip != null:
+		_player_strip.visible = on
 
 
 # AI hand peek — row of face-down card backs whose tops hide behind the score
@@ -494,83 +514,13 @@ func _build_victory_panel() -> void:
 	_bs.panel_victory.add_child(rb)
 
 
-# Builds one pilot slot (face portrait + horizontal HP bar + score label).
-# Returns a Dictionary of refs used by `_apply_slots`.
-func _build_slot(parent: Control, x: float, y: float) -> Dictionary:
-	# Tinted background that doubles as a fallback when no face image exists
-	# (standalone runs, INTL pilots without art, dead pilot grayscale tint).
-	var icon_bg := ColorRect.new()
-	icon_bg.position = Vector2(x + PORTRAIT_X, y + PORTRAIT_Y)
-	icon_bg.size     = Vector2(PORTRAIT_W, PORTRAIT_H)
-	icon_bg.color    = Color(0.3, 0.3, 0.3)
-	icon_bg.visible  = false
-	parent.add_child(icon_bg)
-
-	# Face portrait — sits on top of icon_bg. Texture is set in _apply_slots
-	# from PilotImages.face_for(pilot.pilot_id); when null, falls back to bg.
-	var face_rect := TextureRect.new()
-	face_rect.position = Vector2(x + PORTRAIT_X, y + PORTRAIT_Y)
-	face_rect.size     = Vector2(PORTRAIT_W, PORTRAIT_H)
-	face_rect.expand_mode      = TextureRect.EXPAND_IGNORE_SIZE
-	face_rect.stretch_mode     = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	face_rect.mouse_filter     = Control.MOUSE_FILTER_IGNORE
-	face_rect.visible          = false
-	parent.add_child(face_rect)
-
-	# Role label — tiny tag overlaid in the bottom-left corner of the portrait
-	# so the role is still readable when the face fills the slot.
-	var icon_lbl := Label.new()
-	icon_lbl.text = ""
-	icon_lbl.add_theme_font_size_override("font_size", 14)
-	icon_lbl.add_theme_color_override("font_color", Color.WHITE)
-	icon_lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
-	icon_lbl.add_theme_constant_override("outline_size", 3)
-	icon_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	icon_lbl.vertical_alignment   = VERTICAL_ALIGNMENT_BOTTOM
-	icon_lbl.position = Vector2(x + PORTRAIT_X + 3.0, y + PORTRAIT_Y)
-	icon_lbl.size     = Vector2(PORTRAIT_W - 6.0, PORTRAIT_H - 2.0)
-	icon_lbl.visible  = false
-	parent.add_child(icon_lbl)
-
-	# Horizontal HP bar — sits directly under the face, full portrait width.
-	var bar := ProgressBar.new()
-	bar.position        = Vector2(x + HBAR_X, y + HBAR_Y)
-	bar.size            = Vector2(HBAR_W, HBAR_H)
-	bar.min_value       = 0.0
-	bar.max_value       = 100.0
-	bar.value           = 0.0
-	bar.show_percentage = false
-	bar.fill_mode       = ProgressBar.FILL_BEGIN_TO_END
-	bar.visible         = false
-	parent.add_child(bar)
-
-	# Score below the HP bar — placeholder until scoring system exists.
-	var score_lbl := Label.new()
-	score_lbl.text = PLACEHOLDER_SCORE
-	score_lbl.add_theme_font_size_override("font_size", 14)
-	score_lbl.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
-	score_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	score_lbl.position = Vector2(x, y + SCORE_Y)
-	score_lbl.size     = Vector2(SLOT_W, SCORE_H)
-	score_lbl.visible  = false
-	parent.add_child(score_lbl)
-
-	return {
-		"bar": bar,
-		"icon_bg": icon_bg,
-		"face_rect": face_rect,
-		"icon_lbl": icon_lbl,
-		"score_lbl": score_lbl,
-	}
-
-
 func update_hud() -> void:
 	# Battle log is no longer surfaced on screen; `_bs.last_log` is still
 	# updated by effect handlers for diagnostics but renders nowhere.
 	var in_card_phase := _bs.game_phase == GameEnums.BattlePhase.CARD_PHASE
 	_update_cost_donuts(in_card_phase)
 	_update_pile_buttons()
-	_update_pilot_boards()
+	_update_pilot_strips(in_card_phase)
 	update_time_label()
 
 
@@ -604,58 +554,31 @@ func update_time_label() -> void:
 	_lbl_time.text = "%02d:%02d" % [mm, ss]
 
 
-func _update_pilot_boards() -> void:
+# 두 스트립 + 팀 합산 점수 갱신, 그리고 상세 패널의 단계 게이트.
+#
+# `_bs.pilots` 는 스폰 순서(= 역할 순서)를 그대로 유지해야 한다
+# (`BattleSim.player_data_for` 가 그 인덱스로 로스터를 찾는다). 그래서 여기서는
+# **사본을 정렬**한다 — 원본을 sort_custom 하면 아웃게임 스탯이 엉뚱한
+# 파일럿에게 붙는다.
+func _update_pilot_strips(in_card_phase: bool) -> void:
 	var team0: Array = []
 	var team1: Array = []
 	for p in _bs.pilots:
 		var pd := p as PilotData
-		if pd.team == 0:
-			team0.append(pd)
-		else:
-			team1.append(pd)
+		(team0 if pd.team == 0 else team1).append(pd)
 	# Sort by LanePosition (LEFT=0, CENTER=1, RIGHT=2, GUERRILLA=3).
 	team0.sort_custom(func(a: PilotData, b: PilotData) -> bool: return a.lane < b.lane)
 	team1.sort_custom(func(a: PilotData, b: PilotData) -> bool: return a.lane < b.lane)
-	_apply_slots(_player_slots, team0)
-	_apply_slots(_enemy_slots,  team1)
-
-
-func _apply_slots(slots: Array, sorted_pilots: Array) -> void:
-	for i in range(slots.size()):
-		var slot: Dictionary = slots[i]
-		if i >= sorted_pilots.size():
-			slot.bar.visible       = false
-			slot.icon_bg.visible   = false
-			slot.face_rect.visible = false
-			slot.icon_lbl.visible  = false
-			slot.score_lbl.visible = false
-			continue
-
-		var pd: PilotData = sorted_pilots[i]
-		var role_color: Color = ROLE_COLORS[pd.role] if pd.role < ROLE_COLORS.size() \
-				else Color(0.5, 0.5, 0.5)
-
-		slot.bar.visible       = true
-		slot.icon_bg.visible   = true
-		slot.face_rect.visible = true
-		slot.icon_lbl.visible  = true
-		slot.score_lbl.visible = true
-		slot.icon_lbl.text     = _bs.ROLE_NAMES[pd.role] if pd.role < _bs.ROLE_NAMES.size() else "?"
-		slot.score_lbl.text    = PLACEHOLDER_SCORE
-
-		var face_rect: TextureRect = slot.face_rect
-		face_rect.texture = PilotImages.face_for(pd.pilot_id)
-
-		if pd.alive:
-			slot.icon_bg.color = role_color
-			face_rect.modulate = Color.WHITE
-			slot.bar.value     = float(pd.hp) / float(pd.max_hp) * 100.0
-		else:
-			# Luminance-based grayscale so the desaturated shape is still visible.
-			var lum := role_color.r * 0.299 + role_color.g * 0.587 + role_color.b * 0.114
-			slot.icon_bg.color = Color(lum, lum, lum)
-			# Desaturate the face so dead pilots are visually distinct.
-			face_rect.modulate = Color(0.55, 0.55, 0.55, 1.0)
-			slot.bar.value     = 0.0
+	if _player_strip != null:
+		_player_strip.set_pilots(team0)
+		_player_strip.set_interactive_enabled(in_card_phase)
+	if _enemy_strip != null:
+		_enemy_strip.set_pilots(team1)
+	if _lbl_total_score != null:
+		_lbl_total_score.text = "%s - %s" % [
+			BattleSim.fmt_score(_bs.team_score(0)),
+			BattleSim.fmt_score(_bs.team_score(1))]
+	if _bs.pilot_detail != null:
+		_bs.pilot_detail.close_if_phase_left()
 
 

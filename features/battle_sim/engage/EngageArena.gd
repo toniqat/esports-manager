@@ -1,7 +1,7 @@
 class_name EngageArena
 extends Control
 
-# 실시간 교전 아레나 — RealtimeEngageSim 의 상태를 그리기만 한다.
+# 턴제 교전 아레나 — TurnEngageSim 의 상태를 그리기만 한다.
 # 게임 상태 변경은 전부 시뮬레이터/매니저 쪽에서 일어난다.
 #
 # **사이드뷰 벨트스크롤**: 무대는 화면 중앙의 가로로 납작한 시네마 밴드
@@ -113,7 +113,7 @@ const UNIT_LIFT: float = 42.0
 const ACT_RING_COLOR := Color(1.0, 0.92, 0.55, 0.85)
 
 var _bs: BattleSim = null
-var _sim: RealtimeEngageSim = null
+var _sim: TurnEngageSim = null
 var _is_duel: bool = false
 
 ## 무대 노드 — _ready 에서 만든다.
@@ -129,7 +129,9 @@ var _cam_target_center: Vector2 = Vector2.ZERO
 var _cam_target_zoom: float = 1.0
 var _cam_min_zoom: float = 1.0
 
-var _time_lbl: Label = null
+## 라운드 표시 ("라운드 2 / 3"). 결투는 라운드 예산이 없으므로 진행 라운드만.
+var _round_lbl: Label = null
+## 지금 누구 차례인가 / 종료 사유 배너.
 var _phase_lbl: Label = null
 ## 종료 유예 동안 상단에 띄우는 배너(빈 문자열 = 아직 전투 중).
 var _end_banner: String = ""
@@ -186,7 +188,7 @@ func _ready() -> void:
 	_roster.position = Vector2.ZERO
 	add_child(_roster)
 
-	var belt := RealtimeEngageSim.belt_rect()
+	var belt := TurnEngageSim.belt_rect()
 	_cam_min_zoom = minf(BAND_RECT.size.x / belt.size.x,
 			BAND_RECT.size.y / belt.size.y)
 	_cam_center = belt.get_center()
@@ -195,7 +197,7 @@ func _ready() -> void:
 	_cam_target_zoom = _cam_min_zoom
 
 
-func setup(bs: BattleSim, sim: RealtimeEngageSim, title_text: String,
+func setup(bs: BattleSim, sim: TurnEngageSim, title_text: String,
 		is_duel: bool) -> void:
 	_bs = bs
 	_sim = sim
@@ -214,10 +216,10 @@ func _build_ui(title_text: String) -> void:
 	title.size = Vector2(VP_W, 56)
 	add_child(title)
 
-	_time_lbl = _make_label("", 46, TIME_COLOR, HORIZONTAL_ALIGNMENT_CENTER)
-	_time_lbl.position = Vector2(0, 296)
-	_time_lbl.size = Vector2(VP_W, 56)
-	add_child(_time_lbl)
+	_round_lbl = _make_label("", 46, TIME_COLOR, HORIZONTAL_ALIGNMENT_CENTER)
+	_round_lbl.position = Vector2(0, 296)
+	_round_lbl.size = Vector2(VP_W, 56)
+	add_child(_round_lbl)
 
 	_phase_lbl = _make_label("", 24, Color(0.85, 0.85, 0.9),
 			HORIZONTAL_ALIGNMENT_CENTER)
@@ -234,7 +236,7 @@ func _build_ui(title_text: String) -> void:
 
 		var team_units: Array = _sim.units_of(t)
 		for i in team_units.size():
-			var u := team_units[i] as RealtimeEngageSim.EUnit
+			var u := team_units[i] as TurnEngageSim.EUnit
 			var cx: float = _strip_cell_x(team_units.size(), i)
 			var lbl := _make_label("", 19, TEAM_COLORS[t],
 					HORIZONTAL_ALIGNMENT_CENTER)
@@ -280,8 +282,8 @@ func _update_camera(delta: float, snap: bool) -> void:
 			var p: Vector2 = raw
 			mn = Vector2(minf(mn.x, p.x), minf(mn.y, p.y))
 			mx = Vector2(maxf(mx.x, p.x), maxf(mx.y, p.y))
-		var pad := Vector2(RealtimeEngageSim.UNIT_RADIUS + CAM_PAD_X,
-				RealtimeEngageSim.UNIT_RADIUS + CAM_PAD_Y)
+		var pad := Vector2(TurnEngageSim.UNIT_RADIUS + CAM_PAD_X,
+				TurnEngageSim.UNIT_RADIUS + CAM_PAD_Y)
 		mn -= pad
 		mx += pad
 		var span: Vector2 = mx - mn
@@ -311,7 +313,7 @@ func _update_camera(delta: float, snap: bool) -> void:
 func _focus_positions() -> Array:
 	var out: Array = []
 	for raw in _sim.units:
-		var u := raw as RealtimeEngageSim.EUnit
+		var u := raw as TurnEngageSim.EUnit
 		if u.is_active():
 			out.append(u.pos)
 	return out
@@ -323,7 +325,7 @@ func _focus_positions() -> Array:
 # 들어오지 못한다. 뷰가 무대보다 넓은 축(= 최소 배율 근처)은 그냥 중앙에 고정한다.
 static func _clamp_cam_center(c: Vector2, zoom: float) -> Vector2:
 	var half: Vector2 = BAND_RECT.size / (2.0 * maxf(0.01, zoom))
-	var stage := RealtimeEngageSim.stage_rect()
+	var stage := TurnEngageSim.stage_rect()
 	var bc: Vector2 = stage.get_center()
 	var bh: Vector2 = stage.size * 0.5
 	var out := c
@@ -338,20 +340,28 @@ static func _clamp_cam_center(c: Vector2, zoom: float) -> Vector2:
 	return out
 
 
+# 헤더는 두 줄이다 — 위는 라운드 카운터, 아래는 "지금 누구 차례인가".
+# 실시간 시절의 남은 시간(MM:SS.s)은 라운드 개념에 의미가 없어 삭제됐다.
 func _refresh_header() -> void:
-	if _is_duel:
-		_time_lbl.text = _fmt_time(_sim.elapsed)
-		_time_lbl.add_theme_color_override("font_color", TIME_COLOR)
-	else:
-		var left: float = _sim.time_left()
-		_time_lbl.text = _fmt_time(left)
-		_time_lbl.add_theme_color_override("font_color",
-				TIME_LOW if left <= 3.0 else TIME_COLOR)
-	if _phase_lbl != null:
-		if _end_banner != "":
-			_phase_lbl.text = _end_banner
+	if _round_lbl != null:
+		if _is_duel:
+			_round_lbl.text = "라운드 %d" % _sim.round_index
+			_round_lbl.add_theme_color_override("font_color", TIME_COLOR)
 		else:
-			_phase_lbl.text = "교전 종료" if _sim.finished else ""
+			_round_lbl.text = "라운드 %d / %d" % [_sim.round_index, _sim.total_rounds]
+			_round_lbl.add_theme_color_override("font_color",
+					TIME_LOW if _sim.round_index >= _sim.total_rounds else TIME_COLOR)
+	if _phase_lbl == null:
+		return
+	if _end_banner != "":
+		_phase_lbl.text = _end_banner
+	elif _sim.finished:
+		_phase_lbl.text = "교전 종료"
+	elif _sim.flow == TurnEngageSim.Flow.ROUND_START:
+		_phase_lbl.text = "라운드 %d 시작" % _sim.round_index
+	else:
+		var who: String = _sim.actor_label()
+		_phase_lbl.text = "" if who == "" else "%s 의 차례" % who
 
 
 # 매니저가 종료 판정 직후(대시보드가 뜨기 END_HOLD_SEC 전에) 부른다.
@@ -373,9 +383,6 @@ func mark_engage_over(reason: String) -> void:
 			.set_ease(Tween.EASE_IN_OUT)
 
 
-static func _fmt_time(secs: float) -> String:
-	var s: float = max(0.0, secs)
-	return "%02d:%04.1f" % [int(s) / 60, fmod(s, 60.0)]
 
 
 func _refresh_names() -> void:
@@ -404,7 +411,7 @@ func _spawn_popup(at: Vector2, text: String, color: Color) -> void:
 	lbl.pivot_offset = lbl.size * 0.5
 	lbl.scale = Vector2.ONE / maxf(0.01, _cam_zoom)
 	lbl.position = Vector2(at.x - 120.0,
-			at.y - UNIT_LIFT - RealtimeEngageSim.UNIT_RADIUS - 76.0)
+			at.y - UNIT_LIFT - TurnEngageSim.UNIT_RADIUS - 76.0)
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_world.add_child(lbl)
 	var rise: float = 54.0 / maxf(0.01, _cam_zoom)
@@ -430,7 +437,7 @@ func draw_world(c: CanvasItem) -> void:
 # 빈칸이 생기지 않게 하는 것이 주 목적이고, 지평선 바로 위의 뒷벽 띠가
 # "여기서부터 바닥"을 읽히게 한다.
 func _draw_backdrop(c: CanvasItem) -> void:
-	var belt := RealtimeEngageSim.belt_rect()
+	var belt := TurnEngageSim.belt_rect()
 	var x0: float = -BG_ABOVE
 	var w: float = belt.size.x + BG_ABOVE * 2.0
 	_draw_vgradient(c, Rect2(x0, -BG_ABOVE, w, BG_ABOVE - BACKWALL_H),
@@ -450,7 +457,7 @@ func _draw_backdrop(c: CanvasItem) -> void:
 
 # 바닥 — 위(먼 곳)에서 아래(가까운 곳)로 밝아지고, 좌우 절반에 팀색을 얹는다.
 func _draw_floor(c: CanvasItem) -> void:
-	var belt := RealtimeEngageSim.belt_rect()
+	var belt := TurnEngageSim.belt_rect()
 	var w: float = belt.size.x
 	var h: float = belt.size.y
 	_draw_vgradient(c, Rect2(-BG_ABOVE, 0.0, w + BG_ABOVE * 2.0, h + BG_BELOW),
@@ -491,7 +498,7 @@ static func _draw_vgradient(c: CanvasItem, rect: Rect2, top: Color,
 # 축소해 그린다. 사거리원은 없다(사거리 제한 없음).
 func _draw_turrets(c: CanvasItem) -> void:
 	for raw in _sim.turrets:
-		var t := raw as RealtimeEngageSim.ETurret
+		var t := raw as TurnEngageSim.ETurret
 		var col: Color = TEAM_COLORS[t.team]
 		var base: Vector2 = t.pos
 		var s: float = TURRET_BG_SCALE
@@ -562,17 +569,17 @@ static func _shot_impact(p: Dictionary) -> Vector2:
 func _draw_units(c: CanvasItem) -> void:
 	var order: Array = _sim.units.duplicate()
 	order.sort_custom(func(a, b):
-		return (a as RealtimeEngageSim.EUnit).pos.y \
-				< (b as RealtimeEngageSim.EUnit).pos.y)
+		return (a as TurnEngageSim.EUnit).pos.y \
+				< (b as TurnEngageSim.EUnit).pos.y)
 	for raw in order:
-		_draw_unit(c, raw as RealtimeEngageSim.EUnit)
+		_draw_unit(c, raw as TurnEngageSim.EUnit)
 
 
-func _draw_unit(c: CanvasItem, u: RealtimeEngageSim.EUnit) -> void:
-	var dead: bool = (u.state == RealtimeEngageSim.State.DEAD)
+func _draw_unit(c: CanvasItem, u: TurnEngageSim.EUnit) -> void:
+	var dead: bool = (u.state == TurnEngageSim.State.DEAD)
 	var alpha: float = 0.28 if dead else 1.0
 	var col: Color = TEAM_COLORS[u.team]
-	var r: float = RealtimeEngageSim.UNIT_RADIUS
+	var r: float = TurnEngageSim.UNIT_RADIUS
 	var body: Vector2 = u.pos + Vector2(0.0, -UNIT_LIFT)
 
 	# 접지 그림자 — 발밑에 납작한 타원.
@@ -613,7 +620,7 @@ func _draw_unit(c: CanvasItem, u: RealtimeEngageSim.EUnit) -> void:
 
 	# 피격 플래시.
 	if u.hit_flash > 0.0:
-		var k: float = u.hit_flash / RealtimeEngageSim.KNOCK_FLASH_SEC
+		var k: float = u.hit_flash / TurnEngageSim.KNOCK_FLASH_SEC
 		c.draw_circle(body, r + 6.0, Color(1.0, 0.35, 0.35, 0.45 * k))
 
 	# 공격 모션 — 근접은 휘두르는 호, 원거리는 총구 섬광.
@@ -644,25 +651,40 @@ func draw_hud(c: CanvasItem) -> void:
 	# 무대 테두리 — "여기까지가 무대, 밖은 잘려 있다"를 명시한다.
 	c.draw_rect(BAND_RECT.grow(2.0), Color(0.0, 0.0, 0.0, 0.55), false, 6.0)
 	c.draw_rect(BAND_RECT, BAND_FRAME, false, 2.0)
-	_draw_time_bar(c)
+	_draw_round_pips(c)
 
 
-const TIME_BAR_W: float = 560.0
-const TIME_BAR_H: float = 12.0
-const TIME_BAR_Y: float = 368.0
+const ROUND_BAR_W: float = 560.0
+const ROUND_BAR_H: float = 12.0
+const ROUND_BAR_Y: float = 368.0
+## 라운드 칸 사이 간격.
+const ROUND_PIP_GAP: float = 6.0
+## 이 개수를 넘으면 칸으로 나누는 대신 연속 바로 그린다 — 칸이 실처럼 가늘어져
+## 오히려 몇 라운드인지 안 읽힌다. 결투(상한 10라운드)가 여기 걸린다.
+const ROUND_PIP_MAX: int = 8
 
-func _draw_time_bar(c: CanvasItem) -> void:
+# 남은 시간 바를 대체한 **라운드 칸 표시**. 라운드 하나가 칸 하나이고, 지금
+# 라운드까지 채워진다. 결투처럼 라운드 예산이 의미 없는 경우는 그리지 않는다.
+func _draw_round_pips(c: CanvasItem) -> void:
 	if _is_duel:
 		return
-	var x: float = (VP_W - TIME_BAR_W) * 0.5
-	c.draw_rect(Rect2(x, TIME_BAR_Y, TIME_BAR_W, TIME_BAR_H),
+	var x0: float = (VP_W - ROUND_BAR_W) * 0.5
+	c.draw_rect(Rect2(x0, ROUND_BAR_Y, ROUND_BAR_W, ROUND_BAR_H),
 			Color(0.10, 0.11, 0.16, 0.95), true)
-	var frac: float = 0.0
-	if _sim.duration > 0.0:
-		frac = clampf(_sim.time_left() / _sim.duration, 0.0, 1.0)
-	c.draw_rect(Rect2(x, TIME_BAR_Y, TIME_BAR_W * frac, TIME_BAR_H),
-			TIME_LOW if frac <= 0.25 else Color(0.45, 0.80, 0.95), true)
-	c.draw_rect(Rect2(x, TIME_BAR_Y, TIME_BAR_W, TIME_BAR_H),
+	var n: int = max(1, _sim.total_rounds)
+	var done: int = clampi(_sim.round_index, 0, n)
+	if n <= ROUND_PIP_MAX:
+		var pip_w: float = (ROUND_BAR_W - ROUND_PIP_GAP * float(n - 1)) / float(n)
+		for i in n:
+			var px: float = x0 + (pip_w + ROUND_PIP_GAP) * float(i)
+			c.draw_rect(Rect2(px, ROUND_BAR_Y, pip_w, ROUND_BAR_H),
+					Color(0.45, 0.80, 0.95) if i < done
+							else Color(0.20, 0.23, 0.32, 0.95), true)
+	else:
+		c.draw_rect(Rect2(x0, ROUND_BAR_Y,
+				ROUND_BAR_W * float(done) / float(n), ROUND_BAR_H),
+				Color(0.45, 0.80, 0.95), true)
+	c.draw_rect(Rect2(x0, ROUND_BAR_Y, ROUND_BAR_W, ROUND_BAR_H),
 			Color(0.4, 0.45, 0.6, 0.8), false, 1.5)
 
 
@@ -674,14 +696,14 @@ func draw_roster(c: CanvasItem) -> void:
 	for t in range(2):
 		var team_units: Array = _sim.units_of(t)
 		for i in team_units.size():
-			_draw_roster_cell(c, team_units[i] as RealtimeEngageSim.EUnit,
+			_draw_roster_cell(c, team_units[i] as TurnEngageSim.EUnit,
 					_strip_cell_x(team_units.size(), i), STRIP_ROW_Y[t])
 
 
-func _draw_roster_cell(c: CanvasItem, u: RealtimeEngageSim.EUnit, cx: float,
+func _draw_roster_cell(c: CanvasItem, u: TurnEngageSim.EUnit, cx: float,
 		y: float) -> void:
 	var p: PilotData = u.pilot
-	var dead: bool = (u.state == RealtimeEngageSim.State.DEAD)
+	var dead: bool = (u.state == TurnEngageSim.State.DEAD)
 	var alpha: float = 0.35 if dead else 1.0
 	var col: Color = TEAM_COLORS[u.team]
 	var r: float = STRIP_PORTRAIT * 0.5
@@ -751,7 +773,7 @@ func show_dashboard(team0: Array, team1: Array, stats: Dictionary,
 	title.size = Vector2(dash_w, 56)
 	_dashboard.add_child(title)
 
-	var sub := _make_label("교전 시간 %s" % _fmt_time(_sim.elapsed), 22,
+	var sub := _make_label("%d라운드 진행" % _sim.round_index, 22,
 			Color(0.8, 0.8, 0.85), HORIZONTAL_ALIGNMENT_CENTER)
 	sub.position = Vector2(0, 72)
 	sub.size = Vector2(dash_w, 30)

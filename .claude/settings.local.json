@@ -19,7 +19,12 @@
       "Bash(git -C \"D:/Projects/Godot Project/esports-manager\" diff HEAD -- resources/images/tiles/tiles-base.tres)",
       "Bash(git *)",
       "PowerShell(Get-Content *)",
-      "Bash(tasklist /FI \"IMAGENAME eq node.exe\" /FO TABLE)"
+      "Bash(tasklist /FI \"IMAGENAME eq node.exe\" /FO TABLE)",
+      "Bash(sed -i 's/        rows.append/        rows.append/' make_eye_crops.py)",
+      "Bash(python -)",
+      "Bash(python make_eye_crops.py)",
+      "Bash(cp \"C:/Users/limes/AppData/Local/Temp/claude/D--Projects-Godot-Project-esports-manager/5c4c5859-5b63-409a-8474-780ac7544c81/scratchpad/rebuild_db.gd\" __rebuild_db.gd)",
+      "Bash(\"D:/Projects/Godot Project/godot.exe\" --headless --path \"D:/Projects/Godot Project/esports-manager\" --script res://__rebuild_db.gd)"
     ]
   }
 }

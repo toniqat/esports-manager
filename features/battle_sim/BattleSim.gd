@@ -11,8 +11,13 @@ const AUTO_PLAY_INTERVAL := 0.5
 # Card phase UI constants (not DB scope)
 # Hand layout: fixed-width flat hand, centred on the viewport. The X anchor is
 # computed in _ready so the layout follows the actual viewport width. Cards
-# span ~y=1500..1720 at-rest (CARD_H=220) — above the cost-bar zone (y=1790+).
-var BS_HAND_CENTER: Vector2 = Vector2(540.0, 1500.0)
+# span ~y=1440..1660 at-rest (CARD_H=220).
+#
+# y 1440 은 전장 축소(`HexGrid.DISPLAY_SCALE` 1.5 → 1.35)를 따라온 값이다:
+# 전장 하단이 1406 → 1351 로 55px 올라갔으므로 핸드도 60px 올려 카드 윗단과
+# 전장 아랫단 사이의 ~90px 간격을 그대로 유지한다. 확인/취소 버튼 행, 전략
+# 포인트 도넛, Deck / Discard 카운터는 전부 이 값에서 역산하므로 함께 따라온다.
+var BS_HAND_CENTER: Vector2 = Vector2(540.0, 1440.0)
 # Side margin (px) reserved for the Deck / Discard count indicators on the
 # left and right of the hand row. Hand width = viewport_w − 2 × this.
 const BS_HAND_AREA_MARGIN := 130.0
@@ -77,6 +82,20 @@ const ANIM_TURRET_HIT_DUR      := 0.26
 const ANIM_TURRET_HIT_AMP_PX   := 9.0
 ## 피격 순간 포탑 스프라이트에 곱하는 색. 연출이 끝나면 흰색으로 돌아온다.
 const ANIM_TURRET_HIT_TINT     := Color(1.0, 0.42, 0.36, 1.0)
+
+# ─── 공격 카드 돌진 연출 ─────────────────────────────────────────────────────
+# 공격 카드(`attack:N`)를 낼 때 시전자 초상이 대상 초상으로 파고들었다가
+# 돌아온다. 자세한 배선은 anim_pilot_lunge / pilot_lunge_offset 참조.
+## 돌진(1단계) 시간. **거리와 무관하게 고정**이라 먼 대상일수록 빠르게 날아간다 —
+## 연출 길이가 전장 위치에 따라 들쭉날쭉하면 연속 공격의 리듬이 무너진다.
+const ANIM_LUNGE_IN_DUR    := 0.50
+## 복귀(2단계) 시간. 돌진보다 길다 — "천천히 돌아온다"가 이 연출의 후반부다.
+const ANIM_LUNGE_OUT_DUR   := 0.62
+## 복귀 중 붕 뜨는 높이(px). 궤적 한가운데서 최대가 되는 반주기 사인.
+const ANIM_LUNGE_HOP_PX    := 34.0
+## 돌진이 끝났을 때 대상 초상과 겹치는 비율(대상 지름 기준). 0.5 = 절반.
+## 두 마커 반지름이 같으므로 최종 중심 간 거리는 정확히 마커 반지름 1개분이 된다.
+const ANIM_LUNGE_OVERLAP   := 0.5
 
 # ─── 피해 수치 팝업 (공격 카드 전용) ─────────────────────────────────────────
 ## 팝업이 화면에 머무는 시간(s).
@@ -693,6 +712,16 @@ func _advance_pilot_animations(delta: float) -> bool:
 					p.anim_recall_t     = 0.0
 					p.anim_recall_dur   = 0.0
 			any_active = true
+		if p.anim_lunge_phase != 0:
+			if p.anim_lunge_t < p.anim_lunge_dur:
+				p.anim_lunge_t = minf(p.anim_lunge_t + delta, p.anim_lunge_dur)
+				any_active = true
+			elif p.anim_lunge_phase == 2:
+				# 복귀가 끝나면 스스로 걷는다. **1단계는 시간이 다 차도 꺼지지
+				# 않고 대상 앞에 멈춰 선다** — 그 정지 구간이 피해와 쉐이크가
+				# 재생되는 자리이고, 2단계는 anim_pilot_lunge_return 이 건다.
+				anim_pilot_lunge_clear(p)
+				any_active = true
 	return any_active
 
 
@@ -721,6 +750,7 @@ func anim_pilot_shake(p: PilotData) -> void:
 func anim_pilot_recall(p: PilotData, orig_cell: Vector2i) -> void:
 	p.anim_move_dur       = 0.0
 	p.anim_move_t         = 0.0
+	anim_pilot_lunge_clear(p)
 	p.anim_recall_orig    = orig_cell
 	p.anim_recall_phase   = 1
 	p.anim_recall_t       = 0.0
@@ -731,6 +761,7 @@ func anim_pilot_recall(p: PilotData, orig_cell: Vector2i) -> void:
 func anim_pilot_respawn(p: PilotData) -> void:
 	p.anim_move_dur       = 0.0
 	p.anim_move_t         = 0.0
+	anim_pilot_lunge_clear(p)
 	p.anim_recall_phase   = 2
 	p.anim_recall_t       = 0.0
 	p.anim_recall_dur     = ANIM_RECALL_FADE_IN_DUR
@@ -748,6 +779,9 @@ func anim_pilot_death(p: PilotData) -> void:
 	p.anim_move_dur       = 0.0
 	p.anim_move_t         = 0.0
 	p.anim_recall_phase   = 0
+	# 돌진 중에 쓰러질 수 있다(교전 무대가 아니라 전장에서 반격을 맞는 경우).
+	# 시신은 쓰러진 칸에 그대로 남아야 하므로 변위를 걷어 낸다.
+	anim_pilot_lunge_clear(p)
 	p.anim_death_cell     = p.grid_pos
 	p.anim_death_phase    = 1
 	p.anim_death_t        = 0.0
@@ -758,6 +792,81 @@ func anim_pilot_death_clear(p: PilotData) -> void:
 	p.anim_death_phase = 0
 	p.anim_death_t     = 0.0
 	p.anim_death_dur   = 0.0
+
+
+# ─── 공격 카드 돌진 연출 ─────────────────────────────────────────────────────
+# 한 번의 타격이 세 박자다: **파고들기 → 타격(정지) → 복귀**. 가운데 박자는
+# 여기 없다 — 시전자가 대상 앞에 멈춰 선 채로 호출 측(`CardPhaseManager.
+# _effect_attack`)이 피해를 넣고 쉐이크를 걸고 팝업을 띄운다. 그래서 두 함수로
+# 갈라져 있고, 둘 다 자기 단계가 끝날 때까지 await 할 수 있는 코루틴이다.
+#
+# 연속 공격(`repeat`)은 이 세 박자를 타수만큼 반복한다. 다음 카드는 마지막
+# 복귀가 끝나야 낼 수 있다(`CardPhaseManager` 의 입력 잠금 참조).
+
+## 1단계 — 시전자를 대상 초상 앞까지 밀어 넣고, 도달할 때까지 기다린다.
+## 도달 시점의 겹침은 `ANIM_LUNGE_OVERLAP`, 소요 시간은 거리와 무관하게
+## `ANIM_LUNGE_IN_DUR` 고정이다.
+func anim_pilot_lunge(attacker: PilotData, target: PilotData) -> void:
+	if attacker == null or target == null or attacker == target:
+		return
+	if not attacker.alive or renderer == null:
+		return
+	# 그려진 마커끼리 재야 한다 — 마커는 타일 밖(적 위 / 아군 아래)으로 밀려나 있어
+	# 타일 중심으로 재면 같은 칸의 적에게 돌진할 때 방향이 아예 반대가 된다.
+	var markers: Dictionary = renderer.pilot_marker_positions()
+	var from_pos: Vector2 = markers[attacker] as Vector2 if markers.has(attacker) \
+			else pilot_marker_pos_solo(attacker)
+	var to_pos: Vector2 = markers[target] as Vector2 if markers.has(target) \
+			else pilot_marker_pos_solo(target)
+	var delta_v: Vector2 = to_pos - from_pos
+	var dist: float = delta_v.length()
+	# 반지름 1개분을 남기면 두 초상이 대상 지름의 절반만큼 겹친다(둘의 반지름이
+	# 같으므로). 이미 그보다 가까우면 파고들 자리가 없으니 제자리에서 때린다.
+	var keep: float = renderer.pilot_marker_radius(target) * (2.0 * ANIM_LUNGE_OVERLAP)
+	var travel: float = maxf(0.0, dist - keep)
+	attacker.anim_lunge_vec   = Vector2.ZERO if dist < 0.01 \
+			else (delta_v / dist) * travel
+	attacker.anim_lunge_phase = 1
+	attacker.anim_lunge_t     = 0.0
+	attacker.anim_lunge_dur   = ANIM_LUNGE_IN_DUR
+	renderer.queue_redraw()
+	await get_tree().create_timer(ANIM_LUNGE_IN_DUR).timeout
+
+
+## 2단계 — 붕 뜬 채 천천히 원래 자리로. 돌진이 걸려 있지 않으면 즉시 반환하므로
+## 시전자가 없거나 이미 정리된 경우에도 호출 측이 분기할 필요가 없다.
+func anim_pilot_lunge_return(attacker: PilotData) -> void:
+	if attacker == null or attacker.anim_lunge_phase == 0:
+		return
+	attacker.anim_lunge_phase = 2
+	attacker.anim_lunge_t     = 0.0
+	attacker.anim_lunge_dur   = ANIM_LUNGE_OUT_DUR
+	if renderer != null:
+		renderer.queue_redraw()
+	await get_tree().create_timer(ANIM_LUNGE_OUT_DUR).timeout
+
+
+func anim_pilot_lunge_clear(p: PilotData) -> void:
+	p.anim_lunge_phase = 0
+	p.anim_lunge_t     = 0.0
+	p.anim_lunge_dur   = 0.0
+	p.anim_lunge_vec   = Vector2.ZERO
+
+
+## 지금 프레임의 돌진 변위. `BattleRenderer._pilot_anim_offset` 이 다른 오프셋
+## 위에 그대로 더한다.
+##  • 1단계 — `t²` 로 **서서히 빨라지며** 파고든다. 앞 절반에서 25% 만 가므로
+##    짧은 준비 동작 뒤 달려드는 것처럼 읽힌다.
+##  • 2단계 — smoothstep 으로 되돌아오며, 궤적 한가운데서 가장 높이 뜬다.
+func pilot_lunge_offset(p: PilotData) -> Vector2:
+	if p == null or p.anim_lunge_phase == 0 or p.anim_lunge_dur <= 0.0:
+		return Vector2.ZERO
+	var t: float = clampf(p.anim_lunge_t / p.anim_lunge_dur, 0.0, 1.0)
+	if p.anim_lunge_phase == 1:
+		return p.anim_lunge_vec * (t * t)
+	var back: float = t * t * (3.0 - 2.0 * t)
+	return p.anim_lunge_vec * (1.0 - back) \
+			+ Vector2(0.0, -ANIM_LUNGE_HOP_PX * sin(PI * t))
 
 
 # ─── Turret animation driver ─────────────────────────────────────────────────

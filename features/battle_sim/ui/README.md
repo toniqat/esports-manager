@@ -103,12 +103,14 @@ screen: donuts left, buttons bottom-right.
 
 | Donut | Position | Interactive |
 |---|---|---|
-| `_bs.cost_donut` (player, blue) | above the Deck counter, one button-band above the hand row → centre (65, 1354) | yes |
+| `_bs.cost_donut` (player, blue) | above the Deck counter, one button-band above the hand row → centre (65, 1294) | yes |
 | `_bs.cost_donut_enemy` (enemy, red) | top-left, under the AI hand peek → centre (65, 255) | no |
 
-Measured headlessly at 1080×1920: player (65, 1354), enemy (65, 255); the Deck
-label sits at x=8 in the y-band 1500..1720, so the donut (x 9..121, y 1298..1410)
-clears it vertically.
+Measured at 1080×1920: player (65, 1294), enemy (65, 255); the Deck label sits at
+x=8 in the y-band 1440..1660, so the donut (x 9..121, y 1238..1350) clears it
+vertically. The player donut's y is derived from `BS_HAND_CENTER.y`, so it moved
+up with the hand row when the battlefield shrank to 90% — nothing here is a
+literal.
 
 - Ring is full at `PHASE_THRESHOLD` (8); the number in the middle is the raw
   point total, so boost cards read as "9 on a full ring".
@@ -230,8 +232,10 @@ same vertical band the 확인/취소 row occupies on the far side of the screen.
 ### 상단 패널 (시간 + 팀 점수 + 적 스트립)
 `TOP_PANEL_Y` 0 / `TOP_PANEL_H` **130**. 높이는 협상 불가에 가깝다: 이 패널이
 상대 핸드 peek 의 윗부분을 가리는 가림막이고, peek 카드 아래 끝(y 179)에서
-`DONUT_AI_HAND_GAP` 만큼 띄운 자리가 적 도넛이며, 그 도넛 아래가 곧 전장 픽셀
-상단(y 314)이다. 패널을 키우면 그 사슬이 통째로 밀려 도넛이 전장을 덮는다.
+`DONUT_AI_HAND_GAP` 만큼 띄운 자리가 적 도넛(아래 끝 y 311)이며, 그 바로 아래가
+전장 픽셀 상단(y **369** — 전장이 90%로 줄기 전에는 314였다)이다. 패널을 키우면
+그 사슬이 통째로 밀려 도넛이 전장을 덮는다. 그 사이의 빈 띠(y 142~292)를
+**카드 설명 상자**가 쓴다 — `CardPhaseManager.DESC_BOX_TOP`.
 
 - **시간 라벨** — 좌측(x 20), `font_size` 18. `MM:SS` (`get_elapsed_ingame_seconds`).
   **시는 표시하지 않으므로 분이 60을 넘을 수 있다.** BATTLE 중에는 실시간으로

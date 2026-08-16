@@ -102,6 +102,17 @@ var anim_death_t: float      = 0.0
 var anim_death_dur: float    = 0.0
 var anim_death_cell: Vector2i = Vector2i.ZERO
 
+# 공격 카드 돌진 연출: 0 = 없음, 1 = 대상에게 파고드는 중(가속),
+# 2 = 붕 뜬 채 천천히 원래 자리로. `anim_lunge_vec` 는 1단계가 끝났을 때의
+# 최종 변위(픽셀)이고 1·2단계 모두 이 벡터를 보간해 쓴다 — 대상이 그 사이
+# 쓰러져 사라져도 복귀 경로가 어긋나지 않는다.
+# 1단계는 시간이 다 차도 스스로 꺼지지 않고 **대상 앞에서 멈춘 채 대기**한다:
+# 그 정지 구간에서 피해·쉐이크가 재생되고, 2단계는 호출 측이 건다.
+var anim_lunge_phase: int   = 0
+var anim_lunge_t: float     = 0.0
+var anim_lunge_dur: float   = 0.0
+var anim_lunge_vec: Vector2 = Vector2.ZERO
+
 func _init(p_role: int, p_team: int, p_pos: Vector2i, stats: Dictionary) -> void:
 	role     = p_role
 	team     = p_team

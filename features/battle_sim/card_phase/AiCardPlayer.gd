@@ -71,7 +71,9 @@ func run_ai_plays() -> void:
 			_bs.engage_discount_ai = 0
 		_bs.ai_hand.erase(pick)
 		await _show_card_centre(pick)
-		var log_msg := _bs.card_phase.apply_and_dispose_ai_card(pick)
+		# 공격 카드는 돌진 연출이 끝나야 반환된다 — 그래서 await 다. 연출이
+		# 없는 카드는 그 자리에서 값을 돌려주므로 대기가 붙지 않는다.
+		var log_msg: String = await _bs.card_phase.apply_and_dispose_ai_card(pick)
 		if log_msg != "":
 			_bs.last_log = log_msg
 		_bs.hud.update_hud()

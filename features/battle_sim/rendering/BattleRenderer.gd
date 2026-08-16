@@ -3,12 +3,22 @@ extends Node2D
 
 @onready var _bs: BattleSim = get_parent() as BattleSim
 
-# 강조된(타겟 가능) 파일럿 마커가 약간 펄스로 커지는 애니메이션의 시간 누적값.
-# Targeting overlay가 visualizing 중일 때만 _process에서 누적/재draw 한다.
-var _emphasis_time: float = 0.0
-const EMPHASIS_PULSE_HZ: float       = 1.4    # 1초당 펄스 횟수
-const EMPHASIS_SCALE_MIN: float      = 1.06   # 최소 확대 배율
-const EMPHASIS_SCALE_MAX: float      = 1.14   # 최대 확대 배율
+# 대상 지정 카드가 들려 있을 때, **찍을 수 있는 파일럿**의 마커에 곱하는 배율.
+# 예전에는 1.06~1.14 사이를 오가는 펄스(EMPHASIS_PULSE_HZ)였는데, 드래그해서
+# 얼굴 위에 놓는 조작에서는 크기가 계속 변하는 대상이 오히려 겨누기 어려웠다 —
+# 지금은 고정 배율이다. 나머지는 전부 딤드되므로 커진 얼굴만 남아 읽힌다.
+# 2.0 에서 **1.5** 로 낮췄다: 2배는 한 칸에 두세 명이 선 무리를 화면 밖까지
+# 밀어낼 만큼 벌려 놓았고, 얼굴 하나가 옆 레인까지 침범해 어느 타일 이야기인지가
+# 흐려졌다.
+#
+# **이 배율은 초상만이 아니라 배치도 탄다.** 한 칸에 두세 명이 서 있으면 커진
+# 얼굴들이 서로를 덮어 어느 쪽을 눌렀는지 알 수 없게 되므로,
+# `_layout_team_positions` 가 좌우 간격과 타일에서의 거리를 같은 배율로 벌린다
+# (그리고 `_draw_arrow_to_tile` 이 그만큼 긴 화살표를 그린다).
+const TARGET_EMPHASIS_SCALE: float = 1.5
+
+## 강조로 벌어진 무리를 화면 안에 넣을 때 가장자리에서 남기는 여백.
+const SCREEN_EDGE_PAD: float = 6.0
 
 
 # ─── 피해 수치 팝업 (공격 카드 전용) ─────────────────────────────────────────
@@ -25,15 +35,9 @@ const POPUP_FONT_SIZE_BASE := 26
 
 
 func _process(delta: float) -> void:
-	# Targeting/Selection-preview 중 강조 마커가 살아있는 동안만 펄스가 돌도록
-	# 시간을 누적하고 매 프레임 재draw 한다. 비활성 상태에서는 시간을 0으로
-	# 리셋해 다음 강조 시 처음부터 펄스가 시작되게 한다.
-	var to: CardTargetingOverlay = _bs.targeting_overlay
-	if to != null and to.is_visualizing():
-		_emphasis_time += delta
-		queue_redraw()
-	else:
-		_emphasis_time = 0.0
+	# 강조가 고정 배율이 되면서 매 프레임 재draw 할 이유가 사라졌다 — 대상 지정
+	# 상태가 바뀔 때 CardTargetingOverlay._request_redraw() 가 직접 부른다.
+	# 남은 상시 갱신은 피해 수치 팝업뿐.
 	if _advance_popups(delta):
 		queue_redraw()
 
@@ -125,10 +129,8 @@ func _draw() -> void:
 	# so a 드로우 / 전략 점수 card leaves the battlefield untouched.
 	var draw_dim: bool = _bs.targeting_overlay != null \
 			and _bs.targeting_overlay.is_visualizing()
-	var range_set: Dictionary = {}
 	if draw_dim:
-		range_set = _build_range_set()
-		_draw_targeting_tile_dim(range_set)
+		_draw_targeting_tile_dim(_undimmed_cells())
 	_draw_hq_hp_bars()
 	_draw_turret_hp_bars()
 	_draw_pilot_groups()
@@ -180,7 +182,10 @@ func _draw_pilot_groups() -> void:
 	for pos in cell_team0.keys(): all_cells[pos] = true
 	for pos in cell_team1.keys(): all_cells[pos] = true
 
-	for pos in all_cells.keys():
+	# 돌진 중인 시전자가 있는 칸을 **맨 마지막에** 그린다. 돌진은 대상 초상과
+	# 절반쯤 겹치는 것이 연출의 전부라, 대상 칸이 나중에 그려지면 파고든 얼굴이
+	# 그 뒤로 숨어 버린다(칸 순회는 Dictionary 순서라 그때그때 다르다).
+	for pos in _lunging_cells_last(all_cells.keys()):
 		var pv := pos as Vector2i
 		var t0: Array = cell_team0.get(pv, []) as Array
 		var t1: Array = cell_team1.get(pv, []) as Array
@@ -193,6 +198,26 @@ func _draw_pilot_groups() -> void:
 		# top of the pilot stacks. Keep the single-team multi-pilot tag (x2, x3).
 		if total > 1 and (t0.is_empty() or t1.is_empty()):
 			_draw_cell_badge(pv, t0.size(), t1.size())
+
+
+# 셀 순회 순서 — 돌진 중인 파일럿이 서 있는 칸만 뒤로 미룬다. 나머지 순서는
+# 건드리지 않으므로 평소 그림은 한 픽셀도 달라지지 않는다.
+func _lunging_cells_last(cells: Array) -> Array:
+	var lunging: Dictionary = {}
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		if p.anim_lunge_phase != 0:
+			lunging[_render_cell(p)] = true
+	if lunging.is_empty():
+		return cells
+	var normal: Array = []
+	var late: Array = []
+	for c in cells:
+		if lunging.has(c as Vector2i):
+			late.append(c)
+		else:
+			normal.append(c)
+	return normal + late
 
 
 # Group renderable pilots by their *render* cell (not grid_pos): a pilot in
@@ -245,7 +270,8 @@ func _apply_team_layout_to_lookup(out: Dictionary, pilots: Array,
 	if pilots.is_empty():
 		return
 	var n := pilots.size()
-	var positions := _layout_team_positions(n, tile_center, is_enemy, radius)
+	var positions := _layout_team_positions(n, tile_center, is_enemy, radius,
+			_group_emphasis(pilots))
 	var visible_count: int = mini(n, 5)
 	# n > 5 fills positions[0..3] for the first 4 pilots and reserves
 	# positions[4] for the +N overflow circle; remaining pilots have no
@@ -314,21 +340,43 @@ func _font_size_for_count(_n: int) -> int:
 	return int(round(PILOT_FONT_SIZE_BASE * HexGrid.DISPLAY_SCALE))
 
 
+# 이 무리(같은 셀 · 같은 팀)의 배치에 곱해지는 배율. 강조된 파일럿이 한 명이라도
+# 있으면 무리 **전체**가 그 배율로 벌어진다 — 자리는 무리 단위로 풀리므로 사람마다
+# 다른 간격을 줄 수 없고, 겹치지 않으려면 가장 큰 쪽에 맞춰야 한다.
+func _group_emphasis(pilots: Array) -> float:
+	var em: float = 1.0
+	for raw in pilots:
+		em = maxf(em, _pilot_emphasis_scale(raw as PilotData))
+	return em
+
+
 # Returns up to 5 Vector2 positions, ordered:
 #   [close-row left, close-row mid, close-row right, far-row …]
 # Pilots are ALWAYS offset outside the tile toward their own side (enemy above,
 # ally below), even when alone in the cell — the speech-bubble arrow then
 # always marks which tile the pilot occupies.
+#
+# `em` 은 대상 지정 강조 배율(`_group_emphasis`)이다. 초상이 커지는 만큼 배치도
+# 같이 벌어져야 한다 — 두 가지가 동시에 무너지기 때문:
+#   1. **좌우로 겹친다.** 간격은 그대로인데 지름만 2배가 되면 한 칸에 선 두세
+#      명의 얼굴이 서로를 덮어, 어느 얼굴을 눌렀는지 화면에서 읽을 수 없다.
+#   2. **화살표가 사라진다.** 마커가 커지면 초상이 타일 중심까지 삼켜서, 자기
+#      타일을 가리키는 화살표가 초상 뒤에 완전히 깔린다.
+# 그래서 좌우 간격은 `em` 에 비례해 벌어지고, 타일에서의 거리는 반지름 기준
+# 하한(`draw_r * 1.75`)이 이겨 무리가 바깥으로 물러난다 — 그 물러난 만큼이 곧
+# 화살표가 길어질 자리다. em = 1 에서는 언제나 hex 기준 항이 이기므로 평소
+# 배치는 한 픽셀도 바뀌지 않는다.
 func _layout_team_positions(n: int, tile_center: Vector2,
-		is_enemy: bool, radius: float) -> Array:
+		is_enemy: bool, radius: float, em: float = 1.0) -> Array:
 	var dir: float = -1.0 if is_enemy else 1.0
 	var hex_h: float = (_bs.hex_grid as HexGrid).hex_height
-	var close_off: float = hex_h * 0.45 + radius * 0.4
-	var far_off: float   = close_off + radius * 1.85 + 6.0
+	var draw_r: float = radius * em
+	var close_off: float = maxf(hex_h * 0.45 + draw_r * 0.4, draw_r * 1.75)
+	var far_off: float   = close_off + draw_r * 1.85 + 6.0
 	var close_y: float = tile_center.y + dir * close_off
 	var far_y: float   = tile_center.y + dir * far_off
-	var dx_3: float    = radius * 2.4
-	var dx_2: float    = radius * 1.2
+	var dx_3: float    = draw_r * 2.4
+	var dx_2: float    = draw_r * 1.2
 	var visible_count: int = mini(n, 5)
 	var positions: Array = []
 	if visible_count == 1:
@@ -351,7 +399,42 @@ func _layout_team_positions(n: int, tile_center: Vector2,
 		positions.append(Vector2(tile_center.x + dx_3, close_y))
 		positions.append(Vector2(tile_center.x - dx_2, far_y))
 		positions.append(Vector2(tile_center.x + dx_2, far_y))
-	return positions
+	return _clamp_group_on_screen(positions, draw_r)
+
+
+# 무리 **전체를 통째로 밀어** 화면 안에 넣는다.
+#
+# 강조로 벌어진 가장자리 레인의 2~3인 무리는 그대로 두면 화면 밖으로 잘려 나가는
+# 데, 잘린 얼굴은 볼 수도 누를 수도 놓을 수도 없다. 마커를 하나씩 따로 밀면
+# 애써 벌려 놓은 간격이 도로 무너져 다시 겹치므로 **평행 이동**이어야 한다.
+# 화살표는 여전히 각자 자기 타일을 가리키므로 누가 어느 칸에 있는지는 유지된다.
+# 무리가 화면보다 넓은 극단에서는 왼쪽/위쪽 가장자리에 붙인다.
+func _clamp_group_on_screen(positions: Array, draw_r: float) -> Array:
+	if positions.is_empty():
+		return positions
+	var vp: Vector2 = get_viewport_rect().size
+	var pad: float = draw_r + SCREEN_EDGE_PAD
+	var min_p := Vector2(INF, INF)
+	var max_p := Vector2(-INF, -INF)
+	for raw in positions:
+		var v := raw as Vector2
+		min_p = Vector2(minf(min_p.x, v.x), minf(min_p.y, v.y))
+		max_p = Vector2(maxf(max_p.x, v.x), maxf(max_p.y, v.y))
+	var shift := Vector2.ZERO
+	if max_p.x + pad > vp.x:
+		shift.x = vp.x - pad - max_p.x
+	if min_p.x + shift.x - pad < 0.0:
+		shift.x = pad - min_p.x
+	if max_p.y + pad > vp.y:
+		shift.y = vp.y - pad - max_p.y
+	if min_p.y + shift.y - pad < 0.0:
+		shift.y = pad - min_p.y
+	if shift == Vector2.ZERO:
+		return positions
+	var out: Array = []
+	for raw in positions:
+		out.append((raw as Vector2) + shift)
+	return out
 
 
 func _draw_pilot_team(cell: Vector2i, pilots: Array, is_enemy: bool) -> void:
@@ -360,12 +443,15 @@ func _draw_pilot_team(cell: Vector2i, pilots: Array, is_enemy: bool) -> void:
 	var radius := _radius_for_count(n)
 	var fsize := _font_size_for_count(n)
 	var team_color := Color(0.9, 0.2, 0.2) if is_enemy else Color(0.2, 0.5, 0.9)
-	var positions := _layout_team_positions(n, tile_center, is_enemy, radius)
+	var positions := _layout_team_positions(n, tile_center, is_enemy, radius,
+			_group_emphasis(pilots))
 	var visible_count: int = mini(n, 5)
 	for i in range(visible_count):
 		var base_pos: Vector2 = positions[i]
 		var is_overflow: bool = (n > 5 and i == 4)
 		if is_overflow:
+			# 오버플로 원은 대상이 아니므로 강조 배율을 타지 않는다 — 자리만
+			# 무리를 따라 벌어져 있고 크기는 평소 그대로다.
 			_draw_arrow_to_tile(base_pos, tile_center, radius, team_color, 1.0)
 			_draw_overflow_circle(base_pos, n - 4, radius, team_color)
 		else:
@@ -378,7 +464,11 @@ func _draw_pilot_team(cell: Vector2i, pilots: Array, is_enemy: bool) -> void:
 			var marker_color: Color = team_color
 			if pilot.anim_death_phase != 0:
 				marker_color = team_color * _bs.ANIM_DEATH_TINT
-			_draw_arrow_to_tile(pos, tile_center, radius, marker_color, alpha)
+			# 화살표 배율은 **그 파일럿 자신의** 강조다(무리 전체가 아니라):
+			# 한 무리 안에 강조 대상과 아닌 사람이 섞이면 초상 크기가 서로
+			# 다르고, 화살표는 자기 초상 바깥에서 시작해야 한다.
+			_draw_arrow_to_tile(pos, tile_center, radius, marker_color, alpha,
+					_pilot_emphasis_scale(pilot))
 			_draw_pilot_circle(pilot, pos, radius, fsize,
 					marker_color, is_enemy, alpha)
 
@@ -434,6 +524,11 @@ func _pilot_anim_offset(p: PilotData) -> Vector2:
 		var from_screen := _bs.cell_center(p.anim_prev_grid_pos)
 		var to_screen := _bs.cell_center(p.grid_pos)
 		off += from_screen.lerp(to_screen, t_eased) - to_screen
+	# 공격 카드 돌진은 다른 무엇에도 얹힌다 — 이동/복귀와 배타적인 elif 사슬에
+	# 넣지 않는 이유는, 돌진 중에도 대상이 흔들리듯 시전자가 흔들릴 수 있고 오프셋은
+	# 서로 독립이기 때문이다. 계산 자체는 BattleSim 이 소유한다(연출 상수와
+	# 단계 전환이 거기 모여 있다).
+	off += _bs.pilot_lunge_offset(p)
 	if p.anim_shake_dur > 0.0:
 		var t: float = clamp(p.anim_shake_t / p.anim_shake_dur, 0.0, 1.0)
 		var amp: float = _bs.ANIM_SHAKE_AMP_PX * (1.0 - t)
@@ -459,48 +554,38 @@ func _pilot_anim_alpha(p: PilotData) -> float:
 	return alpha
 
 
-# Targeting underlays — soft yellow fill on every in-range cell so the
-# player sees the cast radius, plus a green outline on LOCATION-mode legal
-# pick cells (subset of in-range, e.g. 약탈's enemy-jungle filter). PILOT
-# mode no longer draws per-cell rings — the visible pilot markers are the
-# click target, and the range fill provides the visual cue.
+# Targeting underlays — the paint that marks **what can be dropped on**.
+#
+# 딤과 강조의 규칙이 모드마다 다르고, 그 규칙의 한쪽 절반이 여기다
+# (나머지 절반은 _undimmed_cells / _draw_targeting_pilot_dim /
+#  _pilot_emphasis_scale).
+#
+#   • PILOT    — 타일은 대상이 아니므로 **하나도 칠하지 않고 전부 딤드**한다.
+#                남는 것은 2배로 커진 유효 파일럿뿐. 예전에는 사거리 안 타일을
+#                노랗게 칠했는데, 어차피 그 타일에는 놓을 수 없으니 겨눌 곳을
+#                가리는 노이즈였다.
+#   • LOCATION — 유효 셀만 초록으로 칠하고 나머지는 전부 딤드. 사거리 노란 채움은
+#                사라졌다 — 유효 셀 집합이 이미 사거리의 부분집합이고, 사거리
+#                무제한 카드(약탈 / 정글 파밍)에서는 사거리 표시 자체가 전장
+#                전체라 아무것도 말해 주지 않았다.
+#   • PREVIEW  — 교전 영역(시전자 셀 + 인접 6칸)을 노랗게. 여기서는 영역 자체가
+#                카드가 말하는 내용이다.
 func _draw_targeting_underlays() -> void:
 	var to: CardTargetingOverlay = _bs.targeting_overlay
 	if to == null or not to.is_visualizing():
 		return
 	var hg: HexGrid = _bs.hex_grid
-	var range_set: Dictionary = {}
 	if to.mode == CardTargetingOverlay.Mode.PREVIEW:
 		for raw in to.area_cells.keys():
-			range_set[raw as Vector2i] = true
-	elif to.range_unlimited:
-		# 사거리 제한 없음(복귀 / 보호 / 약탈) — 전장 전체를 노랗게 덮으면
-		# 유효 대상 표시가 묻히므로 채움 자체를 생략한다. 딤도 없다
-		# (_build_range_set 이 전 셀을 in-range 로 돌려준다).
-		pass
-	elif to.range_caster != null and to.range_radius > 0:
-		# Same shape as CardTargetingOverlay.is_in_range_cell — duplicated here
-		# so the renderer doesn't need to call into the overlay per cell.
-		var caster_cell: Vector2i = to.range_caster.grid_pos
-		var max_r: int = to.range_radius
-		for raw in _bs.tiles_layer.get_used_cells():
 			var c := raw as Vector2i
-			var d: int = hg.hex_distance(caster_cell, c)
-			if d == 0 or d <= max_r:
-				range_set[c] = true
-	for raw in range_set.keys():
-		var c := raw as Vector2i
-		var ctr := _bs.cell_center(c)
-		var pts := hg.hex_corners(ctr)
-		draw_colored_polygon(pts, Color(1.0, 0.85, 0.30, 0.22))
-		draw_polyline(_close_polygon(pts),
-				Color(1.0, 0.85, 0.30, 0.85), 3.0, true)
-	# LOCATION valid cells — green outline on top of the range fill.
-	if to.mode == CardTargetingOverlay.Mode.LOCATION:
+			var pts := hg.hex_corners(_bs.cell_center(c))
+			draw_colored_polygon(pts, Color(1.0, 0.85, 0.30, 0.22))
+			draw_polyline(_close_polygon(pts),
+					Color(1.0, 0.85, 0.30, 0.85), 3.0, true)
+	elif to.mode == CardTargetingOverlay.Mode.LOCATION:
 		for raw in to.valid_cells.keys():
 			var c := raw as Vector2i
-			var ctr := _bs.cell_center(c)
-			var pts := hg.hex_corners(ctr)
+			var pts := hg.hex_corners(_bs.cell_center(c))
 			draw_colored_polygon(pts, Color(0.30, 0.85, 0.45, 0.25))
 			draw_polyline(_close_polygon(pts),
 					Color(0.30, 0.85, 0.45, 0.95), 3.0, true)
@@ -518,7 +603,8 @@ func _draw_pending_pick_highlight() -> void:
 		var picked := to.pending_pick as PilotData
 		if picked != null and picked.alive:
 			var pos := _pilot_marker_pos(picked)
-			var radius: float = PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE + 10.0
+			# 강조 배율만큼 커진 마커 **바깥**에 링이 걸리도록 같은 배율을 탄다.
+			var radius: float = pilot_marker_radius(picked) + 10.0
 			draw_arc(pos, radius, 0.0, TAU, 36,
 					Color(0.30, 0.95, 1.0, 0.95), 4.0)
 	elif to.mode == CardTargetingOverlay.Mode.LOCATION:
@@ -529,42 +615,37 @@ func _draw_pending_pick_highlight() -> void:
 				Color(0.30, 0.95, 1.0, 0.95), 5.0, true)
 
 
-# Build the in-range cell set used by both the tile dim and the pilot dim.
-# Mirrors the logic in _draw_targeting_underlays; kept identical so the
-# yellow range fill and the out-of-range black dim never disagree.
-func _build_range_set() -> Dictionary:
+# The cells that stay bright while a 대상 지정 카드 is lifted — everything else
+# takes the black dim. The mirror image of _draw_targeting_underlays: whatever
+# gets painted there is exactly what is spared here.
+#
+# **PILOT 은 빈 집합**이다 — 타일은 그 카드의 대상이 아니므로 전부 어두워지고,
+# 밝게 남는 것은 마커(파일럿)뿐이다.
+func _undimmed_cells() -> Dictionary:
 	var to: CardTargetingOverlay = _bs.targeting_overlay
-	var range_set: Dictionary = {}
+	var out: Dictionary = {}
 	if to == null:
-		return range_set
-	var hg: HexGrid = _bs.hex_grid
-	if to.mode == CardTargetingOverlay.Mode.PREVIEW:
-		for raw in to.area_cells.keys():
-			range_set[raw as Vector2i] = true
-	elif to.range_unlimited:
-		# 전장 전체가 사거리 — 딤이 하나도 올라가지 않도록 전 셀을 넣는다.
-		for raw in _bs.tiles_layer.get_used_cells():
-			range_set[raw as Vector2i] = true
-	elif to.range_caster != null and to.range_radius > 0:
-		var caster_cell: Vector2i = to.range_caster.grid_pos
-		var max_r: int = to.range_radius
-		for raw in _bs.tiles_layer.get_used_cells():
-			var c := raw as Vector2i
-			var d: int = hg.hex_distance(caster_cell, c)
-			if d == 0 or d <= max_r:
-				range_set[c] = true
-	return range_set
+		return out
+	match to.mode:
+		CardTargetingOverlay.Mode.PREVIEW:
+			for raw in to.area_cells.keys():
+				out[raw as Vector2i] = true
+		CardTargetingOverlay.Mode.LOCATION:
+			for raw in to.valid_cells.keys():
+				out[raw as Vector2i] = true
+	return out
 
 
-# Out-of-range tile dim. Drawn BEFORE pilots / HQ bars so an offset pilot
-# marker that visually intrudes into an adjacent out-of-range tile is not
-# covered by the dim of that neighbour cell.
-func _draw_targeting_tile_dim(range_set: Dictionary) -> void:
+# Tile dim. Drawn BEFORE pilots / HQ bars so an offset pilot marker that
+# visually intrudes into an adjacent dimmed tile is not covered by that
+# neighbour's dim — the marker's own dim (if any) is a separate disc drawn
+# after the pilots.
+func _draw_targeting_tile_dim(bright_cells: Dictionary) -> void:
 	var hg: HexGrid = _bs.hex_grid
 	var dim_color := Color(0.0, 0.0, 0.0, 0.60)
 	for raw in _bs.tiles_layer.get_used_cells():
 		var c := raw as Vector2i
-		if range_set.has(c):
+		if bright_cells.has(c):
 			continue
 		var ctr := _bs.cell_center(c)
 		var pts := hg.hex_corners(ctr)
@@ -583,7 +664,6 @@ func _draw_targeting_pilot_dim() -> void:
 	if to == null:
 		return
 	var dim_color := Color(0.0, 0.0, 0.0, 0.60)
-	var radius: float = PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE
 	for raw in _bs.pilots:
 		var p := raw as PilotData
 		if not p.alive:
@@ -592,8 +672,9 @@ func _draw_targeting_pilot_dim() -> void:
 			continue
 		var marker_pos := _pilot_marker_pos(p)
 		# Cover the HP ring outside the portrait too — slightly larger than
-		# the portrait radius.
-		draw_circle(marker_pos, radius + 4.0, dim_color)
+		# the portrait radius. 딤드 대상은 강조 대상이 아니므로 배율은 사실상
+		# 1.0 이지만, 반지름은 그리는 쪽과 같은 한 곳에서 받아 온다.
+		draw_circle(marker_pos, pilot_marker_radius(p) + 4.0, dim_color)
 
 
 # Rendered marker position for the pilot — reads the cached layout built in
@@ -616,15 +697,23 @@ func pilot_marker_positions() -> Dictionary:
 	return _build_pilot_render_layout()
 
 
-# 타겟 가능한 파일럿(=강조)에는 약간 커지는 펄스 배율을 반환한다. 대상이
-# 아니면 1.0. PILOT 모드는 valid_pilots, PREVIEW 는 preview_participants 가
-# 강조 대상이다. Pending pick(이미 찍은 대상)은 별도의 시안 링으로 강조되므로
-# 펄스에서 제외해 시각이 겹치지 않게 한다.
+## 지금 실제로 그려지는 마커 반지름 — 대상 지정 강조 배율이 반영된 값.
+## `CardTargetingOverlay._hit_test_pilot` 이 클릭 반경을 여기서 받는다: 강조로
+## 2배가 된 초상은 타일 반지름보다 커서, 고정 상수로 재면 얼굴 바깥 테두리를
+## 눌렀을 때 대상이 잡히지 않는다.
+func pilot_marker_radius(p: PilotData) -> float:
+	return PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE * _pilot_emphasis_scale(p)
+
+
+# 찍을 수 있는 파일럿(=강조)의 마커 배율. 대상이 아니면 1.0.
+# PILOT 모드는 valid_pilots, PREVIEW 는 preview_participants 가 강조 대상이다.
+#
+# 이미 찍어 둔 대상(pending_pick)도 **같이 커진 채로 둔다** — 시안 링이 그 위에
+# 따로 붙으므로 구분은 되고, 여기서만 1.0 으로 되돌리면 카드를 끌고 지나갈 때
+# 얼굴이 커졌다 작아졌다 하며 도로 펄스처럼 보인다.
 func _pilot_emphasis_scale(p: PilotData) -> float:
 	var to: CardTargetingOverlay = _bs.targeting_overlay
 	if to == null or not to.is_visualizing():
-		return 1.0
-	if to.pending_pick != null and to.pending_pick is PilotData and to.pending_pick == p:
 		return 1.0
 	var emphasized: bool = false
 	match to.mode:
@@ -632,11 +721,7 @@ func _pilot_emphasis_scale(p: PilotData) -> float:
 			emphasized = to.valid_pilots.has(p)
 		CardTargetingOverlay.Mode.PREVIEW:
 			emphasized = p in to.preview_participants
-	if not emphasized:
-		return 1.0
-	# sin 펄스를 0..1 정규화 후 [MIN, MAX] 사이로 매핑.
-	var t: float = (sin(_emphasis_time * TAU * EMPHASIS_PULSE_HZ) + 1.0) * 0.5
-	return EMPHASIS_SCALE_MIN + (EMPHASIS_SCALE_MAX - EMPHASIS_SCALE_MIN) * t
+	return TARGET_EMPHASIS_SCALE if emphasized else 1.0
 
 
 func _close_polygon(pts: PackedVector2Array) -> PackedVector2Array:
@@ -653,17 +738,31 @@ func _alpha_mul(c: Color, alpha: float) -> Color:
 	return Color(c.r, c.g, c.b, c.a * alpha)
 
 
+# 마커에서 자기 타일을 가리키는 말풍선 꼬리.
+#
+# `em` 은 그 파일럿의 강조 배율이다. 초상이 커지면 화살표는 **더 바깥에서
+# 시작해서 더 길게** 뻗어야 한다 — 시작점을 base 반지름에 두면 2배로 커진 초상이
+# 화살표를 통째로 덮어 버린다(강조 대상, 즉 지금 겨누고 있는 파일럿에서만
+# 사라지므로 하필 가장 필요한 순간에 사라진다). 길이도 같은 배율을 타되 타일
+# 중심은 넘지 않는다.
 func _draw_arrow_to_tile(circle_pos: Vector2, tile_center: Vector2,
-		radius: float, color: Color, alpha: float = 1.0) -> void:
+		radius: float, color: Color, alpha: float = 1.0,
+		em: float = 1.0) -> void:
 	var to_tile := tile_center - circle_pos
-	if to_tile.length_squared() < 1.0:
+	var dist: float = to_tile.length()
+	if dist < 1.0:
 		return
-	var dir := to_tile.normalized()
+	var dir := to_tile / dist
 	var perp := Vector2(-dir.y, dir.x)
-	var apex_out: float = clamp(radius * 0.84, 10.0, 24.0)
-	var base_half: float = clamp(radius * 0.9, 10.0, 18.0)
-	var apex := circle_pos + dir * (radius + apex_out)
-	var base := circle_pos + dir * (radius * 0.6)
+	var draw_radius: float = radius * em
+	var apex_out: float = clamp(radius * 0.84, 10.0, 24.0) * em
+	var base_half: float = clamp(radius * 0.9, 10.0, 18.0) * em
+	# 타일 중심을 찔러 넘어가면 옆 칸을 가리키는 것처럼 읽힌다.
+	var apex_len: float = minf(draw_radius + apex_out, dist - 8.0)
+	if apex_len <= draw_radius * 0.6:
+		return
+	var apex := circle_pos + dir * apex_len
+	var base := circle_pos + dir * (draw_radius * 0.6)
 	var pts := PackedVector2Array([
 		apex,
 		base + perp * base_half,
@@ -678,9 +777,8 @@ func _draw_arrow_to_tile(circle_pos: Vector2, tile_center: Vector2,
 func _draw_pilot_circle(pilot: PilotData, pos: Vector2, radius: float,
 		_fsize: int, color: Color, _is_enemy: bool,
 		alpha: float = 1.0) -> void:
-	# 강조(=타겟 가능) 마커는 베이스 반지름에 펄스 배율을 곱해 약간 커진다.
-	# Pending pick(이미 클릭한 대상)은 별도의 시안 링이 강조를 대신하므로 펄스
-	# 적용에서 제외한다.
+	# 찍을 수 있는 대상은 베이스 반지름에 TARGET_EMPHASIS_SCALE 을 곱해 크게
+	# 그린다 — 나머지는 전부 딤드되므로 커진 얼굴만 남는다.
 	var draw_radius: float = radius * _pilot_emphasis_scale(pilot)
 	# Pilot portrait fills the slot. The team-colour HP ring (drawn outside the
 	# portrait) is now the sole faction marker — the previous ring directly on
@@ -689,6 +787,13 @@ func _draw_pilot_circle(pilot: PilotData, pos: Vector2, radius: float,
 	# 쓰러진 파일럿의 초상은 마커 색과 같은 배율로 어두워진다.
 	var portrait_tint: Color = _bs.ANIM_DEATH_TINT if pilot.anim_death_phase != 0 \
 			else Color.WHITE
+	# **초상 뒤의 흰 원.** `*_circle.png` 는 원 안쪽에도 투명한 부분이 있는 것이
+	# 섞여 있어(실측: 40장 중 일부), 그대로 그리면 뒤의 타일 색이 얼굴을 뚫고
+	# 비친다 — 특히 점령된 정글 타일 위에서 파일럿이 타일과 같은 색으로 물든다.
+	# 원 그림 자체가 정사각형에 내접해 있으므로 같은 반지름의 원이 정확히 맞고,
+	# 1px 줄여 안티에일리어싱된 가장자리 바깥으로 흰 테가 삐져나오지 않게 한다.
+	# 딤/페이드는 초상과 같은 tint·alpha 를 타므로 배경만 밝게 남는 일은 없다.
+	draw_circle(pos, maxf(1.0, draw_radius - 1.0), _alpha_mul(portrait_tint, alpha))
 	if portrait != null:
 		var rect := Rect2(pos.x - draw_radius, pos.y - draw_radius,
 				draw_radius * 2.0, draw_radius * 2.0)

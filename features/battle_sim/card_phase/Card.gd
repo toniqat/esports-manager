@@ -74,6 +74,15 @@ var face_up: bool = false
 var is_player_card: bool = true
 var is_animating: bool = false
 var is_selected: bool = false
+## True while the player is aiming this card (holding it and moving the cursor).
+## **The card does not travel** — it stays in its lifted slot in the hand and a
+## `CardDragArrow` runs from its top edge to the cursor instead. What this flag
+## buys is the pose: "lifted highest of all" — hover scale plus the tallest
+## shadow — held regardless of where the cursor currently is, since the cursor
+## has left the hand row and the hit layer's hover bookkeeping no longer speaks
+## for this card. Layout passes leave it alone (`relayout_hand` skips it); only
+## `_pose_selected_card` re-poses it.
+var is_dragging: bool = false
 
 # True while CardPhaseManager is dimming the hand (it's not the player's turn,
 # or the player turn-start banner is still playing). Hover/click feedback is
@@ -246,7 +255,10 @@ func _refresh_block_overlay() -> void:
 ## Card scale grows on hover only; the shadow drops further away (and softens)
 ## for both hover and selection, since either state lifts the card off the table.
 func _refresh_float_state() -> void:
-	var target_scale: Vector2 = _base_scale * (HOVER_SCALE if _is_hovered else 1.0)
+	# A dragged card holds the enlarged pose wherever the cursor goes — it left
+	# the hand row, so the hit layer's hover bookkeeping no longer speaks for it.
+	var lifted: bool = _is_hovered or is_dragging
+	var target_scale: Vector2 = _base_scale * (HOVER_SCALE if lifted else 1.0)
 	if _float_tween != null and _float_tween.is_running():
 		_float_tween.kill()
 	_float_tween = create_tween()
@@ -259,7 +271,7 @@ func _refresh_float_state() -> void:
 	var alpha: float    = SHADOW_REST_ALPHA
 	var spread: float   = SHADOW_REST_SPREAD
 	var blur: int       = SHADOW_REST_BLUR
-	if is_selected:
+	if is_selected or is_dragging:
 		offset = SHADOW_SELECTED_OFFSET
 		alpha  = SHADOW_SELECTED_ALPHA
 		spread = SHADOW_SELECTED_SPREAD
@@ -414,6 +426,23 @@ func tween_to(target_pos: Vector2, target_rot: float, target_scale: Vector2,
 		var scale_goal: Vector2 = _base_scale * (HOVER_SCALE if _is_hovered else 1.0)
 		(_active_tween.tween_property(self, "scale", scale_goal, duration)
 				.set_ease(ease_type).set_trans(trans_type))
+
+
+## Enter / leave the aiming pose. Entering kills any layout tween still in
+## flight and locks in the lifted look; leaving hands the card back to whatever
+## pose CardPhaseManager tweens it to next. `_begin_drag` re-poses the card right
+## after, so the killed tween never strands it half-way.
+##
+## (There used to be a `snap_to()` beside this for the drag to write the card's
+## position every motion event. The card no longer travels with the cursor — the
+## 조준 화살표 does — so nothing needs a tween-free instant move any more.)
+func set_dragging(dragging: bool) -> void:
+	if is_dragging == dragging:
+		return
+	is_dragging = dragging
+	if dragging and _active_tween != null and _active_tween.is_running():
+		_active_tween.kill()
+	_refresh_float_state()
 
 
 # ── Interaction ───────────────────────────────────────────────────────────────

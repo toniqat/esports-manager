@@ -8,7 +8,12 @@ const ROWS := 11
 # Multiplier applied to the BattleField sprite render and to hex geometry. All
 # pilot/HUD draw sizes that should track tile size derive from `hex_size`, so
 # changing this value scales the whole battlefield display in lockstep.
-const DISPLAY_SCALE := 1.5
+#
+# 1.35 = 예전 값 1.5 의 **90%**. 전장 픽셀 박스가 990×1092 → 891×983 으로
+# 줄면서, 화면 중앙(y 860)에 정렬된 전장의 상단이 314 → 369, 하단이
+# 1406 → 1351 로 각각 55px 안쪽으로 들어온다. 핸드 행(`BattleSim.BS_HAND_CENTER`)
+# 은 그 하단이 올라간 만큼 함께 위로 올려 카드와 전장 사이의 간격을 유지한다.
+const DISPLAY_SCALE := 1.35
 
 # ─── Layout vars (computed in _ready) ────────────────────────────────────────
 var hex_size:      float  # circumradius of each flat-top hex

@@ -5,23 +5,27 @@ extends Node
 #
 # 예전에는 카드를 고른 뒤 설명 상자의 "카드 내기"를 눌러야 비로소 모달 대상
 # 지정이 열렸다. 지금은 **카드 선택 자체가 대상 지정 단계**다 — 카드를 드는
-# 순간 사거리 밖 타일이 딤드되고, 대상을 찍은 뒤 좌하단 확인을 눌러야 카드가
-# 소비된다. 모달이 아니므로 핸드 클릭(다른 카드로 갈아타기)과 턴 넘기기는
-# 그대로 살아 있다.
+# 순간 놓을 수 없는 곳이 전부 딤드된다. 모달이 아니므로 핸드 클릭(다른 카드로
+# 갈아타기)과 턴 넘기기는 그대로 살아 있다.
 #
-#   • PILOT    — 사거리 안 타일은 노란 채움, 그 밖은 검은 딤. 유효 대상이
-#                아닌 파일럿은 마커 단위로 딤드된다. 파일럿 초상(마커)을
-#                눌러 대상을 지정하면 시안 링이 붙는다.
-#   • LOCATION — 같은 사거리 표시 + 유효 셀에 초록 외곽선. 셀을 눌러 지정.
+#   • PILOT    — 타일은 전부 딤드(타일은 대상이 아니다). 유효 대상만
+#                TARGET_EMPHASIS_SCALE 만큼 커진 채 밝게 남는다.
+#   • LOCATION — 유효 셀만 초록으로 남고 나머지 셀과 파일럿 전원이 딤드된다.
 #   • PREVIEW  — 전투 개시류. 시전자 셀 + 인접 6칸이 영역이고 좌/우에 참여
-#                파일럿 패널이 뜬다. 따로 찍을 대상이 없으므로 확인은 처음부터
-#                활성.
-#   • INSTANT  — 대상이 없는 카드. 전장 표시는 하나도 없고 확인만 뜬다.
+#                파일럿 패널이 뜬다.
+#   • INSTANT  — 대상이 없는 카드. 전장 표시가 하나도 없다.
 #
-# 확인 / 취소는 화면 **우하단**(Discard 카운터 바로 위)에 나란히 뜬다. 확인을
-# 누르기 전까지는 비용도 빠지지 않고 카드도 핸드에 그대로 있으므로, 취소는
-# 되돌릴 게 없다 — 그냥 선택 해제다. (버리기 / 찾기 카드의 스냅샷 환불 경로는
+# **확정 경로는 드래그 드롭 하나뿐이다.** 예전에는 화면 우하단에 확인 / 취소가
+# 떠서 (1) 대상을 탭해 pending_pick 을 찍고 (2) 확인을 눌러 확정하는 두 박자
+# 경로가 따로 있었는데, 끌어다 놓기가 들어오면서 같은 일을 하는 두 번째 조작이
+# 됐다. 지금은 카드를 대상 위(또는 무대상 카드라면 드롭 존)에 놓는 것만이 카드를
+# 내는 방법이고, **빗나간 드롭은 선택 자체를 해제한다**(CardPhaseManager._end_drag).
+# 그래서 취소 버튼이 하던 일도 사라졌다. 확정 전까지는 비용도 카드도 그대로이므로
+# 되돌릴 상태는 애초에 없다. (버리기 / 찾기 카드의 스냅샷 환불 경로는
 # CardSelectOverlay 쪽에 그대로 남아 있다.)
+#
+# `pending_pick` 은 남아 있지만 이제 **드래그 중 미리보기 전용**이다 —
+# `preview_drag_target` 이 커서 아래의 대상을 찍어 시안 링을 붙인다.
 
 enum Mode { NONE, INSTANT, PILOT, LOCATION, PREVIEW }
 
@@ -34,6 +38,12 @@ var valid_cells:  Dictionary = {}    # Vector2i     → true
 var area_cells:   Dictionary = {}    # Vector2i     → true (PREVIEW area)
 var preview_caster: PilotData = null
 var preview_participants: Array = []  # PilotData (engage participants)
+# 들려 있는 카드의 시전자. **모드와 무관하게** 채워지며, 하는 일은 하나뿐이다 —
+# 시전자는 어느 모드에서도 딤드되지 않는다(should_dim_pilot). 지금 이 카드를 쏘는
+# 사람이 어두워져 있으면 "쓸 수 없는 파일럿"으로 읽히기 때문이다. 대신 **강조
+# 대상은 아니다**: 커지는 것은 놓을 수 있는 곳이라는 신호이므로, 시전자가 그 카드의
+# 유효 대상일 때(보호 / 복귀 같은 target=ally 카드)만 valid_pilots 를 통해 커진다.
+var card_caster: PilotData = null
 # Range info for PILOT / LOCATION modes — drives the in-range tile highlight
 # and the out-of-range black dim drawn by BattleRenderer.
 var range_caster: PilotData = null
@@ -48,27 +58,25 @@ var range_unlimited: bool = false
 # 99 로 적어 두는 관례를 한 곳에 모아 둔 것.
 const UNLIMITED_RANGE: int = 99
 
-# PILOT / LOCATION pending pick — set when the player clicks a valid target
-# but has not yet pressed 확인. Holds either PilotData or Vector2i.
+# PILOT / LOCATION pending pick — 드래그 중 커서 아래에 들어온 유효 대상.
+# 시안 링(BattleRenderer._draw_pending_pick_highlight)의 유일한 입력이다.
+# Holds either PilotData or Vector2i.
 var pending_pick: Variant = null
 
 var _bs: BattleSim = null
 var _on_confirm: Callable = Callable()
-var _on_cancel:  Callable = Callable()
 # CardPhaseManager 가 "비용/시전자 생존/유효 대상"을 판정해 내려주는 값.
-# 확인 버튼은 이 값 AND 대상 지정 완료일 때만 활성화된다.
+# 드롭 확정(confirm_with)은 이 값 AND 대상 지정 완료일 때만 통과한다.
 var _play_allowed: bool = false
 
 # ─── UI consts ───────────────────────────────────────────────────────────────
-const BTN_W            := 180.0
+# 확인 / 취소 버튼은 사라졌지만 그 자리는 **빈 띠로 남긴다** — HudBuilder 가 이
+# 두 상수로 전략 포인트 도넛의 세로 위치를 잡고, 도넛이 핸드 행에 바로 붙어
+# 앉으면 카드 윗단과 겹친다. 이름과 값을 그대로 두는 이유가 그것뿐이라는 뜻이다.
 const BTN_H            := 56.0
-# 버튼 행은 핸드 행 바로 위에 뜬다. HudBuilder 가 이 두 상수로 전략 포인트
-# 도넛의 세로 위치를 잡으므로(도넛이 버튼 띠를 덮지 않도록) 이름을 유지한다.
 const BTN_HAND_GAP     := 10.0
-const BTN_SIDE_MARGIN  := 24.0
-const CONFIRM_BTN_GAP  := 12.0
 # 좌/우 팀 패널 — 좌측에 플레이어 팀, 우측에 적 팀.
-# 패널 하단(=TEAM_PANEL_Y + TEAM_PANEL_H)이 확인/취소 버튼 상단
+# 패널 하단(=TEAM_PANEL_Y + TEAM_PANEL_H)이 위 빈 띠의 상단
 # (BS_HAND_CENTER.y - BTN_HAND_GAP - BTN_H ≈ 1434)을 침범하지 않도록
 # 1200 까지만 확장한다. 행 16개 정도까지는 안전.
 const TEAM_PANEL_W     := 300.0
@@ -81,15 +89,13 @@ const TEAM_ROW_IMG_SIZE := 56.0
 
 # ─── UI refs ─────────────────────────────────────────────────────────────────
 var _ui_layer:    CanvasLayer = null
-var _btn_cancel:  Button = null
-var _btn_confirm: Button = null
 # 좌/우 팀 패널. 각각 0=플레이어팀, 1=적팀의 참여 파일럿 목록을 표시.
 var _team_panels: Array = [null, null]
 
 
 func _ready() -> void:
-	# Layer above HUD (CardSelectOverlay uses 10) so 확인/취소 sit on top of the
-	# cost donut and the description box.
+	# Layer above HUD (CardSelectOverlay uses 10) so the PREVIEW team panels sit
+	# on top of the cost donut and the description box.
 	_ui_layer = CanvasLayer.new()
 	_ui_layer.layer = 11
 	add_child(_ui_layer)
@@ -115,7 +121,13 @@ func is_selecting() -> bool:
 
 # Non-valid pilots are dimmed in PILOT mode; ALL pilots are dimmed in LOCATION.
 # In PREVIEW, participating pilots stay bright and others dim.
+#
+# **시전자만은 어느 모드에서도 딤드되지 않는다.** 딤은 "여기엔 놓을 수 없다"는
+# 말인데, 카드를 쏘는 당사자에게 그 말은 성립하지 않는다 — LOCATION 카드를 들면
+# 전원 딤 규칙에 시전자까지 걸려, 지금 움직이려는 파일럿이 가장 어둡게 보였다.
 func should_dim_pilot(p: PilotData) -> bool:
+	if p != null and p == card_caster:
+		return false
 	match mode:
 		Mode.PILOT:
 			return not valid_pilots.has(p)
@@ -164,16 +176,17 @@ func has_required_pick() -> bool:
 
 # ─── Entry point ─────────────────────────────────────────────────────────────
 ## 핸드에서 카드를 고른 순간 CardPhaseManager._select_card 가 호출한다.
-## `on_confirm` 은 확인 시 `Variant`(PilotData / Vector2i / null) 하나를 받고,
-## `on_cancel` 은 인자 없이 호출된다. 둘 다 오버레이가 스스로 정리된 뒤에
-## 불리므로 콜백 안에서 다시 선택을 걸어도 안전하다.
-func start_card_selection(cd: CardData, on_confirm: Callable,
-		on_cancel: Callable) -> void:
+## `on_confirm` 은 드롭 확정 시 `Variant`(PilotData / Vector2i / null) 하나를
+## 받는다. 오버레이가 스스로 정리된 뒤에 불리므로 콜백 안에서 다시 선택을
+## 걸어도 안전하다. (취소 콜백은 없다 — 빗나간 드롭은 호출 측이
+## `deselect_current_card` 로 직접 걷는다.)
+func start_card_selection(cd: CardData, on_confirm: Callable) -> void:
 	_clear_visual_state()
 	_free_ui()
 	if cd == null:
 		return
 	var caster: PilotData = cd.owner_pilot
+	card_caster = caster
 	var kind: String = ""
 	if _bs.card_phase != null:
 		kind = _bs.card_phase.targeting_kind(cd)
@@ -211,9 +224,7 @@ func start_card_selection(cd: CardData, on_confirm: Callable,
 		_:
 			mode = Mode.INSTANT
 	_on_confirm = on_confirm
-	_on_cancel  = on_cancel
 	_play_allowed = false
-	_build_buttons()
 	_request_redraw()
 
 
@@ -221,86 +232,96 @@ func start_card_selection(cd: CardData, on_confirm: Callable,
 ## 콜백은 부르지 않는다(호출 측이 이미 정리 중일 때 재진입하지 않도록).
 ## 이미 꺼져 있으면 no-op.
 func clear_selection() -> void:
-	if mode == Mode.NONE and _btn_confirm == null:
+	if mode == Mode.NONE and _team_panels[0] == null and _team_panels[1] == null:
 		return
 	_teardown()
 
 
 ## CardPhaseManager 가 "비용 / 시전자 생존 / 유효 대상" 판정 결과를 내려준다.
-## 확인 버튼은 이 값과 has_required_pick() 이 둘 다 참일 때만 눌린다.
+## 드롭 확정은 이 값과 has_required_pick() 이 둘 다 참일 때만 통과한다.
 func set_play_allowed(allowed: bool) -> void:
 	_play_allowed = allowed
-	_refresh_confirm_disabled()
 
 
-# ─── Cancel / confirm handlers ───────────────────────────────────────────────
-func _on_cancel_pressed() -> void:
-	var cb := _on_cancel
-	_teardown()
-	if cb.is_valid():
-		cb.call()
+# ─── 드래그 앤 드롭 진입점 ────────────────────────────────────────────────────
+# 카드를 손에서 끌어다 놓는 것이 **카드를 내는 유일한 조작**이다. 비용 차감 /
+# 카드 소비 / effect chain 은 전부 CardPhaseManager._on_selection_confirm 뒤에
+# 있으므로, 드롭은 대상만 손에 들고 와서 confirm_with 로 들어온다.
+
+## 드롭 지점의 파일럿(PILOT 모드 한정). 유효 대상이 아니면 null.
+func hit_test_pilot_at(pos: Vector2) -> PilotData:
+	if mode != Mode.PILOT:
+		return null
+	return _hit_test_pilot(pos)
 
 
-func _on_confirm_pressed() -> void:
-	if not _play_allowed or not has_required_pick():
+## 드롭 지점의 유효 셀(LOCATION 모드 한정). 없으면 null.
+func hit_test_cell_at(pos: Vector2) -> Variant:
+	if mode != Mode.LOCATION:
+		return null
+	var cell := _hit_test_cell(pos)
+	if cell == Vector2i(-2147483648, -2147483648) or not valid_cells.has(cell):
+		return null
+	return cell
+
+
+## 드래그 중 커서 아래의 대상을 미리 찍어 둔다(시안 링 피드백). 놓지 않고 손을
+## 떼면 그대로 pending_pick 으로 남아 확인 버튼으로도 확정할 수 있다.
+func preview_drag_target(target: Variant) -> void:
+	if target == null:
+		if pending_pick == null:
+			return
+		pending_pick = null
+		_request_redraw()
 		return
-	var picked: Variant = pending_pick
+	if pending_pick == target:
+		return
+	_set_pending_pick(target)
+
+
+## 드롭으로 확정한다. 버튼과 같은 게이트(`_play_allowed`)를 지나며, 통과하면
+## 오버레이를 정리하고 확인 콜백을 부른다. 반환값은 "정말 카드를 냈는가" — false
+## 면 호출 측이 카드를 손으로 되돌려야 한다.
+func confirm_with(target: Variant) -> bool:
+	if mode == Mode.NONE or not _play_allowed:
+		return false
+	pending_pick = target
+	if not has_required_pick():
+		return false
 	var cb := _on_confirm
 	_teardown()
-	if cb.is_valid():
-		cb.call(picked)
+	if not cb.is_valid():
+		return false
+	cb.call(target)
+	return true
 
 
-# Click hit-testing for PILOT and LOCATION modes. A press anywhere on the
-# battlefield is consumed while one of those two kinds is live: a hit sets the
-# pending pick, a miss is simply swallowed. Swallowing the miss is deliberate —
-# CardPhaseManager._unhandled_input would otherwise read a slightly-off tap as
-# "clicked outside" and drop the selection (and the pick with it). Getting out
-# is the 취소 button, a re-click on the card, or picking another card.
+# **전장 클릭은 삼키기만 한다.** PILOT / LOCATION 카드가 들려 있는 동안 전장
+# 어디를 눌러도 아무 일도 일어나지 않는다 — 카드를 내는 조작은 끌어다 놓기
+# 하나뿐이기 때문이다. 그래도 이벤트를 소비하는 이유는 그대로다:
+# CardPhaseManager._unhandled_input 이 전장 탭을 "바깥 클릭"으로 읽어 선택을
+# 통째로 떨어뜨리기 때문. 나가는 길은 빗나간 드롭, 카드 재클릭, 다른 카드 선택.
+#
+# (예전에는 여기서 대상을 찍어 pending_pick 에 넣고 우하단 확인으로 확정했다.
+#  확인 / 취소 버튼과 함께 그 경로가 사라졌다.)
 func _unhandled_input(event: InputEvent) -> void:
 	if mode != Mode.PILOT and mode != Mode.LOCATION:
 		return
 	var pressed: bool = false
-	var pos: Vector2 = Vector2.ZERO
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 			pressed = true
-			pos = (event as InputEventMouseButton).position
 	elif event is InputEventScreenTouch and event.pressed:
 		pressed = true
-		pos = (event as InputEventScreenTouch).position
 	if not pressed:
 		return
 	get_viewport().set_input_as_handled()
-	if mode == Mode.PILOT:
-		# Click lands on the pilot's drawn marker (offset above/below the
-		# tile). _hit_test_pilot inspects the marker positions directly so a
-		# tap on the marker registers even when it sits in a neighbouring cell
-		# from the tile-centre's perspective.
-		var picked := _hit_test_pilot(pos)
-		if picked == null:
-			return
-		_set_pending_pick(picked)
-	else:
-		var cell := _hit_test_cell(pos)
-		if cell == Vector2i(-2147483648, -2147483648):
-			return
-		if not valid_cells.has(cell):
-			return
-		_set_pending_pick(cell)
 
 
-# Stores the clicked target as the pending pick, re-evaluates the 확인 button,
-# and triggers a redraw so the renderer can highlight the chosen pilot/cell.
+# 드래그 중 커서 아래에 들어온 대상을 기록하고 시안 링을 새로 그린다.
 func _set_pending_pick(target: Variant) -> void:
 	pending_pick = target
-	_refresh_confirm_disabled()
 	_request_redraw()
-
-
-func _refresh_confirm_disabled() -> void:
-	if _btn_confirm != null and is_instance_valid(_btn_confirm):
-		_btn_confirm.disabled = not (_play_allowed and has_required_pick())
 
 
 # Closest cell whose centre is within hex_size of `pos`. Returns a sentinel
@@ -345,7 +366,7 @@ func _hit_test_pilot(pos: Vector2) -> PilotData:
 	var hex_size: float = (_bs.hex_grid as HexGrid).hex_size
 	# Slightly looser than half a tile so the click area covers the visible
 	# marker circle (~31.5 px radius at default scale).
-	var max_r: float = hex_size * 0.85
+	var base_r: float = hex_size * 0.85
 	for raw in valid_pilots.keys():
 		var p := raw as PilotData
 		if not p.alive:
@@ -353,55 +374,31 @@ func _hit_test_pilot(pos: Vector2) -> PilotData:
 		var marker: Vector2 = _bs.pilot_marker_pos_solo(p)
 		if markers.has(p):
 			marker = markers[p] as Vector2
+		# 대상 지정 중 유효 파일럿의 초상은 TARGET_EMPHASIS_SCALE 만큼 커져
+		# 타일 반지름을 넘어선다 — 그리는 반지름을 렌더러에서 그대로 받아
+		# 얼굴 바깥 테두리를 눌러도 잡히게 한다.
+		var max_r: float = base_r
+		if _bs.renderer != null:
+			max_r = maxf(base_r, _bs.renderer.pilot_marker_radius(p))
 		var d: float = marker.distance_to(pos)
 		if d <= max_r:
 			if d < best_d:
 				best_d = d
 				best = p
 			continue
+		# 타일 폴백은 강조와 무관하게 **타일 크기** 기준이다 — 커진 초상만큼
+		# 넓히면 옆 칸을 누른 클릭까지 이 파일럿으로 빨려 들어간다.
 		var tile_d: float = _bs.cell_center(p.grid_pos).distance_to(pos)
-		if tile_d <= max_r and d < tile_best_d:
+		if tile_d <= base_r and d < tile_best_d:
 			tile_best_d = d
 			tile_best = p
 	return best if best != null else tile_best
 
 
 # ─── UI construction ─────────────────────────────────────────────────────────
-# 확인 / 취소는 화면 **우하단**, Discard 카운터 바로 위에 나란히 뜬다. y 는
-# BS_HAND_CENTER.y(핸드 행 상단)에서 역산하므로 핸드 행이 움직이면 따라간다.
-# 좌우 순서는 CardSelectOverlay 와 동일하게 확인(왼쪽) / 취소(오른쪽).
-func _btn_top_y() -> float:
-	return _bs.BS_HAND_CENTER.y - BTN_HAND_GAP - BTN_H
-
-
-## 뷰포트 실제 폭. 팀 패널 / 버튼 배치가 모두 이 값을 기준으로 우측 정렬된다.
+## 뷰포트 실제 폭. 팀 패널 배치가 이 값을 기준으로 우측 정렬된다.
 func _screen_w() -> float:
 	return get_viewport().get_visible_rect().size.x
-
-
-func _build_buttons() -> void:
-	# 우측 끝에서 역산: [확인][gap][취소] 순으로 붙여 오른쪽 여백에 맞춘다.
-	var cancel_x: float = _screen_w() - BTN_SIDE_MARGIN - BTN_W
-	var confirm_x: float = cancel_x - CONFIRM_BTN_GAP - BTN_W
-
-	_btn_confirm = _make_btn("확인")
-	_btn_confirm.position = Vector2(confirm_x, _btn_top_y())
-	_btn_confirm.disabled = true
-	_btn_confirm.pressed.connect(_on_confirm_pressed)
-	_ui_layer.add_child(_btn_confirm)
-
-	_btn_cancel = _make_btn("취소")
-	_btn_cancel.position = Vector2(cancel_x, _btn_top_y())
-	_btn_cancel.pressed.connect(_on_cancel_pressed)
-	_ui_layer.add_child(_btn_cancel)
-
-
-func _make_btn(label: String) -> Button:
-	var b := Button.new()
-	b.text = label
-	b.add_theme_font_size_override("font_size", 24)
-	b.size = Vector2(BTN_W, BTN_H)
-	return b
 
 
 # 좌/우 팀 패널을 빌드한다. 좌측에 플레이어팀(0), 우측에 적팀(1) 참여
@@ -552,6 +549,7 @@ func _clear_visual_state() -> void:
 	valid_cells.clear()
 	area_cells.clear()
 	preview_caster = null
+	card_caster = null
 	preview_participants.clear()
 	range_caster = null
 	range_radius = 0
@@ -561,12 +559,6 @@ func _clear_visual_state() -> void:
 
 
 func _free_ui() -> void:
-	if _btn_cancel != null and is_instance_valid(_btn_cancel):
-		_btn_cancel.queue_free()
-	_btn_cancel = null
-	if _btn_confirm != null and is_instance_valid(_btn_confirm):
-		_btn_confirm.queue_free()
-	_btn_confirm = null
 	for i in range(_team_panels.size()):
 		var pn = _team_panels[i]
 		if pn != null and is_instance_valid(pn):
@@ -578,7 +570,6 @@ func _teardown() -> void:
 	_clear_visual_state()
 	_free_ui()
 	_on_confirm = Callable()
-	_on_cancel  = Callable()
 	_request_redraw()
 
 

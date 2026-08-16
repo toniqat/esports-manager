@@ -38,6 +38,37 @@ override were removed.)
 Each pilot draws its own arrow (`_draw_arrow_to_tile`) — direction is computed from the circle's
 position to the tile centre, so side circles in a 3-wide row point diagonally inward.
 
+#### 대상 지정 강조는 배치도 탄다 (`em`)
+`_layout_team_positions` 는 마지막 인자로 **그 무리의 강조 배율**
+(`_group_emphasis` = 무리 안 최대 `_pilot_emphasis_scale`, 즉 1.0 또는
+`TARGET_EMPHASIS_SCALE` **1.5**)을 받는다. 초상만 키우면 두 가지가 동시에
+무너지기 때문이다:
+
+1. **좌우로 겹친다.** 간격은 그대로인데 지름만 커지면 한 칸에 선 두세 명의
+   얼굴이 서로를 덮어, 정작 겨눠야 할 순간에 누가 누구인지 읽을 수 없다.
+2. **화살표가 사라진다.** 마커가 커지면 초상이 타일 중심까지 삼켜서 화살표가
+   초상 뒤에 완전히 깔린다 — 하필 강조된(=지금 겨누는) 파일럿에서만.
+
+그래서 좌우 간격(`dx_2` / `dx_3`)은 `em` 에 비례해 벌어지고, 타일에서의 거리는
+`maxf(hex_h * 0.45 + draw_r * 0.4, draw_r * 1.75)` 로 반지름 기준 하한이 이겨
+무리가 더 **바깥으로 물러난다** — 그 물러난 만큼이 곧 화살표가 길어질 자리다.
+`em = 1` 에서는 언제나 앞 항이 이기므로 평소 배치는 한 픽셀도 바뀌지 않는다.
+
+`_draw_arrow_to_tile` 도 같은 배율을 받아 **커진 초상 바깥에서 시작해 더 길게**
+뻗는다(`apex_out` × `em`). 다만 `dist - 8px` 로 잘라 타일 중심을 넘지 않는다 —
+넘어가면 옆 칸을 가리키는 것처럼 읽힌다. 오버플로 `+N` 원은 대상이 아니므로
+`em = 1` 로 그린다(자리만 무리를 따라 벌어진다).
+
+**화면 밖으로 나가면 무리째 밀어 넣는다** (`_clamp_group_on_screen`). 강조로
+벌어진 가장자리 레인의 2~3인 무리는 그냥 두면 화면 밖으로 잘리는데, 잘린 얼굴은
+누를 수도 놓을 수도 없다. 마커를 하나씩 따로 밀면 애써 벌린 간격이 도로 무너져
+다시 겹치므로 **평행 이동**이다. 화살표는 여전히 각자 자기 타일을 가리키므로
+누가 어느 칸인지도 유지된다. 실측(1080×1920, `SCREEN_EDGE_PAD` 6, 배율이 2.0
+이던 시절): 타일 중심 x=950 의 3인 무리가 `em=2` 에서 자연 폭 617..1283 →
+**495.6..1074** 로 접히고, x=120 의 무리는 왼쪽 가장자리 6px 에 붙는다. 배율이
+1.5 로 내려간 지금은 접히는 일 자체가 훨씬 드물다 — 이 절이 존재하는 이유의
+절반이 그 접힘을 없애자는 것이었다.
+
 Radius and role-text font are FIXED per pilot (base values `PILOT_RADIUS_BASE = 31.5`,
 `PILOT_FONT_SIZE_BASE = 16`, both multiplied by `HexGrid.DISPLAY_SCALE` at draw time so
 they track tile size) regardless of how many pilots share the cell — circles do not shrink
@@ -75,8 +106,9 @@ them each `_draw()`:
   descent fade-in, and a fallen pilot stays on the cell they fell on.
 - `_pilot_anim_offset(p)` — sums move-tween offset (ease-out cubic from
   `anim_prev_grid_pos` → `grid_pos`), recall rise/descend (`ANIM_RECALL_RISE_PX`),
-  death rise (`ANIM_DEATH_RISE_PX`, phase 2 only) and damage shake (decaying
-  `sin` jitter capped at `ANIM_SHAKE_AMP_PX`).
+  death rise (`ANIM_DEATH_RISE_PX`, phase 2 only), **공격 카드 돌진**
+  (`BattleSim.pilot_lunge_offset`) and damage shake (decaying `sin` jitter
+  capped at `ANIM_SHAKE_AMP_PX`).
 - `_pilot_anim_alpha(p)` — 1.0 → 0 during recall phase 1 **and** death phase 2,
   0 → 1.0 during recall phase 2 (and respawn fade-in). Multiplied into every
   per-pilot draw call (circle, ring, role text, HP ring, speech-bubble arrow)
@@ -92,6 +124,19 @@ still occupies a layout slot, so a fallen body shifts the living pilots in its
 cell for the ~1.45s the animation runs; `pilot_marker_positions()` reads the
 same solve, so hit-testing never disagrees with what is on screen.
 
+**초상 뒤에는 흰 원이 깔린다** (`_draw_pilot_circle`). `*_circle.png` 는 원
+안쪽까지 투명한 것이 섞여 있어(실측: 40장 중 일부는 원 내부에도 알파 구멍이
+있다) 그냥 그리면 뒤의 타일 색이 얼굴을 뚫고 비친다 — 점령된 정글 타일 위에서는
+파일럿이 타일과 같은 색으로 물들었다. 원 그림 자체가 정사각형에 **내접**해 있어
+같은 반지름의 `draw_circle` 이 정확히 맞고, 1px 줄여 안티에일리어싱된 가장자리
+바깥으로 흰 테가 삐져나오지 않게 한다. 색은 초상과 **같은** tint·alpha 를
+타므로(사망 딤 / 복귀 페이드) 배경만 밝게 남는 일이 없다.
+
+**돌진 중인 파일럿의 칸은 맨 마지막에 그린다** (`_lunging_cells_last`). 돌진은
+대상 초상과 절반쯤 겹치는 것이 연출의 전부인데, 셀 순회가 `Dictionary` 순서라
+대상 칸이 나중에 그려지면 파고든 얼굴이 그 뒤로 숨는다. 돌진이 없으면 순회
+배열을 그대로 돌려주므로 평소 그림은 달라지지 않는다.
+
 ### 피해 수치 팝업 (`spawn_pilot_popup`)
 공격 카드(`attack:N`) 전용 플로팅 텍스트. `CardPhaseManager._effect_attack` 이
 판정마다 한 번씩 호출한다 — 빗나가면 **MISS**, 명중하면 **-N**, 보호막이 전부
@@ -103,12 +148,14 @@ same solve, so hit-testing never disagrees with what is on screen.
   숫자가 끝까지 재생된다).
 - `BattleSim.DMG_POPUP_DUR`(0.95s) 동안 `DMG_POPUP_RISE_PX`(46px) 만큼 감속하며
   떠오르고 마지막 40% 구간에서만 흐려진다.
-- 연속 공격(`repeat`)은 타수마다 `DMG_POPUP_STAGGER`(0.18s)씩 늦게 떠서 한
-  픽셀에 겹치지 않는다.
+- **`DMG_POPUP_STAGGER`(0.18s)는 이제 거의 쓰이지 않는다.** 한 타격이
+  파고들기 → 타격 → 복귀 세 박자(1.12초)를 다 도는 연출이 붙으면서 연속 공격의
+  팝업이 애초에 서로 겹칠 수 없게 됐다. 지연이 남는 것은 연출이 붙지 않는
+  경우(시전자가 없는 레거시 카드)뿐이다.
 - `_advance_popups(delta)` 가 `_process` 에서 돌며 만료분을 버리고, 살아 있는
   동안 `queue_redraw()` 를 계속 건다. 재시작은 `clear_popups()`.
 
-### Targeting dim + emphasis pulse
+### Targeting dim + 강조 (놓을 수 있는 곳만 밝게)
 **딤은 카드를 드는 순간 올라간다.** 예전에는 모달 대상 지정이 열려야
 (`is_active()`) 사거리 밖 타일이 어두워졌지만, 이제 카드 선택 자체가 대상
 지정이므로 `_draw()` 의 `draw_dim` 조건은 `targeting_overlay.is_visualizing()`
@@ -116,12 +163,33 @@ same solve, so hit-testing never disagrees with what is on screen.
 사거리 개념이 없는 INSTANT 카드(드로우 / 전략 점수 등)를 들었을 때는 전장이
 전혀 어두워지지 않는다.
 
-**사거리 무제한 카드는 노란 채움도 딤도 없다.** `cast_range ≥ 99`
-(`CardTargetingOverlay.UNLIMITED_RANGE` — 복귀 / 보호 / 약탈)면 오버레이가
-`range_unlimited` 을 켜고, `_draw_targeting_underlays` 는 사거리 채움을
-건너뛰며 `_build_range_set` 은 전 셀을 in-range 로 돌려준다(=딤 없음).
-전장을 통째로 노랗게 덮으면 정작 읽어야 할 표시(LOCATION 의 초록 유효 셀,
-딤되지 않은 파일럿 마커)가 묻히기 때문이다.
+**규칙은 하나다 — "이 카드를 놓을 수 있는 곳"만 밝다.** 카드를 끌어다 대상 위에
+놓는 조작이 들어오면서, 딤은 "사거리를 보여 주는 장치"에서 "드롭 지점을 남기는
+장치"로 바뀌었다. 칠하는 쪽(`_draw_targeting_underlays`)과 딤을 면제하는 쪽
+(`_undimmed_cells`)이 서로의 거울이라 둘이 어긋날 수 없다:
+
+| 모드 | 밝게 남는 것 | 칠 |
+|---|---|---|
+| PILOT | **파일럿 마커만** — 타일은 전부 딤 | 없음 |
+| LOCATION | `valid_cells` | 초록 채움 + 외곽선 |
+| PREVIEW | `area_cells` (시전자 셀 + 인접 6칸) | 노란 채움 + 외곽선 |
+| INSTANT | 전부 (딤 자체가 없다) | 없음 |
+
+파일럿 딤은 그대로 `should_dim_pilot` 이 가른다 — PILOT 은 유효 대상이 아닌
+파일럿, LOCATION 은 전원, PREVIEW 는 비참여자. **단 시전자(`card_caster`)는
+어느 모드에서도 딤드되지 않는다** — 딤은 "여기엔 놓을 수 없다"는 말인데 카드를
+쏘는 당사자에게 그 말은 성립하지 않고, 특히 LOCATION 의 "파일럿 전원 딤" 규칙에
+걸리면 지금 움직이려는 그 파일럿이 화면에서 가장 어두웠다. **대신 강조 대상도
+아니다**: 커지는 것은 "놓을 수 있는 곳"이라는 신호이므로, 시전자는 자기가 그
+카드의 유효 대상일 때(보호 / 복귀 같은 `target=ally` 카드)만 `valid_pilots` 를
+통해 커진다.
+
+사라진 것 둘: **PILOT 의 노란 사거리 채움**(어차피 그 타일에는 놓을 수 없으니
+겨눌 곳을 가리는 노이즈였다)과 **`range_unlimited` 특례**(사거리 무제한 카드는
+사거리 표시가 전장 전체라 아무것도 말해 주지 않았는데, 이제 유효 셀 기준으로
+딤이 걸려 약탈 / 정글 파밍도 갈 수 있는 칸만 남는다). 오버레이의
+`range_caster` / `range_radius` / `range_unlimited` 는 남아 있지만 렌더러는
+더 이상 읽지 않는다.
 
 ### 파일럿 마커 위치 — `pilot_marker_positions()`
 `_draw()` 는 매 프레임 `_build_pilot_render_layout()` 으로
@@ -132,11 +200,28 @@ solve 를 즉석에서 한 번 더 돌려 돌려주는 **공개** 래퍼가
 `grid_pos` 만 보고 계산하는 위치(타일 중심 / `pilot_marker_pos_solo`)로는
 누구를 눌렀는지 구분할 수 없다(항상 맨 왼쪽 파일럿이 잡혔다).
 
-타겟 가능한 파일럿 마커는 `_pilot_emphasis_scale(p)`가 반환하는 펄스 배율
-(`EMPHASIS_SCALE_MIN..MAX`, 기본 1.06..1.14)로 약간 커진다. `_process(delta)`
-가 visualizing 동안 `_emphasis_time` 을 누적하고 매 프레임 `queue_redraw()`
-를 호출해 sin 펄스가 돌아간다. 강조 대상은 모드별로 다음과 같다:
+타겟 가능한 파일럿 마커는 `_pilot_emphasis_scale(p)` 가 돌려주는
+**`TARGET_EMPHASIS_SCALE`(1.5)** 로 커진다(그리고 같은 칸의 무리가 겹치지 않도록
+배치까지 함께 벌어진다 — 위 *대상 지정 강조는 배치도 탄다* 절). 강조 대상은
+모드별로:
 - **PILOT**: `valid_pilots` 의 모든 파일럿
 - **PREVIEW**: `preview_participants`
-- 클릭하여 `pending_pick` 으로 잠긴 파일럿은 시안 링이 별도 강조이므로
-  펄스에서 제외된다.
+- **`pending_pick` 도 예외가 아니다** — 시안 링이 그 위에 따로 붙어 구분되고,
+  여기서만 1.0 으로 되돌리면 카드를 끌고 지나갈 때 얼굴이 커졌다 작아졌다
+  한다. 시안 링의 반지름도 같은 배율을 타서 커진 마커 바깥에 걸린다.
+
+그리는 반지름은 **`pilot_marker_radius(p)`** 한 곳에서만 나온다(공개 —
+`CardTargetingOverlay._hit_test_pilot` 이 클릭 반경으로 쓰고, 시안 링과 딤 디스크도
+같은 값을 읽는다). 강조된 초상(31.5 × 1.35 × 1.5 = **63.8px**)은 타일
+반지름(`hex_size * 0.85` = 68.9px)에 가까우므로, 히트 테스트가 고정 상수로 재면
+얼굴 바깥 테두리를 눌렀을 때 대상이 잡히지 않을 수 있다(배율이 2.0 이던 시절엔
+85px 로 확실히 넘겼다). 단 "마커에 안 맞았지만 자기 타일 안"이라는 폴백은 강조와
+무관하게 타일 크기 기준이다 — 커진 초상만큼 넓히면 옆 칸을 누른 클릭까지 빨려
+들어간다.
+
+> **펄스(1.06~1.14 사이를 오가던 sin 확대)는 삭제됐다.** 드래그해서 얼굴 위에
+> 놓는 조작에서는 크기가 계속 변하는 대상이 오히려 겨누기 어려웠다. 그와 함께
+> `_emphasis_time` / `EMPHASIS_*` 상수와, 그것을 굴리기 위해 **매 프레임 돌던
+> `queue_redraw()`** 도 사라졌다 — 대상 지정 상태가 바뀔 때
+> `CardTargetingOverlay._request_redraw()` 가 직접 부르므로 상시 재draw 가
+> 필요 없다. `_process` 에 남은 상시 갱신은 피해 수치 팝업뿐이다.

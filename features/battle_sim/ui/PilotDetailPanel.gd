@@ -3,9 +3,10 @@ extends Node
 
 # 파일럿 상세 패널 — 스트립의 얼굴(아군 하단 / **적 상단** 양쪽)을 누르면 열린다.
 #
-#   좌: 전신 아트를 **무릎 언저리에서 잘라** 세로로 길게
-#   우: 아웃게임 스탯 / 인게임 전투 스탯 / 메크 스탯
-#   하: 닫기 버튼
+#   좌: 전신 아트 **두 장** — 앞에 선 쪽이 밝고, 뒤에 선 쪽은 오른쪽으로 밀린 채
+#       검게 딤드된다. 앞뒤는 전환 버튼이 맞바꾼다(파일럿 ↔ 메크).
+#   우: 스탯 — 앞에 선 쪽의 것. 파일럿이면 인게임 + 파일럿, 메크면 메크 스탯.
+#   하: 전환 / 닫기
 #
 # 여는 조건은 **자기 작전 단계**뿐이다 — `HudBuilder._update_pilot_strips` 가
 # 스트립 버튼을 그때만 활성화하고, `close_if_phase_left()` 가 단계를 벗어나면
@@ -25,23 +26,52 @@ const VP_W: float = 1080.0
 const VP_H: float = 1920.0
 const DIM_COLOR := Color(0.0, 0.0, 0.0, 0.88)
 
-# ─── 좌: 전신 아트 ───────────────────────────────────────────────────────────
-# 폭이 아트 크기를 정한다 — 잘라 낸 상반신의 가로:세로가 대략 0.8 이라 세로로
-# 채우려면 폭이 1000px 넘게 필요하고, 그러면 스탯 칸이 남지 않는다. 그래서
-# **폭 610 에 맞춰 위쪽 정렬**하고(높이 900 은 그 결과를 담을 여유), 남는 아래
-# 공간은 그냥 딤으로 둔다.
-const ART_RECT := Rect2(24.0, 196.0, 610.0, 900.0)
-## 전신 아트를 어디서 자를 것인가 — **불투명 영역**(= 캐릭터 실루엣) 높이의
-## 이 비율까지 남긴다. 이미지마다 인물 크기와 여백이 달라 고정 픽셀로는 누구는
-## 허리에서, 누구는 발목에서 잘린다. 알파 바운딩 박스를 재서 그 안에서 자르면
-## 40장이 대체로 무릎 언저리에서 맞는다.
-const KNEE_FRACTION: float = 0.80
+## 앞에 서 있는 아트가 파일럿인가 메크인가. 전환 버튼이 맞바꾼다.
+enum Focus { PILOT, MECH }
+
+# ─── 전신 아트 (앞 / 뒤 2슬롯) ───────────────────────────────────────────────
+# **아트는 화면 하단에서 잘린다.** 아래끝(`ART_BOTTOM`)을 화면(1920)보다 아래에
+# 두어 다리 아랫부분이 화면 밖으로 나간다 — 예전의 `_knee_crop`(알파 실루엣의
+# 80% 지점에서 텍스처를 잘라 내던 것)은 그래서 삭제됐다. 자르는 일은 이제
+# 화면 가장자리가 하고, 어디서 잘릴지는 아트 크기와 위치 두 상수가 정한다.
+#
+# 크기는 **높이로 정규화**한다. 전신 아트는 전부 세로 1024 에 인물이 꽉 차 있고
+# 가로만 572~756 으로 제각각이라(폭으로 맞추면 인물 키가 이미지마다 다르다),
+# 폭은 원본 비율에서 나온다.
+#
+# 두 아트의 **바닥선은 같다**. 뒤에 선 쪽은 바닥을 딛은 채 `BACK_SCALE` 만큼
+# 작아지고(= 멀리 서 있다) 오른쪽으로 `BACK_SHIFT_PX` 밀린다. 축소 기준점을
+# 노드의 **아래 가운데**(`pivot_offset`)로 잡았기 때문에 크기를 줄여도 발이
+# 뜨지 않는다.
+## 앞에 선 아트의 높이(px). 폭은 원본 비율에서 나오므로(대략 0.65~0.74) 이
+## 값이 곧 인물이 화면을 얼마나 채우는가다 — 1400 이면 폭 900~1030 으로
+## 화면(1080)을 거의 다 쓰고, 그보다 키우면 뒤에 선 메크가 오른쪽으로 완전히
+## 밀려 나간다.
+const ART_H: float = 1400.0
+## 앞에 선 아트의 **아래끝** y. 화면(1920)보다 아래라 하단이 잘린다.
+const ART_BOTTOM: float = 2010.0
+## 앞에 선 아트의 가로 중심.
+const ART_FRONT_CENTER_X: float = 320.0
+## 뒤에 선 아트가 오른쪽으로 밀리는 거리(px). 아트 폭이 대략 870 이므로
+## 이 값이면 둘이 절반쯤 겹친다.
+const ART_BACK_SHIFT_PX: float = 400.0
+## 뒤에 선 아트의 축소율(원근).
+const ART_BACK_SCALE: float = 0.90
+## 뒤에 선 아트에 씌우는 검은 반투명. `modulate` 라 RGB 는 어둡게, A 는 살짝
+## 비치게 — 둘 다 필요하다(어둡기만 하면 실루엣이 아니라 검은 판이 된다).
+const ART_BACK_TINT := Color(0.14, 0.14, 0.18, 0.88)
+## 앞뒤가 자리를 맞바꾸는 데 걸리는 시간(s).
+const ART_SWAP_SEC: float = 0.22
+## 아트가 없는 메크(= 아직 에셋이 하나도 없다)의 플레이스홀더 가로/세로 비.
+const ART_PLACEHOLDER_ASPECT: float = 0.70
 
 # ─── 우: 스탯 ────────────────────────────────────────────────────────────────
-const STAT_X: float = 656.0
-const STAT_W: float = 400.0
-const STAT_TOP: float = 170.0
-const ROW_H: float = 44.0
+# **정보 블록은 아래로 내려왔다.** 아트가 커지면서 화면 위쪽 절반이 인물의
+# 머리·상체 자리가 됐고, 스탯이 예전 자리(y 170)에 남으면 얼굴을 덮는다.
+const STAT_X: float = 600.0
+const STAT_W: float = 452.0
+const STAT_TOP: float = 640.0
+const ROW_H: float = 42.0
 ## 한 줄에서 키(항목명)가 차지하는 폭 비율. 값 쪽이 더 넓다 — "162 (기본 160)"
 ## 처럼 괄호가 붙는 값이 있고, 키는 전부 짧은 명사다.
 const KEY_FRACTION: float = 0.40
@@ -50,15 +80,34 @@ const HEADER_COLOR := Color(1.0, 0.92, 0.55)
 const SECTION_COLOR := Color(0.58, 0.78, 1.0)
 const KEY_COLOR := Color(0.72, 0.74, 0.80)
 const VALUE_COLOR := Color(0.96, 0.96, 0.98)
+## 스탯 블록 뒤에 까는 받침. 아트가 이 자리까지 올라오므로 글자만 얹으면
+## 일러스트 위에서 읽히지 않는다. 내용 높이에 맞춰 자란다.
+const STAT_PANEL_PAD := Vector2(22.0, 26.0)
+const STAT_PANEL_BG := Color(0.04, 0.05, 0.09, 0.86)
+const STAT_PANEL_BORDER := Color(0.30, 0.34, 0.46, 0.70)
 
-const BTN_W: float = 320.0
-const BTN_H: float = 84.0
-const BTN_Y: float = 1620.0
+# ─── 하: 버튼 행 ─────────────────────────────────────────────────────────────
+# 전환은 **정보 블록의 왼쪽 아래**, 닫기는 그 오른쪽 끝. y 는 고정이다 —
+# 메크 쪽 스탯이 훨씬 짧아 받침 높이를 따라가게 두면 버튼이 위아래로 튄다.
+const BTN_W: float = 212.0
+const BTN_H: float = 76.0
+const BTN_Y: float = 1424.0
 
 var _bs: BattleSim = null
 var _layer: CanvasLayer = null
 var _root: Control = null
 var _pilot: PilotData = null
+var _focus: int = Focus.PILOT
+
+# 아트 두 장. 어느 쪽이 앞이냐는 `_focus` 가 정하고, 노드 자체는 바뀌지 않는다.
+var _art_pilot: Control = null
+var _art_mech: Control = null
+var _art_holder: Control = null
+var _swap_tween: Tween = null
+
+# 스탯 블록은 전환 때마다 통째로 다시 세운다 — 절 구성이 아예 달라진다.
+var _stat_root: Control = null
+var _stat_panel: Panel = null
 
 ## 열면서 숨긴 스트립의 팀. 닫을 때 그 스트립만 되돌린다.
 var _hidden_team: int = -1
@@ -87,6 +136,7 @@ func open(p: PilotData) -> void:
 	if is_active():
 		close()
 	_pilot = p
+	_focus = Focus.PILOT
 	_build()
 	if _bs.hud != null:
 		_hidden_team = p.team
@@ -97,6 +147,11 @@ func close() -> void:
 	if _root != null:
 		_root.queue_free()
 		_root = null
+	_stat_root = null
+	_stat_panel = null
+	_art_pilot = null
+	_art_mech = null
+	_art_holder = null
 	_pilot = null
 	if _bs != null and _bs.hud != null and _hidden_team >= 0:
 		_bs.hud.set_strip_visible(_hidden_team, true)
@@ -114,7 +169,9 @@ func close_if_phase_left() -> void:
 func _build() -> void:
 	_root = Control.new()
 	_root.name = "PilotDetail"
-	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# 앵커 프리셋은 쓰지 않는다 — CanvasLayer 아래의 Control 은 full-rect 앵커를
+	# 해석해 줄 부모 rect 가 없어서 크기가 그대로 0 이고, 프리셋을 걸어 두면
+	# "_ready 뒤에 size 가 덮어써진다"는 경고만 남는다. 크기는 명시한다.
 	_root.position = Vector2.ZERO
 	_root.size = Vector2(VP_W, VP_H)
 	# 모달 — 뒤쪽(핸드 · 전장 · 도넛) 입력을 전부 삼킨다.
@@ -128,51 +185,175 @@ func _build() -> void:
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	_root.add_child(dim)
 
-	_build_art()
-	_build_stats()
-	_build_close_button()
+	_build_arts()
+	_rebuild_stats()
+	_build_buttons()
 
 
-# 전신 아트를 알파 바운딩 박스 기준으로 무릎 언저리에서 자른다. AtlasTexture 로
-# 영역만 지정하므로 이미지를 새로 만들지 않는다.
-func _build_art() -> void:
-	var tex: Texture2D = PilotImages.full_for(_pilot.pilot_id)
-	var rect := TextureRect.new()
-	rect.position = ART_RECT.position
-	rect.size = ART_RECT.size
-	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	# KEEP_ASPECT — 비율을 지키며 칸 **좌상단에** 맞춘다. CENTERED 로 두면 칸이
-	# 아트보다 세로로 길어서 인물이 칸 한가운데로 내려앉아 위아래로 큰 빈칸이
-	# 생긴다(실측 확인). COVERED 는 칸을 채우느라 좌우를 잘라 팔이 사라진다.
-	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
-	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+# ─── 전신 아트 ───────────────────────────────────────────────────────────────
+# 두 장을 만들어 자기 홀더에 넣고, 앞뒤 자세는 `_apply_focus(false)` 가 잡는다.
+func _build_arts() -> void:
+	_art_holder = Control.new()
+	_art_holder.name = "ArtHolder"
+	_art_holder.position = Vector2.ZERO
+	_art_holder.size = Vector2(VP_W, VP_H)
+	_art_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_art_holder)
+
+	var pd: PlayerData = _bs.player_data_for(_pilot)
+	var mech: MechData = pd.assigned_mech if pd != null else null
+
+	_art_pilot = _make_art(PilotImages.full_for(_pilot.pilot_id), "초상화 없음")
+	_art_mech  = _make_art(MechImages.full_for(mech.id) if mech != null else null,
+			mech.name if mech != null else "메크 미배정")
+	_art_holder.add_child(_art_mech)
+	_art_holder.add_child(_art_pilot)
+	_apply_focus(false)
+
+
+## 아트 한 장. `tex` 가 null 이면(메크 에셋이 아직 없다 / INTL 파일럿) 같은
+## 자리에 실루엣 플레이스홀더를 세운다 — 자리와 전환 동작은 그대로 확인된다.
+##
+## 노드 크기는 **언제나 앞에 선 크기**(`ART_H`)로 고정하고, 뒤로 물러날 때는
+## `scale` 로만 줄인다. `pivot_offset` 이 아래 가운데라 줄여도 바닥선이 그대로다.
+func _make_art(tex: Texture2D, fallback_text: String) -> Control:
+	var aspect: float = ART_PLACEHOLDER_ASPECT
 	if tex != null:
-		rect.texture = _knee_crop(tex)
-	_root.add_child(rect)
-	if tex == null:
-		# 초상화가 없는 파일럿(단독 실행 / INTL) — 자리만 표시한다.
-		var ph := _make_label("(초상화 없음)", 26, KEY_COLOR,
+		var ts: Vector2 = tex.get_size()
+		if ts.y > 0.0:
+			aspect = ts.x / ts.y
+	var w: float = ART_H * aspect
+
+	var holder := Control.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.size = Vector2(w, ART_H)
+	holder.pivot_offset = Vector2(w * 0.5, ART_H)
+
+	if tex != null:
+		var rect := TextureRect.new()
+		rect.position = Vector2.ZERO
+		rect.size = Vector2(w, ART_H)
+		rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		# 크기를 원본 비율로 이미 맞췄으므로 STRETCH_SCALE 이 정확히 채운다.
+		# KEEP_ASPECT 계열은 여기서 레터박스를 한 번 더 계산할 뿐이다.
+		rect.stretch_mode = TextureRect.STRETCH_SCALE
+		rect.texture = tex
+		rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		holder.add_child(rect)
+	else:
+		var slab := Panel.new()
+		slab.position = Vector2.ZERO
+		slab.size = Vector2(w, ART_H)
+		slab.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var sb := StyleBoxFlat.new()
+		# 옅게 — 이 판은 "아직 그림이 없다"는 자리 표시이지 그림이 아니다.
+		# 알파를 올리면 화면 절반을 차지하는 밝은 사각형이 되어 정작 앞에 선
+		# 파일럿보다 눈에 띈다.
+		sb.bg_color = Color(0.14, 0.15, 0.20, 0.30)
+		sb.border_color = Color(0.42, 0.45, 0.56, 0.45)
+		sb.border_width_top = 3
+		sb.border_width_bottom = 3
+		sb.border_width_left = 3
+		sb.border_width_right = 3
+		sb.corner_radius_top_left = 24
+		sb.corner_radius_top_right = 24
+		slab.add_theme_stylebox_override("panel", sb)
+		holder.add_child(slab)
+
+		var lbl := _make_label(fallback_text, 34, Color(0.78, 0.80, 0.88),
 				HORIZONTAL_ALIGNMENT_CENTER)
-		ph.position = ART_RECT.position + Vector2(0.0, ART_RECT.size.y * 0.5)
-		ph.size = Vector2(ART_RECT.size.x, 40.0)
-		_root.add_child(ph)
+		lbl.position = Vector2(0.0, ART_H * 0.42)
+		lbl.size = Vector2(w, 60.0)
+		holder.add_child(lbl)
+	return holder
 
 
-static func _knee_crop(tex: Texture2D) -> Texture2D:
-	var img: Image = tex.get_image()
-	if img == null:
-		return tex
-	var used: Rect2i = img.get_used_rect()
-	if used.size.x <= 0 or used.size.y <= 0:
-		return tex
-	var h: int = maxi(1, int(round(float(used.size.y) * KNEE_FRACTION)))
-	var atlas := AtlasTexture.new()
-	atlas.atlas = tex
-	atlas.region = Rect2(used.position.x, used.position.y, used.size.x, h)
-	return atlas
+## 앞/뒤 자세를 적용한다. `animate` 면 두 노드가 자리를 맞바꾸는 과정이 보인다.
+func _apply_focus(animate: bool) -> void:
+	var front: Control = _art_pilot if _focus == Focus.PILOT else _art_mech
+	var back: Control  = _art_mech if _focus == Focus.PILOT else _art_pilot
+	# 앞에 선 쪽이 위에 그려져야 한다 — 형제 순서가 곧 z-order 다.
+	_art_holder.move_child(back, 0)
+	_art_holder.move_child(front, 1)
+
+	if _swap_tween != null and _swap_tween.is_running():
+		_swap_tween.kill()
+	if animate:
+		_swap_tween = _art_holder.create_tween().set_parallel() \
+				.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	_pose_art(front, true, animate)
+	_pose_art(back, false, animate)
 
 
-func _build_stats() -> void:
+## 아트 한 장을 앞자리 / 뒷자리에 앉힌다. 뒷자리는 오른쪽으로 밀리고, 작아지고,
+## 검게 딤드된다 — 셋 다 같은 트윈을 탄다.
+func _pose_art(node: Control, is_front: bool, animate: bool) -> void:
+	var x: float = ART_FRONT_CENTER_X - node.size.x * 0.5
+	if not is_front:
+		x += ART_BACK_SHIFT_PX
+	var goal_pos := Vector2(x, ART_BOTTOM - ART_H)
+	var goal_scale: Vector2 = Vector2.ONE if is_front \
+			else Vector2(ART_BACK_SCALE, ART_BACK_SCALE)
+	var goal_tint: Color = Color.WHITE if is_front else ART_BACK_TINT
+	if animate and _swap_tween != null:
+		_swap_tween.tween_property(node, "position", goal_pos, ART_SWAP_SEC)
+		_swap_tween.tween_property(node, "scale", goal_scale, ART_SWAP_SEC)
+		_swap_tween.tween_property(node, "modulate", goal_tint, ART_SWAP_SEC)
+	else:
+		node.position = goal_pos
+		node.scale = goal_scale
+		node.modulate = goal_tint
+
+
+func _on_swap_pressed() -> void:
+	_focus = Focus.MECH if _focus == Focus.PILOT else Focus.PILOT
+	_apply_focus(true)
+	_rebuild_stats()
+
+
+# ─── 스탯 ────────────────────────────────────────────────────────────────────
+# 전환마다 통째로 다시 세운다 — 파일럿 쪽은 3절(이름 · 인게임 · 파일럿), 메크
+# 쪽은 1절이라 줄 수가 아예 다르다. 받침 Panel 을 **먼저** 넣어 글자 뒤에 깔고,
+# 높이는 다 세운 뒤에 내용에 맞춰 준다.
+func _rebuild_stats() -> void:
+	if _stat_root != null and is_instance_valid(_stat_root):
+		# 트리에서 **먼저** 뗀다 — `queue_free` 만 걸면 이번 프레임까지는 그대로
+		# 그려져서 새 블록과 글자가 겹쳐 보인다.
+		_root.remove_child(_stat_root)
+		_stat_root.queue_free()
+	_stat_root = Control.new()
+	_stat_root.name = "StatColumn"
+	_stat_root.position = Vector2.ZERO
+	_stat_root.size = Vector2(VP_W, VP_H)
+	_stat_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_stat_root)
+	# 버튼 행보다 아래(= 뒤)에 두어 전환/닫기가 항상 위에 온다.
+	if _stat_root.get_index() > 0:
+		_root.move_child(_stat_root, 2)
+
+	_stat_panel = Panel.new()
+	_stat_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = STAT_PANEL_BG
+	sb.border_color = STAT_PANEL_BORDER
+	sb.border_width_top = 1
+	sb.border_width_bottom = 1
+	sb.border_width_left = 1
+	sb.border_width_right = 1
+	sb.corner_radius_top_left = 14
+	sb.corner_radius_top_right = 14
+	sb.corner_radius_bottom_left = 14
+	sb.corner_radius_bottom_right = 14
+	_stat_panel.add_theme_stylebox_override("panel", sb)
+	_stat_root.add_child(_stat_panel)
+
+	var bottom: float = _build_stats()
+	_stat_panel.position = Vector2(STAT_X, STAT_TOP) - STAT_PANEL_PAD
+	_stat_panel.size = Vector2(STAT_W, bottom - STAT_TOP) + STAT_PANEL_PAD * 2.0
+
+
+## 스탯 본문을 세우고 마지막 줄의 아래 y 를 돌려준다.
+func _build_stats() -> float:
 	var pd: PlayerData = _bs.player_data_for(_pilot)
 	var mech: MechData = pd.assigned_mech if pd != null else null
 	var role_name: String = _bs.ROLE_NAMES[_pilot.role] \
@@ -180,23 +361,34 @@ func _build_stats() -> void:
 
 	var y: float = STAT_TOP
 	var display_name: String = pd.name if pd != null else _bs.pilot_label(_pilot)
+	if _focus == Focus.MECH:
+		display_name = mech.name if mech != null else "메크 미배정"
 	var name_lbl := _make_label(display_name, 44, HEADER_COLOR,
 			HORIZONTAL_ALIGNMENT_LEFT)
 	name_lbl.position = Vector2(STAT_X, y)
 	name_lbl.size = Vector2(STAT_W, 54.0)
-	_root.add_child(name_lbl)
+	_stat_root.add_child(name_lbl)
 	y += 56.0
 
 	var sub: String = "%s · %s · 성장치 %s" % [
 		role_name,
 		"아군" if _pilot.team == 0 else "적군",
 		BattleSim.fmt_score(_pilot.score)]
+	if _focus == Focus.MECH:
+		sub = "%s 의 기체" % (pd.name if pd != null else _bs.pilot_label(_pilot))
 	var sub_lbl := _make_label(sub, 22, KEY_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
 	sub_lbl.position = Vector2(STAT_X, y)
 	sub_lbl.size = Vector2(STAT_W, 30.0)
-	_root.add_child(sub_lbl)
+	_stat_root.add_child(sub_lbl)
 	y += 30.0 + SECTION_GAP
 
+	if _focus == Focus.MECH:
+		return _build_mech_stats(y, mech)
+	return _build_pilot_stats(y, pd)
+
+
+func _build_pilot_stats(start_y: float, pd: PlayerData) -> float:
+	var y: float = start_y
 	# ─ 인게임 전투 스탯 — 지금 이 전장에서의 상태.
 	y = _section(y, "인게임")
 	y = _row(y, "체력", "%d / %d" % [_pilot.hp, _pilot.max_hp])
@@ -221,30 +413,32 @@ func _build_stats() -> void:
 		y = _row(y, "멘탈", str(pd.mental))
 	else:
 		y = _row(y, "—", "데이터 없음")
-	y += SECTION_GAP
+	return y
 
-	# ─ 메크 — 배정된 기체. speed 스탯은 삭제됐다(교전이 턴제가 되면서).
-	y = _section(y, "메크")
-	if mech != null:
-		y = _row(y, "기체", mech.name)
-		y = _row(y, "체력", str(mech.hp))
-		y = _row(y, "공격력", str(mech.atk))
-		y = _row(y, "존재감", str(mech.presence))
-	else:
-		y = _row(y, "—", "미배정")
+
+# 배정된 기체. speed 스탯은 삭제됐다(교전이 턴제가 되면서).
+func _build_mech_stats(start_y: float, mech: MechData) -> float:
+	var y: float = _section(start_y, "메크")
+	if mech == null:
+		return _row(y, "—", "미배정")
+	y = _row(y, "기체", mech.name)
+	y = _row(y, "체력", str(mech.hp))
+	y = _row(y, "공격력", str(mech.atk))
+	y = _row(y, "존재감", str(mech.presence))
+	return y
 
 
 func _section(y: float, title: String) -> float:
 	var lbl := _make_label(title, 26, SECTION_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
 	lbl.position = Vector2(STAT_X, y)
 	lbl.size = Vector2(STAT_W, 34.0)
-	_root.add_child(lbl)
+	_stat_root.add_child(lbl)
 	var line := ColorRect.new()
 	line.color = Color(SECTION_COLOR.r, SECTION_COLOR.g, SECTION_COLOR.b, 0.35)
 	line.position = Vector2(STAT_X, y + 34.0)
 	line.size = Vector2(STAT_W, 2.0)
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.add_child(line)
+	_stat_root.add_child(line)
 	return y + 42.0
 
 
@@ -253,7 +447,7 @@ func _row(y: float, key: String, value: String) -> float:
 	k.position = Vector2(STAT_X, y)
 	k.size = Vector2(STAT_W * KEY_FRACTION, ROW_H)
 	k.clip_text = true
-	_root.add_child(k)
+	_stat_root.add_child(k)
 	var v := _make_label(value, 26, VALUE_COLOR, HORIZONTAL_ALIGNMENT_RIGHT)
 	v.position = Vector2(STAT_X + STAT_W * KEY_FRACTION, y)
 	v.size = Vector2(STAT_W * (1.0 - KEY_FRACTION), ROW_H)
@@ -261,15 +455,26 @@ func _row(y: float, key: String, value: String) -> float:
 	# 정렬을 포기하고 rect 왼쪽부터 그려서 **오른쪽으로 넘쳐 화면을 벗어난다**
 	# (실측: "아웃게임 데이터 없음" 이 화면 밖에서 잘렸다). 자르는 편이 낫다.
 	v.clip_text = true
-	_root.add_child(v)
+	_stat_root.add_child(v)
 	return y + ROW_H
 
 
-func _build_close_button() -> void:
+# ─── 버튼 행 ─────────────────────────────────────────────────────────────────
+# 전환은 정보 블록의 **왼쪽 아래**, 닫기는 같은 줄 오른쪽 끝.
+func _build_buttons() -> void:
+	var swap := Button.new()
+	swap.text = "전환"
+	swap.add_theme_font_size_override("font_size", 28)
+	swap.position = Vector2(STAT_X, BTN_Y)
+	swap.size = Vector2(BTN_W, BTN_H)
+	swap.focus_mode = Control.FOCUS_NONE
+	swap.pressed.connect(_on_swap_pressed)
+	_root.add_child(swap)
+
 	var btn := Button.new()
 	btn.text = "닫기"
-	btn.add_theme_font_size_override("font_size", 30)
-	btn.position = Vector2((VP_W - BTN_W) * 0.5, BTN_Y)
+	btn.add_theme_font_size_override("font_size", 28)
+	btn.position = Vector2(STAT_X + STAT_W - BTN_W, BTN_Y)
 	btn.size = Vector2(BTN_W, BTN_H)
 	btn.focus_mode = Control.FOCUS_NONE
 	btn.pressed.connect(close)

@@ -221,6 +221,55 @@ INTL 파일럿(id ≥ 100)은 초상화가 없다 — `has_image()` 가 false �
 `prime_into(parent)` 는 반드시 `BattleSim._ready()` 같은 진입 시점에 한 번
 불러야 한다 — 안 부르면 `draw_texture_rect` 가 흰 사각형을 그린다.
 
+### MechImages.gd
+`class_name MechImages`, extends `RefCounted`. `PilotImages` 와 같은 역할의
+메크(기체) 일러스트 조회. **에셋 30장이 모두 들어와 있다** — 출처와 배치 규칙은
+바로 아래 절.
+
+| 함수 | 파일 | 소비자 |
+|---|---|---|
+| `full_for(mech_id)` | `resources/images/mech/N_full.png` | 파일럿 상세 패널 (`ui/PilotDetailPanel.gd`) |
+| `has_image(mech_id)` | 위 파일의 존재 여부 | 플레이스홀더 판정 |
+
+- **`N` 은 `mechs.csv` 의 `id` 그대로다** — 파일럿 쪽의 +1 오프셋(40장을 1..40 으로
+  받아 온 역사적 사정)은 여기서 반복하지 않는다. 파일은 파일럿과 달리 `full/`
+  하위 폴더 없이 `mech/` 바로 아래에 **평평하게** 놓인다.
+- **`load()` 를 그냥 부르지 않는다.** 파일이 없으면 Godot 이 에러를 뱉으며 null 을
+  돌려주므로 `ResourceLoader.exists()` 로 먼저 물어보고 없으면 조용히 null 을 준다.
+  지금은 30칸이 다 차 있어 플레이스홀더 경로가 돌지 않지만, `mechs.csv` 에 행을
+  더하면 다시 살아나는 길이라 그대로 둔다.
+
+#### 메크 전신 아트 (`resources/images/mech/N_full.png`)
+출처는 **Gundam Evolution**(반다이남코, 2022–2023 서비스 종료)의 기체 렌더
+24종이고, Gundam Wiki 의 해당 문서 갤러리에서 받았다. 원본이 이미 **배경 없는
+투명 PNG** 라 배경 제거 작업은 없었다. 개인 프로젝트용 임시 에셋이며 배포용이
+아니다(파일럿 초상화가 젠레스 존 제로 아트인 것과 같은 성격).
+
+**규격은 파일럿 전신 아트를 따르되 정규화 기준 하나가 다르다.** 세로 1024 ·
+알파 크롭 · 바닥 정렬까지는 같지만, 크기는 **바운딩 박스 높이가 아니라 불투명
+픽셀 면적의 제곱근**으로 맞췄다 — 기체 렌더는 검·날개·라이플이 옆으로 뻗어
+바운딩 박스 비율이 0.62~1.51 로 흩어지고, 높이로 맞추면 넓은 포즈일수록 본체가
+쪼그라든다. 면적 기준은 얇은 칼끝이 크기 계산에 거의 기여하지 않아 **본체
+겉보기 크기**가 고르게 맞는다. 캔버스는 **1024×1024 고정**이다(가로 중앙 · 세로
+바닥 정렬). 파일럿 아트처럼 폭을 각자 다르게 두면 상세 패널이 높이로 정규화할 때
+비율 1.5짜리 기체가 화면 폭의 두 배로 벌어진다. 이 규격에서 잘려 나가는 것은
+Exia / Mahiroo / Marasai 세 장의 무기 끝 44~64px 뿐이다.
+
+**id 배치는 `mechs.csv` 의 스탯 아키타입을 따른다** — 이름(`Bulwark-A1` 등)은
+그대로 두었으므로 이름과 기체는 서로 무관하고, **맞춰야 할 것은 스탯이다**.
+
+| id | 아키타입 | 기체 |
+|---|---|---|
+| 0–5 | 탱커 (hp 195–240 / atk 6–10) | Sazabi · DOM Trooper · Guntank · Pale Rider · Mahiroo · Zaku II [Melee] |
+| 6–11 | 격투가 (hp 135–170 / atk 13–18) | RX-78-2 · Kämpfer · GM · Marasai · Barbatos · *(Kämpfer 재사용)* |
+| 12–17 | 암살자 (hp 80–110 / atk 22–30) | Exia · Susanowo · Zeta · Unicorn · Asshimar · *(Exia 재사용)* |
+| 18–23 | 서포터 (presence 2 / atk 8–11) | Methuss · ∀ Gundam · Hyperion · ν Gundam · *(Methuss)* · *(Hyperion)* |
+| 24–29 | 스나이퍼 (presence 2 / atk 19–25) | GM Sniper II · Dynames · Heavyarms Custom EW · Zaku II [Shooting] · *(GM Sniper II)* · *(Dynames)* |
+
+24종으로 30칸을 채우므로 **6칸이 중복**이고, 중복은 언제나 **같은 아키타입 안에서**
+원본과 떨어뜨려 배치했다(밴픽 화면에 같은 그림이 나란히 서지 않게). 24종을 넘는
+그림이 생기면 중복 칸부터 채우면 된다.
+
 ### UiHelpers.gd
 `class_name UiHelpers`, extends `RefCounted`. Static helpers for
 procedurally-built UI panels — currently `mk_label(...)` shared by MatchFlow

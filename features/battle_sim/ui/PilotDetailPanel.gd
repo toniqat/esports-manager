@@ -1,7 +1,7 @@
 class_name PilotDetailPanel
 extends Node
 
-# 파일럿 상세 패널 — 하단 아군 스트립의 얼굴을 누르면 열린다.
+# 파일럿 상세 패널 — 스트립의 얼굴(아군 하단 / **적 상단** 양쪽)을 누르면 열린다.
 #
 #   좌: 전신 아트를 **무릎 언저리에서 잘라** 세로로 길게
 #   우: 아웃게임 스탯 / 인게임 전투 스탯 / 메크 스탯
@@ -12,7 +12,7 @@ extends Node
 # 강제로 닫는다. BATTLE 이 흐르는 동안 열려 있으면 화면이 딤드된 채 전장이
 # 굴러가 버린다.
 #
-# 열려 있는 동안 **아군 스트립은 숨긴다**. 딤 위로 스트립만 남으면 "지금 뭘
+# 열려 있는 동안 **누른 쪽 스트립은 숨긴다**. 딤 위로 스트립만 남으면 "지금 뭘
 # 보고 있는지"가 흐려지고, 딤 아래로 넣으면 방금 누른 얼굴이 어두워져 연결이
 # 끊긴다 — 아예 치우는 편이 읽힌다.
 
@@ -60,6 +60,9 @@ var _layer: CanvasLayer = null
 var _root: Control = null
 var _pilot: PilotData = null
 
+## 열면서 숨긴 스트립의 팀. 닫을 때 그 스트립만 되돌린다.
+var _hidden_team: int = -1
+
 
 func _ready() -> void:
 	_layer = CanvasLayer.new()
@@ -86,7 +89,8 @@ func open(p: PilotData) -> void:
 	_pilot = p
 	_build()
 	if _bs.hud != null:
-		_bs.hud.set_player_strip_visible(false)
+		_hidden_team = p.team
+		_bs.hud.set_strip_visible(_hidden_team, false)
 
 
 func close() -> void:
@@ -94,8 +98,9 @@ func close() -> void:
 		_root.queue_free()
 		_root = null
 	_pilot = null
-	if _bs != null and _bs.hud != null:
-		_bs.hud.set_player_strip_visible(true)
+	if _bs != null and _bs.hud != null and _hidden_team >= 0:
+		_bs.hud.set_strip_visible(_hidden_team, true)
+	_hidden_team = -1
 
 
 ## 작전 단계를 벗어나면 닫는다. `HudBuilder.update_hud` 가 매 갱신마다 부른다 —

@@ -5,7 +5,7 @@
 | `HudBuilder.gd` | HudBuilder | Builds and updates the whole battle HUD |
 | `CostDonut.gd`  | CostDonut  | 전략 포인트 ring gauge; the player's one doubles as the 턴 넘기기 button |
 | `CardPileStack.gd` | CardPileStack | 덱 / 버린 더미 — 앞으로 누운 카드 뭉치 + 장수 |
-| `PilotStrip.gd` | PilotStrip | 파일럿 5인 스트립 — 눈높이 초상화 + 체력 바 + 성장치. 상단(적) / 하단(아군) 두 벌 |
+| `PilotStrip.gd` | PilotStrip | 파일럿 5인 스트립 — 눈높이 초상화 + 체력 바 + 성장치. 상단(적) / 하단(아군) 두 벌, **양쪽 다 누르면 상세가 열린다** |
 | `PilotDetailPanel.gd` | PilotDetailPanel | 파일럿 상세 모달 — 좌 전신 아트 / 우 아웃게임·인게임·메크 스탯 |
 
 ## HudBuilder.gd
@@ -229,8 +229,12 @@ same vertical band the 확인/취소 row occupies on the far side of the screen.
 
 | 스트립 | 위치 | 크기 | 입력 |
 |---|---|---|---|
-| 적 (`_enemy_strip`) | 상단 패널의 자식, `ENEMY_STRIP_RECT`(175, 42, 730×84) | 초상화 130×54 | 없음 |
+| 적 (`_enemy_strip`) | 상단 패널의 자식, `ENEMY_STRIP_RECT`(175, 42, 730×84) | 초상화 130×54 | 눌러서 상세 패널 |
 | 아군 (`_player_strip`) | 핸드 행 **아래**, `PLAYER_STRIP_RECT`(25, 1766, 1030×122) | 초상화 190×79 | 눌러서 상세 패널 |
+
+**양쪽 다 눌린다.** 적 파일럿도 아군과 같은 게이트(자기 작전 단계)에 같은 내용
+(인게임 · 파일럿 · 메크)으로 열린다 — 상대 로스터는 이미 `match_ctx.enemy_roster`
+로 들어와 있어 `BattleSim.player_data_for` 가 인덱스 5..9 로 그대로 찾아 준다.
 
 한 칸의 구성은 위에서 아래로 **눈높이 초상화 → 체력 바 → 성장치 숫자**다.
 
@@ -268,8 +272,8 @@ same vertical band the 확인/취소 row occupies on the far side of the screen.
 스스로 클릭을 받지 못한다).
 
 ### 파일럿 상세 패널 (`PilotDetailPanel.gd`)
-하단 아군 스트립의 얼굴을 누르면 열리는 **모달**. 자기 `CanvasLayer`(13)에
-그리므로 버리기(10) / 대상 지정(11) / 열람·교전(12) 위다.
+스트립의 얼굴(**아군 하단 / 적 상단 양쪽**)을 누르면 열리는 **모달**. 자기
+`CanvasLayer`(13)에 그리므로 버리기(10) / 대상 지정(11) / 열람·교전(12) 위다.
 
 ```
 [풀스크린 딤 α 0.88]
@@ -297,10 +301,10 @@ same vertical band the 확인/취소 row occupies on the far side of the screen.
 - 아웃게임 스탯은 `BattleSim.player_data_for(pilot)` 로 찾는다 — `pilots` 배열의
   인덱스(0..4 = 팀0, 5..9 = 팀1)를 `match_ctx` 의 두 로스터에 그대로 대응시키는
   방식이라 **`pilots` 를 재정렬하면 이름과 스탯이 어긋난다**. 단독 실행이나
-  INTL 파일럿은 null → "데이터 없음".
-- 열려 있는 동안 **아군 스트립은 숨긴다**(`HudBuilder.set_player_strip_visible`).
+  INTL 파일럿은 null → "데이터 없음". 적 파일럿이 열리는 것도 이 대응 덕이다.
+- 열려 있는 동안 **누른 쪽 팀의 스트립만 숨긴다**(`HudBuilder.set_strip_visible(team, on)`).
   딤 위로 스트립만 남으면 지금 무엇을 보고 있는지가 흐려지고, 딤 아래로 넣으면
-  방금 누른 얼굴이 어두워져 연결이 끊긴다.
+  방금 누른 얼굴이 어두워져 연결이 끊긴다. 반대 팀 스트립은 그대로 둔다 —
 - **작전 단계를 벗어나면 강제로 닫힌다**(`close_if_phase_left`, `update_hud`
   마다 호출). 열어 둔 채 BATTLE 이 흐르면 딤 뒤에서 전장이 굴러간다.
 
@@ -326,8 +330,8 @@ same vertical band the 확인/취소 row occupies on the far side of the screen.
   into their ring gauges and gates the player donut's flip / 턴 넘기기 press
   on `game_phase == CARD_PHASE` and `card_phase.can_end_card_phase()`.
 - Calls `_update_pilot_strips(in_card_phase)` — sorts a **copy** of `_bs.pilots`
-  by team and lane, pushes each five into its `PilotStrip`, gates the player
-  strip's hit buttons on 작전 단계, refreshes the team-score label, and lets
+  by team and lane, pushes each five into its `PilotStrip`, gates **both** strips'
+  hit buttons on 작전 단계, refreshes the team-score label, and lets
   `PilotDetailPanel.close_if_phase_left()` close the modal if the phase moved on.
 - Calls `update_time_label()` (also called every frame from `_process`).
 

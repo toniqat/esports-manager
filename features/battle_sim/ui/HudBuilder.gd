@@ -252,11 +252,15 @@ func _build_top_panel() -> void:
 
 	# 적 스트립은 패널의 자식이라 패널 배경 위에 그려진다(= 상대 핸드 peek 을
 	# 가리는 가림막의 일부).
+	# 적 스트립도 **눌러서 상세 패널을 연다** — 아군과 같은 게이트(작전 단계),
+	# 같은 내용(인게임 · 파일럿 · 메크). 상대 로스터는 이미 `match_ctx.enemy_roster`
+	# 로 들어와 있어 `BattleSim.player_data_for` 가 그대로 찾아 준다.
 	_enemy_strip = PilotStrip.new()
 	_enemy_strip.name = "EnemyPilotStrip"
 	tp.add_child(_enemy_strip)
-	_enemy_strip.setup(_bs, 1, ENEMY_STRIP_RECT, false,
+	_enemy_strip.setup(_bs, 1, ENEMY_STRIP_RECT, true,
 			ENEMY_SCORE_FONT, ENEMY_HP_H)
+	_enemy_strip.pilot_pressed.connect(_on_pilot_strip_pressed)
 
 
 # ── 하단 아군 스트립 ─────────────────────────────────────────────────────────
@@ -279,11 +283,14 @@ func _on_pilot_strip_pressed(p: PilotData) -> void:
 	_bs.pilot_detail.open(p)
 
 
-## 상세 패널이 열려 있는 동안 아군 스트립을 치운다 — 딤 위에 남으면 지금 무엇을
-## 보고 있는지가 흐려지고, 딤 아래로 넣으면 방금 누른 얼굴이 어두워진다.
-func set_player_strip_visible(on: bool) -> void:
-	if _player_strip != null:
-		_player_strip.visible = on
+## 상세 패널이 열려 있는 동안 **그 파일럿이 속한 팀의 스트립**을 치운다 — 딤 위에
+## 남으면 지금 무엇을 보고 있는지가 흐려지고, 딤 아래로 넣으면 방금 누른 얼굴이
+## 어두워진다. 반대 팀 스트립은 그대로 둔다(딤에 가려질 뿐이고, 치우면 화면에서
+## 무엇이 사라졌는지가 더 헷갈린다).
+func set_strip_visible(team: int, on: bool) -> void:
+	var strip: PilotStrip = _player_strip if team == 0 else _enemy_strip
+	if strip != null:
+		strip.visible = on
 
 
 # AI hand peek — row of face-down card backs whose tops hide behind the score
@@ -582,6 +589,7 @@ func _update_pilot_strips(in_card_phase: bool) -> void:
 		_player_strip.set_interactive_enabled(in_card_phase)
 	if _enemy_strip != null:
 		_enemy_strip.set_pilots(team1)
+		_enemy_strip.set_interactive_enabled(in_card_phase)
 	if _lbl_total_score != null:
 		_lbl_total_score.text = "%s - %s" % [
 			BattleSim.fmt_score(_bs.team_score(0)),

@@ -5,7 +5,7 @@
 | `Card.gd` | Card | 카드 한 장의 시각 노드 |
 | `CardPhaseManager.gd` | CardPhaseManager | 작전 단계 전체 — 덱 / 핸드 / 카드 효과 |
 | `CardSelectOverlay.gd` | CardSelectOverlay | 버리기:N / 찾기:N / 보존:N 모달 픽 |
-| `CardTargetingOverlay.gd` | CardTargetingOverlay | 카드 선택 = 대상 지정 오버레이 |
+| `CardTargetingOverlay.gd` | CardTargetingOverlay | 카드 드래그 = 대상 지정 오버레이 |
 | `CardPileViewer.gd` | CardPileViewer | Deck / Discard 목록 열람 (읽기 전용) |
 | `CardDragArrow.gd` | CardDragArrow | 카드 ↔ 커서를 잇는 조준 화살표 (2차 베지어) |
 | `AiCardPlayer.gd` | AiCardPlayer | AI 카드 사용 애니메이션 |
@@ -415,11 +415,11 @@ re-evaluates the dim state.
   `spawn_card_node`), so the slot X positions are unaffected.
 
 ##### 핸드 포커스 — who does the row spread around?
-- `_push_focus_card()` — **the single home of that question**: the *selected*
-  card if there is one, else the card under the cursor. A selected card is the
+- `_push_focus_card()` — **the single home of that question**: the *dragged*
+  card if there is one, else the card under the cursor. A dragged card is the
   hand's focus in exactly the same way a hovered one is, so it opens the row the
-  same way and keeps it open while the cursor walks over to the description box.
-  Every other guard reads this one accessor instead of testing `_selected_card`
+  same way and keeps it open while the cursor walks out over the battlefield.
+  Every other guard reads this one accessor instead of testing `_drag_card`
   itself. `_hovered_hand_card()` supplies the cursor half — a `_hovered_card`
   fast path validated against `Card.is_hovered()` and the hand array, so a freed
   card or a hover that arrived while a modal owned the screen can't leave the
@@ -451,7 +451,7 @@ re-evaluates the dim state.
   `slot_position` / `slot_rotation`, then records the focus it laid out for in
   `_reflow_focus`.
 - **A hover reflow lays out the incoming focus card too** — `_apply_hand_reflow`
-  skips only `_selected_card` (whose lifted pose `_select_card` owns), never the
+  skips only `_drag_card` (whose held pose `_begin_drag` owns), never the
   hovered card. The hovered card's slot under the *new* focus is its resting slot
   (own push = 0), but it is almost never already sitting there: the *previous*
   focus had pushed it aside. Skipping it left it stranded at that stale offset,
@@ -492,7 +492,7 @@ re-evaluates the dim state.
   `card_is_playable` = 시전자 alive **and** affordable **and**
   `card_has_valid_targets`.
 
-### Card interaction (select → drag → drop)
+### Card interaction (hover → drag → drop)
 - Hand row: cards span ~y=1440..1660 at-rest (CARD_H=220), centred on the
   viewport. The row moved up 60px when the battlefield shrank to 90%
   (`HexGrid.DISPLAY_SCALE` 1.5 → 1.35 put the field's bottom edge at 1351
@@ -535,63 +535,58 @@ re-evaluates the dim state.
   moved to the **top of the scene-tree** so it draws above its neighbours; on
   unhover the canonical hand order is restored. Moving the cursor from one card
   to another re-spreads the row around the new one every time. While a card is
-  selected the hover has no effect on the layout — not through a special-case
-  guard, but because `_push_focus_card()` keeps answering the selected card, so
-  `_apply_hand_reflow` finds nothing changed and no-ops (the `_hovered_card`
-  pointer is still tracked throughout, ahead of every guard, so the row is
-  correct the instant the selection drops). `Card.tween_to` treats
+  being dragged the hover has no effect on the layout — not through a
+  special-case guard, but because `_push_focus_card()` keeps answering the
+  dragged card, so `_apply_hand_reflow` finds nothing changed and no-ops (the
+  `_hovered_card` pointer is still tracked throughout, ahead of every guard, so
+  the row is correct the instant the drag ends). `Card.tween_to` treats
   its `target_scale` argument as the *layout* scale (`_base_scale`) and leaves
   `scale` **entirely alone** unless that layout scale actually changes (no
   caller changes it today). `scale` therefore has exactly one owner —
   `_refresh_float_state`. Two tweens racing over it is what used to strand a
   hovered card at 1.0: a relayout firing mid-hover captured the hover factor
   from a transient `_is_hovered` and killed the hover tween on its way past.
-- **Select** (`on_card_clicked` → `_select_card`): pressing a card pops it out
-  by `Card.PRESS_LIFT` (40px) **along its own up-axis while keeping its fan
-  rotation** — `slot + Vector2(0, -PRESS_LIFT).rotated(slot_rotation(...))`, so
-  a card on the left half of the fan travels up-left and one on the right half
-  travels up-right: straight out of the fan, the way a card is drawn from a real
-  hand, never plain screen-up-and-right. Sideways travel is
+- **Grab** (`_on_hit_layer_gui_input` press → `_begin_drag` once the cursor
+  passes `DRAG_THRESHOLD_PX`). A press on its own records `_press_card` and does
+  nothing else — **a click that never moves is not an action.** When the drag
+  does fire, a 대상 지정 card pops out by `Card.PRESS_LIFT` (40px) **along its
+  own up-axis while keeping its fan rotation** —
+  `slot + Vector2(0, -PRESS_LIFT).rotated(slot_rotation(...))`, so a card on the
+  left half of the fan travels up-left and one on the right half travels
+  up-right: straight out of the fan, the way a card is drawn from a real hand,
+  never plain screen-up-and-right. Sideways travel is
   `PRESS_LIFT × sin(fan angle)` = ±4.6px on the outermost card of a 12-card hand;
   tighten `BS_HAND_FAN_RADIUS` if the splay should read more strongly.
-  **Selecting makes the card the row's focus, so `_select_card` reflows the whole
-  row around it before posing the lift** — the neighbours give way exactly as they
-  would on a hover, and because the focus card's own push is 0, its pushed slot
-  *is* its resting slot: lift and drop are exact opposites with no push-free
-  special case anywhere. `_select_card` and `_show_description_box` read that one
-  slot.
+  (A card with no target leaves the row entirely instead — see 드래그 앤 드롭.)
+  **Grabbing makes the card the row's focus, so `_begin_drag` reflows the whole
+  row around it before posing the lift** — the neighbours give way exactly as
+  they would on a hover, and because the focus card's own push is 0, its pushed
+  slot *is* its resting slot: lift and drop are exact opposites with no
+  push-free special case anywhere.
 
-  > This is the fix for a real bug. The lifted pose used to be computed
+  > This is the fix for a real bug (it predates the drag-only rewrite, and the
+  > same reasoning still applies). The lifted pose used to be computed
   > *push-free* while the row on screen was still spread around whichever card
-  > the cursor had opened it with — hover reflow is deferred to idle, so a click
+  > the cursor had opened it with — hover reflow is deferred to idle, so a grab
   > landing in the same frame as the `mouse_entered` posed the card off a layout
   > that had not happened yet. The card visibly slid sideways on the way up
-  > (toward the first-hovered card, ~48–60px in a 12-card hand), and since
-  > deselect reflowed off the *new* focus, the sideways travel never came back —
-  > the card only dropped vertically. Reflowing inside `_select_card` closes the
-  > gap: both orderings end at the same layout.
+  > (toward the first-hovered card, ~48–60px in a 12-card hand). Reflowing
+  > inside the grab closes the gap: both orderings end at the same layout.
 
-  Selecting also pins the card to the top of the hand (via the
-  `relayout_hand` → `_reorder_hand_nodes` pass), flips `Card.set_selected(true)`
-  (→ tallest shadow), and refreshes the description box.
-  `_pose_selected_card(card)` owns the lifted pose and is shared with the
-  springback of a missed drag-drop, so the two can never disagree.
-  **Re-pressing the selected card deselects it — on the *release*, not the
-  press** (`_finish_press`). Dropping the selection on the press would make a
-  selected card impossible to drag: the grab and the toggle are the same press.
-  Clicking a different card swaps
-  the selection — the previous one is dropped out of its lifted pose and re-seated
-  by that same row-wide reflow, now spread around the new focus.
-  `deselect_current_card` reflows the **whole** row, the dropped card included
-  (it does *not* skip it): one pass places every card off the same focus state,
-  so the returning card can't land on a slot that disagrees with the row it's
-  landing in. If the cursor is still on it, it stays enlarged and becomes the
-  focus, so its neighbours hold the spread they already had — the card just
-  comes straight back down.
+  The grab also pins the card to the top of the hand (via the
+  `relayout_hand` → `_reorder_hand_nodes` pass), flips `Card.set_dragging(true)`
+  (→ 1.2× + tallest shadow, held even once the cursor leaves the row), and
+  refreshes the description box. `_pose_selected_card(card)` owns the lifted
+  pose. On release, `_end_drag` reflows the **whole** row, the released card
+  included (it does *not* skip it): one pass places every card off the same
+  focus state, so the returning card can't land on a slot that disagrees with
+  the row it's landing in. If the cursor is still on it, it stays enlarged and
+  becomes the focus, so its neighbours hold the spread they already had — the
+  card just comes straight back down.
 - **Hand z-order** (`_reorder_hand_nodes`): canonical order is oldest-lowest /
-  newest-on-top, then the **selected card — or, failing that, the card under the
+  newest-on-top, then the **dragged card — or, failing that, the card under the
   cursor — is raised above all of them**. That last clause is what keeps a
-  hovered card above its right-hand neighbours right after a deselect, when the
+  hovered card above its right-hand neighbours right after a drop, when the
   canonical order alone would bury it.
 - **Hover reflow is deferred and coalesced** (`_queue_hand_reflow` →
   `_apply_hand_reflow`). This is not optional polish — `move_child` re-runs
@@ -606,8 +601,8 @@ re-evaluates the dim state.
      that runs at idle, outside the locked move.
   2. `_reflow_focus` — a pass whose focus card matches the layout already on
      screen returns without touching anything, so the enter/exit churn a
-     reorder provokes can't loop forever. This doubles as the "selection
-     outranks the cursor" rule: with a card selected the focus never moves, so
+     reorder provokes can't loop forever. This doubles as the "the dragged card
+     outranks the cursor" rule: with a card in hand the focus never moves, so
      hovering around reflows nothing.
   3. `_reordering` + an "already sorted?" check in `_reorder_hand_nodes` — a
      reorder that would change nothing moves no children at all.
@@ -622,15 +617,14 @@ re-evaluates the dim state.
   (top 369). Contents are unchanged: header row with the card name on the left
   and the effective cost on the right (white / green / red mirroring the card's
   top-left cost, no 시전자 tag), then the full description.
-  - **It opens on hover, not only on selection.** Which card it shows is the
-    same question as which card the row spreads around, so it reads
-    `_push_focus_card()` — selected card if there is one, else the card under
-    the cursor. It is refreshed from `_apply_hand_reflow` (before that
-    function's early-out, so a hover that doesn't move the row still updates
-    the box), from `_select_card` / `deselect_current_card`, and from
-    `_apply_hand_dim_state` (a dimmed hand has no focus to describe).
-    `_desc_card` tracks what is on screen so an unchanged focus rebuilds
-    nothing.
+  - **It opens on hover.** Which card it shows is the same question as which
+    card the row spreads around, so it reads `_push_focus_card()` — the card
+    being dragged if there is one, else the card under the cursor. It is
+    refreshed from `_apply_hand_reflow` (before that function's early-out, so a
+    hover that doesn't move the row still updates the box), from `_begin_drag`
+    / `_end_drag` / `deselect_current_card`, and from `_apply_hand_dim_state`
+    (a dimmed hand has no focus to describe). `_desc_card` tracks what is on
+    screen so an unchanged focus rebuilds nothing.
   - **Why it left the card's side.** It used to sit beside the lifted card
     (320×220, `DESC_BOX_GAP` 12, on whichever side had more room). Dragging
     made that untenable: a box glued to the card is exactly where the cursor is
@@ -638,94 +632,113 @@ re-evaluates the dim state.
     detached. The top band is out of both the hand's and the drag's way, and it
     is the same place for every card — no side-flipping, no viewport clamp.
   - The box is `MOUSE_FILTER_IGNORE`: it sits over the top of the battlefield
-    and must not catch a drag passing through. The **버리기** button inside it
-    still takes its own clicks (a child is hit-tested independently of an
-    IGNORE parent) and appears only for the *selected* card while a 버리기:N
-    pick overlay is active — a hover is not a commitment.
-  - **There is no 카드 내기 button and no 확인 button** — a card is committed by
-    dropping it, full stop.
-- **Selecting a card *is* the targeting step** (`_select_card` →
-  `targeting_overlay.start_card_selection`): lifting a card immediately dims
-  everything that is not a legal drop target and enlarges the ones that are.
-  Nothing is spent until the drop — see the 대상 지정 section.
+    and must not catch a drag passing through.
+  - **The box has no buttons at all.** It is a read-out, not a control surface:
+    playing a card is a drop, and so is picking one for 버리기:N. The 카드 내기
+    button went with the 확인 row, and the 버리기 button went with the selection
+    state that used to make it reachable.
+- **Dragging a card *is* the targeting step** (`_begin_drag` →
+  `targeting_overlay.start_card_selection`): pulling a card out of the row
+  immediately dims everything that is not a legal drop target and grows the
+  ones that are (over `BattleRenderer.EMPHASIS_TWEEN_SEC`, **0.05s** — the
+  emphasis has to be finished *before* the cursor reaches the target, not still
+  growing under it). Nothing is spent until the drop — see the 대상 지정 section.
 
-#### 드래그 앤 드롭 (카드를 내는 **유일한** 조작)
-**드래그는 선택의 연장이지 별개의 상태가 아니다.** 누르는 순간 평소대로 선택이
-걸리고(행이 벌어지고, 딤·강조가 켜진다), 누른 채 `DRAG_THRESHOLD_PX`(10px) 넘게
-움직이면 드래그로 승격된다.
+#### 드래그 앤 드롭 (카드를 집는 **유일한** 조작)
+**카드 선택 상태는 없다.** 카드를 클릭해도 아무 일도 일어나지 않는다 — 누른 채
+`DRAG_THRESHOLD_PX`(10px) 넘게 움직여야 비로소 카드가 손을 떠나고, 그 순간이
+대상 지정 단계의 시작이다. 손을 떼면 드롭이 성립했든 빗나갔든 그 상태는 통째로
+사라진다.
 
-**빗나간 드롭은 선택을 해제한다.** 예전에는 카드가 선택된 채 리프트 자세로
-되돌아왔고, 화면 우하단의 확인 / 취소로도 낼 수 있었다. 그 버튼 행이 사라지면서
-(아래 *대상 지정* 절) 선택 상태에서 할 수 있는 일이 "다시 끌어다 놓는다" 하나만
-남았으므로, **그만두는 조작(손을 떼는 것)이 곧 취소**가 되는 것이 자연스럽다.
-카드는 애초에 손패를 뜬 적이 없으니 되돌릴 것도 없고, `deselect_current_card` 의
-행 전체 reflow 가 카드를 제자리에 앉힌다. (`_end_drag` 은 그 전에
-`_update_hover_at(p)` 로 커서 위치를 먼저 갱신한다 — reflow 가 올바른 포커스로
-풀리도록.)
+> **예전에는 "선택"이라는 중간 상태가 있었다.** 클릭하면 카드가 리프트되고 대상
+> 지정이 켜진 채 남아, 다시 끌거나 다른 곳을 눌러 해제해야 했다. 조작이 둘로
+> 갈려 있었고(클릭→끌기 / 클릭→클릭 해제), 카드를 낼 수 있는 경로는 어차피 드롭
+> 하나뿐이라 중간 상태가 하는 일이 없었다. `_selected_card` · `_select_card` ·
+> `Card.is_selected` · `Card.card_clicked` · `CardPhaseManager._unhandled_input`
+> 의 바깥 클릭 해제가 전부 그때 사라졌다. `deselect_current_card()` 라는 **이름만**
+> 남아 있는데, 지금 하는 일은 "진행 중인 드래그와 대상 지정을 강제로 걷는다"이고
+> 호출 측(단계 종료 / 재시작 / 교전 아레나 오픈 / 버리기 숨김)이 원하는 것도
+> 정확히 그것이다.
 
-**카드는 커서를 따라가지 않는다 — 조준 화살표가 대신 간다.** 카드는 손패의
-선택 자세(리프트) 그대로 남고, **카드 위쪽 끝에서 커서까지 2차 베지어 곡선**이
-이어진다(`CardDragArrow.gd`). 예전에는 카드 자체가 커서에 붙어 날아다녔는데,
-그러면 겨누려는 대상 — 커진 파일럿 초상 / 초록 유효 셀 — 을 카드가 자기 몸으로
-덮어 버려 정작 놓는 순간에 무엇 위에 있는지가 보이지 않았다. 별도의 "빈 슬롯"
-로직은 여전히 없다 — 카드는 애초에 자리를 뜨지 않는다.
+**끌린 카드의 자세는 대상 유무가 가른다.**
+
+| `targeting_kind` | 끌리는 동안의 카드 | 조준 화살표 | 드롭 지점 |
+|---|---|---|---|
+| `pilot` | **손패에 남는다** (`Card.PRESS_LIFT` 리프트, 부채꼴 기울기 유지) | ✅ | 1.5배로 커진 유효 파일럿 마커 위 |
+| `location` | 〃 | ✅ | 초록 유효 셀 위 |
+| `preview` / `none` | **커서를 따라다닌다** (`Card.follow_cursor`, 기울기는 0 으로 펴진다) | ❌ | 화면 중앙 **드롭 존** |
+| 버리기:N 픽 중 | 〃 | ❌ | 중앙 **버리기 구역** |
+
+- **대상 지정 카드가 자리에 남는 이유**: 카드가 커서에 붙어 날아다니면 겨누려는
+  대상 — 커진 파일럿 초상 / 초록 유효 셀 — 을 카드가 자기 몸으로 덮어 버려,
+  정작 놓는 순간에 무엇 위에 있는지가 보이지 않는다. 대신 **카드 위쪽 끝에서
+  커서까지 2차 베지어 곡선**이 이어진다(`CardDragArrow.gd`, 아래 절).
+- **대상이 없는 카드가 커서를 따라가는 이유**: 겨눌 대상이 없으니 가릴 것도
+  없다. 손에 든 카드를 그대로 구역에 내려놓는 조작이 되고, 화살표가 필요 없어진다.
+  `Card.begin_free_drag()` 이 부채꼴 기울기를 `FREE_DRAG_STRAIGHTEN_SEC`(0.10초)
+  동안 0 으로 펴서 "손에서 뽑아 든" 자세를 만든다.
+- **원래 자리는 빈 채로 유지된다.** `relayout_hand` 이 `is_dragging` 카드를
+  건너뛰므로 남은 카드는 자리를 지키고, 카드가 빠진 만큼 행이 좁혀 들지 않는다.
+  빗나간 드롭은 그 자리로 그대로 돌아온다(실측 오차 0.00px).
+
+**빗나간 드롭은 카드를 제자리로 돌려보낼 뿐이다.** 비용도 카드도 확정 전에는
+건드리지 않으므로 되돌릴 상태가 애초에 없다. (`_end_drag` 은 reflow 전에
+`_update_hover_at(p)` 로 커서 위치를 먼저 갱신한다 — 올바른 포커스로 풀리도록.)
 
 - **입력은 전부 핸드 히트 레이어 하나가 처리한다.** 버튼을 누른 컨트롤이 뗄
   때까지 Godot 의 마우스 포커스를 쥐고 있으므로, 커서가 레이어 밖(전장 위)으로
   나가도 motion 과 release 가 계속 그 레이어로 들어온다. 덕분에 전장 쪽에는
-  드래그를 받기 위한 배선이 하나도 없다.
-- **놓는 곳이 곧 무엇을 하는가다** (`_try_drop_play`):
-
-  | `targeting_kind` | 드롭 지점 | 조준 화살표 | 빗나가면 |
-  |---|---|---|---|
-  | `pilot` | 1.5배로 커진 유효 파일럿 마커 위 | ✅ | **선택 해제** |
-  | `location` | 초록 유효 셀 위 | ✅ | 〃 |
-  | `preview` / `none` | 화면 중앙 **드롭 존** | ❌ | 〃 |
-
-- **조준 화살표**(`CardDragArrow.gd`, `_update_drag_arrow`) — **대상 지정
-  카드(PILOT / LOCATION)에만** 뜬다. 대상이 없는 카드는 겨눌 곳이 아니라 구역에
-  놓는 것이라, 이미 밝아지는 드롭 존이 그 신호다. 자세한 기하는 아래 별도 절.
+  드래그를 받기 위한 배선이 하나도 없다. 누른 카드는 `_grabbable_card_at(p)` 로
+  기록되는데, 이 함수는 `_begin_drag` 이 걸 게이트(작전 단계인가 / 입력이
+  막혀 있지 않은가 / 손패에 실재하는가)를 그대로 미리 본다 — 드래그가 될 수 없는
+  누름은 아예 기록되지 않는다.
 - **드롭 존**(`drop_zone_rect`) — 화면 세로 중앙 기준 화면 높이의
   `DROP_ZONE_H_RATIO`(0.40), 가로는 전체 폭. 1080×1920 에서 `(0, 576) 1080×768`.
   대상 지정 카드에는 **띄우지 않는다**: 그 카드의 드롭 지점은 대상 그 자체라,
   구역까지 깔면 "여기 놓아도 되나"로 읽힌다. 안내 문구는 구역 **위쪽**에
   붙는다(`DROP_ZONE_LABEL_TOP`) — 구역 한가운데는 전장 한복판이라 글자가 타일
-  위에 겹쳐 읽힌다(카드가 커서를 따라다니던 시절에는 카드가 정확히 그 위에 앉아
-  글자를 반으로 가르기도 했다). 커서가 구역 안에 들어오면 채움과 테두리가
+  위에 겹쳐 읽힌다. 커서가 구역 안에 들어오면 채움과 테두리가
   밝아진다(`_set_drop_zone_hot`).
+- **버리기:N 픽 중에는 같은 구역이 버리기 구역이 된다.** `drop_zone_rect()` 가
+  `CardSelectOverlay.TO_DISCARD_CENTER_Y`(700) 를 중심으로 `DISCARD_ZONE_H`
+  (440px) 높이의 띠를 돌려주므로, 이미 골라 둔 카드가 늘어선 줄 위에 얹는
+  조작으로 읽힌다. 문구도 "여기에 놓아 버리기"로 바뀌고, 대상 지정 오버레이는
+  아예 켜지지 않는다(`_begin_drag`). 확정은 예전대로 오버레이의 확인 버튼이다 —
+  드롭은 "버릴 카드로 넘긴다"까지만 한다.
+  > **구역 노드는 이때 캔버스 자식 인덱스 1 로 올라간다.** 평소에는 0(맨 뒤)이
+  > 지만, 버리기 모드에서는 `CardSelectOverlay._battle_dim` 이 0 을 차지하고
+  > 있어서 그대로 두면 구역이 딤 **아래**로 들어가 통째로 눌려 보이지 않는다.
 - **확정 경로는 하나다.** 드롭은 대상만 손에 들고
   `CardTargetingOverlay.confirm_with(target)` 로 들어가고, 그 함수가
   `_play_allowed` 게이트를 지나 `_on_selection_confirm` 을 부른다 — 비용 차감 /
   카드 소비 / effect chain 은 전부 그 뒤에 있다. 드래그 중에는 커서 아래의 대상이
   `preview_drag_target` 으로 미리 찍혀 시안 링이 따라다닌다. **그 `pending_pick`
-  은 이제 순수한 미리보기다** — 확인 버튼이 사라졌으므로 놓지 않고 손을 떼면
-  선택째 사라진다.
-- **`Card` 쪽 계약**: `set_dragging(true)` 는 이제 **자세만** 고정한다 — 커서가
+  은 순수한 미리보기다** — 놓지 않고 손을 떼면 그대로 사라진다.
+  `_end_drag` 은 `_try_drop_play` 가 끝날 때까지 `_drag_card` 를 살려 둔다:
+  확정 콜백이 동기적으로 되돌아와 그 참조로 카드를 찾기 때문이다.
+- **`Card` 쪽 계약**: `set_dragging(true)` 는 **자세만** 고정한다 — 커서가
   손패 밖으로 나가 호버가 풀려도 1.2배 확대와 가장 긴 그림자가 유지된다(히트
   레이어의 호버 장부가 더 이상 이 카드를 대변하지 않으므로 필요하다). 들어갈 때
-  진행 중이던 레이아웃 트윈을 끊으므로 `_begin_drag` 이 곧바로
-  `_pose_selected_card` 로 리프트 자세를 다시 세운다 — 안 그러면 카드가 올라가던
-  도중에 얼어붙는다. `relayout_hand` 는 `is_dragging` 인 카드를 건너뛴다.
-  (예전의 `snap_to()` — 트윈 없는 즉시 이동 — 는 카드가 커서를 따라다닐 때만
-  필요했으므로 **삭제됐다**.)
-- **금지 구간**: 버리기 픽 오버레이가 손패를 잡고 있는 동안에는 드래그가 아예
-  시작되지 않는다(`_begin_drag`). 그 상태에서 카드가 하는 일은 "골라서 버린다"
-  하나뿐이고 대상 지정 오버레이도 꺼져 있어 어디에 놓아도 나갈 수 없다.
-- 선택을 걷어 가는 모든 경로(`deselect_current_card` / `end_card_phase` /
-  `build_starter_decks`)가 `_cancel_drag()` 를 지나므로, 진행 중인 드래그가
-  단계 전환이나 재시작을 넘어 살아남지 못한다.
-- **실측**(헤드리스, 작전 단계 강제 진입 후 합성 입력): 무대상 카드를 드롭
-  존에 놓으면 손패 −1 · 점수 −cost · `cards_played_this_phase` +1, PILOT 카드를
-  적 마커에 놓으면 그 파일럿에게 효과 적용, LOCATION 카드를 유효 셀에 놓으면
-  시전자가 그 셀로 이동. 움직이지 않은 두 번째 클릭은 그대로 선택 해제.
-  **빗나간 드롭 재측정**(버튼 제거 후): `_selected_card = null` · 손패 크기 불변
-  (6장 유지) · 오버레이 `mode = NONE`. 예전 측정치(선택 유지 + 리프트 자세로
-  오차 0.00px 복귀)는 그 동작이 사라졌으므로 더 이상 유효하지 않다.
-  조준 화살표 도입 후 재측정: 드래그가 도는 동안 카드의 `position` 이동
-  **0.00px** · `rotation` 변화 0.0000(부채꼴 기울기 유지), 화살표 노드는
-  `canvas` 자식 인덱스 0 (카드 19번보다 뒤), 커서가 유효 마커 위에 오면
-  `hot=true` + `pending_pick` 설정, 드롭 시 손패 −1 · 화살표 즉시 소멸.
-  무대상 카드(`전진` / `재빠른 사고`)에서는 화살표가 뜨지 않고 드롭 존만 뜬다.
+  진행 중이던 레이아웃 트윈을 끊으므로 `_begin_drag` 이 곧바로 자세를 다시
+  세운다(`_pose_selected_card` 또는 `begin_free_drag`) — 안 그러면 카드가
+  올라가던 도중에 얼어붙는다. 끝낼 때 `set_hovered(false)` 도 함께 거는데, 버리기
+  줄로 넘어간 카드는 `_update_hover_at` 의 손패 순회에 더 이상 잡히지 않아
+  1.2배로 굳은 채 남기 때문이다.
+- 드래그를 걷어 가는 모든 경로(`deselect_current_card` / `end_card_phase` /
+  `build_starter_decks` / `_despawn_player_card_node`)가 `_cancel_drag()` 를
+  지나므로, 진행 중인 드래그가 단계 전환이나 재시작을 넘어 살아남지 못한다.
+- **실측**(헤드리스, 작전 단계 강제 진입 후 합성 입력):
+  - **클릭만** — `is_dragging_card() = false`, 오버레이 `mode = NONE`, 손패 크기
+    불변. 선택 상태가 실제로 없다.
+  - **대상 지정 카드 드래그** — 오버레이 `mode = PILOT`(또는 LOCATION), 화살표
+    노드 visible, 드롭 존 **안 뜸**, 카드는 슬롯에서 24~27px(리프트)만 벗어난다.
+  - **대상 없는 카드 드래그** — 오버레이 `mode = INSTANT`, 화살표 **안 뜸**,
+    드롭 존 visible, 카드가 슬롯에서 774~856px 이동(커서 추적).
+  - **빗나간 드롭** — 손패 크기 · 작전 점수 모두 불변, 카드가 자기 슬롯으로
+    오차 **0.00px** / 회전 오차 **0.0000** 복귀.
+  - **드롭 존에 놓기** — 손패 −1 · 점수 −cost · 오버레이 `mode = NONE`.
+  - **버리기 구역에 놓기** — 손패 −1 · `to_discard` +1, 빗나가면 둘 다 불변,
+    2장을 채우면 오버레이 확인으로 정상 정산.
 
 ##### 조준 화살표의 기하 (`CardDragArrow.gd`)
 2차 베지어 하나가 전부다.
@@ -756,16 +769,13 @@ re-evaluates the dim state.
   계열), 커서가 유효 대상/셀 위면 `COLOR_HOT`(시안, 대상 지정 링과 같은 계열).
   판정은 `_update_drop_feedback` 이 이미 굴리고 있던 것을 bool 로 돌려받는 것뿐이라
   화살표 색과 시안 링이 어긋날 수 없다.
-- **Outside-click dismiss** (`_unhandled_input`): any mouse press / screen
-  touch that lands outside the card, the description panel, and the buttons
-  calls `deselect_current_card()`. Card.`_gui_input` calls `accept_event()` so
-  the same press that selects a card never doubles back to deselect it;
-  `Panel` and `Button` consume their own events via `MOUSE_FILTER_STOP`.
-  **PILOT / LOCATION selections never reach this handler** — the overlay marks
-  every battlefield press handled (see 대상 지정 below).
-- `deselect_current_card()` is also called from `end_card_phase()` and
-  `build_starter_decks()` so the lifted-card / description-box state never
-  leaks across phase transitions or game restarts.
+- **바깥 클릭 해제는 삭제됐다** (`CardPhaseManager._unhandled_input` 통째로).
+  해제할 선택 상태가 없으니 들을 이유도 없다 — 카드는 손을 떼는 순간 이미
+  제자리로 돌아가 있다.
+- `deselect_current_card()` 는 이름만 남은 강제 정리 함수다: 진행 중인 드래그와
+  대상 지정을 걷고 행을 다시 눕힌다. `end_card_phase()` / `build_starter_decks()`
+  / `_despawn_player_card_node()` / `EngagePhaseManager` / `CardSelectOverlay`
+  의 숨김이 부르므로, 끌던 카드가 단계 전환이나 재시작을 넘어 살아남지 못한다.
 - `apply_card_effect(cd, is_player)` → String log message
 
 ### Per-pilot decks (시전자 rule + 슬롯 구성)
@@ -882,10 +892,11 @@ focus card covers.
   card along, which re-spreads again. That cascade was real and measured — one
   step from card 0 toward card 1 ran the focus 0 → 2 → 4 → 6 → 8 → 10 → 11.
 - `_on_hit_layer_gui_input` — the hand's whole pointer story lives here: motion
-  drives `_update_hover_at` (or the drag, while a card is held), a press routes
-  to `on_card_clicked` / `deselect_current_card()`, and the release goes to
-  `_finish_press` (drop, or the deselect toggle). `accept_event()` on both press
-  and release keeps them out of the outside-click handler and out of
+  drives `_update_hover_at` (or the drag, once the press has passed
+  `DRAG_THRESHOLD_PX`), a press just records `_grabbable_card_at(p)` in
+  `_press_card`, and the release goes to `_finish_press` — which resolves the
+  drop if a drag ever started and **does nothing at all otherwise**.
+  `accept_event()` on both press and release keeps them out of
   `CardTargetingOverlay`'s battlefield press handler.
   **The layer keeps Godot's mouse focus while the button is held**, so motion
   and release keep arriving after the cursor has left its rect — that is the
@@ -895,7 +906,7 @@ focus card covers.
   `_on_mouse_exited` still forward to it for the AI peek row and the 찾기 grid,
   which are flat and don't overlap.
 - The layer is sized to the band the cards already occupy (row span + hover
-  enlargement, plus the lift only while a card is selected), so it can't swallow
+  enlargement, plus the lift only while a card is being dragged), so it can't swallow
   anything the cards weren't covering. It clears the player 전략 포인트 도넛
   (bottom 1350 vs layer top 1378). The description box no longer competes with
   it at all — it moved to the top of the screen and is `MOUSE_FILTER_IGNORE`.
@@ -990,13 +1001,13 @@ The DB column is a `;`-separated chain of clauses. Each clause is
 |---|---|---|
 | `draw:N` | yes | Pull N from deck (reshuffles discard if empty); spawns visual node for the player |
 | `search:N` | yes | **Player**: opens CardSelectOverlay search grid — pick exactly N from the deck via 확인. **AI**: same as `draw:N` (random top-of-deck). |
-| `discard:N` | yes | **Player**: opens CardSelectOverlay discard pick — pick exactly N via the desc-box "버리기" button, then press 확인 to commit. The played 버리기 card is non-cancellable (no 버리기 취소 button). **AI**: random N from hand. |
+| `discard:N` | yes | **Player**: opens CardSelectOverlay discard pick — **drag** exactly N cards onto the centred 버리기 구역, then press 확인 to commit. The played 버리기 card is non-cancellable (no 버리기 취소 button). **AI**: random N from hand. |
 | `strategy:N` | yes | +N 작전 점수 to playing side |
 | `attack:N` | yes | **Player**: opens CardTargetingOverlay PILOT mode — battle tiles dim, valid enemy pilots ringed, click an enemy to commit. **AI**: random valid pilot (range-aware). **Rolls `SimulationCore.roll_hit` (`hit/(hit+evasion)`, the same roll the battlefield uses) — a miss deals nothing.** Damage on a hit = `caster.atk × N`; 보호막 absorbs first. `pierce` (필중) skips the roll; `repeat` (연속 공격) re-rolls the same attack after every landed hit, stopping on a miss, on the target's death, or at `MAX_ATTACK_REPEATS` (5). `min_range:N` filters out pilots closer than N (parsed, but no card in the pool carries it since 저격 was removed). **Every swing floats its verdict over the target** via `BattleRenderer.spawn_pilot_popup`: `MISS` on a miss, `-N` on a hit, `흡수` when 보호막 ate the whole hit (the handler returns HP damage, so that case would otherwise read `-0`). **한 타격마다 돌진 연출이 붙고 이 절은 그것을 `await` 한다** — 아래 *공격 돌진 연출* 절 참조. |
 | `shield_pct:N` | yes | **Player**: PILOT mode → click an ally; gains shield = N% of max_hp. **AI**: random ally. Cleared on 본진 복귀. |
 | `recall_ally` | yes | **Player**: PILOT mode → click an ally; teleports to HQ at full HP, shield reset, waypoint reset. **AI**: random ally. |
 | `exhaust_choice:N` | yes (random) | Random N from hand → removed (소멸). Parsed and honoured, but no card in the pool carries it since 차선책 was removed. |
-| `engage:N` | yes | **Player**: opens CardTargetingOverlay PREVIEW mode — caster cell + 6 neighbours highlighted, side panel lists participants, dropping the card in the centre drop zone launches the engage arena. **AI**: same flow via AiCardPlayer. `exclude_lane` flag propagates. **N 은 라운드 수 그대로다** — `engage:3` = 3라운드이고, 한 라운드 안에서 참가자 전원이 한 명씩 차례대로 한 번 행동한다(예전의 "N × 3초" 환산은 삭제). |
+| `engage:N` | yes | **Player**: dragging it opens CardTargetingOverlay PREVIEW mode (caster cell + 6 neighbours highlighted); dropping it in the centre drop zone **submits** the card, which puts up the VS 개시 확인 화면 (`engage/EngageIntro.gd`) — 확인 launches the arena, 취소 rolls the whole play back via `_on_overlay_cancel`. **AI**: same flow via AiCardPlayer. `exclude_lane` flag propagates. **N 은 라운드 수 그대로다** — `engage:3` = 3라운드이고, 한 라운드 안에서 참가자 전원이 한 명씩 차례대로 한 번 행동한다(예전의 "N × 3초" 환산은 삭제). |
 | `duel` | yes | **Player**: PILOT mode → click an enemy in range; opens the turn-based arena restricted to caster + target with the round counter running up instead of a budget, ends on first KO — 이탈이 없으므로 KO 아니면 `DUEL_MAX_ROUNDS`(10라운드) 상한까지 간다. **AI**: random enemy in range. Routes through `EngagePhaseManager.start_duel`. **결투 (id 3) is `pool = 0`** — fully implemented but no longer dealt at random; it is reserved as a future mech-unique card. |
 | `capture_jungle:N` | yes | **Player**: LOCATION mode over `compute_capture_jungle_targets` — **enemy-owned jungle cells adjacent to a cell the caster's team already owns**, anywhere on the map (`cast_range` 99 = 사거리 무시). Flips the picked cell to the caster's team for N turns, so each play pushes the jungle border one cell further. **AI**: random valid cell. SimulationCore.process_temp_zone_expiries restores the previous owner once `turn_count >= expires_turn`. |
 | `move` | yes | **Player**: LOCATION mode → click any cell in `cast_range` (jungle cells included; the lane-pilot displacement recall pulls them back at phase end if needed). **AI**: random valid cell. Caster's `grid_pos` snaps to the picked cell and `BattleSim.anim_pilot_move` plays the tween. Decorators on the same chain (`return_left:N`, `cost_reduce_engage:N`) run separately. |
@@ -1024,9 +1035,10 @@ The DB column is a `;`-separated chain of clauses. Each clause is
 for "what does this card cost right now?". It applies `phase_cost_inc_*`
 (additive) and the one-shot `engage_discount_*` (only when the card has
 an `engage` clause), clamped at 0. The affordability highlight in
-`highlight_affordable_cards`, the description-box "카드 내기" enable check,
-the cost subtraction in `_play_card_direct`, and `AiCardPlayer.run_ai_plays`
-all consult this helper so the four cost-modifier effects stay in sync.
+`highlight_affordable_cards`, the drop gate (`card_is_playable` →
+`set_play_allowed`), the cost subtraction in `_play_card_direct`, and
+`AiCardPlayer.run_ai_plays` all consult this helper so the four cost-modifier
+effects stay in sync.
 
 ### 소멸 / 손패 복귀 routing
 `_dispose_used_card(cd, is_player)` runs after every play and routes the card
@@ -1132,20 +1144,19 @@ keyword check has always fired first, so they are 소멸 on their first play.
   at layer 11 (above the search/discard overlay's layer 10). **그 레이어에 남은
   것은 PREVIEW 모드의 좌/우 팀 패널뿐이다** — 확인 / 취소 버튼은 삭제됐다.
 - **There is no modal step any more.** `Mode` is now just "what kind of card is
-  lifted in hand": `NONE / INSTANT / PILOT / LOCATION / PREVIEW`. One entry
+  being dragged": `NONE / INSTANT / PILOT / LOCATION / PREVIEW`. One entry
   point, `start_card_selection(cd, on_confirm)`, is called from
-  `CardPhaseManager._select_card` the moment a card is lifted; `clear_selection()`
-  runs from `deselect_current_card`. The hand and 턴 넘기기 stay live throughout
-  — the player can switch to a different card mid-pick, and
-  `_is_player_input_blocked()` / `can_end_card_phase()` no longer consult this
-  overlay at all.
+  `CardPhaseManager._begin_drag` the moment a card leaves the row;
+  `clear_selection()` runs from `_end_drag` / `deselect_current_card`. The
+  targeting state therefore lives exactly as long as the drag does — 턴 넘기기
+  stays live, and `_is_player_input_blocked()` / `can_end_card_phase()` never
+  consult this overlay.
 - **확인 / 취소 버튼은 삭제됐다 — 카드를 내는 조작은 드래그 드롭 하나뿐이다.**
   예전에는 (1) 대상을 탭해 `pending_pick` 을 찍고 (2) 우하단 확인을 눌러
   확정하는 두 박자 경로가 드래그와 **나란히** 존재했는데, 같은 일을 하는 두 번째
   조작일 뿐이었고 화면 아래쪽에 상시 버튼 행을 차지했다. 지금은:
   - 카드를 대상 위(무대상 카드라면 드롭 존)에 **놓는 것**만이 확정이다.
-  - **빗나간 드롭 = 취소** (`_end_drag` → `deselect_current_card`). 취소 버튼이
-    하던 일이 그대로 여기로 옮겨 왔다.
+  - **빗나간 드롭 = 취소** — 카드가 자기 슬롯으로 돌아가고 오버레이가 꺼진다.
   - 삭제된 것: `_btn_confirm` / `_btn_cancel` / `_build_buttons` / `_make_btn` /
     `_btn_top_y` / `_on_confirm_pressed` / `_on_cancel_pressed` /
     `_refresh_confirm_disabled` / `BTN_W` / `BTN_SIDE_MARGIN` /
@@ -1169,26 +1180,26 @@ keyword check has always fired first, so they are 소멸 on their first play.
   verdict, so a 시전자 killed by an engage earlier in the same phase makes the
   lifted card undroppable. `_on_selection_confirm` re-checks `card_is_playable`
   rather than trusting that gate.
-- **Battlefield clicks are swallowed** in PILOT / LOCATION mode, and **they now
-  do nothing else**. `_unhandled_input` calls
-  `get_viewport().set_input_as_handled()` unconditionally, because
-  `CardPhaseManager._unhandled_input` would otherwise read a battlefield tap as
-  "clicked outside" and drop the selection. The overlay is added to `BattleSim`
-  after `CardPhaseManager` and unhandled input walks the tree back-to-front, so
-  it gets first refusal. Exits are a missed drop, a re-click on the card, or
-  selecting a different card.
+- **Battlefield clicks are swallowed** in PILOT / LOCATION mode, and they do
+  nothing else. `_unhandled_input` calls
+  `get_viewport().set_input_as_handled()` unconditionally. This is now belt and
+  braces rather than load-bearing: the targeting state only exists during a
+  drag, and the hand hit layer holds the mouse for the whole gesture, so a stray
+  battlefield press can't arrive mid-aim in the first place. It stays because
+  the cost is one line and the failure it guards against (a press leaking into
+  whatever else listens on unhandled input) is silent.
 - **Pending pick** is now **드래그 미리보기 전용**: while a drag is in flight,
   hovering a valid pilot or cell stores it via `preview_drag_target`, and
   `BattleRenderer._draw_pending_pick_highlight()` paints a cyan ring on that
   marker (or a thicker cyan outline on that cell) so the player can see what
-  letting go would commit. The ring's radius follows the 1.5× target emphasis so
-  it hugs the enlarged marker. Releasing without a valid pick drops it along
-  with the selection.
+  letting go would commit. The ring's radius follows the (animated) 1.5× target
+  emphasis so it hugs the enlarged marker. Releasing without a valid pick drops
+  it along with the drag.
 - **드롭 진입점** (드래그가 쓰는 세 개의 공개 함수): `hit_test_pilot_at(pos)` /
   `hit_test_cell_at(pos)` 는 모드에 맞는 히트 테스트를 돌려 **유효 대상일 때만**
   값을 내고, `confirm_with(target)` 이 확정 경로를 탄다
   (`_play_allowed` 게이트 → `_teardown` → 확인 콜백). 실패하면 false 를 돌려
-  호출 측이 선택을 해제한다.
+  호출 측이 카드를 손패로 되돌린다.
 - **시전자(`card_caster`)는 어느 모드에서도 딤드되지 않는다.** 모든 모드에서
   채워지며 하는 일은 그 하나뿐이다(`should_dim_pilot` 의 첫 줄) — 딤은 "여기엔
   놓을 수 없다"는 말인데 카드를 쏘는 당사자에게 그 말은 성립하지 않고, LOCATION
@@ -1281,9 +1292,9 @@ keyword check has always fired first, so they are 소멸 on their first play.
   backstop, not a balance knob; a normal hand never reaches it.
 - `_ai_play_in_progress` blocks re-entry of `_run_ai_turn`, holds the BATTLE
   auto-tick (via `is_ai_turn_active()`) and disables the donut's 턴 넘기기
-  face (via `can_end_card_phase`). It also gates `on_card_clicked` /
-  `on_card_hovered` so the player can't pop the description box mid-AI
-  animation.
+  face (via `can_end_card_phase`). It also gates `_grabbable_card_at` /
+  `_begin_drag` / `on_card_hovered` so the player can't grab a card or pop the
+  description box mid-AI animation.
 
 ### 버리기 / 찾기 / 보존 modal pick (player only)
 - `CardSelectOverlay.gd` (sibling of `CardPhaseManager`, instantiated from
@@ -1308,7 +1319,7 @@ keyword check has always fired first, so they are 소멸 on their first play.
   4. When the chain drains, `_finalize_pending_play()` disposes the played
      card (사용 횟수 / 소멸 routing) and writes the combined log line.
 - **Cancel = full refund** (`_on_overlay_cancel` → `_restore_from_snapshot`):
-  freezes any active selection, frees every player card node, restores
+  drops any in-flight drag, frees every player card node, restores
   hand/deck/discard/cost from the snapshot verbatim, and respawns nodes for
   every CardData now back in `player_hand`. This rolls back even prior
   clauses in a chain (e.g. cancelling 교환 returns the 2 drawn cards to the
@@ -1319,9 +1330,16 @@ keyword check has always fired first, so they are 소멸 on their first play.
   - **Battle dim** = `ColorRect` covering y=0..BS_HAND_CENTER.y, parented
     into `_bs.canvas` and moved to child position 0 so HUD + hand still
     draw on top of it.
-  - Hand stays clickable; clicking a card opens the standard description
-    box, but `_show_description_box` swaps the action button to "버리기"
-    while `card_select_overlay.can_pick_for_discard()` is true.
+  - **픽은 드래그다.** 손패는 계속 살아 있고, 카드를 **중앙 버리기 구역**으로
+    끌어다 놓으면 그 카드가 버릴 카드로 넘어간다
+    (`CardPhaseManager._try_drop_play` → `add_card_to_discard`). 구역은
+    `drop_zone_rect()` 가 `TO_DISCARD_CENTER_Y`(700)를 중심으로
+    `DISCARD_ZONE_H`(440px) 띠로 돌려주고, 문구는 "여기에 놓아 버리기"다.
+    대상 지정 오버레이는 이 모드에서 아예 켜지지 않는다.
+    > 예전에는 카드를 **선택**한 뒤 설명 상자에 뜨는 "버리기" 버튼을 누르는
+    > 두 박자였다. 선택 상태 자체가 사라지면서(위 *드래그 앤 드롭* 절) 그
+    > 버튼이 갈 곳이 없어졌고, 손패에서 카드를 빼내는 조작은 전부 드래그
+    > 하나로 통일됐다.
   - Picked cards are reparented to a centered fan above the dim
     (`TO_DISCARD_CENTER_Y = 700`, fan width = `BS_HAND_WIDTH`, same spacing
     rules as the hand row). Once parked there their `mouse_filter` is set
@@ -1331,8 +1349,8 @@ keyword check has always fired first, so they are 소멸 on their first play.
     `target_count` cards are in the to-discard fan. `target_count` is
     clamped to `min(N, hand.size())`. Pressing 확인 is the sole exit.
   - Bottom-left **숨김** (toggles `hidden_state`; relabels to **표시** while
-    hidden, drops any active card selection on press) is still available
-    so the player can peek at the battle before committing.
+    hidden, drops any in-flight drag on press) is still available so the player
+    can peek at the battle before committing.
 - **Search mode UI** (`Mode.SEARCH`):
   - **Full dim** covers the whole viewport on the high-priority overlay
     layer, dimming both battle and hand.
@@ -1403,6 +1421,8 @@ either of them covers both).
   straight through the dim. `open()` / `close()` call
   `highlight_affordable_cards()` (which tail-calls `_apply_hand_dim_state()`)
   and `hud.update_hud()` so all three re-evaluate on both edges.
-- A card selected in hand **stays selected** through a browse — peeking at what
-  is left in the deck before committing is the point, and the targeting
-  overlay's 확인/취소 row simply sits under the dim until the list closes.
+- 열람은 **드래그 중에는 열 수 없다**(카운터 버튼이 손패 행 옆에 있고, 드래그가
+  포인터를 쥐고 있다). 반대로 열려 있는 동안에는 손패 입력이 통째로 막히므로
+  (`_is_player_input_blocked`) 드래그가 시작되지도 않는다. 예전에는 "선택된
+  카드는 열람 중에도 선택된 채 남는다"는 규칙이 있었는데, 선택 상태 자체가
+  사라지면서 함께 없어졌다.

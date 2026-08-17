@@ -1,17 +1,22 @@
 class_name Card
 extends Control
 
-signal card_clicked(card: Card)
 signal card_hovered(card: Card)
 signal card_unhovered(card: Card)
 
 const CARD_W := 160.0
 const CARD_H := 220.0
 
-## Pixels the card jumps upward when selected (clicked) in the BattleSim hand.
-## CardPhaseManager applies this lift to the selected card so it visually
-## detaches from the rest of the hand while its description box is open.
+## Pixels the card jumps upward while it is being **aimed** — i.e. a 대상 지정
+## card that stays in the hand while a 조준 화살표 runs to the cursor.
+## CardPhaseManager applies this lift so the aimed card visually detaches from
+## the rest of the row. (Cards without a target don't use it: they leave the row
+## entirely and ride the cursor — see `begin_free_drag`.)
 const PRESS_LIFT     := 40.0
+## 자유 이동 드래그로 승격될 때 부채꼴 기울기를 0 으로 펴는 시간(s). 카드를
+## 손에서 뽑아 드는 동작이라 기울기를 유지하면 커서에 비스듬히 매달려 보인다.
+const FREE_DRAG_STRAIGHTEN_SEC := 0.10
+
 # ── 드로우 인트로: 뒤집기 (`play_flip_reveal`) ────────────────────────────────
 # 왼쪽에서 날아온 뒷면 카드가 손패에 안착하기 직전에 뒤집혀 내용을 드러낸다.
 # 3D 회전이 아니라 **가로 폭만 0 으로 접었다 펴는** 2D 흉내다 — scale.x 가 0 이
@@ -93,15 +98,20 @@ var data: CardData = null
 var face_up: bool = false
 var is_player_card: bool = true
 var is_animating: bool = false
-var is_selected: bool = false
-## True while the player is aiming this card (holding it and moving the cursor).
-## **The card does not travel** — it stays in its lifted slot in the hand and a
-## `CardDragArrow` runs from its top edge to the cursor instead. What this flag
-## buys is the pose: "lifted highest of all" — hover scale plus the tallest
-## shadow — held regardless of where the cursor currently is, since the cursor
-## has left the hand row and the hit layer's hover bookkeeping no longer speaks
-## for this card. Layout passes leave it alone (`relayout_hand` skips it); only
-## `_pose_selected_card` re-poses it.
+## True while the player is holding this card out of the hand. There is no
+## separate "selected" state any more — **dragging is the only way a card is
+## ever picked up**, so this one flag carries what `is_selected` used to.
+##
+## Two poses hang off it, chosen by CardPhaseManager:
+##   • 대상 지정 카드 — the card **does not travel**. It stays in its lifted slot
+##     in the hand and a `CardDragArrow` runs from its top edge to the cursor.
+##   • 그 밖의 카드 — the card leaves the row and rides the cursor
+##     (`begin_free_drag` / `follow_cursor`).
+## Either way the flag buys the look: "lifted highest of all" — hover scale plus
+## the tallest shadow — held regardless of where the cursor currently is, since
+## the cursor has left the hand row and the hit layer's hover bookkeeping no
+## longer speaks for this card. Layout passes leave it alone (`relayout_hand`
+## skips it).
 var is_dragging: bool = false
 ## True from the moment a drawn card is spawned (face-down, off the left edge of
 ## the screen) until it has flown in, flipped face-up and been handed back to the
@@ -308,7 +318,7 @@ func _refresh_float_state() -> void:
 	var alpha: float    = SHADOW_REST_ALPHA
 	var spread: float   = SHADOW_REST_SPREAD
 	var blur: int       = SHADOW_REST_BLUR
-	if is_selected or is_dragging:
+	if is_dragging:
 		offset = SHADOW_SELECTED_OFFSET
 		alpha  = SHADOW_SELECTED_ALPHA
 		spread = SHADOW_SELECTED_SPREAD
@@ -465,21 +475,33 @@ func tween_to(target_pos: Vector2, target_rot: float, target_scale: Vector2,
 				.set_ease(ease_type).set_trans(trans_type))
 
 
-## Enter / leave the aiming pose. Entering kills any layout tween still in
-## flight and locks in the lifted look; leaving hands the card back to whatever
-## pose CardPhaseManager tweens it to next. `_begin_drag` re-poses the card right
+## Enter / leave the held pose. Entering kills any layout tween still in flight
+## and locks in the lifted look; leaving hands the card back to whatever pose
+## CardPhaseManager tweens it to next. `_begin_drag` re-poses the card right
 ## after, so the killed tween never strands it half-way.
-##
-## (There used to be a `snap_to()` beside this for the drag to write the card's
-## position every motion event. The card no longer travels with the cursor — the
-## 조준 화살표 does — so nothing needs a tween-free instant move any more.)
 func set_dragging(dragging: bool) -> void:
 	if is_dragging == dragging:
 		return
 	is_dragging = dragging
 	if dragging and _active_tween != null and _active_tween.is_running():
 		_active_tween.kill()
+	if not dragging and _free_rot_tween != null and _free_rot_tween.is_running():
+		_free_rot_tween.kill()
 	_refresh_float_state()
+
+
+## 자유 이동 드래그(대상이 없는 카드) 진입. 카드는 손패의 슬롯을 떠나 커서를
+## 따라다니므로, 부채꼴 기울기를 곧게 펴 "손에서 뽑아 든" 자세로 만든다.
+## 위치는 `follow_cursor` 가 매 모션마다 직접 쓰므로 여기서 건드리지 않는다.
+func begin_free_drag() -> void:
+	if _active_tween != null and _active_tween.is_running():
+		_active_tween.kill()
+	if _free_rot_tween != null and _free_rot_tween.is_running():
+		_free_rot_tween.kill()
+	_free_rot_tween = create_tween()
+	(_free_rot_tween.tween_property(self, "rotation", 0.0,
+			FREE_DRAG_STRAIGHTEN_SEC)
+			.set_ease(HOVER_EASE).set_trans(HOVER_TRANS))
 
 
 ## 드로우 인트로의 마지막 박자 — 뒷면으로 날아온 카드를 그 자리에서 뒤집어
@@ -542,6 +564,14 @@ func begin_discard_fx() -> void:
 	(tw.tween_property(self, "modulate", faded, DISCARD_FADE_SEC)
 			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD))
 	tw.chain().tween_callback(queue_free)
+
+
+## 카드의 **시각 중심**을 `cursor`(뷰포트 좌표)에 맞춘다. 중심은 회전/스케일에
+## 불변인 `position + pivot_offset` 이므로 (Card.tween_to 주석 참조) 목표
+## 좌상단은 `cursor - pivot_offset` 이고, 그 값을 부모 좌표계로 되돌려 `position`
+## 에 쓴다 — `global_position` 은 절대 쓰지 않는다(스케일 결합).
+func follow_cursor(cursor: Vector2) -> void:
+	position = layout_position_from_global(cursor - pivot_offset)
 
 
 # ── Interaction ───────────────────────────────────────────────────────────────
@@ -685,29 +715,8 @@ func set_dimmed(dim: bool) -> void:
 	_refresh_float_state()
 
 
-## Marks this card as the hand's lifted selection. CardPhaseManager owns the
-## lift itself (position / rotation); the card only owns how far its shadow
-## falls, which grows because a selected card floats highest above the table.
-func set_selected(selected: bool) -> void:
-	if is_selected == selected:
-		return
-	is_selected = selected
-	_refresh_float_state()
-
-
-func _gui_input(event: InputEvent) -> void:
-	if not face_up or not is_player_card or _is_dimmed:
-		return
-	# Click-to-select: a press emits card_clicked; CardPhaseManager pops the
-	# card up, brings it to the top of the hand, and shows the description
-	# box. accept_event() prevents the same press from also firing the
-	# outside-click deselect handler in CardPhaseManager._unhandled_input.
-	var pressed: bool = false
-	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-			pressed = true
-	elif event is InputEventScreenTouch and event.pressed:
-		pressed = true
-	if pressed:
-		card_clicked.emit(self)
-		accept_event()
+# **A card never handles its own press.** Hand cards are MOUSE_FILTER_IGNORE and
+# the row's `HandHitLayer` routes every press / motion / release; the 찾기 grid
+# and the 버리기 fan park their own transparent Button over each card. The
+# `card_clicked` signal this class used to emit had no listeners left once
+# click-to-select was removed, so it is gone too.

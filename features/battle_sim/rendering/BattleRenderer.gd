@@ -3,10 +3,11 @@ extends Node2D
 
 @onready var _bs: BattleSim = get_parent() as BattleSim
 
-# 대상 지정 카드가 들려 있을 때, **찍을 수 있는 파일럿**의 마커에 곱하는 배율.
+# 대상 지정 카드를 끌고 있을 때, **찍을 수 있는 파일럿**의 마커가 도달하는 배율.
 # 예전에는 1.06~1.14 사이를 오가는 펄스(EMPHASIS_PULSE_HZ)였는데, 드래그해서
 # 얼굴 위에 놓는 조작에서는 크기가 계속 변하는 대상이 오히려 겨누기 어려웠다 —
-# 지금은 고정 배율이다. 나머지는 전부 딤드되므로 커진 얼굴만 남아 읽힌다.
+# 지금은 **고정 목표값**이고, 거기에 닿기까지 `EMPHASIS_TWEEN_SEC` 동안 부드럽게
+# 자란다(도달 후에는 미동도 없다). 나머지는 전부 딤드되므로 커진 얼굴만 남는다.
 # 2.0 에서 **1.5** 로 낮췄다: 2배는 한 칸에 두세 명이 선 무리를 화면 밖까지
 # 밀어낼 만큼 벌려 놓았고, 얼굴 하나가 옆 레인까지 침범해 어느 타일 이야기인지가
 # 흐려졌다.
@@ -16,6 +17,25 @@ extends Node2D
 # `_layout_team_positions` 가 좌우 간격과 타일에서의 거리를 같은 배율로 벌린다
 # (그리고 `_draw_arrow_to_tile` 이 그만큼 긴 화살표를 그린다).
 const TARGET_EMPHASIS_SCALE: float = 1.5
+
+## 강조가 켜지고 꺼지는 데 걸리는 시간(s). 1.0 ↔ TARGET_EMPHASIS_SCALE 전 구간을
+## 이 시간에 선형으로 지난다.
+##
+## **왜 애니메이션인가.** 예전에는 배율이 즉시 튀었다 — 카드를 집는 순간 전장의
+## 얼굴 서넛이 한 프레임 만에 1.5배로 부풀고 무리가 좌우로 벌어졌으므로, 무엇이
+## 대상인지보다 화면이 흔들렸다는 인상이 먼저 왔다. 배치(육각 링의 반지름)
+## 와 히트 반경(`pilot_marker_radius`)이 전부 이 한 값에서 나오므로, 여기를
+## 보간하면 초상 · 간격 · 화살표 길이 · 클릭 반경이 **함께** 자란다.
+##
+## 0.15 → **0.05** 로 줄였다. 0.15초는 "즉시 튄다"는 인상은 지웠지만, 카드를 든
+## 손이 이미 대상 위로 가 있는데 얼굴이 아직 자라는 중인 구간이 남았다 — 강조는
+## 겨누기 **전에** 끝나 있어야 하는 신호다.
+const EMPHASIS_TWEEN_SEC: float = 0.05
+
+## PilotData → 지금 프레임의 강조 배율(1.0 ~ TARGET_EMPHASIS_SCALE). `_process`
+## 가 매 프레임 목표값 쪽으로 밀고, 그리기 · 배치 · 히트 테스트가 전부 이 값을
+## 읽는다. 살아 있는 파일럿만 담기므로 재시작으로 로스터가 바뀌어도 남지 않는다.
+var _emphasis_now: Dictionary = {}
 
 ## 강조로 벌어진 무리를 화면 안에 넣을 때 가장자리에서 남기는 여백.
 const SCREEN_EDGE_PAD: float = 6.0
@@ -35,11 +55,38 @@ const POPUP_FONT_SIZE_BASE := 26
 
 
 func _process(delta: float) -> void:
-	# 강조가 고정 배율이 되면서 매 프레임 재draw 할 이유가 사라졌다 — 대상 지정
-	# 상태가 바뀔 때 CardTargetingOverlay._request_redraw() 가 직접 부른다.
-	# 남은 상시 갱신은 피해 수치 팝업뿐.
-	if _advance_popups(delta):
+	# 상시 갱신이 필요한 것은 둘뿐이다 — 피해 수치 팝업과, 켜지거나 꺼지는 중인
+	# 대상 강조. 둘 다 멈춰 있으면 재draw 하지 않는다(대상 지정 상태가 **바뀌는**
+	# 순간은 CardTargetingOverlay._request_redraw() 가 따로 걷어찬다).
+	var dirty: bool = _advance_popups(delta)
+	if _advance_emphasis(delta):
+		dirty = true
+	if dirty:
 		queue_redraw()
+
+
+## 각 파일럿의 강조 배율을 목표값 쪽으로 `EMPHASIS_TWEEN_SEC` 페이스로 민다.
+## 아직 움직이는 중이면 true(= 계속 다시 그려야 한다).
+##
+## 목표에 닿은 1.0 은 dict 에서 지운다 — 기본값이 1.0 이므로 남겨 둘 이유가 없고,
+## 매 판 새 PilotData 가 들어오는 자리에 죽은 키가 쌓이지 않는다.
+func _advance_emphasis(delta: float) -> bool:
+	var step: float = (TARGET_EMPHASIS_SCALE - 1.0) \
+			* (delta / maxf(0.0001, EMPHASIS_TWEEN_SEC))
+	var moving: bool = false
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		var want: float = _pilot_emphasis_target(p)
+		var have: float = float(_emphasis_now.get(p, 1.0))
+		if is_equal_approx(have, want):
+			continue
+		have = move_toward(have, want, step)
+		moving = true
+		if is_equal_approx(have, 1.0):
+			_emphasis_now.erase(p)
+		else:
+			_emphasis_now[p] = have
+	return moving
 
 
 ## Ticks every live popup and drops the expired ones. Returns true while at
@@ -705,13 +752,20 @@ func pilot_marker_radius(p: PilotData) -> float:
 	return PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE * _pilot_emphasis_scale(p)
 
 
-# 찍을 수 있는 파일럿(=강조)의 마커 배율. 대상이 아니면 1.0.
-# PILOT 모드는 valid_pilots, PREVIEW 는 preview_participants 가 강조 대상이다.
+# 지금 프레임의 강조 배율 — `_advance_emphasis` 가 목표값으로 밀고 있는 값이다.
+# 그리기 · 배치 · 히트 반경이 전부 여기를 읽으므로 셋이 어긋날 수 없다.
+func _pilot_emphasis_scale(p: PilotData) -> float:
+	return float(_emphasis_now.get(p, 1.0))
+
+
+# 이 파일럿이 **지금 찍을 수 있는 대상인가** — 보간의 목표값(1.0 또는
+# TARGET_EMPHASIS_SCALE). PILOT 모드는 valid_pilots, PREVIEW 는
+# preview_participants 가 강조 대상이다.
 #
 # 이미 찍어 둔 대상(pending_pick)도 **같이 커진 채로 둔다** — 시안 링이 그 위에
 # 따로 붙으므로 구분은 되고, 여기서만 1.0 으로 되돌리면 카드를 끌고 지나갈 때
 # 얼굴이 커졌다 작아졌다 하며 도로 펄스처럼 보인다.
-func _pilot_emphasis_scale(p: PilotData) -> float:
+func _pilot_emphasis_target(p: PilotData) -> float:
 	var to: CardTargetingOverlay = _bs.targeting_overlay
 	if to == null or not to.is_visualizing():
 		return 1.0

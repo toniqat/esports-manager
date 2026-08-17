@@ -6,16 +6,17 @@ extends Node
 # Hand layout uses BS_HAND_WIDTH (inner) + BS_HAND_CARD_GAP (target gap) for
 # adaptive spacing.
 
-# ─── Click-to-select state ────────────────────────────────────────────────────
-# When a card is clicked it pops up by Card.PRESS_LIFT, gets brought to the top
-# of the scene tree, and a description box appears next to it. Selecting IS the
-# targeting step — there is no "카드 내기" button any more; the card is committed
-# by 확인 in CardTargetingOverlay (see _on_selection_confirm). The rest of the
-# row reflows around the selected card, and clicking outside the card / box
-# deselects it.
-var _selected_card: Card = null
+# ─── 손패 상태 ────────────────────────────────────────────────────────────────
+# **카드 선택 상태는 없다.** 카드를 클릭해도 아무 일도 일어나지 않으며, 카드를
+# 집는 유일한 조작은 **끌기**다 — 누른 채 `DRAG_THRESHOLD_PX` 넘게 움직이면
+# 그때 비로소 카드가 손을 떠나고(`_begin_drag`), 그 순간이 곧 대상 지정 단계의
+# 시작이다. 손을 떼면 드롭이 성립했든 빗나갔든 그 상태는 통째로 사라진다.
+#
+# 예전에는 "선택"이라는 중간 상태가 있었다: 클릭하면 카드가 리프트되고 대상
+# 지정이 켜진 채 남아, 그 상태에서 다시 끌거나 다른 곳을 눌러 해제해야 했다.
+# 조작이 둘로 갈려 있었고(클릭→끌기 / 클릭→클릭 해제), 카드를 낼 수 있는
+# 경로는 어차피 드롭 하나뿐이라 중간 상태가 하는 일이 없었다.
 var _description_box: Panel = null
-var _play_button: Button = null
 # Card currently under the cursor. Drives hover_push_offset (neighbours slide
 # clear of the enlarged card) and the z-order raise in _reorder_hand_nodes.
 var _hovered_card: Card = null
@@ -29,8 +30,8 @@ var _hovered_card: Card = null
 # change anything a true no-op, and `_reordering` stops re-entry outright.
 var _hand_reflow_queued: bool = false
 # Which card the layout currently on screen was computed around (see
-# _push_focus_card) — NOT necessarily the hovered one, since a selection
-# outranks the cursor.
+# _push_focus_card) — NOT necessarily the hovered one, since a card being
+# dragged outranks the cursor.
 var _reflow_focus: Card = null
 var _reordering: bool = false
 
@@ -48,37 +49,38 @@ var _hit_bands: Array[Vector2] = []
 # (HudBuilder.TOP_PANEL_H = 130) 바로 아래, 전장 상단(y 369)보다 위인 빈 띠에
 # 가로 가운데 정렬로 앉는다.
 #
-# 뜨는 조건도 바뀌었다 — 이제 **가리키기만 해도** 뜬다(선택은 그중 한 경우일
-# 뿐). 어느 카드를 보여 줄지는 손패 포커스와 같은 질문이라 `_push_focus_card()`
-# 하나가 답한다: 선택된 카드가 있으면 그것, 없으면 커서 아래 카드.
+# 뜨는 조건도 바뀌었다 — 이제 **가리키기만 해도** 뜬다. 어느 카드를 보여 줄지는
+# 손패 포커스와 같은 질문이라 `_push_focus_card()` 하나가 답한다: 끌고 있는
+# 카드가 있으면 그것, 없으면 커서 아래 카드.
 const DESC_BOX_W   := 640.0
 const DESC_BOX_H   := 150.0
 const DESC_BOX_TOP := 142.0
 ## 지금 설명 상자가 보여 주고 있는 카드. 포커스가 실제로 바뀔 때만 다시 짓는다.
 var _desc_card: Card = null
 
-# ─── 드래그 앤 드롭 ──────────────────────────────────────────────────────────
-# 카드를 손에서 끌어내 놓아 사용하는 조작.
+# ─── 드래그 앤 드롭 (카드를 집는 **유일한** 조작) ────────────────────────────
+# 누르는 것만으로는 아무 일도 일어나지 않는다. 누른 채 `DRAG_THRESHOLD_PX` 넘게
+# 움직여야 카드가 손을 떠나고, 그 순간 행이 그 카드를 중심으로 벌어지며 대상
+# 지정 표시(딤 · 강조)가 켜진다. 손을 떼면 그 상태는 통째로 사라진다.
 #
-# **드래그는 선택의 연장이지 별개의 상태가 아니다.** 누르는 순간 예전과 똑같이
-# 선택이 걸리고(행이 그 카드를 중심으로 벌어지고, 대상 지정 표시가 켜지고,
-# 확인 / 취소가 뜬다), 누른 채 `DRAG_THRESHOLD_PX` 넘게 움직이면 드래그로 승격된다.
+# **끌린 카드의 자세는 대상 유무가 가른다:**
+#   • PILOT / LOCATION — 카드는 **움직이지 않는다**. 손패의 리프트 자세
+#     (`Card.PRESS_LIFT`) 그대로 남고, 카드 위쪽 끝에서 커서까지 **조준 화살표**
+#     (`CardDragArrow`, 2차 베지어)가 이어진다. 카드가 커서에 붙어 날아다니면
+#     겨누려는 대상 — 커진 파일럿 초상 / 초록 유효 셀 — 을 카드가 자기 몸으로
+#     덮어 버려, 정작 놓는 순간에 무엇 위에 있는지가 보이지 않는다.
+#   • 그 밖의 카드 — 겨눌 대상이 없으므로 가릴 것도 없다. 카드는 **손패를 떠나
+#     커서를 따라다니고**(`Card.follow_cursor`) 기울기가 곧게 펴진다. 원래
+#     자리는 **빈 채로 유지된다** — `relayout_hand` 가 `is_dragging` 카드를
+#     건너뛰므로 남은 카드는 자리를 지키고, 빗나간 드롭은 그 자리로 되돌아온다.
 #
-# **카드는 커서를 따라가지 않는다.** 손패에서 선택된 자세(약간 위로 튀어나온
-# 리프트) 그대로 남고, 대신 카드 위쪽 끝에서 커서까지 **조준 화살표**
-# (`CardDragArrow`, 2차 베지어)가 이어진다. 예전에는 카드가 커서에 붙어 날아
-# 다녔는데, 그러면 겨누려는 대상 — 커진 파일럿 초상 / 초록 유효 셀 — 을 카드가
-# 자기 몸으로 덮어 버려 정작 놓는 순간에 무엇 위에 있는지가 보이지 않았다.
-# 화살표는 **대상 지정 카드(PILOT / LOCATION)에만** 뜬다: 대상이 없는 카드는
-# 겨눌 곳이 아니라 구역에 놓는 것이라, 이미 밝아지는 드롭 존이 그 신호다.
-#
-# 놓았을 때 카드가 나가는 조건은 대상 유무가 가른다:
+# 놓았을 때 카드가 나가는 조건도 같은 기준이다:
 #   • PILOT / LOCATION — **대상 위에 놓아야** 나간다(커진 초상 / 초록 유효 셀).
-#     빗나가면 카드는 선택된 채 자기 자리로 돌아온다.
-#   • INSTANT / PREVIEW — 화면 한가운데 **드롭 존**에 놓으면 나간다.
-# 어느 쪽이든 확정은 확인 버튼과 **같은 경로**(CardTargetingOverlay.confirm_with
-# → _on_selection_confirm)를 지난다 — 비용 차감 / 카드 소비 / effect chain 이
-# 두 벌 생기지 않도록.
+#   • 그 밖의 카드      — 화면 한가운데 **드롭 존**에 놓으면 나간다.
+#   • 버리기:N 픽 중    — 중앙 **버리기 구역**에 놓으면 버릴 카드로 넘어간다.
+# 어느 쪽이든 확정은 `CardTargetingOverlay.confirm_with → _on_selection_confirm`
+# **한 경로**를 지난다 — 비용 차감 / 카드 소비 / effect chain 이 두 벌 생기지
+# 않도록. 빗나가면 카드는 그냥 제자리로 돌아온다.
 ## 이만큼 움직여야 클릭이 아니라 드래그로 읽는다.
 const DRAG_THRESHOLD_PX := 10.0
 ## 드롭 존의 세로 크기 — 화면 높이 대비 비율. 가로는 화면 전체 폭이다.
@@ -93,20 +95,26 @@ const DROP_ZONE_BORDER_HOT := Color(1.00, 0.92, 0.55, 0.95)
 ## 여전히 위쪽 띠에 둔다.
 const DROP_ZONE_LABEL_TOP := 22.0
 const DROP_ZONE_LABEL_H   := 48.0
+## 버리기:N 픽 중의 드롭 존 높이(px). `CardSelectOverlay.TO_DISCARD_CENTER_Y` 를
+## 중심으로 잡히며, 이미 골라 둔 카드들이 늘어선 줄(카드 높이 220)을 넉넉히
+## 감싼다 — 그 줄 위에 놓는 것이 곧 "여기에 더한다"로 읽혀야 하기 때문.
+const DISCARD_ZONE_H := 440.0
 ## 조준 화살표의 시작점을 카드 위쪽 끝에서 **카드 안쪽으로** 밀어 넣는 거리.
 ## 화살표 노드는 손패 카드보다 뒤에 그려지므로, 이만큼 파묻힌 시작부는 카드에
 ## 가려 보이지 않고 화살이 카드 밑에서 뻗어 나온 것처럼 읽힌다.
 const ARROW_TUCK_PX := 42.0
 
 ## 눌린 카드 — 아직 드래그로 승격되지 않은 상태. null 이면 버튼을 쥐고 있지 않다.
+## 여기서 그냥 손을 떼면 **아무 일도 일어나지 않는다**(선택 상태가 없으므로).
 var _press_card: Card = null
 var _press_pos: Vector2 = Vector2.ZERO
-## 누른 카드가 **이미 선택돼 있었는가**. 선택 토글을 손 떼는 시점으로 미루기
-## 위한 값이다 — 누르는 순간 풀어 버리면 선택된 카드를 끌어낼 수 없다.
-var _press_was_selected: bool = false
-## 지금 조준 중인 카드. null 이면 드래그 중이 아니다. (카드 자체는 손패의 리프트
-## 자세에 그대로 있고, 움직이는 것은 화살표뿐이다.)
+## 지금 끌고 있는 카드. null 이면 드래그 중이 아니다. 손패에서 카드가 "활성"인
+## 유일한 상태이며, 예전의 `_selected_card` 가 하던 일을 전부 이어받았다 —
+## 포커스 / z-order / 대상 지정 / 드롭 확정이 모두 이 값을 본다.
 var _drag_card: Card = null
+## 끌린 카드가 커서를 따라다니는가(대상 지정이 아닌 카드). false 면 손패의
+## 리프트 자세에 남고 조준 화살표가 대신 커서로 뻗는다.
+var _drag_follows_cursor: bool = false
 ## 카드와 커서를 잇는 조준 화살표. 대상 지정 카드에서만 뜬다.
 var _drag_arrow: CardDragArrow = null
 var _drop_zone: Panel = null
@@ -194,13 +202,10 @@ const PILOT_CARDS_PER_PILOT: int = 3
 
 
 func build_starter_decks() -> void:
-	# Drop any selection state held over from the previous match (the game
-	# restart path queue_frees player_card_nodes without touching the
-	# description box / selected-card refs we manage here).
+	# Drop any drag state held over from the previous match (the game restart
+	# path queue_frees player_card_nodes without touching the description box /
+	# drag refs we manage here).
 	deselect_current_card()
-	# deselect_current_card only cancels a drag that belongs to a live
-	# selection; a restart can also land here with a stale press recorded.
-	_cancel_drag()
 	_hide_description_box()
 	_bs.player_deck.clear(); _bs.ai_deck.clear()
 	_bs.player_discard.clear(); _bs.ai_discard.clear()
@@ -1237,19 +1242,19 @@ func _hover_push_amount(total: int) -> float:
 	return maxf(_bs.BS_HAND_HOVER_PUSH, clearance - slot_spacing(total))
 
 
-## The card the row currently spreads around: the **selected** card if there is
+## The card the row currently spreads around: the **dragged** card if there is
 ## one, otherwise the card under the cursor.
 ##
-## A selected card is the hand's focus in exactly the same way a hovered one is —
-## the row must open around it and stay open while the player walks the cursor
-## over to the description box. Routing both states through this one accessor is
-## also what makes the lift reversible: the focus card's own push offset is 0, so
-## its pushed slot *is* its resting slot, and select → deselect can't leave it
-## displaced by a stale push from whichever card happened to be hovered first.
+## A dragged card is the hand's focus in exactly the same way a hovered one is —
+## the row must open around it and stay open while the cursor walks out over the
+## battlefield. Routing both states through this one accessor is also what makes
+## the lift reversible: the focus card's own push offset is 0, so its pushed slot
+## *is* its resting slot, and grab → drop can't leave it displaced by a stale
+## push from whichever card happened to be hovered first.
 func _push_focus_card() -> Card:
-	if _selected_card != null and is_instance_valid(_selected_card) \
-			and _bs.player_card_nodes.has(_selected_card):
-		return _selected_card
+	if _drag_card != null and is_instance_valid(_drag_card) \
+			and _bs.player_card_nodes.has(_drag_card):
+		return _drag_card
 	return _hovered_hand_card()
 
 
@@ -1364,8 +1369,8 @@ func _apply_hit_bands(total: int) -> void:
 ## Builds (once) and re-fits the transparent Control that owns mouse picking for
 ## the whole hand row. It is deliberately sized to the band the cards already
 ## occupy — the row's span plus the hover enlargement, and the lift only while a
-## card is actually selected — so it can't swallow anything the cards weren't
-## covering anyway. The player 전략 포인트 도넛 clears its top edge by 28px.
+## card is actually being dragged — so it can't swallow anything the cards
+## weren't covering anyway. The player 전략 포인트 도넛 clears its top edge by 28px.
 func _fit_hit_layer(total: int) -> void:
 	if _hand_hit_layer == null:
 		_hand_hit_layer = Control.new()
@@ -1376,7 +1381,7 @@ func _fit_hit_layer(total: int) -> void:
 		_hand_hit_layer.mouse_exited.connect(_on_hit_layer_mouse_exited)
 	var grow_x: float = Card.CARD_W * (Card.HOVER_SCALE - 1.0) * 0.5
 	var grow_y: float = Card.CARD_H * (Card.HOVER_SCALE - 1.0) * 0.5
-	var lift: float = Card.PRESS_LIFT if _selected_card != null else 0.0
+	var lift: float = Card.PRESS_LIFT if _drag_card != null else 0.0
 	var left: float  = _bs.BS_HAND_CENTER.x + slot_center_dx(0, total) - grow_x
 	var right: float = _bs.BS_HAND_CENTER.x + slot_center_dx(total - 1, total) \
 			+ Card.CARD_W + grow_x
@@ -1463,45 +1468,47 @@ func _on_hit_layer_gui_input(event: InputEvent) -> void:
 		released = not st.pressed
 	if not pressed and not released:
 		return
-	# accept_event() mirrors what Card._gui_input used to do: the press that
-	# selects a card must not double back into the outside-click deselect. The
-	# release is accepted for the same reason — a drop over the battlefield
-	# must not also read as a stray battlefield press.
+	# The release is accepted so a drop over the battlefield doesn't also read as
+	# a stray battlefield press; the press for symmetry, since the same gesture
+	# owns both ends.
 	_hand_hit_layer.accept_event()
 	if released:
 		_finish_press(p)
 		return
 	_update_hover_at(p)
-	var card := _hand_card_at(p)
-	if card == null:
-		# A press inside the layer's padding but on no card reads as "outside".
-		deselect_current_card()
-		return
+	# Remember which card the finger went down on. **Nothing else happens yet** —
+	# a press with no motion is not an action any more, so there is no state to
+	# undo when the player simply lets go.
+	_press_card = _grabbable_card_at(p)
 	_press_pos = p
-	_press_was_selected = (card == _selected_card)
-	on_card_clicked(card)
-	# Only a press that actually took the selection can become a drag — while
-	# BATTLE ticks or a modal owns the screen, on_card_clicked falls straight
-	# through and there is nothing to drag.
-	_press_card = card if _selected_card == card else null
 
 
-## Button released. Either the drag lands (and maybe plays the card) or, if the
-## cursor never left the press point, this was a plain click.
+## The card a press at `p` could pick up, or null. Mirrors the gates
+## `_begin_drag` would apply, so a press that can never become a drag doesn't
+## even record itself.
+func _grabbable_card_at(p: Vector2) -> Card:
+	if _bs.game_phase != GameEnums.BattlePhase.CARD_PHASE:
+		return null
+	if _is_player_input_blocked():
+		return null
+	var card := _hand_card_at(p)
+	if card == null or not is_instance_valid(card):
+		return null
+	# 아직 날아오는 중인 카드는 잡을 수 없다 — 인트로가 위치를 쥐고 있어서
+	# 리프트 자세를 세워 봐야 다음 프레임에 덮어써진다.
+	if card.intro_active:
+		return null
+	return card if _bs.player_card_nodes.has(card) else null
+
+
+## Button released. Either the drag lands (and maybe plays the card), or the
+## cursor never left the press point and this was a plain click — which now does
+## nothing at all.
 func _finish_press(p: Vector2) -> void:
 	var was_dragging: bool = _drag_card != null
-	var pressed_card: Card = _press_card
-	var was_selected: bool = _press_was_selected
 	_press_card = null
-	_press_was_selected = false
 	if was_dragging:
 		_end_drag(p)
-		return
-	# A click on the already-selected card toggles the selection off. That used
-	# to happen on the press, which is incompatible with dragging: the card
-	# would deselect itself the instant the player grabbed it.
-	if pressed_card != null and was_selected:
-		deselect_current_card()
 
 
 func _on_hit_layer_mouse_exited() -> void:
@@ -1519,31 +1526,52 @@ func is_dragging_card() -> bool:
 	return _drag_card != null
 
 
+## Promotes the held press into a real drag. **This is where a card becomes
+## "active"** — the row spreads around it, the 대상 지정 오버레이 comes up, and
+## the card takes one of the two held poses (see the 드래그 앤 드롭 header).
 func _begin_drag(p: Vector2) -> void:
 	var card: Card = _press_card
-	if card == null or not is_instance_valid(card) or card != _selected_card:
+	if card == null or not is_instance_valid(card) \
+			or not _bs.player_card_nodes.has(card):
 		_press_card = null
 		return
-	# 버리기 픽이 손패를 잡고 있는 동안에는 드래그가 없다 — 그 상태에서 카드가
-	# 하는 일은 "골라서 버린다" 하나뿐이고, 대상 지정 오버레이도 꺼져 있어서
-	# 어디에 놓아도 나갈 수 없다.
-	if _in_discard_pick_mode():
+	if _bs.game_phase != GameEnums.BattlePhase.CARD_PHASE \
+			or _is_player_input_blocked():
 		_press_card = null
 		return
 	_drag_card = card
-	# The card does NOT leave the hand — set_dragging only locks in the "lifted
-	# highest of all" look (1.2× + tallest shadow) so it holds that pose once the
-	# cursor walks off the row. It kills the layout tween on the way in, so the
-	# lifted pose is re-asserted here rather than left frozen mid-flight.
+	# set_dragging locks in the "lifted highest of all" look (1.2× + tallest
+	# shadow) so the card holds that pose once the cursor walks off the row. It
+	# kills the layout tween on the way in, so whichever pose we choose below is
+	# asserted fresh rather than left frozen mid-flight.
 	card.set_dragging(true)
-	_pose_selected_card(card)
+	# The whole row re-spreads around the new focus, exactly as a hover would.
+	# `relayout_hand` skips `is_dragging` cards, so the grabbed card's own slot
+	# is simply left empty — the neighbours hold station.
+	relayout_hand(_bs.player_card_nodes, card)
+	# 버리기 픽 중에는 카드가 낼 대상이 없다 — 중앙 버리기 구역에 놓는 것이
+	# 유일한 행동이므로 대상 지정 오버레이는 켜지 않는다.
+	if _in_discard_pick_mode() or _bs.targeting_overlay == null:
+		_drag_follows_cursor = true
+	else:
+		_bs.targeting_overlay.start_card_selection(card.data,
+				Callable(self, "_on_selection_confirm"))
+		_refresh_play_allowed()
+		_drag_follows_cursor = not _card_uses_drag_arrow(card)
+	if _drag_follows_cursor:
+		card.begin_free_drag()
+	else:
+		_pose_selected_card(card)
 	_show_drop_zone(card)
+	_refresh_description_box()
 	_update_drag(p)
 
 
 func _update_drag(p: Vector2) -> void:
 	if _drag_card == null or not is_instance_valid(_drag_card):
 		return
+	if _drag_follows_cursor:
+		_drag_card.follow_cursor(p)
 	_update_drag_arrow(p, _update_drop_feedback(p))
 
 
@@ -1554,6 +1582,12 @@ func _update_drop_feedback(p: Vector2) -> bool:
 	var to: CardTargetingOverlay = _bs.targeting_overlay
 	if to == null or _drag_card == null:
 		return false
+	# 버리기 픽 중에는 대상 지정이 없다 — 버리기 구역 하나가 유일한 드롭 지점.
+	if _in_discard_pick_mode():
+		var in_zone: bool = drop_zone_rect().has_point(p) \
+				and _bs.card_select_overlay.can_pick_for_discard()
+		_set_drop_zone_hot(in_zone)
+		return in_zone
 	match targeting_kind(_drag_card.data):
 		"pilot":
 			var picked: PilotData = to.hit_test_pilot_at(p)
@@ -1575,6 +1609,8 @@ func _update_drop_feedback(p: Vector2) -> bool:
 ## 카드는 겨눌 곳이 아니라 구역에 놓는 것이라 드롭 존이 이미 그 신호다.
 func _card_uses_drag_arrow(card: Card) -> bool:
 	if card == null or not is_instance_valid(card):
+		return false
+	if _in_discard_pick_mode():
 		return false
 	var kind: String = targeting_kind(card.data)
 	return kind == "pilot" or kind == "location"
@@ -1617,31 +1653,55 @@ func _hide_drag_arrow() -> void:
 		_drag_arrow.stop()
 
 
+## Button released with a drag in flight. Either the drop resolves into a play
+## (the node is already gone by the time `_try_drop_play` returns true) or the
+## card simply goes home — **a missed drop costs nothing**, since neither the
+## cost nor the card ever left the hand.
 func _end_drag(p: Vector2) -> void:
 	var card: Card = _drag_card
-	_drag_card = null
 	_hide_drop_zone()
 	_hide_drag_arrow()
 	if card == null or not is_instance_valid(card):
+		_drag_card = null
+		_drag_follows_cursor = false
+		_clear_targeting()
 		return
+	# Drop the held pose first: `add_card_to_discard` re-poses the node into the
+	# centred 버리기 fan, and `relayout_hand` skips anything still flagged
+	# `is_dragging`. The hover flag goes with it — a card that leaves the hand
+	# (into the 버리기 fan) is no longer covered by `_update_hover_at`'s sweep,
+	# so a stale hover would strand it at 1.2× over there. If the cursor really
+	# is back on it, the `_update_hover_at` below re-hovers it.
 	card.set_dragging(false)
-	if card != _selected_card:
-		return
-	if _try_drop_play(card, p):
-		return
-	# **빗나간 드롭 = 선택 해제.** 예전에는 카드가 선택된 채 리프트 자세로
-	# 되돌아왔는데, 확인 / 취소 버튼이 사라지면서 그 상태에서 할 수 있는 일이
-	# "다시 끌어 놓는다" 하나뿐이 됐다 — 그렇다면 그만두는 조작(손을 떼는 것)이
-	# 곧 취소여야 한다. 카드는 애초에 손패를 뜬 적이 없으므로 되돌릴 것은 없고,
-	# deselect_current_card 의 행 전체 reflow 가 카드를 제자리에 앉힌다.
-	# 커서 위치를 먼저 갱신해 두면 그 reflow 가 올바른 포커스로 풀린다.
+	card.set_hovered(false)
+	# `_drag_card` stays live across the drop so `_on_selection_confirm` — which
+	# the confirm path calls back into synchronously — can find the card it is
+	# committing.
+	var _played: bool = _try_drop_play(card, p)
+	_drag_card = null
+	_drag_follows_cursor = false
+	_clear_targeting()
+	# Refresh the cursor's card first so the reflow below resolves to the right
+	# focus, then lay the whole row out — that is what walks a missed card back
+	# into its slot (and closes nothing, since the slot was held empty for it).
 	_update_hover_at(p)
-	deselect_current_card()
+	relayout_hand(_bs.player_card_nodes)
+	_refresh_description_box()
 
 
-## Resolves what dropping `card` at `p` means. Returns true when the card was
-## actually played (in which case the node is already gone).
+## Resolves what dropping `card` at `p` means. Returns true when the drop was
+## consumed — a card played (node already freed) or, in 버리기 픽 mode, a card
+## moved into the to-discard row.
 func _try_drop_play(card: Card, p: Vector2) -> bool:
+	# 버리기:N 픽 — 카드가 하는 일은 "버릴 카드로 넘긴다" 하나뿐이라 대상 지정
+	# 경로를 아예 타지 않는다.
+	if _in_discard_pick_mode():
+		if not drop_zone_rect().has_point(p):
+			return false
+		if not _bs.card_select_overlay.can_pick_for_discard():
+			return false
+		_bs.card_select_overlay.add_card_to_discard(card)
+		return true
 	var to: CardTargetingOverlay = _bs.targeting_overlay
 	if to == null:
 		return false
@@ -1659,15 +1719,22 @@ func _try_drop_play(card: Card, p: Vector2) -> bool:
 
 
 ## Drops any in-flight drag without playing the card. Called from the paths that
-## tear the selection down out from under it (phase end, restart, deselect).
+## tear the drag down out from under it (phase end, restart, forced teardown).
 func _cancel_drag() -> void:
 	if _drag_card != null and is_instance_valid(_drag_card):
 		_drag_card.set_dragging(false)
 	_drag_card = null
+	_drag_follows_cursor = false
 	_press_card = null
-	_press_was_selected = false
 	_hide_drop_zone()
 	_hide_drag_arrow()
+
+
+## Tears down the 대상 지정 오버레이 if it is still up. Idempotent — the confirm
+## path tears itself down before calling back, so this is usually a no-op there.
+func _clear_targeting() -> void:
+	if _bs.targeting_overlay != null:
+		_bs.targeting_overlay.clear_selection()
 
 
 ## The card's layout position in viewport space — the same convention
@@ -1679,8 +1746,8 @@ func _card_layout_global(card: Card) -> Vector2:
 	return parent_ci.get_global_transform_with_canvas() * card.position
 
 
-## Poses `card` in the selected (lifted) pose at its own slot. Shared by
-## _select_card and the springback of a missed drop so the two can't drift.
+## Poses `card` in the aimed (lifted) pose at its own slot — the 대상 지정 카드
+## pose, where the card stays in the hand and only the 조준 화살표 travels.
 func _pose_selected_card(card: Card) -> void:
 	var idx := _bs.player_card_nodes.find(card)
 	if idx < 0:
@@ -1708,8 +1775,16 @@ func _pose_selected_card(card: Card) -> void:
 
 ## 대상이 없는 카드를 놓아서 내는 중앙 구역: 화면 세로 중앙을 기준으로 화면
 ## 높이의 `DROP_ZONE_H_RATIO` 만큼, 가로는 전체 폭.
+##
+## 버리기:N 픽 중에는 같은 구역이 **버리기 구역**이 된다 — 이미 골라 둔 카드가
+## 늘어선 줄(`CardSelectOverlay.TO_DISCARD_CENTER_Y`)을 중심으로 잡히므로 "그
+## 줄 위에 얹는다"로 읽힌다.
 func drop_zone_rect() -> Rect2:
 	var vp: Vector2 = _bs.canvas.get_viewport().get_visible_rect().size
+	if _in_discard_pick_mode():
+		return Rect2(0.0,
+				CardSelectOverlay.TO_DISCARD_CENTER_Y - DISCARD_ZONE_H * 0.5,
+				vp.x, DISCARD_ZONE_H)
 	var h: float = vp.y * DROP_ZONE_H_RATIO
 	return Rect2(0.0, vp.y * 0.5 - h * 0.5, vp.x, h)
 
@@ -1718,10 +1793,17 @@ func drop_zone_rect() -> Rect2:
 ## 그 카드들의 드롭 지점은 대상 그 자체라, 구역까지 깔면 "여기 놓으면 되나"로
 ## 읽혀 오해만 부른다.
 func _show_drop_zone(card: Card) -> void:
-	var kind: String = targeting_kind(card.data)
-	if kind == "pilot" or kind == "location":
+	if _card_uses_drag_arrow(card):
 		return
 	_build_drop_zone()
+	_drop_zone_label.text = "여기에 놓아 버리기" if _in_discard_pick_mode() \
+			else "여기에 놓아 사용"
+	# 버리기 픽 중에는 `CardSelectOverlay._battle_dim` 이 같은 캔버스의 자식
+	# 인덱스 0 을 차지하고 있다 — 구역을 0 에 두면 그 딤 **아래**로 들어가 통째로
+	# 눌려 보이지 않는다. 딤 바로 위(1)로 올린다.
+	var back_idx: int = 1 if _in_discard_pick_mode() else 0
+	_bs.canvas.move_child(_drop_zone,
+			mini(back_idx, maxi(0, _bs.canvas.get_child_count() - 1)))
 	var r := drop_zone_rect()
 	_drop_zone.position = r.position
 	_drop_zone.size     = r.size
@@ -1790,14 +1872,14 @@ func _update_hover_at(p: Vector2) -> void:
 
 ## Reorder player card nodes in the scene tree so that draw order matches hand order.
 ## Index 0 (oldest) is lowest; last index (newest) draws on top of all others.
-## The selected card — or, failing that, the card under the cursor — is then
+## The dragged card — or, failing that, the card under the cursor — is then
 ## raised above all of them, so a card the player is pointing at is never
-## covered by its right-hand neighbours (including right after a deselect,
-## while the cursor is still sitting on it).
+## covered by its right-hand neighbours (including right after a drop, while the
+## cursor is still sitting on it).
 func _reorder_hand_nodes() -> void:
 	if _reordering:
 		return
-	var top: Card = _selected_card
+	var top: Card = _drag_card
 	if top == null:
 		top = _hovered_hand_card()
 	if top != null and (not is_instance_valid(top)
@@ -1872,7 +1954,7 @@ func respawn_turns_for(cd: CardData) -> int:
 
 
 ## Can the player commit `cd` right now? Cost, 시전자 생존, and target
-## availability all have to hold. Drives the 확인 button's enable state.
+## availability all have to hold. Gates the drop.
 func card_is_playable(cd: CardData) -> bool:
 	if cd == null:
 		return false
@@ -1883,33 +1965,32 @@ func card_is_playable(cd: CardData) -> bool:
 	return card_has_valid_targets(cd)
 
 
-## Pushes the "is the lifted card playable?" verdict into the targeting
-## overlay, which ANDs it with "has a target been picked yet?" to decide
-## whether a drop is allowed to commit.
+## Pushes the "is the held card playable?" verdict into the targeting overlay,
+## which ANDs it with "has a target been picked yet?" to decide whether a drop is
+## allowed to commit.
 func _refresh_play_allowed() -> void:
 	if _bs.targeting_overlay == null:
 		return
-	if _selected_card == null or not is_instance_valid(_selected_card):
+	if _drag_card == null or not is_instance_valid(_drag_card):
 		return
-	_bs.targeting_overlay.set_play_allowed(card_is_playable(_selected_card.data))
+	_bs.targeting_overlay.set_play_allowed(card_is_playable(_drag_card.data))
 
 
-# ─── Click-to-select interaction ──────────────────────────────────────────────
+# ─── Hover / hand focus ───────────────────────────────────────────────────────
 # Hover feedback (brightness modulate) lives in Card.gd. CardPhaseManager owns
-# the z-ordering, the lifted-card pose, the description box, and the
-# outside-click dismissal.
+# the z-ordering, the held-card pose, and the description box.
 
 func on_card_hovered(card: Card) -> void:
 	# Tracked before the guards so the pointer stays accurate even when the
-	# hover arrives while a card is selected or a modal owns the screen.
+	# hover arrives while a card is held or a modal owns the screen.
 	_hovered_card = card
 	if _bs.game_phase != GameEnums.BattlePhase.CARD_PHASE:
 		return
 	if _is_player_input_blocked():
 		return
-	# No selection check here: _push_focus_card is the single home of the
-	# "selection outranks the cursor" rule, and _apply_hand_reflow no-ops when
-	# the focus hasn't actually moved.
+	# No drag check here: _push_focus_card is the single home of the "the held
+	# card outranks the cursor" rule, and _apply_hand_reflow no-ops when the
+	# focus hasn't actually moved.
 	_queue_hand_reflow()
 
 
@@ -1937,14 +2018,14 @@ func _apply_hand_reflow() -> void:
 		return
 	# The description box reads the same focus, so it rides the same coalesced
 	# pass — and it is refreshed *before* the early-out below, because a hover
-	# that doesn't move the row (one arriving while a card is selected) still
-	# has to leave the box showing the right card.
+	# that doesn't move the row (one arriving while a card is held) still has to
+	# leave the box showing the right card.
 	_refresh_description_box()
 	var focus := _push_focus_card()
 	# Nothing to do when the row already matches the focus — this is what stops
 	# the enter/exit churn a reorder provokes from looping forever, and it is
-	# also what makes hovering around while a card is selected a no-op (the
-	# selection stays the focus, so `focus` never changes).
+	# also what makes hovering around while a card is held a no-op (the held card
+	# stays the focus, so `focus` never changes).
 	if focus == _reflow_focus:
 		return
 	# The **new** focus card must be laid out with everyone else. Its slot under
@@ -1952,36 +2033,19 @@ func _apply_hand_reflow() -> void:
 	# sitting there: the previous focus had pushed it aside, and skipping it left
 	# it stranded at that stale offset — a card hovered right after its neighbour
 	# stayed displaced by up to a full push (+26.9px at 8 cards, ~60px at the
-	# 12-card cap), so it read as mis-hovered and then slid sideways on its way
-	# up when clicked. Only the *selected* card is skipped, because
-	# `_select_card` owns its lifted pose; the hovered card's scale is untouched
-	# by `tween_to`, so the layout spring can't fight the hover tween.
-	relayout_hand(_bs.player_card_nodes, _selected_card)
-
-
-func on_card_clicked(card: Card) -> void:
-	if _bs.game_phase != GameEnums.BattlePhase.CARD_PHASE:
-		return
-	if _is_player_input_blocked():
-		return
-	if not is_instance_valid(card) or not _bs.player_card_nodes.has(card):
-		return
-	if _selected_card == card:
-		# Re-pressing the selected card toggles the selection off — but only on
-		# the *release* (`_finish_press`). Dropping it here would deselect the
-		# card the instant the player grabbed it to drag, which is the same
-		# press. 취소 and an outside click are the other ways out.
-		return
-	_select_card(card)
+	# 12-card cap), so it read as mis-hovered. Only the *dragged* card is skipped
+	# (`relayout_hand` would skip it anyway on `is_dragging`); the hovered card's
+	# scale is untouched by `tween_to`, so the layout spring can't fight the
+	# hover tween.
+	relayout_hand(_bs.player_card_nodes, _drag_card)
 
 
 # Player can't pick / hover hand cards while the search-pick modal owns the
 # screen or while the AI's async play loop is in flight. The targeting overlay
-# is deliberately NOT in this list any more: card selection *is* targeting now,
-# so the hand has to stay live for the player to switch to a different card
-# mid-pick. Discard mode is the other exception — the overlay's whole job is to
-# let the player click hand cards and choose which to throw away, so input goes
-# through and the desc-box "버리기" button routes the pick.
+# is deliberately NOT in this list — targeting only exists while a card is being
+# dragged, and the drag owns the pointer anyway. Discard mode is the other
+# exception: the overlay's whole job is to let the player pull cards out of the
+# hand, and that is now a drag onto the 버리기 구역.
 func _is_player_input_blocked() -> bool:
 	if _ai_play_in_progress:
 		return true
@@ -2000,87 +2064,34 @@ func _is_player_input_blocked() -> bool:
 	return false
 
 
-func _unhandled_input(event: InputEvent) -> void:
-	# Outside-click / outside-touch dismisses the active selection. Card,
-	# description box, and buttons each accept their own events, so anything
-	# reaching this handler is by definition outside all of them.
-	#
-	# PILOT / LOCATION selections never get here: CardTargetingOverlay runs its
-	# _unhandled_input first (it is added to BattleSim after CardPhaseManager,
-	# and unhandled input walks the tree back-to-front) and marks every
-	# battlefield press handled, hit or miss — otherwise a tap 5 px off a pilot
-	# marker would silently throw away the pick. Those kinds exit via 취소, a
-	# re-click on the card, or by selecting a different card.
-	if _selected_card == null:
-		return
-	var pressed: bool = false
-	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-			pressed = true
-	elif event is InputEventScreenTouch and event.pressed:
-		pressed = true
-	if pressed:
-		deselect_current_card()
-
-
-func _select_card(card: Card) -> void:
-	var previous: Card = _selected_card
-	if previous != null and previous != card:
-		# Drop the previous selection out of its lifted pose — otherwise two
-		# cards would float at once. Its slot is rewritten by the row-wide
-		# reflow below, off the NEW focus.
-		if is_instance_valid(previous):
-			previous.set_selected(false)
-		_hide_description_box()
-	_selected_card = card
-	# Selecting makes this card the row's focus, exactly as hovering it would,
-	# so the whole row re-spreads around it here: the neighbours give way, the
-	# previous selection settles back in, and the anchored end cards hold the
-	# hand's width. The focus card itself is skipped — its lifted pose follows.
-	# relayout_hand → _reorder_hand_nodes also raises it above every other card.
-	relayout_hand(_bs.player_card_nodes, card)
-	card.set_selected(true)
-	_pose_selected_card(card)
-	_refresh_description_box()
-	# Selecting a card IS the targeting step: everything the card can't be
-	# dropped on dims, everything it can grows. Still non-modal — the hand and
-	# 턴 넘기기 stay live. Skipped while a 버리기 overlay owns the hand, where
-	# the desc-box "버리기" button is the only action a card can take.
-	if _bs.targeting_overlay != null and not _in_discard_pick_mode():
-		_bs.targeting_overlay.start_card_selection(card.data,
-				Callable(self, "_on_selection_confirm"))
-		_refresh_play_allowed()
-
-
-# Public so end_card_phase / restart can drop any pending selection.
+## Forcibly drops whatever the hand is holding — an in-flight drag and the
+## targeting state that came with it. Nothing to refund: the cost is only spent
+## on a committed drop, so a card torn out of a drag has never left the hand.
+##
+## Public because every path that pulls the rug out from under the hand calls it
+## (phase end, restart, engage arena opening, 숨김 in the 버리기 overlay, a hand
+## card being despawned). Idempotent.
+##
+## (The name survives from the click-to-select era; there is no selection any
+## more, but every caller means exactly this.)
 func deselect_current_card() -> void:
-	if _selected_card == null:
-		return
-	# A drag in flight belongs to this selection — it goes with it, and the
-	# relayout below is what puts the card back in the row.
+	var had: bool = _drag_card != null or _press_card != null
 	_cancel_drag()
-	if is_instance_valid(_selected_card):
-		_selected_card.set_selected(false)
-	_selected_card = null
-	# Reflow the whole row — the dropped card INCLUDED. One pass places every
+	_clear_targeting()
+	if not had:
+		return
+	# Reflow the whole row — the released card INCLUDED. One pass places every
 	# card off the same hover state, so the returning card can't land on a slot
-	# that disagrees with the row it's landing in. If the cursor is still on it
-	# it stays enlarged, so its neighbours slide away exactly as they do on a
-	# fresh hover, and _reorder_hand_nodes (inside relayout_hand) re-raises it
-	# above its right-hand neighbours.
+	# that disagrees with the row it's landing in.
 	relayout_hand(_bs.player_card_nodes)
 	# The focus falls back to whatever the cursor is on (often the same card),
 	# so the box follows rather than blinking out and back.
 	_refresh_description_box()
-	# Drop the range / area visualization and the 확인 / 취소 row that
-	# _select_card put up. Nothing to refund — no cost was spent yet.
-	if _bs.targeting_overlay != null:
-		_bs.targeting_overlay.clear_selection()
 
 
-## True while a 버리기:N pick overlay owns the hand. In that state a card click
-## opens the description box with a "버리기" button instead of entering the
-## normal targeting/확인 flow.
+## True while a 버리기:N pick overlay owns the hand. In that state dragging a
+## card onto the centred 버리기 구역 is the only thing a card can do — the
+## targeting overlay never comes up.
 func _in_discard_pick_mode() -> bool:
 	return _bs.card_select_overlay != null \
 			and _bs.card_select_overlay.is_discard_mode()
@@ -2091,21 +2102,22 @@ func _in_discard_pick_mode() -> bool:
 ## Vector2i for LOCATION, null for PREVIEW / INSTANT cards. Only now is the
 ## cost deducted and the card consumed.
 func _on_selection_confirm(picked: Variant) -> void:
-	if _selected_card == null or not is_instance_valid(_selected_card):
+	if _drag_card == null or not is_instance_valid(_drag_card):
 		return
-	var card := _selected_card
-	# Re-check rather than trusting the button state: a battle tick can't fire
+	var card := _drag_card
+	# Re-check rather than trusting the drop gate: a battle tick can't fire
 	# during 작전 단계, but an engage resolved from an earlier card in the same
 	# phase can have killed the 시전자 or drained the points since.
 	if not card_is_playable(card.data):
 		# The overlay has already torn itself down by the time it calls us, so
-		# the selection can't be left holding a dead targeting state.
+		# the drag can't be left holding a dead targeting state.
 		deselect_current_card()
 		return
-	# Tear down selection state BEFORE handing the node to the play path, which
-	# frees it — the dangling reference must never escape this function.
+	# Tear down drag state BEFORE handing the node to the play path, which frees
+	# it — the dangling reference must never escape this function. (`_end_drag`
+	# clears `_drag_card` again on its way out; both are guarded.)
 	_hide_description_box()
-	_selected_card = null
+	_drag_card = null
 	_play_card_direct(card, picked)
 
 
@@ -2206,24 +2218,10 @@ func _show_description_box(card: Card) -> void:
 	desc_lbl.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(desc_lbl)
 
-	# The old "카드 내기" button is gone — committing a card is now the 확인
-	# button that CardTargetingOverlay parks at the bottom-left, so the play
-	# action lives in one place whether or not the card needs a target. The
-	# only button this box still owns is the 버리기:N pick action, which has
-	# nothing to do with playing a card. is_discard_mode() (not
-	# can_pick_for_discard) decides whether it appears, so the button stays
-	# visible-but-disabled while the overlay's 숨김 state is on. It is tied to
-	# the *selected* card, never to a merely hovered one — 버리기 commits a card
-	# and a hover is not a commitment.
-	if _in_discard_pick_mode() and card == _selected_card:
-		_play_button = Button.new()
-		_play_button.add_theme_font_size_override("font_size", 22)
-		_play_button.custom_minimum_size = Vector2(0.0, 52.0)
-		_play_button.text = "버리기"
-		_play_button.disabled = not _bs.card_select_overlay.can_pick_for_discard()
-		_play_button.pressed.connect(_on_discard_selected_pressed)
-		vbox.add_child(_play_button)
-
+	# **This box has no buttons.** It is a read-out, not a control surface:
+	# playing a card is a drop, and so is picking one for 버리기:N. The old
+	# "카드 내기" and "버리기" buttons both went with the selection state that
+	# used to make them reachable.
 	_bs.canvas.add_child(box)
 	_description_box = box
 	_desc_card = card
@@ -2233,31 +2231,12 @@ func _hide_description_box() -> void:
 	if _description_box != null and is_instance_valid(_description_box):
 		_description_box.queue_free()
 	_description_box = null
-	_play_button = null
 	_desc_card = null
 
 
-# Description-box "버리기" button handler: hands the currently-selected hand
-# card off to the active discard overlay. add_card_to_discard() does the
-# bookkeeping (hand removal, layout, threshold check); we just clear the
-# desc-box state so the next pick can re-open it cleanly.
-func _on_discard_selected_pressed() -> void:
-	if _selected_card == null or not is_instance_valid(_selected_card):
-		return
-	if _bs.card_select_overlay == null \
-			or not _bs.card_select_overlay.can_pick_for_discard():
-		return
-	var card := _selected_card
-	_hide_description_box()
-	_selected_card = null
-	# The card survives (it moves into the to-discard fan), so drop the lifted
-	# shadow pose with it — otherwise it keeps casting a floating shadow there.
-	card.set_selected(false)
-	_bs.card_select_overlay.add_card_to_discard(card)
-
-
-# Player play path, entered only from 확인 — by which point the target (if the
-# card wanted one) is already resolved, so nothing here opens a picker.
+# Player play path, entered only from a committed drop — by which point the
+# target (if the card wanted one) is already resolved, so nothing here opens a
+# picker.
 #
 # Snapshots the pre-play state up front so a 버리기 / 찾기 clause inside the
 # effect chain can fully roll back on cancel — even when earlier clauses (e.g.
@@ -2656,8 +2635,8 @@ func _on_overlay_cancel() -> void:
 # list. Cost / deck / discard arrays are restored verbatim. Used both for the
 # overlay-cancel path and for any future "mid-effect bail" needs.
 func _restore_from_snapshot(snap: Dictionary) -> void:
-	# Drop any active selection (description box) before tearing down nodes —
-	# _selected_card may point at a node we're about to free.
+	# Drop any in-flight drag before tearing down nodes — _drag_card may point
+	# at a node we're about to free.
 	deselect_current_card()
 	for raw in _bs.player_card_nodes:
 		var node := raw as Card
@@ -3516,12 +3495,10 @@ func _despawn_player_card_node(cd: CardData) -> void:
 	for node in _bs.player_card_nodes:
 		var c := node as Card
 		if c.data == cd:
-			# The node is about to be freed, so any selection pointing at it has
-			# to go first — otherwise _selected_card dangles and the description
-			# box / 확인 row outlive the card they belong to. (Reachable from
-			# _trim_hand_overflow, whose auto-draw can fire on a card the player
-			# left selected when the phase ended.)
-			if _selected_card == c:
+			# The node is about to be freed, so any drag pointing at it has to go
+			# first — otherwise _drag_card dangles and the description box /
+			# targeting overlay outlive the card they belong to.
+			if _drag_card == c or _press_card == c:
 				deselect_current_card()
 			_bs.player_card_nodes.erase(c)
 			play_discard_fx(c)

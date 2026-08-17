@@ -1101,12 +1101,27 @@ keyword check has always fired first, so they are 소멸 on their first play.
 
 | 박자 | 담당 | 시간 |
 |---|---|---|
-| 파고들기 | `BattleSim.anim_pilot_lunge(attacker, target)` | `ANIM_LUNGE_IN_DUR` **0.50s** |
-| 타격 (정지) | `_effect_attack` — 피해 / 쉐이크 / 팝업 | 한 프레임 |
-| 복귀 | `BattleSim.anim_pilot_lunge_return(attacker)` | `ANIM_LUNGE_OUT_DUR` **0.62s** |
+| 파고들기 | `BattleSim.anim_pilot_lunge(attacker, target)` | `ANIM_LUNGE_IN_DUR` **0.08s** |
+| 타격 (정지) | `_effect_attack` — 피해 / 쉐이크 / 팝업 | 한 프레임 (쉐이크는 0.26초) |
+| 복귀 | `BattleSim.anim_pilot_lunge_return(attacker)` | `ANIM_LUNGE_OUT_DUR` **0.24s** |
 
-- **0.5초는 거리와 무관하게 고정**이라 먼 대상일수록 빠르게 날아간다. 연출
+- **한 타격의 총 연출 시간은 두 값의 합, 0.32초다.** 예전에는
+  0.50 + 0.62 = 1.12초였는데, 연속 공격(`repeat`, 최대 5타)이 이 세 박자를
+  타수만큼 반복하므로 카드 한 장이 최대 5.6초를 먹었다 — 그동안 손패도 턴
+  넘기기도 잠긴다. 0.40초를 거쳐 지금은 **파고들기만 다시 절반(0.16 → 0.08)**
+  으로 줄어 5타를 다 굴려도 1.6초다. 파고들기 : 복귀 = 1 : 3 이라 "튀어나갔다
+  천천히 돌아온다"가 더 뚜렷해졌다. **두 값을 만질 때는 `DMG_POPUP_DUR`(0.30)이
+  합보다 짧도록 함께 조정할 것** — 아니면 연속 타격의 숫자가 같은 자리에 겹쳐
+  쌓인다(팝업 좌표는 띄운 순간에 고정된다).
+- **0.08초는 거리와 무관하게 고정**이라 먼 대상일수록 빠르게 날아간다. 연출
   길이가 전장 위치에 따라 들쭉날쭉하면 연속 공격의 리듬이 무너진다.
+- **맞는 쪽의 흔들림은 전장 교전보다 훨씬 격렬하다** —
+  `_apply_attack_damage` 가 `anim_pilot_shake` 에 `ANIM_SHAKE_CARD_DUR`(0.26s) /
+  `ANIM_SHAKE_CARD_AMP_PX`(20px)를 넘긴다(전장 기본은 0.18s / 6px). 매 턴
+  자동으로 오가는 교전 피해와 달리 카드 명중은 플레이어가 방금 고른 한 방이라,
+  같은 세기로 흔들면 카드가 아무 일도 안 한 것처럼 읽힌다. 세기는
+  `PilotData.anim_shake_amp` 로 실려 가고 진동 수는 지속시간을 따라 늘어난다
+  (주파수 고정) — 자세한 내용은 `rendering/README.md`.
 - 궤적은 `t²` — **서서히 빨라진다**(앞 절반에서 25%만 간다). 짧은 준비 동작 뒤
   달려드는 것처럼 읽힌다. 복귀는 smoothstep 이고 궤적 한가운데서
   `ANIM_LUNGE_HOP_PX`(34px)만큼 **붕 뜬다**.
@@ -1118,9 +1133,9 @@ keyword check has always fired first, so they are 소멸 on their first play.
 - **1단계는 시간이 다 차도 스스로 꺼지지 않고 대상 앞에 멈춰 선다.** 그 정지
   구간이 피해가 적용되는 자리이고, 2단계는 호출 측이 건다. 스스로 걷는 것은
   2단계뿐이다(`_advance_pilot_animations`).
-- **연속 공격(`repeat`)은 세 박자를 타수만큼 반복한다.** 실측: 1타 1.13초,
-  2타 2.25초. 팝업이 서로 겹칠 일이 없어져 `DMG_POPUP_STAGGER` 는 연출이 붙지
-  않는 경우(시전자 없는 레거시 카드)에만 쓰인다.
+- **연속 공격(`repeat`)은 세 박자를 타수만큼 반복한다.** 1타 0.32초, 2타
+  0.64초, 상한(5타) 1.6초. 팝업이 서로 겹칠 일이 없어져 `DMG_POPUP_STAGGER` 는
+  연출이 붙지 않는 경우(시전자 없는 레거시 카드)에만 쓰인다.
 - **연출이 끝나야 다음 카드를 낼 수 있다.** `_attack_anim_active` 가
   `_is_player_input_blocked()`(손패 딤 + 클릭 차단)와 `can_end_card_phase()`
   (턴 넘기기 잠금) 양쪽에 걸린다. `_set_attack_anim_active` 가 양쪽 가장자리에서

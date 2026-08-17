@@ -361,7 +361,8 @@ visual transitions. All durations fit inside the 0.5s `AUTO_PLAY_INTERVAL`.
 
 | Trigger | Site | Visual |
 |---|---|---|
-| Combat / card damage | `SimulationCore` damage_map apply, `CardPhaseManager.apply_card_effect` | `anim_pilot_shake` → 0.18s horizontal jitter (decaying) |
+| Combat damage (전장 자동 교전) | `SimulationCore` damage_map apply | `anim_pilot_shake(p)` → `ANIM_SHAKE_DUR` 0.18s / `ANIM_SHAKE_AMP_PX` 6px horizontal jitter (decaying) |
+| 공격 카드 명중 | `CardPhaseManager._apply_attack_damage` | same call with `ANIM_SHAKE_CARD_DUR` 0.26s / `ANIM_SHAKE_CARD_AMP_PX` **20px** — 매 턴 자동으로 오가는 교전 피해와 달리 카드 명중은 플레이어가 방금 고른 한 방이라 훨씬 격렬하게 흔든다. 주파수는 같으므로 진동 수가 4 → 5.8회로 함께 는다 |
 | Movement (free + push advance + push retreat) | `resolve_movement` (once per pilot per turn) | `anim_pilot_move(p, orig)` → 0.30s ease-out tween from `orig` cell to `grid_pos` |
 | Recall — 저HP / 위치 이탈 | `RecallSystem.return_to_hq` | `anim_pilot_recall(p, orig)` → 0.20s fade-out + rise at `orig`, then 0.25s fade-in + descend at HQ. Both halves always play — the pilot never leaves the field, and it is holding still that turn, so the fade-in stays anchored at the HQ |
 | Recall — 복귀 카드 | `CardPhaseManager._effect_recall_ally` | same `anim_pilot_recall(p, orig)` sequence |
@@ -374,6 +375,7 @@ visual transitions. All durations fit inside the 0.5s `AUTO_PLAY_INTERVAL`.
 `_advance_turret_animations(delta)` every frame (both, never short-circuited)
 and calls `renderer.queue_redraw()` while any timer is active. Constants live on
 `BattleSim`: `ANIM_MOVE_DUR`, `ANIM_SHAKE_DUR`, `ANIM_SHAKE_AMP_PX`,
+`ANIM_SHAKE_CARD_DUR`, `ANIM_SHAKE_CARD_AMP_PX`,
 `ANIM_RECALL_FADE_OUT_DUR`, `ANIM_RECALL_FADE_IN_DUR`, `ANIM_RECALL_RISE_PX`,
 `ANIM_DEATH_HOLD_DUR`, `ANIM_DEATH_FADE_DUR`, `ANIM_DEATH_RISE_PX`,
 `ANIM_DEATH_TINT`, the turret trio `ANIM_TURRET_HIT_DUR` /

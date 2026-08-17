@@ -3081,7 +3081,8 @@ func _apply_attack_damage(t: PilotData, caster: PilotData, n: int) -> int:
 	if t.hp <= 0:
 		_bs.mark_pilot_dead(t, caster)
 	elif dmg > 0:
-		_bs.anim_pilot_shake(t)
+		# 공격 카드 전용 세기 — 전장 자동 교전보다 훨씬 격렬하다.
+		_bs.anim_pilot_shake(t, _bs.ANIM_SHAKE_CARD_DUR, _bs.ANIM_SHAKE_CARD_AMP_PX)
 	return dmg
 
 

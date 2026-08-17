@@ -67,6 +67,12 @@ const ANIM_RECALL_FADE_IN_DUR  := 0.25
 const ANIM_RECALL_RISE_PX      := 110.0
 ## Damage shake horizontal amplitude in px (decays linearly to 0 across the duration).
 const ANIM_SHAKE_AMP_PX        := 6.0
+## 공격 카드(`attack:N`) 명중 전용 흔들림 — 전장 자동 교전보다 **훨씬 격렬하다**
+## (진폭 6 → 20px, 지속 0.18 → 0.26초 = 진동 수도 4 → 5.8회로 함께 늘어난다).
+## 매 턴 자동으로 오가는 교전 피해와 달리 카드 명중은 플레이어가 방금 고른
+## 한 방이라, 같은 세기로 흔들면 카드가 아무 일도 안 한 것처럼 읽힌다.
+const ANIM_SHAKE_CARD_AMP_PX   := 20.0
+const ANIM_SHAKE_CARD_DUR      := 0.26
 ## 사망 연출 1단계 — 쓰러진 자리에서 딤드된 채 버티는 시간.
 const ANIM_DEATH_HOLD_DUR      := 1.0
 ## 사망 연출 2단계 — 투명해지며 위로 떠오르는 시간.
@@ -86,11 +92,19 @@ const ANIM_TURRET_HIT_TINT     := Color(1.0, 0.42, 0.36, 1.0)
 # ─── 공격 카드 돌진 연출 ─────────────────────────────────────────────────────
 # 공격 카드(`attack:N`)를 낼 때 시전자 초상이 대상 초상으로 파고들었다가
 # 돌아온다. 자세한 배선은 anim_pilot_lunge / pilot_lunge_offset 참조.
+## **한 타격의 총 연출 시간은 `ANIM_LUNGE_IN_DUR + ANIM_LUNGE_OUT_DUR` = 0.32초다.**
+## 예전에는 0.50 + 0.62 = 1.12초였는데, 연속 공격(`repeat`, 최대 5타)이 이 세 박자를
+## 타수만큼 반복하므로 한 장이 5.6초를 먹었다 — 그동안 손패도 턴 넘기기도 잠긴다
+## (`CardPhaseManager._attack_anim_active`). 지금은 5타를 다 굴려도 1.6초다.
+## 두 값을 만질 때는 **합보다 `DMG_POPUP_DUR` 이 짧도록** 함께 조정할 것.
+##
 ## 돌진(1단계) 시간. **거리와 무관하게 고정**이라 먼 대상일수록 빠르게 날아간다 —
 ## 연출 길이가 전장 위치에 따라 들쭉날쭉하면 연속 공격의 리듬이 무너진다.
-const ANIM_LUNGE_IN_DUR    := 0.50
+## 0.16 → 0.08 로 절반이 되면서 "덤벼드는" 인상이 강해졌다(복귀는 그대로라
+## 파고들기 : 복귀 = 1 : 3 이다).
+const ANIM_LUNGE_IN_DUR    := 0.08
 ## 복귀(2단계) 시간. 돌진보다 길다 — "천천히 돌아온다"가 이 연출의 후반부다.
-const ANIM_LUNGE_OUT_DUR   := 0.62
+const ANIM_LUNGE_OUT_DUR   := 0.24
 ## 복귀 중 붕 뜨는 높이(px). 궤적 한가운데서 최대가 되는 반주기 사인.
 const ANIM_LUNGE_HOP_PX    := 34.0
 ## 돌진이 끝났을 때 대상 초상과 겹치는 비율(대상 지름 기준). 0.5 = 절반.
@@ -98,8 +112,12 @@ const ANIM_LUNGE_HOP_PX    := 34.0
 const ANIM_LUNGE_OVERLAP   := 0.5
 
 # ─── 피해 수치 팝업 (공격 카드 전용) ─────────────────────────────────────────
-## 팝업이 화면에 머무는 시간(s).
-const DMG_POPUP_DUR      := 0.95
+## 팝업이 화면에 머무는 시간(s). **한 타격의 연출 길이(0.32초)보다 길면 연속
+## 공격의 숫자가 같은 자리에 겹쳐 쌓인다** — 팝업 좌표는 띄운 순간에 고정되므로
+## 두 번째 타격의 `-N` 이 첫 번째 것 위에 그대로 얹힌다. 돌진 연출을 1.12 → 0.40
+## → 0.32 초로 줄일 때마다 이 값도 함께 내려왔다(0.95 → 0.38 → 0.30). 마지막
+## 숫자는 다음 타격이 시작되기 직전에 사라진다.
+const DMG_POPUP_DUR      := 0.30
 ## 팝업이 떠오르는 총 높이(px).
 const DMG_POPUP_RISE_PX  := 46.0
 ## 연속 공격처럼 한 번에 여러 번 터질 때 팝업 사이에 주는 시작 지연(s).
@@ -736,9 +754,17 @@ func anim_pilot_move(p: PilotData, from_cell: Vector2i) -> void:
 	p.anim_move_dur = ANIM_MOVE_DUR
 
 
-func anim_pilot_shake(p: PilotData) -> void:
+## 피격 흔들림. 인자를 비우면 **전장 자동 교전의 기본 세기**이고, 공격 카드는
+## `ANIM_SHAKE_CARD_DUR` / `ANIM_SHAKE_CARD_AMP_PX` 를 넘겨 훨씬 격렬하게 흔든다 —
+## 카드 한 장의 명중은 매 턴 자동으로 오가는 교전 피해와 무게가 다르다.
+##
+## 흔들림의 **주파수는 고정**이다(`BattleRenderer` 가 지속시간에 비례해 진동 수를
+## 늘린다). 길게 흔들라는 지시가 "느리게 흔들라"로 읽히면 격렬함이 사라진다.
+func anim_pilot_shake(p: PilotData, dur: float = ANIM_SHAKE_DUR,
+		amp: float = ANIM_SHAKE_AMP_PX) -> void:
 	p.anim_shake_t   = 0.0
-	p.anim_shake_dur = ANIM_SHAKE_DUR
+	p.anim_shake_dur = dur
+	p.anim_shake_amp = amp
 
 
 # Recall sequence: fade out + rise at orig_cell, then fade in + descend at HQ.

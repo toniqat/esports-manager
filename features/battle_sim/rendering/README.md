@@ -221,8 +221,14 @@ them each `_draw()`:
 - `_pilot_anim_offset(p)` — sums move-tween offset (ease-out cubic from
   `anim_prev_grid_pos` → `grid_pos`), recall rise/descend (`ANIM_RECALL_RISE_PX`),
   death rise (`ANIM_DEATH_RISE_PX`, phase 2 only), **공격 카드 돌진**
-  (`BattleSim.pilot_lunge_offset`) and damage shake (decaying `sin` jitter
-  capped at `ANIM_SHAKE_AMP_PX`).
+  (`BattleSim.pilot_lunge_offset`) and damage shake (decaying `sin` jitter).
+- **피격 흔들림의 세기는 흔든 쪽이 정한다** — `PilotData.anim_shake_amp` 에
+  실려 온다(전장 자동 교전 `ANIM_SHAKE_AMP_PX` **6px** / 공격 카드 명중
+  `ANIM_SHAKE_CARD_AMP_PX` **20px**). 렌더러가 상수 하나를 읽던 시절에는 둘 중
+  하나만 맞출 수 있었다. **주파수는 고정이고 진동 수가 지속시간을 따라간다**
+  (`cycles = 4 × dur / ANIM_SHAKE_DUR`) — 진동 수를 4회로 고정하면 길게 흔들라는
+  지시가 "느리게 흔들라"가 되어 격렬함이 오히려 사라진다. 실측: 전장 6px 기준
+  최대 5.63px · 4주기, 카드 20px 기준 최대 19.13px · 5.8주기.
 - `_pilot_anim_alpha(p)` — 1.0 → 0 during recall phase 1 **and** death phase 2,
   0 → 1.0 during recall phase 2 (and respawn fade-in). Multiplied into every
   per-pilot draw call (circle, ring, role text, HP ring, speech-bubble arrow)
@@ -260,10 +266,11 @@ same solve, so hit-testing never disagrees with what is on screen.
 - 좌표는 **띄운 순간의 마커 위치를 그대로 고정**한다. 대상이 그 사이에
   쓰러지거나 밀려나도 숫자가 따라다니지 않는다(그리고 대상이 사라진 뒤에도
   숫자가 끝까지 재생된다).
-- `BattleSim.DMG_POPUP_DUR`(0.95s) 동안 `DMG_POPUP_RISE_PX`(46px) 만큼 감속하며
-  떠오르고 마지막 40% 구간에서만 흐려진다.
+- `BattleSim.DMG_POPUP_DUR`(**0.30s**) 동안 `DMG_POPUP_RISE_PX`(46px) 만큼 감속하며
+  떠오르고 마지막 40% 구간에서만 흐려진다. 이 값은 **한 타격의 돌진 연출 길이
+  (0.32초)보다 짧아야 한다** — 길면 연속 공격의 숫자가 같은 자리에 겹쳐 쌓인다.
 - **`DMG_POPUP_STAGGER`(0.18s)는 이제 거의 쓰이지 않는다.** 한 타격이
-  파고들기 → 타격 → 복귀 세 박자(1.12초)를 다 도는 연출이 붙으면서 연속 공격의
+  파고들기 → 타격 → 복귀 세 박자(0.32초)를 다 도는 연출이 붙으면서 연속 공격의
   팝업이 애초에 서로 겹칠 수 없게 됐다. 지연이 남는 것은 연출이 붙지 않는
   경우(시전자가 없는 레거시 카드)뿐이다.
 - `_advance_popups(delta)` 가 `_process` 에서 돌며 만료분을 버리고, 살아 있는

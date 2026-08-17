@@ -466,7 +466,9 @@ logical state so the renderer can soften the transition:
   actually moved — one tween per pilot per turn even across several lockstep
   rounds. `advance_pilot` does the same per mini-tick.
 - The damage_map application loop calls `_bs.anim_pilot_shake(p)` for surviving
-  pilots that took damage > 0.
+  pilots that took damage > 0 — **인자 없는 기본 세기**(0.18s / 6px)다. 공격
+  카드는 같은 함수에 자기 상수(`ANIM_SHAKE_CARD_*`, 0.26s / 20px)를 넘겨 훨씬
+  격렬하게 흔든다.
 - The `turret_dmg` application loop calls `_bs.anim_turret_hit(td)` for turrets
   that took damage > 0 **and survived** — both in `simulate_turn` step 5 and in
   `_apply_card_damage`. A killing blow is skipped: the `Building` node is freed

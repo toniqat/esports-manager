@@ -686,8 +686,16 @@ func _pilot_anim_offset(p: PilotData) -> Vector2:
 	off += _bs.pilot_lunge_offset(p)
 	if p.anim_shake_dur > 0.0:
 		var t: float = clamp(p.anim_shake_t / p.anim_shake_dur, 0.0, 1.0)
-		var amp: float = _bs.ANIM_SHAKE_AMP_PX * (1.0 - t)
-		off.x += sin(t * TAU * 4.0) * amp
+		# 진폭은 흔들림을 건 쪽이 정한다(전장 교전 6px / 공격 카드 20px).
+		# 0 은 `anim_shake_amp` 가 붙기 전에 만들어진 상태이므로 기본값으로 읽는다.
+		var base_amp: float = p.anim_shake_amp
+		if base_amp <= 0.0:
+			base_amp = _bs.ANIM_SHAKE_AMP_PX
+		var amp: float = base_amp * (1.0 - t)
+		# **주파수는 고정, 진동 수가 지속시간을 따라간다.** 진동 수를 4회로
+		# 고정하면 길게 흔들라는 지시가 "느리게 흔들라"가 되어 격렬함이 사라진다.
+		var cycles: float = 4.0 * (p.anim_shake_dur / _bs.ANIM_SHAKE_DUR)
+		off.x += sin(t * TAU * cycles) * amp
 	return off
 
 

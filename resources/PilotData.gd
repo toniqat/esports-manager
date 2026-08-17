@@ -93,8 +93,12 @@ var anim_prev_grid_pos: Vector2i = Vector2i.ZERO
 var anim_move_t: float    = 0.0
 var anim_move_dur: float  = 0.0
 # Damage shake: short horizontal jitter.
+# 진폭은 **흔들림마다 다르다** — 전장 자동 교전은 `BattleSim.ANIM_SHAKE_AMP_PX`,
+# 공격 카드 명중은 `ANIM_SHAKE_CARD_AMP_PX`(훨씬 크다)로 들어온다. 상수를 하나로
+# 두고 렌더러가 읽던 시절에는 둘 중 하나만 맞출 수 있었다.
 var anim_shake_t: float   = 0.0
 var anim_shake_dur: float = 0.0
+var anim_shake_amp: float = 0.0
 # Recall sequence: 0 = none, 1 = fade-out + rise at anim_recall_orig,
 # 2 = fade-in + descend at grid_pos (HQ). Respawn skips straight to phase 2.
 var anim_recall_phase: int   = 0

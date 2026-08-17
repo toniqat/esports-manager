@@ -256,8 +256,128 @@ re-evaluates the dim state.
   Deck / Discard labels: a normal draw snaps; a reshuffle draw kicks off a
   parallel tween (`_animate_reshuffle_counts`) that drains the discard count
   to 0 while the deck count grows over `BS_RESHUFFLE_TWEEN_DUR` (~0.55s).
-- `spawn_card_node(cd)` — instantiates a player Card.tscn into `_bs.canvas`. The
-  AI hand is logical-only — no card backs are spawned for the enemy.
+- `spawn_card_node(cd, at_left = false, animate = true)` — instantiates a player
+  Card.tscn into `_bs.canvas`. The AI hand is logical-only — no card backs are
+  spawned for the enemy. `animate` runs the 드로우 인트로 below.
+
+#### 드로우 인트로 (뽑힌 카드가 손패에 들어오는 길)
+뽑힌 카드는 자기 슬롯에 그냥 나타나지 않는다. **덱 뭉치에서 한 장이 떠오르며
+사라지고 → 뒷면인 채로 화면 왼쪽 바깥에서 나타나 → 손패 오른쪽 끝(새 카드가
+앉을 자리) 위로 날아가 → 그 자리에서 뒤집혀 내용을 드러내며 → 슬롯에
+안착한다.** 네 박자가 각각 다른 질문에 답한다: 어디서 왔는가(덱 뭉치 →
+왼쪽) → 어디에 앉는가(행의 오른쪽 끝) → 무엇인가(드러나는 앞면).
+
+| 박자 | 담당 | 시간 |
+|---|---|---|
+| 덱 뭉치에서 떠오르며 사라짐 | `_play_draw_intro` ⓪, `CardPileStack.play_pop()` | `GHOST_SEC` **0.26s** (이어받기는 **0.182s** 에) |
+| 왼쪽 바깥 → 오른쪽 끝 위 | `_play_draw_intro` ①, `Card.tween_to` | `DRAW_FLY_SEC` **0.28s** |
+| 뒤집기 | `Card.play_flip_reveal()` | `Card.FLIP_HALF_SEC` × 2 = **0.18s** |
+| 안착 | `_play_draw_intro` ③ → `relayout_hand` | `BS_HAND_SPRING_DURATION` 0.18s |
+
+- **⓪ 과 ① 은 겹친다.** 왼쪽 진입은 잔상이 다 사라진 뒤가 아니라 알파가
+  `CardPileStack.GHOST_HANDOFF_ALPHA`(0.30) 만큼 남은 시점
+  (`CardPileStack.ghost_handoff_delay()` = 0.182s)에 시작한다 — 완전히 사라진
+  뒤에 시작하면 카드 한 장이 두 번 나온 것처럼 끊겨 보인다. 뭉치가 아직
+  없으면(`pile_deck == null`, HUD 가 세워지기 전의 개시 배분) 이 박자는 통째로
+  건너뛴다. 잔상 자체는 `ui/README.md` → 오가는 카드 = 잔상.
+- **출발점** `_draw_entry_position()` = `(-CARD_W - DRAW_ENTRY_PAD_PX, BS_HAND_CENTER.y)`
+  — 카드 폭만큼 더 나가 있어 첫 프레임에 화면 안쪽으로 삐져나오지 않는다.
+- **뒤집는 지점은 최종 슬롯보다 `DRAW_FLIP_LIFT_PX`(78px) 위**다. 행 안에서
+  뒤집으면 이웃 카드에 절반이 가리고, 마지막 "안착"이 눈에 보이는 동작으로
+  남지 않는다.
+- **비행 곡선은 `EASE_IN_OUT` / `TRANS_SINE`.** 처음엔 `EASE_OUT` / `TRANS_CUBIC`
+  이었는데 앞이 무거운 감속 곡선이라 1200px 를 0.10초 만에 77% 지나가 "왼쪽에서
+  왔다"가 읽히지 않았다(실측). 대칭 곡선이 가로지르는 구간을 눈에 남긴다.
+- **비행은 `Card.tween_to`(= `_active_tween`)를 그대로 쓴다.** 카드 자신이 쥔
+  트윈이라야 `begin_discard_fx` 가 걷어 낼 수 있기 때문이다 — 상한 초과 정리는
+  **가장 오래된 카드**를 버리는데 그 카드가 아직 날아오는 중일 수 있고, 죽지 않은
+  비행 트윈이 남으면 떨어지는 카드를 도로 손패 쪽으로 끌어올린다.
+- **`Card.intro_active` 가 그 카드를 손패의 일원에서 잠시 뺀다**:
+  `relayout_hand` 이 건너뛰고(위치의 주인은 인트로다), `Card.set_hovered` 와
+  `_grabbable_card_at` 이 거절한다(아직 잡을 수 있는 카드가 아니다). 나머지
+  손패는 스폰 즉시 **새 카드 몫까지 좁혀 놓고** 기다린다 — `relayout_hand` 은
+  총 장수로 이미 돌았다.
+- **뒤집기는 `scale.x` 를 0 까지 접었다 펴는 2D 흉내**이고, 앞/뒷면 교체는 폭이
+  0 인 그 프레임에 일어난다. 도는 동안 `Card._flip_active` 가 서고
+  `_refresh_float_state` 는 `scale` 에서 손을 뗀다 — 호버 확대와 같은 프로퍼티를
+  두고 다투면 카드가 납작한 채로 굳는다.
+- **같은 프레임에 여러 장이 뽑히면**(개시 5장 / `draw:N` / 재고) 출발 시각이
+  `DRAW_STAGGER_SEC`(0.07s)씩 밀린다. 없으면 다섯 장이 정확히 겹쳐 날아가 한 장
+  처럼 보인다. 간격은 `_draw_intro_active`(진행 중인 인트로 수)로 잰다.
+- **각 박자는 트윈의 `finished` 가 아니라 `SceneTreeTimer` 로 기다린다.** 카드가
+  도중에 free 되면(재시작 / 스냅샷 롤백 / 상한 초과 정리) 그 트윈의 `finished` 는
+  영영 오지 않아 코루틴이 매달린 채 카운터를 붙잡는다. 매 박자 앞에
+  `_intro_alive(node)` 를 다시 묻는다.
+- **인트로를 끄는 두 호출자**: `at_left` 복귀(정밀 이동 — 왼쪽으로 되돌아오는
+  카드라 오른쪽 끝으로 날아가는 연출이 방향부터 어긋난다)와
+  `_restore_from_snapshot`(취소 롤백은 손패를 통째로 다시 세우는 작업이라,
+  연출을 태우면 되돌린 손패 전체가 새로 뽑힌 것처럼 보인다).
+- **실측**(헤드리스): 스폰 직후 `intro_active = true` · `face_up = false` ·
+  `position = (-300, 1440)`; 인트로 종료 시 `face_up = true` · `scale = (1,1)`;
+  안착 후 슬롯과의 오차 **0.00px** / 회전 오차 **0.0000**.
+
+#### 버리기 연출 (`Card.begin_discard_fx`)
+손패를 떠나 버려지는 카드는 **부채꼴 기울기와 무관하게 화면 Y축으로만** 곧장
+내려가며 투명해지고(`DISCARD_DROP_PX` **150px** / `DISCARD_FADE_SEC` 0.30s) 다
+내려가면 스스로 `queue_free` 한다. 리프트(`PRESS_LIFT`)가 카드 자신의 up 축을
+타는 것과 반대다 — 버려지는 카드는 손에서 뽑히는 게 아니라 아래로 떨어지는
+것이라, 기울기를 타면 기울어진 카드만 옆으로 새 나가 줄이 흐트러져 보인다.
+(부모가 `CanvasLayer` 라 회전이 없으므로 `position.y` 를 더하는 것이 곧 순수
+화면 Y축 이동이다.)
+
+- **낙하 곡선은 `EASE_OUT`** — 손을 떠나는 순간 확 튕겨 내려간 뒤 아래에서
+  서서히 멎는다. 예전에는 `EASE_IN` 이라 처음엔 굼뜨다가 마지막에 빨라졌고,
+  그러면 카드가 손패에서 **떨어져 나가는** 순간이 가장 흐릿하고 정작 다 사라질
+  때 제일 빨라 "버렸다"의 무게가 끝에 실렸다. 페이드(`modulate`)는 그대로
+  `EASE_IN` 이라 카드는 다 내려가 멎은 자리에서 마저 지워진다.
+- **버린 더미 쪽에도 반대 방향의 잔상이 내려앉는다** — 카드 한 장이 뭉치 위에서
+  아래로 내려오며 나타난다(`CardPileStack.play_land`). **손패 카드의 낙하가 다
+  끝난 뒤에 시작한다**: `PILE_LAND_DELAY_SEC` = `Card.DISCARD_FADE_SEC`(0.30s)
+  로 묶여 있어 두 연출이 겹치지 않고 이어 붙는다 — 한 장의 카드가 손에서 떨어져
+  더미로 들어가는 **한 동작**으로 읽히게 하기 위해서다. 예전 0.16s 는 카드가
+  아직 반쯤 떨어지는 중에 더미가 먼저 받아, 같은 카드가 두 군데에 동시에 있었다.
+  **부르는 자리는 한 곳, `_notice_discard_gain()` 이다**: 버린 더미가 카드를 받는
+  코드는 일곱 군데(카드 사용 / 버리기:N / 상한 초과 정리 / 과감한 정리 …)나
+  되므로 전부를 부르는 대신 `update_deck_discard_labels` 에서 **장수가 늘어난 것을
+  알아챈다** — 어차피 일곱 군데가 모두 지나는 자리이고(숫자가 안 바뀌면 화면도
+  안 바뀐다), 리셔플처럼 줄어드는 경우는 델타가 음수라 저절로 걸러진다. 한 번에
+  띄우는 잔상은 `PILE_LAND_MAX_GHOSTS`(3장)까지다 — 그 이상은 겹쳐 뭉개지기만
+  한다. **소멸(`exhaust`)은 버린 더미로 가지 않으므로 잔상도 없다** —
+  `play_discard_fx` 가 아니라 장수를 기준으로 삼은 것이 그대로 그 규칙이 된다.
+- **숫자와 두께는 잔상이 다 내려앉은 뒤에 오른다.** `_discard_pending` 이 "배열
+  에는 들어왔지만 아직 화면에 없는 장수"를 들고 있고, 표시값은 언제나
+  `배열 크기 − _discard_pending` 이다. `_commit_discard_gain(n, wait)` 이
+  `PILE_LAND_DELAY_SEC + (장수−1)×GHOST_STAGGER_SEC + GHOST_SEC` 뒤에 그만큼을
+  털어 내면서 숫자와 뭉치 두께가 함께 오른다 — 카드가 뭉치에 **닿는** 순간과
+  더미가 두꺼워지는 순간이 같아진다. 대기는 트윈이 아니라 `SceneTreeTimer` 다
+  (드로우 인트로와 같은 이유: 노드가 도중에 사라져도 코루틴이 매달리지 않는다).
+  - **델타 0 은 정산을 건드리지 않는다.** `update_deck_discard_labels` 은 대부분
+    델타 0 인 단순 갱신으로 불리므로(드로우 / 손패 재배치 / HUD 갱신 …), 거기서
+    `_discard_pending` 을 0 으로 밀면 갱신 한 번에 지연이 통째로 날아가 잔상이
+    채 내려앉기도 전에 숫자가 올라간다(구현 중 실측으로 잡은 버그). 0 으로
+    되돌리는 것은 **줄어든 경우(리셔플)뿐**이고, `_animate_reshuffle_counts` 도
+    자기 초입에서 `_discard_seen` / `_discard_pending` 을 다시 잡는다.
+  - **실측**(헤드리스): 배열에 1장 추가 직후 `displayed` 그대로 · `pending 1`
+    → 0.30s 시점에도 그대로 → 0.65s 시점에 `displayed 1.0` · `pending 0`.
+- 진입점은 `CardPhaseManager.play_discard_fx(node)` 하나이고, **노드는 부르기
+  전에 이미 `player_card_nodes` 에서 빠져 있어야 한다** — 연출이 도는 0.3초
+  동안 레이아웃 · 호버 · 히트 밴드가 그 카드를 여전히 손패로 세면 남은 카드들이
+  빈자리를 메우지 못한다. `_despawn_player_card_node` 가 erase → play 순서로
+  부른다.
+- 진행 중이던 레이아웃 / 호버 / 그림자 / 뒤집기 트윈을 전부 killed 한 뒤 건다.
+  같은 `position` · `modulate` 를 두고 다투는 트윈이 남으면 카드가 제자리로
+  끌려 올라간다.
+- **버리기:N 의 중앙 줄도 같은 연출로 내려간다.** `CardSelectOverlay._commit_discard`
+  가 `to_discard_nodes` 를 목록에서 먼저 떼어 내고(안 그러면 `_teardown` 이 그
+  자리에서 free 한다) 한 장씩 `play_discard_fx` 로 넘긴다. **취소 경로는
+  예외다** — `_on_cancel_pressed` → `_teardown` 은 그대로 즉시 free 하고
+  `_restore_from_snapshot` 이 손패를 다시 세운다. 버려지지 않은 카드가 떨어질
+  이유가 없다.
+- **실측**(헤드리스, 낙하 거리 260px 시절): 배열에서는 즉시 빠지고 노드는 살아
+  있음 → 0.15초 시점에 `dy = +37.2px` · `dx = 0.00` · `rot_delta = 0.0000` ·
+  `alpha = 0.73` → 0.45초 시점에 free 완료. 지금 거리는 **150px** 이다 —
+  카드가 화면 아래로 멀리 빠져나가기보다 손패 바로 밑에서 사라지는 쪽이
+  "버렸다"로 읽힌다.
 - **The fan is one circle.** Every card centre rides a circle of radius
   `BS_HAND_FAN_RADIUS` (3200px) whose pivot sits directly *below* the row, and
   both readings of the fan come off it: a card's tilt is its angle on the circle
@@ -354,8 +474,12 @@ re-evaluates the dim state.
   `Card.layout_position_from_global()` and tweens plain `position` instead; a
   card's visual centre is always `position + pivot_offset`, invariant under both
   rotation and scale.
-- `update_deck_discard_labels()` / `_refresh_count_labels()` — snap visible
-  counts to current player_deck / player_discard sizes.
+- `update_deck_discard_labels()` / `_refresh_count_labels()` — snap the visible
+  Deck count to `player_deck.size()`; the Discard count lags by
+  `_discard_pending` until its 착지 잔상 lands (see 버리기 연출). The counts go into the
+  two `CardPileStack` 뭉치 (`_bs.pile_deck` / `_bs.pile_discard`) as **floats**,
+  so during a reshuffle tween the stack's thickness rides the same curve the
+  number does. See `ui/README.md` → 덱 / 버린 더미 뭉치.
 - `highlight_affordable_cards()` — re-reads every visible card's playability:
   `set_affordable(eff <= player_cost)`, `set_respawn_turns(respawn_turns_for(cd))`,
   and `update_displayed_cost(eff)`. Tail-calls `_apply_hand_dim_state()` and
@@ -379,12 +503,12 @@ re-evaluates the dim state.
   gone, but `CardTargetingOverlay.BTN_H` / `BTN_HAND_GAP` still reserve the gap
   so the donut doesn't land on the cards' top edge.)
   `BS_HAND_AREA_MARGIN` (130px) on each side is reserved for the
-  Deck / Discard count labels and shrinks the inner `BS_HAND_WIDTH`, which is
+  Deck / Discard 뭉치 and shrinks the inner `BS_HAND_WIDTH`, which is
   then widened by `BS_HAND_WIDTH_SCALE` (1.10) → **902px** on a 1080-wide
-  screen (row spans x=89..991). That eats into the label gutters, so
+  screen (row spans x=89..991). That eats into the pile gutters, so
   `HudBuilder._build_hand_indicators` derives its gutter from the real hand
-  edge instead of `BS_HAND_AREA_MARGIN` and scales the label font down to fit
-  (130→89px gutter, font 22→20).
+  edge instead of `BS_HAND_AREA_MARGIN` and scales the title font down to fit
+  (130→89px gutter, font 22→20; the pile itself is 81px wide after a 4px inset).
 - **Floating shadow** (`Card._build_shadow` / `_refresh_float_state`): every
   player card owns a `DropShadow` Panel parked at child index 0, so it draws
   under `CardBack` / `CardFront` and inherits the card's fan rotation and
@@ -1251,17 +1375,17 @@ keyword check has always fired first, so they are 소멸 on their first play.
 버리기/찾기 overlay's 10 and the targeting overlay's 11, so a list opened over
 either of them covers both).
 
-- **Entry point**: the two hand-row counters. `HudBuilder._build_hand_indicators`
-  lays a transparent flat `Button` over each `Deck` / `Discard` label
-  (`_make_pile_button`) — a `Label` is `MOUSE_FILTER_IGNORE` by class default
-  and can't take a click itself — and the press calls
+- **Entry point**: the two hand-row 뭉치. `HudBuilder._build_hand_indicators`
+  lays a transparent flat `Button` over each `CardPileStack`
+  (`_make_pile_button`) — the pile sets itself to `MOUSE_FILTER_IGNORE` and
+  can't take a click itself — and the press calls
   `CardPileViewer.open(Pile.DECK | Pile.DISCARD)`.
 - **When it opens**: `CardPhaseManager.can_browse_piles()` — 작전 단계 only, and
   not while the turn banner, the AI's play loop, a 버리기/찾기 overlay or the
   engage arena owns the screen. `HudBuilder._update_pile_buttons()` (called from
-  `update_hud`) disables both buttons and fades the labels to
-  `PILE_LABEL_DIM_ALPHA` whenever the answer is no, so "you can't open this
-  right now" is visible rather than a dead tap.
+  `update_hud`) disables both buttons and dims both piles
+  (`CardPileStack.set_dimmed(true)`) whenever the answer is no, so "you can't
+  open this right now" is visible rather than a dead tap.
 - **Contents**: the same 5-column `ScrollContainer` grid the 찾기 overlay uses,
   **sorted by card name** (`_sorted_cards()`, ties broken by cost) on a
   *duplicate* — the live pile order is never touched, and the deck's real draw

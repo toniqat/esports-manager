@@ -212,7 +212,16 @@ func _commit_discard() -> void:
 	if to_discard_cards.size() != target_count:
 		return
 	var picks := to_discard_cards.duplicate()
+	# 중앙에 늘어선 카드들도 손패에서 버릴 때와 **같은 연출**로 내려보낸다.
+	# `_teardown` 은 to_discard_nodes 를 그 자리에서 free 하므로, 연출을 넘길
+	# 노드는 목록에서 먼저 떼어 낸다.
+	var dropping := to_discard_nodes.duplicate()
+	to_discard_nodes.clear()
 	_teardown()
+	for raw in dropping:
+		var node := raw as Card
+		if is_instance_valid(node) and _bs.card_phase != null:
+			_bs.card_phase.play_discard_fx(node)
 	_finish_with_picks(picks)
 
 

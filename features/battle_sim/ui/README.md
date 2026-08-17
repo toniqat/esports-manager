@@ -4,6 +4,7 @@
 |---|---|---|
 | `HudBuilder.gd` | HudBuilder | Builds and updates the whole battle HUD |
 | `CostDonut.gd`  | CostDonut  | 전략 포인트 ring gauge; the player's one doubles as the 턴 넘기기 button |
+| `CardPileStack.gd` | CardPileStack | 덱 / 버린 더미 — 앞으로 누운 카드 뭉치 + 장수 |
 | `PilotStrip.gd` | PilotStrip | 파일럿 5인 스트립 — 눈높이 초상화 + 체력 바 + 성장치. 상단(적) / 하단(아군) 두 벌 |
 | `PilotDetailPanel.gd` | PilotDetailPanel | 파일럿 상세 모달 — 좌 전신 아트 / 우 아웃게임·인게임·메크 스탯 |
 
@@ -52,22 +53,28 @@ Creates UI inside `_bs.canvas` (a CanvasLayer added to BattleSim):
   스트립**. Has an explicit opaque dark `StyleBoxFlat` so the AI hand peek
   behind it stays visually clipped regardless of theme. 아군 스트립은 여기가
   아니라 핸드 행 아래에 있다 — 아래 파일럿 스트립 절 참고.
-- **Hand indicators** (in the gutters either side of the card row) —
-  `lbl_deck_count` (left, "Deck\n10") and `lbl_discard_count` (right,
-  "Discard\n0"). CardPhaseManager updates the text on every draw / play and
-  tweens the counts during a deck/discard reshuffle. Built by
-  `_build_hand_indicators()`. **Both counters are also buttons**: a transparent
-  flat `Button` (`_make_pile_button`) covers each label — a `Label` is
-  `MOUSE_FILTER_IGNORE` by class default and takes no clicks of its own — and
-  opens `CardPileViewer` on that pile. `_update_pile_buttons()` runs from
+- **Deck / Discard 카드 뭉치** (in the gutters either side of the card row) —
+  `_bs.pile_deck` (left) and `_bs.pile_discard` (right), two `CardPileStack`
+  controls. CardPhaseManager pushes the count on every draw / play and tweens
+  it during a deck/discard reshuffle. Built by `_build_hand_indicators()`.
+  **Both piles are also buttons**: a transparent flat `Button`
+  (`_make_pile_button`) covers each one — `CardPileStack` sets itself to
+  `MOUSE_FILTER_IGNORE` and takes no clicks of its own — and opens
+  `CardPileViewer` on that pile. `_update_pile_buttons()` runs from
   `update_hud()` and gates both on `CardPhaseManager.can_browse_piles()`
-  (작전 단계 only), fading the labels to `PILE_LABEL_DIM_ALPHA` while disabled.
+  (작전 단계 only), fading the piles via `set_dimmed(true)` while disabled.
   See `card_phase/README.md` → Deck / Discard 목록 열람. The gutter is
   **not** `BS_HAND_AREA_MARGIN` —
   `BS_HAND_WIDTH_SCALE` widens the card row past it, so the gutter is derived
   as `min(BS_HAND_AREA_MARGIN, (screen_w − BS_HAND_WIDTH) / 2)` (89px at 1080)
-  and the font shrinks with it (22 → 20) so "Discard" still fits and no card
-  ever overlaps a label.
+  and the title font shrinks with it (22 → 20) so "Discard" still fits and no
+  card ever overlaps a pile. The inset is **4px** (the old labels used 8) —
+  the pile's width *is* the card's width, so it takes everything the gutter has.
+
+  > **예전에는 이 자리가 `"Deck\n18"` 두 줄짜리 `Label` 하나였다.** 숫자는
+  > 읽혔지만 더미가 물건으로 보이지 않아서, 손패에 들어오는 카드가 어디서
+  > 오고 버린 카드가 어디로 가는지가 화면 어디에도 없었다. `lbl_deck_count` /
+  > `lbl_discard_count` 는 그때 사라졌다.
 - **전략 포인트 도넛 ×2** — `CostDonut` ring gauges in the **left-hand** gutter
   (see below). Built by `_build_cost_donuts()`.
 - **아군 파일럿 스트립** (y 1766..1888) — 핸드 행 아래. 예전에는 여기가 비어
@@ -145,6 +152,70 @@ still exists on `CostDonut` but **nothing calls it any more** — targeting stop
 being modal, so there is no state that needs the flip blocked. The donut's y is
 still derived from `CardTargetingOverlay.BTN_HAND_GAP + BTN_H` so it keeps the
 same vertical band the 확인/취소 row occupies on the far side of the screen.
+
+### 덱 / 버린 더미 뭉치 (`CardPileStack.gd`)
+핸드 행 양옆 거터에 **앞으로 누운 카드 뭉치**를 그리는 `Control`. 뒷면이 위를
+향한 카드가 겹쳐 쌓인 모양이고, 그 자체가 카운터이자 열람 버튼의 과녁이다.
+
+**"누워 있다"는 두 가지가 만든다.** (1) 세로를 `FORESHORTEN`(0.55)만큼 눌러
+카드의 220/160 비율을 죽이고, (2) **윗변을 아랫변보다 좁게**
+(`TOP_EDGE_SCALE` 0.78) 그려 원근을 넣는다. 직사각형을 그냥 납작하게만 눌러
+놓으면 누운 카드가 아니라 그냥 얇은 카드로 읽힌다. `FORESHORTEN` 은 0.42 로
+시작했다가 0.55 로 올렸다 — 더 눕히면 맨 위 카드의 면이 숫자보다 얇아져
+뒷면이 아니라 띠가 된다. 세로 자리는 핸드 행 높이(220px)만큼 있고 뭉치는
+100px 도 안 쓰므로 아낄 이유가 없다.
+
+**층은 위로 쌓인다.** 층이 올라갈수록 화면 **위쪽**으로 `LAYER_DY`(5.5px)씩
+밀리므로 아래 카드들의 앞쪽 단면이 뭉치 **아래**로 삐져나오고, 위에서 비스듬히
+내려다보는 자세가 된다. 맨 마지막에 그리는 층이 곧 맨 위 카드이고, 장수는 그
+카드 뒷면 한가운데에 찍힌다(외곽선을 함께 깐다 — 아래 층의 밝은 단면과 겹치는
+프레임이 있다). 제목("Deck" / "Discard")은 뭉치 아래 `Label` 자식이다.
+
+**두께 = 장수.** 보이는 층 수는 `ceil(count / CARDS_PER_LAYER)`(4장당 한 층),
+상한 `MAX_LAYERS`(8). **바닥선은 고정이고 뭉치는 위로만 자란다** — 세로 중심을
+고정하면 카드 한 장이 오갈 때마다 뭉치 전체가 아래위로 떨린다. 자리는 언제나
+`MAX_LAYERS` 기준으로 잡아 둔다. `set_count()` 는 `float` 를 받는다:
+`CardPhaseManager._animate_reshuffle_counts` 의 리셔플 트윈이 소수로 굴러들어
+오므로 두께도 숫자와 같은 곡선으로 자라고 줄어든다. 0장이면 테두리만 남은 빈
+슬롯 하나에 흐린 "0".
+
+맨 위 카드 뒷면 색(`BACK_FILL` / `BACK_LINE`)은 `Card._apply_back_style` 와
+같은 값이라 손패의 뒷면 카드와 같은 물건으로 읽힌다. **뒷면은 이 색 하나로
+균일하게 칠한다** — 예전에는 면 안쪽으로 물러난 사다리꼴을 더미별 accent 색
+(덱 보라 / 버린 더미 적갈, `HudBuilder.PILE_ACCENT_*`)으로 덧그렸는데, 뭉치가
+작아 그 액자가 무늬가 아니라 **면에 얹힌 계조**로 읽혔다. 두 더미는 아래 제목
+라벨이 이미 갈라 주므로 색으로 또 가를 이유가 없다. `accent` 인자와
+`PILE_ACCENT_*` 상수는 그때 함께 사라졌고 `setup()` 은 `(title, font_size)` 다.
+
+측정(1080폭, 거터 81px): 카드 한 장 61px · 8층 뭉치 99.5px · 숫자 폰트 27.
+
+#### 오가는 카드 = 잔상 (`play_pop` / `play_land`)
+숫자만 바뀌면 카드가 **더미에서 나왔다 / 더미로 들어갔다**가 화면에 남지 않는다.
+그래서 뭉치는 맨 위 카드와 같은 모양의 **잔상** 한 장을 더 그린다 — 노드가
+아니라 `_draw()` 안의 사다리꼴 하나라 레이아웃 · 입력 · z-order 에 아무 영향이
+없고, 잔상은 뭉치보다 **뒤에 그리지 않는다**(가려지면 동작의 절반이 사라진다).
+
+| | 방향 | 알파 | 부르는 곳 |
+|---|---|---|---|
+| `play_pop()` (덱) | 맨 위 카드에서 **위로** `GHOST_RISE_PX`(74px) | 1 → 0 | `CardPhaseManager._play_draw_intro` ⓪ |
+| `play_land()` (버린 더미) | 그 높이에서 **아래로** 내려앉음 | 0 → 1 | `CardPhaseManager._notice_discard_gain` |
+
+- 한 장이 도는 시간은 `GHOST_SEC`(0.26s). 잔상은 **여러 장이 동시에** 돌 수
+  있어야 하므로(개시 5장 · 드로우:N · 버리기:N) 트윈이 아니라 `_ghosts` 배열 +
+  `_process` 로 굴린다. 각 항목이 자기 `delay` 와 진행도를 들고 있어 서로를
+  끊지 않는다. `play_burst(land, n, delay)` 가 `GHOST_STAGGER_SEC`(0.08s)씩
+  밀어 넣는다.
+- **드로우와의 이음매**: 왼쪽 진입은 잔상이 다 사라진 뒤가 아니라 알파가
+  `GHOST_HANDOFF_ALPHA`(0.30) 만큼 남은 시점에 시작한다 — 완전히 사라진 뒤에
+  시작하면 한 장이 두 번 나온 것처럼 끊겨 보인다. 그 시각은
+  `CardPileStack.ghost_handoff_delay()`(= 0.182s) 한 곳에서 나온다.
+- **버리기와의 이음매는 반대로 겹치지 않는다.** 착지 잔상은 손패 카드가 다
+  떨어진 **뒤**(`CardPhaseManager.PILE_LAND_DELAY_SEC` = `Card.DISCARD_FADE_SEC`
+  0.30s)에 출발한다 — 드로우는 한 장이 덱에서 손으로 이어 달리는 그림이라
+  겹쳐야 하고, 버리기는 손에서 떨어진 카드가 더미에 **도착**하는 그림이라
+  이어 붙여야 한다. 그리고 **숫자와 두께는 그 잔상이 다 내려앉은 뒤에 오른다**
+  (`CardPhaseManager._discard_pending` / `_commit_discard_gain`) — 카드가 뭉치에
+  닿는 순간과 더미가 두꺼워지는 순간이 같아진다.
 
 ### 파일럿 스트립 (`PilotStrip.gd`) — 상단 적 / 하단 아군
 예전에는 열 명이 **전부 상단 패널 안에** 84px 슬롯으로 몰려 있었다(아군 좌 /

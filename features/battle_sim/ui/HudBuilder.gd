@@ -126,64 +126,70 @@ func build_ui() -> void:
 	_build_turn_announcer()
 
 
-# ── Deck / Discard count labels ──────────────────────────────────────────────
+# ── Deck / Discard 카드 뭉치 ─────────────────────────────────────────────────
 # Live in the BS_HAND_AREA_MARGIN gutters on either side of the hand row.
 # The hand row spans y=BS_HAND_CENTER.y .. y=BS_HAND_CENTER.y + Card.CARD_H,
-# so we centre the labels vertically across that same band.
+# so we centre the piles vertically across that same band.
+#
+# 예전에는 이 자리에 `"Deck\n18"` 두 줄 Label 하나였다. 지금은 같은 rect 안에
+# **앞으로 누운 카드 뭉치**(`CardPileStack`)를 그린다 — 뒷면이 위를 향한 채
+# 겹쳐 쌓이고, 두께가 실제 장수에 비례하며, 장수는 맨 위 카드 뒷면에 찍힌다.
+# 자리와 크기(gutter · inset)는 그대로라 도넛 · 핸드 · 전장은 손대지 않았다.
 const HAND_INDICATOR_FONT       := 22
 const HAND_INDICATOR_TITLE_COL  := Color(0.85, 0.85, 0.85)
-## 목록을 열 수 없는 상태에서 카운터 라벨에 씌우는 알파.
+## 목록을 열 수 없는 상태에서 뭉치에 씌우는 알파.
 const PILE_LABEL_DIM_ALPHA      := 0.45
+# 예전에는 뒷면 안쪽에 더미별 accent 무늬(덱 보라 / 버린 더미 적갈)를 덧그렸다.
+# 뭉치가 작아 그 액자가 무늬가 아니라 면에 얹힌 계조로 읽혀 삭제했고, 두 더미는
+# 아래 제목 라벨이 가른다 — `CardPileStack.BACK_FILL` 주석 참고.
 func _build_hand_indicators() -> void:
 	var hand_y: float = _bs.BS_HAND_CENTER.y
 	var hand_h: float = Card.CARD_H
-	var screen_w0 := get_viewport().get_visible_rect().size.x
+	var screen_w := get_viewport().get_visible_rect().size.x
 	# BS_HAND_WIDTH_SCALE widens the card row past the nominal margin, so the
 	# real gutter is whatever is left beside the hand — never wider than the
 	# nominal margin, and never overlapped by the outermost card.
 	var margin: float = min(_bs.BS_HAND_AREA_MARGIN,
-			(screen_w0 - _bs.BS_HAND_WIDTH) * 0.5)
-	# Inset the labels a few px so they don't kiss the screen edge.
-	var inset: float  = 8.0
+			(screen_w - _bs.BS_HAND_WIDTH) * 0.5)
+	# Inset a few px so the pile doesn't kiss the screen edge. 예전 라벨은 8px
+	# 씩 물러났는데, 뭉치는 폭이 곧 카드 크기라 4px 만 남기고 최대한 넓게 쓴다.
+	var inset: float  = 4.0
 	var w: float      = max(1.0, margin - inset * 2.0)
 	# Shrink the font when the gutter is tighter than nominal so "Discard"
 	# still fits inside it (~3.5 px of glyph per point of font size).
 	var font_size: int = clampi(int(w / 3.5), 12, HAND_INDICATOR_FONT)
 
-	_bs.lbl_deck_count = Label.new()
-	_bs.lbl_deck_count.text = "Deck\n0"
-	_bs.lbl_deck_count.add_theme_font_size_override("font_size", font_size)
-	_bs.lbl_deck_count.add_theme_color_override("font_color", HAND_INDICATOR_TITLE_COL)
-	_bs.lbl_deck_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_bs.lbl_deck_count.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
-	_bs.lbl_deck_count.position = Vector2(inset, hand_y)
-	_bs.lbl_deck_count.size     = Vector2(w, hand_h)
-	_bs.canvas.add_child(_bs.lbl_deck_count)
+	_bs.pile_deck = _make_pile_stack("Deck", font_size,
+			Vector2(inset, hand_y), Vector2(w, hand_h))
+	_bs.pile_discard = _make_pile_stack("Discard", font_size,
+			Vector2(screen_w - margin + inset, hand_y), Vector2(w, hand_h))
 
-	var screen_w := get_viewport().get_visible_rect().size.x
-	_bs.lbl_discard_count = Label.new()
-	_bs.lbl_discard_count.text = "Discard\n0"
-	_bs.lbl_discard_count.add_theme_font_size_override("font_size", font_size)
-	_bs.lbl_discard_count.add_theme_color_override("font_color", HAND_INDICATOR_TITLE_COL)
-	_bs.lbl_discard_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_bs.lbl_discard_count.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
-	_bs.lbl_discard_count.position = Vector2(screen_w - margin + inset, hand_y)
-	_bs.lbl_discard_count.size     = Vector2(w, hand_h)
-	_bs.canvas.add_child(_bs.lbl_discard_count)
-
-	# 두 카운터는 눌러서 해당 더미의 카드 목록을 펼치는 버튼이기도 하다.
-	# Label 은 기본 MOUSE_FILTER_IGNORE 라 클릭을 받지 못하므로, 라벨 rect 를
-	# 그대로 덮는 투명 Button 을 얹어 입력만 가져간다.
-	_btn_deck_view = _make_pile_button(_bs.lbl_deck_count,
+	# 두 뭉치는 눌러서 해당 더미의 카드 목록을 펼치는 버튼이기도 하다.
+	# `CardPileStack` 은 스스로 MOUSE_FILTER_IGNORE 라 클릭을 받지 못하므로,
+	# 뭉치 rect 를 그대로 덮는 투명 Button 을 얹어 입력만 가져간다.
+	_btn_deck_view = _make_pile_button(_bs.pile_deck,
 			CardPileViewer.Pile.DECK)
-	_btn_discard_view = _make_pile_button(_bs.lbl_discard_count,
+	_btn_discard_view = _make_pile_button(_bs.pile_discard,
 			CardPileViewer.Pile.DISCARD)
 	_update_pile_buttons()
 
 
-# 카운터 라벨 위에 얹는 투명 히트 버튼. flat + alpha 0 이라 라벨의 생김새는
+# `setup()` 은 size 에서 폰트 크기와 자리를 유도하므로 **size 를 넣은 뒤**에
+# 불러야 한다. 트리에 붙이는 것도 그 전이어야 _ready 의 mouse_filter 가 선다.
+func _make_pile_stack(title: String, font_size: int,
+		at: Vector2, of_size: Vector2) -> CardPileStack:
+	var pile := CardPileStack.new()
+	pile.name = "CardPile" + title
+	pile.position = at
+	pile.size     = of_size
+	_bs.canvas.add_child(pile)
+	pile.setup(title, font_size)
+	return pile
+
+
+# 뭉치 위에 얹는 투명 히트 버튼. flat + alpha 0 이라 뭉치의 생김새는
 # 그대로 두고 클릭만 가로챈다.
-func _make_pile_button(anchor: Label, which: int) -> Button:
+func _make_pile_button(anchor: Control, which: int) -> Button:
 	var b := Button.new()
 	b.flat = true
 	b.focus_mode = Control.FOCUS_NONE
@@ -204,18 +210,17 @@ func _on_pile_button_pressed(which: int) -> void:
 
 
 # 열람이 불가능한 상태(BATTLE 진행 중, 상대 차례, 다른 오버레이 활성)에서는
-# 버튼을 비활성화하고 라벨을 흐리게 해 "지금은 못 연다"를 보여 준다.
+# 버튼을 비활성화하고 뭉치를 흐리게 해 "지금은 못 연다"를 보여 준다.
 func _update_pile_buttons() -> void:
 	var can: bool = _bs.card_phase != null and _bs.card_phase.can_browse_piles()
-	var label_alpha: float = 1.0 if can else PILE_LABEL_DIM_ALPHA
 	if _btn_deck_view != null:
 		_btn_deck_view.disabled = not can
 	if _btn_discard_view != null:
 		_btn_discard_view.disabled = not can
-	if _bs.lbl_deck_count != null:
-		_bs.lbl_deck_count.modulate = Color(1, 1, 1, label_alpha)
-	if _bs.lbl_discard_count != null:
-		_bs.lbl_discard_count.modulate = Color(1, 1, 1, label_alpha)
+	if _bs.pile_deck != null:
+		_bs.pile_deck.set_dimmed(not can)
+	if _bs.pile_discard != null:
+		_bs.pile_discard.set_dimmed(not can)
 
 
 # ── 상단 패널: 시간 · 팀 점수 한 줄 + 그 아래 적 파일럿 스트립 ────────────────

@@ -843,11 +843,16 @@ func draw_card(is_player: bool) -> CardData:
 # ─── Deck / Discard count display ────────────────────────────────────────────
 ## Snap the visible Deck / Discard counts to the actual array sizes. Cancels
 ## any running reshuffle tween so the labels don't fight each other.
+## **버린 더미 숫자는 배열보다 늦게 따라온다.** 카드가 손패에서 떨어지고
+## (`Card.DISCARD_FADE_SEC`) 그 다음 잔상이 뭉치 위로 내려앉아 착지를 마친
+## 시점에야 장수가 오른다 — 그래서 `_discard_pending`(아직 화면에 안 들어온
+## 장수)을 빼고 표시한다. 줄어드는 쪽(리셔플)은 즉시 반영된다.
 func update_deck_discard_labels() -> void:
 	if _reshuffle_tween != null and _reshuffle_tween.is_running():
 		_reshuffle_tween.kill()
 	_deck_displayed    = float(_bs.player_deck.size())
-	_discard_displayed = float(_bs.player_discard.size())
+	_notice_discard_gain()
+	_discard_displayed = float(_bs.player_discard.size() - _discard_pending)
 	_refresh_count_labels()
 
 
@@ -856,6 +861,10 @@ func update_deck_discard_labels() -> void:
 func _animate_reshuffle_counts(old_discard: int, new_deck: int, new_discard: int) -> void:
 	if _reshuffle_tween != null and _reshuffle_tween.is_running():
 		_reshuffle_tween.kill()
+	# 리셔플은 버린 더미를 통째로 덱으로 되돌리는 동작이라, 지연 정산을 기다리는
+	# 장수가 남아 있으면 트윈이 끝난 뒤 유령 장수가 다시 더해진다.
+	_discard_seen    = new_discard
+	_discard_pending = 0
 	# Lock the visible state to the pre-reshuffle snapshot, then tween to target.
 	_deck_displayed    = 0.0
 	_discard_displayed = float(old_discard)
@@ -880,10 +889,82 @@ func _set_discard_displayed(v: float) -> void:
 
 
 func _refresh_count_labels() -> void:
-	if _bs.lbl_deck_count != null:
-		_bs.lbl_deck_count.text = "Deck\n%d" % int(round(_deck_displayed))
-	if _bs.lbl_discard_count != null:
-		_bs.lbl_discard_count.text = "Discard\n%d" % int(round(_discard_displayed))
+	# 뭉치는 소수 카운트를 그대로 받는다 — 리셔플 트윈이 도는 동안 두께(층 수)도
+	# 숫자와 같은 곡선으로 자라고 줄어든다.
+	if _bs.pile_deck != null:
+		_bs.pile_deck.set_count(_deck_displayed)
+	if _bs.pile_discard != null:
+		_bs.pile_discard.set_count(_discard_displayed)
+
+
+# ─── 버린 더미 착지 연출 ──────────────────────────────────────────────────────
+# 버린 더미가 카드를 받는 자리는 일곱 군데다(카드 사용 / 버리기:N / 상한 초과
+# 정리 / 과감한 정리 …). 일곱 군데를 전부 부르는 대신 **장수가 늘어난 것을
+# 한 곳에서 알아챈다** — `update_deck_discard_labels` 은 어차피 그 일곱 군데가
+# 모두 지나는 자리이고(숫자가 안 바뀌면 화면도 안 바뀐다), 리셔플처럼 장수가
+# 줄어드는 경우는 델타가 음수라 저절로 걸러진다.
+##
+## 손패에서 떨어지는 카드와 착지를 잇는 지연(s). **손패 카드의 낙하가 완전히
+## 끝난 뒤**에 더미가 받는다 — 한 장의 카드가 손에서 떨어져 더미로 들어가는
+## 한 동작이 되도록 두 연출을 겹치지 않고 이어 붙인 것이다. (예전에는 0.16초
+## 라 카드가 아직 반쯤 떨어지는 중에 더미가 먼저 받아, 같은 카드가 두 군데에
+## 동시에 있었다.)
+const PILE_LAND_DELAY_SEC := Card.DISCARD_FADE_SEC
+## 한 번에 몇 장까지 잔상을 띄울 것인가. 리셔플 직후처럼 한꺼번에 열 장 넘게
+## 들어오면 잔상이 겹쳐 뭉개지기만 한다.
+const PILE_LAND_MAX_GHOSTS := 3
+
+## 직전에 본 버린 더미 장수 — 델타를 재는 기준.
+var _discard_seen: int = 0
+## 배열에는 들어왔지만 **아직 화면에 반영하지 않은** 장수. 잔상이 다 내려앉는
+## 순간 `_commit_discard_gain` 이 이만큼 털어 내고, 그때 숫자와 뭉치 두께가
+## 함께 오른다. 표시값은 언제나 `배열 크기 - 이 값`이다.
+var _discard_pending: int = 0
+
+
+func _notice_discard_gain() -> void:
+	var now: int = _bs.player_discard.size()
+	var gained: int = now - _discard_seen
+	_discard_seen = now
+	if gained < 0:
+		# 줄어들었다 = 리셔플. 밀린 정산을 붙들고 있을 이유가 없다.
+		_discard_pending = 0
+		return
+	if gained == 0:
+		# 장수가 그대로면 아무 일도 없었다 — **밀린 정산은 건드리지 않는다.**
+		# 이 함수는 `update_deck_discard_labels` 이 불릴 때마다 도는데 그 대부분은
+		# 델타 0 인 단순 갱신이고(드로우 / 손패 재배치 / HUD 갱신 …), 여기서
+		# `_discard_pending` 을 0 으로 밀면 다음 갱신 한 번에 지연이 통째로
+		# 날아가 잔상이 채 내려앉기도 전에 숫자가 올라간다(실측으로 잡은 버그).
+		return
+	if _bs.pile_discard == null:
+		# HUD 가 아직 없으면 연출도 없다 — 지연 없이 그대로 반영한다.
+		return
+	var ghosts: int = mini(gained, PILE_LAND_MAX_GHOSTS)
+	_discard_pending += gained
+	_bs.pile_discard.play_burst(true, ghosts, PILE_LAND_DELAY_SEC)
+	# 마지막 잔상이 완전히 내려앉는 시점 = 착지 지연 + (장수-1)×스태거 + 잔상 1장.
+	_commit_discard_gain(gained, PILE_LAND_DELAY_SEC
+			+ float(ghosts - 1) * CardPileStack.GHOST_STAGGER_SEC
+			+ CardPileStack.GHOST_SEC)
+
+
+## 잔상이 다 내려앉은 뒤에 장수를 실제로 올린다. 트윈이 아니라 타이머로 기다리는
+## 것은 드로우 인트로와 같은 이유다 — 도중에 노드가 사라져도 코루틴이 매달리지
+## 않는다. `await` 없이 호출한다(불꽃놀이처럼 던져 두는 코루틴).
+func _commit_discard_gain(n: int, wait: float) -> void:
+	var tree := get_tree()
+	if tree != null:
+		await tree.create_timer(wait).timeout
+	if not is_instance_valid(_bs):
+		return
+	_discard_pending = maxi(0, _discard_pending - n)
+	# 리셔플 트윈이 도는 중이면 표시값의 주인은 그쪽이다 — 여기서 덮어쓰면
+	# 되돌아가는 숫자가 한 프레임 튄다.
+	if _reshuffle_tween != null and _reshuffle_tween.is_running():
+		return
+	_discard_displayed = float(_bs.player_discard.size() - _discard_pending)
+	_refresh_count_labels()
 
 
 # ─── Card node helpers ────────────────────────────────────────────────────────
@@ -894,7 +975,15 @@ func _refresh_count_labels() -> void:
 ## from the array index, so this one flag is the whole "손패 맨 왼쪽" rule
 ## (정밀 이동 / `return_left`). Callers must insert into `_bs.player_hand` at the
 ## matching end; the two arrays are kept in the same order.
-func spawn_card_node(cd: CardData, at_left: bool = false) -> void:
+##
+## `animate` decides whether the card plays the 드로우 인트로 (뒷면으로 화면
+## 왼쪽에서 날아와 뒤집히며 안착 — `_play_draw_intro`). Two callers turn it off:
+##   • `at_left` 복귀(정밀 이동) — 그 카드는 뽑힌 것이 아니라 **손패 왼쪽으로
+##     되돌아오는** 것이라, 오른쪽 끝으로 날아가는 연출이 방향부터 어긋난다.
+##   • `_restore_from_snapshot` — 취소 롤백은 손패를 통째로 다시 세우는
+##     작업이라, 연출을 태우면 되돌린 손패 전체가 새로 뽑힌 것처럼 보인다.
+func spawn_card_node(cd: CardData, at_left: bool = false,
+		animate: bool = true) -> void:
 	var node := _bs.CARD_SCENE.instantiate() as Card
 	node.pivot_offset = Vector2(80.0, 110.0)
 	_bs.canvas.add_child(node)
@@ -902,11 +991,20 @@ func spawn_card_node(cd: CardData, at_left: bool = false) -> void:
 	# cards themselves must not — an overlapping card that claims its own rect
 	# steals its neighbour's only clickable pixels (see _apply_hit_bands).
 	_set_subtree_mouse_ignore(node)
-	node.global_position = _bs.BS_HAND_CENTER  # start at hand center for spring-in
-	node.setup(cd, true, true)
-	# Hover brings the card to the top of the hand z-order; click selects it
-	# and opens the description box (handled in CardPhaseManager).
-	node.card_clicked.connect(on_card_clicked)
+	var intro: bool = animate and not at_left
+	if intro:
+		# 뒷면으로, 화면 왼쪽 바깥에서 출발한다. `relayout_hand` 가 건너뛰도록
+		# 배열에 들어가기 **전에** intro_active 를 세운다.
+		node.intro_active = true
+		node.setup(cd, true, false)
+		node.position = node.layout_position_from_global(_draw_entry_position())
+	else:
+		node.global_position = _bs.BS_HAND_CENTER  # start at hand center for spring-in
+		node.setup(cd, true, true)
+	# Hover brings the card to the top of the hand z-order and opens the
+	# description box. `card_clicked` is deliberately left unwired: a click on a
+	# hand card does nothing now — picking a card up is a drag, and the drag is
+	# routed by the hit layer, not by the card.
 	node.card_hovered.connect(on_card_hovered)
 	node.card_unhovered.connect(on_card_unhovered)
 	if at_left:
@@ -919,6 +1017,93 @@ func spawn_card_node(cd: CardData, at_left: bool = false) -> void:
 	# Newly-spawned cards inherit the current turn dim state so a card drawn
 	# during BATTLE / AI turn / banner sweep isn't briefly bright.
 	_apply_hand_dim_state()
+	if intro:
+		_play_draw_intro(node)
+
+
+# ─── 드로우 인트로 ────────────────────────────────────────────────────────────
+# 뽑힌 카드는 곧바로 자기 슬롯에 나타나지 않는다. **뒷면인 채로 화면 왼쪽 바깥
+# 에서 나타나 손패 오른쪽 끝(= 새 카드가 앉을 자리) 위로 날아간 뒤, 그 자리에서
+# 뒤집혀 내용을 드러내며 슬롯에 안착한다.** 세 박자가 각각 답하는 질문이 다르다:
+# 어디서 왔는가(덱 = 왼쪽 카운터 쪽) → 어디에 앉는가(행의 오른쪽 끝) → 무엇인가
+# (뒤집혀 드러나는 앞면).
+#
+# 연출이 도는 동안 그 카드는 `Card.intro_active` 라 **레이아웃 · 호버 · 잡기가
+# 전부 비켜 간다** — 나머지 손패는 이미 새 카드 몫까지 자리를 좁힌 채 기다린다
+# (`relayout_hand` 은 스폰 즉시 총 장수로 돌았고, 인트로 카드만 건너뛴다).
+## 왼쪽 바깥 출발점이 화면 밖으로 얼마나 더 나가 있는가(px).
+const DRAW_ENTRY_PAD_PX := 140.0
+## 왼쪽 바깥 → 손패 오른쪽 끝까지 날아가는 시간(s).
+const DRAW_FLY_SEC := 0.28
+## 뒤집는 지점이 최종 슬롯보다 위로 뜨는 높이(px). 뒤집기를 슬롯 **위**에서
+## 하는 이유는 그래야 뒤집힌 카드가 행 뒤로 숨지 않고 온전히 보이기 때문이고,
+## 마지막 안착(슬롯으로 내려앉기)이 눈에 보이는 동작으로 남기 때문이다.
+const DRAW_FLIP_LIFT_PX := 78.0
+## 같은 프레임에 여러 장이 뽑힐 때(개시 5장 / 드로우:N / 재고) 출발 시각에 주는
+## 간격(s). 없으면 다섯 장이 정확히 겹쳐 날아가 한 장처럼 보인다.
+const DRAW_STAGGER_SEC := 0.07
+
+## 지금 인트로가 걸려 있는 카드 수 — 스태거 간격을 이 값으로 잰다.
+var _draw_intro_active: int = 0
+
+
+## 뒷면 카드가 나타나는 화면 왼쪽 바깥 지점(뷰포트 좌표, 카드 좌상단 기준).
+func _draw_entry_position() -> Vector2:
+	return Vector2(-Card.CARD_W - DRAW_ENTRY_PAD_PX, _bs.BS_HAND_CENTER.y)
+
+
+## 드로우 인트로 본체. `spawn_card_node` 가 fire-and-forget 으로 부른다.
+##
+## 각 박자를 **트윈의 `finished` 가 아니라 타이머로** 기다린다: 카드가 도중에
+## free 되면(재시작 / 스냅샷 롤백 / 상한 초과 정리) 그 트윈의 `finished` 는
+## 영영 오지 않아 코루틴이 매달린 채 카운터를 붙잡는다.
+func _play_draw_intro(node: Card) -> void:
+	_draw_intro_active += 1
+	var delay: float = float(_draw_intro_active - 1) * DRAW_STAGGER_SEC
+	if delay > 0.0:
+		await get_tree().create_timer(delay).timeout
+	# ⓪ 덱 뭉치에서 카드 한 장이 떠오르며 사라진다 — 이 카드가 **어디서 왔는지**
+	#    를 말하는 박자다. 다 사라지기를 기다리지 않고, 알파가
+	#    `GHOST_HANDOFF_ALPHA` 만큼 남은 시점에 왼쪽 진입이 이어받는다: 완전히
+	#    사라진 뒤에 시작하면 한 장이 두 번 나온 것처럼 끊겨 보인다.
+	if _intro_alive(node) and _bs.pile_deck != null:
+		_bs.pile_deck.play_pop()
+		await get_tree().create_timer(CardPileStack.ghost_handoff_delay()).timeout
+	# ① 왼쪽 바깥 → 손패 오른쪽 끝 위
+	if _intro_alive(node):
+		var total: int = _bs.player_card_nodes.size()
+		var staging: Vector2 = slot_position(total - 1, total) \
+				+ Vector2(0.0, -DRAW_FLIP_LIFT_PX)
+		# 비행은 레이아웃 트윈(`Card.tween_to`)을 그대로 쓴다 — 카드 자신이 쥐고
+		# 있는 트윈이라야 버리기 연출(`begin_discard_fx`)이 걷어 낼 수 있다.
+		# 상한 초과 정리는 **가장 오래된 카드**를 버리는데, 그 카드가 아직 날아오는
+		# 중일 수 있고, 그때 죽지 않은 비행 트윈이 남으면 떨어지는 카드를 도로
+		# 손패 쪽으로 끌어올린다. 기울기는 0 으로 두고 날아온 뒤 안착에서 받는다.
+		# EASE_IN_OUT / SINE 인 이유: 1200px 를 0.28초에 지나는 이동이라 앞이 무거운
+		# 감속 곡선(EASE_OUT + CUBIC)에서는 첫 프레임에 이미 화면 오른쪽 끝에 닿아
+		# "왼쪽에서 왔다"가 읽히지 않았다(실측: 0.10초에 77% 주파). 대칭 곡선이
+		# 가로지르는 구간을 눈에 남긴다.
+		node.tween_to(staging, 0.0, Vector2.ONE, DRAW_FLY_SEC,
+				Tween.EASE_IN_OUT, Tween.TRANS_SINE)
+		await get_tree().create_timer(DRAW_FLY_SEC).timeout
+	# ② 그 자리에서 뒤집어 앞면을 드러낸다
+	if _intro_alive(node):
+		node.play_flip_reveal()
+		await get_tree().create_timer(Card.FLIP_HALF_SEC * 2.0).timeout
+	# ③ 손패에 넘겨 슬롯으로 안착시킨다
+	if _intro_alive(node):
+		node.intro_active = false
+		relayout_hand(_bs.player_card_nodes)
+		highlight_affordable_cards()
+	elif is_instance_valid(node):
+		node.intro_active = false
+	_draw_intro_active = max(0, _draw_intro_active - 1)
+
+
+## 인트로를 계속 진행해도 되는가 — 노드가 살아 있고 아직 손패의 일원인가.
+func _intro_alive(node: Card) -> bool:
+	return is_instance_valid(node) and node.intro_active \
+			and _bs.player_card_nodes.has(node)
 
 
 ## Uniform centre-to-centre spacing (px) between adjacent cards in a hand of
@@ -1102,8 +1287,9 @@ func relayout_hand(nodes: Array, skip: Variant = null) -> void:
 	for i in total:
 		var node := nodes[i] as Card
 		# A dragged card is owned by the cursor, not by the layout — every pass
-		# has to leave its position alone until the drop resolves.
-		if node == skip or node.is_dragging:
+		# has to leave its position alone until the drop resolves. A card still
+		# playing its 드로우 인트로 is owned by the intro for the same reason.
+		if node == skip or node.is_dragging or node.intro_active:
 			continue
 		var pos := slot_position(i, total)
 		node.tween_to(pos, slot_rotation(i, total), Vector2.ONE,
@@ -2488,8 +2674,11 @@ func _restore_from_snapshot(snap: Dictionary) -> void:
 		_bs.preserved_cards_p = (snap["preserved"] as Array).duplicate()
 	# 취소된 카드가 세워 둔 단계 종료 요청도 함께 되돌린다.
 	_end_phase_requested = false
+	# 롤백은 손패를 통째로 다시 세우는 작업이므로 드로우 인트로를 태우지 않는다 —
+	# 되돌린 카드가 전부 새로 뽑힌 것처럼 왼쪽에서 날아 들어오면 "취소" 가 아니라
+	# "새 손패" 로 읽힌다.
 	for raw_cd in _bs.player_hand:
-		spawn_card_node(raw_cd as CardData)
+		spawn_card_node(raw_cd as CardData, false, false)
 	relayout_hand(_bs.player_card_nodes)
 	highlight_affordable_cards()
 	update_deck_discard_labels()
@@ -3335,5 +3524,18 @@ func _despawn_player_card_node(cd: CardData) -> void:
 			if _selected_card == c:
 				deselect_current_card()
 			_bs.player_card_nodes.erase(c)
-			c.queue_free()
+			play_discard_fx(c)
 			return
+
+
+## 손패를 떠나 버려지는 카드의 연출 — 아래로 내려가며 사라진 뒤 스스로 free
+## 된다. 노드는 **호출 전에 이미 `player_card_nodes` 에서 빠져 있어야 한다**:
+## 연출이 도는 0.3초 동안 레이아웃 · 호버 · 히트 밴드가 그 카드를 여전히 손패의
+## 일원으로 세면 남은 카드들이 빈자리를 메우지 못한다.
+##
+## `CardSelectOverlay._commit_discard` 도 이 함수를 쓴다 — 버리기:N 으로 화면
+## 중앙에 늘어세운 카드들이 확정될 때 같은 연출로 내려간다.
+func play_discard_fx(node: Card) -> void:
+	if node == null or not is_instance_valid(node):
+		return
+	node.begin_discard_fx()

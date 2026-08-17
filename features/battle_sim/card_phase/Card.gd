@@ -12,6 +12,26 @@ const CARD_H := 220.0
 ## CardPhaseManager applies this lift to the selected card so it visually
 ## detaches from the rest of the hand while its description box is open.
 const PRESS_LIFT     := 40.0
+# ── 드로우 인트로: 뒤집기 (`play_flip_reveal`) ────────────────────────────────
+# 왼쪽에서 날아온 뒷면 카드가 손패에 안착하기 직전에 뒤집혀 내용을 드러낸다.
+# 3D 회전이 아니라 **가로 폭만 0 으로 접었다 펴는** 2D 흉내다 — scale.x 가 0 이
+# 되는 순간(카드가 옆에서 본 종잇장처럼 사라진 순간) 앞/뒷면을 맞바꾸므로
+# 뒤집히는 것처럼 읽힌다.
+## 접는 데 걸리는 시간(s). 펴는 데도 같은 시간이 걸리므로 총 뒤집기 시간은 2배.
+const FLIP_HALF_SEC := 0.09
+
+# ── 버리기 연출 (`begin_discard_fx`) ─────────────────────────────────────────
+# 손패를 떠나 버려지는 카드는 **부채꼴 기울기와 무관하게 화면 Y축으로만** 곧장
+# 내려가며 투명해진다. 리프트(`PRESS_LIFT`)가 카드 자신의 up 축을 타는 것과
+# 반대다 — 버려지는 카드는 손에서 뽑히는 게 아니라 아래로 떨어지는 것이라,
+# 기울기를 타면 기울어진 카드만 옆으로 새 나가 줄이 흐트러져 보인다.
+#
+# **낙하 곡선은 `EASE_OUT`** — 손을 떠나는 순간 확 튕겨 내려간 뒤 아래에서
+# 서서히 멎는다. 예전에는 `EASE_IN` 이라 처음엔 굼뜨다가 마지막에 빨라졌는데,
+# 그러면 카드가 손패에서 **떨어져 나가는** 순간이 가장 흐릿하고 정작 다 사라질
+# 때 제일 빨라 "버렸다"의 무게가 끝에 실렸다.
+const DISCARD_DROP_PX  := 150.0
+const DISCARD_FADE_SEC := 0.30
 ## Modulate multiplier applied while the mouse is hovering over a face-up
 ## player card. Above 1.0 → brighter (Godot canvas modulate supports values
 ## > 1 for an additive-feeling brighten).
@@ -83,6 +103,12 @@ var is_selected: bool = false
 ## for this card. Layout passes leave it alone (`relayout_hand` skips it); only
 ## `_pose_selected_card` re-poses it.
 var is_dragging: bool = false
+## True from the moment a drawn card is spawned (face-down, off the left edge of
+## the screen) until it has flown in, flipped face-up and been handed back to the
+## layout. `CardPhaseManager.relayout_hand` skips these cards — the intro owns
+## the position — and hover / grab both refuse them: a card still in flight is
+## not yet part of the row the player can act on.
+var intro_active: bool = false
 
 # True while CardPhaseManager is dimming the hand (it's not the player's turn,
 # or the player turn-start banner is still playing). Hover/click feedback is
@@ -100,6 +126,14 @@ var _base_scale: Vector2 = Vector2.ONE
 var _shadow: Panel = null
 var _shadow_tween: Tween = null
 var _float_tween: Tween  = null
+## 자유 이동 드래그 진입 시 부채꼴 기울기를 펴는 전용 트윈. 위치는 매 모션마다
+## `follow_cursor` 가 직접 쓰므로 트윈을 태우지 않는다.
+var _free_rot_tween: Tween = null
+## 드로우 인트로의 뒤집기 트윈. 도는 동안 `_flip_active` 가 서 있고,
+## `_refresh_float_state` 는 그 사이 `scale` 에서 손을 뗀다 — 접혔다 펴지는 폭과
+## 호버 확대가 같은 프로퍼티를 두고 다투면 카드가 납작한 채로 굳는다.
+var _flip_tween: Tween = null
+var _flip_active: bool = false
 
 # 사용 불가 표시 상태. `set_affordable` / `set_respawn_turns` 가 갱신하고
 # `_refresh_block_overlay` 가 두 값을 합쳐 슬래브와 숫자를 켜고 끈다.
@@ -259,11 +293,14 @@ func _refresh_float_state() -> void:
 	# the hand row, so the hit layer's hover bookkeeping no longer speaks for it.
 	var lifted: bool = _is_hovered or is_dragging
 	var target_scale: Vector2 = _base_scale * (HOVER_SCALE if lifted else 1.0)
-	if _float_tween != null and _float_tween.is_running():
-		_float_tween.kill()
-	_float_tween = create_tween()
-	(_float_tween.tween_property(self, "scale", target_scale, SHADOW_TWEEN_DURATION)
-			.set_ease(HOVER_EASE).set_trans(HOVER_TRANS))
+	# 뒤집기가 도는 동안 `scale` 의 주인은 `play_flip_reveal` 하나다. 여기서
+	# 끼어들면 카드가 접힌 폭(scale.x ≈ 0)으로 되돌려져 그대로 굳는다.
+	if not _flip_active:
+		if _float_tween != null and _float_tween.is_running():
+			_float_tween.kill()
+		_float_tween = create_tween()
+		(_float_tween.tween_property(self, "scale", target_scale, SHADOW_TWEEN_DURATION)
+				.set_ease(HOVER_EASE).set_trans(HOVER_TRANS))
 
 	if _shadow == null:
 		return
@@ -445,6 +482,68 @@ func set_dragging(dragging: bool) -> void:
 	_refresh_float_state()
 
 
+## 드로우 인트로의 마지막 박자 — 뒷면으로 날아온 카드를 그 자리에서 뒤집어
+## 내용을 드러낸다. 총 `FLIP_HALF_SEC × 2` 초가 걸리며, 호출 측은 그 시간을
+## 타이머로 기다린다(트윈의 `finished` 를 기다리면 도중에 카드가 free 될 때
+## 신호가 영영 오지 않는다).
+##
+## 뒤집기는 `scale.x` 를 0 까지 접었다 다시 펴는 것이고, 앞/뒷면 교체는 폭이
+## 0 인 정확히 그 순간에 일어난다 — 카드가 화면에서 사라져 있는 프레임이라
+## 바뀌는 장면이 보이지 않는다.
+func play_flip_reveal() -> void:
+	if _flip_tween != null and _flip_tween.is_running():
+		_flip_tween.kill()
+	_flip_active = true
+	_flip_tween = create_tween()
+	(_flip_tween.tween_property(self, "scale", Vector2(0.0, _base_scale.y),
+			FLIP_HALF_SEC).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE))
+	_flip_tween.tween_callback(_reveal_face)
+	(_flip_tween.tween_property(self, "scale", _base_scale, FLIP_HALF_SEC)
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE))
+	_flip_tween.tween_callback(_end_flip)
+
+
+func _reveal_face() -> void:
+	face_up = true
+	card_front.visible = true
+	card_back.visible = false
+	# 뒷면인 동안은 `_refresh_block_overlay` 가 슬래브를 무조건 숨겼으므로
+	# (뒷면에는 읽을 비용도 시전자도 없다) 앞면이 된 지금 다시 판정한다.
+	_refresh_block_overlay()
+
+
+func _end_flip() -> void:
+	_flip_active = false
+	# 뒤집는 동안 밀린 호버/드래그 상태를 한 번에 반영한다.
+	_refresh_float_state()
+
+
+## 버려지는 카드의 마지막 연출. 손패 배열에서 이미 빠진 노드를 받아 화면
+## 아래로 떨어뜨리며 투명하게 만들고, 다 내려가면 스스로 사라진다.
+##
+## **방향은 언제나 화면 아래**다: 부모(캔버스)는 회전이 없으므로 `position.y`
+## 를 더하는 것이 곧 순수 Y축 이동이고, 카드 자신의 부채꼴 기울기는 이동
+## 방향에 아무 영향을 주지 않는다(모양은 기울어진 채로 내려간다).
+func begin_discard_fx() -> void:
+	intro_active = false
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 진행 중이던 레이아웃 / 호버 / 뒤집기 트윈은 전부 이 연출과 같은
+	# 프로퍼티를 두고 다투므로 먼저 걷어 낸다.
+	for t in [_active_tween, _hover_tween, _float_tween, _shadow_tween,
+			_free_rot_tween, _flip_tween]:
+		if t != null and t.is_running():
+			t.kill()
+	_flip_active = false
+	var drop_to: Vector2 = position + Vector2(0.0, DISCARD_DROP_PX)
+	var faded := Color(modulate.r, modulate.g, modulate.b, 0.0)
+	var tw := create_tween().set_parallel()
+	(tw.tween_property(self, "position", drop_to, DISCARD_FADE_SEC)
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC))
+	(tw.tween_property(self, "modulate", faded, DISCARD_FADE_SEC)
+			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD))
+	tw.chain().tween_callback(queue_free)
+
+
 # ── Interaction ───────────────────────────────────────────────────────────────
 
 func store_base_y() -> void:
@@ -535,6 +634,10 @@ func is_playable() -> bool:
 ## peek row and the 찾기 grid, which are flat and don't overlap.
 func set_hovered(hovered: bool) -> void:
 	if not face_up or not is_player_card:
+		return
+	# 아직 날아오는 중인 카드는 손패의 일원이 아니다 — 호버 확대가 붙으면
+	# 인트로가 소유한 `scale` / `position` 을 두고 다툰다.
+	if intro_active:
 		return
 	if hovered and _is_dimmed:
 		return

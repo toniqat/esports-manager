@@ -251,9 +251,10 @@ var lbl_victory: Label
 # button once tapped; `cost_donut_enemy` is a readout only.
 var cost_donut:       CostDonut = null
 var cost_donut_enemy: CostDonut = null
-# Deck / Discard count indicators on either side of the hand row.
-var lbl_deck_count:    Label = null
-var lbl_discard_count: Label = null
+# Deck / Discard 카드 뭉치 — 핸드 행 양옆 거터. 앞으로 누운 카드 뭉치이자
+# 장수 카운터이자 목록 열람 버튼(위에 투명 Button 이 얹힌다).
+var pile_deck:    CardPileStack = null
+var pile_discard: CardPileStack = null
 
 # ─── Module refs ─────────────────────────────────────────────────────────────
 @onready var gm: Node                       = get_node("/root/GameManager")

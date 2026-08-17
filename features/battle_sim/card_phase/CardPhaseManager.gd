@@ -166,6 +166,14 @@ var _player_turn_announce_in_progress: bool = false
 # _next_turn_side() 주석 참조. 새 판마다 build_starter_decks 가 -1 로 되돌린다.
 var _last_turn_side: int = -1
 
+# 플레이어가 자기 차례를 넘긴 뒤, 다시 차례를 받기 전까지 서 있는 잠금.
+# 카드를 한 장도 안 내고 넘겨도 되고 문턱 초과분만 소멸하므로, 넘긴 직후의
+# 점수는 정확히 문턱에 걸려 있다 — 잠금이 없으면 다음 틱에 곧바로 자기 차례가
+# 다시 열린다. 푸는 조건은 둘, **자동 드로우로 손패가 바뀌거나**(do_battle_turn)
+# **상대가 한 번 차례를 가지거나**(_run_ai_turn) 다. 자세한 이유는
+# _next_turn_side() 주석 참조.
+var _player_pass_lock: bool = false
+
 # 연속 공격(`attack:N|repeat`)이 명중을 이어갈 때 한 번의 사용으로 허용되는
 # 최대 타수. 확률상 거의 닿지 않지만 무한 루프를 구조적으로 막는 상한이다.
 const MAX_ATTACK_REPEATS: int = 5
@@ -213,6 +221,7 @@ func build_starter_decks() -> void:
 	_clear_hands()
 	# 차례 교대 기록도 새 판에서는 백지 — 첫 선은 블루가 잡는다.
 	_last_turn_side = -1
+	_player_pass_lock = false
 
 
 # Deals every pilot in `pilots` its 6-card stack out of `pool`, stamping each
@@ -423,8 +432,15 @@ func do_battle_turn() -> void:
 		_bs.cost_counter += 1
 		if _bs.cost_counter >= _bs.COST_RECOVERY_INTERVAL:
 			_bs.cost_counter = 0
-			_bs.player_cost += _bs.COST_RECOVERY
-			_bs.ai_cost     += _bs.COST_RECOVERY
+			# **문턱 위에서는 회복하지 않는다.** 점수는 쓸 차례를 기다리는
+			# 자원이지 쌓아 두는 자원이 아니다 — 이미 차례를 가질 수 있는
+			# 쪽에 더 얹어 봐야 다음 차례에 쓸 수 없는 점수만 불어난다
+			# (턴을 넘기면 문턱 초과분은 어차피 소멸한다, end_card_phase 참조).
+			# 양 팀에 같은 규칙으로 건다.
+			if _bs.player_cost < _bs.PHASE_THRESHOLD:
+				_bs.player_cost += _bs.COST_RECOVERY
+			if _bs.ai_cost < _bs.PHASE_THRESHOLD:
+				_bs.ai_cost += _bs.COST_RECOVERY
 		_bs.draw_counter += 1
 		if _bs.draw_counter >= _bs.CARD_DRAW_INTERVAL:
 			_bs.draw_counter = 0
@@ -436,6 +452,8 @@ func do_battle_turn() -> void:
 			var drawn := draw_card(true)
 			if drawn != null:
 				spawn_card_node(drawn)
+				# 손패가 바뀌었다 — 카드 없이 넘긴 차례의 잠금이 풀린다.
+				_player_pass_lock = false
 			_trim_hand_overflow(true)
 			# AI hand visuals (face-down card backs) live in HudBuilder; the row
 			# reflows after the draw so the count peek matches state.
@@ -485,9 +503,18 @@ func do_battle_turn() -> void:
 ##
 ## 준비 판정이 양쪽 비대칭인 것은 의도된 기존 동작이다. AI 는 낼 수 있는 카드가
 ## 손에 있어야 준비된 것으로 치고(`_ai_turn_ready`), 플레이어는 점수만 차면
-## 진입한다 — 낼 게 없는 손은 `can_end_card_phase` 의 탈출구가 통과시킨다.
+## 진입한다 — 대신 플레이어 쪽에는 **패스 잠금**(`_player_pass_lock`)이 붙는다.
+##
+## **패스 잠금이 필요한 이유.** 턴 넘기기의 조건이 "카드를 한 장 이상 낼 것"
+## 이었을 때는 그 규칙이 곧 "넘기고 나면 점수가 문턱 아래로 내려간다"의
+## 보증이었다. 지금은 한 장도 안 내고 넘길 수 있고 문턱 초과분만 깎이므로,
+## 넘긴 직후에도 점수는 정확히 문턱에 걸려 있다 — 규칙 1 대로라면 다음 틱
+## (0.5초 뒤)에 "당신의 차례"가 다시 뜬다. 그래서 넘긴 쪽은 **손패가 바뀌거나
+## 상대가 한 번 차례를 가질 때까지** 준비되지 않은 것으로 친다. 그 사이
+## BATTLE 은 평소대로 흐른다.
 func _next_turn_side() -> int:
-	var player_ready: bool = _bs.player_cost >= _bs.PHASE_THRESHOLD
+	var player_ready: bool = _bs.player_cost >= _bs.PHASE_THRESHOLD \
+			and not _player_pass_lock
 	var ai_ready: bool = _ai_turn_ready()
 	if player_ready and ai_ready:
 		return _bs.blue_team if _last_turn_side == -1 else 1 - _last_turn_side
@@ -550,10 +577,10 @@ func start_card_phase() -> void:
 	_bs.blog.stage("card-phase")
 	_bs.blog.log_event("PHASE", "작전 단계 시작 — player %d / ai %d 점"
 			% [_bs.player_cost, _bs.ai_cost])
-	# The 턴 넘기기 gate counts *cards played*, not points spent — see
-	# can_end_card_phase(). Reset it on entry so last phase's plays don't
-	# unlock this one.
-	_bs.cards_played_this_phase = 0
+	# 자기 차례가 열리면 패스 잠금은 그 역할을 다한 것이다 — 넘긴 뒤 다시
+	# 여기까지 온 것 자체가 잠금이 풀렸다는 뜻이지만, 상태를 여기서 한 번 더
+	# 백지로 돌려 다음 넘기기가 깨끗한 잠금으로 시작하게 한다.
+	_player_pass_lock = false
 	# Phase-bound cost modifiers (정밀 이동 / 집중) only live for one
 	# 작전 단계; reset on entry so a leftover from a previous phase doesn't
 	# persist. engage_discount_* is intentionally NOT reset — 전투 준비 was
@@ -612,21 +639,18 @@ func _apply_hand_dim_state() -> void:
 	_refresh_description_box()
 
 
-# Returns true once the player has played at least one card this 작전 단계.
-# Also blocked while a discard / search overlay is mid-resolution so the
-# player can't 턴 넘기기 their way out of an unfinished pick.
+# **자기 차례는 언제든 넘길 수 있다 — 카드를 한 장도 내지 않아도 된다.**
+# 남는 조건은 전부 "지금 넘기면 무언가가 중간에 끊긴다"는 것뿐이다(모달 픽,
+# 상대 차례, 돌진 연출, VS 확인 화면, 차례 배너).
 #
-# The gate used to be "player_cost dropped below the phase-entry snapshot",
-# which deadlocked the phase outright: 8 of the 20 cards cost 0 (임기응변 /
-# 정밀 이동 / 복귀 …), so a hand whose only playable cards were free could
-# never lower the cost, the 턴 넘기기 face never enabled, and BATTLE stays
-# paused during 작전 단계 — nothing could ever unstick it. Counting *plays*
-# keeps the "do something on your turn" intent without the trap.
-#
-# Second escape hatch: a hand with nothing playable at all (시전자 전멸,
-# every card unaffordable, no legal targets) can't satisfy the play rule
-# either, and the hand can't change because draws only tick in BATTLE. That
-# state passes straight through.
+# 규칙의 이력이 둘 있다. 처음에는 "점수를 문턱 아래로 내렸을 것"이었는데,
+# 28장 중 9장이 0코스트라 낼 수 있는 카드가 전부 무료면 점수가 줄지 않아
+# 턴을 영영 넘기지 못했다(작전 단계 동안 BATTLE 이 멈추므로 손패도 안 바뀐다).
+# 그래서 "카드를 한 장 이상 냈을 것"으로 바뀌었고, 낼 게 하나도 없는 손만
+# 예외로 통과시켰다. 지금은 그 예외가 규칙을 삼켰다 — 점수는 문턱 위인데
+# 손에 낼 게 없거나, 그냥 지금은 쓰고 싶지 않은 경우가 실제로 흔하고,
+# "무언가 하나는 내라"를 강제하면 아무 카드나 버리듯 내게 된다.
+# 대신 넘긴 쪽은 `end_card_phase` 에서 문턱 초과분을 잃고 패스 잠금을 진다.
 func can_end_card_phase() -> bool:
 	if _bs.game_phase != GameEnums.BattlePhase.CARD_PHASE:
 		return false
@@ -645,9 +669,7 @@ func can_end_card_phase() -> bool:
 		return false
 	if _player_turn_announce_in_progress:
 		return false
-	if _bs.cards_played_this_phase > 0:
-		return true
-	return not _has_any_playable_card()
+	return true
 
 
 ## True while the player may open the Deck / Discard 목록 (HudBuilder wires the
@@ -667,22 +689,18 @@ func can_browse_piles() -> bool:
 	return true
 
 
-# True while at least one card in the player's hand could be committed right
-# now (cost, 시전자 생존 and target availability all hold) — i.e. the player
-# still has a move to make.
-func _has_any_playable_card() -> bool:
-	for raw in _bs.player_hand:
-		if card_is_playable(raw as CardData):
-			return true
-	return false
-
-
-# Ends the *player's* 작전 단계 and hands control straight back to BATTLE.
+# Ends the *player's* 작전 단계 and hands control back to BATTLE.
 #
-# It does NOT hand over to the AI. The opponent takes its own turn when its own
-# 작전 점수 reaches PHASE_THRESHOLD (see _run_ai_turn, driven from
-# do_battle_turn), so passing the turn no longer fires a "상대 차례" banner for
-# an opponent that has nothing to spend.
+# 넘기는 순간 세 가지가 함께 일어난다.
+#   1. **문턱 초과분 소멸** — 점수는 정확히 `PHASE_THRESHOLD` 로 깎인다. 차례를
+#      쓰지 않고 넘긴 대가이고, 문턱 위에서 회복이 멈추는 규칙(do_battle_turn)과
+#      짝을 이뤄 "점수는 쟁여 두는 자원이 아니다"를 만든다.
+#   2. **패스 잠금** — 손패가 바뀌거나 상대가 한 번 차례를 갖기 전까지 내 차례는
+#      다시 열리지 않는다 (`_player_pass_lock`, `_next_turn_side` 주석 참조).
+#   3. **상대가 문턱 위면 그 자리에서 상대 차례** — 다음 BATTLE 틱을 기다리지
+#      않는다. 내 점수와는 무관하다(내 차례는 방금 끝났으므로).
+#      `_ai_turn_ready()` 로 묻는 것은 "낼 카드도 있는가"까지 포함하기
+#      위해서다 — 점수만 보고 부르면 아무것도 안 하는 "상대 차례" 배너가 뜬다.
 func end_card_phase() -> void:
 	if not can_end_card_phase():
 		return
@@ -696,12 +714,21 @@ func end_card_phase() -> void:
 	if not log_lines.is_empty():
 		_bs.last_log = log_lines[-1]
 	_bs.game_phase = GameEnums.BattlePhase.BATTLE
+	var burned: int = maxi(0, _bs.player_cost - _bs.PHASE_THRESHOLD)
+	if burned > 0:
+		_bs.player_cost = _bs.PHASE_THRESHOLD
+	_player_pass_lock = true
 	# 계획 살인의 예약은 그 작전 단계 안에서만 유효하다 — 안 터졌으면 사라진다.
 	_bs.kill_bounty_p = 0
-	_bs.blog.log_event("PHASE", "작전 단계 종료 → BATTLE")
+	_bs.blog.log_event("PHASE", "작전 단계 종료 → BATTLE (남은 %d점%s)"
+			% [_bs.player_cost, "" if burned == 0 else ", 초과 %d점 소멸" % burned])
 	_bs.renderer.queue_redraw()
 	_bs.hud.update_hud()
 	_apply_hand_dim_state()
+	# 상대가 이미 문턱 위라면 곧바로 상대 차례로 넘어간다.
+	if _ai_turn_ready():
+		_last_turn_side = 1
+		await _run_ai_turn()
 
 
 ## Reads and clears the `end_phase` request. Public so `AiCardPlayer` can break
@@ -724,8 +751,7 @@ func is_ai_turn_active() -> bool:
 # The AI gets a turn only when it can actually do something with it: 작전 점수
 # at the threshold AND at least one card it can pay for. Without the second
 # half an AI sitting on a full score with an empty / unaffordable hand would
-# re-announce "상대 차례" every single tick and play nothing — the mirror of the
-# deadlock `_has_any_playable_card` covers on the player side. The affordability
+# re-announce "상대 차례" every single tick and play nothing. The affordability
 # test is deliberately the same one AiCardPlayer.run_ai_plays uses, so a turn
 # that starts is guaranteed to consume at least one card.
 func _ai_turn_ready() -> bool:
@@ -767,7 +793,14 @@ func _run_ai_turn() -> void:
 		if not log_lines.is_empty():
 			_bs.last_log = log_lines[-1]
 	_bs.kill_bounty_ai = 0
-	_bs.blog.log_event("PHASE", "상대 차례 종료 → BATTLE")
+	# 플레이어와 같은 규칙 — 차례를 놓는 쪽은 문턱 초과분을 잃는다.
+	var burned: int = maxi(0, _bs.ai_cost - _bs.PHASE_THRESHOLD)
+	if burned > 0:
+		_bs.ai_cost = _bs.PHASE_THRESHOLD
+	# 상대가 차례를 가졌으니 플레이어의 패스 잠금이 풀린다.
+	_player_pass_lock = false
+	_bs.blog.log_event("PHASE", "상대 차례 종료 → BATTLE (남은 %d점%s)"
+			% [_bs.ai_cost, "" if burned == 0 else ", 초과 %d점 소멸" % burned])
 	_ai_play_in_progress = false
 	highlight_affordable_cards()
 	_bs.renderer.queue_redraw()
@@ -2479,11 +2512,6 @@ func _finalize_pending_play() -> void:
 	# pile or is removed from the match entirely.
 	_dispose_used_card(cd, true)
 	_bs.last_log = log_msg
-	# Counted here rather than in _play_card_direct so a card cancelled out of a
-	# 버리기 / 찾기 overlay (which rolls the whole play back via the snapshot in
-	# _on_overlay_cancel) doesn't unlock 턴 넘기기 on a play that never happened.
-	if bool(_pending_play.get("is_player", false)):
-		_bs.cards_played_this_phase += 1
 	_pending_play.clear()
 	relayout_hand(_bs.player_card_nodes)
 	highlight_affordable_cards()
@@ -2492,8 +2520,7 @@ func _finalize_pending_play() -> void:
 	_bs.renderer.queue_redraw()
 	# 완벽한 마무리 — 체인이 다 돌고 `_dispose_used_card` 까지 끝난 **뒤**라야
 	# 단계를 닫을 수 있다. 체인 도중에 닫으면 카드가 손패 밖에 떠 있는 채로
-	# 문이 닫혀 discard 로도 소멸로도 가지 못한다. `cards_played_this_phase` 도
-	# 바로 위에서 이미 올라갔으므로 `can_end_card_phase()` 의 게이트를 통과한다.
+	# 문이 닫혀 discard 로도 소멸로도 가지 못한다.
 	if consume_end_phase_request():
 		end_card_phase()
 

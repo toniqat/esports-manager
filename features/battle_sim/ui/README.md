@@ -122,9 +122,9 @@ literal.
    face swaps from the number to "턴 넘기기".
 2. tap it again → `end_turn_pressed` fires (only while `set_end_enabled(true)`;
    a disabled face renders grey and swallows the press). `set_end_enabled`
-   repaints the caption as well as the ring — playing a 0-cost card arms the
-   button without changing the value, so a redraw alone would leave a white
-   ring under a grey "턴 넘기기".
+   repaints the caption as well as the ring, independently of the value — so a
+   state change that arms or disarms the button without moving the point total
+   can't leave a white ring under a grey "턴 넘기기".
 3. tap anywhere else → flips straight back to the point readout. That press is
    deliberately left unhandled so whatever was actually clicked still reacts.
 
@@ -135,12 +135,12 @@ outside tap. Presses landing inside the donut are consumed with
 
 State setters driven from `HudBuilder._update_cost_donuts()`:
 `set_value(cost, PHASE_THRESHOLD)`,
+`set_end_enabled(can_end_card_phase())` — **작전 단계 내내 true** 이고, 배너 /
+모달 / 돌진 연출처럼 지금 닫으면 무언가가 끊기는 상태에서만 false 다. 카드를
+한 장도 내지 않고 넘겨도 된다(see `card_phase/README.md`). `set_locked(…)`
 `set_flip_allowed(in_card_phase and not card_pile_viewer.is_active())` (turning
 it off un-flips — the pile-viewer clause is load-bearing because `CostDonut`
 listens on `_input`, which runs ahead of GUI picking and would otherwise be
-tappable straight through the 열람 dim), `set_end_enabled(can_end_card_phase())` — which is true once
-the player has played **one card** this 작전 단계, or immediately when nothing
-in hand is playable (see `card_phase/README.md`). `set_locked(…)`
 still exists on `CostDonut` but **nothing calls it any more** — targeting stopped
 being modal, so there is no state that needs the flip blocked. The donut's y is
 still derived from `CardTargetingOverlay.BTN_HAND_GAP + BTN_H` so it keeps the

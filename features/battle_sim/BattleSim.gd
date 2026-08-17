@@ -169,10 +169,6 @@ var game_over: bool              = false
 var auto_play_timer: float       = AUTO_PLAY_INTERVAL
 var last_log: String             = ""
 var game_phase: int              = GameEnums.BattlePhase.GAMBIT
-# How many cards the player has resolved during the current CARD_PHASE —
-# drives the 턴 넘기기 enable rule (play at least one card before passing).
-# Reset on phase entry by CardPhaseManager.start_card_phase().
-var cards_played_this_phase: int = 0
 
 # Card phase state
 var player_hand:    Array = []
@@ -1033,7 +1029,6 @@ func _on_restart_pressed() -> void:
 	# 블루의 선이 사라진다.
 	seed_side_costs()
 	pending_atk_buff_p = 0; pending_atk_buff_ai = 0
-	cards_played_this_phase = 0
 	engage_discount_p = 0; engage_discount_ai = 0
 	phase_cost_inc_p = 0; phase_cost_inc_ai = 0
 	phase_draw_discount_p = 0; phase_draw_discount_ai = 0

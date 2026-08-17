@@ -39,6 +39,14 @@ is referred to as "1분".
 | `COST_RECOVERY` / `CARD_DRAW_INTERVAL` | ✅ `ECONOMY_START_TURN` 부터 |
 | 성장 (`GROWTH_PER_TURN`) | ❌ 1턴부터 |
 
+##### 문턱 위에서는 회복하지 않는다
+`COST_RECOVERY` 는 **자기 점수가 `PHASE_THRESHOLD` 미만인 쪽에만** 들어간다
+(양 팀 같은 규칙). 점수는 차례를 기다리는 자원이지 쌓아 두는 자원이 아니라는
+것이고, 턴을 넘길 때 문턱 초과분이 소멸하는 규칙(`end_card_phase`)과 짝을
+이룬다 — 둘이 합쳐 **전략 점수의 실질 상한이 문턱**이 된다. 카드 효과
+(아드레날린)만이 그 위로 올려놓을 수 있고, 그렇게 올라간 점수도 그 차례를
+넘기는 순간 문턱으로 깎인다.
+
 `simulate_turn()` 이 자기 초입에서 `turn_count` 를 올리므로 게이트를 보는 시점의
 `turn_count` 는 **방금 끝난 턴의 번호**(1-based)다. 카운터는 개시 시
 `INTERVAL - 1` 로 놓여 있어 게이트가 열리는 첫 턴에 곧바로 발동한다.
@@ -88,8 +96,28 @@ Line 2 carries two separate jobs.
 되돌리는 이 규칙의 유일한 상태다.
 
 준비 판정이 비대칭인 것은 기존 동작 그대로다: AI 는 낼 수 있는 카드가 손에
-있어야 준비된 것으로 치고(`_ai_turn_ready`), 플레이어는 점수만 차면 진입한다 —
-낼 게 없는 손은 `can_end_card_phase` 의 탈출구가 통과시킨다.
+있어야 준비된 것으로 치고(`_ai_turn_ready`), 플레이어는 점수만 차면 진입한다.
+
+##### 패스 잠금 (`_player_pass_lock`)
+플레이어 쪽 준비 판정에는 조건이 하나 더 붙는다 — **방금 넘긴 차례는 곧바로
+돌아오지 않는다.**
+
+턴 넘기기의 조건이 "카드를 한 장 이상 낼 것"이었을 때는 그 규칙이 곧 "넘기고
+나면 점수가 문턱 아래로 내려간다"의 보증이었다. 지금은 한 장도 안 내고 넘길
+수 있고 문턱 초과분만 깎이므로, 넘긴 직후에도 점수는 정확히 문턱에 걸려 있다 —
+규칙 1 그대로라면 다음 틱(0.5초)에 "당신의 차례"가 다시 뜬다. 그래서
+`end_card_phase` 가 잠금을 세우고, 푸는 자리는 둘뿐이다.
+
+| 푸는 자리 | 왜 |
+|---|---|
+| `do_battle_turn` 의 자동 드로우 (카드가 실제로 들어왔을 때) | 손패가 바뀌었으면 낼 것이 생겼을 수 있다 |
+| `_run_ai_turn` 종료 | 상대가 한 번 차례를 가졌다 = 판이 움직였다 |
+
+`start_card_phase` 도 진입 시 한 번 더 백지로 돌린다(다음 넘기기가 깨끗한
+잠금으로 시작하도록). 새 판은 `build_starter_decks` 가 되돌린다.
+잠긴 동안 BATTLE 은 평소대로 흐르고, 덱과 discard 가 모두 마른 극단에서만
+플레이어 차례가 영영 열리지 않는다 — 그때는 회복도 멈춰 있어 어차피 바뀔 것이
+없는 상태다.
 
 ### 개시 상태 (진영 + 빈 손)
 - **블루가 선을 잡는다.** `BattleSim.blue_team` (0 = 플레이어 팀) 은
@@ -128,41 +156,52 @@ first auto-draw after the turn ends is what trims the excess.
 스캔인 것은 보존 카드가 손패 앞쪽에 있어도 멈추지 않기 위해서이고, 손패가 통째로
 보존되는 극단(최대 2장이라 실제로는 불가능)에서도 무한 루프가 나지 않는다.
 `_prune_preserved` 가 매 트림마다 손패를 떠난 항목을 걷어 유령 참조를 막는다.
-- `start_card_phase()` — transitions to CARD_PHASE, resets
-  `_bs.cards_played_this_phase` so the 턴 넘기기 face of the 전략 포인트 도넛
-  starts disabled for the new turn.
+- `start_card_phase()` — transitions to CARD_PHASE and clears
+  `_player_pass_lock` (자기 차례가 열렸다는 것이 곧 잠금이 풀렸다는 뜻이다).
   Awaits `HudBuilder.play_turn_announce(true)` so the "당신의 차례" banner
   sweeps in / holds / fades out before the player can interact; the player
   hand stays dimmed for that whole interval via `_apply_hand_dim_state()`.
-- `can_end_card_phase()` → bool — true once **`cards_played_this_phase > 0`**,
-  i.e. the player has resolved at least one card this 작전 단계.
-  `_has_any_playable_card()` is a second escape hatch: a hand with nothing
-  playable at all (every card unaffordable, 시전자 down, or no legal target)
-  passes straight through, because BATTLE is paused during 작전 단계 so the
-  hand can never change on its own.
-  Also blocked while `_player_turn_announce_in_progress`, while overlays own
-  the screen, while the AI play loop is in flight, and while a 공격 카드's
-  돌진 연출 is running (`_attack_anim_active` — 연출 중간에 단계가 닫히면
-  시전자가 파고든 자세 그대로 BATTLE 이 재개된다).
+- `can_end_card_phase()` → bool — **자기 차례는 언제든 넘길 수 있다.** 카드를
+  한 장도 내지 않아도 되고, 점수를 한 점도 쓰지 않아도 된다. 남은 false 조건은
+  전부 "지금 닫으면 무언가가 중간에 끊긴다"는 것뿐이다:
+  `_player_turn_announce_in_progress`, 모달 오버레이(버리기·찾기 / 더미 열람 /
+  전투 개시 VS 확인), AI 플레이 루프, 그리고 공격 카드의 돌진 연출
+  (`_attack_anim_active` — 연출 중간에 단계가 닫히면 시전자가 파고든 자세
+  그대로 BATTLE 이 재개된다).
 
-  **Why plays and not points.** The gate used to be
-  `player_cost < card_phase_entry_cost` (a cost snapshot taken on entry), which
-  deadlocked the phase outright: 9 of the 28 cards cost 0 (임기응변 / 정밀 이동 /
-  복귀 / 집중 …) and 조정 *raises* the total, so a hand whose only playable
-  cards were free could never lower the cost, the 턴 넘기기 face never enabled,
-  and nothing could unstick it — BATTLE does not tick during 작전 단계, so no
-  new card ever arrives. Counting resolved plays keeps the "do something on
-  your turn" intent without the trap. `card_phase_entry_cost` is gone.
-- The counter is bumped in `_finalize_pending_play()`, not `_play_card_direct()`,
-  so a card rolled back out of a 버리기 / 찾기 overlay (`_on_overlay_cancel`
-  restores the pre-play snapshot) doesn't unlock 턴 넘기기 on a play that never
-  happened. AI plays never touch it — `_pending_play.is_player` gates the bump.
+  **규칙의 이력.** 처음 게이트는 `player_cost < card_phase_entry_cost` (진입
+  시점의 점수 스냅샷)였고 이건 단계를 통째로 교착시켰다: 28장 중 9장이 0코스트
+  (임기응변 / 정밀 이동 / 복귀 / 집중 …)이고 조정은 오히려 총량을 *올리므로*,
+  낼 수 있는 카드가 전부 무료인 손은 점수를 영영 못 내려 턴 넘기기 면이
+  활성화되지 않았다 — 작전 단계 동안 BATTLE 이 멈추므로 새 카드도 안 온다.
+  그래서 **"카드를 한 장 이상 냈을 것"**(`cards_played_this_phase > 0`)으로
+  바뀌었고, 낼 게 하나도 없는 손만 `_has_any_playable_card()` 탈출구로
+  통과시켰다. 지금은 그 예외가 규칙을 삼켰다 — 점수는 문턱 위인데 손에 낼 게
+  없거나 지금은 쓰고 싶지 않은 경우가 실제로 흔하고, "무언가 하나는 내라"를
+  강제하면 아무 카드나 버리듯 내게 된다. `cards_played_this_phase` 와
+  `_has_any_playable_card()` 는 함께 **삭제됐다**.
 - `end_card_phase()` — the player's turn only: drops the selection, runs
   `recall_sys.process_phase_end_recalls()` (HP threshold + out-of-position
-  card-displaced pilots) and returns to BATTLE. **No banner, no AI plays** —
-  it is fully synchronous now. The opponent takes its turn on its own schedule
-  (see 상대 차례 below). Also zeroes `kill_bounty_p` — 계획 살인's reservation
-  only lives for the phase that placed it.
+  card-displaced pilots) and returns to BATTLE. Also zeroes `kill_bounty_p` —
+  계획 살인's reservation only lives for the phase that placed it. 넘기는 순간
+  세 가지가 함께 일어난다.
+
+  1. **문턱 초과분 소멸** — `player_cost` 는 정확히 `PHASE_THRESHOLD` 로 깎인다
+     (소멸량은 로그에 남는다). 차례를 쓰지 않고 넘긴 대가이고, 문턱 위에서
+     회복이 멈추는 규칙과 짝을 이룬다.
+  2. **패스 잠금** — `_player_pass_lock` 을 세운다(위 절).
+  3. **상대가 문턱 위면 그 자리에서 상대 차례** — `_ai_turn_ready()` 가 true 면
+     `_last_turn_side = 1` 을 찍고 `await _run_ai_turn()` 한다. 다음 BATTLE
+     틱을 기다리지 않고, 내 점수와도 무관하다(내 차례는 방금 끝났으므로).
+     점수만 보지 않고 `_ai_turn_ready()` 로 묻는 것은 아무것도 안 하는
+     "상대 차례" 배너를 띄우지 않기 위해서다. **넘기기 자체에는 여전히 배너가
+     없다** — 배너가 뜬다면 그건 상대가 실제로 행동한다는 뜻이다.
+
+  이 마지막 절 때문에 `end_card_phase` 는 **코루틴**이다. `CostDonut.
+  end_turn_pressed` 는 그대로 연결해 두면 되고(시그널은 코루틴 핸들러를 받는다),
+  `_finalize_pending_play` 의 완벽한 마무리 경로도 `await` 없이 부른다.
+- AI 차례 종료(`_run_ai_turn`)에도 같은 소멸 규칙이 걸린다 — `ai_cost` 역시
+  문턱으로 깎이고, 그 자리에서 플레이어의 패스 잠금이 풀린다.
 
 #### 작전 단계 진입 정산 (`_apply_phase_entry_carryovers`)
 지연 효과 셋이 자기 팀의 **다음 작전 단계 진입 시점**에 한꺼번에 정산된다.
@@ -178,8 +217,8 @@ first auto-draw after the turn ends is what trims the excess.
 - `_ai_turn_ready()` — `ai_cost >= PHASE_THRESHOLD` **and** at least one card
   in `ai_hand` the AI can pay for, tested with the same
   `effective_cost_for(cd, false) <= ai_cost` filter
-  `AiCardPlayer.run_ai_plays` uses. The second half is the mirror of the
-  player's `_has_any_playable_card` escape hatch: an AI sitting on a full score
+  `AiCardPlayer.run_ai_plays` uses. The second half is what keeps the banner
+  honest: an AI sitting on a full score
   with an empty or unaffordable hand would otherwise re-announce "상대 차례"
   every tick and play nothing. Because the filter matches, a turn that starts
   always consumes at least one card, so the condition can't hold twice in a row

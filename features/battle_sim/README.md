@@ -61,7 +61,7 @@ _bs.renderer.queue_redraw()
 ## BattleSim.gd (thin orchestrator)
 
 Responsibilities:
-- Declares all DB-driven config vars and **state vars** (pilots, turrets, neutral_zone_cells, game_phase, HUD refs, card state, `gambit_lanes`, `cards_played_this_phase`)
+- Declares all DB-driven config vars and **state vars** (pilots, turrets, neutral_zone_cells, game_phase, HUD refs, card state, `gambit_lanes`)
 - Holds `@onready` refs to all child modules
 - Public **coordinate helpers**: `cell_center(pos)`, `pilot_label(p)`, `role_stats_str(role)`
 - **Lifecycle**: `_ready()`, `_process(delta)`
@@ -234,13 +234,17 @@ Responsibilities:
   찬다. 실측 기준 첫 작전 단계는 **22턴 · 손패 7장**이고 상한
   `MAX_HAND_SIZE` 는 **10**이다.
 - Ending the phase goes through the player's 전략 포인트 도넛: tap it once to
-  flip it into a circular 턴 넘기기 button, tap again to end. The 턴 넘기기
-  face stays disabled until the player **plays at least one card** this phase
-  (tracked via `cards_played_this_phase`) — or until the hand holds nothing
-  playable at all, which passes straight through so the phase can't deadlock.
+  flip it into a circular 턴 넘기기 button, tap again to end. **카드를 한 장도
+  내지 않아도 넘길 수 있다** — 면이 회색으로 잠기는 것은 배너 / 모달 / 돌진
+  연출처럼 지금 닫으면 무언가가 끊기는 상태뿐이다.
   Tapping anywhere else flips it back to the point readout.
 - Phase end re-runs recalls (HP threshold + out-of-position card displacement)
-  and drops straight back to BATTLE.
+  and drops straight back to BATTLE. 그때 **문턱을 넘은 전략 점수는 소멸하고**
+  (`player_cost` = `PHASE_THRESHOLD`), 넘긴 쪽은 손패가 바뀌거나 상대가 한 번
+  차례를 갖기 전까지 다시 차례를 받지 못한다(패스 잠금). 상대가 이미 문턱 위
+  라면 다음 틱을 기다리지 않고 **그 자리에서 상대 차례로 넘어간다**. 짝이 되는
+  규칙이 하나 더 있다 — **문턱 위에서는 `COST_RECOVERY` 가 들어오지 않는다**
+  (양 팀 동일). 셋이 합쳐 전략 점수의 실질 상한이 문턱이 된다.
 - **The AI's turn is its own**, no longer stapled to the player's phase end:
   it fires from the BATTLE tick when `ai_cost >= PHASE_THRESHOLD` *and* the AI
   holds a card it can pay for, and only then does the "상대 차례" banner show.

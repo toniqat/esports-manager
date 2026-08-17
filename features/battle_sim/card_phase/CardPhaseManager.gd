@@ -672,6 +672,11 @@ func can_end_card_phase() -> bool:
 	# 닫히면 시전자가 파고든 자세 그대로 BATTLE 이 재개된다.
 	if _attack_anim_active:
 		return false
+	# 전투 개시 VS 확인 화면도 마찬가지다 — 그 화면이 떠 있는 동안 카드는 이미
+	# 손패를 떠나 `_pending_play` 에 매달려 있고 game_phase 는 아직 CARD_PHASE 라,
+	# 여기서 단계를 닫으면 확인/취소를 기다리던 체인이 갈 곳을 잃는다.
+	if _bs.engage_phase != null and _bs.engage_phase.is_intro_active():
+		return false
 	if _player_turn_announce_in_progress:
 		return false
 	return true
@@ -689,7 +694,8 @@ func can_browse_piles() -> bool:
 		return false
 	if _bs.card_select_overlay != null and _bs.card_select_overlay.is_active():
 		return false
-	if _bs.engage_phase != null and _bs.engage_phase.is_active():
+	if _bs.engage_phase != null and (_bs.engage_phase.is_active()
+			or _bs.engage_phase.is_intro_active()):
 		return false
 	return true
 
@@ -2052,6 +2058,10 @@ func _is_player_input_blocked() -> bool:
 	# 돌진 연출이 끝나야 다음 카드를 낼 수 있다.
 	if _attack_anim_active:
 		return true
+	# 전투 개시 VS 확인 화면 — game_phase 는 아직 CARD_PHASE 이므로 손패가
+	# 스스로 딤되지 않는다.
+	if _bs.engage_phase != null and _bs.engage_phase.is_intro_active():
+		return true
 	if _player_turn_announce_in_progress:
 		return true
 	# Deck / Discard 열람 중 — 목록이 화면을 덮고 있으므로 핸드는 딤 상태로.
@@ -2880,8 +2890,10 @@ func _apply_single_effect(e: Dictionary, is_player: bool, caster: PilotData,
 		"recall_ally": return _effect_recall_ally(ally_team,
 				selected_target as PilotData)
 		"exhaust_choice": return _effect_exhaust_choice(is_player, value)
-		"engage":   return _effect_engage(value, flags, caster, is_player)
-		"duel":                    return _effect_duel(caster,
+		# 교전 두 절도 기다린다 — 제출 직후에 참가자 명단(VS)을 띄우고 확인을
+		# 받기 때문. 공격 절과 같은 이유로 체인 전체가 코루틴이 된다.
+		"engage":   return await _effect_engage(value, flags, caster, is_player)
+		"duel":     return await _effect_duel(caster,
 				selected_target as PilotData, is_player)
 		"move":                    return _effect_move(caster, selected_target)
 		"capture_jungle":          return _effect_capture_jungle(value,
@@ -3090,6 +3102,19 @@ func _effect_advance(steps: int, caster: PilotData) -> String:
 	return "전진 %d%s" % [steps, tag]
 
 
+## 전투 개시 — **카드를 제출한 이 시점**에 참가자 명단(VS 화면)이 뜨고, 확인을
+## 받은 뒤에야 아레나가 열린다.
+##
+## 명단이 카드를 **고르는** 순간이 아니라 여기 붙는 이유는 `EngageIntro` 머리말
+## 참고. 이 절이 `await` 를 물면서 `_apply_single_effect` → `_process_pending_chain`
+## / `apply_card_effect` → `AiCardPlayer.run_ai_plays` 가 줄줄이 코루틴이 되는데,
+## 공격 절(`_effect_attack`)이 이미 같은 이유로 그렇게 되어 있어 새로 생기는
+## 계약은 없다.
+##
+## **취소는 카드 제출 자체를 무른다** — `_on_overlay_cancel` 이 `_play_card_direct`
+## 가 떠 둔 스냅샷(손패 / 덱 / 비용 / engage 할인)을 통째로 복원하므로, 버리기 /
+## 찾기 오버레이의 취소와 완전히 같은 경로다. 그 뒤 빈 문자열을 돌려주면
+## `_process_pending_chain` 이 `_pending_play` 가 비었음을 보고 체인을 접는다.
 func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 		is_player: bool) -> String:
 	# 시전자 없는 카드(레거시 fallback)는 전투 자체가 의미가 없음. 이 경우는
@@ -3097,13 +3122,25 @@ func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 	if caster == null or rounds <= 0:
 		return "전투 개시 (시전자 없음)"
 	var exclude_lane: bool = "exclude_lane" in flags
-	# Both player and AI plays open the modal so the engage is visible —
+	var sides: Array = _bs.engage_phase.engage_sides(caster, exclude_lane)
+	var t0: Array = sides[0]
+	var t1: Array = sides[1]
+	# 한쪽이라도 비면 start_engage 가 어차피 no-op 이므로 명단을 띄우지 않는다.
+	if t0.is_empty() or t1.is_empty():
+		return "전투 개시 (대상 부족)"
+	var who: String = "" if is_player else " (AI)"
+	# AI 가 낸 카드는 플레이어가 무를 수 있는 것이 아니므로 확인만 뜬다.
+	var ok: bool = await _bs.engage_phase.prompt_engage(t0, t1, rounds,
+			"전투 개시%s" % who, is_player)
+	if not ok:
+		_on_overlay_cancel()
+		return ""
+	# Both player and AI plays open the arena so the engage is visible —
 	# AiCardPlayer awaits engage_finished between AI plays so the
 	# back-to-back animations don't stomp each other.
 	_bs.engage_phase.start_engage(caster, rounds, exclude_lane,
 			Callable(self, "_on_engage_finished"))
 	var tag: String = " (레인 제외)" if exclude_lane else ""
-	var who: String = "" if is_player else " (AI)"
 	# engage:N 의 N 은 **라운드 수** 그대로다 — 초로 환산하던 예전 규칙은 삭제됐다.
 	return "전투 개시 %d라운드%s%s" % [rounds, tag, who]
 
@@ -3159,13 +3196,23 @@ func _effect_recall_ally(ally_team: int,
 # 결투 — opens a turn-based engage arena restricted to caster + picked enemy.
 # No round budget is shown: neither side can disengage, so the fight runs until
 # one of them is KO'd. TurnEngageSim.DUEL_MAX_ROUNDS is only a runaway cap.
+## 결투 — 1:1. 전투 개시와 같은 VS 확인 화면을 지난다(참가자는 두 명뿐).
+## `pool = 0` 이라 지금은 아무에게도 지급되지 않지만, 되살아났을 때 개시 흐름이
+## 전투 개시와 갈라지지 않도록 같은 경로에 태워 둔다.
 func _effect_duel(caster: PilotData, picked: PilotData,
 		is_player: bool) -> String:
 	if caster == null or picked == null:
 		return "결투 (대상 없음)"
+	var who: String = "" if is_player else " (AI)"
+	var t0: Array = [caster] if caster.team == 0 else [picked]
+	var t1: Array = [picked] if caster.team == 0 else [caster]
+	var ok: bool = await _bs.engage_phase.prompt_engage(t0, t1,
+			TurnEngageSim.DUEL_MAX_ROUNDS, "결투%s" % who, is_player)
+	if not ok:
+		_on_overlay_cancel()
+		return ""
 	_bs.engage_phase.start_duel(caster, picked,
 			Callable(self, "_on_engage_finished"))
-	var who: String = "" if is_player else " (AI)"
 	return "결투 %s → %s%s" % [_bs.pilot_label(caster),
 			_bs.pilot_label(picked), who]
 

@@ -12,8 +12,13 @@ extends Node
 #   • PILOT    — 타일은 전부 딤드(타일은 대상이 아니다). 유효 대상만
 #                TARGET_EMPHASIS_SCALE 만큼 커진 채 밝게 남는다.
 #   • LOCATION — 유효 셀만 초록으로 남고 나머지 셀과 파일럿 전원이 딤드된다.
-#   • PREVIEW  — 전투 개시류. 시전자 셀 + 인접 6칸이 영역이고 좌/우에 참여
-#                파일럿 패널이 뜬다.
+#   • PREVIEW  — 전투 개시류. 시전자 셀 + 인접 6칸이 영역으로 밝아지고 그 안의
+#                참여 파일럿이 강조된다. **참가자 명단은 여기 없다** — 카드를
+#                제출한 뒤 `engage/EngageIntro.gd` 의 VS 화면이 보여 준다.
+#                (예전에는 화면 좌/우에 세로 팀 패널 두 개가 떴다. 아직 낼지도
+#                정하지 않은 카드를 집기만 해도 화면 절반이 표로 덮였고, 세로로
+#                나란히 선 목록 둘은 어느 쪽이 내 팀인지를 위치로 말해 주지도
+#                못했다.)
 #   • INSTANT  — 대상이 없는 카드. 전장 표시가 하나도 없다.
 #
 # **확정 경로는 드래그 드롭 하나뿐이다.** 카드를 대상 위(또는 무대상 카드라면
@@ -73,30 +78,6 @@ var _play_allowed: bool = false
 # 앉으면 카드 윗단과 겹친다. 이름과 값을 그대로 두는 이유가 그것뿐이라는 뜻이다.
 const BTN_H            := 56.0
 const BTN_HAND_GAP     := 10.0
-# 좌/우 팀 패널 — 좌측에 플레이어 팀, 우측에 적 팀.
-# 패널 하단(=TEAM_PANEL_Y + TEAM_PANEL_H)이 위 빈 띠의 상단
-# (BS_HAND_CENTER.y - BTN_HAND_GAP - BTN_H ≈ 1434)을 침범하지 않도록
-# 1200 까지만 확장한다. 행 16개 정도까지는 안전.
-const TEAM_PANEL_W     := 300.0
-const TEAM_PANEL_H     := 1200.0
-const TEAM_PANEL_Y     := 200.0
-const TEAM_PANEL_MARGIN := 20.0   # 화면 가장자리에서의 여백
-const TEAM_ROW_H        := 70.0
-const TEAM_ROW_GAP      := 8.0
-const TEAM_ROW_IMG_SIZE := 56.0
-
-# ─── UI refs ─────────────────────────────────────────────────────────────────
-var _ui_layer:    CanvasLayer = null
-# 좌/우 팀 패널. 각각 0=플레이어팀, 1=적팀의 참여 파일럿 목록을 표시.
-var _team_panels: Array = [null, null]
-
-
-func _ready() -> void:
-	# Layer above HUD (CardSelectOverlay uses 10) so the PREVIEW team panels sit
-	# on top of the cost donut and the description box.
-	_ui_layer = CanvasLayer.new()
-	_ui_layer.layer = 11
-	add_child(_ui_layer)
 
 
 # Bind step so the overlay does not need to know its parent type at construction.
@@ -180,7 +161,6 @@ func has_required_pick() -> bool:
 ## `deselect_current_card` 로 직접 걷는다.)
 func start_card_selection(cd: CardData, on_confirm: Callable) -> void:
 	_clear_visual_state()
-	_free_ui()
 	if cd == null:
 		return
 	var caster: PilotData = cd.owner_pilot
@@ -218,7 +198,6 @@ func start_card_selection(cd: CardData, on_confirm: Callable) -> void:
 					cd.effect, "engage", "exclude_lane")
 			preview_participants = _bs.card_phase.compute_engage_participants(
 					caster, area, exclude_lane)
-			_build_team_panels()
 		_:
 			mode = Mode.INSTANT
 	_on_confirm = on_confirm
@@ -230,7 +209,7 @@ func start_card_selection(cd: CardData, on_confirm: Callable) -> void:
 ## 콜백은 부르지 않는다(호출 측이 이미 정리 중일 때 재진입하지 않도록).
 ## 이미 꺼져 있으면 no-op.
 func clear_selection() -> void:
-	if mode == Mode.NONE and _team_panels[0] == null and _team_panels[1] == null:
+	if mode == Mode.NONE:
 		return
 	_teardown()
 
@@ -393,151 +372,6 @@ func _hit_test_pilot(pos: Vector2) -> PilotData:
 	return best if best != null else tile_best
 
 
-# ─── UI construction ─────────────────────────────────────────────────────────
-## 뷰포트 실제 폭. 팀 패널 배치가 이 값을 기준으로 우측 정렬된다.
-func _screen_w() -> float:
-	return get_viewport().get_visible_rect().size.x
-
-
-# 좌/우 팀 패널을 빌드한다. 좌측에 플레이어팀(0), 우측에 적팀(1) 참여
-# 파일럿을 파일럿 이미지 + HP 텍스트 + HP 프로그레스 바로 표시한다.
-# PREVIEW 모드 전용.
-func _build_team_panels() -> void:
-	# 참여자 팀별 그룹화 + 역할 정렬.
-	var by_team: Array = [[], []]
-	for raw in preview_participants:
-		var p := raw as PilotData
-		(by_team[p.team] as Array).append(p)
-	for t in range(2):
-		(by_team[t] as Array).sort_custom(func(a: PilotData, b: PilotData) -> bool:
-			return a.role < b.role)
-
-	var team_titles: Array = ["아군", "적군"]
-	var team_colors: Array = [
-		Color(0.32, 0.62, 0.95),
-		Color(0.95, 0.40, 0.32),
-	]
-	# 화면 X 좌표: 좌측 패널 = MARGIN, 우측 패널 = 화면 폭 - PANEL_W - MARGIN
-	var screen_w: float = _screen_w()
-	var xs: Array = [
-		TEAM_PANEL_MARGIN,
-		screen_w - TEAM_PANEL_W - TEAM_PANEL_MARGIN,
-	]
-	for t in range(2):
-		_team_panels[t] = _build_one_team_panel(
-				team_titles[t] as String,
-				team_colors[t] as Color,
-				by_team[t] as Array,
-				xs[t] as float)
-
-
-# 한쪽 팀의 파일럿 목록을 담는 단일 패널을 만들어 _ui_layer 의 자식으로
-# 추가하고 인스턴스를 반환.
-func _build_one_team_panel(title_text: String, accent: Color,
-		pilots: Array, x: float) -> Panel:
-	var panel := Panel.new()
-	panel.position = Vector2(x, TEAM_PANEL_Y)
-	panel.size = Vector2(TEAM_PANEL_W, TEAM_PANEL_H)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.08, 0.10, 0.18, 0.94)
-	sb.border_color = accent
-	sb.border_width_top    = 2
-	sb.border_width_bottom = 2
-	sb.border_width_left   = 2
-	sb.border_width_right  = 2
-	sb.corner_radius_top_left     = 12
-	sb.corner_radius_top_right    = 12
-	sb.corner_radius_bottom_left  = 12
-	sb.corner_radius_bottom_right = 12
-	panel.add_theme_stylebox_override("panel", sb)
-	_ui_layer.add_child(panel)
-
-	var vbox := VBoxContainer.new()
-	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	vbox.offset_left   = 12
-	vbox.offset_top    = 12
-	vbox.offset_right  = -12
-	vbox.offset_bottom = -12
-	vbox.add_theme_constant_override("separation", TEAM_ROW_GAP)
-	panel.add_child(vbox)
-
-	var title := Label.new()
-	title.text = "%s (%d)" % [title_text, pilots.size()]
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 22)
-	title.add_theme_color_override("font_color", accent)
-	vbox.add_child(title)
-
-	if pilots.is_empty():
-		var empty_lbl := Label.new()
-		empty_lbl.text = "참여자 없음"
-		empty_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		empty_lbl.add_theme_font_size_override("font_size", 16)
-		empty_lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
-		vbox.add_child(empty_lbl)
-		return panel
-
-	for raw in pilots:
-		var p := raw as PilotData
-		vbox.add_child(_build_pilot_row(p, accent))
-	return panel
-
-
-# 한 명의 파일럿 row (이미지 + 라벨 + HP 텍스트 + HP 바). 팀 패널의 vbox에
-# 자식으로 추가될 컨트롤을 반환.
-func _build_pilot_row(p: PilotData, accent: Color) -> Control:
-	var row := Control.new()
-	row.custom_minimum_size = Vector2(0.0, TEAM_ROW_H)
-	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	# 좌측 이미지 박스. PilotImages.face_for 가 직사각형 face 텍스처를 돌려준다.
-	var img_box := TextureRect.new()
-	img_box.position = Vector2(0.0, (TEAM_ROW_H - TEAM_ROW_IMG_SIZE) * 0.5)
-	img_box.size = Vector2(TEAM_ROW_IMG_SIZE, TEAM_ROW_IMG_SIZE)
-	img_box.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	img_box.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	img_box.texture = PilotImages.face_for(p.pilot_id)
-	row.add_child(img_box)
-
-	# 우측 정보 컬럼 (이름 + HP 텍스트 + HP 바).
-	var info_x: float = TEAM_ROW_IMG_SIZE + 10.0
-	var info_w: float = TEAM_PANEL_W - 24.0 - info_x   # 패널 padding 24 보정
-	var name_lbl := Label.new()
-	name_lbl.text = _bs.pilot_label(p)
-	name_lbl.position = Vector2(info_x, 4.0)
-	name_lbl.size = Vector2(info_w, 24.0)
-	name_lbl.add_theme_font_size_override("font_size", 18)
-	name_lbl.add_theme_color_override("font_color", accent)
-	row.add_child(name_lbl)
-
-	var hp_text := Label.new()
-	hp_text.text = "HP %d / %d" % [p.hp, p.max_hp]
-	hp_text.position = Vector2(info_x, 28.0)
-	hp_text.size = Vector2(info_w, 20.0)
-	hp_text.add_theme_font_size_override("font_size", 14)
-	hp_text.add_theme_color_override("font_color", Color(0.92, 0.92, 0.92))
-	row.add_child(hp_text)
-
-	# HP 프로그레스 바.
-	var bar_h: float = 8.0
-	var bar_y: float = 52.0
-	var bar_bg := ColorRect.new()
-	bar_bg.position = Vector2(info_x, bar_y)
-	bar_bg.size = Vector2(info_w, bar_h)
-	bar_bg.color = Color(0.06, 0.06, 0.08, 1.0)
-	row.add_child(bar_bg)
-	var ratio: float = 0.0
-	if p.max_hp > 0:
-		ratio = clamp(float(p.hp) / float(p.max_hp), 0.0, 1.0)
-	var bar_fill := ColorRect.new()
-	bar_fill.position = bar_bg.position
-	bar_fill.size = Vector2(info_w * ratio, bar_h)
-	bar_fill.color = Color(0.30, 0.85, 0.45, 1.0)
-	row.add_child(bar_fill)
-
-	return row
-
-
 # ─── Teardown ────────────────────────────────────────────────────────────────
 # Common reset helper used by start_card_selection / _teardown before stamping
 # new state. Does NOT touch button refs — the entry point rebuilds them.
@@ -556,17 +390,8 @@ func _clear_visual_state() -> void:
 	_play_allowed = false
 
 
-func _free_ui() -> void:
-	for i in range(_team_panels.size()):
-		var pn = _team_panels[i]
-		if pn != null and is_instance_valid(pn):
-			(pn as Panel).queue_free()
-		_team_panels[i] = null
-
-
 func _teardown() -> void:
 	_clear_visual_state()
-	_free_ui()
 	_on_confirm = Callable()
 	_request_redraw()
 

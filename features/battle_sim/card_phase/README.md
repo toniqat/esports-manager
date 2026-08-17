@@ -1140,9 +1140,11 @@ keyword check has always fired first, so they are 소멸 on their first play.
   숨지 않게 한다).
 
 ### 대상 지정 (CardTargetingOverlay)
-- `CardTargetingOverlay.gd` — sibling of `CardPhaseManager`, owns a CanvasLayer
-  at layer 11 (above the search/discard overlay's layer 10). **그 레이어에 남은
-  것은 PREVIEW 모드의 좌/우 팀 패널뿐이다** — 확인 / 취소 버튼은 삭제됐다.
+- `CardTargetingOverlay.gd` — sibling of `CardPhaseManager`. **It owns no nodes
+  at all now.** It used to hold a CanvasLayer at layer 11 for the PREVIEW 좌/우
+  팀 패널; those moved to the post-submit VS screen (`engage/EngageIntro.gd`),
+  and the 확인 / 취소 버튼 had already gone, so the layer went with them. What is
+  left is pure state that `BattleRenderer` reads.
 - **There is no modal step any more.** `Mode` is now just "what kind of card is
   being dragged": `NONE / INSTANT / PILOT / LOCATION / PREVIEW`. One entry
   point, `start_card_selection(cd, on_confirm)`, is called from
@@ -1230,14 +1232,14 @@ keyword check has always fired first, so they are 소멸 on their first play.
     덮지 않기 위해 딤도 채움도 생략" 특례는 필요가 없어졌다.
   - `cast_method == "range" and target == "caster"` → **PREVIEW** mode
     (engage cards only; 전진은 target=enemy 라 PREVIEW 가 아니라 즉시 발동).
-    The caster cell and 6 neighbours show a soft yellow fill with full outline.
-    Two side panels — **좌측 = 아군 팀, 우측 = 적군 팀** — list each
-    alive participant with the pilot face image (`PilotImages.face_for`),
-    role/팀 라벨, HP 텍스트, HP 프로그레스 바. 카드를 고른 즉시 패널이
-    뜨고, 따로 찍을 대상이 없으므로 **화면 중앙 드롭 존**에 놓으면 곧바로
-    나간다 → `_play_card_direct(card, null)` 가 비용 차감 / 카드 파괴 /
-    effect chain 실행을 한꺼번에 수행한다. Cells outside the engage area also get the
-    black out-of-range dim.
+    The caster cell and 6 neighbours show a soft yellow fill with full outline
+    and the participants inside it are emphasised; cells outside the engage area
+    get the black out-of-range dim. 따로 찍을 대상이 없으므로 **화면 중앙 드롭
+    존**에 놓으면 곧바로 나간다 → `_play_card_direct(card, null)`.
+    > **참가자 명단은 여기 없다.** 예전에는 카드를 고르는 순간 화면 좌/우에 세로
+    > 팀 패널 두 개가 떠서 참가 파일럿을 나열했다. 지금 그 명단은 **카드를 제출한
+    > 뒤** `engage/EngageIntro.gd` 의 VS 화면이 보여 준다 — 이유는
+    > `engage/README.md` 의 *개시 확인 화면* 절.
   - anything else → **INSTANT**. No caster, no range, nothing painted on the
     battlefield (`is_visualizing()` is false, so BattleRenderer skips the dim
     entirely) — 드롭 존만 뜬다.

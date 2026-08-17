@@ -538,11 +538,14 @@ func _update_cost_donuts(in_card_phase: bool) -> void:
 		_bs.cost_donut_enemy.set_value(_bs.ai_cost, maxv)
 	if _bs.cost_donut != null:
 		# Deck / Discard 목록이 열려 있으면 플립도 막는다 — CostDonut._input 은
-		# GUI 픽보다 먼저 돌아 열람 딤을 뚫고 눌린다.
-		var browsing: bool = _bs.card_pile_viewer != null \
-				and _bs.card_pile_viewer.is_active()
+		# GUI 픽보다 먼저 돌아 열람 딤을 뚫고 눌린다. 전투 개시 VS 확인 화면도
+		# 같은 이유로 막는다: 그 화면이 떠 있는 동안 game_phase 는 아직
+		# CARD_PHASE 라, 딤만으로는 도넛이 눌리는 것을 못 막는다.
+		var modal_up: bool = (_bs.card_pile_viewer != null
+					and _bs.card_pile_viewer.is_active()) \
+				or (_bs.engage_phase != null and _bs.engage_phase.is_intro_active())
 		_bs.cost_donut.set_value(_bs.player_cost, maxv)
-		_bs.cost_donut.set_flip_allowed(in_card_phase and not browsing)
+		_bs.cost_donut.set_flip_allowed(in_card_phase and not modal_up)
 		_bs.cost_donut.set_end_enabled(in_card_phase
 				and _bs.card_phase.can_end_card_phase())
 

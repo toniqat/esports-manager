@@ -142,12 +142,16 @@ outside tap. Presses landing inside the donut are consumed with
 
 State setters driven from `HudBuilder._update_cost_donuts()`:
 `set_value(cost, PHASE_THRESHOLD)`,
+`set_flip_allowed(in_card_phase and not modal_up)` where `modal_up` is
+"Deck/Discard 열람 중 **or** 전투 개시 VS 확인 화면이 떠 있음" (turning it off
+un-flips). Both clauses are load-bearing for the same reason: `CostDonut`
+listens on `_input`, which runs ahead of GUI picking, so it stays tappable
+straight through either dim. The VS screen matters because `game_phase` is
+still CARD_PHASE while it is up — the arena has not opened yet, so
+`in_card_phase` alone lets the donut through.
 `set_end_enabled(can_end_card_phase())` — **작전 단계 내내 true** 이고, 배너 /
 모달 / 돌진 연출처럼 지금 닫으면 무언가가 끊기는 상태에서만 false 다. 카드를
 한 장도 내지 않고 넘겨도 된다(see `card_phase/README.md`). `set_locked(…)`
-`set_flip_allowed(in_card_phase and not card_pile_viewer.is_active())` (turning
-it off un-flips — the pile-viewer clause is load-bearing because `CostDonut`
-listens on `_input`, which runs ahead of GUI picking and would otherwise be
 still exists on `CostDonut` but **nothing calls it any more** — targeting stopped
 being modal, so there is no state that needs the flip blocked. The donut's y is
 still derived from `CardTargetingOverlay.BTN_HAND_GAP + BTN_H` so it keeps the

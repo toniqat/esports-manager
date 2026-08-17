@@ -73,6 +73,12 @@ var _overlay_layer: CanvasLayer = null
 # Arena instance (Control parented to _overlay_layer). Cleaned up in _close_overlay.
 var _arena: EngageArena = null
 
+# ─── 개시 확인 화면 (VS) ──────────────────────────────────────────────────────
+# 카드가 **제출된 직후**, 아레나가 열리기 전에 참가자 명단을 보여 주는 모달.
+# `prompt_engage` 가 만들고 await 하며, 그동안 `_active` 는 아직 false 다 —
+# 교전은 시작되지 않았고 취소되면 아예 시작되지 않는다.
+var _intro: EngageIntro = null
+
 
 func _ready() -> void:
 	# Build the dedicated CanvasLayer up front so _open_overlay just has to
@@ -116,6 +122,65 @@ func start_engage(caster: PilotData, rounds_total: int, exclude_lane: bool,
 		return
 
 	_begin(caster, t0, t1, false, rounds_total, on_done)
+
+
+## 시전자 기준 참가자를 **팀별로 갈라** 돌려준다: `[team0, team1]`.
+## `start_engage` 가 쓰는 것과 같은 수집 규칙이라 개시 확인 화면(VS)에 뜬 명단과
+## 실제로 무대에 오르는 명단이 어긋날 수 없다. 두 호출 사이에는 아무 일도
+## 일어나지 않으므로 두 번 수집해도 결과가 같다.
+func engage_sides(caster: PilotData, exclude_lane: bool) -> Array:
+	var t0: Array = []
+	var t1: Array = []
+	if caster == null:
+		return [t0, t1]
+	for raw in _gather_participants(caster, exclude_lane):
+		var p := raw as PilotData
+		if p.alive:
+			(t0 if p.team == 0 else t1).append(p)
+	return [t0, t1]
+
+
+## 개시 확인 화면(VS)을 띄우고 **확인(true) / 취소(false)** 를 기다린다.
+##
+## 아레나를 여는 것과는 별개의 단계다 — 여기서 취소하면 교전은 시작조차 하지
+## 않고, 호출 측(`CardPhaseManager._effect_engage`)이 카드 제출 자체를 무른다.
+## `allow_cancel` 이 false 면 확인만 놓는다: AI 가 낸 카드는 플레이어가 무를 수
+## 있는 것이 아니므로 "누가 싸우는지 보고 넘긴다"만 남는다.
+func prompt_engage(t0: Array, t1: Array, rounds: int, title: String,
+		allow_cancel: bool) -> bool:
+	if _overlay_layer == null:
+		return true
+	# 카드를 든 손패 상태를 먼저 걷는다 — 이 모달이 그 위를 덮으면 리프트된
+	# 카드가 딤 아래에 남는다. (`_begin` 도 같은 이유로 부른다.)
+	if _bs.card_phase != null:
+		_bs.card_phase.deselect_current_card()
+	_intro = EngageIntro.new()
+	_intro.name = "EngageIntro"
+	_overlay_layer.add_child(_intro)
+	_intro.setup(title, rounds, t0, t1, allow_cancel)
+	# 손패 딤과 턴 넘기기 잠금은 `is_intro_active()` 를 읽는데, 그 둘은 상태가
+	# 바뀔 때만 다시 평가된다 — 열 때와 닫을 때 한 번씩 깨워 준다.
+	_refresh_hand_gates()
+	var confirmed: bool = await _intro.decided
+	if is_instance_valid(_intro):
+		_intro.queue_free()
+	_intro = null
+	_refresh_hand_gates()
+	return confirmed
+
+
+func _refresh_hand_gates() -> void:
+	if _bs.card_phase != null:
+		_bs.card_phase.highlight_affordable_cards()
+	if _bs.hud != null:
+		_bs.hud.update_hud()
+
+
+## True while the VS 확인 화면 owns the screen. BattleSim's auto-tick is already
+## held by CARD_PHASE (player) or `is_ai_turn_active()` (AI), so this exists for
+## UI gates that need to know the hand is not the player's to touch.
+func is_intro_active() -> bool:
+	return _intro != null and is_instance_valid(_intro)
 
 
 # 결투 — 1:1 턴제 교전. _gather_participants 를 우회해 시전자와 target 만

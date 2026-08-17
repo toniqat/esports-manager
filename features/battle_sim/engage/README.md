@@ -30,13 +30,14 @@
 ## Files
 | File | Purpose |
 |---|---|
-| `EngagePhaseManager.gd` | `class_name EngagePhaseManager extends Node` — 오케스트레이터. 참가자를 모으고, `TurnEngageSim` 을 만들고, `_process` 에서 고정 스텝으로 굴리고, 종료 판정 후 `END_HOLD_SEC`(2.0초) 유예를 두고 대시보드를 띄운다. 공개 API는 예전과 동일: `start_engage(caster, rounds, exclude_lane, on_done)` / `start_duel(caster, target, on_done)` / `is_active()` / `engage_finished` 시그널. |
+| `EngagePhaseManager.gd` | `class_name EngagePhaseManager extends Node` — 오케스트레이터. 참가자를 모으고, `TurnEngageSim` 을 만들고, `_process` 에서 고정 스텝으로 굴리고, 종료 판정 후 `END_HOLD_SEC`(2.0초) 유예를 두고 대시보드를 띄운다. API: `start_engage(caster, rounds, exclude_lane, on_done)` / `start_duel(caster, target, on_done)` / `is_active()` / `engage_finished` 시그널, 그리고 개시 확인 화면용 `engage_sides(caster, exclude_lane)` / `prompt_engage(...) -> bool` / `is_intro_active()`. |
+| `EngageIntro.gd` | `class_name EngageIntro extends Control` — **개시 확인 화면(VS)**. 카드를 제출한 직후 참가자 명단을 보여 주고 확인 / 취소를 받는다. 아래 [개시 확인 화면](#개시-확인-화면-vs) 절. |
 | `TurnEngageSim.gd` | `class_name TurnEngageSim extends RefCounted` — **헤드리스 시뮬레이터**. 노드를 하나도 만들지 않는다. 벨트 좌표, 진형 배치, 행동 순서, 라운드 진행, 유닛 한 차례, 포탑, 데미지, 종료 판정 전부 여기. 튜닝 상수도 전부 여기 상단에 모여 있다. |
 | `EngageArena.gd` | `class_name EngageArena extends Control` — 시뮬레이터 상태를 그리기만 하는 렌더러. 시네마 밴드 안의 사이드뷰 무대(배경 / 바닥 / 포탑 / 유닛 / 투사체)와 밴드 아래 **참가자 초상화 + 체력 바 스트립**을 담당한다. 라운드 카운터 / 차례 표시 / 종료 사유 배너(`mark_engage_over`)와 결과 대시보드도 여기. |
 
 매니저는 `BattleSim._ready()` 에서 자식으로 붙고 `_bs.engage_phase` 에 잡힌다.
-매니저가 소유한 전용 `CanvasLayer`(`ENGAGE_OVERLAY_LAYER = 12`)에 아레나가
-붙는다. 이 레이어는 HUD 캔버스(1), `CardSelectOverlay`(10),
+매니저가 소유한 전용 `CanvasLayer`(`ENGAGE_OVERLAY_LAYER = 12`)에 **개시 확인
+화면과 아레나가 차례로** 붙는다(둘은 동시에 뜨지 않는다). 이 레이어는 HUD 캔버스(1), `CardSelectOverlay`(10),
 `CardTargetingOverlay`(11) 위이므로 무대와 대시보드는 항상 핸드 행과
 남아 있는 타게팅 UI 위에 그려진다. (파일럿 상세 패널만 13으로 더 위에 있다.)
 
@@ -44,8 +45,12 @@
 1. 플레이어(또는 AI)가 engage 카드(`engage:3` 전투 개시, `engage:4` 완벽한
    기회) 또는 결투(`duel`)를 낸다. `engage:N|exclude_lane` 도 그대로
    동작하지만 현재 이 플래그를 다는 카드는 없다.
-2. `CardPhaseManager._effect_engage()` → `EngagePhaseManager.start_engage(...)`,
-   `_effect_duel()` → `start_duel(...)`.
+2. `CardPhaseManager._effect_engage()` 가 먼저 `engage_sides()` 로 참가자를
+   팀별로 갈라 보고, 한쪽이라도 비면 그 자리에서 접는다. 아니면
+   **`prompt_engage()` 로 VS 개시 확인 화면을 띄우고 `await` 한다.**
+   취소되면 `_on_overlay_cancel()` 이 카드 제출 자체를 무르고 아레나는 열리지
+   않는다. 확인이면 `EngagePhaseManager.start_engage(...)`. (`_effect_duel()`
+   → `start_duel(...)` 도 같은 확인 화면을 지난다.)
 3. 매니저가 **들어오기 직전의 페이즈를 `_phase_before` 에 적어 두고**
    `_bs.game_phase = ENGAGE` 로 전환. BATTLE 자동 틱은 멈추고,
    카드 hover/click 과 턴 넘기기도 `CARD_PHASE` 가드 때문에 차단된다.
@@ -65,6 +70,57 @@ AI 플레이도 같은 무대를 탄다. `AiCardPlayer.run_ai_plays()` 는 매 �
 후 `engage_phase.is_active()` 면 `engage_finished` 를 `await` 한다 — 카드의
 effect chain 이 아니라 `is_active()` 로 판정하므로 clause 가 `duel` 인 결투도
 정상적으로 기다려진다.
+
+## 개시 확인 화면 (VS)
+`EngageIntro.gd`. **카드를 제출한 순간** 딤드된 전체 화면 위에 뜬다.
+
+```
+              전투 개시                ← 카드 이름 (AI 가 낸 것이면 " (AI)")
+      [적군 (3)]  eye ×N              ← 상단
+              VS  /  3라운드           ← 중앙
+      [아군 (4)]  eye ×N              ← 하단
+             취소   확인               ← 아군 줄 아래
+```
+
+- 초상화는 전장 스트립과 같은 **eye 크롭**(480×200 가로 밴드, `EYE_ASPECT` 2.4)
+  이고 그 아래에 체력 바 + `hp / max` 숫자가 붙는다. 보호막이 있으면 바가
+  노란색이 되는 것도 `ui/PilotStrip.gd` 와 같은 규칙이다.
+- 두 줄은 각자 바깥(적은 위, 아군은 아래)에서 `SLIDE_SEC`(0.22초) 동안 밀려
+  들어온다. **버튼은 처음부터 눌린다** — 연출이 입력을 붙잡으면 반복 관전이
+  느려진다.
+- **취소는 카드 제출 자체를 무른다.** `_effect_engage` 가
+  `CardPhaseManager._on_overlay_cancel()` 을 불러 `_play_card_direct` 가 떠 둔
+  스냅샷(손패 / 덱 / 비용 / engage 할인 / 보존 목록)을 통째로 복원한다 —
+  버리기 / 찾기 오버레이의 취소와 완전히 같은 경로다. 실측: 손패 5 → 4 → **5**,
+  작전 점수 99 → 93 → **99**.
+- **AI 가 낸 카드에는 확인만 뜬다**(`allow_cancel = false`). 플레이어가 무를 수
+  있는 것이 아니므로 "누가 싸우는지 보고 넘긴다"만 남는다.
+- 확인 화면이 떠 있는 동안 `game_phase` 는 아직 **CARD_PHASE**(또는 AI 턴이면
+  BATTLE)다 — 아레나는 열리지 않았다. 그래서 손패 딤과 턴 넘기기 잠금이 페이즈
+  만으로는 걸리지 않고, 셋이 `is_intro_active()` 를 따로 읽는다:
+  `CardPhaseManager._is_player_input_blocked()` / `can_end_card_phase()` /
+  `can_browse_piles()`, 그리고 `HudBuilder._update_cost_donuts` 의 도넛 플립
+  (`CostDonut._input` 은 GUI 픽보다 먼저 돌아 딤을 뚫고 눌린다). `prompt_engage`
+  는 화면을 열 때와 닫을 때 `_refresh_hand_gates()` 로 그 게이트들을 깨운다.
+- **앵커를 건드리지 않는다.** CanvasLayer 밑의 Control 에 `PRESET_FULL_RECT` 를
+  걸면 마주 보는 앵커가 서로 달라져 `_ready` 에서 쓴 크기가 레이아웃 패스에
+  덮이고(엔진 경고 그대로), 부모가 rect 를 주지 않으므로 결과는 0×0 이다 —
+  딤도 안 그려지고 `MOUSE_FILTER_STOP` 도 뒤쪽 입력을 못 막는다. 앵커를 기본값
+  (전부 0)으로 두고 `position` / `size` 만 쓰면 그대로 남는다.
+
+### 왜 명단이 여기로 옮겨 왔나
+예전에는 `CardTargetingOverlay` 의 PREVIEW 모드가 **카드를 고르는 순간** 화면
+좌/우에 세로 팀 패널 두 개를 띄워 참가자를 나열했다. 둘 다 문제였다:
+
+1. **시점이 틀렸다.** 카드를 집기만 해도 명단이 떠서, 아직 낼지 말지도 정하지
+   않은 상태에서 화면 절반이 표로 덮였다. 정작 명단이 궁금해지는 순간은 카드를
+   낸 **직후** — "이제 누가 싸우는가"가 확정된 시점이다.
+2. **좌/우 세로 패널은 진영을 말하지 않는다.** 나란히 선 스크롤 목록 두 개는
+   어느 쪽이 내 팀인지를 위치로 알려 주지 못한다. 상단 = 적 / 하단 = 아군은
+   전장 화면(`ui/PilotStrip.gd`)이 이미 쓰는 규칙이라 새로 배울 것이 없다.
+
+PREVIEW 모드 자체는 남아 있다 — 카드를 끄는 동안 시전자 셀 + 인접 6칸이
+밝아지고 그 안의 참가자가 강조되는 것까지가 그 역할이다.
 
 ## 라운드 규칙 (engage:N → N 라운드)
 | 카드 | effect | 지속 |

@@ -80,7 +80,7 @@ Responsibilities:
 
 | File | class_name | Description |
 |---|---|---|
-| `resources/PilotData.gd` | PilotData | role, hp/max_hp, atk, team, grid_pos, lane, waypoint_idx, **move_range**, **hit**, **evasion**, **jungle_start_pref**, **respawn_timer** (death-only off-field clock — see `BattleSim.turns_until_return`), **recall_hold** (본진 복귀한 턴의 이동 1회 스킵) |
+| `resources/PilotData.gd` | PilotData | role, hp/max_hp, atk, team, grid_pos, lane, waypoint_idx, **move_range**, **hit**, **evasion**, **jungle_start_pref**, **respawn_timer** (death-only off-field clock — see `BattleSim.turns_until_return`), **recall_hold** (본진 복귀한 턴의 이동 1회 스킵), **prev_grid_pos** (직전 셀 — 정글러 초상화가 앉는 방향의 출처) |
 | `resources/TurretData.gd` | TurretData | team, grid_pos, hp, tier, lane, alive |
 | `resources/PlayerData.gd` | PlayerData | id, name, role, team_id, 5 stats (laning / mechanics / gamesense / teamfight / mental), `assigned_mech` |
 | `resources/MechData.gd` | MechData | id, name, hp, atk, **presence** (4=melee/2=ranged; engage 무대의 타겟 어그로 가중치로만 사용). **`speed` 는 삭제됐다** — 교전이 라운드 턴제가 되면서 행동 빈도 개념이 사라졌다 |

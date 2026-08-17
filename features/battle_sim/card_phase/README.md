@@ -1113,8 +1113,8 @@ keyword check has always fired first, so they are 소멸 on their first play.
 - **멈추는 거리는 `ANIM_LUNGE_OVERLAP`(0.5)** — 대상 지름의 절반만큼 겹친다.
   두 마커 반지름이 같으므로 최종 중심 간 거리 = 마커 반지름 1개분. 거리는
   `BattleRenderer.pilot_marker_positions()` 로 잰다(타일 중심이 아니라 **그려진
-  마커**: 마커는 적 위 / 아군 아래로 밀려나 있어 타일로 재면 같은 칸의 적에게
-  돌진할 때 방향이 아예 반대가 된다).
+  마커**: 마커는 타일을 둘러싼 육각 링의 서로 다른 슬롯에 앉아 있어 타일로
+  재면 같은 칸의 적에게 돌진할 때 방향이 아예 반대가 된다).
 - **1단계는 시간이 다 차도 스스로 꺼지지 않고 대상 앞에 멈춰 선다.** 그 정지
   구간이 피해가 적용되는 자리이고, 2단계는 호출 측이 건다. 스스로 걷는 것은
   2단계뿐이다(`_advance_pilot_animations`).
@@ -1256,8 +1256,9 @@ keyword check has always fired first, so they are 소멸 on their first play.
     > `BattleSim.pilot_marker_pos_solo`, both of which depend only on
     > `grid_pos` — so every pilot sharing a cell had the *same* probe point and
     > the first one in `valid_pilots` (the leftmost drawn portrait) won every
-    > click, whichever face the player tapped. Pilots with no drawn slot (the
-    > `>5` overflow circle) still fall back to the solo offset.
+    > click, whichever face the player tapped. 지금은 렌더 가능한 파일럿이
+    > 전원 슬롯을 받으므로 폴백(`pilot_marker_pos_solo` → 렌더러의
+    > `pilot_marker_pos_fallback`)은 사실상 걸리지 않는다.
   - **LOCATION mode** keeps the cell-centred hit test (`_hit_test_cell`).
 - The 전략 포인트 도넛 is **no longer locked** while a card is selected — with
   the modal gone there is nothing to protect: 턴 넘기기 during a selection just

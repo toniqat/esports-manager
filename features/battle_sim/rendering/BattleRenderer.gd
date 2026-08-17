@@ -14,7 +14,7 @@ extends Node2D
 #
 # **이 배율은 초상만이 아니라 배치도 탄다.** 한 칸에 두세 명이 서 있으면 커진
 # 얼굴들이 서로를 덮어 어느 쪽을 눌렀는지 알 수 없게 되므로,
-# `_layout_team_positions` 가 좌우 간격과 타일에서의 거리를 같은 배율로 벌린다
+# `_build_pilot_render_layout` 이 육각 링의 반지름을 같은 배율로 벌린다
 # (그리고 `_draw_arrow_to_tile` 이 그만큼 긴 화살표를 그린다).
 const TARGET_EMPHASIS_SCALE: float = 1.5
 
@@ -41,6 +41,31 @@ var _emphasis_now: Dictionary = {}
 const SCREEN_EDGE_PAD: float = 6.0
 
 
+# ─── 말풍선 꼬리(화살표)의 관성 ───────────────────────────────────────────────
+# **이동 트윈이 도는 동안 화살표는 크기도 방향도 바꾸지 않는다.** 예전에는 끝점을
+# 언제나 "지금 프레임의 타일 중심"으로 잡았는데, `_render_cell` 이 이동이 시작된
+# 프레임부터 곧장 **도착 칸**을 돌려주므로 화살표가 초상보다 먼저 목적지를 가리키며
+# 0.3초 내내 회전하고 늘어났다 — 파일럿은 아직 출발 칸에 있는데 꼬리만 다음 칸에
+# 가 있는 그림이다. 지금은 이동이 시작되는 프레임에 **직전 프레임의 화살표 벡터**를
+# 붙들어(`_arrow_hold`) 초상에 강체로 매달고, **도착한 뒤에야** 회전 + 신축으로
+# 제 칸을 다시 가리킨다.
+#
+# 상태는 셋으로 갈린다:
+#   `_arrow_hold`     — 붙들고 있는(그리고 정착의 출발점이 되는) 벡터
+#   `_arrow_settle_t` — 도착 후 경과 시간. `_process` 가 민다
+#   `_arrow_vec_now`  — 이번 프레임에 실제로 그린 벡터(= 다음 이동이 붙들 값)
+#
+## 도착 후 화살표가 제 타일을 다시 가리키기까지 걸리는 시간(s). 이동 트윈
+## (`BattleSim.ANIM_MOVE_DUR` 0.30) 과 합쳐도 턴 간격(0.5초)을 넘지 않아야
+## 한다 — 넘으면 다음 이동이 아직 정착 중인 화살표를 붙들어, 어긋난 각도가
+## 턴을 넘어 누적된다.
+const ARROW_SETTLE_SEC: float = 0.15
+
+var _arrow_hold: Dictionary = {}
+var _arrow_settle_t: Dictionary = {}
+var _arrow_vec_now: Dictionary = {}
+
+
 # ─── 피해 수치 팝업 (공격 카드 전용) ─────────────────────────────────────────
 # 공격 카드가 대상 파일럿 위에 남기는 짧은 플로팅 텍스트. 각 항목은
 #   {"pos": Vector2, "text": String, "color": Color, "t": float, "delay": float}
@@ -60,6 +85,10 @@ func _process(delta: float) -> void:
 	# 순간은 CardTargetingOverlay._request_redraw() 가 따로 걷어찬다).
 	var dirty: bool = _advance_popups(delta)
 	if _advance_emphasis(delta):
+		dirty = true
+	# 도착 후의 화살표 정착. 이동 트윈이 끝나면 BattleSim 은 더 이상 재draw 를
+	# 걷어차지 않으므로, 이 구간의 프레임은 여기서 만들어야 한다.
+	if _advance_arrow_settle(delta):
 		dirty = true
 	if dirty:
 		queue_redraw()
@@ -166,6 +195,8 @@ func _draw() -> void:
 	# targeting dim overlay agree on where each pilot's marker landed within
 	# its team's offset row above / below the tile.
 	_pilot_render_layout = _build_pilot_render_layout()
+	# 전장을 뜬 파일럿이 붙들고 있던 화살표 기하를 버린다.
+	_prune_arrow_state()
 	_draw_captured_tile_overlays()
 	_draw_targeting_underlays()
 	# Out-of-range tile dim is drawn BEFORE HQ/turret/pilot graphics so a
@@ -222,29 +253,24 @@ func _draw_captured_tile_overlays() -> void:
 
 
 func _draw_pilot_groups() -> void:
-	var groups := _group_pilots_by_render_cell()
-	var cell_team0: Dictionary = groups[0]
-	var cell_team1: Dictionary = groups[1]
-	var all_cells: Dictionary = {}
-	for pos in cell_team0.keys(): all_cells[pos] = true
-	for pos in cell_team1.keys(): all_cells[pos] = true
+	var by_cell := _group_pilots_by_render_cell()
 
 	# 돌진 중인 시전자가 있는 칸을 **맨 마지막에** 그린다. 돌진은 대상 초상과
 	# 절반쯤 겹치는 것이 연출의 전부라, 대상 칸이 나중에 그려지면 파고든 얼굴이
 	# 그 뒤로 숨어 버린다(칸 순회는 Dictionary 순서라 그때그때 다르다).
-	for pos in _lunging_cells_last(all_cells.keys()):
+	for pos in _lunging_cells_last(by_cell.keys()):
 		var pv := pos as Vector2i
-		var t0: Array = cell_team0.get(pv, []) as Array
-		var t1: Array = cell_team1.get(pv, []) as Array
-		var total := t0.size() + t1.size()
-		if not t1.is_empty():
-			_draw_pilot_team(pv, t1, true)
-		if not t0.is_empty():
-			_draw_pilot_team(pv, t0, false)
+		var pilots: Array = by_cell[pv] as Array
+		var c0: int = 0
+		for raw in pilots:
+			if (raw as PilotData).team == 0:
+				c0 += 1
+		var c1: int = pilots.size() - c0
+		_draw_pilot_cell(pv, pilots)
 		# Skip the cross-team collision badge (1v1, 2v2 …) — it added noise on
 		# top of the pilot stacks. Keep the single-team multi-pilot tag (x2, x3).
-		if total > 1 and (t0.is_empty() or t1.is_empty()):
-			_draw_cell_badge(pv, t0.size(), t1.size())
+		if pilots.size() > 1 and (c0 == 0 or c1 == 0):
+			_draw_cell_badge(pv, c0, c1)
 
 
 # 셀 순회 순서 — 돌진 중인 파일럿이 서 있는 칸만 뒤로 미룬다. 나머지 순서는
@@ -269,64 +295,74 @@ func _lunging_cells_last(cells: Array) -> Array:
 
 # Group renderable pilots by their *render* cell (not grid_pos): a pilot in
 # recall fade-out is drawn at the cell they came from, so they don't crowd the
-# HQ layout until the fade-in phase starts. Returns [team0_dict, team1_dict].
-func _group_pilots_by_render_cell() -> Array:
-	var cell_team0: Dictionary = {}
-	var cell_team1: Dictionary = {}
+# HQ layout until the fade-in phase starts.
+#
+# **두 팀이 한 배열에 담긴다.** 초상화가 앉는 6슬롯은 셀 하나가 팀 구분 없이
+# 공유하기 때문이다 — 예전에는 "적은 타일 위 / 아군은 타일 아래" 라 팀마다 따로
+# 풀어도 서로 부딪힐 일이 없었지만, 지금은 방향이 **각자의 이동 방향**에서 나오
+# 므로 같은 칸의 두 팀이 같은 슬롯을 노릴 수 있다.
+#
+# 배열 순서는 `_bs.pilots` 순서(= 스폰 순서)다. 슬롯 배정이 순서에 의존하는
+# 그리디라, 여기가 프레임마다 흔들리면 배치가 통째로 떨린다.
+func _group_pilots_by_render_cell() -> Dictionary:
+	var by_cell: Dictionary = {}
 	for raw in _bs.pilots:
 		var p := raw as PilotData
 		if not _is_renderable(p):
 			continue
 		var rcell := _render_cell(p)
-		if p.team == 0:
-			if not cell_team0.has(rcell):
-				cell_team0[rcell] = []
-			(cell_team0[rcell] as Array).append(p)
-		else:
-			if not cell_team1.has(rcell):
-				cell_team1[rcell] = []
-			(cell_team1[rcell] as Array).append(p)
-	return [cell_team0, cell_team1]
+		if not by_cell.has(rcell):
+			by_cell[rcell] = []
+		(by_cell[rcell] as Array).append(p)
+	return by_cell
 
 
-# Builds the PilotData → Vector2 marker_pos lookup used by the dim overlay.
-# Mirrors _layout_team_positions for small stacks (n ≤ 5); the
-# overflow circle case (n > 5) doesn't have a per-pilot slot for the
-# overflow group, so those pilots fall back to their team-direction offset.
+# Builds the PilotData → Vector2 marker_pos lookup shared by the drawing pass,
+# the dim overlay and the targeting hit test. 모든 렌더 가능한 파일럿이 자기
+# 슬롯을 받는다 — `+N` 오버플로 원은 사라졌고, 7명째부터는 바깥 링으로 나간다.
+#
+# 배정은 **전장 전체를 한 번에 훑는 그리디**다: 앞서 자리를 잡은 마커와 겹치는
+# 슬롯은 건너뛰고 시계방향으로 다음 슬롯을 찾는다. 그래서 위아래로 붙은 두 칸이
+# 서로를 향한 슬롯을 고르는 일(= 초상화가 겹치는 유일한 구조적 원인)이 없다.
 func _build_pilot_render_layout() -> Dictionary:
 	var out: Dictionary = {}
-	var groups := _group_pilots_by_render_cell()
-	var cell_team0: Dictionary = groups[0]
-	var cell_team1: Dictionary = groups[1]
-	var all_cells: Dictionary = {}
-	for pos in cell_team0.keys(): all_cells[pos] = true
-	for pos in cell_team1.keys(): all_cells[pos] = true
-	for pos in all_cells.keys():
-		var pv := pos as Vector2i
-		var t0: Array = cell_team0.get(pv, []) as Array
-		var t1: Array = cell_team1.get(pv, []) as Array
-		var tile_center := _bs.cell_center(pv)
-		var radius := _radius_for_count(t0.size() + t1.size())
-		_apply_team_layout_to_lookup(out, t0, tile_center, false, radius)
-		_apply_team_layout_to_lookup(out, t1, tile_center, true,  radius)
+	var by_cell := _group_pilots_by_render_cell()
+	var cells: Array = by_cell.keys()
+	# 순회 순서가 곧 우선순위(먼저 도는 칸이 자기 기본 방향을 지킨다)이므로
+	# 좌표로 정렬한다 — Dictionary 순서에 맡기면 같은 상황에서 프레임마다 다른
+	# 칸이 양보하게 되어 배치가 떨린다.
+	cells.sort_custom(_compare_cells)
+	var base_r: float = PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE
+	# 이미 자리를 잡은 마커의 **강조 이전** 좌표. 슬롯 배정을 강조 배율과 무관하게
+	# 두기 위한 것이다 — 강조까지 반영하면 카드를 집을 때마다 전장의 슬롯이 새로
+	# 풀려 배치가 통째로 다시 섞인 것처럼 보인다.
+	var placed: Array = []
+	for raw_cell in cells:
+		var cell := raw_cell as Vector2i
+		var pilots: Array = by_cell[cell] as Array
+		var tile_center := _bs.cell_center(cell)
+		var em: float = _group_emphasis(pilots)
+		var used: Dictionary = {}
+		var slots: Array = []
+		for raw in pilots:
+			var slot: int = _pick_slot(tile_center,
+					pilot_display_dir_index(raw as PilotData), base_r, used, placed)
+			used[slot] = true
+			placed.append(tile_center + _slot_offset(slot, base_r))
+			slots.append(slot)
+		var positions: Array = []
+		for raw_slot in slots:
+			positions.append(tile_center + _slot_offset(raw_slot as int, base_r * em))
+		positions = _clamp_group_on_screen(positions, base_r * em)
+		for i in range(pilots.size()):
+			out[pilots[i]] = positions[i] as Vector2
 	return out
 
 
-func _apply_team_layout_to_lookup(out: Dictionary, pilots: Array,
-		tile_center: Vector2, is_enemy: bool, radius: float) -> void:
-	if pilots.is_empty():
-		return
-	var n := pilots.size()
-	var positions := _layout_team_positions(n, tile_center, is_enemy, radius,
-			_group_emphasis(pilots))
-	var visible_count: int = mini(n, 5)
-	# n > 5 fills positions[0..3] for the first 4 pilots and reserves
-	# positions[4] for the +N overflow circle; remaining pilots have no
-	# screen slot. Map only the on-screen pilots so the dim overlay matches
-	# what's actually drawn.
-	var slot_count: int = visible_count - 1 if n > 5 else visible_count
-	for i in range(slot_count):
-		out[pilots[i]] = positions[i] as Vector2
+func _compare_cells(a: Vector2i, b: Vector2i) -> bool:
+	if a.x != b.x:
+		return a.x < b.x
+	return a.y < b.y
 
 
 func _draw_hq_hp_bars() -> void:
@@ -369,27 +405,38 @@ func _draw_turret_hp_bar(td: TurretData) -> void:
 
 
 # ─── Pilot rendering ─────────────────────────────────────────────────────────
-# All pilot circles are offset OUTSIDE their tile (enemy ABOVE, ally BELOW)
-# with a small team-coloured triangle behind them whose apex points to the
-# tile centre — like a speech-bubble tail.
+# 초상화는 언제나 타일 **바깥**에 앉고, 뒤에서 타일 중심을 가리키는 팀 색 삼각형
+# (말풍선 꼬리)이 어느 칸 이야기인지를 말한다. 앉을 자리는 타일을 둘러싼 육각
+# 6슬롯이고, 그 중 어느 슬롯을 고르는지는 아래 두 절이 정한다.
 
 # Pilot dimensions track HexGrid.DISPLAY_SCALE so they stay proportional to
 # tile size. Base values are calibrated against the unscaled (1.0x) hex.
 const PILOT_RADIUS_BASE := 31.5
-const PILOT_FONT_SIZE_BASE := 16
+
+## 초상화가 앉을 수 있는 6방향 — 육각 이웃과 정확히 같은 방향이고, 배열 순서가
+## **시계방향**(화면 기준 y 아래)이다. 슬롯이 막히면 이 배열의 다음 칸으로 돈다.
+## 인덱스: 0=N 1=NE 2=SE 3=S 4=SW 5=NW.
+const HEX_DIRS: Array[Vector2] = [
+	Vector2( 0.0,       -1.0),   # N
+	Vector2( 0.8660254, -0.5),   # NE
+	Vector2( 0.8660254,  0.5),   # SE
+	Vector2( 0.0,        1.0),   # S
+	Vector2(-0.8660254,  0.5),   # SW
+	Vector2(-0.8660254, -0.5),   # NW
+]
+
+## 초상화 사이에 남기는 최소 여백(px). 링 반지름과 충돌 판정이 같은 값에서
+## 나오므로 둘이 어긋날 수 없다.
+const MARKER_GAP := 6.0
+
+## 몇 겹까지 링을 만들 것인가. 한 링이 6자리이므로 3겹 = 18자리 — 5v5 전원이 한
+## 칸에 몰려도(10명) 남는다. 이 위로는 겹치더라도 자리를 준다.
+const SLOT_RINGS := 3
 
 
-func _radius_for_count(_n: int) -> float:
-	return PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE
-
-
-func _font_size_for_count(_n: int) -> int:
-	return int(round(PILOT_FONT_SIZE_BASE * HexGrid.DISPLAY_SCALE))
-
-
-# 이 무리(같은 셀 · 같은 팀)의 배치에 곱해지는 배율. 강조된 파일럿이 한 명이라도
-# 있으면 무리 **전체**가 그 배율로 벌어진다 — 자리는 무리 단위로 풀리므로 사람마다
-# 다른 간격을 줄 수 없고, 겹치지 않으려면 가장 큰 쪽에 맞춰야 한다.
+# 이 무리(= 같은 셀에 선 **양 팀 전원**)의 배치에 곱해지는 배율. 강조된 파일럿이
+# 한 명이라도 있으면 무리 전체가 그 배율로 벌어진다 — 슬롯은 셀 단위로 풀리므로
+# 사람마다 다른 간격을 줄 수 없고, 겹치지 않으려면 가장 큰 쪽에 맞춰야 한다.
 func _group_emphasis(pilots: Array) -> float:
 	var em: float = 1.0
 	for raw in pilots:
@@ -397,56 +444,125 @@ func _group_emphasis(pilots: Array) -> float:
 	return em
 
 
-# Returns up to 5 Vector2 positions, ordered:
-#   [close-row left, close-row mid, close-row right, far-row …]
-# Pilots are ALWAYS offset outside the tile toward their own side (enemy above,
-# ally below), even when alone in the cell — the speech-bubble arrow then
-# always marks which tile the pilot occupies.
+## 링 `ring`(0부터)의 반지름. **이웃 슬롯이 60° 간격이므로 반지름 d 인 링에서
+## 이웃 슬롯 사이 거리는 정확히 d 다** — 그래서 지름 + 여백을 그대로 반지름으로
+## 쓰면 한 링 안의 초상화가 서로 닿지 않는다. 바깥 링은 그 배수라 반지름 방향
+## 으로도 같은 간격이 확보된다.
+func _ring_radius(ring: int, r: float) -> float:
+	return (r * 2.0 + MARKER_GAP) * float(ring + 1)
+
+
+## 슬롯 번호(= ring * 6 + 방향 인덱스) → 타일 중심에서의 변위.
+func _slot_offset(slot: int, r: float) -> Vector2:
+	@warning_ignore("integer_division")
+	var ring: int = slot / 6
+	return HEX_DIRS[slot % 6] * _ring_radius(ring, r)
+
+
+## 이 파일럿이 앉을 슬롯. **기본 방향에서 시계방향으로** 돌며 (1) 같은 칸에서
+## 아직 안 쓴 자리이고 (2) 이미 놓인 어떤 마커와도 겹치지 않는 첫 자리를 잡는다.
+## 안쪽 링 6자리를 다 돌면 그대로 바깥 링으로 나간다 — 그만큼 타일에서 멀어지고
+## 화살표가 길어져, 붐비는 칸일수록 "어느 타일인지"가 화살표로 읽힌다.
+##
+## 겹침 판정이 **다른 칸의 마커까지** 본다는 것이 요점이다: 위아래로 붙은 두 칸이
+## 서로를 향한 슬롯(위 칸의 S, 아래 칸의 N)을 고르면 초상화 두 개가 그 사이에서
+## 정면으로 겹치는데, 이것이 전장에서 얼굴이 가려지는 유일한 구조적 원인이었다.
+func _pick_slot(tile_center: Vector2, base_dir: int, r: float,
+		used: Dictionary, placed: Array) -> int:
+	for ring in range(SLOT_RINGS):
+		for step in range(6):
+			var slot: int = ring * 6 + (base_dir + step) % 6
+			if used.has(slot):
+				continue
+			if _slot_collides(tile_center + _slot_offset(slot, r), r, placed):
+				continue
+			return slot
+	# 사방이 막혔으면 겹치더라도 빈 슬롯을 준다 — 그리지 않는 것보다 낫다.
+	for ring in range(SLOT_RINGS):
+		for step in range(6):
+			var slot: int = ring * 6 + (base_dir + step) % 6
+			if not used.has(slot):
+				return slot
+	return base_dir
+
+
+func _slot_collides(pos: Vector2, r: float, placed: Array) -> bool:
+	# 링 간격(지름 + MARKER_GAP)보다 살짝 관대하게 잡는다 — 같은 링의 이웃 슬롯이
+	# 정확히 그 거리라, 판정을 같은 값으로 두면 부동소수 오차 하나로 멀쩡한 자리가
+	# 반려된다.
+	var min_d: float = r * 2.0 + MARKER_GAP * 0.5
+	for raw in placed:
+		if pos.distance_to(raw as Vector2) < min_d:
+			return true
+	return false
+
+
+# ─── 초상화가 앉는 기본 방향 ─────────────────────────────────────────────────
+# **이동 방향의 정반대**다. 파일럿은 자기가 가려는 쪽을 비워 두고 지나온 쪽에
+# 선다 — 오른쪽 레인을 NE 로 밀고 올라가는 팀0 은 타일 왼쪽 아래(SW)에, 그 구간을
+# 반대로 내려오는 팀1 은 오른쪽 위(NE)에 선다. 미드는 위/아래라 예전 규칙(적 위 /
+# 아군 아래)과 그림이 같고, 왼쪽 레인은 오른쪽 레인의 좌우 반전이 저절로 나온다.
 #
-# `em` 은 대상 지정 강조 배율(`_group_emphasis`)이다. 초상이 커지는 만큼 배치도
-# 같이 벌어져야 한다 — 두 가지가 동시에 무너지기 때문:
-#   1. **좌우로 겹친다.** 간격은 그대로인데 지름만 2배가 되면 한 칸에 선 두세
-#      명의 얼굴이 서로를 덮어, 어느 얼굴을 눌렀는지 화면에서 읽을 수 없다.
-#   2. **화살표가 사라진다.** 마커가 커지면 초상이 타일 중심까지 삼켜서, 자기
-#      타일을 가리키는 화살표가 초상 뒤에 완전히 깔린다.
-# 그래서 좌우 간격은 `em` 에 비례해 벌어지고, 타일에서의 거리는 반지름 기준
-# 하한(`draw_r * 1.75`)이 이겨 무리가 바깥으로 물러난다 — 그 물러난 만큼이 곧
-# 화살표가 길어질 자리다. em = 1 에서는 언제나 hex 기준 항이 이기므로 평소
-# 배치는 한 픽셀도 바뀌지 않는다.
-func _layout_team_positions(n: int, tile_center: Vector2,
-		is_enemy: bool, radius: float, em: float = 1.0) -> Array:
-	var dir: float = -1.0 if is_enemy else 1.0
-	var hex_h: float = (_bs.hex_grid as HexGrid).hex_height
-	var draw_r: float = radius * em
-	var close_off: float = maxf(hex_h * 0.45 + draw_r * 0.4, draw_r * 1.75)
-	var far_off: float   = close_off + draw_r * 1.85 + 6.0
-	var close_y: float = tile_center.y + dir * close_off
-	var far_y: float   = tile_center.y + dir * far_off
-	var dx_3: float    = draw_r * 2.4
-	var dx_2: float    = draw_r * 1.2
-	var visible_count: int = mini(n, 5)
-	var positions: Array = []
-	if visible_count == 1:
-		positions.append(Vector2(tile_center.x, close_y))
-	elif visible_count == 2:
-		positions.append(Vector2(tile_center.x - dx_2, close_y))
-		positions.append(Vector2(tile_center.x + dx_2, close_y))
-	elif visible_count == 3:
-		positions.append(Vector2(tile_center.x - dx_3, close_y))
-		positions.append(Vector2(tile_center.x,        close_y))
-		positions.append(Vector2(tile_center.x + dx_3, close_y))
-	elif visible_count == 4:
-		positions.append(Vector2(tile_center.x - dx_3, close_y))
-		positions.append(Vector2(tile_center.x,        close_y))
-		positions.append(Vector2(tile_center.x + dx_3, close_y))
-		positions.append(Vector2(tile_center.x,        far_y))
+# 방향의 출처는 둘로 갈린다:
+#   • 레인 파일럿 — **레인 경로**(다음 웨이포인트)를 향하는 방향. 교전으로 멈춰
+#     서 있거나 한 턴 밀려나도 표시가 뒤집히지 않고, 같은 구간의 팀원이 늘 같은
+#     쪽으로 정렬된다.
+#   • 정글러 — **직전에 서 있던 칸**에서 지금 칸으로 온 방향. 정글에는 경로가
+#     없고 로밍 목적지가 수시로 바뀌므로 지나온 자취가 유일하게 안정적인 신호다.
+
+## `p` 의 기본 슬롯 방향(HEX_DIRS 인덱스). 공개 — BattleSim 의 대체 좌표 계산이
+## 같은 답을 써야 한다.
+func pilot_display_dir_index(p: PilotData) -> int:
+	return _nearest_dir_index(-_pilot_travel_dir(p))
+
+
+## 이 파일럿이 향하고 있는 방향(픽셀, 정규화 전). 아무 신호도 없으면 적 HQ 쪽을
+## 본다 — 개시 직후처럼 아직 한 칸도 움직이지 않았을 때의 답이다.
+func _pilot_travel_dir(p: PilotData) -> Vector2:
+	var here := _render_cell(p)
+	var here_px := _bs.cell_center(here)
+	if p.is_guerrilla:
+		if p.prev_grid_pos != here:
+			return here_px - _bs.cell_center(p.prev_grid_pos)
 	else:
-		positions.append(Vector2(tile_center.x - dx_3, close_y))
-		positions.append(Vector2(tile_center.x,        close_y))
-		positions.append(Vector2(tile_center.x + dx_3, close_y))
-		positions.append(Vector2(tile_center.x - dx_2, far_y))
-		positions.append(Vector2(tile_center.x + dx_2, far_y))
-	return _clamp_group_on_screen(positions, draw_r)
+		var wp := _peek_waypoint(p, here)
+		if wp != here:
+			return _bs.cell_center(wp) - here_px
+	var hq: Vector2i = _bs.ENEMY_HQ_POS if p.team == 0 else _bs.PLAYER_HQ_POS
+	if hq != here:
+		return _bs.cell_center(hq) - here_px
+	# 적 HQ 칸 위에 선 파일럿 — 더 갈 곳이 없으니 팀의 진행 방향을 그대로 쓴다.
+	return Vector2(0.0, -1.0) if p.team == 0 else Vector2(0.0, 1.0)
+
+
+## `SimulationCore.current_waypoint` 의 **부작용 없는** 사본. 원본은 지나친
+## 웨이포인트를 만나면 `waypoint_idx` 를 밀어 올리는데, 그리기 중에 시뮬 상태를
+## 건드리면 화면이 게임을 바꾸는 셈이 된다.
+func _peek_waypoint(p: PilotData, here: Vector2i) -> Vector2i:
+	var paths: Array = _bs.LANE_PATHS_TEAM0 if p.team == 0 else _bs.LANE_PATHS_TEAM1
+	if p.lane < 0 or p.lane >= paths.size():
+		return here
+	var path: Array = paths[p.lane] as Array
+	if path.is_empty():
+		return here
+	var idx: int = clampi(p.waypoint_idx, 0, path.size() - 1)
+	while idx < path.size() - 1 and (path[idx] as Vector2i) == here:
+		idx += 1
+	return path[idx] as Vector2i
+
+
+func _nearest_dir_index(v: Vector2) -> int:
+	if v.length_squared() < 0.0001:
+		return 3   # S — 팀0 의 평소 방향
+	var n := v.normalized()
+	var best: int = 0
+	var best_dot: float = -INF
+	for i in range(HEX_DIRS.size()):
+		var d: float = n.dot(HEX_DIRS[i])
+		if d > best_dot:
+			best_dot = d
+			best = i
+	return best
 
 
 # 무리 **전체를 통째로 밀어** 화면 안에 넣는다.
@@ -484,40 +600,32 @@ func _clamp_group_on_screen(positions: Array, draw_r: float) -> Array:
 	return out
 
 
-func _draw_pilot_team(cell: Vector2i, pilots: Array, is_enemy: bool) -> void:
+# 한 칸의 파일럿 전원(양 팀)을 그린다. **자리는 여기서 풀지 않는다** —
+# `_draw()` 가 프레임 앞머리에 `_build_pilot_render_layout()` 으로 이미 배정해
+# 두었고, 딤 오버레이와 히트 테스트도 같은 표를 읽는다.
+func _draw_pilot_cell(cell: Vector2i, pilots: Array) -> void:
 	var tile_center := _bs.cell_center(cell)
-	var n := pilots.size()
-	var radius := _radius_for_count(n)
-	var fsize := _font_size_for_count(n)
-	var team_color := Color(0.9, 0.2, 0.2) if is_enemy else Color(0.2, 0.5, 0.9)
-	var positions := _layout_team_positions(n, tile_center, is_enemy, radius,
-			_group_emphasis(pilots))
-	var visible_count: int = mini(n, 5)
-	for i in range(visible_count):
-		var base_pos: Vector2 = positions[i]
-		var is_overflow: bool = (n > 5 and i == 4)
-		if is_overflow:
-			# 오버플로 원은 대상이 아니므로 강조 배율을 타지 않는다 — 자리만
-			# 무리를 따라 벌어져 있고 크기는 평소 그대로다.
-			_draw_arrow_to_tile(base_pos, tile_center, radius, team_color, 1.0)
-			_draw_overflow_circle(base_pos, n - 4, radius, team_color)
-		else:
-			var pilot := pilots[i] as PilotData
-			var off := _pilot_anim_offset(pilot)
-			var alpha := _pilot_anim_alpha(pilot)
-			var pos := base_pos + off
-			# 쓰러진 파일럿은 팀 색까지 함께 죽여 딤드로 읽히게 한다. 초상 자체의
-			# 딤은 _draw_pilot_circle 이 같은 배율로 건다.
-			var marker_color: Color = team_color
-			if pilot.anim_death_phase != 0:
-				marker_color = team_color * _bs.ANIM_DEATH_TINT
-			# 화살표 배율은 **그 파일럿 자신의** 강조다(무리 전체가 아니라):
-			# 한 무리 안에 강조 대상과 아닌 사람이 섞이면 초상 크기가 서로
-			# 다르고, 화살표는 자기 초상 바깥에서 시작해야 한다.
-			_draw_arrow_to_tile(pos, tile_center, radius, marker_color, alpha,
-					_pilot_emphasis_scale(pilot))
-			_draw_pilot_circle(pilot, pos, radius, fsize,
-					marker_color, is_enemy, alpha)
+	var radius: float = PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE
+	for raw in pilots:
+		var pilot := raw as PilotData
+		var is_enemy: bool = pilot.team == 1
+		var team_color := Color(0.9, 0.2, 0.2) if is_enemy else Color(0.2, 0.5, 0.9)
+		var pos := _pilot_marker_pos(pilot) + _pilot_anim_offset(pilot)
+		var alpha := _pilot_anim_alpha(pilot)
+		# 쓰러진 파일럿은 팀 색까지 함께 죽여 딤드로 읽히게 한다. 초상 자체의
+		# 딤은 _draw_pilot_circle 이 같은 배율로 건다.
+		var marker_color: Color = team_color
+		if pilot.anim_death_phase != 0:
+			marker_color = team_color * _bs.ANIM_DEATH_TINT
+		# 화살표 배율은 **그 파일럿 자신의** 강조다(무리 전체가 아니라):
+		# 한 무리 안에 강조 대상과 아닌 사람이 섞이면 초상 크기가 서로
+		# 다르고, 화살표는 자기 초상 바깥에서 시작해야 한다.
+		# 끝점은 타일 중심이 아니라 `_arrow_aim_point` 가 정한다 — 이동 중에는
+		# 꼬리가 크기 · 방향을 그대로 유지한 채 초상을 따라가고, 도착한 뒤에야
+		# 회전 + 신축으로 제 타일을 다시 가리킨다.
+		_draw_arrow_to_tile(pos, _arrow_aim_point(pilot, pos, tile_center),
+				radius, marker_color, alpha, _pilot_emphasis_scale(pilot))
+		_draw_pilot_circle(pilot, pos, radius, marker_color, alpha)
 
 
 # ─── Animation helpers ───────────────────────────────────────────────────────
@@ -725,13 +833,22 @@ func _draw_targeting_pilot_dim() -> void:
 
 
 # Rendered marker position for the pilot — reads the cached layout built in
-# _draw(). Falls back to BattleSim.pilot_marker_pos_solo (the team-direction
-# offset) when the pilot was not laid out this frame (overflow circle slot
-# or off-screen states).
+# _draw(). 지금은 렌더 가능한 파일럿이 모두 슬롯을 받으므로 이 폴백은 레이아웃이
+# 아직 한 번도 안 돌았을 때(첫 프레임 이전)나 렌더 대상이 아닌 파일럿을 물었을
+# 때만 걸린다.
 func _pilot_marker_pos(p: PilotData) -> Vector2:
 	if _pilot_render_layout.has(p):
 		return _pilot_render_layout[p] as Vector2
-	return _bs.pilot_marker_pos_solo(p)
+	return pilot_marker_pos_fallback(p)
+
+
+## 레이아웃 표에 없는 파일럿의 **대체** 마커 좌표 — 자기 칸에 혼자 선 것으로 치고
+## 기본 방향(= 이동 방향의 반대)의 첫 링에 앉힌다. 공개인 이유는 `BattleSim` 과
+## `CardTargetingOverlay` 의 폴백 경로가 같은 답을 써야 하기 때문이다.
+func pilot_marker_pos_fallback(p: PilotData) -> Vector2:
+	var base_r: float = PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE
+	return _bs.cell_center(_render_cell(p)) \
+			+ _slot_offset(pilot_display_dir_index(p), base_r)
 
 
 ## Fresh `PilotData → Vector2` marker map — the same per-cell stack solve
@@ -792,28 +909,123 @@ func _alpha_mul(c: Color, alpha: float) -> Color:
 	return Color(c.r, c.g, c.b, c.a * alpha)
 
 
-# 마커에서 자기 타일을 가리키는 말풍선 꼬리.
+# ─── 화살표 관성 (이동 중 고정 → 도착 후 정착) ───────────────────────────────
+
+## 이 파일럿의 화살표가 지금 **붙들려 있는가**. 이동 트윈이 도는 동안만 참이다 —
+## 복귀 / 부활 / 전사는 `anim_move_dur` 를 0 으로 밀고 들어오므로 저절로 빠진다
+## (순간이동에는 "따라가는 꼬리"라는 개념이 없다).
+func _arrow_frozen(p: PilotData) -> bool:
+	return p.anim_move_dur > 0.0
+
+
+## 이번 프레임에 화살표가 가리킬 점. 셋 중 하나다 —
+##   이동 중        → 붙든 벡터 그대로(크기 · 방향 불변, 초상만 따라 움직인다)
+##   도착 직후      → 붙든 벡터에서 참값으로 회전 + 신축하는 중
+##   그 밖(정지 중) → 참값(= 타일 중심)
+##
+## 부작용으로 `_arrow_vec_now` 에 이번 프레임의 벡터를 남긴다. 다음 이동이
+## 붙드는 것이 바로 이 값이다 — 직전 프레임에 **실제로 보이던** 기하라야
+## 이동이 시작되는 프레임에 화살표가 한 번도 튀지 않는다.
+func _arrow_aim_point(p: PilotData, marker_pos: Vector2,
+		tile_center: Vector2) -> Vector2:
+	var want: Vector2 = tile_center - marker_pos
+	var vec: Vector2 = want
+	if _arrow_frozen(p):
+		# 붙들 값을 새로 잡아야 하는 두 경우 — (1) 붙든 것이 아예 없다,
+		# (2) **정착 중에 다음 이동이 시작됐다**(`_arrow_settle_t > 0`). (2)에서
+		# 옛 hold 를 그대로 쓰면 정착으로 이미 돌아간 만큼 화살표가 되감긴다.
+		if not _arrow_hold.has(p) or float(_arrow_settle_t.get(p, 0.0)) > 0.0:
+			var prev: Vector2 = want
+			if _arrow_vec_now.has(p):
+				prev = _arrow_vec_now[p]
+			_arrow_hold[p] = prev
+			_arrow_settle_t[p] = 0.0
+		vec = _arrow_hold[p]
+	elif _arrow_hold.has(p):
+		var t: float = clampf(
+				float(_arrow_settle_t.get(p, 0.0)) / ARROW_SETTLE_SEC, 0.0, 1.0)
+		var from_vec: Vector2 = _arrow_hold[p]
+		# 감속(ease-out cubic) — 도착하자마자 크게 돌아 두고 마지막에 살며시 맞춘다.
+		vec = _lerp_polar(from_vec, want, 1.0 - pow(1.0 - t, 3.0))
+	_arrow_vec_now[p] = vec
+	return marker_pos + vec
+
+
+## **각도와 길이를 따로** 보간한다 — 끝점을 직선으로 lerp 하면 화살표가 도중에
+## 짧아졌다 길어지고(두 벡터 사이를 가로지르므로) 회전으로 읽히지 않는다.
+## 사용자에게 보여야 하는 것은 "돌면서 늘어난다" 두 가지다.
+func _lerp_polar(a: Vector2, b: Vector2, t: float) -> Vector2:
+	var la: float = a.length()
+	var lb: float = b.length()
+	if la < 0.001 or lb < 0.001:
+		return a.lerp(b, t)
+	# 각 차이는 ±PI 로 감아 짧은 쪽으로 돈다.
+	var ang: float = a.angle() + wrapf(b.angle() - a.angle(), -PI, PI) * t
+	return Vector2.from_angle(ang) * lerpf(la, lb, t)
+
+
+## 정착 타이머를 민다. 아직 정착 중인 화살표가 하나라도 있으면 true(= 계속
+## 다시 그려야 한다). 이동 중인 파일럿은 시간이 흐르지 않는다 — 붙든 벡터는
+## 이동이 **끝나는** 순간부터 풀리기 시작해야 한다.
+func _advance_arrow_settle(delta: float) -> bool:
+	if _arrow_hold.is_empty():
+		return false
+	var moving: bool = false
+	for raw in _arrow_hold.keys():
+		var p := raw as PilotData
+		if _arrow_frozen(p):
+			continue
+		var t: float = float(_arrow_settle_t.get(p, 0.0)) + delta
+		if t >= ARROW_SETTLE_SEC:
+			_arrow_hold.erase(p)
+			_arrow_settle_t.erase(p)
+		else:
+			_arrow_settle_t[p] = t
+		moving = true
+	return moving
+
+
+## 화면에서 사라진 파일럿의 화살표 상태를 버린다(사망 후 퇴장, 재시작으로 로스터
+## 자체가 갈리는 경우). 그리기 표에 없는 파일럿은 다음에 나타날 때 어차피
+## 순간이동이므로 붙들 기하가 없다.
+func _prune_arrow_state() -> void:
+	for raw in _arrow_vec_now.keys():
+		if not _pilot_render_layout.has(raw):
+			_arrow_vec_now.erase(raw)
+			_arrow_hold.erase(raw)
+			_arrow_settle_t.erase(raw)
+
+
+# 마커에서 자기 타일을 가리키는 말풍선 꼬리. `aim_point` 는 **보통은 타일
+# 중심이지만 이동 중에는 아니다** — 이동 트윈이 도는 동안 꼬리는 크기도 방향도
+# 바꾸지 않고 초상에 매달려 따라가므로, 그때의 끝점은 `_arrow_aim_point` 가
+# 붙들어 둔 벡터가 정한다.
 #
 # `em` 은 그 파일럿의 강조 배율이다. 초상이 커지면 화살표는 **더 바깥에서
 # 시작해서 더 길게** 뻗어야 한다 — 시작점을 base 반지름에 두면 2배로 커진 초상이
 # 화살표를 통째로 덮어 버린다(강조 대상, 즉 지금 겨누고 있는 파일럿에서만
 # 사라지므로 하필 가장 필요한 순간에 사라진다). 길이도 같은 배율을 타되 타일
 # 중심은 넘지 않는다.
-func _draw_arrow_to_tile(circle_pos: Vector2, tile_center: Vector2,
+func _draw_arrow_to_tile(circle_pos: Vector2, aim_point: Vector2,
 		radius: float, color: Color, alpha: float = 1.0,
 		em: float = 1.0) -> void:
-	var to_tile := tile_center - circle_pos
+	var to_tile := aim_point - circle_pos
 	var dist: float = to_tile.length()
 	if dist < 1.0:
 		return
 	var dir := to_tile / dist
 	var perp := Vector2(-dir.y, dir.x)
 	var draw_radius: float = radius * em
-	var apex_out: float = clamp(radius * 0.84, 10.0, 24.0) * em
 	var base_half: float = clamp(radius * 0.9, 10.0, 18.0) * em
-	# 타일 중심을 찔러 넘어가면 옆 칸을 가리키는 것처럼 읽힌다.
-	var apex_len: float = minf(draw_radius + apex_out, dist - 8.0)
-	if apex_len <= draw_radius * 0.6:
+	# **끝은 언제나 타일 중심 바로 앞이다.** 예전에는 마커 반지름에서 길이를
+	# 뽑았는데(반지름 + 24px), 7명째부터 바깥 링에 앉는 마커는 타일에서 두 배로
+	# 멀어져 그 길이로는 허공에 짧은 삼각형만 남고 어느 칸 이야기인지가 사라진다.
+	# 거리에서 역산하면 멀어진 만큼 화살표가 길어져 "약간 멀어져 앉되 가리키는
+	# 칸은 분명하다"가 성립한다. 중심을 찔러 넘어가지는 않는다 — 넘어가면 옆 칸을
+	# 가리키는 것처럼 읽힌다.
+	var tip_inset: float = clamp(radius * 0.55, 10.0, 26.0)
+	var apex_len: float = dist - tip_inset
+	if apex_len <= draw_radius * 0.75:
 		return
 	var apex := circle_pos + dir * apex_len
 	var base := circle_pos + dir * (draw_radius * 0.6)
@@ -829,8 +1041,7 @@ func _draw_arrow_to_tile(circle_pos: Vector2, tile_center: Vector2,
 
 
 func _draw_pilot_circle(pilot: PilotData, pos: Vector2, radius: float,
-		_fsize: int, color: Color, _is_enemy: bool,
-		alpha: float = 1.0) -> void:
+		color: Color, alpha: float = 1.0) -> void:
 	# 찍을 수 있는 대상은 베이스 반지름에 TARGET_EMPHASIS_SCALE 을 곱해 크게
 	# 그린다 — 나머지는 전부 딤드되므로 커진 얼굴만 남는다.
 	var draw_radius: float = radius * _pilot_emphasis_scale(pilot)
@@ -891,19 +1102,6 @@ func _draw_pilot_circle(pilot: PilotData, pos: Vector2, radius: float,
 		var sh_seg: int = max(8, int(36.0 * sh_frac))
 		draw_arc(pos, sh_ring_r, sh_start, sh_end, sh_seg,
 				_alpha_mul(Color(0.45, 0.85, 1.0), alpha), 3.0)
-
-
-func _draw_overflow_circle(pos: Vector2, overflow_n: int, radius: float,
-		color: Color) -> void:
-	draw_circle(pos, radius, color.darkened(0.3))
-	draw_arc(pos, radius, 0.0, TAU, 20, color.lightened(0.3), 1.5)
-	var fsz: int = int(round(10.0 * HexGrid.DISPLAY_SCALE))
-	var txt := "+%d" % overflow_n
-	var tsz := ThemeDB.fallback_font.get_string_size(txt,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, fsz)
-	draw_string(ThemeDB.fallback_font,
-			pos - tsz * 0.5 + Vector2(0.0, 5.0 * HexGrid.DISPLAY_SCALE),
-			txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz, Color.WHITE)
 
 
 func _draw_cell_badge(cell: Vector2i, c0: int, c1: int) -> void:

@@ -9,7 +9,7 @@ Reads all state from `_bs` (the BattleSim parent).
 ### Draw pipeline (called from `_draw()`)
 1. `_draw_hq_hp_bars()` — green HP bar under each HQ once any T2 in their team is destroyed
 2. `_draw_turret_hp_bars()` — yellow HP bar above each living turret (T2 hidden while own-lane T1 alive). 피격 중에는 `BattleSim.turret_hit_offset(td)` 만큼 함께 흔들린다 — 포탑 스프라이트(`Building` 노드)는 렌더러가 그리지 않고 BattleSim 이 직접 흔들므로, 바만 제자리에 두면 둘이 어긋난다.
-3. Per-cell pilot rendering via `_draw_pilot_team()` — pilots render OUTSIDE the tile (enemy above, ally below) with a small team-coloured triangle behind them whose apex points to the tile centre (speech-bubble tail)
+3. Per-cell pilot rendering via `_draw_pilot_cell()` — pilots render OUTSIDE the tile, on a hex ring of 6 slots around it, with a team-coloured triangle behind them whose apex points to the tile centre (speech-bubble tail). **자리는 여기서 풀지 않는다** — `_draw()` 앞머리의 `_build_pilot_render_layout()` 이 전장 전체를 한 번에 배정하고, 딤 오버레이 · 히트 테스트 · 돌진 기하가 같은 표를 읽는다
 4. `_draw_cell_badge()` — `NvN` / `xN` count badge centred ON the tile (the tile centre is now empty, since pilots are offset outward)
 5. `_draw_pilot_popups()` — 공격 카드의 피해 수치 / MISS 플로팅 텍스트, **맨 마지막**에 그려 무엇에도 가려지지 않는다
 
@@ -17,50 +17,162 @@ The minion / lane-line / minion-progress visualizations were removed alongside
 the minion concept. Tile background colouring (lane vs jungle vs neutral) is
 owned by the TileMapLayer in `BattleField.tscn`, not by the renderer.
 
-### Pilot layout per team in a single cell
-Built by `_layout_team_positions()`. Direction sign: enemy = above tile, ally = below.
+### 초상화가 앉는 자리 — 타일을 둘러싼 육각 6슬롯
+`_build_pilot_render_layout()` 이 **전장 전체를 한 번에** 배정한다. 자리는
+타일 중심에서 6방향(`HEX_DIRS` = 육각 이웃과 같은 방향, 배열 순서가 화면 기준
+**시계방향** N→NE→SE→S→SW→NW)으로 뻗은 링 위이고, 반지름은 `_ring_radius()`:
 
-| Count | Layout |
-|---|---|
-| 1 | one circle, offset toward team side (also when alone in the cell) |
-| 2–3 | one horizontal row, offset toward team side |
-| 4 | row of 3 close to tile + 1 farther out |
-| 5 | row of 3 close to tile + 2 farther out |
-| 6+ | 5-slot layout; the last slot becomes a `+N` overflow circle |
+```
+ring_radius(ring) = (지름 + MARKER_GAP) × (ring + 1)      # 91px, 182px, 273px
+```
+
+**이웃 슬롯이 60° 간격이므로 반지름 d 인 링에서 이웃 슬롯 사이 거리는 정확히
+d 다** — 그래서 지름 + 여백을 그대로 반지름으로 쓰면 한 링 안의 초상화가 절대
+닿지 않고, 바깥 링은 그 배수라 반지름 방향으로도 같은 간격이 확보된다.
+`SLOT_RINGS`(3) = 18자리라 5v5 전원이 한 칸에 몰려도(10명) 남는다.
+
+배정은 파일럿마다:
+1. **기본 방향**을 잡는다 — 아래 *기본 방향* 절. 이동 방향의 정반대다.
+2. 거기서 **시계방향으로** 돌며 (a) 같은 칸에서 아직 안 쓴 자리이고
+   (b) **이미 놓인 어떤 마커와도 겹치지 않는** 첫 자리를 잡는다(`_pick_slot`).
+3. 안쪽 링 6자리를 다 돌면 그대로 **바깥 링**으로 나간다. 그만큼 타일에서
+   멀어지고 화살표가 길어져, 붐비는 칸일수록 "어느 타일인지"를 화살표가 말한다.
+
+(b)가 **다른 칸의 마커까지 본다**는 것이 요점이다. 이웃 타일 중심은 140px 밖에
+안 떨어져 있는데 초상화 지름이 85px 라, 위아래로 붙은 두 칸이 서로를 향한
+슬롯(위 칸의 S, 아래 칸의 N)을 고르면 두 얼굴이 그 사이에서 정면으로 겹친다 —
+레인이 맞붙는 순간마다 벌어지던, 전장에서 얼굴이 가려지는 유일한 구조적
+원인이었다. 지금은 뒤에 오는 칸이 시계방향으로 한 칸 비껴 앉는다.
+
+순회 순서가 곧 우선순위(먼저 도는 칸이 자기 기본 방향을 지킨다)이므로 셀은
+**좌표로 정렬**하고(`_compare_cells`), 한 칸 안에서는 `_bs.pilots` 순서(스폰
+순서)를 쓴다 — Dictionary 순서에 맡기면 같은 상황에서 프레임마다 다른 칸이
+양보해 배치가 떨린다.
+
+**한 칸의 6슬롯은 양 팀이 공유한다.** `_group_pilots_by_render_cell()` 이
+두 팀을 한 배열에 담는 이유다 — 예전에는 "적은 타일 위 / 아군은 타일 아래" 라
+팀마다 따로 풀어도 부딪힐 일이 없었지만, 지금은 방향이 각자의 이동 방향에서
+나오므로 같은 칸의 두 팀이 같은 슬롯을 노릴 수 있다.
+
+**`+N` 오버플로 원은 삭제됐다.** 렌더 가능한 파일럿은 전원이 자기 슬롯을 받고,
+7명째부터는 바깥 링에 앉는다(`_draw_overflow_circle` 과 함께 제거).
 
 **No solo exception**: a pilot alone in a cell is laid out exactly like a
-stacked one — offset toward its own side (enemy above, ally below) with the
-speech-bubble arrow pointing back at the tile. The arrow is therefore always
-present, so the tile a pilot occupies reads the same whether the cell is
-contested or not. (The earlier `is_solo` centring + `_has_crowded_neighbor`
-override were removed.)
+stacked one — offset outward with the speech-bubble arrow pointing back at the
+tile. The arrow is therefore always present, so the tile a pilot occupies reads
+the same whether the cell is contested or not. (The earlier `is_solo` centring +
+`_has_crowded_neighbor` override were removed.)
 
-Each pilot draws its own arrow (`_draw_arrow_to_tile`) — direction is computed from the circle's
-position to the tile centre, so side circles in a 3-wide row point diagonally inward.
+#### 기본 방향 — 이동 방향의 정반대
+파일럿은 **자기가 가려는 쪽을 비워 두고 지나온 쪽에 선다**
+(`pilot_display_dir_index`). 오른쪽 레인을 NE 로 밀고 올라가는 팀0 은 타일
+왼쪽 아래(SW)에, 같은 구간을 반대로 내려오는 팀1 은 오른쪽 위(NE)에 앉는다.
+미드는 위/아래라 예전 규칙(적 위 / 아군 아래)과 그림이 같고, 왼쪽 레인은
+오른쪽 레인의 좌우 반전이 계산에서 저절로 나온다.
+
+| 이동 | 표시 |
+|---|---|
+| N | S |
+| NE | SW |
+| SE | NW |
+| S | N |
+| SW | NE |
+| NW | SE |
+
+방향의 출처는 둘로 갈린다(`_pilot_travel_dir`):
+
+- **레인 파일럿 — 레인 경로.** 지금 칸에서 다음 웨이포인트를 향하는 방향을
+  6방향으로 스냅한다. 교전으로 멈춰 서 있거나 한 턴 밀려나도 표시가 뒤집히지
+  않고, 같은 레인 같은 구간의 팀원이 늘 같은 쪽으로 정렬된다. 웨이포인트 조회는
+  `_peek_waypoint` — `SimulationCore.current_waypoint` 의 **부작용 없는** 사본
+  이다(원본은 `waypoint_idx` 를 밀어 올린다. 그리기 중에 시뮬 상태를 건드리면
+  화면이 게임을 바꾸는 셈이 된다).
+- **정글러 — `PilotData.prev_grid_pos`.** 정글에는 경로가 없고 로밍 목적지는
+  수시로 바뀌므로 지나온 자취가 유일하게 안정적인 신호다. 왼쪽 위(NW)로
+  움직였으면 오른쪽 아래(SE)에, 오른쪽 위(NE)로 움직였으면 왼쪽 아래(SW)에 선다.
+
+둘 다 답이 없으면(개시 직후, 아직 한 칸도 안 움직인 정글러) **적 HQ 쪽**을
+보고, 적 HQ 칸 위에 서 있으면 팀의 진행 방향(팀0 = N)을 그대로 쓴다.
+
+실측(BattleSim 단독 실행, 턴 17): 오른쪽 레인 팀0 이 적 T2 를 지나 `(1,-3)` 에
+서면 SE, 같은 칸의 팀1 은 NW. 정글러는 `(1,0)→(0,-1)`(NW 이동) 뒤 SE. 10명을
+한 칸에 몰아넣으면 안쪽 6 + 바깥 4 로 갈리고 마커 최소 간격은 **91.0px**
+(필요값 85.1px).
+
+Each pilot draws its own arrow (`_draw_arrow_to_tile`) — direction is computed
+from the circle's position to the tile centre, **except while the pilot is
+moving** (다음 절).
+
+#### 이동 중에는 화살표가 크기도 방향도 바꾸지 않는다
+`_render_cell` 은 이동 트윈이 시작되는 프레임부터 곧장 **도착 칸**을 돌려주고,
+초상만 `_pilot_anim_offset` 으로 출발 칸에서 되돌려 그려진다. 그래서 끝점을
+"지금 프레임의 타일 중심"으로 잡으면 **화살표가 초상보다 먼저 목적지를 가리키며
+0.3초 내내 회전하고 늘어났다** — 파일럿은 아직 출발 칸에 있는데 꼬리만 다음 칸에
+가 있는 그림이다(실측: 이동 시작 시점의 참값이 91px → **182px**, 각도 −150° →
+−124°).
+
+지금은 `_arrow_aim_point(p, marker_pos, tile_center)` 가 끝점을 정한다:
+
+| 상태 | 화살표 |
+|---|---|
+| 이동 중 (`anim_move_dur > 0`) | 붙든 벡터 그대로 — **크기 · 방향 불변**, 초상에 강체로 매달려 따라간다 |
+| 도착 직후 (`ARROW_SETTLE_SEC` 0.15초) | 붙든 벡터 → 참값으로 **회전 + 신축** (ease-out cubic) |
+| 그 밖 | 참값(= 타일 중심) |
+
+붙드는 값은 **직전 프레임에 실제로 그려진 벡터**(`_arrow_vec_now`)다 — 매 프레임
+남겨 두므로 이동이 시작되는 프레임에 화살표가 한 번도 튀지 않는다. 정착 중에
+다음 이동이 시작되면(`_arrow_settle_t > 0`) 그 시점의 벡터로 **다시** 붙든다.
+옛 hold 를 그대로 쓰면 정착으로 이미 돌아간 만큼 화살표가 되감긴다.
+
+보간은 `_lerp_polar` — **각도와 길이를 따로** 민다. 끝점을 직선 lerp 하면 두 벡터
+사이를 가로지르느라 화살표가 도중에 짧아졌다 길어져 회전으로 읽히지 않는다.
+
+**대개는 정착할 것도 없다.** 슬롯 방향과 링이 그대로면 붙든 벡터와 참값이 정확히
+같아(타일 중심 → 슬롯 변위는 칸이 달라도 같은 값이다) 정착 구간이 무동작이다.
+움직이는 것은 이동 뒤 슬롯이 바뀐 경우뿐 — 실측(BattleSim 단독, 턴 3): 91.1px
+−150° 로 고정된 채 이동하고, 도착 후 길이는 그대로 −150° → −90° 로 돈다.
+
+`ARROW_SETTLE_SEC` 는 이동 트윈(`BattleSim.ANIM_MOVE_DUR` 0.30)과 합쳐도 턴
+간격(0.5초)을 넘지 않아야 한다 — 넘으면 다음 이동이 아직 정착 중인 화살표를
+붙들어 어긋난 각도가 턴을 넘어 누적된다. 상태 dict 셋(`_arrow_hold` /
+`_arrow_settle_t` / `_arrow_vec_now`)은 `_prune_arrow_state()` 가 매 `_draw` 에서
+레이아웃에 없는 파일럿(사망 후 퇴장, 재시작으로 갈린 로스터)을 버린다. 정착
+구간의 프레임은 `_process` 의 `_advance_arrow_settle` 이 만든다 — 이동 트윈이
+끝나면 BattleSim 은 더 이상 재draw 를 걷어차지 않기 때문. 복귀 / 부활 / 전사는
+`anim_move_dur` 를 0 으로 밀고 들어오므로 저절로 빠진다(순간이동에는 따라가는
+꼬리가 없다).
+
+#### 화살표 길이는 거리에서 역산한다
+`_draw_arrow_to_tile` 의 끝점은 **언제나 타일 중심 바로 앞**
+(`dist - tip_inset`)이다. 예전에는 마커 반지름에서 뽑았는데(반지름 + 24px),
+바깥 링에 앉는 마커는 타일에서 두 배로 멀어져 그 길이로는 허공에 짧은 삼각형만
+남고 어느 칸 이야기인지가 사라진다. 거리에서 역산하면 멀어진 만큼 화살표가
+길어져 "약간 멀어져 앉되 가리키는 칸은 분명하다"가 성립한다. 중심을 찔러
+넘어가지는 않는다 — 넘어가면 옆 칸을 가리키는 것처럼 읽힌다.
 
 #### 대상 지정 강조는 배치도 탄다 (`em`)
-`_layout_team_positions` 는 마지막 인자로 **그 무리의 강조 배율**
-(`_group_emphasis` = 무리 안 최대 `_pilot_emphasis_scale`, 즉 1.0 또는
-`TARGET_EMPHASIS_SCALE` **1.5**)을 받는다. 초상만 키우면 두 가지가 동시에
-무너지기 때문이다:
+`_build_pilot_render_layout` 은 **그 칸의 강조 배율**(`_group_emphasis` = 그 칸에
+선 양 팀 전원 중 최대 `_pilot_emphasis_scale`, 즉 1.0 또는
+`TARGET_EMPHASIS_SCALE` **1.5**)을 링 반지름에 곱한다. 초상만 키우면 두 가지가
+동시에 무너지기 때문이다:
 
 1. **좌우로 겹친다.** 간격은 그대로인데 지름만 커지면 한 칸에 선 두세 명의
    얼굴이 서로를 덮어, 정작 겨눠야 할 순간에 누가 누구인지 읽을 수 없다.
 2. **화살표가 사라진다.** 마커가 커지면 초상이 타일 중심까지 삼켜서 화살표가
    초상 뒤에 완전히 깔린다 — 하필 강조된(=지금 겨누는) 파일럿에서만.
 
-그래서 좌우 간격(`dx_2` / `dx_3`)은 `em` 에 비례해 벌어지고, 타일에서의 거리는
-`maxf(hex_h * 0.45 + draw_r * 0.4, draw_r * 1.75)` 로 반지름 기준 하한이 이겨
-무리가 더 **바깥으로 물러난다** — 그 물러난 만큼이 곧 화살표가 길어질 자리다.
-`em = 1` 에서는 언제나 앞 항이 이기므로 평소 배치는 한 픽셀도 바뀌지 않는다.
+링 반지름이 통째로 `em` 배가 되므로 **간격과 거리가 한 번에 같이 벌어진다** —
+링 정의(`지름 + 여백`)가 곧 비겹침 조건이라 `em` 을 곱해도 그 조건이 그대로
+유지되고(85.05 × 1.5 = 127.6 필요 vs 91 × 1.5 = 136.5 확보), 무리가 바깥으로
+물러난 만큼이 곧 화살표가 길어질 자리다. 화살표 끝은 어차피 거리에서 역산하므로
+(위 절) 따로 배율을 태울 것이 없다.
 
-`_draw_arrow_to_tile` 도 같은 배율을 받아 **커진 초상 바깥에서 시작해 더 길게**
-뻗는다(`apex_out` × `em`). 다만 `dist - 8px` 로 잘라 타일 중심을 넘지 않는다 —
-넘어가면 옆 칸을 가리키는 것처럼 읽힌다. 오버플로 `+N` 원은 대상이 아니므로
-`em = 1` 로 그린다(자리만 무리를 따라 벌어진다).
+**슬롯 배정 자체는 `em` 을 보지 않는다.** 겹침 판정은 강조 이전 좌표로 돌리고,
+`em` 은 배정이 끝난 뒤 반지름에만 곱한다 — 강조까지 반영하면 카드를 집을 때마다
+전장의 슬롯이 새로 풀려 배치가 통째로 다시 섞인 것처럼 보인다.
 
-**화면 밖으로 나가면 무리째 밀어 넣는다** (`_clamp_group_on_screen`). 강조로
-벌어진 가장자리 레인의 2~3인 무리는 그냥 두면 화면 밖으로 잘리는데, 잘린 얼굴은
+**화면 밖으로 나가면 칸째 밀어 넣는다** (`_clamp_group_on_screen`, 한 칸의 양 팀
+전원이 한 무리다). 강조로 벌어진 가장자리 레인의 2~3인 무리는 그냥 두면 화면 밖으로 잘리는데, 잘린 얼굴은
 누를 수도 놓을 수도 없다. 마커를 하나씩 따로 밀면 애써 벌린 간격이 도로 무너져
 다시 겹치므로 **평행 이동**이다. 화살표는 여전히 각자 자기 타일을 가리키므로
 누가 어느 칸인지도 유지된다. 실측(1080×1920, `SCREEN_EDGE_PAD` 6, 배율이 2.0
@@ -69,13 +181,15 @@ position to the tile centre, so side circles in a 3-wide row point diagonally in
 1.5 로 내려간 지금은 접히는 일 자체가 훨씬 드물다 — 이 절이 존재하는 이유의
 절반이 그 접힘을 없애자는 것이었다.
 
-Radius and role-text font are FIXED per pilot (base values `PILOT_RADIUS_BASE = 31.5`,
-`PILOT_FONT_SIZE_BASE = 16`, both multiplied by `HexGrid.DISPLAY_SCALE` at draw time so
-they track tile size) regardless of how many pilots share the cell — circles do not shrink
-for multi-pilot stacks. As a consequence, 3-wide rows extend past the hex's flat-to-flat
-width and may visually overlap adjacent tiles' pilot displays; this is intentional. HQ HP
-bars and cell badges are also scaled by `HexGrid.DISPLAY_SCALE` to stay proportional to
-the bigger tiles.
+Radius is FIXED per pilot (`PILOT_RADIUS_BASE = 31.5` × `HexGrid.DISPLAY_SCALE`
+= 42.5px at draw time, so it tracks tile size) regardless of how many pilots
+share the cell — circles do not shrink for multi-pilot stacks. 붐비는 칸이
+감당하는 것은 크기가 아니라 **거리**다: 6명을 넘으면 바깥 링으로 나가고, 그만큼
+화살표가 길어진다. HQ HP bars and cell badges are also scaled by
+`HexGrid.DISPLAY_SCALE` to stay proportional to the bigger tiles.
+
+(`PILOT_FONT_SIZE_BASE` 는 슬롯 안에 역할 글자를 찍던 시절의 잔재라 초상화가
+슬롯을 통째로 채우게 되면서 **삭제됐다**.)
 
 HP is shown as a circular progress ring hugging the outside of every pilot's
 circle (radius + 3 px, 4 px wide). The dark backing ring traces the full
@@ -118,8 +232,8 @@ them each `_draw()`:
   pilot reads as dimmed rather than merely faded. Phase 1 holds at full alpha
   (딤드된 채 대기), phase 2 fades it out while it rises.
 
-The 5+ overflow circle and the cell badge (`NvN` / `xN`) are drawn at full
-alpha — they're aggregate visuals, not per-pilot. Note that a pilot mid-death
+The cell badge (`NvN` / `xN`) is drawn at full
+alpha — it's an aggregate visual, not per-pilot. Note that a pilot mid-death
 still occupies a layout slot, so a fallen body shifts the living pilots in its
 cell for the ~1.45s the animation runs; `pilot_marker_positions()` reads the
 same solve, so hit-testing never disagrees with what is on screen.
@@ -198,8 +312,15 @@ solve 를 즉석에서 한 번 더 돌려 돌려주는 **공개** 래퍼가
 `pilot_marker_positions()` 이고, `CardTargetingOverlay._hit_test_pilot` 이
 이걸 쓴다 — 한 셀에 여러 명이 서 있으면 각자 다른 슬롯에 그려지므로,
 `grid_pos` 만 보고 계산하는 위치(타일 중심 / `pilot_marker_pos_solo`)로는
-누구를 눌렀는지 구분할 수 없다(항상 맨 왼쪽 파일럿이 잡혔다).
+누구를 눌렀는지 구분할 수 없다(항상 맨 왼쪽 파일럿이 잡혔다). 게다가 슬롯은
+전장 전체를 훑는 그리디로 정해지므로, **한 칸만 따로 풀어서는 같은 답이 나오지
+않는다** — 이 표 하나가 유일한 답이다.
 
+표에 없는 파일럿(레이아웃이 아직 한 번도 안 돌았거나 렌더 대상이 아닌 경우)의
+폴백은 **`pilot_marker_pos_fallback(p)`** — 자기 칸에 혼자 선 것으로 치고 기본
+방향의 첫 링에 앉힌다. `BattleSim.pilot_marker_pos_solo` 는 이제 이 함수로
+그대로 넘긴다(예전에는 거기에 "적 위 / 아군 아래" 규칙이 한 벌 더 적혀 있었고,
+방향 규칙이 바뀌면 두 답이 갈라졌다).
 
 타겟 가능한 파일럿 마커는 `_pilot_emphasis_scale(p)` 가 돌려주는 배율만큼
 커진다 — 목표값은 **`TARGET_EMPHASIS_SCALE`(1.5)** 이고, 거기에 **곧바로 튀지

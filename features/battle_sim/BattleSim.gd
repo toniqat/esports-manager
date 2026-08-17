@@ -722,8 +722,14 @@ func _advance_pilot_animations(delta: float) -> bool:
 # the pilot was on before the move. The visual interpolates from from_cell to
 # the pilot's current grid_pos.
 func anim_pilot_move(p: PilotData, from_cell: Vector2i) -> void:
-	# Skip if same cell or pilot is mid-recall (recall takes priority).
-	if from_cell == p.grid_pos or p.anim_recall_phase != 0:
+	if from_cell == p.grid_pos:
+		return
+	# 칸을 옮겼다는 **사실**은 연출과 무관하게 남는다 — 복귀 연출이 도는 중이라
+	# 트윈을 건너뛰더라도 BattleRenderer 는 이 값으로 정글러 초상화의 방향을
+	# 잡는다(온 방향의 반대쪽).
+	p.prev_grid_pos = from_cell
+	# Skip the tween if the pilot is mid-recall (recall takes priority).
+	if p.anim_recall_phase != 0:
 		return
 	p.anim_prev_grid_pos = from_cell
 	p.anim_move_t   = 0.0
@@ -743,6 +749,9 @@ func anim_pilot_shake(p: PilotData) -> void:
 func anim_pilot_recall(p: PilotData, orig_cell: Vector2i) -> void:
 	p.anim_move_dur       = 0.0
 	p.anim_move_t         = 0.0
+	# 순간이동에는 '온 방향'이 없다 — HQ 에 다시 선 파일럿의 초상화 방향은
+	# 레인 경로(또는 적 HQ 방향)에서 새로 뽑혀야 한다.
+	p.prev_grid_pos       = p.grid_pos
 	anim_pilot_lunge_clear(p)
 	p.anim_recall_orig    = orig_cell
 	p.anim_recall_phase   = 1
@@ -754,6 +763,7 @@ func anim_pilot_recall(p: PilotData, orig_cell: Vector2i) -> void:
 func anim_pilot_respawn(p: PilotData) -> void:
 	p.anim_move_dur       = 0.0
 	p.anim_move_t         = 0.0
+	p.prev_grid_pos       = p.grid_pos   # 부활도 순간이동 — anim_pilot_recall 참조
 	anim_pilot_lunge_clear(p)
 	p.anim_recall_phase   = 2
 	p.anim_recall_t       = 0.0
@@ -990,20 +1000,16 @@ func effective_cost_for(cd: CardData, is_player: bool) -> int:
 	return max(0, c)
 
 
-# Drawn-position of a pilot marker assuming it sits solo on its tile. Used by
-# CardTargetingOverlay's PILOT-mode hit test so the click lands on the visible
-# marker (which is offset above/below the tile centre by team) rather than
-# the tile centre. When a cell hosts multiple pilots BattleRenderer further
-# spreads them, but the close-row centre still falls inside the click radius.
+# Drawn-position of a pilot marker assuming it sits solo on its tile — the
+# **fallback** for callers that can't wait for BattleRenderer's per-frame slot
+# solve (CardTargetingOverlay's PILOT hit test, the lunge geometry). 답은
+# 렌더러가 소유한다: 초상화가 앉는 방향은 그 파일럿의 이동 방향에서 나오므로
+# 여기서 다시 계산하면 두 답이 갈라진다(예전에는 여기에 "적 위 / 아군 아래"가
+# 한 벌 더 적혀 있었다).
 func pilot_marker_pos_solo(p: PilotData) -> Vector2:
-	var center := cell_center(p.grid_pos)
-	# Mirror BattleRenderer's enemy-up / ally-down convention — a lone pilot is
-	# drawn on that same close-row offset, never at the tile centre.
-	var dir: float = -1.0 if p.team == 1 else 1.0
-	var hex_h: float = hex_grid.hex_height
-	var radius: float = 31.5 * HexGrid.DISPLAY_SCALE  # PILOT_RADIUS_BASE
-	var close_off: float = hex_h * 0.45 + radius * 0.4
-	return Vector2(center.x, center.y + dir * close_off)
+	if renderer != null:
+		return renderer.pilot_marker_pos_fallback(p)
+	return cell_center(p.grid_pos)
 
 # ─── Button callbacks ─────────────────────────────────────────────────────────
 # Season-mode return: the win panel "다음 →" button hands control back to the

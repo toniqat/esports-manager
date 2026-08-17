@@ -229,9 +229,10 @@ Responsibilities:
 - **개시 상태는 진영이 정한다.** `BattleSim.blue_team` (match_ctx.player_side
   에서 유도; MatchFlow 는 지금 플레이어를 항상 BLUE 로 고정) 쪽이
   `BLUE_COST_HEAD_START`(1) 만큼 전략 포인트를 선점한 채 시작하므로 문턱에 먼저
-  닿는다 — 밴픽에서 후밴/후픽을 하는 대가다. 양 팀 모두 개시 손패
-  `INITIAL_HAND_SIZE`(5)장을 들고 시작해, 첫 차례에는 손패가 상한
-  `MAX_HAND_SIZE`(12)에 딱 맞게 찬다.
+  닿는다 — 밴픽에서 후밴/후픽을 하는 대가다. **개시 손패는 없다** — 양 팀 다
+  0장으로 시작하고, 손패는 `ECONOMY_START_TURN`(10)부터 도는 자동 드로우로만
+  찬다. 실측 기준 첫 작전 단계는 **22턴 · 손패 7장**이고 상한
+  `MAX_HAND_SIZE` 는 **10**이다.
 - Ending the phase goes through the player's 전략 포인트 도넛: tap it once to
   flip it into a circular 턴 넘기기 button, tap again to end. The 턴 넘기기
   face stays disabled until the player **plays at least one card** this phase

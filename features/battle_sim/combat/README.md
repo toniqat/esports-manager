@@ -99,7 +99,7 @@ impossible; the two-pass split is described under "Movement".
 
 **성장** — 살아 있는 파일럿의 `atk` / `max_hp` 가 매 턴 `GROWTH_PER_TURN`
 (game_config, **0.01** = +1%p) 만큼 원본 대비 늘어난다.
-- **1턴부터 돈다.** `ECONOMY_START_TURN`(4턴) 게이트는 전략 점수 / 자동 드로우
+- **1턴부터 돈다.** `ECONOMY_START_TURN`(10턴) 게이트는 전략 점수 / 자동 드로우
   같은 **카드 경제** 전용이고 성장에는 걸리지 않는다.
 - 스탯은 매 턴 곱해 나가는 대신 `PilotData.base_atk` / `base_max_hp` 에서
   **다시 계산**한다 — 매 턴 반올림이 끼면 오차가 누적돼 실제 성장률을 갉아먹는다.

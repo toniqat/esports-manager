@@ -206,12 +206,13 @@ func build_starter_decks() -> void:
 	_bs.ai_deck.shuffle()
 	# Sync the visible Deck / Discard counters with the freshly-built deck.
 	update_deck_discard_labels()
-	# 개시 손패를 돌리기 전에 이전 판의 손패를 확실히 비운다. 재시작 경로는
-	# 이미 비우고 들어오지만, 여기서 손패가 비어 있다는 것이 개시 배분의 전제다.
+	# 양 팀은 **빈 손**으로 시작한다. 손패는 `ECONOMY_START_TURN` 부터 도는 BATTLE
+	# 자동 드로우로만 채워진다 — 그 전 구간은 카드가 아예 없는 순수 라인전이다.
+	# 재시작 경로는 이미 비우고 들어오지만, 이전 판의 카드 노드가 남지 않도록
+	# 여기서 한 번 더 확실히 비운다.
 	_clear_hands()
 	# 차례 교대 기록도 새 판에서는 백지 — 첫 선은 블루가 잡는다.
 	_last_turn_side = -1
-	_deal_initial_hands()
 
 
 # Deals every pilot in `pilots` its 6-card stack out of `pool`, stamping each
@@ -303,9 +304,9 @@ func _sample(src: Array, n: int, fallback: Array) -> Array:
 	return out
 
 
-## Empties both hands and frees the player's card nodes, so `_deal_initial_hands`
-## can assume it is dealing into an empty hand. `_on_restart_pressed` already
-## does this on its way in; this keeps the precondition local to the deal.
+## Empties both hands and frees the player's card nodes, so a fresh match always
+## starts from a genuinely empty hand. `_on_restart_pressed` already does this on
+## its way in; this keeps the precondition local to the deck build.
 func _clear_hands() -> void:
 	for node in _bs.player_card_nodes:
 		if is_instance_valid(node):
@@ -313,26 +314,6 @@ func _clear_hands() -> void:
 	_bs.player_card_nodes.clear()
 	_bs.player_hand.clear()
 	_bs.ai_hand.clear()
-
-
-## 개시 손패 — 양 팀에 `INITIAL_HAND_SIZE` 장씩 미리 돌린다.
-##
-## 이게 없으면 양 팀 다 **빈 손**으로 시작해, 첫 차례가 오는 시점의 손패가
-## 그때까지 지나간 자동 드로우 횟수(CARD_DRAW_INTERVAL 에 묶인 수)로만
-## 결정된다 — 상한 `MAX_HAND_SIZE` 에 한참 못 미치는 손으로 첫 작전 단계를
-## 맞게 된다는 뜻이다. 개시 배분은 그 격차를 메워, 첫 차례를 거의 꽉 찬 손으로
-## 시작하게 한다.
-##
-## `MAX_HAND_SIZE` 보다 훨씬 작은 장수이므로 `_trim_hand_overflow` 는 돌리지
-## 않는다. 덱이 마르면 `draw_card` 가 null 을 돌려주고 그 자리에서 멈춘다.
-func _deal_initial_hands() -> void:
-	for _i in range(_bs.INITIAL_HAND_SIZE):
-		var drawn := draw_card(true)
-		if drawn != null:
-			spawn_card_node(drawn)
-		draw_card(false)
-	if _bs.hud != null:
-		_bs.hud.update_ai_hand_visuals()
 
 
 ## Subset of `pool` this pilot is allowed to own. Falls back to the unfiltered
@@ -429,14 +410,15 @@ func do_battle_turn() -> void:
 	if _bs.game_over:
 		return
 	# 카드 경제 게이트. `ECONOMY_START_TURN` 전까지는 전략 점수도 자동 드로우도
-	# 멈춰 있다 — 개시 손패 5장과 블루 선점 1점만 들고 초반 몇 턴을 라인전으로
-	# 보내라는 규칙이다. 카운터 자체를 굴리지 않으므로 게이트가 풀리는 턴에
-	# 밀린 회복이 한꺼번에 터지지도 않는다.
+	# 멈춰 있다 — 개시 손패가 없으므로 그 구간은 **양 팀 다 빈 손**이고, 0턴에
+	# 들어가 있는 것은 블루 선점 1점뿐이다. 초반 몇 턴은 카드 없이 라인전만
+	# 하라는 규칙이다. 카운터 자체를 굴리지 않으므로 게이트가 풀리는 턴에 밀린
+	# 회복이 한꺼번에 터지지도 않는다.
 	#
 	# `simulate_turn()` 이 자기 초입에서 `turn_count` 를 올리므로, 이 시점의
 	# `turn_count` 는 **방금 끝난 턴의 번호**(1-based)다. 카운터는 개시 시
 	# `INTERVAL - 1` 로 놓여 있어 게이트가 열리는 첫 턴에 곧바로 발동한다 —
-	# ECONOMY_START_TURN = 4 면 4턴째에 첫 회복 / 첫 드로우가 들어간다.
+	# ECONOMY_START_TURN = 10 이면 10턴째에 첫 회복 / 첫 드로우가 들어간다.
 	if _bs.turn_count >= _bs.ECONOMY_START_TURN:
 		_bs.cost_counter += 1
 		if _bs.cost_counter >= _bs.COST_RECOVERY_INTERVAL:

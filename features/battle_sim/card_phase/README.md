@@ -26,16 +26,16 @@ is referred to as "1분".
   tick so the 부활 countdown printed on each card face stays current.
 
 #### 카드 경제 게이트 (`ECONOMY_START_TURN`)
-전략 점수 회복과 자동 드로우는 **`ECONOMY_START_TURN`(game_config, 4)턴부터**
+전략 점수 회복과 자동 드로우는 **`ECONOMY_START_TURN`(game_config, 10)턴부터**
 돈다. 그 전에는 두 카운터를 아예 굴리지 않으므로 게이트가 열리는 턴에 밀린
-회복이 한꺼번에 터지지도 않는다. 초반 몇 턴은 개시 손패 5장과 블루 선점 1점만
-들고 순수 라인전으로 보내라는 규칙이다.
+회복이 한꺼번에 터지지도 않는다. **개시 손패는 없다** — 그 구간의 양 팀은
+손패가 0장이고 블루 선점 1점만 들고 순수 라인전으로 보낸다는 규칙이다.
 
 게이트가 걸리는 것은 **카드 경제뿐**이다:
 
 | 항목 | 게이트 |
 |---|---|
-| 개시 손패 (`INITIAL_HAND_SIZE`) · 블루 선점 (`BLUE_COST_HEAD_START`) | ❌ 0턴에 그대로 들어간다 |
+| 블루 선점 (`BLUE_COST_HEAD_START`) | ❌ 0턴에 그대로 들어간다 |
 | `COST_RECOVERY` / `CARD_DRAW_INTERVAL` | ✅ `ECONOMY_START_TURN` 부터 |
 | 성장 (`GROWTH_PER_TURN`) | ❌ 1턴부터 |
 
@@ -43,9 +43,15 @@ is referred to as "1분".
 `turn_count` 는 **방금 끝난 턴의 번호**(1-based)다. 카운터는 개시 시
 `INTERVAL - 1` 로 놓여 있어 게이트가 열리는 첫 턴에 곧바로 발동한다.
 
-**실측** (standalone, PHASE_THRESHOLD 8 · COST_RECOVERY_INTERVAL 2 · 블루 선점 1):
-첫 작전 단계가 **16턴**에 `player 8 / ai 7` 로 열린다 — 회복이 4·6·8·10·12·14·16턴에
-7회. 게이트 이전에는 13턴이었다.
+**실측** (standalone, PHASE_THRESHOLD 8 · COST_RECOVERY_INTERVAL 2 ·
+CARD_DRAW_INTERVAL 2 · 블루 선점 1): 1~9턴은 `cost_p = 1 / 손패 0장` 으로 완전히
+멈춰 있고, 10턴에 첫 회복 + 첫 드로우가 동시에 들어간다. 이후 회복·드로우가
+10·12·14·16·18·20·22턴에 7회씩 — **첫 작전 단계는 22턴, 손패 7장**
+(`player 8 / ai 7`)이다. 4턴 게이트 시절에는 16턴이었고, 게이트 이전에는 13턴이었다.
+
+> **standalone 주의**: `match_ctx` 없이 BattleSim.tscn 을 직접 돌리면 `ROLE_STATS`
+> 기본값으로 HQ 가 **20턴께 무너진다** — 첫 작전 단계(22턴)에 닿기 전에 판이 끝나므로
+> 카드 흐름을 CLI 로 볼 때는 HQ HP 를 올리거나 카운터를 직접 굴려야 한다.
 
 #### 두 쪽이 각자 자기 점수로 턴을 갖는다
 The two sides' turns are **independent**. `do_battle_turn` closes by asking
@@ -85,24 +91,26 @@ Line 2 carries two separate jobs.
 있어야 준비된 것으로 치고(`_ai_turn_ready`), 플레이어는 점수만 차면 진입한다 —
 낼 게 없는 손은 `can_end_card_phase` 의 탈출구가 통과시킨다.
 
-### 개시 상태 (진영 + 개시 손패)
+### 개시 상태 (진영 + 빈 손)
 - **블루가 선을 잡는다.** `BattleSim.blue_team` (0 = 플레이어 팀) 은
   `match_ctx.player_side` 에서 유도되고, `BattleSim.seed_side_costs()` 가 그 팀의
   작전 점수를 `BLUE_COST_HEAD_START`(1) 로 심는다. COST_RECOVERY 는 양 팀에 같은
   틱에 같은 양이 들어가므로 그 차이는 그대로 유지되고, 블루가 항상 문턱에 먼저
   닿는다. 밴픽에서 후밴/후픽을 하는 대가다 — 지금은 `MatchFlow` 가 플레이어를
   항상 BLUE 로 고정한다.
-- **개시 손패는 `INITIAL_HAND_SIZE`(5)장**. `build_starter_decks` 가 덱을 섞은
-  직후 `_deal_initial_hands()` 로 양 팀에 돌린다. 이게 없으면 양 팀 다 빈 손으로
-  시작해 첫 차례까지 자동 드로우만으로 손이 차므로, 첫 작전 단계를 상한에 한참
-  못 미치는 손으로 맞게 된다. 실측: 개시 5장 + 13틱까지의 자동 드로우 7회 =
-  **첫 차례에 정확히 12장**(= `MAX_HAND_SIZE`).
+- **개시 손패는 없다 — 양 팀 다 빈 손으로 시작한다.** `build_starter_decks` 는
+  덱을 섞고 `_clear_hands()` 로 손패를 비우는 데서 끝나고, 손패는 오직
+  `ECONOMY_START_TURN`(10)부터 도는 BATTLE 자동 드로우로만 찬다. 예전에는
+  `INITIAL_HAND_SIZE`(5)장을 `_deal_initial_hands()` 로 미리 돌려 첫 차례를 상한에
+  꽉 찬 손으로 맞게 했는데, 지금은 그 반대가 규칙이다 — 초반 9턴은 카드가 아예
+  없는 라인전이고 첫 작전 단계(22턴)의 손패는 7장이다. `INITIAL_HAND_SIZE` 키와
+  `_deal_initial_hands()` 는 함께 삭제됐다.
 
 ### Hand overflow (BATTLE auto-draw only)
-`MAX_HAND_SIZE` is **12**. The auto-draws that tick by while 작전 점수 climbs
+`MAX_HAND_SIZE` is **10**. The auto-draws that tick by while 작전 점수 climbs
 back to `PHASE_THRESHOLD` — i.e. the stretch when it is *not* the player's turn
 — always draw, even on a full hand, and `_trim_hand_overflow(is_player)` then
-discards from the **front** of the hand (oldest first) until it is back at 12.
+discards from the **front** of the hand (oldest first) until it is back at 10.
 Both sides run the same rule; only the player side despawns card nodes and
 relayouts. The old behaviour was to skip the draw when the hand was full, which
 stalled the deck and left the same dead hand sitting there for the whole wait.
@@ -221,11 +229,13 @@ re-evaluates the dim state.
   outermost cards tilt ±6.7° and hang 21.4px below the middle pair; a 5-card
   hand splays ±6.2° / 18.5px (its spacing is uncompressed, so it's just as wide).
   Shrink the radius for a deeper curve.
-  > The 12-card figures quoted throughout this section are the **live** worst
-  > case again: `MAX_HAND_SIZE` is 12, and the 개시 손패 rule puts a full 12 in
-  > hand on the very first 작전 단계. (They were measured at 12, then spent a
-  > while as a hypothetical while the cap sat at 8.) The 8-card figures also
-  > quoted below are just a mid-size sample, not the cap.
+  > The 12-card figures quoted throughout this section are now **one card past
+  > the cap** — `MAX_HAND_SIZE` is **10**, and with the 개시 손패 gone the hand
+  > only ever touches 10 mid-match (a 작전 단계 드로우 can overshoot it until the
+  > next auto-draw trims). They're kept as the measured worst case: every layout
+  > quantity here is monotonic in hand size, so 12 bounds 10 and re-measuring
+  > would only move the numbers slightly inward. The 8-card figures also quoted
+  > below are just a mid-size sample, not the cap.
 - `slot_spacing(total)` — uniform centre-to-centre spacing.
   `Card.CARD_W + BS_HAND_CARD_GAP` until the natural span exceeds
   `BS_HAND_WIDTH`; from then on it compresses so the row always fits the

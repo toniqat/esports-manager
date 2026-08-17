@@ -127,9 +127,6 @@ var RECALL_HP_THRESHOLD:     float = 0.0
 ## 공격 카드 · 교전 아레나는 이 배율을 타지 않는다.
 var BATTLE_PILOT_DMG_MULT:   float = 1.0
 var MAX_HAND_SIZE:           int   = 0
-## 개시 직후 양 팀이 미리 받는 손패 장수. 전투 시작 시 한 번만 배분된다 —
-## 이후의 보충은 BATTLE 자동 드로우가 맡는다.
-var INITIAL_HAND_SIZE:       int   = 0
 ## 블루 진영이 개시 시점에 선점하는 전략 포인트. 밴픽에서 후밴/후픽을 하는
 ## 대가로 인게임 선을 잡게 하는 노브다 (see `blue_team`).
 var BLUE_COST_HEAD_START:    int   = 0
@@ -138,9 +135,9 @@ var CARD_DRAW_INTERVAL:      int   = 1
 var COST_RECOVERY_INTERVAL:  int   = 1
 var PHASE_THRESHOLD:         int   = 0
 ## 카드 경제(전략 점수 회복 + 자동 드로우)가 처음 도는 턴. 그 전 턴들에는
-## 회복도 드로우도 없다 — 개시 손패(`INITIAL_HAND_SIZE`)와 블루 선점
-## (`BLUE_COST_HEAD_START`)만 0턴에 들어가 있고 거기서 멈춰 있다. 성장은 이
-## 게이트를 타지 않는다(1턴부터 돈다).
+## 회복도 드로우도 없고 **개시 손패도 없다** — 0턴에 들어가는 것은 블루 선점
+## (`BLUE_COST_HEAD_START`) 하나뿐이고, 양 팀은 빈 손으로 이 턴까지 순수
+## 라인전만 한다. 성장은 이 게이트를 타지 않는다(1턴부터 돈다).
 var ECONOMY_START_TURN:      int   = 1
 ## 턴당 누적 성장률. 살아 있는 파일럿의 `atk` / `max_hp` 가 매 턴 이만큼
 ## 원본 대비 늘어난다 (0.01 = +1%p/턴). SimulationCore.tick_growth_and_expiries.
@@ -442,8 +439,7 @@ func _populate_from_data_loader() -> void:
 	TURRET_ATK              = int(cfg.get("TURRET_ATK", "8"))
 	RECALL_HP_THRESHOLD     = float(cfg.get("RECALL_HP_THRESHOLD", "0.2"))
 	BATTLE_PILOT_DMG_MULT   = float(cfg.get("BATTLE_PILOT_DMG_MULT", "0.5"))
-	MAX_HAND_SIZE           = int(cfg.get("MAX_HAND_SIZE", "12"))
-	INITIAL_HAND_SIZE       = int(cfg.get("INITIAL_HAND_SIZE", "5"))
+	MAX_HAND_SIZE           = int(cfg.get("MAX_HAND_SIZE", "10"))
 	BLUE_COST_HEAD_START    = int(cfg.get("BLUE_COST_HEAD_START", "1"))
 	COST_RECOVERY           = int(cfg.get("COST_RECOVERY", "1"))
 	CARD_DRAW_INTERVAL      = max(1, int(cfg.get("CARD_DRAW_INTERVAL", "1")))

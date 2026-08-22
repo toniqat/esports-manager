@@ -7,22 +7,32 @@ extends Node
 # 예전에는 이 패널 하나가 열 명 전부를 84px 슬롯으로 담았다(아군 좌 / 점수 중앙 /
 # 적 우). 지금은 **적 다섯만** 여기 있고, 아군 다섯은 핸드 행 아래로 내려갔다.
 #
-# 패널 높이 130 은 협상 불가에 가깝다: 이 패널이 상대 핸드 peek 의 윗부분을
-# 가리는 가림막이고, peek 카드 아래 끝(y 179)에서 `DONUT_AI_HAND_GAP` 만큼 띄운
-# 자리가 적 도넛이며, 그 도넛 아래가 곧 전장 픽셀 상단(y 314)이다. 패널을
-# 키우면 그 사슬이 통째로 밀려 도넛이 전장을 덮는다.
+# 패널 높이는 **적 스트립이 정한다**: 헤더 줄(y 4..38) 아래 `ENEMY_STRIP_RECT`
+# 가 앉고 그 밑단에 4px 를 더한 값이 곧 이 높이다. 그리고 그 아래가 사슬이다 —
+# 패널이 상대 핸드 peek 의 윗부분을 가리는 가림막이고, peek 카드 아래 끝에서
+# `DONUT_AI_HAND_GAP` 만큼 띄운 자리가 적 도넛이며, 그 도넛 아래가 곧 전장 픽셀
+# 상단(y 369)이다. **패널을 키우면 `AI_HAND_TOP_Y` 도 같은 양만큼 내려야 한다** —
+# 안 그러면 peek 이 패널 뒤로 통째로 숨는다.
+#
+# 예전 130 은 적 스트립이 730×84 짜리 축소판이던 시절의 값이다. 스트립이 아군과
+# 같은 크기(1030×122)가 되면서 168 로 올랐고, peek 도 80 → 118 로 함께 내려갔다.
+# 지금 도넛 아래끝은 349, 전장 상단이 369 라 **여유는 20px 뿐이다** — 여기서 더
+# 키우려면 peek 이 보이는 양(49px)이나 `DONUT_AI_HAND_GAP` 을 깎아야 한다.
 const TOP_PANEL_Y      := 0.0
-const TOP_PANEL_H      := 130.0
+const TOP_PANEL_H      := 168.0
 ## 시간 · 팀 점수 한 줄.
 const HEADER_ROW_Y     := 4.0
 const HEADER_ROW_H     := 34.0
 const TIME_FONT        := 18
 const TOTAL_SCORE_FONT := 26
-## 적 스트립 — 패널 로컬 좌표. 아군 스트립보다 작다(내 팀이 아니므로 정보
-## 밀도를 낮춘다).
-const ENEMY_STRIP_RECT := Rect2(175.0, 42.0, 730.0, 84.0)
-const ENEMY_SCORE_FONT := 15
-const ENEMY_HP_H       := 6.0
+## 적 스트립 — 패널 로컬 좌표. **아군 스트립과 폭 · 초상화 · 체력 바 · 성장치
+## 폰트가 전부 같다**(x 25 부터 1030px, 초상화 190×79). 예전에는 730×84 짜리
+## 축소판이었는데(초상화 130×54), 같은 얼굴을 위아래에서 두 배 다른 크기로
+## 보여 주니 상대 파일럿이 누구인지가 아군만큼 읽히지 않았다 — 상대 성장치는
+## 내 성장치와 **나란히 비교하라고** 있는 숫자다.
+const ENEMY_STRIP_RECT := Rect2(25.0, 42.0, 1030.0, 122.0)
+const ENEMY_SCORE_FONT := 20
+const ENEMY_HP_H       := 10.0
 
 # ── 하단 아군 스트립 (핸드 행 아래) ───────────────────────────────────────────
 # 핸드 행은 y 1500..1720, 그 아래가 통째로 비어 있었다(예전 하단 코스트 바 자리).
@@ -54,7 +64,10 @@ const PLAYER_HP_H       := 10.0
 # Adjacent centres therefore sit R·sin(step) apart; at the values below that is
 # ~34.6 px against a 72 px card, i.e. the cards overlap by a bit over half.
 const AI_HAND_SCALE  := 0.45
-const AI_HAND_TOP_Y  := 80.0   # top of the MIDDLE card; the rest ride higher
+## Top of the MIDDLE card; the rest ride higher. Tied to TOP_PANEL_H — the panel
+## must hide the card's top 50 px so only the bottom ~49 px peeks out, so this is
+## `TOP_PANEL_H − 50`. Move the panel and this moves with it.
+const AI_HAND_TOP_Y  := 118.0
 ## Circle radius (px) the card centres ride. Larger = flatter arc.
 const AI_HAND_FAN_RADIUS := 620.0
 ## Angular step (deg) per card. Sets the horizontal overlap via R·sin(step).

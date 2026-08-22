@@ -210,13 +210,14 @@ under `BattleField/BuildingLayer` and `BattleField/WaypointLayer`.
 
 ### PilotImages.gd
 `class_name PilotImages`, extends `RefCounted`. Static lookup for the pilot
-portraits under `resources/images/pilot/{faces,circle,eye,full}/`.
+portraits under `resources/images/pilot/{faces,circle,eye,tall,full}/`.
 
 | 함수 | 파일 | 크기 | 소비자 |
 |---|---|---|---|
 | `face_for` | `faces/N_rect.png` | 256² | (현재 없음 — 예전 상단 슬롯이 쓰던 컷) |
 | `circle_for` | `circle/N_circle.png` | 256² 원형 | 전장 마커 · 교전 무대 초상화 |
 | `eye_for` | `eye/N_eye.png` | **480×200** | 파일럿 스트립 (`ui/PilotStrip.gd`) |
+| `tall_for` | `tall/N_tall.png` | **210×700** | 교전 아레나 하단 스트립 (`engage/EngageArena.gd`) |
 | `full_for` | `full/N_full.png` | 가변 × 1024 | 파일럿 상세 패널 (`ui/PilotDetailPanel.gd`) |
 
 **`eye/` 는 손으로 자르지 말 것** — `resources/images/pilot/make_eye_crops.py`
@@ -228,8 +229,25 @@ pid 16 은 `faces/16_rect.png` 가 `full/16_full.png` 와 **다른 일러스트*
 코스튬 · 포즈)라 매칭이 0.554 로 떨어지고 무기 부품에 오매칭된다 — 스크립트의
 `OVERRIDE` 에 눈 좌표를 직접 박아 두었다.
 
-`prime_into(parent)` 는 **circle / face 만** 프라임한다. eye / full 은 `TextureRect`
-노드에만 쓰이고 노드에 할당하는 경로는 GPU 업로드가 보장되므로 대상이 아니다.
+**`tall/` 도 손으로 자르지 말 것** — `make_tall_crops.py` 가 같은 얼굴 템플릿
+매칭으로 `full/` 에서 만든다(같은 `OVERRIDE` 예외 1건). 구도는 **머리~허벅지**:
+얼굴 사각형 위로 `TOP_PAD`(얼굴 높이 ×0.30)만큼 여백을 두고 아래로
+`BUST_H`(×4.40) 내려간 세로 밴드를 잘라, 폭은 **얼굴 높이 × `BAND_W_FACES`
+1.32** 로 정한다(`ASPECT` 는 그 둘에서 유도되는 0.30).
+
+**밴드 폭(얼굴 높이 ×1.32)은 고정 상수로 두고 길이만 만진다.** 스트립 칸 폭이
+90px 로 고정이라 이 값이 곧 화면에서의 얼굴 크기다 — `BUST_H` 를 늘릴 때 폭까지
+같이 늘리면 얼굴이 작아져 스트립에서 안 읽힌다. 지금 값은 세로 1920 화면에서
+스트립 아래로 556px 가 그냥 비어 있던 것을 메우려고 **2.40(머리~가슴, 220×400)
+에서 4.40 으로 늘린 것**이고, 화면 칸도 90×164 → **90×300** 으로 함께 커졌다.
+둘은 `STRIP_PORTRAIT_H = 90 × BUST_H / 1.32` 로 묶여 있으니 반드시 같이 고칠 것.
+폭을 어깨 실루엣에 맞추면 파일럿마다 인물 크기가 달라진다 — 출력 비율을 고정하는
+쪽이 열 명이 한 줄에 섰을 때 얼굴 크기를 고르게 만든다.
+
+`prime_into(parent)` 는 **circle / face / tall** 을 프라임한다. eye / full 은
+`TextureRect` 노드에만 쓰이고 노드에 할당하는 경로는 GPU 업로드가 보장되므로
+대상이 아니지만, **tall 은 `draw_texture_rect` 로 그려지므로 프라임이 필수다** —
+빠뜨리면 교전 스트립의 초상화 열 칸이 통째로 흰 사각형으로 나온다(실측 확인).
 
 **id ↔ file ↔ 이름은 한 줄로 묶여 있다.** `players.csv` 의 pilot id `N` 은
 `N+1_rect.png` / `N+1_circle.png` 를 쓰고(파일명은 1-based, id 는 0-based),

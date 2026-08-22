@@ -6,8 +6,8 @@ extends Control
 #
 # **사이드뷰 벨트스크롤**: 무대는 화면 중앙의 가로로 납작한 시네마 밴드
 # (`BAND_RECT`) 하나뿐이고, 그 안에서 팀0(아군)이 왼쪽 · 팀1(적군)이 오른쪽을
-# 보고 마주 선다. 밴드 아래에는 교전 참가자 전원의 원형 초상화가 팀별로
-# 깔리고 그 밑에 체력 바가 붙는다.
+# 보고 마주 선다. 밴드 아래에는 교전 참가자 전원이 **한 줄**로 깔린다 —
+# 아군 왼쪽 / 적군 오른쪽, 가운데 VS, 세로로 긴 버스트 초상화 아래에 체력 바.
 #
 # 텍스트는 전부 Label 노드로 만든다(draw_string 은 한글 폴백 폰트를 태우기
 # 어렵다). 그래픽은 세 개의 DrawProxy 노드가 나눠 그린다:
@@ -44,7 +44,11 @@ const LOW_HP_RATIO: float = 0.30
 ## 위로는 남은 시간 바 / 배너를, 아래로는 초상화 스트립을 피한다.
 ## 세로 1920 화면에서 위아래로 딤을 남기는 "시네마 밴드". 벨트(1240×400)가
 ## 가로로 딱 차고 세로로 약간 여유가 남는 비율로 잡혀 있다.
-const BAND_RECT := Rect2(24.0, 440.0, 1032.0, 500.0)
+## y 는 **화면 전체의 무게중심에서 역산한 값**이다 — 스트립 초상화가 허벅지까지
+## 길어지며(90×300) 아래로 자란 만큼, 위쪽 블록(제목 · 라운드 · 밴드)을 통째로
+## 130px 내려 위 여백(370)과 아래 여백(384)을 비슷하게 맞췄다. 예전 440 은
+## 초상화가 164 이던 시절의 값이라 지금 그대로 두면 바닥에 556px 가 빈다.
+const BAND_RECT := Rect2(24.0, 570.0, 1032.0, 500.0)
 const BAND_FRAME    := Color(0.45, 0.53, 0.72, 0.90)
 ## 무대 밖 화면(전장 · 핸드 행 등)을 덮는 딤.
 const DIM_COLOR     := Color(0.0, 0.0, 0.0, 0.86)
@@ -82,18 +86,44 @@ const CAM_POS_RATE: float = 4.0
 const CAM_ZOOM_RATE: float = 2.6
 
 # ─── 하단 초상화 스트립 ──────────────────────────────────────────────────────
-## 팀별 헤더 y 좌표와 초상화 행 y 좌표.
-const STRIP_HEADER_Y := [976.0, 1258.0]
-const STRIP_ROW_Y    := [1010.0, 1292.0]
+# **아군 왼쪽 / 적군 오른쪽**, 한 줄에 열 명이 마주 선다 (5v5 면 IIIII vs IIIII).
+# 예전에는 팀마다 한 줄씩 위아래로 쌓은 원형 초상화였는데, 위/아래는 무대의
+# 좌/우와 어긋나 "어느 쪽이 내 팀인가"를 스트립에서 다시 읽어야 했다 — 무대에서
+# 팀0 은 언제나 왼쪽에 선다. 스트립이 같은 좌우를 쓰면 그 질문 자체가 사라진다.
+#
+# 초상화는 원이 아니라 **세로로 긴 전신 크롭**(`PilotImages.tall_for`, 210×700)이다.
+# 열 칸을 한 줄에 늘어놓으면 한 칸이 90px 뿐이고, 그 폭에 원형 초상을 넣으면
+# 지름 90px 짜리 얼굴이 되어 누가 누구인지 읽히지 않는다. 세로로 길게 가면
+# 같은 폭에서 얼굴을 그만큼 크게 담고 남는 세로로 몸까지 보여 준다.
+#
+# **크롭은 머리~허벅지(얼굴 높이 4.4배)이고 밴드 폭은 얼굴 높이 1.32배로 고정**
+# 이다(`make_tall_crops.py`). 폭이 고정이라 칸 폭 90px 에서의 **얼굴 크기는
+# 크롭 길이와 무관하게 일정**하다 — 세로만 길어지고 몸이 더 보인다. 예전에는
+# 머리~가슴(2.4배 · 90×164)이었는데, 세로 1920 화면에서 스트립 아래로 556px 가
+# 그냥 비어 있었다. 길이를 바꿀 때는 반드시 두 곳을 함께 고칠 것 —
+# 스크립트의 `BUST_H` 와 여기 `STRIP_PORTRAIT_H`(= 90 × BUST_H / 1.32).
 const STRIP_LEFT: float = 24.0
 const STRIP_WIDTH: float = 1032.0
-## 한 참가자가 차지하는 칸 폭(최대 5명 기준).
-const STRIP_CELL_W: float = 206.0
-const STRIP_PORTRAIT: float = 150.0
-const STRIP_HP_W: float = 168.0
-const STRIP_HP_H: float = 18.0
+## 두 팀 사이의 홈 — 여기에 "VS" 가 앉는다. 양 팀은 **이 홈에 붙어서** 바깥으로
+## 늘어서므로, 인원이 5명 미만이어도 가운데가 비지 않고 "마주 선" 그림이 남는다.
+const STRIP_MID_GAP: float = 68.0
+## 초상화 사이 간격.
+const STRIP_CELL_GAP: float = 8.0
+## 초상화 한 칸. tall 크롭(210×700)과 같은 비율(1 : 3.333)이고, 폭은 STRIP_WIDTH 에
+## 정확히 들어맞게 잡혀 있다: 5×90 + 4×8 = 482, 482×2 + 68 = 1032.
+const STRIP_PORTRAIT_W: float = 90.0
+const STRIP_PORTRAIT_H: float = 300.0
+## 팀 이름 줄 / 초상화 윗변. 이름 라벨 밑단(STRIP_TOP + 300 + 8 + 14 + 4 + 24)이
+## 1536 이라 바닥까지 384px 가 남는다 — 위 여백(제목 위 370)과 짝을 맞춘 값이다.
+const STRIP_HEADER_Y: float = 1140.0
+const STRIP_TOP: float = 1186.0
+const STRIP_HP_W: float = 90.0
+const STRIP_HP_H: float = 14.0
 ## 초상화 아래 체력 바까지의 간격.
-const STRIP_HP_GAP: float = 10.0
+const STRIP_HP_GAP: float = 8.0
+## 지금 차례를 가진 유닛의 테두리 두께 / 평소 테두리 두께.
+const STRIP_RIM_ACT: float = 4.0
+const STRIP_RIM_IDLE: float = 2.0
 
 # ─── 포탑(배경 지형) ─────────────────────────────────────────────────────────
 ## 탑신 높이(축소 전). 총구 높이 = 이 값 × TURRET_BG_SCALE 이며 포격 투사체의
@@ -212,47 +242,76 @@ func setup(bs: BattleSim, sim: TurnEngageSim, title_text: String,
 func _build_ui(title_text: String) -> void:
 	var title := _make_label(title_text, 40, TITLE_COLOR,
 			HORIZONTAL_ALIGNMENT_CENTER)
-	title.position = Vector2(0, 240)
+	title.position = Vector2(0, 370)
 	title.size = Vector2(VP_W, 56)
 	add_child(title)
 
 	_round_lbl = _make_label("", 46, TIME_COLOR, HORIZONTAL_ALIGNMENT_CENTER)
-	_round_lbl.position = Vector2(0, 296)
+	_round_lbl.position = Vector2(0, 426)
 	_round_lbl.size = Vector2(VP_W, 56)
 	add_child(_round_lbl)
 
 	_phase_lbl = _make_label("", 24, Color(0.85, 0.85, 0.9),
 			HORIZONTAL_ALIGNMENT_CENTER)
-	_phase_lbl.position = Vector2(0, 390)
+	_phase_lbl.position = Vector2(0, 520)
 	_phase_lbl.size = Vector2(VP_W, 32)
 	add_child(_phase_lbl)
 
+	var centre_x: float = STRIP_LEFT + STRIP_WIDTH * 0.5
+	var vs := _make_label("VS", 30, TITLE_COLOR, HORIZONTAL_ALIGNMENT_CENTER)
+	vs.position = Vector2(centre_x - STRIP_MID_GAP * 0.5,
+			STRIP_TOP + STRIP_PORTRAIT_H * 0.5 - 20.0)
+	vs.size = Vector2(STRIP_MID_GAP, 40)
+	add_child(vs)
+
 	for t in range(2):
-		var hdr := _make_label("아군" if t == 0 else "적군", 26, TEAM_COLORS[t],
-				HORIZONTAL_ALIGNMENT_LEFT)
-		hdr.position = Vector2(STRIP_LEFT + 6.0, STRIP_HEADER_Y[t])
-		hdr.size = Vector2(STRIP_WIDTH, 30)
+		var team_units: Array = _sim.units_of(t)
+		# 팀 이름은 그 팀 초상화 무리 **위**에 온다 — 좌우가 곧 팀이므로
+		# 라벨도 그 자리에 있어야 한다.
+		var hdr := _make_label("아군" if t == 0 else "적군", 24, TEAM_COLORS[t],
+				HORIZONTAL_ALIGNMENT_CENTER)
+		var group_w: float = _strip_group_width(team_units.size())
+		hdr.position = Vector2(
+				(centre_x - STRIP_MID_GAP * 0.5 - group_w) if t == 0
+						else (centre_x + STRIP_MID_GAP * 0.5),
+				STRIP_HEADER_Y)
+		hdr.size = Vector2(group_w, 30)
 		add_child(hdr)
 
-		var team_units: Array = _sim.units_of(t)
 		for i in team_units.size():
 			var u := team_units[i] as TurnEngageSim.EUnit
-			var cx: float = _strip_cell_x(team_units.size(), i)
-			var lbl := _make_label("", 19, TEAM_COLORS[t],
+			var cx: float = _strip_cell_x(t, team_units.size(), i)
+			var lbl := _make_label("", 17, TEAM_COLORS[t],
 					HORIZONTAL_ALIGNMENT_CENTER)
-			lbl.position = Vector2(cx - STRIP_CELL_W * 0.5,
-					STRIP_ROW_Y[t] + STRIP_PORTRAIT + STRIP_HP_GAP
+			lbl.position = Vector2(cx - STRIP_PORTRAIT_W * 0.5,
+					STRIP_TOP + STRIP_PORTRAIT_H + STRIP_HP_GAP
 							+ STRIP_HP_H + 4.0)
-			lbl.size = Vector2(STRIP_CELL_W, 26)
+			lbl.size = Vector2(STRIP_PORTRAIT_W, 24)
+			# 칸이 90px 뿐이라 넘치는 글자는 잘라야 한다 — 가운데 정렬 Label 은
+			# 넘치면 정렬을 포기하고 옆 칸을 침범한다.
+			lbl.clip_text = true
 			add_child(lbl)
 			_name_labels[u.pilot] = lbl
 
 
-# 참가 인원이 5명 미만이면 남는 칸을 양쪽으로 나눠 가운데 정렬한다.
-static func _strip_cell_x(count: int, idx: int) -> float:
-	var total: float = float(count) * STRIP_CELL_W
-	var x0: float = STRIP_LEFT + (STRIP_WIDTH - total) * 0.5
-	return x0 + STRIP_CELL_W * (float(idx) + 0.5)
+## 초상화 n 개가 차지하는 가로 폭(간격 포함).
+static func _strip_group_width(count: int) -> float:
+	if count <= 0:
+		return 0.0
+	return float(count) * STRIP_PORTRAIT_W + float(count - 1) * STRIP_CELL_GAP
+
+
+## 한 참가자 칸의 중심 x. **두 팀 다 가운데 홈에 붙어** 바깥으로 늘어선다 —
+## 팀0 은 홈 왼쪽에서 왼쪽으로, 팀1 은 홈 오른쪽에서 오른쪽으로. 인원이 5명
+## 미만이면 바깥쪽이 비고 가운데는 언제나 차 있다.
+static func _strip_cell_x(team: int, count: int, idx: int) -> float:
+	var step: float = STRIP_PORTRAIT_W + STRIP_CELL_GAP
+	var centre: float = STRIP_LEFT + STRIP_WIDTH * 0.5
+	if team == 0:
+		return centre - STRIP_MID_GAP * 0.5 \
+				- float(count - 1 - idx) * step - STRIP_PORTRAIT_W * 0.5
+	return centre + STRIP_MID_GAP * 0.5 \
+			+ float(idx) * step + STRIP_PORTRAIT_W * 0.5
 
 
 func _process(delta: float) -> void:
@@ -390,7 +449,9 @@ func _refresh_names() -> void:
 		var p := key as PilotData
 		var lbl := _name_labels[key] as Label
 		var dead: bool = not p.alive
-		lbl.text = "%s%s" % [_bs.pilot_label(p), "  (처치)" if dead else ""]
+		# 칸이 90px 뿐이라 이름만 적는다 — 처치는 초상화가 어두워지고 뒤판이
+		# 붉어지는 것으로 이미 말하고 있다.
+		lbl.text = _bs.pilot_label(p)
 		lbl.modulate = Color(0.62, 0.48, 0.48) if dead else Color.WHITE
 
 
@@ -656,7 +717,7 @@ func draw_hud(c: CanvasItem) -> void:
 
 const ROUND_BAR_W: float = 560.0
 const ROUND_BAR_H: float = 12.0
-const ROUND_BAR_Y: float = 368.0
+const ROUND_BAR_Y: float = 498.0
 ## 라운드 칸 사이 간격.
 const ROUND_PIP_GAP: float = 6.0
 ## 이 개수를 넘으면 칸으로 나누는 대신 연속 바로 그린다 — 칸이 실처럼 가늘어져
@@ -689,7 +750,8 @@ func _draw_round_pips(c: CanvasItem) -> void:
 
 
 # ─── 하단 초상화 스트립 (_roster 에 그린다) ──────────────────────────────────
-# 교전 참가자 전원을 팀별로 한 줄씩. 초상화 아래에 체력 바(+보호막)가 붙는다.
+# 교전 참가자 전원이 **한 줄**에 선다 — 아군 왼쪽 / 적군 오른쪽, 가운데는 VS.
+# 초상화 아래에 체력 바(+보호막)가 붙는다.
 func draw_roster(c: CanvasItem) -> void:
 	if _sim == null:
 		return
@@ -697,7 +759,7 @@ func draw_roster(c: CanvasItem) -> void:
 		var team_units: Array = _sim.units_of(t)
 		for i in team_units.size():
 			_draw_roster_cell(c, team_units[i] as TurnEngageSim.EUnit,
-					_strip_cell_x(team_units.size(), i), STRIP_ROW_Y[t])
+					_strip_cell_x(t, team_units.size(), i), STRIP_TOP)
 
 
 func _draw_roster_cell(c: CanvasItem, u: TurnEngageSim.EUnit, cx: float,
@@ -706,29 +768,30 @@ func _draw_roster_cell(c: CanvasItem, u: TurnEngageSim.EUnit, cx: float,
 	var dead: bool = (u.state == TurnEngageSim.State.DEAD)
 	var alpha: float = 0.35 if dead else 1.0
 	var col: Color = TEAM_COLORS[u.team]
-	var r: float = STRIP_PORTRAIT * 0.5
-	var centre := Vector2(cx, y + r)
+	var rect := Rect2(cx - STRIP_PORTRAIT_W * 0.5, y,
+			STRIP_PORTRAIT_W, STRIP_PORTRAIT_H)
 
-	# 초상 뒤판 — 죽으면 붉게 가라앉는다.
-	c.draw_circle(centre, r + 4.0,
-			Color(0.18, 0.09, 0.09, 0.95) if dead else Color(0.09, 0.11, 0.17, 0.95))
+	# 초상 뒤판 — 죽으면 붉게 가라앉는다. tall 크롭은 인물 주변이 투명이라
+	# 뒤판이 없으면 딤드된 화면이 그대로 비쳐 실루엣이 끊긴다.
+	c.draw_rect(rect,
+			Color(0.18, 0.09, 0.09, 0.95) if dead else Color(0.09, 0.11, 0.17, 0.95),
+			true)
 
-	var portrait: Texture2D = PilotImages.circle_for(p.pilot_id)
+	var portrait: Texture2D = PilotImages.tall_for(p.pilot_id)
 	if portrait != null:
-		c.draw_texture_rect(portrait,
-				Rect2(centre - Vector2(r, r), Vector2(r * 2.0, r * 2.0)),
-				false, Color(1, 1, 1, alpha))
+		c.draw_texture_rect(portrait, rect, false, Color(1, 1, 1, alpha))
 	else:
-		c.draw_circle(centre, r, Color(col.r, col.g, col.b, alpha))
+		c.draw_rect(rect, Color(col.r, col.g, col.b, alpha * 0.5), true)
 
-	# 테두리 — 행동 중이면 금색으로 승격된다(무대에서 나와 있는 그 유닛이다).
-	var rim: Color = ACT_RING_COLOR if (not dead and u.is_acting()) else col
-	c.draw_arc(centre, r + 3.0, 0.0, TAU, 44, Color(rim.r, rim.g, rim.b, alpha),
-			4.0)
+	# 테두리 — 행동 중이면 금색으로 굵어진다(무대에 나와 있는 그 유닛이다).
+	var acting: bool = not dead and u.is_acting()
+	var rim: Color = ACT_RING_COLOR if acting else col
+	c.draw_rect(rect, Color(rim.r, rim.g, rim.b, alpha), false,
+			STRIP_RIM_ACT if acting else STRIP_RIM_IDLE)
 
 	# 체력 바 — 초상화 바로 아래.
 	var bar_x: float = cx - STRIP_HP_W * 0.5
-	var bar_y: float = y + STRIP_PORTRAIT + STRIP_HP_GAP
+	var bar_y: float = y + STRIP_PORTRAIT_H + STRIP_HP_GAP
 	c.draw_rect(Rect2(bar_x, bar_y, STRIP_HP_W, STRIP_HP_H), HP_BAR_BG, true)
 	var ratio: float = u.hp_ratio()
 	var fill_w: float = STRIP_HP_W * ratio

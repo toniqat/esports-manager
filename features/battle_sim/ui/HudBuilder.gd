@@ -638,5 +638,8 @@ func _update_pilot_strips(in_card_phase: bool) -> void:
 			BattleSim.fmt_score(_bs.team_score(1))]
 	if _bs.pilot_detail != null:
 		_bs.pilot_detail.close_if_phase_left()
+		# 닫히지 않고 살아남았다면 스탯을 지금 값으로 다시 세운다 — 카드가
+		# 건 라인전 스탯 / 성장 획득 배율이 그 자리에서 읽혀야 한다.
+		_bs.pilot_detail.refresh()
 
 

@@ -295,7 +295,7 @@ same vertical band the 확인/취소 row occupies on the far side of the screen.
 │    뒤: +ART_BACK_SHIFT_PX(400) 오른쪽, ×ART_BACK_SCALE(0.90), ART_BACK_TINT 로 딤드
 │    둘 다 아래끝이 ART_BOTTOM(2010) — 화면(1920)보다 아래라 **하단이 잘린다**
 ├─ 우: 스탯   STAT_X 600, STAT_W 452, STAT_TOP 640 (받침 Panel 이 내용 높이에 맞춰 자람)
-│    앞이 파일럿이면 — 인게임(체력 / 공격력 / 성장 / 명중·회피 / 보호막 / 라인)
+│    앞이 파일럿이면 — 인게임(체력 / 공격력 / 성장 / 명중·회피 / [일시 효과] / 라인)
 │                    + 파일럿(라인전 · 메카닉 · 게임센스 · 한타 · 멘탈)
 │    앞이 메크면   — 메크(기체명 / 체력 / 공격력 / 존재감)
 └─ 하: [전환] [닫기]  y 1424 — 전환은 정보 블록의 **왼쪽 아래**
@@ -332,6 +332,33 @@ same vertical band the 확인/취소 row occupies on the far side of the screen.
   얹으면 일러스트 위에서 읽히지 않는다.
 - **버튼 행의 y 는 고정이다.** 받침 높이를 따라가게 두면 메크 쪽 스탯이 훨씬
   짧아 전환/닫기가 위아래로 튄다.
+- **보호막은 별도 행이 아니라 체력 뒤에 `(+N)` 으로 붙는다** — `120 (+30) / 200`.
+  보호막은 그 자체로 읽는 숫자가 아니라 "지금 몇 대 더 버티는가"이고, 그 답은
+  체력과 나란히 놓여야 나온다. 0 이면 괄호를 아예 안 적는다(빈 괄호는 노이즈다).
+  예전의 `보호막` 행은 그래서 **삭제됐다** — 같은 정보를 두 번 두지 않는다.
+- **명중 / 회피는 라인전 스탯이 먹은 값으로 적는다.** 안전한 파밍 / 공격적인
+  라인전이 미는 것은 `PilotData.hit` / `evasion` 필드가 아니라 **판정 시점의
+  배율**(`lane_stat_mod`)이라, 원본 필드를 그대로 찍으면 카드를 내도 이 줄이
+  1 도 움직이지 않는다 — 화면에 "반영되지 않는" 것으로 보이는 원인이었다.
+  판정과 **같은 함수**(`SimulationCore.lane_adjusted`)를 통과시켜 화면의 숫자와
+  실제로 굴러가는 숫자를 하나로 묶고, 배율이 걸려 있을 때만 뒤에
+  `(기본 50 / 50)` 을 덧붙인다.
+- **카드가 건 일시 효과는 걸려 있을 때만 줄이 생긴다** — `라인전 스탯`
+  (`lane_stat_mod`, `-10%  (7턴)`)과 `성장 획득`(`growth_rate_mult`,
+  `+10%  (7턴)` / 완벽한 마무리는 `(작전 단계까지)`). 남은 수명은
+  `_remain_txt(expire_turn, until_phase)` 한 곳이 만든다. 늘 `없음` 이라고
+  적어 두면 정작 걸렸을 때 눈에 띄지 않으므로 **없으면 줄도 없다** — 받침
+  `Panel` 이 내용 높이에 맞춰 자라므로 줄 수가 변해도 레이아웃이 깨지지 않는다.
+- **`성장` 행은 공격력과 최대 체력을 함께 적는다**(`공 +46% · 체 +11%`). 둘은
+  4배 차이로 **다르게** 자라므로(`GROWTH_ATK_PER_SCORE` vs `GROWTH_HP_PER_SCORE`)
+  한쪽만 적으면 다른 쪽이 안 자란 것처럼 읽힌다. 이 행은 성장치에서 파생된
+  값이고, 카드가 미는 `성장 획득` 배율과는 **다른 것**이다 — 이름이 비슷해
+  헷갈리기 쉬운 자리라 둘을 나란히 둔다.
+- **`refresh()` 가 열려 있는 패널의 스탯을 지금 값으로 다시 세운다**
+  (`update_hud` 마다, `close_if_phase_left` 바로 뒤). 패널은 모달이라 열려 있는
+  사이에 카드가 나가지는 않지만, 값이 바뀌는 자리는 전부 `update_hud` 를
+  지나므로 이 한 줄이 "화면의 숫자는 언제나 지금 값"을 보장한다. 아트와 앞뒤
+  자세는 건드리지 않는다 — 전환 트윈이 끊긴다.
 - **값 라벨에는 `clip_text = true` 가 필수다.** 오른쪽 정렬 `Label` 은 글자가
   rect 보다 넓으면 정렬을 포기하고 rect 왼쪽부터 그려서 **오른쪽으로 넘쳐 화면을
   벗어난다**(실측: "아웃게임 데이터 없음" 이 화면 밖에서 잘렸다).
@@ -415,8 +442,9 @@ peek 카드 아래 끝(y 217)에서 `DONUT_AI_HAND_GAP` 만큼 띄운 자리가 
   on `game_phase == CARD_PHASE` and `card_phase.can_end_card_phase()`.
 - Calls `_update_pilot_strips(in_card_phase)` — sorts a **copy** of `_bs.pilots`
   by team and lane, pushes each five into its `PilotStrip`, gates **both** strips'
-  hit buttons on 작전 단계, refreshes the team-score label, and lets
-  `PilotDetailPanel.close_if_phase_left()` close the modal if the phase moved on.
+  hit buttons on 작전 단계, refreshes the team-score label, then lets
+  `PilotDetailPanel.close_if_phase_left()` close the modal if the phase moved on
+  and `PilotDetailPanel.refresh()` re-seat the stat rows of one that survived.
 - Calls `update_time_label()` (also called every frame from `_process`).
 
 ### update_time_label() (per-frame)

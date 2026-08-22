@@ -165,6 +165,16 @@ func close_if_phase_left() -> void:
 		close()
 
 
+## 열려 있는 동안 스탯을 현재 값으로 다시 세운다. `HudBuilder.update_hud` 가
+## 매 갱신마다 부른다 — 패널은 모달이라 열려 있는 사이에 카드가 나가지는
+## 않지만, 값이 바뀌는 자리(카드 효과 · 만료 · 성장 재계산)는 전부 update_hud
+## 를 지나므로 이 한 줄이 "화면의 숫자는 언제나 지금 값"을 보장한다.
+## 아트와 앞뒤 자세는 건드리지 않는다(전환 트윈이 끊긴다).
+func refresh() -> void:
+	if is_active():
+		_rebuild_stats()
+
+
 # ─── UI ──────────────────────────────────────────────────────────────────────
 func _build() -> void:
 	_root = Control.new()
@@ -391,11 +401,39 @@ func _build_pilot_stats(start_y: float, pd: PlayerData) -> float:
 	var y: float = start_y
 	# ─ 인게임 전투 스탯 — 지금 이 전장에서의 상태.
 	y = _section(y, "인게임")
-	y = _row(y, "체력", "%d / %d" % [_pilot.hp, _pilot.max_hp])
+	# 보호막은 별도 행이 아니라 **체력 뒤에 (+N)** 으로 붙는다 — 보호막은 그
+	# 자체로 읽는 숫자가 아니라 "지금 몇 대 더 버티는가"이고, 그 답은 체력과
+	# 나란히 놓여야 나온다. 0 이면 아예 안 적는다(빈 괄호는 노이즈다).
+	var hp_txt: String = "%d" % _pilot.hp
+	if _pilot.shield > 0:
+		hp_txt += " (+%d)" % _pilot.shield
+	y = _row(y, "체력", "%s / %d" % [hp_txt, _pilot.max_hp])
 	y = _row(y, "공격력", "%d  (기본 %d)" % [_pilot.atk, _pilot.base_atk])
-	y = _row(y, "성장", "+%.0f%%" % (_pilot.growth * 100.0))
-	y = _row(y, "명중 / 회피", "%d / %d" % [_pilot.hit, _pilot.evasion])
-	y = _row(y, "보호막", str(_pilot.shield))
+	# 성장은 공격력과 최대 체력이 **다른 속도**로 자란다(공격력이 4배 빠르다).
+	# 한쪽만 적으면 다른 쪽이 안 자란 것처럼 읽히므로 둘을 한 줄에 적는다.
+	y = _row(y, "성장", "공 +%.0f%% · 체 +%.0f%%" % [
+		_pilot.growth * 100.0, _pilot.growth_hp * 100.0])
+	# **명중 / 회피는 라인전 스탯이 먹은 값으로 적는다.** 카드(안전한 파밍 /
+	# 공격적인 라인전)가 미는 것은 `hit` / `evasion` 필드가 아니라 판정 시점의
+	# 배율(`PilotData.lane_stat_mod`)이라, 원본 필드를 그대로 찍으면 카드를 내도
+	# 이 줄이 1 도 움직이지 않는다 — 판정과 같은 함수(`SimulationCore.lane_adjusted`)
+	# 를 통과시켜야 화면의 숫자가 실제로 굴러가는 숫자와 같아진다.
+	var eff_hit: int = _bs.sim_core.lane_adjusted(_pilot.hit, _pilot)
+	var eff_eva: int = _bs.sim_core.lane_adjusted(_pilot.evasion, _pilot)
+	var hitrow: String = "%d / %d" % [eff_hit, eff_eva]
+	if not is_zero_approx(_pilot.lane_stat_mod):
+		hitrow += "  (기본 %d / %d)" % [_pilot.hit, _pilot.evasion]
+	y = _row(y, "명중 / 회피", hitrow)
+	# ─ 카드가 걸어 둔 일시 효과. **걸려 있을 때만** 줄이 생긴다 — 늘 `없음`
+	# 이라고 적혀 있으면 정작 걸렸을 때 눈에 띄지 않는다.
+	if not is_zero_approx(_pilot.lane_stat_mod):
+		y = _row(y, "라인전 스탯", "%+d%%%s" % [
+			roundi(_pilot.lane_stat_mod * 100.0),
+			_remain_txt(_pilot.lane_stat_expire_turn, false)])
+	if not is_equal_approx(_pilot.growth_rate_mult, 1.0):
+		y = _row(y, "성장 획득", "%+d%%%s" % [
+			roundi((_pilot.growth_rate_mult - 1.0) * 100.0),
+			_remain_txt(_pilot.growth_rate_expire_turn, _pilot.growth_until_phase)])
 	y = _row(y, "라인 / 위치", "%s%s" % [
 		_bs.LANE_NAMES[_pilot.lane] if _pilot.lane < _bs.LANE_NAMES.size() else "?",
 		"  (정글)" if _pilot.is_guerrilla else ""])
@@ -414,6 +452,17 @@ func _build_pilot_stats(start_y: float, pd: PlayerData) -> float:
 	else:
 		y = _row(y, "—", "데이터 없음")
 	return y
+
+
+## 일시 효과의 남은 수명을 괄호 한 덩이로. 턴 만료형(안전한 파밍 / 공격적인
+## 라인전)은 남은 턴 수, 단계 만료형(완벽한 마무리)은 "작전 단계까지". 둘 다
+## 아니면 빈 문자열이라 값 뒤에 아무것도 붙지 않는다.
+func _remain_txt(expire_turn: int, until_phase: bool) -> String:
+	if until_phase:
+		return "  (작전 단계까지)"
+	if expire_turn < 0:
+		return ""
+	return "  (%d턴)" % maxi(0, expire_turn - _bs.turn_count)
 
 
 # 배정된 기체. speed 스탯은 삭제됐다(교전이 턴제가 되면서).

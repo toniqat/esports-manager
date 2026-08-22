@@ -593,6 +593,25 @@ func update_time_label() -> void:
 	_lbl_time.text = "%02d:%02d" % [mm, ss]
 
 
+## 스트립의 자리 순서 — **전장에서 왼쪽부터 오른쪽으로 늘어놓은 순서**다:
+## 좌측 레인 → 정글 → 중앙 레인 → 우측 레인 ×2. `LanePosition` 의 열거값 순서
+## (LEFT · CENTER · RIGHT · GUERRILLA)를 그대로 쓰면 정글러가 다섯 번째 칸,
+## 즉 우측 라이너 **뒤**에 앉는데, 정글은 전장에서 좌우 레인 사이에 있으므로
+## 그 자리는 지도 어디와도 대응하지 않는다. 이 표 하나가 그 대응을 만든다.
+const LANE_SEAT_ORDER: Array = [0, 2, 3, 1]   # LEFT, CENTER, RIGHT, GUERRILLA
+
+
+static func _lane_seat_rank(p: PilotData) -> int:
+	var lane: int = p.lane
+	if lane < 0 or lane >= LANE_SEAT_ORDER.size():
+		return LANE_SEAT_ORDER.size()
+	return int(LANE_SEAT_ORDER[lane])
+
+
+static func _lane_seat_less(a: PilotData, b: PilotData) -> bool:
+	return _lane_seat_rank(a) < _lane_seat_rank(b)
+
+
 # 두 스트립 + 팀 합산 점수 갱신, 그리고 상세 패널의 단계 게이트.
 #
 # `_bs.pilots` 는 스폰 순서(= 역할 순서)를 그대로 유지해야 한다
@@ -605,9 +624,8 @@ func _update_pilot_strips(in_card_phase: bool) -> void:
 	for p in _bs.pilots:
 		var pd := p as PilotData
 		(team0 if pd.team == 0 else team1).append(pd)
-	# Sort by LanePosition (LEFT=0, CENTER=1, RIGHT=2, GUERRILLA=3).
-	team0.sort_custom(func(a: PilotData, b: PilotData) -> bool: return a.lane < b.lane)
-	team1.sort_custom(func(a: PilotData, b: PilotData) -> bool: return a.lane < b.lane)
+	team0.sort_custom(_lane_seat_less)
+	team1.sort_custom(_lane_seat_less)
 	if _player_strip != null:
 		_player_strip.set_pilots(team0)
 		_player_strip.set_interactive_enabled(in_card_phase)

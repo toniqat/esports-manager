@@ -267,8 +267,11 @@ same vertical band the 확인/취소 row occupies on the far side of the screen.
   길어지는 것과 같은 성장을 숫자 쪽에서 읽는 것이다. 적립 규칙은 `BattleSim` 의
   `SCORE_*` 절 참고.
 
-칸은 `LanePosition`(LEFT → CENTER → RIGHT → GUERRILLA) 순으로 정렬된다.
-정렬은 **`_bs.pilots` 의 사본에** 한다 — 원본은 스폰 순서(= 역할 순서)를
+칸 순서는 **전장을 왼쪽부터 오른쪽으로 훑은 순서**다 — **좌측 → 정글 → 중앙 →
+우측 ×2**(`HudBuilder.LANE_SEAT_ORDER`). `LanePosition` 의 열거값 순서
+(LEFT · CENTER · RIGHT · GUERRILLA)를 그대로 쓰면 정글러가 우측 라이너 **뒤**
+다섯 번째 칸에 앉는데, 정글은 지도에서 좌우 레인 **사이**라 그 자리는 전장
+어디와도 대응하지 않는다. 정렬은 **`_bs.pilots` 의 사본에** 한다 — 원본은 스폰 순서(= 역할 순서)를
 유지해야 `BattleSim.player_data_for` 가 그 인덱스로 로스터를 찾을 수 있다.
 
 **하단 스트립의 y(1766)는 카드 밑단에서 계산해 나온 값이다.** 부채꼴의 양 끝

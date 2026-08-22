@@ -287,6 +287,12 @@ var cost_donut_enemy: CostDonut = null
 var pile_deck:    CardPileStack = null
 var pile_discard: CardPileStack = null
 
+# 킬로그 — 화면 우측 상단(적 스트립 아래)에 처치 / 포탑 철거를 한 줄씩 쌓는다.
+# `HudBuilder._build_kill_feed` 가 만들고, 적립은 `mark_pilot_dead` 와
+# `score_turret_kill` 두 곳에서만 들어온다. 교전 중에 난 처치는 아레나가 닫힐
+# 때까지 피드 안에 밀려 있다가 한 줄씩 풀린다 — `ui/KillFeed.gd` 참고.
+var kill_feed: KillFeed = null
+
 # ─── Module refs ─────────────────────────────────────────────────────────────
 @onready var gm: Node                       = get_node("/root/GameManager")
 @onready var _data_loader: Node              = $DataLoader
@@ -610,8 +616,35 @@ func mark_pilot_dead(p: PilotData, killer: PilotData = null) -> void:
 	p.respawn_timer = respawn_turns_now()
 	p.atk_buff      = 0   # 카드가 걸어 둔 일시 공격력은 죽으면 사라진다
 	anim_pilot_death(p)
+	# **`_payout_kill_bounty` 보다 먼저** — 어시스트 명단이 `damage_credit`
+	# 에서 나오는데 그 정산이 장부를 비운다.
+	_push_kill_feed(p, killer)
 	_award_kill_bounty(p.team)
 	_payout_kill_bounty(p, killer)
+
+
+## 킬로그 한 줄. 막타(`killer`)를 앞에 세우고, 같은 대상에게 피해를 넣은 나머지를
+## **피해가 큰 순**으로 어시스트에 붙인다 — 성장치 어시스트 배분과 같은 표를
+## 읽으므로 화면에 뜬 얼굴과 점수를 받은 얼굴이 어긋나지 않는다.
+##
+## `killer` 가 null 로 들어오는 경로가 있다(라스트힛을 적어 두는
+## `SimulationCore._last_hitter` 는 매 턴 비워진다). 그때는 가장 많이 때린
+## 사람을 막타 자리에 세운다 — 빈 칸을 두는 것보다 낫다.
+func _push_kill_feed(victim: PilotData, killer: PilotData) -> void:
+	if kill_feed == null:
+		return
+	var contributors: Array = victim.damage_credit.keys()
+	contributors.sort_custom(func(a: PilotData, b: PilotData) -> bool:
+		return float(victim.damage_credit[a]) > float(victim.damage_credit[b]))
+	var last_hit: PilotData = killer
+	if last_hit == null and not contributors.is_empty():
+		last_hit = contributors[0] as PilotData
+	var assists: Array = []
+	for raw in contributors:
+		var a := raw as PilotData
+		if a != last_hit:
+			assists.append(a)
+	kill_feed.push_kill(last_hit, victim, assists)
 
 
 ## 계획 살인의 지급 지점. 전장에는 제3세력이 없으므로 "누가 죽였는가"를 따로
@@ -822,6 +855,9 @@ func _payout_kill_bounty(victim: PilotData, killer: PilotData) -> void:
 ## 마지막 한 대를 넣은 파일럿에게만 간다(어시스트 개념이 없다).
 func score_turret_kill(attacker: PilotData, td: TurretData = null) -> void:
 	add_score(attacker, SCORE_TURRET_KILL)
+	if kill_feed != null:
+		kill_feed.push_turret(attacker, td)
+
 
 
 ## 팀 합산 성장치. 상단 중앙 점수표가 읽는다 — 죽어 있는 파일럿도 포함한다

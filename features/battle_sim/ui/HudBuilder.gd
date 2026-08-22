@@ -119,6 +119,7 @@ func build_ui() -> void:
 	_build_ai_hand_peek()
 	_build_top_panel()
 	_build_player_strip()
+	_build_kill_feed()
 	_build_hand_indicators()
 	_build_cost_donuts()
 	_build_victory_panel()
@@ -273,6 +274,16 @@ func _build_player_strip() -> void:
 	_player_strip.setup(_bs, 0, PLAYER_STRIP_RECT, true,
 			PLAYER_SCORE_FONT, PLAYER_HP_H)
 	_player_strip.pilot_pressed.connect(_on_pilot_strip_pressed)
+
+
+# ── 킬로그 ───────────────────────────────────────────────────────────────────
+# 적 스트립 바로 아래, 화면 우측. **상단 패널보다 뒤에 붙는다** — 형제 z-order 가
+# 곧 자식 인덱스라, peek 카드 위에 그려져야 줄이 카드에 잘리지 않는다.
+func _build_kill_feed() -> void:
+	_bs.kill_feed = KillFeed.new()
+	_bs.kill_feed.name = "KillFeed"
+	_bs.canvas.add_child(_bs.kill_feed)
+	_bs.kill_feed.setup(_bs)
 
 
 func _on_pilot_strip_pressed(p: PilotData) -> void:

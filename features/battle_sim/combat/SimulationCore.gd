@@ -140,7 +140,7 @@ func simulate_turn() -> void:
 			_bs.blog.log_event("TURRET", "T%d[%s] team%d DESTROYED @%s" % [
 					td.tier, _bs.LANE_NAMES[td.lane], td.team, str(td.grid_pos)])
 			if was_alive:
-				_bs.score_turret_kill(_last_turret_hitter.get(td, null) as PilotData)
+				_bs.score_turret_kill(_last_turret_hitter.get(td, null) as PilotData, td)
 				var b: Building = _bs.building_registry.get_at(td.grid_pos)
 				if b != null:
 					_bs.building_registry.unregister(b)
@@ -1286,7 +1286,7 @@ func _apply_card_damage(damage_map: Dictionary, turret_dmg: Dictionary,
 			td.hp = 0; td.alive = false
 			log_lines.append("T%d %s turret destroyed!" % [td.tier, _bs.LANE_NAMES[td.lane]])
 			if was_alive:
-				_bs.score_turret_kill(_last_turret_hitter.get(td, null) as PilotData)
+				_bs.score_turret_kill(_last_turret_hitter.get(td, null) as PilotData, td)
 				var b: Building = _bs.building_registry.get_at(td.grid_pos)
 				if b != null:
 					_bs.building_registry.unregister(b)

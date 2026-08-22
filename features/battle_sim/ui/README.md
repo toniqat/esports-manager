@@ -7,6 +7,7 @@
 | `CardPileStack.gd` | CardPileStack | 덱 / 버린 더미 — 앞으로 누운 카드 뭉치 + 장수 |
 | `PilotStrip.gd` | PilotStrip | 파일럿 5인 스트립 — 눈높이 초상화 + 체력 바 + 성장치. 상단(적) / 하단(아군) 두 벌, **양쪽 다 누르면 상세가 열린다** |
 | `PilotDetailPanel.gd` | PilotDetailPanel | 파일럿 상세 모달 — 좌 전신 아트 2장(파일럿 ↔ 메크 전환) / 우 스탯 |
+| `KillFeed.gd` | KillFeed | 킬로그 — 우측 상단에 처치 / 포탑 철거를 한 줄씩. 교전 중 처치는 아레나가 닫힌 뒤 몰아서 |
 
 ## HudBuilder.gd
 `extends Node` — child of BattleSim.
@@ -355,6 +356,44 @@ same vertical band the 확인/취소 row occupies on the far side of the screen.
   (`BattleSim.team_score`). 5명 × 1.00k 로 시작하므로 개시값은 `5.00k - 5.00k`.
   죽어 있는 파일럿의 점수도 합산에 들어간다(점수는 전장에 서 있는지와 무관한
   누적 기록이다).
+
+### 킬로그 (`KillFeed.gd`)
+화면 **우측 상단**(적 스트립 밑단에서 8px 아래, y 176)에 처치와 포탑 철거를 한
+줄씩 쌓는다. 전장은 0.5초마다 저 혼자 흐르고 교전은 오버레이가 화면을 덮으므로,
+**무슨 일이 일어났는지가 지나가고 나면 남는 곳이 없었다** — 팀 점수가 조금
+벌어진 것 말고는.
+
+한 줄은 왼쪽부터 `[막타][어시][어시][아이콘][피해자]` 이고, 모든 줄은
+`feed_width()` 안에서 **오른쪽 정렬**된다 — 어시스트가 몇이든 피해자 칸이 언제나
+같은 x 에 온다.
+
+| 칸 | 폭 | 내용 |
+|---|---|---|
+| 막타 | `PORTRAIT_W` 96 | 가로로 긴 eye 컷. 이 줄의 주인 |
+| 어시스트 ×0..4 | `ASSIST_W` 32 (= 1/3) | 높이는 같고 폭만 1/3 |
+| 아이콘 | `ICON_W` 32 | 처치 = 교차한 칼, 포탑 철거 = 파열 |
+| 피해자 | 96 | 파일럿이면 eye 컷, 포탑이면 실루엣 + `T1 좌` |
+
+- **적립처는 두 곳뿐이다** — `BattleSim.mark_pilot_dead`(→ `_push_kill_feed`)와
+  `BattleSim.score_turret_kill`. 전자는 **`_payout_kill_bounty` 보다 먼저**
+  불려야 한다: 어시스트 명단이 `PilotData.damage_credit` 에서 나오는데 그 정산이
+  장부를 비운다. 그래서 화면에 뜬 얼굴과 성장치를 받은 얼굴이 같은 표에서 나온다.
+- **막타가 null 인 경로가 있다** — `SimulationCore._last_hitter` 는 매 턴 비워지므로
+  타이밍에 따라 비어 들어온다. 그때는 가장 많이 때린 사람을 막타 자리에 세운다.
+- **교전 중 처치는 보류된다** — `_submit` 이 `EngagePhaseManager.is_active()` 를
+  보고 `_pending` 에 쌓고, 결과 대시보드를 닫는 `_on_dashboard_confirmed` 가
+  `flush_pending()` 을 불러 `FLUSH_STAGGER`(0.25초) 간격으로 풀어놓는다. 아레나가
+  화면을 덮고 있는 동안 띄워 봐야 아무도 못 본다.
+- **줄은 위에서 밀고 들어온다** — 새 줄이 y 0, 나머지가 한 칸씩 아래로. `HOLD_SEC`
+  4초 뒤 `FADE_SEC` 0.5초에 걸쳐 지워지고, `MAX_ROWS`(4)를 넘긴 가장 오래된 줄은
+  아래로 밀려나며 페이드한다. 밀려난 줄은 `_rows` 가 아니라 **`_fading` 으로
+  옮긴다** — 자리 계산에서는 빠져야 하지만 페이드는 계속 돌아야 한다(실측: `_rows`
+  에서 빼기만 했더니 그 줄이 화면에 영원히 굳었다).
+- **아이콘은 줄의 `_draw` 가 아니라 자식 `Glyph` 노드다.** Control 의 `_draw` 는
+  자식보다 **먼저** 나가므로 줄 배경(반투명)과 포탑 칸 슬래브(불투명) 밑에 깔린다
+  — 실측에서 칼은 흐려지고 포탑 실루엣은 아예 보이지 않았다.
+- 4줄이면 아래끝이 y 354 로 **전장 픽셀 상단(369) 바로 위**에서 멈춘다.
+  `MAX_ROWS` / `ROW_STEP` 을 키우면 전장을 덮는다.
 
 ### update_hud() (per-turn)
 - Calls `_update_cost_donuts(in_card_phase)` — pushes both sides' 작전 점수

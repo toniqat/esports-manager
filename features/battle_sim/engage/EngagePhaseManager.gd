@@ -344,6 +344,10 @@ func _on_dashboard_confirmed() -> void:
 		_on_done = Callable()
 	_bs.renderer.queue_redraw()
 	_bs.hud.update_hud()
+	# 교전 중에 난 처치는 아레나가 화면을 덮고 있어 킬로그가 보류해 두었다.
+	# 무대가 치워진 지금 한 줄씩 이어서 풀어놓는다.
+	if _bs.kill_feed != null:
+		_bs.kill_feed.flush_pending()
 	engage_finished.emit()
 
 

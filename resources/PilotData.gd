@@ -24,14 +24,11 @@ var recall_hold: bool     = false
 var lane: int             = GameEnums.LanePosition.GUERRILLA
 var is_guerrilla: bool    = false
 var waypoint_idx: int     = 0
-# 직전에 서 있던 셀. **정글러 초상화의 방향**이 여기서 나온다 — 정글에는 레인
-# 경로가 없고 로밍 목적지는 수시로 바뀌므로, 지나온 자취가 "이 사람이 어디로
-# 가는 중인가"의 유일한 안정적 신호다(BattleRenderer 는 온 방향의 **반대쪽**에
-# 초상화를 앉힌다). `BattleSim.anim_pilot_move` 가 모든 실제 이동에서 갱신하고,
-# 본진 복귀 / 부활은 자기 자신으로 되돌린다 — 순간이동에는 '온 방향'이 없다.
-# 위의 `anim_prev_grid_pos` 와 다른 것이다: 저쪽은 이동 트윈 전용이라 복귀·부활
-# 이후에도 죽기 전 값이 남아 있고, 연출이 끝나도 지워지지 않는다.
-var prev_grid_pos: Vector2i = Vector2i.ZERO
+# **`prev_grid_pos` 는 삭제됐다.** 전장 초상화가 "지나온 쪽"에 앉던 시절
+# (BattleRenderer 의 이동 방향 배치)의 유일한 소비자였고, 초상화 자리가 팀 고정
+# (아래 진영 = 아래 / 위 진영 = 위)으로 바뀌면서 아무도 읽지 않게 됐다. 아래의
+# `anim_move_path` 와 헷갈리지 말 것 — 저쪽은 연출용 경로이고 렌더러가 소비하며
+# 비운다.
 var move_range: int       = 1                # cells advanced per minute
 var jungle_start_pref: int = -1              # GameEnums.JungleStartDir or -1 (none)
 # Sticky roam destination for junglers, (-1,-1) = none yet. Held across turns by
@@ -167,7 +164,6 @@ func _init(p_role: int, p_team: int, p_pos: Vector2i, stats: Dictionary) -> void
 	role     = p_role
 	team     = p_team
 	grid_pos = p_pos
-	prev_grid_pos = p_pos
 	hp       = stats["hp"]
 	max_hp   = stats["hp"]
 	atk      = stats["atk"]

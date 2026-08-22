@@ -129,13 +129,21 @@ MOBA 의 골드에 해당한다(개시 1.00k → 50턴 25k → 캐리 40k+). 적
 `roll_hit` 을 쓰므로 둘 다 반영되고, 교전 무대는 자기 확률 구간을 쓰므로
 반영되지 않는다.
 
-`prev_grid_pos: Vector2i` 는 **직전에 서 있던 셀**이고, 유일한 소비자는
-`BattleRenderer._pilot_travel_dir` — 정글러 초상화를 "온 방향의 반대쪽"에
-앉히기 위한 것이다(레인 파일럿은 레인 경로에서 방향을 뽑으므로 읽지 않는다).
-`BattleSim.anim_pilot_move` 가 모든 실제 이동에서 갱신하고, 본진 복귀 / 부활은
-자기 자신으로 되돌린다 — 순간이동에는 '온 방향'이 없기 때문. **`anim_prev_grid_pos`
-와 다른 것이다**: 저쪽은 이동 트윈 전용이라 복귀 연출 중에는 갱신을 건너뛰고,
-복귀·부활 뒤에도 죽기 전 값이 남는다.
+**`prev_grid_pos: Vector2i` 는 삭제됐다.** 유일한 소비자가
+`BattleRenderer._pilot_travel_dir`(초상화를 "온 방향의 반대쪽"에 앉히던 규칙)
+였는데, 초상화 자리가 **팀 고정**(아래 진영 = 타일 아래 / 위 진영 = 타일 위)으로
+바뀌면서 아무도 읽지 않게 됐다. 갱신 배선(`anim_pilot_move` /
+`anim_pilot_move_path` / 복귀 / 부활 4곳)도 함께 걷어 냈다 — 되살릴 일이 생기면
+커밋 64bec06 을 볼 것. 아래 `anim_move_path` 와 헷갈리지 말 것: 저쪽은 연출용
+경로이고 렌더러가 읽는 즉시 비운다.
+
+`anim_move_path: Array[Vector2i]` 는 **이번에 실제로 밟은 칸의 경로**
+(`[출발 칸, …, 도착 칸]`)다. `SimulationCore.resolve_movement` 이 락스텝
+라운드마다 칸을 붙이고(`move_range` 2), 전진 카드는 같은 프레임의 걸음을
+`BattleSim.anim_pilot_move` 가 이어 붙인다. `BattleRenderer._sync_glide` 가
+읽는 즉시 `clear()` 하므로, 다음 턴 이동은 빈 배열에서 새 경로로 시작한다.
+**연출 시간은 여기 없다** — 타이머는 렌더러(`_glide`)가 쥐고 있고, 예전의
+`anim_prev_grid_pos` / `anim_move_t` / `anim_move_dur` 는 삭제됐다.
 
 `jungle_roam_target: Vector2i` ((-1,-1) = none) is the jungler's sticky roam
 destination, held across turns by `SimulationCore._jungle_goal_for` so the

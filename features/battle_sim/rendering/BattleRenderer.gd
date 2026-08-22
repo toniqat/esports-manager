@@ -362,9 +362,9 @@ func _lunging_cells_last(cells: Array) -> Array:
 # HQ layout until the fade-in phase starts.
 #
 # **두 팀이 한 배열에 담긴다.** 초상화가 앉는 6슬롯은 셀 하나가 팀 구분 없이
-# 공유하기 때문이다 — 예전에는 "적은 타일 위 / 아군은 타일 아래" 라 팀마다 따로
-# 풀어도 서로 부딪힐 일이 없었지만, 지금은 방향이 **각자의 이동 방향**에서 나오
-# 므로 같은 칸의 두 팀이 같은 슬롯을 노릴 수 있다.
+# 공유하기 때문이다 — 기본 방향은 팀마다 반대쪽(팀0 S / 팀1 N)이라 출발점은
+# 부딪히지 않지만, 겹침을 피해 **시계방향으로 도는 순간** 한 팀의 블록이 다른
+# 팀의 슬롯 위로 넘어갈 수 있다. 한 표에서 같이 풀어야 그 자리를 서로 안다.
 #
 # 배열 순서는 `_bs.pilots` 순서(= 스폰 순서)다. 슬롯 배정이 순서에 의존하는
 # 그리디라, 여기가 프레임마다 흔들리면 배치가 통째로 떨린다.
@@ -398,8 +398,13 @@ func _build_pilot_render_layout() -> Dictionary:
 # PilotData → {"cell": Vector2i, "slot": int}. 모든 렌더 가능한 파일럿이 자기
 # 슬롯을 받는다 — `+N` 오버플로 원은 사라졌고, 7명째부터는 바깥 링으로 나간다.
 #
-# 배정은 **전장 전체를 한 번에 훑는 그리디**다: 앞서 자리를 잡은 마커와 겹치는
-# 슬롯은 건너뛰고 시계방향으로 다음 슬롯을 찾는다. 그래서 위아래로 붙은 두 칸이
+# 배정은 **전장 전체를 한 번에 훑는 그리디**이되, 낱개가 아니라 **블록 단위**다:
+# 같은 칸에서 기본 방향이 같은 파일럿들(= 같은 팀)은 한 덩어리로 묶여 자리표의
+# **연속된 창(window)** 을 통째로 차지하고, 막히면 창째 한 칸 옆으로 미끄러진다
+# (`_pick_block_slots`). 낱개 그리디였을 때는 A·B 가 나란히 선 칸에서 A 의 자리만
+# 막히면 A 가 B 를 뛰어넘어 반대쪽에 앉아, 두 얼굴의 좌우가 뒤바뀌었다.
+#
+# 겹침 판정이 **다른 칸의 마커까지** 본다는 것은 그대로다 — 위아래로 붙은 두 칸이
 # 서로를 향한 슬롯을 고르는 일(= 초상화가 겹치는 유일한 구조적 원인)이 없다.
 func _solve_slots() -> Dictionary:
 	var out: Dictionary = {}
@@ -418,13 +423,163 @@ func _solve_slots() -> Dictionary:
 		var cell := raw_cell as Vector2i
 		var tile_center := _bs.cell_center(cell)
 		var used: Dictionary = {}
-		for raw in by_cell[cell] as Array:
-			var slot: int = _pick_slot(tile_center,
-					pilot_display_dir_index(raw as PilotData), base_r, used, placed)
-			used[slot] = true
-			placed.append(tile_center + _slot_offset(slot, base_r))
-			out[raw] = {"cell": cell, "slot": slot}
+		for raw_block in _slot_blocks(by_cell[cell] as Array):
+			var block: Dictionary = raw_block
+			var members: Array = block["pilots"] as Array
+			var slots: Array = _pick_block_slots(tile_center, int(block["dir"]),
+					_block_seat_bias(members), members.size(), base_r, used, placed)
+			for i in range(members.size()):
+				var slot: int = int(slots[i])
+				used[slot] = true
+				placed.append(tile_center + _slot_offset(slot, base_r))
+				out[members[i]] = {"cell": cell, "slot": slot}
 	return out
+
+
+## 한 칸의 파일럿을 **기본 방향이 같은 블록**으로 묶는다. 블록은 한 덩어리로
+## 자리를 받는 단위다 — 구성원은 자리표 위의 연속된 창에 왼쪽부터 순서대로
+## 앉으므로(`_pick_block_slots`), 창이 어디로 밀려도 좌우 순서가 유지된다.
+##
+## 블록 순서는 **첫 등장 순**(= `_bs.pilots` 스폰 순서)이라 프레임마다 흔들리지
+## 않는다. 기본 방향은 팀이 정하므로(팀0 S / 팀1 N) **한 칸의 블록은 최대 둘**,
+## 곧 팀별로 하나씩이다 — 같은 팀은 언제나 한 덩어리로 나란히 앉는다.
+func _slot_blocks(pilots: Array) -> Array:
+	var order: Array = []
+	var by_dir: Dictionary = {}
+	for raw in pilots:
+		var p := raw as PilotData
+		var d: int = pilot_display_dir_index(p)
+		if not by_dir.has(d):
+			by_dir[d] = []
+			order.append(d)
+		(by_dir[d] as Array).append(p)
+	var out: Array = []
+	for d in order:
+		out.append({"dir": int(d), "pilots": by_dir[d] as Array})
+	return out
+
+
+## 블록 `n` 명이 앉을 슬롯들(**자리표 왼쪽부터** 순서대로). 블록은 자리표
+## (`SEAT_ROW_*`)의 **연속된 `n` 칸 = 창(window)** 을 통째로 차지한다. 그 창이
+## 막혀 있으면 **창을 통째로 한 칸 옆으로 밀어** 다시 본다 — 그래서 나란히 선
+## A·B 는 왼쪽이 막히면 **둘 다 오른쪽으로**, 오른쪽이 막히면 **둘 다 왼쪽으로**
+## 비켜 앉고, 좌우 순서가 뒤집히지 않는다.
+##
+## 창 후보의 순서는 `_seat_windows`(자기 절반을 지키는 창 → 기본 방향에 가까운 창
+## → 왼쪽 창)이고, 한 링의 창이 전부 막히면 **블록째** 바깥 링으로 나간다 — 링
+## 경계에서 갈라져 두 겹에 걸쳐 앉지 않게 하기 위함이다.
+##
+## **예전에는 우선순위 순으로 빈자리를 하나씩 주웠다.** 막힌 자리를 건너뛰기만
+## 하므로 블록이 끊기는 것은 물론, A 의 자리만 막히면 A 가 B 를 뛰어넘어 반대쪽
+## 끝에 앉아 두 얼굴의 좌우가 뒤바뀌었다(그 앞은 각도 기준 시계방향 회전이었고,
+## 그것은 아래 진영을 타일 위로 끌고 갔다 — `SEAT_ROW_DOWN` 주석).
+##
+## 세 링의 창이 다 막히거나 `n` 이 자리표보다 크면 한 명씩 따로 찾기(`_pick_slot`)로
+## 떨어진다 — 나란히 서는 것보다 그려지는 것이 먼저다.
+func _pick_block_slots(tile_center: Vector2, base_dir: int, bias: int, n: int,
+		r: float, used: Dictionary, placed: Array) -> Array:
+	var row: Array = _seat_row(base_dir)
+	if n <= row.size():
+		for ring in range(SLOT_RINGS):
+			for raw_win in _seat_windows(n, bias):
+				var start: int = int(raw_win)
+				var cand: Array = []
+				var ok: bool = true
+				for k in range(n):
+					var slot: int = ring * 6 + int(row[start + k])
+					if used.has(slot) \
+							or _slot_collides(tile_center + _slot_offset(slot, r), r, placed):
+						ok = false
+						break
+					cand.append(slot)
+				if ok:
+					return cand
+	var fallback: Array = []
+	var local_used: Dictionary = used.duplicate()
+	var local_placed: Array = placed.duplicate()
+	for _k in range(n):
+		var slot: int = _pick_slot(tile_center, base_dir, bias, r, local_used, local_placed)
+		local_used[slot] = true
+		local_placed.append(tile_center + _slot_offset(slot, r))
+		fallback.append(slot)
+	return fallback
+
+
+## 이 블록이 자리표에서 **어느 쪽으로 쏠려 앉는가**: 오른쪽 +1 / 왼쪽 -1 / 없음 0.
+##
+## 기본 방향(= 팀)만으로는 좌우가 안 갈린다 — 자리표의 동률은 언제나 왼쪽 창이
+## 가져갔고, 그래서 **모든 블록이 왼쪽으로 쏠렸다**. 우측 레인은 서포터 + 스나이퍼
+## 둘이 한 칸에 서는 일이 잦은데, 그 2인 창이 왼쪽(팀0 이면 `SW S`)에 앉는 바람에
+## 왼쪽 이웃 칸을 지나는 정글러 마커와 부딪혀 블록이 통째로 밀려나곤 했다 —
+## 화면에서는 두 초상화가 이유 없이 돌아 앉는 것으로 보인다.
+##
+## 그래서 **레인이 곧 쏠리는 방향**이다: 우측 레인은 오른쪽(팀0 `S SE` / 팀1
+## `N NE`), 좌측 레인은 왼쪽(`S SW` / `N NW`), 가운데 레인과 정글러는 쏠림 없음.
+## 레인이 서로 다른 파일럿이 한 블록에 섞이면(같은 팀 정글러 + 라이너처럼)
+## 방향을 정할 근거가 없으므로 0 으로 떨어진다.
+##
+## 쏠림은 **동률을 가르는 자리에만** 들어간다(`_compare_seat_windows`) — 자기
+## 절반을 지키는 것도, 기본 방향에서 덜 비켜나는 것도 여전히 먼저다. 그래서
+## 혼자 선 파일럿은 레인과 무관하게 한가운데(팀0 `S`)에 앉고, 그 자리가 막혔을
+## 때 어느 쪽으로 비켜 앉는지만 레인이 정한다.
+func _block_seat_bias(members: Array) -> int:
+	var bias: int = 0
+	for raw in members:
+		var b: int = _lane_seat_bias((raw as PilotData).lane)
+		if b == 0 or (bias != 0 and b != bias):
+			return 0
+		bias = b
+	return bias
+
+
+func _lane_seat_bias(lane: int) -> int:
+	match lane:
+		GameEnums.LanePosition.RIGHT: return 1
+		GameEnums.LanePosition.LEFT:  return -1
+		_:                            return 0
+
+
+## 이 기본 방향(= 팀)의 자리표. 팀0 은 타일 아래를, 팀1 은 타일 위를 지난다.
+func _seat_row(base_dir: int) -> Array:
+	return SEAT_ROW_UP if base_dir == 0 else SEAT_ROW_DOWN
+
+
+## `n` 명짜리 블록이 앉을 **창의 시작 칸** 후보를 좋은 순서대로. 창은 자리표의
+## 연속된 `n` 칸이므로 어느 창을 골라도 구성원의 좌우 순서는 그대로다.
+##
+## 순서를 매기는 기준은 셋이다:
+## 1. **자기 절반(가운데 세 자리)을 벗어난 인원이 적을수록** — 아래 진영이 타일
+##    위에 앉는 것보다 나쁜 것은 없다.
+## 2. **창의 중심이 기본 방향에 가까울수록** — 같은 조건이면 한가운데에서 덜
+##    비켜난 쪽. 이것이 "한 칸씩 미끄러진다"를 만드는 항이다.
+## 3. **블록이 쏠리는 쪽 창일수록**(`bias`) — 우측 레인이면 오른쪽 창, 좌측 레인
+##    이면 왼쪽 창. 쏠림이 없는 블록(가운데 레인 · 정글러)은 예전처럼 왼쪽 창이
+##    남은 동률을 가져간다. 자세한 이유는 `_block_seat_bias`.
+func _seat_windows(n: int, bias: int = 0) -> Array:
+	var scored: Array = []
+	for start in range(0, 7 - n):
+		var off: int = 0
+		for k in range(n):
+			var seat: int = start + k
+			if seat < SEAT_HALF_MIN or seat > SEAT_HALF_MAX:
+				off += 1
+		var center: float = float(start) + float(n - 1) * 0.5
+		scored.append({"start": start, "off": off, "d": absf(center - float(SEAT_BASE))})
+	scored.sort_custom(_compare_seat_windows.bind(bias))
+	var out: Array = []
+	for raw in scored:
+		out.append(int((raw as Dictionary)["start"]))
+	return out
+
+
+func _compare_seat_windows(a: Dictionary, b: Dictionary, bias: int) -> bool:
+	if int(a["off"]) != int(b["off"]):
+		return int(a["off"]) < int(b["off"])
+	if not is_equal_approx(float(a["d"]), float(b["d"])):
+		return float(a["d"]) < float(b["d"])
+	if bias > 0:
+		return int(a["start"]) > int(b["start"])
+	return int(a["start"]) < int(b["start"])
 
 
 # 지금 프레임의 마커 좌표 표. 글라이드가 낸 **중심 + 슬롯 벡터**에 그 칸의 강조
@@ -681,7 +836,7 @@ func _draw_turret_hp_bar(td: TurretData) -> void:
 const PILOT_RADIUS_BASE := 31.5
 
 ## 초상화가 앉을 수 있는 6방향 — 육각 이웃과 정확히 같은 방향이고, 배열 순서가
-## **시계방향**(화면 기준 y 아래)이다. 슬롯이 막히면 이 배열의 다음 칸으로 돈다.
+## **시계방향**(화면 기준 y 아래)이다.
 ## 인덱스: 0=N 1=NE 2=SE 3=S 4=SW 5=NW.
 const HEX_DIRS: Array[Vector2] = [
 	Vector2( 0.0,       -1.0),   # N
@@ -691,6 +846,33 @@ const HEX_DIRS: Array[Vector2] = [
 	Vector2(-0.8660254,  0.5),   # SW
 	Vector2(-0.8660254, -0.5),   # NW
 ]
+
+## 한 링의 여섯 자리를 **왼쪽에서 오른쪽으로** 늘어놓은 자리표(HEX_DIRS 인덱스).
+## 가운데 세 자리(인덱스 1·2·3)가 그 팀의 **절반**이고, 한가운데(`SEAT_BASE` = 2)가
+## 기본 방향이다. 팀0 은 타일 **아래**를, 팀1 은 타일 **위**를 지나며 왼쪽에서
+## 오른쪽으로 훑는 순서다:
+##
+##     팀0(아래 진영)   NW   SW  [S]  SE   NE   N
+##     팀1(위 진영)     SW   NW  [N]  NE   SE   S
+##
+## 두 표 모두 육각 링을 한 방향으로 감은 것이라(팀0 은 반시계, 팀1 은 시계),
+## **자리표에서 연속인 칸은 링에서도 연속인 자리**다 — 블록이 창(window) 하나로
+## 앉으면 화면에서도 끊김 없이 나란히 선다.
+##
+## 링을 좌우가 아니라 **각도**로 도는 방식(기본 방향에서 시계방향 회전, 또는
+## 좌우 번갈아 벌리기)은 전부 삭제됐다. 그 순서로는 자리가 하나 막혔을 때 블록의
+## 한 명만 반대편으로 건너뛰어, 비켜 앉은 것이 아니라 **자리를 맞바꾼 것**으로
+## 읽혔다 — 지금은 블록이 통째로 한 칸 미끄러진다(`_pick_block_slots`).
+const SEAT_ROW_DOWN: Array[int] = [5, 4, 3, 2, 1, 0]   # 팀0: NW SW [S] SE NE N
+const SEAT_ROW_UP:   Array[int] = [4, 5, 0, 1, 2, 3]   # 팀1: SW NW [N] NE SE S
+
+## 자리표에서 기본 방향이 앉는 칸. 좌우 각 2칸이 여기서 뻗어 나간다.
+const SEAT_BASE := 2
+
+## 자리표에서 **자기 절반**인 구간(둘 다 포함). 이 밖은 위/아래가 뒤집히는 자리라
+## 창을 고를 때 감점된다.
+const SEAT_HALF_MIN := 1
+const SEAT_HALF_MAX := 3
 
 ## 초상화 사이에 남기는 최소 여백(px). 링 반지름과 충돌 판정이 같은 값에서
 ## 나오므로 둘이 어긋날 수 없다.
@@ -726,19 +908,25 @@ func _slot_offset(slot: int, r: float) -> Vector2:
 	return HEX_DIRS[slot % 6] * _ring_radius(ring, r)
 
 
-## 이 파일럿이 앉을 슬롯. **기본 방향에서 시계방향으로** 돌며 (1) 같은 칸에서
-## 아직 안 쓴 자리이고 (2) 이미 놓인 어떤 마커와도 겹치지 않는 첫 자리를 잡는다.
-## 안쪽 링 6자리를 다 돌면 그대로 바깥 링으로 나간다 — 그만큼 타일에서 멀어지고
-## 화살표가 길어져, 붐비는 칸일수록 "어느 타일인지"가 화살표로 읽힌다.
+## 이 파일럿이 앉을 슬롯. 혼자 앉는 것은 **1인짜리 창**이므로 블록과 같은 표를
+## 쓴다 — `_seat_windows(1, bias)` 가 자리표를 기본 방향부터 좌우로 번갈아 훑는
+## 순서를 돌려준다(팀0 · 쏠림 없음이면 S → SW → SE → NW → NE → N, 우측 레인이면
+## 좌우가 뒤집혀 S → SE → SW → NE → NW → N). 거기서 (1) 같은 칸에서 아직 안 쓴
+## 자리이고 (2) 이미 놓인 어떤 마커와도 겹치지 않는 첫 자리를 잡는다. 안쪽 링 6자리를
+## 다 돌면 그대로 바깥 링으로 나간다 — 그만큼 타일에서 멀어지고 화살표가 길어져,
+## 붐비는 칸일수록 "어느 타일인지"가 화살표로 읽힌다.
 ##
 ## 겹침 판정이 **다른 칸의 마커까지** 본다는 것이 요점이다: 위아래로 붙은 두 칸이
 ## 서로를 향한 슬롯(위 칸의 S, 아래 칸의 N)을 고르면 초상화 두 개가 그 사이에서
 ## 정면으로 겹치는데, 이것이 전장에서 얼굴이 가려지는 유일한 구조적 원인이었다.
-func _pick_slot(tile_center: Vector2, base_dir: int, r: float,
+## 그 자리를 피해 **어디로 비켜 앉는가**를 정하는 것이 위 순서다.
+func _pick_slot(tile_center: Vector2, base_dir: int, bias: int, r: float,
 		used: Dictionary, placed: Array) -> int:
+	var row: Array = _seat_row(base_dir)
+	var seats: Array = _seat_windows(1, bias)
 	for ring in range(SLOT_RINGS):
-		for step in range(6):
-			var slot: int = ring * 6 + (base_dir + step) % 6
+		for raw_seat in seats:
+			var slot: int = ring * 6 + int(row[int(raw_seat)])
 			if used.has(slot):
 				continue
 			if _slot_collides(tile_center + _slot_offset(slot, r), r, placed):
@@ -746,8 +934,8 @@ func _pick_slot(tile_center: Vector2, base_dir: int, r: float,
 			return slot
 	# 사방이 막혔으면 겹치더라도 빈 슬롯을 준다 — 그리지 않는 것보다 낫다.
 	for ring in range(SLOT_RINGS):
-		for step in range(6):
-			var slot: int = ring * 6 + (base_dir + step) % 6
+		for raw_seat in seats:
+			var slot: int = ring * 6 + int(row[int(raw_seat)])
 			if not used.has(slot):
 				return slot
 	return base_dir
@@ -765,71 +953,25 @@ func _slot_collides(pos: Vector2, r: float, placed: Array) -> bool:
 
 
 # ─── 초상화가 앉는 기본 방향 ─────────────────────────────────────────────────
-# **이동 방향의 정반대**다. 파일럿은 자기가 가려는 쪽을 비워 두고 지나온 쪽에
-# 선다 — 오른쪽 레인을 NE 로 밀고 올라가는 팀0 은 타일 왼쪽 아래(SW)에, 그 구간을
-# 반대로 내려오는 팀1 은 오른쪽 위(NE)에 선다. 미드는 위/아래라 예전 규칙(적 위 /
-# 아군 아래)과 그림이 같고, 왼쪽 레인은 오른쪽 레인의 좌우 반전이 저절로 나온다.
+# **팀이 정한다** — 아래 진영(팀0)은 타일 아래(S), 위 진영(팀1)은 타일 위(N).
+# 화면에서 자기 HQ 가 있는 쪽이 곧 자기 자리라, 어느 칸을 보든 아래줄이 내 팀이고
+# 윗줄이 상대 팀이다. 여기서 겹치는 경우는 배정 쪽이 자리표(`SEAT_ROW_*`)를
+# **좌우로 미끄러뜨려** 푼다(`_pick_block_slots` / `_pick_slot`) — 기본 방향은
+# 자리표 한가운데이고, 그 **절반**(팀0 이면 아래 SW·S·SE, 팀1 이면 위 NW·N·NE)이
+# 다 막히기 전에는 반대쪽으로 넘어가지 않는다.
 #
-# 방향의 출처는 둘로 갈린다:
-#   • 레인 파일럿 — **레인 경로**(다음 웨이포인트)를 향하는 방향. 교전으로 멈춰
-#     서 있거나 한 턴 밀려나도 표시가 뒤집히지 않고, 같은 구간의 팀원이 늘 같은
-#     쪽으로 정렬된다.
-#   • 정글러 — **직전에 서 있던 칸**에서 지금 칸으로 온 방향. 정글에는 경로가
-#     없고 로밍 목적지가 수시로 바뀌므로 지나온 자취가 유일하게 안정적인 신호다.
+# **삭제된 것 — 이동 방향 기반 배치.** 예전에는 "가려는 쪽을 비우고 지나온 쪽에
+# 선다"며 레인 파일럿은 다음 웨이포인트 방향의 반대, 정글러는 `prev_grid_pos` 에서
+# 온 방향의 반대에 앉혔다(`_pilot_travel_dir` / `_peek_waypoint` /
+# `_nearest_dir_index`, 커밋 64bec06). 같은 레인 같은 구간이면 정렬은 맞았지만
+# **같은 팀이 구간마다 다른 쪽에 앉아**(1차 포탑 전 왼쪽 아래 → 그 뒤 아래 →
+# 적 포탑 뒤 오른쪽 아래) 화면에서 팀을 위/아래로 읽는 기준이 사라졌다.
+# 되살리지 말 것. `PilotData.prev_grid_pos` 도 그때 함께 삭제됐다.
 
 ## `p` 의 기본 슬롯 방향(HEX_DIRS 인덱스). 공개 — BattleSim 의 대체 좌표 계산이
 ## 같은 답을 써야 한다.
 func pilot_display_dir_index(p: PilotData) -> int:
-	return _nearest_dir_index(-_pilot_travel_dir(p))
-
-
-## 이 파일럿이 향하고 있는 방향(픽셀, 정규화 전). 아무 신호도 없으면 적 HQ 쪽을
-## 본다 — 개시 직후처럼 아직 한 칸도 움직이지 않았을 때의 답이다.
-func _pilot_travel_dir(p: PilotData) -> Vector2:
-	var here := _render_cell(p)
-	var here_px := _bs.cell_center(here)
-	if p.is_guerrilla:
-		if p.prev_grid_pos != here:
-			return here_px - _bs.cell_center(p.prev_grid_pos)
-	else:
-		var wp := _peek_waypoint(p, here)
-		if wp != here:
-			return _bs.cell_center(wp) - here_px
-	var hq: Vector2i = _bs.ENEMY_HQ_POS if p.team == 0 else _bs.PLAYER_HQ_POS
-	if hq != here:
-		return _bs.cell_center(hq) - here_px
-	# 적 HQ 칸 위에 선 파일럿 — 더 갈 곳이 없으니 팀의 진행 방향을 그대로 쓴다.
-	return Vector2(0.0, -1.0) if p.team == 0 else Vector2(0.0, 1.0)
-
-
-## `SimulationCore.current_waypoint` 의 **부작용 없는** 사본. 원본은 지나친
-## 웨이포인트를 만나면 `waypoint_idx` 를 밀어 올리는데, 그리기 중에 시뮬 상태를
-## 건드리면 화면이 게임을 바꾸는 셈이 된다.
-func _peek_waypoint(p: PilotData, here: Vector2i) -> Vector2i:
-	var paths: Array = _bs.LANE_PATHS_TEAM0 if p.team == 0 else _bs.LANE_PATHS_TEAM1
-	if p.lane < 0 or p.lane >= paths.size():
-		return here
-	var path: Array = paths[p.lane] as Array
-	if path.is_empty():
-		return here
-	var idx: int = clampi(p.waypoint_idx, 0, path.size() - 1)
-	while idx < path.size() - 1 and (path[idx] as Vector2i) == here:
-		idx += 1
-	return path[idx] as Vector2i
-
-
-func _nearest_dir_index(v: Vector2) -> int:
-	if v.length_squared() < 0.0001:
-		return 3   # S — 팀0 의 평소 방향
-	var n := v.normalized()
-	var best: int = 0
-	var best_dot: float = -INF
-	for i in range(HEX_DIRS.size()):
-		var d: float = n.dot(HEX_DIRS[i])
-		if d > best_dot:
-			best_dot = d
-			best = i
-	return best
+	return 3 if p.team == 0 else 0   # 팀0 = S(아래), 팀1 = N(위)
 
 
 # 무리 **전체를 통째로 밀어** 화면 안에 넣는다.
@@ -1112,7 +1254,7 @@ func _pilot_marker_pos(p: PilotData) -> Vector2:
 
 
 ## 레이아웃 표에 없는 파일럿의 **대체** 마커 좌표 — 자기 칸에 혼자 선 것으로 치고
-## 기본 방향(= 이동 방향의 반대)의 첫 링에 앉힌다. 공개인 이유는 `BattleSim` 과
+## 기본 방향(팀0 = 아래 / 팀1 = 위)의 첫 링에 앉힌다. 공개인 이유는 `BattleSim` 과
 ## `CardTargetingOverlay` 의 폴백 경로가 같은 답을 써야 하기 때문이다.
 func pilot_marker_pos_fallback(p: PilotData) -> Vector2:
 	var base_r: float = PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE

@@ -80,7 +80,7 @@ Responsibilities:
 
 | File | class_name | Description |
 |---|---|---|
-| `resources/PilotData.gd` | PilotData | role, hp/max_hp, atk, team, grid_pos, lane, waypoint_idx, **move_range**, **hit**, **evasion**, **jungle_start_pref**, **respawn_timer** (death-only off-field clock — see `BattleSim.turns_until_return`), **recall_hold** (본진 복귀한 턴의 이동 1회 스킵), **prev_grid_pos** (직전 셀 — 정글러 초상화가 앉는 방향의 출처) |
+| `resources/PilotData.gd` | PilotData | role, hp/max_hp, atk, team, grid_pos, lane, waypoint_idx, **move_range**, **hit**, **evasion**, **jungle_start_pref**, **respawn_timer** (death-only off-field clock — see `BattleSim.turns_until_return`), **recall_hold** (본진 복귀한 턴의 이동 1회 스킵), **anim_move_path** (이번에 밟은 칸의 경로 — 렌더러가 읽고 비운다) |
 | `resources/TurretData.gd` | TurretData | team, grid_pos, hp, tier, lane, alive |
 | `resources/PlayerData.gd` | PlayerData | id, name, role, team_id, 5 stats (laning / mechanics / gamesense / teamfight / mental), `assigned_mech` |
 | `resources/MechData.gd` | MechData | id, name, hp, atk, **presence** (4=melee/2=ranged; engage 무대의 타겟 어그로 가중치로만 사용). **`speed` 는 삭제됐다** — 교전이 라운드 턴제가 되면서 행동 빈도 개념이 사라졌다 |
@@ -388,7 +388,8 @@ visual transitions. All durations fit inside the 0.5s `AUTO_PLAY_INTERVAL`.
 |---|---|---|
 | Combat damage (전장 자동 교전) | `SimulationCore` damage_map apply | `anim_pilot_shake(p)` → `ANIM_SHAKE_DUR` 0.18s / `ANIM_SHAKE_AMP_PX` 6px horizontal jitter (decaying) |
 | 공격 카드 명중 | `CardPhaseManager._apply_attack_damage` | same call with `ANIM_SHAKE_CARD_DUR` 0.26s / `ANIM_SHAKE_CARD_AMP_PX` **20px** — 매 턴 자동으로 오가는 교전 피해와 달리 카드 명중은 플레이어가 방금 고른 한 방이라 훨씬 격렬하게 흔든다. 주파수는 같으므로 진동 수가 4 → 5.8회로 함께 는다 |
-| Movement (free + push advance + push retreat) | `resolve_movement` (once per pilot per turn) | `anim_pilot_move(p, orig)` → 0.30s ease-out tween from `orig` cell to `grid_pos` |
+| Movement (free + push advance + push retreat) | `resolve_movement` (once per pilot per turn) | `anim_pilot_move_path(p, path)` → 렌더러가 **실제로 밟은 칸의 폴리라인**을 따라 0.30s smoothstep 으로 미끄러뜨린다 (`BattleRenderer._glide`). 슬롯이 바뀌기만 해도 같은 글라이드가 걸린다 — 초상화는 어떤 경우에도 순간이동하지 않는다 |
+| 카드 이동 / 전진 (`move`, `advance:N`) | `SimulationCore._step_pilot` | `anim_pilot_move(p, orig)` — 같은 프레임의 걸음은 **경로에 이어 붙는다**, 그래서 `advance:3` 이 세 칸을 순서대로 걷는다 |
 | Recall — 저HP / 위치 이탈 | `RecallSystem.return_to_hq` | `anim_pilot_recall(p, orig)` → 0.20s fade-out + rise at `orig`, then 0.25s fade-in + descend at HQ. Both halves always play — the pilot never leaves the field, and it is holding still that turn, so the fade-in stays anchored at the HQ |
 | Recall — 복귀 카드 | `CardPhaseManager._effect_recall_ally` | same `anim_pilot_recall(p, orig)` sequence |
 | Respawn (사망 후 부활) | `SimulationCore.process_respawns` | `anim_pilot_respawn` → fade-in + descend at HQ only (skip phase 1); also clears any leftover 전사 연출 |
@@ -421,6 +422,13 @@ is already false), groups them by `_render_cell(p)` (`anim_recall_orig` during
 fade-out, `anim_death_cell` during the 전사 연출, otherwise `grid_pos`) and
 applies per-pilot pixel offset and alpha via `_pilot_anim_offset` /
 `_pilot_anim_alpha`.
+
+**이동만은 렌더러가 통째로 소유한다.** `BattleSim` 은 이동 타이머를 들고 있지
+않고(`anim_prev_grid_pos` / `anim_move_t` / `anim_move_dur` 는 삭제됐다),
+`PilotData.anim_move_path` 에 **밟은 칸의 경로**만 남긴다. 마커 좌표의 보간과
+그동안의 재draw 는 `BattleRenderer._glide` 가 맡는다 — 자세한 규칙(폴리라인,
+각도와 길이의 박자 분리, 스냅하는 경우)은 [`rendering/README.md`](rendering/README.md)
+의 *마커 글라이드* 절.
 
 ---
 

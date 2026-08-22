@@ -152,7 +152,7 @@ subtract from `shield` first, then `hp`. Cleared on every 본진 복귀 path:
 `BattleRenderer._draw_pilot_circle` paints a cyan ring just outside the HP ring
 sized by `shield / max_hp` so the buff is visible on the field.
 
-UI animation fields (`anim_prev_grid_pos`, `anim_move_t/dur`, `anim_shake_t/dur`,
+UI animation fields (`anim_move_path`, `anim_shake_t/dur/amp`,
 `anim_recall_phase/t/dur/orig`, `anim_death_phase/t/dur/cell`) are mutated by
 `BattleSim.anim_pilot_*` helpers and read only by `BattleRenderer` — the
 simulation never reads them. The recall sequence always plays both halves

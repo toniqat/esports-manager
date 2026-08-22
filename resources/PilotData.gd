@@ -115,10 +115,21 @@ var lane_stat_mod: float  = 0.0
 var lane_stat_expire_turn: int = -1   # -1 = 없음
 
 # ─── Animation state (UI-only; SimulationCore does NOT read these) ────────────
-# Move tween: cell-to-cell pixel interpolation from anim_prev_grid_pos to grid_pos.
-var anim_prev_grid_pos: Vector2i = Vector2i.ZERO
-var anim_move_t: float    = 0.0
-var anim_move_dur: float  = 0.0
+# 이동 연출의 **경로**. `[출발 칸, …, 도착 칸]` 이고, 두 칸 이상 움직인 턴에는
+# 실제로 밟은 칸이 순서대로 들어 있다(정글러 move_range 2, 전진 카드 advance:N).
+# 렌더러가 이 경로를 따라 초상화를 미끄러뜨리므로 2칸 이동이 중간 칸을 스쳐
+# 지나가지 않고 **꺾여서** 간다.
+#
+# **렌더러가 소비하며 비운다** — `BattleRenderer._sync_glide` 가 경로를 읽어
+# 글라이드를 시작한 뒤 `clear()` 한다. 그래서 같은 프레임에 여러 걸음이 들어오면
+# (전진 카드의 N틱) `BattleSim.anim_pilot_move` 가 이어 붙일 수 있고, 턴을 넘긴
+# 다음 이동은 빈 배열에서 새로 시작한다.
+#
+# 연출 **시간**은 여기 없다 — 타이머는 렌더러(`BattleRenderer._glide`)가 쥐고
+# 있다. 예전의 `anim_prev_grid_pos` / `anim_move_t` / `anim_move_dur` 는 삭제됐다:
+# 칸 이동만 트윈하고 슬롯 변화는 순간이동이라 "칸은 미끄러지는데 초상화는 튀는"
+# 그림이 남았고, 지금은 **마커 좌표 자체**를 렌더러가 한 곳에서 보간한다.
+var anim_move_path: Array[Vector2i] = []
 # Damage shake: short horizontal jitter.
 # 진폭은 **흔들림마다 다르다** — 전장 자동 교전은 `BattleSim.ANIM_SHAKE_AMP_PX`,
 # 공격 카드 명중은 `ANIM_SHAKE_CARD_AMP_PX`(훨씬 크다)로 들어온다. 상수를 하나로

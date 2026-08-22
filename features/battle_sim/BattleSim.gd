@@ -55,7 +55,9 @@ const BS_HAND_HOVER_FALLOFF_POW := 2.0
 const BS_HAND_FAN_RADIUS := 3200.0
 
 # ─── Pilot battlefield animation consts (fit within AUTO_PLAY_INTERVAL=0.5s) ─
-## Move tween: cell-to-cell ease-out interpolation.
+## 마커 글라이드 — 초상화가 **직전에 그려지던 자리에서 새 자리까지** 미끄러지는
+## 시간. 칸 이동(경로를 따라)과 같은 칸 안의 슬롯 이동이 같은 값을 쓴다.
+## 타이머는 `BattleRenderer._glide` 가 쥐고 있고 여기는 그 노브다.
 const ANIM_MOVE_DUR            := 0.30
 ## Damage shake: short horizontal jitter when a pilot takes damage.
 const ANIM_SHAKE_DUR           := 0.18
@@ -904,12 +906,8 @@ func _advance_pilot_animations(delta: float) -> bool:
 					p.anim_death_t     = 0.0
 					p.anim_death_dur   = 0.0
 			any_active = true
-		if p.anim_move_dur > 0.0:
-			p.anim_move_t += delta
-			if p.anim_move_t >= p.anim_move_dur:
-				p.anim_move_dur = 0.0
-				p.anim_move_t   = 0.0
-			any_active = true
+		# 이동 연출에는 여기 타이머가 없다 — 마커 좌표의 보간은 렌더러가
+		# 통째로 쥐고 있고(BattleRenderer._glide), 재draw 도 거기서 걷어찬다.
 		if p.anim_shake_dur > 0.0:
 			p.anim_shake_t += delta
 			if p.anim_shake_t >= p.anim_shake_dur:
@@ -943,21 +941,35 @@ func _advance_pilot_animations(delta: float) -> bool:
 
 
 # Triggered by SimulationCore when a pilot moves cell. `from_cell` is the cell
-# the pilot was on before the move. The visual interpolates from from_cell to
-# the pilot's current grid_pos.
+# the pilot was on before the move.
+#
+# **한 걸음씩 들어온다.** 같은 프레임에 여러 번 불리면(전진 카드의 N틱) 경로를
+# 이어 붙여 렌더러가 실제로 밟은 칸을 따라 미끄러지게 한다 — 마지막 걸음만 남기면
+# 3칸 전진이 2칸을 순간이동한 뒤 1칸만 걷는 그림이 된다. 렌더러는 경로를 읽는
+# 즉시 비우므로, 턴을 넘긴 다음 이동은 빈 배열에서 새로 시작한다.
 func anim_pilot_move(p: PilotData, from_cell: Vector2i) -> void:
 	if from_cell == p.grid_pos:
 		return
-	# 칸을 옮겼다는 **사실**은 연출과 무관하게 남는다 — 복귀 연출이 도는 중이라
-	# 트윈을 건너뛰더라도 BattleRenderer 는 이 값으로 정글러 초상화의 방향을
-	# 잡는다(온 방향의 반대쪽).
-	p.prev_grid_pos = from_cell
-	# Skip the tween if the pilot is mid-recall (recall takes priority).
+	# Skip the glide if the pilot is mid-recall (recall takes priority).
 	if p.anim_recall_phase != 0:
 		return
-	p.anim_prev_grid_pos = from_cell
-	p.anim_move_t   = 0.0
-	p.anim_move_dur = ANIM_MOVE_DUR
+	if not p.anim_move_path.is_empty() \
+			and p.anim_move_path[p.anim_move_path.size() - 1] == from_cell:
+		p.anim_move_path.append(p.grid_pos)
+	else:
+		p.anim_move_path.assign([from_cell, p.grid_pos])
+
+
+## 한 턴치 이동을 **경로 통째로** 넘기는 진입점. `SimulationCore.resolve_movement`
+## 이 락스텝 라운드마다 밟은 칸을 모아 한 번에 부른다 — 걸음마다
+## `anim_pilot_move` 를 부르는 것과 결과는 같지만, 그쪽 패스는 커밋을 모아
+## 처리하므로 경로도 모아서 넘기는 편이 배선이 짧다.
+func anim_pilot_move_path(p: PilotData, cells: Array) -> void:
+	if cells.size() < 2:
+		return
+	if p.anim_recall_phase != 0:
+		return
+	p.anim_move_path.assign(cells)
 
 
 ## 피격 흔들림. 인자를 비우면 **전장 자동 교전의 기본 세기**이고, 공격 카드는
@@ -979,11 +991,7 @@ func anim_pilot_shake(p: PilotData, dur: float = ANIM_SHAKE_DUR,
 # 복귀와 복귀 card 가 같은 연출을 쓴다. (파일럿이 전장에서 사라지는 사유는
 # 사망뿐이고, 그건 anim_pilot_death 가 맡는다.)
 func anim_pilot_recall(p: PilotData, orig_cell: Vector2i) -> void:
-	p.anim_move_dur       = 0.0
-	p.anim_move_t         = 0.0
-	# 순간이동에는 '온 방향'이 없다 — HQ 에 다시 선 파일럿의 초상화 방향은
-	# 레인 경로(또는 적 HQ 방향)에서 새로 뽑혀야 한다.
-	p.prev_grid_pos       = p.grid_pos
+	p.anim_move_path.clear()
 	anim_pilot_lunge_clear(p)
 	p.anim_recall_orig    = orig_cell
 	p.anim_recall_phase   = 1
@@ -993,9 +1001,7 @@ func anim_pilot_recall(p: PilotData, orig_cell: Vector2i) -> void:
 
 # Respawn: skip phase 1; just fade in + descend at the pilot's HQ cell.
 func anim_pilot_respawn(p: PilotData) -> void:
-	p.anim_move_dur       = 0.0
-	p.anim_move_t         = 0.0
-	p.prev_grid_pos       = p.grid_pos   # 부활도 순간이동 — anim_pilot_recall 참조
+	p.anim_move_path.clear()
 	anim_pilot_lunge_clear(p)
 	p.anim_recall_phase   = 2
 	p.anim_recall_t       = 0.0
@@ -1011,8 +1017,7 @@ func anim_pilot_respawn(p: PilotData) -> void:
 # 사망 판정을 내리는 모든 경로(전장 교전 / 전진 카드 / 공격 카드 / 교전 아레나)
 # 에서 불러야 한다 — 안 부르면 예전처럼 파일럿이 그 프레임에 툭 사라진다.
 func anim_pilot_death(p: PilotData) -> void:
-	p.anim_move_dur       = 0.0
-	p.anim_move_t         = 0.0
+	p.anim_move_path.clear()
 	p.anim_recall_phase   = 0
 	# 돌진 중에 쓰러질 수 있다(교전 무대가 아니라 전장에서 반격을 맞는 경우).
 	# 시신은 쓰러진 칸에 그대로 남아야 하므로 변위를 걷어 낸다.

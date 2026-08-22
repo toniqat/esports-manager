@@ -541,10 +541,13 @@ immediately.
 SimulationCore and RecallSystem call back into `BattleSim` after mutating
 logical state so the renderer can soften the transition:
 
-- `resolve_movement` records each mover's cell at the start of the turn and
-  calls `_bs.anim_pilot_move(p, orig)` once at the end for every pilot that
-  actually moved — one tween per pilot per turn even across several lockstep
-  rounds. `advance_pilot` does the same per mini-tick.
+- `resolve_movement` accumulates each mover's **path** (`m["path"]`, one cell
+  appended per committed lockstep round) and calls
+  `_bs.anim_pilot_move_path(p, path)` once at the end for every pilot that
+  actually moved. 렌더러는 그 폴리라인을 따라 초상화를 미끄러뜨리므로
+  `move_range` 2 짜리 이동이 중간 칸을 스쳐 지나가지 않고 **꺾여서** 간다.
+  `advance_pilot` 은 미니틱마다 `_step_pilot` → `_bs.anim_pilot_move(p, orig)`
+  를 부르고, 같은 프레임의 걸음은 그쪽에서 같은 경로에 이어 붙는다.
 - The damage_map application loop calls `_bs.anim_pilot_shake(p)` for surviving
   pilots that took damage > 0 — **인자 없는 기본 세기**(0.18s / 6px)다. 공격
   카드는 같은 함수에 자기 상수(`ANIM_SHAKE_CARD_*`, 0.26s / 20px)를 넘겨 훨씬

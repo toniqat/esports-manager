@@ -104,57 +104,61 @@ the same whether the cell is contested or not. (The earlier `is_solo` centring +
 - **정글러 — `PilotData.prev_grid_pos`.** 정글에는 경로가 없고 로밍 목적지는
   수시로 바뀌므로 지나온 자취가 유일하게 안정적인 신호다. 왼쪽 위(NW)로
   움직였으면 오른쪽 아래(SE)에, 오른쪽 위(NE)로 움직였으면 왼쪽 아래(SW)에 선다.
+Each pilot draws its own arrow (`_draw_arrow_to_tile`) — the tip is the
+**glide-interpolated tile centre** (`_marker_center`), so the tail slides with
+the portrait instead of pointing at the destination first (다음 절).
 
 둘 다 답이 없으면(개시 직후, 아직 한 칸도 안 움직인 정글러) **적 HQ 쪽**을
 보고, 적 HQ 칸 위에 서 있으면 팀의 진행 방향(팀0 = N)을 그대로 쓴다.
+### 마커 글라이드 — 초상화는 순간이동하지 않는다
+**화면 위의 마커 좌표 하나가 통째로 보간된다.** 예전에는 칸 이동만 트윈하고
+(`PilotData.anim_move_t/dur`, 셀 중심끼리의 lerp) **슬롯 변화는 즉시 반영**했다.
+슬롯 하나가 91px, 반대편으로 옮겨 앉으면 182px 라 **칸 사이 거리(140px)보다 큰
+순간이동**이 매 턴 섞여 들어왔고, 옆 사람이 와서 비켜 앉기만 하는 파일럿은 아예
+트윈이 걸리지 않아 그냥 튀었다.
 
-실측(BattleSim 단독 실행, 턴 17): 오른쪽 레인 팀0 이 적 T2 를 지나 `(1,-3)` 에
-서면 SE, 같은 칸의 팀1 은 NW. 정글러는 `(1,0)→(0,-1)`(NW 이동) 뒤 SE. 10명을
-한 칸에 몰아넣으면 안쪽 6 + 바깥 4 로 갈리고 마커 최소 간격은 **91.0px**
-(필요값 85.1px).
+지금은 마커 좌표를 **중심 + 슬롯 벡터**로 갈라 놓고 둘을 따로 민다
+(`_sync_glide` → `_eval_glide`, 상태는 `_glide` dict):
 
-Each pilot draws its own arrow (`_draw_arrow_to_tile`) — direction is computed
-from the circle's position to the tile centre, **except while the pilot is
-moving** (다음 절).
+| 성분 | 무엇 | 언제 |
+|---|---|---|
+| `center` | 지나간 칸 중심을 이은 **폴리라인**을 호 길이 비율로 훑는다 | `BattleSim.ANIM_MOVE_DUR` (0.30초), smoothstep |
+| `vec` 의 **각도** | 슬롯 방향. 짧은 쪽으로 돈다 | 위와 **같은 박자** |
+| `vec` 의 **길이** | 링(반지름) | **도착한 뒤** `MARKER_RADIUS_SETTLE_SEC` (0.15초), ease-out cubic |
 
-#### 이동 중에는 화살표가 크기도 방향도 바꾸지 않는다
-`_render_cell` 은 이동 트윈이 시작되는 프레임부터 곧장 **도착 칸**을 돌려주고,
-초상만 `_pilot_anim_offset` 으로 출발 칸에서 되돌려 그려진다. 그래서 끝점을
-"지금 프레임의 타일 중심"으로 잡으면 **화살표가 초상보다 먼저 목적지를 가리키며
-0.3초 내내 회전하고 늘어났다** — 파일럿은 아직 출발 칸에 있는데 꼬리만 다음 칸에
-가 있는 그림이다(실측: 이동 시작 시점의 참값이 91px → **182px**, 각도 −150° →
-−124°).
+- **경로를 따라 꺾인다.** `PilotData.anim_move_path` 가 이번에 실제로 밟은 칸을
+  들고 온다(`SimulationCore.resolve_movement` 이 락스텝 라운드마다 붙이고, 전진
+  카드는 `anim_pilot_move` 가 같은 프레임의 걸음을 이어 붙인다). 그래서
+  `move_range` 2 짜리 이동과 `advance:3` 이 중간 칸을 스쳐 지나가지 않는다 —
+  실측: 3칸 경로의 중점이 직선 중점에서 **121.5px** 벗어난다. 렌더러는 경로를
+  읽는 즉시 **비운다**(`_screen_path`); 그래야 다음 턴 이동이 옛 출발점으로
+  되감기지 않는다.
+- **각도가 중심과 같은 박자로 도는 것이 곧 "화살표가 칸 이동과 동시에 돈다"**
+  이다. 링이 그대로면 길이 보간이 항등이라 화살표 길이가 이동 내내 한 픽셀도
+  변하지 않고 꼬리가 초상에 매달려 통째로 미끄러진다. 붐비는 칸에 들어가느라
+  **바깥 링으로 밀려날 때만** 도착 후에 늘어난다 — 이동 중에 길이까지 변하면
+  무엇이 움직였는지가 흐려진다.
+- **곡선은 smoothstep** — 양 끝에서 정지한다. 예전 이동 트윈의 ease-out cubic 은
+  슬롯이 어차피 튀던 시절의 선택이라 출발이 급해도 티가 덜 났는데, 그 곡선은
+  60fps 첫 프레임에 이미 거리의 15%(실측 **24.98px**)를 지나간다 — 순간이동을
+  없애려는 연출이 출발할 때마다 한 번 튀는 셈이었다. smoothstep 으로 바꾼 뒤
+  첫 프레임 변위는 **0.5~0.7px**, 한 번의 이동이 40프레임에 걸쳐 흐른다.
+- **순간이동이 맞는 경우는 스냅한다** — 복귀 / 부활(`anim_recall_phase != 0`)은
+  페이드가 자리 이동을 덮고, 전사(`anim_death_phase != 0`)는 시신이 쓰러진 칸에
+  붙박여 있어야 한다. 미끄러뜨리면 사라지는 몸이 화면을 가로지른다.
+- 레이아웃에서 빠진 파일럿(사망 퇴장, 재시작으로 갈린 로스터)의 상태는
+  `_sync_glide` 가 버린다.
 
-지금은 `_arrow_aim_point(p, marker_pos, tile_center)` 가 끝점을 정한다:
+시간을 미는 것은 `_process` 의 `_advance_glide` **하나뿐**이다. 그래서
+`_build_pilot_render_layout()` 을 한 프레임에 몇 번 불러도(그리기 · 히트 테스트 ·
+돌진 기하 · 팝업) 연출이 되감기지 않는다. `BattleSim` 은 이동 타이머를 더 이상
+들고 있지 않으므로 이 구간의 재draw 도 렌더러가 걷어찬다.
 
-| 상태 | 화살표 |
-|---|---|
-| 이동 중 (`anim_move_dur > 0`) | 붙든 벡터 그대로 — **크기 · 방향 불변**, 초상에 강체로 매달려 따라간다 |
-| 도착 직후 (`ARROW_SETTLE_SEC` 0.15초) | 붙든 벡터 → 참값으로 **회전 + 신축** (ease-out cubic) |
-| 그 밖 | 참값(= 타일 중심) |
-
-붙드는 값은 **직전 프레임에 실제로 그려진 벡터**(`_arrow_vec_now`)다 — 매 프레임
-남겨 두므로 이동이 시작되는 프레임에 화살표가 한 번도 튀지 않는다. 정착 중에
-다음 이동이 시작되면(`_arrow_settle_t > 0`) 그 시점의 벡터로 **다시** 붙든다.
-옛 hold 를 그대로 쓰면 정착으로 이미 돌아간 만큼 화살표가 되감긴다.
-
-보간은 `_lerp_polar` — **각도와 길이를 따로** 민다. 끝점을 직선 lerp 하면 두 벡터
-사이를 가로지르느라 화살표가 도중에 짧아졌다 길어져 회전으로 읽히지 않는다.
-
-**대개는 정착할 것도 없다.** 슬롯 방향과 링이 그대로면 붙든 벡터와 참값이 정확히
-같아(타일 중심 → 슬롯 변위는 칸이 달라도 같은 값이다) 정착 구간이 무동작이다.
-움직이는 것은 이동 뒤 슬롯이 바뀐 경우뿐 — 실측(BattleSim 단독, 턴 3): 91.1px
-−150° 로 고정된 채 이동하고, 도착 후 길이는 그대로 −150° → −90° 로 돈다.
-
-`ARROW_SETTLE_SEC` 는 이동 트윈(`BattleSim.ANIM_MOVE_DUR` 0.30)과 합쳐도 턴
-간격(0.5초)을 넘지 않아야 한다 — 넘으면 다음 이동이 아직 정착 중인 화살표를
-붙들어 어긋난 각도가 턴을 넘어 누적된다. 상태 dict 셋(`_arrow_hold` /
-`_arrow_settle_t` / `_arrow_vec_now`)은 `_prune_arrow_state()` 가 매 `_draw` 에서
-레이아웃에 없는 파일럿(사망 후 퇴장, 재시작으로 갈린 로스터)을 버린다. 정착
-구간의 프레임은 `_process` 의 `_advance_arrow_settle` 이 만든다 — 이동 트윈이
-끝나면 BattleSim 은 더 이상 재draw 를 걷어차지 않기 때문. 복귀 / 부활 / 전사는
-`anim_move_dur` 를 0 으로 밀고 들어오므로 저절로 빠진다(순간이동에는 따라가는
-꼬리가 없다).
+**삭제된 것 — 화살표 관성 장치.** `_arrow_hold` / `_arrow_settle_t` /
+`_arrow_vec_now` / `_arrow_frozen` / `_arrow_aim_point` / `_advance_arrow_settle` /
+`_prune_arrow_state` / `_lerp_polar` / `ARROW_SETTLE_SEC` 는 전부 사라졌다. 그것은
+"초상은 출발 칸에 있는데 꼬리만 도착 칸을 가리킨다"를 가리려고 이동 중 꼬리를
+얼려 두던 장치인데, 지금은 초상이 실제로 미끄러지므로 꼬리가 그냥 따라가면 된다.
 
 #### 화살표 길이는 거리에서 역산한다
 `_draw_arrow_to_tile` 의 끝점은 **언제나 타일 중심 바로 앞**
@@ -165,7 +169,7 @@ moving** (다음 절).
 넘어가지는 않는다 — 넘어가면 옆 칸을 가리키는 것처럼 읽힌다.
 
 #### 대상 지정 강조는 배치도 탄다 (`em`)
-`_build_pilot_render_layout` 은 **그 칸의 강조 배율**(`_group_emphasis` = 그 칸에
+`_compose_positions` 는 **그 칸의 강조 배율**(`_group_emphasis` = 그 칸에
 선 양 팀 전원 중 최대 `_pilot_emphasis_scale`, 즉 1.0 또는
 `TARGET_EMPHASIS_SCALE` **1.5**)을 링 반지름에 곱한다. 초상만 키우면 두 가지가
 동시에 무너지기 때문이다:
@@ -184,6 +188,12 @@ moving** (다음 절).
 **슬롯 배정 자체는 `em` 을 보지 않는다.** 겹침 판정은 강조 이전 좌표로 돌리고,
 `em` 은 배정이 끝난 뒤 반지름에만 곱한다 — 강조까지 반영하면 카드를 집을 때마다
 전장의 슬롯이 새로 풀려 배치가 통째로 다시 섞인 것처럼 보인다.
+
+**글라이드도 `em` 을 보지 않는다.** 보간되는 것은 강조 이전의 중심 + 슬롯
+벡터이고, `em` 은 그 위에 매 프레임 곱해진다 — 그래서 강조가 `EMPHASIS_TWEEN_SEC`
+(0.05초)에 다 자라는 동안 0.30초짜리 글라이드가 끼어들어 굼떠지지 않는다.
+곱하는 축은 타일 중심이 아니라 **글라이드 중심**이다: 칸을 건너는 중인 파일럿을
+도착 타일 기준으로 부풀리면 아직 도착하지도 않은 지점을 축으로 튕겨 나간다.
 
 **화면 밖으로 나가면 칸째 밀어 넣는다** (`_clamp_group_on_screen`, 한 칸의 양 팀
 전원이 한 무리다). 강조로 벌어진 가장자리 레인의 2~3인 무리는 그냥 두면 화면 밖으로 잘리는데, 잘린 얼굴은
@@ -232,10 +242,11 @@ them each `_draw()`:
   Pilots are grouped/team-laid-out by this so a recalling pilot is drawn at the
   cell they came from until they fully fade out, then "appears" at HQ for the
   descent fade-in, and a fallen pilot stays on the cell they fell on.
-- `_pilot_anim_offset(p)` — sums move-tween offset (ease-out cubic from
-  `anim_prev_grid_pos` → `grid_pos`), recall rise/descend (`ANIM_RECALL_RISE_PX`),
+- `_pilot_anim_offset(p)` — sums recall rise/descend (`ANIM_RECALL_RISE_PX`),
   death rise (`ANIM_DEATH_RISE_PX`, phase 2 only), **공격 카드 돌진**
   (`BattleSim.pilot_lunge_offset`) and damage shake (decaying `sin` jitter).
+  **칸 이동은 여기 없다** — 마커 좌표 자체가 글라이드로 미끄러지므로(위
+  *마커 글라이드* 절) 여기서 한 번 더 얹으면 두 벌이 된다.
 - **피격 흔들림의 세기는 흔든 쪽이 정한다** — `PilotData.anim_shake_amp` 에
   실려 온다(전장 자동 교전 `ANIM_SHAKE_AMP_PX` **6px** / 공격 카드 명중
   `ANIM_SHAKE_CARD_AMP_PX` **20px**). 렌더러가 상수 하나를 읽던 시절에는 둘 중
@@ -328,8 +339,11 @@ same solve, so hit-testing never disagrees with what is on screen.
 
 ### 파일럿 마커 위치 — `pilot_marker_positions()`
 `_draw()` 는 매 프레임 `_build_pilot_render_layout()` 으로
-`PilotData → Vector2` 마커 위치 표를 만들어 딤 오버레이와 공유한다. 같은
-solve 를 즉석에서 한 번 더 돌려 돌려주는 **공개** 래퍼가
+`PilotData → Vector2` 마커 위치 표를 만들어 딤 오버레이와 공유한다. 그 함수는
+세 걸음이다 — **자리를 푼다**(`_solve_slots`, 순수) → **글라이드를 맞춘다**
+(`_sync_glide`) → **지금 프레임의 좌표를 낸다**(`_compose_positions`, 강조 배율과
+화면 클램프를 얹는다). 시간은 여기서 흐르지 않으므로 한 프레임에 여러 번 불려도
+답이 흔들리지 않는다. 같은 것을 그대로 돌려주는 **공개** 래퍼가
 `pilot_marker_positions()` 이고, `CardTargetingOverlay._hit_test_pilot` 이
 이걸 쓴다 — 한 셀에 여러 명이 서 있으면 각자 다른 슬롯에 그려지므로,
 `grid_pos` 만 보고 계산하는 위치(타일 중심 / `pilot_marker_pos_solo`)로는
@@ -390,7 +404,7 @@ solve 를 즉석에서 한 번 더 돌려 돌려주는 **공개** 래퍼가
 > 대상이 오히려 겨누기 어려웠다. 지금 값은 **도달하면 미동도 없다**. 그와 함께
 > `_emphasis_time` / `EMPHASIS_PULSE_*` 상수도 사라졌다.
 
-`_process` 의 상시 재draw 는 **피해 수치 팝업과, 켜지거나 꺼지는 중인 강조**
-두 가지뿐이다. 둘 다 멈춰 있으면 `queue_redraw()` 를 부르지 않는다 — 대상 지정
-상태가 **바뀌는** 순간은 `CardTargetingOverlay._request_redraw()` 가 따로
-걷어찬다.
+`_process` 의 상시 재draw 는 셋이다 — **피해 수치 팝업**, **켜지거나 꺼지는 중인
+강조**, 그리고 **미끄러지는 중인 마커**(`_advance_glide`). 전부 멈춰 있으면
+`queue_redraw()` 를 부르지 않는다 — 대상 지정 상태가 **바뀌는** 순간은
+`CardTargetingOverlay._request_redraw()` 가 따로 걷어찬다.

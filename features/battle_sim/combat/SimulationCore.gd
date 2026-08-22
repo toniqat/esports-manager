@@ -726,6 +726,10 @@ func resolve_movement(advance_set: Dictionary, retreat_set: Dictionary,
 			"pilot":      p,
 			"kind":       kind,
 			"orig":       p.grid_pos,
+			# 실제로 밟은 칸들. 락스텝 라운드마다 커밋된 칸이 하나씩 붙고, 패스가
+			# 끝나면 통째로 연출에 넘어간다 — `move_range` 2 짜리 정글러가 중간
+			# 칸을 스쳐 지나가지 않고 꺾어서 걷게 하기 위한 것이다.
+			"path":       [p.grid_pos] as Array,
 			"steps_left": maxi(1, p.move_range) if kind == MOVE_KIND_FREE else 1,
 			"active":     true,
 			"moved":      false,
@@ -736,7 +740,7 @@ func resolve_movement(advance_set: Dictionary, retreat_set: Dictionary,
 	for raw_m in movers:
 		var m: Dictionary = raw_m
 		if bool(m["moved"]):
-			_bs.anim_pilot_move(m["pilot"] as PilotData, m["orig"] as Vector2i)
+			_bs.anim_pilot_move_path(m["pilot"] as PilotData, m["path"] as Array)
 
 
 # One lockstep round: collect intents, arbitrate head-on exchanges, commit.
@@ -778,6 +782,7 @@ func _run_movement_round(movers: Array) -> bool:
 		var p2 := m2["pilot"] as PilotData
 		committed.append({"p": p2, "prev": p2.grid_pos, "kind": m2["kind"]})
 		p2.grid_pos = w["dest"] as Vector2i
+		(m2["path"] as Array).append(p2.grid_pos)
 		m2["steps_left"] = int(m2["steps_left"]) - 1
 		m2["moved"] = true
 		if m2["kind"] == MOVE_KIND_RETREAT:

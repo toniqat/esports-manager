@@ -41,29 +41,34 @@ var _emphasis_now: Dictionary = {}
 const SCREEN_EDGE_PAD: float = 6.0
 
 
-# ─── 말풍선 꼬리(화살표)의 관성 ───────────────────────────────────────────────
-# **이동 트윈이 도는 동안 화살표는 크기도 방향도 바꾸지 않는다.** 예전에는 끝점을
-# 언제나 "지금 프레임의 타일 중심"으로 잡았는데, `_render_cell` 이 이동이 시작된
-# 프레임부터 곧장 **도착 칸**을 돌려주므로 화살표가 초상보다 먼저 목적지를 가리키며
-# 0.3초 내내 회전하고 늘어났다 — 파일럿은 아직 출발 칸에 있는데 꼬리만 다음 칸에
-# 가 있는 그림이다. 지금은 이동이 시작되는 프레임에 **직전 프레임의 화살표 벡터**를
-# 붙들어(`_arrow_hold`) 초상에 강체로 매달고, **도착한 뒤에야** 회전 + 신축으로
-# 제 칸을 다시 가리킨다.
+# ─── 마커 글라이드 (초상화는 절대 순간이동하지 않는다) ───────────────────────
+# **화면 위의 마커 좌표 하나가 통째로 보간된다.** 예전에는 칸 이동만 트윈하고
+# (`PilotData.anim_move_t/dur`, 셀 중심끼리의 lerp) 슬롯 변화는 즉시 반영했는데,
+# 슬롯 하나가 91px 이고 반대편으로 옮겨 앉으면 182px 라 **칸 사이 거리(140px)보다
+# 큰 순간이동**이 매 턴 섞여 들어왔다. 옆 사람이 와서 비켜 앉는 파일럿은 아예
+# 트윈이 걸리지 않아 그냥 튀었다.
 #
-# 상태는 셋으로 갈린다:
-#   `_arrow_hold`     — 붙들고 있는(그리고 정착의 출발점이 되는) 벡터
-#   `_arrow_settle_t` — 도착 후 경과 시간. `_process` 가 민다
-#   `_arrow_vec_now`  — 이번 프레임에 실제로 그린 벡터(= 다음 이동이 붙들 값)
+# 지금은 마커 좌표를 **중심 + 슬롯 벡터**로 갈라 놓고 둘을 따로 민다:
 #
-## 도착 후 화살표가 제 타일을 다시 가리키기까지 걸리는 시간(s). 이동 트윈
-## (`BattleSim.ANIM_MOVE_DUR` 0.30) 과 합쳐도 턴 간격(0.5초)을 넘지 않아야
-## 한다 — 넘으면 다음 이동이 아직 정착 중인 화살표를 붙들어, 어긋난 각도가
-## 턴을 넘어 누적된다.
-const ARROW_SETTLE_SEC: float = 0.15
+#   center — 지나간 칸의 중심을 이은 **폴리라인**을 따라 간다. 그래서 2칸 이동
+#            (정글러 move_range 2, 전진 카드 advance:N)이 중간 칸을 스쳐 지나가지
+#             않고 실제로 밟은 대로 꺾인다. 경로는 `PilotData.anim_move_path`.
+#   vec    — 타일 중심에서 슬롯까지의 변위. **각도는 중심 이동과 같은 박자로**
+#            돌고(= 화살표 방향이 칸 이동과 동시에 바뀐다), **길이는 도착한 뒤에**
+#            따라온다 — 붐비는 칸에 들어가느라 바깥 링으로 밀려날 때 이동 중에
+#            화살표까지 늘어나면 무엇이 움직였는지가 흐려진다.
+#
+# 말풍선 꼬리는 이제 **언제나 `center` 를 가리킨다**. 초상이 실제로 미끄러지므로
+# 꼬리도 같이 미끄러지면 되고, 예전의 관성 장치(`_arrow_hold` / `_arrow_settle_t` /
+# `_arrow_vec_now` / `_lerp_polar`)는 통째로 삭제됐다 — 그것은 "초상은 출발 칸에
+# 있는데 꼬리만 도착 칸을 가리킨다"를 가리려고 있던 것이다.
 
-var _arrow_hold: Dictionary = {}
-var _arrow_settle_t: Dictionary = {}
-var _arrow_vec_now: Dictionary = {}
+## 링(반지름)이 바뀔 때, 이동이 끝난 **뒤에** 길이가 따라오는 데 걸리는 시간(s).
+## `BattleSim.ANIM_MOVE_DUR`(0.30) 과 합쳐도 턴 간격(0.5초)을 넘지 않아야 한다.
+const MARKER_RADIUS_SETTLE_SEC: float = 0.15
+
+## PilotData → 글라이드 상태. 스키마는 `_settled_glide` 참조.
+var _glide: Dictionary = {}
 
 
 # ─── 피해 수치 팝업 (공격 카드 전용) ─────────────────────────────────────────
@@ -80,15 +85,17 @@ const POPUP_FONT_SIZE_BASE := 26
 
 
 func _process(delta: float) -> void:
-	# 상시 갱신이 필요한 것은 둘뿐이다 — 피해 수치 팝업과, 켜지거나 꺼지는 중인
-	# 대상 강조. 둘 다 멈춰 있으면 재draw 하지 않는다(대상 지정 상태가 **바뀌는**
-	# 순간은 CardTargetingOverlay._request_redraw() 가 따로 걷어찬다).
+	# 상시 갱신이 필요한 것은 셋이다 — 피해 수치 팝업, 켜지거나 꺼지는 중인 대상
+	# 강조, 그리고 미끄러지는 중인 마커. 전부 멈춰 있으면 재draw 하지 않는다
+	# (대상 지정 상태가 **바뀌는** 순간은 CardTargetingOverlay._request_redraw()
+	#  가 따로 걷어찬다).
 	var dirty: bool = _advance_popups(delta)
 	if _advance_emphasis(delta):
 		dirty = true
-	# 도착 후의 화살표 정착. 이동 트윈이 끝나면 BattleSim 은 더 이상 재draw 를
-	# 걷어차지 않으므로, 이 구간의 프레임은 여기서 만들어야 한다.
-	if _advance_arrow_settle(delta):
+	# 목표 자리를 먼저 훑어 새 글라이드를 띄운 다음 시간을 민다. BattleSim 은
+	# 이동 타이머를 더 이상 들고 있지 않으므로 이 구간의 프레임은 여기서 만든다.
+	_sync_glide(_solve_slots())
+	if _advance_glide(delta):
 		dirty = true
 	if dirty:
 		queue_redraw()
@@ -195,8 +202,6 @@ func _draw() -> void:
 	# targeting dim overlay agree on where each pilot's marker landed within
 	# its team's offset row above / below the tile.
 	_pilot_render_layout = _build_pilot_render_layout()
-	# 전장을 뜬 파일럿이 붙들고 있던 화살표 기하를 버린다.
-	_prune_arrow_state()
 	_draw_front_line_overlays()
 	_draw_captured_tile_overlays()
 	_draw_jungle_camps()
@@ -377,13 +382,26 @@ func _group_pilots_by_render_cell() -> Dictionary:
 
 
 # Builds the PilotData → Vector2 marker_pos lookup shared by the drawing pass,
-# the dim overlay and the targeting hit test. 모든 렌더 가능한 파일럿이 자기
+# the dim overlay and the targeting hit test.
+#
+# 세 걸음이다 — **자리를 푼다**(`_solve_slots`, 순수) → **글라이드를 맞춘다**
+# (`_sync_glide`, 목표가 바뀐 파일럿에게 새 보간을 띄운다) → **지금 프레임의
+# 좌표를 낸다**(`_compose_positions`, 강조 배율과 화면 클램프를 얹는다).
+# 시간을 미는 것은 `_process` 의 `_advance_glide` 뿐이므로, 이 함수를 한 프레임에
+# 여러 번 불러도(그리기 · 히트 테스트 · 돌진 기하) 답이 흔들리지 않는다.
+func _build_pilot_render_layout() -> Dictionary:
+	var solution := _solve_slots()
+	_sync_glide(solution)
+	return _compose_positions(solution)
+
+
+# PilotData → {"cell": Vector2i, "slot": int}. 모든 렌더 가능한 파일럿이 자기
 # 슬롯을 받는다 — `+N` 오버플로 원은 사라졌고, 7명째부터는 바깥 링으로 나간다.
 #
 # 배정은 **전장 전체를 한 번에 훑는 그리디**다: 앞서 자리를 잡은 마커와 겹치는
 # 슬롯은 건너뛰고 시계방향으로 다음 슬롯을 찾는다. 그래서 위아래로 붙은 두 칸이
 # 서로를 향한 슬롯을 고르는 일(= 초상화가 겹치는 유일한 구조적 원인)이 없다.
-func _build_pilot_render_layout() -> Dictionary:
+func _solve_slots() -> Dictionary:
 	var out: Dictionary = {}
 	var by_cell := _group_pilots_by_render_cell()
 	var cells: Array = by_cell.keys()
@@ -398,20 +416,39 @@ func _build_pilot_render_layout() -> Dictionary:
 	var placed: Array = []
 	for raw_cell in cells:
 		var cell := raw_cell as Vector2i
-		var pilots: Array = by_cell[cell] as Array
 		var tile_center := _bs.cell_center(cell)
-		var em: float = _group_emphasis(pilots)
 		var used: Dictionary = {}
-		var slots: Array = []
-		for raw in pilots:
+		for raw in by_cell[cell] as Array:
 			var slot: int = _pick_slot(tile_center,
 					pilot_display_dir_index(raw as PilotData), base_r, used, placed)
 			used[slot] = true
 			placed.append(tile_center + _slot_offset(slot, base_r))
-			slots.append(slot)
+			out[raw] = {"cell": cell, "slot": slot}
+	return out
+
+
+# 지금 프레임의 마커 좌표 표. 글라이드가 낸 **중심 + 슬롯 벡터**에 그 칸의 강조
+# 배율을 곱하고(= 무리가 함께 벌어진다) 화면 밖으로 나간 무리를 통째로 밀어 넣는다.
+#
+# 배율을 타일 중심이 아니라 **글라이드 중심**에 걸어야 한다는 것이 요점이다 —
+# 칸을 건너는 중인 파일럿을 도착 타일 기준으로 부풀리면 아직 도착하지도 않은
+# 지점을 축으로 튕겨 나간다.
+func _compose_positions(solution: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	var by_cell: Dictionary = {}
+	for raw in solution.keys():
+		var cell := (solution[raw] as Dictionary)["cell"] as Vector2i
+		if not by_cell.has(cell):
+			by_cell[cell] = []
+		(by_cell[cell] as Array).append(raw)
+	var base_r: float = PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE
+	for raw_cell in by_cell.keys():
+		var pilots: Array = by_cell[raw_cell] as Array
+		var em: float = _group_emphasis(pilots)
 		var positions: Array = []
-		for raw_slot in slots:
-			positions.append(tile_center + _slot_offset(raw_slot as int, base_r * em))
+		for raw in pilots:
+			var g: Dictionary = _glide[raw]
+			positions.append((g["center"] as Vector2) + (g["vec"] as Vector2) * em)
 		positions = _clamp_group_on_screen(positions, base_r * em)
 		for i in range(pilots.size()):
 			out[pilots[i]] = positions[i] as Vector2
@@ -422,6 +459,177 @@ func _compare_cells(a: Vector2i, b: Vector2i) -> bool:
 	if a.x != b.x:
 		return a.x < b.x
 	return a.y < b.y
+
+
+# ─── 마커 글라이드 ───────────────────────────────────────────────────────────
+
+## 목표(칸 + 슬롯)가 바뀐 파일럿에게 새 보간을 띄운다. **시간은 여기서 흐르지
+## 않는다** — 미는 것은 `_advance_glide` 하나뿐이라, 한 프레임에 이 함수가 몇 번
+## 불려도(그리기 · 히트 테스트 · 팝업) 연출이 되감기지 않는다.
+func _sync_glide(solution: Dictionary) -> void:
+	var base_r: float = PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE
+	for raw in solution.keys():
+		var p := raw as PilotData
+		var e: Dictionary = solution[p]
+		var cell := e["cell"] as Vector2i
+		var slot: int = int(e["slot"])
+		var center := _bs.cell_center(cell)
+		var vec := _slot_offset(slot, base_r)
+		if not _glide.has(p):
+			_glide[p] = _settled_glide(cell, slot, center, vec)
+			continue
+		var g: Dictionary = _glide[p]
+		if (g["cell"] as Vector2i) == cell and int(g["slot"]) == slot:
+			continue
+		# 순간이동이 **맞는** 경우 — 복귀 / 부활은 페이드가 자리 이동을 덮고,
+		# 시신은 쓰러진 칸에 붙박여 있어야 한다. 미끄러뜨리면 사라지는 몸이
+		# 화면을 가로지른다.
+		if p.anim_recall_phase != 0 or p.anim_death_phase != 0:
+			_glide[p] = _settled_glide(cell, slot, center, vec)
+			continue
+		var from_center: Vector2 = g["center"] as Vector2
+		var from_vec: Vector2 = g["vec"] as Vector2
+		var path := PackedVector2Array()
+		if (g["cell"] as Vector2i) != cell:
+			path = _screen_path(p, cell)
+		if path.is_empty():
+			path.append(center)
+		# 출발점은 **지금 실제로 그려지고 있는 중심**이다 — 이전 글라이드가 아직
+		# 안 끝났으면 기록된 출발 칸으로 되감기는 대신 그 자리에서 이어 간다.
+		path[0] = from_center
+		# 길이(= 링)가 바뀌는 경우에만 도착 후 정착 구간을 단다.
+		var settle: float = 0.0
+		if not is_equal_approx(from_vec.length(), vec.length()):
+			settle = MARKER_RADIUS_SETTLE_SEC
+		var ng: Dictionary = {
+			"cell":     cell,
+			"slot":     slot,
+			"path":     path,
+			"from_vec": from_vec,
+			"to_vec":   vec,
+			"t":        0.0,
+			"move_dur": _bs.ANIM_MOVE_DUR,
+			"total":    _bs.ANIM_MOVE_DUR + settle,
+			"center":   from_center,
+			"vec":      from_vec,
+		}
+		_eval_glide(ng)
+		_glide[p] = ng
+	# 전장을 뜬 파일럿(사망 퇴장, 재시작으로 갈린 로스터)의 상태는 버린다.
+	for raw in _glide.keys():
+		if not solution.has(raw):
+			_glide.erase(raw)
+
+
+## 아무 데도 가지 않는(= 이미 도착해 있는) 상태.
+func _settled_glide(cell: Vector2i, slot: int, center: Vector2,
+		vec: Vector2) -> Dictionary:
+	return {
+		"cell":     cell,
+		"slot":     slot,
+		"path":     PackedVector2Array([center]),
+		"from_vec": vec,
+		"to_vec":   vec,
+		"t":        0.0,
+		"move_dur": _bs.ANIM_MOVE_DUR,
+		"total":    0.0,
+		"center":   center,
+		"vec":      vec,
+	}
+
+
+## `p` 가 이번에 실제로 밟은 칸들의 화면 좌표. `PilotData.anim_move_path` 가
+## 도착 칸까지 이어져 있으면 그대로 쓰고(2칸 이동이 꺾여서 간다), 아니면
+## 출발 → 도착 두 점짜리 직선으로 떨어진다(카드 순간이동, 밀림 등).
+##
+## **읽으면서 비운다.** 그래야 같은 프레임의 뒤이은 걸음은 이어 붙고(전진 카드의
+## N틱), 다음 턴의 이동은 빈 배열에서 새 경로로 시작한다.
+func _screen_path(p: PilotData, to_cell: Vector2i) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	var cells: Array[Vector2i] = p.anim_move_path
+	if cells.size() >= 2 and cells[cells.size() - 1] == to_cell:
+		for c in cells:
+			out.append(_bs.cell_center(c))
+	p.anim_move_path.clear()
+	if out.is_empty():
+		out.append(_bs.cell_center(to_cell))
+	return out
+
+
+## 모든 글라이드의 시계를 민다. 아직 움직이는 것이 하나라도 있으면 true.
+func _advance_glide(delta: float) -> bool:
+	var moving: bool = false
+	for raw in _glide.keys():
+		var g: Dictionary = _glide[raw]
+		var total: float = float(g["total"])
+		if float(g["t"]) >= total:
+			continue
+		g["t"] = minf(float(g["t"]) + delta, total)
+		_eval_glide(g)
+		moving = true
+	return moving
+
+
+## 지금 시각의 중심 · 슬롯 벡터를 `g` 에 적어 넣는다.
+##
+## **중심과 각도는 같은 박자, 길이만 뒤에 온다.** 링이 그대로면 길이 보간은
+## 항등이라 화살표 길이가 이동 내내 한 픽셀도 변하지 않고(꼬리가 초상에 매달려
+## 통째로 미끄러진다), 붐비는 칸으로 들어가 바깥 링으로 밀려날 때만 도착 후
+## `MARKER_RADIUS_SETTLE_SEC` 동안 늘어난다.
+func _eval_glide(g: Dictionary) -> void:
+	var move_dur: float = maxf(0.0001, float(g["move_dur"]))
+	var t: float = float(g["t"])
+	var te: float = clampf(t / move_dur, 0.0, 1.0)
+	# **smoothstep — 양 끝에서 정지한다.** 예전 이동 트윈은 ease-out cubic 이었고
+	# (슬롯은 어차피 튀었으니 출발이 급해도 티가 덜 났다) 그 곡선은 60fps 첫
+	# 프레임에 이미 거리의 15%(≈25px)를 지나간다 — 순간이동을 없애려는 연출이
+	# 출발할 때마다 한 번 튀는 셈이었다. 실측: 첫 프레임 24.98px → 1.1px.
+	te = te * te * (3.0 - 2.0 * te)
+	g["center"] = _polyline_lerp(g["path"] as PackedVector2Array, te)
+	var a: Vector2 = g["from_vec"] as Vector2
+	var b: Vector2 = g["to_vec"] as Vector2
+	# 각도는 **짧은 쪽으로** 돈다. 끝점을 직선 lerp 하면 두 벡터 사이를 가로지르며
+	# 마커가 타일 중심 쪽으로 파고들었다 나와, 회전이 아니라 흔들림으로 읽힌다.
+	var ang: float = a.angle() + wrapf(b.angle() - a.angle(), -PI, PI) * te
+	var tr: float = 1.0
+	if float(g["total"]) > float(g["move_dur"]):
+		tr = clampf((t - float(g["move_dur"])) / MARKER_RADIUS_SETTLE_SEC, 0.0, 1.0)
+		tr = 1.0 - pow(1.0 - tr, 3.0)
+	g["vec"] = Vector2.from_angle(ang) * lerpf(a.length(), b.length(), tr)
+
+
+## 폴리라인 위를 **호 길이 비율**로 훑는다. 구간 개수로 나누면 칸마다 속도가
+## 달라지지는 않지만(육각 이웃 간 거리는 모두 같다) 출발점만 바꿔 끼운 경로에서
+## 첫 구간이 짧아지므로, 거리로 재는 편이 어느 경우에도 등속이다.
+func _polyline_lerp(pts: PackedVector2Array, t: float) -> Vector2:
+	if pts.is_empty():
+		return Vector2.ZERO
+	if pts.size() == 1 or t <= 0.0:
+		return pts[0]
+	if t >= 1.0:
+		return pts[pts.size() - 1]
+	var total: float = 0.0
+	for i in range(1, pts.size()):
+		total += pts[i - 1].distance_to(pts[i])
+	if total < 0.001:
+		return pts[0]
+	var want: float = total * t
+	var acc: float = 0.0
+	for i in range(1, pts.size()):
+		var seg: float = pts[i - 1].distance_to(pts[i])
+		if acc + seg >= want:
+			return pts[i - 1].lerp(pts[i], (want - acc) / maxf(0.0001, seg))
+		acc += seg
+	return pts[pts.size() - 1]
+
+
+## 이 파일럿의 말풍선 꼬리가 가리킬 점 — 글라이드 중인 **타일 중심**이다. 이동
+## 중에는 아직 출발 칸 근처에 있으므로, 꼬리가 도착 칸을 먼저 가리키며 늘어나는
+## 일이 없다(초상과 함께 미끄러진다).
+func _marker_center(p: PilotData) -> Vector2:
+	if _glide.has(p):
+		return (_glide[p] as Dictionary)["center"] as Vector2
+	return _bs.cell_center(_render_cell(p))
 
 
 func _draw_hq_hp_bars() -> void:
@@ -662,8 +870,7 @@ func _clamp_group_on_screen(positions: Array, draw_r: float) -> Array:
 # 한 칸의 파일럿 전원(양 팀)을 그린다. **자리는 여기서 풀지 않는다** —
 # `_draw()` 가 프레임 앞머리에 `_build_pilot_render_layout()` 으로 이미 배정해
 # 두었고, 딤 오버레이와 히트 테스트도 같은 표를 읽는다.
-func _draw_pilot_cell(cell: Vector2i, pilots: Array) -> void:
-	var tile_center := _bs.cell_center(cell)
+func _draw_pilot_cell(_cell: Vector2i, pilots: Array) -> void:
 	var radius: float = PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE
 	for raw in pilots:
 		var pilot := raw as PilotData
@@ -679,10 +886,10 @@ func _draw_pilot_cell(cell: Vector2i, pilots: Array) -> void:
 		# 화살표 배율은 **그 파일럿 자신의** 강조다(무리 전체가 아니라):
 		# 한 무리 안에 강조 대상과 아닌 사람이 섞이면 초상 크기가 서로
 		# 다르고, 화살표는 자기 초상 바깥에서 시작해야 한다.
-		# 끝점은 타일 중심이 아니라 `_arrow_aim_point` 가 정한다 — 이동 중에는
-		# 꼬리가 크기 · 방향을 그대로 유지한 채 초상을 따라가고, 도착한 뒤에야
-		# 회전 + 신축으로 제 타일을 다시 가리킨다.
-		_draw_arrow_to_tile(pos, _arrow_aim_point(pilot, pos, tile_center),
+		# 끝점은 **글라이드 중인 타일 중심**이다 — 초상이 실제로 미끄러지므로
+		# 꼬리도 같은 박자로 따라간다. 링이 그대로면 이동 내내 길이가 한 픽셀도
+		# 변하지 않고, 바깥 링으로 밀려날 때만 도착 후에 늘어난다(`_eval_glide`).
+		_draw_arrow_to_tile(pos, _marker_center(pilot),
 				radius, marker_color, alpha, _pilot_emphasis_scale(pilot))
 		_draw_pilot_circle(pilot, pos, radius, marker_color, alpha)
 
@@ -715,8 +922,9 @@ func _render_cell(p: PilotData) -> Vector2i:
 	return p.grid_pos
 
 
-# Per-pilot pixel offset combining move tween, recall rise/descend and
-# damage shake. Applied on top of the per-cell layout position.
+# Per-pilot pixel offset combining recall rise/descend, 전사 상승, 돌진, 그리고
+# 피격 흔들림. **칸 이동은 여기 없다** — 마커 좌표 자체가 글라이드로 미끄러지므로
+# (`_sync_glide` / `_eval_glide`) 여기서 한 번 더 얹으면 두 벌이 된다.
 func _pilot_anim_offset(p: PilotData) -> Vector2:
 	var off := Vector2.ZERO
 	if p.anim_death_phase == 2:
@@ -732,12 +940,6 @@ func _pilot_anim_offset(p: PilotData) -> Vector2:
 	elif p.anim_recall_phase == 2:
 		var t: float = clamp(p.anim_recall_t / p.anim_recall_dur, 0.0, 1.0)
 		off.y -= _bs.ANIM_RECALL_RISE_PX * (1.0 - t)
-	elif p.anim_move_dur > 0.0:
-		var t_raw: float = clamp(p.anim_move_t / p.anim_move_dur, 0.0, 1.0)
-		var t_eased: float = 1.0 - pow(1.0 - t_raw, 3.0)
-		var from_screen := _bs.cell_center(p.anim_prev_grid_pos)
-		var to_screen := _bs.cell_center(p.grid_pos)
-		off += from_screen.lerp(to_screen, t_eased) - to_screen
 	# 공격 카드 돌진은 다른 무엇에도 얹힌다 — 이동/복귀와 배타적인 elif 사슬에
 	# 넣지 않는 이유는, 돌진 중에도 대상이 흔들리듯 시전자가 흔들릴 수 있고 오프셋은
 	# 서로 독립이기 때문이다. 계산 자체는 BattleSim 이 소유한다(연출 상수와
@@ -976,97 +1178,9 @@ func _alpha_mul(c: Color, alpha: float) -> Color:
 	return Color(c.r, c.g, c.b, c.a * alpha)
 
 
-# ─── 화살표 관성 (이동 중 고정 → 도착 후 정착) ───────────────────────────────
-
-## 이 파일럿의 화살표가 지금 **붙들려 있는가**. 이동 트윈이 도는 동안만 참이다 —
-## 복귀 / 부활 / 전사는 `anim_move_dur` 를 0 으로 밀고 들어오므로 저절로 빠진다
-## (순간이동에는 "따라가는 꼬리"라는 개념이 없다).
-func _arrow_frozen(p: PilotData) -> bool:
-	return p.anim_move_dur > 0.0
-
-
-## 이번 프레임에 화살표가 가리킬 점. 셋 중 하나다 —
-##   이동 중        → 붙든 벡터 그대로(크기 · 방향 불변, 초상만 따라 움직인다)
-##   도착 직후      → 붙든 벡터에서 참값으로 회전 + 신축하는 중
-##   그 밖(정지 중) → 참값(= 타일 중심)
-##
-## 부작용으로 `_arrow_vec_now` 에 이번 프레임의 벡터를 남긴다. 다음 이동이
-## 붙드는 것이 바로 이 값이다 — 직전 프레임에 **실제로 보이던** 기하라야
-## 이동이 시작되는 프레임에 화살표가 한 번도 튀지 않는다.
-func _arrow_aim_point(p: PilotData, marker_pos: Vector2,
-		tile_center: Vector2) -> Vector2:
-	var want: Vector2 = tile_center - marker_pos
-	var vec: Vector2 = want
-	if _arrow_frozen(p):
-		# 붙들 값을 새로 잡아야 하는 두 경우 — (1) 붙든 것이 아예 없다,
-		# (2) **정착 중에 다음 이동이 시작됐다**(`_arrow_settle_t > 0`). (2)에서
-		# 옛 hold 를 그대로 쓰면 정착으로 이미 돌아간 만큼 화살표가 되감긴다.
-		if not _arrow_hold.has(p) or float(_arrow_settle_t.get(p, 0.0)) > 0.0:
-			var prev: Vector2 = want
-			if _arrow_vec_now.has(p):
-				prev = _arrow_vec_now[p]
-			_arrow_hold[p] = prev
-			_arrow_settle_t[p] = 0.0
-		vec = _arrow_hold[p]
-	elif _arrow_hold.has(p):
-		var t: float = clampf(
-				float(_arrow_settle_t.get(p, 0.0)) / ARROW_SETTLE_SEC, 0.0, 1.0)
-		var from_vec: Vector2 = _arrow_hold[p]
-		# 감속(ease-out cubic) — 도착하자마자 크게 돌아 두고 마지막에 살며시 맞춘다.
-		vec = _lerp_polar(from_vec, want, 1.0 - pow(1.0 - t, 3.0))
-	_arrow_vec_now[p] = vec
-	return marker_pos + vec
-
-
-## **각도와 길이를 따로** 보간한다 — 끝점을 직선으로 lerp 하면 화살표가 도중에
-## 짧아졌다 길어지고(두 벡터 사이를 가로지르므로) 회전으로 읽히지 않는다.
-## 사용자에게 보여야 하는 것은 "돌면서 늘어난다" 두 가지다.
-func _lerp_polar(a: Vector2, b: Vector2, t: float) -> Vector2:
-	var la: float = a.length()
-	var lb: float = b.length()
-	if la < 0.001 or lb < 0.001:
-		return a.lerp(b, t)
-	# 각 차이는 ±PI 로 감아 짧은 쪽으로 돈다.
-	var ang: float = a.angle() + wrapf(b.angle() - a.angle(), -PI, PI) * t
-	return Vector2.from_angle(ang) * lerpf(la, lb, t)
-
-
-## 정착 타이머를 민다. 아직 정착 중인 화살표가 하나라도 있으면 true(= 계속
-## 다시 그려야 한다). 이동 중인 파일럿은 시간이 흐르지 않는다 — 붙든 벡터는
-## 이동이 **끝나는** 순간부터 풀리기 시작해야 한다.
-func _advance_arrow_settle(delta: float) -> bool:
-	if _arrow_hold.is_empty():
-		return false
-	var moving: bool = false
-	for raw in _arrow_hold.keys():
-		var p := raw as PilotData
-		if _arrow_frozen(p):
-			continue
-		var t: float = float(_arrow_settle_t.get(p, 0.0)) + delta
-		if t >= ARROW_SETTLE_SEC:
-			_arrow_hold.erase(p)
-			_arrow_settle_t.erase(p)
-		else:
-			_arrow_settle_t[p] = t
-		moving = true
-	return moving
-
-
-## 화면에서 사라진 파일럿의 화살표 상태를 버린다(사망 후 퇴장, 재시작으로 로스터
-## 자체가 갈리는 경우). 그리기 표에 없는 파일럿은 다음에 나타날 때 어차피
-## 순간이동이므로 붙들 기하가 없다.
-func _prune_arrow_state() -> void:
-	for raw in _arrow_vec_now.keys():
-		if not _pilot_render_layout.has(raw):
-			_arrow_vec_now.erase(raw)
-			_arrow_hold.erase(raw)
-			_arrow_settle_t.erase(raw)
-
-
-# 마커에서 자기 타일을 가리키는 말풍선 꼬리. `aim_point` 는 **보통은 타일
-# 중심이지만 이동 중에는 아니다** — 이동 트윈이 도는 동안 꼬리는 크기도 방향도
-# 바꾸지 않고 초상에 매달려 따라가므로, 그때의 끝점은 `_arrow_aim_point` 가
-# 붙들어 둔 벡터가 정한다.
+# 마커에서 자기 타일을 가리키는 말풍선 꼬리. `aim_point` 는 **글라이드 중인 타일
+# 중심**(`_marker_center`)이다 — 이동 중에는 초상과 함께 미끄러지므로 꼬리가
+# 초상보다 먼저 도착 칸을 가리키며 늘어나는 일이 없다.
 #
 # `em` 은 그 파일럿의 강조 배율이다. 초상이 커지면 화살표는 **더 바깥에서
 # 시작해서 더 길게** 뻗어야 한다 — 시작점을 base 반지름에 두면 2배로 커진 초상이

@@ -82,23 +82,45 @@ restarts from waypoint 0 the next turn. Nothing else reads it. (The former
 model — off the field, healing `RECALL_HEAL_RATIO` per turn until full — and its
 `is_recalling` flag are both gone.)
 
-**성장 필드 6개** — `base_atk` / `base_max_hp` / `growth` / `growth_rate_mult` /
-`growth_rate_expire_turn` / `growth_until_phase`. 매 턴
-`SimulationCore.tick_growth_and_expiries` 가 살아 있는 파일럿의 `growth` 를
-`BattleSim.GROWTH_PER_TURN × growth_rate_mult` 만큼 올리고, `atk` / `max_hp` 를
-**원본에서 다시 계산**한다(매 턴 곱하면 반올림 오차가 누적된다). 두 원본은
-`_init` 이 채운다 — 메크 스탯 주입(`SimulationCore._stats_for`)이 생성자를
-거치므로 어떤 스폰 경로에서도 비지 않는다. `growth` 는 파일럿에 붙어 있어
-**사망·리스폰으로 초기화되지 않는다**(죽어 있는 동안 성장이 멈출 뿐).
-`growth_rate_mult` 는 안전한 파밍(턴 만료)과 완벽한 마무리(작전 단계 만료)가
-공유하므로 나중에 건 쪽이 덮어쓴다.
+**성장 필드 8개** — `base_atk` / `base_max_hp` / `growth` / `growth_hp` /
+`atk_buff` / `growth_rate_mult` / `growth_rate_expire_turn` / `growth_until_phase`.
 
-**성장치 `score`** (개시 1.0) — 위의 `growth` 와 **다른 것이다**. `growth` 는
-스탯을 밀어 올리는 배율이고, `score` 는 스탯에 아무 영향이 없는 **기여 지표**다
-(처치 / 사망 / 준 피해 / 포탑 · HQ 피해로 누적, 상한 없음, 하한 0.10).
-파일럿 스트립에 `1.00k` 형식으로 찍히고 팀 점수는 팀원 합산이다. 적립 규칙과
-상수는 전부 `BattleSim` 의 `SCORE_*` 절에 있고 변동은 `BattleSim.add_score`
-한 곳만 지난다 — 이름이 비슷해 헷갈리기 쉬우니 필드도 갈라 두었다.
+**성장은 시간이 아니라 성장치(`score`)가 만든다.** 예전에는
+`SimulationCore.tick_growth_and_expiries` 가 매 턴 `GROWTH_PER_TURN` 을 누적했는데,
+그러면 (1) 아무것도 안 해도 자라 킬·포탑·파밍이 성장에 아무 영향이 없었고,
+(2) `atk` 와 `max_hp` 가 **같은 비율**로 자라 "몇 대 맞아야 죽는가"가 영원히
+그대로였다. `GROWTH_PER_TURN` 은 game_config 에서 삭제됐다.
+
+지금은 `BattleSim.refresh_growth_stats` 가 성장치에서 둘을 파생시킨다 —
+`growth` = 공격력분(+8.33%p per 1k), `growth_hp` = 최대 체력분(+2.08%p per 1k).
+**공격력이 4배 빠르게 자라는 이 비대칭이 성장 체감의 전부다**(25k 에서 atk ×3.0 /
+hp ×1.5). 스탯은 매 턴 곱해 나가는 대신 두 원본에서 **다시 계산**한다(반올림
+오차 누적 방지). 두 원본은 `_init` 이 채운다 — 메크 스탯 주입
+(`SimulationCore._stats_for`)이 생성자를 거치므로 어떤 스폰 경로에서도 비지
+않는다. 재계산은 점수가 움직이는 그 순간(`add_score`)에 돈다.
+
+`atk_buff` 는 카드가 거는 **일시** 공격력 가산이다. `atk` 를 직접 밀면 턴
+한가운데의 재계산에 지워지고 턴 끝의 되돌리기가 원본을 깎으므로, 별도 필드로
+들고 있다가 `base × (1 + growth) + atk_buff` 로 마지막에 더한다.
+
+`growth_rate_mult` 는 이제 성장이 아니라 **성장치 적립**에 곱해진다(안전한
+파밍 턴 만료 / 완벽한 마무리 작전 단계 만료) — 결과는 같고 배선이 한 겹 준다.
+둘이 같은 필드를 공유하므로 나중에 건 쪽이 덮어쓴다.
+
+**성장치 `score`** (개시 1.0) — 위의 성장의 **원천**이다. 파일럿의 성장 통화이고
+MOBA 의 골드에 해당한다(개시 1.00k → 50턴 25k → 캐리 40k+). 적립처는 셋이다:
+**전선 체류**(턴당 0.50k) / **정글 캠프**(0.50k, 4턴 리스폰, 정글러) / **처치
+현상금**(라스트힛 1.5k + 앞선 격차 20%, 어시스트가 피해 비례로 최대 50%). 포탑
+철거 +1.0k. **포탑/HQ 피해와 사망 벌점은 삭제됐다.** 상한 없음, 하한 0.10k.
+파일럿 스트립에 `18.05k` 형식으로 찍히고 팀 점수는 팀원 합산이다. 규칙과 상수는
+전부 `BattleSim` 의 `SCORE_*` 절에 있고 변동은 `BattleSim.add_score` 한 곳만
+지난다 — 하한 · 적립 배율 · 스탯 재계산을 한 자리에서만 처리하기 위해서다.
+
+**`damage_credit: Dictionary`** (`공격자 → 이번 생에 받은 누적 피해`) — 피해는
+곧장 점수가 되지 않고 **피해자의 이 장부**에 쌓였다가, 그 대상이 쓰러질 때
+`BattleSim._payout_kill_bounty` 가 라스트힛과 어시스트에게 나눠 주고 비운다.
+전장 자동 교전 · 공격 카드 · 교전 무대가 전부 `BattleSim.record_pilot_damage`
+한 지점을 지나므로 표가 하나다.
 
 **라인전 스탯 2개** — `lane_stat_mod` (±0.10) / `lane_stat_expire_turn`.
 `SimulationCore.roll_hit` **한 곳에서만** 읽히며, 공격자의 `hit` 과 방어자의

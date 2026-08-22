@@ -157,9 +157,6 @@ var PHASE_THRESHOLD:         int   = 0
 ## (`BLUE_COST_HEAD_START`) 하나뿐이고, 양 팀은 빈 손으로 이 턴까지 순수
 ## 라인전만 한다. 성장은 이 게이트를 타지 않는다(1턴부터 돈다).
 var ECONOMY_START_TURN:      int   = 1
-## 턴당 누적 성장률. 살아 있는 파일럿의 `atk` / `max_hp` 가 매 턴 이만큼
-## 원본 대비 늘어난다 (0.01 = +1%p/턴). SimulationCore.tick_growth_and_expiries.
-var GROWTH_PER_TURN:         float = 0.0
 
 # Derived after DB load
 var PLAYER_HQ_POS: Vector2i = Vector2i.ZERO
@@ -178,6 +175,14 @@ var TURRET_POSITIONS: Dictionary = {}
 
 # ─── State ────────────────────────────────────────────────────────────────────
 var neutral_zone_cells: Dictionary = {}  # Vector2i → int (-1=gray, 0=team0, 1=team1)
+## 정글 캠프의 재생성 시계. `Vector2i cell → int ready_turn` 이고, `turn_count`
+## 가 그 값 이상이면 캠프가 차 있다. 정글러가 밟아 먹으면
+## `turn_count + JUNGLE_CAMP_RESPAWN_TURNS` 로 밀린다.
+##
+## 칸은 `neutral_zone_cells` 와 같은 집합(정글 + 중립 전부)이고, 캠프를 먹을 수
+## 있는 것은 **자기 팀 소유이거나 중립인 칸**뿐이다 — 그래서 적 정글을 점령하면
+## 돌 수 있는 캠프가 늘어 수입이 그만큼 커진다.
+var jungle_camps: Dictionary = {}        # Vector2i → int (ready_turn)
 var pilots:  Array               = []
 var turrets: Array               = []
 var player_hq_hp: int            = 0
@@ -461,7 +466,6 @@ func _populate_from_data_loader() -> void:
 	COST_RECOVERY_INTERVAL  = max(1, int(cfg.get("COST_RECOVERY_INTERVAL", "1")))
 	PHASE_THRESHOLD         = int(cfg.get("PHASE_THRESHOLD", "8"))
 	ECONOMY_START_TURN      = max(1, int(cfg.get("ECONOMY_START_TURN", "1")))
-	GROWTH_PER_TURN         = float(cfg.get("GROWTH_PER_TURN", "0.0"))
 	# Init counters so first event fires on turn 1
 	draw_counter = CARD_DRAW_INTERVAL - 1
 	cost_counter = COST_RECOVERY_INTERVAL - 1
@@ -583,18 +587,22 @@ func turns_until_return(p: PilotData) -> int:
 ## `killer` 는 **성장치 정산 전용**이다. 계획 살인 현상금은 예나 지금이나
 ## "쓰러진 파일럿의 반대 팀"으로 충분하지만(전장에 제3세력이 없다), 성장치는
 ## 개인 지표라 실제로 마지막 타격을 넣은 파일럿을 알아야 한다. 모르면 null 을
-## 넘긴다 — 포탑 처치가 그런 경우다.
+## 넘긴다 — 포탑 처치가 그런 경우이고, 그때도 어시스트는 지급된다.
+##
+## **사망 자체에는 점수 벌점이 없다.** 벌점은 죽어 있는 동안 전선 수입과 캠프가
+## 통째로 멈추는 것 — 그것이 리스폰 턴 수(경기 후반일수록 길어진다)에 비례하는
+## 진짜 비용이다. 예전의 −0.10k 는 25k 스케일에서 아무 의미가 없는 데다 같은
+## 손해를 두 번 매기는 것이었다.
 func mark_pilot_dead(p: PilotData, killer: PilotData = null) -> void:
 	p.hp            = 0
 	p.alive         = false
 	p.recall_hold   = false   # 복귀 대기 중 죽으면 대기도 함께 사라진다
 	p.shield        = 0
 	p.respawn_timer = respawn_turns_now()
+	p.atk_buff      = 0   # 카드가 걸어 둔 일시 공격력은 죽으면 사라진다
 	anim_pilot_death(p)
 	_award_kill_bounty(p.team)
-	add_score(p, SCORE_DEATH)
-	if killer != null:
-		add_score(killer, SCORE_KILL)
+	_payout_kill_bounty(p, killer)
 
 
 ## 계획 살인의 지급 지점. 전장에는 제3세력이 없으므로 "누가 죽였는가"를 따로
@@ -611,54 +619,199 @@ func _award_kill_bounty(dead_team: int) -> void:
 
 
 # ─── 성장치 (파일럿 점수) ────────────────────────────────────────────────────
-# 파일럿마다 개시 1.00k 에서 출발해 경기 내내 누적되는 종합 지표. 파일럿
-# 스트립의 체력 바 아래에 찍히고, 상단 중앙의 팀 점수는 그 팀 다섯 명의 **합산**
-# 이다(개시 5.00k - 5.00k). 상한이 없으므로 게이지가 아니라 숫자로만 보여 준다.
+# 파일럿의 **성장 통화**. MOBA 의 골드에 해당하고, 개시 1.00k 에서 시작해 50턴
+# 평균 25.00k / 잘 큰 캐리 40.00k 을 넘긴다. 파일럿 스트립의 체력 바 아래에
+# 찍히고, 상단 중앙의 팀 점수는 그 팀 다섯 명의 **합산**이다(개시 5.00k).
+# 상한이 없으므로 게이지가 아니라 숫자로만 보여 준다.
 #
-# **성장(`PilotData.growth`)과는 다른 것이다.** 성장은 매 턴 `atk`/`max_hp` 를
-# 밀어 올리는 스탯 배율이고, 성장치는 전투 기여를 읽는 점수라 스탯에 아무
-# 영향을 주지 않는다. 이름이 비슷해 헷갈리기 쉬우니 필드도 `growth` 와
-# `score` 로 갈라 두었다.
+# **성장(`PilotData.growth`)은 이 값에서 파생된다** — `refresh_growth_stats`.
+# 예전에는 둘이 완전히 무관해서(성장은 시간 경과, 성장치는 표시용 기록) 킬을
+# 따도 포탑을 밀어도 스탯이 1도 변하지 않았고, 게다가 `atk` 와 `max_hp` 가 같은
+# 비율로 자라 교전 타수가 영원히 그대로였다.
 #
-# 적립은 **피해가 굴려지는 그 지점**에서 한다 — 실제로 깎인 양이 아니라 굴린
-# 양이다. 오버킬 몇 점이 지표를 흔들지는 않고, 반대로 적용 지점(damage_map
-# 소진 루프)에서 잡으려면 공격자를 거기까지 들고 가야 해서 배선이 훨씬 는다.
+# 적립처는 셋뿐이다.
+#   • **전선 체류** — 살아서 자기 레인의 전선(양 팀 최전방 포탑 사이) 안에
+#     서 있는 턴마다 `SCORE_FRONTLINE_PER_TURN`. 수입의 60%가 여기서 나온다.
+#   • **정글 캠프** — 정글러가 자기 팀 소유(또는 중립) 정글 칸의 살아 있는
+#     캠프를 밟으면 `SCORE_JUNGLE_CAMP`. 캠프는 `JUNGLE_CAMP_RESPAWN_TURNS`
+#     마다 되살아나므로 정글러는 쉬지 않고 순회해야 라이너만큼 번다.
+#   • **처치 현상금** — 라스트힛이 전액, 그 대상에게 피해를 넣은 아군이
+#     피해 비례로 최대 50%를 더 받는다(어시스트). 아래 `mark_pilot_dead`.
+#
+# 포탑/HQ **피해**는 더 이상 점수를 주지 않는다 — 피해가 고정 2 로 바뀌면서
+# 한 경기에 굴러 봐야 0.01k 수준이라 노이즈였다. 대신 **철거**에 한 번 지급한다.
 ## 개시값.
 const SCORE_START: float = 1.0
 ## 아무리 죽어도 여기 아래로는 내려가지 않는다.
 const SCORE_MIN: float = 0.10
-const SCORE_KILL: float = 0.20
-const SCORE_DEATH: float = -0.10
-## 피해 1 당 적립량 (= 100 당 0.01 / 0.02 / 0.03).
-const SCORE_PER_PILOT_DMG: float  = 0.01 / 100.0
-const SCORE_PER_TURRET_DMG: float = 0.02 / 100.0
-const SCORE_PER_HQ_DMG: float     = 0.03 / 100.0
-const SCORE_TURRET_KILL: float = 0.15
+## 전선 안에 살아서 서 있는 1턴당 적립. **이 값 하나가 성장 속도의 주 노브다.**
+##
+## 0.50 은 헤드리스 실측에서 역산한 값이다. 목표는 "50턴에 평균 25k(= atk ×3)"
+## 이고, 파일럿이 실제로 전선에서 버는 턴은 50턴 중 약 46턴(HQ 에서 걸어 나오는
+## 초반 몇 턴과 복귀·사망 구간이 빠진다) → 24k / 46 ≈ 0.52.
+##
+## 처음에는 "전선 15k + 킬 8k = 25k" 를 겨냥해 0.35 로 잡았는데, 실측이 두 가정을
+## 모두 비껴갔다 — 전선 체류율이 예상보다 높아 전선만으로 17.8k 를 벌었고(예상
+## 15k), 반대로 **킬이 거의 안 났다**(전장 자동 교전은 `BATTLE_PILOT_DMG_MULT`
+## 0.35 때문에 한 대에 2~9 밖에 안 들어가 라인전만으로는 사람이 죽지 않는다.
+## 처치는 사실상 교전·공격 카드에서만 나오므로 플레이어가 얼마나 싸우느냐에
+## 통째로 달려 있다). 그래서 **아무도 싸우지 않은 하한선**이 목표에 닿도록
+## 전선 수입을 올리고, 킬은 그 위에 얹히는 가속으로 둔다.
+const SCORE_FRONTLINE_PER_TURN: float = 0.50
+## 정글 캠프 1개. **라이너의 턴당 수입(0.50)보다 훨씬 크다** — 캠프를 먹으려면
+## 그 칸까지 걸어가야 하고 재생성을 기다려야 하므로, 캠프당 값이 같으면
+## 정글러의 턴당 수입은 구조적으로 라이너보다 낮다.
+##
+## 0.65 는 헤드리스 실측에서 역산한 값이었다. 기준선은 **"50턴 · 포탑이 하나도
+## 안 부서지고 적 정글도 안 뺏은"** 판이다(포탑을 불사로 만들어 T1 파괴 보상과
+## 전선 확장을 둘 다 없앤 4회 평균): 캠프값 0.50 · 재생성 4턴에서 정글러 18.4k /
+## 라이너 평균 23.5k = **0.78배**였고, 필요한 배수 22.45 / 17.375 = 1.29 를
+## 곱해 0.65 가 나왔다(적용 후 0.98배).
+##
+## **재생성이 4턴 → 6턴으로 늦춰지면서 0.98 로 다시 올렸다.** 캠프 획득 빈도가
+## 그대로 재생성 주기에 반비례하므로(정글러 수입은 전부 캠프다) 주기를 1.5배로
+## 늘리면 값도 1.5배여야 같은 수입이 나온다: 0.65 × 1.5 ≈ 0.98. 늦춘 것은
+## **순회 리듬**이지 정글러의 몫이 아니다 — 한 칸이 되살아나기를 더 오래 기다리는
+## 대신 한 번 먹을 때 더 크게 먹는다.
+##
+## 적 정글까지 점령하면 돌 캠프가 늘어 라이너를 추월한다 — 그것이 정글 점령의
+## 값이고, 이 상수는 **점령이 없는 하한선**을 라이너와 나란히 놓을 뿐이다.
+const SCORE_JUNGLE_CAMP: float = 0.98
+## 캠프가 다시 차오르기까지의 턴 수. 4턴은 한쪽 정글(4칸)에서 **매 턴 정확히
+## 한 칸**이 되살아나 정글러가 발밑을 뜰 이유가 없었다 — 6턴이면 그 칸이
+## 비어 있는 구간이 생겨 반대쪽으로 넘어가는 순회가 강제된다.
+const JUNGLE_CAMP_RESPAWN_TURNS: int = 6
+## **방치 할인** — 차 있는 채로 놀고 있는 캠프가 거리 한 칸을 되사는 데 걸리는
+## 턴 수. 정글러의 목표 선택(`SimulationCore._best_ready_camp`)은 거리에서
+## `방치 턴 / 이 값` 을 뺀 값이 가장 작은 캠프를 고르므로, 멀리 있어 계속
+## 미뤄지던 캠프도 언젠가는 가장 싼 목표가 된다.
+##
+## 이것이 없으면 정글러는 **자기 발밑 4칸에 갇힌다**: 한쪽 정글이 4칸이라
+## 재생성 주기가 그 칸 수에 가까우면 매 턴 한 칸이 되살아나고, 거리만 보는 그리디는
+## 언제나 거리 1짜리 캠프를 찾아내고 반대쪽 정글은 개시부터 끝까지 캠프가 꽉
+## 찬 채로 남는다(실측: 팀0 정글러가 30턴 동안 (0,0)/(0,-1)/(1,0) 을 한 번도
+## 밟지 않았다). 할인이 붙으면 방치된 쪽이 주기적으로 가장 싸져 정글러가
+## 좌우를 오가는 **순회**가 된다.
+const JUNGLE_CAMP_STALE_PER_STEP: int = 3
+## 처치 기본 현상금 — 누구를 잡아도 이만큼은 나온다.
+const SCORE_KILL_BASE: float = 1.5
+## 앞서가는 적 현상금. 피해자가 처치자 팀 평균보다 앞선 만큼의 이 비율이
+## 기본값 위에 얹힌다. 10k 앞선 에이스를 잡으면 1.5 + 2.0 = 3.5k.
+const SCORE_KILL_BOUNTY_RATE: float = 0.20
+## 어시스트 전원이 나눠 갖는 현상금의 상한 비율. 각자의 몫은
+## `현상금 × 0.5 × (내 피해 / 그 대상이 이번 생에 받은 총 피해)` 라, 라스트힛만
+## 넣고 딜을 안 넣은 파일럿과 끝까지 두들긴 파일럿이 구분된다.
+const SCORE_ASSIST_MAX_SHARE: float = 0.50
+## 포탑 철거. 처치 기본값에 준하는 한 덩어리.
+const SCORE_TURRET_KILL: float = 1.0
+
+# ─── 성장 환산 (성장치 → 스탯) ───────────────────────────────────────────────
+# **공격력이 체력의 4배 속도로 자란다.** 이 비대칭이 성장 체감의 전부다 —
+# 둘이 같은 비율이면 `atk/max_hp` 가 불변이라 "몇 대 맞아야 죽는가"가 50턴이
+# 지나도 1타도 안 줄어든다(예전 설계의 구조적 결함).
+#
+# 기준점: 성장치 25k(= 개시분을 뺀 24k) 에서 **공격력 ×3.0 / 최대 체력 ×1.5**.
+# 격투가 atk 16 → 48, 탱커 hp 220 → 330 이라 교전 타수가 14타 → 7타로 준다.
+# 스나이퍼(hp 75 → 113)는 3타에 무너지고, 40k 캐리는 ×4.25 로 2타에 끝낸다.
+const GROWTH_ATK_PER_SCORE: float = 2.0 / 24.0   # +8.33%p / 1k
+const GROWTH_HP_PER_SCORE:  float = 0.5 / 24.0   # +2.08%p / 1k
 
 
-## 모든 성장치 변동이 지나는 한 지점. 하한만 지킨다(상한 없음).
+## 모든 성장치 변동이 지나는 한 지점. 하한만 지키고(상한 없음), **적립 배율**
+## (안전한 파밍 / 완벽한 마무리)은 늘어나는 쪽에만 곱한다.
+##
+## 곧바로 스탯을 다시 계산하는 것이 요점이다 — 성장이 턴 경계가 아니라 점수가
+## 움직인 그 순간에 붙어야 "킬을 땄더니 세졌다"가 한 박자로 읽힌다.
 func add_score(p: PilotData, delta: float) -> void:
 	if p == null or is_zero_approx(delta):
 		return
+	if delta > 0.0:
+		delta *= p.growth_rate_mult
 	p.score = maxf(SCORE_MIN, p.score + delta)
+	refresh_growth_stats(p)
 
 
-func score_pilot_damage(attacker: PilotData, amount: int) -> void:
-	if amount > 0:
-		add_score(attacker, float(amount) * SCORE_PER_PILOT_DMG)
+## 성장치에서 `atk` / `max_hp` 를 **원본에서 다시 계산**한다. 매 턴 곱해 나가는
+## 대신 이렇게 하는 이유는 그때나 지금이나 같다 — 반올림이 반복되면 누적 오차가
+## 실제 성장률을 갉아먹는다.
+##
+## 최대 체력이 오른 만큼 현재 체력도 같이 올려 준다(성장이 만피 파일럿을
+## 상대적으로 다치게 하지 않는다). 카드가 건 일시 공격력은 `atk_buff` 로 따로
+## 들고 있다가 마지막에 더한다 — `atk` 를 직접 밀면 이 재계산에 지워진다.
+func refresh_growth_stats(p: PilotData) -> void:
+	if p == null:
+		return
+	var gained: float = maxf(0.0, p.score - SCORE_START)
+	p.growth    = gained * GROWTH_ATK_PER_SCORE
+	p.growth_hp = gained * GROWTH_HP_PER_SCORE
+	p.atk = maxi(1, roundi(float(p.base_atk) * (1.0 + p.growth))) + p.atk_buff
+	var new_max: int = maxi(1, roundi(float(p.base_max_hp) * (1.0 + p.growth_hp)))
+	if new_max != p.max_hp:
+		# 죽어 있는 파일럿의 현재 체력은 0 으로 둔다 — 쓰러진 뒤에도 점수가
+		# 들어올 수 있고(자기가 때려 둔 적이 나중에 죽으면 어시스트가 붙는다)
+		# 그때 최대 체력이 오르면서 hp 가 1 이상으로 되살아나면 스트립과 카드
+		# 잠금 표시가 살아 있는 것처럼 읽힌다. 부활은 `process_respawns` 가
+		# 만피로 세워 준다.
+		if p.alive:
+			p.hp = maxi(1, p.hp + (new_max - p.max_hp))
+		p.max_hp = new_max
 
 
-func score_turret_damage(attacker: PilotData, amount: int) -> void:
-	if amount > 0:
-		add_score(attacker, float(amount) * SCORE_PER_TURRET_DMG)
+## 팀 평균 성장치. 처치 현상금이 "얼마나 앞선 적인가"를 재는 기준선이다.
+func team_avg_score(team: int) -> float:
+	var total: float = 0.0
+	var n: int = 0
+	for raw in pilots:
+		var p := raw as PilotData
+		if p.team == team:
+			total += p.score
+			n += 1
+	return total / float(n) if n > 0 else SCORE_START
 
 
-func score_hq_damage(attacker: PilotData, amount: int) -> void:
-	if amount > 0:
-		add_score(attacker, float(amount) * SCORE_PER_HQ_DMG)
+## 피해 한 건을 **피해자의 장부**에 적는다. 점수는 여기서 나가지 않는다 —
+## 어시스트는 그 대상이 실제로 쓰러졌을 때만 정산되기 때문이다(MOBA 와 같다).
+## 전장 자동 교전 · 교전 무대 · 공격 카드가 전부 이 한 지점을 지난다.
+##
+## 적는 값은 **굴린 피해 전체**다 — 보호막에 먹힌 몫도 기여이고, 오버킬 몇 점이
+## 비율을 흔들지도 않는다.
+func record_pilot_damage(attacker: PilotData, victim: PilotData, amount: int) -> void:
+	if attacker == null or victim == null or amount <= 0:
+		return
+	if attacker.team == victim.team:
+		return
+	victim.damage_credit[attacker] = int(victim.damage_credit.get(attacker, 0)) + amount
 
 
-func score_turret_kill(attacker: PilotData) -> void:
+## 처치 현상금 정산. 라스트힛(`killer`)이 전액을 받고, 그 대상에게 피해를 넣은
+## 다른 아군이 **피해 비례로 최대 `SCORE_ASSIST_MAX_SHARE`** 를 더 받는다.
+## 분모는 피해자가 이번 생에 받은 총 피해라, 라스트힛이 딜의 대부분을 넣었다면
+## 어시스트 총합은 50% 에 한참 못 미친다.
+##
+## `killer` 가 null 이어도(포탑 처치) 어시스트는 지급된다 — 끝까지 두들긴
+## 사람에게 아무것도 안 주는 쪽이 더 이상하다.
+func _payout_kill_bounty(victim: PilotData, killer: PilotData) -> void:
+	var killer_team: int = killer.team if killer != null else 1 - victim.team
+	var lead: float = maxf(0.0, victim.score - team_avg_score(killer_team))
+	var bounty: float = SCORE_KILL_BASE + lead * SCORE_KILL_BOUNTY_RATE
+	var total_dmg: float = 0.0
+	for raw in victim.damage_credit.keys():
+		total_dmg += float(victim.damage_credit[raw])
+	if killer != null:
+		add_score(killer, bounty)
+	if total_dmg > 0.0:
+		for raw in victim.damage_credit.keys():
+			var a := raw as PilotData
+			if a == killer:
+				continue
+			var share: float = float(victim.damage_credit[a]) / total_dmg
+			add_score(a, bounty * SCORE_ASSIST_MAX_SHARE * share)
+	victim.damage_credit.clear()
+
+
+## 포탑 철거. `td` 는 킬로그가 어느 포탑인지를 그리는 데만 쓴다 — 점수는
+## 마지막 한 대를 넣은 파일럿에게만 간다(어시스트 개념이 없다).
+func score_turret_kill(attacker: PilotData, td: TurretData = null) -> void:
 	add_score(attacker, SCORE_TURRET_KILL)
 
 
@@ -676,6 +829,14 @@ func team_score(team: int) -> float:
 ## 성장치 표기. 1.0 → "1.00k". 소수 둘째 자리까지 — 피해 100 이 0.01k 라
 ## 한 자리로 자르면 한참을 싸워도 숫자가 안 움직이는 것처럼 보인다.
 static func fmt_score(v: float) -> String:
+	# 소수 둘째 자리는 개시 구간(1.00k 대)에서 숫자가 움직이는 것을 보여 주기
+	# 위한 것이다. 후반에는 자릿수가 늘어 `24.90k` / 팀 합산은 `124.50k` 까지
+	# 가는데, 스트립 칸이 좁아 한 자리로 줄인다 — 그 구간에서는 0.05k 의 변화가
+	# 어차피 안 읽히고, 자릿수가 밀려 옆 칸을 침범하는 쪽이 훨씬 나쁘다.
+	if absf(v) >= 100.0:
+		return "%.0fk" % v
+	if absf(v) >= 10.0:
+		return "%.1fk" % v
 	return "%.2fk" % v
 
 

@@ -53,6 +53,9 @@ func simulate_turn() -> void:
 	process_respawns()
 
 	# Apply pending ATK buffs from card plays this turn (kept from old design).
+	# 가산은 `atk` 가 아니라 `atk_buff` 에 얹는다 — 성장 재계산이 이 턴 한가운데
+	# (처치가 나면 그 자리에서) 돌기 때문에 `atk` 를 직접 밀면 가산분이 지워지고
+	# 턴 끝의 되돌리기가 원본을 깎아 버린다.
 	var buff_p  := _bs.pending_atk_buff_p
 	var buff_ai := _bs.pending_atk_buff_ai
 	var buffed_pilots: Array = []
@@ -61,9 +64,11 @@ func simulate_turn() -> void:
 			var bp := raw_p as PilotData
 			if not bp.alive: continue
 			if bp.team == 0 and buff_p > 0:
-				bp.atk += buff_p; buffed_pilots.append(bp)
+				bp.atk_buff += buff_p; buffed_pilots.append(bp)
 			elif bp.team == 1 and buff_ai > 0:
-				bp.atk += buff_ai; buffed_pilots.append(bp)
+				bp.atk_buff += buff_ai; buffed_pilots.append(bp)
+		for raw_p in buffed_pilots:
+			_bs.refresh_growth_stats(raw_p as PilotData)
 
 	var log_lines: Array = []
 	# 1. Recall (instant teleport) for any pilot under HP threshold.
@@ -170,14 +175,21 @@ func simulate_turn() -> void:
 	# Reset ATK buffs applied this turn
 	for raw_p in buffed_pilots:
 		var bp := raw_p as PilotData
-		if bp.team == 0:    bp.atk -= buff_p
-		elif bp.team == 1:  bp.atk -= buff_ai
+		if bp.team == 0:    bp.atk_buff -= buff_p
+		elif bp.team == 1:  bp.atk_buff -= buff_ai
+		_bs.refresh_growth_stats(bp)
 	_bs.pending_atk_buff_p  = 0
 	_bs.pending_atk_buff_ai = 0
 
 	_bs.blog.stage("7-zones")
 	process_neutral_zone_captures()
 	process_temp_zone_expiries()
+
+	# 8. 성장치 적립 — 이동과 점령이 모두 끝난 **이번 턴의 최종 자리**로 판정한다.
+	#    전선까지 걸어 들어간 턴에는 그 턴부터 벌고, 밀려난 턴에는 못 번다.
+	_bs.blog.stage("8-income")
+	award_frontline_income()
+	process_jungle_camps()
 	if not log_lines.is_empty(): _bs.last_log = log_lines[0]
 	check_win_condition()
 	_bs.blog.end_turn()
@@ -186,19 +198,19 @@ func simulate_turn() -> void:
 
 
 # ─── 성장 / 지속 효과 만료 ───────────────────────────────────────────────────
-## 매 턴 한 번, 살아 있는 파일럿의 누적 성장을 굴리고 턴 만료형 버프를 걷는다.
+## 매 턴 한 번, 턴 만료형 버프를 걷고 전원의 스탯을 성장치에서 다시 계산한다.
 ##
-## **성장은 1턴부터 돈다.** `ECONOMY_START_TURN`(10턴) 게이트는 전략 점수 회복과
-## 자동 드로우 — 즉 카드 경제 — 에만 걸리는 규칙이라 여기에는 적용하지 않는다.
+## **시간이 성장을 만들지 않는다.** 예전에는 여기서 살아 있는 파일럿마다
+## `GROWTH_PER_TURN` 을 누적했는데, 그러면 (1) 아무것도 안 해도 자라서 킬·포탑·
+## 파밍이 성장에 아무 영향이 없었고 (2) `atk` 와 `max_hp` 가 **같은 비율**로
+## 자라 교전 타수가 영원히 그대로였다. 지금 성장은 전부 성장치(`PilotData.score`)
+## 에서 나오고, 그 환산은 `BattleSim.refresh_growth_stats` 한 곳에 있다.
 ##
-## 스탯은 매 턴 곱해 나가는 대신 **원본에서 다시 계산**한다. 반올림이 매 턴
-## 끼어들면 누적 오차가 실제 성장률을 갉아먹기 때문이다. 최대 체력이 오른 만큼
-## 현재 체력도 같이 올려 주므로, 성장이 만피 파일럿을 상대적으로 다치게 하지
-## 않는다.
+## 여기 남은 재계산은 **보험**이다 — 점수가 움직이는 모든 자리(`add_score`)가
+## 이미 스탯을 갱신하므로 값은 보통 그대로다. 배율 만료(안전한 파밍이 끝나는
+## 턴)처럼 점수를 건드리지 않고 조건만 바뀌는 경우를 여기서 쓸어 담는다.
 ##
-## 죽어 있는 파일럿은 성장하지 않는다 — 누적치(`growth`)는 그대로 남으므로
-## 부활하면 죽기 전 성장을 그대로 들고 돌아온다. 사망의 비용에 "성장이 멈춘
-## 시간"이 포함되는 셈이다.
+## 이 호출이 턴의 맨 앞이라야 이번 턴 교전이 갱신된 스탯으로 굴러간다.
 func tick_growth_and_expiries() -> void:
 	var turn: int = _bs.turn_count
 	for raw in _bs.pilots:
@@ -210,13 +222,112 @@ func tick_growth_and_expiries() -> void:
 		if p.lane_stat_expire_turn >= 0 and turn >= p.lane_stat_expire_turn:
 			p.lane_stat_mod        = 0.0
 			p.lane_stat_expire_turn = -1
-		if not p.alive:
+		_bs.refresh_growth_stats(p)
+
+
+# ─── 성장치 적립: 전선 체류 ──────────────────────────────────────────────────
+## 레인 파일럿의 기본 수입. **살아서 자기 레인의 전선 안에 서 있는 턴**마다
+## `SCORE_FRONTLINE_PER_TURN` 이 들어온다.
+##
+## 전선 = 그 레인에서 **양 팀의 살아 있는 최전방 포탑 사이**(포탑 칸 포함)다.
+## 외곽(T1)이 부서지면 그 팀 쪽 경계가 T2 로, T2 마저 부서지면 HQ 로 물러나
+## 전선이 넓어진다 — 밀어낸 만큼 벌 수 있는 자리가 늘어나는 셈이다.
+##
+## 죽어 있거나 저HP 복귀로 HQ 에 서 있는 동안에는 한 푼도 안 들어온다. 사망과
+## 복귀의 진짜 비용이 여기 있다 — 전장을 비운 시간이 곧 성장을 놓친 시간이다.
+##
+## **정글러는 제외**다. 정글러의 전선은 정글이고, 수입은 캠프에서 나온다.
+func award_frontline_income() -> void:
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		if not p.alive or p.is_guerrilla:
 			continue
-		p.growth += _bs.GROWTH_PER_TURN * p.growth_rate_mult
-		p.atk = maxi(1, roundi(float(p.base_atk) * (1.0 + p.growth)))
-		var new_max: int = maxi(1, roundi(float(p.base_max_hp) * (1.0 + p.growth)))
-		p.hp     = maxi(1, p.hp + (new_max - p.max_hp))
-		p.max_hp = new_max
+		if not front_line_cells(p.lane).has(p.grid_pos):
+			continue
+		_bs.add_score(p, _bs.SCORE_FRONTLINE_PER_TURN)
+
+
+## `lane` 번 레인의 전선 셀 집합. 포탑이 부서질 때마다 넓어지므로 캐시하지 않고
+## 매 턴 다시 만든다 — 레인이 셋뿐이고 통로가 수십 칸이라 비용이 없다.
+func front_line_cells(lane: int) -> Dictionary:
+	var order: Dictionary = lane_corridor_order(lane)
+	var result: Dictionary = {}
+	if order.is_empty():
+		return result
+	var lo: int = _front_boundary_index(0, lane, order)
+	var hi: int = _front_boundary_index(1, lane, order)
+	if lo > hi:
+		var tmp: int = lo; lo = hi; hi = tmp
+	for raw in order.keys():
+		var idx: int = int(order[raw])
+		if idx >= lo and idx <= hi:
+			result[raw as Vector2i] = true
+	return result
+
+
+## `team` 의 이 레인 전선 경계가 통로의 몇 번째 칸인가. 살아 있는 **가장 바깥**
+## 포탑(T1 → T2 순)이고, 둘 다 부서졌으면 그 팀의 HQ 쪽 끝이다.
+func _front_boundary_index(team: int, lane: int, order: Dictionary) -> int:
+	for tier in [1, 2]:
+		for raw in _bs.turrets:
+			var td := raw as TurretData
+			if not td.alive or td.team != team or td.lane != lane or td.tier != tier:
+				continue
+			if order.has(td.grid_pos):
+				return int(order[td.grid_pos])
+	# 포탑이 다 무너진 레인 — 경계는 그 팀 쪽 통로 끝(팀0 = 0, 팀1 = 마지막).
+	return 0 if team == 0 else order.size() - 1
+
+
+# ─── 성장치 적립: 정글 캠프 ──────────────────────────────────────────────────
+## 정글러의 기본 수입. 자기 팀 소유(또는 아직 중립인) 정글 칸에 **차 있는 캠프**
+## 를 밟으면 `SCORE_JUNGLE_CAMP` 를 먹고, 그 칸은 `JUNGLE_CAMP_RESPAWN_TURNS`
+## 뒤에나 다시 찬다. 그래서 정글러는 한자리에 머물 수 없고 계속 순회해야 한다.
+##
+## 적 소유 칸의 캠프는 못 먹는다 — 적 정글을 **점령**해야(T1 파괴 보상 / 약탈)
+## 돌 수 있는 캠프가 늘고, 그만큼 라이너를 추월할 수 있다.
+##
+## `process_neutral_zone_captures` **뒤에** 부른다: 방금 점령한 중립 칸의 캠프를
+## 그 턴에 바로 먹게 하기 위해서다.
+func process_jungle_camps() -> void:
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		if not p.alive or not p.is_guerrilla:
+			continue
+		if not camp_harvestable(p.grid_pos, p.team):
+			continue
+		_bs.jungle_camps[p.grid_pos] = _bs.turn_count + _bs.JUNGLE_CAMP_RESPAWN_TURNS
+		_bs.add_score(p, _bs.SCORE_JUNGLE_CAMP)
+		_bs.blog.log_event("CAMP", "%-4s 캠프 획득 %s (+%.2fk → %.2fk, 재생성 %d턴)"
+				% [_bs.pilot_label(p), str(p.grid_pos), _bs.SCORE_JUNGLE_CAMP,
+					p.score, _bs.JUNGLE_CAMP_RESPAWN_TURNS])
+
+
+## 이 칸의 캠프를 `team` 이 지금 먹을 수 있는가. 렌더러(캠프 표시)와 정글러의
+## 목표 선택이 같은 함수를 읽는다 — 화면에 보이는 캠프와 실제로 먹히는 캠프가
+## 어긋나면 안 된다.
+func camp_harvestable(cell: Vector2i, team: int) -> bool:
+	var owner_id: int = int(_bs.neutral_zone_cells.get(cell, -2))
+	if owner_id == -2 or owner_id == 1 - team:
+		return false
+	return camp_charged(cell)
+
+
+## 이 칸의 캠프가 지금 **차 있는가** — 소유권은 보지 않는다. 적 소유 칸의 캠프도
+## 차 있고 비고를 반복하므로, 렌더러는 그것을 "있지만 지금 우리 것은 아닌" 속 빈
+## 마름모로 그린다(`BattleRenderer._draw_jungle_camps`). 적 정글을 뺏을 값어치가
+## 지금 있는지를 화면에서 읽을 수 있어야 점령이 판단의 대상이 된다.
+func camp_charged(cell: Vector2i) -> bool:
+	if not _bs.neutral_zone_cells.has(cell):
+		return false
+	return _bs.turn_count >= int(_bs.jungle_camps.get(cell, 0))
+
+
+## 모든 정글/중립 칸에 캠프를 세운다. 개시 시점에는 전부 차 있다.
+func init_jungle_camps() -> void:
+	_bs.jungle_camps.clear()
+	for raw in _bs.neutral_zone_cells.keys():
+		_bs.jungle_camps[raw as Vector2i] = 0
 
 
 ## 작전 단계 만료형 성장 배율(완벽한 마무리)을 `team` 전원에게서 걷는다.
@@ -504,7 +615,7 @@ func _credit_pilot_damage(attacker: PilotData, victim: PilotData, dmg: int,
 		damage_map: Dictionary) -> void:
 	damage_map[victim] = damage_map.get(victim, 0) + dmg
 	_last_hitter[victim] = attacker
-	_bs.score_pilot_damage(attacker, dmg)
+	_bs.record_pilot_damage(attacker, victim, dmg)
 
 
 ## 포탑 피해 한 건. 파괴 귀속(`SCORE_TURRET_KILL`)은 적용 단계가
@@ -513,7 +624,6 @@ func _credit_turret_damage(attacker: PilotData, td: TurretData, dmg: int,
 		turret_dmg: Dictionary) -> void:
 	turret_dmg[td] = turret_dmg.get(td, 0) + dmg
 	_last_turret_hitter[td] = attacker
-	_bs.score_turret_damage(attacker, dmg)
 
 
 ## 지금 이 포탑을 때릴 수 있는가. T2 는 같은 레인 T1 이 살아 있는 동안 무적이다.
@@ -933,6 +1043,14 @@ func _jungle_goal_for(p: PilotData) -> Vector2i:
 	if nearest_neutral != Vector2i(-1, -1):
 		p.jungle_roam_target = Vector2i(-1, -1)   # an open neutral outranks roaming
 		return nearest_neutral
+	# **차 있는 캠프가 가장 먼저다.** 정글러의 수입이 전부 캠프에서 나오므로
+	# "가장 먼 아군 칸"으로 순회하는 것보다 "지금 먹을 수 있는 캠프"가 곧 목표다.
+	# 먹고 나면 그 칸의 캠프가 4턴 동안 비므로 다음 캠프가 자연히 새 목표가 되고,
+	# 그 반복이 순회가 된다 — 예전의 sticky 왕복이 필요 없다.
+	var camp := _best_ready_camp(p)
+	if camp != Vector2i(-1, -1):
+		p.jungle_roam_target = Vector2i(-1, -1)
+		return camp
 	var captured := _own_captured_jungle_cells(p.team)
 	if captured.is_empty():
 		p.jungle_roam_target = Vector2i(-1, -1)
@@ -945,6 +1063,47 @@ func _jungle_goal_for(p: PilotData) -> Vector2i:
 		return target
 	p.jungle_roam_target = _farthest_captured_cell(p.grid_pos, captured)
 	return p.jungle_roam_target
+
+
+## 지금 먹을 수 있는 캠프 중 `p` 가 가야 할 칸. 없으면 (-1,-1).
+##
+## **거리만으로 고르면 정글러가 자기 발밑에 갇힌다.** 한쪽 정글이 4칸이고 캠프
+## 재생성이 4턴이라 매 턴 정확히 한 칸이 되살아나므로, 최단 거리 그리디는 영원히
+## 거리 1짜리 캠프를 찾아내 그 4칸을 뱅뱅 돈다 — 반대쪽 정글은 개시부터 끝까지
+## 캠프가 꽉 찬 채로 남는다(실측: 팀0 정글러가 30턴 동안 오른쪽 정글 세 칸을 한
+## 번도 밟지 않았다). 화면에는 "먹을 게 남아 있는 칸을 두고 빈 칸만 도는" 것으로
+## 보인다.
+##
+## 그래서 비용은 거리가 아니라 **거리 − 방치 할인**이다:
+##     cost = 거리 × JUNGLE_CAMP_STALE_PER_STEP − 차 있는 채로 방치된 턴 수
+## 차 있는 채 놀고 있는 캠프는 턴마다 조금씩 싸지므로, 멀어서 계속 밀리던 캠프도
+## 언젠가는 가장 싼 목표가 되어 정글러가 좌우를 오가는 **순회**가 된다.
+##
+## **목표를 향해 한 걸음 옮기면 그 목표의 비용은 반드시 더 내려간다**(거리 −1 =
+## −2, 방치 +1 = −1, 합 −3). 다른 캠프는 같은 턴에 −1 밖에 안 싸지므로 가는
+## 도중에 목표가 뒤집혀 왕복하는 일이 없다.
+##
+## 제자리(이미 서 있는 칸)가 차 있으면 **무조건 그 칸이다** — 이동은
+## `process_jungle_camps` 보다 앞에 오므로, 발밑의 캠프는 가만히 있기만 하면
+## 이번 턴에 먹는다. 방치 할인에 끌려 떠나면 그 한 턴을 통째로 버린다.
+func _best_ready_camp(p: PilotData) -> Vector2i:
+	if camp_harvestable(p.grid_pos, p.team):
+		return p.grid_pos
+	var best := Vector2i(-1, -1)
+	var best_cost: int = 2147483647
+	var best_d: int = 999999
+	for raw in _bs.jungle_camps.keys():
+		var cell := raw as Vector2i
+		if not camp_harvestable(cell, p.team):
+			continue
+		var d: int = _bs.hex_grid.hex_distance(p.grid_pos, cell)
+		var idle: int = maxi(0, _bs.turn_count - int(_bs.jungle_camps.get(cell, 0)))
+		var cost: int = d * _bs.JUNGLE_CAMP_STALE_PER_STEP - idle
+		# 동률은 가까운 쪽 — 방치 할인은 어디로 갈지를 정하는 항이지 헛걸음을
+		# 늘리는 항이 아니다.
+		if cost < best_cost or (cost == best_cost and d < best_d):
+			best_cost = cost; best_d = d; best = cell
+	return best
 
 
 # Farthest cell of `captured` from `from`, excluding `from` itself. Returns
@@ -1344,10 +1503,13 @@ func _movement_forbidden_for(p: PilotData) -> Dictionary:
 
 # ─── Lane corridors ──────────────────────────────────────────────────────────
 # lane → {cell: true}. 한 레인의 웨이포인트를 BFS 로 이어 붙인 통로 셀 집합.
-# 카드 이동이 파일럿을 **다른 레인**에 떨어뜨렸는지 판정하는 데만 쓰인다
-# (`RecallSystem._is_out_of_position`). 팀1 의 경로는 팀0 경로의 역순이라
-# 통로 셀 집합은 양 팀이 같으므로 레인당 하나만 만든다.
+# 소비자는 둘이다 — 카드 이동이 파일럿을 **다른 레인**에 떨어뜨렸는지 판정하는
+# `RecallSystem._is_out_of_position`, 그리고 **전선** 계산(`front_line_cells`).
+# 팀1 의 경로는 팀0 경로의 역순이라 통로 셀 집합은 양 팀이 같으므로 레인당
+# 하나만 만든다. `_lane_corridor_orders` 는 같은 통로에 팀0 HQ 쪽부터 순번을
+# 매긴 표로, 전선이 "두 포탑 **사이**"를 물어야 해서 앞뒤 관계가 필요하다.
 var _lane_corridors: Array = []
+var _lane_corridor_orders: Array = []
 
 
 ## 통로가 만들어진 레인 수. `LANE_NAMES` 는 GUERRILLA 슬롯까지 세므로 레인을
@@ -1367,20 +1529,35 @@ func lane_corridor(lane: int) -> Dictionary:
 	return _lane_corridors[lane] as Dictionary
 
 
+## `lane` 번 레인의 통로를 **팀0 HQ 쪽부터 순서대로** 번호 매긴 표.
+## `Vector2i cell → int index`. 전선 계산이 "이 칸이 두 포탑 사이인가"를 묻는데,
+## 집합만으로는 앞뒤를 알 수 없어서 통로를 만드는 그 자리에서 순번도 적어 둔다.
+func lane_corridor_order(lane: int) -> Dictionary:
+	if _lane_corridors.is_empty():
+		_build_lane_corridors()
+	if lane < 0 or lane >= _lane_corridor_orders.size():
+		return {}
+	return _lane_corridor_orders[lane] as Dictionary
+
+
 func _build_lane_corridors() -> void:
 	# 재진입 방지 — 아래 루프가 `lane_corridor*` 를 다시 부르지는 않지만, 빈
 	# 배열이 "아직 안 만들었다" 의 신호라서 자리부터 채워 둔다.
 	_lane_corridors = []
+	_lane_corridor_orders = []
 	# 레인 파일럿은 정글에 못 들어가므로 통로도 정글을 우회해야 한다.
 	var jungle_fbd: Dictionary = _bs.neutral_zone_cells.duplicate()
 	for lane in _bs.LANE_PATHS_TEAM0.size():
 		var cells: Dictionary = {}
+		var order: Dictionary = {}
 		var path: Array = _bs.LANE_PATHS_TEAM0[lane] as Array
 		if path.is_empty():
 			_lane_corridors.append(cells)
+			_lane_corridor_orders.append(order)
 			continue
 		var cur: Vector2i = path[0] as Vector2i
 		cells[cur] = true
+		order[cur] = 0
 		for i in range(1, path.size()):
 			var wp: Vector2i = path[i] as Vector2i
 			var guard: int = 0
@@ -1390,8 +1567,13 @@ func _build_lane_corridors() -> void:
 					break
 				cur = nxt
 				cells[cur] = true
+				# 순번은 **처음 밟았을 때만** 적는다 — 웨이포인트 사이를 되짚는
+				# 구간이 있어도 앞뒤 관계가 뒤집히지 않는다.
+				if not order.has(cur):
+					order[cur] = order.size()
 				guard += 1
 		_lane_corridors.append(cells)
+		_lane_corridor_orders.append(order)
 
 
 func _nearest_uncaptured_neutral(p: PilotData) -> Vector2i:

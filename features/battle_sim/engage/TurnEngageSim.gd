@@ -318,7 +318,9 @@ func _build_units(caster: PilotData, team0: Array, team1: Array) -> void:
 				continue
 			var u := _make_unit(p)
 			units.append(u)
-			stats[p] = {"dealt": 0, "taken": 0, "kills": 0}
+			# `score0` 는 교전 **개시 시점**의 성장치 — 결과 대시보드가 이 값과
+			# 지금 값의 차를 "성장" 행으로 보여 준다.
+			stats[p] = {"dealt": 0, "taken": 0, "kills": 0, "score0": p.score}
 			(front if u.is_melee else back).append(u)
 		_place_row(front, _row_x(t, true))
 		_place_row(back, _row_x(t, false))
@@ -770,8 +772,9 @@ func _resolve_attack(u: EUnit, target: EUnit) -> void:
 			KNOCK_IMPULSE_MELEE if u.is_melee else KNOCK_IMPULSE_RANGED)
 	(stats[a] as Dictionary)["dealt"] = int(stats[a]["dealt"]) + dealt
 	(stats[d] as Dictionary)["taken"] = int(stats[d]["taken"]) + dealt
-	# 성장치(점수) — 준 피해와 처치는 전장과 같은 지점을 지난다.
-	_bs.score_pilot_damage(a, dealt)
+	# 성장치(점수) — 준 피해와 처치는 전장과 같은 지점을 지난다. 피해는 곧장
+	# 점수가 되는 대신 피해자의 장부에 쌓였다가 처치 시 어시스트로 정산된다.
+	_bs.record_pilot_damage(a, d, dealt)
 	if d.hp <= 0:
 		_kill(target, a)
 		(stats[a] as Dictionary)["kills"] = int(stats[a]["kills"]) + 1

@@ -7,6 +7,20 @@ Owns all `_draw()` logic. BattleSim calls `renderer.queue_redraw()` whenever sta
 Reads all state from `_bs` (the BattleSim parent).
 
 ### Draw pipeline (called from `_draw()`)
+0. `_draw_front_line_overlays()` + `_draw_captured_tile_overlays()` +
+   `_draw_jungle_camps()` — **성장치 수입이 나오는 자리**를 타일 위에 얹는다.
+   전선은 얇은 금색 **테두리**(레인마다 양 팀의 살아 있는 최전방 포탑 사이;
+   `SimulationCore.front_line_cells`), 캠프는 칸 한가운데의 작은 초록 **마름모**.
+   수입이 위치에서 나오는데 그 위치가 안 보이면 왜 뒤처지는지 알 수 없으므로
+   그린다. 정글 점령 타일이 이미 면을 칠하고 있어 전선은 테두리로만 표시해
+   색이 경쟁하지 않게 하고, 캠프 판정은 시뮬레이터와 **같은 함수**
+   (`camp_harvestable(cell, team)` / `camp_charged(cell)`)를 지나므로 보이는
+   캠프와 먹히는 캠프가 어긋날 수 없다. 팀 인자는 `_bs.blue_team`.
+   **캠프는 두 가지로 갈라 그린다**: 우리가 지금 먹을 수 있으면 **꽉 찬** 초록
+   마름모, 적 소유 칸에 차 있으면 같은 자리 · 같은 크기의 **속 빈** 마름모
+   (`CAMP_MARK_ENEMY_COLOR`, 외곽선만). 채움 여부가 "우리 것 / 적 것"을 가르므로
+   둘을 헷갈릴 여지가 없고, 적 정글을 **지금 뺏을 값어치가 있는지**가 화면에
+   있어야 정글 점령이 판단의 대상이 된다.
 1. `_draw_hq_hp_bars()` — green HP bar under each HQ once any T2 in their team is destroyed
 2. `_draw_turret_hp_bars()` — yellow HP bar above each living turret (T2 hidden while own-lane T1 alive). 피격 중에는 `BattleSim.turret_hit_offset(td)` 만큼 함께 흔들린다 — 포탑 스프라이트(`Building` 노드)는 렌더러가 그리지 않고 BattleSim 이 직접 흔들므로, 바만 제자리에 두면 둘이 어긋난다.
 3. Per-cell pilot rendering via `_draw_pilot_cell()` — pilots render OUTSIDE the tile, on a hex ring of 6 slots around it, with a team-coloured triangle behind them whose apex points to the tile centre (speech-bubble tail). **자리는 여기서 풀지 않는다** — `_draw()` 앞머리의 `_build_pilot_render_layout()` 이 전장 전체를 한 번에 배정하고, 딤 오버레이 · 히트 테스트 · 돌진 기하가 같은 표를 읽는다

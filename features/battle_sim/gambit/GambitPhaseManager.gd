@@ -35,6 +35,7 @@ func launch_battle() -> void:
 	_bs.sim_core.spawn_pilots_with_lanes()
 	_bs.sim_core.spawn_turrets()
 	_bs.sim_core.init_neutral_zones()
+	_bs.sim_core.init_jungle_camps()
 	_bs.game_phase = GameEnums.BattlePhase.BATTLE
 	_bs.renderer.queue_redraw()
 	_bs.hud.update_hud()

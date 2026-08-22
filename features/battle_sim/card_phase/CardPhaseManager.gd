@@ -3075,9 +3075,10 @@ func _apply_attack_damage(t: PilotData, caster: PilotData, n: int) -> int:
 		dmg -= absorbed
 	if dmg > 0:
 		t.hp = max(0, t.hp - dmg)
-	# 성장치는 **굴린 피해 전체**로 적립한다 — 보호막에 먹힌 몫도 기여다
-	# (전장 · 교전 무대의 집계와 같은 규칙).
-	_bs.score_pilot_damage(caster, rolled)
+	# 피해는 **피해자의 장부**에 적힌다 — 성장치는 그 대상이 실제로 쓰러질 때
+	# 현상금을 나누며 정산된다(전장 · 교전 무대와 같은 규칙). 적는 값은 굴린
+	# 피해 전체다: 보호막에 먹힌 몫도 기여다.
+	_bs.record_pilot_damage(caster, t, rolled)
 	if t.hp <= 0:
 		_bs.mark_pilot_dead(t, caster)
 	elif dmg > 0:

@@ -62,9 +62,8 @@ Main turn loop and all combat / movement / spawn logic. Each `simulate_turn`
 counts as **1 minute** of in-game time.
 
 ### Turn loop (`simulate_turn`)
-0. **`tick_growth_and_expiries`** — 성장 누적 + 턴 만료형 버프 회수. 턴의 맨
-   앞이라야 이번 턴의 교전이 갱신된 스탯으로 굴러가고, 바로 뒤에 붙었다
-   떼어지는 `pending_atk_buff` 가 성장 재계산에 지워지지 않는다. 아래
+0. **`tick_growth_and_expiries`** — 턴 만료형 버프 회수 + 전원 스탯 재계산.
+   턴의 맨 앞이라야 이번 턴의 교전이 갱신된 스탯으로 굴러간다. 아래
    "성장 / 라인전 스탯" 참조.
 1. `process_respawns` — one sweep over everyone off the field, which now means
    the dead and only the dead: count `respawn_timer` down, return at own HQ at
@@ -84,7 +83,10 @@ counts as **1 minute** of in-game time.
    combat pushes together. See "Movement" below.
 7. HQ damage: any pilot sitting on enemy HQ once any defender T2 is down.
 8. `process_neutral_zone_captures` — junglers stepping on a neutral cell flip it.
-9. `check_win_condition` — HQ HP ≤ 0 → game over.
+9. **성장치 수입** — `award_frontline_income` + `process_jungle_camps`. 아래
+   "성장치 수입" 참조. **이동과 점령이 다 끝난 뒤**라야 그 턴의 최종 자리로
+   판정된다 — 전선까지 걸어 들어간 턴에는 그 턴부터 벌고, 밀려난 턴에는 못 번다.
+10. `check_win_condition` — HQ HP ≤ 0 → game over.
 
 **Damage is applied before movement, and movement is a single pass.** Both
 matter. Damage first means a pilot killed this turn never moves and a turret
@@ -94,31 +96,109 @@ A single movement pass is what makes the pass-through bug structurally
 impossible; the two-pass split is described under "Movement".
 
 ### 성장 / 라인전 스탯 (`tick_growth_and_expiries`)
-두 시스템이 같은 훅에서 돌지만 **건드리는 스탯이 겹치지 않는다** — 성장은
-`atk` / `max_hp`, 라인전 스탯은 `hit` / `evasion`.
+두 시스템이 **건드리는 스탯이 겹치지 않는다** — 성장은 `atk` / `max_hp`,
+라인전 스탯은 `hit` / `evasion`.
 
-**성장** — 살아 있는 파일럿의 `atk` / `max_hp` 가 매 턴 `GROWTH_PER_TURN`
-(game_config, **0.01** = +1%p) 만큼 원본 대비 늘어난다.
-- **1턴부터 돈다.** `ECONOMY_START_TURN`(10턴) 게이트는 전략 점수 / 자동 드로우
-  같은 **카드 경제** 전용이고 성장에는 걸리지 않는다.
+**성장 — 시간이 아니라 성장치(`PilotData.score`)가 만든다.**
+예전에는 이 훅이 살아 있는 파일럿마다 `GROWTH_PER_TURN` 을 누적했다. 그 설계에는
+결함이 둘 있었고 둘 다 치명적이었다.
+- 아무것도 안 해도 자란다 → 킬 · 포탑 · 파밍이 성장에 **아무 영향이 없다**.
+- `atk` 와 `max_hp` 가 **같은 비율**로 자란다 → `atk / max_hp` 가 불변이라
+  "몇 대 맞아야 죽는가"가 50턴이 지나도 1타도 안 줄어든다. 성장이 안 보인 게
+  아니라 구조상 보일 수 없었다.
+
+지금 성장은 전부 `BattleSim.refresh_growth_stats` 한 곳에서 성장치로부터
+파생된다 — `GROWTH_PER_TURN` 은 game_config 에서 삭제됐다.
+- **공격력이 체력의 4배 속도로 자란다**: `GROWTH_ATK_PER_SCORE`(2.0/24 =
+  +8.33%p per 1k) vs `GROWTH_HP_PER_SCORE`(0.5/24 = +2.08%p per 1k). 성장치
+  25k 에서 정확히 **atk ×3.0 / max_hp ×1.5**, 40k 에서 ×4.25 / ×1.81.
+  이 비대칭 하나가 성장 체감의 전부다.
 - 스탯은 매 턴 곱해 나가는 대신 `PilotData.base_atk` / `base_max_hp` 에서
-  **다시 계산**한다 — 매 턴 반올림이 끼면 오차가 누적돼 실제 성장률을 갉아먹는다.
+  **다시 계산**한다 — 반올림이 반복되면 누적 오차가 성장률을 갉아먹는다.
   두 원본은 `PilotData._init` 이 채우므로 메크 스탯 주입(`_stats_for`)을 포함한
   모든 스폰 경로에서 비지 않는다.
 - 최대 체력이 오른 만큼 현재 체력도 같이 올린다(`hp += new_max - max_hp`).
-- **죽어 있는 파일럿은 성장하지 않는다.** 누적치(`growth`)는 그대로 남으므로
-  부활하면 죽기 전 성장을 들고 돌아온다 — 사망의 비용에 "성장이 멈춘 시간"이
-  포함되는 셈이다.
-- 획득 배율(`growth_rate_mult`)은 안전한 파밍(턴 만료형)과 완벽한 마무리
-  (작전 단계 만료형)가 건드린다. **같은 필드라 나중에 건 쪽이 덮어쓴다.**
-  후자의 해제는 `clear_growth_until_phase(team)` 를 `CardPhaseManager` 가
-  그 팀의 다음 작전 단계 진입 시 부른다.
+- 재계산은 **점수가 움직이는 그 순간**(`BattleSim.add_score`)에 돈다 — 턴 경계가
+  아니라 그 자리라야 "킬을 땄더니 세졌다"가 한 박자로 읽힌다. 이 훅에 남은
+  재계산은 **보험**이고, 실제로 하는 일은 배율 만료를 걷는 것이다.
+- 그래서 카드가 거는 **일시** 공격력은 `atk` 가 아니라 `PilotData.atk_buff` 에
+  얹어야 한다. 예전처럼 `atk += buff` 로 밀면 턴 한가운데(처치가 난 자리)의
+  재계산이 가산분을 지우고, 턴 끝의 `atk -= buff` 가 원본을 깎아 버린다.
+  `refresh_growth_stats` 가 `base × (1 + growth) + atk_buff` 로 마지막에 더한다.
+- **죽어 있는 동안은 수입이 없으므로 성장도 멈춘다.** 누적치는 그대로 남아
+  부활하면 죽기 전 성장을 들고 돌아온다.
+- `growth_rate_mult` 는 이제 성장이 아니라 **성장치 적립**에 곱해진다(안전한
+  파밍 턴 만료형 / 완벽한 마무리 작전 단계 만료형). 결과는 같고 배선이 한 겹
+  준다. **같은 필드라 나중에 건 쪽이 덮어쓴다.** 후자의 해제는
+  `clear_growth_until_phase(team)` 를 `CardPhaseManager` 가 그 팀의 다음 작전
+  단계 진입 시 부른다.
 
 **라인전 스탯** (`lane_stat_mod`, ±0.10) — `roll_hit` **하나에만** 걸린다.
 전장 자동 교전과 공격 카드가 그 함수를 공유하므로 둘 다 반영되고, 교전 무대는
 자기 확률 구간을 쓰므로 반영되지 않는다. 포탑 / HQ 피해는 명중 판정 자체가
 없으므로 무관하다. 만료(`lane_stat_expire_turn`)는 성장 만료와 같은 훅에서
 처리하며, **죽어 있어도 돈다** — 버프의 수명은 전장에 서 있는지와 무관하다.
+
+### 성장치 수입 (`award_frontline_income` / `process_jungle_camps`)
+성장이 성장치에서 나오므로, **성장치를 어디서 버는가가 곧 성장 설계**다.
+적립처는 셋이고 둘이 여기 있다(셋째인 처치 현상금은 `BattleSim.mark_pilot_dead`).
+
+**전선 — 레인 파일럿의 수입.** 레인마다 **양 팀의 살아 있는 최전방 포탑 사이**
+(포탑 칸 포함)가 전선이고, 살아서 그 안에 서 있는 턴마다 0.50k 가 들어온다.
+- 경계는 `_front_boundary_index(team, lane, order)` — 그 팀의 살아 있는 가장
+  바깥 포탑(T1 → T2 순)이고, 둘 다 부서졌으면 통로 끝(그 팀 HQ 쪽)이다.
+  **T1 이 부서지면 전선이 그 팀 쪽으로 넓어진다** — 밀어낸 만큼 벌 자리가 는다.
+- 앞뒤 관계는 `lane_corridor_order(lane)` 이 답한다. 통로를 BFS 로 잇는 그
+  자리에서 팀0 HQ 쪽부터 순번을 매겨 두고, **처음 밟았을 때만** 번호를 적어
+  웨이포인트 사이를 되짚는 구간이 앞뒤를 뒤집지 못하게 한다.
+- 포탑이 부서질 때마다 답이 바뀌므로 `front_line_cells(lane)` 은 **캐시하지
+  않는다**. 레인 셋 × 수십 칸이라 비용이 없다.
+- **HQ 에서 걸어 나오는 동안 · 저HP 복귀 뒤 다시 걸어가는 동안 · 죽어 있는
+  동안은 한 푼도 안 들어온다.** 사망과 복귀의 진짜 비용이 여기 있고, 그래서
+  사망에 점수 벌점을 따로 매기지 않는다.
+- **정글러는 제외** — 정글러의 전선은 정글이다.
+
+**정글 캠프 — 정글러의 수입.** 모든 정글/중립 칸에 캠프가 하나씩 있고
+(`BattleSim.jungle_camps`, `셀 → ready_turn`), 밟으면 **0.98k** 를 먹고 그 칸은
+**6턴** 뒤에나 다시 찬다.
+- **캠프값이 라이너의 턴당 수입(0.50k)보다 큰 이유**: 캠프는 걸어가야 하고
+  재생성을 기다려야 하므로, 캠프당 값이 같으면 정글러의 턴당 수입이 구조적으로
+  낮다. 실측(50턴 · 포탑 무파괴 · 적 정글 미점령, 4회 평균)에서 재생성 4턴 ·
+  캠프값 0.50k 일 때 정글러 18.4k / 라이너 평균 23.5k = **0.78배**였고, 0.65k 로
+  올려 **0.98배**가 됐다. 역산은 `BattleSim.SCORE_JUNGLE_CAMP` 주석 참조.
+- **재생성이 4턴 → 6턴으로 늦춰지면서 캠프값도 0.65k → 0.98k 로 함께 올렸다.**
+  정글러 수입은 전량 캠프이고 획득 빈도가 재생성 주기에 반비례하므로, 주기를
+  1.5배로 늘리면 값도 1.5배여야 같은 수입이 나온다. 늦춘 것은 **순회 리듬**이지
+  정글러의 몫이 아니다 — 한 칸이 되살아나기를 더 오래 기다리는 대신 한 번 먹을
+  때 더 크게 먹는다.
+- 판정은 `camp_harvestable(cell, team)` 하나뿐이고 **렌더러도 같은 함수를
+  읽는다** — 화면에 보이는 캠프와 실제로 먹히는 캠프가 어긋날 수 없다.
+  소유권을 빼고 "지금 차 있는가"만 묻는 `camp_charged(cell)` 이 그 안쪽에
+  들어 있고, 렌더러가 **적 소유 칸의 캠프**를 속 빈 마름모로 그릴 때 쓴다.
+- 먹을 수 있는 것은 **자기 팀 소유이거나 아직 중립인** 칸뿐이다. 적 정글을
+  점령하면 돌 캠프가 늘어 라이너를 추월할 수 있다 — 정글 점령의 값이 여기 있다.
+- `process_neutral_zone_captures` **뒤**에 돈다: 방금 점령한 중립 칸의 캠프를
+  그 턴에 바로 먹게 하기 위해서다.
+- 정글러의 이동 목표도 이걸 따라간다 — `_jungle_goal_for` 의 2순위가
+  `_best_ready_camp`(1순위는 아직 안 먹은 중립)이고, 먹고 나면 그 칸이 6턴
+  비어 다음 캠프가 자연히 새 목표가 된다. **그 반복이 곧 순회**라 예전의
+  sticky 로밍은 캠프가 하나도 안 찼을 때의 폴백으로만 남았다.
+- **목표를 고르는 비용은 거리가 아니라 `거리 × JUNGLE_CAMP_STALE_PER_STEP −
+  방치 턴 수`다.** 거리만 보면 정글러는 **자기 발밑 4칸에 갇힌다**: 한쪽 정글이
+  4칸이라 재생성 주기가 그 칸 수에 가까우면 매 턴 한 칸이 되살아나고, 최단 거리 그리디는
+  언제나 거리 1짜리 캠프를 찾아냈고, 반대쪽 정글은 개시부터 끝까지 캠프가 꽉 찬
+  채 남았다(실측 60턴: 밟은 칸 **6개**, 오른쪽 정글 세 칸은 한 번도 안 밟음 —
+  화면에는 "먹을 게 남은 칸을 두고 빈 칸만 도는" 것으로 보인다). 차 있는 채
+  놀고 있는 캠프가 턴마다 조금씩 싸지면 방치된 쪽이 주기적으로 가장 싼 목표가
+  되어 좌우를 오가는 순회가 된다(같은 60턴: 밟은 칸 **11개**, 캠프 획득
+  53 → 45회 = 수입 85%. 그 15%가 순회의 이동 시간이다).
+- 목표를 향해 **한 걸음 옮기면 그 목표의 비용은 반드시 더 내려간다**(거리 −1 =
+  −3, 방치 +1 = −1, 합 −4). 다른 캠프는 같은 턴에 −1 밖에 안 싸지므로 가는 도중에
+  목표가 뒤집혀 왕복하는 일이 없다 — 예전 sticky 로밍이 필요했던 이유가 그
+  왕복이었다.
+- **발밑의 캠프가 차 있으면 무조건 그 칸이 목표다.** 이동은
+  `process_jungle_camps` 보다 앞에 오므로 가만히 있기만 하면 이번 턴에 먹는다 —
+  방치 할인에 끌려 떠나면 그 한 턴을 통째로 버린다.
 
 ### Combat (`_resolve_cell`)
 Combat happens **only between pilots in the same cell**. There is no

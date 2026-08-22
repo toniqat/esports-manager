@@ -197,7 +197,9 @@ func _draw() -> void:
 	_pilot_render_layout = _build_pilot_render_layout()
 	# 전장을 뜬 파일럿이 붙들고 있던 화살표 기하를 버린다.
 	_prune_arrow_state()
+	_draw_front_line_overlays()
 	_draw_captured_tile_overlays()
+	_draw_jungle_camps()
 	_draw_targeting_underlays()
 	# Out-of-range tile dim is drawn BEFORE HQ/turret/pilot graphics so a
 	# pilot marker that visually overlaps an adjacent out-of-range tile (the
@@ -250,6 +252,63 @@ func _draw_captured_tile_overlays() -> void:
 		var center := _bs.cell_center(cell)
 		var pts := hg.hex_corners(center)
 		draw_colored_polygon(pts, Color(1.0, 1.0, 1.0, 0.55))
+
+
+# ─── 전선 / 정글 캠프 (성장치 수입이 나오는 자리) ────────────────────────────
+## 전선 = 그 레인에서 양 팀의 살아 있는 최전방 포탑 **사이**. 레인 파일럿은 이
+## 안에 살아서 서 있는 턴에만 성장치를 번다(`SimulationCore.award_frontline_income`).
+##
+## 화면에 그리는 이유는 하나다 — 수입이 위치에서 나오는데 그 위치가 안 보이면
+## 플레이어는 자기가 왜 뒤처지는지 알 수 없다. 얇은 테두리로만 표시해 타일 색
+## (정글 점령)과 경쟁하지 않게 한다.
+const FRONT_LINE_COLOR: Color = Color(0.98, 0.86, 0.42, 0.30)
+const FRONT_LINE_WIDTH: float = 2.0
+## 캠프 마름모의 반지름 — hex_size 배율.
+const CAMP_MARK_RATIO: float = 0.20
+const CAMP_MARK_COLOR: Color = Color(0.65, 1.0, 0.55, 0.92)
+## 적 소유 칸에 차 있는 캠프 — 같은 자리 · 같은 크기의 **속 빈** 마름모.
+## 채우지 않는 것이 "있지만 지금은 못 먹는다"를 말한다. 색은 채운 쪽보다 **어둡다**
+## — 타일이 흰색·연분홍이라 밝은 초록 외곽선은 면에 먹혀 사라진다(실측 확인).
+const CAMP_MARK_ENEMY_COLOR: Color = Color(0.18, 0.48, 0.24, 0.90)
+const CAMP_MARK_ENEMY_WIDTH: float = 2.5
+
+func _draw_front_line_overlays() -> void:
+	if _bs.sim_core == null or _bs.turrets.is_empty():
+		return
+	var hg: HexGrid = _bs.hex_grid
+	for lane in _bs.sim_core.lane_corridor_count():
+		for raw in _bs.sim_core.front_line_cells(lane).keys():
+			var pts := hg.hex_corners(_bs.cell_center(raw as Vector2i))
+			pts.append(pts[0])
+			draw_polyline(pts, FRONT_LINE_COLOR, FRONT_LINE_WIDTH)
+
+
+## 차 있는 정글 캠프에 작은 마름모를 하나 찍는다. **두 가지로 갈라 그린다.**
+##   • 우리가 지금 먹을 수 있는 캠프 → 꽉 찬 초록 마름모.
+##   • 적 소유 칸에 차 있는 캠프 → 같은 자리 · 같은 크기의 **속 빈** 마름모.
+## 뺏을 값어치가 지금 있는지(= 그 칸의 캠프가 차 있는지)가 안 보이면 정글 점령이
+## 판단의 대상이 되지 못한다. 채움 여부가 "우리 것 / 적 것"을 가르므로 둘을
+## 헷갈릴 여지가 없다.
+##
+## 판정은 시뮬레이터와 같은 함수(`camp_harvestable` / `camp_charged`)를 지나므로
+## 보이는 캠프와 먹히는 캠프가 어긋날 수 없다.
+func _draw_jungle_camps() -> void:
+	if _bs.sim_core == null:
+		return
+	var r: float = _bs.hex_grid.hex_size * CAMP_MARK_RATIO
+	var foe: int = 1 - _bs.blue_team
+	for raw in _bs.jungle_camps.keys():
+		var cell := raw as Vector2i
+		var c := _bs.cell_center(cell)
+		var pts := PackedVector2Array([
+				c + Vector2(0, -r), c + Vector2(r, 0),
+				c + Vector2(0, r),  c + Vector2(-r, 0)])
+		if _bs.sim_core.camp_harvestable(cell, _bs.blue_team):
+			draw_colored_polygon(pts, CAMP_MARK_COLOR)
+		elif _bs.sim_core.camp_charged(cell) 				and int(_bs.neutral_zone_cells.get(cell, -2)) == foe:
+			var loop := PackedVector2Array(pts)
+			loop.append(pts[0])
+			draw_polyline(loop, CAMP_MARK_ENEMY_COLOR, CAMP_MARK_ENEMY_WIDTH)
 
 
 func _draw_pilot_groups() -> void:

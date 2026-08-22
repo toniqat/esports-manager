@@ -57,8 +57,16 @@
 4. 무대가 열리고 매니저의 `_process` 가 시뮬레이터를 고정 스텝
    (`FIXED_DT = 1/60`, 프레임당 최대 `MAX_STEPS_PER_FRAME = 8` 스텝)으로 굴린다.
 5. 종료 판정 → **`END_HOLD_SEC`(2.0초) 유예** → 대시보드(준 딜량 / 받은 딜량 /
-   처치 수) → `확인` → 무대 제거, **`phase = _phase_before`**, `on_done` 호출,
-   `engage_finished` emit.
+   처치 수 / **성장**) → `확인` → 무대 제거, **`phase = _phase_before`**,
+   `on_done` 호출, `engage_finished` emit.
+
+   **성장 열**은 `+2.15k → 12.40k` 형식으로 이 교전이 성장 경쟁에 무슨 의미였는지를
+   보여 준다. 개시 시점 값은 `TurnEngageSim` 이 참가자를 배치하며
+   `stats[p]["score0"]` 에 찍어 두고, 대시보드가 지금 값과의 차를 낸다. 번 쪽은
+   금색, 못 번 쪽은 회색. 열 자리는 `EngageArena` 의 `DASH_COL_*` 상수에 모여
+   있어 헤더 행과 데이터 행이 같은 표를 읽는다. 값 라벨에는 `clip_text = true`
+   가 필수다 — 우측 정렬 `Label` 은 글자가 rect 보다 넓으면 정렬을 포기하고 rect
+   왼쪽부터 그려 패널 밖으로 넘친다.
 
 복귀 페이즈를 `CARD_PHASE` 로 못박지 않는 이유: 상대 차례
 (`CardPhaseManager._run_ai_turn`)는 `game_phase` 를 바꾸지 않고 **BATTLE 안에서**
@@ -404,8 +412,16 @@ base   = hit / (hit + evasion)                                 # 전장과 같�
   전장에 그대로 반영된다.
 - 처치 → `_bs.mark_pilot_dead(pilot, killer)`. 전장과 같은 사망 경로라 리스폰 턴
   스케일링(`respawn_turns_now()` = 5 + 경과 턴/10)과 전사 연출, **성장치 정산**이
-  무대 처치에도 그대로 걸린다. 준 피해도 `_bs.score_pilot_damage` 로 적립된다 —
-  성장치 규칙은 `BattleSim` 의 `SCORE_*` 절 참고.
+  무대 처치에도 그대로 걸린다. 준 피해는 `_bs.record_pilot_damage` 로 **피해자의
+  장부**에 적히고, 그 대상이 쓰러질 때 라스트힛 현상금과 피해 비례 어시스트로
+  정산된다(전장·공격 카드와 같은 경로) — 성장치 규칙은 `BattleSim` 의 `SCORE_*`
+  절 참고. 처치가 곧 성장이므로 **교전 한 번이 성장 경쟁의 분기점**이고, 그래서
+  결과 대시보드에 성장 열이 붙는다(바로 아래).
+- **무대에서 난 처치는 킬로그에 바로 뜨지 않는다.** 아레나가 화면을 덮고 있어
+  어차피 보이지 않으므로 `ui/KillFeed.gd` 가 `is_active()` 를 보고 보류했다가,
+  결과 대시보드를 닫는 `_on_dashboard_confirmed` 가 `flush_pending()` 을 불러
+  0.25초 간격으로 한 줄씩 풀어놓는다 — 그 교전에서 무슨 일이 있었는지가 한 번에
+  읽힌다.
 - **`grid_pos` 는 건드리지 않는다.** 살아남은 파일럿은 원래 셀에 그대로 남는다.
   저HP 파일럿은 작전 단계 종료 시 `RecallSystem.process_phase_end_recalls()`
   의 HP 임계 복귀가 어차피 본진으로 데려간다.

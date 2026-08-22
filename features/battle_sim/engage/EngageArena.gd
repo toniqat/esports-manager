@@ -793,7 +793,8 @@ func show_dashboard(team0: Array, team1: Array, stats: Dictionary,
 		y += 32.0
 		for raw in team_pilots:
 			var p := raw as PilotData
-			var s: Dictionary = stats.get(p, {"dealt": 0, "taken": 0, "kills": 0})
+			var s: Dictionary = stats.get(p,
+					{"dealt": 0, "taken": 0, "kills": 0, "score0": p.score})
 			_dashboard_row(p, s, y, dash_w)
 			y += 36.0
 		y += 16.0
@@ -807,12 +808,32 @@ func show_dashboard(team0: Array, team1: Array, stats: Dictionary,
 	_dashboard.add_child(btn)
 
 
+# 열 자리 — 헤더와 데이터 행이 같은 표를 읽어야 어긋나지 않는다.
+const DASH_COL_NAME_X:   float = 28.0
+const DASH_COL_NAME_W:   float = 250.0
+const DASH_COL_DEALT_X:  float = 278.0
+const DASH_COL_TAKEN_X:  float = 418.0
+const DASH_COL_KILLS_X:  float = 558.0
+const DASH_COL_STAT_W:   float = 140.0
+const DASH_COL_GROWTH_X: float = 668.0
+const DASH_COL_GROWTH_W: float = 244.0
+## 성장 행의 색 — 이번 교전에서 번 성장치는 금색, 못 벌었으면 회색.
+const GROWTH_GAIN_COLOR: Color = Color(1.0, 0.84, 0.36)
+const GROWTH_FLAT_COLOR: Color = Color(0.62, 0.64, 0.70)
+
+
 func _dashboard_header_row(y: float, _dash_w: float) -> void:
 	var cols := [
-		{"text": "파일럿",   "x": 28.0,  "w": 240.0, "align": HORIZONTAL_ALIGNMENT_LEFT},
-		{"text": "준 딜량",   "x": 270.0, "w": 200.0, "align": HORIZONTAL_ALIGNMENT_RIGHT},
-		{"text": "받은 딜량", "x": 470.0, "w": 200.0, "align": HORIZONTAL_ALIGNMENT_RIGHT},
-		{"text": "처치",     "x": 670.0, "w": 200.0, "align": HORIZONTAL_ALIGNMENT_RIGHT},
+		{"text": "파일럿",   "x": DASH_COL_NAME_X,   "w": DASH_COL_NAME_W,
+			"align": HORIZONTAL_ALIGNMENT_LEFT},
+		{"text": "준 딜량",   "x": DASH_COL_DEALT_X,  "w": DASH_COL_STAT_W,
+			"align": HORIZONTAL_ALIGNMENT_RIGHT},
+		{"text": "받은 딜량", "x": DASH_COL_TAKEN_X,  "w": DASH_COL_STAT_W,
+			"align": HORIZONTAL_ALIGNMENT_RIGHT},
+		{"text": "처치",     "x": DASH_COL_KILLS_X,  "w": DASH_COL_STAT_W,
+			"align": HORIZONTAL_ALIGNMENT_RIGHT},
+		{"text": "성장",     "x": DASH_COL_GROWTH_X, "w": DASH_COL_GROWTH_W,
+			"align": HORIZONTAL_ALIGNMENT_RIGHT},
 	]
 	for c in cols:
 		var lbl := _make_label(String(c["text"]), 20,
@@ -827,16 +848,35 @@ func _dashboard_row(p: PilotData, s: Dictionary, y: float, _dash_w: float) -> vo
 	var name_lbl := _make_label(
 			"%s  (HP %d/%d)%s" % [_bs.pilot_label(p), p.hp, p.max_hp, suffix],
 			20, TEAM_COLORS[p.team], HORIZONTAL_ALIGNMENT_LEFT)
-	name_lbl.position = Vector2(28, y)
-	name_lbl.size = Vector2(240, 28)
+	name_lbl.position = Vector2(DASH_COL_NAME_X, y)
+	name_lbl.size = Vector2(DASH_COL_NAME_W, 28)
 	_dashboard.add_child(name_lbl)
 
-	_dashboard.add_child(_stat_cell(int(s["dealt"]), 270.0, y, 200.0))
-	_dashboard.add_child(_stat_cell(int(s["taken"]), 470.0, y, 200.0))
-	_dashboard.add_child(_stat_cell(int(s["kills"]), 670.0, y, 200.0))
+	_dashboard.add_child(_stat_cell(int(s["dealt"]), DASH_COL_DEALT_X, y, DASH_COL_STAT_W))
+	_dashboard.add_child(_stat_cell(int(s["taken"]), DASH_COL_TAKEN_X, y, DASH_COL_STAT_W))
+	_dashboard.add_child(_stat_cell(int(s["kills"]), DASH_COL_KILLS_X, y, DASH_COL_STAT_W))
+	_dashboard.add_child(_growth_cell(p, float(s.get("score0", p.score)), y))
 
 	if not p.alive:
 		name_lbl.modulate = Color(0.7, 0.5, 0.5)
+
+
+## "성장" 칸 — `+2.15k → 12.40k`. 이 교전이 성장 경쟁에 무슨 의미였는지가 곧
+## 번 성장치이므로, 델타를 앞에 세우고 도달한 총액을 뒤에 붙인다.
+func _growth_cell(p: PilotData, score_before: float, y: float) -> Label:
+	var delta: float = p.score - score_before
+	var text: String = "%s%s  →  %s" % [
+			"+" if delta >= 0.0 else "−",
+			BattleSim.fmt_score(absf(delta)), BattleSim.fmt_score(p.score)]
+	var lbl := _make_label(text, 20,
+			GROWTH_GAIN_COLOR if delta > 0.0 else GROWTH_FLAT_COLOR,
+			HORIZONTAL_ALIGNMENT_RIGHT)
+	lbl.position = Vector2(DASH_COL_GROWTH_X, y)
+	lbl.size = Vector2(DASH_COL_GROWTH_W, 28)
+	# 우측 정렬 Label 은 글자가 rect 보다 넓으면 정렬을 포기하고 왼쪽부터 그려
+	# 패널 밖으로 넘친다 — clip 이 필수다.
+	lbl.clip_text = true
+	return lbl
 
 
 func _stat_cell(value: int, x: float, y: float, w: float) -> Label:

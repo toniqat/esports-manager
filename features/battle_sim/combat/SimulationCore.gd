@@ -163,12 +163,14 @@ func simulate_turn() -> void:
 		var defending_team := 1 if p.team == 0 else 0
 		var ehq := _bs.ENEMY_HQ_POS if p.team == 0 else _bs.PLAYER_HQ_POS
 		if p.grid_pos == ehq and any_t2_destroyed(defending_team):
-			if p.team == 0: hq_damage_e += p.atk
-			else:           hq_damage_p += p.atk
-			_bs.score_hq_damage(p, p.atk)
-			log_lines.append("%s→HQ:%d" % [_bs.pilot_label(p), p.atk])
+			# 포탑과 같은 고정 피해다 — 성장한 공격력이 HQ 에 얹히면 후반
+			# 한타 한 번에 경기가 닫혀 버린다.
+			var hq_hit: int = _bs.PILOT_STRUCTURE_DMG
+			if p.team == 0: hq_damage_e += hq_hit
+			else:           hq_damage_p += hq_hit
+			log_lines.append("%s→HQ:%d" % [_bs.pilot_label(p), hq_hit])
 			_bs.blog.log_event("HQ", "%-4s hits team%d HQ for %d" % [
-					_bs.pilot_label(p), defending_team, p.atk])
+					_bs.pilot_label(p), defending_team, hq_hit])
 	_bs.enemy_hq_hp  = max(0, _bs.enemy_hq_hp  - hq_damage_e)
 	_bs.player_hq_hp = max(0, _bs.player_hq_hp - hq_damage_p)
 
@@ -539,9 +541,9 @@ func _apply_turret_siege(attackers: Array, defenders: Array, td: TurretData,
 	if _turret_attackable(td):
 		for raw in attackers:
 			var a := raw as PilotData
-			_credit_turret_damage(a, td, a.atk, turret_dmg)
-			log_lines.append("%s→T%d[%s]:%d" % [
-					_bs.pilot_label(a), td.tier, _bs.LANE_NAMES[td.lane], a.atk])
+			_credit_turret_damage(a, td, _bs.PILOT_STRUCTURE_DMG, turret_dmg)
+			log_lines.append("%s→T%d[%s]:%d" % [_bs.pilot_label(a), td.tier,
+					_bs.LANE_NAMES[td.lane], _bs.PILOT_STRUCTURE_DMG])
 
 	if defenders.is_empty():
 		return

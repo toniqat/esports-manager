@@ -157,6 +157,14 @@ var PHASE_THRESHOLD:         int   = 0
 ## (`BLUE_COST_HEAD_START`) 하나뿐이고, 양 팀은 빈 손으로 이 턴까지 순수
 ## 라인전만 한다. 성장은 이 게이트를 타지 않는다(1턴부터 돈다).
 var ECONOMY_START_TURN:      int   = 1
+## 파일럿 한 명이 **포탑 / HQ 에 한 번에 넣는 고정 피해**. `atk` 와 무관하다.
+##
+## 예전에는 `atk` 전량이 들어갔는데, 성장이 공격력을 ×3 까지 밀어 올리는 지금
+## 그대로 두면 후반 포탑이 한 턴에 녹아 경기 길이가 성장에 반비례해 무너진다.
+## 구조물이 빨리 무너지는 이유는 **공격력이 커져서가 아니라 수비수가 저HP
+## 복귀·사망으로 전장을 비웠기 때문**이어야 한다 — 그래서 피해는 고정이고,
+## 대신 포탑 체력이 16 까지 내려와 무방비면 8턴에 철거된다.
+var PILOT_STRUCTURE_DMG:     int   = 2
 
 # Derived after DB load
 var PLAYER_HQ_POS: Vector2i = Vector2i.ZERO
@@ -466,6 +474,7 @@ func _populate_from_data_loader() -> void:
 	COST_RECOVERY_INTERVAL  = max(1, int(cfg.get("COST_RECOVERY_INTERVAL", "1")))
 	PHASE_THRESHOLD         = int(cfg.get("PHASE_THRESHOLD", "8"))
 	ECONOMY_START_TURN      = max(1, int(cfg.get("ECONOMY_START_TURN", "1")))
+	PILOT_STRUCTURE_DMG     = max(1, int(cfg.get("PILOT_STRUCTURE_DMG", "2")))
 	# Init counters so first event fires on turn 1
 	draw_counter = CARD_DRAW_INTERVAL - 1
 	cost_counter = COST_RECOVERY_INTERVAL - 1

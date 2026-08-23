@@ -209,6 +209,9 @@ func build_starter_decks() -> void:
 	_hide_description_box()
 	_bs.player_deck.clear(); _bs.ai_deck.clear()
 	_bs.player_discard.clear(); _bs.ai_discard.clear()
+	# 새 판이면 배분 표도 백지에서 시작한다 — 재시작 경로가 같은 함수를 다시
+	# 지나므로 비우지 않으면 이전 판의 PilotData 키가 남는다.
+	_bs.starter_cards.clear()
 	var pool := _build_pool_from_db()
 	if pool.is_empty():
 		update_deck_discard_labels()
@@ -256,17 +259,32 @@ func _deal_team_deck(pool: Array, pilots: Array, out_deck: Array) -> void:
 		# 새로 만들면 메크 슬롯과 라인전 슬롯이 같은 그룹을 한 장씩 집어 갈 수
 		# 있다. `_sample` 이 고른 카드의 그룹을 여기에 적어 나간다.
 		var claimed: Dictionary = {}
-		var picks: Array = _sample(_cards_of_type(eligible, CardData.TYPE_MECH),
+		var mech_picks: Array = _sample(
+				_cards_of_type(eligible, CardData.TYPE_MECH),
 				MECH_CARDS_PER_PILOT, eligible, claimed)
+		var pilot_picks: Array = []
 		for slot in _pilot_slots_for(p):
 			var cat: String = String(slot[0])
 			var count: int  = int(slot[1])
-			picks.append_array(_sample(
+			pilot_picks.append_array(_sample(
 					_cards_in_category(eligible, cat), count, eligible, claimed))
-		for src_raw in picks:
-			var copy := make_card_copy(src_raw as CardData)
-			copy.owner_pilot = p
-			out_deck.append(copy)
+		# 배분 표는 **덱에 들어간 사본**을 가리킨다 — 풀의 원본을 적어 두면 그
+		# 카드의 비용 증가(정밀 이동의 `return_left`)처럼 사본에만 찍히는 값이
+		# 상세 패널에서 안 보인다.
+		var record: Dictionary = {"mech": [], "pilot": []}
+		for src_raw in mech_picks:
+			record["mech"].append(_deal_one(src_raw as CardData, p, out_deck))
+		for src_raw in pilot_picks:
+			record["pilot"].append(_deal_one(src_raw as CardData, p, out_deck))
+		_bs.starter_cards[p] = record
+
+
+## 풀의 원본 한 장을 시전자 사본으로 떠 덱에 넣고, 그 사본을 돌려준다.
+func _deal_one(src: CardData, p: PilotData, out_deck: Array) -> CardData:
+	var copy := make_card_copy(src)
+	copy.owner_pilot = p
+	out_deck.append(copy)
+	return copy
 
 
 ## The 파일럿 카드 slot table for one pilot: `[[category, count], …]` summing to

@@ -244,6 +244,15 @@ var pending_atk_buff_ai: int   = 0
 var draw_counter:         int   = 0  # shared draw interval counter
 var cost_counter:         int   = 0  # shared cost recovery interval counter
 
+# 파일럿마다 개시에 배분받은 6장 — `PilotData → {"mech": Array, "pilot": Array}`.
+# `CardPhaseManager._deal_team_deck` 이 덱을 돌 때 한 번 적고 경기 내내 바뀌지
+# 않는다. 상세 패널(`ui/PilotDetailPanel.gd`)의 파일럿 / 메크 탭이 유일한
+# 소비자이며, **손패 · 덱 · 버린 더미를 훑어 역산하지 않는 이유가 이것이다** —
+# 소멸(`exhaust`)한 카드는 세 더미 어디에도 없어서 역산하면 목록에서 조용히
+# 사라진다. "이 파일럿이 무엇을 들고 들어왔는가"는 경기 중에 변하지 않는 사실
+# 이므로 배분 시점의 표를 그대로 들고 있는 편이 맞다.
+var starter_cards: Dictionary = {}
+
 # ─── 진영 (블루 / 레드) ───────────────────────────────────────────────────────
 # 어느 팀이 블루인가. 0 = 플레이어 팀, 1 = AI 팀. `match_ctx.player_side`
 # (GameEnums.DraftSide) 에서 유도되며, MatchFlow 를 거치지 않은 단독 실행에서는

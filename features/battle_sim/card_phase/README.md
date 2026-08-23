@@ -805,6 +805,15 @@ re-evaluates the dim state.
   | 서포터 | `role == Role.SUPPORT` | 3 | `lane` 1 + `draw` 2 |
   | 탱커 / 격투가 / 스나이퍼 | 나머지 | 3 | `lane` 2 + `draw` 1 |
 
+- **배분 표는 `BattleSim.starter_cards` 에 남는다** — `PilotData →
+  {"mech": [CardData ×3], "pilot": [CardData ×3]}`. `_deal_one()` 이 덱에 넣는
+  **그 사본**을 그대로 적으므로, 사본에만 찍히는 값(정밀 이동의 `return_left`
+  비용 증가)까지 표를 통해 보인다. 유일한 소비자는 상세 패널의 파일럿 / 메크
+  탭(`ui/PilotDetailPanel.gd`)이고, 손패 · 덱 · 버린 더미를 훑어 **역산하지
+  않는 이유**가 이것이다: 소멸(`exhaust`)한 카드는 세 더미 어디에도 없어서
+  역산하면 목록에서 조용히 사라지는데, "이 파일럿이 무엇을 들고 들어왔는가"는
+  경기 중에 변하지 않는 사실이다. 표는 `build_starter_decks` 가 새 판마다
+  `clear()` 한다 — 재시작 경로가 같은 함수를 다시 지나기 때문.
 - **각 슬롯은 중복 없이(without replacement) 뽑는다** (`_sample`). 라인전 풀이
   3종인데 슬롯이 2장을 요구하므로, 예전의 중복 허용 랜덤이면 같은 카드 두 장이
   나오는 쪽이 더 흔했다. 풀이 요구 장수보다 작으면 그때만 중복으로 폴백하고,

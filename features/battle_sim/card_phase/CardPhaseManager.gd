@@ -252,13 +252,17 @@ func _deal_team_deck(pool: Array, pilots: Array, out_deck: Array) -> void:
 		var eligible := _pool_for_pilot(pool, p)
 		if eligible.is_empty():
 			continue
+		# 상호 배타 장부는 **한 파일럿의 6장 전체**를 가로지른다 — 슬롯마다
+		# 새로 만들면 메크 슬롯과 라인전 슬롯이 같은 그룹을 한 장씩 집어 갈 수
+		# 있다. `_sample` 이 고른 카드의 그룹을 여기에 적어 나간다.
+		var claimed: Dictionary = {}
 		var picks: Array = _sample(_cards_of_type(eligible, CardData.TYPE_MECH),
-				MECH_CARDS_PER_PILOT, eligible)
+				MECH_CARDS_PER_PILOT, eligible, claimed)
 		for slot in _pilot_slots_for(p):
 			var cat: String = String(slot[0])
 			var count: int  = int(slot[1])
 			picks.append_array(_sample(
-					_cards_in_category(eligible, cat), count, eligible))
+					_cards_in_category(eligible, cat), count, eligible, claimed))
 		for src_raw in picks:
 			var copy := make_card_copy(src_raw as CardData)
 			copy.owner_pilot = p
@@ -301,7 +305,13 @@ func _cards_in_category(pool: Array, cat: String) -> Array:
 ## `src` falls back to `fallback` (the pilot's whole scope-filtered pool), and a
 ## pool smaller than `n` is topped up with repeats. Deck size is a hard invariant
 ## — 5 pilots × 6 cards — and a mis-tagged `card_cat` must not silently break it.
-func _sample(src: Array, n: int, fallback: Array) -> Array:
+##
+## `claimed` is the pilot's 상호 배타 ledger (`excl_group` → true), shared across
+## every slot of that one pilot and **mutated here**. A card whose group is
+## already claimed is passed over on the first sweep; the repeat-fallback ignores
+## the ledger, because a short deck is the worse failure of the two.
+func _sample(src: Array, n: int, fallback: Array,
+		claimed: Dictionary = {}) -> Array:
 	if n <= 0:
 		return []
 	var bag: Array = (src if not src.is_empty() else fallback).duplicate()
@@ -309,12 +319,20 @@ func _sample(src: Array, n: int, fallback: Array) -> Array:
 		return []
 	bag.shuffle()
 	var out: Array = []
+	var relaxed: bool = false
 	while out.size() < n:
 		if bag.is_empty():
-			# Pool smaller than the slot asks for — refill and allow repeats.
+			# Pool smaller than the slot asks for (or emptied by the exclusion
+			# sweep) — refill and allow repeats, exclusions no longer enforced.
 			bag = (src if not src.is_empty() else fallback).duplicate()
 			bag.shuffle()
-		out.append(bag.pop_back())
+			relaxed = true
+		var cd := bag.pop_back() as CardData
+		if not relaxed and not cd.excl_group.is_empty():
+			if claimed.has(cd.excl_group):
+				continue
+			claimed[cd.excl_group] = true
+		out.append(cd)
 	return out
 
 
@@ -390,6 +408,7 @@ func _make_card_from_def(def: Dictionary) -> CardData:
 	cd.pool        = int(def.get("pool", 1))
 	cd.card_type   = String(def.get("card_type", CardData.TYPE_MECH))
 	cd.card_cat    = String(def.get("card_cat", CardData.CAT_NONE))
+	cd.excl_group  = String(def.get("excl_group", ""))
 	return cd
 
 
@@ -475,6 +494,7 @@ func make_card_copy(src: CardData) -> CardData:
 	cd.pool        = src.pool
 	cd.card_type   = src.card_type
 	cd.card_cat    = src.card_cat
+	cd.excl_group  = src.excl_group
 	cd.owner_pilot = src.owner_pilot
 	return cd
 

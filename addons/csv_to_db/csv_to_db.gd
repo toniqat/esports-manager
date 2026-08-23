@@ -20,7 +20,7 @@ const DB_PATH = "res://data/game.db"
 # Required columns and primary key per table
 const SCHEMAS: Dictionary = {
 	"pilots":      {"req": ["id","name","abbrev","hp","atk","heal"],           "pk": "id"},
-	"cards":       {"req": ["id","name","cost","uses","cast_method","target","cast_range","area","keyword","effect","description","scope","pool","card_type","card_cat"], "pk": "id"},
+	"cards":       {"req": ["id","name","cost","uses","cast_method","target","cast_range","area","keyword","effect","description","scope","pool","card_type","card_cat","excl_group"], "pk": "id"},
 	"game_config": {"req": ["key","value"],                                     "pk": "key"},
 	"lane_config": {"req": ["lane_id","name","max_pilots","mid_col","mid_row"], "pk": "lane_id"},
 	"players":     {"req": ["id","team_id","name","role","laning","mechanics","gamesense","teamfight","mental"], "pk": "id"},
@@ -63,6 +63,11 @@ const TABLE_DEFS: Dictionary = {
 		# 파일럿 카드의 하위 분류 — lane / draw / jungle / common. 메크 카드는 "-".
 		# common 은 라인전 슬롯과 정글 슬롯 **양쪽** 후보에 들어간다(복귀).
 		"card_cat":    {"data_type": "text", "not_null": true},
+		# 상호 배타 그룹. 비어 있지 않은 같은 값끼리는 **한 파일럿이 하나만**
+		# 가질 수 있다 — 안전한 파밍 ↔ 공격적인 라인전이 첫 사례다. 둘은 같은
+		# `lane_stat` 슬롯을 정반대 방향으로 밀어서 한 사람이 둘 다 들면 서로를
+		# 지운다(나중에 낸 쪽이 덮어쓴다). CardPhaseManager._sample 이 본다.
+		"excl_group":  {"data_type": "text", "not_null": true},
 	},
 	"game_config": {
 		"key":   {"data_type": "text", "primary_key": true, "not_null": true},

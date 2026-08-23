@@ -953,9 +953,9 @@ parent chain, the Card still lit up — which reads exactly like the hit layer
 working and made this a slow one to find. Same defaults as above, opposite
 direction.
 
-### cards.csv 컬럼 — `scope` / `pool` / `card_type` / `card_cat`
-Four columns drive who gets a card, which deck slot it fills, and whether it is
-dealt at all. All flow `cards.csv` → `addons/csv_to_db/csv_to_db.gd`
+### cards.csv 컬럼 — `scope` / `pool` / `card_type` / `card_cat` / `excl_group`
+Five columns drive who gets a card, which deck slot it fills, whether it is
+dealt at all, and what it cannot be dealt alongside. All flow `cards.csv` → `addons/csv_to_db/csv_to_db.gd`
 (SCHEMAS + TABLE_DEFS) → `GameManager.card_pool_bs` → `CardData`. **Adding a
 column means running Project → Tools → Rebuild game.db**; until then
 `GameManager` reads them with defaults (`any` / `1` / `mech` / `-`) so an older
@@ -967,11 +967,28 @@ game.db still loads.
 | `pool`  | `1` / `0` | `0` = 랜덤 스타터 덱에 절대 들어가지 않음 (결투 · 전령 제압 · 용 보상). |
 | `card_type` | `mech` / `pilot` | 덱 구성의 1차 분류. 파일럿마다 `mech` 3장 + `pilot` 3장. |
 | `card_cat` | `-` / `lane` / `draw` / `jungle` / `common` | 파일럿 카드의 슬롯 분류. 메크 카드는 `-`. `common` 은 라인전 슬롯과 정글 슬롯 **양쪽** 후보(복귀 하나뿐). |
+| `excl_group` | 빈 문자열 / 그룹 이름 | **상호 배타 그룹.** 값이 같은 카드끼리는 한 파일럿이 **하나만** 갖는다. 지금은 `laning` 하나 — 안전한 파밍 ↔ 공격적인 라인전. |
 
-`keyword` 컬럼은 **`|` 로 구분된 목록**이다(`exhaust` / `preserve`). 판정은
-반드시 `CardData.has_keyword(kw)` 를 지나야 한다 — `keyword == "exhaust"` 로
-문자열을 통째로 비교하면 두 번째 키워드가 붙는 순간 첫 번째가 조용히 꺼진다.
-전령 제압이 `exhaust|preserve` 로 둘을 함께 단 첫 카드다.
+`keyword` 컬럼은 **`|` 로 구분된 목록**이다(`exhaust` / `preserve` /
+`volatile`). 판정은 반드시 `CardData.has_keyword(kw)` 를 지나야 한다 —
+`keyword == "exhaust"` 로 문자열을 통째로 비교하면 두 번째 키워드가 붙는 순간
+첫 번째가 조용히 꺼진다. 전령 제압이 `exhaust|preserve` 로 둘을 함께 단 첫
+카드이고, 파일럿 스킬이 만들어 주는 카드는 전부 `exhaust|volatile` 이다.
+
+#### `excl_group` — 한 파일럿이 둘 다 가질 수 없는 카드
+`_sample` 이 파일럿 한 명의 **6장 전체**를 가로지르는 장부(`claimed`)를 들고
+돌면서, 이미 집은 그룹의 카드는 건너뛴다. 장부를 슬롯마다 새로 만들면 메크
+슬롯과 라인전 슬롯이 같은 그룹을 한 장씩 집어 갈 수 있으므로
+`_deal_team_deck` 이 파일럿당 한 번만 만들어 모든 `_sample` 호출에 넘긴다.
+
+첫 사례인 **안전한 파밍 ↔ 공격적인 라인전**이 배타인 이유는 둘이 같은
+`lane_stat` 슬롯을 **정반대 방향으로** 밀기 때문이다 — 한 사람이 둘 다 들면
+합산이 아니라 나중에 낸 쪽이 앞의 것을 지운다(`_effect_lane_stat` 은 덮어쓰기다).
+라인전 풀이 3종(안전한 파밍 · 공격적인 라인전 · 복귀)인데 라이너 슬롯이 2장을
+요구하므로, 배타가 없으면 그 조합이 셋 중 하나로 흔하게 나온다.
+
+중복 폴백(풀이 슬롯 요구보다 작을 때)에서는 배타를 **놓아 준다** — 짧은 덱이 더
+나쁜 실패이기 때문이다(덱 크기 30은 불변식).
 
 #### 현재 30행의 분포
 | 분류 | 장수 | 카드 |

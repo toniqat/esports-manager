@@ -55,6 +55,12 @@ const CAT_COMMON := "common"
 @export var card_type: String = TYPE_MECH
 # 파일럿 카드의 하위 슬롯 분류. 메크 카드는 CAT_NONE.
 @export var card_cat: String = CAT_NONE
+# 상호 배타 그룹 (cards.csv `excl_group`). 비어 있으면 제약 없음. 값이 같은
+# 카드끼리는 **한 파일럿이 하나만** 가질 수 있다 — 스타터 덱을 돌리는
+# `CardPhaseManager._sample` 이 유일한 소비자다. 첫 사례인 안전한 파밍 ↔
+# 공격적인 라인전은 같은 `lane_stat` 슬롯을 정반대 방향으로 밀어서, 한 사람이
+# 둘 다 들면 나중에 낸 쪽이 앞의 것을 지운다(합산이 아니라 덮어쓰기다).
+@export var excl_group: String = ""
 
 # Runtime — set when this card is dealt to a pilot's mini-deck. Identifies the
 # 시전자 (caster) for effect resolution and drives the owner badge on the UI.

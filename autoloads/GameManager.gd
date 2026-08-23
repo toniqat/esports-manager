@@ -349,6 +349,8 @@ func _load_card_pool_bs() -> void:
 			# 는 전부 "메크 카드 / 분류 없음"으로 읽혀 덱 구성이 폴백 경로를 탄다.
 			"card_type":   String(row.get("card_type", CardData.TYPE_MECH)),
 			"card_cat":    String(row.get("card_cat", CardData.CAT_NONE)),
+			# 상호 배타 그룹 — 비어 있으면 제약 없음.
+			"excl_group":  String(row.get("excl_group", "")),
 		})
 	db.close_db()
 	print("GameManager: card pool loaded — %d cards" % card_pool_bs.size())

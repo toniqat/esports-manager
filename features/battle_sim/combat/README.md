@@ -178,7 +178,8 @@ impossible; the two-pass split is described under "Movement".
 - 판정은 `camp_harvestable(cell, team)` 하나뿐이고 **렌더러도 같은 함수를
   읽는다** — 화면에 보이는 캠프와 실제로 먹히는 캠프가 어긋날 수 없다.
   소유권을 빼고 "지금 차 있는가"만 묻는 `camp_charged(cell)` 이 그 안쪽에
-  들어 있고, 렌더러가 **적 소유 칸의 캠프**를 속 빈 마름모로 그릴 때 쓴다.
+  들어 있고, 렌더러가 **적 소유 칸의 캠프**를 어두운 호박색 아웃라인으로 그릴
+  때 쓴다(`rendering/README.md`).
 - 먹을 수 있는 것은 **자기 팀 소유이거나 아직 중립인** 칸뿐이다. 적 정글을
   점령하면 돌 캠프가 늘어 라이너를 추월할 수 있다 — 정글 점령의 값이 여기 있다.
 - `process_neutral_zone_captures` **뒤**에 돈다: 방금 점령한 중립 칸의 캠프를

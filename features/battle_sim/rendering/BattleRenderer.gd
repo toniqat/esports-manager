@@ -268,14 +268,27 @@ func _draw_captured_tile_overlays() -> void:
 ## (정글 점령)과 경쟁하지 않게 한다.
 const FRONT_LINE_COLOR: Color = Color(0.98, 0.86, 0.42, 0.30)
 const FRONT_LINE_WIDTH: float = 2.0
-## 캠프 마름모의 반지름 — hex_size 배율.
-const CAMP_MARK_RATIO: float = 0.20
-const CAMP_MARK_COLOR: Color = Color(0.65, 1.0, 0.55, 0.92)
-## 적 소유 칸에 차 있는 캠프 — 같은 자리 · 같은 크기의 **속 빈** 마름모.
-## 채우지 않는 것이 "있지만 지금은 못 먹는다"를 말한다. 색은 채운 쪽보다 **어둡다**
-## — 타일이 흰색·연분홍이라 밝은 초록 외곽선은 면에 먹혀 사라진다(실측 확인).
-const CAMP_MARK_ENEMY_COLOR: Color = Color(0.18, 0.48, 0.24, 0.90)
-const CAMP_MARK_ENEMY_WIDTH: float = 2.5
+## 캠프 아웃라인 — **차 있는 캠프가 있는 타일의 테두리**를 그린다.
+##
+## 예전에는 칸 한가운데에 작은 마름모를 찍었다(우리 것 = 꽉 찬 초록, 적 것 =
+## 속 빈 초록). 마름모는 그 칸 **안**의 물건이라 정글러 초상화와 자리를 다퉜고,
+## 캠프가 서너 칸 이어져 있어도 점 셋으로 흩어져 "이쪽 정글이 통째로 남아 있다"
+## 가 한눈에 안 들어왔다. 테두리는 타일 자체를 가리키므로 초상화와 겹칠 일이
+## 없고, **인접한 캠프끼리는 사이 변을 그리지 않아** 여러 칸이 하나의 덩어리로
+## 이어져 보인다(아래 `_draw_jungle_camps`).
+##
+## **색은 소유를 가르지 않는다 — 차 있으면 밝은 노랑, 그게 전부다.** 한때는
+## 적 소유 칸의 캠프를 어두운 호박색(`CAMP_LINE_ENEMY_COLOR`, 삭제됨)으로 따로
+## 그렸는데, 그 색이 "비어 있음"과 구분되지 않아 정작 화면에서 읽히는 것은
+## 소유가 아니라 밝기였다. 소유는 이미 타일 자체가 팀색으로 말하고 있으므로
+## 테두리는 **지금 이 칸에 성장 포인트가 남아 있는가** 하나만 말하면 된다.
+const CAMP_LINE_COLOR: Color = Color(1.00, 0.90, 0.28, 0.98)
+const CAMP_LINE_WIDTH: float = 3.0
+## 캠프를 다 먹어 **비어 있는** 정글/중립 칸에 덧씌우는 그늘. 테두리가 사라지는
+## 것만으로는 "여긴 아직 안 먹었다"와 "여긴 방금 먹었다"가 같은 그림이 된다 —
+## 밝기 한 단계를 내려 두면 정글러가 어디로 돌아야 하는지가 색만으로 읽힌다.
+## 재생성(6턴)이 돌면 그늘이 걷히고 노란 테두리가 돌아온다.
+const CAMP_SPENT_TINT: Color = Color(0.0, 0.0, 0.05, 0.34)
 
 func _draw_front_line_overlays() -> void:
 	if _bs.sim_core == null or _bs.turrets.is_empty():
@@ -288,34 +301,66 @@ func _draw_front_line_overlays() -> void:
 			draw_polyline(pts, FRONT_LINE_COLOR, FRONT_LINE_WIDTH)
 
 
-## 차 있는 정글 캠프에 작은 마름모를 하나 찍는다. **두 가지로 갈라 그린다.**
-##   • 우리가 지금 먹을 수 있는 캠프 → 꽉 찬 초록 마름모.
-##   • 적 소유 칸에 차 있는 캠프 → 같은 자리 · 같은 크기의 **속 빈** 마름모.
-## 뺏을 값어치가 지금 있는지(= 그 칸의 캠프가 차 있는지)가 안 보이면 정글 점령이
-## 판단의 대상이 되지 못한다. 채움 여부가 "우리 것 / 적 것"을 가르므로 둘을
-## 헷갈릴 여지가 없다.
+## 차 있는 캠프가 서 있는 정글 타일의 **테두리**를 그린다.
+##
+## 한 변을 그리는 조건은 하나다 — 그 변 너머의 이웃 칸이 **같은 부류의 캠프가
+## 아닐 것**. 그래서 캠프 두 칸이 붙어 있으면 맞닿은 변이 양쪽에서 다 빠져
+## 바깥 윤곽만 남고, 정글 한쪽이 통째로 차 있으면 그 덩어리 전체가 하나의
+## 테두리로 읽힌다. 부류(우리 것 / 적 것)가 다르면 사이 변을 그린다 — 색이
+## 다른 두 덩어리가 경계 없이 붙어 있으면 어디까지가 어느 쪽인지 알 수 없다.
+##
+## 변 ↔ 이웃 대응은 **표가 아니라 기하로 푼다**: 변의 중점이 중심에서 뻗는
+## 방향과 이웃 칸 중심 방향을 맞춰 본다. 육각 오프셋 좌표는 홀/짝 열마다 이웃
+## 오프셋이 달라(이 저장소가 이미 부호 버그로 한 번 앓았다) 손으로 적은 표가
+## 조용히 틀리기 쉬운 자리다.
 ##
 ## 판정은 시뮬레이터와 같은 함수(`camp_harvestable` / `camp_charged`)를 지나므로
 ## 보이는 캠프와 먹히는 캠프가 어긋날 수 없다.
 func _draw_jungle_camps() -> void:
 	if _bs.sim_core == null:
 		return
-	var r: float = _bs.hex_grid.hex_size * CAMP_MARK_RATIO
-	var foe: int = 1 - _bs.blue_team
+	# 차 있는 칸 / 빈 칸을 한 번에 가른다. 소유는 보지 않는다 — 테두리는
+	# "성장 포인트가 남아 있는가" 하나만 말한다.
+	var charged: Dictionary = {}   # Vector2i → true
+	var spent: Array = []
 	for raw in _bs.jungle_camps.keys():
 		var cell := raw as Vector2i
-		var c := _bs.cell_center(cell)
-		var pts := PackedVector2Array([
-				c + Vector2(0, -r), c + Vector2(r, 0),
-				c + Vector2(0, r),  c + Vector2(-r, 0)])
-		if _bs.sim_core.camp_harvestable(cell, _bs.blue_team):
-			draw_colored_polygon(pts, CAMP_MARK_COLOR)
-		elif _bs.sim_core.camp_charged(cell) 				and int(_bs.neutral_zone_cells.get(cell, -2)) == foe:
-			var loop := PackedVector2Array(pts)
-			loop.append(pts[0])
-			draw_polyline(loop, CAMP_MARK_ENEMY_COLOR, CAMP_MARK_ENEMY_WIDTH)
+		if _bs.sim_core.camp_charged(cell):
+			charged[cell] = true
+		else:
+			spent.append(cell)
+
+	# 빈 칸부터 — 그늘은 테두리보다 아래에 깔려야 한다(이웃한 차 있는 칸의
+	# 테두리가 그늘에 먹히지 않게).
+	for raw in spent:
+		var cell := raw as Vector2i
+		draw_colored_polygon(_bs.hex_grid.hex_corners(_bs.cell_center(cell)),
+				CAMP_SPENT_TINT)
+
+	for raw in charged.keys():
+		var cell := raw as Vector2i
+		var center := _bs.cell_center(cell)
+		var pts := _bs.hex_grid.hex_corners(center)
+		for i in range(6):
+			var a: Vector2 = pts[i]
+			var b: Vector2 = pts[(i + 1) % 6]
+			var across := _neighbor_across_edge(cell, center, (a + b) * 0.5)
+			if charged.has(across):
+				continue    # 같은 덩어리의 안쪽 변 — 이어 붙는다
+			draw_line(a, b, CAMP_LINE_COLOR, CAMP_LINE_WIDTH)
 
 
+## `cell` 의 어느 변(중점 `edge_mid`) 너머에 있는 이웃 칸. 없으면 (-9999,-9999).
+## 이웃 여섯 중 중심 방향이 그 변과 가장 잘 맞는 것을 고른다.
+func _neighbor_across_edge(cell: Vector2i, center: Vector2,
+		edge_mid: Vector2) -> Vector2i:
+	var want := (edge_mid - center).normalized()
+	for raw in _bs.hex_grid.get_neighbors(cell.x, cell.y):
+		var nb := raw as Vector2i
+		var dir := (_bs.cell_center(nb) - center).normalized()
+		if dir.dot(want) > 0.99:
+			return nb
+	return Vector2i(-9999, -9999)
 
 
 func _draw_pilot_groups() -> void:

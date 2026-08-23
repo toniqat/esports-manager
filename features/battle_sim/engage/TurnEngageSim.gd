@@ -264,6 +264,9 @@ var _gap_left: float = 0.0
 
 var _bs: BattleSim = null
 var _origin_cell: Vector2i = Vector2i.ZERO
+## 시전자가 있는 교전인가(= 카드가 연 교전인가). 오브젝트 교전은 false 이고,
+## 그때는 포탑이 한 기도 가담하지 않는다 — `_build_turrets` 참조.
+var _has_caster: bool = false
 
 
 # 유닛이 돌아다닐 수 있는 벨트 사각형. 렌더러의 최소 카메라 배율도 여기서 나온다.
@@ -292,6 +295,7 @@ func setup(bs: BattleSim, caster: PilotData, team0: Array, team1: Array,
 		rounds: int, duel: bool, first_team: int = -1) -> void:
 	_bs = bs
 	_origin_cell = caster.grid_pos if caster != null else Vector2i.ZERO
+	_has_caster = caster != null
 	if first_team >= 0:
 		initiator_team = first_team
 	else:
@@ -428,12 +432,23 @@ func _place_row(row: Array, x: float) -> void:
 		u.pos = u.anchor_pos
 
 
-# 포탑 참가 규칙: **참가 파일럿이 자기 팀 포탑 칸 위에 서 있으면** 그 포탑이
-# 교전에 가담한다. 즉 "포탑 칸에 있는 적에게 교전을 걸면 포탑이 같이 싸운다".
-# 사거리 개념은 없다 — 참가한 포탑은 아레나 전체를 사정권으로 본다.
+# 포탑 참가 규칙: **적이 걸어온 교전에서만**, 그리고 **참가 파일럿이 자기 팀
+# 포탑 칸 위에 서 있을 때만** 그 포탑이 가담한다. 즉 포탑은 "허깅하고 있는 우리
+# 편에게 적이 교전을 강제했을 때" 방어에 나서는 것이지, 우리가 그 자리에서 먼저
+# 교전을 열 때 따라 나오는 화력이 아니다. 포탑 칸에 눌러앉아 카드로 교전을
+# 여는 쪽이 포탑까지 끼고 싸우면 그 칸이 일방적인 안전지대가 된다.
+#
+# 그래서 걸러 내는 자리가 둘이다.
+#   1. **오브젝트 교전(전령 / 용)에는 어느 팀 포탑도 안 낀다** — 시전자가 없는
+#      교전이라 "누가 걸었는가"가 없고, 무대도 중립 칸에서 열린다.
+#   2. **시전자 팀의 포탑은 빠진다** — 교전을 연 쪽이 곧 강제한 쪽이다.
+#
+# 가담한 포탑에 사거리 개념은 없다 — 아레나 전체를 사정권으로 본다.
 # 자리는 유닛 벨트가 아니라 **지평선 근처의 배경 지형**(TURRET_BG_Y) 이다.
 func _build_turrets() -> void:
 	turrets.clear()
+	if not _has_caster:
+		return                       # 오브젝트 교전 — 포탑은 가담하지 않는다.
 	# 참가자가 밟고 있는 셀 집합을 팀별로 모은다.
 	var occupied: Array = [{}, {}]   # occupied[team][Vector2i] = true
 	for raw in units:
@@ -445,6 +460,8 @@ func _build_turrets() -> void:
 		var t := raw as TurretData
 		if t == null or not t.alive:
 			continue
+		if t.team == initiator_team:
+			continue                 # 교전을 건 쪽의 포탑은 가담하지 않는다.
 		if not (occupied[t.team] as Dictionary).has(t.grid_pos):
 			continue
 		var et := ETurret.new()

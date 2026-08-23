@@ -18,14 +18,24 @@ func ensure_view() -> void:
 	add_child(_view)
 
 
-# Pool layout for the draft grid: 5 roles × 8 candidates, ranked by total stats
+# Pool layout for the draft grid: 5 roles × 5 candidates, ranked by total stats
 # (descending) inside each role. Returns Array of
 # {pilot: PlayerData, role: int, rank: int}.
+#
+# **모브 파일럿은 빠진다.** 스킬이 25개뿐이라 40명 중 15명은 고유 스킬이 없고,
+# 그쪽은 초상화도 실루엣인 "이름 없는 선수"다 — 플레이어가 뽑을 대상이 아니라
+# AI 팀의 머릿수를 채우는 배경이다. 적으로는 여전히 만난다.
+#
+# 그래서 격자가 8행에서 5행으로 줄었고, 팀 0(플레이어 시작 팀)은 다섯 자리가
+# 전부 네임드다 — `apply_draft` 의 맞교환이 네임드끼리만 일어나야 팀별 네임드
+# 수가 드래프트로 흔들리지 않는다.
 func get_pool_grid() -> Array:
 	var pool: Array = _gm.season_state["all_pilots"]
 	var by_role: Dictionary = {0: [], 1: [], 2: [], 3: [], 4: []}
 	for p_raw in pool:
 		var p := p_raw as PlayerData
+		if p.is_mob:
+			continue
 		by_role[int(p.role)].append(p)
 	var entries: Array = []
 	for r in 5:

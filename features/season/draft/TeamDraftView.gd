@@ -2,7 +2,9 @@ class_name TeamDraftView
 extends Control
 
 # Procedural UI for the initial team draft. Lives as a child of the TeamDraft
-# Control node and reads the 40-pilot pool through TeamDraft.get_pool_grid().
+# Control node and reads the **네임드 25인** pool through
+# TeamDraft.get_pool_grid() (모브 15명은 그 함수가 걸러 낸다 — 스킬이 없는
+# 이름 없는 선수라 플레이어가 뽑을 대상이 아니다).
 # Tap a card to pick that pilot for its role; tap the same card again to unpick;
 # tap a different card in the same role to swap. Confirm button activates once
 # all five roles are filled, then calls TeamDraft.apply_draft() and routes the
@@ -20,7 +22,8 @@ const ROLE_COLORS: Array = [
 ]
 
 const COLS: int = 5
-const ROWS: int = 8
+## 역할당 후보 수 = 네임드 파일럿 25 ÷ 5역할. 예전에는 40인 풀 전체라 8이었다.
+const ROWS: int = 5
 const COL_W: float = 200.0
 const ROW_H: float = 175.0
 const GRID_X0: float = 40.0

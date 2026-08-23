@@ -23,7 +23,7 @@ const SCHEMAS: Dictionary = {
 	"cards":       {"req": ["id","name","cost","uses","cast_method","target","cast_range","area","keyword","effect","description","scope","pool","card_type","card_cat","excl_group"], "pk": "id"},
 	"game_config": {"req": ["key","value"],                                     "pk": "key"},
 	"lane_config": {"req": ["lane_id","name","max_pilots","mid_col","mid_row"], "pk": "lane_id"},
-	"players":     {"req": ["id","team_id","name","role","laning","mechanics","gamesense","teamfight","mental","skill_id"], "pk": "id"},
+	"players":     {"req": ["id","team_id","name","role","laning","mechanics","gamesense","teamfight","mental","skill_id","is_mob"], "pk": "id"},
 	"pilot_skills": {"req": ["id","key","name","role","type","p1","p2","keyword","description"], "pk": "id"},
 	"mechs":       {"req": ["id","name","hp","atk","presence"],                 "pk": "id"},
 	"teams":       {"req": ["id","name","short_name"],                          "pk": "id"},
@@ -93,6 +93,10 @@ const TABLE_DEFS: Dictionary = {
 		"mental":    {"data_type": "int",  "not_null": true},
 		# 이 파일럿의 고유 파일럿 스킬 id(pilot_skills.id). -1 = 없음(모브).
 		"skill_id":  {"data_type": "int",  "not_null": true},
+		# 1 = 모브 파일럿 — 스킬이 없고 스탯이 네임드보다 낮으며 초상화가
+		# 실루엣 컷으로 나온다(PilotImages.set_mob_ids). 스탯 하향은 런타임
+		# 계수가 아니라 **CSV 값 자체**에 이미 반영돼 있다.
+		"is_mob":    {"data_type": "int",  "not_null": true},
 	},
 	"pilot_skills": {
 		"id":          {"data_type": "int",  "primary_key": true, "not_null": true},

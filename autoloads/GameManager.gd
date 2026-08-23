@@ -180,8 +180,8 @@ func load_match_data() -> Dictionary:
 			int(row["laning"]), int(row["mechanics"]), int(row["gamesense"]),
 			int(row["teamfight"]), int(row["mental"]),
 			# 옛 game.db(스킬 이전)도 열리도록 기본값과 함께 읽는다 — 그때는
-			# 전원이 스킬 없는 파일럿이 된다.
-			int(row.get("skill_id", -1))))
+			# 전원이 "스킬 없는 네임드"가 되고 그림도 평소 컷 그대로다.
+			int(row.get("skill_id", -1)), int(row.get("is_mob", 0)) != 0))
 
 	db.query("SELECT * FROM mechs ORDER BY id")
 	if db.query_result.is_empty():
@@ -195,6 +195,14 @@ func load_match_data() -> Dictionary:
 			int(row.get("presence", 4))))
 
 	db.close_db()
+	# 실루엣 컷 목록은 한 번만 심는다 — PilotImages 는 static 이라 이후의 모든
+	# 초상화 조회(전장 마커 · 스트립 · 교전 무대 · 상세 패널)가 자동으로 갈린다.
+	var mob_ids: Array = []
+	for raw in players:
+		var pd := raw as PlayerData
+		if pd.is_mob:
+			mob_ids.append(pd.id)
+	PilotImages.set_mob_ids(mob_ids)
 	return {"players": players, "mechs": mechs}
 
 

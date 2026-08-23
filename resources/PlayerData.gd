@@ -13,10 +13,13 @@ extends Resource
 @export var teamfight: int = 50
 @export var mental: int = 50
 
-# ─── 파일럿 스킬 ─────────────────────────────────────────────────────────────
+# ─── 파일럿 스킬 / 모브 ───────────────────────────────────────────────────────
 # 이 선수의 고유 파일럿 스킬 id(`pilot_skills.id`), -1 = 없음. 스킬은 라인에
 # 묶여 있어 같은 역할의 스킬만 붙는다(players.csv 가 그 짝을 들고 있다).
 @export var skill_id: int = -1
+# 모브 파일럿 — 스킬이 없고 스탯이 네임드보다 낮으며 초상화가 실루엣으로
+# 나온다. 스탯 하향은 CSV 값에 이미 반영돼 있으므로 런타임 분기가 없다.
+@export var is_mob: bool = false
 
 # Set during the assign phase: which mech this player is piloting this match.
 var assigned_mech: MechData = null
@@ -25,7 +28,7 @@ var assigned_mech: MechData = null
 func _init(p_id: int = 0, p_name: String = "", p_role: int = 0, p_team_id: int = 0,
 		p_laning: int = 50, p_mechanics: int = 50, p_gamesense: int = 50,
 		p_teamfight: int = 50, p_mental: int = 50,
-		p_skill_id: int = -1) -> void:
+		p_skill_id: int = -1, p_is_mob: bool = false) -> void:
 	id = p_id
 	name = p_name
 	role = p_role
@@ -36,3 +39,4 @@ func _init(p_id: int = 0, p_name: String = "", p_role: int = 0, p_team_id: int =
 	teamfight = p_teamfight
 	mental = p_mental
 	skill_id = p_skill_id
+	is_mob = p_is_mob

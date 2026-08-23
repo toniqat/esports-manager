@@ -6,10 +6,10 @@ uid="uid://g46lrumverft"
 
 [deps]
 
-files=["res://data/csv/players.team.translation", "res://data/csv/players.name.translation", "res://data/csv/players.role.translation", "res://data/csv/players.laning.translation", "res://data/csv/players.mechanics.translation", "res://data/csv/players.gamesense.translation", "res://data/csv/players.teamfight.translation", "res://data/csv/players.mental.translation"]
+files=["res://data/csv/players.team.translation", "res://data/csv/players.name.translation", "res://data/csv/players.role.translation", "res://data/csv/players.laning.translation", "res://data/csv/players.mechanics.translation", "res://data/csv/players.gamesense.translation", "res://data/csv/players.teamfight.translation", "res://data/csv/players.mental.translation", "res://data/csv/players.skill.translation", "res://data/csv/players.is.translation"]
 
 source_file="res://data/csv/players.csv"
-dest_files=["res://data/csv/players.team.translation", "res://data/csv/players.name.translation", "res://data/csv/players.role.translation", "res://data/csv/players.laning.translation", "res://data/csv/players.mechanics.translation", "res://data/csv/players.gamesense.translation", "res://data/csv/players.teamfight.translation", "res://data/csv/players.mental.translation"]
+dest_files=["res://data/csv/players.team.translation", "res://data/csv/players.name.translation", "res://data/csv/players.role.translation", "res://data/csv/players.laning.translation", "res://data/csv/players.mechanics.translation", "res://data/csv/players.gamesense.translation", "res://data/csv/players.teamfight.translation", "res://data/csv/players.mental.translation", "res://data/csv/players.skill.translation", "res://data/csv/players.is.translation"]
 
 [params]
 

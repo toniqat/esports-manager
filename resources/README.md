@@ -210,7 +210,8 @@ under `BattleField/BuildingLayer` and `BattleField/WaypointLayer`.
 
 ### PilotImages.gd
 `class_name PilotImages`, extends `RefCounted`. Static lookup for the pilot
-portraits under `resources/images/pilot/{faces,circle,eye,tall,full}/`.
+portraits under `resources/images/pilot/{faces,circle,eye,tall,full}/`, plus the
+**모브 실루엣** set that mirrors all five under `pilot/mob/`.
 
 | 함수 | 파일 | 크기 | 소비자 |
 |---|---|---|---|
@@ -265,6 +266,33 @@ id 36 `Ink`(Yixuan / Trails of Ink, id 35 `Yixuan`).
 INTL 파일럿(id ≥ 100)은 초상화가 없다 — `has_image()` 가 false 를 돌려주고
 호출자가 플레이스홀더로 대체한다. `intl_players.csv` 의 이름은 그래서 초상화
 제약 없이 **남은 에이전트 중에서** 골라 붙였다.
+
+#### 모브 파일럿 실루엣 (`pilot/mob/`)
+`pilot_skills.csv` 가 25개뿐이라 40명 중 **15명은 고유 스킬이 없다**
+(`players.csv` 의 `is_mob = 1`). 그 15명은 이름표가 아니라 **그림**이 "이 선수는
+이름 없는 선수다"를 말한다 — 다섯 컷이 통째로 실루엣 한 벌 더 있고,
+`GameManager.load_match_data()` 가 `PilotImages.set_mob_ids()` 로 id 목록을 한
+번 심으면 그 뒤의 모든 조회(전장 마커 · 스트립 · 교전 무대 · 상세 패널)가 자동으로
+`pilot/mob/{faces,circle,eye,tall,full}/` 쪽으로 갈린다. 파일명은 원본과 같다.
+목록이 비어 있으면(BattleSim 단독 실행) 전원이 평소 컷으로 나온다 — 폴백이
+원본이라 심는 것을 잊어도 흰 사각형이 뜨지는 않는다.
+
+**만드는 것은 `make_mob_silhouettes.py`** 이고 방식이 **컷마다 다르다**:
+
+| 컷 | 방식 | 왜 |
+|---|---|---|
+| `full` · `tall` | 알파 그대로 두고 RGB 를 단색(`38,42,60`)으로 | 알파가 곧 인물 윤곽이라 그림자 인간이 된다 |
+| `circle` · `faces` · `eye` | 밝기를 어두운 띠(0.10~0.46)로 눌러 틴트 | 원형 마스크·타이트 얼굴 크롭이라 단색으로 칠하면 **특징 없는 덩어리**가 된다 |
+
+첫 판에서는 "투명 픽셀 비율이 10% 이상이면 단색"이라는 자동 규칙을 썼는데,
+`circle` 은 마스크 모서리 때문에 20.8% 가 투명이라 그 규칙에 걸려 **그냥 검은 원**
+하나가 됐고 `tall` 은 파일럿마다 규칙이 갈렸다. 판정은 알파 비율이 아니라 컷의
+성격이므로 표로 못박았다.
+
+모브는 이름도 스탯도 그대로 쓰되 **스탯이 네임드보다 10% 낮다** — 그 하향은
+런타임 계수가 아니라 `players.csv` 값 자체에 이미 반영돼 있어서, 나중에 난이도
+배율을 넣을 자리가 비어 있다. 시즌 드래프트 격자에서도 빠진다
+(`features/season/draft/README.md`).
 
 `prime_into(parent)` 는 반드시 `BattleSim._ready()` 같은 진입 시점에 한 번
 불러야 한다 — 안 부르면 `draw_texture_rect` 가 흰 사각형을 그린다.

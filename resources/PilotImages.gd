@@ -38,6 +38,41 @@ const EYE_DIR: String    = "res://resources/images/pilot/eye/"
 const TALL_DIR: String   = "res://resources/images/pilot/tall/"
 const FULL_DIR: String   = "res://resources/images/pilot/full/"
 
+# ─── 모브 파일럿 ─────────────────────────────────────────────────────────────
+# 스킬을 받지 못한 15명은 **실루엣 컷**으로 나온다 — 같은 파일명이 `mob/` 아래에
+# 한 벌 더 있고(`resources/images/pilot/mob/{faces,circle,eye,tall,full}/`),
+# 아래 조회 함수가 id 를 보고 그쪽으로 갈아탄다. 이름표가 아니라 그림이
+# "이 선수는 이름 없는 선수다"를 말하게 하려는 것이다.
+#
+# 실루엣 방식은 컷마다 다르다(`make_mob_silhouettes.py`). `full` / `tall` 은
+# 알파가 곧 인물 윤곽이라 납작한 단색으로 칠하면 그림자 인간이 되지만,
+# `circle` / `faces` / `eye` 는 원형 마스크·타이트 얼굴 크롭이라 같은 처리를
+# 하면 **특징 없는 덩어리**가 된다 — 그쪽은 밝기를 어두운 띠로 눌러 얼굴
+# 형태만 남긴다.
+#
+# 목록은 `GameManager` 가 players.csv 의 `is_mob` 을 읽어 `set_mob_ids()` 로
+# 심는다. 비어 있으면(BattleSim 단독 실행 등) 전원이 평소 컷으로 나온다 —
+# 폴백이 원본이라 심는 것을 잊어도 흰 사각형이 뜨지는 않는다.
+const MOB_DIR: String = "res://resources/images/pilot/mob/"
+
+static var _mob_ids: Dictionary = {}
+
+
+## players.csv 의 `is_mob = 1` 인 파일럿 id 들. GameManager 가 한 번 심는다.
+static func set_mob_ids(ids: Array) -> void:
+	_mob_ids.clear()
+	for raw in ids:
+		_mob_ids[int(raw)] = true
+
+
+static func is_mob(pilot_id: int) -> bool:
+	return _mob_ids.has(pilot_id)
+
+
+## `sub` 컷의 디렉터리. 모브면 같은 이름의 실루엣 폴더를 돌려준다.
+static func _dir_for(pilot_id: int, sub: String, normal_dir: String) -> String:
+	return (MOB_DIR + sub + "/") if is_mob(pilot_id) else normal_dir
+
 
 static func has_image(pilot_id: int) -> bool:
 	return pilot_id >= 0 and pilot_id < POOL_SIZE
@@ -46,20 +81,20 @@ static func has_image(pilot_id: int) -> bool:
 static func face_for(pilot_id: int) -> Texture2D:
 	if not has_image(pilot_id):
 		return null
-	return load(FACE_DIR + "%d_rect.png" % (pilot_id + 1)) as Texture2D
+	return load(_dir_for(pilot_id, "faces", FACE_DIR) + "%d_rect.png" % (pilot_id + 1)) as Texture2D
 
 
 static func circle_for(pilot_id: int) -> Texture2D:
 	if not has_image(pilot_id):
 		return null
-	return load(CIRCLE_DIR + "%d_circle.png" % (pilot_id + 1)) as Texture2D
+	return load(_dir_for(pilot_id, "circle", CIRCLE_DIR) + "%d_circle.png" % (pilot_id + 1)) as Texture2D
 
 
 ## 눈높이 밴드 (480×200). 파일럿 스트립이 쓴다 — 세로로 잘라 쓰지 말 것.
 static func eye_for(pilot_id: int) -> Texture2D:
 	if not has_image(pilot_id):
 		return null
-	return load(EYE_DIR + "%d_eye.png" % (pilot_id + 1)) as Texture2D
+	return load(_dir_for(pilot_id, "eye", EYE_DIR) + "%d_eye.png" % (pilot_id + 1)) as Texture2D
 
 
 ## 세로로 긴 전신 크롭 (210×700, 머리~허벅지). 교전 아레나 하단 스트립이 쓴다 —
@@ -68,14 +103,14 @@ static func eye_for(pilot_id: int) -> Texture2D:
 static func tall_for(pilot_id: int) -> Texture2D:
 	if not has_image(pilot_id):
 		return null
-	return load(TALL_DIR + "%d_tall.png" % (pilot_id + 1)) as Texture2D
+	return load(_dir_for(pilot_id, "tall", TALL_DIR) + "%d_tall.png" % (pilot_id + 1)) as Texture2D
 
 
 ## 전신 아트 (가변 폭 × 1024). 파일럿 상세 패널이 쓴다.
 static func full_for(pilot_id: int) -> Texture2D:
 	if not has_image(pilot_id):
 		return null
-	return load(FULL_DIR + "%d_full.png" % (pilot_id + 1)) as Texture2D
+	return load(_dir_for(pilot_id, "full", FULL_DIR) + "%d_full.png" % (pilot_id + 1)) as Texture2D
 
 
 # 모든 PilotImages 텍스처를 parent의 자식 Sprite2D로 등록해 GPU 업로드를 트리거.

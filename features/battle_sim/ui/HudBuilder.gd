@@ -326,7 +326,16 @@ func _build_top_panel() -> void:
 		timer.position = Vector2(float(spec[1]), OBJ_TIMER_Y)
 		timer.size = Vector2(OBJ_TIMER_W, OBJ_TIMER_H)
 		timer.setup(_bs, int(spec[0]))
+		# 누르면 그 오브젝트의 보상 카드를 실물로 띄운다. 회피할 수 있는
+		# 사건이므로 무엇을 주는지는 결판 전에 볼 수 있어야 한다.
+		timer.timer_pressed.connect(_on_obj_timer_pressed)
 		_obj_timers.append(timer)
+
+
+func _on_obj_timer_pressed(kind: int) -> void:
+	if _bs.objective_reward != null:
+		_bs.objective_reward.toggle(kind)
+
 
 # ── 하단 아군 스트립 ─────────────────────────────────────────────────────────
 # 핸드 행 아래. 누르면 파일럿 상세 패널이 열린다 — 다만 **자기 작전 단계에만**

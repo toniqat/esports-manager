@@ -350,6 +350,11 @@ var card_pile_viewer: CardPileViewer = null
 # 아트, 우측에 아웃게임 / 인게임 / 메크 스탯. **자기 작전 단계에서만** 열리며
 # 단계를 벗어나면 HudBuilder 가 닫는다. lazy-add in _ready().
 var pilot_detail: PilotDetailPanel = null
+# 오브젝트 보상 미리보기 — 상단 패널의 오브젝트 시계를 누르면 열리는 정보
+# 팝업. 그 오브젝트가 주는 카드를 실물로 보여 준다. **전장을 붙잡지 않는다**
+# (`_battle_tick_held` 가 읽지 않는다) — 순수 정보이므로 읽는 동안에도 턴은
+# 평소대로 흐르고, 아무 데나 누르면 닫힌다. lazy-add in _ready().
+var objective_reward: ObjectiveRewardPopup = null
 # 전투 개시(engage) — 카드의 engage:N 효과가 발동되면 잠시 ENGAGE 페이즈로
 # 전환되어 실시간 교전 아레나를 띄운다. 전투가 끝나면 아레나를 연 페이즈로
 # 복귀한다(플레이어 카드면 CARD_PHASE, 상대 차례의 AI 카드면 BATTLE).
@@ -430,6 +435,11 @@ func _ready() -> void:
 	pilot_detail.name = "PilotDetailPanel"
 	add_child(pilot_detail)
 	pilot_detail.bind(self)
+	# 오브젝트 보상 미리보기 — 상단 패널의 시계가 연다.
+	objective_reward = ObjectiveRewardPopup.new()
+	objective_reward.name = "ObjectiveRewardPopup"
+	add_child(objective_reward)
+	objective_reward.bind(self)
 	# Engage manager owns the turn-based 전투 modal lifecycle.
 	engage_phase = EngagePhaseManager.new()
 	engage_phase.name = "EngagePhaseManager"

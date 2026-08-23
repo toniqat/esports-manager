@@ -48,6 +48,7 @@ And accesses shared state via `_bs.pilots`, `_bs.turn_count`, etc.
 | HudBuilder     | Node | `ui/HudBuilder.gd`         | HUD construction; 전략 포인트 도넛 (`ui/CostDonut.gd`), **양 팀 파일럿 스트립** (`ui/PilotStrip.gd`, 상단 적 / 하단 아군), 우측 상단 **킬로그** (`ui/KillFeed.gd`), 적 스트립 양옆 **오브젝트 시계** (`ui/ObjectiveTimer.gd`) |
 | ObjectiveSystem | Node | `objective/ObjectiveSystem.gd` | **오브젝트(전령 / 용)** — 좌우 중립 칸에서 정해진 턴마다 열리는 교전 사건. 시계 · 참여 결정 · 정산. 화면은 교전 모듈의 VS 화면과 무대를 빌려 쓴다. Lazily added in `_ready()` **after** config load. |
 | PilotDetailPanel | Node | `ui/PilotDetailPanel.gd` | 파일럿 상세 모달 — 하단 스트립의 얼굴을 누르면 열린다(작전 단계 한정). Lazily added in `_ready()`. |
+| ObjectiveRewardPopup | Node | `ui/ObjectiveRewardPopup.gd` | 오브젝트 보상 미리보기 — 상단 패널의 시계를 누르면 그 오브젝트가 주는 카드를 실물로 띄운다. **전장을 붙잡지 않는다.** Lazily added in `_ready()`. |
 | BattleLogger   | Node | `debug/BattleLogger.gd`    | Full action log (console + `user://battle_logs/`) and enemy cross-over detector. Lazily added in `_ready()` after pilots spawn; reachable as `_bs.blog`. |
 
 Cross-module calls go through `_bs`:

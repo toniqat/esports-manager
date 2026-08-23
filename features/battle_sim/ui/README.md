@@ -7,6 +7,7 @@
 | `CardPileStack.gd` | CardPileStack | 덱 / 버린 더미 — 앞으로 누운 카드 뭉치 + 장수 |
 | `PilotStrip.gd` | PilotStrip | 파일럿 5인 스트립 — 눈높이 초상화 + 체력 바 + 성장치. 상단(적) / 하단(아군) 두 벌, **양쪽 다 누르면 상세가 열린다** |
 | `ObjectiveTimer.gd` | ObjectiveTimer | 오브젝트 등장 시계 — 적 스트립 양옆에 아이콘 + 남은 턴(좌 전령 / 우 용). **누르면 보상 팝업이 열린다** |
+| `ObjectiveRewardPopup.gd` | ObjectiveRewardPopup | 오브젝트 보상 미리보기 — 시계를 누르면 그 오브젝트가 주는 카드를 실물로 띄운다 |
 | `PilotDetailPanel.gd` | PilotDetailPanel | 파일럿 상세 모달 — 좌 전신 아트 2장(파일럿 ↔ 메크 전환) / 우 스탯 |
 | `KillFeed.gd` | KillFeed | 킬로그 — 우측 상단에 처치 / 포탑 철거를 한 줄씩. 교전 중 처치는 아레나가 닫힌 뒤 몰아서 |
 
@@ -339,6 +340,32 @@ same vertical band the 확인/취소 row occupies on the far side of the screen.
 초상화가 이미 그 칸을 쓰고 있었고, 글자 두 줄이 넷째 손님이 됐다.
 
 ### 오브젝트 보상 미리보기 (`ObjectiveRewardPopup.gd`)
+시계를 누르면 열리는 **정보 팝업**. 자기 `CanvasLayer`(12)에 그린다.
+
+```
+[풀스크린 딤 α 0.78 — 아무 데나 누르면 닫힌다]
+└─ 판 560×내용 (화면 한가운데, 테두리 = 오브젝트 색)
+     ├ 전령 / 용                    (40pt, 보랏빛 / 주홍)
+     ├ N턴 뒤 등장                  (24pt)  ← ObjectiveSystem.turns_until_cell
+     ├ 보상: [전령 제압] — …        (24pt)  ← ObjectiveSystem.reward_text
+     ├ 보상 카드 한 장 (Card.tscn 원본 크기) + 여러 장이면 오른쪽에 ×N
+     ├ 획득 즉시 손패로 / 덱에 섞여  (22pt)
+     └ [닫기]
+```
+
+- **왜 있는가.** 오브젝트는 참여 / 미참여를 고르는 사건인데, 무엇을 주는지는
+  결판이 임박한 그 턴에 뜨는 결정 창의 한 줄 말고는 볼 자리가 경기 내내 없었다.
+  라인을 밀지 정글러를 붙일지는 보상의 값어치를 알아야 정해진다.
+- **전장을 붙잡지 않는다.** `ObjectiveSystem` 의 참여 결정 창과 달리 순수
+  정보이므로 `BattleSim._battle_tick_held()` 가 이 팝업을 읽지 않는다 — BATTLE
+  자동 틱도 MM:SS 시계도 평소대로 흐른다. 대신 딤이 STOP 이라 뒤쪽 입력은 삼킨다.
+- **카드는 진짜 `CardData` 다** — `CardPhaseManager.make_objective_card(id)` 가
+  `cards.csv` 에서 그대로 집어 온다(보상 카드는 `pool = 0` 이라 이 경로로만
+  세상에 나온다). 따로 그린 그림이면 실제로 손에 들어온 카드와 같은 것인지
+  확인할 길이 없다. 카드에 시전자가 없으므로(`owner_pilot == null`) 초상화 자리는
+  빈다 — 손패에서 보게 될 모습 그대로다.
+- 카드가 DB 에서 안 나오면(`make_objective_card` → null) 자리에 한 줄 안내만
+  세운다. 팝업 하나 때문에 매치를 세우지 않는다.
 
 ### 파일럿 상세 패널 (`PilotDetailPanel.gd`)
 스트립의 얼굴(**아군 하단 / 적 상단 양쪽**)을 누르면 열리는 **모달**. 자기

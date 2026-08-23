@@ -46,6 +46,7 @@ And accesses shared state via `_bs.pilots`, `_bs.turn_count`, etc.
 | GambitPhaseManager | Node | `gambit/GambitPhaseManager.gd` | Auto role→lane mapping + launch (UI removed; pre-battle choices live in `features/match_flow/`) |
 | EngagePhaseManager | Node | `engage/EngagePhaseManager.gd` | 전투 개시(engage) modal — **라운드 턴제 사이드뷰 벨트 교전** (`engage/TurnEngageSim.gd` 헤드리스 시뮬 + `engage/EngageArena.gd` 렌더러) triggered by `engage:N` / `duel` cards. Lazily added in `_ready()`. |
 | HudBuilder     | Node | `ui/HudBuilder.gd`         | HUD construction; 전략 포인트 도넛 (`ui/CostDonut.gd`), **양 팀 파일럿 스트립** (`ui/PilotStrip.gd`, 상단 적 / 하단 아군 — 이제 크기가 같다), 우측 상단 **킬로그** (`ui/KillFeed.gd`) |
+| ObjectiveSystem | Node | `objective/ObjectiveSystem.gd` | **오브젝트(전령 / 용)** — 좌우 중립 칸에서 정해진 턴마다 열리는 교전 사건. 시계 · 참여 결정 · 정산. 화면은 교전 모듈의 VS 화면과 무대를 빌려 쓴다. Lazily added in `_ready()` **after** config load. |
 | PilotDetailPanel | Node | `ui/PilotDetailPanel.gd` | 파일럿 상세 모달 — 하단 스트립의 얼굴을 누르면 열린다(작전 단계 한정). Lazily added in `_ready()`. |
 | BattleLogger   | Node | `debug/BattleLogger.gd`    | Full action log (console + `user://battle_logs/`) and enemy cross-over detector. Lazily added in `_ready()` after pilots spawn; reachable as `_bs.blog`. |
 
@@ -208,21 +209,42 @@ Responsibilities:
 - TANK→LEFT, FIGHTER→CENTER, ASSASSIN→GUERRILLA, SUPPORT→RIGHT, SNIPER→RIGHT.
 
 ### Jungle
-- Map starts with both jungles fully captured; only `(-3,-1)` and `(1,-1)`
-  start neutral. The roaming jungler can capture neutrals by stepping on them.
-- Junglers do not push lanes. They roam own-captured cells and contest neutrals.
+- Map starts with both jungles fully captured. `(-3,-1)` and `(1,-1)` are
+  **permanently neutral** — they are the 오브젝트 자리(전령 / 용), not camps.
+  See 오브젝트 below.
+- Junglers do not push lanes. They roam own-captured cells harvesting camps.
 - Jungler-vs-jungler combat in a contested cell uses the same hit/evasion roll.
   A loser is pushed to the nearest own-captured jungle cell.
 - T1 destruction triggers per-lane "취약지점" (vuln cell) flips. The vuln
   cells per team/lane live in `VULN_TEAM{0,1}_{LEFT,CENTER,RIGHT}` in
   `combat/SimulationCore.gd`: side lanes have 1 vuln cell, mid has 2 (the
-  flanking cells). When a team's same-lane T1 falls, three branches in priority:
+  flanking cells). When a team's same-lane T1 falls, two branches in priority:
   (1) **Restoration** — if any of the capturer's own same-lane vuln cells are
   owned by the loser, those flip back to the capturer and nothing else moves.
-  (2) **Side-neutral override (LEFT/RIGHT only)** — if `(-3,-1)`/`(1,-1)` is
-  owned by the loser, the capturer takes the neutral instead of the loser's
-  vuln. (3) **Default** — the loser's same-lane vuln cell(s) flip to the
-  capturer. Mid T1 has no side-neutral override.
+  (2) **Default** — the loser's same-lane vuln cell(s) flip to the capturer.
+  **The old side-neutral override is gone**: `(-3,-1)`/`(1,-1)` can never be
+  owned by anyone now, so that branch could never fire.
+
+### 오브젝트 (전령 / 용)
+좌우 중립 칸에서 **정해진 턴마다 열리는 교전 사건**. 전체 규칙 · 노브 · 보상
+카드는 `objective/README.md`. 요약:
+
+- **좌측 = 전령(12턴 첫 등장, 참가 3인: LEFT/CENTER/JUNGLE)**,
+  **우측 = 용(15턴, 참가 4인: RIGHT×2/CENTER/JUNGLE)**. 결판 후 15턴,
+  양 팀 미참여로 무산되면 10턴 뒤 재시도. 남은 턴 수는 타일 위에 상시 표시.
+- **차례와 상관없이 발생한다** — `CardPhaseManager.do_battle_turn()` 이
+  `simulate_turn()` 직후, 카드 경제보다 **앞**에서 `await` 한다.
+- **회피할 수 있다.** 플레이어는 참여 / 미참여 두 버튼(VS 화면 재사용), AI 는
+  양 팀 참가자의 `(hp+shield)×atk` 합으로 승률을 내 0.45 미만이면 물러난다.
+  한쪽만 참여하면 전투 없이 그쪽이 가져가고, 양쪽이면 4라운드 교전
+  (`EngagePhaseManager.start_objective_engage`) 뒤 **생존 인원 → 잔여 HP 비율
+  합**으로 승자를 가린다. 사망한 파일럿은 참여 불가라 그만큼 불리하다.
+- **보상** — 전령: [전령 제압](0코, 보존+소멸) 1장을 손패로. 최외곽 적 포탑에
+  피해 8. 용: [용 보상](0코, 소멸) 5장을 덱에 섞어 넣는다. 드로우 1 + 지정한
+  아군의 성장 적립 배율 **영구** +10%(`PilotData.growth_rate_bonus`, 누적).
+  두 카드 모두 `pool = 0` 이고 **시전자가 없다**(`owner_pilot == null`).
+- 캠프 칸이 14 → 12 로 줄어든 만큼 `SCORE_JUNGLE_CAMP` 이 0.98 → **1.15** 로
+  올랐다(14/12). 오브젝트는 정글러 수입의 대체재가 아니라 그 위의 추가 이득이다.
 
 ### Card Phase (작전 단계)
 - Triggered when `player_cost >= PHASE_THRESHOLD`.
@@ -324,7 +346,7 @@ see [`engage/README.md`](engage/README.md) for details. Key contract:
 | 적립처 | 값 | 누가 |
 |---|---|---|
 | 전선 체류 (턴당) | `SCORE_FRONTLINE_PER_TURN` **0.50k** | 레인 파일럿 |
-| 정글 캠프 1개 | `SCORE_JUNGLE_CAMP` **0.98k** (6턴 리스폰) | 정글러 |
+| 정글 캠프 1개 | `SCORE_JUNGLE_CAMP` **1.15k** (6턴 리스폰) | 정글러 |
 | 처치 — 라스트힛 | `SCORE_KILL_BASE` **1.5k** + 앞선 격차 × **20%** | 전원 |
 | 처치 — 어시스트 | 현상금 × **50%** × (내 피해 / 총 피해) | 전원 |
 | 포탑 철거 | `SCORE_TURRET_KILL` **1.0k** | 레인 파일럿 |

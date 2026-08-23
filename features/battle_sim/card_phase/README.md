@@ -149,10 +149,22 @@ away mid-turn. `_effect_draw` and `_on_search_overlay_complete` therefore carry
 **no** `MAX_HAND_SIZE` guard (only an exhausted deck+discard stops them); the
 first auto-draw after the turn ends is what trims the excess.
 
-**계획 중시의 보존은 이 트림에서만 의미가 있다.** `BattleSim.preserved_cards_p/ai`
-에 올라간 카드는 `_trim_hand_overflow` 가 건너뛴다 — 그게 `preserve:N` 의 유일한
-효과다. 카드 효과에 의한 **강제** 버리기(재고 / 완벽한 마무리 / 과감한 정리 /
-솔로 퍼포먼스)는 보존을 보지 않는다. 루프가 `pop_front()` 가 아니라 인덱스
+**보존이 둘이다 — 수명이 다르다.**
+
+| | 계획 중시 (`preserve:N` 효과) | `보존` 키워드 (`keyword` 컬럼) |
+|---|---|---|
+| 어디에 산다 | `BattleSim.preserved_cards_p/ai` 목록 | 카드 자신 (`CardData.has_keyword`) |
+| 수명 | 그 팀의 **다음 작전 단계 시작까지** | 영구 |
+| 막는 것 | 상한 초과 자동 버리기**만** | **모든 버리기** |
+| 다는 카드 | (손패의 아무 카드나 지정) | [전령 제압] (오브젝트 보상) |
+
+`_trim_hand_overflow` 는 둘 다 건너뛴다. 카드 효과에 의한 **강제** 버리기
+(재고 / 완벽한 마무리 / 과감한 정리 / 솔로 퍼포먼스 / 버리기:N)는 계획 중시의
+보존을 보지 않지만, **`보존` 키워드는 그것도 뚫지 못한다** — 강제 버리기 넷이
+전부 `_discardable(hand)` 로 손패를 거르고, 플레이어의 버리기 모달도
+`add_card_to_discard` 에서 거부하며 `target_count` 를 **버릴 수 있는 카드 수**로
+잡는다(손패 크기로 잡으면 확인 버튼이 영영 잠긴 모달이 만들어진다).
+한 매치에 한 장 나오는 오브젝트 보상이 재고 한 번에 사라지면 안 되기 때문이다. 루프가 `pop_front()` 가 아니라 인덱스
 스캔인 것은 보존 카드가 손패 앞쪽에 있어도 멈추지 않기 위해서이고, 손패가 통째로
 보존되는 극단(최대 2장이라 실제로는 불가능)에서도 무한 루프가 나지 않는다.
 `_prune_preserved` 가 매 트림마다 손패를 떠난 항목을 걷어 유령 참조를 막는다.
@@ -952,11 +964,16 @@ game.db still loads.
 | Column | Values | Meaning |
 |---|---|---|
 | `scope` | `any` / `lane` / `jungle` | 시전자 제약 — **누가 가질 수 있는가**. `lane` = 레인 파일럿만 (전진), `jungle` = 정글러만 (약탈 / 정글 파밍 / 전투 준비 / 정밀 이동), `any` = 제약 없음. Enforced once, at deal time. |
-| `pool`  | `1` / `0` | `0` = 랜덤 스타터 덱에 절대 들어가지 않음 (결투). |
+| `pool`  | `1` / `0` | `0` = 랜덤 스타터 덱에 절대 들어가지 않음 (결투 · 전령 제압 · 용 보상). |
 | `card_type` | `mech` / `pilot` | 덱 구성의 1차 분류. 파일럿마다 `mech` 3장 + `pilot` 3장. |
 | `card_cat` | `-` / `lane` / `draw` / `jungle` / `common` | 파일럿 카드의 슬롯 분류. 메크 카드는 `-`. `common` 은 라인전 슬롯과 정글 슬롯 **양쪽** 후보(복귀 하나뿐). |
 
-#### 현재 28행의 분포
+`keyword` 컬럼은 **`|` 로 구분된 목록**이다(`exhaust` / `preserve`). 판정은
+반드시 `CardData.has_keyword(kw)` 를 지나야 한다 — `keyword == "exhaust"` 로
+문자열을 통째로 비교하면 두 번째 키워드가 붙는 순간 첫 번째가 조용히 꺼진다.
+전령 제압이 `exhaust|preserve` 로 둘을 함께 단 첫 카드다.
+
+#### 현재 30행의 분포
 | 분류 | 장수 | 카드 |
 |---|---|---|
 | `mech` | 9 (풀 대상 8) | 전투 개시 · 완벽한 기회 · 결투(`pool=0`) · 공격 · 필중 · 연속 공격 · 전진 · 보호 · 약탈 |
@@ -964,6 +981,17 @@ game.db still loads.
 | `pilot` / `common` | 1 | 복귀 |
 | `pilot` / `draw` | 13 | 교환 · 조정 · 임기응변 · 재빠른 사고 · 집중 · 사전 준비 · 아드레날린 · 계획 살인 · 재고 · 완벽한 마무리 · 계획 중시 · 과감한 정리 · 솔로 퍼포먼스 |
 | `pilot` / `jungle` | 3 | 정글 파밍 · 전투 준비 · 정밀 이동 |
+| 오브젝트 보상 (`pool=0`) | 2 | 전령 제압(`mech`) · 용 보상(`pilot`/`common`) |
+
+**오브젝트 보상 카드 두 장은 시전자가 없다** (`owner_pilot == null`) — 팀이 먹은
+것이지 누가 먹은 것이 아니고, 시전자를 붙이면 그 파일럿이 쓰러져 있는 동안 보상이
+통째로 잠긴다. 그래서 `scope` 판정도 지나지 않고
+`CardPhaseManager.grant_cards_to_hand` / `grant_cards_to_deck` 로만 나온다.
+사거리 기준점이 없으므로 대상 계산이 `caster == null` 을 **"전장 전체가 사거리"**
+로 읽는다(`compute_valid_pilot_targets` / `compute_valid_location_targets` /
+`CardTargetingOverlay.start_card_selection`). 교전(PREVIEW)만은 예외로 시전자를
+요구한다 — 참가자를 시전자 칸 주변에서 모으기 때문. 전체 규칙은
+`objective/README.md`.
 
 **이름이 비슷한 두 장**: **재빠른 사고**(id 15, `draw:2`)와 **과감한 정리**
 (id 29, `discard_right:3;draw:5`)는 다른 카드다. 후자는 계획서의 "재빠른 생각"을
@@ -1021,6 +1049,8 @@ The DB column is a `;`-separated chain of clauses. Each clause is
 | `lane_stat:N\|turns:T` | yes | 안전한 파밍 / 공격적인 라인전 — 시전자의 `lane_stat_mod = N/100`, `lane_stat_expire_turn = turn_count + T`. **전장 명중 판정 전용**: `SimulationCore.roll_hit` 이 공격자의 `hit` 과 방어자의 `evasion` 에 각자 자기 배율을 곱한다. `atk` / `max_hp` 는 건드리지 않는다(그쪽은 성장 담당). 같은 파일럿에 두 번 걸면 **덮어쓴다** — 합산이면 3종 풀에서 2장 뽑는 구조상 +20~30% 가 운으로 굴러 나온다. |
 | `growth:N\|turns:T` | yes | 안전한 파밍 — 시전자의 성장 **획득 배율**을 `1 + N/100` 로. 성장률 자체가 아니라 그 배수다(+10% → 턴당 +1%p 가 +1.1%p). 만료는 `SimulationCore.tick_growth_and_expiries` 가 매 턴 확인. |
 | `growth_until_phase:N` | yes | 완벽한 마무리 — 시전자 **팀 전원**의 성장 획득 배율을 `1 + N/100` 로 올리고 `growth_until_phase` 를 세운다. 그 팀의 다음 작전 단계 진입 시 `_apply_phase_entry_carryovers` 가 걷는다. `growth:N` 과 같은 필드를 쓰므로 나중에 건 쪽이 이긴다. |
+| `growth_perm:N` | yes | [용 보상] — **지정한 아군 파일럿 한 명**의 성장 적립 배율에 N%p 를 **영구로 누적**. 만료도 해제도 없다. 위 두 절이 쓰는 `growth_rate_mult`(서로 덮어쓰는 슬롯)이 아니라 별도 필드 `PilotData.growth_rate_bonus` 에 얹는다 — 슬롯에 넣으면 용을 다섯 번 먹어도 +10% 에서 멈추고 그 뒤 라인전 카드 한 장이 그걸 지운다. 최종 배율은 `BattleSim.add_score` 에서 `growth_rate_mult + growth_rate_bonus` 로 합쳐진다. **Player**: PILOT mode(`target=ally`, `cast_range` 99 — 시전자가 없으므로 전장 전체). **AI**: random ally. |
+| `turret_damage:N` | yes | [전령 제압] — 찍은 칸의 포탑에 **명중 판정 없이** N 피해. 유효 대상은 `compute_turret_damage_targets` → `SimulationCore.outermost_enemy_turrets(team)`: **레인마다 T1 → T2 순으로 훑어 처음 만난 살아 있는 적 포탑**뿐이다(안쪽 포탑 저격 불가; T1 이 무너진 레인은 T2 가 그 자리를 물려받아 후반에도 쓸 곳이 남는다). 적용은 `SimulationCore.apply_card_turret_damage` → 전장의 `_apply_card_damage` 를 그대로 재사용하므로 흔들림 연출 · 킬로그 · `Building` 노드 해제 · T1 파괴 시 정글 획득이 한 군데서만 일어난다. 시전자가 없으면 성장치 귀속만 생략된다(`add_score` 가 null 을 거른다). **Player**: LOCATION mode. **AI**: random valid cell. |
 | `discard_hand` | yes | 완벽한 마무리의 첫 절 — 손패 전부 discard. 보존을 **무시한다**. |
 | `discard_hand_draw` | yes | 재고 — 손패 전부 버리고 **버린 장수만큼** 다시 뽑는다. 손패 크기는 그대로고 내용만 갈린다(덱+discard 가 마르면 뽑은 만큼만). |
 | `discard_right:N` | yes | 과감한 정리 — 손패 **오른쪽**(가장 최근에 들어온 쪽) N장을 discard. `hand.pop_back()` × N. |
@@ -1045,7 +1075,9 @@ effects stay in sync.
 three ways, **손패 복귀 first**:
 - a `return_left[:N]` clause → back to the **leftmost slot of the hand**
   (정밀 이동). Never reaches the discard pile and is never 소멸.
-- `keyword == "exhaust"` → removed permanently (소멸)
+- `cd.has_keyword("exhaust")` → removed permanently (소멸). **문자열 비교가
+  아니라 헬퍼를 쓴다** — `keyword` 는 `|` 로 여러 개를 달 수 있고, 전령 제압은
+  `exhaust|preserve` 라 통짜 비교로는 소멸이 꺼진다.
 - anything else → returns to the discard pile
 
 #### 손패 복귀 (`return_left[:N]`)

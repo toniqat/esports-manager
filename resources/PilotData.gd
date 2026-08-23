@@ -82,6 +82,13 @@ var growth_rate_mult: float = 1.0
 var growth_rate_expire_turn: int = -1
 # 작전 단계 만료형 적립 배율 표시. (완벽한 마무리) — 다음 작전 단계 진입 시 해제.
 var growth_until_phase: bool = false
+# **영구 적립 배율 가산분.** 용 보상(`growth_perm:10`)이 얹는다. 위의 세 필드와
+# 달리 만료도 해제도 없고 **누적된다** — 같은 파일럿에게 용 보상을 두 장 쓰면
+# +20% 다. 별도 필드인 이유가 그 누적이다: `growth_rate_mult` 은 카드끼리 덮어
+# 쓰는 슬롯이라(안전한 파밍 ↔ 완벽한 마무리) 거기에 얹으면 라인전 카드 한 장이
+# 오브젝트 보상을 지워 버린다. 최종 배율은 `BattleSim.add_score` 에서
+# `growth_rate_mult + growth_rate_bonus` 로 합쳐진다.
+var growth_rate_bonus: float = 0.0
 
 # ─── 성장치 (파일럿 점수) ─────────────────────────────────────────────────────
 # 개시 1.00k 에서 시작해 경기 내내 누적되는 파일럿의 성장 통화 — MOBA 의 골드에

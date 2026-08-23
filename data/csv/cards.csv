@@ -27,3 +27,5 @@ id,name,cost,uses,cast_method,target,cast_range,area,keyword,effect,description,
 29,과감한 정리,2,1,instant,hand,0,0,,discard_right:3;draw:5,"손패 오른쪽 3장을 버리고 드로우: 5",any,1,pilot,draw
 30,솔로 퍼포먼스,4,1,instant,hand,0,0,,discard_other_pilots|strategy_each:1;draw:4,"다른 파일럿의 카드를 전부 버리고 장당 전략 점수 +1, 드로우: 4",any,1,pilot,draw
 31,정글 파밍,1,1,location,location,99,0,,move|own_jungle,아군이 소유한 정글 타일로 이동,jungle,1,pilot,jungle
+32,전령 제압,0,1,location,location,99,0,exhaust|preserve,turret_damage:8,지정한 최외곽 적 포탑에 피해: 8,any,0,mech,-
+33,용 보상,0,1,target,ally,99,0,exhaust,draw:1;growth_perm:10,"드로우: 1, 지정한 아군 파일럿의 성장 효율 +10%",any,0,pilot,common

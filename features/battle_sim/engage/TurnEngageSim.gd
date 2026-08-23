@@ -281,14 +281,21 @@ static func stage_rect() -> Rect2:
 
 
 # 참가자 목록을 받아 벨트를 구성한다.
-#   `caster` — 시전자. 매 라운드 **첫 번째로** 행동한다.
+#   `caster` — 시전자. 매 라운드 **첫 번째로** 행동한다. **null 이어도 된다** —
+#              오브젝트 교전(전령 / 용)은 카드가 아니라 타이머가 여는 것이라
+#              시전자가 없다. 그때는 순서가 역할 우선순위만으로 정해지고
+#              선공 팀은 `first_team` 이 정한다.
 #   `team0/1` — 참가 PilotData 배열.
 #   `rounds` — 라운드 수. 결투는 DUEL_MAX_ROUNDS 를 넘긴다.
+#   `first_team` — 선공 팀. -1 이면 시전자의 팀(시전자도 없으면 팀0).
 func setup(bs: BattleSim, caster: PilotData, team0: Array, team1: Array,
-		rounds: int, duel: bool) -> void:
+		rounds: int, duel: bool, first_team: int = -1) -> void:
 	_bs = bs
-	_origin_cell = caster.grid_pos
-	initiator_team = caster.team
+	_origin_cell = caster.grid_pos if caster != null else Vector2i.ZERO
+	if first_team >= 0:
+		initiator_team = first_team
+	else:
+		initiator_team = caster.team if caster != null else 0
 	is_duel = duel
 	total_rounds = max(1, rounds)
 

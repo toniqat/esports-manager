@@ -92,8 +92,15 @@ func _ready() -> void:
 ##
 ## `BattleSim` 핸들을 받지 않는다 — 이 화면이 읽는 것은 `PilotData` 의 hp /
 ## max_hp / shield / role / pilot_id 뿐이고, 그 전부가 인자로 들어온다.
+## `confirm_text` / `cancel_text` 는 오브젝트 교전(전령 / 용)이 같은 화면을
+## **참여 / 미참여** 결정 창으로 재사용하기 위한 것이다. 결정의 모양은 카드
+## 교전과 같다 — 명단을 보고 두 갈래 중 하나를 고른다 — 이므로 화면을 새로
+## 만들 이유가 없고, 오히려 같은 화면이라야 "이 명단으로 붙는다"가 같은
+## 그림으로 읽힌다. `subtitle` 은 라운드 수 아래 한 줄(보상 안내)이다.
 func setup(title: String, rounds: int,
-		t0: Array, t1: Array, allow_cancel: bool) -> void:
+		t0: Array, t1: Array, allow_cancel: bool,
+		confirm_text: String = "확인", cancel_text: String = "취소",
+		subtitle: String = "") -> void:
 	var dim := ColorRect.new()
 	dim.color = DIM_COLOR
 	dim.position = Vector2.ZERO
@@ -103,9 +110,11 @@ func setup(title: String, rounds: int,
 
 	_build_title(title)
 	_build_center(rounds)
+	if not subtitle.is_empty():
+		_build_subtitle(subtitle)
 	var enemy_row := _build_row(t1, 1, "적군", ENEMY_HEADER_Y, ENEMY_ROW_Y)
 	var ally_row  := _build_row(t0, 0, "아군", ALLY_HEADER_Y, ALLY_ROW_Y)
-	_build_buttons(allow_cancel)
+	_build_buttons(allow_cancel, confirm_text, cancel_text)
 	_play_intro(enemy_row, ally_row)
 
 
@@ -227,10 +236,19 @@ func _build_cell(parent: Control, p: PilotData, team: int, at: Vector2) -> void:
 	parent.add_child(hp_lbl)
 
 
-func _build_buttons(allow_cancel: bool) -> void:
-	var confirm := _mk_button("확인", Color(0.22, 0.52, 0.34))
+## 라운드 수 바로 아래 한 줄. 오브젝트 교전이 보상을 알리는 자리다.
+func _build_subtitle(text: String) -> void:
+	var lbl := _mk_label(text, 32, Color(0.80, 0.86, 0.95))
+	lbl.position = Vector2(0.0, ROUNDS_Y + 66.0)
+	lbl.size = Vector2(VP_W, 48.0)
+	add_child(lbl)
+
+
+func _build_buttons(allow_cancel: bool, confirm_text: String = "확인",
+		cancel_text: String = "취소") -> void:
+	var confirm := _mk_button(confirm_text, Color(0.22, 0.52, 0.34))
 	if allow_cancel:
-		var cancel := _mk_button("취소", Color(0.36, 0.20, 0.22))
+		var cancel := _mk_button(cancel_text, Color(0.36, 0.20, 0.22))
 		cancel.position = Vector2(VP_W * 0.5 - BTN_W - BTN_GAP * 0.5, BTN_Y)
 		cancel.pressed.connect(func() -> void: _decide(false))
 		add_child(cancel)

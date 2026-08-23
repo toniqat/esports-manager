@@ -434,6 +434,12 @@ func _build_pilot_stats(start_y: float, pd: PlayerData) -> float:
 		y = _row(y, "성장 획득", "%+d%%%s" % [
 			roundi((_pilot.growth_rate_mult - 1.0) * 100.0),
 			_remain_txt(_pilot.growth_rate_expire_turn, _pilot.growth_until_phase)])
+	# 용 보상(`growth_perm`)이 얹은 **영구** 가산분. 만료 시계가 없으므로 위의
+	# 만료형 줄과 합치지 않고 따로 적는다 — 둘이 한 줄로 합쳐지면 "10턴 남음"이
+	# 영구분에도 걸린 것처럼 읽힌다.
+	if not is_zero_approx(_pilot.growth_rate_bonus):
+		y = _row(y, "성장 효율(영구)", "%+d%%"
+				% roundi(_pilot.growth_rate_bonus * 100.0))
 	y = _row(y, "라인 / 위치", "%s%s" % [
 		_bs.LANE_NAMES[_pilot.lane] if _pilot.lane < _bs.LANE_NAMES.size() else "?",
 		"  (정글)" if _pilot.is_guerrilla else ""])

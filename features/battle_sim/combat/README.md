@@ -158,14 +158,20 @@ impossible; the two-pass split is described under "Movement".
   사망에 점수 벌점을 따로 매기지 않는다.
 - **정글러는 제외** — 정글러의 전선은 정글이다.
 
-**정글 캠프 — 정글러의 수입.** 모든 정글/중립 칸에 캠프가 하나씩 있고
-(`BattleSim.jungle_camps`, `셀 → ready_turn`), 밟으면 **0.98k** 를 먹고 그 칸은
-**6턴** 뒤에나 다시 찬다.
+**정글 캠프 — 정글러의 수입.** 모든 **정글 칸**에 캠프가 하나씩 있고
+(`BattleSim.jungle_camps`, `셀 → ready_turn`), 밟으면 **1.15k** 를 먹고 그 칸은
+**6턴** 뒤에나 다시 찬다. **좌우 중립 두 칸은 빠진다** — 거기는 오브젝트
+자리(전령 / 용)이지 캠프가 아니다(`SimulationCore.is_objective_cell`,
+`objective/README.md`).
 - **캠프값이 라이너의 턴당 수입(0.50k)보다 큰 이유**: 캠프는 걸어가야 하고
   재생성을 기다려야 하므로, 캠프당 값이 같으면 정글러의 턴당 수입이 구조적으로
   낮다. 실측(50턴 · 포탑 무파괴 · 적 정글 미점령, 4회 평균)에서 재생성 4턴 ·
   캠프값 0.50k 일 때 정글러 18.4k / 라이너 평균 23.5k = **0.78배**였고, 0.65k 로
   올려 **0.98배**가 됐다. 역산은 `BattleSim.SCORE_JUNGLE_CAMP` 주석 참조.
+- **좌우 중립 칸이 오브젝트 자리가 되면서 0.98k → 1.15k 로 다시 올렸다.**
+  캠프가 서는 칸이 14 → 12 로 줄었으므로 순회 수입도 같은 비율로 준다:
+  0.98 × 14/12 ≈ 1.15 — 잃은 몫만 정확히 되돌려 놓는 값이다. 전령 / 용은 그 위에
+  얹히는 **추가** 이득이지 정글러가 원래 먹던 수입을 되찾는 수단이 아니다.
 - **재생성이 4턴 → 6턴으로 늦춰지면서 캠프값도 0.65k → 0.98k 로 함께 올렸다.**
   정글러 수입은 전량 캠프이고 획득 빈도가 재생성 주기에 반비례하므로, 주기를
   1.5배로 늘리면 값도 1.5배여야 같은 수입이 나온다. 늦춘 것은 **순회 리듬**이지
@@ -179,8 +185,8 @@ impossible; the two-pass split is described under "Movement".
   점령하면 돌 캠프가 늘어 라이너를 추월할 수 있다 — 정글 점령의 값이 여기 있다.
 - `process_neutral_zone_captures` **뒤**에 돈다: 방금 점령한 중립 칸의 캠프를
   그 턴에 바로 먹게 하기 위해서다.
-- 정글러의 이동 목표도 이걸 따라간다 — `_jungle_goal_for` 의 2순위가
-  `_best_ready_camp`(1순위는 아직 안 먹은 중립)이고, 먹고 나면 그 칸이 6턴
+- 정글러의 이동 목표도 이걸 따라간다 — `_jungle_goal_for` 의 **1순위**가
+  `_best_ready_camp` 이고, 먹고 나면 그 칸이 6턴
   비어 다음 캠프가 자연히 새 목표가 된다. **그 반복이 곧 순회**라 예전의
   sticky 로밍은 캠프가 하나도 안 찼을 때의 폴백으로만 남았다.
 - **목표를 고르는 비용은 거리가 아니라 `거리 × JUNGLE_CAMP_STALE_PER_STEP −
@@ -365,7 +371,7 @@ so the resolver can veto a move after asking for it:
   enemy already shares the cell. Otherwise defers to `_next_step_for(p)`, which
   may well name a same-lane enemy turret cell: the pilot walks onto it.
 - `_next_step_for(p)` — raw goal + BFS, ignoring occupancy:
-  - Jungler → `_jungle_goal_for(p)` (uncaptured neutral, else a **sticky** roam
+  - Jungler → `_jungle_goal_for(p)` (best ready camp, else a **sticky** roam
     target — see "Jungler roaming" below).
   - **Every lane pilot → `current_waypoint(p)`, with no exceptions.** There is
     no defensive behaviour: a pilot does not turn around because its own turret
@@ -426,14 +432,29 @@ TileMap negative-coord system:
 |---------|-------|
 | Team 0  | (-2,0), (-2,-1), (-3,0), (0,0), (0,-1), (1,0) |
 | Team 1  | (-2,-3), (-2,-2), (-3,-2), (0,-3), (0,-2), (1,-2) |
-| Neutral | (-3,-1), (1,-1) |
+| Neutral | (-3,-1), (1,-1) — **permanently**; see below |
 
 - `init_neutral_zones()` — paints the initial owner of each cell.
 - `process_neutral_zone_captures()` — a jungler standing alone on a neutral
-  cell (no enemy in same cell) flips it to their team.
+  cell (no enemy in same cell) flips it to their team. **Objective cells are
+  skipped.**
+
+#### 오브젝트 칸 (`is_objective_cell`)
+`(-3,-1)` and `(1,-1)` are the 전령 / 용 자리 and stay neutral for the whole
+match. They drop out of every jungle rule: no camp is placed on them
+(`init_jungle_camps`), a jungler cannot capture them
+(`process_neutral_zone_captures`), they are not roam targets, and the T1
+side-neutral override is gone (it could never fire — nobody can own them).
+
+**`_nearest_uncaptured_neutral()` was deleted outright.** Its test — "is this
+neutral still unowned?" — is now permanently true, so keeping it as the
+jungler's first priority parked the jungler on the objective tile from turn 1
+waiting for a capture that never comes, and the camps never got walked.
+
+Full rules in `objective/README.md`.
 
 #### Jungler roaming (`_jungle_goal_for`)
-An uncaptured neutral always wins. Once both neutrals are taken the jungler
+The best ready camp wins (`_best_ready_camp`). With no camp charged the jungler
 roams to a **sticky** target parked on `PilotData.jungle_roam_target`, and the
 target is only recomputed when it has been reached, was never set, or has
 stopped belonging to the jungler's team (a lost T1 can flip a jungle cell). The
@@ -449,7 +470,7 @@ jungler loitering in front of its own mid T1 while the enemy sieged it. With a
 sticky target the jungler completes the tour and comes to rest only on a jungle
 cell; lane cells are crossed, never idled on. It still does not engage lane
 pilots or turrets — see "Engagement scopes".
-- `_on_t1_destroyed(td, log_lines)` — three priority branches keyed off
+- `_on_t1_destroyed(td, log_lines)` — two priority branches keyed off
   per-lane "취약지점" (vulnerable cell) sets in `VULN_TEAM{0,1}_{LEFT,CENTER,RIGHT}`.
   A vulnerable point is the jungle cell in a team's own territory closest to
   enemy territory along that lane: side lanes have 1 cell, mid has 2 flanking
@@ -457,12 +478,12 @@ pilots or turrets — see "Engagement scopes".
     1. **Restoration (all lanes)** — if any of the *capturer's* own same-lane
        vuln cells are currently owned by the loser, those cells flip back to
        the capturer and nothing on the loser's side is taken.
-    2. **Side-neutral override (LEFT/RIGHT only)** — if the same-side neutral
-       (`(-3,-1)` / `(1,-1)`) is owned by the loser, the capturer takes the
-       neutral cell instead of the loser's vuln cell.
-    3. **Default capture** — the loser's same-lane vuln cell(s) flip to the
-       capturer. Side lanes flip 1 cell, mid flips both flanking cells. Mid T1
-       has no neutral override (mid has no side neutral).
+    2. **Default capture** — the loser's same-lane vuln cell(s) flip to the
+       capturer. Side lanes flip 1 cell, mid flips both flanking cells.
+
+  The old **side-neutral override** (side-lane T1 grabbing `(-3,-1)`/`(1,-1)`
+  when the loser owned it) is deleted: those cells are permanently neutral now,
+  so the condition could never be true.
 
 ### Spawning
 - `spawn_pilots_with_lanes()` — builds 5 player + 5 enemy `PilotData` using

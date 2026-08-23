@@ -4,15 +4,35 @@ extends Node
 @onready var _bs: BattleSim = get_parent() as BattleSim
 
 # ─── Hardcoded jungle layout ─────────────────────────────────────────────────
-# The map starts with both jungles already captured by their respective teams,
-# leaving only two neutral cells (the side-by-side neutral camps) up for grabs.
+# The map starts with both jungles already captured by their respective teams.
+# The two side cells between them (`NEUTRAL_LEFT` / `NEUTRAL_RIGHT`) are
+# **permanently neutral** — see `is_objective_cell`.
 # Coordinates use the BattleField TileMap's negative-coord system.
 const JUNGLE_TEAM0_LEFT  := [Vector2i(-2,  0), Vector2i(-2, -1), Vector2i(-3,  0)]
 const JUNGLE_TEAM0_RIGHT := [Vector2i( 0,  0), Vector2i( 0, -1), Vector2i( 1,  0)]
 const JUNGLE_TEAM1_LEFT  := [Vector2i(-2, -3), Vector2i(-2, -2), Vector2i(-3, -2)]
 const JUNGLE_TEAM1_RIGHT := [Vector2i( 0, -3), Vector2i( 0, -2), Vector2i( 1, -2)]
+## 좌측 오브젝트(전령) 칸. 상시 중립이다 — 아래 `is_objective_cell` 참조.
 const NEUTRAL_LEFT  := Vector2i(-3, -1)
+## 우측 오브젝트(용) 칸. 상시 중립이다.
 const NEUTRAL_RIGHT := Vector2i( 1, -1)
+
+
+## **오브젝트 칸인가.** 좌우 중립 두 칸은 정글이 아니라 **오브젝트가 서는
+## 자리**이고, 그래서 정글 규칙에서 통째로 빠진다:
+##
+##   • 캠프가 서지 않는다 (`init_jungle_camps`) — 밟아도 성장치가 안 나온다.
+##   • 정글러가 점령할 수 없다 (`process_neutral_zone_captures`).
+##   • T1 파괴 보상의 측면 중립 탈취 분기도 사라졌다 (`_on_t1_destroyed`) —
+##     아무도 소유하지 않으므로 뺏을 것이 없다.
+##   • 정글러의 순회 목표에서도 빠진다 (`_jungle_goal_for`).
+##
+## 예전에는 정글러가 밟아서 자기 팀 색으로 칠하는 **12번째 · 13번째 캠프**였다.
+## 그 몫은 나머지 캠프 값(`BattleSim.SCORE_JUNGLE_CAMP` 0.98 → 1.15)으로
+## 되돌려 놓았다 — 정글러의 수입 총량은 그대로 두고, 지도 한복판의 두 칸만
+## "먹는 곳"에서 "싸우는 곳"으로 바뀐 것이다.
+static func is_objective_cell(cell: Vector2i) -> bool:
+	return cell == NEUTRAL_LEFT or cell == NEUTRAL_RIGHT
 
 # 취약지점 (vulnerable points) per team per lane. Defined as the jungle cell(s)
 # in a team's own territory that sit closest to enemy territory along that lane.
@@ -325,11 +345,17 @@ func camp_charged(cell: Vector2i) -> bool:
 	return _bs.turn_count >= int(_bs.jungle_camps.get(cell, 0))
 
 
-## 모든 정글/중립 칸에 캠프를 세운다. 개시 시점에는 전부 차 있다.
+## 모든 정글 칸에 캠프를 세운다. 개시 시점에는 전부 차 있다.
+##
+## **오브젝트 칸(좌우 중립)에는 캠프가 서지 않는다** — `jungle_camps` 에 아예
+## 들어가지 않으므로 `camp_charged` 도 렌더러의 마름모도 그 칸을 모른다.
 func init_jungle_camps() -> void:
 	_bs.jungle_camps.clear()
 	for raw in _bs.neutral_zone_cells.keys():
-		_bs.jungle_camps[raw as Vector2i] = 0
+		var cell := raw as Vector2i
+		if is_objective_cell(cell):
+			continue
+		_bs.jungle_camps[cell] = 0
 
 
 ## 작전 단계 만료형 성장 배율(완벽한 마무리)을 `team` 전원에게서 걷는다.
@@ -1045,11 +1071,12 @@ func _next_step_for(p: PilotData) -> Vector2i:
 # jungles, so it read as the jungler loitering in front of its own mid T1 while
 # the enemy sieged it. Holding the target makes the jungler finish its tour and
 # come to rest only on a jungle cell; lane cells are crossed, never idled on.
+#
+# **"아직 안 잡힌 중립부터 간다"는 1순위는 삭제됐다.** 좌우 중립 두 칸이
+# 오브젝트 자리(상시 중립)가 되면서 그 판정은 영원히 참이 됐다 — 정글러가
+# 개시부터 끝까지 전령 / 용 칸 위에 서서 점령되지도 않는 칸을 기다리고, 캠프는
+# 한 번도 돌지 않는다. 지금 정글러의 1순위는 **차 있는 캠프**다.
 func _jungle_goal_for(p: PilotData) -> Vector2i:
-	var nearest_neutral := _nearest_uncaptured_neutral(p)
-	if nearest_neutral != Vector2i(-1, -1):
-		p.jungle_roam_target = Vector2i(-1, -1)   # an open neutral outranks roaming
-		return nearest_neutral
 	# **차 있는 캠프가 가장 먼저다.** 정글러의 수입이 전부 캠프에서 나오므로
 	# "가장 먼 아군 칸"으로 순회하는 것보다 "지금 먹을 수 있는 캠프"가 곧 목표다.
 	# 먹고 나면 그 칸의 캠프가 4턴 동안 비므로 다음 캠프가 자연히 새 목표가 되고,
@@ -1368,6 +1395,58 @@ func t1_alive_in_lane(team: int, lane: int) -> bool:
 	return false
 
 
+## **레인별로 살아 있는 가장 바깥 적 포탑** 목록. [전령 제압] 카드의 유효 대상이
+## 이것 하나다 — 안쪽 포탑(같은 레인 T1 이 아직 서 있는 T2)은 저격할 수 없다.
+##
+## 레인마다 T1 → T2 순으로 훑어 **처음 만난 살아 있는 포탑**을 담는다. 그래서
+## T1 이 무너진 레인은 T2 가 그 자리를 물려받아 대상이 되고, 후반에 먹은 전령
+## 보상도 쓸 곳이 남는다. 세 레인이 전부 정리된 팀에는 대상이 없다(빈 배열).
+##
+## `_turret_attackable` 과 같은 규칙을 다른 각도에서 읽는다: 저쪽은 "이 포탑을
+## 지금 때릴 수 있나"이고 이쪽은 "때릴 수 있는 포탑이 어느 것들인가"다.
+func outermost_enemy_turrets(attacker_team: int) -> Array:
+	var out: Array = []
+	var foe: int = 1 - attacker_team
+	for lane_idx in range(3):
+		for tier in [1, 2]:
+			var found: TurretData = null
+			for raw in _bs.turrets:
+				var td := raw as TurretData
+				if td.alive and td.team == foe and td.lane == lane_idx and td.tier == tier:
+					found = td
+					break
+			if found != null:
+				out.append(found)
+				break
+	return out
+
+
+## `cell` 위에 서 있는 **살아 있는 포탑**. 없으면 null. [전령 제압] 이 LOCATION
+## 모드로 찍은 칸을 포탑으로 되돌릴 때 쓴다.
+func turret_at_cell(cell: Vector2i) -> TurretData:
+	for raw in _bs.turrets:
+		var td := raw as TurretData
+		if td.alive and td.grid_pos == cell:
+			return td
+	return null
+
+
+## 카드가 포탑 한 기에 넣는 즉발 피해. 명중 판정은 없다.
+##
+## 턴 전투의 피해 적용 경로(`_apply_card_damage`)를 그대로 재사용한다 — 흔들림
+## 연출 · 킬로그 · `Building` 노드 해제 · T1 파괴 시 정글 획득까지 한 군데서만
+## 일어나야 하기 때문이다. `attacker` 는 성장치 귀속용이고 **null 이어도 된다**
+## (오브젝트 보상 카드는 시전자가 없다 — `add_score` 가 null 을 걸러 낸다).
+func apply_card_turret_damage(td: TurretData, dmg: int,
+		attacker: PilotData, log_lines: Array) -> void:
+	if td == null or not td.alive or dmg <= 0:
+		return
+	_last_turret_hitter.clear()
+	if attacker != null:
+		_last_turret_hitter[td] = attacker
+	_apply_card_damage({}, {td: dmg}, log_lines)
+
+
 func any_t2_destroyed(defending_team: int) -> bool:
 	for t in _bs.turrets:
 		var td := t as TurretData
@@ -1458,6 +1537,11 @@ func process_neutral_zone_captures() -> void:
 	for raw in _bs.pilots:
 		var p := raw as PilotData
 		if not p.alive or not p.is_guerrilla:
+			continue
+		# 오브젝트 칸은 상시 중립이다 — 밟아도 점령되지 않는다. 이 가드가
+		# 없으면 개시 직후 정글러가 걸어 들어가 전령 / 용 자리를 자기 색으로
+		# 칠해 버리고, 그 칸은 다시는 중립으로 돌아오지 않는다.
+		if is_objective_cell(p.grid_pos):
 			continue
 		# Only capture neutral cells (uncaptured) — jungle owned by an enemy
 		# team can be retaken only via T1 destruction, not by stepping on it.
@@ -1583,26 +1667,6 @@ func _build_lane_corridors() -> void:
 		_lane_corridor_orders.append(order)
 
 
-func _nearest_uncaptured_neutral(p: PilotData) -> Vector2i:
-	var jungle_dir := p.jungle_start_pref
-	var primary := Vector2i(-1, -1)
-	var secondary := Vector2i(-1, -1)
-	if jungle_dir == GameEnums.JungleStartDir.LEFT:
-		primary  = NEUTRAL_LEFT
-		secondary = NEUTRAL_RIGHT
-	elif jungle_dir == GameEnums.JungleStartDir.RIGHT:
-		primary  = NEUTRAL_RIGHT
-		secondary = NEUTRAL_LEFT
-	else:
-		primary  = NEUTRAL_LEFT
-		secondary = NEUTRAL_RIGHT
-	if int(_bs.neutral_zone_cells.get(primary, 0)) == -1:
-		return primary
-	if int(_bs.neutral_zone_cells.get(secondary, 0)) == -1:
-		return secondary
-	return Vector2i(-1, -1)
-
-
 # ─── T1 destruction → jungle capture ─────────────────────────────────────────
 
 func _on_t1_destroyed(td: TurretData, log_lines: Array) -> void:
@@ -1611,11 +1675,13 @@ func _on_t1_destroyed(td: TurretData, log_lines: Array) -> void:
 	#   1. Restoration: if any of the capturer's own same-lane vuln cells are
 	#      currently owned by the loser, restore those cells to the capturer
 	#      INSTEAD of capturing the loser's vuln. (Applies to all lanes.)
-	#   2. Side neutral override (LEFT/RIGHT only): if the same-side neutral is
-	#      owned by the loser, the capturer takes the neutral instead of the
-	#      loser's vuln cell.
-	#   3. Default capture: the loser's same-lane vuln cell(s) flip to the
+	#   2. Default capture: the loser's same-lane vuln cell(s) flip to the
 	#      capturer. Side lanes flip 1 cell, mid flips both flanking cells.
+	#
+	# **측면 중립 탈취 분기는 삭제됐다.** 예전에는 사이드 레인 T1 을 깨면 같은
+	# 쪽 중립 칸이 패자 소유일 때 그 칸을 대신 가져갔는데, 좌우 중립은 이제
+	# 상시 중립(오브젝트 자리)이라 누구의 소유도 되지 않는다 — 그 조건은
+	# 영원히 거짓이므로 분기 자체가 죽은 코드였다.
 	var capturer := 1 - td.team
 	var own_vulns: Array  = _vuln_cells_for(capturer, td.lane)
 	var loser_vulns: Array = _vuln_cells_for(td.team, td.lane)
@@ -1630,19 +1696,9 @@ func _on_t1_destroyed(td: TurretData, log_lines: Array) -> void:
 		log_lines.append("%s vuln restored by team %d" % [_bs.LANE_NAMES[td.lane], capturer])
 		return
 
-	if td.lane == GameEnums.Lane.LEFT or td.lane == GameEnums.Lane.RIGHT:
-		var side_neutral: Vector2i = NEUTRAL_LEFT if td.lane == GameEnums.Lane.LEFT else NEUTRAL_RIGHT
-		if int(_bs.neutral_zone_cells.get(side_neutral, -2)) == td.team:
-			_set_zone_cell(side_neutral, capturer)
-			log_lines.append("%s side-neutral captured by team %d" % [_bs.LANE_NAMES[td.lane], capturer])
-			return
-		for c in loser_vulns:
-			_set_zone_cell(c as Vector2i, capturer)
-		log_lines.append("%s vuln captured by team %d" % [_bs.LANE_NAMES[td.lane], capturer])
-	else:
-		for c in loser_vulns:
-			_set_zone_cell(c as Vector2i, capturer)
-		log_lines.append("Center vulns captured by team %d" % capturer)
+	for c in loser_vulns:
+		_set_zone_cell(c as Vector2i, capturer)
+	log_lines.append("%s vuln captured by team %d" % [_bs.LANE_NAMES[td.lane], capturer])
 
 
 func _vuln_cells_for(team: int, lane: int) -> Array:

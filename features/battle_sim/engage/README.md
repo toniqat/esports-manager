@@ -30,7 +30,7 @@
 ## Files
 | File | Purpose |
 |---|---|
-| `EngagePhaseManager.gd` | `class_name EngagePhaseManager extends Node` — 오케스트레이터. 참가자를 모으고, `TurnEngageSim` 을 만들고, `_process` 에서 고정 스텝으로 굴리고, 종료 판정 후 `END_HOLD_SEC`(2.0초) 유예를 두고 대시보드를 띄운다. API: `start_engage(caster, rounds, exclude_lane, on_done)` / `start_duel(caster, target, on_done)` / `is_active()` / `engage_finished` 시그널, 그리고 개시 확인 화면용 `engage_sides(caster, exclude_lane)` / `prompt_engage(...) -> bool` / `is_intro_active()`. |
+| `EngagePhaseManager.gd` | `class_name EngagePhaseManager extends Node` — 오케스트레이터. 참가자를 모으고, `TurnEngageSim` 을 만들고, `_process` 에서 고정 스텝으로 굴리고, 종료 판정 후 `END_HOLD_SEC`(2.0초) 유예를 두고 대시보드를 띄운다. API: `start_engage(caster, rounds, exclude_lane, on_done)` / `start_duel(caster, target, on_done)` / **`start_objective_engage(t0, t1, rounds, title, first_team, on_done)`** / `is_active()` / `engage_finished` 시그널, 그리고 개시 확인 화면용 `engage_sides(caster, exclude_lane)` / `prompt_engage(t0, t1, rounds, title, allow_cancel, confirm_text, cancel_text, subtitle) -> bool` / `is_intro_active()`. |
 | `EngageIntro.gd` | `class_name EngageIntro extends Control` — **개시 확인 화면(VS)**. 카드를 제출한 직후 참가자 명단을 보여 주고 확인 / 취소를 받는다. 아래 [개시 확인 화면](#개시-확인-화면-vs) 절. |
 | `TurnEngageSim.gd` | `class_name TurnEngageSim extends RefCounted` — **헤드리스 시뮬레이터**. 노드를 하나도 만들지 않는다. 벨트 좌표, 진형 배치, 행동 순서, 라운드 진행, 유닛 한 차례, 포탑, 데미지, 종료 판정 전부 여기. 튜닝 상수도 전부 여기 상단에 모여 있다. |
 | `EngageArena.gd` | `class_name EngageArena extends Control` — 시뮬레이터 상태를 그리기만 하는 렌더러. 시네마 밴드 안의 사이드뷰 무대(배경 / 바닥 / 포탑 / 유닛 / 투사체)와 밴드 아래 **참가자 초상화 + 체력 바 스트립**(아군 왼쪽 / 적군 오른쪽 한 줄, 세로로 긴 버스트 초상화)을 담당한다. 라운드 카운터 / 차례 표시 / 종료 사유 배너(`mark_engage_over`)와 결과 대시보드도 여기. |
@@ -79,6 +79,26 @@ AI 플레이도 같은 무대를 탄다. `AiCardPlayer.run_ai_plays()` 는 매 �
 effect chain 이 아니라 `is_active()` 로 판정하므로 clause 가 `duel` 인 결투도
 정상적으로 기다려진다.
 
+## 오브젝트 교전 (전령 / 용)
+`ObjectiveSystem` 이 여는 교전. 무대와 생명주기는 카드 교전과 **완전히 같고**
+(라운드 진행 · 종료 유예 · 결과 대시보드 · `engage_finished`), 다른 것은 셋뿐이다.
+
+1. **시전자가 없다.** 카드가 아니라 타이머가 여는 교전이라 "매 라운드 먼저
+   행동하는 한 명"이 없다. `TurnEngageSim.setup(..., first_team)` 에 선공 팀을
+   직접 넘기고(오브젝트는 블루), `caster = null` 을 받아들인다 —
+   `_role_sorted` 의 "시전자를 맨 앞으로" 단계만 조용히 건너뛴다.
+2. **참가자를 시전자 주변에서 모으지 않는다.** 포지션이 정한 명단
+   (`ObjectiveSystem.participants_for`)이 그대로 `t0` / `t1` 로 들어온다.
+3. **무대 제목이 오브젝트 이름**이다(`_arena_title`, "전령" / "용").
+
+종료 배너는 카드 교전과 같은 문구(전멸 / N라운드 완료)를 그대로 쓴다. 승패와
+보상은 배너가 아니라 무대가 닫힌 뒤 `BattleSim.last_log` 가 말한다 — 배너는 종료
+판정 직후 `END_HOLD_SEC` 동안 떠 있고 호출 측이 제어를 되찾는 것은 그 **뒤**라,
+승패를 배너에 실을 수 있는 시점이 애초에 없다.
+
+승패 판정은 매니저가 아니라 `ObjectiveSystem._engage_winner` 가 한다 —
+**생존 인원 수 → 동률이면 잔여 HP 비율 합**. 자세한 내용은 `objective/README.md`.
+
 ## 개시 확인 화면 (VS)
 `EngageIntro.gd`. **카드를 제출한 순간** 딤드된 전체 화면 위에 뜬다.
 
@@ -87,7 +107,7 @@ effect chain 이 아니라 `is_active()` 로 판정하므로 clause 가 `duel` �
       [적군 (3)]  eye ×N              ← 상단
               VS  /  3라운드           ← 중앙
       [아군 (4)]  eye ×N              ← 하단
-             취소   확인               ← 아군 줄 아래
+             취소   확인               ← 아군 줄 아래 (문구는 바꿀 수 있다)
 ```
 
 - 초상화는 전장 스트립과 같은 **eye 크롭**(480×200 가로 밴드, `EYE_ASPECT` 2.4)
@@ -96,6 +116,11 @@ effect chain 이 아니라 `is_active()` 로 판정하므로 clause 가 `duel` �
 - 두 줄은 각자 바깥(적은 위, 아군은 아래)에서 `SLIDE_SEC`(0.22초) 동안 밀려
   들어온다. **버튼은 처음부터 눌린다** — 연출이 입력을 붙잡으면 반복 관전이
   느려진다.
+- **버튼 문구와 부제는 인자다.** `setup(title, rounds, t0, t1, allow_cancel,
+  confirm_text, cancel_text, subtitle)`. 오브젝트가 이 화면을 **참여 / 미참여**
+  결정 창으로 그대로 재사용한다(부제 = 보상 안내). 결정의 모양이 같으므로 —
+  명단을 보고 두 갈래 중 하나를 고른다 — 화면을 새로 만들 이유가 없고, 오히려
+  같은 화면이라야 "이 명단으로 붙는다"가 같은 그림으로 읽힌다.
 - **취소는 카드 제출 자체를 무른다.** `_effect_engage` 가
   `CardPhaseManager._on_overlay_cancel()` 을 불러 `_play_card_direct` 가 떠 둔
   스냅샷(손패 / 덱 / 비용 / engage 할인 / 보존 목록)을 통째로 복원한다 —

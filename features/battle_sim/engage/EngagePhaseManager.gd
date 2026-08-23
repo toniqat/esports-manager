@@ -63,6 +63,10 @@ var _phase_before: int = GameEnums.BattlePhase.CARD_PHASE
 # Hand-off back to CardPhaseManager for UI refresh after engage closes.
 var _on_done: Callable = Callable()
 
+## 아레나 제목. 빈 문자열이면 "전투 개시" / "결투" 기본값을 쓴다. 오브젝트
+## 교전이 "전령" / "용" 을 넣는다.
+var _arena_title: String = ""
+
 # Dedicated CanvasLayer for the engage modal so it sits above the hand row
 # (hand cards live on _bs.canvas at layer 1) and any leftover targeting UI.
 # Picked to be >= CardSelectOverlay (layer 10) and CardTargetingOverlay
@@ -147,7 +151,8 @@ func engage_sides(caster: PilotData, exclude_lane: bool) -> Array:
 ## `allow_cancel` 이 false 면 확인만 놓는다: AI 가 낸 카드는 플레이어가 무를 수
 ## 있는 것이 아니므로 "누가 싸우는지 보고 넘긴다"만 남는다.
 func prompt_engage(t0: Array, t1: Array, rounds: int, title: String,
-		allow_cancel: bool) -> bool:
+		allow_cancel: bool, confirm_text: String = "확인",
+		cancel_text: String = "취소", subtitle: String = "") -> bool:
 	if _overlay_layer == null:
 		return true
 	# 카드를 든 손패 상태를 먼저 걷는다 — 이 모달이 그 위를 덮으면 리프트된
@@ -157,7 +162,8 @@ func prompt_engage(t0: Array, t1: Array, rounds: int, title: String,
 	_intro = EngageIntro.new()
 	_intro.name = "EngageIntro"
 	_overlay_layer.add_child(_intro)
-	_intro.setup(title, rounds, t0, t1, allow_cancel)
+	_intro.setup(title, rounds, t0, t1, allow_cancel,
+			confirm_text, cancel_text, subtitle)
 	# 손패 딤과 턴 넘기기 잠금은 `is_intro_active()` 를 읽는데, 그 둘은 상태가
 	# 바뀔 때만 다시 평가된다 — 열 때와 닫을 때 한 번씩 깨워 준다.
 	_refresh_hand_gates()
@@ -206,9 +212,36 @@ func start_duel(caster: PilotData, target: PilotData,
 	_begin(caster, t0, t1, true, TurnEngageSim.DUEL_MAX_ROUNDS, on_done)
 
 
+## 오브젝트 교전 — 전령 / 용을 두고 벌어지는 교전. 카드 교전과 다른 점은 셋뿐.
+##
+##   1. **시전자가 없다.** 카드가 아니라 타이머가 여는 교전이라 "먼저 행동하는
+##      한 명"이 없다. 선공 팀은 `first_team`(블루)이 정한다.
+##   2. **참가자를 시전자 주변에서 모으지 않는다.** 포지션으로 정해진 명단이
+##      그대로 들어온다(`ObjectiveSystem.participants_for`).
+##   3. **무대 제목이 오브젝트 이름**이다("전령" / "용").
+##
+## 종료 배너는 카드 교전과 같은 문구(전멸 / N라운드 완료)를 그대로 쓴다 — 승패와
+## 보상은 배너가 아니라 무대가 닫힌 뒤 `last_log` 가 말한다. 배너는 종료 판정
+## 직후 `END_HOLD_SEC` 동안 떠 있고 호출 측이 제어를 되찾는 것은 그 **뒤**라,
+## 승패를 배너에 실을 수 있는 시점이 애초에 없다.
+##
+## 나머지 생명주기(라운드 진행 · 종료 유예 · 대시보드 · `engage_finished`)는
+## 카드 교전과 완전히 같다 — 호출 측은 같은 방식으로 await 하면 된다.
+func start_objective_engage(t0: Array, t1: Array, rounds: int, title: String,
+		first_team: int, on_done: Callable = Callable()) -> void:
+	if _active:
+		return
+	if t0.is_empty() or t1.is_empty():
+		if on_done.is_valid():
+			on_done.call()
+		return
+	_begin(null, t0, t1, false, rounds, on_done, title, first_team)
+
+
 # 공통 진입 — 시뮬레이터 구성 + 아레나 오픈 + _process 구동 시작.
 func _begin(caster: PilotData, t0: Array, t1: Array, duel: bool,
-		rounds: int, on_done: Callable) -> void:
+		rounds: int, on_done: Callable, title: String = "",
+		first_team: int = -1) -> void:
 	_active = true
 	_is_duel = duel
 	_team_pilots[0] = t0
@@ -216,9 +249,10 @@ func _begin(caster: PilotData, t0: Array, t1: Array, duel: bool,
 	_on_done = on_done
 	_accum = 0.0
 	_hold_left = -1.0
+	_arena_title = title
 
 	_sim = TurnEngageSim.new()
-	_sim.setup(_bs, caster, t0, t1, rounds, duel)
+	_sim.setup(_bs, caster, t0, t1, rounds, duel, first_team)
 
 	# Drop any lifted-card / description-box selection so the modal sits cleanly
 	# over the table. CardPhaseManager.deselect_current_card is idempotent.
@@ -362,7 +396,10 @@ func _open_overlay() -> void:
 	_arena = EngageArena.new()
 	_arena.name = "EngageArena"
 	_overlay_layer.add_child(_arena)
-	_arena.setup(_bs, _sim, "결투" if _is_duel else "전투 개시", _is_duel)
+	var title: String = _arena_title
+	if title.is_empty():
+		title = "결투" if _is_duel else "전투 개시"
+	_arena.setup(_bs, _sim, title, _is_duel)
 
 
 # Debug-log helper: "TANK0(hp120) SNPR0(dead)" for one side of the engage.

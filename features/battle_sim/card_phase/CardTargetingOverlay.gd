@@ -168,16 +168,24 @@ func start_card_selection(cd: CardData, on_confirm: Callable) -> void:
 	var kind: String = ""
 	if _bs.card_phase != null:
 		kind = _bs.card_phase.targeting_kind(cd)
-	# 시전자가 없는 레거시 카드는 대상 지정 자체가 성립하지 않으므로 INSTANT
-	# 취급 — 확인 버튼만 뜬다.
-	if caster == null:
+	# **시전자가 없는 카드도 대상 지정을 한다.** 오브젝트 보상([전령 제압] /
+	# [용 보상])은 누구의 카드도 아니지만 찍을 곳은 분명히 있다 — 최외곽 적
+	# 포탑, 아군 파일럿 한 명. 시전자가 없다는 것은 **사거리 기준점이 없다**는
+	# 뜻일 뿐이므로 `range_unlimited` 로 읽어 사거리 채움과 딤을 그리지 않는다
+	# (compute_* 헬퍼도 같은 규칙으로 거리 판정을 건너뛴다).
+	#
+	# 예전에는 여기서 `kind = "none"` 으로 눌러 INSTANT 취급했다. 그러면 두
+	# 보상 카드가 아무 데나 떨어뜨려도 대상 없이 발동되어 조용히 아무 일도
+	# 하지 않는 카드가 된다.
+	if caster == null and kind == "preview":
+		# 교전만은 예외 — 참가자를 시전자 칸 주변에서 모으므로 기준점이 필수다.
 		kind = "none"
 	match kind:
 		"pilot":
 			mode = Mode.PILOT
 			range_caster = caster
 			range_radius = max(0, cd.cast_range)
-			range_unlimited = cd.cast_range >= UNLIMITED_RANGE
+			range_unlimited = caster == null or cd.cast_range >= UNLIMITED_RANGE
 			var team_filter: int = 1 if cd.target == "enemy" else 0
 			for raw in _bs.card_phase.compute_valid_pilot_targets(cd, caster, team_filter):
 				valid_pilots[raw as PilotData] = true
@@ -185,7 +193,7 @@ func start_card_selection(cd: CardData, on_confirm: Callable) -> void:
 			mode = Mode.LOCATION
 			range_caster = caster
 			range_radius = max(1, cd.cast_range)
-			range_unlimited = cd.cast_range >= UNLIMITED_RANGE
+			range_unlimited = caster == null or cd.cast_range >= UNLIMITED_RANGE
 			for c in _bs.card_phase.compute_valid_location_targets(cd, caster):
 				valid_cells[c as Vector2i] = true
 		"preview":

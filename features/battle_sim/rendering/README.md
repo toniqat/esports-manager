@@ -21,6 +21,18 @@ Reads all state from `_bs` (the BattleSim parent).
    (`CAMP_MARK_ENEMY_COLOR`, 외곽선만). 채움 여부가 "우리 것 / 적 것"을 가르므로
    둘을 헷갈릴 여지가 없고, 적 정글을 **지금 뺏을 값어치가 있는지**가 화면에
    있어야 정글 점령이 판단의 대상이 된다.
+0.5 `_draw_objectives()` — 좌우 중립 두 칸(`SimulationCore.NEUTRAL_LEFT` /
+   `NEUTRAL_RIGHT`)에 **오브젝트 이름과 다음 등장까지 남은 턴 수**를 찍는다
+   (`전령` / `용` 위, `N턴` 아래; `_draw_centered_text` 가 검은 외곽선을 두른다 —
+   타일 색이 흰색 / 팀 색 / 회색으로 계속 바뀌므로 외곽선 없이는 어느 배경에서든
+   읽히지 않는다). 그 두 칸에는 캠프가 없으므로 마름모와 겹치지 않는다.
+
+   **왜 상시 표시인가.** 오브젝트는 정글 캠프와 달리 "지나가다 밟는 것"이 아니라
+   **양 팀이 같은 순간에 같은 자리로 모이는 약속**이다. 언제 열리는지가 안 보이면
+   미리 라인을 밀어 둘지 정글러를 그쪽에 붙여 둘지를 판단할 수 없다. 남은 0턴
+   (= 이번 턴에 열림)에는 숫자를 지우고 이름만 남긴다 — 그 프레임에는 이미 결정
+   창이 화면을 덮고 있고, 무대가 닫히면 다음 등장까지의 새 숫자가 자리를 잇는다.
+   상태는 `ObjectiveSystem.kind_at_cell` / `turns_until_cell` 에서만 온다.
 1. `_draw_hq_hp_bars()` — green HP bar under each HQ once any T2 in their team is destroyed
 2. `_draw_turret_hp_bars()` — yellow HP bar above each living turret (T2 hidden while own-lane T1 alive). 피격 중에는 `BattleSim.turret_hit_offset(td)` 만큼 함께 흔들린다 — 포탑 스프라이트(`Building` 노드)는 렌더러가 그리지 않고 BattleSim 이 직접 흔들므로, 바만 제자리에 두면 둘이 어긋난다.
 3. Per-cell pilot rendering via `_draw_pilot_cell()` — pilots render OUTSIDE the tile, on a hex ring of 6 slots around it, with a team-coloured triangle behind them whose apex points to the tile centre (speech-bubble tail). **자리는 여기서 풀지 않는다** — `_draw()` 앞머리의 `_build_pilot_render_layout()` 이 전장 전체를 한 번에 배정하고, 딤 오버레이 · 히트 테스트 · 돌진 기하가 같은 표를 읽는다

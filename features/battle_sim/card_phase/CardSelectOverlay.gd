@@ -104,10 +104,24 @@ func can_pick_for_discard() -> bool:
 			and to_discard_cards.size() < target_count
 
 
+## 지금 손패에서 실제로 버릴 수 있는 카드 수 — `보존` 키워드 카드는 빠진다.
+func _discardable_hand_count() -> int:
+	var n: int = 0
+	for raw in _bs.player_hand:
+		var cd := raw as CardData
+		if cd != null and cd.is_preserved_by_keyword():
+			continue
+		n += 1
+	return n
+
+
 # ─── Entry points ────────────────────────────────────────────────────────────
 func start_discard(n: int, on_complete: Callable, on_cancel: Callable) -> void:
 	mode = Mode.DISCARD
-	target_count = max(0, min(n, _bs.player_hand.size()))
+	# 상한은 손패 크기가 아니라 **버릴 수 있는 카드 수**다. `보존` 키워드 카드는
+	# 고를 수 없으므로(add_card_to_discard 가 거부한다) 손패 크기로 잡으면
+	# 확인 버튼이 영원히 잠긴 모달이 만들어진다.
+	target_count = max(0, min(n, _discardable_hand_count()))
 	hidden_state = false
 	to_discard_cards.clear()
 	to_discard_nodes.clear()
@@ -172,6 +186,11 @@ func add_card_to_discard(node: Card) -> void:
 	if not _bs.player_card_nodes.has(node):
 		return
 	var cd: CardData = node.data
+	# `보존` 키워드 카드는 버릴 수 없다 — 오브젝트 보상처럼 한 매치에 한 장
+	# 나오는 카드가 버리기:N 한 번에 사라지면 안 된다. `target_count` 도 같은
+	# 규칙으로 잡혀 있으므로 고를 카드가 모자라는 일은 없다.
+	if cd != null and cd.is_preserved_by_keyword():
+		return
 	_bs.player_card_nodes.erase(node)
 	_bs.player_hand.erase(cd)
 	to_discard_cards.append(cd)

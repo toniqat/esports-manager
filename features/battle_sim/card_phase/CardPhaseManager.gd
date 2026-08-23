@@ -393,6 +393,74 @@ func _make_card_from_def(def: Dictionary) -> CardData:
 	return cd
 
 
+# ─── 오브젝트 보상 카드 지급 ─────────────────────────────────────────────────
+# 전령 / 용을 가져간 팀에게 카드를 쥐여 주는 두 진입점. 보상 카드는 `pool = 0`
+# 이라 스타터 덱에는 절대 들어가지 않고, **오직 여기로만** 세상에 나온다.
+#
+# **보상 카드에는 시전자가 없다**(`owner_pilot == null`). 오브젝트는 팀이 먹은
+# 것이지 누가 먹은 것이 아니고, 시전자를 붙이면 그 파일럿이 쓰러진 동안 보상이
+# 통째로 잠긴다(카드 잠금은 시전자 생존을 본다). 대신 사거리 기준점이 사라지므로
+# 대상 계산 쪽이 caster == null 을 "전장 전체"로 읽는다 —
+# `compute_valid_pilot_targets` / `compute_valid_location_targets` 참조.
+
+## cards.csv 의 한 행을 id 로 집어 시전자 없는 CardData 한 장을 만든다.
+## 카드가 DB 에 없으면 null (게임을 세우지 않고 로그만 남긴다 — 보상을 못 받는
+## 것과 매치가 죽는 것은 다른 무게다).
+func make_objective_card(card_id: int) -> CardData:
+	var gm: Node = _bs.gm
+	if gm == null:
+		return null
+	for raw_def in gm.card_pool_bs:
+		var def: Dictionary = raw_def as Dictionary
+		if int(def.get("id", -1)) != card_id:
+			continue
+		var cd := _make_card_from_def(def)
+		cd.owner_pilot = null
+		return cd
+	push_warning("CardPhaseManager: 보상 카드 id=%d 를 cards 테이블에서 찾지 못했다" % card_id)
+	return null
+
+
+## 보상 카드 `count` 장을 **손패로 곧장** 넣는다(전령). 손패 상한은 보지 않는다 —
+## 자기 차례에 들어온 카드가 상한을 넘겨도 버리지 않는 기존 규칙과 같고, 어차피
+## 전령 보상은 `보존` 키워드라 다음 자동 버리기도 이 카드를 건너뛴다.
+## 실제로 들어간 장수를 돌려준다.
+func grant_cards_to_hand(card_id: int, is_player: bool, count: int) -> int:
+	var hand: Array = _bs.player_hand if is_player else _bs.ai_hand
+	var added: int = 0
+	for _i in max(0, count):
+		var cd := make_objective_card(card_id)
+		if cd == null:
+			break
+		hand.append(cd)
+		if is_player:
+			spawn_card_node(cd)
+		added += 1
+	if added > 0:
+		_refresh_hand_after_bulk_change(is_player)
+		update_deck_discard_labels()
+	return added
+
+
+## 보상 카드 `count` 장을 **덱에 섞어 넣는다**(용). 맨 위에 쌓지 않는 이유는
+## 5장이 한꺼번에 손에 들어오면 그 다음 몇 번의 드로우가 통째로 보상 카드가 되어
+## 덱이 잠기기 때문이다 — 섞어 넣으면 경기 후반에 걸쳐 한 장씩 나온다.
+## 실제로 들어간 장수를 돌려준다.
+func grant_cards_to_deck(card_id: int, is_player: bool, count: int) -> int:
+	var deck: Array = _bs.player_deck if is_player else _bs.ai_deck
+	var added: int = 0
+	for _i in max(0, count):
+		var cd := make_objective_card(card_id)
+		if cd == null:
+			break
+		deck.append(cd)
+		added += 1
+	if added > 0:
+		deck.shuffle()
+		update_deck_discard_labels()
+	return added
+
+
 # Copies a CardData (so each draw is a unique instance) including the 시전자 tag.
 func make_card_copy(src: CardData) -> CardData:
 	var cd := CardData.new(src.card_name, src.cost, src.description)
@@ -420,9 +488,22 @@ func do_battle_turn() -> void:
 	# already holds the tick via is_ai_turn_active(); this is the backstop.
 	if _ai_play_in_progress:
 		return
+	# 오브젝트 결정 창 / 무대가 열려 있는 동안은 턴이 돌면 안 된다. BattleSim 이
+	# 이미 틱을 붙잡고 있지만(`_battle_tick_held`), 상대 차례 가드와 같은 이유로
+	# 여기에도 백스톱을 둔다 — 이 함수는 await 를 품고 있어 재진입 가능하다.
+	if _bs.objective != null and _bs.objective.is_busy():
+		return
 	_bs.sim_core.simulate_turn()
 	if _bs.game_over:
 		return
+	# **오브젝트는 차례와 상관없이 발생한다.** 그래서 카드 경제(전략 점수 회복 /
+	# 자동 드로우)와 작전 단계 판정보다 **앞**에 온다 — 전령이 열리는 턴에
+	# 마침 문턱을 넘었다고 해서 오브젝트가 한 턴 밀리면 안 된다. 결정 창과
+	# 교전 무대가 여기서 통째로 await 되고, 끝난 뒤 평소의 턴 마무리가 이어진다.
+	if _bs.objective != null:
+		await _bs.objective.process_turn()
+		if _bs.game_over:
+			return
 	# 카드 경제 게이트. `ECONOMY_START_TURN` 전까지는 전략 점수도 자동 드로우도
 	# 멈춰 있다 — 개시 손패가 없으므로 그 구간은 **양 팀 다 빈 손**이고, 0턴에
 	# 들어가 있는 것은 블루 선점 1점뿐이다. 초반 몇 턴은 카드 없이 라인전만
@@ -539,8 +620,9 @@ func _next_turn_side() -> int:
 ## trims the excess.
 ##
 ## 계획 중시(`preserve:N`)로 보존된 카드는 **건너뛴다** — 그게 그 카드의 유일한
-## 효과다. 손패가 통째로 보존되는 경우(최대 2장이라 실제로는 불가능)에도
-## 루프가 멈추도록 인덱스 스캔으로 돈다: 상한 초과가 남아도 무한 루프는 없다.
+## 효과다. `보존` 키워드를 단 카드(오브젝트 보상)도 같이 건너뛴다. 손패가 통째로
+## 보존되는 경우에도 루프가 멈추도록 인덱스 스캔으로 돈다: 상한 초과가 남아도
+## 무한 루프는 없다.
 func _trim_hand_overflow(is_player: bool) -> int:
 	var hand:    Array = _bs.player_hand    if is_player else _bs.ai_hand
 	var discard: Array = _bs.player_discard if is_player else _bs.ai_discard
@@ -550,7 +632,7 @@ func _trim_hand_overflow(is_player: bool) -> int:
 	var i: int = 0
 	while hand.size() > _bs.MAX_HAND_SIZE and i < hand.size():
 		var oldest := hand[i] as CardData
-		if preserved.has(oldest):
+		if preserved.has(oldest) or oldest.is_preserved_by_keyword():
 			i += 1
 			continue
 		hand.remove_at(i)
@@ -1932,7 +2014,11 @@ func highlight_affordable_cards() -> void:
 		c.set_respawn_turns(respawn_turns_for(c.data))
 		# 계획 중시로 보존된 카드는 시안 테두리를 두른다 — 사용 가능 여부와는
 		# 무관한 별개의 표시라 슬래브와 겹쳐 떠도 서로를 가리지 않는다.
-		c.set_preserved(_bs.preserved_cards_p.has(c.data))
+		# `보존` 키워드 카드는 계획 중시로 보존된 카드와 같은 시안 테두리를
+		# 두른다 — 플레이어에게 두 보존은 "이 카드는 버려지지 않는다" 한 가지
+		# 의미이고, 수명이 다르다는 것은 카드 텍스트가 말한다.
+		c.set_preserved(_bs.preserved_cards_p.has(c.data)
+				or c.data.is_preserved_by_keyword())
 		# Reflect any active cost modifier (사전 준비 / 전투 준비 / 집중 /
 		# cost_inc_phase) on the card's top-left cost number — green when
 		# reduced below the printed cost, red when increased, white when
@@ -2310,15 +2396,14 @@ func card_has_valid_targets(cd: CardData) -> bool:
 	if cd == null:
 		return false
 	var caster: PilotData = cd.owner_pilot
+	# 시전자 없는 카드(오브젝트 보상)는 사거리라는 개념이 없다 — 아래 compute_*
+	# 헬퍼가 caster == null 을 "전장 전체가 사거리"로 읽는다. 교전(preview)만은
+	# 시전자 칸을 중심으로 참가자를 모으므로 여전히 시전자를 요구한다.
 	match targeting_kind(cd):
 		"pilot":
-			if caster == null:
-				return false
 			var team_filter: int = 1 if cd.target == "enemy" else 0
 			return not compute_valid_pilot_targets(cd, caster, team_filter).is_empty()
 		"location":
-			if caster == null:
-				return false
 			return not compute_valid_location_targets(cd, caster).is_empty()
 		"preview":
 			# engage — require at least one alive participant from each
@@ -2366,39 +2451,51 @@ func targeting_kind(cd: CardData) -> String:
 # Pilots within hex range of caster, on the requested team, alive. Honours the
 # `min_range` flag (e.g. 저격: range 6 with min_range:2 → cells 2..6 hexes
 # from caster). Returns an Array of PilotData.
+#
+# **시전자가 없으면 사거리 판정을 통째로 건너뛴다** — 오브젝트 보상 카드([용
+# 보상])는 누구의 카드도 아니므로 잴 기준점이 없다. 예전에는 여기서 빈 배열을
+# 돌려줬는데, 그러면 `card_has_valid_targets` 가 거짓이 되어 카드가 손패에서
+# 영영 잠긴다.
 func compute_valid_pilot_targets(cd: CardData, caster: PilotData,
 		team: int) -> Array:
 	var out: Array = []
-	if caster == null:
-		return out
+	var unbounded: bool = caster == null
 	var max_r: int = max(0, cd.cast_range)
 	var min_r: int = _clause_int_flag(cd.effect, "min_range", 0)
 	for raw in _bs.pilots:
 		var p := raw as PilotData
 		if not p.alive or p.team != team:
 			continue
-		var d: int = _bs.hex_grid.hex_distance(caster.grid_pos, p.grid_pos)
-		if d > max_r:
-			continue
-		if d < min_r:
-			continue
+		if not unbounded:
+			var d: int = _bs.hex_grid.hex_distance(caster.grid_pos, p.grid_pos)
+			if d > max_r:
+				continue
+			if d < min_r:
+				continue
 		out.append(p)
 	return out
 
 
 # Cells within hex range of caster (alive cells only). 약탈 (capture_jungle)
 # runs on its own rule set — see compute_capture_jungle_targets.
+#
+# **절 검사가 시전자 검사보다 앞에 온다.** [전령 제압](`turret_damage`)은
+# 시전자가 없는 카드이고 대상은 시전자 위치와 무관한 "최외곽 적 포탑"이라,
+# caster == null 로 먼저 걷어 내면 그 카드는 영영 낼 수 없는 카드가 된다.
+# 시전자 기준 반경으로 떨어지는 것은 아래의 일반 경로뿐이다.
 func compute_valid_location_targets(cd: CardData, caster: PilotData) -> Array:
 	var out: Array = []
-	if caster == null:
-		return out
 	# Inspect the effect chain for clauses that constrain the legal set.
 	for clause in _parse_effect_chain(cd.effect):
 		var cname: String = String(clause.get("name", ""))
+		if cname == "turret_damage":
+			return compute_turret_damage_targets(cd, caster)
 		if cname == "capture_jungle":
 			return compute_capture_jungle_targets(caster)
 		if cname == "move" and "own_jungle" in (clause.get("flags", []) as Array):
 			return compute_own_jungle_targets(caster)
+	if caster == null:
+		return out
 	var max_r: int = max(1, cd.cast_range)
 	var seen: Dictionary = {}
 	for col in range(-8, 8):
@@ -2414,6 +2511,39 @@ func compute_valid_location_targets(cd: CardData, caster: PilotData) -> Array:
 				continue
 			out.append(c)
 	return out
+
+
+## [전령 제압](`turret_damage:N`)의 유효 대상 — **레인별로 살아 있는 가장 바깥
+## 적 포탑**이 서 있는 칸. 사거리는 보지 않는다(오브젝트 보상 카드는 시전자가
+## 없어 잴 기준점이 없다).
+##
+## 판정은 `SimulationCore.outermost_enemy_turrets` 하나를 지난다 — 화면에서
+## 초록으로 열리는 칸과 실제로 피해가 들어가는 포탑이 같은 목록에서 나온다.
+func compute_turret_damage_targets(cd: CardData, caster: PilotData) -> Array:
+	var out: Array = []
+	if _bs.sim_core == null:
+		return out
+	var team: int = caster.team if caster != null else card_team(cd)
+	for raw in _bs.sim_core.outermost_enemy_turrets(team):
+		out.append((raw as TurretData).grid_pos)
+	return out
+
+
+## 이 카드가 **어느 팀의 것인가** (0 = 플레이어, 1 = AI). 시전자가 있으면 그
+## 팀이고, 없으면(오브젝트 보상 카드) 카드가 들어 있는 더미로 가린다.
+##
+## AI 쪽 더미 세 곳을 다 보는 이유는 대상 계산이 불리는 시점이 하나가 아니기
+## 때문이다 — 플레이어의 드래그 미리보기(손패), AI 의 사전 대상 선택(손패),
+## 사용 가능 판정(손패). 어디에도 없으면 플레이어 것으로 읽는다: 시전자 없는
+## 카드가 더미 밖에 떠 있는 유일한 순간은 플레이어가 이미 낸 직후다.
+func card_team(cd: CardData) -> int:
+	if cd == null:
+		return 0
+	if cd.owner_pilot != null:
+		return cd.owner_pilot.team
+	if _bs.ai_hand.has(cd) or _bs.ai_deck.has(cd) or _bs.ai_discard.has(cd):
+		return 1
+	return 0
 
 
 # 약탈의 유효 대상 — **적 팀이 소유한 정글 셀 중, 시전자 팀이 소유한 정글 셀과
@@ -2720,7 +2850,7 @@ func _dispose_used_card(cd: CardData, is_player: bool) -> void:
 	if bump >= 0:
 		_return_card_to_hand_left(cd, is_player, bump)
 		return
-	if cd.keyword == "exhaust":
+	if cd.has_keyword(CardData.KW_EXHAUST):
 		return
 	var discard: Array = _bs.player_discard if is_player else _bs.ai_discard
 	discard.append(cd)
@@ -2906,6 +3036,10 @@ func _apply_single_effect(e: Dictionary, is_player: bool, caster: PilotData,
 		"strategy_on_kill":        return _effect_strategy_on_kill(value, is_player)
 		"lane_stat":               return _effect_lane_stat(value, flags, caster)
 		"growth":                  return _effect_growth_rate(value, flags, caster)
+		"growth_perm":             return _effect_growth_perm(value, ally_team,
+				selected_target as PilotData)
+		"turret_damage":           return _effect_turret_damage(value, ally_team,
+				caster, selected_target)
 		"growth_until_phase":      return _effect_growth_until_phase(value, ally_team)
 		"discard_hand":            return _effect_discard_hand(is_player)
 		"discard_hand_draw":       return _effect_discard_hand_draw(is_player)
@@ -2949,9 +3083,10 @@ func _effect_discard(is_player: bool, n: int) -> String:
 	var discard: Array = _bs.player_discard if is_player else _bs.ai_discard
 	var moved: int = 0
 	for i in n:
-		if hand.is_empty():
+		var bag: Array = _discardable(hand)
+		if bag.is_empty():
 			break
-		var pick := hand[randi() % hand.size()] as CardData
+		var pick := bag[randi() % bag.size()] as CardData
 		hand.erase(pick)
 		discard.append(pick)
 		if is_player:
@@ -3344,6 +3479,47 @@ func _effect_growth_rate(pct: int, flags: Array, caster: PilotData) -> String:
 	return "%s 성장 %+d%% (%d턴)" % [_bs.pilot_label(caster), pct, turns]
 
 
+## `growth_perm:N` — [용 보상]. **지정한 아군 파일럿 한 명**의 성장 적립 배율에
+## N%p 를 **영구로 누적**한다. 만료도 해제도 없다.
+##
+## `growth_rate_mult`(안전한 파밍 / 완벽한 마무리가 서로 덮어쓰는 슬롯)이 아니라
+## `growth_rate_bonus` 에 얹는 이유가 그 누적이다 — 슬롯에 넣으면 용을 다섯 번
+## 먹어도 +10% 에서 멈추고, 그 뒤에 라인전 카드 한 장이 그걸 지운다.
+##
+## 대상이 없으면(파일럿이 그 사이 쓰러졌다) 아무 일도 하지 않는다. 카드 자체는
+## 이미 소비된 뒤이므로 여기서 되돌릴 것은 없다.
+func _effect_growth_perm(pct: int, ally_team: int, picked: PilotData) -> String:
+	var target: PilotData = picked
+	if target == null or not target.alive or target.team != ally_team:
+		return "성장 효율 (대상 없음)"
+	target.growth_rate_bonus += float(pct) / 100.0
+	_bs.blog.log_event("GROWTH", "%-4s 성장 효율 %+d%% (영구, 누적 %+d%%)" % [
+			_bs.pilot_label(target), pct,
+			roundi(target.growth_rate_bonus * 100.0)])
+	return "%s 성장 효율 %+d%% (영구)" % [_bs.pilot_label(target), pct]
+
+
+## `turret_damage:N` — [전령 제압]. 찍은 칸의 포탑에 **명중 판정 없이** N 피해.
+##
+## 유효 대상은 `compute_turret_damage_targets` 가 이미 최외곽 포탑으로 좁혀 두지만
+## 여기서 한 번 더 확인한다: 카드를 든 뒤 확정 전까지 전장 턴이 돌 수는 없어도,
+## 같은 작전 단계 안에서 앞서 낸 카드(전진 / 공격)가 그 포탑을 무너뜨렸을 수는
+## 있다. 그러면 이 절은 조용히 아무것도 하지 않는다.
+func _effect_turret_damage(n: int, ally_team: int, caster: PilotData,
+		picked: Variant) -> String:
+	if n <= 0 or not (picked is Vector2i):
+		return "포탑 피해 (대상 없음)"
+	var td: TurretData = _bs.sim_core.turret_at_cell(picked as Vector2i)
+	if td == null or td.team == ally_team:
+		return "포탑 피해 (대상 없음)"
+	if not _bs.sim_core.outermost_enemy_turrets(ally_team).has(td):
+		return "포탑 피해 (최외곽 포탑 아님)"
+	var log_lines: Array = []
+	_bs.sim_core.apply_card_turret_damage(td, n, caster, log_lines)
+	_bs.renderer.queue_redraw()
+	return "T%d %s 포탑 −%d" % [td.tier, _bs.LANE_NAMES[td.lane], n]
+
+
 ## `growth_until_phase:N` — 완벽한 마무리. 시전자 **팀 전원**의 성장 획득 배율을
 ## 올리고, 그 팀의 다음 작전 단계 진입 시 `_apply_phase_entry_carryovers` 가 걷는다.
 func _effect_growth_until_phase(pct: int, ally_team: int) -> String:
@@ -3360,20 +3536,38 @@ func _effect_growth_until_phase(pct: int, ally_team: int) -> String:
 
 
 # ─── 손패 조작 카드 ──────────────────────────────────────────────────────────
-# 아래 강제 버리기들은 **계획 중시의 보존을 무시한다** — 보존은 상한 초과
-# 자동 버리기(`_trim_hand_overflow`)로부터만 지켜 준다.
+# 아래 강제 버리기들은 **계획 중시의 보존을 무시한다** — 그 보존(`preserve:N`
+# 효과, `BattleSim.preserved_cards_*`)은 상한 초과 자동 버리기로부터만 지켜 준다.
+#
+# **`보존` 키워드는 다르다.** 카드 자신이 달고 있는 것이라 강제 버리기도 뚫지
+# 못한다 — 그래서 이 절 전체가 `_discardable()` 로 손패를 거른다. 오브젝트
+# 보상은 한 매치에 한 장 나오는 카드이므로 재고 한 번에 날아가면 안 된다.
+
+## 지금 버릴 수 있는 손패 카드들 — `보존` 키워드를 단 카드는 빠진다.
+## 강제 버리기 계열이 전부 이 한 함수를 지나므로 규칙이 한 군데에만 산다.
+func _discardable(hand: Array) -> Array:
+	var out: Array = []
+	for raw in hand:
+		var cd := raw as CardData
+		if cd != null and cd.is_preserved_by_keyword():
+			continue
+		out.append(cd)
+	return out
+
 
 ## Moves the whole hand to the discard pile. Returns how many cards moved.
+## `보존` 키워드 카드는 손패에 그대로 남는다.
 func _discard_whole_hand(is_player: bool) -> int:
 	var hand:    Array = _bs.player_hand    if is_player else _bs.ai_hand
 	var discard: Array = _bs.player_discard if is_player else _bs.ai_discard
-	var moved: int = hand.size()
-	for raw in hand.duplicate():
+	var moved: int = 0
+	for raw in _discardable(hand):
 		var cd := raw as CardData
+		hand.erase(cd)
 		discard.append(cd)
 		if is_player:
 			_despawn_player_card_node(cd)
-	hand.clear()
+		moved += 1
 	return moved
 
 
@@ -3401,14 +3595,20 @@ func _effect_discard_hand_draw(is_player: bool) -> String:
 
 
 ## 과감한 정리 — 손패 **오른쪽**(가장 최근에 들어온 쪽) N장을 버린다.
+## `보존` 키워드 카드는 건너뛰고 그 다음 카드를 대신 버린다(자리를 지킨 채 남는다).
 func _effect_discard_right(is_player: bool, n: int) -> String:
 	var hand:    Array = _bs.player_hand    if is_player else _bs.ai_hand
 	var discard: Array = _bs.player_discard if is_player else _bs.ai_discard
 	var moved: int = 0
+	var scan: int = hand.size() - 1
 	for _i in n:
-		if hand.is_empty():
+		while scan >= 0 and (hand[scan] as CardData).is_preserved_by_keyword():
+			scan -= 1
+		if scan < 0:
 			break
-		var cd := hand.pop_back() as CardData
+		var cd := hand[scan] as CardData
+		hand.remove_at(scan)
+		scan -= 1
 		discard.append(cd)
 		if is_player:
 			_despawn_player_card_node(cd)
@@ -3431,6 +3631,11 @@ func _effect_discard_other_pilots(flags: Array, is_player: bool,
 	for raw in hand.duplicate():
 		var cd := raw as CardData
 		if cd.owner_pilot == caster:
+			continue
+		# 시전자가 없는 카드(오브젝트 보상)는 "다른 파일럿의 카드"가 아니다 —
+		# 애초에 주인이 없으므로 이 카드가 걷어 갈 대상이 아니고, `보존`
+		# 키워드도 강제 버리기를 막는다.
+		if cd.owner_pilot == null or cd.is_preserved_by_keyword():
 			continue
 		hand.erase(cd)
 		discard.append(cd)

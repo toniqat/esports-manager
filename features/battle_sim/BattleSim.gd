@@ -168,6 +168,28 @@ var ECONOMY_START_TURN:      int   = 1
 ## 대신 포탑 체력이 16 까지 내려와 무방비면 8턴에 철거된다.
 var PILOT_STRUCTURE_DMG:     int   = 2
 
+# ─── 오브젝트 (전령 / 용) ────────────────────────────────────────────────────
+# 좌측 중립 칸에 전령, 우측 중립 칸에 용이 정해진 턴에 열린다. 자세한 규칙은
+# `objective/README.md`. 여기 있는 것은 전부 `game_config` 노브다.
+## 전령이 처음 열리는 턴.
+var OBJ_HERALD_FIRST_TURN:   int   = 12
+## 용이 처음 열리는 턴.
+var OBJ_DRAGON_FIRST_TURN:   int   = 15
+## **결판이 난 뒤** 같은 오브젝트가 다시 열리기까지의 턴 수. 한 팀이 가져갔든
+## 교전 끝에 아무도 못 가져갔든 같은 값이다 — 자리는 소모되지 않는다.
+var OBJ_RESPAWN_TURNS:       int   = 15
+## **양 팀이 모두 미참여**해서 무산됐을 때의 재시도 간격. 결판 간격보다 짧다:
+## 아무 일도 일어나지 않았으므로 자원을 그만큼 오래 재워 둘 이유가 없다.
+var OBJ_RETRY_TURNS:         int   = 10
+## 오브젝트 교전의 라운드 수. 카드 전투 개시(3) 보다 길다.
+var OBJ_ENGAGE_ROUNDS:       int   = 4
+## [전령 제압] 카드가 최외곽 적 포탑에 넣는 고정 피해.
+var OBJ_HERALD_TURRET_DMG:   int   = 8
+## 용을 가져간 팀의 덱에 섞여 들어가는 [용 보상] 카드 장수.
+var OBJ_DRAGON_CARD_COUNT:   int   = 5
+## [용 보상] 한 장이 지정한 파일럿에게 **영구로** 얹는 성장 적립 배율(%).
+var OBJ_DRAGON_GROWTH_PCT:   int   = 10
+
 # Derived after DB load
 var PLAYER_HQ_POS: Vector2i = Vector2i.ZERO
 var ENEMY_HQ_POS:  Vector2i = Vector2i.ZERO
@@ -333,6 +355,11 @@ var engage_phase: EngagePhaseManager = null
 # 상대 차례(CardPhaseManager._run_ai_turn) 안에서 await로 한 장씩 차례대로
 # 보여 준다. lazy-add.
 var ai_card_player: AiCardPlayer = null
+# 오브젝트(전령 / 용) — 좌우 중립 칸에서 정해진 턴마다 열리는 교전 사건.
+# 시계 · 참여 결정 · 정산을 전부 들고 있다. 턴 진입점은
+# `CardPhaseManager.do_battle_turn` 하나뿐이다. `objective/README.md` 참고.
+# lazy-add in _ready().
+var objective: ObjectiveSystem = null
 # 전투 행동 로거 — 모든 좌표 변화 / 교전 / 카드 사용을 콘솔 + user:// 파일에
 # 남기고, 턴 경계에서 적 파일럿 간 교차(cross-over)를 자동 감지한다.
 # `debug/BattleLogger.gd` 참고. lazy-add in _ready() after pilots spawn.
@@ -408,6 +435,12 @@ func _ready() -> void:
 	ai_card_player.name = "AiCardPlayer"
 	add_child(ai_card_player)
 	ai_card_player.bind(self)
+	# 오브젝트 시계 — 첫 등장 턴이 game_config 에서 오므로
+	# `_populate_from_data_loader()` 뒤라야 한다.
+	objective = ObjectiveSystem.new()
+	objective.name = "ObjectiveSystem"
+	add_child(objective)
+	objective.init_objectives()
 	# Lane assignment is fixed by role; jungle direction comes from MatchFlow
 	# (or default LEFT when running BattleSim standalone).
 	_gambit.auto_assign_lanes()
@@ -483,6 +516,14 @@ func _populate_from_data_loader() -> void:
 	PHASE_THRESHOLD         = int(cfg.get("PHASE_THRESHOLD", "8"))
 	ECONOMY_START_TURN      = max(1, int(cfg.get("ECONOMY_START_TURN", "1")))
 	PILOT_STRUCTURE_DMG     = max(1, int(cfg.get("PILOT_STRUCTURE_DMG", "2")))
+	OBJ_HERALD_FIRST_TURN   = max(1, int(cfg.get("OBJ_HERALD_FIRST_TURN", "12")))
+	OBJ_DRAGON_FIRST_TURN   = max(1, int(cfg.get("OBJ_DRAGON_FIRST_TURN", "15")))
+	OBJ_RESPAWN_TURNS       = max(1, int(cfg.get("OBJ_RESPAWN_TURNS", "15")))
+	OBJ_RETRY_TURNS         = max(1, int(cfg.get("OBJ_RETRY_TURNS", "10")))
+	OBJ_ENGAGE_ROUNDS       = max(1, int(cfg.get("OBJ_ENGAGE_ROUNDS", "4")))
+	OBJ_HERALD_TURRET_DMG   = max(1, int(cfg.get("OBJ_HERALD_TURRET_DMG", "8")))
+	OBJ_DRAGON_CARD_COUNT   = max(1, int(cfg.get("OBJ_DRAGON_CARD_COUNT", "5")))
+	OBJ_DRAGON_GROWTH_PCT   = max(0, int(cfg.get("OBJ_DRAGON_GROWTH_PCT", "10")))
 	# Init counters so first event fires on turn 1
 	draw_counter = CARD_DRAW_INTERVAL - 1
 	cost_counter = COST_RECOVERY_INTERVAL - 1
@@ -533,7 +574,7 @@ func _process(delta: float) -> void:
 	# tick until the player presses "단계 넘기기"; the AI's own turn runs *inside*
 	# BATTLE (CardPhaseManager._run_ai_turn) and holds the tick the same way.
 	if not game_over and game_phase == GameEnums.BattlePhase.BATTLE \
-			and not _ai_turn_active():
+			and not _battle_tick_held():
 		auto_play_timer -= delta
 		if auto_play_timer <= 0.0:
 			auto_play_timer = AUTO_PLAY_INTERVAL
@@ -556,13 +597,29 @@ func _ai_turn_active() -> bool:
 	return card_phase != null and card_phase.is_ai_turn_active()
 
 
+## **BATTLE 안에서 시뮬레이션을 붙잡고 있는 것이 있는가.** `game_phase` 를 바꾸지
+## 않은 채 턴을 멈추는 사유가 둘이다.
+##
+##   • 상대 차례 — `CardPhaseManager._run_ai_turn` 이 BATTLE 안에서 돈다.
+##   • 오브젝트 — 참여 / 미참여 결정 창이 떠 있는 동안은 아직 BATTLE 이다
+##     (뒤이어 열리는 교전 무대는 `game_phase = ENGAGE` 로도 막히지만, 그 앞의
+##     결정 구간은 이 가드만이 막는다).
+##
+## 자동 틱과 MM:SS 시계가 같은 답을 읽어야 화면의 시간과 실제 턴이 어긋나지
+## 않는다.
+func _battle_tick_held() -> bool:
+	if _ai_turn_active():
+		return true
+	return objective != null and objective.is_busy()
+
+
 # Smooth in-game seconds, derived from completed turns + fractional progress
 # through the current 0.5s real-time tick. 1 turn = 1 in-game minute = 60 sec.
 # Frozen during CARD_PHASE / 상대 차례 / game_over so the clock matches the
 # paused sim.
 func get_elapsed_ingame_seconds() -> int:
 	var base: int = turn_count * 60
-	if game_over or game_phase != GameEnums.BattlePhase.BATTLE or _ai_turn_active():
+	if game_over or game_phase != GameEnums.BattlePhase.BATTLE or _battle_tick_held():
 		return base
 	var frac: float = clamp(1.0 - auto_play_timer / AUTO_PLAY_INTERVAL, 0.0, 1.0)
 	return base + int(frac * 60.0)
@@ -720,7 +777,13 @@ const SCORE_FRONTLINE_PER_TURN: float = 0.50
 ##
 ## 적 정글까지 점령하면 돌 캠프가 늘어 라이너를 추월한다 — 그것이 정글 점령의
 ## 값이고, 이 상수는 **점령이 없는 하한선**을 라이너와 나란히 놓을 뿐이다.
-const SCORE_JUNGLE_CAMP: float = 0.98
+##
+## **좌우 중립 칸이 오브젝트 자리가 되면서 0.98 → 1.15 로 올렸다.** 캠프가 서는
+## 칸이 14칸(정글 12 + 중립 2)에서 12칸으로 줄었으므로, 정글러의 순회 수입도
+## 같은 비율로 줄어든다. 0.98 × 14/12 ≈ 1.15 — 잃은 몫만 정확히 되돌려 놓는
+## 값이다. 전령 / 용은 그 위에 얹히는 **추가** 이득이지, 정글러가 원래 먹던
+## 수입을 되찾는 수단이 아니다.
+const SCORE_JUNGLE_CAMP: float = 1.15
 ## 캠프가 다시 차오르기까지의 턴 수. 4턴은 한쪽 정글(4칸)에서 **매 턴 정확히
 ## 한 칸**이 되살아나 정글러가 발밑을 뜰 이유가 없었다 — 6턴이면 그 칸이
 ## 비어 있는 구간이 생겨 반대쪽으로 넘어가는 순회가 강제된다.
@@ -770,7 +833,10 @@ func add_score(p: PilotData, delta: float) -> void:
 	if p == null or is_zero_approx(delta):
 		return
 	if delta > 0.0:
-		delta *= p.growth_rate_mult
+		# 만료형 슬롯(`growth_rate_mult`) + 영구 가산분(`growth_rate_bonus`, 용
+		# 보상). 둘을 합쳐 한 번에 곱하므로 라인전 카드가 오브젝트 보상을
+		# 덮어쓰지 않는다 — PilotData.growth_rate_bonus 주석 참조.
+		delta *= p.growth_rate_mult + p.growth_rate_bonus
 	p.score = maxf(SCORE_MIN, p.score + delta)
 	refresh_growth_stats(p)
 

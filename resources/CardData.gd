@@ -6,6 +6,19 @@ const SCOPE_ANY    := "any"      # 누구나 가질 수 있음
 const SCOPE_LANE   := "lane"     # 레인 파일럿 전용 (전진 등)
 const SCOPE_JUNGLE := "jungle"   # 정글러 전용 (약탈 등)
 
+# 키워드 (cards.csv `keyword` 컬럼). **`|` 로 여러 개를 붙일 수 있다** —
+# 전령 제압은 `exhaust|preserve` 로 "한 번 쓰면 소멸하되 그때까지는 절대
+# 버려지지 않는다"를 함께 단다. 판정은 언제나 `has_keyword()` 를 지나야 한다:
+# `keyword == "exhaust"` 로 문자열을 통째로 비교하면 두 번째 키워드가 붙는
+# 순간 첫 번째가 조용히 꺼진다.
+const KW_EXHAUST  := "exhaust"    # 사용 후 소멸 (덱으로도 discard 로도 안 감)
+## 보존 — **버려지지 않는다.** 손패 상한 초과 자동 버리기도, 버리기 계열 카드
+## (재고 / 완벽한 마무리 / 과감한 정리 / 솔로 퍼포먼스 / 버리기:N)도 이 카드를
+## 건너뛴다. 오브젝트 보상처럼 "쓸 때를 골라야 하는" 한정 카드를 위한 것이라
+## 작전 단계 한 번짜리인 계획 중시(`preserve:N` 효과)와는 수명이 다르다 —
+## 그쪽은 `BattleSim.preserved_cards_*` 목록, 이쪽은 카드 자신의 키워드다.
+const KW_PRESERVE := "preserve"
+
 # 카드 종류 (cards.csv `card_type` 컬럼). 덱은 파일럿마다 메크 카드
 # `MECH_CARDS_PER_PILOT` 장 + 파일럿 카드 `PILOT_CARDS_PER_PILOT` 장으로 돌아간다.
 const TYPE_MECH  := "mech"    # 메크에 붙는 카드 (공격 / 전진 / 전투 개시 …)
@@ -28,7 +41,7 @@ const CAT_COMMON := "common"
 @export var target: String = "hand"       # caster / enemy / ally / pilot / hand / location
 @export var cast_range: int = 0           # tiles from caster (0 = self, 99 = unbounded)
 @export var area: int = 0                 # AoE radius around target (0 = single)
-@export var keyword: String = ""          # "" or "exhaust"
+@export var keyword: String = ""          # `|` 로 구분된 키워드 목록 — has_keyword() 로만 읽는다
 @export var effect: String = ""           # semicolon list, e.g. "draw:2;discard:2"
 @export var description: String = ""
 # 시전자 제약. CardPhaseManager.build_starter_decks 가 파일럿별 미니덱을 돌릴
@@ -53,6 +66,23 @@ func _init(p_name: String = "", p_cost: int = 1, p_desc: String = "") -> void:
 	card_name = p_name
 	cost = p_cost
 	description = p_desc
+
+
+## 이 카드가 `kw` 키워드를 달고 있는가. `keyword` 컬럼은 `|` 로 구분된 목록이라
+## 문자열 비교가 아니라 반드시 이 함수를 지나야 한다. 공백은 CSV 손질 실수를
+## 흡수하려고 걷어 낸다.
+func has_keyword(kw: String) -> bool:
+	if keyword.is_empty():
+		return false
+	for raw in keyword.split("|", false):
+		if (raw as String).strip_edges() == kw:
+			return true
+	return false
+
+
+## 손패에서 강제로 버려지지 않는 카드인가 — `KW_PRESERVE` 주석 참조.
+func is_preserved_by_keyword() -> bool:
+	return has_keyword(KW_PRESERVE)
 
 
 ## True when a pilot of the given kind may own this card. 정글러는 any + jungle,

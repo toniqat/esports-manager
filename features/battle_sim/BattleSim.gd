@@ -171,16 +171,20 @@ var PILOT_STRUCTURE_DMG:     int   = 2
 # ─── 오브젝트 (전령 / 용) ────────────────────────────────────────────────────
 # 좌측 중립 칸에 전령, 우측 중립 칸에 용이 정해진 턴에 열린다. 자세한 규칙은
 # `objective/README.md`. 여기 있는 것은 전부 `game_config` 노브다.
-## 전령이 처음 열리는 턴.
-var OBJ_HERALD_FIRST_TURN:   int   = 12
-## 용이 처음 열리는 턴.
-var OBJ_DRAGON_FIRST_TURN:   int   = 15
+## 전령이 처음 열리는 턴. **용보다 10턴 늦다** — 두 오브젝트가 같은 구간에
+## 겹쳐 열리면 정글러와 중앙이 양쪽에 끌려다니느라 어느 쪽도 결정이 되지 않는다.
+## 순서를 용 먼저로 둔 이유는 보상의 성격이다: 용은 경기 내내 천천히 도는 성장
+## 이득이라 일찍 먹을수록 값이 커지고, 전령의 포탑 8 피해는 늦게 먹어도 값이
+## 그대로다.
+var OBJ_HERALD_FIRST_TURN:   int   = 35
+## 용이 처음 열리는 턴. **두 오브젝트 중 먼저 열린다.**
+var OBJ_DRAGON_FIRST_TURN:   int   = 25
 ## **결판이 난 뒤** 같은 오브젝트가 다시 열리기까지의 턴 수. 한 팀이 가져갔든
 ## 교전 끝에 아무도 못 가져갔든 같은 값이다 — 자리는 소모되지 않는다.
-var OBJ_RESPAWN_TURNS:       int   = 15
+var OBJ_RESPAWN_TURNS:       int   = 20
 ## **양 팀이 모두 미참여**해서 무산됐을 때의 재시도 간격. 결판 간격보다 짧다:
 ## 아무 일도 일어나지 않았으므로 자원을 그만큼 오래 재워 둘 이유가 없다.
-var OBJ_RETRY_TURNS:         int   = 10
+var OBJ_RETRY_TURNS:         int   = 15
 ## 오브젝트 교전의 라운드 수. 카드 전투 개시(3) 보다 길다.
 var OBJ_ENGAGE_ROUNDS:       int   = 4
 ## [전령 제압] 카드가 최외곽 적 포탑에 넣는 고정 피해.
@@ -516,10 +520,10 @@ func _populate_from_data_loader() -> void:
 	PHASE_THRESHOLD         = int(cfg.get("PHASE_THRESHOLD", "8"))
 	ECONOMY_START_TURN      = max(1, int(cfg.get("ECONOMY_START_TURN", "1")))
 	PILOT_STRUCTURE_DMG     = max(1, int(cfg.get("PILOT_STRUCTURE_DMG", "2")))
-	OBJ_HERALD_FIRST_TURN   = max(1, int(cfg.get("OBJ_HERALD_FIRST_TURN", "12")))
-	OBJ_DRAGON_FIRST_TURN   = max(1, int(cfg.get("OBJ_DRAGON_FIRST_TURN", "15")))
-	OBJ_RESPAWN_TURNS       = max(1, int(cfg.get("OBJ_RESPAWN_TURNS", "15")))
-	OBJ_RETRY_TURNS         = max(1, int(cfg.get("OBJ_RETRY_TURNS", "10")))
+	OBJ_HERALD_FIRST_TURN   = max(1, int(cfg.get("OBJ_HERALD_FIRST_TURN", "35")))
+	OBJ_DRAGON_FIRST_TURN   = max(1, int(cfg.get("OBJ_DRAGON_FIRST_TURN", "25")))
+	OBJ_RESPAWN_TURNS       = max(1, int(cfg.get("OBJ_RESPAWN_TURNS", "20")))
+	OBJ_RETRY_TURNS         = max(1, int(cfg.get("OBJ_RETRY_TURNS", "15")))
 	OBJ_ENGAGE_ROUNDS       = max(1, int(cfg.get("OBJ_ENGAGE_ROUNDS", "4")))
 	OBJ_HERALD_TURRET_DMG   = max(1, int(cfg.get("OBJ_HERALD_TURRET_DMG", "8")))
 	OBJ_DRAGON_CARD_COUNT   = max(1, int(cfg.get("OBJ_DRAGON_CARD_COUNT", "5")))

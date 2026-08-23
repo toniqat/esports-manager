@@ -23,7 +23,8 @@ const SCHEMAS: Dictionary = {
 	"cards":       {"req": ["id","name","cost","uses","cast_method","target","cast_range","area","keyword","effect","description","scope","pool","card_type","card_cat","excl_group"], "pk": "id"},
 	"game_config": {"req": ["key","value"],                                     "pk": "key"},
 	"lane_config": {"req": ["lane_id","name","max_pilots","mid_col","mid_row"], "pk": "lane_id"},
-	"players":     {"req": ["id","team_id","name","role","laning","mechanics","gamesense","teamfight","mental"], "pk": "id"},
+	"players":     {"req": ["id","team_id","name","role","laning","mechanics","gamesense","teamfight","mental","skill_id"], "pk": "id"},
+	"pilot_skills": {"req": ["id","key","name","role","type","p1","p2","keyword","description"], "pk": "id"},
 	"mechs":       {"req": ["id","name","hp","atk","presence"],                 "pk": "id"},
 	"teams":       {"req": ["id","name","short_name"],                          "pk": "id"},
 	"intl_teams":   {"req": ["id","name","short_name"],                         "pk": "id"},
@@ -90,6 +91,26 @@ const TABLE_DEFS: Dictionary = {
 		"gamesense": {"data_type": "int",  "not_null": true},
 		"teamfight": {"data_type": "int",  "not_null": true},
 		"mental":    {"data_type": "int",  "not_null": true},
+		# 이 파일럿의 고유 파일럿 스킬 id(pilot_skills.id). -1 = 없음(모브).
+		"skill_id":  {"data_type": "int",  "not_null": true},
+	},
+	"pilot_skills": {
+		"id":          {"data_type": "int",  "primary_key": true, "not_null": true},
+		# 런타임 분기 키(snake_case). 스킬 하나하나가 고유 효과라 효과 문법을
+		# 만드는 대신 이 키로 갈라 쓴다 — PilotSkillSystem 이 소비한다.
+		"key":         {"data_type": "text", "not_null": true},
+		"name":        {"data_type": "text", "not_null": true},
+		# GameEnums.Role. 스킬은 라인(역할)에 묶여 있으므로 같은 역할의
+		# 파일럿에게만 붙는다.
+		"role":        {"data_type": "int",  "not_null": true},
+		# cooldown / charge / passive
+		"type":        {"data_type": "text", "not_null": true},
+		# cooldown = 재사용까지의 턴 수, charge = 활성화에 드는 충전 수.
+		"p1":          {"data_type": "int",  "not_null": true},
+		# 최대 충전 수(0 = 충전 없음).
+		"p2":          {"data_type": "int",  "not_null": true},
+		"keyword":     {"data_type": "text", "not_null": true},
+		"description": {"data_type": "text", "not_null": true},
 	},
 	"mechs": {
 		"id":       {"data_type": "int",  "primary_key": true, "not_null": true},

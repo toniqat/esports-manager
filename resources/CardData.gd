@@ -18,6 +18,13 @@ const KW_EXHAUST  := "exhaust"    # 사용 후 소멸 (덱으로도 discard 로�
 ## 작전 단계 한 번짜리인 계획 중시(`preserve:N` 효과)와는 수명이 다르다 —
 ## 그쪽은 `BattleSim.preserved_cards_*` 목록, 이쪽은 카드 자신의 키워드다.
 const KW_PRESERVE := "preserve"
+## 휘발성 — **버려질 때 버린 더미로 가지 않고 그 자리에서 사라진다.** 파일럿
+## 스킬이 손패에 직접 만들어 주는 카드들이 단다(배회의 [이동], 복귀 명령의
+## [복귀], 격전의 [전투 개시], 약탈자의 [약탈], 공격적인 전진의 [전진]).
+## `KW_EXHAUST` 와 짝이지 같은 것이 아니다 — 소멸은 **쓰면** 사라지는 것이고
+## 휘발성은 **안 쓰고 버려지면** 사라지는 것이라, 스킬이 준 카드는 어느 쪽으로도
+## 덱을 불리지 않는다. 판정은 `CardPhaseManager.send_to_discard` 한 곳을 지난다.
+const KW_VOLATILE := "volatile"
 
 # 카드 종류 (cards.csv `card_type` 컬럼). 덱은 파일럿마다 메크 카드
 # `MECH_CARDS_PER_PILOT` 장 + 파일럿 카드 `PILOT_CARDS_PER_PILOT` 장으로 돌아간다.
@@ -89,6 +96,11 @@ func has_keyword(kw: String) -> bool:
 ## 손패에서 강제로 버려지지 않는 카드인가 — `KW_PRESERVE` 주석 참조.
 func is_preserved_by_keyword() -> bool:
 	return has_keyword(KW_PRESERVE)
+
+
+## 버려질 때 버린 더미로 가지 않고 사라지는 카드인가 — `KW_VOLATILE` 주석 참조.
+func is_volatile() -> bool:
+	return has_keyword(KW_VOLATILE)
 
 
 ## True when a pilot of the given kind may own this card. 정글러는 any + jungle,

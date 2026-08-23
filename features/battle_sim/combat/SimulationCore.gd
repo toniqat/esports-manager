@@ -197,6 +197,11 @@ func simulate_turn() -> void:
 	_bs.blog.stage("8-income")
 	award_frontline_income()
 	process_jungle_camps()
+	# 9. 파일럿 스킬의 턴 박자 — 매 턴 충전(축적 · 신예)과 만료형 두 개
+	#    (사냥의 보상 · 위치 고정)를 여기서 굴린다. 수입 **뒤**라야 이번 턴에
+	#    막 만료된 적립 배율이 이번 턴 수입까지는 먹인다.
+	if _bs.skill != null:
+		_bs.skill.on_turn_advanced()
 	if not log_lines.is_empty(): _bs.last_log = log_lines[0]
 	check_win_condition()
 	_bs.blog.end_turn()
@@ -509,11 +514,11 @@ func _resolve_pilot_combat(t0: Array, t1: Array,
 		var hit_a := roll_hit(a, b)
 		var hit_b := roll_hit(b, a)
 		if hit_a:
-			var dmg_a := _pilot_hit_damage(a)
+			var dmg_a := _pilot_hit_damage(a, b)
 			_credit_pilot_damage(a, b, dmg_a, damage_map)
 			log_lines.append("%s→%s:%d" % [_bs.pilot_label(a), _bs.pilot_label(b), dmg_a])
 		if hit_b:
-			var dmg_b := _pilot_hit_damage(b)
+			var dmg_b := _pilot_hit_damage(b, a)
 			_credit_pilot_damage(b, a, dmg_b, damage_map)
 			log_lines.append("%s→%s:%d" % [_bs.pilot_label(b), _bs.pilot_label(a), dmg_b])
 		if hit_a and not hit_b:
@@ -594,12 +599,12 @@ func _apply_turret_siege(attackers: Array, defenders: Array, td: TurretData,
 		var a := atk_sorted[i] as PilotData
 		var d := def_sorted[i] as PilotData
 		if roll_hit(a, d):
-			var dmg_a := _pilot_hit_damage(a)
+			var dmg_a := _pilot_hit_damage(a, d)
 			_credit_pilot_damage(a, d, dmg_a, damage_map)
 			log_lines.append("%s→%s:%d (attacker)" % [
 					_bs.pilot_label(a), _bs.pilot_label(d), dmg_a])
 		if roll_hit(d, a):
-			var dmg_d := _pilot_hit_damage(d)
+			var dmg_d := _pilot_hit_damage(d, a)
 			_credit_pilot_damage(d, a, dmg_d, damage_map)
 			log_lines.append("%s→%s:%d (defender)" % [
 					_bs.pilot_label(d), _bs.pilot_label(a), dmg_d])
@@ -618,9 +623,15 @@ func _apply_turret_siege(attackers: Array, defenders: Array, td: TurretData,
 # 공격자의 `hit` 과 방어자의 `evasion` 에 **각자 자기 배율**이 곱해지므로,
 # 공격적인 라인전(+10%)을 건 파일럿은 때릴 때 더 잘 맞히고 맞을 때 더 잘 피한다.
 # `atk` / `max_hp` 는 여기서 손대지 않는다 — 그쪽은 성장이 담당한다.
+## 전장 명중 판정. 라인전 스탯(카드 · 스킬)에 더해 **파일럿 스킬의 명중 / 회피
+## 배율**(노련함 · 몰아치기 · 퍼포먼스)이 여기서 한 번에 곱해진다 — 판정이 한
+## 곳뿐이라 전장 자동 교전과 공격 카드가 같은 값을 본다.
 func roll_hit(attacker: PilotData, defender: PilotData) -> bool:
-	var num := float(lane_adjusted(attacker.hit, attacker))
-	var den := num + float(lane_adjusted(defender.evasion, defender))
+	var sk: PilotSkillSystem = _bs.skill
+	var hit_m: float = sk.hit_mult(attacker)      if sk != null else 1.0
+	var eva_m: float = sk.evasion_mult(defender)  if sk != null else 1.0
+	var num := float(lane_adjusted(attacker.hit, attacker)) * hit_m
+	var den := num + float(lane_adjusted(defender.evasion, defender)) * eva_m
 	if den <= 0.0: return false
 	return randf() < (num / den)
 
@@ -628,9 +639,16 @@ func roll_hit(attacker: PilotData, defender: PilotData) -> bool:
 ## 라인전 스탯 배율을 먹인 hit / evasion 값. 최소 1 을 보장해 −100% 같은 값이
 ## 판정을 0으로 무너뜨리지 않게 한다.
 func lane_adjusted(stat_value: int, p: PilotData) -> int:
-	if p == null or is_zero_approx(p.lane_stat_mod):
+	if p == null:
 		return stat_value
-	return maxi(1, roundi(float(stat_value) * (1.0 + p.lane_stat_mod)))
+	# 카드가 미는 `lane_stat_mod` 와 스킬이 미는 가산분(백본 · 위치 고정)을
+	# 합쳐 한 번에 곱한다 — 둘은 서로를 덮어쓰지 않는다.
+	var mod: float = p.lane_stat_mod
+	if _bs.skill != null:
+		mod += _bs.skill.lane_stat_add(p)
+	if is_zero_approx(mod):
+		return stat_value
+	return maxi(1, roundi(float(stat_value) * (1.0 + mod)))
 
 
 # 명중 1회가 **파일럿에게** 넣는 전장 피해. `BattleSim.BATTLE_PILOT_DMG_MULT`
@@ -644,8 +662,17 @@ func lane_adjusted(stat_value: int, p: PilotData) -> int:
 # 원래는 `damage_map` 에 `atk` 를 그대로 더했다. atk 28 짜리 상대와 max_hp 75
 # 인 스나이퍼가 붙으면 한 대가 최대 체력의 37% 라, 복귀선(20%) 위에서 곧장
 # 0 으로 떨어져 **복귀할 구간 자체가 존재하지 않았다**.
-func _pilot_hit_damage(attacker: PilotData) -> int:
-	return maxi(1, roundi(float(attacker.atk) * _bs.BATTLE_PILOT_DMG_MULT))
+##
+## **파일럿 스킬의 피해 배율**(불안정한 대포)이 여기서 양방향으로 곱해진다 —
+## 주는 쪽과 받는 쪽이 각자 자기 배율을 갖고, 둘 다 이 카드를 들었으면 둘 다
+## 곱해진다. 그래서 `victim` 을 받는다.
+func _pilot_hit_damage(attacker: PilotData, victim: PilotData = null) -> int:
+	var dmg: float = float(attacker.atk) * _bs.BATTLE_PILOT_DMG_MULT
+	if _bs.skill != null:
+		dmg *= _bs.skill.damage_out_mult(attacker)
+		if victim != null:
+			dmg *= _bs.skill.damage_in_mult(victim)
+	return maxi(1, roundi(dmg))
 
 
 ## 판정 단계에서 나온 파일럿 피해 한 건을 `damage_map` 에 쌓고, 같은 자리에서

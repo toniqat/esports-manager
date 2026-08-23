@@ -5,7 +5,7 @@
 | `HudBuilder.gd` | HudBuilder | Builds and updates the whole battle HUD |
 | `CostDonut.gd`  | CostDonut  | 전략 포인트 ring gauge; the player's one doubles as the 턴 넘기기 button |
 | `CardPileStack.gd` | CardPileStack | 덱 / 버린 더미 — 앞으로 누운 카드 뭉치 + 장수 |
-| `PilotStrip.gd` | PilotStrip | 파일럿 5인 스트립 — 눈높이 초상화 + 체력 바 + 성장치. 상단(적) / 하단(아군) 두 벌, **양쪽 다 누르면 상세가 열린다** |
+| `PilotStrip.gd` | PilotStrip | 파일럿 5인 스트립 — 눈높이 초상화 + 체력 바 + 성장치. 상단(적) / 하단(아군) 두 벌, **양쪽 다 누르면 상세가 열린다**. 아군 칸에는 **파일럿 스킬 준비도 딤 + 숫자**가 얹힌다 |
 | `ObjectiveTimer.gd` | ObjectiveTimer | 오브젝트 등장 시계 — 적 스트립 양옆에 아이콘 + 남은 턴(좌 전령 / 우 용). **누르면 보상 팝업이 열린다** |
 | `ObjectiveRewardPopup.gd` | ObjectiveRewardPopup | 오브젝트 보상 미리보기 — 시계를 누르면 그 오브젝트가 주는 카드를 실물로 띄운다 |
 | `PilotDetailPanel.gd` | PilotDetailPanel | 파일럿 상세 모달 — 좌 전신 아트 2장 / 우 머리글 + 탭 3개 + 스탯 칩 + 지속 효과 + 카드 + **파일럿 스킬 블록** |
@@ -692,3 +692,80 @@ HUD-state event fires.
 
 ### mk_label(parent, text, font_size, color, pos, sz, align)
 Convenience helper to create and add a styled Label.
+
+
+---
+
+## 파일럿 스킬 표시 (`PilotStrip` 딤 + `PilotDetailPanel` 블록)
+
+선수마다 붙는 고유 능력. 규칙과 25개 목록은 `../skill/README.md` 에 있고,
+여기 적는 것은 **화면에 어떻게 나타나는가**뿐이다.
+
+### 스트립 — 준비도 와이프 + 숫자
+**초상화는 기본적으로 어둡게 덮여 있고, 스킬이 준비되는 만큼 왼쪽부터 밝아진다.**
+채움 비율은 `PilotSkillSystem.progress(p)` 하나가 답한다 — 쿨타임은 경과 비율,
+충전식은 활성화에 드는 충전 대비 비율, **패시브는 언제나 1.0**(누를 수 없는 대신
+상시 적용이라 "아직 안 됐다"가 성립하지 않는다).
+
+구현은 딤 한 장(`SKILL_DIM`, 검정 α 0.55)의 **왼쪽 끝을 밀어내는** 것이다:
+
+```
+filled = progress(p)
+dim.position.x = px + _portrait_w * filled
+dim.size.x     = _portrait_w * (1 - filled)
+```
+
+밝은 쪽에 사각형을 얹는 방식이 아닌 이유는 100% 에서다 — 얹으면 채움이 꽉 차도
+한 겹이 남지만, 좁히면 폭이 0 이 되어 초상화가 **원래 색 그대로**가 된다.
+
+딤은 `eye` 다음 · `rim` **앞**에 붙인다(형제 z-order = 자식 인덱스). 팀색
+테두리가 딤 위에 남아야 어느 팀인지가 준비도에 따라 흐려지지 않는다.
+
+숫자는 초상화 **오른쪽 위**의 작은 칸(`SKILL_BADGE_W_RATIO` 0.28 ×
+`SKILL_BADGE_H_RATIO` 0.42, 검정 받침 α 0.55)이고 `badge_text(p)` 가 답한다 —
+쿨타임이면 **남은 턴**(준비되면 빈칸), 충전식과 충전을 쌓는 패시브면 **충전 수**,
+그 밖에는 빈칸이다. 색이 "지금 누를 수 있는가"를 말한다(금색 `SKILL_BADGE_READY`
+/ 회청색 `SKILL_BADGE_WAIT`).
+
+**아군 스트립에만 뜬다**(`_team != 0` 이면 `_apply_skill_state` 가 곧장 돌아온다).
+스킬은 아군만 누를 수 있고, 적 칸까지 어둡게 덮으면 상대 얼굴이 스킬과 무관하게
+흐려 보인다. 칸 크기가 두 스트립에서 다르므로 배지 칸도 **초상화 비율**로 잡는다
+— 역할 태그가 그렇게 하는 것과 같은 이유다(고정 픽셀이면 작은 쪽에서 얼굴을
+덮는다).
+
+갱신은 `HudBuilder.update_hud` → `_update_pilot_strips` → `PilotStrip.refresh()`
+경로 하나뿐이다. 전장 틱과 무관하게 상태가 바뀌는 경로(오브젝트 등장 · 처치
+관여 · 포탑 파괴)를 덮으려고 `PilotSkillSystem.skill_state_changed` 가
+`update_hud` 에 직접 연결돼 있다(`BattleSim._ready`).
+
+### 상세 패널 — 인게임 탭 카드 줄 아래
+스킬은 카드와 다른 종류의 자원이라 카드 격자에 섞지 않고 자기 블록을 갖는다.
+지속 효과 썸네일에 한 칸으로 끼워 넣는 길도 있었지만, 그러면 "지금 쓸 수
+있는가"를 알려면 썸네일을 한 번 더 눌러야 한다 — 스킬은 누르라고 있는 것이므로
+버튼이 바로 보여야 한다.
+
+```
+파일럿 스킬 ──────────────────────────
+공성전 (30pt, 금색)                충전식 (20pt, 우측)
+포탑 파괴, 전투 개시 (19pt, 흐리게)
+충전 5로 시작. 포탑 파괴 시 +1 충전 (최대 5) / 활성화: …   ← 자동 줄바꿈
+충전 0 / 5 · 사용에 5 충전                                  ← 준비되면 초록
+[            사용            ]   폭 STAT_W, 높이 68
+```
+
+* **배지는 타입 한 단어만**이다. 키워드까지 붙이면 긴 스킬에서 38% 폭을 넘겨
+  오른쪽 정렬이 왼쪽부터 잘려 나간다 — 우측 정렬 `Label` 은 넘칠 때 정렬을
+  포기하고 rect 왼쪽부터 그리기 때문이다(`godot_control_sizing_traps` 와 같은
+  함정). 키워드는 자기 줄에 작고 흐리게 내려왔다.
+* 설명문 높이는 **폰트에게 물어** 잡는다(`Font.get_multiline_string_size`).
+  글자 수로 어림하면 한글/영문 혼용에서 한두 줄씩 어긋나 아래 버튼이 겹치거나
+  뜬다.
+* **패시브에는 버튼이 없다** — 누를 수 없는 것에 비활성 버튼을 두면 "언젠가는
+  눌리는 것"으로 읽힌다. `_skill_use_btn` 이 null 로 남는다.
+* `refresh()` 는 **상태 줄과 버튼 활성만** 다시 쓴다(`_refresh_skill_block`).
+  트리를 다시 세우면 카드 노드가 매 갱신마다 인스턴스화된다 — 이 패널의 다른
+  갱신 경로와 같은 규칙이다.
+* **사용하면 패널이 닫힌다.** 결과가 손패 · 전장 · 스트립에 나타나는데 딤이 그
+  위를 덮고 있으면 아무 일도 안 일어난 것처럼 보이고, 계략처럼 자기 오버레이
+  (`CardSelectOverlay`, 레이어 10)를 여는 스킬은 이 패널(레이어 13) 뒤에 깔려
+  아예 보이지 않는다.

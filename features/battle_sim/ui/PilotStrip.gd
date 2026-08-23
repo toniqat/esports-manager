@@ -33,6 +33,24 @@ const SHIELD_FILL      := Color(0.85, 0.85, 0.30)
 ## 체력 바가 경고색으로 바뀌는 비율.
 const HP_LOW_RATIO: float = 0.30
 const SCORE_COLOR      := Color(1.0, 0.94, 0.62)
+# ─── 파일럿 스킬 표시 ────────────────────────────────────────────────────────
+# **초상화는 기본적으로 어둡게 덮여 있고, 스킬이 준비되는 만큼 왼쪽부터 밝아진다.**
+# 채움은 `PilotSkillSystem.progress()` 가 답한다 — 쿨타임은 경과 비율, 충전식은
+# 활성화에 필요한 충전 대비 비율, **패시브는 언제나 1.0**(누를 수 없는 대신 상시
+# 적용이라 "아직 안 됐다"가 성립하지 않는다).
+#
+# 구현은 딤 한 장의 **왼쪽 끝을 밀어내는** 것이다: 밝은 쪽에 사각형을 얹는 대신
+# 어두운 쪽을 좁히면, 채움이 100% 일 때 딤이 폭 0 이 되어 초상화가 원래 색
+# 그대로가 된다(얹는 방식은 100% 에서도 한 겹이 남는다).
+const SKILL_DIM        := Color(0.0, 0.0, 0.05, 0.55)
+## 지금 누를 수 있는 스킬의 숫자 색 / 아직인 스킬의 숫자 색.
+const SKILL_BADGE_READY := Color(1.0, 0.86, 0.35)
+const SKILL_BADGE_WAIT  := Color(0.78, 0.82, 0.92)
+const SKILL_BADGE_OUTLINE := Color(0, 0, 0, 0.9)
+## 숫자 칸 — 초상화 오른쪽 위. 폭은 초상화 폭 비율로 잡아 두 스트립이 같이 준다.
+const SKILL_BADGE_W_RATIO: float = 0.28
+const SKILL_BADGE_H_RATIO: float = 0.42
+const SKILL_BADGE_FONT_RATIO: float = 0.80
 ## 쓰러진 파일럿의 초상화에 씌우는 틴트.
 const DEAD_TINT        := Color(0.42, 0.42, 0.46, 1.0)
 ## 초상화 테두리 — 팀색.
@@ -109,6 +127,17 @@ func _build_cell(idx: int) -> Dictionary:
 	eye.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	eye.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(eye)
+
+	# 스킬 준비도 딤 — 초상화 **오른쪽 남은 만큼**을 덮는다. `rim` 보다 먼저
+	# 붙여 팀색 테두리가 딤 위에 남게 한다(테두리까지 어두워지면 어느 팀인지가
+	# 준비도에 따라 흐려진다).
+	var skill_dim := ColorRect.new()
+	skill_dim.position = Vector2(px, 0.0)
+	skill_dim.size = Vector2(_portrait_w, _portrait_h)
+	skill_dim.color = SKILL_DIM
+	skill_dim.visible = false
+	skill_dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(skill_dim)
 
 	# 팀색 테두리 — 얇은 사각 프레임. Panel 하나로 그린다.
 	var rim := Panel.new()
@@ -189,6 +218,31 @@ func _build_cell(idx: int) -> Dictionary:
 	score_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(score_lbl)
 
+	# 스킬 숫자 — 초상화 오른쪽 위. 쿨타임이면 남은 턴, 충전식/충전 패시브면
+	# 충전 수다. 빈 문자열이면 숨는다(준비된 쿨타임 스킬 · 충전 없는 패시브).
+	var badge_w: float = _portrait_w * SKILL_BADGE_W_RATIO
+	var badge_h: float = _portrait_h * SKILL_BADGE_H_RATIO
+	var badge_bg := ColorRect.new()
+	badge_bg.position = Vector2(px + _portrait_w - badge_w - 2.0, 2.0)
+	badge_bg.size = Vector2(badge_w, badge_h)
+	badge_bg.color = Color(0.0, 0.0, 0.0, 0.55)
+	badge_bg.visible = false
+	badge_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(badge_bg)
+
+	var badge := Label.new()
+	badge.add_theme_font_size_override("font_size",
+			maxi(9, int(round(badge_h * SKILL_BADGE_FONT_RATIO))))
+	badge.add_theme_color_override("font_outline_color", SKILL_BADGE_OUTLINE)
+	badge.add_theme_constant_override("outline_size", 4)
+	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	badge.position = badge_bg.position
+	badge.size = badge_bg.size
+	badge.visible = false
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(badge)
+
 	# 히트 버튼 — 칸 전체를 덮는 투명 버튼. Label / TextureRect 는 기본
 	# MOUSE_FILTER_IGNORE 라 스스로 클릭을 받지 못하므로 입력만 여기서 가져간다.
 	var btn: Button = null
@@ -205,7 +259,8 @@ func _build_cell(idx: int) -> Dictionary:
 	return {
 		"bg": bg, "eye": eye, "rim": rim, "tag_bg": tag_bg, "role": role_lbl,
 		"dead": dead_lbl, "bar_bg": bar_bg, "bar": bar, "score": score_lbl,
-		"btn": btn,
+		"btn": btn, "skill_dim": skill_dim,
+		"badge_bg": badge_bg, "badge": badge, "px": px,
 	}
 
 
@@ -250,6 +305,9 @@ static func _set_cell_visible(cell: Dictionary, on: bool) -> void:
 	(cell["score"] as Label).visible = on
 	if not on:
 		(cell["dead"] as Label).visible = false
+		(cell["skill_dim"] as ColorRect).visible = false
+		(cell["badge_bg"] as ColorRect).visible = false
+		(cell["badge"] as Label).visible = false
 
 
 func _apply_cell(cell: Dictionary, p: PilotData) -> void:
@@ -278,3 +336,33 @@ func _apply_cell(cell: Dictionary, p: PilotData) -> void:
 		bar.color = HP_FILL_HI if ratio >= HP_LOW_RATIO else HP_FILL_LOW
 
 	(cell["score"] as Label).text = BattleSim.fmt_score(p.score)
+	_apply_skill_state(cell, p)
+
+
+## 스킬 준비도 딤과 숫자. **아군 스트립에만** 뜬다 — 스킬은 아군만 누를 수 있고,
+## 적 칸까지 어둡게 덮으면 상대 얼굴이 스킬과 무관하게 흐려 보인다.
+func _apply_skill_state(cell: Dictionary, p: PilotData) -> void:
+	var dim := cell["skill_dim"] as ColorRect
+	var badge_bg := cell["badge_bg"] as ColorRect
+	var badge := cell["badge"] as Label
+	var sk: PilotSkillSystem = _bs.skill if _bs != null else null
+	if _team != 0 or sk == null or not sk.has_skill(p):
+		dim.visible = false
+		badge_bg.visible = false
+		badge.visible = false
+		return
+	# 채움만큼 왼쪽이 밝아진다 = 딤의 왼쪽 끝을 그만큼 오른쪽으로 민다.
+	var filled: float = clampf(sk.progress(p), 0.0, 1.0)
+	var px: float = float(cell["px"])
+	dim.visible = filled < 1.0
+	dim.position = Vector2(px + _portrait_w * filled, 0.0)
+	dim.size = Vector2(_portrait_w * (1.0 - filled), _portrait_h)
+
+	var text: String = sk.badge_text(p)
+	var show: bool = not text.is_empty()
+	badge_bg.visible = show
+	badge.visible = show
+	if show:
+		badge.text = text
+		badge.add_theme_color_override("font_color",
+				SKILL_BADGE_READY if sk.can_activate(p) else SKILL_BADGE_WAIT)

@@ -1104,7 +1104,26 @@ three ways, **손패 복귀 first**:
 - `cd.has_keyword("exhaust")` → removed permanently (소멸). **문자열 비교가
   아니라 헬퍼를 쓴다** — `keyword` 는 `|` 로 여러 개를 달 수 있고, 전령 제압은
   `exhaust|preserve` 라 통짜 비교로는 소멸이 꺼진다.
-- anything else → returns to the discard pile
+- anything else → `send_to_discard(cd, discard)` (아래)
+
+`_dispose_used_card` 는 **카드 한 장이 실제로 나갔다는 유일한 신호**이기도 하다
+— 파일럿 스킬의 `on_card_played` 훅(퍼포먼스의 충전)이 여기서 걸린다. 손패를
+떠나는 모든 경로가 이 함수를 지나므로 플레이어 카드와 AI 카드가 같은 박자로
+세어진다.
+
+#### 휘발성 (`volatile`) — 버리기의 유일한 출구
+버려지는 카드는 전부 **`send_to_discard(cd, discard)`** 한 곳을 지난다(상한 초과
+정리 · 버리기:N 모달 · 재고 · 완벽한 마무리 · 과감한 정리 · 솔로 퍼포먼스 ·
+`_dispose_used_card`, 일곱 자리). `KW_VOLATILE` 을 단 카드는 더미에 앉지 않고
+**그 자리에서 사라지고**, 함수는 `false` 를 돌려준다.
+
+**소멸과 휘발성은 다른 것이다.** 소멸은 **쓰면** 사라지고, 휘발성은 **안 쓰고
+버려지면** 사라진다. 파일럿 스킬이 손패에 만들어 주는 카드(이동 · 복귀 · 전투
+개시 · 아드레날린 · 약탈)가 둘을 함께 달아, 스킬이 카드를 주되 **덱을 불리지는
+않게** 한다 — `../skill/README.md` 참조.
+
+호출 측은 손패에서 빼는 것까지만 하고 이 함수에 넘긴다. 카드 노드를 지우는 것
+(`_despawn_player_card_node`)은 어느 쪽이든 똑같이 필요하므로 여기서 하지 않는다.
 
 #### 손패 복귀 (`return_left[:N]`)
 `_return_left_bump(cd)` re-parses the played card's effect chain and returns the

@@ -377,6 +377,11 @@ var objective: ObjectiveSystem = null
 # `debug/BattleLogger.gd` 참고. lazy-add in _ready() after pilots spawn.
 var blog: BattleLogger = null
 
+## 파일럿 스킬 — 선수마다 붙는 고유 능력(쿨타임 / 충전식 / 패시브).
+## `features/battle_sim/skill/PilotSkillSystem.gd` 참조. 스폰과 덱 배분이 **끝난
+## 뒤** 세운다 — 짝을 로스터에서 찾고, 백본 패시브가 이미 돌아간 덱을 만진다.
+var skill: PilotSkillSystem = null
+
 # ─── TileMapLayer refs (set after BattleField.tscn is added as child) ────────
 @onready var tiles_layer:    TileMapLayer = $BattleField/Tiles
 @onready var _wp_layer:       Node2D       = $BattleField/WaypointLayer
@@ -470,6 +475,16 @@ func _ready() -> void:
 	# Build the per-team deck AFTER pilots spawn — each pilot owns 6 random cards
 	# from the pool (시전자 rule) and all 5 stacks shuffle into the team deck.
 	card_phase.build_starter_decks()
+	# 파일럿 스킬 — 로스터(`player_data_for`)와 덱이 모두 선 뒤라야 한다.
+	skill = PilotSkillSystem.new()
+	skill.name = "PilotSkillSystem"
+	add_child(skill)
+	# 충전 / 쿨타임이 움직이면 스트립의 딤과 숫자가 그 자리에서 따라간다.
+	# `update_hud` 는 매 턴과 카드 사용 뒤에도 돌지만, 전장 틱과 무관하게
+	# 상태가 바뀌는 경로(오브젝트 등장 · 처치 관여 · 포탑 파괴)가 있어서
+	# 그쪽까지 덮으려면 신호가 필요하다.
+	skill.skill_state_changed.connect(hud.update_hud)
+	skill.init_for_match()
 
 
 func _on_data_load_failed(reason: String) -> void:
@@ -691,10 +706,16 @@ func mark_pilot_dead(p: PilotData, killer: PilotData = null) -> void:
 	p.shield        = 0
 	p.respawn_timer = respawn_turns_now()
 	p.atk_buff      = 0   # 카드가 걸어 둔 일시 공격력은 죽으면 사라진다
+	p.deaths += 1
+	if killer != null and killer.team != p.team:
+		killer.kills += 1
 	anim_pilot_death(p)
 	# **`_payout_kill_bounty` 보다 먼저** — 어시스트 명단이 `damage_credit`
-	# 에서 나오는데 그 정산이 장부를 비운다.
+	# 에서 나오는데 그 정산이 장부를 비운다. 파일럿 스킬의 처치 관여 훅도
+	# 같은 장부를 읽으므로 같은 이유로 이 앞에 선다.
 	_push_kill_feed(p, killer)
+	if skill != null:
+		skill.on_kill(p, killer)
 	_award_kill_bounty(p.team)
 	_payout_kill_bounty(p, killer)
 
@@ -850,9 +871,11 @@ func add_score(p: PilotData, delta: float) -> void:
 		return
 	if delta > 0.0:
 		# 만료형 슬롯(`growth_rate_mult`) + 영구 가산분(`growth_rate_bonus`, 용
-		# 보상). 둘을 합쳐 한 번에 곱하므로 라인전 카드가 오브젝트 보상을
+		# 보상) + 파일럿 스킬 가산분(축적 / 사냥의 보상 / 위치 고정 / 경쟁 심리).
+		# 셋을 합쳐 한 번에 곱하므로 라인전 카드가 오브젝트 보상이나 스킬을
 		# 덮어쓰지 않는다 — PilotData.growth_rate_bonus 주석 참조.
-		delta *= p.growth_rate_mult + p.growth_rate_bonus
+		var skill_add: float = skill.growth_rate_add(p) if skill != null else 0.0
+		delta *= p.growth_rate_mult + p.growth_rate_bonus + skill_add
 	p.score = maxf(SCORE_MIN, p.score + delta)
 	refresh_growth_stats(p)
 
@@ -870,8 +893,13 @@ func refresh_growth_stats(p: PilotData) -> void:
 	var gained: float = maxf(0.0, p.score - SCORE_START)
 	p.growth    = gained * GROWTH_ATK_PER_SCORE
 	p.growth_hp = gained * GROWTH_HP_PER_SCORE
-	p.atk = maxi(1, roundi(float(p.base_atk) * (1.0 + p.growth))) + p.atk_buff
-	var new_max: int = maxi(1, roundi(float(p.base_max_hp) * (1.0 + p.growth_hp)))
+	# 파일럿 스킬의 스탯 배율은 **여기**에 얹는다 — `atk` 를 직접 밀면 다음
+	# 재계산에 통째로 지워지고, 충전이 오르내릴 때마다 원본이 깎여 나간다.
+	var s_atk: float = skill.atk_mult(p) if skill != null else 1.0
+	var s_hp:  float = skill.hp_mult(p)  if skill != null else 1.0
+	p.atk = maxi(1, roundi(float(p.base_atk) * (1.0 + p.growth) * s_atk)) + p.atk_buff
+	var new_max: int = maxi(1, roundi(
+			float(p.base_max_hp) * (1.0 + p.growth_hp) * s_hp))
 	if new_max != p.max_hp:
 		# 죽어 있는 파일럿의 현재 체력은 0 으로 둔다 — 쓰러진 뒤에도 점수가
 		# 들어올 수 있고(자기가 때려 둔 적이 나중에 죽으면 어시스트가 붙는다)
@@ -941,6 +969,8 @@ func score_turret_kill(attacker: PilotData, td: TurretData = null) -> void:
 	add_score(attacker, SCORE_TURRET_KILL)
 	if kill_feed != null:
 		kill_feed.push_turret(attacker, td)
+	if skill != null:
+		skill.on_turret_destroyed(attacker)
 
 
 

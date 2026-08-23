@@ -178,7 +178,10 @@ func load_match_data() -> Dictionary:
 		players.append(PlayerData.new(
 			int(row["id"]), row["name"], int(row["role"]), int(row["team_id"]),
 			int(row["laning"]), int(row["mechanics"]), int(row["gamesense"]),
-			int(row["teamfight"]), int(row["mental"])))
+			int(row["teamfight"]), int(row["mental"]),
+			# 옛 game.db(스킬 이전)도 열리도록 기본값과 함께 읽는다 — 그때는
+			# 전원이 스킬 없는 파일럿이 된다.
+			int(row.get("skill_id", -1))))
 
 	db.query("SELECT * FROM mechs ORDER BY id")
 	if db.query_result.is_empty():
@@ -318,6 +321,7 @@ var card_pool_bs: Array = []  # Array of {id,name,cost,uses,cast_method,target,c
 
 func _ready() -> void:
 	_load_card_pool_bs()
+	_load_pilot_skills()
 
 
 func _load_card_pool_bs() -> void:
@@ -354,3 +358,45 @@ func _load_card_pool_bs() -> void:
 		})
 	db.close_db()
 	print("GameManager: card pool loaded — %d cards" % card_pool_bs.size())
+
+
+# ── 파일럿 스킬 (used by PilotSkillSystem in battle sim) ──────────────────────
+# `pilot_skills` 테이블 그대로. 키는 스킬 id 이고 값은 그 행의 Dictionary 다.
+# `players.skill_id` 가 이 표를 가리킨다 — 모브 파일럿은 -1 이라 아무것도
+# 가리키지 않는다.
+var pilot_skills: Dictionary = {}   # int id → {id,key,name,role,type,p1,p2,keyword,description}
+
+
+func skill_def(skill_id: int) -> Dictionary:
+	return pilot_skills.get(skill_id, {})
+
+
+func _load_pilot_skills() -> void:
+	var db := SQLite.new()
+	db.path = "res://data/game.db"
+	db.verbosity_level = SQLite.QUIET
+	if not db.open_db():
+		push_error("GameManager: cannot open data/game.db")
+		return
+	# 스킬 테이블이 없는 옛 game.db 에서도 조용히 넘어간다 — 그때는 전원이
+	# 스킬 없는 파일럿으로 굴러가고 UI 는 스킬 칸을 그리지 않는다.
+	db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='pilot_skills'")
+	if db.query_result.is_empty():
+		db.close_db()
+		print("GameManager: pilot_skills table missing — skills disabled")
+		return
+	db.query("SELECT * FROM pilot_skills ORDER BY id")
+	for row in db.query_result:
+		pilot_skills[int(row["id"])] = {
+			"id":          int(row["id"]),
+			"key":         String(row["key"]),
+			"name":        String(row["name"]),
+			"role":        int(row["role"]),
+			"type":        String(row["type"]),
+			"p1":          int(row["p1"]),
+			"p2":          int(row["p2"]),
+			"keyword":     String(row["keyword"]),
+			"description": String(row["description"]),
+		}
+	db.close_db()
+	print("GameManager: pilot skills loaded — %d skills" % pilot_skills.size())

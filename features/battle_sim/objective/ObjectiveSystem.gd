@@ -136,6 +136,10 @@ func _resolve_objective(st: Dictionary) -> void:
 	var label: String = kind_name(kind)
 	var t0: Array = participants_for(kind, 0)
 	var t1: Array = participants_for(kind, 1)
+	# 용의 가호(파일럿 스킬)는 **용이 열리는 순간** 충전한다 — 이겼는지가
+	# 아니라 나타났는지가 조건이라 결판보다 앞에 선다.
+	if kind == Kind.DRAGON and _bs.skill != null:
+		_bs.skill.on_dragon_spawned()
 	_bs.blog.log_event("OBJ", "%s 등장 @%s — 아군 %d명 / 적군 %d명" % [
 			label, str(st["cell"]), t0.size(), t1.size()])
 
@@ -184,6 +188,10 @@ func _run_objective_engage(st: Dictionary, kind: int,
 		_bs.blog.log_event("OBJ", "%s 무승부 — 다음 %d턴" % [label, int(st["next_turn"])])
 		return
 	_grant_reward(kind, winner)
+	# 고양감(파일럿 스킬)은 **싸워서 이겼을 때만** 충전한다 — 아무도 안 나와
+	# 거저 가져간 경우(`_award_uncontested`)는 "전투에서 승리"가 아니다.
+	if _bs.skill != null:
+		_bs.skill.on_objective_won(winner)
 	_reschedule(st, _bs.OBJ_RESPAWN_TURNS)
 	var side: String = "아군" if winner == 0 else "적군"
 	_bs.last_log = "[%s] %s 획득 · %s" % [label, side, reward_text(kind)]
@@ -242,6 +250,10 @@ func participants_for(kind: int, team: int) -> Array:
 		if not p.alive or p.team != team:
 			continue
 		if not lanes.has(p.lane):
+			continue
+		# 위치 고정(파일럿 스킬)을 건 파일럿은 오브젝트에 못 낀다 — 그 스킬이
+		# 파는 것이 "라인에 눌러앉아 파밍만 한다"이므로 여기 나오면 대가가 없다.
+		if _bs.skill != null and _bs.skill.blocks_objective(p):
 			continue
 		out.append(p)
 	return out

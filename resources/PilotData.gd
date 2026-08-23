@@ -17,6 +17,11 @@ var alive: bool           = true
 # in SimulationCore.process_respawns. 복귀(본진 귀환)는 전장을 비우지 않으므로
 # 이 타이머를 쓰지 않는다: 죽지 않는 한 파일럿은 항상 전장 위에 있다.
 var respawn_timer: int    = 0
+# 이번 매치의 처치 수 / 사망 수. `BattleSim.mark_pilot_dead` 한 곳에서만 오른다.
+# 킬로그와 성장치는 각자 다른 표를 쓰므로(피해 장부 / 킬 피드) 이 둘은 순수한
+# 누적 카운터이고, 지금은 경쟁 심리(파일럿 스킬)가 상대 라이너와 견주는 데 쓴다.
+var kills: int            = 0
+var deaths: int           = 0
 # 본진 복귀한 그 턴에는 HQ 에 서 있기만 하고 움직이지 않는다는 표시.
 # RecallSystem.return_to_hq 가 켜고, 다음 이동 패스(SimulationCore.resolve_movement)
 # 가 한 턴을 걸러 내면서 스스로 끈다 — 그래서 "복귀 → 다음 턴부터 레인으로".

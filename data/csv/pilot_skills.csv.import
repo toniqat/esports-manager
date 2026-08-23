@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://dusbasybgwhjd"
+
+[deps]
+
+files=["res://data/csv/pilot_skills.key.translation", "res://data/csv/pilot_skills.name.translation", "res://data/csv/pilot_skills.role.translation", "res://data/csv/pilot_skills.type.translation", "res://data/csv/pilot_skills.p1.translation", "res://data/csv/pilot_skills.p2.translation", "res://data/csv/pilot_skills.keyword.translation", "res://data/csv/pilot_skills.description.translation"]
+
+source_file="res://data/csv/pilot_skills.csv"
+dest_files=["res://data/csv/pilot_skills.key.translation", "res://data/csv/pilot_skills.name.translation", "res://data/csv/pilot_skills.role.translation", "res://data/csv/pilot_skills.type.translation", "res://data/csv/pilot_skills.p1.translation", "res://data/csv/pilot_skills.p2.translation", "res://data/csv/pilot_skills.keyword.translation", "res://data/csv/pilot_skills.description.translation"]
+
+[params]
+
+compress=true
+delimiter=0

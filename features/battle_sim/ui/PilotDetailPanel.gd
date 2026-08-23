@@ -201,6 +201,29 @@ const CARD_GRID_COLS: int = 3
 # 어느 판에 달린 버튼인지가 안 보인다. 자리가 바뀌는 것은 **탭을 누른 순간**
 # 뿐이고, 값만 바뀌는 `refresh()` 는 받침을 건드리지 않으므로 버튼이 숫자를
 # 따라 위아래로 떨지 않는다.
+# ─── 파일럿 스킬 블록 (인게임 탭 · 카드 줄 아래) ────────────────────────────
+# 스킬은 카드와 다른 종류의 자원이라 카드 격자에 섞지 않고 **자기 블록**을 갖는다
+# — 이름 · 타입 · 설명문 · 상태 한 줄 · 그리고 큰 사용 버튼. 지속 효과 썸네일에
+# 한 칸으로 끼워 넣는 길도 있었지만, 그러면 "지금 쓸 수 있는가"를 알려면 썸네일을
+# 한 번 더 눌러야 한다 — 스킬은 누르라고 있는 것이므로 버튼이 바로 보여야 한다.
+const SKILL_SECTION_H: float = 34.0
+const SKILL_NAME_FONT: int = 30
+const SKILL_TYPE_FONT: int = 20
+const SKILL_DESC_FONT: int = 22
+const SKILL_STATUS_FONT: int = 22
+const SKILL_KW_FONT: int = 19
+const SKILL_KW_COLOR := Color(0.58, 0.63, 0.76)
+const SKILL_LINE_GAP: float = 8.0
+const SKILL_NAME_COLOR := Color(1.0, 0.88, 0.52)
+const SKILL_TYPE_COLOR := Color(0.66, 0.78, 0.96)
+const SKILL_DESC_COLOR := Color(0.88, 0.90, 0.95)
+const SKILL_READY_COLOR := Color(0.70, 1.0, 0.78)
+const SKILL_WAIT_COLOR  := Color(0.80, 0.82, 0.90)
+const SKILL_USE_H: float = 68.0
+## 타입 이름 — CSV 값 그대로는 화면에 안 쓴다.
+const SKILL_TYPE_LABEL: Dictionary = {
+	"cooldown": "쿨타임", "charge": "충전식", "passive": "패시브",
+}
 
 const BTN_W: float = 212.0
 const BTN_H: float = 76.0
@@ -224,6 +247,11 @@ var _tab_buttons: Array = []          # Array[Button], Tab 순서
 # 머리글(이름 · 기체명 · 성장치)은 **탭과 무관**하므로 `_build` 에서 한 번만
 # 세우고 `refresh()` 가 숫자만 고친다.
 var _growth_label: Label = null
+## 파일럿 스킬 블록의 상태 줄과 사용 버튼. `refresh()` 가 이 둘만 다시 쓴다 —
+## 트리를 다시 세우면 카드 노드가 매 갱신마다 인스턴스화된다. 패시브 스킬과
+## 스킬 없는 파일럿에서는 버튼이 null 이다.
+var _skill_status: Label = null
+var _skill_use_btn: Button = null
 
 # 본문(칩 · 효과 · 카드)은 탭이 바뀔 때 통째로 다시 세운다 — 구성이 아예 다르다.
 # 값만 바뀌는 `refresh()` 는 이 트리를 건드리지 않고 라벨만 고친다.
@@ -327,6 +355,7 @@ func refresh() -> void:
 		return
 	if _growth_label != null and is_instance_valid(_growth_label):
 		_growth_label.text = BattleSim.fmt_score(_pilot.score)
+	_refresh_skill_block()
 	# 걸려 있는 효과의 **구성**이 달라졌으면(만료 / 새 효과) 본문을 다시 세운다.
 	# 값만 바뀐 경우에는 아래 라벨 갱신으로 끝난다 — 트리를 다시 세우면 카드
 	# 노드가 매 갱신마다 인스턴스화되고 열어 둔 패널이 닫힌다.
@@ -613,7 +642,9 @@ func _build_body_content() -> float:
 	var all_cards: Array = _starter_cards("pilot") + _starter_cards("mech")
 	y = _build_card_grid(y + 18.0, "보유 카드", all_cards, "all",
 			CARD_GRID_COLS)
-	return y
+	# 스킬 블록은 카드 줄 **아래**다 — 카드가 "무엇을 들고 시작했는가"라면
+	# 스킬은 "이 선수만이 할 수 있는 것"이라, 읽는 순서가 그쪽이 나중이다.
+	return _build_skill_block(y + 22.0)
 
 
 # ─── 머리글 (탭 위) ─────────────────────────────────────────────────────────
@@ -1040,6 +1071,119 @@ func _build_card_grid(start_y: float, title: String, cards: Array,
 	return y + float(rows) * ch + float(rows - 1) * CARD_ROW_GAP
 
 
+## 파일럿 스킬 한 블록. 스킬이 없는 파일럿(모브)에게는 한 줄만 남긴다 —
+## 칸을 통째로 빼면 "이 선수는 스킬이 없다"가 화면에서 사라져 버그처럼 읽힌다.
+func _build_skill_block(start_y: float) -> float:
+	var sk: PilotSkillSystem = _bs.skill
+	var y: float = _build_section_head(start_y, "파일럿 스킬", SKILL_SECTION_H)
+	if sk == null or not sk.has_skill(_pilot):
+		var none := _make_label("스킬 없음", 24, KEY_COLOR,
+				HORIZONTAL_ALIGNMENT_LEFT)
+		none.position = Vector2(STAT_X, y)
+		none.size = Vector2(STAT_W, 32.0)
+		_body_root.add_child(none)
+		return y + 32.0
+
+	# 이름 + 타입 배지 — 한 줄에 좌/우로 나눠 앉는다.
+	var name_lbl := _make_label(sk.skill_name(_pilot), SKILL_NAME_FONT,
+			SKILL_NAME_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
+	name_lbl.position = Vector2(STAT_X, y)
+	name_lbl.size = Vector2(STAT_W * 0.62, 40.0)
+	_body_root.add_child(name_lbl)
+
+	# 배지는 **타입 한 단어만** 이다. 키워드까지 붙이면 긴 스킬(포탑 파괴, 전투
+	# 개시)에서 38% 폭을 넘겨 오른쪽 정렬이 왼쪽부터 잘려 나간다 — 우측 정렬
+	# Label 은 넘칠 때 정렬을 포기하고 rect 왼쪽부터 그린다(`clip_text` 는 그
+	# 넘침을 화면 밖으로 나가지 않게 막을 뿐 잘림 자체는 남는다).
+	var type_lbl := _make_label(String(SKILL_TYPE_LABEL.get(
+			sk.skill_type(_pilot), sk.skill_type(_pilot))),
+			SKILL_TYPE_FONT, SKILL_TYPE_COLOR, HORIZONTAL_ALIGNMENT_RIGHT)
+	type_lbl.position = Vector2(STAT_X + STAT_W * 0.62, y + 8.0)
+	type_lbl.size = Vector2(STAT_W * 0.38, 30.0)
+	type_lbl.clip_text = true
+	_body_root.add_child(type_lbl)
+	y += 40.0
+
+	# 키워드는 자기 줄에 작고 흐리게 — 분류 꼬리표라 설명문보다 앞에 오되
+	# 이름만큼 크면 안 된다.
+	var kw: String = sk.skill_keyword(_pilot)
+	if not kw.is_empty():
+		var kw_lbl := _make_label(kw, SKILL_KW_FONT, SKILL_KW_COLOR,
+				HORIZONTAL_ALIGNMENT_LEFT)
+		kw_lbl.position = Vector2(STAT_X, y)
+		kw_lbl.size = Vector2(STAT_W, 26.0)
+		kw_lbl.clip_text = true
+		_body_root.add_child(kw_lbl)
+		y += 26.0
+	y += SKILL_LINE_GAP
+
+	# 설명문 — 줄바꿈은 폰트에게 물어 실제 높이를 잡는다. 글자 수로 어림하면
+	# 한글/영문 혼용에서 한두 줄씩 어긋나 아래 버튼이 겹치거나 뜬다.
+	var desc := _make_label(sk.skill_description(_pilot), SKILL_DESC_FONT,
+			SKILL_DESC_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	desc.position = Vector2(STAT_X, y)
+	desc.size = Vector2(STAT_W, 30.0)
+	_body_root.add_child(desc)
+	var font: Font = desc.get_theme_font("font")
+	var desc_h: float = 30.0
+	if font != null:
+		desc_h = maxf(30.0, font.get_multiline_string_size(
+				desc.text, HORIZONTAL_ALIGNMENT_LEFT, STAT_W,
+				SKILL_DESC_FONT).y + 6.0)
+	desc.size = Vector2(STAT_W, desc_h)
+	y += desc_h + SKILL_LINE_GAP
+
+	# 상태 한 줄 — 남은 턴 / 충전 수. `refresh()` 가 이 라벨만 다시 쓴다.
+	_skill_status = _make_label(sk.status_text(_pilot), SKILL_STATUS_FONT,
+			SKILL_WAIT_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
+	_skill_status.position = Vector2(STAT_X, y)
+	_skill_status.size = Vector2(STAT_W, 30.0)
+	_body_root.add_child(_skill_status)
+	y += 30.0 + SKILL_LINE_GAP
+
+	# 패시브에는 버튼이 없다 — 누를 수 없는 것에 비활성 버튼을 두면 "언젠가는
+	# 눌리는 것"으로 읽힌다.
+	if sk.skill_type(_pilot) == PilotSkillSystem.TYPE_PASSIVE:
+		_skill_use_btn = null
+		return y
+	_skill_use_btn = Button.new()
+	_skill_use_btn.text = "사용"
+	_skill_use_btn.focus_mode = Control.FOCUS_NONE
+	_skill_use_btn.add_theme_font_size_override("font_size", 28)
+	_skill_use_btn.position = Vector2(STAT_X, y)
+	_skill_use_btn.size = Vector2(STAT_W, SKILL_USE_H)
+	_skill_use_btn.pressed.connect(_on_skill_use_pressed)
+	_body_root.add_child(_skill_use_btn)
+	_refresh_skill_block()
+	return y + SKILL_USE_H
+
+
+## 상태 줄과 버튼 활성만 다시 쓴다 — 트리는 건드리지 않는다.
+func _refresh_skill_block() -> void:
+	var sk: PilotSkillSystem = _bs.skill
+	if sk == null or _pilot == null:
+		return
+	if _skill_status != null and is_instance_valid(_skill_status):
+		_skill_status.text = sk.status_text(_pilot)
+		_skill_status.add_theme_color_override("font_color",
+				SKILL_READY_COLOR if sk.can_activate(_pilot) else SKILL_WAIT_COLOR)
+	if _skill_use_btn != null and is_instance_valid(_skill_use_btn):
+		_skill_use_btn.disabled = not sk.can_activate(_pilot)
+
+
+## 사용 버튼. **발동한 뒤에는 패널을 닫는다** — 결과가 손패 · 전장 · 스트립에
+## 나타나는데 딤이 그 위를 덮고 있으면 아무 일도 안 일어난 것처럼 보이고,
+## 계략처럼 자기 오버레이(레이어 10)를 여는 스킬은 이 패널(레이어 13) 뒤에
+## 깔려 아예 보이지 않는다.
+func _on_skill_use_pressed() -> void:
+	var sk: PilotSkillSystem = _bs.skill
+	if sk == null or _pilot == null or not sk.can_activate(_pilot):
+		return
+	var target: PilotData = _pilot
+	close()
+	sk.activate(target)
 
 
 # ─── 정보 패널 (칩 · 지속 효과 · 카드 공용) ─────────────────────────────────

@@ -674,7 +674,7 @@ func _trim_hand_overflow(is_player: bool) -> int:
 			i += 1
 			continue
 		hand.remove_at(i)
-		discard.append(oldest)
+		send_to_discard(oldest, discard)
 		if is_player:
 			_despawn_player_card_node(oldest)
 		dropped += 1
@@ -735,6 +735,14 @@ func start_card_phase() -> void:
 ##  1. 계획 중시의 보존 — 한 번의 BATTLE 구간만 버티는 효과이므로 여기서 걷는다.
 ##  2. 아드레날린의 다음 단계 전략 점수(음수 가능) — 점수는 0 아래로 안 내려간다.
 ##  3. 완벽한 마무리의 성장 배율 — "다음 작전 단계까지"가 여기서 끝난다.
+## 자기 작전 단계가 닫힐 때 도는 스킬 정산 — 몰아치기의 충전이 비워지고
+## 전투 명령의 단계 효과가 걷힌다. `end_card_phase`(플레이어)와 `_run_ai_turn`
+## (AI)이 둘 다 마지막에 부른다.
+func _notify_skill_phase_end(is_player: bool) -> void:
+	if _bs.skill != null:
+		_bs.skill.on_phase_end(is_player)
+
+
 func _apply_phase_entry_carryovers(is_player: bool) -> void:
 	var team: int = 0 if is_player else 1
 	if is_player:
@@ -851,6 +859,7 @@ func end_card_phase() -> void:
 	_player_pass_lock = true
 	# 계획 살인의 예약은 그 작전 단계 안에서만 유효하다 — 안 터졌으면 사라진다.
 	_bs.kill_bounty_p = 0
+	_notify_skill_phase_end(true)
 	_bs.blog.log_event("PHASE", "작전 단계 종료 → BATTLE (남은 %d점%s)"
 			% [_bs.player_cost, "" if burned == 0 else ", 초과 %d점 소멸" % burned])
 	_bs.renderer.queue_redraw()
@@ -924,6 +933,7 @@ func _run_ai_turn() -> void:
 		if not log_lines.is_empty():
 			_bs.last_log = log_lines[-1]
 	_bs.kill_bounty_ai = 0
+	_notify_skill_phase_end(false)
 	# 플레이어와 같은 규칙 — 차례를 놓는 쪽은 문턱 초과분을 잃는다.
 	var burned: int = maxi(0, _bs.ai_cost - _bs.PHASE_THRESHOLD)
 	if burned > 0:
@@ -2747,7 +2757,7 @@ func _on_discard_overlay_complete(picks: Array) -> void:
 	if _pending_play.is_empty():
 		return
 	for pick_raw in picks:
-		_bs.player_discard.append(pick_raw as CardData)
+		send_to_discard(pick_raw as CardData, _bs.player_discard)
 	(_pending_play["log_lines"] as Array).append("버리기 %d" % picks.size())
 	relayout_hand(_bs.player_card_nodes)
 	update_deck_discard_labels()
@@ -2871,6 +2881,10 @@ func _finalize_pending_play() -> void:
 		end_card_phase()
 
 
+# 카드 한 장이 실제로 나갔다는 유일한 신호이기도 하다 — 파일럿 스킬의
+# `on_card_played`(퍼포먼스의 충전)가 여기서 걸린다. 손패를 떠나는 모든 경로가
+# 이 함수를 지나므로 플레이어 카드와 AI 카드가 같은 박자로 센다.
+#
 # Routes a played card by 키워드:
 #  - `return_left[:N]` clause → back to the **손패 맨 왼쪽** (정밀 이동)
 #  - keyword == "exhaust"     → removed (소멸), never re-enters the deck
@@ -2885,13 +2899,15 @@ func _finalize_pending_play() -> void:
 # 소멸로도 가지 않는다.
 func _dispose_used_card(cd: CardData, is_player: bool) -> void:
 	var bump: int = _return_left_bump(cd)
+	if _bs.skill != null:
+		_bs.skill.on_card_played(cd, is_player)
 	if bump >= 0:
 		_return_card_to_hand_left(cd, is_player, bump)
 		return
 	if cd.has_keyword(CardData.KW_EXHAUST):
 		return
 	var discard: Array = _bs.player_discard if is_player else _bs.ai_discard
-	discard.append(cd)
+	send_to_discard(cd, discard)
 
 
 # `return_left[:N]` 절의 비용 증가분. 절이 없으면 -1 (= 손패로 돌아가지 않는다).
@@ -3074,7 +3090,7 @@ func _apply_single_effect(e: Dictionary, is_player: bool, caster: PilotData,
 		"lane_stat":               return _effect_lane_stat(value, flags, caster)
 		"growth":                  return _effect_growth_rate(value, flags, caster)
 		"growth_perm":             return _effect_growth_perm(value, ally_team,
-				selected_target as PilotData)
+				selected_target as PilotData, caster)
 		"turret_damage":           return _effect_turret_damage(value, ally_team,
 				caster, selected_target)
 		"growth_until_phase":      return _effect_growth_until_phase(value, ally_team)
@@ -3125,7 +3141,7 @@ func _effect_discard(is_player: bool, n: int) -> String:
 			break
 		var pick := bag[randi() % bag.size()] as CardData
 		hand.erase(pick)
-		discard.append(pick)
+		send_to_discard(pick, discard)
 		if is_player:
 			_despawn_player_card_node(pick)
 		moved += 1
@@ -3239,6 +3255,11 @@ func _set_attack_anim_active(active: bool) -> void:
 func _apply_attack_damage(t: PilotData, caster: PilotData, n: int) -> int:
 	var atk_value: int = caster.atk if caster != null else 100
 	var dmg: int = max(1, atk_value * n)
+	# 불안정한 대포 — 주는 쪽 / 받는 쪽 배율. 전장 자동 교전과 같은 규칙이다.
+	if _bs.skill != null:
+		dmg = maxi(1, roundi(float(dmg)
+				* _bs.skill.damage_out_mult(caster)
+				* _bs.skill.damage_in_mult(t)))
 	var rolled: int = dmg
 	# 보호막 absorbs first, HP next.
 	if t.shield > 0:
@@ -3251,6 +3272,10 @@ func _apply_attack_damage(t: PilotData, caster: PilotData, n: int) -> int:
 	# 현상금을 나누며 정산된다(전장 · 교전 무대와 같은 규칙). 적는 값은 굴린
 	# 피해 전체다: 보호막에 먹힌 몫도 기여다.
 	_bs.record_pilot_damage(caster, t, rolled)
+	# 몰아치기 — **명중한 공격 카드**만 충전한다(빗나간 타격은 `_effect_attack`
+	# 이 여기까지 오지 않는다).
+	if _bs.skill != null:
+		_bs.skill.on_attack_hit(caster)
 	if t.hp <= 0:
 		_bs.mark_pilot_dead(t, caster)
 	elif dmg > 0:
@@ -3401,6 +3426,11 @@ func _effect_duel(caster: PilotData, picked: PilotData,
 func _effect_move(caster: PilotData, picked: Variant) -> String:
 	if not (picked is Vector2i) or caster == null:
 		return "이동 (대상 없음)"
+	# 위치 고정(파일럿 스킬)이 걸린 파일럿은 자리에서 못 뜬다 — 그 스킬이 파는
+	# 것이 "안 움직이는 대신 더 번다"이므로 이동 카드로 빠져나갈 수 있으면
+	# 대가가 사라진다.
+	if _bs.skill != null and _bs.skill.blocks_move(caster):
+		return "이동 (위치 고정)"
 	var cell := picked as Vector2i
 	if cell == caster.grid_pos:
 		return "이동 %s (제자리)" % _bs.pilot_label(caster)
@@ -3525,8 +3555,14 @@ func _effect_growth_rate(pct: int, flags: Array, caster: PilotData) -> String:
 ##
 ## 대상이 없으면(파일럿이 그 사이 쓰러졌다) 아무 일도 하지 않는다. 카드 자체는
 ## 이미 소비된 뒤이므로 여기서 되돌릴 것은 없다.
-func _effect_growth_perm(pct: int, ally_team: int, picked: PilotData) -> String:
-	var target: PilotData = picked
+## `growth_perm:N` — 지정 아군의 성장 적립 배율을 **영구**로 N% 올린다(누적).
+##
+## 대상이 안 찍힌 카드는 **시전자 자신**에게 건다 — [핫핸드]가 그 경우다(대상
+## 지정이 없는 `instant` 카드라 `picked` 가 언제나 null 로 들어온다). 용 보상은
+## `target=ally` 라 언제나 찍힌 대상이 들어오므로 이 폴백을 타지 않는다.
+func _effect_growth_perm(pct: int, ally_team: int, picked: PilotData,
+		caster: PilotData = null) -> String:
+	var target: PilotData = picked if picked != null else caster
 	if target == null or not target.alive or target.team != ally_team:
 		return "성장 효율 (대상 없음)"
 	target.growth_rate_bonus += float(pct) / 100.0
@@ -3580,6 +3616,25 @@ func _effect_growth_until_phase(pct: int, ally_team: int) -> String:
 # 못한다 — 그래서 이 절 전체가 `_discardable()` 로 손패를 거른다. 오브젝트
 # 보상은 한 매치에 한 장 나오는 카드이므로 재고 한 번에 날아가면 안 된다.
 
+## 버려지는 카드 한 장을 더미로 보낸다 — **버리기의 유일한 출구**다.
+##
+## `휘발성`(`KW_VOLATILE`)을 단 카드는 더미에 앉지 않고 그 자리에서 사라진다.
+## 파일럿 스킬이 손패에 직접 만들어 준 카드들이 그것이라, 안 쓰고 버려도 덱이
+## 불어나지 않는다 — 스킬은 카드를 **주는** 것이지 덱을 키우는 것이 아니다.
+## 더미에 실제로 들어갔으면 true.
+##
+## 호출 측은 손패에서 빼는 것까지만 하고 이 함수에 넘긴다. 카드 노드를 지우는
+## 것(`_despawn_player_card_node`)은 어느 쪽이든 똑같이 필요하므로 여기서 하지
+## 않는다.
+func send_to_discard(cd: CardData, discard: Array) -> bool:
+	if cd == null:
+		return false
+	if cd.is_volatile():
+		return false
+	discard.append(cd)
+	return true
+
+
 ## 지금 버릴 수 있는 손패 카드들 — `보존` 키워드를 단 카드는 빠진다.
 ## 강제 버리기 계열이 전부 이 한 함수를 지나므로 규칙이 한 군데에만 산다.
 func _discardable(hand: Array) -> Array:
@@ -3601,7 +3656,7 @@ func _discard_whole_hand(is_player: bool) -> int:
 	for raw in _discardable(hand):
 		var cd := raw as CardData
 		hand.erase(cd)
-		discard.append(cd)
+		send_to_discard(cd, discard)
 		if is_player:
 			_despawn_player_card_node(cd)
 		moved += 1
@@ -3646,7 +3701,7 @@ func _effect_discard_right(is_player: bool, n: int) -> String:
 		var cd := hand[scan] as CardData
 		hand.remove_at(scan)
 		scan -= 1
-		discard.append(cd)
+		send_to_discard(cd, discard)
 		if is_player:
 			_despawn_player_card_node(cd)
 		moved += 1
@@ -3675,7 +3730,7 @@ func _effect_discard_other_pilots(flags: Array, is_player: bool,
 		if cd.owner_pilot == null or cd.is_preserved_by_keyword():
 			continue
 		hand.erase(cd)
-		discard.append(cd)
+		send_to_discard(cd, discard)
 		if is_player:
 			_despawn_player_card_node(cd)
 		moved += 1

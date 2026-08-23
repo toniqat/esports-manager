@@ -125,6 +125,13 @@ func start_engage(caster: PilotData, rounds_total: int, exclude_lane: bool,
 			on_done.call()
 		return
 
+	# 파일럿 스킬의 라운드 보정 — 전투 명령(이번 작전 단계, −1)과 공성전
+	# (다음 한 장, +3)의 합. 후자는 여기서 **소모**된다: 한 장에만 붙는 것이라
+	# 실제로 교전이 열리는 이 지점이 유일하게 옳은 소모 자리다.
+	if _bs.skill != null:
+		rounds_total = maxi(1, rounds_total
+				+ _bs.skill.engage_round_delta(caster.team, true))
+
 	_begin(caster, t0, t1, false, rounds_total, on_done)
 
 
@@ -250,6 +257,9 @@ func _begin(caster: PilotData, t0: Array, t1: Array, duel: bool,
 	_accum = 0.0
 	_hold_left = -1.0
 	_arena_title = title
+	# 기회주의자(파일럿 스킬)의 처치 장부는 교전 하나에만 유효하다.
+	if _bs.skill != null:
+		_bs.skill.on_engage_started()
 
 	_sim = TurnEngageSim.new()
 	_sim.setup(_bs, caster, t0, t1, rounds, duel, first_team)

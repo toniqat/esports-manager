@@ -187,6 +187,11 @@ class EUnit extends RefCounted:
 	var is_melee: bool = true
 	## 적 뒷줄(원거리)을 우선으로 노리는가. 암살자만 true.
 	var dives_backline: bool = false
+	## 파일럿 스킬이 강제하는 **첫 공격**의 표적 역할(GameEnums.Role). -1 = 없음.
+	## 원딜 사냥꾼 하나가 쓴다 — 그 한 번이 지나면 `skill_focus_used` 가 켜져
+	## 평소 표적 규칙으로 돌아간다.
+	var skill_focus_role: int = -1
+	var skill_focus_used: bool = false
 	var atk_range: float = 0.0
 	var move_speed: float = 0.0
 
@@ -346,6 +351,9 @@ func _make_unit(p: PilotData) -> EUnit:
 	u.team = p.team
 	u.is_melee = _is_melee_role(p.role)
 	u.dives_backline = (p.role == GameEnums.Role.ASSASSIN)
+	# 원딜 사냥꾼(파일럿 스킬)이 강제하는 첫 표적. 스킬이 없으면 -1 이라
+	# `_pick_target` 이 평소 규칙으로 흐른다.
+	u.skill_focus_role = _bs.skill.engage_focus_role(p) if _bs.skill != null else -1
 	u.atk_range = MELEE_REACH if u.is_melee else RANGE_RANGED
 	u.move_speed = MOVE_SPEED_MELEE if u.is_melee else MOVE_SPEED_RANGED
 	u.facing_x = 1.0 if u.team == 0 else -1.0
@@ -550,8 +558,18 @@ func _advance_order() -> void:
 		if _order_idx >= _order.size():
 			# 한 라운드 종료.
 			if round_index >= total_rounds:
-				_finish()
-				return
+				# 기회주의자(파일럿 스킬) — 이 교전에서 처치를 낸 파일럿이
+				# 그 스킬을 갖고 있으면 라운드가 한 번 늘어난다. 한 교전에
+				# 한 번뿐이라 `_opportunist_used` 로 잠근다.
+				var extra: int = 0
+				if not _opportunist_used and _bs.skill != null:
+					extra = _bs.skill.engage_bonus_rounds_from_kills()
+				if extra > 0:
+					_opportunist_used = true
+					total_rounds += extra
+				else:
+					_finish()
+					return
 			round_index += 1
 			_order_idx = -1
 			current_actor = null
@@ -742,7 +760,18 @@ const DIVE_FOCUS: float = 0.40
 ## 때문이다(실시간 시절에는 동시 행동이 이 역할을 했다).
 var _focus_count: Dictionary = {}   # EUnit → int
 
+## 기회주의자의 라운드 연장을 이 교전에서 이미 썼는가.
+var _opportunist_used: bool = false
+
 func _pick_target(u: EUnit) -> EUnit:
+	# 원딜 사냥꾼(파일럿 스킬) — 아직 안 쓴 첫 공격은 적 원딜이 살아 있는 한
+	# 반드시 그쪽으로 간다. 거리도 존재감도 보지 않는다.
+	if u.skill_focus_role >= 0 and not u.skill_focus_used:
+		for raw in units:
+			var e := raw as EUnit
+			if e.team != u.team and e.is_active() 					and e.pilot.role == u.skill_focus_role:
+				_focus_count[e] = int(_focus_count.get(e, 0)) + 1
+				return e
 	var best: EUnit = null
 	var best_score: float = INF
 	for raw in units:
@@ -790,7 +819,16 @@ func _resolve_attack(u: EUnit, target: EUnit) -> void:
 				"color": Color(0.85, 0.85, 0.85)})
 		return
 
-	var dealt := _apply_damage(d, max(1, a.atk))
+	# 파일럿 스킬의 피해 배율 — 불안정한 대포(양방향)와 원딜 사냥꾼의 첫 공격
+	# 보너스. 전장과 같은 질의 함수를 쓰므로 두 무대의 규칙이 갈라지지 않는다.
+	var raw_dmg: float = float(max(1, a.atk))
+	if _bs.skill != null:
+		raw_dmg *= _bs.skill.damage_out_mult(a) * _bs.skill.damage_in_mult(d)
+	if u.skill_focus_role >= 0 and not u.skill_focus_used:
+		if d.role == u.skill_focus_role and _bs.skill != null:
+			raw_dmg *= _bs.skill.engage_focus_atk_mult(a)
+		u.skill_focus_used = true
+	var dealt := _apply_damage(d, maxi(1, roundi(raw_dmg)))
 	target.hit_flash = KNOCK_FLASH_SEC
 	_apply_knock(u.pos, target,
 			KNOCK_IMPULSE_MELEE if u.is_melee else KNOCK_IMPULSE_RANGED)

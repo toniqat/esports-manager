@@ -49,6 +49,7 @@ And accesses shared state via `_bs.pilots`, `_bs.turn_count`, etc.
 | ObjectiveSystem | Node | `objective/ObjectiveSystem.gd` | **오브젝트(전령 / 용)** — 좌우 중립 칸에서 정해진 턴마다 열리는 교전 사건. 시계 · 참여 결정 · 정산. 화면은 교전 모듈의 VS 화면과 무대를 빌려 쓴다. Lazily added in `_ready()` **after** config load. |
 | PilotDetailPanel | Node | `ui/PilotDetailPanel.gd` | 파일럿 상세 모달 — 스트립의 얼굴을 누르면 열린다(작전 단계 한정). 머리글(이름 · 기체명 · 성장치)이 탭과 분리돼 늘 보이고, 탭이 바꾸는 것은 아래 상세 패널뿐이다. Lazily added in `_ready()`. |
 | ObjectiveRewardPopup | Node | `ui/ObjectiveRewardPopup.gd` | 오브젝트 보상 미리보기 — 상단 패널의 시계를 누르면 그 오브젝트가 주는 카드를 실물로 띄운다. **전장을 붙잡지 않는다.** Lazily added in `_ready()`. |
+| PilotSkillSystem | Node | `skill/PilotSkillSystem.gd` | **파일럿 스킬** — 선수마다 붙는 고유 능력(쿨타임 / 충전식 / 패시브). 상태 · 활성화 · 사건 훅 · 패시브 질의. Lazily added in `_ready()` **after** `build_starter_decks()` (짝을 로스터에서 찾고 백본 패시브가 덱을 만진다). `skill/README.md` 참조 |
 | BattleLogger   | Node | `debug/BattleLogger.gd`    | Full action log (console + `user://battle_logs/`) and enemy cross-over detector. Lazily added in `_ready()` after pilots spawn; reachable as `_bs.blog`. |
 
 Cross-module calls go through `_bs`:
@@ -82,7 +83,7 @@ Responsibilities:
 
 | File | class_name | Description |
 |---|---|---|
-| `resources/PilotData.gd` | PilotData | role, hp/max_hp, atk, team, grid_pos, lane, waypoint_idx, **move_range**, **hit**, **evasion**, **jungle_start_pref**, **respawn_timer** (death-only off-field clock — see `BattleSim.turns_until_return`), **recall_hold** (본진 복귀한 턴의 이동 1회 스킵), **anim_move_path** (이번에 밟은 칸의 경로 — 렌더러가 읽고 비운다) |
+| `resources/PilotData.gd` | PilotData | role, hp/max_hp, atk, team, grid_pos, lane, waypoint_idx, **move_range**, **hit**, **evasion**, **jungle_start_pref**, **respawn_timer** (death-only off-field clock — see `BattleSim.turns_until_return`), **recall_hold** (본진 복귀한 턴의 이동 1회 스킵), **anim_move_path** (이번에 밟은 칸의 경로 — 렌더러가 읽고 비운다), **kills / deaths** (이번 매치 누적 — `mark_pilot_dead` 한 곳에서만 오르고, 경쟁 심리 스킬이 상대 라이너와 견주는 데 쓴다) |
 | `resources/TurretData.gd` | TurretData | team, grid_pos, hp, tier, lane, alive |
 | `resources/PlayerData.gd` | PlayerData | id, name, role, team_id, 5 stats (laning / mechanics / gamesense / teamfight / mental), `assigned_mech` |
 | `resources/MechData.gd` | MechData | id, name, hp, atk, **presence** (4=melee/2=ranged; engage 무대의 타겟 어그로 가중치로만 사용). **`speed` 는 삭제됐다** — 교전이 라운드 턴제가 되면서 행동 빈도 개념이 사라졌다 |

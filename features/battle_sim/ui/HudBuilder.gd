@@ -7,32 +7,71 @@ extends Node
 # 예전에는 이 패널 하나가 열 명 전부를 84px 슬롯으로 담았다(아군 좌 / 점수 중앙 /
 # 적 우). 지금은 **적 다섯만** 여기 있고, 아군 다섯은 핸드 행 아래로 내려갔다.
 #
-# 패널 높이는 **적 스트립이 정한다**: 헤더 줄(y 4..38) 아래 `ENEMY_STRIP_RECT`
-# 가 앉고 그 밑단에 4px 를 더한 값이 곧 이 높이다. 그리고 그 아래가 사슬이다 —
-# 패널이 상대 핸드 peek 의 윗부분을 가리는 가림막이고, peek 카드 아래 끝에서
-# `DONUT_AI_HAND_GAP` 만큼 띄운 자리가 적 도넛이며, 그 도넛 아래가 곧 전장 픽셀
-# 상단(y 369)이다. **패널을 키우면 `AI_HAND_TOP_Y` 도 같은 양만큼 내려야 한다** —
-# 안 그러면 peek 이 패널 뒤로 통째로 숨는다.
+# 헤더 줄(y 4..38) 아래가 **스트립 띠**(y 46..127)이고 거기에 5px 를 더한 값이
+# 이 높이다. 띠 안에서 적 스트립은 가운데 672px 만 쓰고, 남은 좌우 여백이
+# **오브젝트 시계 두 칸**이다(`OBJ_TIMER_*`).
 #
-# 예전 130 은 적 스트립이 730×84 짜리 축소판이던 시절의 값이다. 스트립이 아군과
-# 같은 크기(1030×122)가 되면서 168 로 올랐고, peek 도 80 → 118 로 함께 내려갔다.
-# 지금 도넛 아래끝은 349, 전장 상단이 369 라 **여유는 20px 뿐이다** — 여기서 더
-# 키우려면 peek 이 보이는 양(49px)이나 `DONUT_AI_HAND_GAP` 을 깎아야 한다.
+# **패널 높이는 내용이 정한다** — 헤더 + 스트립 띠 + 5px 여백, 그게 전부다.
+# 예전 168 은 스트립이 아군과 같은 크기(1030×122)이던 시절의 값인데, 스트립이
+# 60% 로 줄어든 뒤에도 그대로 남아 띠 아래에 27px 짜리 빈 칸이 붙어 있었다.
+#
+# 그 아래가 사슬이다 — 패널이 상대 핸드 peek 의 윗부분을 가리는 가림막이고,
+# peek 카드 아래 끝에서 `DONUT_AI_HAND_GAP` 만큼 띄운 자리가 적 도넛이며, 그
+# 도넛 아래가 곧 전장 픽셀 상단(y 369)이다. **패널 높이를 바꾸면
+# `AI_HAND_TOP_Y`(= `TOP_PANEL_H − 50`) 와 `KillFeed.FEED_TOP`(= `TOP_PANEL_H
+# + 8`) 을 같은 양만큼 함께 옮겨야 한다** — 전자를 두면 peek 이 패널 뒤로
+# 통째로 숨거나(키울 때) 카드 윗부분이 그대로 드러나고(줄일 때), 후자를 두면
+# 킬로그가 패널에서 떨어져 뜬다. 도넛은 `AI_HAND_TOP_Y` 에서 계산되므로 따로
+# 만질 것이 없다.
+#
+# 132 로 줄면서 peek 이 82 로, 적 도넛 아래끝이 349 → 311 로 함께 올라왔다 —
+# peek 이 드러나는 양(49px)은 그대로이고 전장 상단(369)까지의 여유만
+# 20 → 58px 로 늘었다. 그 뒤 적 스트립이 20% 커지며 **148** 이 됐고(띠
+# 46..143 + 5), 사슬도 같은 16px 씩 내려갔다 — peek 98, 적 도넛 아래끝 327,
+# 킬로그 156. 전장 상단까지의 여유는 42px 로 아직 넉넉하다.
 const TOP_PANEL_Y      := 0.0
-const TOP_PANEL_H      := 168.0
+const TOP_PANEL_H      := 148.0
 ## 시간 · 팀 점수 한 줄.
 const HEADER_ROW_Y     := 4.0
 const HEADER_ROW_H     := 34.0
 const TIME_FONT        := 18
 const TOTAL_SCORE_FONT := 26
-## 적 스트립 — 패널 로컬 좌표. **아군 스트립과 폭 · 초상화 · 체력 바 · 성장치
-## 폰트가 전부 같다**(x 25 부터 1030px, 초상화 190×79). 예전에는 730×84 짜리
-## 축소판이었는데(초상화 130×54), 같은 얼굴을 위아래에서 두 배 다른 크기로
-## 보여 주니 상대 파일럿이 누구인지가 아군만큼 읽히지 않았다 — 상대 성장치는
-## 내 성장치와 **나란히 비교하라고** 있는 숫자다.
-const ENEMY_STRIP_RECT := Rect2(25.0, 42.0, 1030.0, 122.0)
-const ENEMY_SCORE_FONT := 20
-const ENEMY_HP_H       := 10.0
+## 적 스트립 — 패널 로컬 좌표. **아군 스트립을 66% 로 줄인 것**이고 가로
+## 가운데에 놓는다(폭 672, 초상화 118×49). 한때는 아군과 정확히 같은 크기
+## (1030×122, 초상화 190×79)였다 — 그 전의 730×84 축소판이 같은 얼굴을 위아래
+## 두 배 다른 크기로 보여 준 탓이었다.
+##
+## 줄인 이유는 자리다. 오브젝트 등장 시계가 전장 타일에서 이 패널로 올라
+## 오면서 **스트립 양옆에 아이콘 + 턴 수가 앉을 칸**이 필요해졌다(좌 전령 /
+## 우 용 — 지도의 좌우와 같은 배치라 자리가 곧 이름이다). 성장치는 그대로 두
+## 자릿수까지 읽히므로 "내 것과 나란히 비교한다"는 원래 목적은 살아 있다.
+##
+## 처음 줄일 때는 60%(618×76, 초상화 108×45)였는데 얼굴이 그 크기에서 누가
+## 누구인지 읽히는 하한을 밑돌았다. 초상화 폭은 칸 폭에서 유도되므로
+## (`PilotStrip.setup`) 키우는 방법은 스트립 폭을 미는 것뿐이라 618 → 672 로
+## 한 번(초상화 +10%), 다시 **672 → 806 으로 한 번 더(+20%)** 밀었다. 높이도
+## eye 비(2.4:1)를 따라 76 → 81 → **97** 로 함께 올라간다(초상화 145×60).
+##
+## 그만큼 좌우 여백이 줄어 시계 칸은 190 → 168 → **101** 이 됐다 — 시계 쪽에서
+## 아이콘과 숫자 사이 여백을 줄이고 "턴" 글자를 지워 그 폭에 맞췄다
+## (`ObjectiveTimer`). 얼굴이 먼저 읽혀야 하는 패널이므로 자리를 다툴 때
+## 물러나는 쪽은 언제나 시계다.
+const ENEMY_STRIP_RECT := Rect2(137.0, 46.0, 806.0, 97.0)
+const ENEMY_SCORE_FONT := 14
+const ENEMY_HP_H       := 7.0
+
+## 오브젝트 시계 두 칸 — 스트립 양옆의 남은 여백.
+##
+## **세로는 적 초상화 띠와 정확히 같다**(y 46, 높이 60 ≈ `_portrait_h`). 한때는
+## 스트립 띠 전체(122px)를 썼는데 — 아이콘이 클수록 곁눈으로 읽힌다는 이유였다 —
+## 그러면 시계가 초상화보다 위아래로 튀어나와 패널 안에서 가장 큰 물체가 되고,
+## 정작 얼굴 쪽으로 가야 할 시선을 먼저 잡아챈다. 초상화와 밑단·윗단을 맞추면
+## 셋(좌 시계 · 얼굴 다섯 · 우 시계)이 한 줄로 읽힌다.
+const OBJ_TIMER_W  := 101.0
+const OBJ_TIMER_Y  := 46.0
+const OBJ_TIMER_H  := 60.0
+const OBJ_TIMER_LEFT_X  := 26.0
+const OBJ_TIMER_RIGHT_X := 953.0
 
 # ── 하단 아군 스트립 (핸드 행 아래) ───────────────────────────────────────────
 # 핸드 행은 y 1500..1720, 그 아래가 통째로 비어 있었다(예전 하단 코스트 바 자리).
@@ -67,7 +106,7 @@ const AI_HAND_SCALE  := 0.45
 ## Top of the MIDDLE card; the rest ride higher. Tied to TOP_PANEL_H — the panel
 ## must hide the card's top 50 px so only the bottom ~49 px peeks out, so this is
 ## `TOP_PANEL_H − 50`. Move the panel and this moves with it.
-const AI_HAND_TOP_Y  := 118.0
+const AI_HAND_TOP_Y  := 98.0
 ## Circle radius (px) the card centres ride. Larger = flatter arc.
 const AI_HAND_FAN_RADIUS := 620.0
 ## Angular step (deg) per card. Sets the horizontal overlap via R·sin(step).
@@ -276,6 +315,18 @@ func _build_top_panel() -> void:
 			ENEMY_SCORE_FONT, ENEMY_HP_H)
 	_enemy_strip.pilot_pressed.connect(_on_pilot_strip_pressed)
 
+	# 오브젝트 등장 시계 — 스트립 양옆. 전령이 왼쪽 · 용이 오른쪽인 것은
+	# 전장에서 두 오브젝트가 서는 칸의 좌우와 같다.
+	_obj_timers.clear()
+	for spec in [[ObjectiveSystem.Kind.HERALD, OBJ_TIMER_LEFT_X],
+			[ObjectiveSystem.Kind.DRAGON, OBJ_TIMER_RIGHT_X]]:
+		var timer := ObjectiveTimer.new()
+		timer.name = "ObjTimer%d" % int(spec[0])
+		tp.add_child(timer)
+		timer.position = Vector2(float(spec[1]), OBJ_TIMER_Y)
+		timer.size = Vector2(OBJ_TIMER_W, OBJ_TIMER_H)
+		timer.setup(_bs, int(spec[0]))
+		_obj_timers.append(timer)
 
 # ── 하단 아군 스트립 ─────────────────────────────────────────────────────────
 # 핸드 행 아래. 누르면 파일럿 상세 패널이 열린다 — 다만 **자기 작전 단계에만**
@@ -636,6 +687,8 @@ func _update_pilot_strips(in_card_phase: bool) -> void:
 		_lbl_total_score.text = "%s - %s" % [
 			BattleSim.fmt_score(_bs.team_score(0)),
 			BattleSim.fmt_score(_bs.team_score(1))]
+	for raw in _obj_timers:
+		(raw as ObjectiveTimer).queue_redraw()
 	if _bs.pilot_detail != null:
 		_bs.pilot_detail.close_if_phase_left()
 		# 닫히지 않고 살아남았다면 스탯을 지금 값으로 다시 세운다 — 카드가

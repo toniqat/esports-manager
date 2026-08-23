@@ -205,7 +205,6 @@ func _draw() -> void:
 	_draw_front_line_overlays()
 	_draw_captured_tile_overlays()
 	_draw_jungle_camps()
-	_draw_objectives()
 	_draw_targeting_underlays()
 	# Out-of-range tile dim is drawn BEFORE HQ/turret/pilot graphics so a
 	# pilot marker that visually overlaps an adjacent out-of-range tile (the
@@ -317,54 +316,6 @@ func _draw_jungle_camps() -> void:
 			draw_polyline(loop, CAMP_MARK_ENEMY_COLOR, CAMP_MARK_ENEMY_WIDTH)
 
 
-# ─── 오브젝트 (전령 / 용) ────────────────────────────────────────────────────
-## 좌우 중립 칸에 **이름과 남은 턴 수**를 찍는다.
-##
-## 오브젝트는 정글 캠프와 달리 "지나가다 밟는 것"이 아니라 **양 팀이 같은 순간에
-## 같은 자리로 모이는 약속**이다. 언제 열리는지가 안 보이면 그 약속을 지킬 수
-## 없다 — 미리 라인을 밀어 둘지, 정글러를 그쪽에 붙여 둘지가 전부 이 숫자를
-## 보고 내리는 판단이다. 그래서 남은 턴은 상시 표시이고 양 팀 공통이다.
-##
-## 열리는 턴(남은 0턴)에는 숫자를 지우고 이름만 남긴다 — 그 프레임에는 이미
-## 결정 창이 화면을 덮고 있으므로 `0턴`은 읽힐 일이 없고, 무대가 닫힌 직후
-## 다음 등장까지의 새 숫자가 곧바로 자리를 잇는다.
-const OBJ_NAME_FONT_SIZE: int = 20
-const OBJ_TURN_FONT_SIZE: int = 26
-const OBJ_NAME_COLOR: Color = Color(0.98, 0.92, 0.70, 0.95)
-const OBJ_TURN_COLOR: Color = Color(1.00, 0.98, 0.90, 1.00)
-## 육각 중심에서 이름 / 숫자가 앉는 세로 오프셋(px). 이름이 위, 숫자가 아래.
-const OBJ_NAME_DY: float = -6.0
-const OBJ_TURN_DY: float = 24.0
-
-func _draw_objectives() -> void:
-	if _bs.objective == null:
-		return
-	var font := ThemeDB.fallback_font
-	for cell in [SimulationCore.NEUTRAL_LEFT, SimulationCore.NEUTRAL_RIGHT]:
-		var kind: int = _bs.objective.kind_at_cell(cell)
-		if kind < 0:
-			continue
-		var center := _bs.cell_center(cell)
-		_draw_centered_text(font, center + Vector2(0.0, OBJ_NAME_DY),
-				ObjectiveSystem.kind_name(kind), OBJ_NAME_FONT_SIZE, OBJ_NAME_COLOR)
-		var left: int = _bs.objective.turns_until_cell(cell)
-		if left > 0:
-			_draw_centered_text(font, center + Vector2(0.0, OBJ_TURN_DY),
-					"%d턴" % left, OBJ_TURN_FONT_SIZE, OBJ_TURN_COLOR)
-
-
-## 가운데 정렬 문자열 한 줄 + 검은 외곽선. 타일 색이 흰색 / 팀 색 / 회색으로
-## 계속 바뀌므로 외곽선 없이는 어느 배경에서든 읽히지 않는다.
-func _draw_centered_text(font: Font, at: Vector2, text: String,
-		size: int, color: Color) -> void:
-	var w: float = font.get_string_size(text,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
-	var base := at + Vector2(-w * 0.5, 0.0)
-	for ox in [-1.5, 1.5]:
-		for oy in [-1.5, 1.5]:
-			draw_string(font, base + Vector2(ox, oy), text,
-					HORIZONTAL_ALIGNMENT_LEFT, -1, size, Color(0, 0, 0, 0.85))
-	draw_string(font, base, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, color)
 
 
 func _draw_pilot_groups() -> void:

@@ -37,15 +37,22 @@ const SCORE_COLOR      := Color(1.0, 0.94, 0.62)
 const DEAD_TINT        := Color(0.42, 0.42, 0.46, 1.0)
 ## 초상화 테두리 — 팀색.
 const TEAM_RIM := [Color(0.32, 0.62, 0.95), Color(0.95, 0.40, 0.32)]
-## 역할 태그 받침 크기. "Su" / "Sn" 두 글자가 들어가는 최소 폭.
-const ROLE_TAG_W: float = 30.0
-const ROLE_TAG_H: float = 19.0
+## 역할 태그 받침 — **초상화 높이에서 유도한다**. 두 스트립의 초상화 크기가
+## 달라졌으므로(아군 190×79 / 적 118×49) 고정 픽셀로 두면 작은 쪽에서 태그가
+## 얼굴 절반을 덮는다. 비율은 큰 쪽의 원래 값(30×19, 폰트 14)에서 그대로 딴
+## 것이라 아군 스트립의 그림은 한 픽셀도 달라지지 않는다.
+const ROLE_TAG_H_RATIO: float = 0.24     # 79 × 0.24 ≈ 19
+const ROLE_TAG_ASPECT: float = 30.0 / 19.0
+const ROLE_TAG_FONT_RATIO: float = 0.74  # 19 × 0.74 ≈ 14
 
 # ─── 레이아웃 (setup 이 채운다) ──────────────────────────────────────────────
 var _cell_w: float = 200.0
 var _portrait_w: float = 184.0
 var _portrait_h: float = 77.0
 var _hp_h: float = 8.0
+var _tag_h: float = 19.0
+var _tag_w: float = 30.0
+var _tag_font: int = 14
 var _score_font: int = 16
 var _team: int = 0
 var _interactive: bool = false
@@ -72,6 +79,9 @@ func setup(bs: BattleSim, team: int, rect: Rect2, interactive: bool,
 	_cell_w = rect.size.x / float(SLOT_COUNT)
 	_portrait_w = _cell_w - 16.0
 	_portrait_h = _portrait_w / EYE_ASPECT
+	_tag_h = _portrait_h * ROLE_TAG_H_RATIO
+	_tag_w = _tag_h * ROLE_TAG_ASPECT
+	_tag_font = maxi(9, int(round(_tag_h * ROLE_TAG_FONT_RATIO)))
 	for i in SLOT_COUNT:
 		_cells.append(_build_cell(i))
 
@@ -118,14 +128,14 @@ func _build_cell(idx: int) -> Dictionary:
 	# 역할 태그 — 초상화 좌하단. 어두운 받침 위에 흰 글자 + 검은 외곽선.
 	# 외곽선만으로는 검은 머리카락 위에서 한 글자 태그(T / F)가 거의 안 보였다.
 	var tag_bg := ColorRect.new()
-	tag_bg.position = Vector2(px + 2.0, _portrait_h - ROLE_TAG_H - 2.0)
-	tag_bg.size = Vector2(ROLE_TAG_W, ROLE_TAG_H)
+	tag_bg.position = Vector2(px + 2.0, _portrait_h - _tag_h - 2.0)
+	tag_bg.size = Vector2(_tag_w, _tag_h)
 	tag_bg.color = Color(0.0, 0.0, 0.0, 0.55)
 	tag_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(tag_bg)
 
 	var role_lbl := Label.new()
-	role_lbl.add_theme_font_size_override("font_size", 14)
+	role_lbl.add_theme_font_size_override("font_size", _tag_font)
 	role_lbl.add_theme_color_override("font_color", ROLE_TAG_COLOR)
 	role_lbl.add_theme_color_override("font_outline_color", ROLE_TAG_OUTLINE)
 	role_lbl.add_theme_constant_override("outline_size", 4)

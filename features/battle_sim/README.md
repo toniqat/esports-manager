@@ -45,7 +45,7 @@ And accesses shared state via `_bs.pilots`, `_bs.turn_count`, etc.
 | CardPhaseManager | Node | `card_phase/CardPhaseManager.gd` | 작전 단계 turn flow, deck, fanned hand layout, phase-end gating |
 | GambitPhaseManager | Node | `gambit/GambitPhaseManager.gd` | Auto role→lane mapping + launch (UI removed; pre-battle choices live in `features/match_flow/`) |
 | EngagePhaseManager | Node | `engage/EngagePhaseManager.gd` | 전투 개시(engage) modal — **라운드 턴제 사이드뷰 벨트 교전** (`engage/TurnEngageSim.gd` 헤드리스 시뮬 + `engage/EngageArena.gd` 렌더러) triggered by `engage:N` / `duel` cards. Lazily added in `_ready()`. |
-| HudBuilder     | Node | `ui/HudBuilder.gd`         | HUD construction; 전략 포인트 도넛 (`ui/CostDonut.gd`), **양 팀 파일럿 스트립** (`ui/PilotStrip.gd`, 상단 적 / 하단 아군 — 이제 크기가 같다), 우측 상단 **킬로그** (`ui/KillFeed.gd`) |
+| HudBuilder     | Node | `ui/HudBuilder.gd`         | HUD construction; 전략 포인트 도넛 (`ui/CostDonut.gd`), **양 팀 파일럿 스트립** (`ui/PilotStrip.gd`, 상단 적 / 하단 아군), 우측 상단 **킬로그** (`ui/KillFeed.gd`), 적 스트립 양옆 **오브젝트 시계** (`ui/ObjectiveTimer.gd`) |
 | ObjectiveSystem | Node | `objective/ObjectiveSystem.gd` | **오브젝트(전령 / 용)** — 좌우 중립 칸에서 정해진 턴마다 열리는 교전 사건. 시계 · 참여 결정 · 정산. 화면은 교전 모듈의 VS 화면과 무대를 빌려 쓴다. Lazily added in `_ready()` **after** config load. |
 | PilotDetailPanel | Node | `ui/PilotDetailPanel.gd` | 파일럿 상세 모달 — 하단 스트립의 얼굴을 누르면 열린다(작전 단계 한정). Lazily added in `_ready()`. |
 | BattleLogger   | Node | `debug/BattleLogger.gd`    | Full action log (console + `user://battle_logs/`) and enemy cross-over detector. Lazily added in `_ready()` after pilots spawn; reachable as `_bs.blog`. |

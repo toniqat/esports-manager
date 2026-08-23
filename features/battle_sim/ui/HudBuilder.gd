@@ -84,6 +84,15 @@ const OBJ_TIMER_RIGHT_X := 953.0
 const PLAYER_STRIP_RECT := Rect2(25.0, 1766.0, 1030.0, 122.0)
 const PLAYER_SCORE_FONT := 20
 const PLAYER_HP_H       := 10.0
+## 아군 스트립 뒤판 — 스트립 영역을 `PLAYER_BG_PAD` 만큼 사방으로 넓힌 짙은
+## 패널 한 장. 적 스트립은 상단 패널 위에 앉아 있어 처음부터 받침이 있었지만,
+## 아군 스트립은 맨 화면 위에 떠 있어 얼굴·체력 바·성장치 세 줄이 배경 없이
+## 흩어져 보였다 — 특히 성장치 숫자는 받침이 없으면 어디까지가 한 파일럿의
+## 칸인지가 안 읽힌다. 색과 테두리는 상단 패널과 같게 두어 위아래 두 스트립이
+## 같은 판 위에 앉은 것으로 보이게 한다.
+const PLAYER_BG_PAD     := 10.0
+const STRIP_BG_COLOR    := Color(0.06, 0.06, 0.10, 1.0)
+const STRIP_BG_BORDER   := Color(0.18, 0.18, 0.24, 1.0)
 
 # ── AI hand peek (below score panel) ─────────────────────────────────────────
 # AI hand is shown as a fan of card-back nodes whose tops are tucked behind the
@@ -137,6 +146,11 @@ const DONUT_DEFAULT_MAX := 8
 # ── 파일럿 스트립 refs ────────────────────────────────────────────────────────
 var _enemy_strip:  PilotStrip = null   # team 1, 화면 상단
 var _player_strip: PilotStrip = null   # team 0, 핸드 행 아래
+## 아군 스트립 뒤판. 스트립과 **함께** 숨어야 한다 — 상세 패널이 스트립만
+## 치우면 빈 판이 딤 위에 덩그러니 남는다.
+var _player_strip_bg: Panel = null
+## 적 스트립 좌우의 오브젝트 등장 시계 — 좌 전령 / 우 용.
+var _obj_timers: Array = []           # Array[ObjectiveTimer]
 
 # ── Deck / Discard 카운터 히트 버튼 ───────────────────────────────────────────
 # 카운터 라벨 위에 얹힌 투명 버튼. 누르면 CardPileViewer 가 그 더미의 카드를
@@ -341,6 +355,24 @@ func _on_obj_timer_pressed(kind: int) -> void:
 # 핸드 행 아래. 누르면 파일럿 상세 패널이 열린다 — 다만 **자기 작전 단계에만**
 # 눌린다(`_update_pilot_strips` 가 버튼 활성 상태를 관리).
 func _build_player_strip() -> void:
+	# 뒤판을 **먼저** 붙인다 — 형제 z-order 가 곧 자식 인덱스라, 나중에 붙으면
+	# 판이 초상화를 덮는다.
+	var bg := Panel.new()
+	bg.name = "PlayerStripBackdrop"
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg.position = PLAYER_STRIP_RECT.position - Vector2(PLAYER_BG_PAD, PLAYER_BG_PAD)
+	bg.size = PLAYER_STRIP_RECT.size + Vector2(PLAYER_BG_PAD, PLAYER_BG_PAD) * 2.0
+	var bg_style := StyleBoxFlat.new()
+	bg_style.bg_color = STRIP_BG_COLOR
+	bg_style.border_color = STRIP_BG_BORDER
+	bg_style.border_width_top    = 1
+	bg_style.border_width_bottom = 1
+	bg_style.border_width_left   = 1
+	bg_style.border_width_right  = 1
+	bg.add_theme_stylebox_override("panel", bg_style)
+	_bs.canvas.add_child(bg)
+	_player_strip_bg = bg
+
 	_player_strip = PilotStrip.new()
 	_player_strip.name = "PlayerPilotStrip"
 	_bs.canvas.add_child(_player_strip)
@@ -375,6 +407,8 @@ func set_strip_visible(team: int, on: bool) -> void:
 	var strip: PilotStrip = _player_strip if team == 0 else _enemy_strip
 	if strip != null:
 		strip.visible = on
+	if team == 0 and _player_strip_bg != null:
+		_player_strip_bg.visible = on
 
 
 # AI hand peek — row of face-down card backs whose tops hide behind the score

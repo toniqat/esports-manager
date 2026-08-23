@@ -83,6 +83,8 @@ Creates UI inside `_bs.canvas` (a CanvasLayer added to BattleSim):
 - **아군 파일럿 스트립** (y 1766..1888) — 핸드 행 아래. 예전에는 여기가 비어
   있었다(하단 코스트 바와 사각 단계 넘기기 버튼이 사라진 자리). 바닥 ~32px 는
   아이폰 홈 바 / 시스템 제스처용으로 남긴다. `_build_player_strip()`.
+  **그 뒤에 뒤판 `Panel` 한 장**(`PlayerStripBackdrop`, y 1756..1898)이 깔린다 —
+  아래 파일럿 스트립 절의 "아군 스트립 뒤판" 참고.
 - **Victory panel** — Win/lose label + Play Again button.
 - **Turn announcer** (built last, full-screen Control overlay) —
   `play_turn_announce(is_player)` sweeps a 110-px-tall coloured bar in
@@ -296,6 +298,16 @@ same vertical band the 확인/취소 row occupies on the far side of the screen.
 카드는 가운데보다 21.4px 아래로 처지고(12장 기준) 호버/선택 시
 `Card.HOVER_SCALE`(1.2)로 커지므로 최악의 경우 카드 밑단이 y ≈ 1763 까지
 내려온다. 1724 에 두었더니 카드가 초상화 윗부분을 덮었다(실측 확인).
+
+**아군 스트립 뒤판** — `PlayerStripBackdrop`, 스트립 영역을 `PLAYER_BG_PAD`
+(10px) 만큼 사방으로 넓힌 짙은 `Panel` 한 장(y 1756..1898). 색과 테두리는 상단
+패널과 같다. 적 스트립은 상단 패널 위에 앉아 있어 처음부터 받침이 있었지만,
+아군 스트립은 맨 화면 위에 떠 있어 얼굴 · 체력 바 · 성장치 세 줄이 배경 없이
+흩어져 보였다 — 특히 성장치 숫자는 받침이 없으면 어디까지가 한 파일럿의 칸인지가
+읽히지 않는다. **`_build_player_strip()` 이 스트립보다 먼저 붙인다**(형제
+z-order 가 곧 자식 인덱스라, 나중에 붙으면 판이 초상화를 덮는다) 그리고
+**`set_strip_visible(0, on)` 이 스트립과 함께 숨긴다** — 상세 패널이 스트립만
+치우면 빈 판이 딤 위에 덩그러니 남는다.
 
 **입력 게이트**: `set_interactive_enabled(in_card_phase)` — 자기 작전 단계가
 아니면 히트 버튼이 `disabled` 다. 히트 판정은 칸 전체를 덮는 투명 `Button` 이

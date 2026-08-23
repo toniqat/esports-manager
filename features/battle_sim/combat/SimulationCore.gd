@@ -299,16 +299,30 @@ func _front_boundary_index(team: int, lane: int, order: Dictionary) -> int:
 ## 그 턴에 바로 먹게 하기 위해서다.
 func process_jungle_camps() -> void:
 	for raw in _bs.pilots:
-		var p := raw as PilotData
-		if not p.alive or not p.is_guerrilla:
-			continue
-		if not camp_harvestable(p.grid_pos, p.team):
-			continue
-		_bs.jungle_camps[p.grid_pos] = _bs.turn_count + _bs.JUNGLE_CAMP_RESPAWN_TURNS
-		_bs.add_score(p, _bs.SCORE_JUNGLE_CAMP)
-		_bs.blog.log_event("CAMP", "%-4s 캠프 획득 %s (+%.2fk → %.2fk, 재생성 %d턴)"
-				% [_bs.pilot_label(p), str(p.grid_pos), _bs.SCORE_JUNGLE_CAMP,
-					p.score, _bs.JUNGLE_CAMP_RESPAWN_TURNS])
+		harvest_camp_under(raw as PilotData)
+
+
+## `p` 가 지금 서 있는 칸의 캠프를 **그 자리에서** 먹인다. 먹었으면 true.
+##
+## 진입점이 둘이다. (1) 턴 루프의 `process_jungle_camps` — 이동과 점령이 끝난
+## 뒤 그 턴의 최종 자리로 정산한다. (2) **정글러를 옮기는 카드**(정밀 이동 /
+## 정글 파밍) — `CardPhaseManager._effect_move` 가 옮긴 직후 여기로 온다.
+##
+## 카드 쪽이 필요한 이유는 박자다. 카드는 작전 단계에 나가고 그 다음 턴 루프는
+## 몇 초 뒤에 오므로, 카드로 캠프 위에 내려앉아도 수확이 다음 턴까지 미뤄져
+## "카드를 냈는데 아무 일도 안 일어난" 것으로 보였다 — 그 사이에 상대가 같은
+## 칸을 밟으면 아예 뺏긴다. 정산 자체는 한 함수라 두 경로가 어긋날 수 없다.
+func harvest_camp_under(p: PilotData) -> bool:
+	if p == null or not p.alive or not p.is_guerrilla:
+		return false
+	if not camp_harvestable(p.grid_pos, p.team):
+		return false
+	_bs.jungle_camps[p.grid_pos] = _bs.turn_count + _bs.JUNGLE_CAMP_RESPAWN_TURNS
+	_bs.add_score(p, _bs.SCORE_JUNGLE_CAMP)
+	_bs.blog.log_event("CAMP", "%-4s 캠프 획득 %s (+%.2fk → %.2fk, 재생성 %d턴)"
+			% [_bs.pilot_label(p), str(p.grid_pos), _bs.SCORE_JUNGLE_CAMP,
+				p.score, _bs.JUNGLE_CAMP_RESPAWN_TURNS])
+	return true
 
 
 ## 이 칸의 캠프를 `team` 이 지금 먹을 수 있는가. 렌더러(캠프 표시)와 정글러의

@@ -3371,7 +3371,15 @@ func _effect_move(caster: PilotData, picked: Variant) -> String:
 	caster.grid_pos = cell
 	_bs.blog.log_move(caster, orig, cell, "card-move")
 	_bs.anim_pilot_move(caster, orig)
-	return "이동 %s → (%d,%d)" % [_bs.pilot_label(caster), cell.x, cell.y]
+	# **내려앉은 칸의 캠프는 그 자리에서 먹는다.** 턴 루프의 정산
+	# (`process_jungle_camps`)까지 기다리면 카드를 낸 순간과 수확 사이가 몇 초
+	# 벌어져 "카드를 냈는데 아무 일도 안 일어난" 것으로 보이고, 그 사이에 적
+	# 정글러가 같은 칸을 밟으면 통째로 뺏긴다. 정산 자체는 턴 루프와 같은
+	# 함수라 값도 재생성 시계도 어긋날 수 없다.
+	var msg: String = "이동 %s → (%d,%d)" % [_bs.pilot_label(caster), cell.x, cell.y]
+	if _bs.sim_core.harvest_camp_under(caster):
+		msg += " · 캠프 +%.2fk" % _bs.SCORE_JUNGLE_CAMP
+	return msg
 
 
 # 약탈 — flip an enemy-owned jungle cell to the caster's team for `turns`

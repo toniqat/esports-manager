@@ -158,20 +158,18 @@ impossible; the two-pass split is described under "Movement".
   사망에 점수 벌점을 따로 매기지 않는다.
 - **정글러는 제외** — 정글러의 전선은 정글이다.
 
-**정글 캠프 — 정글러의 수입.** 모든 **정글 칸**에 캠프가 하나씩 있고
-(`BattleSim.jungle_camps`, `셀 → ready_turn`), 밟으면 **1.15k** 를 먹고 그 칸은
-**6턴** 뒤에나 다시 찬다. **좌우 중립 두 칸은 빠진다** — 거기는 오브젝트
-자리(전령 / 용)이지 캠프가 아니다(`SimulationCore.is_objective_cell`,
-`objective/README.md`).
+**정글 캠프 — 정글러의 수입.** 모든 **정글/중립 칸**에 캠프가 하나씩 있고
+(`BattleSim.jungle_camps`, `셀 → ready_turn`), 밟으면 **0.98k** 를 먹고 그 칸은
+**6턴** 뒤에나 다시 찬다. **좌우 중립 두 칸도 포함이다** — 전령 / 용이 그 좌표를
+무대로 빌려 쓸 뿐 타일 규칙은 다른 정글 칸과 같다(`objective/README.md`).
 - **캠프값이 라이너의 턴당 수입(0.50k)보다 큰 이유**: 캠프는 걸어가야 하고
   재생성을 기다려야 하므로, 캠프당 값이 같으면 정글러의 턴당 수입이 구조적으로
   낮다. 실측(50턴 · 포탑 무파괴 · 적 정글 미점령, 4회 평균)에서 재생성 4턴 ·
   캠프값 0.50k 일 때 정글러 18.4k / 라이너 평균 23.5k = **0.78배**였고, 0.65k 로
   올려 **0.98배**가 됐다. 역산은 `BattleSim.SCORE_JUNGLE_CAMP` 주석 참조.
-- **좌우 중립 칸이 오브젝트 자리가 되면서 0.98k → 1.15k 로 다시 올렸다.**
-  캠프가 서는 칸이 14 → 12 로 줄었으므로 순회 수입도 같은 비율로 준다:
-  0.98 × 14/12 ≈ 1.15 — 잃은 몫만 정확히 되돌려 놓는 값이다. 전령 / 용은 그 위에
-  얹히는 **추가** 이득이지 정글러가 원래 먹던 수입을 되찾는 수단이 아니다.
+- 한때 **1.15k** 였다 — 좌우 중립 두 칸이 오브젝트 전용 자리가 되어 캠프 칸이
+  14 → 12 로 줄었을 때 그 몫(× 14/12)을 얹은 값이다. 두 칸이 다시 평범한 정글
+  칸으로 돌아오면서 그 보정은 근거를 잃어 **0.98k 로 되돌렸다**.
 - **재생성이 4턴 → 6턴으로 늦춰지면서 캠프값도 0.65k → 0.98k 로 함께 올렸다.**
   정글러 수입은 전량 캠프이고 획득 빈도가 재생성 주기에 반비례하므로, 주기를
   1.5배로 늘리면 값도 1.5배여야 같은 수입이 나온다. 늦춘 것은 **순회 리듬**이지
@@ -185,8 +183,8 @@ impossible; the two-pass split is described under "Movement".
   점령하면 돌 캠프가 늘어 라이너를 추월할 수 있다 — 정글 점령의 값이 여기 있다.
 - `process_neutral_zone_captures` **뒤**에 돈다: 방금 점령한 중립 칸의 캠프를
   그 턴에 바로 먹게 하기 위해서다.
-- 정글러의 이동 목표도 이걸 따라간다 — `_jungle_goal_for` 의 **1순위**가
-  `_best_ready_camp` 이고, 먹고 나면 그 칸이 6턴
+- 정글러의 이동 목표도 이걸 따라간다 — `_jungle_goal_for` 는 아직 안 잡힌 중립
+  칸 다음에 `_best_ready_camp` 을 보고, 먹고 나면 그 칸이 6턴
   비어 다음 캠프가 자연히 새 목표가 된다. **그 반복이 곧 순회**라 예전의
   sticky 로밍은 캠프가 하나도 안 찼을 때의 폴백으로만 남았다.
 - **목표를 고르는 비용은 거리가 아니라 `거리 × JUNGLE_CAMP_STALE_PER_STEP −
@@ -432,29 +430,31 @@ TileMap negative-coord system:
 |---------|-------|
 | Team 0  | (-2,0), (-2,-1), (-3,0), (0,0), (0,-1), (1,0) |
 | Team 1  | (-2,-3), (-2,-2), (-3,-2), (0,-3), (0,-2), (1,-2) |
-| Neutral | (-3,-1), (1,-1) — **permanently**; see below |
+| Neutral | (-3,-1), (1,-1) — uncaptured at start, up for grabs |
 
 - `init_neutral_zones()` — paints the initial owner of each cell.
 - `process_neutral_zone_captures()` — a jungler standing alone on a neutral
-  cell (no enemy in same cell) flips it to their team. **Objective cells are
-  skipped.**
+  cell (no enemy in same cell) flips it to their team.
 
-#### 오브젝트 칸 (`is_objective_cell`)
-`(-3,-1)` and `(1,-1)` are the 전령 / 용 자리 and stay neutral for the whole
-match. They drop out of every jungle rule: no camp is placed on them
-(`init_jungle_camps`), a jungler cannot capture them
-(`process_neutral_zone_captures`), they are not roam targets, and the T1
-side-neutral override is gone (it could never fire — nobody can own them).
+#### 좌우 중립 칸 = 오브젝트 무대, 그러나 **평범한 정글 칸**
+`(-3,-1)` 과 `(1,-1)` 은 전령 / 용이 서는 자리이지만 **타일 규칙은 다른 정글
+칸과 한 글자도 다르지 않다**: 캠프가 서고(`init_jungle_camps`), 정글러가 밟아
+점령하고(`process_neutral_zone_captures`), 순회 목표가 되고, 사이드 T1 파괴의
+**측면 중립 탈취 분기**(`_on_t1_destroyed`)로 주인이 바뀐다.
 
-**`_nearest_uncaptured_neutral()` was deleted outright.** Its test — "is this
-neutral still unowned?" — is now permanently true, so keeping it as the
-jungler's first priority parked the jungler on the objective tile from turn 1
-waiting for a capture that never comes, and the camps never got walked.
-
-Full rules in `objective/README.md`.
+한때는 **상시 중립**이었다 — 캠프도 점령도 없는 오브젝트 전용 자리. 그때는
+`is_objective_cell()` 이 그 판정이었고 `_nearest_uncaptured_neutral()` 은 판정이
+영원히 참이 되므로 함수째 삭제됐었다. 두 칸이 정글로 돌아오면서 셋 다 되살아
+났고, `is_objective_cell` 은 이제 없다. 오브젝트 쪽은 그 좌표를 **무대로 빌려
+쓸 뿐**이라 타일 상태를 읽지도 쓰지도 않는다 — 남은 턴 수 표시도 타일이 아니라
+상단 패널로 옮겨 갔다(`ui/ObjectiveTimer.gd`). 자세한 내용은
+`objective/README.md`.
 
 #### Jungler roaming (`_jungle_goal_for`)
-The best ready camp wins (`_best_ready_camp`). With no camp charged the jungler
+아직 아무도 점령하지 않은 중립 칸이 **1순위**다(`_nearest_uncaptured_neutral`,
+밴픽에서 고른 `jungle_start_pref` 가 좌우 순서를 정한다) — 밟는 것만으로 지도
+한 칸이 우리 것이 되고 그 칸의 캠프까지 딸려 온다. 그 다음이 the best ready camp
+(`_best_ready_camp`). With no camp charged the jungler
 roams to a **sticky** target parked on `PilotData.jungle_roam_target`, and the
 target is only recomputed when it has been reached, was never set, or has
 stopped belonging to the jungler's team (a lost T1 can flip a jungle cell). The

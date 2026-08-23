@@ -243,8 +243,13 @@ Responsibilities:
   피해 8. 용: [용 보상](0코, 소멸) 5장을 덱에 섞어 넣는다. 드로우 1 + 지정한
   아군의 성장 적립 배율 **영구** +10%(`PilotData.growth_rate_bonus`, 누적).
   두 카드 모두 `pool = 0` 이고 **시전자가 없다**(`owner_pilot == null`).
-- 캠프 칸이 14 → 12 로 줄어든 만큼 `SCORE_JUNGLE_CAMP` 이 0.98 → **1.15** 로
-  올랐다(14/12). 오브젝트는 정글러 수입의 대체재가 아니라 그 위의 추가 이득이다.
+- **오브젝트는 그 좌표를 무대로 빌려 쓸 뿐, 두 칸은 평범한 정글 칸이다** —
+  캠프가 서고, 정글러가 밟아 점령하고, 사이드 T1 파괴로 주인이 바뀐다. 한때는
+  상시 중립이라 캠프 칸이 14 → 12 로 줄었고 그만큼 `SCORE_JUNGLE_CAMP` 이
+  0.98 → 1.15 로 올라 있었는데, 두 칸이 돌아오면서 **0.98 로 되돌렸다**.
+- 남은 턴 수는 **상단 패널**의 `ui/ObjectiveTimer.gd` 두 칸에 상시 표시된다
+  (적 스트립 양옆, 좌 전령 / 우 용). 전장 타일 위에 찍던 절
+  (`BattleRenderer._draw_objectives`)은 삭제됐다.
 
 ### Card Phase (작전 단계)
 - Triggered when `player_cost >= PHASE_THRESHOLD`.
@@ -350,7 +355,7 @@ see [`engage/README.md`](engage/README.md) for details. Key contract:
 | 적립처 | 값 | 누가 |
 |---|---|---|
 | 전선 체류 (턴당) | `SCORE_FRONTLINE_PER_TURN` **0.50k** | 레인 파일럿 |
-| 정글 캠프 1개 | `SCORE_JUNGLE_CAMP` **1.15k** (6턴 리스폰) | 정글러 |
+| 정글 캠프 1개 | `SCORE_JUNGLE_CAMP` **0.98k** (6턴 리스폰) | 정글러 |
 | 처치 — 라스트힛 | `SCORE_KILL_BASE` **1.5k** + 앞선 격차 × **20%** | 전원 |
 | 처치 — 어시스트 | 현상금 × **50%** × (내 피해 / 총 피해) | 전원 |
 | 포탑 철거 | `SCORE_TURRET_KILL` **1.0k** | 레인 파일럿 |

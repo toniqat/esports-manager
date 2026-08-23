@@ -191,7 +191,6 @@ func simulate_turn() -> void:
 
 	_bs.blog.stage("7-zones")
 	process_neutral_zone_captures()
-	process_temp_zone_expiries()
 
 	# 8. 성장치 적립 — 이동과 점령이 모두 끝난 **이번 턴의 최종 자리**로 판정한다.
 	#    전선까지 걸어 들어간 턴에는 그 턴부터 벌고, 밀려난 턴에는 못 번다.
@@ -294,6 +293,8 @@ func _front_boundary_index(team: int, lane: int, order: Dictionary) -> int:
 ##
 ## 적 소유 칸의 캠프는 못 먹는다 — 적 정글을 **점령**해야(중립 칸을 먼저 밟거나
 ## T1 파괴 보상으로) 돌 수 있는 캠프가 늘고, 그만큼 라이너를 추월할 수 있다.
+## 약탈 카드는 소유권을 바꾸지 않고 **그 한 번의 수입만** 가로챈다
+## (`steal_camp_point`).
 ##
 ## `process_neutral_zone_captures` **뒤에** 부른다: 방금 점령한 중립 칸의 캠프를
 ## 그 턴에 바로 먹게 하기 위해서다.
@@ -322,6 +323,23 @@ func harvest_camp_under(p: PilotData) -> bool:
 	_bs.blog.log_event("CAMP", "%-4s 캠프 획득 %s (+%.2fk → %.2fk, 재생성 %d턴)"
 			% [_bs.pilot_label(p), str(p.grid_pos), _bs.SCORE_JUNGLE_CAMP,
 				p.score, _bs.JUNGLE_CAMP_RESPAWN_TURNS])
+	return true
+
+
+## 약탈 — `cell` 의 **차 있는 캠프**를 `thief` 가 그 자리에서 가로챈다. 성공하면
+## true. 소유권은 건드리지 않는다: 훔치는 것은 타일이 아니라 **이번 한 번의
+## 수입**이고, 그래서 적 정글러는 다음 재생성까지 그 칸을 빈손으로 지나간다.
+##
+## `harvest_camp_under` 와 정산이 같다(같은 값 · 같은 재생성 시계) — 다른 것은
+## 거리 제약뿐이라, 카드 한 장이 "발로 밟은 것과 같은 한 번"을 원격으로 산다.
+func steal_camp_point(cell: Vector2i, thief: PilotData) -> bool:
+	if thief == null or not camp_charged(cell):
+		return false
+	_bs.jungle_camps[cell] = _bs.turn_count + _bs.JUNGLE_CAMP_RESPAWN_TURNS
+	_bs.add_score(thief, _bs.SCORE_JUNGLE_CAMP)
+	_bs.blog.log_event("CAMP", "%-4s 캠프 약탈 %s (+%.2fk → %.2fk, 재생성 %d턴)"
+			% [_bs.pilot_label(thief), str(cell), _bs.SCORE_JUNGLE_CAMP,
+				thief.score, _bs.JUNGLE_CAMP_RESPAWN_TURNS])
 	return true
 
 
@@ -1505,27 +1523,6 @@ func _set_zone_cell(cell: Vector2i, owner_id: int) -> void:
 	elif owner_id == 1:  atlas = Vector2i(2, 0)
 	else:                atlas = Vector2i(3, 0)
 	_bs.tiles_layer.set_cell(cell, 0, atlas, 0)
-
-
-# Public wrapper for outside callers (e.g. CardPhaseManager._effect_capture_jungle).
-func set_zone_cell(cell: Vector2i, owner_id: int) -> void:
-	_set_zone_cell(cell, owner_id)
-
-
-# Restore expired 약탈 captures. Called from simulate_turn after the
-# capture-by-jungler step so naturally-captured cells aren't immediately
-# overwritten by an expiring temp.
-func process_temp_zone_expiries() -> void:
-	if _bs.temp_zone_overrides.is_empty():
-		return
-	var keep: Array = []
-	for raw in _bs.temp_zone_overrides:
-		var entry: Dictionary = raw as Dictionary
-		if _bs.turn_count >= int(entry["expires_turn"]):
-			_set_zone_cell(entry["cell"] as Vector2i, int(entry["prev_owner"]))
-		else:
-			keep.append(entry)
-	_bs.temp_zone_overrides = keep
 
 
 func process_neutral_zone_captures() -> void:

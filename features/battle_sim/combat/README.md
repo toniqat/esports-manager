@@ -558,8 +558,8 @@ the siege then runs from that cell on the next tick or turn. There is no
 adjacent siege — a tick that only moves the group onto the turret deals no
 turret damage.
 
-Skips `process_respawns` / `process_neutral_zone_captures` /
-`process_temp_zone_expiries` and does **not** bump `turn_count`. Win condition
+Skips `process_respawns` / `process_neutral_zone_captures` and does **not**
+bump `turn_count`. Win condition
 is rechecked at the end so a turret-destruction kill via 전진 resolves
 immediately.
 

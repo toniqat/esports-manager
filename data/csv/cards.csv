@@ -18,7 +18,7 @@ id,name,cost,uses,cast_method,target,cast_range,area,keyword,effect,description,
 19,계획 살인,2,1,instant,hand,0,0,,strategy_on_kill:4,"사용 후, 이번 작전 단계에서 적을 처치했다면 전략 점수: 4",any,1,pilot,draw
 21,복귀,0,1,target,ally,99,0,,recall_ally,아군을 본진으로 귀환,any,1,pilot,common
 22,보호,2,1,target,ally,99,0,,shield_pct:20,보호막: 아군 체력의 20%,any,1,mech,-
-23,약탈,1,1,location,location,99,0,,capture_jungle:10,"아군 정글과 인접한 상대 정글 타일을 10턴 동안 점령",jungle,1,mech,-
+23,약탈,1,1,location,location,99,0,,steal_camp:1,"성장 포인트가 남아 있는 상대 정글 타일 하나를 골라 그 포인트를 가로챈다",jungle,1,mech,-
 24,안전한 파밍,3,1,instant,hand,0,0,,lane_stat:-10|turns:10;growth:10|turns:10,"10턴 동안 라인전 스탯 -10%, 성장 +10%",lane,1,pilot,lane
 25,공격적인 라인전,3,1,instant,hand,0,0,,lane_stat:10|turns:10,10턴 동안 라인전 스탯 +10%,lane,1,pilot,lane
 26,재고,0,1,instant,hand,0,0,,discard_hand_draw,"손패를 전부 버리고, 버린 수만큼 드로우",any,1,pilot,draw

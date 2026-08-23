@@ -293,12 +293,6 @@ var next_phase_strategy_ai: int = 0
 var kill_bounty_p:  int = 0
 var kill_bounty_ai: int = 0
 
-# ─── Temporary jungle captures (약탈) ────────────────────────────────────────
-# Each entry: {cell: Vector2i, prev_owner: int, expires_turn: int}. SimulationCore
-# checks expiries each turn and restores `prev_owner` on the cell when
-# `turn_count >= expires_turn`.
-var temp_zone_overrides: Array = []
-
 # Gambit state — gambit_lanes is filled by GambitPhaseManager.auto_assign_lanes()
 var gambit_lanes: Array   = [-1, -1, -1, -1, -1]
 
@@ -1358,7 +1352,6 @@ func _on_restart_pressed() -> void:
 	preserved_cards_p.clear(); preserved_cards_ai.clear()
 	next_phase_strategy_p = 0; next_phase_strategy_ai = 0
 	kill_bounty_p = 0; kill_bounty_ai = 0
-	temp_zone_overrides.clear()
 	_clear_turret_hit_visuals()
 	if renderer != null:
 		renderer.clear_popups()

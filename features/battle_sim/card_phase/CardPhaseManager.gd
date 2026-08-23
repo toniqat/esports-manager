@@ -2476,8 +2476,8 @@ func compute_valid_pilot_targets(cd: CardData, caster: PilotData,
 	return out
 
 
-# Cells within hex range of caster (alive cells only). 약탈 (capture_jungle)
-# runs on its own rule set — see compute_capture_jungle_targets.
+# Cells within hex range of caster (alive cells only). 약탈 (steal_camp)
+# runs on its own rule set — see compute_steal_camp_targets.
 #
 # **절 검사가 시전자 검사보다 앞에 온다.** [전령 제압](`turret_damage`)은
 # 시전자가 없는 카드이고 대상은 시전자 위치와 무관한 "최외곽 적 포탑"이라,
@@ -2490,8 +2490,8 @@ func compute_valid_location_targets(cd: CardData, caster: PilotData) -> Array:
 		var cname: String = String(clause.get("name", ""))
 		if cname == "turret_damage":
 			return compute_turret_damage_targets(cd, caster)
-		if cname == "capture_jungle":
-			return compute_capture_jungle_targets(caster)
+		if cname == "steal_camp":
+			return compute_steal_camp_targets(caster)
 		if cname == "move" and "own_jungle" in (clause.get("flags", []) as Array):
 			return compute_own_jungle_targets(caster)
 	if caster == null:
@@ -2546,31 +2546,31 @@ func card_team(cd: CardData) -> int:
 	return 0
 
 
-# 약탈의 유효 대상 — **적 팀이 소유한 정글 셀 중, 시전자 팀이 소유한 정글 셀과
-# 인접한 것**. 시전자 사거리는 보지 않는다(카드의 cast_range 는 99).
+# 약탈의 유효 대상 — **적 팀이 소유한 정글 셀 중 캠프가 차 있는 것**. 시전자
+# 사거리는 보지 않는다(카드의 cast_range 는 99).
 #
-# 예전에는 "사거리(1) 안의 적 소유 정글 셀"이었는데, 정글은 레인에서 떨어져
-# 있고 레인 파일럿은 정글 셀에 들어가지도 못하므로 유효 대상이 사실상 항상
-# 비어 있었다 — card_has_valid_targets 가 false 를 돌려주니 카드가 영영
-# 사용 불가였다. 전선을 자기 정글에서 한 칸씩 밀어 나가는 규칙으로 바꾸면
-# 시전자가 어디 있든 최소한 한 칸은 열려 있다.
-func compute_capture_jungle_targets(caster: PilotData) -> Array:
+# 규칙이 두 번 바뀌었다. 처음에는 "사거리(1) 안의 적 소유 정글 셀"이었는데,
+# 정글은 레인에서 떨어져 있고 레인 파일럿은 정글 셀에 들어가지도 못하므로
+# 유효 대상이 사실상 항상 비어 있었다 — 카드가 영영 사용 불가였다. 그 다음이
+# "아군 정글과 인접한 적 정글 셀"(전선을 한 칸씩 미는 규칙)이었다.
+#
+# **지금은 훔치는 것이 타일이 아니라 그 칸의 수입이다.** 그래서 조건도 소유
+# 지도가 아니라 **캠프가 차 있는가** 하나로 옮겨 갔다 — 비어 있는 칸을 고를 수
+# 있으면 그 자리가 곧 헛치기이고, 화면의 아웃라인(`BattleRenderer._draw_jungle_camps`)
+# 이 이미 어느 칸에 값이 남아 있는지를 말해 주고 있다. 인접 조건이 없으므로
+# 정글 반대편의 살진 캠프도 노릴 수 있다: 그 원격성이 이 카드의 값이다.
+func compute_steal_camp_targets(caster: PilotData) -> Array:
 	var out: Array = []
-	if caster == null:
+	if caster == null or _bs.sim_core == null:
 		return out
-	var zones: Dictionary = _bs.neutral_zone_cells
 	var enemy_team: int = 1 - caster.team
-	for raw_cell in zones.keys():
+	for raw_cell in _bs.jungle_camps.keys():
 		var cell := raw_cell as Vector2i
-		if int(zones[cell]) != enemy_team:
+		if int(_bs.neutral_zone_cells.get(cell, -2)) != enemy_team:
 			continue
-		for n in _bs.hex_grid.get_neighbors(cell.x, cell.y):
-			var nb := n as Vector2i
-			if not zones.has(nb):
-				continue
-			if int(zones[nb]) == caster.team:
-				out.append(cell)
-				break
+		if not _bs.sim_core.camp_charged(cell):
+			continue
+		out.append(cell)
 	return out
 
 
@@ -2579,8 +2579,8 @@ func compute_capture_jungle_targets(caster: PilotData) -> Array:
 # 정글러는 자기 정글 어디로든 붙을 수 있어야 하고, 사거리로 묶으면 정글 반대편
 # 캠프가 영영 닿지 않는다. 제자리 셀은 뺀다 — 이동이 no-op 이 되기 때문.
 #
-# 소유 판정은 `neutral_zone_cells` 를 그대로 읽으므로 약탈이 걸어 둔 임시 점령
-# (`temp_zone_overrides`)도 자동으로 반영된다 — 그 카드가 소유 맵 자체를 바꾼다.
+# 소유 판정은 `neutral_zone_cells` 를 그대로 읽는다 — 정글러가 밟아 점령한 칸도
+# T1 파괴 보상으로 넘어온 칸도 그 자리에서 목표가 된다.
 func compute_own_jungle_targets(caster: PilotData) -> Array:
 	var out: Array = []
 	if caster == null:
@@ -3026,8 +3026,7 @@ func _apply_single_effect(e: Dictionary, is_player: bool, caster: PilotData,
 		"duel":     return await _effect_duel(caster,
 				selected_target as PilotData, is_player)
 		"move":                    return _effect_move(caster, selected_target)
-		"capture_jungle":          return _effect_capture_jungle(value,
-				selected_target, caster)
+		"steal_camp":              return _effect_steal_camp(selected_target, caster)
 		"cost_reduce_engage":      return _effect_cost_reduce_engage(value, is_player)
 		"cost_reduce_hand":        return _effect_cost_reduce_hand(value, is_player)
 		"cost_reduce_draw_phase":  return _effect_cost_reduce_draw_phase(value, is_player)
@@ -3382,27 +3381,19 @@ func _effect_move(caster: PilotData, picked: Variant) -> String:
 	return msg
 
 
-# 약탈 — flip an enemy-owned jungle cell to the caster's team for `turns`
-# turns. Cell must already be a jungle/neutral cell currently owned by the
-# enemy team. SimulationCore restores the previous owner once
-# turn_count >= expires_turn.
-func _effect_capture_jungle(turns: int, picked: Variant,
-		caster: PilotData) -> String:
+# 약탈 — 적 소유 정글 칸의 **차 있는 캠프**를 원격으로 가로챈다. 타일 주인은
+# 그대로다: 바뀌는 것은 그 칸의 재생성 시계와 시전자의 성장치뿐이라, 적 정글러는
+# 다음 재생성까지 그 칸을 빈손으로 지나간다.
+#
+# 정산은 `SimulationCore.steal_camp_point` 한 곳이고 값과 재생성 시계가 밟아서
+# 먹는 것과 같다 — 카드 한 장이 "발로 밟은 한 번"을 거리 무시로 사는 것이다.
+func _effect_steal_camp(picked: Variant, caster: PilotData) -> String:
 	if not (picked is Vector2i) or caster == null:
-		return "정글 점령 (대상 없음)"
+		return "약탈 (대상 없음)"
 	var cell := picked as Vector2i
-	if not _bs.neutral_zone_cells.has(cell):
-		return "정글 점령 실패 (정글 아님)"
-	var prev_owner: int = int(_bs.neutral_zone_cells[cell])
-	if prev_owner == caster.team:
-		return "정글 점령 실패 (이미 아군 소유)"
-	_bs.sim_core.set_zone_cell(cell, caster.team)
-	_bs.temp_zone_overrides.append({
-		"cell": cell,
-		"prev_owner": prev_owner,
-		"expires_turn": _bs.turn_count + turns,
-	})
-	return "정글 점령 (%d,%d) %d턴" % [cell.x, cell.y, turns]
+	if not _bs.sim_core.steal_camp_point(cell, caster):
+		return "약탈 실패 (캠프 없음)"
+	return "약탈 (%d,%d) +%.2fk" % [cell.x, cell.y, _bs.SCORE_JUNGLE_CAMP]
 
 
 # 사전 준비 — hand-wide cost reduction. Mutates every current hand card's

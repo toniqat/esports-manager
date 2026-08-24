@@ -71,7 +71,7 @@ func run_ai_plays() -> void:
 			_bs.engage_discount_ai = 0
 		_bs.ai_hand.erase(pick)
 		await _show_card_centre(pick)
-		# 공격 카드는 돌진 연출이 끝나야 반환된다 — 그래서 await 다. 연출이
+		# 공격 카드는 명중 연출이 끝나야 반환된다 — 그래서 await 다. 연출이
 		# 없는 카드는 그 자리에서 값을 돌려주므로 대기가 붙지 않는다.
 		var log_msg: String = await _bs.card_phase.apply_and_dispose_ai_card(pick)
 		if log_msg != "":
@@ -115,12 +115,17 @@ func _show_card_centre(cd: CardData) -> void:
 			if child is Control:
 				(child as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-		# Phase 1 — fly to centre, scale up, still showing the back.
+		# Phase 1 — fly to centre, scale up, **straighten out**, still showing
+		# the back. 회전까지 함께 푸는 이유: 뽑혀 나온 카드는 상대 부채꼴이
+		# 준 기울기(`HudBuilder._layout_ai_hand` 의 `rotation = -theta`)를 그대로
+		# 달고 있어, 안 펴면 화면 한가운데에 비스듬하게 선 채로 뒤집힌다.
 		var tw_fly := _bs.create_tween().set_parallel()
 		tw_fly.tween_property(node, "global_position", center_anchor,
 				FLY_FROM_HAND_SEC).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 		tw_fly.tween_property(node, "scale", SCALE_BIG, FLY_FROM_HAND_SEC) \
 				.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+		tw_fly.tween_property(node, "rotation", 0.0, FLY_FROM_HAND_SEC) \
+				.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 		await tw_fly.finished
 		if not is_instance_valid(node):
 			return

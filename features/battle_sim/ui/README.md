@@ -52,6 +52,11 @@ Creates UI inside `_bs.canvas` (a CanvasLayer added to BattleSim):
   Control's visual centre is `position + pivot_offset`, invariant under both
   rotation and scale (see `card_phase/README.md`), and `pivot_offset` must be
   set explicitly or the cards rotate about their top-left corner.
+
+  **`pop_ai_hand_card_node()` does not reset rotation** — the popped card keeps
+  the fan's `-θ`, and `AiCardPlayer._show_card_centre` tweens it to 0 during the
+  fly-out. Without that the AI's played card stood at the centre of the screen
+  visibly tilted, flipped over, and vanished still crooked.
 - **Top panel** (y=0, h=132) — 시간 · 팀 점수 한 줄 + 그 아래 **적 파일럿
   스트립** + 그 양옆 **오브젝트 시계 두 칸**. Has an explicit opaque dark `StyleBoxFlat` so the AI hand peek
   behind it stays visually clipped regardless of theme. 아군 스트립은 여기가

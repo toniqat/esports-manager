@@ -475,6 +475,25 @@ func pop_ai_hand_card_node() -> Card:
 	return card
 
 
+## 상대 손패의 **왼쪽 끝** 자리(뷰포트 좌표, 카드 좌상단 기준). 지금 손패보다
+## 한 장 많은 부채꼴로 재므로, 여기로 날아온 카드가 실제로 앉을 자리와 맞는다.
+##
+## 쓰는 곳은 오브젝트 보상 연출(`objective/ObjectiveRewardFx.gd`) 하나다 —
+## 적이 전령 / 용을 가져갔을 때 보상 카드가 빨려 들어가는 지점. 상대의 덱은
+## 화면에 없으므로 손패 자리가 "상대 것이 됐다"를 말하는 유일한 좌표다.
+func ai_hand_left_anchor() -> Vector2:
+	var n: int = maxi(1, _ai_card_back_nodes.size() + 1)
+	var step_deg: float = AI_HAND_FAN_STEP_DEG
+	if n > 1:
+		step_deg = min(step_deg, AI_HAND_FAN_MAX_SPREAD_DEG / float(n - 1))
+	var half_card := Vector2(Card.CARD_W, Card.CARD_H) * 0.5
+	var mid_center_y: float = AI_HAND_TOP_Y + Card.CARD_H * AI_HAND_SCALE * 0.5
+	var pivot := Vector2(1080.0 * 0.5, mid_center_y - AI_HAND_FAN_RADIUS)
+	var theta: float = deg_to_rad(-float(n - 1) * 0.5 * step_deg)
+	var centre: Vector2 = pivot + Vector2(sin(theta), cos(theta)) * AI_HAND_FAN_RADIUS
+	return centre - half_card
+
+
 # Lays the AI card backs out on the inverted fan described above. The step
 # angle shrinks once the hand is wide enough to hit AI_HAND_FAN_MAX_SPREAD_DEG,
 # so the row redistributes instead of growing — the same "fixed width, tighter

@@ -46,7 +46,8 @@ And accesses shared state via `_bs.pilots`, `_bs.turn_count`, etc.
 | GambitPhaseManager | Node | `gambit/GambitPhaseManager.gd` | Auto role→lane mapping + launch (UI removed; pre-battle choices live in `features/match_flow/`) |
 | EngagePhaseManager | Node | `engage/EngagePhaseManager.gd` | 전투 개시(engage) modal — **라운드 턴제 사이드뷰 벨트 교전** (`engage/TurnEngageSim.gd` 헤드리스 시뮬 + `engage/EngageArena.gd` 렌더러) triggered by `engage:N` / `duel` cards. Lazily added in `_ready()`. |
 | HudBuilder     | Node | `ui/HudBuilder.gd`         | HUD construction; 전략 포인트 도넛 (`ui/CostDonut.gd`), **양 팀 파일럿 스트립** (`ui/PilotStrip.gd`, 상단 적 / 하단 아군), 우측 상단 **킬로그** (`ui/KillFeed.gd`), 적 스트립 양옆 **오브젝트 시계** (`ui/ObjectiveTimer.gd`) |
-| ObjectiveSystem | Node | `objective/ObjectiveSystem.gd` | **오브젝트(전령 / 용)** — 좌우 중립 칸에서 정해진 턴마다 열리는 교전 사건. 시계 · 참여 결정 · 정산. 화면은 교전 모듈의 VS 화면과 무대를 빌려 쓴다. Lazily added in `_ready()` **after** config load. |
+| ObjectiveSystem | Node | `objective/ObjectiveSystem.gd` | **오브젝트(전령 / 용)** — 좌우 중립 칸에서 정해진 턴마다 열리는 교전 사건. 시계 · 참여 결정 · 정산. 결정 창과 무대는 교전 모듈의 VS 화면과 아레나를 빌려 쓴다. Lazily added in `_ready()` **after** config load. |
+| ObjectiveRewardFx | Node | `objective/ObjectiveRewardFx.gd` | **오브젝트 보상 획득 연출** — 보상 카드를 화면 한가운데에 펼쳤다가 들어갈 자리(덱 뭉치 / 손패 왼쪽 끝 / 상대 손패)로 날려 보낸다. `ObjectiveSystem._grant_reward` 가 **지급 직전에** await 한다. |
 | PilotDetailPanel | Node | `ui/PilotDetailPanel.gd` | 파일럿 상세 모달 — 스트립의 얼굴을 누르면 열린다(작전 단계 한정). 머리글(이름 · 기체명 · 성장치)이 탭과 분리돼 늘 보이고, 탭이 바꾸는 것은 아래 상세 패널뿐이다. Lazily added in `_ready()`. |
 | ObjectiveRewardPopup | Node | `ui/ObjectiveRewardPopup.gd` | 오브젝트 보상 미리보기 — 상단 패널의 시계를 누르면 그 오브젝트가 주는 카드를 실물로 띄운다. **전장을 붙잡지 않는다.** Lazily added in `_ready()`. |
 | PilotSkillSystem | Node | `skill/PilotSkillSystem.gd` | **파일럿 스킬** — 선수마다 붙는 고유 능력(쿨타임 / 충전식 / 패시브). 상태 · 활성화 · 사건 훅 · 패시브 질의. Lazily added in `_ready()` **after** `build_starter_decks()` (짝을 로스터에서 찾고 백본 패시브가 덱을 만진다). `skill/README.md` 참조 |
@@ -246,6 +247,11 @@ Responsibilities:
   피해 8. 용: [용 보상](0코, 소멸) 5장을 덱에 섞어 넣는다. 드로우 1 + 지정한
   아군의 성장 적립 배율 **영구** +10%(`PilotData.growth_rate_bonus`, 누적).
   두 카드 모두 `pool = 0` 이고 **시전자가 없다**(`owner_pilot == null`).
+- **보상은 연출을 거쳐 들어온다**(`objective/ObjectiveRewardFx.gd`) — 용은
+  N장이 중앙에 부채꼴로 펼쳐졌다가 한 장처럼 겹쳐져 **좌측 아래 덱 뭉치**로,
+  전령은 한 장이 떠올랐다가 **손패 맨 왼쪽 자리**로 내려앉는다. 적이 가져가면
+  둘 다 **상단 상대 손패 왼쪽 끝**으로 사라진다. `_grant_reward` 가 연출을
+  `await` 한 **뒤에** 지급하므로 같은 카드가 두 군데에 보이지 않는다.
 - **오브젝트는 그 좌표를 무대로 빌려 쓸 뿐, 두 칸은 평범한 정글 칸이다** —
   캠프가 서고, 정글러가 밟아 점령하고, 사이드 T1 파괴로 주인이 바뀐다. 한때는
   상시 중립이라 캠프 칸이 14 → 12 로 줄었고 그만큼 `SCORE_JUNGLE_CAMP` 이

@@ -582,13 +582,19 @@ func make_objective_card(card_id: int) -> CardData:
 ## 자기 차례에 들어온 카드가 상한을 넘겨도 버리지 않는 기존 규칙과 같고, 어차피
 ## 전령 보상은 `보존` 키워드라 다음 자동 버리기도 이 카드를 건너뛴다.
 ## 실제로 들어간 장수를 돌려준다.
-func grant_cards_to_hand(card_id: int, is_player: bool, count: int) -> int:
+## `at_left` 는 손패 **맨 왼쪽**에 꽂는다 — 오브젝트 보상 연출
+## (`objective/ObjectiveRewardFx.gd`)이 카드를 그 자리로 날려 보내고 끝나므로,
+## 실제 삽입도 같은 자리여야 연출과 결과가 어긋나지 않는다. 그 경로는 드로우
+## 인트로도 타지 않는다(`spawn_card_node` 이 `at_left` 에서 인트로를 끈다) —
+## 화면 왼쪽 밖에서 다시 날아오면 방금 본 비행이 두 번 재생된다.
+func grant_cards_to_hand(card_id: int, is_player: bool, count: int,
+		at_left: bool = false) -> int:
 	var added: int = 0
 	for _i in max(0, count):
 		var cd := make_objective_card(card_id)
 		if cd == null:
 			break
-		add_card_to_hand(cd, is_player)
+		add_card_to_hand(cd, is_player, at_left)
 		added += 1
 	if added > 0:
 		_refresh_hand_after_bulk_change(is_player)

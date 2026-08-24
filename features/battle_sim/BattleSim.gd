@@ -358,6 +358,12 @@ var pilot_detail: PilotDetailPanel = null
 # (`_battle_tick_held` 가 읽지 않는다) — 순수 정보이므로 읽는 동안에도 턴은
 # 평소대로 흐르고, 아무 데나 누르면 닫힌다. lazy-add in _ready().
 var objective_reward: ObjectiveRewardPopup = null
+# 오브젝트 보상 **획득** 연출 — 전령 / 용의 보상 카드를 화면 한가운데에 펼쳤다가
+# 들어갈 자리(덱 뭉치 / 손패 왼쪽 끝 / 상대 손패)로 날려 보낸다. 위의
+# `objective_reward` 는 **결판 전에** 무엇을 주는지 미리 보는 정보 팝업이고,
+# 이쪽은 **결판 뒤에** 실제로 받은 카드를 보여 주는 연출이다 — 이름이 비슷할 뿐
+# 여는 사람도(시계 / `ObjectiveSystem`) 수명도 다르다. lazy-add in _ready().
+var objective_fx: ObjectiveRewardFx = null
 # 전투 개시(engage) — 카드의 engage:N 효과가 발동되면 잠시 ENGAGE 페이즈로
 # 전환되어 실시간 교전 아레나를 띄운다. 전투가 끝나면 아레나를 연 페이즈로
 # 복귀한다(플레이어 카드면 CARD_PHASE, 상대 차례의 AI 카드면 BATTLE).
@@ -458,6 +464,11 @@ func _ready() -> void:
 	objective_reward.name = "ObjectiveRewardPopup"
 	add_child(objective_reward)
 	objective_reward.bind(self)
+	# 오브젝트 보상 획득 연출 — `ObjectiveSystem._grant_reward` 가 지급 직전에 연다.
+	objective_fx = ObjectiveRewardFx.new()
+	objective_fx.name = "ObjectiveRewardFx"
+	add_child(objective_fx)
+	objective_fx.bind(self)
 	# Engage manager owns the turn-based 전투 modal lifecycle.
 	engage_phase = EngagePhaseManager.new()
 	engage_phase.name = "EngagePhaseManager"

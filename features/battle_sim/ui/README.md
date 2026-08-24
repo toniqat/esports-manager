@@ -53,6 +53,13 @@ Creates UI inside `_bs.canvas` (a CanvasLayer added to BattleSim):
   rotation and scale (see `card_phase/README.md`), and `pivot_offset` must be
   set explicitly or the cards rotate about their top-left corner.
 
+  **`ai_hand_left_anchor()`** re-runs that same solve for index 0 of a hand one
+  card **larger** than the current one, so it answers "where would the next
+  leftmost AI card sit?". Its only consumer is the objective reward FX
+  (`objective/ObjectiveRewardFx.gd`) — when the enemy takes 전령 / 용, the reward
+  cards fly into that point. The AI's *deck* is nowhere on screen, so the hand's
+  left edge is the only coordinate that can say "this became theirs".
+
   **`pop_ai_hand_card_node()` does not reset rotation** — the popped card keeps
   the fan's `-θ`, and `AiCardPlayer._show_card_centre` tweens it to 0 during the
   fly-out. Without that the AI's played card stood at the centre of the screen

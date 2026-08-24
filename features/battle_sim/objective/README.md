@@ -16,9 +16,11 @@
 ## Files
 | File | Purpose |
 |---|---|
-| `ObjectiveSystem.gd` | `class_name ObjectiveSystem extends Node` — 시계 · 참가자 · 의사 결정 · 정산 전부. 이 모듈에는 파일이 하나뿐이다: 화면은 교전 모듈의 VS 화면(`engage/EngageIntro.gd`)과 무대(`engage/EngageArena.gd`)를 그대로 빌려 쓴다. |
+| `ObjectiveSystem.gd` | `class_name ObjectiveSystem extends Node` — 시계 · 참가자 · 의사 결정 · 정산 전부. 결정 창과 교전 무대는 교전 모듈의 VS 화면(`engage/EngageIntro.gd`)과 무대(`engage/EngageArena.gd`)를 그대로 빌려 쓴다. |
+| `ObjectiveRewardFx.gd` | `class_name ObjectiveRewardFx extends Node` — **보상 획득 연출**. 보상 카드를 화면 한가운데에 펼쳤다가 들어갈 자리로 날려 보낸다. 아래 *보상 획득 연출* 절. |
 
-`BattleSim._ready()` 가 자식으로 붙이고 `_bs.objective` 로 잡는다. **설정값을 읽은
+`BattleSim._ready()` 가 둘 다 자식으로 붙이고 `_bs.objective` / `_bs.objective_fx`
+로 잡는다. **설정값을 읽은
 뒤**(`_populate_from_data_loader()`)라야 한다 — 첫 등장 턴이 `game_config` 에서
 온다.
 
@@ -190,6 +192,51 @@ id 33 · 0코 · exhaust · target ally / cast_range 99 · draw:1;growth_perm:10
 
 두 카드 모두 `pool = 0` 이라 랜덤 스타터 덱에는 절대 들어가지 않고, 오직
 `grant_cards_to_hand` / `grant_cards_to_deck` 로만 세상에 나온다.
+
+## 보상 획득 연출 (`ObjectiveRewardFx.gd`)
+보상은 `_grant_reward` 한 줄로 들어간다. 그 결과는 손패가 한 장 늘거나(전령)
+덱 숫자가 다섯 오르는 것(용)뿐이라, 오브젝트 하나를 두고 4인 교전까지 벌인
+끝의 보답치고는 **화면에 아무 일도 일어나지 않았다**. 특히 용은 덱에 섞여
+들어가므로 그 자리에서는 손에 잡히는 것이 하나도 없다 — 무엇을 받았는지는
+카드를 실물로 한 번 보여 줘야 한다.
+
+**연출이 지급보다 먼저다.** `_grant_reward` 는 코루틴이고, `objective_fx.play()`
+를 `await` 한 **뒤에** `grant_cards_to_hand` / `grant_cards_to_deck` 를 부른다.
+순서를 뒤집으면 연출이 도는 동안 이미 손패에 같은 카드가 서 있어 한 장이 두
+군데에 보인다. 부르는 두 자리(`_run_objective_engage` / `_award_uncontested`)도
+그래서 `await` 로 받는다.
+
+| 오브젝트 | 박자 |
+|---|---|
+| **용** | 보상 카드 N장이 중앙에 **부채꼴로 펼쳐졌다가**(`SPREAD_SEC` 0.34s + `HOLD_SEC` 0.70s) → **한 장처럼 겹쳐지고**(`COLLAPSE_SEC` 0.26s) → 좌측 아래 **덱 뭉치**로 빨려 들어간다(`FLY_SEC` 0.42s) |
+| **전령** | 보상 카드 1장이 중앙에 떠올랐다가 → **손패 맨 왼쪽 자리**로 내려앉는다 (한 장짜리라 겹치는 박자를 건너뛴다) |
+
+- **적이 가져가면 둘 다 상단 상대 손패의 왼쪽 끝**으로 날아가 사라진다
+  (`HudBuilder.ai_hand_left_anchor()`). 상대의 덱은 화면에 없으므로 용도 그
+  자리를 쓴다 — 중요한 것은 "누구 것이 됐는가"이고, 그 답은 카드가 위로 갔는지
+  아래로 갔는지가 말한다.
+- **전령의 도착점과 실제 삽입 자리가 같다.** 연출은 `slot_position(0, n+1)` 로
+  잰 **맨 왼쪽 슬롯**을 향하고, 지급도 `grant_cards_to_hand(..., at_left = true)`
+  로 그 자리에 꽂는다. `at_left` 경로는 드로우 인트로도 타지 않는다
+  (`spawn_card_node` 이 끈다) — 화면 왼쪽 밖에서 다시 날아오면 방금 본 비행이
+  두 번 재생된다.
+- **딤은 비행이 시작될 때 걷는다.** 덱 뭉치도 상대 손패도 딤 아래에 있어서,
+  어디로 들어가는지를 보여 주려면 그 순간에 화면이 밝아야 한다.
+- 카드는 손패와 같은 `Card.tscn` 노드다(`ObjectiveRewardPopup` 과 같은 이유 —
+  따로 그린 그림이면 실제로 들어온 카드와 같은 것인지 확인할 길이 없다).
+- **무혈 획득에서는 확인 창을 닫은 뒤에 온다.** 알림 위에 보상 카드가 겹쳐
+  날아다니면 어느 쪽을 보라는 화면인지가 흐려진다.
+- 연출이 도는 동안(약 1.9초) `_busy` 가 그대로 켜져 있으므로 BATTLE 자동 틱과
+  MM:SS 시계는 멈춰 있다 — 이 연출은 `_resolve_objective` 안에서 끝난다.
+- 각 박자는 트윈의 `finished` 가 아니라 **타이머**로 기다린다. 노드가 도중에
+  free 되면(재시작 · 씬 전환) 그 신호는 영영 오지 않아 코루틴이 매달린다
+  (`CardPhaseManager._play_draw_intro` 와 같은 규칙).
+
+## 미리보기와 헷갈리지 말 것
+`ui/ObjectiveRewardPopup.gd` 는 **결판 전에** 시계를 눌러 "무엇을 주는가"를 보는
+정보 팝업이고, `ObjectiveRewardFx.gd` 는 **결판 뒤에** 실제로 받은 카드를 보여
+주는 연출이다. 이름이 비슷할 뿐 여는 사람도(시계 / `ObjectiveSystem`) 수명도
+다르고, 전자는 전장을 붙잡지 않고 후자는 붙잡는다.
 
 ## 킬로그 한 줄 (`_push_feed`)
 결판이 나면 화면 우측 상단 킬로그에 **처치 줄과 같은 문법으로** 한 줄이 뜬다 —

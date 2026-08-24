@@ -187,7 +187,7 @@ func _run_objective_engage(st: Dictionary, kind: int,
 		_bs.last_log = "[%s] 무승부 — 아무도 가져가지 못했다" % label
 		_bs.blog.log_event("OBJ", "%s 무승부 — 다음 %d턴" % [label, int(st["next_turn"])])
 		return
-	_grant_reward(kind, winner)
+	await _grant_reward(kind, winner)
 	_push_feed(kind, winner, t0 if winner == 0 else t1)
 	# 고양감(파일럿 스킬)은 **싸워서 이겼을 때만** 충전한다 — 아무도 안 나와
 	# 거저 가져간 경우(`_award_uncontested`)는 "전투에서 승리"가 아니다.
@@ -207,7 +207,6 @@ func _run_objective_engage(st: Dictionary, kind: int,
 func _award_uncontested(st: Dictionary, kind: int, winner: int,
 		t0: Array, t1: Array) -> void:
 	var label: String = kind_name(kind)
-	_grant_reward(kind, winner)
 	# 무혈 획득도 킬로그에 오른다 — 아무도 안 나와 거저 가져간 것이야말로
 	# 그 순간 화면에 아무 일도 일어나지 않는 경우라, 자국이 더 필요하다.
 	_push_feed(kind, winner, t0 if winner == 0 else t1)
@@ -220,11 +219,14 @@ func _award_uncontested(st: Dictionary, kind: int, winner: int,
 			% [label, winner, reward_text(kind), int(st["next_turn"])])
 	# 플레이어가 결정에 참여하지 않았다면(참가 가능한 파일럿이 아무도 없었다)
 	# 알림 창도 띄우지 않는다 — 고른 적 없는 결과에 확인을 누르게 할 이유가 없다.
-	if t0.is_empty():
-		return
-	await _bs.engage_phase.prompt_engage(t0, t1, _bs.OBJ_ENGAGE_ROUNDS,
-			"%s — %s 무혈 획득" % [label, side], false,
-			"확인", "", reward_text(kind))
+	#
+	# **지급(과 그 연출)은 이 창을 닫은 뒤에 온다** — 알림 위에 보상 카드가
+	# 겹쳐 날아다니면 어느 쪽을 보라는 화면인지가 흐려진다.
+	if not t0.is_empty():
+		await _bs.engage_phase.prompt_engage(t0, t1, _bs.OBJ_ENGAGE_ROUNDS,
+				"%s — %s 무혈 획득" % [label, side], false,
+				"확인", "", reward_text(kind))
+	await _grant_reward(kind, winner)
 
 
 ## 이번 교전의 승자. **생존 인원 수 → 동률이면 잔여 HP 비율 합**.
@@ -345,13 +347,24 @@ func reward_text(kind: int) -> String:
 ## 전령은 카드 한 장을 **손패로 곧장**(보존 키워드라 버려지지 않는다), 용은
 ## 카드 다섯 장을 **덱에 섞어서**. 둘의 차이가 곧 두 오브젝트의 성격이다 —
 ## 전령은 지금 당장 쓸 한 방, 용은 경기 내내 천천히 도는 성장 이득.
+##
+## **지급보다 연출이 먼저다**(`objective/ObjectiveRewardFx.gd`) — 보상 카드를
+## 화면 한가운데에 펼쳐 보여 준 뒤 들어갈 자리로 날려 보내고, 그 비행이 끝난
+## 자리에서 실제로 넣는다. 순서를 뒤집으면 연출이 도는 동안 이미 손패에 같은
+## 카드가 서 있어 한 장이 두 군데에 보인다. 그래서 이 함수는 코루틴이고,
+## 부르는 두 곳(`_run_objective_engage` / `_award_uncontested`)이 await 한다.
 func _grant_reward(kind: int, team: int) -> void:
 	var is_player: bool = team == 0
-	if kind == Kind.HERALD:
-		_bs.card_phase.grant_cards_to_hand(HERALD_CARD_ID, is_player, 1)
+	var to_deck: bool = kind != Kind.HERALD
+	var card_id: int = HERALD_CARD_ID if kind == Kind.HERALD else DRAGON_CARD_ID
+	var count: int = 1 if kind == Kind.HERALD else int(_bs.OBJ_DRAGON_CARD_COUNT)
+	if _bs.objective_fx != null:
+		await _bs.objective_fx.play(card_id, is_player, count, to_deck)
+	if to_deck:
+		_bs.card_phase.grant_cards_to_deck(card_id, is_player, count)
 	else:
-		_bs.card_phase.grant_cards_to_deck(DRAGON_CARD_ID, is_player,
-				_bs.OBJ_DRAGON_CARD_COUNT)
+		# 연출이 카드를 손패 **맨 왼쪽**으로 날려 보내고 끝나므로 삽입도 그 자리다.
+		_bs.card_phase.grant_cards_to_hand(card_id, is_player, count, true)
 
 
 # ─── 킬로그 ──────────────────────────────────────────────────────────────────

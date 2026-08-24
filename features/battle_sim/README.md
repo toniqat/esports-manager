@@ -279,8 +279,8 @@ Responsibilities:
   `MAX_HAND_SIZE` 는 **10**이다.
 - Ending the phase goes through the player's 전략 포인트 도넛: tap it once to
   flip it into a circular 턴 넘기기 button, tap again to end. **카드를 한 장도
-  내지 않아도 넘길 수 있다** — 면이 회색으로 잠기는 것은 배너 / 모달 / 돌진
-  연출처럼 지금 닫으면 무언가가 끊기는 상태뿐이다.
+  내지 않아도 넘길 수 있다** — 면이 회색으로 잠기는 것은 배너 / 모달 / 공격
+  명중 연출처럼 지금 닫으면 무언가가 끊기는 상태뿐이다.
   Tapping anywhere else flips it back to the point readout.
 - Phase end re-runs recalls (HP threshold + out-of-position card displacement)
   and drops straight back to BATTLE. 그때 **문턱을 넘은 전략 점수는 소멸하고**

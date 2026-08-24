@@ -91,32 +91,39 @@ const ANIM_TURRET_HIT_AMP_PX   := 9.0
 ## 피격 순간 포탑 스프라이트에 곱하는 색. 연출이 끝나면 흰색으로 돌아온다.
 const ANIM_TURRET_HIT_TINT     := Color(1.0, 0.42, 0.36, 1.0)
 
-# ─── 공격 카드 돌진 연출 ─────────────────────────────────────────────────────
-# 공격 카드(`attack:N`)를 낼 때 시전자 초상이 대상 초상으로 파고들었다가
-# 돌아온다. 자세한 배선은 anim_pilot_lunge / pilot_lunge_offset 참조.
-## **한 타격의 총 연출 시간은 `ANIM_LUNGE_IN_DUR + ANIM_LUNGE_OUT_DUR` = 0.32초다.**
-## 예전에는 0.50 + 0.62 = 1.12초였는데, 연속 공격(`repeat`, 최대 5타)이 이 세 박자를
-## 타수만큼 반복하므로 한 장이 5.6초를 먹었다 — 그동안 손패도 턴 넘기기도 잠긴다
-## (`CardPhaseManager._attack_anim_active`). 지금은 5타를 다 굴려도 1.6초다.
-## 두 값을 만질 때는 **합보다 `DMG_POPUP_DUR` 이 짧도록** 함께 조정할 것.
+# ─── 공격 카드 명중 연출 ─────────────────────────────────────────────────────
+# 공격 카드(`attack:N`)의 한 타격은 두 초상 위에서 동시에 벌어진다 —
+# **시전자 초상에서 하얀 빛이 솟아오르고**, **피격자 초상에서 파티클이 사방으로
+# 퍼지며 초상이 격하게 흔들린다**. 자세한 배선은 `anim_pilot_cast` /
+# `BattleRenderer.spawn_pilot_burst` 참조.
+#
+# 예전에는 **돌진(몸통 박치기)**이었다 — 시전자 초상이 대상 초상까지 파고들었다
+# (`ANIM_LUNGE_IN_DUR`) 붕 뜬 채 돌아오는(`ANIM_LUNGE_OUT_DUR`) 세 박자. 그
+# 연출은 초상을 실제로 **옮겼기 때문에** 딸린 장치가 많았다: 마커 좌표를 다시
+# 풀어 방향을 재고(같은 칸의 적이면 방향이 뒤집힌다), 파고든 얼굴이 대상 뒤로
+# 숨지 않게 렌더러가 그리는 순서를 바꾸고(`_lunging_cells_last`), 사망 · 복귀 ·
+# 부활마다 변위를 걷어 내야 했다(`anim_pilot_lunge_clear`). 지금은 두 초상이
+# 제자리에 있고 그 위에 이펙트만 얹히므로 그 셋이 통째로 사라졌다.
+# **되살리지 말 것** — 삭제된 API 목록은 `debug/removed` 대신 이 주석이 기록이다.
+
+## **한 타격의 총 연출 시간은 `ANIM_CAST_DUR + ANIM_HIT_HOLD_SEC` = 0.32초다.**
+## 돌진 시절(0.08 + 0.24)과 같은 길이로 맞춘 값이다 — 연속 공격(`repeat`, 최대
+## 5타)이 이 두 박자를 타수만큼 반복하므로 한 장의 상한도 그대로 1.6초이고,
+## `DMG_POPUP_DUR`(0.30) < 0.32 라는 기존 관계도 유지된다(팝업 좌표는 띄운
+## 순간에 고정되므로 이 부등호가 깨지면 연속 타격의 숫자가 같은 자리에 쌓인다).
 ##
-## 돌진(1단계) 시간. **거리와 무관하게 고정**이라 먼 대상일수록 빠르게 날아간다 —
-## 연출 길이가 전장 위치에 따라 들쭉날쭉하면 연속 공격의 리듬이 무너진다.
-## 0.16 → 0.08 로 절반이 되면서 "덤벼드는" 인상이 강해졌다(복귀는 그대로라
-## 파고들기 : 복귀 = 1 : 3 이다).
-const ANIM_LUNGE_IN_DUR    := 0.08
-## 복귀(2단계) 시간. 돌진보다 길다 — "천천히 돌아온다"가 이 연출의 후반부다.
-const ANIM_LUNGE_OUT_DUR   := 0.24
-## 복귀 중 붕 뜨는 높이(px). 궤적 한가운데서 최대가 되는 반주기 사인.
-const ANIM_LUNGE_HOP_PX    := 34.0
-## 돌진이 끝났을 때 대상 초상과 겹치는 비율(대상 지름 기준). 0.5 = 절반.
-## 두 마커 반지름이 같으므로 최종 중심 간 거리는 정확히 마커 반지름 1개분이 된다.
-const ANIM_LUNGE_OVERLAP   := 0.5
+## 시전 빛이 솟아오르는 시간(s). 피해는 이 박자가 **끝난 뒤** 들어간다 —
+## 빛이 올라가는 동안이 "쏘는 중"이고, 그 다음이 맞는 순간이다.
+const ANIM_CAST_DUR      := 0.12
+## 시전 빛이 시전자 초상 위로 솟아오르는 높이(px).
+const ANIM_CAST_RISE_PX  := 54.0
+## 명중 뒤 다음 타격까지 두는 여운(s). 파티클과 쉐이크가 이 구간에서 돈다.
+const ANIM_HIT_HOLD_SEC  := 0.20
 
 # ─── 피해 수치 팝업 (공격 카드 전용) ─────────────────────────────────────────
 ## 팝업이 화면에 머무는 시간(s). **한 타격의 연출 길이(0.32초)보다 길면 연속
 ## 공격의 숫자가 같은 자리에 겹쳐 쌓인다** — 팝업 좌표는 띄운 순간에 고정되므로
-## 두 번째 타격의 `-N` 이 첫 번째 것 위에 그대로 얹힌다. 돌진 연출을 1.12 → 0.40
+## 두 번째 타격의 `-N` 이 첫 번째 것 위에 그대로 얹힌다. 한 타격의 연출을 1.12 → 0.40
 ## → 0.32 초로 줄일 때마다 이 값도 함께 내려왔다(0.95 → 0.38 → 0.30). 마지막
 ## 숫자는 다음 타격이 시작되기 직전에 사라진다.
 const DMG_POPUP_DUR      := 0.30
@@ -1212,16 +1219,12 @@ func _advance_pilot_animations(delta: float) -> bool:
 					p.anim_recall_t     = 0.0
 					p.anim_recall_dur   = 0.0
 			any_active = true
-		if p.anim_lunge_phase != 0:
-			if p.anim_lunge_t < p.anim_lunge_dur:
-				p.anim_lunge_t = minf(p.anim_lunge_t + delta, p.anim_lunge_dur)
-				any_active = true
-			elif p.anim_lunge_phase == 2:
-				# 복귀가 끝나면 스스로 걷는다. **1단계는 시간이 다 차도 꺼지지
-				# 않고 대상 앞에 멈춰 선다** — 그 정지 구간이 피해와 쉐이크가
-				# 재생되는 자리이고, 2단계는 anim_pilot_lunge_return 이 건다.
-				anim_pilot_lunge_clear(p)
-				any_active = true
+		if p.anim_cast_dur > 0.0:
+			p.anim_cast_t += delta
+			if p.anim_cast_t >= p.anim_cast_dur:
+				p.anim_cast_dur = 0.0
+				p.anim_cast_t   = 0.0
+			any_active = true
 	return any_active
 
 
@@ -1277,7 +1280,7 @@ func anim_pilot_shake(p: PilotData, dur: float = ANIM_SHAKE_DUR,
 # 사망뿐이고, 그건 anim_pilot_death 가 맡는다.)
 func anim_pilot_recall(p: PilotData, orig_cell: Vector2i) -> void:
 	p.anim_move_path.clear()
-	anim_pilot_lunge_clear(p)
+	anim_pilot_cast_clear(p)
 	p.anim_recall_orig    = orig_cell
 	p.anim_recall_phase   = 1
 	p.anim_recall_t       = 0.0
@@ -1287,7 +1290,7 @@ func anim_pilot_recall(p: PilotData, orig_cell: Vector2i) -> void:
 # Respawn: skip phase 1; just fade in + descend at the pilot's HQ cell.
 func anim_pilot_respawn(p: PilotData) -> void:
 	p.anim_move_path.clear()
-	anim_pilot_lunge_clear(p)
+	anim_pilot_cast_clear(p)
 	p.anim_recall_phase   = 2
 	p.anim_recall_t       = 0.0
 	p.anim_recall_dur     = ANIM_RECALL_FADE_IN_DUR
@@ -1304,9 +1307,9 @@ func anim_pilot_respawn(p: PilotData) -> void:
 func anim_pilot_death(p: PilotData) -> void:
 	p.anim_move_path.clear()
 	p.anim_recall_phase   = 0
-	# 돌진 중에 쓰러질 수 있다(교전 무대가 아니라 전장에서 반격을 맞는 경우).
-	# 시신은 쓰러진 칸에 그대로 남아야 하므로 변위를 걷어 낸다.
-	anim_pilot_lunge_clear(p)
+	# 시전 도중에 쓰러질 수 있다(반격 · 계시 연쇄). 시신 위에 빛이 남아
+	# 있으면 아직 무언가를 쏘는 중으로 읽히므로 걷어 낸다.
+	anim_pilot_cast_clear(p)
 	p.anim_death_cell     = p.grid_pos
 	p.anim_death_phase    = 1
 	p.anim_death_t        = 0.0
@@ -1319,79 +1322,51 @@ func anim_pilot_death_clear(p: PilotData) -> void:
 	p.anim_death_dur   = 0.0
 
 
-# ─── 공격 카드 돌진 연출 ─────────────────────────────────────────────────────
-# 한 번의 타격이 세 박자다: **파고들기 → 타격(정지) → 복귀**. 가운데 박자는
-# 여기 없다 — 시전자가 대상 앞에 멈춰 선 채로 호출 측(`CardPhaseManager.
-# _effect_attack`)이 피해를 넣고 쉐이크를 걸고 팝업을 띄운다. 그래서 두 함수로
-# 갈라져 있고, 둘 다 자기 단계가 끝날 때까지 await 할 수 있는 코루틴이다.
+# ─── 공격 카드 명중 연출 ─────────────────────────────────────────────────────
+# 한 번의 타격이 두 박자다: **시전(빛이 솟는다) → 명중(파티클 + 쉐이크)**.
+# 가운데의 피해 계산은 여기 없다 — 호출 측(`CardPhaseManager._effect_attack`)이
+# 두 박자 사이에서 판정을 굴리고 피해를 넣고 팝업을 띄운다. 그래서 두 함수로
+# 갈라져 있고, 둘 다 자기 박자가 끝날 때까지 await 할 수 있는 코루틴이다.
 #
-# 연속 공격(`repeat`)은 이 세 박자를 타수만큼 반복한다. 다음 카드는 마지막
-# 복귀가 끝나야 낼 수 있다(`CardPhaseManager` 의 입력 잠금 참조).
+# 연속 공격(`repeat`)은 이 두 박자를 타수만큼 반복한다. 다음 카드는 마지막
+# 여운이 끝나야 낼 수 있다(`CardPhaseManager._attack_anim_active`).
 
-## 1단계 — 시전자를 대상 초상 앞까지 밀어 넣고, 도달할 때까지 기다린다.
-## 도달 시점의 겹침은 `ANIM_LUNGE_OVERLAP`, 소요 시간은 거리와 무관하게
-## `ANIM_LUNGE_IN_DUR` 고정이다.
-func anim_pilot_lunge(attacker: PilotData, target: PilotData) -> void:
-	if attacker == null or target == null or attacker == target:
+## 1단계 — 시전자 초상에서 하얀 빛이 솟아오른다. 초상 자체는 움직이지 않는다.
+## 빛이 다 오를 때까지 기다렸다가 반환하므로 호출 측은 이 await 뒤에 피해를 넣는다.
+func anim_pilot_cast(caster: PilotData) -> void:
+	if caster == null or not caster.alive:
 		return
-	if not attacker.alive or renderer == null:
-		return
-	# 그려진 마커끼리 재야 한다 — 마커는 타일 밖(적 위 / 아군 아래)으로 밀려나 있어
-	# 타일 중심으로 재면 같은 칸의 적에게 돌진할 때 방향이 아예 반대가 된다.
-	var markers: Dictionary = renderer.pilot_marker_positions()
-	var from_pos: Vector2 = markers[attacker] as Vector2 if markers.has(attacker) \
-			else pilot_marker_pos_solo(attacker)
-	var to_pos: Vector2 = markers[target] as Vector2 if markers.has(target) \
-			else pilot_marker_pos_solo(target)
-	var delta_v: Vector2 = to_pos - from_pos
-	var dist: float = delta_v.length()
-	# 반지름 1개분을 남기면 두 초상이 대상 지름의 절반만큼 겹친다(둘의 반지름이
-	# 같으므로). 이미 그보다 가까우면 파고들 자리가 없으니 제자리에서 때린다.
-	var keep: float = renderer.pilot_marker_radius(target) * (2.0 * ANIM_LUNGE_OVERLAP)
-	var travel: float = maxf(0.0, dist - keep)
-	attacker.anim_lunge_vec   = Vector2.ZERO if dist < 0.01 \
-			else (delta_v / dist) * travel
-	attacker.anim_lunge_phase = 1
-	attacker.anim_lunge_t     = 0.0
-	attacker.anim_lunge_dur   = ANIM_LUNGE_IN_DUR
-	renderer.queue_redraw()
-	await get_tree().create_timer(ANIM_LUNGE_IN_DUR).timeout
-
-
-## 2단계 — 붕 뜬 채 천천히 원래 자리로. 돌진이 걸려 있지 않으면 즉시 반환하므로
-## 시전자가 없거나 이미 정리된 경우에도 호출 측이 분기할 필요가 없다.
-func anim_pilot_lunge_return(attacker: PilotData) -> void:
-	if attacker == null or attacker.anim_lunge_phase == 0:
-		return
-	attacker.anim_lunge_phase = 2
-	attacker.anim_lunge_t     = 0.0
-	attacker.anim_lunge_dur   = ANIM_LUNGE_OUT_DUR
+	caster.anim_cast_t   = 0.0
+	caster.anim_cast_dur = ANIM_CAST_DUR
 	if renderer != null:
 		renderer.queue_redraw()
-	await get_tree().create_timer(ANIM_LUNGE_OUT_DUR).timeout
+	await get_tree().create_timer(ANIM_CAST_DUR).timeout
 
 
-func anim_pilot_lunge_clear(p: PilotData) -> void:
-	p.anim_lunge_phase = 0
-	p.anim_lunge_t     = 0.0
-	p.anim_lunge_dur   = 0.0
-	p.anim_lunge_vec   = Vector2.ZERO
+## 2단계 — 피격자 초상에서 파티클이 사방으로 퍼진다. 쉐이크는 피해를 실제로
+## 넣는 `CardPhaseManager._apply_attack_damage` 가 따로 건다(전장 자동 교전과
+## 같은 진입점을 쓰기 위해서다 — 여기서 같이 걸면 스킬이 거는 한 방까지
+## 흔들린다). 파티클을 뿌린 뒤 여운만큼 기다리고 반환한다.
+func anim_pilot_impact(target: PilotData) -> void:
+	if renderer != null and target != null:
+		renderer.spawn_pilot_burst(target)
+	await get_tree().create_timer(ANIM_HIT_HOLD_SEC).timeout
 
 
-## 지금 프레임의 돌진 변위. `BattleRenderer._pilot_anim_offset` 이 다른 오프셋
-## 위에 그대로 더한다.
-##  • 1단계 — `t²` 로 **서서히 빨라지며** 파고든다. 앞 절반에서 25% 만 가므로
-##    짧은 준비 동작 뒤 달려드는 것처럼 읽힌다.
-##  • 2단계 — smoothstep 으로 되돌아오며, 궤적 한가운데서 가장 높이 뜬다.
-func pilot_lunge_offset(p: PilotData) -> Vector2:
-	if p == null or p.anim_lunge_phase == 0 or p.anim_lunge_dur <= 0.0:
-		return Vector2.ZERO
-	var t: float = clampf(p.anim_lunge_t / p.anim_lunge_dur, 0.0, 1.0)
-	if p.anim_lunge_phase == 1:
-		return p.anim_lunge_vec * (t * t)
-	var back: float = t * t * (3.0 - 2.0 * t)
-	return p.anim_lunge_vec * (1.0 - back) \
-			+ Vector2(0.0, -ANIM_LUNGE_HOP_PX * sin(PI * t))
+## 시전 빛이 걸려 있지 않은 상태로 되돌린다. 사망 / 복귀 / 부활이 부른다 —
+## 빛은 변위가 아니라서 남아 있어도 자리를 어긋나게 하지는 않지만, 시신이나
+## HQ 로 순간이동한 초상 위에 빛이 계속 떠 있으면 무슨 일이 일어난 것처럼 읽힌다.
+func anim_pilot_cast_clear(p: PilotData) -> void:
+	p.anim_cast_t   = 0.0
+	p.anim_cast_dur = 0.0
+
+
+## 지금 프레임의 시전 빛 진행도(0..1). 걸려 있지 않으면 -1.
+## `BattleRenderer._draw_pilot_cast_fx` 하나가 읽는다.
+func pilot_cast_progress(p: PilotData) -> float:
+	if p == null or p.anim_cast_dur <= 0.0:
+		return -1.0
+	return clampf(p.anim_cast_t / p.anim_cast_dur, 0.0, 1.0)
 
 
 # ─── Turret animation driver ─────────────────────────────────────────────────
@@ -1524,7 +1499,7 @@ func effective_cost_for(cd: CardData, is_player: bool) -> int:
 
 # Drawn-position of a pilot marker assuming it sits solo on its tile — the
 # **fallback** for callers that can't wait for BattleRenderer's per-frame slot
-# solve (CardTargetingOverlay's PILOT hit test, the lunge geometry). 답은
+# solve (CardTargetingOverlay's PILOT hit test). 답은
 # 렌더러가 소유한다: 초상화가 앉는 방향은 그 파일럿의 이동 방향에서 나오므로
 # 여기서 다시 계산하면 두 답이 갈라진다(예전에는 여기에 "적 위 / 아군 아래"가
 # 한 벌 더 적혀 있었다).

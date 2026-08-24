@@ -216,16 +216,13 @@ var anim_death_t: float      = 0.0
 var anim_death_dur: float    = 0.0
 var anim_death_cell: Vector2i = Vector2i.ZERO
 
-# 공격 카드 돌진 연출: 0 = 없음, 1 = 대상에게 파고드는 중(가속),
-# 2 = 붕 뜬 채 천천히 원래 자리로. `anim_lunge_vec` 는 1단계가 끝났을 때의
-# 최종 변위(픽셀)이고 1·2단계 모두 이 벡터를 보간해 쓴다 — 대상이 그 사이
-# 쓰러져 사라져도 복귀 경로가 어긋나지 않는다.
-# 1단계는 시간이 다 차도 스스로 꺼지지 않고 **대상 앞에서 멈춘 채 대기**한다:
-# 그 정지 구간에서 피해·쉐이크가 재생되고, 2단계는 호출 측이 건다.
-var anim_lunge_phase: int   = 0
-var anim_lunge_t: float     = 0.0
-var anim_lunge_dur: float   = 0.0
-var anim_lunge_vec: Vector2 = Vector2.ZERO
+# 공격 카드 시전 연출 — **시전자 초상 위로 하얗게 솟아오르는 빛**. 예전의
+# 돌진(`anim_lunge_*`, 시전자가 대상 초상까지 파고들었다 돌아오던 몸통
+# 박치기)을 대체한다: 시전자는 이제 제자리에 서 있고 화면에서 움직이는 것은
+# 빛뿐이라, 같은 칸의 적을 때릴 때 방향이 뒤집히거나 파고든 얼굴이 대상을
+# 가리는 문제가 구조적으로 사라졌다.
+var anim_cast_t: float   = 0.0
+var anim_cast_dur: float = 0.0
 
 func _init(p_role: int, p_team: int, p_pos: Vector2i, stats: Dictionary) -> void:
 	role     = p_role

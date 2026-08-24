@@ -177,9 +177,9 @@ first auto-draw after the turn ends is what trims the excess.
   한 장도 내지 않아도 되고, 점수를 한 점도 쓰지 않아도 된다. 남은 false 조건은
   전부 "지금 닫으면 무언가가 중간에 끊긴다"는 것뿐이다:
   `_player_turn_announce_in_progress`, 모달 오버레이(버리기·찾기 / 더미 열람 /
-  전투 개시 VS 확인), AI 플레이 루프, 그리고 공격 카드의 돌진 연출
-  (`_attack_anim_active` — 연출 중간에 단계가 닫히면 시전자가 파고든 자세
-  그대로 BATTLE 이 재개된다).
+  전투 개시 VS 확인), AI 플레이 루프, 그리고 공격 카드의 명중 연출
+  (`_attack_anim_active` — 연출 중간에 단계가 닫히면 시전 빛과 파티클이
+  화면에 남은 채로 BATTLE 이 재개된다).
 
   **규칙의 이력.** 처음 게이트는 `player_cost < card_phase_entry_cost` (진입
   시점의 점수 스냅샷)였고 이건 단계를 통째로 교착시켰다: 28장 중 9장이 0코스트
@@ -254,7 +254,7 @@ first auto-draw after the turn ends is what trims the excess.
 `_apply_hand_dim_state()` toggles `Card.set_dimmed(true|false)` on every
 player hand node based on `_is_player_input_blocked() or game_phase != CARD_PHASE`.
 That covers BATTLE auto-tick, the player turn-start banner, the AI run loop,
-any active modal overlay, and the 공격 돌진 연출 (`_attack_anim_active`). `Card.set_dimmed(true)` darkens the modulate,
+any active modal overlay, and the 공격 명중 연출 (`_attack_anim_active`). `Card.set_dimmed(true)` darkens the modulate,
 suppresses hover brighten, and ignores `_gui_input` clicks; `set_dimmed(false)`
 restores `Color.WHITE`. `highlight_affordable_cards()` always tail-calls
 `_apply_hand_dim_state()` so every overlay-close path that funnels through it
@@ -1096,7 +1096,7 @@ The DB column is a `;`-separated chain of clauses. Each clause is
 | `search:N` | yes | **Player**: opens CardSelectOverlay search grid — pick exactly N from the deck via 확인. **AI**: same as `draw:N` (random top-of-deck). |
 | `discard:N` | yes | **Player**: opens CardSelectOverlay discard pick — **drag** exactly N cards onto the centred 버리기 구역, then press 확인 to commit. The played 버리기 card is non-cancellable (no 버리기 취소 button). **AI**: random N from hand. |
 | `strategy:N` | yes | +N 작전 점수 to playing side |
-| `attack:N` | yes | **Player**: opens CardTargetingOverlay PILOT mode — battle tiles dim, valid enemy pilots ringed, click an enemy to commit. **AI**: random valid pilot (range-aware). **Rolls `SimulationCore.roll_hit` (`hit/(hit+evasion)`, the same roll the battlefield uses) — a miss deals nothing.** Damage on a hit = `caster.atk × N`; 보호막 absorbs first. `pierce` (필중) skips the roll; `repeat` (연속 공격) re-rolls the same attack after every landed hit, stopping on a miss, on the target's death, or at `MAX_ATTACK_REPEATS` (5). `min_range:N` filters out pilots closer than N (parsed, but no card in the pool carries it since 저격 was removed). **Every swing floats its verdict over the target** via `BattleRenderer.spawn_pilot_popup`: `MISS` on a miss, `-N` on a hit, `흡수` when 보호막 ate the whole hit (the handler returns HP damage, so that case would otherwise read `-0`). **한 타격마다 돌진 연출이 붙고 이 절은 그것을 `await` 한다** — 아래 *공격 돌진 연출* 절 참조. |
+| `attack:N` | yes | **Player**: opens CardTargetingOverlay PILOT mode — battle tiles dim, valid enemy pilots ringed, click an enemy to commit. **AI**: random valid pilot (range-aware). **Rolls `SimulationCore.roll_hit` (`hit/(hit+evasion)`, the same roll the battlefield uses) — a miss deals nothing.** Damage on a hit = `caster.atk × N`; 보호막 absorbs first. `pierce` (필중) skips the roll; `repeat` (연속 공격) re-rolls the same attack after every landed hit, stopping on a miss, on the target's death, or at `MAX_ATTACK_REPEATS` (5). `min_range:N` filters out pilots closer than N (parsed, but no card in the pool carries it since 저격 was removed). **Every swing floats its verdict over the target** via `BattleRenderer.spawn_pilot_popup`: `MISS` on a miss, `-N` on a hit, `흡수` when 보호막 ate the whole hit (the handler returns HP damage, so that case would otherwise read `-0`). **한 타격마다 명중 연출(시전 빛 → 조각 + 쉐이크)이 붙고 이 절은 그것을 `await` 한다** — 아래 *공격 명중 연출* 절 참조. |
 | `shield_pct:N` | yes | **Player**: PILOT mode → click an ally; gains shield = N% of max_hp. **AI**: random ally. Cleared on 본진 복귀. |
 | `recall_ally` | yes | **Player**: PILOT mode → click an ally; teleports to HQ at full HP, shield reset, waypoint reset. **AI**: random ally. |
 | `exhaust_choice:N` | yes (random) | Random N from hand → removed (소멸). Parsed and honoured, but no card in the pool carries it since 차선책 was removed. |
@@ -1211,26 +1211,23 @@ Note that the five `exhaust` cards (조정 / 임기응변 / 재빠른 사고 / �
 아드레날린) carry `uses = 3` in the CSV. That has never meant anything — the
 keyword check has always fired first, so they are 소멸 on their first play.
 
-### 공격 돌진 연출 (`attack:N`)
-공격 카드를 내면 **시전자 초상이 대상 초상에 파고들었다 돌아온다.** 한 타격이
-세 박자다:
+### 공격 명중 연출 (`attack:N`)
+공격 카드를 내면 **두 초상 위에서 동시에** 일이 벌어진다 — 시전자 초상에서
+하얀 빛이 솟아오르고, 피격자 초상에서 조각이 사방으로 퍼지며 초상이 격하게
+흔들린다. 한 타격이 두 박자다:
 
 | 박자 | 담당 | 시간 |
 |---|---|---|
-| 파고들기 | `BattleSim.anim_pilot_lunge(attacker, target)` | `ANIM_LUNGE_IN_DUR` **0.08s** |
-| 타격 (정지) | `_effect_attack` — 피해 / 쉐이크 / 팝업 | 한 프레임 (쉐이크는 0.26초) |
-| 복귀 | `BattleSim.anim_pilot_lunge_return(attacker)` | `ANIM_LUNGE_OUT_DUR` **0.24s** |
+| 시전 (빛) | `BattleSim.anim_pilot_cast(caster)` | `ANIM_CAST_DUR` **0.12s** |
+| 명중 (조각 + 쉐이크 + 팝업) | `BattleSim.anim_pilot_impact(target)` + `_effect_attack` | `ANIM_HIT_HOLD_SEC` **0.20s** |
 
-- **한 타격의 총 연출 시간은 두 값의 합, 0.32초다.** 예전에는
-  0.50 + 0.62 = 1.12초였는데, 연속 공격(`repeat`, 최대 5타)이 이 세 박자를
-  타수만큼 반복하므로 카드 한 장이 최대 5.6초를 먹었다 — 그동안 손패도 턴
-  넘기기도 잠긴다. 0.40초를 거쳐 지금은 **파고들기만 다시 절반(0.16 → 0.08)**
-  으로 줄어 5타를 다 굴려도 1.6초다. 파고들기 : 복귀 = 1 : 3 이라 "튀어나갔다
-  천천히 돌아온다"가 더 뚜렷해졌다. **두 값을 만질 때는 `DMG_POPUP_DUR`(0.30)이
-  합보다 짧도록 함께 조정할 것** — 아니면 연속 타격의 숫자가 같은 자리에 겹쳐
-  쌓인다(팝업 좌표는 띄운 순간에 고정된다).
-- **0.08초는 거리와 무관하게 고정**이라 먼 대상일수록 빠르게 날아간다. 연출
-  길이가 전장 위치에 따라 들쭉날쭉하면 연속 공격의 리듬이 무너진다.
+- **한 타격의 총 연출 시간은 두 값의 합, 0.32초다** — 돌진 시절과 같은 길이로
+  맞춘 값이라 연속 공격(`repeat`, 최대 5타)의 상한도 그대로 1.6초다.
+  **두 값을 만질 때는 `DMG_POPUP_DUR`(0.30)이 합보다 짧도록 함께 조정할 것** —
+  아니면 연속 타격의 숫자가 같은 자리에 겹쳐 쌓인다(팝업 좌표는 띄운 순간에
+  고정된다).
+- **시전 빛은 명중 여부와 무관하게 먼저 돈다.** 빗나간 공격도 쏘기는 쐈고,
+  `MISS` 팝업은 그 다음 자리에서 뜬다(빗나간 타격에는 조각이 없고 여운만 있다).
 - **맞는 쪽의 흔들림은 전장 교전보다 훨씬 격렬하다** —
   `_apply_attack_damage` 가 `anim_pilot_shake` 에 `ANIM_SHAKE_CARD_DUR`(0.26s) /
   `ANIM_SHAKE_CARD_AMP_PX`(20px)를 넘긴다(전장 기본은 0.18s / 6px). 매 턴
@@ -1238,18 +1235,14 @@ keyword check has always fired first, so they are 소멸 on their first play.
   같은 세기로 흔들면 카드가 아무 일도 안 한 것처럼 읽힌다. 세기는
   `PilotData.anim_shake_amp` 로 실려 가고 진동 수는 지속시간을 따라 늘어난다
   (주파수 고정) — 자세한 내용은 `rendering/README.md`.
-- 궤적은 `t²` — **서서히 빨라진다**(앞 절반에서 25%만 간다). 짧은 준비 동작 뒤
-  달려드는 것처럼 읽힌다. 복귀는 smoothstep 이고 궤적 한가운데서
-  `ANIM_LUNGE_HOP_PX`(34px)만큼 **붕 뜬다**.
-- **멈추는 거리는 `ANIM_LUNGE_OVERLAP`(0.5)** — 대상 지름의 절반만큼 겹친다.
-  두 마커 반지름이 같으므로 최종 중심 간 거리 = 마커 반지름 1개분. 거리는
-  `BattleRenderer.pilot_marker_positions()` 로 잰다(타일 중심이 아니라 **그려진
-  마커**: 마커는 타일을 둘러싼 육각 링의 서로 다른 슬롯에 앉아 있어 타일로
-  재면 같은 칸의 적에게 돌진할 때 방향이 아예 반대가 된다).
-- **1단계는 시간이 다 차도 스스로 꺼지지 않고 대상 앞에 멈춰 선다.** 그 정지
-  구간이 피해가 적용되는 자리이고, 2단계는 호출 측이 건다. 스스로 걷는 것은
-  2단계뿐이다(`_advance_pilot_animations`).
-- **연속 공격(`repeat`)은 세 박자를 타수만큼 반복한다.** 1타 0.32초, 2타
+- **쉐이크만 `_apply_attack_damage` 안에 있다.** 조각(`spawn_pilot_burst`)은
+  `_effect_attack` 이 뿌린다 — 전자는 전장 자동 교전 · 파일럿 스킬의 한 방과
+  **같은 피해 진입점**이라 거기서 조각까지 뿌리면 카드가 아닌 피해에도 파티클이
+  붙는다. 매 턴 도는 피해까지 조각을 뿌리면 그게 곧 배경이 된다.
+- **포탑에는 조각이 없다.** `_impact_anchor` 가 `TurretData` 에 null 을 돌려주고
+  `anim_pilot_impact` 은 여운만 둔다 — 포탑은 자기 피격 연출
+  (`BattleSim.anim_turret_hit`, 흔들림 + 붉은 섬광)을 따로 갖고 있다.
+- **연속 공격(`repeat`)은 두 박자를 타수만큼 반복한다.** 1타 0.32초, 2타
   0.64초, 상한(5타) 1.6초. 팝업이 서로 겹칠 일이 없어져 `DMG_POPUP_STAGGER` 는
   연출이 붙지 않는 경우(시전자 없는 레거시 카드)에만 쓰인다.
 - **연출이 끝나야 다음 카드를 낼 수 있다.** `_attack_anim_active` 가
@@ -1264,11 +1257,30 @@ keyword check has always fired first, so they are 소멸 on their first play.
   않는다. 연출이 없는 절은 그 자리에서 값을 돌려주므로 대기가 붙지 않는다.
 - `_process_pending_chain` 은 await 뒤에 `_pending_play.is_empty()` 를 다시
   본다 — 연출이 도는 사이 취소 경로가 판을 비웠을 수 있다.
-- 사망 / 복귀 / 부활은 `anim_pilot_lunge_clear` 로 돌진 변위를 걷어 낸다.
-  안 그러면 시신이 파고든 자리에 남는다.
-- 렌더러 쪽 배선은 `rendering/README.md` — `pilot_lunge_offset` 합산과
-  `_lunging_cells_last`(돌진 중인 칸을 맨 마지막에 그려 파고든 얼굴이 대상 뒤로
-  숨지 않게 한다).
+- 사망 / 복귀 / 부활은 `anim_pilot_cast_clear` 로 시전 빛을 걷어 낸다 —
+  시신 위에 빛이 남아 있으면 아직 뭔가를 쏘는 중으로 읽힌다.
+- 렌더러 쪽 배선은 `rendering/README.md` — `_draw_pilot_cast_fx`(빛기둥)와
+  `_draw_pilot_bursts`(조각).
+
+#### 예전의 **돌진(몸통 박치기)** — 되살리지 말 것
+시전자 초상이 대상 초상까지 **실제로 파고들었다**(`ANIM_LUNGE_IN_DUR`) 붕 뜬 채
+돌아오는(`ANIM_LUNGE_OUT_DUR`) 세 박자였다. 초상을 옮기는 연출이라 딸린 장치가
+셋이었고 지금은 전부 삭제됐다:
+
+- **방향 계산** — 거리를 `BattleRenderer.pilot_marker_positions()` 의 그려진
+  마커로 재야 했다. 타일 중심으로 재면 같은 칸의 적에게 돌진할 때 방향이 아예
+  반대가 되기 때문(마커는 적 위 / 아군 아래로 밀려나 있다).
+- **그리기 순서** — `BattleRenderer._lunging_cells_last` 가 돌진 중인 칸을 맨
+  마지막으로 미뤄야 했다. 아니면 파고든 얼굴이 대상 칸 뒤로 숨는다.
+- **변위 정리** — 사망 / 복귀 / 부활마다 `anim_pilot_lunge_clear`.
+
+지금은 두 초상이 제자리에 있고 그 위에 이펙트만 얹히므로 셋 다 필요가 없다.
+삭제된 이름: `BattleSim.anim_pilot_lunge` / `anim_pilot_lunge_return` /
+`anim_pilot_lunge_clear` / `pilot_lunge_offset`, `ANIM_LUNGE_IN_DUR` /
+`ANIM_LUNGE_OUT_DUR` / `ANIM_LUNGE_HOP_PX` / `ANIM_LUNGE_OVERLAP`,
+`PilotData.anim_lunge_phase` / `anim_lunge_t` / `anim_lunge_dur` /
+`anim_lunge_vec`, `BattleRenderer._lunging_cells_last`,
+`CardPhaseManager._lunge_anchor`(→ `_impact_anchor` 로 이름만 남았다).
 
 ### 대상 지정 (CardTargetingOverlay)
 - `CardTargetingOverlay.gd` — sibling of `CardPhaseManager`. **It owns no nodes

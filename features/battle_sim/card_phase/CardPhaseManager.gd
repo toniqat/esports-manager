@@ -157,7 +157,7 @@ var _ai_play_in_progress: bool = false
 # 그 턴 안에 `consume_end_phase_request()` 로 받아 간다.
 var _end_phase_requested: bool = false
 
-# 공격 카드(`attack:N`)의 돌진 연출이 도는 동안 켜진다. 한 장을 낸 뒤 연출이
+# 공격 카드(`attack:N`)의 명중 연출이 도는 동안 켜진다. 한 장을 낸 뒤 연출이
 # 끝나기 전에 다음 카드를 낼 수 없어야 한다는 것이 이 플래그의 전부다 — 손패는
 # 딤드되고(`_is_player_input_blocked`), 턴 넘기기도 잠긴다
 # (`can_end_card_phase`). AI 차례의 공격에도 똑같이 걸리지만, 그때는 이미
@@ -904,7 +904,7 @@ func _apply_hand_dim_state() -> void:
 
 # **자기 차례는 언제든 넘길 수 있다 — 카드를 한 장도 내지 않아도 된다.**
 # 남는 조건은 전부 "지금 넘기면 무언가가 중간에 끊긴다"는 것뿐이다(모달 픽,
-# 상대 차례, 돌진 연출, VS 확인 화면, 차례 배너).
+# 상대 차례, 명중 연출, VS 확인 화면, 차례 배너).
 #
 # 규칙의 이력이 둘 있다. 처음에는 "점수를 문턱 아래로 내렸을 것"이었는데,
 # 28장 중 9장이 0코스트라 낼 수 있는 카드가 전부 무료면 점수가 줄지 않아
@@ -926,7 +926,7 @@ func can_end_card_phase() -> bool:
 		return false
 	if _ai_play_in_progress:
 		return false
-	# 공격 돌진 연출이 도는 동안에는 턴도 넘길 수 없다 — 연출 중간에 단계가
+	# 공격 명중 연출이 도는 동안에는 턴도 넘길 수 없다 — 연출 중간에 단계가
 	# 닫히면 시전자가 파고든 자세 그대로 BATTLE 이 재개된다.
 	if _attack_anim_active:
 		return false
@@ -2397,7 +2397,7 @@ func _apply_hand_reflow() -> void:
 func _is_player_input_blocked() -> bool:
 	if _ai_play_in_progress:
 		return true
-	# 돌진 연출이 끝나야 다음 카드를 낼 수 있다.
+	# 명중 연출이 끝나야 다음 카드를 낼 수 있다.
 	if _attack_anim_active:
 		return true
 	# 전투 개시 VS 확인 화면 — game_phase 는 아직 CARD_PHASE 이므로 손패가
@@ -3029,7 +3029,7 @@ func _process_pending_chain() -> void:
 						break
 					clauses.pop_front()
 			continue
-		# 공격 절은 돌진 연출이 끝날 때까지 매달린다 — 그동안 손패 입력과 턴
+		# 공격 절은 명중 연출이 끝날 때까지 매달린다 — 그동안 손패 입력과 턴
 		# 넘기기가 잠기고(`_attack_anim_active`), 체인의 나머지와
 		# `_finalize_pending_play` 는 그 뒤에 이어진다. 호출 측 넷은 전부 이
 		# 호출이 마지막 문장이라 fire-and-forget 으로 두어도 순서가 어긋나지
@@ -3318,7 +3318,7 @@ func apply_card_effect(cd: CardData, is_player: bool) -> String:
 			if _chain_hit != want_hit:
 				skip_to = "on_miss" if want_hit else "on_hit"
 			continue
-		# 공격 절은 돌진 연출을 기다린다 — AI 도 같은 연출을 쓰므로
+		# 공격 절은 명중 연출을 기다린다 — AI 도 같은 연출을 쓰므로
 		# AiCardPlayer 의 플레이 루프가 그만큼 늦게 다음 카드로 넘어간다.
 		var msg: String = await _apply_single_effect(clause, is_player, caster,
 				ally_team, enemy_team, target)
@@ -3398,7 +3398,7 @@ func _apply_single_effect(e: Dictionary, is_player: bool, caster: PilotData,
 		"search":   return _effect_draw(is_player, value)   # 찾기 = same draw mechanic
 		"discard":  return _effect_discard(is_player, value)
 		"strategy": return _effect_strategy(is_player, value)
-		# 유일하게 기다려야 하는 절 — 돌진 연출이 끝나야 다음 절/다음 카드로
+		# 유일하게 기다려야 하는 절 — 명중 연출이 끝나야 다음 절/다음 카드로
 		# 넘어간다. 이 await 하나가 _process_pending_chain / apply_card_effect /
 		# AiCardPlayer.run_ai_plays 를 줄줄이 코루틴으로 만든다(모두 await 로
 		# 받는다).
@@ -3576,7 +3576,7 @@ func _effect_strategy(is_player: bool, n: int) -> String:
 ##   |pierce |repeat  예전 그대로 (필중 / 명중마다 반복)
 ##
 ## 대상은 PilotData 이거나 TurretData 다. 둘을 가르는 자리는 피해를 넣는 두
-## 함수뿐이고 나머지 흐름(명중 판정 · 돌진 연출 · 팝업)은 공유한다.
+## 함수뿐이고 나머지 흐름(명중 판정 · 명중 연출 · 팝업)은 공유한다.
 func _effect_attack(n: int, flags: Array, caster: PilotData, enemy_team: int,
 		picked: PilotData = null) -> String:
 	_last_attack_hits = 0
@@ -3600,13 +3600,15 @@ func _effect_attack(n: int, flags: Array, caster: PilotData, enemy_team: int,
 	for victim_raw in victims:
 		for _swing in swings_each:
 			var landed: bool = pierce or caster == null or _roll_against(caster, victim_raw)
+			# 1단계 — 시전자 초상에서 빛이 솟는다. 명중 여부와 무관하게 먼저
+			# 도는 박자다: 빗나간 공격도 쏘기는 쐈다.
 			if animated:
-				await _bs.anim_pilot_lunge(caster, _lunge_anchor(victim_raw))
+				await _bs.anim_pilot_cast(caster)
 			if not landed:
 				missed += 1
 				_popup_on(victim_raw, "MISS", BattleRenderer.POPUP_MISS_COLOR)
 				if animated:
-					await _bs.anim_pilot_lunge_return(caster)
+					await _bs.get_tree().create_timer(_bs.ANIM_HIT_HOLD_SEC).timeout
 				continue
 			var dealt: int = _deal_damage_to(victim_raw, caster, n)
 			total_dmg += dealt
@@ -3617,8 +3619,10 @@ func _effect_attack(n: int, flags: Array, caster: PilotData, enemy_team: int,
 				_popup_on(victim_raw, "흡수", BattleRenderer.POPUP_SHIELD_COLOR)
 			if not _is_alive(victim_raw):
 				_last_attack_kills += 1
+			# 2단계 — 피격자 초상에서 조각이 퍼지고 여운만큼 쉰다. 쉐이크는
+			# 피해를 실제로 넣은 `_apply_attack_damage` 가 이미 걸어 뒀다.
 			if animated:
-				await _bs.anim_pilot_lunge_return(caster)
+				await _bs.anim_pilot_impact(_impact_anchor(victim_raw))
 			# 연속 공격은 **같은 대상**에 대해서만 이어진다 — 명중할 때마다 한
 			# 번 더 굴리고, 빗나가거나 대상이 쓰러지면 멈춘다.
 			if repeat:
@@ -3627,13 +3631,13 @@ func _effect_attack(n: int, flags: Array, caster: PilotData, enemy_team: int,
 					if not (pierce or caster == null or _roll_against(caster, victim_raw)):
 						break
 					if animated:
-						await _bs.anim_pilot_lunge(caster, _lunge_anchor(victim_raw))
+						await _bs.anim_pilot_cast(caster)
 					var again: int = _deal_damage_to(victim_raw, caster, n)
 					total_dmg += again
 					_last_attack_hits += 1
 					_popup_on(victim_raw, "-%d" % again, BattleRenderer.POPUP_DAMAGE_COLOR)
 					if animated:
-						await _bs.anim_pilot_lunge_return(caster)
+						await _bs.anim_pilot_impact(_impact_anchor(victim_raw))
 					extra += 1
 			if not _is_alive(victim_raw):
 				break
@@ -3820,8 +3824,10 @@ func _roll_against(caster: PilotData, victim: Variant) -> bool:
 	return _bs.sim_core.roll_hit(caster, victim as PilotData)
 
 
-## 돌진 연출이 향할 곳. 포탑은 초상화가 없으므로 연출을 걸지 않는다.
-func _lunge_anchor(victim: Variant) -> PilotData:
+## 파티클을 뿌릴 초상. 포탑에는 초상화가 없으므로 null 이고, 그때는
+## `anim_pilot_impact` 이 여운만 두고 조각은 뿌리지 않는다 — 포탑은 자기
+## 피격 연출(`BattleSim.anim_turret_hit`)을 따로 갖고 있다.
+func _impact_anchor(victim: Variant) -> PilotData:
 	if victim is PilotData:
 		return victim as PilotData
 	return null
@@ -3872,7 +3878,7 @@ func _apply_attack_damage_turret(td: TurretData, caster: PilotData) -> int:
 # Mech ATK was scaled ×20 in the DB so a 1×ATK card hit lands at a meaningful
 # share of pilot HP without a separate placeholder multiplier. Caster falls
 # back to a flat 100 only when the card has no owner_pilot (legacy paths).
-## 돌진 연출 잠금의 양쪽 가장자리. 플래그만 세우면 이미 화면에 떠 있는 손패 딤과
+## 명중 연출 잠금의 양쪽 가장자리. 플래그만 세우면 이미 화면에 떠 있는 손패 딤과
 ## 턴 넘기기 버튼은 다음 갱신까지 옛 상태로 남으므로, 두 소비자를 여기서 함께
 ## 깨운다. `_apply_hand_dim_state` 를 직접 부르는 것은 `highlight_affordable_cards`
 ## 가 아직 정리되지 않은 플레이 중간 상태(방금 free 된 카드 노드)를 훑기 때문이다.

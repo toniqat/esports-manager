@@ -91,12 +91,50 @@ const POPUP_SHIELD_COLOR := Color(0.45, 0.85, 1.00)
 const POPUP_FONT_SIZE_BASE := 26
 
 
+# ─── 공격 카드 명중 파티클 ───────────────────────────────────────────────────
+# 피격자 초상에서 사방으로 퍼지는 짧은 조각들. 팝업과 같은 구조다 —
+# **좌표를 띄운 순간에 고정**하고(대상이 쓰러져 시신이 되든 다음 턴에 밀려나든
+# 파티클이 따라다니지 않는다) 스스로 시간을 밀다 만료되면 사라진다.
+#
+# `_process` 가 팝업과 함께 굴리고 `_draw()` 맨 끝에서 팝업 **바로 앞에** 그린다:
+# 조각이 숫자를 덮으면 방금 몇 대미지였는지가 안 읽힌다.
+#
+# 조각 수를 프레임마다 새로 뽑지 않고 **띄울 때 각도·거리·크기를 굳혀 배열에
+# 담는다** — 매 프레임 `randf()` 를 다시 굴리면 퍼져 나가는 조각이 아니라
+# 매 프레임 다른 자리에서 깜빡이는 점들이 된다.
+var _bursts: Array = []
+
+## 한 번의 명중이 뿌리는 조각 수.
+const BURST_COUNT: int = 12
+## 조각이 날아가는 시간(s). `BattleSim.ANIM_HIT_HOLD_SEC`(0.20) 안에 끝나야
+## 연속 공격의 다음 타격이 앞 타격의 파편 위에 겹치지 않는다.
+const BURST_DUR: float = 0.18
+## 조각이 마커 반지름의 몇 배까지 날아가는가 — 안쪽 / 바깥쪽 경계.
+const BURST_REACH_MIN: float = 0.9
+const BURST_REACH_MAX: float = 1.9
+## 조각 반지름(px, DISPLAY_SCALE 이 곱해진다).
+const BURST_DOT_R: float = 4.6
+const BURST_COLOR := Color(1.00, 0.86, 0.62)
+
+# ─── 공격 카드 시전 빛 ───────────────────────────────────────────────────────
+# 시전자 초상 위로 솟아오르는 하얀 빛. 파티클과 달리 **상태를 들고 있지 않다** —
+# `PilotData.anim_cast_*` 를 `BattleSim.pilot_cast_progress` 로 물어 그 프레임의
+# 모양을 만들 뿐이라, 시전자가 미끄러지면 빛도 함께 따라간다(시전 중에 움직일
+# 일은 없지만, 좌표를 굳혀 두면 그때만 어긋난다).
+## 빛기둥 하나의 폭(마커 지름 대비).
+const CAST_BEAM_W_RATIO: float = 0.62
+## 솟는 빛의 색. 알파는 진행도에 따라 깎인다.
+const CAST_COLOR := Color(1.0, 1.0, 1.0)
+
+
 func _process(delta: float) -> void:
 	# 상시 갱신이 필요한 것은 셋이다 — 피해 수치 팝업, 켜지거나 꺼지는 중인 대상
 	# 강조, 그리고 미끄러지는 중인 마커. 전부 멈춰 있으면 재draw 하지 않는다
 	# (대상 지정 상태가 **바뀌는** 순간은 CardTargetingOverlay._request_redraw()
 	#  가 따로 걷어찬다).
 	var dirty: bool = _advance_popups(delta)
+	if _advance_bursts(delta):
+		dirty = true
 	if _advance_emphasis(delta):
 		dirty = true
 	# 목표 자리를 먼저 훑어 새 글라이드를 띄운 다음 시간을 민다. BattleSim 은
@@ -180,10 +218,98 @@ func spawn_score_popup(p: PilotData, amount: float) -> void:
 			BattleSim.SCORE_POPUP_DUR, BattleSim.SCORE_POPUP_RISE_PX)
 
 
+## Ticks every live burst and drops the expired ones. Same shape as
+## `_advance_popups` — returns true while at least one is still on screen.
+func _advance_bursts(delta: float) -> bool:
+	if _bursts.is_empty():
+		return false
+	var keep: Array = []
+	for raw in _bursts:
+		var e: Dictionary = raw
+		e["t"] = float(e["t"]) + delta
+		if float(e["t"]) < BURST_DUR:
+			keep.append(e)
+	_bursts = keep
+	return true
+
+
+## 피격자 초상에서 조각이 퍼지는 연출을 띄운다. 진입점은
+## `BattleSim.anim_pilot_impact` 하나이고, 그 함수를 부르는 것은 공격 카드
+## (`CardPhaseManager._effect_attack`)뿐이다 — 전장 자동 교전은 예전대로
+## 흔들림만 준다(매 턴 도는 피해까지 조각을 뿌리면 그게 곧 배경이 된다).
+func spawn_pilot_burst(p: PilotData) -> void:
+	if p == null:
+		return
+	var markers: Dictionary = _build_pilot_render_layout()
+	var pos: Vector2 = markers[p] as Vector2 if markers.has(p) \
+			else _bs.pilot_marker_pos_solo(p)
+	var r: float = pilot_marker_radius(p)
+	# 각도는 균등 분할 + 흔들기다. 완전 무작위로 뽑으면 열두 조각이 한쪽에
+	# 뭉치는 프레임이 자주 나와 "퍼진다"가 아니라 "샌다"로 보인다.
+	var shards: Array = []
+	for i in BURST_COUNT:
+		var ang: float = (float(i) / float(BURST_COUNT)) * TAU 				+ randf_range(-0.22, 0.22)
+		shards.append({
+			"dir":   Vector2(cos(ang), sin(ang)),
+			"reach": r * randf_range(BURST_REACH_MIN, BURST_REACH_MAX),
+			"size":  randf_range(0.6, 1.0),
+		})
+	_bursts.append({"pos": pos, "t": 0.0, "shards": shards})
+	queue_redraw()
+
+
+## 조각들. 바깥으로 감속하며 날아가고 뒷부분에서 흐려지며 작아진다.
+func _draw_pilot_bursts() -> void:
+	if _bursts.is_empty():
+		return
+	var dot_r: float = BURST_DOT_R * HexGrid.DISPLAY_SCALE
+	for raw in _bursts:
+		var e: Dictionary = raw
+		var k: float = clampf(float(e["t"]) / BURST_DUR, 0.0, 1.0)
+		var travel: float = 1.0 - pow(1.0 - k, 2.0)   # 감속
+		var alpha: float = 1.0 if k < 0.45 else 1.0 - (k - 0.45) / 0.55
+		var origin: Vector2 = e["pos"] as Vector2
+		for raw_s in (e["shards"] as Array):
+			var sh: Dictionary = raw_s
+			var at: Vector2 = origin \
+					+ (sh["dir"] as Vector2) * (float(sh["reach"]) * travel)
+			draw_circle(at, dot_r * float(sh["size"]) * (1.0 - k * 0.55),
+					_alpha_mul(BURST_COLOR, alpha))
+
+
+## 시전자 초상 위로 솟는 하얀 빛. 마커 폭의 세로 기둥 하나가 위로 흐르며
+## 옅어지고, 그 앞머리에 작은 원이 하나 떠오른다 — 기둥만 그리면 어디까지가
+## 이번 프레임의 앞머리인지가 안 읽힌다.
+func _draw_pilot_cast_fx() -> void:
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		var k: float = _bs.pilot_cast_progress(p)
+		if k < 0.0:
+			continue
+		if not _is_renderable(p):
+			continue
+		var pos: Vector2 = _pilot_marker_pos(p)
+		var r: float = pilot_marker_radius(p)
+		var rise: float = _bs.ANIM_CAST_RISE_PX * HexGrid.DISPLAY_SCALE * k
+		var half_w: float = r * CAST_BEAM_W_RATIO
+		# 알파는 앞머리에서 뒤로 갈수록, 그리고 진행도가 끝에 가까울수록 옅다.
+		var fade: float = 1.0 - k * k
+		var top: float = pos.y - r * 0.35 - rise
+		draw_rect(Rect2(pos.x - half_w, top, half_w * 2.0,
+				(pos.y + r * 0.45) - top),
+				_alpha_mul(CAST_COLOR, 0.16 * fade))
+		draw_rect(Rect2(pos.x - half_w * 0.42, top, half_w * 0.84,
+				(pos.y + r * 0.45) - top),
+				_alpha_mul(CAST_COLOR, 0.26 * fade))
+		draw_circle(Vector2(pos.x, top), maxf(2.0, half_w * 0.5 * (1.0 - k * 0.4)),
+				_alpha_mul(CAST_COLOR, 0.72 * fade))
+
+
 ## Drops every in-flight popup. Called on restart so numbers from the previous
 ## match don't float over the fresh board.
 func clear_popups() -> void:
 	_popups.clear()
+	_bursts.clear()
 	queue_redraw()
 
 
@@ -250,6 +376,9 @@ func _draw() -> void:
 	# marker disc stacked on each other.
 	if draw_dim:
 		_draw_targeting_pilot_dim()
+	# 공격 카드 연출 두 겹 — 시전자 빛은 초상 위에, 피격 조각은 그 위에.
+	_draw_pilot_cast_fx()
+	_draw_pilot_bursts()
 	# 피해 수치 / MISS 는 무엇에도 가려지면 안 되므로 맨 마지막.
 	_draw_pilot_popups()
 
@@ -386,10 +515,11 @@ func _neighbor_across_edge(cell: Vector2i, center: Vector2,
 func _draw_pilot_groups() -> void:
 	var by_cell := _group_pilots_by_render_cell()
 
-	# 돌진 중인 시전자가 있는 칸을 **맨 마지막에** 그린다. 돌진은 대상 초상과
-	# 절반쯤 겹치는 것이 연출의 전부라, 대상 칸이 나중에 그려지면 파고든 얼굴이
-	# 그 뒤로 숨어 버린다(칸 순회는 Dictionary 순서라 그때그때 다르다).
-	for pos in _lunging_cells_last(by_cell.keys()):
+	# 칸 순회 순서는 Dictionary 순서 그대로다. 예전에는 돌진(몸통 박치기) 중인
+	# 칸을 맨 마지막으로 미뤘는데(`_lunging_cells_last`, 삭제됨), 그 연출이
+	# 시전자 초상을 대상 칸 위로 실제로 옮겼기 때문이다 — 지금은 초상이 제자리에
+	# 있고 이펙트만 얹히므로 미룰 칸이 없다.
+	for pos in by_cell.keys():
 		var pv := pos as Vector2i
 		var pilots: Array = by_cell[pv] as Array
 		var c0: int = 0
@@ -402,26 +532,6 @@ func _draw_pilot_groups() -> void:
 		# top of the pilot stacks. Keep the single-team multi-pilot tag (x2, x3).
 		if pilots.size() > 1 and (c0 == 0 or c1 == 0):
 			_draw_cell_badge(pv, c0, c1)
-
-
-# 셀 순회 순서 — 돌진 중인 파일럿이 서 있는 칸만 뒤로 미룬다. 나머지 순서는
-# 건드리지 않으므로 평소 그림은 한 픽셀도 달라지지 않는다.
-func _lunging_cells_last(cells: Array) -> Array:
-	var lunging: Dictionary = {}
-	for raw in _bs.pilots:
-		var p := raw as PilotData
-		if p.anim_lunge_phase != 0:
-			lunging[_render_cell(p)] = true
-	if lunging.is_empty():
-		return cells
-	var normal: Array = []
-	var late: Array = []
-	for c in cells:
-		if lunging.has(c as Vector2i):
-			late.append(c)
-		else:
-			normal.append(c)
-	return normal + late
 
 
 # Group renderable pilots by their *render* cell (not grid_pos): a pilot in
@@ -455,7 +565,7 @@ func _group_pilots_by_render_cell() -> Dictionary:
 # (`_sync_glide`, 목표가 바뀐 파일럿에게 새 보간을 띄운다) → **지금 프레임의
 # 좌표를 낸다**(`_compose_positions`, 강조 배율과 화면 클램프를 얹는다).
 # 시간을 미는 것은 `_process` 의 `_advance_glide` 뿐이므로, 이 함수를 한 프레임에
-# 여러 번 불러도(그리기 · 히트 테스트 · 돌진 기하) 답이 흔들리지 않는다.
+# 여러 번 불러도(그리기 · 히트 테스트 · 파티클 좌표) 답이 흔들리지 않는다.
 func _build_pilot_render_layout() -> Dictionary:
 	var solution := _solve_slots()
 	_sync_glide(solution)
@@ -1131,7 +1241,7 @@ func _render_cell(p: PilotData) -> Vector2i:
 	return p.grid_pos
 
 
-# Per-pilot pixel offset combining recall rise/descend, 전사 상승, 돌진, 그리고
+# Per-pilot pixel offset combining recall rise/descend, 전사 상승, 그리고
 # 피격 흔들림. **칸 이동은 여기 없다** — 마커 좌표 자체가 글라이드로 미끄러지므로
 # (`_sync_glide` / `_eval_glide`) 여기서 한 번 더 얹으면 두 벌이 된다.
 func _pilot_anim_offset(p: PilotData) -> Vector2:
@@ -1149,11 +1259,6 @@ func _pilot_anim_offset(p: PilotData) -> Vector2:
 	elif p.anim_recall_phase == 2:
 		var t: float = clamp(p.anim_recall_t / p.anim_recall_dur, 0.0, 1.0)
 		off.y -= _bs.ANIM_RECALL_RISE_PX * (1.0 - t)
-	# 공격 카드 돌진은 다른 무엇에도 얹힌다 — 이동/복귀와 배타적인 elif 사슬에
-	# 넣지 않는 이유는, 돌진 중에도 대상이 흔들리듯 시전자가 흔들릴 수 있고 오프셋은
-	# 서로 독립이기 때문이다. 계산 자체는 BattleSim 이 소유한다(연출 상수와
-	# 단계 전환이 거기 모여 있다).
-	off += _bs.pilot_lunge_offset(p)
 	if p.anim_shake_dur > 0.0:
 		var t: float = clamp(p.anim_shake_t / p.anim_shake_dur, 0.0, 1.0)
 		# 진폭은 흔들림을 건 쪽이 정한다(전장 교전 6px / 공격 카드 20px).

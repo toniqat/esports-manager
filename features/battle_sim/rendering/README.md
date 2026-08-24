@@ -54,7 +54,7 @@ Reads all state from `_bs` (the BattleSim parent).
    `_draw_centered_text` 도 유일한 소비자가 사라져 함께 지웠다.
 1. `_draw_hq_hp_bars()` — green HP bar under each HQ once any T2 in their team is destroyed
 2. `_draw_turret_hp_bars()` — yellow HP bar above each living turret (T2 hidden while own-lane T1 alive). 피격 중에는 `BattleSim.turret_hit_offset(td)` 만큼 함께 흔들린다 — 포탑 스프라이트(`Building` 노드)는 렌더러가 그리지 않고 BattleSim 이 직접 흔들므로, 바만 제자리에 두면 둘이 어긋난다.
-3. Per-cell pilot rendering via `_draw_pilot_cell()` — pilots render OUTSIDE the tile, on a hex ring of 6 slots around it, with a team-coloured triangle behind them whose apex points to the tile centre (speech-bubble tail). **자리는 여기서 풀지 않는다** — `_draw()` 앞머리의 `_build_pilot_render_layout()` 이 전장 전체를 한 번에 배정하고, 딤 오버레이 · 히트 테스트 · 돌진 기하가 같은 표를 읽는다
+3. Per-cell pilot rendering via `_draw_pilot_cell()` — pilots render OUTSIDE the tile, on a hex ring of 6 slots around it, with a team-coloured triangle behind them whose apex points to the tile centre (speech-bubble tail). **자리는 여기서 풀지 않는다** — `_draw()` 앞머리의 `_build_pilot_render_layout()` 이 전장 전체를 한 번에 배정하고, 딤 오버레이 · 히트 테스트 · 연출 좌표가 같은 표를 읽는다
 4. `_draw_cell_badge()` — `NvN` / `xN` count badge centred ON the tile (the tile centre is now empty, since pilots are offset outward)
 5. `_draw_pilot_popups()` — 피해 수치 / MISS · 성장치 팝업 플로팅 텍스트, **맨 마지막**에 그려 무엇에도 가려지지 않는다
 
@@ -237,7 +237,7 @@ the portrait instead of pointing at the destination first (다음 절).
 
 시간을 미는 것은 `_process` 의 `_advance_glide` **하나뿐**이다. 그래서
 `_build_pilot_render_layout()` 을 한 프레임에 몇 번 불러도(그리기 · 히트 테스트 ·
-돌진 기하 · 팝업) 연출이 되감기지 않는다. `BattleSim` 은 이동 타이머를 더 이상
+파티클 좌표 · 팝업) 연출이 되감기지 않는다. `BattleSim` 은 이동 타이머를 더 이상
 들고 있지 않으므로 이 구간의 재draw 도 렌더러가 걷어찬다.
 
 **삭제된 것 — 화살표 관성 장치.** `_arrow_hold` / `_arrow_settle_t` /
@@ -329,8 +329,10 @@ them each `_draw()`:
   cell they came from until they fully fade out, then "appears" at HQ for the
   descent fade-in, and a fallen pilot stays on the cell they fell on.
 - `_pilot_anim_offset(p)` — sums recall rise/descend (`ANIM_RECALL_RISE_PX`),
-  death rise (`ANIM_DEATH_RISE_PX`, phase 2 only), **공격 카드 돌진**
-  (`BattleSim.pilot_lunge_offset`) and damage shake (decaying `sin` jitter).
+  death rise (`ANIM_DEATH_RISE_PX`, phase 2 only) and damage shake (decaying
+  `sin` jitter). **공격 카드 연출은 여기 없다** — 시전 빛도 피격 조각도 초상을
+  옮기지 않고 그 위에 얹히기만 한다(아래 *공격 카드 명중 연출* 절). 예전의
+  돌진(`BattleSim.pilot_lunge_offset`)은 여기 한 항으로 더해졌었다.
   **칸 이동은 여기 없다** — 마커 좌표 자체가 글라이드로 미끄러지므로(위
   *마커 글라이드* 절) 여기서 한 번 더 얹으면 두 벌이 된다.
 - **피격 흔들림의 세기는 흔든 쪽이 정한다** — `PilotData.anim_shake_amp` 에
@@ -363,10 +365,34 @@ same solve, so hit-testing never disagrees with what is on screen.
 바깥으로 흰 테가 삐져나오지 않게 한다. 색은 초상과 **같은** tint·alpha 를
 타므로(사망 딤 / 복귀 페이드) 배경만 밝게 남는 일이 없다.
 
-**돌진 중인 파일럿의 칸은 맨 마지막에 그린다** (`_lunging_cells_last`). 돌진은
-대상 초상과 절반쯤 겹치는 것이 연출의 전부인데, 셀 순회가 `Dictionary` 순서라
-대상 칸이 나중에 그려지면 파고든 얼굴이 그 뒤로 숨는다. 돌진이 없으면 순회
-배열을 그대로 돌려주므로 평소 그림은 달라지지 않는다.
+**셀 순회 순서는 `Dictionary` 순서 그대로다.** 예전에는 돌진(몸통 박치기) 중인
+칸을 맨 마지막으로 미뤘는데(`_lunging_cells_last`, **삭제됨**), 그 연출이 시전자
+초상을 대상 칸 위로 실제로 옮겼기 때문이다 — 대상 칸이 나중에 그려지면 파고든
+얼굴이 그 뒤로 숨었다. 지금은 초상이 제자리에 있고 이펙트만 얹히므로 미룰 칸이
+없다.
+
+### 공격 카드 명중 연출
+공격 카드(`attack:N`) 한 타격이 두 초상 위에 동시에 그린다. 둘 다 `_draw()`
+**맨 끝**, 피해 수치 팝업 바로 앞이다 — 마커 위에 얹혀야 하지만 숫자를 덮으면
+안 된다.
+
+**시전 빛** (`_draw_pilot_cast_fx`) — 시전자 초상 위로 솟는 하얀 기둥.
+`BattleSim.pilot_cast_progress(p)` 가 그 프레임의 진행도(0..1)를 주고, 그 값
+하나에서 높이(`ANIM_CAST_RISE_PX` 54px × k) · 폭(`CAST_BEAM_W_RATIO` 마커 지름의
+0.62) · 알파(1 − k²)가 나온다. **상태를 들고 있지 않다** — `PilotData.anim_cast_*`
+를 매 프레임 물어보므로 시전자가 미끄러지면 빛도 따라간다. 기둥 둘(넓고 옅은 것
++ 좁고 진한 것)에 앞머리 원 하나를 얹는데, 기둥만 그리면 이번 프레임의 앞머리가
+어디까지인지 안 읽힌다.
+
+**피격 조각** (`spawn_pilot_burst` / `_draw_pilot_bursts`) — 피격자 초상에서
+`BURST_COUNT`(12)개의 작은 원이 사방으로 퍼진다. 팝업과 **같은 구조**다: 좌표를
+띄운 순간에 고정하고(대상이 시신이 되든 밀려나든 조각이 따라다니지 않는다)
+`_advance_bursts` 가 `_process` 에서 시간을 민다. 각도는 균등 분할 + 흔들기
+(`±0.22rad`)이고 거리·크기는 **띄울 때 한 번 굳혀 배열에 담는다** — 매 프레임
+`randf()` 를 다시 굴리면 퍼져 나가는 조각이 아니라 매 프레임 다른 자리에서
+깜빡이는 점들이 된다. `BURST_DUR`(0.18s)이 `BattleSim.ANIM_HIT_HOLD_SEC`(0.20s)
+보다 짧아야 연속 공격의 다음 타격이 앞 타격의 파편 위에 겹치지 않는다.
+`clear_popups()` 가 재시작 때 조각도 함께 비운다.
 
 ### 피해 수치 팝업 (`spawn_pilot_popup`)
 공격 카드(`attack:N`) 전용 플로팅 텍스트. `CardPhaseManager._effect_attack` 이
@@ -378,10 +404,10 @@ same solve, so hit-testing never disagrees with what is on screen.
   쓰러지거나 밀려나도 숫자가 따라다니지 않는다(그리고 대상이 사라진 뒤에도
   숫자가 끝까지 재생된다).
 - `BattleSim.DMG_POPUP_DUR`(**0.30s**) 동안 `DMG_POPUP_RISE_PX`(46px) 만큼 감속하며
-  떠오르고 마지막 40% 구간에서만 흐려진다. 이 값은 **한 타격의 돌진 연출 길이
+  떠오르고 마지막 40% 구간에서만 흐려진다. 이 값은 **한 타격의 명중 연출 길이
   (0.32초)보다 짧아야 한다** — 길면 연속 공격의 숫자가 같은 자리에 겹쳐 쌓인다.
 - **`DMG_POPUP_STAGGER`(0.18s)는 이제 거의 쓰이지 않는다.** 한 타격이
-  파고들기 → 타격 → 복귀 세 박자(0.32초)를 다 도는 연출이 붙으면서 연속 공격의
+  시전 → 명중 두 박자(0.32초)를 다 도는 연출이 붙으면서 연속 공격의
   팝업이 애초에 서로 겹칠 수 없게 됐다. 지연이 남는 것은 연출이 붙지 않는
   경우(시전자가 없는 레거시 카드)뿐이다.
 - `_advance_popups(delta)` 가 `_process` 에서 돌며 만료분을 버리고, 살아 있는

@@ -94,6 +94,21 @@ const RESPAWN_FONT_COLOR    := Color(1.0, 0.86, 0.86)
 const PRESERVE_BORDER_COLOR := Color(0.45, 0.95, 1.0, 1.0)
 const PRESERVE_BORDER_WIDTH := 5
 
+# ── 스택 표시 ────────────────────────────────────────────────────────────────
+## 뒤로 겹쳐 보이는 판을 최대 몇 장까지 그릴지. 뭉치가 다섯 장이어도 판은 셋에서
+## 멈춘다 — 그보다 많으면 카드가 오른쪽 아래로 길어져 부채꼴의 이웃을 침범한다.
+const STACK_MAX_LAYERS := 3
+## 겹친 판이 한 장마다 어긋나는 거리(px). 카드 자신의 up 축이 아니라 화면
+## 오른쪽·아래로 민다 — 기울어진 카드에서도 "뒤에 더 있다"로 읽히는 방향이다.
+const STACK_LAYER_STEP := Vector2(7.0, 7.0)
+const STACK_LAYER_COLOR := Color(0.10, 0.09, 0.16, 1.0)
+const STACK_BADGE_SIZE := Vector2(46.0, 30.0)
+const STACK_BADGE_COLOR := Color(0.06, 0.05, 0.10, 0.92)
+const STACK_BADGE_TEXT_COLOR := Color(1.0, 0.92, 0.45)
+## 비용 -1(사용할 수 없는 카드)이 비용 칸에 찍는 글자. 숫자를 쓰면 "-1 을 내면
+## 된다"로 읽히므로 아예 수가 아닌 것을 쓴다.
+const UNPLAYABLE_COST_TEXT := "—"
+
 var data: CardData = null
 var face_up: bool = false
 var is_player_card: bool = true
@@ -154,6 +169,12 @@ var _respawn_label: Label = null
 # 계획 중시로 보존된 카드인가. `set_preserved` 가 갱신한다.
 var _preserved: bool = false
 var _preserve_mark: Panel = null
+## 뭉치 표시. **카드 뒤로 어긋나게 겹쳐 보이는 얇은 판**(`_stack_layers`)과
+## 오른쪽 위 `x3` 배지(`_stack_badge`) 두 벌이고, `stack_count` 가 1 이면 둘 다
+## 꺼진다. 판을 뒤에 깔아야 "여러 장이 겹쳐 있다"가 배지를 읽기 전에 먼저
+## 보인다 — 숫자만으로는 손패에서 카드 한 장과 구별되지 않는다.
+var _stack_layers: Array[Panel] = []
+var _stack_badge: Label = null
 
 const DIM_MODULATE: Color = Color(0.42, 0.42, 0.48, 1.0)
 
@@ -279,6 +300,67 @@ func _build_block_overlay() -> void:
 	_preserve_mark.visible = false
 	add_child(_preserve_mark)
 
+	# 겹친 판은 **카드 앞면보다 먼저** 붙어야 뒤로 간다 — 형제 z-order 가 곧
+	# 자식 인덱스라 나중에 붙이면 앞면을 덮는다. `_ready` 시점에는 CardFront /
+	# CardBack 이 이미 씬에 서 있으므로 `move_child` 로 맨 뒤로 내린다.
+	for i in STACK_MAX_LAYERS:
+		var layer := Panel.new()
+		layer.name = "StackLayer%d" % i
+		layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		layer.size = Vector2(CARD_W, CARD_H)
+		layer.position = STACK_LAYER_STEP * float(i + 1)
+		var ls := StyleBoxFlat.new()
+		ls.bg_color = STACK_LAYER_COLOR
+		ls.border_color = Color(0.55, 0.52, 0.70, 0.9)
+		ls.border_width_top = 2
+		ls.border_width_bottom = 2
+		ls.border_width_left = 2
+		ls.border_width_right = 2
+		ls.corner_radius_top_left     = 10
+		ls.corner_radius_top_right    = 10
+		ls.corner_radius_bottom_left  = 10
+		ls.corner_radius_bottom_right = 10
+		layer.add_theme_stylebox_override("panel", ls)
+		layer.visible = false
+		add_child(layer)
+		move_child(layer, 0)
+		_stack_layers.append(layer)
+
+	_stack_badge = Label.new()
+	_stack_badge.name = "StackBadge"
+	_stack_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_stack_badge.size = STACK_BADGE_SIZE
+	_stack_badge.position = Vector2(CARD_W - STACK_BADGE_SIZE.x - 6.0, 6.0)
+	_stack_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_stack_badge.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
+	_stack_badge.add_theme_font_size_override("font_size", 22)
+	_stack_badge.add_theme_color_override("font_color", STACK_BADGE_TEXT_COLOR)
+	_stack_badge.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.95))
+	_stack_badge.add_theme_constant_override("outline_size", 5)
+	var bs := StyleBoxFlat.new()
+	bs.bg_color = STACK_BADGE_COLOR
+	bs.corner_radius_top_left     = 8
+	bs.corner_radius_top_right    = 8
+	bs.corner_radius_bottom_left  = 8
+	bs.corner_radius_bottom_right = 8
+	_stack_badge.add_theme_stylebox_override("normal", bs)
+	_stack_badge.visible = false
+	add_child(_stack_badge)
+
+
+## 뭉치 표시를 지금 `data.stack_count` 에 맞춘다. `CardPhaseManager` 가 카드를
+## 흡수할 때마다 부른다.
+func refresh_stack_badge() -> void:
+	var n: int = data.stack_count if data != null else 1
+	var showable: bool = face_up and is_player_card and n > 1
+	if _stack_badge != null and is_instance_valid(_stack_badge):
+		_stack_badge.visible = showable
+		_stack_badge.text = "x%d" % n
+	for i in _stack_layers.size():
+		var layer := _stack_layers[i] as Panel
+		if is_instance_valid(layer):
+			layer.visible = showable and i < (n - 1)
+
 
 ## Turns the slab / countdown on or off from the two independent reasons a card
 ## can be unplayable. Face-down cards (AI hand peek, 찾기 grid) never show it —
@@ -293,6 +375,7 @@ func _refresh_block_overlay() -> void:
 		_respawn_label.text = str(_respawn_turns)
 	if _preserve_mark != null and is_instance_valid(_preserve_mark):
 		_preserve_mark.visible = showable and _preserved
+	refresh_stack_badge()
 
 
 ## Re-poses the card and its shadow for the current hover / selected state.
@@ -368,7 +451,7 @@ func _apply_data() -> void:
 	if data == null:
 		return
 	name_label.text = data.card_name
-	cost_label.text = str(data.cost)
+	cost_label.text = UNPLAYABLE_COST_TEXT if not data.is_playable() else str(data.cost)
 	cost_label.add_theme_font_size_override("font_size", 22)
 	cost_label.add_theme_color_override("font_color", COST_COLOR_BASE)
 	cost_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
@@ -596,6 +679,12 @@ func is_hovered() -> bool:
 ## `cost`, so a returned card reads white at its new printed price.
 func update_displayed_cost(effective_cost: int) -> void:
 	if data == null:
+		return
+	# 비용 -1 은 값이 아니라 **낼 수 없다는 표시**다 — 할인도 증세도 얹히지 않고
+	# 언제나 같은 글자를 찍는다.
+	if not data.is_playable():
+		cost_label.text = UNPLAYABLE_COST_TEXT
+		cost_label.add_theme_color_override("font_color", COST_COLOR_BASE)
 		return
 	cost_label.text = str(effective_cost)
 	var col: Color = COST_COLOR_BASE

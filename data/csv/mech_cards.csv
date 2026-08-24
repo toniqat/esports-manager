@@ -1,0 +1,65 @@
+id,mech_id,name,count,cost,cast_method,target,cast_range,area,keyword,effect,trigger,description
+1,24,천둥 폭풍,1,4,instant,hand,0,0,,attack:1|all,,전장 내 모든 적 공격
+2,24,천공의 일격,1,2,target,foe,2,0,,attack:1,,사거리 2 내 적 또는 포탑 지정 공격
+3,24,꿰뚫는 번개,3,4,location,turret_outer,99,0,exhaust,attack:1|line,turret_kill_deck,"소멸. 적의 최외곽 포탑 지정 — 아군 HQ 부터 그 포탑 타일까지 모든 적과 포탑 공격. 적 포탑 파괴 시마다 덱에 1장 생성"
+4,25,캐시,1,-1,instant,hand,0,0,,hand_passive:cash,,이 카드가 핸드에 있을 때 아무 카드나 사용할 때마다 시전자가 보유한 성장 점수의 4% 만큼 성장 점수 획득
+5,25,스캐빈저,1,2,instant,hand,0,0,,search_discard:1,,묘지 탐색: 1
+6,25,로켓 펀치,1,4,target,foe,3,0,,attack:1;on_hit;strategy:2;search_card:4,,"사거리 3 내 적 또는 포탑 지정 공격. 명중 시 전략 점수 +2, 덱에서 [캐시] 탐색"
+7,26,미사일,3,4,target,foe,3,0,stack,attack:1|stack,,스택. 사거리 3 내 적 또는 포탑 지정 — 대상 타일에 스택 수만큼 공격
+8,26,미사일 준비,1,1,instant,hand,0,0,,search_card:7|count:2,,덱에서 [미사일] 탐색: 2
+9,26,정밀 폭격,1,4,target,enemy,99,1,,attack:1|area:1;gen_hand:7|per_hit|temp,,"전장 내 적 지정 — 대상으로부터 사거리 1 내 모든 적과 포탑 공격. 명중한 만큼 핸드에 소멸·휘발성 [미사일] 생성"
+10,27,전장 강타,5,4,instant,hand,0,0,stack,attack:1|random|stack,,스택. 스택 수만큼 전장 내 무작위 적 공격
+11,27,계시,1,-1,instant,hand,0,0,,hand_passive:revelation,,이 카드가 핸드에 있을 때 적이 카드로 피해를 입을 때마다 그 대상을 공격 (이 카드로 인한 피해 제외)
+12,27,결속,1,2,target,ally,99,0,exhaust,link_engage,,소멸. 전장 내 아군 지정 — 시전자가 전투에 참여할 때 지정한 아군도 함께 참여
+13,28,락온,0,0,instant,hand,0,0,volatile|exhaust,attack:1|damaged,,"휘발성, 소멸. 이번 작전 단계 동안 이 메크가 피해를 입힌 적 모두 공격"
+14,28,테러,1,2,instant,hand,0,0,,attack:1|self_range:2;on_hit;gen_hand:13,,사거리 2 내 모든 적 공격. 1회 이상 명중 시 핸드에 [락온] 생성
+15,28,파괴,1,5,target,enemy,99,1,,attack:1|area:1;on_hit;gen_hand:13,,전장 내 적 지정 — 대상 1칸 이내 모든 적 공격. 1회 이상 명중 시 핸드에 [락온] 생성
+16,6,승전보,0,0,instant,hand,0,0,exhaust|preserve,draw:3;strategy:2,,"소멸, 보존. 드로우: 3, 전략 점수 +2"
+17,6,돌격,1,6,target,enemy,3,0,,engage:3|at_target,,사거리 3 내 적 지정 — 대상 1칸 이내 전투 개시: 3
+18,6,질주,2,0,location,location,2,0,,move|own_jungle,,사거리 2 내 아군 정글 타일 지정 이동
+19,7,철거,0,0,location,turret_any,99,0,volatile|exhaust,attack:1|turret_only,,"휘발성, 소멸. 전장 내 적 포탑 지정 공격"
+20,7,우세한 전장,1,6,range,caster,3,0,,engage:4|self_range:3;gen_hand:19|per_kill,,사거리 3 이내 전투 개시: 4. 교전에서 생존할 시 처치한 적 수만큼 핸드에 [철거] 생성
+21,7,격렬한 돌진,2,2,instant,hand,0,0,,push:2|bonus_clear:1,,밀기: 2. 도중에 적이 없을 경우 추가 밀기: 1
+22,8,처형,0,4,target,foe,2,0,preserve|exhaust,execute:25|charge:5,,"보존, 소멸. 5 충전 미만일 때 이 카드 제거. 충전을 모두 소모하여 사거리 2 내 최대 체력 25% 이하인 적 또는 포탑 처치"
+23,8,일격,1,2,target,foe,1,0,,attack:1;on_hit;draw:1;charge:1,,"사거리 1 내 적 또는 포탑 지정 공격. 명중 시 드로우: 1, +1 충전"
+24,8,휩쓸기,1,4,location,location,2,0,,move|own_jungle;attack:1|self_range:1;charge:1|per_hit,,사거리 2 내 아군 정글 타일 지정 이동. 이후 사거리 1 내 모든 적 또는 포탑 공격 — 명중한 수만큼 +1 충전
+25,9,유령의 올가미,1,3,target,enemy,2,0,,attack:2,,사거리 2 내 적 지정 공격: 2
+26,9,전쟁의 사슬,1,3,target,enemy,1,0,,engage:0|at_target|charge_rounds,,사거리 1 내 적 지정 — 대상과 전투 개시: {영혼 포식 충전 수}
+27,9,영혼 포식,1,2,instant,hand,0,0,,attack:1|self_range:1;charge:1|per_hit;heal_pct:10|per_hit|self,,사거리 1 내 모든 적 공격. 명중한 횟수마다 +1 충전 및 시전자 체력 10% 회복. 충전 수만큼 [전쟁의 사슬] 의 전투 라운드가 증가
+28,0,몸집 불리기,1,2,instant,hand,0,0,,max_hp:20|self,,자신의 최대 체력 20 증가
+29,0,추적,1,3,target,enemy,99,0,,attack:1;on_hit;track:15,,전장 내 적 지정 공격. 명중 시 15턴 간 추적 — 대상이 전투에 참여하면 시전자도 참여
+30,0,강습,1,8,target,enemy,99,0,,engage:3|at_target,,전장 내 적 지정 — 대상 1칸 이내 전투 개시: 3
+31,1,최첨단 보호,1,3,target,ally,1,0,,heal_pct:30;reactive_armor:1,,사거리 1 내 아군 지정 — 대상 최대 체력의 30% 회복 및 [반응 장갑] 1 부여
+32,1,초고출력,1,4,instant,hand,0,0,,attack:1|self_range:1|pierce;reactive_armor:1|per_hit|self,,사거리 1 내 모든 적 및 포탑 필중. 명중한 수만큼 자신에게 [반응 장갑] 1 부여
+33,1,개시,1,8,range,caster,2,0,,engage:5|self_range:2,,사거리 2 이내 전투 개시: 5
+34,2,주먹다짐,2,3,target,enemy,1,0,exhaust,mutual_attack:2,,소멸. 사거리 1 내 적 지정 — 대상과 자신이 2회씩 서로 공격. 대상의 공격은 필중
+35,2,고통과 쾌감,0,4,instant,hand,0,0,,taunt_all;strategy:4,,"전장 내 모든 적이 시전자를 필중 공격. 전략 점수 +4"
+36,2,제압 전투,1,8,range,caster,2,0,,engage:4|self_range:2,,사거리 2 내 모든 적 지정 — 전투 개시: 4
+37,12,리부트,3,0,instant,hand,0,0,exhaust,charge:50;search_card:38,,소멸. +50 충전. 덱에서 [단계 A] 탐색
+38,12,단계 A,1,2,target,enemy,99,0,exhaust,gen_deck:39;mark_target:15,,소멸. 덱에 [단계 B] 생성. 전장 내 적 지정하여 목표 부여 — 목표: 대상이 시전자에게 받는 피해 +15%
+39,12,단계 B,0,5,instant,hand,0,0,exhaust,engage:3|at_marked;phase_b,,"소멸. 목표가 부여된 적 대상 1칸 이내 전투 개시: 3. 교전에서 적이 처치되면 덱에 [단계 C] 생성, 아니면 [단계 A] 생성"
+40,12,단계 C,0,0,instant,hand,0,0,exhaust,gen_deck:38;phase_c,,"소멸. 덱에 [단계 A] 생성. 강화 하나 선택 — 알파: 다음 [단계 A] 사용 시 덱이 아닌 핸드에 [단계 B] 생성 / 베타: 다음 [단계 B] 사용 시 +100 충전 / 감마: 다음 [단계 C] 사용 시 성장 점수 +10%"
+41,13,약자 멸시,4,-1,instant,hand,0,0,stack,hand_passive:contempt,,스택. 이 카드가 핸드에 있을 때 교전 시 자신에게 스택 수만큼 약자 멸시 부여 — 약자 멸시: 체력이 가장 적은 적을 공격 후 스택 -1
+42,13,전격전,1,6,location,location,2,0,,search_card:41;move;engage:3|self_range:1,,[약자 멸시] 탐색. 이동: 2. 이후 시전자 1칸 이내 전투 개시: 3
+43,13,즉발 베기,1,2,location,location,2,0,,move;attack:1|self_range:1,,이동: 2. 이후 사거리 1 내 모든 적 공격
+44,14,명상,3,0,instant,hand,0,0,exhaust,discard_left;draw_discarded,,소멸. 핸드에서 이 카드보다 왼쪽에 있는 모든 카드를 버리고 버린 수만큼 드로우
+45,14,질풍,1,2,target,enemy,99,0,,discard_right:2;draw:2;attack:1;move_to_target,,"핸드 내 가장 오른쪽 카드 버리기: 2, 드로우: 2. 전장 내 적 지정 공격 — 대상 위치로 이동하며 이번 작전 단계가 끝나면 이전 위치로 복귀"
+46,14,신속,1,2,instant,hand,0,0,,discard_right:2;attack:1|damaged,,핸드 내 가장 오른쪽 카드 버리기: 2. 이번 작전 단계에서 피해를 입힌 적들을 다시 공격
+47,15,최면,1,2,target,enemy,99,0,,move_target:1,,전장 내 적 지정 — 대상 이동: 1
+48,15,매혹적인 침공,1,6,instant,hand,0,0,,pull_to_caster|self_range:2;engage:4|self_range:1,,사거리 2 내 모든 적을 시전자 타일로 이동. 시전자 1칸 이내 전투 개시: 4
+49,15,매혹,1,4,target,pilot,99,0,,growth_link:5,,전장 내 아군 또는 적 지정 — 5턴 동안 대상이 얻는 성장 점수와 동일한 성장 점수 획득
+50,18,공격 명령,1,2,target,ally,99,0,stack,heal_pct:30;attack:1|around_target:1,death_stack,"스택. 아군 또는 적이 처치될 때마다 스택 +1. 전장 내 아군 지정 — 대상 체력 30% 회복 및 사거리 1 내 모든 적 공격"
+51,18,투자,1,2,instant,hand,0,0,,discard:1;gen_deck:50,,"버리기: 1. 덱에 [공격 명령] 생성"
+52,18,간보기,1,6,target,enemy,2,0,,attack:1;on_hit;engage:3|at_target;on_miss;strategy:4,,"사거리 2 내 적 지정 공격. 명중 시 대상 1칸 이내 전투 개시: 3, 빗나갈 시 전략 점수 +4"
+53,19,지원 보호,2,2,target,ally,99,0,,shield_atk:200,,전장 내 아군 지정 — 대상에게 시전자 공격력의 200% 보호막 생성
+54,19,수호,1,2,instant,hand,0,0,,shield_atk:200|all_allies,,전장 내 모든 아군에게 시전자 공격력의 200% 보호막 생성
+55,20,강타,1,1,target,ally,99,0,,stun_next,,전장 내 아군 지정 — 대상이 다음 교전에서 적에게 피해를 주면 그 적을 기절. 한 교전 내에 같은 적에게 두 번 이상 적용되지 않음
+56,20,탈진,1,2,target,enemy,1,0,,attack:1;on_hit;no_engage_phase,,사거리 1 내 적 지정 공격. 명중 시 대상은 이번 작전 단계 동안 전투 참여 불가
+57,20,변덕,1,0,instant,hand,0,0,,draw_discard:3|cost_reduce:1,,묘지 드로우: 3. 이번 작전 단계 동안 해당 카드들은 비용 1 감소
+58,21,밸런스,1,-1,instant,hand,0,0,,hand_passive:balance,,이 카드가 핸드에 있을 때 이 메크의 다른 카드가 성장 점수를 소모하지 않음
+59,21,파란 약,1,3,target,ally,99,0,,score_cost:100;growth_eff:20,,전장 내 아군 지정 — 시전자의 성장 점수 100 소모 및 대상이 전장 이탈까지 성장 효율 +20%
+60,21,붉은 가루,1,2,target,ally,99,0,,score_cost:100;max_hp:20,,전장 내 아군 지정 — 시전자의 성장 점수 100 소모 및 대상 최대 체력 20 증가
+61,21,녹색 병,1,2,target,ally,99,0,,score_cost:100;atk_add:2,,전장 내 아군 지정 — 시전자의 성장 점수 100 소모 및 대상 공격력 2 증가
+62,22,죽음의 손가락,1,4,target,enemy,99,0,,dmg_taken:25;bounty:10,,"전장 내 적 지정 — 대상은 전장 이탈까지 받는 피해 +25%, 대상의 성장 점수 10% 만큼 현상금 지정. 중첩되지 않음"
+63,22,확신,1,3,target,enemy,1,0,,attack_bounty:2,,사거리 1 내 적 지정 공격 — 대상의 현상금 2% 만큼 피해
+64,22,사형 선고,1,8,target,enemy,2,0,,pull_to_caster;engage:3|self_range:1,,사거리 2 내 적 지정 — 대상을 시전자의 타일로 이동시키고 시전자 1칸 이내 전투 개시: 3

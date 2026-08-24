@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://4cr3q3oqhxth"
+
+[deps]
+
+files=["res://docs/pilot_skills.category.translation", "res://docs/pilot_skills.name.translation", "res://docs/pilot_skills.진영.translation", "res://docs/pilot_skills.키워드.translation", "res://docs/pilot_skills.type.translation", "res://docs/pilot_skills.typeParam1.translation", "res://docs/pilot_skills.typeParam2.translation", "res://docs/pilot_skills.desc.translation"]
+
+source_file="res://docs/pilot_skills.csv"
+dest_files=["res://docs/pilot_skills.category.translation", "res://docs/pilot_skills.name.translation", "res://docs/pilot_skills.진영.translation", "res://docs/pilot_skills.키워드.translation", "res://docs/pilot_skills.type.translation", "res://docs/pilot_skills.typeParam1.translation", "res://docs/pilot_skills.typeParam2.translation", "res://docs/pilot_skills.desc.translation"]
+
+[params]
+
+compress=true
+delimiter=0

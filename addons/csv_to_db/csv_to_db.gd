@@ -25,7 +25,9 @@ const SCHEMAS: Dictionary = {
 	"lane_config": {"req": ["lane_id","name","max_pilots","mid_col","mid_row"], "pk": "lane_id"},
 	"players":     {"req": ["id","team_id","name","role","laning","mechanics","gamesense","teamfight","mental","skill_id","is_mob"], "pk": "id"},
 	"pilot_skills": {"req": ["id","key","name","role","type","p1","p2","keyword","description"], "pk": "id"},
-	"mechs":       {"req": ["id","name","hp","atk","presence"],                 "pk": "id"},
+	"mechs":       {"req": ["id","name","role","hp","atk","presence"],          "pk": "id"},
+	"mech_passives": {"req": ["id","mech_id","key","name","p1","p2","keyword","description"], "pk": "id"},
+	"mech_cards":    {"req": ["id","mech_id","name","count","cost","cast_method","target","cast_range","area","keyword","effect","trigger","description"], "pk": "id"},
 	"teams":       {"req": ["id","name","short_name"],                          "pk": "id"},
 	"intl_teams":   {"req": ["id","name","short_name"],                         "pk": "id"},
 	"intl_players": {"req": ["id","team_id","name","role","laning","mechanics","gamesense","teamfight","mental"], "pk": "id"},
@@ -119,10 +121,61 @@ const TABLE_DEFS: Dictionary = {
 	"mechs": {
 		"id":       {"data_type": "int",  "primary_key": true, "not_null": true},
 		"name":     {"data_type": "text", "not_null": true},
+		# GameEnums.Role. **메크에 역할이 생겼다** — 예전에는 "메크는 역할이
+		# 없다"가 설계였지만, 메크마다 고유 패시브와 고유 카드 셋이 붙으면서
+		# 그 카드들이 역할군을 전제하게 됐다(탱커의 반응 장갑 / 원딜의 사거리
+		# 지정 공격 …). 배정 자체는 여전히 자유다 — 이 값은 밴픽 화면의 분류와
+		# 데이터 검증용이고, 어느 슬롯에 어느 메크를 앉힐지는 막지 않는다.
+		"role":     {"data_type": "int",  "not_null": true},
 		"hp":       {"data_type": "int",  "not_null": true},
 		"atk":      {"data_type": "int",  "not_null": true},
 		# 존재감 — 전투 개시 시 타겟 어그로 가중치. 근접 메크 4, 원거리 메크 2.
 		"presence": {"data_type": "int",  "not_null": true},
+	},
+	# ── 메크 패시브 ──────────────────────────────────────────────────────────
+	# 메크 한 대에 붙는 상시 능력. pilot_skills 와 같은 형태(런타임 분기 키
+	# `key` + 파라미터 p1/p2)이고 소비자는 MechSkillSystem 이다. 21대 중 15대만
+	# 가지며 나머지 6대는 카드로만 논다.
+	"mech_passives": {
+		"id":          {"data_type": "int",  "primary_key": true, "not_null": true},
+		"mech_id":     {"data_type": "int",  "not_null": true},
+		"key":         {"data_type": "text", "not_null": true},
+		"name":        {"data_type": "text", "not_null": true},
+		# 패시브마다 뜻이 다른 두 숫자. 충전형이면 p1 = 시작 충전, p2 = 최대 충전.
+		"p1":          {"data_type": "int",  "not_null": true},
+		"p2":          {"data_type": "int",  "not_null": true},
+		"keyword":     {"data_type": "text", "not_null": true},
+		"description": {"data_type": "text", "not_null": true},
+	},
+	# ── 메크 카드 ────────────────────────────────────────────────────────────
+	# 파일럿이 받는 **메크 카드 3장**이 사라지고, 그 자리를 배정된 메크의 고유
+	# 카드 목록이 통째로 채운다. `count` 가 그 메크를 채용했을 때 덱에 들어가는
+	# 장수이고 `count = 0` 인 카드는 다른 효과가 만들어 줄 때만 세상에 나온다.
+	# 컬럼 구성은 cards.csv 와 나란하되 덱 슬롯(card_type/card_cat/excl_group)과
+	# 시전자 제약(scope)이 없다 — 메크 카드의 임자는 메크가 정하기 때문.
+	"mech_cards": {
+		"id":          {"data_type": "int",  "primary_key": true, "not_null": true},
+		"mech_id":     {"data_type": "int",  "not_null": true},
+		"name":        {"data_type": "text", "not_null": true},
+		# 채용 시 덱에 들어가는 장수. 0 = 별도 효과로만 생성된다.
+		"count":       {"data_type": "int",  "not_null": true},
+		# **-1 = 사용할 수 없는 카드.** 핸드에 들고 있는 것만으로 효과를 낸다
+		# (캐시 · 계시 · 약자 멸시 · 밸런스). 드래그도 거부된다.
+		"cost":        {"data_type": "int",  "not_null": true},
+		"cast_method": {"data_type": "text", "not_null": true},
+		# cards.csv 의 값에 셋이 더 붙는다 — foe(적 파일럿 또는 포탑) /
+		# turret_outer(최외곽 적 포탑) / turret_any(살아 있는 적 포탑 전부).
+		"target":      {"data_type": "text", "not_null": true},
+		"cast_range":  {"data_type": "int",  "not_null": true},
+		"area":        {"data_type": "int",  "not_null": true},
+		# `|` 로 구분된 목록. exhaust / preserve / volatile 에 **stack** 이 더해졌다.
+		"keyword":     {"data_type": "text", "not_null": true},
+		"effect":      {"data_type": "text", "not_null": true},
+		# 카드 자신에게 붙는 사건 훅(비어 있으면 없음). 패시브가 아니라 **그
+		# 카드**가 존재를 얻는 조건이라 여기에 산다 — turret_kill_deck(꿰뚫는
+		# 번개) / death_stack(공격 명령).
+		"trigger":     {"data_type": "text", "not_null": true},
+		"description": {"data_type": "text", "not_null": true},
 	},
 	"teams": {
 		"id":         {"data_type": "int",  "primary_key": true, "not_null": true},

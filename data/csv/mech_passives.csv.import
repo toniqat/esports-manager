@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://cwxumaunfh6f7"
+
+[deps]
+
+files=["res://data/csv/mech_passives.mech.translation", "res://data/csv/mech_passives.key.translation", "res://data/csv/mech_passives.name.translation", "res://data/csv/mech_passives.p1.translation", "res://data/csv/mech_passives.p2.translation", "res://data/csv/mech_passives.keyword.translation", "res://data/csv/mech_passives.description.translation"]
+
+source_file="res://data/csv/mech_passives.csv"
+dest_files=["res://data/csv/mech_passives.mech.translation", "res://data/csv/mech_passives.key.translation", "res://data/csv/mech_passives.name.translation", "res://data/csv/mech_passives.p1.translation", "res://data/csv/mech_passives.p2.translation", "res://data/csv/mech_passives.keyword.translation", "res://data/csv/mech_passives.description.translation"]
+
+[params]
+
+compress=true
+delimiter=0

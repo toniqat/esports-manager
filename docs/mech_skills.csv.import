@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://bj2lkqbp0o16w"
+
+[deps]
+
+files=["res://docs/mech_skills.hero.translation", "res://docs/mech_skills.category.translation", "res://docs/mech_skills.mech.translation", "res://docs/mech_skills.name.translation", "res://docs/mech_skills.count.translation", "res://docs/mech_skills.코스트.translation", "res://docs/mech_skills.키워드.translation", "res://docs/mech_skills.desc.translation"]
+
+source_file="res://docs/mech_skills.csv"
+dest_files=["res://docs/mech_skills.hero.translation", "res://docs/mech_skills.category.translation", "res://docs/mech_skills.mech.translation", "res://docs/mech_skills.name.translation", "res://docs/mech_skills.count.translation", "res://docs/mech_skills.코스트.translation", "res://docs/mech_skills.키워드.translation", "res://docs/mech_skills.desc.translation"]
+
+[params]
+
+compress=true
+delimiter=0

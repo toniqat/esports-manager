@@ -137,9 +137,15 @@ func start_discard(n: int, on_complete: Callable, on_cancel: Callable) -> void:
 	_refresh_visibility()
 
 
-func start_search(n: int, on_complete: Callable, on_cancel: Callable) -> void:
+## `pile` 은 **어느 더미를 펼치는가**. 비워 두면 덱(찾기), 버린 더미를 넘기면
+## 묘지 탐색(스캐빈저 · 변덕)이 된다 — 그리드도 픽 규칙도 완전히 같고 다른
+## 것은 카드가 어디서 오느냐 하나뿐이라, 모드를 새로 만들지 않고 인자로 받는다.
+## 고른 카드를 어느 더미에서 빼는지는 호출 측(`CardPhaseManager`)이 정한다.
+func start_search(n: int, on_complete: Callable, on_cancel: Callable,
+		pile: Array = []) -> void:
 	mode = Mode.SEARCH
-	target_count = max(0, min(n, _bs.player_deck.size()))
+	var src: Array = pile if not pile.is_empty() else _bs.player_deck
+	target_count = max(0, min(n, src.size()))
 	hidden_state = false
 	search_selected.clear()
 	_on_complete = on_complete
@@ -148,7 +154,7 @@ func start_search(n: int, on_complete: Callable, on_cancel: Callable) -> void:
 		_finish_with_picks([])
 		return
 	_build_full_dim()
-	_build_search_grid(_bs.player_deck)
+	_build_search_grid(src)
 	_build_buttons(false)
 	_refresh_visibility()
 	_update_confirm_button()

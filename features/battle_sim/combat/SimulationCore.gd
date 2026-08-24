@@ -225,6 +225,9 @@ func simulate_turn() -> void:
 ## 이 호출이 턴의 맨 앞이라야 이번 턴 교전이 갱신된 스탯으로 굴러간다.
 func tick_growth_and_expiries() -> void:
 	var turn: int = _bs.turn_count
+	# 메크가 건 지속 효과(추적 · 매혹)도 같은 박자로 걷힌다.
+	if _bs.mech_skill != null:
+		_bs.mech_skill.tick_expiries(turn)
 	for raw in _bs.pilots:
 		var p := raw as PilotData
 		# 만료는 죽어 있어도 돈다 — 버프의 수명은 전장에 서 있는지와 무관하다.
@@ -672,6 +675,13 @@ func _pilot_hit_damage(attacker: PilotData, victim: PilotData = null) -> int:
 		dmg *= _bs.skill.damage_out_mult(attacker)
 		if victim != null:
 			dmg *= _bs.skill.damage_in_mult(victim)
+	# 메크가 거는 받는-피해 배율과 반응 장갑. 전장 자동 교전도 카드 공격과
+	# **같은 규칙**을 쓴다 — 취약이 카드에만 걸리면 원딜 A 의 각인이 전장에서
+	# 아무 일도 하지 않는 절반짜리 패시브가 된다.
+	if _bs.mech_skill != null and victim != null:
+		dmg *= _bs.mech_skill.damage_taken_mult(victim, attacker)
+		if _bs.mech_skill.consume_reactive_armor(victim):
+			dmg *= 1.0 - MechSkillSystem.REACTIVE_ARMOR_CUT
 	return maxi(1, roundi(dmg))
 
 

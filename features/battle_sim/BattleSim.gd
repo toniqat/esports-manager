@@ -381,7 +381,14 @@ var blog: BattleLogger = null
 ## `features/battle_sim/skill/PilotSkillSystem.gd` 참조. 스폰과 덱 배분이 **끝난
 ## 뒤** 세운다 — 짝을 로스터에서 찾고, 백본 패시브가 이미 돌아간 덱을 만진다.
 var skill: PilotSkillSystem = null
-## 교전이 도는 동안 밀어 둔 성장치 팝업. `PilotData -> float`(그 교전에서 번 합).
+## 메크 스킬 — 배정된 **기체**에 붙는 패시브와 그 기체가 들고 온 카드들의
+## 런타임 상태(충전 · 지속 효과 · 사건 훅). 파일럿 스킬(`skill`)과 같은 자리에
+## 서는 형제 모듈이고, 같은 이유로 스폰과 덱 배분이 모두 끝난 뒤에 세워진다.
+## `features/battle_sim/mech/MechSkillSystem.gd` 참조.
+var mech_skill: MechSkillSystem = null
+## 매혹의 성장치 복사가 지금 한 겹 돌고 있는가. 고리를 한 겹에서 끊는 빗장이다.
+var _score_link_depth: int = 0
+## 교전이 도는 동안 밀어 둔 성장치 팝업. `PilotData → float`(그 교전에서 번 합).
 ## 무대가 치워질 때 `flush_score_popups` 가 한 사람당 한 장으로 풀어놓는다.
 var _score_popup_hold: Dictionary = {}
 
@@ -488,6 +495,12 @@ func _ready() -> void:
 	# 그쪽까지 덮으려면 신호가 필요하다.
 	skill.skill_state_changed.connect(hud.update_hud)
 	skill.init_for_match()
+	# 메크 스킬 — 파일럿 스킬과 같은 전제(로스터 + 덱)를 요구하므로 바로 옆에
+	# 세운다. 덱보다 먼저 세우면 `mech_cards` 배분 표를 못 읽는다.
+	mech_skill = MechSkillSystem.new()
+	mech_skill.name = "MechSkillSystem"
+	add_child(mech_skill)
+	mech_skill.init_for_match()
 
 
 func _on_data_load_failed(reason: String) -> void:
@@ -719,6 +732,8 @@ func mark_pilot_dead(p: PilotData, killer: PilotData = null) -> void:
 	_push_kill_feed(p, killer)
 	if skill != null:
 		skill.on_kill(p, killer)
+	if mech_skill != null:
+		mech_skill.on_kill(p, killer)
 	_award_kill_bounty(p.team)
 	_payout_kill_bounty(p, killer)
 
@@ -913,6 +928,14 @@ func add_score(p: PilotData, delta: float) -> float:
 		# 덮어쓰지 않는다 — PilotData.growth_rate_bonus 주석 참조.
 		var skill_add: float = skill.growth_rate_add(p) if skill != null else 0.0
 		delta *= p.growth_rate_mult + p.growth_rate_bonus + skill_add
+	# 매혹([매혹] 카드) — 이 파일럿이 버는 만큼을 걸어 둔 쪽이 **그대로 한 벌
+	# 더** 번다. 복사이지 이전이 아니라서 원래 주인의 몫은 줄지 않는다. 복사본에
+	# 다시 링크가 걸려 있어도 한 겹에서 끊는다(`_score_link_depth`) — A→B→A 같은
+	# 고리가 생기면 무한 재귀가 되기 때문이다.
+	if p.growth_link_to != null and _score_link_depth == 0:
+		_score_link_depth = 1
+		add_score(p.growth_link_to, delta)
+		_score_link_depth = 0
 	var before: float = p.score
 	p.score = maxf(SCORE_MIN, p.score + delta)
 	refresh_growth_stats(p)
@@ -976,9 +999,17 @@ func refresh_growth_stats(p: PilotData) -> void:
 	# 재계산에 통째로 지워지고, 충전이 오르내릴 때마다 원본이 깎여 나간다.
 	var s_atk: float = skill.atk_mult(p) if skill != null else 1.0
 	var s_hp:  float = skill.hp_mult(p)  if skill != null else 1.0
-	p.atk = maxi(1, roundi(float(p.base_atk) * (1.0 + p.growth) * s_atk)) + p.atk_buff
+	# 메크가 쌓는 **영구** 보정도 같은 자리에 얹는다 — 고정분은 성장 배율 밖에서
+	# 더하고(공격력 +1 은 성장률에 따라 커지는 값이 아니다), 배율분만 성장과 함께
+	# 곱해진다. 탱커 E(과적재)는 최대 체력에서 공격력을 파생시키므로 **체력을 먼저
+	# 확정한 뒤** 공격력을 다시 계산한다.
+	var m_atk: float = mech_skill.atk_mult(p) if mech_skill != null else 1.0
 	var new_max: int = maxi(1, roundi(
-			float(p.base_max_hp) * (1.0 + p.growth_hp) * s_hp))
+			float(p.base_max_hp) * (1.0 + p.growth_hp) * s_hp)) + p.bonus_max_hp
+	p.atk = maxi(1, roundi(float(p.base_atk) * (1.0 + p.growth)
+			* s_atk * m_atk * (1.0 + p.bonus_atk_mult))) 			+ p.bonus_atk_flat + p.atk_buff
+	if mech_skill != null:
+		p.atk += mech_skill.bulk_power_atk(p, new_max)
 	if new_max != p.max_hp:
 		# 죽어 있는 파일럿의 현재 체력은 0 으로 둔다 — 쓰러진 뒤에도 점수가
 		# 들어올 수 있고(자기가 때려 둔 적이 나중에 죽으면 어시스트가 붙는다)
@@ -1100,6 +1131,8 @@ func score_turret_kill(attacker: PilotData, td: TurretData = null) -> void:
 		kill_feed.push_turret(attacker, td)
 	if skill != null:
 		skill.on_turret_destroyed(attacker)
+	if mech_skill != null:
+		mech_skill.on_turret_destroyed(attacker, td)
 
 
 

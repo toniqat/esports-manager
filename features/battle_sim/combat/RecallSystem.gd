@@ -80,6 +80,11 @@ func _is_out_of_position(p: PilotData) -> bool:
 ## 전장을 비우지 않으므로 `alive` 는 손대지 않는다 — 대신 `recall_hold` 를 켜서
 ## 이번 턴 이동만 건너뛰고, 다음 턴부터 웨이포인트 0 부터 다시 걸어 나간다.
 func return_to_hq(p: PilotData, log_lines: Array, reason: String) -> void:
+	# 메크가 걸어 둔 "전장 이탈까지" 짜리 상태는 여기서 끊긴다 — 취약 · 반응
+	# 장갑 · 받는 피해 · 목표 · 추적 · 결속이 전부 그것이다. 복귀는 전장을
+	# 비우지 않지만 **전선에서 물러나는 것**이라 이 문장이 성립한다.
+	if _bs.mech_skill != null:
+		_bs.mech_skill.clear_field_effects(p)
 	var orig_pos := p.grid_pos
 	var hp_before := p.hp
 	p.grid_pos     = _bs.PLAYER_HQ_POS if p.team == 0 else _bs.ENEMY_HQ_POS

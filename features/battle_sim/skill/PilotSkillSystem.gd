@@ -461,7 +461,8 @@ func _act_dragon_blessing(p: PilotData) -> String:
 			var cd := _bs.card_phase.draw_card(true)
 			if cd == null:
 				break
-			_bs.card_phase.spawn_card_node(cd)
+			if not _bs.card_phase.last_draw_merged:
+				_bs.card_phase.spawn_card_node(cd)
 			drew += 1
 		_refresh_hand()
 	return "전략 점수 +%d · 드로우 %d" % [BLESSING_STRATEGY, drew]
@@ -480,10 +481,11 @@ func _act_fierce_battle(p: PilotData) -> String:
 	if found == null:
 		return _grant_volatile(p, CARD_ENGAGE_START, "전투 개시")
 	_bs.player_deck.erase(found)
-	_bs.player_hand.append(found)
 	if _bs.card_phase != null:
-		_bs.card_phase.spawn_card_node(found)
+		_bs.card_phase.add_card_to_hand(found, true)
 		_bs.card_phase.update_deck_discard_labels()
+	else:
+		_bs.player_hand.append(found)
 	_refresh_hand()
 	return "[%s] 드로우" % found.card_name
 
@@ -517,8 +519,7 @@ func _grant_volatile(p: PilotData, card_id: int, label: String) -> String:
 	cd.owner_pilot = p
 	cd.keyword = _with_keywords(cd.keyword,
 			[CardData.KW_EXHAUST, CardData.KW_VOLATILE])
-	_bs.player_hand.append(cd)
-	_bs.card_phase.spawn_card_node(cd)
+	_bs.card_phase.add_card_to_hand(cd, true)
 	_refresh_hand()
 	return "[%s] 생성 (소멸 · 휘발성)" % label
 

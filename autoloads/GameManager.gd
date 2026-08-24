@@ -189,10 +189,14 @@ func load_match_data() -> Dictionary:
 		return {"error": "mechs table empty — rebuild game.db"}
 	var mechs: Array = []
 	for row in db.query_result:
-		mechs.append(MechData.new(
+		var md := MechData.new(
 			int(row["id"]), row["name"],
 			int(row["hp"]), int(row["atk"]),
-			int(row.get("presence", 4))))
+			int(row.get("presence", 4)))
+		# 역할군은 기본값 -1 로 읽는다 — `role` 컬럼이 없는 옛 game.db 에서도
+		# 메크 목록 자체는 그대로 서고, 분류만 "없음"이 된다.
+		md.role = int(row.get("role", -1))
+		mechs.append(md)
 
 	db.close_db()
 	# 실루엣 컷 목록은 한 번만 심는다 — PilotImages 는 static 이라 이후의 모든
@@ -330,6 +334,7 @@ var card_pool_bs: Array = []  # Array of {id,name,cost,uses,cast_method,target,c
 func _ready() -> void:
 	_load_card_pool_bs()
 	_load_pilot_skills()
+	_load_mech_skills()
 
 
 func _load_card_pool_bs() -> void:
@@ -408,3 +413,87 @@ func _load_pilot_skills() -> void:
 		}
 	db.close_db()
 	print("GameManager: pilot skills loaded — %d skills" % pilot_skills.size())
+
+
+# ── 메크 패시브 / 메크 카드 (used by MechSkillSystem + CardPhaseManager) ──────
+# 파일럿 스킬이 **선수**에게 붙는 한 수라면 이 둘은 **기체**에 붙는다. 표는
+# `data/csv/mech_passives.csv`(15행) 와 `data/csv/mech_cards.csv`(64행)이고,
+# 짝은 `mechs.id` 다 — `players.skill_id` 같은 포인터 컬럼이 없는 것은 메크
+# 한 대가 자기 패시브 하나와 자기 카드 셋을 통째로 소유하기 때문이다.
+#
+# 세 표를 들고 있는 이유가 각각 다르다.
+#   • `mech_passives`  — mech_id → 그 메크의 패시브 행 하나 (없으면 비어 있다)
+#   • `mech_cards`     — mech_id → 그 메크의 카드 행 배열 (덱을 돌릴 때 훑는다)
+#   • `mech_card_defs` — 카드 id → 행 하나 (효과가 카드를 **지목해** 만들 때.
+#     `gen_hand:13` 처럼 id 로 부르는 절이 열 개가 넘어서 매번 배열을 뒤지면
+#     같은 선형 탐색이 카드 한 장마다 다시 돈다)
+var mech_passives:  Dictionary = {}   # int mech_id → {id,mech_id,key,name,p1,p2,keyword,description}
+var mech_cards:     Dictionary = {}   # int mech_id → Array of card def Dictionaries
+var mech_card_defs: Dictionary = {}   # int card id → card def Dictionary
+
+
+## 이 메크의 패시브 행. 패시브가 없는 메크(6대)는 빈 Dictionary.
+func mech_passive_def(mech_id: int) -> Dictionary:
+	return mech_passives.get(mech_id, {})
+
+
+## 이 메크가 들고 오는 카드 행들. 알 수 없는 메크면 빈 배열.
+func mech_cards_for(mech_id: int) -> Array:
+	return mech_cards.get(mech_id, [])
+
+
+## 메크 카드 한 행을 id 로. 없으면 빈 Dictionary.
+func mech_card_def(card_id: int) -> Dictionary:
+	return mech_card_defs.get(card_id, {})
+
+
+func _load_mech_skills() -> void:
+	var db := SQLite.new()
+	db.path = "res://data/game.db"
+	db.verbosity_level = SQLite.QUIET
+	if not db.open_db():
+		push_error("GameManager: cannot open data/game.db")
+		return
+	# 두 표가 없는 옛 game.db 에서도 조용히 넘어간다 — 그때는 모든 메크가
+	# 패시브도 고유 카드도 없는 상태로 굴러가고, 덱 구성은 공용 메크 카드
+	# 폴백(cards.csv 의 card_type = mech)을 탄다.
+	db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='mech_passives'")
+	if not db.query_result.is_empty():
+		db.query("SELECT * FROM mech_passives ORDER BY id")
+		for row in db.query_result:
+			mech_passives[int(row["mech_id"])] = {
+				"id":          int(row["id"]),
+				"mech_id":     int(row["mech_id"]),
+				"key":         String(row["key"]),
+				"name":        String(row["name"]),
+				"p1":          int(row["p1"]),
+				"p2":          int(row["p2"]),
+				"keyword":     String(row["keyword"]),
+				"description": String(row["description"]),
+			}
+	db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='mech_cards'")
+	if not db.query_result.is_empty():
+		db.query("SELECT * FROM mech_cards ORDER BY id")
+		for row in db.query_result:
+			var def: Dictionary = {
+				"id":          int(row["id"]),
+				"mech_id":     int(row["mech_id"]),
+				"name":        String(row["name"]),
+				"count":       int(row["count"]),
+				"cost":        int(row["cost"]),
+				"cast_method": String(row["cast_method"]),
+				"target":      String(row["target"]),
+				"cast_range":  int(row["cast_range"]),
+				"area":        int(row["area"]),
+				"keyword":     String(row["keyword"]),
+				"effect":      String(row["effect"]),
+				"trigger":     String(row.get("trigger", "")),
+				"description": String(row["description"]),
+			}
+			mech_card_defs[int(row["id"])] = def
+			if not mech_cards.has(int(row["mech_id"])):
+				mech_cards[int(row["mech_id"])] = []
+			(mech_cards[int(row["mech_id"])] as Array).append(def)
+	db.close_db()
+	print("GameManager: mech skills loaded — %d passives, %d cards" % [
+			mech_passives.size(), mech_card_defs.size()])

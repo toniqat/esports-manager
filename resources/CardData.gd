@@ -25,6 +25,18 @@ const KW_PRESERVE := "preserve"
 ## 휘발성은 **안 쓰고 버려지면** 사라지는 것이라, 스킬이 준 카드는 어느 쪽으로도
 ## 덱을 불리지 않는다. 판정은 `CardPhaseManager.send_to_discard` 한 곳을 지난다.
 const KW_VOLATILE := "volatile"
+## 스택 — **핸드에서 같은 카드끼리 한 장으로 뭉친다.** 두 장째가 손에 들어오면
+## 새 노드가 서지 않고 이미 서 있던 카드의 `stack_count` 가 오르며, 카드 오른쪽
+## 위에 `x3` 이 찍히고 뒤로 여러 장이 겹쳐 보인다. 손패 크기·상한·버리기가 전부
+## 그 뭉치를 **한 장으로** 세고, 사용하면 뭉치가 통째로 나간다 — 대개 그 카드의
+## 효과가 `|stack` 플래그로 `stack_count` 를 읽어 세기를 결정한다(미사일 · 전장
+## 강타 · 공격 명령 · 약자 멸시).
+##
+## 뭉쳐 있는 것은 **손패에서뿐**이다. 덱과 버린 더미에는 언제나 낱장으로 눕는다
+## (`CardPhaseManager.send_to_discard` 가 뭉치를 다시 흩는다) — 그러지 않으면
+## 리셔플 한 번에 덱 장수가 줄어들고, 뽑을 때마다 뭉치째 들어와 드로우 한 번이
+## 몇 장인지가 흔들린다.
+const KW_STACK := "stack"
 
 # 카드 종류 (cards.csv `card_type` 컬럼). 덱은 파일럿마다 메크 카드
 # `MECH_CARDS_PER_PILOT` 장 + 파일럿 카드 `PILOT_CARDS_PER_PILOT` 장으로 돌아간다.
@@ -69,6 +81,19 @@ const CAT_COMMON := "common"
 # 둘 다 들면 나중에 낸 쪽이 앞의 것을 지운다(합산이 아니라 덮어쓰기다).
 @export var excl_group: String = ""
 
+# ─── 메크 카드 ───────────────────────────────────────────────────────────────
+# 메크 카드는 `cards.csv` 가 아니라 `mech_cards.csv` 에서 온다. 두 값이 그 출신을
+# 말한다 — `mech_card_id` 가 그 표의 행 id(효과가 카드를 **지목해** 만들 때 쓰는
+# 키이자 스택 병합의 동일성 판정), `mech_id` 가 그 카드를 들고 온 기체다.
+# 파일럿 카드와 공용 카드는 둘 다 -1 이다.
+@export var mech_card_id: int = -1
+@export var mech_id: int = -1
+## 카드 자신에게 붙는 사건 훅(mech_cards.trigger). 비어 있으면 없음.
+@export var trigger: String = ""
+
+## 손패에서 이 뭉치가 몇 장인가 — `KW_STACK` 주석 참조. 스택이 아닌 카드는 언제나 1.
+var stack_count: int = 1
+
 # Runtime — set when this card is dealt to a pilot's mini-deck. Identifies the
 # 시전자 (caster) for effect resolution and drives the owner badge on the UI.
 # Not @export'd because PilotData is a transient match-only object.
@@ -101,6 +126,29 @@ func is_preserved_by_keyword() -> bool:
 ## 버려질 때 버린 더미로 가지 않고 사라지는 카드인가 — `KW_VOLATILE` 주석 참조.
 func is_volatile() -> bool:
 	return has_keyword(KW_VOLATILE)
+
+
+## 손패에서 같은 카드끼리 뭉치는가 — `KW_STACK` 주석 참조.
+func is_stackable() -> bool:
+	return has_keyword(KW_STACK)
+
+
+## 이 두 장이 **같은 뭉치**인가. 스택 카드이면서 같은 `mech_cards` 행이고 시전자도
+## 같아야 한다 — 시전자가 다르면 사거리 기준점도 성장치도 다른 카드다.
+func stacks_with(other: CardData) -> bool:
+	if other == null or not is_stackable() or not other.is_stackable():
+		return false
+	if mech_card_id < 0 or mech_card_id != other.mech_card_id:
+		return false
+	return owner_pilot == other.owner_pilot
+
+
+## **낼 수 있는 카드인가.** 비용 -1 은 "사용할 수 없다"는 뜻이다 — 핸드에 들고
+## 있는 것만으로 효과를 내는 네 장(캐시 · 계시 · 약자 멸시 · 밸런스)이 쓰며,
+## 드래그도 확정도 거부된다. 0 코스트와 헷갈리지 말 것: 0 은 공짜로 낼 수 있다는
+## 뜻이고 -1 은 낼 수 없다는 뜻이다.
+func is_playable() -> bool:
+	return cost >= 0
 
 
 ## True when a pilot of the given kind may own this card. 정글러는 any + jungle,

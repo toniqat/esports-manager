@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://wpv8h8uyqiqy"
+
+[deps]
+
+files=["res://data/csv/mech_cards.mech.translation", "res://data/csv/mech_cards.name.translation", "res://data/csv/mech_cards.count.translation", "res://data/csv/mech_cards.cost.translation", "res://data/csv/mech_cards.cast.translation", "res://data/csv/mech_cards.target.translation", "res://data/csv/mech_cards.cast.translation", "res://data/csv/mech_cards.area.translation", "res://data/csv/mech_cards.keyword.translation", "res://data/csv/mech_cards.effect.translation", "res://data/csv/mech_cards.trigger.translation", "res://data/csv/mech_cards.description.translation"]
+
+source_file="res://data/csv/mech_cards.csv"
+dest_files=["res://data/csv/mech_cards.mech.translation", "res://data/csv/mech_cards.name.translation", "res://data/csv/mech_cards.count.translation", "res://data/csv/mech_cards.cost.translation", "res://data/csv/mech_cards.cast.translation", "res://data/csv/mech_cards.target.translation", "res://data/csv/mech_cards.cast.translation", "res://data/csv/mech_cards.area.translation", "res://data/csv/mech_cards.keyword.translation", "res://data/csv/mech_cards.effect.translation", "res://data/csv/mech_cards.trigger.translation", "res://data/csv/mech_cards.description.translation"]
+
+[params]
+
+compress=true
+delimiter=0

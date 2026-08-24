@@ -105,13 +105,14 @@ func _ready() -> void:
 # `on_done`      — optional Callable invoked once the modal closes and game
 #                  phase returns to CARD_PHASE. Used to refresh hand UI.
 func start_engage(caster: PilotData, rounds_total: int, exclude_lane: bool,
-		on_done: Callable = Callable()) -> void:
+		on_done: Callable = Callable(),
+		center: Vector2i = Vector2i(-999, -999), radius: int = 1) -> void:
 	if _active:
 		return
 	if caster == null or rounds_total <= 0:
 		return
 
-	var participants := _gather_participants(caster, exclude_lane)
+	var participants := _gather_participants(caster, exclude_lane, center, radius)
 	# Need at least one pilot per side; otherwise the card just no-ops.
 	var t0: Array = []
 	var t1: Array = []
@@ -139,12 +140,13 @@ func start_engage(caster: PilotData, rounds_total: int, exclude_lane: bool,
 ## `start_engage` 가 쓰는 것과 같은 수집 규칙이라 개시 확인 화면(VS)에 뜬 명단과
 ## 실제로 무대에 오르는 명단이 어긋날 수 없다. 두 호출 사이에는 아무 일도
 ## 일어나지 않으므로 두 번 수집해도 결과가 같다.
-func engage_sides(caster: PilotData, exclude_lane: bool) -> Array:
+func engage_sides(caster: PilotData, exclude_lane: bool,
+		center: Vector2i = Vector2i(-999, -999), radius: int = 1) -> Array:
 	var t0: Array = []
 	var t1: Array = []
 	if caster == null:
 		return [t0, t1]
-	for raw in _gather_participants(caster, exclude_lane):
+	for raw in _gather_participants(caster, exclude_lane, center, radius):
 		var p := raw as PilotData
 		if p.alive:
 			(t0 if p.team == 0 else t1).append(p)
@@ -260,6 +262,9 @@ func _begin(caster: PilotData, t0: Array, t1: Array, duel: bool,
 	# 기회주의자(파일럿 스킬)의 처치 장부는 교전 하나에만 유효하다.
 	if _bs.skill != null:
 		_bs.skill.on_engage_started()
+	# 메크 쪽 교전 개시 훅 — 반응 장갑 전개 · 불굴 · 약자 멸시가 여기서 켜진다.
+	if _bs.mech_skill != null:
+		_bs.mech_skill.on_engage_start(t0 + t1)
 
 	_sim = TurnEngageSim.new()
 	_sim.setup(_bs, caster, t0, t1, rounds, duel, first_team)
@@ -325,20 +330,39 @@ func _end_banner_text() -> String:
 
 # ─── Participant gathering ───────────────────────────────────────────────────
 # Caster cell + 6 neighbor cells (radius-1 hex). Includes the caster.
-func _gather_participants(caster: PilotData, exclude_lane: bool) -> Array:
-	var area: Dictionary = {caster.grid_pos: true}
-	for n in _bs.hex_grid.get_neighbors(caster.grid_pos.x, caster.grid_pos.y):
-		area[n] = true
+## 교전 무대에 설 사람들. 기본 무대는 **시전자 칸 + 인접 6칸**이지만, 메크
+## 카드가 그 둘을 바꿔 부른다 — `center` 로 무대를 시전자가 아닌 **지정한 적
+## 주변**으로 옮기고([돌격] · [강습] · [간보기]), `radius` 로 넓힌다([우세한
+## 전장] 3, [개시] · [제압 전투] 2). 기본값은 예전 그대로다.
+func _gather_participants(caster: PilotData, exclude_lane: bool,
+		center: Vector2i = Vector2i(-999, -999), radius: int = 1) -> Array:
+	var origin: Vector2i = center if center != Vector2i(-999, -999) else caster.grid_pos
 	var out: Array = []
 	for raw in _bs.pilots:
 		var p := raw as PilotData
 		if not p.alive:
 			continue
-		if not area.has(p.grid_pos):
+		if _bs.hex_grid.hex_distance(origin, p.grid_pos) > radius:
 			continue
 		if exclude_lane and not _is_engage_eligible_under_exclude_lane(p):
 			continue
+		# 탈진([탈진] 카드) — 이번 작전 단계 동안 전투에 못 들어간다. 무대에
+		# 세우지 않는 것이 곧 그 효과다.
+		if p.engage_locked:
+			continue
 		out.append(p)
+	# 결속 / 추적 — **무대 밖에서 끌려 들어오는** 두 경로. 참가가 확정된 뒤에
+	# 붙이므로 사거리를 보지 않는다: 그 원격성이 두 카드의 값이다.
+	var pulled: Array = []
+	for raw in out:
+		var p := raw as PilotData
+		if p.engage_link != null and p.engage_link.alive 				and not out.has(p.engage_link) and not pulled.has(p.engage_link):
+			pulled.append(p.engage_link)
+		for entry_raw in p.tracked_by:
+			var tracker: PilotData = (entry_raw as Dictionary).get("pilot", null)
+			if tracker != null and tracker.alive 					and not out.has(tracker) and not pulled.has(tracker):
+				pulled.append(tracker)
+	out.append_array(pulled)
 	return out
 
 

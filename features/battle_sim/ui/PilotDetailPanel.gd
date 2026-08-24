@@ -620,8 +620,11 @@ func _build_body_content() -> float:
 	if _tab != Tab.INGAME:
 		var slot: String = "pilot" if _tab == Tab.PILOT else "mech"
 		var title: String = "파일럿 카드" if _tab == Tab.PILOT else "메크 카드"
+		# 열 수를 장수로 잡던 시절의 값이 남아 있었다 — 그때는 두 탭 다 정확히
+		# 3장이라 `size()` 가 곧 `CARD_GRID_COLS` 였다. 지금 메크 카드는 기체가
+		# 정하므로 최대 7장까지 오고, 그대로 두면 7열이 패널 밖으로 넘친다.
 		return _build_card_grid(y + 18.0, title, _starter_cards(slot),
-				slot, _starter_cards(slot).size())
+				slot, mini(CARD_GRID_COLS, maxi(1, _starter_cards(slot).size())))
 
 	# 죽어 있을 때만 뜨는 한 줄. 스트립의 부활 카운트는 패널이 열려 있는 동안
 	# 숨겨져 있으므로 여기 말고는 남은 턴 수를 볼 자리가 없다.

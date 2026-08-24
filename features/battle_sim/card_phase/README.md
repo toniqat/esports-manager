@@ -791,22 +791,31 @@ re-evaluates the dim state.
 - `apply_card_effect(cd, is_player)` → String log message
 
 ### Per-pilot decks (시전자 rule + 슬롯 구성)
-- `build_starter_decks()` — for each pilot on each side, deals 6 `CardData`
-  copies from the DB pool and tags each with that pilot as 시전자
-  (`owner_pilot`). All 5 stacks shuffle into the team deck: **5 × 6 = 30장**.
-  Player and AI sides build identically; the AI hand is logical-only but its
-  cards still carry an enemy-pilot owner.
-- **6장은 메크 3 + 파일럿 3으로 갈린다**, 그리고 파일럿 3장의 내역은 역할이
-  정한다. `_pilot_slots_for(p)` 가 그 표다:
+- `build_starter_decks()` — for each pilot on each side, deals a `CardData` copy
+  per deck slot and tags each with that pilot as 시전자 (`owner_pilot`). All 5
+  stacks shuffle into the team deck. Player and AI sides build identically; the
+  AI hand is logical-only but its cards still carry an enemy-pilot owner.
+- **메크 절반은 뽑는 것이 아니라 따라온다.** 배정된 기체의 카드 목록
+  (`mech_cards.csv`)을 `count` 만큼 펼친 것이 그 파일럿의 메크 카드 전부이고,
+  기체마다 **2~7장**이라 덱 크기가 조합에 따라 달라진다(이론 25~43장, 실측 30~35장). 예전의
+  "공용 메크 카드 풀에서 3장 뽑기"는 `match_ctx` 없이 BattleSim.tscn 을 직접
+  돌릴 때만 도는 폴백으로 남았고, `MECH_CARDS_PER_PILOT`(3)는 그 폴백 상수다.
+  `_mech_card_defs_for(p)` 가 그 기체의 행들을 돌려주고, 비어 있을 때만 폴백이
+  걸린다. **파일럿 카드 3장은 그대로**이고 내역은 역할이 정한다
+  (`_pilot_slots_for(p)`):
 
   | 역할 | 판정 | 메크 | 파일럿 3장 |
   |---|---|---|---|
-  | 암살자(정글러) | `is_guerrilla` | 3 | `jungle` 2 + `draw` 1 |
-  | 서포터 | `role == Role.SUPPORT` | 3 | `lane` 1 + `draw` 2 |
-  | 탱커 / 격투가 / 스나이퍼 | 나머지 | 3 | `lane` 2 + `draw` 1 |
+  | 암살자(정글러) | `is_guerrilla` | 기체가 정한다 | `jungle` 2 + `draw` 1 |
+  | 서포터 | `role == Role.SUPPORT` | 기체가 정한다 | `lane` 1 + `draw` 2 |
+  | 탱커 / 격투가 / 스나이퍼 | 나머지 | 기체가 정한다 | `lane` 2 + `draw` 1 |
 
+- **`count = 0` 인 메크 카드도 배분 표에는 적는다.** 덱에는 안 들어가지만
+  (승전보 · 철거 · 처형 · 락온 · 고통과 쾌감 · 단계 B/C — 패시브나 다른 카드가
+  만들어 줄 때만 나온다) 상세 패널의 메크 탭이 "이 기체가 무엇을 하는 기체인가"를
+  보여 주는 자리라, 조건부로만 나오는 카드가 거기서 빠지면 기체를 반만 읽게 된다.
 - **배분 표는 `BattleSim.starter_cards` 에 남는다** — `PilotData →
-  {"mech": [CardData ×3], "pilot": [CardData ×3]}`. `_deal_one()` 이 덱에 넣는
+  {"mech": [CardData …], "pilot": [CardData ×3]}`. `_deal_one()` 이 덱에 넣는
   **그 사본**을 그대로 적으므로, 사본에만 찍히는 값(정밀 이동의 `return_left`
   비용 증가)까지 표를 통해 보인다. 유일한 소비자는 상세 패널의 파일럿 / 메크
   탭(`ui/PilotDetailPanel.gd`)이고, 손패 · 덱 · 버린 더미를 훑어 **역산하지
@@ -843,9 +852,39 @@ re-evaluates the dim state.
   `card_type` / `card_cat`) AND `owner_pilot`. Use this any time you need a
   deck-safe duplicate.
 
-**실측** (standalone 1판, 양 팀): 30/30장, 파일럿마다 mech 3 + 파일럿 3,
-서포터만 draw 2, 정글러만 jungle 슬롯 2(= `jungle` 2 또는 `jungle` 1 + `common` 1),
-같은 파일럿이 같은 카드를 두 장 가진 사례 0.
+**실측** (헤드리스 1판, 역할군마다 첫 기체 배정): 플레이어 덱 **33장**
+(메크 18 + 파일럿 15). 파일럿 카드는 여전히 3장씩이고 서포터만 draw 2,
+정글러만 jungle 슬롯 2(= `jungle` 2 또는 `jungle` 1 + `common` 1)다. 메크 쪽은
+기체가 정하므로 같은 카드가 여러 장 나오는 것이 **정상**이다(미사일 3 · 리부트 3 ·
+약자 멸시 4 · 전장 강타 5).
+
+### 스택 (핸드에서 뭉치는 카드)
+`스택` 키워드를 단 카드는 손패에서 같은 카드끼리 **한 장으로** 뭉친다.
+
+- 진입점은 **`add_card_to_hand(cd, is_player, at_left)` 하나**다. 뭉칠 수 있으면
+  `stack_count` 만 올리고 노드를 새로 세우지 않으며, 그때 false 를 돌려준다.
+  `draw_card` 는 같은 판정을 안에서 하고 결과를 **`last_draw_merged`** 로 알린다 —
+  호출 측 다섯 곳이 그 값을 보고 `spawn_card_node` 를 건너뛴다(새 노드가 안 서면
+  날아올 카드가 없으므로 드로우 연출도 없다).
+- **뭉치는 곳은 손패뿐이다.** `send_to_discard` 가 더미로 내려앉는 뭉치를 다시
+  낱장으로 흩는다 — 그러지 않으면 리셔플 한 번에 덱 장수가 뭉친 만큼 줄고, 다음
+  드로우 한 번이 몇 장인지가 흔들린다.
+- 동일성은 `CardData.stacks_with()` — **같은 `mech_card_id` + 같은 시전자**.
+  시전자가 다르면 사거리 기준점도 성장치도 다른 카드다.
+- 화면은 `Card.refresh_stack_badge()` — 카드 **뒤로** 어긋나게 겹치는 판
+  (최대 3장, `move_child(layer, 0)` 로 앞면보다 뒤에 앉힌다)과 오른쪽 위 `xN`
+  배지. 판을 뒤에 깔아야 "여러 장"이 배지를 읽기 전에 먼저 보인다.
+- 손패 배열에 **한 항목**으로만 존재하므로 손패 크기 · `_trim_hand_overflow` ·
+  부채꼴 레이아웃 · `HandHitLayer` 밴드가 전부 뭉치를 한 장으로 센다. 그 넷을
+  따로 고치지 않아도 되는 것이 이 표현을 고른 유일한 이유다.
+
+### 코스트 -1 (사용할 수 없는 카드)
+`cost = -1` 은 값이 아니라 **낼 수 없다는 표시**다(캐시 · 계시 · 약자 멸시 ·
+밸런스 — 손에 들고 있는 것만으로 일한다). `CardData.is_playable()` 이 그 판정이고
+세 곳이 읽는다 — `Card._apply_data` / `update_displayed_cost` 는 비용 칸에 숫자
+대신 `—` 를 찍고(할인도 증세도 얹지 않는다), `highlight_affordable_cards` 는 점수와
+무관하게 지불 불가로 잠그며, `_begin_drag` 은 드래그 자체를 거부한다. **단 버리기
+픽 중에는 끌린다**: 못 내는 카드라고 못 버리는 것은 아니다.
 - Card front layout:
   - **Top-left**: 작전 점수 (cost) label, large outlined text on the
     cost-coloured card body. `Card.update_displayed_cost(eff)` recolours the

@@ -53,6 +53,54 @@ var presence: int         = 4
 # data hook for future integration so card effects can build up the value now.
 var shield: int           = 0
 
+# ─── 메크가 거는 지속 상태 ────────────────────────────────────────────────────
+# 아래 필드는 전부 **메크 패시브와 메크 카드**(`mech_passives` / `mech_cards`)가
+# 만든다. `MechSkillSystem` 이 켜고 끄며, 소비자는 그 값을 원래 계산하던 자리
+# (`SimulationCore` 의 피해·명중, `BattleSim.refresh_growth_stats`,
+# `TurnEngageSim`)다 — 파일럿 스킬과 같은 규칙이다.
+
+## 취약 — **1마다 받는 피해 +1%.** 원딜 A(취약 각인)가 쌓는다. 누적되며 상한이
+## 없고, 자기 작전 단계가 끝나면 걷힌다(각인 자체가 "이번 작전 단계 동안"이다).
+var vulnerable: int = 0
+## 반응 장갑 — **공격을 한 번 받을 때마다 그 피해를 90% 줄이고 1 소모한다.**
+## 탱커 G 의 패시브와 두 카드가 쌓는다. 보호막과 달리 값이 아니라 **횟수**다.
+var reactive_armor: int = 0
+## 받는 피해 배율 가산분(죽음의 손가락 +0.25). 전장 이탈(복귀/사망)까지 남는다.
+var damage_taken_bonus: float = 0.0
+## 현상금 — 지원 V 가 찍는다. [확신] 이 이 값의 몇 %를 피해로 바꾼다.
+var bounty: float = 0.0
+## 목표 — 이 파일럿을 지목한 시전자와 그가 얹는 피해 배율(단계 A: +0.15).
+## 한 명만 지목할 수 있다: 새로 찍으면 앞의 것을 덮는다.
+var marked_by: PilotData = null
+var marked_bonus: float = 0.0
+## 추적 — `[{"pilot": PilotData, "expire_turn": int}, …]`. 이 파일럿이 전투에
+## 참여하면 목록의 파일럿도 함께 끌려 들어간다(탱커 E 의 [추적]).
+var tracked_by: Array = []
+## 결속 — 시전자가 전투에 참여할 때 함께 들어가는 아군(원딜 I 의 [결속]).
+var engage_link: PilotData = null
+## 탈진 — 이번 작전 단계 동안 전투에 참여할 수 없다(지원 S 의 [탈진]).
+var engage_locked: bool = false
+## 강타 — 다음 교전에서 이 파일럿이 피해를 준 적을 그 라운드 동안 기절시킨다.
+var stun_charge: bool = false
+## 기절 — 이 라운드 동안 행동 불능(교전 무대 전용).
+var stunned_rounds: int = 0
+## 매혹 — 이 파일럿이 버는 성장치를 그대로 복사해 가는 상대와 그 만료 턴.
+var growth_link_to: PilotData = null
+var growth_link_expire_turn: int = -1
+
+# ─── 영구 스탯 보정 (메크가 쌓는 몫) ──────────────────────────────────────────
+# `BattleSim.refresh_growth_stats` 가 `base_atk` / `base_max_hp` 에서 스탯을 **다시
+# 계산**하므로, 메크가 얹는 증가분은 `atk` / `max_hp` 를 직접 밀면 그 재계산
+# 한 번에 지워진다. 그래서 카드의 일시 공격력(`atk_buff`)과 같은 이유로 별도
+# 필드로 산다 — 이쪽은 만료가 없는 **영구** 몫이라는 점만 다르다.
+## 공격력 고정 가산(조준 보정 +1/명중, [녹색 병] +2).
+var bonus_atk_flat: int = 0
+## 공격력 배율 가산(영혼 수확 +1%/타).
+var bonus_atk_mult: float = 0.0
+## 최대 체력 고정 가산([몸집 불리기] +20, [붉은 가루] +20, 영혼 수확 +5/타,
+## 고통과 쾌감 패시브의 피해 20%).
+var bonus_max_hp: int = 0
+
 # ─── 성장 (인게임 누적) ───────────────────────────────────────────────────────
 # **성장은 시간이 아니라 성장치(`score`)가 만든다.** 예전에는 살아 있기만 하면
 # 매 턴 `BattleSim.GROWTH_PER_TURN` 만큼 `atk` 와 `max_hp` 가 함께 늘었는데,

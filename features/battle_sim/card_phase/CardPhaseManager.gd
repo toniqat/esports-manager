@@ -186,13 +186,48 @@ var _player_pass_lock: bool = false
 # 최대 타수. 확률상 거의 닿지 않지만 무한 루프를 구조적으로 막는 상한이다.
 const MAX_ATTACK_REPEATS: int = 5
 
+## 직전 `draw_card` 가 손패의 같은 뭉치에 **흡수됐는가**. true 면 손패 크기가
+## 늘지 않았고 새 카드 노드도 서지 않았으므로, 호출 측은 `spawn_card_node` 를
+## 건너뛰어야 한다 — 스택 카드 전용 신호다.
+var last_draw_merged: bool = false
+
+## 지금 도는 효과 체인에서 **공격 절이 한 대라도 맞았는가.** `on_hit` /
+## `on_miss` 가 읽는 유일한 값이고 공격 절이 결과를 여기에 적는다. 체인
+## 하나짜리 수명이라 카드 한 장이 시작될 때 false 로 놓인다.
+var _chain_hit: bool = false
+## 지금 효과 체인이 도는 카드. 절이 **카드 자신**을 물어야 할 때 읽는다 —
+## 스택 수(`|stack`)와 명중 수 연동 생성(`gen_hand:N|per_hit`)이 그것이다.
+## 절 함수마다 카드를 인자로 끌고 다니면 서명이 열 개 넘게 늘어난다.
+var _current_card: CardData = null
+## 지금 체인이 겨누고 있는 대상 (PilotData / Vector2i / null). **플레이어와 AI 가
+## 같은 값을 여기 둔다** — 플레이어 쪽 `_pending_play["target"]` 은 오버레이가
+## 체인을 끊었다 이었다 하는 사정 때문에 존재하고, AI 쪽에는 `_pending_play`
+## 자체가 없다. 절 구현이 대상을 물을 곳은 하나여야 한다.
+var _current_target: Variant = null
+## 직전 공격 절이 **몇 대 맞혔는가 / 몇을 눕혔는가.** `|per_hit` 을 단 뒤
+## 절들이 읽는다(충전 · 카드 생성 · 회복 · 반응 장갑) — 그 절들은 자기가
+## 때리지 않으므로 앞 절의 결과를 물어볼 곳이 필요하다.
+var _last_attack_hits: int = 0
+var _last_attack_kills: int = 0
+## 지금 카드가 손패에서 몇 번째 자리에 있었는가. [명상] 이 "이 카드보다
+## 왼쪽"을 세는 근거이고, 카드가 손패를 떠나기 직전에 찍힌다. -1 = 모름
+## (AI 경로 · 손패 밖에서 발동한 카드).
+var _current_card_index: int = -1
+## 직전 `discard_left` 가 버린 장수. [명상] 의 `draw_discarded` 가 읽는다.
+var _last_discarded_count: int = 0
+
 # ─── Deck setup ───────────────────────────────────────────────────────────────
 # Per-pilot 6-card draw: every pilot pulls 6 cards from the DB pool and tags them
 # with itself as the 시전자. All 5 pilots' stacks shuffle together into the team
 # deck — same logic for player and AI sides. Deck size is 5 × 6 = 30 per side.
 #
 # The 6 split into two halves that are drawn from different pools:
-#   • 메크 카드 3장 — `card_type = mech` (공격 / 전진 / 전투 개시 / 보호 …)
+#   • 메크 카드 — **배정된 기체가 통째로 들고 온다.** `mech_cards.csv` 에서 그
+#     기체의 행을 전부 집어 `count` 만큼 펼친 것이 이 절반이고, 그래서 장수가
+#     기체마다 2~7장으로 다르다(덱 크기가 곧 기체 선택의 일부다). 아래
+#     `MECH_CARDS_PER_PILOT` 는 **기체가 없을 때만** 쓰이는 폴백 상수로 남았다 —
+#     match_ctx 없이 BattleSim.tscn 을 직접 돌리는 경로에서 cards.csv 의
+#     `card_type = mech` 공용 카드 3장을 뽑는다.
 #   • 파일럿 카드 3장 — `card_type = pilot`, and *which* 3 depends on the role:
 #       정글러      → 정글 2 + 드로우 1
 #       서포터      → 라인전 1 + 드로우 2
@@ -259,9 +294,16 @@ func _deal_team_deck(pool: Array, pilots: Array, out_deck: Array) -> void:
 		# 새로 만들면 메크 슬롯과 라인전 슬롯이 같은 그룹을 한 장씩 집어 갈 수
 		# 있다. `_sample` 이 고른 카드의 그룹을 여기에 적어 나간다.
 		var claimed: Dictionary = {}
-		var mech_picks: Array = _sample(
-				_cards_of_type(eligible, CardData.TYPE_MECH),
-				MECH_CARDS_PER_PILOT, eligible, claimed)
+		# 메크 카드는 **뽑는 것이 아니라 따라오는 것**이다 — 배정된 기체의 카드
+		# 목록을 `count` 만큼 펼친 것이 곧 이 파일럿의 메크 절반이다. 기체가
+		# 없을 때만(BattleSim.tscn 단독 실행) 예전처럼 공용 메크 카드 3장을
+		# 뽑는 폴백으로 떨어진다.
+		var mech_defs: Array = _mech_card_defs_for(p)
+		var mech_picks: Array = []
+		if mech_defs.is_empty():
+			mech_picks = _sample(
+					_cards_of_type(eligible, CardData.TYPE_MECH),
+					MECH_CARDS_PER_PILOT, eligible, claimed)
 		var pilot_picks: Array = []
 		for slot in _pilot_slots_for(p):
 			var cat: String = String(slot[0])
@@ -272,11 +314,43 @@ func _deal_team_deck(pool: Array, pilots: Array, out_deck: Array) -> void:
 		# 카드의 비용 증가(정밀 이동의 `return_left`)처럼 사본에만 찍히는 값이
 		# 상세 패널에서 안 보인다.
 		var record: Dictionary = {"mech": [], "pilot": []}
+		for def_raw in mech_defs:
+			var def: Dictionary = def_raw as Dictionary
+			# `count = 0` 인 카드는 덱에 들어가지 않는다 — 다른 효과가 만들어 줄
+			# 때만 세상에 나오는 카드(승전보 · 철거 · 처형 · 락온 · 고통과 쾌감 ·
+			# 단계 B/C)이고, 그래도 **배분 표에는 적는다**: 상세 패널의 메크 탭이
+			# "이 기체가 무엇을 하는 기체인가"를 보여 주는 자리라, 조건부로만
+			# 나오는 카드가 거기서 통째로 빠지면 기체를 반만 읽게 된다.
+			var deck_copies: int = max(0, int(def.get("count", 1)))
+			var shown: CardData = null
+			for _i in deck_copies:
+				var cd := make_mech_card(def)
+				cd.owner_pilot = p
+				out_deck.append(cd)
+				if shown == null:
+					shown = cd
+			if shown == null:
+				shown = make_mech_card(def)
+				shown.owner_pilot = p
+			record["mech"].append(shown)
 		for src_raw in mech_picks:
 			record["mech"].append(_deal_one(src_raw as CardData, p, out_deck))
 		for src_raw in pilot_picks:
 			record["pilot"].append(_deal_one(src_raw as CardData, p, out_deck))
 		_bs.starter_cards[p] = record
+
+
+## 이 파일럿에게 배정된 기체의 카드 행들. 기체가 없으면(match_ctx 없이
+## BattleSim.tscn 을 직접 돌린 경우) 빈 배열이고, 호출 측이 공용 메크 카드
+## 폴백으로 떨어진다.
+func _mech_card_defs_for(p: PilotData) -> Array:
+	var gm: Node = _bs.gm
+	if gm == null:
+		return []
+	var pd: PlayerData = _bs.player_data_for(p)
+	if pd == null or pd.assigned_mech == null:
+		return []
+	return gm.mech_cards_for(pd.assigned_mech.id)
 
 
 ## 풀의 원본 한 장을 시전자 사본으로 떠 덱에 넣고, 그 사본을 돌려준다.
@@ -430,6 +504,52 @@ func _make_card_from_def(def: Dictionary) -> CardData:
 	return cd
 
 
+## `mech_cards.csv` 한 행 → CardData 한 장. `cards.csv` 쪽 행과 컬럼이 다르므로
+## 팩토리도 따로다 — 저쪽에는 없는 `mech_id` / `count` / `trigger` 가 있고, 이쪽에는
+## 없는 덱 슬롯 컬럼(card_type / card_cat / excl_group / scope / pool)이 있다.
+##
+## **시전자 제약은 붙지 않는다**(`scope = any`). 메크 카드의 임자는 배정된 기체가
+## 정하므로 레인/정글 필터를 한 번 더 씌우면 정글러가 자기 기체 카드를 못 받는
+## 자리가 생긴다 — 이동 카드를 들고 오는 메크가 여럿이다.
+func make_mech_card(def: Dictionary) -> CardData:
+	var cd := CardData.new(
+			String(def.get("name", "?")),
+			int(def.get("cost", 0)),
+			String(def.get("description", "")))
+	cd.uses         = 1
+	cd.cast_method  = String(def.get("cast_method", "instant"))
+	cd.target       = String(def.get("target", "hand"))
+	cd.cast_range   = int(def.get("cast_range", 0))
+	cd.area         = int(def.get("area", 0))
+	cd.keyword      = String(def.get("keyword", ""))
+	cd.effect       = String(def.get("effect", ""))
+	cd.trigger      = String(def.get("trigger", ""))
+	cd.scope        = CardData.SCOPE_ANY
+	cd.pool         = 0
+	cd.card_type    = CardData.TYPE_MECH
+	cd.card_cat     = CardData.CAT_NONE
+	cd.mech_card_id = int(def.get("id", -1))
+	cd.mech_id      = int(def.get("mech_id", -1))
+	return cd
+
+
+## 메크 카드 한 장을 **행 id 로** 만든다. 효과가 카드를 지목해 만들 때
+## (`gen_hand:13` / `gen_deck:39` / `search_card:7`) 쓰는 유일한 진입점이다.
+## 알 수 없는 id 는 null — 카드 한 장을 못 만드는 것과 매치가 죽는 것은 무게가
+## 다르므로 경고만 남긴다.
+func make_mech_card_by_id(card_id: int, owner: PilotData) -> CardData:
+	var gm: Node = _bs.gm
+	if gm == null:
+		return null
+	var def: Dictionary = gm.mech_card_def(card_id)
+	if def.is_empty():
+		push_warning("CardPhaseManager: 메크 카드 id=%d 를 mech_cards 에서 찾지 못했다" % card_id)
+		return null
+	var cd := make_mech_card(def)
+	cd.owner_pilot = owner
+	return cd
+
+
 # ─── 오브젝트 보상 카드 지급 ─────────────────────────────────────────────────
 # 전령 / 용을 가져간 팀에게 카드를 쥐여 주는 두 진입점. 보상 카드는 `pool = 0`
 # 이라 스타터 덱에는 절대 들어가지 않고, **오직 여기로만** 세상에 나온다.
@@ -463,15 +583,12 @@ func make_objective_card(card_id: int) -> CardData:
 ## 전령 보상은 `보존` 키워드라 다음 자동 버리기도 이 카드를 건너뛴다.
 ## 실제로 들어간 장수를 돌려준다.
 func grant_cards_to_hand(card_id: int, is_player: bool, count: int) -> int:
-	var hand: Array = _bs.player_hand if is_player else _bs.ai_hand
 	var added: int = 0
 	for _i in max(0, count):
 		var cd := make_objective_card(card_id)
 		if cd == null:
 			break
-		hand.append(cd)
-		if is_player:
-			spawn_card_node(cd)
+		add_card_to_hand(cd, is_player)
 		added += 1
 	if added > 0:
 		_refresh_hand_after_bulk_change(is_player)
@@ -513,6 +630,9 @@ func make_card_copy(src: CardData) -> CardData:
 	cd.card_type   = src.card_type
 	cd.card_cat    = src.card_cat
 	cd.excl_group  = src.excl_group
+	cd.mech_card_id = src.mech_card_id
+	cd.mech_id      = src.mech_id
+	cd.trigger      = src.trigger
 	cd.owner_pilot = src.owner_pilot
 	return cd
 
@@ -575,7 +695,8 @@ func do_battle_turn() -> void:
 			# deck and left the same dead hand sitting there for the whole wait.
 			var drawn := draw_card(true)
 			if drawn != null:
-				spawn_card_node(drawn)
+				if not last_draw_merged:
+					spawn_card_node(drawn)
 				# 손패가 바뀌었다 — 카드 없이 넘긴 차례의 잠금이 풀린다.
 				_player_pass_lock = false
 			_trim_hand_overflow(true)
@@ -739,6 +860,9 @@ func start_card_phase() -> void:
 ## 전투 명령의 단계 효과가 걷힌다. `end_card_phase`(플레이어)와 `_run_ai_turn`
 ## (AI)이 둘 다 마지막에 부른다.
 func _notify_skill_phase_end(is_player: bool) -> void:
+	# 메크 쪽 단계 정산 — 취약 각인이 걷히고 탈진이 풀린다.
+	if _bs.mech_skill != null:
+		_bs.mech_skill.on_phase_end(is_player)
 	if _bs.skill != null:
 		_bs.skill.on_phase_end(is_player)
 
@@ -949,6 +1073,64 @@ func _run_ai_turn() -> void:
 
 
 # ─── Card draw ────────────────────────────────────────────────────────────────
+# ─── 스택 (핸드에서 뭉치는 카드) ─────────────────────────────────────────────
+# `스택` 키워드를 단 카드는 손패에서 같은 카드끼리 **한 장으로** 뭉친다. 뭉친
+# 카드는 손패 배열에 **한 항목**으로만 존재하고 `stack_count` 가 몇 장인지를
+# 들고 있으므로, 손패 크기 · 상한 초과 정리 · 부채꼴 레이아웃 · 히트 밴드가
+# 전부 그 뭉치를 한 장으로 센다 — 그 셋을 따로 고칠 필요가 없다는 것이 이
+# 표현을 고른 이유다.
+#
+# 뭉치는 곳은 손패뿐이다. 덱과 버린 더미에는 낱장으로 눕고(`send_to_discard`),
+# 손패로 들어올 때 다시 뭉친다.
+
+## 손패에 이미 서 있는 같은 뭉치. 없으면 null.
+func _stack_partner_in_hand(cd: CardData, hand: Array) -> CardData:
+	if cd == null or not cd.is_stackable():
+		return null
+	for raw in hand:
+		var other := raw as CardData
+		if other != cd and other.stacks_with(cd):
+			return other
+	return null
+
+
+## 카드 한 장을 손패에 넣는 **유일한 진입점**. 뭉칠 수 있으면 뭉치고(그때는
+## 노드를 새로 세우지 않고 이미 서 있는 카드의 `xN` 배지만 올린다), 아니면
+## 평소대로 손패에 앉히고 노드를 세운다.
+##
+## 새 카드가 실제로 손패 한 자리를 차지했으면 true, 뭉쳐서 흡수됐으면 false.
+## 드로우 연출을 걸지 말지를 호출 측이 이 값으로 가른다.
+func add_card_to_hand(cd: CardData, is_player: bool, at_left: bool = false) -> bool:
+	if cd == null:
+		return false
+	var hand: Array = _bs.player_hand if is_player else _bs.ai_hand
+	var partner: CardData = _stack_partner_in_hand(cd, hand)
+	if partner != null:
+		partner.stack_count += cd.stack_count
+		if is_player:
+			refresh_stack_node(partner)
+		return false
+	if at_left:
+		hand.insert(0, cd)
+	else:
+		hand.append(cd)
+	if is_player:
+		spawn_card_node(cd, at_left)
+	else:
+		_bs.hud.update_ai_hand_visuals()
+	return true
+
+
+## 이 카드의 손패 노드에 뭉치 표시를 다시 그린다. 노드가 없으면(AI 쪽 · 아직
+## 안 선 카드) 조용히 넘어간다.
+func refresh_stack_node(cd: CardData) -> void:
+	for raw in _bs.player_card_nodes:
+		var c := raw as Card
+		if c.data == cd:
+			c.refresh_stack_badge()
+			return
+
+
 func draw_card(is_player: bool) -> CardData:
 	var deck:    Array = _bs.player_deck    if is_player else _bs.ai_deck
 	var discard: Array = _bs.player_discard if is_player else _bs.ai_discard
@@ -968,9 +1150,19 @@ func draw_card(is_player: bool) -> CardData:
 	# CardData copy is fine: each draw uses make_card_copy so this is a
 	# per-instance mutation, not a pool-wide change.
 	var draw_disc: int = _bs.phase_draw_discount_p if is_player else _bs.phase_draw_discount_ai
-	if draw_disc > 0:
+	if draw_disc > 0 and card.is_playable():
 		card.cost = max(0, card.cost - draw_disc)
+	# 뽑힌 카드가 손패의 같은 뭉치에 흡수되면 손패 크기가 늘지 않는다 —
+	# `last_draw_merged` 가 그 신호이고, 호출 측은 이 값을 보고 드로우 연출을
+	# 건너뛴다(카드 노드가 새로 서지 않으므로 날아올 카드가 없다).
 	hand.append(card)
+	var partner: CardData = _stack_partner_in_hand(card, hand)
+	last_draw_merged = partner != null
+	if partner != null:
+		hand.erase(card)
+		partner.stack_count += card.stack_count
+		if is_player:
+			refresh_stack_node(partner)
 	if is_player:
 		if did_reshuffle:
 			# Animate the swap as one motion: discard pre_size → 0, deck 0 → deck.size()
@@ -1675,6 +1867,12 @@ func _begin_drag(p: Vector2) -> void:
 			or _is_player_input_blocked():
 		_press_card = null
 		return
+	# 비용 -1 카드는 애초에 손을 떠나지 않는다 — 놓을 곳이 없는 카드를 끌어낼 수
+	# 있으면 매번 제자리로 돌아오는 헛동작만 남는다. 단 **버리기 픽 중에는**
+	# 끌린다: 못 내는 카드라고 못 버리는 것은 아니다.
+	if not card.data.is_playable() and not _in_discard_pick_mode():
+		_press_card = null
+		return
 	_drag_card = card
 	# set_dragging locks in the "lifted highest of all" look (1.2× + tallest
 	# shadow) so the card holds that pose once the cursor walks off the row. It
@@ -2056,7 +2254,11 @@ func highlight_affordable_cards() -> void:
 		if c.data == null or not c.face_up:
 			continue
 		var eff: int = _bs.effective_cost_for(c.data, true)
-		c.set_affordable(eff <= _bs.player_cost)
+		# 비용 -1 은 **낼 수 없는 카드**다(캐시 · 계시 · 약자 멸시 · 밸런스).
+		# 점수가 얼마든 지불 불가로 잠가 두면 슬래브가 덮이고 드래그도 거부된다 —
+		# 그 카드들은 손에 들고 있는 것만으로 일하기 때문에, 잠기는 것이 곧
+		# "이건 내는 카드가 아니다" 라는 안내가 된다.
+		c.set_affordable(c.data.is_playable() and eff <= _bs.player_cost)
 		# 시전자가 쓰러져 있으면 카드도 같이 잠긴다 — 카드 전체가 어두워지고
 		# 부활까지 남은 턴이 한가운데 크게 찍힌다.
 		c.set_respawn_turns(respawn_turns_for(c.data))
@@ -2414,6 +2616,9 @@ func _play_card_direct(card: Card, pre_target: Variant = null) -> void:
 	# restore puts the discount back.
 	if _bs.engage_discount_p > 0 and card_has_engage(cd):
 		_bs.engage_discount_p = 0
+	# [명상] 이 "이 카드보다 왼쪽"을 세려면 손패에서 빠지기 **전**의 자리를
+	# 알아야 한다 — 체인이 도는 동안 카드는 이미 손패 밖이기 때문이다.
+	_current_card_index = _bs.player_hand.find(cd)
 	_bs.player_hand.erase(cd)
 	_bs.player_card_nodes.erase(card)
 	card.queue_free()
@@ -2432,6 +2637,9 @@ func _play_card_direct(card: Card, pre_target: Variant = null) -> void:
 		# location effects.
 		"target":     pre_target,
 	}
+	_chain_hit = false
+	_current_card = cd
+	_current_target = pre_target
 	_process_pending_chain()
 
 
@@ -2449,6 +2657,11 @@ func card_has_valid_targets(cd: CardData) -> bool:
 	# 시전자 칸을 중심으로 참가자를 모으므로 여전히 시전자를 요구한다.
 	match targeting_kind(cd):
 		"pilot":
+			# `pilot` 은 아군과 적을 **둘 다** 고를 수 있다(매혹) — 어느 쪽이든
+			# 하나라도 있으면 낼 수 있는 카드다.
+			if cd.target == "pilot":
+				return not (compute_valid_pilot_targets(cd, caster, 0)
+						+ compute_valid_pilot_targets(cd, caster, 1)).is_empty()
 			var team_filter: int = 1 if cd.target == "enemy" else 0
 			return not compute_valid_pilot_targets(cd, caster, team_filter).is_empty()
 		"location":
@@ -2493,6 +2706,12 @@ func targeting_kind(cd: CardData) -> String:
 	if cd.cast_method == "target":
 		if cd.target == "enemy" or cd.target == "ally" or cd.target == "pilot":
 			return "pilot"
+		# `foe` — 적 파일럿 **또는** 포탑. 두 종류를 한 문장으로 부르는 메크
+		# 카드가 열 장이 넘어서, 대상 지정은 둘 다 서 있을 수 있는 **칸**을
+		# 고르게 하고 "그 칸의 무엇을 때리는가"는 공격 절이 정한다
+		# (`_foe_at_cell` — 파일럿이 먼저다).
+		if cd.target == "foe":
+			return "location"
 	return "none"
 
 
@@ -2534,6 +2753,14 @@ func compute_valid_pilot_targets(cd: CardData, caster: PilotData,
 func compute_valid_location_targets(cd: CardData, caster: PilotData) -> Array:
 	var out: Array = []
 	# Inspect the effect chain for clauses that constrain the legal set.
+	# 메크 카드의 세 가지 대상 종류. 절이 아니라 `target` 컬럼이 정하므로
+	# 절 검사보다 앞에 온다.
+	if cd.target == "foe":
+		return compute_foe_targets(cd, caster)
+	if cd.target == "turret_outer":
+		return compute_turret_damage_targets(cd, caster)
+	if cd.target == "turret_any":
+		return compute_any_enemy_turret_targets(caster)
 	for clause in _parse_effect_chain(cd.effect):
 		var cname: String = String(clause.get("name", ""))
 		if cname == "turret_damage":
@@ -2607,6 +2834,49 @@ func card_team(cd: CardData) -> int:
 # 있으면 그 자리가 곧 헛치기이고, 화면의 아웃라인(`BattleRenderer._draw_jungle_camps`)
 # 이 이미 어느 칸에 값이 남아 있는지를 말해 주고 있다. 인접 조건이 없으므로
 # 정글 반대편의 살진 캠프도 노릴 수 있다: 그 원격성이 이 카드의 값이다.
+## `target = foe` 의 유효 칸 — 사거리 안에서 **적 파일럿이 서 있거나 살아 있는
+## 적 포탑이 선** 칸 전부. 파일럿과 포탑을 한 목록에 담는 대신 칸을 고르게 하는
+## 이유는 대상 지정 오버레이가 초상화(PILOT)와 칸(LOCATION) 둘 중 하나만 다룰 수
+## 있고, 포탑에는 초상화가 없기 때문이다.
+func compute_foe_targets(cd: CardData, caster: PilotData) -> Array:
+	var out: Array = []
+	if caster == null:
+		return out
+	var enemy_team: int = 1 - caster.team
+	var max_r: int = maxi(0, cd.cast_range)
+	var seen: Dictionary = {}
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		if not p.alive or p.team != enemy_team:
+			continue
+		if _bs.hex_grid.hex_distance(caster.grid_pos, p.grid_pos) > max_r:
+			continue
+		seen[p.grid_pos] = true
+	for raw in _bs.turrets:
+		var td := raw as TurretData
+		if not td.alive or td.team != enemy_team:
+			continue
+		if _bs.hex_grid.hex_distance(caster.grid_pos, td.grid_pos) > max_r:
+			continue
+		seen[td.grid_pos] = true
+	for cell in seen.keys():
+		out.append(cell)
+	return out
+
+
+## `target = turret_any` — 살아 있는 적 포탑이 선 칸 전부. 사거리를 보지 않는다
+## ([철거] 는 전장 어디든 겨눈다).
+func compute_any_enemy_turret_targets(caster: PilotData) -> Array:
+	var out: Array = []
+	if caster == null:
+		return out
+	for raw in _bs.turrets:
+		var td := raw as TurretData
+		if td.alive and td.team != caster.team:
+			out.append(td.grid_pos)
+	return out
+
+
 func compute_steal_camp_targets(caster: PilotData) -> Array:
 	var out: Array = []
 	if caster == null or _bs.sim_core == null:
@@ -2724,12 +2994,35 @@ func _process_pending_chain() -> void:
 					_on_search_overlay_complete,
 					_on_overlay_cancel)
 			return
+		if ename == "search_discard":
+			# 묘지 탐색 — 찾기와 같은 그리드를 **버린 더미** 위에 편다.
+			_pending_play["clauses"] = clauses
+			_bs.card_select_overlay.start_search(n,
+					_on_graveyard_overlay_complete,
+					_on_overlay_cancel, _bs.player_discard)
+			return
 		if ename == "preserve":
 			_pending_play["clauses"] = clauses
 			_bs.card_select_overlay.start_preserve(n,
 					_on_preserve_overlay_complete,
 					_on_overlay_cancel)
 			return
+		# `on_hit` / `on_miss` — 앞선 공격 절이 한 대라도 맞았는가로 체인의
+		# **나머지를 통째로** 가른다. 절 하나에 조건을 매다는 대신 체인을 두
+		# 토막으로 자르는 이유는 카드가 요구하는 문장이 언제나 "명중 시 A,
+		# 빗나갈 시 B" 두 갈래이기 때문이다 — 갈래마다 절이 여럿이라(간보기는
+		# 명중 쪽에 전투 개시가, 빗나감 쪽에 전략 점수가 온다) 절 단위
+		# 플래그로는 그 묶음을 표현할 수 없다.
+		if ename == "on_hit" or ename == "on_miss":
+			var want_hit: bool = ename == "on_hit"
+			if _chain_hit != want_hit:
+				var other: String = "on_miss" if want_hit else "on_hit"
+				while not clauses.is_empty():
+					var peek: Dictionary = clauses[0] as Dictionary
+					if String(peek.get("name", "")) == other:
+						break
+					clauses.pop_front()
+			continue
 		# 공격 절은 돌진 연출이 끝날 때까지 매달린다 — 그동안 손패 입력과 턴
 		# 넘기기가 잠기고(`_attack_anim_active`), 체인의 나머지와
 		# `_finalize_pending_play` 는 그 뒤에 이어진다. 호출 측 넷은 전부 이
@@ -2768,6 +3061,22 @@ func _on_discard_overlay_complete(picks: Array) -> void:
 # Search complete: the picks are still in the deck — move them to the hand and
 # resume the chain. Like 드로우:N, a 찾기 resolved during 작전 단계 may overfill
 # the hand; the next BATTLE auto-draw trims it back to MAX_HAND_SIZE.
+## 묘지 탐색 확정 — 고른 카드를 **버린 더미**에서 빼 손패로 올린다. 찾기와
+## 다른 것은 어느 더미에서 빼느냐 하나뿐이라 나머지 흐름은 그대로 공유한다.
+func _on_graveyard_overlay_complete(picks: Array) -> void:
+	if _pending_play.is_empty():
+		return
+	var taken: int = 0
+	for pick_raw in picks:
+		var cd: CardData = pick_raw as CardData
+		_bs.player_discard.erase(cd)
+		add_card_to_hand(cd, true)
+		taken += 1
+	(_pending_play["log_lines"] as Array).append("묘지 탐색 %d장" % taken)
+	update_deck_discard_labels()
+	_process_pending_chain()
+
+
 func _on_search_overlay_complete(picks: Array) -> void:
 	if _pending_play.is_empty():
 		return
@@ -2901,6 +3210,9 @@ func _dispose_used_card(cd: CardData, is_player: bool) -> void:
 	var bump: int = _return_left_bump(cd)
 	if _bs.skill != null:
 		_bs.skill.on_card_played(cd, is_player)
+	# 메크 쪽 카드 훅 — 무념의 충전과 [캐시] 의 성장치 배당이 여기서 걸린다.
+	if _bs.mech_skill != null:
+		_bs.mech_skill.on_card_played(cd, is_player)
 	if bump >= 0:
 		_return_card_to_hand_left(cd, is_player, bump)
 		return
@@ -2982,7 +3294,24 @@ func apply_card_effect(cd: CardData, is_player: bool) -> String:
 
 	var clauses: Array = _parse_effect_chain(cd.effect)
 	var lines: Array = []
+	_chain_hit = false
+	_current_card = cd
+	_current_target = target
+	var skip_to: String = ""
 	for clause in clauses:
+		var cname: String = String(clause.get("name", ""))
+		if skip_to != "":
+			if cname != skip_to:
+				continue
+			skip_to = ""
+		# 플레이어 쪽 `_process_pending_chain` 과 같은 두 갈래 규칙이다 —
+		# 저쪽은 오버레이 때문에 체인을 배열로 들고 있고 이쪽은 한 번에
+		# 도는 것뿐이라 표현만 다르다.
+		if cname == "on_hit" or cname == "on_miss":
+			var want_hit: bool = cname == "on_hit"
+			if _chain_hit != want_hit:
+				skip_to = "on_miss" if want_hit else "on_hit"
+			continue
 		# 공격 절은 돌진 연출을 기다린다 — AI 도 같은 연출을 쓰므로
 		# AiCardPlayer 의 플레이 루프가 그만큼 늦게 다음 카드로 넘어간다.
 		var msg: String = await _apply_single_effect(clause, is_player, caster,
@@ -3068,17 +3397,17 @@ func _apply_single_effect(e: Dictionary, is_player: bool, caster: PilotData,
 		# AiCardPlayer.run_ai_plays 를 줄줄이 코루틴으로 만든다(모두 await 로
 		# 받는다).
 		"attack":   return await _effect_attack(value, flags, caster, enemy_team,
-				selected_target as PilotData)
+				_as_pilot(selected_target))
 		"shield_pct": return _effect_shield_pct(value, ally_team,
-				selected_target as PilotData)
+				_as_pilot(selected_target))
 		"recall_ally": return _effect_recall_ally(ally_team,
-				selected_target as PilotData)
+				_as_pilot(selected_target))
 		"exhaust_choice": return _effect_exhaust_choice(is_player, value)
 		# 교전 두 절도 기다린다 — 제출 직후에 참가자 명단(VS)을 띄우고 확인을
 		# 받기 때문. 공격 절과 같은 이유로 체인 전체가 코루틴이 된다.
 		"engage":   return await _effect_engage(value, flags, caster, is_player)
 		"duel":     return await _effect_duel(caster,
-				selected_target as PilotData, is_player)
+				_as_pilot(selected_target), is_player)
 		"move":                    return _effect_move(caster, selected_target)
 		"steal_camp":              return _effect_steal_camp(selected_target, caster)
 		"cost_reduce_engage":      return _effect_cost_reduce_engage(value, is_player)
@@ -3090,7 +3419,7 @@ func _apply_single_effect(e: Dictionary, is_player: bool, caster: PilotData,
 		"lane_stat":               return _effect_lane_stat(value, flags, caster)
 		"growth":                  return _effect_growth_rate(value, flags, caster)
 		"growth_perm":             return _effect_growth_perm(value, ally_team,
-				selected_target as PilotData, caster)
+				_as_pilot(selected_target), caster)
 		"turret_damage":           return _effect_turret_damage(value, ally_team,
 				caster, selected_target)
 		"growth_until_phase":      return _effect_growth_until_phase(value, ally_team)
@@ -3109,8 +3438,75 @@ func _apply_single_effect(e: Dictionary, is_player: bool, caster: PilotData,
 		# 로그 한 줄만 남긴다.
 		"return_left":             return "손패 복귀" if value <= 0 \
 				else "손패 복귀 · 비용 +%d" % value
+		# ── 메크 카드 절 ─────────────────────────────────────────────────────
+		# 아래는 전부 `mech_cards.csv` 만 쓰는 절이다. 이름을 위쪽 공용 절과
+		# 겹치지 않게 지은 것은 의도된 것으로, 카드 한 장의 절 목록만 보고도
+		# "이건 기체가 주는 카드"임이 읽히게 하려는 것이다.
+		"heal_pct":        return _effect_heal_pct(value, flags, caster, ally_team,
+				_as_pilot(selected_target))
+		"max_hp":          return _effect_max_hp(value, flags, caster, ally_team,
+				_as_pilot(selected_target))
+		"atk_add":         return _effect_atk_add(value, flags, caster, ally_team,
+				_as_pilot(selected_target))
+		"shield_atk":      return _effect_shield_atk(value, flags, caster, ally_team,
+				_as_pilot(selected_target))
+		"reactive_armor":  return _effect_reactive_armor(value, flags, caster,
+				ally_team, _as_pilot(selected_target))
+		"charge":          return _effect_charge(value, flags, caster)
+		"score_cost":      return _effect_score_cost(value, caster)
+		"growth_eff":      return _effect_growth_eff(value, ally_team, caster,
+				_as_pilot(selected_target))
+		"gen_hand":        return _effect_gen_card(value, flags, caster, is_player, true)
+		"gen_deck":        return _effect_gen_card(value, flags, caster, is_player, false)
+		"search_card":     return _effect_search_card(value, flags, caster, is_player)
+		"search_discard":  return _effect_search_discard(value, is_player)
+		"draw_discard":    return _effect_draw_discard(value, flags, is_player)
+		"push":            return _effect_push(value, flags, caster)
+		"move_target":     return _effect_move_target(value, caster,
+				_as_pilot(selected_target))
+		"move_to_target":  return _effect_move_to_target(caster,
+				_as_pilot(selected_target))
+		"pull_to_caster":  return _effect_pull_to_caster(flags, caster, enemy_team)
+		"mark_target":     return _effect_mark_target(value, caster,
+				_as_pilot(selected_target))
+		"track":           return _effect_track(value, caster,
+				_as_pilot(selected_target))
+		"link_engage":     return _effect_link_engage(caster,
+				_as_pilot(selected_target))
+		"stun_next":       return _effect_stun_next(_as_pilot(selected_target))
+		"no_engage_phase": return _effect_no_engage_phase(_as_pilot(selected_target))
+		"dmg_taken":       return _effect_dmg_taken(value, _as_pilot(selected_target))
+		"bounty":          return _effect_bounty(value, _as_pilot(selected_target))
+		"growth_link":     return _effect_growth_link(value, caster,
+				_as_pilot(selected_target))
+		"discard_left":    return _effect_discard_left(is_player)
+		"draw_discarded":  return _effect_draw_discarded(is_player)
+		"execute":         return _effect_execute(value, flags, caster, selected_target)
+		"attack_bounty":   return await _effect_attack_bounty(value, caster,
+				_as_pilot(selected_target))
+		"mutual_attack":   return await _effect_mutual_attack(value, caster,
+				_as_pilot(selected_target))
+		"taunt_all":       return await _effect_taunt_all(caster, enemy_team)
+		# 핸드 상주 카드(비용 -1)의 표지 절. 낼 수 없는 카드라 여기까지 올 일이
+		# 없지만, 절을 비워 두면 CSV 오타와 구분되지 않으므로 이름을 남긴다.
+		"hand_passive":    return ""
+		# ── 아직 배선되지 않은 절 (2단계) ────────────────────────────────────
+		# 단계 B / 단계 C 는 교전 결과에 따라 다음 카드를 갈아 끼우고 강화 3택
+		# 모달을 띄운다 — 카드 한 장이 자기 다음 상태를 고르는 유일한 자리라
+		# 전용 UI 를 요구한다. 절 이름만 먼저 잡아 두고 로그 한 줄만 남긴다.
+		"phase_b":         return "단계 B 결과 정산 (미구현)"
+		"phase_c":         return "강화 선택 (미구현)"
 		_: return ""
 
+
+
+## 대상 인자를 PilotData 로 **안전하게** 읽는다. `x as PilotData` 는 x 가
+## Object 가 아닐 때(예: `target = foe` 카드가 넘기는 Vector2i) 런타임 오류를
+## 낸다 — 대상이 칸일 수도 있는 절이 생기면서 `as` 를 그대로 쓸 수 없게 됐다.
+func _as_pilot(v: Variant) -> PilotData:
+	if v is PilotData:
+		return v as PilotData
+	return null
 
 func _effect_draw(is_player: bool, n: int) -> String:
 	# No MAX_HAND_SIZE guard: a 드로우:N played during 작전 단계 is the side's own
@@ -3122,7 +3518,7 @@ func _effect_draw(is_player: bool, n: int) -> String:
 		var c := draw_card(is_player)
 		if c == null:
 			break
-		if is_player:
+		if is_player and not last_draw_merged:
 			spawn_card_node(c)
 		drew += 1
 	if not is_player and drew > 0:
@@ -3160,76 +3556,307 @@ func _effect_strategy(is_player: bool, n: int) -> String:
 	return "전략 점수 +%d" % n
 
 
+## 공격 절. 예전에는 "적 하나를 한 번 때린다"였고 지금도 기본형은 그대로지만,
+## 메크 카드가 대상 집합을 아홉 가지로 넓혔다 — 플래그가 그 집합을 정한다.
+##
+##   |all           전장 내 모든 적 파일럿                 (천둥 폭풍)
+##   |random        무작위 적 파일럿 (스택 수만큼 뽑는다)  (전장 강타)
+##   |self_range:N  시전자 기준 N칸 내 모든 적과 포탑      (테러 · 초고출력 …)
+##   |area:N        지정 대상 기준 N칸 내 모든 적과 포탑   (정밀 폭격 · 파괴)
+##   |damaged       이번 작전 단계에 이 메크가 때린 적 전부 (락온 · 신속)
+##   |line          아군 HQ ~ 지정 포탑까지의 레인 전부     (꿰뚫는 번개)
+##   |turret_only   지정한 적 포탑 하나                     (철거)
+##   |stack         **같은 대상을 스택 수만큼 반복해서** 때린다 (미사일)
+##   |pierce |repeat  예전 그대로 (필중 / 명중마다 반복)
+##
+## 대상은 PilotData 이거나 TurretData 다. 둘을 가르는 자리는 피해를 넣는 두
+## 함수뿐이고 나머지 흐름(명중 판정 · 돌진 연출 · 팝업)은 공유한다.
 func _effect_attack(n: int, flags: Array, caster: PilotData, enemy_team: int,
 		picked: PilotData = null) -> String:
-	var t: PilotData = picked
-	if t == null or not t.alive or t.team != enemy_team:
-		var targets: Array = []
+	_last_attack_hits = 0
+	_last_attack_kills = 0
+	var victims: Array = _resolve_attack_victims(flags, caster, enemy_team, picked)
+	if victims.is_empty():
+		return "공격 (대상 없음)"
+	var pierce: bool = "pierce" in flags
+	var repeat: bool = "repeat" in flags
+	# `|stack` 은 대상을 늘리는 것이 아니라 **같은 대상을 반복**한다. 대상 쪽을
+	# 늘리는 것은 `|random` 쪽이고, 둘이 같은 카드에 붙으면(전장 강타) 이미
+	# 대상 목록이 스택 수만큼이므로 반복은 1 로 둔다.
+	var swings_each: int = 1
+	if "stack" in flags and not ("random" in flags):
+		swings_each = maxi(1, _stack_of_current_card())
+	var animated: bool = caster != null and caster.alive and _bs.renderer != null
+	if animated:
+		_set_attack_anim_active(true)
+	var total_dmg: int = 0
+	var missed: int = 0
+	for victim_raw in victims:
+		for _swing in swings_each:
+			var landed: bool = pierce or caster == null or _roll_against(caster, victim_raw)
+			if animated:
+				await _bs.anim_pilot_lunge(caster, _lunge_anchor(victim_raw))
+			if not landed:
+				missed += 1
+				_popup_on(victim_raw, "MISS", BattleRenderer.POPUP_MISS_COLOR)
+				if animated:
+					await _bs.anim_pilot_lunge_return(caster)
+				continue
+			var dealt: int = _deal_damage_to(victim_raw, caster, n)
+			total_dmg += dealt
+			_last_attack_hits += 1
+			if dealt > 0:
+				_popup_on(victim_raw, "-%d" % dealt, BattleRenderer.POPUP_DAMAGE_COLOR)
+			else:
+				_popup_on(victim_raw, "흡수", BattleRenderer.POPUP_SHIELD_COLOR)
+			if not _is_alive(victim_raw):
+				_last_attack_kills += 1
+			if animated:
+				await _bs.anim_pilot_lunge_return(caster)
+			# 연속 공격은 **같은 대상**에 대해서만 이어진다 — 명중할 때마다 한
+			# 번 더 굴리고, 빗나가거나 대상이 쓰러지면 멈춘다.
+			if repeat:
+				var extra: int = 0
+				while extra < MAX_ATTACK_REPEATS - 1 and _is_alive(victim_raw):
+					if not (pierce or caster == null or _roll_against(caster, victim_raw)):
+						break
+					if animated:
+						await _bs.anim_pilot_lunge(caster, _lunge_anchor(victim_raw))
+					var again: int = _deal_damage_to(victim_raw, caster, n)
+					total_dmg += again
+					_last_attack_hits += 1
+					_popup_on(victim_raw, "-%d" % again, BattleRenderer.POPUP_DAMAGE_COLOR)
+					if animated:
+						await _bs.anim_pilot_lunge_return(caster)
+					extra += 1
+			if not _is_alive(victim_raw):
+				break
+	if animated:
+		_set_attack_anim_active(false)
+	_chain_hit = _last_attack_hits > 0
+	var tag: String = " (필중)" if pierce else ""
+	if _last_attack_hits == 0:
+		return "공격%s 전부 빗나감 (%d회)" % [tag, missed]
+	return "공격%s %d대상 %d타 -%d HP" % [
+			tag, victims.size(), _last_attack_hits, total_dmg]
+
+
+## 이 카드의 스택 수. 카드가 없으면(패시브가 직접 부른 공격) 1.
+func _stack_of_current_card() -> int:
+	if _current_card == null:
+		return 1
+	return maxi(1, _current_card.stack_count)
+
+
+## 공격 절이 실제로 때릴 것들. 원소는 PilotData 또는 TurretData.
+func _resolve_attack_victims(flags: Array, caster: PilotData, enemy_team: int,
+		picked: PilotData) -> Array:
+	var out: Array = []
+	if "turret_only" in flags:
+		var cell: Variant = _pending_target_cell()
+		var td: TurretData = null
+		if cell is Vector2i and _bs.sim_core != null:
+			td = _bs.sim_core.turret_at_cell(cell as Vector2i)
+		if td != null and td.alive and td.team == enemy_team:
+			out.append(td)
+		return out
+	if "line" in flags:
+		return _line_victims(caster, enemy_team)
+	if "damaged" in flags:
+		if _bs.mech_skill != null and caster != null:
+			for raw in (_bs.mech_skill.damaged_this_phase.get(caster, []) as Array):
+				var p := raw as PilotData
+				if p.alive and p.team == enemy_team:
+					out.append(p)
+		return out
+	if "all" in flags:
 		for raw in _bs.pilots:
 			var p := raw as PilotData
 			if p.alive and p.team == enemy_team:
-				targets.append(p)
-		if targets.is_empty():
-			return "공격 (대상 없음)"
-		t = targets[randi() % targets.size()] as PilotData
-	# 공격 카드도 전장과 같은 명중 판정(hit/(hit+evasion))을 굴린다 —
-	# `SimulationCore.roll_hit`. 빗나가면 데미지가 아예 없다.
-	#   • pierce (필중)  — 판정을 건너뛰고 무조건 명중.
-	#   • repeat (연속 공격) — 명중할 때마다 같은 공격을 한 번 더 굴린다.
-	#     빗나가거나 대상이 쓰러지면 멈추고, 무한 루프 방지로
-	#     MAX_ATTACK_REPEATS 타에서 끊는다.
-	# 시전자가 없는 레거시 카드는 굴릴 스탯이 없으므로 항상 명중 처리.
-	var pierce: bool = "pierce" in flags
-	var repeat: bool = "repeat" in flags
-	var hits: int = 0
-	var total_dmg: int = 0
-	# 판정 결과는 대상 파일럿 위에 그대로 떠오른다 — 빗나가면 MISS, 명중하면
-	# 그 타격의 피해량.
-	#
-	# **한 타격 = 파고들기 → 타격 → 복귀 세 박자다**(BattleSim.anim_pilot_lunge).
-	# 그래서 연속 공격의 팝업이 서로 겹칠 일이 없어 `DMG_POPUP_STAGGER` 는 연출이
-	# 붙지 않는 경우(시전자 없는 레거시 카드)에만 남는다.
-	var animated: bool = caster != null and caster.alive and _bs.renderer != null
-	var swings: int = 0
-	if animated:
-		_set_attack_anim_active(true)
-	while hits < MAX_ATTACK_REPEATS:
-		var landed: bool = pierce or caster == null \
-				or _bs.sim_core.roll_hit(caster, t)
-		var delay: float = 0.0 if animated else float(swings) * _bs.DMG_POPUP_STAGGER
-		swings += 1
-		# 명중 여부와 무관하게 먼저 파고든다 — 빗나감은 붙은 뒤에 읽히는
-		# 결과이지, 달려들지 않을 이유가 아니다.
-		if animated:
-			await _bs.anim_pilot_lunge(caster, t)
-		if not landed:
-			_bs.renderer.spawn_pilot_popup(t, "MISS", BattleRenderer.POPUP_MISS_COLOR, delay)
-			if animated:
-				await _bs.anim_pilot_lunge_return(caster)
+				out.append(p)
+		return out
+	if "random" in flags:
+		var bag: Array = []
+		for raw in _bs.pilots:
+			var p := raw as PilotData
+			if p.alive and p.team == enemy_team:
+				bag.append(p)
+		if bag.is_empty():
+			return out
+		var picks: int = 1
+		if "stack" in flags:
+			picks = _stack_of_current_card()
+		for _i in picks:
+			out.append(bag[randi() % bag.size()])
+		return out
+	var self_r: int = _flag_int(flags, "self_range", -1)
+	if self_r >= 0 and caster != null:
+		return _victims_around(caster.grid_pos, self_r, enemy_team)
+	var area_r: int = _flag_int(flags, "area", -1)
+	if area_r >= 0:
+		var origin: Vector2i = Vector2i(-999, -999)
+		if picked != null:
+			origin = picked.grid_pos
+		elif _pending_target_cell() is Vector2i:
+			origin = _pending_target_cell() as Vector2i
+		if origin == Vector2i(-999, -999):
+			return out
+		return _victims_around(origin, area_r, enemy_team)
+	# 기본형 — 지정한 적 하나. 지정이 없거나 이미 쓰러졌으면 아무나 하나.
+	# 대상이 셀로 들어오는 카드(적 또는 포탑을 한 칸에서 고르는 `foe` 계열)는
+	# 그 칸에 선 적 파일럿을 먼저 보고, 없으면 포탑을 본다.
+	if picked != null and picked.alive and picked.team == enemy_team:
+		out.append(picked)
+		return out
+	var cell2: Variant = _pending_target_cell()
+	if cell2 is Vector2i:
+		var v: Variant = _foe_at_cell(cell2 as Vector2i, enemy_team)
+		if v != null:
+			out.append(v)
+			return out
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		if p.alive and p.team == enemy_team:
+			out.append(p)
 			break
-		hits += 1
-		var dealt: int = _apply_attack_damage(t, caster, n)
-		total_dmg += dealt
-		# dealt 는 보호막을 지나 HP 에 실제로 들어간 양이다. 보호막이 전부
-		# 먹었으면 "-0" 대신 흡수로 읽히게 한다.
-		if dealt > 0:
-			_bs.renderer.spawn_pilot_popup(t, "-%d" % dealt,
-					BattleRenderer.POPUP_DAMAGE_COLOR, delay)
-		else:
-			_bs.renderer.spawn_pilot_popup(t, "흡수",
-					BattleRenderer.POPUP_SHIELD_COLOR, delay)
-		if animated:
-			await _bs.anim_pilot_lunge_return(caster)
-		if not repeat or not t.alive:
-			break
-	if animated:
-		_set_attack_anim_active(false)
-	var tag: String = " (필중)" if pierce else ""
-	if hits == 0:
-		return "공격%s %s 빗나감" % [tag, _bs.pilot_label(t)]
-	var hit_tag: String = " x%d" % hits if hits > 1 else ""
-	return "공격%s%s %s -%d HP" % [tag, hit_tag, _bs.pilot_label(t), total_dmg]
+	return out
 
+
+## 한 칸에 선 "적 또는 포탑". 파일럿이 먼저다 — 같은 칸에 둘 다 있으면 카드를
+## 겨눈 사람이 보고 있던 것은 얼굴이지 건물이 아니다.
+func _foe_at_cell(cell: Vector2i, enemy_team: int) -> Variant:
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		if p.alive and p.team == enemy_team and p.grid_pos == cell:
+			return p
+	if _bs.sim_core != null:
+		var td: TurretData = _bs.sim_core.turret_at_cell(cell)
+		if td != null and td.alive and td.team == enemy_team:
+			return td
+	return null
+
+
+## `origin` 에서 `radius` 칸 안의 적 파일럿과 적 포탑 전부.
+func _victims_around(origin: Vector2i, radius: int, enemy_team: int) -> Array:
+	var out: Array = []
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		if p.alive and p.team == enemy_team \
+				and _bs.hex_grid.hex_distance(origin, p.grid_pos) <= radius:
+			out.append(p)
+	for raw in _bs.turrets:
+		var td := raw as TurretData
+		if td.alive and td.team == enemy_team \
+				and _bs.hex_grid.hex_distance(origin, td.grid_pos) <= radius:
+			out.append(td)
+	return out
+
+
+## 꿰뚫는 번개 — **아군 HQ 쪽 끝부터 지정한 포탑 칸까지**의 레인 통로에 서 있는
+## 적과 포탑 전부. 앞뒤는 `SimulationCore.lane_corridor_order` 가 정한다(팀0 HQ
+## 쪽부터 번호가 매겨져 있다) — 팀0 은 번호가 작은 쪽이 자기 진영이므로 지정한
+## 칸의 번호 **이하**를, 팀1 은 **이상**을 쓸어 담는다.
+func _line_victims(caster: PilotData, enemy_team: int) -> Array:
+	var out: Array = []
+	var cell: Variant = _pending_target_cell()
+	if not (cell is Vector2i) or caster == null or _bs.sim_core == null:
+		return out
+	var target_cell := cell as Vector2i
+	var td: TurretData = _bs.sim_core.turret_at_cell(target_cell)
+	if td == null:
+		return out
+	var order: Dictionary = _bs.sim_core.lane_corridor_order(td.lane)
+	if not order.has(target_cell):
+		return out
+	var limit: int = int(order[target_cell])
+	var ally_team: int = 1 - enemy_team
+	var band: Dictionary = {}
+	for raw_cell in order.keys():
+		var c := raw_cell as Vector2i
+		var o: int = int(order[c])
+		if ally_team == 0 and o <= limit:
+			band[c] = true
+		elif ally_team == 1 and o >= limit:
+			band[c] = true
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		if p.alive and p.team == enemy_team and band.has(p.grid_pos):
+			out.append(p)
+	for raw in _bs.turrets:
+		var t := raw as TurretData
+		if t.alive and t.team == enemy_team and band.has(t.grid_pos):
+			out.append(t)
+	return out
+
+
+## 이번 카드가 고른 셀(LOCATION 대상). 파일럿을 고른 카드에서는 null.
+func _pending_target_cell() -> Variant:
+	if _current_target is Vector2i:
+		return _current_target
+	return null
+
+
+
+
+func _is_alive(victim: Variant) -> bool:
+	if victim is PilotData:
+		return (victim as PilotData).alive
+	if victim is TurretData:
+		return (victim as TurretData).alive
+	return false
+
+
+## 명중 판정. 포탑은 굴리지 않는다 — 전장 규칙에서도 파일럿→포탑 피해는
+## 무판정이다(`SimulationCore._resolve_turret_combat`).
+func _roll_against(caster: PilotData, victim: Variant) -> bool:
+	if victim is TurretData:
+		return true
+	return _bs.sim_core.roll_hit(caster, victim as PilotData)
+
+
+## 돌진 연출이 향할 곳. 포탑은 초상화가 없으므로 연출을 걸지 않는다.
+func _lunge_anchor(victim: Variant) -> PilotData:
+	if victim is PilotData:
+		return victim as PilotData
+	return null
+
+
+func _popup_on(victim: Variant, text: String, color: Color) -> void:
+	if _bs.renderer == null or not (victim is PilotData):
+		return
+	_bs.renderer.spawn_pilot_popup(victim as PilotData, text, color, 0.0)
+
+
+func _deal_damage_to(victim: Variant, caster: PilotData, n: int) -> int:
+	if victim is TurretData:
+		return _apply_attack_damage_turret(victim as TurretData, caster)
+	return _apply_attack_damage(victim as PilotData, caster, n)
+
+
+## 파일럿 스킬 / 메크 패시브가 직접 거는 한 방(계시 · 무념). 카드 체인 밖이라
+## 연출도 팝업도 없이 판정과 피해만 굴린다 — 화면에는 결과(체력 · 킬로그)만
+## 남는다.
+func deal_simple_attack(caster: PilotData, target: PilotData, n: int) -> int:
+	if caster == null or target == null or not target.alive:
+		return 0
+	if not _bs.sim_core.roll_hit(caster, target):
+		return 0
+	return _apply_attack_damage(target, caster, n)
+
+
+## 파일럿→포탑 카드 피해. 전장과 같은 **고정값**(`PILOT_STRUCTURE_DMG`)을 쓴다 —
+## `atk` 비례로 두면 성장이 공격력을 ×3 까지 미는 후반에 카드 한 장이 포탑을
+## 통째로 지운다(전장 공성이 고정 피해로 바뀐 것과 같은 이유다).
+func _apply_attack_damage_turret(td: TurretData, caster: PilotData) -> int:
+	var dmg: int = maxi(1, _bs.PILOT_STRUCTURE_DMG)
+	var log_lines: Array = []
+	# 철거 · 정산 · 스프라이트 해제까지 전부 그 함수 한 곳이 한다 — [전령 제압]
+	# 이 이미 쓰고 있는 경로이고, 여기서 따로 처리하면 포탑이 무너지는 자리가
+	# 둘로 갈린다.
+	_bs.sim_core.apply_card_turret_damage(td, dmg, caster, log_lines)
+	if _bs.renderer != null:
+		_bs.renderer.queue_redraw()
+	return dmg
 
 # One landed swing of an attack card. Returns the **HP** damage dealt (what is
 # left after 보호막 absorption, matching what the log line has always shown) so
@@ -3260,6 +3887,14 @@ func _apply_attack_damage(t: PilotData, caster: PilotData, n: int) -> int:
 		dmg = maxi(1, roundi(float(dmg)
 				* _bs.skill.damage_out_mult(caster)
 				* _bs.skill.damage_in_mult(t)))
+	# 메크가 거는 받는-피해 배율(취약 · 죽음의 손가락 · 목표)과 반응 장갑.
+	# **반응 장갑이 보호막보다 먼저다** — 90%를 깎고 남은 10%를 보호막이 받는
+	# 순서라야 두 방어가 겹쳐 읽힌다(반대로 두면 보호막이 온전한 피해를 먼저
+	# 먹고 장갑은 잔량에만 걸려 사실상 아무 일도 하지 않는다).
+	if _bs.mech_skill != null:
+		dmg = maxi(1, roundi(float(dmg) * _bs.mech_skill.damage_taken_mult(t, caster)))
+		if _bs.mech_skill.consume_reactive_armor(t):
+			dmg = maxi(1, roundi(float(dmg) * (1.0 - MechSkillSystem.REACTIVE_ARMOR_CUT)))
 	var rolled: int = dmg
 	# 보호막 absorbs first, HP next.
 	if t.shield > 0:
@@ -3276,6 +3911,13 @@ func _apply_attack_damage(t: PilotData, caster: PilotData, n: int) -> int:
 	# 이 여기까지 오지 않는다).
 	if _bs.skill != null:
 		_bs.skill.on_attack_hit(caster)
+	# 메크 쪽 명중 훅 — 취약 각인 · 조준 보정 · 영혼 수확 · 고통과 쾌감이
+	# 여기서 걸리고, "이번 단계에 때린 적" 명단도 여기서 쌓인다.
+	if _bs.mech_skill != null:
+		_bs.mech_skill.on_card_attack_hit(caster, t, dmg)
+		# 계시 — 적이 **카드로** 맞을 때마다 그 카드를 안 낸 계시 보유자가
+		# 한 대 얹는다. 자기 자신은 제외돼 있어 연쇄가 닫힌다.
+		_bs.mech_skill.on_card_damage_for_revelation(t, caster)
 	if t.hp <= 0:
 		_bs.mark_pilot_dead(t, caster)
 	elif dmg > 0:
@@ -3321,7 +3963,28 @@ func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 	if caster == null or rounds <= 0:
 		return "전투 개시 (시전자 없음)"
 	var exclude_lane: bool = "exclude_lane" in flags
-	var sides: Array = _bs.engage_phase.engage_sides(caster, exclude_lane)
+	# 메크 카드가 무대의 **중심**과 **반경**을 바꾼다.
+	#   |at_target   지정한 적 주변에서 연다        (돌격 · 강습 · 간보기)
+	#   |at_marked   목표가 찍힌 적 주변에서 연다   (단계 B)
+	#   |self_range:N 시전자 중심 반경 N            (우세한 전장 3 · 개시 2 …)
+	#   |charge_rounds 라운드 수를 영혼 포식 충전으로 갈음한다 (전쟁의 사슬)
+	var center: Vector2i = Vector2i(-999, -999)
+	var radius: int = maxi(1, _flag_int(flags, "self_range", 1))
+	if "at_target" in flags:
+		if _current_target is PilotData:
+			center = (_current_target as PilotData).grid_pos
+	elif "at_marked" in flags:
+		for raw in _bs.pilots:
+			var p := raw as PilotData
+			if p.alive and p.marked_by == caster:
+				center = p.grid_pos
+				break
+	if "charge_rounds" in flags and _bs.mech_skill != null:
+		rounds = maxi(1, _bs.mech_skill.chain_rounds(caster))
+	if rounds <= 0:
+		return "전투 개시 (라운드 0)"
+	var sides: Array = _bs.engage_phase.engage_sides(caster, exclude_lane,
+			center, radius)
 	var t0: Array = sides[0]
 	var t1: Array = sides[1]
 	# 한쪽이라도 비면 start_engage 가 어차피 no-op 이므로 명단을 띄우지 않는다.
@@ -3338,7 +4001,7 @@ func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 	# AiCardPlayer awaits engage_finished between AI plays so the
 	# back-to-back animations don't stomp each other.
 	_bs.engage_phase.start_engage(caster, rounds, exclude_lane,
-			Callable(self, "_on_engage_finished"))
+			Callable(self, "_on_engage_finished"), center, radius)
 	var tag: String = " (레인 제외)" if exclude_lane else ""
 	# engage:N 의 N 은 **라운드 수** 그대로다 — 초로 환산하던 예전 규칙은 삭제됐다.
 	return "전투 개시 %d라운드%s%s" % [rounds, tag, who]
@@ -3631,7 +4294,22 @@ func send_to_discard(cd: CardData, discard: Array) -> bool:
 		return false
 	if cd.is_volatile():
 		return false
+	# 무념(암살 T)은 "카드를 사용하거나 버릴 때마다" 충전한다. 낸 카드는
+	# `_dispose_used_card` 가 이미 세었으므로(그 경로도 결국 여기로 온다)
+	# 지금 도는 카드만 빼면 두 번 세지 않는다.
+	if _bs.mech_skill != null and cd != _current_card:
+		_bs.mech_skill.on_card_discarded(cd, discard == _bs.player_discard)
 	discard.append(cd)
+	# **뭉치는 손패에서만 뭉쳐 있다.** 더미로 내려앉는 순간 다시 낱장으로
+	# 흩어진다 — 그러지 않으면 리셔플 한 번에 덱 장수가 뭉친 만큼 줄고, 다음에
+	# 뽑을 때 한 장을 뽑았는데 세 장이 들어오는 일이 생긴다. 흩어진 낱장들은
+	# 손패로 돌아올 때 `add_card_to_hand` 가 다시 뭉쳐 준다.
+	var extra: int = cd.stack_count - 1
+	cd.stack_count = 1
+	for _i in max(0, extra):
+		var copy := make_card_copy(cd)
+		copy.stack_count = 1
+		discard.append(copy)
 	return true
 
 
@@ -3679,7 +4357,7 @@ func _effect_discard_hand_draw(is_player: bool) -> String:
 		var c := draw_card(is_player)
 		if c == null:
 			break
-		if is_player:
+		if is_player and not last_draw_merged:
 			spawn_card_node(c)
 		drew += 1
 	_refresh_hand_after_bulk_change(is_player)
@@ -3862,3 +4540,574 @@ func play_discard_fx(node: Card) -> void:
 	if node == null or not is_instance_valid(node):
 		return
 	node.begin_discard_fx()
+
+
+# ═══ 메크 카드 절 ═══════════════════════════════════════════════════════════
+# 아래는 전부 `mech_cards.csv` 만 쓰는 절이다. 공용 카드(cards.csv)는 하나도
+# 건드리지 않으므로, 이 블록을 통째로 들어내도 예전 카드들은 그대로 돈다.
+#
+# 절 이름이 공용 쪽과 겹치지 않는 것은 의도된 것이다 — 카드 한 장의 `effect`
+# 문자열만 보고도 "이건 기체가 주는 카드"임이 읽혀야 하고, 겹치는 이름은
+# 나중에 한쪽 규칙을 고칠 때 다른 쪽을 조용히 함께 바꾼다.
+
+## `|self` 가 붙었으면 시전자, 아니면 지정한 아군. 지정이 비었으면 가장 체력이
+## 적은 아군으로 떨어진다 — AI 경로가 대상을 못 고르는 카드에서도 절이 no-op 이
+## 되지 않게 하려는 것이고, 보호(`shield_pct`)가 이미 쓰는 규칙과 같다.
+func _ally_subject(flags: Array, caster: PilotData, ally_team: int,
+		picked: PilotData) -> PilotData:
+	if "self" in flags:
+		return caster
+	if picked != null and picked.alive and picked.team == ally_team:
+		return picked
+	var best: PilotData = null
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		if p.alive and p.team == ally_team:
+			if best == null or p.hp < best.hp:
+				best = p
+	return best
+
+
+## `|per_hit` 이 붙었으면 직전 공격 절의 명중 수, 아니면 1. 0 을 돌려줄 수 있다
+## (한 대도 못 맞힌 공격 뒤의 절은 아무 일도 하지 않는 것이 옳다).
+func _repeat_count(flags: Array) -> int:
+	if "per_hit" in flags:
+		return _last_attack_hits
+	if "per_kill" in flags:
+		return _last_attack_kills
+	if "stack" in flags:
+		return _stack_of_current_card()
+	return 1
+
+
+func _effect_heal_pct(pct: int, flags: Array, caster: PilotData,
+		ally_team: int, picked: PilotData) -> String:
+	var t: PilotData = _ally_subject(flags, caster, ally_team, picked)
+	if t == null:
+		return "회복 (대상 없음)"
+	var times: int = _repeat_count(flags)
+	if times <= 0:
+		return ""
+	var healed: int = 0
+	for _i in times:
+		var amount: int = int(t.max_hp * pct / 100)
+		var before: int = t.hp
+		t.hp = mini(t.max_hp, t.hp + amount)
+		healed += t.hp - before
+	return "회복 +%d %s" % [healed, _bs.pilot_label(t)]
+
+
+## 최대 체력 영구 증가. `bonus_max_hp` 로 들어가야 성장 재계산에 지워지지 않는다
+## — 늘어난 만큼 현재 체력도 함께 오른다(`refresh_growth_stats` 가 그렇게 한다).
+func _effect_max_hp(amount: int, flags: Array, caster: PilotData,
+		ally_team: int, picked: PilotData) -> String:
+	var t: PilotData = _ally_subject(flags, caster, ally_team, picked)
+	if t == null:
+		return "최대 체력 (대상 없음)"
+	t.bonus_max_hp += amount * maxi(1, _repeat_count(flags))
+	_bs.refresh_growth_stats(t)
+	return "최대 체력 +%d %s" % [amount, _bs.pilot_label(t)]
+
+
+func _effect_atk_add(amount: int, flags: Array, caster: PilotData,
+		ally_team: int, picked: PilotData) -> String:
+	var t: PilotData = _ally_subject(flags, caster, ally_team, picked)
+	if t == null:
+		return "공격력 (대상 없음)"
+	t.bonus_atk_flat += amount * maxi(1, _repeat_count(flags))
+	_bs.refresh_growth_stats(t)
+	return "공격력 +%d %s" % [amount, _bs.pilot_label(t)]
+
+
+## 시전자 **공격력의 N%** 만큼 보호막. 보호(`shield_pct`)가 대상의 최대 체력을
+## 기준으로 삼는 것과 대비되는데, 지원 Q 의 두 장은 "이 기체가 얼마나 센가"를
+## 파는 카드라서 기준점이 시전자 쪽이어야 한다.
+##
+## 걸어 준 보호막은 **누가 걸었는지 기억된다**(`MechSkillSystem.shield_source`) —
+## 수호 연계 패시브가 그 아군의 공격에 편승할 근거가 그 표다.
+func _effect_shield_atk(pct: int, flags: Array, caster: PilotData,
+		ally_team: int, picked: PilotData) -> String:
+	if caster == null:
+		return "보호막 (시전자 없음)"
+	var amount: int = int(caster.atk * pct / 100)
+	var targets: Array = []
+	if "all_allies" in flags:
+		for raw in _bs.pilots:
+			var p := raw as PilotData
+			if p.alive and p.team == ally_team:
+				targets.append(p)
+	else:
+		var t: PilotData = _ally_subject(flags, caster, ally_team, picked)
+		if t != null:
+			targets.append(t)
+	if targets.is_empty():
+		return "보호막 (대상 없음)"
+	for raw in targets:
+		var p := raw as PilotData
+		p.shield += amount
+		if _bs.mech_skill != null:
+			_bs.mech_skill.shield_source[p] = caster
+	return "보호막 +%d ×%d" % [amount, targets.size()]
+
+
+func _effect_reactive_armor(n: int, flags: Array, caster: PilotData,
+		ally_team: int, picked: PilotData) -> String:
+	var t: PilotData = _ally_subject(flags, caster, ally_team, picked)
+	if t == null:
+		return "반응 장갑 (대상 없음)"
+	var add: int = n * maxi(0, _repeat_count(flags))
+	if add <= 0:
+		return ""
+	t.reactive_armor += add
+	return "반응 장갑 +%d %s" % [add, _bs.pilot_label(t)]
+
+
+## 메크 패시브 충전. `|per_hit` 이면 직전 공격의 명중 수만큼.
+func _effect_charge(n: int, flags: Array, caster: PilotData) -> String:
+	if caster == null or _bs.mech_skill == null:
+		return ""
+	var add: int = n * maxi(0, _repeat_count(flags))
+	if add <= 0:
+		return ""
+	var gained: int = _bs.mech_skill.add_charge(caster, add)
+	return "충전 +%d (%d/%d)" % [gained,
+			_bs.mech_skill.charge_of(caster),
+			_bs.mech_skill.max_charge_of(caster)]
+
+
+## 성장 점수를 **소모**한다. 시트의 "성장 점수 100" 은 게임 안의 `1.00k` 이고,
+## 그 환산은 `MechSkillSystem.SCORE_COST_UNIT` 한 곳에만 적혀 있다.
+##
+## [밸런스] 를 손에 들고 있으면 같은 기체의 카드는 이 비용을 내지 않는다 —
+## 카드 한 장이 다른 카드들의 가격표를 지우는 유일한 자리다.
+func _effect_score_cost(n: int, caster: PilotData) -> String:
+	if caster == null:
+		return ""
+	if _bs.mech_skill != null and _bs.mech_skill.score_cost_waived(_current_card):
+		return "성장 점수 면제 (밸런스)"
+	var cost: float = float(n) * MechSkillSystem.SCORE_COST_UNIT
+	_bs.add_score(caster, -cost)
+	return "성장 점수 −%.2fk" % cost
+
+
+## 성장 **효율**(적립 배율)을 전장 이탈까지 올린다. 누적되는 몫이라
+## `growth_rate_bonus` 에 얹는다 — 카드끼리 덮어쓰는 `growth_rate_mult` 슬롯에
+## 넣으면 라인전 카드 한 장이 이 효과를 지운다(용 보상과 같은 이유).
+func _effect_growth_eff(pct: int, ally_team: int, caster: PilotData,
+		picked: PilotData) -> String:
+	var t: PilotData = _ally_subject([], caster, ally_team, picked)
+	if t == null:
+		return "성장 효율 (대상 없음)"
+	t.growth_rate_bonus += float(pct) / 100.0
+	return "성장 효율 %+d%% %s" % [pct, _bs.pilot_label(t)]
+
+
+## 메크 카드를 **만든다**. `to_hand` 면 손패로, 아니면 덱에 섞어서.
+##   |per_hit   직전 공격의 명중 수만큼
+##   |per_kill  직전 공격에서 눕힌 수만큼
+##   |temp      만들어진 카드에 `소멸 · 휘발성`을 덧입힌다 (정밀 폭격의 미사일)
+func _effect_gen_card(card_id: int, flags: Array, caster: PilotData,
+		is_player: bool, to_hand: bool) -> String:
+	var times: int = maxi(0, _repeat_count(flags))
+	if times <= 0 or caster == null:
+		return ""
+	var made: int = 0
+	var label: String = ""
+	for _i in times:
+		var cd: CardData = make_mech_card_by_id(card_id, caster)
+		if cd == null:
+			break
+		if "temp" in flags:
+			cd.keyword = _merge_keywords(cd.keyword,
+					[CardData.KW_EXHAUST, CardData.KW_VOLATILE])
+		label = cd.card_name
+		if to_hand:
+			add_card_to_hand(cd, is_player)
+		else:
+			var deck: Array = _bs.player_deck if is_player else _bs.ai_deck
+			deck.append(cd)
+		made += 1
+	if made == 0:
+		return ""
+	if not to_hand:
+		var deck2: Array = _bs.player_deck if is_player else _bs.ai_deck
+		deck2.shuffle()
+	update_deck_discard_labels()
+	return "[%s] %s %d장 생성" % [label, "핸드" if to_hand else "덱", made]
+
+
+## 키워드 목록에 없는 것만 덧붙인다. `|` 로 구분된 목록이라 문자열을 이어 붙이는
+## 것만으로는 중복이 생긴다.
+func _merge_keywords(base: String, add: Array) -> String:
+	var have: Array = []
+	for raw in base.split("|", false):
+		var k: String = (raw as String).strip_edges()
+		if not k.is_empty():
+			have.append(k)
+	for raw in add:
+		var k: String = raw as String
+		if not have.has(k):
+			have.append(k)
+	return "|".join(have)
+
+
+## 덱에서 **특정 카드**를 찾아 손패로. `|count:N` 으로 장수를 정하며 기본 1장.
+## 찾기(`search:N`)가 아무 카드나 고르게 하는 것과 달리 이쪽은 카드가 지목돼
+## 있으므로 모달이 없다 — 고를 것이 없는 선택은 클릭 한 번을 버리는 일이다.
+func _effect_search_card(card_id: int, flags: Array, caster: PilotData,
+		is_player: bool) -> String:
+	var want: int = maxi(1, _flag_int(flags, "count", 1))
+	var deck: Array = _bs.player_deck if is_player else _bs.ai_deck
+	var taken: int = 0
+	var label: String = ""
+	for i in range(deck.size() - 1, -1, -1):
+		if taken >= want:
+			break
+		var cd := deck[i] as CardData
+		if cd.mech_card_id != card_id:
+			continue
+		if caster != null and cd.owner_pilot != caster:
+			continue
+		deck.remove_at(i)
+		label = cd.card_name
+		add_card_to_hand(cd, is_player)
+		taken += 1
+	update_deck_discard_labels()
+	if taken == 0:
+		return "탐색 (덱에 없음)"
+	return "[%s] %d장 탐색" % [label, taken]
+
+
+## 묘지 탐색의 **AI / 폴백 경로**. 플레이어는 `_process_pending_chain` 이
+## 오버레이로 가로채므로 여기 오지 않는다.
+func _effect_search_discard(n: int, is_player: bool) -> String:
+	var discard: Array = _bs.player_discard if is_player else _bs.ai_discard
+	var taken: int = 0
+	for _i in n:
+		if discard.is_empty():
+			break
+		var cd := discard.pop_back() as CardData
+		add_card_to_hand(cd, is_player)
+		taken += 1
+	update_deck_discard_labels()
+	return "묘지 탐색 %d장" % taken
+
+
+## 묘지 **드로우** — 고르지 않고 위에서부터 N장. 탐색과 다른 것은 선택의 유무다.
+## `|cost_reduce:N` 이 붙으면 그렇게 올라온 카드만 비용이 내려간다(변덕).
+func _effect_draw_discard(n: int, flags: Array, is_player: bool) -> String:
+	var discard: Array = _bs.player_discard if is_player else _bs.ai_discard
+	var cut: int = _flag_int(flags, "cost_reduce", 0)
+	var taken: int = 0
+	for _i in n:
+		if discard.is_empty():
+			break
+		var cd := discard.pop_back() as CardData
+		if cut > 0 and cd.is_playable():
+			cd.cost = maxi(0, cd.cost - cut)
+		add_card_to_hand(cd, is_player)
+		taken += 1
+	update_deck_discard_labels()
+	if cut > 0:
+		return "묘지 드로우 %d장 (비용 −%d)" % [taken, cut]
+	return "묘지 드로우 %d장" % taken
+
+
+## 밀기 — 전진과 같은 미니틱을 N번 돌린다. `|bonus_clear:N` 은 "도중에 적을 한
+## 번도 만나지 않았으면" 얹는 추가 걸음이고, 판정은 밀고 난 뒤 시전자 칸에 적이
+## 있는지로 갈음한다.
+func _effect_push(steps: int, flags: Array, caster: PilotData) -> String:
+	if caster == null or not caster.alive or steps <= 0:
+		return "밀기 (시전자 없음)"
+	var log_lines: Array = []
+	_bs.sim_core.advance_pilot(caster, steps, log_lines)
+	var bonus: int = _flag_int(flags, "bonus_clear", 0)
+	var clear: bool = true
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		if p.alive and p.team != caster.team and p.grid_pos == caster.grid_pos:
+			clear = false
+			break
+	if bonus > 0 and clear:
+		_bs.sim_core.advance_pilot(caster, bonus, log_lines)
+		return "밀기 %d (+%d 추가)" % [steps, bonus]
+	return "밀기 %d" % steps
+
+
+## 최면 — **적을** 자기 HQ 쪽으로 N칸 민다. 시전자가 아니라 대상이 움직이는
+## 유일한 이동 절이라, 전진과 같은 미니틱을 대상 기준으로 돌린다.
+func _effect_move_target(steps: int, caster: PilotData,
+		picked: PilotData) -> String:
+	if picked == null or not picked.alive or caster == null:
+		return "이동 (대상 없음)"
+	var log_lines: Array = []
+	_bs.sim_core.advance_pilot(picked, steps, log_lines)
+	return "%s 이동 %d" % [_bs.pilot_label(picked), steps]
+
+
+## 질풍 — 시전자가 **대상의 칸으로** 뛰어든다. 시트의 "작전 단계가 끝나면 이전
+## 위치로 복귀"는 2단계로 미뤄 둔다(복귀 예약을 들고 있을 자리가 아직 없다) —
+## 지금은 뛰어들기만 하고 그 자리에 남는다.
+func _effect_move_to_target(caster: PilotData, picked: PilotData) -> String:
+	if caster == null or picked == null or not caster.alive:
+		return "이동 (대상 없음)"
+	if _bs.skill != null and _bs.skill.blocks_move(caster):
+		return "이동 (위치 고정)"
+	var orig := caster.grid_pos
+	if orig == picked.grid_pos:
+		return ""
+	caster.grid_pos = picked.grid_pos
+	_bs.blog.log_move(caster, orig, caster.grid_pos, "card-dive")
+	_bs.anim_pilot_move(caster, orig)
+	return "돌입 → %s" % _bs.pilot_label(picked)
+
+
+## 매혹적인 침공 / 사형 선고 — 적을 **시전자 칸으로** 끌어온다.
+## `|self_range:N` 이 붙으면 그 반경 안의 적 전부, 없으면 지정한 하나.
+func _effect_pull_to_caster(flags: Array, caster: PilotData,
+		enemy_team: int) -> String:
+	if caster == null or not caster.alive:
+		return "끌어오기 (시전자 없음)"
+	var radius: int = _flag_int(flags, "self_range", -1)
+	var moved: int = 0
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		if not p.alive or p.team != enemy_team:
+			continue
+		if radius >= 0:
+			if _bs.hex_grid.hex_distance(caster.grid_pos, p.grid_pos) > radius:
+				continue
+		elif not _is_pending_target(p):
+			continue
+		if p.grid_pos == caster.grid_pos:
+			continue
+		var orig := p.grid_pos
+		p.grid_pos = caster.grid_pos
+		_bs.blog.log_move(p, orig, p.grid_pos, "card-pull")
+		_bs.anim_pilot_move(p, orig)
+		moved += 1
+	return "끌어오기 %d명" % moved
+
+
+func _is_pending_target(p: PilotData) -> bool:
+	return _current_target == p
+
+
+## 단계 A 의 목표 — 이 적이 **시전자에게** 받는 피해가 오른다. 한 명만 지목할 수
+## 있고 새로 찍으면 앞의 것을 덮는다(전장에 목표가 둘이면 단계 B 가 어느 쪽으로
+## 열릴지 정할 수 없다).
+func _effect_mark_target(pct: int, caster: PilotData,
+		picked: PilotData) -> String:
+	if picked == null or caster == null:
+		return "목표 (대상 없음)"
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		if p.marked_by == caster:
+			p.marked_by = null
+			p.marked_bonus = 0.0
+	picked.marked_by = caster
+	picked.marked_bonus = float(pct) / 100.0
+	return "목표 %s (+%d%%)" % [_bs.pilot_label(picked), pct]
+
+
+## 추적 — 이 적이 전투에 들어가면 시전자도 함께 끌려 들어간다. 만료 턴을 함께
+## 적어 두고 `MechSkillSystem.tick_expiries` 가 걷는다.
+func _effect_track(turns: int, caster: PilotData, picked: PilotData) -> String:
+	if picked == null or caster == null:
+		return "추적 (대상 없음)"
+	picked.tracked_by.append({
+		"pilot": caster,
+		"expire_turn": _bs.turn_count + turns,
+	})
+	return "추적 %s (%d턴)" % [_bs.pilot_label(picked), turns]
+
+
+## 결속 — 시전자가 싸울 때 이 아군도 무대에 선다. 방향이 한쪽뿐인 것이 요점이다
+## (지정한 아군이 싸울 때 시전자가 끌려가지는 않는다).
+func _effect_link_engage(caster: PilotData, picked: PilotData) -> String:
+	if caster == null or picked == null:
+		return "결속 (대상 없음)"
+	caster.engage_link = picked
+	return "결속 → %s" % _bs.pilot_label(picked)
+
+
+func _effect_stun_next(picked: PilotData) -> String:
+	if picked == null:
+		return "강타 (대상 없음)"
+	picked.stun_charge = true
+	return "강타 %s" % _bs.pilot_label(picked)
+
+
+func _effect_no_engage_phase(picked: PilotData) -> String:
+	if picked == null:
+		return "탈진 (대상 없음)"
+	picked.engage_locked = true
+	return "탈진 %s (이번 작전 단계)" % _bs.pilot_label(picked)
+
+
+func _effect_dmg_taken(pct: int, picked: PilotData) -> String:
+	if picked == null:
+		return "받는 피해 (대상 없음)"
+	# 중첩되지 않는다 — 같은 카드를 두 장 써도 값이 그대로다.
+	picked.damage_taken_bonus = maxf(picked.damage_taken_bonus, float(pct) / 100.0)
+	return "받는 피해 +%d%% %s" % [pct, _bs.pilot_label(picked)]
+
+
+## 현상금 — 대상의 **성장치 N%** 를 값으로 찍는다. [확신] 이 이 값을 피해로
+## 바꾼다. 중첩되지 않으므로 더 큰 쪽만 남는다.
+func _effect_bounty(pct: int, picked: PilotData) -> String:
+	if picked == null:
+		return "현상금 (대상 없음)"
+	picked.bounty = maxf(picked.bounty, picked.score * float(pct) / 100.0)
+	return "현상금 %.2fk %s" % [picked.bounty, _bs.pilot_label(picked)]
+
+
+## 매혹 — 대상이 버는 성장치를 그대로 복사해 간다. 적에게도 걸 수 있다.
+func _effect_growth_link(turns: int, caster: PilotData,
+		picked: PilotData) -> String:
+	if caster == null or picked == null:
+		return "매혹 (대상 없음)"
+	picked.growth_link_to = caster
+	picked.growth_link_expire_turn = _bs.turn_count + turns
+	return "매혹 %s (%d턴)" % [_bs.pilot_label(picked), turns]
+
+
+## 명상 — 손패에서 **이 카드보다 왼쪽**을 전부 버린다. 자리를 모르면(AI 경로)
+## 손패 전체를 버린다: 명상은 손을 통째로 갈아 끼우는 카드이므로 그쪽이 의도에
+## 더 가깝다.
+func _effect_discard_left(is_player: bool) -> String:
+	var hand: Array = _bs.player_hand if is_player else _bs.ai_hand
+	var discard: Array = _bs.player_discard if is_player else _bs.ai_discard
+	var limit: int = _current_card_index
+	if limit < 0:
+		limit = hand.size()
+	var victims: Array = []
+	for i in mini(limit, hand.size()):
+		var cd := hand[i] as CardData
+		if not cd.is_preserved_by_keyword():
+			victims.append(cd)
+	for raw in victims:
+		var cd := raw as CardData
+		hand.erase(cd)
+		if _bs.mech_skill != null:
+			_bs.mech_skill.on_card_discarded(cd, is_player)
+		send_to_discard(cd, discard)
+		if is_player:
+			_despawn_player_card_node(cd)
+	_last_discarded_count = victims.size()
+	_refresh_hand_after_bulk_change(is_player)
+	return "왼쪽 %d장 버리기" % victims.size()
+
+
+func _effect_draw_discarded(is_player: bool) -> String:
+	var drew: int = 0
+	for _i in _last_discarded_count:
+		var c := draw_card(is_player)
+		if c == null:
+			break
+		if is_player and not last_draw_merged:
+			spawn_card_node(c)
+		drew += 1
+	_refresh_hand_after_bulk_change(is_player)
+	return "드로우 %d" % drew
+
+
+## 처형 — 충전을 전부 태워 **최대 체력 N% 이하**인 적 또는 포탑을 즉사시킨다.
+## 충전이 모자라면 카드가 그냥 사라진다(그것이 카드 텍스트의 "이 카드 제거"다).
+func _effect_execute(pct: int, flags: Array, caster: PilotData,
+		picked: Variant) -> String:
+	if caster == null or _bs.mech_skill == null:
+		return "처형 (시전자 없음)"
+	var need: int = maxi(1, _flag_int(flags, "charge", 5))
+	if _bs.mech_skill.charge_of(caster) < need:
+		return "처형 불발 (충전 %d/%d)" % [
+				_bs.mech_skill.charge_of(caster), need]
+	var victim: Variant = picked
+	if victim == null:
+		var cell: Variant = _pending_target_cell()
+		if cell is Vector2i:
+			victim = _foe_at_cell(cell as Vector2i, 1 - caster.team)
+	if victim is PilotData:
+		var p := victim as PilotData
+		if not p.alive or float(p.hp) > float(p.max_hp) * float(pct) / 100.0:
+			return "처형 불발 (체력 초과)"
+		_bs.mech_skill.spend_charge(caster, need)
+		_bs.mark_pilot_dead(p, caster)
+		return "처형 %s" % _bs.pilot_label(p)
+	if victim is TurretData:
+		var td := victim as TurretData
+		if not td.alive or float(td.hp) > float(td.max_hp) * float(pct) / 100.0:
+			return "처형 불발 (체력 초과)"
+		_bs.mech_skill.spend_charge(caster, need)
+		var log_lines: Array = []
+		_bs.sim_core.apply_card_turret_damage(td, td.hp, caster, log_lines)
+		return "포탑 처형 T%d %s" % [td.tier, _bs.LANE_NAMES[td.lane]]
+	return "처형 (대상 없음)"
+
+
+## 확신 — 대상에게 찍힌 **현상금의 N%** 를 그대로 피해로 넣는다. 공격력과 무관한
+## 유일한 피해원이라 명중 판정만 공유하고 계산은 따로 한다.
+func _effect_attack_bounty(pct: int, caster: PilotData,
+		picked: PilotData) -> String:
+	if caster == null or picked == null or not picked.alive:
+		return "확신 (대상 없음)"
+	if not _bs.sim_core.roll_hit(caster, picked):
+		if _bs.renderer != null:
+			_bs.renderer.spawn_pilot_popup(picked, "MISS",
+					BattleRenderer.POPUP_MISS_COLOR, 0.0)
+		_chain_hit = false
+		return "확신 빗나감"
+	# 현상금은 성장치(k) 단위라 피해로 쓰려면 점수 표기 단위로 되돌려야 한다.
+	var dmg: int = maxi(1, int(picked.bounty / MechSkillSystem.SCORE_COST_UNIT
+			* float(pct) / 100.0))
+	var before: int = picked.hp
+	if picked.shield > 0:
+		var absorbed: int = mini(picked.shield, dmg)
+		picked.shield -= absorbed
+		dmg -= absorbed
+	if dmg > 0:
+		picked.hp = maxi(0, picked.hp - dmg)
+	_bs.record_pilot_damage(caster, picked, before - picked.hp)
+	if _bs.renderer != null:
+		_bs.renderer.spawn_pilot_popup(picked, "-%d" % (before - picked.hp),
+				BattleRenderer.POPUP_DAMAGE_COLOR, 0.0)
+	if picked.hp <= 0:
+		_bs.mark_pilot_dead(picked, caster)
+	_chain_hit = true
+	return "확신 %s -%d" % [_bs.pilot_label(picked), before - picked.hp]
+
+
+## 주먹다짐 — 시전자와 대상이 **N번씩 서로** 때린다. 대상의 공격은 필중이고
+## 시전자의 공격은 판정을 굴린다: 그 비대칭이 이 카드의 값이다.
+func _effect_mutual_attack(times: int, caster: PilotData,
+		picked: PilotData) -> String:
+	if caster == null or picked == null or not picked.alive:
+		return "주먹다짐 (대상 없음)"
+	var out_dmg: int = 0
+	var in_dmg: int = 0
+	for _i in maxi(1, times):
+		if picked.alive and _bs.sim_core.roll_hit(caster, picked):
+			out_dmg += _apply_attack_damage(picked, caster, 1)
+		if caster.alive:
+			in_dmg += _apply_attack_damage(caster, picked, 1)
+		if not caster.alive:
+			break
+	_chain_hit = out_dmg > 0
+	return "주먹다짐 −%d / 자신 −%d" % [out_dmg, in_dmg]
+
+
+## 고통과 쾌감 — 전장의 **모든 적이** 시전자를 필중으로 한 대씩 친다. 받아 내는
+## 것이 곧 이득인 기체(탱커 N)의 카드라, 맞는 만큼 최대 체력이 오르는 그 기체의
+## 패시브와 짝이다.
+func _effect_taunt_all(caster: PilotData, enemy_team: int) -> String:
+	if caster == null or not caster.alive:
+		return "도발 (시전자 없음)"
+	var total: int = 0
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		if not p.alive or p.team != enemy_team:
+			continue
+		total += _apply_attack_damage(caster, p, 1)
+		if not caster.alive:
+			break
+	return "도발 — 자신 −%d" % total

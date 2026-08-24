@@ -685,11 +685,20 @@ func _credit_pilot_damage(attacker: PilotData, victim: PilotData, dmg: int,
 	_bs.record_pilot_damage(attacker, victim, dmg)
 
 
-## 포탑 피해 한 건. 파괴 귀속(`SCORE_TURRET_KILL`)은 적용 단계가
+## 포탑 피해 한 건. **성장치는 여기서 나간다** — 포탑의 몫(`SCORE_TURRET_FULL`)
+## 은 철거하는 순간의 일시불이 아니라 깎아 낸 체력 1점당으로 쪼개져 있으므로,
+## 피해를 예약하는 이 자리가 곧 적립하는 자리다.
+##
+## 점수가 붙는 것은 **실제로 깎일 몫**뿐이다. 이번 판정에서 이미 예약된 피해
+## (`turret_dmg`)를 남은 체력에서 뺀 나머지로 잘라 내는 이유가 그것이다 —
+## 한 칸에 공격자 셋이 올라서서 체력 2 짜리 포탑에 6 을 몰아 넣어도 나가는
+## 점수는 2 점어치다. 파괴 귀속(킬로그 · 사건 훅)은 예나 지금이나 적용 단계가
 ## `_last_turret_hitter` 를 보고 준다.
 func _credit_turret_damage(attacker: PilotData, td: TurretData, dmg: int,
 		turret_dmg: Dictionary) -> void:
-	turret_dmg[td] = turret_dmg.get(td, 0) + dmg
+	var pending: int = int(turret_dmg.get(td, 0))
+	_bs.score_turret_damage(attacker, mini(dmg, maxi(0, td.hp - pending)))
+	turret_dmg[td] = pending + dmg
 	_last_turret_hitter[td] = attacker
 
 
@@ -1481,6 +1490,10 @@ func apply_card_turret_damage(td: TurretData, dmg: int,
 		attacker: PilotData, log_lines: Array) -> void:
 	if td == null or not td.alive or dmg <= 0:
 		return
+	# 턴 전투와 같은 규칙으로 성장치를 적립한다 — 카드로 넣은 피해라고 포탑의
+	# 몫이 달라질 이유가 없다. 오버킬은 잘라 낸다(체력 3 인 포탑에 8 을 넣어도
+	# 3 점어치).
+	_bs.score_turret_damage(attacker, mini(dmg, td.hp))
 	_last_turret_hitter.clear()
 	if attacker != null:
 		_last_turret_hitter[td] = attacker

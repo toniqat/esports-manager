@@ -105,29 +105,45 @@ func _outlined(font: Font, at: Vector2, text: String, fsize: int,
 
 # ─── 글리프 ──────────────────────────────────────────────────────────────────
 # 이미지 에셋이 없으므로 도형으로 그린다(킬로그 아이콘과 같은 방식). 좌표는
-# 전부 **64×64 기준**으로 적고 `ICON_SIZE / 64` 배율을 곱해 옮긴다 — 크기를
-# 바꿀 때 숫자를 다시 짜지 않아도 된다.
+# 전부 **64×64 기준**으로 적고 `크기 / 64` 배율을 곱해 옮긴다 — 크기를 바꿀 때
+# 숫자를 다시 짜지 않아도 된다.
+#
+# 그리는 함수는 **static** 이고 캔버스를 인자로 받는다 — 같은 그림을 킬로그의
+# 오브젝트 획득 줄(`KillFeed.Glyph`)도 쓰기 때문이다. 두 벌로 두면 시계의 용과
+# 킬로그의 용이 조용히 다른 그림이 된다.
 const GLYPH_UNIT: float = 64.0
 
-func _draw_glyph(origin: Vector2, color: Color) -> void:
-	if _kind == ObjectiveSystem.Kind.HERALD:
-		_draw_herald(origin, color)
+## 오브젝트 아이콘 하나를 `ci` 위에 그린다. `origin` 은 정사각 칸의 왼쪽 위,
+## `icon_size` 는 그 한 변.
+static func draw_kind_glyph(ci: CanvasItem, kind: int, origin: Vector2,
+		icon_size: float, color: Color) -> void:
+	if kind == ObjectiveSystem.Kind.HERALD:
+		_draw_herald(ci, origin, icon_size, color)
 	else:
-		_draw_dragon(origin, color)
+		_draw_dragon(ci, origin, icon_size, color)
+
+
+## 그 오브젝트의 색. 전령은 보랏빛, 용은 주홍.
+static func kind_color(kind: int) -> Color:
+	return HERALD_COLOR if kind == ObjectiveSystem.Kind.HERALD else DRAGON_COLOR
+
+
+func _draw_glyph(origin: Vector2, color: Color) -> void:
+	draw_kind_glyph(self, _kind, origin, ICON_SIZE, color)
 
 
 ## 전령 = **깃발**. 세로 장대에 삼각 페넌트 하나. "누군가가 소식을 들고 온다"는
 ## 뜻을 도형 셋으로 낼 수 있는 가장 짧은 그림이다.
-func _draw_herald(o: Vector2, color: Color) -> void:
-	var pole := _poly(o, [
-		Vector2(17, 6), Vector2(22, 6), Vector2(22, 58), Vector2(17, 58)])
-	draw_colored_polygon(pole, color)
-	var flag := _poly(o, [
-		Vector2(22, 9), Vector2(55, 20), Vector2(22, 31)])
-	draw_colored_polygon(flag, color)
+static func _draw_herald(ci: CanvasItem, o: Vector2, icon_size: float,
+		color: Color) -> void:
+	var k: float = icon_size / GLYPH_UNIT
+	ci.draw_colored_polygon(_poly(o, [
+		Vector2(17, 6), Vector2(22, 6), Vector2(22, 58), Vector2(17, 58)], k),
+			color)
+	ci.draw_colored_polygon(_poly(o, [
+		Vector2(22, 9), Vector2(55, 20), Vector2(22, 31)], k), color)
 	# 장대 꼭대기 구슬 — 깃발이 매달린 쪽이 위라는 것을 못 박는다.
-	draw_circle(o + Vector2(19.5, 6.0) * (ICON_SIZE / GLYPH_UNIT),
-			4.5 * (ICON_SIZE / GLYPH_UNIT), color)
+	ci.draw_circle(o + Vector2(19.5, 6.0) * k, 4.5 * k, color)
 
 
 ## 용 = **머리 + 몸통 + 펼친 두 날개**. 좌우 대칭이라 왼쪽 날개만 적고 x 를
@@ -138,28 +154,27 @@ func _draw_herald(o: Vector2, color: Color) -> void:
 ## 으로 보였다 — 이 크기에서 실루엣을 만드는 것은 디테일이 아니라 큰 삼각형
 ## 둘의 각도다. 위쪽 머리 원과 아래로 뻗은 꼬리가 "위아래가 있는 생물"이라는
 ## 것을 마저 말해 준다.
-func _draw_dragon(o: Vector2, color: Color) -> void:
+static func _draw_dragon(ci: CanvasItem, o: Vector2, icon_size: float,
+		color: Color) -> void:
+	var k: float = icon_size / GLYPH_UNIT
 	var wing: Array = [
 		Vector2(31, 22), Vector2(3, 12), Vector2(9, 33), Vector2(29, 38)]
-	draw_colored_polygon(_poly(o, wing), color)
+	ci.draw_colored_polygon(_poly(o, wing, k), color)
 	var mirrored: Array = []
 	for raw in wing:
 		var v := raw as Vector2
 		mirrored.append(Vector2(GLYPH_UNIT - v.x, v.y))
-	draw_colored_polygon(_poly(o, mirrored), color)
+	ci.draw_colored_polygon(_poly(o, mirrored, k), color)
 	# 몸통 — 위가 굵고 아래로 갈수록 가늘어지는 꼬리.
-	var body := _poly(o, [
+	ci.draw_colored_polygon(_poly(o, [
 		Vector2(32, 14), Vector2(39, 30), Vector2(34, 56), Vector2(30, 56),
-		Vector2(25, 30)])
-	draw_colored_polygon(body, color)
+		Vector2(25, 30)], k), color)
 	# 머리 — 몸통 맨 위의 원 하나.
-	var k: float = ICON_SIZE / GLYPH_UNIT
-	draw_circle(o + Vector2(32.0, 13.0) * k, 8.0 * k, color)
+	ci.draw_circle(o + Vector2(32.0, 13.0) * k, 8.0 * k, color)
 
 
 ## 64×64 좌표 목록을 실제 화면 좌표로 옮긴다.
-func _poly(o: Vector2, pts: Array) -> PackedVector2Array:
-	var k: float = ICON_SIZE / GLYPH_UNIT
+static func _poly(o: Vector2, pts: Array, k: float) -> PackedVector2Array:
 	var out := PackedVector2Array()
 	for raw in pts:
 		out.append(o + (raw as Vector2) * k)

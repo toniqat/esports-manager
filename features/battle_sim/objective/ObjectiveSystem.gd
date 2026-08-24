@@ -188,6 +188,7 @@ func _run_objective_engage(st: Dictionary, kind: int,
 		_bs.blog.log_event("OBJ", "%s 무승부 — 다음 %d턴" % [label, int(st["next_turn"])])
 		return
 	_grant_reward(kind, winner)
+	_push_feed(kind, winner, t0 if winner == 0 else t1)
 	# 고양감(파일럿 스킬)은 **싸워서 이겼을 때만** 충전한다 — 아무도 안 나와
 	# 거저 가져간 경우(`_award_uncontested`)는 "전투에서 승리"가 아니다.
 	if _bs.skill != null:
@@ -205,6 +206,9 @@ func _award_uncontested(st: Dictionary, kind: int, winner: int,
 		t0: Array, t1: Array) -> void:
 	var label: String = kind_name(kind)
 	_grant_reward(kind, winner)
+	# 무혈 획득도 킬로그에 오른다 — 아무도 안 나와 거저 가져간 것이야말로
+	# 그 순간 화면에 아무 일도 일어나지 않는 경우라, 자국이 더 필요하다.
+	_push_feed(kind, winner, t0 if winner == 0 else t1)
 	_reschedule(st, _bs.OBJ_RESPAWN_TURNS)
 	var side: String = "아군" if winner == 0 else "적군"
 	_bs.last_log = "[%s] %s 무혈 획득 · %s" % [label, side, reward_text(kind)]
@@ -344,6 +348,39 @@ func _grant_reward(kind: int, team: int) -> void:
 	else:
 		_bs.card_phase.grant_cards_to_deck(DRAGON_CARD_ID, is_player,
 				_bs.OBJ_DRAGON_CARD_COUNT)
+
+
+# ─── 킬로그 ──────────────────────────────────────────────────────────────────
+## 오브젝트 획득 한 줄. **대표는 정글러**다 — 전령도 용도 양 팀 정글러가 언제나
+## 참가자이고 오브젝트를 도는 것 자체가 정글의 일이라, 한 얼굴로 "누가
+## 가져갔나"를 말해야 한다면 그 자리는 정글러다. 정글러가 못 나왔으면(사망 ·
+## 위치 고정 스킬) 남은 참가자 중 첫 사람이 그 자리에 서고, 나머지는 전부
+## 어시스트로 붙는다.
+##
+## 명단은 **참여를 고른 팀의 참가자**다(`participants_for` 가 준 그 배열).
+## 교전 중에 쓰러진 사람도 그대로 남는다.
+func _push_feed(kind: int, winner: int, group: Array) -> void:
+	if _bs.kill_feed == null:
+		return
+	var ordered: Array = _feed_order(group)
+	if ordered.is_empty():
+		_bs.kill_feed.push_objective(kind, null, [], winner)
+		return
+	_bs.kill_feed.push_objective(kind, ordered[0] as PilotData,
+			ordered.slice(1), winner)
+
+
+## 정글러를 맨 앞으로 당긴 참가자 순서. 나머지는 `participants_for` 가 준
+## 순서(= 스폰 순서) 그대로다.
+func _feed_order(group: Array) -> Array:
+	var out: Array = []
+	for raw in group:
+		if (raw as PilotData).lane == GameEnums.LanePosition.GUERRILLA:
+			out.append(raw)
+	for raw in group:
+		if (raw as PilotData).lane != GameEnums.LanePosition.GUERRILLA:
+			out.append(raw)
+	return out
 
 
 # ─── 시계 ────────────────────────────────────────────────────────────────────

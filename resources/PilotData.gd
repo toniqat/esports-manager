@@ -109,10 +109,17 @@ var growth_rate_bonus: float = 0.0
 # 절에 있고, 변동은 `BattleSim.add_score` 한 곳만 지난다.
 var score: float          = 1.0   # = BattleSim.SCORE_START
 
-# 이번 생에 **나를 때린 사람들**의 누적 피해량. `PilotData attacker → int`.
+# 이번 생에 **나를 때린 사람들**의 피해 기록. `PilotData attacker →
+# Array[Vector2i]` 이고 각 항목은 `(때린 턴, 그 턴의 피해 합)` 이다 — 같은 턴에
+# 들어온 피해는 한 항목으로 합쳐지므로 항목 수는 어시스트 창(15턴)을 넘지 않는다.
 # 내가 쓰러질 때 `BattleSim.mark_pilot_dead` 가 이걸 읽어 현상금을 라스트힛과
 # 어시스트에게 나눠 주고 비운다. 피해가 굴려지는 그 지점에서 쌓으므로
 # (`BattleSim.record_pilot_damage`) 전장·교전 무대·공격 카드가 같은 표를 쓴다.
+#
+# **턴 도장을 찍는 이유는 만료 때문이다** — `BattleSim.SCORE_ASSIST_WINDOW_TURNS`
+# 보다 오래된 피해는 어시스트 배분에서도 킬로그 명단에서도 빠진다. 그 판정은
+# `BattleSim.live_damage_credit(victim)` 한 곳에서만 하고, 읽는 김에 만료된
+# 항목을 실제로 지운다 — 이 사전을 직접 훑는 코드가 있으면 안 된다.
 var damage_credit: Dictionary = {}
 
 # ─── 라인전 스탯 ──────────────────────────────────────────────────────────────

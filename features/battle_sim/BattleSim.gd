@@ -381,6 +381,9 @@ var blog: BattleLogger = null
 ## `features/battle_sim/skill/PilotSkillSystem.gd` 참조. 스폰과 덱 배분이 **끝난
 ## 뒤** 세운다 — 짝을 로스터에서 찾고, 백본 패시브가 이미 돌아간 덱을 만진다.
 var skill: PilotSkillSystem = null
+## 교전이 도는 동안 밀어 둔 성장치 팝업. `PilotData -> float`(그 교전에서 번 합).
+## 무대가 치워질 때 `flush_score_popups` 가 한 사람당 한 장으로 풀어놓는다.
+var _score_popup_hold: Dictionary = {}
 
 # ─── TileMapLayer refs (set after BattleField.tscn is added as child) ────────
 @onready var tiles_layer:    TileMapLayer = $BattleField/Tiles
@@ -730,9 +733,10 @@ func mark_pilot_dead(p: PilotData, killer: PilotData = null) -> void:
 func _push_kill_feed(victim: PilotData, killer: PilotData) -> void:
 	if kill_feed == null:
 		return
-	var contributors: Array = victim.damage_credit.keys()
+	var credit: Dictionary = live_damage_credit(victim)
+	var contributors: Array = credit.keys()
 	contributors.sort_custom(func(a: PilotData, b: PilotData) -> bool:
-		return float(victim.damage_credit[a]) > float(victim.damage_credit[b]))
+		return float(credit[a]) > float(credit[b]))
 	var last_hit: PilotData = killer
 	if last_hit == null and not contributors.is_empty():
 		last_hit = contributors[0] as PilotData
@@ -846,8 +850,37 @@ const SCORE_KILL_BOUNTY_RATE: float = 0.20
 ## `현상금 × 0.5 × (내 피해 / 그 대상이 이번 생에 받은 총 피해)` 라, 라스트힛만
 ## 넣고 딜을 안 넣은 파일럿과 끝까지 두들긴 파일럿이 구분된다.
 const SCORE_ASSIST_MAX_SHARE: float = 0.50
-## 포탑 철거. 처치 기본값에 준하는 한 덩어리.
-const SCORE_TURRET_KILL: float = 1.0
+## 포탑 한 기를 처음부터 끝까지 갈아 냈을 때 그 레인이 벌어 가는 성장치 총액.
+##
+## 예전에는 이 값이 **철거하는 순간** 마지막 한 대를 넣은 파일럿에게 통째로
+## 갔다(`SCORE_TURRET_KILL`). 그러면 8턴 동안 밀어붙인 파일럿과 마지막 2 를
+## 넣은 파일럿의 몫이 같았고, 포탑을 반쯤 갈아 놓고 죽은 사람은 한 푼도 못
+## 받았다 — 공성은 한 번의 사건이 아니라 여러 턴에 걸친 노동이다. 지금은
+## **깎아 낸 체력 1점당**으로 쪼개 실제로 민 만큼 나눠 갖는다
+## (`score_turret_damage`). 총액은 그대로라 포탑 하나의 값어치는 안 달라졌다.
+const SCORE_TURRET_FULL: float = 1.0
+## 처치 관여(어시스트)가 살아 있는 기간(턴). 이보다 오래된 피해는 현상금
+## 배분에서도 킬로그 명단에서도 빠진다 — 20턴 전에 한 대 긁어 놓은 것이
+## 지금의 처치에 지분을 갖는 것은 "관여"가 아니다. 판정은
+## `live_damage_credit` 한 곳뿐이고 만료된 기록은 그 자리에서 지워진다.
+const SCORE_ASSIST_WINDOW_TURNS: int = 15
+
+# ─── 성장치 팝업 (전장 초상화 위) ────────────────────────────────────────────
+# 성장치가 오르는 자리 중 **한 번에 크게 들어오는 것**만 초상화 위에 숫자로
+# 띄운다 — 처치 현상금(막타 · 어시스트), 포탑 피해, 그리고 교전에서 번 총액.
+# 전선 체류(턴당 0.50k)와 정글 캠프는 뺐다: 매 턴 열 명의 얼굴 위에서 숫자가
+# 튀면 그게 곧 배경이 되어 정작 큰 한 건이 묻힌다.
+#
+# 진입점은 `award_score` 하나이고, 조용히 적립만 하는 `add_score` 와 그 한 겹이
+# 갈라져 있다 — 어느 적립처가 화면에 뜨는지가 호출부에서 읽혀야 한다.
+## 팝업 글자색 — 성장치 숫자(스트립)와 같은 계열의 금색.
+const SCORE_POPUP_COLOR := Color(1.00, 0.86, 0.36)
+## 화면에 머무는 시간(s). 피해 숫자(0.30초)보다 한참 길다 — 피해는 연속 타격의
+## 리듬에 맞춰 스쳐 가면 되지만 성장치는 **읽으라고 띄우는 값**이다.
+const SCORE_POPUP_DUR := 1.10
+## 떠오르는 높이(px). 피해 숫자(46)보다 높이 떠서 같은 얼굴 위에 둘이 동시에
+## 떠도 서로를 덮지 않는다.
+const SCORE_POPUP_RISE_PX := 72.0
 
 # ─── 성장 환산 (성장치 → 스탯) ───────────────────────────────────────────────
 # **공격력이 체력의 4배 속도로 자란다.** 이 비대칭이 성장 체감의 전부다 —
@@ -866,9 +899,13 @@ const GROWTH_HP_PER_SCORE:  float = 0.5 / 24.0   # +2.08%p / 1k
 ##
 ## 곧바로 스탯을 다시 계산하는 것이 요점이다 — 성장이 턴 경계가 아니라 점수가
 ## 움직인 그 순간에 붙어야 "킬을 땄더니 세졌다"가 한 박자로 읽힌다.
-func add_score(p: PilotData, delta: float) -> void:
+##
+## **실제로 오른 만큼**을 돌려준다(하한과 적립 배율이 먹은 뒤의 값). 화면에
+## 띄우는 쪽(`award_score`)이 요청한 값이 아니라 들어간 값을 보여야 하기
+## 때문이고, 그 밖의 호출부는 그냥 무시하면 된다.
+func add_score(p: PilotData, delta: float) -> float:
 	if p == null or is_zero_approx(delta):
-		return
+		return 0.0
 	if delta > 0.0:
 		# 만료형 슬롯(`growth_rate_mult`) + 영구 가산분(`growth_rate_bonus`, 용
 		# 보상) + 파일럿 스킬 가산분(축적 / 사냥의 보상 / 위치 고정 / 경쟁 심리).
@@ -876,8 +913,50 @@ func add_score(p: PilotData, delta: float) -> void:
 		# 덮어쓰지 않는다 — PilotData.growth_rate_bonus 주석 참조.
 		var skill_add: float = skill.growth_rate_add(p) if skill != null else 0.0
 		delta *= p.growth_rate_mult + p.growth_rate_bonus + skill_add
+	var before: float = p.score
 	p.score = maxf(SCORE_MIN, p.score + delta)
 	refresh_growth_stats(p)
+	return p.score - before
+
+
+## `add_score` 에 **전장 초상화 팝업**을 붙인 판. 성장치가 크게 움직이는 자리
+## (처치 현상금 · 어시스트 · 포탑 피해)는 전부 이쪽을 지난다.
+##
+## 죽어 있는 파일럿에게는 띄우지 않는다 — 시신은 1.45초 뒤 전장을 뜨고, 그
+## 뒤에 뜬 숫자는 아무 얼굴 위에도 서 있지 않다. 어시스트는 자기가 죽은
+## 뒤에도 들어오므로 실제로 걸리는 경로다.
+func award_score(p: PilotData, delta: float) -> float:
+	var applied: float = add_score(p, delta)
+	if applied > 0.0:
+		_show_score_gain(p, applied)
+	return applied
+
+
+## 팝업 한 장. **교전이 도는 동안은 띄우지 않고 쌓아 둔다** — 아레나가 화면을
+## 통째로 덮고 있어 지금 띄워 봐야 아무도 못 보고, 팝업 좌표는 띄운 순간의
+## 마커 자리에 고정되므로 무대가 치워질 때쯤엔 엉뚱한 곳에 떠 있다. 킬로그가
+## 같은 이유로 같은 짓을 한다(`KillFeed._pending`).
+func _show_score_gain(p: PilotData, amount: float) -> void:
+	if p == null or amount <= 0.0:
+		return
+	if engage_phase != null and engage_phase.is_active():
+		_score_popup_hold[p] = float(_score_popup_hold.get(p, 0.0)) + amount
+		return
+	if not p.alive or renderer == null:
+		return
+	renderer.spawn_score_popup(p, amount)
+
+
+## 교전이 닫히는 순간 `EngagePhaseManager._on_dashboard_confirmed` 가 부른다.
+## 그 교전 동안 번 것을 **파일럿마다 한 장으로 합쳐** 띄운다 — 라운드마다
+## 처치가 났다고 숫자가 세 번 뜨면 "이 교전에서 얼마를 벌었나"를 도리어 더하게
+## 된다. 쓰러진 파일럿은 건너뛴다.
+func flush_score_popups() -> void:
+	for raw in _score_popup_hold.keys():
+		var p := raw as PilotData
+		if p != null and p.alive and renderer != null:
+			renderer.spawn_score_popup(p, float(_score_popup_hold[p]))
+	_score_popup_hold.clear()
 
 
 ## 성장치에서 `atk` / `max_hp` 를 **원본에서 다시 계산**한다. 매 턴 곱해 나가는
@@ -929,12 +1008,45 @@ func team_avg_score(team: int) -> float:
 ##
 ## 적는 값은 **굴린 피해 전체**다 — 보호막에 먹힌 몫도 기여이고, 오버킬 몇 점이
 ## 비율을 흔들지도 않는다.
+## 적는 값에는 **턴 도장**이 함께 찍힌다 — 같은 턴의 피해는 한 항목으로 합치고,
+## `SCORE_ASSIST_WINDOW_TURNS` 이 지난 항목은 `live_damage_credit` 이 지운다.
 func record_pilot_damage(attacker: PilotData, victim: PilotData, amount: int) -> void:
 	if attacker == null or victim == null or amount <= 0:
 		return
 	if attacker.team == victim.team:
 		return
-	victim.damage_credit[attacker] = int(victim.damage_credit.get(attacker, 0)) + amount
+	var entries: Array = victim.damage_credit.get(attacker, [])
+	if not entries.is_empty() and (entries[-1] as Vector2i).x == turn_count:
+		entries[-1] = (entries[-1] as Vector2i) + Vector2i(0, amount)
+	else:
+		entries.append(Vector2i(turn_count, amount))
+	victim.damage_credit[attacker] = entries
+
+
+## 지금 이 순간 유효한 기여만 남긴 `공격자 → 누적 피해` 표. 현상금 배분 ·
+## 킬로그 명단 · 파일럿 스킬의 처치 관여 훅이 **전부 이 함수 하나**를 읽는다 —
+## 만료 규칙이 세 군데에 흩어지면 화면에 뜬 얼굴과 점수를 받은 얼굴이 갈린다.
+##
+## 만료된 항목은 읽는 김에 실제로 지운다(항목이 하나도 안 남은 공격자는 키째
+## 지운다). 기록은 턴 순서대로 쌓이므로 앞에서부터 걷어 내면 된다.
+func live_damage_credit(victim: PilotData) -> Dictionary:
+	var out: Dictionary = {}
+	if victim == null:
+		return out
+	# 턴 T 의 피해는 T + WINDOW 턴이 되는 순간 사라진다.
+	var cutoff: int = turn_count - SCORE_ASSIST_WINDOW_TURNS
+	for raw in victim.damage_credit.keys():
+		var entries: Array = victim.damage_credit[raw]
+		while not entries.is_empty() and (entries[0] as Vector2i).x <= cutoff:
+			entries.pop_front()
+		if entries.is_empty():
+			victim.damage_credit.erase(raw)
+			continue
+		var total: int = 0
+		for e in entries:
+			total += (e as Vector2i).y
+		out[raw] = total
+	return out
 
 
 ## 처치 현상금 정산. 라스트힛(`killer`)이 전액을 받고, 그 대상에게 피해를 넣은
@@ -948,25 +1060,42 @@ func _payout_kill_bounty(victim: PilotData, killer: PilotData) -> void:
 	var killer_team: int = killer.team if killer != null else 1 - victim.team
 	var lead: float = maxf(0.0, victim.score - team_avg_score(killer_team))
 	var bounty: float = SCORE_KILL_BASE + lead * SCORE_KILL_BOUNTY_RATE
+	# **만료를 지난 피해는 분모에도 안 들어간다** — 15턴 전에 긁어 놓은 딜이
+	# 분모를 부풀리면 정작 지금 잡은 사람들의 몫이 조용히 깎인다.
+	var credit: Dictionary = live_damage_credit(victim)
 	var total_dmg: float = 0.0
-	for raw in victim.damage_credit.keys():
-		total_dmg += float(victim.damage_credit[raw])
+	for raw in credit.keys():
+		total_dmg += float(credit[raw])
 	if killer != null:
-		add_score(killer, bounty)
+		award_score(killer, bounty)
 	if total_dmg > 0.0:
-		for raw in victim.damage_credit.keys():
+		for raw in credit.keys():
 			var a := raw as PilotData
 			if a == killer:
 				continue
-			var share: float = float(victim.damage_credit[a]) / total_dmg
-			add_score(a, bounty * SCORE_ASSIST_MAX_SHARE * share)
+			var share: float = float(credit[a]) / total_dmg
+			award_score(a, bounty * SCORE_ASSIST_MAX_SHARE * share)
 	victim.damage_credit.clear()
 
 
-## 포탑 철거. `td` 는 킬로그가 어느 포탑인지를 그리는 데만 쓴다 — 점수는
-## 마지막 한 대를 넣은 파일럿에게만 간다(어시스트 개념이 없다).
+## 포탑 피해 한 건의 성장치 적립. `hp_removed` 는 **실제로 깎인 체력**이다 —
+## 오버킬까지 값으로 치면 마지막 한 대에 인원이 몰릴수록 포탑 총액이 불어난다.
+##
+## 한 점당 값은 `SCORE_TURRET_FULL / TURRET_HP` 라, 한 기를 통째로 갈아 내면
+## 예전의 철거 일시불과 정확히 같은 총액이 나온다(지금 설정 = 체력 16 · 고정
+## 피해 2 이므로 한 대에 0.13k, 여덟 대에 1.0k).
+func score_turret_damage(attacker: PilotData, hp_removed: int) -> void:
+	if attacker == null or hp_removed <= 0:
+		return
+	award_score(attacker, SCORE_TURRET_FULL * float(hp_removed)
+			/ float(maxi(1, TURRET_HP)))
+
+
+## 포탑 철거. `td` 는 킬로그가 어느 포탑인지를 그리는 데만 쓴다.
+##
+## **여기서는 성장치가 나가지 않는다** — 포탑의 몫은 갈아 내는 동안 이미
+## `score_turret_damage` 로 다 나갔다. 남은 일은 킬로그 한 줄과 사건 훅이다.
 func score_turret_kill(attacker: PilotData, td: TurretData = null) -> void:
-	add_score(attacker, SCORE_TURRET_KILL)
 	if kill_feed != null:
 		kill_feed.push_turret(attacker, td)
 	if skill != null:
@@ -1392,6 +1521,7 @@ func _on_restart_pressed() -> void:
 	next_phase_strategy_p = 0; next_phase_strategy_ai = 0
 	kill_bounty_p = 0; kill_bounty_ai = 0
 	_clear_turret_hit_visuals()
+	_score_popup_hold.clear()
 	if renderer != null:
 		renderer.clear_popups()
 	for node in player_card_nodes:

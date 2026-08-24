@@ -71,11 +71,18 @@ const MARKER_RADIUS_SETTLE_SEC: float = 0.15
 var _glide: Dictionary = {}
 
 
-# ─── 피해 수치 팝업 (공격 카드 전용) ─────────────────────────────────────────
-# 공격 카드가 대상 파일럿 위에 남기는 짧은 플로팅 텍스트. 각 항목은
-#   {"pos": Vector2, "text": String, "color": Color, "t": float, "delay": float}
+# ─── 마커 위 플로팅 숫자 ─────────────────────────────────────────────────────
+# 두 종류가 같은 배열을 쓴다 — 공격 카드의 **피해 수치**(붉은 `-N`, 0.30초)와
+# 성장치가 크게 오른 순간의 **성장치 팝업**(금색 `+1.50k`, 1.10초). 각 항목은
+#   {"pos": Vector2, "text": String, "color": Color, "t": float,
+#    "delay": float, "dur": float, "rise": float}
 # 이고 `pos` 는 **띄운 순간의 마커 좌표를 그대로 고정**한다 — 대상이 그 사이
 # 쓰러지거나 밀려나도 숫자가 따라다니지 않게 하기 위함.
+#
+# 수명과 높이가 **항목마다** 다른 이유: 피해 숫자는 연속 타격(0.32초 간격)
+# 사이에 사라져야 같은 자리에 겹쳐 쌓이지 않고, 성장치는 반대로 한 박자
+# 머물러 있어야 읽힌다. 둘이 한 얼굴 위에 동시에 떠도 성장치가 더 높이
+# 뜨므로 서로를 덮지 않는다.
 var _popups: Array = []
 
 const POPUP_MISS_COLOR   := Color(0.78, 0.80, 0.86)
@@ -134,7 +141,7 @@ func _advance_popups(delta: float) -> bool:
 	for raw in _popups:
 		var e: Dictionary = raw
 		e["t"] = float(e["t"]) + delta
-		if float(e["t"]) < float(e["delay"]) + _bs.DMG_POPUP_DUR:
+		if float(e["t"]) < float(e["delay"]) + float(e["dur"]):
 			keep.append(e)
 	_popups = keep
 	return true
@@ -144,7 +151,7 @@ func _advance_popups(delta: float) -> bool:
 ## members of a 연속 공격 chain so several numbers off the same swing don't
 ## stack on one pixel.
 func spawn_pilot_popup(p: PilotData, text: String, color: Color,
-		delay: float = 0.0) -> void:
+		delay: float = 0.0, dur: float = -1.0, rise: float = -1.0) -> void:
 	if p == null:
 		return
 	var markers: Dictionary = _build_pilot_render_layout()
@@ -156,8 +163,21 @@ func spawn_pilot_popup(p: PilotData, text: String, color: Color,
 		"color": color,
 		"t":     0.0,
 		"delay": max(0.0, delay),
+		"dur":   _bs.DMG_POPUP_DUR if dur <= 0.0 else dur,
+		"rise":  _bs.DMG_POPUP_RISE_PX if rise <= 0.0 else rise,
 	})
 	queue_redraw()
+
+
+## 성장치가 오른 것을 그 파일럿 얼굴 위에 띄운다 — `+1.50k`. 진입점은
+## `BattleSim._show_score_gain` / `flush_score_popups` 뿐이고, **무엇을 띄울지
+## (어느 적립처를 보여 줄지)는 여기가 아니라 그쪽이 정한다.**
+func spawn_score_popup(p: PilotData, amount: float) -> void:
+	if amount <= 0.0:
+		return
+	spawn_pilot_popup(p, "+" + BattleSim.fmt_score(amount),
+			BattleSim.SCORE_POPUP_COLOR, 0.0,
+			BattleSim.SCORE_POPUP_DUR, BattleSim.SCORE_POPUP_RISE_PX)
 
 
 ## Drops every in-flight popup. Called on restart so numbers from the previous
@@ -177,9 +197,9 @@ func _draw_pilot_popups() -> void:
 		var local_t: float = float(e["t"]) - float(e["delay"])
 		if local_t < 0.0:
 			continue
-		var k: float = clampf(local_t / _bs.DMG_POPUP_DUR, 0.0, 1.0)
+		var k: float = clampf(local_t / float(e["dur"]), 0.0, 1.0)
 		# 위로 갈수록 감속하며 떠오르고, 뒷부분에서만 흐려진다.
-		var rise: float = _bs.DMG_POPUP_RISE_PX * (1.0 - pow(1.0 - k, 2.0))
+		var rise: float = float(e["rise"]) * (1.0 - pow(1.0 - k, 2.0))
 		var alpha: float = 1.0 if k < 0.6 else 1.0 - (k - 0.6) / 0.4
 		var txt: String = String(e["text"])
 		var tsz := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz)

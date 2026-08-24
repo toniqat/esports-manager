@@ -670,7 +670,9 @@ func on_kill(victim: PilotData, killer: PilotData) -> void:
 	var involved: Dictionary = {}
 	if killer != null and killer.team != victim.team:
 		involved[killer] = true
-	for raw in victim.damage_credit.keys():
+	# **만료를 지난 피해는 관여가 아니다** — 현상금 배분과 킬로그가 읽는 그
+	# 표(`BattleSim.live_damage_credit`)를 여기서도 그대로 읽는다.
+	for raw in _bs.live_damage_credit(victim).keys():
 		var a := raw as PilotData
 		if a != null and a.team != victim.team:
 			involved[a] = true

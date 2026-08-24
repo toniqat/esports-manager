@@ -56,7 +56,7 @@ Reads all state from `_bs` (the BattleSim parent).
 2. `_draw_turret_hp_bars()` — yellow HP bar above each living turret (T2 hidden while own-lane T1 alive). 피격 중에는 `BattleSim.turret_hit_offset(td)` 만큼 함께 흔들린다 — 포탑 스프라이트(`Building` 노드)는 렌더러가 그리지 않고 BattleSim 이 직접 흔들므로, 바만 제자리에 두면 둘이 어긋난다.
 3. Per-cell pilot rendering via `_draw_pilot_cell()` — pilots render OUTSIDE the tile, on a hex ring of 6 slots around it, with a team-coloured triangle behind them whose apex points to the tile centre (speech-bubble tail). **자리는 여기서 풀지 않는다** — `_draw()` 앞머리의 `_build_pilot_render_layout()` 이 전장 전체를 한 번에 배정하고, 딤 오버레이 · 히트 테스트 · 돌진 기하가 같은 표를 읽는다
 4. `_draw_cell_badge()` — `NvN` / `xN` count badge centred ON the tile (the tile centre is now empty, since pilots are offset outward)
-5. `_draw_pilot_popups()` — 공격 카드의 피해 수치 / MISS 플로팅 텍스트, **맨 마지막**에 그려 무엇에도 가려지지 않는다
+5. `_draw_pilot_popups()` — 피해 수치 / MISS · 성장치 팝업 플로팅 텍스트, **맨 마지막**에 그려 무엇에도 가려지지 않는다
 
 The minion / lane-line / minion-progress visualizations were removed alongside
 the minion concept. Tile background colouring (lane vs jungle vs neutral) is
@@ -386,6 +386,21 @@ same solve, so hit-testing never disagrees with what is on screen.
   경우(시전자가 없는 레거시 카드)뿐이다.
 - `_advance_popups(delta)` 가 `_process` 에서 돌며 만료분을 버리고, 살아 있는
   동안 `queue_redraw()` 를 계속 건다. 재시작은 `clear_popups()`.
+- **수명과 높이는 항목마다 다르다**(`dur` / `rise` 키). 기본값은 위의 피해
+  수치용이고, 성장치 팝업만 자기 값을 넘긴다 — 아래 절.
+
+### 성장치 팝업 (`spawn_score_popup`)
+성장치가 **한 번에 크게** 오른 순간 그 파일럿 얼굴 위로 금색 `+1.50k` 가
+떠오른다. 피해 수치와 같은 배열·같은 그리기 경로를 쓰되 상수만 다르다 —
+`BattleSim.SCORE_POPUP_DUR`(**1.10s**) / `SCORE_POPUP_RISE_PX`(**72px**) /
+`SCORE_POPUP_COLOR`(금색). 피해 숫자는 연속 타격(0.32초 간격) 사이에 사라져야
+겹치지 않고, 성장치는 반대로 한 박자 머물러 있어야 읽힌다. 한 얼굴 위에 둘이
+동시에 떠도 성장치가 더 높이 뜨므로 서로를 덮지 않는다.
+
+**무엇을 띄울지는 렌더러가 정하지 않는다** — `BattleSim._show_score_gain` /
+`flush_score_popups` 만 이 함수를 부르고, 죽은 파일럿 제외 · 교전 중 보류 ·
+교전 총액 합산 같은 규칙은 전부 그쪽에 있다(`features/battle_sim/README.md` 의
+"성장치 팝업" 절).
 
 ### Targeting dim + 강조 (놓을 수 있는 곳만 밝게)
 **딤은 카드를 손에서 끌어내는 순간 올라간다.** 예전에는 모달 대상 지정이 열려야

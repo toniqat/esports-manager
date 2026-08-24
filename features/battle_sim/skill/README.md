@@ -134,7 +134,10 @@ CSV 의 `key` 로 갈라 쓴다 — 한 스킬을 고치려면 그 `KEY_*` 상�
 
 **`on_kill` 은 `_payout_kill_bounty` 보다 먼저 불려야 한다** — 처치 관여 명단의
 출처인 `victim.damage_credit` 을 그 정산이 비운다. 킬로그가 같은 이유로 같은
-자리에 있다.
+자리에 있다. 명단은 그 사전을 직접 훑지 않고 **`BattleSim.live_damage_credit`**
+을 지난다 — `SCORE_ASSIST_WINDOW_TURNS`(15턴)보다 오래된 피해는 관여가 아니고,
+그 만료 규칙은 현상금 배분 · 킬로그 · 이 훅이 **한 함수를 함께 읽어야** 셋이
+같은 얼굴을 가리킨다.
 
 **`on_objective_won` 은 교전으로 이긴 경우에만** 불린다. 아무도 안 나와 거저
 가져간 경우(`_award_uncontested`)는 CSV 문구의 "전투에서 승리"가 아니다.

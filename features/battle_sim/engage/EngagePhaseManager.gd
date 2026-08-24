@@ -392,6 +392,10 @@ func _on_dashboard_confirmed() -> void:
 	# 무대가 치워진 지금 한 줄씩 이어서 풀어놓는다.
 	if _bs.kill_feed != null:
 		_bs.kill_feed.flush_pending()
+	# 같은 이유로 밀려 있던 성장치 팝업 — 이쪽은 파일럿마다 **한 장으로 합쳐**
+	# 전장 초상화 위에 뜬다("이 교전에서 얼마를 벌었나"). 쓰러진 참가자는
+	# 건너뛴다.
+	_bs.flush_score_popups()
 	engage_finished.emit()
 
 

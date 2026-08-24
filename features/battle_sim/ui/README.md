@@ -9,7 +9,7 @@
 | `ObjectiveTimer.gd` | ObjectiveTimer | 오브젝트 등장 시계 — 적 스트립 양옆에 아이콘 + 남은 턴(좌 전령 / 우 용). **누르면 보상 팝업이 열린다** |
 | `ObjectiveRewardPopup.gd` | ObjectiveRewardPopup | 오브젝트 보상 미리보기 — 시계를 누르면 그 오브젝트가 주는 카드를 실물로 띄운다 |
 | `PilotDetailPanel.gd` | PilotDetailPanel | 파일럿 상세 모달 — 좌 전신 아트 2장 / 우 머리글 + 탭 3개 + 스탯 칩 + 지속 효과 + 카드 + **파일럿 스킬 블록** |
-| `KillFeed.gd` | KillFeed | 킬로그 — 우측 상단에 처치 / 포탑 철거를 한 줄씩. 교전 중 처치는 아레나가 닫힌 뒤 몰아서 |
+| `KillFeed.gd` | KillFeed | 킬로그 — 우측 상단에 처치 / 포탑 철거 / 오브젝트 획득을 한 줄씩. 교전 중 처치는 아레나가 닫힌 뒤 몰아서 |
 
 ## HudBuilder.gd
 `extends Node` — child of BattleSim.
@@ -635,8 +635,8 @@ z-order 가 곧 자식 인덱스라, 나중에 붙으면 판이 초상화를 덮
   누적 기록이다).
 
 ### 킬로그 (`KillFeed.gd`)
-화면 **우측 상단**(상단 패널 밑단에서 8px 아래, y **156** = `TOP_PANEL_H` + 8)에 처치와 포탑 철거를 한
-줄씩 쌓는다. 전장은 0.5초마다 저 혼자 흐르고 교전은 오버레이가 화면을 덮으므로,
+화면 **우측 상단**(상단 패널 밑단에서 8px 아래, y **156** = `TOP_PANEL_H` + 8)에 처치 · 포탑 철거 ·
+오브젝트 획득을 한 줄씩 쌓는다. 전장은 0.5초마다 저 혼자 흐르고 교전은 오버레이가 화면을 덮으므로,
 **무슨 일이 일어났는지가 지나가고 나면 남는 곳이 없었다** — 팀 점수가 조금
 벌어진 것 말고는.
 
@@ -648,13 +648,26 @@ z-order 가 곧 자식 인덱스라, 나중에 붙으면 판이 초상화를 덮
 |---|---|---|
 | 막타 | `PORTRAIT_W` 96 | 가로로 긴 eye 컷. 이 줄의 주인 |
 | 어시스트 ×0..4 | `ASSIST_W` 32 (= 1/3) | 높이는 같고 폭만 1/3 |
-| 아이콘 | `ICON_W` 32 | 처치 = 교차한 칼, 포탑 철거 = 파열 |
-| 피해자 | 96 | 파일럿이면 eye 컷, 포탑이면 실루엣 + `T1 좌` |
+| 아이콘 | `ICON_W` 32 | 처치 = 교차한 칼, 포탑 철거·오브젝트 획득 = 파열 |
+| 피해자 | 96 | 파일럿이면 eye 컷, 포탑이면 실루엣 + `T1 좌`, 오브젝트면 글리프 + `용` / `전령` |
 
-- **적립처는 두 곳뿐이다** — `BattleSim.mark_pilot_dead`(→ `_push_kill_feed`)와
-  `BattleSim.score_turret_kill`. 전자는 **`_payout_kill_bounty` 보다 먼저**
-  불려야 한다: 어시스트 명단이 `PilotData.damage_credit` 에서 나오는데 그 정산이
-  장부를 비운다. 그래서 화면에 뜬 얼굴과 성장치를 받은 얼굴이 같은 표에서 나온다.
+- **적립처는 세 곳이다** — `BattleSim.mark_pilot_dead`(→ `_push_kill_feed`),
+  `BattleSim.score_turret_kill`, 그리고 `ObjectiveSystem._push_feed`
+  (→ `push_objective`). 첫 번째는 **`_payout_kill_bounty` 보다 먼저** 불려야
+  한다: 어시스트 명단이 `PilotData.damage_credit` 에서 나오는데 그 정산이 장부를
+  비운다. 그래서 화면에 뜬 얼굴과 성장치를 받은 얼굴이 같은 표에서 나온다
+  (그 표는 만료를 거른 `BattleSim.live_damage_credit` 한 함수가 만든다).
+- **오브젝트 줄의 대표는 정글러다** — 전령도 용도 양 팀 정글러가 언제나 참가자이고
+  오브젝트를 도는 것 자체가 정글의 일이라, 한 얼굴로 "누가 가져갔나"를 말해야
+  한다면 그 자리는 정글러다(`ObjectiveSystem._feed_order`). 정글러가 못 나왔으면
+  (사망 · 위치 고정 스킬) 남은 참가자 중 첫 사람이 서고, 나머지는 전부 어시스트로
+  붙는다. 명단은 **참여를 고른 시점의 참가자**라 그 뒤 교전에서 쓰러진 사람도
+  그대로 남고, **무혈 획득도 한 줄 뜬다** — 아무도 안 나와 거저 가져간 것이야말로
+  화면에 아무 일도 일어나지 않는 경우라 자국이 더 필요하다.
+- **전령 / 용 그림은 `ObjectiveTimer` 의 static 함수가 그린다**
+  (`draw_kind_glyph` / `kind_color`, 64×64 정규 좌표). 상단 패널의 등장 시계와
+  **같은 함수**라 두 자리의 용이 다른 그림이 될 수 없다. 킬로그 쪽 노드는
+  `ObjGlyph` 이고 `Glyph` 와 따로 있는 이유는 그리는 방식이 아니라 좌표계다.
 - **막타가 null 인 경로가 있다** — `SimulationCore._last_hitter` 는 매 턴 비워지므로
   타이밍에 따라 비어 들어온다. 그때는 가장 많이 때린 사람을 막타 자리에 세운다.
 - **교전 중 처치는 보류된다** — `_submit` 이 `EngagePhaseManager.is_active()` 를

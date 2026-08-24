@@ -14,8 +14,15 @@ extends Control
 #   • **어시스트** — 높이는 같고 폭만 1/3(`ASSIST_W`). 피해를 넣었지만 마지막
 #     한 대는 넣지 못한 사람들이고, `PilotData.damage_credit` 에서 피해가 큰
 #     순으로 최대 `MAX_ASSISTS` 명까지 온다(성장치 어시스트 배분과 같은 표다).
-#   • **아이콘** — 처치는 교차한 칼, 포탑 철거는 파열 표시.
-#   • **피해자** — 파일럿이면 같은 크기의 eye 컷, 포탑이면 포탑 실루엣 + `T1 좌`.
+#   • **아이콘** — 처치는 교차한 칼, 포탑 철거와 오브젝트 획득은 파열 표시.
+#   • **피해자** — 파일럿이면 같은 크기의 eye 컷, 포탑이면 포탑 실루엣 + `T1 좌`,
+#     오브젝트면 전령 / 용 글리프 + 그 이름.
+#
+# **오브젝트 획득도 한 줄이다**(`push_objective`). 전령과 용은 결판이 나도
+# 화면에 남는 것이 `last_log` 한 줄뿐이라, 정작 경기의 큰 갈림길이 팀 점수가
+# 조금 벌어진 것 말고는 아무 자국도 남기지 않았다. 대표 자리에는 **정글러**가
+# 서고(오브젝트는 정글의 사건이다) 같이 나온 나머지 참가자가 어시스트로
+# 붙는다 — 처치 줄과 같은 문법이라 따로 읽는 법을 배울 것이 없다.
 #
 # 줄은 **위에서 밀고 들어온다** — 새 줄이 y=0 에 앉고 먼저 있던 줄들이 한 칸씩
 # 아래로 내려가며, `MAX_ROWS` 를 넘긴 가장 오래된 줄이 아래로 밀려 사라진다.
@@ -125,6 +132,18 @@ func push_turret(destroyer: PilotData, turret: TurretData) -> void:
 			"assists": []})
 
 
+## 오브젝트(전령 / 용) 획득 한 건. `main` 은 대표(정글러 우선, 없으면 참가자
+## 중 첫 사람), `assists` 는 같이 나온 나머지 참가자들. `team` 은 가져간 팀 —
+## 오브젝트 칸의 테두리 색이 그 팀색이 된다.
+##
+## 명단은 **참여를 고른 시점의 참가자**다. 그 뒤 교전에서 쓰러진 사람도 그대로
+## 남는다 — 오브젝트를 가져오는 데 쓴 몸이 곧 기여다.
+func push_objective(kind: int, main: PilotData, assists: Array,
+		team: int) -> void:
+	_submit({"turret": null, "victim": null, "objective": kind, "team": team,
+			"killer": main, "assists": assists.slice(0, MAX_ASSISTS)})
+
+
 func _submit(rec: Dictionary) -> void:
 	# 교전이 도는 동안은 아레나가 화면을 덮고 있다 — 지금 띄워 봐야 아무도
 	# 못 본다. 끝나고 `flush_pending()` 이 한 줄씩 풀어놓는다.
@@ -215,6 +234,9 @@ class Row extends Control:
 		var turret := rec["turret"] as TurretData
 		var killer := rec["killer"] as PilotData
 		var is_turret: bool = turret != null
+		# -1 = 오브젝트 줄이 아니다. 그 밖에는 `ObjectiveSystem.Kind`.
+		var objective: int = int(rec.get("objective", -1))
+		var is_obj: bool = objective >= 0
 
 		var w: float = KillFeed.PORTRAIT_W \
 				+ float(assists.size()) * (KillFeed.ASSIST_W + KillFeed.SLOT_GAP) \
@@ -236,6 +258,8 @@ class Row extends Control:
 		var killer_team: int = 0
 		if killer != null:
 			killer_team = killer.team
+		elif is_obj:
+			killer_team = int(rec["team"])
 		elif is_turret:
 			killer_team = 1 - turret.team
 		else:
@@ -249,12 +273,21 @@ class Row extends Control:
 			_add_portrait(x, KillFeed.ASSIST_W, a, a.team)
 			x += KillFeed.ASSIST_W + KillFeed.SLOT_GAP
 
+		var icon_kind: int = Glyph.Kind.SWORDS
+		var icon_col: Color = KillFeed.KILL_ICON
+		if is_turret:
+			icon_kind = Glyph.Kind.BURST
+			icon_col = KillFeed.TURRET_ICON
+		elif is_obj:
+			icon_kind = Glyph.Kind.BURST
+			icon_col = ObjectiveTimer.kind_color(objective)
 		_add_glyph(Vector2(x, 0.0), Vector2(KillFeed.ICON_W, KillFeed.ROW_H),
-				Glyph.Kind.BURST if is_turret else Glyph.Kind.SWORDS,
-				KillFeed.TURRET_ICON if is_turret else KillFeed.KILL_ICON)
+				icon_kind, icon_col)
 		x += KillFeed.ICON_W + KillFeed.SLOT_GAP
 
-		if is_turret:
+		if is_obj:
+			_add_objective_slot(x, objective, killer_team)
+		elif is_turret:
 			var slot := Rect2(x, 0.0, KillFeed.PORTRAIT_W, KillFeed.ROW_H)
 			var slab := ColorRect.new()
 			slab.position = slot.position
@@ -286,6 +319,39 @@ class Row extends Control:
 			_add_portrait(x, KillFeed.PORTRAIT_W, victim, victim.team)
 
 		modulate = Color(1, 1, 1, 0)
+
+	## 줄 오른쪽 끝의 오브젝트 칸 — 포탑 칸과 같은 문법(슬래브 + 글리프 +
+	## 이름)이다. 글리프는 상단 패널의 등장 시계와 **같은 static 함수**가
+	## 그리므로 두 자리의 용이 다른 그림이 될 수 없다.
+	func _add_objective_slot(x: float, kind: int, team: int) -> void:
+		var slot := Rect2(x, 0.0, KillFeed.PORTRAIT_W, KillFeed.ROW_H)
+		var slab := ColorRect.new()
+		slab.position = slot.position
+		slab.size = slot.size
+		slab.color = KillFeed.SLOT_BG
+		slab.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(slab)
+		var g := ObjGlyph.new()
+		g.position = Vector2(x + 3.0, 0.0)
+		g.size = Vector2(KillFeed.ROW_H, KillFeed.ROW_H)
+		g.kind = kind
+		g.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(g)
+		_add_rim(slot.position, slot.size, team)
+		var lbl := Label.new()
+		lbl.add_theme_font_size_override("font_size", 17)
+		lbl.add_theme_color_override("font_color", KillFeed.TURRET_LABEL)
+		lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+		lbl.add_theme_constant_override("outline_size", 4)
+		lbl.text = ObjectiveSystem.kind_name(kind)
+		lbl.clip_text = true
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		lbl.position = Vector2(x + 40.0, 0.0)
+		lbl.size = Vector2(KillFeed.PORTRAIT_W - 48.0, KillFeed.ROW_H)
+		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(lbl)
+
 
 	func _add_portrait(x: float, w: float, p: PilotData, team: int) -> void:
 		var at := Vector2(x, 0.0)
@@ -350,6 +416,20 @@ class Row extends Control:
 		g.col = col
 		g.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(g)
+
+
+# ─── 오브젝트 글리프 한 개 ───────────────────────────────────────────────────
+# 전령 / 용 그림은 `ObjectiveTimer` 가 static 으로 들고 있다 — 여기서는 자기
+# rect 에 맞춰 한 번 부를 뿐이다. `Glyph` 와 따로 두는 이유는 그리는 방식이
+# 아니라 **좌표계**가 달라서다(저쪽은 64×64 정규 좌표, 이쪽은 rect 중심).
+class ObjGlyph extends Control:
+	var kind: int = 0
+
+	func _draw() -> void:
+		var s: float = minf(size.x, size.y) - 4.0
+		ObjectiveTimer.draw_kind_glyph(self, kind,
+				Vector2((size.x - s) * 0.5, (size.y - s) * 0.5), s,
+				ObjectiveTimer.kind_color(kind))
 
 
 # ─── 아이콘 한 개 ────────────────────────────────────────────────────────────

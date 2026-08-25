@@ -312,6 +312,23 @@ it: nobody can move through anybody.
 
 Turrets do not attack pilots (the old retaliation logic has been removed).
 
+### 수호 연계 편승 대기열 (`_guardian_rides`)
+
+지원 Q(수호 연계)는 "이 메크의 보호막을 두른 아군이 피해를 주면 이 메크도 그
+적을 친다". 전장 피해는 **판정(`_resolve_*` → `damage_map`)과 적용(HP 깎기)이
+갈려 있으므로**, 편승 공격을 판정 자리에서 곧장 굴리면 안 된다 — 편승은
+`CardPhaseManager.deal_simple_attack` 을 지나 **그 자리에서 HP 를 깎기** 때문에,
+아직 적용되지 않은 이번 턴의 피해보다 먼저 상대를 눕히고 나머지 판정이 시체를
+상대로 계속 굴러간다.
+
+그래서 `_credit_pilot_damage` 는 (공격자, 피해자) 쌍을 `_guardian_rides` 에
+**적어만 두고**, 파일럿 피해 적용 루프가 끝난 직후 `_flush_guardian_rides()` 가
+한꺼번에 굴린다. 그때는 이번 턴에 쓰러진 사람이 이미 `alive == false` 라
+`MechSkillSystem.on_shielded_ally_damage` 의 게이트가 그 둘을 걸러 낸다.
+부르는 자리는 둘 — 턴 루프(`simulate_turn`)와 전진 카드 경로
+(`_apply_card_damage`). 카드 공격은 판정과 적용이 갈려 있지 않으므로
+`CardPhaseManager` 가 자기 피해 지점에서 곧장 부른다.
+
 ### Debug logging hooks
 Every `grid_pos` mutation in this folder reports to `_bs.blog`
 (`debug/BattleLogger.gd`) via `log_move(p, from, to, kind, note)`, and every

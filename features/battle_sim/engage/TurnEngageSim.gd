@@ -192,6 +192,9 @@ class EUnit extends RefCounted:
 	## 평소 표적 규칙으로 돌아간다.
 	var skill_focus_role: int = -1
 	var skill_focus_used: bool = false
+	## 이번 차례의 표적을 **약자 멸시**가 정했는가. 스택은 그때만 소모된다 —
+	## 다른 규칙이 고른 표적에까지 값을 물리면 스택이 겨눔과 무관하게 마른다.
+	var contempt_pick: bool = false
 	var atk_range: float = 0.0
 	var move_speed: float = 0.0
 
@@ -583,6 +586,12 @@ func _advance_order() -> void:
 			_begin_turret_turn(actor as ETurret)
 			return
 		var u := actor as EUnit
+		# 기절([강타]) — 이번 차례를 통째로 건너뛰고 남은 라운드가 하나 준다.
+		# 순서 배열에서 빼지는 않으므로 살아 있는 사람들의 상대 순서는 그대로다.
+		if _bs.mech_skill != null and _bs.mech_skill.consume_stun_turn(u.pilot):
+			popups.append({"pos": u.pos, "text": "기절",
+					"color": Color(0.70, 0.85, 1.0)})
+			continue
 		var t := _pick_target(u)
 		if t == null:
 			continue                # 때릴 상대가 없다 — 이번 차례는 그냥 넘긴다.
@@ -764,6 +773,15 @@ var _focus_count: Dictionary = {}   # EUnit → int
 var _opportunist_used: bool = false
 
 func _pick_target(u: EUnit) -> EUnit:
+	u.contempt_pick = false
+	# 약자 멸시(암살 R) — 스택이 남아 있는 동안은 **체력이 가장 적은 적**만
+	# 본다. 거리도 존재감도 보지 않는 것이 이 카드의 값이다.
+	if _bs.mech_skill != null and _bs.mech_skill.contempt_active(u.pilot):
+		var weak: EUnit = _weakest_enemy(u)
+		if weak != null:
+			u.contempt_pick = true
+			_focus_count[weak] = int(_focus_count.get(weak, 0)) + 1
+			return weak
 	# 원딜 사냥꾼(파일럿 스킬) — 아직 안 쓴 첫 공격은 적 원딜이 살아 있는 한
 	# 반드시 그쪽으로 간다. 거리도 존재감도 보지 않는다.
 	if u.skill_focus_role >= 0 and not u.skill_focus_used:
@@ -800,11 +818,69 @@ func _pick_target(u: EUnit) -> EUnit:
 	return best
 
 
+## 아직 살아 있는 적 유닛 전부. 전탄 발사가 한 차례에 훑는 명단이다.
+func _living_enemies(u: EUnit) -> Array:
+	var out: Array = []
+	for raw in units:
+		var e := raw as EUnit
+		if e.team != u.team and e.is_active():
+			out.append(e)
+	return out
+
+
+## 남은 체력이 가장 적은 적. 비율이 아니라 **절대값**이다 — 약자 멸시는
+## "체력이 가장 적은 적"이라 적혀 있고, 비율로 읽으면 최대 체력이 큰 탱커가
+## 반피만 되어도 표적이 되어 "약자"라는 말과 어긋난다.
+func _weakest_enemy(u: EUnit) -> EUnit:
+	var best: EUnit = null
+	for raw in _living_enemies(u):
+		var e := raw as EUnit
+		if best == null or e.pilot.hp < best.pilot.hp:
+			best = e
+	return best
+
+
+## 이 PilotData 를 들고 무대에 서 있는 유닛. 피해 계산이 팝업을 띄울 자리를
+## 되찾을 때만 쓴다(`_apply_damage` 는 PilotData 만 들고 있다).
+func _unit_for(p: PilotData) -> EUnit:
+	for raw in units:
+		var u := raw as EUnit
+		if u.pilot == p:
+			return u
+	return null
+
+
 # ─── 전투 해상도 ─────────────────────────────────────────────────────────────
 # 데미지는 전장과 동일(명중 시 dmg = atk, 보호막부터 흡수)하지만 **명중률만은
 # 전장과 별개**다 — `_hit_chance` 가 80~100% 구간으로 리맵한 확률을 준다.
 func _resolve_attack(u: EUnit, target: EUnit) -> void:
 	u.swing_t = 0.22
+	var mech: MechSkillSystem = _bs.mech_skill
+	# 전탄 발사(원딜 I) — 이 한 차례의 공격이 **적 전원**에게 간다. 대가는
+	# 기체 공격력 절반이고 그건 데이터(mechs.csv atk 12)에 이미 들어가 있다.
+	var victims: Array = [target]
+	if mech != null and mech.engage_targets_all(u.pilot):
+		var all_foes: Array = _living_enemies(u)
+		if not all_foes.is_empty():
+			victims = all_foes
+	for raw in victims:
+		_strike_one(u, raw as EUnit)
+	# 약자 멸시 — "공격 후 스택 -1". 몇 명을 때렸든 **한 차례에 하나**다:
+	# 스택은 겨눔의 횟수이지 타격의 횟수가 아니다.
+	if mech != null and u.contempt_pick:
+		mech.consume_contempt(u.pilot)
+		u.contempt_pick = false
+
+
+## 한 대상에게 들어가는 타격 한 번. `_resolve_attack` 이 대상 집합을 정하고
+## 이 함수가 그 하나하나를 굴린다 — 전탄 발사는 같은 차례에 이 함수를 여러 번
+## 부르는 것이고, 오버클럭은 같은 대상에게 한 번 더 부르는 것이다.
+##
+## `allow_extra` 가 false 면 오버클럭이 걸리지 않는다. 추가 공격이 다시 추가
+## 공격을 굴리면 확률에 따라 한 차례가 무한히 늘어난다.
+func _strike_one(u: EUnit, target: EUnit, allow_extra: bool = true) -> void:
+	if target == null or not target.is_active():
+		return
 	if not u.is_melee:
 		projectiles.append({
 			"from": u.pos, "to": target.pos, "t": 0.0,
@@ -837,6 +913,16 @@ func _resolve_attack(u: EUnit, target: EUnit) -> void:
 	# 성장치(점수) — 준 피해와 처치는 전장과 같은 지점을 지난다. 피해는 곧장
 	# 점수가 되는 대신 피해자의 장부에 쌓였다가 처치 시 어시스트로 정산된다.
 	_bs.record_pilot_damage(a, d, dealt)
+	# 메크 쪽 교전 피해 훅 — 영혼 수확(전사 L)과 고통과 쾌감(탱커 N)이 무대
+	# 위에서도 걸린다. 전장·카드와 같은 함수를 지나므로 규칙이 갈라지지 않는다.
+	var mech: MechSkillSystem = _bs.mech_skill
+	if mech != null:
+		mech.on_engage_damage(a, d, dealt)
+		# 강타([강타] 카드) — 때린 쪽이 장전돼 있으면 맞은 적이 다음 차례를
+		# 통째로 잃는다. 같은 적에게 두 번은 걸리지 않는다.
+		if mech.try_stun(a, d):
+			popups.append({"pos": target.pos, "text": "기절!",
+					"color": Color(0.70, 0.85, 1.0)})
 	if d.hp <= 0:
 		_kill(target, a)
 		(stats[a] as Dictionary)["kills"] = int(stats[a]["kills"]) + 1
@@ -845,6 +931,13 @@ func _resolve_attack(u: EUnit, target: EUnit) -> void:
 	else:
 		popups.append({"pos": target.pos, "text": "-%d" % dealt,
 				"color": Color(1.0, 0.45, 0.45)})
+	# 오버클럭(암살 P) — 교전 피해 직후 굴린다. 성공하면 **같은 대상에게**
+	# 한 번 더 때리고 충전 절반이 날아간다(소모는 질의 함수가 한다).
+	if allow_extra and mech != null and target.is_active() \
+			and mech.overclock_extra_attack(a):
+		popups.append({"pos": u.pos, "text": "오버클럭",
+				"color": Color(0.65, 0.95, 1.0)})
+		_strike_one(u, target, false)
 
 
 # 넉백 — 공격자로부터 멀어지는 방향으로 민다. 벨트 느낌을 위해 세로 성분은
@@ -878,6 +971,18 @@ func _apply_damage(d: PilotData, amount: int) -> int:
 	if dmg > 0:
 		hp_dmg = min(dmg, d.hp)
 		d.hp = max(0, d.hp - dmg)
+	# 불굴(지원 V) — 이 교전에서 **팀 전원이 한 번씩**, 체력 1 아래로 내려가지
+	# 않는다. 판정을 여기 두는 이유는 포탑 사격도 같은 함수를 지나기 때문이다 —
+	# 파일럿 공격에만 걸면 포탑 한 방에 죽는 구멍이 남는다.
+	if d.hp <= 0 and _bs.mech_skill != null \
+			and _bs.mech_skill.last_stand_available(d):
+		_bs.mech_skill.consume_last_stand(d)
+		d.hp = 1
+		hp_dmg = maxi(0, hp_dmg - 1)   # 실제로 깎인 만큼만 센다
+		var u: EUnit = _unit_for(d)
+		if u != null:
+			popups.append({"pos": u.pos, "text": "불굴!",
+					"color": Color(1.0, 0.92, 0.55)})
 	return absorbed + hp_dmg
 
 

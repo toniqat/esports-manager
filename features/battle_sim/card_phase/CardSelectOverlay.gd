@@ -16,7 +16,11 @@ extends Node
 
 var _bs: BattleSim = null
 
-enum Mode { NONE, DISCARD, SEARCH, PRESERVE }
+# CHOICE 는 카드를 고르는 것이 아니라 **선택지를 고르는** 모드다(단계 C 의
+# 강화 3택). 그리드도 픽 규칙도 SEARCH 와 같고, 다른 것은 셋뿐이다 — 펼치는
+# 것이 더미가 아니라 호출 측이 만든 표시용 카드이고, 이름순 정렬을 하지 않으며
+# (알파 · 베타 · 감마의 순서 자체가 정보다), 취소 버튼이 없다.
+enum Mode { NONE, DISCARD, SEARCH, PRESERVE, CHOICE }
 
 const DIM_COLOR             := Color(0.0, 0.0, 0.0, 0.55)
 # Vertical center of the to-discard row inside the dimmed battle area
@@ -181,6 +185,29 @@ func start_preserve(n: int, on_complete: Callable, on_cancel: Callable) -> void:
 	_update_confirm_button()
 
 
+## 단계 C 의 강화 3택 — `options`(표시용 CardData 배열)를 찾기와 같은 그리드로
+## 펼쳐 **하나**를 고르게 한다. 고른 카드는 어느 더미에도 들어가지 않는다:
+## 이 오버레이는 픽만 돌려주고 그 뜻을 읽는 것은 `CardPhaseManager` 다.
+##
+## **취소가 없다.** 여기까지 온 시점에 카드는 이미 나갔고 앞선 절도 이미 돌았다 —
+## 무를 것이 남아 있지 않으므로, 취소 버튼을 놓으면 되돌아갈 곳 없는 취소가 된다.
+func start_choice(options: Array, on_complete: Callable) -> void:
+	mode = Mode.CHOICE
+	target_count = 1
+	hidden_state = false
+	search_selected.clear()
+	_on_complete = on_complete
+	_on_cancel = Callable()
+	if options.is_empty():
+		_finish_with_picks([])
+		return
+	_build_full_dim()
+	_build_search_grid(options, false)
+	_build_buttons(false)
+	_refresh_visibility()
+	_update_confirm_button()
+
+
 # ─── Player interactions ─────────────────────────────────────────────────────
 # Called from CardPhaseManager when the desc-box "버리기" button is pressed on
 # a hand card. The card is removed from the live hand and parked in the
@@ -258,9 +285,9 @@ func _commit_search() -> void:
 	_finish_with_picks(picks)
 
 
-## SEARCH 와 PRESERVE 는 같은 스크롤 그리드 UI 를 쓴다.
+## SEARCH · PRESERVE · CHOICE 셋이 같은 스크롤 그리드 UI 를 쓴다.
 func _is_grid_mode() -> bool:
-	return mode == Mode.SEARCH or mode == Mode.PRESERVE
+	return mode == Mode.SEARCH or mode == Mode.PRESERVE or mode == Mode.CHOICE
 
 
 func _finish_with_picks(picks: Array) -> void:
@@ -332,13 +359,16 @@ func _build_buttons(is_discard: bool) -> void:
 	var top_y: float = _bs.BS_HAND_CENTER.y - BTN_HAND_GAP - BTN_H
 	var right_x: float = 1080.0 - BTN_SIDE_MARGIN - BTN_W
 
-	if is_discard:
-		# 버리기 cards are non-cancellable — once started, the player must
-		# pick exactly target_count cards and press 확인. Only the 확인 button
-		# (top-right of the hand area) and the 숨김 peek button are exposed.
+	# 취소가 없는 두 모드 — 버리기와 강화 3택. 버리기는 시작한 이상 정확히
+	# target_count 장을 골라야 끝나고, 3택은 이미 나간 카드의 정산이라 무를 것이
+	# 없다. 둘 다 확인 버튼과 숨김만 놓는다.
+	if is_discard or mode == Mode.CHOICE:
 		_btn_confirm = _make_btn("확인")
 		_btn_confirm.position = Vector2(right_x, top_y)
-		_btn_confirm.pressed.connect(_commit_discard)
+		if mode == Mode.DISCARD:
+			_btn_confirm.pressed.connect(_commit_discard)
+		else:
+			_btn_confirm.pressed.connect(_commit_search)
 		_btn_confirm.disabled = true
 		_overlay_layer.add_child(_btn_confirm)
 	else:
@@ -362,14 +392,18 @@ func _make_btn(label: String) -> Button:
 	return b
 
 
-## Lays `source` out as the 5-column scroll grid both SEARCH and PRESERVE pick
-## from. `source` is never mutated — the picks come back as CardData refs.
-func _build_search_grid(source: Array) -> void:
+## Lays `source` out as the 5-column scroll grid SEARCH / PRESERVE / CHOICE all
+## pick from. `source` is never mutated — the picks come back as CardData refs.
+##
+## `sort_names` 가 false 면 넘어온 순서를 그대로 쓴다. 강화 3택이 그 경우다 —
+## 알파 · 베타 · 감마는 더미가 아니라 **정해진 순서가 있는 목록**이라, 이름순으로
+## 다시 세우면 감마 · 베타 · 알파가 되어 카드 설명문의 차례와 어긋난다.
+func _build_search_grid(source: Array, sort_names: bool = true) -> void:
 	# 이름 오름차순으로 펼친다 — 실제 더미 순서를 그대로 보여 주면 그리드가 곧
 	# "다음에 뽑을 순서" 표가 되어 버린다. 정렬은 표시용 복사본에만 하고 원본은
 	# 건드리지 않는다 (picks 는 CardData 참조라 순서와 무관).
 	# CardPileViewer 의 열람 목록도 같은 규칙을 쓴다.
-	var deck: Array = _sorted_for_display(source)
+	var deck: Array = _sorted_for_display(source) if sort_names else source.duplicate()
 	if deck.is_empty():
 		return
 	var grid_w: float = 1080.0 - 2.0 * SEARCH_GRID_SIDE_PAD

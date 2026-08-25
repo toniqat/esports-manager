@@ -1100,7 +1100,7 @@ The DB column is a `;`-separated chain of clauses. Each clause is
 | `shield_pct:N` | yes | **Player**: PILOT mode → click an ally; gains shield = N% of max_hp. **AI**: random ally. Cleared on 본진 복귀. |
 | `recall_ally` | yes | **Player**: PILOT mode → click an ally; teleports to HQ at full HP, shield reset, waypoint reset. **AI**: random ally. |
 | `exhaust_choice:N` | yes (random) | Random N from hand → removed (소멸). Parsed and honoured, but no card in the pool carries it since 차선책 was removed. |
-| `engage:N` | yes | **Player**: dragging it opens CardTargetingOverlay PREVIEW mode (caster cell + 6 neighbours highlighted); dropping it in the centre drop zone **submits** the card, which puts up the VS 개시 확인 화면 (`engage/EngageIntro.gd`) — 확인 launches the arena, 취소 rolls the whole play back via `_on_overlay_cancel`. **AI**: same flow via AiCardPlayer. `exclude_lane` flag propagates. **N 은 라운드 수 그대로다** — `engage:3` = 3라운드이고, 한 라운드 안에서 참가자 전원이 한 명씩 차례대로 한 번 행동한다(예전의 "N × 3초" 환산은 삭제). |
+| `engage:N` | yes | **Player**: dragging it opens CardTargetingOverlay PREVIEW mode (caster cell + 6 neighbours highlighted); dropping it in the centre drop zone **submits** the card, which puts up the VS 개시 확인 화면 (`engage/EngageIntro.gd`) — 확인 launches the arena, 취소 rolls the whole play back via `_on_overlay_cancel`. **AI**: same flow via AiCardPlayer. `exclude_lane` flag propagates. **N 은 라운드 수 그대로다** — `engage:3` = 3라운드이고, 한 라운드 안에서 참가자 전원이 한 명씩 차례대로 한 번 행동한다(예전의 "N × 3초" 환산은 삭제). **이 절은 무대가 닫힐 때까지 `engage_finished` 를 await 한다** — 뒤에 오는 절이 교전 결과를 묻기 때문이다([우세한 전장] 의 `gen_hand:19\|per_kill`, [단계 B] 의 `phase_b`). 기다리지 않으면 그 둘이 첫 라운드가 돌기도 전에, 즉 처치 수가 언제나 0 인 시점에 정산된다. 돌아온 뒤 `_last_attack_kills` 에 **이 교전에서 시전자가 눕힌 수**를 얹으므로 `per_kill` 이 절 종류를 몰라도 같은 질문을 그대로 한다(쓰러진 시전자는 0 — "생존할 시"). |
 | `duel` | yes | **Player**: PILOT mode → click an enemy in range; opens the turn-based arena restricted to caster + target with the round counter running up instead of a budget, ends on first KO — 이탈이 없으므로 KO 아니면 `DUEL_MAX_ROUNDS`(10라운드) 상한까지 간다. **AI**: random enemy in range. Routes through `EngagePhaseManager.start_duel`. **결투 (id 3) is `pool = 0`** — fully implemented but no longer dealt at random; it is reserved as a future mech-unique card. |
 | `steal_camp:N` | yes | 약탈 — **적 소유 정글 칸의 차 있는 캠프 하나를 원격으로 가로챈다.** **Player**: LOCATION mode over `compute_steal_camp_targets` — 적 팀이 소유하고 **캠프가 차 있는** 정글 셀 전부, 사거리 무시(`cast_range` 99). 정산은 `SimulationCore.steal_camp_point` 하나이고 값(`SCORE_JUNGLE_CAMP`)도 재생성 시계(`JUNGLE_CAMP_RESPAWN_TURNS`)도 **밟아서 먹는 것과 같다** — 카드 한 장이 "발로 밟은 한 번"을 거리 무시로 사는 것이다. **소유권은 바뀌지 않는다.** `N` 은 읽히지 않는다(자리만 남겨 둔 값). **AI**: random valid cell. 예전에는 **점령** 카드였다 — 아군 정글과 인접한 적 정글 셀을 N턴 동안 자기 색으로 뒤집고 `temp_zone_overrides` 가 만료 시 되돌렸는데, 그 배선과 `process_temp_zone_expiries` 는 함께 삭제됐다. |
 | `move` | yes | **Player**: LOCATION mode → click any cell in `cast_range` (jungle cells included; the lane-pilot displacement recall pulls them back at phase end if needed). **AI**: random valid cell. Caster's `grid_pos` snaps to the picked cell and `BattleSim.anim_pilot_move` plays the tween. Decorators on the same chain (`return_left:N`, `cost_reduce_engage:N`) run separately. |
@@ -1124,6 +1124,8 @@ The DB column is a `;`-separated chain of clauses. Each clause is
 | `strategy_next_phase:N` | yes | 아드레날린의 뒷절 — `_bs.next_phase_strategy_p/ai += N`(음수 가능). 다음 작전 단계 진입 시 정산되고 점수는 0 아래로 안 내려간다. |
 | `end_phase` | yes | 완벽한 마무리의 마지막 절 — **여기서 단계를 닫지 않는다.** 체인이 도는 동안 카드는 손패 밖에 떠 있어서, 지금 닫으면 소멸 / discard 라우팅 전에 문이 닫힌다. `_end_phase_requested` 플래그만 세우고, **Player**: `_finalize_pending_play` 말미가, **AI**: `AiCardPlayer` 의 플레이 루프가(교전 아레나를 기다린 **뒤**에) `consume_end_phase_request()` 로 받아 간다. |
 | `move\|own_jungle` | yes | 정글 파밍 — `compute_valid_location_targets` 가 `compute_own_jungle_targets` 로 분기해 유효 셀을 **시전자 팀이 소유한 정글 셀**로 좁힌다. 약탈과 마찬가지로 `cast_range`(99)는 무시 — 사거리로 묶으면 정글 반대편 캠프가 영영 닿지 않는다. 제자리 셀은 뺀다. 소유 판정이 `neutral_zone_cells` 를 직접 읽으므로 정글러가 밟아 점령한 칸도 T1 파괴 보상으로 넘어온 칸도 그 자리에서 목표가 된다. **AI**: `_ai_pick_target` 이 같은 함수를 쓰므로 그대로 따라간다. |
+| `phase_b` | yes | [단계 B] 의 뒷절 — **바로 앞 `engage` 절의 결과**가 다음 카드를 정한다. 시전자가 적을 눕혔으면 덱에 [단계 C](id 40), 아니면 [단계 A](id 38). 처치 수는 `EngagePhaseManager.last_engage_kills` 가 답한다(무대가 치워진 뒤라 `_sim` 이 아니라 그 사본 `_last_stats` 를 읽는다). 강화 [베타] 예약이 있으면 여기서 소모하며 +100 충전. |
+| `phase_c` | yes | [단계 C] 의 뒷절 — **강화 3택**. **Player**: `_process_pending_chain` 이 이 절을 가로채 `CardSelectOverlay.start_choice` 로 강화 카드 세 장을 펼친다(찾기와 같은 그리드, **취소 없음** — 카드는 이미 나갔고 앞 절도 이미 돌았다). **AI**: `_effect_phase_c_auto` 가 무작위로 고른다. 두 경로가 `register_phase_boon` 한 함수로 모인다. 강화 [감마] 정산은 **새 강화를 고르기 전에** 한다 — 순서를 뒤집으면 방금 고른 감마가 그 자리에서 되먹힌다. |
 
 #### Effective cost & affordability
 `BattleSim.effective_cost_for(cd, is_player)` is the single source of truth
@@ -1465,12 +1467,24 @@ keyword check has always fired first, so they are 소멸 on their first play.
   `_begin_drag` / `on_card_hovered` so the player can't grab a card or pop the
   description box mid-AI animation.
 
-### 버리기 / 찾기 / 보존 modal pick (player only)
+### 버리기 / 찾기 / 보존 / 강화 3택 modal pick (player only)
 - `CardSelectOverlay.gd` (sibling of `CardPhaseManager`, instantiated from
   `BattleSim._ready` once the HUD canvas exists). Owns one
   `CanvasLayer` (`layer = 10`) and rebuilds its UI on every `start_*()`.
   AI plays bypass this overlay and keep the synchronous `apply_card_effect`
-  path (random discard, search aliased to draw).
+  path (random discard, search aliased to draw, 강화 3택 무작위).
+- **`Mode.CHOICE` — 강화 3택 (단계 C).** 카드를 고르는 것이 아니라 **선택지를
+  고르는** 모드다. 그리드도 픽 규칙도 SEARCH 와 같고 다른 것이 셋뿐이다.
+  - 펼치는 것이 더미가 아니라 **호출 측이 만든 표시용 카드**다
+    (`CardPhaseManager.build_phase_boon_cards` — 비용 -1 이라 그 자리에 숫자가
+    아니라 `—` 가 찍힌다: 이건 내는 카드가 아니라 고르는 선택지다). 고른 카드는
+    어느 더미에도 들어가지 않고, 남는 것은 `phase_boon:<key>` 를 읽어 옮긴
+    예약뿐이다.
+  - **이름순 정렬을 하지 않는다** (`_build_search_grid(source, false)`) — 알파 ·
+    베타 · 감마는 정해진 순서가 있는 목록이라, 이름순으로 다시 세우면 감마 ·
+    베타 · 알파가 되어 카드 설명문의 차례와 어긋난다.
+  - **취소 버튼이 없다** — 여기까지 온 시점에 카드는 이미 나갔고 앞선 절
+    (`gen_deck:38`)도 이미 돌았다. 되돌아갈 곳 없는 취소를 놓지 않는다.
 - **Async chain pattern** in `CardPhaseManager._play_card_direct`:
   1. Snapshot `player_hand` / `player_deck` / `player_discard` /
      `player_cost` BEFORE deducting cost or removing the played card. Stored

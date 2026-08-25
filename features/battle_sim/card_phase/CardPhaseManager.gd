@@ -3039,6 +3039,21 @@ func _process_pending_chain() -> void:
 					_on_preserve_overlay_complete,
 					_on_overlay_cancel)
 			return
+		if ename == "phase_c":
+			# 강화 3택 — 찾기와 같은 그리드를 강화 카드 세 장 위에 편다.
+			# **취소가 없다**: [단계 C] 는 이미 나간 카드이고, 그 앞의 절
+			# (`gen_deck:38`)도 이미 돌았다 — 무를 것이 남아 있지 않다.
+			_pending_play["clauses"] = clauses
+			var boon_caster: PilotData = _pending_play["caster"]
+			# 감마 정산은 **모달을 열기 전**에 한다. 예약을 먼저 소모해야
+			# 이번에 새로 고른 강화가 그 자리에서 되먹히지 않는다.
+			var pay: String = _phase_c_payout(boon_caster)
+			if pay != "":
+				(_pending_play["log_lines"] as Array).append(pay)
+			_bs.card_select_overlay.start_choice(
+					build_phase_boon_cards(boon_caster),
+					_on_phase_boon_overlay_complete)
+			return
 		# `on_hit` / `on_miss` — 앞선 공격 절이 한 대라도 맞았는가로 체인의
 		# **나머지를 통째로** 가른다. 절 하나에 조건을 매다는 대신 체인을 두
 		# 토막으로 자르는 이유는 카드가 요구하는 문장이 언제나 "명중 시 A,
@@ -3072,6 +3087,22 @@ func _process_pending_chain() -> void:
 		if msg != "":
 			(_pending_play["log_lines"] as Array).append(msg)
 	_finalize_pending_play()
+
+
+## 강화 3택이 끝났다. 고른 카드는 **표시용 사본**이라 어느 더미에도 들어가지
+## 않는다 — 여기서 하는 일은 그 카드가 들고 있던 `phase_boon:<key>` 를 읽어
+## 예약으로 옮기고 체인을 잇는 것뿐이다.
+func _on_phase_boon_overlay_complete(picks: Array) -> void:
+	if _pending_play.is_empty():
+		return
+	var caster: PilotData = _pending_play["caster"]
+	var key: String = ""
+	if not picks.is_empty():
+		key = String((picks[0] as CardData).effect).trim_prefix("phase_boon:")
+	var msg: String = register_phase_boon(caster, key)
+	if msg != "":
+		(_pending_play["log_lines"] as Array).append(msg)
+	_process_pending_chain()
 
 
 # Called by CardSelectOverlay when the player has picked all N cards (or the
@@ -3522,12 +3553,14 @@ func _apply_single_effect(e: Dictionary, is_player: bool, caster: PilotData,
 		# 핸드 상주 카드(비용 -1)의 표지 절. 낼 수 없는 카드라 여기까지 올 일이
 		# 없지만, 절을 비워 두면 CSV 오타와 구분되지 않으므로 이름을 남긴다.
 		"hand_passive":    return ""
-		# ── 아직 배선되지 않은 절 (2단계) ────────────────────────────────────
-		# 단계 B / 단계 C 는 교전 결과에 따라 다음 카드를 갈아 끼우고 강화 3택
-		# 모달을 띄운다 — 카드 한 장이 자기 다음 상태를 고르는 유일한 자리라
-		# 전용 UI 를 요구한다. 절 이름만 먼저 잡아 두고 로그 한 줄만 남긴다.
-		"phase_b":         return "단계 B 결과 정산 (미구현)"
-		"phase_c":         return "강화 선택 (미구현)"
+		# ── 단계 A → B → C 사슬 ──────────────────────────────────────────────
+		# 카드 한 장이 **자기 다음 상태를 정하는** 유일한 자리다. `phase_b` 는
+		# 바로 앞 `engage` 절의 결과를 읽고, `phase_c` 는 강화 3택을 고르게
+		# 한다. 플레이어의 3택은 `_process_pending_chain` 이 이 디스패치보다
+		# **먼저** 가로채 모달을 열므로, 여기 오는 `phase_c` 는 AI(또는 오버레이
+		# 없는 폴백)뿐이고 그쪽은 무작위로 고른다.
+		"phase_b":         return _effect_phase_b(caster, is_player)
+		"phase_c":         return _effect_phase_c_auto(caster)
 		_: return ""
 
 
@@ -3956,6 +3989,10 @@ func _apply_attack_damage(t: PilotData, caster: PilotData, n: int) -> int:
 		# 계시 — 적이 **카드로** 맞을 때마다 그 카드를 안 낸 계시 보유자가
 		# 한 대 얹는다. 자기 자신은 제외돼 있어 연쇄가 닫힌다.
 		_bs.mech_skill.on_card_damage_for_revelation(t, caster)
+		# 수호 연계 — 이 메크의 보호막을 두른 아군이 때렸으면 그 메크도 얹는다.
+		# 전장 자동 교전과 달리 카드 피해는 그 자리에서 HP 가 깎이므로(판정과
+		# 적용이 갈려 있지 않다) 여기서 곧장 불러도 순서가 어긋나지 않는다.
+		_bs.mech_skill.on_shielded_ally_damage(caster, t)
 	if t.hp <= 0:
 		_bs.mark_pilot_dead(t, caster)
 	elif dmg > 0:
@@ -4040,6 +4077,20 @@ func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 	# back-to-back animations don't stomp each other.
 	_bs.engage_phase.start_engage(caster, rounds, exclude_lane,
 			Callable(self, "_on_engage_finished"), center, radius)
+	# **무대가 닫힐 때까지 기다린다.** 이 절 뒤에 오는 절이 교전 결과를 묻기
+	# 때문이다 — [우세한 전장] 의 `gen_hand:19|per_kill` 과 [단계 B] 의
+	# `phase_b` 둘. 기다리지 않으면 그 둘이 첫 라운드가 돌기도 전에, 즉 처치
+	# 수가 언제나 0 인 시점에 정산된다. 체인은 공격 절 때문에 이미 코루틴이라
+	# 새로 생기는 계약이 없고, `AiCardPlayer` 쪽의 `await engage_finished` 는
+	# 그때 `is_active()` 가 이미 false 라 그냥 통과한다.
+	if _bs.engage_phase.is_active():
+		await _bs.engage_phase.engage_finished
+	# `per_kill` 은 "방금 그것이 몇을 눕혔나" 하나를 묻는 플래그다 — 공격 절이
+	# 쓰던 그 칸에 이번 교전의 처치 수를 얹어, 뒤따르는 절이 절 종류를 몰라도
+	# 같은 질문을 그대로 할 수 있게 한다. 쓰러진 시전자는 0 이다("생존할 시").
+	_last_attack_kills = 0
+	if _bs.engage_phase.survived_last_engage(caster):
+		_last_attack_kills = _bs.engage_phase.last_engage_kills(caster)
 	var tag: String = " (레인 제외)" if exclude_lane else ""
 	# engage:N 의 N 은 **라운드 수** 그대로다 — 초로 환산하던 예전 규칙은 삭제됐다.
 	return "전투 개시 %d라운드%s%s" % [rounds, tag, who]
@@ -4749,6 +4800,13 @@ func _effect_gen_card(card_id: int, flags: Array, caster: PilotData,
 	var times: int = maxi(0, _repeat_count(flags))
 	if times <= 0 or caster == null:
 		return ""
+	# 강화 [알파] — 다음 [단계 A] 가 만드는 [단계 B] 는 덱이 아니라 **핸드**로
+	# 간다. 예약을 지목해서 소모하므로 다른 카드가 만드는 [단계 B](없다)나
+	# 다른 예약(베타 · 감마)은 건드리지 않는다.
+	if not to_hand and card_id == MechSkillSystem.CARD_PHASE_B \
+			and _bs.mech_skill != null \
+			and _bs.mech_skill.consume_phase_boon(caster, MechSkillSystem.BOON_ALPHA):
+		to_hand = true
 	var made: int = 0
 	var label: String = ""
 	for _i in times:
@@ -4894,6 +4952,13 @@ func _effect_move_to_target(caster: PilotData, picked: PilotData) -> String:
 	var orig := caster.grid_pos
 	if orig == picked.grid_pos:
 		return ""
+	# 자리 되돌리기 — [질풍] 은 뛰어들고 **이번 작전 단계가 끝나면 원래 칸으로
+	# 돌아온다**. 예약은 `PilotData.phase_return_cell` 에 살고 푸는 자리는
+	# `MechSkillSystem.on_phase_end` 하나다. 같은 단계에 두 번 뛰어들어도
+	# 처음 자리가 남는다 — 되돌아갈 곳은 "이 단계를 시작한 칸"이지 직전 칸이
+	# 아니다.
+	if caster.phase_return_cell == PilotData.NO_RETURN:
+		caster.phase_return_cell = orig
 	caster.grid_pos = picked.grid_pos
 	_bs.blog.log_move(caster, orig, caster.grid_pos, "card-dive")
 	_bs.anim_pilot_move(caster, orig)
@@ -4981,6 +5046,97 @@ func _effect_no_engage_phase(picked: PilotData) -> String:
 		return "탈진 (대상 없음)"
 	picked.engage_locked = true
 	return "탈진 %s (이번 작전 단계)" % _bs.pilot_label(picked)
+
+
+# ─── 단계 A → B → C 사슬 ────────────────────────────────────────────────────
+# 세 장이 서로를 만들어 주며 도는 고리다. [단계 A] 가 [단계 B] 를 덱에 세우고,
+# [단계 B] 가 연 교전의 **결과**가 다음 장을 정한다 — 적을 눕혔으면 [단계 C],
+# 아니면 다시 [단계 A]. [단계 C] 는 강화 하나를 고르게 하고, 그 예약이 고리의
+# 다음 한 바퀴에 얹힌다(알파 = 단계 A, 베타 = 단계 B, 감마 = 단계 C).
+#
+# 절이 카드 이름을 그대로 쓴 것은 이 셋이 **서로만** 지목하기 때문이다 — 일반화할
+# 두 번째 사례가 없는데 문법을 만들면 절 하나에 카드 셋의 사정이 다 들어온다.
+
+## 단계 B — 바로 앞 `engage` 절의 결과가 다음 카드를 정한다. 그 절이 무대가
+## 닫힐 때까지 기다리므로(`_effect_engage`) 여기 오는 시점에는 처치 수가 이미
+## 확정돼 있다.
+func _effect_phase_b(caster: PilotData, is_player: bool) -> String:
+	if caster == null:
+		return "단계 B (시전자 없음)"
+	var parts: Array = []
+	# 강화 [베타] — 다음 [단계 B] 사용 시 +100 충전. 예약은 여기서 소모된다.
+	if _bs.mech_skill != null and _bs.mech_skill.consume_phase_boon(
+			caster, MechSkillSystem.BOON_BETA):
+		_bs.mech_skill.add_charge(caster, MechSkillSystem.PHASE_BOON_BETA_CHARGE)
+		parts.append("강화 베타 +%d 충전" % MechSkillSystem.PHASE_BOON_BETA_CHARGE)
+	var killed: int = 0
+	if _bs.engage_phase != null:
+		killed = _bs.engage_phase.last_engage_kills(caster)
+	var next_id: int = MechSkillSystem.CARD_PHASE_A
+	if killed > 0:
+		next_id = MechSkillSystem.CARD_PHASE_C
+	var made: String = _effect_gen_card(next_id, [], caster, is_player, false)
+	if made != "":
+		parts.append(made)
+	parts.append("교전 처치 %d" % killed)
+	return "단계 B · " + ", ".join(parts)
+
+
+## 단계 C — **AI / 폴백 경로 전용.** 플레이어의 3택은 `_process_pending_chain`
+## 이 이 디스패치보다 먼저 가로채 모달을 연다. AI 는 무작위로 고른다: 파일럿
+## 스킬 쪽 AI 가 활성화를 아예 하지 않는 것과 같은 1차 한계다.
+func _effect_phase_c_auto(caster: PilotData) -> String:
+	if caster == null:
+		return "강화 선택 (시전자 없음)"
+	var parts: Array = []
+	var pay: String = _phase_c_payout(caster)
+	if pay != "":
+		parts.append(pay)
+	var defs: Array = MechSkillSystem.boon_defs()
+	var pick: Dictionary = defs[randi() % defs.size()] as Dictionary
+	parts.append(register_phase_boon(caster, String(pick["key"])))
+	return ", ".join(parts)
+
+
+## 강화 [감마] 의 정산 — "다음 [단계 C] 사용 시 성장 점수 +10%". **새 강화를
+## 고르기 전에** 부른다: 순서를 뒤집으면 방금 고른 감마가 그 자리에서 되먹힌다.
+func _phase_c_payout(caster: PilotData) -> String:
+	if caster == null or _bs.mech_skill == null:
+		return ""
+	if not _bs.mech_skill.consume_phase_boon(caster, MechSkillSystem.BOON_GAMMA):
+		return ""
+	var gained: float = _bs.add_score(caster,
+			caster.score * MechSkillSystem.PHASE_BOON_GAMMA_RATE)
+	return "강화 감마 +%.2fk" % gained
+
+
+## 고른 강화를 예약으로 옮긴다. 모달(플레이어)과 무작위 선택(AI)이 **같은 이
+## 함수**로 모이므로 두 경로의 규칙이 갈라질 수 없다.
+func register_phase_boon(caster: PilotData, key: String) -> String:
+	if caster == null or key.is_empty() or _bs.mech_skill == null:
+		return "강화 (선택 없음)"
+	_bs.mech_skill.set_phase_boon(caster, key)
+	for raw in MechSkillSystem.boon_defs():
+		var def: Dictionary = raw as Dictionary
+		if String(def["key"]) == key:
+			return "%s 예약" % String(def["name"])
+	return "강화 예약"
+
+
+## 3택 모달에 세울 **표시용 카드** 세 장. 진짜 카드가 아니라 그리드에 세우기
+## 위한 사본이고, 어느 더미에도 들어가지 않는다 — 고른 뒤 남는 것은 예약뿐이다.
+##
+## 비용을 -1 로 두는 것은 그 자리에 숫자가 아니라 `—` 가 찍히게 하려는 것이다:
+## 이건 내는 카드가 아니라 고르는 선택지다.
+func build_phase_boon_cards(caster: PilotData) -> Array:
+	var out: Array = []
+	for raw in MechSkillSystem.boon_defs():
+		var def: Dictionary = raw as Dictionary
+		var cd := CardData.new(String(def["name"]), -1, String(def["desc"]))
+		cd.effect = "phase_boon:" + String(def["key"])
+		cd.owner_pilot = caster
+		out.append(cd)
+	return out
 
 
 func _effect_dmg_taken(pct: int, picked: PilotData) -> String:

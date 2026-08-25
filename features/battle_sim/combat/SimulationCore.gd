@@ -130,6 +130,8 @@ func simulate_turn() -> void:
 					_bs.pilot_label(p), str(p.grid_pos), p.respawn_timer])
 		elif damage_map[k] > 0:
 			_bs.anim_pilot_shake(p)
+	# 수호 연계의 편승 공격 — 이번 턴의 피해가 전부 적용된 **뒤**에 굴린다.
+	_flush_guardian_rides()
 
 	for k in turret_dmg.keys():
 		var td := k as TurretData
@@ -685,6 +687,27 @@ func _pilot_hit_damage(attacker: PilotData, victim: PilotData = null) -> int:
 	return maxi(1, roundi(dmg))
 
 
+## 이번 판정에서 나온 (공격자, 피해자) 쌍. 수호 연계가 편승할 후보이고,
+## 피해가 **적용된 뒤** `_flush_guardian_rides` 가 비운다.
+var _guardian_rides: Array = []
+
+
+## 수호 연계의 편승 공격을 한꺼번에 굴린다. 피해 적용이 끝난 뒤에 부르므로
+## 이번 턴에 쓰러진 사람은 이미 `alive == false` 이고, 훅이 그 둘을 걸러 낸다.
+func _flush_guardian_rides() -> void:
+	var rides: Array = _guardian_rides
+	_guardian_rides = []
+	if _bs.mech_skill == null:
+		return
+	for raw in rides:
+		var pair: Array = raw as Array
+		var a := pair[0] as PilotData
+		var v := pair[1] as PilotData
+		if a == null or not a.alive:
+			continue
+		_bs.mech_skill.on_shielded_ally_damage(a, v)
+
+
 ## 판정 단계에서 나온 파일럿 피해 한 건을 `damage_map` 에 쌓고, 같은 자리에서
 ## 성장치 적립 + 처치 귀속용 마지막 타격자 기록까지 끝낸다. 전장의 모든 파일럿
 ## 피해가 여기 한 곳을 지나야 한 경로만 점수를 놓치는 일이 없다.
@@ -693,6 +716,17 @@ func _credit_pilot_damage(attacker: PilotData, victim: PilotData, dmg: int,
 	damage_map[victim] = damage_map.get(victim, 0) + dmg
 	_last_hitter[victim] = attacker
 	_bs.record_pilot_damage(attacker, victim, dmg)
+	# 수호 연계(지원 Q) — **적어만 두고 지금 때리지 않는다.** 여기는 아직 판정
+	# 단계라 이번 턴의 피해가 한 점도 적용되지 않았고, 편승 공격은 HP 를 그
+	# 자리에서 깎는다(`deal_simple_attack`). 지금 부르면 편승 한 방이 아직
+	# 적용되지 않은 피해보다 먼저 상대를 눕혀, 같은 턴의 나머지 판정이 이미
+	# 죽은 사람을 상대로 계속 굴러간다.
+	#
+	# `shield_source` 를 여기서 한 번 걸러 두는 것은 이 함수가 **전장의 모든
+	# 파일럿 피해**를 지나기 때문이다 — 보호막을 두른 사람이 하나도 없는 판에서
+	# 매 타격마다 배열 한 개를 만들 이유가 없다. 실제 판정은 훅이 다시 한다.
+	if _bs.mech_skill != null and _bs.mech_skill.shield_source.has(attacker):
+		_guardian_rides.append([attacker, victim])
 
 
 ## 포탑 피해 한 건. **성장치는 여기서 나간다** — 포탑의 몫(`SCORE_TURRET_FULL`)
@@ -1364,6 +1398,7 @@ func _apply_card_damage(damage_map: Dictionary, turret_dmg: Dictionary,
 					% [_bs.pilot_label(dp), str(dp.grid_pos)])
 		elif damage_map[k] > 0:
 			_bs.anim_pilot_shake(dp)
+	_flush_guardian_rides()
 	for k in turret_dmg.keys():
 		var td := k as TurretData
 		var was_alive := td.alive

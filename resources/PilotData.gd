@@ -87,6 +87,13 @@ var stunned_rounds: int = 0
 ## 매혹 — 이 파일럿이 버는 성장치를 그대로 복사해 가는 상대와 그 만료 턴.
 var growth_link_to: PilotData = null
 var growth_link_expire_turn: int = -1
+## 예약이 없다는 표시. 실제 셀과 절대 겹치지 않도록 격자 밖 좌표를 쓴다.
+const NO_RETURN := Vector2i(-9999, -9999)
+## 자리 되돌리기 — [질풍]이 이 파일럿을 적 칸으로 던지기 **직전**의 칸.
+## 자기 작전 단계가 끝나면 `MechSkillSystem.on_phase_end` 가 여기로 되돌린다.
+## `NO_RETURN` 이면 예약이 없다 — 사망 / 복귀는 예약을 함께 지운다(그 둘이
+## 이미 자리를 옮긴 뒤라, 되돌리면 방금 일어난 일을 무르는 꼴이 된다).
+var phase_return_cell: Vector2i = NO_RETURN
 
 # ─── 영구 스탯 보정 (메크가 쌓는 몫) ──────────────────────────────────────────
 # `BattleSim.refresh_growth_stats` 가 `base_atk` / `base_max_hp` 에서 스탯을 **다시

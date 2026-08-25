@@ -67,6 +67,12 @@ var _on_done: Callable = Callable()
 ## 교전이 "전령" / "용" 을 넣는다.
 var _arena_title: String = ""
 
+## 방금 끝난 교전의 성적표(`TurnEngageSim.stats` 의 사본). `_sim` 은 대시보드를
+## 닫을 때 버려지는데, `engage:N` 절을 물고 있던 효과 체인은 그 **뒤에** 깨어나
+## "이 교전에서 몇을 눕혔나"를 묻는다([우세한 전장] 의 `gen_hand|per_kill`).
+## 그래서 사본을 여기 남긴다 — 교전 하나짜리 값이라 다음 교전이 덮어쓴다.
+var _last_stats: Dictionary = {}
+
 # Dedicated CanvasLayer for the engage modal so it sits above the hand row
 # (hand cards live on _bs.canvas at layer 1) and any leftover targeting UI.
 # Picked to be >= CardSelectOverlay (layer 10) and CardTargetingOverlay
@@ -379,6 +385,13 @@ func _is_engage_eligible_under_exclude_lane(p: PilotData) -> bool:
 
 # ─── End / dashboard / teardown ──────────────────────────────────────────────
 func _finish_engage() -> void:
+	# 성적표는 `_sim` 이 버려지기 전에 떠 둔다 — 아래 `_on_dashboard_confirmed`
+	# 가 `_sim = null` 로 무대를 치우고, 그 뒤에야 효과 체인이 깨어난다.
+	_last_stats = _sim.stats.duplicate()
+	# 메크 쪽 교전 종료 훅 — 강타 장전 · 약자 멸시 스택 · 불굴 장부처럼 **그
+	# 교전 한 번**짜리 상태가 여기서 걷힌다(`on_engage_start` 의 짝이다).
+	if _bs.mech_skill != null:
+		_bs.mech_skill.on_engage_end(_team_pilots[0] + _team_pilots[1])
 	_bs.last_log = _result_log()
 	_bs.blog.log_event("ENGAGE", "전투 개시 종료 — t0=%s t1=%s"
 			% [_engage_side_str(0), _engage_side_str(1)])
@@ -426,6 +439,20 @@ func _on_dashboard_confirmed() -> void:
 # Public read used by AiCardPlayer to know when to await engage_finished.
 func is_active() -> bool:
 	return _active
+
+
+## 방금 끝난 교전에서 이 파일럿이 눕힌 적 수. 무대가 치워진 뒤에도 답한다.
+## [우세한 전장] 의 `gen_hand:19|per_kill` 이 유일한 소비자다.
+func last_engage_kills(p: PilotData) -> int:
+	if p == null or not _last_stats.has(p):
+		return 0
+	return int((_last_stats[p] as Dictionary).get("kills", 0))
+
+
+## 방금 끝난 교전에 서 있었고 **살아서 나왔는가**. "교전에서 생존할 시" 라는
+## 조건이 붙은 카드가 읽는다 — 명단에 없으면(참가하지 않았으면) false 다.
+func survived_last_engage(p: PilotData) -> bool:
+	return p != null and _last_stats.has(p) and p.alive
 
 
 func _open_overlay() -> void:

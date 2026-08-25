@@ -72,6 +72,11 @@ const CARD_VICTORY       := 16   # 승전보     (핸드, 오브젝트 승리)
 const CARD_DEMOLISH      := 19   # 철거       (핸드, 오브젝트 승리)
 const CARD_EXECUTE       := 22   # 처형       (핸드, 최대 충전)
 const CARD_PAIN_PLEASURE := 35   # 고통과 쾌감 (덱, 자기 레인 포탑 파괴)
+# 단계 A → B → C 사슬(암살 P). 세 장이 서로를 덱에 만들어 주며 돌고,
+# 그 고리가 어디로 이어지는지는 [단계 B] 가 연 교전의 결과가 정한다.
+const CARD_PHASE_A := 38   # 단계 A
+const CARD_PHASE_B := 39   # 단계 B
+const CARD_PHASE_C := 40   # 단계 C
 
 # ─── 튜닝 상수 ───────────────────────────────────────────────────────────────
 ## 취약 1당 받는 피해 배율 가산분.
@@ -85,6 +90,29 @@ const CASH_RATE: float = 0.04
 ## `score_cost:N` 의 단위. **N = 100 이 성장치 1.00k** 다 — 시트의 "성장 점수 100"
 ## 은 게임 안의 `1.00k` 를 가리키고, 그 환산을 여기 한 곳에만 적어 둔다.
 const SCORE_COST_UNIT: float = 0.01
+## 단계 C 의 강화 [베타] — 다음 [단계 B] 를 낼 때 들어오는 충전.
+const PHASE_BOON_BETA_CHARGE: int = 100
+## 단계 C 의 강화 [감마] — 다음 [단계 C] 를 낼 때 버는 자기 성장치 비율.
+const PHASE_BOON_GAMMA_RATE: float = 0.10
+
+# ─── 단계 C 의 강화 3택 ──────────────────────────────────────────────────────
+# [단계 C] 를 낼 때 하나를 고르고, 그 다음 한 번에만 쓰인다. 세 값이 서로 다른
+# 카드에 걸리므로(알파 = 단계 A, 베타 = 단계 B, 감마 = 단계 C) 파일럿당 하나만
+# 들고 있으면 충분하다 — 새로 고르면 앞의 것을 덮는다.
+const BOON_ALPHA := "alpha"   # 다음 [단계 A] 가 [단계 B] 를 덱이 아닌 핸드에
+const BOON_BETA  := "beta"    # 다음 [단계 B] 사용 시 +100 충전
+const BOON_GAMMA := "gamma"   # 다음 [단계 C] 사용 시 성장 점수 +10%
+
+## 강화 하나의 표시 이름과 설명문. 플레이어가 고르는 3택 모달과 AI 의 무작위
+## 선택이 **같은 표**를 읽으므로 목록이 갈라질 수 없다.
+const BOON_DEFS: Array[Dictionary] = [
+	{"key": BOON_ALPHA, "name": "강화 · 알파",
+		"desc": "다음 [단계 A] 사용 시 [단계 B] 를 덱이 아닌 핸드에 생성"},
+	{"key": BOON_BETA, "name": "강화 · 베타",
+		"desc": "다음 [단계 B] 사용 시 +100 충전"},
+	{"key": BOON_GAMMA, "name": "강화 · 감마",
+		"desc": "다음 [단계 C] 사용 시 성장 점수 +10%"},
+]
 
 # ─── 상태 ────────────────────────────────────────────────────────────────────
 # PilotData → {
@@ -297,6 +325,18 @@ func consume_last_stand(p: PilotData) -> void:
 ## 이번 교전에 불굴이 걸린 팀들과 이미 소모한 파일럿. 교전 개시마다 새로 잡는다.
 var _last_stand_team: Dictionary = {}
 var _last_stand_used: Dictionary = {}
+## 약자 멸시(암살 R) — 이번 교전에 남은 스택. `PilotData → int`.
+## 개시 때 손패의 [약자 멸시] 장수를 그대로 심고, 한 번 겨눌 때마다 하나씩 준다.
+var _contempt: Dictionary = {}
+## 강타([강타] 카드) — 이번 교전에 **이미 기절시킨 적**. `PilotData → true`.
+## "한 교전 내에 같은 적에게 두 번 이상 적용되지 않음"이 이 표의 전부다.
+var _stun_applied: Dictionary = {}
+## 수호 연계(지원 Q)의 편승 공격이 지금 도는 중인가. 편승 공격이 다시 피해를
+## 만들어 같은 훅으로 되돌아오는 고리를 끊는다 — 두 메크가 서로에게 보호막을
+## 걸어 두면 그 고리가 실제로 닫힌다.
+var _guardian_busy: bool = false
+## 단계 C 의 강화 예약. `PilotData → BOON_*`. 다음 한 번에만 쓰이고 소모된다.
+var _phase_boon: Dictionary = {}
 
 
 # ─── 사건 훅 ─────────────────────────────────────────────────────────────────
@@ -426,6 +466,8 @@ func on_objective_win(team: int) -> void:
 func on_engage_start(participants: Array) -> void:
 	_last_stand_team.clear()
 	_last_stand_used.clear()
+	_contempt.clear()
+	_stun_applied.clear()
 	for raw in participants:
 		var p := raw as PilotData
 		match passive_key(p):
@@ -438,8 +480,74 @@ func on_engage_start(participants: Array) -> void:
 		# 약자 멸시(암살 R) — 손패에 들고 있는 장수만큼 교전용 스택을 심는다.
 		var contempt: int = hand_passive_stacks(p, HAND_CONTEMPT)
 		if contempt > 0:
-			p.set_meta("contempt_stacks", contempt)
+			_contempt[p] = contempt
 	mech_state_changed.emit()
+
+
+## 교전 무대가 닫혔다. **그 교전 한 번**짜리 상태를 여기서 걷는다 —
+## `on_engage_start` 가 켠 것들의 짝이다. 반응 장갑은 여기 없다: 그건 남은
+## 겹수가 곧 다음 교전까지 가는 값이라 교전이 아니라 전장을 떠날 때 걷힌다.
+func on_engage_end(participants: Array) -> void:
+	for raw in participants:
+		var p := raw as PilotData
+		if p == null:
+			continue
+		# 강타는 **한 교전**짜리 장전이다 — 그 교전에서 아무도 못 때렸어도
+		# 다음 교전으로 넘어가지 않는다("다음 교전에서"가 카드의 문장이다).
+		p.stun_charge = false
+		p.stunned_rounds = 0
+	_contempt.clear()
+	_stun_applied.clear()
+	_last_stand_team.clear()
+	_last_stand_used.clear()
+	mech_state_changed.emit()
+
+
+# ─── 교전 무대가 읽는 질의 (계산은 TurnEngageSim 이 한다) ───────────────────
+## 약자 멸시 — 이 파일럿이 지금 **체력이 가장 적은 적**을 겨눠야 하는가.
+func contempt_active(p: PilotData) -> bool:
+	return int(_contempt.get(p, 0)) > 0
+
+
+## 겨눔 한 번을 썼다. 스택이 0 이 되면 평소 표적 규칙으로 돌아간다.
+func consume_contempt(p: PilotData) -> void:
+	var n: int = int(_contempt.get(p, 0))
+	if n <= 1:
+		_contempt.erase(p)
+	else:
+		_contempt[p] = n - 1
+	mech_state_changed.emit()
+
+
+## 남은 약자 멸시 스택. 로그와 상세 표시용.
+func contempt_stacks(p: PilotData) -> int:
+	return int(_contempt.get(p, 0))
+
+
+## 강타 — `attacker` 가 방금 때린 `victim` 을 기절시킨다. 실제로 걸었으면 true.
+## 게이트가 둘이다: 때린 쪽이 장전돼 있을 것, 그리고 **이 교전에서 그 적이
+## 아직 기절한 적이 없을 것**. 후자가 없으면 근접 하나가 같은 적을 계속 물어
+## 그 적이 교전 내내 한 번도 행동하지 못한다.
+func try_stun(attacker: PilotData, victim: PilotData, rounds: int = 1) -> bool:
+	if attacker == null or victim == null or not attacker.stun_charge:
+		return false
+	if _stun_applied.has(victim):
+		return false
+	_stun_applied[victim] = true
+	victim.stunned_rounds = maxi(victim.stunned_rounds, rounds)
+	mech_state_changed.emit()
+	return true
+
+
+## 기절 — 이번 차례를 건너뛰는가. 건너뛰었으면 남은 라운드가 하나 줄어든다.
+## 판정과 소모를 한 함수에 둔 것은 그 둘이 갈리면 "건너뛰었는데 안 줄어드는"
+## 상태가 만들어지기 때문이다.
+func consume_stun_turn(p: PilotData) -> bool:
+	if p == null or p.stunned_rounds <= 0:
+		return false
+	p.stunned_rounds -= 1
+	mech_state_changed.emit()
+	return true
 
 
 ## 한 팀의 작전 단계가 끝났다. 단계 수명짜리 상태를 여기서 걷는다.
@@ -456,6 +564,7 @@ func on_phase_end(is_player: bool) -> void:
 			if has_passive(p, KEY_VULNERABILITY_MARK):
 				has_mark = true
 			damaged_this_phase.erase(p)
+			_restore_phase_position(p)
 		else:
 			# 탈진은 **당한 쪽**의 단계가 끝날 때 풀린다.
 			p.engage_locked = false
@@ -465,6 +574,26 @@ func on_phase_end(is_player: bool) -> void:
 			if p2.team != team:
 				p2.vulnerable = 0
 	mech_state_changed.emit()
+
+
+## [질풍] 의 자리 되돌리기 — 적 칸으로 뛰어들었던 파일럿을 **이번 작전 단계가
+## 끝나는 이 자리에서** 원래 칸으로 돌려놓는다. 뛰어드는 것과 돌아오는 것이
+## 한 카드의 앞뒤라, 예약을 심는 자리(`CardPhaseManager._effect_move_to_target`)
+## 와 푸는 자리가 이 둘뿐이다.
+##
+## 예약이 없거나(대부분) 그 사이 죽었으면 아무 일도 없다 — 후자는
+## `clear_field_effects` 가 이미 예약을 지웠으므로 여기까지 오지도 않는다.
+func _restore_phase_position(p: PilotData) -> void:
+	if p.phase_return_cell == PilotData.NO_RETURN:
+		return
+	var back: Vector2i = p.phase_return_cell
+	p.phase_return_cell = PilotData.NO_RETURN
+	if not p.alive or p.grid_pos == back:
+		return
+	var orig: Vector2i = p.grid_pos
+	p.grid_pos = back
+	_bs.blog.log_move(p, orig, back, "phase-return")
+	_bs.anim_pilot_move(p, orig)
 
 
 ## 파일럿이 전장을 떠났다(사망 · 본진 복귀). "전장 이탈까지" 로 적힌 상태가
@@ -481,6 +610,11 @@ func clear_field_effects(p: PilotData) -> void:
 	p.engage_link = null
 	p.stun_charge = false
 	p.stunned_rounds = 0
+	# [질풍]의 자리 되돌리기 예약 — 사망 / 복귀는 이미 자리를 옮긴 뒤라,
+	# 되돌리면 방금 일어난 그 일을 무르는 꼴이 된다.
+	p.phase_return_cell = PilotData.NO_RETURN
+	_contempt.erase(p)
+	_phase_boon.erase(p)
 	shield_source.erase(p)
 
 
@@ -559,6 +693,65 @@ func on_card_damage_for_revelation(target: PilotData, source: PilotData) -> void
 			continue
 		if _bs.card_phase != null:
 			_bs.card_phase.deal_simple_attack(owner, target, 1)
+
+
+## 수호 연계(지원 Q) — **이 메크의 보호막을 두른 아군이 피해를 주면 이 메크도**
+## 그 적을 친다. 전장 자동 교전과 카드 공격 양쪽의 피해 지점이 부른다(교전
+## 무대는 부르지 않는다 — 편승할 메크가 그 무대에 없을 수 있고, 있으면 자기
+## 차례에 이미 때린다).
+##
+## 게이트가 셋이다.
+##   1. 그 아군이 **지금도** 보호막을 두르고 있을 것 — 다 깎이면 연계도 끝난다.
+##      (그러지 않으면 한 번 걸어 준 보호막이 매치 내내 편승권으로 남는다.)
+##   2. 편승하는 메크가 자기 자신이 아닐 것 — [수호] 는 시전자에게도 보호막을
+##      걸므로 이 검사가 없으면 자기 공격에 자기가 편승한다.
+##   3. 재진입 금지 — 편승 공격도 피해라서 같은 훅으로 되돌아온다. 두 메크가
+##      서로에게 보호막을 걸어 두면 그 고리가 실제로 닫힌다.
+func on_shielded_ally_damage(attacker: PilotData, target: PilotData) -> void:
+	if _guardian_busy or attacker == null or target == null or not target.alive:
+		return
+	var guard: PilotData = shield_source.get(attacker, null) as PilotData
+	if guard == null or guard == attacker or not guard.alive:
+		return
+	if not has_passive(guard, KEY_GUARDIAN_LINK):
+		return
+	if attacker.shield <= 0:
+		shield_source.erase(attacker)
+		return
+	if _bs.card_phase == null:
+		return
+	_guardian_busy = true
+	_bs.card_phase.deal_simple_attack(guard, target, 1)
+	_guardian_busy = false
+
+
+# ─── 단계 C 의 강화 예약 ─────────────────────────────────────────────────────
+## 강화 하나를 예약한다. 파일럿당 하나뿐이라 새로 고르면 앞의 것을 덮는다.
+func set_phase_boon(p: PilotData, key: String) -> void:
+	if p == null or key.is_empty():
+		return
+	_phase_boon[p] = key
+	mech_state_changed.emit()
+
+
+## 예약된 강화가 `key` 면 **소모하고** true. 카드 세 장이 각자 자기 것만
+## 물어보므로, 알파를 들고 있는 동안 [단계 B] 를 내도 그 예약은 그대로 남는다.
+func consume_phase_boon(p: PilotData, key: String) -> bool:
+	if p == null or String(_phase_boon.get(p, "")) != key:
+		return false
+	_phase_boon.erase(p)
+	mech_state_changed.emit()
+	return true
+
+
+## 지금 예약된 강화(없으면 빈 문자열). 상세 표시와 로그용.
+func phase_boon_of(p: PilotData) -> String:
+	return String(_phase_boon.get(p, ""))
+
+
+## 강화 3택의 표시용 정의. 모달과 AI 가 같은 표를 읽는다.
+static func boon_defs() -> Array:
+	return BOON_DEFS
 
 
 # ─── 카드 생성 헬퍼 ──────────────────────────────────────────────────────────

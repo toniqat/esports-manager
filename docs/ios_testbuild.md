@@ -155,6 +155,28 @@ CLI 에서는 그 메시지가 `r_error` 에 안 실려 빈 줄만 남는다. �
 `.godot/imported/` 안에만 구워지고 그건 gitignore 대상이다. 대신 임포트 시간과
 `.godot/` 용량이 늘어난다.
 
+### 화면 방향 — Godot 3 문자열이 남아 있으면 **가로로 빌드된다**
+
+```
+window/handheld/orientation=1        # 1 = Portrait
+```
+
+Godot 4 에서 이 설정은 **정수 enum** 이다
+(`Landscape,Portrait,Reverse Landscape,Reverse Portrait,Sensor Landscape,Sensor Portrait,Sensor`).
+그런데 이 프로젝트에는 Godot 3 시절의 문자열 `"portrait"` 가 남아 있었고,
+Godot 4 는 그걸 해석하지 못해 **기본값 0 = Landscape** 로 떨어뜨렸다. 첫 빌드의
+`Info.plist` 에 `UIInterfaceOrientationLandscapeLeft` 가 박힌 이유다.
+
+에디터에서는 데스크톱 창이라 티가 안 난다 — **기기에서만 드러나는** 종류의
+버그라, 빌드된 `.ipa` 의 `Info.plist` 를 한 번 열어 보는 것이 유일한 확인법이다:
+
+```python
+import zipfile, plistlib
+z = zipfile.ZipFile("EsportsManager-debug-unsigned.ipa")
+d = plistlib.loads(z.read("Payload/EsportsManager.app/Info.plist"))
+print(d["CFBundleIdentifier"], d["UISupportedInterfaceOrientations"])
+```
+
 ---
 
 ## 손볼 일이 생기면
@@ -192,6 +214,7 @@ application/version="0.1"
 | `due to configuration errors:` 뒤가 **비어 있다** | `project.godot` 의 `textures/vram_compression/import_etc2_astc` 가 꺼졌다 — 아래 항목 |
 | `.xcodeproj 를 찾지 못했다` | Godot 익스포트 단계가 실패했다 — 그 위 단계 로그를 볼 것 |
 | `pck 안에 data/game.db 가 없다` | `include_filter` 가 빗나갔다 |
+| 폰에서 게임이 **가로로** 뜼다 | `window/handheld/orientation` 이 문자열로 되돌아갔다 — 위 항목 |
 | 폰에서 앱이 켜지자마자 닫힌다 | 서명 만료(7일) 또는 신뢰 설정 미완료 → 재설치 + 기기 관리에서 신뢰 |
 | Sideloadly 가 폰을 못 잡는다 | Microsoft Store 판 iTunes 가 깔려 있다 — Apple 사이트 버전으로 교체 |
 | `Unable to install... 0xE8008015` | 무료 계정 앱 3개 한도 초과 — 다른 사이드로드 앱을 지운다 |

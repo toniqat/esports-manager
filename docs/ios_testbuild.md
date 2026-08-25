@@ -107,6 +107,7 @@ CI 에서 바로 서명해 TestFlight 로 올리는 쪽이 낫다 — 이 워크
 | `resources/images/appicon_1024.png` | 앱 아이콘 1024×1024 (지금은 `icon.svg` 를 구워 낸 기본 Godot 아이콘 — 갈아 끼우려면 이 파일만 덮어쓰면 된다) |
 | `autoloads/GameManager.gd` | `db_path()` / `_extract_db_to_user()` — 아래 항목 |
 | `features/battle_sim/data/DataLoader.gd` | 같은 이유로 `GameManager.db_path()` 를 쓴다 |
+| `project.godot` | `textures/vram_compression/import_etc2_astc=true` — 아래 항목 |
 
 ### `res://data/game.db` → `user://data/game.db`
 
@@ -129,6 +130,30 @@ SQLite 는 **디스크 위의 진짜 파일**을 열어야 한다. 에디터에�
 `export_presets.cfg` 의 `include_filter="data/game.db"` 가 그걸 넣는 자리이고,
 워크플로의 포장 단계가 `pck` 안에서 그 문자열을 실제로 찾아 확인한다 — 필터가
 조용히 빗나가면 빌드는 초록불인데 게임만 죽는 조합이 나오기 때문이다.
+
+---
+
+### `import_etc2_astc` — 이게 꺼져 있으면 익스포트가 **말없이** 죽는다
+
+```
+rendering/textures/vram_compression/import_etc2_astc=true
+```
+
+iOS 와 안드로이드는 이 설정을 요구하는데 **기본값이 false** 다. 꺼져 있으면
+Godot 은 익스포트를 거부하면서도 이유를 **한 글자도 찍지 않는다**:
+
+```
+ERROR: Cannot export project with preset "iOS" due to configuration errors:
+                                          ← 여기가 통째로 비어 있다
+```
+
+에디터 UI 에서는 익스포트 창이 이걸 별도 대화상자로 알려 주지만, 헤드리스
+CLI 에서는 그 메시지가 `r_error` 에 안 실려 빈 줄만 남는다. 프리셋 옵션을
+아무리 뒤져 봐도 원인이 안 나오는 자리라, **빈 메시지 = 이 설정**으로 외워 두는 편이 빠르다.
+
+켜도 추적되는 `.import` 파일은 하나도 안 바뀐다 — ETC2/ASTC 변종은
+`.godot/imported/` 안에만 구워지고 그건 gitignore 대상이다. 대신 임포트 시간과
+`.godot/` 용량이 늘어난다.
 
 ---
 
@@ -164,6 +189,7 @@ application/version="0.1"
 | 증상 | 원인 |
 |---|---|
 | `No export template found at .../ios.zip` | `GODOT_VERSION` / `GODOT_RELEASE` 가 릴리스 태그와 안 맞는다 |
+| `due to configuration errors:` 뒤가 **비어 있다** | `project.godot` 의 `textures/vram_compression/import_etc2_astc` 가 꺼졌다 — 아래 항목 |
 | `.xcodeproj 를 찾지 못했다` | Godot 익스포트 단계가 실패했다 — 그 위 단계 로그를 볼 것 |
 | `pck 안에 data/game.db 가 없다` | `include_filter` 가 빗나갔다 |
 | 폰에서 앱이 켜지자마자 닫힌다 | 서명 만료(7일) 또는 신뢰 설정 미완료 → 재설치 + 기기 관리에서 신뢰 |

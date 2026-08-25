@@ -1,0 +1,215 @@
+# iOS 테스트 빌드 — 맥 없이 아이폰에 올린다.
+#
+# macOS 기기가 없어도 되는 이유는 GitHub 이 빌려주는 macOS 러너가 xcodebuild 를
+# 대신 돌려 주기 때문이다. 저장소가 public 이라 이 러너는 무료다.
+#
+# 서명은 하지 않는다. 무료 Apple ID 서명은 Sideloadly 가 로컬에서 하는 일이라
+# CI 에 인증서나 프로비저닝 프로파일을 넣을 이유가 없다 — CODE_SIGNING_ALLOWED=NO
+# 로 빌드한 .app 을 Payload/ 에 담아 zip 하면 그게 곧 unsigned .ipa 다.
+name: iOS 테스트 빌드 (unsigned IPA)
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: "익스포트 템플릿"
+        type: choice
+        options: [debug, release]
+        default: debug
+  # feat/** 이 같이 들어 있는 것은 main 이 한참 뒤처져 있기 때문이다 — 지금
+  # 개발 중인 브랜치를 빌드해야 폰에서 보는 것이 실제 작업물이 된다.
+  # 참고: 왼쪽 Actions 목록의 "Run workflow" 수동 버튼은 이 파일이 **기본
+  # 브랜치(main)** 에 올라가야 비로소 나타난다. 그전까지 방아쇠는 push 뿐이다.
+  push:
+    branches: [main, "feat/**"]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+
+concurrency:
+  group: ios-testbuild-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # 프로젝트를 만든 에디터와 같은 버전이어야 한다. 올릴 때 여기 두 줄만 고친다.
+  GODOT_VERSION: "4.5"
+  GODOT_RELEASE: "stable"
+  EXPORT_PRESET: "iOS"
+  APP_NAME: "EsportsManager"
+
+jobs:
+  ipa:
+    name: Godot 익스포트 → xcodebuild → unsigned .ipa
+    runs-on: macos-15
+    timeout-minutes: 60
+
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 빌드 타입 결정
+        id: cfg
+        run: |
+          set -euo pipefail
+          BT="${{ inputs.build_type || 'debug' }}"
+          if [ "$BT" = "release" ]; then
+            echo "godot_flag=--export-release" >> "$GITHUB_OUTPUT"
+            echo "xcode_config=Release"        >> "$GITHUB_OUTPUT"
+          else
+            echo "godot_flag=--export-debug"   >> "$GITHUB_OUTPUT"
+            echo "xcode_config=Debug"          >> "$GITHUB_OUTPUT"
+          fi
+          echo "build_type=$BT" >> "$GITHUB_OUTPUT"
+          echo "빌드 타입: $BT"
+
+      # 에디터(약 110MB)와 iOS 템플릿을 캐시한다. tpz 전체는 1GB 가 넘지만
+      # 우리가 쓰는 것은 그 안의 ios.zip 하나뿐이라 그것만 꺼내서 캐시한다.
+      - name: Godot 에디터 캐시
+        id: cache-editor
+        uses: actions/cache@v4
+        with:
+          path: ~/godot-bin
+          key: godot-editor-${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}-macos
+
+      - name: iOS 익스포트 템플릿 캐시
+        id: cache-template
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Application Support/Godot/export_templates/${{ env.GODOT_VERSION }}.${{ env.GODOT_RELEASE }}
+          key: godot-tpl-ios-${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}
+
+      - name: Godot 에디터 내려받기
+        if: steps.cache-editor.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          TAG="${GODOT_VERSION}-${GODOT_RELEASE}"
+          URL="https://github.com/godotengine/godot/releases/download/${TAG}/Godot_v${TAG}_macos.universal.zip"
+          echo "GET $URL"
+          curl -fsSL --retry 3 -o /tmp/godot.zip "$URL"
+          mkdir -p ~/godot-bin
+          unzip -q /tmp/godot.zip -d ~/godot-bin
+
+      - name: iOS 익스포트 템플릿 내려받기
+        if: steps.cache-template.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          TAG="${GODOT_VERSION}-${GODOT_RELEASE}"
+          URL="https://github.com/godotengine/godot/releases/download/${TAG}/Godot_v${TAG}_export_templates.tpz"
+          DIR="$HOME/Library/Application Support/Godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}"
+          echo "GET $URL"
+          curl -fsSL --retry 3 -o /tmp/templates.tpz "$URL"
+          mkdir -p "$DIR"
+          # tpz 는 그냥 zip 이다. 필요한 것은 그 안의 ios.zip 하나뿐.
+          unzip -j -o /tmp/templates.tpz "templates/ios.zip" -d "$DIR"
+          ls -la "$DIR"
+
+      - name: 도구 버전 확인
+        run: |
+          set -euo pipefail
+          "$HOME/godot-bin/Godot.app/Contents/MacOS/Godot" --headless --version
+          xcodebuild -version
+          echo "--- 설치된 템플릿 ---"
+          ls -la "$HOME/Library/Application Support/Godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}"
+
+      # .godot/ 는 저장소에 없다(gitignore). 익스포트 전에 임포트를 한 번 돌려
+      # 300여 장의 PNG 와 SVG 를 .godot/imported/ 에 굽는다. 첫 스캔에서 한 번에
+      # 안 끝나는 일이 있어 두 번 돌리고, 첫 실패는 무시한다.
+      - name: 에셋 임포트
+        run: |
+          set -uo pipefail
+          GODOT="$HOME/godot-bin/Godot.app/Contents/MacOS/Godot"
+          "$GODOT" --headless --path . --import || true
+          "$GODOT" --headless --path . --import
+
+      - name: Godot iOS 익스포트 (Xcode 프로젝트 생성)
+        run: |
+          set -euo pipefail
+          GODOT="$HOME/godot-bin/Godot.app/Contents/MacOS/Godot"
+          mkdir -p build/ios
+          # export_presets.cfg 의 application/export_project_only=true 때문에
+          # Godot 은 xcodebuild 를 부르지 않고 Xcode 프로젝트만 만들어 둔다 —
+          # 서명 플래그를 우리가 쥐기 위해서다.
+          "$GODOT" --headless --path . ${{ steps.cfg.outputs.godot_flag }} \
+            "$EXPORT_PRESET" "$PWD/build/ios/${APP_NAME}.ipa"
+          echo "--- build/ios ---"
+          ls -la build/ios
+
+      - name: Xcode 프로젝트 / 스킴 찾기
+        id: xc
+        run: |
+          set -euo pipefail
+          PROJ="$(find build/ios -maxdepth 3 -name '*.xcodeproj' -print -quit)"
+          if [ -z "$PROJ" ]; then
+            echo "::error::.xcodeproj 를 찾지 못했다. Godot 익스포트가 실패했거나 결과물 위치가 바뀌었다."
+            find build -maxdepth 4 -print
+            exit 1
+          fi
+          SCHEME="$(xcodebuild -list -project "$PROJ" | awk '/Schemes:/{f=1;next} f && NF {print $1; exit}')"
+          echo "proj=$PROJ"     >> "$GITHUB_OUTPUT"
+          echo "scheme=$SCHEME" >> "$GITHUB_OUTPUT"
+          echo "프로젝트=$PROJ / 스킴=$SCHEME"
+
+      - name: xcodebuild (서명 없이)
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project "${{ steps.xc.outputs.proj }}" \
+            -scheme "${{ steps.xc.outputs.scheme }}" \
+            -configuration "${{ steps.cfg.outputs.xcode_config }}" \
+            -sdk iphoneos \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_ENTITLEMENTS="" \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            build
+
+      - name: unsigned .ipa 로 포장
+        id: pack
+        run: |
+          set -euo pipefail
+          APP="$(find "$RUNNER_TEMP/dd/Build/Products" -maxdepth 3 -name '*.app' -type d -print -quit)"
+          if [ -z "$APP" ]; then
+            echo "::error::.app 이 없다 — xcodebuild 는 통과했는데 산출물이 없다."
+            find "$RUNNER_TEMP/dd/Build/Products" -maxdepth 3 -print
+            exit 1
+          fi
+          echo ".app = $APP"
+
+          # 아이폰에서 타이틀 화면부터 죽는 사고를 여기서 잡는다. game.db 는
+          # 리소스가 아니라 include_filter 로만 pck 에 들어가므로, 필터가
+          # 조용히 빗나가면 빌드는 초록불인데 게임은 DB 오류로 멈춘다.
+          PCK="$(find "$APP" -maxdepth 1 -name '*.pck' -print -quit)"
+          if [ -n "$PCK" ] && ! grep -aq "data/game.db" "$PCK"; then
+            echo "::error::pck 안에 data/game.db 가 없다 — export_presets.cfg 의 include_filter 를 확인할 것."
+            exit 1
+          fi
+          echo "pck 안에서 data/game.db 확인됨"
+
+          rm -rf "$RUNNER_TEMP/Payload"
+          mkdir -p "$RUNNER_TEMP/Payload"
+          cp -R "$APP" "$RUNNER_TEMP/Payload/"
+          IPA="$RUNNER_TEMP/${APP_NAME}-${{ steps.cfg.outputs.build_type }}-unsigned.ipa"
+          ( cd "$RUNNER_TEMP" && zip -qry "$IPA" Payload )
+          ls -lh "$IPA"
+          echo "ipa=$IPA" >> "$GITHUB_OUTPUT"
+          {
+            echo "### iOS 테스트 빌드 완료"
+            echo ""
+            echo "- 타입: ${{ steps.cfg.outputs.build_type }}"
+            echo "- 번들 ID: com.toniqat.esportsmanager"
+            echo "- 크기: $(du -h "$IPA" | cut -f1)"
+            echo ""
+            echo "아래 아티팩트를 내려받아 압축을 푼 뒤, 나온 .ipa 를 Sideloadly 에 넣으면 된다."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 아티팩트 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-ios-${{ steps.cfg.outputs.build_type }}-unsigned-ipa
+          path: ${{ steps.pack.outputs.ipa }}
+          if-no-files-found: error
+          retention-days: 30

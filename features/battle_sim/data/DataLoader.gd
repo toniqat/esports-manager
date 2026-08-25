@@ -12,11 +12,16 @@ var lane_cfg:    Array      = []  # lane_id(int) → {name, max_pilots, mid_col,
 # Called by BattleSim._ready() after signal is connected.
 # Returns true on success, false on any failure (signal is also emitted).
 func load_data() -> bool:
+	# 경로는 GameManager 가 정한다 — 익스포트 빌드에서는 res:// 가 pck 안이라
+	# SQLite 가 열 수 없고, 그걸 user:// 로 뽑아내는 자리가 거기다.
+	var gm: Node = get_node_or_null("/root/GameManager")
+	var db_file: String = gm.db_path() if gm != null else "res://data/game.db"
+
 	var db := SQLite.new()
-	db.path = "res://data/game.db"
+	db.path = db_file
 	db.verbosity_level = SQLite.QUIET
 	if not db.open_db():
-		data_load_failed.emit("Cannot open res://data/game.db — run the CSV→DB import tool first.")
+		data_load_failed.emit("Cannot open %s — run the CSV→DB import tool first." % db_file)
 		return false
 
 	var ok: bool = true

@@ -35,6 +35,10 @@
 ```
 esports-manager/
 ├── CLAUDE.md                    ← YOU ARE HERE
+├── export_presets.cfg           ← iOS 익스포트 프리셋 (CI 가 읽는다 — 커밋된 파일이다)
+│
+├── .github/workflows/
+│   └── ios-testbuild.yml         ← iOS unsigned .ipa 빌드 (macOS 러너) — docs/ios_testbuild.md
 │
 ├── features/
 │   ├── season/                  ← Outgame campaign (PRIMARY entry — Season.tscn)
@@ -152,6 +156,10 @@ esports-manager/
 │   ├── BattleSim.tscn           ← Battle sim scene (entered from MatchFlow)
 │   ├── BattleField.tscn         ← TileMapLayer + Building/Waypoint layers
 │   └── Card.tscn                ← Card prefab (instantiated at runtime)
+│
+├── docs/
+│   ├── ios_testbuild.md          ← 맥 없이 아이폰에서 돌리는 법 (Actions + Sideloadly)
+│   └── mech_skills_design.md     ← 메크 21대 목록 + 절 문법
 │
 └── addons/godot_mcp/            ← MCP editor plugin (do not modify)
 ```
@@ -436,6 +444,40 @@ Godot 4.5's `UNUSED_PRIVATE_CLASS_VARIABLE` warning treats a leading underscore 
 **Known exceptions**:
 - `_bs` (the orchestrator handle inside each BattleSim child module) is conventionally underscored even though it's `get_parent()`-derived; the underscore marks it as "framework wiring, don't touch".
 - `_on_*` signal handler methods keep the underscore even when their `Callable` is passed across scripts via `signal.connect(other._on_xxx)`. The underscore is the Godot-wide signal-handler convention; the cross-script reference is signal wiring, not a real call.
+
+---
+
+## iOS 테스트 빌드 (맥 없이)
+
+`.github/workflows/ios-testbuild.yml` 가 GitHub 의 **macOS 러너**에서
+`Godot --export-debug "iOS"` → `xcodebuild` → `Payload/*.app` → zip 을 돌려
+**서명되지 않은 `.ipa`** 를 아티팩트로 올린다. 그걸 내려받아 윈도우 PC 에서
+**Sideloadly** 로 아이폰에 밀어 넣는다 — 서명은 Sideloadly 가 무료 Apple ID 로
+로컬에서 하므로 **CI 에 인증서도 시크릿도 없다**(`CODE_SIGNING_ALLOWED=NO`).
+저장소가 public 이라 macOS 러너는 무료다. 절차 · 제약 · 실패 표는 **`docs/ios_testbuild.md`**.
+
+Godot 이 `xcodebuild` 를 직접 부르지 않는 것은 `export_presets.cfg` 의
+`application/export_project_only=true` 때문이다 — 서명을 아예 끄고 싶으므로
+Xcode 프로젝트만 받아 빌드 플래그를 우리가 쥐는다.
+
+### `res://data/game.db` → `user://data/game.db`
+
+**SQLite 는 디스크 위의 진짜 파일을 열어야 한다.** 에디터에서는 `res://` 가
+그대로 실제 폴더라 그냥 열리지만, 익스포트한 빌드에서는 `res://` 가 `.pck` 안으로
+들어가 SQLite 가 그 경로를 열지 못한다 — 손대지 않았다면 아이폰에서 타이틀 화면부터
+DB 오류로 멈추었을 자리다. 그래서 모든 런타임 DB 접근은 **`GameManager.db_path()`**
+한 곳을 지난다 — 에디터에서는 `res://data/game.db` 그대로(CSV→DB 재빌드가 곷바로
+반영돼야 하므로), 기기에서는 pck 안의 DB 를 `user://data/game.db` 로 꺼낸 사본을
+돌려준다. **매 실행마다 덮어쓴다** — DB 는 런타임에 읽기 전용이고(세이브는
+`user://saves/*.save`) 96KB 뿐이라, 뭐가 바뀜는지 비교하는 캐시 무효화 장치를 두는 것보다
+그냥 복사하는 쪽이 언제나 옳다(새 빌드를 깔았는데 옫 빌드의 game.db 가 남아 있는 사고가
+구조적으로 불가능해진다). 편집 도구인 `addons/csv_to_db/csv_to_db.gd` 만 여전히
+`res://data/game.db` 에 **쓴다** — 그것이 원본이기 때문이다.
+
+`data/game.db` 는 **리소스가 아니므로** 그냥 두면 pck 에 안 들어간다.
+`export_presets.cfg` 의 `include_filter="data/game.db"` 가 그걸 넣는 자리이고,
+워크플로의 포장 단계가 pck 안에서 그 문자열을 실제로 찾아 확인한다 — 필터가 조용히
+빗나가면 빌드는 초록불인데 게임만 죽는 조합이 나오기 때문이다.
 
 ---
 

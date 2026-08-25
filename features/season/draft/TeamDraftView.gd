@@ -69,15 +69,28 @@ const FILTER_BORDER_OFF := Color(0.28, 0.31, 0.40, 1.0)
 
 # ─── 하: 썸네일 격자 ─────────────────────────────────────────────────────────
 const GRID_Y: float = 740.0
-const GRID_H: float = 950.0
+## 격자 높이는 상수가 아니라 **남는 자리**다 — 필터 줄 아래부터 하단 바 위까지.
+## 화면이 길수록 썸네일이 더 보인다(디자인 화면 1920 에서 정확히 예전 950).
+const GRID_BAR_GAP: float = 12.0
+
+
+static func grid_h() -> float:
+	return bar_y() - GRID_BAR_GAP - GRID_Y
 const GRID_X0: float = 24.0
 const GRID_W: float = 1032.0
 const GRID_COLS: int = 5
 const GRID_GAP: float = 8.0
 
 # ─── 맨 아래: 스킬 구성 + 확정 ───────────────────────────────────────────────
-const BAR_Y: float = 1702.0
+## 하단 바 아래끝이 안전선에서 물러나는 양.
+const BAR_BOTTOM_GAP: float = 20.0
 const BAR_H: float = 198.0
+
+
+## 하단 바(스킬 구성 + 확정)의 y. 확정 버튼은 이 화면에서 가장 아래에 있는
+## 터치 대상이라 홈 인디케이터 / 제스처 바와 맞닿는다 — 안전선에 매단다.
+static func bar_y() -> float:
+	return ScreenMetrics.safe_h() - BAR_BOTTOM_GAP - BAR_H
 const SKILL_PANEL_X: float = 24.0
 const SKILL_PANEL_W: float = 640.0
 const CONFIRM_X: float = 680.0
@@ -115,9 +128,15 @@ func _ready() -> void:
 
 # ── Build ────────────────────────────────────────────────────────────────────
 func _build_ui() -> void:
+	# 화면 전체를 안전 영역 위끝까지 내린다 — 노치 / 다이나믹 아일랜드 밑에
+	# 제목이 깔리지 않게. 제목만 따로 내리면 본문과 겹친다.
+	ScreenMetrics.indent_to_safe_top(self)
 	var bg := ColorRect.new()
 	bg.color = BG_COLOR
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# 배경만은 안전 영역 밖(노치 자리)까지 덮는다 — 안 그러면 그 띠가
+	# 엔진 기본 배경색으로 남는다.
+	ScreenMetrics.extend_background(bg)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 
@@ -219,7 +238,7 @@ func _build_grid() -> void:
 	# 색으로 못 박아 두면 빈 목록도 빈 목록으로 보인다.
 	var back := Panel.new()
 	back.position = Vector2(GRID_X0 - 8.0, GRID_Y - 8.0)
-	back.size = Vector2(GRID_W + 16.0, GRID_H + 16.0)
+	back.size = Vector2(GRID_W + 16.0, grid_h() + 16.0)
 	back.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var back_sty := StyleBoxFlat.new()
 	back_sty.bg_color = Color(0.05, 0.06, 0.10, 1.0)
@@ -237,7 +256,7 @@ func _build_grid() -> void:
 
 	var scroll := ScrollContainer.new()
 	scroll.position = Vector2(GRID_X0, GRID_Y)
-	scroll.size = Vector2(GRID_W, GRID_H)
+	scroll.size = Vector2(GRID_W, grid_h())
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	add_child(scroll)
 
@@ -272,7 +291,7 @@ func _build_grid() -> void:
 
 func _build_bottom_bar() -> void:
 	var panel := Panel.new()
-	panel.position = Vector2(SKILL_PANEL_X, BAR_Y)
+	panel.position = Vector2(SKILL_PANEL_X, bar_y())
 	panel.size = Vector2(SKILL_PANEL_W, BAR_H)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var sty := StyleBoxFlat.new()
@@ -301,7 +320,7 @@ func _build_bottom_bar() -> void:
 	_confirm_btn = Button.new()
 	_confirm_btn.text = "드래프트 확정"
 	_confirm_btn.focus_mode = Control.FOCUS_NONE
-	_confirm_btn.position = Vector2(CONFIRM_X, BAR_Y)
+	_confirm_btn.position = Vector2(CONFIRM_X, bar_y())
 	_confirm_btn.size     = Vector2(CONFIRM_W, BAR_H)
 	_confirm_btn.add_theme_font_size_override("font_size", 38)
 	_confirm_btn.disabled = true

@@ -35,8 +35,10 @@ const DIM_COLOR := Color(0.0, 0.0, 0.0, 0.88)
 ## 화면 크기는 `EngageArena` 와 같은 방식으로 **절대 좌표로 박는다** — CanvasLayer
 ## 밑의 Control 은 PRESET_FULL_RECT 만으로 사이즈가 잡히지 않아 (0,0) 으로 남고,
 ## 그러면 딤이 안 그려지고 MOUSE_FILTER_STOP 도 뒤쪽 입력을 못 막는다.
-const VP_W: float = 1080.0
-const VP_H: float = 1920.0
+## 화면 크기는 고정 상수가 아니라 런타임 값이다 — 스트레치가 `expand` 라
+## 세로로 긴 기기에서는 높이가 1920 보다 커진다. 딤 · 루트가 뷰포트 전체를
+## 덮지 않으면 그 차이만큼 화면 끝에 안 덮인 띠가 남는다.
+## `docs/mobile_safe_area.md` 참고.
 
 ## eye 크롭의 가로:세로 비 — `PilotStrip.EYE_ASPECT` 와 같은 값이다. 임의 높이로
 ## 늘리면 얼굴이 찌그러진다.
@@ -84,7 +86,7 @@ func _ready() -> void:
 	# 그러면 딤도 안 그려지고 MOUSE_FILTER_STOP 도 뒤쪽 입력을 못 막는다.
 	# 앵커가 전부 0 이면 아래 두 줄이 그대로 남는다.
 	position = Vector2.ZERO
-	size = Vector2(VP_W, VP_H)
+	size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
 
 
 ## `t0` = 팀0(아군) 참가자, `t1` = 팀1(적군) 참가자. `rounds` 는 engage:N 의 N
@@ -104,7 +106,7 @@ func setup(title: String, rounds: int,
 	var dim := ColorRect.new()
 	dim.color = DIM_COLOR
 	dim.position = Vector2.ZERO
-	dim.size = Vector2(VP_W, VP_H)
+	dim.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
 	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(dim)
 
@@ -122,19 +124,19 @@ func setup(title: String, rounds: int,
 func _build_title(text: String) -> void:
 	var lbl := _mk_label(text, 40, Color(1.0, 0.92, 0.62))
 	lbl.position = Vector2(0.0, 220.0)
-	lbl.size = Vector2(VP_W, 56.0)
+	lbl.size = Vector2(ScreenMetrics.vp_w(), 56.0)
 	add_child(lbl)
 
 
 func _build_center(rounds: int) -> void:
 	var vs := _mk_label("VS", 148, Color(1.0, 0.96, 0.86))
 	vs.position = Vector2(0.0, VS_Y)
-	vs.size = Vector2(VP_W, 170.0)
+	vs.size = Vector2(ScreenMetrics.vp_w(), 170.0)
 	add_child(vs)
 
 	var rd := _mk_label("%d라운드" % rounds, 46, Color(0.95, 0.80, 0.42))
 	rd.position = Vector2(0.0, ROUNDS_Y)
-	rd.size = Vector2(VP_W, 60.0)
+	rd.size = Vector2(ScreenMetrics.vp_w(), 60.0)
 	add_child(rd)
 
 
@@ -148,20 +150,20 @@ func _build_row(pilots: Array, team: int, header: String,
 
 	var row := Control.new()
 	row.position = Vector2.ZERO
-	row.size = Vector2(VP_W, VP_H)
+	row.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(row)
 
 	var head := _mk_label("%s (%d)" % [header, sorted.size()], 30, TEAM_RIM[team])
 	head.position = Vector2(0.0, header_y)
-	head.size = Vector2(VP_W, 40.0)
+	head.size = Vector2(ScreenMetrics.vp_w(), 40.0)
 	row.add_child(head)
 
 	var n: int = sorted.size()
 	if n == 0:
 		return row
 	var span: float = float(n) * CELL_W + float(n - 1) * CELL_GAP
-	var first_x: float = (VP_W - span) * 0.5
+	var first_x: float = (ScreenMetrics.vp_w() - span) * 0.5
 	for i in n:
 		_build_cell(row, sorted[i] as PilotData, team,
 				Vector2(first_x + float(i) * (CELL_W + CELL_GAP), row_y))
@@ -240,7 +242,7 @@ func _build_cell(parent: Control, p: PilotData, team: int, at: Vector2) -> void:
 func _build_subtitle(text: String) -> void:
 	var lbl := _mk_label(text, 32, Color(0.80, 0.86, 0.95))
 	lbl.position = Vector2(0.0, ROUNDS_Y + 66.0)
-	lbl.size = Vector2(VP_W, 48.0)
+	lbl.size = Vector2(ScreenMetrics.vp_w(), 48.0)
 	add_child(lbl)
 
 
@@ -249,12 +251,12 @@ func _build_buttons(allow_cancel: bool, confirm_text: String = "확인",
 	var confirm := _mk_button(confirm_text, Color(0.22, 0.52, 0.34))
 	if allow_cancel:
 		var cancel := _mk_button(cancel_text, Color(0.36, 0.20, 0.22))
-		cancel.position = Vector2(VP_W * 0.5 - BTN_W - BTN_GAP * 0.5, BTN_Y)
+		cancel.position = Vector2(ScreenMetrics.vp_w() * 0.5 - BTN_W - BTN_GAP * 0.5, BTN_Y)
 		cancel.pressed.connect(func() -> void: _decide(false))
 		add_child(cancel)
-		confirm.position = Vector2(VP_W * 0.5 + BTN_GAP * 0.5, BTN_Y)
+		confirm.position = Vector2(ScreenMetrics.vp_w() * 0.5 + BTN_GAP * 0.5, BTN_Y)
 	else:
-		confirm.position = Vector2((VP_W - BTN_W) * 0.5, BTN_Y)
+		confirm.position = Vector2((ScreenMetrics.vp_w() - BTN_W) * 0.5, BTN_Y)
 	confirm.pressed.connect(func() -> void: _decide(true))
 	add_child(confirm)
 

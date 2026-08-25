@@ -33,8 +33,10 @@ extends Node
 ## 뜰 일이 없다(연출이 도는 동안 `ObjectiveSystem._busy` 가 전장을 붙잡는다).
 const OVERLAY_LAYER: int = 12
 
-const VP_W: float = 1080.0
-const VP_H: float = 1920.0
+## 화면 크기는 고정 상수가 아니라 런타임 값이다 — 스트레치가 `expand` 라
+## 세로로 긴 기기에서는 높이가 1920 보다 커진다. 딤 · 루트가 뷰포트 전체를
+## 덮지 않으면 그 차이만큼 화면 끝에 안 덮인 띠가 남는다.
+## `docs/mobile_safe_area.md` 참고.
 
 ## 카드가 펼쳐지는 자리(카드 **중심** 기준). 전장 한가운데(y 860)보다 살짝
 ## 아래다 — 위쪽에는 상대 손패와 상단 패널이, 아래에는 내 손패가 있어 그 사이가
@@ -195,7 +197,7 @@ func _build_dim() -> ColorRect:
 	# CanvasLayer 아래의 Control 은 full-rect 앵커를 풀어 줄 부모 rect 가 없다 —
 	# 크기를 명시한다(PilotDetailPanel · ObjectiveRewardPopup 과 같은 이유).
 	_root.position = Vector2.ZERO
-	_root.size = Vector2(VP_W, VP_H)
+	_root.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
 	# 연출은 관전 전용이라 입력을 받을 것이 없다. 다만 딤이 STOP 이라 뒤쪽으로
 	# 클릭이 새지는 않는다 — 그동안 눌린 손패가 나중에 반응하면 안 된다.
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -204,7 +206,7 @@ func _build_dim() -> ColorRect:
 	var dim := ColorRect.new()
 	dim.color = Color(DIM_COLOR.r, DIM_COLOR.g, DIM_COLOR.b, 0.0)
 	dim.position = Vector2.ZERO
-	dim.size = Vector2(VP_W, VP_H)
+	dim.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	# 카드보다 **먼저** 붙는다 — 형제 z-order 가 곧 자식 인덱스라, 나중에 붙으면
 	# 딤이 카드를 덮는다.

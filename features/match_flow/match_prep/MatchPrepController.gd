@@ -35,6 +35,12 @@ func _build_ui(player_roster: Array, enemy_roster: Array, player_team_name: Stri
 	bg.bg_color = Color(0.04, 0.06, 0.12, 1.0)
 	_panel.add_theme_stylebox_override("panel", bg)
 	_mf.canvas.add_child(_panel)
+	# 화면 전체를 안전 영역 위끝까지 내린다 — 노치 / 다이나믹 아일랜드 밑에
+	# 제목이 깔리지 않게. 제목만 따로 내리면 본문과 겹친다.
+	ScreenMetrics.indent_to_safe_top(_panel)
+	# 판을 내리면 위쪽 띠가 비므로 같은 색으로 메운다 — 노치 자리는
+	# 비워 둘 곳이 아니라 쓰지 않을 곳이다.
+	ScreenMetrics.backfill_top(_panel, Color(0.04, 0.06, 0.12, 1.0))
 
 	UiHelpers.mk_label(_panel, "경기 준비", 48, Color(1.0, 0.85, 0.20),
 			Vector2(0, 30), Vector2(1080, 60), HORIZONTAL_ALIGNMENT_CENTER)
@@ -48,8 +54,11 @@ func _build_ui(player_roster: Array, enemy_roster: Array, player_team_name: Stri
 
 	var btn := Button.new()
 	btn.text = "경기 시작"
-	btn.position = Vector2((1080.0 - 480.0) / 2.0, 1740.0)
 	btn.size     = Vector2(480, 110)
+	# 하단 안전선에 매단다 — 이 자리는 아이폰 홈 인디케이터 / 안드로이드
+	# 제스처 바가 터치를 가져가는 구간과 맞닿아 있다.
+	btn.position = Vector2((ScreenMetrics.vp_w() - btn.size.x) * 0.5,
+			ScreenMetrics.safe_h() - 70.0 - btn.size.y)
 	btn.add_theme_font_size_override("font_size", 36)
 	btn.pressed.connect(_on_start_pressed)
 	_panel.add_child(btn)

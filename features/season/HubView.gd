@@ -58,9 +58,15 @@ func ensure_view() -> void:
 
 # ── Build ────────────────────────────────────────────────────────────────────
 func _build() -> void:
+	# 화면 전체를 안전 영역 위끝까지 내린다 — 노치 / 다이나믹 아일랜드 밑에
+	# 제목이 깔리지 않게. 제목만 따로 내리면 본문과 겹친다.
+	ScreenMetrics.indent_to_safe_top(self)
 	var bg := ColorRect.new()
 	bg.color = Color(0.07, 0.08, 0.14, 1.0)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# 배경만은 안전 영역 밖(노치 자리)까지 덮는다 — 안 그러면 그 띠가
+	# 엔진 기본 배경색으로 남는다.
+	ScreenMetrics.extend_background(bg)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 
@@ -78,7 +84,8 @@ func _build() -> void:
 	_build_buttons()
 
 	_toast_lbl = UiHelpers.mk_label(self, "", 22, Color(1.0, 0.85, 0.40),
-			Vector2(0, 1640), Vector2(1080, 28), HORIZONTAL_ALIGNMENT_CENTER)
+			Vector2(0, ScreenMetrics.safe_h() - 252.0),
+			Vector2(ScreenMetrics.vp_w(), 28), HORIZONTAL_ALIGNMENT_CENTER)
 
 
 func _build_roster_block() -> void:
@@ -141,9 +148,11 @@ func _build_roster_block() -> void:
 
 
 func _build_buttons() -> void:
-	var top: float = 1700.0
 	var btn_w: float = 480.0
 	var btn_h: float = 110.0
+	# 하단 안전선에 매단다 — 이 자리는 아이폰 홈 인디케이터 / 안드로이드
+	# 제스처 바가 터치를 가져가는 구간과 맞닿아 있다.
+	var top: float = ScreenMetrics.safe_h() - 110.0 - btn_h
 	var gap: float = 30.0
 	var total_w: float = 2.0 * btn_w + gap
 	var start_x: float = (1080.0 - total_w) / 2.0

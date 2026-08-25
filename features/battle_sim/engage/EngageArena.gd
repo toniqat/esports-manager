@@ -22,8 +22,10 @@ extends Control
 # 무대는 딤 아래에 깔려 버린다. 딤보다 뒤에 붙은 프록시 노드에 그려야
 # "무대 밖만 딤드"가 성립한다.
 
-const VP_W: float = 1080.0
-const VP_H: float = 1920.0
+## 화면 크기는 고정 상수가 아니라 런타임 값이다 — 스트레치가 `expand` 라
+## 세로로 긴 기기에서는 높이가 1920 보다 커진다. 딤 · 루트가 뷰포트 전체를
+## 덮지 않으면 그 차이만큼 화면 끝에 안 덮인 띠가 남는다.
+## `docs/mobile_safe_area.md` 참고.
 
 const TEAM_COLORS := [
 	Color(0.32, 0.62, 0.95),   # team 0 (player)
@@ -178,13 +180,13 @@ func _ready() -> void:
 	# 뒤쪽 입력을 못 막는다. 아레나 UI 는 어차피 1080×1920 절대 좌표계다.
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	position = Vector2.ZERO
-	size = Vector2(VP_W, VP_H)
+	size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
 
 	# 1) 풀스크린 딤 — 무대 밖(전장 · 핸드 행)을 눌러 준다.
 	var dim := ColorRect.new()
 	dim.color = DIM_COLOR
 	dim.position = Vector2.ZERO
-	dim.size = Vector2(VP_W, VP_H)
+	dim.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(dim)
 
@@ -243,18 +245,18 @@ func _build_ui(title_text: String) -> void:
 	var title := _make_label(title_text, 40, TITLE_COLOR,
 			HORIZONTAL_ALIGNMENT_CENTER)
 	title.position = Vector2(0, 370)
-	title.size = Vector2(VP_W, 56)
+	title.size = Vector2(ScreenMetrics.vp_w(), 56)
 	add_child(title)
 
 	_round_lbl = _make_label("", 46, TIME_COLOR, HORIZONTAL_ALIGNMENT_CENTER)
 	_round_lbl.position = Vector2(0, 426)
-	_round_lbl.size = Vector2(VP_W, 56)
+	_round_lbl.size = Vector2(ScreenMetrics.vp_w(), 56)
 	add_child(_round_lbl)
 
 	_phase_lbl = _make_label("", 24, Color(0.85, 0.85, 0.9),
 			HORIZONTAL_ALIGNMENT_CENTER)
 	_phase_lbl.position = Vector2(0, 520)
-	_phase_lbl.size = Vector2(VP_W, 32)
+	_phase_lbl.size = Vector2(ScreenMetrics.vp_w(), 32)
 	add_child(_phase_lbl)
 
 	var centre_x: float = STRIP_LEFT + STRIP_WIDTH * 0.5
@@ -433,7 +435,7 @@ func mark_engage_over(reason: String) -> void:
 	_phase_lbl.text = reason
 	_phase_lbl.add_theme_font_size_override("font_size", 30)
 	_phase_lbl.add_theme_color_override("font_color", TITLE_COLOR)
-	_phase_lbl.size = Vector2(VP_W, 40)
+	_phase_lbl.size = Vector2(ScreenMetrics.vp_w(), 40)
 	_phase_lbl.pivot_offset = _phase_lbl.size * 0.5
 	var tw := create_tween()
 	tw.tween_property(_phase_lbl, "scale", Vector2(1.18, 1.18), 0.12) \
@@ -729,7 +731,7 @@ const ROUND_PIP_MAX: int = 8
 func _draw_round_pips(c: CanvasItem) -> void:
 	if _is_duel:
 		return
-	var x0: float = (VP_W - ROUND_BAR_W) * 0.5
+	var x0: float = (ScreenMetrics.vp_w() - ROUND_BAR_W) * 0.5
 	c.draw_rect(Rect2(x0, ROUND_BAR_Y, ROUND_BAR_W, ROUND_BAR_H),
 			Color(0.10, 0.11, 0.16, 0.95), true)
 	var n: int = max(1, _sim.total_rounds)
@@ -814,7 +816,7 @@ func show_dashboard(team0: Array, team1: Array, stats: Dictionary,
 	_dashboard = Panel.new()
 	var dash_w := 940.0
 	var dash_h := 1240.0
-	_dashboard.position = Vector2((VP_W - dash_w) * 0.5, (VP_H - dash_h) * 0.5)
+	_dashboard.position = Vector2((ScreenMetrics.vp_w() - dash_w) * 0.5, (ScreenMetrics.vp_h() - dash_h) * 0.5)
 	_dashboard.size = Vector2(dash_w, dash_h)
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.08, 0.10, 0.16, 0.98)

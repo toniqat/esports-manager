@@ -378,6 +378,37 @@ Exia / Mahiroo / Marasai 세 장의 무기 끝 44~64px 뿐이다.
 원본과 떨어뜨려 배치했다(밴픽 화면에 같은 그림이 나란히 서지 않게). 24종을 넘는
 그림이 생기면 중복 칸부터 채우면 된다.
 
+### ScreenMetrics.gd
+`class_name ScreenMetrics`, extends `RefCounted` — **정적 함수만** 있다
+(창의 루트 뷰포트를 직접 읽으므로 노드가 필요 없다).
+
+**이 저장소의 모든 화면 좌표가 지나는 한 곳이다.** 스트레치가 `expand` 라
+기기마다 뷰포트 크기가 다르고, 그 위에 OS 가 못 쓰게 막는 띠(노치 · 다이나믹
+아일랜드 · 홈 인디케이터 · 제스처 바)가 얹힌다. 아래쪽 띠는 **가려지는 것이
+아니라 터치를 빼앗기는** 구간이라 거기 놓인 버튼은 보이지만 눌리지 않는다.
+
+| 함수 | 답 |
+|---|---|
+| `viewport_size()` / `vp_w()` / `vp_h()` | 스트레치가 먹은 뒤의 뷰포트 크기 |
+| `insets()` | `(좌, 위, 우, 아래)` 인셋 — **뷰포트 단위**로 환산해서 |
+| `safe_rect()` | 안전 영역 사각형 |
+| `top_y()` / `bottom_y()` | 첫 · 마지막으로 쓸 수 있는 y. **터치 대상의 아래끝은 `bottom_y()` 를 넘으면 안 된다** |
+| `left_x()` / `right_x()` / `center_x()` | 가로. `center_x()` 가 하드코딩된 `540` 을 대신한다 |
+| `safe_h()` | 안전 영역 높이 = `indent_to_safe_top()` 한 화면의 로컬 바닥 |
+| `design_offset_y/x/()` | 1080×1920 짜리 화면 한 장을 안전 영역 안에서 가운데로 놓을 때 밀 양 |
+| `indent_to_safe_top(c)` | 전체 화면 Control 을 통째로 안전 영역 위끝까지 내린다(`offset_top`) |
+| `extend_background(c)` | 그 자식 중 **배경판**만 도로 화면 끝까지 늘린다 |
+| `backfill_top(panel, color)` | 배경이 판 자신의 StyleBox 일 때, 비워진 위쪽 띠를 같은 색으로 메운다 |
+| `gesture_edge_w()` | 안드로이드 뒤로 가기 제스처가 가져가는 좌우 폭 — **인셋이 아니라 경고선** |
+
+`DisplayServer.get_display_safe_area()` 는 **네이티브 화면 픽셀**로 답하므로
+그대로 쓰면 안 된다 — 창 크기 대 뷰포트 크기의 비를 곱해 논리 좌표로 옮기는
+것이 `_compute_insets` 가 하는 일이고, 결과는 창/뷰포트 크기를 키로 캐시된다.
+
+데스크톱에서 기기 인셋을 흉내 내려면 환경 변수 `ESM_SAFE_AREA="좌,위,우,아래"`
+또는 사용자 인자 `-- --safe-area=0,162,0,90`. 배치 규약 세 가지와 기기별
+수치표는 **`docs/mobile_safe_area.md`**.
+
 ### UiHelpers.gd
 `class_name UiHelpers`, extends `RefCounted`. Static helpers for
 procedurally-built UI panels — currently `mk_label(...)` shared by MatchFlow

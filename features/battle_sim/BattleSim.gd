@@ -17,6 +17,11 @@ const AUTO_PLAY_INTERVAL := 0.5
 # 전장 하단이 1406 → 1351 로 55px 올라갔으므로 핸드도 60px 올려 카드 윗단과
 # 전장 아랫단 사이의 ~90px 간격을 그대로 유지한다. 확인/취소 버튼 행, 전략
 # 포인트 도넛, Deck / Discard 카운터는 전부 이 값에서 역산하므로 함께 따라온다.
+#
+# 여기 적힌 1440 은 **디자인 화면(1080×1920) 기준값**이다. 실제 y 는 `_ready`
+# 에서 `HudBuilder.bottom_offset()` 만큼 밀린다 — 화면이 9:16 보다 길면 아래로,
+# 홈 인디케이터가 1920 안쪽을 파고들면 위로. 아군 스트립도 같은 스칼라를 타므로
+# 핸드 ↔ 스트립 간격은 어느 기기에서나 그대로다.
 var BS_HAND_CENTER: Vector2 = Vector2(540.0, 1440.0)
 # Side margin (px) reserved for the Deck / Discard count indicators on the
 # left and right of the hand row. Hand width = viewport_w − 2 × this.
@@ -426,6 +431,9 @@ func _ready() -> void:
 	var vp_w  := get_viewport().get_visible_rect().size.x
 	var vp_cx := vp_w * 0.5
 	BS_HAND_CENTER.x = vp_cx - Card.CARD_W * 0.5
+	# 세로는 안전 영역 바닥에 맞춰 덩어리째 민다 — 아군 스트립과 같은 스칼라라
+	# 둘 사이 간격은 보존된다(`HudBuilder` 의 "안전 영역 오프셋" 절).
+	BS_HAND_CENTER.y += HudBuilder.bottom_offset()
 	# Inner hand width = total width minus the two side margins reserved for
 	# the Deck / Discard count labels, widened by BS_HAND_WIDTH_SCALE.
 	BS_HAND_WIDTH = max(Card.CARD_W,

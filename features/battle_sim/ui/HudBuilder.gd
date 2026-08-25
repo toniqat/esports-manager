@@ -3,6 +3,28 @@ extends Node
 
 @onready var _bs: BattleSim = get_parent() as BattleSim
 
+# ── 안전 영역 오프셋 ─────────────────────────────────────────────────────────
+# 아래의 모든 상수는 **1080×1920 디자인 화면**에 적힌 값 그대로이고, 실제 기기
+# 대응은 그 값들을 건드리지 않고 **덩어리째 미는 것**으로 한다. 상단 패널 ↔
+# 상대 손패 peek ↔ 적 도넛 ↔ 킬로그가 서로 픽셀 단위로 맞물려 있고(위 주석의
+# "사슬"), 하단도 핸드 부채꼴 ↔ 카드 밑단 ↔ 아군 스트립이 마찬가지라, 상수를
+# 하나씩 기기 대응으로 바꾸면 그 관계가 조용히 어긋난다. 스칼라 두 개면 관계는
+# 전부 보존된다.
+#
+# 9:16 화면 · 인셋 0 이면 둘 다 0 이라 예전 배치와 한 픽셀도 다르지 않다.
+
+
+## 상단 덩어리를 밀어 내리는 양 — 노치 / 다이나믹 아일랜드 / 상태 표시줄.
+static func top_offset() -> float:
+	return ScreenMetrics.top_y()
+
+
+## 하단 덩어리를 밀어 내리는(음수면 올리는) 양 — 디자인 바닥(1920)과 실제
+## 안전 바닥의 차. 화면이 길면 양수, 홈 인디케이터가 1920 안쪽을 파고들면
+## 음수다.
+static func bottom_offset() -> float:
+	return ScreenMetrics.bottom_y() - ScreenMetrics.BASE_H
+
 # ── 상단 패널 (시간 + 팀 점수 + 적 파일럿 스트립) ─────────────────────────────
 # 예전에는 이 패널 하나가 열 명 전부를 84px 슬롯으로 담았다(아군 좌 / 점수 중앙 /
 # 적 우). 지금은 **적 다섯만** 여기 있고, 아군 다섯은 핸드 행 아래로 내려갔다.
@@ -70,8 +92,10 @@ const ENEMY_HP_H       := 7.0
 const OBJ_TIMER_W  := 101.0
 const OBJ_TIMER_Y  := 46.0
 const OBJ_TIMER_H  := 60.0
+## 좌우 여백은 대칭이므로 왼쪽 하나만 상수로 두고 오른쪽은 뷰포트 가로에서
+## 역산한다 — 예전의 `OBJ_TIMER_RIGHT_X = 953`(= 1080 − 101 − 26)은 가로가
+## 1080 보다 넓어질 수 있게 되면서 가운데 정렬을 깨뜨렸다.
 const OBJ_TIMER_LEFT_X  := 26.0
-const OBJ_TIMER_RIGHT_X := 953.0
 
 # ── 하단 아군 스트립 (핸드 행 아래) ───────────────────────────────────────────
 # 핸드 행은 y 1500..1720, 그 아래가 통째로 비어 있었다(예전 하단 코스트 바 자리).
@@ -293,8 +317,9 @@ func _update_pile_buttons() -> void:
 # ── 상단 패널: 시간 · 팀 점수 한 줄 + 그 아래 적 파일럿 스트립 ────────────────
 func _build_top_panel() -> void:
 	var tp := Panel.new()
-	tp.position = Vector2(0.0, TOP_PANEL_Y)
-	tp.size     = Vector2(1080.0, TOP_PANEL_H)
+	var vp_w: float = ScreenMetrics.vp_w()
+	tp.position = Vector2(0.0, TOP_PANEL_Y + top_offset())
+	tp.size     = Vector2(vp_w, TOP_PANEL_H)
 	# Force an opaque dark background so the AI hand card backs sitting
 	# behind this panel are visually clipped to the peek strip below.
 	var tp_style := StyleBoxFlat.new()
@@ -314,7 +339,7 @@ func _build_top_panel() -> void:
 			HORIZONTAL_ALIGNMENT_LEFT)
 	_lbl_total_score = UiHelpers.mk_label(tp, "", TOTAL_SCORE_FONT,
 			Color(1.0, 0.95, 0.6),
-			Vector2(0.0, HEADER_ROW_Y), Vector2(1080.0, HEADER_ROW_H),
+			Vector2(0.0, HEADER_ROW_Y), Vector2(vp_w, HEADER_ROW_H),
 			HORIZONTAL_ALIGNMENT_CENTER)
 
 	# 적 스트립은 패널의 자식이라 패널 배경 위에 그려진다(= 상대 핸드 peek 을
@@ -325,15 +350,19 @@ func _build_top_panel() -> void:
 	_enemy_strip = PilotStrip.new()
 	_enemy_strip.name = "EnemyPilotStrip"
 	tp.add_child(_enemy_strip)
-	_enemy_strip.setup(_bs, 1, ENEMY_STRIP_RECT, true,
+	var strip_rect := Rect2(
+			Vector2((vp_w - ENEMY_STRIP_RECT.size.x) * 0.5, ENEMY_STRIP_RECT.position.y),
+			ENEMY_STRIP_RECT.size)
+	_enemy_strip.setup(_bs, 1, strip_rect, true,
 			ENEMY_SCORE_FONT, ENEMY_HP_H)
 	_enemy_strip.pilot_pressed.connect(_on_pilot_strip_pressed)
 
 	# 오브젝트 등장 시계 — 스트립 양옆. 전령이 왼쪽 · 용이 오른쪽인 것은
 	# 전장에서 두 오브젝트가 서는 칸의 좌우와 같다.
 	_obj_timers.clear()
+	var timer_right_x: float = vp_w - OBJ_TIMER_W - OBJ_TIMER_LEFT_X
 	for spec in [[ObjectiveSystem.Kind.HERALD, OBJ_TIMER_LEFT_X],
-			[ObjectiveSystem.Kind.DRAGON, OBJ_TIMER_RIGHT_X]]:
+			[ObjectiveSystem.Kind.DRAGON, timer_right_x]]:
 		var timer := ObjectiveTimer.new()
 		timer.name = "ObjTimer%d" % int(spec[0])
 		tp.add_child(timer)
@@ -354,14 +383,25 @@ func _on_obj_timer_pressed(kind: int) -> void:
 # ── 하단 아군 스트립 ─────────────────────────────────────────────────────────
 # 핸드 행 아래. 누르면 파일럿 상세 패널이 열린다 — 다만 **자기 작전 단계에만**
 # 눌린다(`_update_pilot_strips` 가 버튼 활성 상태를 관리).
+## 아군 스트립의 실제 자리 — 디자인 좌표를 안전 영역만큼 민 것. 가로도 뷰포트
+## 기준으로 다시 가운데 잡는다(태블릿에서 1080 이 가운데가 아니다).
+static func player_strip_rect() -> Rect2:
+	var vp_w: float = ScreenMetrics.vp_w()
+	return Rect2(
+			Vector2((vp_w - PLAYER_STRIP_RECT.size.x) * 0.5,
+					PLAYER_STRIP_RECT.position.y + bottom_offset()),
+			PLAYER_STRIP_RECT.size)
+
+
 func _build_player_strip() -> void:
 	# 뒤판을 **먼저** 붙인다 — 형제 z-order 가 곧 자식 인덱스라, 나중에 붙으면
 	# 판이 초상화를 덮는다.
 	var bg := Panel.new()
 	bg.name = "PlayerStripBackdrop"
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bg.position = PLAYER_STRIP_RECT.position - Vector2(PLAYER_BG_PAD, PLAYER_BG_PAD)
-	bg.size = PLAYER_STRIP_RECT.size + Vector2(PLAYER_BG_PAD, PLAYER_BG_PAD) * 2.0
+	var strip_rect := player_strip_rect()
+	bg.position = strip_rect.position - Vector2(PLAYER_BG_PAD, PLAYER_BG_PAD)
+	bg.size = strip_rect.size + Vector2(PLAYER_BG_PAD, PLAYER_BG_PAD) * 2.0
 	var bg_style := StyleBoxFlat.new()
 	bg_style.bg_color = STRIP_BG_COLOR
 	bg_style.border_color = STRIP_BG_BORDER
@@ -376,7 +416,7 @@ func _build_player_strip() -> void:
 	_player_strip = PilotStrip.new()
 	_player_strip.name = "PlayerPilotStrip"
 	_bs.canvas.add_child(_player_strip)
-	_player_strip.setup(_bs, 0, PLAYER_STRIP_RECT, true,
+	_player_strip.setup(_bs, 0, strip_rect, true,
 			PLAYER_SCORE_FONT, PLAYER_HP_H)
 	_player_strip.pilot_pressed.connect(_on_pilot_strip_pressed)
 
@@ -415,8 +455,10 @@ func set_strip_visible(team: int, on: bool) -> void:
 # panel. update_ai_hand_visuals() syncs the visible count to `_bs.ai_hand`.
 func _build_ai_hand_peek() -> void:
 	_ai_hand_root = Control.new()
-	_ai_hand_root.position = Vector2.ZERO
-	_ai_hand_root.size     = Vector2(1080.0, 1920.0)
+	# 루트를 통째로 내리면 안쪽 부채꼴 좌표(`AI_HAND_TOP_Y` 기반)를 손대지 않고
+	# 노치 아래로 옮겨진다.
+	_ai_hand_root.position = Vector2(0.0, top_offset())
+	_ai_hand_root.size     = ScreenMetrics.viewport_size()
 	_ai_hand_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# Force opaque dark background on the score panel later by giving the
 	# panel an explicit StyleBoxFlat. The panel is created in `_build_top_panel`,
@@ -487,8 +529,10 @@ func ai_hand_left_anchor() -> Vector2:
 	if n > 1:
 		step_deg = min(step_deg, AI_HAND_FAN_MAX_SPREAD_DEG / float(n - 1))
 	var half_card := Vector2(Card.CARD_W, Card.CARD_H) * 0.5
-	var mid_center_y: float = AI_HAND_TOP_Y + Card.CARD_H * AI_HAND_SCALE * 0.5
-	var pivot := Vector2(1080.0 * 0.5, mid_center_y - AI_HAND_FAN_RADIUS)
+	# `_ai_hand_root` 가 `top_offset()` 만큼 내려가 있으므로 로컬 → 뷰포트 변환에
+	# 그 값을 더한다. 이 함수만 뷰포트 좌표를 약속한다(`_layout_ai_hand` 는 로컬).
+	var mid_center_y: float = AI_HAND_TOP_Y + Card.CARD_H * AI_HAND_SCALE * 0.5 			+ top_offset()
+	var pivot := Vector2(ScreenMetrics.center_x(), mid_center_y - AI_HAND_FAN_RADIUS)
 	var theta: float = deg_to_rad(-float(n - 1) * 0.5 * step_deg)
 	var centre: Vector2 = pivot + Vector2(sin(theta), cos(theta)) * AI_HAND_FAN_RADIUS
 	return centre - half_card
@@ -509,7 +553,7 @@ func _layout_ai_hand() -> void:
 	# θ=0 lands that card's centre at AI_HAND_TOP_Y + half its scaled height.
 	var half_card := Vector2(Card.CARD_W, Card.CARD_H) * 0.5
 	var mid_center_y: float = AI_HAND_TOP_Y + Card.CARD_H * AI_HAND_SCALE * 0.5
-	var pivot := Vector2(1080.0 * 0.5, mid_center_y - AI_HAND_FAN_RADIUS)
+	var pivot := Vector2(ScreenMetrics.center_x(), mid_center_y - AI_HAND_FAN_RADIUS)
 	for i in n:
 		var card := _ai_card_back_nodes[i] as Card
 		var theta: float = deg_to_rad((float(i) - float(n - 1) * 0.5) * step_deg)
@@ -553,12 +597,13 @@ func play_turn_announce(is_player: bool) -> void:
 		child.queue_free()
 	var bar_color: Color = TURN_ANNOUNCE_PLAYER_COLOR if is_player else TURN_ANNOUNCE_ENEMY_COLOR
 	var msg: String      = "당신의 차례" if is_player else "상대 차례"
-	var center_y: float = 960.0 - TURN_ANNOUNCE_BAR_H * 0.5  # 1920 / 2
+	var vp := ScreenMetrics.viewport_size()
+	var center_y: float = vp.y * 0.5 - TURN_ANNOUNCE_BAR_H * 0.5
 
 	var bar := ColorRect.new()
 	bar.color = bar_color
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bar.position = Vector2(540.0, center_y)
+	bar.position = Vector2(vp.x * 0.5, center_y)
 	bar.size     = Vector2(0.0, TURN_ANNOUNCE_BAR_H)
 	bar.pivot_offset = Vector2(0.0, TURN_ANNOUNCE_BAR_H * 0.5)
 	_turn_announce_root.add_child(bar)
@@ -572,7 +617,7 @@ func play_turn_announce(is_player: bool) -> void:
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
 	lbl.position = Vector2(0.0, center_y)
-	lbl.size     = Vector2(1080.0, TURN_ANNOUNCE_BAR_H)
+	lbl.size     = Vector2(vp.x, TURN_ANNOUNCE_BAR_H)
 	lbl.modulate = Color(1.0, 1.0, 1.0, 0.0)
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_turn_announce_root.add_child(lbl)
@@ -580,7 +625,7 @@ func play_turn_announce(is_player: bool) -> void:
 	_turn_announce_root.visible = true
 
 	var tw_in := _bs.create_tween().set_parallel()
-	tw_in.tween_property(bar, "size", Vector2(1080.0, TURN_ANNOUNCE_BAR_H),
+	tw_in.tween_property(bar, "size", Vector2(vp.x, TURN_ANNOUNCE_BAR_H),
 			TURN_ANNOUNCE_IN_DUR).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	tw_in.tween_property(bar, "position", Vector2(0.0, center_y),
 			TURN_ANNOUNCE_IN_DUR).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
@@ -619,8 +664,8 @@ func _build_cost_donuts() -> void:
 	_bs.cost_donut_enemy.fill_color = DONUT_FILL_ENEMY
 	_bs.cost_donut_enemy.interactive = false
 	var ai_hand_bottom: float = AI_HAND_TOP_Y + Card.CARD_H * AI_HAND_SCALE
-	_bs.cost_donut_enemy.set_center(Vector2(cx,
-			ai_hand_bottom + DONUT_AI_HAND_GAP + CostDonut.RADIUS))
+	_bs.cost_donut_enemy.set_center(Vector2(cx, top_offset()
+			+ ai_hand_bottom + DONUT_AI_HAND_GAP + CostDonut.RADIUS))
 
 	_bs.cost_donut = CostDonut.new()
 	_bs.cost_donut.name = "CostDonutPlayer"
@@ -636,8 +681,9 @@ func _build_cost_donuts() -> void:
 
 func _build_victory_panel() -> void:
 	_bs.panel_victory = Panel.new()
-	_bs.panel_victory.position = Vector2(190.0, 760.0)
+	var vp := ScreenMetrics.viewport_size()
 	_bs.panel_victory.size     = Vector2(700.0, 400.0)
+	_bs.panel_victory.position = (vp - _bs.panel_victory.size) * 0.5
 	_bs.panel_victory.visible  = false
 	_bs.canvas.add_child(_bs.panel_victory)
 

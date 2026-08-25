@@ -54,6 +54,12 @@ func _build_ui() -> void:
 	bg.bg_color = Color(0.05, 0.07, 0.13, 1.0)
 	_panel.add_theme_stylebox_override("panel", bg)
 	_mf.canvas.add_child(_panel)
+	# 화면 전체를 안전 영역 위끝까지 내린다 — 노치 / 다이나믹 아일랜드 밑에
+	# 제목이 깔리지 않게. 제목만 따로 내리면 본문과 겹친다.
+	ScreenMetrics.indent_to_safe_top(_panel)
+	# 판을 내리면 위쪽 띠가 비므로 같은 색으로 메운다 — 노치 자리는
+	# 비워 둘 곳이 아니라 쓰지 않을 곳이다.
+	ScreenMetrics.backfill_top(_panel, Color(0.05, 0.07, 0.13, 1.0))
 
 	UiHelpers.mk_label(_panel, "ASSIGN MECHS TO PLAYERS", 44, Color(1.0, 0.85, 0.2),
 			Vector2(0.0, 30.0), Vector2(1080.0, 60.0), HORIZONTAL_ALIGNMENT_CENTER)
@@ -97,12 +103,18 @@ func _build_ui() -> void:
 		_slot_buttons.append(btn)
 
 	# Status + confirm
+	# 하단 안전선에 매단다 — 이 자리는 아이폰 홈 인디케이터 / 안드로이드
+	# 제스처 바가 터치를 가져가는 구간과 맞닿아 있다.
+	var confirm_h: float = 100.0
+	var confirm_y: float = ScreenMetrics.safe_h() - 150.0 - confirm_h
 	_lbl_status = UiHelpers.mk_label(_panel, "", 24, Color(1.0, 1.0, 0.9),
-			Vector2(0.0, 1610.0), Vector2(1080.0, 40.0), HORIZONTAL_ALIGNMENT_CENTER)
+			Vector2(0.0, confirm_y - 60.0), Vector2(ScreenMetrics.vp_w(), 40.0),
+			HORIZONTAL_ALIGNMENT_CENTER)
 	_btn_confirm = Button.new()
 	_btn_confirm.text     = "Confirm Assignment"
-	_btn_confirm.position = Vector2(290.0, 1670.0)
-	_btn_confirm.size     = Vector2(500.0, 100.0)
+	_btn_confirm.size     = Vector2(500.0, confirm_h)
+	_btn_confirm.position = Vector2(
+			(ScreenMetrics.vp_w() - _btn_confirm.size.x) * 0.5, confirm_y)
 	_btn_confirm.add_theme_font_size_override("font_size", 32)
 	_btn_confirm.disabled = true
 	_btn_confirm.pressed.connect(_on_confirm_pressed)

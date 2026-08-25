@@ -29,6 +29,12 @@ func _build_ui() -> void:
 	bg.bg_color = Color(0.04, 0.06, 0.12, 1.0)
 	_panel.add_theme_stylebox_override("panel", bg)
 	_mf.canvas.add_child(_panel)
+	# 화면 전체를 안전 영역 위끝까지 내린다 — 노치 / 다이나믹 아일랜드 밑에
+	# 제목이 깔리지 않게. 제목만 따로 내리면 본문과 겹친다.
+	ScreenMetrics.indent_to_safe_top(_panel)
+	# 판을 내리면 위쪽 띠가 비므로 같은 색으로 메운다 — 노치 자리는
+	# 비워 둘 곳이 아니라 쓰지 않을 곳이다.
+	ScreenMetrics.backfill_top(_panel, Color(0.04, 0.06, 0.12, 1.0))
 
 	UiHelpers.mk_label(_panel, "JUNGLE START", 56, Color(1.0, 0.85, 0.2),
 			Vector2(0.0, 80.0), Vector2(1080.0, 80.0), HORIZONTAL_ALIGNMENT_CENTER)

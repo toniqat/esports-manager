@@ -147,6 +147,8 @@ esports-manager/
 │   ├── PlayerData.gd            ← class_name PlayerData (out-game persona + assigned mech)
 │   ├── MechData.gd              ← class_name MechData (mech stats — no role)
 │   ├── BuildingData.gd / WaypointData.gd ← @tool inspector resources
+│   ├── ScreenMetrics.gd         ← class_name ScreenMetrics — 세이프 에어리어 / 뷰포트 크기 (정적).
+│   │                              **모든 화면 좌표가 여기를 지난다** — docs/mobile_safe_area.md
 │   └── UiHelpers.gd             ← class_name UiHelpers (mk_label etc.)
 │
 ├── scenes/
@@ -159,6 +161,7 @@ esports-manager/
 │
 ├── docs/
 │   ├── ios_testbuild.md          ← 맥 없이 아이폰에서 돌리는 법 (Actions + Sideloadly)
+│   ├── mobile_safe_area.md       ← **UI 를 어디에 놓아도 되는가** — 세이프 에어리어 · 화면비 · 제스처 구역
 │   └── mech_skills_design.md     ← 메크 21대 목록 + 절 문법
 │
 └── addons/godot_mcp/            ← MCP editor plugin (do not modify)
@@ -372,6 +375,7 @@ Each child module has `@onready var _bs: BattleSim = get_parent() as BattleSim` 
 | Deck / Discard 목록 열람 | 핸드 행 양옆의 **Deck / Discard 뭉치를 누르면** 그 더미의 카드가 찾기 그리드와 같은 5열 목록으로 펼쳐진다(`card_phase/CardPileViewer.gd`, 읽기 전용). **정렬은 이름 오름차순** — 실제 덱 순서를 보여 주면 다음 드로우가 그대로 읽히기 때문이며, 찾기(`search:N`) 그리드도 같은 규칙으로 정렬한다. 열리는 시점은 **작전 단계뿐**(`CardPhaseManager.can_browse_piles()`); 못 여는 상태에서는 버튼이 비활성이고 뭉치가 흐려진다. 열려 있는 동안 핸드 입력 · 턴 넘기기 · 도넛 플립이 모두 잠긴다 — 특히 `CostDonut` 은 `_input` 으로 듣기 때문에 딤만으로는 막히지 않아 `set_flip_allowed` 를 따로 끈다. 닫기는 닫기 버튼 또는 딤 클릭. |
 | 사용 불가 카드 표시 | 마나 부족 / 시전자 부활 대기는 **카드 전체를 덮는 반투명 슬래브**(`Card.BlockOverlay`)로 표현한다 — 카드 배경만 회색으로 칠하면 그 위의 파일럿 일러스트가 밝게 남아 쓸 수 있는 카드처럼 읽혔다. 시전자가 쓰러져 있으면 그 위에 **부활까지 남은 턴 수**가 카드 한가운데 큰 폰트로 찍히고, 그 동안 확인 버튼은 비활성이다. |
 | 전장 크기 | `HexGrid.DISPLAY_SCALE` = **1.35** (예전 1.5의 90%). 전장 픽셀 박스가 990×1092 → 891×983 으로 줄어 화면 중앙(y 860) 기준 상단 314 → **369**, 하단 1406 → **1351** 이 된다. 타일·건물·웨이포인트 스케일과 hex 기하가 이 상수 하나에서 나오고, 파일럿 마커 / HP 바 / 폰트 크기도 `hex_size` 또는 `DISPLAY_SCALE` 에서 유도되므로 전부 함께 줄어든다. |
+| 화면 대응 (세이프 에어리어) | **HUD 상수는 1080×1920 디자인 값 그대로 두고 위/아래 덩어리를 스칼라 두 개로 민다** — `HudBuilder.top_offset()`(= `ScreenMetrics.top_y()`)과 `HudBuilder.bottom_offset()`(= `ScreenMetrics.bottom_y() − 1920`). 상단 패널 ↔ 상대 손패 peek ↔ 적 도넛 ↔ 킬로그가 픽셀 단위로 맞물려 있고 하단도 핸드 부채꼴 ↔ 카드 밑단 ↔ 아군 스트립이 마찬가지라, 상수를 하나씩 기기 대응으로 고치면 그 관계가 조용히 어긋난다. `BattleSim.BS_HAND_CENTER.y` 도 `_ready` 에서 같은 `bottom_offset()` 을 타므로 핸드 ↔ 스트립 간격은 어느 기기에서나 그대로다. 스트레치는 **`expand`** 라 폰에서 가로는 정확히 1080 이고 세로만 늘어난다(인셋 0 · 9:16 이면 두 오프셋이 모두 0 이라 예전 배치와 한 픽셀도 다르지 않다 — 실측). 전체 화면 딤은 `1920` 리터럴이 아니라 반드시 `ScreenMetrics.viewport_size()` 여야 한다. 규약 · 기기별 수치 · 데스크톱 검증법은 **`docs/mobile_safe_area.md`**. |
 | 핸드 레이아웃 | Row top is `BS_HAND_CENTER.y` = **1440** (전장이 90%로 줄며 하단이 55px 올라간 만큼 60px 위로 옮겼다 — 카드 윗단과 전장 아랫단 사이 ~90px 간격 유지). 확인/취소 행 · 전략 포인트 도넛 · Deck/Discard 카운터 · 히트 레이어가 전부 이 값에서 역산되므로 함께 따라온다. Row is `BS_HAND_WIDTH` = (viewport − 2×`BS_HAND_AREA_MARGIN`) × `BS_HAND_WIDTH_SCALE` (1.10) = 902px wide; the Deck/Discard labels re-derive their gutter from the real hand edge. **The fan is one circle**: every card centre rides a circle of radius `BS_HAND_FAN_RADIUS` (3200px) pivoted *below* the row, so tilt and vertical offset always agree and **the middle card is the highest while both ends curve down** (12-card hand: ±6.7°, ends hanging 21.4px below the middle). A plain click does nothing at all — see 카드 드래그 앤 드롭. Each player card casts a `DropShadow` child whose offset/blur grows with height — rest 10px → hover 24px → dragged 32px. **The row spreads around one "focus" card — `_push_focus_card()` = the card being dragged, else the hovered one** — so grabbing a card opens the hand exactly as hovering it does. Focus scales the card to `Card.HOVER_SCALE` (1.2×, cubic EASE_OUT in 0.04s) and slides its neighbours away by `_hover_push_amount` — solved from the coverage it must prevent (96px enlarged half-width + `BS_HAND_HOVER_MIN_STRIP` 32px clickable sliver − the row's own spacing), so **it grows with the hand size**: `BS_HAND_HOVER_PUSH` 28px floor up to 8 cards → 60.5px at 12 cards. **The hand's width is fixed**: the two end cards are anchors, and the push ramps to exactly 0 at them via `1 − (steps/steps_to_end)^BS_HAND_HOVER_FALLOFF_POW` (2.0, so near neighbours keep nearly the full push) — the row redistributes rather than growing. Dragging a 대상 지정 card lifts it by `Card.PRESS_LIFT` **along its own up-axis, keeping its fan rotation** (±4.6px sideways at the ends of a 12-card hand); `_begin_drag` reflows the whole row around it first, and since the focus card's own push is 0 there is no push-free slot variant — lift and drop are exact opposites. `_reorder_hand_nodes` raises the dragged — else hovered — card above all others. A hover reflow lays out the **incoming focus card too** — only the *dragged* card is skipped — otherwise it stays stranded at the push the previous focus gave it. **Hand cards don't pick the mouse**: `spawn_card_node` sets the whole card subtree to `MOUSE_FILTER_IGNORE` (PASS is not enough — a PASS container is still returned by picking) and one `HandHitLayer` Control over the row routes hover/clicks by cursor x, using bands cut at the midpoints between card centres, with the focus card holding the cursor while it's on its enlarged face. Rect picking let the focus card cover its right-hand neighbour down to 0–17px. Hover reflows are **deferred + coalesced** (`move_child` re-fires mouse_entered/exited synchronously — see card_phase/README.md), and `scale` is owned solely by `Card._refresh_float_state`. Card layout tweens `position`, never `global_position` (the latter is scale-coupled — see card_phase/README.md). |
 | 상대 핸드 레이아웃 | 상대 핸드도 겹쳐진 **부채꼴**이며, 플레이어 핸드를 **상하 반전**한 모양이다: 원의 중심이 카드보다 *위*에 있어 θ=0 지점이 호의 가장 낮은 점이 되고, 따라서 **가운데 카드가 패널 아래로 가장 많이 튀어나오고 양 끝이 위로 말려 올라간다**. 기울기는 `−θ`(플레이어 팬의 좌우 기울기를 거울대칭). `HudBuilder.AI_HAND_FAN_RADIUS` 620 / `AI_HAND_FAN_STEP_DEG` 3.2 / `AI_HAND_FAN_MAX_SPREAD_DEG` 28 로, 카드 간 중심 간격은 34.6px(72px 카드 대비 절반 넘게 겹침)에서 12장 기준 26.9px 까지 좁아진다. 자세한 식은 `ui/README.md`. |
 | 전투 행동 로그 | `debug/BattleLogger.gd` (`_bs.blog`). 매 턴 전/후 위치 스냅샷 + 리스폰·리콜·교전·데미지·사망·자유이동(스텝 단위)·푸시·포탑·HQ·정글·카드까지 콘솔과 `user://battle_logs/battle_<timestamp>.log` 양쪽에 기록. 턴 종료 시 같은 스코프의 적끼리 자리를 맞바꾸면 `!!SWAP` / `!!CROSS` 로 표시하고 두 파일럿의 이동 이력을 되짚어 준다. 기본 ON — `blog.enabled` 로 끈다. |
@@ -488,6 +492,9 @@ DB 오류로 멈추었을 자리다. 그래서 모든 런타임 DB 접근은 **`
 4. For multi-module features (season, battle_sim, match_flow): also read the relevant submodule's README
 5. Make focused changes only in that feature's folder
 6. After adding tables/columns to CSV: run **Project → Tools → Rebuild game.db**
+7. UI 를 새로 놓거나 옮겼다면 **`docs/mobile_safe_area.md`** 의 체크리스트로
+   검산한다 — 화면 아래쪽은 홈 인디케이터 / 제스처 바가 **터치를 가져가는**
+   구간이라, 거기 놓인 버튼은 보이지만 눌리지 않는다
 
 ---
 

@@ -794,3 +794,30 @@ dim.size.x     = _portrait_w * (1 - filled)
   위를 덮고 있으면 아무 일도 안 일어난 것처럼 보이고, 계략처럼 자기 오버레이
   (`CardSelectOverlay`, 레이어 10)를 여는 스킬은 이 패널(레이어 13) 뒤에 깔려
   아예 보이지 않는다.
+
+---
+
+## 화면 대응 (세이프 에어리어)
+
+`HudBuilder` 의 좌표 상수는 **1080×1920 디자인 값 그대로**이고, 기기 대응은
+그 값을 건드리지 않고 **덩어리째 미는 것**으로 한다.
+
+| 스칼라 | 값 | 미는 대상 |
+|---|---|---|
+| `HudBuilder.top_offset()` | `ScreenMetrics.top_y()` | 상단 패널 · 상대 손패 peek 루트 · 적 도넛 · `KillFeed` |
+| `HudBuilder.bottom_offset()` | `ScreenMetrics.bottom_y() − 1920` | 아군 스트립(+뒤판) · `BattleSim.BS_HAND_CENTER.y`(→ 덱/버린 더미 · 플레이어 도넛 · 딤이 전부 따라온다) |
+
+상수를 하나씩 고치지 않는 이유는 이 파일 머리말의 "사슬" 때문이다 — 상단
+패널 ↔ peek ↔ 도넛 ↔ 킬로그가 픽셀 단위로 맞물려 있어서 하나만 옮기면 관계가
+조용히 어긋난다. 스칼라 두 개면 관계가 전부 보존되고, **인셋이 0 이면 두
+값이 모두 0 이라 예전 배치와 한 픽셀도 다르지 않다**(실측).
+
+가로는 `ScreenMetrics.vp_w()` / `center_x()` 에서 온다 — 적 스트립과 오브젝트
+시계는 뷰포트 가로에 맞춰 다시 가운데를 잡고, 시계의 오른쪽 칸은 왼쪽 여백에서
+역산한다(예전 `OBJ_TIMER_RIGHT_X = 953` 은 삭제).
+
+전체 화면 딤(`CardSelectOverlay` · `PilotDetailPanel` · `CardPileViewer` …)은
+반드시 `ScreenMetrics.viewport_size()` 여야 한다. `Vector2(1080, 1920)` 리터럴은
+긴 화면에서 아래쪽에 안 덮인 띠를 남긴다.
+
+자세한 규약 · 기기별 수치 · 데스크톱 검증법: **`docs/mobile_safe_area.md`**

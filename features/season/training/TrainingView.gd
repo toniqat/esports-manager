@@ -108,9 +108,15 @@ func _resolve_scheduler() -> void:
 
 # ── Build ────────────────────────────────────────────────────────────────────
 func _build() -> void:
+	# 화면 전체를 안전 영역 위끝까지 내린다 — 노치 / 다이나믹 아일랜드 밑에
+	# 제목이 깔리지 않게. 제목만 따로 내리면 본문과 겹친다.
+	ScreenMetrics.indent_to_safe_top(self)
 	var bg := ColorRect.new()
 	bg.color = Color(0.07, 0.08, 0.14, 1.0)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# 배경만은 안전 영역 밖(노치 자리)까지 덮는다 — 안 그러면 그 띠가
+	# 엔진 기본 배경색으로 남는다.
+	ScreenMetrics.extend_background(bg)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 
@@ -224,9 +230,11 @@ func _build_grid() -> void:
 
 
 func _build_buttons() -> void:
-	var y: float = 1740.0
 	var w: float = 480.0
 	var h: float = 100.0
+	# 하단 안전선에 매단다 — 이 자리는 아이폰 홈 인디케이터 / 안드로이드
+	# 제스처 바가 터치를 가져가는 구간과 맞닿아 있다.
+	var y: float = ScreenMetrics.safe_h() - 80.0 - h
 	var gap: float = 40.0
 	var total_w: float = 2.0 * w + gap
 	var x0: float = (1080.0 - total_w) / 2.0
@@ -274,7 +282,10 @@ func _build_picker() -> void:
 	sty.corner_radius_bottom_right = 8
 	card.add_theme_stylebox_override("panel", sty)
 	card.size     = Vector2(640, 800)
-	card.position = Vector2((1080.0 - 640.0) / 2.0, (1920.0 - 800.0) / 2.0)
+	# 이 뷰는 안전 영역 위끝으로 내려가 있으므로 세로 가운데는 뷰포트 높이가
+	# 아니라 안전 영역 높이로 잡는다.
+	card.position = (Vector2(ScreenMetrics.vp_w(), ScreenMetrics.safe_h())
+			- Vector2(640.0, 800.0)) * 0.5
 	_picker_layer.add_child(card)
 
 	UiHelpers.mk_label(card, "훈련 선택", 28, Color(1.0, 0.85, 0.20),

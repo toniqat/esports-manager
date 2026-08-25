@@ -37,9 +37,11 @@ const SEARCH_ROW_GAP        := 18.0
 const SEARCH_GRID_SIDE_PAD  := 90.0
 const BTN_W                 := 180.0
 const BTN_H                 := 56.0
-# Bottom-of-screen anchor for the 숨김 button (kept where it was — it gates
-# both modes and feels natural near the home-bar safe area).
-const BTN_BOTTOM_Y          := 1830.0
+# 숨김 버튼이 **안전선에서 물러나는 양**. 예전에는 `BTN_BOTTOM_Y = 1830` 절대
+# 좌표였는데, 디자인 화면 기준으로도 아래끝이 1886 이라 아이폰 홈 인디케이터
+# 구간(대략 y ≥ 1845)에 걸쳐 있었다 — 화면에 보이지만 **눌리지 않는** 버튼이다.
+# 지금은 실제 안전선에서 역산한다(1920 · 인셋 0 이면 예전과 같은 1830).
+const BTN_BOTTOM_GAP        := 34.0
 # Top-of-hand anchor for 확인 / 취소 buttons. Mirrors CardTargetingOverlay.
 const BTN_HAND_GAP          := 10.0
 const BTN_SIDE_MARGIN       := 24.0
@@ -331,7 +333,7 @@ func _build_battle_dim() -> void:
 	_battle_dim.color = DIM_COLOR
 	_battle_dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_battle_dim.position = Vector2.ZERO
-	_battle_dim.size = Vector2(1080.0, _bs.BS_HAND_CENTER.y)
+	_battle_dim.size = Vector2(ScreenMetrics.vp_w(), _bs.BS_HAND_CENTER.y)
 	_bs.canvas.add_child(_battle_dim)
 	_bs.canvas.move_child(_battle_dim, 0)
 
@@ -343,13 +345,14 @@ func _build_full_dim() -> void:
 	_full_dim.color = DIM_COLOR
 	_full_dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	_full_dim.position = Vector2.ZERO
-	_full_dim.size = Vector2(1080.0, 1920.0)
+	_full_dim.size = ScreenMetrics.viewport_size()
 	_overlay_layer.add_child(_full_dim)
 
 
 func _build_buttons(is_discard: bool) -> void:
 	_btn_hide = _make_btn("숨김")
-	_btn_hide.position = Vector2(BTN_SIDE_MARGIN, BTN_BOTTOM_Y)
+	_btn_hide.position = Vector2(BTN_SIDE_MARGIN,
+			ScreenMetrics.bottom_y() - BTN_BOTTOM_GAP - BTN_H)
 	_btn_hide.pressed.connect(_on_hide_pressed)
 	_overlay_layer.add_child(_btn_hide)
 
@@ -357,7 +360,7 @@ func _build_buttons(is_discard: bool) -> void:
 	# attention stays anchored where the cards are. _btn_top_y derives from
 	# BS_HAND_CENTER.y so any future hand-row movement carries the buttons.
 	var top_y: float = _bs.BS_HAND_CENTER.y - BTN_HAND_GAP - BTN_H
-	var right_x: float = 1080.0 - BTN_SIDE_MARGIN - BTN_W
+	var right_x: float = ScreenMetrics.right_x() - BTN_SIDE_MARGIN - BTN_W
 
 	# 취소가 없는 두 모드 — 버리기와 강화 3택. 버리기는 시작한 이상 정확히
 	# target_count 장을 골라야 끝나고, 3택은 이미 나간 카드의 정산이라 무를 것이
@@ -406,7 +409,7 @@ func _build_search_grid(source: Array, sort_names: bool = true) -> void:
 	var deck: Array = _sorted_for_display(source) if sort_names else source.duplicate()
 	if deck.is_empty():
 		return
-	var grid_w: float = 1080.0 - 2.0 * SEARCH_GRID_SIDE_PAD
+	var grid_w: float = ScreenMetrics.vp_w() - 2.0 * SEARCH_GRID_SIDE_PAD
 	var grid_h: float = SEARCH_GRID_BOTTOM_Y - SEARCH_GRID_TOP_Y
 
 	_scroll_root = ScrollContainer.new()
@@ -482,7 +485,7 @@ func _layout_to_discard_row() -> void:
 		return
 	var slot_y: float = TO_DISCARD_CENTER_Y - Card.CARD_H * 0.5
 	var hand_w: float = _bs.BS_HAND_WIDTH
-	var visual_cx: float = 1080.0 * 0.5
+	var visual_cx: float = ScreenMetrics.center_x()
 	var ideal_total: float = float(n) * Card.CARD_W \
 			+ float(max(n - 1, 0)) * _bs.BS_HAND_CARD_GAP
 	var spacing: float = Card.CARD_W + _bs.BS_HAND_CARD_GAP

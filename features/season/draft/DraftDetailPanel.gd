@@ -20,8 +20,10 @@ extends CanvasLayer
 
 const OVERLAY_LAYER: int = 20
 
-const VP_W: float = 1080.0
-const VP_H: float = 1920.0
+## 화면 크기는 고정 상수가 아니라 런타임 값이다 — 스트레치가 `expand` 라
+## 세로로 긴 기기에서는 높이가 1920 보다 커진다. 딤 · 루트가 뷰포트 전체를
+## 덮지 않으면 그 차이만큼 화면 끝에 안 덮인 띠가 남는다.
+## `docs/mobile_safe_area.md` 참고.
 const DIM_COLOR := Color(0.0, 0.0, 0.0, 0.88)
 
 # ─── 좌: 전신 아트 ───────────────────────────────────────────────────────────
@@ -129,7 +131,7 @@ func _build() -> void:
 	# CanvasLayer 아래의 Control 은 앵커 프리셋이 뷰포트로 풀리지 않는다 —
 	# 크기를 직접 준다.
 	_root.position = Vector2.ZERO
-	_root.size = Vector2(VP_W, VP_H)
+	_root.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_root)
 
@@ -138,14 +140,14 @@ func _build() -> void:
 	dim.flat = true
 	dim.focus_mode = Control.FOCUS_NONE
 	dim.position = Vector2.ZERO
-	dim.size = Vector2(VP_W, VP_H)
+	dim.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
 	dim.pressed.connect(close)
 	_root.add_child(dim)
 
 	var dim_rect := ColorRect.new()
 	dim_rect.color = DIM_COLOR
 	dim_rect.position = Vector2.ZERO
-	dim_rect.size = Vector2(VP_W, VP_H)
+	dim_rect.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
 	dim_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(dim_rect)
 

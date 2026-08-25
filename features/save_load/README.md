@@ -121,3 +121,19 @@ leaves `match_resume` non-null on disk. On `이어하기`:
   tap deletes). No undo.
 - **New game on filled slot**: not allowed directly — player must delete
   first. Keeps the destructive path explicit.
+
+---
+
+## 화면 대응 (세이프 에어리어)
+
+`TitleScreen._build()` 이 `ScreenMetrics.indent_to_safe_top(self)` 로 화면째
+안전 영역 위끝까지 내리고, 배경 `ColorRect` 만 `extend_background(bg)` 로 도로
+화면 끝까지 늘린다(노치 자리는 쓰지 않을 곳이지 비워 둘 곳이 아니다).
+
+하단의 안내 라벨은 `ScreenMetrics.safe_h() - 100` 에 매단다.
+
+**여기서 실제로 났던 버그**: 제목 라벨만 `top_y()` 만큼 내렸더니 본문(슬롯
+카드)은 제자리에 남아 제목이 카드 밑으로 들어갔다. 여백은 요소마다가 아니라
+화면째 준다.
+
+자세한 내용: **`docs/mobile_safe_area.md`**

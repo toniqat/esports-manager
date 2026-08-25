@@ -215,7 +215,7 @@ func _pile_label() -> String:
 func _screen_size() -> Vector2:
 	var vp := get_viewport()
 	if vp == null:
-		return Vector2(1080.0, 1920.0)
+		return ScreenMetrics.viewport_size()
 	return vp.get_visible_rect().size
 
 

@@ -125,3 +125,28 @@ player already committed when the save was written) and:
 overwritten by the next post-gambit or post-week save. Closing mid-battle
 keeps the disk save at the post-gambit snapshot, so the resume path
 replays the battle from scratch with the same locked-in picks.
+
+---
+
+## 화면 대응 (세이프 에어리어)
+
+네 컨트롤러(PREP / BAN_PICK / ASSIGN / JUNGLE_START)는 모두 `_mf.canvas` 아래에
+전체 화면 `Panel` 하나를 세우고 거기에 절대 좌표로 그린다. `_panel` 을 만든
+직후 두 줄이 따라온다.
+
+```gdscript
+_mf.canvas.add_child(_panel)
+ScreenMetrics.indent_to_safe_top(_panel)          # 판째 노치 밑으로
+ScreenMetrics.backfill_top(_panel, <판 배경색>)   # 비워진 위쪽 띠를 메운다
+```
+
+배경이 **판 자신의 StyleBox** 라 판을 위로 늘릴 수 없다(늘리면 안쪽 좌표계가
+같이 움직여 내용이 도로 노치 밑으로 들어간다). 그래서 시즌 뷰의
+`extend_background()` 대신 띠 한 장을 판의 **첫 자식**으로 까는
+`backfill_top()` 을 쓴다.
+
+내려간 판 안에서 하단 버튼은 `ScreenMetrics.safe_h()` 기준이다 —
+`MatchPrepController` 는 `safe_h() - 70 - h`, `AssignController` 는
+`safe_h() - 150 - h`(상태 라벨은 그 60px 위).
+
+자세한 내용: **`docs/mobile_safe_area.md`**

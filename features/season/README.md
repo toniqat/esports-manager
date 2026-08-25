@@ -185,3 +185,31 @@ Lazy view builders cache the instance after first creation.
   drive which subsystem owns the current week.
 - `date_of_week_offset(n)` returns the Monday of the week n weeks ahead
   (used by schedulers to stamp matches).
+
+---
+
+## 화면 대응 (세이프 에어리어)
+
+시즌 뷰는 전부 전체 화면 `Control` 에 절대 좌표로 그린다. 규약은 두 줄이다.
+
+```gdscript
+func _build() -> void:
+	ScreenMetrics.indent_to_safe_top(self)   # 화면째 노치 밑으로 내린다
+	...
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	ScreenMetrics.extend_background(bg)      # 배경만 노치 자리까지 도로 늘린다
+```
+
+**제목만 내리면 안 된다** — 본문이 제자리에 남아 둘이 겹친다(타이틀 화면에서
+실제로 제목이 슬롯 카드 밑으로 들어갔다).
+
+내려간 화면 안에서 하단 액션 바를 매달 때는 `ScreenMetrics.bottom_y()` 가
+아니라 **`safe_h()`** 를 쓴다(전자는 뷰포트 좌표라 내린 만큼 두 번 더해진다).
+`LeagueView` / `BracketView` / `IntlBracketView` / `TrainingView` 는
+`safe_h() - 80 - h`, `TrainingResultView` 는 `- 70`, `HubView` 는 `- 110`,
+`TeamDraftView` 는 `bar_y()` 가 `safe_h() - 20 - BAR_H` 다.
+
+`TeamDraftView.grid_h()` 는 **남는 자리**로 계산한다(`bar_y() - 12 - GRID_Y`) —
+화면이 길수록 썸네일이 한 줄 더 보인다(1920 에서 950, 2340 에서 1280).
+
+자세한 내용: **`docs/mobile_safe_area.md`**

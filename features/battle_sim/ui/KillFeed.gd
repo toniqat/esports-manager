@@ -39,8 +39,10 @@ extends Control
 # 쥐어 주면 서로의 y 를 덮어쓴다.
 
 # ─── 자리 (screen coords) ────────────────────────────────────────────────────
-## 피드 오른쪽 끝. 화면 오른쪽 가장자리에서 22px 물러난다.
-const FEED_RIGHT: float = 1058.0
+## 피드 오른쪽 끝이 화면 오른쪽 가장자리에서 물러나는 양.
+## 예전에는 `FEED_RIGHT = 1058.0` 절대 좌표였는데, 가로가 1080 보다 넓어질 수
+## 있게 되면서(태블릿) 가장자리에서 역산하는 쪽으로 바꿨다.
+const FEED_EDGE_PAD: float = 22.0
 ## 피드 위쪽 끝 — 상단 패널(`HudBuilder.TOP_PANEL_H` 148) 밑단에서 8px 아래.
 ## 패널 높이가 바뀌면 이 값도 함께 옮긴다(패널이 168 이던 시절엔 176, 132 이던
 ## 시절엔 140 이었다).
@@ -101,7 +103,11 @@ var _flush_left: float = -1.0
 
 func setup(bs: BattleSim) -> void:
 	_bs = bs
-	position = Vector2(FEED_RIGHT - feed_width(), FEED_TOP)
+	# 세로는 상단 패널과 같은 스칼라를 타야 패널 밑단에서 8px 아래라는 관계가
+	# 노치가 있는 기기에서도 유지된다.
+	position = Vector2(
+			ScreenMetrics.right_x() - FEED_EDGE_PAD - feed_width(),
+			FEED_TOP + HudBuilder.top_offset())
 	size = Vector2(feed_width(), float(MAX_ROWS) * ROW_STEP)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_process(true)

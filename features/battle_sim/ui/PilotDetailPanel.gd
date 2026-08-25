@@ -37,8 +37,10 @@ extends Node
 ## 없지만, 겹친다면 이쪽이 위여야 한다.
 const OVERLAY_LAYER: int = 13
 
-const VP_W: float = 1080.0
-const VP_H: float = 1920.0
+## 화면 크기는 고정 상수가 아니라 런타임 값이다 — 스트레치가 `expand` 라
+## 세로로 긴 기기에서는 높이가 1920 보다 커진다. 딤 · 루트가 뷰포트 전체를
+## 덮지 않으면 그 차이만큼 화면 끝에 안 덮인 띠가 남는다.
+## `docs/mobile_safe_area.md` 참고.
 const DIM_COLOR := Color(0.0, 0.0, 0.0, 0.88)
 
 ## 탭 셋. 인게임 = 지금 이 전장에서의 상태, 파일럿 = 사람의 능력치 + 파일럿
@@ -375,7 +377,7 @@ func _build() -> void:
 	# 해석해 줄 부모 rect 가 없어서 크기가 그대로 0 이고, 프리셋을 걸어 두면
 	# "_ready 뒤에 size 가 덮어써진다"는 경고만 남는다. 크기는 명시한다.
 	_root.position = Vector2.ZERO
-	_root.size = Vector2(VP_W, VP_H)
+	_root.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
 	# 모달 — 뒤쪽(핸드 · 전장 · 도넛) 입력을 전부 삼킨다.
 	_root.mouse_filter = Control.MOUSE_FILTER_STOP
 	_layer.add_child(_root)
@@ -383,7 +385,7 @@ func _build() -> void:
 	var dim := ColorRect.new()
 	dim.color = DIM_COLOR
 	dim.position = Vector2.ZERO
-	dim.size = Vector2(VP_W, VP_H)
+	dim.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	_root.add_child(dim)
 
@@ -400,7 +402,7 @@ func _build_arts() -> void:
 	_art_holder = Control.new()
 	_art_holder.name = "ArtHolder"
 	_art_holder.position = Vector2.ZERO
-	_art_holder.size = Vector2(VP_W, VP_H)
+	_art_holder.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
 	_art_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_art_holder)
 
@@ -574,7 +576,7 @@ func _rebuild_body() -> void:
 	_body_root = Control.new()
 	_body_root.name = "BodyColumn"
 	_body_root.position = Vector2.ZERO
-	_body_root.size = Vector2(VP_W, VP_H)
+	_body_root.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
 	# IGNORE 는 **이 노드만** 히트 테스트에서 뺀다 — 자식 칩 버튼은 그대로 눌린다.
 	_body_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_body_root)
@@ -1208,7 +1210,7 @@ func _open_info(key: String) -> void:
 	_menu_root = Control.new()
 	_menu_root.name = "InfoMenu"
 	_menu_root.position = Vector2.ZERO
-	_menu_root.size = Vector2(VP_W, VP_H)
+	_menu_root.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
 	# 바깥을 누르면 닫힌다. 이 판이 STOP 이라 뒤쪽 버튼이 전부 가려지므로
 	# **뒤판이 직접 라우팅한다**(`_on_menu_backdrop_input`) — 아래 주석 참조.
 	_menu_root.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -1296,7 +1298,7 @@ func _build_menu_content() -> void:
 	var x: float = STAT_X - MENU_GAP_X - MENU_W
 	# 누른 것과 같은 높이에서 시작하되 화면 위아래로는 넘기지 않는다.
 	var y: float = clampf(src_btn.position.y - MENU_PAD.y, 20.0,
-			maxf(20.0, VP_H - panel_h - 20.0))
+			maxf(20.0, ScreenMetrics.vp_h() - panel_h - 20.0))
 
 	var panel := Panel.new()
 	panel.position = Vector2(x, y)

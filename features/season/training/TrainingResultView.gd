@@ -56,9 +56,15 @@ func set_next_label(lbl: String) -> void:
 
 # ── Build ────────────────────────────────────────────────────────────────────
 func _build() -> void:
+	# 화면 전체를 안전 영역 위끝까지 내린다 — 노치 / 다이나믹 아일랜드 밑에
+	# 제목이 깔리지 않게. 제목만 따로 내리면 본문과 겹친다.
+	ScreenMetrics.indent_to_safe_top(self)
 	var bg := ColorRect.new()
 	bg.color = Color(0.07, 0.08, 0.14, 1.0)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# 배경만은 안전 영역 밖(노치 자리)까지 덮는다 — 안 그러면 그 띠가
+	# 엔진 기본 배경색으로 남는다.
+	ScreenMetrics.extend_background(bg)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 
@@ -143,8 +149,12 @@ func _build_table() -> void:
 func _build_button() -> void:
 	_next_btn = Button.new()
 	_next_btn.text = _next_label
-	_next_btn.position = Vector2((1080.0 - 480.0) / 2.0, 1740.0)
 	_next_btn.size     = Vector2(480, 110)
+	# 하단 안전선에 매단다 — 이 자리는 아이폰 홈 인디케이터 / 안드로이드
+	# 제스처 바가 터치를 가져가는 구간과 맞닿아 있다.
+	_next_btn.position = Vector2(
+			(ScreenMetrics.vp_w() - _next_btn.size.x) * 0.5,
+			ScreenMetrics.safe_h() - 70.0 - _next_btn.size.y)
 	_next_btn.add_theme_font_size_override("font_size", 36)
 	_next_btn.pressed.connect(_on_next_pressed)
 	add_child(_next_btn)

@@ -1431,8 +1431,31 @@ keyword check has always fired first, so they are 소멸 on their first play.
   the card carried `end_phase` (완벽한 마무리). The check sits **after** the
   arena await on purpose — breaking first would close 상대 차례 with the
   engage the card just opened still on screen.
+- **카드 선택은 무작위가 아니라 우선순위 점수제다** (`_pick_best_card` /
+  `_score_card`). 목표는 강한 AI 가 아니라 **눈에 띄게 덜 헛도는** AI 다 —
+  예전에는 사거리 안에 적이 없는 공격 카드나 만피 아군에게 거는 회복이 무작위로
+  튀어나와, 상대 차례가 중앙 애니메이션만 돌고 아무 일도 일어나지 않는 구간이
+  됐다. 규칙은 넷이다.
+  - **낼 수 없으면 뺀다** — `CardPhaseManager.ai_can_play` 가 지불 가능 ·
+    시전자 생존 · `CardData.is_playable()` 을 함께 본다. 마지막 하나가 새로
+    생긴 것으로, `effective_cost_for` 는 결과를 0 아래로 깎지 않아 **비용 -1
+    (사용 불가)** 카드가 "0 코스트"로 읽혔다 — 그 한 줄이 없으면 AI 가 캐시 ·
+    계시 · 약자 멸시 · 밸런스를 그냥 태워 버린다. `_ai_turn_ready` 도 같은
+    함수를 읽는다(한쪽만 통과하면 배너만 뜨고 아무 카드도 안 나가는 차례가
+    생긴다).
+  - **고를 대상이 없으면 뺀다** — `card_needs_target` 이 true 인데
+    `ai_target_for` 가 null 이면 그 카드는 후보에서 빠진다.
+  - **절 이름이 점수를 정한다** (`CLAUSE_WEIGHT`). 카드 한 장이 절을 여럿 달고
+    있으면 **가장 높은 절**이 그 카드의 성격이다 — 간보기는
+    `attack;on_hit;engage;on_miss;strategy` 인데 그 카드가 하는 일은 공격이지
+    전략 점수가 아니다. 회복 · 보호막 계열은 `_support_bias` 가 상황을 본다:
+    가장 다친 아군이 `SUPPORT_HP_RATIO`(0.70) 위면 `SUPPORT_IDLE_PENALTY`(2.5)
+    만큼 후순위로 밀린다(막지는 않는다 — 손에 그것밖에 없을 수도 있다).
+  - **비용은 감점, 동점은 흔들림으로 가른다** — `COST_PENALTY`(0.15/점)로 싼
+    카드를 먼저 내 한 차례에 더 많은 카드가 나가게 하고, `JITTER`(0.4)가 없으면
+    같은 손패가 매번 같은 순서로 나가 상대 차례가 기계적으로 읽힌다.
 - **`MAX_PLAYS_PER_TURN` (12)** caps one AI turn. The loop's real exit is "no
-  affordable card left", but a card that costs nothing and *rotates* the hand
+  playable card left", but a card that costs nothing and *rotates* the hand
   can defer that forever — 재고 (비용 0, 손패를 전부 버리고 같은 수를 다시
   뽑는다) re-draws itself until deck + discard run dry. The cap is a structural
   backstop, not a balance knob; a normal hand never reaches it.

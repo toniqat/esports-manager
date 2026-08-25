@@ -36,6 +36,53 @@ const FLIP_HALF_SEC     := 0.10
 # 밸런스 노브가 아니다 — 정상적인 손패라면 절대 닿지 않는다.
 const MAX_PLAYS_PER_TURN := 12
 
+# ─── 우선순위 점수제 ─────────────────────────────────────────────────────────
+# AI 는 이제 낼 수 있는 카드 중 **무작위**가 아니라 **점수가 가장 높은** 한 장을
+# 고른다. 목표는 강한 AI 가 아니라 **눈에 띄게 덜 헛도는** AI 다 — 예전에는
+# 사거리 안에 적이 없는 공격 카드나 만피 아군에게 거는 회복이 무작위로 튀어나와,
+# 상대 차례가 중앙 애니메이션만 돌고 아무 일도 일어나지 않는 구간이 됐다.
+#
+# 점수는 절 이름 하나로 정한다(`CardPhaseManager.card_clause_names`). 카드 한
+# 장이 절을 여럿 달고 있으면 **가장 높은 절**이 그 카드의 성격이다 — 간보기는
+# `attack;on_hit;engage;on_miss;strategy` 인데 그 카드가 하는 일은 공격이지
+# 전략 점수가 아니다.
+const CLAUSE_WEIGHT: Dictionary = {
+	"execute": 5.0,        # 마무리 — 조건이 맞으면 그 자리에서 한 명이 사라진다
+	"attack": 3.0,
+	"attack_bounty": 3.0,
+	"mutual_attack": 2.6,
+	"engage": 2.5,
+	"duel": 2.5,
+	"taunt_all": 2.0,
+	"advance": 1.6,
+	"heal_pct": 1.4,       # 아래 `_support_bias` 가 상황을 본다
+	"shield_atk": 1.4,
+	"shield_pct": 1.4,
+	"recall_ally": 1.4,
+	"draw": 1.0,
+	"search": 1.0,
+	"search_card": 1.0,
+	"search_discard": 1.0,
+	"draw_discard": 1.0,
+	"strategy": 1.0,
+	"steal_camp": 1.2,
+	"move": 0.6,
+	"push": 0.6,
+}
+## 표에 없는 절의 기본 점수. 0 이 아니라 낮은 양수인 것은 "모르는 카드"가
+## 아예 안 나가는 것보다 마지막에라도 나가는 쪽이 낫기 때문이다.
+const CLAUSE_WEIGHT_DEFAULT: float = 0.5
+## 비용 한 점당 깎이는 점수. 싼 카드를 먼저 내면 한 차례에 더 많은 카드가 나간다.
+const COST_PENALTY: float = 0.15
+## 동점을 가르는 흔들림. 없으면 같은 손패가 매번 같은 순서로 나가 상대 차례가
+## 기계적으로 읽힌다.
+const JITTER: float = 0.4
+## 회복 · 보호막이 제값을 하는 아군 체력 비율. 이 위면 후순위로 밀린다.
+const SUPPORT_HP_RATIO: float = 0.70
+## 그 후순위의 크기. 낮추기만 하고 막지는 않는다 — 만피에 거는 보호막도
+## 무의미하지는 않고, 손에 그것밖에 없을 수도 있다.
+const SUPPORT_IDLE_PENALTY: float = 2.5
+
 var _bs: BattleSim = null
 
 
@@ -55,14 +102,9 @@ func run_ai_plays() -> void:
 		if plays >= MAX_PLAYS_PER_TURN:
 			break
 		plays += 1
-		var affordable: Array = []
-		for raw in _bs.ai_hand:
-			var cd := raw as CardData
-			if _bs.effective_cost_for(cd, false) <= _bs.ai_cost:
-				affordable.append(cd)
-		if affordable.is_empty():
+		var pick: CardData = _pick_best_card()
+		if pick == null:
 			break
-		var pick := affordable[randi() % affordable.size()] as CardData
 		var eff_cost: int = _bs.effective_cost_for(pick, false)
 		_bs.ai_cost -= eff_cost
 		# Consume the AI's pending engage discount on use so a follow-up
@@ -90,6 +132,62 @@ func run_ai_plays() -> void:
 		if _bs.card_phase.consume_end_phase_request():
 			break
 		await _bs.get_tree().create_timer(POST_GAP_SEC).timeout
+
+
+## 지금 손패에서 **가장 점수가 높은** 한 장. 낼 수 있는 카드가 하나도 없으면
+## null 이고, 그러면 호출 루프가 차례를 접는다.
+func _pick_best_card() -> CardData:
+	var best: CardData = null
+	var best_score: float = -INF
+	for raw in _bs.ai_hand:
+		var cd := raw as CardData
+		var sc: float = _score_card(cd)
+		if sc <= -INF:
+			continue
+		if sc > best_score:
+			best_score = sc
+			best = cd
+	return best
+
+
+## 카드 한 장의 점수. `-INF` 는 "이 카드는 지금 낼 수 없다"이고 이유가 둘이다 —
+## 지불 불가 / 시전자 사망 / 사용 불가 카드(`ai_can_play`), 그리고 **고를 대상이
+## 없다**. 후자를 거르지 않으면 사거리 안에 적이 없는 공격 카드가 그대로 나가
+## `_ai_pick_target` 이 null 을 돌려주고, 효과 절이 "대상 없음"을 로그에 남긴
+## 채 비용만 빠진다.
+func _score_card(cd: CardData) -> float:
+	var cp: CardPhaseManager = _bs.card_phase
+	if cd == null or cp == null or not cp.ai_can_play(cd):
+		return -INF
+	if cp.card_needs_target(cd) and cp.ai_target_for(cd, cd.owner_pilot) == null:
+		return -INF
+	var score: float = -INF
+	for raw in cp.card_clause_names(cd):
+		var clause: String = raw as String
+		if clause.is_empty():
+			continue
+		var w: float = float(CLAUSE_WEIGHT.get(clause, CLAUSE_WEIGHT_DEFAULT))
+		if clause == "heal_pct" or clause == "shield_atk" or clause == "shield_pct" \
+				or clause == "recall_ally":
+			w -= _support_bias()
+		score = maxf(score, w)
+	if score <= -INF:
+		score = CLAUSE_WEIGHT_DEFAULT
+	score -= COST_PENALTY * float(_bs.effective_cost_for(cd, false))
+	return score + randf() * JITTER
+
+
+## 회복 · 보호막이 지금 제값을 하는가. 팀에서 가장 다친 아군이 성한 편이면
+## 그만큼 후순위로 민다 — 만피 다섯에게 거는 회복이 공격보다 먼저 나가는 것이
+## 예전 무작위 픽에서 가장 눈에 띄는 헛수고였다.
+func _support_bias() -> float:
+	var worst: float = 1.0
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		if p.team != 1 or not p.alive or p.max_hp <= 0:
+			continue
+		worst = minf(worst, float(p.hp) / float(p.max_hp))
+	return 0.0 if worst < SUPPORT_HP_RATIO else SUPPORT_IDLE_PENALTY
 
 
 # Pulls one card-back from the AI hand peek (rightmost), flies it from its

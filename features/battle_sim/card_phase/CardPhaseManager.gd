@@ -1016,9 +1016,49 @@ func _ai_turn_ready() -> bool:
 	if _bs.ai_cost < _bs.PHASE_THRESHOLD:
 		return false
 	for raw in _bs.ai_hand:
-		if _bs.effective_cost_for(raw as CardData, false) <= _bs.ai_cost:
+		if ai_can_play(raw as CardData):
 			return true
 	return false
+
+
+## AI 가 이 카드를 **낼 수 있는가.** `_ai_turn_ready` 와 `AiCardPlayer` 가 같은
+## 함수를 읽어야 한다: 한쪽만 통과하면 배너만 뜨고 아무 카드도 안 나가는 차례가
+## 생긴다.
+##
+## 비용 검사만으로는 모자란다 — `effective_cost_for` 는 결과를 0 아래로 깎지
+## 않으므로 **비용 -1(사용 불가)** 카드가 "0 코스트"로 읽힌다. 그 한 줄이 없으면
+## AI 가 캐시 · 계시 · 약자 멸시 · 밸런스를 그냥 태워 버린다 — 손에 들고 있는
+## 것이 효과의 전부인 카드들이다.
+func ai_can_play(cd: CardData) -> bool:
+	if cd == null or not cd.is_playable():
+		return false
+	# 시전자가 쓰러져 있으면 못 낸다 — 플레이어 쪽 `card_is_playable` 과 같은 게이트다.
+	if respawn_turns_for(cd) > 0:
+		return false
+	return _bs.effective_cost_for(cd, false) <= _bs.ai_cost
+
+
+## 대상을 **골라야** 하는 카드인가. AI 는 고를 대상이 없는 카드를 아예 건너뛴다.
+func card_needs_target(cd: CardData) -> bool:
+	var kind: String = targeting_kind(cd)
+	return kind == "pilot" or kind == "location"
+
+
+## AI 쪽 대상 선정의 공개 진입점. AI 는 언제나 팀1 이다.
+func ai_target_for(cd: CardData, caster: PilotData) -> Variant:
+	return _ai_pick_target(cd, caster, 1, 0)
+
+
+## 이 카드의 효과 체인에 든 절 이름들. AI 의 우선순위 점수제가 카드 한 장이
+## 무엇을 하는지 읽는 유일한 창구다 — `_parse_effect_chain` 을 밖으로 내보내면
+## 절 딕셔너리 형태가 곧 공개 계약이 된다.
+func card_clause_names(cd: CardData) -> Array:
+	var out: Array = []
+	if cd == null:
+		return out
+	for clause in _parse_effect_chain(cd.effect):
+		out.append(String(clause.get("name", "")))
+	return out
 
 
 # The AI's own 작전 단계. Unlike the player's it never switches game_phase —

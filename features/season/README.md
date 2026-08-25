@@ -54,7 +54,7 @@ and exposes intent methods on the hub. Pattern mirrors `BattleSim`:
 |---|---|---|
 | CalendarSystem           | `calendar/CalendarSystem.gd`                 | `advance_week()` — rolls 7 days, bumps `phase_week`, transitions phase. Emits `week_advanced`, `phase_changed`. |
 | HubView                  | `HubView.gd`                                 | Simplified hub — phase/week counter + roster + "이번 주 시작" + 순위 buttons. |
-| TeamDraft                | `draft/TeamDraft.gd`                         | Initial 5-pilot team selection from 40-pilot pool                |
+| TeamDraft                | `draft/TeamDraft.gd`                         | 초기 5인 선발 (네임드 25인 풀) — 역할 고정 5칸 · 역할 필터 · 스크롤 썸네일 격자 · 상세 팝업. `draft/README.md` |
 | TrainingScheduler        | `training/TrainingScheduler.gd`              | 7-day × pilot grid; default fills + player edits + `apply_week_training()` (one-shot per week, returns before/after deltas) |
 | TrainingView             | `training/TrainingView.gd`                   | Schedule editor; "주 진행" button calls `SeasonHub.on_training_save_and_advance`. |
 | TrainingResultView       | `training/TrainingResultView.gd`             | Post-week dashboard — 5×5 stat deltas. "다음 →" calls `SeasonHub.on_training_result_continue`. |

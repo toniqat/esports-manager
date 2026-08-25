@@ -44,7 +44,9 @@ esports-manager/
 │   │   ├── GameOverView.gd      ← class_name GameOverView — Phase 7/8 elimination screen
 │   │   ├── EndingView.gd        ← class_name EndingView — Phase 8 world-champion screen
 │   │   ├── calendar/            ← Weekly clock, phase transitions
-│   │   ├── draft/               ← Initial 5-pilot team selection from 40-pool
+│   │   ├── draft/               ← 초기 5인 선발 (네임드 25인 풀) — 우마무스메식 인물 고르기
+│   │   │                          (상체 일러스트 5칸 + 역할 필터 + 스크롤 썸네일 격자 +
+│   │   │                           이름 탭으로 여는 `DraftDetailPanel` 상세 팝업)
 │   │   ├── training/            ← 7-day × pilot training grid + TrainingResultView dashboard
 │   │   ├── league/              ← LeagueManager + LeagueView (1-round-per-week schedule, AI sims, standings)
 │   │   └── tournament/          ← TournamentManager + BracketView (4-team SE playoff, 2 weeks, Phase 7);
@@ -131,7 +133,9 @@ esports-manager/
 │
 ├── resources/
 │   ├── README.md                ← Resource documentation
-│   ├── CardData.gd              ← class_name CardData (card data container)
+│   ├── CardData.gd              ← class_name CardData (card data container). `from_def()` 는 **static** —
+│   │                              `cards.csv` 한 행을 카드 한 장으로 조립하는 유일한 자리라
+│   │                              BattleSim 없이도 돌아야 한다(드래프트 상세 팝업이 쓴다)
 │   ├── MechImages.gd            ← class_name MechImages (메크 전신 아트 조회 — 30칸 전부 채워져 있음)
 │   ├── GameEnums.gd             ← class_name GameEnums (all shared enums)
 │   ├── PilotData.gd             ← class_name PilotData (pilot runtime state; kills / deaths 포함)

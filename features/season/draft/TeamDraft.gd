@@ -6,6 +6,29 @@ extends Control
 
 @onready var _gm: Node = get_node("/root/GameManager")
 
+# ─── 슬롯 순서 (탑 · 정글 · 미드 · 원딜 · 서폿) ──────────────────────────────
+# 화면의 다섯 칸은 **역할 고정**이고 그 순서는 `GameEnums.Role` 의 열거값 순서가
+# 아니라 **MOBA 라인 순서**다 — 탑 → 정글 → 미드 → 원딜 → 서폿. 열거값 순서
+# (TANK · FIGHTER · ASSASSIN · SUPPORT · SNIPER)를 그대로 쓰면 정글러가 세 번째,
+# 서포터가 네 번째로 앉는데 그 배열은 플레이어가 아는 라인업과 대응하지 않는다.
+# 인게임 파일럿 스트립이 같은 이유로 `HudBuilder.LANE_SEAT_ORDER` 를 따로 들고
+# 있다 — 이쪽은 그 스트립이 아니라 **필터 버튼과 짝을 이루는** 표다.
+const SLOT_ROLES: Array = [
+	GameEnums.Role.TANK,      # 탑
+	GameEnums.Role.ASSASSIN,  # 정글
+	GameEnums.Role.FIGHTER,   # 미드
+	GameEnums.Role.SNIPER,    # 원딜
+	GameEnums.Role.SUPPORT,   # 서폿
+]
+const SLOT_NAMES: Array = ["탑", "정글", "미드", "원딜", "서폿"]
+
+## 역할 → 화면 슬롯 인덱스. `SLOT_ROLES` 의 역인덱스이며, 썸네일을 눌렀을 때
+## 그 파일럿이 어느 칸에 앉는지를 정하는 유일한 답이다.
+static func slot_of_role(role: int) -> int:
+	return SLOT_ROLES.find(role)
+
+
+
 var _view: TeamDraftView = null
 
 
@@ -114,3 +137,83 @@ func _rebuild_rosters_from_pool() -> void:
 	for p in _gm.season_state["all_pilots"]:
 		rosters[p.team_id].append(p.id)
 	_gm.season_state["team_rosters"] = rosters
+
+
+# ─── 카드 후보 풀 (역할이 정한다) ────────────────────────────────────────────
+# 파일럿 카드 3장의 **내역은 역할이 가르고**, 그 세 장이 어느 카드가 될지는
+# 경기 시작 시 `CardPhaseManager._deal_team_deck` 이 표집한다. 그래서 드래프트
+# 시점에 보여 줄 수 있는 것은 확정된 덱이 아니라 **후보 풀**이다 — 슬롯 구성은
+# 지금 확정이고 어느 카드가 뽑힐지만 나중에 정해진다.
+#
+# 아래 표는 `CardPhaseManager._pilot_slots_for` 와 **같은 규칙**이다. 저쪽은
+# `PilotData.is_guerrilla`(= 배정된 레인)를 보고 이쪽은 역할을 보는데, 레인이
+# 역할에서 유도되므로(ASSASSIN → GUERRILLA) 답이 갈리지 않는다.
+static func pilot_card_slots_for_role(role: int) -> Array:
+	if role == GameEnums.Role.ASSASSIN:
+		return [[CardData.CAT_JUNGLE, 2], [CardData.CAT_DRAW, 1]]
+	if role == GameEnums.Role.SUPPORT:
+		return [[CardData.CAT_LANE, 1], [CardData.CAT_DRAW, 2]]
+	return [[CardData.CAT_LANE, 2], [CardData.CAT_DRAW, 1]]
+
+
+## 이 역할의 파일럿이 받을 수 있는 **파일럿 카드 후보 전부**, 슬롯 순서대로.
+## 랜덤 스타터 덱에 안 들어가는 행(`pool = 0`)과 시전자 제약(`scope`)에 걸리는
+## 행은 실제 배분과 같은 자리에서 걸러 낸다 — 화면에 뜬 후보가 실제로는 못
+## 받는 카드이면 그 목록은 거짓말이 된다.
+func candidate_cards_for_role(role: int) -> Array:
+	var is_jungler: bool = role == GameEnums.Role.ASSASSIN
+	var out: Array = []
+	var seen: Dictionary = {}
+	for slot_raw in pilot_card_slots_for_role(role):
+		var cat: String = String((slot_raw as Array)[0])
+		for def_raw in _gm.card_pool_bs:
+			var def: Dictionary = def_raw as Dictionary
+			if int(def.get("pool", 1)) == 0:
+				continue
+			if String(def.get("card_type", "")) != CardData.TYPE_PILOT:
+				continue
+			var cd := CardData.from_def(def)
+			if not cd.allowed_for_guerrilla(is_jungler):
+				continue
+			if not cd.fits_category(cat):
+				continue
+			if seen.has(cd.card_name):
+				continue
+			seen[cd.card_name] = true
+			out.append(cd)
+	return out
+
+
+## 이 역할이 받는 슬롯 내역을 사람이 읽는 한 줄로. "라인전 2 · 드로우 1".
+static func slot_summary_for_role(role: int) -> String:
+	var parts: Array = []
+	for slot_raw in pilot_card_slots_for_role(role):
+		var slot: Array = slot_raw as Array
+		parts.append("%s %d" % [cat_label(String(slot[0])), int(slot[1])])
+	return " · ".join(parts)
+
+
+static func cat_label(cat: String) -> String:
+	match cat:
+		CardData.CAT_LANE:   return "라인전"
+		CardData.CAT_DRAW:   return "드로우"
+		CardData.CAT_JUNGLE: return "정글"
+	return cat
+
+
+# ─── 파일럿 스킬 ─────────────────────────────────────────────────────────────
+## 이 선수의 고유 스킬 행. 모브(스킬 없음)는 빈 Dictionary 를 돌려준다.
+func skill_def_for(p: PlayerData) -> Dictionary:
+	if p == null or p.skill_id < 0:
+		return {}
+	return _gm.skill_def(p.skill_id)
+
+
+## 스킬 타입 표시명. CSV 의 `cooldown` / `charge` / `passive` 를 그대로 띄우면
+## 화면에서 읽히지 않는다.
+static func skill_type_label(t: String) -> String:
+	match t:
+		"cooldown": return "쿨타임"
+		"charge":   return "충전식"
+		"passive":  return "패시브"
+	return t

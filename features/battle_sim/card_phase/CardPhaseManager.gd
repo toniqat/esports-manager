@@ -485,23 +485,9 @@ func _build_pool_from_db() -> Array:
 
 
 func _make_card_from_def(def: Dictionary) -> CardData:
-	var cd := CardData.new(
-			String(def.get("name", "?")),
-			int(def.get("cost", 0)),
-			String(def.get("description", "")))
-	cd.uses        = int(def.get("uses", 1))
-	cd.cast_method = String(def.get("cast_method", "instant"))
-	cd.target      = String(def.get("target", "hand"))
-	cd.cast_range  = int(def.get("cast_range", 0))
-	cd.area        = int(def.get("area", 0))
-	cd.keyword     = String(def.get("keyword", ""))
-	cd.effect      = String(def.get("effect", ""))
-	cd.scope       = String(def.get("scope", CardData.SCOPE_ANY))
-	cd.pool        = int(def.get("pool", 1))
-	cd.card_type   = String(def.get("card_type", CardData.TYPE_MECH))
-	cd.card_cat    = String(def.get("card_cat", CardData.CAT_NONE))
-	cd.excl_group  = String(def.get("excl_group", ""))
-	return cd
+	# 조립 자체는 `CardData.from_def` 한 곳에 있다 — 드래프트 화면도 같은 표를
+	# 읽어 후보 카드를 실물로 그리기 때문에, 여기 사본을 두면 둘이 갈린다.
+	return CardData.from_def(def)
 
 
 ## `mech_cards.csv` 한 행 → CardData 한 장. `cards.csv` 쪽 행과 컬럼이 다르므로

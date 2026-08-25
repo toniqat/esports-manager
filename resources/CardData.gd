@@ -175,3 +175,31 @@ func fits_category(cat: String) -> bool:
 	if card_cat != CAT_COMMON:
 		return false
 	return cat == CAT_LANE or cat == CAT_JUNGLE
+
+
+## `cards.csv` 한 행(= `GameManager.card_pool_bs` 항목) → CardData 한 장.
+##
+## **static 인 것이 요점이다.** 예전에는 이 조립이 `CardPhaseManager` 안에만
+## 있어서 카드를 실물로 보여 주려면 BattleSim 이 서 있어야 했는데, 드래프트
+## 화면처럼 전투가 없는 자리에서도 "이 역할이 받을 후보 카드"를 같은 노드로
+## 그려야 한다 — 표가 둘이면 화면에 뜬 카드와 실제로 덱에 들어가는 카드가
+## 조용히 갈린다. `mech_cards.csv` 쪽은 컬럼이 달라 여전히 자기 팩토리를 쓴다
+## (`CardPhaseManager.make_mech_card`).
+static func from_def(def: Dictionary) -> CardData:
+	var cd := CardData.new(
+			String(def.get("name", "?")),
+			int(def.get("cost", 0)),
+			String(def.get("description", "")))
+	cd.uses        = int(def.get("uses", 1))
+	cd.cast_method = String(def.get("cast_method", "instant"))
+	cd.target      = String(def.get("target", "hand"))
+	cd.cast_range  = int(def.get("cast_range", 0))
+	cd.area        = int(def.get("area", 0))
+	cd.keyword     = String(def.get("keyword", ""))
+	cd.effect      = String(def.get("effect", ""))
+	cd.scope       = String(def.get("scope", SCOPE_ANY))
+	cd.pool        = int(def.get("pool", 1))
+	cd.card_type   = String(def.get("card_type", TYPE_MECH))
+	cd.card_cat    = String(def.get("card_cat", CAT_NONE))
+	cd.excl_group  = String(def.get("excl_group", ""))
+	return cd

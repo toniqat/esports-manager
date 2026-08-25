@@ -28,9 +28,13 @@ Three child controllers each build their own UI on `enter()` and emit
 | Node | Script | Responsibility |
 |---|---|---|
 | MatchPrepController | `match_prep/MatchPrepController.gd` | Pre-match dashboard — both rosters with stats. "경기 시작" → BAN_PICK. |
-| BanPickController | `ban_pick/BanPickController.gd` | LoL-international ban/pick (4 bans + 10 picks) with random AI |
+| BanPickController | `ban_pick/BanPickController.gd` | LoL-international ban/pick (4 bans + 10 picks) with random AI. 위 = 상대 초상화 5인 + 픽 슬롯, 가운데 = 역할군 필터 + 메크 격자(5열 × 3.5줄 스크롤), 아래 = 아군(거울). 메크를 누르면 하단 시트가 그 기체의 패시브 · 카드 셋을 펼치고, **같은 메크를 한 번 더 눌러야** 확정된다 |
 | AssignController | `assign/AssignController.gd` | Manual mech↔player slot assignment for the player team (enemy auto-shuffled) |
 | JungleStartController | `jungle_start/JungleStartController.gd` | Choose Assassin's jungle start direction (LEFT or RIGHT) |
+
+`BanPickController.enter()` 는 다른 셋과 달리 **로스터와 팀명까지 받는다** —
+밴픽 화면이 위/아래에 양 팀 파일럿 초상화를 세우기 때문이다(배정은 아직 멀었지만,
+누구를 위해 고르는지가 안 보이면 21대 중 무엇을 골라야 할지도 안 보인다).
 
 Each controller accesses the orchestrator via:
 ```gdscript
@@ -91,7 +95,7 @@ into pilots; otherwise it falls back to `ROLE_STATS` defaults.
 | File | Purpose |
 |---|---|
 | `MatchFlow.gd` | State machine orchestrator |
-| `ban_pick/BanPickController.gd` | Ban/Pick phase |
+| `ban_pick/BanPickController.gd` | Ban/Pick phase — 양 팀 초상화 + 메크 격자 + 하단 상세 시트 |
 | `assign/AssignController.gd` | Mech-to-player assignment phase |
 | `jungle_start/JungleStartController.gd` | Jungle direction phase |
 

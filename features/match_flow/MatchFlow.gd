@@ -125,7 +125,12 @@ func _enter_phase(p: int) -> void:
 			var e_name: String = _team_name(enemy_team_id)
 			_prep.enter(p_roster, e_roster, p_name, e_name)
 		GameEnums.MatchPhase.BAN_PICK:
-			_ban_pick.enter(all_mechs, player_side)
+			# 밴픽 화면은 위/아래에 양 팀 파일럿 초상화를 세우므로 로스터와
+			# 팀명이 함께 필요하다 — 배정(ASSIGN)은 아직 멀었지만, 누구를
+			# 위해 고르는지가 안 보이면 21대 중 무엇을 골라야 할지도 안 보인다.
+			_ban_pick.enter(all_mechs, player_side,
+					_team_roster(player_team_id), _team_roster(enemy_team_id),
+					_team_name(player_team_id), _team_name(enemy_team_id))
 		GameEnums.MatchPhase.ASSIGN:
 			# Resolve picked mech IDs into MechData objects
 			var p_mechs := _ids_to_mechs(player_picked_mech_ids)

@@ -61,6 +61,9 @@ esports-manager/
 │   │   ├── MatchFlow.gd         ← class_name MatchFlow — orchestrator
 │   │   ├── match_prep/          ← Pre-match dashboard (review rosters before BAN_PICK)
 │   │   ├── ban_pick/            ← LoL-international ban/pick + random AI
+│   │   │                          (위 = 상대 초상화 5인 + 픽 슬롯 / 가운데 = 역할군 필터 +
+│   │   │                           메크 격자 5열 × 3.5줄 수직 스크롤 / 아래 = 아군, 거울 배치.
+│   │   │                           메크 1탭 = 하단 시트로 패시브 · 카드 셋, 2탭 = 확정)
 │   │   ├── assign/              ← Mech↔player slot manual assignment
 │   │   └── jungle_start/        ← Assassin jungle start direction (LEFT/RIGHT)
 │   │
@@ -231,7 +234,10 @@ On the player's match week, `SeasonHub.on_training_result_continue`
 populates `season_state["pending_match"]` (`{source, schedule_idx,
 enemy_team_id, winner_side}`) and `change_scene_to_file` to MatchFlow.tscn.
 MatchFlow runs PREP (review rosters) → BAN_PICK → ASSIGN → JUNGLE_START
-→ BattleSim. 진영(`player_side`)은 **현재 항상 BLUE 로 고정**이며
+→ BattleSim. **BAN_PICK 은 양 팀 로스터와 팀명까지 받는다** — 화면 위아래에
+전장 스트립과 같은 eye 초상화 5인씩을 세우고 그 안쪽에 픽 슬롯을 붙이므로,
+`MatchFlow._enter_phase` 가 `_team_roster()` / `_team_name()` 을 함께 넘긴다.
+진영(`player_side`)은 **현재 항상 BLUE 로 고정**이며
 (예전의 매 경기 랜덤 추첨은 제거), 밴픽 순서와 BattleSim 의 전략 포인트
 선점·선턴을 함께 결정한다 — 위 "진영 (블루 / 레드)" 항목 참조.
 After BattleSim, the win panel's "다음 →" returns to

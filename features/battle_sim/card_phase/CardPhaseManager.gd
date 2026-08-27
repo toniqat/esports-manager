@@ -95,10 +95,6 @@ const DROP_ZONE_BORDER_HOT := Color(1.00, 0.92, 0.55, 0.95)
 ## 여전히 위쪽 띠에 둔다.
 const DROP_ZONE_LABEL_TOP := 22.0
 const DROP_ZONE_LABEL_H   := 48.0
-## 버리기:N 픽 중의 드롭 존 높이(px). `CardSelectOverlay.TO_DISCARD_CENTER_Y` 를
-## 중심으로 잡히며, 이미 골라 둔 카드들이 늘어선 줄(카드 높이 220)을 넉넉히
-## 감싼다 — 그 줄 위에 놓는 것이 곧 "여기에 더한다"로 읽혀야 하기 때문.
-const DISCARD_ZONE_H := 440.0
 ## 조준 화살표의 시작점을 카드 위쪽 끝에서 **카드 안쪽으로** 밀어 넣는 거리.
 ## 화살표 노드는 손패 카드보다 뒤에 그려지므로, 이만큼 파묻힌 시작부는 카드에
 ## 가려 보이지 않고 화살이 카드 밑에서 뻗어 나온 것처럼 읽힌다.
@@ -186,17 +182,12 @@ var _player_pass_lock: bool = false
 # 최대 타수. 확률상 거의 닿지 않지만 무한 루프를 구조적으로 막는 상한이다.
 const MAX_ATTACK_REPEATS: int = 5
 
-## 직전 `draw_card` 가 손패의 같은 뭉치에 **흡수됐는가**. true 면 손패 크기가
-## 늘지 않았고 새 카드 노드도 서지 않았으므로, 호출 측은 `spawn_card_node` 를
-## 건너뛰어야 한다 — 스택 카드 전용 신호다.
-var last_draw_merged: bool = false
-
 ## 지금 도는 효과 체인에서 **공격 절이 한 대라도 맞았는가.** `on_hit` /
 ## `on_miss` 가 읽는 유일한 값이고 공격 절이 결과를 여기에 적는다. 체인
 ## 하나짜리 수명이라 카드 한 장이 시작될 때 false 로 놓인다.
 var _chain_hit: bool = false
 ## 지금 효과 체인이 도는 카드. 절이 **카드 자신**을 물어야 할 때 읽는다 —
-## 스택 수(`|stack`)와 명중 수 연동 생성(`gen_hand:N|per_hit`)이 그것이다.
+## 충전 수(`|charge`)와 명중 수 연동 생성(`gen_hand:N|per_hit`)이 그것이다.
 ## 절 함수마다 카드를 인자로 끌고 다니면 서명이 열 개 넘게 늘어난다.
 var _current_card: CardData = null
 ## 지금 체인이 겨누고 있는 대상 (PilotData / Vector2i / null). **플레이어와 AI 가
@@ -510,6 +501,7 @@ func make_mech_card(def: Dictionary) -> CardData:
 	cd.keyword      = String(def.get("keyword", ""))
 	cd.effect       = String(def.get("effect", ""))
 	cd.trigger      = String(def.get("trigger", ""))
+	cd.charge_max   = int(def.get("charge_max", 0))
 	cd.scope        = CardData.SCOPE_ANY
 	cd.pool         = 0
 	cd.card_type    = CardData.TYPE_MECH
@@ -625,6 +617,8 @@ func make_card_copy(src: CardData) -> CardData:
 	cd.mech_card_id = src.mech_card_id
 	cd.mech_id      = src.mech_id
 	cd.trigger      = src.trigger
+	cd.charge_max   = src.charge_max
+	cd.charge       = src.charge
 	cd.owner_pilot = src.owner_pilot
 	return cd
 
@@ -687,8 +681,7 @@ func do_battle_turn() -> void:
 			# deck and left the same dead hand sitting there for the whole wait.
 			var drawn := draw_card(true)
 			if drawn != null:
-				if not last_draw_merged:
-					spawn_card_node(drawn)
+				spawn_card_node(drawn)
 				# 손패가 바뀌었다 — 카드 없이 넘긴 차례의 잠금이 풀린다.
 				_player_pass_lock = false
 			_trim_hand_overflow(true)
@@ -879,10 +872,18 @@ func _apply_phase_entry_carryovers(is_player: bool) -> void:
 func _apply_hand_dim_state() -> void:
 	var dim: bool = _is_player_input_blocked() \
 			or _bs.game_phase != GameEnums.BattlePhase.CARD_PHASE
+	var low: bool = _hand_is_lowered()
+	var pose_changed: bool = low != _hand_lowered_applied
+	_hand_lowered_applied = low
 	for node in _bs.player_card_nodes:
 		var c := node as Card
 		if is_instance_valid(c):
 			c.set_dimmed(dim)
+			c.set_lowered(low)
+	# 자리가 바뀌는 것은 오르내림이 실제로 뒤집힐 때뿐이다 — 매 갱신마다 다시
+	# 깔면 손패의 트윈이 계속 처음부터 다시 돈다.
+	if pose_changed:
+		relayout_hand(_bs.player_card_nodes)
 	# The description box answers "what is the hand pointing at?", so it follows
 	# the same gate: a dimmed hand has no focus to describe.
 	_refresh_description_box()
@@ -1105,43 +1106,26 @@ func _run_ai_turn() -> void:
 
 
 # ─── Card draw ────────────────────────────────────────────────────────────────
-# ─── 스택 (핸드에서 뭉치는 카드) ─────────────────────────────────────────────
-# `스택` 키워드를 단 카드는 손패에서 같은 카드끼리 **한 장으로** 뭉친다. 뭉친
-# 카드는 손패 배열에 **한 항목**으로만 존재하고 `stack_count` 가 몇 장인지를
-# 들고 있으므로, 손패 크기 · 상한 초과 정리 · 부채꼴 레이아웃 · 히트 밴드가
-# 전부 그 뭉치를 한 장으로 센다 — 그 셋을 따로 고칠 필요가 없다는 것이 이
-# 표현을 고른 이유다.
+# ─── 충전 (카드 한 장이 자기 안에 쌓는 세기) ────────────────────────────────
+# `충전` 키워드를 단 카드는 **손패에 들어올 때마다** 자기 `charge` 를 하나 올린다
+# (상한은 `charge_max`). 사용하면 쌓인 만큼이 한꺼번에 나가고 0 으로 돌아간다.
 #
-# 뭉치는 곳은 손패뿐이다. 덱과 버린 더미에는 낱장으로 눕고(`send_to_discard`),
-# 손패로 들어올 때 다시 뭉친다.
+# 예전에는 같은 카드를 손패에서 **한 장으로 뭉치는** `스택` 이었다 — 그때는
+# 카드가 덱에 3~5장씩 들어가 있어야 세기가 붙었고, 더미로 내려갈 때마다 낱장
+# 으로 다시 흩어야 했다(`send_to_discard`). 충전은 그 둘을 다 없앤다: 덱에는
+# `count = 1` 로 한 장만 있고, 흩을 뭉치도 없다.
 
-## 손패에 이미 서 있는 같은 뭉치. 없으면 null.
-func _stack_partner_in_hand(cd: CardData, hand: Array) -> CardData:
-	if cd == null or not cd.is_stackable():
-		return null
-	for raw in hand:
-		var other := raw as CardData
-		if other != cd and other.stacks_with(cd):
-			return other
-	return null
-
-
-## 카드 한 장을 손패에 넣는 **유일한 진입점**. 뭉칠 수 있으면 뭉치고(그때는
-## 노드를 새로 세우지 않고 이미 서 있는 카드의 `xN` 배지만 올린다), 아니면
-## 평소대로 손패에 앉히고 노드를 세운다.
+## 카드 한 장을 손패에 넣는 **유일한 진입점**. 충전 카드면 들어오면서 충전이
+## 하나 오른다.
 ##
-## 새 카드가 실제로 손패 한 자리를 차지했으면 true, 뭉쳐서 흡수됐으면 false.
-## 드로우 연출을 걸지 말지를 호출 측이 이 값으로 가른다.
+## 새 카드가 실제로 손패 한 자리를 차지했으면 true. (예전에는 뭉쳐서 흡수되면
+## false 를 돌려줬는데, 흡수라는 경로 자체가 사라져 지금은 언제나 true 다 —
+## 호출 측의 분기는 그대로 두어도 옳게 흐른다.)
 func add_card_to_hand(cd: CardData, is_player: bool, at_left: bool = false) -> bool:
 	if cd == null:
 		return false
 	var hand: Array = _bs.player_hand if is_player else _bs.ai_hand
-	var partner: CardData = _stack_partner_in_hand(cd, hand)
-	if partner != null:
-		partner.stack_count += cd.stack_count
-		if is_player:
-			refresh_stack_node(partner)
-		return false
+	cd.gain_charge()
 	if at_left:
 		hand.insert(0, cd)
 	else:
@@ -1153,13 +1137,13 @@ func add_card_to_hand(cd: CardData, is_player: bool, at_left: bool = false) -> b
 	return true
 
 
-## 이 카드의 손패 노드에 뭉치 표시를 다시 그린다. 노드가 없으면(AI 쪽 · 아직
+## 이 카드의 손패 노드에 충전 표시를 다시 그린다. 노드가 없으면(AI 쪽 · 아직
 ## 안 선 카드) 조용히 넘어간다.
-func refresh_stack_node(cd: CardData) -> void:
+func refresh_charge_node(cd: CardData) -> void:
 	for raw in _bs.player_card_nodes:
 		var c := raw as Card
 		if c.data == cd:
-			c.refresh_stack_badge()
+			c.refresh_charge_badge()
 			return
 
 
@@ -1184,17 +1168,9 @@ func draw_card(is_player: bool) -> CardData:
 	var draw_disc: int = _bs.phase_draw_discount_p if is_player else _bs.phase_draw_discount_ai
 	if draw_disc > 0 and card.is_playable():
 		card.cost = max(0, card.cost - draw_disc)
-	# 뽑힌 카드가 손패의 같은 뭉치에 흡수되면 손패 크기가 늘지 않는다 —
-	# `last_draw_merged` 가 그 신호이고, 호출 측은 이 값을 보고 드로우 연출을
-	# 건너뛴다(카드 노드가 새로 서지 않으므로 날아올 카드가 없다).
+	# 충전 카드는 손패에 들어오는 것만으로 충전이 하나 오른다.
+	card.gain_charge()
 	hand.append(card)
-	var partner: CardData = _stack_partner_in_hand(card, hand)
-	last_draw_merged = partner != null
-	if partner != null:
-		hand.erase(card)
-		partner.stack_count += card.stack_count
-		if is_player:
-			refresh_stack_node(partner)
 	if is_player:
 		if did_reshuffle:
 			# Animate the swap as one motion: discard pre_size → 0, deck 0 → deck.size()
@@ -1537,6 +1513,29 @@ func _fan_arc_drop(dx: float) -> float:
 ## hand of `total` cards. X follows slot_center_dx; Y rides the fan arc, so a
 ## card near either end of the row sits lower than the middle one. Rotation for
 ## the same slot comes from slot_rotation().
+## **내 차례가 아닐 때 손패는 화면 아래로 물러난다.** 카드 절반쯤이 아군 파일럿
+## 스트립 뒤판에 가려지는 자리까지 내려가고, 같은 상태에서 카드 노드는 그 뒤판
+## **뒤로** 내려간다(`_reorder_hand_nodes`) — 그래서 실제로 가려진다. 내 차례가
+## 되면 그대로 올라오고 z-order 도 되돌아온다.
+##
+## 값을 상수로 박지 않고 스트립 뒤판에서 역산하는 이유: `BS_HAND_CENTER.y` 도
+## 스트립도 세이프 에어리어 오프셋(`HudBuilder.bottom_offset`)을 이미 먹은 값이라
+## 둘의 차만 재면 기기와 무관하게 "절반쯤 가려진다"가 유지된다.
+func hand_drop_offset() -> float:
+	if not _hand_is_lowered():
+		return 0.0
+	var strip_top: float = _bs.hud.player_strip_backdrop_top()
+	return maxf(0.0, strip_top - Card.CARD_H * 0.5 - _bs.BS_HAND_CENTER.y)
+
+
+## 지금 손패가 내려가 있어야 하는가 — **내 작전 단계가 아니면** 내려간다.
+## 딤(`_apply_hand_dim_state`)보다 좁은 조건이다: 내 차례 안에서 잠깐 입력이
+## 막히는 구간(명중 연출 · 모달 픽 · 차례 배너)에는 손패가 어두워질 뿐
+## 내려가지 않는다 — 그때 내려가면 모달 한 번마다 손패가 오르내린다.
+func _hand_is_lowered() -> bool:
+	return _bs.game_phase != GameEnums.BattlePhase.CARD_PHASE
+
+
 func slot_position(index: int, total: int) -> Vector2:
 	if total <= 0:
 		return _bs.BS_HAND_CENTER
@@ -1544,7 +1543,7 @@ func slot_position(index: int, total: int) -> Vector2:
 	# BattleSim._ready), so a centre-to-centre distance adds to it directly.
 	var dx: float = slot_center_dx(index, total)
 	return Vector2(_bs.BS_HAND_CENTER.x + dx,
-			_bs.BS_HAND_CENTER.y + _fan_arc_drop(dx))
+			_bs.BS_HAND_CENTER.y + _fan_arc_drop(dx) + hand_drop_offset())
 
 
 ## Horizontal offset (px) card `index` takes on while some *other* card in the
@@ -1749,10 +1748,13 @@ func _fit_hit_layer(total: int) -> void:
 	# bottom edge.
 	var drop: float = _fan_arc_drop(slot_center_dx(0, total))
 	drop = maxf(drop, _fan_arc_drop(slot_center_dx(total - 1, total)))
-	var top: float = _bs.BS_HAND_CENTER.y - grow_y - lift
+	# 손패가 내려가 있으면 레이어도 같이 내려간다 — 안 따라가면 카드가 없는
+	# 자리에서 전장 위의 클릭을 삼킨다.
+	var row_y: float = _bs.BS_HAND_CENTER.y + hand_drop_offset()
+	var top: float = row_y - grow_y - lift
 	_hand_hit_layer.position = Vector2(left, top)
 	_hand_hit_layer.size = Vector2(right - left,
-			_bs.BS_HAND_CENTER.y + drop + Card.CARD_H + grow_y - top)
+			row_y + drop + Card.CARD_H + grow_y - top)
 	_hand_hit_layer.visible = true
 
 
@@ -2139,18 +2141,16 @@ func _pose_selected_card(card: Card) -> void:
 
 # ─── 드롭 존 ─────────────────────────────────────────────────────────────────
 
-## 대상이 없는 카드를 놓아서 내는 중앙 구역: 화면 세로 중앙을 기준으로 화면
-## 높이의 `DROP_ZONE_H_RATIO` 만큼, 가로는 전체 폭.
+## 카드를 놓아서 내는 중앙 구역: 화면 세로 중앙을 기준으로 화면 높이의
+## `DROP_ZONE_H_RATIO` 만큼, 가로는 전체 폭.
 ##
-## 버리기:N 픽 중에는 같은 구역이 **버리기 구역**이 된다 — 이미 골라 둔 카드가
-## 늘어선 줄(`CardSelectOverlay.TO_DISCARD_CENTER_Y`)을 중심으로 잡히므로 "그
-## 줄 위에 얹는다"로 읽힌다.
+## **버리기:N 픽 중에도 같은 구역이다.** 예전에는 버리기만 따로 `y = 700` 을
+## 중심으로 한 440px 띠를 썼는데, 같은 조작(카드를 끌어다 놓는다)이 무엇을 하느냐에
+## 따라 놓아야 할 자리가 달라져 매번 다시 겨눠야 했다. 지금은 구역도, 골라 둔
+## 카드가 늘어서는 줄(`CardSelectOverlay.to_discard_center_y`)도 이 rect 에서
+## 나오므로 둘이 어긋날 수 없다.
 func drop_zone_rect() -> Rect2:
 	var vp: Vector2 = _bs.canvas.get_viewport().get_visible_rect().size
-	if _in_discard_pick_mode():
-		return Rect2(0.0,
-				CardSelectOverlay.TO_DISCARD_CENTER_Y - DISCARD_ZONE_H * 0.5,
-				vp.x, DISCARD_ZONE_H)
 	var h: float = vp.y * DROP_ZONE_H_RATIO
 	return Rect2(0.0, vp.y * 0.5 - h * 0.5, vp.x, h)
 
@@ -2259,24 +2259,41 @@ func _reorder_hand_nodes() -> void:
 			order.append(card)
 	if top != null:
 		order.append(top)
+	# **내 차례가 아니면 손패는 아군 스트립 뒤판보다 뒤에 그려진다** — 카드가
+	# 절반쯤 내려가 있는 것(`hand_drop_offset`)만으로는 판 **위에** 걸쳐 있어
+	# 가려지지 않는다. 기준은 노드 하나(`marker`)이고, 그 앞자리에 차례로 꽂으면
+	# 카드들의 상대 순서는 그대로 둔 채 덩어리째 판 아래로 내려간다.
+	var parent: Node = _bs.canvas
+	var marker: Node = null
+	if _hand_is_lowered():
+		marker = _bs.hud.player_strip_backdrop()
+		if marker == null or not is_instance_valid(marker) \
+				or marker.get_parent() != parent:
+			marker = null
 	# Bail when the tree already draws them in that order. move_child re-runs
 	# mouse picking and fires enter/exit on the very cards being sorted, so a
 	# reorder that changes nothing must touch nothing — otherwise every reflow
 	# kicks off another hover storm and the hand never settles.
-	var prev: int = -1
+	var base: int = (marker.get_index() if marker != null
+			else parent.get_child_count()) - order.size()
 	var sorted := true
-	for card in order:
-		var ci: int = card.get_index()
-		if ci <= prev:
+	for i in order.size():
+		if order[i].get_index() != base + i:
 			sorted = false
 			break
-		prev = ci
 	if sorted:
 		return
 	_reordering = true
 	for card in order:
-		# move_child to last puts each successive card on top of the previous.
-		card.get_parent().move_child(card, card.get_parent().get_child_count() - 1)
+		if marker != null:
+			# 마커 **바로 앞**에 꽂는다. 카드가 마커보다 뒤에 있었으면 빼내도
+			# 마커 인덱스가 그대로이므로 그 자리에, 앞에 있었으면 마커가 한 칸
+			# 당겨지므로 한 칸 앞에 넣는다.
+			var mi: int = marker.get_index()
+			parent.move_child(card, mi if card.get_index() > mi else mi - 1)
+		else:
+			# move_child to last puts each successive card on top of the previous.
+			parent.move_child(card, parent.get_child_count() - 1)
 	_reordering = false
 
 
@@ -2671,6 +2688,7 @@ func _play_card_direct(card: Card, pre_target: Variant = null) -> void:
 	}
 	_chain_hit = false
 	_current_card = cd
+	_charge_spent = _burn_charge(cd)
 	_current_target = pre_target
 	_process_pending_chain()
 
@@ -3359,6 +3377,7 @@ func apply_card_effect(cd: CardData, is_player: bool) -> String:
 	var lines: Array = []
 	_chain_hit = false
 	_current_card = cd
+	_charge_spent = _burn_charge(cd)
 	_current_target = target
 	var skip_to: String = ""
 	for clause in clauses:
@@ -3583,7 +3602,7 @@ func _effect_draw(is_player: bool, n: int) -> String:
 		var c := draw_card(is_player)
 		if c == null:
 			break
-		if is_player and not last_draw_merged:
+		if is_player:
 			spawn_card_node(c)
 		drew += 1
 	if not is_player and drew > 0:
@@ -3631,7 +3650,7 @@ func _effect_strategy(is_player: bool, n: int) -> String:
 ##   |damaged       이번 작전 단계에 이 메크가 때린 적 전부 (락온 · 신속)
 ##   |line          아군 HQ ~ 지정 포탑까지의 레인 전부     (꿰뚫는 번개)
 ##   |turret_only   지정한 적 포탑 하나                     (철거)
-##   |stack         **같은 대상을 스택 수만큼 반복해서** 때린다 (미사일)
+##   |charge        **충전 수만큼** 반복해서 때린다 (미사일 · 전장 강타)
 ##   |pierce |repeat  예전 그대로 (필중 / 명중마다 반복)
 ##
 ## 대상은 PilotData 이거나 TurretData 다. 둘을 가르는 자리는 피해를 넣는 두
@@ -3645,12 +3664,12 @@ func _effect_attack(n: int, flags: Array, caster: PilotData, enemy_team: int,
 		return "공격 (대상 없음)"
 	var pierce: bool = "pierce" in flags
 	var repeat: bool = "repeat" in flags
-	# `|stack` 은 대상을 늘리는 것이 아니라 **같은 대상을 반복**한다. 대상 쪽을
-	# 늘리는 것은 `|random` 쪽이고, 둘이 같은 카드에 붙으면(전장 강타) 이미
-	# 대상 목록이 스택 수만큼이므로 반복은 1 로 둔다.
+	# `|charge` 는 대상을 늘리는 것이 아니라 **각 대상을 충전 수만큼 반복**한다.
+	# 대상 쪽을 늘리는 것은 `|random` 이고, 둘이 같은 카드에 붙으면(전장 강타)
+	# 이미 대상 목록이 충전 수 + 1 만큼이므로 반복은 1 로 둔다.
 	var swings_each: int = 1
-	if "stack" in flags and not ("random" in flags):
-		swings_each = maxi(1, _stack_of_current_card())
+	if "charge" in flags and not ("random" in flags):
+		swings_each = maxi(1, _charge_spent)
 	var animated: bool = caster != null and caster.alive and _bs.renderer != null
 	if animated:
 		_set_attack_anim_active(true)
@@ -3710,11 +3729,32 @@ func _effect_attack(n: int, flags: Array, caster: PilotData, enemy_team: int,
 			tag, victims.size(), _last_attack_hits, total_dmg]
 
 
-## 이 카드의 스택 수. 카드가 없으면(패시브가 직접 부른 공격) 1.
-func _stack_of_current_card() -> int:
-	if _current_card == null:
+## 이 카드가 이번 사용에 실제로 태운 충전 수. 카드가 없거나(패시브가 직접 부른
+## 공격) 충전 카드가 아니면 1 — 충전이 안 붙은 카드는 "한 번"이 기본값이다.
+##
+## 값이 카드가 아니라 여기에 사는 이유: 사용 시점에 `spend_charge()` 로 이미
+## 0 이 됐기 때문이다. 효과 체인은 오버레이 때문에 여러 프레임에 걸쳐 돌 수
+## 있으므로, 태운 수는 체인이 시작될 때 한 번 찍혀 있어야 한다.
+var _charge_spent: int = 1
+## 마지막으로 손패에 적용된 오르내림 상태. `_apply_hand_dim_state` 가 자리를
+## 다시 깔지 말지를 이 값으로 가른다.
+var _hand_lowered_applied: bool = false
+
+
+## 카드를 내는 순간 쌓인 충전을 통째로 태우고, 태운 수를 돌려준다. **사용 시
+## 모든 충전을 소모**가 이 한 줄이다 — 효과가 몇 개든 세기는 하나이므로 절이
+## 아니라 카드가 손을 떠나는 자리에서 한 번만 태운다. 충전 카드가 아니면 1
+## (= "한 번"). 취소로 되돌아간 카드는 스냅샷이 손패를 통째로 복원하지만 충전은
+## 같은 CardData 인스턴스에 살아 그대로 0 이 된다 — 대상 지정을 취소해도 충전이
+## 날아가는 셈이라, 취소가 가능한 카드에는 붙이지 않는 것이 규칙이다(미사일은
+## 대상 지정 카드지만 드롭으로만 확정되므로 취소 경로가 없다).
+func _burn_charge(cd: CardData) -> int:
+	if cd == null or not cd.is_charge_card():
 		return 1
-	return maxi(1, _current_card.stack_count)
+	var n: int = cd.spend_charge()
+	if _bs.player_hand.has(cd) or _bs.ai_hand.has(cd):
+		refresh_charge_node(cd)
+	return n
 
 
 ## 공격 절이 실제로 때릴 것들. 원소는 PilotData 또는 TurretData.
@@ -3753,8 +3793,10 @@ func _resolve_attack_victims(flags: Array, caster: PilotData, enemy_team: int,
 		if bag.is_empty():
 			return out
 		var picks: int = 1
-		if "stack" in flags:
-			picks = _stack_of_current_card()
+		if "charge" in flags:
+			# 전장 강타 — "소모한 충전 수 + 1 만큼 반복". 충전이 0 이어도 한 번은
+			# 나가야 하므로 +1 은 상수항이지 보정이 아니다.
+			picks = maxi(1, _charge_spent + 1)
 		for _i in picks:
 			out.append(bag[randi() % bag.size()])
 		return out
@@ -4226,6 +4268,9 @@ func _effect_cost_reduce_hand(n: int, is_player: bool) -> String:
 	for raw in hand:
 		var c := raw as CardData
 		if c == null: continue
+		# 비용 -1 은 값이 아니라 "낼 수 없다"는 표시라 할인이 얹히지 않는다 —
+		# 깎으면 `max(0, ...)` 를 지나며 0 이 되어 공짜 카드로 둔갑한다.
+		if not c.is_playable(): continue
 		c.cost = max(0, c.cost - n)
 	return "핸드 카드 비용 -%d" % n
 
@@ -4389,16 +4434,6 @@ func send_to_discard(cd: CardData, discard: Array) -> bool:
 	if _bs.mech_skill != null and cd != _current_card:
 		_bs.mech_skill.on_card_discarded(cd, discard == _bs.player_discard)
 	discard.append(cd)
-	# **뭉치는 손패에서만 뭉쳐 있다.** 더미로 내려앉는 순간 다시 낱장으로
-	# 흩어진다 — 그러지 않으면 리셔플 한 번에 덱 장수가 뭉친 만큼 줄고, 다음에
-	# 뽑을 때 한 장을 뽑았는데 세 장이 들어오는 일이 생긴다. 흩어진 낱장들은
-	# 손패로 돌아올 때 `add_card_to_hand` 가 다시 뭉쳐 준다.
-	var extra: int = cd.stack_count - 1
-	cd.stack_count = 1
-	for _i in max(0, extra):
-		var copy := make_card_copy(cd)
-		copy.stack_count = 1
-		discard.append(copy)
 	return true
 
 
@@ -4446,7 +4481,7 @@ func _effect_discard_hand_draw(is_player: bool) -> String:
 		var c := draw_card(is_player)
 		if c == null:
 			break
-		if is_player and not last_draw_merged:
+		if is_player:
 			spawn_card_node(c)
 		drew += 1
 	_refresh_hand_after_bulk_change(is_player)
@@ -4664,8 +4699,8 @@ func _repeat_count(flags: Array) -> int:
 		return _last_attack_hits
 	if "per_kill" in flags:
 		return _last_attack_kills
-	if "stack" in flags:
-		return _stack_of_current_card()
+	if "charge" in flags:
+		return maxi(1, _charge_spent)
 	return 1
 
 
@@ -5199,7 +5234,7 @@ func _effect_draw_discarded(is_player: bool) -> String:
 		var c := draw_card(is_player)
 		if c == null:
 			break
-		if is_player and not last_draw_merged:
+		if is_player:
 			spawn_card_node(c)
 		drew += 1
 	_refresh_hand_after_bulk_change(is_player)

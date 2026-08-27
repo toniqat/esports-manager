@@ -443,6 +443,20 @@ func _on_pilot_strip_pressed(p: PilotData) -> void:
 ## 남으면 지금 무엇을 보고 있는지가 흐려지고, 딤 아래로 넣으면 방금 누른 얼굴이
 ## 어두워진다. 반대 팀 스트립은 그대로 둔다(딤에 가려질 뿐이고, 치우면 화면에서
 ## 무엇이 사라졌는지가 더 헷갈린다).
+## 아군 스트립 뒤판 노드. `CardPhaseManager` 가 두 가지로 읽는다 — 내 차례가
+## 아닐 때 손패 카드를 **이 판보다 뒤로** 내려보낼 기준 노드이고(형제 z-order 가
+## 곧 자식 인덱스다), 카드가 얼마나 내려가야 절반쯤 가려지는지를 재는 자다.
+func player_strip_backdrop() -> Panel:
+	return _player_strip_bg
+
+
+## 그 뒤판의 위쪽 끝(y). 세이프 에어리어 오프셋이 이미 먹은 실제 좌표다.
+func player_strip_backdrop_top() -> float:
+	if _player_strip_bg != null and is_instance_valid(_player_strip_bg):
+		return _player_strip_bg.position.y
+	return player_strip_rect().position.y - PLAYER_BG_PAD
+
+
 func set_strip_visible(team: int, on: bool) -> void:
 	var strip: PilotStrip = _player_strip if team == 0 else _enemy_strip
 	if strip != null:
@@ -752,23 +766,16 @@ func update_time_label() -> void:
 	_lbl_time.text = "%02d:%02d" % [mm, ss]
 
 
-## 스트립의 자리 순서 — **전장에서 왼쪽부터 오른쪽으로 늘어놓은 순서**다:
-## 좌측 레인 → 정글 → 중앙 레인 → 우측 레인 ×2. `LanePosition` 의 열거값 순서
-## (LEFT · CENTER · RIGHT · GUERRILLA)를 그대로 쓰면 정글러가 다섯 번째 칸,
-## 즉 우측 라이너 **뒤**에 앉는데, 정글은 전장에서 좌우 레인 사이에 있으므로
-## 그 자리는 지도 어디와도 대응하지 않는다. 이 표 하나가 그 대응을 만든다.
-const LANE_SEAT_ORDER: Array = [0, 2, 3, 1]   # LEFT, CENTER, RIGHT, GUERRILLA
-
-
-static func _lane_seat_rank(p: PilotData) -> int:
-	var lane: int = p.lane
-	if lane < 0 or lane >= LANE_SEAT_ORDER.size():
-		return LANE_SEAT_ORDER.size()
-	return int(LANE_SEAT_ORDER[lane])
-
-
+## 스트립의 자리 순서는 **역할**이 정한다 — `GameEnums.ROLE_DISPLAY_ORDER`
+## (탑 · 정글 · 미드 · 원딜 · 서폿), 곧 전장을 왼쪽부터 오른쪽으로 훑은 순서
+## (좌측 → 정글 → 중앙 → 우측 ×2)다. 예전에는 여기 `LANE_SEAT_ORDER` 표를 따로
+## 두고 `PilotData.lane` 으로 정렬했는데, **우측 레인에는 두 명이 앉아 있어**
+## (스나이퍼 · 서포터) 그 둘의 순서를 lane 이 가르지 못했다 — `sort_custom` 은
+## 안정 정렬이 아니므로 같은 lane 두 명의 앞뒤가 실행마다 흔들릴 수 있었다.
+## 역할로 정렬하면 다섯 자리가 전부 유일하게 정해지고, **아웃게임 화면들과도
+## 같은 표 하나를 읽는다**(시즌 허브 로스터 · 훈련 격자 · 밴픽 화면).
 static func _lane_seat_less(a: PilotData, b: PilotData) -> bool:
-	return _lane_seat_rank(a) < _lane_seat_rank(b)
+	return GameEnums.role_seat(a.role) < GameEnums.role_seat(b.role)
 
 
 # 두 스트립 + 팀 합산 점수 갱신, 그리고 상세 패널의 단계 게이트.

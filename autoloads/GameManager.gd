@@ -537,6 +537,7 @@ func _load_mech_skills() -> void:
 				"cast_range":  int(row["cast_range"]),
 				"area":        int(row["area"]),
 				"keyword":     String(row["keyword"]),
+				"charge_max":  int(row.get("charge_max", 0)),
 				"effect":      String(row["effect"]),
 				"trigger":     String(row.get("trigger", "")),
 				"description": String(row["description"]),

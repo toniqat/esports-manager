@@ -98,8 +98,12 @@ func _build_roster_block() -> void:
 	UiHelpers.mk_label(self, "내 팀 로스터", 24, Color(1.0, 0.85, 0.20),
 			Vector2(x0, y0 - 36), Vector2(360, 30), HORIZONTAL_ALIGNMENT_LEFT)
 
-	for r in 5:
-		var y: float = y0 + r * (row_h + row_gap)
+	# 줄 순서는 **역할 열거값 순서가 아니라 화면 순서**다(탑 · 정글 · 미드 ·
+	# 원딜 · 서폿) — `GameEnums.ROLE_DISPLAY_ORDER`. 위젯 배열은 그리는 순서,
+	# 즉 자리 순서로 쌓이므로 `_refresh_roster` 가 같은 표로 되읽는다.
+	for seat in 5:
+		var r: int = int(GameEnums.ROLE_DISPLAY_ORDER[seat])
+		var y: float = y0 + seat * (row_h + row_gap)
 		var role_col: Color = ROLE_COLORS[r]
 		var panel := Panel.new()
 		var sty := StyleBoxFlat.new()
@@ -330,8 +334,9 @@ func _refresh_roster() -> void:
 		var p := raw as PlayerData
 		if p.team_id == pid:
 			by_role[int(p.role)] = p
-	for r in 5:
-		var w: Dictionary = _roster_widgets[r]
+	for seat in 5:
+		var r: int = int(GameEnums.ROLE_DISPLAY_ORDER[seat])
+		var w: Dictionary = _roster_widgets[seat]
 		if not by_role.has(r):
 			w["name"].text = "—"
 			w["total"].text = ""

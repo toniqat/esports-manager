@@ -7,19 +7,11 @@ extends Control
 @onready var _gm: Node = get_node("/root/GameManager")
 
 # ─── 슬롯 순서 (탑 · 정글 · 미드 · 원딜 · 서폿) ──────────────────────────────
-# 화면의 다섯 칸은 **역할 고정**이고 그 순서는 `GameEnums.Role` 의 열거값 순서가
-# 아니라 **MOBA 라인 순서**다 — 탑 → 정글 → 미드 → 원딜 → 서폿. 열거값 순서
-# (TANK · FIGHTER · ASSASSIN · SUPPORT · SNIPER)를 그대로 쓰면 정글러가 세 번째,
-# 서포터가 네 번째로 앉는데 그 배열은 플레이어가 아는 라인업과 대응하지 않는다.
-# 인게임 파일럿 스트립이 같은 이유로 `HudBuilder.LANE_SEAT_ORDER` 를 따로 들고
-# 있다 — 이쪽은 그 스트립이 아니라 **필터 버튼과 짝을 이루는** 표다.
-const SLOT_ROLES: Array = [
-	GameEnums.Role.TANK,      # 탑
-	GameEnums.Role.ASSASSIN,  # 정글
-	GameEnums.Role.FIGHTER,   # 미드
-	GameEnums.Role.SNIPER,    # 원딜
-	GameEnums.Role.SUPPORT,   # 서폿
-]
+# 화면의 다섯 칸은 **역할 고정**이고 그 순서는 `GameEnums.ROLE_DISPLAY_ORDER`
+# 하나에서 온다 — 인게임 파일럿 스트립도, 밴픽 화면의 양 팀 블록도, 시즌 허브
+# 로스터도 같은 표를 읽는다. 예전에는 화면마다 자기 순서를 들고 있어서 같은
+# 다섯 명이 화면마다 다른 자리에 앉았다.
+const SLOT_ROLES: Array = GameEnums.ROLE_DISPLAY_ORDER
 const SLOT_NAMES: Array = ["탑", "정글", "미드", "원딜", "서폿"]
 
 ## 역할 → 화면 슬롯 인덱스. `SLOT_ROLES` 의 역인덱스이며, 썸네일을 눌렀을 때

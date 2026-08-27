@@ -194,7 +194,6 @@ class EUnit extends RefCounted:
 	var skill_focus_used: bool = false
 	## 이번 차례의 표적을 **약자 멸시**가 정했는가. 스택은 그때만 소모된다 —
 	## 다른 규칙이 고른 표적에까지 값을 물리면 스택이 겨눔과 무관하게 마른다.
-	var contempt_pick: bool = false
 	var atk_range: float = 0.0
 	var move_speed: float = 0.0
 
@@ -314,11 +313,38 @@ func setup(bs: BattleSim, caster: PilotData, team0: Array, team1: Array,
 	_build_units(caster, team0, team1)
 	_build_turrets()
 	_build_order(caster)
+	_contempt_opening()
 
 	round_index = 1
 	_order_idx = -1
 	flow = Flow.ROUND_START
 	_gap_left = ROUND_GAP_SEC
+
+
+## 약자 멸시(암살 R) — **1라운드가 돌기 전에** 터지는 선제 타격. 손패에 든
+## [약자 멸시]의 충전을 통째로 태우고, 태운 수만큼 **체력이 가장 적은 적**을
+## 공격력 `CONTEMPT_DMG_MULT` 로 때린다.
+##
+## 순서가 중요하다: `_build_units` 뒤라야 무대에 선 유닛과 그 자리가 정해져 있고
+## (팝업 좌표가 거기서 나온다), 라운드 루프 앞이라야 "교전을 시작하면"이 된다.
+## 오버클럭은 태우지 않는다(`allow_extra = false`) — 개시 타격이 다시 추가 공격을
+## 굴리면 카드 한 장이 교전을 혼자 끝낼 수 있다.
+func _contempt_opening() -> void:
+	var mech: MechSkillSystem = _bs.mech_skill
+	if mech == null:
+		return
+	for raw in units:
+		var u := raw as EUnit
+		var n: int = mech.take_contempt_charges(u.pilot)
+		if n <= 0:
+			continue
+		popups.append({"pos": u.pos, "text": "약자 멸시 x%d" % n,
+				"color": Color(1.0, 0.72, 0.35)})
+		for _i in n:
+			var weak: EUnit = _weakest_enemy(u)
+			if weak == null:
+				break
+			_strike_one(u, weak, false, CONTEMPT_DMG_MULT)
 
 
 # ─── 구성 ────────────────────────────────────────────────────────────────────
@@ -763,6 +789,8 @@ const FOCUS_BONUS_FLOOR: float = 0.45
 const LOW_HP_FOCUS: float = 0.6     # 빈사(35% 미만) 적 마무리 가중
 ## 암살자가 적 뒷줄(원거리)에 주는 가중. 낮을수록 더 집요하게 파고든다.
 const DIVE_FOCUS: float = 0.40
+## 약자 멸시의 개시 타격에 곱해지는 공격력 배율 (카드 문안의 "공격력 50%").
+const CONTEMPT_DMG_MULT: float = 0.5
 
 ## 팀별 이번 라운드의 집중 대상 → 몇 명이 노렸는가. 라운드가 넘어가도 그대로
 ## 두는 이유는 집중 사격이 라운드 경계에서 끊기면 처치가 거의 나오지 않기
@@ -773,15 +801,6 @@ var _focus_count: Dictionary = {}   # EUnit → int
 var _opportunist_used: bool = false
 
 func _pick_target(u: EUnit) -> EUnit:
-	u.contempt_pick = false
-	# 약자 멸시(암살 R) — 스택이 남아 있는 동안은 **체력이 가장 적은 적**만
-	# 본다. 거리도 존재감도 보지 않는 것이 이 카드의 값이다.
-	if _bs.mech_skill != null and _bs.mech_skill.contempt_active(u.pilot):
-		var weak: EUnit = _weakest_enemy(u)
-		if weak != null:
-			u.contempt_pick = true
-			_focus_count[weak] = int(_focus_count.get(weak, 0)) + 1
-			return weak
 	# 원딜 사냥꾼(파일럿 스킬) — 아직 안 쓴 첫 공격은 적 원딜이 살아 있는 한
 	# 반드시 그쪽으로 간다. 거리도 존재감도 보지 않는다.
 	if u.skill_focus_role >= 0 and not u.skill_focus_used:
@@ -865,11 +884,6 @@ func _resolve_attack(u: EUnit, target: EUnit) -> void:
 			victims = all_foes
 	for raw in victims:
 		_strike_one(u, raw as EUnit)
-	# 약자 멸시 — "공격 후 스택 -1". 몇 명을 때렸든 **한 차례에 하나**다:
-	# 스택은 겨눔의 횟수이지 타격의 횟수가 아니다.
-	if mech != null and u.contempt_pick:
-		mech.consume_contempt(u.pilot)
-		u.contempt_pick = false
 
 
 ## 한 대상에게 들어가는 타격 한 번. `_resolve_attack` 이 대상 집합을 정하고
@@ -878,7 +892,8 @@ func _resolve_attack(u: EUnit, target: EUnit) -> void:
 ##
 ## `allow_extra` 가 false 면 오버클럭이 걸리지 않는다. 추가 공격이 다시 추가
 ## 공격을 굴리면 확률에 따라 한 차례가 무한히 늘어난다.
-func _strike_one(u: EUnit, target: EUnit, allow_extra: bool = true) -> void:
+func _strike_one(u: EUnit, target: EUnit, allow_extra: bool = true,
+		dmg_mult: float = 1.0) -> void:
 	if target == null or not target.is_active():
 		return
 	if not u.is_melee:
@@ -897,7 +912,7 @@ func _strike_one(u: EUnit, target: EUnit, allow_extra: bool = true) -> void:
 
 	# 파일럿 스킬의 피해 배율 — 불안정한 대포(양방향)와 원딜 사냥꾼의 첫 공격
 	# 보너스. 전장과 같은 질의 함수를 쓰므로 두 무대의 규칙이 갈라지지 않는다.
-	var raw_dmg: float = float(max(1, a.atk))
+	var raw_dmg: float = float(max(1, a.atk)) * dmg_mult
 	if _bs.skill != null:
 		raw_dmg *= _bs.skill.damage_out_mult(a) * _bs.skill.damage_in_mult(d)
 	if u.skill_focus_role >= 0 and not u.skill_focus_used:

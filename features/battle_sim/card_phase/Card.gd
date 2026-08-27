@@ -73,6 +73,13 @@ const SHADOW_SELECTED_ALPHA := 0.32
 const SHADOW_REST_SPREAD     := 1.0
 const SHADOW_HOVER_SPREAD    := 1.06
 const SHADOW_SELECTED_SPREAD := 1.08
+## 내 차례가 아닐 때(핸드가 내려가 있을 때)의 그림자. 카드가 카메라에서 멀어진
+## 것처럼 보이도록 **그림자가 카드에 더 붙는다** — 거리가 곧 높이이므로, 짧고
+## 좁은 그림자는 "바닥에 가까이 누워 있다"로 읽힌다.
+const SHADOW_FAR_OFFSET := Vector2(1.0, 4.0)
+const SHADOW_FAR_BLUR   := 3
+const SHADOW_FAR_ALPHA  := 0.58
+const SHADOW_FAR_SPREAD := 0.98
 const SHADOW_TWEEN_DURATION  := 0.05
 
 # ── 사용 불가 오버레이 ────────────────────────────────────────────────────────
@@ -94,19 +101,25 @@ const RESPAWN_FONT_COLOR    := Color(1.0, 0.86, 0.86)
 const PRESERVE_BORDER_COLOR := Color(0.45, 0.95, 1.0, 1.0)
 const PRESERVE_BORDER_WIDTH := 5
 
-# ── 스택 표시 ────────────────────────────────────────────────────────────────
-## 뒤로 겹쳐 보이는 판을 최대 몇 장까지 그릴지. 뭉치가 다섯 장이어도 판은 셋에서
-## 멈춘다 — 그보다 많으면 카드가 오른쪽 아래로 길어져 부채꼴의 이웃을 침범한다.
-const STACK_MAX_LAYERS := 3
-## 겹친 판이 한 장마다 어긋나는 거리(px). 카드 자신의 up 축이 아니라 화면
-## 오른쪽·아래로 민다 — 기울어진 카드에서도 "뒤에 더 있다"로 읽히는 방향이다.
-const STACK_LAYER_STEP := Vector2(7.0, 7.0)
-const STACK_LAYER_COLOR := Color(0.10, 0.09, 0.16, 1.0)
-const STACK_BADGE_SIZE := Vector2(46.0, 30.0)
-const STACK_BADGE_COLOR := Color(0.06, 0.05, 0.10, 0.92)
-const STACK_BADGE_TEXT_COLOR := Color(1.0, 0.92, 0.45)
-## 비용 -1(사용할 수 없는 카드)이 비용 칸에 찍는 글자. 숫자를 쓰면 "-1 을 내면
-## 된다"로 읽히므로 아예 수가 아닌 것을 쓴다.
+# ── 충전 표시 ────────────────────────────────────────────────────────────────
+## 충전 배지는 **오른쪽 아래**다 — 오른쪽 위는 파일럿 초상 배지가 가져갔고,
+## 왼쪽 위는 비용 칸이다. `N/M` 으로 찍어 숫자 하나가 비용으로 오독되지 않게 한다.
+const CHARGE_BADGE_SIZE := Vector2(52.0, 30.0)
+const CHARGE_BADGE_COLOR := Color(0.06, 0.05, 0.10, 0.92)
+const CHARGE_BADGE_TEXT_COLOR := Color(1.0, 0.92, 0.45)
+
+# ── 파일럿 초상 배지 ─────────────────────────────────────────────────────────
+# 시전자의 얼굴은 **카드 본체를 채우지 않는다.** 카드 안쪽 오른쪽 위에 작은 원형
+# 초상 하나로 앉고, 본체 자리는 카드 일러스트가 들어올 때까지 비워 둔다.
+#
+# **손패에서만 그린다**(`is_player_card`). 상세 패널 · 더미 열람 · 밴픽 · 드래프트
+# 처럼 "이 기체가 주는 카드"를 보여 주는 자리에서는 시전자가 없거나 의미가 없고,
+# 상대 손패 peek 은 뒷면이라 그릴 것이 없다.
+const PORTRAIT_SIZE   := 54.0
+const PORTRAIT_MARGIN := 8.0
+## 본체 위쪽 끝 — 헤더 행(30px) + 마진(5) + VBox 간격(4).
+const PORTRAIT_TOP    := 44.0
+
 const UNPLAYABLE_COST_TEXT := "—"
 
 var data: CardData = null
@@ -169,12 +182,12 @@ var _respawn_label: Label = null
 # 계획 중시로 보존된 카드인가. `set_preserved` 가 갱신한다.
 var _preserved: bool = false
 var _preserve_mark: Panel = null
-## 뭉치 표시. **카드 뒤로 어긋나게 겹쳐 보이는 얇은 판**(`_stack_layers`)과
-## 오른쪽 위 `x3` 배지(`_stack_badge`) 두 벌이고, `stack_count` 가 1 이면 둘 다
-## 꺼진다. 판을 뒤에 깔아야 "여러 장이 겹쳐 있다"가 배지를 읽기 전에 먼저
-## 보인다 — 숫자만으로는 손패에서 카드 한 장과 구별되지 않는다.
-var _stack_layers: Array[Panel] = []
-var _stack_badge: Label = null
+## 충전 배지 (`N/M`). 충전 카드가 아니면 꺼진다.
+var _charge_badge: Label = null
+## 시전자 얼굴 배지 (카드 안쪽 오른쪽 위). 손패 카드에만 선다.
+var _portrait: TextureRect = null
+## 핸드가 내려가 있는가(= 내 차례가 아닌가). 그림자 거리만 바꾼다.
+var _lowered: bool = false
 
 const DIM_MODULATE: Color = Color(0.42, 0.42, 0.48, 1.0)
 
@@ -300,66 +313,63 @@ func _build_block_overlay() -> void:
 	_preserve_mark.visible = false
 	add_child(_preserve_mark)
 
-	# 겹친 판은 **카드 앞면보다 먼저** 붙어야 뒤로 간다 — 형제 z-order 가 곧
-	# 자식 인덱스라 나중에 붙이면 앞면을 덮는다. `_ready` 시점에는 CardFront /
-	# CardBack 이 이미 씬에 서 있으므로 `move_child` 로 맨 뒤로 내린다.
-	for i in STACK_MAX_LAYERS:
-		var layer := Panel.new()
-		layer.name = "StackLayer%d" % i
-		layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		layer.size = Vector2(CARD_W, CARD_H)
-		layer.position = STACK_LAYER_STEP * float(i + 1)
-		var ls := StyleBoxFlat.new()
-		ls.bg_color = STACK_LAYER_COLOR
-		ls.border_color = Color(0.55, 0.52, 0.70, 0.9)
-		ls.border_width_top = 2
-		ls.border_width_bottom = 2
-		ls.border_width_left = 2
-		ls.border_width_right = 2
-		ls.corner_radius_top_left     = 10
-		ls.corner_radius_top_right    = 10
-		ls.corner_radius_bottom_left  = 10
-		ls.corner_radius_bottom_right = 10
-		layer.add_theme_stylebox_override("panel", ls)
-		layer.visible = false
-		add_child(layer)
-		move_child(layer, 0)
-		_stack_layers.append(layer)
+	_charge_badge = Label.new()
+	_charge_badge.name = "ChargeBadge"
+	_charge_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_charge_badge.size = CHARGE_BADGE_SIZE
+	_charge_badge.position = Vector2(CARD_W - CHARGE_BADGE_SIZE.x - 6.0,
+			CARD_H - CHARGE_BADGE_SIZE.y - 6.0)
+	_charge_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_charge_badge.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
+	_charge_badge.add_theme_font_size_override("font_size", 20)
+	_charge_badge.add_theme_color_override("font_color", CHARGE_BADGE_TEXT_COLOR)
+	_charge_badge.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.95))
+	_charge_badge.add_theme_constant_override("outline_size", 5)
+	var cb := StyleBoxFlat.new()
+	cb.bg_color = CHARGE_BADGE_COLOR
+	cb.corner_radius_top_left     = 8
+	cb.corner_radius_top_right    = 8
+	cb.corner_radius_bottom_left  = 8
+	cb.corner_radius_bottom_right = 8
+	_charge_badge.add_theme_stylebox_override("normal", cb)
+	_charge_badge.visible = false
+	add_child(_charge_badge)
 
-	_stack_badge = Label.new()
-	_stack_badge.name = "StackBadge"
-	_stack_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_stack_badge.size = STACK_BADGE_SIZE
-	_stack_badge.position = Vector2(CARD_W - STACK_BADGE_SIZE.x - 6.0, 6.0)
-	_stack_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_stack_badge.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
-	_stack_badge.add_theme_font_size_override("font_size", 22)
-	_stack_badge.add_theme_color_override("font_color", STACK_BADGE_TEXT_COLOR)
-	_stack_badge.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.95))
-	_stack_badge.add_theme_constant_override("outline_size", 5)
-	var bs := StyleBoxFlat.new()
-	bs.bg_color = STACK_BADGE_COLOR
-	bs.corner_radius_top_left     = 8
-	bs.corner_radius_top_right    = 8
-	bs.corner_radius_bottom_left  = 8
-	bs.corner_radius_bottom_right = 8
-	_stack_badge.add_theme_stylebox_override("normal", bs)
-	_stack_badge.visible = false
-	add_child(_stack_badge)
+	# 시전자 얼굴 배지. 앞면 위에 앉되 **사용 불가 슬래브 아래**여야 한다 —
+	# 잠긴 카드에서 얼굴만 밝게 남으면 쓸 수 있는 카드처럼 읽힌다. 그래서 배지를
+	# 붙인 뒤 슬래브 · 부활 숫자 · 보존 테두리를 다시 맨 뒤로 보낸다.
+	_portrait = TextureRect.new()
+	_portrait.name = "OwnerPortrait"
+	_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_portrait.size = Vector2(PORTRAIT_SIZE, PORTRAIT_SIZE)
+	_portrait.position = Vector2(CARD_W - PORTRAIT_SIZE - PORTRAIT_MARGIN,
+			PORTRAIT_TOP)
+	_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_portrait.visible = false
+	add_child(_portrait)
+	# 슬래브 · 부활 숫자 · 보존 테두리가 초상 배지를 덮도록 맨 뒤로 다시 보낸다.
+	move_child(_block_overlay, get_child_count() - 1)
+	move_child(_respawn_label, get_child_count() - 1)
+	move_child(_preserve_mark, get_child_count() - 1)
 
 
-## 뭉치 표시를 지금 `data.stack_count` 에 맞춘다. `CardPhaseManager` 가 카드를
-## 흡수할 때마다 부른다.
-func refresh_stack_badge() -> void:
-	var n: int = data.stack_count if data != null else 1
-	var showable: bool = face_up and is_player_card and n > 1
-	if _stack_badge != null and is_instance_valid(_stack_badge):
-		_stack_badge.visible = showable
-		_stack_badge.text = "x%d" % n
-	for i in _stack_layers.size():
-		var layer := _stack_layers[i] as Panel
-		if is_instance_valid(layer):
-			layer.visible = showable and i < (n - 1)
+## 충전 배지와 시전자 초상 배지를 지금 상태에 맞춘다. `CardPhaseManager` 가
+## 충전이 오르거나 내릴 때마다 부른다.
+func refresh_charge_badge() -> void:
+	var showable: bool = face_up and is_player_card
+	if _charge_badge != null and is_instance_valid(_charge_badge):
+		var on: bool = showable and data != null and data.is_charge_card()
+		_charge_badge.visible = on
+		if on:
+			_charge_badge.text = "%d/%d" % [data.charge, maxi(1, data.charge_max)]
+	if _portrait != null and is_instance_valid(_portrait):
+		var pid: int = -1
+		if data != null and data.owner_pilot != null:
+			pid = data.owner_pilot.pilot_id
+		var tex: Texture2D = PilotImages.circle_for(pid) if pid >= 0 else null
+		_portrait.texture = tex
+		_portrait.visible = showable and tex != null
 
 
 ## Turns the slab / countdown on or off from the two independent reasons a card
@@ -375,7 +385,7 @@ func _refresh_block_overlay() -> void:
 		_respawn_label.text = str(_respawn_turns)
 	if _preserve_mark != null and is_instance_valid(_preserve_mark):
 		_preserve_mark.visible = showable and _preserved
-	refresh_stack_badge()
+	refresh_charge_badge()
 
 
 ## Re-poses the card and its shadow for the current hover / selected state.
@@ -401,7 +411,15 @@ func _refresh_float_state() -> void:
 	var alpha: float    = SHADOW_REST_ALPHA
 	var spread: float   = SHADOW_REST_SPREAD
 	var blur: int       = SHADOW_REST_BLUR
-	if is_dragging:
+	# 내 차례가 아니면 손패가 화면 아래로 물러나 있다 — 그림자를 카드에 바짝
+	# 붙여 "카메라에서 멀어졌다"를 거리로 말한다. 그 상태에서는 호버도 드래그도
+	# 없으므로(핸드가 딤드 · 입력 차단) 이 갈래가 다른 둘과 다투지 않는다.
+	if _lowered:
+		offset = SHADOW_FAR_OFFSET
+		alpha  = SHADOW_FAR_ALPHA
+		spread = SHADOW_FAR_SPREAD
+		blur   = SHADOW_FAR_BLUR
+	elif is_dragging:
 		offset = SHADOW_SELECTED_OFFSET
 		alpha  = SHADOW_SELECTED_ALPHA
 		spread = SHADOW_SELECTED_SPREAD
@@ -470,22 +488,17 @@ func _apply_data() -> void:
 	_apply_owner_face()
 
 
-# Sets the owner pilot face image filling the card body. Falls back to a
-# fully-transparent texture when no face image is available (standalone runs
-# without a roster / INTL pilots without art); the cost-coloured card front
-# still shows through. Card description is intentionally NOT rendered on
-# the card itself — it's surfaced by CardPhaseManager's description box only
-# when the card is selected.
+# 카드 **본체**는 비워 둔다 — 예전에는 여기에 시전자 얼굴이 크게 깔렸는데,
+# 카드 일러스트가 들어올 자리라 지금은 아무것도 그리지 않는다(비용색 앞면이
+# 그대로 드러난다). 시전자는 카드 안쪽 오른쪽 위의 작은 원형 배지가 말한다 —
+# `refresh_charge_badge` 참조. 래퍼는 남겨 둔다: VBox 안에서 본체 높이를
+# 잡아 주는 스페이서라, 지우면 헤더 행만 남아 카드가 위로 쪼그라든다.
 func _apply_owner_face() -> void:
 	if owner_face_wrap == null or owner_face == null:
 		return
-	var tex: Texture2D = null
-	if data != null and data.owner_pilot != null:
-		tex = PilotImages.face_for(data.owner_pilot.pilot_id)
-	owner_face.texture = tex
-	# Wrap stays visible even without a texture so the card layout doesn't
-	# collapse; the cost-coloured card front shows through the empty area.
+	owner_face.texture = null
 	owner_face_wrap.visible = true
+	refresh_charge_badge()
 
 
 func _cost_color(cost: int) -> Color:
@@ -693,6 +706,16 @@ func update_displayed_cost(effective_cost: int) -> void:
 	elif effective_cost > data.cost:
 		col = COST_COLOR_INCREASED
 	cost_label.add_theme_color_override("font_color", col)
+
+
+## 핸드가 내려가 있는가(= 내 차례가 아닌가)를 알린다. 바꾸는 것은 **그림자
+## 거리 하나**이고 카드 자리는 `CardPhaseManager.slot_position` 이 따로 민다 —
+## 둘 다 같은 질문(`_hand_is_lowered`)을 읽으므로 어긋나지 않는다.
+func set_lowered(on: bool) -> void:
+	if _lowered == on:
+		return
+	_lowered = on
+	_refresh_float_state()
 
 
 ## Marks whether the player can currently pay for this card. The card body

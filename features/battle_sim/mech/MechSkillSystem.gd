@@ -52,15 +52,18 @@ const KEY_CALIBRATION        := "calibration"         # 원딜 J — 전장 명�
 # ─── 카드 자신에게 붙는 사건 훅 (`mech_cards.trigger`) ───────────────────────
 ## 적 포탑이 파괴될 때마다 이 카드를 덱에 한 장 만든다 (꿰뚫는 번개).
 const TRIGGER_TURRET_KILL_DECK := "turret_kill_deck"
-## 아군이든 적이든 누가 처치될 때마다 이 카드의 스택이 하나 오른다 (공격 명령).
-const TRIGGER_DEATH_STACK := "death_stack"
+## 아군이든 적이든 누가 처치될 때마다 이 카드를 손패에 한 장 만든다 (공격 명령).
+## 예전에는 손패에 있는 그 카드의 **스택을 올리는** 훅이었는데, 스택이 충전으로
+## 바뀌면서 "처치가 곧 명령"이라는 카드의 문장을 카드 자체를 주는 쪽으로 옮겼다 —
+## 충전은 손패 진입에서 오고, 이 카드는 `소멸` 이라 쓰면 사라진다.
+const TRIGGER_DEATH_HAND := "death_hand"
 
 # ─── 핸드 상주 카드 (`hand_passive:<key>`) ───────────────────────────────────
 # 비용 -1 이라 낼 수 없고, **손패에 있는 것만으로** 일하는 네 장이다. 절이
 # `hand_passive:<key>` 하나뿐이라 효과 체인을 타지 않고 여기서 직접 읽는다.
 const HAND_CASH       := "cash"        # 원딜 B — 카드 사용마다 성장치 4%
 const HAND_REVELATION := "revelation"  # 원딜 I — 카드 피해에 편승해 추가 공격
-const HAND_CONTEMPT   := "contempt"    # 암살 R — 교전 시 약자 멸시 스택
+const HAND_CONTEMPT   := "contempt"    # 암살 R — 교전 개시 시 충전만큼 선제 타격
 const HAND_BALANCE    := "balance"     # 지원 U — 이 메크 카드의 성장치 비용 면제
 
 # ─── 메크 카드 id (mech_cards.csv) ───────────────────────────────────────────
@@ -325,9 +328,6 @@ func consume_last_stand(p: PilotData) -> void:
 ## 이번 교전에 불굴이 걸린 팀들과 이미 소모한 파일럿. 교전 개시마다 새로 잡는다.
 var _last_stand_team: Dictionary = {}
 var _last_stand_used: Dictionary = {}
-## 약자 멸시(암살 R) — 이번 교전에 남은 스택. `PilotData → int`.
-## 개시 때 손패의 [약자 멸시] 장수를 그대로 심고, 한 번 겨눌 때마다 하나씩 준다.
-var _contempt: Dictionary = {}
 ## 강타([강타] 카드) — 이번 교전에 **이미 기절시킨 적**. `PilotData → true`.
 ## "한 교전 내에 같은 적에게 두 번 이상 적용되지 않음"이 이 표의 전부다.
 var _stun_applied: Dictionary = {}
@@ -418,7 +418,7 @@ func on_kill(victim: PilotData, killer: PilotData) -> void:
 	if killer != null and has_passive(killer, KEY_EXECUTION_CHARGE):
 		add_charge(killer, 1)
 	# [공격 명령] — 아군이든 적이든 누가 죽으면 그 카드의 스택이 오른다.
-	_bump_death_stacks()
+	_grant_death_cards()
 	# 쓰러진 파일럿에게 걸려 있던 지속 상태는 전장을 떠나며 함께 걷힌다.
 	if victim != null:
 		clear_field_effects(victim)
@@ -466,7 +466,6 @@ func on_objective_win(team: int) -> void:
 func on_engage_start(participants: Array) -> void:
 	_last_stand_team.clear()
 	_last_stand_used.clear()
-	_contempt.clear()
 	_stun_applied.clear()
 	for raw in participants:
 		var p := raw as PilotData
@@ -477,16 +476,13 @@ func on_engage_start(participants: Array) -> void:
 				# 불굴은 **팀 전체**에 걸린다 — 이 기체가 참가한 교전이면
 				# 그 팀 아군 모두가 한 번씩 버틴다.
 				_last_stand_team[p.team] = true
-		# 약자 멸시(암살 R) — 손패에 들고 있는 장수만큼 교전용 스택을 심는다.
-		var contempt: int = hand_passive_stacks(p, HAND_CONTEMPT)
-		if contempt > 0:
-			_contempt[p] = contempt
 	mech_state_changed.emit()
 
 
 ## 교전 무대가 닫혔다. **그 교전 한 번**짜리 상태를 여기서 걷는다 —
 ## `on_engage_start` 가 켠 것들의 짝이다. 반응 장갑은 여기 없다: 그건 남은
 ## 겹수가 곧 다음 교전까지 가는 값이라 교전이 아니라 전장을 떠날 때 걷힌다.
+## 약자 멸시도 여기 없다 — 개시 타격 한 번으로 끝나 남는 상태가 없다.
 func on_engage_end(participants: Array) -> void:
 	for raw in participants:
 		var p := raw as PilotData
@@ -496,7 +492,6 @@ func on_engage_end(participants: Array) -> void:
 		# 다음 교전으로 넘어가지 않는다("다음 교전에서"가 카드의 문장이다).
 		p.stun_charge = false
 		p.stunned_rounds = 0
-	_contempt.clear()
 	_stun_applied.clear()
 	_last_stand_team.clear()
 	_last_stand_used.clear()
@@ -504,24 +499,29 @@ func on_engage_end(participants: Array) -> void:
 
 
 # ─── 교전 무대가 읽는 질의 (계산은 TurnEngageSim 이 한다) ───────────────────
-## 약자 멸시 — 이 파일럿이 지금 **체력이 가장 적은 적**을 겨눠야 하는가.
-func contempt_active(p: PilotData) -> bool:
-	return int(_contempt.get(p, 0)) > 0
-
-
-## 겨눔 한 번을 썼다. 스택이 0 이 되면 평소 표적 규칙으로 돌아간다.
-func consume_contempt(p: PilotData) -> void:
-	var n: int = int(_contempt.get(p, 0))
-	if n <= 1:
-		_contempt.erase(p)
-	else:
-		_contempt[p] = n - 1
-	mech_state_changed.emit()
-
-
-## 남은 약자 멸시 스택. 로그와 상세 표시용.
-func contempt_stacks(p: PilotData) -> int:
-	return int(_contempt.get(p, 0))
+## 약자 멸시(암살 R) — 손패에 있는 [약자 멸시]의 **충전을 통째로 태우고** 그 수를
+## 돌려준다. 무대는 이 수만큼 개시 타격을 굴린다(`TurnEngageSim._contempt_opening`).
+##
+## 예전에는 이것이 **겨눔 강제**였다 — 교전 내내 스택이 남은 동안 그 파일럿이
+## 체력이 가장 적은 적만 노렸고, 한 차례 때릴 때마다 스택이 하나 줄었다. 그러면
+## 카드의 값이 "몇 라운드짜리 교전인가"에 통째로 매달려(라운드가 모자라면 스택이
+## 남은 채 교전이 끝난다) 카드를 손에 들고 있는 것과 결과가 이어지지 않았다.
+## 지금은 개시 순간에 다 쓰므로 라운드 수와 무관하다.
+func take_contempt_charges(p: PilotData) -> int:
+	if p == null:
+		return 0
+	var hand: Array = _bs.player_hand if p.team == 0 else _bs.ai_hand
+	var total: int = 0
+	for raw in hand:
+		var cd := raw as CardData
+		if cd.owner_pilot != p:
+			continue
+		if not cd.effect.begins_with("hand_passive:" + HAND_CONTEMPT):
+			continue
+		total += cd.spend_charge()
+		if p.team == 0 and _bs.card_phase != null:
+			_bs.card_phase.refresh_charge_node(cd)
+	return total
 
 
 ## 강타 — `attacker` 가 방금 때린 `victim` 을 기절시킨다. 실제로 걸었으면 true.
@@ -613,7 +613,6 @@ func clear_field_effects(p: PilotData) -> void:
 	# [질풍]의 자리 되돌리기 예약 — 사망 / 복귀는 이미 자리를 옮긴 뒤라,
 	# 되돌리면 방금 일어난 그 일을 무르는 꼴이 된다.
 	p.phase_return_cell = PilotData.NO_RETURN
-	_contempt.erase(p)
 	_phase_boon.erase(p)
 	shield_source.erase(p)
 
@@ -635,8 +634,8 @@ func tick_expiries(turn: int) -> void:
 
 
 # ─── 핸드 상주 카드 ──────────────────────────────────────────────────────────
-## 이 파일럿이 손패에 들고 있는 `hand_passive:<key>` 카드의 **총 장수**(스택 포함).
-## 0 이면 안 들고 있는 것이다.
+## 이 파일럿이 손패에 들고 있는 `hand_passive:<key>` 카드의 **세기**. 충전
+## 카드면 쌓인 충전 수, 아니면 장수. 0 이면 안 들고 있는 것이다.
 func hand_passive_stacks(p: PilotData, key: String) -> int:
 	if p == null:
 		return 0
@@ -645,7 +644,7 @@ func hand_passive_stacks(p: PilotData, key: String) -> int:
 	for raw in hand:
 		var cd := raw as CardData
 		if cd.owner_pilot == p and cd.effect.begins_with("hand_passive:" + key):
-			total += cd.stack_count
+			total += cd.charge if cd.is_charge_card() else 1
 	return total
 
 
@@ -807,18 +806,28 @@ func _owns_trigger_card(p: PilotData, trigger: String) -> bool:
 	return false
 
 
-## [공격 명령] — 손패에 있는 것의 스택을 올린다. 없으면 아무 일도 없다
-## (덱에 있는 카드의 스택을 미리 올려 두면 뽑는 순간 몇 장인지가 불투명해진다).
-func _bump_death_stacks() -> void:
-	for team in 2:
-		var hand: Array = _bs.player_hand if team == 0 else _bs.ai_hand
-		for raw in hand:
-			var cd := raw as CardData
-			if cd.trigger != TRIGGER_DEATH_STACK:
-				continue
-			cd.stack_count += 1
-			if team == 0 and _bs.card_phase != null:
-				_bs.card_phase.refresh_stack_node(cd)
+## [공격 명령] — 누가 쓰러질 때마다 **그 카드를 들고 오는 기체의 파일럿**에게
+## 한 장을 손패에 만든다. 판정은 배분 표(`starter_cards`)를 읽는 `_owns_trigger_card`
+## 이므로 그 카드가 지금 손패에 있든 더미에 있든 이미 소멸했든 답이 같다 — 훅은
+## **기체의 성질**이지 그 카드 한 장의 소재가 아니다.
+func _grant_death_cards() -> void:
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		if not _owns_trigger_card(p, TRIGGER_DEATH_HAND):
+			continue
+		var cid: int = _trigger_card_id(p, TRIGGER_DEATH_HAND)
+		if cid >= 0:
+			_grant_card_to_hand(p, cid)
+
+
+## 이 파일럿의 기체가 들고 오는 카드 중 그 훅을 단 카드의 id. 없으면 -1.
+func _trigger_card_id(p: PilotData, trigger: String) -> int:
+	var record: Dictionary = _bs.starter_cards.get(p, {})
+	for raw in (record.get("mech", []) as Array):
+		var cd := raw as CardData
+		if cd.trigger == trigger:
+			return cd.mech_card_id
+	return -1
 
 
 # ─── 패시브 개별 구현 ────────────────────────────────────────────────────────

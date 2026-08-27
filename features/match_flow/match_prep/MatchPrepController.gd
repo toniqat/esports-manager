@@ -80,8 +80,12 @@ func _build_team_block(parent: Node, roster: Array, header: String, header_color
 		if p != null and p.role >= 0 and p.role < 5:
 			by_role[int(p.role)] = p
 
-	for r in 5:
-		var y: float = y0 + 44.0 + r * (row_h + row_gap)
+	# 줄 순서는 **역할 열거값 순서가 아니라 화면 순서**다(탑 · 정글 · 미드 ·
+	# 원딜 · 서폿). `by_role` 은 역할로 색인하므로 자리(seat)를 역할로 한 번
+	# 바꿔 읽는다 — `GameEnums.ROLE_DISPLAY_ORDER` 가 그 표다.
+	for seat in 5:
+		var r: int = int(GameEnums.ROLE_DISPLAY_ORDER[seat])
+		var y: float = y0 + 44.0 + seat * (row_h + row_gap)
 		var role_col: Color = ROLE_COLORS[r]
 		var p: PlayerData = by_role[r]
 

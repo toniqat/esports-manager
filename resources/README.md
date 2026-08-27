@@ -46,9 +46,29 @@ Shared enum definitions:
 - `Lane { LEFT, CENTER, RIGHT }` — waypoint/building lanes (no GUERRILLA)
 - `BattlePhase { GAMBIT, CARD_PHASE, BATTLE }` — in-battle phase machine
 - `TowerLevel { HQ, LEVEL_2, LEVEL_1 }` — building atlas selector
-- `MatchPhase { LOAD, BAN_PICK, ASSIGN, JUNGLE_START, LAUNCH }` — out-of-battle pipeline
+- `MatchPhase { LOAD, PREP, BAN_PICK, ASSIGN, JUNGLE_START, LAUNCH }` — out-of-battle
+  pipeline. **`ASSIGN` 은 더 이상 지나지 않는다** — 메크 배정이 밴픽 화면 안으로
+  들어갔다(`ban_pick/BanPickController._enter_assign_mode`). 열거값은 세이브
+  호환을 위해 자리만 지킨다
 - `JungleStartDir { LEFT, RIGHT }` — assassin's jungle entry side
 - `DraftSide { BLUE, RED }` — ban/pick draft sides
+
+**열거값 말고 표가 하나 더 있다 — `ROLE_DISPLAY_ORDER`.**
+```gdscript
+const ROLE_DISPLAY_ORDER: Array = [Role.TANK, Role.ASSASSIN, Role.FIGHTER, Role.SNIPER, Role.SUPPORT]
+static func role_seat(role: int) -> int   # 역할 → 화면 자리 0..4
+```
+파일럿 다섯을 화면에 늘어놓는 순서 — **탑 · 정글 · 미드 · 원딜 · 서폿**이고,
+전장을 왼쪽부터 오른쪽으로 훑은 순서(LEFT · GUERRILLA · CENTER · RIGHT · RIGHT)와도
+같다. `Role` 열거값 순서를 그대로 쓰면 정글러가 세 번째, 원딜이 다섯 번째로 앉는데
+그 배열은 플레이어가 아는 라인업과도 지도와도 대응하지 않는다.
+
+**인게임과 아웃게임이 이 표 하나를 함께 읽는다** — 전장 파일럿 스트립
+(`HudBuilder._lane_seat_less`), 밴픽 화면의 양 팀 블록, 시즌 허브 로스터, 훈련
+격자와 훈련 결과, 경기 전 대시보드, 드래프트 슬롯(`TeamDraft.SLOT_ROLES` 는 이제
+이 상수 자체다). 예전에는 화면마다 자기 순서를 들고 있어 **같은 다섯 명이 화면마다
+다른 자리에** 앉았고, 전장 스트립은 `PilotData.lane` 으로 정렬해서 우측 레인의 두
+명(스나이퍼 · 서포터) 앞뒤가 `sort_custom` 의 불안정성에 맡겨져 있었다.
 
 ### PilotData.gd
 `class_name PilotData`, extends `RefCounted`.
@@ -184,7 +204,7 @@ via `BattleSim.turret_hit_offset(td)`.
 Out-game player persona consumed by MatchFlow / BattleSim:
 - `id, name, role (GameEnums.Role), team_id (0=player, 1=enemy)`
 - Stats `laning, mechanics, gamesense, teamfight, mental` (each 1–100)
-- `assigned_mech: MechData` — set by AssignController at match prep time
+- `assigned_mech: MechData` — 밴픽 화면의 배정 단계(`ban_pick/BanPickController._finish`)가 새긴다. 예전에는 별도 화면이던 `AssignController` 의 몫이었다
 
 Loaded from the `players` table (CSV-seeded via `addons/csv_to_db`).
 
@@ -331,8 +351,9 @@ RGB 를 단색(`38,42,60`)으로 덮는다** — 얼굴이 조금이라도 읽�
 
 | 함수 | 파일 | 소비자 |
 |---|---|---|
-| `full_for(mech_id)` | `resources/images/mech/N_full.png` | 파일럿 상세 패널 (`ui/PilotDetailPanel.gd`) |
-| `has_image(mech_id)` | 위 파일의 존재 여부 | 플레이스홀더 판정 |
+| `full_for(mech_id)` | `resources/images/mech/N_full.png` | 파일럿 상세 패널 (`ui/PilotDetailPanel.gd`), 밴픽 하단 시트 |
+| `portrait_for(mech_id)` | `resources/images/mech/portrait/N_portrait.png` | 밴픽 격자 · 밴 칩 · 팀 블록의 메크 칸 |
+| `has_image(mech_id)` | `N_full.png` 의 존재 여부 | 플레이스홀더 판정 |
 
 - **`N` 은 `mechs.csv` 의 `id` 그대로다** — 파일럿 쪽의 +1 오프셋(40장을 1..40 으로
   받아 온 역사적 사정)은 여기서 반복하지 않는다. 파일은 파일럿과 달리 `full/`
@@ -341,6 +362,28 @@ RGB 를 단색(`38,42,60`)으로 덮는다** — 얼굴이 조금이라도 읽�
   돌려주므로 `ResourceLoader.exists()` 로 먼저 물어보고 없으면 조용히 null 을 준다.
   지금은 쓰이는 21칸이 다 차 있어 플레이스홀더 경로가 돌지 않지만, `mechs.csv` 에
   행을 더하면 다시 살아나는 길이라 그대로 둔다.
+
+#### 메크 정사각 초상화 (`resources/images/mech/portrait/N_portrait.png`)
+전신 아트에서 **머리~상반신만** 잘라 구운 256² 정사각 컷이다. 밴픽 격자 칸은
+200px 도 안 되는데 전신 아트는 1024² 캔버스에 기체가 온몸으로 서 있는 그림이라,
+그대로 넣으면 기체가 콩알만 하게 들어가 **어느 기체인지가 안 읽힌다**. 챔피언
+아이콘과 같은 성격의 컷이고, 상세 시트만 여전히 원본 전신 아트를 쓴다(거기서는
+한 번에 한 대뿐이다).
+
+다시 구울 때는 **`resources/images/mech/make_mech_portraits.py` 를 돌릴 것** —
+손으로 자르면 기체마다 인물 배율이 어긋난다(파일럿 `eye` / `tall` 컷이 스크립트
+생성인 것과 같은 이유). 머리를 찾는 방식이 요점이다: 알파 바운딩 박스의 위끝을
+머리로 치면 안 된다 — 21대 중 열 대 넘게 라이플 · 안테나 · 날개가 머리 위로
+뻗어 있어 그 자리에서 자르면 프레임이 무기로 가득 찬다. 그래서 알파를 **침식**
+(`MinFilter(31)`)해 얇은 구조물을 지운 뒤 남은 덩어리의 위끝을 머리로 삼고, 가로
+중심도 같은 마스크의 **중앙값**으로 잡는다(평균이면 한쪽으로 뻗은 팔 하나가
+중심을 통째로 끌고 간다). 크기는 기체 전체 높이의 58%.
+
+자동 판정이 어긋나는 기체만 스크립트의 `OVERRIDES` 가 손으로 잡는다 — 지금은
+넷이고, 그중 **0(Bulwark-A1)과 20(Cleric-P1)은 절대 좌표 상자**를 준다(전자는
+방패가 몸통을 가로질러 침식 덩어리의 위끝이 머리가 아니고, 후자는 옆으로 뻗은
+라이플이 무게중심을 끌어간다). **`portrait/` 에도 30칸이 다 있다** — 스크립트가
+`*_full.png` 를 통째로 도는 것이라 쓰이지 않는 9칸도 함께 구워진다.
 
 #### 메크 전신 아트 (`resources/images/mech/N_full.png`)
 출처는 **Gundam Evolution**(반다이남코, 2022–2023 서비스 종료)의 기체 렌더
@@ -434,9 +477,15 @@ p.assigned_mech = m
 붙으면서 그 카드들이 역할군을 전제하게 됐다. **배정 자체는 여전히 자유다** — 이
 값은 밴픽 화면의 분류와 데이터 검증에 쓰이고 ASSIGN 을 막지 않는다.
 
-`CardData` 에는 넷이 붙었다 — `mech_card_id` / `mech_id`(어느 기체의 몇 번 카드인가),
-`trigger`(그 카드에 붙은 사건 훅), `stack_count`(손패에서 뭉친 장수). 그리고 키워드에
-**`stack`** 이 더해졌고, **`cost = -1` 은 "낼 수 없는 카드"** 를 뜻한다(`is_playable()`).
+`CardData` 에는 다섯이 붙었다 — `mech_card_id` / `mech_id`(어느 기체의 몇 번 카드인가),
+`trigger`(그 카드에 붙은 사건 훅), `charge_max`(충전 상한, `mech_cards.charge_max`),
+`charge`(지금 쌓인 충전). 그리고 키워드에 **`charge`** 가 더해졌고,
+**`cost = -1` 은 "낼 수 없는 카드"** 를 뜻한다(`is_playable()`) — **비용 -1 은
+할인도 증세도 받지 않는다**: `BattleSim.effective_cost_for` 가 그대로 -1 을
+돌려주고 `_effect_cost_reduce_hand`(사전 준비)도 건너뛴다. 예전에는 -1 이 그냥
+수로 취급돼 `max(0, …)` 를 지나며 0 이 됐고, 그러면 `is_playable()` 를 안 보는
+자리마다 그 카드가 "공짜로 낼 수 있는 카드"로 읽혔다.
+`stack_count` 와 키워드 `stack`(핸드에서 뭉치기)은 충전으로 대체되며 삭제됐다.
 
 `PilotData` 에는 메크가 거는 지속 상태 열두 개와 영구 스탯 보정 세 개가 붙었다 —
 자세한 내용은 그 파일의 "메크가 거는 지속 상태" 절과

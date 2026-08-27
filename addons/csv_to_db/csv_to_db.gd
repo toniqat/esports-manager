@@ -27,7 +27,7 @@ const SCHEMAS: Dictionary = {
 	"pilot_skills": {"req": ["id","key","name","role","type","p1","p2","keyword","description"], "pk": "id"},
 	"mechs":       {"req": ["id","name","role","hp","atk","presence"],          "pk": "id"},
 	"mech_passives": {"req": ["id","mech_id","key","name","p1","p2","keyword","description"], "pk": "id"},
-	"mech_cards":    {"req": ["id","mech_id","name","count","cost","cast_method","target","cast_range","area","keyword","effect","trigger","description"], "pk": "id"},
+	"mech_cards":    {"req": ["id","mech_id","name","count","cost","cast_method","target","cast_range","area","keyword","charge_max","effect","trigger","description"], "pk": "id"},
 	"teams":       {"req": ["id","name","short_name"],                          "pk": "id"},
 	"intl_teams":   {"req": ["id","name","short_name"],                         "pk": "id"},
 	"intl_players": {"req": ["id","team_id","name","role","laning","mechanics","gamesense","teamfight","mental"], "pk": "id"},
@@ -168,12 +168,14 @@ const TABLE_DEFS: Dictionary = {
 		"target":      {"data_type": "text", "not_null": true},
 		"cast_range":  {"data_type": "int",  "not_null": true},
 		"area":        {"data_type": "int",  "not_null": true},
-		# `|` 로 구분된 목록. exhaust / preserve / volatile 에 **stack** 이 더해졌다.
+		# `|` 로 구분된 목록. exhaust / preserve / volatile 에 **charge** 가 더해졌다.
 		"keyword":     {"data_type": "text", "not_null": true},
+		# 충전 상한. `charge` 키워드를 단 카드만 읽는다(그 밖에는 0).
+		"charge_max":  {"data_type": "int",  "not_null": true},
 		"effect":      {"data_type": "text", "not_null": true},
 		# 카드 자신에게 붙는 사건 훅(비어 있으면 없음). 패시브가 아니라 **그
 		# 카드**가 존재를 얻는 조건이라 여기에 산다 — turret_kill_deck(꿰뚫는
-		# 번개) / death_stack(공격 명령).
+		# 번개) / death_hand(공격 명령).
 		"trigger":     {"data_type": "text", "not_null": true},
 		"description": {"data_type": "text", "not_null": true},
 	},

@@ -84,8 +84,12 @@ func _build_table() -> void:
 	var row_gap: float = 16.0
 	var width: float = 1020.0
 
-	for r in 5:
-		var y: float = y0 + r * (row_h + row_gap)
+	# 줄 순서는 **역할 열거값 순서가 아니라 화면 순서**다(탑 · 정글 · 미드 ·
+	# 원딜 · 서폿) — `GameEnums.ROLE_DISPLAY_ORDER`. `_row_widgets` 는 그리는
+	# 순서(= 자리 순서)로 쌓이므로 `refresh()` 가 같은 표로 되읽는다.
+	for seat in 5:
+		var r: int = int(GameEnums.ROLE_DISPLAY_ORDER[seat])
+		var y: float = y0 + seat * (row_h + row_gap)
 		var role_col: Color = ROLE_COLORS[r]
 
 		var panel := Panel.new()
@@ -172,8 +176,9 @@ func refresh() -> void:
 		var entry: Dictionary = result_data[pid]
 		by_role[int(entry["role"])] = entry
 
-	for r in 5:
-		var w: Dictionary = _row_widgets[r]
+	for seat in 5:
+		var r: int = int(GameEnums.ROLE_DISPLAY_ORDER[seat])
+		var w: Dictionary = _row_widgets[seat]
 		if not by_role.has(r):
 			w["name"].text = "—"
 			(w["face"] as TextureRect).texture = null

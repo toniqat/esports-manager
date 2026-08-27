@@ -164,15 +164,18 @@ func _refresh_roster() -> void:
 		var p := raw as PlayerData
 		if p.team_id == pid:
 			by_role[int(p.role)] = p
-	for i in 5:
-		if by_role.has(i):
-			var p: PlayerData = by_role[i]
+	# 줄 순서는 화면 순서(탑 · 정글 · 미드 · 원딜 · 서폿) — `_roster_lines` 도
+	# 그 순서로 세워져 있다.
+	for seat in 5:
+		var r: int = int(GameEnums.ROLE_DISPLAY_ORDER[seat])
+		if by_role.has(r):
+			var p: PlayerData = by_role[r]
 			var total: int = p.laning + p.mechanics + p.gamesense + p.teamfight + p.mental
-			_roster_lines[i].text = "%-9s  %-14s  TOTAL %d" % [
-				ROLE_NAMES[i], p.name, total,
+			_roster_lines[seat].text = "%-9s  %-14s  TOTAL %d" % [
+				ROLE_NAMES[r], p.name, total,
 			]
 		else:
-			_roster_lines[i].text = "%s  —" % ROLE_NAMES[i]
+			_roster_lines[seat].text = "%s  —" % ROLE_NAMES[r]
 
 
 func _on_restart_pressed() -> void:

@@ -461,8 +461,7 @@ func _act_dragon_blessing(p: PilotData) -> String:
 			var cd := _bs.card_phase.draw_card(true)
 			if cd == null:
 				break
-			if not _bs.card_phase.last_draw_merged:
-				_bs.card_phase.spawn_card_node(cd)
+			_bs.card_phase.spawn_card_node(cd)
 			drew += 1
 		_refresh_hand()
 	return "전략 점수 +%d · 드로우 %d" % [BLESSING_STRATEGY, drew]

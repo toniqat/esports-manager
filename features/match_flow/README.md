@@ -4,8 +4,12 @@
 Pre-battle pipeline that runs **before** `BattleSim.tscn`:
 
 ```
-LOAD → PREP → BAN_PICK → ASSIGN → JUNGLE_START → LAUNCH (change_scene → BattleSim)
+LOAD → PREP → BAN_PICK → JUNGLE_START → LAUNCH (change_scene → BattleSim)
 ```
+
+**`MatchPhase.ASSIGN` 은 더 이상 지나지 않는다.** 메크 배정이 밴픽 화면 안으로
+들어갔고(아래 BAN_PICK 절), `assign/AssignController.gd` 는 삭제됐다. 열거값은
+세이브 호환을 위해 자리만 지킨다.
 
 PREP is the pre-match dashboard — both rosters' stats laid out side by
 side so the player can review who they're up against before committing
@@ -28,13 +32,79 @@ Three child controllers each build their own UI on `enter()` and emit
 | Node | Script | Responsibility |
 |---|---|---|
 | MatchPrepController | `match_prep/MatchPrepController.gd` | Pre-match dashboard — both rosters with stats. "경기 시작" → BAN_PICK. |
-| BanPickController | `ban_pick/BanPickController.gd` | LoL-international ban/pick (4 bans + 10 picks) with random AI. 위 = 상대 초상화 5인 + 픽 슬롯, 가운데 = 역할군 필터 + 메크 격자(5열 × 3.5줄 스크롤), 아래 = 아군(거울). 메크를 누르면 하단 시트가 그 기체의 패시브 · 카드 셋을 펼치고, **같은 메크를 한 번 더 눌러야** 확정된다 |
-| AssignController | `assign/AssignController.gd` | Manual mech↔player slot assignment for the player team (enemy auto-shuffled) |
+| BanPickController | `ban_pick/BanPickController.gd` | LoL-international ban/pick (4 bans + 10 picks) with random AI, **그리고 그 자리에서 이어지는 메크 배정**. 아래 두 절 참조 |
 | JungleStartController | `jungle_start/JungleStartController.gd` | Choose Assassin's jungle start direction (LEFT or RIGHT) |
 
-`BanPickController.enter()` 는 다른 셋과 달리 **로스터와 팀명까지 받는다** —
-밴픽 화면이 위/아래에 양 팀 파일럿 초상화를 세우기 때문이다(배정은 아직 멀었지만,
-누구를 위해 고르는지가 안 보이면 21대 중 무엇을 골라야 할지도 안 보인다).
+`BanPickController.enter()` 는 다른 둘과 달리 **로스터와 팀명까지 받는다** —
+밴픽 화면이 위/아래에 양 팀 파일럿 초상화를 세우고, 14수가 끝나면 그 로스터에
+배정을 직접 새기기 때문이다.
+
+---
+
+## BAN_PICK 화면
+
+세로 한 장을 **위 / 가운데 / 아래** 세 덩이로 나눈다.
+
+```
+위     밴 칩 2개 → 메크 칸 5개 → 파일럿 초상화 5인      (상대 팀)
+가운데 픽창 = 역할군 필터 탭 + 메크 격자 (정사각 칸, 4.5줄 스크롤)
+아래   파일럿 초상화 5인 → 메크 칸 5개 → 밴 칩 2개      (아군, 거울)
+```
+
+- **메크 칸은 파일럿 칸보다 세로로 두 배 길다**(`MECH_H_RATIO`) — 파일럿은
+  눈높이 밴드(2.4:1)라 납작하고 메크는 정사각 초상화라, 같은 폭에서 메크가 두 배
+  높이를 가져야 두 그림이 각자 제 비율로 앉는다.
+- **거울 배치**라 안쪽(전장 쪽)에 언제나 파일럿 얼굴이 오고 바깥쪽에 메크가 온다.
+- **픽창에만 짙은 배경판**(`GRID_BG_COLOR`)이 깔리고 나머지 화면은 어두운 회색
+  (`PAGE_BG_COLOR`)이다 — 판 하나가 "여기가 고르는 곳"과 "여기는 양 팀 상황"을
+  색 한 단계로 가른다.
+- **격자 칸은 정사각 초상화 + 아래 이름 한 줄이 전부다.** 왼쪽 위에 역할군 배지
+  (역할 색으로 채운 둥근 사각형 + 하얀 두 글자 `Tk/As/Fi/Sn/Su`)가 붙는다. 예전에는
+  칸마다 `HP · ATK · 존재감` 과 패시브 이름이 두 줄 더 붙었는데, 스물한 대를 훑는
+  화면에서 칸마다 다섯 줄을 읽게 하면 정작 **그림으로 알아보는** 일이 안 된다 —
+  숫자와 패시브 설명은 한 번 눌러 여는 하단 시트가 통째로 들고 있다.
+- 초상화는 `MechImages.portrait_for()` 가 주는 **미리 구운 256² 정사각 컷**이다.
+  예전의 "전신 아트를 런타임에 격자 크기로 줄여 굽기"(`_bake_thumbs` / `THUMB_PX`)는
+  삭제됐다.
+- **다섯 칸의 순서는 `GameEnums.ROLE_DISPLAY_ORDER`**(탑 · 정글 · 미드 · 원딜 ·
+  서폿)다. 그래서 파일럿 초상화에 이름표도 역할 태그도 붙지 않는다 — 자리가 곧
+  역할이고, 인게임 스트립도 같은 순서로 선다.
+- **진행 상태 줄은 칩 14개뿐이다.** 예전의 "BLUE 픽 — 내 차례 (3 / 14)" 한 줄은
+  삭제됐다 — 누구 차례인지는 밝아진 칩이, 무엇을 하는 차례인지는 시트의 확정
+  버튼("밴 확정" / "픽 확정" / "상대 차례")이 말한다.
+
+조작은 그대로 **1탭 = 선택(하단 시트 열기), 같은 메크 2탭 = 확정**이고, 시트는
+내 차례가 아닐 때도 열린다(확정 버튼만 잠긴다).
+
+---
+
+## 배정 (밴픽 화면 안에서)
+
+14수가 끝나면 **화면을 갈아타지 않는다** — `_enter_assign_mode()` 가 픽창(탭 +
+격자 + 배경판)을 걷어 내고 그 자리에 안내와 "배정 완료" 버튼을 세운 뒤, 아군
+블록을 다시 세운다:
+
+```
+메크 칸 (끌 수 있음, 처음엔 픽 순서)
+파일럿 초상화 (정사각으로 확장 — eye 밴드가 아니라 faces 크롭)
+밴 칩
+```
+
+메크 칸을 **끌어다 다른 칸에 놓으면 둘이 맞바뀐다**(`_swap_assign`). 드롭했을
+때만 바뀌고, `DRAG_THRESHOLD_PX`(8px)를 못 넘긴 것은 탭으로 친다. 끄는 동안
+원래 칸은 자국으로 남고(α 0.35) 커서 밑의 칸은 테두리가 금색으로 굵어진다.
+입력은 칸마다 붙은 `gui_input` 하나가 받는다 — 누른 컨트롤이 마우스 포커스를
+유지하므로 커서가 칸 밖으로 나가도 motion / release 가 계속 들어온다.
+
+정사각 확장에 `faces` 크롭을 쓰는 것이 요점이다 — 눈높이 밴드(`eye`)를 정사각
+칸에 넣으면 얼굴이 위아래로 잘려 이목구비가 통째로 사라진다.
+
+상대 팀은 예전 `AssignController` 와 똑같이 **자동 배정(섞기)** 이다.
+
+"배정 완료"가 `_finish()` 를 부르고, 거기서 자리(seat) → 역할 변환
+(`ROLE_DISPLAY_ORDER` 한 겹)을 거쳐 `PlayerData.assigned_mech` 를 채운 뒤
+`phase_finished` 로 로스터를 그대로 넘긴다. **로스터 배열 자체는 역할 0..4 순서를
+지킨다** — `MatchFlow._roster_mech_ids` 의 재개 스냅샷이 그 순서를 전제한다.
 
 Each controller accesses the orchestrator via:
 ```gdscript
@@ -95,8 +165,8 @@ into pilots; otherwise it falls back to `ROLE_STATS` defaults.
 | File | Purpose |
 |---|---|
 | `MatchFlow.gd` | State machine orchestrator |
-| `ban_pick/BanPickController.gd` | Ban/Pick phase — 양 팀 초상화 + 메크 격자 + 하단 상세 시트 |
-| `assign/AssignController.gd` | Mech-to-player assignment phase |
+| `match_prep/MatchPrepController.gd` | Pre-match dashboard |
+| `ban_pick/BanPickController.gd` | Ban/Pick + 메크 배정 — 양 팀 초상화 + 메크 격자 + 하단 상세 시트 + 드래그 배정 |
 | `jungle_start/JungleStartController.gd` | Jungle direction phase |
 
 ---
@@ -134,7 +204,7 @@ replays the battle from scratch with the same locked-in picks.
 
 ## 화면 대응 (세이프 에어리어)
 
-네 컨트롤러(PREP / BAN_PICK / ASSIGN / JUNGLE_START)는 모두 `_mf.canvas` 아래에
+세 컨트롤러(PREP / BAN_PICK / JUNGLE_START)는 모두 `_mf.canvas` 아래에
 전체 화면 `Panel` 하나를 세우고 거기에 절대 좌표로 그린다. `_panel` 을 만든
 직후 두 줄이 따라온다.
 
@@ -150,7 +220,9 @@ ScreenMetrics.backfill_top(_panel, <판 배경색>)   # 비워진 위쪽 띠를 
 `backfill_top()` 을 쓴다.
 
 내려간 판 안에서 하단 버튼은 `ScreenMetrics.safe_h()` 기준이다 —
-`MatchPrepController` 는 `safe_h() - 70 - h`, `AssignController` 는
-`safe_h() - 150 - h`(상태 라벨은 그 60px 위).
+`MatchPrepController` 는 `safe_h() - 70 - h`. `BanPickController` 는 버튼이 아니라
+**블록 전체**를 `safe_h()` 에서 역산한다(`_lay["bot_block_y"]` /
+`_lay["assign_block_y"]`), 그리고 픽창 높이는 위아래 블록이 먹고 남은 띠에서
+나온다 — 그래서 어느 화면에서나 격자 칸은 정사각으로 남고 보이는 줄 수만 바뀐다.
 
 자세한 내용: **`docs/mobile_safe_area.md`**

@@ -140,8 +140,13 @@ func _build_preview_table() -> void:
 	var name_w: float = 150.0
 	var stat_w: float = 150.0
 
-	for r in 5:
-		var y: float = y0 + r * row_h
+	# 줄 순서는 **역할 열거값 순서가 아니라 화면 순서**다(탑 · 정글 · 미드 ·
+	# 원딜 · 서폿) — `GameEnums.ROLE_DISPLAY_ORDER`. 아래 라벨 배열들은 그리는
+	# 순서(= 자리 순서)로 쌓이고, `_player_pilots_by_seat()` 도 같은 순서로
+	# 파일럿을 돌려주므로 인덱스 하나가 끝까지 자리 번호로 남는다.
+	for seat in 5:
+		var r: int = int(GameEnums.ROLE_DISPLAY_ORDER[seat])
+		var y: float = y0 + seat * row_h
 		var role_col: Color = ROLE_COLORS[r]
 
 		var panel := Panel.new()
@@ -210,8 +215,9 @@ func _build_grid() -> void:
 				Vector2(grid_x0 + name_col_w + c * cell_w, grid_y0),
 				Vector2(cell_w, header_h), HORIZONTAL_ALIGNMENT_CENTER)
 
-	for r in 5:
-		var y: float = grid_y0 + header_h + r * cell_h
+	for seat in 5:
+		var r: int = int(GameEnums.ROLE_DISPLAY_ORDER[seat])
+		var y: float = grid_y0 + header_h + seat * cell_h
 		UiHelpers.mk_label(self, ROLE_NAMES[r], 18, ROLE_COLORS[r],
 				Vector2(grid_x0, y + (cell_h - 24) / 2.0),
 				Vector2(name_col_w, 24), HORIZONTAL_ALIGNMENT_CENTER)
@@ -223,7 +229,7 @@ func _build_grid() -> void:
 			btn.size     = Vector2(cell_w - 8, cell_h - 8)
 			btn.add_theme_font_size_override("font_size", 22)
 			btn.text = ""
-			btn.pressed.connect(_on_cell_pressed.bind(r, c))
+			btn.pressed.connect(_on_cell_pressed.bind(seat, c))
 			add_child(btn)
 			btn_row.append(btn)
 		_cell_buttons.append(btn_row)
@@ -324,10 +330,10 @@ func refresh() -> void:
 # has a real scheduled match this week) → MATCH. Unlocked weekday whose value is
 # still MATCH (left over from default-fill) → REST so it can be edited.
 func _normalize_locked_cells() -> void:
-	var pilots: Array = _player_pilots_by_role()
+	var pilots: Array = _player_pilots_by_seat()
 	var sched: Dictionary = _gm.season_state["training_schedule"]
-	for r in 5:
-		var p: PlayerData = pilots[r]
+	for seat in 5:
+		var p: PlayerData = pilots[seat]
 		if p == null or not sched.has(p.id):
 			continue
 		var week: Array = sched[p.id]
@@ -339,26 +345,26 @@ func _normalize_locked_cells() -> void:
 
 
 func _refresh_preview() -> void:
-	var pilots: Array = _player_pilots_by_role()
-	for r in 5:
-		var p: PlayerData = pilots[r]
+	var pilots: Array = _player_pilots_by_seat()
+	for seat in 5:
+		var p: PlayerData = pilots[seat]
 		if p == null:
-			_name_lbls[r].text = "—"
-			(_face_rects[r] as TextureRect).texture = null
+			_name_lbls[seat].text = "—"
+			(_face_rects[seat] as TextureRect).texture = null
 			for s in STAT_KEYS.size():
-				_stat_cells[r][s]["current"].text = "—"
-				_stat_cells[r][s]["projected"].text = ""
+				_stat_cells[seat][s]["current"].text = "—"
+				_stat_cells[seat][s]["projected"].text = ""
 			continue
-		_name_lbls[r].text = p.name
-		(_face_rects[r] as TextureRect).texture = PilotImages.face_for(p.id)
+		_name_lbls[seat].text = p.name
+		(_face_rects[seat] as TextureRect).texture = PilotImages.face_for(p.id)
 		var projected: Dictionary = {}
 		if _scheduler != null:
 			projected = _scheduler.projected_week_stats(p)
 		for s in STAT_KEYS.size():
 			var key: String = STAT_KEYS[s]
 			var cur: int = int(p.get(key))
-			_stat_cells[r][s]["current"].text = "%d" % cur
-			var prj_lbl: Label = _stat_cells[r][s]["projected"]
+			_stat_cells[seat][s]["current"].text = "%d" % cur
+			var prj_lbl: Label = _stat_cells[seat][s]["projected"]
 			if projected.has(key):
 				var prj: int = int(projected[key])
 				var diff: int = prj - cur
@@ -375,12 +381,12 @@ func _refresh_preview() -> void:
 
 
 func _refresh_grid() -> void:
-	var pilots: Array = _player_pilots_by_role()
+	var pilots: Array = _player_pilots_by_seat()
 	var sched: Dictionary = _gm.season_state["training_schedule"]
-	for r in 5:
-		var p: PlayerData = pilots[r]
+	for seat in 5:
+		var p: PlayerData = pilots[seat]
 		for c in 7:
-			var btn: Button = _cell_buttons[r][c]
+			var btn: Button = _cell_buttons[seat][c]
 			if p == null:
 				btn.text = ""
 				btn.disabled = true
@@ -442,25 +448,29 @@ func _is_cell_locked(weekday: int) -> bool:
 	return false
 
 
-func _player_pilots_by_role() -> Array:
+## 플레이어 팀 다섯 명을 **화면 자리 순서**(탑 · 정글 · 미드 · 원딜 · 서폿)로.
+## 예전에는 역할 색인이었는데, 미리보기 표 · 격자 · 셀 클릭이 전부 같은 인덱스
+## 하나를 돌려 쓰므로 그 인덱스가 화면 줄 번호와 어긋나면 **엉뚱한 파일럿의
+## 훈련이 바뀐다**. 그래서 표 쪽을 자리 순서로 옮겼다.
+func _player_pilots_by_seat() -> Array:
 	var pool: Array = _gm.season_state["all_pilots"]
 	var pid: int = int(_gm.season_state["player_team_id"])
-	var by_role: Array = [null, null, null, null, null]
+	var by_seat: Array = [null, null, null, null, null]
 	for raw in pool:
 		var p := raw as PlayerData
 		if p.team_id == pid and p.role >= 0 and p.role < 5:
-			by_role[int(p.role)] = p
-	return by_role
+			by_seat[GameEnums.role_seat(int(p.role))] = p
+	return by_seat
 
 
 # ── Interaction ──────────────────────────────────────────────────────────────
-func _on_cell_pressed(role_row: int, day_col: int) -> void:
+func _on_cell_pressed(seat_row: int, day_col: int) -> void:
 	if _is_cell_locked(day_col):
 		return
-	var pilots: Array = _player_pilots_by_role()
-	if role_row >= pilots.size() or pilots[role_row] == null:
+	var pilots: Array = _player_pilots_by_seat()
+	if seat_row >= pilots.size() or pilots[seat_row] == null:
 		return
-	var p: PlayerData = pilots[role_row]
+	var p: PlayerData = pilots[seat_row]
 	_open_picker(p.id, day_col)
 
 

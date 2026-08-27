@@ -2,11 +2,16 @@ class_name MatchFlow
 extends Node2D
 
 # Top-level orchestrator for the pre-battle match flow:
-#   LOAD -> BAN_PICK -> ASSIGN -> JUNGLE_START -> LAUNCH (change_scene to BattleSim)
+#   LOAD -> PREP -> BAN_PICK -> JUNGLE_START -> LAUNCH (change_scene to BattleSim)
 #
-# Each child controller (BanPickController, AssignController, JungleStartController)
-# builds its own UI on enter() and emits phase_finished when done. MatchFlow
-# advances the state machine and feeds GameManager.match_ctx.
+# Each child controller (MatchPrepController, BanPickController,
+# JungleStartController) builds its own UI on enter() and emits phase_finished
+# when done. MatchFlow advances the state machine and feeds GameManager.match_ctx.
+#
+# **`MatchPhase.ASSIGN` 은 더 이상 지나지 않는다** — 메크 배정은 밴픽 화면이
+# 끝난 자리에서 그대로 이어지고(`BanPickController._enter_assign_mode`), 그래서
+# 밴픽 결과가 이미 `assigned_mech` 까지 채운 로스터를 들고 온다. 열거값은
+# 세이브 호환을 위해 남겨 두었지만 아무도 그 단계로 들어가지 않는다.
 
 signal phase_changed(new_phase: int)
 
@@ -14,7 +19,6 @@ signal phase_changed(new_phase: int)
 @onready var canvas: CanvasLayer               = $CanvasLayer
 @onready var _prep:     Node                   = $MatchPrepController
 @onready var _ban_pick: Node                   = $BanPickController
-@onready var _assign:   Node                   = $AssignController
 @onready var _jungle:   Node                   = $JungleStartController
 
 var phase: int = GameEnums.MatchPhase.LOAD
@@ -77,7 +81,6 @@ func _ready() -> void:
 	# Wire signals
 	_prep.phase_finished.connect(_on_prep_finished)
 	_ban_pick.phase_finished.connect(_on_ban_pick_finished)
-	_assign.phase_finished.connect(_on_assign_finished)
 	_jungle.phase_finished.connect(_on_jungle_finished)
 
 	# Resume entry skips PREP — the player already committed to the match
@@ -131,13 +134,6 @@ func _enter_phase(p: int) -> void:
 			_ban_pick.enter(all_mechs, player_side,
 					_team_roster(player_team_id), _team_roster(enemy_team_id),
 					_team_name(player_team_id), _team_name(enemy_team_id))
-		GameEnums.MatchPhase.ASSIGN:
-			# Resolve picked mech IDs into MechData objects
-			var p_mechs := _ids_to_mechs(player_picked_mech_ids)
-			var e_mechs := _ids_to_mechs(enemy_picked_mech_ids)
-			var p_roster := _team_roster(player_team_id)
-			var e_roster := _team_roster(enemy_team_id)
-			_assign.enter(p_roster, p_mechs, e_roster, e_mechs)
 		GameEnums.MatchPhase.JUNGLE_START:
 			_jungle.enter()
 		GameEnums.MatchPhase.LAUNCH:
@@ -165,15 +161,12 @@ func _on_prep_finished(_result: Dictionary) -> void:
 
 
 func _on_ban_pick_finished(result: Dictionary) -> void:
+	# 밴픽 화면이 배정까지 마치고 돌아온다 — `PlayerData.assigned_mech` 는 이미
+	# 채워져 있고, 결과는 그 로스터를 그대로 넘겨준다(예전 AssignController 가
+	# 하던 일이 그 화면 안으로 들어왔다).
 	banned_mech_ids        = result["banned"]
 	player_picked_mech_ids = result["player_picks"]
 	enemy_picked_mech_ids  = result["enemy_picks"]
-	_enter_phase(GameEnums.MatchPhase.ASSIGN)
-
-
-func _on_assign_finished(result: Dictionary) -> void:
-	# AssignController has already mutated PlayerData.assigned_mech on each player.
-	# Result echoes the rosters for clarity.
 	gm.match_ctx["player_roster"] = result["player_roster"]
 	gm.match_ctx["enemy_roster"]  = result["enemy_roster"]
 	_enter_phase(GameEnums.MatchPhase.JUNGLE_START)
@@ -300,17 +293,6 @@ func _team_name(team_id: int) -> String:
 			if team_id >= 0 and team_id < meta.size():
 				return String(meta[team_id]["name"])
 	return "Team %d" % team_id
-
-
-func _ids_to_mechs(ids: Array) -> Array:
-	var out: Array = []
-	for id in ids:
-		for m_raw in all_mechs:
-			var m := m_raw as MechData
-			if m.id == int(id):
-				out.append(m)
-				break
-	return out
 
 
 func _show_error(msg: String) -> void:

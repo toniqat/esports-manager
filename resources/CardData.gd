@@ -25,18 +25,18 @@ const KW_PRESERVE := "preserve"
 ## 휘발성은 **안 쓰고 버려지면** 사라지는 것이라, 스킬이 준 카드는 어느 쪽으로도
 ## 덱을 불리지 않는다. 판정은 `CardPhaseManager.send_to_discard` 한 곳을 지난다.
 const KW_VOLATILE := "volatile"
-## 스택 — **핸드에서 같은 카드끼리 한 장으로 뭉친다.** 두 장째가 손에 들어오면
-## 새 노드가 서지 않고 이미 서 있던 카드의 `stack_count` 가 오르며, 카드 오른쪽
-## 위에 `x3` 이 찍히고 뒤로 여러 장이 겹쳐 보인다. 손패 크기·상한·버리기가 전부
-## 그 뭉치를 **한 장으로** 세고, 사용하면 뭉치가 통째로 나간다 — 대개 그 카드의
-## 효과가 `|stack` 플래그로 `stack_count` 를 읽어 세기를 결정한다(미사일 · 전장
-## 강타 · 공격 명령 · 약자 멸시).
+## 충전 — **카드 한 장이 자기 안에 세기를 쌓는다.** `charge_max` 를 상한으로,
+## 이 카드가 손패에 들어올 때마다 `charge` 가 1 오르고, 사용하면 쌓인 만큼이
+## 한꺼번에 나가며 0 으로 돌아온다(미사일 · 전장 강타 · 약자 멸시). 효과 쪽은
+## `|charge` 플래그로 그 수를 읽는다.
 ##
-## 뭉쳐 있는 것은 **손패에서뿐**이다. 덱과 버린 더미에는 언제나 낱장으로 눕는다
-## (`CardPhaseManager.send_to_discard` 가 뭉치를 다시 흩는다) — 그러지 않으면
-## 리셔플 한 번에 덱 장수가 줄어들고, 뽑을 때마다 뭉치째 들어와 드로우 한 번이
-## 몇 장인지가 흔들린다.
-const KW_STACK := "stack"
+## 예전에는 같은 카드를 **손패에서 한 장으로 뭉치는** `스택` 키워드였다. 뭉치는
+## 표현은 손패 크기 · 상한 정리 · 부채꼴 · 히트 밴드를 건드리지 않는다는 장점이
+## 있었지만, 더미로 내려갈 때마다 낱장으로 흩어야 했고(안 그러면 리셔플 한 번에
+## 덱 장수가 준다) "덱에 몇 장 넣을 것인가"(count)가 곧 세기의 상한이라
+## 카드마다 3~5장씩 덱을 불렸다. 충전은 카드 한 장(`count = 1`)이 자기 상태로
+## 세기를 들고 있으므로 그 둘이 다 사라진다 — 흩을 것도, 불릴 덱도 없다.
+const KW_CHARGE := "charge"
 
 # 카드 종류 (cards.csv `card_type` 컬럼). 덱은 파일럿마다 메크 카드
 # `MECH_CARDS_PER_PILOT` 장 + 파일럿 카드 `PILOT_CARDS_PER_PILOT` 장으로 돌아간다.
@@ -90,9 +90,11 @@ const CAT_COMMON := "common"
 @export var mech_id: int = -1
 ## 카드 자신에게 붙는 사건 훅(mech_cards.trigger). 비어 있으면 없음.
 @export var trigger: String = ""
+## 충전 상한(mech_cards.charge_max). `KW_CHARGE` 를 안 단 카드는 0.
+@export var charge_max: int = 0
 
-## 손패에서 이 뭉치가 몇 장인가 — `KW_STACK` 주석 참조. 스택이 아닌 카드는 언제나 1.
-var stack_count: int = 1
+## 지금 쌓인 충전 — `KW_CHARGE` 주석 참조. 충전 카드가 아니면 언제나 0.
+var charge: int = 0
 
 # Runtime — set when this card is dealt to a pilot's mini-deck. Identifies the
 # 시전자 (caster) for effect resolution and drives the owner badge on the UI.
@@ -128,19 +130,28 @@ func is_volatile() -> bool:
 	return has_keyword(KW_VOLATILE)
 
 
-## 손패에서 같은 카드끼리 뭉치는가 — `KW_STACK` 주석 참조.
-func is_stackable() -> bool:
-	return has_keyword(KW_STACK)
+## 충전을 쌓는 카드인가 — `KW_CHARGE` 주석 참조.
+func is_charge_card() -> bool:
+	return has_keyword(KW_CHARGE)
 
 
-## 이 두 장이 **같은 뭉치**인가. 스택 카드이면서 같은 `mech_cards` 행이고 시전자도
-## 같아야 한다 — 시전자가 다르면 사거리 기준점도 성장치도 다른 카드다.
-func stacks_with(other: CardData) -> bool:
-	if other == null or not is_stackable() or not other.is_stackable():
+## 이 카드가 손패에 들어왔다 — 충전을 하나 올린다(상한까지). 실제로 올랐으면
+## true. 충전 카드가 아니면 아무 일도 없다.
+func gain_charge() -> bool:
+	if not is_charge_card():
 		return false
-	if mech_card_id < 0 or mech_card_id != other.mech_card_id:
-		return false
-	return owner_pilot == other.owner_pilot
+	var before: int = charge
+	charge = mini(charge + 1, maxi(1, charge_max))
+	return charge != before
+
+
+## 쌓인 충전을 통째로 태운다. 태운 수를 돌려준다 — 충전 카드가 아니면 0.
+func spend_charge() -> int:
+	if not is_charge_card():
+		return 0
+	var n: int = charge
+	charge = 0
+	return n
 
 
 ## **낼 수 있는 카드인가.** 비용 -1 은 "사용할 수 없다"는 뜻이다 — 핸드에 들고

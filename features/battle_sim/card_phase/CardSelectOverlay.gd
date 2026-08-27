@@ -23,9 +23,6 @@ var _bs: BattleSim = null
 enum Mode { NONE, DISCARD, SEARCH, PRESERVE, CHOICE }
 
 const DIM_COLOR             := Color(0.0, 0.0, 0.0, 0.55)
-# Vertical center of the to-discard row inside the dimmed battle area
-# (battle dim spans y=0..BS_HAND_CENTER.y; 700 is the visual middle).
-const TO_DISCARD_CENTER_Y   := 700.0
 const SEARCH_GRID_TOP_Y     := 220.0
 # Bottom of the search grid sits above where the 확인 / 취소 buttons land
 # (top-of-hand area). Keeps the deck-pick scroll list from sliding under the
@@ -56,6 +53,10 @@ var target_count: int = 0
 # Discard mode
 var to_discard_cards: Array = []   # CardData refs in the order they were picked
 var to_discard_nodes: Array = []   # Card visual nodes (live in _bs.canvas)
+## 각 픽이 손패에서 떠나올 때 앉아 있던 자리. 되돌릴 때 그 자리로 다시 꽂는다 —
+## 뒤에 붙이면 골랐다 무른 카드가 손패 오른쪽 끝으로 순간이동해 "무른 것"이
+## 아니라 "새로 뽑은 것"처럼 읽힌다.
+var _to_discard_slots: Array = []  # int
 
 # Search / preserve mode (shared grid state)
 var search_selected: Array = []    # CardData refs (deck picks / hand picks)
@@ -131,6 +132,7 @@ func start_discard(n: int, on_complete: Callable, on_cancel: Callable) -> void:
 	hidden_state = false
 	to_discard_cards.clear()
 	to_discard_nodes.clear()
+	_to_discard_slots.clear()
 	_on_complete = on_complete
 	_on_cancel = on_cancel
 	if target_count <= 0:
@@ -226,20 +228,66 @@ func add_card_to_discard(node: Card) -> void:
 	# 규칙으로 잡혀 있으므로 고를 카드가 모자라는 일은 없다.
 	if cd != null and cd.is_preserved_by_keyword():
 		return
+	var slot: int = _bs.player_hand.find(cd)
 	_bs.player_card_nodes.erase(node)
 	_bs.player_hand.erase(cd)
 	to_discard_cards.append(cd)
 	to_discard_nodes.append(node)
-	# Once a card joins the to-discard fan it is no longer part of the live
-	# hand and shouldn't react to clicks (no un-pick path while we wait for
-	# the player to hit 확인). MOUSE_FILTER_IGNORE makes the centred fan
-	# inert until _commit_discard tears it down.
+	_to_discard_slots.append(maxi(0, slot))
+	# **골라 둔 카드를 누르면 손패로 돌아간다.** 카드 자신은 손패에서와 같이
+	# 마우스를 잡지 않으므로(`_set_subtree_mouse_ignore`), 손패 히트 레이어가
+	# 하던 일을 여기서는 카드 위에 얹는 투명 버튼 하나가 대신한다 — 찾기 그리드가
+	# 쓰는 것과 같은 수법이다.
 	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_attach_unpick_overlay(node)
 	_bs.card_phase.relayout_hand(_bs.player_card_nodes)
 	_layout_to_discard_row()
 	# No auto-commit on the Nth pick — the player explicitly confirms via the
 	# 확인 button now. _update_confirm_button gates the button on
 	# to_discard_cards.size() == target_count.
+	_update_confirm_button()
+
+
+## 골라 둔 카드 위에 얹는 투명 버튼. 누르면 그 카드가 손패로 돌아간다.
+func _attach_unpick_overlay(node: Card) -> void:
+	var hit := Button.new()
+	hit.name = "UnpickHit"
+	hit.mouse_filter = Control.MOUSE_FILTER_STOP
+	hit.flat = true
+	hit.size = Vector2(Card.CARD_W, Card.CARD_H)
+	hit.position = Vector2.ZERO
+	hit.modulate = Color(1, 1, 1, 0)
+	hit.pressed.connect(func() -> void: remove_card_from_discard(node))
+	node.add_child(hit)
+
+
+## 버리기 후보에서 빼내 **원래 자리로** 손패에 돌려놓는다. 카드 노드는 그대로
+## 재사용한다 — 새로 세우면 드로우 인트로를 타거나(왼쪽 밖에서 날아온다) 그
+## 카드에 걸려 있던 표시(보존 테두리 · 충전 배지)를 다시 붙여야 한다.
+func remove_card_from_discard(node: Card) -> void:
+	if mode != Mode.DISCARD or hidden_state:
+		return
+	var i: int = to_discard_nodes.find(node)
+	if i < 0:
+		return
+	var cd := to_discard_cards[i] as CardData
+	var slot: int = int(_to_discard_slots[i])
+	to_discard_nodes.remove_at(i)
+	to_discard_cards.remove_at(i)
+	_to_discard_slots.remove_at(i)
+	# 트리에서 **먼저 떼고** 해제한다 — `queue_free` 만으로는 이 프레임이 끝날
+	# 때까지 버튼이 카드 위에 남아, 손패로 돌아간 카드를 한 번 더 누르면 이미
+	# 목록에서 빠진 노드로 무르기가 다시 돈다.
+	var hit: Node = node.get_node_or_null("UnpickHit")
+	if hit != null:
+		node.remove_child(hit)
+		hit.queue_free()
+	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	slot = clampi(slot, 0, _bs.player_hand.size())
+	_bs.player_hand.insert(slot, cd)
+	_bs.player_card_nodes.insert(mini(slot, _bs.player_card_nodes.size()), node)
+	_bs.card_phase.relayout_hand(_bs.player_card_nodes)
+	_layout_to_discard_row()
 	_update_confirm_button()
 
 
@@ -271,6 +319,13 @@ func _commit_discard() -> void:
 	# 노드는 목록에서 먼저 떼어 낸다.
 	var dropping := to_discard_nodes.duplicate()
 	to_discard_nodes.clear()
+	# 무르기 버튼은 노드와 함께 떠나므로 연출 도중에 다시 눌릴 수 없다.
+	for raw in dropping:
+		var node := raw as Card
+		var hit: Node = node.get_node_or_null("UnpickHit")
+		if hit != null:
+			node.remove_child(hit)
+			hit.queue_free()
 	_teardown()
 	for raw in dropping:
 		var node := raw as Card
@@ -485,11 +540,20 @@ func _attach_search_pick_overlay(node: Card, cd: CardData) -> void:
 # Lays out the picked-for-discard cards in a horizontal fan that mirrors the
 # hand row's spacing (so it visually reads as "a hand of cards being set
 # aside").
+## 골라 둔 카드가 늘어서는 줄의 세로 중심. **카드를 놓는 구역과 같은 중심**이라
+## "놓은 자리에 그대로 늘어선다"가 된다 — 예전의 고정 700 은 구역이 화면 중앙일
+## 때 줄이 그 위쪽에 걸려 놓은 곳과 쌓이는 곳이 어긋났다.
+func to_discard_center_y() -> float:
+	if _bs != null and _bs.card_phase != null:
+		return _bs.card_phase.drop_zone_rect().get_center().y
+	return ScreenMetrics.viewport_size().y * 0.5
+
+
 func _layout_to_discard_row() -> void:
 	var n: int = to_discard_nodes.size()
 	if n == 0:
 		return
-	var slot_y: float = TO_DISCARD_CENTER_Y - Card.CARD_H * 0.5
+	var slot_y: float = to_discard_center_y() - Card.CARD_H * 0.5
 	var hand_w: float = _bs.BS_HAND_WIDTH
 	var visual_cx: float = ScreenMetrics.center_x()
 	var ideal_total: float = float(n) * Card.CARD_W \
@@ -552,6 +616,7 @@ func _teardown() -> void:
 			(node as Card).queue_free()
 	to_discard_nodes.clear()
 	to_discard_cards.clear()
+	_to_discard_slots.clear()
 	for node in search_grid_nodes:
 		if is_instance_valid(node):
 			(node as Card).queue_free()

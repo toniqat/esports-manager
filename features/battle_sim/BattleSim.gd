@@ -202,9 +202,9 @@ var OBJ_ENGAGE_ROUNDS:       int   = 4
 ## [전령 제압] 카드가 최외곽 적 포탑에 넣는 고정 피해.
 var OBJ_HERALD_TURRET_DMG:   int   = 8
 ## 용을 가져간 팀의 덱에 섞여 들어가는 [용 보상] 카드 장수.
-var OBJ_DRAGON_CARD_COUNT:   int   = 5
+var OBJ_DRAGON_CARD_COUNT:   int   = 3
 ## [용 보상] 한 장이 지정한 파일럿에게 **영구로** 얹는 성장 적립 배율(%).
-var OBJ_DRAGON_GROWTH_PCT:   int   = 10
+var OBJ_DRAGON_GROWTH_PCT:   int   = 5
 
 # Derived after DB load
 var PLAYER_HQ_POS: Vector2i = Vector2i.ZERO
@@ -596,8 +596,8 @@ func _populate_from_data_loader() -> void:
 	OBJ_RETRY_TURNS         = max(1, int(cfg.get("OBJ_RETRY_TURNS", "15")))
 	OBJ_ENGAGE_ROUNDS       = max(1, int(cfg.get("OBJ_ENGAGE_ROUNDS", "4")))
 	OBJ_HERALD_TURRET_DMG   = max(1, int(cfg.get("OBJ_HERALD_TURRET_DMG", "8")))
-	OBJ_DRAGON_CARD_COUNT   = max(1, int(cfg.get("OBJ_DRAGON_CARD_COUNT", "5")))
-	OBJ_DRAGON_GROWTH_PCT   = max(0, int(cfg.get("OBJ_DRAGON_GROWTH_PCT", "10")))
+	OBJ_DRAGON_CARD_COUNT   = max(1, int(cfg.get("OBJ_DRAGON_CARD_COUNT", "3")))
+	OBJ_DRAGON_GROWTH_PCT   = max(0, int(cfg.get("OBJ_DRAGON_GROWTH_PCT", "5")))
 	# Init counters so first event fires on turn 1
 	draw_counter = CARD_DRAW_INTERVAL - 1
 	cost_counter = COST_RECOVERY_INTERVAL - 1
@@ -1497,6 +1497,12 @@ func role_stats_str(role: int) -> String:
 func effective_cost_for(cd: CardData, is_player: bool) -> int:
 	if cd == null:
 		return 0
+	# **비용 -1 은 값이 아니라 "낼 수 없다"는 표시다.** 할인도 증세도 얹히지
+	# 않는다 — 예전에는 여기서 -1 이 그냥 수로 취급돼 `max(0, ...)` 를 지나며
+	# 0 이 됐고, 그러면 `is_playable()` 를 안 보는 자리마다 그 카드가 "공짜로
+	# 낼 수 있는 카드"로 읽혔다.
+	if not cd.is_playable():
+		return cd.cost
 	var inc: int = phase_cost_inc_p if is_player else phase_cost_inc_ai
 	var c: int = cd.cost + inc
 	var disc: int = engage_discount_p if is_player else engage_discount_ai

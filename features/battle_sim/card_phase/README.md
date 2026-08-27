@@ -711,12 +711,16 @@ re-evaluates the dim state.
   붙는다(`DROP_ZONE_LABEL_TOP`) — 구역 한가운데는 전장 한복판이라 글자가 타일
   위에 겹쳐 읽힌다. 커서가 구역 안에 들어오면 채움과 테두리가
   밝아진다(`_set_drop_zone_hot`).
-- **버리기:N 픽 중에는 같은 구역이 버리기 구역이 된다.** `drop_zone_rect()` 가
-  `CardSelectOverlay.TO_DISCARD_CENTER_Y`(700) 를 중심으로 `DISCARD_ZONE_H`
-  (440px) 높이의 띠를 돌려주므로, 이미 골라 둔 카드가 늘어선 줄 위에 얹는
-  조작으로 읽힌다. 문구도 "여기에 놓아 버리기"로 바뀌고, 대상 지정 오버레이는
-  아예 켜지지 않는다(`_begin_drag`). 확정은 예전대로 오버레이의 확인 버튼이다 —
-  드롭은 "버릴 카드로 넘긴다"까지만 한다.
+- **버리기:N 픽 중에도 같은 구역이다.** `drop_zone_rect()` 는 모드를 보지 않고
+  언제나 같은 rect 를 돌려주며, 골라 둔 카드가 늘어서는 줄도 그 rect 의 중심에서
+  나온다(`CardSelectOverlay.to_discard_center_y()`). 문구만 "여기에 놓아 버리기"로
+  바뀌고, 대상 지정 오버레이는 아예 켜지지 않는다(`_begin_drag`). 확정은 예전대로
+  오버레이의 확인 버튼이다 — 드롭은 "버릴 카드로 넘긴다"까지만 한다.
+  > 예전에는 버리기만 `TO_DISCARD_CENTER_Y`(700)를 중심으로 한 `DISCARD_ZONE_H`
+    (440px) 짜리 별도 띠를 썼다. **같은 조작(카드를 끌어다 놓는다)이 무엇을
+    하느냐에 따라 놓을 자리가 달라져** 카드를 낼 때와 버릴 때 매번 다시 겨눠야
+    했고, 골라 둔 카드가 늘어서는 줄과 구역의 중심도 서로 달랐다. 두 상수는
+    함께 삭제됐다.
   > **구역 노드는 이때 캔버스 자식 인덱스 1 로 올라간다.** 평소에는 0(맨 뒤)이
   > 지만, 버리기 모드에서는 `CardSelectOverlay._battle_dim` 이 0 을 차지하고
   > 있어서 그대로 두면 구역이 딤 **아래**로 들어가 통째로 눌려 보이지 않는다.
@@ -855,28 +859,35 @@ re-evaluates the dim state.
 **실측** (헤드리스 1판, 역할군마다 첫 기체 배정): 플레이어 덱 **33장**
 (메크 18 + 파일럿 15). 파일럿 카드는 여전히 3장씩이고 서포터만 draw 2,
 정글러만 jungle 슬롯 2(= `jungle` 2 또는 `jungle` 1 + `common` 1)다. 메크 쪽은
-기체가 정하므로 같은 카드가 여러 장 나오는 것이 **정상**이다(미사일 3 · 리부트 3 ·
-약자 멸시 4 · 전장 강타 5).
+기체가 정하므로 같은 카드가 여러 장 나오는 것이 **정상**이다(리부트 3 등). 다만
+충전 카드는 `count = 1` 이다 — 세기가 장수가 아니라 `charge` 로 살기 때문.
 
-### 스택 (핸드에서 뭉치는 카드)
-`스택` 키워드를 단 카드는 손패에서 같은 카드끼리 **한 장으로** 뭉친다.
+### 충전 (카드가 자기 안에 쌓는 세기)
+`충전` 키워드(`mech_cards.keyword = charge`)를 단 카드는 **손패에 들어올 때마다**
+자기 `charge` 를 하나 올리고(상한 `mech_cards.charge_max`), 사용하면 쌓인 만큼이
+한꺼번에 나가며 0 으로 돌아간다. 지금 네 장이 쓴다 — 미사일(3) · 전장 강타(5) ·
+약자 멸시(3). 공격 명령은 충전을 버리고 **처치마다 손패에 생성**되는 쪽으로 갔다.
 
-- 진입점은 **`add_card_to_hand(cd, is_player, at_left)` 하나**다. 뭉칠 수 있으면
-  `stack_count` 만 올리고 노드를 새로 세우지 않으며, 그때 false 를 돌려준다.
-  `draw_card` 는 같은 판정을 안에서 하고 결과를 **`last_draw_merged`** 로 알린다 —
-  호출 측 다섯 곳이 그 값을 보고 `spawn_card_node` 를 건너뛴다(새 노드가 안 서면
-  날아올 카드가 없으므로 드로우 연출도 없다).
-- **뭉치는 곳은 손패뿐이다.** `send_to_discard` 가 더미로 내려앉는 뭉치를 다시
-  낱장으로 흩는다 — 그러지 않으면 리셔플 한 번에 덱 장수가 뭉친 만큼 줄고, 다음
-  드로우 한 번이 몇 장인지가 흔들린다.
-- 동일성은 `CardData.stacks_with()` — **같은 `mech_card_id` + 같은 시전자**.
-  시전자가 다르면 사거리 기준점도 성장치도 다른 카드다.
-- 화면은 `Card.refresh_stack_badge()` — 카드 **뒤로** 어긋나게 겹치는 판
-  (최대 3장, `move_child(layer, 0)` 로 앞면보다 뒤에 앉힌다)과 오른쪽 위 `xN`
-  배지. 판을 뒤에 깔아야 "여러 장"이 배지를 읽기 전에 먼저 보인다.
-- 손패 배열에 **한 항목**으로만 존재하므로 손패 크기 · `_trim_hand_overflow` ·
-  부채꼴 레이아웃 · `HandHitLayer` 밴드가 전부 뭉치를 한 장으로 센다. 그 넷을
-  따로 고치지 않아도 되는 것이 이 표현을 고른 유일한 이유다.
+- 오르는 자리는 둘뿐이다: `add_card_to_hand()` 와 `draw_card()`. 둘 다
+  `CardData.gain_charge()` 를 지나므로 상한 판정이 한 군데에만 산다.
+- 태우는 자리는 하나다: `_burn_charge(cd)` — 카드가 손을 떠날 때 한 번 돌고,
+  태운 수를 **`_charge_spent`** 에 적어 둔다. 절이 아니라 카드 단위인 이유는
+  "사용 시 모든 충전을 소모"가 효과 개수와 무관하기 때문이고, 값이 카드가 아니라
+  매니저에 사는 이유는 그 시점에 `charge` 가 이미 0 이기 때문이다(효과 체인은
+  오버레이 때문에 여러 프레임에 걸쳐 돈다).
+- 효과 쪽 플래그는 **`|charge`** 다. `attack:1|area:0|charge`(미사일)는 각 대상을
+  충전 수만큼 때리고, `attack:1|random|charge`(전장 강타)는 **충전 수 + 1** 명을
+  무작위로 뽑는다(+1 은 상수항이라 충전 0 이어도 한 번은 나간다).
+- 화면은 `Card.refresh_charge_badge()` — 카드 **오른쪽 아래**의 `N/M` 배지.
+  오른쪽 위는 시전자 초상 배지가, 왼쪽 위는 비용 칸이 이미 쓰고 있다.
+
+> **예전에는 `스택` 이었다** — 같은 카드가 손패에서 한 장으로 뭉치고
+> `stack_count` 가 몇 장인지를 들고 있었다. 뭉치는 표현은 손패 크기 · 상한 정리 ·
+> 부채꼴 · 히트 밴드를 손대지 않아도 된다는 장점이 있었지만 대가가 둘이었다:
+> 더미로 내려갈 때마다 낱장으로 다시 흩어야 했고(안 그러면 리셔플 한 번에 덱
+> 장수가 준다), 세기의 상한이 곧 `count` 라 카드 한 종류가 덱을 3~5장씩 불렸다.
+> 충전은 `count = 1` 로 그 둘을 다 없앤다. `stacks_with` / `stack_count` /
+> `last_draw_merged` / `refresh_stack_badge` 는 그때 함께 삭제됐다.
 
 ### 코스트 -1 (사용할 수 없는 카드)
 `cost = -1` 은 값이 아니라 **낼 수 없다는 표시**다(캐시 · 계시 · 약자 멸시 ·
@@ -896,10 +907,24 @@ re-evaluates the dim state.
     `CardPhaseManager.highlight_affordable_cards` calls it for every visible
     card so the cost-modifier effects stay in sync with the card art.
   - **Top-center**: card name (auto-truncates with `clip_text`).
-  - **Center / body**: **owner face image** filling the card
-    (`PilotImages.face_for(owner.pilot_id)`, 140×170 `TextureRect` inside a
-    `CenterContainer`, `STRETCH_KEEP_ASPECT_COVERED`). Empty when no face is
-    available — the cost-coloured panel shows through.
+  - **Center / body**: **비어 있다.** 카드 일러스트가 들어올 자리이고, 그때까지는
+    비용색 앞면이 그대로 드러난다. `OwnerFaceWrap` 은 노드로 남아 있지만 텍스처가
+    null 이다 — VBox 안에서 본체 높이를 잡아 주는 스페이서라, 지우면 헤더 행만
+    남아 카드가 위로 쪼그라든다.
+  - **Top-right of the body**: 시전자 **원형 초상 배지**
+    (`PilotImages.circle_for(owner.pilot_id)`, `PORTRAIT_SIZE` 54px, `PORTRAIT_TOP`
+    44 = 헤더 행 30 + 마진 5 + VBox 간격 4). **손패에서만 그린다**
+    (`is_player_card`) — 상세 패널 · 더미 열람 · 밴픽 · 드래프트처럼 "이 기체가
+    주는 카드"를 보여 주는 자리에서는 시전자가 없거나 의미가 없고, 상대 손패
+    peek 은 뒷면이라 그릴 것이 없다. 사용 불가 슬래브 **아래**에 앉으므로 잠긴
+    카드에서는 얼굴도 같이 어두워진다(밝게 남으면 쓸 수 있는 카드처럼 읽힌다).
+    > 예전에는 시전자 얼굴(`PilotImages.face_for`)이 **카드 본체를 가득 채웠다**.
+      일러스트가 들어올 자리를 얼굴이 차지하고 있었고, 손패 밖의 모든 카드 표시
+      (상세 패널 · 열람 · 밴픽)에도 같은 얼굴이 깔려 "이 카드는 누구 것인가"가
+      맥락과 무관하게 반복됐다.
+  - **Bottom-right**: 충전 배지 `N/M` (`CHARGE_BADGE_SIZE` 52×30). 충전 카드가
+    아니면 꺼진다. 오른쪽 **위**가 아닌 이유는 그 자리를 초상 배지가 가져갔기
+    때문이고, 왼쪽 위는 비용 칸이다.
   - **Unplayable dim** (`BlockOverlay`): a `Panel` at the **end** of the child
     list — above `CardFront`, so it darkens the owner face, name and cost
     together — filled `BLOCKED_OVERLAY_COLOR` (black α 0.58) with the card's
@@ -917,8 +942,34 @@ re-evaluates the dim state.
   - **No description on the card itself.** The full description is surfaced
     only in the side description box that appears when the player selects
     the card (`_show_description_box`).
-  - **No role badge.** Role is conveyed solely by the owner face image; the
+  - **No role badge.** Role is conveyed by the owner portrait badge; the
     description box still surfaces "시전자 <Role><team>" in the header line.
+
+#### 핸드 오르내림 — 내 차례가 아니면 손패가 물러난다
+**내 작전 단계가 아니면 손패는 화면 아래로 내려가 아군 파일럿 스트립 뒤로 숨는다.**
+카드 절반쯤이 스트립 뒤판에 가려지고, 내 차례가 되면 그대로 올라온다.
+
+- 조건은 `_hand_is_lowered()` = `game_phase != CARD_PHASE` 하나다. 딤
+  (`_apply_hand_dim_state`)보다 **좁은** 조건인 것이 요점이다 — 내 차례 안에서
+  잠깐 입력이 막히는 구간(명중 연출 · 모달 픽 · 차례 배너)에는 손패가 어두워질
+  뿐 내려가지 않는다. 그때도 내려가면 모달 한 번마다 손패가 오르내린다.
+- **자리**는 `hand_drop_offset()` 이 `slot_position()` 에 더한다. 값은 상수가
+  아니라 스트립 뒤판에서 역산한다 — `_bs.hud.player_strip_backdrop_top()
+  − Card.CARD_H × 0.5 − BS_HAND_CENTER.y`. 둘 다 세이프 에어리어 오프셋을 이미
+  먹은 값이라 기기와 무관하게 "절반쯤 가려진다"가 유지된다(1080×1920 기준 **206px**).
+- **z-order**는 `_reorder_hand_nodes()` 가 바꾼다. 내려간 것만으로는 카드가
+  스트립 판 **위에** 걸쳐 있어 가려지지 않으므로, 그 판(`player_strip_backdrop()`)을
+  마커로 잡고 그 **바로 앞자리**에 카드를 차례로 꽂아 덩어리째 판 아래로 내린다.
+  카드가 마커보다 뒤에 있었으면 빼내도 마커 인덱스가 그대로이므로 그 자리에,
+  앞에 있었으면 마커가 한 칸 당겨지므로 한 칸 앞에 넣는다. 되돌리는 쪽(내 차례)은
+  예전처럼 자식 목록 맨 끝이다. 조기 종료 판정(`sorted`)도 그 기준으로 다시
+  계산하므로 반복 호출이 트리를 건드리지 않는다.
+- **그림자**는 `Card.set_lowered()` 가 `SHADOW_FAR_*`(offset 1×4, blur 3,
+  spread 0.98)로 바꾼다. **카드에 바짝 붙은 짧은 그림자 = 카메라에서 멀다**가
+  이 연출의 전부다 — 내 차례에는 평소의 rest / hover / drag 세 단계로 돌아온다.
+  그 상태에서는 호버도 드래그도 없으므로 네 갈래가 서로 다투지 않는다.
+- **히트 레이어도 같이 내려간다**(`_fit_hit_layer` 이 `hand_drop_offset()` 을 탄다).
+  안 따라가면 카드가 없는 자리에서 전장 위의 클릭을 삼킨다.
 
 #### 핸드 히트 레이어 — draw order must not decide hit-testing
 Player hand cards do **not** pick the mouse. `spawn_card_node` runs
@@ -1114,7 +1165,7 @@ The DB column is a `;`-separated chain of clauses. Each clause is
 | `lane_stat:N\|turns:T` | yes | 안전한 파밍 / 공격적인 라인전 — 시전자의 `lane_stat_mod = N/100`, `lane_stat_expire_turn = turn_count + T`. **전장 명중 판정 전용**: `SimulationCore.roll_hit` 이 공격자의 `hit` 과 방어자의 `evasion` 에 각자 자기 배율을 곱한다. `atk` / `max_hp` 는 건드리지 않는다(그쪽은 성장 담당). 같은 파일럿에 두 번 걸면 **덮어쓴다** — 합산이면 3종 풀에서 2장 뽑는 구조상 +20~30% 가 운으로 굴러 나온다. |
 | `growth:N\|turns:T` | yes | 안전한 파밍 — 시전자의 성장 **획득 배율**을 `1 + N/100` 로. 성장률 자체가 아니라 그 배수다(+10% → 턴당 +1%p 가 +1.1%p). 만료는 `SimulationCore.tick_growth_and_expiries` 가 매 턴 확인. |
 | `growth_until_phase:N` | yes | 완벽한 마무리 — 시전자 **팀 전원**의 성장 획득 배율을 `1 + N/100` 로 올리고 `growth_until_phase` 를 세운다. 그 팀의 다음 작전 단계 진입 시 `_apply_phase_entry_carryovers` 가 걷는다. `growth:N` 과 같은 필드를 쓰므로 나중에 건 쪽이 이긴다. |
-| `growth_perm:N` | yes | [용 보상] — **지정한 아군 파일럿 한 명**의 성장 적립 배율에 N%p 를 **영구로 누적**. 만료도 해제도 없다. 위 두 절이 쓰는 `growth_rate_mult`(서로 덮어쓰는 슬롯)이 아니라 별도 필드 `PilotData.growth_rate_bonus` 에 얹는다 — 슬롯에 넣으면 용을 다섯 번 먹어도 +10% 에서 멈추고 그 뒤 라인전 카드 한 장이 그걸 지운다. 최종 배율은 `BattleSim.add_score` 에서 `growth_rate_mult + growth_rate_bonus` 로 합쳐진다. **Player**: PILOT mode(`target=ally`, `cast_range` 99 — 시전자가 없으므로 전장 전체). **AI**: random ally. |
+| `growth_perm:N` | yes | [용 보상] — **지정한 아군 파일럿 한 명**의 성장 적립 배율에 N%p 를 **영구로 누적**. 만료도 해제도 없다. 위 두 절이 쓰는 `growth_rate_mult`(서로 덮어쓰는 슬롯)이 아니라 별도 필드 `PilotData.growth_rate_bonus` 에 얹는다 — 슬롯에 넣으면 용을 여러 번 먹어도 +5% 에서 멈추고 그 뒤 라인전 카드 한 장이 그걸 지운다. 최종 배율은 `BattleSim.add_score` 에서 `growth_rate_mult + growth_rate_bonus` 로 합쳐진다. **Player**: PILOT mode(`target=ally`, `cast_range` 99 — 시전자가 없으므로 전장 전체). **AI**: random ally. |
 | `turret_damage:N` | yes | [전령 제압] — 찍은 칸의 포탑에 **명중 판정 없이** N 피해. 유효 대상은 `compute_turret_damage_targets` → `SimulationCore.outermost_enemy_turrets(team)`: **레인마다 T1 → T2 순으로 훑어 처음 만난 살아 있는 적 포탑**뿐이다(안쪽 포탑 저격 불가; T1 이 무너진 레인은 T2 가 그 자리를 물려받아 후반에도 쓸 곳이 남는다). 적용은 `SimulationCore.apply_card_turret_damage` → 전장의 `_apply_card_damage` 를 그대로 재사용하므로 흔들림 연출 · 킬로그 · `Building` 노드 해제 · T1 파괴 시 정글 획득이 한 군데서만 일어난다. 시전자가 없으면 성장치 귀속만 생략된다(`add_score` 가 null 을 거른다). **Player**: LOCATION mode. **AI**: random valid cell. |
 | `discard_hand` | yes | 완벽한 마무리의 첫 절 — 손패 전부 discard. 보존을 **무시한다**. |
 | `discard_hand_draw` | yes | 재고 — 손패 전부 버리고 **버린 장수만큼** 다시 뽑는다. 손패 크기는 그대로고 내용만 갈린다(덱+discard 가 마르면 뽑은 만큼만). |
@@ -1513,21 +1564,30 @@ keyword check has always fired first, so they are 소멸 on their first play.
   - **Battle dim** = `ColorRect` covering y=0..BS_HAND_CENTER.y, parented
     into `_bs.canvas` and moved to child position 0 so HUD + hand still
     draw on top of it.
-  - **픽은 드래그다.** 손패는 계속 살아 있고, 카드를 **중앙 버리기 구역**으로
-    끌어다 놓으면 그 카드가 버릴 카드로 넘어간다
+  - **픽은 드래그다.** 손패는 계속 살아 있고, 카드를 **중앙 구역**으로 끌어다
+    놓으면 그 카드가 버릴 카드로 넘어간다
     (`CardPhaseManager._try_drop_play` → `add_card_to_discard`). 구역은
-    `drop_zone_rect()` 가 `TO_DISCARD_CENTER_Y`(700)를 중심으로
-    `DISCARD_ZONE_H`(440px) 띠로 돌려주고, 문구는 "여기에 놓아 버리기"다.
+    **카드를 낼 때와 같은 `drop_zone_rect()`** 이고, 문구만 "여기에 놓아 버리기"다.
     대상 지정 오버레이는 이 모드에서 아예 켜지지 않는다.
     > 예전에는 카드를 **선택**한 뒤 설명 상자에 뜨는 "버리기" 버튼을 누르는
     > 두 박자였다. 선택 상태 자체가 사라지면서(위 *드래그 앤 드롭* 절) 그
     > 버튼이 갈 곳이 없어졌고, 손패에서 카드를 빼내는 조작은 전부 드래그
     > 하나로 통일됐다.
-  - Picked cards are reparented to a centered fan above the dim
-    (`TO_DISCARD_CENTER_Y = 700`, fan width = `BS_HAND_WIDTH`, same spacing
-    rules as the hand row). Once parked there their `mouse_filter` is set
-    to `IGNORE` so the fan can't be re-clicked while the player commits.
-  - **No auto-commit and no cancel.** A 버리기:N card is non-cancellable:
+  - Picked cards are laid out in a centered fan (`to_discard_center_y()` =
+    the shared drop zone's centre, fan width = `BS_HAND_WIDTH`, same spacing
+    rules as the hand row).
+  - **골라 둔 카드를 누르면 손패로 돌아간다** (`remove_card_from_discard`).
+    카드 자신은 손패에서와 같이 마우스를 잡지 않으므로(`MOUSE_FILTER_IGNORE`),
+    투명 `Button` 한 장(`UnpickHit`)을 카드 위에 얹어 그 클릭을 받는다 — 찾기
+    그리드가 쓰는 것과 같은 수법이다. 되돌아가는 자리는 **떠나올 때의 인덱스**
+    (`_to_discard_slots`)다: 뒤에 붙이면 골랐다 무른 카드가 손패 오른쪽 끝으로
+    순간이동해 "무른 것"이 아니라 "새로 뽑은 것"처럼 읽힌다. 버튼은 `queue_free`
+    **전에 `remove_child`** 로 떼어 낸다 — 안 그러면 그 프레임이 끝날 때까지
+    버튼이 남아 이미 목록에서 빠진 노드로 무르기가 한 번 더 돈다.
+    > 예전에는 무르는 길이 없어(`mouse_filter = IGNORE` 로 못 박아 두었다)
+      잘못 고른 카드를 확인 버튼까지 그대로 안고 가야 했다.
+  - **No auto-commit and no cancel (of the card itself).** A 버리기:N card is
+    non-cancellable:
     the only top-right button is **확인**, disabled until exactly
     `target_count` cards are in the to-discard fan. `target_count` is
     clamped to `min(N, hand.size())`. Pressing 확인 is the sole exit.

@@ -1,11 +1,17 @@
 class_name DraftDetailPanel
 extends CanvasLayer
 
-# 드래프트 화면의 파일럿 상세 팝업 — 선택 슬롯의 **이름을 누르면** 열린다.
+# 파일럿 상세 팝업 — **아웃게임에서 파일럿 한 명을 들여다보는 유일한 자리**다.
 #
 #   좌: 전신 아트 한 장
 #   우: 머리글(이름 · 역할 · 원소속) → 스탯 칩 6개 → 파일럿 스킬 → 후보 카드
 #   하: 닫기
+#
+# 여는 자리가 둘이다 — **드래프트**(선택 슬롯의 상체 일러스트를 누른다)와
+# **밴픽의 배정 단계**(양 팀 파일럿 초상화를 누른다). 그래서 이 팝업은
+# `TeamDraft` 인스턴스를 요구하지 않는다: 필요한 것은 `PlayerData` 한 장과
+# 오토로드 `GameManager` 뿐이고, 후보 카드 목록은 `TeamDraft` 의 **static**
+# 함수에 카드 풀을 직접 넘겨 받는다.
 #
 # 인게임의 `features/battle_sim/ui/PilotDetailPanel.gd` 와 **같은 언어**를 쓰되
 # 같은 클래스가 아니다 — 저쪽은 `BattleSim` 오케스트레이터와 `PilotData`(런타임
@@ -96,7 +102,6 @@ const ROLE_COLORS: Array = [
 
 const STAT_KEYS: Array = ["라인전", "메카닉", "게임센스", "한타", "멘탈"]
 
-var _draft: TeamDraft = null
 var _pilot: PlayerData = null
 var _root: Control = null
 
@@ -105,12 +110,12 @@ func _init() -> void:
 	layer = OVERLAY_LAYER
 
 
-## 팝업을 연다. `draft` 는 후보 카드 · 스킬 표를 읽는 데이터 계층이다.
-func open(draft: TeamDraft, p: PlayerData) -> void:
+## 팝업을 연다. 필요한 것은 파일럿 한 명뿐이다 — 스킬 행과 카드 풀은 오토로드
+## `GameManager` 에서 직접 읽는다.
+func open(p: PlayerData) -> void:
 	close()
-	_draft = draft
 	_pilot = p
-	if p == null or draft == null:
+	if p == null:
 		return
 	_build()
 
@@ -290,7 +295,7 @@ func _mk_chip(body: Control, at: Vector2, sz: Vector2, key: String,
 
 func _build_skill_block(body: Control, w: float, y: float) -> float:
 	y = _section(body, w, y, "파일럿 스킬")
-	var sk: Dictionary = _draft.skill_def_for(_pilot)
+	var sk: Dictionary = _skill_def()
 	if sk.is_empty():
 		# 모브는 여기서 자기 정체를 말한다 — 스탯 10% 하향보다 이쪽이 크다.
 		UiHelpers.mk_label(body, "고유 스킬 없음 (이름 없는 선수)",
@@ -345,7 +350,9 @@ func _build_card_sections(body: Control, w: float, y: float) -> float:
 ## 이 역할의 후보 카드 중 `cat` 슬롯에 해당하는 것들.
 func _cards_in_cat(role: int, cat: String) -> Array:
 	var out: Array = []
-	for raw in _draft.candidate_cards_for_role(role):
+	var gm: Node = get_node_or_null("/root/GameManager")
+	var pool: Array = gm.card_pool_bs if gm != null else []
+	for raw in TeamDraft.candidate_cards_for_role(pool, role):
 		var cd := raw as CardData
 		if cd.fits_category(cat):
 			out.append(cd)
@@ -430,6 +437,14 @@ func _build_close() -> void:
 	btn.add_theme_stylebox_override("focus",   sty)
 	btn.pressed.connect(close)
 	_root.add_child(btn)
+
+
+## 이 선수의 고유 스킬 행. 모브(스킬 없음)는 빈 Dictionary 를 돌려준다.
+func _skill_def() -> Dictionary:
+	var gm: Node = get_node_or_null("/root/GameManager")
+	if gm == null or _pilot == null or _pilot.skill_id < 0:
+		return {}
+	return gm.skill_def(_pilot.skill_id)
 
 
 func _team_short(team_id: int) -> String:

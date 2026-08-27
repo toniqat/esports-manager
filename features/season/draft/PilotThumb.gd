@@ -1,10 +1,17 @@
 class_name PilotThumb
 extends Button
 
-# 드래프트 하단 격자의 캐릭터 썸네일 한 칸 — 얼굴 크롭 · 이름 · 역할 태그 ·
-# 종합 스탯. 우마무스메식 "인물 목록"이라 카드가 아니라 **초상화**가 칸의
-# 주인이고, 숫자는 그 아래 한 줄로만 붙는다(예전 `PilotCard` 는 200×175 칸에
-# 스탯 막대 다섯 줄을 세워서 정작 얼굴이 48px 였다).
+# 드래프트 하단 격자의 캐릭터 썸네일 한 칸 — **얼굴 하나와 역할군 배지가 전부다.**
+#
+# 예전에는 얼굴 밑에 역할군 이름 · 파일럿 이름 · 종합 스탯 세 줄이 붙어 있었고,
+# 그 세 줄이 250px 짜리 칸의 3분의 1을 먹었다. 우마무스메식 인물 고르기에서
+# 격자가 하는 일은 **누구인지 알아보게 하는 것**이지 능력치를 비교하게 하는
+# 것이 아니다 — 이름도 스탯도 한 번 눌러 위 칸에 앉힌 뒤 상세 팝업이 통째로
+# 들고 있고, 그 세 줄을 걷어 낸 만큼 얼굴이 칸을 다 쓴다(칸이 정사각이 됐다).
+#
+# 남은 글자는 **왼쪽 위 역할군 배지 두 글자**뿐이고, 그것도 읽으라고 있는 것이
+# 아니라 색을 확인해 주는 것이다 — 밴픽 화면의 메크 격자와 **같은 배지**라
+# (`BanPickController._build_role_badge`) 두 화면이 같은 표시를 쓴다.
 #
 # 선택 표시는 **금색 테두리 + 우상단 체크 배지** 두 겹이다. 테두리만으로는
 # 격자가 5열로 촘촘해 어느 칸이 켜졌는지가 곁눈으로 안 읽힌다.
@@ -12,14 +19,11 @@ extends Button
 signal thumb_tapped(pilot_id: int)
 
 const CELL_W: float = 200.0
-const CELL_H: float = 250.0
+## 칸은 **정사각**이다 — 얼굴 크롭(256²)이 정사각이라 아래 글자 줄이 사라진
+## 지금은 칸도 그 비율을 그대로 따르는 것이 맞다.
+const CELL_H: float = 200.0
 
 const ART_MARGIN: float = 6.0
-const ART_H: float = 168.0
-
-const ROLE_TAG_H: float = 22.0
-const NAME_H: float = 30.0
-const STAT_H: float = 22.0
 
 const BORDER_W: int = 3
 const BORDER_W_SEL: int = 4
@@ -34,7 +38,12 @@ const BADGE_SIZE: float = 40.0
 const BADGE_BG := Color(1.00, 0.85, 0.20, 1.0)
 const BADGE_FG := Color(0.10, 0.08, 0.02, 1.0)
 
-const ROLE_NAMES: Array = ["TANK", "FIGHTER", "ASSASSIN", "SUPPORT", "SNIPER"]
+# ─── 역할군 배지 (왼쪽 위) ───────────────────────────────────────────────────
+## 두 글자 약칭. 밴픽 화면의 `ROLE_INITIALS` 와 **같은 표**다 — 같은 역할이
+## 화면마다 다른 글자면 색으로 알아본다는 전제가 무너진다.
+const ROLE_INITIALS: Array = ["Tk", "Fi", "As", "Su", "Sn"]
+const ROLE_BADGE_W: float = 44.0
+const ROLE_BADGE_H: float = 30.0
 const ROLE_COLORS: Array = [
 	Color(0.30, 0.55, 1.00),   # TANK     blue
 	Color(1.00, 0.55, 0.20),   # FIGHTER  orange
@@ -49,9 +58,8 @@ var _selected: bool = false
 var _built: bool = false
 
 var _face: TextureRect
+var _role_badge: Panel
 var _role_lbl: Label
-var _name_lbl: Label
-var _stat_lbl: Label
 var _badge: Panel
 
 
@@ -87,32 +95,25 @@ func _build() -> void:
 	text               = ""
 	pressed.connect(_on_pressed)
 
-	var art_w: float = CELL_W - ART_MARGIN * 2.0
+	var art_sz: float = CELL_W - ART_MARGIN * 2.0
 	_face = TextureRect.new()
 	_face.position     = Vector2(ART_MARGIN, ART_MARGIN)
-	_face.size         = Vector2(art_w, ART_H)
+	_face.size         = Vector2(art_sz, art_sz)
 	_face.expand_mode  = TextureRect.EXPAND_IGNORE_SIZE
 	_face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	_face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_face)
 
-	var y: float = ART_MARGIN + ART_H + 2.0
-	_role_lbl = UiHelpers.mk_label(self, "", 15, Color(1, 1, 1),
-			Vector2(ART_MARGIN, y), Vector2(art_w, ROLE_TAG_H),
+	_role_badge = Panel.new()
+	_role_badge.position = Vector2(ART_MARGIN + 4.0, ART_MARGIN + 4.0)
+	_role_badge.size     = Vector2(ROLE_BADGE_W, ROLE_BADGE_H)
+	_role_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_role_badge)
+	_role_lbl = UiHelpers.mk_label(_role_badge, "", 19, Color(1, 1, 1),
+			Vector2.ZERO, Vector2(ROLE_BADGE_W, ROLE_BADGE_H),
 			HORIZONTAL_ALIGNMENT_CENTER)
-	y += ROLE_TAG_H
-
-	_name_lbl = UiHelpers.mk_label(self, "", 22, Color(1, 1, 1),
-			Vector2(ART_MARGIN, y), Vector2(art_w, NAME_H),
-			HORIZONTAL_ALIGNMENT_CENTER)
-	_name_lbl.clip_text = true
-	_name_lbl.add_theme_constant_override("outline_size", 2)
-	_name_lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.6))
-	y += NAME_H
-
-	_stat_lbl = UiHelpers.mk_label(self, "", 15, Color(0.72, 0.78, 0.90),
-			Vector2(ART_MARGIN, y), Vector2(art_w, STAT_H),
-			HORIZONTAL_ALIGNMENT_CENTER)
+	_role_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_role_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	_badge = Panel.new()
 	_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -138,19 +139,26 @@ func _build() -> void:
 func _refresh() -> void:
 	if pilot == null:
 		_face.texture = null
-		_name_lbl.text = ""
-		_role_lbl.text = ""
-		_stat_lbl.text = ""
+		_role_badge.visible = false
 		return
-	_face.texture  = PilotImages.face_for(pilot.id)
-	_name_lbl.text = pilot.name
+	_face.texture = PilotImages.face_for(pilot.id)
 	var r: int = int(pilot.role)
-	if r >= 0 and r < ROLE_NAMES.size():
-		_role_lbl.text = ROLE_NAMES[r]
-		_role_lbl.add_theme_color_override("font_color", ROLE_COLORS[r])
-	else:
-		_role_lbl.text = "?"
-	_stat_lbl.text = "종합 %d" % total_stats(pilot)
+	var known: bool = r >= 0 and r < ROLE_INITIALS.size()
+	_role_badge.visible = known
+	if known:
+		_role_lbl.text = String(ROLE_INITIALS[r])
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = (ROLE_COLORS[r] as Color).darkened(0.15)
+		sb.border_color = Color(0, 0, 0, 0.55)
+		sb.border_width_top = 1
+		sb.border_width_bottom = 1
+		sb.border_width_left = 1
+		sb.border_width_right = 1
+		sb.corner_radius_top_left     = 8
+		sb.corner_radius_top_right    = 8
+		sb.corner_radius_bottom_left  = 8
+		sb.corner_radius_bottom_right = 8
+		_role_badge.add_theme_stylebox_override("panel", sb)
 
 
 static func total_stats(p: PlayerData) -> int:

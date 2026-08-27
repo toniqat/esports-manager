@@ -44,12 +44,15 @@ Shared enum definitions:
 - `Role { TANK, FIGHTER, ASSASSIN, SUPPORT, SNIPER }` — pilot/player position
 - `LanePosition { LEFT, CENTER, RIGHT, GUERRILLA }` — battle-lane slot
 - `Lane { LEFT, CENTER, RIGHT }` — waypoint/building lanes (no GUERRILLA)
-- `BattlePhase { GAMBIT, CARD_PHASE, BATTLE }` — in-battle phase machine
+- `BattlePhase { GAMBIT, CARD_PHASE, BATTLE, ENGAGE }` — in-battle phase
+  machine. **`GAMBIT` 은 빈 단계가 아니다** — 전장이 다 선 채로 여기 머물며
+  정글 시작 방향을 묻는다(`battle_sim/gambit/JungleStartOverlay.gd`)
 - `TowerLevel { HQ, LEVEL_2, LEVEL_1 }` — building atlas selector
 - `MatchPhase { LOAD, PREP, BAN_PICK, ASSIGN, JUNGLE_START, LAUNCH }` — out-of-battle
-  pipeline. **`ASSIGN` 은 더 이상 지나지 않는다** — 메크 배정이 밴픽 화면 안으로
-  들어갔다(`ban_pick/BanPickController._enter_assign_mode`). 열거값은 세이브
-  호환을 위해 자리만 지킨다
+  pipeline. **`ASSIGN` 과 `JUNGLE_START` 는 더 이상 지나지 않는다** — 메크 배정은
+  밴픽 화면 안으로(`ban_pick/BanPickController._enter_assign_mode`), 정글 시작
+  방향은 BattleSim 안으로(`battle_sim/gambit/JungleStartOverlay.gd`) 들어갔다.
+  두 열거값은 세이브 호환을 위해 자리만 지킨다
 - `JungleStartDir { LEFT, RIGHT }` — assassin's jungle entry side
 - `DraftSide { BLUE, RED }` — ban/pick draft sides
 
@@ -235,11 +238,20 @@ portraits under `resources/images/pilot/{faces,circle,eye,tall,full}/`, plus the
 
 | 함수 | 파일 | 크기 | 소비자 |
 |---|---|---|---|
-| `face_for` | `faces/N_rect.png` | 256² | (현재 없음 — 예전 상단 슬롯이 쓰던 컷) |
+| `face_for` | `faces/N_rect.png` | 256² | 드래프트 격자 썸네일 (`season/draft/PilotThumb.gd`) |
 | `circle_for` | `circle/N_circle.png` | 256² 원형 | 전장 마커 · 교전 무대 초상화 |
 | `eye_for` | `eye/N_eye.png` | **480×200** | 파일럿 스트립 (`ui/PilotStrip.gd`) |
 | `tall_for` | `tall/N_tall.png` | **210×700** | 교전 아레나 하단 스트립 (`engage/EngageArena.gd`) |
+| `bust_for` | `tall/` 의 **윗부분** `AtlasTexture` | 174×351 (`BUST_ASPECT` 0.496) | 드래프트 선택 5인 칸 · 밴픽 **배정 단계**의 아군 파일럿 칸 |
 | `full_for` | `full/N_full.png` | 가변 × 1024 | 파일럿 상세 패널 (`ui/PilotDetailPanel.gd`) |
+
+**`bust_for` 는 파일이 아니라 크롭이다** — `tall` 컷(210×700, 머리~허벅지)의
+윗부분을 `AtlasTexture` 로 잘라 돌려주므로 원본을 한 벌 더 굽지 않는다.
+`full` 에서 직접 자르지 않는 것이 요점이다: full 은 파일럿마다 인물 배율이 달라
+다섯 칸의 얼굴 크기가 들쭉날쭉해지는데, `tall` 은 이미 얼굴 사각형을 템플릿
+매칭으로 찾아 배율을 통일해 둔 컷이다. **두 화면이 이 한 함수를 함께 읽는다**
+(드래프트 선택 칸 / 밴픽 배정 단계) — 각자 자기 `Rect2` 를 들고 있으면 한쪽만
+고쳐도 두 화면의 얼굴 크기가 갈린다. 칸 비율은 반드시 `BUST_ASPECT` 여야 한다.
 
 **`eye/` 는 손으로 자르지 말 것** — `resources/images/pilot/make_eye_crops.py`
 가 `full/` 아트에서 자동으로 만든다. 얼굴 위치를 추측하지 않고 `faces/N_rect.png`

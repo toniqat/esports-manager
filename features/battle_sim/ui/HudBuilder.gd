@@ -457,6 +457,25 @@ func player_strip_backdrop_top() -> float:
 	return player_strip_rect().position.y - PLAYER_BG_PAD
 
 
+## 개시 전(정글 시작 선택) 동안 **지금 쓸 수 없는 HUD 를 걷는다** — 손패 행
+## 양옆의 덱 / 버린 더미 뭉치(와 그 히트 버튼), 전략 포인트 도넛 둘, 상단
+## 패널의 오브젝트 등장 시계 둘. 셋 다 아직 존재하지 않는 것을 0 으로 보여
+## 주는 자리이고, 특히 손패 자리는 정글러 초상화가 통째로 쓴다.
+##
+## **파일럿 스트립과 상단 패널은 남는다** — 개시 직전에 양 팀 로스터를 다시
+## 확인하는 것은 이 화면이 하는 일의 일부다.
+func set_pregame_chrome_visible(on: bool) -> void:
+	for node in [_bs.pile_deck, _bs.pile_discard, _btn_deck_view,
+			_btn_discard_view, _bs.cost_donut, _bs.cost_donut_enemy]:
+		var c := node as CanvasItem
+		if c != null:
+			c.visible = on
+	for raw in _obj_timers:
+		var t := raw as CanvasItem
+		if t != null:
+			t.visible = on
+
+
 func set_strip_visible(team: int, on: bool) -> void:
 	var strip: PilotStrip = _player_strip if team == 0 else _enemy_strip
 	if strip != null:

@@ -43,7 +43,8 @@ And accesses shared state via `_bs.pilots`, `_bs.turn_count`, etc.
 | Pathfinding    | Node | `combat/Pathfinding.gd`    | BFS + greedy fallback (hex distance) |
 | BattleRenderer | Node2D | `rendering/BattleRenderer.gd` | HQ/turret HP bars + per-cell pilot rendering |
 | CardPhaseManager | Node | `card_phase/CardPhaseManager.gd` | 작전 단계 turn flow, deck, fanned hand layout, phase-end gating |
-| GambitPhaseManager | Node | `gambit/GambitPhaseManager.gd` | Auto role→lane mapping + launch (UI removed; pre-battle choices live in `features/match_flow/`) |
+| GambitPhaseManager | Node | `gambit/GambitPhaseManager.gd` | 개시 전 단계 — 역할 고정 레인 배정 + 전장 세우기(`prepare_field`) + **정글 시작 오버레이** + 개시(`begin_battle`). `gambit/README.md` 참조 |
+| JungleStartOverlay | Node | `gambit/JungleStartOverlay.gd` | **정글 시작 방향** — 비워진 손패 자리의 정글러 원형 초상화를 좌 / 우 정글 무리로 끌어다 놓고 "전투 시작"으로 확정한다. `match_ctx.active` 일 때만 열린다. Lazily added by `GambitPhaseManager`. |
 | EngagePhaseManager | Node | `engage/EngagePhaseManager.gd` | 전투 개시(engage) modal — **라운드 턴제 사이드뷰 벨트 교전** (`engage/TurnEngageSim.gd` 헤드리스 시뮬 + `engage/EngageArena.gd` 렌더러) triggered by `engage:N` / `duel` cards. Lazily added in `_ready()`. |
 | HudBuilder     | Node | `ui/HudBuilder.gd`         | HUD construction; 전략 포인트 도넛 (`ui/CostDonut.gd`), **양 팀 파일럿 스트립** (`ui/PilotStrip.gd`, 상단 적 / 하단 아군), 우측 상단 **킬로그** (`ui/KillFeed.gd`), 적 스트립 양옆 **오브젝트 시계** (`ui/ObjectiveTimer.gd`) |
 | ObjectiveSystem | Node | `objective/ObjectiveSystem.gd` | **오브젝트(전령 / 용)** — 좌우 중립 칸에서 정해진 턴마다 열리는 교전 사건. 시계 · 참여 결정 · 정산. 결정 창과 무대는 교전 모듈의 VS 화면과 아레나를 빌려 쓴다. Lazily added in `_ready()` **after** config load. |
@@ -70,8 +71,16 @@ Responsibilities:
 - Holds `@onready` refs to all child modules
 - Public **coordinate helpers**: `cell_center(pos)`, `pilot_label(p)`, `role_stats_str(role)`
 - **Lifecycle**: `_ready()`, `_process(delta)`
-  - `_ready` calls `_gambit.auto_assign_lanes()` then `_gambit.launch_battle()` —
-    no overlay, scene transitions straight into BATTLE.
+  - `_ready` calls `_gambit.auto_assign_lanes()` then `_gambit.launch_battle()`.
+    그 안에서 전장이 다 서고(`field_ready = true`), **경기로 들어온 경우
+    (`match_ctx.active`)에는 GAMBIT 에 머물러 정글 시작 오버레이를 연다** —
+    BATTLE 은 그 화면의 "전투 시작"이 부른다. 단독 실행(BattleSim.tscn 직접
+    실행 / 헤드리스 검증)은 물을 상대가 없으므로 곧장 BATTLE 이다. 어느 쪽이든
+    `_ready` 는 그대로 이어서 덱 배분 · 파일럿/메크 스킬 · 로거를 배선한다
+    (전장은 이미 다 섰고 BATTLE 틱만 미뤄진 것이다).
+  - **`field_ready`** 는 `BattleRenderer._draw` 의 유일한 게이트다. 예전에는
+    `game_phase == GAMBIT` 이면 통째로 안 그렸는데, 정글 시작 선택이 그 GAMBIT
+    안으로 들어오면서 개시 전에도 전장이 보여야 하게 됐다.
   - `_process` auto-ticks `card_phase.do_battle_turn()` every `AUTO_PLAY_INTERVAL`
     seconds while `game_phase == BATTLE`. CARD_PHASE pauses the tick, and so does
     the 상대 차례 — that one runs *inside* BATTLE, so the guard also reads

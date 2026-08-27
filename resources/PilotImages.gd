@@ -109,6 +109,31 @@ static func tall_for(pilot_id: int) -> Texture2D:
 	return load(_dir_for(pilot_id, "tall", TALL_DIR) + "%d_tall.png" % (pilot_id + 1)) as Texture2D
 
 
+## 상체 크롭 (어깨~얼굴). `tall` 컷의 **윗부분**을 `AtlasTexture` 로 잘라
+## 돌려준다 — 원본을 한 벌 더 굽지 않는다. `full` 에서 직접 자르지 않는 것이
+## 요점이다 — full 은 파일럿마다 인물 배율이 달라 다섯 칸의 얼굴 크기가
+## 들쐄날쒑해지는데, `tall` 은 이미 얼굴 사각형을 템플릿 매칭으로 찾아 배율을
+## 통일해 둔 컷이라 그 위에서 자르면 얼굴이 같은 크기로 선다
+## (`make_tall_crops.py` 참조).
+##
+## **두 화면이 이 한 함수를 함께 읽는다** — 드래프트의 선택 5인 칸과
+## 밴픽 배정 단계의 아군 파일럿 칸이다. 칸 비율은 반드시 `BUST_ASPECT` 여야
+## 하며, 둘 중 하나만 바꾸면 얼굴이 찌그러진다.
+const BUST_REGION := Rect2(18.0, 0.0, 174.0, 351.0)
+## 상체 크롭의 가로 : 세로 비 (174 / 351).
+const BUST_ASPECT: float = 174.0 / 351.0
+
+
+static func bust_for(pilot_id: int) -> Texture2D:
+	var src: Texture2D = tall_for(pilot_id)
+	if src == null:
+		return null
+	var atlas := AtlasTexture.new()
+	atlas.atlas = src
+	atlas.region = BUST_REGION
+	return atlas
+
+
 ## 전신 아트 (가변 폭 × 1024). 파일럿 상세 패널이 쓴다.
 static func full_for(pilot_id: int) -> Texture2D:
 	if not has_image(pilot_id):

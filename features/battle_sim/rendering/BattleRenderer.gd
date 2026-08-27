@@ -342,7 +342,11 @@ func _draw_pilot_popups() -> void:
 
 
 func _draw() -> void:
-	if _bs.game_phase == GameEnums.BattlePhase.GAMBIT:
+	# **게이트는 페이즈가 아니라 "그릴 것이 있는가"다.** 예전에는 GAMBIT 이면
+	# 통째로 건너뛰었는데, 정글 시작 선택이 그 GAMBIT 안으로 들어오면서 개시
+	# 전에도 전장이 보여야 하게 됐다 — 어느 쪽 정글로 갈지는 정글 소유 · 캠프 ·
+	# 우리 정글러의 자리를 보고 정하는 선택이다.
+	if not _bs.field_ready:
 		return
 	# Recompute the per-cell pilot grouping once so _draw_pilot_groups and the
 	# targeting dim overlay agree on where each pilot's marker landed within
@@ -351,6 +355,7 @@ func _draw() -> void:
 	_draw_front_line_overlays()
 	_draw_captured_tile_overlays()
 	_draw_jungle_camps()
+	_draw_jungle_start_zones()
 	_draw_targeting_underlays()
 	# Out-of-range tile dim is drawn BEFORE HQ/turret/pilot graphics so a
 	# pilot marker that visually overlaps an adjacent out-of-range tile (the
@@ -391,6 +396,32 @@ func _draw() -> void:
 #     PilotData → Vector2 marker_pos (tile centre when solo, else offset)
 #   }
 var _pilot_render_layout: Dictionary = {}
+
+
+## 정글 시작 선택(개시 전) 동안 좌 / 우 정글을 **무리째** 밝힌다. 드롭 대상이
+## 칸이 아니라 무리이므로 강조도 무리 단위여야 한다 — 칸 하나만 밝히면
+## "이 칸에 정확히 놓아라"로 읽힌다.
+##
+## 캠프 아웃라인 **뒤에** 그린다(호출 순서가 곧 z-order다) — 이 강조는 잠깐
+## 떴다 사라지는 안내이고, 그 밑의 소유 색과 캠프 테두리는 그 선택의 근거라
+## 가려지면 안 된다. 그래서 채움은 옅고 테두리만 또렷하다.
+func _draw_jungle_start_zones() -> void:
+	var jp: JungleStartOverlay = _bs.jungle_pick
+	if jp == null or not jp.is_active():
+		return
+	var hg: HexGrid = _bs.hex_grid
+	var hot: int = jp.highlight_dir()
+	for dir in [GameEnums.JungleStartDir.LEFT, GameEnums.JungleStartDir.RIGHT]:
+		var lit: bool = dir == hot
+		var fill: Color = JungleStartOverlay.ZONE_FILL_HOT if lit \
+				else JungleStartOverlay.ZONE_FILL
+		var line: Color = JungleStartOverlay.ZONE_LINE_HOT if lit \
+				else JungleStartOverlay.ZONE_LINE
+		var width: float = 5.0 if lit else 3.0
+		for c_raw in JungleStartOverlay.cells_for(dir):
+			var pts := hg.hex_corners(_bs.cell_center(c_raw as Vector2i))
+			draw_colored_polygon(pts, fill)
+			draw_polyline(_close_polygon(pts), line, width, true)
 
 
 # Captured jungle/neutral tiles use saturated team-coloured atlas tiles. We

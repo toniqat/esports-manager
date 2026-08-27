@@ -152,13 +152,18 @@ static func pilot_card_slots_for_role(role: int) -> Array:
 ## 랜덤 스타터 덱에 안 들어가는 행(`pool = 0`)과 시전자 제약(`scope`)에 걸리는
 ## 행은 실제 배분과 같은 자리에서 걸러 낸다 — 화면에 뜬 후보가 실제로는 못
 ## 받는 카드이면 그 목록은 거짓말이 된다.
-func candidate_cards_for_role(role: int) -> Array:
+##
+## **static 이고 카드 풀을 인자로 받는다** — 유일한 소비자인 `DraftDetailPanel`
+## 이 드래프트 화면 밖(밴픽의 파일럿 상세)에서도 열리게 됐고, 그쪽에는 건네줄
+## `TeamDraft` 인스턴스가 없다. 호출부가 `GameManager.card_pool_bs` 를 그대로
+## 넘긴다.
+static func candidate_cards_for_role(card_pool: Array, role: int) -> Array:
 	var is_jungler: bool = role == GameEnums.Role.ASSASSIN
 	var out: Array = []
 	var seen: Dictionary = {}
 	for slot_raw in pilot_card_slots_for_role(role):
 		var cat: String = String((slot_raw as Array)[0])
-		for def_raw in _gm.card_pool_bs:
+		for def_raw in card_pool:
 			var def: Dictionary = def_raw as Dictionary
 			if int(def.get("pool", 1)) == 0:
 				continue
@@ -194,13 +199,6 @@ static func cat_label(cat: String) -> String:
 
 
 # ─── 파일럿 스킬 ─────────────────────────────────────────────────────────────
-## 이 선수의 고유 스킬 행. 모브(스킬 없음)는 빈 Dictionary 를 돌려준다.
-func skill_def_for(p: PlayerData) -> Dictionary:
-	if p == null or p.skill_id < 0:
-		return {}
-	return _gm.skill_def(p.skill_id)
-
-
 ## 스킬 타입 표시명. CSV 의 `cooldown` / `charge` / `passive` 를 그대로 띄우면
 ## 화면에서 읽히지 않는다.
 static func skill_type_label(t: String) -> String:

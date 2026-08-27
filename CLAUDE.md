@@ -17,13 +17,13 @@
   training, and resolves any AI matches scheduled for the week.
 - **Weekly flow**: HUB → TRAINING (set this week's schedule) → "주 진행"
   → TRAINING_RESULT (per-pilot before/after/delta dashboard) → "다음" →
-  MatchFlow if player has a match (PREP → BAN_PICK → ASSIGN → JUNGLE_START
-  → BattleSim → return) → STANDINGS (LeagueView / BracketView /
+  MatchFlow if player has a match (PREP → BAN_PICK(밴픽 + 메크 배정) →
+  BattleSim → return; **정글 시작 방향은 BattleSim 안에서 고른다**) → STANDINGS (LeagueView / BracketView /
   IntlBracketView) → "다음 주" → HUB.
 - **Save / load**: 3 slots persisted as JSON under `user://saves/slot{0,1,2}.save`.
   Auto-save fires at four points: (1) DRAFT → HUB, (2) MatchFlow pre-ban-pick
-  (after PREP confirmation), (3) MatchFlow post-gambit (after jungle dir
-  picked), (4) post-week-end (after CalendarSystem.advance_week on the
+  (after PREP confirmation), (3) MatchFlow post-ban-pick (after 메크 배정
+  완료), (4) post-week-end (after CalendarSystem.advance_week on the
   "다음 주" press). No save during BattleSim — closing mid-battle resumes
   from #3. Title screen routes "이어하기" to MatchFlow.tscn when the slot
   was saved mid-match (`season_state.match_resume` non-null), else Season.tscn.
@@ -48,9 +48,11 @@ esports-manager/
 │   │   ├── GameOverView.gd      ← class_name GameOverView — Phase 7/8 elimination screen
 │   │   ├── EndingView.gd        ← class_name EndingView — Phase 8 world-champion screen
 │   │   ├── calendar/            ← Weekly clock, phase transitions
-│   │   ├── draft/               ← 초기 5인 선발 (네임드 25인 풀) — 우마무스메식 인물 고르기
-│   │   │                          (상체 일러스트 5칸 + 역할 필터 + 스크롤 썸네일 격자 +
-│   │   │                           이름 탭으로 여는 `DraftDetailPanel` 상세 팝업)
+│   │   ├── draft/               ← 초기 5인 선발 (네임드 25인 풀) — 우마무스메식 인물 고르기.
+│   │   │                          PICK(상체 일러스트 5칸 + 역할 필터 + 정사각 썸네일 격자
+│   │   │                          + 가운데 "다음") ↔ CONFIRM(픽창을 걷고 5인을 화면 가운데로
+│   │   │                          내린 뒤 "드래프트 확정" / 작은 "뒤로"). 일러스트 탭으로
+│   │   │                          `DraftDetailPanel` 상세 팝업
 │   │   ├── training/            ← 7-day × pilot training grid + TrainingResultView dashboard
 │   │   ├── league/              ← LeagueManager + LeagueView (1-round-per-week schedule, AI sims, standings)
 │   │   └── tournament/          ← TournamentManager + BracketView (4-team SE playoff, 2 weeks, Phase 7);
@@ -64,9 +66,12 @@ esports-manager/
 │   │   │                          (위 = 상대 메크 칸 5 + 초상화 5 / 가운데 = 픽창(역할군
 │   │   │                           필터 + 정사각 메크 격자 5열 × 4.5줄 스크롤) / 아래 = 아군,
 │   │   │                           거울 배치. 메크 1탭 = 하단 시트로 패시브 · 카드 셋, 2탭 =
-│   │   │                           확정. 14수가 끝나면 픽창이 사라지고 아군 초상화가 정사각
-│   │   │                           으로 커지며 메크 칸을 드래그 드롭으로 맞바꾼다)
-│   │   └── jungle_start/        ← Assassin jungle start direction (LEFT/RIGHT)
+│   │   │                           확정. 14수가 끝나면 픽창 자리에 "게임 시작"만 남고 아군
+│   │   │                           블록이 배정판이 된다 — 파일럿 **상체 일러스트**가 위,
+│   │   │                           메크 칸이 아래, 드래그 드롭으로 맞바꾼다. 양 팀 초상화 ·
+│   │   │                           메크 칸이 전부 눌려 파일럿 / 메크 상세가 뜬다)
+│   │   │                          `MechDetailPanel.gd` = 메크 상세 팝업(좌 전신 아트 / 우 정보)
+│   │   └── (jungle_start/ 는 삭제됐다 — 정글 시작 방향은 BattleSim 이 묻는다)
 │   │
 │   ├── save_load/               ← Title screen + 3-slot save/load (entry: TitleScreen.tscn)
 │   │   ├── README.md            ← Read before editing save/load code
@@ -113,7 +118,9 @@ esports-manager/
 │       │   └── MechSkillSystem.gd  ← 메크 스킬 — 기체마다 붙는 패시브 15종 + 그 기체 카드들의 상태·사건 훅
 │       ├── gambit/
 │       │   ├── README.md
-│       │   └── GambitPhaseManager.gd ← Pre-battle lane assignment UI
+│       │   ├── GambitPhaseManager.gd ← 개시 전 단계 — 역할 고정 레인 + 전장 세우기 + 개시
+│       │   └── JungleStartOverlay.gd ← 정글 시작 방향 — 비워진 손패 자리의 정글러 원형
+│       │                               초상화를 좌/우 정글 무리로 끌어다 놓고 확정
 │       ├── buildings/
 │       │   ├── Building.gd / Waypoint.gd  ← @tool placeable scene nodes
 │       │   ├── BuildingLayer.gd / WaypointLayer.gd
@@ -180,9 +187,9 @@ esports-manager/
 
 | Feature | Scene | Script | Status |
 |---|---|---|---|
-| Save / Load | `scenes/TitleScreen.tscn` | `features/save_load/TitleScreen.gd` | **Main entry** — 3 slots under `user://saves/`. New game / continue / delete. Auto-saves at draft / pre-ban-pick / post-gambit / post-week-end. Mid-match resume re-enters MatchFlow at the saved phase. |
+| Save / Load | `scenes/TitleScreen.tscn` | `features/save_load/TitleScreen.gd` | **Main entry** — 3 slots under `user://saves/`. New game / continue / delete. Auto-saves at draft / pre-ban-pick / post-ban-pick / post-week-end. Mid-match resume re-enters MatchFlow at the saved phase. |
 | Season | `scenes/Season.tscn` | `features/season/SeasonHub.gd` | Weekly campaign hub. HUB → TRAINING → TRAINING_RESULT → MatchFlow (if match) → STANDINGS → "다음 주" → HUB. Calendar advances 1 week per cycle. INTL phase = 3-week SE bracket; playoff = 2-week SE bracket. REGULAR_INTL win → ENDING; loss → GAME_OVER. |
-| Match Flow | `scenes/MatchFlow.tscn` | `features/match_flow/MatchFlow.gd` | Pre-battle pipeline — entered from Season on the player's match week. PREP → BAN_PICK(밴픽 + 메크 배정) → JUNGLE_START → BattleSim. **`MatchPhase.ASSIGN` 은 더 이상 지나지 않는다** — 배정이 밴픽 화면 안으로 들어갔고 `assign/AssignController.gd` 는 삭제됐다. |
+| Match Flow | `scenes/MatchFlow.tscn` | `features/match_flow/MatchFlow.gd` | Pre-battle pipeline — entered from Season on the player's match week. PREP → BAN_PICK(밴픽 + 메크 배정) → BattleSim. **열거값 둘이 자리만 지킨다** — `ASSIGN` 은 배정이 밴픽 화면 안으로 들어가며(`assign/AssignController.gd` 삭제), `JUNGLE_START` 는 정글 시작 선택이 BattleSim 안으로 들어가며(`jungle_start/` 삭제) 지나지 않게 됐다. |
 | Battle Sim | `scenes/BattleSim.tscn` | `features/battle_sim/BattleSim.gd` | **Primary focus** — consumes match_ctx |
 
 ### TitleScreen → Season handoff
@@ -203,16 +210,19 @@ Four trigger points across SeasonHub and MatchFlow:
 1. **Post-draft** — `SeasonHub.goto(Screen.HUB)` when previous screen was DRAFT.
 2. **Pre-ban-pick** — `MatchFlow._on_prep_finished()` after the player
    confirms PREP. Writes `season_state.match_resume = {phase: BAN_PICK, player_side, ...}`.
-3. **Post-gambit** — `MatchFlow._on_jungle_finished()` right before scene-change
-   to BattleSim. Writes the full match snapshot (banned/picked/assigned mech
-   IDs, jungle dir) into `match_resume` with `phase = LAUNCH`.
+3. **Post-ban-pick** — `MatchFlow._on_ban_pick_finished()` right before
+   scene-change to BattleSim. Writes the full match snapshot (banned/picked/
+   assigned mech IDs) into `match_resume` with `phase = LAUNCH`. 예전에는 정글
+   방향까지 여기 들어와 저장이 한 단계 뒤(`_on_jungle_finished`)에 있었는데, 그
+   선택이 BattleSim 으로 옮겨 가며 시점이 당겨졌다 — 재개는 어차피 전투를
+   처음부터 다시 돌리므로 정글 방향도 그때 다시 묻는다.
 4. **Post-week-end** — `SeasonHub.on_proceed_to_next_week()` after
    `CalendarSystem.advance_week()` rolls the calendar. Covers both
    post-match weeks and no-match weeks.
 
 No save fires inside BattleSim. Closing mid-battle leaves the disk save at
 trigger #3, so resume drops back into BattleSim with the same locked-in
-picks but the battle replays from scratch.
+picks but the battle replays from scratch (정글 시작 화면도 다시 뜬다).
 
 `SaveSystem.save_slot(gm.active_save_slot)` is a no-op when the slot is -1
 (running Season.tscn / MatchFlow.tscn directly from the editor).
@@ -238,7 +248,7 @@ On the player's match week, `SeasonHub.on_training_result_continue`
 populates `season_state["pending_match"]` (`{source, schedule_idx,
 enemy_team_id, winner_side}`) and `change_scene_to_file` to MatchFlow.tscn.
 MatchFlow runs PREP (review rosters) → BAN_PICK(밴픽 + 메크 배정) →
-JUNGLE_START → BattleSim. **BAN_PICK 은 양 팀 로스터와 팀명까지 받는다** —
+BattleSim (정글 시작 방향은 그 안에서 묻는다). **BAN_PICK 은 양 팀 로스터와 팀명까지 받는다** —
 화면 위아래에 전장 스트립과 같은 eye 초상화 5인씩을 세우고 그 바깥에 메크 칸을
 붙이며, 14수가 끝나면 **그 로스터에 배정을 직접 새겨** 돌려주기 때문이다
 (`MatchFlow._enter_phase` 가 `_team_roster()` / `_team_name()` 을 함께 넘기고,
@@ -313,7 +323,8 @@ Each child module has `@onready var _bs: BattleSim = get_parent() as BattleSim` 
 | Pathfinding | `combat/Pathfinding.gd` | BFS + greedy movement |
 | BattleRenderer | `rendering/BattleRenderer.gd` | All `_draw()` logic (extends Node2D) |
 | CardPhaseManager | `card_phase/CardPhaseManager.gd` | Card turn flow, deck, hand, card effects |
-| GambitPhaseManager | `gambit/GambitPhaseManager.gd` | Auto role→lane mapping + battle launch |
+| GambitPhaseManager | `gambit/GambitPhaseManager.gd` | 개시 전 단계 — 역할 고정 레인 배정 + 전장 세우기(`prepare_field`) + 정글 시작 오버레이 + 개시(`begin_battle`) |
+| JungleStartOverlay | `gambit/JungleStartOverlay.gd` | **정글 시작 방향** — 비워진 손패 자리의 정글러 원형 초상화를 좌 / 우 정글 무리로 끌어다 놓고 "전투 시작"으로 확정. `match_ctx.active` 일 때만 열린다 |
 | ObjectiveSystem | `objective/ObjectiveSystem.gd` | 오브젝트(전령 / 용) — 좌우 중립 칸의 시계 · 참여 결정 · 정산. 결정 창과 무대는 교전 모듈의 VS 화면과 아레나를 빌려 쓴다 |
 | ObjectiveRewardFx | `objective/ObjectiveRewardFx.gd` | 오브젝트 **보상 획득 연출** — 보상 카드를 화면 한가운데에 펼쳤다가 들어갈 자리(덱 뭉치 / 손패 왼쪽 끝 / 상대 손패)로 날려 보낸다. `_grant_reward` 가 **지급 직전에** await 한다 |
 | MechSkillSystem | `mech/MechSkillSystem.gd` | 메크 스킬 — 배정된 **기체**에 붙는 패시브 15종과 그 기체 카드들이 남기는 지속 상태(취약 · 반응 장갑 · 목표 · 추적 · 현상금 …). 계산은 원래 하던 자리가 하고 이 모듈은 질의 함수만 내보낸다 |
@@ -327,7 +338,8 @@ Each child module has `@onready var _bs: BattleSim = get_parent() as BattleSim` 
 ### Battle Sim — Active Systems
 | System | Description |
 |---|---|
-| Gambit Phase | **UI removed.** Lane is fixed by role (TANK→LEFT, FIGHTER→CENTER, ASSASSIN→GUERRILLA, SUPPORT/SNIPER→RIGHT). Pre-battle choices live in `features/match_flow/`. |
+| Gambit Phase (개시 전) | 레인은 **역할이 고정한다**(TANK→LEFT, FIGHTER→CENTER, ASSASSIN→GUERRILLA, SUPPORT/SNIPER→RIGHT) — 예전의 인게임 배정 오버레이는 삭제됐고 그 자리는 밴픽 화면이 가져갔다. 이 단계에 남은 선택은 **정글 시작 방향** 하나다(아래 항목). `GambitPhaseManager.launch_battle()` 이 셋으로 갈라져 있다 — `prepare_field()`(파일럿 · 포탑 · 정글 소유 · 캠프를 세우고 `BattleSim.field_ready` 를 켠다) → 정글 시작 오버레이(경기로 들어온 경우) → `begin_battle()`(`game_phase = BATTLE` 이 되는 유일한 자리). |
+| 정글 시작 (인게임) | **좌우 중 어느 정글에서 시작하는지를 전장 위에서 고른다**(`gambit/JungleStartOverlay.gd`, `match_ctx.active` 일 때만 — 단독 실행에는 물을 상대가 없으므로 기본값 LEFT 로 곧장 개시한다. 헤드리스 검증이 그 경로를 탄다). 전장은 이미 다 서 있고 HUD 에서는 **지금 쓸 수 없는 것들만** 숨는다 — 덱 / 버린 더미 뭉치, 전략 포인트 도넛 둘, 오브젝트 등장 시계 둘(`HudBuilder.set_pregame_chrome_visible`). 파일럿 스트립과 상단 패널은 남는다(개시 직전에 양 팀 로스터를 다시 보는 것이 이 화면이 하는 일의 일부다). 비워진 **손패 자리에 아군 정글러의 원형 초상화**(전장 마커와 같은 `circle` 컷, 지름 150)가 놓이고, 그것을 **좌측 정글 7칸 / 우측 정글 7칸** 중 한 무리로 끌어다 놓는다(팀0 정글 3 + 팀1 정글 3 + 그 사이 중립 1 = 한 덩어리. 어느 칸 중심에서든 `hex_size` 안이면 그 무리라, 칸 하나를 정확히 겨누는 화면이 아니다). **드롭은 선택일 뿐 개시가 아니다** — 초상화가 그 정글 한가운데에 앉고 초상화 **아래**에 "전투 시작"이 뜬다(그 전에는 같은 자리에 안내문. 위에 두면 안 된다 — 우리 팀 HQ 는 격자의 맨 아래 칸이고 그 칸의 초상화 무리는 타일 밑에 앉아 전장 픽셀 아래끝보다 더 내려온다). 확정이 `PilotData.jungle_start_pref` 와 `match_ctx.jungle_start_dir` 에 방향을 새기고 BATTLE 을 연다. 강조는 `BattleRenderer._draw_jungle_start_zones()` 가 캠프 아웃라인 **뒤에** 그린다 — 그 밑의 소유 색과 캠프 테두리가 이 선택의 근거라 가려지면 안 된다. **`BattleRenderer._draw` 의 게이트가 페이즈에서 `BattleSim.field_ready` 로 바뀌었다** — 예전에는 GAMBIT 이면 통째로 안 그렸는데, 이 선택이 그 GAMBIT 안으로 들어오면서 개시 전에도 전장이 보여야 하게 됐다. 예전에는 이것이 `features/match_flow/jungle_start/` 의 **별도 화면**으로, 전장을 한 픽셀도 안 보여 준 채 "← LEFT / RIGHT →" 두 버튼만 세웠다 — 그 폴더는 삭제됐다. |
 | Auto BATTLE | BATTLE auto-ticks every 0.5s (1 tick = "1분"). No Next-Turn or Auto-Play buttons. CARD_PHASE pauses the tick, and so does 상대 차례 — that one runs *inside* BATTLE without changing `game_phase`, so `BattleSim._process` also gates on `card_phase.is_ai_turn_active()` (same flag freezes the MM:SS clock). |
 | 진영 (블루 / 레드) | `BattleSim.blue_team` (0 = 플레이어 팀) 은 `match_ctx.player_side` 에서 유도된다. **레드 = 밴픽 선밴/선픽, 블루 = 후밴/후픽 + 인게임 선**. 블루의 인게임 이득은 둘이다 — (1) `BattleSim.seed_side_costs()` 가 개시 시점에 전략 포인트를 `BLUE_COST_HEAD_START`(game_config, 1) 로 심어 문턱에 먼저 닿게 하고(COST_RECOVERY 는 양 팀에 같은 틱에 같은 양이 들어가므로 격차가 유지된다), (2) 양 팀이 같은 틱에 문턱 위에 있을 때 **먼저 차례를 잡는다**. **현재 `MatchFlow` 는 플레이어를 항상 BLUE 로 고정한다** — 예전의 매 경기 랜덤 추첨은 제거됐고, 되살릴 때는 `MatchFlow._ready()` 의 fresh-entry 한 줄만 되돌리면 된다. |
 | 개시 손패 (없음) | **양 팀은 빈 손으로 시작한다.** `build_starter_decks` 는 덱을 섞고 `_clear_hands()` 로 손패를 비우는 데서 끝나고, 손패는 오직 `ECONOMY_START_TURN`(10)부터 도는 BATTLE 자동 드로우로만 찬다 — 1~9턴은 카드가 아예 없는 순수 라인전이다. 예전에는 `INITIAL_HAND_SIZE`(game_config, 5)장을 `_deal_initial_hands()` 로 미리 돌려 첫 차례를 상한에 꽉 찬 손으로 맞게 했는데, 그 키와 함수는 **삭제됐다**. 실측: 첫 작전 단계가 **22턴 · 손패 7장**(player 8 / ai 7). |

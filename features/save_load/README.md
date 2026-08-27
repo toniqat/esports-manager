@@ -6,13 +6,15 @@ across the campaign / match-day lifecycle (no manual save UI):
 
 1. **Post-draft** — first DRAFT → HUB transition (SeasonHub).
 2. **Pre-ban-pick** — MatchFlow `_ready()`, right before BAN_PICK starts.
-3. **Post-gambit** — `_on_jungle_finished` in MatchFlow, right after JUNGLE_START
-   completes and just before BattleSim launches.
+3. **Post-ban-pick** — `_on_ban_pick_finished` in MatchFlow, right after 메크
+   배정이 끝나고 BattleSim 이 뜨기 직전. 예전에는 그 뒤의 JUNGLE_START 가
+   끝나는 자리였는데(`_on_jungle_finished`), 정글 시작 선택이 BattleSim 안으로
+   옮겨 가며 한 단계 앞으로 당겨졌다.
 4. **Post-match** — SeasonHub `_ready()` after `_consume_pending_match_result`
    applies the result and clears `match_resume`.
 
 No save fires while BattleSim is running — closing mid-battle resumes from
-the post-gambit snapshot and replays the battle.
+the post-ban-pick snapshot and replays the battle (정글 시작 화면도 다시 뜬다).
 
 ## Entry point
 `scenes/TitleScreen.tscn` — set as `run/main_scene` in `project.godot`.
@@ -73,7 +75,9 @@ Resource-typed entries:
     jungle_start_dir: int }
   ```
   At BAN_PICK only `phase` + `player_side` are meaningful; the assignment
-  fields are filled in at the post-gambit save.
+  fields are filled in at the post-ban-pick save. `jungle_start_dir` 은 이제
+  **기본값(LEFT)만 적힌다** — 그 선택은 BattleSim 이 개시 직전에 묻고, 재개는
+  어차피 전투를 처음부터 다시 돌린다.
 
 ## Auto-save trigger points
 Four trigger points across two scripts:
@@ -82,7 +86,7 @@ Four trigger points across two scripts:
 |---|---|---|---|
 | 1 | DRAFT → HUB | `SeasonHub.goto()` | null (cleared) |
 | 2 | Pre-ban-pick (MatchFlow entry, before BAN_PICK starts) | `MatchFlow._ready()` | `{phase: BAN_PICK, ...}` |
-| 3 | Post-gambit (after JUNGLE_START finishes, before BattleSim) | `MatchFlow._on_jungle_finished()` | `{phase: LAUNCH, ...}` |
+| 3 | Post-ban-pick (after 메크 배정 완료, before BattleSim) | `MatchFlow._on_ban_pick_finished()` | `{phase: LAUNCH, ...}` |
 | 4 | Post-match (return from BattleSim, result applied) | `SeasonHub._ready()` | null (cleared by `_consume_pending_match_result`) |
 
 `active_save_slot` is set on GameManager by TitleScreen. If a session enters
@@ -103,7 +107,7 @@ leaves `match_resume` non-null on disk. On `이어하기`:
   - `phase == LAUNCH`: rebuild `match_ctx` (rosters, assigned mechs,
     bans, jungle dir) from the resume payload, scene-change directly to
     BattleSim. No phase UI runs.
-- The on-disk `match_resume` is only overwritten by save #3 (post-gambit)
+- The on-disk `match_resume` is only overwritten by save #3 (post-ban-pick)
   or save #4 (post-match). Closing mid-battle leaves the disk save at #3,
   so the next resume drops back into BattleSim with the same locked-in
   picks.

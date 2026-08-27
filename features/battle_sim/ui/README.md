@@ -17,6 +17,17 @@
 Builds the battle HUD and updates it via `update_hud()` (per-turn) and
 `update_time_label()` (every frame from `BattleSim._process`).
 
+### `set_pregame_chrome_visible(on)` — 개시 전에 걷는 HUD
+정글 시작 선택(`gambit/JungleStartOverlay.gd`)이 열려 있는 동안 **지금 쓸 수
+없는 것들만** 숨는다 — 손패 행 양옆의 덱 / 버린 더미 뭉치와 그 히트 버튼,
+전략 포인트 도넛 둘, 상단 패널의 오브젝트 등장 시계 둘. 셋 다 아직 존재하지
+않는 것을 0 으로 보여 주는 자리이고, 특히 손패 자리는 정글러 초상화가 통째로
+쓴다. **파일럿 스트립과 상단 패널은 남는다** — 개시 직전에 양 팀 로스터를 다시
+확인하는 것은 그 화면이 하는 일의 일부다. 오버레이가 닫힐 때 그대로 되돌린다.
+
+`set_strip_visible(team, on)`(상세 패널이 부른다)과는 **다른 함수, 다른 이유**다:
+저쪽은 딤 위에 남을 것을 치우는 것이고 이쪽은 아직 뜻이 없는 것을 치우는 것이다.
+
 ### build_ui()
 Creates UI inside `_bs.canvas` (a CanvasLayer added to BattleSim):
 

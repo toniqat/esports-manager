@@ -38,9 +38,26 @@ extends Node
 # 들여다보는 것이 밴픽 화면이 하는 일의 절반이다. 그때는 확정 버튼만 잠긴다.
 #
 # ── 배정 (ASSIGN) ────────────────────────────────────────────────────────────
-# 14수가 끝나면 **화면을 갈아타지 않는다** — 픽창이 사라지고 그 자리에 안내와
-# 확정 버튼이 서며, 아래 아군 블록의 파일럿 초상화가 **정사각으로 확장**되고
-# 그 위의 메크 칸을 **끌어다 놓아 서로 맞바꾼다**. 처음 배열은 픽 순서 그대로다.
+# 14수가 끝나면 **화면을 갈아타지 않는다** — 픽창이 사라지고 그 자리에 "게임
+# 시작" 버튼 하나가 서며, 아래 아군 블록이 배정판으로 다시 선다:
+#
+#   파일럿 상체 일러스트 5인  (드래프트 화면의 선택 칸과 **같은 크롭 · 같은 비율**)
+#   메크 칸 5개              (끌어다 놓아 서로 맞바꾼다)
+#   "드래그 드롭으로 메크-파일럿 지정 변경"  (메크 줄 오른쪽 아래, 작은 글씨)
+#   밴 칩
+#
+# **파일럿이 위, 메크가 아래다.** 배정은 "이 사람이 무엇을 타는가"를 정하는
+# 일이고, 그 문장의 주어가 위에 와야 한 칸을 세로로 훑는 것이 곧 한 문장이
+# 된다. 초상화가 `PilotImages.bust_for` 상체 크롭으로 커진 것도 같은 이유다 —
+# 눈높이 밴드는 다섯을 한 줄로 세워 놓고 훑는 데는 좋지만, 그 다섯 명 각각에게
+# 기체를 붙이는 화면에서는 누가 누구인지가 먼저 읽혀야 한다.
+#
+# **양 팀 초상화와 메크 칸이 전부 눌린다** — 파일럿은 `DraftDetailPanel`,
+# 메크는 `MechDetailPanel` 이다. 배정은 스탯을 보고 하는 일인데 그 스탯을
+# 볼 자리가 없으면 픽 순서 그대로 두는 것 말고 할 수 있는 것이 없다.
+# 인게임 상세 패널과 달리 **둘을 한 화면에 겹치지 않고 인게임 탭도 없다** —
+# 아직 경기가 시작되지 않아 인게임 상태라는 것이 존재하지 않는다.
+#
 # 예전에는 이 단계가 `assign/AssignController.gd` 라는 **별도 화면**이었는데,
 # 방금 고른 열 대가 화면에서 통째로 사라진 뒤 글자 목록으로 다시 나타나서
 # "내가 뭘 골랐더라"를 두 번 읽게 했다. 그 파일은 삭제됐다.
@@ -140,8 +157,17 @@ const SHEET_CARD_GAP: float   = 10.0
 const SHEET_BTN_H: float      = 76.0
 
 ## 배정 단계에서 메크 칸을 끌기 시작하는 문턱(px). 이보다 덜 움직인 것은 탭이지
-## 드래그가 아니다 — 손가락은 언제나 조금씩 떨린다.
+## 드래그가 아니다 — 손가락은 언제나 조금씩 떨린다. 문턱을 못 넘긴 탭은
+## 그 칸의 메크 상세를 연다.
 const DRAG_THRESHOLD_PX: float = 8.0
+
+## 배정 단계 메크 줄 오른쪽 아래의 조작 안내 한 줄.
+const ASSIGN_HINT_H: float = 24.0
+const ASSIGN_HINT_FONT: int = 17
+const ASSIGN_HINT_TEXT: String = "드래그 드롭으로 메크-파일럿 지정 변경"
+## 픽창이 있던 자리에 서는 "게임 시작" 버튼.
+const START_BTN_W: float = 460.0
+const START_BTN_H: float = 108.0
 
 ## 픽창(격자) 배경 — 화면에서 **가장 어두운** 자리다.
 const GRID_BG_COLOR := Color(0.04, 0.04, 0.10, 1.0)
@@ -194,6 +220,12 @@ var _sheet_dim: ColorRect
 var _sheet: Panel
 var _sheet_confirm: Button
 var _selected_mech_id: int = -1
+
+# 배정 단계의 상세 팝업 — 파일럿은 드래프트 화면과 **같은 팝업**을 쓴다
+# (`DraftDetailPanel` 은 `PlayerData` 한 장과 오토로드만 있으면 열린다).
+# 둘 다 lazy-add: 배정 단계에 들어가기 전에는 열릴 일이 없다.
+var _pilot_detail: DraftDetailPanel = null
+var _mech_detail: MechDetailPanel = null
 
 # 배정 단계의 드래그 상태
 var _drag_seat: int = -1
@@ -253,8 +285,12 @@ func _layout() -> void:
 	var portrait_h: float = portrait_w / EYE_ASPECT
 	var mech_h: float = portrait_h * MECH_H_RATIO
 	var block_h: float = BAN_ROW_H + BLOCK_INNER_GAP + mech_h + 2.0 + portrait_h
-	# 배정 단계에서는 파일럿 초상화가 정사각으로 커진다.
-	var assign_block_h: float = BAN_ROW_H + BLOCK_INNER_GAP + mech_h + 2.0 + portrait_w
+	# 배정 단계에서는 파일럿 초상화가 **상체 일러스트**로 커진다 — 드래프트
+	# 화면의 선택 칸과 같은 크롭이라 비율도 같은 곳(`PilotImages.BUST_ASPECT`)
+	# 에서 온다. 폭은 그대로이므로 높이만 그 비율이 정한다.
+	var assign_portrait_h: float = portrait_w / PilotImages.BUST_ASPECT
+	var assign_block_h: float = assign_portrait_h + 2.0 + mech_h + 2.0 \
+			+ ASSIGN_HINT_H + BLOCK_INNER_GAP + BAN_ROW_H
 
 	var top_block_y: float = TOP_PAD + PIPS_H + BLOCK_GAP
 	var band_top: float = top_block_y + block_h + BLOCK_GAP
@@ -281,6 +317,7 @@ func _layout() -> void:
 		"w": w, "h": h, "strip_w": strip_w,
 		"cell_w": cell_w, "portrait_w": portrait_w, "portrait_h": portrait_h,
 		"mech_h": mech_h, "block_h": block_h, "assign_block_h": assign_block_h,
+		"assign_portrait_h": assign_portrait_h,
 		"pips_y": TOP_PAD,
 		"top_block_y": top_block_y,
 		"group_y": group_y, "group_h": group_h,
@@ -386,15 +423,17 @@ func _build_team_block(side: int, is_top: bool) -> void:
 	for i in range(SLOT_COUNT):
 		var cx: float = cell_w * (float(i) + 0.5)
 		slots.append(_build_mech_slot(holder,
-				Vector2(cx - pw * 0.5, mech_y), Vector2(pw, mh), side_col, i))
+				Vector2(cx - pw * 0.5, mech_y), Vector2(pw, mh), side_col, side, i))
 
 	# ── 파일럿 초상화 ── (이름표도 역할 태그도 없다 — 자리가 곧 역할이다)
+	var hits: Array = []
 	for i in range(SLOT_COUNT):
 		var cx2: float = cell_w * (float(i) + 0.5)
-		_build_pilot_portrait(holder, side, i,
-				Vector2(cx2 - pw * 0.5, por_y), Vector2(pw, ph), side_col)
+		hits.append(_build_pilot_portrait(holder, side, i,
+				Vector2(cx2 - pw * 0.5, por_y), Vector2(pw, ph), side_col))
 
-	_side_ui[side] = {"holder": holder, "ban_chips": chips, "mech_slots": slots}
+	_side_ui[side] = {"holder": holder, "ban_chips": chips, "mech_slots": slots,
+			"pilot_hits": hits}
 
 
 ## 밴 줄 — 팀 이름 + 밴 칩 2개. 블록 바깥쪽 끝에 붙는다.
@@ -418,11 +457,16 @@ func _build_ban_row(holder: Control, side: int, side_col: Color,
 	return chips
 
 
-## 파일럿 초상화 한 칸. `sz.x == sz.y` 면 정사각 얼굴 크롭(배정 단계), 아니면
-## 눈높이 밴드(밴픽 단계)를 쓴다 — 눈높이 밴드를 정사각 칸에 넣으면 얼굴이
-## 위아래로 잘려 이목구비가 통째로 사라진다.
+## 파일럿 초상화 한 칸. **칸 비율이 크롭을 정한다** — 가로로 납작하면 눈높이
+## 밴드(밴픽 단계), 세로로 길면 상체 일러스트(배정 단계)다. 눈높이 밴드를
+## 세로로 긴 칸에 넣으면 얼굴만 늘어나고, 상체 크롭을 납작한 칸에 넣으면
+## 이목구비가 통째로 잘려 나간다.
+##
+## 반환값은 그 칸을 덮는 **투명 탭 버튼**이다. 처음에는 숨어 있고 배정 단계에
+## 들어갈 때만 켜진다 — 밴픽 중에는 초상화가 "누구를 위해 고르는가"를 말하는
+## 그림일 뿐이라 누를 것이 없다.
 func _build_pilot_portrait(holder: Control, side: int, seat: int,
-		pos: Vector2, sz: Vector2, side_col: Color) -> void:
+		pos: Vector2, sz: Vector2, side_col: Color) -> Button:
 	# 초상화 뒤판 — 이미지가 없을 때(INTL 팀 / 단독 실행) 그대로 보이는 폴백.
 	var back := ColorRect.new()
 	back.position = pos
@@ -440,8 +484,8 @@ func _build_pilot_portrait(holder: Control, side: int, seat: int,
 		var face := TextureRect.new()
 		face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		var square: bool = absf(sz.x - sz.y) < 1.0
-		face.texture = PilotImages.face_for(p.id) if square else PilotImages.eye_for(p.id)
+		var wide: bool = sz.x > sz.y
+		face.texture = PilotImages.eye_for(p.id) if wide else PilotImages.bust_for(p.id)
 		face.position = pos
 		face.size = sz
 		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -460,6 +504,18 @@ func _build_pilot_portrait(holder: Control, side: int, seat: int,
 	rim_sb.border_width_right = 2
 	rim.add_theme_stylebox_override("panel", rim_sb)
 	holder.add_child(rim)
+
+	var hit := Button.new()
+	hit.flat = true
+	hit.text = ""
+	hit.focus_mode = Control.FOCUS_NONE
+	hit.modulate = Color(1, 1, 1, 0)
+	hit.position = pos
+	hit.size = sz
+	hit.visible = false
+	hit.pressed.connect(_on_pilot_portrait_pressed.bind(side, seat))
+	holder.add_child(hit)
+	return hit
 
 
 ## 자리(화면 순서) → 그 팀의 파일럿. 로스터는 역할 0..4 순으로 들어오므로
@@ -510,7 +566,7 @@ func _build_chip(parent: Control, pos: Vector2, sz: float) -> Dictionary:
 ## 메크 칸 한 칸 — 정사각 초상화가 칸을 채우고 아래에 이름 띠 한 줄.
 ## 배정 단계에서는 이 칸이 **끌 수 있는 물건**이 된다(`_bind_slot_drag`).
 func _build_mech_slot(parent: Control, pos: Vector2, sz: Vector2,
-		side_col: Color, seat: int) -> Dictionary:
+		side_col: Color, side: int, seat: int) -> Dictionary:
 	var frame := Panel.new()
 	frame.position = pos
 	frame.size = sz
@@ -550,7 +606,22 @@ func _build_mech_slot(parent: Control, pos: Vector2, sz: Vector2,
 			Vector2(4.0, sz.y - 2.0 - band_h + 2.0), Vector2(sz.x - 8.0, band_h - 2.0),
 			HORIZONTAL_ALIGNMENT_CENTER)
 	nm.clip_text = true
-	return {"frame": frame, "art": art, "band": band, "name": nm,
+
+	# 상대 팀 칸의 탭 버튼. 아군 칸은 드래그 배선(`_bind_slot_drag`)이 탭까지
+	# 함께 받으므로 이 버튼을 켜지 않는다 — 켜면 그 버튼이 press 를 가져가
+	# 드래그가 시작되지 않는다.
+	var hit := Button.new()
+	hit.flat = true
+	hit.text = ""
+	hit.focus_mode = Control.FOCUS_NONE
+	hit.modulate = Color(1, 1, 1, 0)
+	hit.position = pos
+	hit.size = sz
+	hit.visible = false
+	hit.pressed.connect(_on_mech_slot_tapped.bind(side, seat))
+	parent.add_child(hit)
+
+	return {"frame": frame, "art": art, "band": band, "name": nm, "hit": hit,
 			"style": sb, "side_col": side_col, "seat": seat}
 
 
@@ -1226,15 +1297,43 @@ func _enter_assign_mode() -> void:
 	_filter_btns.clear()
 	_cells.clear()
 
+	# 상대 블록은 다시 세우지 않고 **탭만 열어 준다** — 밴픽 내내 서 있던
+	# 그림이 그대로 남아야 "저쪽이 무엇을 골랐나"를 두 번 읽지 않는다.
+	_set_block_tappable(enemy_side, true)
+
 	_rebuild_player_block_for_assign()
 	_build_assign_prompt()
 	_refresh_ui()
 
 
-## 아군 블록을 다시 세운다 — 파일럿 초상화가 **정사각**으로 커지고 그 위의 메크
-## 칸이 끌 수 있는 물건이 된다. 위아래 순서도 뒤집힌다(메크가 위, 파일럿이
-## 아래) — 끌어 옮기는 물건이 손가락에서 가까운 아래쪽이 아니라 위쪽에 있어야
-## 끄는 동안 그 밑의 "어느 파일럿 자리인가"가 손에 가리지 않는다.
+## 한 팀 블록의 초상화 · 메크 칸 탭을 켜고 끈다. 아군 메크 칸만은 예외로
+## 남는다 — 그쪽 탭은 드래그 배선(`_on_slot_input`)이 함께 받으므로 투명
+## 버튼을 켜면 그 버튼이 press 를 가져가 드래그가 영영 시작되지 않는다.
+func _set_block_tappable(side: int, on: bool) -> void:
+	var ui: Dictionary = _side_ui.get(side, {})
+	if ui.is_empty():
+		return
+	for raw in ui.get("pilot_hits", []):
+		var b := raw as Button
+		if b != null:
+			b.visible = on
+	if side == _player_side:
+		return
+	for slot_raw in ui.get("mech_slots", []):
+		var hit := (slot_raw as Dictionary).get("hit", null) as Button
+		if hit != null:
+			hit.visible = on
+
+
+## 아군 블록을 다시 세운다 — **파일럿 상체 일러스트가 위, 메크 칸이 그 아래**,
+## 메크 줄 오른쪽 아래에 조작 안내 한 줄, 맨 밑에 밴 칩. 메크 칸은 끌 수 있는
+## 물건이 된다.
+##
+## 예전에는 메크가 위였다 — 끄는 손가락이 그 밑의 "어느 파일럿 자리인가"를
+## 가리지 않게 하려는 배치였는데, 그러면 세로로 훑을 때 목적어가 주어보다
+## 먼저 와서 다섯 칸이 무엇을 정하는 화면인지가 뒤집혀 읽혔다. 초상화가
+## 상체 일러스트로 커진 지금은 손가락이 덮을 수 있는 넓이보다 칸이 훨씬 커서
+## 그 걱정 자체가 없다.
 func _rebuild_player_block_for_assign() -> void:
 	var old: Dictionary = _side_ui.get(_player_side, {})
 	if not old.is_empty() and old["holder"] != null:
@@ -1243,6 +1342,7 @@ func _rebuild_player_block_for_assign() -> void:
 	var strip_w: float = _lay["strip_w"]
 	var cell_w: float = _lay["cell_w"]
 	var pw: float = _lay["portrait_w"]
+	var ph: float = _lay["assign_portrait_h"]
 	var mh: float = _lay["mech_h"]
 	var side_col: Color = BLUE_COLOR if _player_side == GameEnums.DraftSide.BLUE else RED_COLOR
 
@@ -1252,51 +1352,99 @@ func _rebuild_player_block_for_assign() -> void:
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel.add_child(holder)
 
-	var mech_y: float = 0.0
-	var por_y: float = mh + 2.0
-	var ban_y: float = por_y + pw + BLOCK_INNER_GAP
+	var por_y: float = 0.0
+	var mech_y: float = ph + 2.0
+	var hint_y: float = mech_y + mh + 2.0
+	var ban_y: float = hint_y + ASSIGN_HINT_H + BLOCK_INNER_GAP
 
 	var chips: Array = _build_ban_row(holder, _player_side, side_col, ban_y, strip_w)
+
+	var hits: Array = []
+	for i in range(SLOT_COUNT):
+		var cx2: float = cell_w * (float(i) + 0.5)
+		hits.append(_build_pilot_portrait(holder, _player_side, i,
+				Vector2(cx2 - pw * 0.5, por_y), Vector2(pw, ph), side_col))
 
 	var slots: Array = []
 	for i in range(SLOT_COUNT):
 		var cx: float = cell_w * (float(i) + 0.5)
 		var slot: Dictionary = _build_mech_slot(holder,
-				Vector2(cx - pw * 0.5, mech_y), Vector2(pw, mh), side_col, i)
+				Vector2(cx - pw * 0.5, mech_y), Vector2(pw, mh), side_col,
+				_player_side, i)
 		_bind_slot_drag(slot)
 		slots.append(slot)
 
-	for i in range(SLOT_COUNT):
-		var cx2: float = cell_w * (float(i) + 0.5)
-		_build_pilot_portrait(holder, _player_side, i,
-				Vector2(cx2 - pw * 0.5, por_y), Vector2(pw, pw), side_col)
+	# 조작 안내는 **메크 줄 오른쪽 아래에 작게** 붙는다 — 한 번 읽고 나면
+	# 다시 볼 일이 없는 문장이라 화면 가운데를 차지하면 안 된다.
+	var hint := UiHelpers.mk_label(holder, ASSIGN_HINT_TEXT, ASSIGN_HINT_FONT,
+			TEXT_DIM, Vector2(0.0, hint_y), Vector2(strip_w, ASSIGN_HINT_H),
+			HORIZONTAL_ALIGNMENT_RIGHT)
+	hint.clip_text = true
 
-	_side_ui[_player_side] = {"holder": holder, "ban_chips": chips, "mech_slots": slots}
+	_side_ui[_player_side] = {"holder": holder, "ban_chips": chips,
+			"mech_slots": slots, "pilot_hits": hits}
+	_set_block_tappable(_player_side, true)
 
 
-## 픽창이 있던 자리에 안내 한 줄과 확정 버튼을 세운다.
+## 픽창이 있던 자리에 "게임 시작" 버튼 하나를 세운다. 안내 문구는 아군 메크 줄
+## 오른쪽 아래로 내려갔고 제목("메크 배정")은 삭제됐다 — 화면에 남은 것이
+## 양 팀 초상화와 그 밑의 기체뿐이면 무엇을 하는 단계인지는 그림이 말한다.
 func _build_assign_prompt() -> void:
 	var w: float = _lay["w"]
-	var cy: float = _lay["group_y"] + _lay["group_h"] * 0.5
-
-	var head := UiHelpers.mk_label(_panel, "메크 배정", 44, ACCENT,
-			Vector2(0.0, cy - 150.0), Vector2(w, 56.0), HORIZONTAL_ALIGNMENT_CENTER)
-	head.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
-	head.add_theme_constant_override("outline_size", 4)
-
-	UiHelpers.mk_label(_panel, "아래 메크 칸을 끌어다 다른 칸에 놓으면 서로 바뀐다",
-			24, Color(0.80, 0.84, 0.94),
-			Vector2(0.0, cy - 86.0), Vector2(w, 34.0), HORIZONTAL_ALIGNMENT_CENTER)
-	UiHelpers.mk_label(_panel, "처음 배열은 픽 순서 그대로다", 20, TEXT_DIM,
-			Vector2(0.0, cy - 50.0), Vector2(w, 30.0), HORIZONTAL_ALIGNMENT_CENTER)
-
 	var btn := Button.new()
-	btn.text = "배정 완료"
+	btn.text = "게임 시작"
+	btn.focus_mode = Control.FOCUS_NONE
 	btn.add_theme_font_size_override("font_size", 34)
-	btn.size = Vector2(460.0, 108.0)
-	btn.position = Vector2((w - 460.0) * 0.5, cy + 10.0)
+	btn.size = Vector2(START_BTN_W, START_BTN_H)
+	# 가운데 띠의 **아래쪽**에 매단다 — 배정판(아군 블록) 바로 위라, 칸을
+	# 다 옮긴 손이 그대로 내려가 닿는 자리다.
+	btn.position = Vector2((w - START_BTN_W) * 0.5,
+			float(_lay["assign_block_y"]) - BLOCK_GAP - START_BTN_H)
 	btn.pressed.connect(_finish)
 	_panel.add_child(btn)
+
+
+# ── 배정 단계의 상세 팝업 ────────────────────────────────────────────────────
+func _on_pilot_portrait_pressed(side: int, seat: int) -> void:
+	if not _assign_mode:
+		return
+	var p: PlayerData = _pilot_at(side, seat)
+	if p == null:
+		return
+	if _pilot_detail == null:
+		_pilot_detail = DraftDetailPanel.new()
+		add_child(_pilot_detail)
+	_close_detail_panels()
+	_pilot_detail.open(p)
+
+
+func _on_mech_slot_tapped(side: int, seat: int) -> void:
+	if not _assign_mode:
+		return
+	var ids: Array = _assign_order if side == _player_side else _picks_of(side)
+	if seat < 0 or seat >= ids.size():
+		return
+	_open_mech_detail(int(ids[seat]))
+
+
+func _open_mech_detail(mech_id: int) -> void:
+	var m := _find_mech(mech_id)
+	if m == null:
+		return
+	if _mech_detail == null:
+		_mech_detail = MechDetailPanel.new()
+		add_child(_mech_detail)
+	_close_detail_panels()
+	_mech_detail.open(m)
+
+
+## 두 팝업은 **동시에 뜨지 않는다** — 파일럿과 메크를 한 화면에 겹치지 않는
+## 것이 이 단계의 규칙이고, 딤이 두 겹 쌓이면 뒤엣것이 앞엣것을 어둡게 덮는다.
+func _close_detail_panels() -> void:
+	if _pilot_detail != null:
+		_pilot_detail.close()
+	if _mech_detail != null:
+		_mech_detail.close()
 
 
 ## 메크 칸 하나를 끌 수 있게 만든다. 누른 컨트롤이 마우스 포커스를 유지하므로
@@ -1397,6 +1545,14 @@ func _highlight_drop_target(here: Vector2) -> void:
 func _end_drag() -> void:
 	var from_seat: int = _drag_seat
 	var dragging: bool = _drag_ghost != null
+	# 문턱을 못 넘긴 것은 드래그가 아니라 **탭**이고, 탭은 그 칸의 메크 상세를
+	# 연다 — 아군 메크 칸에는 투명 탭 버튼을 얹을 수 없어서(드래그의 press 를
+	# 가로챈다) 그 몫이 여기로 온다.
+	if not dragging and _drag_armed and from_seat >= 0:
+		_drag_armed = false
+		_drag_seat = -1
+		_on_mech_slot_tapped(_player_side, from_seat)
+		return
 	if _drag_ghost != null:
 		var here: Vector2 = _panel.get_local_mouse_position()
 		var to_seat: int = _seat_under(here)
@@ -1484,6 +1640,9 @@ func _finish() -> void:
 	var player_picks: Array = (_picks_of(_player_side) as Array).duplicate()
 	var enemy_picks: Array  = (_picks_of(_other_side(_player_side)) as Array).duplicate()
 	_close_sheet()
+	# 팝업은 CanvasLayer 라 `_panel` 을 지워도 따라 사라지지 않는다 — 열어 둔
+	# 채 넘어가면 딤이 BattleSim 위에 그대로 남는다.
+	_close_detail_panels()
 	_panel.queue_free()
 	_panel = null
 	_cells.clear()

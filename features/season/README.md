@@ -28,7 +28,7 @@ HUB (이번 주 시작)
   → (apply_week_training mutates PlayerData stats)
   → TRAINING_RESULT (per-pilot before/after/delta dashboard + 다음)
   → has player match this week?
-        ├─ Yes → MatchFlow (PREP → BAN_PICK → ASSIGN → JUNGLE_START → BattleSim)
+        ├─ Yes → MatchFlow (PREP → BAN_PICK(밴픽 + 메크 배정) → BattleSim)
         │           → return to Season → apply result
         │           → resolve remaining AI matches for the week
         │           → STANDINGS (LeagueView / BracketView / IntlBracketView)
@@ -85,7 +85,8 @@ On the player's match week, the path differs from the daily model:
   `_has_player_match_this_week()`. If true, populates
   `season_state["pending_match"]` (`{source, schedule_idx, enemy_team_id,
   winner_side}`) and `change_scene_to_file` into MatchFlow.
-- MatchFlow runs PREP → BAN_PICK → ASSIGN → JUNGLE_START → BattleSim.
+- MatchFlow runs PREP → BAN_PICK(밴픽 + 메크 배정) → BattleSim. 정글 시작
+  방향은 BattleSim 이 개시 직전에 묻는다.
 - When BattleSim ends, the win panel's "다음 →" returns to `Season.tscn`.
 - `SeasonHub._ready` consumes `pending_match`, applies the result via
   `LeagueManager.record_result()` / `TournamentManager.record_result()` /
@@ -137,9 +138,9 @@ internal-only and never exposed in-game.
 2. **Pre-ban-pick** — `MatchFlow._on_prep_finished` after the player
    confirms PREP. Writes `season_state["match_resume"] = {phase: BAN_PICK,
    player_side, ...}`.
-3. **Post-gambit** — `MatchFlow._on_jungle_finished` before
+3. **Post-ban-pick** — `MatchFlow._on_ban_pick_finished` before
    `change_scene_to_file` to BattleSim. Writes the full match snapshot
-   (banned/picked/assigned mech IDs, jungle dir) into `match_resume`.
+   (banned/picked/assigned mech IDs) into `match_resume`.
 4. **Post-week-end** — `SeasonHub.on_proceed_to_next_week` after
    `advance_week`. Captures both post-match weeks and no-match weeks.
 

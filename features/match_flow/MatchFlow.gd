@@ -2,16 +2,22 @@ class_name MatchFlow
 extends Node2D
 
 # Top-level orchestrator for the pre-battle match flow:
-#   LOAD -> PREP -> BAN_PICK -> JUNGLE_START -> LAUNCH (change_scene to BattleSim)
+#   LOAD -> PREP -> BAN_PICK -> LAUNCH (change_scene to BattleSim)
 #
-# Each child controller (MatchPrepController, BanPickController,
-# JungleStartController) builds its own UI on enter() and emits phase_finished
-# when done. MatchFlow advances the state machine and feeds GameManager.match_ctx.
+# Each child controller (MatchPrepController, BanPickController) builds its own
+# UI on enter() and emits phase_finished when done. MatchFlow advances the state
+# machine and feeds GameManager.match_ctx.
 #
-# **`MatchPhase.ASSIGN` 은 더 이상 지나지 않는다** — 메크 배정은 밴픽 화면이
-# 끝난 자리에서 그대로 이어지고(`BanPickController._enter_assign_mode`), 그래서
-# 밴픽 결과가 이미 `assigned_mech` 까지 채운 로스터를 들고 온다. 열거값은
-# 세이브 호환을 위해 남겨 두었지만 아무도 그 단계로 들어가지 않는다.
+# **열거값 둘이 자리만 지킨다 — `ASSIGN` 과 `JUNGLE_START`.**
+#   • 메크 배정은 밴픽 화면이 끝난 자리에서 그대로 이어진다
+#     (`BanPickController._enter_assign_mode`) — 그래서 밴픽 결과가 이미
+#     `assigned_mech` 까지 채운 로스터를 들고 온다.
+#   • 정글 시작 방향은 **BattleSim 안으로 들어갔다**
+#     (`features/battle_sim/gambit/JungleStartOverlay.gd`) — 좌우 중 어느
+#     정글로 갈지는 전장을 보면서 정하는 것이지, 전장을 못 본 채 "LEFT / RIGHT"
+#     두 글자 중에 고르는 것이 아니었다. `jungle_start/JungleStartController.gd`
+#     는 삭제됐다.
+# 두 열거값은 세이브 호환(`match_resume.phase`)을 위해 남는다.
 
 signal phase_changed(new_phase: int)
 
@@ -19,7 +25,6 @@ signal phase_changed(new_phase: int)
 @onready var canvas: CanvasLayer               = $CanvasLayer
 @onready var _prep:     Node                   = $MatchPrepController
 @onready var _ban_pick: Node                   = $BanPickController
-@onready var _jungle:   Node                   = $JungleStartController
 
 var phase: int = GameEnums.MatchPhase.LOAD
 
@@ -81,7 +86,6 @@ func _ready() -> void:
 	# Wire signals
 	_prep.phase_finished.connect(_on_prep_finished)
 	_ban_pick.phase_finished.connect(_on_ban_pick_finished)
-	_jungle.phase_finished.connect(_on_jungle_finished)
 
 	# Resume entry skips PREP — the player already committed to the match
 	# when the pre-ban-pick save fired.
@@ -134,8 +138,6 @@ func _enter_phase(p: int) -> void:
 			_ban_pick.enter(all_mechs, player_side,
 					_team_roster(player_team_id), _team_roster(enemy_team_id),
 					_team_name(player_team_id), _team_name(enemy_team_id))
-		GameEnums.MatchPhase.JUNGLE_START:
-			_jungle.enter()
 		GameEnums.MatchPhase.LAUNCH:
 			_launch_battle()
 
@@ -169,14 +171,14 @@ func _on_ban_pick_finished(result: Dictionary) -> void:
 	enemy_picked_mech_ids  = result["enemy_picks"]
 	gm.match_ctx["player_roster"] = result["player_roster"]
 	gm.match_ctx["enemy_roster"]  = result["enemy_roster"]
-	_enter_phase(GameEnums.MatchPhase.JUNGLE_START)
-
-
-func _on_jungle_finished(result: Dictionary) -> void:
-	gm.match_ctx["jungle_start_dir"] = result["dir"]
-	# Post-gambit autosave (trigger #3). All match state is locked in now —
-	# capture mech IDs per role slot so resume can re-attach assigned_mech to
-	# each PlayerData on its way back into BattleSim.
+	# 정글 시작 방향은 이제 BattleSim 이 묻는다 — 여기서는 기본값만 심어 둔다
+	# (상대 정글러와 단독 실행이 읽는 값이고, 아군 정글러의 값은 개시 직전에
+	# `JungleStartOverlay` 가 덮어쓴다).
+	gm.match_ctx["jungle_start_dir"] = GameEnums.JungleStartDir.LEFT
+	# Post-gambit autosave (trigger #3). 밴픽과 배정이 끝나 매치 상태가 전부
+	# 확정된 자리다 — 예전에는 정글 방향까지 여기 들어왔지만, 그 선택이
+	# BattleSim 으로 옮겨 가면서 저장 시점이 한 단계 앞으로 당겨졌다. 재개는
+	# 어차피 전투를 처음부터 다시 돌리므로 정글 방향도 그때 다시 묻는다.
 	if gm.season_state.get("active", false):
 		var p_ids: Array = _roster_mech_ids(gm.match_ctx.get("player_roster", []))
 		var e_ids: Array = _roster_mech_ids(gm.match_ctx.get("enemy_roster",  []))
@@ -188,9 +190,9 @@ func _on_jungle_finished(result: Dictionary) -> void:
 			"enemy_picked_mech_ids":  enemy_picked_mech_ids.duplicate(),
 			"player_assigned_mech_ids": p_ids,
 			"enemy_assigned_mech_ids":  e_ids,
-			"jungle_start_dir": int(result["dir"]),
+			"jungle_start_dir": int(GameEnums.JungleStartDir.LEFT),
 		}
-		_autosave("post_gambit")
+		_autosave("post_ban_pick")
 	_enter_phase(GameEnums.MatchPhase.LAUNCH)
 
 
@@ -202,9 +204,10 @@ func _launch_battle() -> void:
 	get_tree().change_scene_to_file("res://scenes/BattleSim.tscn")
 
 
-# Resume path for the post-gambit save: rebuild match_ctx from the resume
-# payload and scene-change directly to BattleSim. Mirrors _on_assign_finished
-# + _on_jungle_finished + _launch_battle without the UI controllers.
+# Resume path for the post-ban-pick save: rebuild match_ctx from the resume
+# payload and scene-change directly to BattleSim. Mirrors _on_ban_pick_finished
+# + _launch_battle without the UI controllers. 정글 방향은 BattleSim 이 다시
+# 물으므로 여기서 복원하는 값은 상대 정글러와 폴백을 위한 기본값이다.
 func _resume_at_launch(resume: Dictionary) -> void:
 	player_side            = int(resume.get("player_side", GameEnums.DraftSide.BLUE))
 	banned_mech_ids        = (resume.get("banned_mech_ids", []) as Array).duplicate()

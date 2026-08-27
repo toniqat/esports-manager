@@ -240,6 +240,13 @@ var game_over: bool              = false
 var auto_play_timer: float       = AUTO_PLAY_INTERVAL
 var last_log: String             = ""
 var game_phase: int              = GameEnums.BattlePhase.GAMBIT
+## 전장이 다 섰는가 — 파일럿 · 포탑 · 정글 소유 · 캠프가 전부 자리를 잡았다.
+## `BattleRenderer._draw` 의 유일한 게이트다: 예전에는 `game_phase == GAMBIT`
+## 이면 통째로 그리지 않았는데, 정글 시작 선택이 그 GAMBIT 안으로 들어오면서
+## **개시 전에도 전장이 보여야** 하게 됐다(어느 쪽 정글로 갈지는 전장을 보고
+## 정하는 선택이다). 무엇을 그릴지가 페이즈가 아니라 "그릴 것이 있는가"에
+## 달리게 됐다는 뜻이다.
+var field_ready: bool            = false
 
 # Card phase state
 var player_hand:    Array = []
@@ -365,6 +372,12 @@ var card_pile_viewer: CardPileViewer = null
 # 아트, 우측에 아웃게임 / 인게임 / 메크 스탯. **자기 작전 단계에서만** 열리며
 # 단계를 벗어나면 HudBuilder 가 닫는다. lazy-add in _ready().
 var pilot_detail: PilotDetailPanel = null
+## 정글 시작 방향을 고르는 개시 전 오버레이 — 비워진 손패 자리에 아군 정글러의
+## 원형 초상화를 놓고, 그것을 좌 / 우 정글 무리로 끌어다 놓게 한다.
+## `GambitPhaseManager` 가 **`match_ctx.active` 일 때만** 세운다 — 단독 실행
+## (BattleSim.tscn 직접 실행 / 헤드리스 검증)에는 물을 상대가 없다.
+## lazy-add in GambitPhaseManager._open_jungle_start().
+var jungle_pick: JungleStartOverlay = null
 # 오브젝트 보상 미리보기 — 상단 패널의 오브젝트 시계를 누르면 열리는 정보
 # 팝업. 그 오브젝트가 주는 카드를 실물로 보여 준다. **전장을 붙잡지 않는다**
 # (`_battle_tick_held` 가 읽지 않는다) — 순수 정보이므로 읽는 동안에도 턴은
@@ -499,8 +512,10 @@ func _ready() -> void:
 	objective.name = "ObjectiveSystem"
 	add_child(objective)
 	objective.init_objectives()
-	# Lane assignment is fixed by role; jungle direction comes from MatchFlow
-	# (or default LEFT when running BattleSim standalone).
+	# Lane assignment is fixed by role. `launch_battle()` spawns the field and
+	# then either opens the 정글 시작 오버레이(경기로 들어온 경우) or begins
+	# BATTLE straight away (단독 실행) — 아래로 이어지는 덱 · 스킬 배선은 어느
+	# 쪽이든 그대로 돈다(전장은 이미 다 섰고 BATTLE 틱만 미뤄진 것이다).
 	_gambit.auto_assign_lanes()
 	_gambit.launch_battle()
 	# Action logger — bound AFTER pilots spawn so its header can dump the roster.
@@ -1536,6 +1551,7 @@ func _on_restart_pressed() -> void:
 	turn_count = 0; game_over = false
 	last_log = ""; auto_play_timer = AUTO_PLAY_INTERVAL
 	game_phase    = GameEnums.BattlePhase.GAMBIT
+	field_ready   = false
 	gambit_lanes = [-1, -1, -1, -1, -1]
 	panel_victory.visible = false
 	pilots.clear()

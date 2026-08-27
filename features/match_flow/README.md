@@ -4,12 +4,21 @@
 Pre-battle pipeline that runs **before** `BattleSim.tscn`:
 
 ```
-LOAD → PREP → BAN_PICK → JUNGLE_START → LAUNCH (change_scene → BattleSim)
+LOAD → PREP → BAN_PICK → LAUNCH (change_scene → BattleSim)
 ```
 
-**`MatchPhase.ASSIGN` 은 더 이상 지나지 않는다.** 메크 배정이 밴픽 화면 안으로
-들어갔고(아래 BAN_PICK 절), `assign/AssignController.gd` 는 삭제됐다. 열거값은
-세이브 호환을 위해 자리만 지킨다.
+**열거값 둘이 자리만 지킨다 — `ASSIGN` 과 `JUNGLE_START`.**
+
+- **메크 배정**이 밴픽 화면 안으로 들어갔고(아래 BAN_PICK 절),
+  `assign/AssignController.gd` 는 삭제됐다.
+- **정글 시작 방향**은 **BattleSim 안으로 들어갔다**
+  (`features/battle_sim/gambit/JungleStartOverlay.gd`). 좌우 중 어느 정글로
+  갈지는 정글 소유 · 캠프 · 우리 정글러의 자리를 보고 정하는 선택인데, 예전의
+  `jungle_start/JungleStartController.gd` 는 전장을 한 픽셀도 보여 주지 않은 채
+  "← LEFT / RIGHT →" 두 버튼만 세웠다 — 그 화면에서 고르는 것은 동전 던지기와
+  다르지 않았다. 그 폴더는 삭제됐다.
+
+두 열거값은 세이브 호환(`match_resume.phase`)을 위해 남는다.
 
 PREP is the pre-match dashboard — both rosters' stats laid out side by
 side so the player can review who they're up against before committing
@@ -33,7 +42,13 @@ Three child controllers each build their own UI on `enter()` and emit
 |---|---|---|
 | MatchPrepController | `match_prep/MatchPrepController.gd` | Pre-match dashboard — both rosters with stats. "경기 시작" → BAN_PICK. |
 | BanPickController | `ban_pick/BanPickController.gd` | LoL-international ban/pick (4 bans + 10 picks) with random AI, **그리고 그 자리에서 이어지는 메크 배정**. 아래 두 절 참조 |
-| JungleStartController | `jungle_start/JungleStartController.gd` | Choose Assassin's jungle start direction (LEFT or RIGHT) |
+
+배정 단계가 여는 상세 팝업 둘은 컨트롤러의 형제 파일이다:
+
+| File | Purpose |
+|---|---|
+| `ban_pick/MechDetailPanel.gd` | `class_name MechDetailPanel extends CanvasLayer` — 메크 상세(좌 전신 아트 / 우 스탯 칩 3 → 패시브 → 메크 카드 격자 / 하 닫기) |
+| `season/draft/DraftDetailPanel.gd` | 파일럿 상세 — **드래프트 화면과 같은 팝업을 그대로 쓴다**(`open(p: PlayerData)` 하나면 열린다) |
 
 `BanPickController.enter()` 는 다른 둘과 달리 **로스터와 팀명까지 받는다** —
 밴픽 화면이 위/아래에 양 팀 파일럿 초상화를 세우고, 14수가 끝나면 그 로스터에
@@ -81,30 +96,62 @@ Three child controllers each build their own UI on `enter()` and emit
 ## 배정 (밴픽 화면 안에서)
 
 14수가 끝나면 **화면을 갈아타지 않는다** — `_enter_assign_mode()` 가 픽창(탭 +
-격자 + 배경판)을 걷어 내고 그 자리에 안내와 "배정 완료" 버튼을 세운 뒤, 아군
+격자 + 배경판)을 걷어 내고 그 자리에 **"게임 시작" 버튼 하나**를 세운 뒤, 아군
 블록을 다시 세운다:
 
 ```
-메크 칸 (끌 수 있음, 처음엔 픽 순서)
-파일럿 초상화 (정사각으로 확장 — eye 밴드가 아니라 faces 크롭)
-밴 칩
+파일럿 상체 일러스트 5인  (`PilotImages.bust_for` — 드래프트 화면의 선택 칸과
+                          같은 크롭 · 같은 비율)
+메크 칸 5개               (끌 수 있음, 처음엔 픽 순서)
+"드래그 드롭으로 메크-파일럿 지정 변경"   (메크 줄 오른쪽 아래, 17pt)
+밴 칩 2개
 ```
 
+**파일럿이 위, 메크가 아래다.** 배정은 "이 사람이 무엇을 타는가"를 정하는
+일이고, 그 문장의 주어가 위에 와야 한 칸을 세로로 훑는 것이 곧 한 문장이 된다.
+예전에는 메크가 위였다 — 끄는 손가락이 그 밑의 "어느 파일럿 자리인가"를 가리지
+않게 하려는 배치였는데, 그러면 목적어가 주어보다 먼저 와서 다섯 칸이 무엇을
+정하는 화면인지가 뒤집혀 읽혔다. 초상화가 상체 일러스트로 커진 지금은 손가락이
+덮을 수 있는 넓이보다 칸이 훨씬 커서 그 걱정 자체가 없다.
+
+초상화 높이는 폭에서 유도한다 — `portrait_w / PilotImages.BUST_ASPECT`
+(`_lay["assign_portrait_h"]`). 예전의 정사각 `faces` 크롭은 삭제됐다. 어느
+크롭을 쓸지는 **칸 비율이 정한다**(`_build_pilot_portrait`): 가로로 납작하면
+눈높이 밴드(밴픽 단계), 세로로 길면 상체 일러스트(배정 단계).
+
 메크 칸을 **끌어다 다른 칸에 놓으면 둘이 맞바뀐다**(`_swap_assign`). 드롭했을
-때만 바뀌고, `DRAG_THRESHOLD_PX`(8px)를 못 넘긴 것은 탭으로 친다. 끄는 동안
-원래 칸은 자국으로 남고(α 0.35) 커서 밑의 칸은 테두리가 금색으로 굵어진다.
-입력은 칸마다 붙은 `gui_input` 하나가 받는다 — 누른 컨트롤이 마우스 포커스를
-유지하므로 커서가 칸 밖으로 나가도 motion / release 가 계속 들어온다.
+때만 바뀌고, `DRAG_THRESHOLD_PX`(8px)를 못 넘긴 것은 **탭**이라 그 칸의 메크
+상세를 연다. 끄는 동안 원래 칸은 자국으로 남고(α 0.35) 커서 밑의 칸은 테두리가
+금색으로 굵어진다. 입력은 칸마다 붙은 `gui_input` 하나가 받는다 — 누른 컨트롤이
+마우스 포커스를 유지하므로 커서가 칸 밖으로 나가도 motion / release 가 계속
+들어온다.
 
-정사각 확장에 `faces` 크롭을 쓰는 것이 요점이다 — 눈높이 밴드(`eye`)를 정사각
-칸에 넣으면 얼굴이 위아래로 잘려 이목구비가 통째로 사라진다.
+상대 팀은 예전 `AssignController` 와 똑같이 **자동 배정(섞기)** 이고, 블록도
+다시 세우지 않는다 — 밴픽 내내 서 있던 그림이 그대로 남아야 "저쪽이 무엇을
+골랐나"를 두 번 읽지 않는다.
 
-상대 팀은 예전 `AssignController` 와 똑같이 **자동 배정(섞기)** 이다.
+### 배정 단계의 상세 팝업 (양 팀 전부 눌린다)
+- **파일럿 초상화** → `DraftDetailPanel`(드래프트 화면과 같은 팝업)
+- **메크 초상화** → `MechDetailPanel`
 
-"배정 완료"가 `_finish()` 를 부르고, 거기서 자리(seat) → 역할 변환
+배정은 스탯을 보고 하는 일인데 그 스탯을 볼 자리가 없으면 픽 순서 그대로 두는
+것 말고 할 수 있는 것이 없다. **인게임 상세 패널과는 다르다** — 인게임 탭
+(체력 · 공격력 · 지속 효과)이 없고, 파일럿과 메크를 한 화면에 겹치지도 않는다:
+아직 경기가 시작되지 않아 인게임 상태라는 것이 존재하지 않고, 지금 묻는 질문은
+"이 사람" 또는 "이 기체" 한 쪽이다. 두 팝업은 동시에 뜨지 않는다
+(`_close_detail_panels`) — 딤이 두 겹 쌓이면 뒤엣것이 앞엣것을 어둡게 덮는다.
+
+탭 배선은 칸마다 얹은 **투명 Button** 이고 배정에 들어갈 때만 켜진다
+(`_set_block_tappable`). **아군 메크 칸만은 예외**로 그 버튼을 켜지 않는다 —
+그쪽 탭은 드래그 배선(`_on_slot_input`)이 함께 받으므로, 버튼을 켜면 그 버튼이
+press 를 가져가 드래그가 영영 시작되지 않는다.
+
+"게임 시작"이 `_finish()` 를 부르고, 거기서 자리(seat) → 역할 변환
 (`ROLE_DISPLAY_ORDER` 한 겹)을 거쳐 `PlayerData.assigned_mech` 를 채운 뒤
 `phase_finished` 로 로스터를 그대로 넘긴다. **로스터 배열 자체는 역할 0..4 순서를
 지킨다** — `MatchFlow._roster_mech_ids` 의 재개 스냅샷이 그 순서를 전제한다.
+팝업 둘도 여기서 닫는다 — `CanvasLayer` 라 `_panel` 을 지워도 따라 사라지지
+않아, 열어 둔 채 넘어가면 딤이 BattleSim 위에 그대로 남는다.
 
 Each controller accesses the orchestrator via:
 ```gdscript
@@ -167,7 +214,7 @@ into pilots; otherwise it falls back to `ROLE_STATS` defaults.
 | `MatchFlow.gd` | State machine orchestrator |
 | `match_prep/MatchPrepController.gd` | Pre-match dashboard |
 | `ban_pick/BanPickController.gd` | Ban/Pick + 메크 배정 — 양 팀 초상화 + 메크 격자 + 하단 상세 시트 + 드래그 배정 |
-| `jungle_start/JungleStartController.gd` | Jungle direction phase |
+| `ban_pick/MechDetailPanel.gd` | 배정 단계의 메크 상세 팝업 |
 
 ---
 
@@ -179,8 +226,13 @@ two live in `SeasonHub`):
   presses "경기 시작" on the PREP dashboard. Writes
   `season_state.match_resume = {phase: BAN_PICK, player_side, ...empty
   arrays}`. Skipped when running MatchFlow standalone (no `pending_match`).
-- **Post-gambit** — fires in `_on_jungle_finished()` before `_launch_battle`
-  scene-changes to BattleSim. Writes the full match snapshot:
+- **Post-ban-pick** — fires in `_on_ban_pick_finished()` right after 배정
+  완료, before `_launch_battle` scene-changes to BattleSim. 예전에는 정글
+  방향까지 여기 들어와 이 저장이 `_on_jungle_finished()` 에 있었지만, 그 선택이
+  BattleSim 으로 옮겨 가면서 저장 시점이 한 단계 앞으로 당겨졌다 — 재개는
+  어차피 전투를 처음부터 다시 돌리므로 정글 방향도 그때 다시 묻는다
+  (스냅샷의 `jungle_start_dir` 은 상대 정글러와 폴백을 위한 기본값 LEFT 다).
+  Writes the full match snapshot:
   `{phase: LAUNCH, player_side, banned_mech_ids, player_picked_mech_ids,
   enemy_picked_mech_ids, player_assigned_mech_ids, enemy_assigned_mech_ids,
   jungle_start_dir}`. The mech-id arrays are 5-entry, role-sorted (0..4) so
@@ -193,18 +245,19 @@ player already committed when the save was written) and:
 - `phase == LAUNCH` → `_resume_at_launch(resume)` rebuilds `match_ctx`
   from the resume payload (rosters via `_team_roster()`, mechs via
   `_find_mech()`) and scene-changes to BattleSim immediately. No UI
-  controllers run.
+  controllers run — 정글 시작 화면은 BattleSim 이 열므로 재개해도 그 한
+  물음은 다시 나온다.
 
 `match_resume` is cleared in-memory on consumption; on disk it's only
-overwritten by the next post-gambit or post-week save. Closing mid-battle
-keeps the disk save at the post-gambit snapshot, so the resume path
+overwritten by the next post-ban-pick or post-week save. Closing mid-battle
+keeps the disk save at the post-ban-pick snapshot, so the resume path
 replays the battle from scratch with the same locked-in picks.
 
 ---
 
 ## 화면 대응 (세이프 에어리어)
 
-세 컨트롤러(PREP / BAN_PICK / JUNGLE_START)는 모두 `_mf.canvas` 아래에
+두 컨트롤러(PREP / BAN_PICK)는 모두 `_mf.canvas` 아래에
 전체 화면 `Panel` 하나를 세우고 거기에 절대 좌표로 그린다. `_panel` 을 만든
 직후 두 줄이 따라온다.
 

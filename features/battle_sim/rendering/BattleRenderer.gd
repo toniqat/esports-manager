@@ -355,6 +355,7 @@ func _draw() -> void:
 	_draw_front_line_overlays()
 	_draw_captured_tile_overlays()
 	_draw_jungle_camps()
+	_draw_jungle_pick_dim()
 	_draw_jungle_start_zones()
 	_draw_targeting_underlays()
 	# Out-of-range tile dim is drawn BEFORE HQ/turret/pilot graphics so a
@@ -405,6 +406,26 @@ var _pilot_render_layout: Dictionary = {}
 ## 캠프 아웃라인 **뒤에** 그린다(호출 순서가 곧 z-order다) — 이 강조는 잠깐
 ## 떴다 사라지는 안내이고, 그 밑의 소유 색과 캠프 테두리는 그 선택의 근거라
 ## 가려지면 안 된다. 그래서 채움은 옅고 테두리만 또렷하다.
+## 정글 시작 선택 동안 **정글이 아닌 칸을 전부 덮는다.** 이 화면에서 고를 수
+## 있는 것은 좌 / 우 정글 두 무리뿐이므로 레인 통로 · 포탑 칸 · HQ 는 지금
+## 판단의 대상이 아니다 — 밝은 채로 두면 어디를 보라는 화면인지가 흐려진다.
+##
+## 밝게 남는 칸의 정의를 드롭 대상(`JungleStartOverlay.cells_for`)에서 그대로
+## 가져오는 것이 요점이다: 놓을 수 있는 칸과 밝은 칸이 같은 목록에서 나온다.
+##
+## 캠프 아웃라인 **뒤**, 무리 강조 **앞**에 그린다 — 그 둘은 이 선택의 근거이자
+## 안내라 딤 위에 남아야 한다.
+func _draw_jungle_pick_dim() -> void:
+	var jp: JungleStartOverlay = _bs.jungle_pick
+	if jp == null or not jp.is_active():
+		return
+	var bright: Dictionary = {}
+	for dir in [GameEnums.JungleStartDir.LEFT, GameEnums.JungleStartDir.RIGHT]:
+		for c_raw in JungleStartOverlay.cells_for(dir):
+			bright[c_raw as Vector2i] = true
+	_draw_targeting_tile_dim(bright)
+
+
 func _draw_jungle_start_zones() -> void:
 	var jp: JungleStartOverlay = _bs.jungle_pick
 	if jp == null or not jp.is_active():
@@ -550,19 +571,14 @@ func _draw_pilot_groups() -> void:
 	# 칸을 맨 마지막으로 미뤘는데(`_lunging_cells_last`, 삭제됨), 그 연출이
 	# 시전자 초상을 대상 칸 위로 실제로 옮겼기 때문이다 — 지금은 초상이 제자리에
 	# 있고 이펙트만 얹히므로 미룰 칸이 없다.
+	# **타일 중앙 배지(`x3` / `2v1`)는 삭제됐다.** 한 칸에 선 사람이 몇인지는
+	# 육각 링의 초상화가 낱개로 이미 말하고 있고(전원이 자기 슬롯을 받는다 —
+	# 오버플로가 없다), 그 위에 숫자를 하나 더 얹으면 칸 한가운데를 차지해
+	# 캠프 아웃라인 · 점령 면 색과 자리를 다퉜다. `_draw_cell_badge` 는 그때
+	# 함께 사라졌다.
 	for pos in by_cell.keys():
 		var pv := pos as Vector2i
-		var pilots: Array = by_cell[pv] as Array
-		var c0: int = 0
-		for raw in pilots:
-			if (raw as PilotData).team == 0:
-				c0 += 1
-		var c1: int = pilots.size() - c0
-		_draw_pilot_cell(pv, pilots)
-		# Skip the cross-team collision badge (1v1, 2v2 …) — it added noise on
-		# top of the pilot stacks. Keep the single-team multi-pilot tag (x2, x3).
-		if pilots.size() > 1 and (c0 == 0 or c1 == 0):
-			_draw_cell_badge(pv, c0, c1)
+		_draw_pilot_cell(pv, by_cell[pv] as Array)
 
 
 # Group renderable pilots by their *render* cell (not grid_pos): a pilot in
@@ -582,11 +598,28 @@ func _group_pilots_by_render_cell() -> Dictionary:
 		var p := raw as PilotData
 		if not _is_renderable(p):
 			continue
+		if _hidden_during_jungle_pick(p):
+			continue
 		var rcell := _render_cell(p)
 		if not by_cell.has(rcell):
 			by_cell[rcell] = []
 		(by_cell[rcell] as Array).append(p)
 	return by_cell
+
+
+## 정글 시작 선택 동안 **전장에서 치워지는 파일럿.** 그 화면이 묻는 것은
+## "우리 정글러가 어느 쪽에서 시작하는가" 하나이고, 나머지 아홉 명은 전원이
+## 아직 자기 HQ 에 몰려 서 있어 두 덩어리로 뭉친 초상화가 정글 소유 · 캠프 ·
+## 딤을 가릴 뿐이다. **정글러만 남는다** — 지금 옮기는 것이 저 사람이라는
+## 사실은 화면에 있어야 한다.
+##
+## 자리 배정(`_solve_slots`)도 같은 목록을 읽으므로 숨은 사람은 슬롯을 잡지
+## 않는다 — 안 보이는 마커 때문에 정글러가 링 바깥으로 밀리면 안 된다.
+func _hidden_during_jungle_pick(p: PilotData) -> bool:
+	var jp: JungleStartOverlay = _bs.jungle_pick
+	if jp == null or not jp.is_active():
+		return false
+	return p != jp.jungler()
 
 
 # Builds the PilotData → Vector2 marker_pos lookup shared by the drawing pass,
@@ -1628,28 +1661,3 @@ func _draw_pilot_circle(pilot: PilotData, pos: Vector2, radius: float,
 		var sh_seg: int = max(8, int(36.0 * sh_frac))
 		draw_arc(pos, sh_ring_r, sh_start, sh_end, sh_seg,
 				_alpha_mul(Color(0.45, 0.85, 1.0), alpha), 3.0)
-
-
-func _draw_cell_badge(cell: Vector2i, c0: int, c1: int) -> void:
-	var text:   String
-	var bg_col: Color
-	if c0 > 0 and c1 > 0:
-		text   = "%dv%d" % [c0, c1]
-		bg_col = Color(0.72, 0.1, 0.1, 0.92)
-	elif c0 > 1:
-		text   = "x%d" % c0
-		bg_col = Color(0.1, 0.22, 0.65, 0.88)
-	else:
-		text   = "x%d" % c1
-		bg_col = Color(0.55, 0.1, 0.1, 0.88)
-	# Pilots now render outside the tile, so the tile centre is free for the badge.
-	var center := _bs.cell_center(cell)
-	var s: float = HexGrid.DISPLAY_SCALE
-	var bsize  := Vector2(36.0, 20.0) * s
-	var bpos   := center - bsize * 0.5
-	draw_rect(Rect2(bpos, bsize), bg_col)
-	var fsz: int = int(round(13.0 * s))
-	var tsz := ThemeDB.fallback_font.get_string_size(text,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, fsz)
-	draw_string(ThemeDB.fallback_font, center + Vector2(-tsz.x * 0.5, 5.0 * s),
-			text, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz, Color.WHITE)

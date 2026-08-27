@@ -329,7 +329,12 @@ func harvest_camp_under(p: PilotData) -> bool:
 	if not camp_harvestable(p.grid_pos, p.team):
 		return false
 	_bs.jungle_camps[p.grid_pos] = _bs.turn_count + _bs.JUNGLE_CAMP_RESPAWN_TURNS
-	_bs.add_score(p, _bs.SCORE_JUNGLE_CAMP)
+	# **팝업을 띄우는 적립처다**(`award_score`). 정글러의 수입은 전부 여기서
+	# 나오는데 숫자가 스트립 구석에서 조용히 오르기만 하면 "캠프를 먹었다"가
+	# 화면에 남지 않는다 — 순회 리듬이 곧 정글러의 플레이인데 그 한 박자가
+	# 안 보였다. 전선 체류(매 턴 · 열 명)는 여전히 조용한 쪽이다: 그건 배경이
+	# 되어 정작 큰 한 건을 묻는다.
+	_bs.award_score(p, _bs.SCORE_JUNGLE_CAMP)
 	_bs.blog.log_event("CAMP", "%-4s 캠프 획득 %s (+%.2fk → %.2fk, 재생성 %d턴)"
 			% [_bs.pilot_label(p), str(p.grid_pos), _bs.SCORE_JUNGLE_CAMP,
 				p.score, _bs.JUNGLE_CAMP_RESPAWN_TURNS])
@@ -346,7 +351,8 @@ func steal_camp_point(cell: Vector2i, thief: PilotData) -> bool:
 	if thief == null or not camp_charged(cell):
 		return false
 	_bs.jungle_camps[cell] = _bs.turn_count + _bs.JUNGLE_CAMP_RESPAWN_TURNS
-	_bs.add_score(thief, _bs.SCORE_JUNGLE_CAMP)
+	# 밟아서 먹는 것과 같은 값 · 같은 시계 · 같은 팝업.
+	_bs.award_score(thief, _bs.SCORE_JUNGLE_CAMP)
 	_bs.blog.log_event("CAMP", "%-4s 캠프 약탈 %s (+%.2fk → %.2fk, 재생성 %d턴)"
 			% [_bs.pilot_label(thief), str(cell), _bs.SCORE_JUNGLE_CAMP,
 				thief.score, _bs.JUNGLE_CAMP_RESPAWN_TURNS])

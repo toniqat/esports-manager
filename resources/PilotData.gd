@@ -150,6 +150,51 @@ var growth_until_phase: bool = false
 # `growth_rate_mult + growth_rate_bonus` 로 합쳐진다.
 var growth_rate_bonus: float = 0.0
 
+# ─── 지속 효과 장부 (카드 한 장 단위) ────────────────────────────────────────
+# **누가 걸었는가**를 들고 있는 표. 위의 `growth_rate_bonus` / `bonus_max_hp` /
+# `bonus_atk_flat` 은 여러 카드가 함께 쌓는 **합계 슬롯**이라, 상세 패널이 그
+# 숫자만 읽으면 [용 보상]과 [핫핸드]가 한 칸에 뭉쳐 `+10%` 로만 보인다 —
+# 무엇을 더 먹어야 하고 무엇이 이미 걸려 있는지가 그 한 칸에서 사라진다.
+#
+# 그래서 계산은 그대로 합계 슬롯이 하고(성장 재계산이 읽는 곳은 한 군데여야
+# 한다) **표시만** 이 장부를 읽는다. 항목은 `(src, kind)` 로 합쳐지므로 같은
+# 카드를 두 번 쓰면 한 줄에서 값이 커진다.
+#
+#   src   카드 이름 그대로 ([용 보상] · [핫핸드] · [파란 약] …)
+#   kind  FX_GROWTH_RATE(적립 배율 %) / FX_MAX_HP(최대 체력) / FX_ATK(공격력)
+#
+# 장부에 없는 몫(메크 패시브가 직접 미는 영혼 수확 · 조준 보정 …)은 상세
+# 패널이 **잔여분**으로 따로 한 줄 세운다 — 합계와 장부가 어긋나면 화면이
+# 조용히 거짓말을 하게 되므로.
+const FX_GROWTH_RATE := "growth_rate"
+const FX_MAX_HP      := "max_hp"
+const FX_ATK         := "atk"
+var persistent_fx: Array = []   # Array[Dictionary] {src, kind, amount}
+
+
+## 장부에 한 줄 적는다(같은 카드 · 같은 종류면 합친다). 실제 스탯은 부르는
+## 쪽이 이미 밀었다 — 이 함수는 표시용 기록만 남긴다.
+func log_persistent_fx(src: String, kind: String, amount: float) -> void:
+	if src.is_empty() or is_zero_approx(amount):
+		return
+	for raw in persistent_fx:
+		var e := raw as Dictionary
+		if String(e["src"]) == src and String(e["kind"]) == kind:
+			e["amount"] = float(e["amount"]) + amount
+			return
+	persistent_fx.append({"src": src, "kind": kind, "amount": amount})
+
+
+## 장부가 기록한 그 종류의 합계. 상세 패널이 잔여분을 내는 데 쓴다.
+func persistent_fx_total(kind: String) -> float:
+	var total: float = 0.0
+	for raw in persistent_fx:
+		var e := raw as Dictionary
+		if String(e["kind"]) == kind:
+			total += float(e["amount"])
+	return total
+
+
 # ─── 성장치 (파일럿 점수) ─────────────────────────────────────────────────────
 # 개시 1.00k 에서 시작해 경기 내내 누적되는 파일럿의 성장 통화 — MOBA 의 골드에
 # 해당한다. 50턴 평균 25.00k, 잘 큰 캐리는 40.00k 을 넘긴다. 파일럿 스트립에

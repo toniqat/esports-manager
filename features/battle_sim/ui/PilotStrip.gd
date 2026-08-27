@@ -24,8 +24,6 @@ signal pilot_pressed(pilot: PilotData)
 
 const SLOT_COUNT: int = 5
 
-const ROLE_TAG_COLOR   := Color(1, 1, 1)
-const ROLE_TAG_OUTLINE := Color(0, 0, 0, 0.85)
 const HP_FILL_HI       := Color(0.30, 0.85, 0.45)
 const HP_FILL_LOW      := Color(0.90, 0.55, 0.25)
 const HP_BG            := Color(0.08, 0.09, 0.13)
@@ -55,22 +53,18 @@ const SKILL_BADGE_FONT_RATIO: float = 0.80
 const DEAD_TINT        := Color(0.42, 0.42, 0.46, 1.0)
 ## 초상화 테두리 — 팀색.
 const TEAM_RIM := [Color(0.32, 0.62, 0.95), Color(0.95, 0.40, 0.32)]
-## 역할 태그 받침 — **초상화 높이에서 유도한다**. 두 스트립의 초상화 크기가
-## 달라졌으므로(아군 190×79 / 적 118×49) 고정 픽셀로 두면 작은 쪽에서 태그가
-## 얼굴 절반을 덮는다. 비율은 큰 쪽의 원래 값(30×19, 폰트 14)에서 그대로 딴
-## 것이라 아군 스트립의 그림은 한 픽셀도 달라지지 않는다.
-const ROLE_TAG_H_RATIO: float = 0.24     # 79 × 0.24 ≈ 19
-const ROLE_TAG_ASPECT: float = 30.0 / 19.0
-const ROLE_TAG_FONT_RATIO: float = 0.74  # 19 × 0.74 ≈ 14
+## **역할 태그는 삭제됐다.** 초상화 좌하단에 T / F / A … 한 글자를 어두운 받침
+## 위에 찍던 칸인데, 스트립의 자리 순서 자체가 이미 역할이다
+## (`GameEnums.ROLE_DISPLAY_ORDER` — 탑 · 정글 · 미드 · 원딜 · 서폿, 아웃게임
+## 화면들과 같은 표). 같은 말을 두 번 하면서 얼굴 아래쪽을 가리기만 했다.
+## 되살릴 때는 `ROLE_TAG_*` 상수와 `_build_cell` 의 `tag_bg` / `role_lbl` 두
+## 노드를 함께 되돌려야 한다.
 
 # ─── 레이아웃 (setup 이 채운다) ──────────────────────────────────────────────
 var _cell_w: float = 200.0
 var _portrait_w: float = 184.0
 var _portrait_h: float = 77.0
 var _hp_h: float = 8.0
-var _tag_h: float = 19.0
-var _tag_w: float = 30.0
-var _tag_font: int = 14
 var _score_font: int = 16
 var _team: int = 0
 var _interactive: bool = false
@@ -97,9 +91,6 @@ func setup(bs: BattleSim, team: int, rect: Rect2, interactive: bool,
 	_cell_w = rect.size.x / float(SLOT_COUNT)
 	_portrait_w = _cell_w - 16.0
 	_portrait_h = _portrait_w / EYE_ASPECT
-	_tag_h = _portrait_h * ROLE_TAG_H_RATIO
-	_tag_w = _tag_h * ROLE_TAG_ASPECT
-	_tag_font = maxi(9, int(round(_tag_h * ROLE_TAG_FONT_RATIO)))
 	for i in SLOT_COUNT:
 		_cells.append(_build_cell(i))
 
@@ -153,27 +144,6 @@ func _build_cell(idx: int) -> Dictionary:
 	rim_sb.border_width_right = 2
 	rim.add_theme_stylebox_override("panel", rim_sb)
 	add_child(rim)
-
-	# 역할 태그 — 초상화 좌하단. 어두운 받침 위에 흰 글자 + 검은 외곽선.
-	# 외곽선만으로는 검은 머리카락 위에서 한 글자 태그(T / F)가 거의 안 보였다.
-	var tag_bg := ColorRect.new()
-	tag_bg.position = Vector2(px + 2.0, _portrait_h - _tag_h - 2.0)
-	tag_bg.size = Vector2(_tag_w, _tag_h)
-	tag_bg.color = Color(0.0, 0.0, 0.0, 0.55)
-	tag_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(tag_bg)
-
-	var role_lbl := Label.new()
-	role_lbl.add_theme_font_size_override("font_size", _tag_font)
-	role_lbl.add_theme_color_override("font_color", ROLE_TAG_COLOR)
-	role_lbl.add_theme_color_override("font_outline_color", ROLE_TAG_OUTLINE)
-	role_lbl.add_theme_constant_override("outline_size", 4)
-	role_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	role_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	role_lbl.position = tag_bg.position
-	role_lbl.size = tag_bg.size
-	role_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(role_lbl)
 
 	# 부활까지 남은 턴 — 쓰러져 있는 동안 초상화 한가운데에 크게.
 	var dead_lbl := Label.new()
@@ -257,7 +227,7 @@ func _build_cell(idx: int) -> Dictionary:
 		add_child(btn)
 
 	return {
-		"bg": bg, "eye": eye, "rim": rim, "tag_bg": tag_bg, "role": role_lbl,
+		"bg": bg, "eye": eye, "rim": rim,
 		"dead": dead_lbl, "bar_bg": bar_bg, "bar": bar, "score": score_lbl,
 		"btn": btn, "skill_dim": skill_dim,
 		"badge_bg": badge_bg, "badge": badge, "px": px,
@@ -298,8 +268,6 @@ static func _set_cell_visible(cell: Dictionary, on: bool) -> void:
 	(cell["bg"] as ColorRect).visible = on
 	(cell["eye"] as TextureRect).visible = on
 	(cell["rim"] as Panel).visible = on
-	(cell["tag_bg"] as ColorRect).visible = on
-	(cell["role"] as Label).visible = on
 	(cell["bar_bg"] as ColorRect).visible = on
 	(cell["bar"] as ColorRect).visible = on
 	(cell["score"] as Label).visible = on
@@ -314,9 +282,6 @@ func _apply_cell(cell: Dictionary, p: PilotData) -> void:
 	var eye := cell["eye"] as TextureRect
 	eye.texture = PilotImages.eye_for(p.pilot_id)
 	eye.modulate = Color.WHITE if p.alive else DEAD_TINT
-
-	(cell["role"] as Label).text = _bs.ROLE_NAMES[p.role] \
-			if p.role < _bs.ROLE_NAMES.size() else "?"
 
 	var dead_lbl := cell["dead"] as Label
 	dead_lbl.visible = not p.alive

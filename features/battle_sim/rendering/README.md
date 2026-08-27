@@ -52,11 +52,25 @@ Reads all state from `_bs` (the BattleSim parent).
    점령 면 색 · 초상화가 이미 그 칸을 쓴다) 글자 두 줄이 넷째 손님이 됐다.
    시계는 상단 패널로 옮겨 갔다 — `ui/ObjectiveTimer.gd`(좌 전령 / 우 용).
    `_draw_centered_text` 도 유일한 소비자가 사라져 함께 지웠다.
+
+   **`_draw_cell_badge()` 도 삭제됐다.** 한 칸에 여럿이 서면 타일 한가운데에
+   `x3` / `2v1` 을 찍던 절이다. 전원이 자기 육각 슬롯을 받게 된 뒤로(오버플로가
+   없다) 초상화가 이미 인원을 낱개로 말하고 있었고, 그 배지는 방금 정글로 돌아온
+   칸 한가운데를 차지해 캠프 아웃라인 · 점령 면 색과 자리를 다퉜다.
+
+   **정글 시작 선택 딤(`_draw_jungle_pick_dim`)이 새로 들어왔다.** 개시 전
+   `JungleStartOverlay` 가 열려 있는 동안 **정글이 아닌 칸을 전부 덮는다** —
+   밝게 남는 칸의 정의를 드롭 대상(`JungleStartOverlay.cells_for`)에서 그대로
+   가져오므로 놓을 수 있는 칸과 밝은 칸이 같은 목록에서 나온다. 캠프 아웃라인
+   **뒤**, 무리 강조 **앞**에 그린다(그 둘은 이 선택의 근거이자 안내다). 같은
+   구간에는 **전장 초상화도 정글러 한 명만 남는다**
+   (`_hidden_during_jungle_pick` — 나머지 아홉은 아직 자기 HQ 에 몰려 서 있어
+   두 덩어리로 뭉친 얼굴이 정글 소유 · 캠프 · 딤을 가릴 뿐이다). 자리 배정
+   (`_solve_slots`)도 같은 목록을 읽으므로 숨은 사람은 슬롯을 잡지 않는다.
 1. `_draw_hq_hp_bars()` — green HP bar under each HQ once any T2 in their team is destroyed
 2. `_draw_turret_hp_bars()` — yellow HP bar above each living turret (T2 hidden while own-lane T1 alive). 피격 중에는 `BattleSim.turret_hit_offset(td)` 만큼 함께 흔들린다 — 포탑 스프라이트(`Building` 노드)는 렌더러가 그리지 않고 BattleSim 이 직접 흔들므로, 바만 제자리에 두면 둘이 어긋난다.
 3. Per-cell pilot rendering via `_draw_pilot_cell()` — pilots render OUTSIDE the tile, on a hex ring of 6 slots around it, with a team-coloured triangle behind them whose apex points to the tile centre (speech-bubble tail). **자리는 여기서 풀지 않는다** — `_draw()` 앞머리의 `_build_pilot_render_layout()` 이 전장 전체를 한 번에 배정하고, 딤 오버레이 · 히트 테스트 · 연출 좌표가 같은 표를 읽는다
-4. `_draw_cell_badge()` — `NvN` / `xN` count badge centred ON the tile (the tile centre is now empty, since pilots are offset outward)
-5. `_draw_pilot_popups()` — 피해 수치 / MISS · 성장치 팝업 플로팅 텍스트, **맨 마지막**에 그려 무엇에도 가려지지 않는다
+4. `_draw_pilot_popups()` — 피해 수치 / MISS · 성장치 팝업 플로팅 텍스트, **맨 마지막**에 그려 무엇에도 가려지지 않는다
 
 The minion / lane-line / minion-progress visualizations were removed alongside
 the minion concept. Tile background colouring (lane vs jungle vs neutral) is
@@ -351,8 +365,7 @@ them each `_draw()`:
   pilot reads as dimmed rather than merely faded. Phase 1 holds at full alpha
   (딤드된 채 대기), phase 2 fades it out while it rises.
 
-The cell badge (`NvN` / `xN`) is drawn at full
-alpha — it's an aggregate visual, not per-pilot. Note that a pilot mid-death
+Note that a pilot mid-death
 still occupies a layout slot, so a fallen body shifts the living pilots in its
 cell for the ~1.45s the animation runs; `pilot_marker_positions()` reads the
 same solve, so hit-testing never disagrees with what is on screen.

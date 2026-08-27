@@ -731,9 +731,12 @@ func do_battle_turn() -> void:
 ## 다시 잡지 못한다. 상대가 문턱 아래라면 교대할 상대가 없으므로 연속 진입이
 ## 그대로 허용된다(규칙 1).
 ##
-## 준비 판정이 양쪽 비대칭인 것은 의도된 기존 동작이다. AI 는 낼 수 있는 카드가
-## 손에 있어야 준비된 것으로 치고(`_ai_turn_ready`), 플레이어는 점수만 차면
-## 진입한다 — 대신 플레이어 쪽에는 **패스 잠금**(`_player_pass_lock`)이 붙는다.
+## **준비 판정은 이제 양쪽이 같다** — 점수가 문턱 위이고 **낼 수 있는 카드가
+## 손에 한 장이라도 있어야** 한다(`_player_turn_ready` / `_ai_turn_ready`).
+## 예전에는 플레이어만 점수로 진입했는데, 아군이 전멸하면 손패 전체가 시전자
+## 사망으로 잠기므로 "당신의 차례"가 열렸다 닫히기만 하고 그 차례에 할 수
+## 있는 일이 하나도 없었다. 플레이어 쪽에는 그 위에 **패스 잠금**
+## (`_player_pass_lock`)이 하나 더 붙는다.
 ##
 ## **패스 잠금이 필요한 이유.** 턴 넘기기의 조건이 "카드를 한 장 이상 낼 것"
 ## 이었을 때는 그 규칙이 곧 "넘기고 나면 점수가 문턱 아래로 내려간다"의
@@ -743,8 +746,7 @@ func do_battle_turn() -> void:
 ## 상대가 한 번 차례를 가질 때까지** 준비되지 않은 것으로 친다. 그 사이
 ## BATTLE 은 평소대로 흐른다.
 func _next_turn_side() -> int:
-	var player_ready: bool = _bs.player_cost >= _bs.PHASE_THRESHOLD \
-			and not _player_pass_lock
+	var player_ready: bool = _player_turn_ready()
 	var ai_ready: bool = _ai_turn_ready()
 	if player_ready and ai_ready:
 		return _bs.blue_team if _last_turn_side == -1 else 1 - _last_turn_side
@@ -1003,6 +1005,30 @@ func consume_end_phase_request() -> bool:
 # hold the BATTLE auto-tick (and the in-game clock) for the duration.
 func is_ai_turn_active() -> bool:
 	return _ai_play_in_progress
+
+
+## 플레이어가 이번 틱에 차례를 가져갈 수 있는가. **AI 와 같은 두 조건**(점수 ·
+## 낼 수 있는 카드)에 **패스 잠금** 하나가 더 붙는다.
+##
+## 카드 조건이 없던 시절의 증상은 이랬다 — 아군 다섯이 모두 쓰러지면 손패의
+## 모든 카드가 시전자 사망으로 잠기는데(`respawn_turns_for`) 점수는 문턱에
+## 걸려 있으므로, 자동 드로우가 손패를 바꿀 때마다 패스 잠금이 풀려 작전
+## 단계가 다시 열렸다. 그 차례에 할 수 있는 일은 턴을 넘기는 것뿐이었다.
+##
+## **손패 상한 초과 버리기는 그대로 돈다** — 그건 차례와 무관하게 BATTLE 의
+## 자동 드로우가 하는 일이고, 덱을 돌리는 것이 그 규칙의 목적이다.
+##
+## `is_playable()` 을 따로 묻는 것은 `card_is_playable` 이 비용만 견주기
+## 때문이다 — **비용 -1**(사용 불가) 카드는 `-1 > player_cost` 가 거짓이라
+## 그 검사를 통과한다(`ai_can_play` 가 같은 이유로 같은 줄을 갖고 있다).
+func _player_turn_ready() -> bool:
+	if _bs.player_cost < _bs.PHASE_THRESHOLD or _player_pass_lock:
+		return false
+	for raw in _bs.player_hand:
+		var cd := raw as CardData
+		if cd != null and cd.is_playable() and card_is_playable(cd):
+			return true
+	return false
 
 
 # The AI gets a turn only when it can actually do something with it: 작전 점수
@@ -3647,6 +3673,7 @@ func _effect_strategy(is_player: bool, n: int) -> String:
 ##   |random        무작위 적 파일럿 (스택 수만큼 뽑는다)  (전장 강타)
 ##   |self_range:N  시전자 기준 N칸 내 모든 적과 포탑      (테러 · 초고출력 …)
 ##   |area:N        지정 대상 기준 N칸 내 모든 적과 포탑   (정밀 폭격 · 파괴)
+##   |around_target:N  같은 기하이되 **찍은 대상이 아군**    (공격 명령)
 ##   |damaged       이번 작전 단계에 이 메크가 때린 적 전부 (락온 · 신속)
 ##   |line          아군 HQ ~ 지정 포탑까지의 레인 전부     (꿰뚫는 번개)
 ##   |turret_only   지정한 적 포탑 하나                     (철거)
@@ -3803,6 +3830,18 @@ func _resolve_attack_victims(flags: Array, caster: PilotData, enemy_team: int,
 	var self_r: int = _flag_int(flags, "self_range", -1)
 	if self_r >= 0 and caster != null:
 		return _victims_around(caster.grid_pos, self_r, enemy_team)
+	# `|around_target:N` — **찍은 대상이 아군인** 카드의 반경 공격([공격 명령]).
+	# `|area:N` 과 기하는 같지만 원점이 적이 아니라 아군이라 따로 있다: `picked`
+	# 가 아군이면 아래 `area` 분기의 `picked.grid_pos` 는 맞아도 그 앞뒤의
+	# "지정한 적 하나" 폴백들이 전부 팀 검사에 걸려 엉뚱한 적 한 명을 집었다.
+	var around_r: int = _flag_int(flags, "around_target", -1)
+	if around_r >= 0:
+		if picked != null:
+			return _victims_around(picked.grid_pos, around_r, enemy_team)
+		if _pending_target_cell() is Vector2i:
+			return _victims_around(_pending_target_cell() as Vector2i,
+					around_r, enemy_team)
+		return out
 	var area_r: int = _flag_int(flags, "area", -1)
 	if area_r >= 0:
 		var origin: Vector2i = Vector2i(-999, -999)
@@ -4363,10 +4402,24 @@ func _effect_growth_perm(pct: int, ally_team: int, picked: PilotData,
 	if target == null or not target.alive or target.team != ally_team:
 		return "성장 효율 (대상 없음)"
 	target.growth_rate_bonus += float(pct) / 100.0
+	# 계산은 위의 합계 슬롯이 하고 **표시만** 장부를 읽는다 — [용 보상]과
+	# [핫핸드]가 같은 슬롯을 쓰지만 상세 패널에서는 각자 한 칸이어야 한다.
+	_log_persistent_fx(target, PilotData.FX_GROWTH_RATE, float(pct) / 100.0)
 	_bs.blog.log_event("GROWTH", "%-4s 성장 효율 %+d%% (영구, 누적 %+d%%)" % [
 			_bs.pilot_label(target), pct,
 			roundi(target.growth_rate_bonus * 100.0)])
 	return "%s 성장 효율 %+d%% (영구)" % [_bs.pilot_label(target), pct]
+
+
+## 지속 효과 장부에 한 줄. **출처는 지금 도는 카드**(`_current_card`)이므로
+## 절 함수마다 이름을 인자로 끌고 다닐 필요가 없다.
+##
+## 스탯을 미는 것은 부르는 쪽이고 여기는 표시용 기록만 남긴다 — 계산과 표시가
+## 같은 값을 두 번 쓰면 한쪽을 고칠 때 다른 쪽이 조용히 어긋난다.
+func _log_persistent_fx(target: PilotData, kind: String, amount: float) -> void:
+	if target == null or _current_card == null:
+		return
+	target.log_persistent_fx(_current_card.card_name, kind, amount)
 
 
 ## `turret_damage:N` — [전령 제압]. 찍은 칸의 포탑에 **명중 판정 없이** N 피해.
@@ -4375,6 +4428,22 @@ func _effect_growth_perm(pct: int, ally_team: int, picked: PilotData,
 ## 여기서 한 번 더 확인한다: 카드를 든 뒤 확정 전까지 전장 턴이 돌 수는 없어도,
 ## 같은 작전 단계 안에서 앞서 낸 카드(전진 / 공격)가 그 포탑을 무너뜨렸을 수는
 ## 있다. 그러면 이 절은 조용히 아무것도 하지 않는다.
+##
+## 두 가지가 얹혀 있다.
+##
+## **(1) 무저항 2배.** 그 레인의 **전선**(= 양 팀 최전방 포탑 사이, 지정한 적
+## 포탑 칸부터 우리 최전방 포탑 칸까지)에 적 파일럿이 한 명도 없으면 피해가
+## 두 배다. 전령은 라인을 밀고 들어가는 사건이라, 막아설 사람이 아무도 없는
+## 라인과 다섯이 버티는 라인이 같은 값이면 "언제 어디에 쓸 것인가"라는 질문이
+## 사라진다. 판정은 `SimulationCore.front_line_cells` 하나를 지난다 — 전선
+## 수입과 화면의 금색 테두리가 읽는 바로 그 집합이라, 눈에 보이는 구간과
+## 2배가 걸리는 구간이 어긋날 수 없다.
+##
+## **(2) 레인 몫 분배.** 깎아 낸 체력만큼의 성장치를 **그 레인의 아군 라이너들이
+## 균등하게** 나눠 받는다(우측 레인은 스나이퍼 · 서포터 둘이라 반씩). 전령은
+## 시전자가 없는 팀 보상이라(`owner_pilot == null`) 평소의 귀속 경로
+## (`apply_card_turret_damage` → `score_turret_damage(attacker, …)`)가 아무에게도
+## 닿지 않는다 — 그 레인을 미느라 버틴 사람들이 공성의 임자다.
 func _effect_turret_damage(n: int, ally_team: int, caster: PilotData,
 		picked: Variant) -> String:
 	if n <= 0 or not (picked is Vector2i):
@@ -4384,10 +4453,59 @@ func _effect_turret_damage(n: int, ally_team: int, caster: PilotData,
 		return "포탑 피해 (대상 없음)"
 	if not _bs.sim_core.outermost_enemy_turrets(ally_team).has(td):
 		return "포탑 피해 (최외곽 포탑 아님)"
+	var unopposed: bool = _front_line_unopposed(td.lane, 1 - ally_team)
+	var dmg: int = n * 2 if unopposed else n
+	var before: int = td.hp
 	var log_lines: Array = []
-	_bs.sim_core.apply_card_turret_damage(td, n, caster, log_lines)
+	_bs.sim_core.apply_card_turret_damage(td, dmg, caster, log_lines)
+	# 오버킬은 값이 아니다 — 실제로 깎인 만큼만 나눈다.
+	var removed: int = maxi(0, before - td.hp)
+	var shared: String = _award_turret_damage_to_lane(td.lane, ally_team, removed)
 	_bs.renderer.queue_redraw()
-	return "T%d %s 포탑 −%d" % [td.tier, _bs.LANE_NAMES[td.lane], n]
+	var tag: String = " (무저항 ×2)" if unopposed else ""
+	return "T%d %s 포탑 −%d%s%s" % [td.tier, _bs.LANE_NAMES[td.lane], dmg,
+			tag, shared]
+
+
+## 그 레인의 전선에 `enemy_team` 파일럿이 한 명도 서 있지 않은가.
+##
+## 정글러도 센다 — "상대 파일럿이 없으면"이 규칙이고, 정글러가 레인 통로에
+## 서 있다면 그 사람이 곧 그 라인을 막고 있는 사람이다.
+func _front_line_unopposed(lane: int, enemy_team: int) -> bool:
+	if _bs.sim_core == null:
+		return false
+	var band: Dictionary = _bs.sim_core.front_line_cells(lane)
+	if band.is_empty():
+		return false
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		if p.alive and p.team == enemy_team and band.has(p.grid_pos):
+			return false
+	return true
+
+
+## 포탑 피해 한 건의 성장치를 **그 레인의 살아 있는 아군 라이너들에게 균등
+## 분배**한다. 사람이 없으면(전원 사망) 아무 일도 없다 — 총액이 보존되는 대신
+## 임자가 없으면 그냥 사라진다.
+##
+## 한 점당 값은 `BattleSim.score_turret_damage` 와 같은 식이라, 다섯이 걸어가
+## 갈아 낸 포탑과 전령이 부순 포탑의 값어치가 다르지 않다.
+func _award_turret_damage_to_lane(lane: int, ally_team: int,
+		hp_removed: int) -> String:
+	if hp_removed <= 0:
+		return ""
+	var laners: Array = []
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		if p.alive and p.team == ally_team and not p.is_guerrilla and p.lane == lane:
+			laners.append(p)
+	if laners.is_empty():
+		return ""
+	var total: float = _bs.SCORE_TURRET_FULL * float(hp_removed) 			/ float(maxi(1, _bs.TURRET_HP))
+	var each: float = total / float(laners.size())
+	for raw in laners:
+		_bs.award_score(raw as PilotData, each)
+	return " · %s %d인 +%.2fk" % [_bs.LANE_NAMES[lane], laners.size(), each]
 
 
 ## `growth_until_phase:N` — 완벽한 마무리. 시전자 **팀 전원**의 성장 획득 배율을
@@ -4728,7 +4846,9 @@ func _effect_max_hp(amount: int, flags: Array, caster: PilotData,
 	var t: PilotData = _ally_subject(flags, caster, ally_team, picked)
 	if t == null:
 		return "최대 체력 (대상 없음)"
-	t.bonus_max_hp += amount * maxi(1, _repeat_count(flags))
+	var hp_add: int = amount * maxi(1, _repeat_count(flags))
+	t.bonus_max_hp += hp_add
+	_log_persistent_fx(t, PilotData.FX_MAX_HP, float(hp_add))
 	_bs.refresh_growth_stats(t)
 	return "최대 체력 +%d %s" % [amount, _bs.pilot_label(t)]
 
@@ -4738,7 +4858,9 @@ func _effect_atk_add(amount: int, flags: Array, caster: PilotData,
 	var t: PilotData = _ally_subject(flags, caster, ally_team, picked)
 	if t == null:
 		return "공격력 (대상 없음)"
-	t.bonus_atk_flat += amount * maxi(1, _repeat_count(flags))
+	var atk_add: int = amount * maxi(1, _repeat_count(flags))
+	t.bonus_atk_flat += atk_add
+	_log_persistent_fx(t, PilotData.FX_ATK, float(atk_add))
 	_bs.refresh_growth_stats(t)
 	return "공격력 +%d %s" % [amount, _bs.pilot_label(t)]
 
@@ -4823,6 +4945,7 @@ func _effect_growth_eff(pct: int, ally_team: int, caster: PilotData,
 	if t == null:
 		return "성장 효율 (대상 없음)"
 	t.growth_rate_bonus += float(pct) / 100.0
+	_log_persistent_fx(t, PilotData.FX_GROWTH_RATE, float(pct) / 100.0)
 	return "성장 효율 %+d%% %s" % [pct, _bs.pilot_label(t)]
 
 

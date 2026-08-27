@@ -899,10 +899,25 @@ func _fx_signature() -> Array:
 ## 걸려 있는 효과 하나 = 사전 하나. **걸려 있지 않으면 목록에 없다** — 꺼져 있는
 ## 칸을 회색으로 늘어놓으면 "몇 개가 켜져 있는가"를 세어야 한다.
 ##
-## 다섯 자리가 전부다. 라인전 스탯(명중/회피 배율), 적립 배율(턴 · 단계 만료),
-## 영구 적립 배율(용 보상), 일시 공격력, 보호막. 팀 단위로 걸리는 계획 살인
-## 예약은 여기 없다 — 파일럿의 것이 아니라 팀의 것이라 다섯 명 모두에게 같은
-## 썸네일이 떠 무엇이 누구 것인지가 흐려진다.
+## 두 종류가 섞여 있다.
+##
+## **(1) 슬롯 효과** — 한 칸을 카드들이 서로 덮어쓰는 것들이라 출처를 물어봐야
+## 답이 하나뿐이다. 라인전 스탯(명중/회피 배율), 적립 배율(턴 · 단계 만료),
+## 일시 공격력, 보호막 넷.
+##
+## **(2) 카드별 지속 효과** — `PilotData.persistent_fx` 장부의 한 줄이 한 칸이
+## 된다. 예전에는 이쪽도 속성으로 뭉쳐 있어서 `영구 +10%` 한 칸이 [용 보상]과
+## [핫핸드]를 함께 뜻했고, 최대 체력 · 공격력 가산분([붉은 가루] · [녹색 병])은
+## **아예 표시되지 않았다** — 성장 재계산에 지워지지 않으려고 `bonus_*` 필드로
+## 따로 사는 값들이라 어느 칩에도 안 실렸기 때문이다. 지금은 카드 이름이 곧
+## 칸 이름이라 "무엇을 몇 번 먹었나"가 그대로 읽힌다.
+##
+## **(3) 잔여분** — 장부에 없는 몫(메크 패시브가 직접 미는 영혼 수확 · 조준
+## 보정 …)은 합계에서 장부를 뺀 나머지를 한 칸으로 세운다. 합계 슬롯과 장부가
+## 어긋나면 화면이 조용히 거짓말을 하게 되므로 남는 몫을 감추지 않는다.
+##
+## 팀 단위로 걸리는 계획 살인 예약은 여기 없다 — 파일럿의 것이 아니라 팀의
+## 것이라 다섯 명 모두에게 같은 썸네일이 떠 무엇이 누구 것인지가 흐려진다.
 func _effect_defs() -> Array:
 	var out: Array = []
 	if not is_zero_approx(_pilot.lane_stat_mod):
@@ -922,14 +937,6 @@ func _effect_defs() -> Array:
 			"value": "%+d%%" % roundi((_pilot.growth_rate_mult - 1.0) * 100.0),
 			"color": Color(0.72, 1.00, 0.80),
 		})
-	if not is_zero_approx(_pilot.growth_rate_bonus):
-		out.append({
-			"key": "fx:perm",
-			"short": "영구",
-			"title": "영구 적립 배율",
-			"value": "%+d%%" % roundi(_pilot.growth_rate_bonus * 100.0),
-			"color": Color(1.00, 0.55, 0.28),
-		})
 	if _pilot.atk_buff != 0:
 		out.append({
 			"key": "fx:atk",
@@ -946,7 +953,88 @@ func _effect_defs() -> Array:
 			"value": str(_pilot.shield),
 			"color": Color(0.92, 0.92, 0.42),
 		})
+	_append_card_fx(out)
+	_append_residual_fx(out)
 	return out
+
+
+## 종류별 색 / 잔여분 칸의 이름. 카드 칸과 잔여분 칸이 같은 표를 읽으므로
+## 같은 종류의 효과는 어디에 뜨든 같은 색이다.
+const FX_KIND_COLOR := {
+	PilotData.FX_GROWTH_RATE: Color(1.00, 0.55, 0.28),
+	PilotData.FX_MAX_HP:      Color(0.55, 0.95, 0.62),
+	PilotData.FX_ATK:         Color(1.00, 0.72, 0.36),
+}
+const FX_KIND_NAME := {
+	PilotData.FX_GROWTH_RATE: "성장 적립",
+	PilotData.FX_MAX_HP:      "최대 체력",
+	PilotData.FX_ATK:         "공격력",
+}
+
+
+## 장부(`PilotData.persistent_fx`)의 한 줄 = 썸네일 한 칸. **카드 이름이 곧
+## 칸 이름**이고 약칭은 그 앞 두 글자다(공백은 빼고 센다 — "용 보상" 은 "용보").
+func _append_card_fx(out: Array) -> void:
+	for raw in _pilot.persistent_fx:
+		var e: Dictionary = raw as Dictionary
+		var amount: float = float(e["amount"])
+		if is_zero_approx(amount):
+			continue
+		var kind: String = String(e["kind"])
+		var src: String = String(e["src"])
+		out.append({
+			"key": "fx:src:%s|%s" % [kind, src],
+			"short": _fx_short(src),
+			"title": src,
+			"value": _fx_value(kind, amount),
+			"color": FX_KIND_COLOR.get(kind, Color(0.86, 0.86, 0.90)) as Color,
+		})
+
+
+## 합계 슬롯에서 장부를 뺀 나머지. 메크 패시브가 `bonus_*` 를 직접 미는 몫이라
+## 출처를 카드 이름으로 부를 수 없다 — 종류 이름으로 한 칸을 세운다.
+func _append_residual_fx(out: Array) -> void:
+	var specs: Array = [
+		[PilotData.FX_GROWTH_RATE, "적립", _pilot.growth_rate_bonus],
+		[PilotData.FX_MAX_HP, "체력", float(_pilot.bonus_max_hp)],
+		[PilotData.FX_ATK, "공격", float(_pilot.bonus_atk_flat)],
+	]
+	for raw in specs:
+		var spec: Array = raw as Array
+		var kind: String = String(spec[0])
+		var rest: float = float(spec[2]) - _pilot.persistent_fx_total(kind)
+		if is_zero_approx(rest):
+			continue
+		out.append({
+			"key": "fx:rest:%s" % kind,
+			"short": String(spec[1]),
+			"title": "%s (그 밖의 영구 가산)" % String(FX_KIND_NAME.get(kind, kind)),
+			"value": _fx_value(kind, rest),
+			"color": FX_KIND_COLOR.get(kind, Color(0.86, 0.86, 0.90)) as Color,
+		})
+
+
+## 썸네일에 찍히는 두 글자. 아이콘 에셋이 없으므로 약칭이 곧 아이콘이고,
+## 온전한 이름은 눌러서 여는 정보 패널의 제목이 들고 있다.
+static func _fx_short(src: String) -> String:
+	var compact: String = src.replace(" ", "")
+	return compact.substr(0, 2) if compact.length() >= 2 else compact
+
+
+## 종류마다 단위가 다르다 — 적립 배율은 %, 나머지 둘은 스탯 값 그대로.
+static func _fx_value(kind: String, amount: float) -> String:
+	if kind == PilotData.FX_GROWTH_RATE:
+		return "%+d%%" % roundi(amount * 100.0)
+	return "%+d" % roundi(amount)
+
+
+## `fx:src:` / `fx:rest:` 키가 가리키는 (종류, 값). 정보 패널의 내역이 읽는다.
+func _fx_entry(key: String) -> Dictionary:
+	for raw in _effect_defs():
+		var d: Dictionary = raw as Dictionary
+		if String(d["key"]) == key:
+			return d
+	return {}
 
 
 func _build_effect_row(start_y: float) -> float:
@@ -960,10 +1048,20 @@ func _build_effect_row(start_y: float) -> float:
 		_body_root.add_child(none)
 		return y + 32.0
 
+	# **여러 줄로 접힌다.** 예전에는 한 줄뿐이었고 효과 자리도 다섯이 상한이라
+	# 정확히 맞아떨어졌는데, 지속 효과가 카드 한 장 단위로 갈리면서 칸 수에
+	# 상한이 없어졌다 — 접지 않으면 여섯 번째 칸부터 화면 밖으로 나간다.
+	var per_row: int = maxi(1, int(floor((STAT_W + FX_GAP) / (FX_SIZE + FX_GAP))))
 	for i in defs.size():
 		var d: Dictionary = defs[i] as Dictionary
-		_make_fx_thumb(d, Vector2(STAT_X + float(i) * (FX_SIZE + FX_GAP), y))
-	return y + FX_SIZE
+		@warning_ignore("integer_division")
+		var row: int = i / per_row
+		var col: int = i % per_row
+		_make_fx_thumb(d, Vector2(
+				STAT_X + float(col) * (FX_SIZE + FX_GAP),
+				y + float(row) * (FX_SIZE + FX_GAP)))
+	var rows: int = int(ceil(float(defs.size()) / float(per_row)))
+	return y + float(rows) * (FX_SIZE + FX_GAP) - FX_GAP
 
 
 ## 썸네일 한 칸 — 위에 두 글자 약칭(효과별 색), 아래에 작게 지금 값.
@@ -1480,6 +1578,8 @@ func _menu_rows(key: String) -> Array:
 ## **어디에 곱해지는가**와 **언제까지인가**를 말한다 — 그 둘이 안 보이면 효과가
 ## 켜져 있다는 사실만 알 뿐 그래서 뭘 해야 하는지가 안 나온다.
 func _fx_rows(key: String) -> Array:
+	if key.begins_with("fx:src:") or key.begins_with("fx:rest:"):
+		return _fx_card_rows(key)
 	match key:
 		"fx:lane":
 			return [
@@ -1494,11 +1594,6 @@ func _fx_rows(key: String) -> Array:
 						_pilot.growth_until_phase)],
 				["영구 가산", "%+d%%" % roundi(_pilot.growth_rate_bonus * 100.0)],
 				["성장치", BattleSim.fmt_score(_pilot.score)]]
-		"fx:perm":
-			return [
-				["영구 적립 배율", "%+d%%" % roundi(_pilot.growth_rate_bonus * 100.0)],
-				["남은 시간", "영구"],
-				["성장치", BattleSim.fmt_score(_pilot.score)]]
 		"fx:atk":
 			return [
 				["일시 가산", "%+d" % _pilot.atk_buff],
@@ -1509,6 +1604,33 @@ func _fx_rows(key: String) -> Array:
 				["보호막", str(_pilot.shield)],
 				["현재 체력", "%d / %d" % [_pilot.hp, _pilot.max_hp]]]
 	return []
+
+
+## 카드별 지속 효과 / 잔여분 한 칸의 내역. **그 한 장이 얹은 몫**과 **그 종류의
+## 합계**를 나란히 적는다 — 칸이 여럿으로 갈린 지금은 "이건 얼마고 다 합치면
+## 얼마인가"가 한 화면에 없으면 도리어 더하게 된다.
+func _fx_card_rows(key: String) -> Array:
+	var d: Dictionary = _fx_entry(key)
+	if d.is_empty():
+		return []
+	# `fx:src:<kind>|<카드 이름>` / `fx:rest:<kind>` — 둘 다 세 번째 조각이
+	# 종류이고, 카드 쪽에만 `|` 뒤에 이름이 붙어 있다.
+	var kind: String = key.get_slice(":", 2).get_slice("|", 0)
+	var rows: Array = [
+		["이 효과", String(d["value"])],
+		["남은 시간", "영구"]]
+	match kind:
+		PilotData.FX_GROWTH_RATE:
+			rows.append(["영구 가산 합계",
+					"%+d%%" % roundi(_pilot.growth_rate_bonus * 100.0)])
+			rows.append(["성장치", BattleSim.fmt_score(_pilot.score)])
+		PilotData.FX_MAX_HP:
+			rows.append(["영구 가산 합계", "%+d" % _pilot.bonus_max_hp])
+			rows.append(["최대 체력", str(_pilot.max_hp)])
+		PilotData.FX_ATK:
+			rows.append(["영구 가산 합계", "%+d" % _pilot.bonus_atk_flat])
+			rows.append(["최종 공격력", str(_pilot.atk)])
+	return rows
 
 
 ## 카드 한 장의 내역. 설명문 자체는 note 로 내려가고 여기에는 **손에서 판단할
@@ -1557,13 +1679,15 @@ func _menu_note(key: String) -> String:
 	if key.begins_with("card:"):
 		var cd: CardData = _card_of(key)
 		return cd.description if cd != null else ""
+	if key.begins_with("fx:src:"):
+		return "이 카드가 남긴 영구 가산분. 만료도 해제도 없고 같은 카드를 다시 쓰면 누적된다."
+	if key.begins_with("fx:rest:"):
+		return "카드가 아니라 메크 패시브가 직접 쌓은 몫. 출처를 카드 이름으로 부를 수 없어 한 칸으로 묶었다."
 	match key:
 		"fx:lane":
 			return "전장 명중 판정에만 곱해진다. 교전 무대는 자기 확률 구간을 쓴다."
 		"fx:rate":
 			return "성장이 아니라 성장치 적립에 곱해진다. 안전한 파밍과 완벽한 마무리가 같은 칸을 쓴다."
-		"fx:perm":
-			return "용 보상이 얹는 영구 가산분. 만료도 해제도 없고 누적된다."
 		"fx:atk":
 			return "카드가 얹은 임시 가산분. 성장 재계산에 지워지지 않는다."
 		"fx:shield":

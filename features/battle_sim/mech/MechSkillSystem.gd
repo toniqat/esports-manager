@@ -674,7 +674,10 @@ func _payout_cash(is_player: bool) -> void:
 		var owner: PilotData = cd.owner_pilot
 		if owner == null:
 			continue
-		_bs.add_score(owner, owner.score * CASH_RATE)
+		# 팝업을 띄운다(`award_score`) — 카드가 나갈 때마다 조용히 붙는 이자라
+		# 화면에 흔적이 없으면 [캐시]가 핸드에 있는 것과 없는 것이 구분되지
+		# 않는다. 죽어 있는 보유자에게는 `_show_score_gain` 이 알아서 안 띄운다.
+		_bs.award_score(owner, owner.score * CASH_RATE)
 
 
 ## 계시(원딜 I) — 적이 **카드로** 피해를 입을 때마다 계시 보유자가 그 적을 친다.

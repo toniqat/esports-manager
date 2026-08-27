@@ -158,7 +158,7 @@
 | `VULNERABLE_PER_STACK` | 0.01 | 취약 1당 받는 피해 배율 |
 | `REACTIVE_ARMOR_CUT` | 0.90 | 반응 장갑 한 겹이 깎는 비율 |
 | `OVERCLOCK_PROC_PER_CHARGE` | 0.01 | 충전 1당 교전 추가 공격 확률 |
-| `CASH_RATE` | 0.04 | [캐시] 가 카드 한 장마다 버는 자기 성장치 비율 |
+| `CASH_RATE` | 0.04 | [캐시] 가 카드 한 장마다 버는 자기 성장치 비율. 적립은 `award_score` 를 지나 **초상화 위에 팝업이 뜬다** — 흔적이 없으면 그 카드를 손에 들고 있는 것과 없는 것이 화면에서 구분되지 않는다 |
 | `SCORE_COST_UNIT` | 0.01 | `score_cost:N` 의 단위 — **N=100 이 1.00k** |
 | `PHASE_BOON_BETA_CHARGE` | 100 | 강화 베타가 [단계 B] 에 얹는 충전 |
 | `PHASE_BOON_GAMMA_RATE` | 0.10 | 강화 감마가 [단계 C] 에서 버는 자기 성장치 비율 |

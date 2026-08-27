@@ -95,8 +95,21 @@ Line 2 carries two separate jobs.
 허용된다(규칙 1). `_last_turn_side` 는 `build_starter_decks` 가 새 판마다 -1 로
 되돌리는 이 규칙의 유일한 상태다.
 
-준비 판정이 비대칭인 것은 기존 동작 그대로다: AI 는 낼 수 있는 카드가 손에
-있어야 준비된 것으로 치고(`_ai_turn_ready`), 플레이어는 점수만 차면 진입한다.
+**준비 판정은 이제 양쪽이 같다** — 점수가 문턱 위이고 **낼 수 있는 카드가 손에
+한 장이라도 있어야** 한다(`_player_turn_ready` / `_ai_turn_ready`). 플레이어
+쪽에는 그 위에 패스 잠금(아래)이 하나 더 붙는다.
+
+예전에는 플레이어만 점수로 진입했다. 아군 다섯이 모두 쓰러지면 손패의 모든
+카드가 시전자 사망으로 잠기는데(`respawn_turns_for`) 점수는 문턱에 걸려 있으므로,
+자동 드로우가 손패를 바꿀 때마다 패스 잠금이 풀려 "당신의 차례"가 0.5초마다
+열렸다 닫히기만 했다 — 그 차례에 할 수 있는 일은 턴을 넘기는 것뿐이었다.
+
+`_player_turn_ready` 가 `is_playable()` 을 따로 묻는 것은 `card_is_playable` 이
+비용만 견주기 때문이다: **비용 -1**(사용 불가) 카드는 `-1 > player_cost` 가
+거짓이라 그 검사를 통과한다(`ai_can_play` 가 같은 이유로 같은 줄을 갖고 있다).
+
+**손패 상한 초과 버리기는 그대로 돈다** — 그건 차례와 무관하게 BATTLE 의 자동
+드로우가 하는 일이고, 덱을 돌리는 것이 그 규칙의 목적이다.
 
 ##### 패스 잠금 (`_player_pass_lock`)
 플레이어 쪽 준비 판정에는 조건이 하나 더 붙는다 — **방금 넘긴 차례는 곧바로
@@ -1147,7 +1160,7 @@ The DB column is a `;`-separated chain of clauses. Each clause is
 | `search:N` | yes | **Player**: opens CardSelectOverlay search grid — pick exactly N from the deck via 확인. **AI**: same as `draw:N` (random top-of-deck). |
 | `discard:N` | yes | **Player**: opens CardSelectOverlay discard pick — **drag** exactly N cards onto the centred 버리기 구역, then press 확인 to commit. The played 버리기 card is non-cancellable (no 버리기 취소 button). **AI**: random N from hand. |
 | `strategy:N` | yes | +N 작전 점수 to playing side |
-| `attack:N` | yes | **Player**: opens CardTargetingOverlay PILOT mode — battle tiles dim, valid enemy pilots ringed, click an enemy to commit. **AI**: random valid pilot (range-aware). **Rolls `SimulationCore.roll_hit` (`hit/(hit+evasion)`, the same roll the battlefield uses) — a miss deals nothing.** Damage on a hit = `caster.atk × N`; 보호막 absorbs first. `pierce` (필중) skips the roll; `repeat` (연속 공격) re-rolls the same attack after every landed hit, stopping on a miss, on the target's death, or at `MAX_ATTACK_REPEATS` (5). `min_range:N` filters out pilots closer than N (parsed, but no card in the pool carries it since 저격 was removed). **Every swing floats its verdict over the target** via `BattleRenderer.spawn_pilot_popup`: `MISS` on a miss, `-N` on a hit, `흡수` when 보호막 ate the whole hit (the handler returns HP damage, so that case would otherwise read `-0`). **한 타격마다 명중 연출(시전 빛 → 조각 + 쉐이크)이 붙고 이 절은 그것을 `await` 한다** — 아래 *공격 명중 연출* 절 참조. |
+| `attack:N` | yes | **Player**: opens CardTargetingOverlay PILOT mode — battle tiles dim, valid enemy pilots ringed, click an enemy to commit. **AI**: random valid pilot (range-aware). **Rolls `SimulationCore.roll_hit` (`hit/(hit+evasion)`, the same roll the battlefield uses) — a miss deals nothing.** Damage on a hit = `caster.atk × N`; 보호막 absorbs first. `pierce` (필중) skips the roll; `repeat` (연속 공격) re-rolls the same attack after every landed hit, stopping on a miss, on the target's death, or at `MAX_ATTACK_REPEATS` (5). `min_range:N` filters out pilots closer than N (parsed, but no card in the pool carries it since 저격 was removed). **Every swing floats its verdict over the target** via `BattleRenderer.spawn_pilot_popup`: `MISS` on a miss, `-N` on a hit, `흡수` when 보호막 ate the whole hit (the handler returns HP damage, so that case would otherwise read `-0`). **한 타격마다 명중 연출(시전 빛 → 조각 + 쉐이크)이 붙고 이 절은 그것을 `await` 한다** — 아래 *공격 명중 연출* 절 참조. **대상 집합은 플래그가 정한다**(`_resolve_attack_victims`): `\|all` 전장 내 모든 적 / `\|random` 무작위 / `\|self_range:N` 시전자 반경 / `\|area:N` **찍은 적** 반경 / `\|around_target:N` **찍은 아군** 반경([공격 명령]) / `\|damaged` 이번 단계에 때린 적 / `\|line` 레인 통로 / `\|turret_only` 지정 포탑. `around_target` 이 `area` 와 따로 있는 이유는 원점의 팀이다 — `picked` 가 아군이면 기본형의 "지정한 적 하나" 폴백들이 전부 팀 검사에 걸려 **엉뚱한 적 한 명**을 집었다(오래 살아 있던 [공격 명령] 버그). |
 | `shield_pct:N` | yes | **Player**: PILOT mode → click an ally; gains shield = N% of max_hp. **AI**: random ally. Cleared on 본진 복귀. |
 | `recall_ally` | yes | **Player**: PILOT mode → click an ally; teleports to HQ at full HP, shield reset, waypoint reset. **AI**: random ally. |
 | `exhaust_choice:N` | yes (random) | Random N from hand → removed (소멸). Parsed and honoured, but no card in the pool carries it since 차선책 was removed. |
@@ -1165,8 +1178,8 @@ The DB column is a `;`-separated chain of clauses. Each clause is
 | `lane_stat:N\|turns:T` | yes | 안전한 파밍 / 공격적인 라인전 — 시전자의 `lane_stat_mod = N/100`, `lane_stat_expire_turn = turn_count + T`. **전장 명중 판정 전용**: `SimulationCore.roll_hit` 이 공격자의 `hit` 과 방어자의 `evasion` 에 각자 자기 배율을 곱한다. `atk` / `max_hp` 는 건드리지 않는다(그쪽은 성장 담당). 같은 파일럿에 두 번 걸면 **덮어쓴다** — 합산이면 3종 풀에서 2장 뽑는 구조상 +20~30% 가 운으로 굴러 나온다. |
 | `growth:N\|turns:T` | yes | 안전한 파밍 — 시전자의 성장 **획득 배율**을 `1 + N/100` 로. 성장률 자체가 아니라 그 배수다(+10% → 턴당 +1%p 가 +1.1%p). 만료는 `SimulationCore.tick_growth_and_expiries` 가 매 턴 확인. |
 | `growth_until_phase:N` | yes | 완벽한 마무리 — 시전자 **팀 전원**의 성장 획득 배율을 `1 + N/100` 로 올리고 `growth_until_phase` 를 세운다. 그 팀의 다음 작전 단계 진입 시 `_apply_phase_entry_carryovers` 가 걷는다. `growth:N` 과 같은 필드를 쓰므로 나중에 건 쪽이 이긴다. |
-| `growth_perm:N` | yes | [용 보상] — **지정한 아군 파일럿 한 명**의 성장 적립 배율에 N%p 를 **영구로 누적**. 만료도 해제도 없다. 위 두 절이 쓰는 `growth_rate_mult`(서로 덮어쓰는 슬롯)이 아니라 별도 필드 `PilotData.growth_rate_bonus` 에 얹는다 — 슬롯에 넣으면 용을 여러 번 먹어도 +5% 에서 멈추고 그 뒤 라인전 카드 한 장이 그걸 지운다. 최종 배율은 `BattleSim.add_score` 에서 `growth_rate_mult + growth_rate_bonus` 로 합쳐진다. **Player**: PILOT mode(`target=ally`, `cast_range` 99 — 시전자가 없으므로 전장 전체). **AI**: random ally. |
-| `turret_damage:N` | yes | [전령 제압] — 찍은 칸의 포탑에 **명중 판정 없이** N 피해. 유효 대상은 `compute_turret_damage_targets` → `SimulationCore.outermost_enemy_turrets(team)`: **레인마다 T1 → T2 순으로 훑어 처음 만난 살아 있는 적 포탑**뿐이다(안쪽 포탑 저격 불가; T1 이 무너진 레인은 T2 가 그 자리를 물려받아 후반에도 쓸 곳이 남는다). 적용은 `SimulationCore.apply_card_turret_damage` → 전장의 `_apply_card_damage` 를 그대로 재사용하므로 흔들림 연출 · 킬로그 · `Building` 노드 해제 · T1 파괴 시 정글 획득이 한 군데서만 일어난다. 시전자가 없으면 성장치 귀속만 생략된다(`add_score` 가 null 을 거른다). **Player**: LOCATION mode. **AI**: random valid cell. |
+| `growth_perm:N` | yes | [용 보상] — **지정한 아군 파일럿 한 명**의 성장 적립 배율에 N%p 를 **영구로 누적**. 만료도 해제도 없다. 위 두 절이 쓰는 `growth_rate_mult`(서로 덮어쓰는 슬롯)이 아니라 별도 필드 `PilotData.growth_rate_bonus` 에 얹는다 — 슬롯에 넣으면 용을 여러 번 먹어도 +5% 에서 멈추고 그 뒤 라인전 카드 한 장이 그걸 지운다. 최종 배율은 `BattleSim.add_score` 에서 `growth_rate_mult + growth_rate_bonus` 로 합쳐진다. **대상이 안 찍힌 카드는 시전자 자신에게** 건다 — [핫핸드]가 그 경우다(대상 지정 없는 `instant` 카드라 `picked` 가 언제나 null). 표시는 합계 슬롯이 아니라 **카드 단위 장부**(`PilotData.persistent_fx`)를 읽는다 — 아래 *지속 효과 장부* 절. **Player**: PILOT mode(`target=ally`, `cast_range` 99 — 시전자가 없으므로 전장 전체). **AI**: random ally. |
+| `turret_damage:N` | yes | [전령 제압] — 찍은 칸의 포탑에 **명중 판정 없이** N 피해. 유효 대상은 `compute_turret_damage_targets` → `SimulationCore.outermost_enemy_turrets(team)`: **레인마다 T1 → T2 순으로 훑어 처음 만난 살아 있는 적 포탑**뿐이다(안쪽 포탑 저격 불가; T1 이 무너진 레인은 T2 가 그 자리를 물려받아 후반에도 쓸 곳이 남는다). 적용은 `SimulationCore.apply_card_turret_damage` → 전장의 `_apply_card_damage` 를 그대로 재사용하므로 흔들림 연출 · 킬로그 · `Building` 노드 해제 · T1 파괴 시 정글 획득이 한 군데서만 일어난다. **무저항이면 2배**: 그 레인의 전선(`SimulationCore.front_line_cells` — 양 팀 최전방 포탑 사이, 화면의 금색 테두리와 같은 집합)에 적 파일럿이 한 명도 없으면 피해가 두 배다. 전령은 라인을 밀고 들어가는 사건이라, 막아설 사람이 없는 라인과 다섯이 버티는 라인이 같은 값이면 "언제 어디에 쓸 것인가"가 사라진다. **성장치는 그 레인 아군이 균등하게 나눠 받는다**(`_award_turret_damage_to_lane`, 우측 레인은 스나이퍼 · 서포터 둘이라 반씩) — 전령은 시전자가 없는 팀 보상이라 평소의 귀속 경로(`apply_card_turret_damage` → `score_turret_damage(attacker, …)`)가 아무에게도 닿지 않고, 그 레인을 미느라 버틴 사람들이 공성의 임자다. 한 점당 값은 `SCORE_TURRET_FULL / TURRET_HP` 로 걸어가 갈아 낸 포탑과 같다. **Player**: LOCATION mode. **AI**: random valid cell. |
 | `discard_hand` | yes | 완벽한 마무리의 첫 절 — 손패 전부 discard. 보존을 **무시한다**. |
 | `discard_hand_draw` | yes | 재고 — 손패 전부 버리고 **버린 장수만큼** 다시 뽑는다. 손패 크기는 그대로고 내용만 갈린다(덱+discard 가 마르면 뽑은 만큼만). |
 | `discard_right:N` | yes | 과감한 정리 — 손패 **오른쪽**(가장 최근에 들어온 쪽) N장을 discard. `hand.pop_back()` × N. |
@@ -1177,6 +1190,23 @@ The DB column is a `;`-separated chain of clauses. Each clause is
 | `move\|own_jungle` | yes | 정글 파밍 — `compute_valid_location_targets` 가 `compute_own_jungle_targets` 로 분기해 유효 셀을 **시전자 팀이 소유한 정글 셀**로 좁힌다. 약탈과 마찬가지로 `cast_range`(99)는 무시 — 사거리로 묶으면 정글 반대편 캠프가 영영 닿지 않는다. 제자리 셀은 뺀다. 소유 판정이 `neutral_zone_cells` 를 직접 읽으므로 정글러가 밟아 점령한 칸도 T1 파괴 보상으로 넘어온 칸도 그 자리에서 목표가 된다. **AI**: `_ai_pick_target` 이 같은 함수를 쓰므로 그대로 따라간다. |
 | `phase_b` | yes | [단계 B] 의 뒷절 — **바로 앞 `engage` 절의 결과**가 다음 카드를 정한다. 시전자가 적을 눕혔으면 덱에 [단계 C](id 40), 아니면 [단계 A](id 38). 처치 수는 `EngagePhaseManager.last_engage_kills` 가 답한다(무대가 치워진 뒤라 `_sim` 이 아니라 그 사본 `_last_stats` 를 읽는다). 강화 [베타] 예약이 있으면 여기서 소모하며 +100 충전. |
 | `phase_c` | yes | [단계 C] 의 뒷절 — **강화 3택**. **Player**: `_process_pending_chain` 이 이 절을 가로채 `CardSelectOverlay.start_choice` 로 강화 카드 세 장을 펼친다(찾기와 같은 그리드, **취소 없음** — 카드는 이미 나갔고 앞 절도 이미 돌았다). **AI**: `_effect_phase_c_auto` 가 무작위로 고른다. 두 경로가 `register_phase_boon` 한 함수로 모인다. 강화 [감마] 정산은 **새 강화를 고르기 전에** 한다 — 순서를 뒤집으면 방금 고른 감마가 그 자리에서 되먹힌다. |
+
+#### 지속 효과 장부 (`PilotData.persistent_fx`)
+`growth_perm` / `growth_eff` / `max_hp` / `atk_add` 네 절은 **합계 슬롯**
+(`growth_rate_bonus` / `bonus_max_hp` / `bonus_atk_flat`)에 값을 얹는다 —
+성장 재계산(`BattleSim.refresh_growth_stats`)이 읽는 곳은 한 군데여야 하기
+때문이다. 그러면 상세 패널이 그 숫자만 읽어서는 [용 보상]과 [핫핸드]가 한 칸에
+뭉쳐 `+10%` 로만 보이고, 무엇을 이미 먹었는지가 그 한 칸에서 사라진다.
+
+그래서 네 절은 값을 민 **직후** `_log_persistent_fx(target, kind, amount)` 로
+장부에 한 줄을 더 적는다. 출처는 그때 도는 카드(`_current_card.card_name`)이므로
+절 함수마다 이름을 인자로 끌고 다닐 필요가 없고, 항목은 `(카드, 종류)` 로
+합쳐지므로 같은 카드를 두 번 쓰면 한 줄에서 값이 커진다.
+
+**계산은 합계 슬롯이 하고 표시만 장부를 읽는다.** 장부에 없는 몫(메크 패시브가
+`bonus_*` 를 직접 미는 영혼 수확 · 조준 보정 …)은 상세 패널이 합계에서 장부를
+뺀 **잔여분**으로 따로 한 칸 세운다 — 자세한 표시 규칙은 `ui/README.md` 의
+"지속 효과 썸네일" 절.
 
 #### Effective cost & affordability
 `BattleSim.effective_cost_for(cd, is_player)` is the single source of truth

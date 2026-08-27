@@ -1177,8 +1177,12 @@ func score_turret_kill(attacker: PilotData, td: TurretData = null) -> void:
 
 
 
-## 팀 합산 성장치. 상단 중앙 점수표가 읽는다 — 죽어 있는 파일럿도 포함한다
-## (점수는 전장에 서 있는지와 무관한 누적 기록이다).
+## 팀 합산 성장치. 죽어 있는 파일럿도 포함한다 — 점수는 전장에 서 있는지와
+## 무관한 누적 기록이다.
+##
+## **지금은 아무도 읽지 않는다.** 상단 중앙의 `12.4k - 9.8k` 점수표가 삭제되면서
+## 유일한 소비자가 사라졌다(`HudBuilder._build_top_panel` 주석 참조). 합계 자체는
+## 언제든 다시 필요해질 값이라 함수는 남긴다.
 func team_score(team: int) -> float:
 	var total: float = 0.0
 	for raw in pilots:

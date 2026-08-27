@@ -94,6 +94,13 @@ func is_active() -> bool:
 	return _root != null and is_instance_valid(_root)
 
 
+## 이 화면이 옮기고 있는 아군 정글러. 렌더러가 읽는다 — 선택하는 동안
+## **전장에는 이 한 사람만 남고** 나머지 아홉은 치워진다
+## (`BattleRenderer._hidden_during_jungle_pick`).
+func jungler() -> PilotData:
+	return _jungler
+
+
 ## 지금 밝혀야 할 정글 무리. 끄는 중이면 커서 밑의 것, 아니면 고른 것.
 func highlight_dir() -> int:
 	return _hover_dir if _dragging else _picked_dir

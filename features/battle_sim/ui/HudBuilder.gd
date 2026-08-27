@@ -53,11 +53,11 @@ static func bottom_offset() -> float:
 # 킬로그 156. 전장 상단까지의 여유는 42px 로 아직 넉넉하다.
 const TOP_PANEL_Y      := 0.0
 const TOP_PANEL_H      := 148.0
-## 시간 · 팀 점수 한 줄.
+## 경과 시계 한 줄. **팀 합산 점수는 이 줄에서 삭제됐다** — `_build_top_panel`
+## 주석 참조.
 const HEADER_ROW_Y     := 4.0
 const HEADER_ROW_H     := 34.0
 const TIME_FONT        := 18
-const TOTAL_SCORE_FONT := 26
 ## 적 스트립 — 패널 로컬 좌표. **아군 스트립을 66% 로 줄인 것**이고 가로
 ## 가운데에 놓는다(폭 672, 초상화 118×49). 한때는 아군과 정확히 같은 크기
 ## (1030×122, 초상화 190×79)였다 — 그 전의 730×84 축소판이 같은 얼굴을 위아래
@@ -78,9 +78,18 @@ const TOTAL_SCORE_FONT := 26
 ## 아이콘과 숫자 사이 여백을 줄이고 "턴" 글자를 지워 그 폭에 맞췄다
 ## (`ObjectiveTimer`). 얼굴이 먼저 읽혀야 하는 패널이므로 자리를 다툴 때
 ## 물러나는 쪽은 언제나 시계다.
-const ENEMY_STRIP_RECT := Rect2(137.0, 46.0, 806.0, 97.0)
-const ENEMY_SCORE_FONT := 14
+const ENEMY_STRIP_RECT := Rect2(137.0, 46.0, 806.0, 100.0)
+## **성장치 폰트는 아군과 같다**(`PLAYER_SCORE_FONT`). 초상화는 여전히 아군보다
+## 작지만 그 숫자는 내 것과 **나란히 견주라고** 있는 값이라, 크기가 다르면 같은
+## 줄에서 읽는 두 수의 무게가 달라진다 — 얼굴은 작아도 되고 숫자는 안 된다.
+## 예전 14 는 스트립을 60% 로 줄이던 시절에 칸 폭에서 유도한 값이었다.
+const ENEMY_SCORE_FONT := 20  # = PLAYER_SCORE_FONT
 const ENEMY_HP_H       := 7.0
+
+## 적 스트립 뒤판이 초상화 띠 바깥으로 나가는 여백. **아군 뒤판과 같은 규칙**
+## (`PLAYER_BG_PAD`)이지만 아래쪽만은 `TOP_PANEL_H` 에 맞춰 잘린다 — 그 아래
+## 사슬(상대 핸드 peek 가림 · 적 도넛 · 킬로그)이 전부 그 값에서 나오기 때문.
+const ENEMY_BG_PAD     := 10.0
 
 ## 오브젝트 시계 두 칸 — 스트립 양옆의 남은 여백.
 ##
@@ -173,6 +182,9 @@ var _player_strip: PilotStrip = null   # team 0, 핸드 행 아래
 ## 아군 스트립 뒤판. 스트립과 **함께** 숨어야 한다 — 상세 패널이 스트립만
 ## 치우면 빈 판이 딤 위에 덩그러니 남는다.
 var _player_strip_bg: Panel = null
+## 적 스트립 뒤판. 같은 이유로 스트립과 함께 숨는다. 예전에는 화면 가로를 통째로
+## 덮는 상단 패널이 그 자리였다 — `_build_top_panel` 주석 참조.
+var _enemy_strip_bg: Panel = null
 ## 적 스트립 좌우의 오브젝트 등장 시계 — 좌 전령 / 우 용.
 var _obj_timers: Array = []           # Array[ObjectiveTimer]
 
@@ -184,7 +196,6 @@ var _btn_discard_view: Button = null
 
 # ── Center labels ────────────────────────────────────────────────────────────
 var _lbl_time: Label = null
-var _lbl_total_score: Label = null
 
 
 # ── AI hand peek refs ────────────────────────────────────────────────────────
@@ -314,50 +325,81 @@ func _update_pile_buttons() -> void:
 		_bs.pile_discard.set_dimmed(not can)
 
 
-# ── 상단 패널: 시간 · 팀 점수 한 줄 + 그 아래 적 파일럿 스트립 ────────────────
+# ── 상단 chrome: 경과 시계 + 적 파일럿 스트립(뒤판) + 오브젝트 시계 둘 ───────
+#
+# **예전에는 화면 가로를 통째로 덮는 패널 한 장이었다.** 그 판이 헤더 줄과 적
+# 스트립과 오브젝트 시계를 다 담고 있어서, 좌우 끝의 시계가 스트립과 같은 판
+# 위에 얹힌 것으로 읽혔다 — 시계는 스트립의 일부가 아니라 전장의 사건을
+# 세는 별개의 물건이다. 지금은 **아군 스트립과 같은 규칙**으로, 뒤판이
+# 초상화 다섯 칸만 감싸고(`_enemy_strip_bg`) 시계 둘과 경과 시계는 그 바깥에
+# 배경 없이 선다.
+#
+# 뒤판은 여전히 **상대 핸드 peek 의 윗부분을 가리는 가림막**이다 — peek 부채꼴은
+# 화면 가로 가운데(x ≈ 378..702)에 서므로 스트립 폭(x 127..953) 안에 통째로
+# 들어간다. 그래서 아래끝을 `TOP_PANEL_H` 에 맞춰 두면 가려지는 양이 예전과
+# 한 픽셀도 다르지 않고, 그 아래 사슬(적 도넛 · 킬로그)도 그대로다.
+#
+# **팀 합산 점수(`12.4k - 9.8k`)는 삭제됐다** — 같은 수를 스트립의 다섯 칸이
+# 이미 낱개로 보여 주고 있고, 합계는 어느 쪽이 이기고 있는지를 한 줄로 말해
+# 주는 대신 정작 누가 크고 있는지를 가렸다. `TOTAL_SCORE_FONT` 와
+# `_lbl_total_score` 는 그때 함께 사라졌다.
 func _build_top_panel() -> void:
-	var tp := Panel.new()
 	var vp_w: float = ScreenMetrics.vp_w()
-	tp.position = Vector2(0.0, TOP_PANEL_Y + top_offset())
-	tp.size     = Vector2(vp_w, TOP_PANEL_H)
-	# Force an opaque dark background so the AI hand card backs sitting
-	# behind this panel are visually clipped to the peek strip below.
-	var tp_style := StyleBoxFlat.new()
-	tp_style.bg_color = Color(0.06, 0.06, 0.10, 1.0)
-	tp_style.border_color = Color(0.18, 0.18, 0.24, 1.0)
-	tp_style.border_width_top    = 1
-	tp_style.border_width_bottom = 1
-	tp_style.border_width_left   = 1
-	tp_style.border_width_right  = 1
-	tp.add_theme_stylebox_override("panel", tp_style)
-	_bs.canvas.add_child(tp)
+	var strip_rect := Rect2(
+			Vector2((vp_w - ENEMY_STRIP_RECT.size.x) * 0.5,
+					ENEMY_STRIP_RECT.position.y + top_offset()),
+			ENEMY_STRIP_RECT.size)
 
-	# 시계는 왼쪽 끝, 팀 점수는 가운데. 둘이 같은 줄에 앉는다.
-	_lbl_time = UiHelpers.mk_label(tp, "00:00", TIME_FONT,
-			Color(0.85, 0.85, 0.85),
-			Vector2(20.0, HEADER_ROW_Y), Vector2(220.0, HEADER_ROW_H),
-			HORIZONTAL_ALIGNMENT_LEFT)
-	_lbl_total_score = UiHelpers.mk_label(tp, "", TOTAL_SCORE_FONT,
-			Color(1.0, 0.95, 0.6),
-			Vector2(0.0, HEADER_ROW_Y), Vector2(vp_w, HEADER_ROW_H),
-			HORIZONTAL_ALIGNMENT_CENTER)
+	# 뒤판 — 초상화 띠를 사방으로 `ENEMY_BG_PAD` 넓힌 판. 아래끝만은
+	# `TOP_PANEL_H` 에 못박는다(그 아래 사슬이 전부 그 값에서 나온다).
+	var bg := Panel.new()
+	bg.name = "EnemyStripBackdrop"
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg.position = strip_rect.position - Vector2(ENEMY_BG_PAD, ENEMY_BG_PAD)
+	bg.size = Vector2(
+			strip_rect.size.x + ENEMY_BG_PAD * 2.0,
+			TOP_PANEL_H - ENEMY_STRIP_RECT.position.y + ENEMY_BG_PAD)
+	var bg_style := StyleBoxFlat.new()
+	bg_style.bg_color = STRIP_BG_COLOR
+	bg_style.border_color = STRIP_BG_BORDER
+	bg_style.border_width_top    = 1
+	bg_style.border_width_bottom = 1
+	bg_style.border_width_left   = 1
+	bg_style.border_width_right  = 1
+	bg.add_theme_stylebox_override("panel", bg_style)
+	_bs.canvas.add_child(bg)
+	_enemy_strip_bg = bg
 
-	# 적 스트립은 패널의 자식이라 패널 배경 위에 그려진다(= 상대 핸드 peek 을
-	# 가리는 가림막의 일부).
+	# 경과 시계 — 왼쪽 끝, 배경 없이. 캔버스 직속이라 뒤판을 옮겨도 따라오지
+	# 않는다(둘은 이제 서로 다른 물건이다).
+	# `UiHelpers.mk_label` 은 Control 부모를 받는다 — 캔버스는 CanvasLayer 라
+	# 여기서는 직접 세운다(예전에는 전폭 패널이 그 Control 이었다).
+	_lbl_time = Label.new()
+	_lbl_time.text = "00:00"
+	_lbl_time.add_theme_font_size_override("font_size", TIME_FONT)
+	_lbl_time.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
+	# 받침이 없으므로 외곽선으로 읽힘을 지킨다 — 전장 타일 위로 지나갈 일은
+	# 없지만 배경이 밝은 기기 테마에서 흐려질 수 있다.
+	_lbl_time.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	_lbl_time.add_theme_constant_override("outline_size", 4)
+	_lbl_time.position = Vector2(20.0, HEADER_ROW_Y + top_offset())
+	_lbl_time.size = Vector2(220.0, HEADER_ROW_H)
+	_lbl_time.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bs.canvas.add_child(_lbl_time)
+
 	# 적 스트립도 **눌러서 상세 패널을 연다** — 아군과 같은 게이트(작전 단계),
 	# 같은 내용(인게임 · 파일럿 · 메크). 상대 로스터는 이미 `match_ctx.enemy_roster`
 	# 로 들어와 있어 `BattleSim.player_data_for` 가 그대로 찾아 준다.
+	#
+	# 뒤판 **뒤에** 붙이면 판이 얼굴을 덮는다(형제 z-order = 자식 인덱스).
 	_enemy_strip = PilotStrip.new()
 	_enemy_strip.name = "EnemyPilotStrip"
-	tp.add_child(_enemy_strip)
-	var strip_rect := Rect2(
-			Vector2((vp_w - ENEMY_STRIP_RECT.size.x) * 0.5, ENEMY_STRIP_RECT.position.y),
-			ENEMY_STRIP_RECT.size)
+	_bs.canvas.add_child(_enemy_strip)
 	_enemy_strip.setup(_bs, 1, strip_rect, true,
 			ENEMY_SCORE_FONT, ENEMY_HP_H)
 	_enemy_strip.pilot_pressed.connect(_on_pilot_strip_pressed)
 
-	# 오브젝트 등장 시계 — 스트립 양옆. 전령이 왼쪽 · 용이 오른쪽인 것은
+	# 오브젝트 등장 시계 — 스트립 **바깥** 좌우. 전령이 왼쪽 · 용이 오른쪽인 것은
 	# 전장에서 두 오브젝트가 서는 칸의 좌우와 같다.
 	_obj_timers.clear()
 	var timer_right_x: float = vp_w - OBJ_TIMER_W - OBJ_TIMER_LEFT_X
@@ -365,8 +407,8 @@ func _build_top_panel() -> void:
 			[ObjectiveSystem.Kind.DRAGON, timer_right_x]]:
 		var timer := ObjectiveTimer.new()
 		timer.name = "ObjTimer%d" % int(spec[0])
-		tp.add_child(timer)
-		timer.position = Vector2(float(spec[1]), OBJ_TIMER_Y)
+		_bs.canvas.add_child(timer)
+		timer.position = Vector2(float(spec[1]), OBJ_TIMER_Y + top_offset())
 		timer.size = Vector2(OBJ_TIMER_W, OBJ_TIMER_H)
 		timer.setup(_bs, int(spec[0]))
 		# 누르면 그 오브젝트의 보상 카드를 실물로 띄운다. 회피할 수 있는
@@ -480,8 +522,11 @@ func set_strip_visible(team: int, on: bool) -> void:
 	var strip: PilotStrip = _player_strip if team == 0 else _enemy_strip
 	if strip != null:
 		strip.visible = on
-	if team == 0 and _player_strip_bg != null:
-		_player_strip_bg.visible = on
+	# 뒤판도 함께 숨긴다 — 스트립만 치우면 빈 판이 딤 위에 남는다. 두 스트립이
+	# 각자 자기 뒤판을 가지므로 규칙이 위아래 같다.
+	var bg: Panel = _player_strip_bg if team == 0 else _enemy_strip_bg
+	if bg != null:
+		bg.visible = on
 
 
 # AI hand peek — row of face-down card backs whose tops hide behind the score
@@ -817,10 +862,6 @@ func _update_pilot_strips(in_card_phase: bool) -> void:
 	if _enemy_strip != null:
 		_enemy_strip.set_pilots(team1)
 		_enemy_strip.set_interactive_enabled(in_card_phase)
-	if _lbl_total_score != null:
-		_lbl_total_score.text = "%s - %s" % [
-			BattleSim.fmt_score(_bs.team_score(0)),
-			BattleSim.fmt_score(_bs.team_score(1))]
 	for raw in _obj_timers:
 		(raw as ObjectiveTimer).queue_redraw()
 	if _bs.pilot_detail != null:

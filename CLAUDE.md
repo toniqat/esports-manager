@@ -163,7 +163,8 @@ esports-manager/
 │   └── Card.tscn                ← Card prefab (instantiated at runtime)
 │
 ├── docs/
-│   ├── ios_testbuild.md          ← 맥 없이 아이폰에서 돌리는 법 (Actions + Sideloadly)
+│   ├── ios_testbuild.md          ← 맥 없이 아이폰에서 돌리는 법 (Actions + Sideloadly).
+│   │                                코드/에셋만 바뀐 경우 pck 만 갈아 끼우는 빠른 길도 여기 있다
 │   ├── mobile_safe_area.md       ← **UI 를 어디에 놓아도 되는가** — 세이프 에어리어 · 화면비 · 제스처 구역
 │   └── mech_skills_design.md     ← 메크 21대 목록 + 절 문법
 │

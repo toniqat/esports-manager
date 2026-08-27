@@ -60,6 +60,95 @@ GitHub 은 아티팩트를 **zip 으로 한 겹 더 싸서** 준다. 압축을 �
 
 ---
 
+## 빠른 길 — pck 만 갈아 끼우기
+
+**게임 코드와 에셋만 바뀌었다면 CI 를 돌릴 필요가 없다.** 이미 손에 있는
+unsigned `.ipa` 안의 `.pck` 만 로컬에서 구운 새 것으로 바꿔 치면 된다 — 10~15분이
+몇 초가 된다. 맥은 여전히 필요 없고, 윈도우 PC 의 Godot 하나면 끝난다.
+
+`.ipa` 안의 `.app` 은 크게 둘로 나뉜다. **엔진 바이너리 + `Info.plist` + 아이콘**은
+xcodebuild 가 굽는 것이고, **게임 전체(`.pck`)** 는 Godot 이 굽는 것이다. 뒤쪽만
+바뀌었다면 앞쪽을 다시 만들 이유가 없다.
+
+### 1. pck 굽기
+
+```bash
+godot --headless --path <프로젝트 경로> --export-pack "iOS" build/EsportsManager.pck
+```
+
+`--export-pack` 에는 `--export-debug` / `--export-release` 같은 구분이 **없다** —
+pck 는 데이터일 뿐이고 debug/release 를 가르는 것은 엔진 바이너리 쪽이라, 어느
+템플릿으로 구운 `.ipa` 에 넣어도 된다.
+
+### 2. ipa 안의 pck 교체
+
+```python
+import zipfile
+
+SRC, PCK, DST = "build/EsportsManager-debug-unsigned.ipa", "build/EsportsManager.pck", "build/새이름.ipa"
+pck = open(PCK, "rb").read()
+
+with zipfile.ZipFile(SRC) as zin, zipfile.ZipFile(DST, "w", zipfile.ZIP_DEFLATED) as zout:
+    for i in zin.infolist():
+        out = zipfile.ZipInfo(i.filename, date_time=i.date_time)
+        # 이 세 줄이 핵심이다 — 특히 external_attr 에 엔진 바이너리의 실행 비트가 들어 있다.
+        out.compress_type, out.external_attr, out.create_system = i.compress_type, i.external_attr, i.create_system
+        zout.writestr(out, pck if i.filename.endswith(".pck") else zin.read(i.filename))
+```
+
+**`external_attr` 를 반드시 옮겨야 한다.** 거기에 `Payload/*.app/EsportsManager` 의
+실행 비트(`-rwxr-xr-x`)가 들어 있고, 그게 날아가면 Sideloadly 는 멀쩡히 설치하는데
+앱만 안 뜬다. zip 을 다시 쓰는 것 자체는 안전하다 — 이 `.ipa` 는 **서명이 없으므로**
+깨질 서명이 없다(서명은 어차피 Sideloadly 가 설치할 때 로컬에서 한다).
+
+그 다음은 평소와 같다 — 새 `.ipa` 를 Sideloadly 에 넣는다.
+
+### 이 길이 통하지 않는 변경
+
+| 바꾼 것 | pck 교체로 되나 | 왜 |
+|---|---|---|
+| GDScript, 씬, 이미지, `data/game.db` | **된다** | 전부 pck 안에 있다 |
+| 대부분의 `project.godot` 설정 | **된다** | pck 안 `project.binary` 로 들어간다 (예: `window/stretch/aspect`) |
+| `window/handheld/orientation` | **안 된다** | 익스포트 시점에 `Info.plist` 로 구워진다 — pck 밖이다 |
+| 번들 ID / 버전 / 앱 아이콘 | **안 된다** | 같은 이유. 아이콘은 `Assets.car` 로 따로 구워진다 |
+| GDExtension(godot-sqlite) 갱신 | **안 된다** | iOS 는 xcframework 를 **앱 바이너리에 정적 링크**한다 |
+| Godot 버전 업 | **안 된다** | 엔진 바이너리가 곧 그 버전이다 |
+
+GDExtension 이 pck 밖에 산다는 것은 눈으로 확인할 수 있다 — `.app` 안에 `.dylib`
+이 하나도 없고, pck 안에도 `addons/godot-sqlite/bin/*` 항목이 없다(경로 목록을 담은
+`.gdextension` **텍스트 파일만** 들어간다).
+
+### 검산
+
+`grep` 으로 pck 안에서 `data/game.db` 문자열을 찾는 것은 "경로가 적혀 있다"까지만
+말해 준다. 내용이 비었는지까지 보려면 **파일 테이블의 크기 필드**를 읽어야 한다.
+
+```python
+import struct
+f = open("build/EsportsManager.pck", "rb")
+assert f.read(4) == b"GDPC"
+f.seek(0x20); dir_off, = struct.unpack("<Q", f.read(8))   # v3 는 파일 테이블이 파일 끝에 있다
+f.seek(dir_off); n, = struct.unpack("<I", f.read(4))
+for _ in range(n):
+    plen, = struct.unpack("<I", f.read(4))
+    name = f.read(plen).rstrip(b"\x00").decode()
+    off, size = struct.unpack("<QQ", f.read(16)); f.read(16); f.read(4)  # md5 + flags
+    if "game.db" in name or name == "project.binary":
+        print(size, name)
+```
+
+**Godot 4.5 의 pck 는 포맷 v3 라 파일 테이블이 파일 끝에 있다.** 헤더 `0x20`
+위치의 uint64 가 그 오프셋이고, 옛 v1/v2 처럼 헤더 바로 뒤에서 읽으면 `files=0`
+이라는 거짓말을 얻는다.
+
+로컬 윈도우 엔진으로 `--main-pack` 스모크 테스트를 돌리면
+`Identifier "SQLite" not declared` 파스 에러가 나는데 **이건 정상이다** — iOS
+익스포트가 windows dll 을 뺐을 뿐이고, 폰에서는 그 자리를 정적 링크된
+xcframework 가 채운다. 이 테스트로는 pck 가 마운트되고 메인 씬이 열리는 것까지만
+확인할 수 있다.
+
+---
+
 ## Sideloadly 로 아이폰에 설치
 
 ### 준비물
@@ -214,7 +303,8 @@ application/version="0.1"
 | `due to configuration errors:` 뒤가 **비어 있다** | `project.godot` 의 `textures/vram_compression/import_etc2_astc` 가 꺼졌다 — 아래 항목 |
 | `.xcodeproj 를 찾지 못했다` | Godot 익스포트 단계가 실패했다 — 그 위 단계 로그를 볼 것 |
 | `pck 안에 data/game.db 가 없다` | `include_filter` 가 빗나갔다 |
-| 폰에서 게임이 **가로로** 뜼다 | `window/handheld/orientation` 이 문자열로 되돌아갔다 — 위 항목 |
+| 폰에서 게임이 **가로로** 뜬다 | `window/handheld/orientation` 이 문자열로 되돌아갔다 — 위 항목 |
+| pck 를 갈아 끼웠는데 **화면 방향 · 아이콘 · 번들 ID** 가 그대로다 | 그 셋은 `Info.plist` / `Assets.car` 에 구워져 pck 밖에 산다 — CI 로 ipa 를 새로 굽는다 |
 | 폰에서 앱이 켜지자마자 닫힌다 | 서명 만료(7일) 또는 신뢰 설정 미완료 → 재설치 + 기기 관리에서 신뢰 |
 | Sideloadly 가 폰을 못 잡는다 | Microsoft Store 판 iTunes 가 깔려 있다 — Apple 사이트 버전으로 교체 |
 | `Unable to install... 0xE8008015` | 무료 계정 앱 3개 한도 초과 — 다른 사이드로드 앱을 지운다 |

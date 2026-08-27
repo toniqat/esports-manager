@@ -159,3 +159,15 @@ perspective. 밴은 합법성 판정용 `_banned`(양 팀 합본)와 표시용
 ### Mechs have a role, but assignment is still free
 `mechs.role` 은 이 화면의 필터와 데이터 검증에 쓰인다. 어느 슬롯에 어느 기체를
 앉힐지는 여전히 ASSIGN 이 자유롭게 정한다.
+
+---
+
+## 격자 스크롤 — 메크 칸이 `MOUSE_FILTER_PASS` 인 이유
+
+`_build_mech_cell` 의 `Button` 은 필터를 **PASS 로 내려 둔다**(기본값 STOP).
+STOP 이면 폰에서 메크 격자가 전혀 안 굴러간다 — 드래그 스크롤은 터치에서
+에뮬레이트된 마우스 press 가 `ScrollContainer` 까지 올라와야 시작되는데
+STOP 이 그걸 끊기 때문이고, 칸이 격자를 빈틈없이 덮으므로 예외 자리가 없다.
+`_grid_content` 가 `IGNORE` 인 것도 같은 사슬의 일부다(몸통이 STOP 이면 칸
+사이 빈 자리를 눌러도 거기서 끊긴다). 데스크톱은 휠이 STOP 을 뚫어서 이
+결함이 안 보인다. 규칙과 검증법은 **`docs/mobile_safe_area.md` §5**.

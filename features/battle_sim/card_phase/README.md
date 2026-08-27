@@ -1609,3 +1609,17 @@ either of them covers both).
   (`_is_player_input_blocked`) 드래그가 시작되지도 않는다. 예전에는 "선택된
   카드는 열람 중에도 선택된 채 남는다"는 규칙이 있었는데, 선택 상태 자체가
   사라지면서 함께 없어졌다.
+
+---
+
+## 카드 그리드 스크롤 (찾기 / 버리기 / 더미 열람)
+
+`CardSelectOverlay._build_search_grid` 와 `CardPileViewer._build_grid` 의
+스크롤 몸통 `inner` 는 **`MOUSE_FILTER_IGNORE`** 이고, 찾기 그리드의 투명
+픽 버튼(`_attach_search_pick_overlay` 의 `hit`)은 **`MOUSE_FILTER_PASS`** 다.
+둘 다 기본값(STOP)이면 폰에서 그리드가 안 굴러간다 — Godot 의 드래그 스크롤은
+터치에서 에뮬레이트된 마우스 press 가 `ScrollContainer` 까지 올라와야
+시작되는데 STOP 이 그 전파를 끊는다. 카드 노드 자체는 이미 IGNORE 라 문제가
+없었고, 막고 있던 것은 그 위/아래의 두 겹이다. 데스크톱에서는 휠이 STOP 을
+뚫도록 엔진이 예외를 두어 이 결함이 드러나지 않는다. 규칙과 검증법은
+**`docs/mobile_safe_area.md` §5**.

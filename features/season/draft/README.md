@@ -108,3 +108,15 @@ pilot's prior team — every team always has exactly one pilot per role.
 닫기 버튼에 **불투명 스타일이 필수다** — 그 자리는 드래프트 화면의 "드래프트
 확정" 버튼과 겹치는데, 기본 Button 테마는 반투명이라 딤 아래의 그 글자가 비쳐
 두 라벨이 한 칸에 겹쳐 읽혔다.
+
+---
+
+## 격자 스크롤 — 썸네일이 `MOUSE_FILTER_PASS` 인 이유
+
+`PilotThumb` 는 `Button` 이지만 필터를 **PASS 로 내려 둔다**. 기본값 STOP 이면
+폰에서 격자가 통째로 안 굴러간다 — Godot 의 드래그 스크롤은 터치에서
+에뮬레이트된 **마우스 press 가 `ScrollContainer` 까지 올라와야** 시작되는데
+STOP 이 그 전파를 끊고, 썸네일이 격자를 빈틈없이 덮으므로 손가락을 어디에
+대도 문턱을 넘지 못한다. 데스크톱에서는 휠이 STOP 을 뚫도록 엔진이 예외를
+두고 있어 이 결함이 드러나지 않는다. 규칙과 검증법은
+**`docs/mobile_safe_area.md` §5**.

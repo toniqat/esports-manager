@@ -566,6 +566,11 @@ func _build_mech_cell(m: MechData) -> Dictionary:
 	var btn := Button.new()
 	btn.size = Vector2(cw, ch)
 	btn.custom_minimum_size = Vector2(cw, ch)
+	# 스크롤 안의 탭 대상은 **PASS** 여야 한다 — 모바일 드래그 스크롤은 터치에서
+	# 에뮬레이트된 마우스 press 가 ScrollContainer 까지 올라가야 시작되는데
+	# STOP 이 그걸 끊는다. 칸이 격자를 빈틈없이 덮으므로 STOP 이면 손가락을
+	# 어디에 대도 격자가 안 움직인다(실측). 탭은 PASS 로도 그대로 동작한다.
+	btn.mouse_filter = Control.MOUSE_FILTER_PASS
 	btn.pressed.connect(_on_mech_pressed.bind(m.id))
 	for st in ["normal", "hover", "pressed", "focus", "disabled"]:
 		btn.add_theme_stylebox_override(st, _cell_style(false))

@@ -77,6 +77,13 @@ func _build() -> void:
 	size               = Vector2(CELL_W, CELL_H)
 	focus_mode         = Control.FOCUS_NONE
 	clip_contents      = true
+	# **STOP 이면 안 된다** — 이 칸은 ScrollContainer 안에 있고, 모바일의 드래그
+	# 스크롤은 (터치에서 에뮬레이트된) 마우스 press/motion 이 ScrollContainer 까지
+	# 올라가야 시작된다. STOP 은 그 전파를 끊으므로 손가락이 썸네일 위에서
+	# 시작하면 격자가 영영 안 움직인다 — 칸이 격자를 빈틈없이 덮으므로 사실상
+	# 스크롤이 통째로 죽는다. PASS 는 버튼 자신도 그대로 이벤트를 받으므로
+	# 탭은 지금과 똑같이 동작하고, 드래그가 시작되면 Godot 이 그 눌림을 취소한다.
+	mouse_filter       = Control.MOUSE_FILTER_PASS
 	text               = ""
 	pressed.connect(_on_pressed)
 

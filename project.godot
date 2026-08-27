@@ -41,6 +41,11 @@ custom_bind_ip=""
 port_override_enabled=false
 port_override=6550
 
+[gui]
+
+; 모바일 드래그 스크롤의 탭 허용 오차. 근거는 docs/mobile_safe_area.md §5.
+common/default_scroll_deadzone=24
+
 [rendering]
 
 renderer/rendering_method="mobile"

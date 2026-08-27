@@ -424,6 +424,9 @@ func _build_search_grid(source: Array, sort_names: bool = true) -> void:
 			+ float(max(rows - 1, 0)) * SEARCH_ROW_GAP
 	inner.custom_minimum_size = Vector2(grid_w, inner_h)
 	inner.size = inner.custom_minimum_size
+	# 기본값(STOP)이면 카드 사이 빈 자리를 눌러도 그 이벤트가 여기서 끊겨
+	# ScrollContainer 가 드래그 스크롤을 시작하지 못한다.
+	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_scroll_root.add_child(inner)
 
 	# Cell width: 5 columns evenly spaced inside the grid; cards keep their
@@ -464,10 +467,13 @@ func _sorted_for_display(src: Array) -> Array:
 
 
 func _attach_search_pick_overlay(node: Card, cd: CardData) -> void:
-	# A flat, fully-transparent Button sized to the card. It absorbs clicks
-	# (mouse_filter STOP by default on Button) so the underlying Card never
-	# sees them.
+	# A flat, fully-transparent Button sized to the card. The Card underneath
+	# is MOUSE_FILTER_IGNORE, so it never sees the click regardless.
+	# **PASS, not the Button default STOP** — this sits inside a
+	# ScrollContainer and STOP would stop the emulated mouse press from
+	# reaching it, killing touch drag-scroll on mobile.
 	var hit := Button.new()
+	hit.mouse_filter = Control.MOUSE_FILTER_PASS
 	hit.flat = true
 	hit.size = Vector2(Card.CARD_W, Card.CARD_H)
 	hit.position = Vector2.ZERO

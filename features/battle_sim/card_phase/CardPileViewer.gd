@@ -167,6 +167,9 @@ func _build_grid(cards: Array, screen: Vector2) -> void:
 			+ float(max(rows - 1, 0)) * ROW_GAP
 	inner.custom_minimum_size = Vector2(grid_w, inner_h)
 	inner.size = inner.custom_minimum_size
+	# 기본값(STOP)이면 터치가 여기서 끊겨 ScrollContainer 가 드래그 스크롤을
+	# 시작하지 못한다 (CardSelectOverlay._build_search_grid 와 같은 이유).
+	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_scroll_root.add_child(inner)
 
 	var col_w: float = (grid_w - float(COL_COUNT - 1) * COL_GAP) / float(COL_COUNT)

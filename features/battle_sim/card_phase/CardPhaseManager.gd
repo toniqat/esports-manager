@@ -4124,6 +4124,12 @@ func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 	#   |at_marked   목표가 찍힌 적 주변에서 연다   (단계 B)
 	#   |self_range:N 시전자 중심 반경 N            (우세한 전장 3 · 개시 2 …)
 	#   |charge_rounds 라운드 수를 영혼 포식 충전으로 갈음한다 (전쟁의 사슬)
+	#   |drop_in     시전자만 타일을 무시하고 **적 진형 한가운데에 낙하** (강습)
+	#
+	# `drop_in` 은 카드 문안에 적혀 있지 않다 — 순수한 배치 연출이기 때문이고,
+	# 그래도 플래그로 둔 것은 [강습]이 "전장 내 어디서든 걸 수 있다"는 카드라
+	# 그 그림(공중에서 떨어져 바로 투입된다)이 무대에 남아야 하기 때문이다.
+	var drop_in: bool = "drop_in" in flags
 	var center: Vector2i = Vector2i(-999, -999)
 	var radius: int = maxi(1, _flag_int(flags, "self_range", 1))
 	if "at_target" in flags:
@@ -4147,8 +4153,18 @@ func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 	if t0.is_empty() or t1.is_empty():
 		return "전투 개시 (대상 부족)"
 	var who: String = "" if is_player else " (AI)"
+	# 개시 확인 화면에 뜨는 라운드 수는 파일럿 스킬 보정까지 먹은 **실제** 수여야
+	# 한다. 여기서는 엿보기만 하고(consume = false) 소모는 `start_engage` 가 한다 —
+	# 취소했는데 [공성전]의 한 장짜리 보너스가 타 버리면 되돌릴 방법이 없다.
+	var shown_rounds: int = _bs.engage_phase.engage_rounds_for(caster, rounds, false)
+	# **무대를 먼저 세운다.** 개시 확인 화면은 명단만이 아니라 **시작 위치**를
+	# 보여 주는 화면이고, 확인을 누르면 바로 그 무대가 이어진다 — 화면에서 본
+	# 배치와 실제로 싸우는 배치가 같아야 그 화면이 판단의 근거가 된다.
+	var origin: Vector2i = center if center != Vector2i(-999, -999) else caster.grid_pos
+	_bs.engage_phase.prepare_sim(caster, t0, t1, shown_rounds, false, -1,
+			origin, drop_in)
 	# AI 가 낸 카드는 플레이어가 무를 수 있는 것이 아니므로 확인만 뜬다.
-	var ok: bool = await _bs.engage_phase.prompt_engage(t0, t1, rounds,
+	var ok: bool = await _bs.engage_phase.prompt_engage(t0, t1, shown_rounds,
 			"전투 개시%s" % who, is_player)
 	if not ok:
 		_on_overlay_cancel()
@@ -4157,7 +4173,7 @@ func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 	# AiCardPlayer awaits engage_finished between AI plays so the
 	# back-to-back animations don't stomp each other.
 	_bs.engage_phase.start_engage(caster, rounds, exclude_lane,
-			Callable(self, "_on_engage_finished"), center, radius)
+			Callable(self, "_on_engage_finished"), center, radius, drop_in)
 	# **무대가 닫힐 때까지 기다린다.** 이 절 뒤에 오는 절이 교전 결과를 묻기
 	# 때문이다 — [우세한 전장] 의 `gen_hand:19|per_kill` 과 [단계 B] 의
 	# `phase_b` 둘. 기다리지 않으면 그 둘이 첫 라운드가 돌기도 전에, 즉 처치
@@ -4173,8 +4189,10 @@ func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 	if _bs.engage_phase.survived_last_engage(caster):
 		_last_attack_kills = _bs.engage_phase.last_engage_kills(caster)
 	var tag: String = " (레인 제외)" if exclude_lane else ""
+	if drop_in:
+		tag += " · 강습"
 	# engage:N 의 N 은 **라운드 수** 그대로다 — 초로 환산하던 예전 규칙은 삭제됐다.
-	return "전투 개시 %d라운드%s%s" % [rounds, tag, who]
+	return "전투 개시 %d라운드%s%s" % [shown_rounds, tag, who]
 
 
 # Engage 모달이 닫힌 직후 호출. 사망자가 생겼을 수 있고, 보호막/HP 가
@@ -4238,6 +4256,10 @@ func _effect_duel(caster: PilotData, picked: PilotData,
 	var who: String = "" if is_player else " (AI)"
 	var t0: Array = [caster] if caster.team == 0 else [picked]
 	var t1: Array = [picked] if caster.team == 0 else [caster]
+	# 결투도 같은 개시 확인 화면을 지난다 — 둘뿐이어도 어느 타일에서 붙는지는
+	# 보여 줘야 한다.
+	_bs.engage_phase.prepare_sim(caster, t0, t1,
+			TurnEngageSim.DUEL_MAX_ROUNDS, true, -1, caster.grid_pos)
 	var ok: bool = await _bs.engage_phase.prompt_engage(t0, t1,
 			TurnEngageSim.DUEL_MAX_ROUNDS, "결투%s" % who, is_player)
 	if not ok:

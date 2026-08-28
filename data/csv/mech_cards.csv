@@ -28,7 +28,7 @@ id,mech_id,name,count,cost,cast_method,target,cast_range,area,keyword,charge_max
 27,9,영혼 포식,1,2,instant,hand,0,0,,0,attack:1|self_range:1;charge:1|per_hit;heal_pct:10|per_hit|self,,사거리 1 내 모든 적 공격. 명중한 횟수마다 +1 충전 및 시전자 체력 10% 회복. 충전 수만큼 [전쟁의 사슬] 의 전투 라운드가 증가
 28,0,몸집 불리기,1,2,instant,hand,0,0,,0,max_hp:20|self,,자신의 최대 체력 20 증가
 29,0,추적,1,3,target,enemy,99,0,,0,attack:1;on_hit;track:15,,전장 내 적 지정 공격. 명중 시 15턴 간 추적 — 대상이 전투에 참여하면 시전자도 참여
-30,0,강습,1,8,target,enemy,99,0,,0,engage:3|at_target,,전장 내 적 지정 — 대상 1칸 이내 전투 개시: 3
+30,0,강습,1,8,target,enemy,99,0,,0,engage:3|at_target|drop_in,,전장 내 적 지정 — 대상 1칸 이내 전투 개시: 3
 31,1,최첨단 보호,1,3,target,ally,1,0,,0,heal_pct:30;reactive_armor:1,,사거리 1 내 아군 지정 — 대상 최대 체력의 30% 회복 및 [반응 장갑] 1 부여
 32,1,초고출력,1,4,instant,hand,0,0,,0,attack:1|self_range:1|pierce;reactive_armor:1|per_hit|self,,사거리 1 내 모든 적 및 포탑 필중. 명중한 수만큼 자신에게 [반응 장갑] 1 부여
 33,1,개시,1,8,range,caster,2,0,,0,engage:5|self_range:2,,사거리 2 이내 전투 개시: 5

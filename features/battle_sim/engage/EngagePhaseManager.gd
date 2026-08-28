@@ -67,6 +67,11 @@ var _on_done: Callable = Callable()
 ## 교전이 "전령" / "용" 을 넣는다.
 var _arena_title: String = ""
 
+## 오브젝트(전령 / 용)가 연 교전인가. 결과 화면의 승패 판정이 갈리는 유일한
+## 지점이다 — 오브젝트는 이미 판정이 있고(생존 인원 → 잔여 HP 비율 합),
+## 카드 교전에는 없어서 "이겼다고 부를 수 있는 모양"을 따로 정해야 한다.
+var _is_objective: bool = false
+
 ## 방금 끝난 교전의 성적표(`TurnEngageSim.stats` 의 사본). `_sim` 은 대시보드를
 ## 닫을 때 버려지는데, `engage:N` 절을 물고 있던 효과 체인은 그 **뒤에** 깨어나
 ## "이 교전에서 몇을 눕혔나"를 묻는다([우세한 전장] 의 `gen_hand|per_kill`).
@@ -88,6 +93,16 @@ var _arena: EngageArena = null
 # `prompt_engage` 가 만들고 await 하며, 그동안 `_active` 는 아직 false 다 —
 # 교전은 시작되지 않았고 취소되면 아예 시작되지 않는다.
 var _intro: EngageIntro = null
+
+## 개시 확인 화면이 그린 **바로 그 무대**. 확인을 누르면 `_begin` 이 이것을
+## 그대로 가져가므로, 화면에서 본 시작 위치와 실제로 싸우는 자리가 같다 —
+## 그 일치가 이 화면을 **판단의 근거**로 만들어 준다. 다시 만들면 지터와
+## 칸 안 자리가 달라져 "본 것"과 "나온 것"이 어긋난다.
+##
+## 생명 주기 주의: 프롬프트를 띄우고도 교전이 안 열리는 경로가 있다(미참여 ·
+## 무혈 획득 알림). 그래서 `_begin` 은 명단이 일치할 때만 이것을 쓰고
+## (`TurnEngageSim.matches`), 아니면 조용히 버리고 새로 세운다.
+var _pending_sim: TurnEngageSim = null
 
 
 func _ready() -> void:
@@ -112,7 +127,8 @@ func _ready() -> void:
 #                  phase returns to CARD_PHASE. Used to refresh hand UI.
 func start_engage(caster: PilotData, rounds_total: int, exclude_lane: bool,
 		on_done: Callable = Callable(),
-		center: Vector2i = Vector2i(-999, -999), radius: int = 1) -> void:
+		center: Vector2i = Vector2i(-999, -999), radius: int = 1,
+		drop_in: bool = false) -> void:
 	if _active:
 		return
 	if caster == null or rounds_total <= 0:
@@ -132,14 +148,41 @@ func start_engage(caster: PilotData, rounds_total: int, exclude_lane: bool,
 			on_done.call()
 		return
 
-	# 파일럿 스킬의 라운드 보정 — 전투 명령(이번 작전 단계, −1)과 공성전
-	# (다음 한 장, +3)의 합. 후자는 여기서 **소모**된다: 한 장에만 붙는 것이라
-	# 실제로 교전이 열리는 이 지점이 유일하게 옳은 소모 자리다.
-	if _bs.skill != null:
-		rounds_total = maxi(1, rounds_total
-				+ _bs.skill.engage_round_delta(caster.team, true))
+	# 파일럿 스킬의 라운드 보정을 여기서 **소모**한다 — 아래 항목 참조.
+	rounds_total = engage_rounds_for(caster, rounds_total, true)
 
-	_begin(caster, t0, t1, false, rounds_total, on_done)
+	_begin(caster, t0, t1, false, rounds_total, on_done,
+			"", -1, center, drop_in)
+
+
+## 카드가 적은 라운드 수에 파일럿 스킬 보정을 얹은 **실제 라운드 수**.
+## 전투 명령(이번 작전 단계, −1)과 공성전(다음 한 장, +3)의 합이고, 후자는
+## 한 장에만 붙는 것이라 교전이 **실제로 열릴 때** 소모된다.
+##
+## `consume` 이 false 면 엿보기만 한다 — 개시 확인 화면은 아직 교전이 열릴지
+## 모르는 시점이라 그 보너스를 태우면 취소 한 번에 사라진다. 대신 **그 화면이
+## 보여 주는 라운드 수는 실제와 같아야 하므로** 엿보기가 필요하다(예전에는 화면이
+## 보정 전의 수를 띄우고 실제로는 다른 수로 돌았다).
+func engage_rounds_for(caster: PilotData, rounds_total: int,
+		consume: bool) -> int:
+	if caster == null or _bs.skill == null:
+		return maxi(1, rounds_total)
+	return maxi(1, rounds_total
+			+ _bs.skill.engage_round_delta(caster.team, consume))
+
+
+## 개시 확인 화면에 보여 줄 **무대를 미리 세운다.** 상태를 바꾸는 것은
+## `TurnEngageSim.begin()` 쪽에 모여 있으므로 여기서는 자리만 정해진다 — 취소하면
+## 아무 일도 일어나지 않았어야 하기 때문이다(약자 머시의 개시 타격은 피해를
+## 넣고 충전을 태운다).
+func prepare_sim(caster: PilotData, t0: Array, t1: Array, rounds: int,
+		duel: bool, first_team: int = -1,
+		origin: Vector2i = Vector2i(-999, -999),
+		drop_in: bool = false) -> TurnEngageSim:
+	var sim := TurnEngageSim.new()
+	sim.setup(_bs, caster, t0, t1, rounds, duel, first_team, origin, drop_in)
+	_pending_sim = sim
+	return sim
 
 
 ## 시전자 기준 참가자를 **팀별로 갈라** 돌려준다: `[team0, team1]`.
@@ -170,6 +213,10 @@ func prompt_engage(t0: Array, t1: Array, rounds: int, title: String,
 		cancel_text: String = "취소", subtitle: String = "") -> bool:
 	if _overlay_layer == null:
 		return true
+	# 무대를 아직 안 세웠으면 여기서 세운다 — 명단만 보여 주던 예전 화면으로
+	# 돌아가지 않게 하는 폴백이다(호출 측이 `prepare_sim` 을 부르는 것이 정석이다).
+	if _pending_sim == null:
+		prepare_sim(null, t0, t1, rounds, false, 0)
 	# 카드를 든 손패 상태를 먼저 걷는다 — 이 모달이 그 위를 덮으면 리프트된
 	# 카드가 딤 아래에 남는다. (`_begin` 도 같은 이유로 부른다.)
 	if _bs.card_phase != null:
@@ -177,7 +224,7 @@ func prompt_engage(t0: Array, t1: Array, rounds: int, title: String,
 	_intro = EngageIntro.new()
 	_intro.name = "EngageIntro"
 	_overlay_layer.add_child(_intro)
-	_intro.setup(title, rounds, t0, t1, allow_cancel,
+	_intro.setup(_bs, _pending_sim, title, allow_cancel,
 			confirm_text, cancel_text, subtitle)
 	# 손패 딤과 턴 넘기기 잠금은 `is_intro_active()` 를 읽는데, 그 둘은 상태가
 	# 바뀔 때만 다시 평가된다 — 열 때와 닫을 때 한 번씩 깨워 준다.
@@ -187,6 +234,8 @@ func prompt_engage(t0: Array, t1: Array, rounds: int, title: String,
 		_intro.queue_free()
 	_intro = null
 	_refresh_hand_gates()
+	if not confirmed:
+		_pending_sim = null      # 무른 교전의 무대를 다음 교전이 주워 쓰면 안 된다.
 	return confirmed
 
 
@@ -224,7 +273,8 @@ func start_duel(caster: PilotData, target: PilotData,
 		t0 = [caster]; t1 = [target]
 	else:
 		t0 = [target]; t1 = [caster]
-	_begin(caster, t0, t1, true, TurnEngageSim.DUEL_MAX_ROUNDS, on_done)
+	_begin(caster, t0, t1, true, TurnEngageSim.DUEL_MAX_ROUNDS, on_done,
+			"", -1, caster.grid_pos)
 
 
 ## 오브젝트 교전 — 전령 / 용을 두고 벌어지는 교전. 카드 교전과 다른 점은 셋뿐.
@@ -243,22 +293,26 @@ func start_duel(caster: PilotData, target: PilotData,
 ## 나머지 생명주기(라운드 진행 · 종료 유예 · 대시보드 · `engage_finished`)는
 ## 카드 교전과 완전히 같다 — 호출 측은 같은 방식으로 await 하면 된다.
 func start_objective_engage(t0: Array, t1: Array, rounds: int, title: String,
-		first_team: int, on_done: Callable = Callable()) -> void:
+		first_team: int, on_done: Callable = Callable(),
+		origin: Vector2i = Vector2i(-999, -999)) -> void:
 	if _active:
 		return
 	if t0.is_empty() or t1.is_empty():
 		if on_done.is_valid():
 			on_done.call()
 		return
-	_begin(null, t0, t1, false, rounds, on_done, title, first_team)
+	_begin(null, t0, t1, false, rounds, on_done, title, first_team, origin,
+			false, true)
 
 
 # 공통 진입 — 시뮬레이터 구성 + 아레나 오픈 + _process 구동 시작.
 func _begin(caster: PilotData, t0: Array, t1: Array, duel: bool,
 		rounds: int, on_done: Callable, title: String = "",
-		first_team: int = -1) -> void:
+		first_team: int = -1, origin: Vector2i = Vector2i(-999, -999),
+		drop_in: bool = false, objective: bool = false) -> void:
 	_active = true
 	_is_duel = duel
+	_is_objective = objective
 	_team_pilots[0] = t0
 	_team_pilots[1] = t1
 	_on_done = on_done
@@ -272,8 +326,19 @@ func _begin(caster: PilotData, t0: Array, t1: Array, duel: bool,
 	if _bs.mech_skill != null:
 		_bs.mech_skill.on_engage_start(t0 + t1)
 
-	_sim = TurnEngageSim.new()
-	_sim.setup(_bs, caster, t0, t1, rounds, duel, first_team)
+	# 개시 확인 화면이 보여 준 바로 그 무대를 이어받는다 — 화면에서 본 시작
+	# 위치가 그대로 싸우는 자리여야 그 화면이 판단의 근거가 된다. 명단이
+	# 어긋나면(프롬프트만 뜨고 교전이 안 열린 앞서의 경로) 조용히 새로 세운다.
+	var reuse: TurnEngageSim = _pending_sim
+	_pending_sim = null
+	if reuse != null and reuse.matches(t0, t1, rounds):
+		_sim = reuse
+	else:
+		_sim = TurnEngageSim.new()
+		_sim.setup(_bs, caster, t0, t1, rounds, duel, first_team, origin, drop_in)
+	# 상태를 바꾸는 것은 전부 여기부터다 — 약자 멸시의 개시 타격이 위의 두
+	# 스킬 훅(충전을 채우는 쪽)을 지난 뒤에 돌아야 하므로 순서가 고정이다.
+	_sim.begin()
 
 	# Drop any lifted-card / description-box selection so the modal sits cleanly
 	# over the table. CardPhaseManager.deselect_current_card is idempotent.
@@ -396,10 +461,57 @@ func _finish_engage() -> void:
 	_bs.blog.log_event("ENGAGE", "전투 개시 종료 — t0=%s t1=%s"
 			% [_engage_side_str(0), _engage_side_str(1)])
 	if _arena != null:
-		_arena.show_dashboard(_team_pilots[0], _team_pilots[1], _sim.stats,
+		_arena.show_dashboard(_result_title(),
 				Callable(self, "_on_dashboard_confirmed"))
 	else:
 		_on_dashboard_confirmed()
+
+
+## 결과 화면 맨 윗줄 — **승리 / 패배 / 교전 결과**.
+##
+## 오브젝트 교전에는 이미 판정이 있다(`ObjectiveSystem.engage_winner` — 생존
+## 인원 → 잔여 HP 비율 합). 그 함수를 그대로 빌려 쓰므로 여기 뜬 글자와 실제로
+## 보상을 가져가는 팀이 갈릴 수 없다.
+##
+## 카드 교전에는 그런 판정이 없다 — 이기고 지는 것이 아니라 **얼마나 이득을
+## 봤나**가 전부인 사건이라, 승패를 억지로 매기면 대부분의 교전이 무의미한
+## 패배로 읽힌다. 그래서 **이겼다고 부를 수 있는 두 모양**만 승리로 친다:
+## 상대를 전멸시켰거나, 하나 이상 눕히고도 이쪽은 아무도 안 죽었거나. 그
+## 밖(피해만 주고받은 교전, 서로 하나씩 눕힌 교전, 양측 전멸)은 승패를 말하지
+## 않고 "교전 결과"로 남는다.
+func _result_title() -> String:
+	if _sim == null:
+		return EngageArena.RESULT_NEUTRAL
+	if _is_objective:
+		var w: int = -1
+		if _bs.objective != null:
+			w = _bs.objective.engage_winner(_team_pilots[0], _team_pilots[1])
+		if w == 0:
+			return EngageArena.RESULT_WIN
+		if w == 1:
+			return EngageArena.RESULT_LOSE
+		return EngageArena.RESULT_NEUTRAL
+	var won: bool = _side_took_engage(0)
+	var lost: bool = _side_took_engage(1)
+	if won == lost:
+		return EngageArena.RESULT_NEUTRAL
+	return EngageArena.RESULT_WIN if won else EngageArena.RESULT_LOSE
+
+
+## `team` 이 이 교전을 가져갔는가 — 상대 전멸, 또는 처치 1 이상 + 전원 생존.
+func _side_took_engage(team: int) -> bool:
+	if _sim.active_count(1 - team) == 0:
+		return true
+	var kills: int = 0
+	for raw in (_team_pilots[team] as Array):
+		var s: Dictionary = _sim.stats.get(raw, {})
+		kills += int(s.get("kills", 0))
+	if kills <= 0:
+		return false
+	for raw in (_team_pilots[team] as Array):
+		if not (raw as PilotData).alive:
+			return false
+	return true
 
 
 func _result_log() -> String:

@@ -149,7 +149,7 @@ func _resolve_objective(st: Dictionary) -> void:
 	if not t1.is_empty():
 		join1 = _ai_wants_to_join(t1, t0)
 	if not t0.is_empty():
-		join0 = await _ask_player(kind, t0, t1)
+		join0 = await _ask_player(kind, st["cell"], t0, t1)
 
 	if join0 and join1:
 		await _run_objective_engage(st, kind, t0, t1)
@@ -171,7 +171,7 @@ func _run_objective_engage(st: Dictionary, kind: int,
 		t0: Array, t1: Array) -> void:
 	var label: String = kind_name(kind)
 	_bs.engage_phase.start_objective_engage(t0, t1, _bs.OBJ_ENGAGE_ROUNDS,
-			label, _bs.blue_team)
+			label, _bs.blue_team, Callable(), st["cell"])
 	if not _bs.engage_phase.is_active():
 		# 무대가 열리지 않았다(참가자 부족 등) — 무산으로 접는다.
 		_reschedule(st, _bs.OBJ_RETRY_TURNS)
@@ -181,7 +181,7 @@ func _run_objective_engage(st: Dictionary, kind: int,
 	# 아니라 **판정 자체를 미리 걸어 둘 수 없다** — 대신 무대가 끝난 뒤
 	# `last_log` 와 결과 창이 보상을 말한다.
 	await _bs.engage_phase.engage_finished
-	var winner: int = _engage_winner(t0, t1)
+	var winner: int = engage_winner(t0, t1)
 	if winner < 0:
 		_reschedule(st, _bs.OBJ_RESPAWN_TURNS)
 		_bs.last_log = "[%s] 무승부 — 아무도 가져가지 못했다" % label
@@ -223,6 +223,8 @@ func _award_uncontested(st: Dictionary, kind: int, winner: int,
 	# **지급(과 그 연출)은 이 창을 닫은 뒤에 온다** — 알림 위에 보상 카드가
 	# 겹쳐 날아다니면 어느 쪽을 보라는 화면인지가 흐려진다.
 	if not t0.is_empty():
+		_bs.engage_phase.prepare_sim(null, t0, t1, _bs.OBJ_ENGAGE_ROUNDS,
+				false, _bs.blue_team, st["cell"])
 		await _bs.engage_phase.prompt_engage(t0, t1, _bs.OBJ_ENGAGE_ROUNDS,
 				"%s — %s 무혈 획득" % [label, side], false,
 				"확인", "", reward_text(kind))
@@ -235,7 +237,10 @@ func _award_uncontested(st: Dictionary, kind: int, winner: int,
 ## 비율 합을 쓰는 이유는 체력 총량이 역할마다 크게 다르기 때문이다 — 탱커
 ## 220 과 스나이퍼 75 를 절대값으로 더하면 "탱커가 살아 있는 쪽"이 언제나
 ## 이긴다. 비율이면 각자 자기 몫만큼만 낸다.
-func _engage_winner(t0: Array, t1: Array) -> int:
+## **결과 화면도 이 함수를 읽는다** — 무대가 닫히기 전에 뜨는 승리 / 패배
+## 글자와 실제로 보상을 가져가는 팀이 갈릴 수 없어야 한다(둘 사이에 상태가
+## 바뀌지 않으므로 같은 답이 나온다).
+func engage_winner(t0: Array, t1: Array) -> int:
 	var alive0: int = _alive_count(t0)
 	var alive1: int = _alive_count(t1)
 	if alive0 != alive1:
@@ -276,9 +281,14 @@ func participants_for(kind: int, team: int) -> Array:
 ## **상대의 결정은 보여 주지 않는다.** AI 는 이 창이 뜨기 전에 이미 결정을
 ## 내렸지만, 그것을 알려 주면 "적이 물러났으니 나도 그냥 먹으면 된다"가 되어
 ## 결정이 아니라 확인 절차가 된다.
-func _ask_player(kind: int, t0: Array, t1: Array) -> bool:
+func _ask_player(kind: int, cell: Vector2i, t0: Array, t1: Array) -> bool:
 	var label: String = kind_name(kind)
 	var title: String = "%s 등장 — 전투에 참여하시겠습니까?" % label
+	# 무대를 먼저 세운다 — 오브젝트 칸을 한가운데 두면 참가자들이 지금 서 있는
+	# 타일이 그대로 배치가 된다. 누가 어디서 달려오는지를 보고 참여를 정하는
+	# 것이 이 창의 질문이므로 명단만으로는 부족하다. 선공은 무대와 같은 블루다.
+	_bs.engage_phase.prepare_sim(null, t0, t1, _bs.OBJ_ENGAGE_ROUNDS, false,
+			_bs.blue_team, cell)
 	return await _bs.engage_phase.prompt_engage(t0, t1, _bs.OBJ_ENGAGE_ROUNDS,
 			title, true, "참여", "미참여", reward_text(kind))
 

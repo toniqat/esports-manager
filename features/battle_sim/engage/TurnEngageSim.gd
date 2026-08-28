@@ -8,11 +8,21 @@ extends RefCounted
 # step(delta) 를 호출하고, EngageArena 는 units / turrets / projectiles /
 # popups / 라운드 상태를 읽어 그리기만 한다.
 #
-# 좌표계: 전장의 육각 셀 매핑은 **쓰지 않는다**. 무대는 팀0(아군)이 왼쪽,
-# 팀1(적군)이 오른쪽에 마주 서는 평면 벨트다. x = 벨트를 따라가는 진행 방향,
-# y = 벨트의 얕은 깊이(위쪽이 멀고 아래쪽이 가깝다). 파일럿이 전장 어느 셀에
-# 있었는지는 배치에 반영하지 않는다 — 역할이 자리를 정한다(근접 앞줄 /
-# 원거리 뒷줄).
+# 좌표계: **탑뷰(쿼터뷰) 바닥면**이다. x = 가로, y = 깊이(위쪽이 멀고 아래쪽이
+# 가깝다). 진영이 좌우를 나누지 않는다 — **자리를 정하는 것은 전장 타일이다**:
+# 교전이 열린 칸을 무대 한가운데 두고, 각 파일럿이 밟고 있던 칸의 상대 육각
+# 오프셋을 무대 좌표로 환산해 그 자리에 세운다(`_place_from_grid`). 그래서
+# "윗타일에 둘 · 아랫타일에 둘 · 왼쪽 정글에 하나"가 무대에서도 그 모양으로
+# 선다. 한 칸에 여럿이면 그 칸 구역 안에서 흩어지고, 팀0 은 그 칸의 왼쪽 반
+# 팀1 은 오른쪽 반을 쓴다 — 칸을 벗어나지 않으면서 진영도 읽히게.
+#
+# 이 배치는 **연출이다.** 판정은 라운드마다 전원이 한 번씩 돌아가며 때리는
+# 그대로이고, 시작 자리가 바꾸는 것은 접근 거리와 표적 선택의 거리항뿐이다.
+#
+# 2026-08 이전의 **사이드뷰 벨트**(팀0 왼쪽 · 팀1 오른쪽으로 마주 서고 역할이
+# 앞줄 / 뒷줄을 정하던 평면 벨트)는 여기서 대체됐다. `facing_x`(좌우 부호 하나로
+# 방향을 표현하던 것) · `_place_row` · `_row_x` · `FRONT_OFFSET` · `ROW_GAP` ·
+# `DEPTH_MARGIN` · `KNOCK_VERTICAL_SCALE` 이 그때 함께 사라졌다.
 #
 # ─── 행동 모델: 라운드 · 한 명씩 ─────────────────────────────────────────────
 # **한 라운드 안에서 모두가 정확히 한 번씩 행동한다.** 무대에는 언제나 단 한
@@ -33,23 +43,53 @@ extends RefCounted
 ## 미러 등)이 있으므로 관전 페이싱용 라운드 상한을 둔다.
 const DUEL_MAX_ROUNDS: int = 10
 
-# ─── 벨트 지오메트리 (아레나 좌표, 렌더러가 카메라로 화면에 맞춘다) ──────────
-## 벨트 전체 폭. 유닛은 항상 이 안에 갇힌다 — 교전 중 이탈은 없다.
-## EngageArena.BAND_RECT(1032×500)에 통째로 들어가는 크기로 잡혀 있다 —
-## 여기를 키우면 카메라 최소 배율이 떨어져 유닛이 잘게 보인다.
-const BELT_W: float = 1240.0
-## 벨트 깊이(y). 사이드뷰라 얕게 잡는다 — 깊이는 겹침 방지와 원근 표현용이지
-## 전술적 의미는 없다.
-const BELT_H: float = 400.0
-## 유닛 슬롯이 들어가지 않는 위아래 여백.
-const DEPTH_MARGIN: float = 60.0
-## 양 팀 앞줄이 중앙선에서 각각 이만큼 떨어져 선다 (앞줄 간격 = 2배 = 300).
-const FRONT_OFFSET: float = 150.0
-## 앞줄(근접)과 뒷줄(원거리) 사이 간격.
-const ROW_GAP: float = 155.0
-## 슬롯 좌표에 주는 흐트러짐 — 완벽한 일렬은 기계적으로 보인다.
-const SLOT_JITTER_X: float = 18.0
-const SLOT_JITTER_Y: float = 14.0
+# ─── 무대 지오메트리 (아레나 좌표, 렌더러가 카메라로 화면에 맞춘다) ─────────
+## 무대 바닥면의 크기. 유닛은 항상 이 안에 갇힌다 — 교전 중 이탈은 없다.
+## EngageArena.BAND_RECT(1032×1000)와 거의 같은 비율이라 카메라 최소 배율에서
+## 바닥면이 밴드에 통째로 들어간다. 여기를 키우면 그 배율이 떨어져 유닛이 잘게
+## 보인다.
+const STAGE_W: float = 1240.0
+const STAGE_H: float = 1180.0
+
+# ─── 전장 타일 → 무대 좌표 ──────────────────────────────────────────────────
+# **교전 시작 위치는 전장에서 어느 칸에 서 있었는지가 정한다 — 다만 반영하는
+# 것은 그 칸의 *방향*뿐이고 물리적 거리는 반영하지 않는다.** 윗타일에 둘 ·
+# 아랫타일에 둘 · 왼쪽 정글에 정글러 하나였다면 무대에서도 그 모양이지만, 그
+# 정글러가 여덟 칸 떨어져 있었는지 두 칸이었는지는 무대에서 거의 같아 보인다.
+# 전장의 거리를 곧이곧대로 옮기면 오브젝트 교전처럼 참가자가 전장 곳곳에서
+# 모이는 경우에 무리가 무대 네 귀퉁이로 흩어지고, `_fit_scale` 이 그것을 통째로
+# 줄이느라 얼굴만 잘게 보인다 — 배치가 말해야 하는 것은 "누가 어느 쪽에서
+# 왔는가"이지 "몇 칸이었는가"가 아니다.
+#
+# 아래 둘은 **한 칸이 무대에서 차지하는 거리의 기준**이고, 세로가 가로보다 짧은
+# 것은 쿼터뷰라 깊이 방향이 눌려 보이기 때문이다(같은 이유로 바닥 마커도 납작한
+# 타원이다).
+const CELL_SPAN_X: float = 300.0
+const CELL_SPAN_Y: float = 235.0
+## 한 칸에 여럿이 설 때 그 칸 중심에서 흩어지는 반경.
+const CELL_CLUSTER_RX: float = 106.0
+const CELL_CLUSTER_RY: float = 60.0
+## 한 칸의 인원이 둘을 넘을 때마다 위 반경에 얹는 비율.
+const CELL_CLUSTER_CROWD: float = 0.07
+## 자리마다 얹는 흐트러짐 — 완벽한 격자는 기계적으로 보인다.
+const SLOT_JITTER_X: float = 24.0
+const SLOT_JITTER_Y: float = 16.0
+## 칸 오프셋의 **포화 곡선**(단위: 칸). 거리 d 칸인 참가자는 원점에서
+## `CELL_REACH_MAX * d / (d + CELL_REACH_HALF)` 칸 떨어진 자리에 선다 — 방향은 한
+## 치도 안 바뀌고 거리는 **순서만 남긴 채** 상한에 수렴한다(1칸 0.82 · 2칸 1.07 ·
+## 3칸 1.19 · 5칸 1.31 · 10칸 1.42 · ∞ 1.55 = 465 / 364px).
+##
+## 예전에는 거리를 그대로 곱한 뒤 상한에서 **잘라 냈다**(`MAX_CELL_OFFSET_X/Y`
+## 660 / 517, **삭제됨**). 그 방식은 세 칸 넘게 떨어진 참가자를 전부 같은 상한에
+## 붙여 **순서는 사라지는데 무대는 최대로 벌어지는** 최악을 골랐다 — 오브젝트
+## 교전에서 참가자들이 서로 화면 끝에 서 있던 것이 그것이다. 곡선은 그보다 낮은
+## 상한으로 무대를 안 벌리면서, 그 안에서 d 가 커질수록 조금씩이나마 계속 멀어져
+## 순서를 도리어 되살린다. **결속 / 추적으로 전장 반대편에서 끌려 들어온
+## 참가자**가 배치 전체의 배율을 혼자 무너뜨리지 않는 것도 그대로다.
+const CELL_REACH_MAX: float = 1.55
+const CELL_REACH_HALF: float = 0.9
+## 칸 오프셋 바운딩 박스가 이 여백 안에 들어가도록 배치를 통째로 줄인다.
+const STAGE_FIT_MARGIN: float = 150.0
 
 # ─── 유닛 ────────────────────────────────────────────────────────────────────
 const UNIT_RADIUS: float = 40.0
@@ -67,15 +107,17 @@ const RANGED_APPROACH_RATIO: float = 0.9
 ## 접근이 느려도 무대가 비지 않았지만, 지금은 한 번에 한 명뿐이라 접근 시간이
 ## 곧 관전자가 기다리는 시간이다. 3라운드 5v5 가 약 17초에 끝나는 것이 여기서
 ## 나온다 — 느리게 잡으면 그대로 30초를 넘긴다.
-const MOVE_SPEED_MELEE: float = 1400.0
-const MOVE_SPEED_RANGED: float = 1100.0
+const MOVE_SPEED_MELEE: float = 1600.0
+const MOVE_SPEED_RANGED: float = 1250.0
 ## 넉백으로 밀려난 만큼 자기 자리(anchor_pos)로 되돌아오는 드리프트 속도 배율.
 ## **원위치 복귀가 아니다** — 앵커 자체가 마지막으로 공격한 자리로 갱신되므로
 ## 이 드리프트는 벨트 클램프 등으로 어긋난 잔차만 추스른다.
 const SETTLE_SPEED_MULT: float = 0.85
 ## 접근 단계가 이 시간을 넘기면 이번 차례를 접는다(대상이 멀리 밀려나 있는 등의
-## 교착 방지). 접는 자리가 곧 새 앵커다.
-const ADVANCE_MAX_SEC: float = 0.55
+## 교착 방지). 접는 자리가 곧 새 앵커다. 사이드뷰 벨트(깊이 400) 시절의 0.55 는
+## 탑뷰 바닥면(1180)에서 **대각선 반대편의 적에게 닿지 못한다** — 그 차례가
+## 통째로 "걸어가다 말았다"가 되므로 무대가 커진 만큼 함께 늘렸다.
+const ADVANCE_MAX_SEC: float = 0.85
 ## 공격 모션을 붙잡는 시간. 이 동안 유닛은 대상 앞에 멈춰 서 있다.
 ## 원거리는 투사체 비행(최대 270px / PROJECTILE_SPEED ≈ 0.19초)이 끝나기를
 ## 기다려야 하므로 근접보다 길다.
@@ -107,8 +149,6 @@ const KNOCK_IMPULSE_MELEE: float = 420.0
 const KNOCK_IMPULSE_RANGED: float = 150.0
 ## 넉백 속도의 지수 감쇠 계수(1/s).
 const KNOCK_DAMP: float = 9.0
-## 벨트 느낌을 위해 넉백은 거의 수평으로 민다 — 세로 성분을 이만큼으로 죽인다.
-const KNOCK_VERTICAL_SCALE: float = 0.35
 ## 넉백 연출 타이머(렌더러 전용) 길이.
 const KNOCK_FLASH_SEC: float = 0.22
 
@@ -121,18 +161,13 @@ const KNOCK_FLASH_SEC: float = 0.22
 # 포탑도 **라운드마다 한 번** 행동한다 — 파일럿 전원이 돌고 난 뒤, 시전자 팀
 # 포탑부터 차례가 온다. 예전의 자기 ATB(TURRET_SPEED)는 삭제됐다.
 #
-# **포탑은 무대 참가자가 아니라 배경 지형 구조물이다.** 유닛 벨트가 아니라
-# 지평선 근처의 먼 지형 위에 서고, 렌더러의 카메라 프레이밍에서도 빠진다
-# (EngageArena._focus_positions) — 포탑을 프레임에 넣으면 벨트 양 끝까지
-# 담느라 배율이 떨어져 정작 싸우는 유닛이 잘게 보였다.
-## 포탑이 서는 x — 자기 팀 **뒷줄에서 이만큼 더 바깥**.
-const TURRET_BACK_OFFSET: float = 90.0
-## 포탑이 서는 y — 유닛 슬롯(DEPTH_MARGIN 60 부터)보다 살짝 위, 즉 **가장 먼
-## 바닥선**.
-const TURRET_BG_Y: float = 48.0
-## 같은 팀 포탑이 둘 이상이면 깊이(y) 대신 x 로 나눠 세운다 — 배경 지형은
-## 지평선 한 줄이라 y 로 흩으면 그 줄을 벗어난다.
-const TURRET_BG_STEP: float = 160.0
+# **포탑은 무대 참가자가 아니라 지형이다.** 탑뷰에서는 자기가 실제로 서 있는
+# 칸(= 파일럿과 같은 `_cell_offset` 매핑) 위에 그대로 서고, 렌더러의 카메라
+# 프레이밍에서는 여전히 빠진다(EngageArena._focus_positions) — 포탑을 프레임에
+# 넣으면 무대 끝까지 담느라 배율이 떨어져 정작 싸우는 유닛이 잘게 보인다.
+# 사이드뷰 시절의 "지평선 한 줄에 나란히"(TURRET_BACK_OFFSET / TURRET_BG_Y /
+# TURRET_BG_STEP)는 그래서 삭제됐다 — 그 자리는 무대에 지평선이 있었기에
+# 성립하던 것이고, 지금은 포탑도 파일럿과 같은 바닥면 위에 있다.
 ## 포탑 명중 굴림에 쓰는 고정 hit 스탯(포탑에는 hit 스탯이 없다).
 const TURRET_HIT: int = 50
 
@@ -203,8 +238,12 @@ class EUnit extends RefCounted:
 	var act_t: float = 0.0
 	## 넉백 잔여 속도.
 	var knock_vel: Vector2 = Vector2.ZERO
-	## 바라보는 방향의 x 부호(+1 = 오른쪽). 사이드뷰라 좌우만 의미가 있다.
-	var facing_x: float = 1.0
+	## 바라보는 방향(단위 벡터). 탑뷰라 **모든 방향**에 의미가 있다 — 좌우
+	## 부호 하나(`facing_x`)로 표현하던 사이드뷰 시절과 다른 점이다.
+	var facing: Vector2 = Vector2.RIGHT
+	## [강습]으로 적진 한가운데에 낙하한 유닛인가. 렌더러가 바닥 마커를 겹링으로
+	## 그려 "여기로 떨어졌다"를 남긴다.
+	var dropped_in: bool = false
 	## 피격 플래시 잔여 시간(렌더러 전용).
 	var hit_flash: float = 0.0
 	## 공격 모션 잔여 시간(렌더러 전용).
@@ -276,18 +315,18 @@ var _origin_cell: Vector2i = Vector2i.ZERO
 var _has_caster: bool = false
 
 
-# 유닛이 돌아다닐 수 있는 벨트 사각형. 렌더러의 최소 카메라 배율도 여기서 나온다.
-static func belt_rect() -> Rect2:
-	return Rect2(0.0, 0.0, BELT_W, BELT_H)
+# 유닛이 돌아다닐 수 있는 바닥면. 렌더러의 최소 카메라 배율도 여기서 나온다.
+static func ground_rect() -> Rect2:
+	return Rect2(0.0, 0.0, STAGE_W, STAGE_H)
 
 
-## 카메라가 비출 수 있는 최대 범위 — 벨트 + 배경 지형(포탑이 선 지평선 근처).
-## 카메라 클램프를 belt_rect 로 두면 지평선 위에 선 포탑이 어떤 배율에서도
-## 화면에 들어오지 못한다. 유닛 이동 한계는 여전히 belt_rect 다.
-const STAGE_TOP_EXTRA: float = 150.0
+## 카메라가 비출 수 있는 최대 범위 — 바닥면을 사방으로 조금 넓힌 것. 여백이
+## 필요한 이유는 초상화가 발밑에서 `EngageArena.UNIT_LIFT` 만큼 떠 있어서다:
+## 바닥면 딱 그만큼만 열어 두면 맨 윗줄에 선 유닛의 얼굴이 잘린다.
+const STAGE_MARGIN: float = 130.0
 
 static func stage_rect() -> Rect2:
-	return Rect2(0.0, -STAGE_TOP_EXTRA, BELT_W, BELT_H + STAGE_TOP_EXTRA)
+	return ground_rect().grow(STAGE_MARGIN)
 
 
 # 참가자 목록을 받아 벨트를 구성한다.
@@ -298,10 +337,25 @@ static func stage_rect() -> Rect2:
 #   `team0/1` — 참가 PilotData 배열.
 #   `rounds` — 라운드 수. 결투는 DUEL_MAX_ROUNDS 를 넘긴다.
 #   `first_team` — 선공 팀. -1 이면 시전자의 팀(시전자도 없으면 팀0).
+#   `origin` — 무대 한가운데에 놓을 전장 칸. 기본값(-999,-999)이면 시전자 칸.
+#              [돌격] · [강습] 처럼 무대가 시전자가 아닌 **지정한 적** 주변에서
+#              열리는 카드는 여기에 그 칸을 넣는다 — 그래야 화면 한가운데가
+#              실제로 교전이 열린 자리가 된다.
+#   `drop_in` — [강습]. 시전자만 타일 위치를 무시하고 적 진영 한가운데에 낙하.
+#
+# **`setup` 은 무대를 세우기만 한다.** 실제로 싸움이 시작되는 것은 `begin()`
+# 이고, 둘이 갈라져 있는 것은 개시 확인 화면(VS)이 **같은 시뮬레이터를 미리
+# 만들어 그림만 보여 주기** 때문이다: 거기서 취소하면 아무 일도 일어나지
+# 않아야 하는데 약자 멸시의 개시 타격(`_contempt_opening`)은 피해를 넣고
+# 충전을 태운다. 그래서 상태를 바꾸는 것은 전부 `begin()` 쪽에 있다.
 func setup(bs: BattleSim, caster: PilotData, team0: Array, team1: Array,
-		rounds: int, duel: bool, first_team: int = -1) -> void:
+		rounds: int, duel: bool, first_team: int = -1,
+		origin: Vector2i = Vector2i(-999, -999), drop_in: bool = false) -> void:
 	_bs = bs
-	_origin_cell = caster.grid_pos if caster != null else Vector2i.ZERO
+	if origin != Vector2i(-999, -999):
+		_origin_cell = origin
+	else:
+		_origin_cell = caster.grid_pos if caster != null else Vector2i.ZERO
 	_has_caster = caster != null
 	if first_team >= 0:
 		initiator_team = first_team
@@ -312,13 +366,31 @@ func setup(bs: BattleSim, caster: PilotData, team0: Array, team1: Array,
 
 	_build_units(caster, team0, team1)
 	_build_turrets()
+	# 배치는 유닛과 포탑이 **둘 다** 만들어진 뒤에 한 번에 한다 — 둘이 같은
+	# 칸→무대 매핑을 쓰고, 축소 배율도 둘의 칸을 함께 보고 정해지기 때문이다.
+	_place_from_grid()
+	if drop_in:
+		_apply_drop_in(caster)
+	_face_initial()
 	_build_order(caster)
-	_contempt_opening()
 
 	round_index = 1
 	_order_idx = -1
 	flow = Flow.ROUND_START
 	_gap_left = ROUND_GAP_SEC
+
+
+## 개시 — 여기부터 상태가 바뀐다. 호출 측(`EngagePhaseManager._begin`)은 메크 ·
+## 파일럿 스킬의 교전 개시 훅을 **먼저** 돌린 뒤에 부른다(약자 멸시의 충전이
+## 그 훅에서 채워진다).
+func begin() -> void:
+	_contempt_opening()
+	round_index = 1
+	_order_idx = -1
+	flow = Flow.ROUND_START
+	_gap_left = ROUND_GAP_SEC
+	finished = false
+	elapsed = 0.0
 
 
 ## 약자 멸시(암살 R) — **1라운드가 돌기 전에** 터지는 선제 타격. 손패에 든
@@ -348,30 +420,22 @@ func _contempt_opening() -> void:
 
 
 # ─── 구성 ────────────────────────────────────────────────────────────────────
-# 진형: 팀0 은 왼쪽에서 오른쪽을 보고, 팀1 은 오른쪽에서 왼쪽을 본다. 각 팀은
-# 근접(앞줄)과 원거리(뒷줄)로 나뉘고, 줄 안에서는 깊이(y)를 균등 분배한다.
-func _build_units(caster: PilotData, team0: Array, team1: Array) -> void:
+# 유닛만 만든다 — **자리는 `_place_from_grid` 가 전장 타일에서 가져온다.**
+# 사이드뷰 시절에는 여기서 역할이 앞줄 / 뒷줄을 갈랐는데(근접 앞 · 원거리 뒤),
+# 탑뷰에서는 그 줄이 곰 거짓말이 된다: 화면에 보이는 자리가 전장의 자리와 아무
+# 관계가 없으면 "위쪽 타일에 둘, 아래쪽 타일에 둘"을 보고 교전을 걸 이유가 사라진다.
+func _build_units(_caster: PilotData, team0: Array, team1: Array) -> void:
 	units.clear()
 	stats.clear()
-
 	for t in range(2):
-		var front: Array = []   # Array[EUnit]
-		var back: Array = []    # Array[EUnit]
 		for raw in (team0 if t == 0 else team1):
 			var p := raw as PilotData
 			if p == null or not p.alive:
 				continue
-			var u := _make_unit(p)
-			units.append(u)
+			units.append(_make_unit(p))
 			# `score0` 는 교전 **개시 시점**의 성장치 — 결과 대시보드가 이 값과
 			# 지금 값의 차를 "성장" 행으로 보여 준다.
 			stats[p] = {"dealt": 0, "taken": 0, "kills": 0, "score0": p.score}
-			(front if u.is_melee else back).append(u)
-		_place_row(front, _row_x(t, true))
-		_place_row(back, _row_x(t, false))
-	# caster 는 배치에 영향을 주지 않는다 — 순서에서만 앞으로 당겨진다.
-	if caster == null:
-		return
 
 
 func _make_unit(p: PilotData) -> EUnit:
@@ -385,7 +449,7 @@ func _make_unit(p: PilotData) -> EUnit:
 	u.skill_focus_role = _bs.skill.engage_focus_role(p) if _bs.skill != null else -1
 	u.atk_range = MELEE_REACH if u.is_melee else RANGE_RANGED
 	u.move_speed = MOVE_SPEED_MELEE if u.is_melee else MOVE_SPEED_RANGED
-	u.facing_x = 1.0 if u.team == 0 else -1.0
+	u.facing = Vector2.RIGHT if u.team == 0 else Vector2.LEFT
 	return u
 
 
@@ -443,30 +507,197 @@ static func _role_rank(role: int) -> int:
 	return ROLE_ACT_ORDER.size() if idx < 0 else idx
 
 
-# 팀 t 의 앞줄/뒷줄 x 좌표.
-static func _row_x(team: int, is_front: bool) -> float:
-	var centre: float = BELT_W * 0.5
-	var depth_off: float = FRONT_OFFSET + (0.0 if is_front else ROW_GAP)
-	return centre - depth_off if team == 0 else centre + depth_off
+# ─── 타일 기반 배치 ─────────────────────────────────────────────────
+# **무대의 자리는 전장의 자리다.** 교전이 열린 칸(`_origin_cell`)을 무대 한가운데
+# 두고, 참가자와 가담 포탑이 밟고 있는 칸의 **상대 육각 오프셋**을 무대 좌표로
+# 환산해 세운다. 진영으로 좌우를 가르지 않는 것이 요점이다 — 같은 칸에서 붙은 두
+# 팀은 무대에서도 한 칸에 섞여 서고, 위 타일에 둘 · 아래 타일에 둘이었다면 무대에서도
+# 위 둘 · 아래 둘이다.
+#
+# 이 자리는 **개시 시점의 앵커**일 뿐이다 — 첫 공격을 끝내는 순간부터 앵커는
+# 그때그때 서 있는 자리로 갱신된다(`_settle`).
+func _place_from_grid() -> void:
+	var by_cell: Dictionary = {}          # Vector2i -> Array[EUnit]
+	for raw in units:
+		var u := raw as EUnit
+		if not by_cell.has(u.pilot.grid_pos):
+			by_cell[u.pilot.grid_pos] = []
+		(by_cell[u.pilot.grid_pos] as Array).append(u)
+
+	# 1) 칸마다 무대 오프셋. 포탑 칸도 같은 표에 넣는다 — 축소 배율은 화면에
+	#    들어가야 하는 것 **전부**를 보고 정해져야 한다.
+	var offs: Dictionary = {}             # Vector2i -> Vector2
+	for cell in by_cell:
+		offs[cell] = _cell_offset(cell)
+	for raw in turrets:
+		var et := raw as ETurret
+		var tc: Vector2i = et.data.grid_pos
+		if not offs.has(tc):
+			offs[tc] = _cell_offset(tc)
+
+	# 2) 오프셋을 **바운딩 박스 중심**으로 옮긴다. 무대 한가운데에 놓아야 하는
+	#    것은 교전이 열린 칸이 아니라 참가자들이 만든 덩어리다 — 열린 칸을
+	#    중심으로 못박으면 그 칸이 무리의 끝일 때(무대를 지정한 적 쪽으로 옮기는
+	#    [돌격] · [강습], 또는 오브젝트 칸에서 열리는 교전) 무대 절반이 통째로
+	#    빈다. 옮겨도 **상대 위치는 한 픽셀도 안 바뀐다** — 배치가 말하는 것은
+	#    그것뿐이므로 잃는 정보가 없다.
+	_recentre(offs)
+
+	# 3) 전부 무대 안에 들어가도록 통째로 줄인다. 같은 이유로 배율이 줄어도
+	#    "위 둘 / 아래 둘 / 왼쪽 하나"는 그대로 읽힌다.
+	var fit: float = _fit_scale(offs.values())
+	var centre := Vector2(STAGE_W * 0.5, STAGE_H * 0.5)
+	for cell in offs.keys():
+		offs[cell] = centre + (offs[cell] as Vector2) * fit
+
+	# 4) 칸 안의 자리. **칸 윤곽은 그리지 않는다** — 거리를 방향으로만 압축한
+	#    지금은 무대의 한 칸이 전장의 한 칸과 같은 크기가 아니라, 바닥에 육각을
+	#    그려 두면 그것이 도리어 거짓 축척을 말한다.
+	for cell in by_cell:
+		_seat_cell(by_cell[cell] as Array, offs[cell] as Vector2, fit)
+
+	# 5) 포탑은 자기 칸 위에 그대로 선다.
+	for raw in turrets:
+		var et2 := raw as ETurret
+		et2.pos = _clamp_to_ground(offs[et2.data.grid_pos] as Vector2)
 
 
-# 한 줄(같은 x)의 유닛들을 깊이 방향으로 균등 분배한다. 이 자리는 **개시
-# 시점의 앵커**일 뿐이다 — 첫 공격을 끝내는 순간부터 앵커는 그때그때 서 있는
-# 자리로 갱신된다.
-func _place_row(row: Array, x: float) -> void:
+## 오프셋 표를 자기 바운딩 박스 중심 기준으로 옮긴다(제자리 수정).
+static func _recentre(offs: Dictionary) -> void:
+	if offs.is_empty():
+		return
+	var mn := Vector2(INF, INF)
+	var mx := Vector2(-INF, -INF)
+	for cell in offs:
+		var o: Vector2 = offs[cell]
+		mn = Vector2(minf(mn.x, o.x), minf(mn.y, o.y))
+		mx = Vector2(maxf(mx.x, o.x), maxf(mx.y, o.y))
+	var mid: Vector2 = (mn + mx) * 0.5
+	for cell in offs.keys():
+		offs[cell] = (offs[cell] as Vector2) - mid
+
+
+## 한 칸의 무대 오프셋(무대 중심 기준). **방향은 전장 그대로, 거리는 포화 곡선으로
+## 압축한다.** 육각 화면 좌표의 차를 칸 피치로 나눠 "칸 단위 벡터"를 만들고 — 육각
+## 오프셋 좌표는 홀/짝 열마다 이웃 규칙이 달라 손으로 적은 표가 조용히 틀리기 쉬운
+## 자리라, 격자 자신이 이미 답을 아는 `hex_to_screen` 을 그대로 지난다 — 그 **단위
+## 방향만** 남긴 뒤 길이를 `CELL_REACH_*` 곡선으로 다시 매긴다. 마지막에
+## `CELL_SPAN_*` 을 성분별로 곱하는 것이 쿼터뷰의 세로 압축이다.
+func _cell_offset(cell: Vector2i) -> Vector2:
+	var g: HexGrid = _bs.hex_grid if _bs != null else null
+	if g == null or g.hex_size <= 0.0 or g.hex_height <= 0.0:
+		return Vector2.ZERO
+	var d: Vector2 = g.hex_to_screen(cell.x, cell.y) \
+			- g.hex_to_screen(_origin_cell.x, _origin_cell.y)
+	# 칸 피치로 나눈 "칸 단위" 벡터. 교전이 열린 칸 자신은 여기서 끝난다.
+	var n := Vector2(d.x / (g.hex_size * 1.5), d.y / g.hex_height)
+	var dist: float = n.length()
+	if dist < 0.001:
+		return Vector2.ZERO
+	var dir: Vector2 = n / dist
+	var reach: float = CELL_REACH_MAX * dist / (dist + CELL_REACH_HALF)
+	return Vector2(dir.x * reach * CELL_SPAN_X, dir.y * reach * CELL_SPAN_Y)
+
+
+## 오프셋 바운딩 박스를 무대 안(여백 포함)으로 밀어 넣는 균일 축소 배율.
+static func _fit_scale(offsets: Array) -> float:
+	var mx: float = 0.0
+	var my: float = 0.0
+	for raw in offsets:
+		var o := raw as Vector2
+		mx = maxf(mx, absf(o.x))
+		my = maxf(my, absf(o.y))
+	var lim_x: float = STAGE_W * 0.5 - STAGE_FIT_MARGIN
+	var lim_y: float = STAGE_H * 0.5 - STAGE_FIT_MARGIN
+	var s: float = 1.0
+	if mx > lim_x:
+		s = minf(s, lim_x / mx)
+	if my > lim_y:
+		s = minf(s, lim_y / my)
+	return s
+
+
+## 한 칸 안의 자리. 혼자면 칸 한가운데, 여러이면 **팀0 은 왼쪽 반원 · 팀1 은 오른쪽
+## 반원**으로 나누어 앉는다 — 칸을 벗어나지 않으면서 어느 쪽이 내 팀인지가 읽힌다.
+## 팀을 통째로 좌우로 가르는 것과는 다르다: 가르는 단위가 무대 전체가 아니라
+## **칸 하나**라, 타일 배치는 그대로 남는다.
+func _seat_cell(row: Array, at: Vector2, fit: float) -> void:
 	var n: int = row.size()
 	if n == 0:
 		return
-	var top: float = DEPTH_MARGIN
-	var span: float = BELT_H - DEPTH_MARGIN * 2.0
-	for i in n:
-		var u := row[i] as EUnit
-		var frac: float = 0.5 if n == 1 else float(i) / float(n - 1)
-		var slot := Vector2(
-			x + randf_range(-SLOT_JITTER_X, SLOT_JITTER_X),
-			top + span * frac + randf_range(-SLOT_JITTER_Y, SLOT_JITTER_Y))
-		u.anchor_pos = _clamp_to_belt(slot)
-		u.pos = u.anchor_pos
+	if n == 1:
+		var only := row[0] as EUnit
+		only.anchor_pos = _clamp_to_ground(at + _slot_jitter(fit))
+		only.pos = only.anchor_pos
+		return
+	var side: Array = [[], []]
+	for raw in row:
+		(side[(raw as EUnit).team] as Array).append(raw)
+	# 붐비는 칸은 반원을 조금 넓힌다 — 초상화 지름이 UNIT_RADIUS×2(80)라 한 팀
+	# 셋 이상이 기본 반경에 서면 얼굴이 서로를 덮는다. 넓혀도 칸 윤곽을 크게
+	# 벗어나지는 않고, 그 정도 겹침은 "한 타일에 몰려 있다"로 읽혀야 맞다.
+	var crowd: float = 1.0 + CELL_CLUSTER_CROWD * float(maxi(0, n - 2))
+	var rx: float = CELL_CLUSTER_RX * fit * crowd
+	var ry: float = CELL_CLUSTER_RY * fit * crowd
+	for t in range(2):
+		var arc: Array = side[t]
+		var m: int = arc.size()
+		# 팀0 = 왼쪽(각도 PI 중심) · 팀1 = 오른쪽(각도 0 중심) 반원.
+		var base: float = PI if t == 0 else 0.0
+		for i in m:
+			var f: float = 0.5 if m == 1 else float(i) / float(m - 1)
+			var a: float = base + (f - 0.5) * PI * 0.92
+			var u := arc[i] as EUnit
+			u.anchor_pos = _clamp_to_ground(at
+					+ Vector2(cos(a) * rx, sin(a) * ry) + _slot_jitter(fit))
+			u.pos = u.anchor_pos
+
+
+func _slot_jitter(fit: float) -> Vector2:
+	return Vector2(randf_range(-SLOT_JITTER_X, SLOT_JITTER_X),
+			randf_range(-SLOT_JITTER_Y, SLOT_JITTER_Y)) * fit
+
+
+## [강습] — 시전자만 자기 타일을 무시하고 **적 진영 한가운데에 낙하**한다.
+## 카드 문안에는 적혀 있지 않지만 그것이 이 카드의 그림이다(공중에서 떨어져 그대로
+## 전장에 투입된다). 배치 연출이지 판정 변경이 아니다 — 라운드마다 돌아가며 한 번씩
+## 때리는 것은 그대로다. 바뀌는 것은 접근 거리와, 그 거리를 보는 표적 선택의
+## 가중뿐이다.
+func _apply_drop_in(caster: PilotData) -> void:
+	if caster == null:
+		return
+	var u: EUnit = _unit_for(caster)
+	if u == null:
+		return
+	var sum := Vector2.ZERO
+	var n: int = 0
+	for raw in units:
+		var e := raw as EUnit
+		if e.team != u.team:
+			sum += e.pos
+			n += 1
+	if n == 0:
+		return
+	u.anchor_pos = _clamp_to_ground(sum / float(n))
+	u.pos = u.anchor_pos
+	u.dropped_in = true
+
+
+## 개시 시점의 시선 — 적 무리 쪽을 본다. 사이드뷰에서는 팀이 곰 방향이라 이럴
+## 필요가 없었지만(팀0 은 언제나 오른쪽), 탑뷰에서는 적이 어느 쪽에 있는지가 칸
+## 배치마다 다르다.
+func _face_initial() -> void:
+	for raw in units:
+		var u := raw as EUnit
+		var sum := Vector2.ZERO
+		var n: int = 0
+		for other in units:
+			var e := other as EUnit
+			if e.team != u.team:
+				sum += e.pos
+				n += 1
+		if n > 0:
+			_face_toward(u, sum / float(n) - u.pos)
 
 
 # 포탑 참가 규칙: **적이 걸어온 교전에서만**, 그리고 **참가 파일럿이 자기 팀
@@ -481,7 +712,7 @@ func _place_row(row: Array, x: float) -> void:
 #   2. **시전자 팀의 포탑은 빠진다** — 교전을 연 쪽이 곧 강제한 쪽이다.
 #
 # 가담한 포탑에 사거리 개념은 없다 — 아레나 전체를 사정권으로 본다.
-# 자리는 유닛 벨트가 아니라 **지평선 근처의 배경 지형**(TURRET_BG_Y) 이다.
+# 자리는 파일럿과 같은 **자기 칸 위**다(`_place_from_grid`).
 func _build_turrets() -> void:
 	turrets.clear()
 	if not _has_caster:
@@ -492,7 +723,6 @@ func _build_turrets() -> void:
 		var u := raw as EUnit
 		(occupied[u.team] as Dictionary)[u.pilot.grid_pos] = true
 
-	var joined: Array = [[], []]     # joined[team] = Array[ETurret]
 	for raw in _bs.turrets:
 		var t := raw as TurretData
 		if t == null or not t.alive:
@@ -506,19 +736,9 @@ func _build_turrets() -> void:
 		et.team = t.team
 		et.atk = max(1, t.atk)
 		turrets.append(et)
-		(joined[t.team] as Array).append(et)
-
-	# 자기 팀 진영 뒤쪽 **배경 지형** 위에 세운다. 같은 팀 포탑이 둘 이상이면
-	# 지평선 한 줄을 따라 안쪽으로 나란히 선다.
-	for team in range(2):
-		var row: Array = joined[team]
-		var back_x: float = _row_x(team, false)
-		for i in row.size():
-			var et := row[i] as ETurret
-			var out_off: float = TURRET_BACK_OFFSET + TURRET_BG_STEP * float(i)
-			et.pos = Vector2(
-					back_x - out_off if team == 0 else back_x + out_off,
-					TURRET_BG_Y)
+	# 자리는 `_place_from_grid` 가 준다 — 포탑도 파일럿과 같은 칸→무대 매핑을
+	# 지난다. 가담 조건 자체가 "우리 편이 그 포탑 칸에 서 있다"이므로, 그 칸에
+	# 그려 두면 포탑과 허깅하는 아군이 자연히 같은 자리에 선다.
 
 
 static func _is_melee_role(role: int) -> bool:
@@ -673,7 +893,7 @@ func _tick_advance(u: EUnit, dt: float) -> void:
 			return
 	var to_target: Vector2 = u.target.pos - u.pos
 	var dist: float = to_target.length()
-	_face_toward(u, to_target.x)
+	_face_toward(u, to_target)
 
 	if dist <= u.strike_dist() + STRIKE_DIST_EPSILON:
 		_resolve_attack(u, u.target)
@@ -738,19 +958,21 @@ func _step_toward(u: EUnit, to: Vector2, speed: float, dt: float) -> bool:
 	var off: Vector2 = to - u.pos
 	var d: float = off.length()
 	if d <= HOME_EPSILON:
-		u.pos = _clamp_to_belt(to)
+		u.pos = _clamp_to_ground(to)
 		return true
 	var step_len: float = speed * dt
 	if step_len >= d:
-		u.pos = _clamp_to_belt(to)
+		u.pos = _clamp_to_ground(to)
 		return true
-	u.pos = _clamp_to_belt(u.pos + off / d * step_len)
+	u.pos = _clamp_to_ground(u.pos + off / d * step_len)
 	return false
 
 
-func _face_toward(u: EUnit, dx: float) -> void:
-	if absf(dx) > 1.0:
-		u.facing_x = 1.0 if dx > 0.0 else -1.0
+## 바라보는 방향을 갱신한다. 탑뷰라 방향은 **백터 통째**다 — 사이드뷰 시절의
+## 좌우 부호 하나(`facing_x`)로는 위아래로 마주 선 둘을 구분할 수 없다.
+func _face_toward(u: EUnit, dir: Vector2) -> void:
+	if dir.length_squared() > 1.0:
+		u.facing = dir.normalized()
 
 
 # 넉백 속도를 적용하고 지수 감쇠시킨다. 상태와 무관하게 매 프레임 돈다.
@@ -771,8 +993,8 @@ func _apply_knockback(u: EUnit, dt: float) -> void:
 		u.knock_vel = Vector2.ZERO
 		return
 	var before: Vector2 = u.pos
-	u.pos = _clamp_to_belt(u.pos + u.knock_vel * dt)
-	u.anchor_pos = _clamp_to_belt(u.anchor_pos + (u.pos - before))
+	u.pos = _clamp_to_ground(u.pos + u.knock_vel * dt)
+	u.anchor_pos = _clamp_to_ground(u.anchor_pos + (u.pos - before))
 	u.knock_vel = u.knock_vel.lerp(Vector2.ZERO, 1.0 - exp(-KNOCK_DAMP * dt))
 
 
@@ -955,14 +1177,15 @@ func _strike_one(u: EUnit, target: EUnit, allow_extra: bool = true,
 		_strike_one(u, target, false)
 
 
-# 넉백 — 공격자로부터 멀어지는 방향으로 민다. 벨트 느낌을 위해 세로 성분은
-# KNOCK_VERTICAL_SCALE 만큼 눌러 거의 수평으로 밀려나게 한다.
+# 넉백 — 공격자로부터 **멀어지는 그 방향 그대로** 민다. 사이드뷰 시절에는
+# 세로 성분을 `KNOCK_VERTICAL_SCALE` 로 눌러 거의 수평으로만 밀었는데(벨트에서
+# 세로는 원근 표현일 뿐 전술적 의미가 없었다), 탑뷰에서는 세로도 실제 거리라
+# 누르면 위아래로 선 두 사람 사이에서만 넉백이 사라진다.
 func _apply_knock(from: Vector2, target: EUnit, impulse: float) -> void:
 	var dir: Vector2 = target.pos - from
 	if dir.length_squared() < 0.001:
 		dir = Vector2(1.0 if target.team == 1 else -1.0, 0.0)
-	dir = Vector2(dir.x, dir.y * KNOCK_VERTICAL_SCALE).normalized()
-	target.knock_vel += dir * impulse
+	target.knock_vel += dir.normalized() * impulse
 
 
 # 교전 전용 명중 확률. 전장의 `hit/(hit+evasion)` 을 기준값으로 삼아
@@ -1075,11 +1298,33 @@ func _update_projectiles(dt: float) -> void:
 	projectiles = keep
 
 
-# 교전이 끝날 때까지 아무도 벨트 밖으로 나갈 수 없다.
-func _clamp_to_belt(p: Vector2) -> Vector2:
+# 교전이 끝날 때까지 아무도 바닥면 밖으로 나갈 수 없다.
+func _clamp_to_ground(p: Vector2) -> Vector2:
 	return Vector2(
-		clampf(p.x, UNIT_RADIUS, BELT_W - UNIT_RADIUS),
-		clampf(p.y, UNIT_RADIUS, BELT_H - UNIT_RADIUS))
+		clampf(p.x, UNIT_RADIUS, STAGE_W - UNIT_RADIUS),
+		clampf(p.y, UNIT_RADIUS, STAGE_H - UNIT_RADIUS))
+
+
+## 이 무대가 **바로 그 명단 · 그 라운드 수**로 세워졌는가.
+##
+## 개시 확인 화면(VS)이 미리 세운 무대를 그대로 써도 되는지를 `EngagePhaseManager._begin`
+## 이 여기로 묻는다. 프롬프트를 띄우고도 교전이 안 열리는 경로(미참여 · 무혈
+## 획득 알림)가 있어 지난 무대가 남을 수 있기 때문이고, 명단이 하나라도 다르면
+## 그것은 **다른 교전**이다.
+func matches(t0: Array, t1: Array, rounds: int) -> bool:
+	if total_rounds != max(1, rounds):
+		return false
+	var want: Dictionary = {}
+	for raw in t0 + t1:
+		var p := raw as PilotData
+		if p != null and p.alive:
+			want[p] = true
+	if want.size() != units.size():
+		return false
+	for raw in units:
+		if not want.has((raw as EUnit).pilot):
+			return false
+	return true
 
 
 ## 지금 무대에 나와 있는 행동자의 표시 이름. 렌더러가 헤더에 쓴다.

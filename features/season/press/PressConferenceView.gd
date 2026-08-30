@@ -96,12 +96,13 @@ var _body: Control                  # 말풍선이 쌓이는 자리 (스크롤 �
 var _scroll: ScrollContainer
 var _body_y: float = 0.0
 var _answer_holder: Control
-var _tap_catcher: Control
 
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
+	# 탭은 **이 화면 자신이** 받는다 — 스크롤 안쪽에서 올라온 클릭이 여기서 멎는다.
 	mouse_filter = Control.MOUSE_FILTER_PASS
+	gui_input.connect(_on_tap_input)
 	ensure_view()
 
 
@@ -134,15 +135,15 @@ func _build() -> void:
 			Vector2(ScreenMetrics.vp_w(), scroll_h))
 	_scroll = pack["scroll"]
 	_body = pack["body"]
-
-	# 화면 아무 데나 눌러 다음 대사를 부르는 판. 말풍선보다 **뒤**에 깔린다
-	# (자식 인덱스 0) — 앞에 두면 스크롤 드래그와 답변 버튼을 통째로 삼킨다.
-	_tap_catcher = Control.new()
-	_tap_catcher.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_tap_catcher.mouse_filter = Control.MOUSE_FILTER_STOP
-	_tap_catcher.gui_input.connect(_on_tap_input)
-	add_child(_tap_catcher)
-	move_child(_tap_catcher, 1)   # 배경(0) 바로 위
+	# **스크롤과 그 안의 판은 클릭을 삼키지 않는다.** 둘 다 기본값이 STOP 이라
+	# 그대로 두면 화면의 190px 아래쪽 — 곧 말풍선이 있는 자리 전부 — 이 탭을
+	# 먹어 버려 "화면 아무 데나 눌러 다음 줄"이 동작하지 않는다. PASS 로 두면
+	# 처리되지 않은 클릭이 **부모 사슬**을 타고 이 화면까지 올라온다(형제로
+	# 깔아 둔 판은 소용이 없다 — 전파는 위로만 가지 옆으로는 안 간다).
+	# 휠 · 터치 드래그는 ScrollContainer 가 자기 자리에서 먹으므로 스크롤은
+	# 그대로 살아 있고, 답변 Button 은 STOP 이라 거기서 멎는다.
+	_scroll.mouse_filter = Control.MOUSE_FILTER_PASS
+	_body.mouse_filter = Control.MOUSE_FILTER_PASS
 
 	_hint_lbl = UiHelpers.mk_label(self, "", 22, OutgameTheme.TEXT_FAINT,
 			Vector2(0, bottom - 46.0), Vector2(ScreenMetrics.vp_w(), 28),
@@ -371,6 +372,7 @@ func _on_tap_input(event: InputEvent) -> void:
 	var mb := event as InputEventMouseButton
 	if mb == null or not mb.pressed or mb.button_index != MOUSE_BUTTON_LEFT:
 		return
+	accept_event()
 	_reveal_next_line()
 
 

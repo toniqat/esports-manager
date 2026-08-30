@@ -52,12 +52,21 @@ b   = z.read('Payload/EsportsManager.app/EsportsManager')      # 실행 바이�
 pck = z.read('Payload/EsportsManager.app/EsportsManager.pck')  # 게임 데이터
 
 print('네이티브 햅틱:', all(n in b for n in [
-    b'register_haptics_types', b'_OBJC_CLASS_$_UIImpactFeedbackGenerator']))
+    b'register_haptics_types',
+    b'_OBJC_CLASS_$_UIImpactFeedbackGenerator',        # light / medium / heavy
+    b'_OBJC_CLASS_$_UISelectionFeedbackGenerator',     # SELECT
+    b'_OBJC_CLASS_$_UINotificationFeedbackGenerator',  # SUCCESS / WARNING / ERROR
+]))
 print('game.db:', b'data/game.db' in pck)   # 없으면 타이틀 화면부터 DB 오류로 죽는다
 ```
 
-- **네이티브 햅틱** — 둘 다 있어야 한다. 없으면 폰에서
-  `Input.vibrate_handheld` 폴백이 돈다(`ios/plugins/README.md`).
+- **네이티브 햅틱** — **넷 다** 있어야 한다. 앞의 둘만 보면 부족하다는 것을
+  실제로 겪었다: 업스트림 플러그인이 impact 셋만 바인딩하는데 그 둘은 멀쩡히
+  있어서, **감촉의 3분의 2가 폰에서 침묵인 채로 검산을 통과했다**(버튼 뗌 ·
+  훈련 타일 드래그 · 경기 승패 · 오브젝트 획득이 전부 조용했다). 뒤의 두
+  클래스를 부르는 코드는 이 빌드에 플러그인밖에 없으므로, 그 참조가 곧
+  "impact 셋 말고 나머지도 들어왔다"의 증거다. 하나라도 없으면
+  `ios/plugins/README.md`.
 - **`data/game.db`** — 리소스가 아니라 `include_filter` 로만 pck 에 들어가므로,
   필터가 조용히 빗나가면 빌드는 초록불인데 게임이 멈춘다.
 

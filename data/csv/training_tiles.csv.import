@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://d3g56xsq78me8"
+
+[deps]
+
+files=["res://data/csv/training_tiles.name.translation", "res://data/csv/training_tiles.grade.translation", "res://data/csv/training_tiles.shape.translation", "res://data/csv/training_tiles.exp.translation", "res://data/csv/training_tiles.effect.translation"]
+
+source_file="res://data/csv/training_tiles.csv"
+dest_files=["res://data/csv/training_tiles.name.translation", "res://data/csv/training_tiles.grade.translation", "res://data/csv/training_tiles.shape.translation", "res://data/csv/training_tiles.exp.translation", "res://data/csv/training_tiles.effect.translation"]
+
+[params]
+
+compress=true
+delimiter=0

@@ -162,7 +162,7 @@
 - [x] `LeagueManager.next_unplayed_player_match()`, `matches_today()`, `team_name()`, `team_short_name()` — Phase 6/7 + LeagueView 헤더 보조
 - [x] `data/csv/teams.csv` 신설 (8팀, id/name/short_name) + `addons/csv_to_db/plugin.gd` SCHEMAS+TABLE_DEFS 갱신
 - [x] `GameManager._load_team_meta()` 가 `season_state["team_meta"]` 채움 (DB 미빌드 시 fallback Array 합성)
-- [x] `TrainingView._is_cell_locked()` 이 `player_has_match_on_weekday_this_week()` 사용. `_normalize_locked_cells` 가 잠금 해제된 MATCH 셀을 REST로 자동 변환. `TrainingScheduler.apply_day_training()` 도 매치 없는 날의 MATCH 셀을 REST 처리하여 mental -2 누락 방지.
+- [x] ~~주말 MATCH 잠금~~ — **훈련이 타일 배치판으로 바뀌며 사라졌다.** 판이 월~금 5일뿐이라 경기 주말은 애초에 판 위에 없다(`features/season/training/README.md`).
 - [x] `HubView._on_match_day_reached` 토스트가 "오늘 경기 vs <팀명>" / "오늘은 경기 없음" 으로 분기. "리그 순위" 버튼이 실제로 `goto(Screen.LEAGUE)` 호출.
 - [x] PilotCard / TeamDraftView 의 "TEAM N" 라벨이 team_meta short_name 사용
 
@@ -318,4 +318,4 @@
 - **세이브/로드**: Phase 1~8에 포함하지 않음. 캠페인 1회차 일관 플레이가 v1 목표. 세이브는 v2.
 - **AI 팀 훈련**: AI 팀 스탯이 시즌 동안 변하지 않음 (현재 안). 변동 도입 시 별도 phase.
 - **트레이드/이적 시스템**: spec에 없으므로 v1 미포함. 잔여 20명 FA 풀이 있다는 컨셉은 v2 후보.
-- **퍼지(컨디션/피로도)**: 스탯 모델 단순 유지로 인한 미포함. 사용자가 깊이를 원하면 추후 mental 스탯에 컨디션 의미 부여.
+- **퍼지(컨디션/피로도)**: 미포함. 스탯 6종이 전부 전투 계산의 입력이라 컨디션을 얹을 자리가 따로 없다 — 넣으려면 스탯이 아니라 훈련 타일의 절(예: 연속 배치 페널티)로 넣는 편이 판과 맞물린다.

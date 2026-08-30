@@ -151,7 +151,7 @@ static func _serialize_season_state(s: Dictionary) -> Dictionary:
 		"intl_pilots":       _pilots_to_array(s.get("intl_pilots", [])),
 		"team_rosters":      s.get("team_rosters", {}),
 		"league_standings":  s.get("league_standings", {}),
-		"training_schedule": s.get("training_schedule", {}),
+		"training_board":    s.get("training_board", []),
 		"phase_results":     s.get("phase_results", {}),
 		"pending_match":     s.get("pending_match", null),
 		"current_tournament": s.get("current_tournament", null),
@@ -177,12 +177,27 @@ static func _deserialize_season_state(s: Dictionary) -> Dictionary:
 		"intl_pilots":       _array_to_pilots(s.get("intl_pilots", [])),
 		"team_rosters":      _int_keyed_dict_in(s.get("team_rosters", {})),
 		"league_standings":  _int_keyed_dict_in(s.get("league_standings", {})),
-		"training_schedule": _int_keyed_dict_in(s.get("training_schedule", {})),
+		"training_board":    _board_in(s.get("training_board", [])),
 		"phase_results":     _int_keyed_dict_in(s.get("phase_results", {})),
 		"pending_match":     s.get("pending_match", null),
 		"current_tournament": s.get("current_tournament", null),
 		"match_resume":      s.get("match_resume", null),
 	}
+
+
+## 훈련판 배치를 정수 좌표로 되돌린다. JSON 은 수를 전부 실수로 되돌려 주므로
+## 그냥 실으면 `{x: 0.0, y: 0.0}` 이 되고, 그 뒤 `Vector2i(...)` 로 감싸는 자리마다
+## 조용히 형변환이 한 겹 더 붙는다 — 한 자리라도 빠뜨리면 칸 비교가 어긋난다.
+static func _board_in(rows: Array) -> Array:
+	var out: Array = []
+	for r in rows:
+		var d: Dictionary = r
+		out.append({
+			"tile": String(d.get("tile", "")),
+			"x": int(d.get("x", 0)),
+			"y": int(d.get("y", 0)),
+		})
+	return out
 
 
 static func _pilots_to_array(pilots: Array) -> Array:

@@ -1,41 +1,272 @@
-# Training Scheduler
+# 주간 훈련 (타일 배치판)
 
-Weekly 7-day training grid. Rows = pilots on the player's team (5 rows).
-Columns = Mon..Sun. Each cell is a `GameEnums.TrainingType`. The whole
-week is applied atomically when the player presses "주 진행".
+한 주의 훈련을 **5열(선수) × 5행(월~금) 판에 코스 타일을 끼워 넣어** 짠다.
+원작(Esports Godfather)의 루틴 훈련판을 옮긴 것이고, 원본 분석은
+`docs/routine.md` 에 있다.
 
 ## Files
 | File | Role |
 |---|---|
-| `TrainingScheduler.gd` | Headless logic — default templates, `apply_week_training()` (returns per-pilot before/after/delta dict), `projected_week_stats()` for the preview UI, `refill_player_team_defaults()` after a week roll. |
-| `TrainingView.gd` | Schedule editor — preview table + 5×7 grid + picker dialog. "주 진행" button calls `SeasonHub.on_training_save_and_advance()`. |
-| `TrainingResultView.gd` | Post-week dashboard — 5 pilots × 5 stats with `before → after` and `+delta` per cell. "다음 →" calls `SeasonHub.on_training_result_continue()`. |
+| `TrainingTile.gd` | `class_name TrainingTile` — CSV 한 행 = 타일 하나. **문법 해석은 여기에만 있다**(모양 · 색 · EXP · 효과 절). 색 표 · 등급 표 · 등급별 배치 상한도 여기가 소유한다. |
+| `TrainingBoard.gd` | `class_name TrainingBoard` — 머리 없는 판. 배치 판정(`can_place` / `place` / `remove_at`), 정산(`cell_exp` / `compute_gains` / `compute_day_gains`), **요일 적용**(`apply_day_training`), 미리보기(`projected_stats`), 주 진행 초기화(`reset_week_progress`). Season.tscn 의 `TrainingBoard` 노드. |
+| `TrainingView.gd` | 편성 화면 — 초상화 5 + 판 5×5 + 코스 인벤토리 + "훈련 확정". 드래그 드롭. 배치·읽기 규약은 아래 "화면 배치". |
 
-## Behavior
-- Default schedule (`default_week_for_pilot`) auto-fills at the start of
-  each week. `refill_player_team_defaults()` runs in
-  `SeasonHub.on_proceed_to_next_week()` after `advance_week`.
-- Player can override Mon–Thu cells freely. Fri/Sat/Sun cells lock to
-  MATCH whenever the player has a real match this week (across league,
-  playoff, or INTL). When unlocked, MATCH cells fall back to REST.
-- `apply_week_training()` is the per-week tick: walks each player-team
-  pilot's 7 cells, applies stat deltas (clamped 1..100), and returns a
-  result dict the dashboard reads. MATCH cells fall back to REST when
-  no real match is scheduled this week (so off-week-ends don't bleed
-  mental). Idempotent within a week boundary because SeasonHub controls
-  the call site.
-- `projected_week_stats(p)` runs the same logic against a copy of `p`'s
-  current stats to preview the post-week projection on the editor screen.
+## 판의 축
+```
+        탑    정글   미드   원딜   서폿      ← 열(column) = 한 선수의 한 주
+  월  [    ][    ][    ][    ][    ]
+  화  [    ][    ][    ][    ][    ]   ← 행(row) = 같은 요일 다섯 명
+  수  [    ][    ][    ][    ][    ]
+  목  [    ][    ][    ][    ][    ]
+  금  [    ][    ][    ][    ][    ]
+```
+열 순서는 `GameEnums.ROLE_DISPLAY_ORDER`(전장 스트립 · 허브 로스터 · 밴픽과
+같은 표)다. **토·일은 판에 없다** — 그 이틀은 경기 주말이라 훈련이 아니고,
+예전 7일 격자의 금·토·일 MATCH 잠금이 하던 일을 판 크기 자체가 대신한다.
 
-## Stats touched
-Only the existing PlayerData stats: `laning, mechanics, gamesense, teamfight, mental`.
-Clamped to `[1, 100]` per stat per day. `REST` boosts mental; `SCRIM` trades
-mental for teamfight + gamesense; `MATCH` costs mental; topic-specific training
-nudges the matching stat.
+원작은 이 축이 **반대**다(행이 선수, 열이 교시). 그래서 효과 범위 이름을
+상/하/좌/우가 아니라 **의미**로 지었다(`day_*` / `mate_*`) — 방향으로 적어 두면
+판을 한 번 돌릴 때마다 절이 전부 거짓말이 된다.
 
-## Picker dialog
-Tapping a non-locked cell opens a centered modal panel listing the six
-player-editable types (`REST/LANING/MECHANICS/GAMESENSE/TEAMFIGHT/SCRIM`)
-plus a Cancel button. `MATCH` is never offered — it's reserved for the
-weekend lock. Tapping outside the panel (on the dim layer) also dismisses
-the picker.
+## `data/csv/training_tiles.csv`
+| 컬럼 | 뜻 |
+|---|---|
+| `id` | `T01` … (텍스트 PK) |
+| `grade` | 0=D 1=C 2=B 3=A 4=S |
+| `shape` | `/` 로 줄을 나눈 색 문자열. **한 줄 = 하루, 한 글자 = 선수 한 명.** `W`=1칸, `WW`=같은 요일 둘, `W/W`=한 선수 이틀, `CC/DD`=둘×이틀, `WWWWW`=하루를 다섯 명이 |
+| `exp` | `\|` 로 이은 `스탯:값`. `all:8` = 여섯 스탯 전부. **한 칸이 주는 값**이라 n칸 타일은 n배 |
+| `effect` | `;` 로 이은 절 |
+
+**`description` 컬럼은 없다.** 예전에는 있었고 정보 팝오버가 그것을 그대로
+찍었는데, 그 문장은 `effect` 절을 사람이 손으로 옮겨 적은 것이라 절의 숫자를
+고치면 설명만 조용히 거짓말이 됐다. 지금 팝오버의 두 줄은 둘 다 타일 데이터에서
+만들어진다 — `TrainingTile.exp_summary()`(EXP)와 `effect_summary()`(효과).
+
+### 색 ↔ 스탯
+`PlayerData.STAT_KEYS` 와 같은 순서다.
+
+| 기호 | 색 | 스탯 |
+|---|---|---|
+| `H` | 노랑 | 전장 명중 `field_hit` |
+| `E` | 파랑 | 전장 회피 `field_eva` |
+| `C` | 빨강 | 교전 명중 `engage_hit` |
+| `D` | 보라 | 교전 회피 `engage_eva` |
+| `A` | 주황 | 공격력 성장 `atk_growth` |
+| `P` | 초록 | 체력 성장 `hp_growth` |
+| `K` | 검정 | **경험치 0** — 증폭형 타일의 자기 칸 |
+| `W` | 회색 | 무속성 — 여섯 스탯을 고루 |
+
+색은 지금은 표시와 `exp` 의 짝일 뿐이지만, 원작의 조건형 효과("같은 열의 레드
+개수만큼 방어 +40")를 넣을 자리로 남겨 뒀다 — `TrainingTile.cell_colors` 가
+이미 칸별 색을 들고 있으므로 절 하나만 추가하면 된다.
+
+### 효과 절
+```
+mult:<scope>:<pct>            그 범위의 칸 EXP 를 pct% 로 곱한다 (100 = 무변화)
+flat:<scope>:<stat>:<n>       그 범위의 칸에 stat EXP 를 n 더한다
+```
+| scope | 뜻 |
+|---|---|
+| `self` | 자기 칸 |
+| `day_next` / `day_prev` | 그 선수의 다음 날 / 전날 한 칸 |
+| `day_all` | 그 선수의 한 주 전체 |
+| `day_prev_all` / `day_next_all` | 그 선수의 앞선 날 / 남은 날 전부 |
+| `mate_left` / `mate_right` | 옆 선수의 같은 요일 |
+| `mate_all` | 그 요일의 다른 선수 전부 |
+
+화면에 뜨는 문구는 `TrainingTile.SCOPE_LABELS` 표 하나에서 나온다(`day_next` →
+"다음 날", `mate_all` → "같은 날 다른 선수"). 절 이름과 같은 이유로 **방향이
+아니라 의미**로 적는다 — 판을 한 번 돌리면 "위 칸"은 거짓말이 된다.
+`mult` 는 화면에 **차이**를 적는다(`115` → `+15%`): 100 이 무변화이므로 그
+절이 무엇을 바꾸는지에 곧장 답하는 것은 115 가 아니라 +15 다.
+
+**자기 타일이 덮은 칸은 어느 scope 에도 안 들어간다.** 자기 자신에게 배율을
+거는 절은 그냥 EXP 를 그만큼 더 적으면 되는 값이고, 여러 칸 타일에서는 한 칸이
+다른 칸에 배율을 걸어 배치와 무관한 자기 증폭이 생긴다.
+
+## 정산 (`cell_exp` → `compute_gains` / `compute_day_gains`)
+3단계이고 **순서가 결과를 바꾸지 않는 것**이 설계의 요점이다.
+
+1. 칸마다 기본 EXP 를 깐다. 빈 칸은 기본 코스(`FILLER_TILE_ID` = T01)가 메우므로
+   **"아무것도 안 놓은 판"과 "기본으로 도배한 판"이 같은 결과**를 낸다.
+2. 절을 전부 훑어 **배율 표**와 **가산 표**를 따로 쌓는다. 배율은 곱해서 쌓인다
+   (120% 둘이면 144%) — 더하기로 쌓으면 증폭 타일 셋만 붙여도 폭주한다.
+3. 둘을 칸마다 한 번에 적용해 **칸별 EXP 를 굳힌다**(`cell_exp`,
+   `Vector2i(seat, day) → {stat: int}`). 같은 패스에서 곱하면 절이 도는 순서가
+   결과를 바꾼다("왼쪽 칸 ×0.5" 뒤에 "그 칸 +100" 이 오면 100 이 안 깎인다).
+   **반올림도 여기서 칸당 한 번만** 한다.
+
+접는 것은 그 다음이다. `compute_gains()` 는 다섯 줄 전부를, `compute_day_gains(day)`
+는 그 줄만 자리별로 더한다. **자기 줄만 다시 계산하지 않는 것**이 요점이다 —
+절의 스코프는 요일을 넘나들므로(`day_next` · `day_prev_all` · `mate_all`) 수요일
+타일이 목요일 칸에 건 배율은 목요일을 정산할 때 살아 있어야 한다. 칸 표를
+판 전체로 한 번 만들고 접기만 나누면 **요일 다섯의 합이 주간 한 번과 한 EXP 도
+어긋날 수 없다**(헤드리스로 검증한다).
+
+### EXP 와 나머지 통장
+**EXP 는 스탯 포인트가 아니다** — `EXP_PER_POINT`(40)만큼 모여야 스탯이 1 오른다.
+빈 판은 선수당 스탯 +1/주, 한 스탯에 몰아주면 +5~9/주.
+
+나머지는 **주 안에서만 이월된다**(`season_state["training_exp_carry"]`,
+`seat → {stat: 남은 EXP}`). 예전에는 그냥 버렸는데 — 정산이 주 1회라 버려도 한 주에
+한 번뿐이었다 — 정산이 요일 단위로 쪼개지면서 그러면 하루 30 EXP 짜리 판이 닷새
+내내 매일 0 점이 되어 한 주에 한 점도 안 오른다. 통장은 주가 시작될 때
+비운다(`reset_week_progress`) — 주를 넘겨 쌓이면 판을 비워 둔 주가 지난주
+나머지로 스탯을 올린다.
+
+## 적용 (`apply_day_training(day)`)
+**훈련은 요일 단위로 먹는다.** 예전의 `apply_week_training()` 은 삭제됐다 —
+시간 경과 화면(`features/season/week/`)이 "그날 무슨 일이 있었는가"를 요일마다
+물으면서 정산도 하루씩으로 쪼개졌다.
+
+돌려주는 것은 그 화면이 읽는 줄 목록이다 — 자리 순서대로 늘어선
+`Array[{pilot_id, name, role, seat, before, after, ups, exp, carry}]`.
+`ups` 는 이번 날 실제로 오른 포인트, `exp` 는 그날 번 EXP, `carry` 는 정산 뒤에
+통장에 남은 나머지다(화면이 `27/40` 로 "다음 한 점까지"를 보여 준다).
+
+두 번 먹지 않게 하는 장치는 **화면 쪽**에 있다 — 결과를 
+`season_state["week_day_log"][day]` 에 남기고 이미 있으면 다시 부르지 않는다
+(`WeekProgressView._settle_day_if_needed`). 경기를 치르고 같은 요일로 돌아오는
+경로가 실제로 있다.
+
+## 화면 배치
+
+세로로 네 덩이 — **초상화 다섯 → 판 5×5 → 코스 인벤토리 → 훈련 확정**.
+
+**가로 기준선은 `_grid_x()` 하나다.** 판을 화면 한가운데에 놓고(1080 기준
+100..980) 초상화 · 요일 글자 · 드롭 미리보기가 전부 그 값에서 나온다. 가운데를
+잡는 것은 요일 칸까지 합친 덩어리가 아니라 **판 자체**다 — 요일 글자는 판 옆에
+붙은 이름표이지 내용이 아니라서, 덩어리째 가운데에 두면 눈이 따라가는 다섯 열이
+요일 칸 폭의 절반만큼 오른쪽으로 밀린다. 예전에는 판 왼쪽 끝이 상수(`GRID_X` 80)
+였고 요일 칸이 그 **안쪽**에 있어 판 오른쪽 끝이 화면 밖(1102 > 1080)으로 나가
+있었다.
+
+### 초상화 다섯 (열 머리글)
+인게임 파일럿 스트립과 **같은 가로 초상화**(`PilotImages.eye_for`, 480×200 밴드)
+이고 칸 높이는 그 비율(2.4:1)에서 나온다 — 임의 높이로 늘리면 얼굴이 찌그러진다.
+**누를 수 없고 이름 · 역할 글자도 없다**: 이 줄이 답하는 질문은 "이 열이 누구의
+한 주인가" 하나뿐이라 얼굴이 그 답이고 테두리 색이 역할이다.
+
+예전에는 이 줄이 **누를 수 있었고** 그 아래에 고른 선수의 여섯 스탯을
+`before→after` 로 보여 주는 **예상 변화 한 줄**이 있었다. 초상화가 순수한
+머리글이 되며 고를 주체가 사라졌고, 그 정보는 "훈련 확정" 뒤의 **시간 경과
+화면**(`features/season/week/`)이 요일마다 다섯 명 × 여섯 스탯으로 보여 준다.
+예전에 그 자리를 맡았던 주간 결산 한 장(`TrainingResultView`)은 정산이 요일
+단위로 쪼개지면서 삭제됐다.
+
+### 판 (`_draw_grid`)
+칸은 **정사각형**(`CELL` 176)이다 — 색 면이 곧 "한 선수의 하루"라 가로로
+납작하면 여러 칸 타일의 모양(2×2 · 1×3 · 5×1)이 판 위에서 왜곡돼 읽힌다.
+
+타일 몸통은 **같은 타일의 이웃 칸과 맞닿은 변에서 여백(`CELL_PAD`)도
+테두리(`TILE_EDGE`)도 버린다**(`_draw_tile_body`) — 그래서 여러 칸 타일은 칸
+사이에 구분선 없이 한 덩어리로 이어지고 바깥 윤곽만 남는다. 전장의 캠프
+아웃라인이 쓰는 규칙과 같다(그 변 너머의 이웃이 같은 타일이 아닐 때만 그린다).
+색은 **그 변이 속한 칸의 색**이라, 위가 빨강 아래가 보라인 [합숙 스크림]은
+윤곽만 봐도 위아래가 다른 것이 읽힌다. 안쪽 이음매에 얇은 어두운 선을 넣던 예전
+방식은 삭제했다 — 그 선이 곧 "여기서 타일이 끊긴다"로 읽혔다.
+
+타일 위에 남는 글씨는 **이름 하나뿐**이고 타일이 덮은 범위 한가운데에 앉는다.
+EXP 요약은 여기서 빠졌다 — 판이 답해야 하는 질문은 "무엇이 어디에 놓였나"이고
+숫자는 인벤토리의 정보 팝오버가 들고 있다. 드래그 미리보기(`_make_drag_preview`)
+도 같은 이음매 규칙 · 같은 칸 크기를 쓴다: 미리보기와 놓인 결과가 다른 모양이면
+미리보기가 아니다.
+
+### 코스 인벤토리 + 정보 팝오버
+카드 한 장에는 **등급 · 놓임/상한 · 모양 미니어처 · 이름**만 있다. 설명문과 EXP
+요약이 빠지며 카드 높이가 244 → 146 으로 줄어 열다섯 장이 한 화면 남짓에 든다 —
+열다섯 장이 각자 네 줄짜리 설명을 들고 있으면 목록이 두 화면이 되고, 정작 훑어
+고를 때 견주는 것은 이름과 모양이다. 모양 미니어처는 남는다: 설명문이 아니고,
+**드래그로 잡은 칸을 판 좌표로 옮기는 근거**이기도 하다(그리는 쪽과 역산하는
+쪽이 `_mini_geom` 한 함수를 함께 읽는다).
+
+**카드를 탭하면 그 옆에 정보 팝오버가 뜬다**(`_select_card` → `_build_popover` →
+`_place_popover`) — 등급 · 이름 · 놓임/상한 · **EXP 요약** · **효과 요약** 넷.
+설명문 줄은 없다(위 CSV 절 참조). EXP 는 약칭이 아니라 온전한 스탯 이름을 쓴다
+(`전회 +44` 가 아니라 `전장 회피 +44`) — 폭이 348px 이고 여기서 답할 질문이
+"이 코스가 무엇을 올리는가" 하나뿐이라 다시 풀어 읽을 이유가 없다. 오른쪽에 붙이되
+자리가 없으면 왼쪽으로 넘어가고, 가리키던 카드가 스크롤 밖으로 밀려나면 함께
+숨는다. 팝오버는 스크롤 **밖**에 사는 별개의 판이라(안에 두면 스크롤 폭에 잘린다)
+스크롤이 움직이면 `_place_popover` 가 따라간다. 높이는 글자에서 역산한다
+(`TrainingView._text_height`) — 절대 좌표로 짓는 이 화면에서 컨테이너 자동
+크기를 섞으면 자리를 잡는 프레임과 그리는 프레임이 어긋난다. **그 높이는
+`Font.get_multiline_string_size` 를 그대로 쓰면 안 된다**: 그 함수는 글꼴 줄
+높이만 더할 뿐 `Label` 이 줄 사이에 넣는 `line_spacing`(기본 테마 3)을 세지
+않아서, 두 줄짜리 글이 실측 49px 인데 46 이 돌아온다. 그 3px 이 팝오버 아래끝을
+넘어 판 위로 삐져나오던 것이 **설명이 패널을 넘어가던** 원인이다 — `_text_height`
+가 줄 수를 세어 그 몫을 되돌려 준다(실측 1줄 23 · 2줄 49 · 3줄 75 로
+`Label.get_minimum_size().y` 와 정확히 일치). **잠긴 카드(등급
+상한에 닿은 것)도 고를 수 있다** — 못 놓는 것과 무엇인지 못 보는 것은 다른 일이다.
+팝오버 자신이 클릭을 삼키고 **그 클릭으로 닫힌다**: 삼키지 않으면 밑에 깔린
+카드가 대신 눌려 방금 연 것이 그 자리에서 닫히거나 옆 코스로 갈아탄다(팝오버는
+카드 두어 장을 덮으므로 반드시 일어나는 일이다).
+
+## 배치 제약 — 등급별 개수 상한
+타일은 **몇 번이든 다시 쓸 수 있다**(보유 수량이 없다). 그래서
+`TrainingTile.GRADE_PLACE_LIMIT` = `[-1, 8, 4, 2, 1]`(D 무제한 · C 8 · B 4 · A 2 ·
+S 1)이 "가장 센 타일로 도배"를 막는 **유일한** 장치다. 인벤토리 카드마다
+`놓임/상한` 이 찍히고 상한에 닿은 등급은 카드가 잠긴다.
+
+## 드래그 드롭 (`TrainingView`)
+Godot 내장 드래그(`set_drag_forwarding`)를 쓴다. 출발점이 둘이다.
+
+* **인벤토리 카드** → 새로 놓는다. 카드 어디를 잡았는지는 보지 않는다.
+* **판 위의 타일** → 옮긴다. **집는 순간 판에서 걷어 낸다**(안 그러면 한 칸 옆으로
+  미는 이동이 "자기 자신과 겹친다"로 거절된다). 드롭이 실패하면
+  `NOTIFICATION_DRAG_END` 가 원래 자리에 되돌리고, 성공하면 `_grid_drop` 이
+  되돌릴 사본을 지운다(안 지우면 타일이 둘로 늘어난다).
+
+### 커서는 언제나 타일 한가운데에 있다
+끌려 나온 타일은 **자기 한가운데를 커서에 두고** 따라오고, 그 중심이 어느 칸에
+가장 가까운지가 곧 놓일 자리다(`_origin_for` — 중앙 정렬 → 반올림 → 판 안으로
+clamp). 미리보기와 판 위의 초록 칸이 **같은 한 함수**에서 나오므로 손가락 밑의
+모양과 실제로 놓이는 자리가 갈릴 수 없다. clamp 가 필요한 이유: 5칸짜리
+[전지 훈련]은 x 가 0 일 수밖에 없고, 2칸짜리를 맨 왼쪽 열 한가운데에서 놓으려
+하면 중심이 판 밖을 가리켜 물려 주지 않으면 영영 놓을 수 없는 자리가 생긴다.
+
+**미리보기 노드가 두 겹인 것은 엔진 때문이다.** `set_drag_preview` 로 넘긴
+노드는 뷰포트가 매 프레임 `set_position(마우스 좌표)` 로 **덮어쓴다** — 그
+노드에 오프셋을 적어 두면 오류도 경고도 없이 사라지고 왼쪽 위 모서리가 커서에
+붙는다. 그래서 바깥 `root` 는 엔진에 자리를 내주고 실제 그림은 그 **자식**이
+`-ext × CELL / 2` 만큼 밀린 채 들고 있다. 예전 코드는 이 사실을 모른 채 `root`
+자신을 밀고 있었고, 그래서 **미리보기는 좌측 상단이 커서에 붙은 채로 뜨는데
+드롭은 잡은 칸 기준으로 들어가** 보이는 자리와 놓이는 자리가 달랐다.
+
+### 영향 범위 표시 (노란 칸)
+**절을 가진 타일을 끌면 그 타일이 닿는 칸이 노랗게 뜬다** — 지금 커서가 가리키는
+자리에 놓았을 때 배율 · 가산을 받게 되는 칸들이고, 놓는 순간(`_drag_tile` 이
+비는 순간) 함께 사라진다. 목록은 `TrainingBoard.affected_cells(t, origin)` 이
+내는데, 그 함수가 정산(`compute_gains`)과 **같은 `_scope_cells` 를 지나므로**
+화면에 뜬 칸과 실제로 효과를 받는 칸이 갈릴 수 없다.
+
+읽는 규약 셋. **(1) 절이 없는 타일에는 아무것도 안 뜬다** — 남에게 아무 일도 안
+하는 타일에 "영향 범위"를 그리면 그 표시가 무엇을 뜻하는지가 흐려진다.
+**(2) 자기 칸은 빠진다** — 그 자리는 드롭 미리보기(초록 / 빨강)가 이미 말하고
+있고, 표시를 미리보기보다 **먼저** 깔아 겹치는 칸은 미리보기가 위를 덮는다.
+**(3) 놓을 수 없는 자리에서도 뜬다** — 못 놓는 것과 무엇에 닿는지 안 보이는
+것은 다른 일이고, 이 표시를 보고 자리를 옮기는 것이 증폭 타일의 자리를 고르는
+방식이다.
+
+색은 **칸을 채우는 것이 아니라 테두리로 가리킨다**(`AFFECT_FILL` α 0.16 +
+`AFFECT_LINE`) — 면을 진하게 깔면 그 칸에 이미 놓인 타일이 무슨 색이었는지가
+지워지는데, 증폭 타일이 무엇 위에 걸리는지가 곧 이 표시를 보는 이유다.
+
+**탭(움직이지 않은 누름)은 드래그와 다른 일을 한다** — 판 위의 타일은 탭하면
+걷히고, 인벤토리 카드는 탭하면 **골라져 정보 팝오버가 뜬다**. 내장 드래그는
+커서가 움직여야 시작되므로 그냥 누르고 떼는 것은 `_gui_input` 이 따로 받는다.
+
+판은 **노드 스물다섯 개가 아니라 `Control` 한 장**이다(`_draw_grid`) — 칸 · 놓인
+타일 · 드롭 미리보기를 한 자리에서 그리고, 히트 테스트와 그리기가 같은
+`occupancy()` 표를 읽으므로 보이는 타일과 잡히는 타일이 갈라지지 않는다.
+
+## 저장
+`season_state["training_board"]` = `Array of {tile: String, x: int, y: int}`
+(`x` = 선수 자리 0..4, `y` = 요일 0..4). **빈 칸은 적지 않는다.**
+한 주가 끝나면 `SeasonHub.on_proceed_to_next_week` 이 `reset_for_new_week()` 으로
+판을 비운다 — 기본 코스로 미리 채우지 않는 것은 빈 칸이 이미 기본 코스로
+정산되기 때문이고, 비어 있어야 "이번 주에 내가 놓은 것"이 한눈에 보인다.
+
+## 스탯 (여섯 종, `PlayerData`)
+표는 `PlayerData.STAT_KEYS` / `STAT_LABELS` / `STAT_SHORT` / `STAT_NOTES` 하나뿐이고
+이 폴더의 화면 둘도 그것을 읽는다. **하한 1, 상한 없음** — 100 을 넘어 계속 자란다.
+자세한 것은 루트 `CLAUDE.md` 의 "선수 스탯 (여섯 종)" 항목.

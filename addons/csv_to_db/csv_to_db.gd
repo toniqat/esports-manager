@@ -31,6 +31,7 @@ const SCHEMAS: Dictionary = {
 	"teams":       {"req": ["id","name","short_name"],                          "pk": "id"},
 	"intl_teams":   {"req": ["id","name","short_name"],                         "pk": "id"},
 	"intl_players": {"req": ["id","team_id","name","role","field_hit","field_eva","engage_hit","engage_eva","atk_growth","hp_growth"], "pk": "id"},
+	"training_tiles": {"req": ["id","name","grade","shape","exp","effect"], "pk": "id"},
 }
 
 # SQLite column definitions per table
@@ -201,6 +202,18 @@ const TABLE_DEFS: Dictionary = {
 		"engage_eva": {"data_type": "int",  "not_null": true},
 		"atk_growth": {"data_type": "int",  "not_null": true},
 		"hp_growth":  {"data_type": "int",  "not_null": true},
+	},
+	# 주간 훈련판에 올리는 코스 타일. `shape` 은 `/` 로 줄을 나눈
+	# 색 문자열(한 줄 = 하루, 한 글자 = 선수 한 명), `exp` 은 `|` 로 이은
+	# `스탯:값` 목록(`all` = 여섯 전부), `effect` 는 `;` 로 이은 절 목록.
+	# 문법과 색 표는 `features/season/training/TrainingTile.gd` 가 소유한다.
+	"training_tiles": {
+		"id":          {"data_type": "text", "primary_key": true, "not_null": true},
+		"name":        {"data_type": "text", "not_null": true},
+		"grade":       {"data_type": "int",  "not_null": true},
+		"shape":       {"data_type": "text", "not_null": true},
+		"exp":         {"data_type": "text", "not_null": true},
+		"effect":      {"data_type": "text", "not_null": true},
 	},
 }
 

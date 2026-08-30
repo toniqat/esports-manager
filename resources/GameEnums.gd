@@ -49,17 +49,6 @@ enum SeasonPhase {
 	REGULAR_INTL,     # Oct–Nov  — final international (win = ending)
 }
 
-# Training categories. MATCH is locked on Fri/Sat/Sun afternoons during seasons.
-enum TrainingType {
-	REST,
-	LANING,
-	MECHANICS,
-	GAMESENSE,
-	TEAMFIGHT,
-	SCRIM,
-	MATCH,
-}
-
 # Result of a single league match-day or playoff series.
 enum MatchDayResult { PENDING, WIN, LOSS }
 

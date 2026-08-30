@@ -1,0 +1,16 @@
+id,name,grade,shape,exp,effect
+T01,기초 훈련,0,W,all:8,
+T02,기초 훈련 2,1,W/W,all:16,
+T03,사격 훈련,1,H,field_hit:44,
+T04,회피 기동,1,E,field_eva:44,
+T05,근접 교전,1,C,engage_hit:44,
+T06,반응 훈련,1,D,engage_eva:44,
+T07,화력 증강,1,A,atk_growth:44,
+T08,내구 단련,1,P,hp_growth:44,
+T09,합동 훈련,2,WW,all:22,mult:mate_all:115
+T10,집중 특강,2,K,,mult:day_next:180
+T11,전술 회의,2,W/W/W,all:20,mult:day_all:110
+T12,합숙 스크림,3,CC/DD,engage_hit:52|engage_eva:52,
+T13,한계 돌파,3,H/H/H,field_hit:96,mult:day_prev_all:50
+T14,멘토링,3,K/W/W,all:38,mult:mate_all:125
+T15,전지 훈련,4,WWWWW,all:34,mult:day_next:120

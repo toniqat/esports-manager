@@ -58,9 +58,14 @@ Resource-typed entries:
   runtime-only (set in match flow) and is rebuilt on resume from
   `match_resume.{player,enemy}_assigned_mech_ids`, so it isn't persisted on
   the PlayerData rows themselves.
-- `team_rosters`, `league_standings`, `training_schedule`, `phase_results`
-  are all `Dictionary[int, X]`. JSON.stringify converts int keys to strings;
+- `team_rosters`, `league_standings`, `phase_results` are all
+  `Dictionary[int, X]`. JSON.stringify converts int keys to strings;
   `_int_keyed_dict_in` rebuilds the int keys on load.
+- `training_board` is an `Array` of `{tile: String, x: int, y: int}` (주간 훈련판).
+  JSON returns every number as a float, so `_board_in` casts `x`/`y` back to
+  int on load — 그러지 않으면 `{x: 0.0}` 이 되어 그 뒤 `Vector2i(...)` 로 감싸는
+  자리마다 형변환이 한 겹씩 더 붙고, 한 자리만 빠뜨려도 칸 비교가 어긋난다.
+  (예전의 `training_schedule` `Dictionary[int, Array[7]]` 은 삭제됐다.)
 - `pending_match` round-trips as-is. Non-null between match-day dispatch
   and `_consume_pending_match_result` (always paired with `match_resume`
   except briefly during post-match save where both are null).

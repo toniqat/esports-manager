@@ -46,7 +46,10 @@ var season_state: Dictionary = {
 	"team_rosters": {},           # team_id (int) -> Array[int] of pilot ids
 	"league_standings": {},       # team_id (int) -> {"wins": int, "losses": int}
 	"match_schedule": [],         # Array of {phase, year, month, day, weekday, round, team_a, team_b, played, winner}
-	"training_schedule": {},      # pilot_id (int) -> Array[7] of GameEnums.TrainingType
+	# 주간 훈련판 — 5열(선수, 자리 순서) × 5행(월~금)에 올려 둔 타일 목록.
+	# Array of {tile: String(training_tiles.id), x: int(0..4 선수), y: int(0..4 요일)}.
+	# 빈 칸은 기초 훈련(T01)이 자동으로 메우므로 목록에 적지 않는다.
+	"training_board": [],
 	"tournament_stage": GameEnums.TournamentStage.LEAGUE,
 	"phase_results": {},          # SeasonPhase -> {made_playoffs:bool, champion:int, intl_played:bool, intl_champion:int}
 	# Active player match in flight across Season → MatchFlow → BattleSim → Season.
@@ -102,7 +105,7 @@ func reset_season_state() -> void:
 		"team_rosters": {},
 		"league_standings": {},
 		"match_schedule": [],
-		"training_schedule": {},
+		"training_board": [],
 		"tournament_stage": GameEnums.TournamentStage.LEAGUE,
 		"phase_results": {},
 		"pending_match": null,
@@ -146,15 +149,9 @@ func init_season(player_team_id: int = 0) -> String:
 		standings[t] = {"wins": 0, "losses": 0}
 	season_state["league_standings"] = standings
 
-	# Default training schedule: all REST. Detailed defaults filled later by
-	# TrainingScheduler when the player enters the training screen.
-	var sched: Dictionary = {}
-	for p in pilots:
-		var week: Array = []
-		for d in 7:
-			week.append(GameEnums.TrainingType.REST)
-		sched[p.id] = week
-	season_state["training_schedule"] = sched
+	# 훈련판은 빈 채 시작한다 — 빈 칸은 기초 훈련이 자동으로 메우므로
+	# "아무것도 안 놓은 판"과 "기초로 도배한 판"이 같은 결과를 낸다.
+	season_state["training_board"] = []
 
 	season_state["active"] = true
 	return ""
@@ -388,6 +385,7 @@ func _ready() -> void:
 	_load_card_pool_bs()
 	_load_pilot_skills()
 	_load_mech_skills()
+	_load_training_tiles()
 
 
 func _load_card_pool_bs() -> void:
@@ -466,6 +464,53 @@ func _load_pilot_skills() -> void:
 		}
 	db.close_db()
 	print("GameManager: pilot skills loaded — %d skills" % pilot_skills.size())
+
+
+# ── 주간 훈련 타일 (used by TrainingBoard / TrainingView) ───────────────
+# `data/csv/training_tiles.csv` 그대로. 배열이고 CSV 순서(= 등급 순서)를
+# 유지한다 — 인벤토리 목록이 그 순서 그대로 그려지므로 정렬을 화면 쪽에
+# 두면 타일이 늘 때마다 자리가 조용히 바뀐다.
+#
+# 문법 해석은 여기서 하지 않는다 — `TrainingTile.from_def()` 가 한 행을 타일
+# 하나로 조립한다. 이젠은 DB 행을 그대로 나르는 자리다(카드 풀과 같은 규칙).
+var training_tiles: Array = []   # Array of {id,name,grade,shape,exp,effect}
+
+
+## 타일 id 로 한 행을 찾는다. 없으면 빈 Dictionary — 세이브에 남은 타일을
+## CSV 에서 지우더라도 판이 통째로 죽지 않게 하기 위해서다.
+func training_tile_def(tile_id: String) -> Dictionary:
+	for row in training_tiles:
+		if String(row["id"]) == tile_id:
+			return row
+	return {}
+
+
+func _load_training_tiles() -> void:
+	var db := SQLite.new()
+	db.path = db_path()
+	db.verbosity_level = SQLite.QUIET
+	if not db.open_db():
+		push_error("GameManager: cannot open data/game.db")
+		return
+	# 타일 테이블이 없는 옛 game.db 에서도 조용히 넘어간다 — 그때 훈련판은
+	# 모든 칸이 기초 훈련인 판이 되고 인벤토리만 비어 있다.
+	db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='training_tiles'")
+	if db.query_result.is_empty():
+		db.close_db()
+		print("GameManager: training_tiles table missing — board falls back to basics")
+		return
+	db.query("SELECT * FROM training_tiles ORDER BY grade, id")
+	for row in db.query_result:
+		training_tiles.append({
+			"id":          String(row["id"]),
+			"name":        String(row["name"]),
+			"grade":       int(row["grade"]),
+			"shape":       String(row["shape"]),
+			"exp":         String(row["exp"]),
+			"effect":      String(row["effect"]),
+		})
+	db.close_db()
+	print("GameManager: training tiles loaded — %d tiles" % training_tiles.size())
 
 
 # ── 메크 패시브 / 메크 카드 (used by MechSkillSystem + CardPhaseManager) ──────

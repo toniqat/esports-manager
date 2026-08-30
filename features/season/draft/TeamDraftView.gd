@@ -24,15 +24,11 @@ extends Control
 # 가 "역할당 정확히 1명"을 강제하므로 자유 순서로 두면 화면에서만 가능한 조합이
 # 생겨 확정 버튼에서 처음 거절당한다 — 규칙은 고를 때 보여야 한다.
 
-const ROLE_COLORS: Array = [
-	Color(0.30, 0.55, 1.00),   # TANK     blue
-	Color(1.00, 0.55, 0.20),   # FIGHTER  orange
-	Color(0.75, 0.40, 1.00),   # ASSASSIN purple
-	Color(0.30, 0.85, 0.45),   # SUPPORT  green
-	Color(1.00, 0.35, 0.35),   # SNIPER   red
-]
+## 역할 색은 팔레트가 소유한다 — 화면마다 자기 배열을 들면 같은 역할이
+## 화면마다 다른 색으로 그려진다.
+const ROLE_COLORS: Array = OutgameTheme.ROLE_COLORS
 
-const BG_COLOR := Color(0.07, 0.08, 0.14, 1.0)
+const BG_COLOR := OutgameTheme.BG
 
 # ─── 상: 선택 5인 ────────────────────────────────────────────────────────────
 # 다섯 칸은 `_slot_row` 한 Control 안의 **지역 좌표**로 산다 — CONFIRM 모드가
@@ -52,9 +48,9 @@ const SLOT_ROW_H: float = 502.0
 ## PICK 모드에서 선택 5인 블록이 앉는 y.
 const SLOT_ROW_Y: float = 24.0
 
-const SLOT_FRAME_BG := Color(0.10, 0.12, 0.18, 1.0)
-const SLOT_FRAME_BG_EMPTY := Color(0.09, 0.10, 0.15, 1.0)
-const SLOT_FRAME_BORDER_EMPTY := Color(0.24, 0.26, 0.34, 1.0)
+const SLOT_FRAME_BG := OutgameTheme.SURFACE
+const SLOT_FRAME_BG_EMPTY := OutgameTheme.SURFACE_SUNK
+const SLOT_FRAME_BORDER_EMPTY := OutgameTheme.BORDER
 
 # ─── 중: 필터 ────────────────────────────────────────────────────────────────
 const FILTER_Y: float = 546.0
@@ -63,10 +59,10 @@ const FILTER_X0: float = 24.0
 const FILTER_TOTAL_W: float = 1032.0
 const FILTER_GAP: float = 8.0
 const FILTER_LABELS: Array = ["전체", "탑", "정글", "미드", "원딜", "서폿"]
-const FILTER_BG_ON  := Color(0.20, 0.32, 0.55, 1.0)
-const FILTER_BG_OFF := Color(0.11, 0.13, 0.19, 1.0)
-const FILTER_BORDER_ON  := Color(1.00, 0.85, 0.20, 1.0)
-const FILTER_BORDER_OFF := Color(0.28, 0.31, 0.40, 1.0)
+const FILTER_BG_ON  := OutgameTheme.ACCENT_DIM
+const FILTER_BG_OFF := OutgameTheme.SURFACE
+const FILTER_BORDER_ON  := OutgameTheme.ACCENT
+const FILTER_BORDER_OFF := OutgameTheme.BORDER
 
 # ─── 하: 썸네일 격자 ─────────────────────────────────────────────────────────
 const GRID_Y: float = 626.0
@@ -208,12 +204,12 @@ func _build_slot_row() -> void:
 		_slot_art.append(art)
 
 		var empty := UiHelpers.mk_label(frame, "선택 없음", 26,
-				Color(0.42, 0.46, 0.58), Vector2(0, SLOT_ART_H * 0.5 - 20.0),
+				OutgameTheme.TEXT_FAINT, Vector2(0, SLOT_ART_H * 0.5 - 20.0),
 				Vector2(SLOT_W, 40), HORIZONTAL_ALIGNMENT_CENTER)
 		empty.name = "EmptyMark"
 		empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-		var nm := UiHelpers.mk_label(_slot_row, "—", 26, Color(0.92, 0.94, 0.98),
+		var nm := UiHelpers.mk_label(_slot_row, "—", 26, OutgameTheme.TEXT,
 				Vector2(x, SLOT_NAME_Y), Vector2(SLOT_W, SLOT_NAME_H),
 				HORIZONTAL_ALIGNMENT_CENTER)
 		nm.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -228,7 +224,7 @@ func _build_filter_row() -> void:
 		var btn := Button.new()
 		btn.text = String(FILTER_LABELS[i])
 		btn.focus_mode = Control.FOCUS_NONE
-		btn.add_theme_font_size_override("font_size", 26)
+		OutgameTheme.style_ghost_button(btn, 26)
 		btn.position = Vector2(FILTER_X0 + float(i) * (w + FILTER_GAP), FILTER_Y)
 		btn.size = Vector2(w, FILTER_H)
 		# i == 0 이 "전체"(-1), 그 뒤는 `SLOT_ROLES` 와 같은 순서다 — 필터 버튼과
@@ -249,8 +245,8 @@ func _build_grid() -> void:
 	_grid_back.size = Vector2(GRID_W + 16.0, grid_h() + 16.0)
 	_grid_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var back_sty := StyleBoxFlat.new()
-	back_sty.bg_color = Color(0.05, 0.06, 0.10, 1.0)
-	back_sty.border_color = Color(0.22, 0.25, 0.33, 1.0)
+	back_sty.bg_color = OutgameTheme.SURFACE
+	back_sty.border_color = OutgameTheme.BORDER
 	back_sty.border_width_left = 2
 	back_sty.border_width_right = 2
 	back_sty.border_width_top = 2
@@ -306,7 +302,7 @@ func _build_bottom_bar() -> void:
 	_next_btn.focus_mode = Control.FOCUS_NONE
 	_next_btn.position = Vector2(main_x, bar_y())
 	_next_btn.size     = Vector2(MAIN_BTN_W, BAR_H)
-	_next_btn.add_theme_font_size_override("font_size", 40)
+	OutgameTheme.style_primary_button(_next_btn, 38)
 	_next_btn.disabled = true
 	_next_btn.pressed.connect(_on_next_pressed)
 	add_child(_next_btn)
@@ -316,7 +312,7 @@ func _build_bottom_bar() -> void:
 	_confirm_btn.focus_mode = Control.FOCUS_NONE
 	_confirm_btn.position = Vector2(main_x, bar_y())
 	_confirm_btn.size     = Vector2(MAIN_BTN_W, BAR_H)
-	_confirm_btn.add_theme_font_size_override("font_size", 40)
+	OutgameTheme.style_primary_button(_confirm_btn, 38)
 	_confirm_btn.visible = false
 	_confirm_btn.pressed.connect(_on_confirm_pressed)
 	add_child(_confirm_btn)
@@ -329,7 +325,7 @@ func _build_bottom_bar() -> void:
 	_back_btn.position = Vector2(main_x - BACK_BTN_GAP - BACK_BTN_W,
 			bar_y() + (BAR_H - BACK_BTN_H) * 0.5)
 	_back_btn.size     = Vector2(BACK_BTN_W, BACK_BTN_H)
-	_back_btn.add_theme_font_size_override("font_size", 26)
+	OutgameTheme.style_text_button(_back_btn, 26)
 	_back_btn.visible = false
 	_back_btn.pressed.connect(_on_back_pressed)
 	add_child(_back_btn)
@@ -457,7 +453,7 @@ func _refresh_slots() -> void:
 			sty.border_color = SLOT_FRAME_BORDER_EMPTY
 			_slot_name_lbl[i].text = "—"
 			_slot_name_lbl[i].add_theme_color_override("font_color",
-					Color(0.48, 0.51, 0.60))
+					OutgameTheme.TEXT_FAINT)
 			frame.disabled = true
 		else:
 			art.texture = PilotImages.bust_for(p.id)
@@ -466,7 +462,7 @@ func _refresh_slots() -> void:
 			sty.border_color = ROLE_COLORS[role]
 			_slot_name_lbl[i].text = p.name
 			_slot_name_lbl[i].add_theme_color_override("font_color",
-					Color(0.92, 0.94, 0.98))
+					OutgameTheme.TEXT)
 			frame.disabled = false
 		# 채워진 칸은 눌러서 상세를 여는 버튼이므로 다섯 상태 전부 같은 스타일을
 		# 준다 — flat 버튼이라도 hover / pressed 는 기본 테마가 덧칠한다.

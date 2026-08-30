@@ -30,7 +30,7 @@ const OVERLAY_LAYER: int = 20
 ## 세로로 긴 기기에서는 높이가 1920 보다 커진다. 딤 · 루트가 뷰포트 전체를
 ## 덮지 않으면 그 차이만큼 화면 끝에 안 덮인 띠가 남는다.
 ## `docs/mobile_safe_area.md` 참고.
-const DIM_COLOR := Color(0.0, 0.0, 0.0, 0.88)
+const DIM_COLOR := Color(0.11, 0.11, 0.18, 0.58)
 
 # ─── 좌: 전신 아트 ───────────────────────────────────────────────────────────
 # 인게임 상세 패널과 같은 값 — 세로 1400 에 아래끝을 화면 밖(2010)에 두어
@@ -47,35 +47,35 @@ const PANEL_W: float = 460.0
 const PANEL_TOP: float = 150.0
 const PANEL_BOTTOM: float = 1740.0
 const PANEL_PAD: float = 22.0
-const PANEL_BG := Color(0.04, 0.05, 0.09, 0.90)
-const PANEL_BORDER := Color(0.30, 0.34, 0.46, 0.70)
+const PANEL_BG := OutgameTheme.SURFACE
+const PANEL_BORDER := OutgameTheme.BORDER
 
 const HDR_NAME_FONT: int = 40
 const HDR_SUB_FONT: int = 22
 const SECTION_H: float = 36.0
 const SECTION_FONT: int = 24
-const SECTION_COLOR := Color(0.58, 0.78, 1.0)
+const SECTION_COLOR := OutgameTheme.TEXT_SUB
 
 # ─── 스탯 칩 ─────────────────────────────────────────────────────────────────
 const CHIP_COLS: int = 3
 const CHIP_GAP: float = 12.0
 const CHIP_H: float = 92.0
 const CHIP_RADIUS: int = 16
-const CHIP_BG := Color(0.10, 0.12, 0.18, 0.94)
-const CHIP_BORDER := Color(0.32, 0.36, 0.48, 0.80)
+const CHIP_BG := OutgameTheme.SURFACE_SUNK
+const CHIP_BORDER := OutgameTheme.BORDER
 const CHIP_NAME_FONT: int = 19
 const CHIP_VALUE_FONT: int = 34
-const CHIP_NAME_COLOR := Color(0.72, 0.74, 0.80)
-const CHIP_VALUE_COLOR := Color(0.96, 0.96, 0.98)
-const CHIP_TOTAL_COLOR := Color(1.0, 0.92, 0.55)
+const CHIP_NAME_COLOR := OutgameTheme.TEXT_SUB
+const CHIP_VALUE_COLOR := OutgameTheme.TEXT
+const CHIP_TOTAL_COLOR := OutgameTheme.ACCENT_TEXT
 
 # ─── 스킬 ────────────────────────────────────────────────────────────────────
 const SKILL_NAME_FONT: int = 30
 const SKILL_META_FONT: int = 19
 const SKILL_DESC_FONT: int = 21
-const SKILL_NAME_COLOR := Color(1.0, 0.88, 0.52)
-const SKILL_META_COLOR := Color(0.58, 0.63, 0.76)
-const SKILL_DESC_COLOR := Color(0.88, 0.90, 0.95)
+const SKILL_NAME_COLOR := OutgameTheme.ACCENT_TEXT
+const SKILL_META_COLOR := OutgameTheme.TEXT_SUB
+const SKILL_DESC_COLOR := OutgameTheme.TEXT
 
 # ─── 후보 카드 ───────────────────────────────────────────────────────────────
 # 3열이라 축소율이 곧 열 폭이다 — 0.80 에서 한 장이 128px 이고 3열 + 간격 24 가
@@ -87,18 +87,14 @@ const CARD_VIEW_SCALE: float = 0.80
 const CARD_COLS: int = 3
 const CARD_GAP: float = 12.0
 const CARD_NOTE_FONT: int = 18
-const CARD_NOTE_COLOR := Color(0.62, 0.66, 0.76)
+const CARD_NOTE_COLOR := OutgameTheme.TEXT_SUB
 
 const CLOSE_H: float = 84.0
 
 const ROLE_NAMES: Array = ["TANK", "FIGHTER", "ASSASSIN", "SUPPORT", "SNIPER"]
-const ROLE_COLORS: Array = [
-	Color(0.30, 0.55, 1.00),
-	Color(1.00, 0.55, 0.20),
-	Color(0.75, 0.40, 1.00),
-	Color(0.30, 0.85, 0.45),
-	Color(1.00, 0.35, 0.35),
-]
+## 역할 색은 팔레트가 소유한다 — 화면마다 자기 배열을 들면 같은 역할이
+## 화면마다 다른 색으로 그려진다.
+const ROLE_COLORS: Array = OutgameTheme.ROLE_COLORS
 
 ## 칩 목록 — 선수 스탯 여섯에 "종합" 한 칸을 더한다(3열 × 세 줄 중
 ## 마지막 한 칸은 비운다). 글자는 짧은 쪽을 쓴다 — 칩 한 칸이 141px 라
@@ -169,7 +165,7 @@ func _build_art() -> void:
 	var tex: Texture2D = PilotImages.full_for(_pilot.id)
 	if tex == null:
 		var slab := ColorRect.new()
-		slab.color = Color(0.30, 0.33, 0.42, 0.30)
+		slab.color = Color(0.30, 0.33, 0.42, 0.14)
 		var slab_w: float = ART_H * ART_PLACEHOLDER_ASPECT
 		slab.size = Vector2(slab_w, ART_H)
 		slab.position = Vector2(ART_CENTER_X - slab_w * 0.5, ART_BOTTOM - ART_H)
@@ -235,13 +231,13 @@ func _build_panel() -> void:
 
 func _build_header(body: Control, w: float, y: float) -> float:
 	var name_lbl := UiHelpers.mk_label(body, _pilot.name, HDR_NAME_FONT,
-			Color(1, 1, 1), Vector2(0, y), Vector2(w, 52))
+			OutgameTheme.TEXT, Vector2(0, y), Vector2(w, 52))
 	name_lbl.clip_text = true
 	y += 54.0
 
 	var r: int = int(_pilot.role)
 	var role_name: String = String(ROLE_NAMES[r]) if r >= 0 and r < ROLE_NAMES.size() else "?"
-	var role_col: Color = ROLE_COLORS[r] if r >= 0 and r < ROLE_COLORS.size() else Color(1, 1, 1)
+	var role_col: Color = ROLE_COLORS[r] if r >= 0 and r < ROLE_COLORS.size() else OutgameTheme.TEXT
 	var slot: int = TeamDraft.slot_of_role(r)
 	var slot_name: String = String(TeamDraft.SLOT_NAMES[slot]) if slot >= 0 else "?"
 	var sub := UiHelpers.mk_label(body,
@@ -345,7 +341,7 @@ func _build_card_sections(body: Control, w: float, y: float) -> float:
 		var lbl := UiHelpers.mk_label(body,
 				"%s 슬롯 — 후보 %d종 중 %d장" % [
 					TeamDraft.cat_label(cat), cards.size(), picks],
-				20, Color(0.80, 0.84, 0.92), Vector2(0, y), Vector2(w, 28))
+				20, OutgameTheme.TEXT_SUB, Vector2(0, y), Vector2(w, 28))
 		lbl.clip_text = true
 		y += 30.0
 		y = _build_card_grid(body, w, y, cards) + 18.0
@@ -418,7 +414,7 @@ func _section(body: Control, w: float, y: float, title: String) -> float:
 func _build_close() -> void:
 	var btn := Button.new()
 	btn.text = "닫기"
-	btn.add_theme_font_size_override("font_size", 30)
+	OutgameTheme.style_ghost_button(btn, 30)
 	btn.focus_mode = Control.FOCUS_NONE
 	btn.position = Vector2(PANEL_X, PANEL_BOTTOM + 16.0)
 	btn.size = Vector2(PANEL_W, CLOSE_H)
@@ -426,8 +422,8 @@ func _build_close() -> void:
 	# 버튼과 겹치는데, 기본 Button 테마는 반투명이라 딤 아래의 그 글자가
 	# 비쳐 "닫기"와 "드래프트 확정"이 한 칸에 겹쳐 읽혔다.
 	var sty := StyleBoxFlat.new()
-	sty.bg_color = Color(0.16, 0.19, 0.28, 1.0)
-	sty.border_color = Color(0.46, 0.52, 0.66, 1.0)
+	sty.bg_color = OutgameTheme.SURFACE
+	sty.border_color = OutgameTheme.BORDER_STRONG
 	sty.border_width_left = 2
 	sty.border_width_right = 2
 	sty.border_width_top = 2

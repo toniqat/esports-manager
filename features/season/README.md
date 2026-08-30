@@ -133,7 +133,17 @@ On the player's match week, the path differs from the daily model:
 cards still show meaningful dates. The day-of-week distinction is
 internal-only and never exposed in-game.
 
-## Autosave triggers (4)
+## 흰 배경 테마
+아웃게임 화면의 **모든 색이 `resources/OutgameTheme.gd` 를 지난다** — 바탕 ·
+카드 · 글자 · 강조 · 역할 색 · 버튼 스타일 · 요일 이름이 그 한 표에 있다.
+참고 디자인은 `docs/ref_image.jpg`(하얀 종이 위에 색이 있는 카드). 화면마다
+자기 `Color(...)` 리터럴을 들고 있으면 같은 카드가 화면마다 다른 회색으로
+그려지고, 팔레트를 한 번 손보는 일이 파일 열몇 개를 훑는 일이 된다.
+**인게임(BattleSim)은 이 표를 쓰지 않는다** — 전장은 어두운 화면이다.
+
+## Autosave triggers (5)
+0. **Post-match** — `SeasonHub._ready` right after the BattleSim result is
+   applied (so closing on the standings screen preserves the outcome).
 1. **Post-draft** — `SeasonHub.goto(HUB)` when previous screen was DRAFT.
 2. **Pre-ban-pick** — `MatchFlow._on_prep_finished` after the player
    confirms PREP. Writes `season_state["match_resume"] = {phase: BAN_PICK,

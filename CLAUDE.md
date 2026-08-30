@@ -20,6 +20,9 @@
   MatchFlow if player has a match (PREP → BAN_PICK(밴픽 + 메크 배정) →
   BattleSim → return; **정글 시작 방향은 BattleSim 안에서 고른다**) → STANDINGS (LeagueView / BracketView /
   IntlBracketView) → "다음 주" → HUB.
+- **아웃게임은 흰 배경 계통**이고 **모든 색이 `resources/OutgameTheme.gd` 를
+  지난다**(참고 디자인 `docs/ref_image.jpg`). 인게임(BattleSim)은 그 표를
+  쓰지 않는다 — 전장은 어두운 화면이다.
 - **Save / load**: 3 slots persisted as JSON under `user://saves/slot{0,1,2}.save`.
   Auto-save fires at four points: (1) DRAFT → HUB, (2) MatchFlow pre-ban-pick
   (after PREP confirmation), (3) MatchFlow post-ban-pick (after 메크 배정
@@ -162,6 +165,12 @@ esports-manager/
 │   ├── BuildingData.gd / WaypointData.gd ← @tool inspector resources
 │   ├── ScreenMetrics.gd         ← class_name ScreenMetrics — 세이프 에어리어 / 뷰포트 크기 (정적).
 │   │                              **모든 화면 좌표가 여기를 지난다** — docs/mobile_safe_area.md
+│   ├── OutgameTheme.gd          ← class_name OutgameTheme — **아웃게임 흰 배경 팔레트**.
+│   │                              시즌 허브 · 기자회견 · 훈련판 · 시간 경과 · 순위 ·
+│   │                              브래킷 · 드래프트의 **모든 색이 여기를 지난다**
+│   │                              (참고 디자인 `docs/ref_image.jpg`). 색 표 + StyleBox
+│   │                              공장 + 버튼 스타일 + 카드 · 원형 초상 · 칩 · 스크롤 헬퍼.
+│   │                              **인게임(BattleSim)은 안 쓴다** — 전장은 어두운 화면이다
 │   └── UiHelpers.gd             ← class_name UiHelpers (mk_label etc.)
 │
 ├── scenes/

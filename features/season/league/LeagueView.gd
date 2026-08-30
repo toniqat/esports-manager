@@ -1,10 +1,10 @@
 class_name LeagueView
 extends Control
 
-# Phase 5 — League standings screen. 8 rows ranked by W-L. Player team row is
-# tinted; the top PLAYOFF_TEAMS rows are flagged as playoff-bound. Top of the
-# screen surfaces the current phase and the player's next scheduled match.
-# Bottom button returns to the HUB.
+# 리그 순위표. 8줄을 승-패 순으로 세우고, 플레이어 팀 줄은 앰버 테두리로,
+# 플레이오프 진출권(상위 `PLAYOFF_TEAMS`) 줄은 왼쪽 초록 띠로 표시한다.
+# 색은 전부 `OutgameTheme` 를 지난다 — 흰 종이 위의 카드 목록이다.
+#
 
 const PHASE_NAMES: Dictionary = {
 	GameEnums.SeasonPhase.PRESEASON:      "프리시즌",
@@ -16,9 +16,9 @@ const PHASE_NAMES: Dictionary = {
 }
 const WEEKDAY_NAMES: Array = ["월", "화", "수", "목", "금", "토", "일"]
 
-const ROW_W: float = 1020.0
-const ROW_H: float = 110.0
-const ROW_GAP: float = 8.0
+const ROW_W: float = 1000.0
+const ROW_H: float = 104.0
+const ROW_GAP: float = 10.0
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 @onready var _gm: Node = get_node("/root/GameManager")
@@ -62,22 +62,15 @@ func _build() -> void:
 	# 화면 전체를 안전 영역 위끝까지 내린다 — 노치 / 다이나믹 아일랜드 밑에
 	# 제목이 깔리지 않게. 제목만 따로 내리면 본문과 겹친다.
 	ScreenMetrics.indent_to_safe_top(self)
-	var bg := ColorRect.new()
-	bg.color = Color(0.07, 0.08, 0.14, 1.0)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	# 배경만은 안전 영역 밖(노치 자리)까지 덮는다 — 안 그러면 그 띠가
-	# 엔진 기본 배경색으로 남는다.
-	ScreenMetrics.extend_background(bg)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bg)
+	OutgameTheme.add_background(self)
 
-	UiHelpers.mk_label(self, "리그 순위", 36, Color(1.0, 0.85, 0.20),
-			Vector2(0, 18), Vector2(1080, 44), HORIZONTAL_ALIGNMENT_CENTER)
-
-	_phase_lbl = UiHelpers.mk_label(self, "", 24, Color(0.55, 0.85, 1.0),
-			Vector2(0, 70), Vector2(1080, 30), HORIZONTAL_ALIGNMENT_CENTER)
-	_next_match_lbl = UiHelpers.mk_label(self, "", 22, Color(1.0, 0.85, 0.40),
-			Vector2(0, 104), Vector2(1080, 28), HORIZONTAL_ALIGNMENT_CENTER)
+	var x0: float = (ScreenMetrics.vp_w() - ROW_W) / 2.0
+	_phase_lbl = UiHelpers.mk_label(self, "", 24, OutgameTheme.TEXT_SUB,
+			Vector2(x0, 32), Vector2(ROW_W, 30), HORIZONTAL_ALIGNMENT_LEFT)
+	UiHelpers.mk_label(self, "리그 순위", 52, OutgameTheme.TEXT,
+			Vector2(x0, 66), Vector2(ROW_W, 62), HORIZONTAL_ALIGNMENT_LEFT)
+	_next_match_lbl = UiHelpers.mk_label(self, "", 24, OutgameTheme.ACCENT_TEXT,
+			Vector2(x0, 136), Vector2(ROW_W, 30), HORIZONTAL_ALIGNMENT_LEFT)
 
 	_build_header()
 	_build_rows()
@@ -85,55 +78,48 @@ func _build() -> void:
 
 
 func _build_header() -> void:
-	var header_y: float = 168.0
-	var x0: float = (1080.0 - ROW_W) / 2.0
-	UiHelpers.mk_label(self, "순위", 22, Color(0.7, 0.8, 0.95),
-			Vector2(x0, header_y), Vector2(100, 28), HORIZONTAL_ALIGNMENT_CENTER)
-	UiHelpers.mk_label(self, "팀", 22, Color(0.7, 0.8, 0.95),
-			Vector2(x0 + 110, header_y), Vector2(370, 28), HORIZONTAL_ALIGNMENT_LEFT)
-	UiHelpers.mk_label(self, "승-패", 22, Color(0.7, 0.8, 0.95),
-			Vector2(x0 + 480, header_y), Vector2(220, 28), HORIZONTAL_ALIGNMENT_CENTER)
-	UiHelpers.mk_label(self, "승률", 22, Color(0.7, 0.8, 0.95),
-			Vector2(x0 + 700, header_y), Vector2(160, 28), HORIZONTAL_ALIGNMENT_CENTER)
-	UiHelpers.mk_label(self, "PO", 22, Color(0.7, 0.8, 0.95),
-			Vector2(x0 + 860, header_y), Vector2(160, 28), HORIZONTAL_ALIGNMENT_CENTER)
+	var header_y: float = 186.0
+	var x0: float = (ScreenMetrics.vp_w() - ROW_W) / 2.0
+	OutgameTheme.add_divider(self, Vector2(x0, header_y + 34.0), ROW_W)
+	UiHelpers.mk_label(self, "순위", 20, OutgameTheme.TEXT_SUB,
+			Vector2(x0 + 16, header_y), Vector2(100, 28), HORIZONTAL_ALIGNMENT_CENTER)
+	UiHelpers.mk_label(self, "팀", 20, OutgameTheme.TEXT_SUB,
+			Vector2(x0 + 126, header_y), Vector2(370, 28), HORIZONTAL_ALIGNMENT_LEFT)
+	UiHelpers.mk_label(self, "승-패", 20, OutgameTheme.TEXT_SUB,
+			Vector2(x0 + 480, header_y), Vector2(200, 28), HORIZONTAL_ALIGNMENT_CENTER)
+	UiHelpers.mk_label(self, "승률", 20, OutgameTheme.TEXT_SUB,
+			Vector2(x0 + 680, header_y), Vector2(160, 28), HORIZONTAL_ALIGNMENT_CENTER)
+	UiHelpers.mk_label(self, "PO", 20, OutgameTheme.TEXT_SUB,
+			Vector2(x0 + 840, header_y), Vector2(144, 28), HORIZONTAL_ALIGNMENT_CENTER)
 
 
 func _build_rows() -> void:
-	var grid_y: float = 210.0
-	var x0: float = (1080.0 - ROW_W) / 2.0
+	var grid_y: float = 236.0
+	var x0: float = (ScreenMetrics.vp_w() - ROW_W) / 2.0
 	for r in 8:
 		var y: float = grid_y + r * (ROW_H + ROW_GAP)
 		var panel := Panel.new()
 		panel.position = Vector2(x0, y)
 		panel.size     = Vector2(ROW_W, ROW_H)
 		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var sty := StyleBoxFlat.new()
-		sty.bg_color     = Color(0.10, 0.12, 0.18, 1.0)
-		sty.border_color = Color(0.20, 0.22, 0.30, 1.0)
-		sty.border_width_left = 1; sty.border_width_right = 1
-		sty.border_width_top  = 1; sty.border_width_bottom = 1
-		sty.corner_radius_top_left     = 6
-		sty.corner_radius_top_right    = 6
-		sty.corner_radius_bottom_left  = 6
-		sty.corner_radius_bottom_right = 6
+		var sty: StyleBoxFlat = OutgameTheme.card_style(14)
 		panel.add_theme_stylebox_override("panel", sty)
 		add_child(panel)
 
-		var rank_lbl := UiHelpers.mk_label(panel, "", 30, Color(1, 1, 1),
-				Vector2(0, (ROW_H - 36) / 2.0), Vector2(100, 36),
+		var rank_lbl := UiHelpers.mk_label(panel, "", 30, OutgameTheme.TEXT_SUB,
+				Vector2(16, (ROW_H - 36) / 2.0), Vector2(100, 36),
 				HORIZONTAL_ALIGNMENT_CENTER)
-		var name_lbl := UiHelpers.mk_label(panel, "", 26, Color(1, 1, 1),
-				Vector2(110, (ROW_H - 32) / 2.0), Vector2(370, 32),
+		var name_lbl := UiHelpers.mk_label(panel, "", 28, OutgameTheme.TEXT,
+				Vector2(126, (ROW_H - 34) / 2.0), Vector2(370, 34),
 				HORIZONTAL_ALIGNMENT_LEFT)
-		var wl_lbl := UiHelpers.mk_label(panel, "", 26, Color(1, 1, 1),
-				Vector2(480, (ROW_H - 32) / 2.0), Vector2(220, 32),
+		var wl_lbl := UiHelpers.mk_label(panel, "", 26, OutgameTheme.TEXT,
+				Vector2(480, (ROW_H - 32) / 2.0), Vector2(200, 32),
 				HORIZONTAL_ALIGNMENT_CENTER)
-		var pct_lbl := UiHelpers.mk_label(panel, "", 26, Color(1, 1, 1),
-				Vector2(700, (ROW_H - 32) / 2.0), Vector2(160, 32),
+		var pct_lbl := UiHelpers.mk_label(panel, "", 26, OutgameTheme.TEXT_SUB,
+				Vector2(680, (ROW_H - 32) / 2.0), Vector2(160, 32),
 				HORIZONTAL_ALIGNMENT_CENTER)
-		var po_lbl := UiHelpers.mk_label(panel, "", 26, Color(0.55, 0.95, 0.55),
-				Vector2(860, (ROW_H - 32) / 2.0), Vector2(160, 32),
+		var po_lbl := UiHelpers.mk_label(panel, "", 24, OutgameTheme.POSITIVE,
+				Vector2(840, (ROW_H - 32) / 2.0), Vector2(144, 32),
 				HORIZONTAL_ALIGNMENT_CENTER)
 
 		_row_widgets.append({
@@ -151,7 +137,7 @@ func _build_back_button() -> void:
 	var x0: float = (1080.0 - total) / 2.0
 	# 하단 안전선에 매단다 — 이 자리는 아이폰 홈 인디케이터 / 안드로이드
 	# 제스처 바가 터치를 가져가는 구간과 맞닿아 있다.
-	var y: float = ScreenMetrics.safe_h() - 80.0 - h
+	var y: float = ScreenMetrics.safe_h() - 40.0 - h
 
 	_back_btn = Button.new()
 	_back_btn.text = "돌아가기"
@@ -180,12 +166,13 @@ func refresh() -> void:
 		return
 
 	var phase: int = int(_gm.season_state["current_phase"])
-	_phase_lbl.text = "현재 페이즈: %s" % PHASE_NAMES.get(phase, "—")
+	_phase_lbl.text = "%s · %d주차" % [
+		PHASE_NAMES.get(phase, "—"), int(_gm.season_state["phase_week"])]
 
 	var pid: int = int(_gm.season_state["player_team_id"])
 	var nxt = _league.next_unplayed_player_match()
 	if nxt == null:
-		_next_match_lbl.text = "다음 매치 없음"
+		_next_match_lbl.text = "다음 경기 없음"
 	else:
 		var opp: int = int(nxt["team_b"]) if int(nxt["team_a"]) == pid else int(nxt["team_a"])
 		_next_match_lbl.text = "다음 매치: %d주차 vs %s" % [
@@ -205,8 +192,9 @@ func refresh() -> void:
 			w["wl"].text   = ""
 			w["pct"].text  = ""
 			w["po"].text   = ""
-			sty.bg_color = Color(0.07, 0.08, 0.14, 1.0)
-			sty.border_color = Color(0.20, 0.22, 0.30, 1.0)
+			sty.bg_color = OutgameTheme.SURFACE_SUNK
+			sty.border_color = OutgameTheme.BORDER
+			sty.set_border_width_all(1)
 			continue
 
 		var row: Dictionary = ranked[r]
@@ -218,31 +206,31 @@ func refresh() -> void:
 		var is_player: bool = (tid == pid)
 		var made_po: bool = r < po_count
 
-		w["rank"].text = "%d위" % (r + 1)
+		w["rank"].text = "%d" % (r + 1)
 		w["name"].text = "%s  (%s)" % [_league.team_name(tid), _league.team_short_name(tid)]
 		w["wl"].text   = "%d승 %d패" % [wins, losses]
 		w["pct"].text  = pct_s
 		w["po"].text   = "PO" if made_po else ""
 
-		# Tint player team's row; promote-zone gets a green-ish bg.
+		# 플레이어 줄은 앰버 틴트 + 앰버 테두리, 진출권은 왼쪽 초록 띠 하나.
+		# 색면으로 칠하면 그 줄의 숫자가 안 읽힌다 — 흰 종이에서 강조는 테두리다.
+		sty.bg_color = OutgameTheme.ACCENT_DIM if is_player else OutgameTheme.SURFACE
 		if is_player:
-			sty.bg_color     = Color(0.20, 0.32, 0.55, 1.0)
-			sty.border_color = Color(1.0, 0.85, 0.20, 1.0)
-			sty.border_width_left = 3; sty.border_width_right = 3
-			sty.border_width_top  = 3; sty.border_width_bottom = 3
+			sty.set_border_width_all(2)
+			sty.border_color = OutgameTheme.ACCENT
 		elif made_po:
-			sty.bg_color     = Color(0.12, 0.20, 0.16, 1.0)
-			sty.border_color = Color(0.40, 0.65, 0.45, 1.0)
-			sty.border_width_left = 2; sty.border_width_right = 2
-			sty.border_width_top  = 2; sty.border_width_bottom = 2
+			# `StyleBoxFlat` 의 테두리 색은 **한 가지뿐**이라 "옅은 외곽선 + 초록
+			# 왼쪽 띠"를 한 판으로 낼 수 없다. 띠 쪽을 택한다 — 흰 종이 위에서는
+			# 그림자가 이미 카드의 윤곽을 만들고 있어 외곽선이 없어도 판이 선다.
+			sty.set_border_width_all(0)
+			sty.border_width_left = 6
+			sty.border_color = OutgameTheme.POSITIVE
 		else:
-			sty.bg_color     = Color(0.10, 0.12, 0.18, 1.0)
-			sty.border_color = Color(0.20, 0.22, 0.30, 1.0)
-			sty.border_width_left = 1; sty.border_width_right = 1
-			sty.border_width_top  = 1; sty.border_width_bottom = 1
+			sty.set_border_width_all(1)
+			sty.border_color = OutgameTheme.BORDER
 
-		w["po"].add_theme_color_override("font_color",
-				Color(0.55, 0.95, 0.55) if made_po else Color(0.4, 0.4, 0.45))
+		w["rank"].add_theme_color_override("font_color",
+				OutgameTheme.TEXT if is_player else OutgameTheme.TEXT_SUB)
 
 
 # ── Button handlers ─────────────────────────────────────────────────────────

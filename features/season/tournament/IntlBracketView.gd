@@ -62,26 +62,19 @@ func _build() -> void:
 	# 화면 전체를 안전 영역 위끝까지 내린다 — 노치 / 다이나믹 아일랜드 밑에
 	# 제목이 깔리지 않게. 제목만 따로 내리면 본문과 겹친다.
 	ScreenMetrics.indent_to_safe_top(self)
-	var bg := ColorRect.new()
-	bg.color = Color(0.07, 0.08, 0.14, 1.0)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	# 배경만은 안전 영역 밖(노치 자리)까지 덮는다 — 안 그러면 그 띠가
-	# 엔진 기본 배경색으로 남는다.
-	ScreenMetrics.extend_background(bg)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bg)
+	OutgameTheme.add_background(self)
 
-	UiHelpers.mk_label(self, "국제대회 브래킷", 36, Color(1.0, 0.85, 0.20),
+	UiHelpers.mk_label(self, "국제대회 브래킷", 36, OutgameTheme.TEXT,
 			Vector2(0, 18), Vector2(1080, 44), HORIZONTAL_ALIGNMENT_CENTER)
 
-	_phase_lbl = UiHelpers.mk_label(self, "", 22, Color(0.55, 0.85, 1.0),
+	_phase_lbl = UiHelpers.mk_label(self, "", 22, OutgameTheme.TEXT_SUB,
 			Vector2(0, 70), Vector2(1080, 28), HORIZONTAL_ALIGNMENT_CENTER)
-	_stage_lbl = UiHelpers.mk_label(self, "", 22, Color(0.85, 0.85, 0.95),
+	_stage_lbl = UiHelpers.mk_label(self, "", 22, OutgameTheme.TEXT_SUB,
 			Vector2(0, 102), Vector2(1080, 28), HORIZONTAL_ALIGNMENT_CENTER)
-	_next_match_lbl = UiHelpers.mk_label(self, "", 22, Color(1.0, 0.85, 0.40),
+	_next_match_lbl = UiHelpers.mk_label(self, "", 22, OutgameTheme.ACCENT_TEXT,
 			Vector2(0, 134), Vector2(1080, 28), HORIZONTAL_ALIGNMENT_CENTER)
 
-	_empty_lbl = UiHelpers.mk_label(self, "국제대회 진행 전입니다.", 26, Color(0.85, 0.85, 0.9),
+	_empty_lbl = UiHelpers.mk_label(self, "국제대회 진행 전입니다.", 26, OutgameTheme.TEXT_FAINT,
 			Vector2(0, 720), Vector2(1080, 36), HORIZONTAL_ALIGNMENT_CENTER)
 	_empty_lbl.visible = false
 
@@ -121,24 +114,27 @@ func _build_match_panel(pos: Vector2, slot: int, sz: Vector2) -> Dictionary:
 	panel.size     = sz
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var sty := StyleBoxFlat.new()
-	sty.bg_color     = Color(0.10, 0.12, 0.18, 1.0)
-	sty.border_color = Color(0.30, 0.35, 0.50, 1.0)
+	sty.bg_color     = OutgameTheme.SURFACE
+	sty.border_color = OutgameTheme.BORDER
 	sty.border_width_left = 2; sty.border_width_right = 2
 	sty.border_width_top = 2;  sty.border_width_bottom = 2
 	sty.corner_radius_top_left     = 6
 	sty.corner_radius_top_right    = 6
 	sty.corner_radius_bottom_left  = 6
 	sty.corner_radius_bottom_right = 6
+	sty.shadow_color = OutgameTheme.SHADOW
+	sty.shadow_size = 6
+	sty.shadow_offset = Vector2(0, 3)
 	panel.add_theme_stylebox_override("panel", sty)
 	add_child(panel)
 
-	var slot_lbl := UiHelpers.mk_label(panel, _slot_label_static(slot), 18, Color(1.0, 0.85, 0.40),
+	var slot_lbl := UiHelpers.mk_label(panel, _slot_label_static(slot), 18, OutgameTheme.ACCENT_TEXT,
 			Vector2(8, 4), Vector2(sz.x - 16, 22), HORIZONTAL_ALIGNMENT_LEFT)
-	var date_lbl := UiHelpers.mk_label(panel, "", 16, Color(0.7, 0.75, 0.9),
+	var date_lbl := UiHelpers.mk_label(panel, "", 16, OutgameTheme.TEXT_SUB,
 			Vector2(8, 4), Vector2(sz.x - 16, 22), HORIZONTAL_ALIGNMENT_RIGHT)
-	var team_a_lbl := UiHelpers.mk_label(panel, "", 22, Color(1, 1, 1),
+	var team_a_lbl := UiHelpers.mk_label(panel, "", 22, OutgameTheme.TEXT,
 			Vector2(12, 36), Vector2(sz.x - 24, 32), HORIZONTAL_ALIGNMENT_LEFT)
-	var team_b_lbl := UiHelpers.mk_label(panel, "", 22, Color(1, 1, 1),
+	var team_b_lbl := UiHelpers.mk_label(panel, "", 22, OutgameTheme.TEXT,
 			Vector2(12, sz.y - 50), Vector2(sz.x - 24, 32), HORIZONTAL_ALIGNMENT_LEFT)
 
 	return {
@@ -159,13 +155,13 @@ func _build_back_button() -> void:
 	var x0: float = (1080.0 - total) / 2.0
 	# 하단 안전선에 매단다 — 이 자리는 아이폰 홈 인디케이터 / 안드로이드
 	# 제스처 바가 터치를 가져가는 구간과 맞닿아 있다.
-	var y: float = ScreenMetrics.safe_h() - 80.0 - h
+	var y: float = ScreenMetrics.safe_h() - 40.0 - h
 
 	_back_btn = Button.new()
 	_back_btn.text = "돌아가기"
 	_back_btn.position = Vector2(x0, y)
 	_back_btn.size     = Vector2(w, h)
-	_back_btn.add_theme_font_size_override("font_size", 30)
+	OutgameTheme.style_primary_button(_back_btn, 34)
 	_back_btn.pressed.connect(_on_back_pressed)
 	add_child(_back_btn)
 
@@ -245,15 +241,15 @@ func _refresh_match_panel(slot: int, m: Dictionary, pid: int) -> void:
 
 	var sty: StyleBoxFlat = w["stylebox"]
 	if ta == pid or tb == pid:
-		sty.border_color = Color(1.0, 0.85, 0.20, 1.0)
+		sty.border_color = OutgameTheme.ACCENT
 		sty.border_width_left = 3; sty.border_width_right = 3
 		sty.border_width_top = 3;  sty.border_width_bottom = 3
 	elif played:
-		sty.border_color = Color(0.40, 0.65, 0.45, 1.0)
+		sty.border_color = OutgameTheme.POSITIVE
 		sty.border_width_left = 2; sty.border_width_right = 2
 		sty.border_width_top = 2;  sty.border_width_bottom = 2
 	else:
-		sty.border_color = Color(0.30, 0.35, 0.50, 1.0)
+		sty.border_color = OutgameTheme.BORDER
 		sty.border_width_left = 2; sty.border_width_right = 2
 		sty.border_width_top = 2;  sty.border_width_bottom = 2
 
@@ -268,12 +264,12 @@ func _team_text(team_id: int) -> String:
 
 func _team_color(team_id: int, pid: int, played: bool, winner: int) -> Color:
 	if team_id < 0:
-		return Color(0.5, 0.5, 0.55)
+		return OutgameTheme.TEXT_FAINT
 	if played:
 		if team_id == winner:
-			return Color(1.0, 0.95, 0.50) if team_id == pid else Color(0.55, 0.95, 0.55)
-		return Color(0.55, 0.55, 0.60)
-	return Color(1.0, 0.85, 0.40) if team_id == pid else Color(1, 1, 1)
+			return OutgameTheme.ACCENT_TEXT if team_id == pid else OutgameTheme.POSITIVE
+		return OutgameTheme.TEXT_FAINT
+	return OutgameTheme.ACCENT_TEXT if team_id == pid else OutgameTheme.TEXT
 
 
 func _slot_label_static(slot: int) -> String:

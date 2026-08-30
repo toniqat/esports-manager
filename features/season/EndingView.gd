@@ -46,7 +46,7 @@ func _build() -> void:
 	# 제목이 깔리지 않게. 제목만 따로 내리면 본문과 겹친다.
 	ScreenMetrics.indent_to_safe_top(self)
 	var bg := ColorRect.new()
-	bg.color = Color(0.05, 0.05, 0.10, 1.0)
+	bg.color = OutgameTheme.BG
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	# 배경만은 안전 영역 밖(노치 자리)까지 덮는다 — 안 그러면 그 띠가
 	# 엔진 기본 배경색으로 남는다.
@@ -54,25 +54,25 @@ func _build() -> void:
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 
-	UiHelpers.mk_label(self, "WORLD CHAMPION", 72, Color(1.0, 0.85, 0.20),
+	UiHelpers.mk_label(self, "WORLD CHAMPION", 72, OutgameTheme.ACCENT_TEXT,
 			Vector2(0, 140), Vector2(1080, 96), HORIZONTAL_ALIGNMENT_CENTER)
-	UiHelpers.mk_label(self, "캠페인 완주 — 정규시즌 국제대회 우승!", 26, Color(0.95, 0.95, 1.0),
+	UiHelpers.mk_label(self, "캠페인 완주 — 정규시즌 국제대회 우승!", 26, OutgameTheme.TEXT,
 			Vector2(0, 244), Vector2(1080, 36), HORIZONTAL_ALIGNMENT_CENTER)
 
 	# Section: campaign recap (6 events).
-	UiHelpers.mk_label(self, "── 캠페인 기록 ──", 24, Color(0.55, 0.85, 1.0),
+	UiHelpers.mk_label(self, "── 캠페인 기록 ──", 24, OutgameTheme.TEXT_SUB,
 			Vector2(0, 340), Vector2(1080, 32), HORIZONTAL_ALIGNMENT_CENTER)
 	for i in PHASE_ORDER.size():
-		var lbl := UiHelpers.mk_label(self, "", 22, Color(0.92, 0.92, 0.95),
+		var lbl := UiHelpers.mk_label(self, "", 22, OutgameTheme.TEXT_SUB,
 				Vector2(140, 390 + i * 40), Vector2(800, 32),
 				HORIZONTAL_ALIGNMENT_LEFT)
 		_phase_lines.append(lbl)
 
 	# Section: final roster.
-	UiHelpers.mk_label(self, "── 최종 로스터 ──", 24, Color(0.55, 0.85, 1.0),
+	UiHelpers.mk_label(self, "── 최종 로스터 ──", 24, OutgameTheme.TEXT_SUB,
 			Vector2(0, 670), Vector2(1080, 32), HORIZONTAL_ALIGNMENT_CENTER)
 	for i in 5:
-		var lbl := UiHelpers.mk_label(self, "", 22, Color(0.95, 0.95, 1.0),
+		var lbl := UiHelpers.mk_label(self, "", 22, OutgameTheme.TEXT,
 				Vector2(140, 720 + i * 40), Vector2(800, 32),
 				HORIZONTAL_ALIGNMENT_LEFT)
 		_roster_lines.append(lbl)
@@ -81,7 +81,7 @@ func _build() -> void:
 	btn.text = "다시 시작"
 	btn.position = Vector2((1080.0 - 760.0) / 2.0, 1500.0)
 	btn.size     = Vector2(360, 110)
-	btn.add_theme_font_size_override("font_size", 32)
+	OutgameTheme.style_primary_button(btn, 32)
 	btn.pressed.connect(_on_restart_pressed)
 	add_child(btn)
 
@@ -89,7 +89,7 @@ func _build() -> void:
 	title_btn.text = "타이틀로"
 	title_btn.position = Vector2((1080.0 - 760.0) / 2.0 + 400.0, 1500.0)
 	title_btn.size     = Vector2(360, 110)
-	title_btn.add_theme_font_size_override("font_size", 32)
+	OutgameTheme.style_ghost_button(title_btn, 32)
 	title_btn.pressed.connect(_on_title_pressed)
 	add_child(title_btn)
 
@@ -124,9 +124,9 @@ func _refresh_recap() -> void:
 			var champ_p: int = int(entry.get("champion", -1))
 			line += "  —  " + _format_winner(champ_p, pid, league, intl)
 		_phase_lines[i].text = line
-		var color: Color = Color(0.95, 0.95, 1.0)
+		var color: Color = OutgameTheme.TEXT
 		if _phase_won_by_player(phase, entry, pid):
-			color = Color(1.0, 0.85, 0.20)
+			color = OutgameTheme.ACCENT_TEXT
 		_phase_lines[i].add_theme_color_override("font_color", color)
 
 

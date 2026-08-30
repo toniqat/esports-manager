@@ -14,14 +14,10 @@ const PHASE_NAMES: Dictionary = {
 	GameEnums.SeasonPhase.REGULAR:        "정규시즌",
 	GameEnums.SeasonPhase.REGULAR_INTL:   "정규시즌 국제대회",
 }
-const ROLE_NAMES: Array = ["TANK", "FIGHTER", "ASSASSIN", "SUPPORT", "SNIPER"]
-const ROLE_COLORS: Array = [
-	Color(0.30, 0.55, 1.00),
-	Color(1.00, 0.55, 0.20),
-	Color(0.75, 0.40, 1.00),
-	Color(0.30, 0.85, 0.45),
-	Color(1.00, 0.35, 0.35),
-]
+## 역할 이름 · 색은 팔레트가 소유한다 — 화면마다 자기 배열을 들면 같은 역할이
+## 화면마다 다른 색으로 그려진다.
+const ROLE_NAMES: Array  = OutgameTheme.ROLE_NAMES
+const ROLE_COLORS: Array = OutgameTheme.ROLE_COLORS
 const STAT_KEYS: Array   = PlayerData.STAT_KEYS
 const STAT_LABELS: Array = PlayerData.STAT_SHORT
 
@@ -61,29 +57,22 @@ func _build() -> void:
 	# 화면 전체를 안전 영역 위끝까지 내린다 — 노치 / 다이나믹 아일랜드 밑에
 	# 제목이 깔리지 않게. 제목만 따로 내리면 본문과 겹친다.
 	ScreenMetrics.indent_to_safe_top(self)
-	var bg := ColorRect.new()
-	bg.color = Color(0.07, 0.08, 0.14, 1.0)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	# 배경만은 안전 영역 밖(노치 자리)까지 덮는다 — 안 그러면 그 띠가
-	# 엔진 기본 배경색으로 남는다.
-	ScreenMetrics.extend_background(bg)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bg)
+	OutgameTheme.add_background(self)
 
-	UiHelpers.mk_label(self, "SEASON HUB", 40, Color(1.0, 0.85, 0.20),
-			Vector2(0, 24), Vector2(1080, 50), HORIZONTAL_ALIGNMENT_CENTER)
+	UiHelpers.mk_label(self, "시즌 허브", 52, OutgameTheme.TEXT,
+			Vector2(40, 60), Vector2(700, 62), HORIZONTAL_ALIGNMENT_LEFT)
 
-	_phase_lbl = UiHelpers.mk_label(self, "", 30, Color(0.55, 0.85, 1.0),
-			Vector2(0, 88), Vector2(1080, 36), HORIZONTAL_ALIGNMENT_CENTER)
-	_week_lbl = UiHelpers.mk_label(self, "", 26, Color(0.92, 0.92, 0.98),
-			Vector2(0, 132), Vector2(1080, 32), HORIZONTAL_ALIGNMENT_CENTER)
-	_next_match_lbl = UiHelpers.mk_label(self, "", 24, Color(1.0, 0.85, 0.40),
-			Vector2(0, 174), Vector2(1080, 30), HORIZONTAL_ALIGNMENT_CENTER)
+	_phase_lbl = UiHelpers.mk_label(self, "", 24, OutgameTheme.TEXT_SUB,
+			Vector2(40, 28), Vector2(700, 30), HORIZONTAL_ALIGNMENT_LEFT)
+	_week_lbl = UiHelpers.mk_label(self, "", 26, OutgameTheme.TEXT_SUB,
+			Vector2(ScreenMetrics.vp_w() - 400.0, 62), Vector2(360, 32), HORIZONTAL_ALIGNMENT_RIGHT)
+	_next_match_lbl = UiHelpers.mk_label(self, "", 24, OutgameTheme.ACCENT_TEXT,
+			Vector2(40, 134), Vector2(1000, 30), HORIZONTAL_ALIGNMENT_LEFT)
 
 	_build_roster_block()
 	_build_buttons()
 
-	_toast_lbl = UiHelpers.mk_label(self, "", 22, Color(1.0, 0.85, 0.40),
+	_toast_lbl = UiHelpers.mk_label(self, "", 22, OutgameTheme.ACCENT_TEXT,
 			Vector2(0, ScreenMetrics.safe_h() - 252.0),
 			Vector2(ScreenMetrics.vp_w(), 28), HORIZONTAL_ALIGNMENT_CENTER)
 
@@ -95,7 +84,7 @@ func _build_roster_block() -> void:
 	var row_gap: float = 12.0
 	var width: float = 1020.0
 
-	UiHelpers.mk_label(self, "내 팀 로스터", 24, Color(1.0, 0.85, 0.20),
+	UiHelpers.mk_label(self, "내 팀 로스터", 24, OutgameTheme.TEXT_SUB,
 			Vector2(x0, y0 - 36), Vector2(360, 30), HORIZONTAL_ALIGNMENT_LEFT)
 
 	# 줄 순서는 **역할 열거값 순서가 아니라 화면 순서**다(탑 · 정글 · 미드 ·
@@ -107,12 +96,13 @@ func _build_roster_block() -> void:
 		var role_col: Color = ROLE_COLORS[r]
 		var panel := Panel.new()
 		var sty := StyleBoxFlat.new()
-		sty.bg_color = Color(0.10, 0.12, 0.18, 1.0)
+		sty.bg_color = OutgameTheme.SURFACE
 		sty.border_color = role_col
-		sty.border_width_left = 2; sty.border_width_right = 2
-		sty.border_width_top  = 2; sty.border_width_bottom = 2
-		sty.corner_radius_top_left = 6; sty.corner_radius_top_right = 6
-		sty.corner_radius_bottom_left = 6; sty.corner_radius_bottom_right = 6
+		sty.border_width_left = 6
+		OutgameTheme.set_corner_radius(sty, 16)
+		sty.shadow_color = OutgameTheme.SHADOW
+		sty.shadow_size = 5
+		sty.shadow_offset = Vector2(0, 2)
 		panel.add_theme_stylebox_override("panel", sty)
 		panel.position = Vector2(x0, y)
 		panel.size     = Vector2(width, row_h)
@@ -129,9 +119,9 @@ func _build_roster_block() -> void:
 
 		UiHelpers.mk_label(panel, ROLE_NAMES[r], 20, role_col,
 				Vector2(190, 14), Vector2(160, 26), HORIZONTAL_ALIGNMENT_LEFT)
-		var name_lbl := UiHelpers.mk_label(panel, "—", 28, Color(1, 1, 1),
+		var name_lbl := UiHelpers.mk_label(panel, "—", 28, OutgameTheme.TEXT,
 				Vector2(190, 44), Vector2(560, 36), HORIZONTAL_ALIGNMENT_LEFT)
-		var total_lbl := UiHelpers.mk_label(panel, "", 22, Color(1.0, 0.85, 0.40),
+		var total_lbl := UiHelpers.mk_label(panel, "", 22, OutgameTheme.TEXT_SUB,
 				Vector2(190, 90), Vector2(280, 28), HORIZONTAL_ALIGNMENT_LEFT)
 
 		# Stat strip
@@ -140,9 +130,9 @@ func _build_roster_block() -> void:
 		var stat_lbls: Array = []
 		for s in STAT_KEYS.size():
 			var sx: float = stat_x0 + s * stat_w
-			UiHelpers.mk_label(panel, STAT_LABELS[s], 18, Color(0.65, 0.75, 0.90),
+			UiHelpers.mk_label(panel, STAT_LABELS[s], 18, OutgameTheme.TEXT_SUB,
 					Vector2(sx, 60), Vector2(stat_w, 22), HORIZONTAL_ALIGNMENT_CENTER)
-			var v_lbl := UiHelpers.mk_label(panel, "", 32, Color(1, 1, 1),
+			var v_lbl := UiHelpers.mk_label(panel, "", 32, OutgameTheme.TEXT,
 					Vector2(sx, 88), Vector2(stat_w, 40), HORIZONTAL_ALIGNMENT_CENTER)
 			stat_lbls.append(v_lbl)
 
@@ -159,13 +149,13 @@ func _build_buttons() -> void:
 	var top: float = ScreenMetrics.safe_h() - 110.0 - btn_h
 	var gap: float = 30.0
 	var total_w: float = 2.0 * btn_w + gap
-	var start_x: float = (1080.0 - total_w) / 2.0
+	var start_x: float = (ScreenMetrics.vp_w() - total_w) / 2.0
 
 	_start_btn = Button.new()
-	_start_btn.text = "이번 주 시작"
+	_start_btn.text = "이번 주 시작 →"
 	_start_btn.position = Vector2(start_x, top)
 	_start_btn.size     = Vector2(btn_w, btn_h)
-	_start_btn.add_theme_font_size_override("font_size", 36)
+	OutgameTheme.style_primary_button(_start_btn, 34)
 	_start_btn.pressed.connect(_on_start_pressed)
 	add_child(_start_btn)
 
@@ -173,7 +163,7 @@ func _build_buttons() -> void:
 	_standings_btn.text = "리그 순위"
 	_standings_btn.position = Vector2(start_x + btn_w + gap, top)
 	_standings_btn.size     = Vector2(btn_w, btn_h)
-	_standings_btn.add_theme_font_size_override("font_size", 36)
+	OutgameTheme.style_ghost_button(_standings_btn, 32)
 	_standings_btn.pressed.connect(_on_standings_pressed)
 	add_child(_standings_btn)
 
@@ -265,7 +255,7 @@ func refresh() -> void:
 			max_weeks = cal.phase_max_weeks(phase)
 
 	_phase_lbl.text = "현재 페이즈: %s" % PHASE_NAMES.get(phase, "—")
-	_week_lbl.text  = "%d주차 / %d주차" % [pweek, max_weeks]
+	_week_lbl.text  = "%d / %d주차" % [pweek, max_weeks]
 
 	_refresh_next_match()
 	_refresh_roster()

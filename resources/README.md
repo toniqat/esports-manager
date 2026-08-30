@@ -483,6 +483,42 @@ Exia / Mahiroo / Marasai 세 장의 무기 끝 44~64px 뿐이다.
 procedurally-built UI panels — currently `mk_label(...)` shared by MatchFlow
 controllers and HudBuilder.
 
+### OutgameTheme.gd
+`class_name OutgameTheme`, extends `RefCounted`. **아웃게임 화면의 모든 색이
+여기를 지난다** — 시즌 허브 · 기자회견 · 훈련판 · 시간 경과 · 순위 · 브래킷 ·
+드래프트. 화면마다 자기 `Color(...)` 리터럴을 들고 있으면 같은 카드가 화면마다
+다른 회색으로 그려지고, 팔레트를 한 번 손보는 일이 파일 열몇 개를 훑는 일이 된다.
+**인게임(BattleSim)은 이 표를 쓰지 않는다** — 전장은 어두운 화면이고 거기서
+흰 카드는 눈부신 판이 된다.
+
+참고 디자인은 `docs/ref_image.jpg`(하얀 종이 위에 색이 있는 카드). 규칙 셋:
+
+1. 바탕은 `BG`, 내용은 그보다 **더 흰** `SURFACE` 카드 위에. 경계는 선이 아니라
+   **그림자와 밝기 차이**가 만든다(`BORDER` 는 아주 옅다).
+2. 강조는 색면 하나(`ACCENT`)로만 — 지금 어느 요일인가, 지금 누를 버튼은 무엇인가.
+   **글자에 쓸 앰버는 `ACCENT_TEXT`** 다(`ACCENT` 를 흰 종이 위 글자에 그대로
+   쓰면 대비가 모자란다. `const` 자리에서 `darkened()` 가 상수식이 아니라
+   리터럴로 따로 둔 것이다).
+3. 분류는 카드 왼쪽 색 띠(`lead_bar_style`) 또는 카드 색면(`CARD_TINTS`)이 한다.
+   역할 색 다섯(`ROLE_COLORS`)과 역할 이름(`ROLE_NAMES`)도 여기가 소유한다 —
+   순서는 `GameEnums.Role`(자리 순서가 아니다).
+
+| 묶음 | 내보내는 것 |
+|---|---|
+| 색 | `BG` `SURFACE` `SURFACE_SUNK` `RAIL` `RAIL_TEXT` / `TEXT` `TEXT_SUB` `TEXT_FAINT` `TEXT_ON_FILL` / `ACCENT` `ACCENT_DIM` `ACCENT_TEXT` `LINK` / `POSITIVE` `NEGATIVE` `NEUTRAL` / `BORDER` `BORDER_STRONG` `SHADOW` / `CARD_TINTS` `ROLE_COLORS` `ROLE_NAMES` `DAY_LETTERS` `DAY_NAMES` |
+| StyleBox | `card_style` `flat_style` `lead_bar_style` `set_corner_radius` |
+| 버튼 | `style_primary_button`(앰버, 한 화면에 하나) `style_ghost_button` `style_text_button` `style_dark_button`(어두운 색면 — "이 화면을 떠난다") |
+| 조각 | `add_background`(안이 `ScreenMetrics.extend_background` 를 부른다) `add_card` `add_divider` `add_round_portrait` `add_chip` `add_vscroll` |
+
+**`add_round_portrait` 은 `clip_contents` 로 만들지 않는다.** 그것은 Control 의
+사각 rect 로 자르지 StyleBox 의 모서리 반지름으로 자르지 않아서, `Panel`
+(radius = 지름/2) 안에 `TextureRect` 를 넣어 봐야 텍스처가 둥근 모서리를 그대로
+덮어 **모서리만 살짝 둥근 사각형**이 나온다(실측). 그래서 텍스처를 입힌 **원형
+폴리곤**을 직접 그린다(`draw_colored_polygon(points, WHITE, uvs, tex)`), UV 는
+`KEEP_ASPECT_COVERED` 와 같게(짧은 축을 꽉 채우고 긴 축은 가운데를 잘라 낸다).
+반환값은 자식을 얹어도 되는 `Control` 이다 — Control 의 `_draw` 는 자식보다
+**먼저** 나가므로 원이 배경, 자식이 그 위다.
+
 ## Usage Pattern
 ```gdscript
 # Reference enums

@@ -29,14 +29,14 @@ const BORDER_W: int = 3
 const BORDER_W_SEL: int = 4
 const RADIUS: int = 10
 
-const BG_OFF := Color(0.13, 0.15, 0.22, 1.0)
-const BG_ON  := Color(0.20, 0.32, 0.55, 1.0)
-const BORDER_OFF := Color(0.30, 0.32, 0.40, 1.0)
-const BORDER_ON  := Color(1.00, 0.85, 0.20, 1.0)
+const BG_OFF := OutgameTheme.SURFACE
+const BG_ON  := OutgameTheme.ACCENT_DIM
+const BORDER_OFF := OutgameTheme.BORDER
+const BORDER_ON  := OutgameTheme.ACCENT
 
 const BADGE_SIZE: float = 40.0
-const BADGE_BG := Color(1.00, 0.85, 0.20, 1.0)
-const BADGE_FG := Color(0.10, 0.08, 0.02, 1.0)
+const BADGE_BG := OutgameTheme.ACCENT
+const BADGE_FG := OutgameTheme.RAIL
 
 # ─── 역할군 배지 (왼쪽 위) ───────────────────────────────────────────────────
 ## 두 글자 약칭. 밴픽 화면의 `ROLE_INITIALS` 와 **같은 표**다 — 같은 역할이
@@ -44,13 +44,9 @@ const BADGE_FG := Color(0.10, 0.08, 0.02, 1.0)
 const ROLE_INITIALS: Array = ["Tk", "Fi", "As", "Su", "Sn"]
 const ROLE_BADGE_W: float = 44.0
 const ROLE_BADGE_H: float = 30.0
-const ROLE_COLORS: Array = [
-	Color(0.30, 0.55, 1.00),   # TANK     blue
-	Color(1.00, 0.55, 0.20),   # FIGHTER  orange
-	Color(0.75, 0.40, 1.00),   # ASSASSIN purple
-	Color(0.30, 0.85, 0.45),   # SUPPORT  green
-	Color(1.00, 0.35, 0.35),   # SNIPER   red
-]
+## 역할 색은 팔레트가 소유한다 — 화면마다 자기 배열을 들면 같은 역할이
+## 화면마다 다른 색으로 그려진다.
+const ROLE_COLORS: Array = OutgameTheme.ROLE_COLORS
 
 var pilot: PlayerData = null
 
@@ -109,7 +105,7 @@ func _build() -> void:
 	_role_badge.size     = Vector2(ROLE_BADGE_W, ROLE_BADGE_H)
 	_role_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_role_badge)
-	_role_lbl = UiHelpers.mk_label(_role_badge, "", 19, Color(1, 1, 1),
+	_role_lbl = UiHelpers.mk_label(_role_badge, "", 19, OutgameTheme.TEXT_ON_FILL,
 			Vector2.ZERO, Vector2(ROLE_BADGE_W, ROLE_BADGE_H),
 			HORIZONTAL_ALIGNMENT_CENTER)
 	_role_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -149,7 +145,7 @@ func _refresh() -> void:
 		_role_lbl.text = String(ROLE_INITIALS[r])
 		var sb := StyleBoxFlat.new()
 		sb.bg_color = (ROLE_COLORS[r] as Color).darkened(0.15)
-		sb.border_color = Color(0, 0, 0, 0.55)
+		sb.border_color = Color(0, 0, 0, 0.18)
 		sb.border_width_top = 1
 		sb.border_width_bottom = 1
 		sb.border_width_left = 1

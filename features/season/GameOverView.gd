@@ -37,7 +37,7 @@ func _build() -> void:
 	# 제목이 깔리지 않게. 제목만 따로 내리면 본문과 겹친다.
 	ScreenMetrics.indent_to_safe_top(self)
 	var bg := ColorRect.new()
-	bg.color = Color(0.05, 0.05, 0.08, 1.0)
+	bg.color = OutgameTheme.BG
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	# 배경만은 안전 영역 밖(노치 자리)까지 덮는다 — 안 그러면 그 띠가
 	# 엔진 기본 배경색으로 남는다.
@@ -45,19 +45,19 @@ func _build() -> void:
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 
-	UiHelpers.mk_label(self, "GAME OVER", 80, Color(1.0, 0.40, 0.40),
+	UiHelpers.mk_label(self, "GAME OVER", 80, OutgameTheme.NEGATIVE,
 			Vector2(0, 600), Vector2(1080, 100), HORIZONTAL_ALIGNMENT_CENTER)
 
-	_reason_lbl = UiHelpers.mk_label(self, "", 28, Color(0.95, 0.85, 0.85),
+	_reason_lbl = UiHelpers.mk_label(self, "", 28, OutgameTheme.TEXT,
 			Vector2(0, 740), Vector2(1080, 40), HORIZONTAL_ALIGNMENT_CENTER)
-	_summary_lbl = UiHelpers.mk_label(self, "", 22, Color(0.75, 0.78, 0.85),
+	_summary_lbl = UiHelpers.mk_label(self, "", 22, OutgameTheme.TEXT_SUB,
 			Vector2(0, 800), Vector2(1080, 30), HORIZONTAL_ALIGNMENT_CENTER)
 
 	var btn := Button.new()
 	btn.text = "다시 시작"
 	btn.position = Vector2((1080.0 - 760.0) / 2.0, 1500.0)
 	btn.size     = Vector2(360, 110)
-	btn.add_theme_font_size_override("font_size", 32)
+	OutgameTheme.style_primary_button(btn, 32)
 	btn.pressed.connect(_on_restart_pressed)
 	add_child(btn)
 
@@ -65,7 +65,7 @@ func _build() -> void:
 	title_btn.text = "타이틀로"
 	title_btn.position = Vector2((1080.0 - 760.0) / 2.0 + 400.0, 1500.0)
 	title_btn.size     = Vector2(360, 110)
-	title_btn.add_theme_font_size_override("font_size", 32)
+	OutgameTheme.style_ghost_button(title_btn, 32)
 	title_btn.pressed.connect(_on_title_pressed)
 	add_child(title_btn)
 

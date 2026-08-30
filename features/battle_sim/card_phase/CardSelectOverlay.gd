@@ -258,8 +258,6 @@ func _attach_unpick_overlay(node: Card) -> void:
 	hit.position = Vector2.ZERO
 	hit.modulate = Color(1, 1, 1, 0)
 	hit.pressed.connect(func() -> void: remove_card_from_discard(node))
-	# 무르기는 값이 되돌아갈 뿐이다 — 확정과 같은 무게로 울리면 안 된다.
-	HapticUi.kind(hit, Haptics.Kind.SELECT)
 	node.add_child(hit)
 
 
@@ -430,7 +428,6 @@ func _build_buttons(is_discard: bool) -> void:
 		else:
 			_btn_confirm.pressed.connect(_commit_search)
 		_btn_confirm.disabled = true
-		HapticUi.kind(_btn_confirm, Haptics.Kind.MEDIUM)
 		_overlay_layer.add_child(_btn_confirm)
 	else:
 		_btn_cancel = _make_btn("보존 취소" if mode == Mode.PRESERVE else "찾기 취소")
@@ -442,7 +439,6 @@ func _build_buttons(is_discard: bool) -> void:
 				right_x - CONFIRM_BTN_GAP - BTN_W, top_y)
 		_btn_confirm.pressed.connect(_commit_search)
 		_btn_confirm.disabled = true
-		HapticUi.kind(_btn_confirm, Haptics.Kind.MEDIUM)
 		_overlay_layer.add_child(_btn_confirm)
 
 
@@ -538,7 +534,6 @@ func _attach_search_pick_overlay(node: Card, cd: CardData) -> void:
 	hit.position = Vector2.ZERO
 	hit.modulate = Color(1, 1, 1, 0)
 	hit.pressed.connect(func() -> void: _toggle_search_pick(cd, node))
-	HapticUi.kind(hit, Haptics.Kind.SELECT)
 	node.add_child(hit)
 
 

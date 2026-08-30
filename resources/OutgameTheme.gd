@@ -138,32 +138,30 @@ static func set_corner_radius(sb: StyleBoxFlat, r: int) -> void:
 
 ## 화면의 주된 행동 한 개 — 앰버 색면 + 흰 글자. 한 화면에 하나만 둔다.
 ##
-## **감촉도 이 표가 정한다.** 버튼의 색을 고르는 자리가 곧 그 버튼이 화면에서
-## 갖는 무게를 고르는 자리라, 아웃게임 버튼의 햅틱 세기는 화면마다 손으로 적지
-## 않고 여기 네 함수에서 나온다(`HapticUi` 의 기본값은 LIGHT 이므로 ghost 는
-## 아무것도 안 적어도 그 값이다).
+## **감촉은 여기서 정하지 않는다.** 한때는 버튼의 색을 고르는 자리가 곧 그
+## 감촉의 세기를 고르는 자리여서 이 네 함수가 `HapticUi.kind` 를 적었지만(primary
+## · dark = MEDIUM / ghost = LIGHT / text = SELECT), 그 표는 폐기됐다 — 지금은
+## 모든 버튼이 종류와 무관하게 같은 두 박자(누름 LIGHT → 뗌 SOFT)를 낸다.
+## 무게는 화면이 말하고, 손에 오는 것은 눌렸다는 사실 하나다. `autoloads/HapticUi.gd`.
 static func style_primary_button(b: Button, font_size: int = 34) -> Button:
-	HapticUi.kind(b, Haptics.Kind.MEDIUM)
 	return _style_button(b, font_size, ACCENT, TEXT_ON_FILL,
 			ACCENT.lightened(0.10), ACCENT.darkened(0.12), null)
 
 
-## 그 밖의 행동 — 흰 바탕 + 옅은 테두리. 감촉은 기본값(LIGHT).
+## 그 밖의 행동 — 흰 바탕 + 옅은 테두리.
 static func style_ghost_button(b: Button, font_size: int = 30) -> Button:
 	return _style_button(b, font_size, SURFACE, TEXT,
 			SURFACE_SUNK, BORDER_STRONG, BORDER)
 
 
-## 되돌아가는 행동 — 바탕 없이 글자만. 아무것도 확정하지 않으므로 SELECT.
+## 되돌아가는 행동 — 바탕 없이 글자만.
 static func style_text_button(b: Button, font_size: int = 26) -> Button:
-	HapticUi.kind(b, Haptics.Kind.SELECT)
 	return _style_button(b, font_size, Color(1, 1, 1, 0), TEXT_SUB,
 			Color(0, 0, 0, 0.04), Color(0, 0, 0, 0.08), null)
 
 
 ## 어두운 색면 — 경기 시작처럼 "지금 이 화면을 떠난다"는 행동.
 static func style_dark_button(b: Button, font_size: int = 34) -> Button:
-	HapticUi.kind(b, Haptics.Kind.MEDIUM)
 	return _style_button(b, font_size, RAIL, TEXT_ON_FILL,
 			RAIL.lightened(0.12), RAIL.lightened(0.22), null)
 

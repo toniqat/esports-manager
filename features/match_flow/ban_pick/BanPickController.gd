@@ -677,7 +677,6 @@ func _build_filter_tabs() -> void:
 		btn.size = Vector2(bw, TABS_H)
 		btn.set_meta("role", role)
 		btn.pressed.connect(_on_filter_pressed.bind(role))
-		HapticUi.kind(btn, Haptics.Kind.SELECT)
 		_panel.add_child(btn)
 		_filter_btns.append(btn)
 
@@ -755,8 +754,6 @@ func _build_mech_cell(m: MechData) -> Dictionary:
 	# 어디에 대도 격자가 안 움직인다(실측). 탭은 PASS 로도 그대로 동작한다.
 	btn.mouse_filter = Control.MOUSE_FILTER_PASS
 	btn.pressed.connect(_on_mech_pressed.bind(m.id))
-	# 1탭은 하단 시트를 여는 것뿐이다 — 밴/픽이 나가는 것은 2탭(확정)이다.
-	HapticUi.kind(btn, Haptics.Kind.SELECT)
 	for st in ["normal", "hover", "pressed", "focus", "disabled"]:
 		btn.add_theme_stylebox_override(st, _cell_style(false))
 	_grid_content.add_child(btn)
@@ -999,8 +996,6 @@ func _build_sheet_body(m: MechData, sw: float, sh: float) -> void:
 	_sheet_confirm.position = Vector2(sw - SHEET_PAD - 340.0, by)
 	_sheet_confirm.size = Vector2(340.0, SHEET_BTN_H)
 	_sheet_confirm.pressed.connect(_on_confirm_pressed)
-	# 밴 · 픽이 실제로 나가는 자리. 14수 중 한 수이고 무를 수 없다.
-	HapticUi.kind(_sheet_confirm, Haptics.Kind.MEDIUM)
 	_sheet.add_child(_sheet_confirm)
 	_refresh_sheet_confirm()
 
@@ -1406,8 +1401,6 @@ func _build_assign_prompt() -> void:
 	btn.position = Vector2((w - START_BTN_W) * 0.5,
 			float(_lay["assign_block_y"]) - BLOCK_GAP - START_BTN_H)
 	btn.pressed.connect(_finish)
-	# 화면을 떠나 전장으로 들어간다.
-	HapticUi.kind(btn, Haptics.Kind.MEDIUM)
 	_panel.add_child(btn)
 
 

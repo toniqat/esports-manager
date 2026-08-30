@@ -469,6 +469,9 @@ func _on_grid_input(event: InputEvent) -> void:
 	if cell.x < 0:
 		return
 	if not _board.remove_at(cell).is_empty():
+		# 판에서 타일이 실제로 빠졌다. 놓기(SOFT)의 반대 동작이라 그보다 가볍게 —
+		# 걷어내기는 되돌리는 손이지 확정하는 손이 아니다.
+		Haptics.play(Haptics.Kind.LIGHT)
 		refresh()
 
 
@@ -516,7 +519,9 @@ func _grid_drop(at_position: Vector2, _data: Variant) -> void:
 	if _board == null or _drag_tile == null:
 		return
 	if _board.place(_drag_tile.id, _origin_for(_drag_tile, at_position)) >= 0:
-		Haptics.play(Haptics.Kind.MEDIUM)
+		# 타일이 판에 물렸다 — 버튼을 뗄 때와 같은 뭉툭한 한 겹이 그 조작을 닫는다.
+		# 집기 · 미리보기(SELECT)보다 무거워야 셋이 한 동작의 세 박자로 읽힌다.
+		Haptics.play(Haptics.Kind.SOFT)
 		# 놓였으므로 되돌릴 것이 없다 — 여기서 지우지 않으면 DRAG_END 가
 		# 판에서 걷어 온 사본을 한 장 더 얹어 타일이 둘로 늘어난다.
 		_drag_from_board = {}
@@ -529,6 +534,8 @@ func _begin_drag(t: TrainingTile, from_board: Dictionary) -> void:
 	_drag_from_board = from_board
 	_hover_cell = Vector2i(-1, -1)
 	_hover_ok = false
+	# 타일이 손에 딸려 올라왔다. 한 동작의 첫 박자라 가장 가볍다 —
+	# 미리보기가 물릴 때(SELECT)와 놓을 때(SOFT)가 그 뒤를 잇는다.
 	Haptics.play(Haptics.Kind.SELECT)
 	set_drag_preview(_make_drag_preview(t))
 	if _grid != null:

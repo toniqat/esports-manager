@@ -76,14 +76,12 @@ func _build() -> void:
 	_new_btn.position = Vector2(28, 240)
 	_new_btn.size = Vector2(size.x - 56.0, 100)
 	_new_btn.pressed.connect(_on_new)
-	HapticUi.kind(_new_btn, Haptics.Kind.MEDIUM)
 	add_child(_new_btn)
 
 	_continue_btn = _make_btn("이어하기")
 	_continue_btn.position = Vector2(28, 240)
 	_continue_btn.size = Vector2((size.x - 80.0) * 0.6, 100)
 	_continue_btn.pressed.connect(_on_continue)
-	HapticUi.kind(_continue_btn, Haptics.Kind.MEDIUM)
 	add_child(_continue_btn)
 
 	_delete_btn = _make_btn("삭제")

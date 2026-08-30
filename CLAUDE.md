@@ -240,13 +240,20 @@ esports-manager/
 **손에 무엇이 전해지는가를 정하는 표는 하나다.** 배선은 두 층이고, 어느 쪽도
 화면마다 세기를 손으로 적지 않는다.
 
-1. **버튼은 `autoloads/HapticUi.gd` 가 자동으로 배선한다** — `node_added` 하나가
-   트리에 들어오는 **모든 `BaseButton`** 의 `pressed` 에 감촉을 물린다(기본
-   `LIGHT`). 예외만 `HapticUi.kind(btn, …)` / `HapticUi.mute(btn)` 로 적는다.
-   아웃게임 버튼은 그것조차 안 적는다 — **`OutgameTheme` 의 버튼 스타일이 곧
-   세기**다(primary · dark = `MEDIUM`, ghost = `LIGHT`, text = `SELECT`).
-   `button_down` 에는 `Haptics.prepare()` 가 붙어 누름과 활성화 사이에 탭틱
-   엔진이 깨어난다.
+1. **버튼은 `autoloads/HapticUi.gd` 가 자동으로 배선하고, 한 번 누르면 두 박자가
+   온다** — `node_added` 하나가 트리에 들어오는 **모든 `BaseButton`** 의
+   `button_down` 과 `pressed` **양쪽**에 감촉을 문다: **누를 때(닿음) `LIGHT`,
+   뗄 때(활성화) `SOFT`**. 감촉이 뗄 때만 오면 누른 순간에는 아무 일도 안
+   일어나고, 화면이 바뀌기 전까지 눌렸는지 확인할 길이 없다 — 그래서 닿는
+   순간 가벼운 톡이 먼저 오고 뭉툭한 한 겹이 그것을 닫는다. 눌렀다가 손가락을
+   밖으로 빼면 `pressed` 가 안 오므로 **닫는 박자가 없는 것이 곧 "아무 일도
+   일어나지 않았다"**이고, 그래서 무거운 쪽을 뗄 때에 둔다. **버튼 세기 표는
+   폐기됐다** — 예전에는 `OutgameTheme` 의 버튼 스타일이 곧 세기였지만
+   (primary · dark = `MEDIUM`, ghost = `LIGHT`, text = `SELECT`) 지금은 종류와
+   무관하게 같은 두 박자다(확정인지 탭 전환인지는 화면이 말한다). 예외만
+   `HapticUi.mute(btn)`(두 박자 다 끔) / `kind(btn, …)`(뗄 때) /
+   `down_kind_for(btn, …)`(누를 때) 로 적는다. `button_down` 에는
+   `Haptics.prepare()` 도 함께 붙어 누름과 활성화 사이에 탭틱 엔진이 깨어난다.
 2. **버튼이 아닌 것은 그 사건이 일어나는 자리에서 직접 부른다**(`Haptics.play`).
 
 | 사건 | 자리 | 감촉 |
@@ -264,7 +271,8 @@ esports-manager/
 | 오브젝트 획득(아군 / 적군) | `ObjectiveSystem._grant_reward` | `SUCCESS` / `WARNING` |
 | 경기 승 / 패 | `SimulationCore.check_win_condition` | `SUCCESS` / `ERROR` |
 | 정글 시작 — 집기 / 무리 진입 / 방향 결정 | `gambit/JungleStartOverlay` | `SELECT` / `SELECT` / `MEDIUM` |
-| 훈련 타일 — 집기 / 놓을 수 있는 자리 진입 / 배치 | `season/training/TrainingView` | `SELECT` / `SELECT` / `MEDIUM` |
+| 훈련 타일 — 집기 / 놓을 수 있는 자리 진입 / 배치 | `season/training/TrainingView` | `SELECT` / `SELECT` / `SOFT` |
+| 훈련 타일 — 판에서 탭해 걷어냄 | `season/training/TrainingView._on_grid_input` | `LIGHT` |
 | 밴픽 메크 칸 — 들어올림 / 맞바꿈 | `ban_pick/BanPickController` | `SELECT` / `MEDIUM` |
 | 세이브 삭제 — 무장 / 실행 | `save_load/SlotCard._on_delete` | `WARNING` / `ERROR` |
 | 캠페인 종료 / 우승 | `GameOverView` / `EndingView.ensure_view` | `ERROR` / `SUCCESS` |
@@ -278,6 +286,9 @@ esports-manager/
   같은 이유로 두 번 눌러야 지워지는 삭제 버튼은 자동 배선을 `mute` 한다.
 - **드래그의 "들어섬"만 운다.** 벗어나는 쪽은 조용하다 — 놓을 수 있게 됐다는
   것이 신호이고, 매 프레임 울리면 그것은 신호가 아니라 진동이다.
+- **끌어다 놓는 조작은 버튼과 같은 문법으로 닫는다.** 훈련 타일이 판에 물리는
+  순간은 버튼을 뗄 때와 같은 `SOFT` 다 — 집기 · 미리보기(`SELECT`)보다 무거운
+  한 겹이 와야 셋이 한 동작의 세 박자로 읽힌다.
 
 **데스크톱에서는 전부 조용한 no-op** 이므로 에디터 실행에 가드가 필요 없다.
 다만 **`--check-only --script` 는 오토로드 식별자를 모른다** — `Haptics` /

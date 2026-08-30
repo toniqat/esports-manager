@@ -228,8 +228,9 @@ func load_match_data() -> Dictionary:
 	for row in db.query_result:
 		players.append(PlayerData.new(
 			int(row["id"]), row["name"], int(row["role"]), int(row["team_id"]),
-			int(row["laning"]), int(row["mechanics"]), int(row["gamesense"]),
-			int(row["teamfight"]), int(row["mental"]),
+			int(row["field_hit"]), int(row["field_eva"]),
+			int(row["engage_hit"]), int(row["engage_eva"]),
+			int(row["atk_growth"]), int(row["hp_growth"]),
 			# 옛 game.db(스킬 이전)도 열리도록 기본값과 함께 읽는다 — 그때는
 			# 전원이 "스킬 없는 네임드"가 되고 그림도 평소 컷 그대로다.
 			int(row.get("skill_id", -1)), int(row.get("is_mob", 0)) != 0))
@@ -339,8 +340,9 @@ func _load_intl_pool() -> Dictionary:
 	for row in db.query_result:
 		pilots.append(PlayerData.new(
 			int(row["id"]), row["name"], int(row["role"]), int(row["team_id"]),
-			int(row["laning"]), int(row["mechanics"]), int(row["gamesense"]),
-			int(row["teamfight"]), int(row["mental"])))
+			int(row["field_hit"]), int(row["field_eva"]),
+			int(row["engage_hit"]), int(row["engage_eva"]),
+			int(row["atk_growth"]), int(row["hp_growth"])))
 	db.close_db()
 	return {"teams": teams, "pilots": pilots}
 

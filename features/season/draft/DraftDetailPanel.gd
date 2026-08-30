@@ -100,7 +100,11 @@ const ROLE_COLORS: Array = [
 	Color(1.00, 0.35, 0.35),
 ]
 
-const STAT_KEYS: Array = ["라인전", "메카닉", "게임센스", "한타", "멘탈"]
+## 칩 목록 — 선수 스탯 여섯에 "종합" 한 칸을 더한다(3열 × 세 줄 중
+## 마지막 한 칸은 비운다). 글자는 짧은 쪽을 쓴다 — 칩 한 칸이 141px 라
+## "전장 명중" 은 들어가지만 줄바꿈 없이 꽉 차서 값과 붙어 보인다.
+const STAT_KEYS: Array = ["전장 명중", "전장 회피", "교전 명중",
+		"교전 회피", "공격 성장", "체력 성장"]
 
 var _pilot: PlayerData = null
 var _root: Control = null
@@ -249,21 +253,22 @@ func _build_header(body: Control, w: float, y: float) -> float:
 
 func _build_stat_chips(body: Control, w: float, y: float) -> float:
 	y = _section(body, w, y, "선수 능력치")
-	var values: Array = [_pilot.laning, _pilot.mechanics, _pilot.gamesense,
-			_pilot.teamfight, _pilot.mental]
 	var chip_w: float = (w - CHIP_GAP * float(CHIP_COLS - 1)) / float(CHIP_COLS)
-	for i in 6:
+	var n: int = STAT_KEYS.size() + 1      # 스탯 여섯 + 종합
+	for i in n:
 		var col: int = i % CHIP_COLS
 		@warning_ignore("integer_division")
 		var row: int = i / CHIP_COLS
 		var at := Vector2(float(col) * (chip_w + CHIP_GAP),
 				y + float(row) * (CHIP_H + CHIP_GAP))
-		var is_total: bool = i == 5
+		var is_total: bool = i == STAT_KEYS.size()
 		var key: String = "종합" if is_total else String(STAT_KEYS[i])
-		var val: int = PilotThumb.total_stats(_pilot) if is_total else int(values[i])
+		var val: int = PilotThumb.total_stats(_pilot) if is_total 				else int(_pilot.get(String(PlayerData.STAT_KEYS[i])))
 		_mk_chip(body, at, Vector2(chip_w, CHIP_H), key, str(val),
 				CHIP_TOTAL_COLOR if is_total else CHIP_VALUE_COLOR)
-	return y + CHIP_H * 2.0 + CHIP_GAP
+	@warning_ignore("integer_division")
+	var rows: int = (n + CHIP_COLS - 1) / CHIP_COLS
+	return y + CHIP_H * float(rows) + CHIP_GAP * float(rows - 1)
 
 
 func _mk_chip(body: Control, at: Vector2, sz: Vector2, key: String,

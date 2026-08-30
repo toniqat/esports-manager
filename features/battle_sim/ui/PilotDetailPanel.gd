@@ -719,12 +719,20 @@ func _build_header_block() -> void:
 func _chip_defs() -> Array:
 	match _tab:
 		Tab.INGAME:
+			# 명중 / 회피가 **네 칸**이다 — 전장과 교전이 각자 자기 스탯을
+			# 읽으므로 한 칸으로 묶으면 둘 중 어느 말인지가 안 나온다.
 			return [["hp", "체력"], ["atk", "공격력"], ["growth", "성장"],
-					["hit", "명중"], ["eva", "회피"], ["presence", "존재감"]]
+					["hit", "전장 명중"], ["eva", "전장 회피"],
+					["e_hit", "교전 명중"], ["e_eva", "교전 회피"],
+					["presence", "존재감"]]
 		Tab.PILOT:
-			return [["laning", "라인전"], ["mechanics", "메카닉"],
-					["gamesense", "게임센스"], ["teamfight", "한타"],
-					["mental", "멘탈"]]
+			# 선수 스탯 여섯. 표는 `PlayerData` 가 소유하므로 여기서는 그대로
+			# 펼친다 — 스탯이 늘거나 이름이 바뀌어도 이 파일을 고칠 일이 없다.
+			var defs: Array = []
+			for i in PlayerData.STAT_KEYS.size():
+				defs.append([String(PlayerData.STAT_KEYS[i]),
+						String(PlayerData.STAT_LABELS[i])])
+			return defs
 		_:
 			return [["m_hp", "체력"], ["m_atk", "공격력"], ["m_presence", "존재감"]]
 
@@ -853,6 +861,10 @@ static func _value_font_size(text: String) -> int:
 func _chip_value(key: String) -> String:
 	var pd: PlayerData = _bs.player_data_for(_pilot)
 	var mech: MechData = _mech()
+	# 선수 스탯 여섯은 키 이름이 그대로 `PlayerData` 의 필드명이라 하나씩
+	# 적지 않고 표를 지나간다 — 스탯이 늘어도 고칠 자리가 없다.
+	if key in PlayerData.STAT_KEYS:
+		return str(int(pd.get(key))) if pd != null else "—"
 	match key:
 		"hp":
 			return "%d / %d" % [_pilot.hp, _pilot.max_hp]
@@ -866,16 +878,10 @@ func _chip_value(key: String) -> String:
 			return str(_bs.sim_core.lane_adjusted(_pilot.evasion, _pilot))
 		"presence":
 			return str(_pilot.presence)
-		"laning":
-			return str(pd.laning) if pd != null else "—"
-		"mechanics":
-			return str(pd.mechanics) if pd != null else "—"
-		"gamesense":
-			return str(pd.gamesense) if pd != null else "—"
-		"teamfight":
-			return str(pd.teamfight) if pd != null else "—"
-		"mental":
-			return str(pd.mental) if pd != null else "—"
+		"e_hit":
+			return str(_pilot.engage_hit)
+		"e_eva":
+			return str(_pilot.engage_eva)
 		"m_hp":
 			return str(mech.hp) if mech != null else "—"
 		"m_atk":
@@ -1552,17 +1558,23 @@ func _menu_rows(key: String) -> Array:
 		"presence":
 			return [["기본", str(_pilot.presence)],
 					["출처", mech.name if mech != null else "역할 기본값"]]
-		"laning", "mechanics", "gamesense", "teamfight", "mental":
-			if pd == null:
-				return [["기본", "—"]]
-			var vals: Dictionary = {
-				"laning": pd.laning, "mechanics": pd.mechanics,
-				"gamesense": pd.gamesense, "teamfight": pd.teamfight,
-				"mental": pd.mental,
-			}
-			# 아웃게임 스탯은 **경기 중에 변하지 않는다** — 훈련으로만 오른다.
-			# 그래서 기본값과 최종값이 언제나 같고 증가분 줄이 따로 없다.
-			return [["기본", str(int(vals[key]))], ["인게임 증가", "없음"]]
+		_:
+			pass
+	if key in PlayerData.STAT_KEYS:
+		if pd == null:
+			return [["기본", "—"]]
+		# 선수 스탯은 **경기 중에 변하지 않는다** — 주간 훈련으로만 오른다.
+		# 그래서 기본값과 최종값이 언제나 같고 증가분 줄이 따로 없다.
+		return [["기본", str(int(pd.get(key)))], ["인게임 증가", "없음"]]
+	match key:
+		"e_hit":
+			return [["기본", str(_pilot.engage_hit)],
+					["대등한 상대에게", "%d%%" % roundi(
+							PilotData.hit_chance(_pilot.engage_hit, _pilot.engage_hit) * 100.0)]]
+		"e_eva":
+			return [["기본", str(_pilot.engage_eva)],
+					["대등한 상대에게", "%d%%" % roundi(
+							PilotData.hit_chance(_pilot.engage_eva, _pilot.engage_eva) * 100.0)]]
 		"m_hp":
 			return [["기체 체력", str(mech.hp) if mech != null else "—"],
 					["파일럿 기본 최대 체력", str(_pilot.base_max_hp)]]
@@ -1676,6 +1688,8 @@ func _remain_label(expire_turn: int, until_phase: bool) -> String:
 ## 것에만 붙인다. **카드의 설명문은 여기로 들어온다** — 카드 노드에 적힌 글씨는
 ## 축소돼 있어 읽으라고 있는 것이 아니다.
 func _menu_note(key: String) -> String:
+	if key in PlayerData.STAT_KEYS:
+		return PlayerData.STAT_NOTES[PlayerData.STAT_KEYS.find(key)]
 	if key.begins_with("card:"):
 		var cd: CardData = _card_of(key)
 		return cd.description if cd != null else ""
@@ -1695,15 +1709,15 @@ func _menu_note(key: String) -> String:
 		"growth":
 			return "성장은 성장치에서 파생된다. 공격력이 최대 체력보다 4배 빠르게 자란다."
 		"hit":
-			return "명중 / (명중 + 상대 회피) 로 전장 명중 판정을 굴린다."
+			return "명중 / (명중 + 상대 회피) 를 80~100% 에 엹어 전장 판정을 굴린다."
 		"eva":
-			return "상대 명중 / (상대 명중 + 회피) 로 피격 판정을 굴린다."
+			return "높을수록 상대의 전장 명중률을 80% 쪽으로 끌어내린다."
 		"presence":
 			return "교전 무대의 표적 가중치. 전장은 읽지 않는다."
-		"mechanics":
-			return "인게임 명중의 기준값이 된다."
-		"gamesense":
-			return "인게임 회피의 기준값이 된다."
+		"e_hit":
+			return "교전 무대에서만 읽는 명중. 전장 명중과 따로 산다."
+		"e_eva":
+			return "교전 무대에서만 읽는 회피. 전장 회피와 따로 산다."
 		"m_hp", "m_atk":
 			return "기체 스탯이 파일럿의 기본값이 되고, 거기서 성장이 붙는다."
 	return ""

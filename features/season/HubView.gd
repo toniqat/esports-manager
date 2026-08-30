@@ -22,8 +22,8 @@ const ROLE_COLORS: Array = [
 	Color(0.30, 0.85, 0.45),
 	Color(1.00, 0.35, 0.35),
 ]
-const STAT_KEYS: Array   = ["laning", "mechanics", "gamesense", "teamfight", "mental"]
-const STAT_LABELS: Array = ["라", "메", "겜", "한", "멘"]
+const STAT_KEYS: Array   = PlayerData.STAT_KEYS
+const STAT_LABELS: Array = PlayerData.STAT_SHORT
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 @onready var _gm: Node = get_node("/root/GameManager")
@@ -136,7 +136,7 @@ func _build_roster_block() -> void:
 
 		# Stat strip
 		var stat_x0: float = 480.0
-		var stat_w: float = (width - stat_x0 - 20) / 5.0
+		var stat_w: float = (width - stat_x0 - 20) / float(STAT_KEYS.size())
 		var stat_lbls: Array = []
 		for s in STAT_KEYS.size():
 			var sx: float = stat_x0 + s * stat_w
@@ -347,7 +347,7 @@ func _refresh_roster() -> void:
 		var p: PlayerData = by_role[r]
 		w["name"].text = p.name
 		(w["face"] as TextureRect).texture = PilotImages.face_for(p.id)
-		var total: int = p.laning + p.mechanics + p.gamesense + p.teamfight + p.mental
+		var total: int = p.stat_total()
 		w["total"].text = "TOTAL %d" % total
 		for s in STAT_KEYS.size():
 			var key: String = STAT_KEYS[s]

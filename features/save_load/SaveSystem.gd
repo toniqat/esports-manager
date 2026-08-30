@@ -190,8 +190,13 @@ static func _pilots_to_array(pilots: Array) -> Array:
 	for p in pilots:
 		out.append({
 			"id": p.id, "name": p.name, "role": p.role, "team_id": p.team_id,
-			"laning": p.laning, "mechanics": p.mechanics, "gamesense": p.gamesense,
-			"teamfight": p.teamfight, "mental": p.mental,
+			"field_hit": p.field_hit, "field_eva": p.field_eva,
+			"engage_hit": p.engage_hit, "engage_eva": p.engage_eva,
+			"atk_growth": p.atk_growth, "hp_growth": p.hp_growth,
+			# 스킬과 모브 표시도 함께 살려야 한다 — 둘 다 CSV 에서 온 값이지만
+			# 세이브가 복원하는 것은 CSV 행이 아니라 이 배열이라, 빼면 이어하기한
+			# 선수가 전원 스킬 없는 네임드로 부활한다.
+			"skill_id": p.skill_id, "is_mob": p.is_mob,
 		})
 	return out
 
@@ -203,9 +208,10 @@ static func _array_to_pilots(rows: Array) -> Array:
 		out.append(PlayerData.new(
 			int(d.get("id", 0)), String(d.get("name", "")),
 			int(d.get("role", 0)), int(d.get("team_id", 0)),
-			int(d.get("laning", 50)), int(d.get("mechanics", 50)),
-			int(d.get("gamesense", 50)), int(d.get("teamfight", 50)),
-			int(d.get("mental", 50))))
+			int(d.get("field_hit", 50)), int(d.get("field_eva", 50)),
+			int(d.get("engage_hit", 50)), int(d.get("engage_eva", 50)),
+			int(d.get("atk_growth", 50)), int(d.get("hp_growth", 50)),
+			int(d.get("skill_id", -1)), bool(d.get("is_mob", false))))
 	return out
 
 

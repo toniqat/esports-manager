@@ -66,7 +66,7 @@ func _compare_by_stats(a: PlayerData, b: PlayerData) -> bool:
 
 
 func _total_stats(p: PlayerData) -> int:
-	return p.laning + p.mechanics + p.gamesense + p.teamfight + p.mental
+	return p.stat_total()
 
 
 # Validate a draft selection: 5 pilot ids, one per role 0..4, all distinct,

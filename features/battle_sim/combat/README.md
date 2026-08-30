@@ -520,10 +520,12 @@ pilots or turrets — see "Engagement scopes".
 ### Spawning
 - `spawn_pilots_with_lanes()` — builds 5 player + 5 enemy `PilotData` using
   `GambitPhaseManager.ROLE_TO_LANE`. Stats come from `_stats_for(...)`.
-- `_stats_for(...)` — when match_ctx is active, pulls hp/atk from the
-  assigned mech AND hit/evasion from `PlayerData.mechanics` /
-  `PlayerData.gamesense`. Otherwise falls back to `ROLE_STATS` defaults
-  with `hit = evasion = 50`.
+- `_stats_for(...)` — when match_ctx is active, pulls hp/atk/presence from
+  the assigned mech and everything else from the **선수 스탯 6종**:
+  `field_hit`/`field_eva` → `hit`/`evasion`, `engage_hit`/`engage_eva` →
+  the engage-arena pair, `atk_growth`/`hp_growth` → `atk_growth_mult` /
+  `hp_growth_mult` (via `PlayerData.growth_mult`). Otherwise falls back to
+  `ROLE_STATS` defaults with every stat at 50 / every multiplier at 1.0.
 - `_pilot_id_from_roster(ctx_active, roster, idx, fallback_id)` — used to
   populate `pilot.pilot_id` (the portrait lookup key). Returns
   `roster[idx].id` only when ctx is active AND the id is inside the regular

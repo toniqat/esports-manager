@@ -23,14 +23,14 @@ const SCHEMAS: Dictionary = {
 	"cards":       {"req": ["id","name","cost","uses","cast_method","target","cast_range","area","keyword","effect","description","scope","pool","card_type","card_cat","excl_group"], "pk": "id"},
 	"game_config": {"req": ["key","value"],                                     "pk": "key"},
 	"lane_config": {"req": ["lane_id","name","max_pilots","mid_col","mid_row"], "pk": "lane_id"},
-	"players":     {"req": ["id","team_id","name","role","laning","mechanics","gamesense","teamfight","mental","skill_id","is_mob"], "pk": "id"},
+	"players":     {"req": ["id","team_id","name","role","field_hit","field_eva","engage_hit","engage_eva","atk_growth","hp_growth","skill_id","is_mob"], "pk": "id"},
 	"pilot_skills": {"req": ["id","key","name","role","type","p1","p2","keyword","description"], "pk": "id"},
 	"mechs":       {"req": ["id","name","role","hp","atk","presence"],          "pk": "id"},
 	"mech_passives": {"req": ["id","mech_id","key","name","p1","p2","keyword","description"], "pk": "id"},
 	"mech_cards":    {"req": ["id","mech_id","name","count","cost","cast_method","target","cast_range","area","keyword","charge_max","effect","trigger","description"], "pk": "id"},
 	"teams":       {"req": ["id","name","short_name"],                          "pk": "id"},
 	"intl_teams":   {"req": ["id","name","short_name"],                         "pk": "id"},
-	"intl_players": {"req": ["id","team_id","name","role","laning","mechanics","gamesense","teamfight","mental"], "pk": "id"},
+	"intl_players": {"req": ["id","team_id","name","role","field_hit","field_eva","engage_hit","engage_eva","atk_growth","hp_growth"], "pk": "id"},
 }
 
 # SQLite column definitions per table
@@ -88,11 +88,12 @@ const TABLE_DEFS: Dictionary = {
 		"team_id":   {"data_type": "int",  "not_null": true},
 		"name":      {"data_type": "text", "not_null": true},
 		"role":      {"data_type": "int",  "not_null": true},
-		"laning":    {"data_type": "int",  "not_null": true},
-		"mechanics": {"data_type": "int",  "not_null": true},
-		"gamesense": {"data_type": "int",  "not_null": true},
-		"teamfight": {"data_type": "int",  "not_null": true},
-		"mental":    {"data_type": "int",  "not_null": true},
+		"field_hit":  {"data_type": "int",  "not_null": true},
+		"field_eva":  {"data_type": "int",  "not_null": true},
+		"engage_hit": {"data_type": "int",  "not_null": true},
+		"engage_eva": {"data_type": "int",  "not_null": true},
+		"atk_growth": {"data_type": "int",  "not_null": true},
+		"hp_growth":  {"data_type": "int",  "not_null": true},
 		# 이 파일럿의 고유 파일럿 스킬 id(pilot_skills.id). -1 = 없음(모브).
 		"skill_id":  {"data_type": "int",  "not_null": true},
 		# 1 = 모브 파일럿 — 스킬이 없고 스탯이 네임드보다 낮으며 초상화가
@@ -194,11 +195,12 @@ const TABLE_DEFS: Dictionary = {
 		"team_id":   {"data_type": "int",  "not_null": true},
 		"name":      {"data_type": "text", "not_null": true},
 		"role":      {"data_type": "int",  "not_null": true},
-		"laning":    {"data_type": "int",  "not_null": true},
-		"mechanics": {"data_type": "int",  "not_null": true},
-		"gamesense": {"data_type": "int",  "not_null": true},
-		"teamfight": {"data_type": "int",  "not_null": true},
-		"mental":    {"data_type": "int",  "not_null": true},
+		"field_hit":  {"data_type": "int",  "not_null": true},
+		"field_eva":  {"data_type": "int",  "not_null": true},
+		"engage_hit": {"data_type": "int",  "not_null": true},
+		"engage_eva": {"data_type": "int",  "not_null": true},
+		"atk_growth": {"data_type": "int",  "not_null": true},
+		"hp_growth":  {"data_type": "int",  "not_null": true},
 	},
 }
 

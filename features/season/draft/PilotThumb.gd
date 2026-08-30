@@ -162,7 +162,7 @@ func _refresh() -> void:
 
 
 static func total_stats(p: PlayerData) -> int:
-	return p.laning + p.mechanics + p.gamesense + p.teamfight + p.mental
+	return p.stat_total()
 
 
 func _apply_style() -> void:

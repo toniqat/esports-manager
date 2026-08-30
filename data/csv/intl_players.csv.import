@@ -6,10 +6,10 @@ uid="uid://cee7miv2ty8p2"
 
 [deps]
 
-files=["res://data/csv/intl_players.team.translation", "res://data/csv/intl_players.name.translation", "res://data/csv/intl_players.role.translation", "res://data/csv/intl_players.laning.translation", "res://data/csv/intl_players.mechanics.translation", "res://data/csv/intl_players.gamesense.translation", "res://data/csv/intl_players.teamfight.translation", "res://data/csv/intl_players.mental.translation"]
+files=["res://data/csv/intl_players.team.translation", "res://data/csv/intl_players.name.translation", "res://data/csv/intl_players.role.translation", "res://data/csv/intl_players.field.translation", "res://data/csv/intl_players.field.translation", "res://data/csv/intl_players.engage.translation", "res://data/csv/intl_players.engage.translation", "res://data/csv/intl_players.atk.translation", "res://data/csv/intl_players.hp.translation"]
 
 source_file="res://data/csv/intl_players.csv"
-dest_files=["res://data/csv/intl_players.team.translation", "res://data/csv/intl_players.name.translation", "res://data/csv/intl_players.role.translation", "res://data/csv/intl_players.laning.translation", "res://data/csv/intl_players.mechanics.translation", "res://data/csv/intl_players.gamesense.translation", "res://data/csv/intl_players.teamfight.translation", "res://data/csv/intl_players.mental.translation"]
+dest_files=["res://data/csv/intl_players.team.translation", "res://data/csv/intl_players.name.translation", "res://data/csv/intl_players.role.translation", "res://data/csv/intl_players.field.translation", "res://data/csv/intl_players.field.translation", "res://data/csv/intl_players.engage.translation", "res://data/csv/intl_players.engage.translation", "res://data/csv/intl_players.atk.translation", "res://data/csv/intl_players.hp.translation"]
 
 [params]
 

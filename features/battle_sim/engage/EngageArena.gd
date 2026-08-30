@@ -150,9 +150,12 @@ const TURRET_BODY_COLOR := Color(0.17, 0.19, 0.27, 1.0)
 ## 초상화 원의 중심은 발밑(pos)에서 이만큼 위에 뜼다. 사이드뷰 시절(42)보다
 ## 훨씬 높은 것은 그 사이에 **바닥을 가리키는 쉐기**가 들어야 하기 때문이다.
 const UNIT_LIFT: float = 82.0
-## 바닥 위치 표식 — 누운 원(쿼터뷰라 납짝하다).
-const GROUND_RX: float = 30.0
-const GROUND_RY: float = 13.0
+## 바닥 위치 표식 — 누운 원(쿼터뷰라 납짝하다). **이 원이 곧 충돌 판정이다**:
+## 시뮬레이터가 같은 값으로 유닛을 서로 밀어내므로(`TurnEngageSim._separate_units`)
+## 화면에서 두 바닥 원이 겹치는 일이 없다. 값을 여기서 따로 들면 그리는 원과
+## 부딪히는 원이 갈라지므로 시뮬레이터 상수를 그대로 읽는다.
+const GROUND_RX: float = TurnEngageSim.FOOT_RX
+const GROUND_RY: float = TurnEngageSim.FOOT_RY
 ## 초상화 → 바닥 원을 잇는 쉐기의 윗변 반폭.
 const PIN_HALF_W: float = 10.0
 ## 행동 중(돌진/타격) 유닛에 두르는 강조 링.

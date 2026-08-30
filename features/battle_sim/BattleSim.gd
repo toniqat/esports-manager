@@ -1034,8 +1034,12 @@ func refresh_growth_stats(p: PilotData) -> void:
 	if p == null:
 		return
 	var gained: float = maxf(0.0, p.score - SCORE_START)
-	p.growth    = gained * GROWTH_ATK_PER_SCORE
-	p.growth_hp = gained * GROWTH_HP_PER_SCORE
+	# 선수의 **성장 계수**(`PlayerData.atk_growth` / `hp_growth`)가 여기서
+	# 곱해진다. 주간 훈련이 바꾸는 것은 개시 스탯이 아니라 **경기가 흘러가는
+	# 기울기**다 — 계수가 높은 선수는 같은 성장치로 더 많이 변한다. 1.0 이
+	# 기준(스탯 50)이므로 밸런스가 기본값에서 저절로 밀리지 않는다.
+	p.growth    = gained * GROWTH_ATK_PER_SCORE * p.atk_growth_mult
+	p.growth_hp = gained * GROWTH_HP_PER_SCORE * p.hp_growth_mult
 	# 파일럿 스킬의 스탯 배율은 **여기**에 얹는다 — `atk` 를 직접 밀면 다음
 	# 재계산에 통째로 지워지고, 충전이 오르내릴 때마다 원본이 깎여 나간다.
 	var s_atk: float = skill.atk_mult(p) if skill != null else 1.0

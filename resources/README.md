@@ -78,8 +78,16 @@ static func role_seat(role: int) -> int   # 역할 → 화면 자리 0..4
 
 In-battle pilot state: role, hp/max_hp, atk, team, grid_pos, lane, waypoint_idx,
 `move_range` (cells per minute), `jungle_start_pref` (GameEnums.JungleStartDir
-or -1), plus combat dice stats `hit` and `evasion` populated from PlayerData
-(`mechanics` → hit, `gamesense` → evasion).
+or -1), plus **두 벌의 명중 스탯**과 **두 개의 성장 계수 배율**, 전부 PlayerData 에서
+온다: `hit` / `evasion` ← `field_hit` / `field_eva` (전장), `engage_hit` /
+`engage_eva` ← 같은 이름 (교전 무대), `atk_growth_mult` / `hp_growth_mult` ←
+`PlayerData.growth_mult(atk_growth / hp_growth)`.
+
+`PilotData.hit_chance(hit, eva, range_mult = 1.0)` 는 **두 무대가 공유하는 명중
+공식**이다 — 비율 `hit/(hit+eva)` 를 `HIT_MIN`(0.80) ~ `HIT_MAX`(1.00) 에 선형으로
+얹으므로 대등하면 90%. 스탯에 상한이 없으므로 비율을 그대로 확률로 쓰면 격차가
+벌어졌을 때 한쪽이 아무것도 못 맞히는 경기가 나온다. `range_mult` 는 거리 계수
+자리이고 지금은 언제나 1.0 이다(전장이 같은 칸 교전뿐이라 거리가 없다).
 
 `presence` is copied from the assigned mech and is **read only by the 교전 무대**
 (`TurnEngageSim`) as the target aggro weight. The battlefield ignores it.
@@ -206,7 +214,13 @@ via `BattleSim.turret_hit_offset(td)`.
 
 Out-game player persona consumed by MatchFlow / BattleSim:
 - `id, name, role (GameEnums.Role), team_id (0=player, 1=enemy)`
-- Stats `laning, mechanics, gamesense, teamfight, mental` (each 1–100)
+- **선수 스탯 6종** — `field_hit` 전장 명중 / `field_eva` 전장 회피 /
+  `engage_hit` 교전 명중 / `engage_eva` 교전 회피 / `atk_growth` 공격력 성장 계수 /
+  `hp_growth` 체력 성장 계수. **하한 1, 상한 없다**(주간 훈련이 100 을 넘겨 올린다).
+  표는 `STAT_KEYS` / `STAT_LABELS` / `STAT_SHORT` / `STAT_NOTES` 넷이고 모든 화면이
+  그것을 읽는다. 전력 합산은 `stat_total()` / `stat_avg()`, 성장 계수 → 배율 환산은
+  `static growth_mult(v)` = `v / GROWTH_STAT_BASE`(80). 예전 5종(`laning` /
+  `mechanics` / `gamesense` / `teamfight` / `mental`)은 삭제됐다
 - `assigned_mech: MechData` — 밴픽 화면의 배정 단계(`ban_pick/BanPickController._finish`)가 새긴다. 예전에는 별도 화면이던 `AssignController` 의 몫이었다
 
 Loaded from the `players` table (CSV-seeded via `addons/csv_to_db`).

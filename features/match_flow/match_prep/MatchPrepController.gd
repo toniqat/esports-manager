@@ -16,8 +16,8 @@ const ROLE_COLORS: Array = [
 	Color(0.30, 0.85, 0.45),
 	Color(1.00, 0.35, 0.35),
 ]
-const STAT_KEYS: Array   = ["laning", "mechanics", "gamesense", "teamfight", "mental"]
-const STAT_LABELS: Array = ["라", "메", "겜", "한", "멘"]
+const STAT_KEYS: Array   = PlayerData.STAT_KEYS
+const STAT_LABELS: Array = PlayerData.STAT_SHORT
 
 var _panel: Panel
 
@@ -122,13 +122,13 @@ func _build_team_block(parent: Node, roster: Array, header: String, header_color
 				Vector2(132, 38), Vector2(360, 30), HORIZONTAL_ALIGNMENT_LEFT)
 		var total: int = 0
 		if p != null:
-			total = p.laning + p.mechanics + p.gamesense + p.teamfight + p.mental
+			total = p.stat_total()
 		UiHelpers.mk_label(row, "TOTAL %d" % total, 22, Color(1.0, 0.85, 0.40),
 				Vector2(132, 76), Vector2(200, 30), HORIZONTAL_ALIGNMENT_LEFT)
 
-		# Stat strip: 5 stats each "라 25" style
+		# Stat strip: 스탯 여섯 칸 ("전명 25" 꼴). 칸 수는 PlayerData 가 정한다.
 		var stat_x0: float = 480.0
-		var stat_w: float = (width - stat_x0 - 20) / 5.0
+		var stat_w: float = (width - stat_x0 - 20) / float(STAT_KEYS.size())
 		for s in STAT_KEYS.size():
 			var sx: float = stat_x0 + s * stat_w
 			var key: String = STAT_KEYS[s]

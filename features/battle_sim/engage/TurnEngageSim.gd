@@ -91,6 +91,36 @@ const CELL_REACH_HALF: float = 0.9
 ## 칸 오프셋 바운딩 박스가 이 여백 안에 들어가도록 배치를 통째로 줄인다.
 const STAGE_FIT_MARGIN: float = 150.0
 
+# ─── 바닥 마커 충돌 ─────────────────────────────────────────────────────────
+# **발밑 타원이 곧 충돌 판정이다.** 화면에 그려지는 그 원(`EngageArena` 의
+# `GROUND_RX/RY` 가 아래 두 상수를 그대로 읽는다)이 서로 파고들지 않으므로,
+# 두 유닛이 바닥의 같은 지점에 겹쳐 선 그림이 나오지 않는다 — 탑뷰에서 "이
+# 유닛이 어디에 서 있는가"를 말하는 것은 82px 떠 있는 초상이 아니라 이 원이라,
+# 원이 겹치면 자리 자체가 안 읽힌다.
+#
+# 판정은 **정규화한 원 공간**에서 한다: y 를 `FOOT_ASPECT` 배로 늘리면 납작한
+# 타원 둘이 반지름 `FOOT_RX` 인 원 둘이 되고, 그러면 겹침 판정도 밀어내는
+# 방향도 원 하나로 풀린다(타원끼리의 최단 거리에는 닫힌 해가 없다). 밀어낸
+# 뒤 y 를 다시 나누어 원래 공간으로 돌린다.
+#
+# 실제 거리로는 **나란히 서면 60px · 위아래로 서면 26px** 이 최소 간격이다.
+# 근접 사거리(`MELEE_REACH` 88)보다 작으므로 **공격하러 붙는 동작과 다투지
+# 않는다** — 이 판정이 실제로 일하는 자리는 개시 배치(한 칸에 몰린 무리)와
+# 넉백으로 남을 떠밀린 자리 둘이다.
+const FOOT_RX: float = 30.0
+const FOOT_RY: float = 13.0
+const FOOT_ASPECT: float = FOOT_RX / FOOT_RY
+## 이완 횟수. **겹침은 한 프레임 안에 다 푼다** — 조금씩 나눠 밀면(이완 비율을
+## 1 미만으로 두면) 넉백처럼 깊이 파고드는 한 방에서 몇 프레임 동안 원이 겹친
+## 채로 그려진다(실측: 비율 0.5 · 3회에서 최악 7.7% 겹침). 밀린 쪽이 그 자리에서
+## 곧장 비켜 주는 편이 도리어 "부딪혀서 밀렸다"로 읽힌다.
+##
+## 개시 배치는 열 명이 한 칸에 몰릴 수 있어(오브젝트 교전 · 같은 칸 5v5) 더
+## 많이 돈다. 한 쌍씩 즉시 반영하는 가우스-자이델이라 한 회에 푼 쌍이 뒤 쌍에
+## 다시 밀릴 수 있고, 그 사슬이 인원수만큼 길어지기 때문이다.
+const SEPARATE_ITERS_PLACE: int = 16
+const SEPARATE_ITERS_TICK: int = 6
+
 # ─── 유닛 ────────────────────────────────────────────────────────────────────
 const UNIT_RADIUS: float = 40.0
 ## 근접이 공격을 넣기 위해 좁혀야 하는 거리. UNIT_RADIUS 두 개(80)보다 살짝
@@ -173,15 +203,17 @@ const TURRET_HIT: int = 50
 
 const PROJECTILE_SPEED: float = 1400.0
 
-# ─── 명중 보정 ───────────────────────────────────────────────────────────────
-## 교전 명중률은 전장(SimulationCore.roll_hit)과 **별개**로 계산한다. 전장 확률
-## `hit/(hit+evasion)` 을 [ENGAGE_HIT_MIN, ENGAGE_HIT_MAX] 구간으로 리맵한다:
-##     chance = ENGAGE_HIT_MIN + (ENGAGE_HIT_MAX - ENGAGE_HIT_MIN) * base
-## 전장 대비 훨씬 가까이 붙어 싸운다는 전제라 **최소 80% / 평균(base 0.5) 90%
-## / 최대 100%** 가 되도록 잡았다. 단조 증가라 스탯 우열 순서는 그대로
-## 보존된다 — 명중이 높은 파일럿이 여전히 더 잘 맞힌다.
-const ENGAGE_HIT_MIN: float = 0.80
-const ENGAGE_HIT_MAX: float = 1.00
+# ─── 명중 보정 ────────────────────────────────────────────────────────────
+## 명중 확률 공식은 **전장과 공유한다** — `PilotData.hit_chance` 가 비율
+## `hit/(hit+eva)` 을 80~100% 구간에 선형으로 엹는다(대등하면 90%).
+## 다른 것은 **입력**이다 — 이 무대는 `engage_hit` / `engage_eva`(교전 명중 /
+## 교전 회피)를 읽고, 전장(`SimulationCore.roll_hit`)은 `hit` / `evasion`을 읽는다.
+## 그래서 같은 선수가 라인전과 한타에서 다를 수 있고, 그 둘을 가르는 것이
+## 주간 훈련판이 주는 선택지다.
+##
+## 예전에는 구간과 공식이 이 파일에만 있었고(`ENGAGE_HIT_MIN` / `_MAX`, **삭제됨**)
+## 전장은 비율을 그대로 확률로 썼다 — 같은 스탯 차이가 두 무대에서 전혀 다른
+## 크기로 읽혔다.
 
 ## 유닛 상태. 이탈 / 후퇴 / **원위치 복귀** 상태는 없다 — 라운드가 끝날 때까지
 ## 아무도 벨트를 뜨지 못하고, 공격을 끝낸 유닛은 그 자리에 눌러앉는다.
@@ -371,6 +403,9 @@ func setup(bs: BattleSim, caster: PilotData, team0: Array, team1: Array,
 	_place_from_grid()
 	if drop_in:
 		_apply_drop_in(caster)
+	# 겹침 정리는 **낙하까지 끝난 뒤**다 — [강습]의 시전자는 적 진형 한가운데,
+	# 곧 이미 누가 서 있는 자리로 떨어지므로 그 한 명이야말로 밀어내야 한다.
+	_separate_units(SEPARATE_ITERS_PLACE)
 	_face_initial()
 	_build_order(caster)
 
@@ -765,6 +800,10 @@ func step(dt: float) -> void:
 		Flow.ACTING:
 			_tick_actor(dt)
 
+	# 겹침 정리는 **한 프레임의 맨 끝**이다 — 접근 이동(`_tick_actor`)보다 뒤라야
+	# 그 프레임에 실제로 그려지는 자리가 정리된 자리가 된다.
+	_separate_units(SEPARATE_ITERS_TICK)
+
 
 # 종료 판정이 난 뒤의 유예(EngagePhaseManager.END_HOLD_SEC) 동안 굴리는 스텝.
 # 전투는 완전히 멈춘 상태에서 날아가던 투사체를 착탄시키고 피격 플래시 /
@@ -776,6 +815,76 @@ func step_afterglow(dt: float) -> void:
 		var t := raw as ETurret
 		t.fire_t = max(0.0, t.fire_t - dt)
 	_update_projectiles(dt)
+	_separate_units(SEPARATE_ITERS_TICK)
+
+
+## 발밑 타원(= 화면의 바닥 원)이 서로 파고들지 않도록 밀어낸다. 위 "바닥 마커
+## 충돌" 절이 판정 공간을, 이 함수가 이완을 맡는다.
+##
+## **앵커도 같이 민다.** 앵커를 제자리에 두면 IDLE 의 복원 드리프트
+## (`move_speed × SETTLE_SPEED_MULT`)가 밀어낸 만큼을 곧장 되돌려, 겹친 두
+## 유닛이 밀고 당기며 그 자리에서 떤다 — `_apply_knockback` 이 앵커를 함께
+## 옮기는 것과 같은 이유다. 이 모듈에는 원위치 복귀가 없고, **밀려난 자리가
+## 곧 새 자리**다.
+##
+## **시신은 밀리지 않는다.** 쓰러진 자리에 그대로 남고 산 유닛만 그 밖으로
+## 밀려난다(시신도 바닥 원을 그대로 갖고 있으므로 판정에서 빼면 산 유닛이
+## 시신 위에 겹쳐 선다). 둘 다 시신이면 아무 일도 하지 않는다.
+##
+## 이완은 **한 쌍씩 즉시 반영**하는 가우스-자이델이라 벽(`_clamp_to_ground`)에
+## 몰린 유닛이 못 밀린 만큼을 다음 쌍이 이어받는다.
+func _separate_units(iters: int) -> void:
+	var n: int = units.size()
+	if n < 2:
+		return
+	var min_d: float = FOOT_RX * 2.0
+	for _pass in iters:
+		var moved: bool = false
+		for i in range(n - 1):
+			var a := units[i] as EUnit
+			for j in range(i + 1, n):
+				var b := units[j] as EUnit
+				var a_live: bool = a.is_active()
+				var b_live: bool = b.is_active()
+				if not a_live and not b_live:
+					continue
+				# 타원 → 원. y 만 늘리면 두 마커가 같은 반지름의 원이 된다.
+				var d := Vector2(b.pos.x - a.pos.x,
+						(b.pos.y - a.pos.y) * FOOT_ASPECT)
+				var dist: float = d.length()
+				if dist >= min_d:
+					continue
+				var dir: Vector2
+				if dist < 0.001:
+					# 정확히 같은 자리 — 밀어낼 방향이 없으므로 팀으로 가른다
+					# (`_seat_cell` 의 "팀0 은 왼쪽"과 같은 규칙).
+					dir = Vector2(-1.0 if a.team == 0 else 1.0, 0.0)
+				else:
+					dir = d / dist
+				# 한쪽이 시신이면 산 쪽이 겹친 양을 혼자 진다.
+				var share_a: float = 0.5
+				if not a_live:
+					share_a = 0.0
+				elif not b_live:
+					share_a = 1.0
+				var push: float = min_d - dist
+				var off := Vector2(dir.x, dir.y / FOOT_ASPECT) * push
+				_shift_unit(a, -off * share_a)
+				_shift_unit(b, off * (1.0 - share_a))
+				moved = true
+		if not moved:
+			return
+
+
+## 유닛 하나를 밀되 앵커를 **실제로 밀린 만큼** 함께 옮긴다 —
+## `_clamp_to_ground` 가 벽에서 잘라 낸 몫까지 앵커에 반영해야 벽에 붙은 유닛의
+## 앵커가 바닥면 밖으로 새지 않는다.
+func _shift_unit(u: EUnit, off: Vector2) -> void:
+	if off.length_squared() < 0.000001:
+		return
+	var before: Vector2 = u.pos
+	u.pos = _clamp_to_ground(u.pos + off)
+	u.anchor_pos = _clamp_to_ground(u.anchor_pos + (u.pos - before))
 
 
 ## 차례와 무관하게 매 프레임 흐르는 것들 — 연출 타이머, 넉백, 앵커 잔차 복원.
@@ -1127,7 +1236,7 @@ func _strike_one(u: EUnit, target: EUnit, allow_extra: bool = true,
 
 	var a: PilotData = u.pilot
 	var d: PilotData = target.pilot
-	if randf() >= _hit_chance(a.hit, d.evasion):
+	if randf() >= _hit_chance(a.engage_hit, d.engage_eva):
 		popups.append({"pos": target.pos, "text": "MISS",
 				"color": Color(0.85, 0.85, 0.85)})
 		return
@@ -1188,14 +1297,10 @@ func _apply_knock(from: Vector2, target: EUnit, impulse: float) -> void:
 	target.knock_vel += dir.normalized() * impulse
 
 
-# 교전 전용 명중 확률. 전장의 `hit/(hit+evasion)` 을 기준값으로 삼아
-# [ENGAGE_HIT_MIN, ENGAGE_HIT_MAX] 구간에 선형으로 얹는다 — 최소 80%,
-# 스탯이 대등하면(base 0.5) 90%. 전장 굴림은 `SimulationCore.roll_hit` 에
-# 그대로 남아 있고 여기와 서로 영향을 주지 않는다.
+# 교전 명중 확률. 공식 자체는 `PilotData.hit_chance` 가 소유하고(전장과
+# 공유한다) 이 래퍼는 그것을 **교전 스탯으로** 부른다는 사실만 말한다.
 static func _hit_chance(hit: int, evasion: int) -> float:
-	var total: float = float(max(1, hit + evasion))
-	var base: float = clampf(float(hit) / total, 0.0, 1.0)
-	return ENGAGE_HIT_MIN + (ENGAGE_HIT_MAX - ENGAGE_HIT_MIN) * base
+	return PilotData.hit_chance(hit, evasion)
 
 
 func _apply_damage(d: PilotData, amount: int) -> int:
@@ -1253,7 +1358,7 @@ func _begin_turret_turn(t: ETurret) -> void:
 		"team": t.team, "is_turret": true,
 	})
 	# 포탑도 명중 판정을 굴린다 — hit 스탯이 없으므로 TURRET_HIT 를 쓴다.
-	if randf() >= _hit_chance(TURRET_HIT, victim.pilot.evasion):
+	if randf() >= _hit_chance(TURRET_HIT, victim.pilot.engage_eva):
 		popups.append({"pos": victim.pos, "text": "MISS",
 				"color": Color(0.85, 0.85, 0.85)})
 		return

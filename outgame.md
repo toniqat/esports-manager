@@ -23,7 +23,7 @@
 - **플레이어 팀**: `team_id = 0`. 드래프트로 5명 자동 스왑 (역할 동일 교환).
 - **시간 단위**: 1일 = 1 tick. 주는 월~일 (weekday 0~6).
 - **경기 처리**: 모든 리그 경기는 BattleSim 풀 플레이 (자동 시뮬 옵션 없음).
-- **스탯 모델**: 기존 5스탯 유지 (`laning, mechanics, gamesense, teamfight, mental`). 신규 스탯/컨디션 시스템 도입 안 함.
+- **스탯 모델**: **선수 스탯 6종** (`field_hit, field_eva, engage_hit, engage_eva, atk_growth, hp_growth`). 하한 1 · **상한 없음**. 예전 5스탯(`laning, mechanics, gamesense, teamfight, mental`)은 삭제됐다 — 인게임에서 실제로 읽히던 것이 둘뿐이었기 때문. 컨디션/피로도는 여전히 도입 안 함.
 - **리그 구조**: 8팀 정규리그 + 상위 4팀 플레이오프.
 - **캠페인 길이**: 6대회 (12월 시작 → 다음 해 11월).
 

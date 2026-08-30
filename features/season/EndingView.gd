@@ -170,7 +170,7 @@ func _refresh_roster() -> void:
 		var r: int = int(GameEnums.ROLE_DISPLAY_ORDER[seat])
 		if by_role.has(r):
 			var p: PlayerData = by_role[r]
-			var total: int = p.laning + p.mechanics + p.gamesense + p.teamfight + p.mental
+			var total: int = p.stat_total()
 			_roster_lines[seat].text = "%-9s  %-14s  TOTAL %d" % [
 				ROLE_NAMES[r], p.name, total,
 			]

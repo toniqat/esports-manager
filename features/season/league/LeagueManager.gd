@@ -202,7 +202,7 @@ func _team_avg_stat(team_id: int) -> float:
 	for p in _gm.season_state["all_pilots"]:
 		if p.team_id != team_id:
 			continue
-		sum += float(p.laning + p.mechanics + p.gamesense + p.teamfight + p.mental) / 5.0
+		sum += p.stat_avg()
 		count += 1
 	if count == 0:
 		return 0.0

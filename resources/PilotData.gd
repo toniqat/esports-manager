@@ -39,9 +39,22 @@ var jungle_start_pref: int = -1              # GameEnums.JungleStartDir or -1 (n
 # Sticky roam destination for junglers, (-1,-1) = none yet. Held across turns by
 # SimulationCore._jungle_goal_for so the roam target cannot flip mid-route.
 var jungle_roam_target: Vector2i = Vector2i(-1, -1)
-# Hit/evasion drive paired combat rolls (PlayerData.mechanics → hit, gamesense → evasion).
+# 전장 명중 / 회피 — `SimulationCore.roll_hit` 이 읽는다
+# (`PlayerData.field_hit` / `field_eva` 에서 온다).
 var hit: int              = 50
 var evasion: int          = 50
+# 교전 명중 / 회피 — `TurnEngageSim` 이 읽는다
+# (`PlayerData.engage_hit` / `engage_eva` 에서 온다). 전장과 **따로 사는**
+# 것이 요점이다: 같은 선수가 라인전에서 강한 것과 한타에서 강한 것은
+# 다른 일이라, 그 둘을 가르는 것이 훈련판의 선택지가 된다.
+var engage_hit: int       = 50
+var engage_eva: int       = 50
+# 성장 계수 배율 — `BattleSim.refresh_growth_stats` 가 `GROWTH_ATK_PER_SCORE` /
+# `GROWTH_HP_PER_SCORE` 에 곱한다. 1.0 이 기준(`PlayerData.GROWTH_STAT_BASE` = 50).
+# **스탯을 직접 밀지 않고 성장률을 민다** — 전자는 재계산 한 번에 지워지고,
+# 훈련이 바꾸는 것은 개시 스탯이 아니라 경기가 흘랬가는 기울기다.
+var atk_growth_mult: float = 1.0
+var hp_growth_mult: float  = 1.0
 # 존재감 — 전투 개시(engage)에서만 참조. 근접 메크 4, 원거리 메크 2.
 # 피격 가중치(높을수록 자주 표적이 됨).
 #
@@ -291,7 +304,40 @@ func _init(p_role: int, p_team: int, p_pos: Vector2i, stats: Dictionary) -> void
 		evasion = int(stats["evasion"])
 	if stats.has("presence"):
 		presence = int(stats["presence"])
+	if stats.has("engage_hit"):
+		engage_hit = int(stats["engage_hit"])
+	if stats.has("engage_eva"):
+		engage_eva = int(stats["engage_eva"])
+	if stats.has("atk_growth_mult"):
+		atk_growth_mult = float(stats["atk_growth_mult"])
+	if stats.has("hp_growth_mult"):
+		hp_growth_mult = float(stats["hp_growth_mult"])
 	# 성장 계산의 원본. 생성자에서 잡아 두는 것이 요점이다 — 메크 스탯 주입은
 	# 이 생성자를 통해 들어오므로 어떤 스폰 경로를 타도 원본이 비지 않는다.
 	base_atk    = atk
 	base_max_hp = max_hp
+
+
+# ─── 명중 확률 ──────────────────────────────────────────────────
+## 명중 확률은 **상대값이 정한다** — `hit/(hit+eva)` 를
+## [`HIT_MIN`, `HIT_MAX`] 구간에 선형으로 엹는다. 둘이 대등하면 90%,
+## 한쪽으로 완전히 기울어야 80% / 100% 에 닿는다.
+##
+## **전장과 교전이 같은 공식을 쓴다** — 입력만 다르다(전장은
+## `hit`/`evasion`, 교전은 `engage_hit`/`engage_eva`). 예전에는 전장이
+## 비율을 그대로 확률로 썼고(대등 = 50%) 교전만 이 리맵을 했는데,
+## 그러면 같은 스탯 차이가 두 무대에서 전혀 다른 크기로 읽혔다.
+##
+## 구간을 바닥까지 안 내리는 이유: 스탯이 훈련으로 100 을 넘어 계속
+## 자라므로 비율 그대로를 확률로 쓰면 상대적 격차가 명중을 0 근처까지
+## 끜어내려 한 팀이 아무것도 못 하는 경기가 난다.
+const HIT_MIN: float = 0.80
+const HIT_MAX: float = 1.00
+
+## 거리 계수 자리. 지금은 전장이 **같은 칸 교전**뿐이라 거리라는
+## 개념이 없어 항상 1.0 을 넘긴다. 사거리 규칙이 생기면 호출부가 이
+## 인자에 계수를 실어 보내면 된다 — 공식 자체는 건드리지 않는다.
+static func hit_chance(hit_stat: int, eva_stat: int, range_mult: float = 1.0) -> float:
+	var total: float = float(maxi(1, hit_stat + eva_stat))
+	var base: float = clampf(float(hit_stat) / total, 0.0, 1.0)
+	return clampf((HIT_MIN + (HIT_MAX - HIT_MIN) * base) * range_mult, 0.0, 1.0)

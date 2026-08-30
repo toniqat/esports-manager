@@ -621,11 +621,14 @@ func _apply_turret_siege(attackers: Array, defenders: Array, td: TurretData,
 					_bs.pilot_label(d), _bs.pilot_label(a), dmg_d])
 
 
-# Hit chance = attacker.hit / (attacker.hit + defender.evasion). Pure roll.
+# 명중 확률은 `PilotData.hit_chance` 가 정한다 — 비율 `hit/(hit+eva)` 를
+# 80~100% 구간에 선형으로 엹으므로 대등하면 90% 이다.
 #
-# 이건 **전장 전용** 명중률이다. 교전(TurnEngageSim)은 이 값을 기준값으로만
-# 삼아 [ENGAGE_HIT_MIN, ENGAGE_HIT_MAX] = 80~100% 구간으로 리맵한 별도 확률을
-# 쓴다 — 여기를 고쳐도 교전 구간은 그대로이고, 그 반대도 마찬가지다.
+# **교전 무대와 공식을 공유한다.** 다른 것은 입력뿐이다 — 이쪽은 `hit` /
+# `evasion`(전장 명중 / 전장 회피), 교전은 `engage_hit` / `engage_eva`. 예전에는
+# 이 함수가 비율을 그대로 확률로 썼고(대등 = 50%) 교전만 리맵을 했는데,
+# 그러면 같은 스탯 차이가 두 무대에서 전혀 다른 크기로 읽혔고, 스탯 상한이
+# 없어진 지금은 격차가 벌어지면 한 팀이 사실상 아무것도 못 맞히는 경기가 난다.
 #
 # 공개 함수 — 카드 공격(`CardPhaseManager._effect_attack`)도 같은 판정을 쓴다.
 # 전장 교전과 공격 카드의 명중률이 갈라지지 않도록 여기 한 곳만 고치면 된다.
@@ -637,14 +640,24 @@ func _apply_turret_siege(attackers: Array, defenders: Array, td: TurretData,
 ## 전장 명중 판정. 라인전 스탯(카드 · 스킬)에 더해 **파일럿 스킬의 명중 / 회피
 ## 배율**(노련함 · 몰아치기 · 퍼포먼스)이 여기서 한 번에 곱해진다 — 판정이 한
 ## 곳뿐이라 전장 자동 교전과 공격 카드가 같은 값을 본다.
+## 전장 명중 판정. 확률은 `PilotData.hit_chance` 가 정한다 — 비율을
+## 80~100% 구간에 엹으므로 스탯이 밀려도 바닥이 80% 다. 예전에는 비율
+## 그대로(`hit/(hit+eva)`)가 확률이어서 대등한 둘이 서로 절반씩만 맞췄고,
+## 스탯 격차가 벌어지면 한쪽이 사실상 아무것도 못 하는 경기가 나왔다 —
+## 스탯의 상한을 없애면서 그 꾬려가 실제 위험이 됐다.
+##
+## **교전 무대와 같은 공식을 쓰되 입력이 다르다** — 이쪽은 `hit`/`evasion`
+## (= 전장 명중/회피)이고 저쪽은 `engage_hit`/`engage_eva` 다. 라인전
+## 스탯 배율(`lane_adjusted`)과 스킬 배율은 **이 공식에 들어가기 전** 스탯에
+## 먼저 곱해진다 — 확률을 직접 밀면 구간 밖으로 나가거나 상한에 막혀
+## 배율이 조용히 사라진다.
 func roll_hit(attacker: PilotData, defender: PilotData) -> bool:
 	var sk: PilotSkillSystem = _bs.skill
 	var hit_m: float = sk.hit_mult(attacker)      if sk != null else 1.0
 	var eva_m: float = sk.evasion_mult(defender)  if sk != null else 1.0
-	var num := float(lane_adjusted(attacker.hit, attacker)) * hit_m
-	var den := num + float(lane_adjusted(defender.evasion, defender)) * eva_m
-	if den <= 0.0: return false
-	return randf() < (num / den)
+	var atk_stat := maxi(1, roundi(float(lane_adjusted(attacker.hit, attacker)) * hit_m))
+	var def_stat := maxi(1, roundi(float(lane_adjusted(defender.evasion, defender)) * eva_m))
+	return randf() < PilotData.hit_chance(atk_stat, def_stat)
 
 
 ## 라인전 스탯 배율을 먹인 hit / evasion 값. 최소 1 을 보장해 −100% 같은 값이
@@ -1877,9 +1890,12 @@ func _pilot_id_from_roster(ctx_active: bool, roster: Array, idx: int,
 	return fallback_id
 
 
-# Returns a stats dict {hp, atk, hit, evasion, presence}.
+# Returns a stats dict {hp, atk, hit, evasion, engage_hit, engage_eva,
+# atk_growth_mult, hp_growth_mult, presence}.
 # hp/atk/presence come from the assigned mech (or ROLE_STATS fallback).
-# hit/evasion come from PlayerData (mechanics → hit, gamesense → evasion).
+# 나머지는 전부 PlayerData 의 선수 스탯 여섯에서 온다 — 명중/회피가
+# 전장과 교전으로 갈라져 있고(같은 선수가 라인전과 한타에서 다를 수 있다),
+# 성장 계수 둘은 `BattleSim.refresh_growth_stats` 가 곱하는 배율이다.
 # presence drives 전투 개시(engage) target weighting and is not read by the
 # battlefield. Fallback presence: melee roles (TANK/FIGHTER/ASSASSIN) → 4,
 # ranged (SUPPORT/SNIPER) → 2, matching the mech CSV convention.
@@ -1892,7 +1908,10 @@ func _stats_for(ctx_active: bool, roster: Array, idx: int, role_id: int) -> Dict
 		if m != null:
 			return {
 				"hp": m.hp, "atk": m.atk,
-				"hit": pd.mechanics, "evasion": pd.gamesense,
+				"hit": pd.field_hit, "evasion": pd.field_eva,
+				"engage_hit": pd.engage_hit, "engage_eva": pd.engage_eva,
+				"atk_growth_mult": PlayerData.growth_mult(pd.atk_growth),
+				"hp_growth_mult":  PlayerData.growth_mult(pd.hp_growth),
 				"presence": m.presence,
 			}
 	var base: Dictionary = _bs.ROLE_STATS[role_id]
@@ -1900,6 +1919,8 @@ func _stats_for(ctx_active: bool, roster: Array, idx: int, role_id: int) -> Dict
 	return {
 		"hp": base["hp"], "atk": base["atk"],
 		"hit": 50, "evasion": 50,
+		"engage_hit": 50, "engage_eva": 50,
+		"atk_growth_mult": 1.0, "hp_growth_mult": 1.0,
 		"presence": 4 if melee else 2,
 	}
 

@@ -18,8 +18,9 @@ On `_ready()`, BattleSim reads `GameManager.match_ctx`:
 | match_ctx field | Used by |
 |---|---|
 | `player_roster[i].assigned_mech` | `SimulationCore._stats_for()` → PilotData hp/atk |
-| `player_roster[i].mechanics` | PilotData.hit (combat 명중률) |
-| `player_roster[i].gamesense` | PilotData.evasion (combat 회피율) |
+| `player_roster[i].field_hit` / `.field_eva` | PilotData.hit / .evasion (전장 명중 판정) |
+| `player_roster[i].engage_hit` / `.engage_eva` | PilotData.engage_hit / .engage_eva (교전 무대 명중 판정) |
+| `player_roster[i].atk_growth` / `.hp_growth` | PilotData.atk_growth_mult / .hp_growth_mult (성장 계수 배율) |
 | `enemy_roster[i].assigned_mech` / stats | same, for team 1 |
 | `jungle_start_dir` | PilotData.jungle_start_pref on the player-team assassin |
 | `player_side` | `BattleSim.blue_team` via `seed_side_costs()` — 블루 진영의 전략 포인트 선점 + 선턴 |
@@ -96,7 +97,7 @@ Responsibilities:
 |---|---|---|
 | `resources/PilotData.gd` | PilotData | role, hp/max_hp, atk, team, grid_pos, lane, waypoint_idx, **move_range**, **hit**, **evasion**, **jungle_start_pref**, **respawn_timer** (death-only off-field clock — see `BattleSim.turns_until_return`), **recall_hold** (본진 복귀한 턴의 이동 1회 스킵), **anim_move_path** (이번에 밟은 칸의 경로 — 렌더러가 읽고 비운다), **kills / deaths** (이번 매치 누적 — `mark_pilot_dead` 한 곳에서만 오르고, 경쟁 심리 스킬이 상대 라이너와 견주는 데 쓴다) |
 | `resources/TurretData.gd` | TurretData | team, grid_pos, hp, tier, lane, alive |
-| `resources/PlayerData.gd` | PlayerData | id, name, role, team_id, 5 stats (laning / mechanics / gamesense / teamfight / mental), `assigned_mech`, **`skill_id`** (pilot_skills.id, -1 = 없음), **`is_mob`** (실루엣 초상화 · 스킬 없음 · 드래프트 제외) |
+| `resources/PlayerData.gd` | PlayerData | id, name, role, team_id, **선수 스탯 6종** (field_hit / field_eva / engage_hit / engage_eva / atk_growth / hp_growth — 표는 `STAT_KEYS` / `STAT_LABELS` / `STAT_SHORT` / `STAT_NOTES`, 하한 1 · 상한 없음), `assigned_mech`, **`skill_id`** (pilot_skills.id, -1 = 없음), **`is_mob`** (실루엣 초상화 · 스킬 없음 · 드래프트 제외) |
 | `resources/MechData.gd` | MechData | id, name, hp, atk, **presence** (4=melee/2=ranged; engage 무대의 타겟 어그로 가중치로만 사용). **`speed` 는 삭제됐다** — 교전이 라운드 턴제가 되면서 행동 빈도 개념이 사라졌다 |
 
 ---

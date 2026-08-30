@@ -52,11 +52,18 @@ Xcode 프로젝트만 받아서 `xcodebuild` 를 우리 플래그로 돌린다.
 
 `main` 브랜치에 push 하면 자동으로 돈다 (`.md` / `docs/` 만 바뀐 커밋은 제외).
 
-### 내려받은 파일 풀기
+### 내려받은 파일 풀기 — 두는 자리는 `build/` 다
 
 GitHub 은 아티팩트를 **zip 으로 한 겹 더 싸서** 준다. 압축을 풀면
 `EsportsManager-debug-unsigned.ipa` 가 나온다 — Sideloadly 에 넣을 것은 **그
 `.ipa`** 이지 내려받은 zip 이 아니다.
+
+**그 `.ipa` 는 저장소의 `build/` 폴더에 둔다**(gitignore 라 커밋되지 않는다).
+파일명에는 **빌드한 커밋의 short SHA** 를 붙이고
+(`EsportsManager-debug-unsigned-<sha>.ipa`) **낡은 산출물은 지운다** — 그 폴더에
+여러 빌드가 섞이면 어느 것이 방금 만든 것인지 알 수 없다(실제로 기능이 하나도
+안 들어간 직전 커밋의 `.ipa` 를 올릴 뻔했다). `gh run download` 명령과 "이 `.ipa`
+안에 무엇이 들어 있나" 검산 스니펫은 **`build/README.md`**.
 
 ---
 

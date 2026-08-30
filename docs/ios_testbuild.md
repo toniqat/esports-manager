@@ -112,6 +112,7 @@ with zipfile.ZipFile(SRC) as zin, zipfile.ZipFile(DST, "w", zipfile.ZIP_DEFLATED
 | `window/handheld/orientation` | **안 된다** | 익스포트 시점에 `Info.plist` 로 구워진다 — pck 밖이다 |
 | 번들 ID / 버전 / 앱 아이콘 | **안 된다** | 같은 이유. 아이콘은 `Assets.car` 로 따로 구워진다 |
 | GDExtension(godot-sqlite) 갱신 | **안 된다** | iOS 는 xcframework 를 **앱 바이너리에 정적 링크**한다 |
+| 햅틱 네이티브 플러그인 | **안 된다** | 같은 이유 — `.gdip` 정적 라이브러리도 앱 바이너리 안이다 |
 | Godot 버전 업 | **안 된다** | 엔진 바이너리가 곧 그 버전이다 |
 
 GDExtension 이 pck 밖에 산다는 것은 눈으로 확인할 수 있다 — `.app` 안에 `.dylib`
@@ -314,6 +315,31 @@ grep -o '<color key="backgroundColor"[^/]*' "/tmp/ios/EsportsManager/Launch Scre
 ---
 
 ---
+
+## 햅틱 네이티브 플러그인 — 폴백이 도는지 어떻게 아는가
+
+`autoloads/Haptics.gd` 는 플러그인이 없어도 **죽지 않는다** — `Input.vibrate_handheld`
+로 조용히 내려앉고 경고를 한 번 찍을 뿐이다. 편한 설계지만 그 대가가 있다:
+**빌드는 언제나 초록불**이고, 폰에서 감촉이 밋밋한 이유를 찾으려면 로그를 봐야
+한다. 그래서 판정을 CI 로 옮겼다.
+
+- 바이너리는 **커밋하지 않는다**. `.github/workflows/ios-testbuild.yml` 이 매
+  빌드에서 `toniqat/godot-haptics-upstream-fork` 를 그 Godot 버전의 추출 헤더로
+  컴파일해 `ios/plugins/haptics/` 에 놓는다(arm64, 캐시 키 = 버전 + 소스 SHA).
+- **게이트 셋**이 폴백을 막는다 — (1) 세 파일 존재 + `lipo -info` arm64 +
+  `nm` 에 `register_haptics_types` + preset 의 `plugins/Haptics=true`,
+  (2) 익스포트된 Xcode 프로젝트에 `haptics*.a` 와 그것을 참조하는 pbxproj,
+  (3) 최종 `.app` 바이너리 심볼 확인(스트립될 수 있어 보고만 한다).
+  1·2 중 하나라도 어긋나면 빌드가 그 자리에서 선다.
+- 잡 요약(Actions → 그 실행 → Summary)의 **"햅틱"** 줄이 결과를 말해 준다.
+
+**윈도우에서 로컬로 뽑은 익스포트에는 플러그인이 없다** — Godot 이 `.gdip` 을
+못 찾으면 `plugins/Haptics` 키를 그냥 무시한다. 그러니 실기에서 감촉을 볼 때는
+반드시 CI 아티팩트를 쓴다. 위의 "pck 만 갈아 끼우기" 빠른 길도 마찬가지다 —
+플러그인은 pck 밖(앱 바이너리 안)이라 pck 교체로는 절대 안 들어온다.
+
+자세한 규약(파일 이름이 왜 `haptics.release.a` / `haptics.debug.a` 인지)은
+`ios/plugins/README.md`.
 
 ## 손볼 일이 생기면
 

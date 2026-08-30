@@ -98,8 +98,12 @@ Haptics.play(Haptics.Kind.SUCCESS)   # 결과가 이쪽에 유리하게 났다
 - **남발하면 배경이 된다.** 매 턴 도는 사건에 붙이면 정작 큰 한 건이 묻힌다 —
   전선 체류 성장치 팝업을 안 띄우는 것과 같은 이유다.
 
-**네이티브 바이너리는 아직 안 들어와 있다** — `ios/plugins/README.md` 참조.
-그때까지 iOS 실기에서는 `Input.vibrate_handheld` 폴백이 돌고 경고가 한 번 찍힌다.
+**네이티브 바이너리는 CI 가 굽는다** — `.github/workflows/ios-testbuild.yml` 이
+매 iOS 빌드에서 그 Godot 버전의 헤더로 다시 컴파일해 `ios/plugins/haptics/` 에
+놓고, 세 겹의 게이트로 그것이 실제로 링크됐는지까지 확인한다
+(`ios/plugins/README.md`). 그러므로 **CI 아티팩트에서는 폴백이 돌지 않는다**.
+윈도우에서 로컬로 익스포트한 빌드에는 플러그인이 없으므로 그때만
+`Input.vibrate_handheld` 폴백이 돌고 경고가 한 번 찍힌다.
 
 
 ### HapticUi.gd

@@ -7,3 +7,9 @@
 ~*.tmp
 ~*.dll
 /build/
+
+# 햅틱 네이티브 플러그인은 CI 가 굽는다 — 저장소에 커밋하지 않는다.
+# `.gdip` 정적 라이브러리는 엔진 헤더에 컴파일 타임으로 묶이므로, 커밋해 두면
+# GODOT_VERSION 을 올리는 순간 낡은 .a 가 조용히 안 맞게 된다.
+/ios/plugins/haptics/
+/.haptics-src/

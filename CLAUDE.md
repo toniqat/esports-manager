@@ -48,7 +48,9 @@ esports-manager/
 ├── export_presets.cfg           ← iOS 익스포트 프리셋 (CI 가 읽는다 — 커밋된 파일이다)
 │
 ├── ios/plugins/                 ← iOS 네이티브 플러그인 배치 자리 (익스포터가 읽는다).
-│                                  Haptics 바이너리는 **아직 미배치** — ios/plugins/README.md
+│                                  Haptics 바이너리는 **CI 가 굽는다** — 커밋하지 않고
+│                                  (.gitignore) 매 iOS 빌드에서 그 Godot 버전의 헤더로
+│                                  다시 컴파일한다. 규약과 게이트는 ios/plugins/README.md
 │
 ├── .github/workflows/
 │   └── ios-testbuild.yml         ← iOS unsigned .ipa 빌드 (macOS 러너) — docs/ios_testbuild.md

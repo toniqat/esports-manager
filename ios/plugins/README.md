@@ -58,14 +58,24 @@ armv7 은 Xcode 14 에서 사라졌고 시뮬레이터 슬라이스는 사이드
 1. **플러그인 확인** — 세 파일이 있고, `lipo -info` 가 arm64 라 답하고,
    `nm` 이 `register_haptics_types` 심볼을 찾고, preset 에 `plugins/Haptics=true`
    가 있을 것.
-2. **익스포트 결과 확인** — 생성된 Xcode 프로젝트 안에 플러그인 `.a` 가 있고
-   그 안에 `register_haptics_types` 심볼이 있고 `project.pbxproj` 가 그것을
-   참조할 것. **찾는 이름에 주의** — 익스포터는 고른 쪽을 `.gdip` 의
+2. **익스포트 결과 확인** — 생성된 Xcode 프로젝트 안에 플러그인 `.a` 가 있고,
+   그 안에 `register_haptics_types` 심볼이 있고, **그것이 링크 단계에 들어가
+   있을 것**. **찾는 이름에 주의** — 익스포터는 고른 쪽을 `.gdip` 의
    `binary=` 이름, 곧 **`haptics.a`** 로 베껴 넣고 자리도 프로젝트 루트가 아니라
    `<앱>/ios/plugins/haptics/` 다. `haptics.release.a` 라는 이름으로 찾으면
    멀쩡한 빌드가 "플러그인 없음"으로 잡힌다(실측 — 첫 CI 실행이 여기서 섰다).
-3. **최종 바이너리 보고** — `.app` 바이너리에서 심볼을 찾아 요약에 적는다
-   (릴리스는 스트립될 수 있어 실패로 세우지는 않는다 — 하드 게이트는 1·2다).
+
+   **그리고 "pbxproj 에 haptics 문자열이 있다"로는 부족하다.** pbxproj 는
+   `PBXFileReference`(그런 파일이 있다)와 `PBXBuildFile`(그것을 빌드에 쓴다)을
+   따로 두고, **실제로 링크되는 것은 후자가 `PBXFrameworksBuildPhase` 의
+   files 목록에 들어 있을 때뿐**이다. 워크플로는 UUID 를 두 번 타고 들어가
+   그 목록에서 확인한다.
+3. **최종 바이너리 보고** — `.app` 바이너리에서 `register_haptics_types` 를
+   찾고, 없으면 `nm -mu` 로 `UIImpactFeedbackGenerator` 참조를 찾는다(ObjC 클래스
+   참조는 dyld 가 런타임에 묶는 **정의되지 않은 외부 심볼**이라 스트립을
+   견디고, 이 빌드에서 그 UIKit 클래스를 부르는 코드는 플러그인뿐이다).
+   **여기서는 세우지 않는다** — 링커가 심볼을 지역화하거나 벗겨낼 수 있어
+   없다고 곧 폴백은 아니기 때문이고, 하드 게이트는 1·2 다.
 
 1 이나 2 가 어긋나면 빌드가 그 자리에서 선다.
 

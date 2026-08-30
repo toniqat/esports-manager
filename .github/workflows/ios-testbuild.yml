@@ -271,9 +271,18 @@ jobs:
           # 그 .a 가 우리가 구운 것과 같은 물건인지까지 본다. 빈 껍데기가
           # 복사돼도 존재 검사만으로는 통과하기 때문이다.
           nm -gU "$LIB" 2>/dev/null | grep -q "register_haptics_types" || { echo "::error::익스포트된 .a 에 register_haptics_types 심볼이 없다."; exit 1; }
+          # **파일 참조가 있다 != 링크된다.** pbxproj 는 `PBXFileReference` 와
+          # `PBXBuildFile` 을 따로 두고, 실제로 링크되는 것은 후자가
+          # `PBXFrameworksBuildPhase` 의 files 목록에 들어 있을 때뿐이다.
+          # 그래서 UUID 를 두 번 타고 들어가 그 목록에서 확인한다 — "haptics"
+          # 문자열이 파일 어딘가에 있다는 것만으로는 아무것도 보장되지 않는다.
           PBX="$(find build/ios -maxdepth 3 -name 'project.pbxproj' -print -quit)"
-          grep -q 'haptics' "$PBX" || { echo "::error::pbxproj 가 haptics 를 참조하지 않는다 — 링크 단계에 안 들어갔다."; exit 1; }
-          echo "pbxproj 가 플러그인을 참조한다."
+          REF="$(grep -oE "[0-9A-F]{24} = \{isa = PBXFileReference[^}]*haptics[^}]*\}" "$PBX" | grep -oE "^[0-9A-F]{24}" | head -1)"
+          test -n "$REF" || { echo "::error::pbxproj 에 haptics PBXFileReference 가 없다."; exit 1; }
+          BF="$(grep -oE "[0-9A-F]{24} = \{isa = PBXBuildFile; fileRef = $REF;" "$PBX" | grep -oE "^[0-9A-F]{24}" | head -1)"
+          test -n "$BF" || { echo "::error::haptics 파일 참조는 있는데 PBXBuildFile 이 없다 — 링크 대상이 아니다."; exit 1; }
+          awk '/Begin PBXFrameworksBuildPhase/,/End PBXFrameworksBuildPhase/' "$PBX" | grep -q "$BF" || { echo "::error::haptics 가 Frameworks 링크 단계에 없다."; exit 1; }
+          echo "링크 단계 확인 — PBXFileReference $REF -> PBXBuildFile $BF -> Frameworks"
 
       - name: Xcode 프로젝트 / 스킴 찾기
         id: xc
@@ -330,17 +339,24 @@ jobs:
           fi
           echo "pck 안에서 data/game.db 확인됨"
 
-          # 네이티브 햅틱이 최종 바이너리까지 살아 왔는지. 릴리스 빌드는 심볼이
-          # 벗겨질 수 있어 실패로 세우지는 않고 요약에 적는다 — 하드 게이트는
-          # 앞의 두 스텝(플러그인 산출물 · pbxproj 참조)이 이미 걸어 뒀다.
+          # 네이티브 햅틱이 최종 바이너리까지 살아 왔는지 한 번 더 본다.
+          # **하드 게이트는 앞의 두 스텝**(플러그인 산출물 · Frameworks 링크
+          # 단계)이 이미 걸어 뒀다. 여기서 세우지 않는 것은 링커가 심볼을
+          # 지역화하거나 벗겨낼 수 있어서다 — 없다고 곧 폴백은 아니다.
           BIN="$APP/$(basename "$APP" .app)"
-          if [ -f "$BIN" ] && nm -a "$BIN" 2>/dev/null | grep -q "register_haptics_types"; then
-            echo "HAPTICS_LINKED=yes"
-            HAP_NOTE="네이티브 (Taptic Engine)"
-          else
-            echo "HAPTICS_LINKED=unknown (심볼이 벗겨졌을 수 있다)"
-            HAP_NOTE="네이티브 — 심볼 확인 불가(스트립), 링크는 확인됨"
+          HAP_NOTE="네이티브 — 링크 확인됨"
+          if [ -f "$BIN" ]; then
+            echo "app 바이너리: $(file -b "$BIN")"
+            if nm -a "$BIN" 2>/dev/null | grep -q "register_haptics_types"; then
+              HAP_NOTE="네이티브 (Taptic Engine) — 심볼 확인됨"
+            elif nm -mu "$BIN" 2>/dev/null | grep -q "UIImpactFeedbackGenerator"; then
+              # ObjC 클래스 참조는 dyld 가 런타임에 묶는 **정의되지 않은 외부
+              # 심볼**이라 스트립을 견딘다. UIKit 의 이 클래스를 부르는 코드는
+              # 이 빌드에서 플러그인뿐이다.
+              HAP_NOTE="네이티브 (Taptic Engine) — UIKit 참조 확인됨"
+            fi
           fi
+          echo "HAPTICS: $HAP_NOTE"
 
           rm -rf "$RUNNER_TEMP/Payload"
           mkdir -p "$RUNNER_TEMP/Payload"

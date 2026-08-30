@@ -30,6 +30,11 @@ Godot 은 `.gdip` 의 `binary=` 가 가리키는 `haptics.a` 가 **그 자리에
 릴리스 플러그인을 링크할 이유가 없다. **`haptics.a` 라는 이름의 파일을 여기
 두면 그 선택이 통째로 무력화된다.**
 
+실측으로 확인했다(더미 `.a` 두 장을 넣고 윈도우에서 익스포트) —
+`--export-debug` 는 `haptics.debug.a` 를, `--export-release` 는
+`haptics.release.a` 를 집어 가고, 둘 다 목적지에서는
+`<앱>/ios/plugins/haptics/**haptics.a**` 라는 한 이름이 된다.
+
 ### 어떻게 구워지는가
 
 원본은 `toniqat/godot-haptics-upstream-fork`(upstream `kyoz/godot-haptics`)이고
@@ -53,8 +58,12 @@ armv7 은 Xcode 14 에서 사라졌고 시뮬레이터 슬라이스는 사이드
 1. **플러그인 확인** — 세 파일이 있고, `lipo -info` 가 arm64 라 답하고,
    `nm` 이 `register_haptics_types` 심볼을 찾고, preset 에 `plugins/Haptics=true`
    가 있을 것.
-2. **익스포트 결과 확인** — 생성된 Xcode 프로젝트 안에 `haptics*.a` 가 있고
-   `project.pbxproj` 가 그것을 참조할 것.
+2. **익스포트 결과 확인** — 생성된 Xcode 프로젝트 안에 플러그인 `.a` 가 있고
+   그 안에 `register_haptics_types` 심볼이 있고 `project.pbxproj` 가 그것을
+   참조할 것. **찾는 이름에 주의** — 익스포터는 고른 쪽을 `.gdip` 의
+   `binary=` 이름, 곧 **`haptics.a`** 로 베껴 넣고 자리도 프로젝트 루트가 아니라
+   `<앱>/ios/plugins/haptics/` 다. `haptics.release.a` 라는 이름으로 찾으면
+   멀쩡한 빌드가 "플러그인 없음"으로 잡힌다(실측 — 첫 CI 실행이 여기서 섰다).
 3. **최종 바이너리 보고** — `.app` 바이너리에서 심볼을 찾아 요약에 적는다
    (릴리스는 스트립될 수 있어 실패로 세우지는 않는다 — 하드 게이트는 1·2다).
 

@@ -328,9 +328,13 @@ grep -o '<color key="backgroundColor"[^/]*' "/tmp/ios/EsportsManager/Launch Scre
   컴파일해 `ios/plugins/haptics/` 에 놓는다(arm64, 캐시 키 = 버전 + 소스 SHA).
 - **게이트 셋**이 폴백을 막는다 — (1) 세 파일 존재 + `lipo -info` arm64 +
   `nm` 에 `register_haptics_types` + preset 의 `plugins/Haptics=true`,
-  (2) 익스포트된 Xcode 프로젝트에 `haptics*.a` 와 그것을 참조하는 pbxproj,
-  (3) 최종 `.app` 바이너리 심볼 확인(스트립될 수 있어 보고만 한다).
-  1·2 중 하나라도 어긋나면 빌드가 그 자리에서 선다.
+  (2) 익스포트된 `.a` 가 **Frameworks 링크 단계**에 들어갔을 것
+  (UUID 를 `PBXFileReference` → `PBXBuildFile` → 링크 단계로 두 번 타고 확인한다
+  — pbxproj 에 "haptics" 문자열이 있다는 것만으로는 아무것도 보장되지 않는다),
+  (3) **최종 `.app` 바이너리 안**에 `register_haptics_types` 와
+  `OBJC_CLASS_$_UIImpactFeedbackGenerator` 가 둘 다 있을 것 — 정적 아카이브의
+  멤버는 참조하는 심볼이 있을 때만 끌려 들어오므로 1·2 를 통과하고도 통째로
+  데드 스트립될 수 있다. 셋 중 하나라도 어긋나면 빌드가 그 자리에서 선다.
 - 잡 요약(Actions → 그 실행 → Summary)의 **"햅틱"** 줄이 결과를 말해 준다.
 
 **윈도우에서 로컬로 뽑은 익스포트에는 플러그인이 없다** — Godot 이 `.gdip` 을

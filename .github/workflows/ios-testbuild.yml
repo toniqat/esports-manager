@@ -339,23 +339,22 @@ jobs:
           fi
           echo "pck 안에서 data/game.db 확인됨"
 
-          # 네이티브 햅틱이 최종 바이너리까지 살아 왔는지 한 번 더 본다.
-          # **하드 게이트는 앞의 두 스텝**(플러그인 산출물 · Frameworks 링크
-          # 단계)이 이미 걸어 뒀다. 여기서 세우지 않는 것은 링커가 심볼을
-          # 지역화하거나 벗겨낼 수 있어서다 — 없다고 곧 폴백은 아니다.
+          # 마지막 게이트 — 네이티브 햅틱이 **최종 바이너리 안에** 있는가.
+          # 정적 아카이브의 멤버는 참조하는 심볼이 있을 때만 끌려 들어오므로,
+          # 링크 단계에 .a 가 있어도 Godot 이 만든 초기화 코드가 빠지면 통째로
+          # 버려질 수 있다. 그 경우가 정확히 "빌드 초록불 + 폰에서는 폴백" 이다.
+          #
+          # **`nm` 은 쓰지 않는다** — 103MB 짜리 이 바이너리에서 두 심볼을 다
+          # 놓쳤다(실측). 이름은 문자열 테이블에 그대로 들어 있으므로 바이트를
+          # 직접 훑는 쪽이 확실하다.
           BIN="$APP/$(basename "$APP" .app)"
-          HAP_NOTE="네이티브 — 링크 확인됨"
-          if [ -f "$BIN" ]; then
-            echo "app 바이너리: $(file -b "$BIN")"
-            if nm -a "$BIN" 2>/dev/null | grep -q "register_haptics_types"; then
-              HAP_NOTE="네이티브 (Taptic Engine) — 심볼 확인됨"
-            elif nm -mu "$BIN" 2>/dev/null | grep -q "UIImpactFeedbackGenerator"; then
-              # ObjC 클래스 참조는 dyld 가 런타임에 묶는 **정의되지 않은 외부
-              # 심볼**이라 스트립을 견딘다. UIKit 의 이 클래스를 부르는 코드는
-              # 이 빌드에서 플러그인뿐이다.
-              HAP_NOTE="네이티브 (Taptic Engine) — UIKit 참조 확인됨"
-            fi
-          fi
+          test -f "$BIN" || { echo "::error::.app 안에 실행 바이너리가 없다: $BIN"; exit 1; }
+          echo "app 바이너리: $(file -b "$BIN")"
+          LC_ALL=C grep -qa "register_haptics_types" "$BIN" || { echo "::error::최종 바이너리에 register_haptics_types 가 없다 — 플러그인이 링크 단계에는 있었지만 데드 스트립됐다. 이대로면 폰에서 Input.vibrate_handheld 폴백이 돈다."; exit 1; }
+          # ObjC 클래스 참조는 dyld 가 런타임에 묶는 외부 심볼이라 스트립을
+          # 견딘다. 이 빌드에서 그 UIKit 클래스를 부르는 코드는 플러그인뿐이다.
+          LC_ALL=C grep -qa 'OBJC_CLASS_$_UIImpactFeedbackGenerator' "$BIN" || { echo "::error::최종 바이너리에 UIImpactFeedbackGenerator 참조가 없다 — 햅틱 구현이 안 들어갔다."; exit 1; }
+          HAP_NOTE="네이티브 (Taptic Engine) — 최종 바이너리에서 확인됨"
           echo "HAPTICS: $HAP_NOTE"
 
           rm -rf "$RUNNER_TEMP/Payload"

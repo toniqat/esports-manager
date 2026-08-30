@@ -438,6 +438,10 @@ func _ready() -> void:
 	# 이 단계가 없으면 draw_texture_rect가 흰 사각형으로 그려진다.
 	PilotImages.prime_into(self)
 
+	# 전장의 감촉은 대부분 버튼이 아니라 손패 드래그 · 명중 · 처치에서 나온다 —
+	# `HapticUi` 의 버튼 예열이 닿지 않는 자리라 화면을 열 때 한 번 깨워 둔다.
+	Haptics.prepare()
+
 	# Centre the hand row on the actual viewport width (handles any screen size).
 	# Subtract half card width so the pivot point (card centre) lands on screen centre,
 	# not the top-left corner which Godot uses for Control global_position.
@@ -766,6 +770,10 @@ func mark_pilot_dead(p: PilotData, killer: PilotData = null) -> void:
 	p.deaths += 1
 	if killer != null and killer.team != p.team:
 		killer.kills += 1
+	# 전장에서 가장 무거운 한 건. 어느 팀이 쓰러졌든 같은 세기다 — 내 쪽이
+	# 죽은 것과 적을 눕힌 것을 감촉으로 가르려 들면 둘 다 흐려지고, 어느
+	# 쪽인지는 화면(킬로그 · 초상 딤)이 이미 말한다.
+	Haptics.play(Haptics.Kind.HEAVY)
 	anim_pilot_death(p)
 	# **`_payout_kill_bounty` 보다 먼저** — 어시스트 명단이 `damage_credit`
 	# 에서 나오는데 그 정산이 장부를 비운다. 파일럿 스킬의 처치 관여 훅도
@@ -1172,6 +1180,8 @@ func score_turret_damage(attacker: PilotData, hp_removed: int) -> void:
 ## **여기서는 성장치가 나가지 않는다** — 포탑의 몫은 갈아 내는 동안 이미
 ## `score_turret_damage` 로 다 나갔다. 남은 일은 킬로그 한 줄과 사건 훅이다.
 func score_turret_kill(attacker: PilotData, td: TurretData = null) -> void:
+	# 구조물이 무너지는 것은 처치와 같은 무게의 사건이다.
+	Haptics.play(Haptics.Kind.HEAVY)
 	if kill_feed != null:
 		kill_feed.push_turret(attacker, td)
 	if skill != null:

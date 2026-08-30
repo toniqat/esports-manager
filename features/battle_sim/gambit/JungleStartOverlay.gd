@@ -276,6 +276,7 @@ func _on_root_input(event: InputEvent) -> void:
 		if p.distance_to(_portrait_centre()) <= PORTRAIT_D * 0.5:
 			_dragging = true
 			_hover_dir = _dir_under(p)
+			Haptics.play(Haptics.Kind.SELECT)
 			_bs.renderer.queue_redraw()
 		_root.accept_event()
 		return
@@ -289,6 +290,10 @@ func _on_root_input(event: InputEvent) -> void:
 		var was: int = _hover_dir
 		_hover_dir = _dir_under(p)
 		if was != _hover_dir:
+			# 정글 무리 **위로 들어선** 순간에만. 벗어나는 쪽은 안 울린다 —
+			# 놓을 수 있게 됐다는 것이 신호이고 그 반대는 그냥 빈 곳이다.
+			if _hover_dir >= 0:
+				Haptics.play(Haptics.Kind.SELECT)
 			_bs.renderer.queue_redraw()
 
 
@@ -300,6 +305,9 @@ func _drop_at(p: Vector2) -> void:
 	var dir: int = _dir_under(p)
 	if dir >= 0:
 		_picked_dir = dir
+		# 방향이 정해졌다 — 아직 개시는 아니지만(확정 버튼이 따로 있다) 선택은
+		# 여기서 끝난다.
+		Haptics.play(Haptics.Kind.MEDIUM)
 	_hover_dir = -1
 	_snap_to_state()
 	_bs.renderer.queue_redraw()

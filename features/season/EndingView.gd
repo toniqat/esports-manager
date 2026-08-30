@@ -38,6 +38,8 @@ func ensure_view() -> void:
 		_build()
 		_built = true
 	refresh()
+	# 우승. 캠페인 전체가 여기로 오려고 굴러왔다.
+	Haptics.play(Haptics.Kind.SUCCESS)
 
 
 # ── Build ────────────────────────────────────────────────────────────────────

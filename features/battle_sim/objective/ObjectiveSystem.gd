@@ -365,6 +365,9 @@ func reward_text(kind: int) -> String:
 ## 부르는 두 곳(`_run_objective_engage` / `_award_uncontested`)이 await 한다.
 func _grant_reward(kind: int, team: int) -> void:
 	var is_player: bool = team == 0
+	# 오브젝트는 양 팀이 같은 자리로 모이는 약속이라 결과가 어느 쪽으로 갔는지가
+	# 곧 사건이다 — 여기만 승/패를 감촉으로 가른다.
+	Haptics.play(Haptics.Kind.SUCCESS if is_player else Haptics.Kind.WARNING)
 	var to_deck: bool = kind != Kind.HERALD
 	var card_id: int = HERALD_CARD_ID if kind == Kind.HERALD else DRAGON_CARD_ID
 	var count: int = 1 if kind == Kind.HERALD else int(_bs.OBJ_DRAGON_CARD_COUNT)

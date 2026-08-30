@@ -61,6 +61,8 @@ func _build_ui(player_roster: Array, enemy_roster: Array, player_team_name: Stri
 			ScreenMetrics.safe_h() - 70.0 - btn.size.y)
 	btn.add_theme_font_size_override("font_size", 36)
 	btn.pressed.connect(_on_start_pressed)
+	# 이 화면을 떠나 밴픽으로 들어간다.
+	HapticUi.kind(btn, Haptics.Kind.MEDIUM)
 	_panel.add_child(btn)
 
 

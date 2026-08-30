@@ -231,6 +231,8 @@ func _build_filter_row() -> void:
 		# 위쪽 다섯 칸이 같은 표를 읽으므로 순서가 갈릴 수 없다.
 		var role: int = -1 if i == 0 else int(TeamDraft.SLOT_ROLES[i - 1])
 		btn.pressed.connect(_on_filter_pressed.bind(role))
+		# 필터는 격자에 무엇이 보이는지를 바꿀 뿐이다 — 확정이 아니다.
+		HapticUi.kind(btn, Haptics.Kind.SELECT)
 		add_child(btn)
 		_filter_btns.append(btn)
 	_apply_filter_styles()

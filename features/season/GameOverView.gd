@@ -29,6 +29,8 @@ func ensure_view() -> void:
 		_build()
 		_built = true
 	refresh()
+	# 캠페인이 끝났다 — 이 화면이 열리는 것 자체가 결과다.
+	Haptics.play(Haptics.Kind.ERROR)
 
 
 # ── Build ────────────────────────────────────────────────────────────────────

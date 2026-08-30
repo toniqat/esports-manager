@@ -214,13 +214,19 @@ func _input(event: InputEvent) -> void:
 	# Inside the donut: swallow the press either way so hand cards / the
 	# battlefield underneath never see it.
 	get_viewport().set_input_as_handled()
+	# 도넛은 Button 이 아니라 `_input` 으로 듣는다 — `HapticUi` 의 자동 배선이
+	# 닿지 않는 자리라 여기서 직접 낸다.
 	if _flipped:
 		if _end_enabled:
 			set_flipped(false)
 			end_turn_pressed.emit()
+			# 차례를 넘기는 것은 커밋이다.
+			Haptics.play(Haptics.Kind.MEDIUM)
 		return
 	if _flip_allowed:
 		set_flipped(true)
+		# 뒤집기는 아직 아무것도 넘기지 않았다 — 면이 바뀌었을 뿐.
+		Haptics.play(Haptics.Kind.SELECT)
 
 
 func _hits(point: Vector2) -> bool:

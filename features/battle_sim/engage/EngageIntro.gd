@@ -101,6 +101,9 @@ func _build_buttons(allow_cancel: bool, confirm_text: String = "확인",
 	else:
 		confirm.position = Vector2((ScreenMetrics.vp_w() - BTN_W) * 0.5, BTN_Y)
 	confirm.pressed.connect(func() -> void: _decide(true))
+	# 교전 / 오브젝트 참여를 여는 커밋. 취소는 기본값(LIGHT) 그대로 — 무른
+	# 것은 아무 일도 안 일어난 것이다.
+	HapticUi.kind(confirm, Haptics.Kind.MEDIUM)
 	add_child(confirm)
 
 

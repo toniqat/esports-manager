@@ -90,6 +90,8 @@ func _build() -> void:
 	mouse_filter       = Control.MOUSE_FILTER_PASS
 	text               = ""
 	pressed.connect(_on_pressed)
+	# 슬롯에 앉히는 것은 언제든 바꿀 수 있다 — 드래프트 확정만이 커밋이다.
+	HapticUi.kind(self, Haptics.Kind.SELECT)
 
 	var art_sz: float = CELL_W - ART_MARGIN * 2.0
 	_face = TextureRect.new()

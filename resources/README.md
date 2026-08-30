@@ -510,6 +510,15 @@ controllers and HudBuilder.
 | 버튼 | `style_primary_button`(앰버, 한 화면에 하나) `style_ghost_button` `style_text_button` `style_dark_button`(어두운 색면 — "이 화면을 떠난다") |
 | 조각 | `add_background`(안이 `ScreenMetrics.extend_background` 를 부른다) `add_card` `add_divider` `add_round_portrait` `add_chip` `add_vscroll` |
 
+**버튼 스타일은 색만 정하지 않는다 — 감촉도 정한다.** 아웃게임 버튼의 햅틱
+세기는 화면마다 손으로 적지 않고 이 네 함수에서 나온다(`HapticUi.kind`):
+`style_primary_button` · `style_dark_button` = `MEDIUM`(확정 · 화면을 떠남),
+`style_ghost_button` = `LIGHT`(`HapticUi` 기본값이라 아무것도 안 적는다),
+`style_text_button` = `SELECT`(되돌아가는 행동은 아무것도 확정하지 않는다).
+버튼의 색을 고르는 자리가 곧 그 버튼이 화면에서 갖는 무게를 고르는 자리라,
+둘을 갈라 두면 같은 판단을 두 군데에서 내리게 된다. 배선 전체는
+`autoloads/README.md` 의 `HapticUi.gd` 절.
+
 **`add_round_portrait` 은 `clip_contents` 로 만들지 않는다.** 그것은 Control 의
 사각 rect 로 자르지 StyleBox 의 모서리 반지름으로 자르지 않아서, `Panel`
 (radius = 지름/2) 안에 `TextureRect` 를 넣어 봐야 텍스처가 둥근 모서리를 그대로

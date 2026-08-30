@@ -47,6 +47,9 @@ esports-manager/
 ├── CLAUDE.md                    ← YOU ARE HERE
 ├── export_presets.cfg           ← iOS 익스포트 프리셋 (CI 가 읽는다 — 커밋된 파일이다)
 │
+├── ios/plugins/                 ← iOS 네이티브 플러그인 배치 자리 (익스포터가 읽는다).
+│                                  Haptics 바이너리는 **아직 미배치** — ios/plugins/README.md
+│
 ├── .github/workflows/
 │   └── ios-testbuild.yml         ← iOS unsigned .ipa 빌드 (macOS 러너) — docs/ios_testbuild.md
 │
@@ -164,7 +167,14 @@ esports-manager/
 │
 ├── autoloads/
 │   ├── README.md                ← Autoload documentation
-│   └── GameManager.gd           ← State singleton — NO class_name
+│   ├── GameManager.gd           ← State singleton — NO class_name
+│   ├── Haptics.gd               ← iOS / Android 햅틱 래퍼. **원본은 이 저장소가 아니다**
+│   │                              (별도 `godot-haptics` 포크에서 복사해 온다).
+│   │                              전역 이름으로 등록(`*`)돼 있어 `Haptics.play(Kind.X)` 로 부른다
+│   └── HapticUi.gd              ← **버튼 햅틱 자동 배선** — `node_added` 하나가 트리에 들어오는
+│                                  모든 `BaseButton` 에 감촉을 물린다(기본 LIGHT, `button_down`
+│                                  에는 `prepare()`). 예외만 `HapticUi.kind()` / `mute()` 로 적는다.
+│                                  이쪽은 이 저장소가 원본이라 고쳐도 된다
 │
 ├── resources/
 │   ├── README.md                ← Resource documentation
@@ -182,7 +192,9 @@ esports-manager/
 │   ├── BuildingData.gd / WaypointData.gd ← @tool inspector resources
 │   ├── ScreenMetrics.gd         ← class_name ScreenMetrics — 세이프 에어리어 / 뷰포트 크기 (정적).
 │   │                              **모든 화면 좌표가 여기를 지난다** — docs/mobile_safe_area.md
-│   ├── OutgameTheme.gd          ← class_name OutgameTheme — **아웃게임 흰 배경 팔레트**.
+│   ├── OutgameTheme.gd          ← class_name OutgameTheme — **아웃게임 흰 배경 팔레트**
+│   │                              (+ 버튼 감촉 세기. `style_primary` / `style_dark` = MEDIUM,
+│   │                               `style_ghost` = LIGHT, `style_text` = SELECT).
 │   │                              시즌 허브 · 기자회견 · 훈련판 · 시간 경과 · 순위 ·
 │   │                              브래킷 · 드래프트의 **모든 색이 여기를 지난다**
 │   │                              (참고 디자인 `docs/ref_image.jpg`). 색 표 + StyleBox
@@ -217,6 +229,54 @@ esports-manager/
 | Season | `scenes/Season.tscn` | `features/season/SeasonHub.gd` | Weekly campaign hub. HUB → PRESS(기자회견) → TRAINING(타일판) → WEEK(월~일 하루씩; 토·일에 경기가 있으면 MatchFlow → STANDINGS → 확인) → 일요일 마감 → HUB. 리그는 주 2경기(토·일), 토너먼트는 주 1경기(토). INTL phase = 3-week SE bracket; playoff = 2-week SE bracket. REGULAR_INTL win → ENDING; loss → GAME_OVER. 화면은 전부 흰 배경 계통(`resources/OutgameTheme.gd`). |
 | Match Flow | `scenes/MatchFlow.tscn` | `features/match_flow/MatchFlow.gd` | Pre-battle pipeline — entered from Season on the player's match week. PREP → BAN_PICK(밴픽 + 메크 배정) → BattleSim. **열거값 둘이 자리만 지킨다** — `ASSIGN` 은 배정이 밴픽 화면 안으로 들어가며(`assign/AssignController.gd` 삭제), `JUNGLE_START` 는 정글 시작 선택이 BattleSim 안으로 들어가며(`jungle_start/` 삭제) 지나지 않게 됐다. |
 | Battle Sim | `scenes/BattleSim.tscn` | `features/battle_sim/BattleSim.gd` | **Primary focus** — consumes match_ctx |
+
+### 햅틱 (감촉) — 아웃게임 · 인게임 공통
+**손에 무엇이 전해지는가를 정하는 표는 하나다.** 배선은 두 층이고, 어느 쪽도
+화면마다 세기를 손으로 적지 않는다.
+
+1. **버튼은 `autoloads/HapticUi.gd` 가 자동으로 배선한다** — `node_added` 하나가
+   트리에 들어오는 **모든 `BaseButton`** 의 `pressed` 에 감촉을 물린다(기본
+   `LIGHT`). 예외만 `HapticUi.kind(btn, …)` / `HapticUi.mute(btn)` 로 적는다.
+   아웃게임 버튼은 그것조차 안 적는다 — **`OutgameTheme` 의 버튼 스타일이 곧
+   세기**다(primary · dark = `MEDIUM`, ghost = `LIGHT`, text = `SELECT`).
+   `button_down` 에는 `Haptics.prepare()` 가 붙어 누름과 활성화 사이에 탭틱
+   엔진이 깨어난다.
+2. **버튼이 아닌 것은 그 사건이 일어나는 자리에서 직접 부른다**(`Haptics.play`).
+
+| 사건 | 자리 | 감촉 |
+|---|---|---|
+| 카드를 손패에서 끌어냄 | `CardPhaseManager._begin_drag` | `SELECT` |
+| 끌린 카드가 **유효 대상 / 드롭 존에 막 들어섬** | `CardPhaseManager._update_drag` (`_drag_hot_last` 전이) | `SELECT` |
+| 카드가 실제로 나감 / 버릴 카드로 넘어감 | `CardPhaseManager._end_drag` | `MEDIUM` |
+| 공격 카드 **명중 한 방** | `CardPhaseManager._effect_attack` | `MEDIUM` |
+| 공격 카드 **빗나감** | 〃 | `LIGHT` |
+| 파일럿 처치(양 팀) | `BattleSim.mark_pilot_dead` | `HEAVY` |
+| 포탑 철거 | `BattleSim.score_turret_kill` | `HEAVY` |
+| 내 작전 단계 개시 | `CardPhaseManager.start_card_phase` | `MEDIUM` |
+| 턴 넘기기 / 도넛 뒤집기 | `ui/CostDonut._input` | `MEDIUM` / `SELECT` |
+| 교전 결과(승 / 패 / 무) | `EngagePhaseManager` 대시보드 진입 | `SUCCESS` / `ERROR` / `MEDIUM` |
+| 오브젝트 획득(아군 / 적군) | `ObjectiveSystem._grant_reward` | `SUCCESS` / `WARNING` |
+| 경기 승 / 패 | `SimulationCore.check_win_condition` | `SUCCESS` / `ERROR` |
+| 정글 시작 — 집기 / 무리 진입 / 방향 결정 | `gambit/JungleStartOverlay` | `SELECT` / `SELECT` / `MEDIUM` |
+| 훈련 타일 — 집기 / 놓을 수 있는 자리 진입 / 배치 | `season/training/TrainingView` | `SELECT` / `SELECT` / `MEDIUM` |
+| 밴픽 메크 칸 — 들어올림 / 맞바꿈 | `ban_pick/BanPickController` | `SELECT` / `MEDIUM` |
+| 세이브 삭제 — 무장 / 실행 | `save_load/SlotCard._on_delete` | `WARNING` / `ERROR` |
+| 캠페인 종료 / 우승 | `GameOverView` / `EndingView.ensure_view` | `ERROR` / `SUCCESS` |
+
+**규칙 셋.**
+- **매 턴 도는 사건에는 안 붙인다** — 전장 자동 교전의 한 대, 전선 체류
+  성장치, 캠프 획득. 남발하면 감촉이 배경이 되어 정작 큰 한 건이 묻힌다
+  (성장치 팝업이 전선 수입을 안 띄우는 것과 같은 이유).
+- **한 사건은 한 번만 운다.** 처치로 끝난 명중은 `MEDIUM` 을 건너뛴다 —
+  `mark_pilot_dead` 가 이미 `HEAVY` 를 냈고, 겹치면 처치가 평타처럼 뭉개진다.
+  같은 이유로 두 번 눌러야 지워지는 삭제 버튼은 자동 배선을 `mute` 한다.
+- **드래그의 "들어섬"만 운다.** 벗어나는 쪽은 조용하다 — 놓을 수 있게 됐다는
+  것이 신호이고, 매 프레임 울리면 그것은 신호가 아니라 진동이다.
+
+**데스크톱에서는 전부 조용한 no-op** 이므로 에디터 실행에 가드가 필요 없다.
+다만 **`--check-only --script` 는 오토로드 식별자를 모른다** — `Haptics` /
+`HapticUi` 를 부르는 파일은 그 검사에서 `Identifier not found` 가 뜨지만
+실제 실행에는 문제가 없다. 검산은 씬을 띄워서 한다.
 
 ### TitleScreen → Season handoff
 `TitleScreen.gd` lists three slots (`user://saves/slot{0,1,2}.save`) via

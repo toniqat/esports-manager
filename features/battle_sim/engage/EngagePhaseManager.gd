@@ -460,9 +460,15 @@ func _finish_engage() -> void:
 	_bs.last_log = _result_log()
 	_bs.blog.log_event("ENGAGE", "전투 개시 종료 — t0=%s t1=%s"
 			% [_engage_side_str(0), _engage_side_str(1)])
+	var title: String = _result_title()
+	# 성적표가 뜨는 자리 하나에서만 승패를 감촉으로 말한다 — 라운드마다 울리면
+	# 무대가 도는 내내 진동만 남고 정작 결과가 묻힌다.
+	match title:
+		EngageArena.RESULT_WIN: Haptics.play(Haptics.Kind.SUCCESS)
+		EngageArena.RESULT_LOSE: Haptics.play(Haptics.Kind.ERROR)
+		_: Haptics.play(Haptics.Kind.MEDIUM)
 	if _arena != null:
-		_arena.show_dashboard(_result_title(),
-				Callable(self, "_on_dashboard_confirmed"))
+		_arena.show_dashboard(title, Callable(self, "_on_dashboard_confirmed"))
 	else:
 		_on_dashboard_confirmed()
 

@@ -111,6 +111,10 @@ var _drag_card: Card = null
 ## 끌린 카드가 커서를 따라다니는가(대상 지정이 아닌 카드). false 면 손패의
 ## 리프트 자세에 남고 조준 화살표가 대신 커서로 뻗는다.
 var _drag_follows_cursor: bool = false
+## 직전 프레임에 "지금 놓으면 나간다" 였는가. 그 답이 **거짓 → 참으로 바뀌는
+## 순간에만** 감촉이 한 번 튄다 — 유효 대상 위로 들어섰다는 신호이고, 매
+## 프레임 울리면 그것은 신호가 아니라 진동이 된다.
+var _drag_hot_last: bool = false
 ## 카드와 커서를 잇는 조준 화살표. 대상 지정 카드에서만 뜬다.
 var _drag_arrow: CardDragArrow = null
 var _drop_zone: Panel = null
@@ -830,6 +834,9 @@ func start_card_phase() -> void:
 	# sweep so the player can't click cards before it clears.
 	_player_turn_announce_in_progress = true
 	_apply_hand_dim_state()
+	# 내 차례가 열렸다. 전장은 저 혼자 0.5초마다 흐르므로 화면을 안 보고 있을 수
+	# 있는 유일한 구간이고, 그래서 이 한 번이 "지금 볼 차례"를 대신한다.
+	Haptics.play(Haptics.Kind.MEDIUM)
 	await _bs.hud.play_turn_announce(true)
 	_player_turn_announce_in_progress = false
 	highlight_affordable_cards()
@@ -1958,6 +1965,9 @@ func _begin_drag(p: Vector2) -> void:
 		_pose_selected_card(card)
 	_show_drop_zone(card)
 	_refresh_description_box()
+	# 카드가 손을 떠났다 — 값이 바뀌었을 뿐 확정된 것은 없으므로 가장 작은 톡.
+	_drag_hot_last = false
+	Haptics.play(Haptics.Kind.SELECT)
 	_update_drag(p)
 
 
@@ -1966,7 +1976,13 @@ func _update_drag(p: Vector2) -> void:
 		return
 	if _drag_follows_cursor:
 		_drag_card.follow_cursor(p)
-	_update_drag_arrow(p, _update_drop_feedback(p))
+	var hot: bool = _update_drop_feedback(p)
+	# 유효 대상 / 드롭 존에 **막 들어선** 순간에만 한 번. 화살표가 시안으로
+	# 바뀌는 바로 그 박자라, 눈을 안 봐도 겨눠졌다는 것이 손에서 읽힌다.
+	if hot and not _drag_hot_last:
+		Haptics.play(Haptics.Kind.SELECT)
+	_drag_hot_last = hot
+	_update_drag_arrow(p, hot)
 
 
 ## Live feedback under the cursor: the cyan pending-pick ring for target cards,
@@ -2072,6 +2088,11 @@ func _end_drag(p: Vector2) -> void:
 	# the confirm path calls back into synchronously — can find the card it is
 	# committing.
 	var _played: bool = _try_drop_play(card, p)
+	# 카드가 실제로 나갔다(또는 버릴 카드로 넘어갔다). 빗나간 드롭은 아무 일도
+	# 일어나지 않은 것이므로 감촉도 없다 — 되돌아온 카드는 사건이 아니다.
+	if _played:
+		Haptics.play(Haptics.Kind.MEDIUM)
+	_drag_hot_last = false
 	_drag_card = null
 	_drag_follows_cursor = false
 	_clear_targeting()
@@ -3711,6 +3732,9 @@ func _effect_attack(n: int, flags: Array, caster: PilotData, enemy_team: int,
 				await _bs.anim_pilot_cast(caster)
 			if not landed:
 				missed += 1
+				# 빗나감도 사건이다 — 다만 맞은 것과 헷갈리면 안 되므로 가장
+				# 약한 한 톡으로 "쐈지만 안 맞았다"만 말한다.
+				Haptics.play(Haptics.Kind.LIGHT)
 				_popup_on(victim_raw, "MISS", BattleRenderer.POPUP_MISS_COLOR)
 				if animated:
 					await _bs.get_tree().create_timer(_bs.ANIM_HIT_HOLD_SEC).timeout
@@ -3724,6 +3748,11 @@ func _effect_attack(n: int, flags: Array, caster: PilotData, enemy_team: int,
 				_popup_on(victim_raw, "흡수", BattleRenderer.POPUP_SHIELD_COLOR)
 			if not _is_alive(victim_raw):
 				_last_attack_kills += 1
+			else:
+				# 명중 한 방. 쓰러뜨린 경우는 여기서 울리지 않는다 —
+				# `mark_pilot_dead` / `score_turret_kill` 이 이미 HEAVY 를 냈고,
+				# 그 위에 한 겹 더 얹으면 처치가 평타처럼 뭉개진다.
+				Haptics.play(Haptics.Kind.MEDIUM)
 			# 2단계 — 피격자 초상에서 조각이 퍼지고 여운만큼 쉰다. 쉐이크는
 			# 피해를 실제로 넣은 `_apply_attack_damage` 가 이미 걸어 뒀다.
 			if animated:
@@ -3740,6 +3769,8 @@ func _effect_attack(n: int, flags: Array, caster: PilotData, enemy_team: int,
 					var again: int = _deal_damage_to(victim_raw, caster, n)
 					total_dmg += again
 					_last_attack_hits += 1
+					if _is_alive(victim_raw):
+						Haptics.play(Haptics.Kind.MEDIUM)
 					_popup_on(victim_raw, "-%d" % again, BattleRenderer.POPUP_DAMAGE_COLOR)
 					if animated:
 						await _bs.anim_pilot_impact(_impact_anchor(victim_raw))

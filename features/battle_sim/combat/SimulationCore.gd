@@ -1952,11 +1952,13 @@ func check_win_condition() -> void:
 		_bs.game_over = true
 		_bs.lbl_victory.text       = "Player Team Wins!"
 		_bs.panel_victory.visible = true
+		Haptics.play(Haptics.Kind.SUCCESS)
 		_record_season_winner(0)
 	elif _bs.player_hq_hp <= 0:
 		_bs.game_over = true
 		_bs.lbl_victory.text       = "Opponent Team Wins!"
 		_bs.panel_victory.visible = true
+		Haptics.play(Haptics.Kind.ERROR)
 		_record_season_winner(1)
 
 

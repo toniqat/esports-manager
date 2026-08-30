@@ -328,6 +328,8 @@ func _show_answers() -> void:
 		b.alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		OutgameTheme.style_ghost_button(b, ANSWER_FONT)
 		b.pressed.connect(_on_answer_picked.bind(i, String(answers[i])))
+		# 답은 한 번 고르면 무를 수 없다 — 확정의 무게로 낸다.
+		HapticUi.kind(b, Haptics.Kind.MEDIUM)
 		_answer_holder.add_child(b)
 
 	_body_y += _answer_holder.size.y + 10.0

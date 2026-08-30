@@ -501,6 +501,11 @@ func _grid_can_drop(at_position: Vector2, _data: Variant) -> bool:
 	var origin: Vector2i = _origin_for(_drag_tile, at_position)
 	var ok: bool = _board.can_place(_drag_tile, origin)
 	if origin != _hover_cell or ok != _hover_ok:
+		# 미리보기가 **놓을 수 있는 자리로 막 들어선** 순간에만 한 톡 —
+		# 손가락 밑에서 타일이 칸에 물린 느낌이 이 화면의 조작 감각이다.
+		# 칸이 바뀌었을 뿐인데도 울리면 판 위를 훑는 내내 진동이 된다.
+		if ok and not _hover_ok:
+			Haptics.play(Haptics.Kind.SELECT)
 		_hover_cell = origin
 		_hover_ok = ok
 		_grid.queue_redraw()
@@ -511,6 +516,7 @@ func _grid_drop(at_position: Vector2, _data: Variant) -> void:
 	if _board == null or _drag_tile == null:
 		return
 	if _board.place(_drag_tile.id, _origin_for(_drag_tile, at_position)) >= 0:
+		Haptics.play(Haptics.Kind.MEDIUM)
 		# 놓였으므로 되돌릴 것이 없다 — 여기서 지우지 않으면 DRAG_END 가
 		# 판에서 걷어 온 사본을 한 장 더 얹어 타일이 둘로 늘어난다.
 		_drag_from_board = {}
@@ -523,6 +529,7 @@ func _begin_drag(t: TrainingTile, from_board: Dictionary) -> void:
 	_drag_from_board = from_board
 	_hover_cell = Vector2i(-1, -1)
 	_hover_ok = false
+	Haptics.play(Haptics.Kind.SELECT)
 	set_drag_preview(_make_drag_preview(t))
 	if _grid != null:
 		_grid.queue_redraw()

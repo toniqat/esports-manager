@@ -22,6 +22,8 @@ config/icon="res://icon.svg"
 
 MCPGameBridge="res://addons/godot_mcp/game_bridge/mcp_game_bridge.gd"
 GameManager="res://autoloads/GameManager.gd"
+Haptics="*res://autoloads/Haptics.gd"
+HapticUi="*res://autoloads/HapticUi.gd"
 
 [display]
 

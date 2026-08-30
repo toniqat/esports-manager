@@ -27,7 +27,6 @@ var _stage_lbl: Label
 var _next_match_lbl: Label
 var _empty_lbl: Label
 var _match_widgets: Array = []   # 7 dicts of {panel, stylebox, slot_lbl, date_lbl, team_a_lbl, team_b_lbl}
-var _next_btn: Button
 var _back_btn: Button
 var _built: bool = false
 
@@ -147,31 +146,24 @@ func _build_match_panel(pos: Vector2, slot: int, sz: Vector2) -> Dictionary:
 	}
 
 
+## 버튼은 하나뿐이다("확인") — 주를 넘기는 일은 시간 경과 화면의 일요일
+## 마감이 가져갔고, 돌아갈 자리는 버튼이 아니라 주 진행 상태가 정한다
+## (`SeasonHub.on_standings_confirmed`).
 func _build_back_button() -> void:
-	var w: float = 320.0
+	var w: float = 1000.0
 	var h: float = 100.0
-	var gap: float = 30.0
-	var total: float = w * 2 + gap
-	var x0: float = (1080.0 - total) / 2.0
+	var x0: float = (ScreenMetrics.vp_w() - w) / 2.0
 	# 하단 안전선에 매단다 — 이 자리는 아이폰 홈 인디케이터 / 안드로이드
 	# 제스처 바가 터치를 가져가는 구간과 맞닿아 있다.
 	var y: float = ScreenMetrics.safe_h() - 40.0 - h
 
 	_back_btn = Button.new()
-	_back_btn.text = "돌아가기"
+	_back_btn.text = "확인"
 	_back_btn.position = Vector2(x0, y)
 	_back_btn.size     = Vector2(w, h)
 	OutgameTheme.style_primary_button(_back_btn, 34)
 	_back_btn.pressed.connect(_on_back_pressed)
 	add_child(_back_btn)
-
-	_next_btn = Button.new()
-	_next_btn.text = "다음 주 →"
-	_next_btn.position = Vector2(x0 + w + gap, y)
-	_next_btn.size     = Vector2(w, h)
-	_next_btn.add_theme_font_size_override("font_size", 30)
-	_next_btn.pressed.connect(_on_next_week_pressed)
-	add_child(_next_btn)
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────
@@ -216,7 +208,6 @@ func refresh() -> void:
 	var b: Array = _intl.bracket()
 	for i in 7:
 		_refresh_match_panel(i, b[i] if i < b.size() else {}, pid)
-	_refresh_buttons()
 
 
 func _refresh_match_panel(slot: int, m: Dictionary, pid: int) -> void:
@@ -293,17 +284,6 @@ func _stage_name(stage: int) -> String:
 	return "—"
 
 
-func _refresh_buttons() -> void:
-	if _next_btn == null or _hub == null:
-		return
-	_next_btn.disabled = _hub.has_player_match_this_week()
-
-
 func _on_back_pressed() -> void:
-	if _hub != null:
-		_hub.goto(SeasonHub.Screen.HUB)
-
-
-func _on_next_week_pressed() -> void:
-	if _hub != null and _hub.has_method("on_proceed_to_next_week"):
-		_hub.on_proceed_to_next_week()
+	if _hub != null and _hub.has_method("on_standings_confirmed"):
+		_hub.on_standings_confirmed()

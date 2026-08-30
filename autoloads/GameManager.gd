@@ -50,6 +50,21 @@ var season_state: Dictionary = {
 	# Array of {tile: String(training_tiles.id), x: int(0..4 선수), y: int(0..4 요일)}.
 	# 빈 칸은 기초 훈련(T01)이 자동으로 메우므로 목록에 적지 않는다.
 	"training_board": [],
+	# ── 주 진행 (시간 경과 화면) ──────────────────────────────
+	# 지금 보고 있는 요일 (0 = 월 … 6 = 일). **-1 은 주가 아직 안 열렸다는
+	# 뜻**이다 — 허브 · 기자회견 · 훈련 계획 구간이 전부 -1 이고, 그 값이
+	# 순위표의 "확인"이 주로 돌아갈지 허브로 돌아갈지를 가른다.
+	"week_day": -1,
+	# 요일별 훈련 결과 기록. `day(int) → Array[{pilot_id, name, role, seat,
+	# before, after, ups, exp}]`. 적으는 자리는 `TrainingBoard.apply_day_training`
+	# 을 부르는 `WeekProgressView` 하나다 — 이미 있으면 다시 정산하지
+	# 않으므로 경기를 치르고 같은 요일로 돌아와도 훈련이 두 번 먹지 않는다.
+	"week_day_log": {},
+	# 훈련 EXP 의 **나머지 통장**. `seat(int) → {stat: int}`. EXP 40 이 스탯 1
+	# 인데 요일마다 따로 나누면 하루 30 씩 다섯 날이 매일 0 점이 된다 —
+	# 나머지를 다음 날로 넘겨야 다섯 날의 합이 한 주 한 번과 같아진다.
+	# 주가 시작될 때 비운다(`TrainingBoard.reset_week_progress`).
+	"training_exp_carry": {},
 	"tournament_stage": GameEnums.TournamentStage.LEAGUE,
 	"phase_results": {},          # SeasonPhase -> {made_playoffs:bool, champion:int, intl_played:bool, intl_champion:int}
 	# Active player match in flight across Season → MatchFlow → BattleSim → Season.
@@ -106,6 +121,9 @@ func reset_season_state() -> void:
 		"league_standings": {},
 		"match_schedule": [],
 		"training_board": [],
+	"week_day": -1,
+	"week_day_log": {},
+	"training_exp_carry": {},
 		"tournament_stage": GameEnums.TournamentStage.LEAGUE,
 		"phase_results": {},
 		"pending_match": null,

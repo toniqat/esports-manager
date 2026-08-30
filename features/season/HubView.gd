@@ -347,7 +347,8 @@ func _refresh_roster() -> void:
 # ── Button handlers ──────────────────────────────────────────────────────────
 func _on_start_pressed() -> void:
 	if _hub != null:
-		_hub.goto(SeasonHub.Screen.TRAINING)
+		# 주는 기자회견으로 열린다 — 훈련 계획은 그 다음이다.
+		_hub.goto(SeasonHub.Screen.PRESS)
 
 
 func _on_standings_pressed() -> void:

@@ -12,14 +12,21 @@
 - **Campaign loop**: 6 events from December → next year:
   `PRESEASON → PRESEASON_INTL → MIDSEASON → MIDSEASON_INTL → REGULAR → REGULAR_INTL`.
   Win the final REGULAR_INTL = ending. Miss any phase's playoffs = game over.
-- **Weekly progression**: campaign advances **one week at a time**. Each
-  press of "다음 주" rolls the calendar 7 days forward, applies the week's
-  training, and resolves any AI matches scheduled for the week.
-- **Weekly flow**: HUB → TRAINING (set this week's schedule) → "주 진행"
-  → TRAINING_RESULT (per-pilot before/after/delta dashboard) → "다음" →
-  MatchFlow if player has a match (PREP → BAN_PICK(밴픽 + 메크 배정) →
-  BattleSim → return; **정글 시작 방향은 BattleSim 안에서 고른다**) → STANDINGS (LeagueView / BracketView /
-  IntlBracketView) → "다음 주" → HUB.
+- **Weekly progression**: campaign advances **one week at a time**, and the
+  week itself runs **day by day, 월~일** (`season_state["week_day"]` 0..6).
+  훈련은 월~금 닷새에 하루씩 먹고(`TrainingBoard.apply_day_training(day)`),
+  **토·일 이틀이 경기일**이다. 일요일을 닫을 때 `CalendarSystem.advance_week()`
+  이 달력을 7일 굴린다 — 그 함수를 부르는 자리는 `SeasonHub._end_week()` 하나다.
+- **Weekly flow**: HUB(주 시작 직전) → **PRESS**(기자회견 — 메신저 화면) →
+  TRAINING (**타일을 판에 끼워 이번 주 훈련을 짠다**) → "훈련 확정" →
+  **WEEK**(시간 경과 — 좌측 세로 요일 레일 + 그날의 카드 목록):
+  월~금은 그날 훈련 결과를 보고 "확인", 토·일은 경기가 있으면 "경기 시작" →
+  MatchFlow (PREP → BAN_PICK(밴픽 + 메크 배정) → BattleSim → return;
+  **정글 시작 방향은 BattleSim 안에서 고른다**) → STANDINGS (LeagueView /
+  BracketView / IntlBracketView) → "확인" → 다시 그 요일 → 일요일의
+  "주 마감 →" → HUB.
+  예전의 `TRAINING_RESULT`(주간 결산 한 장)는 정산이 요일 단위로 쪼개지면서
+  화면과 함께 **삭제됐다**.
 - **아웃게임은 흰 배경 계통**이고 **모든 색이 `resources/OutgameTheme.gd` 를
   지난다**(참고 디자인 `docs/ref_image.jpg`). 인게임(BattleSim)은 그 표를
   쓰지 않는다 — 전장은 어두운 화면이다.
@@ -27,7 +34,7 @@
   Auto-save fires at four points: (1) DRAFT → HUB, (2) MatchFlow pre-ban-pick
   (after PREP confirmation), (3) MatchFlow post-ban-pick (after 메크 배정
   완료), (4) post-week-end (after CalendarSystem.advance_week on the
-  "다음 주" press). No save during BattleSim — closing mid-battle resumes
+  일요일 마감). No save during BattleSim — closing mid-battle resumes
   from #3. Title screen routes "이어하기" to MatchFlow.tscn when the slot
   was saved mid-match (`season_state.match_resume` non-null), else Season.tscn.
 
@@ -50,7 +57,13 @@ esports-manager/
 │   │   ├── HubView.gd           ← class_name HubView — Phase 3 hub screen UI
 │   │   ├── GameOverView.gd      ← class_name GameOverView — Phase 7/8 elimination screen
 │   │   ├── EndingView.gd        ← class_name EndingView — Phase 8 world-champion screen
-│   │   ├── calendar/            ← Weekly clock, phase transitions
+│   │   ├── calendar/            ← 주 시계 + 요일 표(월~일, 토·일이 경기일) + 페이즈 전환
+│   │   ├── press/               ← **기자회견** — 주 시작 직전의 메신저 화면(원형 기자 초상 +
+│   │   │                          쐐기 말풍선 → 답변 선택지). `PressConferenceView.gd`.
+│   │   │                          지금은 대사 · 선택지가 임시 데이터인 틀이다
+│   │   ├── week/                ← **시간 경과** — 좌측 세로 요일 레일(지금 요일만 앰버) +
+│   │   │                          그날의 훈련 결과 카드 / 경기 카드 + 아래 "확인"
+│   │   │                          (경기일이면 "경기 시작"). `WeekProgressView.gd`
 │   │   ├── draft/               ← 초기 5인 선발 (네임드 25인 풀) — 우마무스메식 인물 고르기.
 │   │   │                          PICK(상체 일러스트 5칸 + 역할 필터 + 정사각 썸네일 격자
 │   │   │                          + 가운데 "다음") ↔ CONFIRM(픽창을 걷고 5인을 화면 가운데로
@@ -60,7 +73,8 @@ esports-manager/
 │   │   │                          코스 타일(폴리오미노)을 드래그 드롭으로 끼워 넣는다.
 │   │   │                          `TrainingTile.gd`(문법) / `TrainingBoard.gd`(판정 · 정산 ·
 │   │   │                          **요일 적용** `apply_day_training`) / `TrainingView.gd`(화면)
-│   │   ├── league/              ← LeagueManager + LeagueView (1-round-per-week schedule, AI sims, standings)
+│   │   ├── league/              ← LeagueManager + LeagueView (**2 rounds per week** — 토 · 일,
+│   │   │                          AI sims, standings)
 │   │   └── tournament/          ← TournamentManager + BracketView (4-team SE playoff, 2 weeks, Phase 7);
 │   │                              InternationalTournament + IntlBracketView (8-team SE INTL, 3 weeks, Phase 8)
 │   │
@@ -200,7 +214,7 @@ esports-manager/
 | Feature | Scene | Script | Status |
 |---|---|---|---|
 | Save / Load | `scenes/TitleScreen.tscn` | `features/save_load/TitleScreen.gd` | **Main entry** — 3 slots under `user://saves/`. New game / continue / delete. Auto-saves at draft / pre-ban-pick / post-ban-pick / post-week-end. Mid-match resume re-enters MatchFlow at the saved phase. |
-| Season | `scenes/Season.tscn` | `features/season/SeasonHub.gd` | Weekly campaign hub. HUB → TRAINING → TRAINING_RESULT → MatchFlow (if match) → STANDINGS → "다음 주" → HUB. Calendar advances 1 week per cycle. INTL phase = 3-week SE bracket; playoff = 2-week SE bracket. REGULAR_INTL win → ENDING; loss → GAME_OVER. |
+| Season | `scenes/Season.tscn` | `features/season/SeasonHub.gd` | Weekly campaign hub. HUB → PRESS(기자회견) → TRAINING(타일판) → WEEK(월~일 하루씩; 토·일에 경기가 있으면 MatchFlow → STANDINGS → 확인) → 일요일 마감 → HUB. 리그는 주 2경기(토·일), 토너먼트는 주 1경기(토). INTL phase = 3-week SE bracket; playoff = 2-week SE bracket. REGULAR_INTL win → ENDING; loss → GAME_OVER. 화면은 전부 흰 배경 계통(`resources/OutgameTheme.gd`). |
 | Match Flow | `scenes/MatchFlow.tscn` | `features/match_flow/MatchFlow.gd` | Pre-battle pipeline — entered from Season on the player's match week. PREP → BAN_PICK(밴픽 + 메크 배정) → BattleSim. **열거값 둘이 자리만 지킨다** — `ASSIGN` 은 배정이 밴픽 화면 안으로 들어가며(`assign/AssignController.gd` 삭제), `JUNGLE_START` 는 정글 시작 선택이 BattleSim 안으로 들어가며(`jungle_start/` 삭제) 지나지 않게 됐다. |
 | Battle Sim | `scenes/BattleSim.tscn` | `features/battle_sim/BattleSim.gd` | **Primary focus** — consumes match_ctx |
 
@@ -246,19 +260,41 @@ BAN_PICK or LAUNCH). Null → `Season.tscn`. SlotCard shows a "경기 진행
 중" tag when `meta.match_in_progress == true`.
 
 ### Weekly progression contract
-The campaign progresses one week at a time. `CalendarSystem.advance_week()`
-rolls 7 days forward, bumps `phase_week`, and emits `week_advanced` (and
-`phase_changed` on transitions). All three managers (LeagueManager,
-TournamentManager, InternationalTournament) listen to `week_advanced` and
-either bootstrap their bracket (`is_playoff_bootstrap_week()` for playoff,
+`CalendarSystem.advance_week()` rolls 7 days forward, bumps `phase_week`,
+and emits `week_advanced` (and `phase_changed` on transitions). **부르는
+자리는 `SeasonHub._end_week()` 하나** — 시간 경과 화면에서 일요일을 닫을 때다.
+All three managers (LeagueManager, TournamentManager,
+InternationalTournament) listen to `week_advanced` and either bootstrap
+their bracket (`is_playoff_bootstrap_week()` for playoff,
 `phase_week == 1 && is_intl_phase` for INTL) or no-op. Match resolution is
-explicit: `SeasonHub` calls `resolve_current_week()` on each manager
-during the post-match flow, never on signal.
+explicit: `SeasonHub` calls `_resolve_ai_for_matchday(md)` **경기일마다**
+(주 통째가 아니다 — 토요일 경기를 마치고 보는 순위표에 아직 치르지도 않은
+일요일 결과가 들어가면 안 된다), never on signal.
+
+### 요일과 경기일 (한 주의 안쪽)
+한 주는 월~일 이레이고 지금 요일은 `season_state["week_day"]`(0..6, **-1 은
+주가 아직 안 열렸다**)가 든다. 월~금 닷새가 훈련판의 다섯 행이고 **토(경기일 0) ·
+일(경기일 1)** 이틀이 경기일이다(`CalendarSystem.MATCH_DAYS`).
+
+**리그는 한 주에 두 라운드를 돌린다**(`ROUNDS_PER_WEEK` = 2) — 스케줄 엔트리에
+`matchday` 컬럼이 생겨 그 둘을 가른다. 라운드 수는 안 바뀌었고 주에 두 개씩
+들어가므로 **리그 주차가 절반**이 됐다(프리시즌 7→4주, 미드 / 정규 14→7주;
+캠페인 전체 ≈ 50주 → **33주**). 프리시즌은 라운드가 홀수라 마지막 주는 토요일
+한 라운드로 끝나고 일요일이 빈다. **토너먼트(플레이오프 · 국제대회)는 여전히
+주 1경기**이고 언제나 토요일(`matchday = 0`)에 선다 — 8강 · 4강 · 결승은 라운드
+사이에 한 주씩 쉬어야 대진표가 읽힌다.
+
+주 진행 상태 셋이 `season_state` 에 살고 세이브에 실린다 — `week_day`,
+`week_day_log`(요일별 훈련 결과 기록, **정수 키**라 로드에서 되돌린다),
+`training_exp_carry`(나머지 EXP 통장). 셋 다
+`TrainingBoard.reset_week_progress()` 가 비우고, 그것은 훈련 확정과 주 종료
+두 곳에서 돈다.
 
 ### Season → MatchFlow → BattleSim handoff
-On the player's match week, `SeasonHub.on_training_result_continue`
-populates `season_state["pending_match"]` (`{source, schedule_idx,
-enemy_team_id, winner_side}`) and `change_scene_to_file` to MatchFlow.tscn.
+시간 경과 화면의 토 / 일에서 "경기 시작"을 누르면
+`SeasonHub.on_week_day_match_start()` → `_launch_player_match_on_day(matchday)`
+가 `season_state["pending_match"]` (`{source, schedule_idx, enemy_team_id,
+winner_side}`)를 채우고 MatchFlow.tscn 으로 `change_scene_to_file` 한다.
 MatchFlow runs PREP (review rosters) → BAN_PICK(밴픽 + 메크 배정) →
 BattleSim (정글 시작 방향은 그 안에서 묻는다). **BAN_PICK 은 양 팀 로스터와 팀명까지 받는다** —
 화면 위아래에 전장 스트립과 같은 eye 초상화 5인씩을 세우고 그 바깥에 메크 칸을

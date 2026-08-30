@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://features/season/SeasonHub.gd" id="1_hub"]
 [ext_resource type="Script" path="res://features/season/calendar/CalendarSystem.gd" id="2_cal"]
 [ext_resource type="Script" path="res://features/season/draft/TeamDraft.gd" id="3_draft"]
-[ext_resource type="Script" path="res://features/season/training/TrainingScheduler.gd" id="4_train"]
+[ext_resource type="Script" path="res://features/season/training/TrainingBoard.gd" id="4_train"]
 [ext_resource type="Script" path="res://features/season/league/LeagueManager.gd" id="5_league"]
 [ext_resource type="Script" path="res://features/season/tournament/TournamentManager.gd" id="6_tour"]
 [ext_resource type="Script" path="res://features/season/tournament/InternationalTournament.gd" id="7_intl"]
@@ -57,7 +57,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("3_draft")
 
-[node name="TrainingScheduler" type="Node" parent="."]
+[node name="TrainingBoard" type="Node" parent="."]
 script = ExtResource("4_train")
 
 [node name="LeagueManager" type="Node" parent="."]

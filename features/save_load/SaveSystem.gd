@@ -152,6 +152,9 @@ static func _serialize_season_state(s: Dictionary) -> Dictionary:
 		"team_rosters":      s.get("team_rosters", {}),
 		"league_standings":  s.get("league_standings", {}),
 		"training_board":    s.get("training_board", []),
+		"week_day":          int(s.get("week_day", -1)),
+		"week_day_log":      s.get("week_day_log", {}),
+		"training_exp_carry": s.get("training_exp_carry", {}),
 		"phase_results":     s.get("phase_results", {}),
 		"pending_match":     s.get("pending_match", null),
 		"current_tournament": s.get("current_tournament", null),
@@ -178,6 +181,12 @@ static func _deserialize_season_state(s: Dictionary) -> Dictionary:
 		"team_rosters":      _int_keyed_dict_in(s.get("team_rosters", {})),
 		"league_standings":  _int_keyed_dict_in(s.get("league_standings", {})),
 		"training_board":    _board_in(s.get("training_board", [])),
+		# 주 진행 상태 셋. 둘 다 **정수 키** dict 이라 되돌리는 손질이
+		# 필요하다 — JSON 은 키를 문자열로 돌려주므로 그대로 실으면
+		# `log[3]` 이 영원히 빈 배열을 돌려줘 같은 요일 훈련이 두 번 먹는다.
+		"week_day":          int(s.get("week_day", -1)),
+		"week_day_log":      _int_keyed_dict_in(s.get("week_day_log", {})),
+		"training_exp_carry": _exp_carry_in(s.get("training_exp_carry", {})),
 		"phase_results":     _int_keyed_dict_in(s.get("phase_results", {})),
 		"pending_match":     s.get("pending_match", null),
 		"current_tournament": s.get("current_tournament", null),
@@ -197,6 +206,19 @@ static func _board_in(rows: Array) -> Array:
 			"x": int(d.get("x", 0)),
 			"y": int(d.get("y", 0)),
 		})
+	return out
+
+
+## 나머지 EXP 통장을 정수로 되돌린다. 바깥 키(자리 번호)도 안쪽 값(EXP)도
+## JSON 을 지나면 문자열 / 실수가 된다 — 그대로 놓아두면 `total / EXP_PER_POINT`
+## 이 정수 나눗셈이 아니게 돼 나머지가 조용히 사라진다.
+static func _exp_carry_in(d: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	for k in d.keys():
+		var pocket: Dictionary = {}
+		for sk in (d[k] as Dictionary).keys():
+			pocket[String(sk)] = int((d[k] as Dictionary)[sk])
+		out[int(k)] = pocket
 	return out
 
 

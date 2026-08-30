@@ -82,13 +82,22 @@ func generate_phase_schedule(phase: int) -> void:
 	var sched: Array = (s["match_schedule"] as Array).filter(
 			func(m): return int(m.get("phase", -1)) != phase)
 
-	# 1 round per week, starting at the current calendar week (Mon of week 1
-	# of this phase). r_idx 0 → week 1.
+	# **2 rounds per week** — 토요일 한 라운드, 일요일 한 라운드. r_idx 0 → 1주차
+	# 토, r_idx 1 → 1주차 일, r_idx 2 → 2주차 토 … 라운드 수가 홀수면(프리시즌의
+	# 7라운드) 마지막 주는 토요일 한 경기로 끝나고 일요일은 비는데, 시간 경과
+	# 화면이 "그날 경기가 있는가"를 스케줄에 물어보므로 빈 일요일은 그냥 넘어간다.
+	#
+	# `weekday` 는 예전부터 0(월) 고정이었다 — 세이브 카드에 찍히는 날짜는 그 주의
+	# 월요일이라는 뜻이고, 경기가 실제로 서는 요일은 **`matchday`** 가 든다.
+	var per_week: int = CalendarSystem.ROUNDS_PER_WEEK
 	for r_idx in rounds.size():
-		var pweek: int = r_idx + 1
+		@warning_ignore("integer_division")
+		var week_idx: int = r_idx / per_week
+		var matchday: int = r_idx % per_week
+		var pweek: int = week_idx + 1
 		var date: Dictionary = {"year": int(s["year"]), "month": int(s["month"]), "day": int(s["day"])}
 		if cal != null:
-			date = cal.date_of_week_offset(r_idx)
+			date = cal.date_of_week_offset(week_idx)
 		for pair in rounds[r_idx]:
 			sched.append({
 				"phase":      phase,
@@ -97,6 +106,7 @@ func generate_phase_schedule(phase: int) -> void:
 				"month":      int(date["month"]),
 				"day":        int(date["day"]),
 				"weekday":    0,
+				"matchday":   matchday,
 				"round":      r_idx,
 				"team_a":     int(pair[0]),
 				"team_b":     int(pair[1]),
@@ -133,6 +143,16 @@ func generate_round_robin(team_count: int) -> Array:
 # the current league phase. Leaves player-team matches unplayed for SeasonHub
 # to launch via MatchFlow → BattleSim. No-op outside league weeks.
 func resolve_current_week() -> void:
+	resolve_matchday(-1)
+
+
+## 한 경기일(0 = 토, 1 = 일)의 AI 경기만 정산한다. `matchday < 0` 이면 이번 주
+## 전체 — 주 종료 시의 쓸어 담기 경로가 그쪽을 쓴다.
+##
+## **경기일로 나눠 도는 것이 요점이다.** 예전에는 주 단위 한 번이라 순위표가
+## 주말 이틀치를 한꺼번에 반영했는데, 지금은 토요일 경기를 마치고 보는 순위표에
+## 일요일 경기 결과가 미리 들어가 있으면 안 된다.
+func resolve_matchday(matchday: int) -> void:
 	if _hub != null:
 		var cal: CalendarSystem = _hub.get_node_or_null("CalendarSystem") as CalendarSystem
 		if cal != null and not cal.is_league_match_week():
@@ -145,6 +165,8 @@ func resolve_current_week() -> void:
 		if bool(m["played"]):
 			continue
 		if int(m["phase"]) != phase or int(m["phase_week"]) != pweek:
+			continue
+		if matchday >= 0 and int(m.get("matchday", 0)) != matchday:
 			continue
 		var ta: int = int(m["team_a"]); var tb: int = int(m["team_b"])
 		if ta == pid or tb == pid:
@@ -237,6 +259,14 @@ func next_unplayed_player_match() -> Variant:
 # if none (rare — a player might bye one week if a tournament gives them a
 # pass, but in normal RR they always play).
 func player_match_this_week() -> Variant:
+	return player_match_on_day(-1)
+
+
+## 이번 주 그 경기일(0 = 토, 1 = 일)의 플레이어 경기. `matchday < 0` 이면
+## 이번 주 아무 날이나. 이미 치른 경기는 세지 않는다 — 시간 경과 화면이
+## "이 요일에 아직 할 경기가 있는가"를 이 함수로 묻기 때문이고, 그래서 경기를
+## 마치고 돌아와도 같은 버튼이 다시 뜨지 않는다.
+func player_match_on_day(matchday: int) -> Variant:
 	var s: Dictionary = _gm.season_state
 	var phase: int = int(s["current_phase"])
 	var pweek: int = int(s["phase_week"])
@@ -245,6 +275,8 @@ func player_match_this_week() -> Variant:
 		if bool(m["played"]):
 			continue
 		if int(m["phase"]) != phase or int(m["phase_week"]) != pweek:
+			continue
+		if matchday >= 0 and int(m.get("matchday", 0)) != matchday:
 			continue
 		if int(m["team_a"]) == pid or int(m["team_b"]) == pid:
 			return m

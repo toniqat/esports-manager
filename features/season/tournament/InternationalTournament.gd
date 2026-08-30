@@ -142,6 +142,9 @@ func _mk_match(slot: int, round_: int, team_a: int, team_b: int, phase_week: int
 		"month":      int(date["month"]),
 		"day":        int(date["day"]),
 		"weekday":    0,
+		# 토너먼트 경기는 언제나 **토요일**(경기일 0)에 선다 — 리그만 토·일
+		# 두 라운드를 돌고, 8강 · 4강 · 결승은 주에 하나씩이다.
+		"matchday":   0,
 		"played":     false,
 		"winner":     -1,
 	}
@@ -280,6 +283,14 @@ func next_unplayed_player_match() -> Variant:
 
 
 func find_player_match_this_week_idx() -> int:
+	return find_player_match_on_day_idx(-1)
+
+
+## 이번 주 그 경기일(0 = 토, 1 = 일)의 플레이어 경기 인덱스. `matchday < 0`
+## 이면 이번 주 아무 날이나. 토너먼트 경기는 전부 토요일이라 1 을 넘기면
+## 언제나 -1 이 나온다 — 그래도 인자를 받는 것은 시간 경과 화면이 요일마다
+## 같은 질문을 세 매니저에게 똑같이 던지기 때문이다.
+func find_player_match_on_day_idx(matchday: int) -> int:
 	if not is_active():
 		return -1
 	var s: Dictionary = _gm.season_state
@@ -291,6 +302,8 @@ func find_player_match_this_week_idx() -> int:
 		if bool(m["played"]):
 			continue
 		if int(m["phase_week"]) != pweek:
+			continue
+		if matchday >= 0 and int(m.get("matchday", 0)) != matchday:
 			continue
 		var ta: int = int(m["team_a"]); var tb: int = int(m["team_b"])
 		if ta == pid or tb == pid:

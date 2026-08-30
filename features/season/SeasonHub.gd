@@ -2,30 +2,48 @@ class_name SeasonHub
 extends Control
 
 # Thin orchestrator for the weekly outgame loop. Owns the screen-routing
-# state machine and the per-week flow:
+# state machine and the per-week flow.
 #
-#   HUB → TRAINING → (apply week) → TRAINING_RESULT → (player match? →
-#   MatchFlow → BattleSim → back here) → resolve AI matches → STANDINGS
-#   (LEAGUE / PLAYOFF / INTL_BRACKET) → (다음 주 → CalendarSystem.advance_week)
-#   → HUB
+# ── 한 주 ───────────────────────────────────────────────────
+# 주는 **이레 내내 한 날씩 흘러간다**(`season_state["week_day"]` 0..6).
 #
-# Autosave triggers (4):
+#   HUB(주 시작 직전) → PRESS(기자회견) → TRAINING(주간 훈련 타일 배치)
+#     → WEEK 월 → 화 → 수 → 목 → 금          (매일 그날 훈련 결과 + 확인)
+#     → WEEK 토 → 경기가 있으면 MatchFlow → BattleSim → STANDINGS → 확인 → WEEK 토
+#     → WEEK 일 → 같은 식
+#     → 주 종료 → CalendarSystem.advance_week → HUB
+#
+# **훈련은 요일 단위로 먹는다** — 예전에는 TRAINING 확정이
+# `apply_week_training()` 한 번으로 한 주를 통째로 정산하고 TRAINING_RESULT
+# 한 장이 그 결과를 보였는데, 시간 경과 화면이 "그날 무슨 일이 있었는가"를
+# 요일마다 묻게 되면서 정산도 `TrainingBoard.apply_day_training(day)` 로
+# 쪼개졌다. `Screen.TRAINING_RESULT` 와 `TrainingResultView` 는 그때
+# **삭제됐다** — 주간 결산 한 장이 하던 일을 요일 다섯 장이 나누어 한다.
+#
+# ── 주말 ──────────────────────────────────────────────────
+# 토 · 일 **이틀이 경기일**이다(`CalendarSystem.MATCH_DAYS`). 리그는 한 주에
+# 두 라운드를 돌리므로 그 둘이 각각 한 날을 차지하고, 토너먼트(플레이오프 ·
+# 국제대회)는 주에 라운드 하나라 언제나 **토요일**에만 선다.
+# 그날 경기가 배정돼 있지 않으면 그 요일은 그냥 넘어간다.
+#
+# Autosave triggers (5):
 #   1. Post-draft         — DRAFT → HUB on a fresh campaign.
 #   2. Pre-ban-pick       — MatchFlow.gd, after PREP confirmation.
 #   3. Post-gambit        — MatchFlow.gd, after jungle direction picked.
-#   4. Post-week-end      — landing on HUB at the start of a new week
-#                            (covers both post-match and no-match weeks).
+#   4. Post-match         — returning from BattleSim, once the result is applied.
+#   5. Post-week-end      — landing on HUB at the start of a new week.
 
 @onready var _gm: Node = get_node("/root/GameManager")
 @onready var _placeholder: Label = get_node_or_null("Placeholder")
 @onready var _draft: Control = get_node_or_null("TeamDraft")
 
-enum Screen { DRAFT, HUB, TRAINING, TRAINING_RESULT, MATCH_DAY, LEAGUE, PLAYOFF, INTL_BRACKET, RESULT, GAME_OVER, ENDING }
+enum Screen { DRAFT, HUB, PRESS, TRAINING, WEEK, LEAGUE, PLAYOFF, INTL_BRACKET, GAME_OVER, ENDING }
 
 var current_screen: int = Screen.DRAFT
 var _hub_view: HubView = null
+var _press_view: PressConferenceView = null
 var _training_view: TrainingView = null
-var _training_result_view: TrainingResultView = null
+var _week_view: WeekProgressView = null
 var _league_view: LeagueView = null
 var _bracket_view: BracketView = null
 var _intl_bracket_view: IntlBracketView = null
@@ -58,9 +76,12 @@ func _ready() -> void:
 			intl.intl_failed_campaign.connect(_on_intl_failed_campaign)
 
 	# Returning from BattleSim: a pending_match with winner_side set means we
-	# just finished a match. Apply the result, resolve any remaining AI
-	# matches for the week, then route to the standings/bracket screen so
-	# the player can review the week before pressing 다음 주.
+	# just finished a match. Apply the result, resolve the AI matches of that
+	# **same match day**, then route to the standings/bracket screen. The
+	# player presses 확인 there and drops back onto the week's day cursor.
+	#
+	# 그날 경기만 정산하는 것이 요점이다 — 주 통째로 돌리면 토요일 경기를
+	# 마치고 보는 순위표에 아직 치르지도 않은 일요일 결과가 미리 들어가 있게 된다.
 	#
 	# Signal handlers in record_result may route to ENDING / GAME_OVER (the
 	# REGULAR_INTL win/loss paths). Respect that — only fall back to
@@ -69,7 +90,11 @@ func _ready() -> void:
 		if current_screen == Screen.DRAFT:
 			current_screen = _post_match_screen()
 		_gm.season_state["match_resume"] = null
-		_resolve_remaining_ai_for_week()
+		var md: int = CalendarSystem.matchday_of(week_day())
+		if md >= 0:
+			_resolve_ai_for_matchday(md)
+		else:
+			_resolve_remaining_ai_for_week()
 		# Post-match save: results are now applied to standings/bracket. Save
 		# before any cascade (ENDING/GAME_OVER routing or just sitting on the
 		# standings view) so closing here preserves the outcome.
@@ -97,10 +122,12 @@ func _route() -> void:
 			_show_draft()
 		Screen.HUB:
 			_show_hub()
+		Screen.PRESS:
+			_show_press()
 		Screen.TRAINING:
 			_show_training()
-		Screen.TRAINING_RESULT:
-			_show_training_result()
+		Screen.WEEK:
+			_show_week()
 		Screen.LEAGUE:
 			_show_league()
 		Screen.PLAYOFF:
@@ -120,10 +147,12 @@ func _hide_all_screens() -> void:
 		_draft.visible = false
 	if _hub_view:
 		_hub_view.visible = false
+	if _press_view:
+		_press_view.visible = false
 	if _training_view:
 		_training_view.visible = false
-	if _training_result_view:
-		_training_result_view.visible = false
+	if _week_view:
+		_week_view.visible = false
 	if _league_view:
 		_league_view.visible = false
 	if _bracket_view:
@@ -174,12 +203,20 @@ func _show_training() -> void:
 		_training_view.visible = true
 
 
-func _show_training_result() -> void:
-	_ensure_training_result_view()
+func _show_press() -> void:
+	_ensure_press_view()
 	_hide_all_screens()
-	if _training_result_view:
-		_training_result_view.ensure_view()
-		_training_result_view.visible = true
+	if _press_view:
+		_press_view.ensure_view()
+		_press_view.visible = true
+
+
+func _show_week() -> void:
+	_ensure_week_view()
+	_hide_all_screens()
+	if _week_view:
+		_week_view.ensure_view()
+		_week_view.visible = true
 
 
 func _show_league() -> void:
@@ -238,12 +275,20 @@ func _ensure_training_view() -> void:
 	add_child(_training_view)
 
 
-func _ensure_training_result_view() -> void:
-	if _training_result_view != null:
+func _ensure_press_view() -> void:
+	if _press_view != null:
 		return
-	_training_result_view = TrainingResultView.new()
-	_training_result_view.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(_training_result_view)
+	_press_view = PressConferenceView.new()
+	_press_view.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_press_view)
+
+
+func _ensure_week_view() -> void:
+	if _week_view != null:
+		return
+	_week_view = WeekProgressView.new()
+	_week_view.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_week_view)
 
 
 func _ensure_league_view() -> void:
@@ -286,126 +331,184 @@ func _ensure_ending_view() -> void:
 	add_child(_ending_view)
 
 
-# ── Weekly flow handlers (called by views) ─────────────────────────────────
+# ── Weekly flow handlers (called by views) ────────────────────────
 
-# TrainingView "주 진행" → apply training, route to TRAINING_RESULT.
-func on_training_save_and_advance() -> void:
-	var sched: TrainingScheduler = get_node_or_null("TrainingScheduler") as TrainingScheduler
-	if sched == null:
-		current_screen = Screen.TRAINING_RESULT
-		_route()
+## 기자회견이 답변까지 끝났다 → 훈련 계획으로.
+func on_press_finished() -> void:
+	goto(Screen.TRAINING)
+
+
+## TrainingView "훈련 확정" → **주가 시작된다**. 판을 정산하지 않고
+## 요일 커서만 월요일에 세운다 — 정산은 시간 경과 화면이 그날에 닿을 때
+## 하루씩 한다(`TrainingBoard.apply_day_training`).
+func on_training_confirmed() -> void:
+	var board: TrainingBoard = get_node_or_null("TrainingBoard") as TrainingBoard
+	if board != null:
+		board.reset_week_progress()
+	_gm.season_state["week_day"] = 0
+	goto(Screen.WEEK)
+
+
+## 지금 화면이 보고 있는 요일(0 = 월 … 6 = 일). 주 진행 전이면 -1.
+func week_day() -> int:
+	return int(_gm.season_state.get("week_day", -1))
+
+
+## 그 요일에 플레이어가 **아직 치르지 않은** 경기가 있는가.
+## 시간 경과 화면이 "경기 시작" 버튼을 세울지 "확인"을 세울지를 이걸로 가른다.
+func has_player_match_on_day(day: int) -> bool:
+	var md: int = CalendarSystem.matchday_of(day)
+	if md < 0:
+		return false
+	return _find_player_match_source(md) != ""
+
+
+## 그 요일의 상대 팀 이름 (없으면 빈 문자열). 화면의 경기 카드가 쓴다.
+func opponent_name_on_day(day: int) -> String:
+	var md: int = CalendarSystem.matchday_of(day)
+	if md < 0:
+		return ""
+	var pid: int = int(_gm.season_state["player_team_id"])
+	var intl: InternationalTournament = get_node_or_null("InternationalTournament") as InternationalTournament
+	if intl != null:
+		var i: int = intl.find_player_match_on_day_idx(md)
+		if i >= 0:
+			var m: Dictionary = (_gm.season_state["current_tournament"]["bracket"] as Array)[i]
+			return intl.team_name(_other_team(m, pid))
+	var tm: TournamentManager = get_node_or_null("TournamentManager") as TournamentManager
+	if tm != null:
+		var i2: int = tm.find_player_match_on_day_idx(md)
+		if i2 >= 0:
+			var m2: Dictionary = (_gm.season_state["current_tournament"]["bracket"] as Array)[i2]
+			return _league_team_name(_other_team(m2, pid))
+	var league: LeagueManager = get_node_or_null("LeagueManager") as LeagueManager
+	if league != null:
+		var m3 = league.player_match_on_day(md)
+		if m3 != null:
+			return league.team_name(_other_team(m3, pid))
+	return ""
+
+
+## 시간 경과 화면의 "경기 시작" → 그 요일의 플레이어 경기를 연다.
+func on_week_day_match_start() -> void:
+	var md: int = CalendarSystem.matchday_of(week_day())
+	if md < 0:
 		return
-	var result: Dictionary = sched.apply_week_training()
-	_ensure_training_result_view()
-	if _training_result_view != null:
-		_training_result_view.result_data = result
-		# Set "다음 →" label based on what comes next.
-		var has_match: bool = _has_player_match_this_week()
-		_training_result_view.set_next_label("경기 준비 →" if has_match else "주간 결산 →")
-	current_screen = Screen.TRAINING_RESULT
-	_route()
+	_launch_player_match_on_day(md)
 
 
-# TrainingResultView "다음" → match (or skip to standings).
-func on_training_result_continue() -> void:
-	if _has_player_match_this_week():
-		_launch_player_match_this_week()
+## 시간 경과 화면의 "확인" → 다음 날로. 일요일이면 주를 닫는다.
+##
+## 넘어가기 **전에** 그날의 AI 경기를 쓸어 담는다 — 플레이어가 그날
+## 경기가 없어 그냥 넘어가는 경우에도 그날 리그는 돌아가야 하기 때문이고,
+## 그래야 다음에 보는 순위표가 날짜와 맞는다.
+func on_week_day_confirmed() -> void:
+	var day: int = week_day()
+	var md: int = CalendarSystem.matchday_of(day)
+	if md >= 0:
+		_resolve_ai_for_matchday(md)
+	if day >= CalendarSystem.DAYS_PER_WEEK - 1:
+		_end_week()
 		return
+	_gm.season_state["week_day"] = day + 1
+	goto(Screen.WEEK)
+
+
+## 순위 · 대진표 화면의 "확인" → 주가 돌고 있으면 그 요일로, 아니면 허브로.
+## 허브에서 "리그 순위"로 궸어본 경우와 경기 직후에 띄운 경우가 같은 버튼을
+## 나눠 쓰므로, 돌아갈 자리는 버튼이 아니라 **주 진행 상태**가 정한다.
+func on_standings_confirmed() -> void:
+	if week_day() >= 0:
+		goto(Screen.WEEK)
+	else:
+		goto(Screen.HUB)
+
+
+## 주를 닫고 다음 주 직전(HUB)으로. 달력을 한 주 굴리고 판을 비운다.
+func _end_week() -> void:
+	# 혼자 남은 AI 경기(예: 배정이 어긋난 주)가 있으면 여기서 정리된다.
 	_resolve_remaining_ai_for_week()
-	current_screen = _post_match_screen()
-	_route()
-
-
-# Standings views' "다음 주" → roll calendar one week forward, refill
-# training defaults, return to HUB.
-func on_proceed_to_next_week() -> void:
 	var cal: CalendarSystem = get_node_or_null("CalendarSystem") as CalendarSystem
 	if cal != null:
 		cal.advance_week()
-	var sched: TrainingScheduler = get_node_or_null("TrainingScheduler") as TrainingScheduler
-	if sched != null:
-		sched.refill_player_team_defaults()
+	# 다음 주 판은 **빈 채로** 시작한다 — 빈 칸은 기본 코스로 정산되므로
+	# 비워 두는 것이 손해가 아니고, 비어 있어야 이번 주에 내가 놓은 것이 보인다.
+	var board: TrainingBoard = get_node_or_null("TrainingBoard") as TrainingBoard
+	if board != null:
+		board.reset_for_new_week()
+	else:
+		_gm.season_state["week_day"] = -1
 	current_screen = Screen.HUB
 	_route()
 	_autosave("post_week")
 
 
-# ── Player-match handoff ───────────────────────────────────────────────────
-# Public — called by standings views to decide whether the "다음 주 →"
-# button should be enabled (no unplayed player match remaining this week).
+# ── Player-match handoff ─────────────────────────────────────
+
+## 이번 주에 아직 치르지 않은 플레이어 경기가 하나라도 있는가.
 func has_player_match_this_week() -> bool:
-	return _has_player_match_this_week()
+	return _find_player_match_source(-1) != ""
 
 
-func _has_player_match_this_week() -> bool:
+## 그 경기일의 플레이어 경기가 어느 대회 것인가 — `"intl"` / `"playoff"` /
+## `"league"` / `""`(없음). 우선순위는 예전부터 INTL > 플레이오프 > 리그다.
+## `matchday < 0` 이면 이번 주 아무 날이나.
+func _find_player_match_source(matchday: int) -> String:
 	var intl: InternationalTournament = get_node_or_null("InternationalTournament") as InternationalTournament
-	if intl != null and intl.find_player_match_this_week_idx() >= 0:
-		return true
+	if intl != null and intl.find_player_match_on_day_idx(matchday) >= 0:
+		return "intl"
 	var tm: TournamentManager = get_node_or_null("TournamentManager") as TournamentManager
-	if tm != null and tm.find_player_match_this_week_idx() >= 0:
-		return true
+	if tm != null and tm.find_player_match_on_day_idx(matchday) >= 0:
+		return "playoff"
 	var league: LeagueManager = get_node_or_null("LeagueManager") as LeagueManager
-	if league != null and league.player_match_this_week() != null:
-		return true
-	return false
+	if league != null and league.player_match_on_day(matchday) != null:
+		return "league"
+	return ""
 
 
-# Find this week's player match (priority INTL > playoff > league), populate
-# pending_match, scene-change to MatchFlow.
-func _launch_player_match_this_week() -> void:
-	if _try_launch_intl_match_this_week():
-		return
-	if _try_launch_playoff_match_this_week():
-		return
-	_try_launch_league_match_this_week()
+static func _other_team(m: Dictionary, pid: int) -> int:
+	return int(m["team_b"]) if int(m["team_a"]) == pid else int(m["team_a"])
 
 
-func _try_launch_intl_match_this_week() -> bool:
-	var intl: InternationalTournament = get_node_or_null("InternationalTournament") as InternationalTournament
-	if intl == null or not intl.is_active():
-		return false
-	var idx: int = intl.find_player_match_this_week_idx()
+func _league_team_name(team_id: int) -> String:
+	var league: LeagueManager = get_node_or_null("LeagueManager") as LeagueManager
+	if league != null:
+		return league.team_name(team_id)
+	return "Team %d" % team_id
+
+
+# Find the player's match on that matchday (priority INTL > playoff > league),
+# populate pending_match, scene-change to MatchFlow.
+func _launch_player_match_on_day(matchday: int) -> void:
+	match _find_player_match_source(matchday):
+		"intl":
+			_launch_bracket_match("intl",
+					(get_node_or_null("InternationalTournament") as InternationalTournament)
+							.find_player_match_on_day_idx(matchday))
+		"playoff":
+			_launch_bracket_match("playoff",
+					(get_node_or_null("TournamentManager") as TournamentManager)
+							.find_player_match_on_day_idx(matchday))
+		"league":
+			_launch_league_match(matchday)
+
+
+func _launch_bracket_match(source: String, idx: int) -> void:
 	if idx < 0:
-		return false
+		return
 	var s: Dictionary = _gm.season_state
 	var pid: int = int(s["player_team_id"])
 	var m: Dictionary = (s["current_tournament"]["bracket"] as Array)[idx]
-	var enemy_team_id: int = int(m["team_b"]) if int(m["team_a"]) == pid else int(m["team_a"])
 	s["pending_match"] = {
-		"source":        "intl",
+		"source":        source,
 		"schedule_idx":  idx,
-		"enemy_team_id": enemy_team_id,
+		"enemy_team_id": _other_team(m, pid),
 		"winner_side":   -1,
 	}
 	get_tree().change_scene_to_file("res://scenes/MatchFlow.tscn")
-	return true
 
 
-func _try_launch_playoff_match_this_week() -> bool:
-	var tm: TournamentManager = get_node_or_null("TournamentManager") as TournamentManager
-	if tm == null or not tm.is_active():
-		return false
-	var idx: int = tm.find_player_match_this_week_idx()
-	if idx < 0:
-		return false
-	var s: Dictionary = _gm.season_state
-	var pid: int = int(s["player_team_id"])
-	var m: Dictionary = (s["current_tournament"]["bracket"] as Array)[idx]
-	var enemy_team_id: int = int(m["team_b"]) if int(m["team_a"]) == pid else int(m["team_a"])
-	s["pending_match"] = {
-		"source":        "playoff",
-		"schedule_idx":  idx,
-		"enemy_team_id": enemy_team_id,
-		"winner_side":   -1,
-	}
-	get_tree().change_scene_to_file("res://scenes/MatchFlow.tscn")
-	return true
-
-
-func _try_launch_league_match_this_week() -> bool:
-	var league: LeagueManager = get_node_or_null("LeagueManager") as LeagueManager
-	if league == null:
-		return false
+func _launch_league_match(matchday: int) -> void:
 	var s: Dictionary = _gm.season_state
 	var pid: int = int(s["player_team_id"])
 	var phase: int = int(s["current_phase"])
@@ -417,19 +520,33 @@ func _try_launch_league_match_this_week() -> bool:
 			continue
 		if int(m["phase"]) != phase or int(m["phase_week"]) != pweek:
 			continue
-		var ta: int = int(m["team_a"]); var tb: int = int(m["team_b"])
-		if ta != pid and tb != pid:
+		if matchday >= 0 and int(m.get("matchday", 0)) != matchday:
 			continue
-		var enemy_team_id: int = tb if ta == pid else ta
+		if int(m["team_a"]) != pid and int(m["team_b"]) != pid:
+			continue
 		s["pending_match"] = {
 			"source":        "league",
 			"schedule_idx":  i,
-			"enemy_team_id": enemy_team_id,
+			"enemy_team_id": _other_team(m, pid),
 			"winner_side":   -1,
 		}
 		get_tree().change_scene_to_file("res://scenes/MatchFlow.tscn")
-		return true
-	return false
+		return
+
+
+## 그 경기일의 AI 경기만 정산한다. 토너먼트는 주에 라운드 하나라
+## 경기일 0(토)에서만 돈다 — 일요일에 다시 불러도 배정된 경기가 없어 무위다.
+func _resolve_ai_for_matchday(matchday: int) -> void:
+	if matchday == 0:
+		var intl: InternationalTournament = get_node_or_null("InternationalTournament") as InternationalTournament
+		if intl != null and intl.is_active():
+			intl.resolve_current_week()
+		var tm: TournamentManager = get_node_or_null("TournamentManager") as TournamentManager
+		if tm != null and tm.is_active():
+			tm.resolve_current_week()
+	var league: LeagueManager = get_node_or_null("LeagueManager") as LeagueManager
+	if league != null:
+		league.resolve_matchday(matchday)
 
 
 # After the player's match returns: apply their result, then auto-resolve any

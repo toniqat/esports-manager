@@ -22,24 +22,36 @@ route directly to HUB (loaded campaign). See `features/save_load/` for the
 save-system contract.
 
 ## Weekly flow
+주는 **월~일 이레 내내 하루씩** 흘러간다(`season_state["week_day"]` 0..6).
+
 ```
-HUB (이번 주 시작)
-  → TRAINING (set this week's training schedule + 주 진행)
-  → (apply_week_training mutates PlayerData stats)
-  → TRAINING_RESULT (per-pilot before/after/delta dashboard + 다음)
-  → has player match this week?
-        ├─ Yes → MatchFlow (PREP → BAN_PICK(밴픽 + 메크 배정) → BattleSim)
-        │           → return to Season → apply result
-        │           → resolve remaining AI matches for the week
-        │           → STANDINGS (LeagueView / BracketView / IntlBracketView)
-        └─ No  → resolve all AI matches for the week
-                  → STANDINGS
-  STANDINGS (다음 주 →)
+HUB (주 시작 직전 — 로스터 · 다음 경기 · "이번 주 시작 →")
+  → PRESS      (기자회견 — 메신저. 대사 몇 줄 뒤 답변 선택지)
+  → TRAINING   (타일을 판에 끼워 이번 주 훈련을 짜고 "훈련 확정")
+  → WEEK       (시간 경과 — 좌측 요일 레일 + 그날의 카드 목록)
+       월 → 화 → 수 → 목 → 금   각 요일에 apply_day_training(day) 로 그 줄만
+                                 정산해 스탯을 올리고 결과를 카드로 보여 준다
+       토 (경기일 0) ┬ 플레이어 경기 있음 → "경기 시작"
+       일 (경기일 1) │     → MatchFlow (PREP → BAN_PICK) → BattleSim
+                     │     → Season 재진입 → 결과 적용 + 그 경기일 AI 정산
+                     │     → STANDINGS → "확인" → WEEK (같은 요일)
+                     └ 없음 → "확인" 하나로 그날 AI 경기만 정산하고 다음 날
+       일요일의 "주 마감 →"
   → CalendarSystem.advance_week (rolls 7 days, bumps phase_week, possibly
     advances phase / bootstraps tournament for next phase)
-  → refill training defaults
+  → TrainingBoard.reset_for_new_week (판 비우기 + 주 진행 상태 초기화)
   → HUB (autosave: post_week)
 ```
+
+**훈련은 요일 단위로 먹는다.** 예전에는 "훈련 확정"이
+`apply_week_training()` 한 번으로 한 주를 통째로 정산하고 `TRAINING_RESULT`
+한 장이 그 결과를 보여 줬는데, 시간 경과 화면이 "그날 무슨 일이 있었는가"를
+요일마다 물으면서 정산도 `apply_day_training(day)` 로 쪼개졌다.
+`Screen.TRAINING_RESULT` 와 `TrainingResultView` 는 그때 **삭제됐다**.
+
+**토·일 이틀이 경기일이다.** 리그는 한 주에 두 라운드를 돌려 그 둘을 채우고,
+토너먼트(플레이오프 · 국제대회)는 주에 라운드 하나라 언제나 토요일에만 선다.
+자세한 것은 `calendar/README.md`.
 
 ## Architecture
 `SeasonHub.gd` is a thin orchestrator (`class_name SeasonHub extends Control`).
@@ -55,9 +67,10 @@ and exposes intent methods on the hub. Pattern mirrors `BattleSim`:
 | CalendarSystem           | `calendar/CalendarSystem.gd`                 | `advance_week()` — rolls 7 days, bumps `phase_week`, transitions phase. Emits `week_advanced`, `phase_changed`. |
 | HubView                  | `HubView.gd`                                 | Simplified hub — phase/week counter + roster + "이번 주 시작" + 순위 buttons. |
 | TeamDraft                | `draft/TeamDraft.gd`                         | 초기 5인 선발 (네임드 25인 풀) — 역할 고정 5칸 · 역할 필터 · 스크롤 썸네일 격자 · 상세 팝업. `draft/README.md` |
-| TrainingScheduler        | `training/TrainingScheduler.gd`              | 7-day × pilot grid; default fills + player edits + `apply_week_training()` (one-shot per week, returns before/after deltas) |
-| TrainingView             | `training/TrainingView.gd`                   | Schedule editor; "주 진행" button calls `SeasonHub.on_training_save_and_advance`. |
-| TrainingResultView       | `training/TrainingResultView.gd`             | Post-week dashboard — 5×5 stat deltas. "다음 →" calls `SeasonHub.on_training_result_continue`. |
+| PressConferenceView      | `press/PressConferenceView.gd`               | **기자회견** — 주 시작 직전의 메신저 화면. 지금은 대사 · 선택지가 임시 데이터인 틀이다. `press/README.md` |
+| TrainingBoard            | `training/TrainingBoard.gd`                  | **주간 훈련 타일판** — 5열(선수) × 5행(월~금). 배치 판정 + 정산(`cell_exp` / `compute_day_gains`) + **요일 적용**(`apply_day_training(day)`) + 나머지 EXP 통장. `training/README.md` |
+| TrainingView             | `training/TrainingView.gd`                   | Schedule editor; "훈련 확정" calls `SeasonHub.on_training_confirmed` — 판을 정산하지 않고 **주를 연다**(요일 커서를 월요일에 세운다). |
+| WeekProgressView         | `week/WeekProgressView.gd`                   | **시간 경과** — 좌측 세로 요일 레일 + 그날의 훈련 결과 / 경기 카드 + 아래 "확인" (경기일이면 "경기 시작"). `week/README.md` |
 | LeagueManager            | `league/LeagueManager.gd`                    | Round-robin schedule keyed by `phase_week` (1 round per week), standings, `resolve_current_week()` for AI matches. |
 | TournamentManager        | `tournament/TournamentManager.gd`            | 4-team SE playoff bracket distributed across 2 weeks (SF week + F week). |
 | InternationalTournament  | `tournament/InternationalTournament.gd`      | 8-team SE INTL bracket distributed across 3 weeks (QF / SF / F). |
@@ -79,21 +92,26 @@ and exposes intent methods on the hub. Pattern mirrors `BattleSim`:
 
 Total ≈ 50 weeks (~ 11.5 months).
 
-## Match-week handoff
-On the player's match week, the path differs from the daily model:
-- `SeasonHub.on_training_result_continue` checks
-  `_has_player_match_this_week()`. If true, populates
-  `season_state["pending_match"]` (`{source, schedule_idx, enemy_team_id,
-  winner_side}`) and `change_scene_to_file` into MatchFlow.
+## Match-day handoff
+- 시간 경과 화면의 토 / 일에서 `SeasonHub.has_player_match_on_day(day)` 가
+  참이면 아래 버튼이 **"경기 시작"** 이 된다. 누르면
+  `on_week_day_match_start()` → `_launch_player_match_on_day(matchday)` 가
+  `season_state["pending_match"]`(`{source, schedule_idx, enemy_team_id,
+  winner_side}`)를 채우고 MatchFlow 로 `change_scene_to_file` 한다.
+  우선순위는 예전과 같이 INTL > 플레이오프 > 리그(`_find_player_match_source`).
 - MatchFlow runs PREP → BAN_PICK(밴픽 + 메크 배정) → BattleSim. 정글 시작
   방향은 BattleSim 이 개시 직전에 묻는다.
 - When BattleSim ends, the win panel's "다음 →" returns to `Season.tscn`.
 - `SeasonHub._ready` consumes `pending_match`, applies the result via
   `LeagueManager.record_result()` / `TournamentManager.record_result()` /
   `InternationalTournament.record_result()`, then calls
-  `_resolve_remaining_ai_for_week()` to sweep up any remaining AI matches
-  scheduled for the same week, then routes to the appropriate STANDINGS
-  view.
+  `_resolve_ai_for_matchday(md)` — **그 경기일의 AI 경기만**. 주 통째로
+  돌리면 토요일 경기를 마치고 보는 순위표에 아직 치르지도 않은 일요일 결과가
+  미리 들어간다. 그러고 나서 STANDINGS 로 라우팅한다.
+- 순위표 / 대진표의 **"확인"** 은 `on_standings_confirmed()` 다 — 주가 돌고
+  있으면(`week_day >= 0`) 그 요일로, 아니면 허브로 돌아간다. 예전의
+  "다음 주 →" 버튼은 세 화면에서 전부 삭제됐다(주를 넘기는 일이 일요일
+  마감으로 옮겨 갔다).
 
 ## Tournament lifecycle
 - TournamentManager and InternationalTournament both listen to
@@ -151,8 +169,8 @@ internal-only and never exposed in-game.
 3. **Post-ban-pick** — `MatchFlow._on_ban_pick_finished` before
    `change_scene_to_file` to BattleSim. Writes the full match snapshot
    (banned/picked/assigned mech IDs) into `match_resume`.
-4. **Post-week-end** — `SeasonHub.on_proceed_to_next_week` after
-   `advance_week`. Captures both post-match weeks and no-match weeks.
+4. **Post-week-end** — `SeasonHub._end_week` after `advance_week` (the
+   일요일 마감). Captures both post-match weeks and no-match weeks.
 
 No save fires inside BattleSim. Closing mid-battle leaves the disk save at
 trigger #3; resume re-enters BattleSim with the locked-in picks but the
@@ -175,9 +193,9 @@ Lazy view builders cache the instance after first creation.
 - `Screen.HUB` → simplified HubView. Calls `LeagueManager.ensure_phase_scheduled()`
   + `TournamentManager.ensure_active()` + `InternationalTournament.ensure_active()`
   to handle save-loads landing on tournament weeks.
+- `Screen.PRESS` → `PressConferenceView` (매번 회견을 새로 연다).
 - `Screen.TRAINING` → `TrainingView`.
-- `Screen.TRAINING_RESULT` → `TrainingResultView` (populated by
-  `on_training_save_and_advance`).
+- `Screen.WEEK` → `WeekProgressView` (요일 커서는 `season_state["week_day"]`).
 - `Screen.LEAGUE` → `LeagueView` (standings).
 - `Screen.PLAYOFF` → `BracketView`.
 - `Screen.INTL_BRACKET` → `IntlBracketView`.
@@ -185,7 +203,8 @@ Lazy view builders cache the instance after first creation.
 - `Screen.ENDING` → `EndingView`.
 
 ## Calendar contract
-- `CalendarSystem.advance_week()` is the single tick. Rolls 7 days
+- `CalendarSystem.advance_week()` is the single tick, and **only
+  `SeasonHub._end_week()` calls it** — the 일요일 마감. Rolls 7 days
   forward, bumps `phase_week`, transitions phase if `phase_week` exceeds
   `phase_max_weeks(current_phase)`. Emits `week_advanced` (always) and
   `phase_changed` (on phase transitions).

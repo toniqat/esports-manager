@@ -5,6 +5,10 @@ extends Control
 # 플레이오프 진출권(상위 `PLAYOFF_TEAMS`) 줄은 왼쪽 초록 띠로 표시한다.
 # 색은 전부 `OutgameTheme` 를 지난다 — 흰 종이 위의 카드 목록이다.
 #
+# **아래 버튼은 하나뿐이다("확인").** 예전에는 "돌아가기 / 다음 주 →" 둘이었는데,
+# 주를 넘기는 일이 시간 경과 화면의 일요일 마감으로 옮겨 가면서 이 화면에 남은
+# 행동은 "다 봤다" 하나가 됐다. 돌아갈 자리는 버튼이 아니라 **주 진행 상태**가
+# 정한다(`SeasonHub.on_standings_confirmed` — 주가 돌고 있으면 그 요일로, 아니면 허브로).
 
 const PHASE_NAMES: Dictionary = {
 	GameEnums.SeasonPhase.PRESEASON:      "프리시즌",
@@ -14,7 +18,6 @@ const PHASE_NAMES: Dictionary = {
 	GameEnums.SeasonPhase.REGULAR:        "정규시즌",
 	GameEnums.SeasonPhase.REGULAR_INTL:   "정규시즌 국제대회",
 }
-const WEEKDAY_NAMES: Array = ["월", "화", "수", "목", "금", "토", "일"]
 
 const ROW_W: float = 1000.0
 const ROW_H: float = 104.0
@@ -27,19 +30,14 @@ var _league: LeagueManager = null
 var _phase_lbl: Label
 var _next_match_lbl: Label
 var _row_widgets: Array = []   # 8 dicts of {panel, stylebox, rank, name, wl, pct, po}
-var _next_btn: Button
-var _back_btn: Button
+var _ok_btn: Button
 var _built: bool = false
 
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_PASS
-	if not _built:
-		_build()
-		_built = true
-	_resolve_league()
-	refresh()
+	ensure_view()
 
 
 # Idempotent — SeasonHub calls this each time it routes to LEAGUE.
@@ -74,7 +72,7 @@ func _build() -> void:
 
 	_build_header()
 	_build_rows()
-	_build_back_button()
+	_build_button()
 
 
 func _build_header() -> void:
@@ -129,31 +127,21 @@ func _build_rows() -> void:
 		})
 
 
-func _build_back_button() -> void:
-	var w: float = 320.0
+func _build_button() -> void:
+	var w: float = ROW_W
 	var h: float = 100.0
-	var gap: float = 30.0
-	var total: float = w * 2 + gap
-	var x0: float = (1080.0 - total) / 2.0
+	var x0: float = (ScreenMetrics.vp_w() - w) / 2.0
 	# 하단 안전선에 매단다 — 이 자리는 아이폰 홈 인디케이터 / 안드로이드
 	# 제스처 바가 터치를 가져가는 구간과 맞닿아 있다.
 	var y: float = ScreenMetrics.safe_h() - 40.0 - h
 
-	_back_btn = Button.new()
-	_back_btn.text = "돌아가기"
-	_back_btn.position = Vector2(x0, y)
-	_back_btn.size     = Vector2(w, h)
-	_back_btn.add_theme_font_size_override("font_size", 30)
-	_back_btn.pressed.connect(_on_back_pressed)
-	add_child(_back_btn)
-
-	_next_btn = Button.new()
-	_next_btn.text = "다음 주 →"
-	_next_btn.position = Vector2(x0 + w + gap, y)
-	_next_btn.size     = Vector2(w, h)
-	_next_btn.add_theme_font_size_override("font_size", 30)
-	_next_btn.pressed.connect(_on_next_week_pressed)
-	add_child(_next_btn)
+	_ok_btn = Button.new()
+	_ok_btn.text = "확인"
+	_ok_btn.position = Vector2(x0, y)
+	_ok_btn.size     = Vector2(w, h)
+	OutgameTheme.style_primary_button(_ok_btn, 34)
+	_ok_btn.pressed.connect(_on_ok_pressed)
+	add_child(_ok_btn)
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────
@@ -175,11 +163,11 @@ func refresh() -> void:
 		_next_match_lbl.text = "다음 경기 없음"
 	else:
 		var opp: int = int(nxt["team_b"]) if int(nxt["team_a"]) == pid else int(nxt["team_a"])
-		_next_match_lbl.text = "다음 매치: %d주차 vs %s" % [
+		_next_match_lbl.text = "다음 경기: %d주차 %s — vs %s" % [
 			int(nxt["phase_week"]),
+			"토" if int(nxt.get("matchday", 0)) == 0 else "일",
 			_league.team_name(opp),
 		]
-	_refresh_buttons()
 
 	var ranked: Array = _league.standings_ranked()
 	var po_count: int = int(_gm.PLAYOFF_TEAMS)
@@ -233,19 +221,7 @@ func refresh() -> void:
 				OutgameTheme.TEXT if is_player else OutgameTheme.TEXT_SUB)
 
 
-# ── Button handlers ─────────────────────────────────────────────────────────
-# Disable "다음 주" while the player still has an unplayed match this week.
-func _refresh_buttons() -> void:
-	if _next_btn == null or _hub == null:
-		return
-	_next_btn.disabled = _hub.has_player_match_this_week()
-
-
-func _on_back_pressed() -> void:
-	if _hub != null:
-		_hub.goto(SeasonHub.Screen.HUB)
-
-
-func _on_next_week_pressed() -> void:
-	if _hub != null and _hub.has_method("on_proceed_to_next_week"):
-		_hub.on_proceed_to_next_week()
+# ── Button handler ──────────────────────────────────────────────────────────
+func _on_ok_pressed() -> void:
+	if _hub != null and _hub.has_method("on_standings_confirmed"):
+		_hub.on_standings_confirmed()

@@ -66,6 +66,17 @@ Resource-typed entries:
   int on load — 그러지 않으면 `{x: 0.0}` 이 되어 그 뒤 `Vector2i(...)` 로 감싸는
   자리마다 형변환이 한 겹씩 더 붙고, 한 자리만 빠뜨려도 칸 비교가 어긋난다.
   (예전의 `training_schedule` `Dictionary[int, Array[7]]` 은 삭제됐다.)
+- **주 진행 상태 셋** — 한 주가 월~일 하루씩 흘러가면서 생겼다
+  (`features/season/week/README.md`).
+  - `week_day` — 지금 보고 있는 요일 0..6. **-1 은 주가 아직 안 열렸다는 뜻**이고,
+    그 값이 순위표의 "확인"이 주로 돌아갈지 허브로 돌아갈지를 가른다.
+  - `week_day_log` — `day(int) → Array[줄]`, 요일별 훈련 결과 기록. **정수 키**라
+    `_int_keyed_dict_in` 을 지난다 — 안 지나면 `log[3]` 이 영원히 빈 배열을 돌려줘
+    같은 요일 훈련이 두 번 먹는다.
+  - `training_exp_carry` — `seat(int) → {stat: 남은 EXP}` 나머지 통장. 바깥 키도
+    안쪽 값도 JSON 을 지나면 문자열 / 실수가 되므로 `_exp_carry_in` 이 둘 다 int 로
+    되돌린다 — 그러지 않으면 `total / EXP_PER_POINT` 가 정수 나눗셈이 아니게 돼
+    나머지가 조용히 사라진다.
 - `pending_match` round-trips as-is. Non-null between match-day dispatch
   and `_consume_pending_match_result` (always paired with `match_resume`
   except briefly during post-match save where both are null).

@@ -276,7 +276,7 @@ esports-manager/
 | 오브젝트 획득(아군 / 적군) | `ObjectiveSystem._grant_reward` | `SUCCESS` / `WARNING` |
 | 경기 승 / 패 | `SimulationCore.check_win_condition` | `SUCCESS` / `ERROR` |
 | 정글 시작 — 집기 / 무리 진입 / 방향 결정 | `gambit/JungleStartOverlay` | `SELECT` / `SELECT` / `MEDIUM` |
-| 훈련 타일 — 집기 / 놓을 수 있는 자리 진입 / 배치 | `season/training/TrainingView` | `SELECT` / `SELECT` / `SOFT` |
+| 훈련 타일 — 집기 / **놓을 수 있는 칸마다 스냅** / 배치 | `season/training/TrainingView` | `SELECT` / `LIGHT` / `SOFT` |
 | 훈련 타일 — 판에서 탭해 걷어냄 | `season/training/TrainingView._on_grid_input` | `LIGHT` |
 | 밴픽 메크 칸 — 들어올림 / 맞바꿈 | `ban_pick/BanPickController` | `SELECT` / `MEDIUM` |
 | 세이브 삭제 — 무장 / 실행 | `save_load/SlotCard._on_delete` | `WARNING` / `ERROR` |
@@ -289,11 +289,16 @@ esports-manager/
 - **한 사건은 한 번만 운다.** 처치로 끝난 명중은 `MEDIUM` 을 건너뛴다 —
   `mark_pilot_dead` 가 이미 `HEAVY` 를 냈고, 겹치면 처치가 평타처럼 뭉개진다.
   같은 이유로 두 번 눌러야 지워지는 삭제 버튼은 자동 배선을 `mute` 한다.
-- **드래그의 "들어섬"만 운다.** 벗어나는 쪽은 조용하다 — 놓을 수 있게 됐다는
-  것이 신호이고, 매 프레임 울리면 그것은 신호가 아니라 진동이다.
+- **드래그는 "들어섬"만 운다 — 다만 칸 단위로 스냅하는 판에서는 칸마다 운다.**
+  벗어나는 쪽은 어디서든 조용하고(놓을 수 있게 됐다는 것이 신호다) 매 **프레임**
+  울리는 것도 여전히 금지다(그것은 신호가 아니라 진동이다). 훈련판이 칸마다
+  `LIGHT` 를 내는 것은 그 화면의 미리보기가 자유 좌표가 아니라 **칸에 물려**
+  움직이기 때문이다 — 한 톡이 곧 "한 칸 넘었다"라서 판 위를 끌면 따다닥 걸리는
+  손맛이 된다. 카드 드래그(`_drag_hot_last`)처럼 대상이 연속인 자리는 여전히
+  전이 한 번만 운다.
 - **끌어다 놓는 조작은 버튼과 같은 문법으로 닫는다.** 훈련 타일이 판에 물리는
-  순간은 버튼을 뗄 때와 같은 `SOFT` 다 — 집기 · 미리보기(`SELECT`)보다 무거운
-  한 겹이 와야 셋이 한 동작의 세 박자로 읽힌다.
+  순간은 버튼을 뗄 때와 같은 `SOFT` 다 — 집기(`SELECT`) · 칸 넘김(`LIGHT`)보다
+  무거운 한 겹이 와야 셋이 한 동작의 처음 · 중간 · 끝으로 읽힌다.
 
 **데스크톱에서는 전부 조용한 no-op** 이므로 에디터 실행에 가드가 필요 없다.
 다만 **`--check-only --script` 는 오토로드 식별자를 모른다** — `Haptics` /

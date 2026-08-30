@@ -504,11 +504,12 @@ func _grid_can_drop(at_position: Vector2, _data: Variant) -> bool:
 	var origin: Vector2i = _origin_for(_drag_tile, at_position)
 	var ok: bool = _board.can_place(_drag_tile, origin)
 	if origin != _hover_cell or ok != _hover_ok:
-		# 미리보기가 **놓을 수 있는 자리로 막 들어선** 순간에만 한 톡 —
-		# 손가락 밑에서 타일이 칸에 물린 느낌이 이 화면의 조작 감각이다.
-		# 칸이 바뀌었을 뿐인데도 울리면 판 위를 훑는 내내 진동이 된다.
-		if ok and not _hover_ok:
-			Haptics.play(Haptics.Kind.SELECT)
+		# **놓을 수 있는 칸에 스냅할 때마다** 한 톡 — 판 위를 끌고 다니는 동안
+		# 칸을 하나 넘을 때마다 따다닥 걸리는 것이 이 화면의 조작 감각이다.
+		# 놓을 수 없는 자리는 조용하다(그 침묵이 곧 "여기엔 안 들어간다"이고,
+		# 미리보기의 빨간 칸이 이미 그것을 말한다).
+		if ok:
+			Haptics.play(Haptics.Kind.LIGHT)
 		_hover_cell = origin
 		_hover_ok = ok
 		_grid.queue_redraw()
@@ -519,8 +520,8 @@ func _grid_drop(at_position: Vector2, _data: Variant) -> void:
 	if _board == null or _drag_tile == null:
 		return
 	if _board.place(_drag_tile.id, _origin_for(_drag_tile, at_position)) >= 0:
-		# 타일이 판에 물렸다 — 버튼을 뗄 때와 같은 뭉툭한 한 겹이 그 조작을 닫는다.
-		# 집기 · 미리보기(SELECT)보다 무거워야 셋이 한 동작의 세 박자로 읽힌다.
+		# 타일이 판에 물렸다 — 뭉툭한 한 겹이 그 조작을 닫는다.
+		# 집기(SELECT) · 칸 넘김(LIGHT)보다 무거워야 한 동작의 끝으로 읽힌다.
 		Haptics.play(Haptics.Kind.SOFT)
 		# 놓였으므로 되돌릴 것이 없다 — 여기서 지우지 않으면 DRAG_END 가
 		# 판에서 걷어 온 사본을 한 장 더 얹어 타일이 둘로 늘어난다.
@@ -534,8 +535,8 @@ func _begin_drag(t: TrainingTile, from_board: Dictionary) -> void:
 	_drag_from_board = from_board
 	_hover_cell = Vector2i(-1, -1)
 	_hover_ok = false
-	# 타일이 손에 딸려 올라왔다. 한 동작의 첫 박자라 가장 가볍다 —
-	# 미리보기가 물릴 때(SELECT)와 놓을 때(SOFT)가 그 뒤를 잇는다.
+	# 타일이 손에 딸려 올라왔다. 한 동작의 첫 박자다 —
+	# 칸을 넘을 때마다(LIGHT) 따다닥 이어지고 놓을 때(SOFT) 닫힌다.
 	Haptics.play(Haptics.Kind.SELECT)
 	set_drag_preview(_make_drag_preview(t))
 	if _grid != null:

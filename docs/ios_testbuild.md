@@ -197,6 +197,7 @@ CI 에서 바로 서명해 TestFlight 로 올리는 쪽이 낫다 — 이 워크
 | `autoloads/GameManager.gd` | `db_path()` / `_extract_db_to_user()` — 아래 항목 |
 | `features/battle_sim/data/DataLoader.gd` | 같은 이유로 `GameManager.db_path()` 를 쓴다 |
 | `project.godot` | `textures/vram_compression/import_etc2_astc=true` — 아래 항목 |
+| `resources/images/splash_blank.png` | 런치 스크린에서 Godot 로고를 걷어 내는 8×8 투명 PNG — 아래 항목 |
 
 ### `res://data/game.db` → `user://data/game.db`
 
@@ -265,6 +266,52 @@ z = zipfile.ZipFile("EsportsManager-debug-unsigned.ipa")
 d = plistlib.loads(z.read("Payload/EsportsManager.app/Info.plist"))
 print(d["CFBundleIdentifier"], d["UISupportedInterfaceOrientations"])
 ```
+
+### Godot 스플래시 — 런치 스크린은 **지울 수 없고 갈아 끼운다**
+
+폰에서 앱을 켜면 Godot 로고가 두 번 지나간다. 서로 다른 물건이라 끄는 법도 다르다.
+
+| 무엇 | 언제 보이나 | 끄는 법 |
+|---|---|---|
+| **iOS 런치 스크린** | 아이콘을 탭한 직후, 앱 프로세스가 뜨는 동안 | 끌 수 없다 — 애플이 요구하는 화면이고 Godot 은 언제나 `Launch Screen.storyboard` 를 굽는다. **무엇을 담을지만** 정할 수 있다 |
+| **엔진 부트 스플래시** | 앱이 뜬 뒤 첫 씬을 로드하는 동안 | `application/boot_splash/show_image=false` |
+
+그래서 `project.godot` 의 `[application]` 절에 세 줄이 들어가 있다:
+
+```
+boot_splash/bg_color=Color(0, 0, 0, 1)
+boot_splash/show_image=false
+boot_splash/image="res://resources/images/splash_blank.png"
+```
+
+- `show_image=false` 는 **엔진 스플래시만** 끈다.
+- `image` 는 **런치 스크린이 읽는다** — Godot 4.5 의 iOS 익스포터는
+  `show_image` 를 **아예 보지 않고**(`editor/export/editor_export_platform_apple_embedded.cpp`)
+  `boot_splash/image` 를 `Images.xcassets/SplashImage.imageset/splash@2x·@3x.png` 로 굽는다.
+  비어 있으면 **엔진에 내장된 Godot 로고**로 폴백한다 — `show_image` 만 꺼 두면
+  런치 스크린에는 로고가 그대로 남는 이유다. 그래서 8×8 **완전 투명** PNG
+  (`resources/images/splash_blank.png`, 70바이트)를 물려 둔다.
+- `bg_color` 는 스토리보드의 배경색이 된다(`storyboard/use_custom_bg_color` 를
+  켜지 않는 한). 투명 이미지 + 검정 배경 = **검정 한 장**이고, 그 검정이 엔진
+  스플래시 배경과 이어져 타이틀 화면까지 색이 끊기지 않는다.
+
+나중에 진짜 스플래시 아트를 넣고 싶으면 `splash_blank.png` 를 덮어쓰거나,
+iOS 에만 다른 그림을 쓰고 싶으면 `export_presets.cfg` 에
+`storyboard/custom_image@2x` 와 `@3x` 를 **둘 다** 채운다(하나만 채우면 무시된다).
+표시 방식은 `storyboard/image_scale_mode`
+(`0=로고와 동일 · 1=Center · 2=Scale to Fit · 3=Scale to Fill · 4=Scale`).
+
+검산 — 익스포트한 뒤 구워진 스플래시가 로고가 아닌지 본다(맥이 없어도 된다:
+`export_project_only=true` 라 Xcode 프로젝트까지는 윈도우에서도 만들어진다):
+
+```bash
+godot --headless --path . --export-debug "iOS" /tmp/ios/EsportsManager.ipa
+ls -la /tmp/ios/EsportsManager/Images.xcassets/SplashImage.imageset/
+# Godot 로고면 14779바이트, 우리 것이면 85바이트
+grep -o '<color key="backgroundColor"[^/]*' "/tmp/ios/EsportsManager/Launch Screen.storyboard"
+```
+
+---
 
 ---
 

@@ -13,6 +13,9 @@ config_version=5
 config/name="EsportsManager"
 run/main_scene="res://scenes/TitleScreen.tscn"
 config/features=PackedStringArray("4.5", "Mobile")
+boot_splash/bg_color=Color(0, 0, 0, 1)
+boot_splash/show_image=false
+boot_splash/image="res://resources/images/splash_blank.png"
 config/icon="res://icon.svg"
 
 [autoload]
@@ -43,7 +46,6 @@ port_override=6550
 
 [gui]
 
-; 모바일 드래그 스크롤의 탭 허용 오차. 근거는 docs/mobile_safe_area.md §5.
 common/default_scroll_deadzone=24
 
 [rendering]

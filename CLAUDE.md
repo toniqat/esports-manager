@@ -176,7 +176,12 @@ esports-manager/
 │   ├── GameManager.gd           ← State singleton — NO class_name
 │   ├── Haptics.gd               ← iOS / Android 햅틱 래퍼. **원본은 이 저장소가 아니다**
 │   │                              (별도 `godot-haptics` 포크에서 복사해 온다).
-│   │                              전역 이름으로 등록(`*`)돼 있어 `Haptics.play(Kind.X)` 로 부른다
+│   │                              전역 이름으로 등록(`*`)돼 있어 `Haptics.play(Kind.X)` 로 부른다.
+│   │                              **그 포크는 업스트림의 사본이 아니다** — 업스트림 iOS
+│   │                              플러그인은 `light`/`medium`/`heavy` 셋만 바인딩해서
+│   │                              SELECT · SOFT · SUCCESS 계열이 폰에서 통째로 침묵했고,
+│   │                              나머지를 포크에서 구현했다. 되감으면 침묵도 돌아온다 —
+│   │                              ios/plugins/README.md
 │   └── HapticUi.gd              ← **버튼 햅틱 자동 배선** — `node_added` 하나가 트리에 들어오는
 │                                  모든 `BaseButton` 에 감촉을 물린다(기본 LIGHT, `button_down`
 │                                  에는 `prepare()`). 예외만 `HapticUi.kind()` / `mute()` 로 적는다.

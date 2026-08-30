@@ -225,6 +225,22 @@ jobs:
             lipo -info "$OUT/$f"
             nm -gU "$OUT/$f" 2>/dev/null | grep -q "register_haptics_types" || { echo "::error::$f 에 register_haptics_types 심볼이 없다."; exit 1; }
           done
+          # `register_haptics_types` 는 **플러그인이 있다**까지밖에 못 본다.
+          # 실제로 겪은 사고는 그 다음 칸이다 — 플러그인은 멀쩡히 실려 있는데
+          # `autoloads/Haptics.gd` 가 부르는 메서드의 **절반이 바인딩돼 있지 않아**
+          # 부르는 자리마다 런타임 에러만 나고 폰에서는 아무 감촉도 안 왔다(버튼은
+          # 누를 때 LIGHT 만 울고 뗄 때 SOFT 는 침묵, 훈련 타일 드래그는 집기 ·
+          # 미리보기 · 놓기 세 박자가 전부 침묵). 그동안 빌드는 내내 초록불이었다.
+          #
+          # `bind_method` 에 넘긴 이름은 문자열 리터럴이라 아카이브의 __cstring 에
+          # 평문으로 남는다. 그 이름들이 다 있는지를 본다 — 전부 `_bind_methods`
+          # 한 함수 안에 있으므로, 헷갈릴 여지가 없는 `notify_success` 하나만
+          # 빠져도 그 블록이 통째로 낡았다는 뜻이다.
+          for f in haptics.release.a haptics.debug.a; do
+            for m in light medium heavy soft rigid selection notify_success notify_warning notify_error prepare is_supported impact; do
+              LC_ALL=C grep -qa "$m" "$OUT/$f" || { echo "::error::$f 가 '$m' 을 바인딩하지 않는다 — 플러그인 소스(${HAPTICS_REPO}@${HAPTICS_REF})가 낡았다. 이대로면 Haptics.$m() 호출이 폰에서 조용히 아무 일도 안 한다."; exit 1; }
+            done
+          done
           grep -q 'plugins/Haptics=true' export_presets.cfg || { echo "::error::export_presets.cfg 에 plugins/Haptics=true 가 없다."; exit 1; }
           echo "플러그인 준비됨 — 폴백 없이 네이티브 햅틱으로 빌드한다."
 
@@ -354,6 +370,12 @@ jobs:
           # ObjC 클래스 참조는 dyld 가 런타임에 묶는 외부 심볼이라 스트립을
           # 견딘다. 이 빌드에서 그 UIKit 클래스를 부르는 코드는 플러그인뿐이다.
           LC_ALL=C grep -qa 'OBJC_CLASS_$_UIImpactFeedbackGenerator' "$BIN" || { echo "::error::최종 바이너리에 UIImpactFeedbackGenerator 참조가 없다 — 햅틱 구현이 안 들어갔다."; exit 1; }
+          # 그리고 **impact 셋 말고 나머지도** 들어왔는가. 이 둘을 부르는 코드는
+          # 이 빌드에 플러그인 말고 없으므로, 있으면 selection / notify_* 가 실제로
+          # 링크됐다는 뜻이다. 위 아카이브 검사는 굽는 재료를 보고 이쪽은 나온
+          # 물건을 본다 — 낡은 캐시가 끼어들면 여기서 걸린다.
+          LC_ALL=C grep -qa 'OBJC_CLASS_$_UISelectionFeedbackGenerator' "$BIN" || { echo "::error::최종 바이너리에 UISelectionFeedbackGenerator 참조가 없다 — 낡은 플러그인이다. Haptics.Kind.SELECT 가 폰에서 침묵한다."; exit 1; }
+          LC_ALL=C grep -qa 'OBJC_CLASS_$_UINotificationFeedbackGenerator' "$BIN" || { echo "::error::최종 바이너리에 UINotificationFeedbackGenerator 참조가 없다 — 낡은 플러그인이다. SUCCESS / WARNING / ERROR 가 폰에서 침묵한다."; exit 1; }
           HAP_NOTE="네이티브 (Taptic Engine) — 최종 바이너리에서 확인됨"
           echo "HAPTICS: $HAP_NOTE"
 

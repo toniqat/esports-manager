@@ -35,6 +35,34 @@ Godot 은 `.gdip` 의 `binary=` 가 가리키는 `haptics.a` 가 **그 자리에
 `haptics.release.a` 를 집어 가고, 둘 다 목적지에서는
 `<앱>/ios/plugins/haptics/**haptics.a**` 라는 한 이름이 된다.
 
+### fork 는 업스트림의 사본이 아니다 — 감촉 표 전체를 바인딩한다
+
+**업스트림 `kyoz/godot-haptics` 의 iOS 플러그인은 `light` / `medium` / `heavy`
+셋만 바인딩한다.** `_bind_methods()` 에 그 셋뿐이고 나머지는 아예 구현이 없다.
+그런데 `autoloads/Haptics.gd` 는 그보다 넓은 표를 전제로 쓰여 있어
+`selection()` · `soft()` · `rigid()` · `notify_success/warning/error()` ·
+`prepare()` · `is_supported()` · `impact(style, intensity)` 를 부른다 — **전부
+없는 메서드**다.
+
+없는 메서드를 부르면 GDScript 는 그 자리에서 런타임 에러를 내고 조용히 지나간다.
+`_plugin != null` 이라 `Input.vibrate_handheld` 폴백조차 안 탄다. 그래서 나온
+증상이 **"플러그인은 멀쩡히 링크됐는데 감촉의 3분의 2가 침묵"** 이었다 — 버튼은
+누를 때(`LIGHT`)만 울고 뗄 때(`SOFT`)는 조용했고, 훈련 타일 드래그는 집기 ·
+미리보기 · 놓기(`SELECT` · `SELECT` · `SOFT`) 세 박자가 통째로 없었으며,
+경기 승패 · 오브젝트 획득 · 세이브 삭제 · 엔딩(`SUCCESS` / `WARNING` / `ERROR`)도
+전부 침묵이었다. 위 게이트 셋은 그동안 내내 초록불이었다 — 그 셋이 보는 것은
+"플러그인이 있는가"이지 "부를 수 있는가"가 아니기 때문이다.
+
+그래서 fork 에서 나머지를 구현하고 바인딩했다. **fork 를 업스트림으로 되감으면
+그 침묵이 그대로 돌아온다.** 함께 바뀐 것이 하나 더 있다 — **제너레이터를
+프로세스 수명 동안 캐시한다**. 업스트림은 호출마다 `UIImpactFeedbackGenerator`
+를 새로 만들고 버렸는데, `-prepare` 는 **그 인스턴스**의 탭틱 엔진을 데우는
+것이라 같은 런루프 안에서 죽는 객체는 그 예열을 들고 사라진다. 누를 때 데워
+둔 물건이 뗄 때 우는 물건과 같아야 `prepare()` 가 뜻을 갖는다.
+
+**Android 쪽(`android/.../Haptics.java`)은 아직 셋뿐이다.** 지금 CI 가 굽는 것은
+iOS 뿐이라 손대지 않았다 — 안드로이드를 내보내게 되면 그때 같은 표로 채워야 한다.
+
 ### 어떻게 구워지는가
 
 원본은 `toniqat/godot-haptics-upstream-fork`(upstream `kyoz/godot-haptics`)이고
@@ -57,7 +85,10 @@ armv7 은 Xcode 14 에서 사라졌고 시뮬레이터 슬라이스는 사이드
 
 1. **플러그인 확인** — 세 파일이 있고, `lipo -info` 가 arm64 라 답하고,
    `nm` 이 `register_haptics_types` 심볼을 찾고, preset 에 `plugins/Haptics=true`
-   가 있을 것.
+   가 있을 것. **그리고 `Haptics.gd` 가 부르는 메서드 이름이 전부 아카이브 안에
+   있을 것** — `bind_method` 에 넘긴 이름은 문자열 리터럴이라 `__cstring` 에
+   평문으로 남는다. 이 검사가 없으면 "플러그인은 있는데 절반이 바인딩 안 됨"이
+   초록불로 지나간다(실제로 지나갔다 — 위 절).
 2. **익스포트 결과 확인** — 생성된 Xcode 프로젝트 안에 플러그인 `.a` 가 있고,
    그 안에 `register_haptics_types` 심볼이 있고, **그것이 링크 단계에 들어가
    있을 것**. **찾는 이름에 주의** — 익스포터는 고른 쪽을 `.gdip` 의
@@ -71,8 +102,11 @@ armv7 은 Xcode 14 에서 사라졌고 시뮬레이터 슬라이스는 사이드
    files 목록에 들어 있을 때뿐**이다. 워크플로는 UUID 를 두 번 타고 들어가
    그 목록에서 확인한다.
 3. **최종 바이너리 확인** — `.app` 실행 바이너리 안에
-   `register_haptics_types` 와 `OBJC_CLASS_$_UIImpactFeedbackGenerator` 가
-   **둘 다** 있을 것. 1·2 가 통과해도 여기서 떨어질 수 있다: **정적 아카이브의
+   `register_haptics_types` 와 `OBJC_CLASS_$_UIImpactFeedbackGenerator` 와
+   `OBJC_CLASS_$_UISelectionFeedbackGenerator` 와
+   `OBJC_CLASS_$_UINotificationFeedbackGenerator` 가 **넷 다** 있을 것. 뒤의 둘을
+   부르는 코드는 이 빌드에 플러그인 말고 없으므로, 그 참조가 곧 "impact 셋 말고
+   나머지도 실제로 링크됐다"의 증거다 — 낡은 캐시가 끼어들면 여기서 걸린다. 1·2 가 통과해도 여기서 떨어질 수 있다: **정적 아카이브의
    멤버는 참조하는 심볼이 있을 때만 끌려 들어오므로**, 링크 단계에 `.a` 가
    있어도 Godot 이 만든 초기화 코드가 빠지면 통째로 데드 스트립된다. 그 경우가
    정확히 "빌드 초록불 + 폰에서는 폴백" 이라, 이 검사가 마지막 자물쇠다.

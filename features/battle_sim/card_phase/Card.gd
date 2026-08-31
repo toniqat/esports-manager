@@ -108,17 +108,84 @@ const CHARGE_BADGE_SIZE := Vector2(52.0, 30.0)
 const CHARGE_BADGE_COLOR := Color(0.06, 0.05, 0.10, 0.92)
 const CHARGE_BADGE_TEXT_COLOR := Color(1.0, 0.92, 0.45)
 
-# ── 파일럿 초상 배지 ─────────────────────────────────────────────────────────
-# 시전자의 얼굴은 **카드 본체를 채우지 않는다.** 카드 안쪽 오른쪽 위에 작은 원형
-# 초상 하나로 앉고, 본체 자리는 카드 일러스트가 들어올 때까지 비워 둔다.
+# ── 앞면 세 층 (아트 · 이름 · 설명) ──────────────────────────
+# 카드 앞면은 위에서부터 **아트 → 이름 → 설명판** 이다.
+#
+# **아트는 카드 높이의 1/3 만 가져간다**(220 / 3 ≈ 73.3 → 74). 예전에는 이 자리가
+# 통째로 비어 있었고(비용색 앞면이 그대로 드러났다) 시전자 얼굴 배지 하나만
+# 떠 있었는데, 지금은 그 위쪽 셋째가 그림 자리다.
+#
+# **아트는 카드 테두리에서 `ART_INSET` 만큼 물러나 앉는다** — 카드 모서리는
+# 둥글고 아트는 네모라, 끝까지 붙이면 둥근 모서리 위로 그림의 네모난
+# 귀퇰이가 샐져나온다. 물러나 앉히면 둥근 테두리가 그림을 액자처럼 두른다
+# (자르지 않으므로 카드마다 백버퍼를 뜨는 `clip_children` 도 필요 없다).
+#
+# 세 층 모두 **절대 좌표**다. 카드는 160×220 으로 고정이고 컨테이너가 없어야
+# 레이아웃 패스를 기다리지 않고 설명 글자 크기를 계산할 수 있다
+# (`_apply_description` — `setup()` 은 첫 레이아웃 패스보다 먼저 돌 수 있다).
+const ART_INSET := 5.0
+const ART_H := 74.0
+const ART_BACK_COLOR := Color(0.05, 0.04, 0.09, 1.0)
+const ART_LINE_COLOR := Color(0.0, 0.0, 0.0, 0.55)
+
+const NAME_FONT_SIZE := 14
+
+# ── 설명문 ─────────────────────────────────────────────
+# 아트 아래의 나머지가 설명판이고, 판은 카드 테두리에서 **좌 · 우 · 아래로**
+# `DESC_INSET` 만큼 물러나 앉는다. 판을 깔지 않으면 글자가 비용색 위에 바로
+# 얹힐는데, 비용색은 파랑부터 노랑까지 여섯 가지라 어느 한 글자색도 여섯 곳에서
+# 다 읽히지 않는다.
+#
+# **글자 크기는 고정이 기본이고, 넘치는 카드만 줄인다** — `DESC_FONT_MAX` 로
+# 찍어 보고 판 안에 안 들어가면 한 단계씩 내려 `DESC_FONT_MIN` 까지 간다.
+# 처음부터 카드마다 다른 크기로 찍으면 손패가 들쌀날줍해 보이고, 반대로 전부
+# 최소 크기로 맞추면 스무 자짜리 카드까지 개미 글씨가 된다(설명문은 22자
+# median 에 mech_cards 쪽 최장 128자다).
+const DESC_INSET := 6.0
+const DESC_TOP := 106.0
+## 판 안쪽 여백(글자와 판 사이) — 좌우 / 위아래.
+const DESC_PAD_H := 6.0
+const DESC_PAD_V := 5.0
+const DESC_FONT_MAX := 13
+const DESC_FONT_MIN := 8
+const DESC_PLATE_COLOR := Color(0.05, 0.04, 0.09, 0.66)
+const DESC_TEXT_COLOR := Color(0.93, 0.94, 0.98)
+## 줄 간격은 0 으로 눌러 둔다 — 글자 크기를 고를 때 재는 값
+## (`Font.get_multiline_string_size`)이 줄 간격을 모르기 때문이다. 간격이 살아
+## 있으면 잴 높이와 실제 높이가 줄 수만큼 어긋나 마지막 줄이 판 밖으로 샐다.
+const DESC_LINE_SPACING := 0
+
+# ── 비용 배지 (좌측 상단, 카드 밖으로 걸친다) ──────────────────
+# 비용은 카드 **모서리 밖으로 살짝 튀어나온 원** 안에 찍힌다. 손패는 카드끼리
+# 절반 넘게 겹치는 부채꼴이라(오른쪽 카드가 왼쪽 카드를 덮는다) 왼쪽 위 모서리가
+# 각 카드에서 언제나 보이는 유일한 구석이고, 원이 그 밖으로 나가 있으면 겹친
+# 줄에서도 비용이 한 줄로 읽힌다.
+const COST_BADGE_SIZE := 42.0
+const COST_BADGE_RING_COLOR := Color(0.98, 0.96, 0.90, 0.95)
+const COST_BADGE_RING_WIDTH := 3
+const COST_FONT_SIZE := 22
+## 사용 불가 슬래브는 카드 사각형만 덮으므로 **밖으로 나간 원은 안 덮인다**.
+## 배지를 따로 어둡게 해 잠긴 카드에서 비용만 밝게 남지 않게 한다.
+const COST_BADGE_BLOCKED_TINT := Color(0.42, 0.42, 0.42, 1.0)
+
+# ── 파일럿 초상 배지 ──────────────────────────────────
+# 시전자의 얼굴은 **카드 본체를 채우지 않는다.** 아트 위 왼쪽, **비용 배지 바로
+# 아래**에 작은 원형 초상 하나로 앉는다. 예전에는 오른쪽 위였는데, 카드가 겹치는
+# 부채꼴에서 오른쪽 절반은 옆 카드에 가려지는 쪽이라 "누구 카드인가"가 손패를
+# 펼쳐 봐야만 읽혔다 — 비용과 얼굴은 한 구석에 세로로 모아 둔다.
 #
 # **손패에서만 그린다**(`is_player_card`). 상세 패널 · 더미 열람 · 밴픽 · 드래프트
 # 처럼 "이 기체가 주는 카드"를 보여 주는 자리에서는 시전자가 없거나 의미가 없고,
 # 상대 손패 peek 은 뒷면이라 그릴 것이 없다.
-const PORTRAIT_SIZE   := 54.0
-const PORTRAIT_MARGIN := 8.0
-## 본체 위쪽 끝 — 헤더 행(30px) + 마진(5) + VBox 간격(4).
-const PORTRAIT_TOP    := 44.0
+const PORTRAIT_SIZE   := 44.0
+const PORTRAIT_LEFT   := 5.0
+## 비용 배지 아래끈(-9 + 42 = 33) 바로 밑.
+const PORTRAIT_TOP    := 34.0
+## 초상 뒤에 깔는 원형 받침이 초상보다 넓은 만큼. 초상 PNG 는 정사각형에 내접한
+## 원이라 아트 위에 그냥 얹으면 가장자리가 그림에 묻힌다.
+const PORTRAIT_RING_PAD := 2.0
+const PORTRAIT_RING_COLOR := Color(0.05, 0.04, 0.09, 0.92)
+const PORTRAIT_RING_LINE := Color(0.98, 0.96, 0.90, 0.85)
 
 const UNPLAYABLE_COST_TEXT := "—"
 
@@ -186,6 +253,8 @@ var _preserve_mark: Panel = null
 var _charge_badge: Label = null
 ## 시전자 얼굴 배지 (카드 안쪽 오른쪽 위). 손패 카드에만 선다.
 var _portrait: TextureRect = null
+## 그 얼굴 뒤에 깔는 원형 받침. 초상과 언제나 함께 켜지고 꺼진다.
+var _portrait_ring: Panel = null
 ## 핸드가 내려가 있는가(= 내 차례가 아닌가). 그림자 거리만 바꾼다.
 var _lowered: bool = false
 
@@ -193,11 +262,14 @@ const DIM_MODULATE: Color = Color(0.42, 0.42, 0.48, 1.0)
 
 @onready var card_front: Panel = $CardFront
 @onready var card_back: Panel = $CardBack
-@onready var name_label: Label = $CardFront/MarginContainer/VBox/HeaderRow/NameLabel
-@onready var cost_label: Label = $CardFront/MarginContainer/VBox/HeaderRow/CostLabel
+@onready var art_frame: Panel = $CardFront/ArtFrame
+@onready var art_rect: TextureRect = $CardFront/ArtFrame/Art
+@onready var name_label: Label = $CardFront/NameLabel
+@onready var desc_plate: Panel = $CardFront/DescPlate
+@onready var desc_label: Label = $CardFront/DescPlate/DescLabel
+@onready var cost_badge: Panel = $CardFront/CostBadge
+@onready var cost_label: Label = $CardFront/CostBadge/CostLabel
 @onready var back_cost_label: Label = $CardBack/BackCostLabel
-@onready var owner_face_wrap: CenterContainer = $CardFront/MarginContainer/VBox/OwnerFaceWrap
-@onready var owner_face: TextureRect = $CardFront/MarginContainer/VBox/OwnerFaceWrap/OwnerFace
 
 
 func _ready() -> void:
@@ -338,12 +410,34 @@ func _build_block_overlay() -> void:
 	# 시전자 얼굴 배지. 앞면 위에 앉되 **사용 불가 슬래브 아래**여야 한다 —
 	# 잠긴 카드에서 얼굴만 밝게 남으면 쓸 수 있는 카드처럼 읽힌다. 그래서 배지를
 	# 붙인 뒤 슬래브 · 부활 숫자 · 보존 테두리를 다시 맨 뒤로 보낸다.
+	_portrait_ring = Panel.new()
+	_portrait_ring.name = "OwnerPortraitRing"
+	_portrait_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_portrait_ring.size = Vector2(PORTRAIT_SIZE + 2.0 * PORTRAIT_RING_PAD,
+			PORTRAIT_SIZE + 2.0 * PORTRAIT_RING_PAD)
+	_portrait_ring.position = Vector2(PORTRAIT_LEFT - PORTRAIT_RING_PAD,
+			PORTRAIT_TOP - PORTRAIT_RING_PAD)
+	var pr := StyleBoxFlat.new()
+	pr.bg_color = PORTRAIT_RING_COLOR
+	pr.border_color = PORTRAIT_RING_LINE
+	pr.border_width_top    = 2
+	pr.border_width_bottom = 2
+	pr.border_width_left   = 2
+	pr.border_width_right  = 2
+	var rr: int = int(_portrait_ring.size.x * 0.5)
+	pr.corner_radius_top_left     = rr
+	pr.corner_radius_top_right    = rr
+	pr.corner_radius_bottom_left  = rr
+	pr.corner_radius_bottom_right = rr
+	_portrait_ring.add_theme_stylebox_override("panel", pr)
+	_portrait_ring.visible = false
+	add_child(_portrait_ring)
+
 	_portrait = TextureRect.new()
 	_portrait.name = "OwnerPortrait"
 	_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_portrait.size = Vector2(PORTRAIT_SIZE, PORTRAIT_SIZE)
-	_portrait.position = Vector2(CARD_W - PORTRAIT_SIZE - PORTRAIT_MARGIN,
-			PORTRAIT_TOP)
+	_portrait.position = Vector2(PORTRAIT_LEFT, PORTRAIT_TOP)
 	_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_portrait.visible = false
@@ -370,6 +464,8 @@ func refresh_charge_badge() -> void:
 		var tex: Texture2D = PilotImages.circle_for(pid) if pid >= 0 else null
 		_portrait.texture = tex
 		_portrait.visible = showable and tex != null
+		if _portrait_ring != null and is_instance_valid(_portrait_ring):
+			_portrait_ring.visible = _portrait.visible
 
 
 ## Turns the slab / countdown on or off from the two independent reasons a card
@@ -385,6 +481,10 @@ func _refresh_block_overlay() -> void:
 		_respawn_label.text = str(_respawn_turns)
 	if _preserve_mark != null and is_instance_valid(_preserve_mark):
 		_preserve_mark.visible = showable and _preserved
+	# 슬래브는 카드 사각형까지만 덮는다 — 밖으로 걸친 비용 원은 직접 눌러 준다.
+	if cost_badge != null and is_instance_valid(cost_badge):
+		cost_badge.modulate = (COST_BADGE_BLOCKED_TINT
+				if _block_overlay.visible else Color.WHITE)
 	refresh_charge_badge()
 
 
@@ -469,12 +569,7 @@ func _apply_data() -> void:
 	if data == null:
 		return
 	name_label.text = data.card_name
-	cost_label.text = UNPLAYABLE_COST_TEXT if not data.is_playable() else str(data.cost)
-	cost_label.add_theme_font_size_override("font_size", 22)
-	cost_label.add_theme_color_override("font_color", COST_COLOR_BASE)
-	cost_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
-	cost_label.add_theme_constant_override("outline_size", 3)
-	name_label.add_theme_font_size_override("font_size", 14)
+	name_label.add_theme_font_size_override("font_size", NAME_FONT_SIZE)
 	name_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 	name_label.add_theme_constant_override("outline_size", 3)
 	var col := _cost_color(data.cost)
@@ -485,20 +580,104 @@ func _apply_data() -> void:
 	style.corner_radius_bottom_left = 10
 	style.corner_radius_bottom_right = 10
 	card_front.add_theme_stylebox_override("panel", style)
-	_apply_owner_face()
-
-
-# 카드 **본체**는 비워 둔다 — 예전에는 여기에 시전자 얼굴이 크게 깔렸는데,
-# 카드 일러스트가 들어올 자리라 지금은 아무것도 그리지 않는다(비용색 앞면이
-# 그대로 드러난다). 시전자는 카드 안쪽 오른쪽 위의 작은 원형 배지가 말한다 —
-# `refresh_charge_badge` 참조. 래퍼는 남겨 둔다: VBox 안에서 본체 높이를
-# 잡아 주는 스페이서라, 지우면 헤더 행만 남아 카드가 위로 쪼그라든다.
-func _apply_owner_face() -> void:
-	if owner_face_wrap == null or owner_face == null:
-		return
-	owner_face.texture = null
-	owner_face_wrap.visible = true
+	_apply_art()
+	_apply_cost_badge()
+	_apply_description()
 	refresh_charge_badge()
+
+
+## 카드 아트 — 위쪽 1/3. 전용 아트가 없는 카드는 `CardImages` 가 이름으로 고른
+## 배경을 받는다(그림이 아예 없으면 액자만 남고 비용색 앞면이 비친다).
+func _apply_art() -> void:
+	if art_frame == null or art_rect == null:
+		return
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = ART_BACK_COLOR
+	sb.border_color = ART_LINE_COLOR
+	sb.border_width_top    = 1
+	sb.border_width_bottom = 1
+	sb.border_width_left   = 1
+	sb.border_width_right  = 1
+	art_frame.add_theme_stylebox_override("panel", sb)
+	art_rect.texture = CardImages.art_for(data.card_name)
+
+
+## 좌측 상단 비용 원. 알맹이는 그 비용색을 어둡게 깔은 것이고 테두리는 밝은
+## 링이라, 카드 본체(같은 비용색)와 겹쳐도 원이 원으로 읽힌다.
+func _apply_cost_badge() -> void:
+	if cost_badge == null or cost_label == null:
+		return
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = _cost_color(data.cost).darkened(0.55)
+	sb.border_color = COST_BADGE_RING_COLOR
+	sb.border_width_top    = COST_BADGE_RING_WIDTH
+	sb.border_width_bottom = COST_BADGE_RING_WIDTH
+	sb.border_width_left   = COST_BADGE_RING_WIDTH
+	sb.border_width_right  = COST_BADGE_RING_WIDTH
+	var r: int = int(COST_BADGE_SIZE * 0.5)
+	sb.corner_radius_top_left     = r
+	sb.corner_radius_top_right    = r
+	sb.corner_radius_bottom_left  = r
+	sb.corner_radius_bottom_right = r
+	cost_badge.add_theme_stylebox_override("panel", sb)
+	cost_label.text = UNPLAYABLE_COST_TEXT if not data.is_playable() else str(data.cost)
+	cost_label.add_theme_font_size_override("font_size", COST_FONT_SIZE)
+	cost_label.add_theme_color_override("font_color", COST_COLOR_BASE)
+	cost_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	cost_label.add_theme_constant_override("outline_size", 3)
+
+
+## 설명문 — 아트 아래 판에 찍는다. 글자 크기는 `DESC_FONT_MAX` 가 기본이고,
+## 그 크기로 판을 넘치는 카드만 한 단계씩 줄여 `DESC_FONT_MIN` 까지 내려간다.
+func _apply_description() -> void:
+	if desc_plate == null or desc_label == null:
+		return
+	var plate := StyleBoxFlat.new()
+	plate.bg_color = DESC_PLATE_COLOR
+	plate.corner_radius_top_left     = 6
+	plate.corner_radius_top_right    = 6
+	plate.corner_radius_bottom_left  = 8
+	plate.corner_radius_bottom_right = 8
+	desc_plate.add_theme_stylebox_override("panel", plate)
+
+	desc_label.text = data.description
+	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc_label.add_theme_color_override("font_color", DESC_TEXT_COLOR)
+	desc_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
+	desc_label.add_theme_constant_override("outline_size", 2)
+	desc_label.add_theme_constant_override("line_spacing", DESC_LINE_SPACING)
+	desc_label.add_theme_font_size_override("font_size", _fit_desc_font_size())
+
+
+## 설명문이 판 안에 들어가는 가장 큰 글자 크기. 들어가는 크기가 없으면 최소값을
+## 돌려준다. **자리는 노드 크기가 아니라 상수에서 계산한다** — `setup()` 은
+## 카드가 트리에 들어간 직후, 첫 레이아웃 패스보다 **먼저** 돌 수 있어 그때
+## `desc_label.size` 는 아직 0 이다. 카드가 160×220 고정이라 상수 산술이 언제나
+## 같은 답을 준다.
+func _fit_desc_font_size() -> int:
+	var text: String = data.description
+	if text.is_empty():
+		return DESC_FONT_MAX
+	var avail_w: float = CARD_W - 2.0 * DESC_INSET - 2.0 * DESC_PAD_H
+	var avail_h: float = CARD_H - DESC_TOP - DESC_INSET - 2.0 * DESC_PAD_V
+	# 충전 카드는 오른쪽 아래에 `N/M` 배지가 앉는다 — 그 한 줄만큼 자리를 비운다.
+	if data.is_charge_card():
+		avail_h -= CHARGE_BADGE_SIZE.y
+	var f: Font = desc_label.get_theme_font("font")
+	if f == null:
+		f = ThemeDB.fallback_font
+	if f == null:
+		return DESC_FONT_MIN
+	var brk: int = (TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND
+			| TextServer.BREAK_ADAPTIVE | TextServer.BREAK_TRIM_EDGE_SPACES)
+	var fs: int = DESC_FONT_MAX
+	while fs > DESC_FONT_MIN:
+		var m: Vector2 = f.get_multiline_string_size(text,
+				HORIZONTAL_ALIGNMENT_LEFT, avail_w, fs, -1, brk)
+		if m.y <= avail_h:
+			return fs
+		fs -= 1
+	return DESC_FONT_MIN
 
 
 func _cost_color(cost: int) -> Color:

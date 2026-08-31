@@ -18,7 +18,7 @@ One row from the `cards` SQLite table, plus a few runtime fields:
 - `keyword: String` — empty or `"exhaust"` (소멸)
 - `effect: String` — semicolon-chain dispatched by `CardPhaseManager`
   (e.g. `"draw:2;discard:2"`, `"attack:1|pierce"`)
-- `description: String` — text shown on the card front + description box
+- `description: String` — 카드 앞면 **아트 아래 설명판**에 그대로 찍히고(글자 크기는 넘칠 때만 줄어든다 — `Card._fit_desc_font_size`), 화면 상단 설명 상자에도 같은 문장이 뜬다
 - `scope: String` — `any` / `lane` / `jungle` (`SCOPE_*` consts). 시전자 제약;
   read once, at deal time, by `CardPhaseManager._pool_for_pilot` via
   `allowed_for_guerrilla(is_guerrilla)`. `lane` cards never reach a 정글러 and
@@ -364,6 +364,33 @@ RGB 를 단색(`38,42,60`)으로 덮는다** — 얼굴이 조금이라도 읽�
 
 `prime_into(parent)` 는 반드시 `BattleSim._ready()` 같은 진입 시점에 한 번
 불러야 한다 — 안 부르면 `draw_texture_rect` 가 흰 사각형을 그린다.
+
+### CardImages.gd
+`class_name CardImages`, extends `RefCounted`. **카드 한 장의 일러스트 조회** —
+`PilotImages` / `MechImages` 와 같은 자리이고, 규칙도 같다(그림을 어디서
+가져오는지는 이 파일 하나만 안다. `load()` 를 그냥 부르지 않고
+`ResourceLoader.exists()` 로 먼저 묻는다).
+
+| 함수 | 파일 | 소비자 |
+|---|---|---|
+| `art_for(card_name)` | `images/card/<이름>.png` → 없으면 배경 | `Card._apply_art` (카드 앞면 위쪽 1/3) |
+| `ground_for(card_name)` | `images/ground/N.png` (`GROUND_COUNT` 5장) | 〃 (전용 아트가 없는 카드) |
+
+**배경은 카드 이름으로 고른다**(`card_name.hash() % GROUND_COUNT`). 무작위로
+고르면 같은 카드가 뽑을 때마다 다른 그림을 달고 나와 "이 그림이 이 카드"라는
+연결이 서지 않고, 순번으로 고르면 손패에 들어온 순서가 그림을 정해 같은 카드가
+자리마다 달라진다. 이름 해시는 실행과 무관하게 같은 답을 주므로 전용 아트가
+채워지기 전까지도 카드 한 장이 자기 그림을 계속 들고 다닌다. **전용 아트가 생기면
+`images/card/` 에 카드 이름으로 넣기만 하면 그쪽이 이긴다** — 코드는 안 고친다.
+
+#### 카드 배경 (`resources/images/ground/N.png`)
+480×660(= 카드 표시 크기 160×220 의 3배)이고 **비율이 카드와 같은 8:11** 이다.
+원본은 1080×1440(3:4) 풀아트 랜드 다섯 장이라 두 번 손봤다 — (1) 아래 110px 의
+작가명 · ⓒ 글자 띠를 잘라 내고, (2) 남은 그림에서 8:11 을 가운데로 크롭한 뒤
+480×660 으로 리샘플. 카드 앞면의 아트 액자는 150×74 라 표시 배율이 3배 안팎이고,
+호버 1.2배와 상세 패널까지 감안해도 3배면 충분하다(원본 1080폭은 5장에 9.5MB 라
+pck 만 무겁게 한다). 그림 자체는 **가로가 긴 풍경**인데 액자는 2:1 에 가까워
+`STRETCH_KEEP_ASPECT_COVERED` 로 가운데를 채운다.
 
 ### MechImages.gd
 `class_name MechImages`, extends `RefCounted`. `PilotImages` 와 같은 역할의

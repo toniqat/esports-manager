@@ -892,7 +892,8 @@ re-evaluates the dim state.
   충전 수만큼 때리고, `attack:1|random|charge`(전장 강타)는 **충전 수 + 1** 명을
   무작위로 뽑는다(+1 은 상수항이라 충전 0 이어도 한 번은 나간다).
 - 화면은 `Card.refresh_charge_badge()` — 카드 **오른쪽 아래**의 `N/M` 배지.
-  오른쪽 위는 시전자 초상 배지가, 왼쪽 위는 비용 칸이 이미 쓰고 있다.
+  오른쪽 위는 예전에 시전자 초상 배지가 쓰던 자리이고(지금 초상은 왼쪽 위로
+  옮겼다), 왼쪽 위는 카드 밖으로 걸친 비용 원이 쓴다.
 
 > **예전에는 `스택` 이었다** — 같은 카드가 손패에서 한 장으로 뭉치고
 > `stack_count` 가 몇 장인지를 들고 있었다. 뭉치는 표현은 손패 크기 · 상한 정리 ·
@@ -909,40 +910,75 @@ re-evaluates the dim state.
 대신 `—` 를 찍고(할인도 증세도 얹지 않는다), `highlight_affordable_cards` 는 점수와
 무관하게 지불 불가로 잠그며, `_begin_drag` 은 드래그 자체를 거부한다. **단 버리기
 픽 중에는 끌린다**: 못 내는 카드라고 못 버리는 것은 아니다.
-- Card front layout:
-  - **Top-left**: 작전 점수 (cost) label, large outlined text on the
-    cost-coloured card body. `Card.update_displayed_cost(eff)` recolours the
-    number — white when matched, green when reduced by an active modifier
-    (사전 준비 / 전투 준비 / 집중), red when increased (`cost_inc_phase`, which
-    no card in the pool currently carries). **정밀 이동's +1 is not a modifier** —
-    `return_left:1` writes it into the card's own `cost`, so the returned card
-    reads white at its new, genuinely higher price.
-    `CardPhaseManager.highlight_affordable_cards` calls it for every visible
-    card so the cost-modifier effects stay in sync with the card art.
-  - **Top-center**: card name (auto-truncates with `clip_text`).
-  - **Center / body**: **비어 있다.** 카드 일러스트가 들어올 자리이고, 그때까지는
-    비용색 앞면이 그대로 드러난다. `OwnerFaceWrap` 은 노드로 남아 있지만 텍스처가
-    null 이다 — VBox 안에서 본체 높이를 잡아 주는 스페이서라, 지우면 헤더 행만
-    남아 카드가 위로 쪼그라든다.
-  - **Top-right of the body**: 시전자 **원형 초상 배지**
-    (`PilotImages.circle_for(owner.pilot_id)`, `PORTRAIT_SIZE` 54px, `PORTRAIT_TOP`
-    44 = 헤더 행 30 + 마진 5 + VBox 간격 4). **손패에서만 그린다**
-    (`is_player_card`) — 상세 패널 · 더미 열람 · 밴픽 · 드래프트처럼 "이 기체가
-    주는 카드"를 보여 주는 자리에서는 시전자가 없거나 의미가 없고, 상대 손패
-    peek 은 뒷면이라 그릴 것이 없다. 사용 불가 슬래브 **아래**에 앉으므로 잠긴
-    카드에서는 얼굴도 같이 어두워진다(밝게 남으면 쓸 수 있는 카드처럼 읽힌다).
-    > 예전에는 시전자 얼굴(`PilotImages.face_for`)이 **카드 본체를 가득 채웠다**.
-      일러스트가 들어올 자리를 얼굴이 차지하고 있었고, 손패 밖의 모든 카드 표시
-      (상세 패널 · 열람 · 밴픽)에도 같은 얼굴이 깔려 "이 카드는 누구 것인가"가
-      맥락과 무관하게 반복됐다.
+- Card front layout — **앞면은 위에서부터 아트 → 이름 → 설명판 세 층**이고,
+  그 위에 비용 원과 시전자 초상이 왼쪽 구석에 세로로 얹힌다. 세 층은 전부
+  **절대 좌표**다(카드는 160×220 고정): 컨테이너가 없어야 첫 레이아웃 패스를
+  기다리지 않고 설명 글자 크기를 계산할 수 있고, `setup()` 은 그 패스보다 먼저
+  돌 수 있다.
+  - **위쪽 1/3 = 카드 아트** (`ArtFrame` + `Art`, `ART_H` 74 = 220 / 3). 그림은
+    `CardImages.art_for(card_name)` 이 준다 — `images/card/<이름>.png` 가 있으면
+    그것, 없으면 `images/ground/N.png` 다섯 장 중 **이름 해시로 고른** 한 장이다
+    (무작위로 고르면 같은 카드가 뽑을 때마다 다른 그림을 달고 나오고, 순번으로
+    고르면 손패에 들어온 순서가 그림을 정한다). 액자는 카드 테두리에서
+    `ART_INSET` 5px 물러나 앉는다 — 카드 모서리는 둥글고 아트는 네모라 끝까지
+    붙이면 둥근 모서리 위로 네모난 귀퉁이가 삐져나온다. 물러나 앉히면 자르지
+    않아도 되므로 카드마다 백버퍼를 뜨는 `clip_children` 이 필요 없다.
+    > 예전에는 이 자리가 통째로 비어 있었다(비용색 앞면이 그대로 드러났다).
+  - **이름 한 줄** (`NameLabel`, y 82..104, `clip_text`). 아트와 설명판 사이의
+    비용색 띠 위에 앉으므로 카드 색이 여전히 보인다.
+  - **설명문** (`DescPlate` + `DescLabel`, y 106..214). 판은 카드 테두리에서
+    좌·우·아래로 `DESC_INSET` 6px 물러나고 글자는 판 안에서 다시
+    `DESC_PAD_H/V` 만큼 들어간다. **판을 까는 이유**는 비용색이 파랑부터
+    노랑까지 여섯 가지라 어느 한 글자색도 여섯 곳에서 다 읽히지 않기 때문이다.
+    **글자 크기는 `DESC_FONT_MAX`(13) 고정이 기본이고, 그 크기로 판을 넘치는
+    카드만 한 단계씩 줄여 `DESC_FONT_MIN`(8) 까지 내려간다**
+    (`_fit_desc_font_size`) — 설명문은 median 22자에 `mech_cards` 쪽 최장
+    128자라, 전부 최대 크기면 긴 카드가 잘리고 전부 최소 크기면 짧은 카드까지
+    개미 글씨가 된다. 재는 것은 노드 크기가 아니라 **상수 산술**이고
+    (`setup()` 이 첫 레이아웃보다 먼저 돌 수 있어 그때 `size` 는 0 이다),
+    충전 카드는 오른쪽 아래 `N/M` 배지 높이만큼 자리를 미리 뺀다. 줄 간격
+    (`line_spacing`)을 0 으로 눌러 두는 것은 `Font.get_multiline_string_size`
+    가 줄 간격을 모르기 때문 — 살려 두면 잰 높이와 실제 높이가 줄 수만큼
+    어긋나 마지막 줄이 판 밖으로 샌다.
+  - **좌측 상단 비용 원** (`CostBadge` + `CostLabel`, `COST_BADGE_SIZE` 42,
+    카드 모서리 밖으로 (-9, -9)). 손패는 카드끼리 절반 넘게 겹치는 부채꼴이라
+    (오른쪽 카드가 왼쪽 카드를 덮는다) **왼쪽 위 모서리가 각 카드에서 언제나
+    보이는 유일한 구석**이고, 원이 그 밖으로 걸쳐 있으면 겹친 줄에서도 비용이
+    한 줄로 읽힌다. 알맹이는 그 비용색을 `darkened(0.55)` 한 것, 테두리는 밝은
+    링이라 같은 비용색 카드 본체 위에서도 원이 원으로 읽힌다.
+    `Card.update_displayed_cost(eff)` 가 숫자를 다시 칠한다 — 매칭이면 흰색,
+    할인(사전 준비 / 전투 준비 / 집중)이면 초록, 증세(`cost_inc_phase`, 지금
+    풀에 그 절을 단 카드는 없다)면 빨강. **정밀 이동의 +1 은 수정자가 아니다** —
+    `return_left:1` 이 카드 자신의 `cost` 를 올리므로 돌아온 카드는 새 가격에
+    흰색으로 찍힌다. `CardPhaseManager.highlight_affordable_cards` 가 보이는
+    카드마다 불러 비용 수정자와 카드 표시가 어긋나지 않게 한다.
+    **사용 불가 슬래브는 카드 사각형까지만 덮으므로** 밖으로 나간 원은
+    `_refresh_block_overlay` 가 `COST_BADGE_BLOCKED_TINT` 로 직접 눌러 준다 —
+    안 그러면 잠긴 카드에서 비용만 밝게 남는다.
+  - **비용 원 바로 아래 = 시전자 원형 초상**
+    (`PilotImages.circle_for(owner.pilot_id)`, `PORTRAIT_SIZE` 44,
+    `PORTRAIT_LEFT` 5 / `PORTRAIT_TOP` 34, 뒤에 원형 받침 `OwnerPortraitRing`).
+    아트 위에 얹히므로 받침 없이는 가장자리가 그림에 묻힌다. **손패에서만
+    그린다**(`is_player_card`) — 상세 패널 · 더미 열람 · 밴픽 · 드래프트처럼
+    "이 기체가 주는 카드"를 보여 주는 자리에서는 시전자가 없거나 의미가 없고,
+    상대 손패 peek 은 뒷면이라 그릴 것이 없다. 사용 불가 슬래브 **아래**에
+    앉으므로 잠긴 카드에서는 얼굴도 같이 어두워진다(밝게 남으면 쓸 수 있는
+    카드처럼 읽힌다).
+    > **오른쪽 위에서 왼쪽 위로 옮겼다.** 겹치는 부채꼴에서 오른쪽 절반은 옆
+      카드에 가려지는 쪽이라 "누구 카드인가"가 손패를 펼쳐 봐야만 읽혔다 —
+      비용과 얼굴은 언제나 보이는 한 구석에 세로로 모아 둔다.
+    > 그보다 더 예전에는 시전자 얼굴(`PilotImages.face_for`)이 **카드 본체를
+      가득 채웠고**, 손패 밖의 모든 카드 표시(상세 패널 · 열람 · 밴픽)에도 같은
+      얼굴이 깔려 "이 카드는 누구 것인가"가 맥락과 무관하게 반복됐다.
   - **Bottom-right**: 충전 배지 `N/M` (`CHARGE_BADGE_SIZE` 52×30). 충전 카드가
-    아니면 꺼진다. 오른쪽 **위**가 아닌 이유는 그 자리를 초상 배지가 가져갔기
-    때문이고, 왼쪽 위는 비용 칸이다.
+    아니면 꺼진다. 오른쪽 **위**가 아닌 이유는 그 자리가 예전에 초상 배지였기
+    때문이고, 왼쪽 위는 지금도 비용 원이 쓴다. 설명문은 이 배지 높이만큼
+    자리를 비워 두고 줄어든다(위 설명문 항목).
   - **Unplayable dim** (`BlockOverlay`): a `Panel` at the **end** of the child
-    list — above `CardFront`, so it darkens the owner face, name and cost
-    together — filled `BLOCKED_OVERLAY_COLOR` (black α 0.58) with the card's
-    own 10 px corner radius. It goes up for either of two reasons, tracked
-    independently and merged by `_refresh_block_overlay()`:
+    list — above `CardFront`, so it darkens the art, portrait, name, cost and
+    description together — filled `BLOCKED_OVERLAY_COLOR` (black α 0.58) with
+    the card's own 10 px corner radius. It goes up for either of two reasons,
+    tracked independently and merged by `_refresh_block_overlay()`:
     `set_affordable(false)` (can't pay) or `set_respawn_turns(n > 0)`
     (시전자 부활 대기). `set_affordable` no longer repaints the card body grey
     — the grey panel sat *under* the portrait, which stayed bright and read as
@@ -952,9 +988,10 @@ re-evaluates the dim state.
     the 시전자 comes back. Visible only while `set_respawn_turns(n)` is
     non-zero. `Card.is_playable()` returns false whenever either reason holds.
     Both nodes must be `MOUSE_FILTER_IGNORE` — see the filter note below.
-  - **No description on the card itself.** The full description is surfaced
-    only in the side description box that appears when the player selects
-    the card (`_show_description_box`).
+  - **설명문은 이제 카드 위에도 있다.** 화면 상단 고정 설명 상자
+    (`_show_description_box`)는 그대로 남아 있고, 그쪽이 여전히 전문을 큰
+    글씨로 보여 준다 — 카드 위의 글자는 8~13px 라 "무슨 카드인지 기억을
+    되살리는" 크기이지 처음 읽는 크기가 아니다.
   - **No role badge.** Role is conveyed by the owner portrait badge; the
     description box still surfaces "시전자 <Role><team>" in the header line.
 

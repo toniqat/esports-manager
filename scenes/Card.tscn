@@ -31,61 +31,67 @@ offset_right = 160.0
 offset_bottom = 220.0
 mouse_filter = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="CardFront"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/margin_left = 5
-theme_override_constants/margin_top = 5
-theme_override_constants/margin_right = 5
-theme_override_constants/margin_bottom = 5
-
-[node name="VBox" type="VBoxContainer" parent="CardFront/MarginContainer"]
-layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="HeaderRow" type="Control" parent="CardFront/MarginContainer/VBox"]
-custom_minimum_size = Vector2(0, 30)
-layout_mode = 2
+[node name="ArtFrame" type="Panel" parent="CardFront"]
+layout_mode = 0
+offset_left = 5.0
+offset_top = 5.0
+offset_right = 155.0
+offset_bottom = 79.0
 mouse_filter = 2
 
-[node name="CostLabel" type="Label" parent="CardFront/MarginContainer/VBox/HeaderRow"]
-layout_mode = 1
-anchors_preset = 9
-anchor_bottom = 1.0
-offset_right = 30.0
-grow_vertical = 2
-text = "0"
-horizontal_alignment = 1
-vertical_alignment = 1
+[node name="Art" type="TextureRect" parent="CardFront/ArtFrame"]
+layout_mode = 0
+offset_right = 150.0
+offset_bottom = 74.0
+expand_mode = 1
+stretch_mode = 6
+mouse_filter = 2
 
-[node name="NameLabel" type="Label" parent="CardFront/MarginContainer/VBox/HeaderRow"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 30.0
-offset_right = -30.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="NameLabel" type="Label" parent="CardFront"]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 82.0
+offset_right = 152.0
+offset_bottom = 104.0
+mouse_filter = 2
 text = "Card Name"
 horizontal_alignment = 1
 vertical_alignment = 1
 clip_text = true
 
-[node name="OwnerFaceWrap" type="CenterContainer" parent="CardFront/MarginContainer/VBox"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="OwnerFace" type="TextureRect" parent="CardFront/MarginContainer/VBox/OwnerFaceWrap"]
-custom_minimum_size = Vector2(150, 150)
-layout_mode = 2
-expand_mode = 1
-stretch_mode = 5
+[node name="DescPlate" type="Panel" parent="CardFront"]
+layout_mode = 0
+offset_left = 6.0
+offset_top = 106.0
+offset_right = 154.0
+offset_bottom = 214.0
 mouse_filter = 2
+
+[node name="DescLabel" type="Label" parent="CardFront/DescPlate"]
+layout_mode = 0
+offset_left = 6.0
+offset_top = 5.0
+offset_right = 144.0
+offset_bottom = 103.0
+mouse_filter = 2
+autowrap_mode = 3
+
+[node name="CostBadge" type="Panel" parent="CardFront"]
+layout_mode = 0
+offset_left = -9.0
+offset_top = -9.0
+offset_right = 33.0
+offset_bottom = 33.0
+mouse_filter = 2
+
+[node name="CostLabel" type="Label" parent="CardFront/CostBadge"]
+layout_mode = 0
+offset_right = 42.0
+offset_bottom = 42.0
+mouse_filter = 2
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
 [connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]

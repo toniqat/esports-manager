@@ -18,8 +18,10 @@ extends Node
 # 메우므로 "아무것도 안 놓은 판"과 "기본으로 도배한 판"이 같은 결과를 낸다.
 
 const COLS: int = 5          # 선수
-const ROWS: int = 5          # 월~금
-const DAY_NAMES: Array = ["월", "화", "수", "목", "금"]
+const ROWS: int = 5          # 하루씩 다섯 줄 (달력으로는 월~금)
+## **`DAY_NAMES` 는 삭제됐다.** 판 옆에 요일 글자를 세우던 화면(`TrainingView`)이
+## 그 표의 유일한 소비자였고, 일상 훈련이 되면서 그 글자가 사라졌다. 요일 이름이
+## 필요한 자리는 시간 경과 화면 하나이고 그쪽은 `OutgameTheme.DAY_NAMES` 를 읽는다.
 
 ## 빈 칸을 메우는 기본 코스. 이 id 가 CSV 에 없으면 빈 칸은 그냥 0 이 된다.
 const FILLER_TILE_ID: String = "T01"

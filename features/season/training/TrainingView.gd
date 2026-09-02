@@ -1,24 +1,33 @@
 class_name TrainingView
 extends Control
 
-# 주간 훈련 편성 화면. 위에서 아래로 네 덩이고, **가로 기준선은 하나뿐이다** —
-# `_grid_x()` 가 판을 화면 한가운데에 놓고 썸네일 · 요일 글자 · 드롭 미리보기가
-# 전부 그 한 값에서 나온다. 예전에는 판 왼쪽 끝이 상수(`GRID_X` 80)였고 요일
-# 칸이 그 안쪽에 있어 판 오른쪽 끝이 화면 밖(1102 > 1080)으로 나가 있었다 —
-# 화면에서는 초상화와 타일이 통째로 오른쪽으로 쏠린 것으로 보였다.
+# 일상 훈련 편성 화면. 위에서 아래로 네 덩이고, **가로 기준선은 하나뿐이다** —
+# `_grid_x()` 가 판을 화면 한가운데에 놓고 썸네일과 드롭 미리보기가 전부 그 한
+# 값에서 나온다. 세로 기준선도 하나다 — `_inv_y()` 가 코스 목록을 하단 액션
+# 바 위에 매달고, `_block_y()` 가 남는 자리를 판 위아래에 고르게 나눈다.
 #
 #   1. **파일럿 초상화 다섯** — 가로로 한 줄. 자리 순서는 전장 스트립과 같은
 #      `GameEnums.ROLE_DISPLAY_ORDER`(탑 · 정글 · 미드 · 원딜 · 서폿)이고,
 #      **그 자리가 곧 판의 열 번호**다. 인게임 스트립과 **같은 가로 초상화**
 #      (`PilotImages.eye_for`, 480×200 밴드)를 쓰고 이름 · 역할 글자는 없다 —
-#      이 줄이 답하는 질문은 "이 열이 누구의 한 주인가" 하나뿐이라 얼굴이
+#      이 줄이 답하는 질문은 "이 열이 누구의 훈련인가" 하나뿐이라 얼굴이
 #      그 답이고 테두리 색이 역할이다. **누를 수 없다**(순수한 열 머리글).
-#   2. **5×5 훈련판** — 열이 선수, 행이 월~금. 칸은 **정사각형**이다.
-#   3. **타일 인벤토리** — 가로 4칸의 세로 스크롤. 카드에는 등급 · 놓임/상한 ·
-#      모양 미니어처 · 이름만 있고 **설명문은 없다** — 카드를 누르면 그 옆에
-#      정보 팝오버가 뜬다(`_select_card`). 타일은 몇 번이든 다시 쓸 수 있고
-#      (보유 수량 없음) **등급별 배치 개수 상한**이 대신 판을 조인다.
-#   4. **훈련 확정** — 화면 최하단 가운데.
+#   2. **5×5 훈련판** — 열이 선수, 행이 하루. **칸도 요일 글자도 그리지
+#      않는다**: 바탕은 선수마다 세로 줄 하나뿐이고, 그 위에 **모서리가 둥근**
+#      코스 타일이 앉는다. 여러 칸 타일의 안쪽 경계는 이음매의 **가운데
+#      토막**만 희미하게 남는다(2×2 = 작은 십자, 가로 2칸 = 작은 세로 일자).
+#   3. **타일 인벤토리** — 가로 4칸의 세로 스크롤이고 **2.5줄만 보인다**
+#      (`INV_VISIBLE_ROWS`). 카드에는 등급 · 놓임/상한 · 모양 미니어처 ·
+#      이름만 있고 **설명문은 없다** — 카드를 누르면 그 옆에 정보 팝오버가
+#      뜬다(`_select_card`). 타일은 몇 번이든 다시 쓸 수 있고(보유 수량 없음)
+#      **등급별 배치 개수 상한**이 대신 판을 조인다.
+#   4. **하단 액션 바** — 화면 끝에서 끝까지, 아래는 안전선에 밀착.
+#      "판 비우기"(1) 와 "훈련 확정"(2) 이 그 구간을 2:1 로 나눠 갖는다
+#      (`OutgameTheme.add_bottom_bar`).
+#
+# **"주간"이라는 말은 화면에서 뺐다.** 판은 여전히 다섯 줄이고 정산도 하루씩
+# 먹지만, 여기서 짜는 것은 한 주의 시간표가 아니라 선수 다섯의 일상이다 —
+# 요일을 적어 두면 그 다섯 칸이 달력의 약속처럼 읽힌다.
 #
 # 예전에는 썸네일 아래에 **예상 변화 한 줄**(썸네일을 눌러 선수를 갈아타며
 # 여섯 스탯 before→after 를 보던 줄)이 있었다. 썸네일이 순수한 머리글이 되며
@@ -57,7 +66,6 @@ const MARGIN: float      = 40.0
 const CELL: float        = 176.0
 const GRID_W: float      = CELL * float(COLS)   # 880
 const GRID_H: float      = CELL * float(ROWS)   # 880
-const DAY_GUTTER: float  = 56.0                 # 판 왼쪽 요일 글자 칸
 ## 칸 사이 여백. 타일 몸통은 **자기 타일과 맞닿은 변에서만** 이 여백을 버려
 ## 이어 붙는다(`_draw_tile_body`).
 const CELL_PAD: float    = 2.0
@@ -72,13 +80,13 @@ const AFFECT_FILL: Color = Color(1.00, 0.86, 0.25, 0.16)
 const AFFECT_LINE: Color = Color(1.00, 0.86, 0.25, 0.92)
 
 const TITLE_Y: float     = 8.0
-const THUMB_Y: float     = 58.0
+const TITLE_H: float     = 44.0
 const THUMB_W: float     = CELL - 6.0
 ## 인게임 스트립과 같은 eye 밴드(480×200)라 높이는 그 비율에서 나온다 —
 ## 임의 높이로 늘리면 얼굴이 찌그러진다.
 const THUMB_H: float     = THUMB_W / 2.4
-const GRID_Y: float      = 146.0
-const INV_TOP_PAD: float = 58.0                 # 판 ↔ 인벤토리 사이
+const THUMB_GAP: float   = 15.0                 # 초상화 ↔ 판
+const INV_LABEL_GAP: float = 32.0               # "훈련 코스" 글자 ↔ 목록
 
 const INV_COLS: int        = 4
 const INV_GAP: float       = 12.0
@@ -89,6 +97,13 @@ const INV_CARD_H: float    = 146.0
 ## 끝"과 "더 있는데 안 보인다"가 같은 그림이 된다 — 반 칸을 비워 두면 아래로
 ## 더 있다는 것이 잘린 카드로 보인다.
 const INV_TAIL_PAD: float = INV_CARD_H * 0.5
+
+## **한 화면에 보이는 카드 줄 수.** 2.5 줄 — 반 줄이 잘려 보이는 것이 곧
+## "아래로 더 있다"이고, 딱 떨어지면 목록이 거기서 끝난 것처럼 보인다.
+## 예전에는 남는 자리를 통째로 목록에 주어 네 줄 남짓이 깔렸는데, 이 화면의
+## 주인공은 판이지 코스 목록이 아니다.
+const INV_VISIBLE_ROWS: float = 2.5
+
 
 ## 카드 안 모양 미니어처의 자리 · 크기(`_mini_geom` / `_add_shape_mini`).
 const MINI_PAD: float = 10.0
@@ -104,9 +119,24 @@ const POP_GAP: float = 10.0
 ## 가 이것을 되돌려 주지 않으면 여러 줄 글이 팝오버 아래로 넘친다.
 const POP_LINE_SPACING: float = 3.0
 
-const BTN_H: float       = 104.0
-const BTN_W: float       = 460.0
-const BTN_BOTTOM_PAD: float = 72.0
+## ── 판의 바탕과 타일 ────────────────────────────────────────────────────────
+## **빈 칸은 그리지 않는다.** 선수 한 명당 세로 줄 하나가 그 열이 어디까지인지를
+## 말하고, 그 밖에는 흰 종이다 — 칸을 스물다섯 개 그려 두면 아직 아무것도 안
+## 놓은 판이 이미 무언가로 꽉 찬 것처럼 보이고, 놓인 타일이 그 격자에 묻힌다.
+const COLUMN_LINE_W: float     = 2.0
+const COLUMN_LINE_COLOR: Color = OutgameTheme.BORDER
+
+## 타일 몸통의 모서리 굴림. **바깥으로 난 두 변이 만나는 구석에서만** 둥글어
+## 지므로(`_tile_cell_box`) 여러 칸 타일은 한 덩어리의 둥근 사각형이 된다.
+const TILE_RADIUS: int = 20
+
+## 타일 **안쪽** 칸 경계. 이음매를 통째로 긋지 않고 **가운데 토막만** 희미하게
+## 남긴다 — 2×2 는 한가운데 작은 십자, 가로 2칸은 한가운데 작은 세로 일자가
+## 된다. 선을 끝까지 그으면 그것이 곧 "여기서 타일이 끊긴다"로 읽혀 한 장이
+## 두 장으로 보인다.
+const SEAM_LEN: float = 32.0
+const SEAM_W: float   = 2.0
+const SEAM_ALPHA: float = 0.45
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 
@@ -164,9 +194,32 @@ static func _grid_x() -> float:
 	return (1080.0 - GRID_W) * 0.5
 
 
-## 요일 글자 칸의 왼쪽 끝. 판 바로 왼쪽에 붙는다.
-static func _day_x() -> float:
-	return _grid_x() - DAY_GUTTER
+## 코스 목록의 높이 — **2.5 줄**. 줄 사이 여백 둘이 그 안에 든다.
+static func _inv_h() -> float:
+	return INV_CARD_H * INV_VISIBLE_ROWS + INV_GAP * 2.0
+
+
+## 코스 목록의 y. 하단 액션 바 바로 위에 매단다.
+static func _inv_y() -> float:
+	return OutgameTheme.bottom_bar_top() - 24.0 - _inv_h()
+
+
+## **초상화 줄 + 판** 덩어리의 y. 목록이 2.5줄로 줄면서 남은 자리를 판 위와
+## 아래에 고르게 나눈다 — 통째로 위에 붙여 두면 화면 아래쪽 300px 이 이유
+## 없이 비고, 아래에 붙이면 제목과 판 사이가 벌어진다.
+static func _block_y() -> float:
+	var block_h: float = THUMB_H + THUMB_GAP + GRID_H
+	var top: float = TITLE_Y + TITLE_H + 12.0
+	var bottom: float = _inv_y() - INV_LABEL_GAP - 16.0
+	return top + maxf(0.0, bottom - top - block_h) * 0.5
+
+
+static func _thumb_y() -> float:
+	return _block_y()
+
+
+static func _grid_y() -> float:
+	return _block_y() + THUMB_H + THUMB_GAP
 
 
 # ── Build ────────────────────────────────────────────────────────────────────
@@ -176,8 +229,9 @@ func _build() -> void:
 	ScreenMetrics.indent_to_safe_top(self)
 	OutgameTheme.add_background(self)
 
-	UiHelpers.mk_label(self, "주간 훈련 편성", 34, OutgameTheme.TEXT,
-			Vector2(0, TITLE_Y), Vector2(ScreenMetrics.vp_w(), 44), HORIZONTAL_ALIGNMENT_CENTER)
+	UiHelpers.mk_label(self, "일상 훈련 편성", 34, OutgameTheme.TEXT,
+			Vector2(0, TITLE_Y), Vector2(ScreenMetrics.vp_w(), TITLE_H),
+			HORIZONTAL_ALIGNMENT_CENTER)
 
 	_build_thumbs()
 	_build_grid()
@@ -193,7 +247,7 @@ func _build_thumbs() -> void:
 		var r: int = int(GameEnums.ROLE_DISPLAY_ORDER[seat])
 		var role_col: Color = ROLE_COLORS[r]
 		var panel := Panel.new()
-		panel.position = Vector2(_grid_x() + float(seat) * CELL + 3.0, THUMB_Y)
+		panel.position = Vector2(_grid_x() + float(seat) * CELL + 3.0, _thumb_y())
 		panel.size     = Vector2(THUMB_W, THUMB_H)
 		panel.add_theme_stylebox_override("panel", _thumb_style(role_col))
 		panel.clip_contents = true
@@ -221,15 +275,17 @@ static func _thumb_style(role_col: Color) -> StyleBoxFlat:
 	return sty
 
 
+## **판 옆의 요일 글자는 없다.** 다섯 줄이 무슨 요일인가는 이 화면이 답해야
+## 하는 질문이 아니다 — 여기서 짜는 것은 한 주의 시간표가 아니라 선수 다섯의
+## 일상이고, 요일을 적어 두면 그 다섯 칸이 달력의 약속처럼 읽힌다. 줄의 순서
+## 자체(위에서 아래로)가 이미 앞뒤를 말한다. 정산은 여전히 하루씩 먹는다.
+##
+## `TrainingBoard.DAY_NAMES` 는 이 화면이 유일한 소비자였으므로 함께 삭제됐다 —
+## 요일 이름이 필요한 자리는 시간 경과 화면 하나이고, 그쪽은 예전부터
+## `OutgameTheme.DAY_NAMES` 를 읽는다.
 func _build_grid() -> void:
-	for day in ROWS:
-		UiHelpers.mk_label(self, String(TrainingBoard.DAY_NAMES[day]), 24,
-				OutgameTheme.TEXT_SUB,
-				Vector2(_day_x(), GRID_Y + float(day) * CELL + (CELL - 30.0) * 0.5),
-				Vector2(DAY_GUTTER, 30), HORIZONTAL_ALIGNMENT_CENTER)
-
 	_grid = Control.new()
-	_grid.position = Vector2(_grid_x(), GRID_Y)
+	_grid.position = Vector2(_grid_x(), _grid_y())
 	_grid.size     = Vector2(GRID_W, GRID_H)
 	_grid.mouse_filter = Control.MOUSE_FILTER_STOP
 	_grid.draw.connect(_draw_grid)
@@ -242,12 +298,11 @@ func _build_grid() -> void:
 
 
 func _build_inventory() -> void:
-	var top: float = GRID_Y + GRID_H + INV_TOP_PAD
-	var btn_y: float = _confirm_button_y()
-	var h: float = maxf(180.0, btn_y - 20.0 - top)
+	var top: float = _inv_y()
+	var h: float = _inv_h()
 
 	UiHelpers.mk_label(self, "훈련 코스", 22, OutgameTheme.TEXT_SUB,
-			Vector2(MARGIN, top - 32.0), Vector2(400, 28))
+			Vector2(MARGIN, top - INV_LABEL_GAP), Vector2(400, 28))
 
 	_inv_scroll = ScrollContainer.new()
 	_inv_scroll.position = Vector2(MARGIN, top)
@@ -266,28 +321,17 @@ func _build_inventory() -> void:
 	_inv_scroll.get_v_scroll_bar().value_changed.connect(_on_inv_scrolled)
 
 
-## 확정 버튼의 y. 인벤토리 높이가 여기서 역산되므로 상수가 아니라 함수다 —
-## 하단 안전선은 기기마다 다르고, 인벤토리가 버튼을 덮으면 훈련을 확정할 수 없다.
-func _confirm_button_y() -> float:
-	return ScreenMetrics.safe_h() - BTN_BOTTOM_PAD - BTN_H
-
-
+## **하단 구간을 둘이 2:1 로 나눠 갖는다** — 주 행동인 "훈련 확정"이 오른쪽
+## 3분의 2, 되돌리는 "판 비우기"가 왼쪽 3분의 1이다(`OutgameTheme.add_bottom_bar`).
+## 코스 목록의 높이가 이 바의 윗변에서 역산되므로(`_inv_y`) 바를 손보면 목록이
+## 저절로 따라 올라간다.
 func _build_confirm_button() -> void:
-	var btn := Button.new()
-	btn.text = "훈련 확정"
-	btn.position = Vector2((1080.0 - BTN_W) * 0.5, _confirm_button_y())
-	btn.size     = Vector2(BTN_W, BTN_H)
-	OutgameTheme.style_primary_button(btn, 32)
-	btn.pressed.connect(_on_confirm_pressed)
-	add_child(btn)
-
-	var clear := Button.new()
-	clear.text = "판 비우기"
-	clear.position = Vector2((1080.0 - BTN_W) * 0.5 - 210.0, _confirm_button_y() + 16.0)
-	clear.size     = Vector2(190, BTN_H - 32.0)
-	OutgameTheme.style_ghost_button(clear, 24)
-	clear.pressed.connect(_on_clear_pressed)
-	add_child(clear)
+	var bar: Array = OutgameTheme.add_bottom_bar(self, [
+		{"text": "판 비우기", "style": "ghost",   "font": 28, "weight": 1.0},
+		{"text": "훈련 확정", "style": "primary", "font": 34, "weight": 2.0},
+	])
+	(bar[0] as Button).pressed.connect(_on_clear_pressed)
+	(bar[1] as Button).pressed.connect(_on_confirm_pressed)
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────
@@ -318,13 +362,14 @@ func _pilots() -> Array:
 func _draw_grid() -> void:
 	if _grid == null:
 		return
-	# 빈 칸
+	# **바탕은 선수마다 세로 줄 하나뿐이다.** 칸을 스물다섯 개 깔면 빈 판이
+	# 이미 무언가로 꽉 찬 것처럼 보이고, 놓인 타일이 그 격자에 묻힌다.
+	# 줄은 열 한가운데를 지나므로 그 위에 앉는 타일이 줄을 덮는다 — 놓인
+	# 자리와 빈 자리가 "줄이 보이는가"로 갈린다.
 	for x in COLS:
-		for y in ROWS:
-			var r := Rect2(float(x) * CELL + CELL_PAD, float(y) * CELL + CELL_PAD,
-					CELL - CELL_PAD * 2.0, CELL - CELL_PAD * 2.0)
-			_grid.draw_rect(r, OutgameTheme.SURFACE_SUNK, true)
-			_grid.draw_rect(r, OutgameTheme.BORDER, false, 2.0)
+		var cx: float = (float(x) + 0.5) * CELL
+		_grid.draw_rect(Rect2(cx - COLUMN_LINE_W * 0.5, 0.0,
+				COLUMN_LINE_W, GRID_H), COLUMN_LINE_COLOR, true)
 
 	if _board == null:
 		return
@@ -339,6 +384,7 @@ func _draw_grid() -> void:
 		var ox: int = int(e.get("x", 0))
 		var oy: int = int(e.get("y", 0))
 		_draw_tile_body(t, ox, oy)
+		_draw_tile_seams(t, ox, oy)
 		_draw_tile_caption(t, ox, oy)
 
 	if _drag_tile == null or _hover_cell.x < 0:
@@ -363,18 +409,21 @@ func _draw_grid() -> void:
 		_grid.draw_rect(r_aff, AFFECT_FILL, true)
 		_grid.draw_rect(r_aff, AFFECT_LINE, false, TILE_EDGE)
 
-	# 드롭 미리보기 — 놓을 수 있으면 초록, 없으면 빨강.
+	# 드롭 미리보기 — 놓을 수 있으면 초록, 없으면 빨강. **놓인 타일과 같은
+	# 둥근 몸통**이라 미리보기의 모양이 곧 결과의 모양이다.
 	var tint: Color = Color(OutgameTheme.POSITIVE, 0.45) if _hover_ok \
 			else Color(OutgameTheme.NEGATIVE, 0.38)
+	var own2: Dictionary = {}
+	for c3 in _drag_tile.cells:
+		own2[c3] = true
 	for c2 in _drag_tile.cells:
-		var at := Vector2i(_hover_cell.x + (c2 as Vector2i).x,
-				_hover_cell.y + (c2 as Vector2i).y)
+		var cc: Vector2i = c2
+		var at := Vector2i(_hover_cell.x + cc.x, _hover_cell.y + cc.y)
 		if at.x < 0 or at.x >= COLS or at.y < 0 or at.y >= ROWS:
 			continue
-		var pad: float = CELL_PAD + 1.0
-		var r3 := Rect2(float(at.x) * CELL + pad, float(at.y) * CELL + pad,
-				CELL - pad * 2.0, CELL - pad * 2.0)
-		_grid.draw_rect(r3, tint, true)
+		var box: Dictionary = _tile_cell_box(own2, cc, _hover_cell.x, _hover_cell.y,
+				tint, null, TILE_RADIUS)
+		_grid.draw_style_box(box["sb"], box["rect"])
 
 
 ## 타일 하나의 몸통. **같은 타일의 이웃 칸과 맞닿은 변에서는 여백도 테두리도
@@ -391,26 +440,94 @@ func _draw_tile_body(t: TrainingTile, ox: int, oy: int) -> void:
 	for i in t.cells.size():
 		var c2: Vector2i = t.cells[i]
 		var col: Color = TrainingTile.color_of(String(t.cell_colors[i]))
-		var up: bool = own.has(c2 + Vector2i(0, -1))
-		var dn: bool = own.has(c2 + Vector2i(0, 1))
-		var lf: bool = own.has(c2 + Vector2i(-1, 0))
-		var rt: bool = own.has(c2 + Vector2i(1, 0))
-		var x0: float = float(ox + c2.x) * CELL + (0.0 if lf else CELL_PAD)
-		var x1: float = float(ox + c2.x + 1) * CELL - (0.0 if rt else CELL_PAD)
-		var y0: float = float(oy + c2.y) * CELL + (0.0 if up else CELL_PAD)
-		var y1: float = float(oy + c2.y + 1) * CELL - (0.0 if dn else CELL_PAD)
-		var w: float = x1 - x0
-		var h: float = y1 - y0
-		_grid.draw_rect(Rect2(x0, y0, w, h),
-				col.darkened(0.42), true)
-		if not up:
-			_grid.draw_rect(Rect2(x0, y0, w, TILE_EDGE), col, true)
-		if not dn:
-			_grid.draw_rect(Rect2(x0, y1 - TILE_EDGE, w, TILE_EDGE), col, true)
-		if not lf:
-			_grid.draw_rect(Rect2(x0, y0, TILE_EDGE, h), col, true)
-		if not rt:
-			_grid.draw_rect(Rect2(x1 - TILE_EDGE, y0, TILE_EDGE, h), col, true)
+		var box: Dictionary = _tile_cell_box(own, c2, ox, oy,
+				col, col.darkened(0.30), TILE_RADIUS)
+		_grid.draw_style_box(box["sb"], box["rect"])
+
+
+## 칸 하나의 사각형과 그 옷. **같은 타일과 맞닿은 변에서는 여백도 테두리도
+## 모서리 굴림도 버린다** — 그래서 여러 칸 타일은 안쪽에 이음매 없이 이어
+## 붙고 바깥 윤곽만 남으며, 굴림은 **바깥으로 난 두 변이 만나는 구석**에만
+## 걸려 덩어리 전체가 하나의 둥근 사각형이 된다(전장의 캠프 아웃라인이 쓰는
+## 규칙과 같다: 그 변 너머의 이웃이 같은 타일이 아닐 때만 그린다).
+##
+## 그리는 쪽이 셋(판 · 드롭 미리보기 · 커서를 따라오는 미리보기)이라 기하가
+## 한 함수에 있어야 한다 — 손가락 밑의 모양과 놓인 결과가 다르면 그것은
+## 미리보기가 아니다.
+static func _tile_cell_box(own: Dictionary, c: Vector2i, ox: int, oy: int,
+		fill: Color, border: Variant, radius: int) -> Dictionary:
+	var up: bool = own.has(c + Vector2i(0, -1))
+	var dn: bool = own.has(c + Vector2i(0, 1))
+	var lf: bool = own.has(c + Vector2i(-1, 0))
+	var rt: bool = own.has(c + Vector2i(1, 0))
+	var x0: float = float(ox + c.x) * CELL + (0.0 if lf else CELL_PAD)
+	var x1: float = float(ox + c.x + 1) * CELL - (0.0 if rt else CELL_PAD)
+	var y0: float = float(oy + c.y) * CELL + (0.0 if up else CELL_PAD)
+	var y1: float = float(oy + c.y + 1) * CELL - (0.0 if dn else CELL_PAD)
+
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = fill
+	if border is Color:
+		sb.border_color = border
+		sb.border_width_left   = 0 if lf else int(TILE_EDGE)
+		sb.border_width_right  = 0 if rt else int(TILE_EDGE)
+		sb.border_width_top    = 0 if up else int(TILE_EDGE)
+		sb.border_width_bottom = 0 if dn else int(TILE_EDGE)
+	sb.corner_radius_top_left     = 0 if (up or lf) else radius
+	sb.corner_radius_top_right    = 0 if (up or rt) else radius
+	sb.corner_radius_bottom_left  = 0 if (dn or lf) else radius
+	sb.corner_radius_bottom_right = 0 if (dn or rt) else radius
+	return {"rect": Rect2(x0, y0, x1 - x0, y1 - y0), "sb": sb}
+
+
+## 타일 **안쪽** 칸 경계. 이음매를 통째로 긋는 대신 **연속한 이음매 하나마다
+## 그 가운데 토막만** 희미하게 남긴다 — 2×2 는 세로 이음매와 가로 이음매가
+## 둘 다 타일 한가운데에서 잘려 작은 십자가 되고, 가로 2칸은 한가운데 작은
+## 세로 일자가 되며, 가로 5칸([전지 훈련])은 이음매 넷이 각자 제 자리에서
+## 짧은 세로 토막으로 남는다. 끝까지 그으면 그 선이 곧 "여기서 타일이
+## 끊긴다"로 읽혀 한 장이 여러 장으로 보인다.
+func _draw_tile_seams(t: TrainingTile, ox: int, oy: int) -> void:
+	var own: Dictionary = {}
+	for c in t.cells:
+		own[c] = true
+	var ext: Vector2i = t.extent()
+	var col: Color = TrainingTile.color_of(String(t.cell_colors[0])).darkened(0.30)
+	col.a = SEAM_ALPHA
+
+	# 세로 이음매 — 열 경계(gx)마다 위아래로 이어진 구간을 찾는다.
+	for gx in range(1, ext.x):
+		var run: int = -1
+		for gy in range(ext.y + 1):
+			var joined: bool = gy < ext.y \
+					and own.has(Vector2i(gx - 1, gy)) and own.has(Vector2i(gx, gy))
+			if joined and run < 0:
+				run = gy
+			elif not joined and run >= 0:
+				_draw_seam(Vector2(float(ox + gx) * CELL,
+						(float(oy) + float(run + gy) * 0.5) * CELL), true, col)
+				run = -1
+
+	# 가로 이음매 — 행 경계(gy)마다 좌우로 이어진 구간.
+	for gy2 in range(1, ext.y):
+		var run2: int = -1
+		for gx2 in range(ext.x + 1):
+			var joined2: bool = gx2 < ext.x \
+					and own.has(Vector2i(gx2, gy2 - 1)) and own.has(Vector2i(gx2, gy2))
+			if joined2 and run2 < 0:
+				run2 = gx2
+			elif not joined2 and run2 >= 0:
+				_draw_seam(Vector2((float(ox) + float(run2 + gx2) * 0.5) * CELL,
+						float(oy + gy2) * CELL), false, col)
+				run2 = -1
+
+
+func _draw_seam(at: Vector2, vertical: bool, col: Color) -> void:
+	if vertical:
+		_grid.draw_rect(Rect2(at.x - SEAM_W * 0.5, at.y - SEAM_LEN * 0.5,
+				SEAM_W, SEAM_LEN), col, true)
+	else:
+		_grid.draw_rect(Rect2(at.x - SEAM_LEN * 0.5, at.y - SEAM_W * 0.5,
+				SEAM_LEN, SEAM_W), col, true)
 
 
 ## 타일 위에 남는 글씨는 **이름 하나뿐**이고, 타일이 덮은 범위 한가운데에
@@ -578,37 +695,77 @@ func _make_drag_preview(t: TrainingTile) -> Control:
 	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(body)
 
+	# 판과 **같은 기하 · 같은 색**이다(`_tile_cell_box`) — 둥근 모서리도,
+	# 안쪽 이음매의 가운데 토막도 그대로 따라온다. 손가락 밑의 모양이 놓인
+	# 결과와 다르면 그것은 미리보기가 아니다.
 	var own: Dictionary = {}
 	for c in t.cells:
 		own[c] = true
 	for i in t.cells.size():
 		var c2: Vector2i = t.cells[i]
 		var col: Color = TrainingTile.color_of(String(t.cell_colors[i]))
-		var lf: bool = own.has(c2 + Vector2i(-1, 0))
-		var rt: bool = own.has(c2 + Vector2i(1, 0))
-		var up: bool = own.has(c2 + Vector2i(0, -1))
-		var dn: bool = own.has(c2 + Vector2i(0, 1))
+		var geom: Dictionary = _tile_cell_box(own, c2, 0, 0,
+				col, col.darkened(0.30), TILE_RADIUS)
+		var r: Rect2 = geom["rect"]
 		var box := Panel.new()
-		var sty := StyleBoxFlat.new()
-		sty.bg_color = col.lightened(0.55)
-		sty.border_color = col
-		sty.border_width_left   = 0 if lf else int(TILE_EDGE)
-		sty.border_width_right  = 0 if rt else int(TILE_EDGE)
-		sty.border_width_top    = 0 if up else int(TILE_EDGE)
-		sty.border_width_bottom = 0 if dn else int(TILE_EDGE)
-		box.add_theme_stylebox_override("panel", sty)
-		var px0: float = 0.0 if lf else CELL_PAD
-		var py0: float = 0.0 if up else CELL_PAD
-		box.position = Vector2(float(c2.x) * CELL + px0, float(c2.y) * CELL + py0)
-		box.size = Vector2(CELL - px0 - (0.0 if rt else CELL_PAD),
-				CELL - py0 - (0.0 if dn else CELL_PAD))
+		box.add_theme_stylebox_override("panel", geom["sb"])
+		box.position = r.position
+		box.size     = r.size
 		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		body.add_child(box)
+	_add_preview_seams(body, t)
 	var name_lbl := UiHelpers.mk_label(body, t.tile_name, 20, OutgameTheme.TEXT,
 			Vector2(8, body.size.y * 0.5 - 14.0),
 			Vector2(body.size.x - 16.0, 28), HORIZONTAL_ALIGNMENT_CENTER)
 	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return root
+
+
+## 커서를 따라오는 미리보기의 이음매. 판 쪽(`_draw_tile_seams`)은 `_grid` 의
+## `_draw` 에 그리고 이쪽은 노드를 쌓는 자리라 그리는 수단만 다르다 — 자리를
+## 정하는 규칙(연속한 이음매의 가운데 토막)은 같은 뜻을 따른다.
+func _add_preview_seams(body: Control, t: TrainingTile) -> void:
+	var own: Dictionary = {}
+	for c in t.cells:
+		own[c] = true
+	var ext: Vector2i = t.extent()
+	var col: Color = TrainingTile.color_of(String(t.cell_colors[0])).darkened(0.30)
+	col.a = SEAM_ALPHA
+	for gx in range(1, ext.x):
+		var run: int = -1
+		for gy in range(ext.y + 1):
+			var joined: bool = gy < ext.y and own.has(Vector2i(gx - 1, gy)) \
+					and own.has(Vector2i(gx, gy))
+			if joined and run < 0:
+				run = gy
+			elif not joined and run >= 0:
+				_add_seam_rect(body, Vector2(float(gx) * CELL,
+						float(run + gy) * 0.5 * CELL), true, col)
+				run = -1
+	for gy2 in range(1, ext.y):
+		var run2: int = -1
+		for gx2 in range(ext.x + 1):
+			var joined2: bool = gx2 < ext.x and own.has(Vector2i(gx2, gy2 - 1)) \
+					and own.has(Vector2i(gx2, gy2))
+			if joined2 and run2 < 0:
+				run2 = gx2
+			elif not joined2 and run2 >= 0:
+				_add_seam_rect(body, Vector2(float(run2 + gx2) * 0.5 * CELL,
+						float(gy2) * CELL), false, col)
+				run2 = -1
+
+
+func _add_seam_rect(body: Control, at: Vector2, vertical: bool, col: Color) -> void:
+	var r := ColorRect.new()
+	r.color = col
+	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if vertical:
+		r.position = Vector2(at.x - SEAM_W * 0.5, at.y - SEAM_LEN * 0.5)
+		r.size     = Vector2(SEAM_W, SEAM_LEN)
+	else:
+		r.position = Vector2(at.x - SEAM_LEN * 0.5, at.y - SEAM_W * 0.5)
+		r.size     = Vector2(SEAM_LEN, SEAM_W)
+	body.add_child(r)
 
 
 # ── 인벤토리 ─────────────────────────────────────────────────────────────────
@@ -856,7 +1013,7 @@ func _place_popover() -> void:
 	if x + POP_W > 1080.0 - 12.0:
 		x = at.x - POP_W - POP_GAP
 	x = clampf(x, 12.0, 1080.0 - POP_W - 12.0)
-	var y: float = clampf(at.y, GRID_Y, ScreenMetrics.safe_h() - _popover.size.y - 12.0)
+	var y: float = clampf(at.y, _grid_y(), ScreenMetrics.safe_h() - _popover.size.y - 12.0)
 	_popover.position = Vector2(x, y)
 	# 가리키던 카드가 스크롤 밖으로 밀려나면 함께 숨는다 — 가리킬 것이 없는
 	# 팝오버는 그 자리에 남아 화면을 덮기만 한다.

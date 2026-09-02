@@ -7,7 +7,7 @@ extends Control
 # ── 한 주 ───────────────────────────────────────────────────
 # 주는 **이레 내내 한 날씩 흘러간다**(`season_state["week_day"]` 0..6).
 #
-#   HUB(주 시작 직전) → PRESS(기자회견) → TRAINING(주간 훈련 타일 배치)
+#   HUB(주 시작 직전) → PRESS(기자회견) → TRAINING(일상 훈련 타일 배치)
 #     → WEEK 월 → 화 → 수 → 목 → 금          (매일 그날 훈련 결과 + 확인)
 #     → WEEK 토 → 경기가 있으면 MatchFlow → BattleSim → STANDINGS → 확인 → WEEK 토
 #     → WEEK 일 → 같은 식

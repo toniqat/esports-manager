@@ -48,7 +48,7 @@ save-system contract.
 ```
 HUB (주 시작 직전 — 로스터 · 다음 경기 · "이번 주 시작 →")
   → PRESS      (기자회견 — 메신저. 대사 몇 줄 뒤 답변 선택지)
-  → TRAINING   (타일을 판에 끼워 이번 주 훈련을 짜고 "훈련 확정")
+  → TRAINING   (일상 훈련 — 타일을 판에 끼워 훈련을 짜고 "훈련 확정")
   → WEEK       (시간 경과 — 좌측 요일 레일 + 그날의 카드 목록)
        월 → 화 → 수 → 목 → 금   각 요일에 apply_day_training(day) 로 그 줄만
                                  정산해 스탯을 올리고 결과를 카드로 보여 준다
@@ -89,7 +89,7 @@ and exposes intent methods on the hub. Pattern mirrors `BattleSim`:
 | HubView                  | `HubView.gd`                                 | Simplified hub — phase/week counter + roster + "이번 주 시작" + 순위 buttons. |
 | TeamDraft                | `draft/TeamDraft.gd`                         | 초기 5인 선발 (네임드 25인 풀) — 역할 고정 5칸 · 역할 필터 · 스크롤 썸네일 격자 · 상세 팝업. `draft/README.md` |
 | PressConferenceView      | `press/PressConferenceView.gd`               | **기자회견** — 주 시작 직전의 메신저 화면. 지금은 대사 · 선택지가 임시 데이터인 틀이다. `press/README.md` |
-| TrainingBoard            | `training/TrainingBoard.gd`                  | **주간 훈련 타일판** — 5열(선수) × 5행(월~금). 배치 판정 + 정산(`cell_exp` / `compute_day_gains`) + **요일 적용**(`apply_day_training(day)`) + 나머지 EXP 통장. `training/README.md` |
+| TrainingBoard            | `training/TrainingBoard.gd`                  | **일상 훈련 타일판** — 5열(선수) × 5행(하루씩. 화면에는 요일을 적지 않는다). 배치 판정 + 정산(`cell_exp` / `compute_day_gains`) + **요일 적용**(`apply_day_training(day)`) + 나머지 EXP 통장. `training/README.md` |
 | TrainingView             | `training/TrainingView.gd`                   | Schedule editor; "훈련 확정" calls `SeasonHub.on_training_confirmed` — 판을 정산하지 않고 **주를 연다**(요일 커서를 월요일에 세운다). |
 | WeekProgressView         | `week/WeekProgressView.gd`                   | **시간 경과** — 좌측 세로 요일 레일 + 그날의 훈련 결과 / 경기 카드 + 아래 "확인" (경기일이면 "경기 시작"). `week/README.md` |
 | LeagueManager            | `league/LeagueManager.gd`                    | Round-robin schedule keyed by `phase_week` (1 round per week), standings, `resolve_current_week()` for AI matches. |

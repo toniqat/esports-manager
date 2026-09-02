@@ -150,20 +150,13 @@ func _build_match_panel(pos: Vector2, slot: int, sz: Vector2) -> Dictionary:
 ## 마감이 가져갔고, 돌아갈 자리는 버튼이 아니라 주 진행 상태가 정한다
 ## (`SeasonHub.on_standings_confirmed`).
 func _build_back_button() -> void:
-	var w: float = 1000.0
-	var h: float = 100.0
-	var x0: float = (ScreenMetrics.vp_w() - w) / 2.0
-	# 하단 안전선에 매단다 — 이 자리는 아이폰 홈 인디케이터 / 안드로이드
-	# 제스처 바가 터치를 가져가는 구간과 맞닿아 있다.
-	var y: float = ScreenMetrics.safe_h() - 40.0 - h
-
-	_back_btn = Button.new()
-	_back_btn.text = "확인"
-	_back_btn.position = Vector2(x0, y)
-	_back_btn.size     = Vector2(w, h)
-	OutgameTheme.style_primary_button(_back_btn, 34)
+	# 하나뿐인 행동이라 **하단 구간을 통째로 차지한다** — 좌우 끝에서 끝까지,
+	# 아래는 안전선에 밀착(`OutgameTheme.add_bottom_bar`).
+	var bar: Array = OutgameTheme.add_bottom_bar(self, [
+		{"text": "확인", "style": "primary", "font": 34},
+	])
+	_back_btn = bar[0]
 	_back_btn.pressed.connect(_on_back_pressed)
-	add_child(_back_btn)
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────

@@ -127,21 +127,14 @@ func _build_rows() -> void:
 		})
 
 
+## 확인 하나뿐이라 **하단 구간을 통째로 차지한다** — 좌우 끝에서 끝까지,
+## 아래는 안전선에 밀착. 규약은 `OutgameTheme.add_bottom_bar`.
 func _build_button() -> void:
-	var w: float = ROW_W
-	var h: float = 100.0
-	var x0: float = (ScreenMetrics.vp_w() - w) / 2.0
-	# 하단 안전선에 매단다 — 이 자리는 아이폰 홈 인디케이터 / 안드로이드
-	# 제스처 바가 터치를 가져가는 구간과 맞닿아 있다.
-	var y: float = ScreenMetrics.safe_h() - 40.0 - h
-
-	_ok_btn = Button.new()
-	_ok_btn.text = "확인"
-	_ok_btn.position = Vector2(x0, y)
-	_ok_btn.size     = Vector2(w, h)
-	OutgameTheme.style_primary_button(_ok_btn, 34)
+	var bar: Array = OutgameTheme.add_bottom_bar(self, [
+		{"text": "확인", "style": "primary", "font": 34},
+	])
+	_ok_btn = bar[0]
 	_ok_btn.pressed.connect(_on_ok_pressed)
-	add_child(_ok_btn)
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────

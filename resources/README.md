@@ -535,6 +535,7 @@ controllers and HudBuilder.
 | 색 | `BG` `SURFACE` `SURFACE_SUNK` `RAIL` `RAIL_TEXT` / `TEXT` `TEXT_SUB` `TEXT_FAINT` `TEXT_ON_FILL` / `ACCENT` `ACCENT_DIM` `ACCENT_TEXT` `LINK` / `POSITIVE` `NEGATIVE` `NEUTRAL` / `BORDER` `BORDER_STRONG` `SHADOW` / `CARD_TINTS` `ROLE_COLORS` `ROLE_NAMES` `DAY_LETTERS` `DAY_NAMES` |
 | StyleBox | `card_style` `flat_style` `lead_bar_style` `set_corner_radius` |
 | 버튼 | `style_primary_button`(앰버, 한 화면에 하나) `style_ghost_button` `style_text_button` `style_dark_button`(어두운 색면 — "이 화면을 떠난다") |
+| 하단 바 | `BOTTOM_BAR_H`(128) `bottom_bar_top()` `add_bottom_bar(parent, specs)` `layout_bottom_bar(buttons, specs)` `style_bottom_button(b, style, font)` |
 | 조각 | `add_background`(안이 `ScreenMetrics.extend_background` 를 부른다) `add_card` `add_divider` `add_round_portrait` `add_chip` `add_vscroll` |
 
 **버튼 스타일은 색만 정한다 — 감촉은 여기서 정하지 않는다.** 한때는 이 네
@@ -543,6 +544,32 @@ controllers and HudBuilder.
 무관하게 같은 두 박자**를 낸다 — 누를 때 `LIGHT`, 뗄 때 `SOFT`. 확정인지 탭
 전환인지는 화면이 말하는 것이고, 손에 오는 감촉이 화면마다 흔들리면 그것이
 도리어 잡음이었다. 배선 전체는 `autoloads/README.md` 의 `HapticUi.gd` 절.
+
+### 하단 액션 바 (`add_bottom_bar`)
+**아웃게임 화면의 주된 행동은 화면 한가운데 떠 있는 도형이 아니라 하단 구간
+전체다.** 좌우 여백 0, 아래는 안전선에 밀착, 모서리는 각지게 — 그래서 바가
+화면의 한 구획이 되고 "여기 아래는 전부 이 행동"이 자리만으로 읽힌다. 버튼이
+여럿이면 그 구간을 **무게 비율대로** 나눠 갖고, 관례는 **주 행동 2 : 보조 1** 에
+**주 행동이 오른쪽 끝**이다(엄지가 닿는 자리이고 훑는 눈이 마지막에 멎는 자리다).
+
+쓰는 화면 여덟: 시즌 허브(`리그 순위` 1 / `이번 주 시작 →` 2) · 일상 훈련
+(`판 비우기` 1 / `훈련 확정` 2) · 드래프트(`뒤로` 1 / `다음`·`드래프트 확정` 2) ·
+리그 순위 · 플레이오프 · 국제대회 브래킷 · 시간 경과(각 `확인` 하나로 전폭) ·
+엔딩 / 게임오버(`타이틀로` 1 / `다시 시작` 2).
+
+규약 넷.
+- **본문 높이는 `bottom_bar_top()` 에서 역산한다.** 바 높이를 화면마다 상수로
+  다시 적으면 바를 한 번 손볼 때마다 그 화면들의 목록이 조용히 바 밑으로 들어간다.
+- **색면은 안전선 아래까지 내려가고 글자는 안전선 위에 남는다.** 홈 인디케이터 /
+  제스처 바 자리를 비워 두면 바 밑에 배경색 띠가 한 줄 남아 바가 떠 보인다.
+  버튼 사각형을 뷰포트 바닥까지 늘리되 `content_margin_bottom` 에 인셋을 얹으면
+  Button 이 글자를 그 안쪽 사각형 한가운데에 놓으므로, 눌리는 자리와 읽히는
+  자리가 둘 다 안전 영역 안이다.
+- **칸이 접히는 화면은 `layout_bottom_bar` 를 다시 부른다.** 보이는 칸만 무게를
+  나눠 가지므로 드래프트의 PICK 상태에서는 "다음"이 화면 폭을 통째로 쓴다.
+- **옷을 갈아입히는 버튼은 `style_bottom_button` 을 쓴다.** `style_dark_button`
+  을 직접 부르면 둥근 모서리가 되살아나 그 칸만 화면에서 도로 떠오른다
+  (시간 경과 화면의 "경기 시작"이 그렇게 바뀐다).
 
 **`add_round_portrait` 은 `clip_contents` 로 만들지 않는다.** 그것은 Control 의
 사각 rect 로 자르지 StyleBox 의 모서리 반지름으로 자르지 않아서, `Panel`

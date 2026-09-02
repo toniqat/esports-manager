@@ -79,21 +79,14 @@ func _build() -> void:
 				HORIZONTAL_ALIGNMENT_LEFT)
 		_roster_lines.append(lbl)
 
-	var btn := Button.new()
-	btn.text = "다시 시작"
-	btn.position = Vector2((1080.0 - 760.0) / 2.0, 1500.0)
-	btn.size     = Vector2(360, 110)
-	OutgameTheme.style_primary_button(btn, 32)
-	btn.pressed.connect(_on_restart_pressed)
-	add_child(btn)
-
-	var title_btn := Button.new()
-	title_btn.text = "타이틀로"
-	title_btn.position = Vector2((1080.0 - 760.0) / 2.0 + 400.0, 1500.0)
-	title_btn.size     = Vector2(360, 110)
-	OutgameTheme.style_ghost_button(title_btn, 32)
-	title_btn.pressed.connect(_on_title_pressed)
-	add_child(title_btn)
+	# **하단 구간을 둘이 2:1 로 나눠 갖는다** — 다시 시작이 주 행동이라 오른쪽
+	# 3분의 2, 타이틀로 나가는 길이 왼쪽 3분의 1이다(`OutgameTheme.add_bottom_bar`).
+	var bar: Array = OutgameTheme.add_bottom_bar(self, [
+		{"text": "타이틀로",  "style": "ghost",   "font": 32, "weight": 1.0},
+		{"text": "다시 시작", "style": "primary", "font": 32, "weight": 2.0},
+	])
+	(bar[0] as Button).pressed.connect(_on_title_pressed)
+	(bar[1] as Button).pressed.connect(_on_restart_pressed)
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────

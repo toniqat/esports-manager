@@ -79,18 +79,15 @@ static func grid_h() -> float:
 
 
 # ─── 맨 아래: 다음 / 확정 ────────────────────────────────────────────────────
-const BAR_BOTTOM_GAP: float = 20.0
-const BAR_H: float = 120.0
-const MAIN_BTN_W: float = 480.0
-const BACK_BTN_W: float = 160.0
-const BACK_BTN_H: float = 80.0
-const BACK_BTN_GAP: float = 20.0
+## **하단 구간을 통째로 차지하는 바 한 줄**이다(`OutgameTheme.add_bottom_bar`).
+## PICK 에서는 "다음"이 화면 폭 전체를, CONFIRM 에서는 "뒤로"(1) 와
+## "드래프트 확정"(2) 이 2:1 로 나눠 갖는다 — 그 화면이 묻는 것은 확정할
+## 것인가 하나이므로 되돌아가는 길은 3분의 1로 족하다.
 
 
-## 하단 버튼 줄의 y. 이 화면에서 가장 아래에 있는 터치 대상이라 홈 인디케이터 /
-## 제스처 바와 맞닿는다 — 안전선에 매단다.
+## 하단 버튼 줄의 y. 격자 높이가 여기서 역산된다.
 static func bar_y() -> float:
-	return ScreenMetrics.safe_h() - BAR_BOTTOM_GAP - BAR_H
+	return OutgameTheme.bottom_bar_top()
 
 
 ## CONFIRM 모드에서 선택 5인 블록이 내려앉는 y — **화면의 세로 가운데**.
@@ -121,6 +118,10 @@ var _grid_body: Control
 var _next_btn: Button
 var _confirm_btn: Button
 var _back_btn: Button
+## 하단 바의 칸 셋과 그 무게. 모드가 바뀌어 보이는 칸이 달라지면
+## `layout_bottom_bar` 가 이 둘을 다시 읽어 폭을 나눈다.
+var _bar_btns: Array = []
+var _bar_specs: Array = []
 var _detail: DraftDetailPanel
 
 
@@ -293,42 +294,26 @@ func _build_grid() -> void:
 			_thumbs_by_id[p.id] = thumb
 
 
+## 세 칸을 한 번에 세우고 **모드가 그중 무엇을 보이게 할지만 정한다** —
+## "다음"과 "드래프트 확정"은 서로 배타라 언제나 하나만 서고, 보이는 칸만
+## 무게대로 폭을 나눠 가지므로 PICK 에서는 "다음"이 화면 폭을 통째로 쓴다.
 func _build_bottom_bar() -> void:
-	var vp_w: float = ScreenMetrics.vp_w()
-	var main_x: float = (vp_w - MAIN_BTN_W) * 0.5
-
-	_next_btn = Button.new()
-	_next_btn.text = "다음"
-	_next_btn.focus_mode = Control.FOCUS_NONE
-	_next_btn.position = Vector2(main_x, bar_y())
-	_next_btn.size     = Vector2(MAIN_BTN_W, BAR_H)
-	OutgameTheme.style_primary_button(_next_btn, 38)
-	_next_btn.disabled = true
-	_next_btn.pressed.connect(_on_next_pressed)
-	add_child(_next_btn)
-
-	_confirm_btn = Button.new()
-	_confirm_btn.text = "드래프트 확정"
-	_confirm_btn.focus_mode = Control.FOCUS_NONE
-	_confirm_btn.position = Vector2(main_x, bar_y())
-	_confirm_btn.size     = Vector2(MAIN_BTN_W, BAR_H)
-	OutgameTheme.style_primary_button(_confirm_btn, 38)
-	_confirm_btn.visible = false
-	_confirm_btn.pressed.connect(_on_confirm_pressed)
-	add_child(_confirm_btn)
-
-	# "뒤로"는 확정 버튼의 왼쪽에 작게 붙는다 — 되돌아가는 길은 있어야 하지만
-	# 이 화면이 묻는 것은 "확정할 것인가" 하나다.
-	_back_btn = Button.new()
-	_back_btn.text = "뒤로"
-	_back_btn.focus_mode = Control.FOCUS_NONE
-	_back_btn.position = Vector2(main_x - BACK_BTN_GAP - BACK_BTN_W,
-			bar_y() + (BAR_H - BACK_BTN_H) * 0.5)
-	_back_btn.size     = Vector2(BACK_BTN_W, BACK_BTN_H)
-	OutgameTheme.style_text_button(_back_btn, 26)
+	_bar_specs = [
+		{"text": "뒤로",          "style": "ghost",   "font": 30, "weight": 1.0},
+		{"text": "다음",          "style": "primary", "font": 38, "weight": 2.0},
+		{"text": "드래프트 확정", "style": "primary", "font": 38, "weight": 2.0},
+	]
+	_bar_btns = OutgameTheme.add_bottom_bar(self, _bar_specs)
+	_back_btn    = _bar_btns[0]
+	_next_btn    = _bar_btns[1]
+	_confirm_btn = _bar_btns[2]
 	_back_btn.visible = false
+	_confirm_btn.visible = false
+	_next_btn.disabled = true
 	_back_btn.pressed.connect(_on_back_pressed)
-	add_child(_back_btn)
+	_next_btn.pressed.connect(_on_next_pressed)
+	_confirm_btn.pressed.connect(_on_confirm_pressed)
+	OutgameTheme.layout_bottom_bar(_bar_btns, _bar_specs)
 
 
 # ── Interaction ──────────────────────────────────────────────────────────────
@@ -417,6 +402,9 @@ func _apply_mode() -> void:
 	_next_btn.visible = picking
 	_confirm_btn.visible = not picking
 	_back_btn.visible = not picking
+	# 보이는 칸이 바뀌었으니 하단 구간을 다시 나눠 준다 — 안 하면 PICK 의
+	# "다음"이 CONFIRM 에서 쓰던 3분의 2 폭을 그대로 들고 서 있는다.
+	OutgameTheme.layout_bottom_bar(_bar_btns, _bar_specs)
 	_slot_row.position.y = SLOT_ROW_Y if picking else confirm_row_y()
 	_refresh_next_btn()
 

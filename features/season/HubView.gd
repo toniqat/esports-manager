@@ -72,8 +72,10 @@ func _build() -> void:
 	_build_roster_block()
 	_build_buttons()
 
+	# 토스트는 하단 바 **바로 위**에 뜬다 — 바 높이를 상수로 다시 적으면
+	# 바를 손볼 때마다 이 줄이 조용히 바 밑으로 들어간다.
 	_toast_lbl = UiHelpers.mk_label(self, "", 22, OutgameTheme.ACCENT_TEXT,
-			Vector2(0, ScreenMetrics.safe_h() - 252.0),
+			Vector2(0, OutgameTheme.bottom_bar_top() - 40.0),
 			Vector2(ScreenMetrics.vp_w(), 28), HORIZONTAL_ALIGNMENT_CENTER)
 
 
@@ -141,31 +143,19 @@ func _build_roster_block() -> void:
 		})
 
 
+## **하단 구간을 둘이 2:1 로 나눠 갖는다** — 주 행동인 "이번 주 시작"이 오른쪽
+## 3분의 2, 곁길인 순위 보기가 왼쪽 3분의 1이다. 무엇이 주 행동인지가 색뿐
+## 아니라 폭으로도 읽혀야 하고, 오른쪽 끝은 엄지가 닿는 자리다.
+## 규약은 `OutgameTheme.add_bottom_bar`.
 func _build_buttons() -> void:
-	var btn_w: float = 480.0
-	var btn_h: float = 110.0
-	# 하단 안전선에 매단다 — 이 자리는 아이폰 홈 인디케이터 / 안드로이드
-	# 제스처 바가 터치를 가져가는 구간과 맞닿아 있다.
-	var top: float = ScreenMetrics.safe_h() - 110.0 - btn_h
-	var gap: float = 30.0
-	var total_w: float = 2.0 * btn_w + gap
-	var start_x: float = (ScreenMetrics.vp_w() - total_w) / 2.0
-
-	_start_btn = Button.new()
-	_start_btn.text = "이번 주 시작 →"
-	_start_btn.position = Vector2(start_x, top)
-	_start_btn.size     = Vector2(btn_w, btn_h)
-	OutgameTheme.style_primary_button(_start_btn, 34)
-	_start_btn.pressed.connect(_on_start_pressed)
-	add_child(_start_btn)
-
-	_standings_btn = Button.new()
-	_standings_btn.text = "리그 순위"
-	_standings_btn.position = Vector2(start_x + btn_w + gap, top)
-	_standings_btn.size     = Vector2(btn_w, btn_h)
-	OutgameTheme.style_ghost_button(_standings_btn, 32)
+	var bar: Array = OutgameTheme.add_bottom_bar(self, [
+		{"text": "리그 순위",      "style": "ghost",   "font": 32, "weight": 1.0},
+		{"text": "이번 주 시작 →", "style": "primary", "font": 34, "weight": 2.0},
+	])
+	_standings_btn = bar[0]
+	_start_btn     = bar[1]
 	_standings_btn.pressed.connect(_on_standings_pressed)
-	add_child(_standings_btn)
+	_start_btn.pressed.connect(_on_start_pressed)
 
 
 # ── Signals ──────────────────────────────────────────────────────────────────

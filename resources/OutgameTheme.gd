@@ -198,6 +198,139 @@ static func _btn_box(bg: Color, border: Variant) -> StyleBoxFlat:
 	return sb
 
 
+# ── 하단 액션 바 ─────────────────────────────────────────────────────────────
+#
+# **아웃게임 화면의 주된 행동은 화면 한가운데 떠 있는 도형이 아니라 하단
+# 구간 전체다.** 좌우 여백 없이 화면 끝에서 끝까지, 아래는 안전선에 밀착하고
+# 모서리는 각지게 — 그래서 바가 화면의 한 구획이 되고 "여기 아래는 전부 이
+# 행동"이 자리만으로 읽힌다. 버튼이 여럿이면 그 구간을 **무게 비율대로**
+# 나눠 갖는다(주 행동 2 : 보조 1) — 무엇이 주 행동인지가 색뿐 아니라 폭으로도
+# 읽혀야 하기 때문이다.
+#
+# **색면은 안전선 아래까지 내려간다.** 홈 인디케이터 / 제스처 바 자리를 비워
+# 두면 바 밑에 배경색 띠가 한 줄 남아 바가 화면에서 떠 보인다. 그래서 버튼
+# 사각형은 뷰포트 바닥까지 늘리되 **글자는 안전선 위에 남긴다** —
+# `content_margin_bottom` 에 인셋을 얹으면 Button 이 글자를 그 안쪽 사각형
+# 한가운데에 놓으므로, 눌리는 자리와 읽히는 자리가 둘 다 안전 영역 안이다.
+#
+# 화면은 `bottom_bar_top()` 하나만 알면 된다 — 본문 높이를 그 값에서 역산하면
+# 바가 기기마다 오르내려도 내용이 그 밑에 깔리지 않는다.
+
+## 바의 높이(안전 영역 안쪽 기준). 아래 인셋은 여기에 포함되지 않는다 —
+## 그것은 글자가 아니라 색면만 내려가는 몫이다.
+const BOTTOM_BAR_H: float = 128.0
+
+## 구간 사이의 실선. ghost 버튼은 자기 테두리가 이미 경계를 만들지만
+## primary · dark 끼리 붙으면 그 자리가 통짜 색면이 된다.
+const BOTTOM_BAR_SEP: Color = Color(0.110, 0.110, 0.122, 0.14)
+
+
+## **본문이 끝나야 하는 y.** 화면째 `indent_to_safe_top` 으로 내려놓은
+## 좌표계 기준이라 `bottom_y()` 가 아니라 `safe_h()` 에서 뺀다.
+static func bottom_bar_top() -> float:
+	return ScreenMetrics.safe_h() - BOTTOM_BAR_H
+
+
+## 하단 바 한 줄을 세운다. `specs` 는 왼쪽부터의 구간 목록이고 한 칸은
+## `{text, style, weight, font}` — `style` 은 `"primary"`(기본) / `"ghost"` /
+## `"dark"` / `"text"`, `weight` 는 구간 폭의 비(기본 1), `font` 는 글자 크기.
+## 주 행동은 **오른쪽 끝**에 둔다(엄지가 닿는 자리이고, 훑는 눈이 마지막에
+## 멎는 자리다).
+##
+## 돌려주는 것은 만든 `Button` 배열이다. 상태에 따라 구간이 접히는 화면
+## (드래프트의 "뒤로")은 `visible` 을 끄고 `layout_bottom_bar` 를 다시 부른다.
+static func add_bottom_bar(parent: Control, specs: Array) -> Array:
+	var out: Array = []
+	for s_raw in specs:
+		var s: Dictionary = s_raw
+		var b := Button.new()
+		b.text = String(s.get("text", ""))
+		b.focus_mode = Control.FOCUS_NONE
+		style_bottom_button(b, String(s.get("style", "primary")),
+				int(s.get("font", 34)))
+		parent.add_child(b)
+		out.append(b)
+		if out.size() < specs.size():
+			var sep := ColorRect.new()
+			sep.color = BOTTOM_BAR_SEP
+			sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			b.add_child(sep)
+	layout_bottom_bar(out, specs)
+	return out
+
+
+## 보이는 구간만 무게 비율대로 다시 늘어놓는다. 마지막 구간의 오른쪽 끝은
+## 반올림 잔차 없이 화면 끝에 정확히 닿는다 — 1px 이라도 남으면 그 틈으로
+## 배경이 비쳐 바가 두 조각으로 보인다.
+static func layout_bottom_bar(buttons: Array, specs: Array) -> void:
+	var vp_w: float = ScreenMetrics.vp_w()
+	var top: float = bottom_bar_top()
+	var below: float = maxf(0.0, ScreenMetrics.insets().w)
+	var total: float = 0.0
+	for i in buttons.size():
+		if (buttons[i] as Button).visible:
+			total += _bar_weight(specs, i)
+	if total <= 0.0:
+		return
+
+	var x: float = 0.0
+	var used: float = 0.0
+	var last: int = -1
+	for i in buttons.size():
+		if (buttons[i] as Button).visible:
+			last = i
+	for i in buttons.size():
+		var b: Button = buttons[i]
+		if not b.visible:
+			continue
+		var w: float = vp_w - used if i == last \
+				else floorf(vp_w * _bar_weight(specs, i) / total)
+		b.position = Vector2(x, top)
+		b.size     = Vector2(w, BOTTOM_BAR_H + below)
+		for c in b.get_children():
+			var sep := c as ColorRect
+			if sep != null:
+				# 구분선은 그 구간의 **오른쪽** 끝에 선다. 마지막 구간은
+				# 화면 끝이라 선을 세우면 바깥 테두리가 된다.
+				sep.visible = i != last
+				sep.position = Vector2(w - 2.0, 0.0)
+				sep.size     = Vector2(2.0, BOTTOM_BAR_H + below)
+		x   += w
+		used += w
+
+
+static func _bar_weight(specs: Array, i: int) -> float:
+	if i < 0 or i >= specs.size():
+		return 1.0
+	return maxf(0.01, float((specs[i] as Dictionary).get("weight", 1.0)))
+
+
+## 바 한 칸의 옷을 입힌다 — 색을 고르고, 모서리를 각지게 펴고, 안전선 아래로
+## 내려간 몫만큼 글자를 위로 물린다. 스타일박스는 `_btn_box` 가 호출마다 새로
+## 만든 것이라 여기서 고쳐도 다른 버튼에 번지지 않는다.
+##
+## **바뀌는 버튼은 이 함수를 다시 부른다** — `style_primary_button` 을 직접
+## 부르면 둥근 모서리가 되살아나 그 칸만 화면에서 도로 떠오른다(시간 경과
+## 화면의 "경기 시작"이 그렇게 바뀐다).
+static func style_bottom_button(b: Button, style: String = "primary",
+		font_size: int = 34) -> Button:
+	if b == null:
+		return b
+	match style:
+		"ghost": style_ghost_button(b, font_size)
+		"dark":  style_dark_button(b, font_size)
+		"text":  style_text_button(b, font_size)
+		_:       style_primary_button(b, font_size)
+	var below: float = maxf(0.0, ScreenMetrics.insets().w)
+	for n in ["normal", "hover", "pressed", "focus", "disabled"]:
+		var sb := b.get_theme_stylebox(n) as StyleBoxFlat
+		if sb == null:
+			continue
+		set_corner_radius(sb, 0)
+		sb.content_margin_bottom = 8.0 + below
+	return b
+
+
 # ── 자주 쓰는 조각 ───────────────────────────────────────────────────────────
 
 ## 화면 바탕 한 장. `_build()` 첫 줄에서 부른다 —

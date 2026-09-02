@@ -13,6 +13,27 @@ phase = game over. The campaign progresses **one week at a time** — the
 calendar internally rolls 7 days per "다음 주" press, but the player only
 sees a phase / week counter.
 
+## 하단 액션 바 (이 폴더의 화면 전부)
+**주된 행동은 화면 한가운데 떠 있는 도형 버튼이 아니라 하단 구간 전체다** —
+`OutgameTheme.add_bottom_bar(parent, specs)` 한 함수가 좌우 끝에서 끝까지, 아래는
+안전선에 밀착한 각진 바를 세운다. 버튼이 N개면 그 구간을 **무게 비율대로** 나눠
+갖고 관례는 **주 행동 2 : 보조 1** 에 **주 행동이 오른쪽 끝**이다.
+
+| 화면 | 바 |
+|---|---|
+| HubView | `리그 순위`(1, ghost) / `이번 주 시작 →`(2, primary) |
+| TrainingView | `판 비우기`(1, ghost) / `훈련 확정`(2, primary) |
+| TeamDraftView | PICK = `다음` 전폭 · CONFIRM = `뒤로`(1) / `드래프트 확정`(2) |
+| LeagueView · BracketView · IntlBracketView | `확인` 전폭 |
+| WeekProgressView | `확인` / `주 마감 →` / `경기 시작`(dark) — 언제나 하나, 전폭 |
+| EndingView · GameOverView | `타이틀로`(1, ghost) / `다시 시작`(2, primary) |
+
+규약 넷(본문 높이는 `bottom_bar_top()` 에서 역산 · 색면은 안전선 아래까지
+내려가되 글자는 위에 남는다 · 칸이 접히면 `layout_bottom_bar` 를 다시 부른다 ·
+옷을 갈아입히는 버튼은 `style_bottom_button`)은 `resources/README.md` 의 "하단
+액션 바" 절에 있다. **기자회견의 답변 선택지는 이 바가 아니다** — 그것은 말풍선
+흐름 안에 서는 선택지라 하단에 고정되지 않는다.
+
 ## Entry point
 `scenes/Season.tscn` — entered from `scenes/TitleScreen.tscn` once the
 player picks a save slot. Root: `Control` with `SeasonHub.gd` attached.

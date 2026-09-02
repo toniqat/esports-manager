@@ -57,8 +57,6 @@ const CONTENT_X: float   = 152.0
 const HEAD_TOP: float    = 26.0
 const TITLE_Y: float     = 118.0
 const LIST_TOP: float    = 250.0
-const BOTTOM_BAR_H: float = 104.0
-const BOTTOM_GAP: float  = 26.0
 
 const CARD_H: float      = 148.0
 const CARD_GAP: float    = 14.0
@@ -172,23 +170,23 @@ func _build_list() -> void:
 	_list_body = pack["body"]
 
 
+## 이 화면의 행동은 하나뿐이라 **하단 구간을 통째로 차지한다** — 좌측 요일
+## 레일 밑까지 화면 끝에서 끝까지 깔리고 아래는 안전선에 밀착한다
+## (`OutgameTheme.add_bottom_bar`).
 func _build_action_button() -> void:
-	var w: float = ScreenMetrics.vp_w() - CONTENT_X - 40.0
-	_action_btn = Button.new()
-	_action_btn.position = Vector2(CONTENT_X,
-			ScreenMetrics.safe_h() - BOTTOM_GAP - BOTTOM_BAR_H)
-	_action_btn.size = Vector2(w, BOTTOM_BAR_H)
-	OutgameTheme.style_primary_button(_action_btn, 34)
+	var bar: Array = OutgameTheme.add_bottom_bar(self, [
+		{"text": "확인", "style": "primary", "font": 34},
+	])
+	_action_btn = bar[0]
 	_action_btn.pressed.connect(_on_action_pressed)
-	add_child(_action_btn)
 
 
 func _rail_h() -> float:
-	return ScreenMetrics.safe_h() - RAIL_TOP - BOTTOM_GAP - BOTTOM_BAR_H - 20.0
+	return OutgameTheme.bottom_bar_top() - RAIL_TOP - 20.0
 
 
 func _list_bottom() -> float:
-	return ScreenMetrics.safe_h() - BOTTOM_GAP - BOTTOM_BAR_H - 24.0
+	return OutgameTheme.bottom_bar_top() - 24.0
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────
@@ -491,10 +489,12 @@ func _refresh_action_button() -> void:
 		return
 	if _hub != null and _hub.has_player_match_on_day(_day):
 		_action_btn.text = "경기 시작"
-		OutgameTheme.style_dark_button(_action_btn, 34)
+		# 하단 바의 칸이라 **각진 모서리를 유지해야 한다** — `style_dark_button`
+		# 을 직접 부르면 모서리가 도로 둥글어져 이 칸만 화면에서 떠오른다.
+		OutgameTheme.style_bottom_button(_action_btn, "dark", 34)
 		return
 	_action_btn.text = "주 마감 →" if _day >= CalendarSystem.DAYS_PER_WEEK - 1 else "확인"
-	OutgameTheme.style_primary_button(_action_btn, 34)
+	OutgameTheme.style_bottom_button(_action_btn, "primary", 34)
 
 
 func _on_action_pressed() -> void:

@@ -30,6 +30,14 @@
 - **아웃게임은 흰 배경 계통**이고 **모든 색이 `resources/OutgameTheme.gd` 를
   지난다**(참고 디자인 `docs/ref_image.jpg`). 인게임(BattleSim)은 그 표를
   쓰지 않는다 — 전장은 어두운 화면이다.
+- **아웃게임 화면의 주된 행동은 하단 구간 전체를 차지하는 바다**
+  (`OutgameTheme.add_bottom_bar`) — 좌우 끝에서 끝까지, 아래는 안전선에 밀착,
+  모서리는 각지게. 화면 한가운데 떠 있는 도형 버튼이 아니다. 버튼이 N개면 그
+  구간을 **무게 비율대로** 나눠 갖고 관례는 **주 행동 2 : 보조 1** 에 **주 행동이
+  오른쪽 끝**이다. 본문 높이는 `bottom_bar_top()` 에서 역산한다 — 바 높이를
+  화면마다 상수로 다시 적으면 바를 한 번 손볼 때마다 그 화면들의 목록이 조용히
+  바 밑으로 들어간다. 규약과 함정 넷은 `resources/README.md` 의 "하단 액션 바"
+  절. **인게임(BattleSim)은 안 쓴다.**
 - **Save / load**: 3 slots persisted as JSON under `user://saves/slot{0,1,2}.save`.
   Auto-save fires at four points: (1) DRAFT → HUB, (2) MatchFlow pre-ban-pick
   (after PREP confirmation), (3) MatchFlow post-ban-pick (after 메크 배정

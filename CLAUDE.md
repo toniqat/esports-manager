@@ -215,6 +215,18 @@ esports-manager/
 │   ├── MechData.gd              ← class_name MechData (mech stats — no role)
 │   ├── BuildingData.gd / WaypointData.gd ← @tool inspector resources
 │   ├── ScreenMetrics.gd         ← class_name ScreenMetrics — 세이프 에어리어 / 뷰포트 크기 (정적).
+│   ├── SilhouetteFx.gd          ← class_name SilhouetteFx — **캐릭터 실루엣 쉐이더의 배선**
+│   │                              (`shaders/silhouette.gdshader` 를 노드에 물리고 등장 컷을
+│   │                               돌린다). 구운 모브 실루엣 PNG 와 **다른 물건**이다 —
+│   │                               그쪽은 상시 에셋, 이쪽은 한 번 지나가는 연출.
+│   │                               **지금 부르는 화면은 없다** — 파일럿 상세 팝업의
+│   │                               등장 컷이 썼다가 걷혔고, 도구만 남겨 둔 것이다
+│   ├── shaders/
+│   │   └── silhouette.gdshader   ← 알파 유지 + RGB 단색 채움 + 바깥 테두리 한 겹,
+│   │                               `reveal` 0→1 로 원본까지 벗겨진다. 테두리가 설 자리는
+│   │                               **아트를 그 폭만큼 안으로 물려서** 만든다 — 전신 아트가
+│   │                               네 변에 닿아 있어 안 그러면 머리 위가 잘린다.
+│   │                               함정 셋은 `resources/README.md`
 │   │                              **모든 화면 좌표가 여기를 지난다** — docs/mobile_safe_area.md
 │   ├── OutgameTheme.gd          ← class_name OutgameTheme — **아웃게임 흰 배경 팔레트**
 │   │                              (+ 버튼 감촉 세기. `style_primary` / `style_dark` = MEDIUM,
@@ -583,6 +595,26 @@ Each child module has `@onready var _bs: BattleSim = get_parent() as BattleSim` 
 | 레인 통로 (`lane_corridor`) | 레인별 실제 통과 셀 집합. 그 레인의 웨이포인트를 정글 금지로 BFS 연결해 **한 번만** 만들고 캐시한다(팀1 경로는 팀0 의 역순이라 셀 집합은 공유). 유일한 소비자는 `RecallSystem._is_out_of_position` — "이동 카드가 이 레인 파일럿을 **남의 레인**에 떨어뜨렸나". 판정은 반드시 **다른 레인에 속함**을 확인하지, 자기 레인에 없음만으로 판정하지 않는다: BFS 타이브레이크가 실제 걸어간 경로와 한 칸 어긋나도 멀쩡한 파일럿을 추방하면 안 되기 때문. `LANE_NAMES` 에는 GUERRILLA 칸도 있으니 순회는 `lane_corridor_count()` 로 한다. |
 
 ---
+
+### 캐릭터 실루엣 쉐이더 (지금은 쓰는 자리가 없다)
+`resources/shaders/silhouette.gdshader` + `resources/SilhouetteFx.gd` 는
+**서 있기만 하고 어느 화면도 부르지 않는다.** 한때 아웃게임 파일럿 상세 팝업
+(`season/draft/DraftDetailPanel.gd`)의 전신 아트가 실루엣으로 서 있다가 아래에서
+위로 벗겨지는 등장 컷이 있었지만 **그 적용은 걷혔다** — 팝업은 이제 아트를 그대로
+켠다(`ART_SIL_REVEAL_SEC` / `_DELAY` 와 `SilhouetteFx.apply` / `play_reveal` 호출이
+함께 사라졌다). 쉐이더와 배선은 다음에 쓸 자리를 위해 남겨 둔 도구다.
+
+**구운 모브 실루엣 PNG(`images/pilot/mob/`)를 대체하는 것이 아니다.** 그쪽은
+"이름 없는 선수"를 상시로 말하는 에셋이고, 무엇보다 `faces` / `circle` / `eye`
+세 컷은 알파가 통짜 사각형이라 런타임에 칠하면 검은 막대가 된다. 쉐이더가 살 수
+있는 자리는 **알파가 곧 인물 윤곽인 컷**(`full` / `tall` 계열)이다.
+
+테두리가 설 자리는 아트를 그 폭만큼 안으로 물려서 만든다(전신 아트 40장이 네 변에
+인물이 닿아 있어 안 그러면 머리 위 테두리가 잘린다). 파라미터 표와 쉐이더를
+만지기 전에 볼 함정 셋(프래그먼트 `COLOR` 는 이미 텍스처가 곱해진 채 들어온다 ·
+`MODULATE` 내장이 없다 · 전역 함수에서 `TEXTURE` 를 못 읽는다)은
+`resources/README.md` 에 실측과 함께 적혀 있다.
+
 
 ## Critical Patterns
 

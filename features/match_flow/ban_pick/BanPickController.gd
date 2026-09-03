@@ -1017,7 +1017,7 @@ func _build_card_row(defs: Array, y: float, rx: float, rw: float) -> void:
 		var def: Dictionary = defs[i]
 		var node := CARD_SCENE.instantiate() as Card
 		# add_child 를 setup 보다 **먼저** — Card.gd 의 @onready 참조는 트리에
-		# 들어간 뒤에야 풀린다(DraftDetailPanel / CardPileViewer 와 같은 순서).
+		# 들어간 뒤에야 풀린다(CardPileViewer / PilotDetailPanel 과 같은 순서).
 		_sheet.add_child(node)
 		node.setup(CardData.from_def(def), false, true)
 		node.mouse_filter = Control.MOUSE_FILTER_IGNORE

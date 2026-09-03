@@ -131,71 +131,14 @@ func _rebuild_rosters_from_pool() -> void:
 	_gm.season_state["team_rosters"] = rosters
 
 
-# ─── 카드 후보 풀 (역할이 정한다) ────────────────────────────────────────────
-# 파일럿 카드 3장의 **내역은 역할이 가르고**, 그 세 장이 어느 카드가 될지는
-# 경기 시작 시 `CardPhaseManager._deal_team_deck` 이 표집한다. 그래서 드래프트
-# 시점에 보여 줄 수 있는 것은 확정된 덱이 아니라 **후보 풀**이다 — 슬롯 구성은
-# 지금 확정이고 어느 카드가 뽑힐지만 나중에 정해진다.
-#
-# 아래 표는 `CardPhaseManager._pilot_slots_for` 와 **같은 규칙**이다. 저쪽은
-# `PilotData.is_guerrilla`(= 배정된 레인)를 보고 이쪽은 역할을 보는데, 레인이
-# 역할에서 유도되므로(ASSASSIN → GUERRILLA) 답이 갈리지 않는다.
-static func pilot_card_slots_for_role(role: int) -> Array:
-	if role == GameEnums.Role.ASSASSIN:
-		return [[CardData.CAT_JUNGLE, 2], [CardData.CAT_DRAW, 1]]
-	if role == GameEnums.Role.SUPPORT:
-		return [[CardData.CAT_LANE, 1], [CardData.CAT_DRAW, 2]]
-	return [[CardData.CAT_LANE, 2], [CardData.CAT_DRAW, 1]]
-
-
-## 이 역할의 파일럿이 받을 수 있는 **파일럿 카드 후보 전부**, 슬롯 순서대로.
-## 랜덤 스타터 덱에 안 들어가는 행(`pool = 0`)과 시전자 제약(`scope`)에 걸리는
-## 행은 실제 배분과 같은 자리에서 걸러 낸다 — 화면에 뜬 후보가 실제로는 못
-## 받는 카드이면 그 목록은 거짓말이 된다.
-##
-## **static 이고 카드 풀을 인자로 받는다** — 유일한 소비자인 `DraftDetailPanel`
-## 이 드래프트 화면 밖(밴픽의 파일럿 상세)에서도 열리게 됐고, 그쪽에는 건네줄
-## `TeamDraft` 인스턴스가 없다. 호출부가 `GameManager.card_pool_bs` 를 그대로
-## 넘긴다.
-static func candidate_cards_for_role(card_pool: Array, role: int) -> Array:
-	var is_jungler: bool = role == GameEnums.Role.ASSASSIN
-	var out: Array = []
-	var seen: Dictionary = {}
-	for slot_raw in pilot_card_slots_for_role(role):
-		var cat: String = String((slot_raw as Array)[0])
-		for def_raw in card_pool:
-			var def: Dictionary = def_raw as Dictionary
-			if int(def.get("pool", 1)) == 0:
-				continue
-			if String(def.get("card_type", "")) != CardData.TYPE_PILOT:
-				continue
-			var cd := CardData.from_def(def)
-			if not cd.allowed_for_guerrilla(is_jungler):
-				continue
-			if not cd.fits_category(cat):
-				continue
-			if seen.has(cd.card_name):
-				continue
-			seen[cd.card_name] = true
-			out.append(cd)
-	return out
-
-
-## 이 역할이 받는 슬롯 내역을 사람이 읽는 한 줄로. "라인전 2 · 드로우 1".
-static func slot_summary_for_role(role: int) -> String:
-	var parts: Array = []
-	for slot_raw in pilot_card_slots_for_role(role):
-		var slot: Array = slot_raw as Array
-		parts.append("%s %d" % [cat_label(String(slot[0])), int(slot[1])])
-	return " · ".join(parts)
-
-
-static func cat_label(cat: String) -> String:
-	match cat:
-		CardData.CAT_LANE:   return "라인전"
-		CardData.CAT_DRAW:   return "드로우"
-		CardData.CAT_JUNGLE: return "정글"
-	return cat
+# ─── 카드 후보 풀 — **삭제됨** ────────────────────────────────────────────────
+# `pilot_card_slots_for_role` / `candidate_cards_for_role` / `slot_summary_for_role`
+# / `cat_label` 넷이 여기 있었고, 유일한 소비자는 `DraftDetailPanel` 의 "받게 될
+# 파일럿 카드" 절이었다. 그 절이 없어지며(후보는 역할이 정하는 것이라 선수를
+# 고르는 판단에 들어가지 않고, 실제 3장은 경기 시작 시 표집된다) 넷 다 함께
+# 사라졌다. **배분 규칙의 원본은 `CardPhaseManager._pilot_slots_for` 다** —
+# 여기 있던 표는 그것을 역할 기준으로 옮겨 적은 사본이었으므로, 되살릴 일이
+# 생기면 사본을 다시 만들지 말고 그쪽을 부를 것.
 
 
 # ─── 파일럿 스킬 ─────────────────────────────────────────────────────────────

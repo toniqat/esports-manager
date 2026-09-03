@@ -4,24 +4,35 @@ extends CanvasLayer
 # 파일럿 상세 팝업 — **아웃게임에서 파일럿 한 명을 들여다보는 유일한 자리**다.
 #
 #   좌: 전신 아트 한 장
-#   우: 머리글(이름 · 역할 · 원소속) → 스탯 칩 6개 → 파일럿 스킬 → 후보 카드
+#   우: 머리글(이름 · 역할 · 원소속) → 스탯 칩 6개 → 파일럿 스킬
 #   하: 닫기
 #
 # 여는 자리가 둘이다 — **드래프트**(선택 슬롯의 상체 일러스트를 누른다)와
 # **밴픽의 배정 단계**(양 팀 파일럿 초상화를 누른다). 그래서 이 팝업은
-# `TeamDraft` 인스턴스를 요구하지 않는다: 필요한 것은 `PlayerData` 한 장과
-# 오토로드 `GameManager` 뿐이고, 후보 카드 목록은 `TeamDraft` 의 **static**
-# 함수에 카드 풀을 직접 넘겨 받는다.
+# `TeamDraft` 인스턴스를 요구하지 않는다 — 필요한 것은 `PlayerData` 한 장과
+# 오토로드 `GameManager` 뿐이다.
+#
+# **카드는 보여 주지 않는다.** 예전에는 여기 "받게 될 파일럿 카드" 절이 있어
+# 역할별 후보 풀 전부(7~14장)를 카드 노드로 깔았는데, 그 목록이 답하는 질문이
+# 없었다 — 실제 3장은 경기 시작 시 표집되므로 드래프트에서 본 후보와 인게임에서
+# 손에 잡히는 카드가 다르고, 후보 풀은 **역할이 정하는 것이라 선수를 고르는
+# 판단에 들어가지 않는다**(같은 역할이면 누구를 뽑아도 같은 목록이다). 의미를
+# 갖는 것은 인게임에서 확정된 카드뿐이고, 그건 `battle_sim/ui/PilotDetailPanel`
+# 이 `BattleSim.starter_cards` 를 읽어 보여 준다. 그때 `TeamDraft` 의 후보 풀
+# 헬퍼 넷(`pilot_card_slots_for_role` / `candidate_cards_for_role` /
+# `slot_summary_for_role` / `cat_label`)도 함께 삭제됐다 — 이 팝업이 유일한
+# 소비자였다. 배분 규칙 자체는 `CardPhaseManager._pilot_slots_for` 가 그대로
+# 들고 있다(그쪽이 원본이다).
 #
 # 인게임의 `features/battle_sim/ui/PilotDetailPanel.gd` 와 **같은 언어**를 쓰되
 # 같은 클래스가 아니다 — 저쪽은 `BattleSim` 오케스트레이터와 `PilotData`(런타임
 # 상태)에 매달려 있고 이쪽이 가진 것은 `PlayerData`(시즌 영속 데이터)뿐이라,
 # 상속으로 잇는 길은 저쪽의 `_bs` 의존을 통째로 선택적으로 만드는 일이 된다.
-# 공유하는 것은 **모양**(좌 아트 / 우 칩 · 섹션)과 카드 노드이지 구현이 아니다.
+# 공유하는 것은 **모양**(좌 아트 / 우 칩 · 섹션)이지 구현이 아니다.
 #
-# **우측 본문은 스크롤된다.** 후보 카드가 역할에 따라 7~14장이라(드로우 풀만
-# 11종) 고정 높이 패널에 다 세울 수 없고, 잘라 내면 "이 역할이 무엇을 받는가"를
-# 반만 보여 주게 된다. 닫기 버튼은 스크롤 **밖** 고정이다 — 목록 끝까지 내려가야
+# **우측 본문은 여전히 스크롤된다.** 카드 격자가 빠져 지금은 대개 한 화면에
+# 들어가지만, 스킬 설명문은 길이가 제각각이라 넘칠 때가 남는다 — 넘치면 잘리는
+# 대신 굴러가야 한다. 닫기 버튼은 스크롤 **밖** 고정이다 — 목록 끝까지 내려가야
 # 닫을 수 있는 모달은 모달이 아니다.
 
 const OVERLAY_LAYER: int = 20
@@ -77,18 +88,6 @@ const SKILL_NAME_COLOR := OutgameTheme.ACCENT_TEXT
 const SKILL_META_COLOR := OutgameTheme.TEXT_SUB
 const SKILL_DESC_COLOR := OutgameTheme.TEXT
 
-# ─── 후보 카드 ───────────────────────────────────────────────────────────────
-# 3열이라 축소율이 곧 열 폭이다 — 0.80 에서 한 장이 128px 이고 3열 + 간격 24 가
-# 패널 안쪽 폭(416)에 딱 들어간다(408). 인게임 상세 패널과 같은 축소율이라
-# 같은 카드가 두 화면에서 같은 크기로 읽힌다. 처음에 0.62 로 잡았더니 카드
-# 이름이 뭉개져 색 슬래브 열세 장이 됐다 — 후보를 "보여 준다"는 목적이 사라진다.
-const CARD_SCENE := preload("res://scenes/Card.tscn")
-const CARD_VIEW_SCALE: float = 0.80
-const CARD_COLS: int = 3
-const CARD_GAP: float = 12.0
-const CARD_NOTE_FONT: int = 18
-const CARD_NOTE_COLOR := OutgameTheme.TEXT_SUB
-
 const CLOSE_H: float = 84.0
 
 const ROLE_NAMES: Array = ["TANK", "FIGHTER", "ASSASSIN", "SUPPORT", "SNIPER"]
@@ -104,6 +103,8 @@ const STAT_KEYS: Array = ["전장 명중", "전장 회피", "교전 명중",
 
 var _pilot: PlayerData = null
 var _root: Control = null
+## 받침의 실제 아래끝(내용이 정한다). 닫기 버튼이 이 값을 따라간다.
+var _panel_bottom: float = PANEL_BOTTOM
 
 
 func _init() -> void:
@@ -223,10 +224,20 @@ func _build_panel() -> void:
 	y = _build_header(body, inner_w, y)
 	y = _build_stat_chips(body, inner_w, y + 18.0)
 	y = _build_skill_block(body, inner_w, y + 22.0)
-	y = _build_card_sections(body, inner_w, y + 22.0)
 
 	body.custom_minimum_size = Vector2(inner_w, y + 12.0)
 	body.size = Vector2(inner_w, y + 12.0)
+
+	# **받침 높이는 내용이 정한다** — 위쪽은 `PANEL_TOP` 에 못박고 아래끝만
+	# 내용에 맞춰 올라온다(넘치면 `PANEL_BOTTOM` 에서 멈추고 그때부터 스크롤이
+	# 일한다). 카드 격자가 있던 시절에는 언제나 꽉 찼으므로 고정 높이로 두어도
+	# 됐지만, 지금은 스탯 칩과 스킬 한 문단뿐이라 고정으로 두면 받침 아래
+	# 절반이 텅 빈 흰 판으로 남는다.
+	var content_h: float = y + 12.0 + PANEL_PAD * 2.0
+	var panel_h2: float = minf(content_h, panel_h)
+	backdrop.size = Vector2(PANEL_W, panel_h2)
+	scroll.size = Vector2(inner_w, panel_h2 - PANEL_PAD * 2.0)
+	_panel_bottom = PANEL_TOP + panel_h2
 
 
 func _build_header(body: Control, w: float, y: float) -> float:
@@ -320,72 +331,6 @@ func _build_skill_block(body: Control, w: float, y: float) -> float:
 			SKILL_DESC_FONT, SKILL_DESC_COLOR)
 
 
-func _build_card_sections(body: Control, w: float, y: float) -> float:
-	var r: int = int(_pilot.role)
-	# 슬롯 내역은 **제목이 아니라 설명문**에 있다. 제목에 붙이면 "받게 될 파일럿
-	# 카드 (라인전 2 · 드로우 1)" 이 한 줄에 안 들어가 `clip_text` 가 끝을 잘라
-	# 낸다 — 섹션 제목은 잘리면 안 되는 자리다.
-	y = _section(body, w, y, "받게 될 파일럿 카드")
-	y += _wrapped_label(body, w, y,
-			"%s. 아래는 이 역할이 뽑을 수 있는 후보 전부이고, 실제 3장은 경기 시작 시 표집된다."
-					% TeamDraft.slot_summary_for_role(r),
-			CARD_NOTE_FONT, CARD_NOTE_COLOR) + 10.0
-
-	for slot_raw in TeamDraft.pilot_card_slots_for_role(r):
-		var slot: Array = slot_raw as Array
-		var cat: String = String(slot[0])
-		var picks: int = int(slot[1])
-		var cards: Array = _cards_in_cat(r, cat)
-		if cards.is_empty():
-			continue
-		var lbl := UiHelpers.mk_label(body,
-				"%s 슬롯 — 후보 %d종 중 %d장" % [
-					TeamDraft.cat_label(cat), cards.size(), picks],
-				20, OutgameTheme.TEXT_SUB, Vector2(0, y), Vector2(w, 28))
-		lbl.clip_text = true
-		y += 30.0
-		y = _build_card_grid(body, w, y, cards) + 18.0
-	return y
-
-
-## 이 역할의 후보 카드 중 `cat` 슬롯에 해당하는 것들.
-func _cards_in_cat(role: int, cat: String) -> Array:
-	var out: Array = []
-	var gm: Node = get_node_or_null("/root/GameManager")
-	var pool: Array = gm.card_pool_bs if gm != null else []
-	for raw in TeamDraft.candidate_cards_for_role(pool, role):
-		var cd := raw as CardData
-		if cd.fits_category(cat):
-			out.append(cd)
-	return out
-
-
-func _build_card_grid(body: Control, w: float, y: float, cards: Array) -> float:
-	var cw: float = Card.CARD_W * CARD_VIEW_SCALE
-	var ch: float = Card.CARD_H * CARD_VIEW_SCALE
-	var row_w: float = float(CARD_COLS) * cw + float(CARD_COLS - 1) * CARD_GAP
-	var x0: float = maxf(0.0, (w - row_w) * 0.5)
-	var rows: int = int(ceil(float(cards.size()) / float(CARD_COLS)))
-	for i in cards.size():
-		var col: int = i % CARD_COLS
-		@warning_ignore("integer_division")
-		var row: int = i / CARD_COLS
-		var node := CARD_SCENE.instantiate() as Card
-		# add_child 를 setup 보다 **먼저** — Card.gd 의 @onready 참조는 트리에
-		# 들어간 뒤에야 풀린다(CardPileViewer / PilotDetailPanel 과 같은 순서).
-		body.add_child(node)
-		# is_player_card = false → 그림자도 호버 브라이튼도 붙지 않는다. IGNORE 와
-		# 합쳐 `Card._refresh_float_state`(= scale 의 주인)가 영영 돌지 않으므로
-		# 여기서 준 축소가 그대로 남는다.
-		node.setup(cards[i] as CardData, false, true)
-		node.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		node.pivot_offset = Vector2.ZERO
-		node.scale = Vector2(CARD_VIEW_SCALE, CARD_VIEW_SCALE)
-		node.position = Vector2(x0 + float(col) * (cw + CARD_GAP),
-				y + float(row) * (ch + CARD_GAP))
-	return y + float(rows) * ch + float(maxi(0, rows - 1)) * CARD_GAP
-
-
 ## 줄바꿈되는 문단 한 덩이. **실제 높이는 폰트가 정한다** — 손으로 재면 긴
 ## 설명문이 아래 블록을 덮는다. 반환값은 그 높이다.
 func _wrapped_label(body: Control, w: float, y: float, text: String,
@@ -416,7 +361,9 @@ func _build_close() -> void:
 	btn.text = "닫기"
 	OutgameTheme.style_ghost_button(btn, 30)
 	btn.focus_mode = Control.FOCUS_NONE
-	btn.position = Vector2(PANEL_X, PANEL_BOTTOM + 16.0)
+	# 받침 아래끝에 붙어 다닌다 — 인게임 상세 패널(`_reposition_close`)과 같은
+	# 규칙이다. 고정 y 에 두면 내용이 짧은 파일럿에서 버튼만 허공에 뜬다.
+	btn.position = Vector2(PANEL_X, _panel_bottom + 16.0)
 	btn.size = Vector2(PANEL_W, CLOSE_H)
 	# **불투명 스타일이 필수다.** 이 자리는 드래프트 화면의 "드래프트 확정"
 	# 버튼과 겹치는데, 기본 Button 테마는 반투명이라 딤 아래의 그 글자가

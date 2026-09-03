@@ -50,10 +50,10 @@ pilot's prior team — every team always has exactly one pilot per role.
 ## Files
 | File | Role |
 |---|---|
-| `TeamDraft.gd`        | `class_name TeamDraft extends Control` — data layer. Owns `validate_draft()`, `apply_draft()`, `get_pool_grid()`, 그리고 화면이 함께 읽는 표 셋 — **슬롯 순서**(`SLOT_ROLES` / `SLOT_NAMES` / `slot_of_role`), **카드 후보 풀**(`pilot_card_slots_for_role` / `candidate_cards_for_role` / `slot_summary_for_role`), **스킬 조회**(`skill_def_for` / `skill_type_label`). Builds `TeamDraftView` lazily via `ensure_view()` (called by `SeasonHub` after `init_season`). |
+| `TeamDraft.gd`        | `class_name TeamDraft extends Control` — data layer. Owns `validate_draft()`, `apply_draft()`, `get_pool_grid()`, 그리고 화면이 함께 읽는 표 둘 — **슬롯 순서**(`SLOT_ROLES` / `SLOT_NAMES` / `slot_of_role`), **스킬 조회**(`skill_def_for` / `skill_type_label`). 카드 후보 풀 헬퍼 넷은 삭제됐다 — 아래 절. Builds `TeamDraftView` lazily via `ensure_view()` (called by `SeasonHub` after `init_season`). |
 | `TeamDraftView.gd`    | `class_name TeamDraftView extends Control` — procedural UI (선택 5인 일러스트 행 + 필터 행 + 스크롤 썸네일 격자 + 하단 스킬 패널/확정 버튼). Lives as a child of the `TeamDraft` node. |
 | `PilotThumb.gd`       | `class_name PilotThumb extends Button` — 격자 한 칸. **정사각(200×200)이고 얼굴 크롭 하나와 왼쪽 위 역할군 배지가 전부다.** 선택되면 금색 테두리 + 우상단 체크 배지. Emits `thumb_tapped(pilot_id)`. |
-| `DraftDetailPanel.gd` | `class_name DraftDetailPanel extends CanvasLayer` — **파일럿 상세 팝업**. 좌 전신 아트 / 우 스크롤 정보 패널(스탯 칩 6개 → 파일럿 스킬 → 후보 카드 격자). `open(p: PlayerData)` **한 인자뿐이다** — 아래 "두 화면이 함께 쓴다" 절. |
+| `DraftDetailPanel.gd` | `class_name DraftDetailPanel extends CanvasLayer` — **파일럿 상세 팝업**. 좌 전신 아트 / 우 스크롤 정보 패널(스탯 칩 6개 → 파일럿 스킬. **받침 높이는 내용이 정한다**). `open(p: PlayerData)` **한 인자뿐이다** — 아래 "두 화면이 함께 쓴다" 절. |
 
 `PilotCard.gd` / `PilotCard.tscn` 은 **삭제됐다** — 200×175 칸에 스탯 막대 다섯
 줄을 세우던 예전 격자 카드이고, `PilotThumb` 이 그 자리를 대신한다.
@@ -78,12 +78,10 @@ pilot's prior team — every team always has exactly one pilot per role.
 초상화, `features/match_flow/ban_pick/`). 그래서 `TeamDraft` 인스턴스를 요구하지
 않는다: 필요한 것은 `PlayerData` 한 장과 오토로드 `GameManager` 뿐이다.
 
-그 탈출이 두 함수를 옮겼다.
-- `TeamDraft.candidate_cards_for_role` 이 **static** 이 되고 카드 풀을 인자로
-  받는다(`candidate_cards_for_role(card_pool, role)`). 호출부가
-  `GameManager.card_pool_bs` 를 그대로 넘긴다.
-- `TeamDraft.skill_def_for` 는 **삭제됐다** — 하단 스킬 패널이 사라지며 유일한
-  소비자가 팝업 하나가 됐고, 팝업이 `GameManager.skill_def()` 를 직접 읽는다.
+그 탈출이 `TeamDraft.skill_def_for` 를 **삭제**했다 — 하단 스킬 패널이 사라지며
+유일한 소비자가 팝업 하나가 됐고, 팝업이 `GameManager.skill_def()` 를 직접 읽는다.
+같은 탈출이 `candidate_cards_for_role` 을 **static** 으로 만들어 카드 풀을 인자로
+받게 했었는데, 후보 카드 절 자체가 없어지며 그 함수도 함께 사라졌다 — 아래 절.
 
 ## 상체 일러스트 (어깨~얼굴) — `PilotImages.bust_for`
 `tall/N_tall.png`(210×700, 머리~허벅지)의 **윗부분**을 `AtlasTexture` 로 잘라
@@ -100,24 +98,32 @@ pilot's prior team — every team always has exactly one pilot per role.
 영역 비율(174 : 351 = `PilotImages.BUST_ASPECT` 0.496)은 칸 비율(204 : 412 =
 0.495)과 같게 잡아 늘어남이 없다 — 둘 중 하나만 바꾸면 얼굴이 찌그러진다.
 
-## 카드 후보 풀 — 확정 덱이 아니다
-파일럿 카드 3장의 **슬롯 내역은 역할이 확정**하지만(정글러 정글 2 + 드로우 1 /
-서포터 라인전 1 + 드로우 2 / 나머지 라인전 2 + 드로우 1) 그 세 장이 어느 카드가
-될지는 **경기 시작 시** `CardPhaseManager._deal_team_deck` 이 표집한다. 메크
-카드 절반은 밴픽 뒤에나 정해진다. 그래서 드래프트가 보여 줄 수 있는 것은 덱이
-아니라 **후보 풀**이고, 상세 팝업이 그렇게 적는다.
+## 카드는 보여 주지 않는다 — 후보 풀 절은 **삭제됐다**
+상세 팝업에 "받게 될 파일럿 카드" 절이 있었다. 역할이 확정하는 슬롯 내역
+(정글러 정글 2 + 드로우 1 / 서포터 라인전 1 + 드로우 2 / 나머지 라인전 2 +
+드로우 1)과 그 슬롯에 들어갈 수 있는 **후보 카드 전부**(역할에 따라 7~14장)를
+`Card.tscn` 실물로 3열 격자에 깔았다.
 
-`TeamDraft.pilot_card_slots_for_role` 은 `CardPhaseManager._pilot_slots_for` 와
-**같은 규칙**이다. 저쪽은 `PilotData.is_guerrilla`(= 배정된 레인)를 보고 이쪽은
-역할을 보는데, 레인이 역할에서 유도되므로(ASSASSIN → GUERRILLA) 답이 갈리지
-않는다. 후보를 거를 때 `pool = 0` 과 `scope` 를 실제 배분과 같은 자리에서
-걸러 내는 것도 같은 이유다 — 화면에 뜬 후보가 실제로는 못 받는 카드이면 그
-목록은 거짓말이 된다.
+**그 목록이 답하는 질문이 없었다.** (1) 실제 3장은 경기 시작 시
+`CardPhaseManager._deal_team_deck` 이 표집하므로 드래프트에서 본 후보와 인게임에서
+손에 잡히는 카드가 다르고, (2) 후보 풀은 **역할이 정하는 것이라** 같은 역할이면
+누구를 뽑아도 같은 목록이 나온다 — 선수를 고르는 판단에 들어갈 수가 없다.
+의미를 갖는 것은 인게임에서 **확정된** 카드뿐이고, 그건
+`battle_sim/ui/PilotDetailPanel` 이 `BattleSim.starter_cards` 를 읽어 보여 준다.
 
-카드 노드는 `res://scenes/Card.tscn` 실물이고(`CardData.from_def` 이 `cards.csv`
-행을 조립한다 — **static 이라 BattleSim 없이도 돈다**, 그것이 그 함수가
-`CardPhaseManager` 밖으로 나온 이유다), 축소율은 인게임 상세 패널과 같은 0.80 이라
-같은 카드가 두 화면에서 같은 크기로 읽힌다.
+함께 삭제된 것 — `DraftDetailPanel` 의 `_build_card_sections` / `_cards_in_cat` /
+`_build_card_grid` 와 `CARD_*` 상수 여섯, 그리고 `TeamDraft` 의 후보 풀 헬퍼 넷
+(`pilot_card_slots_for_role` / `candidate_cards_for_role` / `slot_summary_for_role`
+/ `cat_label`). 이 팝업이 넷의 유일한 소비자였다. **배분 규칙의 원본은
+`CardPhaseManager._pilot_slots_for` 이므로** 되살릴 일이 생기면 사본을 다시 만들지
+말고 그쪽을 부를 것.
+
+**받침 높이가 내용을 따라가게 됐다.** 카드 격자가 있을 때는 우측 패널이 언제나
+꽉 차서 `PANEL_TOP` ~ `PANEL_BOTTOM` 고정으로 충분했는데, 스탯 칩과 스킬 한
+문단만 남으니 아래 절반이 빈 흰 판이 됐다. 지금은 위쪽만 못박고 아래끝이 내용에
+맞춰 올라오며(넘치면 `PANEL_BOTTOM` 에서 멈추고 그때부터 스크롤이 일한다) **닫기
+버튼이 그 아래끝을 따라간다** — 인게임 상세 패널의 `_reposition_close` 와 같은
+규칙이다.
 
 ## UI flow
 1. `SeasonHub._show_draft()` calls `TeamDraft.ensure_view()` then sets `TeamDraft.visible = true`.

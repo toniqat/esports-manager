@@ -191,9 +191,9 @@ func fits_category(cat: String) -> bool:
 ## `cards.csv` 한 행(= `GameManager.card_pool_bs` 항목) → CardData 한 장.
 ##
 ## **static 인 것이 요점이다.** 예전에는 이 조립이 `CardPhaseManager` 안에만
-## 있어서 카드를 실물로 보여 주려면 BattleSim 이 서 있어야 했는데, 드래프트
-## 화면처럼 전투가 없는 자리에서도 "이 역할이 받을 후보 카드"를 같은 노드로
-## 그려야 한다 — 표가 둘이면 화면에 뜬 카드와 실제로 덱에 들어가는 카드가
+## 있어서 카드를 실물로 보여 주려면 BattleSim 이 서 있어야 했는데, 밴픽의 하단
+## 시트와 메크 상세처럼 **전투가 없는 자리**에서도 "이 기체가 주는 카드"를 같은
+## 노드로 그려야 한다 — 표가 둘이면 화면에 뜬 카드와 실제로 덱에 들어가는 카드가
 ## 조용히 갈린다. `mech_cards.csv` 쪽은 컬럼이 달라 여전히 자기 팩토리를 쓴다
 ## (`CardPhaseManager.make_mech_card`).
 static func from_def(def: Dictionary) -> CardData:

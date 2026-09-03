@@ -480,8 +480,9 @@ func _build_pool_from_db() -> Array:
 
 
 func _make_card_from_def(def: Dictionary) -> CardData:
-	# 조립 자체는 `CardData.from_def` 한 곳에 있다 — 드래프트 화면도 같은 표를
-	# 읽어 후보 카드를 실물로 그리기 때문에, 여기 사본을 두면 둘이 갈린다.
+	# 조립 자체는 `CardData.from_def` 한 곳에 있다 — 밴픽 화면(하단 시트 ·
+	# 메크 상세)도 같은 표를 읽어 카드를 실물로 그리기 때문에, 여기 사본을
+	# 두면 둘이 갈린다.
 	return CardData.from_def(def)
 
 

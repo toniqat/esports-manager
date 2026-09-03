@@ -68,7 +68,8 @@ const PASSIVE_META_COLOR := Color(0.58, 0.63, 0.76)
 const PASSIVE_DESC_COLOR := Color(0.88, 0.90, 0.95)
 
 # ─── 메크 카드 ───────────────────────────────────────────────────────────────
-# 파일럿 상세의 후보 카드 격자와 **같은 축소율 · 같은 열 수**다.
+# 인게임 파일럿 상세 패널(`battle_sim/ui/PilotDetailPanel`)의 카드 격자와
+# **같은 축소율 · 같은 열 수**다 — 같은 카드가 두 화면에서 같은 크기로 읽힌다.
 const CARD_SCENE := preload("res://scenes/Card.tscn")
 const CARD_VIEW_SCALE: float = 0.80
 const CARD_COLS: int = 3
@@ -322,7 +323,7 @@ func _build_card_section(body: Control, w: float, y: float) -> float:
 				y + float(row) * (row_h + CARD_GAP))
 		var node := CARD_SCENE.instantiate() as Card
 		# add_child 를 setup 보다 **먼저** — Card.gd 의 @onready 참조는 트리에
-		# 들어간 뒤에야 풀린다(DraftDetailPanel / CardPileViewer 와 같은 순서).
+		# 들어간 뒤에야 풀린다(CardPileViewer / PilotDetailPanel 과 같은 순서).
 		body.add_child(node)
 		node.setup(CardData.from_def(def), false, true)
 		node.mouse_filter = Control.MOUSE_FILTER_IGNORE

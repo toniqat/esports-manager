@@ -199,7 +199,8 @@ esports-manager/
 │   ├── README.md                ← Resource documentation
 │   ├── CardData.gd              ← class_name CardData (card data container). `from_def()` 는 **static** —
 │   │                              `cards.csv` 한 행을 카드 한 장으로 조립하는 유일한 자리라
-│   │                              BattleSim 없이도 돌아야 한다(드래프트 상세 팝업이 쓴다)
+│   │                              BattleSim 없이도 돌아야 한다(밴픽 하단 시트 · 메크 상세가 쓴다.
+│   │                              드래프트 상세 팝업도 썼지만 그 화면의 후보 카드 절은 삭제됐다)
 │   ├── CardImages.gd            ← class_name CardImages (카드 아트 조회 — 전용 아트
 │   │                              `images/card/<이름>.png` 가 있으면 그것, 없으면
 │   │                              **이름 해시로 고른** `images/ground/N.png` 5장 중 한 장.
@@ -214,7 +215,6 @@ esports-manager/
 │   ├── PlayerData.gd            ← class_name PlayerData (out-game persona + assigned mech)
 │   ├── MechData.gd              ← class_name MechData (mech stats — no role)
 │   ├── BuildingData.gd / WaypointData.gd ← @tool inspector resources
-│   ├── ScreenMetrics.gd         ← class_name ScreenMetrics — 세이프 에어리어 / 뷰포트 크기 (정적).
 │   ├── SilhouetteFx.gd          ← class_name SilhouetteFx — **캐릭터 실루엣 쉐이더의 배선**
 │   │                              (`shaders/silhouette.gdshader` 를 노드에 물리고 등장 컷을
 │   │                               돌린다). 구운 모브 실루엣 PNG 와 **다른 물건**이다 —
@@ -227,6 +227,7 @@ esports-manager/
 │   │                               **아트를 그 폭만큼 안으로 물려서** 만든다 — 전신 아트가
 │   │                               네 변에 닿아 있어 안 그러면 머리 위가 잘린다.
 │   │                               함정 셋은 `resources/README.md`
+│   ├── ScreenMetrics.gd         ← class_name ScreenMetrics — 세이프 에어리어 / 뷰포트 크기 (정적).
 │   │                              **모든 화면 좌표가 여기를 지난다** — docs/mobile_safe_area.md
 │   ├── OutgameTheme.gd          ← class_name OutgameTheme — **아웃게임 흰 배경 팔레트**
 │   │                              (+ 버튼 감촉 세기. `style_primary` / `style_dark` = MEDIUM,
@@ -594,7 +595,6 @@ Each child module has `@onready var _bs: BattleSim = get_parent() as BattleSim` 
 | 수비 개념 없음 | 레인 파일럿의 목표는 **언제나** `current_waypoint(p)` 하나다. 아군 포탑이 맞고 있다고 돌아오는 행동은 존재하지 않는다 — 파일럿은 자기 HQ 에서 출발해 레인 길을 따라가고, 그러다 상대 라이너와 마주치는 것이 설계다. (같은 레인 스나이퍼가 죽으면 서포터가 아군 최전방 포탑을 껴안던 `_supporter_should_fall_back` / `_own_forward_turret_cell` 은 삭제됐다.) |
 | 레인 통로 (`lane_corridor`) | 레인별 실제 통과 셀 집합. 그 레인의 웨이포인트를 정글 금지로 BFS 연결해 **한 번만** 만들고 캐시한다(팀1 경로는 팀0 의 역순이라 셀 집합은 공유). 유일한 소비자는 `RecallSystem._is_out_of_position` — "이동 카드가 이 레인 파일럿을 **남의 레인**에 떨어뜨렸나". 판정은 반드시 **다른 레인에 속함**을 확인하지, 자기 레인에 없음만으로 판정하지 않는다: BFS 타이브레이크가 실제 걸어간 경로와 한 칸 어긋나도 멀쩡한 파일럿을 추방하면 안 되기 때문. `LANE_NAMES` 에는 GUERRILLA 칸도 있으니 순회는 `lane_corridor_count()` 로 한다. |
 
----
 
 ### 캐릭터 실루엣 쉐이더 (지금은 쓰는 자리가 없다)
 `resources/shaders/silhouette.gdshader` + `resources/SilhouetteFx.gd` 는
@@ -615,6 +615,7 @@ Each child module has `@onready var _bs: BattleSim = get_parent() as BattleSim` 
 `MODULATE` 내장이 없다 · 전역 함수에서 `TEXTURE` 를 못 읽는다)은
 `resources/README.md` 에 실측과 함께 적혀 있다.
 
+---
 
 ## Critical Patterns
 

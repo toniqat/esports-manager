@@ -553,20 +553,24 @@ func _layout_to_discard_row() -> void:
 	var n: int = to_discard_nodes.size()
 	if n == 0:
 		return
+	# 손패에서 그대로 들려 나온 카드들이므로 **배율도 손패 그대로**다 — 여기서
+	# 1.0 으로 돌리면 골라 둘 때 작아지고 무를 때 다시 커진다. 폭을 재는 자리도
+	# 확대된 폭이어야 간격이 손패와 같은 겹침으로 떨어진다.
+	var card_w: float = CardPhaseManager.hand_card_w()
 	var slot_y: float = to_discard_center_y() - Card.CARD_H * 0.5
 	var hand_w: float = _bs.BS_HAND_WIDTH
 	var visual_cx: float = ScreenMetrics.center_x()
-	var ideal_total: float = float(n) * Card.CARD_W \
+	var ideal_total: float = float(n) * card_w \
 			+ float(max(n - 1, 0)) * _bs.BS_HAND_CARD_GAP
-	var spacing: float = Card.CARD_W + _bs.BS_HAND_CARD_GAP
+	var spacing: float = card_w + _bs.BS_HAND_CARD_GAP
 	if n > 1 and ideal_total > hand_w:
-		spacing = (hand_w - Card.CARD_W) / float(n - 1)
+		spacing = (hand_w - card_w) / float(n - 1)
 	var first_x: float = visual_cx - float(n - 1) * spacing * 0.5 \
 			- Card.CARD_W * 0.5
 	for i in n:
 		var node := to_discard_nodes[i] as Card
 		var pos := Vector2(first_x + float(i) * spacing, slot_y)
-		node.tween_to(pos, 0.0, Vector2.ONE,
+		node.tween_to(pos, 0.0, Vector2.ONE * CardPhaseManager.HAND_CARD_SCALE,
 				_bs.BS_HAND_SPRING_DURATION,
 				_bs.BS_HAND_TWEEN_EASE, _bs.BS_HAND_TWEEN_TRANS)
 

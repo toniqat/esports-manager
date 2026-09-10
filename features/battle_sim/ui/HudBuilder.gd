@@ -230,8 +230,13 @@ func build_ui() -> void:
 
 # ── Deck / Discard 카드 뭉치 ─────────────────────────────────────────────────
 # Live in the BS_HAND_AREA_MARGIN gutters on either side of the hand row.
-# The hand row spans y=BS_HAND_CENTER.y .. y=BS_HAND_CENTER.y + Card.CARD_H,
+# The pile rect spans y=BS_HAND_CENTER.y .. y=BS_HAND_CENTER.y + Card.CARD_H,
 # so we centre the piles vertically across that same band.
+#
+# 그 띠는 손패 카드의 **확대 전** 크기다. 손패는 `CardPhaseManager.HAND_CARD_SCALE`
+# 만큼 크게 그려지지만 확대의 기준점이 카드 한가운데라 **띠의 중심은 그대로**이고,
+# 뭉치가 맞추는 것은 높이가 아니라 그 중심이다 — 그래서 손패 배율을 만져도 이
+# 자리는 손대지 않는다.
 #
 # 예전에는 이 자리에 `"Deck\n18"` 두 줄 Label 하나였다. 지금은 같은 rect 안에
 # **앞으로 누운 카드 뭉치**(`CardPileStack`)를 그린다 — 뒷면이 위를 향한 채

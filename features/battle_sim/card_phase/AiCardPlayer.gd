@@ -19,8 +19,11 @@ const FADE_IN_SEC       := 0.18
 const FADE_OUT_SEC      := 0.22
 const POST_GAP_SEC      := 0.14
 const CENTER_POS        := Vector2(540.0, 760.0)
-const SCALE_BIG         := Vector2(1.35, 1.35)
-const SCALE_SMALL       := Vector2(0.85, 0.85)
+# 중앙에 뜨는 크기 / 오가는 크기. 둘 다 손패와 같은 1.2배를 먹었다
+# (1.35 → 1.62, 0.85 → 1.02) — 상대가 낸 카드는 화면 한가운데에서 **읽으라고**
+# 띄우는 것이라 손패보다 작아질 이유가 없다.
+const SCALE_BIG         := Vector2(1.62, 1.62)
+const SCALE_SMALL       := Vector2(1.02, 1.02)
 # Fly-out from the AI hand peek to the screen centre. The popped card-back
 # tweens its position + scale toward CENTER_POS while still showing the back,
 # then a snap-flip swaps to the face-up data; finally it holds + fades out.

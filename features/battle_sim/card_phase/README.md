@@ -420,10 +420,38 @@ re-evaluates the dim state.
   > quantity here is monotonic in hand size, so 12 bounds 10 and re-measuring
   > would only move the numbers slightly inward. The 8-card figures also quoted
   > below are just a mid-size sample, not the cap.
+##### 손패 카드 배율 (`HAND_CARD_SCALE` 1.2)
+**손패의 카드는 `Card.CARD_W/H`(160×220)보다 크게 그려진다 — 192×264.** 카드
+규격 자체를 키우지 않는 이유는 그 상수를 밴픽 시트 · 더미 열람 · 파일럿 상세
+팝업까지 열 몇 화면이 함께 읽기 때문이다(키우면 그 화면들의 격자가 통째로
+어긋난다). 그래서 손패만 자기 배율을 갖고, `hand_card_w()` / `hand_card_h()`
+두 헬퍼가 "보이는 크기"를 답한다.
+
+**레이아웃 좌표는 배율을 타지 않는다.** 카드의 `pivot_offset` 이 한가운데라
+`position`(= 확대 전 왼쪽 위)에 배율을 곱해도 **중심이 안 움직인다** — 그래서
+`slot_position` / `_apply_hit_bands` 의 "중심 = position + CARD_W/2" 도,
+`hand_drop_offset()` 의 "카드 절반이 스트립 뒤판에 가린다"도 한 글자 안 바뀌었다.
+배율을 알아야 하는 자리는 **보이는 폭을 재는 곳** 셋뿐이다:
+
+| 자리 | 무엇을 재는가 |
+|---|---|
+| `slot_spacing` | 겹치지 않는 간격 / 압축 한계 |
+| `_hover_push_amount` | 포커스 카드가 이웃을 덮는 폭 |
+| `_fit_hit_layer` 의 `grow_x/y` | 슬롯 rect 밖으로 나가는 여유 = `HAND_CARD_SCALE × HOVER_SCALE − 1` |
+
+실측(1080×1920): 4장 간격 204 · 행 138..942, 12장 간격 64.5 · 행 89..991,
+히트 레이어가 호버 카드의 시각 rect 와 **정확히** 일치(4장 기준 좌 118.8 /
+하 1723.1). 카드 아래끝은 아군 스트립 뒤판(1756)에서 59px 떨어져 있고 호버 시
+33px 다. 같은 1.2배가 `AiCardPlayer` 의 중앙 카드(`SCALE_BIG` 1.35 → **1.62**,
+`SCALE_SMALL` 0.85 → **1.02**)와 `CardSelectOverlay` 의 버리기 픽 줄에도 걸린다
+— 후자는 손패에서 그대로 들려 나온 **같은 노드**라, 1.0 으로 돌리면 골라 둘 때
+작아지고 무를 때 다시 커진다. `ObjectiveRewardFx.CARD_SCALE` 도 1.05 → **1.35**
+로 함께 올라갔다(중앙에 읽으라고 띄우는 카드는 손패보다 커야 한다).
+
 - `slot_spacing(total)` — uniform centre-to-centre spacing.
-  `Card.CARD_W + BS_HAND_CARD_GAP` until the natural span exceeds
+  `hand_card_w() + BS_HAND_CARD_GAP` until the natural span exceeds
   `BS_HAND_WIDTH`; from then on it compresses so the row always fits the
-  fixed-width slot (172px up to 5 cards → 67.5px at 12).
+  fixed-width slot (204px up to 4 cards → 64.5px at 12).
 - `slot_center_dx(index, total)` — signed distance from
   the middle of the row to the card's centre. Everything else (X slot, tilt, arc
   drop) is derived from this one number, so the three can never disagree.
@@ -462,8 +490,9 @@ re-evaluates the dim state.
   the give-way in the outer cards, rather than bleeding it evenly across the
   block (a linear ramp would rob the immediate neighbours, which is exactly the
   clearance a packed hand needs most). The amount itself is *solved*, not fixed:
-  the focus card covers `CARD_W × HOVER_SCALE / 2` = 96px to either side, so its
-  neighbour's centre has to sit 96 + `BS_HAND_HOVER_MIN_STRIP` (32) = 128px away
+  the focus card covers `hand_card_w() × HOVER_SCALE / 2` = 115.2px to either
+  side, so its neighbour's centre has to sit that + `BS_HAND_HOVER_MIN_STRIP`
+  (32) = 147.2px away
   to leave a clickable sliver. The resting spacing pays part of that and pays
   less the more cards the hand holds, so the push is the shortfall — **it grows
   with the hand size**: `BS_HAND_HOVER_PUSH` (28px) floor up to 8 cards, 60.5px

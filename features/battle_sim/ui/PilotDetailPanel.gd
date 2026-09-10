@@ -5,15 +5,17 @@ extends Node
 #
 #   좌: 전신 아트 **두 장** — 앞에 선 쪽이 밝고, 뒤에 선 쪽은 오른쪽으로 밀린 채
 #       검게 딤드된다. 앞뒤는 **탭**이 정한다(인게임·파일럿 → 사람 / 메크 → 기체).
-#   우: **머리글**(파일럿 이름 + 메크 이름 + 성장치) → 탭 셋 → 상세 패널
-#   하: 닫기
+#       그 **좌측 하단**에 지속 효과 썸네일이 앉는다(제목 없이 칸만).
+#   우: **머리글**(파일럿 이름 / 그 아래 메크 이름 + 오른쪽에 성장치) → 탭 셋
+#       → 상세 패널(스탯 칩 + 파일럿 스킬)
+#   하: 화면 **전체 폭**에 보유 카드가 손패와 같은 부채꼴로 선다 + 닫기
 #
 # **머리글은 탭과 분리돼 있다.** 이름 · 기체명 · 성장치는 어느 탭을 보든 같은
 # 파일럿의 것이므로 탭이 바뀔 때마다 다시 세울 이유가 없고, 예전처럼 본문
 # 안에 들어 있으면 메크 탭에서 제목이 기체명으로 바뀌며 **파일럿 이름과
 # 성장치가 화면에서 통째로 사라졌다** — 지금 누가 열려 있는지가 탭에 따라
 # 흔들린 것이다. 지금은 머리글이 자기 판 위에 상시로 서 있고, 탭이 바꾸는
-# 것은 그 아래 상세 패널 하나뿐이다. 기체명은 이름 **옆에 작게** 붙어 늘
+# 것은 그 아래 상세 패널 하나뿐이다. 기체명은 이름 **아래 줄에 작게** 붙어 늘
 # 보인다 — 메크 탭까지 들어가야 알 수 있는 값이 아니다.
 #
 # **스탯은 줄이 아니라 칩이다.** 예전에는 `키 ─ 값` 두 칸짜리 행이 세로로 열몇
@@ -91,14 +93,21 @@ const ART_PLACEHOLDER_ASPECT: float = 0.70
 # 파일럿 이름 + 기체명 + 성장치 한 줄. **탭 바로 위**에 자기 받침을 깔고 앉아
 # 있고, 탭이 바뀌어도 다시 세워지지 않는다(`_build_header_block` 은 `_build`
 # 에서 한 번만 돈다).
-const HDR_TOP: float = 452.0
+const HDR_TOP: float = 424.0
 ## 머리글 받침의 아래끝 = 탭 바의 윗변. 둘이 맞닿아 "이 탭들은 이 파일럿의
 ## 것"으로 읽힌다.
 const HDR_BOTTOM: float = 562.0
 const HDR_NAME_FONT: int = 40
-## 기체명 — 이름 **옆에** 작게. 아래 줄에 두면 이름이 두 줄짜리 덩어리가 되어
-## 오른쪽 성장치와 세로 중심이 어긋난다.
-const HDR_MECH_FONT: int = 22
+## 기체명 — 이름 **아래 줄**에 작게. 예전에는 이름 오른쪽에 이어 붙였는데,
+## 줄의 시작점이 곧 이름 폭이라 파일럿마다 기체명이 다른 x 에서 시작했다 —
+## 어디를 보면 기체명인지가 파일럿마다 흔들린 셈이다. 두 줄로 쌓으면 시작점이
+## 언제나 같고, 오른쪽 성장치는 두 줄 덩어리의 세로 가운데에 선다.
+const HDR_MECH_FONT: int = 24
+## 이름 줄 / 기체명 줄의 높이. 둘의 합이 머리글 받침의 내용 높이다 —
+## `HDR_BOTTOM` 은 탭 바의 윗변이라 못 박혀 있으므로, 줄이 늘면 `HDR_TOP` 이
+## 위로 올라가야 한다(지금 424 = 562 − 여백 52 − 84).
+const HDR_NAME_H: float = 52.0
+const HDR_MECH_H: float = 32.0
 const HDR_MECH_COLOR := Color(0.68, 0.74, 0.86)
 const HDR_GROWTH_FONT: int = 40
 ## 성장치 칸의 폭. 이름 줄은 그만큼 좁아진다.
@@ -164,38 +173,85 @@ const MENU_NOTE_FONT: int = 20
 ## 정렬 Label 은 넘치면 정렬을 포기하고 rect 왼쪽부터 그리므로, 잘리는 쪽이
 ## 글의 머리다(clip_text 가 없으면 대신 화면 밖으로 넘친다).
 const MENU_KEY_FRAC: float = 0.42
+## 카드 정보 패널의 아래끝과 카드 줄 제목 사이 간격.
+const MENU_CARD_GAP_Y: float = 14.0
 
-# ─── 지속 효과 썸네일 ───────────────────────────────────────────────────────
-# 스탯 칩 아래 한 줄. **지금 이 파일럿에게 걸려 있는 것만** 뜬다 — 걸려 있지도
-# 않은 효과의 빈 칸이 늘어서 있으면 "무엇이 켜져 있는가"가 도리어 안 읽힌다.
+# ─── 지속 효과 썸네일 (일러스트 좌측 하단) ──────────────────────────────────
+# **지금 이 파일럿에게 걸려 있는 것만** 뜬다 — 걸려 있지도 않은 효과의 빈 칸이
+# 늘어서 있으면 "무엇이 켜져 있는가"가 도리어 안 읽힌다.
 #
 # 칩이 답하지 못하는 질문이 있어서 생겼다. 명중 칩이 55 라고 할 때 그 값이
 # 라인전 카드 때문인지 원래 그런지는 칩을 눌러야 나오고, 적립 배율처럼 **어느
 # 칩에도 안 실리는** 효과는 아예 볼 자리가 없었다. 썸네일 한 줄은 "지금 몇 개가
 # 켜져 있는가"를 세지 않고도 보게 하고, 하나를 누르면 스탯 칩과 **같은 패널**에
 # 그 설명이 뜬다(둘은 같은 자리를 쓰므로 자연히 배타적이다).
+#
+# **자리는 정보 칼럼이 아니라 일러스트 좌측 하단이다.** 칼럼 안에서는 스탯 칩과
+# 카드 사이에 끼어 116px 를 먹었고, 그만큼 아래 사슬(카드 줄 · 스킬 블록 · 닫기
+# 버튼)이 전부 밀려 인게임 탭이 화면 바닥에 닿아 있었다. 화면 왼쪽 아래는 아트의
+# 다리와 딤 뿐이라 비어 있는 자리이고, 여기로 옮기면 칩 ↔ 스킬이 곧바로 이어진다.
+#
+# **제목("지속 효과")은 삭제됐다.** 칼럼 안에서는 위아래 블록과 구분하는 이름표가
+# 필요했지만, 화면 구석에 홀로 선 68px 칸 여섯의 머리에 밑줄 달린 절 제목을
+# 붙이면 그 제목이 칸보다 눈에 띈다. 걸린 효과가 없으면 **아무것도 안 그린다** —
+# 예전의 "걸려 있는 효과 없음" 한 줄은 제목이 있어야 뜻이 서는 문장이었다.
 const FX_SIZE: float = 68.0
 const FX_GAP: float = 12.0
-const FX_SECTION_H: float = 34.0
 const FX_RADIUS: int = 16
 const FX_BG := Color(0.10, 0.12, 0.18, 0.94)
 const FX_BG_HL := Color(0.17, 0.22, 0.34, 0.98)
 const FX_SHORT_FONT: int = 21
 const FX_VALUE_FONT: int = 16
-const FX_EMPTY_COLOR := Color(0.58, 0.61, 0.70)
+## 썸네일 줄의 왼쪽 끝.
+const FX_LEFT_X: float = 26.0
+## 한 줄이 쓸 수 있는 폭 — 정보 칼럼(x 600)과 부딪히지 않는 선. 여섯 칸이 든다.
+const FX_ROW_W: float = 520.0
+## 썸네일 줄의 아래끝과 카드 줄 제목 사이 간격. 줄은 여기서 **위로** 자란다 —
+## 아래로 자라면 두 줄짜리 효과 목록이 카드 부채꼴 위로 내려앉는다.
+const FX_ABOVE_TITLE_GAP: float = 20.0
 
-# ─── 카드 ────────────────────────────────────────────────────────────────────
-# 손패와 **같은 카드 노드**(`Card.tscn`)를 축소해 세운다. 다른 그림으로 그리면
-# "이 카드가 그 카드"라는 연결이 끊긴다.
-## **인게임 탭은 6장을 3열 2행으로 다 보여 준다** — 이 파일럿이 무엇을 들고
-## 시작했는지는 한 화면에 있어야 하는 정보이고, 예전처럼 파일럿 탭과 메크 탭에
-## 3장씩 갈라 두면 여섯 장을 견주려면 탭을 오가야 했다. 두 탭의 3장 줄은 그대로
-## 남는다 — 거기서는 그 탭 스탯 옆에 붙은 "이 몸이 주는 카드" 라는 맥락이 있다.
-const CARD_VIEW_SCALE: float = 0.80
-const CARD_GAP: float = 16.0
-const CARD_ROW_GAP: float = 16.0
-const CARD_SECTION_H: float = 34.0
-const CARD_GRID_COLS: int = 3
+# ─── 카드 (핸드처럼 부채꼴, 화면 하단) ──────────────────────────────────────
+# 손패와 **같은 카드 노드**(`Card.tscn`)를 세운다. 다른 그림으로 그리면 "이 카드가
+# 그 카드"라는 연결이 끊긴다 — 그래서 배치도 손패와 같은 부채꼴이고 자리도
+# 손패와 같은 **화면 하단 전체 폭**이다.
+#
+# **예전에는 정보 칼럼 안의 3열 격자였다.** 칸이 칼럼(폭 452)에 갇혀 있어 카드
+# 한 장이 128×176 밖에 못 됐고, 그 크기의 설명문은 읽는 글이 아니라 무늬였다.
+# 격자를 그대로 두고 2배로 키우는 길은 없다 — 3열이면 800px 로 칼럼을 348px,
+# 화면 오른쪽을 146px 넘고 2행이면 세로도 화면 밖으로 나간다. 부채꼴은 카드를
+# **겹쳐** 세우므로 같은 폭에 같은 장수를 넣으면서 장당 크기를 2배로 키운다.
+#
+# **인게임 탭은 6장 전부**(파일럿 3 → 메크 3), 파일럿 / 메크 탭은 그 탭의 3장이
+# 같은 자리에 선다 — 이 파일럿이 무엇을 들고 시작했는지는 탭을 오가지 않고 한
+# 화면에서 읽혀야 한다.
+## 장당 배율. 격자 시절 0.80(128×176)의 **2배** — 256×352.
+const CARD_VIEW_SCALE: float = 1.60
+## 부채꼴이 쓰는 화면 좌우 여백. **기울어진 카드의 바깥 모서리**가 여기에 닿는다
+## — 양 끝 카드는 9° 가까이 기울어 있어 세로로 긴 카드의 아래 모서리가 폭의
+## 절반보다 27px 더 밖으로 나간다(실측: 여백 24 에서 양 끝이 3px 씩 잘렸다).
+const FAN_MARGIN: float = 52.0
+## 장수가 적을 때의 카드 사이 간격 상한(= 겹치지 않는 배치). 장수가 늘면
+## 여백 안에 들어가도록 이 값 아래로 압축된다.
+const FAN_GAP: float = 14.0
+## 카드 중심이 타는 원의 반지름. 손패(3200)보다 작은 것은 카드가 2배로 커져
+## 부채꼴의 span 자체가 넓어졌기 때문이다 — 같은 반지름이면 기울기가 거의
+## 안 붙어 부채꼴로 안 읽힌다. 6장이면 양 끝이 ±9.3° 로 서고 31px 처진다.
+const FAN_RADIUS: float = 2400.0
+## 가장 깊이 처지는 카드(= 양 끝) 몫으로 아래에 비워 두는 높이 — 호 처짐(27px)에
+## 기울기가 만드는 아래 모서리 돌출(17px)까지 든다.
+const FAN_DROP_RESERVE: float = 44.0
+## 그 아래, 화면 바닥까지의 여백.
+const FAN_BOTTOM_PAD: float = 26.0
+## 카드 줄 제목이 부채꼴 윗변에서 위로 떨어진 거리. **`FAN_LIFT_PX` 보다 커야
+## 한다** — 정보 패널이 열린 카드는 그만큼 솟으므로, 좁으면 솟은 카드가 제목을
+## 밀고 올라온다.
+const FAN_TITLE_GAP: float = 64.0
+const FAN_TITLE_FONT: int = 26
+## 정보 패널이 열린 카드가 부채꼴에서 위로 솟는 높이. 격자 시절에는 버튼에
+## 테두리를 둘러 강조했는데, 부채꼴의 버튼은 카드 rect 가 아니라 **보이는
+## 밴드**라 테두리가 카드가 아닌 띠를 두른다 — 겹친 카드에서 "이것"을 말하는
+## 방법은 앞으로 끌어내는 것이다.
+const FAN_LIFT_PX: float = 30.0
 
 # ─── 하: 닫기 ────────────────────────────────────────────────────────────────
 # **받침 아래끝에 붙어 다닌다.** 탭마다 내용 높이가 달라(인게임 ~360 / 파일럿
@@ -619,14 +675,13 @@ func _rebuild_body() -> void:
 func _build_body_content() -> float:
 	var y: float = _build_chip_grid(STAT_TOP, _chip_defs())
 
+	# 카드는 칼럼의 흐름에 없다 — 화면 하단 전체 폭에 자기 자리를 갖는다(아래
+	# `_build_card_fan`). 그래서 반환값(= 받침 높이)에 얹히지 않는다.
 	if _tab != Tab.INGAME:
 		var slot: String = "pilot" if _tab == Tab.PILOT else "mech"
 		var title: String = "파일럿 카드" if _tab == Tab.PILOT else "메크 카드"
-		# 열 수를 장수로 잡던 시절의 값이 남아 있었다 — 그때는 두 탭 다 정확히
-		# 3장이라 `size()` 가 곧 `CARD_GRID_COLS` 였다. 지금 메크 카드는 기체가
-		# 정하므로 최대 7장까지 오고, 그대로 두면 7열이 패널 밖으로 넘친다.
-		return _build_card_grid(y + 18.0, title, _starter_cards(slot),
-				slot, mini(CARD_GRID_COLS, maxi(1, _starter_cards(slot).size())))
+		_build_card_fan(title, _starter_cards(slot), slot)
+		return y
 
 	# 죽어 있을 때만 뜨는 한 줄. 스트립의 부활 카운트는 패널이 열려 있는 동안
 	# 숨겨져 있으므로 여기 말고는 남은 턴 수를 볼 자리가 없다.
@@ -639,16 +694,14 @@ func _build_body_content() -> float:
 		_body_root.add_child(dead)
 		y += 30.0
 
-	# 지속 효과는 **스탯 칩 바로 아래**다 — 칩이 보여 주는 최종 값을 밀고 있는
-	# 것들이라 같은 눈길 안에 있어야 "왜 이 값인가"가 이어진다.
-	y = _build_effect_row(y + 18.0)
-	# 인게임 탭의 카드는 **여섯 장 전부**, 3열 2행. 파일럿 3 → 메크 3 순서라
-	# 윗줄이 사람, 아랫줄이 기체다.
-	var all_cards: Array = _starter_cards("pilot") + _starter_cards("mech")
-	y = _build_card_grid(y + 18.0, "보유 카드", all_cards, "all",
-			CARD_GRID_COLS)
-	# 스킬 블록은 카드 줄 **아래**다 — 카드가 "무엇을 들고 시작했는가"라면
-	# 스킬은 "이 선수만이 할 수 있는 것"이라, 읽는 순서가 그쪽이 나중이다.
+	# 지속 효과와 카드는 둘 다 칼럼 밖에 산다 — 효과는 일러스트 좌측 하단,
+	# 카드는 화면 하단 전체 폭. 그래서 칼럼의 흐름은 칩 → 스킬로 곧장 이어지고
+	# 받침 높이(반환값)에도 둘이 얹히지 않는다.
+	_build_effect_thumbs()
+	# 인게임 탭의 카드는 **여섯 장 전부**. 파일럿 3 → 메크 3 순서라 부채꼴의
+	# 왼쪽 절반이 사람, 오른쪽 절반이 기체다.
+	_build_card_fan("보유 카드", _starter_cards("pilot") + _starter_cards("mech"),
+			"all")
 	return _build_skill_block(y + 22.0)
 
 
@@ -656,10 +709,9 @@ func _build_body_content() -> float:
 ## 파일럿 이름 + 기체명 + 성장치. **`_build` 에서 한 번만** 세우고 탭 전환은
 ## 건드리지 않는다 — `refresh()` 는 성장치 숫자만 다시 쓴다.
 ##
-## 이름과 기체명은 `HBoxContainer` 로 이어 붙인다. 이름 라벨을 고정 폭으로 두고
-## 기체명을 그 오른쪽 좌표에 놓으려면 글자 폭을 손으로 재야 하는데, 이름 길이가
-## 파일럿마다 다르고 폰트도 폴백을 타므로 그 계산이 조용히 어긋난다 — 컨테이너는
-## 각 라벨의 최소 크기를 그대로 읽어 붙여 준다.
+## 이름과 기체명은 **두 줄로 쌓는다**(예전에는 `HBoxContainer` 로 한 줄에 이어
+## 붙였다). 쌓으면 둘의 x 가 같아 글자 폭을 잴 일이 아예 없어지므로 컨테이너도
+## 필요 없다 — 각 줄은 `clip_text` 로 자기 칸 안에 머문다.
 func _build_header_block() -> void:
 	var pd: PlayerData = _bs.player_data_for(_pilot)
 	var mech: MechData = _mech()
@@ -684,25 +736,22 @@ func _build_header_block() -> void:
 
 	var row_h: float = HDR_BOTTOM - HDR_TOP - STAT_PANEL_PAD.y * 2.0
 	var row_y: float = HDR_TOP + STAT_PANEL_PAD.y
-
-	var row := HBoxContainer.new()
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.position = Vector2(STAT_X, row_y)
-	row.size = Vector2(STAT_W - HDR_GROWTH_W, row_h)
-	row.alignment = BoxContainer.ALIGNMENT_BEGIN
-	row.add_theme_constant_override("separation", 10)
-	_root.add_child(row)
+	var text_w: float = STAT_W - HDR_GROWTH_W
 
 	var name_lbl := _make_label(display_name, HDR_NAME_FONT, HEADER_COLOR,
 			HORIZONTAL_ALIGNMENT_LEFT)
-	name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	row.add_child(name_lbl)
+	name_lbl.position = Vector2(STAT_X, row_y)
+	name_lbl.size = Vector2(text_w, HDR_NAME_H)
+	name_lbl.clip_text = true
+	_root.add_child(name_lbl)
 
 	# 기체명은 늘 보인다 — 메크 탭에 들어가야만 알 수 있는 값이 아니다.
 	var mech_lbl := _make_label(mech.name if mech != null else "메크 미배정",
 			HDR_MECH_FONT, HDR_MECH_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
-	mech_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	row.add_child(mech_lbl)
+	mech_lbl.position = Vector2(STAT_X, row_y + HDR_NAME_H)
+	mech_lbl.size = Vector2(text_w, HDR_MECH_H)
+	mech_lbl.clip_text = true
+	_root.add_child(mech_lbl)
 
 	_growth_label = _make_label(BattleSim.fmt_score(_pilot.score),
 			HDR_GROWTH_FONT, GROWTH_COLOR, HORIZONTAL_ALIGNMENT_RIGHT)
@@ -792,22 +841,24 @@ func _style_target(key: String, highlighted: bool) -> void:
 		return
 	var style: int = int(rec["style"])
 	if style == TargetStyle.CARD:
-		# 카드는 자기 그림을 가진 물건이라 배경을 칠하면 카드가 안 보인다 —
-		# 테두리만 두른다(하이라이트가 아니면 아무것도 안 그린다).
+		# **버튼은 아무것도 그리지 않는다.** 부채꼴의 버튼은 카드 rect 가 아니라
+		# 그 카드가 보이는 **밴드**라, 테두리를 두르면 카드가 아닌 띠를 두른다.
 		var csb := StyleBoxFlat.new()
 		csb.bg_color = Color(0, 0, 0, 0)
-		csb.border_color = CHIP_BORDER_HL if highlighted else Color(0, 0, 0, 0)
-		var cbw: int = 3 if highlighted else 0
-		csb.border_width_top = cbw
-		csb.border_width_bottom = cbw
-		csb.border_width_left = cbw
-		csb.border_width_right = cbw
-		csb.corner_radius_top_left = 10
-		csb.corner_radius_top_right = 10
-		csb.corner_radius_bottom_left = 10
-		csb.corner_radius_bottom_right = 10
 		for cstate in ["normal", "hover", "pressed", "focus"]:
 			btn.add_theme_stylebox_override(cstate, csb)
+		# 강조는 **카드를 부채꼴에서 앞으로 끌어내는 것**이다 — 위로 솟고 형제
+		# 순서 맨 끝(= 맨 앞)으로 간다. 겹쳐 있는 카드 하나를 가리키는 방법은
+		# 그것뿐이고, 손패에서 카드를 집는 동작과도 같은 그림이다.
+		var node := rec.get("node") as Card
+		if node != null and is_instance_valid(node):
+			var base: Vector2 = rec.get("base_pos", node.position) as Vector2
+			node.position = base + (Vector2(0.0, -FAN_LIFT_PX) if highlighted
+					else Vector2.ZERO)
+			var holder: Node = node.get_parent()
+			if holder != null:
+				holder.move_child(node, holder.get_child_count() - 1
+						if highlighted else int(rec.get("index", 0)))
 		return
 
 	var sb := StyleBoxFlat.new()
@@ -1043,31 +1094,32 @@ func _fx_entry(key: String) -> Dictionary:
 	return {}
 
 
-func _build_effect_row(start_y: float) -> float:
-	var y: float = _build_section_head(start_y, "지속 효과", FX_SECTION_H)
+## 지속 효과 썸네일 — **일러스트 좌측 하단**, 카드 부채꼴 바로 위. 제목은 없고
+## 걸린 효과가 없으면 아무것도 안 그린다(위 상수 절의 주석 참고).
+##
+## **줄은 위로 자란다.** 아래끝을 카드 줄 제목에 붙여 놓고 거기서 역산하므로,
+## 효과가 여섯 개를 넘어 두 줄이 되어도 카드 부채꼴을 침범하지 않는다 — 아래로
+## 자라게 두면 두 번째 줄이 그대로 카드 위에 내려앉는다.
+func _build_effect_thumbs() -> void:
 	var defs: Array = _effect_defs()
 	if defs.is_empty():
-		var none := _make_label("걸려 있는 효과 없음", 22, FX_EMPTY_COLOR,
-				HORIZONTAL_ALIGNMENT_LEFT)
-		none.position = Vector2(STAT_X, y)
-		none.size = Vector2(STAT_W, 32.0)
-		_body_root.add_child(none)
-		return y + 32.0
-
-	# **여러 줄로 접힌다.** 예전에는 한 줄뿐이었고 효과 자리도 다섯이 상한이라
-	# 정확히 맞아떨어졌는데, 지속 효과가 카드 한 장 단위로 갈리면서 칸 수에
-	# 상한이 없어졌다 — 접지 않으면 여섯 번째 칸부터 화면 밖으로 나간다.
-	var per_row: int = maxi(1, int(floor((STAT_W + FX_GAP) / (FX_SIZE + FX_GAP))))
+		return
+	var per_row: int = maxi(1, int(floor((FX_ROW_W + FX_GAP) / (FX_SIZE + FX_GAP))))
+	var rows: int = int(ceil(float(defs.size()) / float(per_row)))
+	var top: float = _fx_bottom_y() - float(rows) * (FX_SIZE + FX_GAP) + FX_GAP
 	for i in defs.size():
 		var d: Dictionary = defs[i] as Dictionary
 		@warning_ignore("integer_division")
 		var row: int = i / per_row
 		var col: int = i % per_row
 		_make_fx_thumb(d, Vector2(
-				STAT_X + float(col) * (FX_SIZE + FX_GAP),
-				y + float(row) * (FX_SIZE + FX_GAP)))
-	var rows: int = int(ceil(float(defs.size()) / float(per_row)))
-	return y + float(rows) * (FX_SIZE + FX_GAP) - FX_GAP
+				FX_LEFT_X + float(col) * (FX_SIZE + FX_GAP),
+				top + float(row) * (FX_SIZE + FX_GAP)))
+
+
+## 썸네일 줄의 아래끝 y. 카드 줄 제목의 윗변에서 역산한다.
+func _fx_bottom_y() -> float:
+	return _fan_top_y() - FAN_TITLE_GAP - FX_ABOVE_TITLE_GAP
 
 
 ## 썸네일 한 칸 — 위에 두 글자 약칭(효과별 색), 아래에 작게 지금 값.
@@ -1123,61 +1175,124 @@ func _build_section_head(start_y: float, title: String, head_h: float) -> float:
 	return start_y + head_h + 14.0
 
 
-## 카드 `cols` 열 격자. 3장이면 `cols = 3` 으로 한 줄, 인게임 탭의 6장이면 3열
-## 2행이다. `key_prefix` 는 카드마다 붙는 정보 패널 키의 앞자리(`card:all:2`).
+## 보유 카드를 **손패와 같은 부채꼴로** 화면 하단 전체 폭에 세운다.
+## `key_prefix` 는 카드마다 붙는 정보 패널 키의 앞자리(`card:all:2`).
 ##
-## **카드 노드 위에 투명 버튼을 한 장 덮는다** — `Card` 는 손패에서 호버 · 드래그
+## 기하는 손패(`CardPhaseManager` 의 부채꼴)와 같은 규칙이다 — 카드 **중심**이
+## 행 아래에 놓인 원 위를 타므로 기울기와 세로 처짐이 언제나 일치하고, 가운데
+## 카드가 가장 높으며 양 끝이 아래로 말린다. 카드 노드의 `pivot_offset` 을
+## 가운데로 잡았기 때문에 배율을 아무리 키워도 중심이 안 움직인다(왼쪽 위를
+## 기준으로 잡으면 배율을 바꿀 때마다 부채꼴이 오른쪽 아래로 흐른다).
+##
+## **입력은 카드 rect 가 아니라 밴드가 받는다.** 겹친 카드 중 나중 카드가 앞에
+## 서므로 카드 i 가 실제로 보이는 폭은 자기 왼쪽 변부터 **다음 카드의 왼쪽
+## 변**까지다 — 그 폭이 그대로 버튼 하나가 된다. 카드 rect 를 그대로 덮으면
+## 오른쪽 이웃의 버튼이 이 카드의 보이는 면을 통째로 가려, 눌리는 카드와 보이는
+## 카드가 어긋난다(손패의 `_apply_hit_bands` 와 같은 문제, 같은 계산).
+##
+## 버튼을 따로 두는 이유는 격자 시절과 같다 — `Card` 는 손패에서 호버 · 드래그
 ## 배선을 스스로 쥐고 있는 노드라 여기서 입력을 직접 받게 하면 그 기계가 함께
-## 깨어난다. 버튼은 카드와 정확히 같은 자리를 덮으므로 눌리는 곳과 보이는 곳이
-## 어긋나지 않는다.
-func _build_card_grid(start_y: float, title: String, cards: Array,
-		key_prefix: String, cols: int) -> float:
-	var y: float = _build_section_head(start_y, title, CARD_SECTION_H)
-	if cards.is_empty():
-		var none := _make_label("배분 기록 없음", 24, KEY_COLOR,
-				HORIZONTAL_ALIGNMENT_LEFT)
-		none.position = Vector2(STAT_X, y)
-		none.size = Vector2(STAT_W, 32.0)
-		_body_root.add_child(none)
-		return y + 32.0
-
-	var ncols: int = maxi(1, cols)
+## 깨어난다. 카드는 `CardFan`, 버튼은 그 **뒤에 붙는** `CardFanHits` 에 담아
+## 버튼 쪽이 언제나 위에서 픽을 받고, 카드끼리의 z-order(강조 시 앞으로 끌어냄)는
+## `CardFan` 안에서만 흔들린다.
+func _build_card_fan(title: String, cards: Array, key_prefix: String) -> void:
+	var n: int = cards.size()
+	if n <= 0:
+		return
+	var vp_w: float = ScreenMetrics.vp_w()
 	var cw: float = Card.CARD_W * CARD_VIEW_SCALE
 	var ch: float = Card.CARD_H * CARD_VIEW_SCALE
-	var row_w: float = float(ncols) * cw + float(ncols - 1) * CARD_GAP
-	var x0: float = STAT_X + (STAT_W - row_w) * 0.5
-	var rows: int = int(ceil(float(cards.size()) / float(ncols)))
-	for i in cards.size():
-		var col: int = i % ncols
-		@warning_ignore("integer_division")
-		var row: int = i / ncols
-		var at := Vector2(x0 + float(col) * (cw + CARD_GAP),
-				y + float(row) * (ch + CARD_ROW_GAP))
+	var top_y: float = _fan_top_y()
+
+	var head := _make_label(title, FAN_TITLE_FONT, SECTION_COLOR,
+			HORIZONTAL_ALIGNMENT_CENTER)
+	head.position = Vector2(0.0, top_y - FAN_TITLE_GAP)
+	head.size = Vector2(vp_w, 34.0)
+	_body_root.add_child(head)
+
+	# 간격은 겹치지 않는 폭(cw + 여백)에서 시작해, 양 끝이 화면 여백에 닿도록
+	# 압축된다. 6장이면 155px(카드 폭의 61% 가 보인다), 7장이면 129px.
+	var spacing: float = cw + FAN_GAP
+	if n > 1:
+		spacing = minf(spacing,
+				maxf(24.0, (vp_w - FAN_MARGIN * 2.0 - cw) / float(n - 1)))
+
+	var fan_root := Control.new()
+	fan_root.name = "CardFan"
+	fan_root.position = Vector2.ZERO
+	fan_root.size = Vector2(vp_w, ScreenMetrics.vp_h())
+	fan_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_body_root.add_child(fan_root)
+
+	var hits := Control.new()
+	hits.name = "CardFanHits"
+	hits.position = Vector2.ZERO
+	hits.size = fan_root.size
+	hits.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_body_root.add_child(hits)
+
+	var band_h: float = ch + _fan_arc_drop(float(n - 1) * 0.5 * spacing)
+	var centers: PackedFloat32Array = PackedFloat32Array()
+	for i in n:
+		var dx: float = (float(i) - float(n - 1) * 0.5) * spacing
+		var cx: float = vp_w * 0.5 + dx
+		var cy: float = top_y + ch * 0.5 + _fan_arc_drop(dx)
+		centers.append(cx)
 
 		var node := _bs.CARD_SCENE.instantiate() as Card
 		# add_child BEFORE setup — Card.gd 의 @onready 참조가 트리 진입 후에야
 		# 풀린다 (CardPileViewer._build_grid 와 동일).
-		_body_root.add_child(node)
+		fan_root.add_child(node)
 		# is_player_card=false → 호버 브라이튼 / 그림자가 붙지 않는다. IGNORE 와
 		# 합쳐 `Card._refresh_float_state`(= scale 의 주인)가 영영 돌지 않으므로
-		# 여기서 준 축소가 그대로 남는다.
+		# 여기서 준 배율이 그대로 남는다.
 		node.setup(cards[i] as CardData, false, true)
 		node.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		node.pivot_offset = Vector2.ZERO
+		node.pivot_offset = Vector2(Card.CARD_W * 0.5, Card.CARD_H * 0.5)
 		node.scale = Vector2(CARD_VIEW_SCALE, CARD_VIEW_SCALE)
-		node.position = at
+		node.rotation = _fan_angle(dx)
+		node.position = Vector2(cx - Card.CARD_W * 0.5, cy - Card.CARD_H * 0.5)
 
 		var key: String = "card:%s:%d" % [key_prefix, i]
+		_targets[key] = {"button": null, "style": TargetStyle.CARD,
+				"card": cards[i], "node": node, "base_pos": node.position,
+				"index": i}
+
+	for i in n:
+		# 양 끝 카드만 자기 변까지 밴드를 넓힌다 — 왼쪽 끝은 왼쪽으로 가려질
+		# 것이 없고, 오른쪽 끝은 맨 앞에 서 있어 카드 전체가 보인다.
+		var left: float = centers[i] - cw * 0.5
+		var right: float = centers[i] + cw * 0.5
+		if i < n - 1:
+			right = centers[i + 1] - cw * 0.5
+		var key2: String = "card:%s:%d" % [key_prefix, i]
 		var btn := Button.new()
-		btn.position = at
-		btn.size = Vector2(cw, ch)
+		btn.position = Vector2(left, top_y)
+		btn.size = Vector2(maxf(12.0, right - left), band_h)
 		btn.focus_mode = Control.FOCUS_NONE
-		btn.pressed.connect(_on_target_pressed.bind(key))
-		_body_root.add_child(btn)
-		_targets[key] = {"button": btn, "style": TargetStyle.CARD,
-				"card": cards[i]}
-		_style_target(key, false)
-	return y + float(rows) * ch + float(rows - 1) * CARD_ROW_GAP
+		btn.pressed.connect(_on_target_pressed.bind(key2))
+		hits.add_child(btn)
+		(_targets[key2] as Dictionary)["button"] = btn
+		_style_target(key2, false)
+
+
+## 부채꼴 윗변(= 가운데 카드의 윗변) y. 화면 바닥에서 역산한다 — 카드 높이가
+## 배율에서 나오므로 상수로 박으면 배율을 만질 때마다 부채꼴이 화면을 넘거나
+## 뜬다.
+func _fan_top_y() -> float:
+	return ScreenMetrics.vp_h() - FAN_BOTTOM_PAD - FAN_DROP_RESERVE \
+			- Card.CARD_H * CARD_VIEW_SCALE
+
+
+## 부채꼴 원 위에서의 기울기(라디안). 왼쪽 절반은 음수(왼쪽으로 기움).
+static func _fan_angle(dx: float) -> float:
+	return asin(clampf(dx / FAN_RADIUS, -1.0, 1.0))
+
+
+## 그 카드가 부채꼴 꼭대기보다 아래로 처지는 높이(px). 가운데에서 0.
+static func _fan_arc_drop(dx: float) -> float:
+	var d: float = clampf(absf(dx), 0.0, FAN_RADIUS)
+	return FAN_RADIUS - sqrt(FAN_RADIUS * FAN_RADIUS - d * d)
 
 
 ## 파일럿 스킬 한 블록. 스킬이 없는 파일럿(모브)에게는 한 줄만 남긴다 —
@@ -1403,6 +1518,13 @@ func _build_menu_content() -> void:
 	# 누른 것과 같은 높이에서 시작하되 화면 위아래로는 넘기지 않는다.
 	var y: float = clampf(src_btn.position.y - MENU_PAD.y, 20.0,
 			maxf(20.0, ScreenMetrics.vp_h() - panel_h - 20.0))
+	if _menu_key.begins_with("card:"):
+		# **카드만 예외다.** 칩과 효과는 정보 칼럼 · 화면 왼쪽에 있어 "누른 것과
+		# 같은 높이"가 그 옆의 빈 자리를 가리키지만, 카드는 화면 하단 부채꼴에
+		# 있어서 같은 규칙이 **방금 누른 카드 위**를 가리킨다 — 판이 그 카드를
+		# 통째로 덮는다. 그래서 카드 줄 제목 위로 올려 붙인다. x 는 그대로
+		# 왼쪽이라 오른쪽 아래의 닫기 버튼을 가리지 않는다.
+		y = maxf(20.0, _fan_top_y() - FAN_TITLE_GAP - MENU_CARD_GAP_Y - panel_h)
 
 	var panel := Panel.new()
 	panel.position = Vector2(x, y)

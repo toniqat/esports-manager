@@ -1361,6 +1361,9 @@ func spawn_card_node(cd: CardData, at_left: bool = false,
 		animate: bool = true) -> void:
 	var node := _bs.CARD_SCENE.instantiate() as Card
 	node.pivot_offset = Vector2(80.0, 110.0)
+	# 배율은 트리에 들어가기 전에 준다 — `layout_position_from_global` 이 지금
+	# 배율을 읽어 좌표를 되돌리므로, 나중에 키우면 진입 지점이 그만큼 어긋난다.
+	node.scale = Vector2.ONE * HAND_CARD_SCALE
 	_bs.canvas.add_child(node)
 	# The hand's hit layer picks the mouse for every card in the row, so the
 	# cards themselves must not — an overlapping card that claims its own rect
@@ -1458,7 +1461,7 @@ func _play_draw_intro(node: Card) -> void:
 		# 감속 곡선(EASE_OUT + CUBIC)에서는 첫 프레임에 이미 화면 오른쪽 끝에 닿아
 		# "왼쪽에서 왔다"가 읽히지 않았다(실측: 0.10초에 77% 주파). 대칭 곡선이
 		# 가로지르는 구간을 눈에 남긴다.
-		node.tween_to(staging, 0.0, Vector2.ONE, DRAW_FLY_SEC,
+		node.tween_to(staging, 0.0, Vector2.ONE * HAND_CARD_SCALE, DRAW_FLY_SEC,
 				Tween.EASE_IN_OUT, Tween.TRANS_SINE)
 		await get_tree().create_timer(DRAW_FLY_SEC).timeout
 	# ② 그 자리에서 뒤집어 앞면을 드러낸다
@@ -1481,19 +1484,42 @@ func _intro_alive(node: Card) -> bool:
 			and _bs.player_card_nodes.has(node)
 
 
+# ─── 손패 카드 배율 ──────────────────────────────────────────────────────────
+# **손패의 카드는 `Card.CARD_W/H` 보다 크게 그려진다.** 카드 규격(160×220)은
+# 밴픽 시트 · 더미 열람 · 상세 팝업까지 열 몇 화면이 함께 읽는 값이라 그쪽을
+# 키우면 그 화면들의 격자가 통째로 어긋난다 — 그래서 손패만 자기 배율을 갖는다.
+#
+# **레이아웃 좌표는 배율을 타지 않는다.** 카드의 `pivot_offset` 이 한가운데라
+# `position`(= 확대 전 왼쪽 위)에 배율을 곱해도 **중심이 안 움직인다**. 그래서
+# `slot_position` / `_apply_hit_bands` 의 "중심 = position + CARD_W/2" 는 그대로
+# 이고, 배율을 알아야 하는 것은 **보이는 폭**을 재는 자리뿐이다 — 간격 압축,
+# 호버 밀어내기의 가림 계산, 히트 레이어의 바깥 여유 셋이고 전부 아래 두
+# 헬퍼를 지난다.
+const HAND_CARD_SCALE := 1.2
+
+## 손패에서 카드 한 장이 실제로 차지하는 폭 / 높이(px).
+static func hand_card_w() -> float:
+	return Card.CARD_W * HAND_CARD_SCALE
+
+
+static func hand_card_h() -> float:
+	return Card.CARD_H * HAND_CARD_SCALE
+
+
 ## Uniform centre-to-centre spacing (px) between adjacent cards in a hand of
 ## `total`. Cards sit `BS_HAND_CARD_GAP` apart until the natural span outgrows
 ## BS_HAND_WIDTH; from then on the spacing compresses uniformly so the row always
 ## fits the fixed-width slot the Deck / Discard indicators are measured against.
 func slot_spacing(total: int) -> float:
-	var ideal_spacing: float = Card.CARD_W + _bs.BS_HAND_CARD_GAP
+	var card_w: float = hand_card_w()
+	var ideal_spacing: float = card_w + _bs.BS_HAND_CARD_GAP
 	if total <= 1:
 		return ideal_spacing
-	var ideal_total: float = float(total) * Card.CARD_W \
+	var ideal_total: float = float(total) * card_w \
 			+ float(total - 1) * _bs.BS_HAND_CARD_GAP
 	if ideal_total <= _bs.BS_HAND_WIDTH:
 		return ideal_spacing
-	return (_bs.BS_HAND_WIDTH - Card.CARD_W) / float(total - 1)
+	return (_bs.BS_HAND_WIDTH - card_w) / float(total - 1)
 
 
 ## Signed horizontal distance (px) from the middle of the hand row to the centre
@@ -1630,7 +1656,7 @@ func hover_push_offset(index: int, total: int) -> float:
 func _hover_push_amount(total: int) -> float:
 	if total <= 1:
 		return 0.0
-	var clearance: float = Card.CARD_W * Card.HOVER_SCALE * 0.5 \
+	var clearance: float = hand_card_w() * Card.HOVER_SCALE * 0.5 \
 			+ _bs.BS_HAND_HOVER_MIN_STRIP
 	return maxf(_bs.BS_HAND_HOVER_PUSH, clearance - slot_spacing(total))
 
@@ -1690,7 +1716,7 @@ func relayout_hand(nodes: Array, skip: Variant = null) -> void:
 		if node == skip or node.is_dragging or node.intro_active:
 			continue
 		var pos := slot_position(i, total)
-		node.tween_to(pos, slot_rotation(i, total), Vector2.ONE,
+		node.tween_to(pos, slot_rotation(i, total), Vector2.ONE * HAND_CARD_SCALE,
 				_bs.BS_HAND_SPRING_DURATION,
 				_bs.BS_HAND_TWEEN_EASE, _bs.BS_HAND_TWEEN_TRANS)
 		node.store_base_y()
@@ -1749,10 +1775,10 @@ func _apply_hit_bands(total: int) -> void:
 	for i in total:
 		# The outermost cards extend their band out to their own edge instead of
 		# stopping half a stride short, so the ends of the row stay clickable.
-		var left: float = centers[i] - Card.CARD_W * 0.5
+		var left: float = centers[i] - hand_card_w() * 0.5
 		if i > 0:
 			left = (centers[i - 1] + centers[i]) * 0.5
-		var right: float = centers[i] + Card.CARD_W * 0.5
+		var right: float = centers[i] + hand_card_w() * 0.5
 		if i < total - 1:
 			right = (centers[i] + centers[i + 1]) * 0.5
 		_hit_bands.append(Vector2(left, right))
@@ -1772,8 +1798,12 @@ func _fit_hit_layer(total: int) -> void:
 		_bs.canvas.add_child(_hand_hit_layer)
 		_hand_hit_layer.gui_input.connect(_on_hit_layer_gui_input)
 		_hand_hit_layer.mouse_exited.connect(_on_hit_layer_mouse_exited)
-	var grow_x: float = Card.CARD_W * (Card.HOVER_SCALE - 1.0) * 0.5
-	var grow_y: float = Card.CARD_H * (Card.HOVER_SCALE - 1.0) * 0.5
+	# 슬롯 좌표는 확대 전 카드의 왼쪽 위라, 실제로 그려지는 면이 그 밖으로
+	# 얼마나 나가는지를 **배율 × 호버 확대**에서 역산한다(중심은 안 움직이므로
+	# 좌우·상하로 같은 양씩 나간다).
+	var over: float = HAND_CARD_SCALE * Card.HOVER_SCALE - 1.0
+	var grow_x: float = Card.CARD_W * over * 0.5
+	var grow_y: float = Card.CARD_H * over * 0.5
 	var lift: float = Card.PRESS_LIFT if _drag_card != null else 0.0
 	var left: float  = _bs.BS_HAND_CENTER.x + slot_center_dx(0, total) - grow_x
 	var right: float = _bs.BS_HAND_CENTER.x + slot_center_dx(total - 1, total) \
@@ -2182,7 +2212,7 @@ func _pose_selected_card(card: Card) -> void:
 	# PRESS_LIFT × sin(fan angle): ±4.6px on the outermost card of a 12-card hand,
 	# and it grows if BS_HAND_FAN_RADIUS is tightened.
 	var lifted := slot + Vector2(0.0, -Card.PRESS_LIFT).rotated(rot)
-	card.tween_to(lifted, rot, Vector2.ONE,
+	card.tween_to(lifted, rot, Vector2.ONE * HAND_CARD_SCALE,
 			_bs.BS_HAND_SPRING_DURATION,
 			_bs.BS_HAND_TWEEN_EASE, _bs.BS_HAND_TWEEN_TRANS)
 

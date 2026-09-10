@@ -48,8 +48,10 @@ const CENTER := Vector2(540.0, 880.0)
 ## 손패 부채꼴과 같은 문법이기도 하다.
 const FAN_STEP_PX: float = 118.0
 const FAN_TILT_DEG: float = 7.0
-## 펼쳐진 카드의 배율. 손패 카드보다 크게 보여 준다(읽으라고 띄운 것이다).
-const CARD_SCALE := Vector2(1.05, 1.05)
+## 펼쳐진 카드의 배율. **손패 카드(`CardPhaseManager.HAND_CARD_SCALE` 1.2)보다
+## 커야 한다** — 읽으라고 띄운 것이라, 손패와 같거나 작으면 중앙에 뜬 이유가
+## 사라진다. 손패가 1.0 이던 시절의 1.05 에서 함께 올라온 값이다.
+const CARD_SCALE := Vector2(1.35, 1.35)
 
 const SPREAD_SEC: float = 0.34
 const HOLD_SEC: float = 0.70

@@ -256,16 +256,35 @@ jobs:
 
       - name: Godot iOS 익스포트 (Xcode 프로젝트 생성)
         run: |
-          set -euo pipefail
+          set -uo pipefail
           GODOT="$HOME/godot-bin/Godot.app/Contents/MacOS/Godot"
           mkdir -p build/ios
           # export_presets.cfg 의 application/export_project_only=true 때문에
           # Godot 은 xcodebuild 를 부르지 않고 Xcode 프로젝트만 만들어 둔다 —
           # 서명 플래그를 우리가 쥐기 위해서다.
+          #
+          # **종료 코드로 판정하지 않는다.** 익스포트를 다 끝내 놓고
+          # (`[ DONE ] export`) 종료 과정에서 `libc++abi: Pure virtual function
+          # called!` 로 abort 하는 일이 있다(실측: b6685cb 의 release 익스포트,
+          # exit 134). 그때 산출물은 멀쩡한데 `set -e` 가 그 코드를 그대로 받아
+          # 스텝을 세웠다 — 익스포트가 끝난 뒤의 셧다운은 이 파이프라인이
+          # 물어보는 질문이 아니다. 그래서 **나온 물건**을 본다.
+          set +e
           "$GODOT" --headless --path . ${{ steps.cfg.outputs.godot_flag }} \
             "$EXPORT_PRESET" "$PWD/build/ios/${APP_NAME}.ipa"
-          echo "--- build/ios ---"
-          ls -la build/ios
+          RC=$?
+          set -e
+          echo "--- build/ios (godot exit=$RC) ---"
+          ls -la build/ios || true
+          # .xcodeproj 가 없으면 익스포트가 진짜로 실패한 것이다.
+          PROJ="$(find build/ios -maxdepth 3 -name '*.xcodeproj' -print -quit)"
+          if [ -z "$PROJ" ]; then
+            echo "::error::익스포트 산출물에 .xcodeproj 가 없다 (godot exit=$RC)."
+            exit 1
+          fi
+          if [ "$RC" != "0" ]; then
+            echo "::warning::Godot 이 익스포트를 마친 뒤 종료에서 abort 했다 (exit=$RC). 산출물($PROJ)이 나왔으므로 계속한다 — 아래 플러그인 / pck / 햅틱 게이트가 실제 내용을 검사한다."
+          fi
 
       # 익스포터가 플러그인을 **실제로 집어갔는지** 본다. `plugins/Haptics=true`
       # 는 켜 두고 .gdip 만 안 읽히면 Godot 은 아무 말 없이 그냥 넘어간다 —

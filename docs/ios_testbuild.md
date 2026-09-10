@@ -386,6 +386,7 @@ application/version="0.1"
 | `No export template found at .../ios.zip` | `GODOT_VERSION` / `GODOT_RELEASE` 가 릴리스 태그와 안 맞는다 |
 | `due to configuration errors:` 뒤가 **비어 있다** | `project.godot` 의 `textures/vram_compression/import_etc2_astc` 가 꺼졌다 — 아래 항목 |
 | `.xcodeproj 를 찾지 못했다` | Godot 익스포트 단계가 실패했다 — 그 위 단계 로그를 볼 것 |
+| 익스포트 로그 끝이 `libc++abi: Pure virtual function called!` + `exit 134` | **익스포트는 끝났고 Godot 이 종료에서 죽은 것이다**(`[ DONE ] export` 가 그 위에 있다). 지금 워크플로는 종료 코드가 아니라 `.xcodeproj` 가 나왔는지를 보고 경고만 남긴 채 계속한다 |
 | `pck 안에 data/game.db 가 없다` | `include_filter` 가 빗나갔다 |
 | 폰에서 게임이 **가로로** 뜬다 | `window/handheld/orientation` 이 문자열로 되돌아갔다 — 위 항목 |
 | pck 를 갈아 끼웠는데 **화면 방향 · 아이콘 · 번들 ID** 가 그대로다 | 그 셋은 `Info.plist` / `Assets.car` 에 구워져 pck 밖에 산다 — CI 로 ipa 를 새로 굽는다 |

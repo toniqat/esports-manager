@@ -91,6 +91,10 @@ const ROLE_COLORS: Array = [
 
 var _mech: MechData = null
 var _root: Control = null
+## 누른 카드의 설명판(`CardDescBox`) — 카드 앞면에 설명문이 없으므로 그 글은
+## 카드를 누르면 카드 **위쪽**에 뜨는 이 판이 든다. 같은 카드를 다시 누르면 닫힌다.
+var _desc_box: Panel = null
+var _desc_node: Card = null
 
 
 func _init() -> void:
@@ -106,6 +110,7 @@ func open(m: MechData) -> void:
 
 
 func close() -> void:
+	_hide_card_desc()
 	if _root != null and is_instance_valid(_root):
 		_root.queue_free()
 	_root = null
@@ -197,6 +202,8 @@ func _build_panel() -> void:
 	scroll.size = Vector2(inner_w, panel_h - PANEL_PAD * 2.0)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_root.add_child(scroll)
+	# 손가락 / 마우스로 끌어 굴린다(`DragScroll`).
+	DragScroll.attach(scroll)
 
 	# 스크롤 안쪽은 컨테이너가 아니라 좌표로 쌓는다 — 칩 격자와 카드 격자가
 	# 둘 다 2차원이라 VBox 로는 행마다 컨테이너를 하나씩 더 세워야 한다.
@@ -330,6 +337,7 @@ func _build_card_section(body: Control, w: float, y: float) -> float:
 		node.pivot_offset = Vector2.ZERO
 		node.scale = Vector2(CARD_VIEW_SCALE, CARD_VIEW_SCALE)
 		node.position = at
+		_bind_card_tap(body, node, at, Vector2(cw, ch))
 
 		# 장수 배지 — `count = 0` 인 카드는 덱에 처음부터 들어가지 않고 패시브나
 		# 다른 카드가 만들어 줄 때만 세상에 나온다. 그 사정을 적어 두지 않으면
@@ -343,6 +351,39 @@ func _build_card_section(body: Control, w: float, y: float) -> float:
 				HORIZONTAL_ALIGNMENT_CENTER)
 		badge.clip_text = true
 	return y + float(rows) * row_h + float(maxi(0, rows - 1)) * CARD_GAP
+
+
+## 카드 위에 투명 버튼 한 장 — 누르면 설명판을 연다(같은 카드면 닫는다).
+## **PASS** 다: 정보 패널은 스크롤 안이라 STOP 이면 터치 드래그 스크롤이 끊긴다.
+func _bind_card_tap(body: Control, node: Card, at: Vector2, sz: Vector2) -> void:
+	var hit := Button.new()
+	hit.flat = true
+	hit.focus_mode = Control.FOCUS_NONE
+	hit.mouse_filter = Control.MOUSE_FILTER_PASS
+	hit.modulate = Color(1, 1, 1, 0)
+	hit.position = at
+	hit.size = sz
+	hit.pressed.connect(_toggle_card_desc.bind(node))
+	body.add_child(hit)
+
+
+func _toggle_card_desc(node: Card) -> void:
+	var same: bool = node == _desc_node
+	_hide_card_desc()
+	if same or node == null or not is_instance_valid(node) or node.data == null:
+		return
+	_desc_box = CardDescBox.build(node.data, PANEL_W)
+	_root.add_child(_desc_box)
+	CardDescBox.place_near(_desc_box, node.get_global_rect(),
+			_root.size, true)
+	_desc_node = node
+
+
+func _hide_card_desc() -> void:
+	if _desc_box != null and is_instance_valid(_desc_box):
+		_desc_box.queue_free()
+	_desc_box = null
+	_desc_node = null
 
 
 ## 줄바꿈되는 문단 한 덩이. **실제 높이는 폰트가 정한다** — 손으로 재면 긴

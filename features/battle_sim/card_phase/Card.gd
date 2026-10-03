@@ -108,52 +108,32 @@ const CHARGE_BADGE_SIZE := Vector2(52.0, 30.0)
 const CHARGE_BADGE_COLOR := Color(0.06, 0.05, 0.10, 0.92)
 const CHARGE_BADGE_TEXT_COLOR := Color(1.0, 0.92, 0.45)
 
-# ── 앞면 세 층 (아트 · 이름 · 설명) ──────────────────────────
-# 카드 앞면은 위에서부터 **아트 → 이름 → 설명판** 이다.
-#
-# **아트는 카드 높이의 1/3 만 가져간다**(220 / 3 ≈ 73.3 → 74). 예전에는 이 자리가
-# 통째로 비어 있었고(비용색 앞면이 그대로 드러났다) 시전자 얼굴 배지 하나만
-# 떠 있었는데, 지금은 그 위쪽 셋째가 그림 자리다.
+# ── 앞면 두 층 (아트 · 이름) ─────────────────────────────
+# 카드 앞면은 위에서부터 **아트 → 이름판** 두 층이다. **설명문은 카드에 없다** —
+# 카드를 가리키면 손패 바로 위에 뜨는 설명 상자(`CardPhaseManager`)가, 밴픽 · 메크
+# 상세에서는 카드를 누르면 뜨는 설명판이 그 글을 든다. 160×220 에 많게는 128자를
+# 8pt 로 욱여넣던 설명판은 어차피 읽으라고 있는 글씨가 아니었고, 그 자리를 아트가
+# 통째로 가져가면 카드가 **그림으로** 알아보인다.
 #
 # **아트는 카드 테두리에서 `ART_INSET` 만큼 물러나 앉는다** — 카드 모서리는
 # 둥글고 아트는 네모라, 끝까지 붙이면 둥근 모서리 위로 그림의 네모난
-# 귀퇰이가 샐져나온다. 물러나 앉히면 둥근 테두리가 그림을 액자처럼 두른다
+# 귀퉁이가 삐져나온다. 물러나 앉히면 둥근 테두리가 그림을 액자처럼 두른다
 # (자르지 않으므로 카드마다 백버퍼를 뜨는 `clip_children` 도 필요 없다).
 #
-# 세 층 모두 **절대 좌표**다. 카드는 160×220 으로 고정이고 컨테이너가 없어야
-# 레이아웃 패스를 기다리지 않고 설명 글자 크기를 계산할 수 있다
-# (`_apply_description` — `setup()` 은 첫 레이아웃 패스보다 먼저 돌 수 있다).
+# **이름판은 카드 아랫단**에 테두리에서 좌 · 우 · 아래로 `NAME_INSET` 만큼 물러난
+# 어두운 판이다 — 비용색이 여섯 가지라 판 없이는 어느 글자색도 여섯 곳에서 다
+# 읽히지 않는다. 좌표는 전부 `scenes/Card.tscn` 과 같은 절대 좌표다.
 const ART_INSET := 5.0
-const ART_H := 74.0
+const NAME_INSET := 6.0
+const NAME_PLATE_H := 28.0
+## 이름판 윗변(186) — 아트는 그 3px 위에서 끝난다.
+const NAME_TOP := CARD_H - NAME_INSET - NAME_PLATE_H
+const ART_H := NAME_TOP - 3.0 - ART_INSET
 const ART_BACK_COLOR := Color(0.05, 0.04, 0.09, 1.0)
 const ART_LINE_COLOR := Color(0.0, 0.0, 0.0, 0.55)
+const NAME_PLATE_COLOR := Color(0.05, 0.04, 0.09, 0.80)
 
-const NAME_FONT_SIZE := 14
-
-# ── 설명문 ─────────────────────────────────────────────
-# 아트 아래의 나머지가 설명판이고, 판은 카드 테두리에서 **좌 · 우 · 아래로**
-# `DESC_INSET` 만큼 물러나 앉는다. 판을 깔지 않으면 글자가 비용색 위에 바로
-# 얹힐는데, 비용색은 파랑부터 노랑까지 여섯 가지라 어느 한 글자색도 여섯 곳에서
-# 다 읽히지 않는다.
-#
-# **글자 크기는 고정이 기본이고, 넘치는 카드만 줄인다** — `DESC_FONT_MAX` 로
-# 찍어 보고 판 안에 안 들어가면 한 단계씩 내려 `DESC_FONT_MIN` 까지 간다.
-# 처음부터 카드마다 다른 크기로 찍으면 손패가 들쌀날줍해 보이고, 반대로 전부
-# 최소 크기로 맞추면 스무 자짜리 카드까지 개미 글씨가 된다(설명문은 22자
-# median 에 mech_cards 쪽 최장 128자다).
-const DESC_INSET := 6.0
-const DESC_TOP := 106.0
-## 판 안쪽 여백(글자와 판 사이) — 좌우 / 위아래.
-const DESC_PAD_H := 6.0
-const DESC_PAD_V := 5.0
-const DESC_FONT_MAX := 13
-const DESC_FONT_MIN := 8
-const DESC_PLATE_COLOR := Color(0.05, 0.04, 0.09, 0.66)
-const DESC_TEXT_COLOR := Color(0.93, 0.94, 0.98)
-## 줄 간격은 0 으로 눌러 둔다 — 글자 크기를 고를 때 재는 값
-## (`Font.get_multiline_string_size`)이 줄 간격을 모르기 때문이다. 간격이 살아
-## 있으면 잴 높이와 실제 높이가 줄 수만큼 어긋나 마지막 줄이 판 밖으로 샐다.
-const DESC_LINE_SPACING := 0
+const NAME_FONT_SIZE := 15
 
 # ── 비용 배지 (좌측 상단, 카드 밖으로 걸친다) ──────────────────
 # 비용은 카드 **모서리 밖으로 살짝 튀어나온 원** 안에 찍힌다. 손패는 카드끼리
@@ -265,8 +245,7 @@ const DIM_MODULATE: Color = Color(0.42, 0.42, 0.48, 1.0)
 @onready var art_frame: Panel = $CardFront/ArtFrame
 @onready var art_rect: TextureRect = $CardFront/ArtFrame/Art
 @onready var name_label: Label = $CardFront/NameLabel
-@onready var desc_plate: Panel = $CardFront/DescPlate
-@onready var desc_label: Label = $CardFront/DescPlate/DescLabel
+@onready var name_plate: Panel = $CardFront/NamePlate
 @onready var cost_badge: Panel = $CardFront/CostBadge
 @onready var cost_label: Label = $CardFront/CostBadge/CostLabel
 @onready var back_cost_label: Label = $CardBack/BackCostLabel
@@ -389,8 +368,9 @@ func _build_block_overlay() -> void:
 	_charge_badge.name = "ChargeBadge"
 	_charge_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_charge_badge.size = CHARGE_BADGE_SIZE
-	_charge_badge.position = Vector2(CARD_W - CHARGE_BADGE_SIZE.x - 6.0,
-			CARD_H - CHARGE_BADGE_SIZE.y - 6.0)
+	# 이름판 바로 위, 아트의 오른쪽 아래 구석.
+	_charge_badge.position = Vector2(CARD_W - CHARGE_BADGE_SIZE.x - 8.0,
+			NAME_TOP - CHARGE_BADGE_SIZE.y - 5.0)
 	_charge_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_charge_badge.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
 	_charge_badge.add_theme_font_size_override("font_size", 20)
@@ -582,11 +562,11 @@ func _apply_data() -> void:
 	card_front.add_theme_stylebox_override("panel", style)
 	_apply_art()
 	_apply_cost_badge()
-	_apply_description()
+	_apply_name_plate()
 	refresh_charge_badge()
 
 
-## 카드 아트 — 위쪽 1/3. 전용 아트가 없는 카드는 `CardImages` 가 이름으로 고른
+## 카드 아트 — 이름판 위 전부. 전용 아트가 없는 카드는 `CardImages` 가 이름으로 고른
 ## 배경을 받는다(그림이 아예 없으면 액자만 남고 비용색 앞면이 비친다).
 func _apply_art() -> void:
 	if art_frame == null or art_rect == null:
@@ -627,57 +607,17 @@ func _apply_cost_badge() -> void:
 	cost_label.add_theme_constant_override("outline_size", 3)
 
 
-## 설명문 — 아트 아래 판에 찍는다. 글자 크기는 `DESC_FONT_MAX` 가 기본이고,
-## 그 크기로 판을 넘치는 카드만 한 단계씩 줄여 `DESC_FONT_MIN` 까지 내려간다.
-func _apply_description() -> void:
-	if desc_plate == null or desc_label == null:
+## 이름판 — 카드 아랫단의 어두운 판. 이름 라벨은 판의 형제로 같은 자리에 앉는다.
+func _apply_name_plate() -> void:
+	if name_plate == null:
 		return
 	var plate := StyleBoxFlat.new()
-	plate.bg_color = DESC_PLATE_COLOR
-	plate.corner_radius_top_left     = 6
-	plate.corner_radius_top_right    = 6
+	plate.bg_color = NAME_PLATE_COLOR
+	plate.corner_radius_top_left     = 5
+	plate.corner_radius_top_right    = 5
 	plate.corner_radius_bottom_left  = 8
 	plate.corner_radius_bottom_right = 8
-	desc_plate.add_theme_stylebox_override("panel", plate)
-
-	desc_label.text = data.description
-	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc_label.add_theme_color_override("font_color", DESC_TEXT_COLOR)
-	desc_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
-	desc_label.add_theme_constant_override("outline_size", 2)
-	desc_label.add_theme_constant_override("line_spacing", DESC_LINE_SPACING)
-	desc_label.add_theme_font_size_override("font_size", _fit_desc_font_size())
-
-
-## 설명문이 판 안에 들어가는 가장 큰 글자 크기. 들어가는 크기가 없으면 최소값을
-## 돌려준다. **자리는 노드 크기가 아니라 상수에서 계산한다** — `setup()` 은
-## 카드가 트리에 들어간 직후, 첫 레이아웃 패스보다 **먼저** 돌 수 있어 그때
-## `desc_label.size` 는 아직 0 이다. 카드가 160×220 고정이라 상수 산술이 언제나
-## 같은 답을 준다.
-func _fit_desc_font_size() -> int:
-	var text: String = data.description
-	if text.is_empty():
-		return DESC_FONT_MAX
-	var avail_w: float = CARD_W - 2.0 * DESC_INSET - 2.0 * DESC_PAD_H
-	var avail_h: float = CARD_H - DESC_TOP - DESC_INSET - 2.0 * DESC_PAD_V
-	# 충전 카드는 오른쪽 아래에 `N/M` 배지가 앉는다 — 그 한 줄만큼 자리를 비운다.
-	if data.is_charge_card():
-		avail_h -= CHARGE_BADGE_SIZE.y
-	var f: Font = desc_label.get_theme_font("font")
-	if f == null:
-		f = ThemeDB.fallback_font
-	if f == null:
-		return DESC_FONT_MIN
-	var brk: int = (TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND
-			| TextServer.BREAK_ADAPTIVE | TextServer.BREAK_TRIM_EDGE_SPACES)
-	var fs: int = DESC_FONT_MAX
-	while fs > DESC_FONT_MIN:
-		var m: Vector2 = f.get_multiline_string_size(text,
-				HORIZONTAL_ALIGNMENT_LEFT, avail_w, fs, -1, brk)
-		if m.y <= avail_h:
-			return fs
-		fs -= 1
-	return DESC_FONT_MIN
+	name_plate.add_theme_stylebox_override("panel", plate)
 
 
 func _cost_color(cost: int) -> Color:

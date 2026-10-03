@@ -27,6 +27,7 @@ const GRID_TOP_Y         := 208.0
 const GRID_BOTTOM_Y      := 1400.0
 const GRID_SIDE_PAD      := 90.0
 const COL_COUNT          := 5
+const DESC_W             := 560.0
 const COL_GAP            := 12.0
 const ROW_GAP            := 18.0
 const EMPTY_FONT         := 28
@@ -48,6 +49,9 @@ var _title:         Label       = null
 var _scroll_root:   ScrollContainer = null
 var _btn_close:     Button      = null
 var _card_nodes:    Array       = []   # Array<Card> — grid 안의 시각 노드
+## 가리키거나 누른 카드의 설명판 — 카드 앞면에 설명문이 없으므로 열람에서
+## 무엇을 하는 카드인지는 이 판이 말한다(`CardDescBox`).
+var _desc_box:      Panel       = null
 
 
 func _ready() -> void:
@@ -189,6 +193,33 @@ func _build_grid(cards: Array, screen: Vector2) -> void:
 				float(col) * (col_w + COL_GAP) + (col_w - Card.CARD_W) * 0.5,
 				float(row) * (Card.CARD_H + ROW_GAP))
 		_card_nodes.append(node)
+		# 읽기 전용이라 고르는 버튼이 아니라 **설명판을 여는 투명 버튼**이다.
+		# PASS — 스크롤 안이라 STOP 이면 터치 드래그 스크롤이 끊긴다.
+		var hit := Button.new()
+		hit.mouse_filter = Control.MOUSE_FILTER_PASS
+		hit.flat = true
+		hit.focus_mode = Control.FOCUS_NONE
+		hit.size = Vector2(Card.CARD_W, Card.CARD_H)
+		hit.modulate = Color(1, 1, 1, 0)
+		hit.pressed.connect(_show_desc.bind(node, cd))
+		hit.mouse_entered.connect(_show_desc.bind(node, cd))
+		hit.mouse_exited.connect(_hide_desc)
+		node.add_child(hit)
+
+
+func _show_desc(node: Card, cd: CardData) -> void:
+	_hide_desc()
+	if node == null or not is_instance_valid(node) or cd == null:
+		return
+	_desc_box = CardDescBox.build(cd, DESC_W)
+	_overlay_layer.add_child(_desc_box)
+	CardDescBox.place_near(_desc_box, node.get_global_rect(), _screen_size())
+
+
+func _hide_desc() -> void:
+	if _desc_box != null and is_instance_valid(_desc_box):
+		_desc_box.queue_free()
+	_desc_box = null
 
 
 # ─── Data ────────────────────────────────────────────────────────────────────
@@ -237,6 +268,7 @@ func _on_dim_gui_input(event: InputEvent) -> void:
 
 # ─── Teardown ────────────────────────────────────────────────────────────────
 func _teardown() -> void:
+	_hide_desc()
 	for raw in _card_nodes:
 		var node := raw as Card
 		if is_instance_valid(node):

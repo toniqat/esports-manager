@@ -42,19 +42,17 @@ var _hand_hit_layer: Control = null
 var _hit_bands: Array[Vector2] = []
 
 # ─── Description box ─────────────────────────────────────────────────────────
-# 카드 설명은 **화면 상단 고정 위치**에 뜬다(예전에는 든 카드 좌/우 옆이었다).
-# 두 가지가 그렇게 만들었다: (1) 카드를 끌어다 놓는 조작이 생기면서 카드를
-# 따라다니는 상자가 커서 앞을 가로막았고, (2) 상자를 카드에 붙여 두면 손패
-# 오른쪽 끝 카드에서는 상자가 화면 밖으로 밀려 반대쪽으로 튀었다. 상단 패널
-# (HudBuilder.TOP_PANEL_H = 130) 바로 아래, 전장 상단(y 369)보다 위인 빈 띠에
-# 가로 가운데 정렬로 앉는다.
+# 카드 앞면에는 설명문이 없다(`Card.gd` 앞면 두 층) — 글은 이 상자 하나가 든다.
+# 상자는 **손패 바로 위**, 가로 가운데에 앉는다: 들어 올린 카드의 윗단에서
+# `DESC_BOX_GAP` 위가 상자의 아랫변이다. 예전에는 화면 상단(상단 패널 밑)에
+# 떴는데, 카드를 보는 눈과 글을 읽는 눈이 화면 높이만큼 오가야 했다.
 #
-# 뜨는 조건도 바뀌었다 — 이제 **가리키기만 해도** 뜬다. 어느 카드를 보여 줄지는
+# 뜨는 조건은 그대로다 — **가리키기만 해도** 뜬다. 어느 카드를 보여 줄지는
 # 손패 포커스와 같은 질문이라 `_push_focus_card()` 하나가 답한다: 끌고 있는
-# 카드가 있으면 그것, 없으면 커서 아래 카드.
+# 카드가 있으면 그것, 없으면 커서 아래 카드. 상자는 마우스를 먹지 않으므로
+# 그 위를 지나가는 드래그를 막지 않는다. 높이는 내용이 정한다(`CardDescBox`).
 const DESC_BOX_W   := 640.0
-const DESC_BOX_H   := 150.0
-const DESC_BOX_TOP := 142.0
+const DESC_BOX_GAP := 14.0
 ## 지금 설명 상자가 보여 주고 있는 카드. 포커스가 실제로 바뀔 때만 다시 짓는다.
 var _desc_card: Card = null
 
@@ -2600,9 +2598,9 @@ func _on_selection_confirm(picked: Variant) -> void:
 ## card under the cursor). The box sits at a fixed spot on screen, so nothing
 ## has to move when the focus stays put — only a change of card rebuilds it.
 ##
-## Hovering is enough to open it: the box is far from the hand and out of the
-## drag's way, so there is no reason to make the player commit to a selection
-## just to read what a card does.
+## Hovering is enough to open it: the box ignores the mouse, so sitting just
+## above the hand never blocks a drag, and there is no reason to make the
+## player commit to a selection just to read what a card does.
 func _refresh_description_box() -> void:
 	var focus: Card = _push_focus_card()
 	if focus != null and (_bs.game_phase != GameEnums.BattlePhase.CARD_PHASE
@@ -2622,56 +2620,7 @@ func _show_description_box(card: Card) -> void:
 	if card == null or not is_instance_valid(card) or card.data == null:
 		return
 
-	var box := Panel.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.08, 0.08, 0.12, 0.96)
-	style.border_color = Color(0.95, 0.85, 0.45, 1.0)
-	style.border_width_top    = 2
-	style.border_width_bottom = 2
-	style.border_width_left   = 2
-	style.border_width_right  = 2
-	style.corner_radius_top_left     = 12
-	style.corner_radius_top_right    = 12
-	style.corner_radius_bottom_left  = 12
-	style.corner_radius_bottom_right = 12
-	box.add_theme_stylebox_override("panel", style)
-	box.size = Vector2(DESC_BOX_W, DESC_BOX_H)
-	# 화면 상단 고정 — 상단 패널 아래, 전장 위의 빈 띠에 가로 가운데 정렬.
-	var screen_w: float = _bs.canvas.get_viewport().get_visible_rect().size.x
-	box.position = Vector2((screen_w - DESC_BOX_W) * 0.5, DESC_BOX_TOP)
-	# 상자는 읽기 전용이라 마우스를 먹지 않는다 — 그 자리(전장 상단)를 지나가는
-	# 드래그가 상자에 걸려 멈추면 안 된다. 안에 든 버튼(버리기)은 자기 픽을
-	# 그대로 받는다: 부모가 IGNORE 여도 자식은 따로 히트 테스트된다.
-	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	var vbox := VBoxContainer.new()
-	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	vbox.offset_left   = 14
-	vbox.offset_top    = 14
-	vbox.offset_right  = -14
-	vbox.offset_bottom = -14
-	vbox.add_theme_constant_override("separation", 10)
-	box.add_child(vbox)
-
-	# Header row: card name on the left, cost number on the right. The 시전자
-	# tag was dropped — the card body already shows the owner face.
-	var header := HBoxContainer.new()
-	header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_theme_constant_override("separation", 8)
-	vbox.add_child(header)
-
-	var name_lbl := Label.new()
-	name_lbl.text = card.data.card_name
-	name_lbl.add_theme_font_size_override("font_size", 22)
-	name_lbl.add_theme_color_override("font_color", Color(1.0, 0.95, 0.55))
-	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	header.add_child(name_lbl)
-
 	var eff_cost: int = _bs.effective_cost_for(card.data, true)
-	var cost_lbl := Label.new()
-	cost_lbl.text = str(eff_cost)
-	cost_lbl.add_theme_font_size_override("font_size", 26)
 	# Same colour ramp as the card's top-left cost (white/green/red) so the
 	# two readouts agree when 사전 준비 / 전투 준비 / 정밀 이동 are active.
 	var cost_col: Color = Card.COST_COLOR_BASE
@@ -2679,17 +2628,18 @@ func _show_description_box(card: Card) -> void:
 		cost_col = Card.COST_COLOR_REDUCED
 	elif eff_cost > card.data.cost:
 		cost_col = Card.COST_COLOR_INCREASED
-	cost_lbl.add_theme_color_override("font_color", cost_col)
-	cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	header.add_child(cost_lbl)
-
-	var desc_lbl := Label.new()
-	desc_lbl.text = card.data.description
-	desc_lbl.add_theme_font_size_override("font_size", 18)
-	desc_lbl.add_theme_color_override("font_color", Color(0.92, 0.92, 0.92))
-	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc_lbl.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(desc_lbl)
+	var cost_txt: String = Card.UNPLAYABLE_COST_TEXT if not card.data.is_playable() \
+			else str(eff_cost)
+	var box: Panel = CardDescBox.build(card.data, DESC_BOX_W, false, cost_txt, cost_col)
+	# 손패 바로 위 — 포커스 카드가 가장 높이 솟은 자세(호버 배율 + 드래그 리프트)
+	# 의 윗단에서 `DESC_BOX_GAP` 만큼 띄운다. 그래야 끌어 올린 카드도 상자를
+	# 파고들지 않는다.
+	var screen_w: float = _bs.canvas.get_viewport().get_visible_rect().size.x
+	var card_mid_y: float = _bs.BS_HAND_CENTER.y + hand_drop_offset() + Card.CARD_H * 0.5
+	var lifted_top: float = card_mid_y \
+			- Card.CARD_H * 0.5 * HAND_CARD_SCALE * Card.HOVER_SCALE - Card.PRESS_LIFT
+	box.position = Vector2((screen_w - DESC_BOX_W) * 0.5,
+			lifted_top - DESC_BOX_GAP - box.size.y)
 
 	# **This box has no buttons.** It is a read-out, not a control surface:
 	# playing a card is a drop, and so is picking one for 버리기:N. The old

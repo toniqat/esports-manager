@@ -44,6 +44,7 @@ const BTN_HAND_GAP          := 10.0
 const BTN_SIDE_MARGIN       := 24.0
 const CONFIRM_BTN_GAP       := 12.0
 const SELECTED_TINT         := Color(1.6, 1.6, 0.55, 1.0)
+const GRID_DESC_W           := 560.0
 
 # ─── State ────────────────────────────────────────────────────────────────────
 var mode: int = Mode.NONE
@@ -74,6 +75,9 @@ var _scroll_root:   ScrollContainer = null
 var _btn_hide:      Button      = null
 var _btn_cancel:    Button      = null
 var _btn_confirm:   Button      = null
+## 격자에서 가리키거나 누른 카드의 설명판(`CardDescBox`) — 카드 앞면에 설명문이
+## 없으므로 찾기 · 선택 그리드에서는 이 판이 그 글을 든다. 한 번에 하나다.
+var _desc_box:      Panel       = null
 
 
 func _ready() -> void:
@@ -533,8 +537,29 @@ func _attach_search_pick_overlay(node: Card, cd: CardData) -> void:
 	hit.size = Vector2(Card.CARD_W, Card.CARD_H)
 	hit.position = Vector2.ZERO
 	hit.modulate = Color(1, 1, 1, 0)
-	hit.pressed.connect(func() -> void: _toggle_search_pick(cd, node))
+	hit.pressed.connect(func() -> void:
+		_toggle_search_pick(cd, node)
+		_show_grid_desc(node, cd))
+	hit.mouse_entered.connect(func() -> void: _show_grid_desc(node, cd))
+	hit.mouse_exited.connect(_hide_grid_desc)
 	node.add_child(hit)
+
+
+## 격자 카드 하나의 설명판을 그 카드 아래(자리가 없으면 위)에 띄운다.
+func _show_grid_desc(node: Card, cd: CardData) -> void:
+	_hide_grid_desc()
+	if node == null or not is_instance_valid(node) or cd == null:
+		return
+	_desc_box = CardDescBox.build(cd, GRID_DESC_W)
+	_overlay_layer.add_child(_desc_box)
+	CardDescBox.place_near(_desc_box, node.get_global_rect(),
+			ScreenMetrics.viewport_size())
+
+
+func _hide_grid_desc() -> void:
+	if _desc_box != null and is_instance_valid(_desc_box):
+		_desc_box.queue_free()
+	_desc_box = null
 
 
 # Lays out the picked-for-discard cards in a horizontal fan that mirrors the
@@ -609,6 +634,7 @@ func _update_confirm_button() -> void:
 
 
 func _teardown() -> void:
+	_hide_grid_desc()
 	if _battle_dim != null and is_instance_valid(_battle_dim):
 		_battle_dim.queue_free()
 	_battle_dim = null

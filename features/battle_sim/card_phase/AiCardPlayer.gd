@@ -29,6 +29,11 @@ const SCALE_SMALL       := Vector2(1.02, 1.02)
 # then a snap-flip swaps to the face-up data; finally it holds + fades out.
 const FLY_FROM_HAND_SEC := 0.32
 const FLIP_HALF_SEC     := 0.10
+# 카드 아래에 붙는 설명판(`CardDescBox`). 앞면에서 설명문이 걷힌 뒤로 상대가 낸
+# 카드의 효과를 읽을 곳은 이 판뿐이라, 읽을 시간만큼 머무는 시간을 늘린다.
+const DESC_BOX_W          := 640.0
+const DESC_BOX_GAP        := 16.0
+const DESC_EXTRA_HOLD_SEC := 0.45
 
 # 한 차례에 AI 가 낼 수 있는 최대 카드 수.
 #
@@ -269,15 +274,26 @@ func _show_card_centre(cd: CardData) -> void:
 				.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 		await tw_in.finished
 
-	await _bs.get_tree().create_timer(SHOW_DURATION_SEC).timeout
+	# 카드 앞면에는 설명문이 없다 — 무엇을 냈는지는 그 아래 설명판이 말한다.
+	# 카드와 같은 박자로 사라진다.
+	var desc: Panel = CardDescBox.build(cd, DESC_BOX_W)
+	desc.position = Vector2(CENTER_POS.x - DESC_BOX_W * 0.5,
+			CENTER_POS.y + Card.CARD_H * 0.5 * SCALE_BIG.y + DESC_BOX_GAP)
+	_bs.canvas.add_child(desc)
+
+	await _bs.get_tree().create_timer(SHOW_DURATION_SEC + DESC_EXTRA_HOLD_SEC).timeout
 
 	if not is_instance_valid(node):
+		desc.queue_free()
 		return
 	var tw_out := _bs.create_tween().set_parallel()
 	tw_out.tween_property(node, "modulate", Color(1, 1, 1, 0), FADE_OUT_SEC) \
 			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	tw_out.tween_property(desc, "modulate", Color(1, 1, 1, 0), FADE_OUT_SEC)
 	tw_out.tween_property(node, "scale", SCALE_SMALL, FADE_OUT_SEC) \
 			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 	await tw_out.finished
+	if is_instance_valid(desc):
+		desc.queue_free()
 	if is_instance_valid(node):
 		node.queue_free()

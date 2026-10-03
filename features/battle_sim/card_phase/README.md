@@ -8,7 +8,8 @@
 | `CardTargetingOverlay.gd` | CardTargetingOverlay | 카드 드래그 = 대상 지정 오버레이 |
 | `CardPileViewer.gd` | CardPileViewer | Deck / Discard 목록 열람 (읽기 전용) |
 | `CardDragArrow.gd` | CardDragArrow | 카드 ↔ 커서를 잇는 조준 화살표 (2차 베지어) |
-| `AiCardPlayer.gd` | AiCardPlayer | AI 카드 사용 애니메이션 |
+| `AiCardPlayer.gd` | AiCardPlayer | AI 카드 사용 애니메이션 (중앙 카드 + 그 아래 설명판) |
+| `CardDescBox.gd` | CardDescBox | **카드 설명판** — 이름 · 비용 · 설명문. 카드 앞면에 설명문이 없으므로 글을 보여 주는 모든 자리(손패 위 상자 · AI 카드 · 찾기/열람 격자 · 밴픽 시트 · 메크 상세)가 이것 하나로 짓는다. `build(data, width, light)` 는 높이를 글꼴로 직접 재 돌려주고(`light` = 아웃게임 흰 판), `place_near` 는 카드 옆 자리를 잡는다 |
 
 ## CardPhaseManager.gd
 `extends Node` — child of BattleSim.
@@ -665,12 +666,15 @@ re-evaluates the dim state.
   (140 samples): exactly one hovered card per frame, always at scale 1.2 and
   always topmost, every other card at 1.0, zero engine errors.
 - **Description box** (`_refresh_description_box` / `_show_description_box`):
-  a `Panel` **fixed at the top of the screen** — `DESC_BOX_W` × `DESC_BOX_H`
-  = 640×150 px, horizontally centred, top edge at `DESC_BOX_TOP` (142), i.e.
-  the empty band between the 상단 패널 (bottom 130) and the battlefield
-  (top 369). Contents are unchanged: header row with the card name on the left
-  and the effective cost on the right (white / green / red mirroring the card's
-  top-left cost, no 시전자 tag), then the full description.
+  a `CardDescBox` panel **just above the hand** — `DESC_BOX_W` 640 px wide,
+  horizontally centred, its bottom edge `DESC_BOX_GAP` (14) above the highest
+  pose the focus card can take (hover scale × hand scale + `PRESS_LIFT`), so a
+  lifted card never pokes into it. Height follows the text. Header row: card
+  name on the left, the effective cost on the right (white / green / red
+  mirroring the card's top-left cost); then the full description.
+  **카드 앞면에는 설명문이 없으므로 이 상자가 손패에서 글을 읽는 유일한 자리다.**
+  > 예전에는 화면 상단 고정(`DESC_BOX_TOP` 142, 상단 패널 아래 띠)이었다 —
+    카드를 보는 눈과 글을 읽는 눈이 화면 높이만큼 오가야 했다.
   - **It opens on hover.** Which card it shows is the same question as which
     card the row spreads around, so it reads `_push_focus_card()` — the card
     being dragged if there is one, else the card under the cursor. It is
@@ -679,14 +683,12 @@ re-evaluates the dim state.
     / `_end_drag` / `deselect_current_card`, and from `_apply_hand_dim_state`
     (a dimmed hand has no focus to describe). `_desc_card` tracks what is on
     screen so an unchanged focus rebuilds nothing.
-  - **Why it left the card's side.** It used to sit beside the lifted card
-    (320×220, `DESC_BOX_GAP` 12, on whichever side had more room). Dragging
-    made that untenable: a box glued to the card is exactly where the cursor is
-    about to go, and a box left behind at the card's old slot reads as
-    detached. The top band is out of both the hand's and the drag's way, and it
-    is the same place for every card — no side-flipping, no viewport clamp.
-  - The box is `MOUSE_FILTER_IGNORE`: it sits over the top of the battlefield
-    and must not catch a drag passing through.
+  - **Why it is not glued to the card.** It used to sit beside the lifted card
+    (320×220, on whichever side had more room). Dragging made that untenable:
+    a box glued to the card is exactly where the cursor is about to go. Above
+    the whole row it is the same place for every card — no side-flipping.
+  - The box is `MOUSE_FILTER_IGNORE`: it sits over the bottom of the
+    battlefield and must not catch a drag passing through.
   - **The box has no buttons at all.** It is a read-out, not a control surface:
     playing a card is a drop, and so is picking one for 버리기:N. The 카드 내기
     button went with the 확인 row, and the 버리기 button went with the selection
@@ -939,36 +941,24 @@ re-evaluates the dim state.
 대신 `—` 를 찍고(할인도 증세도 얹지 않는다), `highlight_affordable_cards` 는 점수와
 무관하게 지불 불가로 잠그며, `_begin_drag` 은 드래그 자체를 거부한다. **단 버리기
 픽 중에는 끌린다**: 못 내는 카드라고 못 버리는 것은 아니다.
-- Card front layout — **앞면은 위에서부터 아트 → 이름 → 설명판 세 층**이고,
-  그 위에 비용 원과 시전자 초상이 왼쪽 구석에 세로로 얹힌다. 세 층은 전부
-  **절대 좌표**다(카드는 160×220 고정): 컨테이너가 없어야 첫 레이아웃 패스를
-  기다리지 않고 설명 글자 크기를 계산할 수 있고, `setup()` 은 그 패스보다 먼저
-  돌 수 있다.
-  - **위쪽 1/3 = 카드 아트** (`ArtFrame` + `Art`, `ART_H` 74 = 220 / 3). 그림은
-    `CardImages.art_for(card_name)` 이 준다 — `images/card/<이름>.png` 가 있으면
-    그것, 없으면 `images/ground/N.png` 다섯 장 중 **이름 해시로 고른** 한 장이다
-    (무작위로 고르면 같은 카드가 뽑을 때마다 다른 그림을 달고 나오고, 순번으로
-    고르면 손패에 들어온 순서가 그림을 정한다). 액자는 카드 테두리에서
-    `ART_INSET` 5px 물러나 앉는다 — 카드 모서리는 둥글고 아트는 네모라 끝까지
-    붙이면 둥근 모서리 위로 네모난 귀퉁이가 삐져나온다. 물러나 앉히면 자르지
-    않아도 되므로 카드마다 백버퍼를 뜨는 `clip_children` 이 필요 없다.
-    > 예전에는 이 자리가 통째로 비어 있었다(비용색 앞면이 그대로 드러났다).
-  - **이름 한 줄** (`NameLabel`, y 82..104, `clip_text`). 아트와 설명판 사이의
-    비용색 띠 위에 앉으므로 카드 색이 여전히 보인다.
-  - **설명문** (`DescPlate` + `DescLabel`, y 106..214). 판은 카드 테두리에서
-    좌·우·아래로 `DESC_INSET` 6px 물러나고 글자는 판 안에서 다시
-    `DESC_PAD_H/V` 만큼 들어간다. **판을 까는 이유**는 비용색이 파랑부터
-    노랑까지 여섯 가지라 어느 한 글자색도 여섯 곳에서 다 읽히지 않기 때문이다.
-    **글자 크기는 `DESC_FONT_MAX`(13) 고정이 기본이고, 그 크기로 판을 넘치는
-    카드만 한 단계씩 줄여 `DESC_FONT_MIN`(8) 까지 내려간다**
-    (`_fit_desc_font_size`) — 설명문은 median 22자에 `mech_cards` 쪽 최장
-    128자라, 전부 최대 크기면 긴 카드가 잘리고 전부 최소 크기면 짧은 카드까지
-    개미 글씨가 된다. 재는 것은 노드 크기가 아니라 **상수 산술**이고
-    (`setup()` 이 첫 레이아웃보다 먼저 돌 수 있어 그때 `size` 는 0 이다),
-    충전 카드는 오른쪽 아래 `N/M` 배지 높이만큼 자리를 미리 뺀다. 줄 간격
-    (`line_spacing`)을 0 으로 눌러 두는 것은 `Font.get_multiline_string_size`
-    가 줄 간격을 모르기 때문 — 살려 두면 잰 높이와 실제 높이가 줄 수만큼
-    어긋나 마지막 줄이 판 밖으로 샌다.
+- Card front layout — **앞면은 위에서부터 아트 → 이름판 두 층**이고, 그 위에
+  비용 원과 시전자 초상이 왼쪽 구석에 세로로 얹힌다. **설명문은 카드에 없다** —
+  손패는 위의 설명 상자, AI 가 낸 카드는 그 카드 아래의 설명판
+  (`AiCardPlayer`), 찾기 · 선택 그리드와 더미 열람은 가리키거나 누른 카드 옆의
+  설명판, 밴픽 시트와 메크 상세는 누른 카드 위의 설명판이 든다(전부
+  `CardDescBox`). 160×220 에 최장 128자를 8pt 로 욱여넣던 설명판은 어차피 읽으라고
+  있는 글씨가 아니었고, 그 자리를 아트가 가져가 카드가 **그림으로** 알아보인다.
+  두 층은 **절대 좌표**다(카드는 160×220 고정, `scenes/Card.tscn` 과 같은 값).
+  - **아트** (`ArtFrame` + `Art`, y 5..183, `ART_H` 178 = 이름판 윗변 − 3 − 인셋).
+    그림은 `CardImages.art_for(card_name)` 이 준다 — `images/card/<이름>.png` 가
+    있으면 그것, 없으면 `images/ground/N.png` 다섯 장 중 **이름 해시로 고른** 한
+    장이다. 액자는 카드 테두리에서 `ART_INSET` 5px 물러나 앉는다 — 카드 모서리는
+    둥글고 아트는 네모라 끝까지 붙이면 네모난 귀퉁이가 삐져나온다.
+    > 예전에는 위쪽 1/3(`ART_H` 74)만 아트였고 그 아래가 이름 한 줄 + 설명판이었다.
+  - **이름판** (`NamePlate` + `NameLabel`, y 186..214, `NAME_INSET` 6 /
+    `NAME_PLATE_H` 28). 카드 아랫단의 어두운 판 — 비용색이 여섯 가지라 판 없이는
+    어느 글자색도 여섯 곳에서 다 읽히지 않는다. 비용색 테두리는 판 바깥으로
+    그대로 보인다.
   - **좌측 상단 비용 원** (`CostBadge` + `CostLabel`, `COST_BADGE_SIZE` 42,
     카드 모서리 밖으로 (-9, -9)). 손패는 카드끼리 절반 넘게 겹치는 부채꼴이라
     (오른쪽 카드가 왼쪽 카드를 덮는다) **왼쪽 위 모서리가 각 카드에서 언제나
@@ -999,10 +989,9 @@ re-evaluates the dim state.
     > 그보다 더 예전에는 시전자 얼굴(`PilotImages.face_for`)이 **카드 본체를
       가득 채웠고**, 손패 밖의 모든 카드 표시(상세 패널 · 열람 · 밴픽)에도 같은
       얼굴이 깔려 "이 카드는 누구 것인가"가 맥락과 무관하게 반복됐다.
-  - **Bottom-right**: 충전 배지 `N/M` (`CHARGE_BADGE_SIZE` 52×30). 충전 카드가
-    아니면 꺼진다. 오른쪽 **위**가 아닌 이유는 그 자리가 예전에 초상 배지였기
-    때문이고, 왼쪽 위는 지금도 비용 원이 쓴다. 설명문은 이 배지 높이만큼
-    자리를 비워 두고 줄어든다(위 설명문 항목).
+  - **아트 오른쪽 아래, 이름판 바로 위**: 충전 배지 `N/M`
+    (`CHARGE_BADGE_SIZE` 52×30). 충전 카드가 아니면 꺼진다. 이름판 위로 올린
+    것은 이름을 가리지 않기 위해서다.
   - **Unplayable dim** (`BlockOverlay`): a `Panel` at the **end** of the child
     list — above `CardFront`, so it darkens the art, portrait, name, cost and
     description together — filled `BLOCKED_OVERLAY_COLOR` (black α 0.58) with
@@ -1017,12 +1006,7 @@ re-evaluates the dim state.
     the 시전자 comes back. Visible only while `set_respawn_turns(n)` is
     non-zero. `Card.is_playable()` returns false whenever either reason holds.
     Both nodes must be `MOUSE_FILTER_IGNORE` — see the filter note below.
-  - **설명문은 이제 카드 위에도 있다.** 화면 상단 고정 설명 상자
-    (`_show_description_box`)는 그대로 남아 있고, 그쪽이 여전히 전문을 큰
-    글씨로 보여 준다 — 카드 위의 글자는 8~13px 라 "무슨 카드인지 기억을
-    되살리는" 크기이지 처음 읽는 크기가 아니다.
-  - **No role badge.** Role is conveyed by the owner portrait badge; the
-    description box still surfaces "시전자 <Role><team>" in the header line.
+  - **No role badge.** Role is conveyed by the owner portrait badge.
 
 #### 핸드 오르내림 — 내 차례가 아니면 손패가 물러난다
 **내 작전 단계가 아니면 손패는 화면 아래로 내려가 아군 파일럿 스트립 뒤로 숨는다.**

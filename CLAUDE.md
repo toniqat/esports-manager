@@ -237,6 +237,12 @@ esports-manager/
 │   │                              (참고 디자인 `docs/ref_image.jpg`). 색 표 + StyleBox
 │   │                              공장 + 버튼 스타일 + 카드 · 원형 초상 · 칩 · 스크롤 헬퍼.
 │   │                              **인게임(BattleSim)은 안 쓴다** — 전장은 어두운 화면이다
+│   ├── DragScroll.gd            ← class_name DragScroll — **끌어서 굴리는 스크롤**. 엔진의 터치
+│   │                              드래그 대신 마우스·터치를 한 경로로 받아 `ScrollContainer` 를
+│   │                              굴린다(문턱 · 관성 · 눌린 버튼 취소). `cross_axis_releases` 면
+│   │                              축을 가로지르는 드래그를 `cross_drag_started` 로 넘긴다 —
+│   │                              훈련 코스 목록이 "가로 = 스크롤 / 세로 = 타일 집기"를 그것으로 가른다.
+│   │                              `OutgameTheme.add_vscroll` 은 자동으로 붙인다
 │   └── UiHelpers.gd             ← class_name UiHelpers (mk_label etc.)
 │
 ├── scenes/

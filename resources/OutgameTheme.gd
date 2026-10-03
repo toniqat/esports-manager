@@ -439,7 +439,7 @@ static func add_chip(parent: Control, text: String, pos: Vector2,
 
 
 ## 스크롤 컨테이너 한 장 — 세로만 스크롤. 반환값은
-## `{scroll: ScrollContainer, body: Control}` 이고 내용은 `body` 에 절대
+## `{scroll: ScrollContainer, body: Control, drag: DragScroll}` 이고 내용은 `body` 에 절대
 ## 좌표로 얹은 뒤 `body.custom_minimum_size.y` 로 높이를 알려 준다.
 static func add_vscroll(parent: Control, pos: Vector2, sz: Vector2) -> Dictionary:
 	var sc := ScrollContainer.new()
@@ -451,5 +451,8 @@ static func add_vscroll(parent: Control, pos: Vector2, sz: Vector2) -> Dictionar
 	var body := Control.new()
 	body.custom_minimum_size = Vector2(sz.x, 0)
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	sc.add_child(body)
-	return {"scroll": sc, "body": body}
+	# 손가락 / 마우스로 끌어 굴린다 — 엔진의 터치 드래그 대신(`DragScroll`).
+	var drag := DragScroll.attach(sc)
+	return {"scroll": sc, "body": body, "drag": drag}

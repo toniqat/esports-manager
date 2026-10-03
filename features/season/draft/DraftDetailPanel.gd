@@ -211,6 +211,8 @@ func _build_panel() -> void:
 	scroll.size = Vector2(inner_w, panel_h - PANEL_PAD * 2.0)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_root.add_child(scroll)
+	# 손가락 / 마우스로 끌어 굴린다(`DragScroll`).
+	DragScroll.attach(scroll)
 
 	# 스크롤 안쪽은 컨테이너가 아니라 좌표로 쌓는다 — 칩 격자와 카드 격자가
 	# 둘 다 2차원이라 VBox 로는 행마다 컨테이너를 하나씩 더 세워야 한다.

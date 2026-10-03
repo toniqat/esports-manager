@@ -563,6 +563,36 @@ Exia / Mahiroo / Marasai 세 장의 무기 끝 44~64px 뿐이다.
 또는 사용자 인자 `-- --safe-area=0,162,0,90`. 배치 규약 세 가지와 기기별
 수치표는 **`docs/mobile_safe_area.md`**.
 
+### DragScroll.gd
+`class_name DragScroll`, extends `Node`. **손가락 / 마우스로 끌어 `ScrollContainer`
+를 굴린다.** `DragScroll.attach(scroll, horizontal = false, releases_cross = false)`
+한 줄로 붙고, 그 스크롤의 자식(Control 이 아니라 내용 계산에 안 낀다)으로 산다.
+
+**엔진의 터치 드래그를 끄고 대신 굴린다.** 엔진 경로는 `is_touchscreen_available()`
+일 때만 켜져 데스크톱 마우스로는 아예 안 굴렀고, 폰에서도 스크롤 위의 탭 대상과
+얽혀 "안 굴러간다"는 보고가 계속 나왔다. 이 노드는 마우스와 (에뮬레이트된) 터치를
+같은 코드로 받으므로 **데스크톱에서 마우스로 끌어 본 결과가 곧 폰의 결과**다.
+
+| 상태 | 무엇을 하나 |
+|---|---|
+| PENDING | 스크롤 안에서 눌렸다. `THRESHOLD_PX`(14) 안의 흔들림은 **삼킨다** — 탭이 탭으로 남고, 내장 드래그가 작은 흔들림에 먼저 시작되지 않는다. |
+| SCROLL | 문턱을 넘었고 스크롤 축 방향. 그 순간 **눌려 있던 버튼의 눌림을 취소**한다(`disabled` 를 켰다 끄면 엔진이 press_attempt 를 비운다 → 떼도 `pressed` 가 안 온다). 손을 떼면 관성(`FLING_DECAY`). |
+| CROSS | 문턱을 넘었는데 축을 **가로지른다**(`cross_axis_releases` 일 때만). `cross_drag_started(press_pos)` 를 쏘고 이후 이동은 손대지 않는다 — 화면이 그 신호로 `force_drag` 를 연다. |
+
+규약 셋.
+- **눌림의 출처는 GUI 가 판정한다** — 스크롤 노드의 `gui_input` 시그널로 받는다.
+  `_input` 에서 사각형만 재면 위를 덮은 팝업의 탭까지 스크롤로 잡힌다. 그래서
+  스크롤 아래의 `MOUSE_FILTER_STOP` 은 **전부 PASS 로 내린다**(`_sweep_filters`,
+  노드가 들어올 때마다 지연 실행). PASS 는 자기도 이벤트를 받으므로 탭은 그대로다.
+- **그 눌림을 받아 둔다**(`accept_event`) — 엔진의 터치 드래그가 함께 시작되면
+  한 손가락에 스크롤이 두 배로 간다.
+- **버튼이 아닌 탭 대상**(떼기를 `gui_input` 으로 받는 패널)은 `moved` 를 보고
+  스크롤 · 가로지르기였던 떼기를 무시한다(훈련 코스 카드가 그렇다).
+
+`OutgameTheme.add_vscroll` 은 자동으로 붙인다. 손으로 세운 스크롤 — 드래프트 격자 ·
+드래프트 상세 · 밴픽 메크 격자 · 메크 상세 · 훈련 코스 목록 — 은 각자 부른다.
+인게임(BattleSim)의 더미 열람 · 찾기 그리드에는 아직 안 붙였다.
+
 ### UiHelpers.gd
 `class_name UiHelpers`, extends `RefCounted`. Static helpers for
 procedurally-built UI panels — currently `mk_label(...)` shared by MatchFlow

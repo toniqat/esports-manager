@@ -16,11 +16,16 @@ extends Control
 #      않는다**: 바탕은 선수마다 세로 줄 하나뿐이고, 그 위에 **모서리가 둥근**
 #      코스 타일이 앉는다. 여러 칸 타일의 안쪽 경계는 이음매의 **가운데
 #      토막**만 희미하게 남는다(2×2 = 작은 십자, 가로 2칸 = 작은 세로 일자).
-#   3. **타일 인벤토리** — 가로 4칸의 세로 스크롤이고 **2.5줄만 보인다**
-#      (`INV_VISIBLE_ROWS`). 카드에는 등급 · 놓임/상한 · 모양 미니어처 ·
-#      이름만 있고 **설명문은 없다** — 카드를 누르면 그 옆에 정보 팝오버가
-#      뜬다(`_select_card`). 타일은 몇 번이든 다시 쓸 수 있고(보유 수량 없음)
-#      **등급별 배치 개수 상한**이 대신 판을 조인다.
+#   3. **타일 인벤토리** — 세로로 선 **카드 한 줄의 가로 스크롤**이다. 카드에는
+#      등급 띠 · 놓임/상한 · 모양 미니어처 · 이름만 있고 **설명문은 없다** —
+#      카드를 누르면 그 위에 정보 팝오버가 뜬다(`_select_card`). 타일은 몇 번이든
+#      다시 쓸 수 있고(보유 수량 없음) **등급별 배치 개수 상한**이 대신 판을 조인다.
+#
+#      **가로인 이유는 조작이다.** 판이 목록 바로 위에 있어 "카드를 판으로 끌어
+#      올리기"는 세로 동작이고, 목록이 세로로 스크롤되면 같은 손짓이 두 뜻을
+#      갖는다(예전에는 카드 위에서 시작한 드래그가 전부 타일 집기로 먹혀 목록이
+#      아예 안 굴렀다). 지금은 **처음 움직임의 방향이 가른다** — 가로면 스크롤,
+#      세로면 그 카드의 타일을 집는다(`DragScroll` 의 `cross_drag_started`).
 #   4. **하단 액션 바** — 화면 끝에서 끝까지, 아래는 안전선에 밀착.
 #      "판 비우기"(1) 와 "훈련 확정"(2) 이 그 구간을 2:1 로 나눠 갖는다
 #      (`OutgameTheme.add_bottom_bar`).
@@ -51,6 +56,11 @@ extends Control
 # 판 위의 타일은 **탭하면 걷힌다**. 내장 드래그는 커서가 움직여야 시작되므로
 # 그냥 누르고 떼는 것은 `_gui_input` 이 따로 받는다. 인벤토리 카드의 탭이
 # **고르기**인 것도 같은 이치다.
+#
+# **인벤토리 쪽 드래그는 내장 경로가 아니다.** 카드에 `set_drag_forwarding` 을
+# 걸면 엔진이 10px 만 움직여도 드래그를 시작해 가로 스크롤과 다툰다. 그래서
+# 방향 판정을 `DragScroll` 이 먼저 하고, 세로로 판정나면 이 화면이
+# `force_drag` 로 드래그를 연다(`_on_inv_cross_drag`). 드롭 쪽(판)은 그대로다.
 
 const COLS: int = TrainingBoard.COLS
 const ROWS: int = TrainingBoard.ROWS
@@ -88,28 +98,27 @@ const THUMB_H: float     = THUMB_W / 2.4
 const THUMB_GAP: float   = 15.0                 # 초상화 ↔ 판
 const INV_LABEL_GAP: float = 32.0               # "훈련 코스" 글자 ↔ 목록
 
-const INV_COLS: int        = 4
-const INV_GAP: float       = 12.0
-## 카드에 남은 것은 등급 줄 · 모양 미니어처 · 이름 셋뿐이다. 설명문이 빠지며
-## 244 → 146 으로 줄었고, 그 덕에 15장이 두 화면이 아니라 한 화면 남짓에 든다.
-const INV_CARD_H: float    = 146.0
-## 마지막 줄 뒤에 두는 여백. 스크롤 끝이 카드 밑단에 딱 맞아떨어지면 "여기가
-## 끝"과 "더 있는데 안 보인다"가 같은 그림이 된다 — 반 칸을 비워 두면 아래로
-## 더 있다는 것이 잘린 카드로 보인다.
-const INV_TAIL_PAD: float = INV_CARD_H * 0.5
-
-## **한 화면에 보이는 카드 줄 수.** 2.5 줄 — 반 줄이 잘려 보이는 것이 곧
-## "아래로 더 있다"이고, 딱 떨어지면 목록이 거기서 끝난 것처럼 보인다.
-## 예전에는 남는 자리를 통째로 목록에 주어 네 줄 남짓이 깔렸는데, 이 화면의
-## 주인공은 판이지 코스 목록이 아니다.
-const INV_VISIBLE_ROWS: float = 2.5
-
+## 코스 카드 — **세로로 선 카드 한 장**이고 목록은 그 한 줄의 가로 스크롤이다.
+## 폭은 화면에 5장 반이 걸리게 잡았다 — 반 장이 잘려 보이는 것이 곧 "옆으로
+## 더 있다"이고, 딱 떨어지면 목록이 거기서 끝난 것처럼 보인다.
+const INV_CARD_W: float    = 168.0
+const INV_CARD_H: float    = 236.0
+const INV_GAP: float       = 14.0
+const INV_CARD_RADIUS: int = 12
+## 카드 맨 위 등급 띠(등급 색 면 + 등급 글자 + 놓임/상한).
+const INV_BAND_H: float    = 36.0
+## 마지막 카드 뒤에 두는 여백 — 끝까지 굴렸을 때 마지막 카드가 화면 끝에
+## 딱 붙으면 "여기가 끝"과 "더 있는데 안 보인다"가 같은 그림이 된다.
+const INV_TAIL_PAD: float  = 24.0
 
 ## 카드 안 모양 미니어처의 자리 · 크기(`_mini_geom` / `_add_shape_mini`).
+## 등급 띠 아래의 오목한 상자 안에 가운데 정렬로 앉는다.
 const MINI_PAD: float = 10.0
-const MINI_Y: float   = 34.0
-const MINI_H: float   = 74.0
-const MINI_MAX: float = 18.0
+const MINI_Y: float   = INV_BAND_H + 10.0
+const MINI_H: float   = 124.0
+const MINI_MAX: float = 26.0
+## 이름 — 미니어처 상자 아래, 두 줄까지.
+const INV_NAME_Y: float = MINI_Y + MINI_H + 6.0
 
 ## 정보 팝오버. 고른 카드 **옆**에 뜨고 자리가 없으면 반대쪽으로 넘어간다.
 const POP_W: float   = 380.0
@@ -144,7 +153,10 @@ var _board: TrainingBoard = null
 
 var _grid: Control = null                # 판 — 그리기 · 드롭 · 히트를 다 한다
 var _inv_scroll: ScrollContainer = null
-var _inv_rows: VBoxContainer = null
+var _inv_row: HBoxContainer = null
+var _inv_drag: DragScroll = null
+## 지금 손가락이 눌린 코스 카드 — 세로 드래그로 판정나면 이 카드의 타일을 집는다.
+var _inv_press_tile: TrainingTile = null
 
 var _thumb_faces: Array = []             # 5 TextureRect
 
@@ -194,9 +206,10 @@ static func _grid_x() -> float:
 	return (1080.0 - GRID_W) * 0.5
 
 
-## 코스 목록의 높이 — **2.5 줄**. 줄 사이 여백 둘이 그 안에 든다.
+## 코스 목록의 높이 — 카드 한 장 높이. 가로 스크롤바는 숨긴다(잘린 카드가 이미
+## "옆으로 더 있다"를 말한다).
 static func _inv_h() -> float:
-	return INV_CARD_H * INV_VISIBLE_ROWS + INV_GAP * 2.0
+	return INV_CARD_H
 
 
 ## 코스 목록의 y. 하단 액션 바 바로 위에 매단다.
@@ -204,7 +217,7 @@ static func _inv_y() -> float:
 	return OutgameTheme.bottom_bar_top() - 24.0 - _inv_h()
 
 
-## **초상화 줄 + 판** 덩어리의 y. 목록이 2.5줄로 줄면서 남은 자리를 판 위와
+## **초상화 줄 + 판** 덩어리의 y. 목록 위로 남는 자리를 판 위와
 ## 아래에 고르게 나눈다 — 통째로 위에 붙여 두면 화면 아래쪽 300px 이 이유
 ## 없이 비고, 아래에 붙이면 제목과 판 사이가 벌어진다.
 static func _block_y() -> float:
@@ -307,18 +320,23 @@ func _build_inventory() -> void:
 	_inv_scroll = ScrollContainer.new()
 	_inv_scroll.position = Vector2(MARGIN, top)
 	_inv_scroll.size     = Vector2(1080.0 - MARGIN * 2.0, h)
-	_inv_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_inv_scroll.vertical_scroll_mode   = ScrollContainer.SCROLL_MODE_AUTO
+	_inv_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+	_inv_scroll.vertical_scroll_mode   = ScrollContainer.SCROLL_MODE_DISABLED
 	add_child(_inv_scroll)
 
-	_inv_rows = VBoxContainer.new()
-	_inv_rows.add_theme_constant_override("separation", int(INV_GAP))
-	_inv_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_inv_scroll.add_child(_inv_rows)
+	_inv_row = HBoxContainer.new()
+	_inv_row.add_theme_constant_override("separation", int(INV_GAP))
+	_inv_row.mouse_filter = Control.MOUSE_FILTER_PASS
+	_inv_scroll.add_child(_inv_row)
+
+	# **가로로 끌면 스크롤, 세로로 끌면 타일 집기.** 방향은 처음 문턱을 넘는
+	# 순간 한 번만 정한다 — 그 뒤로는 손가락이 비스듬히 흘러도 뜻이 안 바뀐다.
+	_inv_drag = DragScroll.attach(_inv_scroll, true, true)
+	_inv_drag.cross_drag_started.connect(_on_inv_cross_drag)
 
 	# 팝오버는 스크롤 **밖**에 사는 별개의 판이라(안에 두면 스크롤 폭에 잘린다)
 	# 스크롤이 움직이면 따라가야 한다.
-	_inv_scroll.get_v_scroll_bar().value_changed.connect(_on_inv_scrolled)
+	_inv_scroll.get_h_scroll_bar().value_changed.connect(_on_inv_scrolled)
 
 
 ## **하단 구간을 둘이 2:1 로 나눠 갖는다** — 주 행동인 "훈련 확정"이 오른쪽
@@ -612,6 +630,7 @@ func _grid_get_drag_data(at_position: Vector2) -> Variant:
 		return null
 	_board.remove_entry(idx)
 	_begin_drag(t, entry)
+	set_drag_preview(_make_drag_preview(t))
 	return {"tile": t.id, "from": "board"}
 
 
@@ -654,8 +673,9 @@ func _begin_drag(t: TrainingTile, from_board: Dictionary) -> void:
 	_hover_ok = false
 	# 타일이 손에 딸려 올라왔다. 한 동작의 첫 박자다 —
 	# 칸을 넘을 때마다(LIGHT) 따다닥 이어지고 놓을 때(SOFT) 닫힌다.
+	# 미리보기는 부르는 쪽이 붙인다 — 판은 내장 드래그 안이라 `set_drag_preview`,
+	# 인벤토리는 드래그를 직접 여는 것이라 `force_drag` 에 넘긴다.
 	Haptics.play(Haptics.Kind.SELECT)
-	set_drag_preview(_make_drag_preview(t))
 	if _grid != null:
 		_grid.queue_redraw()
 
@@ -770,34 +790,26 @@ func _add_seam_rect(body: Control, at: Vector2, vertical: bool, col: Color) -> v
 
 # ── 인벤토리 ─────────────────────────────────────────────────────────────────
 func _rebuild_inventory() -> void:
-	if _inv_rows == null or _board == null:
+	if _inv_row == null or _board == null:
 		return
 	# 카드 노드가 통째로 새로 서므로 팝오버가 가리키던 카드도 사라진다.
 	_close_popover()
-	for child in _inv_rows.get_children():
+	for child in _inv_row.get_children():
 		child.queue_free()
 
-	var card_w: float = (_inv_scroll.size.x - INV_GAP * float(INV_COLS - 1) - 16.0) \
-			/ float(INV_COLS)
-	var tiles: Array = _board.all_tiles()
-	var row: HBoxContainer = null
-	for i in tiles.size():
-		if i % INV_COLS == 0:
-			row = HBoxContainer.new()
-			row.add_theme_constant_override("separation", int(INV_GAP))
-			_inv_rows.add_child(row)
-		row.add_child(_make_inventory_card(tiles[i], card_w))
+	for t_raw in _board.all_tiles():
+		_inv_row.add_child(_make_inventory_card(t_raw as TrainingTile))
 	var pad := Control.new()
-	pad.custom_minimum_size = Vector2(0, INV_TAIL_PAD)
-	pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_inv_rows.add_child(pad)
+	pad.custom_minimum_size = Vector2(INV_TAIL_PAD, 0)
+	pad.mouse_filter = Control.MOUSE_FILTER_PASS
+	_inv_row.add_child(pad)
 
 
-## 코스 카드 한 장 — **등급 · 놓임/상한 · 모양 · 이름**이 전부다. 설명문과 EXP
-## 요약은 여기서 빠져 정보 팝오버로 갔다: 카드 열다섯 장이 각자 네 줄짜리 설명을
-## 들고 있으면 목록이 두 화면이 되고, 정작 훑어 고를 때 견주는 것은 이름과
-## 모양이다.
-func _make_inventory_card(t: TrainingTile, w: float) -> Control:
+## 코스 카드 한 장 — **세로로 선 카드**. 위에서부터 등급 띠(등급 글자 ·
+## 놓임/상한) → 오목한 상자 안의 모양 미니어처 → 이름. 설명문과 EXP 요약은
+## 정보 팝오버가 들고 있다: 훑어 고를 때 견주는 것은 이름과 모양이다.
+func _make_inventory_card(t: TrainingTile) -> Control:
+	var w: float = INV_CARD_W
 	var placed: int = _board.placed_count_of_grade(t.grade)
 	var limit: int = t.place_limit()
 	var locked: bool = limit >= 0 and placed >= limit
@@ -805,32 +817,52 @@ func _make_inventory_card(t: TrainingTile, w: float) -> Control:
 	var card := Panel.new()
 	card.custom_minimum_size = Vector2(w, INV_CARD_H)
 	card.add_theme_stylebox_override("panel", _card_style(t, locked, false))
-	card.mouse_filter = Control.MOUSE_FILTER_STOP
+	# **PASS** — 눌림이 스크롤까지 올라가야 `DragScroll` 이 방향을 판정한다.
+	card.mouse_filter = Control.MOUSE_FILTER_PASS
 	card.modulate = Color(1, 1, 1, 0.42) if locked else Color(1, 1, 1, 1)
-	# 탭 = 고르기(정보 팝오버). **잠긴 카드도 고를 수 있다** — 못 놓는 것과
-	# 무엇인지 못 보는 것은 다른 일이다.
+	# 탭 = 고르기(정보 팝오버), 세로 드래그 = 집기. **잠긴 카드도 고를 수 있다** —
+	# 못 놓는 것과 무엇인지 못 보는 것은 다른 일이다.
 	card.gui_input.connect(_on_card_input.bind(t, card))
-	if not locked:
-		card.set_drag_forwarding(
-				func(_at: Vector2) -> Variant: return _inv_get_drag_data(t),
-				func(_at: Vector2, _d: Variant) -> bool: return false,
-				func(_at: Vector2, _d: Variant) -> void: pass)
 
-	# 등급 배지 + 배치 수
-	UiHelpers.mk_label(card, t.grade_name(), 18, t.grade_color(),
-			Vector2(MINI_PAD, 6), Vector2(40, 22)).mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 등급 띠 — 카드 윗변의 둥근 모서리를 그대로 이어받는다.
+	var g: Color = t.grade_color()
+	var band := Panel.new()
+	band.position = Vector2.ZERO
+	band.size = Vector2(w, INV_BAND_H)
+	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var bsty := StyleBoxFlat.new()
+	bsty.bg_color = Color(g.r, g.g, g.b, 0.22)
+	bsty.corner_radius_top_left  = INV_CARD_RADIUS
+	bsty.corner_radius_top_right = INV_CARD_RADIUS
+	band.add_theme_stylebox_override("panel", bsty)
+	card.add_child(band)
+	var grade_lbl := UiHelpers.mk_label(band, t.grade_name(), 22, g,
+			Vector2(MINI_PAD + 2.0, 0), Vector2(40, INV_BAND_H))
+	grade_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	grade_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var cap: String = "∞" if limit < 0 else "%d/%d" % [placed, limit]
-	UiHelpers.mk_label(card, cap, 16, OutgameTheme.TEXT_SUB,
-			Vector2(w - 74.0, 8), Vector2(64, 20),
-			HORIZONTAL_ALIGNMENT_RIGHT).mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var cap_lbl := UiHelpers.mk_label(band, cap, 17, OutgameTheme.TEXT_SUB,
+			Vector2(w - 84.0, 0), Vector2(72, INV_BAND_H),
+			HORIZONTAL_ALIGNMENT_RIGHT)
+	cap_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	cap_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	# 모양 미니어처 — 판에서 몇 칸을 먹는지가 카드에서 먼저 읽혀야 한다.
+	# 모양 미니어처를 담는 오목한 상자 — 판에서 몇 칸을 먹는지가 카드의 그림이다.
+	var well := Panel.new()
+	well.position = Vector2(MINI_PAD, MINI_Y)
+	well.size = Vector2(w - MINI_PAD * 2.0, MINI_H)
+	well.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	well.add_theme_stylebox_override("panel",
+			OutgameTheme.flat_style(OutgameTheme.SURFACE_SUNK, 8))
+	card.add_child(well)
 	_add_shape_mini(card, t, w)
 
-	var name_lbl := UiHelpers.mk_label(card, t.tile_name, 20, OutgameTheme.TEXT,
-			Vector2(MINI_PAD, MINI_Y + MINI_H + 6.0),
-			Vector2(w - MINI_PAD * 2.0, 26), HORIZONTAL_ALIGNMENT_CENTER)
-	name_lbl.clip_text = true
+	var name_lbl := UiHelpers.mk_label(card, t.tile_name, 19, OutgameTheme.TEXT,
+			Vector2(8, INV_NAME_Y),
+			Vector2(w - 16.0, INV_CARD_H - INV_NAME_Y - 8.0),
+			HORIZONTAL_ALIGNMENT_CENTER)
+	name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	return card
@@ -844,8 +876,10 @@ static func _card_style(t: TrainingTile, locked: bool, selected: bool) -> StyleB
 	var bw: int = 4 if selected else 2
 	sty.border_width_left = bw; sty.border_width_right = bw
 	sty.border_width_top  = bw; sty.border_width_bottom = bw
-	sty.corner_radius_top_left = 8;    sty.corner_radius_top_right = 8
-	sty.corner_radius_bottom_left = 8; sty.corner_radius_bottom_right = 8
+	sty.corner_radius_top_left = INV_CARD_RADIUS
+	sty.corner_radius_top_right = INV_CARD_RADIUS
+	sty.corner_radius_bottom_left = INV_CARD_RADIUS
+	sty.corner_radius_bottom_right = INV_CARD_RADIUS
 	return sty
 
 
@@ -878,12 +912,19 @@ func _add_shape_mini(card: Control, t: TrainingTile, card_w: float) -> void:
 		card.add_child(box)
 
 
-## 인벤토리 카드에서 끌어내기. 카드 어디를 잡았는지는 보지 않는다 — 끌려 나온
-## 타일은 언제나 커서를 한가운데에 두므로 카드 안의 잡은 지점이 놓일 자리를
-## 바꾸지 않는다(예전에는 미니어처의 잡은 칸을 판 좌표로 역산했다).
-func _inv_get_drag_data(t: TrainingTile) -> Variant:
+## 인벤토리 카드에서 끌어내기 — `DragScroll` 이 **세로** 드래그로 판정했을 때만
+## 온다. 내장 드래그 경로가 아니므로 `force_drag` 로 직접 연다. 카드 어디를
+## 잡았는지는 보지 않는다 — 끌려 나온 타일은 언제나 커서를 한가운데에 둔다.
+func _on_inv_cross_drag(_press_pos: Vector2) -> void:
+	var t: TrainingTile = _inv_press_tile
+	_inv_press_tile = null
+	if t == null or _board == null or _drag_tile != null:
+		return
+	var limit: int = t.place_limit()
+	if limit >= 0 and _board.placed_count_of_grade(t.grade) >= limit:
+		return   # 잠긴 카드 — 고를 수는 있어도 집을 수는 없다
 	_begin_drag(t, {})
-	return {"tile": t.id, "from": "inventory"}
+	force_drag({"tile": t.id, "from": "inventory"}, _make_drag_preview(t))
 
 
 # ── 정보 팝오버 ──────────────────────────────────────────────────────────────
@@ -892,9 +933,13 @@ func _on_card_input(event: InputEvent, t: TrainingTile, card: Control) -> void:
 	if not (event is InputEventMouseButton):
 		return
 	var mb := event as InputEventMouseButton
-	if mb.pressed or mb.button_index != MOUSE_BUTTON_LEFT:
+	if mb.button_index != MOUSE_BUTTON_LEFT:
 		return
-	if _drag_tile != null:
+	if mb.pressed:
+		_inv_press_tile = t
+		return
+	# 스크롤했거나 타일을 집은 손가락의 떼기는 탭이 아니다.
+	if _drag_tile != null or (_inv_drag != null and _inv_drag.moved):
 		return
 	if _sel_tile != null and _sel_tile.id == t.id:
 		_close_popover()
@@ -1003,17 +1048,16 @@ func _build_popover(t: TrainingTile, placed: int, limit: int) -> Control:
 	return pop
 
 
-## 고른 카드 **오른쪽**에 붙이되 자리가 없으면 왼쪽으로 넘긴다. 세로로는 카드
-## 윗변에 맞추고 화면 밖으로 나가면 끌어올린다.
+## 고른 카드 **위**에 띄운다 — 카드가 화면 아래 한 줄로 늘어서 있어 옆자리는
+## 다른 카드가 차지하고 있다. 가로로는 카드 가운데에 맞추고 화면 밖으로 나가면
+## 끌어들인다.
 func _place_popover() -> void:
 	if _popover == null or _sel_card == null or not is_instance_valid(_sel_card):
 		return
 	var at: Vector2 = _sel_card.get_global_rect().position - get_global_rect().position
-	var x: float = at.x + _sel_card.size.x + POP_GAP
-	if x + POP_W > 1080.0 - 12.0:
-		x = at.x - POP_W - POP_GAP
+	var x: float = at.x + (_sel_card.size.x - POP_W) * 0.5
 	x = clampf(x, 12.0, 1080.0 - POP_W - 12.0)
-	var y: float = clampf(at.y, _grid_y(), ScreenMetrics.safe_h() - _popover.size.y - 12.0)
+	var y: float = maxf(12.0, at.y - _popover.size.y - POP_GAP)
 	_popover.position = Vector2(x, y)
 	# 가리키던 카드가 스크롤 밖으로 밀려나면 함께 숨는다 — 가리킬 것이 없는
 	# 팝오버는 그 자리에 남아 화면을 덮기만 한다.

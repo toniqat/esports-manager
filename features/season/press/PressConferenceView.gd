@@ -94,7 +94,9 @@ var _sub_lbl: Label
 var _hint_lbl: Label
 var _body: Control                  # 말풍선이 쌓이는 자리 (스크롤 내용)
 var _scroll: ScrollContainer
+var _drag: DragScroll               # add_vscroll 이 붙인 드래그 스크롤 — 탭/드래그 판정
 var _body_y: float = 0.0
+var _press_outside_scroll: bool = false
 var _answer_holder: Control
 
 
@@ -135,13 +137,13 @@ func _build() -> void:
 			Vector2(ScreenMetrics.vp_w(), scroll_h))
 	_scroll = pack["scroll"]
 	_body = pack["body"]
-	# **스크롤과 그 안의 판은 클릭을 삼키지 않는다.** 둘 다 기본값이 STOP 이라
-	# 그대로 두면 화면의 190px 아래쪽 — 곧 말풍선이 있는 자리 전부 — 이 탭을
-	# 먹어 버려 "화면 아무 데나 눌러 다음 줄"이 동작하지 않는다. PASS 로 두면
-	# 처리되지 않은 클릭이 **부모 사슬**을 타고 이 화면까지 올라온다(형제로
-	# 깔아 둔 판은 소용이 없다 — 전파는 위로만 가지 옆으로는 안 간다).
-	# 휠 · 터치 드래그는 ScrollContainer 가 자기 자리에서 먹으므로 스크롤은
-	# 그대로 살아 있고, 답변 Button 은 STOP 이라 거기서 멎는다.
+	_drag = pack["drag"]
+	# **탭은 떼는 순간에 받는다.** `DragScroll` 이 스크롤 안의 *누름*을
+	# `accept_event()` 로 삼키므로(엔진 터치 드래그와 겹치지 않게) 누름은 이
+	# 화면까지 올라오지 않는다. 떼기는 삼키지 않으므로 마우스 포커스를 쥔
+	# 스크롤에서 부모 사슬을 타고 여기로 올라온다 — 그래서 스크롤과 판은 PASS
+	# 여야 하고(STOP 이면 사슬이 거기서 끊긴다), 끌어서 굴린 제스처는
+	# `_drag.moved` 로 걸러 탭으로 치지 않는다.
 	_scroll.mouse_filter = Control.MOUSE_FILTER_PASS
 	_body.mouse_filter = Control.MOUSE_FILTER_PASS
 
@@ -368,7 +370,17 @@ func _on_tap_input(event: InputEvent) -> void:
 	if _finished:
 		return
 	var mb := event as InputEventMouseButton
-	if mb == null or not mb.pressed or mb.button_index != MOUSE_BUTTON_LEFT:
+	if mb == null or mb.button_index != MOUSE_BUTTON_LEFT:
+		return
+	if mb.pressed:
+		# 누름이 여기까지 왔다 = 스크롤 바깥(머리글)에서 눌렸다. 그 제스처에는
+		# `_drag.moved` 가 직전 스크롤의 값으로 남아 있으므로 보지 않는다.
+		_press_outside_scroll = true
+		return
+	var outside: bool = _press_outside_scroll
+	_press_outside_scroll = false
+	# 끌어서 스크롤한 손가락은 탭이 아니다.
+	if not outside and _drag != null and _drag.moved:
 		return
 	accept_event()
 	_reveal_next_line()

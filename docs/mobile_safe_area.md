@@ -215,6 +215,14 @@ dim.size = ScreenMetrics.viewport_size()   # 반드시 뷰포트 전체
 데스크톱에서 멀쩡하던 `ScrollContainer` 가 **폰에서만 통째로 안 움직이는**
 함정이 있다. 원인은 화면비도 세이프 에어리어도 아니라 **입력 전파**다.
 
+> **지금 아웃게임의 스크롤은 엔진 경로를 쓰지 않는다** — `resources/DragScroll.gd`
+> 가 마우스와 (에뮬레이트된) 터치를 한 경로로 받아 직접 굴리고, 문턱을 넘는
+> 순간 눌려 있던 버튼을 취소한다. 붙이는 법과 규약은 `resources/README.md` 의
+> `DragScroll.gd` 절. 아래는 엔진 경로가 왜 죽었는지의 기록이고, 탭 대상이 PASS
+> 여야 한다는 규칙(1)은 `DragScroll` 에도 그대로 필요하다(눌림이 스크롤까지
+> 올라가야 판정이 시작된다 — `DragScroll` 이 스크롤 아래의 STOP 을 알아서 PASS 로
+> 내린다). 데스크톱 마우스로 끌어 본 결과가 곧 폰의 결과다.
+
 ### 왜 죽는가
 
 Godot 의 드래그 스크롤은 `DisplayServer.is_touchscreen_available()` 이 참일 때

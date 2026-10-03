@@ -491,7 +491,7 @@ pck 만 무겁게 한다). 그림 자체는 **가로가 긴 풍경**인데 액�
 중심을 통째로 끌고 간다). 크기는 기체 전체 높이의 58%.
 
 자동 판정이 어긋나는 기체만 스크립트의 `OVERRIDES` 가 손으로 잡는다 — 지금은
-넷이고, 그중 **0(Bulwark-A1)과 20(Cleric-P1)은 절대 좌표 상자**를 준다(전자는
+넷이고, 그중 **0(Juggernaut)과 20(Caprice)은 절대 좌표 상자**를 준다(전자는
 방패가 몸통을 가로질러 침식 덩어리의 위끝이 머리가 아니고, 후자는 옆으로 뻗은
 라이플이 무게중심을 끌어간다). **`portrait/` 에도 30칸이 다 있다** — 스크립트가
 `*_full.png` 를 통째로 도는 것이라 쓰이지 않는 9칸도 함께 구워진다.
@@ -512,7 +512,7 @@ pck 만 무겁게 한다). 그림 자체는 **가로가 긴 풍경**인데 액�
 비율 1.5짜리 기체가 화면 폭의 두 배로 벌어진다. 이 규격에서 잘려 나가는 것은
 Exia / Mahiroo / Marasai 세 장의 무기 끝 44~64px 뿐이다.
 
-**id 배치는 `mechs.csv` 의 스탯 아키타입을 따른다** — 이름(`Bulwark-A1` 등)은
+**id 배치는 `mechs.csv` 의 스탯 아키타입을 따른다** — 이름(`Juggernaut` 등)은
 그대로 두었으므로 이름과 기체는 서로 무관하고, **맞춰야 할 것은 스탯이다**.
 
 **아래 표는 30대 시절의 배치이고 지금 `mechs.csv` 가 쓰는 것은 그중 21칸이다.**
@@ -648,7 +648,7 @@ var card = CardData.new("Strike", 1, "A basic attack.")
 
 # Match-flow data
 var p := PlayerData.new(0, "Corin", GameEnums.Role.ASSASSIN, 0, 95, 95, 98, 95, 98)
-var m := MechData.new(12, "Phantom-S1", 90, 26, 4)   # id, name, hp, atk, presence
+var m := MechData.new(12, "Overdrive", 90, 26, 4)   # id, name, hp, atk, presence
 p.assigned_mech = m
 ```
 

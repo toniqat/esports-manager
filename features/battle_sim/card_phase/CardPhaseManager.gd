@@ -4186,12 +4186,15 @@ func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 	#   |at_marked   목표가 찍힌 적 주변에서 연다   (단계 B)
 	#   |self_range:N 시전자 중심 반경 N            (우세한 전장 3 · 개시 2 …)
 	#   |charge_rounds 라운드 수를 영혼 포식 충전으로 갈음한다 (전쟁의 사슬)
-	#   |drop_in     시전자만 타일을 무시하고 **적 진형 한가운데에 낙하** (강습)
+	#   |drop_in     시전자가 **지정한 대상의 칸으로 이동해** 교전에 참가하고,
+	#                무대에서는 적 진형 한가운데에 낙하한다 (강습)
+	#   |move_in     전장 이동은 `drop_in` 과 같고 무대 낙하만 없다 — 시전자는
+	#                무대에서도 옮겨 간 칸의 자기 자리에 선다 (돌격)
 	#
-	# `drop_in` 은 카드 문안에 적혀 있지 않다 — 순수한 배치 연출이기 때문이고,
-	# 그래도 플래그로 둔 것은 [강습]이 "전장 내 어디서든 걸 수 있다"는 카드라
-	# 그 그림(공중에서 떨어져 바로 투입된다)이 무대에 남아야 하기 때문이다.
+	# 둘 다 `at_target` 과 짝이다 — 대상 칸이 정해져야 뛰어들 자리가 있다.
+	# 시전자가 명단에 들어가므로 선공(시전자 팀 · 시전자가 맨 앞)이 그대로 걸린다.
 	var drop_in: bool = "drop_in" in flags
+	var move_in: bool = drop_in or "move_in" in flags
 	var center: Vector2i = Vector2i(-999, -999)
 	var radius: int = maxi(1, _flag_int(flags, "self_range", 1))
 	if "at_target" in flags:
@@ -4207,12 +4210,23 @@ func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 		rounds = maxi(1, _bs.mech_skill.chain_rounds(caster))
 	if rounds <= 0:
 		return "전투 개시 (라운드 0)"
+	# [강습] — 시전자가 **지정한 대상의 칸으로 뛰어들어** 그 교전에 참가한다.
+	# 대상 주변 반경만 보면 멀리서 건 시전자는 명단에서 빠지고, 그러면 "시전자
+	# 팀 선공 + 시전자가 자기 팀 맨 앞"(`TurnEngageSim._build_order`)이라는 선제
+	# 공격권이 시전자 없는 교전으로 새어 나간다. 명단과 무대는 **옮긴 자리에서**
+	# 세우되 전장 위 실제 이동은 확인을 누른 뒤에 한다 — 취소가 아무 일도 없던
+	# 것이 되려면 개시 확인 화면이 떠 있는 동안 시전자가 원래 칸에 있어야 한다.
+	var leap_from: Vector2i = caster.grid_pos
+	var leap: bool = move_in and center != Vector2i(-999, -999) 			and center != caster.grid_pos 			and not (_bs.skill != null and _bs.skill.blocks_move(caster))
+	if leap:
+		caster.grid_pos = center
 	var sides: Array = _bs.engage_phase.engage_sides(caster, exclude_lane,
 			center, radius)
 	var t0: Array = sides[0]
 	var t1: Array = sides[1]
 	# 한쪽이라도 비면 start_engage 가 어차피 no-op 이므로 명단을 띄우지 않는다.
 	if t0.is_empty() or t1.is_empty():
+		caster.grid_pos = leap_from
 		return "전투 개시 (대상 부족)"
 	var who: String = "" if is_player else " (AI)"
 	# 개시 확인 화면에 뜨는 라운드 수는 파일럿 스킬 보정까지 먹은 **실제** 수여야
@@ -4225,12 +4239,21 @@ func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 	var origin: Vector2i = center if center != Vector2i(-999, -999) else caster.grid_pos
 	_bs.engage_phase.prepare_sim(caster, t0, t1, shown_rounds, false, -1,
 			origin, drop_in)
+	# 무대는 옮긴 자리로 세웠다 — 전장의 시전자는 확인 전까지 제자리다.
+	caster.grid_pos = leap_from
 	# AI 가 낸 카드는 플레이어가 무를 수 있는 것이 아니므로 확인만 뜬다.
 	var ok: bool = await _bs.engage_phase.prompt_engage(t0, t1, shown_rounds,
 			"전투 개시%s" % who, is_player)
 	if not ok:
 		_on_overlay_cancel()
 		return ""
+	if leap:
+		# 확인 — 이제 실제로 뛰어든다. `start_engage` 가 명단을 다시 모으므로
+		# 그보다 먼저 옮겨야 VS 화면에서 본 명단과 같은 명단이 나온다.
+		caster.grid_pos = center
+		_bs.blog.log_move(caster, leap_from, center, "card-leap")
+		_bs.anim_pilot_move(caster, leap_from)
+		_bs.sim_core.harvest_camp_under(caster)
 	# Both player and AI plays open the arena so the engage is visible —
 	# AiCardPlayer awaits engage_finished between AI plays so the
 	# back-to-back animations don't stomp each other.
@@ -4253,6 +4276,8 @@ func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 	var tag: String = " (레인 제외)" if exclude_lane else ""
 	if drop_in:
 		tag += " · 강습"
+	elif move_in:
+		tag += " · 돌격"
 	# engage:N 의 N 은 **라운드 수** 그대로다 — 초로 환산하던 예전 규칙은 삭제됐다.
 	return "전투 개시 %d라운드%s%s" % [shown_rounds, tag, who]
 

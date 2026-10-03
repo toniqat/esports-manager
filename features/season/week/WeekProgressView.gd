@@ -3,19 +3,23 @@ extends Control
 
 # ── 시간 경과 화면 (월 → 일) ─────────────────────────────────────────────────
 #
-# 참고 디자인은 `docs/ref_image.jpg` 다 — **왼쪽에 세로 요일 레일, 오른쪽에
-# 그날의 카드 목록**.
+# **맨 위에 가로 요일 레일**(왼쪽 → 오른쪽으로 월 … 일), 그 아래 머리글과
+# 그날의 카드 목록.
 #
-#   ┌──┬────────────────────────────────────┐
-#   │월│  프리시즌 3주차                       │  ← 머리글 (요일 · 날짜)
-#   │화│  수요일                              │
-#   │수│ ─────────────────────────────────── │
-#   │목│  [ 파일럿 카드 ]  ← 그날 훈련 결과       │  ← 세로 스크롤
-#   │금│  [ 파일럿 카드 ]                       │
-#   │토│  [ 파일럿 카드 ]                       │
-#   │일│                                     │
-#   └──┴────────────────────────────────────┘
+#   ┌──────────────────────────────────────┐
+#   │ 3주  월  화 [수] 목  금  토  일          │  ← 요일 레일
+#   └──────────────────────────────────────┘
+#     프리시즌 · 3주차              1년 12월   ← 머리글 (요일 · 날짜)
+#     수요일                              5
+#    ─────────────────────────────────────
+#     [ 파일럿 카드 ]  ← 그날 훈련 결과        ← 세로 스크롤
+#     [ 파일럿 카드 ]
 #           [        확인        ]            ← 다음 날로
+#
+# 예전에는 레일이 **왼쪽 세로 기둥**이었다(참고 디자인 `docs/ref_image.jpg`).
+# 그러면 화면 폭 1080 에서 152px 가 레일 몫으로 빠져 카드의 스탯 여섯 칸이
+# 좁아졌고, 요일이 위에서 아래로 흐르는 것은 달력을 읽는 방향(왼쪽 → 오른쪽)과
+# 어긋났다.
 #
 # 레일의 **지금 요일 한 칸만 앰버로 채워진다** — 지나온 날은 흰 글자, 남은 날은
 # 흐린 글자다. 그 한 칸이 이 화면이 답하는 유일한 질문("지금 며칠인가")이라
@@ -47,16 +51,18 @@ const STAT_KEYS: Array   = PlayerData.STAT_KEYS
 const STAT_SHORT: Array  = PlayerData.STAT_SHORT
 
 # ── 배치 ─────────────────────────────────────────────────────────────────────
+## 상단 가로 레일 — 왼쪽 끝에 `N주`, 그 오른쪽에 요일 칩 일곱이 고르게 선다.
 const RAIL_X: float      = 24.0
-const RAIL_W: float      = 104.0
 const RAIL_TOP: float    = 26.0
-const RAIL_PAD: float    = 16.0
+const RAIL_H: float      = 96.0
+const RAIL_WEEK_W: float = 104.0     # `N주` 라벨 칸
+const RAIL_PAD: float    = 14.0
 const CHIP_D: float      = 72.0
 
-const CONTENT_X: float   = 152.0
-const HEAD_TOP: float    = 26.0
-const TITLE_Y: float     = 118.0
-const LIST_TOP: float    = 250.0
+const CONTENT_X: float   = 40.0
+const HEAD_TOP: float    = RAIL_TOP + RAIL_H + 26.0
+const TITLE_Y: float     = HEAD_TOP + 92.0
+const LIST_TOP: float    = HEAD_TOP + 224.0
 
 const CARD_H: float      = 148.0
 const CARD_GAP: float    = 14.0
@@ -104,28 +110,30 @@ func _build() -> void:
 	_build_action_button()
 
 
-## 왼쪽 세로 요일 레일. 어두운 알약 한 장 위에 요일 칩 일곱.
+## 상단 가로 요일 레일. 어두운 알약 한 장 위에 `N주` 와 요일 칩 일곱.
 func _build_rail() -> void:
-	var h: float = _rail_h()
+	var w: float = _rail_w()
 	var rail := Panel.new()
 	rail.add_theme_stylebox_override("panel",
-			OutgameTheme.flat_style(OutgameTheme.RAIL, int(RAIL_W * 0.5)))
+			OutgameTheme.flat_style(OutgameTheme.RAIL, int(RAIL_H * 0.5)))
 	rail.position = Vector2(RAIL_X, RAIL_TOP)
-	rail.size = Vector2(RAIL_W, h)
+	rail.size = Vector2(w, RAIL_H)
 	rail.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(rail)
 
-	_week_lbl = UiHelpers.mk_label(rail, "", 22, OutgameTheme.RAIL_TEXT,
-			Vector2(0, 22), Vector2(RAIL_W, 26), HORIZONTAL_ALIGNMENT_CENTER)
+	_week_lbl = UiHelpers.mk_label(rail, "", 24, OutgameTheme.RAIL_TEXT,
+			Vector2(12, 0), Vector2(RAIL_WEEK_W - 12.0, RAIL_H),
+			HORIZONTAL_ALIGNMENT_CENTER)
+	_week_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
-	# 칩 일곱을 레일 안에서 고르게 편다. 위쪽에 주차 라벨이 앉으므로 그 아래부터.
-	var top: float = 64.0
-	var span: float = h - top - RAIL_PAD
+	# 칩 일곱을 레일 안에서 고르게 편다. 왼쪽에 주차 라벨이 앉으므로 그 오른쪽부터.
+	var left: float = RAIL_WEEK_W
+	var span: float = w - left - RAIL_PAD
 	var step: float = span / 7.0
 	for d in 7:
-		var cy: float = top + step * (float(d) + 0.5) - CHIP_D * 0.5
+		var cx: float = left + step * (float(d) + 0.5) - CHIP_D * 0.5
 		var chip := Panel.new()
-		chip.position = Vector2((RAIL_W - CHIP_D) * 0.5, cy)
+		chip.position = Vector2(cx, (RAIL_H - CHIP_D) * 0.5)
 		chip.size = Vector2(CHIP_D, CHIP_D)
 		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		rail.add_child(chip)
@@ -170,8 +178,8 @@ func _build_list() -> void:
 	_list_body = pack["body"]
 
 
-## 이 화면의 행동은 하나뿐이라 **하단 구간을 통째로 차지한다** — 좌측 요일
-## 레일 밑까지 화면 끝에서 끝까지 깔리고 아래는 안전선에 밀착한다
+## 이 화면의 행동은 하나뿐이라 **하단 구간을 통째로 차지한다** — 화면 끝에서
+## 끝까지 깔리고 아래는 안전선에 밀착한다
 ## (`OutgameTheme.add_bottom_bar`).
 func _build_action_button() -> void:
 	var bar: Array = OutgameTheme.add_bottom_bar(self, [
@@ -181,8 +189,8 @@ func _build_action_button() -> void:
 	_action_btn.pressed.connect(_on_action_pressed)
 
 
-func _rail_h() -> float:
-	return OutgameTheme.bottom_bar_top() - RAIL_TOP - 20.0
+func _rail_w() -> float:
+	return ScreenMetrics.vp_w() - RAIL_X * 2.0
 
 
 func _list_bottom() -> float:

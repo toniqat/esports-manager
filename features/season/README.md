@@ -91,7 +91,7 @@ and exposes intent methods on the hub. Pattern mirrors `BattleSim`:
 | PressConferenceView      | `press/PressConferenceView.gd`               | **기자회견** — 주 시작 직전의 메신저 화면. 지금은 대사 · 선택지가 임시 데이터인 틀이다. `press/README.md` |
 | TrainingBoard            | `training/TrainingBoard.gd`                  | **일상 훈련 타일판** — 5열(선수) × 5행(하루씩. 화면에는 요일을 적지 않는다). 배치 판정 + 정산(`cell_exp` / `compute_day_gains`) + **요일 적용**(`apply_day_training(day)`) + 나머지 EXP 통장. `training/README.md` |
 | TrainingView             | `training/TrainingView.gd`                   | Schedule editor; "훈련 확정" calls `SeasonHub.on_training_confirmed` — 판을 정산하지 않고 **주를 연다**(요일 커서를 월요일에 세운다). |
-| WeekProgressView         | `week/WeekProgressView.gd`                   | **시간 경과** — 좌측 세로 요일 레일 + 그날의 훈련 결과 / 경기 카드 + 아래 "확인" (경기일이면 "경기 시작"). `week/README.md` |
+| WeekProgressView         | `week/WeekProgressView.gd`                   | **시간 경과** — 상단 가로 요일 레일 + 그날의 훈련 결과 / 경기 카드 + 아래 "확인" (경기일이면 "경기 시작"). `week/README.md` |
 | LeagueManager            | `league/LeagueManager.gd`                    | Round-robin schedule keyed by `phase_week` (1 round per week), standings, `resolve_current_week()` for AI matches. |
 | TournamentManager        | `tournament/TournamentManager.gd`            | 4-team SE playoff bracket distributed across 2 weeks (SF week + F week). |
 | InternationalTournament  | `tournament/InternationalTournament.gd`      | 8-team SE INTL bracket distributed across 3 weeks (QF / SF / F). |

@@ -201,7 +201,52 @@ func _launch_battle() -> void:
 	gm.match_ctx["player_side"]     = player_side
 	gm.match_ctx["banned_mech_ids"] = banned_mech_ids
 	gm.match_ctx["all_mechs"]       = all_mechs
+	gm.match_ctx["enemy_misjudge_chance"] = _misjudge_chance_for(enemy_team_id)
 	get_tree().change_scene_to_file("res://scenes/BattleSim.tscn")
+
+
+## 오브젝트 오판 확률 — 상대 AI 가 수적 열세인데도 오브젝트 교전을 받아들일
+## 확률. 리그 순위 1위 `MISJUDGE_MIN`(5%) → 꼴찌 `MISJUDGE_MAX`(60%) 선형.
+## 승패가 같으면 팀 평균 스탯이 높은 쪽이 위다(시즌 초 전원 0-0 에서도 강팀이
+## 덜 오판하게). 국제대회 외부 팀(id ≥ 100)은 각 리그 상위권이므로 최소값.
+## 시즌 밖(단독 실행)은 두 끝의 중간값.
+const MISJUDGE_MIN: float = 0.05
+const MISJUDGE_MAX: float = 0.60
+
+func _misjudge_chance_for(team_id: int) -> float:
+	if not gm.season_state.get("active", false):
+		return (MISJUDGE_MIN + MISJUDGE_MAX) * 0.5
+	if team_id >= 100:
+		return MISJUDGE_MIN
+	var standings: Dictionary = gm.season_state.get("league_standings", {})
+	var avg: Dictionary = {}
+	var cnt: Dictionary = {}
+	for p_raw in gm.season_state.get("all_pilots", []):
+		var p := p_raw as PlayerData
+		avg[p.team_id] = float(avg.get(p.team_id, 0.0)) + p.stat_avg()
+		cnt[p.team_id] = int(cnt.get(p.team_id, 0)) + 1
+	var rows: Array = []
+	for t in standings.keys():
+		var tid: int = int(t)
+		var e: Dictionary = standings[t]
+		rows.append({
+			"id": tid, "w": int(e["wins"]), "l": int(e["losses"]),
+			"s": float(avg.get(tid, 0.0)) / float(maxi(1, int(cnt.get(tid, 0)))),
+		})
+	rows.sort_custom(func(a, b):
+		if a["w"] != b["w"]:
+			return a["w"] > b["w"]
+		if a["l"] != b["l"]:
+			return a["l"] < b["l"]
+		if a["s"] != b["s"]:
+			return a["s"] > b["s"]
+		return a["id"] < b["id"])
+	if rows.size() < 2:
+		return (MISJUDGE_MIN + MISJUDGE_MAX) * 0.5
+	for i in rows.size():
+		if int(rows[i]["id"]) == team_id:
+			return lerpf(MISJUDGE_MIN, MISJUDGE_MAX, float(i) / float(rows.size() - 1))
+	return (MISJUDGE_MIN + MISJUDGE_MAX) * 0.5
 
 
 # Resume path for the post-ban-pick save: rebuild match_ctx from the resume

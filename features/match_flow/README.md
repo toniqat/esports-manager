@@ -176,8 +176,14 @@ GameManager.match_ctx = {
 	"player_side":   int (BLUE|RED),
 	"banned_mech_ids": Array[int],
 	"all_mechs":      Array[MechData],
+	"enemy_misjudge_chance": float,       # 오브젝트 오판 확률 (5%..60%)
 }
 ```
+
+`enemy_misjudge_chance` 는 `_launch_battle()` 이 `_misjudge_chance_for(enemy_team_id)`
+로 매긴다 — 상대의 리그 순위 1위 5% → 꼴찌 60% 선형(동률은 팀 평균 스탯,
+국제대회 외부 팀은 5%, 시즌 밖은 32.5%). 재개 경로도 `_launch_battle()` 을
+지나므로 따로 저장하지 않는다. 읽는 곳은 `objective/ObjectiveSystem._ai_wants_to_join`.
 
 `BattleSim.gd` reads `match_ctx.active` to decide whether to inject mech stats
 into pilots; otherwise it falls back to `ROLE_STATS` defaults.

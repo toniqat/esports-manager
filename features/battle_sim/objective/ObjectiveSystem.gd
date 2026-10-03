@@ -10,8 +10,9 @@ extends Node
 #   1. **시계** — 각 오브젝트가 열리는 턴을 들고 있다가 그 턴이 오면 깨운다.
 #      상단 패널의 적 스트립 양옆에 남은 턴 수가 찍히므로(`ui/ObjectiveTimer.gd`,
 #      좌 전령 / 우 용) 양 팀 모두 언제 붙게 되는지를 미리 보고 움직일 수 있다.
-#   2. **의사 결정** — 플레이어에게는 참여 / 미참여 두 버튼을, AI 에게는 승률
-#      계산을 물어본다. 결정은 **동시에, 서로 모르는 채로** 내려진다.
+#   2. **의사 결정** — 플레이어에게는 참여 / 미참여 두 버튼을, AI 에게는 머릿수
+#      비교(+ 순위가 정하는 오판 확률)를 물어본다. 결정은 **동시에, 서로
+#      모르는 채로** 내려진다.
 #   3. **정산** — 양쪽 참여면 교전 무대, 한쪽만 참여면 무혈 획득, 아무도
 #      참여하지 않으면 무산.
 #
@@ -44,10 +45,14 @@ const DRAGON_LANES: Array = [
 	GameEnums.LanePosition.GUERRILLA,
 ]
 
-## AI 가 참여를 결정하는 승률 문턱. 0.45 는 **약간 불리해도 붙는다**는 뜻이다 —
-## 정확히 5:5 에서만 붙으면 AI 는 사실상 언제나 물러나고(전장 상태가 딱
-## 대등한 순간은 드물다) 오브젝트가 매번 플레이어의 무혈 획득이 된다.
-const AI_JOIN_WINRATE: float = 0.45
+## 머릿수에서 빠지는 체력 비율. 이 아래인 파일럿은 무대에 서도 한두 대에
+## 쓰러지므로 AI 는 그를 전력으로 세지 않는다(저HP 복귀선과 같은 20%).
+const AI_HEADCOUNT_HP_RATIO: float = 0.20
+
+## 오판 확률 — 수적 열세인데도 교전을 받아들일 확률. `match_ctx` 에
+## `enemy_misjudge_chance` 가 없으면(단독 실행) 이 값. MatchFlow 가 리그 순위로
+## 5%(1위) ~ 60%(꼴찌)를 매겨 넘긴다.
+const AI_MISJUDGE_DEFAULT: float = 0.325
 
 @onready var _bs: BattleSim = get_parent() as BattleSim
 
@@ -293,39 +298,46 @@ func _ask_player(kind: int, cell: Vector2i, t0: Array, t1: Array) -> bool:
 			title, true, "참여", "미참여", reward_text(kind))
 
 
-## AI 의 참여 판단. **양 팀 파일럿의 컨디션으로 승률을 계산해 불리하면
-## 물러난다.**
+## AI 의 참여 판단. **전력 차이(체력 · 공격력 · 성장치)는 보지 않고 머릿수만
+## 센다** — 수적 열세일 때만 물러나고, 같거나 많으면 붙는다. 체력이
+## `AI_HEADCOUNT_HP_RATIO`(20%) 미만인 파일럿은 양 팀 모두 머릿수에서 뺀다.
 ##
-## 전력은 참가자 한 명당 `현재 체력(보호막 포함) × 공격력` 의 합이다. 두 항이
-## 모두 성장치에서 파생되므로 이 곱 하나가 "지금 얼마나 컸고 얼마나 성한가"를
-## 함께 읽는다 — 만피 스나이퍼와 빈사 탱커를 같은 저울에 올릴 수 있어야 한다.
-## 인원 수는 따로 세지 않는다: 죽어서 못 나온 파일럿은 합에서 통째로 빠지므로
-## 이미 반영돼 있다.
+## 물러나야 할 때도 `enemy_misjudge_chance` 확률로 **오판**해 받아들인다 —
+## 하위권 팀일수록 자주(최대 60%), 상위권일수록 드물게(최소 5%).
 ##
 ## 상대가 아무도 못 나오는 상황이면 무조건 참여한다(공짜 보상).
 func _ai_wants_to_join(mine: Array, theirs: Array) -> bool:
 	if theirs.is_empty():
 		return true
-	var p_mine: float = _team_power(mine)
-	var p_theirs: float = _team_power(theirs)
-	var total: float = p_mine + p_theirs
-	if total <= 0.0:
-		return false
-	var winrate: float = p_mine / total
-	_bs.blog.log_event("OBJ", "AI 승률 판정 %.0f%% (아군 전력 %.0f / 적군 %.0f) → %s"
-			% [winrate * 100.0, p_mine, p_theirs,
-				"참여" if winrate >= AI_JOIN_WINRATE else "미참여"])
-	return winrate >= AI_JOIN_WINRATE
+	var n_mine: int = _headcount(mine)
+	var n_theirs: int = _headcount(theirs)
+	if n_mine >= n_theirs:
+		_bs.blog.log_event("OBJ", "AI 머릿수 %d vs %d → 참여" % [n_mine, n_theirs])
+		return true
+	var chance: float = _misjudge_chance()
+	var misjudged: bool = randf() < chance
+	_bs.blog.log_event("OBJ", "AI 머릿수 %d vs %d (열세) · 오판 %.0f%% → %s"
+			% [n_mine, n_theirs, chance * 100.0,
+				"오판, 참여" if misjudged else "미참여"])
+	return misjudged
 
 
-func _team_power(group: Array) -> float:
-	var total: float = 0.0
+func _headcount(group: Array) -> int:
+	var n: int = 0
 	for raw in group:
 		var p := raw as PilotData
-		if not p.alive:
+		if not p.alive or p.max_hp <= 0:
 			continue
-		total += float(maxi(0, p.hp) + maxi(0, p.shield)) * float(maxi(1, p.atk))
-	return total
+		if float(p.hp) / float(p.max_hp) >= AI_HEADCOUNT_HP_RATIO:
+			n += 1
+	return n
+
+
+func _misjudge_chance() -> float:
+	var gm: Node = get_node_or_null("/root/GameManager")
+	if gm == null or not bool(gm.match_ctx.get("active", false)):
+		return AI_MISJUDGE_DEFAULT
+	return float(gm.match_ctx.get("enemy_misjudge_chance", AI_MISJUDGE_DEFAULT))
 
 
 func _alive_count(group: Array) -> int:

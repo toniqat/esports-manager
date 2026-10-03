@@ -23,6 +23,8 @@ func reset_match_ctx() -> void:
 		"player_side":   GameEnums.DraftSide.BLUE,
 		"banned_mech_ids": [],
 		"all_mechs":      [],
+		# 오브젝트 오판 확률 — MatchFlow 가 상대 리그 순위로 매긴다(5%~60%).
+		"enemy_misjudge_chance": 0.325,
 	}
 
 

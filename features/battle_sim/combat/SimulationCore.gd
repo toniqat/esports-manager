@@ -99,6 +99,7 @@ func simulate_turn() -> void:
 				damage_map, turret_dmg, advance_set, retreat_set, engaged, log_lines)
 	# 인접 공성은 없다 — 전진하는 파일럿은 적 포탑 칸에 **실제로 올라선다**.
 	# 포탑 피해는 그 칸에 서서 맞는 **다음 턴**의 `_resolve_cell` 이 넣는다.
+	_apply_lane_bonds(advance_set, retreat_set)
 	_bs.blog.log_event("SETS", "engaged=%s advance=%s retreat=%s" % [
 			_labels(engaged.keys()), _labels(advance_set.keys()),
 			_labels(retreat_set.keys())])
@@ -552,11 +553,12 @@ func _resolve_pilot_combat(t0: Array, t1: Array,
 ## 모든 공성이 여기를 지난다 — 평범한 전진, 교전 승리 후 따라 들어간 무리,
 ## 카드 이동으로 떨어진 경우 전부.
 ##
-## **넉백은 수비자가 있을 때만이다.** 포탑에 무판정 피해를 넣고 → 그 칸의 같은
-## 레인 공격자와 수비자가 **서로** 명중 판정을 굴리고 → **명중 여부와 무관하게**
-## 공격자는 직전 칸으로 밀려난다. 수비자가 없으면 밀어낼 주체가 없으므로
-## 공격자는 그 자리에 남아 매 턴 포탑을 갈아 낸다 — 무방비 포탑은 그대로
-## 무너진다.
+## **포탑을 때렸다고 물러나지 않는다 — 넉백은 수비자에게 맞았을 때만이다.**
+## 포탑에 무판정 피해를 넣고 → 그 칸의 같은 레인 공격자와 수비자가 **서로**
+## 명중 판정을 굴리고 → **수비자의 공격이 명중한 공격자만** 직전 칸으로
+## 밀려난다. 수비자가 빗나갔거나, 짝이 없어 아무도 그를 노리지 않았거나,
+## 수비자가 아예 없으면 공격자는 그 자리에 남아 다음 턴에도 포탑을 갈아 낸다.
+## 예전에는 수비자가 있기만 하면 명중 여부와 무관하게 공격자 전원이 물러났다.
 ##
 ## 예외 하나: **때릴 수 없는 포탑**(같은 레인 T1 이 살아 있는 T2)이면 갈아 낼
 ## 것이 없으므로 붙잡아 두지 않는다 — 무조건 물러난다. 걸어서는 닿을 수 없는
@@ -568,15 +570,13 @@ func _resolve_turret_combat(attackers: Array, defenders: Array, td: TurretData,
 	for raw in attackers: engaged[raw as PilotData] = true
 	for raw in defenders: engaged[raw as PilotData] = true
 	var attackable: bool = _turret_attackable(td)
-	var pushed_out: bool = not defenders.is_empty() or not attackable
-	_bs.blog.log_event("SIEGE", "T%d[%s] team%d @%s ← %s  (수비 %s → %s)" % [
+	var hit_by_defender: Dictionary = _apply_turret_siege(
+			attackers, defenders, td, damage_map, turret_dmg, log_lines)
+	var pushed: Array = attackers if not attackable else hit_by_defender.keys()
+	_bs.blog.log_event("SIEGE", "T%d[%s] team%d @%s ← %s  (수비 %s → 후퇴 %s)" % [
 			td.tier, _bs.LANE_NAMES[td.lane], td.team, str(td.grid_pos),
-			_labels(attackers), _labels(defenders),
-			"공격자 후퇴" if pushed_out else "눌러앉음"])
-	_apply_turret_siege(attackers, defenders, td, damage_map, turret_dmg, log_lines)
-	if not pushed_out:
-		return
-	for raw in attackers:
+			_labels(attackers), _labels(defenders), _labels(pushed)])
+	for raw in pushed:
 		retreat_set[raw as PilotData] = true
 
 
@@ -589,9 +589,11 @@ func _resolve_turret_combat(attackers: Array, defenders: Array, td: TurretData,
 ##    예전에는 공격자의 공격이 전부 포탑으로만 가서 농성 중인 수비자는 공격자를
 ##    일방적으로 두들길 수 있었다 — 이제 포탑을 갈아 내는 것과 별개로 눈앞의
 ##    수비자에게도 명중 판정만큼 피해가 들어간다.
-## 후퇴 처리는 호출자(`_resolve_turret_combat`)가 한다 — 수비자가 있을 때만.
+## 돌려주는 것은 **수비자에게 맞은 공격자** 집합(`PilotData → true`)이다 —
+## 후퇴 처리는 호출자(`_resolve_turret_combat`)가 이것으로 한다.
 func _apply_turret_siege(attackers: Array, defenders: Array, td: TurretData,
-		damage_map: Dictionary, turret_dmg: Dictionary, log_lines: Array) -> void:
+		damage_map: Dictionary, turret_dmg: Dictionary, log_lines: Array) -> Dictionary:
+	var hit_by_defender: Dictionary = {}
 	if _turret_attackable(td):
 		for raw in attackers:
 			var a := raw as PilotData
@@ -600,7 +602,7 @@ func _apply_turret_siege(attackers: Array, defenders: Array, td: TurretData,
 					_bs.LANE_NAMES[td.lane], _bs.PILOT_STRUCTURE_DMG])
 
 	if defenders.is_empty():
-		return
+		return hit_by_defender
 	var atk_sorted := attackers.duplicate()
 	atk_sorted.sort_custom(func(a: PilotData, b: PilotData) -> bool: return a.hp < b.hp)
 	var def_sorted := defenders.duplicate()
@@ -617,8 +619,10 @@ func _apply_turret_siege(attackers: Array, defenders: Array, td: TurretData,
 		if roll_hit(d, a):
 			var dmg_d := _pilot_hit_damage(d, a)
 			_credit_pilot_damage(d, a, dmg_d, damage_map)
+			hit_by_defender[a] = true
 			log_lines.append("%s→%s:%d (defender)" % [
 					_bs.pilot_label(d), _bs.pilot_label(a), dmg_d])
+	return hit_by_defender
 
 
 # 명중 확률은 `PilotData.hit_chance` 가 정한다 — 비율 `hit/(hit+eva)` 를
@@ -770,20 +774,6 @@ func _turret_attackable(td: TurretData) -> bool:
 	return not (td.tier == 2 and t1_alive_in_lane(td.team, td.lane))
 
 
-## 포탑 칸에 서 있는 **같은 레인** 수비 파일럿들. 정글러는 포탑을 지키지 않는다.
-## 넉백 여부를 가르는 유일한 기준이므로 `_resolve_lane_at_turret` 의 분류와 같은
-## 조건(팀 = 포탑 팀, 레인 = 포탑 레인, 위치 = 포탑 칸)을 쓴다.
-func _same_lane_defenders_at(td: TurretData) -> Array:
-	var out: Array = []
-	for raw in _bs.pilots:
-		var d := raw as PilotData
-		if not d.alive or d.is_guerrilla:
-			continue
-		if d.team == td.team and d.lane == td.lane and d.grid_pos == td.grid_pos:
-			out.append(d)
-	return out
-
-
 func _enemy_turret_at(pos: Vector2i, friendly_team: int) -> TurretData:
 	for t in _bs.turrets:
 		var td := t as TurretData
@@ -908,6 +898,9 @@ func _run_movement_round(movers: Array) -> bool:
 	# 누군가의 이동을 취소하면 그 파일럿은 "칸을 비우지 않는" 쪽이 되므로,
 	# 반드시 그 뒤에 본다.
 	_veto_advance_over_stuck_enemy(wants)
+	# 결속은 모든 중재가 끝난 뒤에 맞춘다 — 중재 결과를 보고 묶음 전체를
+	# 한 결과로 정렬하는 단계라서다.
+	_enforce_lane_bonds(wants)
 
 	# 2. Commit the survivors together.
 	var committed: Array = []
@@ -1005,6 +998,113 @@ func _is_leaving_cell(p: PilotData, wants: Array) -> bool:
 		# 캐스트 안으로 끌고 들어가 런타임에 터진다.
 		return (w["dest"] as Vector2i) != p.grid_pos
 	return false
+
+
+# ─── 라인 결속 (바텀 듀오) ────────────────────────────────────────────────────
+# **같은 레인에 배정된 라이너끼리는 결속돼 있다** — 지금 구조에서는 우측 레인의
+# 스나이퍼 + 서포터뿐이지만 판정은 역할이 아니라 레인을 보므로, 레인 배정이
+# 바뀌면 그 조합이 저절로 따라간다. 정글러는 결속되지 않는다.
+#
+# 결속이 하는 일은 하나 — **교전 결과로 생기는 이동(푸시 · 피격 넉백)을 묶음
+# 단위로 맞춘다.** 규칙 셋:
+#  • **같은 칸에 함께 서 있을 때만** 작동한다. 복귀나 사망으로 떨어져 있으면
+#    각자 움직이고, 다시 한 칸에 모이면 다시 묶인다.
+#  • **밀림이 이긴다** — 한 명이라도 후퇴(포탑 수비자에게 맞은 넉백 포함)하면
+#    파트너도 같이 후퇴한다. 반대로 전진은 **묶음 전원이 갈 수 있을 때만** 하고,
+#    한 명이라도 막히면(버티는 적 · 정면 충돌 패배) 다 같이 멈춘다.
+#  • **카드 · 스킬 · 저HP 복귀로 인한 이동은 대상만 움직인다** — 결속은 그
+#    경로들(`RecallSystem`, `CardPhaseManager._effect_move` …)을 지나지 않는다.
+#    자유 이동(걸어가기)도 묶지 않는다.
+
+## `p` 와 결속된 아군 — 같은 팀 · 둘 다 라이너 · 같은 레인 · **같은 칸** · 생존.
+## `p` 자신은 빠진다. 같은 칸 조건 때문에 결속 관계는 언제나 칸 하나 안의
+## 완전 그래프라, 한 명의 파트너 목록이 곧 그 묶음 전체(자신 제외)다.
+func lane_bond_partners(p: PilotData) -> Array:
+	var out: Array = []
+	if p == null or not p.alive or p.is_guerrilla:
+		return out
+	for raw in _bs.pilots:
+		var o := raw as PilotData
+		if o == p or not o.alive or o.is_guerrilla:
+			continue
+		if o.team != p.team or o.lane != p.lane or o.grid_pos != p.grid_pos:
+			continue
+		out.append(o)
+	return out
+
+
+## 교전 판정이 끝난 직후의 결속 전파 — 후퇴 판정을 받은 사람의 파트너를 전진
+## 목록에서 빼고 후퇴 목록에 넣는다(밀림이 이긴다). 턴 전투와 전진 카드가 함께
+## 부른다. 대표 사례는 포탑 칸이다: 수비자에게 맞은 원딜만 후퇴 판정을 받는데,
+## 결속이 서포터도 함께 끌고 나간다.
+func _apply_lane_bonds(advance_set: Dictionary, retreat_set: Dictionary) -> void:
+	for raw in retreat_set.keys():
+		var p := raw as PilotData
+		for raw_o in lane_bond_partners(p):
+			var o := raw_o as PilotData
+			if retreat_set.has(o):
+				continue
+			advance_set.erase(o)
+			retreat_set[o] = true
+			_bs.blog.log_event("BOND", "%s 후퇴 → 결속 파트너 %s 도 후퇴 @%s" % [
+					_bs.pilot_label(p), _bs.pilot_label(o), str(p.grid_pos)])
+
+
+## 이동 라운드 안의 결속 정렬 — 정면 충돌 / 버티는 적 중재가 끝난 `wants` 를
+## 받아 묶음마다 한 결과로 맞춘다.
+##  • 후퇴: 묶음 중 한 명이라도 살아남은 후퇴 의사가 있으면, 막힌 파트너도 그
+##    목적지로 함께 간다. 같은 칸 · 같은 레인이라 목적지는 원래 같으므로 실제로
+##    갈라지는 일은 드물다 — 갈라질 때를 위한 보증이다.
+##  • 전진: 묶음 중 한 명이라도 전진하지 못하면(의사 자체가 없거나 취소됨) 전원의
+##    전진을 취소한다.
+## 결속은 칸 하나 안의 완전 그래프라 한 번 훑으면 수렴한다.
+func _enforce_lane_bonds(wants: Array) -> void:
+	var by_pilot: Dictionary = {}   # PilotData → want
+	for raw_w in wants:
+		var w: Dictionary = raw_w
+		by_pilot[(w["m"] as Dictionary)["pilot"]] = w
+
+	# 후퇴 먼저 — 살아남은 후퇴가 막힌 파트너를 끌고 간다.
+	for raw_w in wants:
+		var w: Dictionary = raw_w
+		var m: Dictionary = w["m"]
+		if m["kind"] != MOVE_KIND_RETREAT or not bool(w["ok"]):
+			continue
+		var p := m["pilot"] as PilotData
+		for raw_o in lane_bond_partners(p):
+			var wo: Dictionary = by_pilot.get(raw_o, {})
+			if wo.is_empty() or bool(wo["ok"]):
+				continue
+			var mo: Dictionary = wo["m"]
+			if mo["kind"] != MOVE_KIND_RETREAT:
+				continue
+			wo["ok"] = true
+			wo["dest"] = w["dest"]
+			mo["active"] = true
+			_bs.blog.log_event("BOND", "%s 후퇴 → 막혔던 결속 파트너 %s 도 %s 로" % [
+					_bs.pilot_label(p), _bs.pilot_label(raw_o as PilotData),
+					str(w["dest"])])
+
+	# 전진 — 한 명이라도 못 가면 다 같이 멈춘다.
+	var held: Dictionary = {}       # PilotData → true
+	for raw_w in wants:
+		var w: Dictionary = raw_w
+		var m: Dictionary = w["m"]
+		if m["kind"] != MOVE_KIND_ADVANCE or not bool(w["ok"]):
+			continue
+		var p := m["pilot"] as PilotData
+		for raw_o in lane_bond_partners(p):
+			var wo: Dictionary = by_pilot.get(raw_o, {})
+			if wo.is_empty() or not bool(wo["ok"]) \
+					or (wo["m"] as Dictionary)["kind"] != MOVE_KIND_ADVANCE:
+				held[p] = true
+				break
+	for raw_p in held.keys():
+		var hp := raw_p as PilotData
+		var w: Dictionary = by_pilot[hp]
+		w["ok"] = false
+		(w["m"] as Dictionary)["active"] = false
+		_bs.blog.log_block(hp, "push-advance held — 결속 파트너가 전진하지 못했다")
 
 
 # Head-on exchange arbitration — see the block comment above `resolve_movement`.
@@ -1318,10 +1418,6 @@ func _advance_tick(caster: PilotData, log_lines: Array) -> void:
 	# 레인 포탑 칸에 떨어진 파일럿은 포탑을 무시하고 평소대로 전진한다.
 	var on_enemy_turret: bool = cell_turret != null \
 			and not caster.is_guerrilla and cell_turret.lane == caster.lane
-	# 포탑 칸 위에서 물러나는 것은 **수비자가 있을 때만**이다. 무방비 포탑 위라면
-	# 무리는 그 자리에 눌러앉아 계속 갈아 낸다(전진도 후퇴도 하지 않는다).
-	var turret_defended: bool = on_enemy_turret \
-			and not _same_lane_defenders_at(cell_turret).is_empty()
 	var squad: Array = [caster]
 	squad.append_array(_same_scope_allies_at(cell, caster))
 	var foes: Array = _same_scope_enemies_at(cell, caster)
@@ -1337,16 +1433,23 @@ func _advance_tick(caster: PilotData, log_lines: Array) -> void:
 	var t1: Array = (bucket.get("t1", []) as Array).duplicate()
 	_resolve_cell(cell, t0, t1,
 			damage_map, turret_dmg, advance_set, retreat_set, engaged, log_lines)
+	# 결속 — 포탑 칸에서 수비자에게 맞은 사람의 파트너도 함께 후퇴로 넘긴다.
+	# 아래의 `hit_back` 이 `retreat_set` 을 읽으므로 반드시 그보다 먼저다.
+	_apply_lane_bonds(advance_set, retreat_set)
 
 	# 판정 강제 — 주사위가 어떻게 나왔든 무리가 이 칸을 가져간다. 이미 적 포탑
-	# 칸 위에 서 있을 때만 포탑 규칙이 우선한다: 수비자가 있으면 때리고 한 칸
-	# 후퇴, 없으면 때리며 제자리.
+	# 칸 위에 서 있을 때만 포탑 규칙이 우선한다: 포탑을 때리고 제자리이되,
+	# **포탑 칸 수비자의 공격에 맞은 사람만** 한 칸 후퇴한다 — 그 판정은
+	# `_resolve_cell` → `_resolve_turret_combat` 이 이미 `retreat_set` 에 적었다.
+	var pushed_back: Array = []
 	for raw_m in squad:
 		var m := raw_m as PilotData
+		var hit_back: bool = on_enemy_turret and retreat_set.has(m)
 		advance_set.erase(m)
 		retreat_set.erase(m)
-		if turret_defended:
+		if hit_back:
 			retreat_set[m] = true
+			pushed_back.append(m)
 		elif not on_enemy_turret:
 			advance_set[m] = true
 	if not on_enemy_turret:
@@ -1355,8 +1458,8 @@ func _advance_tick(caster: PilotData, log_lines: Array) -> void:
 			advance_set.erase(f)
 			retreat_set[f] = true
 	var verdict := "전진 확정"
-	if turret_defended:      verdict = "포탑 칸 수비자 → 후퇴"
-	elif on_enemy_turret:    verdict = "무방비 포탑 칸 → 제자리"
+	if on_enemy_turret:
+		verdict = "포탑 칸 → 제자리 (수비자에게 맞아 후퇴 %s)" % _labels(pushed_back)
 	_bs.blog.log_event("CARD", "전진 판정 — %s %s / 밀려남 %s" % [
 			_labels(squad), verdict, _labels(foes)])
 

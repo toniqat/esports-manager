@@ -76,6 +76,8 @@ counts as **1 minute** of in-game time.
    from the pre-movement positions. Turret sieges are part of it: an attacker
    is a pilot **standing on** the enemy turret cell, so there is no separate
    adjacent-siege pass.
+   Right after it, `_apply_lane_bonds` spreads any retreat to the pilot's
+   lane-bond partners (see "Lane bond" below).
 5. Apply collected pilot / turret damage. T1 destruction triggers
    `_on_t1_destroyed` (jungle capture). Any destroyed turret also frees the
    corresponding `Building` node from `BuildingLayer`.
@@ -432,6 +434,32 @@ so the resolver can veto a move after asking for it:
     center T2 cell on their way to the enemy HQ after their own turrets fall.
   - The forbidden dict is rebuilt fresh per call — `_bs.neutral_zone_cells` is
     never mutated.
+
+### Lane bond (`lane_bond_partners` / `_apply_lane_bonds` / `_enforce_lane_bonds`)
+**Lane pilots of the same team assigned to the same lane are bonded.** Today
+only the bottom duo (SNIPER + SUPPORT on RIGHT) qualifies. The check reads
+`lane`, not role, so a future lane reassignment carries the bond with it.
+Junglers are never bonded.
+
+- **Only while standing on the same cell.** Once separated (recall, death),
+  each moves on its own; the bond resumes when they share a cell again. Because
+  of that, a bond group is always a full clique inside one cell, so one pilot's
+  partner list is the whole group minus itself.
+- **Retreat wins.** `_apply_lane_bonds(advance_set, retreat_set)` runs right
+  after cell resolution. It runs in both `simulate_turn` and `_advance_tick`.
+  If one pilot got a retreat verdict, it moves the partner from advance to
+  retreat. The typical case is the turret cell: the turret defender hits only
+  the carry, and the support is dragged back with them. Before this change the
+  support stayed on the turret cell and kept grinding.
+- **Advance only together.** `_enforce_lane_bonds(wants)` runs inside each
+  lockstep round, after both vetoes. If any member has no surviving ADVANCE
+  want, every member's advance is cancelled. If any member has a surviving
+  RETREAT want, a vetoed partner is re-enabled toward the same destination.
+- **Not bonded:** free walking, card / skill movement, and low-HP or card
+  recall (`RecallSystem`, `_effect_move`, …). Those move only their target; the
+  bond code never runs on those paths.
+- Bond events log under `BOND`. There is no on-screen indicator (decided
+  2026-10-03).
 
 ### Lane corridors (`lane_corridor` / `lane_corridor_count`)
 The per-lane set of cells the lane actually runs through, built once by

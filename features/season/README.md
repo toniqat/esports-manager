@@ -23,7 +23,7 @@ sees a phase / week counter.
 |---|---|
 | HubView | `리그 순위`(1, ghost) / `이번 주 시작 →`(2, primary) |
 | TrainingView | `판 비우기`(1, ghost) / `훈련 확정`(2, primary) |
-| TeamDraftView | PICK = `다음` 전폭 · CONFIRM = `뒤로`(1) / `드래프트 확정`(2) |
+| TeamDraftView | PICK = `다음` 전폭 · CONFIRM = `뒤로`(1) / `게임 시작`(2) |
 | LeagueView · BracketView · IntlBracketView | `확인` 전폭 |
 | WeekProgressView | `확인` / `주 마감 →` / `경기 시작`(dark) — 언제나 하나, 전폭 |
 | EndingView · GameOverView | `타이틀로`(1, ghost) / `다시 시작`(2, primary) |

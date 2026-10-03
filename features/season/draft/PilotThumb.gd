@@ -23,11 +23,15 @@ const CELL_W: float = 200.0
 ## 지금은 칸도 그 비율을 그대로 따르는 것이 맞다.
 const CELL_H: float = 200.0
 
-const ART_MARGIN: float = 6.0
+const ART_MARGIN: float = 4.0
 
 const BORDER_W: int = 3
 const BORDER_W_SEL: int = 4
-const RADIUS: int = 10
+const RADIUS: int = 14
+## 얼굴을 깎는 마스크의 모서리 굴림. 칸 테두리(`RADIUS`)와 **같은 중심을 공유하는
+## 곡선**이 되도록 안쪽 여백만큼 줄인다 — 같은 값을 쓰면 얼굴 모서리가 테두리보다
+## 더 둥글어져 구석에 바탕이 삐져나온다.
+const ART_RADIUS: int = RADIUS - int(ART_MARGIN)
 
 const BG_OFF := OutgameTheme.SURFACE
 const BG_ON  := OutgameTheme.ACCENT_DIM
@@ -55,7 +59,6 @@ var _built: bool = false
 
 var _face: TextureRect
 var _role_badge: Panel
-var _role_lbl: Label
 var _badge: Panel
 
 
@@ -81,35 +84,18 @@ func _build() -> void:
 	size               = Vector2(CELL_W, CELL_H)
 	focus_mode         = Control.FOCUS_NONE
 	clip_contents      = true
-	# **STOP 이면 안 된다** — 이 칸은 ScrollContainer 안에 있고, 모바일의 드래그
-	# 스크롤은 (터치에서 에뮬레이트된) 마우스 press/motion 이 ScrollContainer 까지
-	# 올라가야 시작된다. STOP 은 그 전파를 끊으므로 손가락이 썸네일 위에서
-	# 시작하면 격자가 영영 안 움직인다 — 칸이 격자를 빈틈없이 덮으므로 사실상
-	# 스크롤이 통째로 죽는다. PASS 는 버튼 자신도 그대로 이벤트를 받으므로
-	# 탭은 지금과 똑같이 동작하고, 드래그가 시작되면 Godot 이 그 눌림을 취소한다.
+	# **STOP 이면 안 된다** — 이 칸은 ScrollContainer 안에 있고, 격자를 굴리는
+	# `DragScroll` 은 press 가 ScrollContainer 까지 올라가야 제스처를 시작한다.
+	# STOP 은 그 전파를 끊으므로 칸이 격자를 빈틈없이 덮는 이 화면에서는 스크롤이
+	# 통째로 죽는다. PASS 는 버튼 자신도 그대로 이벤트를 받으므로 탭은 그대로이고,
+	# 끌기가 문턱을 넘으면 `DragScroll` 이 이 버튼의 눌림을 취소한다.
 	mouse_filter       = Control.MOUSE_FILTER_PASS
 	text               = ""
 	pressed.connect(_on_pressed)
 
 	var art_sz: float = CELL_W - ART_MARGIN * 2.0
-	_face = TextureRect.new()
-	_face.position     = Vector2(ART_MARGIN, ART_MARGIN)
-	_face.size         = Vector2(art_sz, art_sz)
-	_face.expand_mode  = TextureRect.EXPAND_IGNORE_SIZE
-	_face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	_face.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_face)
-
-	_role_badge = Panel.new()
-	_role_badge.position = Vector2(ART_MARGIN + 4.0, ART_MARGIN + 4.0)
-	_role_badge.size     = Vector2(ROLE_BADGE_W, ROLE_BADGE_H)
-	_role_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_role_badge)
-	_role_lbl = UiHelpers.mk_label(_role_badge, "", 19, OutgameTheme.TEXT_ON_FILL,
-			Vector2.ZERO, Vector2(ROLE_BADGE_W, ROLE_BADGE_H),
-			HORIZONTAL_ALIGNMENT_CENTER)
-	_role_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_role_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_face = add_rounded_art(self, Vector2(ART_MARGIN, ART_MARGIN),
+			Vector2(art_sz, art_sz), ART_RADIUS)
 
 	_badge = Panel.new()
 	_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -133,28 +119,82 @@ func _build() -> void:
 
 # ── Refresh ──────────────────────────────────────────────────────────────────
 func _refresh() -> void:
+	if _role_badge != null:
+		_role_badge.queue_free()
+		_role_badge = null
 	if pilot == null:
 		_face.texture = null
-		_role_badge.visible = false
 		return
 	_face.texture = PilotImages.face_for(pilot.id)
-	var r: int = int(pilot.role)
-	var known: bool = r >= 0 and r < ROLE_INITIALS.size()
-	_role_badge.visible = known
-	if known:
-		_role_lbl.text = String(ROLE_INITIALS[r])
-		var sb := StyleBoxFlat.new()
-		sb.bg_color = (ROLE_COLORS[r] as Color).darkened(0.15)
-		sb.border_color = Color(0, 0, 0, 0.18)
-		sb.border_width_top = 1
-		sb.border_width_bottom = 1
-		sb.border_width_left = 1
-		sb.border_width_right = 1
-		sb.corner_radius_top_left     = 8
-		sb.corner_radius_top_right    = 8
-		sb.corner_radius_bottom_left  = 8
-		sb.corner_radius_bottom_right = 8
-		_role_badge.add_theme_stylebox_override("panel", sb)
+	_role_badge = add_role_badge(self, int(pilot.role),
+			Vector2(ART_MARGIN + 6.0, ART_MARGIN + 6.0))
+	# 체크 배지보다 아래에 깔리게 — 둘이 겹칠 일은 없지만 순서를 못박아 둔다.
+	if _role_badge != null:
+		move_child(_role_badge, _badge.get_index())
+
+
+## **둥근 사각형으로 깎은 그림 한 장.** 마스크는 둥근 `StyleBoxFlat` 을 그리는
+## `Panel` 이고 그림은 그 자식이다 — `clip_children` 이 자식을 부모가 그린
+## 알파로 잘라 내므로 모서리가 칸 테두리와 같은 곡선으로 떨어진다.
+## `clip_contents` 는 사각형으로만 자르므로 이 자리에 쓸 수 없다.
+## 돌려주는 것은 텍스처를 꽂을 `TextureRect`.
+static func add_rounded_art(parent: Control, pos: Vector2, sz: Vector2,
+		radius: int) -> TextureRect:
+	var mask := Panel.new()
+	mask.position = pos
+	mask.size = sz
+	mask.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mask.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color.WHITE
+	sb.anti_aliasing = true
+	sb.corner_radius_top_left     = radius
+	sb.corner_radius_top_right    = radius
+	sb.corner_radius_bottom_left  = radius
+	sb.corner_radius_bottom_right = radius
+	mask.add_theme_stylebox_override("panel", sb)
+	parent.add_child(mask)
+
+	var art := TextureRect.new()
+	art.position     = Vector2.ZERO
+	art.size         = sz
+	art.expand_mode  = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mask.add_child(art)
+	return art
+
+
+## **역할군 배지**(`Tk` / `As` …) — 격자 썸네일과 드래프트 상단의 상체 일러스트가
+## 같은 함수로 세운다. 화면마다 자기 배지를 그리면 같은 역할이 화면마다 다른
+## 크기 · 색 · 글자로 서서 "색으로 알아본다"는 전제가 무너진다.
+## 알 수 없는 역할이면 아무것도 안 세우고 null.
+static func add_role_badge(parent: Control, role: int, pos: Vector2) -> Panel:
+	if role < 0 or role >= ROLE_INITIALS.size():
+		return null
+	var badge := Panel.new()
+	badge.position = pos
+	badge.size     = Vector2(ROLE_BADGE_W, ROLE_BADGE_H)
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = (ROLE_COLORS[role] as Color).darkened(0.15)
+	sb.border_color = Color(0, 0, 0, 0.18)
+	sb.border_width_top = 1
+	sb.border_width_bottom = 1
+	sb.border_width_left = 1
+	sb.border_width_right = 1
+	sb.corner_radius_top_left     = 8
+	sb.corner_radius_top_right    = 8
+	sb.corner_radius_bottom_left  = 8
+	sb.corner_radius_bottom_right = 8
+	badge.add_theme_stylebox_override("panel", sb)
+	parent.add_child(badge)
+	var lbl := UiHelpers.mk_label(badge, String(ROLE_INITIALS[role]), 19,
+			OutgameTheme.TEXT_ON_FILL, Vector2.ZERO,
+			Vector2(ROLE_BADGE_W, ROLE_BADGE_H), HORIZONTAL_ALIGNMENT_CENTER)
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return badge
 
 
 static func total_stats(p: PlayerData) -> int:

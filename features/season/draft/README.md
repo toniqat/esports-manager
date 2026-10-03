@@ -11,16 +11,24 @@ pilot's prior team — every team always has exactly one pilot per role.
 이름표로만 읽혔다 — 격자가 스크롤되면서 칸 크기가 인원 수에서 풀려났다.
 
 ## 화면은 두 모드를 오간다 — PICK ↔ CONFIRM
-**PICK** 이 위 그림이고, 하단 가운데의 **"다음"**(다섯 칸이 다 차야 활성)이
-**CONFIRM** 으로 넘긴다. CONFIRM 은 **픽창(필터 줄 + 격자 + 뒤판)을 통째로
-숨기고 선택 5인 블록을 화면 세로 가운데로 내린다** — 확정 직전에 보아야 하는
-것은 후보 스물다섯이 아니라 내가 고른 다섯이기 때문이다. 그 자리에서
-**"드래프트 확정"** 이 팀을 확정하고, 그 왼쪽의 작은 **"뒤로"** 가 다시 픽창을
-연다. 모드 전환이 건드리는 것은 셋뿐이다(`_apply_mode`) — 픽창의 `visible`,
-`_slot_row.position.y`, 그리고 하단 버튼 셋 중 무엇이 서는가.
+**PICK** 이 위 그림이고, 하단 바의 **"다음"**(다섯 칸이 다 차야 활성)이
+**CONFIRM** 으로 넘긴다. 넘어가는 동안 **픽창(필터 줄 + 격자 + 뒤판)이 화면
+아래로 빠지고 선택 5인 블록이 화면 세로 가운데로 내려온다** — 두 움직임이 한
+트윈(`MODE_ANIM_SEC` 0.38초, cubic in-out)으로 돌고, "뒤로"는 그 반대를 돈다.
+픽창은 하단 바보다 먼저 붙어 있어 빠져나가는 격자가 바 뒤로 숨는다. 연출이 도는
+동안(`_busy`)은 모든 입력을 무시한다.
+
+CONFIRM 의 주 행동은 **"게임 시작"**(예전 "드래프트 확정")이다. 팀 결성은
+아웃게임의 마지막 화면이고 그 다음부터가 캠페인이라 화면을 그냥 갈아 끼우지 않는다 —
+**암전(0.30초) → 가짜 로딩(0.50초, `LOADING` + 막대) → 밝아짐(0.35초)**
+(`_play_launch_transition`). 덮개는 **허브에 붙인 `CanvasLayer`(layer 100)** 라
+드래프트가 숨겨진 뒤에도 남는다. `validate_draft` 는 **암전 전에** 돌고(거절될
+확정이면 화면을 가리지 않는다), `apply_draft` · 상세 팝업 닫기 · `goto(HUB)`
+(= 드래프트 직후 자동 저장)는 **화면이 다 가려진 순간에** 돈다(`_commit_draft`).
 
 **선택 5인 블록은 `_slot_row` 한 Control 의 지역 좌표로 산다.** 그래야 CONFIRM
-이 그 노드의 y 하나만 밀어 태그 · 일러스트 · 이름을 한 덩어리로 내릴 수 있다.
+이 그 노드의 y 하나만 밀어 블록째 내릴 수 있다. 픽창도 같은 이유로
+`_pick_root` 한 Control 에 모여 있다.
 
 ## 화면에서 걷어 낸 것들
 - **제목("TEAM DRAFT")과 인원 수("내 팀 N/5")** — 다섯 칸이 채워지는 것 자체가
@@ -28,6 +36,10 @@ pilot's prior team — every team always has exactly one pilot per role.
 - **썸네일 칸의 역할군 이름 · 파일럿 이름 · 종합 스탯 세 줄** — 그 자리는
   **왼쪽 위 역할군 배지** 하나로 줄었고(밴픽 메크 격자와 **같은 배지**), 칸은
   정사각이 되어 얼굴이 칸을 다 쓴다.
+- **일러스트 위의 포지션 글자(탑 · 정글 …)와 아래의 이름** — 역할은 일러스트
+  **왼쪽 위의 역할군 배지**가(격자 썸네일과 같은 `PilotThumb.add_role_badge`,
+  **빈 칸에도 선다** — 빈 칸이 어느 역할의 자리인지를 그 배지가 말한다),
+  이름은 상세 팝업이 들고 있다.
 - **일러스트 밑의 `역할 · 원소속` 한 줄**과 **하단의 파일럿 스킬 구성 패널** —
   둘 다 상세 팝업이 통째로 들고 있다. 고르는 화면에 요약을 늘어놓으면 그 요약을
   읽느라 정작 얼굴을 안 본다.
@@ -52,7 +64,7 @@ pilot's prior team — every team always has exactly one pilot per role.
 |---|---|
 | `TeamDraft.gd`        | `class_name TeamDraft extends Control` — data layer. Owns `validate_draft()`, `apply_draft()`, `get_pool_grid()`, 그리고 화면이 함께 읽는 표 둘 — **슬롯 순서**(`SLOT_ROLES` / `SLOT_NAMES` / `slot_of_role`), **스킬 조회**(`skill_def_for` / `skill_type_label`). 카드 후보 풀 헬퍼 넷은 삭제됐다 — 아래 절. Builds `TeamDraftView` lazily via `ensure_view()` (called by `SeasonHub` after `init_season`). |
 | `TeamDraftView.gd`    | `class_name TeamDraftView extends Control` — procedural UI (선택 5인 일러스트 행 + 필터 행 + 스크롤 썸네일 격자 + 하단 스킬 패널/확정 버튼). Lives as a child of the `TeamDraft` node. |
-| `PilotThumb.gd`       | `class_name PilotThumb extends Button` — 격자 한 칸. **정사각(200×200)이고 얼굴 크롭 하나와 왼쪽 위 역할군 배지가 전부다.** 선택되면 금색 테두리 + 우상단 체크 배지. Emits `thumb_tapped(pilot_id)`. |
+| `PilotThumb.gd`       | `class_name PilotThumb extends Button` — 격자 한 칸. **정사각(200×200)이고 얼굴 크롭 하나와 왼쪽 위 역할군 배지가 전부다.** 선택되면 금색 테두리 + 우상단 체크 배지. Emits `thumb_tapped(pilot_id)`. 두 static 헬퍼를 상단 일러스트와 함께 쓴다 — `add_rounded_art`(**둥근 사각형 마스크**: 둥근 `StyleBoxFlat` 을 그리는 `Panel` + `clip_children = CLIP_CHILDREN_ONLY`. 마스크 굴림은 칸 굴림에서 안쪽 여백을 뺀 값이라 테두리와 같은 중심의 곡선이 된다 — `clip_contents` 는 사각형으로만 자른다) · `add_role_badge`. |
 | `DraftDetailPanel.gd` | `class_name DraftDetailPanel extends CanvasLayer` — **파일럿 상세 팝업**. 좌 전신 아트 / 우 스크롤 정보 패널(스탯 칩 6개 → 파일럿 스킬. **받침 높이는 내용이 정한다**). `open(p: PlayerData)` **한 인자뿐이다** — 아래 "두 화면이 함께 쓴다" 절. |
 
 `PilotCard.gd` / `PilotCard.tscn` 은 **삭제됐다** — 200×175 칸에 스탯 막대 다섯
@@ -136,27 +148,26 @@ pilot's prior team — every team always has exactly one pilot per role.
 8. Confirm → `TeamDraft.apply_draft()` rewires team rosters → **`_detail.close()`** → `SeasonHub.goto(Screen.HUB)`. 팝업은 `CanvasLayer` 라 부모 Control 의 `visible` 을 따르지 않는다 — 열어 둔 채 넘어가면 딤이 화면에 그대로 남는다.
 
 ## Layout (1080×1920 portrait)
-`_slot_row` 안쪽 좌표(블록 높이 502):
+**아래에서 위로 쌓는다** — 격자를 하단 바에 매달고(`grid_y()`), 필터(`filter_y()`)와
+선택 5인(`pick_row_y()`)이 차례로 그 위에 앉는다. 격자는 **썸네일 3.5줄**
+(`GRID_VISIBLE_ROWS`, 높이 724)이고 줄인 만큼 선택 5인이 내려왔다 — 반 줄이
+잘려 보이는 것이 곧 "아래로 더 있다"이다.
 
-| Y (지역) | Block |
-|---|---|
-| 0..28     | 슬롯 태그 (탑 · 정글 · 미드 · 원딜 · 서폿), 역할 색 |
-| 32..444   | 상체 일러스트 5칸 = `Button` (204×412, 간격 12, x0 = 6) — 상세 팝업 트리거 |
-| 448..502  | 이름 Label ×5 |
+`_slot_row` 는 **일러스트 한 줄뿐**이다(204×412 버튼 ×5, 간격 12, x0 = 6). 그림은
+역할 색 테두리(3px) 안으로 물려 둥근 마스크로 깎이고, 왼쪽 위에 역할군 배지.
 
-화면 좌표:
+화면 좌표 (세이프 인셋 0 · 9:16 실측):
 
 | Y range     | Block |
 |---|---|
-| 24..526     | `_slot_row` (PICK 모드) |
-| 546..610    | 필터 버튼 6개 (x0 24, 총 폭 1032) — CONFIRM 에서 숨는다 |
-| 626..1768   | 썸네일 격자 뒤판 + `ScrollContainer` (x0 24, w 1032, 5열 × `PilotThumb` **200×200**) — CONFIRM 에서 숨는다 |
-| 1780..1900  | 하단 버튼 줄. PICK = 가운데 "다음"(480×120). CONFIRM = 가운데 "드래프트 확정"(480×120) + 그 왼쪽에 작은 "뒤로"(160×80) |
-| **709..1211** | CONFIRM 모드의 `_slot_row` — 화면 세로 가운데(`confirm_row_y()`) |
+| 520..932    | `_slot_row` (PICK 모드) — `filter_y() − 32 − 412` |
+| 964..1028   | 필터 버튼 6개 (x0 24, 총 폭 1032) |
+| 1056..1780  | 썸네일 격자 뒤판 + `ScrollContainer` (5열 × `PilotThumb` 200×200, 3.5줄) |
+| 하단 바     | PICK = "다음" 전폭. CONFIRM = "뒤로"(1) + "게임 시작"(2) |
+| **754..1166** | CONFIRM 모드의 `_slot_row` — 화면 세로 가운데(`confirm_row_y()`) |
 
-격자 높이와 하단 줄의 y 는 상수가 아니라 `ScreenMetrics.safe_h()` 에서 역산한다
-(`bar_y()` / `grid_h()`) — 하단 버튼은 이 화면에서 가장 아래의 터치 대상이라
-홈 인디케이터 / 제스처 바와 맞닿는다.
+모든 y 는 상수가 아니라 `OutgameTheme.bottom_bar_top()` 에서 역산한다 — 하단
+버튼은 이 화면에서 가장 아래의 터치 대상이라 홈 인디케이터 / 제스처 바와 맞닿는다.
 
 상세 팝업(`DraftDetailPanel`)은 자기 `CanvasLayer`(layer 20) 위에 선다:
 좌 전신 아트(높이 1400, 아래끝 2010, 중심 x 300) / 우 정보 패널
@@ -167,12 +178,11 @@ pilot's prior team — every team always has exactly one pilot per role.
 
 ---
 
-## 격자 스크롤 — 썸네일이 `MOUSE_FILTER_PASS` 인 이유
+## 격자 스크롤 — `DragScroll`
 
-`PilotThumb` 는 `Button` 이지만 필터를 **PASS 로 내려 둔다**. 기본값 STOP 이면
-폰에서 격자가 통째로 안 굴러간다 — Godot 의 드래그 스크롤은 터치에서
-에뮬레이트된 **마우스 press 가 `ScrollContainer` 까지 올라와야** 시작되는데
-STOP 이 그 전파를 끊고, 썸네일이 격자를 빈틈없이 덮으므로 손가락을 어디에
-대도 문턱을 넘지 못한다. 데스크톱에서는 휠이 STOP 을 뚫도록 엔진이 예외를
-두고 있어 이 결함이 드러나지 않는다. 규칙과 검증법은
-**`docs/mobile_safe_area.md` §5**.
+격자는 **`DragScroll` 이 굴린다**(`resources/DragScroll.gd`). 엔진의 터치 드래그는
+데스크톱 마우스로는 아예 안 굴렀고 폰에서도 썸네일 위의 탭과 얽혀 "안 굴러간다"는
+보고가 났다. `DragScroll` 은 마우스와 터치를 같은 경로로 받아 14px 문턱을 넘으면
+스크롤로 판정하고, **그 순간 눌려 있던 썸네일의 눌림을 취소**한다 — 스크롤하려던
+손이 파일럿을 고르지 않는다. 썸네일의 `MOUSE_FILTER_PASS` 는 그대로 필요하다
+(눌림이 스크롤까지 올라가야 판정이 시작된다). 상세 팝업의 정보 스크롤도 같다.

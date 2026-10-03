@@ -4,21 +4,24 @@ extends Control
 # 초기 팀 드래프트 화면 — **우마무스메식 인물 고르기**.
 #
 #   상: 선택한 5인의 **상체 일러스트**가 가로로 나란히 (탑 · 정글 · 미드 · 원딜 · 서폿)
-#       일러스트를 누르면 `DraftDetailPanel` 이 열린다
+#       일러스트 왼쪽 위에 역할군 배지. 일러스트를 누르면 `DraftDetailPanel` 이 열린다
 #   중: 전체 / 탑 / 정글 / 미드 / 원딜 / 서폿 필터 버튼 한 줄
-#   하: 캐릭터 썸네일 격자 (세로 스크롤)
-#   맨 아래: 가운데 큰 "다음"
+#   하: 캐릭터 썸네일 격자 (세로 스크롤, 3.5줄이 보인다)
+#   맨 아래: 하단 바 "다음"
+#
+# 세 덩이는 **아래에서 위로** 쌓는다 — 격자를 하단 바 위에 매달고, 필터와 선택
+# 5인이 그 위에 차례로 앉는다. 격자를 3.5줄로 줄인 만큼 선택 5인이 내려왔다.
 #
 # **화면은 두 모드를 오간다.** PICK 은 위와 같고, "다음"을 누르면 CONFIRM 으로
-# 넘어가 **픽창(필터 + 격자)이 통째로 사라지고 선택 5인이 화면 가운데로 내려온다** —
-# 확정 직전에 보아야 하는 것은 후보 스물다섯이 아니라 내가 고른 다섯이기
-# 때문이다. 거기서 "드래프트 확정"이 팀을 확정하고, 그 왼쪽의 작은 "뒤로"가
-# 다시 픽창을 연다.
+# 넘어가 **픽창(필터 + 격자)이 화면 아래로 빠지고 선택 5인이 화면 가운데로
+# 내려온다**(연출, `_apply_mode`) — 확정 직전에 보아야 하는 것은 후보 스물다섯이
+# 아니라 내가 고른 다섯이기 때문이다. 거기서 **"게임 시작"**이 팀을 확정하고
+# 암전 → 가짜 로딩 → 밝아짐을 거쳐 시즌 허브로 넘어간다. 그 왼쪽의 "뒤로"가
+# 픽창을 다시 올린다.
 #
 # **화면에서 걷어 낸 것들** — 제목("TEAM DRAFT")과 인원 수("내 팀 N/5")는
-# 다섯 칸이 채워지는 것 자체가 이미 말해 주고, 일러스트 밑의 `역할 · 원소속`
-# 한 줄과 하단의 파일럿 스킬 구성 패널은 **상세 팝업이 통째로 들고 있다**.
-# 고르는 화면에 요약을 늘어놓으면 그 요약을 읽느라 정작 얼굴을 안 본다.
+# 다섯 칸이 채워지는 것 자체가 이미 말해 주고, 일러스트 위의 포지션 글자와
+# 아래의 이름은 각각 **역할군 배지**와 **상세 팝업**이 들고 있다.
 #
 # **다섯 칸은 역할 고정**이다(`TeamDraft.SLOT_ROLES`). `TeamDraft.validate_draft`
 # 가 "역할당 정확히 1명"을 강제하므로 자유 순서로 두면 화면에서만 가능한 조합이
@@ -37,24 +40,28 @@ const SLOT_COUNT: int = 5
 const SLOT_W: float = 204.0
 const SLOT_GAP: float = 12.0
 const SLOT_X0: float = 6.0          # (1080 − 5×204 − 4×12) / 2
-const SLOT_TAG_H: float = 28.0
-const SLOT_ART_Y: float = 32.0
 ## 칸 비율(204 : 412 = 0.495)은 `PilotImages.BUST_ASPECT`(0.496)와 같다 —
 ## 둘 중 하나만 바꾸면 얼굴이 찌그러진다.
 const SLOT_ART_H: float = 412.0
-const SLOT_NAME_Y: float = 448.0
-const SLOT_NAME_H: float = 54.0
-const SLOT_ROW_H: float = 502.0
-## PICK 모드에서 선택 5인 블록이 앉는 y.
-const SLOT_ROW_Y: float = 24.0
+## 블록은 **일러스트 한 줄뿐이다.** 예전에는 위에 포지션 글자(탑 · 정글 …)가,
+## 아래에 이름이 붙어 502px 였는데 둘 다 걷었다 — 역할은 일러스트 왼쪽 위의
+## 역할군 배지가(격자 썸네일과 같은 배지), 이름은 상세 팝업이 들고 있다.
+const SLOT_ROW_H: float = SLOT_ART_H
+## 일러스트 테두리(역할 색)의 두께와 굴림. 그림은 그 두께만큼 안으로 물려
+## 앉아 테두리가 그림에 덮이지 않는다.
+const SLOT_BORDER: int = 3
+const SLOT_RADIUS: int = 14
+## 블록 아랫변 ↔ 필터 줄.
+const SLOT_FILTER_GAP: float = 32.0
 
 const SLOT_FRAME_BG := OutgameTheme.SURFACE
 const SLOT_FRAME_BG_EMPTY := OutgameTheme.SURFACE_SUNK
 const SLOT_FRAME_BORDER_EMPTY := OutgameTheme.BORDER
 
 # ─── 중: 필터 ────────────────────────────────────────────────────────────────
-const FILTER_Y: float = 546.0
 const FILTER_H: float = 64.0
+## 필터 줄 아랫변 ↔ 격자 윗변.
+const FILTER_GRID_GAP: float = 16.0
 const FILTER_X0: float = 24.0
 const FILTER_TOTAL_W: float = 1032.0
 const FILTER_GAP: float = 8.0
@@ -65,36 +72,61 @@ const FILTER_BORDER_ON  := OutgameTheme.ACCENT
 const FILTER_BORDER_OFF := OutgameTheme.BORDER
 
 # ─── 하: 썸네일 격자 ─────────────────────────────────────────────────────────
-const GRID_Y: float = 626.0
 const GRID_BAR_GAP: float = 12.0
 const GRID_X0: float = 24.0
 const GRID_W: float = 1032.0
 const GRID_COLS: int = 5
 const GRID_GAP: float = 8.0
+## **한 화면에 보이는 썸네일 줄 수.** 3.5 줄 — 반 줄이 잘려 보이는 것이 곧
+## "아래로 더 있다"이다. 예전에는 필터 아래부터 하단 바 위까지를 통째로 격자에
+## 주어 다섯 줄 남짓이 깔렸고, 그만큼 선택 5인이 화면 꼭대기로 밀려 있었다.
+const GRID_VISIBLE_ROWS: float = 3.5
+
+# ─── 연출 ────────────────────────────────────────────────────────────────────
+## PICK ↔ CONFIRM 전환. 픽창이 아래로 빠지는 것과 5인이 가운데로 내려오는
+## 것이 같은 박자로 돈다.
+const MODE_ANIM_SEC: float = 0.38
+## "게임 시작" 전환 — 암전 → 가짜 로딩 → 밝아짐.
+const LAUNCH_FADE_OUT_SEC: float = 0.30
+const LAUNCH_LOAD_SEC: float = 0.50
+const LAUNCH_FADE_IN_SEC: float = 0.35
+const LAUNCH_BAR_W: float = 420.0
 
 
-## 격자 높이는 상수가 아니라 **남는 자리**다 — 필터 줄 아래부터 하단 버튼 위까지.
-static func grid_h() -> float:
-	return bar_y() - GRID_BAR_GAP - GRID_Y
-
-
-# ─── 맨 아래: 다음 / 확정 ────────────────────────────────────────────────────
+# ─── 세로 배치 — 아래에서 위로 ───────────────────────────────────────────────
+## 하단 버튼 줄의 y. 격자가 여기에 매달린다.
+##
 ## **하단 구간을 통째로 차지하는 바 한 줄**이다(`OutgameTheme.add_bottom_bar`).
 ## PICK 에서는 "다음"이 화면 폭 전체를, CONFIRM 에서는 "뒤로"(1) 와
-## "드래프트 확정"(2) 이 2:1 로 나눠 갖는다 — 그 화면이 묻는 것은 확정할
-## 것인가 하나이므로 되돌아가는 길은 3분의 1로 족하다.
-
-
-## 하단 버튼 줄의 y. 격자 높이가 여기서 역산된다.
+## "게임 시작"(2) 이 2:1 로 나눠 갖는다.
 static func bar_y() -> float:
 	return OutgameTheme.bottom_bar_top()
+
+
+## 격자 높이 — 썸네일 `GRID_VISIBLE_ROWS` 줄과 그 사이 간격.
+static func grid_h() -> float:
+	var gaps: float = floor(GRID_VISIBLE_ROWS)
+	return PilotThumb.CELL_H * GRID_VISIBLE_ROWS + GRID_GAP * gaps
+
+
+static func grid_y() -> float:
+	return bar_y() - GRID_BAR_GAP - grid_h()
+
+
+static func filter_y() -> float:
+	return grid_y() - FILTER_GRID_GAP - FILTER_H
+
+
+## PICK 모드에서 선택 5인 블록이 앉는 y — 필터 줄 바로 위.
+static func pick_row_y() -> float:
+	return maxf(0.0, filter_y() - SLOT_FILTER_GAP - SLOT_ROW_H)
 
 
 ## CONFIRM 모드에서 선택 5인 블록이 내려앉는 y — **화면의 세로 가운데**.
 ## 하단 버튼 줄과 겹치지 않게만 걸러 낸다(짧은 화면에서는 그 위로 밀린다).
 static func confirm_row_y() -> float:
 	return clampf((ScreenMetrics.safe_h() - SLOT_ROW_H) * 0.5,
-			SLOT_ROW_Y, maxf(SLOT_ROW_Y, bar_y() - SLOT_ROW_H - 20.0))
+			0.0, maxf(0.0, bar_y() - SLOT_ROW_H - 20.0))
 
 
 @onready var _draft: TeamDraft = get_parent() as TeamDraft
@@ -104,13 +136,18 @@ var _thumbs_by_id: Dictionary = {}         # pilot_id(int) → PilotThumb
 var _entries: Array = []                   # Array[PlayerData], 화면 정렬 순서
 var _filter_role: int = -1                 # -1 = 전체
 
-## 확정 직전 화면인가. true 면 픽창이 사라지고 선택 5인이 가운데로 내려온다.
+## 확정 직전 화면인가. true 면 픽창이 빠지고 선택 5인이 가운데로 내려온다.
 var _confirm_mode: bool = false
+## 모드 전환 연출 / 게임 시작 전환이 도는 중 — 그 사이의 입력은 무시한다.
+var _busy: bool = false
+var _mode_tween: Tween
 
 var _slot_row: Control
 var _slot_art: Array = []                  # 5 × TextureRect
 var _slot_frame: Array = []                # 5 × Button (누르면 상세 팝업)
-var _slot_name_lbl: Array = []             # 5 × Label
+## 픽창 — 필터 줄 + 격자 뒤판 + 스크롤. 한 Control 에 모여 있어야 CONFIRM 으로
+## 넘어갈 때 덩어리째 아래로 빠진다.
+var _pick_root: Control
 var _filter_btns: Array = []               # 6 × Button
 var _grid_back: Panel
 var _grid_scroll: ScrollContainer
@@ -131,7 +168,7 @@ func _ready() -> void:
 	_build_ui()
 	_reflow_grid()
 	_refresh_slots()
-	_apply_mode()
+	_apply_mode(false)
 
 
 # ── Build ────────────────────────────────────────────────────────────────────
@@ -149,6 +186,13 @@ func _build_ui() -> void:
 	add_child(bg)
 
 	_build_slot_row()
+	# 픽창은 하단 바보다 **먼저** 붙는다 — 그래야 CONFIRM 으로 넘어갈 때 아래로
+	# 빠지는 격자가 바 뒤로 숨는다.
+	_pick_root = Control.new()
+	_pick_root.position = Vector2.ZERO
+	_pick_root.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.safe_h())
+	_pick_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_pick_root)
 	_build_filter_row()
 	_build_grid()
 	_build_bottom_bar()
@@ -163,45 +207,35 @@ func _slot_x(i: int) -> float:
 
 func _build_slot_row() -> void:
 	_slot_row = Control.new()
-	_slot_row.position = Vector2(0.0, SLOT_ROW_Y)
+	_slot_row.position = Vector2(0.0, pick_row_y())
 	_slot_row.size = Vector2(ScreenMetrics.vp_w(), SLOT_ROW_H)
 	_slot_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_slot_row)
 
+	var b: float = float(SLOT_BORDER)
 	for i in SLOT_COUNT:
 		var role: int = int(TeamDraft.SLOT_ROLES[i])
-		var col: Color = ROLE_COLORS[role]
-		var x: float = _slot_x(i)
 
-		UiHelpers.mk_label(_slot_row, String(TeamDraft.SLOT_NAMES[i]), 24, col,
-				Vector2(x, 0.0), Vector2(SLOT_W, SLOT_TAG_H),
-				HORIZONTAL_ALIGNMENT_CENTER)
-
-		# **일러스트 자체가 상세 팝업 버튼이다.** 예전에는 아래 이름 칸이 그
-		# 역할을 했는데(일러스트를 누르면 슬롯을 비우려는 탭과 헷갈린다는
-		# 이유였다), 슬롯을 비우는 조작은 격자에서 같은 썸네일을 다시 누르는
-		# 것 하나뿐이라 위 칸에는 애초에 경쟁하는 탭이 없다 — 인게임에서
-		# 파일럿 얼굴을 눌러 상세를 여는 것과 같은 몸짓이 된다.
+		# **일러스트 자체가 상세 팝업 버튼이다.** 슬롯을 비우는 조작은 격자에서
+		# 같은 썸네일을 다시 누르는 것 하나뿐이라 이 칸에는 경쟁하는 탭이 없다 —
+		# 인게임에서 파일럿 얼굴을 눌러 상세를 여는 것과 같은 몸짓이다.
 		# **`flat` 로 두면 안 된다** — flat 버튼은 스타일박스를 통째로 무시해서
 		# 빈 칸의 테두리와 바탕이 사라지고 "선택 없음" 글자만 허공에 뜬다.
 		var frame := Button.new()
 		frame.text = ""
 		frame.focus_mode = Control.FOCUS_NONE
-		frame.position = Vector2(x, SLOT_ART_Y)
+		frame.position = Vector2(_slot_x(i), 0.0)
 		frame.size = Vector2(SLOT_W, SLOT_ART_H)
-		frame.clip_contents = true
 		frame.disabled = true
 		frame.pressed.connect(_on_slot_pressed.bind(i))
 		_slot_row.add_child(frame)
 		_slot_frame.append(frame)
 
-		var art := TextureRect.new()
-		art.position = Vector2.ZERO
-		art.size = Vector2(SLOT_W, SLOT_ART_H)
-		art.expand_mode  = TextureRect.EXPAND_IGNORE_SIZE
-		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		frame.add_child(art)
+		# 그림은 테두리 두께만큼 안으로 물리고 **같은 곡선으로 깎는다** — 격자
+		# 썸네일과 같은 마스크(`PilotThumb.add_rounded_art`).
+		var art: TextureRect = PilotThumb.add_rounded_art(frame, Vector2(b, b),
+				Vector2(SLOT_W - b * 2.0, SLOT_ART_H - b * 2.0),
+				SLOT_RADIUS - SLOT_BORDER)
 		_slot_art.append(art)
 
 		var empty := UiHelpers.mk_label(frame, "선택 없음", 26,
@@ -210,12 +244,9 @@ func _build_slot_row() -> void:
 		empty.name = "EmptyMark"
 		empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-		var nm := UiHelpers.mk_label(_slot_row, "—", 26, OutgameTheme.TEXT,
-				Vector2(x, SLOT_NAME_Y), Vector2(SLOT_W, SLOT_NAME_H),
-				HORIZONTAL_ALIGNMENT_CENTER)
-		nm.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		nm.clip_text = true
-		_slot_name_lbl.append(nm)
+		# 역할군 배지 — **빈 칸에도 선다.** 위에 있던 포지션 글자가 사라졌으므로
+		# 빈 칸이 어느 역할의 자리인지는 이 배지가 말한다.
+		PilotThumb.add_role_badge(frame, role, Vector2(b + 8.0, b + 8.0))
 
 
 func _build_filter_row() -> void:
@@ -226,13 +257,13 @@ func _build_filter_row() -> void:
 		btn.text = String(FILTER_LABELS[i])
 		btn.focus_mode = Control.FOCUS_NONE
 		OutgameTheme.style_ghost_button(btn, 26)
-		btn.position = Vector2(FILTER_X0 + float(i) * (w + FILTER_GAP), FILTER_Y)
+		btn.position = Vector2(FILTER_X0 + float(i) * (w + FILTER_GAP), filter_y())
 		btn.size = Vector2(w, FILTER_H)
 		# i == 0 이 "전체"(-1), 그 뒤는 `SLOT_ROLES` 와 같은 순서다 — 필터 버튼과
 		# 위쪽 다섯 칸이 같은 표를 읽으므로 순서가 갈릴 수 없다.
 		var role: int = -1 if i == 0 else int(TeamDraft.SLOT_ROLES[i - 1])
 		btn.pressed.connect(_on_filter_pressed.bind(role))
-		add_child(btn)
+		_pick_root.add_child(btn)
 		_filter_btns.append(btn)
 	_apply_filter_styles()
 
@@ -242,7 +273,7 @@ func _build_grid() -> void:
 	# 받침이 없으면 그 여백이 "화면이 끝났다"로 읽힌다. 스크롤 영역의 경계를
 	# 색으로 못 박아 두면 빈 목록도 빈 목록으로 보인다.
 	_grid_back = Panel.new()
-	_grid_back.position = Vector2(GRID_X0 - 8.0, GRID_Y - 8.0)
+	_grid_back.position = Vector2(GRID_X0 - 8.0, grid_y() - 8.0)
 	_grid_back.size = Vector2(GRID_W + 16.0, grid_h() + 16.0)
 	_grid_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var back_sty := StyleBoxFlat.new()
@@ -257,13 +288,16 @@ func _build_grid() -> void:
 	back_sty.corner_radius_bottom_left  = 12
 	back_sty.corner_radius_bottom_right = 12
 	_grid_back.add_theme_stylebox_override("panel", back_sty)
-	add_child(_grid_back)
+	_pick_root.add_child(_grid_back)
 
 	_grid_scroll = ScrollContainer.new()
-	_grid_scroll.position = Vector2(GRID_X0, GRID_Y)
+	_grid_scroll.position = Vector2(GRID_X0, grid_y())
 	_grid_scroll.size = Vector2(GRID_W, grid_h())
 	_grid_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	add_child(_grid_scroll)
+	_pick_root.add_child(_grid_scroll)
+	# 손가락 / 마우스로 끌어 굴린다(`DragScroll`). 썸네일을 누른 채 끌기
+	# 시작하면 그 눌림은 취소되므로 스크롤하려던 손이 파일럿을 고르지 않는다.
+	DragScroll.attach(_grid_scroll)
 
 	# 스크롤 범위는 이 Control 의 `custom_minimum_size` 가 정한다 — 칸을
 	# 좌표로 놓으므로 컨테이너가 아니라 빈 Control 이 몸통이다.
@@ -295,13 +329,13 @@ func _build_grid() -> void:
 
 
 ## 세 칸을 한 번에 세우고 **모드가 그중 무엇을 보이게 할지만 정한다** —
-## "다음"과 "드래프트 확정"은 서로 배타라 언제나 하나만 서고, 보이는 칸만
+## "다음"과 "게임 시작"은 서로 배타라 언제나 하나만 서고, 보이는 칸만
 ## 무게대로 폭을 나눠 가지므로 PICK 에서는 "다음"이 화면 폭을 통째로 쓴다.
 func _build_bottom_bar() -> void:
 	_bar_specs = [
-		{"text": "뒤로",          "style": "ghost",   "font": 30, "weight": 1.0},
-		{"text": "다음",          "style": "primary", "font": 38, "weight": 2.0},
-		{"text": "드래프트 확정", "style": "primary", "font": 38, "weight": 2.0},
+		{"text": "뒤로",      "style": "ghost",   "font": 30, "weight": 1.0},
+		{"text": "다음",      "style": "primary", "font": 38, "weight": 2.0},
+		{"text": "게임 시작", "style": "primary", "font": 38, "weight": 2.0},
 	]
 	_bar_btns = OutgameTheme.add_bottom_bar(self, _bar_specs)
 	_back_btn    = _bar_btns[0]
@@ -318,7 +352,7 @@ func _build_bottom_bar() -> void:
 
 # ── Interaction ──────────────────────────────────────────────────────────────
 func _on_filter_pressed(role: int) -> void:
-	if _filter_role == role:
+	if _busy or _filter_role == role:
 		return
 	_filter_role = role
 	_apply_filter_styles()
@@ -351,7 +385,7 @@ func _reflow_grid() -> void:
 
 
 func _on_thumb_tapped(pilot_id: int) -> void:
-	if not _thumbs_by_id.has(pilot_id):
+	if _busy or not _thumbs_by_id.has(pilot_id):
 		return
 	var thumb: PilotThumb = _thumbs_by_id[pilot_id]
 	var slot: int = TeamDraft.slot_of_role(int(thumb.pilot.role))
@@ -373,6 +407,8 @@ func _on_thumb_tapped(pilot_id: int) -> void:
 
 
 func _on_slot_pressed(slot: int) -> void:
+	if _busy:
+		return
 	var p: PlayerData = _pilot_in_slot(slot)
 	if p == null:
 		return
@@ -380,33 +416,62 @@ func _on_slot_pressed(slot: int) -> void:
 
 
 func _on_next_pressed() -> void:
-	if not _all_filled():
+	if _busy or not _all_filled():
 		return
 	_confirm_mode = true
-	_apply_mode()
+	_apply_mode(true)
 
 
 func _on_back_pressed() -> void:
+	if _busy:
+		return
 	_confirm_mode = false
-	_apply_mode()
+	_apply_mode(true)
 
 
-## PICK ↔ CONFIRM. 바꾸는 것은 셋뿐이다 — 픽창(필터 + 격자)의 표시 여부,
+## PICK ↔ CONFIRM. 바꾸는 것은 셋뿐이다 — 픽창(필터 + 격자)의 자리,
 ## 선택 5인 블록의 y, 그리고 하단 버튼 셋 중 무엇이 서는가.
-func _apply_mode() -> void:
+##
+## `animate` 면 **픽창이 화면 아래로 빠지고 5인이 가운데로 내려오는** 두
+## 움직임이 한 박자로 돈다(되돌아갈 때는 그 반대). 버튼은 연출 전에 곧장
+## 바뀐다 — 하단 바가 픽창보다 위에 그려지므로 빠져나가는 격자가 바 뒤로 숨는다.
+func _apply_mode(animate: bool) -> void:
 	var picking: bool = not _confirm_mode
-	for btn_raw in _filter_btns:
-		(btn_raw as Button).visible = picking
-	_grid_back.visible = picking
-	_grid_scroll.visible = picking
 	_next_btn.visible = picking
 	_confirm_btn.visible = not picking
 	_back_btn.visible = not picking
 	# 보이는 칸이 바뀌었으니 하단 구간을 다시 나눠 준다 — 안 하면 PICK 의
 	# "다음"이 CONFIRM 에서 쓰던 3분의 2 폭을 그대로 들고 서 있는다.
 	OutgameTheme.layout_bottom_bar(_bar_btns, _bar_specs)
-	_slot_row.position.y = SLOT_ROW_Y if picking else confirm_row_y()
 	_refresh_next_btn()
+
+	var row_y: float = pick_row_y() if picking else confirm_row_y()
+	# 픽창이 빠지는 거리 — 필터 줄 윗변이 화면 아래끝을 넘을 만큼.
+	var pick_y: float = 0.0 if picking \
+			else ScreenMetrics.safe_h() - filter_y() + 40.0
+	if _mode_tween != null and _mode_tween.is_valid():
+		_mode_tween.kill()
+	if not animate:
+		_slot_row.position.y = row_y
+		_pick_root.position.y = pick_y
+		_pick_root.visible = picking
+		_busy = false
+		return
+
+	_busy = true
+	_pick_root.visible = true
+	_mode_tween = create_tween().set_parallel(true) \
+			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	_mode_tween.tween_property(_pick_root, "position:y", pick_y, MODE_ANIM_SEC)
+	_mode_tween.tween_property(_slot_row, "position:y", row_y, MODE_ANIM_SEC)
+	_mode_tween.chain().tween_callback(_on_mode_anim_done.bind(picking))
+
+
+func _on_mode_anim_done(picking: bool) -> void:
+	# 다 빠진 픽창은 숨긴다 — 화면 밖이라도 남아 있으면 스크롤 · 버튼이 계속
+	# 입력 경로에 걸린다.
+	_pick_root.visible = picking
+	_busy = false
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────
@@ -425,35 +490,29 @@ func _refresh_slots() -> void:
 		var art: TextureRect = _slot_art[i]
 		var empty_mark: Label = frame.get_node("EmptyMark") as Label
 		var sty := StyleBoxFlat.new()
-		sty.corner_radius_top_left     = 10
-		sty.corner_radius_top_right    = 10
-		sty.corner_radius_bottom_left  = 10
-		sty.corner_radius_bottom_right = 10
-		sty.border_width_left = 3
-		sty.border_width_right = 3
-		sty.border_width_top = 3
-		sty.border_width_bottom = 3
+		sty.corner_radius_top_left     = SLOT_RADIUS
+		sty.corner_radius_top_right    = SLOT_RADIUS
+		sty.corner_radius_bottom_left  = SLOT_RADIUS
+		sty.corner_radius_bottom_right = SLOT_RADIUS
+		sty.border_width_left   = SLOT_BORDER
+		sty.border_width_right  = SLOT_BORDER
+		sty.border_width_top    = SLOT_BORDER
+		sty.border_width_bottom = SLOT_BORDER
 
 		if p == null:
 			art.texture = null
 			empty_mark.visible = true
 			sty.bg_color = SLOT_FRAME_BG_EMPTY
 			sty.border_color = SLOT_FRAME_BORDER_EMPTY
-			_slot_name_lbl[i].text = "—"
-			_slot_name_lbl[i].add_theme_color_override("font_color",
-					OutgameTheme.TEXT_FAINT)
 			frame.disabled = true
 		else:
 			art.texture = PilotImages.bust_for(p.id)
 			empty_mark.visible = false
 			sty.bg_color = SLOT_FRAME_BG
 			sty.border_color = ROLE_COLORS[role]
-			_slot_name_lbl[i].text = p.name
-			_slot_name_lbl[i].add_theme_color_override("font_color",
-					OutgameTheme.TEXT)
 			frame.disabled = false
 		# 채워진 칸은 눌러서 상세를 여는 버튼이므로 다섯 상태 전부 같은 스타일을
-		# 준다 — flat 버튼이라도 hover / pressed 는 기본 테마가 덧칠한다.
+		# 준다 — 안 그러면 hover / pressed 는 기본 테마가 덧칠한다.
 		for st in ["normal", "hover", "pressed", "focus", "disabled"]:
 			frame.add_theme_stylebox_override(st, sty)
 
@@ -492,8 +551,11 @@ func _apply_filter_styles() -> void:
 		btn.add_theme_stylebox_override("focus",   sty)
 
 
+## **"게임 시작"** — 팀을 확정하고 시즌(인게임)으로 넘어간다. 팀 결성은 아웃게임의
+## 마지막 화면이고 그 다음부터가 캠페인이라, 화면을 그냥 갈아 끼우지 않고
+## **암전 → 가짜 로딩 → 밝아짐**으로 넘긴다(`_play_launch_transition`).
 func _on_confirm_pressed() -> void:
-	if not _all_filled():
+	if _busy or not _all_filled():
 		return
 	# 확정은 **역할 순서(GameEnums.Role)** 로 넘긴다 — `validate_draft` 는 순서를
 	# 보지 않지만, 화면의 슬롯 순서(탑 · 정글 · 미드 · 원딜 · 서폿)를 그대로
@@ -502,13 +564,70 @@ func _on_confirm_pressed() -> void:
 	for role in 5:
 		var slot: int = TeamDraft.slot_of_role(role)
 		ids.append(int(_picks[slot]))
-	var err: String = _draft.apply_draft(ids)
+	# 규칙 검사는 **암전 전에** — 거절될 확정이면 화면을 가리지 않는다.
+	var err: String = _draft.validate_draft(ids)
 	if err != "":
 		push_error("TeamDraftView: confirm failed — " + err)
 		return
+	_busy = true
+	_play_launch_transition(ids)
+
+
+## 암전 → 가짜 로딩(`LAUNCH_LOAD_SEC`) → 밝아짐.
+##
+## 덮개는 **허브에 붙인 `CanvasLayer`** 라 이 화면이 숨겨진 뒤에도 남는다
+## (CanvasLayer 는 부모 Control 의 `visible` 을 따르지 않는다). 팀 확정과 허브
+## 전환(= 드래프트 직후 자동 저장)은 **화면이 다 가려진 뒤에** 한다 — 바뀌는
+## 순간이 보이지 않아야 한 장면이 넘어간 것으로 읽힌다. 로딩 막대는 실제
+## 작업과 무관한 연출이다(전환 자체는 한 프레임이다).
+func _play_launch_transition(ids: Array) -> void:
+	var hub: SeasonHub = _draft.get_parent() as SeasonHub
+	var layer := CanvasLayer.new()
+	layer.layer = 100
+	(hub as Node if hub != null else self as Node).add_child(layer)
+
+	var vp: Vector2 = ScreenMetrics.viewport_size()
+	var cover := ColorRect.new()
+	cover.color = Color(0, 0, 0, 1)
+	cover.position = Vector2.ZERO
+	cover.size = vp
+	cover.mouse_filter = Control.MOUSE_FILTER_STOP   # 전환 중의 탭을 삼킨다
+	cover.modulate.a = 0.0
+	layer.add_child(cover)
+
+	var load_lbl := UiHelpers.mk_label(cover, "LOADING", 28,
+			Color(1, 1, 1, 0.80), Vector2(0, vp.y * 0.5 - 56.0),
+			Vector2(vp.x, 36), HORIZONTAL_ALIGNMENT_CENTER)
+	load_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var track := ColorRect.new()
+	track.color = Color(1, 1, 1, 0.18)
+	track.position = Vector2((vp.x - LAUNCH_BAR_W) * 0.5, vp.y * 0.5)
+	track.size = Vector2(LAUNCH_BAR_W, 6)
+	track.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cover.add_child(track)
+	var fill := ColorRect.new()
+	fill.color = OutgameTheme.ACCENT
+	fill.size = Vector2(0, 6)
+	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	track.add_child(fill)
+
+	var tw := layer.create_tween()
+	tw.tween_property(cover, "modulate:a", 1.0, LAUNCH_FADE_OUT_SEC)
+	tw.tween_callback(_commit_draft.bind(ids, hub))
+	tw.tween_property(fill, "size:x", LAUNCH_BAR_W, LAUNCH_LOAD_SEC) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tw.tween_property(cover, "modulate:a", 0.0, LAUNCH_FADE_IN_SEC)
+	tw.tween_callback(layer.queue_free)
+
+
+## 화면이 다 가려진 순간에 도는 확정 — 팀 재배치 + 허브 전환.
+func _commit_draft(ids: Array, hub: SeasonHub) -> void:
+	var err: String = _draft.apply_draft(ids)
+	if err != "":
+		push_error("TeamDraftView: confirm failed — " + err)
 	# 팝업은 CanvasLayer 라 부모 Control 의 `visible` 을 따르지 않는다 — 열어 둔
 	# 채 허브로 넘어가면 딤이 화면에 그대로 남는다.
 	_detail.close()
-	var hub: SeasonHub = _draft.get_parent() as SeasonHub
-	if hub:
+	_busy = false
+	if hub != null:
 		hub.goto(SeasonHub.Screen.HUB)

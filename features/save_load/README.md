@@ -157,3 +157,47 @@ leaves `match_resume` non-null on disk. On `이어하기`:
 화면째 준다.
 
 자세한 내용: **`docs/mobile_safe_area.md`**
+
+
+## Detail moved from root CLAUDE.md
+
+### TitleScreen → Season handoff
+`TitleScreen.gd` lists three slots (`user://saves/slot{0,1,2}.save`) via
+`SaveSystem.list_slots()`. Each slot card shows phase + date, team + trophy
+count, current league standing, and last-save timestamp. **새 게임** on an
+empty slot: `gm.reset_season_state()` + `gm.active_save_slot = idx` + scene
+change to Season.tscn → SeasonHub sees `season_state.active == false` and
+runs the DRAFT flow. **이어하기** on a filled slot: `SaveSystem.load_slot(idx)`
+overwrites `gm.season_state` from disk + sets `active_save_slot` + scene
+change → SeasonHub skips `init_season()` and routes to HUB. **삭제** is
+double-tap-to-confirm (first tap arms the button, second tap deletes).
+GameOverView and EndingView both expose a "타이틀로" button that resets
+season state + clears `active_save_slot` + returns to TitleScreen.tscn.
+
+### Auto-save
+Four trigger points across SeasonHub and MatchFlow:
+1. **Post-draft** — `SeasonHub.goto(Screen.HUB)` when previous screen was DRAFT.
+2. **Pre-ban-pick** — `MatchFlow._on_prep_finished()` after the player
+   confirms PREP. Writes `season_state.match_resume = {phase: BAN_PICK, player_side, ...}`.
+3. **Post-ban-pick** — `MatchFlow._on_ban_pick_finished()` right before
+   scene-change to BattleSim. Writes the full match snapshot (banned/picked/
+   assigned mech IDs) into `match_resume` with `phase = LAUNCH`. 예전에는 정글
+   방향까지 여기 들어와 저장이 한 단계 뒤(`_on_jungle_finished`)에 있었는데, 그
+   선택이 BattleSim 으로 옮겨 가며 시점이 당겨졌다 — 재개는 어차피 전투를
+   처음부터 다시 돌리므로 정글 방향도 그때 다시 묻는다.
+4. **Post-week-end** — `SeasonHub.on_proceed_to_next_week()` after
+   `CalendarSystem.advance_week()` rolls the calendar. Covers both
+   post-match weeks and no-match weeks.
+
+No save fires inside BattleSim. Closing mid-battle leaves the disk save at
+trigger #3, so resume drops back into BattleSim with the same locked-in
+picks but the battle replays from scratch (정글 시작 화면도 다시 뜬다).
+
+`SaveSystem.save_slot(gm.active_save_slot)` is a no-op when the slot is -1
+(running Season.tscn / MatchFlow.tscn directly from the editor).
+
+### Mid-match resume routing
+TitleScreen "이어하기" branches on `season_state.match_resume`. Non-null →
+`MatchFlow.tscn` (MatchFlow consumes the hint and skips PREP, jumping to
+BAN_PICK or LAUNCH). Null → `Season.tscn`. SlotCard shows a "경기 진행
+중" tag when `meta.match_in_progress == true`.

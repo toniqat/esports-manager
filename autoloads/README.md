@@ -171,3 +171,93 @@ HapticUi.down_kind_for(btn, HapticUi.NONE)   # 이 버튼만 누름 박자를 �
 
 ## Note
 Do NOT add `class_name` to autoload scripts in Godot 4.5 — causes parse errors in other scripts.
+
+
+## Detail moved from root CLAUDE.md
+
+### 햅틱 (감촉) — 아웃게임 · 인게임 공통
+**손에 무엇이 전해지는가를 정하는 표는 하나다.** 배선은 두 층이고, 어느 쪽도
+화면마다 세기를 손으로 적지 않는다.
+
+1. **버튼은 `autoloads/HapticUi.gd` 가 자동으로 배선하고, 한 번 누르면 두 박자가
+   온다** — `node_added` 하나가 트리에 들어오는 **모든 `BaseButton`** 의
+   `button_down` 과 `pressed` **양쪽**에 감촉을 문다: **누를 때(닿음) `SOFT`,
+   뗄 때(활성화) `RIGID`**. 감촉이 뗄 때만 오면 누른 순간에는 아무 일도 안
+   일어나고, 화면이 바뀌기 전까지 눌렸는지 확인할 길이 없다 — 그래서 닿는
+   순간 물렁한 한 겹이 먼저 오고 딱 끊기는 톡이 그것을 닫는다. **두 박자의
+   순서는 한 번 뒤집혔다**(예전에는 `LIGHT` → `SOFT`) — 딸깍이는 실물 버튼처럼
+   **끝이 또렷한 쪽이 활성화**를 맡아야 눌렸다는 사실이 손에 남는다. 눌렀다가
+   손가락을 밖으로 빼면 `pressed` 가 안 오므로 **닫는 박자가 없는 것이 곧
+   "아무 일도 일어나지 않았다"**이고, 그래서 또렷한 쪽을 뗄 때에 둔다. **버튼 세기 표는
+   폐기됐다** — 예전에는 `OutgameTheme` 의 버튼 스타일이 곧 세기였지만
+   (primary · dark = `MEDIUM`, ghost = `LIGHT`, text = `SELECT`) 지금은 종류와
+   무관하게 같은 두 박자다(확정인지 탭 전환인지는 화면이 말한다). 예외만
+   `HapticUi.mute(btn)`(두 박자 다 끔) / `kind(btn, …)`(뗄 때) /
+   `down_kind_for(btn, …)`(누를 때) 로 적는다. `button_down` 에는
+   `Haptics.prepare()` 도 함께 붙어 누름과 활성화 사이에 탭틱 엔진이 깨어난다.
+2. **버튼이 아닌 것은 그 사건이 일어나는 자리에서 직접 부른다**(`Haptics.play`).
+
+| 사건 | 자리 | 감촉 |
+|---|---|---|
+| 카드를 손패에서 끌어냄 | `CardPhaseManager._begin_drag` | `SELECT` |
+| 끌린 카드가 **유효 대상 / 드롭 존에 막 들어섬** | `CardPhaseManager._update_drag` (`_drag_hot_last` 전이) | `SELECT` |
+| 카드가 실제로 나감 / 버릴 카드로 넘어감 | `CardPhaseManager._end_drag` | `MEDIUM` |
+| 공격 카드 **명중 한 방** | `CardPhaseManager._effect_attack` | `MEDIUM` |
+| 공격 카드 **빗나감** | 〃 | `LIGHT` |
+| 파일럿 처치(양 팀) | `BattleSim.mark_pilot_dead` | `HEAVY` |
+| 포탑 철거 | `BattleSim.score_turret_kill` | `HEAVY` |
+| 내 작전 단계 개시 | `CardPhaseManager.start_card_phase` | `MEDIUM` |
+| 턴 넘기기 / 도넛 뒤집기 | `ui/CostDonut._input` | `MEDIUM` / `SELECT` |
+| 교전 결과(승 / 패 / 무) | `EngagePhaseManager` 대시보드 진입 | `SUCCESS` / `ERROR` / `MEDIUM` |
+| 오브젝트 획득(아군 / 적군) | `ObjectiveSystem._grant_reward` | `SUCCESS` / `WARNING` |
+| 경기 승 / 패 | `SimulationCore.check_win_condition` | `SUCCESS` / `ERROR` |
+| 정글 시작 — 집기 / 무리 진입 / 방향 결정 | `gambit/JungleStartOverlay` | `SELECT` / `SELECT` / `MEDIUM` |
+| 훈련 타일 — 집기 / **놓을 수 있는 칸마다 스냅** / 배치 | `season/training/TrainingView` | `SELECT` / `LIGHT` / `SOFT` |
+| 훈련 타일 — 판에서 탭해 걷어냄 | `season/training/TrainingView._on_grid_input` | `LIGHT` |
+| 밴픽 메크 칸 — 들어올림 / 맞바꿈 | `ban_pick/BanPickController` | `SELECT` / `MEDIUM` |
+| 세이브 삭제 — 무장 / 실행 | `save_load/SlotCard._on_delete` | `WARNING` / `ERROR` |
+| 캠페인 종료 / 우승 | `GameOverView` / `EndingView.ensure_view` | `ERROR` / `SUCCESS` |
+
+**규칙 셋.**
+- **매 턴 도는 사건에는 안 붙인다** — 전장 자동 교전의 한 대, 전선 체류
+  성장치, 캠프 획득. 남발하면 감촉이 배경이 되어 정작 큰 한 건이 묻힌다
+  (성장치 팝업이 전선 수입을 안 띄우는 것과 같은 이유).
+- **한 사건은 한 번만 운다.** 처치로 끝난 명중은 `MEDIUM` 을 건너뛴다 —
+  `mark_pilot_dead` 가 이미 `HEAVY` 를 냈고, 겹치면 처치가 평타처럼 뭉개진다.
+  같은 이유로 두 번 눌러야 지워지는 삭제 버튼은 자동 배선을 `mute` 한다.
+- **드래그는 "들어섬"만 운다 — 다만 칸 단위로 스냅하는 판에서는 칸마다 운다.**
+  벗어나는 쪽은 어디서든 조용하고(놓을 수 있게 됐다는 것이 신호다) 매 **프레임**
+  울리는 것도 여전히 금지다(그것은 신호가 아니라 진동이다). 훈련판이 칸마다
+  `LIGHT` 를 내는 것은 그 화면의 미리보기가 자유 좌표가 아니라 **칸에 물려**
+  움직이기 때문이다 — 한 톡이 곧 "한 칸 넘었다"라서 판 위를 끌면 따다닥 걸리는
+  손맛이 된다. 카드 드래그(`_drag_hot_last`)처럼 대상이 연속인 자리는 여전히
+  전이 한 번만 운다.
+- **끌어다 놓는 조작도 무거운 한 겹으로 닫는다.** 훈련 타일이 판에 물리는
+  순간은 `SOFT` 다 — 집기(`SELECT`) · 칸 넘김(`LIGHT`)보다 무거운 한 겹이 와야
+  그 셋이 한 동작의 처음 · 중간 · 끝으로 읽힌다.
+
+**데스크톱에서는 전부 조용한 no-op** 이므로 에디터 실행에 가드가 필요 없다.
+다만 **`--check-only --script` 는 오토로드 식별자를 모른다** — `Haptics` /
+`HapticUi` 를 부르는 파일은 그 검사에서 `Identifier not found` 가 뜨지만
+실제 실행에는 문제가 없다. 검산은 씬을 띄워서 한다.
+
+### `res://data/game.db` → `user://data/game.db`
+
+**SQLite 는 디스크 위의 진짜 파일을 열어야 한다.** 에디터에서는 `res://` 가
+그대로 실제 폴더라 그냥 열리지만, 익스포트한 빌드에서는 `res://` 가 `.pck` 안으로
+들어가 SQLite 가 그 경로를 열지 못한다 — 손대지 않았다면 아이폰에서 타이틀 화면부터
+DB 오류로 멈추었을 자리다. 그래서 모든 런타임 DB 접근은 **`GameManager.db_path()`**
+한 곳을 지난다 — 에디터에서는 `res://data/game.db` 그대로(CSV→DB 재빌드가 곷바로
+반영돼야 하므로), 기기에서는 pck 안의 DB 를 `user://data/game.db` 로 꺼낸 사본을
+돌려준다. **매 실행마다 덮어쓴다** — DB 는 런타임에 읽기 전용이고(세이브는
+`user://saves/*.save`) 96KB 뿐이라, 뭐가 바뀜는지 비교하는 캐시 무효화 장치를 두는 것보다
+그냥 복사하는 쪽이 언제나 옳다(새 빌드를 깔았는데 옫 빌드의 game.db 가 남아 있는 사고가
+구조적으로 불가능해진다). 편집 도구인 `addons/csv_to_db/csv_to_db.gd` 만 여전히
+`res://data/game.db` 에 **쓴다** — 그것이 원본이기 때문이다.
+
+`data/game.db` 는 **리소스가 아니므로** 그냥 두면 pck 에 안 들어간다.
+`export_presets.cfg` 의 `include_filter="data/game.db"` 가 그걸 넣는 자리이고,
+워크플로의 포장 단계가 pck 안에서 그 문자열을 실제로 찾아 확인한다 — 필터가 조용히
+빗나가면 빌드는 초록불인데 게임만 죽는 조합이 나오기 때문이다.
+
+---

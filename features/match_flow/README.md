@@ -302,3 +302,13 @@ ScreenMetrics.backfill_top(_panel, <판 배경색>)   # 비워진 위쪽 띠를 
 나온다 — 그래서 어느 화면에서나 격자 칸은 정사각으로 남고 보이는 줄 수만 바뀐다.
 
 자세한 내용: **`docs/mobile_safe_area.md`**
+
+
+## Detail moved from root CLAUDE.md
+
+### Match Flow → Battle Sim handoff
+`MatchFlow` populates `GameManager.match_ctx` (player_roster, enemy_roster,
+jungle_start_dir, banned_mech_ids, …) then `change_scene_to_file` to BattleSim.
+`BattleSim.spawn_pilots_with_lanes()` injects each `PlayerData.assigned_mech`'s
+hp/atk into `PilotData`. If `match_ctx.active` is false (running BattleSim
+standalone), it falls back to `ROLE_STATS` defaults.

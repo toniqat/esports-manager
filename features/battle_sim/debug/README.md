@@ -109,3 +109,12 @@ A push that stops because the tile ahead is an enemy turret logs the siege
 bounce instead (`공성 — … 적 포탑 칸에 진입 후 한 칸 후퇴`).
 
 Details for both in [`../combat/README.md`](../combat/README.md) → "Movement".
+
+
+## Detail moved from root CLAUDE.md
+
+### Active Systems (moved from root CLAUDE.md)
+
+| System | Description |
+|---|---|
+| 전투 행동 로그 | `debug/BattleLogger.gd` (`_bs.blog`). 매 턴 전/후 위치 스냅샷 + 리스폰·리콜·교전·데미지·사망·자유이동(스텝 단위)·푸시·포탑·HQ·정글·카드까지 콘솔과 `user://battle_logs/battle_<timestamp>.log` 양쪽에 기록. 턴 종료 시 같은 스코프의 적끼리 자리를 맞바꾸면 `!!SWAP` / `!!CROSS` 로 표시하고 두 파일럿의 이동 이력을 되짚어 준다. 기본 ON — `blog.enabled` 로 끈다. |

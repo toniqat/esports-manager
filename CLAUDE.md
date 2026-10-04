@@ -1,635 +1,110 @@
 # EsportsManager — Project Navigation Map
 
 ## Workflow Instructions
-**Read this file first every session.** Then locate the relevant feature folder and read its `README.md` before touching any code.
+**Read this file first every session.** It is a map only: find the feature
+folder for the task, then read that folder's `README.md` (and the submodule's
+README for battle_sim / season / match_flow) before touching any code.
+Detail lives in the READMEs — **do not grow this file with system specs**;
+add them to the owning folder's README and at most a one-line pointer here.
 
 ---
 
 ## Project Overview
-- **Engine**: Godot 4.5-stable, GDScript
-- **Target**: 2D Mobile Portrait 1080×1920
-- **Main scene**: `res://scenes/TitleScreen.tscn` (3 save slots — pick one to enter Season.tscn)
-- **Campaign loop**: 6 events from December → next year:
-  `PRESEASON → PRESEASON_INTL → MIDSEASON → MIDSEASON_INTL → REGULAR → REGULAR_INTL`.
-  Win the final REGULAR_INTL = ending. Miss any phase's playoffs = game over.
-- **Weekly progression**: campaign advances **one week at a time**, and the
-  week itself runs **day by day, 월~일** (`season_state["week_day"]` 0..6).
-  훈련은 월~금 닷새에 하루씩 먹고(`TrainingBoard.apply_day_training(day)`),
-  **토·일 이틀이 경기일**이다. 일요일을 닫을 때 `CalendarSystem.advance_week()`
-  이 달력을 7일 굴린다 — 그 함수를 부르는 자리는 `SeasonHub._end_week()` 하나다.
-- **Weekly flow**: HUB(주 시작 직전) → **PRESS**(기자회견 — 메신저 화면) →
-  TRAINING (**일상 훈련** — 타일을 판에 끼워 훈련을 짠다) → "훈련 확정" →
-  **WEEK**(시간 경과 — 상단 가로 요일 레일 + 그날의 카드 목록):
-  월~금은 그날 훈련 결과를 보고 "확인", 토·일은 경기가 있으면 "경기 시작" →
-  MatchFlow (PREP → BAN_PICK(밴픽 + 메크 배정) → BattleSim → return;
-  **정글 시작 방향은 BattleSim 안에서 고른다**) → STANDINGS (LeagueView /
-  BracketView / IntlBracketView) → "확인" → 다시 그 요일 → 일요일의
-  "주 마감 →" → HUB.
-  예전의 `TRAINING_RESULT`(주간 결산 한 장)는 정산이 요일 단위로 쪼개지면서
-  화면과 함께 **삭제됐다**.
-- **아웃게임은 흰 배경 계통**이고 **모든 색이 `resources/OutgameTheme.gd` 를
-  지난다**(참고 디자인 `docs/ref_image.jpg`). 인게임(BattleSim)은 그 표를
-  쓰지 않는다 — 전장은 어두운 화면이다.
-- **아웃게임 화면의 주된 행동은 하단 구간 전체를 차지하는 바다**
-  (`OutgameTheme.add_bottom_bar`) — 좌우 끝에서 끝까지, 아래는 안전선에 밀착,
-  모서리는 각지게. 화면 한가운데 떠 있는 도형 버튼이 아니다. 버튼이 N개면 그
-  구간을 **무게 비율대로** 나눠 갖고 관례는 **주 행동 2 : 보조 1** 에 **주 행동이
-  오른쪽 끝**이다. 본문 높이는 `bottom_bar_top()` 에서 역산한다 — 바 높이를
-  화면마다 상수로 다시 적으면 바를 한 번 손볼 때마다 그 화면들의 목록이 조용히
-  바 밑으로 들어간다. 규약과 함정 넷은 `resources/README.md` 의 "하단 액션 바"
-  절. **인게임(BattleSim)은 안 쓴다.**
-- **Save / load**: 3 slots persisted as JSON under `user://saves/slot{0,1,2}.save`.
-  Auto-save fires at four points: (1) DRAFT → HUB, (2) MatchFlow pre-ban-pick
-  (after PREP confirmation), (3) MatchFlow post-ban-pick (after 메크 배정
-  완료), (4) post-week-end (after CalendarSystem.advance_week on the
-  일요일 마감). No save during BattleSim — closing mid-battle resumes
-  from #3. Title screen routes "이어하기" to MatchFlow.tscn when the slot
-  was saved mid-match (`season_state.match_resume` non-null), else Season.tscn.
+- **Engine**: Godot 4.5-stable, GDScript · **Target**: 2D mobile portrait 1080×1920
+- **Main scene**: `res://scenes/TitleScreen.tscn` (3 save slots → `Season.tscn`)
+- **Campaign**: `PRESEASON → PRESEASON_INTL → MIDSEASON → MIDSEASON_INTL → REGULAR → REGULAR_INTL`.
+  Win final REGULAR_INTL = ending; miss any phase's playoffs = game over.
+- **Week**: advances one week at a time, run day by day 월~일
+  (`season_state["week_day"]`). 월~금 = training days, 토·일 = match days.
+  `CalendarSystem.advance_week()` is called only from `SeasonHub._end_week()`.
+- **Weekly flow**: HUB → PRESS(기자회견) → TRAINING(타일판) → WEEK(요일 레일) →
+  on match day MatchFlow (PREP → BAN_PICK(밴픽 + 메크 배정) → BattleSim) →
+  STANDINGS → back to WEEK → 일요일 "주 마감" → HUB.
+- **Outgame = white theme**: every colour goes through `resources/OutgameTheme.gd`
+  (ref `docs/ref_image.jpg`); primary actions use the full-width bottom bar
+  (`OutgameTheme.add_bottom_bar`, rules in `resources/README.md` "하단 액션 바").
+  **BattleSim uses neither** — the battlefield is a dark screen.
+- **Save / load**: 3 JSON slots `user://saves/slot{0,1,2}.save`, 4 autosave points,
+  no save inside BattleSim → `features/save_load/README.md`.
+- **Screen coordinates** all pass through `ScreenMetrics` (safe area) →
+  `docs/mobile_safe_area.md`.
 
 ---
 
-## Directory Structure
+## Directory Map
 
 ```
 esports-manager/
-├── CLAUDE.md                    ← YOU ARE HERE
-├── export_presets.cfg           ← iOS 익스포트 프리셋 (CI 가 읽는다 — 커밋된 파일이다)
-│
-├── ios/plugins/                 ← iOS 네이티브 플러그인 배치 자리 (익스포터가 읽는다).
-│                                  Haptics 바이너리는 **CI 가 굽는다** — 커밋하지 않고
-│                                  (.gitignore) 매 iOS 빌드에서 그 Godot 버전의 헤더로
-│                                  다시 컴파일한다. 규약과 게이트는 ios/plugins/README.md
-│
-├── .github/workflows/
-│   └── ios-testbuild.yml         ← iOS unsigned .ipa 빌드 (macOS 러너) — docs/ios_testbuild.md
-│
-├── build/                        ← **폰에 올릴 물건을 두는 자리**. CI 가 구운 .ipa 를
-│   └── README.md                    여기로 내려받는다(커밋 SHA 를 파일명에). 산출물은
-│                                    전부 gitignore 이고 **이 README 만 커밋된다**
-│
-├── features/
-│   ├── season/                  ← Outgame campaign (PRIMARY entry — Season.tscn)
-│   │   ├── README.md            ← Read before editing season code
-│   │   ├── SeasonHub.gd         ← class_name SeasonHub — campaign orchestrator
-│   │   ├── HubView.gd           ← class_name HubView — Phase 3 hub screen UI
-│   │   ├── GameOverView.gd      ← class_name GameOverView — Phase 7/8 elimination screen
-│   │   ├── EndingView.gd        ← class_name EndingView — Phase 8 world-champion screen
-│   │   ├── calendar/            ← 주 시계 + 요일 표(월~일, 토·일이 경기일) + 페이즈 전환
-│   │   ├── press/               ← **기자회견** — 주 시작 직전의 메신저 화면(원형 기자 초상 +
-│   │   │                          쐐기 말풍선 → 답변 선택지). `PressConferenceView.gd`.
-│   │   │                          지금은 대사 · 선택지가 임시 데이터인 틀이다
-│   │   ├── week/                ← **시간 경과** — 상단 가로 요일 레일(지금 요일만 앰버) +
-│   │   │                          그날의 훈련 결과 카드 / 경기 카드 + 아래 "확인"
-│   │   │                          (경기일이면 "경기 시작"). `WeekProgressView.gd`
-│   │   ├── draft/               ← 초기 5인 선발 (네임드 25인 풀) — 우마무스메식 인물 고르기.
-│   │   │                          PICK(상체 일러스트 5칸 + 역할 필터 + 정사각 썸네일 격자
-│   │   │                          + 가운데 "다음") ↔ CONFIRM(픽창을 걷고 5인을 화면 가운데로
-│   │   │                          내린 뒤 "게임 시작"(암전 → 가짜 로딩 → 허브) / "뒤로"). 일러스트 탭으로
-│   │   │                          `DraftDetailPanel` 상세 팝업
-│   │   ├── training/            ← **일상 훈련 타일판** — 5열(선수) × 5행(하루씩) 격자에
-│   │   │                          코스 타일(폴리오미노)을 드래그 드롭으로 끼워 넣는다.
-│   │   │                          `TrainingTile.gd`(문법) / `TrainingBoard.gd`(판정 · 정산 ·
-│   │   │                          **요일 적용** `apply_day_training`) / `TrainingView.gd`(화면)
-│   │   ├── league/              ← LeagueManager + LeagueView (**2 rounds per week** — 토 · 일,
-│   │   │                          AI sims, standings)
-│   │   └── tournament/          ← TournamentManager + BracketView (4-team SE playoff, 2 weeks, Phase 7);
-│   │                              InternationalTournament + IntlBracketView (8-team SE INTL, 3 weeks, Phase 8)
-│   │
-│   ├── match_flow/              ← Pre-battle pipeline (entered from Season on the player's match week)
-│   │   ├── README.md            ← Read before editing match flow code
-│   │   ├── MatchFlow.gd         ← class_name MatchFlow — orchestrator
-│   │   ├── match_prep/          ← Pre-match dashboard (review rosters before BAN_PICK)
-│   │   ├── ban_pick/            ← LoL-international ban/pick + 만지작거리는 AI, **그리고 배정**
-│   │   │                          (**흰 배경 계통** `OutgameTheme`. 픽창 맨 위 = 14칸 순서 줄(지금 칸에
-│   │   │                           밴 ✕ / 픽 ✓ SVG + 그 팀 쪽으로 오가는 삼각형. 같은 팀의 같은 행동이 이어지면
-│   │   │                           캡슐로 붙고 가운데 구분선 + 지금 칸만 맥박·아이콘), 차례가 넘어가거나
-│   │   │                           밴↔픽이 바뀔 때만 중앙 차례 배너.
-│   │   │                           상대는 고를 만한 후보 0~2대를 집어 보았다가 확정한다)
-│   │   │                          (위 = 상대 메크 칸 5 + 초상화 5 / 가운데 = 픽창(역할군
-│   │   │                           필터 + 정사각 메크 격자 5열 × 4.5줄 스크롤) / 아래 = 아군,
-│   │   │                           거울 배치. 메크 1탭 = 하단 시트로 패시브 · 카드 셋, 2탭 =
-│   │   │                           확정. **아군 메크 칸은 밴픽 중에도 드래그 드롭으로 다른
-│   │   │                           선수 자리에 옮긴다.** 14수가 끝나면 픽창이 걷히고 두 팀
-│   │   │                           블록이 화면 가운데로 모이며(아군 = 파일럿 **상체 일러스트**
-│   │   │                           위 · 메크 칸 아래), 상대 메크가 포지션에 맞는 선수 자리로
-│   │   │                           옮겨 앉고, 하단 바에 "게임 시작". 양 팀 초상화 ·
-│   │   │                           메크 칸이 전부 눌려 파일럿 / 메크 상세가 뜬다)
-│   │   │                          `MechDetailPanel.gd` = 메크 상세 팝업(좌 전신 아트 / 우 정보)
-│   │   └── (jungle_start/ 는 삭제됐다 — 정글 시작 방향은 BattleSim 이 묻는다)
-│   │
-│   ├── save_load/               ← Title screen + 3-slot save/load (entry: TitleScreen.tscn)
-│   │   ├── README.md            ← Read before editing save/load code
-│   │   ├── SaveSystem.gd        ← class_name SaveSystem — static helpers (serialize/list/save/load/delete)
-│   │   ├── TitleScreen.gd       ← Project entry — builds 3-slot UI, routes button presses
-│   │   └── SlotCard.gd          ← class_name SlotCard — one slot card with new/continue/delete
-│   │
-│   └── battle_sim/              ← Battle simulation (PRIMARY FOCUS)
-│       ├── README.md            ← Read before editing battle sim code
-│       ├── BattleSim.gd         ← Thin orchestrator (class_name BattleSim)
-│       ├── combat/
-│       │   ├── README.md
-│       │   ├── SimulationCore.gd   ← Main turn loop, targeting, win condition
-│       │   ├── RecallSystem.gd     ← Instant HQ teleport at HP threshold
-│       │   ├── HexGrid.gd          ← Hex math, neighbors, screen coords
-│       │   └── Pathfinding.gd      ← BFS + greedy movement
-│       ├── rendering/
-│       │   ├── README.md
-│       │   └── BattleRenderer.gd   ← All _draw() logic (extends Node2D)
-│       ├── card_phase/
-│       │   ├── README.md
-│       │   ├── Card.gd                   ← class_name Card — card visual node
-│       │   ├── CardPhaseManager.gd       ← Card draw/play overlay and effects
-│       │   ├── CardSelectOverlay.gd      ← 버리기:N / 찾기:N modal pick UI
-│       │   ├── CardTargetingOverlay.gd   ← 카드 드래그 = 대상 지정 오버레이 (딤·강조 + 드롭 확정)
-│       │   ├── CardDragArrow.gd          ← 카드 ↔ 커서 조준 화살표 (2차 베지어, 카드 뒤에 그려짐)
-│       │   ├── CardPileViewer.gd         ← Deck / Discard 목록 열람 (읽기 전용, 이름순)
-│       │   ├── AiCardPlayer.gd           ← AI 카드 사용 시 중앙 애니메이션 (+ 그 아래 설명판)
-│       │   └── CardDescBox.gd            ← 카드 설명판 (이름 · 비용 · 설명문) — 카드 앞면에 설명문이 없어 글을 보여 주는 모든 자리가 쓴다
-│       ├── engage/
-│       │   ├── README.md
-│       │   ├── EngagePhaseManager.gd   ← 턴제 교전 오케스트레이터 (engage:N / duel)
-│       │   ├── EngageIntro.gd         ← 카드 제출 직후의 VS 개시 확인 화면 (교전 무대 미리보기 + 확인/취소)
-│       │   ├── TurnEngageSim.gd        ← 헤드리스 탑뷰 교전 시뮬레이터 (라운드 턴제 · 전장 타일이 시작 위치를 정한다)
-│       │   └── EngageArena.gd          ← 탑뷰 렌더러(무대 밴드 + 카메라 + 하단 정사각 썸네일 스트립) + 결과 대시보드
-│       ├── objective/
-│       │   ├── README.md
-│       │   ├── ObjectiveSystem.gd  ← 오브젝트(전령/용) — 시계·참여 결정·정산
-│       │   └── ObjectiveRewardFx.gd ← 보상 획득 연출 — 보상 카드를 중앙에 펼쳤다가 덱/손패/상대 손패로 날린다
-│       ├── skill/
-│       │   ├── README.md
-│       │   └── PilotSkillSystem.gd ← 파일럿 스킬 — 선수마다 붙는 고유 능력(쿨타임/충전식/패시브)
-│       ├── mech/
-│       │   ├── README.md
-│       │   └── MechSkillSystem.gd  ← 메크 스킬 — 기체마다 붙는 패시브 15종 + 그 기체 카드들의 상태·사건 훅
-│       ├── gambit/
-│       │   ├── README.md
-│       │   ├── GambitPhaseManager.gd ← 개시 전 단계 — 역할 고정 레인 + 전장 세우기 + 개시
-│       │   └── JungleStartOverlay.gd ← 정글 시작 방향 — 비워진 손패 자리의 정글러 원형
-│       │                               초상화를 좌/우 정글 무리로 끌어다 놓고 확정
-│       ├── buildings/
-│       │   ├── Building.gd / Waypoint.gd  ← @tool placeable scene nodes
-│       │   ├── BuildingLayer.gd / WaypointLayer.gd
-│       │   └── BuildingRegistry.gd       ← Cell→Building lookup
-│       ├── debug/
-│       │   ├── README.md
-│       │   └── BattleLogger.gd     ← 전 행동 로그(콘솔 + user://battle_logs/) + 교차 감지
-│       ├── data/
-│       │   ├── DataLoader.gd       ← game.db loader (game_cfg, pilots, lanes)
-│       │   └── FieldLoader.gd      ← TileMap reader (HQs/turrets/waypoints/NZ)
-│       └── ui/
-│           ├── README.md
-│           ├── HudBuilder.gd       ← HUD construction and label updates
-│           ├── PilotStrip.gd       ← 파일럿 5인 스트립 (눈높이 초상화 + 체력 + 성장치) ×2. 아군 칸에는 파일럿 스킬 준비도 딤 + 숫자
-│           ├── PilotDetailPanel.gd ← 파일럿 상세 모달 (좌 전신 아트 + 그 좌하단 지속 효과 / 우 머리글 + 탭 3개 + 스탯 칩 + 파일럿 스킬 / 하단 전체 폭 보유 카드 부채꼴)
-│           ├── KillFeed.gd       ← 킬로그 — 우측 상단, 막타+어시 / 아이콘 / 피해자 한 줄
-│           ├── ObjectiveTimer.gd  ← 오브젝트 등장 시계 — 적 스트립 양옆 (좌 전령 / 우 용). 누르면 보상 팝업
-│           ├── ObjectiveRewardPopup.gd ← 오브젝트 보상 미리보기 — 그 오브젝트가 주는 카드를 실물로
-│           ├── CardPileStack.gd   ← 덱 / 버린 더미 — 앞으로 누운 카드 뭉치 + 장수 + 오가는 카드 잔상
-│           └── CostDonut.gd        ← 전략 포인트 도넛 게이지 (player one = 턴 넘기기 버튼)
-│
-├── autoloads/
-│   ├── README.md                ← Autoload documentation
-│   ├── GameManager.gd           ← State singleton — NO class_name
-│   ├── Haptics.gd               ← iOS / Android 햅틱 래퍼. **원본은 이 저장소가 아니다**
-│   │                              (별도 `godot-haptics` 포크에서 복사해 온다).
-│   │                              전역 이름으로 등록(`*`)돼 있어 `Haptics.play(Kind.X)` 로 부른다.
-│   │                              **그 포크는 업스트림의 사본이 아니다** — 업스트림 iOS
-│   │                              플러그인은 `light`/`medium`/`heavy` 셋만 바인딩해서
-│   │                              SELECT · SOFT · SUCCESS 계열이 폰에서 통째로 침묵했고,
-│   │                              나머지를 포크에서 구현했다. 되감으면 침묵도 돌아온다 —
-│   │                              ios/plugins/README.md
-│   └── HapticUi.gd              ← **버튼 햅틱 자동 배선** — `node_added` 하나가 트리에 들어오는
-│                                  모든 `BaseButton` 에 감촉을 물린다(누름 SOFT · 뗌 RIGID, `button_down`
-│                                  에는 `prepare()`). 예외만 `HapticUi.kind()` / `mute()` 로 적는다.
-│                                  이쪽은 이 저장소가 원본이라 고쳐도 된다
-│
-├── resources/
-│   ├── README.md                ← Resource documentation
-│   ├── CardData.gd              ← class_name CardData (card data container). `from_def()` 는 **static** —
-│   │                              `cards.csv` 한 행을 카드 한 장으로 조립하는 유일한 자리라
-│   │                              BattleSim 없이도 돌아야 한다(밴픽 하단 시트 · 메크 상세가 쓴다.
-│   │                              드래프트 상세 팝업도 썼지만 그 화면의 후보 카드 절은 삭제됐다)
-│   ├── CardImages.gd            ← class_name CardImages (카드 아트 조회 — 전용 아트
-│   │                              `images/card/<이름>.png` 가 있으면 그것, 없으면
-│   │                              **이름 해시로 고른** `images/ground/N.png` 5장 중 한 장.
-│   │                              배경은 480×660 = 카드 표시 크기의 3배, 비율은 카드와
-│   │                              같은 8:11)
-│   ├── MechImages.gd            ← class_name MechImages (메크 아트 조회 — 전신 `N_full.png` 30칸 +
-│   │                              **정사각 초상화** `portrait/N_portrait.png` 30칸. 초상화는
-│   │                              `images/mech/make_mech_portraits.py` 가 전신에서 굽는다)
-│   ├── GameEnums.gd             ← class_name GameEnums (all shared enums)
-│   ├── PilotData.gd             ← class_name PilotData (pilot runtime state; kills / deaths 포함)
-│   ├── TurretData.gd            ← class_name TurretData (turret state)
-│   ├── PlayerData.gd            ← class_name PlayerData (out-game persona + assigned mech)
-│   ├── MechData.gd              ← class_name MechData (mech stats — no role)
-│   ├── BuildingData.gd / WaypointData.gd ← @tool inspector resources
-│   ├── SilhouetteFx.gd          ← class_name SilhouetteFx — **캐릭터 실루엣 쉐이더의 배선**
-│   │                              (`shaders/silhouette.gdshader` 를 노드에 물리고 등장 컷을
-│   │                               돌린다). 구운 모브 실루엣 PNG 와 **다른 물건**이다 —
-│   │                               그쪽은 상시 에셋, 이쪽은 한 번 지나가는 연출.
-│   │                               **지금 부르는 화면은 없다** — 파일럿 상세 팝업의
-│   │                               등장 컷이 썼다가 걷혔고, 도구만 남겨 둔 것이다
-│   ├── shaders/
-│   │   └── silhouette.gdshader   ← 알파 유지 + RGB 단색 채움 + 바깥 테두리 한 겹,
-│   │                               `reveal` 0→1 로 원본까지 벗겨진다. 테두리가 설 자리는
-│   │                               **아트를 그 폭만큼 안으로 물려서** 만든다 — 전신 아트가
-│   │                               네 변에 닿아 있어 안 그러면 머리 위가 잘린다.
-│   │                               함정 셋은 `resources/README.md`
-│   ├── ScreenMetrics.gd         ← class_name ScreenMetrics — 세이프 에어리어 / 뷰포트 크기 (정적).
-│   │                              **모든 화면 좌표가 여기를 지난다** — docs/mobile_safe_area.md
-│   ├── OutgameTheme.gd          ← class_name OutgameTheme — **아웃게임 흰 배경 팔레트**
-│   │                              (+ 버튼 감촉 세기. `style_primary` / `style_dark` = MEDIUM,
-│   │                               `style_ghost` = LIGHT, `style_text` = SELECT).
-│   │                              시즌 허브 · 기자회견 · 훈련판 · 시간 경과 · 순위 ·
-│   │                              브래킷 · 드래프트의 **모든 색이 여기를 지난다**
-│   │                              (참고 디자인 `docs/ref_image.jpg`). 색 표 + StyleBox
-│   │                              공장 + 버튼 스타일 + 카드 · 원형 초상 · 칩 · 스크롤 헬퍼.
-│   │                              **인게임(BattleSim)은 안 쓴다** — 전장은 어두운 화면이다
-│   ├── DragScroll.gd            ← class_name DragScroll — **끌어서 굴리는 스크롤**. 엔진의 터치
-│   │                              드래그 대신 마우스·터치를 한 경로로 받아 `ScrollContainer` 를
-│   │                              굴린다(문턱 · 관성 · 눌린 버튼 취소). `cross_axis_releases` 면
-│   │                              축을 가로지르는 드래그를 `cross_drag_started` 로 넘긴다 —
-│   │                              훈련 코스 목록이 "가로 = 스크롤 / 세로 = 타일 집기"를 그것으로 가른다.
-│   │                              `OutgameTheme.add_vscroll` 은 자동으로 붙인다
-│   └── UiHelpers.gd             ← class_name UiHelpers (mk_label etc.)
-│
-├── scenes/
-│   ├── TitleScreen.tscn         ← MAIN scene — 3-slot save/load entry (uses features/save_load/)
-│   ├── Season.tscn              ← Campaign hub (entered from TitleScreen; uses features/season/)
-│   ├── MatchFlow.tscn           ← Pre-battle pipeline (entered from Season)
-│   ├── BattleSim.tscn           ← Battle sim scene (entered from MatchFlow)
-│   ├── BattleField.tscn         ← TileMapLayer + Building/Waypoint layers
-│   └── Card.tscn                ← Card prefab (instantiated at runtime)
-│
-├── docs/
-│   ├── ios_testbuild.md          ← 맥 없이 아이폰에서 돌리는 법 (Actions + Sideloadly).
-│   │                                코드/에셋만 바뀐 경우 pck 만 갈아 끼우는 빠른 길도 여기 있다
-│   ├── mobile_safe_area.md       ← **UI 를 어디에 놓아도 되는가** — 세이프 에어리어 · 화면비 · 제스처 구역
-│   └── mech_skills_design.md     ← 메크 21대 목록 + 절 문법
-│
-└── addons/godot_mcp/            ← MCP editor plugin (do not modify)
+├── CLAUDE.md                 ← YOU ARE HERE (map only)
+├── export_presets.cfg        ← iOS export preset (read by CI)
+├── .github/workflows/ios-testbuild.yml ← unsigned .ipa build → docs/ios_testbuild.md
+├── ios/plugins/              ← iOS native plugins (Haptics built by CI) → README.md
+├── build/                    ← where the phone build (.ipa) is downloaded → README.md
+├── data/                     ← CSV tables, game.db, SQLite addon usage, table list → README.md
+├── autoloads/                ← GameManager, Haptics, HapticUi (+ haptics table, db_path) → README.md
+├── resources/                ← shared data classes, enums, image lookups, OutgameTheme,
+│                               ScreenMetrics, DragScroll, UiHelpers, shaders → README.md
+├── scenes/                   ← TitleScreen / Season / MatchFlow / BattleSim / BattleField / Card .tscn
+├── docs/                     ← ios_testbuild.md, mobile_safe_area.md, mech_skills_design.md
+├── addons/godot_mcp/         ← MCP editor plugin (do not modify)
+└── features/
+    ├── save_load/            ← title screen, 3-slot save/load, autosave, mid-match resume
+    ├── season/               ← outgame campaign (SeasonHub orchestrator, handoffs, brackets)
+    │   ├── calendar/         ← week clock, 요일 / 경기일, phase transitions
+    │   ├── press/            ← 기자회견 messenger screen
+    │   ├── week/             ← 시간 경과 screen (day rail + day cards)
+    │   ├── draft/            ← initial 5-pilot draft
+    │   ├── training/         ← 일상 훈련 tile board
+    │   ├── league/           ← LeagueManager + LeagueView (2 rounds / week)
+    │   └── tournament/       ← playoff + INTL brackets (no README — see season/README.md)
+    ├── match_flow/           ← PREP → BAN_PICK → BattleSim handoff
+    │   ├── match_prep/
+    │   └── ban_pick/         ← ban/pick + mech assignment, MechDetailPanel
+    └── battle_sim/           ← battle simulation (PRIMARY FOCUS) — module table in README.md
+        ├── combat/           ← SimulationCore, recall, hex grid, pathfinding, lanes, jungle, growth income
+        ├── rendering/        ← BattleRenderer (all _draw), marker layout / glide / popups
+        ├── card_phase/       ← cards, hand, drag & drop, targeting, deck rules, AI card play
+        ├── engage/           ← round-based turn engage stage, VS intro, result screen
+        ├── objective/        ← 전령 / 용 objectives + reward FX
+        ├── skill/            ← pilot skills (25)
+        ├── mech/             ← mech passives (15) + mech card hooks
+        ├── gambit/           ← pre-battle setup + jungle start overlay
+        ├── buildings/        ← @tool Building / Waypoint nodes
+        ├── debug/            ← BattleLogger
+        ├── data/             ← DataLoader, FieldLoader
+        └── ui/               ← HUD, pilot strips, detail panel, kill feed, timers, card piles
 ```
 
 ---
 
 ## Feature Map
 
-| Feature | Scene | Script | Status |
+| Feature | Scene | Script | Read |
 |---|---|---|---|
-| Save / Load | `scenes/TitleScreen.tscn` | `features/save_load/TitleScreen.gd` | **Main entry** — 3 slots under `user://saves/`. New game / continue / delete. Auto-saves at draft / pre-ban-pick / post-ban-pick / post-week-end. Mid-match resume re-enters MatchFlow at the saved phase. |
-| Season | `scenes/Season.tscn` | `features/season/SeasonHub.gd` | Weekly campaign hub. HUB → PRESS(기자회견) → TRAINING(일상 훈련 타일판) → WEEK(월~일 하루씩; 토·일에 경기가 있으면 MatchFlow → STANDINGS → 확인) → 일요일 마감 → HUB. 리그는 주 2경기(토·일), 토너먼트는 주 1경기(토). INTL phase = 3-week SE bracket; playoff = 2-week SE bracket. REGULAR_INTL win → ENDING; loss → GAME_OVER. 화면은 전부 흰 배경 계통(`resources/OutgameTheme.gd`). |
-| Match Flow | `scenes/MatchFlow.tscn` | `features/match_flow/MatchFlow.gd` | Pre-battle pipeline — entered from Season on the player's match week. PREP → BAN_PICK(밴픽 + 메크 배정) → BattleSim. **열거값 둘이 자리만 지킨다** — `ASSIGN` 은 배정이 밴픽 화면 안으로 들어가며(`assign/AssignController.gd` 삭제), `JUNGLE_START` 는 정글 시작 선택이 BattleSim 안으로 들어가며(`jungle_start/` 삭제) 지나지 않게 됐다. |
-| Battle Sim | `scenes/BattleSim.tscn` | `features/battle_sim/BattleSim.gd` | **Primary focus** — consumes match_ctx |
+| Save / Load (main entry) | `scenes/TitleScreen.tscn` | `features/save_load/TitleScreen.gd` | `features/save_load/README.md` |
+| Season | `scenes/Season.tscn` | `features/season/SeasonHub.gd` | `features/season/README.md` + submodule |
+| Match Flow | `scenes/MatchFlow.tscn` | `features/match_flow/MatchFlow.gd` | `features/match_flow/README.md` |
+| Battle Sim | `scenes/BattleSim.tscn` | `features/battle_sim/BattleSim.gd` | `features/battle_sim/README.md` + submodule |
 
-### 햅틱 (감촉) — 아웃게임 · 인게임 공통
-**손에 무엇이 전해지는가를 정하는 표는 하나다.** 배선은 두 층이고, 어느 쪽도
-화면마다 세기를 손으로 적지 않는다.
-
-1. **버튼은 `autoloads/HapticUi.gd` 가 자동으로 배선하고, 한 번 누르면 두 박자가
-   온다** — `node_added` 하나가 트리에 들어오는 **모든 `BaseButton`** 의
-   `button_down` 과 `pressed` **양쪽**에 감촉을 문다: **누를 때(닿음) `SOFT`,
-   뗄 때(활성화) `RIGID`**. 감촉이 뗄 때만 오면 누른 순간에는 아무 일도 안
-   일어나고, 화면이 바뀌기 전까지 눌렸는지 확인할 길이 없다 — 그래서 닿는
-   순간 물렁한 한 겹이 먼저 오고 딱 끊기는 톡이 그것을 닫는다. **두 박자의
-   순서는 한 번 뒤집혔다**(예전에는 `LIGHT` → `SOFT`) — 딸깍이는 실물 버튼처럼
-   **끝이 또렷한 쪽이 활성화**를 맡아야 눌렸다는 사실이 손에 남는다. 눌렀다가
-   손가락을 밖으로 빼면 `pressed` 가 안 오므로 **닫는 박자가 없는 것이 곧
-   "아무 일도 일어나지 않았다"**이고, 그래서 또렷한 쪽을 뗄 때에 둔다. **버튼 세기 표는
-   폐기됐다** — 예전에는 `OutgameTheme` 의 버튼 스타일이 곧 세기였지만
-   (primary · dark = `MEDIUM`, ghost = `LIGHT`, text = `SELECT`) 지금은 종류와
-   무관하게 같은 두 박자다(확정인지 탭 전환인지는 화면이 말한다). 예외만
-   `HapticUi.mute(btn)`(두 박자 다 끔) / `kind(btn, …)`(뗄 때) /
-   `down_kind_for(btn, …)`(누를 때) 로 적는다. `button_down` 에는
-   `Haptics.prepare()` 도 함께 붙어 누름과 활성화 사이에 탭틱 엔진이 깨어난다.
-2. **버튼이 아닌 것은 그 사건이 일어나는 자리에서 직접 부른다**(`Haptics.play`).
-
-| 사건 | 자리 | 감촉 |
-|---|---|---|
-| 카드를 손패에서 끌어냄 | `CardPhaseManager._begin_drag` | `SELECT` |
-| 끌린 카드가 **유효 대상 / 드롭 존에 막 들어섬** | `CardPhaseManager._update_drag` (`_drag_hot_last` 전이) | `SELECT` |
-| 카드가 실제로 나감 / 버릴 카드로 넘어감 | `CardPhaseManager._end_drag` | `MEDIUM` |
-| 공격 카드 **명중 한 방** | `CardPhaseManager._effect_attack` | `MEDIUM` |
-| 공격 카드 **빗나감** | 〃 | `LIGHT` |
-| 파일럿 처치(양 팀) | `BattleSim.mark_pilot_dead` | `HEAVY` |
-| 포탑 철거 | `BattleSim.score_turret_kill` | `HEAVY` |
-| 내 작전 단계 개시 | `CardPhaseManager.start_card_phase` | `MEDIUM` |
-| 턴 넘기기 / 도넛 뒤집기 | `ui/CostDonut._input` | `MEDIUM` / `SELECT` |
-| 교전 결과(승 / 패 / 무) | `EngagePhaseManager` 대시보드 진입 | `SUCCESS` / `ERROR` / `MEDIUM` |
-| 오브젝트 획득(아군 / 적군) | `ObjectiveSystem._grant_reward` | `SUCCESS` / `WARNING` |
-| 경기 승 / 패 | `SimulationCore.check_win_condition` | `SUCCESS` / `ERROR` |
-| 정글 시작 — 집기 / 무리 진입 / 방향 결정 | `gambit/JungleStartOverlay` | `SELECT` / `SELECT` / `MEDIUM` |
-| 훈련 타일 — 집기 / **놓을 수 있는 칸마다 스냅** / 배치 | `season/training/TrainingView` | `SELECT` / `LIGHT` / `SOFT` |
-| 훈련 타일 — 판에서 탭해 걷어냄 | `season/training/TrainingView._on_grid_input` | `LIGHT` |
-| 밴픽 메크 칸 — 들어올림 / 맞바꿈 | `ban_pick/BanPickController` | `SELECT` / `MEDIUM` |
-| 세이브 삭제 — 무장 / 실행 | `save_load/SlotCard._on_delete` | `WARNING` / `ERROR` |
-| 캠페인 종료 / 우승 | `GameOverView` / `EndingView.ensure_view` | `ERROR` / `SUCCESS` |
-
-**규칙 셋.**
-- **매 턴 도는 사건에는 안 붙인다** — 전장 자동 교전의 한 대, 전선 체류
-  성장치, 캠프 획득. 남발하면 감촉이 배경이 되어 정작 큰 한 건이 묻힌다
-  (성장치 팝업이 전선 수입을 안 띄우는 것과 같은 이유).
-- **한 사건은 한 번만 운다.** 처치로 끝난 명중은 `MEDIUM` 을 건너뛴다 —
-  `mark_pilot_dead` 가 이미 `HEAVY` 를 냈고, 겹치면 처치가 평타처럼 뭉개진다.
-  같은 이유로 두 번 눌러야 지워지는 삭제 버튼은 자동 배선을 `mute` 한다.
-- **드래그는 "들어섬"만 운다 — 다만 칸 단위로 스냅하는 판에서는 칸마다 운다.**
-  벗어나는 쪽은 어디서든 조용하고(놓을 수 있게 됐다는 것이 신호다) 매 **프레임**
-  울리는 것도 여전히 금지다(그것은 신호가 아니라 진동이다). 훈련판이 칸마다
-  `LIGHT` 를 내는 것은 그 화면의 미리보기가 자유 좌표가 아니라 **칸에 물려**
-  움직이기 때문이다 — 한 톡이 곧 "한 칸 넘었다"라서 판 위를 끌면 따다닥 걸리는
-  손맛이 된다. 카드 드래그(`_drag_hot_last`)처럼 대상이 연속인 자리는 여전히
-  전이 한 번만 운다.
-- **끌어다 놓는 조작도 무거운 한 겹으로 닫는다.** 훈련 타일이 판에 물리는
-  순간은 `SOFT` 다 — 집기(`SELECT`) · 칸 넘김(`LIGHT`)보다 무거운 한 겹이 와야
-  그 셋이 한 동작의 처음 · 중간 · 끝으로 읽힌다.
-
-**데스크톱에서는 전부 조용한 no-op** 이므로 에디터 실행에 가드가 필요 없다.
-다만 **`--check-only --script` 는 오토로드 식별자를 모른다** — `Haptics` /
-`HapticUi` 를 부르는 파일은 그 검사에서 `Identifier not found` 가 뜨지만
-실제 실행에는 문제가 없다. 검산은 씬을 띄워서 한다.
-
-### TitleScreen → Season handoff
-`TitleScreen.gd` lists three slots (`user://saves/slot{0,1,2}.save`) via
-`SaveSystem.list_slots()`. Each slot card shows phase + date, team + trophy
-count, current league standing, and last-save timestamp. **새 게임** on an
-empty slot: `gm.reset_season_state()` + `gm.active_save_slot = idx` + scene
-change to Season.tscn → SeasonHub sees `season_state.active == false` and
-runs the DRAFT flow. **이어하기** on a filled slot: `SaveSystem.load_slot(idx)`
-overwrites `gm.season_state` from disk + sets `active_save_slot` + scene
-change → SeasonHub skips `init_season()` and routes to HUB. **삭제** is
-double-tap-to-confirm (first tap arms the button, second tap deletes).
-GameOverView and EndingView both expose a "타이틀로" button that resets
-season state + clears `active_save_slot` + returns to TitleScreen.tscn.
-
-### Auto-save
-Four trigger points across SeasonHub and MatchFlow:
-1. **Post-draft** — `SeasonHub.goto(Screen.HUB)` when previous screen was DRAFT.
-2. **Pre-ban-pick** — `MatchFlow._on_prep_finished()` after the player
-   confirms PREP. Writes `season_state.match_resume = {phase: BAN_PICK, player_side, ...}`.
-3. **Post-ban-pick** — `MatchFlow._on_ban_pick_finished()` right before
-   scene-change to BattleSim. Writes the full match snapshot (banned/picked/
-   assigned mech IDs) into `match_resume` with `phase = LAUNCH`. 예전에는 정글
-   방향까지 여기 들어와 저장이 한 단계 뒤(`_on_jungle_finished`)에 있었는데, 그
-   선택이 BattleSim 으로 옮겨 가며 시점이 당겨졌다 — 재개는 어차피 전투를
-   처음부터 다시 돌리므로 정글 방향도 그때 다시 묻는다.
-4. **Post-week-end** — `SeasonHub.on_proceed_to_next_week()` after
-   `CalendarSystem.advance_week()` rolls the calendar. Covers both
-   post-match weeks and no-match weeks.
-
-No save fires inside BattleSim. Closing mid-battle leaves the disk save at
-trigger #3, so resume drops back into BattleSim with the same locked-in
-picks but the battle replays from scratch (정글 시작 화면도 다시 뜬다).
-
-`SaveSystem.save_slot(gm.active_save_slot)` is a no-op when the slot is -1
-(running Season.tscn / MatchFlow.tscn directly from the editor).
-
-### Mid-match resume routing
-TitleScreen "이어하기" branches on `season_state.match_resume`. Non-null →
-`MatchFlow.tscn` (MatchFlow consumes the hint and skips PREP, jumping to
-BAN_PICK or LAUNCH). Null → `Season.tscn`. SlotCard shows a "경기 진행
-중" tag when `meta.match_in_progress == true`.
-
-### Weekly progression contract
-`CalendarSystem.advance_week()` rolls 7 days forward, bumps `phase_week`,
-and emits `week_advanced` (and `phase_changed` on transitions). **부르는
-자리는 `SeasonHub._end_week()` 하나** — 시간 경과 화면에서 일요일을 닫을 때다.
-All three managers (LeagueManager, TournamentManager,
-InternationalTournament) listen to `week_advanced` and either bootstrap
-their bracket (`is_playoff_bootstrap_week()` for playoff,
-`phase_week == 1 && is_intl_phase` for INTL) or no-op. Match resolution is
-explicit: `SeasonHub` calls `_resolve_ai_for_matchday(md)` **경기일마다**
-(주 통째가 아니다 — 토요일 경기를 마치고 보는 순위표에 아직 치르지도 않은
-일요일 결과가 들어가면 안 된다), never on signal.
-
-### 요일과 경기일 (한 주의 안쪽)
-한 주는 월~일 이레이고 지금 요일은 `season_state["week_day"]`(0..6, **-1 은
-주가 아직 안 열렸다**)가 든다. 월~금 닷새가 훈련판의 다섯 행이고 **토(경기일 0) ·
-일(경기일 1)** 이틀이 경기일이다(`CalendarSystem.MATCH_DAYS`).
-
-**리그는 한 주에 두 라운드를 돌린다**(`ROUNDS_PER_WEEK` = 2) — 스케줄 엔트리에
-`matchday` 컬럼이 생겨 그 둘을 가른다. 라운드 수는 안 바뀌었고 주에 두 개씩
-들어가므로 **리그 주차가 절반**이 됐다(프리시즌 7→4주, 미드 / 정규 14→7주;
-캠페인 전체 ≈ 50주 → **33주**). 프리시즌은 라운드가 홀수라 마지막 주는 토요일
-한 라운드로 끝나고 일요일이 빈다. **토너먼트(플레이오프 · 국제대회)는 여전히
-주 1경기**이고 언제나 토요일(`matchday = 0`)에 선다 — 8강 · 4강 · 결승은 라운드
-사이에 한 주씩 쉬어야 대진표가 읽힌다.
-
-주 진행 상태 셋이 `season_state` 에 살고 세이브에 실린다 — `week_day`,
-`week_day_log`(요일별 훈련 결과 기록, **정수 키**라 로드에서 되돌린다),
-`training_exp_carry`(나머지 EXP 통장). 셋 다
-`TrainingBoard.reset_week_progress()` 가 비우고, 그것은 훈련 확정과 주 종료
-두 곳에서 돈다.
-
-### Season → MatchFlow → BattleSim handoff
-시간 경과 화면의 토 / 일에서 "경기 시작"을 누르면
-`SeasonHub.on_week_day_match_start()` → `_launch_player_match_on_day(matchday)`
-가 `season_state["pending_match"]` (`{source, schedule_idx, enemy_team_id,
-winner_side}`)를 채우고 MatchFlow.tscn 으로 `change_scene_to_file` 한다.
-MatchFlow runs PREP (review rosters) → BAN_PICK(밴픽 + 메크 배정) →
-BattleSim (정글 시작 방향은 그 안에서 묻는다). **BAN_PICK 은 양 팀 로스터와 팀명까지 받는다** —
-화면 위아래에 전장 스트립과 같은 eye 초상화 5인씩을 세우고 그 바깥에 메크 칸을
-붙이며, 14수가 끝나면 **그 로스터에 배정을 직접 새겨** 돌려주기 때문이다
-(`MatchFlow._enter_phase` 가 `_team_roster()` / `_team_name()` 을 함께 넘기고,
-`_on_ban_pick_finished` 가 결과의 `player_roster` / `enemy_roster` 를 그대로
-`match_ctx` 에 얹는다).
-진영(`player_side`)은 **현재 항상 BLUE 로 고정**이며
-(예전의 매 경기 랜덤 추첨은 제거), 밴픽 순서와 BattleSim 의 전략 포인트
-선점·선턴을 함께 결정한다 — 위 "진영 (블루 / 레드)" 항목 참조.
-After BattleSim, the win panel's "다음 →" returns to
-`Season.tscn`. `SeasonHub._consume_pending_match_result` applies the
-result via `LeagueManager.record_result()` /
-`TournamentManager.record_result(slot, winner)` /
-`InternationalTournament.record_result(slot, winner)` based on
-`pending_match.source`. Then `_resolve_remaining_ai_for_week()` sweeps up
-remaining AI matches scheduled for the same week, and the hub routes to
-the appropriate STANDINGS view.
-
-### Season — Playoff bracket (Phase 7)
-Each league phase reserves **2 trailing playoff weeks** (SF week + F
-week). `CalendarSystem.PHASE_WEEKS` = LEAGUE_WEEKS + 2 for league phases.
-`TournamentManager` bootstraps the bracket when entering the playoff
-bootstrap week (week LEAGUE_WEEKS + 1):
-`SF1: #1 vs #4` and `SF2: #2 vs #3` both stamped to that week,
-`F: SF1.W vs SF2.W` stamped to week LEAGUE_WEEKS + 2. If
-`LeagueManager.player_made_playoffs()` is false on bootstrap,
-`playoff_failed_qualification` fires and `SeasonHub` routes to
-`Screen.GAME_OVER`. Otherwise `playoff_started` fires; AI bracket matches
-resolve via `TournamentManager.resolve_current_week()` during the post-
-match sweep, player matches go through the MatchFlow → BattleSim handoff
-with `pending_match.source = "playoff"`. The F result writes
-`phase_results[phase] = {made_playoffs, champion}` and emits
-`playoff_completed`.
-
-### Season — INTL bracket (Phase 8)
-Each *_INTL phase (`PRESEASON_INTL`, `MIDSEASON_INTL`, `REGULAR_INTL`) is
-a **3-week 8-team single-elimination tournament**. Week 1 = QF (4
-matches), Week 2 = SF (2 matches), Week 3 = F. `InternationalTournament`
-bootstraps on entry to week 1 of an INTL phase using top-4 from
-`LeagueManager.standings_ranked()` (the just-finished league phase's
-standings) + 4 fixed external teams from `data/csv/intl_teams.csv` +
-`intl_players.csv`. High-low pairing (L1×I4, L2×I3, L3×I2, L4×I1). Both
-managers share `season_state["current_tournament"]` but discriminate by
-`type` ("INTL" vs "PLAYOFF") — neither clears the other's bracket. AI
-matches resolve via `InternationalTournament.resolve_current_week()`;
-player matches use the MatchFlow → BattleSim handoff with
-`pending_match.source = "intl"` → `InternationalTournament.record_result`.
-`MatchFlow._team_roster()` reads from `season_state.intl_pilots` when
-`team_id >= 100`. **REGULAR_INTL is the campaign-end gate**: win F →
-`Screen.ENDING`; lose F or get eliminated mid-bracket → `Screen.GAME_OVER`
-(via `intl_failed_campaign` for fail-fast). PRESEASON_INTL and
-MIDSEASON_INTL just toast and continue. Phase results: INTL phases store
-`{intl_played, intl_champion}` under `phase_results[phase]`; league
-phases store `{made_playoffs, champion}`. HubView's third action button
-toggles 3-way: INTL active → "국제대회", PLAYOFF active → "플레이오프",
-else → "리그 순위".
-
-### Match Flow → Battle Sim handoff
-`MatchFlow` populates `GameManager.match_ctx` (player_roster, enemy_roster,
-jungle_start_dir, banned_mech_ids, …) then `change_scene_to_file` to BattleSim.
-`BattleSim.spawn_pilots_with_lanes()` injects each `PlayerData.assigned_mech`'s
-hp/atk into `PilotData`. If `match_ctx.active` is false (running BattleSim
-standalone), it falls back to `ROLE_STATS` defaults.
-
-### Battle Sim — Module Architecture
-`BattleSim.gd` is a **thin orchestrator** (`class_name BattleSim extends Node2D`).
-Each child module has `@onready var _bs: BattleSim = get_parent() as BattleSim` and accesses state via `_bs.*`.
-
-| Node | Script | Purpose |
-|---|---|---|
-| SimulationCore | `combat/SimulationCore.gd` | Main turn loop, targeting, movement, win condition |
-| RecallSystem | `combat/RecallSystem.gd` | Instant HQ teleport at HP ≤ threshold |
-| Pathfinding | `combat/Pathfinding.gd` | BFS + greedy movement |
-| BattleRenderer | `rendering/BattleRenderer.gd` | All `_draw()` logic (extends Node2D) |
-| CardPhaseManager | `card_phase/CardPhaseManager.gd` | Card turn flow, deck, hand, card effects |
-| GambitPhaseManager | `gambit/GambitPhaseManager.gd` | 개시 전 단계 — 역할 고정 레인 배정 + 전장 세우기(`prepare_field`) + 정글 시작 오버레이 + 개시(`begin_battle`) |
-| JungleStartOverlay | `gambit/JungleStartOverlay.gd` | **정글 시작 방향** — 비워진 손패 자리의 정글러 원형 초상화를 좌 / 우 정글 무리로 끌어다 놓고 "전투 시작"으로 확정. `match_ctx.active` 일 때만 열린다 |
-| ObjectiveSystem | `objective/ObjectiveSystem.gd` | 오브젝트(전령 / 용) — 좌우 중립 칸의 시계 · 참여 결정 · 정산. 결정 창과 무대는 교전 모듈의 VS 화면과 아레나를 빌려 쓴다 |
-| ObjectiveRewardFx | `objective/ObjectiveRewardFx.gd` | 오브젝트 **보상 획득 연출** — 보상 카드를 화면 한가운데에 펼쳤다가 들어갈 자리(덱 뭉치 / 손패 왼쪽 끝 / 상대 손패)로 날려 보낸다. `_grant_reward` 가 **지급 직전에** await 한다 |
-| MechSkillSystem | `mech/MechSkillSystem.gd` | 메크 스킬 — 배정된 **기체**에 붙는 패시브 15종과 그 기체 카드들이 남기는 지속 상태(취약 · 반응 장갑 · 목표 · 추적 · 현상금 …). 계산은 원래 하던 자리가 하고 이 모듈은 질의 함수만 내보낸다 |
-| PilotSkillSystem | `skill/PilotSkillSystem.gd` | 파일럿 스킬 — 선수마다 붙는 고유 능력 25종(쿨타임 / 충전식 / 패시브). 상태 · 활성화 · 사건 훅 · 패시브 질의 |
-| EngagePhaseManager | `engage/EngagePhaseManager.gd` | 탑뷰 교전 오케스트레이터 — `engage/TurnEngageSim.gd`(헤드리스 라운드 턴제 시뮬. `prepare_sim` 이 **미리** 세운다) → `engage/EngageIntro.gd`(제출 직후 VS 확인 화면, 그 무대를 정지 화면으로 보여 준다) → `engage/EngageArena.gd`(렌더러) 를 잇는다 |
-| HudBuilder | `ui/HudBuilder.gd` | HUD construction and update (incl. `ui/CostDonut.gd` 전략 포인트 도넛 ×2, `ui/PilotStrip.gd` 파일럿 스트립 ×2, `ui/CardPileStack.gd` 덱 / 버린 더미 뭉치 ×2, `ui/KillFeed.gd` 킬로그, `ui/ObjectiveTimer.gd` 오브젝트 시계 ×2) |
-| ObjectiveRewardPopup | `ui/ObjectiveRewardPopup.gd` | 오브젝트 보상 미리보기 — 시계를 누르면 그 오브젝트가 주는 카드를 실물로 띄운다. 전장을 붙잡지 않는다 |
-| PilotDetailPanel | `ui/PilotDetailPanel.gd` | 파일럿 상세 모달 — 스트립의 얼굴을 누르면 열린다 (작전 단계 한정). 머리글(이름 / 그 아래 기체명 / 오른쪽 성장치) + 인게임 / 파일럿 / 메크 탭 3개 + 화면 하단 전체 폭의 보유 카드 부채꼴 |
-| BattleLogger | `debug/BattleLogger.gd` | 전 행동 로그 + 적 파일럿 교차(cross-over) 자동 감지 |
-
-### Battle Sim — Active Systems
-| System | Description |
+### Where to look for a topic
+| Topic | README |
 |---|---|
-| Gambit Phase (개시 전) | 레인은 **역할이 고정한다**(TANK→LEFT, FIGHTER→CENTER, ASSASSIN→GUERRILLA, SUPPORT/SNIPER→RIGHT) — 예전의 인게임 배정 오버레이는 삭제됐고 그 자리는 밴픽 화면이 가져갔다. 이 단계에 남은 선택은 **정글 시작 방향** 하나다(아래 항목). `GambitPhaseManager.launch_battle()` 이 셋으로 갈라져 있다 — `prepare_field()`(파일럿 · 포탑 · 정글 소유 · 캠프를 세우고 `BattleSim.field_ready` 를 켠다) → 정글 시작 오버레이(경기로 들어온 경우) → `begin_battle()`(`game_phase = BATTLE` 이 되는 유일한 자리). |
-| 정글 시작 (인게임) | **좌우 중 어느 정글에서 시작하는지를 전장 위에서 고른다**(`gambit/JungleStartOverlay.gd`, `match_ctx.active` 일 때만 — 단독 실행에는 물을 상대가 없으므로 기본값 LEFT 로 곧장 개시한다. 헤드리스 검증이 그 경로를 탄다). 전장은 이미 다 서 있고 HUD 에서는 **지금 쓸 수 없는 것들만** 숨는다 — 덱 / 버린 더미 뭉치, 전략 포인트 도넛 둘, 오브젝트 등장 시계 둘(`HudBuilder.set_pregame_chrome_visible`). 파일럿 스트립과 상단 chrome 은 남는다(개시 직전에 양 팀 로스터를 다시 보는 것이 이 화면이 하는 일의 일부다). **전장은 이 화면의 질문만 남기고 접힌다** — 정글이 아닌 칸이 전부 딤드되고(`BattleRenderer._draw_jungle_pick_dim`, 밝게 남는 칸의 정의를 드롭 대상 `cells_for` 에서 그대로 가져오므로 놓을 수 있는 칸과 밝은 칸이 같은 목록에서 나온다) **전장 초상화도 아군 정글러 하나만 남는다**(`_hidden_during_jungle_pick` — 나머지 아홉은 아직 각자 HQ 에 몰려 서 있어 두 덩어리로 뭉친 얼굴이 정글 소유 · 캠프 · 딤을 가릴 뿐이다. 자리 배정 `_solve_slots` 도 같은 목록을 읽으므로 숨은 사람은 슬롯을 잡지 않는다). 비워진 **손패 자리에 아군 정글러의 원형 초상화**(전장 마커와 같은 `circle` 컷, 지름 150)가 놓이고, 그것을 **좌측 정글 7칸 / 우측 정글 7칸** 중 한 무리로 끌어다 놓는다(팀0 정글 3 + 팀1 정글 3 + 그 사이 중립 1 = 한 덩어리. 어느 칸 중심에서든 `hex_size` 안이면 그 무리라, 칸 하나를 정확히 겨누는 화면이 아니다). **드롭은 선택일 뿐 개시가 아니다** — 초상화가 그 정글 한가운데에 앉고 초상화 **아래**에 "전투 시작"이 뜬다(그 전에는 같은 자리에 안내문. 위에 두면 안 된다 — 우리 팀 HQ 는 격자의 맨 아래 칸이고 그 칸의 초상화 무리는 타일 밑에 앉아 전장 픽셀 아래끝보다 더 내려온다). 확정이 `PilotData.jungle_start_pref` 와 `match_ctx.jungle_start_dir` 에 방향을 새기고 BATTLE 을 연다. 강조는 `BattleRenderer._draw_jungle_start_zones()` 가 캠프 아웃라인 **뒤에** 그린다 — 그 밑의 소유 색과 캠프 테두리가 이 선택의 근거라 가려지면 안 된다. **`BattleRenderer._draw` 의 게이트가 페이즈에서 `BattleSim.field_ready` 로 바뀌었다** — 예전에는 GAMBIT 이면 통째로 안 그렸는데, 이 선택이 그 GAMBIT 안으로 들어오면서 개시 전에도 전장이 보여야 하게 됐다. 예전에는 이것이 `features/match_flow/jungle_start/` 의 **별도 화면**으로, 전장을 한 픽셀도 안 보여 준 채 "← LEFT / RIGHT →" 두 버튼만 세웠다 — 그 폴더는 삭제됐다. |
-| Auto BATTLE | BATTLE auto-ticks every 0.5s (1 tick = "1분"). No Next-Turn or Auto-Play buttons. CARD_PHASE pauses the tick, and so does 상대 차례 — that one runs *inside* BATTLE without changing `game_phase`, so `BattleSim._process` also gates on `card_phase.is_ai_turn_active()` (same flag freezes the MM:SS clock). |
-| 진영 (블루 / 레드) | `BattleSim.blue_team` (0 = 플레이어 팀) 은 `match_ctx.player_side` 에서 유도된다. **레드 = 밴픽 선밴/선픽, 블루 = 후밴/후픽 + 인게임 선**. 블루의 인게임 이득은 둘이다 — (1) `BattleSim.seed_side_costs()` 가 개시 시점에 전략 포인트를 `BLUE_COST_HEAD_START`(game_config, 1) 로 심어 문턱에 먼저 닿게 하고(COST_RECOVERY 는 양 팀에 같은 틱에 같은 양이 들어가므로 격차가 유지된다), (2) 양 팀이 같은 틱에 문턱 위에 있을 때 **먼저 차례를 잡는다**. **현재 `MatchFlow` 는 플레이어를 항상 BLUE 로 고정한다** — 예전의 매 경기 랜덤 추첨은 제거됐고, 되살릴 때는 `MatchFlow._ready()` 의 fresh-entry 한 줄만 되돌리면 된다. |
-| 개시 손패 (없음) | **양 팀은 빈 손으로 시작한다.** `build_starter_decks` 는 덱을 섞고 `_clear_hands()` 로 손패를 비우는 데서 끝나고, 손패는 오직 `ECONOMY_START_TURN`(10)부터 도는 BATTLE 자동 드로우로만 찬다 — 1~9턴은 카드가 아예 없는 순수 라인전이다. 예전에는 `INITIAL_HAND_SIZE`(game_config, 5)장을 `_deal_initial_hands()` 로 미리 돌려 첫 차례를 상한에 꽉 찬 손으로 맞게 했는데, 그 키와 함수는 **삭제됐다**. 실측: 첫 작전 단계가 **22턴 · 손패 7장**(player 8 / ai 7). |
-| 상대 차례 (AI 턴) | **양 팀이 각자 자기 작전 점수로 턴을 갖는다.** **준비 판정은 이제 양쪽이 같다** — 점수가 문턱 위이고 **낼 수 있는 카드가 손에 한 장이라도 있어야** 한다(`_player_turn_ready` / `_ai_turn_ready`). 예전에는 플레이어만 점수로 진입했는데, 아군이 전멸하면 손패 전체가 시전자 사망으로 잠기는데도 점수는 문턱에 걸려 있어 자동 드로우가 손패를 바꿀 때마다 "당신의 차례"가 열렸다 닫히기만 했다(그 차례에 할 수 있는 일은 턴을 넘기는 것뿐이다). 손패 상한 초과 버리기는 차례와 무관하게 그대로 돈다 — 덱을 돌리는 것이 그 규칙의 목적이다. `_player_turn_ready` 가 `is_playable()` 을 따로 묻는 것은 `card_is_playable` 이 비용만 견주기 때문이다(비용 -1 은 `-1 > player_cost` 가 거짓이라 통과한다). 플레이어가 턴을 넘긴 순간 **상대가 이미 문턱 위(＋낼 카드 보유)면 그 자리에서 상대 차례가 시작된다** — 다음 BATTLE 틱을 기다리지 않고, 내 점수와도 무관하다(`end_card_phase` 말미의 `_ai_turn_ready()` → `await _run_ai_turn()`). 상대가 문턱 아래면 예전처럼 배너 없이 곧장 BATTLE 로 돌아간다. AI 턴은 그 밖에도 BATTLE 틱에서 `ai_cost ≥ PHASE_THRESHOLD` **이고** 낼 수 있는 카드가 손에 있을 때 `CardPhaseManager._run_ai_turn()` 으로 발동하며, "상대 차례" 배너는 이때만 뜬다(예전엔 상대가 0점이라 아무것도 안 해도 매번 떴다). **양쪽이 동시에 준비되면 `_next_turn_side()` 가 중재한다 — 아직 아무도 안 잡았으면 블루, 그 뒤로는 직전에 잡지 않은 쪽이 잡는 교대다.** 예전엔 이 자리에서 **AI 를 무조건 먼저** 검사해 굶주림을 막았는데(0코스트 카드만 내고 턴을 넘긴 플레이어는 다음 틱에도 점수가 문턱 위라 자기 단계에 재진입해 AI 를 영원히 굶길 수 있다), 블루 우선으로 뒤집으면서 그 방어를 교대 규칙이 대신한다 — 방금 잡은 쪽은 상대가 한 번 잡기 전까지 다시 잡지 못한다. 반대쪽 굶주림(점수만 차고 낼 카드가 없어 배너만 매 틱 뜨는 것)은 `_ai_turn_ready()` 가 `AiCardPlayer` 와 **같은 지불 가능 필터**로 막는다. AI 턴 끝에도 플레이어 턴과 같은 복귀 스윕(`process_phase_end_recalls`)이 돈다. |
-| 메크 스킬 | **기체 한 대에 붙는 고유 능력과 고유 카드 셋.** 파일럿 스킬이 선수에게 붙는 한 수라면 이쪽은 그 선수가 타고 있는 기체가 하는 일이라, **밴픽에서 기체를 고르는 순간 그 파일럿의 덱 절반과 상시 능력 하나가 함께 정해진다**. 표는 `data/csv/mech_passives.csv`(**15행**)와 `data/csv/mech_cards.csv`(**64행**)이고 짝은 `mechs.id` 다 — `players.skill_id` 같은 포인터 컬럼이 없는 것은 기체 한 대가 자기 패시브 하나와 자기 카드 셋을 통째로 소유하기 때문이다. **메크는 21대**이고(원딜 5 · 전사 4 · 탱커 3 · 지원 5 · 암살 4) 그중 15대만 패시브를 갖는다. **덱 구성이 바뀌었다** — 예전의 "공용 메크 카드 풀에서 3장 뽑기"가 사라지고 배정된 기체의 카드 목록을 `count` 만큼 펼친 것이 그 자리를 통째로 채운다(기체마다 2~7장이라 **덱 크기 자체가 기체 선택의 일부**다). `MECH_CARDS_PER_PILOT`(3)는 `match_ctx` 없이 BattleSim.tscn 을 직접 돌릴 때만 쓰이는 폴백으로 남았다. 패시브 보정은 **질의 함수로만** 나가고 계산은 원래 하던 자리가 한다(`BattleSim.refresh_growth_stats` / `SimulationCore._pilot_hit_damage` / `CardPhaseManager._apply_attack_damage`) — 스탯을 직접 밀면 성장 재계산 한 번에 지워지기 때문이고, 영구 증가분은 `PilotData.bonus_atk_flat` / `bonus_atk_mult` / `bonus_max_hp` 로 따로 산다. **메크에 `role` 컬럼이 생겼다** — 카드 셋이 역할군을 전제하게 됐기 때문이며, 다만 **배정은 여전히 자유다**(어느 역할 슬롯에 어느 기체를 앉혀도 된다 — 분류와 데이터 검증용). **교전 무대까지 전부 배선됐다** — 전탄 발사(공격이 적 전원) · 오버클럭(피해 직후 한 번 더) · 불굴(팀 전원 1회 사망 방지) · 약자 멸시(**1라운드 전** 충전 수만큼 최저 HP 적을 공격력 50% 로) · 강타/기절(맞은 적이 다음 차례를 잃음)이 `TurnEngageSim` 에서 실제로 걸리고, 그 다섯은 전부 `MechSkillSystem` 의 질의 함수를 지난다. **수호 연계**(이 메크의 보호막을 두른 아군이 때리면 메크도 얹는다)는 전장 자동 교전에서 **판정이 아니라 적용이 끝난 뒤** 굴린다(`SimulationCore._flush_guardian_rides`) — 판정 단계에서 곧장 때리면 편승 한 방이 아직 적용되지 않은 피해보다 먼저 상대를 눕혀 같은 턴의 나머지 판정이 시체를 상대로 굴러간다. **단계 A→B→C 사슬**과 강화 3택도 섰다 — 아래 "단계 사슬" 항목. 21대 목록 · 절 문법은 **`docs/mech_skills_design.md`**, 코드 쪽 규약은 `mech/README.md`. |
-| 단계 사슬 (단계 A → B → C) | **카드 한 장이 자기 다음 상태를 정하는 유일한 자리.** 암살 P(Overdrive)의 카드 셋이고, [단계 A]가 덱에 [단계 B]를 세우면 그 [단계 B]가 연 **교전의 결과**가 다음 장을 정한다 — 적을 눕혔으면 [단계 C], 아니면 다시 [단계 A]. **그게 성립하려면 `engage` 절이 무대가 닫힐 때까지 기다려야 한다**: `CardPhaseManager._effect_engage` 가 `engage_finished` 를 await 하게 된 것이 그 때문이고, 같은 변경이 [우세한 전장]의 `gen_hand:19\|per_kill`("교전에서 생존할 시 처치한 적 수만큼")도 함께 고친다 — 예전에는 둘 다 첫 라운드가 돌기도 전에, 즉 처치 수가 언제나 0 인 시점에 정산됐다. 교전 성적표는 무대가 치워진 뒤에도 답해야 하므로 `EngagePhaseManager._last_stats` 에 사본으로 남는다(`_sim` 은 대시보드를 닫을 때 버려진다). [단계 C]는 **강화 3택**(알파 = 다음 [단계 A]가 [단계 B]를 핸드에 / 베타 = 다음 [단계 B]에 +100 충전 / 감마 = 다음 [단계 C]에 성장 점수 +10%)을 고르게 하고, 그 예약은 파일럿당 하나이며 **다음 한 번**에만 쓰인다. 플레이어는 `CardSelectOverlay` 의 `CHOICE` 모드(찾기와 같은 그리드, **이름순 정렬 없음**, **취소 없음** — 카드는 이미 나갔다)로 고르고 AI 는 무작위로 고르되, 둘이 `register_phase_boon` 한 함수로 모여 규칙이 갈라지지 않는다. 감마 정산은 **새 강화를 고르기 전에** 한다 — 순서를 뒤집으면 방금 고른 감마가 그 자리에서 되먹힌다. |
-| 충전 (`charge`) | **카드 한 장이 자기 안에 세기를 쌓는다.** 그 카드가 **손패에 들어올 때마다** `CardData.charge` 가 1 오르고(상한 `mech_cards.charge_max`), 사용하면 쌓인 만큼이 한꺼번에 나가며 0 으로 돌아간다. 오르는 자리는 `add_card_to_hand` 와 `draw_card` 둘뿐이고 둘 다 `CardData.gain_charge()` 를 지나며, 태우는 자리는 `CardPhaseManager._burn_charge(cd)` **하나**다 — 카드가 손을 떠날 때 한 번 돌고 태운 수를 `_charge_spent` 에 적어 둔다(절이 아니라 카드 단위인 것은 "사용 시 모든 충전을 소모"가 효과 개수와 무관하기 때문이고, 값이 카드가 아니라 매니저에 사는 것은 그 시점에 `charge` 가 이미 0 이기 때문이다). 효과 쪽 플래그는 **`\|charge`** — `attack:1\|area:0\|charge`(미사일)는 각 대상을 충전 수만큼 때리고 `attack:1\|random\|charge`(전장 강타)는 **충전 수 + 1** 명을 무작위로 뽑는다(+1 은 상수항이라 충전 0 이어도 한 번은 나간다). 화면은 카드 **오른쪽 아래**의 `N/M` 배지(왼쪽 위 구석은 카드 밖으로 걸친 비용 원과 그 아래 시전자 초상이 쓰고, 오른쪽 위는 예전에 그 초상이 있던 자리다). 쓰는 카드 셋 — 미사일(3, 지정 타일의 모든 적) · 전장 강타(5, 무작위 적) · 약자 멸시(3, 핸드 상주 · 교전 개시 타격). **예전에는 `스택` 이었다** — 같은 카드가 손패에서 한 장으로 뭉치고 `stack_count` 가 몇 장인지를 들고 있었다. 손패 크기 · 상한 정리 · 부채꼴 · 히트 밴드를 손대지 않아도 된다는 장점은 있었지만, 더미로 내려갈 때마다 낱장으로 다시 흩어야 했고(안 그러면 리셔플 한 번에 덱 장수가 준다) 세기의 상한이 곧 `count` 라 카드 한 종류가 덱을 3~5장씩 불렸다. 충전은 `count = 1` 로 그 둘을 다 없앤다. `stacks_with` / `stack_count` / `last_draw_merged` / `refresh_stack_badge` 는 그때 함께 삭제됐다. |
-| 공격 명령 (처치마다 손패에 생성) | **충전이 아니라 카드 자체가 생긴다.** 지원-A(mech 18)의 카드이고 `trigger = death_hand` 를 달아, 아군이든 적이든 **누가 쓰러질 때마다** 그 카드를 들고 오는 기체의 파일럿 손패에 한 장이 생긴다(`MechSkillSystem._grant_death_cards`). **대상 반경은 `attack:1|around_target:1`** — 지정한 **아군** 1칸 이내의 모든 적이다. `|area:N` 과 기하는 같지만 원점이 적이 아니라 아군이라 `_resolve_attack_victims` 에 분기가 따로 있다: 그 분기가 없으면 `picked` 가 아군이라 기본형의 "지정한 적 하나" 폴백들이 전부 팀 검사에 걸려 **엉뚱한 적 한 명**만 맞았다. 판정은 배분 표(`starter_cards`)를 읽는 `_owns_trigger_card` 라 그 카드가 지금 손패에 있든 더미에 있든 이미 소멸했든 답이 같다 — 훅은 **기체의 성질**이지 카드 한 장의 소재가 아니다. `소멸`(exhaust)이 붙어 쓰면 사라지므로 처치가 없으면 덱에도 남지 않는다. 예전에는 `death_stack` 으로 **손패에 있는 그 카드의 스택을 올리는** 훅이었는데, 스택이 충전으로 바뀌면서 충전은 손패 진입에서만 오도록 규칙을 하나로 모으고 "처치가 곧 명령"은 카드를 주는 쪽으로 옮겼다. |
-| 코스트 -1 (사용 불가) | **낼 수 없는 카드.** 손에 들고 있는 것만으로 일하는 네 장(캐시 · 계시 · 약자 멸시 · 밸런스)이 쓴다. 비용 칸에 숫자 대신 `—` 가 찍히고, `highlight_affordable_cards` 가 지불 불가로 잠가 슬래브가 덮이며, `_begin_drag` 이 드래그 자체를 거부한다 — 놓을 곳이 없는 카드를 끌어낼 수 있으면 매번 제자리로 돌아오는 헛동작만 남는다. **단 버리기 픽 중에는 끌린다**: 못 내는 카드라고 못 버리는 것은 아니다. 0 코스트와 헷갈리지 말 것 — 0 은 공짜로 낼 수 있다는 뜻이고 -1 은 낼 수 없다는 뜻이다. **비용 -1 은 할인도 증세도 받지 않는다**: `BattleSim.effective_cost_for` 가 그대로 -1 을 돌려주고(예전에는 `max(0, …)` 를 지나며 0 이 되어, `is_playable()` 를 안 보는 자리마다 "공짜 카드"로 읽혔다) `_effect_cost_reduce_hand`(사전 준비)와 `draw_card` 의 집중 할인도 이 카드를 건너뛴다. 효과 문법은 `hand_passive:<key>` 한 줄뿐이고 실제 동작은 `MechSkillSystem` 이 손패를 훑어 직접 읽는다(절은 카드가 **나갈 때** 도는 것이라 태울 수 없다). |
-| 파일럿 스킬 | **선수 한 명에게 붙는 고유 능력.** 카드가 메크와 파일럿이 나눠 주는 공용 자원이라면, 스킬은 그 선수가 아니면 낼 수 없는 한 수다. 표는 `data/csv/pilot_skills.csv`(**25행**)이고 짝은 `players.csv` 의 `skill_id` 가 든다. **스킬은 라인에 묶여 있어** 같은 역할의 파일럿에게만 붙고 역할당 5개씩이다(탑=TANK / 미드=FIGHTER / 정글=ASSASSIN / 서포터=SUPPORT / 원딜=SNIPER). 25개뿐이라 **40명 중 15명(모브)은 스킬이 없다** — 아래 "모브 파일럿" 항목. 타입은 셋이다 — **쿨타임**(쓰면 `p1` 턴 뒤 재사용) · **충전식**(정해진 사건마다 충전이 쌓이고 `p1` 충전을 태워 발동) · **패시브**(누를 수 없고 상시 또는 자동 발동). 충전을 쌓는 패시브(퍼포먼스 · 축적 · 신예 · 몰아치기 · 전리품 수집가)의 충전은 활성화의 연료가 아니라 **효과의 세기** 자체다. **효과는 문법이 아니라 `key` 로 갈라 쓴다** — 25개가 전부 다른 사건에 걸려서(포탑 파괴 · 오브젝트 승리 · 처치 관여 · 공격 카드 명중 · 상대 라이너와의 비교) 절 문법을 만들어 봐야 절이 25개 생길 뿐이다. **패시브 보정은 이 모듈이 질의 함수로만 내보내고 계산은 원래 하던 자리가 그대로 한다**(`BattleSim.refresh_growth_stats` / `add_score`, `SimulationCore.roll_hit` / `lane_adjusted` / `_pilot_hit_damage`, `TurnEngageSim`) — 스킬이 스탯을 직접 밀면 성장 재계산 한 번에 지워진다(카드의 일시 공격력이 `atk_buff` 로 따로 사는 것과 같은 이유). **화면**: 아군 스트립의 초상화가 기본적으로 어둡게 덮여 있고 **준비된 만큼 왼쪽부터 밝아지며**(딤의 왼쪽 끝을 미는 방식 — 얹는 방식은 100%에서도 한 겹이 남는다), 오른쪽 위에 **쿨타임이면 남은 턴 / 충전식이면 충전 수**가 찍힌다. 패시브는 **언제나 100% 밝다**(누를 수 없는 대신 상시 적용이라 "아직 안 됐다"가 성립하지 않는다). 적 스트립에는 표시하지 않는다. 상세 패널 **인게임 탭의 카드 줄 아래**에 이름 · 타입 · 키워드 · 설명문 · 상태 · 큰 **사용** 버튼이 서고, **누르면 패널이 닫힌다**(결과가 손패·전장·스트립에 나타나는데 딤이 덮고 있으면 아무 일도 안 일어난 것처럼 보이고, 계략처럼 자기 오버레이를 여는 스킬은 레이어 10 이라 이 패널 13 뒤에 깔린다). **활성화는 무료이고 한 단계에 몇 개를 써도 된다** — 절제는 쿨타임과 충전이 이미 강제한다. 게이트는 아군 · 살아 있음 · 자기 작전 단계 셋이고, **AI 팀은 패시브와 충전만 굴러가고 활성화는 하지 않는다**(첫 버전의 의도된 한계). 자원은 **효과가 성공했을 때만** 나간다 — 손패가 꽉 차 아무 일도 못 일어난 발동으로 쿨타임을 먹으면 되돌릴 방법이 없다. 스킬이 손패에 만들어 주는 카드(이동 · 복귀 · 전투 개시 · 아드레날린 · 약탈)는 전부 `pool = 0` 에 **`exhaust\|volatile`** 이라 어느 쪽으로도 덱을 불리지 않는다. 25개 목록과 튜닝 상수는 `skill/README.md`. |
-| 모브 파일럿 | **스킬 없는 15명.** 스킬이 25개뿐이라 40명을 다 채울 수 없고, 남는 15명은 이름표가 아니라 **그림**이 "이름 없는 선수"임을 말한다 — 다섯 컷(circle / eye / faces / tall / full)이 통째로 실루엣 한 벌 더 있고(`resources/images/pilot/mob/`), `GameManager.load_match_data()` 가 `PilotImages.set_mob_ids()` 로 목록을 한 번 심으면 그 뒤의 모든 초상화 조회가 자동으로 갈린다. 실루엣은 다섯 컷 모두 **알파는 그대로 둔 채 RGB 를 단색으로 덮는다** — 어두운 초상화는 실루엣이 아니다(밝기만 누르던 예전 방식은 색만 빠질 뿐 이목구비가 그대로 읽혔다). 다만 `faces` / `circle` / `eye` 는 얼굴이 프레임을 꽉 채운 크롭이라(실측: eye 밴드의 97.7% 가 불투명) 그 자리에서 칠하면 검은 원 하나 · 검은 막대 하나가 되므로, 셋만 **`full` 아트에서 머리~어깨를 다시 잘라** 만든다 — full 의 알파가 곧 인물 윤곽이라 배경이 투명하게 남아 머리 모양과 어깨선이 실루엣으로 읽힌다(얼굴 사각형은 `make_eye_crops.py` 와 **같은 템플릿 매칭**으로 찾으므로 인물 배율이 다른 컷과 어긋나지 않는다). 대신 모브 칸만 프레이밍이 달라 네임드보다 인물이 작게 잡힌다. **`circle` 만 불투명한 원 바탕을 구워 넣는다** — 전장 마커는 초상 뒤에 흰 원을 깔고 교전 아레나는 아무것도 안 깔아서, 투명한 채로 두면 같은 그림이 한쪽에선 흰 배지 · 다른 쪽에선 배경이 비치는 구멍이 된다. 스탯은 네임드보다 **10% 낮고** 그 하향은 런타임 계수가 아니라 **`players.csv` 값 자체**에 반영돼 있다 — 나중에 난이도 배율을 곱할 자리를 비워 둔 것이다. **시즌 드래프트 격자에서 빠지지만**(`TeamDraft.get_pool_grid`) 팀에는 그대로 앉아 있어 적으로는 여전히 만난다. 네임드 25명은 **8팀에 고르게 흩어져 있다** — 팀 0(플레이어 시작 팀)이 5명, 나머지 20명이 7개 AI 팀에 2~3명씩. 팀 0 이 전원 네임드인 것은 드래프트의 맞교환이 네임드끼리만 일어나야 팀별 네임드 수가 흔들리지 않기 때문이다. |
-| 오브젝트 (전령 / 용) | 좌우 중립 칸에서 정해진 턴마다 열리는 교전 사건. **그 두 칸은 평범한 정글 칸이다** — 오브젝트는 좌표를 무대로 빌려 쓸 뿐이라 캠프도 서고 정글러가 점령도 한다(아래 "Jungle (initial)" 항목). **우측 = 용(첫 등장 25턴, 참가 4인: RIGHT×2·CENTER·JUNGLE)** 이 먼저 열리고, **좌측 = 전령(35턴, 참가 3인: LEFT·CENTER·JUNGLE)** 이 그 10턴 뒤다. 결판이 나면 20턴 뒤, 양 팀이 모두 미참여해 무산되면 15턴 뒤 다시 열린다. 예전엔 전령 12 / 용 15 로 전령이 먼저였고 간격도 3턴뿐이라 첫 전령과 첫 용이 사실상 같은 구간에 겹쳐, 양쪽 참가자인 정글러·중앙이 좌우로 끌려다니느라 어느 쪽도 "모여서 붙는" 사건이 되지 못했다. 순서를 뒤집은 것은 보상의 성격 때문이다 — 용의 성장 적립 +10% 는 남은 경기 내내 도는 이득이라 **일찍 먹을수록 값이 커지고**, 전령의 포탑 8 피해는 언제 먹어도 값이 그대로다. 첫 등장을 둘 다 10턴 늦추고 재등장 간격을 5턴씩 늘린 것도 같은 이유로, 오브젝트는 라인전을 자르고 들어오는 사건이 아니라 라인이 한 번 정리된 뒤에 열리는 사건이어야 한다. 남은 턴 수는 **상단 패널의 적 스트립 양옆**에 상시 표시된다(`ui/ObjectiveTimer.gd`, 좌 전령 / 우 용 — 아이콘 + 남은 턴. 지도의 좌우와 같은 배치라 자리가 곧 이름이다. 칸은 101×60 이고 **"턴" 글자는 없다** — 아이콘 옆의 숫자가 남은 턴 수 말고 무엇일 수는 없다). **시계를 누르면 그 오브젝트의 보상 카드가 실물로 뜬다**(`ui/ObjectiveRewardPopup.gd`) — 회피할 수 있는 사건이므로 무엇을 주는지는 결판 전에 볼 수 있어야 하고, 이 팝업은 **순수 정보라 전장을 붙잡지 않는다**(참여 결정 창과 다른 점이 그것이다) — 양 팀이 같은 자리로 모이는 약속이라 언제 열리는지가 안 보이면 미리 라인을 밀지 정글러를 붙일지 판단할 수 없다. 예전에는 이 숫자가 타일 위에 찍혔는데(`BattleRenderer._draw_objectives`, **삭제됨**) 그 칸이 정글로 돌아오며 캠프 아웃라인 · 점령 면 색 · 초상화와 자리를 다퉜다. **차례와 상관없이 발생한다**: `CardPhaseManager.do_battle_turn` 이 `simulate_turn()` 직후 · 카드 경제보다 **앞**에서 `await _bs.objective.process_turn()`. **회피할 수 있다** — 플레이어는 참여 / 미참여 두 버튼(`EngageIntro` VS 화면을 문구만 바꿔 재사용), AI 는 **머릿수만** 센다 — 체력 20% 이상인 참가자 수가 상대보다 적을 때만 물러나고(전력 차이는 안 본다), 그때도 **오판 확률**로 받아들인다(상대 리그 순위 1위 5% → 꼴찌 60%, 동률은 팀 평균 스탯, 국제대회 외부 팀 5% — `MatchFlow._misjudge_chance_for` → `match_ctx.enemy_misjudge_chance`). 결정은 서로 모르는 채 동시에 내려진다. 한쪽만 참여하면 전투 없이 그쪽이 가져가고, 양쪽이면 4라운드 교전(`EngagePhaseManager.start_objective_engage` — 시전자 없이 열리고 선공은 블루, **포탑은 어느 팀도 가담하지 않는다**) 뒤 **생존 인원 수 → 동률이면 잔여 HP 비율 합**으로 승자를 가린다(비율인 이유: 절대값이면 "탱커가 살아 있는 쪽"이 언제나 이긴다). **사망한 파일럿은 참여 불가**라 오브젝트 직전의 처치가 곧 오브젝트를 가른다. 보상 — 전령: **[전령 제압]**(id 32, 0코, `exhaust\|preserve`) 1장을 **손패로 곧장**, 레인별 살아 있는 **가장 바깥** 적 포탑에 무판정 피해 8(T1 이 무너진 레인은 T2 가 그 자리를 물려받는다). **그 레인 전선에 적 파일럿이 한 명도 없으면 피해가 2배**이고(전선 = 양 팀 최전방 포탑 사이 = 지정한 적 포탑 칸부터 우리 최전방 포탑 칸까지, `SimulationCore.front_line_cells` — 화면의 금색 테두리와 같은 집합), **깎아 낸 만큼의 성장치를 그 레인 아군 라이너들이 균등하게 나눠 받는다**(우측 레인은 스나이퍼 · 서포터 둘이라 반씩). 전령 제압은 시전자가 없어 평소의 귀속 경로가 아무에게도 닿지 않는데, 그 레인을 미느라 버틴 사람들이 공성의 임자다. 용: **[용 보상]**(id 33, 0코, `exhaust`) **3장**을 **덱에 섞어서**, 드로우 1 + 지정한 아군의 성장 적립 배율 **영구** **+5%**(`PilotData.growth_rate_bonus`, 누적). 두 카드 모두 `pool = 0` 이고 **시전자가 없다**(`owner_pilot == null` — 팀이 먹은 것이지 누가 먹은 것이 아니고, 시전자를 붙이면 그가 쓰러진 동안 보상이 잠긴다). 결정 창이 떠 있는 동안은 아직 BATTLE 이라 `ObjectiveSystem.is_busy()` + `BattleSim._battle_tick_held()` 가 자동 틱과 MM:SS 시계를 함께 붙잡는다. **보상은 연출을 거쳐 들어온다**(`objective/ObjectiveRewardFx.gd`) — 아래 "오브젝트 보상 획득 연출" 항목. 자세한 내용은 `objective/README.md`. |
-| 정글 캠프 값 | 캠프가 서는 칸은 **14칸**(정글 12 + 좌우 중립 2)이고 `BattleSim.SCORE_JUNGLE_CAMP` 은 **0.98k** 다. 한때 중립 두 칸이 오브젝트 전용 자리가 되어 12칸으로 줄었을 때 그 몫(× 14/12)을 얹은 1.15 였는데, 두 칸이 정글로 돌아오면서 되돌렸다 — 전령 / 용은 캠프를 밀어낸 적이 없으므로 되돌려 줄 몫도 없다. |
-| 보존 키워드 | `보존`(`keyword` 에 `preserve`)을 단 카드는 **어떤 버리기에도 걸리지 않는다** — 손패 상한 초과 자동 버리기(`_trim_hand_overflow`)도, 강제 버리기 넷(재고 / 완벽한 마무리 / 과감한 정리 / 솔로 퍼포먼스)도, 버리기:N 모달도. 강제 버리기는 전부 `_discardable(hand)` 를 지나고, 모달은 `add_card_to_discard` 에서 거부하며 `target_count` 를 **버릴 수 있는 카드 수**로 잡는다(손패 크기로 잡으면 확인 버튼이 영영 잠긴 모달이 된다). 작전 단계 한 번짜리인 계획 중시(`preserve:N` 효과, `BattleSim.preserved_cards_*` 목록)와는 **수명도 막는 범위도 다르다** — 그쪽은 상한 초과 버리기만 막고 다음 작전 단계에 풀린다. 화면 표시(시안 테두리)는 둘이 같다: 플레이어에게 두 보존은 "이 카드는 버려지지 않는다" 한 가지 의미다. |
-| 교전 (ENGAGE) | `engage:N` / `duel` 카드가 여는 **라운드 기반 턴제 탑뷰(쿼터뷰) 교전** (관전 전용, 플레이어 입력 없음). **`engage:N` 의 N 은 라운드 수다** — `engage:3` = 3라운드이고, 예전의 "N × 3초" 환산은 삭제됐다. **한 라운드 = 참가자 전원이 정확히 한 번씩 행동**하며, 무대에는 언제나 **한 명만**(`current_actor`) 나와 있다 — 그 한 차례(`ADVANCE` 접근 → `STRIKE` 공격 → 정착)가 끝나면 다음 순서로 넘어가고, 순서 끝에 닿으면 라운드가 오르며 **다시 시전자부터** 같은 순서를 돈다. **행동 순서는 개시 시 한 번 정해져 매 라운드 반복된다(상황 기반)**: 시전자 팀부터 한 명씩 **팀 교대**, 팀 안에서는 **역할 고정**(암살자 → 격투가 → 탱커 → 스나이퍼 → 서포터), 단 **시전자는 자기 팀 맨 앞으로 당겨진다**(교전을 연 쪽이 선공한다는 것이 카드의 값이다). 포탑은 파일럿 전원이 돈 **뒤** 시전자 팀 포탑부터 한 번씩 — 유닛 사이에 끼우지 않는 이유는 카메라가 포탑을 프레이밍하지 않아 화면 밖에서 포격만 날아오는 침묵 구간이 생기기 때문이다. 죽은 행동자는 건너뛰되 순서 배열은 그대로라 살아 있는 사람들의 상대 순서는 바뀌지 않는다. **메크 `speed` 스탯과 `game_config.TURRET_SPEED` 는 삭제됐다** — 라운드마다 전원이 한 번씩 행동하므로 행동 빈도를 가르는 스탯이 없다(예전 ATB 실시간 모델의 유산이며 되살리지 말 것). **시작 위치는 전장 타일이 정하되 반영하는 것은 방향뿐이다** — 아래 "교전 시작 위치" 항목. 무대는 위에서 살짝 눕혀 내려다본 **바닥면**(`STAGE_W`×`STAGE_H` = 1240×1180)이고, 좌우가 진영을 나누지 않는다. 근접은 밀착(`MELEE_REACH` 88px)까지, 원거리는 **최대 사거리의 90%**(270px)까지 파고든 뒤 때린다. 이동 속도는 근접 1600 / 원거리 1250px/s 이고 접근 상한은 `ADVANCE_MAX_SEC` **0.85초**다 — 셋 다 사이드뷰 벨트(1400 / 1100 / 0.55초)보다 큰데, **바닥면이 세로로 두 배 넓어져** 대각선 반대편까지 걸어가야 하는 차례가 생겼기 때문이다(짧게 두면 그 차례가 통째로 "걸어가다 말았다"가 된다). 한 번에 한 명뿐이라 **접근 시간이 곧 관전자가 기다리는 시간**이다. 사거리 판정에는 `STRIKE_DIST_EPSILON`(0.5px) 여유가 붙는다 — 접근을 끝낸 유닛은 사거리 **딱 그 거리**에 스냅하는데, 부동소수 오차로 그 거리가 사거리 바로 위에 떨어지면 여유 없는 판정이 영원히 실패해 유닛이 `ADVANCE_MAX_SEC` 교착으로만 차례를 접는다. **원위치 복귀는 없다** — 공격을 끝낸 자리가 곧 새 앵커(`anchor_pos`)이므로 양 팀이 서로에게 파고들며 무대 한쪽으로 뭉친다. 명중하면 대상이 넉백되고 **밀려난 자리가 그대로 새 앵커가 된다** — 앵커를 두고 오면 복원 드리프트가 넉백보다 빨라 맞은 프레임에 되돌려 버려 넉백이 아예 안 보이고, 근접이 사거리에 붙어 굳어 공격 모션도 사라진다. 넉백 방향은 **공격자로부터 멀어지는 그 방향 그대로**다(`KNOCK_VERTICAL_SCALE` 삭제 — 탑뷰에서는 세로도 실제 거리라 누르면 위아래로 선 둘 사이에서만 넉백이 사라진다). 피해·스탯에는 얹히지 않고 **위치와 재접근 거리**만 바꾼다. **암살자만 적 원거리 역할을 우선 노린다**(`DIVE_FOCUS`) — 이 분기가 없으면 존재감이 두 배(4 vs 2)라 원거리 메크가 교전 내내 한 대도 맞지 않는다(실측 확인). 집중 사격 가중(`_focus_count`)은 **라운드 경계에서 비우지 않는다** — 끊으면 딜이 흩어져 처치가 거의 안 나온다(실시간 시절에는 동시 행동이 이 역할을 했다). **교전 중 이탈은 없다** — 아무도 무대를 뜰 수 없고, 종료는 **라운드 소진** 또는 한 쪽 전멸뿐이며 빈사여도 후퇴하지 않는다. **종료 판정 후 `EngagePhaseManager.END_HOLD_SEC`(2.0초) 동안 전투만 멈춘 무대를 더 보여 주고(종료 사유 배너 표시) 그 다음 결과 화면이 뜬다** — 마지막 처치가 결과창에 먹히지 않게 하기 위함. **결과는 패널이 아니다** — 아래 "교전 결과 화면" 항목. 유예 동안 `round_index` 는 멈추므로 대시보드의 라운드 수는 실제로 싸운 라운드 수 그대로다. **`setup()` 과 `begin()` 이 갈라져 있다** — 전자는 무대를 세우기만 하고(개시 확인 화면이 여기까지만 쓴다) 상태를 바꾸는 것(약자 멸시의 개시 타격 · 라운드 루프)은 전부 후자에 있다. 취소가 진짜로 아무 일도 없던 것이 되는 근거다. **포탑은 사거리 존도 무대 참가자도 아니라 지형이다**: **적이 걸어온 교전에서** 참가 파일럿이 **자기 팀 포탑 칸 위에 서 있을 때만** 그 포탑이 가담해 **라운드마다 한 번** 적 파일럿을 때린다 — **시전자 팀의 포탑은 가담하지 않고**(`t.team == initiator_team` 이면 거른다) **오브젝트 교전에는 어느 팀 포탑도 안 낀다**(`_has_caster == false`). 포탑은 허깅하는 우리 편에게 적이 교전을 **강제했을 때** 방어에 나서는 것이지, 우리가 그 자리에서 먼저 교전을 열 때 따라 나오는 화력이 아니다 — 포탑 칸에 눌러앉아 카드로 교전을 여는 쪽이 포탑까지 끼면 그 칸이 일방적인 안전지대가 된다(**사거리 제한 없음**, 명중 판정은 굴린다, 무대에서 포탑 HP 는 안 깎인다). **자리는 파일럿과 같은 칸→무대 매핑을 지나 자기 칸 위**다 — 가담 조건 자체가 "우리 편이 그 포탑 칸에 서 있다"이므로 포탑과 허깅하는 아군이 저절로 같은 자리에 선다. 사이드뷰 시절의 "지평선 한 줄에 나란히"(x 225 / 1015, y 48)는 삭제됐다. 피해 공식(atk 1회분, 보호막 우선)은 전장과 공유하지만 **명중률은 전장 확률을 80~100% 구간으로 리맵**한다(`ENGAGE_HIT_MIN` 0.80 / `ENGAGE_HIT_MAX` 1.00 → 스탯이 대등하면 90%). 처치는 `mark_pilot_dead(victim, killer)` 를 지나므로 리스폰 스케일링과 **성장치 정산**이 그대로 걸리고, 준 피해도 `score_pilot_damage` 로 적립된다. `grid_pos` 는 교전으로 바뀌지 않는다. **화면**: `EngageArena.BAND_RECT`(24, 406, 1032×**1000**) 한 창 안에서만 무대가 보이고(`clip_contents`) 그 밖은 검정 α 0.86 으로 딤드된다. 사이드뷰 시절(500)의 **두 배 높이**인데, 벨트에서 세로는 원근 표현이라 납작해도 됐지만 탑뷰의 세로는 실제 거리라 **위 타일과 아래 타일이 같은 밴드에 들어가야** 배치가 전장과 같은 모양으로 읽히기 때문이다. 바닥에 **칸 윤곽은 그리지 않는다**(옅은 격자와 무대 테두리만 남는다) — 시작 자리가 타일의 *방향*만 반영하는 지금 무대의 한 칸은 전장의 한 칸과 같은 크기가 아니라, 육각을 그려 두면 있지도 않은 축척을 말한다. 유닛 하나는 **세 겹**이다: 바닥에 누운 타원(정확한 지상 위치) → 그 타원을 가리키는 쐐기 → `UNIT_LIFT`(82px) 위에 뜬 원형 초상. **그 바닥 타원이 곧 콜리전이라 두 유닛의 발밑 원은 절대 겹치지 않는다** (`TurnEngageSim._separate_units` — 그리는 원과 부딪히는 원이 갈라지지 않게 `EngageArena.GROUND_RX/RY` 가 시뮬레이터의 `FOOT_RX` 30 / `FOOT_RY` 13 을 그대로 읽는다). 판정은 **y 를 `FOOT_ASPECT`(≈2.31)배로 늘린 원 공간**에서 한다 — 타원끼리의 최단 거리에는 닫힌 해가 없다. 실제 최소 간격은 **나란히 60px · 위아래 26px** 이라 `MELEE_REACH`(88)보다 작고, 그래서 **붙어서 때리려는 접근과 다투지 않는다** — 실제로 일하는 자리는 개시 배치(한 칸에 몰린 무리 · 오브젝트 교전 · [강습] 낙하)와 넉백으로 떠밀린 자리 둘이다. **밀 때 앵커도 같이 민다**(안 그러면 IDLE 복원 드리프트가 곧장 되돌려 겹친 자리에서 떤다 — `_apply_knockback` 과 같은 이유) 그리고 **시신은 밀리지 않는다**(쓰러진 자리에 남고 산 유닛만 그 밖으로 밀려난다). 겹침은 **한 프레임 안에 다 푼다** — 나눠 밀면 넉백 한 방에서 원이 겹친 채 그려진다(실측 7.7%). 실측: 열 명을 한 칸에 몰아넣어도 개시·전투 내내 최소 간격이 딱 맞닿음(겹침 0), 바닥면 이탈 0. 사이드뷰의 "바라보는 좌우" 쐐기를 대체한 것으로, 탑뷰에서 읽혀야 하는 것은 방향이 아니라 **이 얼굴이 바닥 어느 지점에 서 있는가**다(초상이 떠 있어 그대로는 자기 자리를 가리키지 못한다). 방향은 `EUnit.facing`(단위 **벡터**, `facing_x` 는 삭제)이 들고 공격 모션의 각도로만 쓰인다. **밴드 아래에 참가자 스트립이 한 줄로 깔린다 — 아군 왼쪽 / 적군 오른쪽, 가운데 VS**(5v5 면 `IIIII vs IIIII`). 무대에서 팀0 이 언제나 왼쪽에 서므로 스트립도 같은 좌우를 쓴다. 초상화는 **얼굴 위주 정사각 썸네일**(`PilotImages.face_for` = `faces/N_rect.png` 256×256, 화면에서 90×90)이다 — 밴드가 두 배로 커지면서 세로 300짜리 tall 크롭이 들어갈 자리가 없어졌고, 스트립이 답해야 하는 질문은 "누구인가 · 얼마나 성한가" 둘뿐이라 몸은 무대가 보여 준다(`tall_for` 는 드래프트 · 밴픽이 여전히 쓴다). 그 아래에 체력 바(보호막은 오른쪽에 이어 붙음). **초상화 밑에 이름은 안 적는다** — 예전에는 역할 이름(`T0` / `F1`)이 상시로 찍혔는데 90px 칸에서 그 표는 초상화가 이미 말하는 것을 한 번 더 적을 뿐이었다(`_name_labels` / `_refresh_names` 삭제). 그 줄(`STRIP_SUB_Y`)은 결과 화면에서 번 성장치가 쓴다. 지금 차례를 가진 **정확히 한 명**의 테두리가 금색으로 굵어지고, 처치되면 뒤판이 붉어지며 알파가 35%로 떨어진다. `faces` 텍스처는 `draw_texture_rect` 로 그리므로 **`PilotImages.prime_into` 프라임 대상이다**(빠뜨리면 열 칸이 통째로 흰 사각형). 상단 헤더는 **제목(240) · 라운드 카운터(292) · 라운드 칸(350) · "누구의 차례"(372)** 네 줄이다 — 실시간 시절의 남은 시간 바(MM:SS.s)는 삭제됐다. 카메라는 **생존 유닛의 발밑과 얼굴**을 프레이밍하고(포탑은 제외 — 담으면 배율이 떨어져 유닛이 잘게 보인다) `stage_rect()`(바닥면 + `STAGE_MARGIN` 130) 밖은 절대 비추지 않는다. 얼굴까지 넣는 것은 초상이 82px 떠 있어 발밑만 담으면 맨 윗줄 얼굴이 잘리기 때문이다. 자세한 내용과 튜닝 상수는 `engage/README.md`. |
-| 교전 결과 화면 | **패널도 팝업도 아니다.** 무대(밴드) · 밴드 테두리 · 라운드 칸 · 차례 배너 · 팀 이름 두 줄을 걷어 내고, 교전 내내 서 있던 **하단 초상화 스트립만 그 자리에 남긴 채** 딤드된 배경(`RES_DIM_COLOR` α 0.945 — 밴드가 사라지면 그 자리로 전장이 올라오므로 교전 중의 0.86 보다 어둡다) 위에서 그대로 성적표가 된다. 한 칸이 위에서부터 답하는 것 — **준 피해 숫자**(네 자리부터 `1.2k`) → **준 피해 막대**(초상화 윗변에서 위로 자란다) → **막대 안쪽 밑단의 처치 수**(`처치 2`, **0 은 안 적는다** — 열 칸에 늘어선 0 은 읽을 것 없는 자리만 채운다) → **초상** → **남은 체력** → **이번 교전으로 번 성장치**(`+2.15k`, 못 벌었으면 `—`). **받은 피해는 없앴다**(맞은 양은 바로 밑 체력 바가 이미 말한다) 그리고 **총 성장치도 없앴다**(예전 `+2.15k → 12.40k` — 여기서 묻는 것은 총액이 아니라 이 교전의 몫이고, 총액은 전장 스트립과 파일럿 상세가 상시로 들고 있다). **막대 눈금은 그 교전이 정한다** — 참가자 전원의 준 피해에서 최소 · 최대를 뽑아 `[28, 560]px` 로 편다(절대 스케일이면 소규모 교전은 다 밑동, 후반 교전은 다 천장이라 어느 쪽에서도 누가 더 넣었는지가 안 읽힌다). **맨 윗줄은 승리 / 패배 / 교전 결과**이고 예전의 `교전 결과` 고정 제목 + `N라운드 진행` 소제목은 삭제됐다 — 라운드 수는 이미 다 본 것이고 그 자리가 답해야 하는 질문은 "그래서 이겼나"다. 판정(`EngagePhaseManager._result_title`)은 둘로 갈린다: **오브젝트 교전**은 `ObjectiveSystem.engage_winner()` 를 그대로 빌려 쓰고(생존 인원 → 잔여 HP 비율 합 — 그래야 뜬 글자와 보상을 가져가는 팀이 갈릴 수 없다), **카드 교전**은 판정이 원래 없으므로 **이겼다고 부를 수 있는 두 모양**만 승리로 친다 — 상대 전멸, 또는 처치 1 이상 + 이쪽 전원 생존. 양측이 같은 답이면(서로 하나씩 눕힌 교전, 피해만 주고받은 교전, 양측 전멸) 승패를 말하지 않고 `교전 결과`로 남는다. |
-| 교전 시작 위치 (타일 기반 — **방향만**) | **무대의 자리는 전장의 자리다 — 다만 반영하는 것은 그 칸의 *방향*뿐이고 물리적 거리는 반영하지 않는다.** 교전이 열린 칸을 무대 한가운데 두고, 각 참가자가 밟고 있던 칸의 **상대 육각 오프셋**을 무대 좌표로 환산해 세우되(`TurnEngageSim._place_from_grid` / `_cell_offset`, `CELL_SPAN_X/Y` = 300 / 235) **단위 방향만 남기고 길이는 포화 곡선으로 다시 매긴다**(`CELL_REACH_MAX` 1.55 / `CELL_REACH_HALF` 0.9 칸 → d 칸 떨어진 참가자는 `1.55 × d/(d+0.9)` 칸에 선다: 1칸 0.82 · 2칸 1.07 · 3칸 1.19 · 5칸 1.31 · 10칸 1.42 · **상한 1.55 = 465 / 364px**). 그래서 윗타일에 둘 · 아랫타일에 둘 · 왼쪽 정글에 정글러 하나였다면 무대에서도 그 모양이지만, 그 정글러가 여덟 칸 떨어져 있었는지 두 칸이었는지는 무대에서 거의 같아 보인다. **예전에는 거리를 그대로 곱하고 상한에서 잘라 냈다**(`MAX_CELL_OFFSET_X/Y` 660 / 517, **삭제됨**) — 그러면 세 칸 넘게 떨어진 참가자가 전부 같은 상한에 붙어 순서는 사라지는데 무대는 최대로 벌어졌고, 참가자가 전장 곳곳에서 모이는 **오브젝트(전령 / 용) 교전**이 특히 그랬다(실측: 오프셋 바운딩 박스 1260 × 517 → `_fit_scale` 0.712, 곧 얼굴이 29% 작아진 채 서로 화면 끝에 서 있었다. 지금은 699 × 294 로 축소가 아예 안 걸린다). 진영으로 좌우를 가르지 않는 것이 요점이다: 같은 칸에서 붙은 두 팀은 무대에서도 한 칸에 섞여 서고, **그 칸 안에서만** 팀0 이 왼쪽 반원 · 팀1 이 오른쪽 반원을 쓴다(가르는 단위가 무대 전체가 아니라 칸 하나라 타일 배치가 그대로 남는다). 자리마다 `SLOT_JITTER_X/Y`(24 / 16) 흐트러짐이 붙어 완벽한 격자가 되지 않는다. 오프셋은 **바운딩 박스 중심으로 옮긴 뒤**(`_recentre`) 무대를 넘으면 **통째로 줄인다**(`_fit_scale`) — 열린 칸을 중심에 못박으면 그 칸이 무리의 끝일 때 무대 절반이 비고, 배치가 말하는 것은 상대 위치뿐이라 옮기고 줄여도 잃는 정보가 없다. 칸→무대 환산은 표가 아니라 `HexGrid.hex_to_screen` 을 지난다 — 육각 오프셋 좌표는 홀/짝 열마다 이웃 규칙이 달라 손으로 적은 표가 조용히 틀리기 쉬운 자리다. **바닥에 칸 윤곽을 그리지 않는다** — 예전에는 참가자가 밟고 있던 칸마다 납작한 육각을 깔았지만(`EngageArena._draw_cell_marks` / `TurnEngageSim.cell_marks` / `cell_mark_radius`, **셋 다 삭제됨**) 거리를 압축한 지금은 무대의 한 칸이 전장의 한 칸과 같은 크기가 아니라 그 육각이 있지도 않은 축척을 말하고, 유닛이 자기 칸 밖에 서 있는 것처럼 보인다. 배치가 무작위가 아님을 말하는 것은 이제 윤곽이 아니라 방향이다. **이 배치는 연출이다** — 라운드마다 전원이 한 번씩 돌아가며 때리는 판정은 그대로이고, 시작 자리가 바꾸는 것은 접근 거리와 표적 선택의 거리항뿐이다. **[강습](mech_cards id 30)만 예외다**: `engage:3|at_target|drop_in` 의 `drop_in` 플래그는 시전자를 **지정한 적의 칸으로 전장 위에서 실제로 이동시켜** 그 교전에 참가시킨다 — 그래야 교전을 연 쪽의 선공(시전자 팀 · 시전자가 맨 앞)이 시전자 자신에게 걸린다(예전에는 대상 반경 1칸으로만 명단을 모아 멀리서 건 시전자가 자기 교전에서 빠졌다). 이동은 개시 확인 화면에서 **확인을 누른 뒤에** 일어나고(취소는 제자리), 남의 레인 · 정글에 내려앉으면 작전 단계 끝에 위치 이탈 복귀가 그대로 걸린다. 무대에서는 시전자만 **적 진형 한가운데(적 유닛 위치의 무게중심)에 낙하**하고 바닥 마커에 금색 겹링이 하나 더 붙는다 — `engage/README.md` 의 "[강습]" 절. |
-| 전투 개시 확인 화면 (VS) | **카드를 제출한 순간 교전 무대가 통째로 미리 뜬다**(`engage/EngageIntro.gd`). 딤드된 전체 화면 위에 `EngageArena` 를 **미리보기 모드**로 한 장 세우고(제목 · 라운드 칸 · 무대 · 하단 정사각 썸네일 스트립이 전부 실제 교전과 같은 자리에 있다) 그 아래에 **취소 / 확인**만 얹는다. **무대는 진짜다** — `EngagePhaseManager.prepare_sim()` 이 만든 `TurnEngageSim` 을 그대로 그리고, 확인을 누르면 `_begin` 이 그 무대(`_pending_sim`)를 이어받으므로 **화면에서 본 배치와 실제로 싸우는 배치가 같다**. 다시 만들면 지터와 칸 안 자리가 달라져 "본 것"과 "나온 것"이 어긋나고, 그러면 이 화면은 판단이 아니라 확인 절차로 되돌아간다. 아직 `begin()` 전이라 피해도 충전 소모도 일어나지 않는다. **명단만으로는 부족했다** — 교전을 여는 판단은 "누가 있나"가 아니라 "어디에 어떻게 서 있나"(위 타일에 둘, 아래 타일에 둘, 왼쪽 정글에 정글러 하나)이기 때문이고, **예전 화면**(딤 위에 상단 = 적군 / 중앙 = VS + N라운드 / 하단 = 아군으로 eye 초상화를 깔던 두 줄)은 그 절반만 답했다. **`_pending_sim` 의 생명 주기**: 프롬프트를 띄우고도 교전이 안 열리는 경로가 있으므로(오브젝트 미참여 · 무혈 획득 알림 · 취소) `prompt_engage` 는 취소에서 버리고 `_begin` 은 **명단과 라운드 수가 일치할 때만** 이어받는다(`TurnEngageSim.matches`). 어긋나면 조용히 새로 세운다. **라운드 수는 엿보기로 구한다** — 화면에 뜨는 수는 파일럿 스킬 보정([전투 명령] −1 / [공성전] +3)까지 먹은 실제 수여야 하는데 [공성전]은 한 장에만 붙는 보너스라 취소했는데 타 버리면 되돌릴 수 없다. 그래서 `engage_rounds_for(caster, rounds, consume)` 한 함수를 두고 화면은 `consume = false`, `start_engage` 는 `true` 로 부른다(예전에는 화면이 보정 **전**의 수를 띄우고 실제로는 다른 수로 돌았다). **취소는 카드 제출 자체를 무른다** — `CardPhaseManager._effect_engage` 가 `_on_overlay_cancel()` 로 `_play_card_direct` 의 스냅샷(손패 / 덱 / 비용 / engage 할인 / 보존 목록)을 통째로 복원하므로 버리기·찾기 취소와 완전히 같은 경로다(실측: 손패 5→4→**5**, 점수 99→93→**99**). **AI 가 낸 카드에는 확인만 뜬다** — 플레이어가 무를 수 있는 것이 아니다. 이 화면이 떠 있는 동안 `game_phase` 는 아직 CARD_PHASE(AI 턴이면 BATTLE)라 아레나는 열리지 않았고, 그래서 손패 딤 · 턴 넘기기 · 더미 열람 · 도넛 플립이 페이즈가 아니라 `EngagePhaseManager.is_intro_active()` 를 따로 읽는다. **오브젝트(전령 / 용)의 참여 / 미참여 창도 같은 화면이다** — 무대 중심을 오브젝트 칸으로 넘기므로 누가 어느 정글 · 어느 레인에서 달려오는지가 그대로 배치가 된다(참여를 정하는 데 필요한 것이 정확히 그것이다). `CardTargetingOverlay` 의 PREVIEW 모드 자체는 남아 있다(끄는 동안 시전자 셀 + 인접 6칸이 밝아지고 참가자가 강조된다). |
-| 작전 단계 (CARD_PHASE) | Triggered at `player_cost ≥ PHASE_THRESHOLD`. 작전 점수 read out on the 전략 포인트 donut gauges — **둘 다 화면 좌측 거터**(player: 핸드 행 좌측 상단 = Deck 카운터 위; enemy: 좌측 상단 = 상대 핸드 peek 아래). Tapping the player donut flips it into a circular 턴 넘기기 button — **카드를 한 장도 내지 않아도 언제든 넘길 수 있다**(잠기는 것은 배너 / 모달 / 돌진 연출처럼 지금 닫으면 무언가가 끊기는 상태뿐). 규칙은 두 번 바뀌었다: "작전 점수를 1 이상 써야 한다" → 28장 중 9장이 0코스트라 무료 카드만 있는 손은 점수가 줄지 않아 턴을 영영 못 넘겼고, 그래서 "카드를 한 장 이상 낼 것"(`cards_played_this_phase`)이 됐다가, 지금은 그 마저도 없앴다 — 점수는 문턱 위인데 손에 낼 게 없는 상황이 흔하고, 강제하면 아무 카드나 버리듯 내게 되기 때문이다. `cards_played_this_phase` 와 `_has_any_playable_card()` 는 함께 **삭제됐다**. Tapping elsewhere flips it back. |
-| 턴 넘기기의 대가 (초과분 소멸 · 패스 잠금) | 카드를 안 내고도 넘길 수 있는 대신 세 규칙이 붙는다(양 팀 동일). (1) **문턱 초과 소멸** — 차례를 놓는 순간 점수는 정확히 `PHASE_THRESHOLD`(8)로 깎인다(`end_card_phase` / `_run_ai_turn` 말미, 소멸량은 로그에 남는다). (2) **문턱 위에서는 회복 정지** — `COST_RECOVERY` 는 자기 점수가 문턱 **미만인 쪽에만** 들어간다(`do_battle_turn`). 둘이 합쳐 전략 점수의 실질 상한이 문턱이 되고, 카드 효과(아드레날린)로 그 위에 올라간 점수도 차례를 넘기면 깎인다. (3) **패스 잠금**(`CardPhaseManager._player_pass_lock`) — 넘긴 직후에도 점수는 문턱에 걸려 있으므로 그대로 두면 **다음 틱(0.5초)에 내 차례가 다시 열린다**. 그래서 넘긴 쪽은 **자동 드로우로 손패가 바뀌거나 상대가 한 번 차례를 가질 때까지** `_next_turn_side()` 에서 준비되지 않은 것으로 친다. 그 사이 BATTLE 은 평소대로 흐른다. |
-| 카드 드래그 = 대상 지정 | **카드를 끌어내는 순간이 곧 대상 지정 단계다** — 클릭만으로는 아무 일도 일어나지 않는다(아래 '카드 드래그 앤 드롭' 항목). 설명 상자의 "카드 내기" 버튼도, 화면 우하단의 확인 / 취소 버튼도 없다 — **카드를 내는 조작은 끌어다 놓기 하나뿐**이고, 카드가 손을 떠나는 즉시 **놓을 수 없는 곳이 전부 딤드**된다. 딤 규칙은 모드가 가른다: **PILOT 은 타일을 전부 딤드하고**(타일은 대상이 아니다) 유효 대상 파일럿만 **1.5배로 커진 채**(`BattleRenderer.TARGET_EMPHASIS_SCALE`, 예전 2.0 에서 낮췄다 — 2배는 무리를 화면 밖까지 밀어내고 얼굴이 옆 레인을 침범했다) 밝게 남기며 나머지 파일럿은 딤드한다. **커지는 것은 초상만이 아니라 배치도다** — 한 칸에 두세 명이 서 있으면 커진 얼굴이 서로를 덮어 겨눌 수 없으므로, `_build_pilot_render_layout` 이 그 칸 육각 링의 **반지름**을 같은 배율로 벌린다 — 링 정의(`지름 + 여백`)가 곧 비겹침 조건이라 배율을 곱해도 조건이 유지되고, 타일에서 물러난 만큼 화살표가 길어진다. **슬롯 배정 자체는 강조를 보지 않는다**(겹침 판정은 강조 이전 좌표로 돌린다) — 강조까지 반영하면 카드를 집을 때마다 전장의 슬롯이 새로 풀려 배치가 통째로 다시 섞인 것처럼 보인다. 벌어진 무리가 화면 밖으로 나가면 `_clamp_group_on_screen` 이 칸째 평행 이동해 화면 안에 넣는다. 히트 반경도 `BattleRenderer.pilot_marker_radius(p)` 에서 받아 커진 얼굴 테두리까지 잡힌다. **확대·축소는 즉시 튀지 않고 `BattleRenderer.EMPHASIS_TWEEN_SEC`(**0.05초**) 동안 보간된다** — 한 프레임 만에 얼굴 서넛이 부풀고 무리가 벌어지면 무엇이 대상인지보다 화면이 흔들렸다는 인상이 먼저 온다. 예전 0.15초는 그 인상은 지웠지만 카드를 든 손이 이미 대상 위에 가 있는데 얼굴이 아직 자라는 중인 구간을 남겼다 — 강조는 겨누기 **전에** 끝나 있어야 하는 신호다. 목표값(`_pilot_emphasis_target`)과 지금 값(`_pilot_emphasis_scale`)이 갈라져 있고, 그리기·배치·히트 반경이 전부 후자 한 곳을 읽으므로 보간 중에도 셋이 어긋나지 않는다. 도달하면 미동도 없다 — 예전의 펄스와는 다른 것이다. **LOCATION 은 유효 셀만 초록으로 남기고** 나머지 셀과 **파일럿 전원**을 딤드한다(사거리 노란 채움과 `range_unlimited` 특례는 삭제 — 사거리가 무제한이어도 갈 수 있는 칸만 밝다). **단 시전자는 어느 모드에서도 딤드되지 않는다**(`CardTargetingOverlay.card_caster`) — 카드를 쏘는 당사자에게 "여기엔 놓을 수 없다"는 말은 성립하지 않는다. 대신 강조 대상도 아니어서, 시전자가 자기 카드의 유효 대상일 때(보호 / 복귀 같은 `target=ally`)만 커진다. **확정 전까지 비용도 빠지지 않고 카드도 핸드에 남으므로 되돌릴 것이 없다** — **드래그를 빗나가게 놓으면 카드가 제자리로 돌아가고 오버레이가 꺼진다.** 대상 지정 상태는 드래그와 정확히 같은 수명을 가지므로 '탈출' 이라는 개념 자체가 없다(손을 떼면 끝난다). 모달이 아니라서 턴 넘기기는 계속 살아 있다. **오버레이는 이제 노드를 하나도 소유하지 않는다** — PREVIEW 의 좌/우 팀 패널이 제출 후 VS 화면으로 옮겨 가면서 그 CanvasLayer 도 사라졌다. |
-| 카드 드래그 앤 드롭 | **카드를 끌어다 놓는 것이 카드를 집는 유일한 조작이다.** **카드 선택 상태는 삭제됐다** — 클릭해도 아무 일도 일어나지 않고, 누른 채 `DRAG_THRESHOLD_PX`(10px) 넘게 움직여야 비로소 카드가 손을 떠난다. 예전에는 클릭하면 카드가 리프트된 채 대상 지정이 켜져 남아, 다시 끌거나 다른 곳을 눌러 해제해야 했다 — 조작이 둘로 갈려 있었고(클릭→끌기 / 클릭→클릭 해제) 카드를 낼 수 있는 경로는 어차피 드롭 하나뿐이라 중간 상태가 하는 일이 없었다. `_selected_card` / `_select_card` / `Card.is_selected` / `Card.card_clicked` / 바깥 클릭 해제가 전부 그때 사라졌고, `deselect_current_card()` 는 이름만 남아 '진행 중인 드래그와 대상 지정을 강제로 걷는다' 를 뜻한다. **끌린 카드의 자세는 대상 유무가 가른다.** (1) **대상 지정 카드(PILOT / LOCATION)는 손패에 남는다** — 리프트 자세(`Card.PRESS_LIFT`) 그대로 부채꼴 기울기를 유지하고, 카드 **위쪽 끝에서 커서까지 2차 베지어 조준 화살표**(`card_phase/CardDragArrow.gd`)가 이어진다. 카드가 커서에 붙어 날아다니면 겨누려는 대상(커진 초상 / 초록 유효 셀)을 카드가 자기 몸으로 덮어 정작 놓는 순간에 무엇 위인지가 안 보인다. 화살표 노드는 `_bs.canvas` 의 **자식 인덱스 0**(카드보다 뒤)이고 시작점을 `ARROW_TUCK_PX`(42px)만큼 카드 안으로 파묻어 두므로 화살이 카드 **밑에서** 뻗어 나온 것처럼 읽힌다. 제어점은 **카드 자신의 위쪽 축** 위라 기울어 있는 카드는 그 기울기대로 쏘고, 커서가 카드보다 아래면 `BOW_MIN` 으로 잘려 고리를 만들지 않는다. 색은 지금 놓으면 나가는지를 말한다 — 평소 금색, 유효 대상/셀 위에서 시안. (2) **대상이 없는 카드는 커서를 따라다닌다**(`Card.follow_cursor`) — 겨눌 대상이 없으니 가릴 것도 없고, `Card.begin_free_drag()` 이 부채꼴 기울기를 `FREE_DRAG_STRAIGHTEN_SEC`(0.10초) 동안 0 으로 펴서 '손에서 뽑아 든' 자세를 만든다. 이 카드에는 화살표 대신 드롭 존이 신호다. **원래 자리는 어느 쪽이든 빈 채로 유지된다** — `relayout_hand` 이 `is_dragging` 카드를 건너뛰므로 남은 카드는 자리를 지키고, 빗나간 드롭은 그 자리로 오차 0.00px 로 돌아온다. 놓는 곳이 곧 무엇을 하는가다: **대상 지정 카드는 대상 위에**(커진 파일럿 초상 / 초록 유효 셀), **대상이 없는 카드는 화면 중앙 드롭 존**(`CardPhaseManager.drop_zone_rect` — 세로 중앙 기준 화면 높이의 40%, 가로 전체), **버리기:N 픽 중에도 같은 중앙 구역**이다 — `drop_zone_rect()` 는 모드를 보지 않고 언제나 같은 rect 를 돌려주고 골라 둔 카드가 늘어서는 줄도 그 중심에서 나온다(`CardSelectOverlay.to_discard_center_y()`). 문구만 "여기에 놓아 버리기"로 바뀌고, 그때는 구역 노드를 캔버스 자식 인덱스 **1** 로 올린다(0 은 버리기 딤이 차지하고 있어 그대로 두면 구역이 딤 아래로 눌린다). 예전에는 버리기만 `TO_DISCARD_CENTER_Y`(700) 중심의 `DISCARD_ZONE_H`(440px) 짜리 별도 띠를 썼는데, **같은 조작이 무엇을 하느냐에 따라 놓을 자리가 달라져** 낼 때와 버릴 때 매번 다시 겨눠야 했다(두 상수는 함께 삭제됐다). **골라 둔 카드를 누르면 손패로 돌아간다**(`CardSelectOverlay.remove_card_from_discard`) — 카드 위에 투명 버튼 한 장(`UnpickHit`)을 얹어 그 클릭을 받고, 되돌아가는 자리는 **떠나올 때의 인덱스**다(뒤에 붙이면 무른 카드가 손패 오른쪽 끝으로 순간이동해 "무른 것"이 아니라 "새로 뽑은 것"처럼 읽힌다). **빗나가면 카드가 제자리로 돌아갈 뿐 비용도 카드도 그대로다.** 확정은 `CardTargetingOverlay.confirm_with` → `_on_selection_confirm` 한 경로뿐이라 비용 차감 / 카드 소비 / effect chain 이 두 벌 생기지 않는다(`_end_drag` 은 그 콜백이 동기적으로 되돌아올 때까지 `_drag_card` 를 살려 둔다). 입력은 전부 `HandHitLayer` 하나가 받는다 — 버튼을 쥔 컨트롤이 마우스 포커스를 유지하므로 커서가 전장으로 나가도 motion/release 가 계속 들어오고, 전장 쪽에는 드래그 배선이 없다. |
-| 드로우 연출 (카드가 손패에 들어오는 길) | 뽑힌 카드는 자기 슬롯에 그냥 나타나지 않는다 — **먼저 덱 뭉치에서 카드 한 장이 떠오르며 사라지고**(`CardPileStack.play_pop`, 위 "뭉치를 오가는 카드" 항목 — 알파가 30% 남은 0.182초 시점에 아래 박자가 이어받는다), **뒷면인 채로 화면 왼쪽 바깥에서 나타나**(`_draw_entry_position`) **손패 오른쪽 끝(새 카드가 앉을 자리) 위로 날아가고**(`DRAW_FLY_SEC` 0.28초, `EASE_IN_OUT`/`SINE` — 앞이 무거운 감속 곡선은 1200px 를 0.1초에 77% 지나가 "왼쪽에서 왔다"가 안 읽혔다), **그 자리에서 뒤집혀**(`Card.play_flip_reveal`, `FLIP_HALF_SEC` 0.09초 ×2, `scale.x` 를 0 까지 접었다 펴며 폭이 0 인 프레임에 앞/뒷면 교체) **슬롯에 안착한다**(`relayout_hand`). 뒤집는 지점은 슬롯보다 `DRAW_FLIP_LIFT_PX`(78px) 위다 — 행 안에서 뒤집으면 이웃 카드가 절반을 가리고 안착이 눈에 보이는 동작으로 남지 않는다. 연출이 도는 동안 `Card.intro_active` 가 그 카드를 손패의 일원에서 빼므로 **레이아웃 · 호버 · 잡기가 전부 비켜 간다**(나머지 손패는 이미 새 카드 몫까지 자리를 좁힌 채 기다린다). 비행은 `Card.tween_to`(= `_active_tween`)를 쓴다 — 카드 자신이 쥔 트윈이라야 버리기 연출이 걷어 낼 수 있고, 상한 초과 정리는 **가장 오래된 카드**(= 아직 날아오는 중일 수 있는 카드)를 버린다. 같은 프레임에 여러 장이면 `DRAW_STAGGER_SEC`(0.07초)씩 밀려 출발한다. 각 박자는 트윈의 `finished` 가 아니라 타이머로 기다린다 — 카드가 도중에 free 되면 그 신호는 영영 오지 않는다. **인트로를 끄는 두 자리**: 정밀 이동의 손패 왼쪽 복귀(`at_left`, 방향이 어긋난다)와 `_restore_from_snapshot`(취소 롤백이 새 손패처럼 보인다). |
-| 버리기 연출 | 손패를 떠나 버려지는 카드는 **부채꼴 기울기와 무관하게 화면 Y축으로만** 곧장 내려가며 투명해지고 (`Card.DISCARD_DROP_PX` **150px** / `DISCARD_FADE_SEC` 0.30초 — 화면 아래로 멀리 빠져나가기보다 손패 바로 밑에서 사라지는 쪽이 "버렸다"로 읽힌다. **낙하 곡선은 `EASE_OUT`** — 손을 떠나는 순간 확 튕겨 내려간 뒤 아래에서 서서히 멎는다. 예전 `EASE_IN` 은 떨어져 나가는 순간이 가장 흐릿하고 다 사라질 때 제일 빨라 무게가 끝에 실렸다) 다 내려가면 스스로 `queue_free` 한다. **그 낙하가 끝난 뒤에야 버린 더미가 카드를 받는다** — `CardPileStack.play_land` 가 `PILE_LAND_DELAY_SEC`(= `Card.DISCARD_FADE_SEC` 0.30초) 뒤에 시작해 두 연출이 겹치지 않고 이어 붙고(예전 0.16초는 카드가 아직 떨어지는 중에 더미가 먼저 받아 같은 카드가 두 군데에 있었다), **장수와 뭉치 두께는 그 착지 잔상이 다 내려앉은 뒤에 오른다**(`CardPhaseManager._discard_pending` / `_commit_discard_gain` — 표시값은 언제나 `배열 크기 − pending`). 델타 0 인 단순 갱신은 정산을 건드리지 않는다 — 거기서 pending 을 밀면 갱신 한 번에 지연이 통째로 날아간다 — 리프트(`PRESS_LIFT`)가 카드 자신의 up 축을 타는 것과 반대다(버려지는 카드는 뽑히는 게 아니라 떨어지는 것이라, 기울기를 타면 기울어진 카드만 옆으로 새 나간다). 진입점은 `CardPhaseManager.play_discard_fx(node)` 하나이고 **노드는 부르기 전에 이미 `player_card_nodes` 에서 빠져 있어야 한다** — 0.3초 동안 레이아웃 · 호버 · 히트 밴드가 그 카드를 손패로 세면 남은 카드들이 빈자리를 메우지 못한다. 진행 중이던 레이아웃 / 호버 / 그림자 / 뒤집기 트윈은 전부 kill 하고 시작한다. **버리기:N 으로 화면 중앙에 늘어세운 카드들도 확정 시 같은 연출로 내려간다**(`CardSelectOverlay._commit_discard` 가 `to_discard_nodes` 를 목록에서 먼저 떼어 낸 뒤 넘긴다 — 안 그러면 `_teardown` 이 그 자리에서 free 한다). **취소는 예외** — 버려지지 않은 카드가 떨어질 이유가 없으므로 즉시 free 하고 스냅샷이 손패를 다시 세운다. |
-| 카드 앞면 (아트 · 이름 · 비용 원 · 초상) | **앞면은 위에서부터 아트 → 이름판 두 층**이고, 왼쪽 구석에 비용 원과 시전자 얼굴이 세로로 얹힌다. **설명문은 카드에 없다** — 글은 `card_phase/CardDescBox.gd` 설명판이 화면마다 든다(손패 = 손패 바로 위 상자 · AI 가 낸 카드 = 중앙 카드 아래 · 찾기/선택 그리드와 더미 열람 = 가리키거나 누른 카드 옆 · 밴픽 시트와 메크 상세 = 누른 카드 위). 160×220 에 최장 128자를 8pt 로 욱여넣던 설명판(`DescPlate` / `_fit_desc_font_size`, **삭제됨**)은 읽으라고 있는 글씨가 아니었고, 그 자리를 아트가 가져가 카드가 **그림으로** 알아보인다. **아트는 이름판 위 전부**(y 5..183, `ART_H` 178)이고 그림은 `CardImages.art_for(카드 이름)` 이 준다 — 전용 아트가 없으면 `images/ground/` 다섯 장 중 **이름 해시로 고른** 한 장이라 같은 카드는 언제나 같은 그림을 단다. 액자는 카드 테두리에서 5px 물러나 앉는다(카드 모서리는 둥글고 아트는 네모라 끝까지 붙이면 귀퉁이가 삐져나온다 — 물러나면 자를 필요가 없어 `clip_children` 도 안 쓴다). **이름판**은 카드 아랫단(y 186..214, 테두리에서 좌·우·아래 6px 물러난 어두운 판 — 비용색이 여섯 가지라 판 없이는 어느 글자색도 여섯 곳에서 다 읽히지 않는다)이고, 충전 카드의 `N/M` 배지는 그 바로 위 아트 오른쪽 아래에 앉는다. **비용은 카드 모서리 밖으로 걸친 원**(`CostBadge`, 지름 42, (-9, -9)) 안에 찍히고 **시전자 원형 초상은 그 바로 아래**(`PORTRAIT_TOP` 34)에 앉는다 — 손패는 카드끼리 절반 넘게 겹치는 부채꼴이라(오른쪽 카드가 왼쪽 카드를 덮는다) **왼쪽 위 모서리가 각 카드에서 언제나 보이는 유일한 구석**이고, 그래서 비용과 얼굴을 그 한 구석에 모은다. 사용 불가 슬래브는 카드 사각형까지만 덮으므로 **밖으로 나간 비용 원은 따로 눌러 준다**(`COST_BADGE_BLOCKED_TINT`) — 안 그러면 잠긴 카드에서 비용만 밝게 남는다. 초상은 여전히 **손패에서만** 그린다(`Card.is_player_card` — 상세 패널 · 더미 열람 · 밴픽 · 드래프트에는 시전자가 없거나 의미가 없고, 상대 손패 peek 은 뒷면이다). **예전에는 초상이 오른쪽 위**였는데 겹치는 부채꼴에서 오른쪽 절반은 옆 카드에 가려지는 쪽이라 "누구 카드인가"가 손패를 펼쳐 봐야만 읽혔고, 그보다 더 예전에는 얼굴(`face_for`)이 **본체를 가득 채워** 일러스트 자리를 차지했다. |
-| 핸드 오르내림 (내 차례가 아닐 때) | **내 작전 단계가 아니면 손패가 화면 아래로 물러나 아군 파일럿 스트립 뒤로 숨는다.** 카드 절반쯤이 스트립 뒤판에 가려지고, 내 차례가 되면 그대로 올라온다. 조건은 `_hand_is_lowered()` = `game_phase != CARD_PHASE` 하나이고, 딤(`_apply_hand_dim_state`)보다 **좁다** — 내 차례 안에서 잠깐 입력이 막히는 구간(명중 연출 · 모달 픽 · 차례 배너)에는 손패가 어두워질 뿐 내려가지 않는다(그때도 내려가면 모달 한 번마다 손패가 오르내린다). **자리**는 `hand_drop_offset()` 이 `slot_position()` 에 더하며 상수가 아니라 스트립 뒤판에서 역산한다(`hud.player_strip_backdrop_top() − Card.CARD_H × 0.5 − BS_HAND_CENTER.y`) — 둘 다 세이프 에어리어 오프셋을 이미 먹은 값이라 기기와 무관하게 "절반쯤 가려진다"가 유지된다(1080×1920 에서 **206px**). **z-order** 는 `_reorder_hand_nodes()` 가 바꾼다: 내려간 것만으로는 카드가 판 **위에** 걸쳐 있어 가려지지 않으므로, 스트립 뒤판을 마커로 잡고 그 바로 앞자리에 카드를 차례로 꽂아 덩어리째 판 아래로 내린다(내 차례에는 예전처럼 자식 목록 맨 끝). **그림자**는 `Card.set_lowered()` 가 `SHADOW_FAR_*`(offset 1×4 · blur 3 · spread 0.98)로 바꾼다 — **카드에 바짝 붙은 짧은 그림자 = 카메라에서 멀다**가 이 연출의 전부이고, 내 차례에는 평소의 rest / hover / drag 세 단계로 돌아온다. 히트 레이어도 같은 오프셋을 타므로(`_fit_hit_layer`) 카드가 없는 자리에서 전장 클릭을 삼키지 않는다. |
-| 카드 설명 상자 | **손패 바로 위**, 가로 가운데(`CardPhaseManager.DESC_BOX_W` 640, 높이는 글이 정한다 — `CardDescBox`). 아랫변은 포커스 카드가 가장 높이 솟은 자세(손패 배율 × 호버 배율 + `PRESS_LIFT`)의 윗단에서 `DESC_BOX_GAP`(14) 위라 끌어 올린 카드도 상자를 파고들지 않는다. 카드 앞면에 설명문이 없으므로 **손패에서 글을 읽는 유일한 자리**다. 예전에는 화면 상단 고정(`DESC_BOX_TOP` 142, **삭제됨**)이라 카드를 보는 눈과 글을 읽는 눈이 화면 높이만큼 오갔고, 그보다 더 예전에는 든 카드 좌/우 옆에 붙어 드래그하는 커서 앞을 가로막았다. **가리키기만 해도 뜬다** — 보여 줄 카드는 손패 포커스와 같은 질문이라 `_push_focus_card()`(끌고 있는 카드 > 호버) 하나가 답한다. **버튼은 하나도 없다** — 카드를 내는 것도 드롭이고 버리기:N 픽도 드롭이다. 상자는 `MOUSE_FILTER_IGNORE` 라 그 위(전장 아랫단)를 지나는 드래그를 막지 않는다. |
-| 공격 카드 명중 판정 | `attack:N` 카드도 전장과 **같은 명중 판정**을 굴린다 — `SimulationCore.roll_hit` (`hit/(hit+evasion)`). 빗나가면 데미지가 0이고 로그에 "빗나감"이 남는다. `pierce`(필중)는 판정을 건너뛰고, `repeat`(연속 공격)은 **명중할 때마다** 같은 공격을 다시 굴려 빗나가거나 대상이 쓰러질 때까지 이어진다 — 무한 루프 방지 상한은 `CardPhaseManager.MAX_ATTACK_REPEATS`(5타). **타격마다 명중 연출이 붙고 `_effect_attack` 이 그것을 `await` 한다** — 아래 "공격 명중 연출" 항목. |
-| 전장 초상화 배치 (육각 6슬롯) | 초상화는 타일을 **둘러싼 육각 링**에 앉는다 — 6방향(N/NE/SE/S/SW/NW) × 3겹(반지름 91 / 182 / 273px)이고, 이웃 슬롯이 60° 간격이라 반지름 d 인 링에서 이웃 사이 거리가 정확히 d 여서 `지름 + 여백`을 그대로 반지름으로 쓰면 한 링 안에서 얼굴이 절대 닿지 않는다. **기본 방향은 팀이 정한다 — 아래 진영(팀0) = 타일 아래(S), 위 진영(팀1) = 타일 위(N)**. 레인도 정글러도 예외가 없어서, 어느 칸을 보든 아랫줄이 내 팀이고 윗줄이 상대 팀이다. **예전의 이동 방향 기반 배치("가려는 쪽을 비우고 지나온 쪽에 선다" — 레인 파일럿은 다음 웨이포인트의 반대, 정글러는 `prev_grid_pos` 에서 온 방향의 반대)는 삭제됐다**: 같은 레인 같은 구간의 정렬은 맞았지만 **같은 팀이 구간마다 다른 쪽에 앉아**(오른쪽 레인 기준 1차 포탑 전 왼쪽 아래 → 그 뒤 아래 → 적 1차 포탑 뒤 오른쪽 아래) 팀을 위/아래로 읽는 기준이 사라졌다. `_pilot_travel_dir` / `_peek_waypoint` / `_nearest_dir_index` / `PilotData.prev_grid_pos` 는 그때 함께 사라졌다(되살릴 땐 커밋 64bec06). **여섯 자리는 각도가 아니라 왼쪽→오른쪽 한 줄로 늘어놓는다**(`BattleRenderer.SEAT_ROW_DOWN` / `SEAT_ROW_UP` — 팀0 `NW SW [S] SE NE N`, 팀1 `SW NW [N] NE SE S`). 가운데 세 자리가 그 팀의 **절반**, 한가운데가 기본 방향이고, 둘 다 링을 한 방향으로 감은 것이라 자리표에서 연속인 칸은 링에서도 연속이다. **자리는 낱개가 아니라 블록 단위로 정해진다** — 한 칸에서 기본 방향이 같은 파일럿들(= 같은 팀)은 한 덩어리로 묶여 자리표의 **연속된 n 칸 = 창(window)** 을 통째로 차지하고, 그 창이 (a) 같은 칸에서 안 쓴 자리이고 (b) **이미 놓인 어떤 마커와도 겹치지 않는지**를 본다. 막혀 있으면 **창을 통째로 한 칸 옆으로 밀어** 다시 본다 — 그래서 나란히 선 A·B 는 **왼쪽이 가려지면 둘 다 오른쪽으로, 오른쪽이 가려지면 둘 다 왼쪽으로** 비켜 앉고 좌우 순서가 뒤집히지 않는다(실측 팀0 x2: 기본 `SW S` → SW 막힘 `S SE` → S 막힘 `NW SW`; x3 도 셋이 통째로 미끄러진다). 창 후보의 순서는 **(1) 자기 절반을 벗어난 인원이 적을수록 → (2) 창 중심이 기본 방향에 가까울수록 → (3) 블록이 쏠리는 쪽일수록**이라, 팀0 은 아래 절반(SW·S·SE)을 팀1 은 위 절반(NW·N·NE)을 다 쓰고 나서야 반대쪽으로 넘어간다. **(3)의 방향은 레인이 정한다**(`BattleRenderer._block_seat_bias`) — **우측 레인은 오른쪽**(팀0 `S SE` / 팀1 `N NE`), **좌측 레인은 왼쪽**(`SW S` / `NW N`), 가운데 레인·정글러·레인이 섞인 블록은 쏠림 없음(= 예전처럼 왼쪽). 예전에는 방향이 없어 **모든 블록이 왼쪽으로 쏠렸는데**, 우측 레인은 서포터 + 스나이퍼 둘이 한 칸에 서는 일이 잦고 그 2인 창이 왼쪽(`SW S`)에 앉는 바람에 **왼쪽 이웃 칸을 지나는 정글러 마커와 부딪혀 블록이 통째로 밀려났다** — 화면에서는 두 초상화가 이유 없이 돌아 앉는 것으로 보인다(실측: 지금은 라인전 내내 팀0 `S SE` / 팀1 `N NE` 고정, 양 팀이 같은 칸에 서도 유지). 쏠림은 **동률을 가르는 자리에만** 들어가므로 혼자 선 파일럿은 레인과 무관하게 한가운데에 앉고, 그 자리가 막혔을 때 비켜 앉는 쪽만 레인이 정한다(실측 팀0 x1: S 막힘 → 쏠림 없으면 SW · 우측 레인이면 **SE**, 아래 셋이 다 막혀야 비로소 NW). 그 링의 창이 전부 막히면 **블록째** 바깥 링으로 나간다 — 멀어진 만큼 화살표가 길어져 어느 칸인지가 계속 읽힌다(화살표 끝은 마커 반지름이 아니라 **거리에서 역산**해 언제나 타일 중심 바로 앞에 닿는다). (b)가 다른 칸의 마커까지 본다는 것이 요점이다: 이웃 타일 중심은 140px 인데 초상화 지름이 85px 라, 위아래로 붙은 두 칸이 서로를 향한 슬롯을 고르면 두 얼굴이 정면으로 겹쳤다 — 전장에서 얼굴이 가려지는 유일한 구조적 원인이었고 지금은 뒤에 오는 칸이 비껴 앉는다(실측: 위 칸 팀0 의 S 를 만난 아래 칸 팀1 은 N·NW·NE 가 전부 78.9px 로 겹쳐 x1 = SW, x2 = `SE S` 까지 밀린다 — 위 절반이 물리적으로 다 막힌 경우다). **한 칸의 6슬롯은 양 팀이 공유한다** — 기본 방향은 팀마다 정반대라 출발점은 안 부딪히지만, 창이 자기 절반 밖으로 밀리거나 한 팀이 넷 이상이면 다른 팀 슬롯 위에 앉을 수 있다. 배정은 전장 전체를 좌표순으로 훑는 그리디라 **한 칸만 따로 풀면 같은 답이 안 나온다** — `pilot_marker_positions()` 표 하나가 유일한 답이다. `+N` 오버플로 원은 삭제됐다(전원이 자기 슬롯을 받는다). **타일 한가운데의 인원 배지(`x3` / `2v1`)도 삭제됐다**(`BattleRenderer._draw_cell_badge`) — 초상화가 이미 인원을 낱개로 말하고 있고, 그 배지는 정글로 돌아온 칸 한가운데를 차지해 캠프 아웃라인 · 점령 면 색과 자리를 다퉜다. **창으로 묶는 이유**: 우선순위 순으로 빈자리를 하나씩 줍던 방식에서는 A 의 자리만 막히면 A 가 B 를 뛰어넘어 반대쪽 끝에 앉아, 비켜 앉은 것이 아니라 **자리를 맞바꾼 것**으로 읽혔고 블록이 중간에 끊기기도 했다. 그 앞 세대(**각도 기준 시계방향 회전**)는 거기에 더해 자리가 하나만 막혀도 팀0 을 S → SW → **NW → N** 으로 끌고 올라가 "아랫줄이 내 팀 윗줄이 상대 팀"이라는 읽기 기준 자체를 무너뜨렸다 — 둘 다 되살리지 말 것. 세 링의 창이 다 막힐 때만 한 명씩 찾기로 떨어진다(1인짜리 창이라 같은 표를 쓴다). **초상화는 어떤 경우에도 순간이동하지 않는다** — 아래 "마커 글라이드" 항목. 말풍선 꼬리는 언제나 **글라이드 중인 타일 중심**을 가리키므로 초상과 같은 박자로 미끄러지고, 예전의 화살표 관성 장치(`_arrow_aim_point` / `ARROW_SETTLE_SEC` / `_lerp_polar`)는 통째로 삭제됐다 — 그것은 초상이 튀던 시절에 꼬리만 얼려 두던 가림막이었다. |
-| 마커 글라이드 (이동 연출) | **화면 위의 마커 좌표 하나가 통째로 보간된다**(`BattleRenderer._glide`). 예전에는 칸 이동만 트윈하고(`PilotData.anim_move_t/dur`) **슬롯 변화는 즉시 반영**했는데, 슬롯 하나가 91px · 반대편이면 182px 라 **칸 사이 거리(140px)보다 큰 순간이동**이 매 턴 섞였고, 옆 사람이 와서 비켜 앉기만 하는 파일럿은 아예 트윈이 없었다. 지금은 좌표를 **중심 + 슬롯 벡터**로 갈라 셋을 따로 민다 — **중심**은 이번에 실제로 밟은 칸의 폴리라인을 따라(`PilotData.anim_move_path`) `ANIM_MOVE_DUR`(0.30초) 동안, **슬롯 각도**는 그와 **같은 박자**로(= 화살표 방향이 칸 이동과 동시에 돈다), **슬롯 길이(링)**만 **도착한 뒤** `MARKER_RADIUS_SETTLE_SEC`(0.15초) 동안. 링이 그대로면 길이 보간이 항등이라 이동 내내 화살표 길이가 한 픽셀도 안 변하고, 붐비는 칸으로 들어가 바깥 링으로 밀려날 때만 도착 후에 늘어난다. **경로를 따라 꺾인다** — `move_range` 2 짜리 이동과 `advance:3` 이 중간 칸을 스쳐 지나가지 않는다(실측: 3칸 경로의 중점이 직선 중점에서 121.5px 벗어난다). 곡선은 **smoothstep** 이다 — 예전 ease-out cubic 은 60fps 첫 프레임에 거리의 15%(실측 24.98px)를 지나가 출발할 때마다 한 번 튀었다(지금 0.5~0.7px). **순간이동이 맞는 것은 스냅한다**: 복귀 / 부활은 페이드가 자리 이동을 덮고, 전사한 시신은 쓰러진 칸에 붙박여 있어야 한다. 시간을 미는 것은 `_process` 의 `_advance_glide` 하나뿐이라 레이아웃 표를 한 프레임에 몇 번 물어도 연출이 되감기지 않는다. |
-| 한 셀에 여러 명일 때 대상 지정 | PILOT 히트 테스트는 `grid_pos` 가 아니라 **실제로 그려진 마커 위치**(`BattleRenderer.pilot_marker_positions()`, `_draw()` 와 같은 solve)를 본다. 예전엔 타일 중심 / `pilot_marker_pos_solo` 로 재서 같은 셀의 파일럿이 전부 같은 좌표를 갖는 바람에 어느 얼굴을 눌러도 **맨 왼쪽 파일럿**이 잡혔다. 마커에 안 맞은 클릭은 자기 타일 안이면 여전히 잡히되 마커 거리 순으로 정렬된다. |
-| 핸드 상한 10장 | `MAX_HAND_SIZE` = 10. **내 차례가 아닐 때**(작전 점수가 다시 차오르는 동안) 도는 자동 드로우는 핸드가 꽉 차 있어도 무조건 뽑고, 넘친 만큼 **가장 오래된** 카드부터 discard 로 보낸다(양 팀 동일) — 단 **계획 중시로 보존된 카드는 건너뛴다**. 예전처럼 드로우를 건너뛰면 덱이 돌지 않아 손이 그대로 굳어 있었다. 반면 **내 턴에 카드 효과로 뽑은 카드는 상한을 넘겨도 버리지 않는다** — 턴이 끝난 뒤 첫 자동 드로우가 정리한다. 덱이 비면 discard 전체를 되섞어 덱으로 되돌리는 건 기존과 동일(`draw_card`). |
-| 카드 시전자 제약 (`scope`) | `cards.csv` 의 `scope` 가 카드를 가질 수 있는 파일럿을 정한다 — `lane`(전진 등)은 **레인 파일럿만**, `jungle`(약탈 · 정글 파밍 · 전투 준비 · 정밀 이동)은 **정글러만**, `any` 는 제약 없음. 판정은 **스타터 덱을 돌릴 때 한 번**만 한다(`CardPhaseManager._pool_for_pilot`): 시전자는 배분 후 바뀌지 않으므로, 사용 시점에 막으면 쓸 수 없는 카드가 손패에 영영 잠긴 채 남는다. 알 수 없는 `scope` 값은 제약 없음으로 읽어 CSV 오타가 카드를 통째로 지우지 않게 한다. **파급**: 전투 준비 / 정밀 이동이 정글 전용이 되면서 **레인 파일럿은 이동 카드를 전혀 갖지 못한다**(위치 조작은 전진뿐). `RecallSystem._is_out_of_position` 은 이제 발동할 수 없는 경로지만 향후 레인 이동 카드 자리로 남겨 둔다. |
-| 카드 종류 / 덱 슬롯 (`card_type` · `card_cat`) | `scope` 가 **누가 가질 수 있는가**를 정한다면 이 둘은 **어느 슬롯을 채우는가**를 정한다. `card_type` = `mech` / `pilot`, `card_cat` = `-` / `lane` / `draw` / `jungle` / `common`. 파일럿마다 **메크 3장 + 파일럿 3장**을 받고, 파일럿 3장의 내역은 역할이 가른다 — **정글러** `jungle` 2 + `draw` 1, **서포터** `lane` 1 + `draw` 2, **나머지 3인** `lane` 2 + `draw` 1. 배분 내역은 `BattleSim.starter_cards`(`PilotData → {mech: [3], pilot: [3]}`)에 남아 상세 패널의 파일럿 / 메크 탭이 읽는다 — 소멸한 카드는 어느 더미에도 없으므로 역산하지 않는다. 각 슬롯은 **중복 없이** 뽑는다(라인전 풀이 3종인데 2장을 요구하므로 중복 허용이면 같은 카드 두 장이 더 흔했다); 풀이 모자랄 때만 중복으로 폴백한다. `card_cat = common` 은 **라인전 슬롯과 정글 슬롯 양쪽 후보**이며 지금은 **복귀** 하나뿐이다 — 라인전 카드이면서 정글러의 유일한 HP 회복 수단이라 어느 한쪽에만 두면 한쪽이 굶는다. 덱 크기는 그대로 5명 × 6장 = 30장. |
-| 10턴 경제 게이트 (`ECONOMY_START_TURN`) | 전략 점수 회복과 자동 드로우는 **10턴부터** 돈다(`CardPhaseManager.do_battle_turn`). 그 전에는 두 카운터를 아예 굴리지 않아 게이트가 열릴 때 밀린 회복이 몰려 터지지도 않는다. 개시 손패가 없어졌으므로 **0턴에 들어가는 것은 블루 선점 1점뿐**이고, 1~9턴은 양 팀 다 손패 0장 · 점수 고정(블루 1 / 레드 0)인 순수 라인전 구간이다. **성장은 게이트를 타지 않는다**(1턴부터). 실측: 회복·드로우가 10·12·14·16·18·20·22턴에 7회씩 들어가 첫 작전 단계가 **22턴 · 손패 7장**(player 8 / ai 7) — 4턴 게이트 시절 16턴, 게이트 이전 13턴. `match_ctx` 없이 BattleSim.tscn 을 직접 돌리면 HQ 가 20턴께 무너져 **첫 작전 단계에 닿기도 전에 판이 끝난다**. |
-| 성장 (인게임 누적) | **성장은 시간이 아니라 성장치(`PilotData.score`)가 만든다.** 예전에는 살아 있기만 하면 매 턴 `GROWTH_PER_TURN` 만큼 `atk` 와 `max_hp` 가 함께 늘었는데, 그 설계에는 결함이 둘 있었다 — (1) 아무것도 안 해도 자라서 킬·포탑·파밍이 성장에 **아무 영향이 없었고**, (2) 둘이 **같은 비율**로 자라 "몇 대 맞아야 죽는가"가 수학적으로 불변이었다(50턴에 둘 다 ×1.5 여도 교전 타수는 1타도 안 줄었다). 성장이 안 보인 게 아니라 구조상 보일 수 없었다. `GROWTH_PER_TURN` 은 game_config 에서 **삭제됐다**. 지금은 `BattleSim.refresh_growth_stats` 한 곳이 성장치에서 스탯을 파생시킨다: **공격력 `GROWTH_ATK_PER_SCORE`(2.0/24 = +8.33%p per 1k) / 최대 체력 `GROWTH_HP_PER_SCORE`(0.5/24 = +2.08%p per 1k)** — 공격력이 **4배 빠르게** 자라는 이 비대칭이 성장 체감의 전부다. 기준점은 성장치 25k(개시 1k 를 뺀 24k)에서 **atk ×3.0 / max_hp ×1.5**(실측 정확), 40k 캐리는 ×4.25 / ×1.81. 스탯은 매 턴 곱해 나가는 대신 `base_atk` / `base_max_hp` 에서 **다시 계산**한다(반올림 누적 오차 방지). 최대 체력 증가분만큼 현재 체력도 함께 오른다. 재계산은 **점수가 움직이는 그 순간**(`add_score`)에 돌아 "킬을 땄더니 세졌다"가 한 박자로 읽히고, `SimulationCore.tick_growth_and_expiries` 는 배율 만료만 걷는 보험으로 남았다. 카드가 거는 **일시** 공격력은 `atk` 가 아니라 `PilotData.atk_buff` 에 얹는다 — `atk` 를 직접 밀면 턴 한가운데의 재계산에 지워지고 턴 끝의 되돌리기가 원본을 깎는다. 획득 배율(`growth_rate_mult`)은 이제 **성장이 아니라 성장치 적립**에 곱해지며(결과는 같고 배선이 한 겹 준다) **안전한 파밍**(+10%, 턴 만료)과 **완벽한 마무리**(+25%, 다음 작전 단계까지, 팀 전원)가 건드린다 — 같은 필드라 나중에 건 쪽이 덮어쓴다. |
-| 성장치 (파일럿 점수) | 파일럿의 **성장 통화**. MOBA 의 골드에 해당하고 개시 **1.00k** 에서 시작해 경기 내내 누적된다(`PilotData.score`). 실측(헤드리스 5v5, 실제 메크 스탯 주입, 전체 루프 — **플레이어가 카드를 한 장도 안 낸 하한선**): 10턴 4.9k / 30턴 15.2k / **50턴 24.9k** / 70턴 33.9k / 90턴 43.5k. 위 성장 항목의 환산을 그대로 태우면 **50턴 atk ×3.01 · max_hp ×1.50** 으로 설계 기준점과 정확히 맞고, 90턴이면 ×4.4 다. 두 적립 상수(0.50k)는 이 실측에서 **역산한 값**이다 — 처음에는 "전선 15k + 킬 8k" 를 겨냥해 0.35k 로 잡았는데, 전선 체류율이 예상보다 높아 전선만으로 17.8k 를 벌었고 반대로 **킬이 거의 안 났다**(전장 자동 교전은 `BATTLE_PILOT_DMG_MULT` 0.35 때문에 한 대에 2~9 밖에 안 들어가 라인전만으로는 사람이 죽지 않는다 — 처치는 사실상 교전·공격 카드에서만 나오므로 플레이어가 얼마나 싸우느냐에 통째로 달려 있다). 그래서 **아무도 싸우지 않은 하한선**이 목표에 닿도록 전선 수입을 올렸고, 킬은 그 위에 얹히는 가속으로 둔다. **바로 위의 `growth` 와는 다른 것이 아니라 그 원천이다** — 예전에는 둘이 완전히 무관해서(성장은 시간, 성장치는 표시용 기록) 킬을 따도 스탯이 1도 변하지 않았다. 적립처는 셋뿐이다. **(1) 전선 체류** — 살아서 자기 레인의 전선 안에 서 있는 턴마다 `SCORE_FRONTLINE_PER_TURN`(0.50k). 수입의 대부분이 여기서 나온다(아래 "전선" 항목). **(2) 정글 캠프** — 정글러 전용, `SCORE_JUNGLE_CAMP`(**0.98k**)(아래 "정글 캠프" 항목). **캠프값이 라이너의 턴당 수입(0.50k)보다 훨씬 큰 것은 의도된 보정이다** — 캠프는 걸어가야 하고 재생성(6턴)을 기다려야 해서 획득 빈도가 턴당 1회에 못 미치므로, 캠프당 값이 같으면 정글러의 턴당 수입이 구조적으로 라이너보다 낮다(재생성 4턴 · 0.50k 시절 실측 **0.78배** → 0.65k 로 올려 **0.98배**, 재생성을 6턴으로 늦추며 ×1.5 한 0.98k). 대신 정글러는 밀려나거나 복귀로 수입이 끊기는 일이 없다. **(3) 처치 현상금** — 라스트힛이 `SCORE_KILL_BASE`(1.5k) + 피해자가 처치자 팀 평균보다 앞선 만큼의 `SCORE_KILL_BOUNTY_RATE`(20%)를 전액 받고, 그 대상에게 피해를 넣은 다른 아군이 **피해 비례로 최대 `SCORE_ASSIST_MAX_SHARE`(50%)** 를 더 받는다(`현상금 × 0.5 × 내 피해 / 그 대상이 이번 생에 받은 총 피해`). 이것이 "약한 따라잡기" 장치다 — 10k 앞선 에이스를 잡으면 3.5k, 20k 앞서면 5.5k(실측 정확). **(4) 포탑 피해** — 깎아 낸 체력 1점당 `SCORE_TURRET_FULL`(1.0k) ÷ `TURRET_HP`(**24**) ≈ **0.042k**(고정 피해 2 이므로 한 대에 0.083k, 열두 대에 1.0k). 예전에는 **철거하는 순간** 마지막 한 대를 넣은 파일럿이 1.0k 를 통째로 받았는데(`SCORE_TURRET_KILL`, **삭제됨**), 그러면 여덟 턴 동안 밀어붙인 파일럿과 마지막 2 를 넣은 파일럿의 몫이 같았고 반쯤 갈아 놓고 죽은 사람은 한 푼도 못 받았다 — 공성은 한 번의 사건이 아니라 여러 턴에 걸친 노동이다. 총액은 그대로라 포탑 하나의 값어치는 안 달라졌고, **오버킬은 잘라 낸다**(체력 2 짜리 포탑에 셋이 6 을 몰아 넣어도 나가는 것은 2 점어치). 적립은 `BattleSim.score_turret_damage` 한 함수를 지나고 부르는 자리는 둘이다 — 턴 전투의 `SimulationCore._credit_turret_damage` 와 카드 피해의 `apply_card_turret_damage`. `score_turret_kill` 은 이제 킬로그 한 줄과 사건 훅만 담당한다. **HQ 피해는 여전히 점수를 주지 않는다**(`SCORE_PER_PILOT_DMG` / `_HQ_DMG` 삭제). **사망 벌점도 없다**(`SCORE_DEATH` 삭제) — 벌점은 죽어 있는 동안 전선 수입과 캠프가 통째로 멈추는 것이고, 그게 리스폰 턴 수에 비례하는 진짜 비용이다. 상수는 `BattleSim` 의 `SCORE_*` 절에 모여 있고 모든 변동은 `BattleSim.add_score` 한 곳을 지난다(하한 `SCORE_MIN` 0.10k 과 적립 배율을 한 자리에서만 처리하기 위해). 그 위에 팝업 한 겹을 얹은 `award_score` 가 따로 있다 — 아래 "성장치 팝업" 항목. 표시는 `fmt_score` 이고 상한이 없으므로 **게이지가 아니라 숫자**다 — 자릿수가 늘면 소수 자리를 줄인다(`1.00k` → `24.9k` → 팀 합산 `125k`). 개시 구간에서 숫자가 움직이는 것을 보여 주려면 소수 둘째 자리가 필요하지만, 후반에 그 자리를 유지하면 좁은 스트립 칸에서 자릿수가 밀려 옆 칸을 침범한다. 팀 점수(`team_score`)는 팀원 합산이라 개시값이 `5.00k - 5.00k` 이며 죽어 있는 파일럿도 포함한다. **피해 귀속의 배선**: 피해는 곧장 점수가 되지 않고 **피해자의 장부**(`PilotData.damage_credit`, `공격자 → [(때린 턴, 그 턴의 피해 합)]`)에 쌓였다가 그 대상이 실제로 쓰러질 때 정산된다 — 전장 자동 교전 · 공격 카드 · 교전 무대가 전부 `BattleSim.record_pilot_damage` 한 지점을 지나므로 표가 하나다. 장부는 정산 시 비운다. **처치 관여는 `SCORE_ASSIST_WINDOW_TURNS`(15턴) 짜리 창이다** — 기록마다 턴 도장이 찍히고(같은 턴의 피해는 한 항목으로 합쳐진다) 그보다 오래된 항목은 어시스트 배분에서도 **분모에서도** 빠진다(만료분이 분모에 남으면 지금 잡은 사람들의 몫이 조용히 깎인다). 판정은 `BattleSim.live_damage_credit(victim)` **한 함수**뿐이고 읽는 김에 만료된 항목을 실제로 지운다 — 세 소비자(현상금 배분 · 킬로그 명단 · `PilotSkillSystem.on_kill`)가 그 함수를 함께 읽으므로 화면에 뜬 얼굴과 점수를 받은 얼굴이 갈릴 수 없다. 한편 **라스트힛이 누구인가**는 별개 문제다: 전장 피해는 판정 단계(`damage_map` 에 양만 쌓기)와 적용 단계(HP 깎기)로 갈라져 있어 적용 시점에는 공격자가 남아 있지 않으므로, `SimulationCore._credit_pilot_damage` / `_credit_turret_damage` 가 "마지막으로 때린 자"를 `_last_hitter` / `_last_turret_hitter` 에 적어 두고 적용 단계가 `mark_pilot_dead(victim, killer)` / `score_turret_kill(killer, td)` 에 넘긴다. 두 dict 는 **매 턴과 매 전진 카드 시작 시 비운다**. **킬로그도 같은 표를 읽는다** — 위 "킬로그" 항목. 교전 무대와 공격 카드는 공격자를 손에 들고 있어 이 우회가 필요 없다. |
-| 전선 (前線) — 레인 파일럿의 수입원 | 레인마다 **양 팀의 살아 있는 최전방 포탑 사이**(포탑 칸 포함)가 전선이고, 레인 파일럿은 **살아서 그 안에 서 있는 턴마다** `SCORE_FRONTLINE_PER_TURN`(0.50k)을 번다(`SimulationCore.award_frontline_income`, 턴 루프 8단계 — 이동과 점령이 모두 끝난 **그 턴의 최종 자리**로 판정한다). 외곽(T1)이 부서지면 그 팀 쪽 경계가 T2 로, T2 마저 부서지면 통로 끝(HQ 쪽)으로 물러나 **전선이 넓어진다** — 밀어낸 만큼 벌 자리가 늘어난다. 판정은 `front_line_cells(lane)` 이 매 턴 새로 만든다(포탑이 부서질 때마다 바뀌므로 캐시하지 않는다; 레인 셋 × 수십 칸이라 비용이 없다). 앞뒤 관계는 `lane_corridor_order(lane)` — 통로를 만드는 그 자리에서 팀0 HQ 쪽부터 번호를 매겨 둔 표이고, 처음 밟았을 때만 번호를 적어 되짚는 구간이 앞뒤를 뒤집지 않는다. **HQ 에서 걸어 나오는 동안, 저HP 복귀 뒤 다시 걸어가는 동안, 죽어 있는 동안은 한 푼도 안 들어온다** — 사망과 복귀의 진짜 비용이 여기 있다. **정글러는 제외**(정글러의 전선은 정글이다). 화면에는 전선 셀 테두리가 얇은 금색으로 그려진다(`BattleRenderer._draw_front_line_overlays`) — 수입이 위치에서 나오는데 그 위치가 안 보이면 왜 뒤처지는지 알 수 없기 때문이고, 타일 색(정글 점령)과 경쟁하지 않게 테두리로만 표시한다. |
-| 정글 캠프 — 정글러의 수입원 | **모든 정글/중립 칸에 캠프가 하나씩** 있고(`BattleSim.jungle_camps`, `셀 → ready_turn`), 개시 시점에는 전부 차 있다(`SimulationCore.init_jungle_camps`, `init_neutral_zones` 바로 뒤). 정글러가 **차 있는 캠프** 위에 서면 `SCORE_JUNGLE_CAMP`(**0.98k**)를 먹고 그 칸은 `JUNGLE_CAMP_RESPAWN_TURNS`(**6턴**) 뒤에나 다시 찬다 — 그래서 정글러는 한자리에 머물 수 없고 **계속 순회**해야 라이너의 턴당 수입과 같아진다(자리 지키기와 순회의 비용 차이가 그대로 남는다). **캠프값은 실측에서 역산한 값이다** — 기준선은 "50턴 · 포탑 무파괴 · 적 정글 미점령"(포탑을 불사로 만들어 T1 파괴 보상과 전선 확장을 둘 다 없앤 헤드리스 4회 평균)이고, 재생성 4턴 · 캠프값 0.50k 에서 정글러 18.4k / 라이너 평균 23.5k = **0.78배**였다. 정글러 수입은 전부 캠프(50턴에 약 35회)이므로 필요한 배수는 22.45/17.375 = 1.29 → 0.50 × 1.29 ≈ 0.65(적용 후 실측 0.91~1.07배, 평균 0.98). **재생성이 4턴 → 6턴으로 늦춰지면서 캠프값도 ×1.5 인 0.98k 로 함께 올렸다** — 획득 빈도가 주기에 반비례하므로 그래야 수입이 유지된다. 늦춘 것은 **순회 리듬**이지 정글러의 몫이 아니다(한 칸을 더 오래 기다리는 대신 한 번에 더 크게 먹는다). 적 정글 점령은 그 위에 얹히는 가속이고, 이 상수는 **점령이 없는 하한선**을 라이너와 나란히 놓을 뿐이다. 먹을 수 있는 것은 **자기 팀 소유이거나 아직 중립인** 칸의 캠프뿐이므로, 적 정글을 점령하면(중립 칸 선점 / T1 파괴 보상) 돌 캠프가 늘어 라이너를 추월할 수 있다 — 이것이 정글 점령의 값이다. 판정은 `camp_harvestable(cell, team)` 한 함수이고 **렌더러도 같은 함수를 읽으므로**(그 칸의 **타일 테두리**를 노란 아웃라인으로 두른다) 보이는 캠프와 먹히는 캠프가 어긋날 수 없다. **적 소유 칸의 캠프도 화면에 있다** — 같은 아웃라인을 어두운 호박색(`BattleRenderer.CAMP_LINE_ENEMY_COLOR`)으로 둘러 "있지만 지금 우리 것은 아니다"를 색 하나로 가른다. 소유권을 빼고 "지금 차 있는가"만 묻는 `SimulationCore.camp_charged(cell)` 이 그 판정이며, 뺏을 값어치가 지금 있는지가 안 보이면 약탈이 판단의 대상이 되지 못한다. **아웃라인은 인접한 같은 부류끼리 이어 붙는다** — 아래 "캠프 아웃라인" 항목. 예전에는 칸 한가운데의 작은 **마름모**였다(우리 것 = 꽉 참 / 적 것 = 속 빔). **정산 함수는 `harvest_camp_under(p)` 하나**이고 턴 루프(`process_jungle_camps`)와 **정글러를 옮기는 카드**가 같이 지난다 — 카드로 캠프 위에 내려앉으면 턴 루프를 기다리지 않고 **그 자리에서** 먹는다(아래 "이동 카드" 항목). 정산은 `process_neutral_zone_captures` **뒤**에 돈다 — 방금 점령한 중립 칸의 캠프를 그 턴에 바로 먹게 하기 위해서다. |
-| 캠프 아웃라인 (성장 포인트 표시) | 차 있는 캠프는 **그 정글 타일의 테두리**로 표시한다(`BattleRenderer._draw_jungle_camps`). **색은 소유를 가르지 않는다 — 차 있으면 밝은 노랑(`CAMP_LINE_COLOR`), 그게 전부다.** 한때는 적 소유 칸의 캠프를 어두운 호박색(`CAMP_LINE_ENEMY_COLOR`, **삭제됨**)으로 따로 그렸는데, 그 색이 "비어 있음"과 구분되지 않아 화면에서 읽히는 것이 소유가 아니라 밝기가 됐다 — 소유는 이미 타일 면이 팀색으로 말하고 있으므로 테두리는 **지금 이 칸에 성장 포인트가 남아 있는가** 하나만 말하면 된다(`_camp_mark_kind` 도 함께 삭제). **비어 있는 정글 칸에는 그늘을 씌운다**(`CAMP_SPENT_TINT`, 검정 α 0.34, 테두리보다 **먼저** 그려 이웃한 차 있는 칸의 선이 먹히지 않게 한다) — 테두리가 없는 것만으로는 "아직 안 먹었다"와 "방금 먹었다"가 같은 그림이라, 밝기 한 단계를 내려 두면 정글러가 어디로 돌아야 하는지가 색만으로 읽힌다. **한 변을 그리는 조건은 하나 — 그 변 너머의 이웃이 차 있는 캠프가 아닐 것.** 그래서 캠프 두 칸이 붙어 있으면 맞닿은 변이 양쪽에서 다 빠져 **바깥 윤곽만 남고**, 정글 한쪽이 통째로 차 있으면 그 덩어리 전체가 하나의 테두리로 읽힌다. **변 ↔ 이웃 대응은 표가 아니라 기하로 푼다**(`_neighbor_across_edge`: 변의 중점 방향과 이웃 중심 방향을 맞춰 본다) — 육각 오프셋 좌표는 홀/짝 열마다 이웃 오프셋이 달라 손으로 적은 표가 조용히 틀리기 쉬운 자리다(이 저장소가 이미 부호 버그로 앓은 적이 있다). 헤드리스 검증: 14개 캠프 칸 전부에서 여섯 변이 여섯 이웃에 일대일로 떨어진다. 예전의 칸 한가운데 **마름모**는 정글러 초상화와 자리를 다퉜고, 캠프가 서너 칸 이어져 있어도 점 셋으로 흩어져 "이쪽 정글이 통째로 남아 있다"가 한눈에 안 들어왔다. |
-| 이동 카드 = 즉시 캠프 수확 | 정글러를 옮기는 카드(**정밀 이동 / 정글 파밍**, `_effect_move`)가 **차 있는 캠프 위에 내려앉으면 그 자리에서 먹는다** — 턴 루프의 `process_jungle_camps` 를 기다리지 않는다. 진입점은 `SimulationCore.harvest_camp_under(p)` 하나이므로 값도 재생성 시계도 밟아서 먹는 것과 같고, 로그와 카드 결과 문구에 `· 캠프 +0.98k` 가 붙는다. 기다리게 두면 카드를 낸 순간과 수확 사이가 몇 초 벌어져 "카드를 냈는데 아무 일도 안 일어난" 것으로 보였고, 그 사이 적 정글러가 같은 칸을 밟으면 통째로 뺏겼다. |
-| 약탈 (`steal_camp`) | **적 소유 정글 칸의 차 있는 캠프 하나를 원격으로 가로챈다** — 시전자가 `SCORE_JUNGLE_CAMP`(0.98k)를 받고 그 칸은 6턴 재생성으로 들어간다(`SimulationCore.steal_camp_point`). **타일 주인은 바뀌지 않는다**: 훔치는 것은 땅이 아니라 그 한 번의 수입이고, 그래서 적 정글러는 다음 재생성까지 그 칸을 빈손으로 지나간다. 유효 대상은 **적 팀 소유 + 캠프가 차 있는 정글 셀 전부**이며 사거리를 보지 않는다(`compute_steal_camp_targets`, `cast_range` 99) — 비어 있는 칸은 애초에 고를 수 없으므로 헛치기가 없고, 어느 칸에 값이 남아 있는지는 화면의 캠프 아웃라인이 이미 말해 준다. 예전에는 **점령** 카드였다(`capture_jungle:10` — 아군 정글과 인접한 적 정글 셀을 10턴 동안 자기 색으로 뒤집고 `temp_zone_overrides` 가 만료 시 되돌렸다). 그 배선과 `SimulationCore.process_temp_zone_expiries` / `set_zone_cell` 는 함께 **삭제됐다**. |
-| 파일럿 표시 (스트립 ×2) | 파일럿 다섯 명이 **눈높이 초상화 → 체력 바 → 성장치 숫자** 세 줄로 한 칸을 이루고(성장치는 개시 `1.00k` 에서 후반 `25.00k`+ 까지 오르는 MOBA 중계의 골드 표시에 해당한다), 다섯 칸이 가로로 나란히 선다(`ui/PilotStrip.gd`). **적 팀은 화면 최상단**(`ENEMY_STRIP_RECT` 137,46,806×100 — **아군의 78%** 이고 가로 가운데, **그 뒤에 뒤판 `Panel` 한 장**), **아군은 핸드 행보다 아래**(`PLAYER_STRIP_RECT` 25,1766,1030×122, **그 뒤에 뒤판 `Panel` 한 장** — 아래 항목) — 예전에는 열 명이 전부 상단 패널 양옆에 84px 정사각 슬롯으로 몰려 있어 누가 누구인지도, 어느 쪽이 내 팀인지도 읽히지 않았다. 초상화는 `PilotImages.eye_for` = **`eye/N_eye.png`(480×200, 양 눈이 보이게 가로로 자른 밴드)**이고 칸 높이는 그 비율(`EYE_ASPECT` 2.4)에서 유도한다 — 임의 높이로 늘리면 얼굴이 찌그러진다. 체력 바는 **`ColorRect` 두 장**이다: `ProgressBar` 는 테마 컨텐트 마진에서 최소 크기를 계산해 `size` 를 24px 안팎까지 끌어올리므로 6~10px 바를 요청해도 아래의 성장치 라벨을 덮어썼다(실측 확인). 보호막이 있으면 채움이 노란색이 된다(바를 이어 붙이지 않는 이유는 얇아서 두 구간이 구분되지 않아서다). 쓰러진 파일럿은 초상화가 어두워지고 **부활까지 남은 턴 수**가 한가운데 크게 찍힌다. 하단 스트립의 y(1766)는 **카드 밑단에서 계산해 나온 값**이다 — 부채꼴 양 끝 카드가 가운데보다 21.4px 처지고 호버 시 1.2배로 커져 최악 y≈1763 까지 내려왔었다(핸드 행이 1500 이던 시절). 핸드가 1440 으로 올라간 지금은 최악이 y≈1703 이라 여유가 63px 로 늘었지만, 스트립은 화면 바닥(1888)에 붙어 있어 더 내릴 자리가 없으므로 그대로 둔다. **칸 순서는 `GameEnums.ROLE_DISPLAY_ORDER` 가 정한다 — 탱커 → 암살 → 격투 → 스나이퍼 → 서포터**, 곧 전장을 왼쪽부터 훑은 순서(좌측 → 정글 → 중앙 → 우측 ×2)이고 **아웃게임 화면들과 같은 표**다(시즌 허브 로스터 · 훈련 격자 · 밴픽 화면 · 드래프트 슬롯). `Role` 열거값 순서(TANK · FIGHTER · ASSASSIN · SUPPORT · SNIPER)를 그대로 쓰면 정글러가 세 번째, 원딜이 다섯 번째로 앉는데 그 배열은 지도와도 플레이어가 아는 라인업과도 대응하지 않는다. 예전에는 여기 `HudBuilder.LANE_SEAT_ORDER` 표를 따로 두고 **`PilotData.lane` 으로** 정렬했는데(**삭제됨**), 우측 레인에는 두 명이 앉아 있어(스나이퍼 · 서포터) lane 이 그 둘의 앞뒤를 가르지 못했다 — `sort_custom` 은 안정 정렬이 아니라 같은 lane 두 명의 순서가 실행마다 흔들릴 수 있었다. 역할로 정렬하면 다섯 자리가 전부 유일하게 정해진다. 정렬은 `_bs.pilots` 의 **사본**에 한다 — 원본은 스폰 순서(= 역할 순서)를 유지해야 `BattleSim.player_data_for` 가 그 인덱스로 로스터를 찾을 수 있다. **적 스트립의 크기는 네 번 바뀌었다.** 처음에는 730×84(초상화 130×54) 축소판이었는데 같은 얼굴을 위아래에서 두 배 다른 크기로 보여 줘 상대가 누구인지도 상대 성장치도 아군만큼 읽히지 않았고(그 숫자는 내 것과 나란히 비교하라고 있다), 그래서 아군과 **똑같은** 1030×122 로 키웠다 — 그때 `HudBuilder.TOP_PANEL_H` 가 130 → **168** 로 커지고 그 아래 사슬이 통째로 38px 내려갔다(`AI_HAND_TOP_Y` 80 → **118** = `TOP_PANEL_H − 50` → 적 도넛 아래끝 311 → **349**, 전장 픽셀 상단 369 라 여유 20px). 그 뒤 **60%(618×76)** 로 줄여 가운데에 놓았다 — 오브젝트 등장 시계가 전장 타일에서 이 패널로 올라오면서 **스트립 양옆에 아이콘 + 턴 수가 앉을 칸**이 필요해졌기 때문이다. 다만 그 크기에서는 초상화 108×45 가 누가 누구인지 읽히는 하한을 밑돌았다. 초상화 폭은 칸 폭에서 유도되므로(`PilotStrip.setup` 의 `_cell_w − 16`) 키우는 길은 스트립 폭을 미는 것뿐이라 **두 번 밀었다** — 618 → **672**(초상화 +10%), 다시 672 → **806**(+20%, 초상화 145×60). 높이도 eye 비(2.4:1)를 따라 76 → 81 → **97** 로 함께 올라가고, 가로 가운데 정렬을 지키느라 x 는 231 → 204 → **137** 로 왼쪽으로 밀린다. 좌우 여백이 줄어 시계 칸은 190×122 → 168×49 → **101×60**(`OBJ_TIMER_LEFT_X` 26 / `OBJ_TIMER_RIGHT_X` 953)이 됐다 — 시계 쪽에서 아이콘·숫자 간격을 4 로 줄이고 "턴" 글자를 지워 그 폭에 맞췄다(`ui/ObjectiveTimer.gd`). 얼굴이 먼저 읽혀야 하는 패널이라 자리를 다툴 때 물러나는 쪽은 언제나 시계다. **패널 높이는 이제 내용이 정한다** — `TOP_PANEL_H` 는 168 → 132 → **148**(헤더 4..38 + 스트립 띠 46..143 + 5px)이고, 그 아래 사슬(`AI_HAND_TOP_Y` = `TOP_PANEL_H − 50` = **98**, 적 도넛 아래끝 **327**, `KillFeed.FEED_TOP` = `TOP_PANEL_H + 8` = **156**)이 함께 따라 움직여 전장 상단(369)까지의 여유가 **42px** 로 남는다. 예전 168 은 스트립이 아군과 같은 크기이던 시절의 값이 남아 띠 아래에 27px 짜리 빈 칸을 만들고 있었다. **성장치 폰트는 이제 두 스트립이 같다**(`ENEMY_SCORE_FONT` = `PLAYER_SCORE_FONT` = 20, 예전 14) — 초상화는 아군이 더 크지만 그 숫자는 내 것과 나란히 견주라고 있는 값이라 크기가 다르면 같은 줄에서 읽는 두 수의 무게가 달라진다. 얼굴은 작아도 되고 숫자는 안 된다. **역할 태그(초상화 좌하단의 `T` / `F` 한 글자)는 삭제됐다** — 스트립의 자리 순서 자체가 이미 역할이라 같은 말을 두 번 하면서 얼굴 아래쪽을 가리기만 했다(`ROLE_TAG_*` 세 상수와 `tag_bg` / `role_lbl` 두 노드가 함께 사라졌다). **그리고 전폭 상단 패널이 사라졌다** — 아래 항목 참조. |
-| 상단 chrome (적 스트립 뒤판 + 경과 시계 + 오브젝트 시계) | **예전에는 화면 가로를 통째로 덮는 패널 한 장**(`TOP_PANEL_H` 148)이 헤더 줄과 적 스트립과 오브젝트 시계를 다 담고 있었다. 그러면 좌우 끝의 시계가 스트립과 같은 판 위에 얹힌 것으로 읽히는데, 시계는 스트립의 일부가 아니라 전장의 사건을 세는 별개의 물건이다. 지금은 **아군 스트립과 같은 규칙**으로 뒤판(`_enemy_strip_bg`)이 초상화 다섯 칸만 `ENEMY_BG_PAD`(10)씩 넓혀 감싸고, **경과 시계와 오브젝트 시계 둘은 그 바깥에 배경 없이 선다**(셋 다 `_bs.canvas` 직속). `TOP_PANEL_H` 는 상수로 남아 **그 아래 사슬의 기준 좌표** 노릇을 한다 — 뒤판이 `ENEMY_STRIP_RECT.y − 10`(36)에서 시작해 `TOP_PANEL_H`(148)에서 끝나므로 상대 핸드 peek 을 가리는 양(`AI_HAND_TOP_Y` = `TOP_PANEL_H − 50` = 98)도 적 도넛(327)도 킬로그(`FEED_TOP` = 156)도 한 픽셀도 안 움직였다. peek 부채꼴은 화면 가로 가운데에 서므로 스트립 폭(x 127..953) 안에 통째로 들어가 가림막 노릇도 그대로다. **팀 합산 점수(`12.4k - 9.8k`)는 삭제됐다** — 같은 수를 스트립의 다섯 칸이 이미 낱개로 보여 주고 있었고, 합계는 어느 쪽이 이기고 있는지를 한 줄로 말해 주는 대신 정작 **누가** 크고 있는지를 가렸다(`TOTAL_SCORE_FONT` / `_lbl_total_score` 함께 삭제, `BattleSim.team_score()` 는 소비자 없이 남았다). 경과 시계는 받침이 없으므로 검은 외곽선으로 읽힘을 지키고, `UiHelpers.mk_label` 이 `Control` 부모를 받는 반면 캔버스는 `CanvasLayer` 라 `Label` 을 직접 세운다. |
-| 아군 스트립 뒤판 | 하단 아군 스트립 뒤에 **짙은 `Panel` 한 장**(`PlayerStripBackdrop`, 스트립 영역을 `HudBuilder.PLAYER_BG_PAD` 10px 씩 넓힌 y 1756..1898). 색·테두리는 상단 패널과 같아 위아래 두 스트립이 같은 판 위에 앉은 것으로 읽힌다. 적 스트립은 상단 패널 위에 앉아 있어 처음부터 받침이 있었지만 아군 스트립은 맨 화면 위에 떠 있어 얼굴 · 체력 바 · 성장치 세 줄이 배경 없이 흩어져 보였다 — 특히 성장치 숫자는 받침이 없으면 어디까지가 한 파일럿의 칸인지가 안 읽힌다. **`_build_player_strip` 이 스트립보다 먼저 붙이고**(형제 z-order 가 곧 자식 인덱스라 나중에 붙으면 판이 초상화를 덮는다) **`set_strip_visible(0, on)` 이 스트립과 함께 숨긴다**(상세 패널이 스트립만 치우면 빈 판이 딤 위에 남는다). |
-| 오브젝트 등장 시계 (스트립 양옆) | 적 스트립 좌우 여백에 **아이콘 하나 + 남은 턴 수** 한 쌍씩(`ui/ObjectiveTimer.gd`, 각 101×60). **왼쪽이 전령(보랏빛 깃발) · 오른쪽이 용(주홍 날개)** 이고, 그 좌우는 전장에서 두 오브젝트가 서는 칸의 좌우와 같다 — 자리가 곧 이름이라 이름표가 없다. 적 스트립이 20% 커지며 이 칸이 168 → 101px 로 줄었고, 그에 맞춰 아이콘·숫자 간격이 10 → **4** 가 되고 **숫자 옆의 "턴" 글자가 삭제됐다**(`UNIT_FONT_SIZE` / `UNIT_COLOR` 함께 사라졌다) — 아이콘 옆에 붙은 숫자가 남은 턴 수 말고 무엇일 수는 없으므로 그 두 글자는 숫자를 밀어내기만 했다. `ICON_SIZE` 는 49 그대로이고 세로 가운데에 놓인다(숫자 폰트 32). **누르면 그 오브젝트의 보상 카드가 실물로 뜬다** — `mouse_filter` 가 IGNORE → STOP 이 되고 `timer_pressed(kind)` 를 쏘면 `HudBuilder` 가 `BattleSim.objective_reward.toggle(kind)` 를 부른다(같은 시계를 다시 누르면 닫힌다). 한때는 아이콘 62 에 칸 높이가 스트립 띠 전체(122)여서 — 클수록 곁눈으로 읽힌다는 이유였다 — 시계가 초상화보다 위아래로 튀어나와 상단 패널에서 가장 큰 물체가 됐고 정작 얼굴로 가야 할 시선을 먼저 잡아챘다. 밑단·윗단을 초상화에 맞추면 좌 시계 · 얼굴 다섯 · 우 시계가 한 줄로 읽힌다. 상태는 `ObjectiveSystem.turns_until_cell(cell)` 하나에서만 오고 갱신은 `HudBuilder.update_hud` 의 `queue_redraw()` 뿐이다. **아이콘은 이미지가 아니라 도형이다**(킬로그 글리프와 같은 방식): 좌표를 전부 64×64 기준으로 적고 `ICON_SIZE / 64` 배율만 곱하므로 크기를 바꿔도 숫자를 다시 짜지 않는다. 용의 날개는 **꼭짓점 넷짜리 매끈한 삼각**인데, 처음의 톱니 달린 박쥐 날개(꼭짓점 여덟)는 이 크기로 줄이면 뭉개져 **나뭇잎 한 장**으로 보였다 — 이 크기에서 실루엣을 만드는 것은 디테일이 아니라 큰 삼각형 둘의 각도다. |
-| 킬로그 (처치 / 포탑 철거 / 오브젝트 획득) | 화면 **우측 상단**(상단 패널 밑단에서 8px 아래, y **156** = `TOP_PANEL_H` + 8)에 한 줄씩 쌓인다(`ui/KillFeed.gd`). 전장은 0.5초마다 저 혼자 흐르고 교전은 오버레이가 화면을 덮으므로, **무슨 일이 일어났는지가 지나가고 나면 남는 곳이 없었다** — 팀 점수가 조금 벌어진 것 말고는. 한 줄은 왼쪽부터 `[막타 96px][어시 32px ×0..4][아이콘 32px][피해자 96px]` 이고 모두 eye 컷(`PilotImages.eye_for`)이며, **줄 전체가 오른쪽 정렬**이라 어시스트가 몇이든 피해자 칸이 같은 x 에 온다. 아이콘은 처치 = 교차한 칼, 포탑 철거 = 파열이고 피해자 자리에는 포탑 실루엣 + `T1 좌` 가 온다. **적립처는 셋이다** — `BattleSim.mark_pilot_dead`(→ `_push_kill_feed`), `score_turret_kill(killer, td)`, 그리고 **오브젝트 획득**(`ObjectiveSystem._push_feed` → `KillFeed.push_objective`). 오브젝트 줄은 **대표가 정글러**다(전령도 용도 양 팀 정글러가 언제나 참가자이고 오브젝트를 도는 것 자체가 정글의 일이다 — `_feed_order`). 정글러가 못 나왔으면 남은 참가자 중 첫 사람이 서고 나머지는 어시스트로 붙으며, 명단은 **참여를 고른 시점의 참가자**라 그 뒤 교전에서 쓰러진 사람도 남는다. **무혈 획득도 한 줄 뜬다** — 아무도 안 나와 거저 가져간 것이야말로 화면에 아무 일도 안 일어나는 경우다. 오른쪽 끝 칸에는 전령 / 용 글리프와 이름이 오는데, 그 그림은 상단 패널 등장 시계와 **같은 static 함수**(`ObjectiveTimer.draw_kind_glyph`)가 그린다. 처치 줄의 적립처 둘은 그대로다 — 전자는 반드시 `_payout_kill_bounty` **보다 먼저** 돌아야 한다(그 정산이 어시스트 명단의 출처인 `PilotData.damage_credit` 을 비운다). 그래서 화면에 뜬 얼굴과 성장치를 받은 얼굴이 어긋날 수 없다. 막타가 null 로 들어오면(`_last_hitter` 는 매 턴 비워진다) 가장 많이 때린 사람을 그 자리에 세운다. **교전 중 처치는 그 자리에서 뜨지 않는다** — 아레나가 화면을 덮고 있어 어차피 안 보이므로 `is_active()` 를 보고 `_pending` 에 쌓아 두었다가, 결과 대시보드를 닫는 `EngagePhaseManager._on_dashboard_confirmed` 가 `flush_pending()` 을 불러 `FLUSH_STAGGER`(0.25초) 간격으로 쫘라락 풀어놓는다. 줄은 **위에서 밀고 들어오고**(새 줄이 y 0, 나머지가 한 칸씩 아래로) `HOLD_SEC`(4초) 뒤 `FADE_SEC`(0.5초)에 걸쳐 지워지며, `MAX_ROWS`(4)를 넘긴 가장 오래된 줄은 아래로 밀려나며 페이드한다 — 밀려난 줄은 `_rows` 가 아니라 **`_fading` 으로 옮긴다**(자리 계산에서는 빠지되 페이드는 계속 돌아야 한다. `_rows` 에서 빼기만 했더니 그 줄이 화면에 영원히 굳었다 — 실측). 4줄이면 아래끝이 y **334** 로 전장 픽셀 상단(369) 위에서 멈춘다(상단 패널이 168 이던 시절에는 354 로 아슬아슬했다). **아이콘은 줄의 `_draw` 가 아니라 자식 `Glyph` 노드다** — Control 의 `_draw` 는 자식보다 먼저 나가므로 줄 배경(반투명)과 포탑 칸 슬래브(불투명) 밑에 깔린다(칼은 흐려지고 포탑 실루엣은 아예 안 보였다). |
-| 파일럿 상세 패널 | **자기 작전 단계에** 스트립의 얼굴을 누르면 열리는 모달(`ui/PilotDetailPanel.gd`, 자기 `CanvasLayer` 13 — 버리기 10 / 대상 지정 11 / 열람·교전 12 위). **아군 하단 스트립과 적 상단 스트립 양쪽 다 눌린다** — 적도 같은 게이트에 같은 내용으로 열리며(배분받은 카드 6장까지), 상대 로스터는 이미 `match_ctx.enemy_roster` 로 들어와 있어 `BattleSim.player_data_for` 가 인덱스 5..9 로 그대로 찾아 준다. 화면이 검정 α 0.88 로 딤드되고 **누른 쪽 팀의 스트립만 숨겨진다**(딤 위에 남으면 지금 무엇을 보는지 흐려지고, 딤 아래에 두면 방금 누른 얼굴이 어두워진다. 반대 팀은 딤에 가려질 뿐이므로 그대로 둔다). **좌측에는 전신 아트가 두 장** 겹쳐 서고(파일럿 / 메크), 우측은 **머리글 + 탭 셋 + 상세 패널**이다. **머리글은 탭과 분리돼 있다**(`HDR_TOP` **424** .. `HDR_BOTTOM` 562, 자기 받침 위) — **파일럿 이름 / 그 아래 줄에 작게 기체명 / 오른쪽에 성장치**이고, 어느 탭을 보든 같은 파일럿의 것이라 탭이 바뀌어도 다시 세워지지 않는다(`_build_header_block` 은 `_build` 에서 한 번만 돈다). 예전에는 이 줄이 본문 안에 있어 **메크 탭에서 제목이 기체명으로 바뀌며 파일럿 이름과 성장치가 화면에서 통째로 사라졌다** — 지금 누가 열려 있는지가 탭에 따라 흔들린 셈이다. 기체명이 늘 보이는 것도 같은 이유다(메크 탭까지 들어가야 알 수 있는 값이 아니다). **기체명은 이름 오른쪽에서 아래 줄로 내려왔다** — 예전에는 `HBoxContainer` 로 이어 붙였는데 줄의 시작점이 곧 이름 폭이라 파일럿마다 기체명이 다른 x 에서 시작했다(어디를 보면 기체명인지가 파일럿마다 흔들렸다). 두 줄로 쌓으면 시작점이 언제나 같고 글자 폭을 잴 일이 없어져 컨테이너 자체가 사라졌다. 늘어난 두 줄만큼 `HDR_TOP` 이 위로 올라간 것은 `HDR_BOTTOM` 이 탭 바의 윗변이라 못 박혀 있기 때문이다. 탭이 바꾸는 것은 그 아래 상세 패널 하나다 — **인게임**(체력 · 공격력 · 성장 · 전장/교전 명중 · 회피 · 존재감, 사망 시 `부활까지 N턴` 한 줄, 그 아래 곧바로 **파일럿 스킬 블록**) / **파일럿**(선수 스탯 여섯 = `PlayerData`) / **메크**(체력 · 공격력 · 존재감). 탭이 아트의 앞뒤도 정한다(메크 탭이면 기체가 앞) — 예전의 **전환 버튼은 삭제됐다**. **지속 효과와 보유 카드는 둘 다 정보 칼럼 밖에 산다** — 효과는 **일러스트 좌측 하단**(x 26 부터, 카드 줄 바로 위), 카드는 **화면 하단 전체 폭의 부채꼴**이다. **지속 효과 썸네일**(68×68, 인게임 탭 전용)은 **지금 이 파일럿에게 걸려 있는 것만** 뜨고 여섯 칸을 넘으면 줄이 **위로** 접히며(아래로 접으면 두 번째 줄이 카드 위에 내려앉는다), **제목("지속 효과")은 삭제됐다** — 화면 구석에 홀로 선 칸들의 머리에 밑줄 달린 절 제목을 붙이면 제목이 칸보다 눈에 띄고, 걸린 효과가 없으면 아예 아무것도 안 그린다(예전의 "걸려 있는 효과 없음" 한 줄은 제목이 있어야 뜻이 서는 문장이었다). 옮긴 이유는 자리 다툼이다 — 칼럼 안에서 116px 를 먹어 아래 사슬(카드 줄 · 스킬 블록 · 닫기 버튼)이 통째로 밀렸고, 화면 왼쪽 아래는 아트의 다리와 딤뿐이라 비어 있었다. 세 종류가 섞인다 — **(1) 슬롯 효과** 넷(`fx:lane` 라인전 스탯 / `fx:rate` 적립 배율 / `fx:atk` 일시 공격력 / `fx:shield` 보호막)은 한 칸을 카드들이 서로 덮어쓰므로 종류 이름이 곧 칸 이름이고, **(2) 카드별 지속 효과**(`fx:src:<종류>|<카드 이름>`)는 `PilotData.persistent_fx` 장부의 한 줄이 한 칸이며(약칭은 카드 이름 앞 두 글자 — `용 보상` → `용보`), **(3) 잔여분**(`fx:rest:<종류>`)은 합계에서 장부를 뺀 나머지다(메크 패시브가 `bonus_*` 를 직접 미는 몫이라 출처를 카드 이름으로 부를 수 없다). 예전에는 (2)도 속성으로 뭉쳐 **`fx:perm` 한 칸이 [용 보상]과 [핫핸드]를 함께 뜻했고**, `bonus_max_hp` / `bonus_atk_flat` 로 사는 [붉은 가루] · [녹색 병]은 **아예 표시되지 않았다** — 성장 재계산에 지워지지 않으려고 별도 필드로 사는 값들이라 어느 칩에도 안 실렸기 때문이다. **계산은 그대로 합계 슬롯이 하고 표시만 장부를 읽는다**(장부에 적는 자리는 `CardPhaseManager._log_persistent_fx` 하나이고 출처는 그때 도는 카드다) — 성장 재계산이 읽는 곳은 한 군데여야 한다. 꺼져 있는 칸을 회색으로 늘어놓으면 "몇 개가 켜져 있는가"를 도리어 세어야 하고, 하나도 없으면 `걸려 있는 효과 없음` 한 줄이다. 아이콘 에셋이 없으므로 **두 글자 약칭이 곧 아이콘**이고 온전한 이름은 눌러서 여는 패널의 제목이 들고 있다. 칩만으로는 부족했던 이유가 둘이다 — 명중 칩이 55 일 때 그게 카드 때문인지 원래 그런지가 칩을 눌러야 나왔고, **적립 배율처럼 어느 칩에도 안 실리는** 효과는 볼 자리가 아예 없었다. 팀 단위로 걸리는 계획 살인 예약은 여기 없다(다섯 명 모두에게 같은 썸네일이 떠 누구 것인지가 흐려진다). **스탯 칩 · 지속 효과 · 카드 셋이 같은 정보 패널 하나를 나눠 쓴다**(`_targets` 한 표, 키 접두사가 종류를 가른다 — 없음 = 칩, `fx:` = 효과, `card:` = 카드). 판은 정보 칼럼 왼쪽에 **누른 것과 같은 높이**로 펼쳐지되 **`card:` 만 예외로 카드 줄 제목 위에 올려 붙인다** — 카드는 화면 하단에 있어 같은 규칙이 방금 누른 카드 위를 가리키고, 그러면 판이 그 카드를 통째로 덮는다. "지금 무엇을 보고 있는가"는 한 번에 하나여야 하는 질문이라 판을 따로 두면 둘이 동시에 떠 방금 누른 것이 흐려진다. **카드를 누르면 그 카드의 비용 · 종류 · 시전자 제약과 설명문이 그 패널에 뜬다** — 카드 노드에 적힌 글씨는 ×0.80 으로 줄어 있어 읽으라고 있는 것이 아니다. **뒤판은 클릭을 대신 전달한다**(`_on_menu_backdrop_input`) — 여전히 전체 화면 STOP 이지만 그 좌표에 있던 대상 버튼 / 탭 / 닫기를 찾아 대신 눌러 주므로 **패널을 열어 둔 채 다른 스탯을 누르면 곧장 그쪽으로 갈아탄다**. 예전에는 첫 클릭이 닫는 데 쓰여 한 번 더 눌러야 했고, 스탯 여섯 개를 훑는 동안 클릭이 두 배가 되며 화면이 열림↔닫힘을 반복해 깜빡였다. 아무것도 없는 곳을 누르면 그때 닫힌다. **스탯은 줄이 아니라 칩이다**: 끝이 둥근 사각형 한 칸(141×92, 3열)에 위는 작게 이름, 아래는 크게 **최종 값 하나**뿐이고, 기본값 · 증가분 · 만료 턴은 **칩을 누르면 왼쪽에 펼쳐지는 컨텍스트 메뉴**에 있다(`_menu_rows`, 예: 체력 = 기본 200 / 성장 +61% (+122) / 최대 322 / 현재 159 / 보호막 +30). 예전에는 `키 ─ 값` 행이 열몇 줄 이어지고 값 뒤에 `(기본 160)` `(7턴)` 괄호가 줄줄이 붙어 "지금 얼마인가"를 읽는 데 시간이 걸렸다 — `_row` / `_section` / `ROW_H` / `KEY_FRACTION` 은 그때 함께 삭제됐다. **제목 오른쪽의 큰 숫자가 성장치**이고(예전의 `역할 · 아군/적군 · 성장치` 부제와 `라인 / 위치` 행은 삭제됐다 — 역할과 진영은 방금 누른 초상화가 이미 말했다), **메크 탭에서는 붙지 않는다**(그 제목은 기체명이라 오른쪽 숫자의 임자가 아니다). **보호막은 체력 값이 아니라 체력 메뉴 안에** 있고, **명중 / 회피 칩은 라인전 스탯이 먹은 값**이다(`SimulationCore.lane_adjusted` — 판정과 같은 함수를 통과시킨다. 카드가 미는 것은 `hit` / `evasion` 필드가 아니라 판정 시점의 배율 `lane_stat_mod` 라, 원본 필드를 찍으면 안전한 파밍을 내도 값이 1 도 안 움직인다). **성장 칩의 큰 숫자는 공격력 성장**이고 최대 체력 성장 · 적립 배율은 메뉴에 있다 — 둘은 4배 차이로 다르게 자라고, 카드가 미는 `적립 배율` 과는 다른 것이다. **보유 카드는 화면 하단 전체 폭에 손패와 같은 부채꼴로 선다** — `Card.tscn` **×1.60 = 256×352**(격자 시절 0.80 = 128×176 의 **2배**)이고 인게임 탭은 6장(파일럿 3 → 메크 3 순서라 왼쪽 절반이 사람, 오른쪽 절반이 기체다), 파일럿 / 메크 탭은 그 탭의 카드가 같은 자리에 선다. **예전에는 정보 칼럼 안의 3열 격자였다**: 칸이 칼럼(폭 452)에 갇혀 있어 그보다 키울 수 없었고, 격자를 그대로 두고 2배로 키우는 길은 없다(3열이면 800px 로 칼럼을 348px · 화면 오른쪽을 146px 넘고, 2행이면 패널 아래끝이 ≈1700 → 2052 로 화면 밖이다). 부채꼴은 카드를 **겹쳐** 세우므로 같은 폭에 같은 장수를 넣으면서 장당 크기를 2배로 키운다. 기하는 손패와 같은 규칙(카드 **중심**이 행 아래 원 위를 탄다)이고, 좌우 여백 `FAN_MARGIN`(52)과 아래 여유 `FAN_DROP_RESERVE`(44)는 폭의 절반이 아니라 **기울어진 카드의 바깥 모서리**를 받는다 — 양 끝은 9° 가까이 기울어 세로로 긴 카드가 폭의 절반보다 27px 더 나간다(여백 24 에서 양 끝이 3px 씩 잘렸다 — 실측). **입력은 카드 rect 가 아니라 그 카드가 보이는 밴드**(자기 왼쪽 변 ~ 다음 카드의 왼쪽 변)가 받고 — 겹친 카드에서 rect 를 그대로 덮으면 오른쪽 이웃의 버튼이 이 카드의 보이는 면을 통째로 가린다 — 정보 패널이 열린 카드는 `FAN_LIFT_PX`(30)만큼 솟아 맨 앞으로 끌려 나온다(격자 시절의 테두리 강조는 카드가 아닌 밴드를 두르게 되므로 삭제). 목록은 `BattleSim.starter_cards` 표에서 온다 — 손패·덱·버린 더미를 훑어 역산하면 소멸(`exhaust`)한 카드가 조용히 사라진다. 열려 있는 동안 `refresh()` 가 `update_hud` 마다 **칩 값 라벨과 열린 메뉴의 글자만** 다시 쓴다(트리를 다시 세우면 카드 노드가 매 갱신마다 인스턴스화된다). **닫기**는 받침 아래끝에 붙어 다닌다 — 탭마다 내용 높이가 달라(인게임 ~360 / 파일럿 ~600) 고정 y 에 두면 짧은 탭에서 버튼만 화면 한가운데에 뜬다. 값 라벨에는 **`clip_text = true` 가 필수** — 오른쪽 정렬 `Label` 은 글자가 rect 보다 넓으면 정렬을 포기하고 rect 왼쪽부터 그려 **오른쪽으로 넘쳐 화면을 벗어난다**(실측 확인). 작전 단계를 벗어나면 `close_if_phase_left()` 가 강제로 닫는다 — 열어 둔 채 BATTLE 이 흐르면 딤 뒤에서 전장이 굴러간다. |
-| 상세 패널의 아트 2장 (파일럿 ↔ 메크) | 앞자리와 뒷자리를 두 아트가 나눠 갖는다. **앞** = 밝게, 가로 중심 `ART_FRONT_CENTER_X`(320). **뒤** = `ART_BACK_SHIFT_PX`(400px) 오른쪽으로 밀리고 `ART_BACK_SCALE`(0.90)로 작아지고 `ART_BACK_TINT`(검정 반투명)로 딤드 — "약간 오른쪽에 반쯤 겹쳐 뒤에 선" 자세다. **탭이 앞뒤를 정한다**(`_apply_focus` — 메크 탭이면 기체가 앞, 그 밖에는 사람이 앞; `ART_SWAP_SEC` 0.22초 트윈으로 자리 · 딤 · z-order 가 한꺼번에 바뀐다). 예전의 **전환 버튼(2단 토글)은 삭제됐다** — 정보가 셋으로 갈리면서 2단 토글로는 어디에 무엇이 있는지 말할 수 없게 됐다. **아트는 화면 하단이 자른다** — 아래끝(`ART_BOTTOM` 2010)이 화면(1920) 밖이라 다리 아랫부분이 잘려 나가고, 예전의 무릎 크롭(`_knee_crop` / `KNEE_FRACTION`, 알파 실루엣 높이의 80% 지점에서 `AtlasTexture.region` 으로 텍스처를 자르던 것)은 **삭제됐다**. **크기는 높이(`ART_H` 1400)로 정규화한다** — 전신 아트는 전부 세로 1024 에 인물이 꽉 차 있고 가로만 572~756 이라 폭으로 맞추면 인물 키가 제각각이 된다. 뒤로 물러날 때 노드 크기는 그대로 두고 **`scale` 만** 줄인다: `pivot_offset` 이 **아래 가운데**라 작아져도 바닥선이 그대로여서 둘이 같은 바닥에 선 것처럼 읽힌다. **메크 아트는 30칸이 전부 채워져 있다** — `MechImages.full_for(mech.id)` 가 `res://resources/images/mech/{id}_full.png` 를 찾는다(없으면 `ResourceLoader.exists` 로 조용히 null → 옅은 α 0.30 실루엣 슬래브 + 기체명 플레이스홀더). 파일럿 아트는 세로 1024 에 폭이 572~756 으로 제각각이지만 **메크 아트는 1024×1024 고정 캔버스**다 — 기체 렌더는 검·날개가 옆으로 뻗어 바운딩 박스 비율이 1.5 까지 가고, 높이 정규화가 그 폭을 그대로 환산하면 화면 폭의 두 배로 벌어지기 때문. 그래서 크기도 바운딩 박스가 아니라 **불투명 픽셀 면적**으로 맞춰 본체 겉보기 크기를 고르게 했다. 출처(Gundam Evolution 기체 렌더 24종)와 id ↔ 기체 대응표는 `resources/README.md`. **정보 블록은 아래로 내려왔다**(`STAT_TOP` 170 → 640 → **650**, 머리글이 452, 탭이 562) — 아트가 커지며 화면 위쪽 절반이 인물의 머리·상체 자리가 됐기 때문이고, 글자 뒤에는 받침 `Panel`(α 0.86)이 내용 높이에 맞춰 깔린다. **닫기 버튼은 받침 아래끝에 붙어 다닌다**(`_reposition_close`) — 자리가 바뀌는 것은 탭을 누른 순간뿐이고 `refresh()` 는 받침을 안 건드리므로 버튼이 숫자를 따라 떨지 않는다. 예전의 고정 y(1424)는 인게임 탭에서 버튼만 화면 한가운데에 띄웠다. |
-| 선수 스탯 (여섯 종) | **선수 한 명이 들고 있는 값은 여섯뿐이고 여섯 다 전투 계산의 입력이다.** `PlayerData` 가 표(`STAT_KEYS` / `STAT_LABELS` / `STAT_SHORT` / `STAT_NOTES`)를 소유하고 모든 화면이 그것을 읽는다 — 예전에는 화면마다 자기 배열을 들고 있었다. **하한 1, 상한 없다** — 일상 훈련으로 100 을 넘겨 계속 자란다(그래서 명중을 비율로 읽는다. 아래 항목). ① **전장 명중 `field_hit`** / ② **전장 회피 `field_eva`** → `PilotData.hit` / `evasion` → `SimulationCore.roll_hit`(전장 자동 교전 + 공격 카드). ③ **교전 명중 `engage_hit`** / ④ **교전 회피 `engage_eva`** → `PilotData.engage_hit` / `engage_eva` → `TurnEngageSim`. 전장과 **따로 사는 것**이 요점이다 — 같은 선수가 라인전에서 강한 것과 한타에서 강한 것은 다른 일이고, 그 둘을 가르는 것이 훈련판의 선택지가 된다. ⑤ **공격력 성장 계수 `atk_growth`** / ⑥ **체력 성장 계수 `hp_growth`** → `PilotData.atk_growth_mult` / `hp_growth_mult` → `BattleSim.refresh_growth_stats` 가 `GROWTH_ATK_PER_SCORE` / `GROWTH_HP_PER_SCORE` 에 곱한다. 배율의 기준점은 `PlayerData.GROWTH_STAT_BASE` = **80** 이고 그 값에서 ×1.0 = 지금 밸런스 그대로다 — 50 이 아닌 것은 실측이다(`players.csv` 40명 평균 78.2 / 네임드 85). 50 으로 두면 개시부터 전원이 ×1.56 이라 아무도 안 건드린 밸런스가 56% 밀린다. **성장 계수는 스탯을 직접 밀지 않는다** — 스탯을 밀면 성장 재계산 한 번에 지워지고, 훈련이 바꾸는 것은 개시 스탯이 아니라 경기가 흘러가는 기울기다. **예전 다섯 종(`laning` / `mechanics` / `gamesense` / `teamfight` / `mental`)은 삭제됐다** — 인게임에서 실제로 읽히는 것은 `mechanics`(→hit) 와 `gamesense`(→evasion) 둘뿐이었고 나머지 셋은 전력 합산에만 쓰였다. 전력 합산은 `PlayerData.stat_total()` / `stat_avg()` 한 쌍으로 모였다(예전에는 다섯 필드를 손으로 더한 식이 여덟 군데에 흩어져 있었다). |
-| 명중 판정 (80~100% 리맵) | **전장과 교전이 같은 공식을 쓴다** — `PilotData.hit_chance(hit, eva)` = `HIT_MIN + (HIT_MAX − HIT_MIN) × hit/(hit+eva)`, 곧 `0.80 + 0.20 × 비율`. 대등하면 90%, 한쪽으로 완전히 기울어야 80% / 100% 에 닿는다(실측: 100 vs 50 → 93.3%, 200 vs 50 → 96.0%, 1 vs 300 → 80.1%). 다른 것은 **입력뿐**이다 — 전장은 `hit`/`evasion`, 교전은 `engage_hit`/`engage_eva`. **예전에는 전장이 비율을 그대로 확률로 썼고(대등 = 50%) 교전만 이 리맵을 했다**(`TurnEngageSim.ENGAGE_HIT_MIN` / `_MAX`, **삭제됨**) — 같은 스탯 차이가 두 무대에서 전혀 다른 크기로 읽혔고, 스탯 상한이 없어진 지금은 격차가 벌어지면 한 팀이 사실상 아무것도 못 맞히는 경기가 난다. **파급: 전장 라인전의 피해 처리량이 대략 1.8배가 됐다**(대등한 상대끼리 50% → 90%). `BATTLE_PILOT_DMG_MULT`(0.35)는 손대지 않았으므로 한 대는 여전히 2~9 지만, "라인전만으로는 사람이 죽지 않는다"는 예전 성질은 약해진다 — 성장치 곡선을 다시 재려면 그 상수가 첫 번째 노브다. **거리 계수 자리는 비워 뒀다** — `hit_chance` 의 세 번째 인자 `range_mult` 가 항상 1.0 이다. 전장은 지금 같은 칸 교전뿐이라 거리라는 개념이 없고, 사거리 규칙이 생기면 호출부가 그 인자에 계수를 실어 보내면 된다(공식 자체는 안 건드린다). **라인전 스탯과 스킬 배율은 이 공식에 들어가기 전 스탯에 먼저 곱해진다** — 확률을 직접 밀면 구간 밖으로 나가거나 상한에 막혀 배율이 조용히 사라진다. |
-| 라인전 스탯 | **`hit` / `evasion` 전용** 배율(±10%)이며 `SimulationCore.roll_hit` **한 곳에서만** 곱해진다 — 공격자의 `hit` 과 방어자의 `evasion` 에 각자 자기 배율이 붙는다. `atk` / `max_hp` 는 성장이 담당하므로 여기서 건드리지 않는다. `roll_hit` 은 전장 자동 교전과 공격 카드가 공유하므로 둘 다 반영되고, **교전 무대는 반영되지 않는다**(공식은 같지만 입력이 `engage_hit`/`engage_eva` 이고 이 배율은 `roll_hit` 안에서만 곱해진다). 같은 파일럿에 두 번 걸면 **덮어쓴다**(합산 아님) — 3종 풀에서 2장 뽑는 구조상 합산을 허용하면 +20~30% 가 그냥 운으로 굴러 나온다. **공격적인 라인전**(+10%) / **안전한 파밍**(−10%, 대신 **성장치 적립** +10% — 예전에는 성장 배율이었지만 성장이 성장치에서 파생되면서 적립 쪽으로 옮겨 갔다. 결과는 같다). |
-| 지연 효과 3종 (작전 단계 진입 정산) | `CardPhaseManager._apply_phase_entry_carryovers(is_player)` 가 **자기 팀의 다음 작전 단계 진입 시점**에 한꺼번에 정산한다. (1) **계획 중시**의 보존 목록(`BattleSim.preserved_cards_p/ai`)을 비운다 — 보존은 BATTLE 구간 한 번만 버틴다. (2) **아드레날린**의 `next_phase_strategy_*`(−2)를 점수에 더한다(0 아래로는 안 내려간다). (3) **완벽한 마무리**의 팀 성장 배율을 1.0 으로 되돌린다. 한편 **계획 살인**의 예약(`kill_bounty_*`)은 그 단계가 끝날 때(`end_card_phase` / AI 턴 종료) 사라진다. |
-| 계획 중시 (보존) | 보존은 **상한 초과 자동 버리기(`_trim_hand_overflow`)로부터만** 지켜 준다. 카드 효과에 의한 강제 버리기(재고 / 완벽한 마무리 / 과감한 정리 / 솔로 퍼포먼스)는 보존을 무시한다. 플레이어는 찾기와 같은 그리드로 **손패**를 펼쳐 고르고(`CardSelectOverlay.start_preserve`), 고른 카드는 손패에서 빠지지 않는다 — 오버레이는 픽만 돌려주고 등록은 `CardPhaseManager` 가 한다. 표시는 `Card` 의 시안 테두리(`PreserveMark`)이며 카드를 어둡게 하지 않는다(보존은 제약이 아니라 보증). |
-| 계획 살인 (처치 현상금) | **선불 예약형**이다. 카드를 낸 시점에 `BattleSim.kill_bounty_p/ai` 를 심고, **모든 사망이 지나는 유일한 지점**인 `mark_pilot_dead` 가 쓰러진 파일럿의 **반대 팀**에 한 번 지급하고 0으로 소모한다. 전장에 제3세력이 없으므로 처치자 인자를 따로 넘기지 않는다. 같은 단계에 두 장을 내면 큰 쪽 하나만 남는다. |
-| 완벽한 마무리 (`end_phase`) | 이 절은 **자리에서 단계를 닫지 않는다.** 효과 체인이 도는 동안 카드는 손패 밖에 떠 있어서, 지금 닫으면 소멸 / discard 라우팅 전에 문이 닫힌다. `_end_phase_requested` 플래그만 세우고 **플레이어는 `_finalize_pending_play` 말미**가, **AI 는 `AiCardPlayer` 의 플레이 루프**가(교전 아레나를 기다린 **뒤**에) `consume_end_phase_request()` 로 받아 간다. |
-| AI 카드 선택 (우선순위 점수제) | **AI 는 낼 수 있는 카드 중 무작위가 아니라 점수가 가장 높은 한 장을 낸다**(`AiCardPlayer._pick_best_card`). 목표는 강한 AI 가 아니라 **눈에 띄게 덜 헛도는** AI 다 — 예전에는 사거리 안에 적이 없는 공격 카드나 만피 아군에게 거는 회복이 무작위로 튀어나와, 상대 차례가 중앙 애니메이션만 돌고 아무 일도 일어나지 않는 구간이 됐다. 규칙은 넷 — (1) **못 내는 카드는 뺀다**(`CardPhaseManager.ai_can_play`: 지불 가능 · 시전자 생존 · `CardData.is_playable()`. 마지막 하나가 새로 생겼다: `effective_cost_for` 는 결과를 0 아래로 깎지 않아 **비용 -1**(사용 불가) 카드가 "0 코스트"로 읽혔고, 그래서 AI 가 캐시 · 계시 · 약자 멸시 · 밸런스를 그냥 태웠다. `_ai_turn_ready` 도 같은 함수를 읽는다), (2) **고를 대상이 없으면 뺀다**, (3) **절 이름이 점수를 정한다**(`CLAUSE_WEIGHT`, 카드가 절을 여럿 달았으면 가장 높은 절이 그 카드의 성격이다 — 간보기는 공격 카드이지 전략 점수 카드가 아니다. 회복 · 보호막은 가장 다친 아군이 70% 위면 후순위로 밀린다), (4) **비용은 감점, 동점은 흔들림으로 가른다**(흔들림이 없으면 같은 손패가 매번 같은 순서로 나가 상대 차례가 기계적으로 읽힌다). |
-| AI 한 차례 플레이 상한 | `AiCardPlayer.MAX_PLAYS_PER_TURN`(12). 루프의 실제 종료 조건은 "낼 수 있는 카드가 없을 때"인데, **재고**(비용 0, 손패를 전부 버리고 같은 수를 다시 뽑는다)처럼 비용을 안 쓰고 손패를 회전시키는 카드가 그 조건을 덱+discard 가 마를 때까지 미룰 수 있다. 구조적 루프를 끊는 백스톱이지 밸런스 노브가 아니다. |
-| 휘발성 (`volatile`) | **버려질 때 버린 더미로 가지 않고 그 자리에서 사라진다.** 파일럿 스킬이 손패에 직접 만들어 주는 카드들이 단다(배회의 [이동], 복귀 명령의 [복귀], 격전의 [전투 개시], 고양감의 [아드레날린], 약탈자의 [약탈]). **소멸과 짝이지 같은 것이 아니다** — 소멸은 **쓰면** 사라지는 것이고 휘발성은 **안 쓰고 버려지면** 사라지는 것이라, 둘을 함께 달면 스킬이 준 카드가 어느 쪽으로도 덱을 불리지 않는다. 판정은 **`CardPhaseManager.send_to_discard(cd, discard)` 한 곳**을 지난다 — 버려지는 모든 경로(상한 초과 정리 · 버리기:N 모달 · 재고 · 완벽한 마무리 · 과감한 정리 · 솔로 퍼포먼스 · `_dispose_used_card`, 일곱 자리)가 그 함수를 부르므로 규칙이 한 군데에만 산다. |
-| 상호 배타 (`excl_group`) | `cards.csv` 의 같은 `excl_group` 값을 가진 카드는 **한 파일럿이 하나만** 갖는다. 지금은 `laning` 하나이고 **안전한 파밍 ↔ 공격적인 라인전**이 그 짝이다 — 둘은 같은 `lane_stat` 슬롯을 **정반대 방향으로** 밀어서, 한 사람이 둘 다 들면 합산이 아니라 나중에 낸 쪽이 앞의 것을 지운다. 라인전 풀이 3종(안전한 파밍 · 공격적인 라인전 · 복귀)인데 라이너 슬롯이 2장을 요구하므로 배타가 없으면 그 조합이 셋 중 하나로 흔하게 나왔다. 판정은 `_sample` 이 파일럿 한 명의 **6장 전체**를 가로지르는 장부(`claimed`)를 들고 도는 것이고, 슬롯마다 새로 만들면 메크 슬롯과 라인전 슬롯이 같은 그룹을 한 장씩 집어 갈 수 있으므로 `_deal_team_deck` 이 파일럿당 한 번만 만들어 넘긴다. 중복 폴백(풀이 슬롯 요구보다 작을 때)에서는 배타를 놓아 준다 — 짧은 덱이 더 나쁜 실패이기 때문이다. |
-| 랜덤 풀 제외 (`pool = 0`) | `pool = 0` 인 카드는 `_build_pool_from_db` 가 걸러 내 랜덤 스타터 덱에 절대 들어가지 않는다. **결투(id 3)** 가 첫 사례 — 구현과 효과 처리는 전부 살아 있지만 아무에게도 지급되지 않으며, 특정 메크 고유 카드로 전환할 자리로 남겨 둔 것이다. |
-| 손패 복귀 (`return_left:N`) | **정밀 이동**은 discard 로 가지 않고 **손패 맨 왼쪽**으로 돌아오며, 돌아올 때마다 **그 카드 자신의 비용만** N 오른다(0 → 1 → 2 …). 시전자별 사본(`make_card_copy`)에 찍히므로 다른 카드는 영향이 없다 — 단계 전체에 세금을 매기는 `cost_inc_phase` 와는 별개의 노브이고, 정밀 이동은 더 이상 그 절을 달고 있지 않다(`move;return_left:1`). 판정은 effect chain 이 아니라 `_dispose_used_card` 가 한다 — chain 이 도는 동안 카드는 손패 밖에 있기 때문. 비용이 감당 못 할 만큼 오르면 맨 왼쪽 = `_trim_hand_overflow` 가 가장 먼저 버리는 자리이므로 알아서 정리된다. **이 절을 다는 카드는 비용이 반드시 올라야 한다** — 0코스트가 0코스트로 돌아오면 `AiCardPlayer.run_ai_plays` 루프가 끝나지 않는다. |
-| 카드 소멸 규칙 | **소멸은 `exhaust` 키워드 하나로만 결정된다.** `keyword` 컬럼은 **`|` 로 구분된 목록**이므로 판정은 반드시 `CardData.has_keyword("exhaust")` 를 지난다 — 통짜 문자열 비교는 두 번째 키워드가 붙는 순간(전령 제압 = `exhaust\|preserve`) 소멸을 조용히 꺼 버린다. 손패 복귀 카드를 뺀 나머지는 전부 discard 로 간다. 예전엔 `uses > 0` 인 카드가 사용 횟수를 다 쓰면 사라졌는데, `cards.csv` 는 exhaust 가 아닌 카드도 거의 전부 `uses = 1` 이라 **전투 개시를 포함한 대부분의 카드가 한 번 내면 그대로 소멸**했다 — 덱이 돌지 않고 매치 내내 줄어들기만 했고, discard 는 버리기 카드로만 찼다. `CardData.remaining_uses` 는 삭제됐고 `uses` 컬럼은 로드만 될 뿐 아무도 읽지 않는다(향후 "N회 사용 후 소멸" 용으로 남겨 둔 자리). |
-| 덱 / 버린 더미 뭉치 | 핸드 행 양옆 거터의 Deck / Discard 는 **앞으로 누운 카드 뭉치**로 그려진다(`ui/CardPileStack.gd`) — 카드 뒷면이 위를 향한 채 겹쳐 쌓이고, 아래 카드들의 단면이 뭉치 밑으로 삐져나온다. 예전에는 `"Deck\n18"` 두 줄짜리 Label 하나였다: 숫자는 읽혔지만 더미가 **물건으로 보이지 않아** 카드가 어디서 오고 어디로 가는지가 화면에 없었다. 누워 보이게 하는 것은 둘이다 — 세로를 `FORESHORTEN`(0.55)만큼 누르고, **윗변을 아랫변보다 좁게**(`TOP_EDGE_SCALE` 0.78) 그려 원근을 넣는다. **두께가 곧 장수다**(4장당 한 층, 상한 8층). **바닥선은 고정이고 위로만 자란다** — 세로 중심을 고정하면 카드 한 장이 오갈 때마다 뭉치가 아래위로 떨린다. 장수는 맨 위 카드 뒷면 한가운데에 찍히고 제목은 뭉치 아래에 붙는다. 카운트는 `float` 로 들어와 리셔플 트윈 동안 두께도 같은 곡선을 탄다. 0장이면 테두리만 남은 빈 슬롯. **뒷면은 `Card._apply_back_style` 와 같은 색 하나로 균일하게 칠한다** — 예전에는 면 안쪽에 더미별 accent 사다리꼴(덱 보라 / 버린 더미 적갈)을 덧그렸는데 뭉치가 작아 그 액자가 무늬가 아니라 **면에 얹힌 계조**로 읽혔고, 두 더미는 아래 제목 라벨이 이미 갈라 준다. |
-| 뭉치를 오가는 카드 (잔상) | 숫자만 바뀌면 카드가 더미에서 **나왔다 / 들어갔다**가 화면에 남지 않는다. 그래서 뭉치는 맨 위 카드와 같은 모양의 **잔상** 한 장을 더 그린다(`_draw()` 안의 사다리꼴 하나 — 노드가 아니라 레이아웃 · 입력 · z-order 에 영향이 없다). **덱은 위로 `GHOST_RISE_PX`(74px) 떠오르며 사라지고**(`play_pop`, 드로우 때), **버린 더미는 그 높이에서 내려앉으며 나타난다**(`play_land`, 버리기 때). 한 장이 도는 시간은 `GHOST_SEC`(0.26초)이고, 여러 장이 동시에 돌 수 있어야 하므로 트윈이 아니라 `_ghosts` 배열 + `_process` 로 굴린다. **두 이음매의 규칙이 정반대다**: 드로우의 왼쪽 진입(`_play_draw_intro` ①)은 잔상이 다 사라진 뒤가 아니라 알파가 `GHOST_HANDOFF_ALPHA`(0.30) 남은 시점(0.182초)에 시작해 **겹친다**(완전히 사라진 뒤에 시작하면 한 장이 두 번 나온 것처럼 끊겨 보인다). 반대로 버리기의 착지 잔상은 손패 카드가 다 떨어진 **뒤**(0.30초)에 출발해 **이어 붙는다** — 드로우는 한 장이 덱에서 손으로 이어 달리는 그림이고, 버리기는 손에서 떨어진 카드가 더미에 도착하는 그림이기 때문이다. 착지 쪽은 **장수가 늘어난 것을 한 곳에서 알아채** 부른다(`CardPhaseManager._notice_discard_gain` ← `update_deck_discard_labels`): 버린 더미가 카드를 받는 코드는 일곱 군데지만 숫자가 바뀌는 자리는 하나이고, 리셔플처럼 줄어드는 경우는 델타가 음수라 저절로 걸러진다. **소멸(`exhaust`)은 버린 더미로 가지 않으므로 잔상도 없다.** |
-| Deck / Discard 목록 열람 | 핸드 행 양옆의 **Deck / Discard 뭉치를 누르면** 그 더미의 카드가 찾기 그리드와 같은 5열 목록으로 펼쳐진다(`card_phase/CardPileViewer.gd`, 읽기 전용). **정렬은 이름 오름차순** — 실제 덱 순서를 보여 주면 다음 드로우가 그대로 읽히기 때문이며, 찾기(`search:N`) 그리드도 같은 규칙으로 정렬한다. 열리는 시점은 **작전 단계뿐**(`CardPhaseManager.can_browse_piles()`); 못 여는 상태에서는 버튼이 비활성이고 뭉치가 흐려진다. 열려 있는 동안 핸드 입력 · 턴 넘기기 · 도넛 플립이 모두 잠긴다 — 특히 `CostDonut` 은 `_input` 으로 듣기 때문에 딤만으로는 막히지 않아 `set_flip_allowed` 를 따로 끈다. 닫기는 닫기 버튼 또는 딤 클릭. |
-| 사용 불가 카드 표시 | 마나 부족 / 시전자 부활 대기는 **카드 전체를 덮는 반투명 슬래브**(`Card.BlockOverlay`)로 표현한다 — 카드 배경만 회색으로 칠하면 그 위의 파일럿 일러스트가 밝게 남아 쓸 수 있는 카드처럼 읽혔다. 시전자가 쓰러져 있으면 그 위에 **부활까지 남은 턴 수**가 카드 한가운데 큰 폰트로 찍히고, 그 동안 확인 버튼은 비활성이다. |
-| 전장 크기 | `HexGrid.DISPLAY_SCALE` = **1.35** (예전 1.5의 90%). 전장 픽셀 박스가 990×1092 → 891×983 으로 줄어 화면 중앙(y 860) 기준 상단 314 → **369**, 하단 1406 → **1351** 이 된다. 타일·건물·웨이포인트 스케일과 hex 기하가 이 상수 하나에서 나오고, 파일럿 마커 / HP 바 / 폰트 크기도 `hex_size` 또는 `DISPLAY_SCALE` 에서 유도되므로 전부 함께 줄어든다. |
-| 화면 대응 (세이프 에어리어) | **HUD 상수는 1080×1920 디자인 값 그대로 두고 위/아래 덩어리를 스칼라 두 개로 민다** — `HudBuilder.top_offset()`(= `ScreenMetrics.top_y()`)과 `HudBuilder.bottom_offset()`(= `ScreenMetrics.bottom_y() − 1920`). 상단 패널 ↔ 상대 손패 peek ↔ 적 도넛 ↔ 킬로그가 픽셀 단위로 맞물려 있고 하단도 핸드 부채꼴 ↔ 카드 밑단 ↔ 아군 스트립이 마찬가지라, 상수를 하나씩 기기 대응으로 고치면 그 관계가 조용히 어긋난다. `BattleSim.BS_HAND_CENTER.y` 도 `_ready` 에서 같은 `bottom_offset()` 을 타므로 핸드 ↔ 스트립 간격은 어느 기기에서나 그대로다. 스트레치는 **`expand`** 라 폰에서 가로는 정확히 1080 이고 세로만 늘어난다(인셋 0 · 9:16 이면 두 오프셋이 모두 0 이라 예전 배치와 한 픽셀도 다르지 않다 — 실측). 전체 화면 딤은 `1920` 리터럴이 아니라 반드시 `ScreenMetrics.viewport_size()` 여야 한다. 규약 · 기기별 수치 · 데스크톱 검증법은 **`docs/mobile_safe_area.md`**. |
-| 손패 카드 배율 | **손패의 카드는 `Card.CARD_W/H`(160×220)보다 크게 그려진다 — `CardPhaseManager.HAND_CARD_SCALE`(1.2) → 192×264.** 카드 규격 자체를 키우지 않는 것은 그 상수를 밴픽 시트 · 더미 열람 · 파일럿 상세 팝업까지 열 몇 화면이 함께 읽기 때문이다(키우면 그 격자들이 통째로 어긋난다). **레이아웃 좌표는 배율을 타지 않는다** — `pivot_offset` 이 카드 한가운데라 `position`(확대 전 왼쪽 위)에 배율을 곱해도 **중심이 안 움직이고**, 그래서 슬롯 좌표 · 히트 밴드의 중심 계산 · 손패 내림(`hand_drop_offset`)이 한 글자도 안 바뀌었다. 배율을 아는 자리는 **보이는 폭을 재는 곳 셋**뿐이다(`slot_spacing` 의 간격 압축, `_hover_push_amount` 의 가림 계산, `_fit_hit_layer` 의 `grow_x/y` = `HAND_CARD_SCALE × HOVER_SCALE − 1`). 같은 1.2배가 **상대가 내는 카드**(`AiCardPlayer.SCALE_BIG` 1.35 → **1.62** / `SCALE_SMALL` 0.85 → **1.02**)와 **버리기 픽 줄**(`CardSelectOverlay._layout_to_discard_row` — 손패에서 그대로 들려 나온 같은 노드라 1.0 으로 돌리면 골라 둘 때 작아지고 무를 때 커진다)에도 걸리고, `ObjectiveRewardFx.CARD_SCALE` 은 1.05 → **1.35** 로 함께 올라갔다(중앙에 읽으라고 띄우는 카드는 손패보다 커야 한다). 실측: 4장 간격 204 · 행 138..942, 12장 간격 64.5 · 행 89..991, 카드 아래끝이 아군 스트립 뒤판에서 59px(호버 33px) 떨어진다. |
-| 핸드 레이아웃 | Row top is `BS_HAND_CENTER.y` = **1440** (전장이 90%로 줄며 하단이 55px 올라간 만큼 60px 위로 옮겼다 — 카드 윗단과 전장 아랫단 사이 ~90px 간격 유지). 확인/취소 행 · 전략 포인트 도넛 · Deck/Discard 카운터 · 히트 레이어가 전부 이 값에서 역산되므로 함께 따라온다. Row is `BS_HAND_WIDTH` = (viewport − 2×`BS_HAND_AREA_MARGIN`) × `BS_HAND_WIDTH_SCALE` (1.10) = 902px wide; the Deck/Discard labels re-derive their gutter from the real hand edge. **The fan is one circle**: every card centre rides a circle of radius `BS_HAND_FAN_RADIUS` (3200px) pivoted *below* the row, so tilt and vertical offset always agree and **the middle card is the highest while both ends curve down** (12-card hand: ±6.7°, ends hanging 21.4px below the middle). A plain click does nothing at all — see 카드 드래그 앤 드롭. Each player card casts a `DropShadow` child whose offset/blur grows with height — rest 10px → hover 24px → dragged 32px. **The row spreads around one "focus" card — `_push_focus_card()` = the card being dragged, else the hovered one** — so grabbing a card opens the hand exactly as hovering it does. Focus scales the card to `Card.HOVER_SCALE` (1.2×, cubic EASE_OUT in 0.04s) and slides its neighbours away by `_hover_push_amount` — solved from the coverage it must prevent (96px enlarged half-width + `BS_HAND_HOVER_MIN_STRIP` 32px clickable sliver − the row's own spacing), so **it grows with the hand size**: `BS_HAND_HOVER_PUSH` 28px floor up to 8 cards → 60.5px at 12 cards. **The hand's width is fixed**: the two end cards are anchors, and the push ramps to exactly 0 at them via `1 − (steps/steps_to_end)^BS_HAND_HOVER_FALLOFF_POW` (2.0, so near neighbours keep nearly the full push) — the row redistributes rather than growing. Dragging a 대상 지정 card lifts it by `Card.PRESS_LIFT` **along its own up-axis, keeping its fan rotation** (±4.6px sideways at the ends of a 12-card hand); `_begin_drag` reflows the whole row around it first, and since the focus card's own push is 0 there is no push-free slot variant — lift and drop are exact opposites. `_reorder_hand_nodes` raises the dragged — else hovered — card above all others. A hover reflow lays out the **incoming focus card too** — only the *dragged* card is skipped — otherwise it stays stranded at the push the previous focus gave it. **Hand cards don't pick the mouse**: `spawn_card_node` sets the whole card subtree to `MOUSE_FILTER_IGNORE` (PASS is not enough — a PASS container is still returned by picking) and one `HandHitLayer` Control over the row routes hover/clicks by cursor x, using bands cut at the midpoints between card centres, with the focus card holding the cursor while it's on its enlarged face. Rect picking let the focus card cover its right-hand neighbour down to 0–17px. Hover reflows are **deferred + coalesced** (`move_child` re-fires mouse_entered/exited synchronously — see card_phase/README.md), and `scale` is owned solely by `Card._refresh_float_state`. Card layout tweens `position`, never `global_position` (the latter is scale-coupled — see card_phase/README.md). |
-| 상대 핸드 레이아웃 | 상대 핸드도 겹쳐진 **부채꼴**이며, 플레이어 핸드를 **상하 반전**한 모양이다: 원의 중심이 카드보다 *위*에 있어 θ=0 지점이 호의 가장 낮은 점이 되고, 따라서 **가운데 카드가 패널 아래로 가장 많이 튀어나오고 양 끝이 위로 말려 올라간다**. 기울기는 `−θ`(플레이어 팬의 좌우 기울기를 거울대칭). `HudBuilder.AI_HAND_FAN_RADIUS` 620 / `AI_HAND_FAN_STEP_DEG` 3.2 / `AI_HAND_FAN_MAX_SPREAD_DEG` 28 로, 카드 간 중심 간격은 34.6px(72px 카드 대비 절반 넘게 겹침)에서 12장 기준 26.9px 까지 좁아진다. 자세한 식은 `ui/README.md`. |
-| 전투 행동 로그 | `debug/BattleLogger.gd` (`_bs.blog`). 매 턴 전/후 위치 스냅샷 + 리스폰·리콜·교전·데미지·사망·자유이동(스텝 단위)·푸시·포탑·HQ·정글·카드까지 콘솔과 `user://battle_logs/battle_<timestamp>.log` 양쪽에 기록. 턴 종료 시 같은 스코프의 적끼리 자리를 맞바꾸면 `!!SWAP` / `!!CROSS` 로 표시하고 두 파일럿의 이동 이력을 되짚어 준다. 기본 ON — `blog.enabled` 로 끈다. |
-| 이동 해석 (단일 패스) | 자유이동과 교전 푸시는 **하나의 패스**(`SimulationCore.resolve_movement`)에서 **락스텝**으로 해석된다 — 한 라운드 안의 모든 파일럿이 같은 스냅샷을 보고 목적지를 정한 뒤 동시에 커밋하므로, 같은 스코프의 적끼리 자리를 맞바꾸거나 서로를 통과하는 일이 구조적으로 불가능하다. 한 라운드에서 중재되는 충돌은 둘이다. (1) **버티는 적 지나치기** — 전진은 적 HQ 쪽, 후퇴는 자기 HQ 쪽이라 방향이 같으므로 **승자는 밀려난 패자를 따라 들어간다**(= 라인이 한 턴에 한 칸 밀린다). 예전엔 두 목적지가 겹치면 전진 쪽을 취소해 "패자만 쫓겨나고 승자는 그 칸을 지킨다" 였는데, 일직선 레인에서는 목적지가 **항상** 겹쳐서 교전에 이겨도 승자가 영영 한 칸도 나아가지 못했다. 지금은 적이 밀려날 곳이 없어 그 칸에 **남을 때만** 전진을 취소한다(`_veto_advance_over_stuck_enemy`) — 서 있는 적을 스쳐 지나가지 않기 위해서다. 적 포탑 칸은 막지 않는다 — 패자가 자기 포탑 칸으로 밀려나면 승자도 거기까지 따라 들어가고, 그 칸에서 공성이 시작된다. (2) **정면 충돌**(서로의 칸을 노림)은 **푸시 > 자유이동, 동률이면 팀0** 우선순위로 한쪽이 그 칸을 차지하고 다른 쪽이 멈춰 **같은 칸에서 만나** 다음 턴에 교전한다. 데미지 적용은 이동보다 **앞**에 온다(이번 턴에 죽은 파일럿은 움직이지 않는다). |
-| Combat | **Same-cell only** — no adjacent-cell engagement, no attack range. Lane pilots paired 1:1 by HP against enemy lane pilots; each rolls `PilotData.hit_chance(hit, evasion)`(= 비율을 80~100% 에 리맵, 대등하면 90%) for damage — 이 판정에 **라인전 스탯**이 곱해진다(위 항목). **명중 1회 피해 = `atk × BATTLE_PILOT_DMG_MULT`**(game_config, 0.35 — 반올림, 최소 1). 이 배율은 **파일럿이 받는 전장 피해 전용**이다: 파일럿→포탑 / 파일럿→HQ 는 `atk` 를 아예 안 읽고 `PILOT_STRUCTURE_DMG` 고정값을 쓰며(위 "Turret Combat" 항목), 공격 카드와 교전 무대도 각자 계산을 쓴다. 원본 `atk` 로는 한 대가 복귀 구간보다 컸다 — atk 28 상대 vs max_hp 75 스나이퍼는 1타가 최대 체력의 37% 라 20% 복귀선 위에서 곧장 0 으로 떨어졌고, 저HP 복귀가 발동할 구간 자체가 없었다. **Push is team-level**: tally unilateral wins per team across all pairs in the cell; the side with strictly more unilateral wins sweeps — every pilot of that side in the cell (including unpaired pilots in e.g. 2v1) advances, every opposing pilot retreats. Tie/0-0 → no push. Advance and retreat point the **same way** (enemy HQ vs own HQ), so the winners **follow the losers into the next cell** — 교전 칸 전체가 패자 HQ 쪽으로 한 칸 미끄러지고 다음 턴에 거기서 다시 붙는다. 이것이 라인 푸시다. 전진이 취소되는 경우는 **패자가 밀려날 곳이 없어 그 칸에 남을 때** 하나뿐이다 — 앞 칸이 적 포탑이어도 승자는 그 칸까지 따라 들어간다(포탑 공성은 그 다음 턴). `_move_pilot` aborts further multi-step movement only when a *same-scope* enemy enters the cell (jungler-vs-jungler or lane-vs-lane); cross-scope contacts never freeze movement. |
-| 라인 결속 (바텀 듀오) | **같은 팀 · 같은 레인에 배정된 라이너끼리는 결속돼 있다**(지금은 우측 레인 스나이퍼 + 서포터뿐. 판정이 역할이 아니라 `lane` 이라 레인 배정이 바뀌면 따라간다. 정글러는 제외). **같은 칸에 함께 서 있을 때만** 작동하고, 하는 일은 교전 결과 이동(푸시 · 포탑 수비자 피격 넉백)을 묶음 단위로 맞추는 것 하나다 — **밀림이 이긴다**: 한 명이라도 후퇴 판정이면 파트너도 후퇴하고(포탑 칸에서 원딜만 맞아도 서포터까지 물러난다), 전진은 묶음 전원이 갈 수 있을 때만 한다. **카드 · 스킬 · 저HP 복귀 이동은 대상만 움직인다**(결속 코드가 그 경로를 지나지 않는다). 자유 이동도 묶지 않는다. 화면 표시는 없다(로그 `BOND` 만). `SimulationCore.lane_bond_partners` / `_apply_lane_bonds`(판정 직후, 턴 전투 + 전진 카드) / `_enforce_lane_bonds`(이동 라운드 안). 자세한 내용은 `combat/README.md` 의 "Lane bond". |
-| Engagement scopes | Junglers and lane pilots run on **separate engagement brackets**. A jungler never engages an enemy lane pilot, never deals turret damage, and is never paired against attackers as a turret defender. Lane pilots ignore enemy junglers in the same cell. |
-| Turret Combat (포탑 칸 점거) | **Only same-lane lane pilots interact with a turret** (e.g. a RIGHT-lane pilot cannot damage a CENTER turret). 전진하는 레인 파일럿은 같은 레인 적 포탑 칸에 **실제로 올라선다** — 그냥 걸어 올라가든, 교전에서 이겨 밀려나는 적을 따라 들어가든, 전진 카드로 들어가든 같다(예전의 "발만 들였다 빼는" 인접 공성 `resolve_turret_sieges` / `_bounce_off_enemy_turret` 은 삭제). **진입한 턴에는 피해가 없다.** 그 칸에 서서 맞는 **다음 턴**에 `_resolve_turret_combat` 이 돌아 **명중 판정 없이** `PILOT_STRUCTURE_DMG`(game_config, **2**)를 포탑에 넣는다. **`atk` 비례가 아니라 고정값이다** — 성장이 공격력을 ×3 까지 밀어 올리는 지금 `atk` 전량을 그대로 넣으면 후반 포탑이 한 턴에 녹아 경기 길이가 성장에 반비례해 무너진다. 구조물이 빨리 무너지는 이유는 공격력이 커져서가 아니라 **수비수가 저HP 복귀·사망으로 전장을 비웠기 때문**이어야 한다. 포탑 체력 `TURRET_HP` 는 **24** 라 무방비면 **12턴**, 수비가 붙으면 24턴에 철거된다(예전 16 에서 1.5배가 됐다 — 전령 제압의 8 피해가 포탑 절반이던 것을 1/3 로 낮추고 공성이 한 박자 더 걸리게 하는 값이다). **적이 그 칸에서 농성 중이어도 포탑 피해는 반드시 들어간다** — 수비자는 포탑을 가려 주지 못한다. 포탑 피해를 넣은 **다음**, 같은 레인 공격자와 수비자가 **서로 명중 판정을 굴려**(HP 오름차순 1:1 페어링, 양쪽 다 `_pilot_hit_damage`) 피해를 주고받는다. 예전엔 "공격은 전부 포탑으로 간다"며 **공격자가 수비자에게 0 피해**였고, 그래서 포탑에 눌러앉은 수비자는 공격자를 일방적으로 두들길 수 있었다. **포탑을 때렸다고 물러나지 않는다** — 넉백은 **포탑 칸 수비자의 공격이 명중한 공격자만** 직전 칸으로 민다(`_apply_turret_siege` 가 맞은 공격자 집합을 돌려준다). 수비자가 빗나갔거나, 짝이 없어 아무도 노리지 않았거나(2v1 의 남는 한 명), 수비자가 아예 없으면 공격자는 그 자리에 눌러앉아 **매 턴** 포탑을 갈아 낸다. 예전에는 수비자가 있기만 하면 명중 여부와 무관하게 공격자 전원이 물러났다(`_same_lane_defenders_at` 삭제). 예외는 **때릴 수 없는 포탑**(같은 레인 T1 이 살아 있는 T2)뿐 — 갈아 낼 게 없으니 무조건 물러난다(파일럿끼리의 판정은 그래도 굴린다). 결과적으로 포탑 피해는 무방비면 매 턴, 수비가 붙으면 수비자의 명중률(대등하면 90%)만큼 2턴에 1회(진입 → 타격 후 밀려남 → 재진입)에 가깝고 빗나간 턴마다 한 번 더 갈아 낸다. **HQ 도 같은 고정 피해**를 받는다(`HQ_MAX_HP` **40** → 1인 무방비 20턴 / 5인이면 4턴 — HQ 는 1.5배 대상이 아니다). 오프레인 파일럿은 포탑을 무시하고, 양 팀 오프레인끼리는 여전히 파일럿 교전을 한다. **Turrets do NOT attack pilots. Junglers do NOT attack/defend turrets.** T2 는 같은 레인 T1 이 살아 있는 동안 무적. 포탑 파괴 시 `Building` 노드도 해제해 스프라이트가 사라진다. |
-| 포탑 피격 연출 | 살아남은 포탑이 피해를 입으면 `BattleSim.anim_turret_hit(td)` 가 0.26초(`ANIM_TURRET_HIT_DUR`) 동안 **좌우로 흔들리며 붉게 번쩍이는** 연출을 건다(파괴 타격은 제외 — 스프라이트가 그 자리에서 사라진다). 포탑 그림은 렌더러가 그리는 게 아니라 `BattleField/BuildingLayer` 아래의 `Building` 노드라, `BattleSim._apply_turret_hit_visual` 이 그 노드의 `position` / `modulate` 를 직접 흔든다(기본 위치는 셀별로 `_turret_home_pos` 에 캐시, 마지막 프레임과 재시작 시 원복). `BattleRenderer` 는 `BattleSim.turret_hit_offset(td)` 를 읽어 **HP 바를 같은 오프셋으로** 흔들 뿐이다. |
-| 전진 카드 (`advance:N`) | 카드 한 장이 **라인을 N 칸 밀어 올린다**. 미니틱 하나가 `SimulationCore._advance_tick` 이고, 전장 규칙을 그대로 쓰되 판정 하나만 강제한다 — **전진을 낸 쪽은 그 칸의 교전에서 무조건 이긴 것으로 친다**(피해 판정은 평소대로 굴리므로 맞을 건 맞는다. 밀리는 쪽만 고정). 그래서 **시전자와 같은 칸·같은 스코프의 아군이 함께 한 칸 전진하고, 같은 칸의 적은 함께 한 칸 밀려난다**. 예전엔 (1) 일방 명중 우세를 그대로 읽어 주사위가 나쁘면 시전자가 자기 HQ 쪽으로 물러났고(= 전진 카드가 후퇴 카드였다), (2) "카드는 한 명만 움직인다"며 진 적을 제자리에 두고 시전자만 옆을 스쳐 갔다. 다음 칸이 **같은 레인 적 포탑**이면 무리는 전장 규칙 그대로 **그 칸에 올라선다**(그 틱에는 포탑 피해 없음). 밀려날 곳이 없어 적이 칸에 남으면 무리도 전진하지 않는다. 시전 시점에 **이미 같은 레인 적 포탑 칸 위**라면 포탑 규칙이 이긴다 — 포탑에 무판정 피해를 넣고, **그 칸 수비자의 공격에 맞은 사람만** 한 칸 후퇴(**전진이 뒤로 가는 유일한 경우**), 나머지는 물러나지 않고 제자리에서 계속 갈아 낸다. |
-| Recall / Respawn | **복귀 = 본진 귀환.** 두 가지 사유가 `RecallSystem.return_to_hq` 한 경로로 들어온다 — (1) HP ≤ `RECALL_HP_THRESHOLD`(20%), (2) 이동 카드가 파일럿을 **정글이나 다른 레인의 통로**에 떨어뜨린 위치 이탈. **복귀는 전장을 비우지 않는다** — 그 턴에 곧장 자기 HQ 에 **만피로** 서고 `alive` 는 계속 true 다. 파일럿이 전장에서 사라지는 사유는 **사망뿐**. 대신 복귀한 턴에는 움직이지 않고(`PilotData.recall_hold` → `resolve_movement` 가 이동 패스 1회를 걸러 내며 플래그를 소비), **다음 턴부터** 웨이포인트 0 부터 자기 레인을 다시 걸어 나간다. 즉 복귀 비용은 회복 대기가 아니라 **HQ 에서 전선까지 다시 걸어가는 시간**이고, 그 시간이 곧 **성장치 수입이 끊긴 시간**이다(위 "전선" 항목) — 사망도 마찬가지라 리스폰 턴 수(경기 후반일수록 길어진다)가 그대로 성장 손실로 환산된다. 그래서 사망에 점수 벌점을 따로 매기지 않는다. **자기 레인 위라면 아무리 깊어도 위치 이탈이 아니다** — 스플릿 푸시는 살려 둔 설계다. 복귀 카드(`recall_ally`)는 여기에 대기 없이 즉시 HQ + 만피. 전장을 비우는 것은 사망뿐이므로 `respawn_timer` 와 **`BattleSim.turns_until_return(p)`** 은 **사망 전용 시계**다 — "남은 턴 수"가 필요한 곳(카드 잠금 표시, 로그 `dead:N`)은 여전히 헬퍼를 거친다. **리스폰 턴 수는 경기 시간에 따라 늘어난다** — `BattleSim.respawn_turns_now()` = `RESPAWN_TURNS`(game_config, 5) + `turn_count / 10`. 사망은 **오직** `BattleSim.mark_pilot_dead(p)` 한 곳을 지난다(전장 교전 / 전진 / 공격 카드 / 교전 무대 공통). |
-| 전장 파일럿 마커 | 초상(`PilotImages.circle_for` = `circle/N_circle.png`)은 정사각형에 **내접한 원** 그림이고, `BattleRenderer._draw_pilot_circle` 이 그 **뒤에 흰 원을 깐다**. 40장 중 일부는 원 **안쪽까지** 알파 구멍이 있어 그냥 그리면 뒤의 타일 색이 얼굴을 뚫고 비쳤다 — 특히 점령된 정글 타일 위에서 파일럿이 타일과 같은 색으로 물들었다. 반지름은 그리는 반지름에서 1px 줄여 안티에일리어싱된 가장자리 바깥으로 흰 테가 삐져나오지 않게 하고, 색은 초상과 **같은** tint · alpha 를 타므로(사망 딤 / 복귀 페이드) 배경만 밝게 남지 않는다. |
-| 사망 연출 | 쓰러진 파일럿은 그 자리에서 **1초간 딤드된 채 남았다가**(`ANIM_DEATH_HOLD_DUR`) 0.45초 동안 투명해지며 위로 떠올라 전장을 뜬다. `alive` 는 이미 false 이므로 순수 UI다 — `BattleRenderer._is_renderable()` 이 `anim_death_phase != 0` 을 살아 있음과 함께 그리기 조건으로 삼는다. 시신도 셀 레이아웃 슬롯을 차지하므로 그 1.45초 동안 같은 칸의 산 파일럿이 밀린다(히트 테스트도 같은 solve 를 읽으므로 어긋나지 않는다). |
-| 공격 명중 연출 | **공격 카드를 내면 두 초상 위에서 동시에 일이 벌어진다** — 시전자 초상에서 **하얀 빛이 솟아오르고**, 피격자 초상에서 **조각이 사방으로 퍼지며** 초상이 **격하게 흔들린다**. 한 타격이 두 박자다 — **시전**(`BattleSim.anim_pilot_cast`, `ANIM_CAST_DUR` **0.12초**. 마커 폭의 하얀 기둥이 `ANIM_CAST_RISE_PX` 54px 솟으며 옅어지고 앞머리에 원이 하나 뜬다. **명중 여부와 무관하게 먼저 돈다** — 빗나간 공격도 쏘기는 쐈다) → **명중**(`anim_pilot_impact`, `ANIM_HIT_HOLD_SEC` **0.20초**. `BattleRenderer.spawn_pilot_burst` 가 조각 `BURST_COUNT` 12개를 균등 분할 ±0.22rad 각도로 뿌리고 `BURST_DUR` 0.18초 동안 감속하며 날린다 — **각도·거리·크기를 띄울 때 굳혀 배열에 담는다**. 매 프레임 `randf()` 를 다시 굴리면 퍼지는 조각이 아니라 매 프레임 다른 자리에서 깜빡이는 점이 된다. **맞는 쪽의 쉐이크는 전장 자동 교전보다 훨씬 격렬하다**: `ANIM_SHAKE_CARD_DUR` 0.26초 / `ANIM_SHAKE_CARD_AMP_PX` **20px** vs 전장 기본 0.18초 / 6px. 세기는 `PilotData.anim_shake_amp` 로 실려 가고 렌더러는 **주파수를 고정한 채 진동 수를 지속시간에 비례**시킨다 — 진동 수를 고정하면 길게 흔들라는 지시가 "느리게 흔들라"가 되어 격렬함이 사라진다). **쉐이크만 `_apply_attack_damage` 안에 있고 조각은 `_effect_attack` 이 뿌린다** — 전자는 전장 자동 교전 · 파일럿 스킬의 한 방과 같은 피해 진입점이라 거기서 조각까지 뿌리면 매 턴 도는 피해에도 파티클이 붙어 그게 곧 배경이 된다. **포탑에는 조각이 없다**(초상화가 없다 — 포탑은 `anim_turret_hit` 를 따로 갖는다). **한 타격의 총 연출 시간은 두 값의 합, 0.32초다** — 연속 공격(`repeat`, 최대 5타)이 두 박자를 타수만큼 반복하므로 상한이 1.6초이고, 그동안 손패도 턴 넘기기도 잠긴다. `DMG_POPUP_DUR`(**0.30**)이 그 합보다 짧아야 한다 — 길면 연속 타격의 숫자가 같은 자리에 겹쳐 쌓인다(팝업 좌표는 띄운 순간에 고정된다). **연출이 끝나야 다음 카드를 낼 수 있다** — `CardPhaseManager._attack_anim_active` 가 손패 딤(`_is_player_input_blocked`)과 턴 넘기기(`can_end_card_phase`) 양쪽을 잠근다. **AI 공격도 같은 연출을 쓴다**: `_effect_attack` 의 `await` 하나가 `_apply_single_effect` → `_process_pending_chain` / `apply_card_effect` → `apply_and_dispose_ai_card` → `AiCardPlayer.run_ai_plays` 를 줄줄이 코루틴으로 만든다. 사망 / 복귀 / 부활은 `anim_pilot_cast_clear` 로 빛을 걷어 낸다. **예전에는 돌진(몸통 박치기)이었다** — 시전자 초상이 대상 초상까지 **실제로 파고들었다**(`ANIM_LUNGE_IN_DUR`) 붕 뜬 채 돌아오는(`ANIM_LUNGE_OUT_DUR`) 세 박자. 초상을 옮기는 연출이라 딸린 장치가 셋이었고 지금은 전부 삭제됐다 — (1) 방향을 `pilot_marker_positions()` 의 그려진 마커로 재야 했고(타일 중심으로 재면 같은 칸의 적에게 돌진할 때 방향이 반대가 된다), (2) 파고든 얼굴이 대상 칸 뒤로 숨지 않게 `BattleRenderer._lunging_cells_last` 가 그 칸을 맨 마지막에 그렸으며, (3) 사망 · 복귀 · 부활마다 `anim_pilot_lunge_clear` 로 변위를 걷어 내야 했다. 지금은 두 초상이 제자리에 있고 그 위에 이펙트만 얹히므로 셋 다 필요가 없다 — **되살리지 말 것**. 삭제된 이름: `anim_pilot_lunge` / `anim_pilot_lunge_return` / `anim_pilot_lunge_clear` / `pilot_lunge_offset`, `ANIM_LUNGE_*` 넷, `PilotData.anim_lunge_*` 넷(→ `anim_cast_t` / `anim_cast_dur` 로 대체), `_lunging_cells_last`. |
-| 오브젝트 보상 획득 연출 | **보상 카드는 실물로 한 번 보여 준 뒤에 들어간다**(`objective/ObjectiveRewardFx.gd`). 예전에는 `_grant_reward` 한 줄로 끝나서, 오브젝트 하나를 두고 4인 교전까지 벌인 끝의 보답인데도 손패가 한 장 늘거나 덱 숫자가 다섯 오르는 것 말고는 화면에 아무 일도 일어나지 않았다 — 특히 용은 **덱에 섞여 들어가므로** 그 자리에서 손에 잡히는 것이 하나도 없다. **용**: 보상 카드 N장이 화면 중앙에 부채꼴로 펼쳐졌다가(`SPREAD_SEC` 0.34초 + `HOLD_SEC` 0.70초, 간격 `FAN_STEP_PX` 118px · 양 끝 기울기 `FAN_TILT_DEG` 7°) **한 장처럼 겹쳐지고**(`COLLAPSE_SEC` 0.26초 — 이 박자가 "이 여러 장이 이제 한 더미가 된다"이다) **좌측 아래 덱 뭉치**로 빨려 들어간다(`FLY_SEC` 0.42초). **전령**: 한 장이 중앙에 떠올랐다가 **손패 맨 왼쪽 자리**로 내려앉는다(한 장짜리라 겹치는 박자를 건너뛴다). **적이 가져가면 둘 다 상단 상대 손패의 왼쪽 끝**으로 날아가 사라진다(`HudBuilder.ai_hand_left_anchor()`) — 상대의 덱은 화면에 없으므로 용도 그 자리를 쓴다. 중요한 것은 "누구 것이 됐는가"이고, 그 답은 카드가 위로 갔는지 아래로 갔는지가 말한다. **전령의 도착점과 실제 삽입 자리가 같다** — 연출은 `slot_position(0, n+1)` 로 잰 맨 왼쪽 슬롯을 향하고 지급도 `grant_cards_to_hand(..., at_left = true)` 로 거기 꽂는다(그 경로는 드로우 인트로도 타지 않는다 — 화면 왼쪽 밖에서 다시 날아오면 방금 본 비행이 두 번 재생된다). **지급보다 연출이 먼저다** — `_grant_reward` 가 코루틴이 되어 `play()` 를 await 한 **뒤에** 넣는다. 순서를 뒤집으면 연출이 도는 동안 이미 손패에 같은 카드가 서 있어 한 장이 두 군데에 보인다. 딤(α 0.55)은 **비행이 시작될 때 걷는다** — 덱 뭉치도 상대 손패도 딤 아래에 있어서 어디로 들어가는지를 보여 주려면 그 순간에 화면이 밝아야 한다. 무혈 획득에서는 **확인 창을 닫은 뒤에** 온다(알림 위에 카드가 겹쳐 날아다니면 어느 쪽을 보라는 화면인지가 흐려진다). 카드는 손패와 같은 `Card.tscn` 노드이고(따로 그린 그림이면 실제로 들어온 카드와 같은 것인지 확인할 길이 없다), 각 박자는 트윈의 `finished` 가 아니라 **타이머**로 기다린다(노드가 도중에 free 되면 그 신호는 영영 오지 않는다). 결판 **전에** 시계를 눌러 여는 `ui/ObjectiveRewardPopup.gd` 와 헷갈리지 말 것 — 그쪽은 무엇을 주는지 미리 보는 정보 팝업이라 전장을 붙잡지 않고, 이쪽은 실제로 받은 카드를 보여 주는 연출이라 `_busy` 가 붙잡는다. |
-| 상대 카드는 똑바로 서서 나온다 | AI 가 낸 카드를 화면 중앙으로 날리는 `AiCardPlayer._show_card_centre` 는 **회전도 0 으로 편다**. 뽑혀 나온 카드는 상대 부채꼴이 준 기울기(`HudBuilder._layout_ai_hand` 의 `rotation = -theta`)를 그대로 달고 있고 `pop_ai_hand_card_node()` 는 위치와 배율만 보존하므로, 안 펴면 화면 한가운데에 **비스듬히 선 채로** 뒤집히고 사라졌다. 손에서 뽑아 든 카드가 똑바로 서는 것은 플레이어 쪽 자유 드래그(`Card.begin_free_drag` 이 `FREE_DRAG_STRAIGHTEN_SEC` 동안 기울기를 편다)와 같은 규칙이다. |
-| 성장치 팝업 (전장 초상화 위) | 성장치가 **한 번에 크게** 오르는 순간에만 그 파일럿 얼굴 위로 금색 `+1.50k` 가 떠오른다(`BattleRenderer.spawn_score_popup`, `SCORE_POPUP_DUR` **1.10초** · `SCORE_POPUP_RISE_PX` **72px** — 피해 숫자 0.30초 / 46px 보다 오래 · 높이 떠서 한 얼굴 위에 둘이 동시에 떠도 안 겹친다). 뜨는 자리는 다섯 — **포탑 피해**(한 대마다 0.083k) · **처치 현상금**(막타와 어시스트 각각) · **교전 총액**(무대가 닫힌 뒤 참가자마다 한 장으로 합쳐서) · **정글 캠프**(밟아서 먹든 약탈로 가로채든 0.98k, `SimulationCore.harvest_camp_under` / `steal_camp_point`) · **[캐시] 이자**(카드가 나갈 때마다 보유자 성장치의 4%, `MechSkillSystem._payout_cash`). **전선 체류만 뺐다** — 매 턴 열 명의 얼굴 위에서 숫자가 튀면 그게 곧 배경이 되어 정작 큰 한 건이 묻힌다. 정글 캠프는 반대다: 순회 리듬이 곧 정글러의 플레이인데 그 한 박자가 화면에 없었고, 획득이 턴마다 열 명이 아니라 한 명에게 한 번씩만 일어나 배경이 되지 않는다. [캐시]도 같은 이유로, 흔적이 없으면 그 카드를 손에 들고 있는 것과 없는 것이 화면에서 구분되지 않는다. 배선은 한 겹이다: 조용히 적립만 하는 `add_score` 와 팝업을 붙인 `award_score` 가 갈라져 있어 **어느 적립처가 화면에 뜨는지가 호출부에서 읽히고**, `add_score` 는 하한과 적립 배율이 먹은 **실제 증가분**을 돌려주므로 팝업에는 요청한 값이 아니라 들어간 값이 뜬다. 안 띄우는 경우가 둘이다 — **죽어 있는 파일럿**(시신은 1.45초 뒤 전장을 뜨고, 어시스트는 자기가 죽은 뒤에도 들어오므로 실제로 걸리는 경로다), 그리고 **교전이 도는 동안**(아레나가 화면을 덮고 있어 아무도 못 보고, 팝업 좌표는 띄운 순간의 마커 자리에 고정되므로 무대가 치워질 때쯤엔 엉뚱한 곳에 떠 있다). 후자는 `BattleSim._score_popup_hold` 에 쌓였다가 `EngagePhaseManager._on_dashboard_confirmed` 의 `flush_score_popups()` 에서 파일럿당 한 장으로 풀린다 — 킬로그의 `_pending` 과 같은 자리, 같은 이유다. |
-| 피해 수치 표시 | **공격 카드(`attack:N`) 전용.** 판정마다 대상 마커 위로 `-N` / `MISS` / `흡수`(보호막이 전부 먹은 경우)가 떠올랐다 사라진다(`BattleRenderer.spawn_pilot_popup`). 연속 공격은 타수마다 돌진 연출(0.32초)이 통째로 끼므로 팝업이 겹칠 일이 없다(`DMG_POPUP_DUR` 0.30 < 0.32) — `DMG_POPUP_STAGGER` 는 연출이 붙지 않는 경우(시전자 없는 레거시 카드)에만 남는다. 좌표는 띄운 순간에 고정되므로 대상이 쓰러져도 숫자가 끝까지 재생된다. 전장 자동 교전은 기존대로 흔들림만. |
-| Jungle (initial) | Both jungles start fully captured, **`(-3,-1)` 와 `(1,-1)` 두 칸만 중립으로 남는다**. 그 둘은 전령 / 용이 서는 자리이기도 하지만 **타일 규칙은 다른 정글 칸과 한 글자도 다르지 않다** — 캠프가 서고, 정글러가 밟아 점령하고, 순회 목표가 되고, 사이드 T1 파괴의 측면 중립 탈취 분기로 주인이 바뀐다. 한때는 **상시 중립**(오브젝트 전용)이라 셋 다 막혀 있었고 `is_objective_cell` / `_nearest_uncaptured_neutral` 이 그 판정이었는데, 두 칸이 정글로 돌아오며 전자는 삭제되고 후자는 되살아났다. **목표 선택의 1순위는 아직 아무도 안 잡은 중립 칸**(`_nearest_uncaptured_neutral`, `jungle_start_pref` 가 좌우 순서를 정한다)이고 그 다음이 차 있는 캠프다. **Lane pilots are forbidden from entering any jungle/neutral cell** — Pathfinding receives `_bs.neutral_zone_cells` as the forbidden set for non-junglers. **중립이 다 잡히고 나면 목표는 지금 먹을 수 있는 캠프**(`_best_ready_camp`)다 — 정글러의 수입이 전부 캠프에서 나오므로 캠프가 곧 목표이고, 먹고 나면 그 칸이 4턴 비어 다음 캠프가 자연히 새 목표가 된다. 그 반복이 곧 순회다(위 "정글 캠프" 항목). **그 캠프를 고르는 비용은 거리가 아니라 `거리 × JUNGLE_CAMP_STALE_PER_STEP(3) − 방치 턴 수`다.** 거리만 보면 정글러는 **자기 발밑 4칸에 갇힌다** — 한쪽 정글이 4칸이고 재생성이 4턴이라 매 턴 정확히 한 칸이 되살아나므로 최단 거리 그리디는 언제나 거리 1짜리 캠프를 찾아냈고, 반대쪽 정글은 개시부터 끝까지 캠프가 꽉 찬 채 남았다(실측 60턴: 밟은 칸 **6개**, 오른쪽 정글 세 칸은 한 번도 안 밟음). 화면에는 "먹을 게 남은 칸을 두고 빈 칸만 도는" 것으로 보인다. 차 있는 채 놀고 있는 캠프가 턴마다 조금씩 싸지면 방치된 쪽이 주기적으로 가장 싼 목표가 되어 좌우를 오가는 순회가 된다(같은 60턴: 밟은 칸 **11개**, 캠프 획득 53 → 45회 = 수입 85%. 그 15%가 순회의 이동 시간이고, 그 대가로 정글 전체가 돌아간다). 목표를 향해 한 걸음 옮기면 그 목표의 비용은 반드시 더 내려가므로(−4, 다른 캠프는 −1) 가는 도중에 목표가 뒤집혀 왕복하는 일이 없다. **발밑의 캠프가 차 있으면 무조건 그 칸이 목표다** — 이동이 정산보다 앞에 오므로 가만히 있기만 하면 이번 턴에 먹는다. 캠프가 하나도 안 차 있을 때만 예전의 **sticky** 로밍(`PilotData.jungle_roam_target`, 도달할 때까지 유지)으로 떨어진다 — 매 턴 "가장 먼 아군 칸"을 다시 고르면 한 걸음 옮기는 순간 방금 떠나온 쪽이 가장 멀어져 *미드 레인* 통로 두 칸을 왕복했다. |
-| T1 → Jungle | T1 destroyed in lane L → priority branches off per-lane 취약지점 sets `VULN_TEAM{0,1}_{LEFT,CENTER,RIGHT}` (side lanes 1 cell, mid 2 flanking cells). (1) **Restoration**: if any of capturer's own same-lane vuln cells are loser-owned, restore them, nothing else flips. (2) **Side-neutral override (L/R only)**: if `(-3,-1)`/`(1,-1)` is loser-owned, capturer takes that neutral instead of loser's vuln. (3) **Default**: loser's same-lane vuln cell(s) flip to capturer. Mid has no neutral override. |
-| 3-Lane System | Waypoint paths from HQ → side waypoints → enemy HQ. The old minion / lane-strength concept is **removed**. |
-| 수비 개념 없음 | 레인 파일럿의 목표는 **언제나** `current_waypoint(p)` 하나다. 아군 포탑이 맞고 있다고 돌아오는 행동은 존재하지 않는다 — 파일럿은 자기 HQ 에서 출발해 레인 길을 따라가고, 그러다 상대 라이너와 마주치는 것이 설계다. (같은 레인 스나이퍼가 죽으면 서포터가 아군 최전방 포탑을 껴안던 `_supporter_should_fall_back` / `_own_forward_turret_cell` 은 삭제됐다.) |
-| 레인 통로 (`lane_corridor`) | 레인별 실제 통과 셀 집합. 그 레인의 웨이포인트를 정글 금지로 BFS 연결해 **한 번만** 만들고 캐시한다(팀1 경로는 팀0 의 역순이라 셀 집합은 공유). 유일한 소비자는 `RecallSystem._is_out_of_position` — "이동 카드가 이 레인 파일럿을 **남의 레인**에 떨어뜨렸나". 판정은 반드시 **다른 레인에 속함**을 확인하지, 자기 레인에 없음만으로 판정하지 않는다: BFS 타이브레이크가 실제 걸어간 경로와 한 칸 어긋나도 멀쩡한 파일럿을 추방하면 안 되기 때문. `LANE_NAMES` 에는 GUERRILLA 칸도 있으니 순회는 `lane_corridor_count()` 로 한다. |
-
-
-### 캐릭터 실루엣 쉐이더 (지금은 쓰는 자리가 없다)
-`resources/shaders/silhouette.gdshader` + `resources/SilhouetteFx.gd` 는
-**서 있기만 하고 어느 화면도 부르지 않는다.** 한때 아웃게임 파일럿 상세 팝업
-(`season/draft/DraftDetailPanel.gd`)의 전신 아트가 실루엣으로 서 있다가 아래에서
-위로 벗겨지는 등장 컷이 있었지만 **그 적용은 걷혔다** — 팝업은 이제 아트를 그대로
-켠다(`ART_SIL_REVEAL_SEC` / `_DELAY` 와 `SilhouetteFx.apply` / `play_reveal` 호출이
-함께 사라졌다). 쉐이더와 배선은 다음에 쓸 자리를 위해 남겨 둔 도구다.
-
-**구운 모브 실루엣 PNG(`images/pilot/mob/`)를 대체하는 것이 아니다.** 그쪽은
-"이름 없는 선수"를 상시로 말하는 에셋이고, 무엇보다 `faces` / `circle` / `eye`
-세 컷은 알파가 통짜 사각형이라 런타임에 칠하면 검은 막대가 된다. 쉐이더가 살 수
-있는 자리는 **알파가 곧 인물 윤곽인 컷**(`full` / `tall` 계열)이다.
-
-테두리가 설 자리는 아트를 그 폭만큼 안으로 물려서 만든다(전신 아트 40장이 네 변에
-인물이 닿아 있어 안 그러면 머리 위 테두리가 잘린다). 파라미터 표와 쉐이더를
-만지기 전에 볼 함정 셋(프래그먼트 `COLOR` 는 이미 텍스처가 곱해진 채 들어온다 ·
-`MODULATE` 내장이 없다 · 전역 함수에서 `TEXTURE` 를 못 읽는다)은
-`resources/README.md` 에 실측과 함께 적혀 있다.
+| Haptics table & rules, `game.db` res→user copy | `autoloads/README.md` |
+| Title→Season handoff, autosave, mid-match resume | `features/save_load/README.md` |
+| Weekly progression contract, 요일과 경기일 | `features/season/calendar/README.md` |
+| Season→MatchFlow→BattleSim handoff, playoff / INTL brackets | `features/season/README.md` |
+| MatchFlow→BattleSim handoff (`match_ctx`) | `features/match_flow/README.md`, `features/battle_sim/README.md` |
+| BattleSim module architecture, side (blue/red), growth & 성장치, economy gate, field size | `features/battle_sim/README.md` |
+| Lane combat, turrets, recall, jungle / camps, front line, stats & hit chance | `features/battle_sim/combat/README.md` |
+| Card phase, drag & drop, hand layout, deck slots, keywords, AI turn | `features/battle_sim/card_phase/README.md` |
+| Engage stage, VS intro, start positions, result screen | `features/battle_sim/engage/README.md` |
+| Marker layout / glide, camp outline, death / popup FX | `features/battle_sim/rendering/README.md` |
+| Pilot strips, top chrome, kill feed, detail panel, card piles, safe-area offsets | `features/battle_sim/ui/README.md` |
+| Objectives (전령 / 용) | `features/battle_sim/objective/README.md` |
+| Pilot skills / mech passives | `features/battle_sim/skill/README.md`, `features/battle_sim/mech/README.md` |
+| Mob pilots (silhouettes), silhouette shader, image lookups | `resources/README.md` |
+| CSV tables, SQLite API, Rebuild game.db | `data/README.md` |
+| iOS test build, downloading the .ipa | `docs/ios_testbuild.md`, `build/README.md` |
 
 ---
 
@@ -640,6 +115,8 @@ Do NOT use `class_name` on autoload scripts. Access at runtime:
 ```gdscript
 @onready var _gm: Node = get_node("/root/GameManager")
 ```
+`--check-only --script` doesn't know autoload identifiers (`Haptics`, `HapticUi`)
+— verify by running a scene instead.
 
 ### Module Communication
 All cross-module calls go through the BattleSim orchestrator:
@@ -649,196 +126,39 @@ _bs.pathfinder.bfs_next_step(...)
 _bs.renderer.queue_redraw()
 ```
 
-### Enums
-All shared enums live in `resources/GameEnums.gd` with `class_name GameEnums`.
-- Battle sim: `BattlePhase`, `Role`, `LanePosition`, `Lane`, `TowerLevel`
-- Match flow: `MatchPhase`, `JungleStartDir`, `DraftSide`
-- Season: `SeasonPhase`, `MatchDayResult`, `TournamentStage`
-  (**`TrainingType` 은 삭제됐다** — 일상 훈련이 "하루에 훈련 종류 하나"에서 타일
-  배치판으로 바뀌며 종류라는 개념 자체가 없어졌다. 지금 하루 한 칸이 무엇인가는
-  `training_tiles.id` 가 답한다.)
-
-**같은 파일에 표가 하나 더 있다 — `ROLE_DISPLAY_ORDER` + `role_seat(role)`.**
-파일럿 다섯을 화면에 늘어놓는 순서(**탑 · 정글 · 미드 · 원딜 · 서폿** =
-`TANK · ASSASSIN · FIGHTER · SNIPER · SUPPORT`)이고, 전장을 왼쪽부터 훑은 순서
-(LEFT · GUERRILLA · CENTER · RIGHT · RIGHT)와도 같다. **인게임과 아웃게임이 이
-표 하나를 함께 읽는다** — 전장 파일럿 스트립 · 밴픽 화면의 양 팀 블록 · 시즌 허브
-로스터 · 훈련 격자 · 훈련 결과 · 경기 전 대시보드 · 엔딩 로스터 · 드래프트
-슬롯(`TeamDraft.SLOT_ROLES` 는 이제 이 상수 자체다). 화면마다 자기 순서를 들고
-있으면 같은 다섯 명이 화면마다 다른 자리에 앉는다.
+### Enums & role order
+All shared enums live in `resources/GameEnums.gd` (`class_name GameEnums`).
+`GameEnums.ROLE_DISPLAY_ORDER` / `role_seat(role)` (탑 · 정글 · 미드 · 원딜 · 서폿)
+is the **single** order every screen (in-game and outgame) uses to line up five pilots.
 
 ### Scene → Script Relationship
-Each `.tscn` file references its script by UID. When moving scripts, update both the `.uid` file and the `path=` in the `.tscn` file.
+Each `.tscn` references its script by UID. When moving scripts, update both the
+`.uid` file and the `path=` in the `.tscn`.
 
 ### Variable Naming Convention (lint-driven)
-Godot 4.5's `UNUSED_PRIVATE_CLASS_VARIABLE` warning treats a leading underscore as **"declared private"**. The convention below keeps that warning a real signal instead of noise.
+Godot 4.5's `UNUSED_PRIVATE_CLASS_VARIABLE` treats a leading underscore as "private".
 
 | Prefix | Meaning | Use when |
 |---|---|---|
-| `_foo` | private — used **only inside this script** | helper state, internal cache, locally-instantiated nodes |
-| `foo`  | public  — read or called from **other scripts** | anything accessed via `_bs.foo`, `gm.foo`, signal payloads, etc. |
+| `_foo` | private — used **only inside this script** | helper state, internal cache, local nodes |
+| `foo`  | public — read or called from **other scripts** | `_bs.foo`, `gm.foo`, signal payloads, etc. |
 
-**Rules**
-- If a variable is referenced as `_bs.x`, `gm.x`, `someNode.x` from another script → it MUST NOT have a leading underscore.
-- If a variable is never touched outside its own script → it SHOULD have a leading underscore.
-- `@export` / `@export_tool_button` variables exist for the editor; treat them as "public" (no underscore) so the unused-private warning doesn't fire.
-- Local variables inside a function must not shadow `Node` / `CanvasItem` / `Control` properties (e.g. `visible`, `position`, `name`, `owner`). Suffix with intent: `visible_count`, `target_position`, `display_name`.
-
-**When fixing a warning, fix the cause, not the symptom**
-- `UNUSED_PRIVATE_CLASS_VARIABLE` on an externally-accessed var → drop the underscore (and update every caller).
-- `SHADOWED_VARIABLE_BASE_CLASS` → rename the local. Never rename the engine property.
-- Do **not** sprinkle `@warning_ignore(...)` to silence these — that hides the next real bug.
-
-**Known exceptions**:
-- `_bs` (the orchestrator handle inside each BattleSim child module) is conventionally underscored even though it's `get_parent()`-derived; the underscore marks it as "framework wiring, don't touch".
-- `_on_*` signal handler methods keep the underscore even when their `Callable` is passed across scripts via `signal.connect(other._on_xxx)`. The underscore is the Godot-wide signal-handler convention; the cross-script reference is signal wiring, not a real call.
-
----
-
-## iOS 테스트 빌드 (맥 없이)
-
-`.github/workflows/ios-testbuild.yml` 가 GitHub 의 **macOS 러너**에서
-`Godot --export-debug "iOS"` → `xcodebuild` → `Payload/*.app` → zip 을 돌려
-**서명되지 않은 `.ipa`** 를 아티팩트로 올린다. 그걸 내려받아 윈도우 PC 에서
-**Sideloadly** 로 아이폰에 밀어 넣는다 — 서명은 Sideloadly 가 무료 Apple ID 로
-로컬에서 하므로 **CI 에 인증서도 시크릿도 없다**(`CODE_SIGNING_ALLOWED=NO`).
-저장소가 public 이라 macOS 러너는 무료다. 절차 · 제약 · 실패 표는 **`docs/ios_testbuild.md`**.
-
-### 빌드를 돌렸으면 `.ipa` 를 `build/` 로 내려받는다
-
-**아티팩트 링크만 알려 주고 끝내지 않는다.** `build/` 가 Sideloadly 로 폰에
-올릴 때 손이 닿는 유일한 폴더이므로, CI 그린을 확인한 직후 네 가지를 한다 —
-(1) 그 폴더의 **낡은 `.ipa` / `.pck` 삭제**, (2) 새 `.ipa` 를
-**`EsportsManager-debug-unsigned-<커밋 short SHA>.ipa`** 로 내려받기,
-(3) 내용 검산(pck 안 `data/game.db`, 실행 바이너리 안
-`register_haptics_types` + `OBJC_CLASS_$_UIImpactFeedbackGenerator`),
-(4) 그 결과까지 보고.
-
-**파일명에 SHA 를 붙이는 이유**는 낡은 빌드가 섞이면 어느 것이 방금 만든
-것인지 알 수 없기 때문이다 — 실제로 햅틱이 하나도 안 들어간 직전 커밋의
-`.ipa` 를 폰에 올릴 뻔했다. 날짜는 다운로드 시각이라 답이 되지 못한다.
-명령과 검산 스니펫은 **`build/README.md`**.
-
-**로컬(윈도우) 익스포트는 `.ipa` 를 만들지 못한다** — Xcode 프로젝트와 pck 까지만
-나오고(`build/ios/`), 그것은 익스포트 옵션 · 플러그인 배선처럼 macOS 없이 확인할
-수 있는 것을 25초에 검산하는 용도다. 폰에 올릴 물건은 언제나 CI 아티팩트다.
-
----
-
-Godot 이 `xcodebuild` 를 직접 부르지 않는 것은 `export_presets.cfg` 의
-`application/export_project_only=true` 때문이다 — 서명을 아예 끄고 싶으므로
-Xcode 프로젝트만 받아 빌드 플래그를 우리가 쥐는다.
-
-### `res://data/game.db` → `user://data/game.db`
-
-**SQLite 는 디스크 위의 진짜 파일을 열어야 한다.** 에디터에서는 `res://` 가
-그대로 실제 폴더라 그냥 열리지만, 익스포트한 빌드에서는 `res://` 가 `.pck` 안으로
-들어가 SQLite 가 그 경로를 열지 못한다 — 손대지 않았다면 아이폰에서 타이틀 화면부터
-DB 오류로 멈추었을 자리다. 그래서 모든 런타임 DB 접근은 **`GameManager.db_path()`**
-한 곳을 지난다 — 에디터에서는 `res://data/game.db` 그대로(CSV→DB 재빌드가 곷바로
-반영돼야 하므로), 기기에서는 pck 안의 DB 를 `user://data/game.db` 로 꺼낸 사본을
-돌려준다. **매 실행마다 덮어쓴다** — DB 는 런타임에 읽기 전용이고(세이브는
-`user://saves/*.save`) 96KB 뿐이라, 뭐가 바뀜는지 비교하는 캐시 무효화 장치를 두는 것보다
-그냥 복사하는 쪽이 언제나 옳다(새 빌드를 깔았는데 옫 빌드의 game.db 가 남아 있는 사고가
-구조적으로 불가능해진다). 편집 도구인 `addons/csv_to_db/csv_to_db.gd` 만 여전히
-`res://data/game.db` 에 **쓴다** — 그것이 원본이기 때문이다.
-
-`data/game.db` 는 **리소스가 아니므로** 그냥 두면 pck 에 안 들어간다.
-`export_presets.cfg` 의 `include_filter="data/game.db"` 가 그걸 넣는 자리이고,
-워크플로의 포장 단계가 pck 안에서 그 문자열을 실제로 찾아 확인한다 — 필터가 조용히
-빗나가면 빌드는 초록불인데 게임만 죽는 조합이 나오기 때문이다.
+- Referenced from another script → MUST NOT have a leading underscore; never touched outside → SHOULD.
+- `@export` / `@export_tool_button` vars count as public.
+- Locals must not shadow `Node` / `CanvasItem` / `Control` properties (`visible`, `position`, `name`, `owner`) — suffix them (`visible_count`).
+- Fix the cause, not the symptom: drop the underscore / rename the local. No `@warning_ignore(...)`.
+- Exceptions: `_bs` (orchestrator handle) and `_on_*` signal handlers keep the underscore.
 
 ---
 
 ## Session Checklist
 1. Read `CLAUDE.md` (this file)
-2. Identify the target feature (`season`, `match_flow`, or `battle_sim`)
+2. Identify the target feature (`season`, `match_flow`, `battle_sim`, …)
 3. Read `features/<feature>/README.md`
-4. For multi-module features (season, battle_sim, match_flow): also read the relevant submodule's README
-5. Make focused changes only in that feature's folder
-6. After adding tables/columns to CSV: run **Project → Tools → Rebuild game.db**
-7. iOS CI 빌드를 돌렸으면 **`.ipa` 를 `build/` 로 내려받고**(커밋 short SHA 를
-   파일명에) 낡은 산출물은 지운다 — `build/README.md`
-8. UI 를 새로 놓거나 옮겼다면 **`docs/mobile_safe_area.md`** 의 체크리스트로
-   검산한다 — 화면 아래쪽은 홈 인디케이터 / 제스처 바가 **터치를 가져가는**
-   구간이라, 거기 놓인 버튼은 보이지만 눌리지 않는다
-
----
-
-## Godot-SQLite Addon
-
-**Addon**: `addons/godot-sqlite/` — GDNative SQLite3 wrapper for Godot 4.0+
-**Platforms**: Windows, Linux, Mac, Android, iOS, HTML5
-
-### Core API (class `SQLite`)
-```gdscript
-var db := SQLite.new()
-db.path = "res://data/game.db"       # read-only (packaged)
-db.path = "user://data/game.db"      # read-write (runtime)
-db.open_db()
-db.close_db()
-db.query("SELECT * FROM pilots")
-db.query_with_bindings("SELECT * FROM pilots WHERE role = ?", [role_id])
-db.create_table("pilots", { "id": {"data_type":"int","primary_key":true}, ... })
-db.insert_row("pilots", {"id":1, "role":"Tank", "hp":200, "atk":8})
-db.select_rows("pilots", "hp > 100", ["role","hp"])  # returns Array of Dicts
-db.update_rows("pilots", "id = 1", {"hp": 210})
-db.delete_rows("pilots", "id = 1")
-```
-
-### Data Types
-`int` → INTEGER, `real` → REAL, `text`/`char(n)` → TEXT, `blob` → BLOB (PackedByteArray)
-
-### Important Constraints
-- Column/table **names cannot be bound** — interpolate them directly into query strings
-- **No encryption** support
-- Read-only DBs: package inside `.pck` at `res://`; Read-write DBs: copy to `user://` at runtime
-- Foreign keys must be enabled **before** `open_db()`
-
-### Import / Export
-```gdscript
-db.export_to_json("user://backup.json")
-db.import_from_json("res://data/seed.json")
-db.backup_to("user://save.db")
-db.restore_from("user://save.db")
-```
-
-### CSV → DB Workflow Pattern
-CSV files live in `data/csv/`. The conversion logic lives in
-`addons/csv_to_db/csv_to_db.gd` (a plain `RefCounted`); `addons/csv_to_db/plugin.gd`
-is a thin **EditorPlugin** that only registers the menu item
-(**Project → Tools → Rebuild game.db**). It reads each CSV, validates required
-columns + duplicate PKs, then writes `res://data/game.db` with
-`create_table` + `insert_row`. Adding a new table = add a CSV under `data/csv/`
-and add an entry to both `SCHEMAS` and `TABLE_DEFS` **in `csv_to_db.gd`**.
-
-The logic sits outside the EditorPlugin because `EditorPlugin` cannot be
-instantiated headlessly, so the DB can also be rebuilt from the CLI:
-```gdscript
-# a throwaway `extends SceneTree` script, run with --headless --script
-func _initialize() -> void:
-    var err: String = load("res://addons/csv_to_db/csv_to_db.gd").new().call("rebuild")
-    if err != "": printerr(err)
-    quit()
-```
-
-### Tables (current)
-| Table | CSV | Read at | Purpose |
-|---|---|---|---|
-| `pilots` | `pilots.csv` | BattleSim startup | Per-role baseline stats (used as fallback when match_ctx is inactive) |
-| `cards` | `cards.csv` | GameManager startup | Card pool for the BattleSim card phase (**32행**). `engage:N` 의 N 은 **라운드 수**이고 설명문도 "전투 개시: 3라운드" 로 적는다(초 표기는 삭제). `scope` (`any`/`lane`/`jungle`) restricts who may be a card's 시전자; `pool` (1/0) keeps a card out of the random starter deck (결투 · 전령 제압 · 용 보상); `keyword` 는 `\|` 로 구분된 목록이다(`exhaust` / `preserve`); `card_type` (`mech`/`pilot`) 와 `card_cat` (`-`/`lane`/`draw`/`jungle`/`common`) 은 덱 슬롯을 정한다 — 위 "카드 종류 / 덱 슬롯" 항목 참조. `excl_group` 은 **한 파일럿이 둘 다 가질 수 없는 카드**를 묶는다(지금은 `laning` 하나 — 안전한 파밍 ↔ 공격적인 라인전). 키워드에 **`volatile`** 이 들어왔다 — 안 쓰고 버려지면 더미로 안 가고 사라진다. 새 행 둘: **핫핸드**(id 34, 1코 `exhaust`, `draw:1;growth_perm:5` — 신예 스킬이 덱에 생성)와 **이동**(id 35, 0코, 시전자 제약 없는 이동 — 배회 스킬이 휘발성으로 손패에 생성). 둘 다 `pool = 0`. 이름이 비슷한 **재빠른 사고**(id 15, `draw:2`)와 **과감한 정리**(id 29, `discard_right:3;draw:5`)는 다른 카드다. |
-| `game_config` | `game_config.csv` | BattleSim startup | Tunable knobs (HP, turns, thresholds). `MAX_HAND_SIZE` 는 **10**, `BLUE_COST_HEAD_START`(1) 은 블루 진영이 선점하는 전략 포인트다. **`INITIAL_HAND_SIZE` 는 삭제됐다** — 개시 손패가 없어졌고 양 팀은 빈 손으로 시작한다. `ECONOMY_START_TURN`(**10**)은 전략 점수 회복 / 자동 드로우가 처음 도는 턴이다. **`GROWTH_PER_TURN` 은 삭제됐다** — 성장이 시간이 아니라 성장치에서 파생되면서 턴당 성장률이라는 개념이 사라졌다(위 "성장" 항목). 대신 `PILOT_STRUCTURE_DMG`(**2**) 가 들어왔다 — 파일럿이 포탑/HQ 에 한 번에 넣는 **고정** 피해이며 `atk` 와 무관하다. `BATTLE_PILOT_DMG_MULT`(**0.35**) 는 **전장 교전이 파일럿에게 넣는 피해**에만 곱해진다 — 포탑/HQ 피해·공격 카드·교전 무대는 제외. `TURRET_HP` 는 **24**(예전 16 에서 ×1.5), `HQ_MAX_HP` 는 **40** — 고정 피해 2 에 맞춰 잡은 값이라 셋을 따로 만지면 공성 속도가 어긋난다(무방비 포탑 12턴). 포탑 한 기의 성장치 값어치(`SCORE_TURRET_FULL` 1.0k)는 그대로이므로 한 점당 값만 0.0625k → 0.042k 로 내려갔다. `TURRET_SPEED` 는 **삭제됐다** — 교전이 라운드 턴제가 되면서 가담 포탑도 라운드마다 한 번 쏘므로 속도 개념이 없다. 복귀는 이제 즉시 만피 + 1턴 대기라 회복/대기 관련 키가 없다 — `RECALL_HEAL_RATIO` 와 `RECALL_RETURN_TURNS` 둘 다 제거됐다. 오브젝트 노브 여덟 개(`OBJ_HERALD_FIRST_TURN` **35** / `OBJ_DRAGON_FIRST_TURN` **25** — 용이 먼저다 / `OBJ_RESPAWN_TURNS` **20** / `OBJ_RETRY_TURNS` **15** / `OBJ_ENGAGE_ROUNDS` 4 / `OBJ_HERALD_TURRET_DMG` 8 / `OBJ_DRAGON_CARD_COUNT` **3** / `OBJ_DRAGON_GROWTH_PCT` **5** — 예전 5장 × 10%p 에서 내려왔다. 용은 세 번 넘게 열리므로 옛 값은 후반 성장치 곡선을 통째로 지배했다)는 `objective/README.md` 참조. |
-| `lane_config` | `lane_config.csv` | BattleSim startup | LANE_NAMES, LANE_MAX, midpoints |
-| `pilot_skills` | `pilot_skills.csv` | GameManager startup | **파일럿 스킬 25행** — 역할당 5개. `key` 가 런타임 분기 키(`PilotSkillSystem.KEY_*` 와 1:1), `type` 이 `cooldown`/`charge`/`passive`, `p1` 이 쿨타임 턴 수 또는 활성화 충전 비용, `p2` 가 최대 충전. 배율(몇 %인가)은 CSV 가 아니라 `PilotSkillSystem` 의 상수다 — 스킬마다 의미가 다른 숫자 칸을 대여섯 개 만들지 않기 위해서다. 자세한 목록은 `features/battle_sim/skill/README.md`. |
-| `players` | `players.csv` | Season + MatchFlow startup | 40 pilots (8 teams × 5 roles), `PlayerData` fields. **스탯 컬럼은 여섯이다** — `field_hit` / `field_eva` / `engage_hit` / `engage_eva` / `atk_growth` / `hp_growth`(위 "선수 스탯" 항목). 예전 다섯(`laning`/`mechanics`/`gamesense`/`teamfight`/`mental`)은 삭제됐다. **`skill_id`** 가 `pilot_skills.id` 를 가리키고(-1 = 없음), **`is_mob`** 이 실루엣 초상화 · 스킬 없음 · 드래프트 제외를 한꺼번에 뜻한다 — 네임드 25명은 8팀에 고르게 흩어져 있고(팀 0 이 5명, 나머지 20명이 7팀에 2~3명씩) 모브 15명의 스탯은 CSV 값 자체가 이미 10% 낮다. Player drafts 5 from this pool in Season. **`name` 은 그 id 의 초상화에 묶여 있다** — pilot id `N` 이 쓰는 `resources/images/pilot/*/N+1_*.png` 가 어떤 젠레스 존 제로 에이전트인지가 곧 이름이다(40장 전부 공식 아이콘 아트와 대조). 행 순서·id 를 바꾸면 이름과 얼굴이 어긋난다 — 자세한 규칙과 대체 코스튬 4건은 `resources/README.md` 의 `PilotImages.gd` 절. |
-| `mechs` | `mechs.csv` | MatchFlow startup | **21 mech pool** (원딜 5 · 전사 4 · 탱커 3 · 지원 5 · 암살 4). 예전 30대에서 9대를 지웠고 **살아남은 id 는 그대로 두었다** — `resources/images/mech/{id}_full.png` 가 id 에 묶여 있어 번호를 다시 매기면 그림과 스탯이 통째로 어긋나므로, id 에 구멍이 있다(3·4·5 / 10·11 / 16·17 / 23 / 29 가 빠진 자리). **`role` 컬럼이 생겼다**(GameEnums.Role) — 메크마다 고유 카드 셋이 붙으면서 그 카드들이 역할군을 전제하게 됐기 때문이며, 배정이 어느 슬롯에 어느 기체를 앉힐지는 여전히 막지 않는다. Barrage(id 27)만 공격력이 25 → **12** 로 내려갔다(전탄 발사 패시브의 대가). Drives PilotData stats when picked. **`id` 는 전신 아트에 묶여 있다** — `resources/images/mech/{id}_full.png` 가 그 id 의 스탯 아키타입(탱커 0–5 / 격투 6–11 / 암살 12–17 / 서포터 18–23 / 스나이퍼 24–29)에 맞춰 배치돼 있으므로, 행 순서나 스탯 구간을 바꾸면 그림과 스탯이 어긋난다 — `resources/README.md` 의 대응표 참조. `name` 은 아트와 무관한 자체 명명이고 **21대가 전부 고유한 영단어 코드명**이다(Juggernaut · Overdrive · Barrage …) — 예전의 `계열-A1` / `-A2` 식 접미사 이름(Bulwark-A1 / Bulwark-A2 처럼 같은 계열이 번호만 다른 것)은 바꿨다. 이름은 런타임 키가 아니라 표시값이라(짝은 언제나 `id`) 세이브 호환에 영향이 없다. `presence`(타겟 어그로)는 **교전 무대 전용** — 전장은 읽지 않는다. **`speed` 컬럼은 삭제됐다** — 교전이 라운드 턴제가 되면서 행동 빈도 개념이 사라졌고, `csv_to_db.gd` 스키마와 `GameManager` 로더에서도 함께 빠졌다. |
-| `mech_passives` | `mech_passives.csv` | GameManager startup | **메크 패시브 15행** — 21대 중 15대만 갖는다. `mech_id` 가 짝이고 `key` 가 런타임 분기 키(`MechSkillSystem.KEY_*` 와 1:1), `p1`/`p2` 는 패시브마다 뜻이 다른 두 숫자(시작 충전 · 최대 충전 · 취약 수치 · 피해 비율). 배율(몇 %인가)은 CSV 가 아니라 `MechSkillSystem` 의 상수다 — 파일럿 스킬과 같은 이유. |
-| `mech_cards` | `mech_cards.csv` | GameManager startup | **메크 카드 64행** — 파일럿이 받는 "메크 카드 3장"을 통째로 대체한다. `count` 가 채용 시 덱에 들어가는 장수이고 **`count = 0` 인 여섯 장**(승전보 · 철거 · 처형 · 락온 · 고통과 쾌감 · 단계 B/C)은 패시브나 다른 카드가 만들어 줄 때만 세상에 나온다(그래도 배분 표에는 적는다 — 상세 패널의 메크 탭이 기체를 반만 보여 주지 않게). **`cost = -1` 은 사용 불가**를 뜻한다. `keyword` 에 **`charge`** 가, 컬럼에 **`charge_max`**(충전 상한, 충전 카드가 아니면 0)가 더해졌고, `target` 에 셋이 더해졌다 — `foe`(적 파일럿 **또는** 포탑 → 대상 지정은 **칸**을 고르게 하고 그 칸의 무엇을 때리는지는 공격 절이 정한다. 포탑에는 초상화가 없어 PILOT 오버레이를 쓸 수 없다) / `turret_outer` / `turret_any`. `effect` 의 engage 절에는 **`|drop_in`** 이 더해졌다 — 시전자가 지정한 대상의 칸으로 이동해 교전에 참가하고(선공권), 무대에서는 적 진형 한가운데에 낙하한다([강습] id 30 하나가 쓴다). `trigger` 는 **그 카드**가 존재를 얻는 조건이라 패시브가 아니라 카드 쪽에 산다 — `turret_kill_deck`(꿰뚫는 번개) / `death_hand`(공격 명령 — 누가 쓰러질 때마다 그 카드를 손패에 한 장 만든다). 덱 슬롯 컬럼(card_type / card_cat / excl_group)과 시전자 제약(scope)이 없는 것은 메크 카드의 임자를 기체가 정하기 때문. |
-| `training_tiles` | `training_tiles.csv` | GameManager startup | **일상 훈련판에 올리는 코스 타일 15행.** `shape` 는 `/` 로 줄을 나눈 색 문자열(**한 줄 = 하루, 한 글자 = 선수 한 명**), `exp` 는 `\|` 로 이은 `스탯:값`(`all` = 여섯 전부, **한 칸이 주는 값**), `effect` 는 `;` 로 이은 절(`mult:<scope>:<pct>` / `flat:<scope>:<stat>:<n>`). `id` 가 **텍스트 PK**(`T01` …)인 유일한 표다 — 등급 체인을 나중에 끼워 넣어도 번호가 밀리지 않게. **`description` 컬럼은 삭제됐다** — 그 문장은 `effect` 절을 사람이 손으로 옮겨 적은 것이라 절의 숫자를 고치면 설명만 조용히 거짓말이 됐다. 지금 정보 팝오버가 읽는 두 줄은 둘 다 데이터에서 만들어진다(`TrainingTile.exp_summary()` / `effect_summary()`, 후자는 `SCOPE_LABELS` 표 하나만 지난다). 색 표 · 스코프 표 · 등급별 배치 상한은 `features/season/training/README.md`. |
-| `teams` | `teams.csv` | Season `init_season()` | 8 teams (id/name/short_name) → `season_state["team_meta"]`. Falls back to synthesized `Team N` rows if the table is missing. 팀명은 젠레스 존 제로 **진영(faction)** 에서 땄다 — 다만 **로스터는 진영과 맞지 않는다**(초상화가 진영을 섞어 뽑혀 있어서), 팀명은 순수한 간판이다. |
-| `intl_teams` | `intl_teams.csv` | Season `init_season()` | 4 INTL teams (ids 100..103) → `season_state["intl_team_meta"]`. Synthesized fallback `Intl Alpha/Bravo/Charlie/Delta` rows when the table is missing. 국내 8팀이 쓰지 않은 진영 4개를 쓴다. |
-| `intl_players` | `intl_players.csv` | Season `init_season()` | 20 INTL pilots (ids 100..119, 4 teams × 5 roles). 스탯 컬럼은 `players` 와 같은 여섯이다. → `season_state["intl_pilots"]`. Used by `MatchFlow._team_roster` and `InternationalTournament.simulate_ai_match` when `team_id >= 100`. **초상화가 없으므로**(`PilotImages.has_image` 는 id ≥ 100 에 false) 이름은 `players.csv` 40명이 쓰고 남은 에이전트 중에서 자유롭게 붙였다. |
-
-At runtime, `GameManager` and BattleSim's `DataLoader` open the DB once, load
-tables into Dictionaries / Arrays keyed by ID, then close the DB. All in-game
-access goes through those structures — not live DB queries.
+4. For multi-module features also read the relevant submodule's README
+5. Make focused changes only in that feature's folder; update its README afterwards
+6. After adding tables/columns to CSV: run **Project → Tools → Rebuild game.db** (`data/README.md`)
+7. After an iOS CI build: download the `.ipa` into `build/` (short SHA in the name),
+   delete stale artifacts — `build/README.md`
+8. After placing / moving UI: check against **`docs/mobile_safe_area.md`** —
+   the bottom gesture zone eats touches

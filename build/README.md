@@ -80,3 +80,40 @@ print('game.db:', b'data/game.db' in pck)   # 없으면 타이틀 화면부터 D
 있는 것**을 25초 만에 검산하는 용도다. 폰에 올릴 물건은 언제나 CI 아티팩트다.
 
 절차 · 제약 · Sideloadly 설치법은 **`docs/ios_testbuild.md`**.
+
+
+## Detail moved from root CLAUDE.md
+
+## iOS 테스트 빌드 (맥 없이)
+
+`.github/workflows/ios-testbuild.yml` 가 GitHub 의 **macOS 러너**에서
+`Godot --export-debug "iOS"` → `xcodebuild` → `Payload/*.app` → zip 을 돌려
+**서명되지 않은 `.ipa`** 를 아티팩트로 올린다. 그걸 내려받아 윈도우 PC 에서
+**Sideloadly** 로 아이폰에 밀어 넣는다 — 서명은 Sideloadly 가 무료 Apple ID 로
+로컬에서 하므로 **CI 에 인증서도 시크릿도 없다**(`CODE_SIGNING_ALLOWED=NO`).
+저장소가 public 이라 macOS 러너는 무료다. 절차 · 제약 · 실패 표는 **`docs/ios_testbuild.md`**.
+
+### 빌드를 돌렸으면 `.ipa` 를 `build/` 로 내려받는다
+
+**아티팩트 링크만 알려 주고 끝내지 않는다.** `build/` 가 Sideloadly 로 폰에
+올릴 때 손이 닿는 유일한 폴더이므로, CI 그린을 확인한 직후 네 가지를 한다 —
+(1) 그 폴더의 **낡은 `.ipa` / `.pck` 삭제**, (2) 새 `.ipa` 를
+**`EsportsManager-debug-unsigned-<커밋 short SHA>.ipa`** 로 내려받기,
+(3) 내용 검산(pck 안 `data/game.db`, 실행 바이너리 안
+`register_haptics_types` + `OBJC_CLASS_$_UIImpactFeedbackGenerator`),
+(4) 그 결과까지 보고.
+
+**파일명에 SHA 를 붙이는 이유**는 낡은 빌드가 섞이면 어느 것이 방금 만든
+것인지 알 수 없기 때문이다 — 실제로 햅틱이 하나도 안 들어간 직전 커밋의
+`.ipa` 를 폰에 올릴 뻔했다. 날짜는 다운로드 시각이라 답이 되지 못한다.
+명령과 검산 스니펫은 **`build/README.md`**.
+
+**로컬(윈도우) 익스포트는 `.ipa` 를 만들지 못한다** — Xcode 프로젝트와 pck 까지만
+나오고(`build/ios/`), 그것은 익스포트 옵션 · 플러그인 배선처럼 macOS 없이 확인할
+수 있는 것을 25초에 검산하는 용도다. 폰에 올릴 물건은 언제나 CI 아티팩트다.
+
+---
+
+Godot 이 `xcodebuild` 를 직접 부르지 않는 것은 `export_presets.cfg` 의
+`application/export_project_only=true` 때문이다 — 서명을 아예 끄고 싶으므로
+Xcode 프로젝트만 받아 빌드 플래그를 우리가 쥐는다.

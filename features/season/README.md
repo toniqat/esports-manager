@@ -264,3 +264,69 @@ func _build() -> void:
 화면이 길수록 썸네일이 한 줄 더 보인다(1920 에서 950, 2340 에서 1280).
 
 자세한 내용: **`docs/mobile_safe_area.md`**
+
+
+## Detail moved from root CLAUDE.md
+
+### Season → MatchFlow → BattleSim handoff
+시간 경과 화면의 토 / 일에서 "경기 시작"을 누르면
+`SeasonHub.on_week_day_match_start()` → `_launch_player_match_on_day(matchday)`
+가 `season_state["pending_match"]` (`{source, schedule_idx, enemy_team_id,
+winner_side}`)를 채우고 MatchFlow.tscn 으로 `change_scene_to_file` 한다.
+MatchFlow runs PREP (review rosters) → BAN_PICK(밴픽 + 메크 배정) →
+BattleSim (정글 시작 방향은 그 안에서 묻는다). **BAN_PICK 은 양 팀 로스터와 팀명까지 받는다** —
+화면 위아래에 전장 스트립과 같은 eye 초상화 5인씩을 세우고 그 바깥에 메크 칸을
+붙이며, 14수가 끝나면 **그 로스터에 배정을 직접 새겨** 돌려주기 때문이다
+(`MatchFlow._enter_phase` 가 `_team_roster()` / `_team_name()` 을 함께 넘기고,
+`_on_ban_pick_finished` 가 결과의 `player_roster` / `enemy_roster` 를 그대로
+`match_ctx` 에 얹는다).
+진영(`player_side`)은 **현재 항상 BLUE 로 고정**이며
+(예전의 매 경기 랜덤 추첨은 제거), 밴픽 순서와 BattleSim 의 전략 포인트
+선점·선턴을 함께 결정한다 — 위 "진영 (블루 / 레드)" 항목 참조.
+After BattleSim, the win panel's "다음 →" returns to
+`Season.tscn`. `SeasonHub._consume_pending_match_result` applies the
+result via `LeagueManager.record_result()` /
+`TournamentManager.record_result(slot, winner)` /
+`InternationalTournament.record_result(slot, winner)` based on
+`pending_match.source`. Then `_resolve_remaining_ai_for_week()` sweeps up
+remaining AI matches scheduled for the same week, and the hub routes to
+the appropriate STANDINGS view.
+
+### Season — Playoff bracket (Phase 7)
+Each league phase reserves **2 trailing playoff weeks** (SF week + F
+week). `CalendarSystem.PHASE_WEEKS` = LEAGUE_WEEKS + 2 for league phases.
+`TournamentManager` bootstraps the bracket when entering the playoff
+bootstrap week (week LEAGUE_WEEKS + 1):
+`SF1: #1 vs #4` and `SF2: #2 vs #3` both stamped to that week,
+`F: SF1.W vs SF2.W` stamped to week LEAGUE_WEEKS + 2. If
+`LeagueManager.player_made_playoffs()` is false on bootstrap,
+`playoff_failed_qualification` fires and `SeasonHub` routes to
+`Screen.GAME_OVER`. Otherwise `playoff_started` fires; AI bracket matches
+resolve via `TournamentManager.resolve_current_week()` during the post-
+match sweep, player matches go through the MatchFlow → BattleSim handoff
+with `pending_match.source = "playoff"`. The F result writes
+`phase_results[phase] = {made_playoffs, champion}` and emits
+`playoff_completed`.
+
+### Season — INTL bracket (Phase 8)
+Each *_INTL phase (`PRESEASON_INTL`, `MIDSEASON_INTL`, `REGULAR_INTL`) is
+a **3-week 8-team single-elimination tournament**. Week 1 = QF (4
+matches), Week 2 = SF (2 matches), Week 3 = F. `InternationalTournament`
+bootstraps on entry to week 1 of an INTL phase using top-4 from
+`LeagueManager.standings_ranked()` (the just-finished league phase's
+standings) + 4 fixed external teams from `data/csv/intl_teams.csv` +
+`intl_players.csv`. High-low pairing (L1×I4, L2×I3, L3×I2, L4×I1). Both
+managers share `season_state["current_tournament"]` but discriminate by
+`type` ("INTL" vs "PLAYOFF") — neither clears the other's bracket. AI
+matches resolve via `InternationalTournament.resolve_current_week()`;
+player matches use the MatchFlow → BattleSim handoff with
+`pending_match.source = "intl"` → `InternationalTournament.record_result`.
+`MatchFlow._team_roster()` reads from `season_state.intl_pilots` when
+`team_id >= 100`. **REGULAR_INTL is the campaign-end gate**: win F →
+`Screen.ENDING`; lose F or get eliminated mid-bracket → `Screen.GAME_OVER`
+(via `intl_failed_campaign` for fail-fast). PRESEASON_INTL and
+MIDSEASON_INTL just toast and continue. Phase results: INTL phases store
+`{intl_played, intl_champion}` under `phase_results[phase]`; league
+phases store `{made_playoffs, champion}`. HubView's third action button
+toggles 3-way: INTL active → "국제대회", PLAYOFF active → "플레이오프",
+else → "리그 순위".

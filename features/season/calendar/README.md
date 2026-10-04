@@ -68,3 +68,37 @@ Total ≈ 33 weeks. 프리시즌은 라운드가 홀수(7)라 **마지막 주는
 - `date_of_week_offset(n)` — returns `{year, month, day, weekday}` of the
   Monday `n` weeks ahead. Schedulers stamp matches with this so save
   metadata stays coherent.
+
+
+## Detail moved from root CLAUDE.md
+
+### Weekly progression contract
+`CalendarSystem.advance_week()` rolls 7 days forward, bumps `phase_week`,
+and emits `week_advanced` (and `phase_changed` on transitions). **부르는
+자리는 `SeasonHub._end_week()` 하나** — 시간 경과 화면에서 일요일을 닫을 때다.
+All three managers (LeagueManager, TournamentManager,
+InternationalTournament) listen to `week_advanced` and either bootstrap
+their bracket (`is_playoff_bootstrap_week()` for playoff,
+`phase_week == 1 && is_intl_phase` for INTL) or no-op. Match resolution is
+explicit: `SeasonHub` calls `_resolve_ai_for_matchday(md)` **경기일마다**
+(주 통째가 아니다 — 토요일 경기를 마치고 보는 순위표에 아직 치르지도 않은
+일요일 결과가 들어가면 안 된다), never on signal.
+
+### 요일과 경기일 (한 주의 안쪽)
+한 주는 월~일 이레이고 지금 요일은 `season_state["week_day"]`(0..6, **-1 은
+주가 아직 안 열렸다**)가 든다. 월~금 닷새가 훈련판의 다섯 행이고 **토(경기일 0) ·
+일(경기일 1)** 이틀이 경기일이다(`CalendarSystem.MATCH_DAYS`).
+
+**리그는 한 주에 두 라운드를 돌린다**(`ROUNDS_PER_WEEK` = 2) — 스케줄 엔트리에
+`matchday` 컬럼이 생겨 그 둘을 가른다. 라운드 수는 안 바뀌었고 주에 두 개씩
+들어가므로 **리그 주차가 절반**이 됐다(프리시즌 7→4주, 미드 / 정규 14→7주;
+캠페인 전체 ≈ 50주 → **33주**). 프리시즌은 라운드가 홀수라 마지막 주는 토요일
+한 라운드로 끝나고 일요일이 빈다. **토너먼트(플레이오프 · 국제대회)는 여전히
+주 1경기**이고 언제나 토요일(`matchday = 0`)에 선다 — 8강 · 4강 · 결승은 라운드
+사이에 한 주씩 쉬어야 대진표가 읽힌다.
+
+주 진행 상태 셋이 `season_state` 에 살고 세이브에 실린다 — `week_day`,
+`week_day_log`(요일별 훈련 결과 기록, **정수 키**라 로드에서 되돌린다),
+`training_exp_carry`(나머지 EXP 통장). 셋 다
+`TrainingBoard.reset_week_progress()` 가 비우고, 그것은 훈련 확정과 주 종료
+두 곳에서 돈다.

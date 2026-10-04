@@ -131,3 +131,13 @@ chrome 은 남는다** — 개시 직전에 양 팀 로스터를 다시 확인�
 전장을 한 픽셀도 보여 주지 않은 채 "← LEFT / RIGHT →" 두 버튼만 세웠는데,
 좌우 정글이 무엇을 끼고 있고 우리 정글러가 어디에 서 있는지가 화면에 없으면
 그 선택은 동전 던지기와 다르지 않았다. 그 폴더는 삭제됐다.
+
+
+## Detail moved from root CLAUDE.md
+
+### Active Systems (moved from root CLAUDE.md)
+
+| System | Description |
+|---|---|
+| Gambit Phase (개시 전) | 레인은 **역할이 고정한다**(TANK→LEFT, FIGHTER→CENTER, ASSASSIN→GUERRILLA, SUPPORT/SNIPER→RIGHT) — 예전의 인게임 배정 오버레이는 삭제됐고 그 자리는 밴픽 화면이 가져갔다. 이 단계에 남은 선택은 **정글 시작 방향** 하나다(아래 항목). `GambitPhaseManager.launch_battle()` 이 셋으로 갈라져 있다 — `prepare_field()`(파일럿 · 포탑 · 정글 소유 · 캠프를 세우고 `BattleSim.field_ready` 를 켠다) → 정글 시작 오버레이(경기로 들어온 경우) → `begin_battle()`(`game_phase = BATTLE` 이 되는 유일한 자리). |
+| 정글 시작 (인게임) | **좌우 중 어느 정글에서 시작하는지를 전장 위에서 고른다**(`gambit/JungleStartOverlay.gd`, `match_ctx.active` 일 때만 — 단독 실행에는 물을 상대가 없으므로 기본값 LEFT 로 곧장 개시한다. 헤드리스 검증이 그 경로를 탄다). 전장은 이미 다 서 있고 HUD 에서는 **지금 쓸 수 없는 것들만** 숨는다 — 덱 / 버린 더미 뭉치, 전략 포인트 도넛 둘, 오브젝트 등장 시계 둘(`HudBuilder.set_pregame_chrome_visible`). 파일럿 스트립과 상단 chrome 은 남는다(개시 직전에 양 팀 로스터를 다시 보는 것이 이 화면이 하는 일의 일부다). **전장은 이 화면의 질문만 남기고 접힌다** — 정글이 아닌 칸이 전부 딤드되고(`BattleRenderer._draw_jungle_pick_dim`, 밝게 남는 칸의 정의를 드롭 대상 `cells_for` 에서 그대로 가져오므로 놓을 수 있는 칸과 밝은 칸이 같은 목록에서 나온다) **전장 초상화도 아군 정글러 하나만 남는다**(`_hidden_during_jungle_pick` — 나머지 아홉은 아직 각자 HQ 에 몰려 서 있어 두 덩어리로 뭉친 얼굴이 정글 소유 · 캠프 · 딤을 가릴 뿐이다. 자리 배정 `_solve_slots` 도 같은 목록을 읽으므로 숨은 사람은 슬롯을 잡지 않는다). 비워진 **손패 자리에 아군 정글러의 원형 초상화**(전장 마커와 같은 `circle` 컷, 지름 150)가 놓이고, 그것을 **좌측 정글 7칸 / 우측 정글 7칸** 중 한 무리로 끌어다 놓는다(팀0 정글 3 + 팀1 정글 3 + 그 사이 중립 1 = 한 덩어리. 어느 칸 중심에서든 `hex_size` 안이면 그 무리라, 칸 하나를 정확히 겨누는 화면이 아니다). **드롭은 선택일 뿐 개시가 아니다** — 초상화가 그 정글 한가운데에 앉고 초상화 **아래**에 "전투 시작"이 뜬다(그 전에는 같은 자리에 안내문. 위에 두면 안 된다 — 우리 팀 HQ 는 격자의 맨 아래 칸이고 그 칸의 초상화 무리는 타일 밑에 앉아 전장 픽셀 아래끝보다 더 내려온다). 확정이 `PilotData.jungle_start_pref` 와 `match_ctx.jungle_start_dir` 에 방향을 새기고 BATTLE 을 연다. 강조는 `BattleRenderer._draw_jungle_start_zones()` 가 캠프 아웃라인 **뒤에** 그린다 — 그 밑의 소유 색과 캠프 테두리가 이 선택의 근거라 가려지면 안 된다. **`BattleRenderer._draw` 의 게이트가 페이즈에서 `BattleSim.field_ready` 로 바뀌었다** — 예전에는 GAMBIT 이면 통째로 안 그렸는데, 이 선택이 그 GAMBIT 안으로 들어오면서 개시 전에도 전장이 보여야 하게 됐다. 예전에는 이것이 `features/match_flow/jungle_start/` 의 **별도 화면**으로, 전장을 한 픽셀도 안 보여 준 채 "← LEFT / RIGHT →" 두 버튼만 세웠다 — 그 폴더는 삭제됐다. |

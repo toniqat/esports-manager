@@ -432,8 +432,17 @@ API 는 다섯이다 — `make_material()` / `apply(ci)` / `set_reveal(ci, v)` /
 
 | 함수 | 파일 | 소비자 |
 |---|---|---|
-| `art_for(card_name)` | `images/card/<이름>.png` → 없으면 배경 | `Card._apply_art` (카드 앞면 위쪽 1/3) |
-| `ground_for(card_name)` | `images/ground/N.png` (`GROUND_COUNT` 5장) | 〃 (전용 아트가 없는 카드) |
+| `art_for(card_name)` | `images/card/<이름>.png` → 아이템 아이콘 → 배경 | `Card._apply_art` (카드 앞면 아트 액자) |
+| `item_for(card_name)` | `images/ground/deadlock_items/<아이템>.png` (`ITEM_ART` 표) | 〃 (전용 아트가 없는 카드) |
+| `ground_for(card_name)` | `images/ground/N.png` (`GROUND_COUNT` 5장) | 〃 (`ITEM_ART` 표에도 없는 카드) |
+
+**지금 모든 카드(cards.csv 32 + mech_cards.csv 64 = 96장)는 아이템 아이콘을 단다.**
+`ITEM_ART` 는 카드 이름 → Deadlock 아이템 파일명 표이고, 효과가 비슷한 아이템을
+골랐다(예: `필중` → Sharpshooter, `보호` → Grit, `몸집 불리기` → Colossus, `캐시` →
+Golden Goose Egg; 효과 출처 https://deadlock.wiki/Items). **한 아이템은 한 카드에만**
+쓴다. 아이콘은 200×200 정사각(베이지 바탕 불투명)이라 150×178 액자에
+`STRETCH_KEEP_ASPECT_COVERED` 로 좌우가 조금 잘린다 — 문양은 가운데에 있어 안 다친다.
+카드를 더하거나 이름을 바꾸면 표에도 넣는다; 빠지면 오류 없이 아래 배경 5종으로 떨어진다.
 
 **배경은 카드 이름으로 고른다**(`card_name.hash() % GROUND_COUNT`). 무작위로
 고르면 같은 카드가 뽑을 때마다 다른 그림을 달고 나와 "이 그림이 이 카드"라는

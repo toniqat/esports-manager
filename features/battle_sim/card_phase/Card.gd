@@ -567,7 +567,7 @@ func _apply_data() -> void:
 
 
 ## 카드 아트 — 이름판 위 전부. 전용 아트가 없는 카드는 `CardImages` 가 이름으로 고른
-## 배경을 받는다(그림이 아예 없으면 액자만 남고 비용색 앞면이 비친다).
+## 아이템 아이콘(없으면 배경)을 받는다(그림이 아예 없으면 액자만 남고 비용색 앞면이 비친다).
 func _apply_art() -> void:
 	if art_frame == null or art_rect == null:
 		return

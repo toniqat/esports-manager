@@ -28,16 +28,48 @@ const COST_FONT := 22
 ## 머리줄 이름 왼쪽의 작은 비용 리본(`CostRibbon`).
 const COST_RIBBON_SIZE := Vector2(26.0, 36.0)
 const COST_RIBBON_GAP := 8.0
-const DESC_FONT := 18
+## 설명문 글자 크기 — 머리줄 이름(`NAME_FONT`)과 같다. 예전 18 은 판 제목보다
+## 한참 작아 설명문이 각주처럼 읽혔다.
+const DESC_FONT := 22
 const KW_FONT := 18
 const NOTE_FONT := 15
 ## 설명이 아무리 짧아도 판이 이 높이 아래로 줄지 않는다 — 한 줄짜리 카드에서
 ## 판이 띠처럼 납작해지면 카드마다 판 크기가 들쭉날쭉해 보인다.
 const MIN_H := 110.0
+## 속성 줄(대상 · 사거리 · 시전 범위) 높이. 지속시간은 설명문이 "3턴" 으로 적는다.
+const ATTR_H := 30.0
+const ATTR_SEP := "   "
+## `CardData.target` → 속성 줄의 대상 글자.
+const TARGET_LABELS := {
+	"enemy": "적",
+	"ally": "아군",
+	"pilot": "아군 또는 적",
+	"foe": "적 또는 포탑",
+	"location": "타일",
+	"turret_outer": "최외곽 포탑",
+	"turret_any": "적 포탑",
+}
+
+## 설명문 계산식 `{식|전투 밖 문구}` — 전투 중에는 식의 값, 밖에서는 "(문구)".
+## 식이 읽는 이름: `charge` = 카드 위 토큰 수, `chain` = 시전 파일럿의 [영혼 포식]
+## 토큰 수(`MechSkillSystem.chain_rounds`). 예: `성장 +{charge*8|사용 횟수×8}%`.
+## 설명문의 `\n` 두 글자는 줄바꿈이다(CSV 한 칸에 줄을 나누지 않으려고).
+## 인게임(어두운) 판의 드롭 섀도 — 흐릿한 가장자리(`shadow_size`)를 아래로 민다.
+const DARK_SHADOW_COLOR := Color(0.0, 0.0, 0.0, 0.6)
+const DARK_SHADOW_SIZE: int = 16
+const DARK_SHADOW_DROP: float = 10.0
+static var _formula_re: RegEx = null
+## 전투 중에만 유효한 값 공급자 — `CardPhaseManager` 가 트리에 들어오면 걸고
+## 나가면 풀린다(객체가 해제되면 `is_valid()` 도 false). `func(cd) -> Dictionary`.
+static var live_vars: Callable = Callable()
+static var _special_re: RegEx = null
+## 특수 키워드 중 카드 이름 → 그 카드(`CardData`, 없으면 null). 이름으로 한 번 찾는다.
+static var _ref_cache: Dictionary = {}
 
 
-## 판 배경 — 테두리 없는 둥근 판. 아웃게임은 흰 판 + 그림자, 인게임은 어두운 판.
-static func _panel_style(light: bool) -> StyleBoxFlat:
+## 판 배경 — 테두리 없는 둥근 판. 아웃게임은 흰 판 + 그림자, 인게임은 어두운 판 +
+## 아래로 흐릿한 드롭 섀도. 파일럿 상세 패널의 스탯 설명판도 이 판을 쓴다.
+static func panel_style(light: bool) -> StyleBoxFlat:
 	var style: StyleBoxFlat
 	if light:
 		style = OutgameTheme.card_style(14)
@@ -46,6 +78,9 @@ static func _panel_style(light: bool) -> StyleBoxFlat:
 		style = StyleBoxFlat.new()
 		style.bg_color = Color(0.08, 0.08, 0.12, 1.0)
 		OutgameTheme.set_corner_radius(style, 12)
+		style.shadow_color = DARK_SHADOW_COLOR
+		style.shadow_size = DARK_SHADOW_SIZE
+		style.shadow_offset = Vector2(0.0, DARK_SHADOW_DROP)
 	return style
 
 
@@ -55,12 +90,15 @@ static func _panel_style(light: bool) -> StyleBoxFlat:
 ## `with_notes` 를 끄면 맨 아래 키워드 풀이를 빼고 짓는다 — 손패는 풀이를 판 옆
 ## 별도 판들(`build_keyword_panels`)에 세운다. `min_h` 는 판 높이의 하한(손패는 0 을
 ## 넘겨 판이 글 길이만큼만 선다).
+##
+## `live` 를 끄면 전투 중에도 계산식을 값이 아닌 식 문구로 적는다(`resolve_text`) —
+## 파일럿 상세 패널의 보유 카드가 쓴다(지금 손에 든 카드가 아니라 값이 없다).
 static func build(data: CardData, width: float, light: bool = false,
 		cost_text: String = "", cost_color: Variant = null,
-		with_notes: bool = true, min_h: float = MIN_H) -> Panel:
+		with_notes: bool = true, min_h: float = MIN_H, live: bool = true) -> Panel:
 	var box := Panel.new()
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_theme_stylebox_override("panel", _panel_style(light))
+	box.add_theme_stylebox_override("panel", panel_style(light))
 	if data == null:
 		box.size = Vector2(width, min_h)
 		return box
@@ -105,21 +143,44 @@ static func build(data: CardData, width: float, light: bool = false,
 		kw_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		kw_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		desc_y += tag_h + 4.0
+	# 속성 줄 — 대상 · 사거리 · 시전 범위를 아이콘과 값으로.
+	var attrs: Array = card_attributes(data)
+	if not attrs.is_empty():
+		# 좁은 판(손패 240px)에서는 줄이 접힌다 — 높이는 대역 문자열로 잰다.
+		var attr_h: float = maxf(ATTR_H, _text_height(_attr_measure(attrs), inner_w, KW_FONT))
+		var attr := _attr_label(attrs, light, target_info(data)["color"])
+		attr.position = Vector2(PAD, desc_y)
+		attr.size = Vector2(inner_w, attr_h)
+		box.add_child(attr)
+		desc_y += attr_h + 4.0
 	# 설명문은 "전략 점수" · "비용" 앞에 아이콘이 서므로 RichTextLabel 이다.
-	var desc_h: float = _text_height(StrategyIcon.measure_text(data.description),
+	var desc_text: String = resolve_text(data, live)
+	var desc_h: float = _text_height(StrategyIcon.measure_text(desc_text),
 			inner_w, DESC_FONT)
-	var desc := StrategyIcon.make_rich_label(data.description, DESC_FONT, desc_col)
+	var tgt: Dictionary = target_info(data)
+	var desc := StrategyIcon.make_rich_label(desc_text, DESC_FONT, desc_col,
+			_kw_color(light), _knock_color(light), tgt["color"], tgt["key"],
+			_special_color(light))
 	desc.position = Vector2(PAD, desc_y)
 	desc.size = Vector2(inner_w, desc_h)
 	box.add_child(desc)
 
 	# 키워드 풀이 — 키워드마다 한 줄. 설명문보다 작고 흐리게.
 	var bottom: float = desc_y + desc_h
+	# 카드 이름 특수 키워드는 풀이 줄 대신 그 카드의 설명판을 판 안에 끼운다.
 	var notes: Array = _keyword_notes(data) if with_notes else []
-	if not notes.is_empty():
-		var lines: Array = []
-		for n in notes:
-			lines.append("%s: %s" % [n[0], n[1]])
+	var lines: Array = []
+	var specials: Array = []
+	var refs: Array = []
+	for n_raw in notes:
+		var n: Dictionary = n_raw
+		if n["card"] != null:
+			refs.append(n["card"])
+		elif n["special"]:
+			specials.append("[%s]: %s" % [n["title"], n["note"]])
+		else:
+			lines.append("%s: %s" % [n["title"], n["note"]])
+	if not lines.is_empty():
 		var note_text: String = "\n".join(lines)
 		var note_h: float = _text_height(note_text, inner_w, NOTE_FONT)
 		var note_lbl := _note_label(note_text, light)
@@ -127,6 +188,23 @@ static func build(data: CardData, width: float, light: bool = false,
 		note_lbl.size = Vector2(inner_w, note_h)
 		box.add_child(note_lbl)
 		bottom += GAP + note_h
+	# 효과 용어 풀이 — 용어 앞에 그 아이콘이 서도록 설명문과 같은 RichTextLabel.
+	for sp in specials:
+		var sp_h: float = _text_height(StrategyIcon.measure_text(sp), inner_w, NOTE_FONT)
+		var sp_lbl := StrategyIcon.make_rich_label(sp, NOTE_FONT,
+				OutgameTheme.TEXT_SUB if light else Color(0.70, 0.70, 0.74),
+				_kw_color(light), _knock_color(light), KeywordIcon.TARGET_ANY_COLOR,
+				KeywordIcon.TARGET, _special_color(light))
+		sp_lbl.position = Vector2(PAD, bottom + GAP)
+		sp_lbl.size = Vector2(inner_w, sp_h)
+		box.add_child(sp_lbl)
+		bottom += GAP + sp_h
+	for ref in refs:
+		var sub: Panel = build(ref as CardData, inner_w, light, "", null, false, 0.0, live)
+		_tint_nested(sub, light)
+		sub.position = Vector2(PAD, bottom + GAP)
+		box.add_child(sub)
+		bottom += GAP + sub.size.y
 
 	box.size = Vector2(width, maxf(min_h, bottom + PAD))
 	return box
@@ -137,26 +215,39 @@ static func build(data: CardData, width: float, light: bool = false,
 ## 키워드가 둘이면 판도 둘이다 — 예전에는 한 판에 몰아 담아 어디까지가 어느
 ## 키워드의 풀이인지 경계가 흐렸다. 풀이가 하나도 없으면 빈 배열.
 static func build_keyword_panels(data: CardData, width: float,
-		light: bool = false) -> Array[Panel]:
+		light: bool = false, live: bool = true) -> Array[Panel]:
 	var out: Array[Panel] = []
 	if data == null:
 		return out
 	for n_raw in _keyword_notes(data):
-		var n: Array = n_raw
-		out.append(_build_note_panel(String(n[0]), String(n[1]), width, light))
+		var n: Dictionary = n_raw
+		if n["card"] != null:
+			out.append(build(n["card"] as CardData, width, light, "", null, false, 0.0, live))
+		else:
+			out.append(_build_note_panel(String(n["title"]), String(n["note"]), width,
+					light, bool(n["special"])))
 	return out
 
 
 static func _build_note_panel(title_text: String, note: String, width: float,
-		light: bool) -> Panel:
+		light: bool, special: bool = false) -> Panel:
 	var box := Panel.new()
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_theme_stylebox_override("panel", _panel_style(light))
+	box.add_theme_stylebox_override("panel", panel_style(light))
 	var inner_w: float = width - PAD * 2.0
 	var y: float = PAD
-	var title := UiHelpers.mk_label(box, title_text, KW_FONT, _kw_color(light),
-			Vector2(PAD, y), Vector2(inner_w, float(KW_FONT) * 1.4))
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if special:
+		# 특수 키워드 제목은 설명문과 같은 길로 — 아이콘 + 특수 키워드 색.
+		var rt := StrategyIcon.make_rich_label("[%s]" % title_text, KW_FONT,
+				_special_color(light), _kw_color(light), _knock_color(light),
+				KeywordIcon.TARGET_ANY_COLOR, KeywordIcon.TARGET, _special_color(light))
+		rt.position = Vector2(PAD, y)
+		rt.size = Vector2(inner_w, float(KW_FONT) * 1.4)
+		box.add_child(rt)
+	else:
+		var title := UiHelpers.mk_label(box, title_text, KW_FONT, _kw_color(light),
+				Vector2(PAD, y), Vector2(inner_w, float(KW_FONT) * 1.4))
+		title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	y += float(KW_FONT) * 1.4
 	var note_h: float = _text_height(note, inner_w, NOTE_FONT)
 	var note_lbl := _note_label(note, light)
@@ -168,18 +259,242 @@ static func _build_note_panel(title_text: String, note: String, width: float,
 	return box
 
 
-## `[[이름, 풀이], ...]` — 풀이가 있는 키워드만.
+## 풀이 판 목록 `[{title, note, special, card}, ...]` — 풀이가 있는 키워드가 먼저,
+## 그다음 설명문에 나온 순서대로 특수 키워드. 특수 키워드는 `CardData.SPECIAL_NOTES`
+## 의 용어면 풀이 한 줄, 아니면 카드 이름으로 보고 `card` 에 그 카드를 싣는다(찾지
+## 못한 이름은 빠진다). 카드 이름이 자기 자신이면 풀지 않는다(용어는 푼다 — [추적]).
 static func _keyword_notes(data: CardData) -> Array:
 	var out: Array = []
 	for kw in data.keyword_list():
 		var note: String = data.keyword_note(String(kw))
 		if not note.is_empty():
-			out.append([data.keyword_label(String(kw)), note])
+			out.append({"title": data.keyword_label(String(kw)), "note": note,
+					"special": false, "card": null})
+	for term in special_terms(data):
+		if CardData.SPECIAL_NOTES.has(term):
+			out.append({"title": term, "note": String(CardData.SPECIAL_NOTES[term]),
+					"special": true, "card": null})
+		else:
+			var ref: CardData = card_by_name(term) if term != data.card_name else null
+			if ref != null:
+				out.append({"title": term, "note": "", "special": true, "card": ref})
 	return out
+
+
+## 설명문의 특수 키워드(`[이름]` 의 이름) — 나온 순서대로, 겹침 없이.
+static func special_terms(data: CardData) -> Array:
+	var out: Array = []
+	if data == null:
+		return out
+	if _special_re == null:
+		_special_re = RegEx.create_from_string("\\[([^\\]]+)\\]")
+	for m in _special_re.search_all(resolve_text(data)):
+		var term: String = m.get_string(1).strip_edges()
+		if not term in out:
+			out.append(term)
+	return out
+
+
+## 이름으로 카드 한 장 — 메크 카드 표를 먼저, 다음 파일럿 카드 표. 결과(없음 포함)는
+## 캐시한다. 오토로드가 없으면(에디터 도구 등) null.
+static func card_by_name(card_name: String) -> CardData:
+	if _ref_cache.has(card_name):
+		return _ref_cache[card_name] as CardData
+	var tree := Engine.get_main_loop() as SceneTree
+	var gm: Node = tree.root.get_node_or_null("GameManager") if tree != null else null
+	if gm == null:
+		return null
+	var found: Dictionary = {}
+	for d in (gm.mech_card_defs as Dictionary).values():
+		if String((d as Dictionary).get("name", "")) == card_name:
+			found = d
+			break
+	if found.is_empty():
+		for d in gm.card_pool_bs:
+			if String((d as Dictionary).get("name", "")) == card_name:
+				found = d
+				break
+	var cd: CardData = CardData.from_def(found) if not found.is_empty() else null
+	_ref_cache[card_name] = cd
+	return cd
+
+
+## 판 안에 끼운 카드 설명판 — 바깥 판과 바탕이 같으면 경계가 안 보이므로 한 톤 띄운다.
+static func _tint_nested(sub: Panel, light: bool) -> void:
+	var st := (sub.get_theme_stylebox("panel") as StyleBoxFlat).duplicate() as StyleBoxFlat
+	st.bg_color = st.bg_color.darkened(0.05) if light else st.bg_color.lightened(0.07)
+	st.shadow_size = 0
+	sub.add_theme_stylebox_override("panel", st)
+
+
+static func _special_color(light: bool) -> Color:
+	return KeywordIcon.SPECIAL_COLOR_LIGHT if light else KeywordIcon.SPECIAL_COLOR_DARK
 
 
 static func _kw_color(light: bool) -> Color:
 	return OutgameTheme.ACCENT_TEXT if light else Color(0.55, 0.85, 1.0)
+
+
+## 판 바탕색 — 필중 아이콘이 원 위의 활을 이 색으로 파낸다.
+static func _knock_color(light: bool) -> Color:
+	return OutgameTheme.SURFACE if light else Color(0.08, 0.08, 0.12)
+
+
+## 설명문에 계산식을 채운 글 — `{식|문구}` 를 전투 중에는 값으로, 밖에서는
+## "(문구)" 로 바꾸고 `\n` 을 줄바꿈으로 편다. 식을 못 풀면 문구 쪽으로 물러난다.
+## `live` 를 끄면 전투 중에도 언제나 "(문구)" 쪽이다.
+static func resolve_text(data: CardData, live: bool = true) -> String:
+	if data == null:
+		return ""
+	var text: String = data.description.replace("\\n", "\n")
+	if text.find("{") < 0:
+		return text
+	if _formula_re == null:
+		_formula_re = RegEx.create_from_string("\\{([^{}|]+)\\|([^{}]+)\\}")
+	var vars: Dictionary = {"charge": data.charge, "chain": 0}
+	var in_battle: bool = live and live_vars.is_valid()
+	if in_battle:
+		vars.merge(live_vars.call(data) as Dictionary, true)
+	var out: String = ""
+	var last: int = 0
+	for m in _formula_re.search_all(text):
+		out += text.substr(last, m.get_start() - last)
+		var shown: String = "(%s)" % m.get_string(2)
+		if in_battle:
+			var expr := Expression.new()
+			if expr.parse(m.get_string(1), PackedStringArray(vars.keys())) == OK:
+				var v: Variant = expr.execute(vars.values(), null, false)
+				if not expr.has_execute_failed():
+					shown = str(int(v))
+		out += shown
+		last = m.get_end()
+	return out + text.substr(last)
+
+
+## 카드가 겨누는 것 `{key, color, label}` — 속성 줄의 대상 항목과 설명문의 "대상"
+## 아이콘이 같이 읽는다.
+##   • 타일(`target = location`) — 육각 타일 아이콘. 효과가 `own_jungle` 이면 "아군
+##     정글 타일"(초록), `steal_camp` 면 "적 정글 타일"(빨강), `ambush` 면 "정글 타일",
+##     그 밖은 "타일"(회색). `turret_damage`(전령 제압)는 타일이 아니라 최외곽 적 포탑.
+##   • 자신 — 범위형 시전자 카드, 또는 효과 절이 전부 `|self` 인 즉시 카드(몸집 불리기).
+##   • 그 밖의 즉시 · 범위 카드는 대상이 없다(label 이 빈 글자).
+static func target_info(data: CardData) -> Dictionary:
+	var info := {"key": KeywordIcon.TARGET, "label": "",
+			"color": KeywordIcon.target_color(data.target if data != null else "")}
+	if data == null:
+		return info
+	if data.target == "location":
+		if data.effect.begins_with("turret_damage"):
+			info["label"] = TARGET_LABELS["turret_outer"]
+			info["color"] = KeywordIcon.TARGET_ENEMY_COLOR
+			return info
+		info["key"] = KeywordIcon.TILE
+		info["label"] = "타일"
+		if data.effect.contains("own_jungle"):
+			info["label"] = "아군 정글 타일"
+			info["color"] = KeywordIcon.TARGET_ALLY_COLOR
+		elif data.effect.contains("steal_camp"):
+			info["label"] = "적 정글 타일"
+			info["color"] = KeywordIcon.TARGET_ENEMY_COLOR
+		elif data.effect.contains("ambush"):
+			info["label"] = "정글 타일"
+		return info
+	if (data.cast_method == "range" and data.target == "caster") or _all_self(data):
+		info["label"] = "자신"
+	elif data.cast_method != "instant" and data.cast_method != "range":
+		info["label"] = String(TARGET_LABELS.get(data.target, ""))
+	return info
+
+
+## 효과 절이 하나 이상이고 전부 `|self` 표지를 단 카드 — 자기 자신에게만 건다.
+static func _all_self(data: CardData) -> bool:
+	var clauses: PackedStringArray = data.effect.split(";", false)
+	if clauses.is_empty():
+		return false
+	for c in clauses:
+		if not "self" in (c as String).strip_edges().split("|"):
+			return false
+	return true
+
+
+## 카드의 속성 `[[KeywordIcon 키, 값 글자], ...]` — 대상 · 사거리 · 시전 범위
+## 순, 해당 없는 항목은 빠진다. 지속시간은 속성 줄에 없다 — 설명문이 "3턴 간
+## 교전" 처럼 직접 적는다. 손패에서만 쓰는 카드(드로우 · 전략 점수)는
+## 대개 빈 배열이라 줄 자체가 서지 않는다.
+##   • 대상     — `target` (적 / 아군 / 적 또는 포탑 / 타일 / 자신 …)
+##   • 사거리   — 대상 · 칸 지정 카드의 `cast_range` (99 이상 = 전장)
+##   • 시전 범위 — `area` 컬럼과 효과의 `area` · `around_target` · `self_range`
+##                 반경, 교전 절의 반경(기본 1) 중 가장 큰 값
+static func card_attributes(data: CardData) -> Array:
+	var out: Array = []
+	if data == null:
+		return out
+	var tgt: Dictionary = target_info(data)
+	if not String(tgt["label"]).is_empty():
+		out.append([tgt["key"], tgt["label"]])
+	if data.cast_method == "target" or data.cast_method == "location":
+		var rng: String = "전장" if data.cast_range >= CardTargetingOverlay.UNLIMITED_RANGE \
+				else str(data.cast_range)
+		out.append([KeywordIcon.RANGE, rng])
+	var radius: int = data.area
+	for clause_raw in data.effect.split(";", false):
+		var parts: PackedStringArray = (clause_raw as String).strip_edges().split("|", false)
+		if parts.is_empty():
+			continue
+		if parts[0].split(":")[0].strip_edges() == "engage":
+			radius = maxi(radius, 1)
+		for i in range(1, parts.size()):
+			var flag: PackedStringArray = parts[i].strip_edges().split(":")
+			if flag.size() < 2:
+				continue
+			var fv: int = int(flag[1])
+			if flag[0] in ["area", "around_target", "self_range"]:
+				radius = maxi(radius, fv)
+	if radius > 0:
+		out.append([KeywordIcon.AREA, str(radius)])
+	return out
+
+
+## 속성 줄 — `[아이콘] 값` 덩어리를 가운데 정렬로 늘어놓는다.
+static func _attr_label(attrs: Array, light: bool, target_col: Color) -> RichTextLabel:
+	var rtl := RichTextLabel.new()
+	rtl.bbcode_enabled = false
+	rtl.scroll_active = false
+	rtl.clip_contents = false
+	rtl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	rtl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rtl.add_theme_font_size_override("normal_font_size", KW_FONT)
+	rtl.add_theme_color_override("default_color",
+			OutgameTheme.TEXT if light else Color(0.92, 0.92, 0.92))
+	var icon_px: int = int(round(float(KW_FONT) * 1.25))
+	rtl.push_paragraph(HORIZONTAL_ALIGNMENT_CENTER)
+	for i in attrs.size():
+		var a: Array = attrs[i]
+		if i > 0:
+			rtl.add_text(ATTR_SEP)
+		var tex: Texture2D = KeywordIcon.texture(String(a[0]), icon_px * 2,
+				KeywordIcon.color_for(String(a[0]), _kw_color(light), target_col),
+				_knock_color(light))
+		if tex != null:
+			rtl.add_image(tex, icon_px, icon_px, Color.WHITE, INLINE_ALIGNMENT_CENTER)
+		rtl.add_text(_attr_value(String(a[1])))
+	rtl.pop()
+	return rtl
+
+
+## 항목 하나(아이콘 + 값)는 줄이 갈리지 않게 묶는다 — 공백은 줄 안 끊김 공백,
+## 글자 사이는 `keep_words` 의 단어 결합자("2턴" 이 "2" / "턴" 으로 갈리지 않게).
+static func _attr_value(value: String) -> String:
+	return UiHelpers.keep_words(StrategyIcon.NBSP + value.replace(" ", StrategyIcon.NBSP))
+
+
+## `_attr_label` 의 높이 측정용 대역 — 아이콘(글자 크기 × 1.25)과 그 옆 여백을
+## 글자 세 개 폭으로 넉넉히 친다. 모자라게 재면 접힌 줄이 설명문을 덮는다.
+static func _attr_measure(attrs: Array) -> String:
+	var parts: Array = []
+	for a in attrs:
+		parts.append(UiHelpers.keep_words("000" + _attr_value(String((a as Array)[1]))))
+	return ATTR_SEP.join(parts)
 
 
 static func _note_label(text: String, light: bool) -> Label:

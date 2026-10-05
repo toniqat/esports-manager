@@ -64,11 +64,15 @@ const STAGE_H: float = 1180.0
 # 아래 둘은 **한 칸이 무대에서 차지하는 거리의 기준**이고, 세로가 가로보다 짧은
 # 것은 쿼터뷰라 깊이 방향이 눌려 보이기 때문이다(같은 이유로 바닥 마커도 납작한
 # 타원이다).
-const CELL_SPAN_X: float = 300.0
-const CELL_SPAN_Y: float = 235.0
+const CELL_SPAN_X: float = 360.0
+const CELL_SPAN_Y: float = 280.0
 ## 한 칸에 여럿이 설 때 그 칸 중심에서 흩어지는 반경.
-const CELL_CLUSTER_RX: float = 106.0
-const CELL_CLUSTER_RY: float = 60.0
+const CELL_CLUSTER_RX: float = 130.0
+const CELL_CLUSTER_RY: float = 78.0
+## 한 칸을 두 팀이 나눠 쓸 때 각 팀 반원의 중심을 자기 쪽(팀0 왼쪽 · 팀1 오른쪽)
+## 으로 미는 거리. 반원 둘이 칸 중심에서 맞붙으면 위 · 아래 끝자리의 적끼리
+## 거의 닿은 채로 교전이 시작된다.
+const CELL_TEAM_GAP: float = 60.0
 ## 한 칸의 인원이 둘을 넘을 때마다 위 반경에 얹는 비율.
 const CELL_CLUSTER_CROWD: float = 0.07
 ## 자리마다 얹는 흐트러짐 — 완벽한 격자는 기계적으로 보인다.
@@ -119,6 +123,17 @@ const FOOT_ASPECT: float = FOOT_RX / FOOT_RY
 ## 많이 돈다. 한 쌍씩 즉시 반영하는 가우스-자이델이라 한 회에 푼 쌍이 뒤 쌍에
 ## 다시 밀릴 수 있고, 그 사슬이 인원수만큼 길어지기 때문이다.
 const SEPARATE_ITERS_PLACE: int = 16
+## **개시 간격.** 발밑 원(나란히 60px)은 겹침만 막을 뿐이라, 그것만으로는 한 칸
+## · 이웃 칸에 몰린 무리가 서로 딱 달라붙은 채 교전이 열린다. 개시 배치에서만
+## 쌍마다 아래 간격까지 벌린다(`_spread_start`) — 적끼리는 넓게, 아군끼리는 얼굴
+## (지름 80)이 안 겹칠 만큼. 거리는 y 를 `START_GAP_ASPECT` 배로 늘린 공간에서
+## 잰다 — 무대 자체의 세로 압축(`CELL_SPAN_X / CELL_SPAN_Y`)과 같은 비율이라
+## 위아래로 선 둘도 화면에서 같은 "떨어져 보임"을 얻는다. 전투 중에는 걸지
+## 않는다 — 붙어서 때리는 접근과 다투게 된다.
+const START_ENEMY_GAP: float = 190.0
+const START_ALLY_GAP: float = 105.0
+const START_GAP_ASPECT: float = CELL_SPAN_X / CELL_SPAN_Y
+const START_SPREAD_ITERS: int = 24
 const SEPARATE_ITERS_TICK: int = 6
 
 # ─── 유닛 ────────────────────────────────────────────────────────────────────
@@ -405,6 +420,7 @@ func setup(bs: BattleSim, caster: PilotData, team0: Array, team1: Array,
 		_apply_drop_in(caster)
 	# 겹침 정리는 **낙하까지 끝난 뒤**다 — [강습]의 시전자는 적 진형 한가운데,
 	# 곧 이미 누가 서 있는 자리로 떨어지므로 그 한 명이야말로 밀어내야 한다.
+	_spread_start(START_SPREAD_ITERS)
 	_separate_units(SEPARATE_ITERS_PLACE)
 	_face_initial()
 	_build_order(caster)
@@ -677,13 +693,18 @@ func _seat_cell(row: Array, at: Vector2, fit: float) -> void:
 	for t in range(2):
 		var arc: Array = side[t]
 		var m: int = arc.size()
-		# 팀0 = 왼쪽(각도 PI 중심) · 팀1 = 오른쪽(각도 0 중심) 반원.
+		# 팀0 = 왼쪽(각도 PI 중심) · 팀1 = 오른쪽(각도 0 중심) 반원. 두 팀이
+		# 한 칸을 나눠 쓰면 반원 중심을 자기 쪽으로 `CELL_TEAM_GAP` 만큼 민다.
 		var base: float = PI if t == 0 else 0.0
+		var shared: bool = not (side[1 - t] as Array).is_empty()
+		var shift := Vector2.ZERO
+		if shared:
+			shift.x = (-1.0 if t == 0 else 1.0) * CELL_TEAM_GAP * fit
 		for i in m:
 			var f: float = 0.5 if m == 1 else float(i) / float(m - 1)
 			var a: float = base + (f - 0.5) * PI * 0.92
 			var u := arc[i] as EUnit
-			u.anchor_pos = _clamp_to_ground(at
+			u.anchor_pos = _clamp_to_ground(at + shift
 					+ Vector2(cos(a) * rx, sin(a) * ry) + _slot_jitter(fit))
 			u.pos = u.anchor_pos
 
@@ -871,6 +892,41 @@ func _separate_units(iters: int) -> void:
 				var off := Vector2(dir.x, dir.y / FOOT_ASPECT) * push
 				_shift_unit(a, -off * share_a)
 				_shift_unit(b, off * (1.0 - share_a))
+				moved = true
+		if not moved:
+			return
+
+
+## 개시 배치 전용 — 쌍마다 `START_ENEMY_GAP` / `START_ALLY_GAP` 까지 벌린다
+## (`_separate_units` 와 같은 가우스-자이델, 판정 공간만 `START_GAP_ASPECT`).
+## 앞선 배치가 정한 방향은 그대로 두고 거리만 늘리므로 "위 둘 / 아래 둘 / 왼쪽
+## 하나"는 그대로 읽힌다. 벽에 몰려 다 못 벌린 몫은 남는다 — 바닥면 밖으로
+## 세우지는 않는다.
+func _spread_start(iters: int) -> void:
+	var n: int = units.size()
+	if n < 2:
+		return
+	for _pass in iters:
+		var moved: bool = false
+		for i in range(n - 1):
+			var a := units[i] as EUnit
+			for j in range(i + 1, n):
+				var b := units[j] as EUnit
+				var gap: float = START_ENEMY_GAP if a.team != b.team else START_ALLY_GAP
+				var d := Vector2(b.pos.x - a.pos.x,
+						(b.pos.y - a.pos.y) * START_GAP_ASPECT)
+				var dist: float = d.length()
+				if dist >= gap:
+					continue
+				var dir: Vector2
+				if dist < 0.001:
+					dir = Vector2(-1.0 if a.team == 0 else 1.0, 0.0)
+				else:
+					dir = d / dist
+				var push: float = (gap - dist) * 0.5
+				var off := Vector2(dir.x, dir.y / START_GAP_ASPECT) * push
+				_shift_unit(a, -off)
+				_shift_unit(b, off)
 				moved = true
 		if not moved:
 			return

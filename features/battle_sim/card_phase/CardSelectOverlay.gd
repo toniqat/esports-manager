@@ -7,12 +7,14 @@ extends Node
 # in _teardown(). CardPhaseManager pauses its effect-chain processing while
 # is_active() is true; the configured callbacks resume or revert the chain.
 #
-# SEARCH and PRESERVE share the whole grid UI and differ only in **where the
-# cards come from and what the caller does with the picks**: SEARCH lists the
-# deck and the caller moves the picks into the hand, PRESERVE lists the hand and
-# the caller only marks the picks. Neither mode mutates a pile itself, which is
-# what makes the sharing safe — DISCARD is the odd one out because it pulls the
-# picked cards out of the live hand as they are chosen.
+# Two UIs:
+#   • **손패 픽** (DISCARD / PRESERVE) — the hand stays live; dragging a card onto
+#     the centre drop zone pulls it out of the hand into a fan, tapping it there
+#     sends it back. DISCARD throws the picks away on 확인; PRESERVE puts them
+#     back into their hand slots on 확인 (or 보존 취소) and the caller only marks
+#     them.
+#   • **그리드** (SEARCH / CHOICE) — a full-screen scroll grid of a pile (or of
+#     caller-built option cards). Neither mutates a pile itself.
 
 var _bs: BattleSim = null
 
@@ -51,7 +53,7 @@ var mode: int = Mode.NONE
 var hidden_state: bool = false
 var target_count: int = 0
 
-# Discard mode
+# 손패 픽 (discard / preserve) — 골라 둔 카드 줄. 이름은 버리기 시절 그대로다.
 var to_discard_cards: Array = []   # CardData refs in the order they were picked
 var to_discard_nodes: Array = []   # Card visual nodes (live in _bs.canvas)
 ## 각 픽이 손패에서 떠나올 때 앉아 있던 자리. 되돌릴 때 그 자리로 다시 꽂는다 —
@@ -59,8 +61,8 @@ var to_discard_nodes: Array = []   # Card visual nodes (live in _bs.canvas)
 ## 아니라 "새로 뽑은 것"처럼 읽힌다.
 var _to_discard_slots: Array = []  # int
 
-# Search / preserve mode (shared grid state)
-var search_selected: Array = []    # CardData refs (deck picks / hand picks)
+# Search / choice mode (shared grid state)
+var search_selected: Array = []    # CardData refs (deck picks / option picks)
 var search_grid_nodes: Array = []  # Card visual nodes inside the scroll grid
 
 # Callbacks (CardPhaseManager binds these to its resume / cancel handlers).
@@ -101,17 +103,21 @@ func is_hidden() -> bool:
 	return hidden_state
 
 
-# Discriminator used by the description box to choose its action button.
-# Stays true even while hidden_state is on (the button is rendered as
-# 버리기 but disabled until the player un-hides).
-func is_discard_mode() -> bool:
-	return mode == Mode.DISCARD
+## 손패에서 카드를 끌어 골라내는 모드인가 — 버리기 · 보존. 이 동안 손패는 살아
+## 있고, 카드를 중앙 구역에 놓는 것이 카드가 할 수 있는 유일한 일이다.
+## 숨김 중에도 참이다(픽만 `can_pick_from_hand` 가 막는다).
+func is_hand_pick_mode() -> bool:
+	return mode == Mode.DISCARD or mode == Mode.PRESERVE
 
 
-# Tighter gate for actually accepting a pick: discard mode, not hidden, and
-# the to-discard list isn't already full.
-func can_pick_for_discard() -> bool:
-	return mode == Mode.DISCARD and not hidden_state \
+func is_preserve_mode() -> bool:
+	return mode == Mode.PRESERVE
+
+
+# Tighter gate for actually accepting a pick: hand-pick mode, not hidden, and
+# the picked list isn't already full.
+func can_pick_from_hand() -> bool:
+	return is_hand_pick_mode() and not hidden_state \
 			and to_discard_cards.size() < target_count
 
 
@@ -130,7 +136,7 @@ func _discardable_hand_count() -> int:
 func start_discard(n: int, on_complete: Callable, on_cancel: Callable) -> void:
 	mode = Mode.DISCARD
 	# 상한은 손패 크기가 아니라 **버릴 수 있는 카드 수**다. `보존` 키워드 카드는
-	# 고를 수 없으므로(add_card_to_discard 가 거부한다) 손패 크기로 잡으면
+	# 고를 수 없으므로(add_card_to_pick 이 거부한다) 손패 크기로 잡으면
 	# 확인 버튼이 영원히 잠긴 모달이 만들어진다.
 	target_count = max(0, min(n, _discardable_hand_count()))
 	hidden_state = false
@@ -172,25 +178,30 @@ func start_search(n: int, on_complete: Callable, on_cancel: Callable,
 	_update_confirm_button()
 
 
-## 계획 중시 (`preserve:N`) — 손패를 찾기와 같은 그리드로 펼쳐 N장을 고르게 한다.
-## 찾기와 다른 점은 **어느 더미를 펼치느냐** 하나뿐이고, 고른 카드는 손패에서
-## 빠지지 않는다: 이 오버레이는 픽만 돌려주고, 보존 목록 등록은
-## `CardPhaseManager._on_preserve_overlay_complete` 가 한다.
+## 계획 중시 (`preserve:N`) · 계략 — **버리기와 같은 손패 픽**이다. 카드를 중앙
+## 구역에 끌어다 놓으면 골라 둔 줄로 빠지고, 누르면 손패 원래 자리로 돌아간다.
+## 확인을 누르면 골라 둔 카드가 **손패의 원래 자리로 돌아가고**, 보존 목록 등록은
+## 콜백(`CardPhaseManager._on_preserve_overlay_complete` 등)이 한다. 버리기와
+## 달리 **보존 취소**가 있다(카드 사용 전액 환불 / 계략은 아무것도 안 건다).
+##
+## (예전에는 손패를 찾기 그리드로 한 벌 더 펼쳐 골랐다 — 손에 든 카드를 고르는데
+## 화면 전체가 다른 목록으로 덮였다.)
 func start_preserve(n: int, on_complete: Callable, on_cancel: Callable) -> void:
 	mode = Mode.PRESERVE
 	target_count = max(0, min(n, _bs.player_hand.size()))
 	hidden_state = false
-	search_selected.clear()
+	to_discard_cards.clear()
+	to_discard_nodes.clear()
+	_to_discard_slots.clear()
 	_on_complete = on_complete
 	_on_cancel = on_cancel
 	if target_count <= 0:
 		_finish_with_picks([])
 		return
-	_build_full_dim()
-	_build_search_grid(_bs.player_hand)
+	_build_battle_dim()
 	_build_buttons(false)
-	_refresh_visibility()
 	_update_confirm_button()
+	_refresh_visibility()
 
 
 ## 단계 C 의 강화 3택 — `options`(표시용 CardData 배열)를 찾기와 같은 그리드로
@@ -217,12 +228,12 @@ func start_choice(options: Array, on_complete: Callable) -> void:
 
 
 # ─── Player interactions ─────────────────────────────────────────────────────
-# Called from CardPhaseManager when the desc-box "버리기" button is pressed on
-# a hand card. The card is removed from the live hand and parked in the
-# centered to-discard row until the player presses 확인 (enabled once
-# exactly target_count cards have been picked).
-func add_card_to_discard(node: Card) -> void:
-	if not can_pick_for_discard():
+# Called from CardPhaseManager when a hand card is dropped on the centre zone
+# in 버리기 / 보존 픽. The card is removed from the live hand and parked in the
+# centered picked row until the player presses 확인 (enabled once exactly
+# target_count cards have been picked).
+func add_card_to_pick(node: Card) -> void:
+	if not can_pick_from_hand():
 		return
 	if not _bs.player_card_nodes.has(node):
 		return
@@ -230,7 +241,7 @@ func add_card_to_discard(node: Card) -> void:
 	# `보존` 키워드 카드는 버릴 수 없다 — 오브젝트 보상처럼 한 매치에 한 장
 	# 나오는 카드가 버리기:N 한 번에 사라지면 안 된다. `target_count` 도 같은
 	# 규칙으로 잡혀 있으므로 고를 카드가 모자라는 일은 없다.
-	if cd != null and cd.is_preserved_by_keyword():
+	if mode == Mode.DISCARD and cd != null and cd.is_preserved_by_keyword():
 		return
 	var slot: int = _bs.player_hand.find(cd)
 	_bs.player_card_nodes.erase(node)
@@ -261,19 +272,27 @@ func _attach_unpick_overlay(node: Card) -> void:
 	hit.size = Vector2(Card.CARD_W, Card.CARD_H)
 	hit.position = Vector2.ZERO
 	hit.modulate = Color(1, 1, 1, 0)
-	hit.pressed.connect(func() -> void: remove_card_from_discard(node))
+	hit.pressed.connect(func() -> void: remove_card_from_pick(node))
 	node.add_child(hit)
 
 
-## 버리기 후보에서 빼내 **원래 자리로** 손패에 돌려놓는다. 카드 노드는 그대로
+## 골라 둔 줄에서 빼내 **원래 자리로** 손패에 돌려놓는다. 카드 노드는 그대로
 ## 재사용한다 — 새로 세우면 드로우 인트로를 타거나(왼쪽 밖에서 날아온다) 그
 ## 카드에 걸려 있던 표시(보존 테두리 · 충전 배지)를 다시 붙여야 한다.
-func remove_card_from_discard(node: Card) -> void:
-	if mode != Mode.DISCARD or hidden_state:
+func remove_card_from_pick(node: Card) -> void:
+	if not is_hand_pick_mode() or hidden_state:
 		return
-	var i: int = to_discard_nodes.find(node)
-	if i < 0:
+	_return_pick_to_hand(to_discard_nodes.find(node))
+	_bs.card_phase.relayout_hand(_bs.player_card_nodes)
+	_layout_to_discard_row()
+	_update_confirm_button()
+
+
+## 골라 둔 줄의 `i` 번째를 손패 원래 자리에 다시 꽂는다(배치는 부르는 쪽이 한다).
+func _return_pick_to_hand(i: int) -> void:
+	if i < 0 or i >= to_discard_nodes.size():
 		return
+	var node := to_discard_nodes[i] as Card
 	var cd := to_discard_cards[i] as CardData
 	var slot: int = int(_to_discard_slots[i])
 	to_discard_nodes.remove_at(i)
@@ -290,9 +309,14 @@ func remove_card_from_discard(node: Card) -> void:
 	slot = clampi(slot, 0, _bs.player_hand.size())
 	_bs.player_hand.insert(slot, cd)
 	_bs.player_card_nodes.insert(mini(slot, _bs.player_card_nodes.size()), node)
+
+
+## 골라 둔 카드 전원을 손패로 — **고른 역순으로** 꽂아야 각자 떠나올 때의 인덱스가
+## 그대로 맞는다(보존 확인 / 보존 취소).
+func _return_all_picks_to_hand() -> void:
+	for i in range(to_discard_nodes.size() - 1, -1, -1):
+		_return_pick_to_hand(i)
 	_bs.card_phase.relayout_hand(_bs.player_card_nodes)
-	_layout_to_discard_row()
-	_update_confirm_button()
 
 
 # Toggles the highlight + selection state of a deck card in the search grid.
@@ -338,6 +362,16 @@ func _commit_discard() -> void:
 	_finish_with_picks(picks)
 
 
+## 보존 확인 — 골라 둔 카드는 손패 원래 자리로 돌아가고, 보존 표시는 콜백이 건다.
+func _commit_preserve() -> void:
+	if to_discard_cards.size() != target_count:
+		return
+	var picks := to_discard_cards.duplicate()
+	_return_all_picks_to_hand()
+	_teardown()
+	_finish_with_picks(picks)
+
+
 func _commit_search() -> void:
 	if search_selected.size() != target_count:
 		return
@@ -346,9 +380,9 @@ func _commit_search() -> void:
 	_finish_with_picks(picks)
 
 
-## SEARCH · PRESERVE · CHOICE 셋이 같은 스크롤 그리드 UI 를 쓴다.
+## SEARCH · CHOICE 둘이 같은 스크롤 그리드 UI 를 쓴다.
 func _is_grid_mode() -> bool:
-	return mode == Mode.SEARCH or mode == Mode.PRESERVE or mode == Mode.CHOICE
+	return mode == Mode.SEARCH or mode == Mode.CHOICE
 
 
 func _finish_with_picks(picks: Array) -> void:
@@ -362,6 +396,10 @@ func _finish_with_picks(picks: Array) -> void:
 
 func _on_cancel_pressed() -> void:
 	var cb := _on_cancel
+	# 보존 취소 — 골라 둔 카드를 손패로 먼저 돌려놓는다. `_teardown` 은 줄에 남은
+	# 노드를 해제하므로, 스냅샷 복원이 없는 호출(계략)에서는 그 카드가 사라진다.
+	if mode == Mode.PRESERVE:
+		_return_all_picks_to_hand()
 	_teardown()
 	mode = Mode.NONE
 	_on_complete = Callable()
@@ -441,7 +479,10 @@ func _build_buttons(is_discard: bool) -> void:
 		_btn_confirm = _make_btn("확인")
 		_btn_confirm.position = Vector2(
 				right_x - CONFIRM_BTN_GAP - BTN_W, top_y)
-		_btn_confirm.pressed.connect(_commit_search)
+		if mode == Mode.PRESERVE:
+			_btn_confirm.pressed.connect(_commit_preserve)
+		else:
+			_btn_confirm.pressed.connect(_commit_search)
 		_btn_confirm.disabled = true
 		_overlay_layer.add_child(_btn_confirm)
 
@@ -601,12 +642,12 @@ func _layout_to_discard_row() -> void:
 
 
 # 숨김 hides the dim + selection display so the player can review the battle.
-# In hidden state, picking is disabled (can_pick_for_discard returns false and
+# In hidden state, picking is disabled (can_pick_from_hand returns false and
 # the search grid is not visible) but the cancel / confirm / hide buttons all
 # stay reachable so the player can resolve the overlay either way.
 func _refresh_visibility() -> void:
 	var show := not hidden_state
-	if mode == Mode.DISCARD:
+	if is_hand_pick_mode():
 		if _battle_dim != null:
 			_battle_dim.visible = show
 		for node in to_discard_nodes:
@@ -627,7 +668,7 @@ func _refresh_hide_label() -> void:
 func _update_confirm_button() -> void:
 	if _btn_confirm == null:
 		return
-	if mode == Mode.DISCARD:
+	if is_hand_pick_mode():
 		_btn_confirm.disabled = to_discard_cards.size() != target_count
 	else:
 		_btn_confirm.disabled = search_selected.size() != target_count

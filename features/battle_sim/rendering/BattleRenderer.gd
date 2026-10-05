@@ -177,6 +177,9 @@ const PRESS_SCALE: float = 1.3
 const PRESS_TWEEN_SEC: float = 0.08
 var _press_pilot: PilotData = null
 var _top_pilot: PilotData = null
+# 대상 지정 드래그 중 가리킨 파일럿(`CardTargetingOverlay.picked_pilot`) — 프레임마다
+# `_draw()` 앞머리에서 갱신된다. 칸 순회에서 빠졌다가 딤 위에서 맨 마지막에 그려진다.
+var _pick_top: PilotData = null
 var _press_now: Dictionary = {}
 
 
@@ -539,6 +542,11 @@ func _draw() -> void:
 	# targeting dim overlay agree on where each pilot's marker landed within
 	# its team's offset row above / below the tile.
 	_pilot_render_layout = _build_pilot_render_layout()
+	_pick_top = null
+	if _bs.targeting_overlay != null:
+		_pick_top = _bs.targeting_overlay.picked_pilot()
+		if _pick_top != null and not _is_renderable(_pick_top):
+			_pick_top = null
 	_draw_field_outline()
 	_draw_front_line_overlays()
 	_draw_captured_tile_overlays()
@@ -565,10 +573,6 @@ func _draw() -> void:
 	# 도착 턴인데, 다른 번호처럼
 	# 칸 한가운데에 찍으면 정글러 얼굴이 통째로 덮는다.
 	_draw_jungle_start_marker_badge()
-	# Pending-pick highlight (cyan ring/outline on the clicked-but-not-yet-
-	# confirmed target) draws AFTER pilot circles so the ring sits on top of
-	# the marker, but BEFORE per-pilot dim so it is not greyed out.
-	_draw_pending_pick_highlight()
 	# Per-pilot dim is the only dim drawn ON TOP of pilot markers — only
 	# applied to pilots whose own cell is INSIDE the in-range set (so they're
 	# not already covered by tile dim). This prevents the double-dim where an
@@ -576,6 +580,9 @@ func _draw() -> void:
 	# marker disc stacked on each other.
 	if draw_dim:
 		_draw_targeting_pilot_dim()
+	# 가리킨 대상의 초상 + 시안 링은 **딤 위에** — 이웃 칸 초상이나 그 딤 원판이
+	# 대상 얼굴을 덮지 않는다(초상은 `_draw_pilot_groups` 에서 빠져 있다).
+	_draw_pending_pick_highlight()
 	# 손패 카드 효과 미리보기(경로 · 명중 예상 · 회복 · 고스트 · 영혼) — 딤 위에.
 	_draw_card_preview_field()
 	# 공격 카드 연출 두 겹 — 시전자 빛은 초상 위에, 피격 조각은 그 위에.
@@ -924,7 +931,8 @@ func _draw_pilot_groups() -> void:
 	# **맨 위 초상**(마지막으로 누른 것)은 칸 순회에서 빠져 있다가 맨 끝에
 	# 그림자째 다시 그려진다 — 이웃 칸 마커에 가려져 있던 얼굴이 위로 올라온다.
 	var top := _top_pilot
-	if top != null and _is_renderable(top) and not _hidden_during_jungle_pick(top):
+	if top != null and top != _pick_top and _is_renderable(top) \
+			and not _hidden_during_jungle_pick(top):
 		var radius: float = PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE
 		_draw_marker_shadow(top, radius)
 		_draw_pilot_marker(top, radius)
@@ -1860,11 +1868,12 @@ func _draw_pilot_cell(_cell: Vector2i, pilots: Array) -> void:
 	# **그림자는 한 칸 전원을 먼저 깐다** — 마커마다 바로 밑에 깔면 나중에 그린
 	# 사람의 그림자가 먼저 그린 사람의 초상 위로 떨어진다.
 	# 맨 위 초상(`_top_pilot`)은 여기서 빠지고 `_draw_pilot_groups` 끝에서 그려진다.
+	# 대상 지정 중 가리킨 초상(`_pick_top`)은 딤 위에서 따로 그려진다.
 	for raw in pilots:
-		if raw != _top_pilot:
+		if raw != _top_pilot and raw != _pick_top:
 			_draw_marker_shadow(raw as PilotData, radius)
 	for raw in pilots:
-		if raw != _top_pilot:
+		if raw != _top_pilot and raw != _pick_top:
 			_draw_pilot_marker(raw as PilotData, radius)
 
 
@@ -2085,13 +2094,23 @@ func _draw_targeting_underlays() -> void:
 
 
 # Cyan ring / outline on the clicked-but-not-yet-confirmed target so the
-# player can see what 확인 will commit. Drawn between pilot circles and the
-# dim overlay so it sits on top of the marker.
+# player can see what 확인 will commit. Drawn AFTER the per-pilot dim, together
+# with the picked portrait itself, so the target always sits on top.
 func _draw_pending_pick_highlight() -> void:
 	var to: CardTargetingOverlay = _bs.targeting_overlay
 	if to == null or to.pending_pick == null:
 		return
 	var hg: HexGrid = _bs.hex_grid
+	# LOCATION 의 칸 외곽선은 초상 **밑에** — 그 칸에 선 대상 초상을 선이 긋지 않게.
+	if to.mode == CardTargetingOverlay.Mode.LOCATION:
+		var c := to.pending_pick as Vector2i
+		var pts := hg.hex_corners(_bs.cell_center(c))
+		draw_polyline(_close_polygon(pts),
+				Color(0.30, 0.95, 1.0, 0.95), 5.0, true)
+	if _pick_top != null and not _hidden_during_jungle_pick(_pick_top):
+		var base_r: float = PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE
+		_draw_marker_shadow(_pick_top, base_r)
+		_draw_pilot_marker(_pick_top, base_r)
 	if to.mode == CardTargetingOverlay.Mode.PILOT:
 		var picked := to.pending_pick as PilotData
 		if picked != null and picked.alive:
@@ -2100,12 +2119,6 @@ func _draw_pending_pick_highlight() -> void:
 			var radius: float = pilot_marker_radius(picked) + 10.0
 			draw_arc(pos, radius, 0.0, TAU, 36,
 					Color(0.30, 0.95, 1.0, 0.95), 4.0)
-	elif to.mode == CardTargetingOverlay.Mode.LOCATION:
-		var c := to.pending_pick as Vector2i
-		var ctr := _bs.cell_center(c)
-		var pts := hg.hex_corners(ctr)
-		draw_polyline(_close_polygon(pts),
-				Color(0.30, 0.95, 1.0, 0.95), 5.0, true)
 
 
 # The cells that stay bright while a 대상 지정 카드 is lifted — everything else
@@ -2125,6 +2138,10 @@ func _undimmed_cells() -> Dictionary:
 			for raw in to.area_cells.keys():
 				out[raw as Vector2i] = true
 		CardTargetingOverlay.Mode.PILOT, CardTargetingOverlay.Mode.LOCATION:
+			# 대상을 가리킨 동안은 사거리가 아니라 **효과 범위**가 밝다 — 범위 칸 +
+			# 대상 칸(범위 없는 단일 대상 카드는 대상 칸 하나).
+			if to.pending_pick != null:
+				return to.pick_bright_cells()
 			for raw in _bs.tiles_layer.get_used_cells():
 				var c := raw as Vector2i
 				if to.is_in_range_cell(c):

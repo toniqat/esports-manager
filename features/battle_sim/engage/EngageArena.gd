@@ -89,6 +89,11 @@ const CAM_PAD_Y: float = 130.0
 ## 화면 배율이 출렁이면 멀미가 나기 때문.
 const CAM_POS_RATE: float = 4.0
 const CAM_ZOOM_RATE: float = 2.6
+## **줌 인만** 이만큼 늦게 따라간다(초). 바깥쪽 유닛이 안쪽 적에게 돌진해 배치가
+## 좁혀지는 순간 바로 당겨 들어가면 그 돌진 자체가 프레임 밖으로 잘려 나간다 —
+## 좁아진 배치가 이 시간 동안 유지된 뒤에야 확대를 시작한다. 줌 아웃은 지연이
+## 없다(늦추면 퍼져 나가는 유닛이 밴드 밖으로 나간다).
+const CAM_ZOOM_IN_DELAY: float = 0.2
 
 # ─── 화면 세로 앞커 ──────────────────────────────────────────────
 # 제목 · 라운드 · 라운드 칸 · 차례 배너가 밴드 위에 차례로 쌓인다. 밴드가
@@ -210,6 +215,8 @@ var _cam_zoom: float = 1.0
 var _cam_target_center: Vector2 = Vector2.ZERO
 var _cam_target_zoom: float = 1.0
 var _cam_min_zoom: float = 1.0
+## 프레이밍이 원하는 배율이 지금 목표보다 큰(= 줌 인) 상태로 머문 시간.
+var _cam_zoom_in_wait: float = 0.0
 
 ## 라운드 표시 ("턴 2 / 3" — 화면 용어는 **턴**이다). 결투는 예산이 없으므로 진행 턴만.
 var _round_lbl: Label = null
@@ -430,10 +437,20 @@ func _update_camera(delta: float, snap: bool) -> void:
 		mn -= pad
 		mx += pad
 		var span: Vector2 = mx - mn
-		_cam_target_zoom = clampf(minf(
+		var want_zoom: float = clampf(minf(
 					BAND_RECT.size.x / maxf(1.0, span.x),
 					BAND_RECT.size.y / maxf(1.0, span.y)),
 				_cam_min_zoom, CAM_MAX_ZOOM)
+		# 줌 아웃은 즉시, 줌 인은 좁아진 배치가 CAM_ZOOM_IN_DELAY 동안 유지된
+		# 뒤에. 기다리는 동안의 목표 배율은 더 넓으므로 중심은 바로 옮겨도
+		# 전원이 프레임 안에 남는다.
+		if snap or want_zoom <= _cam_target_zoom:
+			_cam_target_zoom = want_zoom
+			_cam_zoom_in_wait = 0.0
+		else:
+			_cam_zoom_in_wait += delta
+			if _cam_zoom_in_wait >= CAM_ZOOM_IN_DELAY:
+				_cam_target_zoom = want_zoom
 		_cam_target_center = (mn + mx) * 0.5
 	# 유닛이 하나도 안 남았으면 마지막 타겟을 그대로 유지한다(화면이 튀지 않게).
 

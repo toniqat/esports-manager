@@ -66,7 +66,7 @@ CONFIRM 의 주 행동은 **"게임 시작"**(예전 "드래프트 확정")이�
 | `TeamDraft.gd`        | `class_name TeamDraft extends Control` — data layer. Owns `validate_draft()`, `apply_draft()`, `get_pool_grid()`, 그리고 화면이 함께 읽는 표 둘 — **슬롯 순서**(`SLOT_ROLES` / `SLOT_NAMES` / `slot_of_role`), **스킬 조회**(`skill_def_for` / `skill_type_label`). 카드 후보 풀 헬퍼 넷은 삭제됐다 — 아래 절. Builds `TeamDraftView` lazily via `ensure_view()` (called by `SeasonHub` after `init_season`). |
 | `TeamDraftView.gd`    | `class_name TeamDraftView extends Control` — procedural UI (선택 5인 일러스트 행 + 필터 행 + 스크롤 썸네일 격자 + 하단 스킬 패널/확정 버튼). Lives as a child of the `TeamDraft` node. |
 | `PilotThumb.gd`       | `class_name PilotThumb extends Button` — 격자 한 칸. **정사각(200×200)이고 얼굴 크롭 하나와 왼쪽 위 역할군 배지가 전부다.** 선택되면 금색 테두리 + 우상단 체크 배지. Emits `thumb_tapped(pilot_id)`. 두 static 헬퍼를 상단 일러스트와 함께 쓴다 — `add_rounded_art`(**둥근 사각형 마스크**: 둥근 `StyleBoxFlat` 을 그리는 `Panel` + `clip_children = CLIP_CHILDREN_ONLY`. 마스크 굴림은 칸 굴림에서 안쪽 여백을 뺀 값이라 테두리와 같은 중심의 곡선이 된다 — `clip_contents` 는 사각형으로만 자른다) · `add_role_badge`. |
-| `DraftDetailPanel.gd` | `class_name DraftDetailPanel extends CanvasLayer` — **파일럿 상세 팝업**. 좌 전신 아트 / 우 스크롤 정보 패널(스탯 칩 6개 → 파일럿 스킬. **받침 높이는 내용이 정한다**). `open(p: PlayerData)` **한 인자뿐이다** — 아래 "두 화면이 함께 쓴다" 절. |
+| `DraftDetailPanel.gd` | `class_name DraftDetailPanel extends CanvasLayer` — **파일럿 상세 팝업**. 좌 전신 아트 / 우 스크롤 정보 패널(스탯 칩 6개 → 파일럿 스킬(아이콘 타일 + 리치 설명문) → 파일럿 카드 3장. **받침 높이는 내용이 정한다**). `open(p: PlayerData)` **한 인자뿐이다** — 아래 "두 화면이 함께 쓴다" 절. |
 
 `PilotCard.gd` / `PilotCard.tscn` 은 **삭제됐다** — 200×175 칸에 스탯 막대 다섯
 줄을 세우던 예전 격자 카드이고, `PilotThumb` 이 그 자리를 대신한다.
@@ -95,6 +95,24 @@ CONFIRM 의 주 행동은 **"게임 시작"**(예전 "드래프트 확정")이�
 유일한 소비자가 팝업 하나가 됐고, 팝업이 `GameManager.skill_def()` 를 직접 읽는다.
 같은 탈출이 `candidate_cards_for_role` 을 **static** 으로 만들어 카드 풀을 인자로
 받게 했었는데, 후보 카드 절 자체가 없어지며 그 함수도 함께 사라졌다 — 아래 절.
+
+## Skill block — icon tile + rich description
+`DraftDetailPanel._build_skill_block`: a 64px skill icon tile
+(`SkillImages.make_icon_tile(sk.key, 64, OutgameTheme.RAIL, OutgameTheme.ACCENT,
+shadow)` — rounded square with a soft drop shadow) sits at the left of the name
+row; the name is vertically centred on the tile to its right, and the meta line
+(type · keyword) sits under the name in the same column. The tile is inset
+`SKILL_TILE_X` (14) from the scroll body's left edge so the `ScrollContainer`
+clip doesn't shave its shadow.
+
+The description is a **RichTextLabel** (`_rich_paragraph` →
+`StrategyIcon.make_rich_label`), not a plain Label — skill descriptions carry
+`\n` breaks, `{eul}` particle tags, keyword icons and `[card name]` tokens.
+Colours follow the light `CardDescBox`: icon `ACCENT_TEXT`, knock = panel bg
+(`SURFACE`), target `KeywordIcon.TARGET_ANY_COLOR` / `TARGET`, special
+`KeywordIcon.SPECIAL_COLOR_LIGHT`; card costs come from
+`GameManager.card_costs_by_name()`. Height is `StrategyIcon.rich_height(...)`
+with the same costs — never measured by hand.
 
 ## 상체 일러스트 (어깨~얼굴) — `PilotImages.bust_for`
 `tall/N_tall.png`(210×700, 머리~허벅지)의 **윗부분**을 `AtlasTexture` 로 잘라

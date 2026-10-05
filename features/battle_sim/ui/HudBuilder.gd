@@ -424,7 +424,9 @@ func _build_top_panel() -> void:
 	_enemy_top_layer.add_child(_enemy_strip)
 	_enemy_strip.setup(_bs, 1, strip_rect, true,
 			ENEMY_SCORE_FONT)
-	_enemy_strip.pilot_pressed.connect(_on_pilot_strip_pressed)
+	# 적은 탭 / 꾹 누르기 모두 상세 패널(스킬 말풍선은 아군만).
+	_enemy_strip.pilot_tapped.connect(_on_pilot_strip_pressed)
+	_enemy_strip.pilot_long_pressed.connect(_on_pilot_strip_pressed)
 
 	# 오브젝트 등장 시계 — 스트립 **바깥** 좌우. 전령이 왼쪽 · 용이 오른쪽인 것은
 	# 전장에서 두 오브젝트가 서는 칸의 좌우와 같다.
@@ -482,7 +484,24 @@ func _build_player_strip() -> void:
 	_bs.canvas.add_child(_player_strip)
 	_player_strip.setup(_bs, 0, strip_rect, true,
 			PLAYER_SCORE_FONT)
-	_player_strip.pilot_pressed.connect(_on_pilot_strip_pressed)
+	# 아군 — 짧은 탭 = 스킬 말풍선(`SkillPopup`), 꾹 누르기 = 상세 패널.
+	_player_strip.pilot_tapped.connect(_on_player_strip_tapped)
+	_player_strip.pilot_long_pressed.connect(_on_pilot_strip_pressed)
+
+
+## 아군 스트립 노드 — `SkillPopup` 이 스트립 높이의 누름이 칸인지 묻는다.
+func player_strip() -> PilotStrip:
+	return _player_strip
+
+
+## 아군 초상 짧은 탭 — 그 초상 머리 위에 스킬 말풍선. 같은 초상이면 닫힌다.
+func _on_player_strip_tapped(p: PilotData) -> void:
+	if _bs.skill_popup == null or _player_strip == null:
+		return
+	var anchor: Variant = _player_strip.anchor_for(p)
+	if anchor == null:
+		return
+	_bs.skill_popup.toggle(p, anchor as Vector2, _player_strip.global_position.y)
 
 
 # ── 킬로그 ───────────────────────────────────────────────────────────────────
@@ -500,6 +519,8 @@ func _on_pilot_strip_pressed(p: PilotData) -> void:
 		return
 	if not _bs.pilot_detail.can_open():
 		return
+	if _bs.skill_popup != null:
+		_bs.skill_popup.close()
 	_bs.pilot_detail.open(p)
 
 
@@ -550,6 +571,9 @@ func set_player_strip_dropped(on: bool) -> void:
 		return
 	if is_nan(_player_strip_rest_y):
 		_player_strip_rest_y = _player_strip.position.y
+	# 스트립이 내려가면 말풍선 화살표가 허공을 가리킨다.
+	if on and _bs.skill_popup != null:
+		_bs.skill_popup.close()
 	if _strip_drop_tween != null and _strip_drop_tween.is_valid():
 		_strip_drop_tween.kill()
 	_strip_drop_tween = _bs.create_tween().set_parallel()
@@ -590,6 +614,8 @@ func set_strip_visible(team: int, on: bool) -> void:
 	var strip: PilotStrip = _player_strip if team == 0 else _enemy_strip
 	if strip != null:
 		strip.visible = on
+	if team == 0 and not on and _bs.skill_popup != null:
+		_bs.skill_popup.close()
 	# 뒤판도 함께 숨긴다 — 스트립만 치우면 빈 판이 딤 위에 남는다. 두 스트립이
 	# 각자 자기 뒤판을 가지므로 규칙이 위아래 같다.
 	var bg: Panel = _player_strip_bg if team == 0 else _enemy_strip_bg
@@ -940,6 +966,9 @@ func _update_pilot_strips() -> void:
 	if _enemy_strip != null:
 		_enemy_strip.set_pilots(team1)
 		_enemy_strip.set_interactive_enabled(can_open)
+	if _bs.skill_popup != null:
+		_bs.skill_popup.close_if_phase_left()
+		_bs.skill_popup.refresh()
 	for raw in _obj_timers:
 		(raw as ObjectiveTimer).queue_redraw()
 	if _bs.pilot_detail != null:

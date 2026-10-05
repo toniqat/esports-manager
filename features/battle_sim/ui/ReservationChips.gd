@@ -78,7 +78,7 @@ func _entries() -> Array:
 		var n: int = 0
 		for raw in ambush:
 			n += int((raw as Dictionary).get("n", 0))
-		out.append(["ambush_" + side, "탐색 %d" % n])
+		out.append(["ambush_" + side, "찾기 %d" % n])
 	return out
 
 

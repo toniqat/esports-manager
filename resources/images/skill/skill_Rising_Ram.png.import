@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dhdxd5osnwiv8"
-path="res://.godot/imported/deadlock-ex1.png-5de3bc774c244c80b97507c9da46bee0.ctex"
+uid="uid://crhj3su6fvwdy"
+path="res://.godot/imported/skill_Rising_Ram.png-619e3340bb5a89c6494f3cc2025e27d7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://deadlock-ex1.png"
-dest_files=["res://.godot/imported/deadlock-ex1.png-5de3bc774c244c80b97507c9da46bee0.ctex"]
+source_file="res://resources/images/skill/skill_Rising_Ram.png"
+dest_files=["res://.godot/imported/skill_Rising_Ram.png-619e3340bb5a89c6494f3cc2025e27d7.ctex"]
 
 [params]
 

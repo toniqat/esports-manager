@@ -222,7 +222,7 @@ func persistent_fx_total(kind: String) -> float:
 
 
 # ─── 성장치 (파일럿 점수) ─────────────────────────────────────────────────────
-# 개시 1.00k 에서 시작해 경기 내내 누적되는 파일럿의 성장 통화 — MOBA 의 골드에
+# 개시 0.50k 에서 시작해 경기 내내 누적되는 파일럿의 성장 통화 — MOBA 의 골드에
 # 해당한다. 50턴 평균 25.00k, 잘 큰 캐리는 40.00k 을 넘긴다. 파일럿 스트립에
 # 숫자로 찍히고 팀 점수는 팀원 합산이며 상한이 없다.
 #
@@ -233,7 +233,7 @@ func persistent_fx_total(kind: String) -> float:
 # 적립처는 셋이다: **전선 체류**(턴당), **정글 캠프**(정글러), **처치 현상금**
 # (라스트힛 + 피해 비례 어시스트). 규칙과 상수는 전부 `BattleSim` 의 `SCORE_*`
 # 절에 있고, 변동은 `BattleSim.add_score` 한 곳만 지난다.
-var score: float          = 1.0   # = BattleSim.SCORE_START
+var score: float          = 0.5   # = BattleSim.SCORE_START
 
 # 이번 생에 **나를 때린 사람들**의 피해 기록. `PilotData attacker →
 # Array[Vector2i]` 이고 각 항목은 `(때린 턴, 그 턴의 피해 합)` 이다 — 같은 턴에

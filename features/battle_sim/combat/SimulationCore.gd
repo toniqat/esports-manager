@@ -246,6 +246,11 @@ func tick_growth_and_expiries() -> void:
 		_bs.refresh_growth_stats(p)
 
 
+## 결속 중인 라이너의 전선 수입 감소율(0.50k → 0.40k). 결속 묶음은 스탯을
+## 공유해 솔로 라이너처럼 싸우는 대신 한 사람 몫씩을 다 벌지는 못한다.
+const BOND_INCOME_CUT: float = 0.20
+
+
 # ─── 성장치 적립: 전선 체류 ──────────────────────────────────────────────────
 ## 레인 파일럿의 기본 수입. **살아서 자기 레인의 전선 안에 서 있는 턴**마다
 ## `SCORE_FRONTLINE_PER_TURN` 이 들어온다.
@@ -258,6 +263,10 @@ func tick_growth_and_expiries() -> void:
 ## 복귀의 진짜 비용이 여기 있다 — 전장을 비운 시간이 곧 성장을 놓친 시간이다.
 ##
 ## **정글러는 제외**다. 정글러의 전선은 정글이고, 수입은 캠프에서 나온다.
+##
+## **결속 중이면 `BOND_INCOME_CUT` 만큼 깎인다** — 그 턴의 최종 자리에서
+## `lane_bond_partners` 가 비어 있지 않은 사람만이다. 파트너가 죽거나 복귀해
+## 혼자 남은 쪽은 온전히 받는다(둘이 함께 서는 대가는 둘이 함께 설 때만 낸다).
 func award_frontline_income() -> void:
 	for raw in _bs.pilots:
 		var p := raw as PilotData
@@ -265,7 +274,10 @@ func award_frontline_income() -> void:
 			continue
 		if not front_line_cells(p.lane).has(p.grid_pos):
 			continue
-		_bs.add_score(p, _bs.SCORE_FRONTLINE_PER_TURN)
+		var income: float = _bs.SCORE_FRONTLINE_PER_TURN
+		if not lane_bond_partners(p).is_empty():
+			income *= 1.0 - BOND_INCOME_CUT
+		_bs.add_score(p, income)
 
 
 ## `lane` 번 레인의 전선 셀 집합. 포탑이 부서질 때마다 넓어지므로 캐시하지 않고
@@ -526,8 +538,8 @@ func _resolve_pilot_combat(t0: Array, t1: Array,
 		var a := t0[i] as PilotData
 		var b := t1[i] as PilotData
 		engaged[a] = true; engaged[b] = true
-		var hit_a := roll_hit(a, b)
-		var hit_b := roll_hit(b, a)
+		var hit_a := field_roll_hit(a, b)
+		var hit_b := field_roll_hit(b, a)
 		if hit_a:
 			var dmg_a := _pilot_hit_damage(a, b)
 			_credit_pilot_damage(a, b, dmg_a, damage_map)
@@ -614,12 +626,12 @@ func _apply_turret_siege(attackers: Array, defenders: Array, td: TurretData,
 	for i in pairs:
 		var a := atk_sorted[i] as PilotData
 		var d := def_sorted[i] as PilotData
-		if roll_hit(a, d):
+		if field_roll_hit(a, d):
 			var dmg_a := _pilot_hit_damage(a, d)
 			_credit_pilot_damage(a, d, dmg_a, damage_map)
 			log_lines.append("%s→%s:%d (attacker)" % [
 					_bs.pilot_label(a), _bs.pilot_label(d), dmg_a])
-		if roll_hit(d, a):
+		if field_roll_hit(d, a):
 			var dmg_d := _pilot_hit_damage(d, a)
 			_credit_pilot_damage(d, a, dmg_d, damage_map)
 			hit_by_defender[a] = true
@@ -662,9 +674,43 @@ func roll_hit(attacker: PilotData, defender: PilotData) -> bool:
 	return randf() < hit_chance_of(attacker, defender)
 
 
+## 전장 **자동 교전 전용** 명중 판정(턴 전투 · 전진 카드의 `_resolve_cell`).
+## `roll_hit` 과 같되 **결속 스탯 공유**를 켠다 — 공격 카드는 `roll_hit` 을
+## 그대로 써서 각자 자기 스탯으로 판정한다.
+func field_roll_hit(attacker: PilotData, defender: PilotData) -> bool:
+	return randf() < hit_chance_of(attacker, defender, true)
+
+
+## 결속 스탯 공유. 결속 묶음(같은 팀 · 같은 레인 · 같은 칸 라이너)은 전장
+## 명중 / 회피를 **묶음 평균**으로 판정한다 — 명중이 높고 회피가 낮은 원딜과
+## 그 반대인 서포터가 서로를 메워 솔로 라이너 같은 균형 스탯이 된다. 한 명이
+## 빠지면(사망 · 복귀 · 카드 이동) 남은 쪽의 치우친 스탯이 그대로 드러난다.
+## 평균은 원래 스탯(`hit` / `evasion`)끼리 내고, 라인전 배율 · 스킬 배율은 그
+## 위에 각자 자기 것이 곱해진다.
+func bond_shared_hit(p: PilotData) -> int:
+	return _bond_average(p, true)
+
+
+func bond_shared_evasion(p: PilotData) -> int:
+	return _bond_average(p, false)
+
+
+func _bond_average(p: PilotData, want_hit: bool) -> int:
+	var total: int = p.hit if want_hit else p.evasion
+	var n: int = 1
+	for raw in lane_bond_partners(p):
+		var o := raw as PilotData
+		total += o.hit if want_hit else o.evasion
+		n += 1
+	return roundi(float(total) / float(n))
+
+
 ## `roll_hit` 이 굴리는 확률 그 자체(0..1). 손패 미리보기가 공격 카드의 명중률을
 ## 대상 위에 찍는다 — 판정과 같은 함수라 화면의 % 와 실제 확률이 어긋날 수 없다.
-func hit_chance_of(attacker: PilotData, defender: PilotData) -> float:
+##
+## `bond_share` 는 자동 교전(`field_roll_hit`)만 켠다 — 결속 묶음의 평균 스탯.
+func hit_chance_of(attacker: PilotData, defender: PilotData,
+		bond_share: bool = false) -> float:
 	var sk: PilotSkillSystem = _bs.skill
 	var hit_m: float = sk.hit_mult(attacker)      if sk != null else 1.0
 	var eva_m: float = sk.evasion_mult(defender)  if sk != null else 1.0
@@ -673,8 +719,10 @@ func hit_chance_of(attacker: PilotData, defender: PilotData) -> float:
 	if _bs.card_phase != null:
 		hit_m *= 1.0 + _bs.card_phase.hand_hit_add(attacker)
 	eva_m *= 1.0 + defender.eva_card_mod
-	var atk_stat := maxi(1, roundi(float(lane_adjusted(attacker.hit, attacker)) * hit_m))
-	var def_stat := maxi(1, roundi(float(lane_adjusted(defender.evasion, defender)) * eva_m))
+	var base_hit: int = bond_shared_hit(attacker) if bond_share else attacker.hit
+	var base_eva: int = bond_shared_evasion(defender) if bond_share else defender.evasion
+	var atk_stat := maxi(1, roundi(float(lane_adjusted(base_hit, attacker)) * hit_m))
+	var def_stat := maxi(1, roundi(float(lane_adjusted(base_eva, defender)) * eva_m))
 	return PilotData.hit_chance(atk_stat, def_stat)
 
 

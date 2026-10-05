@@ -28,6 +28,8 @@ const SHADOW_LAYERS := 4
 const SHADOW_STEP := 1.5
 ## 설명문 인라인 아이콘 색 — 전략 점수 색.
 const ICON_COLOR := StrategyIcon.COLOR
+## `number_texture` rim width as a fraction of its height.
+const NUMBER_RIM_RATIO := 0.07
 ## 설명문 인라인 아이콘의 폭 / 높이.
 const ICON_ASPECT := 0.62
 ## 아랫변의 기울기 — 높이에 대한 오른쪽 아래가 짧아지는 비율.
@@ -112,6 +114,56 @@ static func _draw_shadow(ci: CanvasItem, pts: PackedVector2Array) -> void:
 ## `w`×`h` 픽셀 리본 텍스처 — 전략 점수 색 알맹이, 테두리 없음. 설명문 인라인 아이콘용.
 static func icon_texture(w: int, h: int) -> Texture2D:
 	return fill_texture(w, h, ICON_COLOR, float(h) * ICON_SLANT_RATIO)
+
+
+static var _num_cache: Dictionary = {}
+
+
+## A `w`×`h` px ribbon with `text` (the cost) on it, as a texture — the card face's
+## cost ribbon in miniature (white `FILL`, `INK` number and a thin `INK` rim so
+## it still reads on the white outgame panels; no shadow).
+## `RichTextLabel.add_image` only takes textures, so the label is rendered once by
+## a cached `SubViewport` (`UPDATE_ONCE`) parked under the SceneTree root. The
+## texture fills in on the first frame after the call. Callers pass 2x pixel
+## sizes and draw at 1x, like the other inline icons.
+static func number_texture(text: String, w: int, h: int) -> Texture2D:
+	w = maxi(1, w)
+	h = maxi(1, h)
+	var key: String = "%s:%dx%d" % [text, w, h]
+	if _num_cache.has(key):
+		var cached: SubViewport = _num_cache[key] as SubViewport
+		if is_instance_valid(cached):
+			return cached.get_texture()
+		_num_cache.erase(key)
+	var vp := SubViewport.new()
+	vp.size = Vector2i(w, h)
+	vp.transparent_bg = true
+	vp.disable_3d = true
+	vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+	var bg := TextureRect.new()
+	var pts: PackedVector2Array = points(Rect2(0.0, 0.0, float(w), float(h)),
+			float(h) * SLANT_RATIO)
+	bg.texture = StrategyIcon.raster_convex(w, h, pts, FILL, INK,
+			maxf(1.5, float(h) * NUMBER_RIM_RATIO))
+	bg.position = Vector2.ZERO
+	bg.size = Vector2(w, h)
+	vp.add_child(bg)
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.add_theme_font_size_override("font_size", maxi(1, int(round(float(h) * 0.62))))
+	lbl.add_theme_color_override("font_color", INK)
+	vp.add_child(lbl)
+	lbl.position = Vector2.ZERO
+	# Above the slanted bottom edge — same as `make_badge`.
+	lbl.size = Vector2(float(w), float(h) * (1.0 - SLANT_RATIO))
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	if tree != null and tree.root != null:
+		# Deferred: the root may be busy setting up children when this is called.
+		tree.root.call_deferred("add_child", vp)
+	_num_cache[key] = vp
+	return vp.get_texture()
 
 
 ## `w`×`h` 픽셀 단색 리본 텍스처 — 테두리 없이 가장자리 커버리지만 1px AA.

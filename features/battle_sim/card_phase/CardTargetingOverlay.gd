@@ -35,7 +35,8 @@ extends Node
 # **강조(확대)는 두 단계다.** 아무것도 가리키지 않은 동안은 `target_pilots`
 # (사거리 안의 유효 대상)가 커진다. 대상을 가리키면 그 카드 효과가 실제로 닿을
 # 파일럿(`pick_pilots` — 대상 + 효과 범위 안의 교전 참가자 / 피격자)만 커지고
-# 나머지 유효 대상은 원래 크기로 돌아온다. 대상에서 벗어나면 다시 앞 단계다.
+# 나머지 유효 대상은 원래 크기로 돌아오며 딤드되고, 타일도 효과 범위
+# (`pick_bright_cells`)만 밝다. 대상에서 벗어나면 다시 앞 단계다.
 
 enum Mode { NONE, INSTANT, PILOT, LOCATION, PREVIEW }
 
@@ -133,6 +134,9 @@ func should_dim_pilot(p: PilotData) -> bool:
 		return false
 	match mode:
 		Mode.PILOT, Mode.LOCATION:
+			# 대상을 가리킨 동안은 그 효과가 닿는 파일럿만 밝다 — 다른 유효 대상도 딤.
+			if pending_pick != null:
+				return not pick_pilots.has(p)
 			return not (target_pilots.has(p) or pick_pilots.has(p))
 		Mode.PREVIEW:
 			return not target_pilots.has(p)
@@ -148,6 +152,28 @@ func is_emphasized(p: PilotData) -> bool:
 	if pending_pick != null and mode != Mode.PREVIEW:
 		return pick_pilots.has(p)
 	return target_pilots.has(p)
+
+
+## 대상을 가리킨 동안 밝게 남는 칸 — 효과 범위(`pick_cells`) + 대상 칸 자체.
+## 범위가 없는 단일 대상 카드는 대상 칸 하나만 남는다. 가리킨 것이 없으면 빈 집합.
+func pick_bright_cells() -> Dictionary:
+	var out: Dictionary = pick_cells.duplicate()
+	if pending_pick is PilotData:
+		out[(pending_pick as PilotData).grid_pos] = true
+	elif pending_pick is Vector2i:
+		out[pending_pick as Vector2i] = true
+	return out
+
+
+## 지금 가리킨 파일럿 — BattleRenderer 가 이 초상을 맨 위에(딤 위에) 그린다.
+## LOCATION 은 칸을 들고 있으므로 초상으로 집은 파일럿이 그 칸에 서 있을 때만.
+func picked_pilot() -> PilotData:
+	if mode == Mode.PILOT and pending_pick is PilotData:
+		return pending_pick as PilotData
+	if mode == Mode.LOCATION and pending_pick is Vector2i and _marker_pick != null \
+			and _marker_pick.alive and _marker_pick.grid_pos == (pending_pick as Vector2i):
+		return _marker_pick
+	return null
 
 
 # Cells inside the caster's range (LOCATION / PILOT use cast_range; PREVIEW

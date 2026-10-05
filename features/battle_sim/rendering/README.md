@@ -38,7 +38,7 @@ Reads all state from `_bs` (the BattleSim parent).
    **먼저** 그려 이웃한 차 있는 칸의 선이 먹히지 않게 한다). 테두리가 사라지는
    것만으로는 "여긴 아직 안 먹었다"와 "여긴 방금 먹었다"가 같은 그림이 된다 —
    밝기 한 단계를 내려 두면 정글러가 어디로 돌아야 하는지가 색만으로 읽히고,
-   재생성(6턴)이 돌면 그늘이 걷히며 노란 테두리가 돌아온다.
+   재생성(7턴)이 돌면 그늘이 걷히며 노란 테두리가 돌아온다.
 
    **캠프 아웃라인은 덩어리로 이어 붙는다.** 한 변을 그리는 조건은 하나 —
    그 변 너머의 이웃이 **차 있는 캠프가 아닐 것**. 그래서 캠프 두 칸이
@@ -600,7 +600,7 @@ same solve, so hit-testing never disagrees with what is on screen.
 | LOCATION | 사거리 안 + `valid_cells` + `pick_cells` | 유효 셀 초록 채움 + 외곽선 |
 | PREVIEW | `area_cells` (시전자 교전 반경 `self_range`, 없으면 1) | 노란 채움 + 외곽선 |
 | INSTANT | 전부 (딤 자체가 없다) | 없음 |
-| 대상을 가리킨 동안 (PILOT / LOCATION) | 위 + 효과 범위 `pick_cells` | 노란 채움 + 외곽선 |
+| 대상을 가리킨 동안 (PILOT / LOCATION) | **효과 범위만** — `pick_bright_cells()` (`pick_cells` + 대상 칸; 범위 없는 단일 대상 카드는 대상 칸 하나). 사거리는 다시 딤드 | 범위 칸 노란 채움 + 외곽선 |
 
 > 예전에는 PILOT 이 **타일 전부 딤**, LOCATION 이 유효 셀만 밝음이라 카드의 사거리가
 > 화면 어디에도 보이지 않았다(사용자 요청으로 사거리 딤 복원). PREVIEW 의 영역도
@@ -622,7 +622,15 @@ same solve, so hit-testing never disagrees with what is on screen.
   (`CardTargetingOverlay._hit_test_pilot`).
 
 파일럿 딤은 `should_dim_pilot` 이 가른다 — PILOT / LOCATION 은 `target_pilots`
-에도 `pick_pilots` 에도 없는 파일럿, PREVIEW 는 비참여자. **시전자(`card_caster`)는
+에도 `pick_pilots` 에도 없는 파일럿(**대상을 가리킨 동안은 `pick_pilots` 밖 전원** —
+다른 유효 대상도 딤드), PREVIEW 는 비참여자.
+
+**가리킨 대상의 초상은 맨 위다.** `_draw()` 가 프레임 앞머리에
+`CardTargetingOverlay.picked_pilot()`(PILOT 의 `pending_pick`, LOCATION 은 초상으로
+집은 파일럿이 그 칸에 서 있을 때)을 `_pick_top` 에 받아 두고, 그 초상은 칸 순회
+(`_draw_pilot_cell`)와 `_top_pilot` 재그리기에서 빠졌다가 **파일럿 딤 원판 뒤에**
+`_draw_pending_pick_highlight` 가 그림자째 다시 그린다(시안 링은 그 위, LOCATION
+칸 외곽선은 그 밑). 이웃 칸 초상이나 그 딤 원판이 대상 얼굴을 덮지 않는다. **시전자(`card_caster`)는
 어느 모드에서도 딤드되지 않는다** — 딤은 "여기엔 놓을 수 없다"는 말인데 카드를
 쏘는 당사자에게 그 말은 성립하지 않는다. **대신 강조 대상도 아니다**: 시전자는
 자기가 그 카드의 유효 대상일 때(보호 / 복귀 같은 `target=ally` 카드)나 효과 범위에

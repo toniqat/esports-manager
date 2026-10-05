@@ -271,7 +271,7 @@ func is_ready(p: PilotData) -> bool:
 		_:             return false
 
 
-## 초상화 밝기 와이프의 채움 비율 0..1 — "얼마나 준비됐는가".
+## 스킬 배지 쿨타임 부채꼴의 채움 비율 0..1 — "얼마나 준비됐는가".
 ##
 ## **패시브는 언제나 1.0** 이다: 누를 수 없는 대신 상시 적용이라 "아직 안 됐다"가
 ## 성립하지 않는다. 충전을 쌓는 패시브의 충전 수는 초상화 옆 숫자가 말한다.
@@ -288,23 +288,6 @@ func progress(p: PilotData) -> float:
 			return clampf(float(st["charge"]) / float(need), 0.0, 1.0)
 		_:
 			return 1.0
-
-
-## 초상화 오른쪽에 찍히는 숫자. 빈 문자열이면 아무것도 안 찍는다.
-## 쿨타임은 **남은 턴**(준비되면 빈칸), 충전은 **충전 수**다.
-func badge_text(p: PilotData) -> String:
-	var st: Dictionary = states.get(p, {})
-	if st.is_empty():
-		return ""
-	match skill_type(p):
-		TYPE_COOLDOWN:
-			var left: int = cooldown_left(p)
-			return "" if left <= 0 else str(left)
-		TYPE_CHARGE:
-			return str(int(st["charge"]))
-		_:
-			# 충전을 쌓는 패시브만 숫자를 갖는다(퍼포먼스 · 축적 · 신예 …).
-			return str(int(st["charge"])) if int(st["def"]["p2"]) > 0 else ""
 
 
 ## 상세 패널이 쓰는 한 줄 상태 문구.
@@ -424,7 +407,7 @@ func _act_ops_prep(p: PilotData) -> String:
 
 
 ## 계략 — 손패 한 장에 보존을 건다. 고르는 화면은 계획 중시(`preserve:N`)와
-## 같은 그리드를 그대로 쓴다. **취소는 아무것도 소모하지 않는다** — 오버레이가
+## 같은 손패 픽(중앙 구역에 끌어다 놓기)을 쓴다. **취소는 아무것도 소모하지 않는다** — 오버레이가
 ## 취소로 닫히면 `activate` 가 빈 문자열을 받아 쿨타임도 안 돈다.
 func _act_scheme(p: PilotData) -> String:
 	if _bs.player_hand.is_empty():
@@ -433,7 +416,7 @@ func _act_scheme(p: PilotData) -> String:
 		return ""
 	_bs.card_select_overlay.start_preserve(1,
 			_on_scheme_picked, _on_scheme_cancelled)
-	return "손패 1장에 보존"
+	return "손 1장에 보존"
 
 
 func _on_scheme_picked(picks: Array) -> void:
@@ -448,7 +431,7 @@ func _on_scheme_cancelled() -> void:
 	# 고르지 않고 닫았다 — 보존도 안 걸리고 쿨타임도 이미 돌았다. 오버레이를
 	# 여는 시점에 쿨타임을 먹이지 않으려면 여기서 되돌려야 하는데, 그러려면
 	# 어느 파일럿이 열었는지를 들고 있어야 한다. 지금은 취소해도 스킬은
-	# 소모된 것으로 둔다 — 그리드가 열린 순간 이미 "썼다"이기 때문이다.
+	# 소모된 것으로 둔다 — 픽이 열린 순간 이미 "썼다"이기 때문이다.
 	_refresh_hand()
 
 

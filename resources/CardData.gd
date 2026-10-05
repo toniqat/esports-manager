@@ -50,8 +50,8 @@ const KW_VOLATILE := "volatile"
 const KW_CHARGE := "charge"
 ## 재배치 — **손패 맨 왼쪽으로 이동한다.** 낼 수 있는 카드는 쓰고 나면 버린
 ## 더미 대신 손패 맨 왼쪽으로 돌아온다(정밀 이동 · 골드러시 — 둘 다 그때마다
-## 자기 비용을 올리는 `self_cost:N` 을 함께 단다). 낼 수 없는 카드(자신감)는
-## 설명문이 정한 사건에 재배치된다. 라우팅은 `CardPhaseManager._dispose_used_card`.
+## 자기 비용을 올리는 `self_cost:N` 을 함께 단다). 라우팅은
+## `CardPhaseManager._dispose_used_card`.
 const KW_REPOSITION := "reposition"
 
 ## 키워드 → 화면 이름. 설명판 · 상세 패널이 같은 표를 읽는다.
@@ -64,8 +64,21 @@ const KEYWORD_NOTES: Dictionary = {
 	KW_EXHAUST: "사용하면 이 게임에서 사라진다",
 	KW_PRESERVE: "버려지지 않는다",
 	KW_VOLATILE: "버려지면 더미로 가지 않고 사라진다",
-	KW_CHARGE: "손패에 들어올 때마다 토큰 +1 (최대 %d)",
-	KW_REPOSITION: "손패 맨 왼쪽으로 이동",
+	KW_CHARGE: "손에 들어올 때마다 토큰 +1 (최대 %d)",
+	KW_REPOSITION: "사용 후 손 맨 왼쪽으로 돌아온다",
+}
+
+## **특수 키워드** — 설명문에서 `[이름]` 으로 감싼 효과 용어. 설명문에는 대괄호 없이
+## 특수 키워드 색으로 찍히고(`StrategyIcon.fill_rich`), 설명판이 용어마다 풀이 판을
+## 단다(`CardDescBox`). 이 표에 없는 `[이름]` 은 **카드 이름**으로 보고, 풀이 판 대신
+## 그 카드의 설명판(비용 · 이름 · 설명)을 세운다.
+const SPECIAL_NOTES: Dictionary = {
+	"추적": "대상이 교전에 참여하면 시전자도 함께 참여한다",
+	"반응 장갑": "공격당하면 그 피해를 90% 줄이고 1 사라진다. 전장을 떠나면 모두 사라진다",
+	"목표": "시전자에게 받는 피해 +15%. 새 목표를 정하면 이전 목표는 풀린다",
+	"현상금": "대상의 성장 점수 일부를 값으로 매긴 표식. 확신 카드의 피해가 이 값에 비례한다",
+	"기절": "교전에서 자기 차례 한 번을 건너뛴다",
+	"취약": "1마다 받는 피해 +1%",
 }
 
 # 카드 종류 (cards.csv `card_type` 컬럼). **cards.csv 의 행은 전부 파일럿

@@ -205,7 +205,7 @@ func _build_card(panel: Panel, cd: CardData, at: Vector2, iw: float,
 ## 차이라 카드 그림만으로는 안 나온다.
 func _where_text(is_herald: bool) -> String:
 	if is_herald:
-		return "획득 즉시 손패로 들어온다"
+		return "획득 즉시 손으로 들어온다"
 	return "획득 시 덱에 섞여 들어간다"
 
 

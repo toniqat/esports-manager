@@ -457,9 +457,6 @@ func _finish_engage() -> void:
 	# 교전 한 번**짜리 상태가 여기서 걷힌다(`on_engage_start` 의 짝이다).
 	if _bs.mech_skill != null:
 		_bs.mech_skill.on_engage_end(_team_pilots[0] + _team_pilots[1])
-	# 파일럿 카드 쪽 교전 종료 훅 — 살아남은 참가자의 [자신감] 이 재배치된다.
-	if _bs.card_phase != null:
-		_bs.card_phase.on_engage_end(_team_pilots[0] + _team_pilots[1])
 	_bs.last_log = _result_log()
 	_bs.blog.log_event("ENGAGE", "전투 개시 종료 — t0=%s t1=%s"
 			% [_engage_side_str(0), _engage_side_str(1)])

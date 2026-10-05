@@ -22,6 +22,9 @@ quirk) — access at runtime via `get_node("/root/GameManager")`.
   칸마다 분류 목록)로 결정적으로 뽑는다. 씨앗은 선수면 `7919 + id`, 단독 실행이면
   팀 · 역할.
 - `card_def(id)` — `card_pool_bs` 한 행. `parse_card_ids("12|36|41")` — CSV 칸 파서.
+- `card_costs_by_name()` — 카드 이름 → 기본 비용(`card_pool_bs` + `mech_card_defs`, 이름이
+  겹치면 파일럿 카드가 이긴다). 처음 부를 때 한 번 만들어 캐시한다. 스킬 설명문의
+  `[카드명]` 앞 비용 리본(`StrategyIcon.fill_rich(..., card_costs)`)용.
 - `pilot_card_slots: Dictionary` — `_ready` 에서 `pilot_card_slots` 테이블을 읽는다.
 
 #### game.db 경로 — `db_path()`

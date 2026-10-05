@@ -6,9 +6,12 @@ extends Node
 #   좌: 전신 아트 **두 장** — 앞에 선 쪽이 밝고, 뒤에 선 쪽은 오른쪽으로 밀린 채
 #       검게 딤드된다. 앞뒤는 **탭**이 정한다(인게임·파일럿 → 사람 / 메크 → 기체).
 #       그 **좌측 하단**에 지속 효과 썸네일이 앉는다(제목 없이 칸만).
-#   우: **머리글**(파일럿 이름 / 그 아래 메크 이름 + 오른쪽에 성장치) → 탭 셋
-#       → 상세 패널(스탯 칩 + 파일럿 스킬)
-#   우하: 정보 칼럼 아래에 보유 카드가 손패와 같은 부채꼴(손패의 80%)로 선다
+#   우: 세 개의 판 — **머리글**(파일럿 이름 / 그 아래 메크 이름 + 오른쪽에 성장치)
+#       → 탭 셋 + 스탯 칩 판 → (인게임 탭) **파일럿 스킬** 판
+#   우하: 정보 칼럼 아래에 보유 카드가 손패와 같은 부채꼴(손패와 같은 크기)로 선다
+#
+# 닫기 버튼은 없다 — 탭 · 칩 · 카드(근처) · 사용 버튼이 아닌 곳을 누르면 닫힌다.
+# 열 때 / 닫을 때 아트와 판이 짧게 미끄러지며 페이드한다(`_play_open` / `_play_close`).
 #
 # **머리글은 탭과 분리돼 있다.** 이름 · 기체명 · 성장치는 어느 탭을 보든 같은
 # 파일럿의 것이므로 탭이 바뀔 때마다 다시 세울 이유가 없고, 예전처럼 본문
@@ -92,28 +95,31 @@ const ART_PLACEHOLDER_ASPECT: float = 0.70
 # **정보 블록은 아래쪽에 있다.** 아트가 커지면서 화면 위쪽 절반이 인물의
 # 머리·상체 자리가 됐고, 스탯이 예전 자리(y 170)에 남으면 얼굴을 덮는다.
 # ─── 머리글 (탭 위, 상세 패널과 분리) ───────────────────────────────────────
-# 파일럿 이름 + 기체명 + 성장치 한 줄. **탭 바로 위**에 자기 받침을 깔고 앉아
-# 있고, 탭이 바뀌어도 다시 세워지지 않는다(`_build_header_block` 은 `_build`
+# 성장치(맨 위 가운데) + 파일럿 이름 + 기체명. **탭 바로 위**에 자기 받침을 깔고
+# 앉아 있고, 탭이 바뀌어도 다시 세워지지 않는다(`_build_header_block` 은 `_build`
 # 에서 한 번만 돈다).
-const HDR_TOP: float = 424.0
-## 머리글 받침의 아래끝 = 탭 바의 윗변. 둘이 맞닿아 "이 탭들은 이 파일럿의
-## 것"으로 읽힌다.
-const HDR_BOTTOM: float = 562.0
+const HDR_TOP: float = 362.0
+## 머리글 받침의 아래끝 — 탭 바 윗변(562)에서 `PANEL_GAP` 만큼 위. 머리글 · 스탯 ·
+## 스킬은 **각자 자기 판**이다(사이가 떠 있다).
+const HDR_BOTTOM: float = 546.0
+## 오른쪽 세 판(머리글 / 탭+스탯 / 파일럿 스킬) 사이 간격.
+const PANEL_GAP: float = 16.0
 const HDR_NAME_FONT: int = 40
 ## 기체명 — 이름 **아래 줄**에 작게. 예전에는 이름 오른쪽에 이어 붙였는데,
 ## 줄의 시작점이 곧 이름 폭이라 파일럿마다 기체명이 다른 x 에서 시작했다 —
 ## 어디를 보면 기체명인지가 파일럿마다 흔들린 셈이다. 두 줄로 쌓으면 시작점이
-## 언제나 같고, 오른쪽 성장치는 두 줄 덩어리의 세로 가운데에 선다.
+## 언제나 같다.
 const HDR_MECH_FONT: int = 24
-## 이름 줄 / 기체명 줄의 높이. 둘의 합이 머리글 받침의 내용 높이다 —
-## `HDR_BOTTOM` 은 탭 바의 윗변이라 못 박혀 있으므로, 줄이 늘면 `HDR_TOP` 이
-## 위로 올라가야 한다(지금 424 = 562 − 여백 52 − 84).
+## 성장치 줄 / 이름 줄 / 기체명 줄의 높이. 셋의 합이 머리글 받침의 내용 높이다 —
+## `HDR_BOTTOM` 은 탭 바 위로 못 박혀 있으므로, 줄이 늘면 `HDR_TOP` 이
+## 위로 올라가야 한다(지금 362 = 546 − 여백 52 − 132).
+const HDR_GROWTH_H: float = 48.0
 const HDR_NAME_H: float = 52.0
 const HDR_MECH_H: float = 32.0
 const HDR_MECH_COLOR := Color(0.68, 0.74, 0.86)
+## 성장치 — 머리글 **맨 위 가운데**. 예전에는 이름 줄 오른쪽 170px 칸이었고,
+## 인게임 탭에는 `성장 +N%` 칩이 따로 있었다(삭제 — 성장치 하나로 읽는다).
 const HDR_GROWTH_FONT: int = 40
-## 성장치 칸의 폭. 이름 줄은 그만큼 좁아진다.
-const HDR_GROWTH_W: float = 170.0
 
 const STAT_X: float = 600.0
 const STAT_W: float = 452.0
@@ -142,20 +148,41 @@ const TAB_BG_OFF := Color(0.06, 0.07, 0.11, 0.80)
 const TAB_BORDER_ON := Color(0.62, 0.80, 1.0, 0.95)
 const TAB_BORDER_OFF := Color(0.26, 0.29, 0.38, 0.65)
 
-# ─── 스탯 칩 ─────────────────────────────────────────────────────────────────
-# 끝이 둥근 사각형 한 칸 = 스탯 하나. 위에 작게 이름, 아래에 크게 **최종 값**.
-# 3열이라 인게임 6칸이 정확히 2행, 파일럿 5칸이 2행(마지막 줄 2칸), 메크 3칸이
-# 1행으로 떨어진다.
-const CHIP_COLS: int = 3
-const CHIP_GAP: float = 14.0
-const CHIP_H: float = 92.0
-const CHIP_RADIUS: int = 18
+# ─── 스탯 칸 ─────────────────────────────────────────────────────────────────
+# 스탯 판 위에 얹힌 **작은 판 하나 = 스탯 하나** — 왼쪽에 이름, 오른쪽 정렬로
+# **최종 값**. 줄 하나에 칸이 하나면 판 폭 전체(체력 · 공격력 · 존재감), 둘이면
+# 반씩(전장 명중 | 전장 회피 …). 탭마다 줄 구성은 `_chip_defs` 가 정한다.
+# 예전에는 3열 칩(위 이름 / 아래 큰 값)이었다.
+const CHIP_GAP: float = 10.0
+const CHIP_H: float = 56.0
+const CHIP_RADIUS: int = 12
+const CHIP_PAD_X: float = 16.0
 const CHIP_BG := Color(0.10, 0.12, 0.18, 0.94)
 const CHIP_BG_HL := Color(0.17, 0.22, 0.34, 0.98)
 const CHIP_BORDER := Color(0.32, 0.36, 0.48, 0.80)
 const CHIP_BORDER_HL := Color(0.72, 0.86, 1.0, 0.95)
-const CHIP_NAME_FONT: int = 20
-const CHIP_NAME_H: float = 28.0
+const CHIP_NAME_FONT: int = 22
+const CHIP_VALUE_FONT: int = 28
+## 이름 앞 스탯 아이콘 — 이름 글자색으로 굽는다.
+const CHIP_ICON_PX: float = 26.0
+const CHIP_ICON_GAP: float = 6.0
+## 칩 key → `KeywordIcon` 아이콘. 같은 스탯은 탭이 달라도 같은 아이콘이다.
+const CHIP_ICONS: Dictionary = {
+	"hp": KeywordIcon.HP, "m_hp": KeywordIcon.HP,
+	"atk": KeywordIcon.ATK, "m_atk": KeywordIcon.ATK,
+	"presence": KeywordIcon.PRESENCE, "m_presence": KeywordIcon.PRESENCE,
+	"hit": KeywordIcon.FIELD_HIT, "field_hit": KeywordIcon.FIELD_HIT,
+	"eva": KeywordIcon.FIELD_EVA, "field_eva": KeywordIcon.FIELD_EVA,
+	"e_hit": KeywordIcon.ENGAGE_HIT, "engage_hit": KeywordIcon.ENGAGE_HIT,
+	"e_eva": KeywordIcon.ENGAGE_EVA, "engage_eva": KeywordIcon.ENGAGE_EVA,
+	"atk_growth": KeywordIcon.ATK_GROWTH, "hp_growth": KeywordIcon.HP_GROWTH,
+}
+## 값 뒤의 괄호 보너스 `(+N)` — 체력 · 공격력은 기본값 대비 증감, 존재감은 특수
+## 능력의 가산분(+ 일 때만). 0 이면 괄호를 달지 않는다.
+const CHIP_BONUS_FONT: int = 22
+const CHIP_BONUS_GAP: float = 6.0
+const BONUS_UP_COLOR := Color(0.45, 0.90, 0.55)
+const BONUS_DOWN_COLOR := Color(0.98, 0.42, 0.42)
 
 # ─── 칩 컨텍스트 메뉴 ────────────────────────────────────────────────────────
 # **정보 칼럼 왼쪽에** 펼친다 — 오른쪽은 화면 끝(1080)까지 28px 밖에 없고,
@@ -165,10 +192,14 @@ const MENU_W: float = 372.0
 const MENU_ROW_H: float = 36.0
 const MENU_PAD := Vector2(20.0, 16.0)
 const MENU_GAP_X: float = 16.0
-const MENU_BG := Color(0.07, 0.09, 0.14, 0.97)
-const MENU_BORDER := Color(0.62, 0.80, 1.0, 0.85)
-## 판 아래의 설명 글. 카드 설명이 여기로 들어오므로 판 높이는 이 글의 실제
-## 줄 수에서 유도한다(`_text_height`).
+## 판 모양은 카드 설명판과 같다(`CardDescBox.panel_style` — 불투명 · 테두리 없음 ·
+## 아래로 흐릿한 드롭 섀도). 이 색은 설명 글 속 아이콘이 파내는 판 바탕색이다.
+const MENU_BG := Color(0.08, 0.08, 0.12, 1.0)
+## 설명 글의 `{attack}` · `{engage}` 자리에 서는 아이콘.
+const MENU_NOTE_ICON: Dictionary = {
+	"attack": KeywordIcon.ATTACK, "engage": KeywordIcon.ENGAGE,
+}
+## 판 아래의 설명 글. 판 높이는 그려진 글의 실제 높이에서 유도한다(`_make_note`).
 const MENU_NOTE_FONT: int = 20
 ## 이름 칸이 차지하는 비율. 나머지가 값 칸이다. 0.52 이던 시절 "다음 작전
 ## 단계까지" 같은 값이 159px 안에 안 들어가 **왼쪽부터 잘려 나갔다** — 오른쪽
@@ -211,82 +242,71 @@ const FX_VALUE_BAND := Color(0.0, 0.0, 0.0, 0.62)
 const FX_LEFT_X: float = 26.0
 ## 한 줄이 쓸 수 있는 폭 — 정보 칼럼(x 600)과 부딪히지 않는 선. 여섯 칸이 든다.
 const FX_ROW_W: float = 520.0
-## 썸네일 줄의 아래끝과 카드 줄 제목 사이 간격. 줄은 여기서 **위로** 자란다 —
-## 아래로 자라면 두 줄짜리 효과 목록이 카드 부채꼴 위로 내려앉는다.
-const FX_ABOVE_TITLE_GAP: float = 20.0
+## 썸네일 줄의 아래끝과 카드 부채꼴 윗변 사이 간격(호버로 커진 카드가 ≈17px
+## 솟는 몫 포함). 줄은 여기서 **위로** 자란다 — 아래로 자라면 두 줄짜리 효과
+## 목록이 카드 부채꼴 위로 내려앉는다.
+const FX_ABOVE_FAN_GAP: float = 36.0
 
-# ─── 카드 (손패와 같은 부채꼴, 정보 칼럼 아래 · 화면 오른쪽 아래) ──────────
-# 손패와 **같은 카드 노드**(`Card.tscn`)를 손패와 **같은 모습**으로 세운다 —
-# 같은 부채꼴 기하(`BattleSim.BS_HAND_*`), 같은 호버(가리키면 `Card.HOVER_SCALE`
-# 로 커지고 밝아지며 이웃이 비켜남), 같은 드로우 인트로(뒷면으로 화면 왼쪽
-# 바깥에서 날아와 뒤집히며 안착). 다른 그림이면 "이 카드가 그 카드"라는 연결이
-# 끊긴다.
+# ─── 보유 카드 (손패와 같은 자리 · 같은 부채꼴) ─────────────────────────────
+# 손패와 **같은 카드 노드**(`Card.tscn`)를 손패와 **같은 자리, 같은 모습**으로
+# 세운다 — 화면 가로 가운데, 손패 너비(`BattleSim.BS_HAND_WIDTH`) 안에서 같은
+# 간격 압축(`CardPhaseManager.slot_spacing` 규칙), 같은 행 높이(`BS_HAND_CENTER`),
+# 같은 부채꼴 기울기 · 처짐, 같은 호버(`Card.HOVER_SCALE` 확대 + 이웃 비켜남),
+# 같은 드롭 쉐도우(`Card` 의 그림자 — `is_player_card` 로 켠다). 다른 그림이면
+# "이 카드가 그 카드"라는 연결이 끊긴다. 드로우 인트로(뒷면으로 날아와 뒤집힘)는
+# 쓰지 않는다 — 대신 열 때 가운데로 모여 있던 카드가 **살짝 펼쳐진다**
+# (`FAN_SPREAD_FROM` → 1).
 #
-# **크기는 손패의 80%**(`FAN_SIZE_VS_HAND`) — `CardPhaseManager.HAND_CARD_SCALE`
-# × 0.8. 손패 기하의 길이 값(반지름 · 간격 · 밀어내기)도 같은 배율로 줄여서
-# 기울기와 겹침 비율이 손패와 똑같다.
-#
-# **자리는 정보 칼럼 아래, 화면 오른쪽 아래**(x `FAN_X` .. `FAN_X + FAN_W`).
-# 예전에는 화면 하단 전체 폭에 ×1.60 카드가 섰는데, 왼쪽 일러스트의 다리를
-# 덮고 정보 칼럼과는 따로 놀았다.
-#
-# **인게임 탭은 6장 전부**(파일럿 3 → 메크 3), 파일럿 / 메크 탭은 그 탭의 3장이
-# 같은 자리에 선다.
-## 손패 대비 카드 크기.
-const FAN_SIZE_VS_HAND: float = 0.80
-## 부채꼴이 쓰는 가로 구간 — 정보 칼럼 받침과 같은 폭.
-const FAN_X: float = STAT_X - 22.0
-const FAN_W: float = STAT_W + 44.0
-## 양 끝 카드 가장자리가 구간 안쪽으로 물러나는 거리 — 기울기와 호버 확대가
-## 바깥 모서리를 밀어내므로 화면 오른쪽 끝(1080)에 닿지 않게 한다.
-const FAN_EDGE_INSET: float = 14.0
-## 가장 깊이 처지는 카드 + 호버 확대(×1.2)가 아래로 늘어나는 몫.
-const FAN_DROP_RESERVE: float = 30.0
-## 그 아래, 안전 영역 바닥까지의 여백.
-const FAN_BOTTOM_PAD: float = 26.0
-## 카드 줄 제목이 부채꼴 윗변에서 위로 떨어진 거리. 호버로 커진 카드(위로 ≈17px)
-## 가 제목을 덮지 않을 만큼.
-const FAN_TITLE_GAP: float = 64.0
-const FAN_TITLE_FONT: int = 26
+# **어느 탭이든 6장 전부**(파일럿 3 → 메크 3)가 같은 자리에 선다. 탭에 맞지 않는
+# 카드(파일럿 탭의 메크 카드 · 메크 탭의 파일럿 카드)는 **딤드되고 눌리지 않는다**
+# — 카드 노드는 탭이 바뀌어도 다시 세우지 않고 딤 / 입력 밴드만 고친다
+# (`_rebuild_fan_hits`). 카드 줄 제목은 없다 — 손패에도 없다.
+## 펼침 연출 — 시작할 때 각 카드의 가로 오프셋(dx)에 곱하는 값과 걸리는 시간.
+const FAN_SPREAD_FROM: float = 0.55
+const FAN_SPREAD_SEC: float = 0.24
+## 부채꼴 둘레의 여유 — 이 안의 빈 곳(겹친 카드 사이 틈 · 딤드 카드)은 눌러도
+## 상세 화면이 닫히지 않는다(`_card_zone`).
+const FAN_ZONE_PAD: float = 24.0
+## 정보 칼럼(머리글 · 탭 · 스탯 판 · 스킬 판) 둘레의 여유. 칩이나 탭을 조금
+## 빗겨 눌러도 이 안이면 화면이 닫히지 않는다.
+const INFO_ZONE_PAD: float = 40.0
 
-# ─── 하: 닫기 ────────────────────────────────────────────────────────────────
-# **받침 아래끝에 붙어 다닌다.** 탭마다 내용 높이가 달라(인게임 ~360 / 파일럿
-# ~600) 한 자리에 못 박아 두면 짧은 탭에서 버튼만 화면 한가운데에 떠 있다 —
-# 어느 판에 달린 버튼인지가 안 보인다. 자리가 바뀌는 것은 **탭을 누른 순간**
-# 뿐이고, 값만 바뀌는 `refresh()` 는 받침을 건드리지 않으므로 버튼이 숫자를
-# 따라 위아래로 떨지 않는다.
-# ─── 파일럿 스킬 블록 (인게임 탭 · 카드 줄 아래) ────────────────────────────
-# 스킬은 카드와 다른 종류의 자원이라 카드 격자에 섞지 않고 **자기 블록**을 갖는다
-# — 이름 · 타입 · 설명문 · 상태 한 줄 · 그리고 큰 사용 버튼. 지속 효과 썸네일에
-# 한 칸으로 끼워 넣는 길도 있었지만, 그러면 "지금 쓸 수 있는가"를 알려면 썸네일을
-# 한 번 더 눌러야 한다 — 스킬은 누르라고 있는 것이므로 버튼이 바로 보여야 한다.
-const SKILL_SECTION_H: float = 34.0
+# ─── 파일럿 스킬 판 (인게임 탭 · 스탯 판 아래, 자기 판) ───────────────────
+# 스킬은 카드와 다른 종류의 자원이라 **자기 판**을 갖는다 — 왼쪽에 아이콘 타일
+# (`SkillImages.make_icon_tile`, 흐린 그림자), 오른쪽에 이름 · 설명문, 아래에 큰
+# 사용 버튼. 제목 줄("파일럿 스킬")과 타입 · 키워드 꼬리표는 없다 — 판 자체가
+# 이름표이고, 타입은 버튼(있다 / 없다 / 딤드)이 말한다.
 const SKILL_NAME_FONT: int = 30
-const SKILL_TYPE_FONT: int = 20
 const SKILL_DESC_FONT: int = 22
 const SKILL_STATUS_FONT: int = 22
-const SKILL_KW_FONT: int = 19
-const SKILL_KW_COLOR := Color(0.58, 0.63, 0.76)
 const SKILL_LINE_GAP: float = 8.0
 const SKILL_NAME_COLOR := Color(1.0, 0.88, 0.52)
-const SKILL_TYPE_COLOR := Color(0.66, 0.78, 0.96)
 const SKILL_DESC_COLOR := Color(0.88, 0.90, 0.95)
-const SKILL_READY_COLOR := Color(0.70, 1.0, 0.78)
 const SKILL_WAIT_COLOR  := Color(0.80, 0.82, 0.90)
 const SKILL_USE_H: float = 68.0
-## 타입 이름 — CSV 값 그대로는 화면에 안 쓴다.
-const SKILL_TYPE_LABEL: Dictionary = {
-	"cooldown": "쿨타임", "charge": "충전식", "passive": "패시브",
-}
+const SKILL_TILE_PX: float = 92.0
+const SKILL_TILE_GAP: float = 18.0
+const SKILL_TILE_BG := Color(0.22, 0.26, 0.38)
+const SKILL_TILE_ICON := Color(1.0, 0.94, 0.78)
+const SKILL_TILE_SHADOW := Color(0.0, 0.0, 0.0, 0.70)
+## 설명문 키워드 아이콘 색 / 필중 아이콘을 파내는 판 바탕색 — 카드 설명판(어두운 판)과 같다.
+const SKILL_KW_ICON := Color(0.55, 0.85, 1.0)
+const SKILL_KNOCK := Color(0.04, 0.05, 0.09)
 
-const BTN_W: float = 212.0
-const BTN_H: float = 76.0
-## 받침 아래끝과 버튼 윗변 사이 간격.
-const BTN_GAP_Y: float = 24.0
+# ─── 열기 / 닫기 연출 ────────────────────────────────────────────────────────
+# 열 때: 아트가 왼쪽에서 살짝 오른쪽으로 오며, 정보 판들이 아래에서 올라오며 페이드인.
+# 닫을 때: 그 반대(아트는 왼쪽으로, 판은 아래로) 페이드아웃. 딤도 같이 페이드.
+const OPEN_SEC: float = 0.2
+const CLOSE_SEC: float = 0.1
+const ART_SLIDE_PX: float = 48.0
+const UI_SLIDE_PX: float = 56.0
 
 var _bs: BattleSim = null
 var _layer: CanvasLayer = null
 var _root: Control = null
+## 딤 / 정보 판 묶음(머리글 · 탭 · 본문). 열기 · 닫기 연출이 이 둘과 아트 홀더를 움직인다.
+var _dim: ColorRect = null
+var _ui_root: Control = null
 var _pilot: PilotData = null
 var _tab: int = Tab.INGAME
 
@@ -306,6 +326,9 @@ var _growth_label: Label = null
 ## 스킬 없는 파일럿에서는 버튼이 null 이다.
 var _skill_status: Label = null
 var _skill_use_btn: Button = null
+## 판을 세울 때 상태 줄을 넣었는가. 준비 완료(쿨타임 0)면 "사용 가능" 줄을 빼므로
+## 이 값이 지금 답과 달라지면 `refresh()` 가 본문을 다시 세운다.
+var _skill_status_shown: bool = false
 
 # 본문(칩 · 효과 · 카드)은 탭이 바뀔 때 통째로 다시 세운다 — 구성이 아예 다르다.
 # 값만 바뀌는 `refresh()` 는 이 트리를 건드리지 않고 라벨만 고친다.
@@ -332,22 +355,19 @@ var _fx_keys: Array = []
 var _menu_key: String = ""
 var _menu_root: Control = null
 
-var _close_btn: Button = null
-
-# 보유 카드 부채꼴 상태. `_build_card_fan` 이 채우고 `_rebuild_body` 가 비운다.
+# 보유 카드 부채꼴 상태. `_build_card_fan` 이 열 때 한 번 채우고 `close()` 가
+# 비운다 — 탭 전환 · 본문 재구성은 입력 밴드(`_fan_hits`)만 다시 세운다.
 var _fan_nodes: Array = []             # Array[Card], 왼쪽부터
-var _fan_keys: Array = []              # 같은 순서의 `card:` 키
+var _fan_cards: Array = []             # 같은 순서의 CardData
+var _fan_slots: Array = []             # 같은 순서의 "pilot" / "mech"
+var _fan_keys: Array = []              # 같은 순서의 `card:` 키 ("" = 딤드, 눌리지 않음)
 var _fan_dx: PackedFloat32Array = PackedFloat32Array()   # 쉬는 자리의 중심 dx
 var _fan_cx: float = 0.0
 var _fan_spacing: float = 0.0
+var _fan_hits: Control = null
 ## 지금 가리키는 카드(밴드 호버). -1 = 없음 — 그때는 정보 패널이 열린 카드가 초점.
 var _fan_hover: int = -1
 var _fan_relayout_queued: bool = false
-## 다음 `_build_card_fan` 이 드로우 인트로를 틀 것인가 — 열 때와 탭을 바꿀 때만.
-## 효과 구성 변화로 `refresh()` 가 본문을 다시 세울 때는 틀지 않는다.
-var _fan_intro_pending: bool = false
-## 부채꼴 세대. 다시 세우면 올라가고, 옛 세대의 인트로 코루틴은 그걸 보고 멈춘다.
-var _fan_gen: int = 0
 
 ## 열면서 숨긴 스트립의 팀. 닫을 때 그 스트립만 되돌린다.
 var _hidden_team: int = -1
@@ -377,21 +397,24 @@ func open(p: PilotData) -> void:
 		close()
 	_pilot = p
 	_tab = Tab.INGAME
-	_fan_intro_pending = true
 	_build()
+	_play_open()
 	if _bs.hud != null:
 		_hidden_team = p.team
 		_bs.hud.set_strip_visible(_hidden_team, false)
 
 
+## 상태는 **즉시** 비운다(`is_active()` 가 곧바로 false — 턴 붙잡기도 풀린다).
+## 화면만 `CLOSE_SEC` 동안 빠져나가다 지워지고, 그동안은 입력을 받지 않는다.
 func close() -> void:
 	_close_menu()
 	if _root != null:
-		_root.queue_free()
+		_play_close(_root, _art_holder, _ui_root, _dim)
 		_root = null
+	_dim = null
+	_ui_root = null
 	_body_root = null
 	_stat_panel = null
-	_close_btn = null
 	_targets.clear()
 	_fx_keys.clear()
 	_reset_fan()
@@ -438,6 +461,11 @@ func refresh() -> void:
 	if _growth_label != null and is_instance_valid(_growth_label):
 		_growth_label.text = BattleSim.fmt_score(_pilot.score)
 	_refresh_skill_block()
+	# 스킬 상태 줄이 생기거나 사라져야 하면(쿨타임이 막 끝남 / 막 씀) 판 높이가
+	# 바뀌므로 본문을 다시 세운다.
+	if _skill_status_shown != _skill_status_visible():
+		_rebuild_body()
+		return
 	# 걸려 있는 효과의 **구성**이 달라졌으면(만료 / 새 효과) 본문을 다시 세운다.
 	# 값만 바뀐 경우에는 아래 라벨 갱신으로 끝난다 — 트리를 다시 세우면 카드
 	# 노드가 매 갱신마다 인스턴스화되고 열어 둔 패널이 닫힌다.
@@ -445,7 +473,9 @@ func refresh() -> void:
 		_rebuild_body()
 		return
 	_refresh_target_values()
-	if _menu_key != "":
+	# 카드 설명판은 값이 없는 글(계산식은 식 문구)이라 다시 세울 것이 없다 —
+	# 매 갱신마다 세우면 등장 연출이 되풀이된다.
+	if _menu_key != "" and not _menu_key.begins_with("card:"):
 		_build_menu_content()
 
 
@@ -462,18 +492,111 @@ func _build() -> void:
 	_root.mouse_filter = Control.MOUSE_FILTER_STOP
 	_layer.add_child(_root)
 
-	var dim := ColorRect.new()
-	dim.color = DIM_COLOR
-	dim.position = Vector2.ZERO
-	dim.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
-	dim.mouse_filter = Control.MOUSE_FILTER_STOP
-	_root.add_child(dim)
+	# 딤 = "바깥". 탭 · 칩 · 카드 · 사용 버튼이 아닌 곳을 누르면 여기로 떨어져
+	# 상세 화면이 닫힌다(`_on_dim_input`). 판(Panel)과 글자는 전부 IGNORE 라 판
+	# 위를 눌러도 닫힌다 — 닫기 버튼은 없다.
+	_dim = ColorRect.new()
+	_dim.color = DIM_COLOR
+	_dim.position = Vector2.ZERO
+	_dim.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
+	_dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	_dim.gui_input.connect(_on_dim_input)
+	_root.add_child(_dim)
 
 	_build_arts()
+
+	_ui_root = Control.new()
+	_ui_root.name = "InfoColumn"
+	_ui_root.position = Vector2.ZERO
+	_ui_root.size = _root.size
+	_ui_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_ui_root)
+
 	_build_header_block()
 	_build_tabs()
 	_rebuild_body()
-	_build_buttons()
+	# 본문 **뒤에** 붙여 카드가 판들 위에 그려지게 한다(`_rebuild_body` 는 본문을
+	# 맨 앞 자식으로 옮긴다). 펼침 연출은 열 때만.
+	_build_card_fan(_starter_cards("pilot") + _starter_cards("mech"),
+			_slot_tags("pilot") + _slot_tags("mech"))
+
+
+# ─── 바깥 누르기 = 닫기 ─────────────────────────────────────────────────────
+## 손을 **뗄 때** 닫는다 — 누를 때 닫으면 떼는 이벤트가 이미 IGNORE 가 된 패널을
+## 지나 아래 손패 · 전장으로 떨어진다. 카드 부채꼴 근처(`_card_zone`)는 예외 —
+## 겹친 카드 사이 틈을 눌렀다고 화면이 닫히면 카드를 고르기가 어렵다.
+func _on_dim_input(event: InputEvent) -> void:
+	var mb := event as InputEventMouseButton
+	if mb == null or mb.button_index != MOUSE_BUTTON_LEFT or mb.pressed:
+		return
+	if _card_zone().has_point(mb.position) or _info_zone().has_point(mb.position):
+		return
+	close()
+
+
+## 정보 칼럼이 차지하는 구역(`INFO_ZONE_PAD` 여유 포함). 머리글 윗변에서 칼럼의
+## 마지막 판(스탯 판 또는 스킬 판) 아랫변까지 — 이 안의 빈 곳은 닫지 않는다.
+func _info_zone() -> Rect2:
+	var bottom: float = STAT_TOP
+	if _body_root != null and is_instance_valid(_body_root):
+		for child in _body_root.get_children():
+			var panel := child as Panel
+			if panel != null and panel.position.x >= STAT_X - STAT_PANEL_PAD.x - 1.0:
+				bottom = maxf(bottom, panel.position.y + panel.size.y)
+	var zone := Rect2(STAT_X - STAT_PANEL_PAD.x, HDR_TOP,
+			STAT_W + STAT_PANEL_PAD.x * 2.0, bottom - HDR_TOP)
+	return zone.grow(INFO_ZONE_PAD)
+
+
+## 카드 부채꼴이 차지하는 구역(여유 포함). 이 안의 빈 곳은 닫지 않는다.
+func _card_zone() -> Rect2:
+	if _fan_nodes.is_empty():
+		return Rect2()
+	var half_w: float = (absf(_fan_dx[0]) + CardPhaseManager.hand_card_w() * 0.5
+			+ FAN_ZONE_PAD)
+	var top: float = _fan_top_y() - FAN_ZONE_PAD
+	var bottom: float = (_fan_top_y() + CardPhaseManager.hand_card_h()
+			+ _fan_arc_drop(_fan_dx[0]) + FAN_ZONE_PAD)
+	return Rect2(_fan_cx - half_w, top, half_w * 2.0, bottom - top)
+
+
+# ─── 열기 / 닫기 연출 ────────────────────────────────────────────────────────
+func _play_open() -> void:
+	_art_holder.position.x = -ART_SLIDE_PX
+	_art_holder.modulate.a = 0.0
+	_ui_root.position.y = UI_SLIDE_PX
+	_ui_root.modulate.a = 0.0
+	_dim.modulate.a = 0.0
+	var tw := _root.create_tween().set_parallel() 			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tw.tween_property(_art_holder, "position:x", 0.0, OPEN_SEC)
+	tw.tween_property(_art_holder, "modulate:a", 1.0, OPEN_SEC)
+	tw.tween_property(_ui_root, "position:y", 0.0, OPEN_SEC)
+	tw.tween_property(_ui_root, "modulate:a", 1.0, OPEN_SEC)
+	tw.tween_property(_dim, "modulate:a", 1.0, OPEN_SEC)
+
+
+## 떠나는 루트를 빼내고 지운다. 상태는 이미 비었으므로 노드 참조는 인자로 받는다.
+## 빠지는 동안 버튼이 눌리지 않게 트리 전체를 IGNORE 로 돌린다.
+func _play_close(old_root: Control, art: Control, ui: Control, dim: Control) -> void:
+	_ignore_input_recursive(old_root)
+	var tw := old_root.create_tween().set_parallel() 			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
+	if art != null:
+		tw.tween_property(art, "position:x", art.position.x - ART_SLIDE_PX, CLOSE_SEC)
+		tw.tween_property(art, "modulate:a", 0.0, CLOSE_SEC)
+	if ui != null:
+		tw.tween_property(ui, "position:y", ui.position.y + UI_SLIDE_PX, CLOSE_SEC)
+		tw.tween_property(ui, "modulate:a", 0.0, CLOSE_SEC)
+	if dim != null:
+		tw.tween_property(dim, "modulate:a", 0.0, CLOSE_SEC)
+	tw.chain().tween_callback(old_root.queue_free)
+
+
+static func _ignore_input_recursive(node: Node) -> void:
+	var c := node as Control
+	if c != null:
+		c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for child in node.get_children():
+		_ignore_input_recursive(child)
 
 
 # ─── 전신 아트 ───────────────────────────────────────────────────────────────
@@ -605,7 +728,7 @@ func _build_tabs() -> void:
 		btn.size = Vector2(w, TAB_H)
 		btn.focus_mode = Control.FOCUS_NONE
 		btn.pressed.connect(_on_tab_pressed.bind(i))
-		_root.add_child(btn)
+		_ui_root.add_child(btn)
 		_tab_buttons.append(btn)
 	_refresh_tab_styles()
 
@@ -638,7 +761,6 @@ func _on_tab_pressed(idx: int) -> void:
 	_close_menu()
 	_refresh_tab_styles()
 	_apply_focus(true)
-	_fan_intro_pending = true
 	_rebuild_body()
 
 
@@ -649,10 +771,10 @@ func _rebuild_body() -> void:
 	if _body_root != null and is_instance_valid(_body_root):
 		# 트리에서 **먼저** 뗀다 — `queue_free` 만 걸면 이번 프레임까지는 그대로
 		# 그려져서 새 블록과 글자가 겹쳐 보인다.
-		_root.remove_child(_body_root)
+		_ui_root.remove_child(_body_root)
 		_body_root.queue_free()
 	_targets.clear()
-	_reset_fan()
+	_fan_hover = -1
 	_fx_keys = _fx_signature()
 
 	_body_root = Control.new()
@@ -661,9 +783,9 @@ func _rebuild_body() -> void:
 	_body_root.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
 	# IGNORE 는 **이 노드만** 히트 테스트에서 뺀다 — 자식 칩 버튼은 그대로 눌린다.
 	_body_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.add_child(_body_root)
-	# 탭 · 닫기 버튼보다 아래(= 뒤)에 둔다. 0 = dim, 1 = 아트 홀더.
-	_root.move_child(_body_root, 2)
+	_ui_root.add_child(_body_root)
+	# 머리글 · 탭보다 아래(= 뒤)에 둔다.
+	_ui_root.move_child(_body_root, 0)
 
 	_stat_panel = Panel.new()
 	_stat_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -683,7 +805,11 @@ func _rebuild_body() -> void:
 	var bottom: float = _build_body_content()
 	_stat_panel.position = Vector2(STAT_X, STAT_TOP) - STAT_PANEL_PAD
 	_stat_panel.size = Vector2(STAT_W, bottom - STAT_TOP) + STAT_PANEL_PAD * 2.0
-	_reposition_close()
+	# 파일럿 스킬은 스탯 판 아래 **자기 판** — 인게임 탭에만 선다.
+	if _tab == Tab.INGAME:
+		_build_skill_panel(_stat_panel.position.y + _stat_panel.size.y + PANEL_GAP)
+	# 카드 밴드 · 딤은 탭을 따른다. `_targets` 를 방금 비웠으므로 카드 키도 다시 싣는다.
+	_rebuild_fan_hits()
 
 	# 열려 있던 정보 패널의 대상 버튼은 방금 통째로 free 됐다 — `_menu_key` 가
 	# 가리키던 강조도 그 버튼과 함께 사라졌으므로 새 버튼에 다시 입힌다. 효과가
@@ -701,12 +827,9 @@ func _rebuild_body() -> void:
 func _build_body_content() -> float:
 	var y: float = _build_chip_grid(STAT_TOP, _chip_defs())
 
-	# 카드는 칼럼의 흐름에 없다 — 칼럼 아래 화면 오른쪽 아래에 자기 자리를 갖는다(아래
-	# `_build_card_fan`). 그래서 반환값(= 받침 높이)에 얹히지 않는다.
+	# 카드는 칼럼의 흐름에 없다 — 손패 자리에 자기 노드로 산다(`_build_card_fan`,
+	# 열 때 한 번). 그래서 반환값(= 받침 높이)에 얹히지 않는다.
 	if _tab != Tab.INGAME:
-		var slot: String = "pilot" if _tab == Tab.PILOT else "mech"
-		var title: String = "파일럿 카드" if _tab == Tab.PILOT else "메크 카드"
-		_build_card_fan(title, _starter_cards(slot), slot)
 		return y
 
 	# 죽어 있을 때만 뜨는 한 줄. 스트립의 부활 카운트는 패널이 열려 있는 동안
@@ -720,15 +843,10 @@ func _build_body_content() -> float:
 		_body_root.add_child(dead)
 		y += 30.0
 
-	# 지속 효과와 카드는 둘 다 칼럼 밖에 산다 — 효과는 일러스트 좌측 하단,
-	# 카드는 칼럼 아래 오른쪽 구석. 그래서 칼럼의 흐름은 칩 → 스킬로 곧장 이어지고
-	# 받침 높이(반환값)에도 둘이 얹히지 않는다.
+	# 지속 효과는 칼럼 밖(일러스트 좌측 하단)에 산다 — 칼럼의 흐름은 칸 → 스킬로
+	# 곧장 이어지고 받침 높이(반환값)에도 얹히지 않는다.
 	_build_effect_thumbs()
-	# 인게임 탭의 카드는 **여섯 장 전부**. 파일럿 3 → 메크 3 순서라 부채꼴의
-	# 왼쪽 절반이 사람, 오른쪽 절반이 기체다.
-	_build_card_fan("보유 카드", _starter_cards("pilot") + _starter_cards("mech"),
-			"all")
-	return _build_skill_block(y + 22.0)
+	return y
 
 
 # ─── 머리글 (탭 위) ─────────────────────────────────────────────────────────
@@ -757,77 +875,90 @@ func _build_header_block() -> void:
 	sb.border_width_right = 1
 	sb.corner_radius_top_left = 14
 	sb.corner_radius_top_right = 14
+	sb.corner_radius_bottom_left = 14
+	sb.corner_radius_bottom_right = 14
 	bg.add_theme_stylebox_override("panel", sb)
-	_root.add_child(bg)
+	_ui_root.add_child(bg)
 
-	var row_h: float = HDR_BOTTOM - HDR_TOP - STAT_PANEL_PAD.y * 2.0
 	var row_y: float = HDR_TOP + STAT_PANEL_PAD.y
-	var text_w: float = STAT_W - HDR_GROWTH_W
+
+	# 성장치 — 맨 위 가운데.
+	_growth_label = _make_label(BattleSim.fmt_score(_pilot.score),
+			HDR_GROWTH_FONT, GROWTH_COLOR, HORIZONTAL_ALIGNMENT_CENTER)
+	_growth_label.position = Vector2(STAT_X, row_y)
+	_growth_label.size = Vector2(STAT_W, HDR_GROWTH_H)
+	_growth_label.clip_text = true
+	_ui_root.add_child(_growth_label)
+	row_y += HDR_GROWTH_H
 
 	var name_lbl := _make_label(display_name, HDR_NAME_FONT, HEADER_COLOR,
 			HORIZONTAL_ALIGNMENT_LEFT)
 	name_lbl.position = Vector2(STAT_X, row_y)
-	name_lbl.size = Vector2(text_w, HDR_NAME_H)
+	name_lbl.size = Vector2(STAT_W, HDR_NAME_H)
 	name_lbl.clip_text = true
-	_root.add_child(name_lbl)
+	_ui_root.add_child(name_lbl)
 
 	# 기체명은 늘 보인다 — 메크 탭에 들어가야만 알 수 있는 값이 아니다.
 	var mech_lbl := _make_label(mech.name if mech != null else "메크 미배정",
 			HDR_MECH_FONT, HDR_MECH_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
 	mech_lbl.position = Vector2(STAT_X, row_y + HDR_NAME_H)
-	mech_lbl.size = Vector2(text_w, HDR_MECH_H)
+	mech_lbl.size = Vector2(STAT_W, HDR_MECH_H)
 	mech_lbl.clip_text = true
-	_root.add_child(mech_lbl)
-
-	_growth_label = _make_label(BattleSim.fmt_score(_pilot.score),
-			HDR_GROWTH_FONT, GROWTH_COLOR, HORIZONTAL_ALIGNMENT_RIGHT)
-	_growth_label.position = Vector2(STAT_X + STAT_W - HDR_GROWTH_W, row_y)
-	_growth_label.size = Vector2(HDR_GROWTH_W, row_h)
-	# **clip_text 는 필수다** — 오른쪽 정렬 Label 은 글자가 rect 보다 넓으면
-	# 정렬을 포기하고 rect 왼쪽부터 그려 오른쪽으로 넘쳐 나간다.
-	_growth_label.clip_text = true
-	_root.add_child(_growth_label)
+	_ui_root.add_child(mech_lbl)
 
 
 # ─── 스탯 칩 ─────────────────────────────────────────────────────────────────
-## 이 탭이 보여 줄 칩 목록. `[[key, 이름], …]` — 값과 메뉴 내용은 key 로 갈린다.
+## 이 탭이 보여 줄 스탯 줄 목록. 줄 하나 = `[[key, 이름], …]`(칸 1개 = 전폭,
+## 2개 = 반씩) — 값과 메뉴 내용은 key 로 갈린다.
+##
+## 인게임 / 메크 탭은 체력 · 공격력 · 존재감이 한 줄씩이고 값도 같은 꼴이다
+## (체력 = `현재 / 최대`). 명중 / 회피는 **전장 줄과 교전 줄**로 나눈다 — 두
+## 무대가 각자 자기 스탯을 읽으므로 한 칸으로 묶으면 어느 말인지가 안 나온다.
 func _chip_defs() -> Array:
 	match _tab:
 		Tab.INGAME:
-			# 명중 / 회피가 **네 칸**이다 — 전장과 교전이 각자 자기 스탯을
-			# 읽으므로 한 칸으로 묶으면 둘 중 어느 말인지가 안 나온다.
-			return [["hp", "체력"], ["atk", "공격력"], ["growth", "성장"],
-					["hit", "전장 명중"], ["eva", "전장 회피"],
-					["e_hit", "교전 명중"], ["e_eva", "교전 회피"],
-					["presence", "존재감"]]
+			return [[["hp", "체력"]], [["atk", "공격력"]], [["presence", "존재감"]],
+					[["hit", "전장 명중"], ["eva", "전장 회피"]],
+					[["e_hit", "교전 명중"], ["e_eva", "교전 회피"]]]
 		Tab.PILOT:
-			# 선수 스탯 여섯. 표는 `PlayerData` 가 소유하므로 여기서는 그대로
-			# 펼친다 — 스탯이 늘거나 이름이 바뀌어도 이 파일을 고칠 일이 없다.
+			# 선수 스탯 여섯을 두 칸씩 세 줄로(전장 명중·회피 / 교전 명중·회피 /
+			# 공격·체력 성장). 표는 `PlayerData` 가 소유하므로 그 순서대로 짝짓는다.
 			var defs: Array = []
-			for i in PlayerData.STAT_KEYS.size():
-				defs.append([String(PlayerData.STAT_KEYS[i]),
-						String(PlayerData.STAT_LABELS[i])])
+			for i in range(0, PlayerData.STAT_KEYS.size(), 2):
+				var line: Array = []
+				for j in range(i, mini(i + 2, PlayerData.STAT_KEYS.size())):
+					line.append([String(PlayerData.STAT_KEYS[j]),
+							String(PlayerData.STAT_LABELS[j])])
+				defs.append(line)
 			return defs
 		_:
-			return [["m_hp", "체력"], ["m_atk", "공격력"], ["m_presence", "존재감"]]
+			return [[["m_hp", "체력"]], [["m_atk", "공격력"]], [["m_presence", "존재감"]]]
 
 
-func _build_chip_grid(start_y: float, defs: Array) -> float:
-	var w: float = (STAT_W - float(CHIP_COLS - 1) * CHIP_GAP) / float(CHIP_COLS)
+## 줄을 펼친 `[key, 이름]` 목록 — 제목 찾기용.
+func _flat_chip_defs() -> Array:
+	var out: Array = []
+	for line in _chip_defs():
+		out.append_array(line as Array)
+	return out
+
+
+func _build_chip_grid(start_y: float, lines: Array) -> float:
 	var y: float = start_y
-	for i in defs.size():
-		var col: int = i % CHIP_COLS
-		@warning_ignore("integer_division")
-		var row: int = i / CHIP_COLS
-		var pos := Vector2(STAT_X + float(col) * (w + CHIP_GAP),
-				start_y + float(row) * (CHIP_H + CHIP_GAP))
-		_make_chip(String(defs[i][0]), String(defs[i][1]), pos, w)
-		y = pos.y + CHIP_H
-	return y
+	for raw in lines:
+		var line: Array = raw as Array
+		var n: int = line.size()
+		var w: float = (STAT_W - float(n - 1) * CHIP_GAP) / float(n)
+		for i in n:
+			_make_chip(String(line[i][0]), String(line[i][1]),
+					Vector2(STAT_X + float(i) * (w + CHIP_GAP), y), w)
+		y += CHIP_H + CHIP_GAP
+	return y - CHIP_GAP
 
 
-## 칩 한 칸. 누르면 메뉴가 열려야 하므로 Button 이고, 그 위의 두 라벨은
-## IGNORE 라 클릭을 가로채지 않는다.
+## 스탯 칸 하나 — 스탯 판 위에 얹힌 작은 판. 왼쪽에 이름, 오른쪽 정렬로 값.
+## 누르면 메뉴가 열려야 하므로 Button 이고, 두 라벨은 IGNORE 라 클릭을 가로채지
+## 않는다.
 func _make_chip(key: String, chip_name: String, pos: Vector2, w: float) -> void:
 	var btn := Button.new()
 	btn.position = pos
@@ -836,23 +967,85 @@ func _make_chip(key: String, chip_name: String, pos: Vector2, w: float) -> void:
 	btn.pressed.connect(_on_target_pressed.bind(key))
 	_body_root.add_child(btn)
 
+	var inner_w: float = w - CHIP_PAD_X * 2.0
+	var name_x: float = CHIP_PAD_X
+	var icon_key: String = String(CHIP_ICONS.get(key, ""))
+	if not icon_key.is_empty():
+		var icon := TextureRect.new()
+		icon.texture = KeywordIcon.texture(icon_key, int(CHIP_ICON_PX * 2.0), KEY_COLOR,
+				Color(CHIP_BG, 1.0))
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon.position = Vector2(name_x, (CHIP_H - CHIP_ICON_PX) * 0.5)
+		icon.size = Vector2(CHIP_ICON_PX, CHIP_ICON_PX)
+		btn.add_child(icon)
+		name_x += CHIP_ICON_PX + CHIP_ICON_GAP
 	var name_lbl := _make_label(chip_name, CHIP_NAME_FONT, KEY_COLOR,
-			HORIZONTAL_ALIGNMENT_CENTER)
-	name_lbl.position = Vector2(0.0, 8.0)
-	name_lbl.size = Vector2(w, CHIP_NAME_H)
+			HORIZONTAL_ALIGNMENT_LEFT)
+	name_lbl.position = Vector2(name_x, 0.0)
+	name_lbl.size = Vector2(inner_w - (name_x - CHIP_PAD_X), CHIP_H)
 	name_lbl.clip_text = true
 	btn.add_child(name_lbl)
 
-	var text: String = _chip_value(key)
-	var val_lbl := _make_label(text, _value_font_size(text), VALUE_COLOR,
-			HORIZONTAL_ALIGNMENT_CENTER)
-	val_lbl.position = Vector2(4.0, CHIP_NAME_H + 6.0)
-	val_lbl.size = Vector2(w - 8.0, CHIP_H - CHIP_NAME_H - 14.0)
+	# **clip_text 는 필수다** — 오른쪽 정렬 Label 은 글자가 rect 보다 넓으면
+	# 정렬을 포기하고 rect 왼쪽부터 그려 오른쪽으로 넘쳐 나간다.
+	var val_lbl := _make_label(_chip_value(key), CHIP_VALUE_FONT, VALUE_COLOR,
+			HORIZONTAL_ALIGNMENT_RIGHT)
+	val_lbl.position = Vector2(CHIP_PAD_X, 0.0)
+	val_lbl.size = Vector2(inner_w, CHIP_H)
 	val_lbl.clip_text = true
 	btn.add_child(val_lbl)
 
-	_targets[key] = {"button": btn, "style": TargetStyle.CHIP, "value": val_lbl}
+	var bonus_lbl := _make_label("", CHIP_BONUS_FONT, VALUE_COLOR,
+			HORIZONTAL_ALIGNMENT_RIGHT)
+	bonus_lbl.position = Vector2(CHIP_PAD_X, 0.0)
+	bonus_lbl.size = Vector2(inner_w, CHIP_H)
+	btn.add_child(bonus_lbl)
+
+	var rec: Dictionary = {"button": btn, "style": TargetStyle.CHIP, "value": val_lbl,
+			"bonus": bonus_lbl, "key": key, "inner_w": inner_w}
+	_targets[key] = rec
+	_layout_chip_value(rec)
 	_style_target(key, false)
+
+
+## 칩 값 + 괄호 보너스를 쓰고 자리를 잡는다. 보너스는 맨 오른쪽, 값은 그 왼쪽에
+## 붙는다 — 색이 다른 두 덩이라 Label 둘로 나누고 보너스 폭만큼 값 칸을 줄인다.
+func _layout_chip_value(rec: Dictionary) -> void:
+	var key: String = String(rec["key"])
+	var val_lbl := rec["value"] as Label
+	var bonus_lbl := rec["bonus"] as Label
+	var inner_w: float = float(rec["inner_w"])
+	var bonus: int = _chip_bonus(key)
+	var bonus_text: String = "" if bonus == 0 else "(%+d)" % bonus
+	bonus_lbl.text = bonus_text
+	bonus_lbl.add_theme_color_override("font_color",
+			BONUS_UP_COLOR if bonus > 0 else BONUS_DOWN_COLOR)
+	var bonus_w: float = 0.0
+	if bonus_text != "":
+		bonus_w = bonus_lbl.get_theme_font("font").get_string_size(bonus_text,
+				HORIZONTAL_ALIGNMENT_LEFT, -1, CHIP_BONUS_FONT).x + CHIP_BONUS_GAP
+	val_lbl.text = _chip_value(key)
+	val_lbl.size = Vector2(inner_w - bonus_w, CHIP_H)
+
+
+## 값 뒤 괄호의 보너스. 체력 · 공격력은 기본값(메크) 대비 지금 값의 증감(성장 ·
+## 스킬 · 메크 · 카드 영구분이 모두 들어간다), 존재감은 특수 능력이 **올렸을 때만**.
+func _chip_bonus(key: String) -> int:
+	match key:
+		"hp", "m_hp":
+			return _pilot.max_hp - _pilot.base_max_hp
+		"atk", "m_atk":
+			return _pilot.atk - _pilot.base_atk
+		"presence", "m_presence":
+			return maxi(0, _presence_delta())
+	return 0
+
+
+func _presence_delta() -> int:
+	var sk: PilotSkillSystem = _bs.skill if _bs != null else null
+	return sk.presence_delta(_pilot) if sk != null else 0
 
 
 ## 정보 패널을 여는 것 셋(칩 · 효과 썸네일 · 카드)의 강조 스타일을 한 곳에서
@@ -905,31 +1098,13 @@ func _refresh_target_values() -> void:
 		var lbl := rec.get("value") as Label
 		if lbl == null or not is_instance_valid(lbl):
 			continue
-		var text: String = _chip_value(String(key))
-		if lbl.text == text:
-			continue
-		lbl.text = text
-		lbl.add_theme_font_size_override("font_size", _value_font_size(text))
-
-
-## 글자 수에 맞춘 값 폰트. 칩 폭이 141px 뿐이라 `145 / 200` 같은 긴 값을 가장 큰
-## 폰트로 두면 잘린다 — 자르느니 한 단계 줄이는 편이 읽힌다.
-static func _value_font_size(text: String) -> int:
-	var n: int = text.length()
-	if n <= 4:
-		return 38
-	if n <= 6:
-		return 32
-	if n <= 9:
-		return 26
-	return 22
+		_layout_chip_value(rec)
 
 
 ## 칩에 크게 찍히는 **최종 값**. 기본값 · 증가분은 여기 적지 않는다 — 그건
 ## 칩을 눌러야 나오는 메뉴의 몫이다.
 func _chip_value(key: String) -> String:
 	var pd: PlayerData = _bs.player_data_for(_pilot)
-	var mech: MechData = _mech()
 	# 선수 스탯 여섯은 키 이름이 그대로 `PlayerData` 의 필드명이라 하나씩
 	# 적지 않고 표를 지나간다 — 스탯이 늘어도 고칠 자리가 없다.
 	if key in PlayerData.STAT_KEYS:
@@ -937,26 +1112,21 @@ func _chip_value(key: String) -> String:
 	match key:
 		"hp":
 			return "%d / %d" % [_pilot.hp, _pilot.max_hp]
-		"atk":
+		"atk", "m_atk":
 			return str(_pilot.atk)
-		"growth":
-			return "+%d%%" % roundi(_pilot.growth * 100.0)
 		"hit":
 			return str(_bs.sim_core.lane_adjusted(_pilot.hit, _pilot))
 		"eva":
 			return str(_bs.sim_core.lane_adjusted(_pilot.evasion, _pilot))
-		"presence":
-			return str(_pilot.presence)
+		"presence", "m_presence":
+			return str(_pilot.presence + maxi(0, _presence_delta()))
 		"e_hit":
 			return str(_pilot.engage_hit)
 		"e_eva":
 			return str(_pilot.engage_eva)
 		"m_hp":
-			return str(mech.hp) if mech != null else "—"
-		"m_atk":
-			return str(mech.atk) if mech != null else "—"
-		"m_presence":
-			return str(mech.presence) if mech != null else "—"
+			# 메크 탭도 인게임과 같은 값 — 지금 이 전장의 체력.
+			return "%d / %d" % [_pilot.hp, _pilot.max_hp]
 	return "—"
 
 
@@ -1167,9 +1337,9 @@ func _build_effect_thumbs() -> void:
 				top + float(row) * (FX_SIZE + FX_GAP)))
 
 
-## 썸네일 줄의 아래끝 y. 카드 줄 제목의 윗변에서 역산한다.
+## 썸네일 줄의 아래끝 y. 카드 부채꼴 윗변에서 역산한다.
 func _fx_bottom_y() -> float:
-	return _fan_top_y() - FAN_TITLE_GAP - FX_ABOVE_TITLE_GAP
+	return _fan_top_y() - FX_ABOVE_FAN_GAP
 
 
 ## 썸네일 한 칸 — 위에 두 글자 약칭(효과별 색), 아래에 작게 지금 값.
@@ -1257,76 +1427,51 @@ func _starter_cards(slot: String) -> Array:
 	return rec.get(slot, []) as Array
 
 
-## 제목 한 줄 + 밑줄. 카드 줄과 효과 줄이 같은 모양을 쓴다.
-func _build_section_head(start_y: float, title: String, head_h: float) -> float:
-	var head := _make_label(title, 26, SECTION_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
-	head.position = Vector2(STAT_X, start_y)
-	head.size = Vector2(STAT_W, head_h)
-	_body_root.add_child(head)
-	var line := ColorRect.new()
-	line.color = Color(SECTION_COLOR.r, SECTION_COLOR.g, SECTION_COLOR.b, 0.35)
-	line.position = Vector2(STAT_X, start_y + head_h)
-	line.size = Vector2(STAT_W, 2.0)
-	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_body_root.add_child(line)
-	return start_y + head_h + 14.0
+## `_starter_cards(slot)` 와 같은 길이의 슬롯 꼬리표 — 탭별 딤이 읽는다.
+func _slot_tags(slot: String) -> Array:
+	var out: Array = []
+	out.resize(_starter_cards(slot).size())
+	out.fill(slot)
+	return out
 
 
-## 보유 카드를 **손패와 같은 부채꼴로** 정보 칼럼 아래(화면 오른쪽 아래)에
-## 세운다. `key_prefix` 는 카드마다 붙는 정보 패널 키의 앞자리(`card:all:2`).
+## 보유 카드를 **손패와 같은 자리 · 같은 부채꼴로** 세운다. 열 때 한 번만 돈다 —
+## 탭이 바뀌면 `_rebuild_fan_hits` 가 딤과 입력 밴드만 고친다.
 ##
-## 기하는 손패(`CardPhaseManager.slot_center_dx` / `_fan_angle` /
-## `_fan_arc_drop`)와 같은 규칙을 `FAN_SIZE_VS_HAND` 배율로 줄인 것이다 — 카드
-## **중심**이 행 아래에 놓인 원 위를 타므로 기울기와 세로 처짐이 언제나 일치한다.
+## 기하는 손패(`CardPhaseManager.slot_spacing` / `slot_position` / `_fan_angle` /
+## `_fan_arc_drop`)와 같은 규칙이다 — 카드 **중심**이 행 아래에 놓인 원 위를 타므로
+## 기울기와 세로 처짐이 언제나 일치한다.
 ##
-## **입력은 카드 rect 가 아니라 밴드가 받는다.** 겹친 카드 중 나중 카드가 앞에
-## 서므로 카드 i 가 실제로 보이는 폭은 자기 왼쪽 변부터 **다음 카드의 왼쪽
-## 변**까지다 — 그 폭이 그대로 버튼 하나가 된다(손패의 `_apply_hit_bands` 와 같은
-## 계산). 밴드는 **쉬는 자리**에 고정이다 — 호버로 카드가 비켜설 때마다 밴드까지
-## 움직이면 커서 밑의 밴드가 바뀌어 초점이 떨린다.
-##
-## 카드는 `CardFan`, 버튼은 그 **뒤에 붙는** `CardFanHits` 에 담아 버튼 쪽이
+## 카드는 `CardFan`, 입력 밴드는 그 **뒤에 붙는** `CardFanHits` 에 담아 밴드 쪽이
 ## 언제나 위에서 픽을 받고, 카드끼리의 z-order 는 `CardFan` 안에서만 흔들린다.
-func _build_card_fan(title: String, cards: Array, key_prefix: String) -> void:
-	var intro: bool = _fan_intro_pending
-	_fan_intro_pending = false
+func _build_card_fan(cards: Array, slots: Array) -> void:
 	var n: int = cards.size()
 	if n <= 0:
 		return
 	var s: float = _fan_scale()
-	var cw: float = Card.CARD_W * s
-	var ch: float = Card.CARD_H * s
-	var top_y: float = _fan_top_y()
-
-	var head := _make_label(title, FAN_TITLE_FONT, SECTION_COLOR,
-			HORIZONTAL_ALIGNMENT_CENTER)
-	head.position = Vector2(FAN_X, top_y - FAN_TITLE_GAP)
-	head.size = Vector2(FAN_W, 34.0)
-	_body_root.add_child(head)
-
-	# 간격은 손패와 같다 — 겹치지 않는 폭(cw + 간격)에서 시작해 구간을 넘으면
-	# 고르게 압축된다.
-	var inner_w: float = FAN_W - FAN_EDGE_INSET * 2.0
-	_fan_spacing = cw + BattleSim.BS_HAND_CARD_GAP * FAN_SIZE_VS_HAND
-	if n > 1:
-		_fan_spacing = minf(_fan_spacing, (inner_w - cw) / float(n - 1))
-	_fan_cx = FAN_X + FAN_W * 0.5
+	var cw: float = CardPhaseManager.hand_card_w()
+	# 간격은 손패와 같다 — 겹치지 않는 폭(cw + 간격)에서 시작해 손패 너비를 넘으면
+	# 고르게 압축된다(`CardPhaseManager.slot_spacing`).
+	_fan_spacing = cw + BattleSim.BS_HAND_CARD_GAP
+	if n > 1 and float(n) * cw + float(n - 1) * BattleSim.BS_HAND_CARD_GAP > _bs.BS_HAND_WIDTH:
+		_fan_spacing = (_bs.BS_HAND_WIDTH - cw) / float(n - 1)
+	# 손패 행의 가운데 — `BS_HAND_CENTER` 는 가운데 카드의 (배율 전) 왼쪽 위다.
+	_fan_cx = _bs.BS_HAND_CENTER.x + Card.CARD_W * 0.5
 
 	var fan_root := Control.new()
 	fan_root.name = "CardFan"
 	fan_root.position = Vector2.ZERO
 	fan_root.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
 	fan_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_body_root.add_child(fan_root)
+	_ui_root.add_child(fan_root)
 
-	var hits := Control.new()
-	hits.name = "CardFanHits"
-	hits.position = Vector2.ZERO
-	hits.size = fan_root.size
-	hits.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_body_root.add_child(hits)
+	_fan_hits = Control.new()
+	_fan_hits.name = "CardFanHits"
+	_fan_hits.position = Vector2.ZERO
+	_fan_hits.size = fan_root.size
+	_fan_hits.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ui_root.add_child(_fan_hits)
 
-	var band_h: float = ch + _fan_arc_drop(float(n - 1) * 0.5 * _fan_spacing)
 	for i in n:
 		var dx: float = (float(i) - float(n - 1) * 0.5) * _fan_spacing
 		_fan_dx.append(dx)
@@ -1339,30 +1484,64 @@ func _build_card_fan(title: String, cards: Array, key_prefix: String) -> void:
 		# add_child BEFORE setup — Card.gd 의 @onready 참조가 트리 진입 후에야
 		# 풀린다 (CardPileViewer._build_grid 와 동일).
 		fan_root.add_child(node)
-		# is_player_card=true — 손패와 같은 그림(시전자 리본 · 그림자 · 호버
+		# is_player_card=true — 손패와 같은 그림(시전자 리본 · 드롭 쉐도우 · 호버
 		# 확대/밝기)을 그대로 쓴다. 입력은 받지 않는다(밴드 버튼이 받는다).
-		node.setup(cards[i] as CardData, true, not intro)
+		node.setup(cards[i] as CardData, true, true)
 		node.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var slot: Vector2 = _fan_slot_pos(i, 0.0)
-		if intro:
-			# 뒷면으로, 화면 왼쪽 바깥에서 출발(손패 `_draw_entry_position`).
-			node.intro_active = true
-			node.position = Vector2(-Card.CARD_W - CardPhaseManager.DRAW_ENTRY_PAD_PX,
-					slot.y)
-		else:
-			node.position = slot
-			node.rotation = _fan_angle(dx)
-		# `tween_to` 를 한 번 태워 `Card._base_scale` 을 기록한다 — 그래야 호버
-		# 확대(×`HOVER_SCALE`)가 이 배율 위에 곱해진다.
-		node.tween_to(node.position, node.rotation, Vector2.ONE * s, 0.01)
-
-		var key: String = "card:%s:%d" % [key_prefix, i]
+		# 펼침 — 가운데 쪽으로 모인 자리(dx × `FAN_SPREAD_FROM`)에서 출발해 제자리로.
+		var from_dx: float = dx * FAN_SPREAD_FROM
+		node.position = _fan_pos_for_dx(from_dx, 0.0)
+		node.rotation = _fan_angle(from_dx)
+		# `tween_to` 가 `Card._base_scale` 을 기록한다 — 그래야 호버 확대
+		# (×`HOVER_SCALE`)가 이 배율 위에 곱해진다.
+		node.tween_to(_fan_global(_fan_pos_for_dx(dx, 0.0)), _fan_angle(dx), Vector2.ONE * s,
+				FAN_SPREAD_SEC, Tween.EASE_OUT, Tween.TRANS_CUBIC)
 		_fan_nodes.append(node)
-		_fan_keys.append(key)
-		_targets[key] = {"button": null, "style": TargetStyle.CARD,
-				"card": cards[i], "node": node}
+		_fan_cards.append(cards[i])
+		_fan_slots.append(slots[i])
+		_fan_keys.append("")
+	_rebuild_fan_hits()
 
+
+## 이 탭에서 카드 i 가 살아 있는가 — 인게임은 전부, 파일럿 / 메크 탭은 그 슬롯만.
+func _fan_card_active(i: int) -> bool:
+	match _tab:
+		Tab.PILOT:
+			return String(_fan_slots[i]) == "pilot"
+		Tab.MECH:
+			return String(_fan_slots[i]) == "mech"
+	return true
+
+
+## 지금 탭에 맞춰 카드 딤과 입력 밴드를 다시 세우고 카드 키를 `_targets` 에 싣는다.
+## `_rebuild_body` 가 `_targets` 를 비운 직후마다 부른다.
+##
+## **입력은 카드 rect 가 아니라 밴드가 받는다.** 겹친 카드 중 나중 카드가 앞에
+## 서므로 카드 i 가 실제로 보이는 폭은 자기 왼쪽 변부터 **다음 카드의 왼쪽
+## 변**까지다 — 그 폭이 그대로 버튼 하나가 된다(손패의 `_apply_hit_bands` 와 같은
+## 계산). 밴드는 **쉬는 자리**에 고정이다 — 호버로 카드가 비켜설 때마다 밴드까지
+## 움직이면 커서 밑의 밴드가 바뀌어 초점이 떨린다. 딤드 카드에는 밴드가 없다 —
+## 그 자리를 누르면 `_card_zone` 이 받아 아무 일도 일어나지 않는다.
+func _rebuild_fan_hits() -> void:
+	if _fan_hits == null or not is_instance_valid(_fan_hits):
+		return
+	for child in _fan_hits.get_children():
+		_fan_hits.remove_child(child)
+		child.queue_free()
+	var n: int = _fan_nodes.size()
+	var cw: float = CardPhaseManager.hand_card_w()
+	var top_y: float = _fan_top_y()
+	var band_h: float = CardPhaseManager.hand_card_h() + _fan_arc_drop(_fan_dx[0])
 	for i in n:
+		var active: bool = _fan_card_active(i)
+		var node := _fan_nodes[i] as Card
+		if is_instance_valid(node):
+			node.set_dimmed(not active)
+		if not active:
+			_fan_keys[i] = ""
+			continue
+		var key: String = "card:%d" % i
+		_fan_keys[i] = key
 		# 양 끝 카드만 자기 변까지 밴드를 넓힌다 — 왼쪽 끝은 왼쪽으로 가려질
 		# 것이 없고, 오른쪽 끝은 맨 앞에 서 있어 카드 전체가 보인다.
 		var cx: float = _fan_cx + _fan_dx[i]
@@ -1370,67 +1549,74 @@ func _build_card_fan(title: String, cards: Array, key_prefix: String) -> void:
 		var right: float = cx + cw * 0.5
 		if i < n - 1:
 			right = _fan_cx + _fan_dx[i + 1] - cw * 0.5
-		var key2: String = String(_fan_keys[i])
 		var btn := Button.new()
 		btn.position = Vector2(left, top_y)
 		btn.size = Vector2(maxf(12.0, right - left), band_h)
 		btn.focus_mode = Control.FOCUS_NONE
-		btn.pressed.connect(_on_target_pressed.bind(key2))
+		btn.pressed.connect(_on_target_pressed.bind(key))
 		btn.mouse_entered.connect(_on_fan_band_hover.bind(i, true))
 		btn.mouse_exited.connect(_on_fan_band_hover.bind(i, false))
-		hits.add_child(btn)
-		(_targets[key2] as Dictionary)["button"] = btn
-		_style_target(key2, false)
-
-	if intro:
-		var gen: int = _fan_gen
-		for i in n:
-			_play_fan_intro(_fan_nodes[i], i, gen)
+		_fan_hits.add_child(btn)
+		_targets[key] = {"button": btn, "style": TargetStyle.CARD,
+				"card": _fan_cards[i], "node": node}
+		_style_target(key, false)
+	_queue_fan_relayout()
 
 
-## 부채꼴 카드 배율 = 손패 배율 × `FAN_SIZE_VS_HAND`.
+## 부채꼴 카드 배율 = 손패 배율.
 static func _fan_scale() -> float:
-	return CardPhaseManager.HAND_CARD_SCALE * FAN_SIZE_VS_HAND
+	return CardPhaseManager.HAND_CARD_SCALE
 
 
-## 부채꼴 상태를 비운다. 세대를 올려 돌고 있던 인트로 코루틴을 멈춘다.
+## 부채꼴 상태를 비운다.
 func _reset_fan() -> void:
 	_fan_nodes.clear()
+	_fan_cards.clear()
+	_fan_slots.clear()
 	_fan_keys.clear()
 	_fan_dx = PackedFloat32Array()
+	_fan_hits = null
 	_fan_hover = -1
-	_fan_gen += 1
 
 
 ## 카드 i 의 자리(왼쪽 위, 배율 전 좌표 — 손패 `slot_position` 과 같은 규약).
 ## `push` 는 초점 카드를 피해 비켜서는 가로 거리.
 func _fan_slot_pos(i: int, push: float) -> Vector2:
-	var dx: float = _fan_dx[i]
-	var cy: float = _fan_top_y() + Card.CARD_H * _fan_scale() * 0.5 + _fan_arc_drop(dx)
-	return Vector2(_fan_cx + dx + push - Card.CARD_W * 0.5, cy - Card.CARD_H * 0.5)
+	return _fan_pos_for_dx(_fan_dx[i], push)
 
 
-## 부채꼴 윗변(= 가운데 카드의 윗변) y. **안전 영역 바닥**에서 역산한다 — 홈 바 /
-## 제스처 띠에 걸린 카드는 눌리지 않는다(`docs/mobile_safe_area.md`).
+## 부채꼴 좌표(정보 묶음 로컬) → `Card.tween_to` 가 받는 화면 좌표. 열기 연출 동안
+## `_ui_root` 가 아래로 밀려 있으므로 그만큼 더해 줘야 한다 — 안 그러면 tween_to 가
+## 그 오프셋을 빼 버려 카드가 `UI_SLIDE_PX` 만큼 위에 내려앉는다(실측: 제목을 덮었다).
+func _fan_global(local: Vector2) -> Vector2:
+	if _ui_root == null or not is_instance_valid(_ui_root):
+		return local
+	return local + _ui_root.position
+
+
+## 가로 오프셋 `dx` 의 부채꼴 자리 — 손패 `slot_position` 과 같은 식(행 높이
+## `BS_HAND_CENTER.y` + 원호 처짐). 펼침 연출이 제자리가 아닌 dx 로도 부른다.
+func _fan_pos_for_dx(dx: float, push: float) -> Vector2:
+	return Vector2(_fan_cx + dx + push - Card.CARD_W * 0.5,
+			_bs.BS_HAND_CENTER.y + _fan_arc_drop(dx))
+
+
+## 부채꼴 윗변(= 가운데 카드의 **보이는** 윗변) y. 손패와 같은 행이라
+## `BS_HAND_CENTER` 가 이미 세이프 에어리어 오프셋을 먹고 있다.
 func _fan_top_y() -> float:
-	return ScreenMetrics.bottom_y() - FAN_BOTTOM_PAD - FAN_DROP_RESERVE \
-			- Card.CARD_H * _fan_scale()
+	return _bs.BS_HAND_CENTER.y + Card.CARD_H * 0.5 - CardPhaseManager.hand_card_h() * 0.5
 
 
-## 부채꼴 원 위에서의 기울기(라디안) — 손패 반지름을 같은 배율로 줄인 원.
+## 부채꼴 원 위에서의 기울기(라디안) — 손패와 같은 원.
 static func _fan_angle(dx: float) -> float:
-	return asin(clampf(dx / _fan_radius(), -1.0, 1.0))
+	return asin(clampf(dx / BattleSim.BS_HAND_FAN_RADIUS, -1.0, 1.0))
 
 
 ## 그 카드가 부채꼴 꼭대기보다 아래로 처지는 높이(px). 가운데에서 0.
 static func _fan_arc_drop(dx: float) -> float:
-	var r: float = _fan_radius()
+	var r: float = BattleSim.BS_HAND_FAN_RADIUS
 	var d: float = clampf(absf(dx), 0.0, r)
 	return r - sqrt(r * r - d * d)
-
-
-static func _fan_radius() -> float:
-	return BattleSim.BS_HAND_FAN_RADIUS * FAN_SIZE_VS_HAND
 
 
 # ─── 부채꼴 초점 (손패 호버와 같은 동작) ─────────────────────────────────────
@@ -1446,7 +1632,7 @@ func _on_fan_band_hover(i: int, entered: bool) -> void:
 func _fan_focus() -> int:
 	if _fan_hover >= 0 and _fan_hover < _fan_nodes.size():
 		return _fan_hover
-	return _fan_keys.find(_menu_key) if _menu_key != "" else -1
+	return _fan_keys.find(_menu_key) if _menu_key.begins_with("card:") else -1
 
 
 ## 밴드를 옮겨 가면 exit / enter 가 한 프레임에 연달아 온다 — 둘을 한 번으로
@@ -1471,11 +1657,8 @@ func _relayout_fan() -> void:
 		if not is_instance_valid(_fan_nodes[i]):
 			continue
 		var c := _fan_nodes[i] as Card
-		# 인트로 중인 카드는 인트로가 자리의 주인이다(손패 `relayout_hand` 와 같다).
-		if c.intro_active:
-			continue
 		c.set_hovered(i == focus)
-		c.tween_to(_fan_slot_pos(i, _fan_push(i, focus, n)), _fan_angle(_fan_dx[i]),
+		c.tween_to(_fan_global(_fan_slot_pos(i, _fan_push(i, focus, n))), _fan_angle(_fan_dx[i]),
 				Vector2.ONE * s, BattleSim.BS_HAND_SPRING_DURATION,
 				BattleSim.BS_HAND_TWEEN_EASE, BattleSim.BS_HAND_TWEEN_TRANS)
 	# z-order — 왼쪽부터 쌓고(오른쪽 카드가 위) 초점 카드만 맨 앞으로.
@@ -1489,140 +1672,134 @@ func _relayout_fan() -> void:
 
 
 ## 초점 옆 카드가 비켜서는 거리 — 손패 `hover_push_offset` 과 같은 식(양 끝은
-## 고정, 감쇠 `BS_HAND_HOVER_FALLOFF_POW`), 길이 값만 `FAN_SIZE_VS_HAND` 배.
+## 고정, 감쇠 `BS_HAND_HOVER_FALLOFF_POW`).
 func _fan_push(i: int, focus: int, n: int) -> float:
 	if focus < 0 or i == focus or n <= 1:
 		return 0.0
 	var steps_to_end: int = (n - 1 - focus) if i > focus else focus
 	if steps_to_end <= 0:
 		return 0.0
-	var clearance: float = Card.CARD_W * _fan_scale() * Card.HOVER_SCALE * 0.5 \
-			+ BattleSim.BS_HAND_HOVER_MIN_STRIP * FAN_SIZE_VS_HAND
-	var amount: float = maxf(BattleSim.BS_HAND_HOVER_PUSH * FAN_SIZE_VS_HAND,
-			clearance - _fan_spacing)
+	var clearance: float = CardPhaseManager.hand_card_w() * Card.HOVER_SCALE * 0.5 \
+			+ BattleSim.BS_HAND_HOVER_MIN_STRIP
+	var amount: float = maxf(BattleSim.BS_HAND_HOVER_PUSH, clearance - _fan_spacing)
 	var t: float = float(absi(i - focus)) / float(steps_to_end)
 	var push: float = amount * (1.0 - pow(t, BattleSim.BS_HAND_HOVER_FALLOFF_POW))
 	return push if i > focus else -push
 
 
-# ─── 부채꼴 드로우 인트로 (손패 `_play_draw_intro` 와 같은 세 박자) ──────────
-## 뒷면으로 화면 왼쪽 바깥에서 날아와 → 자기 자리 위에서 뒤집히고 → 내려앉는다.
-## 손패와 같은 상수(`CardPhaseManager.DRAW_*`)를 쓴다. 박자는 트윈의 `finished`
-## 가 아니라 타이머로 기다린다 — 탭 전환 / 닫기로 카드가 도중에 free 되면
-## `finished` 는 영영 오지 않는다. 그래서 인자도 `Variant` 다(free 된 노드를
-## `Card` 로 받으면 호출 자체가 터진다).
-func _play_fan_intro(node: Variant, i: int, gen: int) -> void:
-	var delay: float = float(i) * CardPhaseManager.DRAW_STAGGER_SEC
-	if delay > 0.0:
-		await get_tree().create_timer(delay).timeout
-	if not _fan_intro_alive(node, gen):
-		return
-	var staging: Vector2 = _fan_slot_pos(i, 0.0) \
-			+ Vector2(0.0, -CardPhaseManager.DRAW_FLIP_LIFT_PX * FAN_SIZE_VS_HAND)
-	(node as Card).tween_to(staging, 0.0, Vector2.ONE * _fan_scale(),
-			CardPhaseManager.DRAW_FLY_SEC, Tween.EASE_IN_OUT, Tween.TRANS_SINE)
-	await get_tree().create_timer(CardPhaseManager.DRAW_FLY_SEC).timeout
-	if not _fan_intro_alive(node, gen):
-		return
-	(node as Card).play_flip_reveal()
-	await get_tree().create_timer(Card.FLIP_HALF_SEC * 2.0).timeout
-	if not _fan_intro_alive(node, gen):
-		return
-	(node as Card).intro_active = false
-	_queue_fan_relayout()
-
-
-func _fan_intro_alive(node: Variant, gen: int) -> bool:
-	return gen == _fan_gen and is_instance_valid(node)
-
-
-## 파일럿 스킬 한 블록. 스킬이 없는 파일럿(모브)에게는 한 줄만 남긴다 —
-## 칸을 통째로 빼면 "이 선수는 스킬이 없다"가 화면에서 사라져 버그처럼 읽힌다.
-func _build_skill_block(start_y: float) -> float:
+## 파일럿 스킬 판 — 스탯 판 아래 `top` 에서 시작하는 **자기 판**.
+##   [아이콘 타일]  이름
+##                  설명문(키워드 아이콘 · 카드 비용 아이콘 · 줄바꿈)
+##                  상태 한 줄 (쿨타임이 남았을 때 / 충전 · 패시브 토큰)
+##   [               사용               ]   ← 패시브에는 없다
+## 스킬이 없는 파일럿(모브)도 판은 선다 — "스킬 없음" 한 줄. 칸을 통째로 빼면
+## "이 선수는 스킬이 없다"가 화면에서 사라져 버그처럼 읽힌다.
+func _build_skill_panel(top: float) -> void:
 	var sk: PilotSkillSystem = _bs.skill
-	var y: float = _build_section_head(start_y, "파일럿 스킬", SKILL_SECTION_H)
+	var panel := Panel.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = STAT_PANEL_BG
+	sb.border_color = STAT_PANEL_BORDER
+	sb.border_width_top = 1
+	sb.border_width_bottom = 1
+	sb.border_width_left = 1
+	sb.border_width_right = 1
+	sb.corner_radius_top_left = 14
+	sb.corner_radius_top_right = 14
+	sb.corner_radius_bottom_left = 14
+	sb.corner_radius_bottom_right = 14
+	panel.add_theme_stylebox_override("panel", sb)
+	_body_root.add_child(panel)
+
+	var y: float = top + STAT_PANEL_PAD.y
+	_skill_status = null
+	_skill_use_btn = null
+	_skill_status_shown = false
 	if sk == null or not sk.has_skill(_pilot):
-		var none := _make_label("스킬 없음", 24, KEY_COLOR,
-				HORIZONTAL_ALIGNMENT_LEFT)
+		var none := _make_label("스킬 없음", 24, KEY_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
 		none.position = Vector2(STAT_X, y)
 		none.size = Vector2(STAT_W, 32.0)
 		_body_root.add_child(none)
-		return y + 32.0
+		_fit_skill_panel(panel, top, y + 32.0)
+		return
 
-	# 이름 + 타입 배지 — 한 줄에 좌/우로 나눠 앉는다.
+	var tile: Control = SkillImages.make_icon_tile(
+			String(sk.def_for(_pilot).get("key", "")), SKILL_TILE_PX,
+			SKILL_TILE_BG, SKILL_TILE_ICON, SKILL_TILE_SHADOW)
+	tile.position = Vector2(STAT_X, y)
+	_body_root.add_child(tile)
+
+	var col_x: float = STAT_X + SKILL_TILE_PX + SKILL_TILE_GAP
+	var col_w: float = STAT_X + STAT_W - col_x
+	var cy: float = y
 	var name_lbl := _make_label(sk.skill_name(_pilot), SKILL_NAME_FONT,
 			SKILL_NAME_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
-	name_lbl.position = Vector2(STAT_X, y)
-	name_lbl.size = Vector2(STAT_W * 0.62, 40.0)
+	name_lbl.position = Vector2(col_x, cy)
+	name_lbl.size = Vector2(col_w, 40.0)
+	name_lbl.clip_text = true
 	_body_root.add_child(name_lbl)
+	cy += 40.0 + SKILL_LINE_GAP * 0.5
 
-	# 배지는 **타입 한 단어만** 이다. 키워드까지 붙이면 긴 스킬(포탑 파괴, 전투
-	# 개시)에서 38% 폭을 넘겨 오른쪽 정렬이 왼쪽부터 잘려 나간다 — 우측 정렬
-	# Label 은 넘칠 때 정렬을 포기하고 rect 왼쪽부터 그린다(`clip_text` 는 그
-	# 넘침을 화면 밖으로 나가지 않게 막을 뿐 잘림 자체는 남는다).
-	var type_lbl := _make_label(String(SKILL_TYPE_LABEL.get(
-			sk.skill_type(_pilot), sk.skill_type(_pilot))),
-			SKILL_TYPE_FONT, SKILL_TYPE_COLOR, HORIZONTAL_ALIGNMENT_RIGHT)
-	type_lbl.position = Vector2(STAT_X + STAT_W * 0.62, y + 8.0)
-	type_lbl.size = Vector2(STAT_W * 0.38, 30.0)
-	type_lbl.clip_text = true
-	_body_root.add_child(type_lbl)
-	y += 40.0
-
-	# 키워드는 자기 줄에 작고 흐리게 — 분류 꼬리표라 설명문보다 앞에 오되
-	# 이름만큼 크면 안 된다.
-	var kw: String = sk.skill_keyword(_pilot)
-	if not kw.is_empty():
-		var kw_lbl := _make_label(kw, SKILL_KW_FONT, SKILL_KW_COLOR,
-				HORIZONTAL_ALIGNMENT_LEFT)
-		kw_lbl.position = Vector2(STAT_X, y)
-		kw_lbl.size = Vector2(STAT_W, 26.0)
-		kw_lbl.clip_text = true
-		_body_root.add_child(kw_lbl)
-		y += 26.0
-	y += SKILL_LINE_GAP
-
-	# 설명문 — 줄바꿈은 폰트에게 물어 실제 높이를 잡는다. 글자 수로 어림하면
-	# 한글/영문 혼용에서 한두 줄씩 어긋나 아래 버튼이 겹치거나 뜬다.
-	var desc := _make_label(sk.skill_description(_pilot), SKILL_DESC_FONT,
-			SKILL_DESC_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
-	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	desc.position = Vector2(STAT_X, y)
-	desc.size = Vector2(STAT_W, 30.0)
+	# 설명문 — 카드 설명과 같은 길(`StrategyIcon`): 키워드 아이콘, `[카드]` 앞의
+	# 비용 아이콘, 줄바꿈, `{eul}` 조사. 높이는 같은 규칙으로 잰다.
+	var gm: Node = _bs.gm
+	var costs: Dictionary = gm.card_costs_by_name() if gm != null else {}
+	var desc_text: String = sk.skill_description(_pilot)
+	var desc_h: float = StrategyIcon.rich_height(desc_text, col_w, SKILL_DESC_FONT, costs)
+	var desc := StrategyIcon.make_rich_label(desc_text, SKILL_DESC_FONT,
+			SKILL_DESC_COLOR, SKILL_KW_ICON, SKILL_KNOCK,
+			KeywordIcon.TARGET_ANY_COLOR, KeywordIcon.TARGET,
+			KeywordIcon.SPECIAL_COLOR_DARK, costs)
+	desc.position = Vector2(col_x, cy)
+	desc.size = Vector2(col_w, desc_h)
 	_body_root.add_child(desc)
-	var font: Font = desc.get_theme_font("font")
-	var desc_h: float = 30.0
-	if font != null:
-		desc_h = maxf(30.0, font.get_multiline_string_size(
-				desc.text, HORIZONTAL_ALIGNMENT_LEFT, STAT_W,
-				SKILL_DESC_FONT).y + 6.0)
-	desc.size = Vector2(STAT_W, desc_h)
-	y += desc_h + SKILL_LINE_GAP
+	cy += desc_h
 
-	# 상태 한 줄 — 남은 턴 / 충전 수. `refresh()` 가 이 라벨만 다시 쓴다.
-	_skill_status = _make_label(sk.status_text(_pilot), SKILL_STATUS_FONT,
-			SKILL_WAIT_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
-	_skill_status.position = Vector2(STAT_X, y)
-	_skill_status.size = Vector2(STAT_W, 30.0)
-	_body_root.add_child(_skill_status)
-	y += 30.0 + SKILL_LINE_GAP
+	# 상태 한 줄 — 남은 턴 / 토큰. **쿨타임이 끝나 "사용 가능"일 때는 뺀다** —
+	# 그 말은 아래 사용 버튼이 밝아져 이미 하고 있다.
+	_skill_status_shown = _skill_status_visible()
+	if _skill_status_shown:
+		cy += SKILL_LINE_GAP
+		_skill_status = _make_label(sk.status_text(_pilot), SKILL_STATUS_FONT,
+				SKILL_WAIT_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
+		_skill_status.position = Vector2(col_x, cy)
+		_skill_status.size = Vector2(col_w, 30.0)
+		_skill_status.clip_text = true
+		_body_root.add_child(_skill_status)
+		cy += 30.0
 
+	y = maxf(y + SKILL_TILE_PX, cy)
 	# 패시브에는 버튼이 없다 — 누를 수 없는 것에 비활성 버튼을 두면 "언젠가는
 	# 눌리는 것"으로 읽힌다.
-	if sk.skill_type(_pilot) == PilotSkillSystem.TYPE_PASSIVE:
-		_skill_use_btn = null
-		return y
-	_skill_use_btn = Button.new()
-	_skill_use_btn.text = "사용"
-	_skill_use_btn.focus_mode = Control.FOCUS_NONE
-	_skill_use_btn.add_theme_font_size_override("font_size", 28)
-	_skill_use_btn.position = Vector2(STAT_X, y)
-	_skill_use_btn.size = Vector2(STAT_W, SKILL_USE_H)
-	_skill_use_btn.pressed.connect(_on_skill_use_pressed)
-	_body_root.add_child(_skill_use_btn)
+	if sk.skill_type(_pilot) != PilotSkillSystem.TYPE_PASSIVE:
+		y += SKILL_LINE_GAP * 2.0
+		_skill_use_btn = Button.new()
+		_skill_use_btn.text = "사용"
+		_skill_use_btn.focus_mode = Control.FOCUS_NONE
+		_skill_use_btn.add_theme_font_size_override("font_size", 28)
+		_skill_use_btn.position = Vector2(STAT_X, y)
+		_skill_use_btn.size = Vector2(STAT_W, SKILL_USE_H)
+		_skill_use_btn.pressed.connect(_on_skill_use_pressed)
+		_body_root.add_child(_skill_use_btn)
+		y += SKILL_USE_H
 	_refresh_skill_block()
-	return y + SKILL_USE_H
+	_fit_skill_panel(panel, top, y)
+
+
+func _fit_skill_panel(panel: Panel, top: float, content_bottom: float) -> void:
+	panel.position = Vector2(STAT_X - STAT_PANEL_PAD.x, top)
+	panel.size = Vector2(STAT_W + STAT_PANEL_PAD.x * 2.0,
+			content_bottom + STAT_PANEL_PAD.y - top)
+
+
+## 상태 줄을 보일 것인가 — 쿨타임형이 준비된 상태("사용 가능")만 아니다.
+func _skill_status_visible() -> bool:
+	var sk: PilotSkillSystem = _bs.skill if _bs != null else null
+	if sk == null or _pilot == null or not sk.has_skill(_pilot):
+		return false
+	return not (sk.skill_type(_pilot) == PilotSkillSystem.TYPE_COOLDOWN
+			and sk.cooldown_left(_pilot) <= 0)
 
 
 ## 상태 줄과 버튼 활성만 다시 쓴다 — 트리는 건드리지 않는다.
@@ -1632,8 +1809,6 @@ func _refresh_skill_block() -> void:
 		return
 	if _skill_status != null and is_instance_valid(_skill_status):
 		_skill_status.text = sk.status_text(_pilot)
-		_skill_status.add_theme_color_override("font_color",
-				SKILL_READY_COLOR if sk.can_activate(_pilot) else SKILL_WAIT_COLOR)
 	if _skill_use_btn != null and is_instance_valid(_skill_use_btn):
 		_skill_use_btn.disabled = not sk.can_activate(_pilot)
 
@@ -1676,7 +1851,7 @@ func _open_info(key: String) -> void:
 	_menu_root.mouse_filter = Control.MOUSE_FILTER_STOP
 	_menu_root.gui_input.connect(_on_menu_backdrop_input)
 	_root.add_child(_menu_root)
-	_build_menu_content()
+	_build_menu_content(true)
 
 
 ## 뒤판 클릭을 **그 자리에 있던 버튼에게 대신 전달한다.**
@@ -1714,10 +1889,11 @@ func _on_menu_backdrop_input(event: InputEvent) -> void:
 			_on_tab_pressed(i)
 			return
 
-	# 3) 닫기 버튼 — 패널만 닫고 마는 것이 아니라 상세 화면째 닫는다.
-	if _close_btn != null and is_instance_valid(_close_btn) \
-			and Rect2(_close_btn.position, _close_btn.size).has_point(at):
-		close()
+	# 3) 스킬 사용 버튼 — 패널을 닫고 그대로 누른다(비활성이면 패널만 닫힌다).
+	if _skill_use_btn != null and is_instance_valid(_skill_use_btn) \
+			and Rect2(_skill_use_btn.position, _skill_use_btn.size).has_point(at):
+		_close_menu()
+		_on_skill_use_pressed()
 		return
 
 	_close_menu()
@@ -1733,8 +1909,9 @@ func _close_menu() -> void:
 
 
 ## 메뉴 판을 (다시) 세운다. `refresh()` 가 값이 바뀔 때마다 부르므로 메뉴에
-## 적힌 숫자도 칩과 같은 순간의 값이다.
-func _build_menu_content() -> void:
+## 적힌 숫자도 칩과 같은 순간의 값이다. 카드는 판이 아니라 손패의 설명판이다
+## (`_build_card_desc`) — `animate` 는 그 등장 연출을 틀 것인가.
+func _build_menu_content(animate: bool = false) -> void:
 	if _menu_root == null or not is_instance_valid(_menu_root):
 		return
 	if not _targets.has(_menu_key):
@@ -1742,45 +1919,18 @@ func _build_menu_content() -> void:
 	for child in _menu_root.get_children():
 		_menu_root.remove_child(child)
 		child.queue_free()
+	if _menu_key.begins_with("card:"):
+		_build_card_desc(animate)
+		return
 
 	var rows: Array = _menu_rows(_menu_key)
 	var note: String = _menu_note(_menu_key)
 	var inner_w: float = MENU_W - MENU_PAD.x * 2.0
-	# **설명 높이는 글자 수가 정한다.** 카드 설명은 스탯 한 줄짜리 주석과 달리
-	# 서너 줄까지 가므로 44px 로 못 박아 두면 아랫줄이 판 밖으로 흘러나간다.
-	var note_h: float = 0.0
-	if note != "":
-		note_h = _text_height(StrategyIcon.measure_text(note), inner_w,
-				MENU_NOTE_FONT) + 10.0
-	var body_h: float = 44.0 + float(rows.size()) * MENU_ROW_H + note_h
-
-	var src_btn := (_targets[_menu_key] as Dictionary)["button"] as Button
-	var panel_h: float = body_h + MENU_PAD.y * 2.0
-	var x: float = STAT_X - MENU_GAP_X - MENU_W
-	# 누른 것과 같은 높이에서 시작하되 화면 위아래로는 넘기지 않는다.
-	var y: float = clampf(src_btn.position.y - MENU_PAD.y, 20.0,
-			maxf(20.0, ScreenMetrics.bottom_y() - panel_h - 20.0))
-	# 카드도 같은 규칙이다 — 부채꼴이 정보 칼럼 아래(오른쪽)로 옮겨 오면서 판은
-	# 그 **왼쪽 옆**에 서고 카드를 덮지 않는다. (화면 하단 전체 폭이던 시절에는
-	# 카드 줄 제목 위로 올려 붙이는 예외가 있었다.)
 
 	var panel := Panel.new()
-	panel.position = Vector2(x, y)
-	panel.size = Vector2(MENU_W, panel_h)
 	# 판 위 클릭은 메뉴를 닫지 않는다 — 뒤판까지 이벤트가 내려가지 않게 STOP.
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = MENU_BG
-	sb.border_color = MENU_BORDER
-	sb.border_width_top = 2
-	sb.border_width_bottom = 2
-	sb.border_width_left = 2
-	sb.border_width_right = 2
-	sb.corner_radius_top_left = 16
-	sb.corner_radius_top_right = 16
-	sb.corner_radius_bottom_left = 16
-	sb.corner_radius_bottom_right = 16
-	panel.add_theme_stylebox_override("panel", sb)
+	panel.add_theme_stylebox_override("panel", CardDescBox.panel_style(false))
 	_menu_root.add_child(panel)
 
 	var iy: float = MENU_PAD.y
@@ -1808,41 +1958,133 @@ func _build_menu_content() -> void:
 		panel.add_child(v)
 		iy += MENU_ROW_H
 
-	if note != "" and _menu_key.begins_with("card:"):
-		# 카드 설명문은 "전략 점수" 앞에 팔각형 아이콘이 선다(`StrategyIcon`).
-		var rn := StrategyIcon.make_rich_label(note, MENU_NOTE_FONT,
-				Color(0.62, 0.66, 0.76))
-		rn.position = Vector2(MENU_PAD.x, iy + 6.0)
-		rn.size = Vector2(inner_w, note_h)
-		panel.add_child(rn)
-	elif note != "":
-		var n := _make_label(note, MENU_NOTE_FONT, Color(0.62, 0.66, 0.76),
-				HORIZONTAL_ALIGNMENT_LEFT)
-		n.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-		# **줄바꿈을 켜는 것이 크기보다 먼저여야 한다.** `Control.size` 의 세터는
-		# 요청값을 최소 크기로 한 번 걷어 올리는데, 줄바꿈이 꺼진 Label 의 최소
-		# 폭은 **한 줄로 편 글자 전체 폭**이다 — 그 상태에서 332px 를 요청하면
-		# 라벨이 글자 폭 그대로 부풀고, 뒤늦게 줄바꿈을 켜도 이미 커진 rect 는
-		# 줄지 않는다. 화면에서는 첫 줄이 판 밖으로 삐져나가고 아랫줄이 잘린
-		# 것으로 보였다(실측 확인).
-		n.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		n.position = Vector2(MENU_PAD.x, iy + 6.0)
-		n.size = Vector2(inner_w, note_h)
+	if note != "":
+		# **설명 높이는 그려진 글이 정한다** — 트리에 넣고 폭을 준 뒤 실제 내용
+		# 높이를 읽는다. 예전에는 fallback 폰트로 따로 재서 아이콘
+		# 이 끼거나 테마 폰트가 다르면 아랫줄이 판 밖으로 튀어나왔다.
+		var n := _make_note(note)
 		panel.add_child(n)
+		n.position = Vector2(MENU_PAD.x, iy + 6.0)
+		n.size = Vector2(inner_w, 0.0)
+		var note_h: float = n.get_content_height()
+		n.size = Vector2(inner_w, note_h)
+		iy += 6.0 + note_h + 4.0
+
+	var src_btn := (_targets[_menu_key] as Dictionary)["button"] as Button
+	var panel_h: float = iy + MENU_PAD.y
+	var x: float = STAT_X - MENU_GAP_X - MENU_W
+	# 누른 것과 같은 높이에서 시작하되 화면 위아래로는 넘기지 않는다.
+	var y: float = clampf(src_btn.position.y - MENU_PAD.y, 20.0,
+			maxf(20.0, ScreenMetrics.bottom_y() - panel_h - 20.0))
+	panel.position = Vector2(x, y)
+	panel.size = Vector2(MENU_W, panel_h)
 
 
-## 자동 줄바꿈된 글의 높이. 판 높이를 내용에서 유도하는 유일한 자리다.
+## 정보 패널 아래의 설명 글. `{attack}` · `{engage}` 자리에 키워드 아이콘
+## (`MENU_NOTE_ICON`)을 끼우고, 아이콘과 다음 낱말은 떨어지지 않게 붙인다.
+## 글은 `UiHelpers.keep_words` 를 지나 낱말 중간에서 줄이 바뀌지 않는다.
+func _make_note(text: String) -> RichTextLabel:
+	var rtl := RichTextLabel.new()
+	rtl.bbcode_enabled = false
+	rtl.scroll_active = false
+	rtl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	rtl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rtl.add_theme_font_size_override("normal_font_size", MENU_NOTE_FONT)
+	rtl.add_theme_color_override("default_color", Color(0.72, 0.75, 0.84))
+	var icon_px: int = roundi(float(MENU_NOTE_FONT) * 1.3)
+	var parts: PackedStringArray = text.split("{")
+	for i in parts.size():
+		var part: String = parts[i]
+		if i > 0:
+			var close_at: int = part.find("}")
+			var tag: String = part.substr(0, close_at) if close_at >= 0 else ""
+			if MENU_NOTE_ICON.has(tag):
+				rtl.add_image(KeywordIcon.texture(String(MENU_NOTE_ICON[tag]), icon_px * 2,
+						SKILL_KW_ICON, MENU_BG), icon_px, icon_px,
+						Color.WHITE, INLINE_ALIGNMENT_CENTER)
+				part = part.substr(close_at + 1)
+				# 아이콘 뒤 빈칸은 줄바꿈하지 않는 빈칸 — 아이콘만 줄 끝에 남지 않게.
+				if part.begins_with(" "):
+					part = "\u00a0" + part.substr(1)
+			else:
+				part = "{" + part
+		if part != "":
+			rtl.add_text(UiHelpers.keep_words(part))
+	return rtl
+
+
+## 카드를 누르면 **손패에서 가리켰을 때와 같은 설명판**이 선다 — 같은
+## `CardDescBox.build`(폭 `CardPhaseManager.DESC_BOX_W`, 키워드 풀이는 옆 판들로
+## 따로) + 같은 자리 규칙(`CardPhaseManager._desc_box_spots`: 확대된 카드 바로 옆,
+## 카드가 화면 가운데이거나 오른쪽이면 판은 왼쪽, 키워드판은 그 바깥쪽) + 같은 등장
+## 연출. 예전의 비용 · 종류 · 분류 · 포지션 행은 삭제됐다 — 손패와 다른 판이면
+## "이 카드가 그 카드"라는 연결이 끊긴다. **계산식은 값이 아니라 식 문구로 적는다**
+## (`live = false`) — 이 카드는 손에 든 카드가 아니라 쓸 때의 값이 없다.
 ##
-## **줄바꿈 규칙을 Label 과 맞춰야 한다.** `get_multiline_string_size` 의 기본
-## 플래그는 `BREAK_MANDATORY | BREAK_WORD_BOUND` 인데 라벨 쪽은
-## `AUTOWRAP_WORD_SMART`(= 거기에 `BREAK_GRAPHEME_BOUND` 가 더 붙는다)라,
-## 기본값으로 재면 라벨이 실제로는 한 줄 더 쓰는 경우가 생겨 마지막 줄이 판
-## 아래로 잘려 나간다(실측 확인 — 두 줄로 재고 세 줄로 그렸다).
-static func _text_height(text: String, width: float, font_size: int) -> float:
-	var font := ThemeDB.fallback_font
-	var flags: int = TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND 			| TextServer.BREAK_GRAPHEME_BOUND
-	return font.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_LEFT,
-			width, font_size, -1, flags).y
+## 판들은 전부 IGNORE 라 위를 눌러도 뒤판(`_on_menu_backdrop_input`)이 받는다.
+func _build_card_desc(animate: bool) -> void:
+	var cd: CardData = _card_of(_menu_key)
+	var i: int = _fan_keys.find(_menu_key)
+	if cd == null or i < 0:
+		return
+	var box: Panel = CardDescBox.build(cd, CardPhaseManager.DESC_BOX_W, false, "", null,
+			false, 0.0, false)
+	var kw_boxes: Array[Panel] = CardDescBox.build_keyword_panels(cd,
+			CardPhaseManager.KEYWORD_BOX_W, false, false)
+	var kw_h: float = 0.0
+	for k in kw_boxes.size():
+		kw_h += kw_boxes[k].size.y + (CardPhaseManager.KEYWORD_BOX_STACK_GAP if k > 0 else 0.0)
+
+	# 확대된 카드의 화면 rect — 쉬는 자리 중심 + 손패 배율 × 호버 배율(초점 카드는
+	# 비켜서지 않는다). 기울기는 무시한다(손패와 같다).
+	var screen := Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
+	var center := Vector2(_fan_cx + _fan_dx[i],
+			_bs.BS_HAND_CENTER.y + Card.CARD_H * 0.5 + _fan_arc_drop(_fan_dx[i]))
+	var half: Vector2 = (Vector2(Card.CARD_W, Card.CARD_H) * 0.5
+			* CardPhaseManager.HAND_CARD_SCALE * Card.HOVER_SCALE)
+	var card_rect := Rect2(center - half, half * 2.0)
+	var on_left: bool = center.x >= screen.x * 0.5
+	var gap: float = CardPhaseManager.DESC_BOX_GAP
+	var margin: float = CardPhaseManager.DESC_BOX_MARGIN
+	var bw: float = CardPhaseManager.DESC_BOX_W
+	var kw_w: float = CardPhaseManager.KEYWORD_BOX_W
+	var box_x: float = (card_rect.position.x - gap - bw if on_left else card_rect.end.x + gap)
+	box_x = clampf(box_x, margin, screen.x - bw - margin)
+	var kx: float = (box_x - gap - kw_w if on_left else box_x + bw + gap)
+	if kx < margin or kx + kw_w > screen.x - margin:
+		kx = (card_rect.end.x + gap if on_left else card_rect.position.x - gap - kw_w)
+	kx = clampf(kx, margin, screen.x - kw_w - margin)
+
+	box.position = Vector2(box_x, _desc_y(card_rect.position.y, box.size.y, screen.y))
+	_menu_root.add_child(box)
+	if animate:
+		_animate_desc_in(box)
+	var kw_pos := Vector2(kx, _desc_y(card_rect.position.y, kw_h, screen.y))
+	for kw_box in kw_boxes:
+		kw_box.position = kw_pos
+		_menu_root.add_child(kw_box)
+		if animate:
+			_animate_desc_in(kw_box)
+		kw_pos.y += kw_box.size.y + CardPhaseManager.KEYWORD_BOX_STACK_GAP
+
+
+## 판의 윗변 — 확대된 카드 윗단에 맞추되, 화면 아래로 넘치면 올린다
+## (`CardPhaseManager._desc_box_y` 와 같은 식).
+static func _desc_y(card_top: float, h: float, screen_h: float) -> float:
+	var margin: float = CardPhaseManager.DESC_BOX_MARGIN
+	return clampf(card_top, margin, maxf(margin, screen_h - h - margin))
+
+
+## 등장 — 제자리보다 `DESC_ANIM_RISE` 아래 · 투명에서 올라오며 나타난다
+## (`CardPhaseManager._animate_desc_in` 과 같은 연출).
+static func _animate_desc_in(box: Control) -> void:
+	var rest_y: float = box.position.y
+	box.position.y = rest_y + CardPhaseManager.DESC_ANIM_RISE
+	box.modulate.a = 0.0
+	var tw := box.create_tween().set_parallel()
+	tw.tween_property(box, "position:y", rest_y, CardPhaseManager.DESC_ANIM_IN_TIME) \
+			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.tween_property(box, "modulate:a", 1.0, CardPhaseManager.DESC_ANIM_IN_TIME)
 
 
 ## 정보 패널의 제목. 접두사가 종류를 가른다 — 스탯은 칩 이름, 효과는 온전한
@@ -1854,10 +2096,7 @@ func _target_title(key: String) -> String:
 			if String(d["key"]) == key:
 				return String(d["title"])
 		return key
-	if key.begins_with("card:"):
-		var cd: CardData = _card_of(key)
-		return cd.card_name if cd != null else key
-	for d2 in _chip_defs():
+	for d2 in _flat_chip_defs():
 		if String(d2[0]) == key:
 			return String(d2[1])
 	return key
@@ -1875,8 +2114,6 @@ func _card_of(key: String) -> CardData:
 func _menu_rows(key: String) -> Array:
 	if key.begins_with("fx:"):
 		return _fx_rows(key)
-	if key.begins_with("card:"):
-		return _card_rows(key)
 	var pd: PlayerData = _bs.player_data_for(_pilot)
 	var mech: MechData = _mech()
 	match key:
@@ -1899,20 +2136,6 @@ func _menu_rows(key: String) -> Array:
 				rows_atk.append(["일시 효과", "%+d" % _pilot.atk_buff])
 			rows_atk.append(["최종", str(_pilot.atk)])
 			return rows_atk
-		"growth":
-			var rows_g: Array = [
-				["성장치", BattleSim.fmt_score(_pilot.score)],
-				["공격력 성장", "+%d%%" % roundi(_pilot.growth * 100.0)],
-				["최대 체력 성장", "+%d%%" % roundi(_pilot.growth_hp * 100.0)]]
-			if not is_equal_approx(_pilot.growth_rate_mult, 1.0):
-				rows_g.append(["적립 배율", "%+d%%%s" % [
-					roundi((_pilot.growth_rate_mult - 1.0) * 100.0),
-					_remain_txt(_pilot.growth_rate_expire_turn,
-							_pilot.growth_until_phase)]])
-			if not is_zero_approx(_pilot.growth_rate_bonus):
-				rows_g.append(["적립 배율(영구)",
-					"%+d%%" % roundi(_pilot.growth_rate_bonus * 100.0)])
-			return rows_g
 		"hit", "eva":
 			var base: int = _pilot.hit if key == "hit" else _pilot.evasion
 			var rows_h: Array = [["기본", str(base)]]
@@ -1923,8 +2146,10 @@ func _menu_rows(key: String) -> Array:
 			rows_h.append(["최종", str(_bs.sim_core.lane_adjusted(base, _pilot))])
 			return rows_h
 		"presence":
-			return [["기본", str(_pilot.presence)],
-					["출처", mech.name if mech != null else "역할 기본값"]]
+			var rows_p: Array = [["기본", str(_pilot.presence)]]
+			if _presence_delta() > 0:
+				rows_p.append(["특수 능력", "%+d" % _presence_delta()])
+			return rows_p
 		_:
 			pass
 	if key in PlayerData.STAT_KEYS:
@@ -1944,12 +2169,15 @@ func _menu_rows(key: String) -> Array:
 							PilotData.hit_chance(_pilot.engage_eva, _pilot.engage_eva) * 100.0)]]
 		"m_hp":
 			return [["기체 체력", str(mech.hp) if mech != null else "—"],
-					["파일럿 기본 최대 체력", str(_pilot.base_max_hp)]]
+					["파일럿 기본 최대 체력", str(_pilot.base_max_hp)],
+					["현재", "%d / %d" % [_pilot.hp, _pilot.max_hp]]]
 		"m_atk":
 			return [["기체 공격력", str(mech.atk) if mech != null else "—"],
-					["파일럿 기본 공격력", str(_pilot.base_atk)]]
+					["파일럿 기본 공격력", str(_pilot.base_atk)],
+					["현재", str(_pilot.atk)]]
 		"m_presence":
-			return [["기체 존재감", str(mech.presence) if mech != null else "—"]]
+			return [["기체 존재감", str(mech.presence) if mech != null else "—"],
+					["현재", str(_pilot.presence)]]
 	return []
 
 
@@ -2026,28 +2254,6 @@ func _fx_card_rows(key: String) -> Array:
 	return rows
 
 
-## 카드 한 장의 내역. 설명문 자체는 note 로 내려가고 여기에는 **손에서 판단할
-## 때 필요한 숫자**만 온다 — 비용, 어느 슬롯의 카드인가, 누가 쓸 수 있는가.
-func _card_rows(key: String) -> Array:
-	var cd: CardData = _card_of(key)
-	if cd == null:
-		return []
-	var rows: Array = [
-		["비용", str(cd.cost) if cd.is_playable() else Card.UNPLAYABLE_COST_TEXT],
-		["종류", "메크 카드" if cd.card_type == CardData.TYPE_MECH else "파일럿 카드"]]
-	if cd.card_type != CardData.TYPE_MECH:
-		rows.append(["분류", cd.category_label()])
-		rows.append(["포지션", CardData.scope_label(cd.scope)])
-	var kws: Array = []
-	for kw in cd.keyword_list():
-		kws.append(cd.keyword_label(String(kw)))
-	if not kws.is_empty():
-		rows.append(["키워드", " · ".join(kws)])
-	if cd.shows_tokens():
-		rows.append(["토큰", str(cd.charge)])
-	return rows
-
-
 ## 남은 수명을 **한 칸짜리 값**으로. `_remain_txt` 는 값 뒤에 괄호로 붙는
 ## 꼬리표(빈 문자열이 정상)라 행의 값 칸에 그대로 쓰면 빈칸이 남는다.
 func _remain_label(expire_turn: int, until_phase: bool) -> String:
@@ -2058,15 +2264,29 @@ func _remain_label(expire_turn: int, until_phase: bool) -> String:
 	return "%d턴" % maxi(0, expire_turn - _bs.turn_count)
 
 
+## 명중 · 회피 · 존재감 설명 — 인게임 칩과 파일럿 탭 칩이 같은 글을 쓴다.
+## `{attack}` · `{engage}` 자리에는 키워드 아이콘이 선다(`_fill_note`).
+const STAT_NOTES: Dictionary = {
+	"hit": "카드 효과로 적에게 {attack} 공격할 시, 명중할 확률을 결정합니다.",
+	"field_hit": "카드 효과로 적에게 {attack} 공격할 시, 명중할 확률을 결정합니다.",
+	"eva": "적의 카드 효과로 {attack} 공격을 받을 때, 빗맞힐 확률을 결정합니다.",
+	"field_eva": "적의 카드 효과로 {attack} 공격을 받을 때, 빗맞힐 확률을 결정합니다.",
+	"e_hit": "{engage} 교전 중, 적을 공격할 때 명중할 확률을 결정합니다.",
+	"engage_hit": "{engage} 교전 중, 적을 공격할 때 명중할 확률을 결정합니다.",
+	"e_eva": "{engage} 교전 중, 적의 공격을 받을 때 빗맞힐 확률을 결정합니다.",
+	"engage_eva": "{engage} 교전 중, 적의 공격을 받을 때 빗맞힐 확률을 결정합니다.",
+	"presence": "존재감이 높을 시, 교전 중 공격 대상이 될 확률이 높아집니다.",
+	"m_presence": "존재감이 높을 시, 교전 중 공격 대상이 될 확률이 높아집니다.",
+}
+
+
 ## 정보 패널 하나에 붙는 설명. 숫자만으로는 "그래서 뭘 가르는 값인가"가 안 나오는
-## 것에만 붙인다. **카드의 설명문은 여기로 들어온다** — 카드 노드에 적힌 글씨는
-## 축소돼 있어 읽으라고 있는 것이 아니다.
+## 것에만 붙인다. 카드는 이 판을 쓰지 않는다 — 손패의 설명판(`_build_card_desc`).
 func _menu_note(key: String) -> String:
+	if STAT_NOTES.has(key):
+		return String(STAT_NOTES[key])
 	if key in PlayerData.STAT_KEYS:
 		return PlayerData.STAT_NOTES[PlayerData.STAT_KEYS.find(key)]
-	if key.begins_with("card:"):
-		var cd: CardData = _card_of(key)
-		return cd.description if cd != null else ""
 	if key.begins_with("fx:src:"):
 		return "이 카드가 남긴 영구 가산분. 만료도 해제도 없고 같은 카드를 다시 쓰면 누적된다."
 	if key.begins_with("fx:rest:"):
@@ -2080,18 +2300,6 @@ func _menu_note(key: String) -> String:
 			return "카드가 얹은 임시 가산분. 성장 재계산에 지워지지 않는다."
 		"fx:shield":
 			return "피해를 체력보다 먼저 먹는다. 본진 복귀 시 사라진다."
-		"growth":
-			return "성장은 성장치에서 파생된다. 공격력이 최대 체력보다 4배 빠르게 자란다."
-		"hit":
-			return "명중 / (명중 + 상대 회피) 를 80~100% 에 엹어 전장 판정을 굴린다."
-		"eva":
-			return "높을수록 상대의 전장 명중률을 80% 쪽으로 끌어내린다."
-		"presence":
-			return "교전 무대의 표적 가중치. 전장은 읽지 않는다."
-		"e_hit":
-			return "교전 무대에서만 읽는 명중. 전장 명중과 따로 산다."
-		"e_eva":
-			return "교전 무대에서만 읽는 회피. 전장 회피와 따로 산다."
 		"m_hp", "m_atk":
 			return "기체 스탯이 파일럿의 기본값이 되고, 거기서 성장이 붙는다."
 	return ""
@@ -2111,31 +2319,6 @@ func _remain_txt(expire_turn: int, until_phase: bool) -> String:
 func _mech() -> MechData:
 	var pd: PlayerData = _bs.player_data_for(_pilot)
 	return pd.assigned_mech if pd != null else null
-
-
-# ─── 하: 닫기 ────────────────────────────────────────────────────────────────
-# 예전의 "전환" 버튼은 삭제됐다 — 파일럿 ↔ 메크는 이제 탭이 가른다.
-func _build_buttons() -> void:
-	_close_btn = Button.new()
-	_close_btn.text = "닫기"
-	_close_btn.add_theme_font_size_override("font_size", 28)
-	_close_btn.size = Vector2(BTN_W, BTN_H)
-	_close_btn.focus_mode = Control.FOCUS_NONE
-	_close_btn.pressed.connect(close)
-	_root.add_child(_close_btn)
-	_reposition_close()
-
-
-## 받침 아래끝 오른쪽에 붙인다. `_rebuild_body` 가 받침 크기를 정한 직후와
-## 버튼을 처음 세울 때 각각 한 번씩 부른다 — 둘 중 어느 쪽이 먼저 와도 되도록
-## 상대가 아직 없으면 그냥 돌아간다.
-func _reposition_close() -> void:
-	if _close_btn == null or not is_instance_valid(_close_btn):
-		return
-	if _stat_panel == null or not is_instance_valid(_stat_panel):
-		return
-	_close_btn.position = Vector2(STAT_X + STAT_W - BTN_W,
-			_stat_panel.position.y + _stat_panel.size.y + BTN_GAP_Y)
 
 
 static func _make_label(text: String, font_size: int, color: Color,

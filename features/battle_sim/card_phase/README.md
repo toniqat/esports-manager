@@ -4,13 +4,67 @@
 |---|---|---|
 | `Card.gd` | Card | 카드 한 장의 시각 노드 |
 | `CardPhaseManager.gd` | CardPhaseManager | 작전 단계 전체 — 덱 / 핸드 / 카드 효과 |
-| `CardSelectOverlay.gd` | CardSelectOverlay | 버리기:N / 찾기:N / 보존:N 모달 픽 |
+| `CardSelectOverlay.gd` | CardSelectOverlay | 버리기:N / 보존:N 손패 픽(중앙 구역에 드롭) · 찾기:N / 강화 3택 그리드 픽 |
 | `CardTargetingOverlay.gd` | CardTargetingOverlay | 카드 드래그 = 대상 지정 오버레이 |
 | `CardPileViewer.gd` | CardPileViewer | Deck / Discard 목록 열람 (읽기 전용) |
 | `CardDragArrow.gd` | CardDragArrow | 카드 ↔ 커서를 잇는 조준 화살표 (2차 베지어 위 chevron 사슬, 커서 쪽 맨 끝만 원래 크기 · 나머지 75%) |
 | `CardPlayPreview.gd` | CardPlayPreview | **손패 미리보기** — 누르면 시전자 강조, 끌면 효과 미리보기(덱/버린 더미 chevron · 버려질 카드 · 찾기/보존 아이콘 + 전장 · 도넛 · 비용 원에 상태를 건다). 아래 *손패 미리보기* 절 |
 | `AiCardPlayer.gd` | AiCardPlayer | AI 카드 사용 애니메이션 (중앙 카드 + 그 오른쪽 설명판 — 키워드 풀이 없음, `DESC_BOX_W` 340, 윗변 = 카드 윗단) |
-| `CardDescBox.gd` | CardDescBox | **카드 설명판** — 이름 · 비용 · 키워드 · 설명문 · 키워드 풀이. 카드 앞면에 설명문이 없으므로 글을 보여 주는 모든 자리(손패 옆 판 · AI 카드 · 찾기/열람 격자 · 밴픽 시트 · 메크 상세)가 이것 하나로 짓는다. **판에는 테두리가 없다.** 머리줄은 **[작은 비용 리본] 이름** 한 덩어리가 판 가운데에 선다(`CostRibbon.make_badge`, `COST_RIBBON_SIZE` 26×36). `build(data, width, light, cost_text, cost_color, with_notes, min_h)` 는 높이를 글꼴로 직접 재 돌려주고(`light` = 아웃게임 흰 판), `with_notes = false` 면 키워드 풀이를 빼고 짓는다 — 손패는 풀이를 `build_keyword_panel` 의 별도 판에 세운다. `place_near` 는 카드 위/아래 자리를 잡는다. 설명문의 비용 표기는 언제나 **"<수치> {비용 아이콘} 비용"**(`+1 비용`, `-1 비용`, `0 비용`)이다. 설명문은 `RichTextLabel` 로 "전략 점수" 앞마다 팔각형 인디케이터, "비용" 앞마다 비용 리본 아이콘(전략 점수 색, 테두리 없음)을 끼워 찍는다(`StrategyIcon.make_rich_label`; 상세 패널의 카드 설명도 같다). 한글은 띄어쓰기에서만 접힌다(`UiHelpers.keep_words`) |
+| `CardDescBox.gd` | CardDescBox | **카드 설명판** — 이름 · 비용 · 키워드 · 설명문 · 키워드 풀이. 카드 앞면에 설명문이 없으므로 글을 보여 주는 모든 자리(손패 옆 판 · AI 카드 · 찾기/열람 격자 · 밴픽 시트 · 메크 상세)가 이것 하나로 짓는다. **판에는 테두리가 없다.** 인게임 판은 아래로 흐릿한 드롭 섀도를 단다(`panel_style`, `DARK_SHADOW_*`; 판 안에 끼운 판은 `_tint_nested` 가 섀도를 끈다). 머리줄은 **[작은 비용 리본] 이름** 한 덩어리가 판 가운데에 선다(`CostRibbon.make_badge`, `COST_RIBBON_SIZE` 26×36). `build(data, width, light, cost_text, cost_color, with_notes, min_h)` 는 높이를 글꼴로 직접 재 돌려주고(`light` = 아웃게임 흰 판), `with_notes = false` 면 키워드 풀이를 빼고 짓는다 — 손패는 풀이를 `build_keyword_panel` 의 별도 판에 세운다. `place_near` 는 카드 위/아래 자리를 잡는다. 설명문 표기 규칙은 아래 **설명문 표기** 절. 설명문은 `resolve_text(data)` 로 계산식(`{식|문구}`)과 `\n` 을 푼 뒤 `RichTextLabel` 로 "전략 점수" 앞마다 팔각형 인디케이터, "비용" 앞마다 비용 리본 아이콘(전략 점수 색, 테두리 없음), 키워드 낱말(`KeywordIcon.WORDS`)과 "N턴" 앞마다 키워드 아이콘(`resources/KeywordIcon.gd`, 키워드 색 — 인게임 하늘색 / 아웃게임 `ACCENT_TEXT`; 뽑기 초록 · 버리기 빨강 · 대상은 카드가 겨누는 편 색)을 끼워 찍는다(`StrategyIcon.make_rich_label`; 상세 패널의 카드 설명도 같다, 대괄호 안 카드 이름에는 안 끼운다). **설명문 글자 크기(`DESC_FONT`)는 머리줄 이름과 같은 22**(예전 18). 키워드 줄 아래에는 **속성 줄**이 선다 — `card_attributes(data)` 가 `[아이콘] 값` 으로 **대상**(`target` → 적 / 아군 / 적 또는 포탑 / 타일 / 자신 …) · **사거리**(대상 · 칸 지정 카드의 `cast_range`, 99 이상 = 전장) · **시전 범위**(`area` 컬럼 · 효과의 `area` / `around_target` / `self_range` · 교전 반경 중 최대)를 늘어놓고(**지속시간은 속성 줄에 없다** — 설명문이 "3턴 간 교전" 으로 적는다), 해당 없는 항목은 빠진다(손패 전용 카드는 대개 줄 자체가 없다). 좁은 손패 판(240)에서는 줄이 접히므로 높이를 대역 문자열(`_attr_measure`, 아이콘 = 글자 셋)로 잰다. 한글은 띄어쓰기에서만 접힌다(`UiHelpers.keep_words`) |
+
+
+## 설명문 표기
+
+`cards.csv` · `mech_cards.csv` 의 `description` 이 따르는 규칙. 아이콘은 낱말에서
+자동으로 붙으므로(`StrategyIcon._tokens`) **규칙대로 쓰면 아이콘이 따라온다.**
+
+- **속성 줄이 말하는 것은 설명문에 다시 적지 않는다** — "사거리 N 내 적 지정 —",
+  "전장 내 적 지정" 같은 머리말은 없다. 시전자 · 대상 주변 효과는 **"범위 내 모든 적"**
+  (반경은 속성 줄의 범위 값). 지칭어로 쓰는 "대상"(대상의 타일로 · 대상 체력)은 남는다.
+- **대상 아이콘** = `CardDescBox.target_info(data)` 하나가 정하고 속성 줄과 설명문의
+  "대상" 이 같이 읽는다. 파일럿 · 포탑은 사람 아이콘(적 · 포탑 빨강, 아군 초록, 아군
+  또는 적 회색). **타일 대상(`target = location`)은 육각 타일 아이콘** — 효과가
+  `own_jungle` 이면 "아군 정글 타일"(초록), `steal_camp` 면 "적 정글 타일"(빨강),
+  `ambush` 면 "정글 타일", 그 밖은 "타일"(회색). 효과 절이 전부 `|self` 인 즉시
+  카드(몸집 불리기)는 대상 "자신". 대상 타일은 속성 줄이 말하므로 설명문은 "이동" 만.
+- **체력**: "체력" · "최대 체력" 모두 하트 아이콘. 수치 변화는 "최대 체력 +20" ·
+  "공격력 +2" 꼴("20 증가" 로 쓰지 않는다).
+- **비용**: "비용 +1" · "비용 -1" · "비용 0" (낱말이 먼저, 수치가 뒤).
+- **공격**: 1회는 "공격", 여러 번은 "공격 2회". 필중은 언제나 **"필중 공격"** 한
+  덩어리(필중 아이콘 하나).
+- **지속시간**: "3턴 간 교전", "10턴 동안 …" — "N턴" 앞에 모래시계가 선다.
+- **카드 수**: "뽑기 2장" · "버리기 1장" · "찾기 1장" (뽑기 초록 · 버리기 빨강 아이콘).
+  보존은 자물쇠.
+- **찾기 = 덱에서 찾기.** 그냥 "찾기" 면 출처는 언제나 덱이라 "덱에서" 를 적지 않는다
+  (`search:N` · `search_card` · `ambush_search` — "[미사일] 찾기 2장"). 덱이 아닌 곳은
+  **"버린 더미에서 찾기"**(`search_discard`)만 출처를 적는다. 예전의 "탐색" 은 없다.
+  돋보기 아이콘.
+- **버린 더미**: "묘지" 는 쓰지 않는다(버린 더미에서 찾기 · 버린 더미에서 뽑기). 눕힌 카드 더미 아이콘.
+- **생성**은 카드를 만들 때만 쓴다(손에 [락온] 생성) — 보호막 · 반응 장갑은 "부여".
+- **보호막**(방패) · **회복**(하트) · **처치**(해골, "처치 관여" 도 같은 아이콘).
+- **손**: "손패" · "핸드" 는 쓰지 않는다 — 언제나 "손"(손의 모든 카드, 손에 생성).
+- **특수 키워드** `[이름]`: 설명문에서 대괄호로 감싼 말. 화면에는 **대괄호 없이 특수
+  키워드 색**(보라, `KeywordIcon.SPECIAL_COLOR_*`)으로 찍히고 풀이는 설명문에 적지 않는다
+  — 설명판이 풀이 판을 단다(손패는 키워드 판 열에 키워드 판 다음으로, 그 밖의 판은 맨
+  아래에). 두 종류:
+  - **효과 용어** — `CardData.SPECIAL_NOTES` 의 표(추적 · 반응 장갑 · 목표 · 현상금 · 기절 ·
+    취약). 풀이 한 줄짜리 판. 용어 앞에는 전용 아이콘(`KeywordIcon.SPECIAL_ICONS`)이
+    설명문 · 판 제목 · 아래 풀이 줄 모두에 선다. 새 용어는 이 표에 풀이를 더하고(아이콘이
+    있으면 `SPECIAL_ICONS` 에도) 설명문에서 `[용어]` 로 감싼다.
+  - **카드 이름** — 표에 없는 `[이름]`. 풀이 대신 **그 카드의 설명판**(비용 · 이름 · 키워드
+    · 설명문, `CardDescBox.build(ref, …, with_notes = false)` — 한 단계만 펼친다)을 세운다.
+    이름은 메크 카드 표 → 파일럿 카드 표 순으로 찾는다(`card_by_name`, 캐시 — `ui/SkillPopup.gd` 카드 미리보기도 쓴다). 자기 이름은
+    펼치지 않는다.
+  - 조사는 대괄호에 붙여 쓴다(`[목표]가`). 계산식 문구 안에는 대괄호를 쓰지 않는다.
+- **소지 중**: 손에 있는 동안 일하는 카드는 **"소지 중: …"** 으로 시작한다(손바닥
+  아이콘). 사용 효과가 따로 있으면 `\n사용: …` 로 줄을 나눈다.
+- **계산식** `{식|문구}`: 전투 중(`CardDescBox.live_vars` 가 유효)에는 식의 값,
+  밖(밴픽 · 메크 상세 · 드래프트)에서는 "(문구)". 전투 중이라도 `build(…, live = false)`
+  / `resolve_text(cd, false)` 면 "(문구)" 다 — 파일럿 상세 패널의 보유 카드가 쓴다
+  (손에 든 카드가 아니라 값이 없다). 식의 이름은 `charge`(카드 위 토큰)
+  와 `chain`(시전 파일럿의 [영혼 포식] 토큰, `CardPhaseManager.desc_live_vars`).
+  문구에는 "토큰" 대신 효과에 맞는 말을 쓴다(사용 횟수 · 충전 횟수).
+  예: `소지 중: 성장 +{charge*8|사용 횟수×8}%`.
 
 ## CardPhaseManager.gd
 `extends Node` — child of BattleSim.
@@ -1323,9 +1377,8 @@ defaults so an older game.db still loads.
   셋 다 **그 파일럿이 손에 든 카드**만 센다(같은 카드 여러 장이면 합산). 맑은 정신은
   손패 **자리**를 보므로 AI 가 비용을 재는 시점(`run_ai_plays` — 손패에서 빼기 전)과
   플레이어가 내는 시점(`_play_card_direct` — 빼기 전)이 둘 다 그 자리를 본다.
-- **자신감의 재배치** — 교전이 끝날 때(`EngagePhaseManager._finish_engage` →
-  `on_engage_end(participants)`) 살아남은 참가자가 손에 든 자신감을 손패 맨 왼쪽으로
-  옮긴다(`_reposition_in_hand` — 손패를 떠나지 않으므로 진입 훅은 돌지 않는다).
+- **자신감은 재배치되지 않는다** — 예전의 "교전 생존 시 손패 맨 왼쪽으로 재배치"
+  (`on_engage_end` · `_reposition_in_hand`)와 `reposition` 키워드는 삭제됐다.
 - **신중한 예산**(`free_in_phase` 표지 절) — 카드가 **그 쪽 작전 단계 도중에** 손패로
   들어오면(`_on_enter_hand` → `_side_in_phase`: 플레이어는 CARD_PHASE, AI 는 자기 차례
   `_ai_play_in_progress`) `CardData.free_this_phase` 가 서고 `effective_cost_for` 가
@@ -1392,7 +1445,7 @@ The DB column is a `;`-separated chain of clauses. Each clause is
 | `discard_hand_draw` | yes | 재고 — 손패 전부 버리고 **버린 장수만큼** 다시 뽑는다. 손패 크기는 그대로고 내용만 갈린다(덱+discard 가 마르면 뽑은 만큼만). |
 | `discard_right:N` | yes | 과감한 정리 — 손패 **오른쪽**(가장 최근에 들어온 쪽) N장을 discard. `hand.pop_back()` × N. |
 | `discard_other_pilots\|strategy_each:M` | yes | 솔로 퍼포먼스 — `owner_pilot != caster` 인 손패 카드를 전부 버리고 장당 전략 점수 +M. 시전자가 없으면 "본인 카드"를 가릴 수 없으므로 아무것도 하지 않는다(손패 전멸 사고 방지). |
-| `preserve:N` | yes | 계획 중시 — **Player**: `CardSelectOverlay.start_preserve` 가 찾기와 같은 그리드로 **손패**를 펼쳐 N장을 고르게 한다(카드는 손패에서 빠지지 않는다). **AI**: 손패에서 무작위 N장. 픽은 `BattleSim.preserved_cards_p/ai` 에 올라가 `_trim_hand_overflow` 로부터만 보호된다 — 강제 버리기는 무시한다. 다음 작전 단계 진입 시 통째로 해제. |
+| `preserve:N` | yes | 계획 중시 — **Player**: `CardSelectOverlay.start_preserve` — 버리기처럼 손패에서 N장을 중앙 구역에 끌어다 놓아 고른다(확인하면 고른 카드는 손패 원래 자리로 돌아간다). **AI**: 손패에서 무작위 N장. 픽은 `BattleSim.preserved_cards_p/ai` 에 올라가 `_trim_hand_overflow` 로부터만 보호된다 — 강제 버리기는 무시한다. 다음 작전 단계 진입 시 통째로 해제. |
 | `strategy_next_phase:N` | yes | 아드레날린(비용 0 · `strategy:4`)의 뒷절 — `_bs.next_phase_strategy_p/ai += N`(음수 가능). 다음 작전 단계 진입 시 정산되고 점수는 0 아래로 안 내려간다. |
 | `end_phase` | yes | 완벽한 마무리의 마지막 절 — **여기서 단계를 닫지 않는다.** 체인이 도는 동안 카드는 손패 밖에 떠 있어서, 지금 닫으면 소멸 / discard 라우팅 전에 문이 닫힌다. `_end_phase_requested` 플래그만 세우고, **Player**: `_finalize_pending_play` 말미가, **AI**: `AiCardPlayer` 의 플레이 루프가(교전 아레나를 기다린 **뒤**에) `consume_end_phase_request()` 로 받아 간다. |
 | `move\|own_jungle` | yes | 정글 파밍 — `compute_valid_location_targets` 가 `compute_own_jungle_targets` 로 분기해 유효 셀을 **시전자 팀이 소유한 정글 셀**로 좁힌다. 약탈과 마찬가지로 `cast_range`(99)는 무시 — 사거리로 묶으면 정글 반대편 캠프가 영영 닿지 않는다. 제자리 셀은 뺀다. 소유 판정이 `neutral_zone_cells` 를 직접 읽으므로 정글러가 밟아 점령한 칸도 T1 파괴 보상으로 넘어온 칸도 그 자리에서 목표가 된다. **AI**: `_ai_pick_target` 이 같은 함수를 쓰므로 그대로 따라간다. |
@@ -1484,9 +1537,6 @@ three ways, **재배치 first**:
 - The returned card sits at index 0, which is exactly where `_trim_hand_overflow`
   pops from — so once its accumulated cost makes it dead weight, the first
   BATTLE auto-draw that overfills the hand discards it.
-
-낼 수 없는 재배치 카드(자신감)는 사건으로 재배치된다 — `_reposition_in_hand` 가 손패
-**안에서** 맨 왼쪽으로 옮긴다(노드 배열도 같은 순서로).
 
 > **낼 수 있는 재배치 카드는 쓸 때마다 비용이 올라야 한다(`self_cost`).**
 > `AiCardPlayer.run_ai_plays` loops while it can afford *something* in
@@ -1659,9 +1709,12 @@ keyword check has always fired first, so they are 소멸 on their first play.
     마커 단위로 딤드된다. 보이는 마커가 곧 드롭 지점이다.
     Range honours `cd.cast_range` and the `min_range:N` flag.
     `target=pilot`(매혹)은 양 팀 모두 유효 대상이다(예전에는 아군만 잡혔다).
-    **대상을 가리키면** 그 카드 효과가 닿을 파일럿(`pick_pilots`)만 커지고 다른
-    유효 대상은 원래 크기로 돌아오며, 효과 범위 칸(`pick_cells`)이 노랗게
-    밝아진다 — 벗어나면 다시 유효 대상 전원이 커진다. 규칙 표는
+    **대상을 가리키면** 그 카드 효과가 닿을 파일럿(`pick_pilots`)만 커지고
+    **밝게 남는다** — 다른 유효 대상은 원래 크기로 돌아오며 **딤드**된다. 타일도
+    사거리 대신 **효과 범위**(`pick_bright_cells()` = `pick_cells` + 대상 칸; 범위
+    없는 단일 대상 카드는 대상 칸 하나)만 밝고 나머지는 딤드, 범위 칸은 노랗게
+    칠해진다. 가리킨 대상의 초상(`picked_pilot()`)은 **딤 위 맨 위에** 다시
+    그려진다(`BattleRenderer._pick_top`). 벗어나면 다시 유효 대상 전원이 커진다. 규칙 표는
     `rendering/README.md` *Targeting dim + 강조*, 범위 계산은
     `CardPhaseManager.compute_pick_affected`.
   - `cast_method == "location"` → **LOCATION** mode. `valid_cells` 만 초록
@@ -1869,14 +1922,21 @@ keyword check has always fired first, so they are 소멸 on their first play.
     (`target_count = min(N, deck.size())`); on commit, picks move from
     `player_deck` to `player_hand` (capped at `MAX_HAND_SIZE`) and visual
     nodes spawn via `spawn_card_node`.
-- **Preserve mode UI** (`Mode.PRESERVE`, 계획 중시): the **same grid**, differing
-  in exactly two places — `_build_search_grid(_bs.player_hand)` sources the
-  **hand** instead of the deck, and the cancel button reads **보존 취소**. That
-  sharing is safe because neither mode mutates a pile itself: the overlay only
-  returns picks and the caller decides what they mean (SEARCH moves them into
-  the hand, PRESERVE only marks them). DISCARD is the odd one out — it pulls
-  picked cards out of the live hand as they are chosen, which is why it keeps
-  its own UI. `_is_grid_mode()` is the shared discriminator.
+- **Preserve mode UI** (`Mode.PRESERVE`, 계획 중시 · 계략 스킬): **버리기와 같은
+  손패 픽**이다(`is_hand_pick_mode()` = DISCARD 또는 PRESERVE). 손패가 살아 있고,
+  카드를 중앙 구역("여기에 놓아 보존")에 끌어다 놓으면 골라 둔 줄로 빠지며
+  (`add_card_to_pick`), 누르면 원래 자리로 돌아간다(`remove_card_from_pick`).
+  버리기와 다른 점은 셋:
+  - **확인**(`_commit_preserve`)은 골라 둔 카드를 **고른 역순으로** 손패의
+    원래 인덱스에 다시 꽂고(`_return_all_picks_to_hand`) 픽을 돌려준다 — 보존
+    표시는 콜백(`_on_preserve_overlay_complete` / 계략 `_on_scheme_picked`)이 건다.
+  - **보존 취소** 버튼이 있다. 누르면 골라 둔 카드를 먼저 손패로 돌려놓은 뒤
+    취소 콜백을 부른다 — 계략은 스냅샷 복원이 없어서, 안 돌려놓으면 `_teardown`
+    이 줄에 남은 카드 노드를 해제해 그 카드가 사라진다.
+  - `보존` 키워드 카드도 고를 수 있다(버리기만 거부한다).
+  > 예전에는 손패를 찾기와 같은 **그리드로 한 벌 더 펼쳐** 골랐다 — 손에 든
+  > 카드를 고르는데 화면 전체가 다른 목록으로 덮였다. 지금 그리드
+  > (`_is_grid_mode()`)는 SEARCH · CHOICE 둘만 쓴다.
 - **보존 표시**: `Card.set_preserved(true)` draws a cyan `PreserveMark` border
   (`draw_center = false`, so it doesn't darken the card). Driven from
   `highlight_affordable_cards`, which reads `_bs.preserved_cards_p`. It is
@@ -1965,13 +2025,13 @@ either of them covers both).
 | 버리기 연출 | 손패를 떠나 버려지는 카드는 **부채꼴 기울기와 무관하게 화면 Y축으로만** 곧장 내려가며 투명해지고 (`Card.DISCARD_DROP_PX` **150px** / `DISCARD_FADE_SEC` 0.30초 — 화면 아래로 멀리 빠져나가기보다 손패 바로 밑에서 사라지는 쪽이 "버렸다"로 읽힌다. **낙하 곡선은 `EASE_OUT`** — 손을 떠나는 순간 확 튕겨 내려간 뒤 아래에서 서서히 멎는다. 예전 `EASE_IN` 은 떨어져 나가는 순간이 가장 흐릿하고 다 사라질 때 제일 빨라 무게가 끝에 실렸다) 다 내려가면 스스로 `queue_free` 한다. **그 낙하가 끝난 뒤에야 버린 더미가 카드를 받는다** — `CardPileStack.play_land` 가 `PILE_LAND_DELAY_SEC`(= `Card.DISCARD_FADE_SEC` 0.30초) 뒤에 시작해 두 연출이 겹치지 않고 이어 붙고(예전 0.16초는 카드가 아직 떨어지는 중에 더미가 먼저 받아 같은 카드가 두 군데에 있었다), **장수와 뭉치 두께는 그 착지 잔상이 다 내려앉은 뒤에 오른다**(`CardPhaseManager._discard_pending` / `_commit_discard_gain` — 표시값은 언제나 `배열 크기 − pending`). 델타 0 인 단순 갱신은 정산을 건드리지 않는다 — 거기서 pending 을 밀면 갱신 한 번에 지연이 통째로 날아간다 — 리프트(`PRESS_LIFT`)가 카드 자신의 up 축을 타는 것과 반대다(버려지는 카드는 뽑히는 게 아니라 떨어지는 것이라, 기울기를 타면 기울어진 카드만 옆으로 새 나간다). 진입점은 `CardPhaseManager.play_discard_fx(node)` 하나이고 **노드는 부르기 전에 이미 `player_card_nodes` 에서 빠져 있어야 한다** — 0.3초 동안 레이아웃 · 호버 · 히트 밴드가 그 카드를 손패로 세면 남은 카드들이 빈자리를 메우지 못한다. 진행 중이던 레이아웃 / 호버 / 그림자 / 뒤집기 트윈은 전부 kill 하고 시작한다. **버리기:N 으로 화면 중앙에 늘어세운 카드들도 확정 시 같은 연출로 내려간다**(`CardSelectOverlay._commit_discard` 가 `to_discard_nodes` 를 목록에서 먼저 떼어 낸 뒤 넘긴다 — 안 그러면 `_teardown` 이 그 자리에서 free 한다). **취소는 예외** — 버려지지 않은 카드가 떨어질 이유가 없으므로 즉시 free 하고 스냅샷이 손패를 다시 세운다. |
 | 카드 앞면 (아트 · 이름 · 비용 리본 · 초상) | **앞면은 위에서부터 아트 → 이름판 두 층**이고, 왼쪽 위에 비용 리본이 얹힌다. **설명문은 카드에 없다** — 글은 `card_phase/CardDescBox.gd` 설명판이 화면마다 든다(손패 = 가리킨 카드 옆 세로 판 · AI 가 낸 카드 = 중앙 카드 오른쪽(키워드 풀이 없음) · 찾기/선택 그리드와 더미 열람 = 가리키거나 누른 카드 옆 · 밴픽 시트와 메크 상세 = 누른 카드 위). 160×220 에 최장 128자를 8pt 로 욱여넣던 설명판(`DescPlate` / `_fit_desc_font_size`, **삭제됨**)은 읽으라고 있는 글씨가 아니었고, 그 자리를 아트가 가져가 카드가 **그림으로** 알아보인다. **아트는 이름판 위 전부**(y 0..184, 카드 끝까지 — 위 두 모서리는 `rounded_top_mask` 쉐이더가 안티앨리어싱으로 깎는다)이고 그림은 `CardImages.art_for(카드 이름)` 이 준다 — 전용 아트가 없으면 `CardImages.ITEM_ART` 가 짝지은 Deadlock 아이템 아이콘(`images/ground/deadlock_items/`, 효과가 비슷한 아이템)이고, 표에도 없으면 `images/ground/` 다섯 장 중 **이름 해시로 고른** 한 장이라 같은 카드는 언제나 같은 그림을 단다. 카드에는 테두리가 없다(비용색 바탕 · 노란 테두리 삭제). **이름판**은 카드 아랫단 전폭(y 184..220)을 아이템 타입색(무기 · 스피릿 · 활력)으로만 채운 판이고, 아트와의 경계에 그림자는 없다(예전 `ArtShadow` 띠 삭제). 충전 카드의 `N/M` 배지는 그 바로 위 아트 오른쪽 아래에 앉는다. **비용은 카드 안 왼쪽 위에 매달린 세로 직각사다리꼴 리본**(`CostBadge`, `COST_RIBBON_RECT`; Panel 스타일박스는 비우고 `draw` 신호로 `CostRibbon.draw` + `StrategyIcon.draw_indicator` 를 그린다)에 찍힌다 — 손패는 카드끼리 절반 넘게 겹치는 부채꼴이라(오른쪽 카드가 왼쪽 카드를 덮는다) **왼쪽 위 모서리가 각 카드에서 언제나 보이는 유일한 구석**이고, 그래서 비용을 그 구석에 둔다. 리본은 사용 불가 슬래브보다 위에 그려지므로 **따로 눌러 준다**(`COST_BADGE_BLOCKED_TINT`) — 안 그러면 잠긴 카드에서 비용만 밝게 남는다. 초상은 여전히 **손패에서만** 그린다(`Card.is_player_card` — 상세 패널 · 더미 열람 · 밴픽 · 드래프트에는 시전자가 없거나 의미가 없고, 상대 손패 peek 은 뒷면이다). **예전에는 초상이 오른쪽 위**였는데 겹치는 부채꼴에서 오른쪽 절반은 옆 카드에 가려지는 쪽이라 "누구 카드인가"가 손패를 펼쳐 봐야만 읽혔고, 그보다 더 예전에는 얼굴(`face_for`)이 **본체를 가득 채워** 일러스트 자리를 차지했다. |
 | 핸드 오르내림 (내 차례가 아닐 때) | **내 작전 단계가 아니면 손패가 화면 아래로 물러나 아군 파일럿 스트립 뒤로 숨는다.** 카드 절반쯤이 스트립 뒤판에 가려지고, 내 차례가 되면 그대로 올라온다. 조건은 `_hand_is_lowered()` = `game_phase != CARD_PHASE` 하나이고, 딤(`_apply_hand_dim_state`)보다 **좁다** — 내 차례 안에서 잠깐 입력이 막히는 구간(명중 연출 · 모달 픽 · 차례 배너)에는 손패가 어두워질 뿐 내려가지 않는다(그때도 내려가면 모달 한 번마다 손패가 오르내린다). **자리**는 `hand_drop_offset()` 이 `slot_position()` 에 더하며 상수가 아니라 스트립 뒤판에서 역산한다(`hud.player_strip_backdrop_top() − Card.CARD_H × 0.5 − BS_HAND_CENTER.y`) — 둘 다 세이프 에어리어 오프셋을 이미 먹은 값이라 기기와 무관하게 "절반쯤 가려진다"가 유지된다(1080×1920 에서 **206px**). **z-order** 는 `_reorder_hand_nodes()` 가 바꾼다: 내려간 것만으로는 카드가 판 **위에** 걸쳐 있어 가려지지 않으므로, 스트립 뒤판을 마커로 잡고 그 바로 앞자리에 카드를 차례로 꽂아 덩어리째 판 아래로 내린다(내 차례에는 예전처럼 자식 목록 맨 끝). **그림자**는 `Card.set_lowered()` 가 `SHADOW_FAR_*`(offset 1×4 · blur 3 · spread 0.98)로 바꾼다 — **카드에 바짝 붙은 짧은 그림자 = 카메라에서 멀다**가 이 연출의 전부이고, 내 차례에는 평소의 rest / hover / drag 세 단계로 돌아온다. 히트 레이어도 같은 오프셋을 타므로(`_fit_hit_layer`) 카드가 없는 자리에서 전장 클릭을 삼키지 않는다. |
-| 카드 설명 판 | **가리킨(확대된) 카드 옆 `DESC_BOX_GAP`(20) 거리**에 카드처럼 세로로 긴 판(`CardPhaseManager.DESC_BOX_W` 240, **높이는 글이 정한다** — 하한 없이 `CardDescBox.build(..., min_h = 0)`, 예전 하한 = 확대된 카드 높이는 삭제). **카드를 끌면 키워드판은 내려가고 설명판만 끌린 카드 왼쪽에 붙어 따라다닌다**(`_desc_follows_drag` / `_follow_drag_desc`, 매 프레임 카드의 실제 변환에서 자리를 잡는다 — 오른변 = 카드 왼변 − `DESC_BOX_GAP`, 윗변 = 카드 윗단, 왼쪽에 자리가 없으면 카드 오른쪽). 예전에는 손패가 비켜 내려가면 판이 손패 위 모서리로 미끄러졌다(`_reflow_description_box` · `DESC_MOVE_TIME`, **삭제됨**). 카드 중심이 화면 가운데이거나 그 오른쪽이면 판은 카드 왼쪽, 가운데보다 왼쪽이면 카드 오른쪽. 키워드 풀이는 그 바깥쪽 별도 판(`_keyword_box`, `KEYWORD_BOX_W` 210)이고 바깥에 자리가 없으면 카드 반대편으로 넘어간다. 판은 옆 손패 카드를 **그림으로 덮지만 터치는 막지 않는다** — 판은 손패 캔버스(layer 1) 위의 전용 `CanvasLayer`(`DESC_LAYER` 2)에 서서 언제나 카드 위에 그려지고(같은 캔버스면 `_reorder_hand_nodes` 가 카드를 자식 목록 끝으로 올려 판을 덮는다), 판과 자식 전부 `MOUSE_FILTER_IGNORE` 라 그 자리를 누르면 `HandHitLayer` 가 아래 카드를 고른다. 카드 앞면에 설명문이 없으므로 **손패에서 글을 읽는 유일한 자리**다. 예전에는 손패 바로 위 가운데 가로 판(640)이었고, 그 전에는 화면 상단 고정(`DESC_BOX_TOP` 142, **삭제됨**)이었다. **가리키기만 해도 뜬다** — 보여 줄 카드는 손패 포커스와 같은 질문이라 `_push_focus_card()`(끌고 있는 카드 > 호버) 하나가 답한다. 판은 불투명하고, 나타날 때 `DESC_ANIM_RISE`(24) 아래에서 올라오며 페이드 인, 사라질 때 그만큼 내려가며 페이드 아웃한 뒤 지워진다(등장 `DESC_ANIM_IN_TIME` 0.2초 · 퇴장 `DESC_ANIM_OUT_TIME` 0.1초, `_animate_desc_in` / `_animate_desc_out` — 포커스가 옮겨 가면 옛 판이 내려가는 동안 새 판이 올라온다). **버튼은 하나도 없다** — 카드를 내는 것도 드롭이고 버리기:N 픽도 드롭이다. |
+| 카드 설명 판 | **가리킨(확대된) 카드 옆 `DESC_BOX_GAP`(20) 거리**에 카드처럼 세로로 긴 판(`CardPhaseManager.DESC_BOX_W` 240, **높이는 글이 정한다** — 하한 없이 `CardDescBox.build(..., min_h = 0)`, 예전 하한 = 확대된 카드 높이는 삭제). **카드를 끌면 키워드판은 내려가고 설명판만 끌린 카드 왼쪽에 붙어 따라다닌다**(`_desc_follows_drag` / `_follow_drag_desc`, 매 프레임 카드의 실제 변환에서 자리를 잡는다 — 오른변 = 카드 왼변 − `DESC_BOX_GAP`, 윗변 = 카드 윗단, 왼쪽에 자리가 없으면 카드 오른쪽). 예전에는 손패가 비켜 내려가면 판이 손패 위 모서리로 미끄러졌다(`_reflow_description_box` · `DESC_MOVE_TIME`, **삭제됨**). 카드 중심이 화면 가운데이거나 그 오른쪽이면 판은 카드 왼쪽, 가운데보다 왼쪽이면 카드 오른쪽. 키워드 풀이는 그 바깥쪽 별도 판(`_keyword_box`, `KEYWORD_BOX_W` 210)이고 바깥에 자리가 없으면 카드 반대편으로 넘어간다. 판은 옆 손패 카드를 **그림으로 덮지만 터치는 막지 않는다** — 판은 손패 캔버스(layer 1) 위의 전용 `CanvasLayer`(`DESC_LAYER` 2)에 서서 언제나 카드 위에 그려지고(같은 캔버스면 `_reorder_hand_nodes` 가 카드를 자식 목록 끝으로 올려 판을 덮는다), 판과 자식 전부 `MOUSE_FILTER_IGNORE` 라 그 자리를 누르면 `HandHitLayer` 가 아래 카드를 고른다. 카드 앞면에 설명문이 없으므로 **손패에서 글을 읽는 유일한 자리**다. 예전에는 손패 바로 위 가운데 가로 판(640)이었고, 그 전에는 화면 상단 고정(`DESC_BOX_TOP` 142, **삭제됨**)이었다. **가리키기만 해도 뜬다** — 보여 줄 카드는 손패 포커스와 같은 질문이라 `_push_focus_card()`(끌고 있는 카드 > 호버) 하나가 답한다. 판은 불투명하고, 나타날 때 `DESC_ANIM_RISE`(24) 아래에서 올라오며 페이드 인, 사라질 때 그만큼 내려가며 페이드 아웃한 뒤 지워진다(등장 `DESC_ANIM_IN_TIME` 0.2초 · 퇴장 `DESC_ANIM_OUT_TIME` 0.1초, `_animate_desc_in` / `_animate_desc_out` — 포커스가 옮겨 가면 옛 판이 내려가는 동안 새 판이 올라온다). **버튼은 하나도 없다** — 카드를 내는 것도 드롭이고 버리기:N · 보존:N 픽도 드롭이다. |
 | 공격 카드 명중 판정 | `attack:N` 카드도 전장과 **같은 명중 판정**을 굴린다 — `SimulationCore.roll_hit` (`hit/(hit+evasion)`). 빗나가면 데미지가 0이고 로그에 "빗나감"이 남는다. `pierce`(필중)는 판정을 건너뛰고, `repeat`(연속 공격)은 **명중할 때마다** 같은 공격을 다시 굴려 빗나가거나 대상이 쓰러질 때까지 이어진다 — 무한 루프 방지 상한은 `CardPhaseManager.MAX_ATTACK_REPEATS`(5타). **타격마다 명중 연출이 붙고 `_effect_attack` 이 그것을 `await` 한다** — 아래 "공격 명중 연출" 항목. |
 | 핸드 상한 10장 | `MAX_HAND_SIZE` = 10. **내 차례가 아닐 때**(작전 점수가 다시 차오르는 동안) 도는 자동 드로우는 핸드가 꽉 차 있어도 무조건 뽑고, 넘친 만큼 **가장 오래된** 카드부터 discard 로 보낸다(양 팀 동일) — 단 **계획 중시로 보존된 카드는 건너뛴다**. 예전처럼 드로우를 건너뛰면 덱이 돌지 않아 손이 그대로 굳어 있었다. 반면 **내 턴에 카드 효과로 뽑은 카드는 상한을 넘겨도 버리지 않는다** — 턴이 끝난 뒤 첫 자동 드로우가 정리한다. 덱이 비면 discard 전체를 되섞어 덱으로 되돌리는 건 기존과 동일(`draw_card`). |
 | 카드 시전자 제약 (`scope`) | `cards.csv` 의 `scope` 가 카드를 가질 수 있는 **포지션**을 정한다 — `any` 단독 = 전부, `lane` 단독 = 탑 · 미드 · 원딜 · 서폿, 그 밖에는 `jungle` / `top` / `mid` / `carry` / `support` 의 `\|` 목록. 판정은 고정 파일럿 카드를 고를 때(`GameManager.pilot_card_ids_for` / `roll_pilot_card_ids`)와 폴백 풀(`_pool_for_pilot`)에서 한다. 펼치기는 `CardData.positions_of` 하나다. |
 | 카드 분류 / 고정 파일럿 카드 (`card_cat` · `pilot_card_slots`) | cards.csv 는 **전부 파일럿 카드**다(`card_type = pilot`). `card_cat` 은 `\|` 로 여러 개를 다는 분류(성장 · 교전 · 매복 · 공격 · 방어 · 유틸리티 · 뽑기 · 정글 · 라인전). 파일럿 카드 3장은 **선수마다 고정**(`players.pilot_cards`), 비었으면 `pilot_card_slots.csv`(포지션마다 세 칸, 칸마다 분류 목록)로 선수 id 를 씨앗 삼아 결정적으로 뽑는다. 배분 내역은 `BattleSim.starter_cards` 에 남아 상세 패널이 읽는다. 위 *Per-pilot decks* 절. |
 | 지연 효과 3종 (작전 단계 진입 정산) | `CardPhaseManager._apply_phase_entry_carryovers(is_player)` 가 **자기 팀의 다음 작전 단계 진입 시점**에 한꺼번에 정산한다. (1) **계획 중시**의 보존 목록(`BattleSim.preserved_cards_p/ai`)을 비운다 — 보존은 BATTLE 구간 한 번만 버틴다. (2) **아드레날린**의 `next_phase_strategy_*`(−2)를 점수에 더한다(0 아래로는 안 내려간다). (3) **완벽한 마무리**의 팀 성장 배율을 1.0 으로 되돌린다. 한편 **계획 살인**의 예약(`kill_bounty_*`)은 그 단계가 끝날 때(`end_card_phase` / AI 턴 종료) 사라진다. |
-| 계획 중시 (보존) | 보존은 **상한 초과 자동 버리기(`_trim_hand_overflow`)로부터만** 지켜 준다. 카드 효과에 의한 강제 버리기(재고 / 완벽한 마무리 / 과감한 정리 / 솔로 퍼포먼스)는 보존을 무시한다. 플레이어는 찾기와 같은 그리드로 **손패**를 펼쳐 고르고(`CardSelectOverlay.start_preserve`), 고른 카드는 손패에서 빠지지 않는다 — 오버레이는 픽만 돌려주고 등록은 `CardPhaseManager` 가 한다. 표시는 `Card` 의 시안 테두리(`PreserveMark`)이며 카드를 어둡게 하지 않는다(보존은 제약이 아니라 보증). |
+| 계획 중시 (보존) | 보존은 **상한 초과 자동 버리기(`_trim_hand_overflow`)로부터만** 지켜 준다. 카드 효과에 의한 강제 버리기(재고 / 완벽한 마무리 / 과감한 정리 / 솔로 퍼포먼스)는 보존을 무시한다. 플레이어는 버리기처럼 **손패에서 끌어다 놓아** 고르고(`CardSelectOverlay.start_preserve`), 확인하면 고른 카드는 손패 원래 자리로 돌아간다 — 오버레이는 픽만 돌려주고 등록은 `CardPhaseManager` 가 한다. 표시는 `Card` 의 시안 테두리(`PreserveMark`)이며 카드를 어둡게 하지 않는다(보존은 제약이 아니라 보증). |
 | 계획 살인 (처치 현상금) | **선불 예약형**이다. 카드를 낸 시점에 `BattleSim.kill_bounty_p/ai` 를 심고, **모든 사망이 지나는 유일한 지점**인 `mark_pilot_dead` 가 쓰러진 파일럿의 **반대 팀**에 한 번 지급하고 0으로 소모한다. 전장에 제3세력이 없으므로 처치자 인자를 따로 넘기지 않는다. 같은 단계에 두 장을 내면 큰 쪽 하나만 남는다. |
 | 완벽한 마무리 (`end_phase`) | 이 절은 **자리에서 단계를 닫지 않는다.** 효과 체인이 도는 동안 카드는 손패 밖에 떠 있어서, 지금 닫으면 소멸 / discard 라우팅 전에 문이 닫힌다. `_end_phase_requested` 플래그만 세우고 **플레이어는 `_finalize_pending_play` 말미**가, **AI 는 `AiCardPlayer` 의 플레이 루프**가(교전 아레나를 기다린 **뒤**에) `consume_end_phase_request()` 로 받아 간다. |
 | AI 카드 선택 (우선순위 점수제) | **AI 는 낼 수 있는 카드 중 무작위가 아니라 점수가 가장 높은 한 장을 낸다**(`AiCardPlayer._pick_best_card`). 목표는 강한 AI 가 아니라 **눈에 띄게 덜 헛도는** AI 다 — 예전에는 사거리 안에 적이 없는 공격 카드나 만피 아군에게 거는 회복이 무작위로 튀어나와, 상대 차례가 중앙 애니메이션만 돌고 아무 일도 일어나지 않는 구간이 됐다. 규칙은 넷 — (1) **못 내는 카드는 뺀다**(`CardPhaseManager.ai_can_play`: 지불 가능 · 시전자 생존 · `CardData.is_playable()`. 마지막 하나가 새로 생겼다: `effective_cost_for` 는 결과를 0 아래로 깎지 않아 **비용 -1**(사용 불가) 카드가 "0 코스트"로 읽혔고, 그래서 AI 가 캐시 · 계시 · 약자 멸시 · 밸런스를 그냥 태웠다. `_ai_turn_ready` 도 같은 함수를 읽는다), (2) **고를 대상이 없으면 뺀다**, (3) **절 이름이 점수를 정한다**(`CLAUSE_WEIGHT`, 카드가 절을 여럿 달았으면 가장 높은 절이 그 카드의 성격이다 — 간보기는 공격 카드이지 전략 점수 카드가 아니다. 회복 · 보호막은 가장 다친 아군이 70% 위면 후순위로 밀린다), (4) **비용은 감점, 동점은 흔들림으로 가른다**(흔들림이 없으면 같은 손패가 매번 같은 순서로 나가 상대 차례가 기계적으로 읽힌다). |
@@ -1979,7 +2039,7 @@ either of them covers both).
 | 휘발성 (`volatile`) | **버려질 때 버린 더미로 가지 않고 그 자리에서 사라진다.** 파일럿 스킬이 손패에 직접 만들어 주는 카드들이 단다(배회의 [이동], 복귀 명령의 [복귀], 격전의 [전투 개시], 고양감의 [아드레날린], 약탈자의 [약탈]). **소멸과 짝이지 같은 것이 아니다** — 소멸은 **쓰면** 사라지는 것이고 휘발성은 **안 쓰고 버려지면** 사라지는 것이라, 둘을 함께 달면 스킬이 준 카드가 어느 쪽으로도 덱을 불리지 않는다. 판정은 **`CardPhaseManager.send_to_discard(cd, discard)` 한 곳**을 지난다 — 버려지는 모든 경로(상한 초과 정리 · 버리기:N 모달 · 재고 · 완벽한 마무리 · 과감한 정리 · 솔로 퍼포먼스 · `_dispose_used_card`, 일곱 자리)가 그 함수를 부르므로 규칙이 한 군데에만 산다. |
 | 상호 배타 (`excl_group`) | 같은 `excl_group` 값을 가진 카드는 **한 파일럿이 하나만** 갖는다 — 고정 카드 뽑기(`roll_pilot_card_ids`)가 지킨다. 지금은 쓰는 카드가 없다(안전한 파밍 ↔ 공격적인 라인전 짝이 사라졌다). |
 | 랜덤 풀 제외 (`pool = 0`) | `pool = 0` 인 카드는 `_build_pool_from_db` 가 걸러 내 랜덤 스타터 덱에 절대 들어가지 않는다. **결투(id 3)** 가 첫 사례 — 구현과 효과 처리는 전부 살아 있지만 아무에게도 지급되지 않으며, 특정 메크 고유 카드로 전환할 자리로 남겨 둔 것이다. |
-| 재배치 (`reposition`) | **손패 맨 왼쪽으로 이동.** 낼 수 있는 카드(정밀 이동 · 골드러시)는 쓰고 나면 discard 대신 손패 맨 왼쪽으로 돌아오고, 같은 카드의 `self_cost:1` 이 그 사본의 비용을 쓸 때마다 올린다(AI 루프의 상한). 낼 수 없는 카드(자신감)는 교전 생존 시 손패 안에서 맨 왼쪽으로 옮겨진다. 라우팅은 `_dispose_used_card`. |
+| 재배치 (`reposition`) | **손패 맨 왼쪽으로 이동.** 낼 수 있는 카드(정밀 이동 · 골드러시)는 쓰고 나면 discard 대신 손패 맨 왼쪽으로 돌아오고, 같은 카드의 `self_cost:1` 이 그 사본의 비용을 쓸 때마다 올린다(AI 루프의 상한). 라우팅은 `_dispose_used_card`. |
 | 카드 소멸 규칙 | **소멸은 `exhaust` 키워드 하나로만 결정된다.** `keyword` 컬럼은 **`|` 로 구분된 목록**이므로 판정은 반드시 `CardData.has_keyword("exhaust")` 를 지난다 — 통짜 문자열 비교는 두 번째 키워드가 붙는 순간(전령 제압 = `exhaust\|preserve`) 소멸을 조용히 꺼 버린다. 손패 복귀 카드를 뺀 나머지는 전부 discard 로 간다. 예전엔 `uses > 0` 인 카드가 사용 횟수를 다 쓰면 사라졌는데, `cards.csv` 는 exhaust 가 아닌 카드도 거의 전부 `uses = 1` 이라 **전투 개시를 포함한 대부분의 카드가 한 번 내면 그대로 소멸**했다 — 덱이 돌지 않고 매치 내내 줄어들기만 했고, discard 는 버리기 카드로만 찼다. `CardData.remaining_uses` 는 삭제됐고 `uses` 컬럼은 로드만 될 뿐 아무도 읽지 않는다(향후 "N회 사용 후 소멸" 용으로 남겨 둔 자리). |
 | Deck / Discard 목록 열람 | 핸드 행 양옆의 **Deck / Discard 뭉치를 누르면** 그 더미의 카드가 찾기 그리드와 같은 5열 목록으로 펼쳐진다(`card_phase/CardPileViewer.gd`, 읽기 전용). **정렬은 이름 오름차순** — 실제 덱 순서를 보여 주면 다음 드로우가 그대로 읽히기 때문이며, 찾기(`search:N`) 그리드도 같은 규칙으로 정렬한다. 열리는 시점은 **작전 단계뿐**(`CardPhaseManager.can_browse_piles()`); 못 여는 상태에서는 버튼이 비활성이고 뭉치가 흐려진다. 열려 있는 동안 핸드 입력 · 턴 넘기기 · 도넛 플립이 모두 잠긴다 — 특히 `CostDonut` 은 `_input` 으로 듣기 때문에 딤만으로는 막히지 않아 `set_flip_allowed` 를 따로 끈다. 닫기는 닫기 버튼 또는 딤 클릭. |
 | 사용 불가 카드 표시 | 마나 부족 / 시전자 부활 대기는 **카드 전체를 덮는 반투명 슬래브**(`Card.BlockOverlay`)로 표현한다 — 카드 배경만 회색으로 칠하면 그 위의 파일럿 일러스트가 밝게 남아 쓸 수 있는 카드처럼 읽혔다. 시전자가 쓰러져 있으면 그 위에 **부활까지 남은 턴 수**가 카드 한가운데 큰 폰트로 찍히고, 그 동안 확인 버튼은 비활성이다. |

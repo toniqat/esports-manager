@@ -3,6 +3,25 @@ extends Node
 
 @onready var _bs: BattleSim = get_parent() as BattleSim
 
+
+# 카드 설명문의 계산식(`{charge*8|…}`)은 전투 중에만 값으로 풀린다 — 이 노드가
+# 트리에 있는 동안만 값 공급자를 건다(`CardDescBox.live_vars`).
+func _enter_tree() -> void:
+	CardDescBox.live_vars = desc_live_vars
+
+
+func _exit_tree() -> void:
+	if CardDescBox.live_vars == Callable(self, "desc_live_vars"):
+		CardDescBox.live_vars = Callable()
+
+
+## 설명문 계산식이 읽는 전투 값 — `charge` 는 `CardDescBox` 가 카드에서 직접 읽는다.
+func desc_live_vars(cd: CardData) -> Dictionary:
+	var chain: int = 0
+	if _bs != null and _bs.mech_skill != null and cd != null and cd.owner_pilot != null:
+		chain = _bs.mech_skill.chain_rounds(cd.owner_pilot)
+	return {"chain": chain}
+
 # Hand layout uses BS_HAND_WIDTH (inner) + BS_HAND_CARD_GAP (target gap) for
 # adaptive spacing.
 
@@ -108,7 +127,7 @@ var _desc_follows_drag: bool = false
 # 놓았을 때 카드가 나가는 조건도 같은 기준이다:
 #   • PILOT / LOCATION — **대상 위에 놓아야** 나간다(커진 초상 / 초록 유효 셀).
 #   • 그 밖의 카드      — 화면 한가운데 **드롭 존**에 놓으면 나간다.
-#   • 버리기:N 픽 중    — 중앙 **버리기 구역**에 놓으면 버릴 카드로 넘어간다.
+#   • 버리기 · 보존 픽 중 — 중앙 **구역**에 놓으면 버릴 / 보존할 카드로 넘어간다.
 # 어느 쪽이든 확정은 `CardTargetingOverlay.confirm_with → _on_selection_confirm`
 # **한 경로**를 지난다 — 비용 차감 / 카드 소비 / effect chain 이 두 벌 생기지
 # 않도록. 빗나가면 카드는 그냥 제자리로 돌아온다.
@@ -1667,7 +1686,7 @@ func _hand_is_lowered() -> bool:
 ## 숨지 않는다(끌린 카드가 언제나 맨 위여야 한다).
 func _drag_lowers_hand() -> bool:
 	return (_drag_card != null and is_instance_valid(_drag_card)
-			and _drag_reached_field and not _in_discard_pick_mode())
+			and _drag_reached_field and not _in_hand_pick_mode())
 
 
 ## 커서가 중앙 판정 범위에 **닿았는가** — 드롭 존 아랫변보다 위에 있으면 참.
@@ -2011,7 +2030,8 @@ func _on_hit_layer_gui_input(event: InputEvent) -> void:
 	_press_pos = p
 	# 누른 순간부터 시전자가 강조된다(전장 네온 + 하단 스트립). 효과 미리보기는
 	# 끌기 시작할 때 붙는다(`_begin_drag`).
-	if _press_card != null and _bs.card_preview != null 			and not _in_discard_pick_mode():
+	if _press_card != null and _bs.card_preview != null \
+			and not _in_hand_pick_mode():
 		_bs.card_preview.show_caster(_press_card.data)
 
 
@@ -2076,7 +2096,7 @@ func _begin_drag(p: Vector2) -> void:
 	# 비용 -1 카드는 애초에 손을 떠나지 않는다 — 놓을 곳이 없는 카드를 끌어낼 수
 	# 있으면 매번 제자리로 돌아오는 헛동작만 남는다. 단 **버리기 픽 중에는**
 	# 끌린다: 못 내는 카드라고 못 버리는 것은 아니다.
-	if not card.data.is_playable() and not _in_discard_pick_mode():
+	if not card.data.is_playable() and not _in_hand_pick_mode():
 		_press_card = null
 		return
 	_drag_card = card
@@ -2092,9 +2112,9 @@ func _begin_drag(p: Vector2) -> void:
 	# `relayout_hand` skips `is_dragging` cards, so the grabbed card's own slot
 	# is simply left empty — the neighbours hold station.
 	relayout_hand(_bs.player_card_nodes, card)
-	# 버리기 픽 중에는 카드가 낼 대상이 없다 — 중앙 버리기 구역에 놓는 것이
+	# 버리기 · 보존 픽 중에는 카드가 낼 대상이 없다 — 중앙 버리기 구역에 놓는 것이
 	# 유일한 행동이므로 대상 지정 오버레이는 켜지 않는다.
-	if _in_discard_pick_mode() or _bs.targeting_overlay == null:
+	if _in_hand_pick_mode() or _bs.targeting_overlay == null:
 		_drag_follows_cursor = true
 	else:
 		_bs.targeting_overlay.start_card_selection(card.data,
@@ -2105,7 +2125,7 @@ func _begin_drag(p: Vector2) -> void:
 		card.begin_free_drag()
 	else:
 		_pose_selected_card(card)
-	if _bs.card_preview != null and not _in_discard_pick_mode():
+	if _bs.card_preview != null and not _in_hand_pick_mode():
 		_bs.card_preview.begin(card.data)
 	_show_drop_zone(card)
 	_refresh_description_box()
@@ -2137,10 +2157,10 @@ func _update_drop_feedback(p: Vector2) -> bool:
 	var to: CardTargetingOverlay = _bs.targeting_overlay
 	if to == null or _drag_card == null:
 		return false
-	# 버리기 픽 중에는 대상 지정이 없다 — 버리기 구역 하나가 유일한 드롭 지점.
-	if _in_discard_pick_mode():
+	# 버리기 · 보존 픽 중에는 대상 지정이 없다 — 중앙 구역 하나가 유일한 드롭 지점.
+	if _in_hand_pick_mode():
 		var in_zone: bool = drop_zone_rect().has_point(p) \
-				and _bs.card_select_overlay.can_pick_for_discard()
+				and _bs.card_select_overlay.can_pick_from_hand()
 		_set_drop_zone_hot(in_zone)
 		return in_zone
 	match targeting_kind(_drag_card.data):
@@ -2169,7 +2189,7 @@ func _update_drop_feedback(p: Vector2) -> bool:
 func _card_uses_drag_arrow(card: Card) -> bool:
 	if card == null or not is_instance_valid(card):
 		return false
-	if _in_discard_pick_mode():
+	if _in_hand_pick_mode():
 		return false
 	var kind: String = targeting_kind(card.data)
 	return kind == "pilot" or kind == "location"
@@ -2227,7 +2247,7 @@ func _end_drag(p: Vector2) -> void:
 		_drag_follows_cursor = false
 		_clear_targeting()
 		return
-	# Drop the held pose first: `add_card_to_discard` re-poses the node into the
+	# Drop the held pose first: `add_card_to_pick` re-poses the node into the
 	# centred 버리기 fan, and `relayout_hand` skips anything still flagged
 	# `is_dragging`. The hover flag goes with it — a card that leaves the hand
 	# (into the 버리기 fan) is no longer covered by `_update_hover_at`'s sweep,
@@ -2262,14 +2282,14 @@ func _end_drag(p: Vector2) -> void:
 ## consumed — a card played (node already freed) or, in 버리기 픽 mode, a card
 ## moved into the to-discard row.
 func _try_drop_play(card: Card, p: Vector2) -> bool:
-	# 버리기:N 픽 — 카드가 하는 일은 "버릴 카드로 넘긴다" 하나뿐이라 대상 지정
+	# 버리기 · 보존 픽 — 카드가 하는 일은 "골라 둔 줄로 넘긴다" 하나뿐이라 대상 지정
 	# 경로를 아예 타지 않는다.
-	if _in_discard_pick_mode():
+	if _in_hand_pick_mode():
 		if not drop_zone_rect().has_point(p):
 			return false
-		if not _bs.card_select_overlay.can_pick_for_discard():
+		if not _bs.card_select_overlay.can_pick_from_hand():
 			return false
-		_bs.card_select_overlay.add_card_to_discard(card)
+		_bs.card_select_overlay.add_card_to_pick(card)
 		return true
 	var to: CardTargetingOverlay = _bs.targeting_overlay
 	if to == null:
@@ -2361,19 +2381,20 @@ func drop_zone_rect() -> Rect2:
 	return Rect2(0.0, vp.y * 0.5 - h * 0.5, vp.x, h)
 
 
-## 드래그를 시작할 때 구역을 띄운다 — **버리기:N 픽 중에만** 보인다. 카드를 낼
+## 드래그를 시작할 때 구역을 띄운다 — **버리기 · 보존 픽 중에만** 보인다. 카드를 낼
 ## 때는 구역이 그려지지 않는다(예전 "여기에 놓아 사용" 띠 삭제): 대신 손패와
 ## 아군 스트립이 아래로 비켜 전장을 비우는 것(`_drag_lowers_hand`)이 "위로 끌어
 ## 놓으면 쓴다"를 말한다. 구역 rect(`drop_zone_rect`) 자체는 그대로 판정에 쓰인다.
 func _show_drop_zone(card: Card) -> void:
-	if _card_uses_drag_arrow(card) or not _in_discard_pick_mode():
+	if _card_uses_drag_arrow(card) or not _in_hand_pick_mode():
 		return
 	_build_drop_zone()
-	_drop_zone_label.text = "여기에 놓아 버리기"
+	_drop_zone_label.text = "여기에 놓아 보존" \
+			if _bs.card_select_overlay.is_preserve_mode() else "여기에 놓아 버리기"
 	# 버리기 픽 중에는 `CardSelectOverlay._battle_dim` 이 같은 캔버스의 자식
 	# 인덱스 0 을 차지하고 있다 — 구역을 0 에 두면 그 딤 **아래**로 들어가 통째로
 	# 눌려 보이지 않는다. 딤 바로 위(1)로 올린다.
-	var back_idx: int = 1 if _in_discard_pick_mode() else 0
+	var back_idx: int = 1 if _in_hand_pick_mode() else 0
 	_bs.canvas.move_child(_drop_zone,
 			mini(back_idx, maxi(0, _bs.canvas.get_child_count() - 1)))
 	var r := drop_zone_rect()
@@ -2659,7 +2680,7 @@ func _is_player_input_blocked() -> bool:
 	if _bs.card_pile_viewer != null and _bs.card_pile_viewer.is_active():
 		return true
 	if _bs.card_select_overlay != null and _bs.card_select_overlay.is_active():
-		if _bs.card_select_overlay.is_discard_mode():
+		if _bs.card_select_overlay.is_hand_pick_mode():
 			return false
 		return true
 	return false
@@ -2690,12 +2711,12 @@ func deselect_current_card() -> void:
 	_refresh_description_box()
 
 
-## True while a 버리기:N pick overlay owns the hand. In that state dragging a
-## card onto the centred 버리기 구역 is the only thing a card can do — the
+## True while a 버리기:N / 보존:N pick overlay owns the hand. In that state
+## dragging a card onto the centred 구역 is the only thing a card can do — the
 ## targeting overlay never comes up.
-func _in_discard_pick_mode() -> bool:
+func _in_hand_pick_mode() -> bool:
 	return _bs.card_select_overlay != null \
-			and _bs.card_select_overlay.is_discard_mode()
+			and _bs.card_select_overlay.is_hand_pick_mode()
 
 
 # ─── Selection confirm (from CardTargetingOverlay) ───────────────────────────
@@ -3569,7 +3590,7 @@ func _on_phase_boon_overlay_complete(picks: Array) -> void:
 
 # Called by CardSelectOverlay when the player has picked all N cards (or the
 # hand was smaller than N). The picks have already been removed from the
-# player's hand by add_card_to_discard(); we just file them in the discard
+# player's hand by add_card_to_pick(); we just file them in the discard
 # pile and resume the chain.
 func _on_discard_overlay_complete(picks: Array) -> void:
 	if _pending_play.is_empty():
@@ -3597,7 +3618,7 @@ func _on_graveyard_overlay_complete(picks: Array) -> void:
 		_bs.player_discard.erase(cd)
 		add_card_to_hand(cd, true)
 		taken += 1
-	(_pending_play["log_lines"] as Array).append("묘지 탐색 %d장" % taken)
+	(_pending_play["log_lines"] as Array).append("버린 더미에서 찾기 %d장" % taken)
 	update_deck_discard_labels()
 	_process_pending_chain()
 
@@ -3764,28 +3785,6 @@ func _return_card_to_hand_left(cd: CardData, is_player: bool) -> void:
 	else:
 		_bs.ai_hand.insert(0, cd)
 		_bs.hud.update_ai_hand_visuals()
-
-
-## 손패 **안에서** 카드 한 장을 맨 왼쪽으로 옮긴다 — 낼 수 없는 재배치 카드
-## ([자신감])가 사건으로 재배치될 때. 손패를 떠나지 않으므로 진입 훅은 돌지 않는다.
-func _reposition_in_hand(cd: CardData, is_player: bool) -> void:
-	var hand: Array = _bs.player_hand if is_player else _bs.ai_hand
-	var i: int = hand.find(cd)
-	if i <= 0:
-		return
-	hand.remove_at(i)
-	hand.insert(0, cd)
-	if not is_player:
-		_bs.hud.update_ai_hand_visuals()
-		return
-	for raw in _bs.player_card_nodes:
-		var node := raw as Card
-		if node != null and node.data == cd:
-			_bs.player_card_nodes.erase(node)
-			_bs.player_card_nodes.insert(0, node)
-			break
-	relayout_hand(_bs.player_card_nodes)
-	highlight_affordable_cards()
 
 
 # ─── Card effects ─────────────────────────────────────────────────────────────
@@ -4910,7 +4909,7 @@ func _effect_cost_reduce_hand(n: int, is_player: bool) -> String:
 		# 깎으면 `max(0, ...)` 를 지나며 0 이 되어 공짜 카드로 둔갑한다.
 		if not c.is_playable(): continue
 		c.cost = max(0, c.cost - n)
-	return "핸드 카드 비용 -%d" % n
+	return "손의 카드 비용 -%d" % n
 
 
 # 전투 준비 — one-shot pending discount on the caster side's next engage
@@ -5211,7 +5210,7 @@ func _discard_whole_hand(is_player: bool) -> int:
 func _effect_discard_hand(is_player: bool) -> String:
 	var moved: int = _discard_whole_hand(is_player)
 	_refresh_hand_after_bulk_change(is_player)
-	return "손패 %d장 버리기" % moved
+	return "손 %d장 버리기" % moved
 
 
 ## 재고 — 손패를 전부 버리고 **버린 장수만큼** 새로 뽑는다. 손패 크기는 그대로고
@@ -5227,7 +5226,7 @@ func _effect_discard_hand_draw(is_player: bool) -> String:
 			spawn_card_node(c)
 		drew += 1
 	_refresh_hand_after_bulk_change(is_player)
-	return "손패 %d장 버리고 %d장 뽑기" % [moved, drew]
+	return "손 %d장 버리기, %d장 뽑기" % [moved, drew]
 
 
 ## 과감한 정리 — 손패 **오른쪽**(가장 최근에 들어온 쪽) N장을 버린다.
@@ -5614,7 +5613,7 @@ func _effect_gen_card(card_id: int, flags: Array, caster: PilotData,
 		var deck2: Array = _bs.player_deck if is_player else _bs.ai_deck
 		deck2.shuffle()
 	update_deck_discard_labels()
-	return "[%s] %s %d장 생성" % [label, "핸드" if to_hand else "덱", made]
+	return "[%s] %s %d장 생성" % [label, "손" if to_hand else "덱", made]
 
 
 ## 키워드 목록에 없는 것만 덧붙인다. `|` 로 구분된 목록이라 문자열을 이어 붙이는
@@ -5655,8 +5654,8 @@ func _effect_search_card(card_id: int, flags: Array, caster: PilotData,
 		taken += 1
 	update_deck_discard_labels()
 	if taken == 0:
-		return "탐색 (덱에 없음)"
-	return "[%s] %d장 탐색" % [label, taken]
+		return "찾기 (덱에 없음)"
+	return "[%s] %d장 찾기" % [label, taken]
 
 
 ## 묘지 탐색의 **AI / 폴백 경로**. 플레이어는 `_process_pending_chain` 이
@@ -5671,7 +5670,7 @@ func _effect_search_discard(n: int, is_player: bool) -> String:
 		add_card_to_hand(cd, is_player)
 		taken += 1
 	update_deck_discard_labels()
-	return "묘지 탐색 %d장" % taken
+	return "버린 더미에서 찾기 %d장" % taken
 
 
 ## 묘지 **드로우** — 고르지 않고 위에서부터 N장. 탐색과 다른 것은 선택의 유무다.
@@ -5690,8 +5689,8 @@ func _effect_draw_discard(n: int, flags: Array, is_player: bool) -> String:
 		taken += 1
 	update_deck_discard_labels()
 	if cut > 0:
-		return "묘지 뽑기 %d장 (비용 −%d)" % [taken, cut]
-	return "묘지 뽑기 %d장" % taken
+		return "버린 더미에서 뽑기 %d장 (비용 −%d)" % [taken, cut]
+	return "버린 더미에서 뽑기 %d장" % taken
 
 
 ## 밀기 — 전진과 같은 미니틱을 N번 돌린다. `|bonus_clear:N` 은 "도중에 적을 한
@@ -6216,7 +6215,7 @@ func _effect_ambush_search(n: int, caster: PilotData, is_player: bool) -> String
 	var list: Array = _bs.ambush_search_p if is_player else _bs.ambush_search_ai
 	list.append({"caster": caster, "n": n})
 	_note_reserve("ambush", is_player)
-	return "다음 작전 단계에 교전 카드 탐색 %d" % n
+	return "다음 작전 단계에 교전 카드 찾기 %d" % n
 
 
 ## 교전 카드인가 — `engage` 절이나 `duel` 절을 가진 카드.
@@ -6231,7 +6230,7 @@ func is_engage_card(cd: CardData) -> bool:
 ## 있으므로 모달이 없다, `_effect_search_card` 와 같은 규칙).
 func _search_engage_cards(caster: PilotData, n: int, is_player: bool) -> String:
 	if caster == null or n <= 0:
-		return "교전 카드 탐색 (시전자 없음)"
+		return "교전 카드 찾기 (시전자 없음)"
 	var deck: Array = _bs.player_deck if is_player else _bs.ai_deck
 	var taken: Array = []
 	for i in range(deck.size() - 1, -1, -1):
@@ -6245,8 +6244,8 @@ func _search_engage_cards(caster: PilotData, n: int, is_player: bool) -> String:
 		taken.append(cd.card_name)
 	update_deck_discard_labels()
 	if taken.is_empty():
-		return "%s 교전 카드 탐색 (덱에 없음)" % _bs.pilot_label(caster)
-	return "%s [%s] 탐색" % [_bs.pilot_label(caster), ", ".join(taken)]
+		return "%s 교전 카드 찾기 (덱에 없음)" % _bs.pilot_label(caster)
+	return "%s [%s] 찾기" % [_bs.pilot_label(caster), ", ".join(taken)]
 
 
 ## `retaliate:N` — 지정한 적이 시전자를 N번 친다([무모한 돌격]). 판정은 전장
@@ -6288,7 +6287,7 @@ func _effect_draw_next_phase(n: int, is_player: bool) -> String:
 # 셋은 파일럿 카드라 이쪽이 읽고, 계산하는 자리(성장 적립 · 명중 판정 · 비용)가
 # 오케스트레이터를 거쳐 묻는다.
 const HAND_GOLD_RUSH  := "gold_rush"    # 골드러시 — 토큰당 성장 +8%
-const HAND_CONFIDENCE := "confidence"   # 자신감 — 전장 명중 +15%, 교전 생존 시 재배치
+const HAND_CONFIDENCE := "confidence"   # 자신감 — 전장 명중 +15%
 const HAND_CLEAR_MIND := "clear_mind"   # 맑은 정신 — 양 옆 카드 비용 -1
 const GOLD_RUSH_GROWTH_PER_TOKEN: float = 0.08
 const CONFIDENCE_HIT_BONUS: float = 0.15
@@ -6342,16 +6341,3 @@ func hand_neighbor_discount(cd: CardData, is_player: bool) -> int:
 			cut += CLEAR_MIND_COST_CUT
 	return cut
 
-
-## 교전이 끝났다(`EngagePhaseManager._finish_engage`) — 살아남은 참가자가 손에 든
-## [자신감] 을 손패 맨 왼쪽으로 재배치한다.
-func on_engage_end(participants: Array) -> void:
-	for raw in participants:
-		var p := raw as PilotData
-		if p == null or not p.alive:
-			continue
-		var is_player: bool = p.team == 0
-		for raw_cd in _team_hand(p.team).duplicate():
-			var cd := raw_cd as CardData
-			if cd.owner_pilot == p and _is_hand_passive(cd, HAND_CONFIDENCE):
-				_reposition_in_hand(cd, is_player)

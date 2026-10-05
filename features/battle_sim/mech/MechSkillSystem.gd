@@ -110,7 +110,7 @@ const BOON_GAMMA := "gamma"   # 다음 [단계 C] 사용 시 성장 점수 +10%
 ## 선택이 **같은 표**를 읽으므로 목록이 갈라질 수 없다.
 const BOON_DEFS: Array[Dictionary] = [
 	{"key": BOON_ALPHA, "name": "강화 · 알파",
-		"desc": "다음 [단계 A] 사용 시 [단계 B] 를 덱이 아닌 핸드에 생성"},
+		"desc": "다음 [단계 A] 사용 시 [단계 B] 를 덱이 아닌 손에 생성"},
 	{"key": BOON_BETA, "name": "강화 · 베타",
 		"desc": "다음 [단계 B] 사용 시 토큰 +100"},
 	{"key": BOON_GAMMA, "name": "강화 · 감마",

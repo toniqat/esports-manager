@@ -84,6 +84,16 @@ const SKILL_DESC_FONT: int = 21
 const SKILL_NAME_COLOR := OutgameTheme.ACCENT_TEXT
 const SKILL_META_COLOR := OutgameTheme.TEXT_SUB
 const SKILL_DESC_COLOR := OutgameTheme.TEXT
+## Skill icon tile (`SkillImages.make_icon_tile`) left of the skill name.
+const SKILL_TILE_PX: float = 64.0
+const SKILL_TILE_BG := OutgameTheme.RAIL
+const SKILL_TILE_ICON := OutgameTheme.ACCENT
+const SKILL_TILE_SHADOW := Color(0.11, 0.11, 0.18, 0.28)
+const SKILL_TILE_SHADOW_PX: float = 14.0
+## Inset from the scroll body's left / the row top so the shadow isn't clipped.
+const SKILL_TILE_X: float = 14.0
+const SKILL_TILE_Y: float = 4.0
+const SKILL_TILE_GAP: float = 16.0
 
 const CLOSE_H: float = 84.0
 ## 파일럿 카드 설명판 사이 간격.
@@ -316,20 +326,32 @@ func _build_skill_block(body: Control, w: float, y: float) -> float:
 				SKILL_DESC_FONT, SKILL_META_COLOR, Vector2(0, y), Vector2(w, 30))
 		return y + 32.0
 
+	# Icon tile on the left; name + meta line stacked to its right, the pair
+	# centred on the tile. The tile is nudged in by
+	# `SKILL_TILE_X` so the scroll clip doesn't shave its shadow.
+	var tile: Control = SkillImages.make_icon_tile(String(sk.get("key", "")),
+			SKILL_TILE_PX, SKILL_TILE_BG, SKILL_TILE_ICON, SKILL_TILE_SHADOW,
+			SKILL_TILE_SHADOW_PX)
+	tile.position = Vector2(SKILL_TILE_X, y + SKILL_TILE_Y)
+	body.add_child(tile)
+	var text_x: float = SKILL_TILE_X + SKILL_TILE_PX + SKILL_TILE_GAP
+	var text_w: float = w - text_x
+	var name_y: float = y + SKILL_TILE_Y + (SKILL_TILE_PX - 40.0 - 26.0) * 0.5
 	var name_lbl := UiHelpers.mk_label(body, String(sk.get("name", "?")),
-			SKILL_NAME_FONT, SKILL_NAME_COLOR, Vector2(0, y), Vector2(w, 40))
+			SKILL_NAME_FONT, SKILL_NAME_COLOR, Vector2(text_x, name_y),
+			Vector2(text_w, 40))
 	name_lbl.clip_text = true
-	y += 42.0
 
 	var meta: String = TeamDraft.skill_type_label(String(sk.get("type", "")))
 	var kw: String = String(sk.get("keyword", ""))
 	if not kw.is_empty():
 		meta += " · " + kw
-	UiHelpers.mk_label(body, meta, SKILL_META_FONT, SKILL_META_COLOR,
-			Vector2(0, y), Vector2(w, 26))
-	y += 28.0
+	var meta_lbl := UiHelpers.mk_label(body, meta, SKILL_META_FONT,
+			SKILL_META_COLOR, Vector2(text_x, name_y + 40.0), Vector2(text_w, 26))
+	meta_lbl.clip_text = true
+	y += SKILL_TILE_Y + SKILL_TILE_PX + 12.0
 
-	return y + _wrapped_label(body, w, y, String(sk.get("description", "")),
+	return y + _rich_paragraph(body, w, y, String(sk.get("description", "")),
 			SKILL_DESC_FONT, SKILL_DESC_COLOR)
 
 
@@ -354,21 +376,25 @@ func _build_pilot_cards(body: Control, w: float, y: float) -> float:
 	return y
 
 
-## 줄바꿈되는 문단 한 덩이. **실제 높이는 폰트가 정한다** — 손으로 재면 긴
-## 설명문이 아래 블록을 덮는다. 반환값은 그 높이다.
-func _wrapped_label(body: Control, w: float, y: float, text: String,
+## Rich description paragraph — skill descriptions carry `\n` breaks,
+## `{eul}` particle tags, keyword icons and `[card name]` tokens, so this is
+## `StrategyIcon.make_rich_label` on light-theme colours (same as the light
+## `CardDescBox`). **The height comes from `StrategyIcon.rich_height`** —
+## measuring by hand lets a long description overlap the block below.
+## Returns that height.
+func _rich_paragraph(body: Control, w: float, y: float, text: String,
 		font_size: int, color: Color) -> float:
-	var lbl := Label.new()
-	lbl.text = text
-	lbl.add_theme_font_size_override("font_size", font_size)
-	lbl.add_theme_color_override("font_color", color)
-	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var costs: Dictionary = {}
+	var gm: Node = get_node_or_null("/root/GameManager")
+	if gm != null:
+		costs = gm.card_costs_by_name()
+	var lbl := StrategyIcon.make_rich_label(text, font_size, color,
+			OutgameTheme.ACCENT_TEXT, PANEL_BG, KeywordIcon.TARGET_ANY_COLOR,
+			KeywordIcon.TARGET, KeywordIcon.SPECIAL_COLOR_LIGHT, costs)
+	var h: float = StrategyIcon.rich_height(text, w, font_size, costs)
 	lbl.position = Vector2(0, y)
-	lbl.custom_minimum_size = Vector2(w, 0)
-	body.add_child(lbl)
-	var h: float = lbl.get_minimum_size().y
 	lbl.size = Vector2(w, h)
+	body.add_child(lbl)
 	return h
 
 

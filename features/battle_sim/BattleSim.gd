@@ -392,6 +392,7 @@ var card_pile_viewer: CardPileViewer = null
 # 단계를 벗어나면 HudBuilder 가 닫는다. lazy-add in _ready().
 var pilot_detail: PilotDetailPanel = null
 var marker_touch: MarkerTouch = null
+var skill_popup: SkillPopup = null
 ## 정글 시작 방향을 고르는 개시 전 오버레이 — 비워진 손패 자리에 아군 정글러의
 ## 원형 초상화를 놓고, 그것을 좌 / 우 정글 무리로 끌어다 놓게 한다.
 ## `GambitPhaseManager` 가 **`match_ctx.active` 일 때만** 세운다 — 단독 실행
@@ -514,6 +515,11 @@ func _ready() -> void:
 	pilot_detail.name = "PilotDetailPanel"
 	add_child(pilot_detail)
 	pilot_detail.bind(self)
+	# 파일럿 스킬 말풍선 — 아군 스트립 초상을 짧게 탭하면 열린다.
+	skill_popup = SkillPopup.new()
+	skill_popup.name = "SkillPopup"
+	add_child(skill_popup)
+	skill_popup.bind(self)
 	# 전장 초상 누르기 — 누르면 커지고 맨 위로, 꾹 누르면 위 상세 패널.
 	marker_touch = MarkerTouch.new()
 	marker_touch.name = "MarkerTouch"
@@ -859,9 +865,9 @@ func _award_kill_bounty(dead_team: int) -> void:
 
 
 # ─── 성장치 (파일럿 점수) ────────────────────────────────────────────────────
-# 파일럿의 **성장 통화**. MOBA 의 골드에 해당하고, 개시 1.00k 에서 시작해 50턴
+# 파일럿의 **성장 통화**. MOBA 의 골드에 해당하고, 개시 0.50k 에서 시작해 50턴
 # 평균 25.00k / 잘 큰 캐리 40.00k 을 넘긴다. 파일럿 스트립의 체력 바 아래에
-# 찍히고, 상단 중앙의 팀 점수는 그 팀 다섯 명의 **합산**이다(개시 5.00k).
+# 찍히고, 상단 중앙의 팀 점수는 그 팀 다섯 명의 **합산**이다(개시 2.50k).
 # 상한이 없으므로 게이지가 아니라 숫자로만 보여 준다.
 #
 # **성장(`PilotData.growth`)은 이 값에서 파생된다** — `refresh_growth_stats`.
@@ -880,8 +886,9 @@ func _award_kill_bounty(dead_team: int) -> void:
 #
 # 포탑/HQ **피해**는 더 이상 점수를 주지 않는다 — 피해가 고정 2 로 바뀌면서
 # 한 경기에 굴러 봐야 0.01k 수준이라 노이즈였다. 대신 **철거**에 한 번 지급한다.
-## 개시값.
-const SCORE_START: float = 1.0
+## 개시값. 1.00k 였다가 0.50k 로 내렸다 — 성장은 `score - SCORE_START` 에서
+## 나오므로 개시값을 바꿔도 개시 스탯은 그대로이고, 줄어드는 것은 시작 잔고뿐이다.
+const SCORE_START: float = 0.5
 ## 아무리 죽어도 여기 아래로는 내려가지 않는다.
 const SCORE_MIN: float = 0.10
 ## 전선 안에 살아서 서 있는 1턴당 적립. **이 값 하나가 성장 속도의 주 노브다.**
@@ -921,11 +928,15 @@ const SCORE_FRONTLINE_PER_TURN: float = 0.50
 ## 14 → 12 로 줄었을 때 그 몫(× 14/12)을 얹은 값이다. 두 칸이 다시 평범한 정글
 ## 칸으로 돌아오면서(캠프도, 점령도 그대로다) 그 보정은 근거를 잃어 0.98 로
 ## 되돌렸다. 전령 / 용은 **같은 자리를 무대로 빌려 쓸 뿐** 캠프를 밀어내지 않는다.
-const SCORE_JUNGLE_CAMP: float = 0.98
+##
+## **0.98 → 0.78 (−20%)** — 재생성을 6 → 7턴으로 늦추면서 값을 보전하지 않고
+## 오히려 깎았다. 정글러의 몫 자체를 줄인 의도된 너프다(위 1.5배 보정과 반대).
+const SCORE_JUNGLE_CAMP: float = 0.78
 ## 캠프가 다시 차오르기까지의 턴 수. 4턴은 한쪽 정글(4칸)에서 **매 턴 정확히
 ## 한 칸**이 되살아나 정글러가 발밑을 뜰 이유가 없었다 — 6턴이면 그 칸이
-## 비어 있는 구간이 생겨 반대쪽으로 넘어가는 순회가 강제된다.
-const JUNGLE_CAMP_RESPAWN_TURNS: int = 6
+## 비어 있는 구간이 생겨 반대쪽으로 넘어가는 순회가 강제된다. 이후 7턴으로
+## 한 턴 더 늦췄다(캠프값 감소와 함께 정글 수입을 줄이는 너프).
+const JUNGLE_CAMP_RESPAWN_TURNS: int = 7
 ## **방치 할인** — 차 있는 채로 놀고 있는 캠프가 거리 한 칸을 되사는 데 걸리는
 ## 턴 수. 정글러의 목표 선택(`SimulationCore._best_ready_camp`)은 거리에서
 ## `방치 턴 / 이 값` 을 뺀 값이 가장 작은 캠프를 고르므로, 멀리 있어 계속

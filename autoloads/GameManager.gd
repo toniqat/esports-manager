@@ -731,6 +731,27 @@ func mech_card_def(card_id: int) -> Dictionary:
 	return mech_card_defs.get(card_id, {})
 
 
+var _card_costs_by_name: Dictionary = {}
+
+
+## Card name → base cost over `card_pool_bs` and `mech_card_defs` (pilot cards win
+## a name clash). Built lazily once and cached — feeds the inline cost icon that
+## `StrategyIcon.fill_rich(..., card_costs)` puts before `[card name]`.
+func card_costs_by_name() -> Dictionary:
+	if not _card_costs_by_name.is_empty():
+		return _card_costs_by_name
+	for raw in card_pool_bs:
+		var def: Dictionary = raw as Dictionary
+		_card_costs_by_name[String(def.get("name", ""))] = int(def.get("cost", 0))
+	for raw in mech_card_defs.values():
+		var mdef: Dictionary = raw as Dictionary
+		var nm: String = String(mdef.get("name", ""))
+		if not _card_costs_by_name.has(nm):
+			_card_costs_by_name[nm] = int(mdef.get("cost", 0))
+	_card_costs_by_name.erase("")
+	return _card_costs_by_name
+
+
 func _load_mech_skills() -> void:
 	var db := SQLite.new()
 	db.path = db_path()

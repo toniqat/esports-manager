@@ -21,6 +21,9 @@ One row from the `cards` SQLite table, plus a few runtime fields:
   휘발성 / `charge` 충전 / `reposition` 재배치). `has_keyword()` 로만 읽고, 화면
   이름 · 풀이는 `keyword_label()` / `keyword_note()`(`KEYWORD_LABELS` /
   `KEYWORD_NOTES`). **충전은 키워드, 충전으로 쌓이는 것은 토큰**(`charge` 필드)
+- `SPECIAL_NOTES` — 특수 키워드(설명문의 `[용어]`) 풀이 표: 추적 · 반응 장갑 · 목표 ·
+  현상금 · 기절 · 취약. 표에 없는 `[이름]` 은 카드 이름으로 읽힌다
+  (`features/battle_sim/card_phase/README.md` "설명문 표기")
 - `effect: String` — semicolon-chain dispatched by `CardPhaseManager`
   (e.g. `"draw:2;discard:2"`, `"attack:1|pierce"`)
 - `description: String` — 카드 앞면 **아트 아래 설명판**에 그대로 찍히고(글자 크기는 넘칠 때만 줄어든다 — `Card._fit_desc_font_size`), 화면 상단 설명 상자에도 같은 문장이 뜬다
@@ -152,7 +155,7 @@ hp ×1.5). 스탯은 매 턴 곱해 나가는 대신 두 원본에서 **다시 �
 둘이 같은 필드를 공유하므로 나중에 건 쪽이 덮어쓴다.
 
 **성장치 `score`** (개시 1.0) — 위의 성장의 **원천**이다. 파일럿의 성장 통화이고
-MOBA 의 골드에 해당한다(개시 1.00k → 50턴 25k → 캐리 40k+). 적립처는 셋이다:
+MOBA 의 골드에 해당한다(개시 0.50k → 50턴 25k → 캐리 40k+). 적립처는 셋이다:
 **전선 체류**(턴당 0.50k) / **정글 캠프**(0.50k, 4턴 리스폰, 정글러) / **처치
 현상금**(라스트힛 1.5k + 앞선 격차 20%, 어시스트가 피해 비례로 최대 50%). 포탑
 철거 +1.0k. **포탑/HQ 피해와 사망 벌점은 삭제됐다.** 상한 없음, 하한 0.10k.
@@ -499,6 +502,28 @@ Bullet Lifesteal · Spirit Lifesteal → 활력)은 MediaWiki API 의 아이템 
 pck 만 무겁게 한다). 그림 자체는 **가로가 긴 풍경**인데 액자는 2:1 에 가까워
 `STRETCH_KEEP_ASPECT_COVERED` 로 가운데를 채운다.
 
+### SkillImages.gd
+`class_name SkillImages`, extends `RefCounted`, static only. **Pilot skill icon
+lookup** — same role as `CardImages` / `MechImages`.
+
+| Function | Source | Used by |
+|---|---|---|
+| `icon_for(skill_key)` | `images/skill/skill_<English_Name>.png` via `ICON` (`pilot_skills.key` → file) | `ui/PilotDetailPanel.gd` skill block (left of the name, tinted with the name colour), `ui/SkillBadge.gd` (strip badge), `ui/SkillPopup.gd` |
+| `make_icon_tile(skill_key, px, bg, icon_color, shadow_color, shadow_px = 14)` | `icon_for` inside a `px`×`px` rounded-square `Panel` (radius `px*0.22`, fill `bg`, anti-aliased `StyleBoxFlat` soft shadow: `shadow_size = shadow_px`, offset `(0, shadow_px*0.4)`), icon inset 16% per side and tinted via `modulate` | `ui/PilotDetailPanel.gd` skill block, `season/draft/DraftDetailPanel.gd` skill block |
+
+`make_icon_tile` is all `MOUSE_FILTER_IGNORE`; an unmapped key still returns the
+empty tile. The shadow paints **outside** the rect — leave about `shadow_px` of
+room around the tile so a clipping parent doesn't cut it.
+
+`images/skill/` holds **152 Deadlock hero ability icons** (38 heroes × 4), white
+glyph on transparent, mostly 137² (Doorman Call Bell + Victor's four 68²,
+Rain of Arrows 200²). Source: namu.wiki `분류:Deadlock(게임)/영웅` → each hero
+page's 능력 section, webp/png → png. File name = `skill_` + the English ability
+name with spaces → `_` (apostrophes / hyphens kept; namu typos fixed:
+Dust Devil, Entangling Thorns). Only 25 are mapped (`ICON`, one ability per
+skill, chosen by effect); the rest are spare. A new skill key without a row
+returns null and the panel just omits the icon.
+
 ### MechImages.gd
 `class_name MechImages`, extends `RefCounted`. `PilotImages` 와 같은 역할의
 메크(기체) 일러스트 조회. **에셋 30장이 그대로 남아 있고 `mechs.csv` 는 21행으로
@@ -669,8 +694,76 @@ shape** — a regular octagon in two poses:
 | `make_badge(parent, center, r, fill, text, font_size, text_color, rim, rim_w)` | octagon Control with a centred number |
 | `texture(px)` | cached indicator ImageTexture for inline use (flat sides touch the square) |
 | `raster_convex(w, h, pts, fill, rim, rim_w)` | bakes any convex clockwise polygon into an AA texture with an inner rim (also used by `CostRibbon`) |
-| `make_rich_label(text, font_size, color)` / `fill_rich(rtl, text, font_size)` | description `RichTextLabel`: indicator before every "전략 점수", cost ribbon before every "비용" (`add_text` / `add_image`, no BBCode — `[캐시]` stays literal). Icon and word are joined by a no-break space; text goes through `UiHelpers.keep_words` |
-| `measure_text(text)` | stand-in string for `get_multiline_string_size` (octagon ≈ two glyphs, ribbon ≈ one; same break rules as `fill_rich`) |
+| `make_rich_label(text, font_size, color, icon_color, knock, target_color, target_key, special_color, card_costs)` / `fill_rich(rtl, text, font_size, icon_color, knock, target_color, target_key, special_color, card_costs)` | description `RichTextLabel`: indicator before every "전략 점수", cost ribbon before every "비용", and a `KeywordIcon` before every keyword word (`KeywordIcon.WORDS` — 전장 명중 · 전장 회피 · 교전 명중 · 교전 회피 · 필중 공격 · 소지 중 · 공격력 · 사거리 · 체력 · 성장 · 필중 · 공격 · 교전 · 이동 · 대상 · 범위 · 뽑기 · 버리기 · 보존 · 찾기 · 생성 · 보호막 · 회복 · 처치 · 버린 더미) and before every duration ("3턴", "(…)턴" — `_duration_end`); **`[이름]` is a special keyword** — printed without brackets in `special_color`, preceded by its `KeywordIcon.SPECIAL_ICONS` icon (in `icon_color`) when it is an effect term; card names get colour only, coloured by `KeywordIcon.color_for` (`icon_color`; 뽑기/버리기 fixed green/red; 대상 = `target_color`); multi-word keywords keep their space as a no-break space; `knock` = panel background (필중 cuts its bow out of the disc with it). At one position the longest word wins (공격력 beats 공격). **Nothing inside `[...]`** gets an icon (card names like `[공격 명령]`). `add_text` / `add_image`, no BBCode — `[캐시]` stays literal. Icon and word are joined by a no-break space; text goes through `UiHelpers.keep_words` |
+| `measure_text(text, card_costs = {})` | stand-in string for `get_multiline_string_size` (square icons ≈ two glyphs, ribbon ≈ one, card-cost icon ≈ one; same tokenizer `_tokens` and break rules as `fill_rich`) |
+| `rich_height(text, width, font_size, card_costs = {})` | height a `make_rich_label` label of that width needs — `measure_text` through `ThemeDB.fallback_font.get_multiline_string_size` with the same `keep_words` / break flags / `ceil + 4` as `CardDescBox._text_height` |
+| `resolve_josa(text)` | CSV text → display text: literal two-char `\n` → newline, particle tags `{eul}` 을/를 · `{eun}` 은/는 · `{i}` 이/가 · `{wa}` 과/와 picked by the previous visible character (closing `]` skipped, so `[아드레날린]{eul}` → 을). Hangul with a final consonant → first form, anything else → second. `_tokens` calls it first, so `fill_rich` / `measure_text` / `rich_height` resolve tags automatically |
+
+**Card cost icon.** `fill_rich`, `make_rich_label` and `measure_text` take a trailing
+`card_costs: Dictionary` (card name → cost; `GameManager.card_costs_by_name()`). A
+`[name]` that is not a `KeywordIcon.SPECIAL_ICONS` term but is a key there gets a
+miniature card-face cost ribbon in front (`CostRibbon.number_texture`, height ≈
+font × 1.2, width ≈ height × 0.78, baked at 2× and drawn at 1×), then a no-break
+space, then the coloured name. Pilot skill descriptions use this (`DraftDetailPanel`,
+`PilotDetailPanel`); card descriptions pass nothing and stay as before.
+A further trailing `card_meta: bool` (`fill_rich` / `make_rich_label`) wraps that
+ribbon + name in `push_meta(name, META_UNDERLINE_NEVER)` so the caller can tell which
+card a press hit (`ui/SkillPopup.gd` card preview).
+
+### KeywordIcon.gd
+`class_name KeywordIcon`, extends `RefCounted`, static only. **Card keyword icons**
+— 64×64-viewBox SVG strings rasterized at runtime (`Image.load_svg_from_string`,
+cached per key · px · colours), so there are no import files and every size is
+crisp. Colours are **baked into the SVG** (`{C}` = icon colour, `{K}` = panel
+background) rather than modulated, because 필중 needs two colours.
+
+| Key | Shape |
+|---|---|
+| `RANGE` 사거리 | horizontal double arrow with a vertical bar at each end |
+| `TARGET` 대상 | head-and-shoulders bust; colour = side the card aims at (`target_color(target)`: enemy red · ally green · else grey) |
+| `AREA` 시전 범위 · 범위 | four isometric diamond tiles (up · down · left · right) |
+| `DURATION` 지속시간 | hourglass — inline before "N턴" only (no longer in the attribute row) |
+| `ENGAGE` 교전 | two crossed swords |
+| `ATTACK` 공격 | bow aimed right: string at the centre, stave curving just right of it, arrow pointing right |
+| `PIERCE` 필중 · 필중 공격 | the same bow cut out of a filled disc |
+| `MOVE` 이동 | left-to-right arrow |
+| `ATK` 공격력 | one sword |
+| `HP` 체력 · 최대 체력 | heart |
+| `GROWTH` 성장 | sprout |
+| `DRAW` 뽑기 | filled rounded card, arrow from above into its centre (outside part filled, inside part cut out); always `DRAW_COLOR` green |
+| `DISCARD` 버리기 · 버린 후 | filled card, arrow from inside it out through the bottom (inside cut out, outside filled); always `DISCARD_COLOR` red |
+| `PRESERVE` 보존 | padlock (keyhole cut out) |
+| `HOLD` 소지 중 | open right hand, palm out, four fingers up, thumb to the right |
+| `SEARCH` 찾기 | magnifying glass |
+| `CREATE` 생성 | filled card with a plus to its right — card creation only (a shield is "부여", not "생성") |
+| `SHIELD` 보호막 | shield |
+| `HEAL` 회복 | heart with a plus cut out |
+| `KILL` 처치 · 처치 관여 | skull (eyes · nose · teeth cut out) |
+| `DISCARD_PILE` 버린 더미 | three cards lying flat, stacked and slightly staggered |
+| `TRACK` [추적] | one footprint: sole + three widely spaced toes |
+| `REACTIVE_ARMOR` [반응 장갑] | centred rounded-square plate, thick diagonal groove top-left → bottom-right, rivets top-right · bottom-left |
+| `MARK` [목표] | circle with a plain cross through it |
+| `BOUNTY` [현상금] | three stacked coins with thick separating outlines; middle coin nudged right, only the (slightly thicker) top coin shows its flat oval face |
+| `STUN` [기절] | swaying ring that starts thin at top-centre, is thickest bottom-left and thins out on the right, with a star on its end |
+| `VULNERABLE` [취약] | the 보호막 shield with a wide crack down the middle |
+| `COOLDOWN` (쿨타임) | clock: ring + 12 o'clock hand + short hand towards 4 o'clock; not a word — `ui/SkillPopup.gd` shows it with the cooldown turns |
+| `TILE` (대상 타일) | flat-top hexagon like the battlefield; not a word — `StrategyIcon.fill_rich(..., target_key)` swaps it in for `TARGET` on tile-target cards |
+| `FIELD_HIT` 전장 명중 · `FIELD_EVA` 전장 회피 | translucent (`fill-opacity` 0.34) flat-top hexagon = a tile, with a full-colour target (ring + cross, the `MARK` shape) / footprint (the `TRACK` shape, scaled) on top |
+| `ENGAGE_HIT` 교전 명중 · `ENGAGE_EVA` 교전 회피 | the same inner icons on a translucent thick X (both bars in **one** path, so the crossing is not doubly opaque) |
+| `ATK_GROWTH` 공격 성장 · `HP_GROWTH` 체력 성장 | `ATK` sword / `HP` heart (shared bodies `_ATK_BODY` / `_HP_BODY`) + a short thick up-arrow at the bottom-right, outlined in `{K}` so it cuts where it meets the shape |
+| `PRESENCE` 존재감 | head + wide torso (the `TARGET` bust) with a target (ring + cross) cut out of the torso in `{K}` |
+
+**Pilot stat icons** — not words; `ui/PilotDetailPanel.gd` (`CHIP_ICONS`) puts them
+before the stat-chip names: 체력 `HP` · 공격력 `ATK` · 존재감 `PRESENCE` · the four
+명중 / 회피 keys · 공격 성장 `ATK_GROWTH` · 체력 성장 `HP_GROWTH`.
+
+`texture(key, px, color, knock)` returns the cached `ImageTexture`;
+`color_for(key, base, target_color)` picks the colour (fixed for 뽑기/버리기, the
+target colour for 대상, else `base`); `target_color(CardData.target)` maps a card's
+target to red / green / grey. Users:
+`StrategyIcon.fill_rich` (inline, before words), `CardDescBox` (the attribute
+row under the keyword line) and `ui/PilotDetailPanel.gd` (stat chips `CHIP_ICONS`,
+and the `{attack}` / `{engage}` icons in stat notes).
 
 ### CostRibbon.gd
 `class_name CostRibbon`, extends `RefCounted`, static only. **The cost shape** —
@@ -701,6 +794,7 @@ light`, so the in-game (dark) panel has none.
 | `make_badge(parent, rect, text, font_size, text_color, fill, shadow)` | small ribbon Control (baked texture, optional shadow) and a dark number in its upper part |
 | `fill_texture(w, h, fill, slant)` | cached rimless ribbon texture, 1px coverage AA |
 | `icon_texture(w, h)` | cached inline icon (strategy colour, no rim) — `fill_texture` with `ICON_SLANT_RATIO` |
+| `number_texture(text, w, h)` | a `w`×`h` px white ribbon (`SLANT_RATIO`) with `text` in `INK` (font ≈ h × 0.62, centred above the slant like `make_badge`) as a texture — the inline card-cost icon of `StrategyIcon.fill_rich(..., card_costs)`. `add_image` only takes textures, so it is rendered by a cached `SubViewport` (transparent, `disable_3d`, `UPDATE_ONCE`) parented under the SceneTree root via `call_deferred("add_child")`; returns `get_texture()`, which fills in on the next drawn frame (headless dummy renderer: no image). Static cache keyed by text / w / h — viewports live for the whole session. Pass 2× pixel sizes, draw at 1× |
 
 ### UiHelpers.gd
 `class_name UiHelpers`, extends `RefCounted`. Static helpers for

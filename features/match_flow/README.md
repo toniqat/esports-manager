@@ -308,7 +308,12 @@ ScreenMetrics.backfill_top(_panel, <판 배경색>)   # 비워진 위쪽 띠를 
 
 ### Match Flow → Battle Sim handoff
 `MatchFlow` populates `GameManager.match_ctx` (player_roster, enemy_roster,
-jungle_start_dir, banned_mech_ids, …) then `change_scene_to_file` to BattleSim.
+jungle_start_dir, banned_mech_ids, …) then changes scene to BattleSim **behind
+the fake loading cover** — `SceneFade.change_scene` (암전 0.30초 → `LOADING` 막대
+0.50초 → 밝아짐 0.35초, the same transition as the draft's "게임 시작"). The
+cover is a `CanvasLayer` on the tree root so it survives the scene swap, and
+BattleSim's heavy `_ready` runs behind it. Resume-at-LAUNCH goes through the
+same `_launch_battle`, so it fades too.
 `BattleSim.spawn_pilots_with_lanes()` injects each `PlayerData.assigned_mech`'s
 hp/atk into `PilotData`. If `match_ctx.active` is false (running BattleSim
 standalone), it falls back to `ROLE_STATS` defaults.

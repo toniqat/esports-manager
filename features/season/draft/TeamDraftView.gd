@@ -86,11 +86,6 @@ const GRID_VISIBLE_ROWS: float = 3.5
 ## PICK ↔ CONFIRM 전환. 픽창이 아래로 빠지는 것과 5인이 가운데로 내려오는
 ## 것이 같은 박자로 돈다.
 const MODE_ANIM_SEC: float = 0.38
-## "게임 시작" 전환 — 암전 → 가짜 로딩 → 밝아짐.
-const LAUNCH_FADE_OUT_SEC: float = 0.30
-const LAUNCH_LOAD_SEC: float = 0.50
-const LAUNCH_FADE_IN_SEC: float = 0.35
-const LAUNCH_BAR_W: float = 420.0
 
 
 # ─── 세로 배치 — 아래에서 위로 ───────────────────────────────────────────────
@@ -573,51 +568,13 @@ func _on_confirm_pressed() -> void:
 	_play_launch_transition(ids)
 
 
-## 암전 → 가짜 로딩(`LAUNCH_LOAD_SEC`) → 밝아짐.
-##
-## 덮개는 **허브에 붙인 `CanvasLayer`** 라 이 화면이 숨겨진 뒤에도 남는다
-## (CanvasLayer 는 부모 Control 의 `visible` 을 따르지 않는다). 팀 확정과 허브
-## 전환(= 드래프트 직후 자동 저장)은 **화면이 다 가려진 뒤에** 한다 — 바뀌는
-## 순간이 보이지 않아야 한 장면이 넘어간 것으로 읽힌다. 로딩 막대는 실제
-## 작업과 무관한 연출이다(전환 자체는 한 프레임이다).
+## 암전 → 가짜 로딩 → 밝아짐(`SceneFade`). 팀 확정과 허브 전환(= 드래프트 직후
+## 자동 저장)은 **화면이 다 가려진 뒤에** 한다 — 바뀌는 순간이 보이지 않아야 한
+## 장면이 넘어간 것으로 읽힌다. 덮개는 root 의 CanvasLayer 라 이 화면이 숨겨진
+## 뒤에도 남는다.
 func _play_launch_transition(ids: Array) -> void:
 	var hub: SeasonHub = _draft.get_parent() as SeasonHub
-	var layer := CanvasLayer.new()
-	layer.layer = 100
-	(hub as Node if hub != null else self as Node).add_child(layer)
-
-	var vp: Vector2 = ScreenMetrics.viewport_size()
-	var cover := ColorRect.new()
-	cover.color = Color(0, 0, 0, 1)
-	cover.position = Vector2.ZERO
-	cover.size = vp
-	cover.mouse_filter = Control.MOUSE_FILTER_STOP   # 전환 중의 탭을 삼킨다
-	cover.modulate.a = 0.0
-	layer.add_child(cover)
-
-	var load_lbl := UiHelpers.mk_label(cover, "LOADING", 28,
-			Color(1, 1, 1, 0.80), Vector2(0, vp.y * 0.5 - 56.0),
-			Vector2(vp.x, 36), HORIZONTAL_ALIGNMENT_CENTER)
-	load_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var track := ColorRect.new()
-	track.color = Color(1, 1, 1, 0.18)
-	track.position = Vector2((vp.x - LAUNCH_BAR_W) * 0.5, vp.y * 0.5)
-	track.size = Vector2(LAUNCH_BAR_W, 6)
-	track.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	cover.add_child(track)
-	var fill := ColorRect.new()
-	fill.color = OutgameTheme.ACCENT
-	fill.size = Vector2(0, 6)
-	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	track.add_child(fill)
-
-	var tw := layer.create_tween()
-	tw.tween_property(cover, "modulate:a", 1.0, LAUNCH_FADE_OUT_SEC)
-	tw.tween_callback(_commit_draft.bind(ids, hub))
-	tw.tween_property(fill, "size:x", LAUNCH_BAR_W, LAUNCH_LOAD_SEC) \
-			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	tw.tween_property(cover, "modulate:a", 0.0, LAUNCH_FADE_IN_SEC)
-	tw.tween_callback(layer.queue_free)
+	SceneFade.play(get_tree(), _commit_draft.bind(ids, hub))
 
 
 ## 화면이 다 가려진 순간에 도는 확정 — 팀 재배치 + 허브 전환.

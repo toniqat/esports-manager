@@ -21,8 +21,9 @@ pilot's prior team — every team always has exactly one pilot per role.
 CONFIRM 의 주 행동은 **"게임 시작"**(예전 "드래프트 확정")이다. 팀 결성은
 아웃게임의 마지막 화면이고 그 다음부터가 캠페인이라 화면을 그냥 갈아 끼우지 않는다 —
 **암전(0.30초) → 가짜 로딩(0.50초, `LOADING` + 막대) → 밝아짐(0.35초)**
-(`_play_launch_transition`). 덮개는 **허브에 붙인 `CanvasLayer`(layer 100)** 라
-드래프트가 숨겨진 뒤에도 남는다. `validate_draft` 는 **암전 전에** 돌고(거절될
+(`_play_launch_transition` → 공용 `resources/SceneFade.gd`). 덮개는 **root 에
+붙인 `CanvasLayer`(layer 100)** 라 드래프트가 숨겨진 뒤에도 남는다(밴픽 → 전장
+전환도 같은 헬퍼를 쓴다). `validate_draft` 는 **암전 전에** 돌고(거절될
 확정이면 화면을 가리지 않는다), `apply_draft` · 상세 팝업 닫기 · `goto(HUB)`
 (= 드래프트 직후 자동 저장)는 **화면이 다 가려진 순간에** 돈다(`_commit_draft`).
 

@@ -1188,7 +1188,7 @@ func _desired_push_advance_cell(p: PilotData) -> Vector2i:
 		var jg_goal := _jungle_goal_for(p)
 		if jg_goal == Vector2i(-1, -1):
 			return p.grid_pos
-		return _bs.pathfinder.bfs_next_step(p.grid_pos, jg_goal, fbd)
+		return jungle_step(p, jg_goal)
 	return _bs.pathfinder.bfs_next_step(p.grid_pos, current_waypoint(p), fbd)
 
 
@@ -1205,7 +1205,7 @@ func _desired_push_retreat_cell(p: PilotData) -> Vector2i:
 				best_d = d; dest = c
 		if dest == Vector2i(-1, -1):
 			dest = _bs.PLAYER_HQ_POS if p.team == 0 else _bs.ENEMY_HQ_POS
-		return _bs.pathfinder.bfs_next_step(p.grid_pos, dest, fbd)
+		return jungle_step(p, dest)
 	# Lane pilots retreat one step along their lane toward own HQ.
 	var home := _bs.PLAYER_HQ_POS if p.team == 0 else _bs.ENEMY_HQ_POS
 	return _bs.pathfinder.bfs_next_step(p.grid_pos, home, fbd)
@@ -1266,8 +1266,35 @@ func _next_step_for(p: PilotData) -> Vector2i:
 		# 맞고 있다고 수비하러 돌아오는 개념은 없다 — 파일럿은 자기 HQ 에서
 		# 출발해 레인 길을 따라가고, 그러다 상대 라이너와 마주치는 것이 설계다.
 		goal = current_waypoint(p)
+	if p.is_guerrilla:
+		return jungle_step(p, goal)
 	var fbd: Dictionary = _movement_forbidden_for(p)
 	return _bs.pathfinder.bfs_next_step(p.grid_pos, goal, fbd)
+
+
+## 정글러의 한 걸음. **같은 거리라면 상대 소유 정글 칸을 피해 간다.**
+##
+## 정글러의 길찾기에는 금지 칸이 없어서(`_movement_forbidden_for`) 언제나 최단
+## 거리였고, 최단 경로가 여럿이면 이웃을 훑는 순서(N · S · NE …)가 길을 정했다 —
+## 그 순서가 위쪽을 먼저 보므로 팀0 정글러는 좌우 중립을 오갈 때 같은 4칸이면서도
+## **상대 정글을 가로질렀다**(실측: `(-3,-1)` → `(-2,-2)` 상대 → `(-1,-2)` →
+## `(0,-2)` 상대 → `(1,-1)`). 그래서 먼저 상대 소유 정글 칸을 막고 묻고, 그렇게는
+## 갈 길이 없을 때만(목표가 상대 정글 깊숙이 있는 경우 등) 예전처럼 막지 않고 묻는다.
+## 목표 칸 자체는 막지 않는다 — 상대 정글 가장자리 칸이 목표면 우회 없이 들어간다.
+##
+## 막는 것은 "피한다"이지 "못 간다"가 아니다: 최단 거리를 포기하는 대신 그보다 긴
+## 우회도 받아들인다(같은 거리 우회가 대부분이다). 정글 시작 화면의 예상 경로
+## (`predict_jungle_path`)도 이 함수를 지나므로 화면과 실제가 갈리지 않는다.
+func jungle_step(p: PilotData, goal: Vector2i) -> Vector2i:
+	var avoid: Dictionary = {}
+	var enemy: int = 1 - p.team
+	for raw in _bs.neutral_zone_cells.keys():
+		if int(_bs.neutral_zone_cells[raw]) == enemy and raw != goal:
+			avoid[raw] = true
+	var step: Vector2i = _bs.pathfinder.bfs_next_step(p.grid_pos, goal, avoid, false)
+	if step == Pathfinding.UNREACHABLE:
+		step = _bs.pathfinder.bfs_next_step(p.grid_pos, goal, {})
+	return step
 
 
 # Goal selection for jungler: nearest uncaptured neutral, else a **sticky** roam
@@ -1283,6 +1310,17 @@ func _next_step_for(p: PilotData) -> Vector2i:
 # the enemy sieged it. Holding the target makes the jungler finish its tour and
 # come to rest only on a jungle cell; lane cells are crossed, never idled on.
 func _jungle_goal_for(p: PilotData) -> Vector2i:
+	# **개시 전에 플레이어가 골라 둔 시작 칸이 맨 먼저다** — 그 화면이 보여 준
+	# 경로가 실제로 걷는 길이어야 한다(`JungleStartOverlay.path_cells` 가 이 함수와
+	# `jungle_step` 을 그대로 굴린다 — `predict_jungle_path`). 도달하면 비우고, 가는 사이
+	# 그 칸이 상대 것이 되면 포기한다(상대 정글은 애초에 고를 수 없는 칸이다).
+	if p.jungle_start_cell != Vector2i(-1, -1):
+		var sc: Vector2i = p.jungle_start_cell
+		if p.grid_pos == sc or int(_bs.neutral_zone_cells.get(sc, -2)) == 1 - p.team:
+			p.jungle_start_cell = Vector2i(-1, -1)
+		else:
+			p.jungle_roam_target = Vector2i(-1, -1)
+			return sc
 	# 아직 아무도 안 잡은 중립 칸이 가장 먼저다 — 밟는 것만으로 지도 한 칸이
 	# 우리 것이 되고, 그 칸의 캠프까지 딸려 온다.
 	var nearest_neutral := _nearest_uncaptured_neutral(p)
@@ -1350,6 +1388,65 @@ func _best_ready_camp(p: PilotData) -> Vector2i:
 		if cost < best_cost or (cost == best_cost and d < best_d):
 			best_cost = cost; best_d = d; best = cell
 	return best
+
+
+## 정글러 `p` 가 지금부터 `turns` 턴 동안 밟을 칸 — **단순 예상 루트**다. 원소는
+## `{cell, turn}`(턴은 1부터, `move_range` 가 2 이상이면 한 턴에 여러 칸).
+##
+## 정글 시작 오버레이가 "시작 칸까지 + 도착 뒤 6턴" 경로를 그리려고 부른다.
+## 시작 칸 이후의 걸음은 중립 점령 · 캠프 재생성 · 방치 할인이 정하므로 따로
+## 흉내 내지 않고 **진짜 `_jungle_goal_for` 를 그대로 돌린다**: 그 함수가 읽는
+## 상태(정글러 자리 · 목표 · 정글 소유 · 캠프 시계 · 턴 수)를 잠깐 앞으로 굴리고
+## 다 끝나면 되돌린다. 턴 루프와 같은 순서다 — 턴 수 증가 → 이동 → 중립 점령 →
+## 캠프 수확.
+##
+## **이 정글러 혼자 걷는다고 본다** — 상대 정글러의 걸음 · 중립 선점 · 정글러끼리의
+## 교전은 계산하지 않는다. 예상 루트를 보여 주는 것이지 상대의 움직임까지 내다보는
+## 화면이 아니다(상대를 넣으면 경로가 상대의 시작 방향을 드러낸다). 그래서 상대가
+## 같은 쪽 중립을 먼저 잡거나 길에서 마주치면 실제 걸음은 거기서부터 갈라진다.
+##
+## 정글 소유는 `_set_zone_cell` 이 아니라 표만 고친다 — 그 함수는 타일맵 색까지
+## 바꾼다. 표 두 개는 **같은 Dictionary 객체에 되써서** 되돌린다(다른 모듈이
+## 참조를 들고 있다).
+func predict_jungle_path(p: PilotData, turns: int) -> Array:
+	var out: Array = []
+	if p == null or not p.is_guerrilla:
+		return out
+	var zones_bak: Dictionary = _bs.neutral_zone_cells.duplicate()
+	var camps_bak: Dictionary = _bs.jungle_camps.duplicate()
+	var turn_bak: int = _bs.turn_count
+	var pos_bak: Vector2i = p.grid_pos
+	var roam_bak: Vector2i = p.jungle_roam_target
+	var start_bak: Vector2i = p.jungle_start_cell
+	for t in range(1, turns + 1):
+		_bs.turn_count += 1
+		var moved: bool = false
+		for _s in maxi(1, p.move_range):
+			var goal := _jungle_goal_for(p)
+			if goal == Vector2i(-1, -1):
+				break
+			var nxt: Vector2i = jungle_step(p, goal)
+			if nxt == p.grid_pos:
+				break
+			p.grid_pos = nxt
+			moved = true
+			out.append({"cell": nxt, "turn": t})
+		# 제자리에 머문 턴도 한 턴이다 — 빼면 "도착 + 6턴" 이 말없이 짧아진다.
+		if not moved:
+			out.append({"cell": p.grid_pos, "turn": t})
+		if int(_bs.neutral_zone_cells.get(p.grid_pos, -2)) == -1:
+			_bs.neutral_zone_cells[p.grid_pos] = p.team
+		if camp_harvestable(p.grid_pos, p.team):
+			_bs.jungle_camps[p.grid_pos] = _bs.turn_count + _bs.JUNGLE_CAMP_RESPAWN_TURNS
+	_bs.neutral_zone_cells.clear()
+	_bs.neutral_zone_cells.merge(zones_bak)
+	_bs.jungle_camps.clear()
+	_bs.jungle_camps.merge(camps_bak)
+	_bs.turn_count = turn_bak
+	p.grid_pos = pos_bak
+	p.jungle_roam_target = roam_bak
+	p.jungle_start_cell = start_bak
+	return out
 
 
 # Farthest cell of `captured` from `from`, excluding `from` itself. Returns

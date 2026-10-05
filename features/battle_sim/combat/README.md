@@ -5,14 +5,20 @@ Each module accesses shared state via `@onready var _bs: BattleSim = get_parent(
 
 ## Pathfinding.gd
 BFS pathfinding with greedy fallback (hex grid).
-- `bfs_next_step(from, to, forbidden_cells={})` → Vector2i
+- `bfs_next_step(from, to, forbidden_cells={}, greedy_fallback=true)` → Vector2i
+  (`greedy_fallback = false` 면 길이 없을 때 `UNREACHABLE` 을 돌려준다 — 부르는 쪽이
+  금지 집합을 풀고 다시 묻는 용도. 도달 판정은 bool 로 든다: 예전의
+  `found == (-1,-1)` 센티널은 미드 칸 `(-1,-1)` 이 목표일 때 찾고도 못 찾은 것으로
+  쳤다)
 - `greedy(from, to, forbidden_cells={})` → Vector2i
 - `neighbors(pos, forbidden_cells={})` → Array[Vector2i]
 
 `forbidden_cells` is a Dictionary used as a set (only `.has()` is read). Neighbors
 present in `forbidden_cells` are dropped during expansion. The starting cell is
 never filtered, so a displaced pilot can always step out of an otherwise-forbidden
-region. SimulationCore uses this to keep lane pilots out of jungle cells.
+region. SimulationCore uses this to keep lane pilots out of jungle cells, and
+`SimulationCore.jungle_step` uses it to keep **junglers out of enemy-owned jungle
+cells whenever a path around exists** (see "Jungler roaming").
 
 ## RecallSystem.gd
 **복귀 = 본진 귀환.** Two triggers, one shared path:
@@ -511,7 +517,22 @@ TileMap negative-coord system:
 `objective/README.md`.
 
 #### Jungler roaming (`_jungle_goal_for`)
-아직 아무도 점령하지 않은 중립 칸이 **1순위**다(`_nearest_uncaptured_neutral`,
+**맨 먼저는 개시 전에 고른 시작 칸**(`PilotData.jungle_start_cell`, 정글 시작
+오버레이가 새긴다)이다 — 그 화면이 그린 경로가 실제 걸음이어야 하므로 도달할
+때까지 다른 무엇보다 앞선다. 도달하거나 그 칸이 상대 것이 되면 비우고 아래
+순서로 넘어간다. 단독 실행에서는 비어 있다. 이 함수를 그대로 앞으로 굴려 정글러의 걸음을 예측하는 것이 `predict_jungle_path(p, turns)` 다(정글 시작 화면의 경로 — 상태를 잠깐 밀었다 되돌린다. 우리 정글러 혼자 걷는다고 보는 단순 예상 루트라 상대 정글러와의 충돌은 계산하지 않는다. `gambit/README.md`).
+
+**한 걸음은 `jungle_step(p, goal)` 이 정한다 — 같은 거리라면 상대 소유 정글 칸을
+피해 간다.** 정글러에게는 금지 칸이 없어 언제나 최단 거리였고, 최단 경로가 여럿이면
+이웃을 훑는 순서(위쪽 먼저)가 길을 정해 팀0 정글러가 좌우 중립을 오갈 때 상대 정글을
+가로질렀다(`(-3,-1)` → `(-2,-2)` → `(-1,-2)` → `(0,-2)` → `(1,-1)`, 넷 중 둘이 상대
+칸). 지금은 상대 소유 정글 칸(목표 칸 자체는 빼고)을 막고 먼저 묻고, 길이 없을 때만
+막지 않고 묻는다. 실측: 놓을 수 있는 8칸 모두 예상 경로에 상대 칸 0, 40턴 동안 상대
+정글 체류 0턴, 같은 경로가 `(-2,-1)` → `(-1,-1)` → `(0,-1)` → `(1,-1)` 로 바뀌었다.
+턴 루프의 세 자리(`_next_step_for` · 밀어붙이기 전진 · 후퇴)와 예측
+(`predict_jungle_path`)이 모두 이 함수를 지난다.
+
+그 다음, 아직 아무도 점령하지 않은 중립 칸이 **1순위**다(`_nearest_uncaptured_neutral`,
 밴픽에서 고른 `jungle_start_pref` 가 좌우 순서를 정한다) — 밟는 것만으로 지도
 한 칸이 우리 것이 되고 그 칸의 캠프까지 딸려 온다. 그 다음이 the best ready camp
 (`_best_ready_camp`). With no camp charged the jungler

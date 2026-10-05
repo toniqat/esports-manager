@@ -59,10 +59,16 @@ Reads all state from `_bs` (the BattleSim parent).
    칸 한가운데를 차지해 캠프 아웃라인 · 점령 면 색과 자리를 다퉜다.
 
    **정글 시작 선택 딤(`_draw_jungle_pick_dim`)이 새로 들어왔다.** 개시 전
-   `JungleStartOverlay` 가 열려 있는 동안 **정글이 아닌 칸을 전부 덮는다** —
-   밝게 남는 칸의 정의를 드롭 대상(`JungleStartOverlay.cells_for`)에서 그대로
-   가져오므로 놓을 수 있는 칸과 밝은 칸이 같은 목록에서 나온다. 캠프 아웃라인
-   **뒤**, 무리 강조 **앞**에 그린다(그 둘은 이 선택의 근거이자 안내다). 같은
+   `JungleStartOverlay` 가 열려 있는 동안 **놓을 수 없는 칸을 전부 덮는다**
+   (정글 아닌 칸 + **상대 소유 정글**) — 밝게 남는 칸의 정의를 드롭 대상
+   (`JungleStartOverlay.active_cells`)에서 그대로 가져오므로 놓을 수 있는 칸과
+   밝은 칸이 같은 목록에서 나온다. 캠프 아웃라인 **뒤**, 칸 강조 **앞**에
+   그린다. 칸 강조(`_draw_jungle_start_zones`)는 놓을 수 있는 칸마다 초록,
+   마커 밑 / 고른 칸은 금색이고, 그 위에 HQ 에서 그 칸까지의 **경로**
+   (`_draw_jungle_start_path`, 시작 칸까지 금색 + 도착 뒤 6턴 하늘색, 턴이 끝나는 칸에 번호 알약 — 마커가 앉는 칸의 번호만 마커 뒤 `_draw_jungle_start_marker_badge` 가 얼굴 오른쪽 아래 배지로)가 마커 밑에
+   깔린다. 그 구간의 아군 정글러는 **오버레이가 정한 자리**
+   (`JungleStartOverlay.marker_pos` — 손가락 밑 / 고른 칸 / HQ 슬롯)에 **꼬리
+   없이** 그려진다(`_draw_pilot_cell`). 같은
    구간에는 **전장 초상화도 정글러 한 명만 남는다**
    (`_hidden_during_jungle_pick` — 나머지 아홉은 아직 자기 HQ 에 몰려 서 있어
    두 덩어리로 뭉친 얼굴이 정글 소유 · 캠프 · 딤을 가릴 뿐이다). 자리 배정

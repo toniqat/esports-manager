@@ -162,7 +162,7 @@ HapticUi.down_kind_for(btn, HapticUi.NONE)   # 이 버튼만 누름 박자를 �
 
 #### 자동 배선이 닿지 않는 자리
 `BaseButton` 이 아닌 것 — 카드 드래그, 전략 포인트 도넛(`_input`), 훈련 타일
-드래그(집기 · 칸마다 스냅 · 놓기), 정글 시작 초상화, 밴픽의 메크 칸
+드래그(집기 · 칸마다 스냅 · 놓기), 정글 시작 정글러 마커 드래그, 밴픽의 메크 칸
 드래그, 그리고 **버튼과 무관한 사건**
 (명중 · 처치 · 포탑 철거 · 교전 결과 · 오브젝트 획득 · 승패). 그 자리들은
 `Haptics.play(...)` 를 직접 부른다 — 표는 루트 `CLAUDE.md` 의 "햅틱 (감촉)" 항목.
@@ -211,7 +211,7 @@ Do NOT add `class_name` to autoload scripts in Godot 4.5 — causes parse errors
 | 교전 결과(승 / 패 / 무) | `EngagePhaseManager` 대시보드 진입 | `SUCCESS` / `ERROR` / `MEDIUM` |
 | 오브젝트 획득(아군 / 적군) | `ObjectiveSystem._grant_reward` | `SUCCESS` / `WARNING` |
 | 경기 승 / 패 | `SimulationCore.check_win_condition` | `SUCCESS` / `ERROR` |
-| 정글 시작 — 집기 / 무리 진입 / 방향 결정 | `gambit/JungleStartOverlay` | `SELECT` / `SELECT` / `MEDIUM` |
+| 정글 시작 — 마커 집기 / **놓을 수 있는 칸마다 스냅** / 칸 결정 | `gambit/JungleStartOverlay` | `SELECT` / `LIGHT` / `MEDIUM` |
 | 훈련 타일 — 집기 / **놓을 수 있는 칸마다 스냅** / 배치 | `season/training/TrainingView` | `SELECT` / `LIGHT` / `SOFT` |
 | 훈련 타일 — 판에서 탭해 걷어냄 | `season/training/TrainingView._on_grid_input` | `LIGHT` |
 | 밴픽 메크 칸 — 들어올림 / 맞바꿈 | `ban_pick/BanPickController` | `SELECT` / `MEDIUM` |

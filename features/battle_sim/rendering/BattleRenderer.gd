@@ -371,6 +371,10 @@ func _draw() -> void:
 	_draw_hq_hp_bars()
 	_draw_turret_hp_bars()
 	_draw_pilot_groups()
+	# 정글 시작 경로 중 **마커가 앉는 칸의 번호**만 마커 위에 배지로 — 그 칸이
+	# 도착 턴인데, 다른 번호처럼
+	# 칸 한가운데에 찍으면 정글러 얼굴이 통째로 덮는다.
+	_draw_jungle_start_marker_badge()
 	# Pending-pick highlight (cyan ring/outline on the clicked-but-not-yet-
 	# confirmed target) draws AFTER pilot circles so the ring sits on top of
 	# the marker, but BEFORE per-pilot dim so it is not greyed out.
@@ -399,50 +403,140 @@ func _draw() -> void:
 var _pilot_render_layout: Dictionary = {}
 
 
-## 정글 시작 선택(개시 전) 동안 좌 / 우 정글을 **무리째** 밝힌다. 드롭 대상이
-## 칸이 아니라 무리이므로 강조도 무리 단위여야 한다 — 칸 하나만 밝히면
-## "이 칸에 정확히 놓아라"로 읽힌다.
+## 정글 시작 선택 동안 **놓을 수 없는 칸을 전부 덮는다.** 이 화면에서 고를 수
+## 있는 것은 우리 정글과 아직 아무도 안 잡은 중립 칸뿐이므로 레인 통로 · 포탑
+## 칸 · HQ · **상대 소유 정글**은 지금 판단의 대상이 아니다.
 ##
-## 캠프 아웃라인 **뒤에** 그린다(호출 순서가 곧 z-order다) — 이 강조는 잠깐
-## 떴다 사라지는 안내이고, 그 밑의 소유 색과 캠프 테두리는 그 선택의 근거라
-## 가려지면 안 된다. 그래서 채움은 옅고 테두리만 또렷하다.
-## 정글 시작 선택 동안 **정글이 아닌 칸을 전부 덮는다.** 이 화면에서 고를 수
-## 있는 것은 좌 / 우 정글 두 무리뿐이므로 레인 통로 · 포탑 칸 · HQ 는 지금
-## 판단의 대상이 아니다 — 밝은 채로 두면 어디를 보라는 화면인지가 흐려진다.
-##
-## 밝게 남는 칸의 정의를 드롭 대상(`JungleStartOverlay.cells_for`)에서 그대로
+## 밝게 남는 칸의 정의를 드롭 대상(`JungleStartOverlay.active_cells`)에서 그대로
 ## 가져오는 것이 요점이다: 놓을 수 있는 칸과 밝은 칸이 같은 목록에서 나온다.
 ##
-## 캠프 아웃라인 **뒤**, 무리 강조 **앞**에 그린다 — 그 둘은 이 선택의 근거이자
+## 캠프 아웃라인 **뒤**, 칸 강조 **앞**에 그린다 — 그 둘은 이 선택의 근거이자
 ## 안내라 딤 위에 남아야 한다.
 func _draw_jungle_pick_dim() -> void:
 	var jp: JungleStartOverlay = _bs.jungle_pick
 	if jp == null or not jp.is_active():
 		return
-	var bright: Dictionary = {}
-	for dir in [GameEnums.JungleStartDir.LEFT, GameEnums.JungleStartDir.RIGHT]:
-		for c_raw in JungleStartOverlay.cells_for(dir):
-			bright[c_raw as Vector2i] = true
-	_draw_targeting_tile_dim(bright)
+	_draw_targeting_tile_dim(jp.active_cells())
 
 
+## 정글 시작 선택 동안 놓을 수 있는 칸을 칸 단위로 밝히고, 마커가 올라온(또는
+## 고른) 칸을 금색으로 두른 뒤 **HQ 에서 그 칸까지 + 도착 뒤 6턴** 정글러가
+## 걸어갈 길을 그린다(칸마다 몇 턴째인지).
+##
+## 캠프 아웃라인 **뒤에** 그린다(호출 순서가 곧 z-order다) — 이 강조는 잠깐
+## 떴다 사라지는 안내이고, 그 밑의 소유 색과 캠프 테두리는 그 선택의 근거라
+## 가려지면 안 된다. 그래서 채움은 옅고 테두리만 또렷하다. 경로는 마커 **밑**이다 —
+## 끌고 있는 얼굴이 그 위로 지나가야 손이 무엇을 옮기는지가 읽힌다.
 func _draw_jungle_start_zones() -> void:
 	var jp: JungleStartOverlay = _bs.jungle_pick
 	if jp == null or not jp.is_active():
 		return
 	var hg: HexGrid = _bs.hex_grid
-	var hot: int = jp.highlight_dir()
-	for dir in [GameEnums.JungleStartDir.LEFT, GameEnums.JungleStartDir.RIGHT]:
-		var lit: bool = dir == hot
-		var fill: Color = JungleStartOverlay.ZONE_FILL_HOT if lit \
-				else JungleStartOverlay.ZONE_FILL
-		var line: Color = JungleStartOverlay.ZONE_LINE_HOT if lit \
-				else JungleStartOverlay.ZONE_LINE
-		var width: float = 5.0 if lit else 3.0
-		for c_raw in JungleStartOverlay.cells_for(dir):
-			var pts := hg.hex_corners(_bs.cell_center(c_raw as Vector2i))
-			draw_colored_polygon(pts, fill)
-			draw_polyline(_close_polygon(pts), line, width, true)
+	var hot: Vector2i = jp.highlight_cell()
+	for c_raw in jp.active_cells().keys():
+		var c := c_raw as Vector2i
+		if c == hot:
+			continue
+		var pts := hg.hex_corners(_bs.cell_center(c))
+		draw_colored_polygon(pts, JungleStartOverlay.ZONE_FILL)
+		draw_polyline(_close_polygon(pts), JungleStartOverlay.ZONE_LINE, 3.0, true)
+	if hot == JungleStartOverlay.NO_CELL:
+		return
+	# 고른 칸은 맨 나중에 — 이웃 칸의 초록 테두리가 금색 변을 덮지 않게.
+	var hot_pts := hg.hex_corners(_bs.cell_center(hot))
+	draw_colored_polygon(hot_pts, JungleStartOverlay.ZONE_FILL_HOT)
+	draw_polyline(_close_polygon(hot_pts), JungleStartOverlay.ZONE_LINE_HOT, 5.0, true)
+	_draw_jungle_start_path(jp)
+
+
+## 정글 시작 경로. **시작 칸까지는 금색, 도착한 뒤의 걸음은 하늘색**이다 — 앞은
+## 플레이어가 고른 길이고 뒤는 그 결과로 정글러가 스스로 도는 순회라, 같은 색이면
+## 어디까지가 내가 정한 것인지가 안 읽힌다.
+##
+## 턴 번호는 **그 턴이 끝나는 칸**에만 찍는다(`move_range` 2 면 지나치는 칸에 같은
+## 숫자가 두 번 찍히지 않게). 도착 뒤의 순회는 왔던 칸을 다시 지나는 일이 흔해서
+## 한 칸에 번호가 여럿일 수 있다 — 그 칸은 원을 겹치지 않고 **한 알약에 "2·7"**
+## 로 묶는다(따로 그리면 뒤 번호가 앞 번호를 덮어 2턴째가 사라진다).
+##
+## 마커가 앉는 칸(`highlight_cell`)의 번호만은 여기서 안 그리고 마커를 그린 뒤
+## `_draw_jungle_start_marker_badge` 가 얼굴 오른쪽 아래에 배지로 얹는다.
+func _draw_jungle_start_path(jp: JungleStartOverlay) -> void:
+	var steps: Array = jp.path_cells()
+	if steps.is_empty():
+		return
+	var prev: Vector2 = _bs.cell_center(jp.jungler().grid_pos)
+	for raw in steps:
+		var st: Dictionary = raw
+		var c: Vector2 = _bs.cell_center(st["cell"] as Vector2i)
+		var col: Color = JungleStartOverlay.PATH_LINE_AFTER if bool(st["after"]) \
+				else JungleStartOverlay.PATH_LINE
+		draw_line(prev, c, col, 6.0, true)
+		draw_circle(c, 3.0, col)   # 꺾이는 마디를 메운다 — 두 선분의 끝이 각지게 벌어진다
+		prev = c
+	var labels: Dictionary = _jungle_path_labels(steps)
+	var hot: Vector2i = jp.highlight_cell()
+	for cell_raw in labels.keys():
+		if cell_raw == hot:
+			continue
+		_draw_jungle_path_pill(_bs.cell_center(cell_raw as Vector2i), labels[cell_raw])
+
+
+## 경로를 칸 → 그 칸의 방문들(`{turn, after}`, 방문 순서대로)로 묶는다.
+## 턴이 끝나는 칸만 남긴다(`move_range` 2 면 지나치는 칸에는 번호가 없다).
+func _jungle_path_labels(steps: Array) -> Dictionary:
+	var labels: Dictionary = {}
+	for i in steps.size():
+		var st: Dictionary = steps[i]
+		var last_of_turn: bool = i == steps.size() - 1 \
+				or int((steps[i + 1] as Dictionary)["turn"]) != int(st["turn"])
+		if not last_of_turn:
+			continue
+		var cell := st["cell"] as Vector2i
+		if not labels.has(cell):
+			labels[cell] = []
+		(labels[cell] as Array).append(st)
+	return labels
+
+
+func _draw_jungle_start_marker_badge() -> void:
+	var jp: JungleStartOverlay = _bs.jungle_pick
+	if jp == null or not jp.is_active():
+		return
+	var hot: Vector2i = jp.highlight_cell()
+	if hot == JungleStartOverlay.NO_CELL:
+		return
+	var labels: Dictionary = _jungle_path_labels(jp.path_cells())
+	if not labels.has(hot):
+		return
+	var rad: float = pilot_marker_radius(jp.jungler())
+	var at: Vector2 = jp.marker_pos(_bs.cell_center(hot)) + Vector2(rad, rad) * 0.78
+	_draw_jungle_path_pill(at, labels[hot])
+
+
+## 턴 번호 알약 하나. 한 칸에 방문이 여럿이면 "2·7" 로 묶고, 테두리 색은 **첫
+## 방문**을 따른다(시작 칸까지의 길이면 금색, 순회에서 처음 밟으면 하늘색).
+func _draw_jungle_path_pill(c: Vector2, visits: Array) -> void:
+	var font: Font = ThemeDB.fallback_font
+	var r: float = 17.0 * HexGrid.DISPLAY_SCALE
+	var fsz: int = int(20.0 * HexGrid.DISPLAY_SCALE)
+	var parts: PackedStringArray = []
+	for v in visits:
+		parts.append(str(int((v as Dictionary)["turn"])))
+	var txt: String = "·".join(parts)
+	var ring: Color = JungleStartOverlay.PATH_LINE_AFTER \
+			if bool((visits[0] as Dictionary)["after"]) else JungleStartOverlay.PATH_LINE
+	var tw: float = font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz).x
+	var half_w: float = maxf(r, tw * 0.5 + r * 0.55)
+	var rect := Rect2(c.x - half_w, c.y - r, half_w * 2.0, r * 2.0)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = JungleStartOverlay.PATH_DOT
+	sb.border_color = ring
+	sb.set_border_width_all(3)
+	sb.set_corner_radius_all(int(r))
+	sb.anti_aliasing = true
+	draw_style_box(sb, rect)
+	draw_string(font, c + Vector2(-tw * 0.5, fsz * 0.36), txt,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, fsz, JungleStartOverlay.PATH_TEXT)
 
 
 # Captured jungle/neutral tiles use saturated team-coloured atlas tiles. We
@@ -1272,6 +1366,13 @@ func _draw_pilot_cell(_cell: Vector2i, pilots: Array) -> void:
 		# 끝점은 **글라이드 중인 타일 중심**이다 — 초상이 실제로 미끄러지므로
 		# 꼬리도 같은 박자로 따라간다. 링이 그대로면 이동 내내 길이가 한 픽셀도
 		# 변하지 않고, 바깥 링으로 밀려날 때만 도착 후에 늘어난다(`_eval_glide`).
+		# 정글 시작 선택 동안의 아군 정글러는 **끌리는 물건**이다 — 자리는
+		# 오버레이가 정하고(손가락 밑 / 고른 칸 / HQ), 가리킬 타일이 아직 없으니
+		# 말풍선 꼬리도 없다.
+		var jp: JungleStartOverlay = _bs.jungle_pick
+		if jp != null and jp.is_active() and pilot == jp.jungler():
+			_draw_pilot_circle(pilot, jp.marker_pos(pos), radius, marker_color, alpha)
+			continue
 		_draw_arrow_to_tile(pos, _marker_center(pilot),
 				radius, marker_color, alpha, _pilot_emphasis_scale(pilot))
 		_draw_pilot_circle(pilot, pos, radius, marker_color, alpha)

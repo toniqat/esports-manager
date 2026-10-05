@@ -36,6 +36,10 @@ var waypoint_idx: int     = 0
 # 비운다.
 var move_range: int       = 1                # cells advanced per minute
 var jungle_start_pref: int = -1              # GameEnums.JungleStartDir or -1 (none)
+# 정글 시작 칸 — 개시 전 `JungleStartOverlay` 에서 정글러를 끌어다 놓은 타일.
+# 도달할 때까지 정글러의 **첫 목표**이고(`SimulationCore._jungle_goal_for`),
+# 도달하거나 그 칸이 상대 것이 되면 (-1,-1) 로 비워진다.
+var jungle_start_cell: Vector2i = Vector2i(-1, -1)
 # Sticky roam destination for junglers, (-1,-1) = none yet. Held across turns by
 # SimulationCore._jungle_goal_for so the roam target cannot flip mid-route.
 var jungle_roam_target: Vector2i = Vector2i(-1, -1)

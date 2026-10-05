@@ -45,7 +45,7 @@ And accesses shared state via `_bs.pilots`, `_bs.turn_count`, etc.
 | BattleRenderer | Node2D | `rendering/BattleRenderer.gd` | HQ/turret HP bars + per-cell pilot rendering |
 | CardPhaseManager | Node | `card_phase/CardPhaseManager.gd` | 작전 단계 turn flow, deck, fanned hand layout, phase-end gating |
 | GambitPhaseManager | Node | `gambit/GambitPhaseManager.gd` | 개시 전 단계 — 역할 고정 레인 배정 + 전장 세우기(`prepare_field`) + **정글 시작 오버레이** + 개시(`begin_battle`). `gambit/README.md` 참조 |
-| JungleStartOverlay | Node | `gambit/JungleStartOverlay.gd` | **정글 시작 방향** — 비워진 손패 자리의 정글러 원형 초상화를 좌 / 우 정글 무리로 끌어다 놓고 "전투 시작"으로 확정한다. `match_ctx.active` 일 때만 열린다. Lazily added by `GambitPhaseManager`. |
+| JungleStartOverlay | Node | `gambit/JungleStartOverlay.gd` | **정글 시작 칸** — 전장에 서 있는 아군 정글러 마커(꼬리 없이)를 직접 끌어다 우리 정글 / 중립 칸 하나에 놓고(상대 정글은 비활성, HQ→그 칸 + 도착 뒤 6턴 경로를 턴 번호와 함께 표시 — `SimulationCore.predict_jungle_path`) "전투 시작"으로 확정. 그 칸이 정글러의 첫 목표(`PilotData.jungle_start_cell`)가 된다. `match_ctx.active` 일 때만 열린다. Lazily added by `GambitPhaseManager`. |
 | EngagePhaseManager | Node | `engage/EngagePhaseManager.gd` | 전투 개시(engage) modal — **라운드 턴제 사이드뷰 벨트 교전** (`engage/TurnEngageSim.gd` 헤드리스 시뮬 + `engage/EngageArena.gd` 렌더러) triggered by `engage:N` / `duel` cards. Lazily added in `_ready()`. |
 | HudBuilder     | Node | `ui/HudBuilder.gd`         | HUD construction; 전략 포인트 도넛 (`ui/CostDonut.gd`), **양 팀 파일럿 스트립** (`ui/PilotStrip.gd`, 상단 적 / 하단 아군), 우측 상단 **킬로그** (`ui/KillFeed.gd`), 적 스트립 양옆 **오브젝트 시계** (`ui/ObjectiveTimer.gd`) |
 | ObjectiveSystem | Node | `objective/ObjectiveSystem.gd` | **오브젝트(전령 / 용)** — 좌우 중립 칸에서 정해진 턴마다 열리는 교전 사건. 시계 · 참여 결정 · 정산. 결정 창과 무대는 교전 모듈의 VS 화면과 아레나를 빌려 쓴다. Lazily added in `_ready()` **after** config load. |
@@ -584,7 +584,7 @@ Each child module has `@onready var _bs: BattleSim = get_parent() as BattleSim` 
 | BattleRenderer | `rendering/BattleRenderer.gd` | All `_draw()` logic (extends Node2D) |
 | CardPhaseManager | `card_phase/CardPhaseManager.gd` | Card turn flow, deck, hand, card effects |
 | GambitPhaseManager | `gambit/GambitPhaseManager.gd` | 개시 전 단계 — 역할 고정 레인 배정 + 전장 세우기(`prepare_field`) + 정글 시작 오버레이 + 개시(`begin_battle`) |
-| JungleStartOverlay | `gambit/JungleStartOverlay.gd` | **정글 시작 방향** — 비워진 손패 자리의 정글러 원형 초상화를 좌 / 우 정글 무리로 끌어다 놓고 "전투 시작"으로 확정. `match_ctx.active` 일 때만 열린다 |
+| JungleStartOverlay | `gambit/JungleStartOverlay.gd` | **정글 시작 칸** — 전장에 서 있는 아군 정글러 마커(꼬리 없이)를 직접 끌어다 우리 정글 / 중립 칸 하나에 놓고(상대 정글은 비활성, HQ→그 칸 + 도착 뒤 6턴 경로를 턴 번호와 함께 표시 — `SimulationCore.predict_jungle_path`) "전투 시작"으로 확정. 그 칸이 정글러의 첫 목표(`PilotData.jungle_start_cell`)가 된다. `match_ctx.active` 일 때만 열린다 |
 | ObjectiveSystem | `objective/ObjectiveSystem.gd` | 오브젝트(전령 / 용) — 좌우 중립 칸의 시계 · 참여 결정 · 정산. 결정 창과 무대는 교전 모듈의 VS 화면과 아레나를 빌려 쓴다 |
 | ObjectiveRewardFx | `objective/ObjectiveRewardFx.gd` | 오브젝트 **보상 획득 연출** — 보상 카드를 화면 한가운데에 펼쳤다가 들어갈 자리(덱 뭉치 / 손패 왼쪽 끝 / 상대 손패)로 날려 보낸다. `_grant_reward` 가 **지급 직전에** await 한다 |
 | MechSkillSystem | `mech/MechSkillSystem.gd` | 메크 스킬 — 배정된 **기체**에 붙는 패시브 15종과 그 기체 카드들이 남기는 지속 상태(취약 · 반응 장갑 · 목표 · 추적 · 현상금 …). 계산은 원래 하던 자리가 하고 이 모듈은 질의 함수만 내보낸다 |

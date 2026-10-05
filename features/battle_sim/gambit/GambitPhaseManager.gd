@@ -87,6 +87,8 @@ func _on_jungle_start_pressed() -> void:
 	var dir: int = _bs.jungle_pick.commit()
 	# `match_ctx` 에도 적어 둔다 — 이 값을 읽는 자리가 스폰(이미 지났다) 말고도
 	# 있고, 무엇보다 "이번 경기에 무엇을 골랐나"의 답이 한 군데에만 있어야 한다.
+	# 고른 **칸** 자체는 정글러(`PilotData.jungle_start_cell`)가 들고 간다 —
+	# 그 칸이 첫 목표이고, 방향은 그 칸이 속한 쪽 정글이다.
 	_bs.gm.match_ctx["jungle_start_dir"] = dir
 	begin_battle()
 

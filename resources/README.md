@@ -78,7 +78,8 @@ static func role_seat(role: int) -> int   # 역할 → 화면 자리 0..4
 
 In-battle pilot state: role, hp/max_hp, atk, team, grid_pos, lane, waypoint_idx,
 `move_range` (cells per minute), `jungle_start_pref` (GameEnums.JungleStartDir
-or -1), plus **두 벌의 명중 스탯**과 **두 개의 성장 계수 배율**, 전부 PlayerData 에서
+or -1), `jungle_start_cell` (개시 전에 고른 정글 시작 칸 — 도달할 때까지 정글러의
+첫 목표, (-1,-1) = 없음), plus **두 벌의 명중 스탯**과 **두 개의 성장 계수 배율**, 전부 PlayerData 에서
 온다: `hit` / `evasion` ← `field_hit` / `field_eva` (전장), `engage_hit` /
 `engage_eva` ← 같은 이름 (교전 무대), `atk_growth_mult` / `hp_growth_mult` ←
 `PlayerData.growth_mult(atk_growth / hp_growth)`.
@@ -562,6 +563,16 @@ Exia / Mahiroo / Marasai 세 장의 무기 끝 44~64px 뿐이다.
 데스크톱에서 기기 인셋을 흉내 내려면 환경 변수 `ESM_SAFE_AREA="좌,위,우,아래"`
 또는 사용자 인자 `-- --safe-area=0,162,0,90`. 배치 규약 세 가지와 기기별
 수치표는 **`docs/mobile_safe_area.md`**.
+
+### SceneFade.gd
+`class_name SceneFade`, extends `RefCounted` (static only). **암전 → 가짜 로딩 →
+밝아짐** 전환 — 한 장면이 넘어갔다는 연출. `play(tree, on_covered)` 는 화면이 다
+가려진 순간 `on_covered` 를 한 번 부르고, `change_scene(tree, path)` 는 그 자리에서
+`change_scene_to_file` 한다. 덮개는 **SceneTree root 의 `CanvasLayer`(layer 100)**
+라 씬 전환을 건너 살아남고 트윈도 그 레이어가 쥔다. 타이밍은 `FADE_OUT_SEC` 0.30 /
+`LOAD_SEC` 0.50 / `FADE_IN_SEC` 0.35. 쓰는 자리: 드래프트 "게임 시작"
+(`TeamDraftView._play_launch_transition`), 밴픽 확정 → 전장
+(`MatchFlow._launch_battle`).
 
 ### DragScroll.gd
 `class_name DragScroll`, extends `Node`. **손가락 / 마우스로 끌어 `ScrollContainer`

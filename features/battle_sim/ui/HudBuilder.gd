@@ -48,11 +48,16 @@ static func bottom_offset() -> float:
 #
 # 132 로 줄면서 peek 이 82 로, 적 도넛 아래끝이 349 → 311 로 함께 올라왔다 —
 # peek 이 드러나는 양(49px)은 그대로이고 전장 상단(369)까지의 여유만
-# 20 → 58px 로 늘었다. 그 뒤 적 스트립이 20% 커지며 **148** 이 됐고(띠
-# 46..143 + 5), 사슬도 같은 16px 씩 내려갔다 — peek 98, 적 도넛 아래끝 327,
-# 킬로그 156. 전장 상단까지의 여유는 42px 로 아직 넉넉하다.
+# 20 → 58px 로 늘었다. 그 뒤 적 스트립이 20% 커지며 **148** 이 됐다(띠
+# 46..143 + 5).
+#
+# **원형 초상 스트립으로 바뀌며 적 스트립 높이가 2배(100 → 200)가 되어 248** 이
+# 됐고 사슬이 100px 씩 내려갔다 — peek 198, 적 도넛 아래끝 427, 킬로그 256.
+# 도넛은 이제 전장 픽셀 상단(369)보다 아래로 내려오지만 화면 왼쪽 여백(x 9..121)
+# 에 앉고, 육각 전장은 위쪽 꼭짓점이 가운데에만 있어 그 자리와 겹치지 않는다
+# (실측 확인).
 const TOP_PANEL_Y      := 0.0
-const TOP_PANEL_H      := 148.0
+const TOP_PANEL_H      := 248.0
 ## 경과 시계 한 줄. **팀 합산 점수는 이 줄에서 삭제됐다** — `_build_top_panel`
 ## 주석 참조.
 const HEADER_ROW_Y     := 4.0
@@ -68,6 +73,9 @@ const TIME_FONT        := 18
 ## 우 용 — 지도의 좌우와 같은 배치라 자리가 곧 이름이다). 성장치는 그대로 두
 ## 자릿수까지 읽히므로 "내 것과 나란히 비교한다"는 원래 목적은 살아 있다.
 ##
+## **지금은 원형 초상(`PilotStrip`)이라 높이가 200**(예전 eye 밴드 시절 100 의
+## 2배)이고, 원 지름은 칸 폭 161 과 높이 중 빡빡한 쪽에서 나온다(≈146).
+##
 ## 처음 줄일 때는 60%(618×76, 초상화 108×45)였는데 얼굴이 그 크기에서 누가
 ## 누구인지 읽히는 하한을 밑돌았다. 초상화 폭은 칸 폭에서 유도되므로
 ## (`PilotStrip.setup`) 키우는 방법은 스트립 폭을 미는 것뿐이라 618 → 672 로
@@ -78,13 +86,12 @@ const TIME_FONT        := 18
 ## 아이콘과 숫자 사이 여백을 줄이고 "턴" 글자를 지워 그 폭에 맞췄다
 ## (`ObjectiveTimer`). 얼굴이 먼저 읽혀야 하는 패널이므로 자리를 다툴 때
 ## 물러나는 쪽은 언제나 시계다.
-const ENEMY_STRIP_RECT := Rect2(137.0, 46.0, 806.0, 100.0)
+const ENEMY_STRIP_RECT := Rect2(137.0, 46.0, 806.0, 200.0)
 ## **성장치 폰트는 아군과 같다**(`PLAYER_SCORE_FONT`). 초상화는 여전히 아군보다
 ## 작지만 그 숫자는 내 것과 **나란히 견주라고** 있는 값이라, 크기가 다르면 같은
 ## 줄에서 읽는 두 수의 무게가 달라진다 — 얼굴은 작아도 되고 숫자는 안 된다.
 ## 예전 14 는 스트립을 60% 로 줄이던 시절에 칸 폭에서 유도한 값이었다.
 const ENEMY_SCORE_FONT := 20  # = PLAYER_SCORE_FONT
-const ENEMY_HP_H       := 7.0
 
 ## 적 스트립 뒤판이 초상화 띠 바깥으로 나가는 여백. **아군 뒤판과 같은 규칙**
 ## (`PLAYER_BG_PAD`)이지만 아래쪽만은 `TOP_PANEL_H` 에 맞춰 잘린다 — 그 아래
@@ -93,13 +100,14 @@ const ENEMY_BG_PAD     := 10.0
 
 ## 오브젝트 시계 두 칸 — 스트립 양옆의 남은 여백.
 ##
-## **세로는 적 초상화 띠와 정확히 같다**(y 46, 높이 60 ≈ `_portrait_h`). 한때는
+## **세로는 적 초상 원의 중심에 맞춘다**(y 126, 높이 60 — 원 중심 y ≈ 156).
+## 예전 eye 밴드 시절에는 초상화 띠와 정확히 같았다(y 46, 높이 60). 한때는
 ## 스트립 띠 전체(122px)를 썼는데 — 아이콘이 클수록 곁눈으로 읽힌다는 이유였다 —
 ## 그러면 시계가 초상화보다 위아래로 튀어나와 패널 안에서 가장 큰 물체가 되고,
 ## 정작 얼굴 쪽으로 가야 할 시선을 먼저 잡아챈다. 초상화와 밑단·윗단을 맞추면
 ## 셋(좌 시계 · 얼굴 다섯 · 우 시계)이 한 줄로 읽힌다.
 const OBJ_TIMER_W  := 101.0
-const OBJ_TIMER_Y  := 46.0
+const OBJ_TIMER_Y  := 126.0
 const OBJ_TIMER_H  := 60.0
 ## 좌우 여백은 대칭이므로 왼쪽 하나만 상수로 두고 오른쪽은 뷰포트 가로에서
 ## 역산한다 — 예전의 `OBJ_TIMER_RIGHT_X = 953`(= 1080 − 101 − 26)은 가로가
@@ -109,14 +117,18 @@ const OBJ_TIMER_LEFT_X  := 26.0
 # ── 하단 아군 스트립 (핸드 행 아래) ───────────────────────────────────────────
 # 핸드 행은 y 1500..1720, 그 아래가 통째로 비어 있었다(예전 하단 코스트 바 자리).
 #
-# y 1766 은 카드 밑단에서 계산해 나온 값이다. 부채꼴의 **양 끝 카드는 가운데보다
+# **지금은 y 1644, 높이 244** — 원형 초상으로 바뀌며 높이가 2배(122 → 244)가
+# 됐고, 바닥(1888)은 그대로 두고 위로 자랐다. 그만큼 핸드 행
+# (`BattleSim.BS_HAND_CENTER.y`)도 1440 → **1370** 으로 70px 올렸다 — 최악
+# 카드 밑단 ≈ 1633 이 뒤판 위끝(1634) 바로 위에 선다(아래 옛 계산과 같은 규칙).
+#
+# (옛 값) y 1766 은 카드 밑단에서 계산해 나온 값이다. 부채꼴의 **양 끝 카드는 가운데보다
 # 21.4px 아래로 처지고**(12장 기준), 호버/선택 시 `Card.HOVER_SCALE`(1.2)로
 # 커지므로 최악의 경우 카드 밑단이 y ≈ 1763 까지 내려온다. 1724 에 두었더니
 # 카드가 초상화 윗부분을 덮었다(실측 확인). 아이폰 홈 바를 위해 바닥 ~32px 도
 # 남긴다 — 위아래가 다 막힌 122px 안에 초상화 · 체력 바 · 성장치가 들어간다.
-const PLAYER_STRIP_RECT := Rect2(25.0, 1766.0, 1030.0, 122.0)
+const PLAYER_STRIP_RECT := Rect2(25.0, 1644.0, 1030.0, 244.0)
 const PLAYER_SCORE_FONT := 20
-const PLAYER_HP_H       := 10.0
 ## 아군 스트립 뒤판 — 스트립 영역을 `PLAYER_BG_PAD` 만큼 사방으로 넓힌 짙은
 ## 패널 한 장. 적 스트립은 상단 패널 위에 앉아 있어 처음부터 받침이 있었지만,
 ## 아군 스트립은 맨 화면 위에 떠 있어 얼굴·체력 바·성장치 세 줄이 배경 없이
@@ -148,7 +160,7 @@ const AI_HAND_SCALE  := 0.45
 ## Top of the MIDDLE card; the rest ride higher. Tied to TOP_PANEL_H — the panel
 ## must hide the card's top 50 px so only the bottom ~49 px peeks out, so this is
 ## `TOP_PANEL_H − 50`. Move the panel and this moves with it.
-const AI_HAND_TOP_Y  := 98.0
+const AI_HAND_TOP_Y  := 198.0
 ## Circle radius (px) the card centres ride. Larger = flatter arc.
 const AI_HAND_FAN_RADIUS := 620.0
 ## Angular step (deg) per card. Sets the horizontal overlap via R·sin(step).
@@ -401,7 +413,7 @@ func _build_top_panel() -> void:
 	_enemy_strip.name = "EnemyPilotStrip"
 	_bs.canvas.add_child(_enemy_strip)
 	_enemy_strip.setup(_bs, 1, strip_rect, true,
-			ENEMY_SCORE_FONT, ENEMY_HP_H)
+			ENEMY_SCORE_FONT)
 	_enemy_strip.pilot_pressed.connect(_on_pilot_strip_pressed)
 
 	# 오브젝트 등장 시계 — 스트립 **바깥** 좌우. 전령이 왼쪽 · 용이 오른쪽인 것은
@@ -464,7 +476,7 @@ func _build_player_strip() -> void:
 	_player_strip.name = "PlayerPilotStrip"
 	_bs.canvas.add_child(_player_strip)
 	_player_strip.setup(_bs, 0, strip_rect, true,
-			PLAYER_SCORE_FONT, PLAYER_HP_H)
+			PLAYER_SCORE_FONT)
 	_player_strip.pilot_pressed.connect(_on_pilot_strip_pressed)
 
 

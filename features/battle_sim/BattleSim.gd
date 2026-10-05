@@ -11,7 +11,12 @@ const AUTO_PLAY_INTERVAL := 0.5
 # Card phase UI constants (not DB scope)
 # Hand layout: fixed-width flat hand, centred on the viewport. The X anchor is
 # computed in _ready so the layout follows the actual viewport width. Cards
-# span ~y=1440..1660 at-rest (CARD_H=220).
+# span ~y=1370..1590 at-rest (CARD_H=220).
+#
+# **지금 값은 1370** — 아군 파일럿 스트립이 원형 초상으로 바뀌며 높이가 2배
+# (122 → 244, 위끝 1766 → 1644)가 되어 핸드 행을 70px 올렸다. 카드 윗단과
+# 전장 아랫단(1351) 사이 간격은 그만큼 줄었다(~90 → ~19px). 아래 1440 문단은
+# 그 전의 계산이다.
 #
 # y 1440 은 전장 축소(`HexGrid.DISPLAY_SCALE` 1.5 → 1.35)를 따라온 값이다:
 # 전장 하단이 1406 → 1351 로 55px 올라갔으므로 핸드도 60px 올려 카드 윗단과
@@ -22,7 +27,9 @@ const AUTO_PLAY_INTERVAL := 0.5
 # 에서 `HudBuilder.bottom_offset()` 만큼 밀린다 — 화면이 9:16 보다 길면 아래로,
 # 홈 인디케이터가 1920 안쪽을 파고들면 위로. 아군 스트립도 같은 스칼라를 타므로
 # 핸드 ↔ 스트립 간격은 어느 기기에서나 그대로다.
-var BS_HAND_CENTER: Vector2 = Vector2(540.0, 1440.0)
+var BS_HAND_CENTER: Vector2 = Vector2(540.0, 1370.0)
+## 화면 세로 가운데에서 전장을 위로 올리는 양(px). `_ready` 참조.
+const FIELD_LIFT := 140.0
 # Side margin (px) reserved for the Deck / Discard count indicators on the
 # left and right of the hand row. Hand width = viewport_w − 2 × this.
 const BS_HAND_AREA_MARGIN := 130.0
@@ -467,9 +474,12 @@ func _ready() -> void:
 	_field_loader.load_field(tiles_layer, _building_layer, _wp_layer)
 	var _vp_size := get_viewport().get_visible_rect().size
 	var _bf_pos := hex_grid.init_from_tilemap(tiles_layer, _vp_size)
-	_bf_pos.y -= 100.0
+	# 140 = 예전 100 + 40: 핸드 행이 1370 으로 올라오며(아군 스트립 2배) 그 위의
+	# 확인/취소 버튼 행(1304..1360)이 전장 아랫단에 닿지 않게 전장도 40px 올렸다.
+	# 위쪽은 상대 핸드 peek 아래끝(≈297)까지 ~39px 여유가 남는다.
+	_bf_pos.y -= FIELD_LIFT
 	$BattleField.position = _bf_pos
-	hex_grid.grid_top   -= 100.0  # keep hex_to_screen() aligned with the shifted TileMap
+	hex_grid.grid_top   -= FIELD_LIFT  # keep hex_to_screen() aligned with the shifted TileMap
 	_populate_from_data_loader()
 	player_hq_hp = HQ_MAX_HP
 	enemy_hq_hp  = HQ_MAX_HP

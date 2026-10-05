@@ -43,10 +43,10 @@ extends Control
 ## 예전에는 `FEED_RIGHT = 1058.0` 절대 좌표였는데, 가로가 1080 보다 넓어질 수
 ## 있게 되면서(태블릿) 가장자리에서 역산하는 쪽으로 바꿨다.
 const FEED_EDGE_PAD: float = 22.0
-## 피드 위쪽 끝 — 상단 패널(`HudBuilder.TOP_PANEL_H` 148) 밑단에서 8px 아래.
+## 피드 위쪽 끝 — 상단 패널(`HudBuilder.TOP_PANEL_H` 248) 밑단에서 8px 아래.
 ## 패널 높이가 바뀌면 이 값도 함께 옮긴다(패널이 168 이던 시절엔 176, 132 이던
 ## 시절엔 140 이었다).
-const FEED_TOP: float   = 156.0
+const FEED_TOP: float   = 256.0
 ## 줄 하나의 높이 = 초상화 높이.
 const ROW_H: float      = 40.0
 ## 줄 사이 간격을 포함한 세로 피치.

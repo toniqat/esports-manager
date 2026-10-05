@@ -21,6 +21,10 @@ extends RefCounted
 #                        밴드 폭이 얼굴 높이 ×1.32 로 고정이라 **길이를 늘려도
 #                        화면에서의 얼굴 크기는 그대로**다 — 몸이 더 보일 뿐.
 #   full/N_full.png    — 전신 아트 (가변 폭 × 1024) — 파일럿 상세 패널
+#   strip/N_strip.png  — **머리~어깨 흉상** (256×320, 투명 배경) — 파일럿
+#                        스트립의 원형 초상. 원 마스킹은 PNG 가 아니라
+#                        `shaders/pilot_bust_mask.gdshader` 가 한다.
+#                        `make_strip_crops.py` 가 eye 와 같은 템플릿 매칭으로 생성.
 #   ribbon/N_ribbon.png — **손패 카드 우측 상단 직각삼각형 리본** (120×136) —
 #                        삼각형 · 둥근 모서리 · 그림자까지 구워 둔 컷.
 #                        `make_ribbon_crops.py` 가 eye 와 같은 템플릿 매칭으로 생성.
@@ -41,13 +45,15 @@ const EYE_DIR: String    = "res://resources/images/pilot/eye/"
 const TALL_DIR: String   = "res://resources/images/pilot/tall/"
 const FULL_DIR: String   = "res://resources/images/pilot/full/"
 const RIBBON_DIR: String = "res://resources/images/pilot/ribbon/"
+const STRIP_DIR: String  = "res://resources/images/pilot/strip/"
 
 # ─── 모브 파일럿 ─────────────────────────────────────────────────────────────
 # 스킬을 받지 못한 15명은 **실루엣 컷**으로 나온다 — 같은 파일명이 `mob/` 아래에
-# 한 벌 더 있고(`resources/images/pilot/mob/{faces,circle,eye,tall,full}/`),
+# 한 벌 더 있고(`resources/images/pilot/mob/{faces,circle,eye,tall,full,strip}/`),
 # 아래 조회 함수가 id 를 보고 그쪽으로 갈아탄다. 이름표가 아니라 그림이
 # "이 선수는 이름 없는 선수다"를 말하게 하려는 것이다.
 #
+# (`strip` 은 `make_strip_crops.py` 가 mob/full 의 같은 자리를 잘라 만든다.)
 # 다섯 컷 모두 알파는 그대로 둔 채 RGB 를 단색으로 덮는다 — 얼굴이 조금이라도
 # 읽히면 실루엣이 아니다(`make_mob_silhouettes.py`). 다만 `faces` / `circle` /
 # `eye` 는 얼굴이 프레임을 꽉 채운 크롭이라 알파가 사실상 통짜 사각형이고, 그
@@ -136,6 +142,18 @@ static func bust_for(pilot_id: int) -> Texture2D:
 	atlas.atlas = src
 	atlas.region = BUST_REGION
 	return atlas
+
+
+## 파일럿 스트립 원형 초상용 흉상 (256×320). 셰이더가 원 아래 절반을 원으로,
+## 위쪽을 원 폭으로 잘라 머리가 원 위로 튀어나오게 한다. 칸 비율은 반드시
+## `STRIP_ASPECT` 여야 한다 — 다르면 얼굴이 찌그러진다.
+const STRIP_ASPECT: float = 256.0 / 320.0
+
+
+static func strip_for(pilot_id: int) -> Texture2D:
+	if not has_image(pilot_id):
+		return null
+	return load(_dir_for(pilot_id, "strip", STRIP_DIR) + "%d_strip.png" % (pilot_id + 1)) as Texture2D
 
 
 ## 손패 카드 우측 상단 리본 (120×136, 카드 단위 60×68 의 2배). `Card` 가

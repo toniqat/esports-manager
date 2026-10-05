@@ -273,14 +273,15 @@ under `BattleField/BuildingLayer` and `BattleField/WaypointLayer`.
 
 ### PilotImages.gd
 `class_name PilotImages`, extends `RefCounted`. Static lookup for the pilot
-portraits under `resources/images/pilot/{faces,circle,eye,tall,full,ribbon}/`, plus the
+portraits under `resources/images/pilot/{faces,circle,eye,tall,full,ribbon,strip}/`, plus the
 **모브 실루엣** set that mirrors them under `pilot/mob/`.
 
 | 함수 | 파일 | 크기 | 소비자 |
 |---|---|---|---|
 | `face_for` | `faces/N_rect.png` | 256² | 드래프트 격자 썸네일 (`season/draft/PilotThumb.gd`) |
 | `circle_for` | `circle/N_circle.png` | 256² 원형 | 전장 마커 · 교전 무대 초상화 |
-| `eye_for` | `eye/N_eye.png` | **480×200** | 파일럿 스트립 (`ui/PilotStrip.gd`) |
+| `eye_for` | `eye/N_eye.png` | **480×200** | 킬로그 · 훈련 격자 · 밴픽 (전장 파일럿 스트립은 이제 `strip_for`) |
+| `strip_for` | `strip/N_strip.png` | **256×320** (`STRIP_ASPECT` 0.8, 투명 배경) | 전장 파일럿 스트립 원형 초상 (`ui/PilotStrip.gd`) — `make_strip_crops.py` 가 굽고 원 마스킹은 `shaders/pilot_bust_mask.gdshader` |
 | `tall_for` | `tall/N_tall.png` | **210×700** | 교전 아레나 하단 스트립 (`engage/EngageArena.gd`) |
 | `bust_for` | `tall/` 의 **윗부분** `AtlasTexture` | 174×351 (`BUST_ASPECT` 0.496) | 드래프트 선택 5인 칸 · 밴픽 **배정 단계**의 아군 파일럿 칸 |
 | `full_for` | `full/N_full.png` | 가변 × 1024 | 파일럿 상세 패널 (`ui/PilotDetailPanel.gd`) |
@@ -768,6 +769,14 @@ p.assigned_mech = m
 | System | Description |
 |---|---|
 | 모브 파일럿 | **스킬 없는 15명.** 스킬이 25개뿐이라 40명을 다 채울 수 없고, 남는 15명은 이름표가 아니라 **그림**이 "이름 없는 선수"임을 말한다 — 다섯 컷(circle / eye / faces / tall / full)이 통째로 실루엣 한 벌 더 있고(`resources/images/pilot/mob/`), `GameManager.load_match_data()` 가 `PilotImages.set_mob_ids()` 로 목록을 한 번 심으면 그 뒤의 모든 초상화 조회가 자동으로 갈린다. 실루엣은 다섯 컷 모두 **알파는 그대로 둔 채 RGB 를 단색으로 덮는다** — 어두운 초상화는 실루엣이 아니다(밝기만 누르던 예전 방식은 색만 빠질 뿐 이목구비가 그대로 읽혔다). 다만 `faces` / `circle` / `eye` 는 얼굴이 프레임을 꽉 채운 크롭이라(실측: eye 밴드의 97.7% 가 불투명) 그 자리에서 칠하면 검은 원 하나 · 검은 막대 하나가 되므로, 셋만 **`full` 아트에서 머리~어깨를 다시 잘라** 만든다 — full 의 알파가 곧 인물 윤곽이라 배경이 투명하게 남아 머리 모양과 어깨선이 실루엣으로 읽힌다(얼굴 사각형은 `make_eye_crops.py` 와 **같은 템플릿 매칭**으로 찾으므로 인물 배율이 다른 컷과 어긋나지 않는다). 대신 모브 칸만 프레이밍이 달라 네임드보다 인물이 작게 잡힌다. **`circle` 만 불투명한 원 바탕을 구워 넣는다** — 전장 마커는 초상 뒤에 흰 원을 깔고 교전 아레나는 아무것도 안 깔아서, 투명한 채로 두면 같은 그림이 한쪽에선 흰 배지 · 다른 쪽에선 배경이 비치는 구멍이 된다. 스탯은 네임드보다 **10% 낮고** 그 하향은 런타임 계수가 아니라 **`players.csv` 값 자체**에 반영돼 있다 — 나중에 난이도 배율을 곱할 자리를 비워 둔 것이다. **시즌 드래프트 격자에서 빠지지만**(`TeamDraft.get_pool_grid`) 팀에는 그대로 앉아 있어 적으로는 여전히 만난다. 네임드 25명은 **8팀에 고르게 흩어져 있다** — 팀 0(플레이어 시작 팀)이 5명, 나머지 20명이 7개 AI 팀에 2~3명씩. 팀 0 이 전원 네임드인 것은 드래프트의 맞교환이 네임드끼리만 일어나야 팀별 네임드 수가 흔들리지 않기 때문이다. |
+
+### 파일럿 스트립 원형 초상 쉐이더 (`shaders/pilot_bust_mask.gdshader`)
+`ui/PilotStrip.gd` 가 칸마다 `ColorRect` 에 물린다(TextureRect 가 아닌 이유: 이미지가
+없어도 원은 그려야 한다). 칸 아래쪽에 팀색 원(지름 = 칸 폭)을 그리고 그 위에
+`strip/N_strip.png` 흉상을 얹되, **원 중심 아래는 원 모양으로, 위는 칸 좌우로만**
+잘라 머리가 원 위로 튀어나오게 한다. 원 테두리 · 스킬 준비도 딤(`fill` / `dim`) ·
+쓰러짐 틴트(`tint`)도 같은 쉐이더가 한다 — 겹쳐 얹는 사각형은 원 바깥 빈 모서리까지
+칠해 버린다. `rect_size` 유니폼은 노드 크기로 넣어야 한다(마스크를 로컬 픽셀로 잰다).
 
 ### 카드 아트 모서리 쉐이더 (`shaders/rounded_top_mask.gdshader`)
 `Card._apply_art` 가 아트 `TextureRect` 에 물린다. 위 두 모서리를 `radius` 로 깎되

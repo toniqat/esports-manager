@@ -173,7 +173,7 @@ const CELL_NAME_H: float  = 28.0
 # 팀 블록 내부 (위 블록 기준 순서 — 아래 블록은 이 순서를 뒤집는다)
 const BAN_ROW_H: float       = 44.0
 const BAN_CHIP: float        = 38.0
-## eye 크롭의 가로:세로 비 (`PilotStrip.EYE_ASPECT` 와 같은 값). 임의 높이로
+## eye 크롭의 가로:세로 비 (`eye/N_eye.png` 480×200). 임의 높이로
 ## 늘리면 얼굴이 찌그러진다.
 const EYE_ASPECT: float      = 2.4
 ## 메크 칸 높이 = 파일럿 초상화 높이 × 이 값.

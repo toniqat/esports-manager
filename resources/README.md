@@ -433,14 +433,20 @@ API 는 다섯이다 — `make_material()` / `apply(ci)` / `set_reveal(ci, v)` /
 | 함수 | 파일 | 소비자 |
 |---|---|---|
 | `art_for(card_name)` | `images/card/<이름>.png` → 아이템 아이콘 → 배경 | `Card._apply_art` (카드 앞면 아트 액자) |
-| `item_for(card_name)` | `images/ground/deadlock_items/<아이템>.png` (`ITEM_ART` 표) | 〃 (전용 아트가 없는 카드) |
+| `item_for(card_name)` | `images/ground/deadlock_items/<타입>_<아이템>.png` (`ITEM_ART` 표) | 〃 (전용 아트가 없는 카드) |
+| `type_for(card_name)` | `ITEM_ART` 값의 접두사 → `TYPE_WEAPON` / `TYPE_SPIRIT` / `TYPE_VITALITY` (`""` = 표에 없음) | `Card._apply_name_plate` (이름판 타입색 `Card.TYPE_COLORS`) |
 | `ground_for(card_name)` | `images/ground/N.png` (`GROUND_COUNT` 5장) | 〃 (`ITEM_ART` 표에도 없는 카드) |
 
 **지금 모든 카드(cards.csv 32 + mech_cards.csv 64 = 96장)는 아이템 아이콘을 단다.**
 `ITEM_ART` 는 카드 이름 → Deadlock 아이템 파일명 표이고, 효과가 비슷한 아이템을
 골랐다(예: `필중` → Sharpshooter, `보호` → Grit, `몸집 불리기` → Colossus, `캐시` →
 Golden Goose Egg; 효과 출처 https://deadlock.wiki/Items). **한 아이템은 한 카드에만**
-쓴다. 아이콘은 200×200 정사각(베이지 바탕 불투명)이라 150×178 액자에
+쓴다. **아이콘 파일명 앞에는 타입 접두사가 붙어 있다** — `wpn_` 무기 · `spt_` 스피릿 ·
+`vit_` 활력(173장 전부: 56 · 56 · 61). 분류는 https://deadlock.wiki/Items 의 Weapon /
+Spirit / Vitality 이고, 위키 목록에 안 잡힌 4장(Extended Magazine · Stalker → 무기,
+Bullet Lifesteal · Spirit Lifesteal → 활력)은 MediaWiki API 의 아이템 페이지 카테고리로
+확인했다. 새 아이콘을 넣을 때도 접두사를 붙인다 — `type_for` 가 이것만 읽는다.
+아이콘은 200×200 정사각(베이지 바탕 불투명)이라 160×184 아트 칸에
 `STRETCH_KEEP_ASPECT_COVERED` 로 좌우가 조금 잘린다 — 문양은 가운데에 있어 안 다친다.
 카드를 더하거나 이름을 바꾸면 표에도 넣는다; 빠지면 오류 없이 아래 배경 5종으로 떨어진다.
 
@@ -730,6 +736,14 @@ p.assigned_mech = m
 | System | Description |
 |---|---|
 | 모브 파일럿 | **스킬 없는 15명.** 스킬이 25개뿐이라 40명을 다 채울 수 없고, 남는 15명은 이름표가 아니라 **그림**이 "이름 없는 선수"임을 말한다 — 다섯 컷(circle / eye / faces / tall / full)이 통째로 실루엣 한 벌 더 있고(`resources/images/pilot/mob/`), `GameManager.load_match_data()` 가 `PilotImages.set_mob_ids()` 로 목록을 한 번 심으면 그 뒤의 모든 초상화 조회가 자동으로 갈린다. 실루엣은 다섯 컷 모두 **알파는 그대로 둔 채 RGB 를 단색으로 덮는다** — 어두운 초상화는 실루엣이 아니다(밝기만 누르던 예전 방식은 색만 빠질 뿐 이목구비가 그대로 읽혔다). 다만 `faces` / `circle` / `eye` 는 얼굴이 프레임을 꽉 채운 크롭이라(실측: eye 밴드의 97.7% 가 불투명) 그 자리에서 칠하면 검은 원 하나 · 검은 막대 하나가 되므로, 셋만 **`full` 아트에서 머리~어깨를 다시 잘라** 만든다 — full 의 알파가 곧 인물 윤곽이라 배경이 투명하게 남아 머리 모양과 어깨선이 실루엣으로 읽힌다(얼굴 사각형은 `make_eye_crops.py` 와 **같은 템플릿 매칭**으로 찾으므로 인물 배율이 다른 컷과 어긋나지 않는다). 대신 모브 칸만 프레이밍이 달라 네임드보다 인물이 작게 잡힌다. **`circle` 만 불투명한 원 바탕을 구워 넣는다** — 전장 마커는 초상 뒤에 흰 원을 깔고 교전 아레나는 아무것도 안 깔아서, 투명한 채로 두면 같은 그림이 한쪽에선 흰 배지 · 다른 쪽에선 배경이 비치는 구멍이 된다. 스탯은 네임드보다 **10% 낮고** 그 하향은 런타임 계수가 아니라 **`players.csv` 값 자체**에 반영돼 있다 — 나중에 난이도 배율을 곱할 자리를 비워 둔 것이다. **시즌 드래프트 격자에서 빠지지만**(`TeamDraft.get_pool_grid`) 팀에는 그대로 앉아 있어 적으로는 여전히 만난다. 네임드 25명은 **8팀에 고르게 흩어져 있다** — 팀 0(플레이어 시작 팀)이 5명, 나머지 20명이 7개 AI 팀에 2~3명씩. 팀 0 이 전원 네임드인 것은 드래프트의 맞교환이 네임드끼리만 일어나야 팀별 네임드 수가 흔들리지 않기 때문이다. |
+
+### 카드 아트 모서리 쉐이더 (`shaders/rounded_top_mask.gdshader`)
+`Card._apply_art` 가 아트 `TextureRect` 에 물린다. 위 두 모서리를 `radius` 로 깎되
+둥근 사각형 SDF + `fwidth` 로 덮임을 계산해 곡선이 화면 1px 에 걸쳐 흐려진다
+(안티앨리어싱 — `clip_children` 의 계단이 없다). 마스크는 UV 가 아니라 노드 로컬
+픽셀(`VERTEX`)로 재므로 `rect_size` 유니폼을 노드 크기로 넣어야 한다 —
+`STRETCH_KEEP_ASPECT_COVERED` 는 텍스처 일부 영역만 그려 UV 가 rect 를 덮지 않는다.
+아랫변은 흐리지 않는다(박스를 `radius` 만큼 아래로 늘려 계산).
 
 ### 캐릭터 실루엣 쉐이더 (지금은 쓰는 자리가 없다)
 `resources/shaders/silhouette.gdshader` + `resources/SilhouetteFx.gd` 는

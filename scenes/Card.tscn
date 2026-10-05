@@ -33,34 +33,31 @@ mouse_filter = 2
 
 [node name="ArtFrame" type="Panel" parent="CardFront"]
 layout_mode = 0
-offset_left = 5.0
-offset_top = 5.0
-offset_right = 155.0
-offset_bottom = 183.0
+offset_right = 160.0
+offset_bottom = 184.0
 mouse_filter = 2
 
 [node name="Art" type="TextureRect" parent="CardFront/ArtFrame"]
 layout_mode = 0
-offset_right = 150.0
-offset_bottom = 178.0
+offset_right = 160.0
+offset_bottom = 184.0
 expand_mode = 1
 stretch_mode = 6
 mouse_filter = 2
 
 [node name="NamePlate" type="Panel" parent="CardFront"]
 layout_mode = 0
-offset_left = 6.0
-offset_top = 186.0
-offset_right = 154.0
-offset_bottom = 214.0
+offset_top = 184.0
+offset_right = 160.0
+offset_bottom = 220.0
 mouse_filter = 2
 
 [node name="NameLabel" type="Label" parent="CardFront"]
 layout_mode = 0
-offset_left = 8.0
-offset_top = 186.0
-offset_right = 152.0
-offset_bottom = 214.0
+offset_left = 6.0
+offset_top = 184.0
+offset_right = 154.0
+offset_bottom = 220.0
 mouse_filter = 2
 text = "Card Name"
 horizontal_alignment = 1

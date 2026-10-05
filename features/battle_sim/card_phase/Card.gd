@@ -115,23 +115,36 @@ const CHARGE_BADGE_TEXT_COLOR := Color(1.0, 0.92, 0.45)
 # 8pt 로 욱여넣던 설명판은 어차피 읽으라고 있는 글씨가 아니었고, 그 자리를 아트가
 # 통째로 가져가면 카드가 **그림으로** 알아보인다.
 #
-# **아트는 카드 테두리에서 `ART_INSET` 만큼 물러나 앉는다** — 카드 모서리는
-# 둥글고 아트는 네모라, 끝까지 붙이면 둥근 모서리 위로 그림의 네모난
-# 귀퉁이가 삐져나온다. 물러나 앉히면 둥근 테두리가 그림을 액자처럼 두른다
-# (자르지 않으므로 카드마다 백버퍼를 뜨는 `clip_children` 도 필요 없다).
+# **카드에는 테두리가 없다** — 앞면은 아트와 이름판 두 판이 카드 사각형을 빈틈
+# 없이 나눠 채운다(예전의 비용색 바탕 · '낼 수 있음' 노란 테두리는 지웠다. 못 내는
+# 카드는 사용 불가 슬래브 하나로 읽힌다).
 #
-# **이름판은 카드 아랫단**에 테두리에서 좌 · 우 · 아래로 `NAME_INSET` 만큼 물러난
-# 어두운 판이다 — 비용색이 여섯 가지라 판 없이는 어느 글자색도 여섯 곳에서 다
-# 읽히지 않는다. 좌표는 전부 `scenes/Card.tscn` 과 같은 절대 좌표다.
-const ART_INSET := 5.0
-const NAME_INSET := 6.0
-const NAME_PLATE_H := 28.0
-## 이름판 윗변(186) — 아트는 그 3px 위에서 끝난다.
-const NAME_TOP := CARD_H - NAME_INSET - NAME_PLATE_H
-const ART_H := NAME_TOP - 3.0 - ART_INSET
+# **아트는 카드 끝까지 붙고 위 두 모서리만 둥글게 깎는다** — `rounded_top_mask`
+# 쉐이더가 SDF 로 덮임을 계산해 곡선이 화면 1px 에 걸쳐 흐려진다(안티앨리어싱).
+# `clip_children` 은 카드마다 백버퍼를 뜨고 가장자리가 계단이 되어 쓰지 않는다.
+# 아래 모서리는 이름판 `StyleBoxFlat` 의 둥근 모서리가 맡는다.
+#
+# **이름판은 카드 아랫단 전폭**을 아이템 타입색(`TYPE_COLORS`)으로 채운 판이다.
+# 그 윗변에 아트가 아래로만 드리우는 그림자(`ART_SHADOW_*`)를 깔아, 아트가 이름판
+# 위에 살짝 떠 있는 것처럼 보이게 한다 — 그림자 띠는 이름판 안에만 있으므로
+# 아트의 좌 · 우 · 위로는 번지지 않는다. 좌표는 전부 `scenes/Card.tscn` 과 같은
+# 절대 좌표다.
+const CARD_RADIUS := 10.0
+const NAME_PLATE_H := 36.0
+## 이름판 윗변(184) = 아트 아랫변.
+const NAME_TOP := CARD_H - NAME_PLATE_H
 const ART_BACK_COLOR := Color(0.05, 0.04, 0.09, 1.0)
-const ART_LINE_COLOR := Color(0.0, 0.0, 0.0, 0.55)
-const NAME_PLATE_COLOR := Color(0.05, 0.04, 0.09, 0.80)
+const ART_MASK_SHADER: Shader = preload("res://resources/shaders/rounded_top_mask.gdshader")
+const ART_SHADOW_H := 9.0
+const ART_SHADOW_ALPHA := 0.55
+## 이름판 색 — `CardImages.type_for` 가 답하는 아이템 타입별(deadlock.wiki 색을
+## 흰 글씨가 읽히게 어둡게 깐 것). 타입이 없는 카드(표에 없는 새 카드)는 중립색.
+const TYPE_COLORS: Dictionary = {
+	CardImages.TYPE_WEAPON: Color("#A86A22"),
+	CardImages.TYPE_SPIRIT: Color("#7E4FB0"),
+	CardImages.TYPE_VITALITY: Color("#5A8A16"),
+}
+const NAME_PLATE_NEUTRAL_COLOR := Color(0.18, 0.16, 0.24, 1.0)
 
 const NAME_FONT_SIZE := 15
 
@@ -141,6 +154,7 @@ const NAME_FONT_SIZE := 15
 # 각 카드에서 언제나 보이는 유일한 구석이고, 원이 그 밖으로 나가 있으면 겹친
 # 줄에서도 비용이 한 줄로 읽힌다.
 const COST_BADGE_SIZE := 42.0
+const COST_BADGE_FILL_COLOR := Color(0.08, 0.06, 0.14, 0.95)
 const COST_BADGE_RING_COLOR := Color(0.98, 0.96, 0.90, 0.95)
 const COST_BADGE_RING_WIDTH := 3
 const COST_FONT_SIZE := 22
@@ -237,6 +251,8 @@ var _portrait: TextureRect = null
 var _portrait_ring: Panel = null
 ## 핸드가 내려가 있는가(= 내 차례가 아닌가). 그림자 거리만 바꾼다.
 var _lowered: bool = false
+## 아트가 이름판 윗변에 드리우는 그림자 띠 — `_apply_name_plate` 가 처음 부를 때 만든다.
+var _art_shadow: TextureRect = null
 
 const DIM_MODULATE: Color = Color(0.42, 0.42, 0.48, 1.0)
 
@@ -552,14 +568,9 @@ func _apply_data() -> void:
 	name_label.add_theme_font_size_override("font_size", NAME_FONT_SIZE)
 	name_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 	name_label.add_theme_constant_override("outline_size", 3)
-	var col := _cost_color(data.cost)
-	var style := StyleBoxFlat.new()
-	style.bg_color = col
-	style.corner_radius_top_left = 10
-	style.corner_radius_top_right = 10
-	style.corner_radius_bottom_left = 10
-	style.corner_radius_bottom_right = 10
-	card_front.add_theme_stylebox_override("panel", style)
+	# 앞면 판 자체는 아무것도 그리지 않는다 — 아트와 이름판이 카드를 다 덮고,
+	# 그 밑에 깔린 판이 있으면 둥근 모서리의 흐린 가장자리로 비쳐 나온다.
+	card_front.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	_apply_art()
 	_apply_cost_badge()
 	_apply_name_plate()
@@ -567,28 +578,34 @@ func _apply_data() -> void:
 
 
 ## 카드 아트 — 이름판 위 전부. 전용 아트가 없는 카드는 `CardImages` 가 이름으로 고른
-## 아이템 아이콘(없으면 배경)을 받는다(그림이 아예 없으면 액자만 남고 비용색 앞면이 비친다).
+## 아이템 아이콘(없으면 배경)을 받는다. 그림이 아예 없을 때만 액자 판이 어두운
+## 바탕을 그린다 — 그림 밑에 판을 깔면 깎인 모서리로 판의 가장자리가 비친다.
 func _apply_art() -> void:
 	if art_frame == null or art_rect == null:
 		return
+	art_rect.texture = CardImages.art_for(data.card_name)
+	var mat := ShaderMaterial.new()
+	mat.shader = ART_MASK_SHADER
+	mat.set_shader_parameter("rect_size", art_rect.size)
+	mat.set_shader_parameter("radius", CARD_RADIUS)
+	art_rect.material = mat
+	if art_rect.texture != null:
+		art_frame.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+		return
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = ART_BACK_COLOR
-	sb.border_color = ART_LINE_COLOR
-	sb.border_width_top    = 1
-	sb.border_width_bottom = 1
-	sb.border_width_left   = 1
-	sb.border_width_right  = 1
+	sb.corner_radius_top_left  = int(CARD_RADIUS)
+	sb.corner_radius_top_right = int(CARD_RADIUS)
 	art_frame.add_theme_stylebox_override("panel", sb)
-	art_rect.texture = CardImages.art_for(data.card_name)
 
 
-## 좌측 상단 비용 원. 알맹이는 그 비용색을 어둡게 깔은 것이고 테두리는 밝은
-## 링이라, 카드 본체(같은 비용색)와 겹쳐도 원이 원으로 읽힌다.
+## 좌측 상단 비용 원. 알맹이는 어두운 중립색이고 테두리는 밝은 링이라, 밝은
+## 아트 위에 걸쳐도 원이 원으로 읽힌다.
 func _apply_cost_badge() -> void:
 	if cost_badge == null or cost_label == null:
 		return
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = _cost_color(data.cost).darkened(0.55)
+	sb.bg_color = COST_BADGE_FILL_COLOR
 	sb.border_color = COST_BADGE_RING_COLOR
 	sb.border_width_top    = COST_BADGE_RING_WIDTH
 	sb.border_width_bottom = COST_BADGE_RING_WIDTH
@@ -607,28 +624,45 @@ func _apply_cost_badge() -> void:
 	cost_label.add_theme_constant_override("outline_size", 3)
 
 
-## 이름판 — 카드 아랫단의 어두운 판. 이름 라벨은 판의 형제로 같은 자리에 앉는다.
+## 이름판 — 카드 아랫단 전폭을 타입색으로 채운 판(테두리 없음). 아래 두 모서리가
+## 카드 모서리다. 이름 라벨은 판의 형제로 같은 자리에 앉고, 그 사이에 아트의
+## 그림자 띠가 낀다.
 func _apply_name_plate() -> void:
 	if name_plate == null:
 		return
 	var plate := StyleBoxFlat.new()
-	plate.bg_color = NAME_PLATE_COLOR
-	plate.corner_radius_top_left     = 5
-	plate.corner_radius_top_right    = 5
-	plate.corner_radius_bottom_left  = 8
-	plate.corner_radius_bottom_right = 8
+	plate.bg_color = TYPE_COLORS.get(CardImages.type_for(data.card_name),
+			NAME_PLATE_NEUTRAL_COLOR)
+	plate.corner_radius_bottom_left  = int(CARD_RADIUS)
+	plate.corner_radius_bottom_right = int(CARD_RADIUS)
 	name_plate.add_theme_stylebox_override("panel", plate)
+	_ensure_art_shadow()
 
 
-func _cost_color(cost: int) -> Color:
-	match cost:
-		1: return Color(0.2, 0.6, 0.9)
-		2: return Color(0.2, 0.75, 0.4)
-		3: return Color(0.9, 0.75, 0.1)
-		4: return Color(0.9, 0.45, 0.1)
-		5: return Color(0.85, 0.2, 0.2)
-		6: return Color(0.6, 0.1, 0.8)
-		_: return Color(0.15, 0.1, 0.25)
+## 아트 아랫변에서 아래로만 옅어지는 검은 띠. 이름판 바로 위 · 이름 라벨 아래에
+## 끼워 글씨는 가리지 않는다.
+func _ensure_art_shadow() -> void:
+	if _art_shadow != null:
+		return
+	var grad := Gradient.new()
+	grad.set_color(0, Color(0.0, 0.0, 0.0, ART_SHADOW_ALPHA))
+	grad.set_color(1, Color(0.0, 0.0, 0.0, 0.0))
+	var tex := GradientTexture2D.new()
+	tex.gradient = grad
+	tex.fill_from = Vector2(0.0, 0.0)
+	tex.fill_to = Vector2(0.0, 1.0)
+	tex.width = 4
+	tex.height = 32
+	_art_shadow = TextureRect.new()
+	_art_shadow.name = "ArtShadow"
+	_art_shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_art_shadow.texture = tex
+	_art_shadow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_art_shadow.stretch_mode = TextureRect.STRETCH_SCALE
+	_art_shadow.position = Vector2(0.0, NAME_TOP)
+	_art_shadow.size = Vector2(CARD_W, ART_SHADOW_H)
+	card_front.add_child(_art_shadow)
+	card_front.move_child(_art_shadow, name_plate.get_index() + 1)
 
 
 # ── Layout Tween ──────────────────────────────────────────────────────────────
@@ -837,25 +871,11 @@ func set_lowered(on: bool) -> void:
 	_refresh_float_state()
 
 
-## Marks whether the player can currently pay for this card. The card body
-## keeps its cost colour either way — an unaffordable card is conveyed by the
-## full-card dim slab (`_refresh_block_overlay`), not by repainting the panel
-## grey, because the grey panel sits *under* the owner face and left the
-## portrait reading as bright/playable.
+## Marks whether the player can currently pay for this card. The card itself
+## is not repainted — an unaffordable card is conveyed only by the full-card
+## dim slab (`_refresh_block_overlay`), which also covers the owner face.
 func set_affordable(affordable: bool) -> void:
 	_affordable = affordable
-	var style := StyleBoxFlat.new()
-	style.bg_color = _cost_color(data.cost)
-	style.border_color = Color(1.0, 0.9, 0.1, 1.0) if affordable else Color(0.45, 0.42, 0.22, 1.0)
-	style.border_width_bottom = 4 if affordable else 2
-	style.border_width_top    = 4 if affordable else 2
-	style.border_width_left   = 4 if affordable else 2
-	style.border_width_right  = 4 if affordable else 2
-	style.corner_radius_top_left     = 10
-	style.corner_radius_top_right    = 10
-	style.corner_radius_bottom_left  = 10
-	style.corner_radius_bottom_right = 10
-	card_front.add_theme_stylebox_override("panel", style)
 	_refresh_block_overlay()
 
 

@@ -11,9 +11,10 @@ extends Node2D
 # 화살표는 **같은 굵기의 chevron(›) 여러 개를 사슬처럼** 2차 베지어 곡선 위에
 # 늘어놓은 것이다. 맨 끝 chevron 의 꼭짓점이 커서에 정확히 닿고, 거기서 곡선을
 # 따라 `CHEVRON_SPACING` 마다 하나씩 카드 쪽으로 거슬러 놓는다. 각 chevron 은
-# 그 자리의 곡선 접선을 향한다. 밝은 띠가 카드 → 커서 방향으로 사슬을 타고
-# 흐른다(`GLOW_SPEED`) — 진행 방향이 정지 화면에서도 읽힌다. 예전에는 카드 쪽이
-# 가늘고 촉 쪽이 굵은 이어진 리본 + 큰 삼각 촉이었다.
+# 그 자리의 곡선 접선을 향한다. 커서 쪽 맨 끝 chevron 만 원래 크기이고 그
+# 뒤를 따르는 나머지는 `TRAIL_SCALE` 배로 작다 — 촉이 어디인지가 크기로 읽힌다.
+# 예전에는 밝은 띠가 사슬을 타고 흐르는 애니메이션이 있었다(삭제됨). 그보다
+# 전에는 카드 쪽이 가늘고 촉 쪽이 굵은 이어진 리본 + 큰 삼각 촉이었다.
 #
 # 곡선의 세 점:
 #   • `p0` = 카드 위쪽 끝 — 다만 카드 안쪽으로 조금 파묻힌 지점(호출 측이
@@ -31,11 +32,9 @@ extends Node2D
 
 # ─── 색 ──────────────────────────────────────────────────────────────────────
 ## 평소(금색, 드롭 존과 같은 계열) / 놓으면 나가는 지점 위(시안, 대상 지정 링과
-## 같은 계열). `*_DIM` 은 빛 띠가 지나가지 않은 chevron 의 색이다.
-const COLOR_BASE     := Color(1.00, 0.85, 0.30, 0.95)
-const COLOR_BASE_DIM := Color(0.62, 0.48, 0.14, 0.80)
-const COLOR_HOT      := Color(0.55, 1.00, 1.00, 1.00)
-const COLOR_HOT_DIM  := Color(0.12, 0.58, 0.70, 0.85)
+## 같은 계열).
+const COLOR_BASE := Color(1.00, 0.85, 0.30, 0.95)
+const COLOR_HOT  := Color(0.55, 1.00, 1.00, 1.00)
 ## chevron 밑에 한 겹 더 그리는 어두운 테두리. 딤드된 전장 위에서도, 밝은 타일
 ## 위에서도 사슬이 끊겨 보이지 않게 한다.
 const OUTLINE_COLOR := Color(0.04, 0.03, 0.09, 0.85)
@@ -43,7 +42,7 @@ const OUTLINE_PAD   := 3.0
 
 # ─── 모양 ────────────────────────────────────────────────────────────────────
 ## chevron 한 개 — 꼭짓점에서 뒤로 `CHEVRON_LEN`, 좌우로 `CHEVRON_HALF` 벌어진
-## 두 팔. 선 굵기는 사슬 전체가 같다.
+## 두 팔. 커서 쪽 맨 끝 chevron 의 크기다.
 const CHEVRON_LEN     := 16.0
 const CHEVRON_HALF    := 17.0
 const CHEVRON_WIDTH   := 7.0
@@ -51,11 +50,8 @@ const CHEVRON_WIDTH   := 7.0
 const CHEVRON_SPACING := 30.0
 ## 곡선 길이를 재려고 나누는 조각 수.
 const SAMPLES := 48
-## 빛 띠 — `GLOW_WAVE` px 마다 하나씩, 초당 `GLOW_SPEED` px 로 카드 → 커서로 흐른다.
-## `GLOW_SHARPNESS` 가 클수록 띠가 좁다.
-const GLOW_WAVE      := 150.0
-const GLOW_SPEED     := 260.0
-const GLOW_SHARPNESS := 3.0
+## 맨 끝을 뒤따르는 chevron 의 크기 배율 (팔 길이 · 반폭 · 선 굵기 모두).
+const TRAIL_SCALE := 0.75
 ## 제어점을 카드 위쪽 축으로 얼마나 밀지 — 커서까지 거리의 이 비율, 상하한 사이.
 const BOW_RATIO := 0.55
 const BOW_MIN   := 40.0
@@ -67,11 +63,6 @@ var _from: Vector2 = Vector2.ZERO
 var _up:   Vector2 = Vector2.UP
 var _to:   Vector2 = Vector2.ZERO
 var _hot:  bool = false
-var _time: float = 0.0
-
-
-func _ready() -> void:
-	set_process(false)
 
 
 ## 화살표를 켜고 양 끝을 갱신한다. `up` 은 카드 자신의 위쪽 축(부채꼴 기울기가
@@ -81,24 +72,14 @@ func aim(from: Vector2, up: Vector2, to: Vector2, hot: bool) -> void:
 	_up = up.normalized() if up.length_squared() > 0.0 else Vector2.UP
 	_to = to
 	_hot = hot
-	if not visible:
-		_time = 0.0
 	visible = true
-	set_process(true)
 	queue_redraw()
 
 
 func stop() -> void:
-	set_process(false)
 	if not visible:
 		return
 	visible = false
-	queue_redraw()
-
-
-## 빛 띠가 흐르도록 켜져 있는 동안 매 프레임 다시 그린다.
-func _process(delta: float) -> void:
-	_time += delta
 	queue_redraw()
 
 
@@ -123,8 +104,7 @@ func _draw() -> void:
 		lens.append(total)
 	if total < MIN_LEN:
 		return
-	var bright: Color = COLOR_HOT if _hot else COLOR_BASE
-	var dim: Color = COLOR_HOT_DIM if _hot else COLOR_BASE_DIM
+	var color: Color = COLOR_HOT if _hot else COLOR_BASE
 	# 커서(끝)에서 카드 쪽으로 거슬러 놓는다 — 맨 끝 꼭짓점이 커서에 닿는다.
 	# 테두리를 전부 먼저 깔고 본색을 얹어야 이웃 chevron 의 테두리가 본색을 덮지 않는다.
 	var chevs: Array = []
@@ -132,18 +112,20 @@ func _draw() -> void:
 	while d >= CHEVRON_LEN:
 		chevs.append(d)
 		d -= CHEVRON_SPACING
-	for dd in chevs:
-		_draw_chevron(pts, lens, dd, CHEVRON_WIDTH + OUTLINE_PAD * 2.0, OUTLINE_COLOR)
-	for dd in chevs:
-		# 빛 띠의 위상 — 거리가 늘수록(커서 쪽) 늦게 밝아지므로 띠가 앞으로 흐른다.
-		var phase: float = fposmod((dd - _time * GLOW_SPEED) / GLOW_WAVE, 1.0)
-		var glow: float = pow(0.5 + 0.5 * cos(phase * TAU), GLOW_SHARPNESS)
-		_draw_chevron(pts, lens, dd, CHEVRON_WIDTH, dim.lerp(bright, glow))
+	# chevs[0] 이 커서 쪽 맨 끝 — 그것만 원래 크기, 나머지는 TRAIL_SCALE.
+	for k in chevs.size():
+		var sc: float = 1.0 if k == 0 else TRAIL_SCALE
+		_draw_chevron(pts, lens, chevs[k], sc,
+				(CHEVRON_WIDTH + OUTLINE_PAD * 2.0) * sc, OUTLINE_COLOR)
+	for k in chevs.size():
+		var sc: float = 1.0 if k == 0 else TRAIL_SCALE
+		_draw_chevron(pts, lens, chevs[k], sc, CHEVRON_WIDTH * sc, color)
 
 
 ## 곡선 길이 `d` 지점에 꼭짓점을 둔 chevron 하나 — 그 자리 접선을 향한다.
+## `sc` 는 팔 길이 · 반폭 배율이다.
 func _draw_chevron(pts: PackedVector2Array, lens: PackedFloat32Array, d: float,
-		width: float, color: Color) -> void:
+		sc: float, width: float, color: Color) -> void:
 	var i: int = 1
 	while i < lens.size() - 1 and lens[i] < d:
 		i += 1
@@ -154,9 +136,9 @@ func _draw_chevron(pts: PackedVector2Array, lens: PackedFloat32Array, d: float,
 		dir = _to - _from
 	dir = dir.normalized()
 	var n := Vector2(-dir.y, dir.x)
-	var back: Vector2 = tip - dir * CHEVRON_LEN
-	draw_polyline(PackedVector2Array([back + n * CHEVRON_HALF, tip,
-			back - n * CHEVRON_HALF]), color, width, true)
+	var back: Vector2 = tip - dir * CHEVRON_LEN * sc
+	draw_polyline(PackedVector2Array([back + n * CHEVRON_HALF * sc, tip,
+			back - n * CHEVRON_HALF * sc]), color, width, true)
 
 
 func _bezier(p0: Vector2, p1: Vector2, p2: Vector2, t: float) -> Vector2:

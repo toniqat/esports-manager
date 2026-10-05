@@ -7,7 +7,7 @@
 | `CardSelectOverlay.gd` | CardSelectOverlay | 버리기:N / 찾기:N / 보존:N 모달 픽 |
 | `CardTargetingOverlay.gd` | CardTargetingOverlay | 카드 드래그 = 대상 지정 오버레이 |
 | `CardPileViewer.gd` | CardPileViewer | Deck / Discard 목록 열람 (읽기 전용) |
-| `CardDragArrow.gd` | CardDragArrow | 카드 ↔ 커서를 잇는 조준 화살표 (2차 베지어 위 같은 굵기 chevron 사슬 + 흐르는 빛) |
+| `CardDragArrow.gd` | CardDragArrow | 카드 ↔ 커서를 잇는 조준 화살표 (2차 베지어 위 chevron 사슬, 커서 쪽 맨 끝만 원래 크기 · 나머지 75%) |
 | `CardPlayPreview.gd` | CardPlayPreview | **손패 미리보기** — 누르면 시전자 강조, 끌면 효과 미리보기(덱/버린 더미 chevron · 버려질 카드 · 찾기/보존 아이콘 + 전장 · 도넛 · 비용 원에 상태를 건다). 아래 *손패 미리보기* 절 |
 | `AiCardPlayer.gd` | AiCardPlayer | AI 카드 사용 애니메이션 (중앙 카드 + 그 오른쪽 설명판 — 키워드 풀이 없음, `DESC_BOX_W` 340, 윗변 = 카드 윗단) |
 | `CardDescBox.gd` | CardDescBox | **카드 설명판** — 이름 · 비용 · 키워드 · 설명문 · 키워드 풀이. 카드 앞면에 설명문이 없으므로 글을 보여 주는 모든 자리(손패 옆 판 · AI 카드 · 찾기/열람 격자 · 밴픽 시트 · 메크 상세)가 이것 하나로 짓는다. **판에는 테두리가 없다.** 머리줄은 **[작은 비용 리본] 이름** 한 덩어리가 판 가운데에 선다(`CostRibbon.make_badge`, `COST_RIBBON_SIZE` 26×36). `build(data, width, light, cost_text, cost_color, with_notes, min_h)` 는 높이를 글꼴로 직접 재 돌려주고(`light` = 아웃게임 흰 판), `with_notes = false` 면 키워드 풀이를 빼고 짓는다 — 손패는 풀이를 `build_keyword_panel` 의 별도 판에 세운다. `place_near` 는 카드 위/아래 자리를 잡는다. 설명문의 비용 표기는 언제나 **"<수치> {비용 아이콘} 비용"**(`+1 비용`, `-1 비용`, `0 비용`)이다. 설명문은 `RichTextLabel` 로 "전략 점수" 앞마다 팔각형 인디케이터, "비용" 앞마다 비용 리본 아이콘(전략 점수 색, 테두리 없음)을 끼워 찍는다(`StrategyIcon.make_rich_label`; 상세 패널의 카드 설명도 같다). 한글은 띄어쓰기에서만 접힌다(`UiHelpers.keep_words`) |
@@ -873,8 +873,8 @@ re-evaluates the dim state.
 - **제어점이 카드의 up 축 위에 있는 이유**: 부채꼴에서 기울어 있는 카드는 그
   기울기 방향으로 화살을 쏜다. 커서가 카드보다 아래에 있으면 내적이 음수라
   `BOW_MIN` 으로 잘려 **고리를 만들지 않는다**.
-- **화살표는 이어진 리본이 아니라 chevron 사슬이다.** 같은 굵기
-  (`CHEVRON_WIDTH` 7, 팔 길이 `CHEVRON_LEN` 16 · 반폭 `CHEVRON_HALF` 17)의 chevron 을
+- **화살표는 이어진 리본이 아니라 chevron 사슬이다.** 촉
+  chevron(`CHEVRON_WIDTH` 7, 팔 길이 `CHEVRON_LEN` 16 · 반폭 `CHEVRON_HALF` 17)과 그 뒤 chevron 들을
   곡선 길이 `CHEVRON_SPACING`(30)마다 하나씩 놓는다. **맨 끝 chevron 의 꼭짓점이
   커서에 닿고** 거기서 카드 쪽으로 거슬러 놓으므로 사슬이 언제나 커서에서 끝난다.
   각 chevron 은 그 자리 곡선 접선을 향한다(`SAMPLES` 48 조각의 누적 길이표로
@@ -882,10 +882,10 @@ re-evaluates the dim state.
   — 하나씩 번갈아 그리면 이웃 chevron 의 테두리가 본색을 덮는다. 예전에는 카드
   쪽이 가늘고(`WIDTH_START` 6) 촉 쪽이 굵은(`WIDTH_END` 14) 이어진 리본 + 큰 삼각
   촉이었다(**삭제됨**).
-- **빛 띠가 카드 → 커서로 흐른다.** chevron 색은 어두운 색(`COLOR_*_DIM`)과 밝은
-  색 사이를 오가고, 밝은 띠가 `GLOW_WAVE`(150px)마다 하나씩 초당 `GLOW_SPEED`(260px)
-  로 진행 방향을 따라 지나간다(`GLOW_SHARPNESS` 3 = 띠 폭). 화살표가 켜져 있는
-  동안만 `_process` 가 돌며 다시 그린다.
+- **촉은 크기로 읽힌다.** 커서 쪽 맨 끝 chevron 만 위 원래 크기이고, 그 뒤를
+  따르는 나머지는 `TRAIL_SCALE`(0.75)배(팔 길이 · 반폭 · 선 굵기 · 테두리 모두)다.
+  사슬은 한 색이고 애니메이션이 없다 — 예전의 흐르는 빛 띠(`GLOW_*`,
+  `COLOR_*_DIM`, `_process` 재그리기)는 **삭제됨**. `aim()` 이 불릴 때만 다시 그린다.
 - **색은 지금 놓으면 나가는지를 말한다** — 평소 `COLOR_BASE`(금색, 드롭 존과 같은
   계열), 커서가 유효 대상/셀 위면 `COLOR_HOT`(시안, 대상 지정 링과 같은 계열).
   판정은 `_update_drop_feedback` 이 이미 굴리고 있던 것을 bool 로 돌려받는 것뿐이라

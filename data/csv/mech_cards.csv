@@ -14,7 +14,7 @@ id,mech_id,name,count,cost,cast_method,target,cast_range,area,keyword,charge_max
 13,28,락온,0,0,instant,hand,0,0,volatile|exhaust,0,attack:1|damaged,,이번 작전 단계 동안 이 메크가 피해를 입힌 적 모두 공격
 14,28,테러,1,2,instant,hand,0,0,,0,attack:1|self_range:2;on_hit;gen_hand:13,,사거리 2 내 모든 적 공격. 1회 이상 명중 시 핸드에 [락온] 생성
 15,28,파괴,1,5,target,enemy,99,1,,0,attack:1|area:1;on_hit;gen_hand:13,,전장 내 적 지정 — 대상 1칸 이내 모든 적 공격. 1회 이상 명중 시 핸드에 [락온] 생성
-16,6,승전보,0,0,instant,hand,0,0,exhaust|preserve,0,draw:3;strategy:2,,"뽑기: 3, 전략 점수 +2"
+16,6,승전보,0,0,instant,hand,0,0,exhaust,0,draw:3;strategy:2,,"뽑기: 3, 전략 점수 +2"
 17,6,돌격,1,6,target,enemy,3,0,,0,engage:3|at_target|move_in,,사거리 3 내 적 지정 — 대상의 칸으로 이동해 교전 3턴
 18,6,질주,2,0,location,location,2,0,,0,move|own_jungle,,사거리 2 내 아군 정글 타일 지정 이동
 19,7,철거,0,0,location,turret_any,99,0,volatile|exhaust,0,attack:1|turret_only,,전장 내 적 포탑 지정 공격

@@ -681,13 +681,15 @@ re-evaluates the dim state.
   card's top, pushed up only if the panel would leave the screen
   (`_desc_box_y`). The card rect comes from `slot_position` + centre pivot, not
   from the live node (which may still be tweening).
-  Keyword notes go in a **second panel** (`_keyword_box`,
-  `CardDescBox.build_keyword_panel`, `KEYWORD_BOX_W` 210) on the far side of the
-  description panel; if that side has no room it flips to the card's other side.
+  Keyword notes go in **one panel per keyword** (`_keyword_boxes`,
+  `CardDescBox.build_keyword_panels`, `KEYWORD_BOX_W` 210), stacked top-down
+  (`KEYWORD_BOX_STACK_GAP` 10) in a column on the far side of the description
+  panel; if that side has no room the column flips to the card's other side.
+  (예전에는 키워드 풀이를 판 하나에 몰아 담았다 — 키워드가 둘이면 판도 둘이다.)
   Header row: [small cost ribbon with the effective cost — white / green / red
   mirroring the card's ribbon] + name, centred; then keyword tags, then the
   description.
-  **While a card is dragged** the keyword panel goes away and the description
+  **While a card is dragged** the keyword panels go away and the description
   panel alone sticks to the dragged card's **left** (`_desc_follows_drag`,
   `_start_desc_follow`, `_follow_drag_desc` from `_process`). Its spot is
   recomputed every frame from the card's live transform (bounding box of the
@@ -1651,25 +1653,28 @@ keyword check has always fired first, so they are 소멸 on their first play.
   **표시 규칙은 "놓을 수 있는 곳만 밝다" 하나다** — 자세한 표는
   `rendering/README.md` 의 *Targeting dim + 강조*:
   - `cast_method == "target"` (target=enemy/ally/pilot) → **PILOT** mode.
-    **타일은 전부 딤드된다** — 타일은 이 카드의 대상이 아니다. `valid_pilots`
+    **시전자 사거리 밖 타일이 딤드된다**(사거리 무제한이면 딤 없음). `valid_pilots`
     는 `TARGET_EMPHASIS_SCALE`(**1.5**)로 커진 채 밝게 남고(그리고 같은 칸의
     무리는 겹치지 않도록 좌우로 벌어진다), 나머지 파일럿은
     마커 단위로 딤드된다. 보이는 마커가 곧 드롭 지점이다.
     Range honours `cd.cast_range` and the `min_range:N` flag.
-    > 예전에는 사거리 안 타일에 노란 채움을 깔았는데, 그 타일에는 어차피 놓을
-    > 수 없으므로 겨눌 얼굴을 가리는 노이즈였다.
+    `target=pilot`(매혹)은 양 팀 모두 유효 대상이다(예전에는 아군만 잡혔다).
+    **대상을 가리키면** 그 카드 효과가 닿을 파일럿(`pick_pilots`)만 커지고 다른
+    유효 대상은 원래 크기로 돌아오며, 효과 범위 칸(`pick_cells`)이 노랗게
+    밝아진다 — 벗어나면 다시 유효 대상 전원이 커진다. 규칙 표는
+    `rendering/README.md` *Targeting dim + 강조*, 범위 계산은
+    `CardPhaseManager.compute_pick_affected`.
   - `cast_method == "location"` → **LOCATION** mode. `valid_cells` 만 초록
-    채움 + 외곽선으로 밝게 남고 **그 밖의 모든 셀이 딤드**되며, 파일럿은
-    **시전자를 뺀** 전원이 딤드된다. 사거리(노란) 채움은 사라졌다 — 유효 셀이 이미 사거리의
-    부분집합이라 두 겹으로 칠할 이유가 없다.
+    채움 + 외곽선으로 밝게 남고 **사거리 밖 셀이 딤드**되며, 파일럿은
+    **시전자와 (`foe` 카드라면) 유효 칸의 적을 뺀** 전원이 딤드된다 — `foe` 카드의
+    유효 칸 적은 PILOT 카드의 유효 대상처럼 커진다.
   - **`cast_range ≥ CardTargetingOverlay.UNLIMITED_RANGE` (99) = 사거리 무시**
-    (복귀 / 보호 / 약탈 / 정글 파밍). `range_unlimited` 은 여전히 켜지지만
-    **렌더러는 더 이상 읽지 않는다**: 딤이 유효 셀 기준이 되면서, 사거리가
-    무제한이어도 갈 수 있는 칸만 밝게 남는다. 예전의 "전장을 통째로 노랗게
-    덮지 않기 위해 딤도 채움도 생략" 특례는 필요가 없어졌다.
+    (복귀 / 보호 / 약탈 / 정글 파밍 / 강습). `range_unlimited` → `is_in_range_cell`
+    이 모든 칸에 참이라 타일 딤이 없다.
   - `cast_method == "range" and target == "caster"` → **PREVIEW** mode
     (engage cards only; 전진은 target=enemy 라 PREVIEW 가 아니라 즉시 발동).
-    The caster cell and 6 neighbours show a soft yellow fill with full outline
+    The cells within the engage radius (`engage_radius(cd)` = the engage clause's
+    `self_range`, default 1) show a soft yellow fill with full outline
     and the participants inside it are emphasised; cells outside the engage area
     get the black out-of-range dim. 따로 찍을 대상이 없으므로 **화면 중앙 드롭
     존**에 놓으면 곧바로 나간다 → `_play_card_direct(card, null)`.

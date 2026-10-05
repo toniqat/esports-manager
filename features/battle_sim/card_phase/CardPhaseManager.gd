@@ -45,8 +45,8 @@ var _hit_bands: Array[Vector2] = []
 # 카드 앞면에는 설명문이 없다(`Card.gd` 앞면 두 층) — 글은 이 판 하나가 든다.
 # 판은 **가리킨(확대된) 카드 바로 옆**에 카드처럼 세로로 길게 선다: 카드 중심이
 # 화면 가운데이거나 그 오른쪽이면 카드 왼쪽에, 가운데보다 왼쪽이면 카드 오른쪽에.
-# 키워드 풀이는 그 판의 바깥쪽에 별도 판(`_keyword_box`)으로 붙는다 — 바깥쪽에
-# 자리가 없으면 카드 반대편으로 넘어간다. 예전에는 손패 위 가로로 긴 판이었는데,
+# 키워드 풀이는 그 판의 바깥쪽에 **키워드마다 한 판씩**(`_keyword_boxes`) 세로로
+# 쌓여 붙는다 — 바깥쪽에 자리가 없으면 카드 반대편으로 넘어간다. 예전에는 손패 위 가로로 긴 판이었는데,
 # 카드를 보는 눈과 글을 읽는 눈이 위아래로 오가야 했다.
 #
 # 판은 이웃 카드를 **그림으로는 덮지만 터치는 막지 않는다** — 두 판과 그 자식이
@@ -62,6 +62,8 @@ const DESC_BOX_W   := 240.0
 const KEYWORD_BOX_W := 210.0
 ## 카드 ↔ 설명판 ↔ 키워드판 사이 간격.
 const DESC_BOX_GAP := 20.0
+## 세로로 쌓인 키워드판끼리의 간격.
+const KEYWORD_BOX_STACK_GAP := 10.0
 ## 등장 / 퇴장 — 나타날 때는 `DESC_ANIM_RISE` 아래에서 올라오며 페이드 인,
 ## 사라질 때는 그만큼 내려가며 페이드 아웃(등장 `DESC_ANIM_IN_TIME` 0.2초 · 퇴장 `DESC_ANIM_OUT_TIME` 0.1초). 퇴장하는 판은
 ## 트윈이 끝난 뒤에 지워지므로, 포커스가 옮겨 가면 옛 판이 내려가는 동안 새 판이
@@ -78,7 +80,7 @@ const DESC_BOX_MARGIN := 8.0
 ## 모달 오버레이(layer 10)보다는 아래다.
 const DESC_LAYER := 2
 var _desc_layer: CanvasLayer = null
-var _keyword_box: Panel = null
+var _keyword_boxes: Array[Panel] = []
 ## 지금 설명 상자가 보여 주고 있는 카드. 포커스가 실제로 바뀔 때만 다시 짓는다.
 var _desc_card: Card = null
 ## 설명판이 끌린 카드(`_drag_card`) 왼쪽에 붙어 따라다니는 중인가. 참이면
@@ -2746,8 +2748,7 @@ func _refresh_description_box() -> void:
 		# 카드 왼쪽에 붙인다. 반대(드래그가 빗나가 손패로 돌아옴)는 키워드판까지
 		# 다시 세워야 하므로 아래에서 새로 짓는다.
 		if dragging:
-			_animate_desc_out(_keyword_box)
-			_keyword_box = null
+			_hide_keyword_boxes()
 			_start_desc_follow(_description_box)
 			return
 	_show_description_box(focus)
@@ -2779,30 +2780,36 @@ func _show_description_box(card: Card) -> void:
 	if card == _drag_card:
 		_desc_parent().add_child(box)
 		_description_box = box
-		_keyword_box = null
+		_keyword_boxes = []
 		_desc_card = card
 		_start_desc_follow(box)
 		return
-	var kw_box: Panel = CardDescBox.build_keyword_panel(card.data, KEYWORD_BOX_W)
-	var spots: Array = _desc_box_spots(card, idx, box.size.y,
-			kw_box.size.y if kw_box != null else 0.0)
+	var kw_boxes: Array[Panel] = CardDescBox.build_keyword_panels(card.data, KEYWORD_BOX_W)
+	# 키워드판은 한 열에 위에서부터 쌓는다 — 열 전체 높이로 자리를 잡는다.
+	var kw_h: float = 0.0
+	for i in kw_boxes.size():
+		kw_h += kw_boxes[i].size.y + (KEYWORD_BOX_STACK_GAP if i > 0 else 0.0)
+	var spots: Array = _desc_box_spots(card, idx, box.size.y, kw_h)
 	box.position = spots[0]
 	_desc_parent().add_child(box)
 	_animate_desc_in(box)
-	if kw_box != null:
-		kw_box.position = spots[1]
+	var kw_pos: Vector2 = spots[1]
+	for kw_box in kw_boxes:
+		kw_box.position = kw_pos
 		_desc_parent().add_child(kw_box)
 		_animate_desc_in(kw_box)
+		kw_pos.y += kw_box.size.y + KEYWORD_BOX_STACK_GAP
 
 	# **These panels have no buttons and never pick the mouse.** They are a
 	# read-out, not a control surface: playing a card is a drop, and so is
 	# picking one for 버리기:N.
 	_description_box = box
-	_keyword_box = kw_box
+	_keyword_boxes = kw_boxes
 	_desc_card = card
 
 
-## 설명판 · 키워드판의 자리 `[box_pos, kw_pos]` — 손패에서 가리킨 카드용.
+## 설명판 · 키워드판 열의 자리 `[box_pos, kw_pos]`(`kw_h` = 쌓인 키워드판 열 전체
+## 높이, `kw_pos` = 그 열의 맨 위) — 손패에서 가리킨 카드용.
 ## 확대된 카드 바로 옆, 카드 윗단에 맞춘다. 카드가 화면 가운데이거나 오른쪽이면
 ## 판은 왼쪽, 아니면 오른쪽. 키워드판은 그 바깥쪽(자리가 없으면 카드 반대편).
 ## 끌린 카드는 이 자리를 쓰지 않는다 — `_follow_drag_desc` 가 카드 왼쪽에 붙인다.
@@ -2916,6 +2923,12 @@ func _desc_parent() -> CanvasLayer:
 	return _desc_layer
 
 
+func _hide_keyword_boxes() -> void:
+	for kw_box in _keyword_boxes:
+		_animate_desc_out(kw_box)
+	_keyword_boxes = []
+
+
 ## 판의 윗변 — 확대된 카드 윗단에 맞추되, 판이 길어 화면 아래로 넘치면 올린다.
 func _desc_box_y(card_top: float, h: float, screen_h: float) -> float:
 	return clampf(card_top, DESC_BOX_MARGIN,
@@ -2924,9 +2937,8 @@ func _desc_box_y(card_top: float, h: float, screen_h: float) -> float:
 
 func _hide_description_box() -> void:
 	_animate_desc_out(_description_box)
-	_animate_desc_out(_keyword_box)
+	_hide_keyword_boxes()
 	_description_box = null
-	_keyword_box = null
 	_desc_card = null
 	_desc_follows_drag = false
 
@@ -3023,7 +3035,7 @@ func card_has_valid_targets(cd: CardData) -> bool:
 			# side inside the caster's area so start_engage doesn't no-op.
 			if caster == null:
 				return false
-			var area := compute_engage_area(caster)
+			var area := compute_engage_area(caster, engage_radius(cd))
 			var exclude_lane: bool = has_clause_flag(cd.effect, "engage", "exclude_lane")
 			var participants := compute_engage_participants(caster, area, exclude_lane)
 			var has_p: bool = false
@@ -3282,12 +3294,126 @@ func compute_ambush_targets(cd: CardData, caster: PilotData) -> Array:
 	return out
 
 
-# Caster cell + all 6 neighbours, mirroring EngagePhaseManager._gather_participants.
-func compute_engage_area(caster: PilotData) -> Array:
-	var out: Array = [caster.grid_pos]
-	for n in _bs.hex_grid.get_neighbors(caster.grid_pos.x, caster.grid_pos.y):
-		out.append(n)
+# Every cell within `radius` of the caster, mirroring
+# EngagePhaseManager._gather_participants (which measures hex distance to the
+# same origin). 예전에는 반경이 1(시전자 칸 + 인접 6칸)로 박혀 있어서
+# [우세한 전장](self_range:3) · [개시] · [제압 전투](self_range:2) 의 영역 표시와
+# 참가자 강조가 실제 교전 명단보다 좁게 그려졌다.
+func compute_engage_area(caster: PilotData, radius: int = 1) -> Array:
+	return cells_within(caster.grid_pos, radius)
+
+
+## 교전 절의 반경 — `_effect_engage` 와 같은 규칙(`|self_range:N`, 없으면 1).
+func engage_radius(cd: CardData) -> int:
+	if cd == null:
+		return 1
+	for clause in _parse_effect_chain(cd.effect):
+		if String(clause["name"]) == "engage":
+			return maxi(1, flag_int(clause["flags"] as Array, "self_range", 1))
+	return 1
+
+
+## 전장 위 `origin` 에서 `radius` 칸 안의 칸 전부(그려지는 타일 기준).
+func cells_within(origin: Vector2i, radius: int) -> Array:
+	var out: Array = []
+	if _bs.tiles_layer == null:
+		return out
+	for raw in _bs.tiles_layer.get_used_cells():
+		var c := raw as Vector2i
+		if _bs.hex_grid.hex_distance(origin, c) <= radius:
+			out.append(c)
 	return out
+
+
+## 드래그 중 대상(`target` — PilotData 또는 Vector2i)을 가리켰을 때 **그 카드 효과가
+## 실제로 닿을 것들** `{ "pilots": {PilotData: true}, "cells": {Vector2i: true} }`.
+## 대상 지정 오버레이가 이 파일럿들만 키우고(나머지 유효 대상은 원래 크기로)
+## 범위 칸을 밝힌다. 기하는 효과 핸들러와 같은 함수 · 같은 플래그를 지난다:
+##   attack |area:N · |around_target:N → 대상 칸 N칸 안의 적 (`_victims_around`)
+##   attack |self_range:N              → 시전자(이동 절 뒤면 도착 칸) N칸 안의 적
+##   attack (단일, `foe` 칸)           → 그 칸의 적 파일럿 (`_foe_at_cell`)
+##   engage |at_target                 → 대상 칸 중심 교전 명단 (`engage_sides`)
+##   engage (그 밖)                    → 시전자(이동 뒤면 도착 칸) 중심 교전 명단
+## 찍은 파일럿 자신은 언제나 들어간다. `on_hit` / `on_miss` 뒤의 조건부 절은
+## 결과를 미리 알 수 없으므로 건너뛴다(손패 미리보기와 같은 규칙).
+func compute_pick_affected(cd: CardData, target: Variant) -> Dictionary:
+	var pilots: Dictionary = {}
+	var cells: Dictionary = {}
+	var out: Dictionary = {"pilots": pilots, "cells": cells}
+	if cd == null or target == null:
+		return out
+	var caster: PilotData = cd.owner_pilot
+	var enemy_team: int = 1 - card_team(cd)
+	var tcell: Vector2i
+	if target is PilotData:
+		tcell = (target as PilotData).grid_pos
+		pilots[target] = true
+	elif target is Vector2i:
+		tcell = target as Vector2i
+	else:
+		return out
+	# 이동 절(`move` · `ambush` · `move_to_target`)을 지나면 뒤 절의 시전자 기준점이
+	# 도착 칸으로 옮겨 간다 — 실제 체인에서도 그 절이 먼저 grid_pos 를 바꾼다.
+	var origin: Vector2i = caster.grid_pos if caster != null else tcell
+	for clause in _parse_effect_chain(cd.effect):
+		var cname: String = String(clause["name"])
+		if cname == "on_hit" or cname == "on_miss":
+			break
+		var flags: Array = clause["flags"] as Array
+		match cname:
+			"move", "ambush":
+				if target is Vector2i:
+					origin = tcell
+			"move_to_target":
+				origin = tcell
+			"attack":
+				var r: int = flag_int(flags, "area", -1)
+				if r < 0:
+					r = flag_int(flags, "around_target", -1)
+				if r >= 0:
+					_mark_pick_area(tcell, r, enemy_team, pilots, cells)
+					continue
+				var sr: int = flag_int(flags, "self_range", -1)
+				if sr >= 0:
+					_mark_pick_area(origin, sr, enemy_team, pilots, cells)
+				elif target is Vector2i:
+					var v: Variant = _foe_at_cell(tcell, enemy_team)
+					if v is PilotData:
+						pilots[v] = true
+			"engage":
+				if caster == null or _bs.engage_phase == null:
+					continue
+				var radius: int = maxi(1, flag_int(flags, "self_range", 1))
+				var at_target: bool = "at_target" in flags
+				if at_target and not (target is PilotData):
+					continue
+				var center: Vector2i = tcell if at_target else origin
+				# 시전자가 서 있을 자리 — 뛰어드는 카드(돌격 · 강습)는 대상 칸,
+				# 이동 절 뒤의 교전은 도착 칸. `_effect_engage` 도 명단을 모으기 전에
+				# 똑같이 잠깐 옮겼다 되돌린다.
+				var stand: Vector2i = origin
+				if at_target and ("drop_in" in flags or "move_in" in flags):
+					stand = tcell
+				var saved: Vector2i = caster.grid_pos
+				caster.grid_pos = stand
+				var sides: Array = _bs.engage_phase.engage_sides(caster,
+						"exclude_lane" in flags, center, radius)
+				caster.grid_pos = saved
+				for side in sides:
+					for raw in side as Array:
+						pilots[raw] = true
+				for c in cells_within(center, radius):
+					cells[c] = true
+	return out
+
+
+func _mark_pick_area(origin: Vector2i, radius: int, enemy_team: int,
+		pilots: Dictionary, cells: Dictionary) -> void:
+	for c in cells_within(origin, radius):
+		cells[c] = true
+	for raw in _victims_around(origin, radius, enemy_team):
+		if raw is PilotData:
+			pilots[raw] = true
 
 
 # Pilots in the engage area that would actually fight. Mirrors EngagePhaseManager

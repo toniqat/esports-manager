@@ -7,7 +7,8 @@ extends RefCounted
 # **키워드는 설명문에 다시 적지 않는다.** 판이 이름 아래에 키워드 줄(소멸 ·
 # 재배치 · 충전 5 …)을 세우고, 키워드마다 한 줄 풀이를 단다 — 그래서 설명문에는
 # 그 카드만의 효과만 남아 짧아진다. 풀이는 보통 판 맨 아래에 붙지만, 손패는 판
-# 옆에 따로 세운다(`build(..., with_notes = false)` + `build_keyword_panel`).
+# 옆에 키워드마다 판 하나씩 따로 세운다(`build(..., with_notes = false)` +
+# `build_keyword_panels`).
 #
 # 카드 앞면에서 설명문이 걷히면서(`Card.gd` 앞면 두 층) 그 글을 들 자리가 화면마다
 # 필요해졌다: 손패는 가리킨 카드 옆(`CardPhaseManager`), 밴픽 시트와 메크 상세는
@@ -52,7 +53,7 @@ static func _panel_style(light: bool) -> StyleBoxFlat:
 ## 손패는 할인 · 증세가 먹은 실제 비용을 넘긴다.
 ##
 ## `with_notes` 를 끄면 맨 아래 키워드 풀이를 빼고 짓는다 — 손패는 풀이를 판 옆
-## 별도 판(`build_keyword_panel`)에 세운다. `min_h` 는 판 높이의 하한(손패는 0 을
+## 별도 판들(`build_keyword_panels`)에 세운다. `min_h` 는 판 높이의 하한(손패는 0 을
 ## 넘겨 판이 글 길이만큼만 선다).
 static func build(data: CardData, width: float, light: bool = false,
 		cost_text: String = "", cost_color: Variant = null,
@@ -131,34 +132,38 @@ static func build(data: CardData, width: float, light: bool = false,
 	return box
 
 
-## 키워드 풀이만 담은 판 — 손패에서 설명판 옆에 따로 선다. 키워드마다 이름(키워드
-## 색) 한 줄 + 풀이. 풀이가 하나도 없으면 null.
-static func build_keyword_panel(data: CardData, width: float,
-		light: bool = false) -> Panel:
+## 키워드 풀이 판들 — 손패에서 설명판 옆에 따로 선다. **키워드 하나에 판 하나**
+## (이름 한 줄(키워드 색) + 풀이)이고, 풀이가 있는 키워드 순서대로 돌려준다.
+## 키워드가 둘이면 판도 둘이다 — 예전에는 한 판에 몰아 담아 어디까지가 어느
+## 키워드의 풀이인지 경계가 흐렸다. 풀이가 하나도 없으면 빈 배열.
+static func build_keyword_panels(data: CardData, width: float,
+		light: bool = false) -> Array[Panel]:
+	var out: Array[Panel] = []
 	if data == null:
-		return null
-	var notes: Array = _keyword_notes(data)
-	if notes.is_empty():
-		return null
+		return out
+	for n_raw in _keyword_notes(data):
+		var n: Array = n_raw
+		out.append(_build_note_panel(String(n[0]), String(n[1]), width, light))
+	return out
+
+
+static func _build_note_panel(title_text: String, note: String, width: float,
+		light: bool) -> Panel:
 	var box := Panel.new()
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_theme_stylebox_override("panel", _panel_style(light))
 	var inner_w: float = width - PAD * 2.0
 	var y: float = PAD
-	for i in notes.size():
-		if i > 0:
-			y += GAP
-		var n: Array = notes[i]
-		var title := UiHelpers.mk_label(box, String(n[0]), KW_FONT, _kw_color(light),
-				Vector2(PAD, y), Vector2(inner_w, float(KW_FONT) * 1.4))
-		title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		y += float(KW_FONT) * 1.4
-		var note_h: float = _text_height(String(n[1]), inner_w, NOTE_FONT)
-		var note_lbl := _note_label(String(n[1]), light)
-		note_lbl.position = Vector2(PAD, y)
-		note_lbl.size = Vector2(inner_w, note_h)
-		box.add_child(note_lbl)
-		y += note_h
+	var title := UiHelpers.mk_label(box, title_text, KW_FONT, _kw_color(light),
+			Vector2(PAD, y), Vector2(inner_w, float(KW_FONT) * 1.4))
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	y += float(KW_FONT) * 1.4
+	var note_h: float = _text_height(note, inner_w, NOTE_FONT)
+	var note_lbl := _note_label(note, light)
+	note_lbl.position = Vector2(PAD, y)
+	note_lbl.size = Vector2(inner_w, note_h)
+	box.add_child(note_lbl)
+	y += note_h
 	box.size = Vector2(width, y + PAD)
 	return box
 

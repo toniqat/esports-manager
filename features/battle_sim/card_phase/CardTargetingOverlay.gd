@@ -9,10 +9,11 @@ extends Node
 # 카드를 손에서 끌어내는 순간 놓을 수 없는 곳이 전부 딤드되고, 손을 떼면 사라진다
 # (`CardPhaseManager._begin_drag` / `_end_drag`).
 #
-#   • PILOT    — 타일은 전부 딤드(타일은 대상이 아니다). 유효 대상만
+#   • PILOT    — 시전자 사거리 밖 타일이 딤드된다. 유효 대상만
 #                TARGET_EMPHASIS_SCALE 만큼 커진 채 밝게 남는다.
-#   • LOCATION — 유효 셀만 초록으로 남고 나머지 셀과 파일럿 전원이 딤드된다.
-#   • PREVIEW  — 전투 개시류. 시전자 셀 + 인접 6칸이 영역으로 밝아지고 그 안의
+#   • LOCATION — 사거리 밖 타일이 딤드되고 유효 셀은 초록. 파일럿은 시전자와
+#                (`foe` 카드라면) 유효 칸의 적을 뺀 전원이 딤드된다.
+#   • PREVIEW  — 전투 개시류. 시전자 교전 반경(`self_range`)이 영역으로 밝아지고 그 안의
 #                참여 파일럿이 강조된다. **참가자 명단은 여기 없다** — 카드를
 #                제출한 뒤 `engage/EngageIntro.gd` 의 VS 화면이 보여 준다.
 #                (예전에는 화면 좌/우에 세로 팀 패널 두 개가 떴다. 아직 낼지도
@@ -29,6 +30,11 @@ extends Node
 #
 # `pending_pick` 은 **드래그 중 미리보기 전용**이다 — `preview_drag_target` 이
 # 커서 아래의 대상을 찍어 시안 링을 붙인다.
+#
+# **강조(확대)는 두 단계다.** 아무것도 가리키지 않은 동안은 `target_pilots`
+# (사거리 안의 유효 대상)가 커진다. 대상을 가리키면 그 카드 효과가 실제로 닿을
+# 파일럿(`pick_pilots` — 대상 + 효과 범위 안의 교전 참가자 / 피격자)만 커지고
+# 나머지 유효 대상은 원래 크기로 돌아온다. 대상에서 벗어나면 다시 앞 단계다.
 
 enum Mode { NONE, INSTANT, PILOT, LOCATION, PREVIEW }
 
@@ -57,6 +63,15 @@ var range_radius: int = 0
 # 않는다 (LOCATION 의 초록 유효 셀 외곽선은 그대로).
 var range_unlimited: bool = false
 
+# 아무것도 가리키지 않은 동안 커지는 파일럿 — PILOT 은 valid_pilots, LOCATION
+# (`foe` 카드)은 유효 칸에 선 적, PREVIEW 는 교전 참가자. 딤에서도 빠진다.
+var target_pilots: Dictionary = {}   # PilotData → true
+# 대상을 가리킨 동안의 효과 범위 — `CardPhaseManager.compute_pick_affected`.
+# pick_pilots 만 커지고, pick_cells 는 노란 범위 칸으로 밝게 남는다.
+var pick_pilots: Dictionary = {}     # PilotData → true
+var pick_cells: Dictionary = {}      # Vector2i  → true
+var _card: CardData = null
+
 # 이 값 이상의 cast_range 는 "제한 없음"으로 읽는다. cards.csv 가 무제한을
 # 99 로 적어 두는 관례를 한 곳에 모아 둔 것.
 const UNLIMITED_RANGE: int = 99
@@ -78,6 +93,11 @@ var _play_allowed: bool = false
 # 앉으면 카드 윗단과 겹친다. 이름과 값을 그대로 두는 이유가 그것뿐이라는 뜻이다.
 const BTN_H            := 56.0
 const BTN_HAND_GAP     := 10.0
+## 이미 가리킨 파일럿은 그 마커 반경의 이 배율 안에 커서가 있는 동안 계속 잡혀
+## 있다. 대상을 가리키면 다른 초상이 원래 크기로 줄며 같은 칸의 쌓인 마커
+## 배치가 바뀌는데, 그때 가리킨 마커가 커서 밑에서 조금 밀려나도 잡힘이 풀렸다
+## 다시 잡히며 깜빡이지 않게 하는 히스테리시스다.
+const PICK_STICKY_SCALE := 1.35
 
 
 # Bind step so the overlay does not need to know its parent type at construction.
@@ -108,20 +128,27 @@ func should_dim_pilot(p: PilotData) -> bool:
 	if p != null and p == card_caster:
 		return false
 	match mode:
-		Mode.PILOT:
-			return not valid_pilots.has(p)
-		Mode.LOCATION:
-			return true
+		Mode.PILOT, Mode.LOCATION:
+			return not (target_pilots.has(p) or pick_pilots.has(p))
 		Mode.PREVIEW:
-			return not (p in preview_participants)
+			return not target_pilots.has(p)
 		_:
 			return false
 
 
-# Cells inside the highlighted "range" area (LOCATION / PILOT use the caster's
-# cast_range; PREVIEW uses the engage area). Used by BattleRenderer to:
-#  • highlight in-range cells with a soft yellow fill, and
-#  • black-dim every other valid grid cell.
+## 이 파일럿을 지금 키울 것인가 — BattleRenderer 의 강조 목표값이 여기를 읽는다.
+## 대상을 가리킨 동안은 그 효과가 닿는 파일럿만, 아니면 사거리 안의 유효 대상.
+func is_emphasized(p: PilotData) -> bool:
+	if not is_visualizing():
+		return false
+	if pending_pick != null and mode != Mode.PREVIEW:
+		return pick_pilots.has(p)
+	return target_pilots.has(p)
+
+
+# Cells inside the caster's range (LOCATION / PILOT use cast_range; PREVIEW
+# uses the engage area). BattleRenderer black-dims every grid cell outside it
+# — an unlimited-range card therefore dims nothing.
 func is_in_range_cell(cell: Vector2i) -> bool:
 	if mode == Mode.PREVIEW:
 		return area_cells.has(cell)
@@ -165,6 +192,7 @@ func start_card_selection(cd: CardData, on_confirm: Callable) -> void:
 		return
 	var caster: PilotData = cd.owner_pilot
 	card_caster = caster
+	_card = cd
 	var kind: String = ""
 	if _bs.card_phase != null:
 		kind = _bs.card_phase.targeting_kind(cd)
@@ -189,6 +217,11 @@ func start_card_selection(cd: CardData, on_confirm: Callable) -> void:
 			var team_filter: int = 1 if cd.target == "enemy" else 0
 			for raw in _bs.card_phase.compute_valid_pilot_targets(cd, caster, team_filter):
 				valid_pilots[raw as PilotData] = true
+			# `pilot`(매혹)은 양 팀 모두 대상이다.
+			if cd.target == "pilot":
+				for raw in _bs.card_phase.compute_valid_pilot_targets(cd, caster, 1):
+					valid_pilots[raw as PilotData] = true
+			target_pilots = valid_pilots.duplicate()
 		"location":
 			mode = Mode.LOCATION
 			range_caster = caster
@@ -196,16 +229,27 @@ func start_card_selection(cd: CardData, on_confirm: Callable) -> void:
 			range_unlimited = caster == null or cd.cast_range >= UNLIMITED_RANGE
 			for c in _bs.card_phase.compute_valid_location_targets(cd, caster):
 				valid_cells[c as Vector2i] = true
+			# `foe`(적 또는 포탑) 카드는 칸을 고르지만 노리는 것은 그 칸의 적이다 —
+			# 유효 칸에 선 적 파일럿이 PILOT 카드의 유효 대상처럼 커진다.
+			if cd.target == "foe":
+				var enemy_team: int = 1 - _bs.card_phase.card_team(cd)
+				for raw in _bs.pilots:
+					var p := raw as PilotData
+					if p.alive and p.team == enemy_team and valid_cells.has(p.grid_pos):
+						target_pilots[p] = true
 		"preview":
 			mode = Mode.PREVIEW
 			preview_caster = caster
-			var area := _bs.card_phase.compute_engage_area(caster)
+			var area := _bs.card_phase.compute_engage_area(caster,
+					_bs.card_phase.engage_radius(cd))
 			for c in area:
 				area_cells[c as Vector2i] = true
 			var exclude_lane: bool = _bs.card_phase.has_clause_flag(
 					cd.effect, "engage", "exclude_lane")
 			preview_participants = _bs.card_phase.compute_engage_participants(
 					caster, area, exclude_lane)
+			for raw in preview_participants:
+				target_pilots[raw] = true
 		_:
 			mode = Mode.INSTANT
 	_on_confirm = on_confirm
@@ -257,6 +301,7 @@ func preview_drag_target(target: Variant) -> void:
 		if pending_pick == null:
 			return
 		pending_pick = null
+		_refresh_pick_area()
 		_request_redraw()
 		return
 	if pending_pick == target:
@@ -306,7 +351,19 @@ func _unhandled_input(event: InputEvent) -> void:
 # 드래그 중 커서 아래에 들어온 대상을 기록하고 시안 링을 새로 그린다.
 func _set_pending_pick(target: Variant) -> void:
 	pending_pick = target
+	_refresh_pick_area()
 	_request_redraw()
+
+
+# 가리킨 대상 기준 효과 범위를 다시 잰다(대상이 없으면 비운다).
+func _refresh_pick_area() -> void:
+	pick_pilots = {}
+	pick_cells = {}
+	if pending_pick == null or _card == null or _bs.card_phase == null:
+		return
+	var aff: Dictionary = _bs.card_phase.compute_pick_affected(_card, pending_pick)
+	pick_pilots = aff["pilots"] as Dictionary
+	pick_cells = aff["cells"] as Dictionary
 
 
 # Closest cell whose centre is within hex_size of `pos`. Returns a sentinel
@@ -352,6 +409,15 @@ func _hit_test_pilot(pos: Vector2) -> PilotData:
 	# Slightly looser than half a tile so the click area covers the visible
 	# marker circle (~31.5 px radius at default scale).
 	var base_r: float = hex_size * 0.85
+	# 이미 가리킨 대상은 조금 더 넓은 반경 안에서 계속 잡혀 있다(PICK_STICKY_SCALE).
+	if pending_pick is PilotData:
+		var held := pending_pick as PilotData
+		if held.alive and valid_pilots.has(held) and markers.has(held):
+			var held_r: float = base_r
+			if _bs.renderer != null:
+				held_r = maxf(base_r, _bs.renderer.pilot_marker_radius(held))
+			if (markers[held] as Vector2).distance_to(pos) <= held_r * PICK_STICKY_SCALE:
+				return held
 	for raw in valid_pilots.keys():
 		var p := raw as PilotData
 		if not p.alive:
@@ -391,6 +457,10 @@ func _clear_visual_state() -> void:
 	preview_caster = null
 	card_caster = null
 	preview_participants.clear()
+	target_pilots = {}
+	pick_pilots = {}
+	pick_cells = {}
+	_card = null
 	range_caster = null
 	range_radius = 0
 	range_unlimited = false

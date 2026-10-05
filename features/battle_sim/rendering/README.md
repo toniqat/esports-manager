@@ -585,33 +585,43 @@ same solve, so hit-testing never disagrees with what is on screen.
 사거리 개념이 없는 INSTANT 카드(드로우 / 전략 점수 등)를 들었을 때는 전장이
 전혀 어두워지지 않는다.
 
-**규칙은 하나다 — "이 카드를 놓을 수 있는 곳"만 밝다.** 카드를 끌어다 대상 위에
-놓는 조작이 들어오면서, 딤은 "사거리를 보여 주는 장치"에서 "드롭 지점을 남기는
-장치"로 바뀌었다. 칠하는 쪽(`_draw_targeting_underlays`)과 딤을 면제하는 쪽
-(`_undimmed_cells`)이 서로의 거울이라 둘이 어긋날 수 없다:
+**타일 딤은 사거리를 말한다 — 시전자에서 `cast_range` 밖의 타일이 어두워진다.**
+칠하는 쪽(`_draw_targeting_underlays`)과 딤을 면제하는 쪽(`_undimmed_cells`)이
+같은 집합을 본다:
 
-| 모드 | 밝게 남는 것 | 칠 |
+| 모드 | 밝게 남는 타일 (`_undimmed_cells`) | 칠 |
 |---|---|---|
-| PILOT | **파일럿 마커만** — 타일은 전부 딤 | 없음 |
-| LOCATION | `valid_cells` | 초록 채움 + 외곽선 |
-| PREVIEW | `area_cells` (시전자 셀 + 인접 6칸) | 노란 채움 + 외곽선 |
+| PILOT | `is_in_range_cell` — 시전자 사거리 안 (무제한이면 전장 전체) + `pick_cells` | 없음 |
+| LOCATION | 사거리 안 + `valid_cells` + `pick_cells` | 유효 셀 초록 채움 + 외곽선 |
+| PREVIEW | `area_cells` (시전자 교전 반경 `self_range`, 없으면 1) | 노란 채움 + 외곽선 |
 | INSTANT | 전부 (딤 자체가 없다) | 없음 |
+| 대상을 가리킨 동안 (PILOT / LOCATION) | 위 + 효과 범위 `pick_cells` | 노란 채움 + 외곽선 |
 
-파일럿 딤은 그대로 `should_dim_pilot` 이 가른다 — PILOT 은 유효 대상이 아닌
-파일럿, LOCATION 은 전원, PREVIEW 는 비참여자. **단 시전자(`card_caster`)는
+> 예전에는 PILOT 이 **타일 전부 딤**, LOCATION 이 유효 셀만 밝음이라 카드의 사거리가
+> 화면 어디에도 보이지 않았다(사용자 요청으로 사거리 딤 복원). PREVIEW 의 영역도
+> 반경 1 로 박혀 있어 [우세한 전장](3) · [개시] · [제압 전투](2) 가 실제 교전
+> 명단보다 좁게 그려졌다 — 지금은 `CardPhaseManager.engage_radius(cd)`.
+
+**확대(강조)는 `CardTargetingOverlay.is_emphasized` 하나가 정한다** (`_pilot_emphasis_target`):
+- 아무것도 가리키지 않은 동안 — `target_pilots`(PILOT: 사거리 안 유효 대상 /
+  LOCATION `foe` 카드: 유효 칸의 적 / PREVIEW: 교전 참가자)가 1.5배.
+- 대상을 가리킨 동안 — `pick_pilots` 만 커지고 나머지 유효 대상은 원래 크기로
+  돌아온다. `pick_pilots` = 대상 + 그 카드 효과가 닿을 파일럿
+  (`CardPhaseManager.compute_pick_affected`: 교전 `at_target` 명단 · `area` /
+  `around_target` / `self_range` 반경의 적 · 이동 절 뒤의 도착 칸 기준).
+  예: [강습] — 드래그 중에는 전장의 적 전원, 적 하나를 가리키면 그 칸 반경 1 의
+  교전 참가자 전원(뛰어드는 시전자 포함).
+- 대상에서 벗어나면 다시 첫 단계.
+- 다른 초상이 줄며 같은 칸 쌓임 배치가 바뀌어도 잡힘이 깜빡이지 않도록, 이미
+  가리킨 파일럿은 마커 반경 × `PICK_STICKY_SCALE`(1.35) 안에서 계속 잡힌다
+  (`CardTargetingOverlay._hit_test_pilot`).
+
+파일럿 딤은 `should_dim_pilot` 이 가른다 — PILOT / LOCATION 은 `target_pilots`
+에도 `pick_pilots` 에도 없는 파일럿, PREVIEW 는 비참여자. **시전자(`card_caster`)는
 어느 모드에서도 딤드되지 않는다** — 딤은 "여기엔 놓을 수 없다"는 말인데 카드를
-쏘는 당사자에게 그 말은 성립하지 않고, 특히 LOCATION 의 "파일럿 전원 딤" 규칙에
-걸리면 지금 움직이려는 그 파일럿이 화면에서 가장 어두웠다. **대신 강조 대상도
-아니다**: 커지는 것은 "놓을 수 있는 곳"이라는 신호이므로, 시전자는 자기가 그
-카드의 유효 대상일 때(보호 / 복귀 같은 `target=ally` 카드)만 `valid_pilots` 를
-통해 커진다.
-
-사라진 것 둘: **PILOT 의 노란 사거리 채움**(어차피 그 타일에는 놓을 수 없으니
-겨눌 곳을 가리는 노이즈였다)과 **`range_unlimited` 특례**(사거리 무제한 카드는
-사거리 표시가 전장 전체라 아무것도 말해 주지 않았는데, 이제 유효 셀 기준으로
-딤이 걸려 약탈 / 정글 파밍도 갈 수 있는 칸만 남는다). 오버레이의
-`range_caster` / `range_radius` / `range_unlimited` 는 남아 있지만 렌더러는
-더 이상 읽지 않는다.
+쏘는 당사자에게 그 말은 성립하지 않는다. **대신 강조 대상도 아니다**: 시전자는
+자기가 그 카드의 유효 대상일 때(보호 / 복귀 같은 `target=ally` 카드)나 효과 범위에
+들 때만 커진다.
 
 ### 파일럿 마커 위치 — `pilot_marker_positions()`
 `_draw()` 는 매 프레임 `_build_pilot_render_layout()` 으로

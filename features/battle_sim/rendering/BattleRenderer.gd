@@ -2039,16 +2039,14 @@ func _pilot_anim_alpha(p: PilotData) -> float:
 # (나머지 절반은 _undimmed_cells / _draw_targeting_pilot_dim /
 #  _pilot_emphasis_scale).
 #
-#   • PILOT    — 타일은 대상이 아니므로 **하나도 칠하지 않고 전부 딤드**한다.
-#                남는 것은 2배로 커진 유효 파일럿뿐. 예전에는 사거리 안 타일을
-#                노랗게 칠했는데, 어차피 그 타일에는 놓을 수 없으니 겨눌 곳을
-#                가리는 노이즈였다.
-#   • LOCATION — 유효 셀만 초록으로 칠하고 나머지는 전부 딤드. 사거리 노란 채움은
-#                사라졌다 — 유효 셀 집합이 이미 사거리의 부분집합이고, 사거리
-#                무제한 카드(약탈 / 정글 파밍)에서는 사거리 표시 자체가 전장
-#                전체라 아무것도 말해 주지 않았다.
-#   • PREVIEW  — 교전 영역(시전자 셀 + 인접 6칸)을 노랗게. 여기서는 영역 자체가
+#   • PILOT    — 타일은 칠하지 않는다. 사거리는 **딤으로** 말한다: 시전자에서
+#                cast_range 밖의 타일만 어두워진다(`_undimmed_cells`, 무제한
+#                사거리면 아무것도 안 어두워진다). 노란 채움은 겨눌 얼굴을 가린다.
+#   • LOCATION — 유효 셀을 초록으로 칠한다. 사거리 밖 타일은 딤.
+#   • PREVIEW  — 교전 영역(시전자 교전 반경)을 노랗게. 여기서는 영역 자체가
 #                카드가 말하는 내용이다.
+#   • 대상을 가리킨 동안(PILOT / LOCATION) — 그 카드 효과의 범위
+#                (`pick_cells`: 교전 반경 · 범위 공격 반경)를 같은 노란 영역으로.
 func _draw_targeting_underlays() -> void:
 	var to: CardTargetingOverlay = _bs.targeting_overlay
 	if to == null or not to.is_visualizing():
@@ -2068,6 +2066,13 @@ func _draw_targeting_underlays() -> void:
 			draw_colored_polygon(pts, Color(0.30, 0.85, 0.45, 0.25))
 			draw_polyline(_close_polygon(pts),
 					Color(0.30, 0.85, 0.45, 0.95), 3.0, true)
+	if to.mode != CardTargetingOverlay.Mode.PREVIEW:
+		for raw in to.pick_cells.keys():
+			var c := raw as Vector2i
+			var pts := hg.hex_corners(_bs.cell_center(c))
+			draw_colored_polygon(pts, Color(1.0, 0.85, 0.30, 0.18))
+			draw_polyline(_close_polygon(pts),
+					Color(1.0, 0.85, 0.30, 0.75), 2.5, true)
 
 
 # Cyan ring / outline on the clicked-but-not-yet-confirmed target so the
@@ -2098,8 +2103,9 @@ func _draw_pending_pick_highlight() -> void:
 # takes the black dim. The mirror image of _draw_targeting_underlays: whatever
 # gets painted there is exactly what is spared here.
 #
-# **PILOT 은 빈 집합**이다 — 타일은 그 카드의 대상이 아니므로 전부 어두워지고,
-# 밝게 남는 것은 마커(파일럿)뿐이다.
+# **PILOT / LOCATION 은 시전자 사거리 안의 칸**이다(`is_in_range_cell` — 무제한
+# 사거리면 전장 전체) + 유효 셀 + 가리킨 대상의 효과 범위. 예전에는 PILOT 이
+# 빈 집합(타일 전부 딤)이라 카드의 사거리가 화면 어디에도 보이지 않았다.
 func _undimmed_cells() -> Dictionary:
 	var to: CardTargetingOverlay = _bs.targeting_overlay
 	var out: Dictionary = {}
@@ -2109,8 +2115,14 @@ func _undimmed_cells() -> Dictionary:
 		CardTargetingOverlay.Mode.PREVIEW:
 			for raw in to.area_cells.keys():
 				out[raw as Vector2i] = true
-		CardTargetingOverlay.Mode.LOCATION:
+		CardTargetingOverlay.Mode.PILOT, CardTargetingOverlay.Mode.LOCATION:
+			for raw in _bs.tiles_layer.get_used_cells():
+				var c := raw as Vector2i
+				if to.is_in_range_cell(c):
+					out[c] = true
 			for raw in to.valid_cells.keys():
+				out[raw as Vector2i] = true
+			for raw in to.pick_cells.keys():
 				out[raw as Vector2i] = true
 	return out
 
@@ -2212,24 +2224,16 @@ func _pilot_draw_scale(p: PilotData) -> float:
 	return _pilot_emphasis_scale(p) * float(_press_now.get(p, 1.0))
 
 
-# 이 파일럿이 **지금 찍을 수 있는 대상인가** — 보간의 목표값(1.0 또는
-# TARGET_EMPHASIS_SCALE). PILOT 모드는 valid_pilots, PREVIEW 는
-# preview_participants 가 강조 대상이다.
-#
-# 이미 찍어 둔 대상(pending_pick)도 **같이 커진 채로 둔다** — 시안 링이 그 위에
-# 따로 붙으므로 구분은 되고, 여기서만 1.0 으로 되돌리면 카드를 끌고 지나갈 때
-# 얼굴이 커졌다 작아졌다 하며 도로 펄스처럼 보인다.
+# 이 파일럿을 **지금 키울 것인가** — 보간의 목표값(1.0 또는
+# TARGET_EMPHASIS_SCALE). 규칙은 `CardTargetingOverlay.is_emphasized` 하나다:
+# 아무것도 가리키지 않은 동안은 사거리 안의 유효 대상, 대상을 가리킨 동안은
+# 그 카드 효과가 닿을 파일럿(대상 + 범위 안 교전 참가자 / 피격자)만.
+# 가리킨 대상 자신은 커진 채로 남고 시안 링이 그 위에 따로 붙는다.
 func _pilot_emphasis_target(p: PilotData) -> float:
 	var to: CardTargetingOverlay = _bs.targeting_overlay
-	if to == null or not to.is_visualizing():
+	if to == null:
 		return 1.0
-	var emphasized: bool = false
-	match to.mode:
-		CardTargetingOverlay.Mode.PILOT:
-			emphasized = to.valid_pilots.has(p)
-		CardTargetingOverlay.Mode.PREVIEW:
-			emphasized = p in to.preview_participants
-	return TARGET_EMPHASIS_SCALE if emphasized else 1.0
+	return TARGET_EMPHASIS_SCALE if to.is_emphasized(p) else 1.0
 
 
 func _circle_polygon(center: Vector2, r: float, n: int) -> PackedVector2Array:

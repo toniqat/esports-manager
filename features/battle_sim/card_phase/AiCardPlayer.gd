@@ -29,9 +29,10 @@ const SCALE_SMALL       := Vector2(1.02, 1.02)
 # then a snap-flip swaps to the face-up data; finally it holds + fades out.
 const FLY_FROM_HAND_SEC := 0.32
 const FLIP_HALF_SEC     := 0.10
-# 카드 아래에 붙는 설명판(`CardDescBox`). 앞면에서 설명문이 걷힌 뒤로 상대가 낸
-# 카드의 효과를 읽을 곳은 이 판뿐이라, 읽을 시간만큼 머무는 시간을 늘린다.
-const DESC_BOX_W          := 640.0
+# 카드 오른쪽에 붙는 설명판(`CardDescBox`, 키워드 풀이 없이). 앞면에서 설명문이
+# 걷힌 뒤로 상대가 낸 카드의 효과를 읽을 곳은 이 판뿐이라, 읽을 시간만큼 머무는
+# 시간을 늘린다. 폭은 중앙 카드(1.62배) 오른쪽 남은 자리에 맞춘다.
+const DESC_BOX_W          := 340.0
 const DESC_BOX_GAP        := 16.0
 const DESC_EXTRA_HOLD_SEC := 0.45
 
@@ -285,11 +286,12 @@ func _show_card_centre(cd: CardData) -> void:
 				.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 		await tw_in.finished
 
-	# 카드 앞면에는 설명문이 없다 — 무엇을 냈는지는 그 아래 설명판이 말한다.
-	# 카드와 같은 박자로 사라진다.
-	var desc: Panel = CardDescBox.build(cd, DESC_BOX_W)
-	desc.position = Vector2(CENTER_POS.x - DESC_BOX_W * 0.5,
-			CENTER_POS.y + Card.CARD_H * 0.5 * SCALE_BIG.y + DESC_BOX_GAP)
+	# 카드 앞면에는 설명문이 없다 — 무엇을 냈는지는 그 오른쪽 설명판이 말한다.
+	# 윗변을 카드 윗단에 맞추고, 카드와 같은 박자로 사라진다.
+	var desc: Panel = CardDescBox.build(cd, DESC_BOX_W, false, "", null, false)
+	var card_half: Vector2 = Vector2(Card.CARD_W, Card.CARD_H) * 0.5 * SCALE_BIG
+	desc.position = Vector2(CENTER_POS.x + card_half.x + DESC_BOX_GAP,
+			CENTER_POS.y - card_half.y)
 	_bs.canvas.add_child(desc)
 
 	await _bs.get_tree().create_timer(SHOW_DURATION_SEC + DESC_EXTRA_HOLD_SEC).timeout

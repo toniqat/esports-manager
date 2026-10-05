@@ -56,8 +56,8 @@ var _hit_bands: Array[Vector2] = []
 # 뜨는 조건은 그대로다 — **가리키기만 해도** 뜬다. 어느 카드를 보여 줄지는
 # 손패 포커스와 같은 질문이라 `_push_focus_card()` 하나가 답한다: 끌고 있는
 # 카드가 있으면 그것, 없으면 커서 아래 카드. 높이는 내용이 정한다(`CardDescBox`,
-# 하한 없음). 카드를 끌어 손패가 비켜 내려가면 판은 손패 위 모서리로 옮겨 간다
-# (`_desc_box_spots`).
+# 하한 없음). **카드를 끌면** 키워드판은 내려가고 설명판만 끌린 카드의 왼쪽에
+# 붙어 매 프레임 따라다닌다(`_desc_follows_drag` / `_follow_drag_desc`).
 const DESC_BOX_W   := 240.0
 const KEYWORD_BOX_W := 210.0
 ## 카드 ↔ 설명판 ↔ 키워드판 사이 간격.
@@ -69,8 +69,6 @@ const DESC_BOX_GAP := 20.0
 const DESC_ANIM_IN_TIME := 0.2
 const DESC_ANIM_OUT_TIME := 0.1
 const DESC_ANIM_RISE := 24.0
-## 드래그로 손패가 비킬 때 판이 손패 위 모서리로 옮겨 가는 시간(`_reflow_description_box`).
-const DESC_MOVE_TIME := 0.18
 ## 화면 가장자리 여백.
 const DESC_BOX_MARGIN := 8.0
 ## 설명 판 전용 CanvasLayer — `_bs.canvas`(layer 1) 바로 위. 손패 카드는
@@ -83,6 +81,11 @@ var _desc_layer: CanvasLayer = null
 var _keyword_box: Panel = null
 ## 지금 설명 상자가 보여 주고 있는 카드. 포커스가 실제로 바뀔 때만 다시 짓는다.
 var _desc_card: Card = null
+## 설명판이 끌린 카드(`_drag_card`) 왼쪽에 붙어 따라다니는 중인가. 참이면
+## `_process` 가 매 프레임 판 자리를 카드의 실제 화면 rect 에서 다시 잡는다 —
+## 커서를 따라가는 카드도, 슬롯에 떠서 화살표를 쏘는 카드도 위치가 트윈으로
+## 움직이므로 드래그 이벤트에서만 맞추면 한 박자씩 어긋난다.
+var _desc_follows_drag: bool = false
 
 # ─── 드래그 앤 드롭 (카드를 집는 **유일한** 조작) ────────────────────────────
 # 누르는 것만으로는 아무 일도 일어나지 않는다. 누른 채 `DRAG_THRESHOLD_PX` 넘게
@@ -1682,7 +1685,6 @@ func _set_drag_reached_field(on: bool) -> void:
 	_bs.hud.set_enemy_top_raised(lowers)
 	if _drag_card != null and is_instance_valid(_drag_card):
 		relayout_hand(_bs.player_card_nodes, _drag_card)
-	_reflow_description_box()
 
 
 ## 끌린 카드가 서는 자리 — 손패가 드래그로 내려가 있어도 **원래(올라온) 슬롯**.
@@ -2735,9 +2737,19 @@ func _refresh_description_box() -> void:
 	if focus == null:
 		_hide_description_box()
 		return
+	var dragging: bool = focus == _drag_card
 	if focus == _desc_card and _description_box != null \
 			and is_instance_valid(_description_box):
-		return
+		if dragging == _desc_follows_drag:
+			return
+		# 가리키던 카드를 그대로 끌어냈다 — 판은 다시 짓지 않고 키워드판만 내린 뒤
+		# 카드 왼쪽에 붙인다. 반대(드래그가 빗나가 손패로 돌아옴)는 키워드판까지
+		# 다시 세워야 하므로 아래에서 새로 짓는다.
+		if dragging:
+			_animate_desc_out(_keyword_box)
+			_keyword_box = null
+			_start_desc_follow(_description_box)
+			return
 	_show_description_box(focus)
 
 
@@ -2763,6 +2775,14 @@ func _show_description_box(card: Card) -> void:
 	# 높이는 내용이 정한다(하한 없음) — 한 줄짜리 카드는 판도 짧다.
 	var box: Panel = CardDescBox.build(card.data, DESC_BOX_W, false, cost_txt, cost_col,
 			false, 0.0)
+	# 끌고 있는 카드에는 키워드판이 없다 — 설명판 하나만 카드 왼쪽에 붙어 다닌다.
+	if card == _drag_card:
+		_desc_parent().add_child(box)
+		_description_box = box
+		_keyword_box = null
+		_desc_card = card
+		_start_desc_follow(box)
+		return
 	var kw_box: Panel = CardDescBox.build_keyword_panel(card.data, KEYWORD_BOX_W)
 	var spots: Array = _desc_box_spots(card, idx, box.size.y,
 			kw_box.size.y if kw_box != null else 0.0)
@@ -2782,31 +2802,15 @@ func _show_description_box(card: Card) -> void:
 	_desc_card = card
 
 
-## 설명판 · 키워드판의 자리 `[box_pos, kw_pos]`.
-##
-## • 평소 — 확대된 카드 바로 옆, 카드 윗단에 맞춘다. 카드가 화면 가운데이거나
-##   오른쪽이면 판은 왼쪽, 아니면 오른쪽. 키워드판은 그 바깥쪽(자리가 없으면 카드
-##   반대편).
-## • 드래그로 손패 · 스트립이 비켜 내려간 동안(`_drag_lowers_hand`) — 카드 옆은
-##   전장 한복판이라 판이 겨누는 자리를 덮는다. 판은 **손패 바로 위 모서리**로
-##   물러난다: 끌린 카드의 슬롯이 화면 오른쪽 절반이면 왼쪽 위(전략 점수 도넛을
-##   덮는다), 아니면 오른쪽 위(전장 오른쪽 아래 빈자리). 아랫변을 손패 윗선에
-##   맞추고, 키워드판은 그 안쪽(화면 가운데 쪽)에 같은 아랫변으로 선다. 판정은
-##   슬롯 기준이라 드래그 동안 고정이다 — 커서를 따라 판이 오가지 않는다.
+## 설명판 · 키워드판의 자리 `[box_pos, kw_pos]` — 손패에서 가리킨 카드용.
+## 확대된 카드 바로 옆, 카드 윗단에 맞춘다. 카드가 화면 가운데이거나 오른쪽이면
+## 판은 왼쪽, 아니면 오른쪽. 키워드판은 그 바깥쪽(자리가 없으면 카드 반대편).
+## 끌린 카드는 이 자리를 쓰지 않는다 — `_follow_drag_desc` 가 카드 왼쪽에 붙인다.
 func _desc_box_spots(card: Card, idx: int, box_h: float, kw_h: float) -> Array:
 	var screen: Vector2 = _bs.canvas.get_viewport().get_visible_rect().size
 	var center: Vector2 = (_card_rest_slot(card, idx, _bs.player_card_nodes.size())
 			+ Vector2(Card.CARD_W, Card.CARD_H) * 0.5)
 	var on_left: bool = center.x >= screen.x * 0.5
-	if card == _drag_card and _drag_lowers_hand():
-		var bottom: float = (_bs.BS_HAND_CENTER.y
-				+ Card.CARD_H * 0.5 * (1.0 - HAND_CARD_SCALE) - DESC_BOX_GAP)
-		var bx: float = (DESC_BOX_MARGIN if on_left
-				else screen.x - DESC_BOX_W - DESC_BOX_MARGIN)
-		var kx_in: float = (bx + DESC_BOX_W + DESC_BOX_GAP if on_left
-				else bx - DESC_BOX_GAP - KEYWORD_BOX_W)
-		return [Vector2(bx, maxf(DESC_BOX_MARGIN, bottom - box_h)),
-				Vector2(kx_in, maxf(DESC_BOX_MARGIN, bottom - kw_h))]
 
 	# 확대된 카드의 화면 rect — 슬롯(레이아웃 좌상단) + 한가운데 피벗, 손패 배율 ×
 	# 호버 배율. 기울기는 무시한다(몇 도라 판 자리에 차이가 없다).
@@ -2827,32 +2831,50 @@ func _desc_box_spots(card: Card, idx: int, box_h: float, kw_h: float) -> Array:
 			Vector2(kx, _desc_box_y(card_rect.position.y, kw_h, screen.y))]
 
 
-## 드래그가 판정 범위에 들고 날 때 — 떠 있는 판을 새 자리로 미끄러뜨린다
-## (다시 짓지 않는다: 같은 카드라 내용이 같다).
-func _reflow_description_box() -> void:
-	if _desc_card == null or not is_instance_valid(_desc_card) 			or _description_box == null or not is_instance_valid(_description_box):
-		return
-	var idx: int = _bs.player_card_nodes.find(_desc_card)
-	if idx < 0:
-		return
-	var kw_valid: bool = _keyword_box != null and is_instance_valid(_keyword_box)
-	var spots: Array = _desc_box_spots(_desc_card, idx, _description_box.size.y,
-			_keyword_box.size.y if kw_valid else 0.0)
-	_slide_desc_to(_description_box, spots[0])
-	if kw_valid:
-		_slide_desc_to(_keyword_box, spots[1])
-
-
-func _slide_desc_to(box: Control, to: Vector2) -> void:
+## 설명판을 끌린 카드에 붙인다 — 진행 중인 등장 트윈(위로 올라오는 `position:y`)
+## 을 죽이고 투명도만 이어서 올린다. 자리는 매 프레임 `_follow_drag_desc` 가 쓰므로
+## 위치 트윈이 남아 있으면 둘이 한 프레임씩 번갈아 판을 잡아당긴다.
+func _start_desc_follow(box: Control) -> void:
+	_desc_follows_drag = true
 	if box.has_meta("desc_tween"):
 		var old: Tween = box.get_meta("desc_tween")
 		if old != null and old.is_valid():
 			old.kill()
-	var tw := box.create_tween().set_parallel()
+	var tw := box.create_tween()
 	box.set_meta("desc_tween", tw)
-	tw.tween_property(box, "position", to, DESC_MOVE_TIME).set_trans(
-			Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tw.tween_property(box, "modulate:a", 1.0, DESC_MOVE_TIME)
+	tw.tween_property(box, "modulate:a", 1.0, DESC_ANIM_IN_TIME)
+	_follow_drag_desc()
+
+
+func _process(_delta: float) -> void:
+	if _desc_follows_drag:
+		_follow_drag_desc()
+
+
+## 끌린 카드의 **지금 화면 rect**(배율 · 기울기를 먹은 네 모서리의 외접 사각형)
+## 왼쪽 `DESC_BOX_GAP` 거리에 판을 세우고, 윗변을 카드 윗단에 맞춘다. 왼쪽에 판이
+## 들어갈 자리가 없으면(카드가 화면 왼쪽 끝) 카드 오른쪽으로 넘긴다 — 화면 안에
+## 가둬 카드를 덮는 것보다 낫다.
+func _follow_drag_desc() -> void:
+	if _drag_card == null or not is_instance_valid(_drag_card) \
+			or _desc_card != _drag_card \
+			or _description_box == null or not is_instance_valid(_description_box):
+		_desc_follows_drag = false
+		return
+	var xf: Transform2D = _drag_card.get_global_transform()
+	var sz: Vector2 = _drag_card.size
+	var lo: Vector2 = xf * Vector2.ZERO
+	var hi: Vector2 = lo
+	for corner in [Vector2(sz.x, 0.0), Vector2(0.0, sz.y), sz]:
+		var pt: Vector2 = xf * (corner as Vector2)
+		lo = lo.min(pt)
+		hi = hi.max(pt)
+	var screen: Vector2 = _bs.canvas.get_viewport().get_visible_rect().size
+	var box_x: float = lo.x - DESC_BOX_GAP - DESC_BOX_W
+	if box_x < DESC_BOX_MARGIN:
+		box_x = minf(hi.x + DESC_BOX_GAP, screen.x - DESC_BOX_W - DESC_BOX_MARGIN)
+	_description_box.position = Vector2(box_x,
+			_desc_box_y(lo.y, _description_box.size.y, screen.y))
 
 
 ## 등장 — 제자리보다 `DESC_ANIM_RISE` 아래 · 투명에서 시작해 올라오며 나타난다.
@@ -2906,6 +2928,7 @@ func _hide_description_box() -> void:
 	_description_box = null
 	_keyword_box = null
 	_desc_card = null
+	_desc_follows_drag = false
 
 
 # Player play path, entered only from a committed drop — by which point the

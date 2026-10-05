@@ -21,6 +21,9 @@ extends RefCounted
 #                        밴드 폭이 얼굴 높이 ×1.32 로 고정이라 **길이를 늘려도
 #                        화면에서의 얼굴 크기는 그대로**다 — 몸이 더 보일 뿐.
 #   full/N_full.png    — 전신 아트 (가변 폭 × 1024) — 파일럿 상세 패널
+#   ribbon/N_ribbon.png — **손패 카드 우측 상단 직각삼각형 리본** (120×136) —
+#                        삼각형 · 둥근 모서리 · 그림자까지 구워 둔 컷.
+#                        `make_ribbon_crops.py` 가 eye 와 같은 템플릿 매칭으로 생성.
 #
 # `prime_into(parent)`는 모든 circle/face 텍스처를 화면 밖 Sprite2D 자식으로
 # 한 번 add_child한다. `load()`로 받은 CompressedTexture2D는 SceneTree에 붙은
@@ -37,6 +40,7 @@ const CIRCLE_DIR: String = "res://resources/images/pilot/circle/"
 const EYE_DIR: String    = "res://resources/images/pilot/eye/"
 const TALL_DIR: String   = "res://resources/images/pilot/tall/"
 const FULL_DIR: String   = "res://resources/images/pilot/full/"
+const RIBBON_DIR: String = "res://resources/images/pilot/ribbon/"
 
 # ─── 모브 파일럿 ─────────────────────────────────────────────────────────────
 # 스킬을 받지 못한 15명은 **실루엣 컷**으로 나온다 — 같은 파일명이 `mob/` 아래에
@@ -132,6 +136,14 @@ static func bust_for(pilot_id: int) -> Texture2D:
 	atlas.atlas = src
 	atlas.region = BUST_REGION
 	return atlas
+
+
+## 손패 카드 우측 상단 리본 (120×136, 카드 단위 60×68 의 2배). `Card` 가
+## TextureRect 에 그대로 얹는다 — 마스킹은 PNG 에 구워져 있다.
+static func ribbon_for(pilot_id: int) -> Texture2D:
+	if not has_image(pilot_id):
+		return null
+	return load(_dir_for(pilot_id, "ribbon", RIBBON_DIR) + "%d_ribbon.png" % (pilot_id + 1)) as Texture2D
 
 
 ## 전신 아트 (가변 폭 × 1024). 파일럿 상세 패널이 쓴다.

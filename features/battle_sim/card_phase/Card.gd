@@ -102,7 +102,7 @@ const PRESERVE_BORDER_COLOR := Color(0.45, 0.95, 1.0, 1.0)
 const PRESERVE_BORDER_WIDTH := 5
 
 # ── 충전 표시 ────────────────────────────────────────────────────────────────
-## 충전 배지는 **오른쪽 아래**다 — 오른쪽 위는 파일럿 초상 배지가 가져갔고,
+## 충전 배지는 **오른쪽 아래**다 — 오른쪽 위는 파일럿 초상 리본이 가져갔고,
 ## 왼쪽 위는 비용 칸이다. `N/M` 으로 찍어 숫자 하나가 비용으로 오독되지 않게 한다.
 const CHARGE_BADGE_SIZE := Vector2(52.0, 30.0)
 const CHARGE_BADGE_COLOR := Color(0.06, 0.05, 0.10, 0.92)
@@ -135,8 +135,6 @@ const NAME_PLATE_H := 36.0
 const NAME_TOP := CARD_H - NAME_PLATE_H
 const ART_BACK_COLOR := Color(0.05, 0.04, 0.09, 1.0)
 const ART_MASK_SHADER: Shader = preload("res://resources/shaders/rounded_top_mask.gdshader")
-const ART_SHADOW_H := 9.0
-const ART_SHADOW_ALPHA := 0.55
 ## 이름판 색 — `CardImages.type_for` 가 답하는 아이템 타입별(deadlock.wiki 색을
 ## 흰 글씨가 읽히게 어둡게 깐 것). 타입이 없는 카드(표에 없는 새 카드)는 중립색.
 const TYPE_COLORS: Dictionary = {
@@ -162,24 +160,28 @@ const COST_FONT_SIZE := 22
 ## 배지를 따로 어둡게 해 잠긴 카드에서 비용만 밝게 남지 않게 한다.
 const COST_BADGE_BLOCKED_TINT := Color(0.42, 0.42, 0.42, 1.0)
 
-# ── 파일럿 초상 배지 ──────────────────────────────────
-# 시전자의 얼굴은 **카드 본체를 채우지 않는다.** 아트 위 왼쪽, **비용 배지 바로
-# 아래**에 작은 원형 초상 하나로 앉는다. 예전에는 오른쪽 위였는데, 카드가 겹치는
-# 부채꼴에서 오른쪽 절반은 옆 카드에 가려지는 쪽이라 "누구 카드인가"가 손패를
-# 펼쳐 봐야만 읽혔다 — 비용과 얼굴은 한 구석에 세로로 모아 둔다.
+# ── 파일럿 초상 리본 (우측 상단 직각삼각형) ─────────────────
+# 시전자의 얼굴은 카드 **오른쪽 위 모서리를 덮는 직각삼각형 리본**에 눈이 보이게
+# 잘려 앉는다. 두 직각변이 카드 윗변 · 오른변에 붙고, 빗변 아래로만 그림자가
+# 떨어진다(빗변 테두리는 없다).
+#
+# **런타임 마스킹이 아니라 파일럿별로 구운 PNG** 다
+# (`PilotImages.ribbon_for`, `make_ribbon_crops.py`). 삼각형 · 둥근 카드 모서리
+# (`CARD_RADIUS`) · 안티앨리어싱 · 그림자가 전부 그림 안에 있어 여기서는 평범한
+# TextureRect 하나다 — 마스크 쉐이더를 쓰면 손패 카드마다 ShaderMaterial 이 붙어
+# 모바일에서 첫 사용 컴파일 · 배치 분리 비용이 생긴다. 크기를 바꾸려면 아래
+# 상수와 스크립트의 `LEG` / `SHADOW_PAD` 를 함께 고치고 다시 구울 것.
+#
+# 손패가 많아 카드가 겹치면 오른쪽 카드가 이 모서리를 덮는다 — 가리킨 카드(줄이
+# 벌어진다)와 맨 오른쪽 카드에서만 온전히 보이는 것은 감수한 선택이다.
 #
 # **손패에서만 그린다**(`is_player_card`). 상세 패널 · 더미 열람 · 밴픽 · 드래프트
 # 처럼 "이 기체가 주는 카드"를 보여 주는 자리에서는 시전자가 없거나 의미가 없고,
 # 상대 손패 peek 은 뒷면이라 그릴 것이 없다.
-const PORTRAIT_SIZE   := 44.0
-const PORTRAIT_LEFT   := 5.0
-## 비용 배지 아래끈(-9 + 42 = 33) 바로 밑.
-const PORTRAIT_TOP    := 34.0
-## 초상 뒤에 깔는 원형 받침이 초상보다 넓은 만큼. 초상 PNG 는 정사각형에 내접한
-## 원이라 아트 위에 그냥 얹으면 가장자리가 그림에 묻힌다.
-const PORTRAIT_RING_PAD := 2.0
-const PORTRAIT_RING_COLOR := Color(0.05, 0.04, 0.09, 0.92)
-const PORTRAIT_RING_LINE := Color(0.98, 0.96, 0.90, 0.85)
+## 삼각형 직각변 길이 (카드 단위). 리본 PNG 는 이 값 × 2 px 로 구워져 있다.
+const RIBBON_LEG := 60.0
+## 삼각형 아래 그림자가 떨어지는 띠 높이. 리본 노드 높이 = LEG + 이 값.
+const RIBBON_SHADOW_PAD := 8.0
 
 const UNPLAYABLE_COST_TEXT := "—"
 
@@ -245,14 +247,10 @@ var _preserved: bool = false
 var _preserve_mark: Panel = null
 ## 충전 배지 (`N/M`). 충전 카드가 아니면 꺼진다.
 var _charge_badge: Label = null
-## 시전자 얼굴 배지 (카드 안쪽 오른쪽 위). 손패 카드에만 선다.
+## 시전자 얼굴 리본 (오른쪽 위 모서리 삼각형). 손패 카드에만 선다.
 var _portrait: TextureRect = null
-## 그 얼굴 뒤에 깔는 원형 받침. 초상과 언제나 함께 켜지고 꺼진다.
-var _portrait_ring: Panel = null
 ## 핸드가 내려가 있는가(= 내 차례가 아닌가). 그림자 거리만 바꾼다.
 var _lowered: bool = false
-## 아트가 이름판 윗변에 드리우는 그림자 띠 — `_apply_name_plate` 가 처음 부를 때 만든다.
-var _art_shadow: TextureRect = null
 
 const DIM_MODULATE: Color = Color(0.42, 0.42, 0.48, 1.0)
 
@@ -403,48 +401,25 @@ func _build_block_overlay() -> void:
 	_charge_badge.visible = false
 	add_child(_charge_badge)
 
-	# 시전자 얼굴 배지. 앞면 위에 앉되 **사용 불가 슬래브 아래**여야 한다 —
-	# 잠긴 카드에서 얼굴만 밝게 남으면 쓸 수 있는 카드처럼 읽힌다. 그래서 배지를
+	# 시전자 얼굴 리본. 앞면 위에 앉되 **사용 불가 슬래브 아래**여야 한다 —
+	# 잠긴 카드에서 얼굴만 밝게 남으면 쓸 수 있는 카드처럼 읽힌다. 그래서 리본을
 	# 붙인 뒤 슬래브 · 부활 숫자 · 보존 테두리를 다시 맨 뒤로 보낸다.
-	_portrait_ring = Panel.new()
-	_portrait_ring.name = "OwnerPortraitRing"
-	_portrait_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_portrait_ring.size = Vector2(PORTRAIT_SIZE + 2.0 * PORTRAIT_RING_PAD,
-			PORTRAIT_SIZE + 2.0 * PORTRAIT_RING_PAD)
-	_portrait_ring.position = Vector2(PORTRAIT_LEFT - PORTRAIT_RING_PAD,
-			PORTRAIT_TOP - PORTRAIT_RING_PAD)
-	var pr := StyleBoxFlat.new()
-	pr.bg_color = PORTRAIT_RING_COLOR
-	pr.border_color = PORTRAIT_RING_LINE
-	pr.border_width_top    = 2
-	pr.border_width_bottom = 2
-	pr.border_width_left   = 2
-	pr.border_width_right  = 2
-	var rr: int = int(_portrait_ring.size.x * 0.5)
-	pr.corner_radius_top_left     = rr
-	pr.corner_radius_top_right    = rr
-	pr.corner_radius_bottom_left  = rr
-	pr.corner_radius_bottom_right = rr
-	_portrait_ring.add_theme_stylebox_override("panel", pr)
-	_portrait_ring.visible = false
-	add_child(_portrait_ring)
-
 	_portrait = TextureRect.new()
-	_portrait.name = "OwnerPortrait"
+	_portrait.name = "OwnerRibbon"
 	_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_portrait.size = Vector2(PORTRAIT_SIZE, PORTRAIT_SIZE)
-	_portrait.position = Vector2(PORTRAIT_LEFT, PORTRAIT_TOP)
+	_portrait.size = Vector2(RIBBON_LEG, RIBBON_LEG + RIBBON_SHADOW_PAD)
+	_portrait.position = Vector2(CARD_W - RIBBON_LEG, 0.0)
 	_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_portrait.stretch_mode = TextureRect.STRETCH_SCALE
 	_portrait.visible = false
 	add_child(_portrait)
-	# 슬래브 · 부활 숫자 · 보존 테두리가 초상 배지를 덮도록 맨 뒤로 다시 보낸다.
+	# 슬래브 · 부활 숫자 · 보존 테두리가 초상 리본을 덮도록 맨 뒤로 다시 보낸다.
 	move_child(_block_overlay, get_child_count() - 1)
 	move_child(_respawn_label, get_child_count() - 1)
 	move_child(_preserve_mark, get_child_count() - 1)
 
 
-## 충전 배지와 시전자 초상 배지를 지금 상태에 맞춘다. `CardPhaseManager` 가
+## 충전 배지와 시전자 초상 리본을 지금 상태에 맞춘다. `CardPhaseManager` 가
 ## 충전이 오르거나 내릴 때마다 부른다.
 func refresh_charge_badge() -> void:
 	var showable: bool = face_up and is_player_card
@@ -457,11 +432,9 @@ func refresh_charge_badge() -> void:
 		var pid: int = -1
 		if data != null and data.owner_pilot != null:
 			pid = data.owner_pilot.pilot_id
-		var tex: Texture2D = PilotImages.circle_for(pid) if pid >= 0 else null
+		var tex: Texture2D = PilotImages.ribbon_for(pid) if pid >= 0 else null
 		_portrait.texture = tex
 		_portrait.visible = showable and tex != null
-		if _portrait_ring != null and is_instance_valid(_portrait_ring):
-			_portrait_ring.visible = _portrait.visible
 
 
 ## Turns the slab / countdown on or off from the two independent reasons a card
@@ -636,33 +609,7 @@ func _apply_name_plate() -> void:
 	plate.corner_radius_bottom_left  = int(CARD_RADIUS)
 	plate.corner_radius_bottom_right = int(CARD_RADIUS)
 	name_plate.add_theme_stylebox_override("panel", plate)
-	_ensure_art_shadow()
 
-
-## 아트 아랫변에서 아래로만 옅어지는 검은 띠. 이름판 바로 위 · 이름 라벨 아래에
-## 끼워 글씨는 가리지 않는다.
-func _ensure_art_shadow() -> void:
-	if _art_shadow != null:
-		return
-	var grad := Gradient.new()
-	grad.set_color(0, Color(0.0, 0.0, 0.0, ART_SHADOW_ALPHA))
-	grad.set_color(1, Color(0.0, 0.0, 0.0, 0.0))
-	var tex := GradientTexture2D.new()
-	tex.gradient = grad
-	tex.fill_from = Vector2(0.0, 0.0)
-	tex.fill_to = Vector2(0.0, 1.0)
-	tex.width = 4
-	tex.height = 32
-	_art_shadow = TextureRect.new()
-	_art_shadow.name = "ArtShadow"
-	_art_shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_art_shadow.texture = tex
-	_art_shadow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_art_shadow.stretch_mode = TextureRect.STRETCH_SCALE
-	_art_shadow.position = Vector2(0.0, NAME_TOP)
-	_art_shadow.size = Vector2(CARD_W, ART_SHADOW_H)
-	card_front.add_child(_art_shadow)
-	card_front.move_child(_art_shadow, name_plate.get_index() + 1)
 
 
 # ── Layout Tween ──────────────────────────────────────────────────────────────

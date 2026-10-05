@@ -248,8 +248,8 @@ under `BattleField/BuildingLayer` and `BattleField/WaypointLayer`.
 
 ### PilotImages.gd
 `class_name PilotImages`, extends `RefCounted`. Static lookup for the pilot
-portraits under `resources/images/pilot/{faces,circle,eye,tall,full}/`, plus the
-**모브 실루엣** set that mirrors all five under `pilot/mob/`.
+portraits under `resources/images/pilot/{faces,circle,eye,tall,full,ribbon}/`, plus the
+**모브 실루엣** set that mirrors them under `pilot/mob/`.
 
 | 함수 | 파일 | 크기 | 소비자 |
 |---|---|---|---|
@@ -259,6 +259,13 @@ portraits under `resources/images/pilot/{faces,circle,eye,tall,full}/`, plus the
 | `tall_for` | `tall/N_tall.png` | **210×700** | 교전 아레나 하단 스트립 (`engage/EngageArena.gd`) |
 | `bust_for` | `tall/` 의 **윗부분** `AtlasTexture` | 174×351 (`BUST_ASPECT` 0.496) | 드래프트 선택 5인 칸 · 밴픽 **배정 단계**의 아군 파일럿 칸 |
 | `full_for` | `full/N_full.png` | 가변 × 1024 | 파일럿 상세 패널 (`ui/PilotDetailPanel.gd`) |
+| `ribbon_for` | `ribbon/N_ribbon.png` | **120×136** (카드 단위 60×68 의 2배) | 손패 카드 우측 상단 삼각형 리본 (`card_phase/Card.gd`) |
+
+**`ribbon/` 도 손으로 만들지 말 것** — `make_ribbon_crops.py` 가 eye 와 같은
+템플릿 매칭으로 `full/` 에서 굽는다. 직각삼각형 마스크 · 카드 둥근 모서리 ·
+빗변 아래 그림자 · 투명부 받침색까지 PNG 에 들어 있어(런타임 마스크 쉐이더를
+피하려는 것) 모브는 `mob/full/` 실루엣으로 같은 크롭을 한 벌 더 굽는다
+(`mob/ribbon/`). 기하는 `Card.RIBBON_LEG` / `RIBBON_SHADOW_PAD` 와 묶여 있다.
 
 **`bust_for` 는 파일이 아니라 크롭이다** — `tall` 컷(210×700, 머리~허벅지)의
 윗부분을 `AtlasTexture` 로 잘라 돌려주므로 원본을 한 벌 더 굽지 않는다.

@@ -12,7 +12,8 @@ extends Node
 #   • PILOT    — 시전자 사거리 밖 타일이 딤드된다. 유효 대상만
 #                TARGET_EMPHASIS_SCALE 만큼 커진 채 밝게 남는다.
 #   • LOCATION — 사거리 밖 타일이 딤드되고 유효 셀은 초록. 파일럿은 시전자와
-#                (`foe` 카드라면) 유효 칸의 적을 뺀 전원이 딤드된다.
+#                (`foe` 카드라면) 유효 칸의 적을 뺀 전원이 딤드된다. 드롭은
+#                초상이 먼저 — 유효 칸에 선 파일럿의 초상에 놓으면 그 칸이다.
 #   • PREVIEW  — 전투 개시류. 시전자 교전 반경(`self_range`)이 영역으로 밝아지고 그 안의
 #                참여 파일럿이 강조된다. **참가자 명단은 여기 없다** — 카드를
 #                제출한 뒤 `engage/EngageIntro.gd` 의 VS 화면이 보여 준다.
@@ -80,6 +81,9 @@ const UNLIMITED_RANGE: int = 99
 # 시안 링(BattleRenderer._draw_pending_pick_highlight)의 유일한 입력이다.
 # Holds either PilotData or Vector2i.
 var pending_pick: Variant = null
+# 마지막으로 초상 히트가 집은 파일럿. LOCATION 은 pending_pick 에 칸만 남으므로
+# 히스테리시스(PICK_STICKY_SCALE)가 "어느 초상을 붙잡고 있었나"를 여기서 읽는다.
+var _marker_pick: PilotData = null
 
 var _bs: BattleSim = null
 var _on_confirm: Callable = Callable()
@@ -285,9 +289,18 @@ func hit_test_pilot_at(pos: Vector2) -> PilotData:
 
 
 ## 드롭 지점의 유효 셀(LOCATION 모드 한정). 없으면 null.
+##
+## **초상이 먼저다.** 마커는 타일 중심에서 위(팀1) / 아래(팀0)로 떠 그려지고
+## 강조되면 더 벌어지므로, 타일 중심 반경만 보면 `foe` 카드(적 또는 포탑)를
+## 적 초상에 놓아도 빗나가고 그 아래 타일을 겨눠야만 잡혔다. 유효 칸에 선
+## 파일럿의 초상을 가리키면 그 파일럿의 칸으로 읽는다 — `foe` 카드는 노리는
+## 적(`target_pilots`)만, 그 밖의 칸 지정 카드는 유효 칸에 선 누구든.
 func hit_test_cell_at(pos: Vector2) -> Variant:
 	if mode != Mode.LOCATION:
 		return null
+	var marker_hit := _hit_test_marker(pos, _location_marker_candidates())
+	if marker_hit != null:
+		return marker_hit.grid_pos
 	var cell := _hit_test_cell(pos)
 	if cell == Vector2i(-2147483648, -2147483648) or not valid_cells.has(cell):
 		return null
@@ -398,6 +411,29 @@ func _hit_test_cell(pos: Vector2) -> Vector2i:
 # ranked by marker distance — that keeps taps on the tile itself working while
 # leaving a stacked cell unambiguous.
 func _hit_test_pilot(pos: Vector2) -> PilotData:
+	return _hit_test_marker(pos, valid_pilots, true)
+
+
+# LOCATION 모드에서 초상으로 칸을 집을 수 있는 파일럿 — 유효 칸에 선 산 파일럿.
+# `foe` 카드는 노리는 적만 (아군 초상에 놓아 같은 칸의 적을 치는 일이 없게).
+func _location_marker_candidates() -> Dictionary:
+	if _card != null and _card.target == "foe":
+		return target_pilots
+	var out: Dictionary = {}
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		if p.alive and valid_cells.has(p.grid_pos):
+			out[p] = true
+	return out
+
+
+# `candidates`(PilotData → true) 중 커서 아래 초상의 주인. `tile_fallback` 이면
+# 초상을 비껴 자기 타일을 누른 클릭도 그 파일럿으로 읽는다(PILOT 모드 —
+# LOCATION 은 타일 판정을 `_hit_test_cell` 이 따로 한다).
+func _hit_test_marker(pos: Vector2, candidates: Dictionary,
+		tile_fallback: bool = false) -> PilotData:
+	if candidates.is_empty():
+		return null
 	var markers: Dictionary = {}
 	if _bs.renderer != null:
 		markers = _bs.renderer.pilot_marker_positions()
@@ -410,15 +446,21 @@ func _hit_test_pilot(pos: Vector2) -> PilotData:
 	# marker circle (~31.5 px radius at default scale).
 	var base_r: float = hex_size * 0.85
 	# 이미 가리킨 대상은 조금 더 넓은 반경 안에서 계속 잡혀 있다(PICK_STICKY_SCALE).
+	# LOCATION 은 칸을 들고 있으므로 초상으로 집은 파일럿을 따로 기억한다.
+	var held: PilotData = null
 	if pending_pick is PilotData:
-		var held := pending_pick as PilotData
-		if held.alive and valid_pilots.has(held) and markers.has(held):
+		held = pending_pick as PilotData
+	elif pending_pick is Vector2i and _marker_pick != null \
+			and _marker_pick.grid_pos == (pending_pick as Vector2i):
+		held = _marker_pick
+	if held != null:
+		if held.alive and candidates.has(held) and markers.has(held):
 			var held_r: float = base_r
 			if _bs.renderer != null:
 				held_r = maxf(base_r, _bs.renderer.pilot_marker_radius(held))
 			if (markers[held] as Vector2).distance_to(pos) <= held_r * PICK_STICKY_SCALE:
-				return held
-	for raw in valid_pilots.keys():
+				return _remember_marker_pick(held)
+	for raw in candidates.keys():
 		var p := raw as PilotData
 		if not p.alive:
 			continue
@@ -437,13 +479,20 @@ func _hit_test_pilot(pos: Vector2) -> PilotData:
 				best_d = d
 				best = p
 			continue
+		if not tile_fallback:
+			continue
 		# 타일 폴백은 강조와 무관하게 **타일 크기** 기준이다 — 커진 초상만큼
 		# 넓히면 옆 칸을 누른 클릭까지 이 파일럿으로 빨려 들어간다.
 		var tile_d: float = _bs.cell_center(p.grid_pos).distance_to(pos)
 		if tile_d <= base_r and d < tile_best_d:
 			tile_best_d = d
 			tile_best = p
-	return best if best != null else tile_best
+	return _remember_marker_pick(best if best != null else tile_best)
+
+
+func _remember_marker_pick(p: PilotData) -> PilotData:
+	_marker_pick = p
+	return p
 
 
 # ─── Teardown ────────────────────────────────────────────────────────────────
@@ -465,6 +514,7 @@ func _clear_visual_state() -> void:
 	range_radius = 0
 	range_unlimited = false
 	pending_pick = null
+	_marker_pick = null
 	_play_allowed = false
 
 

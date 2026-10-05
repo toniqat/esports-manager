@@ -1701,7 +1701,17 @@ keyword check has always fired first, so they are 소멸 on their first play.
     > click, whichever face the player tapped. 지금은 렌더 가능한 파일럿이
     > 전원 슬롯을 받으므로 폴백(`pilot_marker_pos_solo` → 렌더러의
     > `pilot_marker_pos_fallback`)은 사실상 걸리지 않는다.
-  - **LOCATION mode** keeps the cell-centred hit test (`_hit_test_cell`).
+  - **LOCATION mode checks portraits first, then the cell.** `hit_test_cell_at`
+    runs the same marker probe (`_hit_test_marker`, no tile fallback) over
+    `_location_marker_candidates()` — for `foe` cards (적 또는 포탑) only the
+    enemies on valid cells (`target_pilots`), for other location cards anyone
+    alive on a valid cell — and a hit resolves to **that pilot's `grid_pos`**.
+    Only on a miss does the cell-centred `_hit_test_cell` run (turrets, empty
+    cells). Portraits float above (team 1) / below (team 0) their tile and
+    spread further when emphasised, so the old cell-only probe made 천공의 일격 ·
+    로켓 펀치 · 일격 miss when dropped on the enemy's face — you had to aim at the
+    tile underneath. The PICK_STICKY_SCALE hysteresis also covers this path via
+    `_marker_pick` (the pilot whose portrait produced the held cell).
 - The 전략 포인트 도넛 is **no longer locked** while a card is selected — with
   the modal gone there is nothing to protect: 턴 넘기기 during a selection just
   ends the phase, and `end_card_phase` opens with `deselect_current_card()`

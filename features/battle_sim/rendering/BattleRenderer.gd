@@ -1076,6 +1076,12 @@ func _solve_slots() -> Dictionary:
 ## 꼬리, 내 꼬리 ↔ 남의 초상)으로 다시 앉힌다. 깨끗한 자리가 없으면 그대로 둔다.
 ## 다시 앉은 블록은 다른 누구의 꼬리 · 초상과도 닿지 않으므로 새 겹침을 만들지
 ## 않는다. 같은 블록 안(뒷줄 꼬리가 앞줄 밑을 지나는 것)은 보지 않는다.
+##
+## **보정은 옆으로만 옮긴다 — 원래 줄보다 바깥으로는 나가지 않는다.** 꼬리 옆면이
+## 이웃 초상 테두리에 몇 px 덮이는 것보다, 깨끗한 자리를 찾아 두세 줄 바깥으로
+## 날아가 꼬리가 화면 끝까지 늘어나는 쪽이 훨씬 나쁘다. 예전에는 줄 제한이
+## 없어서, 양옆 2차 타워보다 반 줄 낮은 중앙 2차 타워의 초상이 양옆 꼬리에 살짝
+## 닿는다는 이유만으로 ring 2(타일에서 지름 × 3)까지 밀려났다.
 func _repair_arrow_overlaps(entries: Array, r: float) -> void:
 	var outer: float = marker_outer_radius(r)
 	for i in range(entries.size()):
@@ -1096,8 +1102,9 @@ func _repair_arrow_overlaps(entries: Array, r: float) -> void:
 				break
 		if not hit:
 			continue
+		var ring0: int = int(((e["seats"] as Array)[0] as Dictionary)["ring"])
 		var seats: Array = _pick_row_seats(tc, (e["pilots"] as Array).size(), float(e["v"]),
-				int(e["cap"]), int(e["bias"]), r, others_disc, others_arrow, true)
+				int(e["cap"]), int(e["bias"]), r, others_disc, others_arrow, true, ring0 + 1)
 		if not seats.is_empty():
 			e["seats"] = seats
 
@@ -1157,9 +1164,11 @@ func _row_blocks(pilots: Array) -> Array:
 ## 호출자가 육각 링 배치(`_pick_block_slots`)로 떨어진다.
 ##
 ## `strict` 이면 꼬리까지 본다(`_seat_crosses_arrows`) — 꼬리 겹침 보정
-## (`_repair_arrow_overlaps`)이 다시 앉힐 때만 쓴다.
+## (`_repair_arrow_overlaps`)이 다시 앉힐 때만 쓴다. `ring_limit` 은 볼 바깥 줄
+## 수의 상한이다 — 보정은 원래 줄까지만 본다.
 func _pick_row_seats(tile_center: Vector2, n: int, v: float, cap: int, bias: int,
-		r: float, placed: Array, arrows: Array = [], strict: bool = false) -> Array:
+		r: float, placed: Array, arrows: Array = [], strict: bool = false,
+		ring_limit: int = SLOT_RINGS) -> Array:
 	var counts: Array = []
 	var left: int = n
 	while left > 0:
@@ -1169,7 +1178,7 @@ func _pick_row_seats(tile_center: Vector2, n: int, v: float, cap: int, bias: int
 	var step: float = r * 2.0 + MARKER_GAP
 	var side: float = 1.0 if bias > 0 else -1.0
 	var shifts: Array = [0.0, 0.5 * side, -0.5 * side, side, -side]
-	for o in range(SLOT_RINGS):
+	for o in range(mini(ring_limit, SLOT_RINGS)):
 		for raw_s in shifts:
 			var s: float = float(raw_s)
 			var cand: Array = []

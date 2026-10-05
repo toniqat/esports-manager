@@ -1,8 +1,9 @@
 class_name PilotStrip
 extends Control
 
-# 파일럿 5인 스트립 — **원형 초상 5개를 가로로 나란히** 놓고, 원 아래끝에
-# 걸친 알약 배지에 성장치 숫자를 찍는다(Deadlock 중계 HUD 의 초상 줄).
+# 파일럿 5인 스트립 — **원형 초상 5개를 가로로 나란히** 놓고, 원 아래로
+# 늘어진 둥근 탭에 성장치 숫자를 찍는다(Deadlock 중계 HUD 의 초상 줄).
+# 스트립 뒤판(배경)과 초상 원의 테두리는 없다.
 #
 # 한 칸의 초상은 **팀색 원 + 그 위의 머리~어깨 흉상**이다. 흉상은
 # `shaders/pilot_bust_mask.gdshader` 가 잘라 낸다 — 원 중심 아래는 원 모양으로,
@@ -29,26 +30,30 @@ const SLOT_COUNT: int = 5
 
 const BUST_SHADER: Shader = preload("res://resources/shaders/pilot_bust_mask.gdshader")
 
-## 원 바탕색 / 테두리색 — 팀색. [아군, 적].
+## 원 바탕색 — 팀색. [아군, 적]. 성장치 탭도 같은 색이라 원에서 이어져 내려온
+## 한 덩어리로 읽힌다.
 const DISC_COLOR := [Color(0.17, 0.32, 0.58), Color(0.58, 0.21, 0.18)]
+## 스킬 숫자 원의 테두리색. (초상 원 자체의 테두리는 삭제됐다 — 셰이더에
+## `rim_width = 0` 을 넘긴다.)
 const TEAM_RIM := [Color(0.32, 0.62, 0.95), Color(0.95, 0.40, 0.32)]
-const RIM_WIDTH: float = 3.0
-## 원과 칸 가장자리 사이 최소 여백(좌우 합).
+## 원과 칸 가장자리 사이 최소 여백(좌우 합). **축소 전** 레이아웃을 정할 때만
+## 쓴다 — 그때 생긴 원 사이 간격이 축소 뒤에도 그대로 유지된다.
 const CELL_GAP: float = 12.0
+## 초상 크기 배율 — 칸에서 유도한 원 지름을 이만큼 줄인다(30% 축소). 원 사이
+## 간격은 축소 전 그대로이므로 줄 전체가 좁아지고 스트립 가로 가운데에 모인다.
+## 세로는 축소 전 원 중심을 지킨다(적 스트립 양옆 오브젝트 시계가 거기 맞춰져 있다).
+const PORTRAIT_SCALE: float = 0.7
 
 const SCORE_COLOR      := Color(1.0, 0.94, 0.62)
-const SCORE_PILL_BG    := Color(0.05, 0.05, 0.09, 0.95)
-## 성장치 배지 폭 = 원 지름 × 이 값.
+## 성장치 탭 폭 = 원 지름 × 이 값. 탭 위끝은 원 중심에 숨고 아래로
+## `_pill_h()` 만큼 원 밖으로 늘어진다(Deadlock 초상 줄의 금색 탭 모양).
 const SCORE_PILL_W_RATIO: float = 0.58
+const SCORE_TAB_RADIUS: int = 8
 # ─── 파일럿 스킬 표시 ────────────────────────────────────────────────────────
-# **초상화는 기본적으로 어둡게 덮여 있고, 스킬이 준비되는 만큼 왼쪽부터 밝아진다.**
-# 채움은 `PilotSkillSystem.progress()` 가 답한다 — 쿨타임은 경과 비율, 충전식은
-# 활성화에 필요한 충전 대비 비율, **패시브는 언제나 1.0**(누를 수 없는 대신 상시
-# 적용이라 "아직 안 됐다"가 성립하지 않는다).
-#
-# 딤은 셰이더의 `fill` / `dim` 이다 — 사각형을 겹쳐 얹으면 원 바깥의 빈
-# 모서리까지 어두운 상자가 그려진다. 채움이 100% 면 딤이 사라져 원래 색 그대로다.
-const SKILL_DIM: float = 0.55
+# 스킬 준비도는 **숫자 배지 하나**로만 보인다. 예전에는 준비도(충전 / 쿨타임
+# 비율)만큼 초상화가 왼쪽부터 밝아지는 딤이 있었으나 삭제됐다 — 딤은 이제
+# **전장을 이탈한(쓰러진) 파일럿**만의 표시이고, 그때도 흉상만 어두워지고 팀색
+# 원은 그대로다(셰이더 `tint`).
 ## 지금 누를 수 있는 스킬의 숫자 색 / 아직인 스킬의 숫자 색.
 const SKILL_BADGE_READY := Color(1.0, 0.86, 0.35)
 const SKILL_BADGE_WAIT  := Color(0.78, 0.82, 0.92)
@@ -56,7 +61,7 @@ const SKILL_BADGE_OUTLINE := Color(0, 0, 0, 0.9)
 ## 숫자 원 — 초상 원의 오른쪽 위 테두리에 걸친다. 지름 = 원 지름 × 이 값.
 const SKILL_BADGE_RATIO: float = 0.30
 const SKILL_BADGE_FONT_RATIO: float = 0.62
-## 쓰러진 파일럿의 초상화에 씌우는 틴트.
+## 쓰러진 파일럿의 **흉상**에 씌우는 틴트(원은 제외).
 const DEAD_TINT        := Color(0.42, 0.42, 0.46, 1.0)
 ## **역할 태그는 삭제됐다.** 스트립의 자리 순서 자체가 이미 역할이다
 ## (`GameEnums.ROLE_DISPLAY_ORDER` — 탑 · 정글 · 미드 · 원딜 · 서폿).
@@ -69,6 +74,8 @@ var _disc_d: float = 180.0
 var _bust_h: float = 225.0
 ## 흉상 칸 위끝 y (스트립 로컬).
 var _bust_y: float = 0.0
+## 줄 왼쪽 끝 x — 줄이 스트립보다 좁아 가로 가운데에 모인다.
+var _row_x: float = 0.0
 var _score_font: int = 16
 var _team: int = 0
 var _interactive: bool = false
@@ -92,11 +99,19 @@ func setup(bs: BattleSim, team: int, rect: Rect2, interactive: bool,
 	size = rect.size
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	_cell_w = rect.size.x / float(SLOT_COUNT)
+	# 축소 전 레이아웃 — 칸 폭과 높이에서 원 지름, 원 사이 간격, 원 중심을 정한다.
+	var full_cell_w: float = rect.size.x / float(SLOT_COUNT)
 	var avail_h: float = rect.size.y - _pill_h() * 0.5 - 2.0
-	_disc_d = minf(_cell_w - CELL_GAP, avail_h * PilotImages.STRIP_ASPECT)
+	var full_d: float = minf(full_cell_w - CELL_GAP, avail_h * PilotImages.STRIP_ASPECT)
+	var disc_cy: float = avail_h - full_d * 0.5
+	var gap: float = full_cell_w - full_d
+
+	# 축소 — 지름만 줄고 간격은 그대로, 원 중심 높이도 그대로.
+	_disc_d = full_d * PORTRAIT_SCALE
 	_bust_h = _disc_d / PilotImages.STRIP_ASPECT
-	_bust_y = avail_h - _bust_h
+	_bust_y = disc_cy + _disc_d * 0.5 - _bust_h
+	_cell_w = _disc_d + gap
+	_row_x = (rect.size.x - _cell_w * float(SLOT_COUNT)) * 0.5
 	for i in SLOT_COUNT:
 		_cells.append(_build_cell(i))
 
@@ -106,10 +121,27 @@ func _pill_h() -> float:
 
 
 func _build_cell(idx: int) -> Dictionary:
-	var cx: float = _cell_w * (float(idx) + 0.5)
+	var cx: float = _row_x + _cell_w * (float(idx) + 0.5)
 	var px: float = cx - _disc_d * 0.5
 	var r: float = _disc_d * 0.5
 	var disc_c := Vector2(cx, _bust_y + _bust_h - r)
+
+	# 성장치 탭 — 원 **뒤에** 먼저 붙인다. 위끝은 원 중심에서 시작해 원에 덮이고,
+	# 원 아래끝 밖으로 `pill_h` 만큼만 드러난다. 끝이 둥근 사각형이 원에서 밑으로
+	# 늘어진 모양(별도 알약이 아니다).
+	var pill_h: float = _pill_h()
+	var pill_w: float = _disc_d * SCORE_PILL_W_RATIO
+	var disc_bottom: float = disc_c.y + r
+	var pill := Panel.new()
+	pill.position = Vector2(cx - pill_w * 0.5, disc_c.y)
+	pill.size = Vector2(pill_w, disc_bottom + pill_h - disc_c.y)
+	pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var pill_sb := StyleBoxFlat.new()
+	pill_sb.bg_color = DISC_COLOR[_team]
+	pill_sb.set_corner_radius_all(SCORE_TAB_RADIUS)
+	pill_sb.anti_aliasing = true
+	pill.add_theme_stylebox_override("panel", pill_sb)
+	add_child(pill)
 
 	# 원 + 흉상 — ColorRect 한 장에 셰이더. 이미지가 없을 때(단독 실행 / INTL)도
 	# 팀색 원은 그대로 그려진다(`has_portrait = false`).
@@ -121,8 +153,7 @@ func _build_cell(idx: int) -> Dictionary:
 	mat.shader = BUST_SHADER
 	mat.set_shader_parameter("rect_size", bust.size)
 	mat.set_shader_parameter("disc_color", DISC_COLOR[_team])
-	mat.set_shader_parameter("rim_color", TEAM_RIM[_team])
-	mat.set_shader_parameter("rim_width", RIM_WIDTH)
+	mat.set_shader_parameter("rim_width", 0.0)
 	bust.material = mat
 	add_child(bust)
 
@@ -140,29 +171,16 @@ func _build_cell(idx: int) -> Dictionary:
 	dead_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(dead_lbl)
 
-	# 성장치 배지 — 원 아래끝에 반쯤 걸친 알약. 테두리는 팀색.
-	var pill_h: float = _pill_h()
-	var pill_w: float = _disc_d * SCORE_PILL_W_RATIO
-	var pill := Panel.new()
-	pill.position = Vector2(cx - pill_w * 0.5, _bust_y + _bust_h - pill_h * 0.5)
-	pill.size = Vector2(pill_w, pill_h)
-	pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var pill_sb := StyleBoxFlat.new()
-	pill_sb.bg_color = SCORE_PILL_BG
-	pill_sb.border_color = TEAM_RIM[_team]
-	pill_sb.set_border_width_all(2)
-	pill_sb.set_corner_radius_all(int(pill_h * 0.5))
-	pill_sb.anti_aliasing = true
-	pill.add_theme_stylebox_override("panel", pill_sb)
-	add_child(pill)
-
+	# 성장치 숫자 — 탭 중 원 밖으로 드러난 부분에만 앉는다.
 	var score_lbl := Label.new()
 	score_lbl.add_theme_font_size_override("font_size", _score_font)
 	score_lbl.add_theme_color_override("font_color", SCORE_COLOR)
 	score_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	score_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	score_lbl.position = pill.position
-	score_lbl.size = pill.size
+	score_lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.6))
+	score_lbl.add_theme_constant_override("outline_size", 3)
+	score_lbl.position = Vector2(pill.position.x, disc_bottom)
+	score_lbl.size = Vector2(pill_w, pill_h)
 	score_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(score_lbl)
 
@@ -206,12 +224,13 @@ func _build_cell(idx: int) -> Dictionary:
 		btn.flat = true
 		btn.focus_mode = Control.FOCUS_NONE
 		btn.modulate = Color(1, 1, 1, 0)
-		btn.position = Vector2(_cell_w * float(idx), 0.0)
+		btn.position = Vector2(_row_x + _cell_w * float(idx), 0.0)
 		btn.size = Vector2(_cell_w, size.y)
 		btn.pressed.connect(func() -> void: _on_cell_pressed(idx))
 		add_child(btn)
 
 	return {
+		"center": disc_c,
 		"bust": bust, "mat": mat, "dead": dead_lbl,
 		"pill": pill, "score": score_lbl, "btn": btn,
 		"badge_bg": badge_bg, "badge": badge,
@@ -270,27 +289,29 @@ func _apply_cell(cell: Dictionary, p: PilotData) -> void:
 	if not p.alive:
 		dead_lbl.text = str(_bs.turns_until_return(p))
 
-	(cell["score"] as Label).text = BattleSim.fmt_score(p.score)
+	(cell["score"] as Label).text = fmt_strip_score(p.score)
 	_apply_skill_state(cell, p)
 
 
-## 스킬 준비도 딤과 숫자. **아군 스트립에만** 뜬다 — 스킬은 아군만 누를 수 있고,
-## 적 칸까지 어둡게 덮으면 상대 얼굴이 스킬과 무관하게 흐려 보인다.
+## 스트립 탭의 성장치 표기 — 소수 한 자리(`9.9k`), **10k 이상은 정수**(`12k`).
+## 상세 패널은 여전히 `BattleSim.fmt_score`(소수 두 자리)를 쓴다 — 탭은 원
+## 지름의 58% 폭이라 자릿수가 적어야 한다. 9.95 이상은 `%.1f` 가 `10.0` 으로
+## 올라가므로 그 자리부터 정수 표기로 넘긴다.
+static func fmt_strip_score(v: float) -> String:
+	if absf(v) >= 9.95:
+		return "%.0fk" % v
+	return "%.1fk" % v
+
+
+## 스킬 숫자 배지. **아군 스트립에만** 뜬다 — 스킬은 아군만 누를 수 있다.
 func _apply_skill_state(cell: Dictionary, p: PilotData) -> void:
-	var mat := cell["mat"] as ShaderMaterial
 	var badge_bg := cell["badge_bg"] as Panel
 	var badge := cell["badge"] as Label
 	var sk: PilotSkillSystem = _bs.skill if _bs != null else null
 	if _team != 0 or sk == null or not sk.has_skill(p):
-		mat.set_shader_parameter("dim", 0.0)
 		badge_bg.visible = false
 		badge.visible = false
 		return
-	# 채움만큼 왼쪽이 밝아진다 — 셰이더가 UV.x > fill 인 쪽만 어둡게 한다.
-	var filled: float = clampf(sk.progress(p), 0.0, 1.0)
-	mat.set_shader_parameter("fill", filled)
-	mat.set_shader_parameter("dim", SKILL_DIM if filled < 1.0 else 0.0)
-
 	var text: String = sk.badge_text(p)
 	var show: bool = not text.is_empty()
 	badge_bg.visible = show

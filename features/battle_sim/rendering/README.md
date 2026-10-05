@@ -98,16 +98,14 @@ owned by the TileMapLayer in `BattleField.tscn`, not by the renderer.
 앉힌다. 줄 간격과 타일에서의 거리는 둘 다 `d = 지름 + MARKER_GAP`(= 육각 링 0번
 반지름, 91px)라 한 줄 안에서도, 줄과 줄 사이에서도 얼굴이 닿지 않는다.
 
-| 인원(같은 팀, 한 칸) | 보통 칸 | 아군 홈 구역 |
-|---|---|---|
-| 1 / 2 / 3 | 아래(적은 위) 한 줄, 가운데 정렬 (2명 = x ±45.5) | 위 한 줄 |
-| 4 / 5 | 3명 줄 + 그 바깥 줄에 1 / 2명 (`ROW_CAP` 3) | 위 한 줄에 4 / 5명 (`HOME_TOP_CAP` 5) |
+| 인원(같은 팀, 한 칸) | 자리 |
+|---|---|
+| 1 / 2 / 3 | 아래(적은 위) 한 줄, 가운데 정렬 (2명 = x ±45.5) |
+| 4 / 5 | 3명 줄 + 그 바깥 줄에 1 / 2명 (`ROW_CAP` 3) |
 
-- **아군 홈 구역**(`_is_home_zone`) = 아군 HQ 칸 + **HQ 에 붙은 아군 포탑 칸**(지금
-  맵에선 2차 포탑 셋, 부서져도 유지). 화면 맨 아래라 타일 아래의 초상이 손패 ·
-  하단 UI 에 가려지므로 **모두 위로** 올린다. 아군 블록이 위쪽 정원 5를 먼저 쓰고,
-  같은 칸의 적은 남은 정원만큼 그 바깥 줄(위)에, **정원을 넘는 사람부터 아래**로
-  내려간다(실측: 아군 3 + 적 3 → 적 2명 위 두 번째 줄, 1명 아래).
+- **HQ 칸도 예외가 없다.** 예전에는 아군 HQ 칸과 거기 붙은 아군 포탑 칸
+  (`_is_home_zone`)에서 아군 초상을 모두 위로 올렸지만(`HOME_TOP_CAP` 5), 그
+  규칙은 **삭제됐다** — 아군은 어느 칸에서든 아래가 우선이다.
 - **이웃 칸 마커와 겹치면** (1) 줄째 **좌우로 반 칸(d/2)씩** 밀어 보고(0 → ½ → −½
   → 1 → −1, 첫 방향은 레인 쏠림 `_block_seat_bias` 쪽 — 쏠림 없으면 왼쪽), (2) 그래도
   막히면 **한 줄 더 바깥**(타일에서 2d, 3d)에서 같은 순서로 다시 본다. 세 겹
@@ -129,7 +127,6 @@ owned by the TileMapLayer in `BattleField.tscn`, not by the renderer.
   글라이드는 `to_vec` 이 바뀌었는지로 새 보간을 띄운다.
 - 강조(`_pilot_spread`)는 **같은 줄(grp)을 한 배율로** 벌린다 — 줄 이웃은 수평 d
   간격이라 한 명만 1.5배로 밀면 옆 사람과 ≈101px(필요 ≈106px)로 살짝 겹친다.
-- `pilot_marker_pos_fallback` 도 홈 구역에서는 위(N)를 쓴다.
 
 ### 폴백 — 타일을 둘러싼 육각 6슬롯
 `_build_pilot_render_layout()` 이 **전장 전체를 한 번에** 배정한다. 자리는
@@ -270,16 +267,30 @@ the portrait instead of pointing at the destination first (다음 절).
 꼬리가 상승 거리만큼 **늘어났다**. 지금은 꼬리가 초상에 붙은 채 통째로 따라가
 길이 · 방향이 변하지 않고, 꼬리가 타일을 다시 겨누는 것은 **턴 이동(글라이드)뿐**이다.
 
-### HP 링 조각 — 잃은 만큼 떨어져 나가 커지며 사라진다
-링은 `pilot.hp` 를 그대로 읽어 피해가 든 프레임에 그냥 짧아지므로, **방금 잃은 구간**을
-떼어 내 날린다(`_advance_hp_chips` / `_draw_hp_chips`). 감지는 렌더러가 `_hp_seen`
-(마지막으로 본 hp)과 지금 hp 를 비교해서 한다 — 피해 경로(전장 교전 · 공격 카드 ·
-포탑 · 아레나 · 스킬)가 흩어져 있어 호출부에 걸면 빠지는 곳이 생긴다. 조각은 링과
-같은 각도 · 반지름에서 출발해 `HP_CHIP_DUR`(0.45초) 동안 마커 중심 기준으로
-`HP_CHIP_SCALE`(1.45배, ease-out)까지 커지며 알파 `1 − k²` 로 사라진다. 색은 팀색을
-밝힌 것 + 검은 외곽 한 겹. **교전 무대가 떠 있는 동안은 감지를 미룬다** — 아레나가
-전장을 덮고 있어 아무도 못 보므로, 무대가 걷힌 뒤 깎인 총량이 한 조각으로 떨어진다.
-보호막 링은 조각을 내지 않는다. `clear_popups()`(재시작)가 같이 비운다.
+### HP 링 — 보호막은 추가 체력처럼 (`draw_hp_ring`, static)
+링 한 바퀴 = `hp_ring_span` = `max(max_hp, hp + shield)`. 빈 링(어두운 바탕) 위에
+HP(팀색 `TEAM_RING_COLORS`) → 그 바로 뒤에 **보호막(`SHIELD_RING_COLOR`, 밝은 회색)**
+이 같은 링 · 같은 두께로 이어 붙고, `HP_TICK_STEP`(25) 구분선이 보호막 구간까지 같은
+간격으로 이어진다. HP + 보호막이 최대 체력을 넘으면 그 합이 한 바퀴가 되어 HP 구간이
+그만큼 짧아진다(보호막이 링 밖으로 잘리지 않는다). 예전의 링 바깥 시안 보호막 띠는
+삭제됐다. **교전 무대 초상(`EngageArena._draw_unit`)도 이 static 함수로 그린다** —
+두 화면의 링이 갈라지지 않게 하는 단일 출처다. 카드 미리보기(`attack` / `restore`)의
+깜빡임도 같은 링 배치(`_draw_ring_blink`)를 쓴다.
+
+### HP 링 조각 — 잃은 구간이 제자리에서 커지며 사라진다
+링은 `pilot.hp` / `.shield` 를 그대로 읽어 피해가 든 프레임에 그냥 짧아지므로,
+**방금 잃은 구간**을 그 자리에서 지운다(`_advance_hp_chips` / `_draw_hp_chips` →
+static `hp_loss_segments` / `draw_hp_chip`). 감지는 렌더러가 `_hp_seen`(마지막으로 본
+`Vector2i(hp, shield)`)과 지금 값을 비교해서 한다 — 피해 경로(전장 교전 · 공격 카드 ·
+포탑 · 아레나 · 스킬)가 흩어져 있어 호출부에 걸면 빠지는 곳이 생긴다. 구간은 **잃기
+전 링 배치** 기준이고 HP 조각 `[hp1, hp0]`, 보호막 조각 `[hp0 + sh1, hp0 + sh0]`
+(밝은 회색) 두 개까지 나온다. 조각은 **바깥으로 튀어 나가지 않는다** — 링 반지름은
+그대로 두고 두께와 호 각도만 조각 가운데를 기준으로 `HP_CHIP_DUR`(0.45초) 동안
+`HP_CHIP_SCALE`(1.45배, ease-out)까지 키우며 알파 `1 − k²` 로 사라진다. HP 조각 색은
+팀색을 밝힌 것 + 검은 외곽 한 겹. **교전 무대가 떠 있는 동안은 전장 쪽 감지를
+미룬다** — 무대 초상이 같은 조각을 따로 띄우고(`EngageArena._advance_hp_chips`),
+무대가 걷힌 뒤 전장 마커에 깎인 총량이 한 조각으로 떨어진다. `clear_popups()`(재시작)가
+같이 비운다.
 
 ### 초상 누르기 — 커지고 맨 위로 (`press_marker` / `release_marker` / `marker_at`)
 입력은 `ui/MarkerTouch.gd`. 누른 초상은 `PRESS_SCALE`(1.3) 까지 `PRESS_TWEEN_SEC`
@@ -404,6 +415,9 @@ share the cell — circles do not shrink for multi-pilot stacks. 붐비는 칸�
 감당하는 것은 크기가 아니라 **거리**다: 6명을 넘으면 바깥 링으로 나가고, 그만큼
 화살표가 길어진다. HQ HP bars and cell badges are also scaled by
 `HexGrid.DISPLAY_SCALE` to stay proportional to the bigger tiles.
+(Tiles themselves now use `HexGrid.FIELD_SCALE` = 90% of `DISPLAY_SCALE`, so
+portraits are relatively larger than the tiles they sit on — the field shrank,
+the portraits did not.)
 
 (`PILOT_FONT_SIZE_BASE` 는 슬롯 안에 역할 글자를 찍던 시절의 잔재라 초상화가
 슬롯을 통째로 채우게 되면서 **삭제됐다**.)
@@ -479,6 +493,25 @@ same solve, so hit-testing never disagrees with what is on screen.
 얼굴이 그 뒤로 숨었다. 지금은 초상이 제자리에 있고 이펙트만 얹히므로 미룰 칸이
 없다.
 
+### 손패 카드 미리보기 (전장) · 버프 배너
+`card_phase/CardPlayPreview.gd` 가 무엇을 그릴지 정하고(`neon_pilot()` /
+`field_spec()`) 렌더러는 그리기만 한다. 미리보기가 떠 있는 동안 그쪽 `_process` 가
+매 프레임 이 렌더러를 걷어차고, 애니메이션 시계도 그쪽 것(`anim_time()`)이다.
+
+- `_draw_card_preview_neon()` — **`_draw_pilot_groups` 앞**. 시전자 마커 뒤에 겹 원
+  번짐 + 흰 링(하얀 네온). 대상 없는 카드도 이것 하나만 뜬다(딤 없음).
+- `_draw_card_preview_field()` — **대상 딤 뒤, 시전 빛 앞**. `ghost`(도착 칸의
+  **마커 자리**에 반투명 초상 — 지금 마커가 자기 칸 중심에서 떨어진 만큼 옮긴다 —
+  와 경로 / 점선. 이동 카드는 `line = false` 로 **겨눈 타일 한가운데에 고스트만**
+  세운다; 예전 `move_path` 칸 경로 + chevron + 도착 링은 삭제),
+  `soul`(캠프 → 시전자 2차 베지어, 제어점은 수직 방향, 소울 아이콘이 흐른다),
+  `attack`(HP 링의 깎일 구간 · 보호막 먼저, `명중 N%` · `-피해`), `restore`(차오를
+  HP 초록 / 보호막 회색 구간 — 적용 뒤의 링 배치로 잰다).
+- **버프 배너** `spawn_buff_banner(p, card)` — 마커 위 한 줄: 둥근 사각형 카드
+  아트(`draw_textured_rounded_rect` — 둥근 폴리곤에 UV 를 입혀 `draw_colored_polygon`
+  한 번) + 카드 이름. 1.9초, 같은 파일럿에 겹치면 위로 쌓인다. `_draw_pilot_popups`
+  뒤 맨 마지막에 그린다. 아트는 `BattleSim.prime_texture` 로 먼저 GPU 에 올린다.
+
 ### 공격 카드 명중 연출
 공격 카드(`attack:N`) 한 타격이 두 초상 위에 동시에 그린다. 둘 다 `_draw()`
 **맨 끝**, 피해 수치 팝업 바로 앞이다 — 마커 위에 얹혀야 하지만 숫자를 덮으면
@@ -530,6 +563,14 @@ same solve, so hit-testing never disagrees with what is on screen.
 `SCORE_POPUP_COLOR`(흰색 — 굵은 검은 외곽선 `SCORE_POPUP_OUTLINE_PX`, 왼쪽에 소울 아이콘 `SCORE_POPUP_ICON` = `DeadlockSoulsTurq-28x.png`, 글자 높이로 늘리고 검은 외곽선 `SCORE_POPUP_ICON_OUTLINE_PX` — 정적 `draw_outlined_icon` 이 검게 물들인 사본을 8방향으로 깔고 원본을 덮는다. 교전 결과 성장 줄도 같은 함수를 쓴다). 피해 숫자는 연속 타격(0.32초 간격) 사이에 사라져야
 겹치지 않고, 성장치는 반대로 한 박자 머물러 있어야 읽힌다. 한 얼굴 위에 둘이
 동시에 떠도 성장치가 더 높이 뜨므로 서로를 덮지 않는다.
+
+**크기는 얻은 양을 따른다**(`score_popup_scale(amount)` → 팝업 항목의 `scale`).
+화면 숫자(성장치 × 1000) 기준 **100 미만(두 자리)은 최소 0.75배**, **1000 이상은
+최대 1.25배**, 그 사이는 로그 보간이다(300 ≈ 1.0배). 처음에는 0.5 / 1.5배였는데
+폭이 너무 넓어 양쪽 모두 원래 크기와의 차이를 절반으로 줄였다. 배율은 글자 크기 · 아이콘
+(글자 높이를 따른다) · 글자 / 아이콘 외곽선 · 아이콘 간격에 함께 먹는다. 상수는
+`BattleRenderer.SCORE_POPUP_SIZE_MIN/MAX` · `SCORE_POPUP_SIZE_LO/HI_AMOUNT`.
+포탑 한 대 피해(83)는 작게, 정글 캠프(980) · 처치 현상금은 크게 뜬다.
 
 **무엇을 띄울지는 렌더러가 정하지 않는다** — `BattleSim._show_score_gain` /
 `flush_score_popups` 만 이 함수를 부르고, 죽은 파일럿 제외 · 교전 중 보류 ·

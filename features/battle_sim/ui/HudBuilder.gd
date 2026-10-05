@@ -63,34 +63,18 @@ const TOP_PANEL_H      := 248.0
 const HEADER_ROW_Y     := 4.0
 const HEADER_ROW_H     := 34.0
 const TIME_FONT        := 18
-## 적 스트립 — 패널 로컬 좌표. **아군 스트립을 66% 로 줄인 것**이고 가로
-## 가운데에 놓는다(폭 672, 초상화 118×49). 한때는 아군과 정확히 같은 크기
-## (1030×122, 초상화 190×79)였다 — 그 전의 730×84 축소판이 같은 얼굴을 위아래
-## 두 배 다른 크기로 보여 준 탓이었다.
+## 적 스트립 — 패널 로컬 좌표. **아군 스트립(`PLAYER_STRIP_RECT`)과 같은 크기**
+## (1030×244)라 원 지름 · 흉상 · 성장치 배지가 위아래 똑같이 그려진다. 가로는
+## 가운데 정렬. 원은 칸 폭이 아니라 높이에서 지름이 정해지므로 실제 얼굴 다섯은
+## x ≈161..919 에만 서고, 그 바깥 좌우 여백에 오브젝트 시계가 앉는다.
 ##
-## 줄인 이유는 자리다. 오브젝트 등장 시계가 전장 타일에서 이 패널로 올라
-## 오면서 **스트립 양옆에 아이콘 + 턴 수가 앉을 칸**이 필요해졌다(좌 전령 /
-## 우 용 — 지도의 좌우와 같은 배치라 자리가 곧 이름이다). 성장치는 그대로 두
-## 자릿수까지 읽히므로 "내 것과 나란히 비교한다"는 원래 목적은 살아 있다.
-##
-## **지금은 원형 초상(`PilotStrip`)이라 높이가 200**(예전 eye 밴드 시절 100 의
-## 2배)이고, 원 지름은 칸 폭 161 과 높이 중 빡빡한 쪽에서 나온다(≈146).
-##
-## 처음 줄일 때는 60%(618×76, 초상화 108×45)였는데 얼굴이 그 크기에서 누가
-## 누구인지 읽히는 하한을 밑돌았다. 초상화 폭은 칸 폭에서 유도되므로
-## (`PilotStrip.setup`) 키우는 방법은 스트립 폭을 미는 것뿐이라 618 → 672 로
-## 한 번(초상화 +10%), 다시 **672 → 806 으로 한 번 더(+20%)** 밀었다. 높이도
-## eye 비(2.4:1)를 따라 76 → 81 → **97** 로 함께 올라간다(초상화 145×60).
-##
-## 그만큼 좌우 여백이 줄어 시계 칸은 190 → 168 → **101** 이 됐다 — 시계 쪽에서
-## 아이콘과 숫자 사이 여백을 줄이고 "턴" 글자를 지워 그 폭에 맞췄다
-## (`ObjectiveTimer`). 얼굴이 먼저 읽혀야 하는 패널이므로 자리를 다툴 때
-## 물러나는 쪽은 언제나 시계다.
-const ENEMY_STRIP_RECT := Rect2(137.0, 46.0, 806.0, 200.0)
-## **성장치 폰트는 아군과 같다**(`PLAYER_SCORE_FONT`). 초상화는 여전히 아군보다
-## 작지만 그 숫자는 내 것과 **나란히 견주라고** 있는 값이라, 크기가 다르면 같은
-## 줄에서 읽는 두 수의 무게가 달라진다 — 얼굴은 작아도 되고 숫자는 안 된다.
-## 예전 14 는 스트립을 60% 로 줄이던 시절에 칸 폭에서 유도한 값이었다.
+## **아래끝(246)은 예전 806×200 시절과 같다** — 성장치 배지가 `TOP_PANEL_H` 바로
+## 위에 서는 자리를 지키고 높이 44px 만큼 위로 자랐다(y 46 → 2). 그 아래 사슬
+## (상대 핸드 peek · 적 도넛 · 킬로그)은 `TOP_PANEL_H` 에서 나오므로 그대로다.
+## (예전에는 시계 자리 때문에 아군의 66~80% 로 줄여 두었다.)
+const ENEMY_STRIP_RECT := Rect2(25.0, 2.0, 1030.0, 244.0)
+## **성장치 폰트는 아군과 같다**(`PLAYER_SCORE_FONT`) — 그 숫자는 내 것과
+## **나란히 견주라고** 있는 값이다.
 const ENEMY_SCORE_FONT := 20  # = PLAYER_SCORE_FONT
 
 ## 적 스트립 뒤판이 초상화 띠 바깥으로 나가는 여백. **아군 뒤판과 같은 규칙**
@@ -100,14 +84,15 @@ const ENEMY_BG_PAD     := 10.0
 
 ## 오브젝트 시계 두 칸 — 스트립 양옆의 남은 여백.
 ##
-## **세로는 적 초상 원의 중심에 맞춘다**(y 126, 높이 60 — 원 중심 y ≈ 156).
+## **세로는 적 초상 원의 중심에 맞춘다**(y 110, 높이 60 — 원 중심 y ≈ 140,
+## 적 스트립이 아군 크기로 커지며 156 → 140 으로 올라왔다).
 ## 예전 eye 밴드 시절에는 초상화 띠와 정확히 같았다(y 46, 높이 60). 한때는
 ## 스트립 띠 전체(122px)를 썼는데 — 아이콘이 클수록 곁눈으로 읽힌다는 이유였다 —
 ## 그러면 시계가 초상화보다 위아래로 튀어나와 패널 안에서 가장 큰 물체가 되고,
 ## 정작 얼굴 쪽으로 가야 할 시선을 먼저 잡아챈다. 초상화와 밑단·윗단을 맞추면
 ## 셋(좌 시계 · 얼굴 다섯 · 우 시계)이 한 줄로 읽힌다.
 const OBJ_TIMER_W  := 101.0
-const OBJ_TIMER_Y  := 126.0
+const OBJ_TIMER_Y  := 110.0
 const OBJ_TIMER_H  := 60.0
 ## 좌우 여백은 대칭이므로 왼쪽 하나만 상수로 두고 오른쪽은 뷰포트 가로에서
 ## 역산한다 — 예전의 `OBJ_TIMER_RIGHT_X = 953`(= 1080 − 101 − 26)은 가로가
@@ -136,8 +121,13 @@ const PLAYER_SCORE_FONT := 20
 ## 칸인지가 안 읽힌다. 색과 테두리는 상단 패널과 같게 두어 위아래 두 스트립이
 ## 같은 판 위에 앉은 것으로 보이게 한다.
 const PLAYER_BG_PAD     := 10.0
-const STRIP_BG_COLOR    := Color(0.06, 0.06, 0.10, 1.0)
-const STRIP_BG_BORDER   := Color(0.18, 0.18, 0.24, 1.0)
+##
+## **STRIP_BACKDROP_NOTE — 두 스트립의 뒤판은 이제 투명하다**(배경 삭제).
+## 그래도 `Panel` 노드는 남긴다: 아군 뒤판은 `CardPhaseManager` 가 내 차례가
+## 아닐 때 손패를 그 뒤로 내려보내는 z-order 기준이자 내려갈 깊이를 재는 자이고
+## (`player_strip_backdrop[_top]`), 적 뒤판은 `set_strip_visible` 이 함께 숨기는
+## 짝이다. 판이 투명해진 만큼 물러난 손패와 상대 핸드 peek 의 윗부분은 더 이상
+## 가려지지 않고 초상화 **뒤로** 비친다(초상화는 여전히 그 위에 그려진다).
 
 # ── AI hand peek (below score panel) ─────────────────────────────────────────
 # AI hand is shown as a fan of card-back nodes whose tops are tucked behind the
@@ -194,9 +184,30 @@ var _player_strip: PilotStrip = null   # team 0, 핸드 행 아래
 ## 아군 스트립 뒤판. 스트립과 **함께** 숨어야 한다 — 상세 패널이 스트립만
 ## 치우면 빈 판이 딤 위에 덩그러니 남는다.
 var _player_strip_bg: Panel = null
+## 드래그 중 아군 스트립 하강(`set_player_strip_dropped`).
+const STRIP_DRAG_DROP := 120.0
+const STRIP_DRAG_DIM := Color(0.42, 0.42, 0.48, 1.0)
+const STRIP_DRAG_TIME := 0.18
+var _player_strip_rest_y: float = NAN
+var _strip_drop_tween: Tween = null
+## 상단 적 UI(적 스트립 + 뒤판 + 상대 손패 peek)만 담는 전용 층. 평소에는
+## `_bs.canvas` 와 같은 층 번호(1)에 **바로 앞 형제**로 서서 캔버스의 모든 것
+## (턴 배너 · 날아가는 상대 카드 · 킬로그)보다 뒤에 그려진다 — 예전에 캔버스
+## 자식 목록 맨 앞에 있던 것과 같은 순서다. 카드를 전장 쪽으로 끌면
+## (`set_enemy_top_raised`) 층째 위로 비켜 올라가며 어두워지고, 그동안은 층 번호를
+## `ENEMY_TOP_RAISED_LAYER`(-1)로 내려 **전장 타일 · 파일럿 초상(루트 캔버스,
+## 층 0) 아래**에 깔린다 — 겨누는 동안 화면의 우선순위는 전장이다.
+var _enemy_top_layer: CanvasLayer = null
+const ENEMY_TOP_LAYER := 1
+const ENEMY_TOP_RAISED_LAYER := -1
+## 올라가는 양 — 아군 스트립이 내려가는 양(`STRIP_DRAG_DROP`)과 같다.
+const ENEMY_TOP_RAISE := STRIP_DRAG_DROP
+var _enemy_top_tween: Tween = null
 ## 적 스트립 뒤판. 같은 이유로 스트립과 함께 숨는다. 예전에는 화면 가로를 통째로
 ## 덮는 상단 패널이 그 자리였다 — `_build_top_panel` 주석 참조.
 var _enemy_strip_bg: Panel = null
+## 아군 도넛 위 예약 칩(`ReservationChips`).
+var _reserve_chips: ReservationChips = null
 ## 적 스트립 좌우의 오브젝트 등장 시계 — 좌 전령 / 우 용.
 var _obj_timers: Array = []           # Array[ObjectiveTimer]
 
@@ -226,6 +237,13 @@ var _turn_announce_root: Control = null
 func build_ui() -> void:
 	_bs.canvas = CanvasLayer.new()
 	_bs.add_child(_bs.canvas)
+	# 같은 층 번호의 CanvasLayer 끼리는 형제 순서가 그리는 순서다 — 캔버스 앞에
+	# 세워 캔버스보다 뒤에 그려지게 한다(`_enemy_top_layer` 주석).
+	_enemy_top_layer = CanvasLayer.new()
+	_enemy_top_layer.name = "EnemyTopLayer"
+	_enemy_top_layer.layer = ENEMY_TOP_LAYER
+	_bs.add_child(_enemy_top_layer)
+	_bs.move_child(_enemy_top_layer, _bs.canvas.get_index())
 
 	# AI hand peek must build BEFORE the score panel so the panel's opaque
 	# background covers the cards' top portion (sibling z-order = child index).
@@ -236,6 +254,10 @@ func build_ui() -> void:
 	_build_hand_indicators()
 	_build_cost_donuts()
 	_build_victory_panel()
+	# 손패 미리보기 — 자식 순서가 아니라 z_index 로 손패 위에 선다.
+	_bs.card_preview = CardPlayPreview.new()
+	_bs.canvas.add_child(_bs.card_preview)
+	_bs.card_preview.setup(_bs)
 	# Turn announcer added last so its banner draws over everything.
 	_build_turn_announcer()
 
@@ -254,13 +276,11 @@ func build_ui() -> void:
 # **앞으로 누운 카드 뭉치**(`CardPileStack`)를 그린다 — 뒷면이 위를 향한 채
 # 겹쳐 쌓이고, 두께가 실제 장수에 비례하며, 장수는 맨 위 카드 뒷면에 찍힌다.
 # 자리와 크기(gutter · inset)는 그대로라 도넛 · 핸드 · 전장은 손대지 않았다.
-const HAND_INDICATOR_FONT       := 22
-const HAND_INDICATOR_TITLE_COL  := Color(0.85, 0.85, 0.85)
 ## 목록을 열 수 없는 상태에서 뭉치에 씌우는 알파.
 const PILE_LABEL_DIM_ALPHA      := 0.45
 # 예전에는 뒷면 안쪽에 더미별 accent 무늬(덱 보라 / 버린 더미 적갈)를 덧그렸다.
-# 뭉치가 작아 그 액자가 무늬가 아니라 면에 얹힌 계조로 읽혀 삭제했고, 두 더미는
-# 아래 제목 라벨이 가른다 — `CardPileStack.BACK_FILL` 주석 참고.
+# 뭉치가 작아 그 액자가 무늬가 아니라 면에 얹힌 계조로 읽혀 삭제했다. 뭉치 아래
+# 제목 라벨("Deck" / "Discard")도 삭제됐다 — 두 더미는 손패 양옆 자리로 갈린다.
 func _build_hand_indicators() -> void:
 	var hand_y: float = _bs.BS_HAND_CENTER.y
 	var hand_h: float = Card.CARD_H
@@ -274,13 +294,9 @@ func _build_hand_indicators() -> void:
 	# 씩 물러났는데, 뭉치는 폭이 곧 카드 크기라 4px 만 남기고 최대한 넓게 쓴다.
 	var inset: float  = 4.0
 	var w: float      = max(1.0, margin - inset * 2.0)
-	# Shrink the font when the gutter is tighter than nominal so "Discard"
-	# still fits inside it (~3.5 px of glyph per point of font size).
-	var font_size: int = clampi(int(w / 3.5), 12, HAND_INDICATOR_FONT)
-
-	_bs.pile_deck = _make_pile_stack("Deck", font_size,
+	_bs.pile_deck = _make_pile_stack("Deck",
 			Vector2(inset, hand_y), Vector2(w, hand_h))
-	_bs.pile_discard = _make_pile_stack("Discard", font_size,
+	_bs.pile_discard = _make_pile_stack("Discard",
 			Vector2(screen_w - margin + inset, hand_y), Vector2(w, hand_h))
 
 	# 두 뭉치는 눌러서 해당 더미의 카드 목록을 펼치는 버튼이기도 하다.
@@ -295,14 +311,14 @@ func _build_hand_indicators() -> void:
 
 # `setup()` 은 size 에서 폰트 크기와 자리를 유도하므로 **size 를 넣은 뒤**에
 # 불러야 한다. 트리에 붙이는 것도 그 전이어야 _ready 의 mouse_filter 가 선다.
-func _make_pile_stack(title: String, font_size: int,
+func _make_pile_stack(which: String,
 		at: Vector2, of_size: Vector2) -> CardPileStack:
 	var pile := CardPileStack.new()
-	pile.name = "CardPile" + title
+	pile.name = "CardPile" + which
 	pile.position = at
 	pile.size     = of_size
 	_bs.canvas.add_child(pile)
-	pile.setup(title, font_size)
+	pile.setup()
 	return pile
 
 
@@ -351,10 +367,9 @@ func _update_pile_buttons() -> void:
 # 초상화 다섯 칸만 감싸고(`_enemy_strip_bg`) 시계 둘과 경과 시계는 그 바깥에
 # 배경 없이 선다.
 #
-# 뒤판은 여전히 **상대 핸드 peek 의 윗부분을 가리는 가림막**이다 — peek 부채꼴은
-# 화면 가로 가운데(x ≈ 378..702)에 서므로 스트립 폭(x 127..953) 안에 통째로
-# 들어간다. 그래서 아래끝을 `TOP_PANEL_H` 에 맞춰 두면 가려지는 양이 예전과
-# 한 픽셀도 다르지 않고, 그 아래 사슬(적 도넛 · 킬로그)도 그대로다.
+# 뒤판은 **이제 투명하다**(스트립 배경 삭제 — `STRIP_BACKDROP_NOTE`). 예전에는
+# 상대 핸드 peek 의 윗부분을 가리는 가림막이었지만 지금은 peek 윗부분이 초상화
+# 뒤로 비친다. 그 아래 사슬(적 도넛 · 킬로그)은 `TOP_PANEL_H` 에서 나오므로 그대로다.
 #
 # **팀 합산 점수(`12.4k - 9.8k`)는 삭제됐다** — 같은 수를 스트립의 다섯 칸이
 # 이미 낱개로 보여 주고 있고, 합계는 어느 쪽이 이기고 있는지를 한 줄로 말해
@@ -376,15 +391,10 @@ func _build_top_panel() -> void:
 	bg.size = Vector2(
 			strip_rect.size.x + ENEMY_BG_PAD * 2.0,
 			TOP_PANEL_H - ENEMY_STRIP_RECT.position.y + ENEMY_BG_PAD)
-	var bg_style := StyleBoxFlat.new()
-	bg_style.bg_color = STRIP_BG_COLOR
-	bg_style.border_color = STRIP_BG_BORDER
-	bg_style.border_width_top    = 1
-	bg_style.border_width_bottom = 1
-	bg_style.border_width_left   = 1
-	bg_style.border_width_right  = 1
-	bg.add_theme_stylebox_override("panel", bg_style)
-	_bs.canvas.add_child(bg)
+	# 판은 **보이지 않는다**(`StyleBoxEmpty`) — 스트립 배경은 삭제됐다.
+	# 노드는 자리와 z-order 기준으로만 남는다(`STRIP_BACKDROP_NOTE`).
+	bg.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	_enemy_top_layer.add_child(bg)
 	_enemy_strip_bg = bg
 
 	# 경과 시계 — 왼쪽 끝, 배경 없이. 캔버스 직속이라 뒤판을 옮겨도 따라오지
@@ -411,7 +421,7 @@ func _build_top_panel() -> void:
 	# 뒤판 **뒤에** 붙이면 판이 얼굴을 덮는다(형제 z-order = 자식 인덱스).
 	_enemy_strip = PilotStrip.new()
 	_enemy_strip.name = "EnemyPilotStrip"
-	_bs.canvas.add_child(_enemy_strip)
+	_enemy_top_layer.add_child(_enemy_strip)
 	_enemy_strip.setup(_bs, 1, strip_rect, true,
 			ENEMY_SCORE_FONT)
 	_enemy_strip.pilot_pressed.connect(_on_pilot_strip_pressed)
@@ -461,14 +471,9 @@ func _build_player_strip() -> void:
 	var strip_rect := player_strip_rect()
 	bg.position = strip_rect.position - Vector2(PLAYER_BG_PAD, PLAYER_BG_PAD)
 	bg.size = strip_rect.size + Vector2(PLAYER_BG_PAD, PLAYER_BG_PAD) * 2.0
-	var bg_style := StyleBoxFlat.new()
-	bg_style.bg_color = STRIP_BG_COLOR
-	bg_style.border_color = STRIP_BG_BORDER
-	bg_style.border_width_top    = 1
-	bg_style.border_width_bottom = 1
-	bg_style.border_width_left   = 1
-	bg_style.border_width_right  = 1
-	bg.add_theme_stylebox_override("panel", bg_style)
+	# 판은 **보이지 않는다**(`StyleBoxEmpty`) — 스트립 배경은 삭제됐다.
+	# 노드는 자리와 z-order 기준으로만 남는다(`STRIP_BACKDROP_NOTE`).
+	bg.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	_bs.canvas.add_child(bg)
 	_player_strip_bg = bg
 
@@ -525,7 +530,7 @@ func player_strip_backdrop_top() -> float:
 ## 확인하는 것은 이 화면이 하는 일의 일부다.
 func set_pregame_chrome_visible(on: bool) -> void:
 	for node in [_bs.pile_deck, _bs.pile_discard, _btn_deck_view,
-			_btn_discard_view, _bs.cost_donut, _bs.cost_donut_enemy]:
+			_btn_discard_view, _bs.cost_donut, _bs.cost_donut_enemy, _reserve_chips]:
 		var c := node as CanvasItem
 		if c != null:
 			c.visible = on
@@ -533,6 +538,52 @@ func set_pregame_chrome_visible(on: bool) -> void:
 		var t := raw as CanvasItem
 		if t != null:
 			t.visible = on
+
+
+## 카드를 끄는 동안 아군 스트립을 **어둡게 하고 아래로 내린다**
+## (`CardPhaseManager._drag_lowers_hand`) — 손패와 함께 비켜 전장을 비운다.
+## `false` 면 제자리 · 제 밝기로 돌아온다. 뒤판(`_player_strip_bg`)은 움직이지
+## 않는다 — 손패가 내려갈 깊이(`hand_drop_offset`)를 재는 자라 같이 움직이면
+## 트윈 도중에 손패 목표가 흔들린다.
+func set_player_strip_dropped(on: bool) -> void:
+	if _player_strip == null or not is_instance_valid(_player_strip):
+		return
+	if is_nan(_player_strip_rest_y):
+		_player_strip_rest_y = _player_strip.position.y
+	if _strip_drop_tween != null and _strip_drop_tween.is_valid():
+		_strip_drop_tween.kill()
+	_strip_drop_tween = _bs.create_tween().set_parallel()
+	_strip_drop_tween.tween_property(_player_strip, "position:y",
+			_player_strip_rest_y + (STRIP_DRAG_DROP if on else 0.0),
+			STRIP_DRAG_TIME).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_strip_drop_tween.tween_property(_player_strip, "modulate",
+			STRIP_DRAG_DIM if on else Color.WHITE, STRIP_DRAG_TIME)
+
+
+## 카드를 전장 쪽으로 끄는 동안 상단 적 UI(적 스트립 · 상대 손패)를 **위로
+## 비켜 올리고 어둡게** 한다 — 아군 쪽 `set_player_strip_dropped` 의 거울이다
+## (`CardPhaseManager._drag_lowers_hand`). 올라가 있는 동안은 층째 전장 아래로
+## 깔린다(`_enemy_top_layer` 주석). 돌아올 때는 제자리에 닿은 뒤에 층을 올린다
+## — 중간에 올리면 아직 비켜 있는 판이 전장 초상 위로 튀어 오른다.
+func set_enemy_top_raised(on: bool) -> void:
+	if _enemy_top_layer == null or not is_instance_valid(_enemy_top_layer):
+		return
+	if _enemy_top_tween != null and _enemy_top_tween.is_valid():
+		_enemy_top_tween.kill()
+	if on:
+		_enemy_top_layer.layer = ENEMY_TOP_RAISED_LAYER
+	_enemy_top_tween = _bs.create_tween().set_parallel()
+	_enemy_top_tween.tween_property(_enemy_top_layer, "offset:y",
+			-ENEMY_TOP_RAISE if on else 0.0,
+			STRIP_DRAG_TIME).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	for node in _enemy_top_layer.get_children():
+		var ci := node as CanvasItem
+		if ci != null:
+			_enemy_top_tween.tween_property(ci, "modulate",
+					STRIP_DRAG_DIM if on else Color.WHITE, STRIP_DRAG_TIME)
+	if not on:
+		_enemy_top_tween.chain().tween_callback(func() -> void:
+			_enemy_top_layer.layer = ENEMY_TOP_LAYER)
 
 
 func set_strip_visible(team: int, on: bool) -> void:
@@ -559,7 +610,7 @@ func _build_ai_hand_peek() -> void:
 	# panel an explicit StyleBoxFlat. The panel is created in `_build_top_panel`,
 	# but we apply the override here so the AI cards always stay visually
 	# clipped, even with a transparent default theme.
-	_bs.canvas.add_child(_ai_hand_root)
+	_enemy_top_layer.add_child(_ai_hand_root)
 
 
 # Sync `_ai_card_back_nodes` count with `_bs.ai_hand.size()` and reflow.
@@ -772,6 +823,14 @@ func _build_cost_donuts() -> void:
 	_bs.cost_donut.set_center(Vector2(cx, _bs.BS_HAND_CENTER.y
 			- targeting_btn_band - DONUT_HAND_GAP - CostDonut.RADIUS))
 	_bs.cost_donut.end_turn_pressed.connect(_bs.card_phase.end_card_phase)
+
+	# 예약 칩 — 아군 도넛 위로 쌓인다(`ReservationChips`). 적 쪽은 두지 않는다:
+	# 적 도넛 아래는 전장 왼쪽 위 타일과 겹치고, 상대의 예약은 킬로그 · 결과로
+	# 드러난다.
+	_reserve_chips = ReservationChips.new()
+	_bs.canvas.add_child(_reserve_chips)
+	_reserve_chips.setup(_bs, true, _bs.cost_donut.position
+			+ Vector2(CostDonut.RADIUS, CostDonut.RADIUS))
 
 
 func _build_victory_panel() -> void:

@@ -99,6 +99,15 @@ const SCORE_POPUP_ICON_GAP := 4.0
 ## 아이콘 외곽선 두께(px, DISPLAY_SCALE 이 곱해진다). 글자 외곽선(지름 기준)의
 ## 절반쯤이 테두리 바깥으로 나오므로 그와 비슷한 굵기로 보이는 값.
 const SCORE_POPUP_ICON_OUTLINE_PX := 3.0
+## 성장치 팝업 크기 — **얻은 양이 클수록 크게.** 표시값(`fmt_score_gain`, 성장치
+## × 1000) 기준으로 두 자리(< `SCORE_POPUP_SIZE_LO_AMOUNT`)면 최소 배율,
+## `SCORE_POPUP_SIZE_HI_AMOUNT` 이상이면 최대 배율, 그 사이는 **로그 보간**이다
+## — 83 과 980 이 한 자리 수만큼 다른 사건이라는 것이 크기에서 읽혀야 한다.
+## 배율은 글자 · 아이콘 · 외곽선 · 간격에 함께 먹는다.
+const SCORE_POPUP_SIZE_MIN := 0.75
+const SCORE_POPUP_SIZE_MAX := 1.25
+const SCORE_POPUP_SIZE_LO_AMOUNT := 100.0
+const SCORE_POPUP_SIZE_HI_AMOUNT := 1000.0
 
 
 # ─── 공격 카드 명중 파티클 ───────────────────────────────────────────────────
@@ -137,23 +146,22 @@ const CAST_BEAM_W_RATIO: float = 0.62
 const CAST_COLOR := Color(1.0, 1.0, 1.0)
 
 
-# ─── HP 링 조각 (피해를 입은 만큼 잘려 나가 커지며 사라진다) ─────────────────
-# 링은 `pilot.hp` 를 그대로 읽으므로 피해가 들어온 프레임에 그냥 짧아진다 —
-# 얼마나 깎였는지가 한 프레임에 지나가 버린다. 그래서 **방금 잃은 구간**을
-# 떼어 내 마커 중심 기준으로 키우며 투명하게 날린다.
+# ─── HP 링 조각 (피해를 입은 만큼 제자리에서 커지며 사라진다) ───────────────
+# 링은 `pilot.hp` / `.shield` 를 그대로 읽으므로 피해가 들어온 프레임에 그냥
+# 짧아진다 — 얼마나 깎였는지가 한 프레임에 지나가 버린다. 그래서 **방금 잃은
+# 구간**(HP · 보호막 각각)을 그 자리에서 키우며 투명하게 지운다(`draw_hp_chip`).
 #
 # 감지는 호출부가 아니라 여기서 한다(`_hp_seen` 과 지금 hp 를 비교) — 피해 경로가
 # 전장 교전 · 공격 카드 · 포탑 · 교전 아레나 · 스킬로 흩어져 있어 한 곳에 걸면
 # 나머지가 빠진다. 교전이 도는 동안은 감지를 미룬다: 아레나가 전장을 덮고 있어
 # 아무도 못 보므로, 무대가 걷힌 뒤 깎인 총량이 한 조각으로 떨어진다(성장치
 # 팝업의 `_score_popup_hold` 와 같은 이유).
-## PilotData → 마지막으로 본 hp.
+## PilotData → 마지막으로 본 Vector2i(hp, shield).
 var _hp_seen: Dictionary = {}
-## {"p": PilotData, "from": float, "to": float, "t": float} — from/to 는 max_hp
-## 대비 비율(from < to, 잃은 구간).
+## {"p": PilotData, "segs": Array, "t": float} — segs 는 `hp_loss_segments` 의 결과.
 var _hp_chips: Array = []
 const HP_CHIP_DUR: float = 0.45
-## 끝날 때 조각의 반지름 · 두께 배율(마커 중심 기준).
+## 끝날 때 조각의 두께 · 호 길이 배율(조각 가운데 기준).
 const HP_CHIP_SCALE: float = 1.45
 
 
@@ -185,6 +193,8 @@ func _process(delta: float) -> void:
 	if _advance_press(delta):
 		dirty = true
 	if _advance_hp_chips(delta):
+		dirty = true
+	if _advance_banners(delta):
 		dirty = true
 	# 목표 자리를 먼저 훑어 새 글라이드를 띄운 다음 시간을 민다. BattleSim 은
 	# 이동 타이머를 더 이상 들고 있지 않으므로 이 구간의 프레임은 여기서 만든다.
@@ -281,15 +291,13 @@ func _advance_hp_chips(delta: float) -> bool:
 	if not engage_busy:
 		for raw in _bs.pilots:
 			var p := raw as PilotData
-			var seen: int = int(_hp_seen.get(p, p.hp))
-			if p.hp < seen and p.max_hp > 0:
-				_hp_chips.append({
-					"p": p,
-					"from": clampf(float(p.hp) / float(p.max_hp), 0.0, 1.0),
-					"to": clampf(float(seen) / float(p.max_hp), 0.0, 1.0),
-					"t": 0.0,
-				})
-			_hp_seen[p] = p.hp
+			var now := Vector2i(p.hp, p.shield)
+			var seen: Vector2i = _hp_seen.get(p, now)
+			if (now.x < seen.x or now.y < seen.y) and p.max_hp > 0:
+				var segs: Array = hp_loss_segments(seen.x, seen.y, now.x, now.y, p.max_hp)
+				if not segs.is_empty():
+					_hp_chips.append({"p": p, "segs": segs, "t": 0.0})
+			_hp_seen[p] = now
 	if _hp_chips.is_empty():
 		return false
 	var keep: Array = []
@@ -322,7 +330,7 @@ func _advance_popups(delta: float) -> bool:
 ## stack on one pixel.
 func spawn_pilot_popup(p: PilotData, text: String, color: Color,
 		delay: float = 0.0, dur: float = -1.0, rise: float = -1.0,
-		icon: Texture2D = null) -> void:
+		icon: Texture2D = null, size_scale: float = 1.0) -> void:
 	if p == null:
 		return
 	var markers: Dictionary = _build_pilot_render_layout()
@@ -337,6 +345,7 @@ func spawn_pilot_popup(p: PilotData, text: String, color: Color,
 		"dur":   _bs.DMG_POPUP_DUR if dur <= 0.0 else dur,
 		"rise":  _bs.DMG_POPUP_RISE_PX if rise <= 0.0 else rise,
 		"icon":  icon,
+		"scale": size_scale,
 	})
 	queue_redraw()
 
@@ -350,7 +359,17 @@ func spawn_score_popup(p: PilotData, amount: float) -> void:
 	spawn_pilot_popup(p, "+" + BattleSim.fmt_score_gain(amount),
 			BattleSim.SCORE_POPUP_COLOR, 0.0,
 			BattleSim.SCORE_POPUP_DUR, BattleSim.SCORE_POPUP_RISE_PX,
-			BattleSim.SCORE_POPUP_ICON)
+			BattleSim.SCORE_POPUP_ICON, score_popup_scale(amount))
+
+
+## 성장치 팝업 배율 — `SCORE_POPUP_SIZE_*` 주석 참조. `amount` 는 성장치 단위
+## (화면 숫자 = × 1000).
+static func score_popup_scale(amount: float) -> float:
+	var shown: float = amount * 1000.0
+	var lo: float = SCORE_POPUP_SIZE_LO_AMOUNT
+	var hi: float = SCORE_POPUP_SIZE_HI_AMOUNT
+	var t: float = clampf(log(maxf(shown, lo) / lo) / log(hi / lo), 0.0, 1.0)
+	return lerpf(SCORE_POPUP_SIZE_MIN, SCORE_POPUP_SIZE_MAX, t)
 
 
 ## Ticks every live burst and drops the expired ones. Same shape as
@@ -445,6 +464,7 @@ func _draw_pilot_cast_fx() -> void:
 func clear_popups() -> void:
 	_popups.clear()
 	_bursts.clear()
+	_banners.clear()
 	_hp_chips.clear()
 	_hp_seen.clear()
 	_press_now.clear()
@@ -457,9 +477,10 @@ func _draw_pilot_popups() -> void:
 	if _popups.is_empty():
 		return
 	var font := ThemeDB.fallback_font
-	var fsz: int = int(round(POPUP_FONT_SIZE_BASE * HexGrid.DISPLAY_SCALE))
 	for raw in _popups:
 		var e: Dictionary = raw
+		var fsz: int = maxi(1, int(round(POPUP_FONT_SIZE_BASE * HexGrid.DISPLAY_SCALE
+				* float(e.get("scale", 1.0)))))
 		var local_t: float = float(e["t"]) - float(e["delay"])
 		if local_t < 0.0:
 			continue
@@ -490,16 +511,17 @@ func _draw_pilot_popups() -> void:
 func _draw_icon_popup(font: Font, fsz: int, txt: String, tsz: Vector2,
 		icon: Texture2D, e: Dictionary, rise: float, alpha: float) -> void:
 	var icon_sz: float = font.get_height(fsz)
-	var gap: float = SCORE_POPUP_ICON_GAP * HexGrid.DISPLAY_SCALE
+	var k: float = float(e.get("scale", 1.0))
+	var gap: float = SCORE_POPUP_ICON_GAP * HexGrid.DISPLAY_SCALE * k
 	var total_w: float = icon_sz + gap + tsz.x
 	var base: Vector2 = (e["pos"] as Vector2) \
 			+ Vector2(-total_w * 0.5, -PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE - rise)
 	# `base.y` 는 글자 기준선 — 줄 상단은 ascent 만큼 위다.
 	var line_top: float = base.y - font.get_ascent(fsz)
 	draw_outlined_icon(self, icon, Rect2(base.x, line_top, icon_sz, icon_sz),
-			SCORE_POPUP_ICON_OUTLINE_PX * HexGrid.DISPLAY_SCALE, alpha)
+			SCORE_POPUP_ICON_OUTLINE_PX * HexGrid.DISPLAY_SCALE * k, alpha)
 	var text_at := Vector2(base.x + icon_sz + gap, base.y)
-	var outline_px: int = maxi(1, int(round(SCORE_POPUP_OUTLINE_PX * HexGrid.DISPLAY_SCALE)))
+	var outline_px: int = maxi(1, int(round(SCORE_POPUP_OUTLINE_PX * HexGrid.DISPLAY_SCALE * k)))
 	draw_string_outline(font, text_at, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz,
 			outline_px, _alpha_mul(Color(0.0, 0.0, 0.0), alpha))
 	draw_string(font, text_at, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz,
@@ -536,6 +558,8 @@ func _draw() -> void:
 		_draw_targeting_tile_dim(_undimmed_cells())
 	_draw_hq_hp_bars()
 	_draw_turret_hp_bars()
+	# 손패 카드 시전자의 하얀 네온 — 마커 뒤에.
+	_draw_card_preview_neon()
 	_draw_pilot_groups()
 	# 정글 시작 경로 중 **마커가 앉는 칸의 번호**만 마커 위에 배지로 — 그 칸이
 	# 도착 턴인데, 다른 번호처럼
@@ -552,11 +576,14 @@ func _draw() -> void:
 	# marker disc stacked on each other.
 	if draw_dim:
 		_draw_targeting_pilot_dim()
+	# 손패 카드 효과 미리보기(경로 · 명중 예상 · 회복 · 고스트 · 영혼) — 딤 위에.
+	_draw_card_preview_field()
 	# 공격 카드 연출 두 겹 — 시전자 빛은 초상 위에, 피격 조각은 그 위에.
 	_draw_pilot_cast_fx()
 	_draw_pilot_bursts()
 	# 피해 수치 / MISS 는 무엇에도 가려지면 안 되므로 맨 마지막.
 	_draw_pilot_popups()
+	_draw_buff_banners()
 
 
 # ─── Per-frame pilot render layout cache ─────────────────────────────────────
@@ -963,8 +990,8 @@ func _build_pilot_render_layout() -> Dictionary:
 # 자기 자리를 받는다 — `+N` 오버플로 원은 사라졌다.
 #
 # **먼저 가로 줄로 앉힌다**(`_row_blocks` → `_pick_row_seats`): 팀 블록이 타일
-# 아래(팀0) / 위(팀1)에 한 줄로 나란히 서고, 아군 홈 구역에서는 아군도 위로
-# 올라간다. 줄이 세 겹 어디에도 안 들어갈 때만 아래의 육각 링 배치로 떨어진다.
+# 아래(팀0) / 위(팀1)에 한 줄로 나란히 선다(HQ 칸도 예외 없음). 줄이 세 겹
+# 어디에도 안 들어갈 때만 아래의 육각 링 배치로 떨어진다.
 #
 # 배정은 **전장 전체를 한 번에 훑는 그리디**이되, 낱개가 아니라 **블록 단위**다:
 # 같은 칸에서 기본 방향이 같은 파일럿들(= 같은 팀)은 한 덩어리로 묶여 자리표의
@@ -995,7 +1022,7 @@ func _solve_slots() -> Dictionary:
 		var cell := raw_cell as Vector2i
 		var tile_center := _bs.cell_center(cell)
 		var used: Dictionary = {}
-		for raw_block in _row_blocks(cell, by_cell[cell] as Array):
+		for raw_block in _row_blocks(by_cell[cell] as Array):
 			var block: Dictionary = raw_block
 			var members: Array = block["pilots"] as Array
 			var v: float = float(block["v"])
@@ -1107,49 +1134,16 @@ func _point_polygon_distance(pt: Vector2, poly: PackedVector2Array) -> float:
 ## 한 칸의 블록을 **가로 줄 배치 단위**로 나눈다. 각 항목은
 ## `{"pilots": Array, "v": +1(타일 아래) / -1(타일 위), "cap": 한 줄 정원}`.
 ##
-## 보통 칸: 팀0 = 아래, 팀1 = 위, 한 줄 3명(넘치면 다음 줄).
-## **아군 홈 구역**(`_is_home_zone` — 아군 HQ 와 거기 붙은 아군 포탑 칸)은 화면
-## 맨 아래라 타일 아래의 초상이 손패 · 하단 UI 에 가려진다. 그래서 **모두 위로**
-## 올리고 위쪽은 한 줄에 `HOME_TOP_CAP`(5)명까지 받는다 — 아군 블록이 먼저 위를
-## 잡고, 위가 다 차면 그 뒤에 오는 사람(대개 다이브한 적)부터 아래로 내려간다.
-func _row_blocks(cell: Vector2i, pilots: Array) -> Array:
-	var blocks: Array = _slot_blocks(pilots)
+## 모든 칸이 같다: 팀0 = 아래, 팀1 = 위, 한 줄 3명(넘치면 다음 줄). 예전의 **아군
+## 홈 구역 예외**(아군 HQ 와 거기 붙은 아군 포탑 칸에서는 아군도 위로 올리던
+## `_is_home_zone` / `HOME_TOP_CAP`)는 삭제됐다 — 아군은 HQ 에서도 아래가 우선이다.
+func _row_blocks(pilots: Array) -> Array:
 	var out: Array = []
-	if not _is_home_zone(cell):
-		for raw in blocks:
-			var b: Dictionary = raw
-			out.append({"pilots": b["pilots"], "v": 1.0 if int(b["dir"]) == 3 else -1.0,
-					"cap": ROW_CAP})
-		return out
-	# 아군(팀0) 블록이 위쪽 정원을 먼저 쓴다.
-	blocks.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		return int(a["dir"]) == 3 and int(b["dir"]) != 3)
-	var top_left: int = HOME_TOP_CAP
-	for raw in blocks:
-		var members: Array = (raw as Dictionary)["pilots"] as Array
-		var up: int = mini(members.size(), top_left)
-		top_left -= up
-		if up > 0:
-			out.append({"pilots": members.slice(0, up), "v": -1.0, "cap": HOME_TOP_CAP})
-		if up < members.size():
-			out.append({"pilots": members.slice(up), "v": 1.0, "cap": ROW_CAP})
+	for raw in _slot_blocks(pilots):
+		var b: Dictionary = raw
+		out.append({"pilots": b["pilots"], "v": 1.0 if int(b["dir"]) == 3 else -1.0,
+				"cap": ROW_CAP})
 	return out
-
-
-## 아군 홈 구역 — 아군 HQ 칸과 **그 HQ 에 붙은 아군 포탑 칸**(지금 맵에선 2차
-## 포탑 셋). 포탑이 부서져도 자리는 그대로다(그 칸이 화면 아래라는 사실은 안
-## 변한다).
-func _is_home_zone(cell: Vector2i) -> bool:
-	var hq: Vector2i = _bs.PLAYER_HQ_POS
-	if cell == hq:
-		return true
-	if _bs.hex_grid.hex_distance(cell, hq) != 1:
-		return false
-	for raw in _bs.turrets:
-		var td := raw as TurretData
-		if td.team == 0 and td.grid_pos == cell:
-			return true
-	return false
 
 
 ## 블록 `n` 명이 앉을 **가로 줄** 자리들(구성원 순서 = 왼쪽부터). 각 항목은
@@ -1632,6 +1626,12 @@ const HP_RING_GAP := 1.0
 const MARKER_OUTLINE_W := 5.0
 ## HP 링 25 단위 구분선 — 외곽선 두께의 절반.
 const HP_TICK_W := MARKER_OUTLINE_W * 0.5
+## 마커 팀색(HP 링 · 꼬리) — 교전 무대 초상의 HP 링도 이 색을 쓴다.
+const TEAM_RING_COLORS := [Color(0.2, 0.5, 0.9), Color(0.9, 0.2, 0.2)]
+## HP 링 구분선 간격(HP).
+const HP_TICK_STEP: int = 25
+## 보호막 — HP 링 위에 **추가 체력처럼** 이어 붙는 밝은 회색 구간.
+const SHIELD_RING_COLOR := Color(0.82, 0.83, 0.86)
 ## 화살표 폭 배율 — 예전 폭(`clamp(반지름 × 0.9, 10, 18)`)의 90%.
 const ARROW_WIDTH_SCALE := 0.9
 ## 뾰족한 외곽선 끝이 채움 끝보다 앞으로 나가는 최대 거리(px).
@@ -1690,9 +1690,6 @@ const SLOT_RINGS := 3
 ## 가로 줄 배치(`_pick_row_seats`)에서 보통 칸의 한 줄 정원. 넷부터는 다음 줄.
 const ROW_CAP := 3
 
-## 아군 홈 구역(`_is_home_zone`)에서 타일 **위** 한 줄에 앉는 최대 인원 — 이걸
-## 넘는 사람부터 아래로 내려간다.
-const HOME_TOP_CAP := 5
 
 
 # PilotData → 슬롯 벡터에 곱할 배율. **파일럿마다 다르다**: 자기 강조 배율과
@@ -1864,8 +1861,7 @@ func _draw_pilot_cell(_cell: Vector2i, pilots: Array) -> void:
 
 # 파일럿 한 명의 마커 — 꼬리 · 초상 · HP 링, 그리고 그 위의 HP 조각.
 func _draw_pilot_marker(pilot: PilotData, radius: float) -> void:
-	var is_enemy: bool = pilot.team == 1
-	var team_color := Color(0.9, 0.2, 0.2) if is_enemy else Color(0.2, 0.5, 0.9)
+	var team_color: Color = TEAM_RING_COLORS[1 if pilot.team == 1 else 0]
 	var anim_off := _pilot_anim_offset(pilot)
 	var pos := _pilot_marker_pos(pilot) + anim_off
 	var alpha := _pilot_anim_alpha(pilot)
@@ -1897,9 +1893,7 @@ func _draw_pilot_marker(pilot: PilotData, radius: float) -> void:
 	_draw_hp_chips(pilot, pos, radius * _pilot_draw_scale(pilot), marker_color, alpha)
 
 
-# 방금 잃은 HP 구간 — 링에서 떨어져 나와 마커 중심 기준으로 커지며 사라진다.
-# 각도 · 반지름은 `_draw_pilot_circle` 의 HP 링과 같은 식이라 떨어지는 순간에는
-# 링의 빈자리에 정확히 겹친다. 검은 외곽을 한 겹 깔아 밝은 타일 위에서도 읽힌다.
+# 방금 잃은 HP · 보호막 구간 — 링의 빈자리에서 제자리 확대 + 페이드(`draw_hp_chip`).
 func _draw_hp_chips(pilot: PilotData, pos: Vector2, draw_radius: float,
 		color: Color, alpha: float) -> void:
 	for raw in _hp_chips:
@@ -1907,19 +1901,8 @@ func _draw_hp_chips(pilot: PilotData, pos: Vector2, draw_radius: float,
 		if c["p"] != pilot:
 			continue
 		var k: float = clampf(float(c["t"]) / HP_CHIP_DUR, 0.0, 1.0)
-		var grow: float = 1.0 - pow(1.0 - k, 3.0)          # ease-out
-		var s: float = lerpf(1.0, HP_CHIP_SCALE, grow)
-		var a: float = alpha * (1.0 - k * k)               # 끝으로 갈수록 빨리 사라진다
-		var ring_r: float = (draw_radius + HP_RING_W * 0.5 + HP_RING_GAP) * s
-		var w: float = HP_RING_W * s
-		var start_a: float = -PI * 0.5
-		var a0: float = start_a + TAU * float(c["from"])
-		var a1: float = start_a + TAU * float(c["to"])
-		var seg: int = maxi(4, int(36.0 * (float(c["to"]) - float(c["from"]))))
-		draw_arc(pos, ring_r, a0, a1, seg,
-				_alpha_mul(Color(0.0, 0.0, 0.0), a * 0.8), w + MARKER_OUTLINE_W)
-		draw_arc(pos, ring_r, a0, a1, seg,
-				_alpha_mul(color.lightened(0.35), a), w)
+		for seg in c["segs"]:
+			draw_hp_chip(self, pos, draw_radius, seg as Array, color, k, alpha)
 
 
 ## 그림자 가장자리의 흐림 폭(px)과 겹 수. 실루엣을 `-폭/2 … +폭/2` 로 깎고
@@ -2190,8 +2173,6 @@ func pilot_marker_pos_fallback(p: PilotData) -> Vector2:
 	var base_r: float = PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE
 	var cell := _render_cell(p)
 	var dir: int = pilot_display_dir_index(p)
-	if _is_home_zone(cell):
-		dir = 0   # 아군 홈 구역은 위 — `_row_blocks`
 	return _bs.cell_center(cell) + _slot_offset(dir, base_r)
 
 
@@ -2215,7 +2196,7 @@ func pilot_marker_radius(p: PilotData) -> float:
 
 ## 초상 반지름 → 마커 맨 바깥(HP 링 바깥의 검은 외곽선 끝) 반지름. 뒤 원판 ·
 ## 그림자 · 딤 원판이 전부 이 값을 쓴다.
-func marker_outer_radius(draw_radius: float) -> float:
+static func marker_outer_radius(draw_radius: float) -> float:
 	return draw_radius + HP_RING_GAP + HP_RING_W + MARKER_OUTLINE_W
 
 
@@ -2419,40 +2400,497 @@ func _draw_pilot_circle(pilot: PilotData, pos: Vector2, radius: float,
 		draw_texture_rect(portrait, rect, false, _alpha_mul(portrait_tint, alpha))
 	else:
 		draw_circle(pos, draw_radius, _alpha_mul(color, alpha))
-	# Circular HP ring hugging the outside of the pilot circle. Width is
-	# doubled vs. the old marker; colour now matches faction (was green).
-	var hp_ring_w := HP_RING_W
-	var hp_ring_r := draw_radius + hp_ring_w * 0.5 + HP_RING_GAP
-	draw_arc(pos, hp_ring_r, 0.0, TAU, 36,
-			_alpha_mul(Color(0.15, 0.15, 0.15), alpha), hp_ring_w)
-	var hp_frac: float = clamp(float(pilot.hp) / float(pilot.max_hp), 0.0, 1.0)
+	draw_hp_ring(self, pos, draw_radius, pilot.hp, pilot.shield, pilot.max_hp,
+			color, alpha)
+
+
+# ─── HP 링 (전장 마커와 교전 무대 초상이 함께 쓴다) ──────────────────────────
+# 링 한 바퀴 = `hp_ring_span` — 보호막은 **추가 체력**처럼 남은 HP 바로 뒤에
+# 밝은 회색으로 이어 붙는다. HP + 보호막이 최대 체력을 넘으면 그 합이 한 바퀴가
+# 되어(HP 구간이 그만큼 짧아진다) 보호막이 링 밖으로 잘리지 않는다.
+# `EngageArena` 가 같은 함수로 무대 초상을 그리므로 두 화면의 링이 갈라지지 않는다.
+
+## 링 한 바퀴가 나타내는 HP — max(최대 체력, HP + 보호막).
+static func hp_ring_span(hp: int, shield: int, max_hp: int) -> float:
+	return float(maxi(maxi(max_hp, 1), hp + shield))
+
+
+## 초상 반지름 `draw_radius` 바깥에 붙는 링의 중심 반지름.
+static func hp_ring_radius(draw_radius: float) -> float:
+	return draw_radius + HP_RING_W * 0.5 + HP_RING_GAP
+
+
+static func _amul(c: Color, alpha: float) -> Color:
+	return Color(c.r, c.g, c.b, c.a * alpha)
+
+
+## 빈 링(어두운 바탕) → HP(팀색) → 보호막(밝은 회색) → `HP_TICK_STEP` 구분선.
+## 구분선은 보호막 구간까지 같은 간격으로 이어진다 — 보호막도 HP 와 같은 단위다.
+static func draw_hp_ring(c: CanvasItem, pos: Vector2, draw_radius: float,
+		hp: int, shield: int, max_hp: int, color: Color, alpha: float) -> void:
+	var ring_r: float = hp_ring_radius(draw_radius)
+	var w: float = HP_RING_W
+	c.draw_arc(pos, ring_r, 0.0, TAU, 36, _amul(Color(0.15, 0.15, 0.15), alpha), w)
+	var span: float = hp_ring_span(hp, shield, max_hp)
 	var start_a: float = -PI * 0.5
-	if hp_frac > 0.0:
-		var end_a: float = start_a + TAU * hp_frac
-		var seg: int = max(8, int(36.0 * hp_frac))
-		draw_arc(pos, hp_ring_r, start_a, end_a, seg,
-				_alpha_mul(color, alpha), hp_ring_w)
-	# Tick marks every 25 HP — so a 110-HP bar shows 4 dividers and the final
-	# stub reads as 10/25 of a full segment.
-	if pilot.max_hp > 25:
-		var tick_inner: float = hp_ring_r - hp_ring_w * 0.5
-		var tick_outer: float = hp_ring_r + hp_ring_w * 0.5
-		var tick_col: Color = _alpha_mul(Color(0.05, 0.05, 0.05), alpha)
-		var ticks: int = int(floor(float(pilot.max_hp - 1) / 25.0))
-		for i in range(1, ticks + 1):
-			var frac: float = float(i * 25) / float(pilot.max_hp)
-			if frac >= 1.0:
-				break
-			var ang: float = start_a + TAU * frac
-			var dirv := Vector2(cos(ang), sin(ang))
-			draw_line(pos + dirv * tick_inner, pos + dirv * tick_outer,
-					tick_col, HP_TICK_W)
-	# 보호막 ring — cyan band stacked just outside the HP ring, length = shield / max_hp.
-	if pilot.shield > 0:
-		var sh_frac: float = clamp(float(pilot.shield) / float(pilot.max_hp), 0.0, 1.0)
-		var sh_ring_r: float = hp_ring_r + hp_ring_w * 0.5 + 2.0
-		var sh_start: float = -PI * 0.5
-		var sh_end: float = sh_start + TAU * sh_frac
-		var sh_seg: int = max(8, int(36.0 * sh_frac))
-		draw_arc(pos, sh_ring_r, sh_start, sh_end, sh_seg,
-				_alpha_mul(Color(0.45, 0.85, 1.0), alpha), 3.0)
+	var hp_f: float = clampf(float(maxi(hp, 0)) / span, 0.0, 1.0)
+	var all_f: float = clampf(float(maxi(hp, 0) + maxi(shield, 0)) / span, 0.0, 1.0)
+	if hp_f > 0.0:
+		c.draw_arc(pos, ring_r, start_a, start_a + TAU * hp_f,
+				maxi(8, int(36.0 * hp_f)), _amul(color, alpha), w)
+	if all_f > hp_f:
+		c.draw_arc(pos, ring_r, start_a + TAU * hp_f, start_a + TAU * all_f,
+				maxi(4, int(36.0 * (all_f - hp_f))), _amul(SHIELD_RING_COLOR, alpha), w)
+	var tick_inner: float = ring_r - w * 0.5
+	var tick_outer: float = ring_r + w * 0.5
+	var tick_col: Color = _amul(Color(0.05, 0.05, 0.05), alpha)
+	var i: int = 1
+	while float(i * HP_TICK_STEP) < span:
+		var ang: float = start_a + TAU * float(i * HP_TICK_STEP) / span
+		var dirv := Vector2(cos(ang), sin(ang))
+		c.draw_line(pos + dirv * tick_inner, pos + dirv * tick_outer, tick_col, HP_TICK_W)
+		i += 1
+
+
+## 방금 잃은 구간들 — **잃기 전** 링 배치 기준의 비율. HP 조각은 `[hp1, hp0]`,
+## 보호막 조각은 옛 보호막 구간의 바깥 끝 `[hp0 + sh1, hp0 + sh0]` 이다.
+## 원소는 `[from, to, is_shield]`.
+static func hp_loss_segments(hp0: int, sh0: int, hp1: int, sh1: int,
+		max_hp: int) -> Array:
+	var out: Array = []
+	var span: float = hp_ring_span(hp0, sh0, max_hp)
+	hp0 = maxi(hp0, 0)
+	hp1 = maxi(hp1, 0)
+	if hp1 < hp0:
+		out.append([float(hp1) / span, float(hp0) / span, false])
+	if sh1 < sh0:
+		out.append([float(hp0 + maxi(sh1, 0)) / span, float(hp0 + sh0) / span, true])
+	return out
+
+
+## HP 조각 하나 — **제자리에서** 커지며 사라진다. 링 반지름은 그대로 두고
+## 두께와 호의 각도만 조각의 가운데를 기준으로 키운다(바깥으로 튀어 나가지
+## 않는다). `k` 는 0..1 진행도. 검은 외곽을 한 겹 깔아 밝은 바탕에서도 읽힌다.
+static func draw_hp_chip(c: CanvasItem, pos: Vector2, draw_radius: float,
+		seg: Array, color: Color, k: float, alpha: float) -> void:
+	var grow: float = 1.0 - pow(1.0 - k, 3.0)          # ease-out
+	var s: float = lerpf(1.0, HP_CHIP_SCALE, grow)
+	var a: float = alpha * (1.0 - k * k)               # 끝으로 갈수록 빨리 사라진다
+	var f0: float = float(seg[0])
+	var f1: float = float(seg[1])
+	var mid: float = (f0 + f1) * 0.5
+	var half: float = minf((f1 - f0) * 0.5 * s, 0.5)
+	var start_a: float = -PI * 0.5
+	var a0: float = start_a + TAU * (mid - half)
+	var a1: float = start_a + TAU * (mid + half)
+	var ring_r: float = hp_ring_radius(draw_radius)
+	var w: float = HP_RING_W * s
+	var n: int = maxi(4, int(36.0 * half * 2.0))
+	var fill: Color = SHIELD_RING_COLOR if bool(seg[2]) else color.lightened(0.35)
+	c.draw_arc(pos, ring_r, a0, a1, n, _amul(Color(0.0, 0.0, 0.0), a * 0.8),
+			w + MARKER_OUTLINE_W)
+	c.draw_arc(pos, ring_r, a0, a1, n, _amul(fill, a), w)
+
+
+# ─── 손패 카드 미리보기 (전장 쪽) ────────────────────────────────────────────
+# `CardPlayPreview` 가 무엇을 그릴지 정하고(`field_spec` / `neon_pilot`) 여기는
+# 전장 좌표로 그리기만 한다. 미리보기가 떠 있는 동안 그쪽 `_process` 가 매 프레임
+# 이 렌더러를 걷어차므로 애니메이션 시계도 그쪽 것(`anim_time`)을 쓴다.
+
+const NEON_COLOR := Color(1.0, 1.0, 1.0)
+const PREVIEW_PATH_COLOR := Color(1.0, 1.0, 1.0)
+const PREVIEW_HEAL_COLOR := Color(0.40, 1.00, 0.50)
+const PREVIEW_SHIELD_COLOR := Color(0.45, 0.85, 1.00)
+const PREVIEW_DMG_COLOR := Color(1.00, 0.30, 0.25)
+const PREVIEW_FONT_BASE := 24
+
+
+func _preview() -> CardPlayPreview:
+	var cp: CardPlayPreview = _bs.card_preview
+	if cp == null or not cp.is_active():
+		return null
+	return cp
+
+
+## 시전자 하얀 네온 — 마커 **뒤에** 깐다(`_draw_pilot_groups` 앞). 바깥으로
+## 갈수록 옅은 겹 원이 번짐을 만들고, 맨 안쪽에 또렷한 흰 링 하나.
+func _draw_card_preview_neon() -> void:
+	var cp: CardPlayPreview = _preview()
+	if cp == null:
+		return
+	var p: PilotData = cp.neon_pilot()
+	if p == null or not _is_renderable(p):
+		return
+	var pos: Vector2 = _pilot_marker_pos(p) + _pilot_anim_offset(p)
+	var outer: float = marker_outer_radius(pilot_marker_radius(p))
+	var pulse: float = 0.5 + 0.5 * sin(cp.anim_time() * TAU * 1.2)
+	var spread: float = 22.0 * HexGrid.DISPLAY_SCALE
+	for i in 7:
+		var k: float = float(i) / 6.0
+		draw_circle(pos, outer + 2.0 + k * spread,
+				_alpha_mul(NEON_COLOR, (0.34 - k * 0.045) * (0.6 + 0.4 * pulse)))
+	draw_arc(pos, outer + 2.5, 0.0, TAU, 48, _alpha_mul(NEON_COLOR, 0.95),
+			3.5 * HexGrid.DISPLAY_SCALE, true)
+
+
+## 효과 미리보기 — 마커 위에 얹히는 것들. 대상 딤보다 **뒤에** 그려 어둡게
+## 눌리지 않는다.
+func _draw_card_preview_field() -> void:
+	var cp: CardPlayPreview = _preview()
+	if cp == null:
+		return
+	var spec: Dictionary = cp.field_spec()
+	if spec.is_empty():
+		return
+	var t: float = cp.anim_time()
+	if spec.has("ghost"):
+		_draw_preview_ghost(spec["ghost"] as Dictionary, t)
+	if spec.has("soul"):
+		_draw_preview_soul(spec["soul"] as Dictionary, t)
+	if spec.has("attack"):
+		_draw_preview_attack(spec["attack"] as Dictionary, t)
+	if spec.has("restore"):
+		_draw_preview_restore(spec["restore"] as Dictionary, t)
+
+
+## 타일 단위 이동 경로 — 칸 중심을 잇는 선 위에 칸마다 chevron 하나, 빛이
+## 출발점에서 도착점 쪽으로 흐른다. 도착 칸에는 링.
+func _draw_preview_path(cells: Array, t: float, ring_at_end: bool) -> void:
+	if cells.size() < 2:
+		return
+	var pts := PackedVector2Array()
+	for raw in cells:
+		pts.append(_bs.cell_center(raw as Vector2i))
+	var s: float = HexGrid.DISPLAY_SCALE
+	draw_polyline(pts, Color(0, 0, 0, 0.75), 16.0 * s, true)
+	draw_polyline(pts, _alpha_mul(PREVIEW_PATH_COLOR, 0.9), 8.0 * s, true)
+	var steps: int = pts.size() - 1
+	var head: float = fposmod(t * 2.2, float(steps) + 1.0)
+	for i in steps:
+		var a: Vector2 = pts[i]
+		var b: Vector2 = pts[i + 1]
+		var mid: Vector2 = a.lerp(b, 0.55)
+		var dir: Vector2 = (b - a).normalized()
+		# 흐르는 빛 — 앞머리에 가까운 칸일수록 밝다.
+		var d: float = absf(head - float(i) - 0.5)
+		var glow: float = clampf(1.0 - d * 0.8, 0.35, 1.0)
+		_draw_field_chevron(mid, dir, 22.0 * s, _alpha_mul(PREVIEW_PATH_COLOR, glow))
+	if ring_at_end:
+		var end: Vector2 = pts[pts.size() - 1]
+		var pulse: float = 0.5 + 0.5 * sin(t * TAU * 1.4)
+		draw_arc(end, (24.0 + 4.0 * pulse) * s, 0.0, TAU, 40, Color(0, 0, 0, 0.75),
+				13.0 * s, true)
+		draw_arc(end, (24.0 + 4.0 * pulse) * s, 0.0, TAU, 40, PREVIEW_PATH_COLOR,
+				7.0 * s, true)
+
+
+func _draw_field_chevron(c: Vector2, dir: Vector2, half: float, col: Color) -> void:
+	var n := Vector2(-dir.y, dir.x)
+	var tip: Vector2 = c + dir * half * 0.6
+	var pts := PackedVector2Array([
+		tip - dir * half + n * half,
+		tip,
+		tip - dir * half - n * half,
+	])
+	draw_polyline(pts, Color(0, 0, 0, 0.85 * col.a), 15.0 * HexGrid.DISPLAY_SCALE, true)
+	draw_polyline(pts, col, 8.0 * HexGrid.DISPLAY_SCALE, true)
+
+
+## 이동 · 복귀 · 후퇴 — 도착 칸에 반투명 초상(고스트)과, 지금 자리에서 그곳까지의
+## 경로. 경로 칸이 없으면(복귀 = 순간이동) 점선 하나로 잇고, `line = false`
+## (이동 카드)면 고스트만 세운다.
+func _draw_preview_ghost(g: Dictionary, t: float) -> void:
+	var p := g["pilot"] as PilotData
+	if p == null:
+		return
+	var to: Vector2i = g["to"]
+	var path: Array = g.get("path", []) as Array
+	# 고스트는 도착 칸의 **마커가 앉을 자리**에 선다 — 지금 마커가 자기 칸 중심에서
+	# 떨어져 있는 만큼 그대로 옮긴다. 칸 중심에 그리면 이웃 칸으로 늘어진 지금
+	# 마커와 겹치는 일이 생긴다.
+	# 단 이동 카드(`line = false`)는 **겨눈 타일 한가운데**에 세운다 — 지금 마커의
+	# 오프셋을 물려받으면 고스트가 커서가 가리킨 타일이 아니라 이웃 타일에 앉는다.
+	var seat: Vector2 = _pilot_marker_pos(p) - _bs.cell_center(_render_cell(p))
+	if not bool(g.get("line", true)):
+		seat = Vector2.ZERO
+	var dest: Vector2 = _bs.cell_center(to) + seat
+	if path.size() >= 2:
+		_draw_preview_path(path, t, false)
+	elif bool(g.get("line", true)):
+		var from: Vector2 = _pilot_marker_pos(p)
+		var seg: float = 14.0 * HexGrid.DISPLAY_SCALE
+		var total: float = from.distance_to(dest)
+		var off: float = fposmod(t * 40.0, seg * 2.0)
+		var d: float = -seg + off
+		while d < total:
+			var a: Vector2 = from.lerp(dest, clampf(d / total, 0.0, 1.0))
+			var b: Vector2 = from.lerp(dest, clampf((d + seg) / total, 0.0, 1.0))
+			draw_line(a, b, Color(0, 0, 0, 0.75), 13.0 * HexGrid.DISPLAY_SCALE)
+			draw_line(a, b, PREVIEW_PATH_COLOR, 7.0 * HexGrid.DISPLAY_SCALE)
+			d += seg * 2.0
+	var r: float = PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE
+	var pulse: float = 0.5 + 0.5 * sin(t * TAU)
+	var alpha: float = 0.55 + 0.2 * pulse
+	draw_circle(dest, r + 4.0, Color(0, 0, 0, alpha * 0.8))
+	var portrait: Texture2D = PilotImages.circle_for(p.pilot_id)
+	if portrait != null:
+		draw_texture_rect(portrait, Rect2(dest - Vector2(r, r), Vector2(r, r) * 2.0),
+				false, Color(1, 1, 1, alpha))
+	else:
+		draw_circle(dest, r, Color(1, 1, 1, alpha))
+	draw_arc(dest, r + 3.0, 0.0, TAU, 40, Color(0, 0, 0, 0.8),
+			10.0 * HexGrid.DISPLAY_SCALE, true)
+	draw_arc(dest, r + 3.0, 0.0, TAU, 40, PREVIEW_PATH_COLOR,
+			5.0 * HexGrid.DISPLAY_SCALE, true)
+
+
+## 약탈 · 정글 파밍 — 캠프 칸에서 시전자 쪽으로 영혼이 날아가는 궤적과 얻을
+## 성장치. 내려앉은 칸에서 먹는 경우(`at_dest`)는 그 칸 위에서 영혼이 솟는다.
+func _draw_preview_soul(sd: Dictionary, t: float) -> void:
+	var p := sd["pilot"] as PilotData
+	var cell: Vector2i = sd["cell"]
+	var amount: float = float(sd["amount"])
+	var from: Vector2 = _bs.cell_center(cell)
+	var to: Vector2 = from + Vector2(0.0, -60.0 * HexGrid.DISPLAY_SCALE)
+	if not bool(sd.get("at_dest", false)) and p != null:
+		to = _pilot_marker_pos(p)
+	# 제어점은 출발→도착의 **수직** 방향으로 민다 — 위쪽으로만 밀면 위아래로 선
+	# 두 점 사이에서 곡선이 직선으로 무너진다.
+	var span: Vector2 = to - from
+	var bend := Vector2(-span.y, span.x).normalized() * maxf(60.0 * HexGrid.DISPLAY_SCALE,
+			span.length() * 0.35)
+	if bend.y > 0.0:
+		bend = -bend
+	var ctrl: Vector2 = from.lerp(to, 0.5) + bend
+	var pts := PackedVector2Array()
+	for i in 21:
+		var k: float = float(i) / 20.0
+		pts.append(from.lerp(ctrl, k).lerp(ctrl.lerp(to, k), k))
+	draw_polyline(pts, Color(0, 0, 0, 0.45), 7.0 * HexGrid.DISPLAY_SCALE, true)
+	draw_polyline(pts, Color(0.55, 1.0, 0.92, 0.7), 3.0 * HexGrid.DISPLAY_SCALE, true)
+	var icon: Texture2D = BattleSim.SCORE_POPUP_ICON
+	var isz: float = 30.0 * HexGrid.DISPLAY_SCALE
+	var k2: float = fposmod(t * 0.8, 1.0)
+	var at: Vector2 = from.lerp(ctrl, k2).lerp(ctrl.lerp(to, k2), k2)
+	if icon != null:
+		draw_outlined_icon(self, icon, Rect2(at - Vector2(isz, isz) * 0.5,
+				Vector2(isz, isz)), 3.0 * HexGrid.DISPLAY_SCALE,
+				clampf(minf(k2, 1.0 - k2) * 5.0, 0.0, 1.0))
+	_draw_preview_text(to + Vector2(0.0, -PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE - 8.0),
+			"+" + BattleSim.fmt_score_gain(amount), BattleSim.SCORE_POPUP_COLOR)
+
+
+## 공격 예상 — 대상 HP 링에서 **깎일 구간이 깜빡이고**, 마커 위에 명중률과 피해.
+## 보호막이 먼저 받는 몫은 보호막 링에서 깜빡인다.
+func _draw_preview_attack(a: Dictionary, t: float) -> void:
+	var p := a["pilot"] as PilotData
+	if p == null or not _is_renderable(p) or p.max_hp <= 0:
+		return
+	var pos: Vector2 = _pilot_marker_pos(p) + _pilot_anim_offset(p)
+	var draw_r: float = pilot_marker_radius(p)
+	var dmg: int = int(a["damage"])
+	var shield_loss: int = mini(p.shield, dmg)
+	var hp_loss: int = mini(p.hp, dmg - shield_loss)
+	var blink: float = 0.35 + 0.65 * (0.5 + 0.5 * sin(t * TAU * 2.4))
+	# 깎일 구간 = 지금 링 배치에서 잃을 HP · 보호막 구간(`hp_loss_segments`).
+	for raw in hp_loss_segments(p.hp, p.shield, p.hp - hp_loss,
+			p.shield - shield_loss, p.max_hp):
+		_draw_ring_blink(pos, draw_r, raw as Array, Color(1, 1, 1), blink, HP_RING_W + 1.0)
+	var lethal: bool = hp_loss >= p.hp
+	var top: Vector2 = pos + Vector2(0.0, -marker_outer_radius(draw_r) - 6.0)
+	var chance: float = float(a["chance"])
+	var dmg_txt: String = ("처치 -%d" % dmg) if lethal else ("-%d" % dmg)
+	_draw_preview_text(top, dmg_txt, PREVIEW_DMG_COLOR)
+	var fsz: int = int(round(PREVIEW_FONT_BASE * HexGrid.DISPLAY_SCALE))
+	var hit_txt: String = "명중 %d%%" % roundi(chance * 100.0)
+	if bool(a.get("repeat", false)):
+		hit_txt += " · 연속"
+	_draw_preview_text(top + Vector2(0.0, -float(fsz) - 4.0), hit_txt,
+			Color(1.0, 0.95, 0.75))
+
+
+## 회복 · 보호막 예상 — 차오를 구간이 HP 링(초록) / 보호막 링(시안)에서 깜빡이고
+## 마커 위에 더해질 값.
+func _draw_preview_restore(rd: Dictionary, t: float) -> void:
+	var p := rd["pilot"] as PilotData
+	if p == null or not _is_renderable(p) or p.max_hp <= 0:
+		return
+	var pos: Vector2 = _pilot_marker_pos(p) + _pilot_anim_offset(p)
+	var draw_r: float = pilot_marker_radius(p)
+	var heal: int = mini(int(rd.get("heal", 0)), p.max_hp - p.hp)
+	var shield: int = int(rd.get("shield", 0))
+	var blink: float = 0.4 + 0.6 * (0.5 + 0.5 * sin(t * TAU * 2.0))
+	# 차오를 구간은 **적용 뒤의** 링 배치로 잰다 — 보호막이 최대 체력을 넘겨
+	# 한 바퀴가 늘어나는 경우에도 더해질 몫이 링 안에 들어온다.
+	var hp1: int = p.hp + heal
+	var sh1: int = p.shield + shield
+	var span: float = hp_ring_span(hp1, sh1, p.max_hp)
+	if heal > 0:
+		_draw_ring_blink(pos, draw_r, [float(p.hp) / span, float(hp1) / span],
+				PREVIEW_HEAL_COLOR, blink, HP_RING_W)
+	if shield > 0:
+		_draw_ring_blink(pos, draw_r,
+				[float(hp1 + p.shield) / span, float(hp1 + sh1) / span],
+				SHIELD_RING_COLOR, blink, HP_RING_W)
+	var top: Vector2 = pos + Vector2(0.0, -marker_outer_radius(draw_r) - 6.0)
+	var fsz: int = int(round(PREVIEW_FONT_BASE * HexGrid.DISPLAY_SCALE))
+	if heal > 0:
+		_draw_preview_text(top, "+%d" % heal, PREVIEW_HEAL_COLOR)
+		top.y -= float(fsz) + 4.0
+	if shield > 0:
+		_draw_preview_text(top, "보호막 +%d" % shield, PREVIEW_SHIELD_COLOR)
+
+
+## 미리보기 깜빡임 — HP 링 위의 `[from, to]` 구간(링 한 바퀴 대비 비율).
+func _draw_ring_blink(pos: Vector2, draw_r: float, seg: Array, col: Color,
+		blink: float, width: float) -> void:
+	var f0: float = clampf(float(seg[0]), 0.0, 1.0)
+	var f1: float = clampf(float(seg[1]), 0.0, 1.0)
+	if f1 <= f0:
+		return
+	var start_a: float = -PI * 0.5
+	draw_arc(pos, hp_ring_radius(draw_r), start_a + TAU * f0, start_a + TAU * f1,
+			maxi(4, int(36.0 * (f1 - f0))), _alpha_mul(col, blink), width)
+
+
+## 가운데 정렬, 굵은 검은 외곽선. `bottom_center` 는 기준선 가운데.
+func _draw_preview_text(bottom_center: Vector2, txt: String, col: Color) -> void:
+	var font := ThemeDB.fallback_font
+	var fsz: int = int(round(PREVIEW_FONT_BASE * HexGrid.DISPLAY_SCALE))
+	var tsz: Vector2 = font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz)
+	var at := Vector2(bottom_center.x - tsz.x * 0.5, bottom_center.y)
+	draw_string_outline(font, at, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz,
+			maxi(2, int(round(6.0 * HexGrid.DISPLAY_SCALE))), Color(0, 0, 0, 0.9))
+	draw_string(font, at, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz, col)
+
+
+# ─── 버프 배너 (시전 확정 뒤) ────────────────────────────────────────────────
+# 대상에게 효과를 거는 카드(몸집 불리기 · 붉은 가루 · 보호 …)가 **실제로 걸린
+# 순간** 그 파일럿의 전장 초상 위에 한 줄짜리 배너가 뜬다 — 왼쪽은 둥근 사각형으로
+# 깎은 카드 아트, 오른쪽은 카드 이름. 진입점은 `CardPhaseManager` 의 효과
+# 디스패치(`_announce_buff`) 하나다.
+
+const BANNER_DUR: float = 1.9
+const BANNER_FADE_IN: float = 0.15
+const BANNER_FADE_OUT: float = 0.35
+const BANNER_RISE_PX: float = 14.0
+const BANNER_H: float = 46.0
+const BANNER_ART: float = 38.0
+const BANNER_PAD: float = 5.0
+const BANNER_FONT: int = 22
+const BANNER_BG := Color(0.06, 0.06, 0.10, 0.88)
+const BANNER_BORDER := Color(1.0, 1.0, 1.0, 0.55)
+var _banners: Array = []
+
+
+func spawn_buff_banner(p: PilotData, cd: CardData) -> void:
+	if p == null or cd == null:
+		return
+	# 같은 파일럿 위에 이미 떠 있는 배너 수만큼 한 줄씩 위로 쌓는다.
+	var stack: int = 0
+	for raw in _banners:
+		if (raw as Dictionary)["p"] == p:
+			stack += 1
+	var tex: Texture2D = CardImages.art_for(cd.card_name)
+	_bs.prime_texture(tex)
+	_banners.append({
+		"p": p,
+		"tex": tex,
+		"title": cd.card_name,
+		"t": 0.0,
+		"stack": stack,
+	})
+	queue_redraw()
+
+
+func _advance_banners(delta: float) -> bool:
+	if _banners.is_empty():
+		return false
+	var keep: Array = []
+	for raw in _banners:
+		var e: Dictionary = raw
+		e["t"] = float(e["t"]) + delta
+		if float(e["t"]) < BANNER_DUR:
+			keep.append(e)
+	_banners = keep
+	return true
+
+
+func _draw_buff_banners() -> void:
+	if _banners.is_empty():
+		return
+	var font := ThemeDB.fallback_font
+	var s: float = HexGrid.DISPLAY_SCALE
+	var fsz: int = int(round(BANNER_FONT * s))
+	for raw in _banners:
+		var e: Dictionary = raw
+		var p := e["p"] as PilotData
+		if p == null or not _is_renderable(p):
+			continue
+		var t: float = float(e["t"])
+		var alpha: float = clampf(t / BANNER_FADE_IN, 0.0, 1.0)
+		if t > BANNER_DUR - BANNER_FADE_OUT:
+			alpha = clampf((BANNER_DUR - t) / BANNER_FADE_OUT, 0.0, 1.0)
+		var rise: float = BANNER_RISE_PX * s * (1.0 - pow(1.0 - clampf(t / BANNER_DUR, 0.0, 1.0), 2.0))
+		var pos: Vector2 = _pilot_marker_pos(p) + _pilot_anim_offset(p)
+		var h: float = BANNER_H * s
+		var title: String = String(e["title"])
+		var tsz: Vector2 = font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz)
+		var art: float = BANNER_ART * s
+		var pad: float = BANNER_PAD * s
+		var w: float = pad + art + pad * 1.6 + tsz.x + pad * 2.0
+		var bottom: float = pos.y - marker_outer_radius(pilot_marker_radius(p)) - 8.0 * s \
+				- float(int(e["stack"])) * (h + 4.0 * s) - rise
+		var box := Rect2(pos.x - w * 0.5, bottom - h, w, h)
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = _alpha_mul(BANNER_BG, alpha)
+		sb.border_color = _alpha_mul(BANNER_BORDER, alpha)
+		sb.set_border_width_all(maxi(1, int(round(2.0 * s))))
+		sb.set_corner_radius_all(int(round(10.0 * s)))
+		sb.anti_aliasing = true
+		draw_style_box(sb, box)
+		var art_rect := Rect2(box.position.x + pad, box.position.y + (h - art) * 0.5, art, art)
+		var tex := e["tex"] as Texture2D
+		if tex != null:
+			draw_textured_rounded_rect(self, tex, art_rect, 7.0 * s,
+					Color(1, 1, 1, alpha))
+		else:
+			var ph := StyleBoxFlat.new()
+			ph.bg_color = _alpha_mul(Color(0.25, 0.25, 0.32), alpha)
+			ph.set_corner_radius_all(int(round(7.0 * s)))
+			draw_style_box(ph, art_rect)
+		var text_at := Vector2(art_rect.end.x + pad * 1.6,
+				box.position.y + h * 0.5 + font.get_ascent(fsz) * 0.5 - 2.0 * s)
+		draw_string_outline(font, text_at, title, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz,
+				maxi(1, int(round(4.0 * s))), _alpha_mul(Color(0, 0, 0), alpha))
+		draw_string(font, text_at, title, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz,
+				_alpha_mul(Color(1.0, 0.95, 0.80), alpha))
+
+
+## 텍스처를 **둥근 사각형**으로 깎아 그린다 — 셰이더 없이, 둥근 모서리 폴리곤에
+## 같은 모양의 UV 를 입혀 `draw_colored_polygon` 한 번으로. 배너 · 예약 칩이 쓴다.
+static func draw_textured_rounded_rect(ci: CanvasItem, tex: Texture2D, rect: Rect2,
+		radius: float, modulate: Color = Color.WHITE) -> void:
+	var pts := rounded_rect_points(rect, radius)
+	var uvs := PackedVector2Array()
+	for pt in pts:
+		uvs.append((pt - rect.position) / rect.size)
+	ci.draw_colored_polygon(pts, modulate, uvs, tex)
+
+
+static func rounded_rect_points(rect: Rect2, radius: float, seg: int = 5) -> PackedVector2Array:
+	var r: float = minf(radius, minf(rect.size.x, rect.size.y) * 0.5)
+	var out := PackedVector2Array()
+	var corners: Array = [
+		[Vector2(rect.end.x - r, rect.position.y + r), -PI * 0.5],
+		[Vector2(rect.end.x - r, rect.end.y - r), 0.0],
+		[Vector2(rect.position.x + r, rect.end.y - r), PI * 0.5],
+		[Vector2(rect.position.x + r, rect.position.y + r), PI],
+	]
+	for raw in corners:
+		var c: Vector2 = raw[0]
+		var a0: float = raw[1]
+		for i in seg + 1:
+			var a: float = a0 + (PI * 0.5) * float(i) / float(seg)
+			out.append(c + Vector2(cos(a), sin(a)) * r)
+	return out

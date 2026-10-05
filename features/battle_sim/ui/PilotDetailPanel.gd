@@ -8,7 +8,7 @@ extends Node
 #       그 **좌측 하단**에 지속 효과 썸네일이 앉는다(제목 없이 칸만).
 #   우: **머리글**(파일럿 이름 / 그 아래 메크 이름 + 오른쪽에 성장치) → 탭 셋
 #       → 상세 패널(스탯 칩 + 파일럿 스킬)
-#   하: 화면 **전체 폭**에 보유 카드가 손패와 같은 부채꼴로 선다 + 닫기
+#   우하: 정보 칼럼 아래에 보유 카드가 손패와 같은 부채꼴(손패의 80%)로 선다
 #
 # **머리글은 탭과 분리돼 있다.** 이름 · 기체명 · 성장치는 어느 탭을 보든 같은
 # 파일럿의 것이므로 탭이 바뀔 때마다 다시 세울 이유가 없고, 예전처럼 본문
@@ -175,8 +175,6 @@ const MENU_NOTE_FONT: int = 20
 ## 정렬 Label 은 넘치면 정렬을 포기하고 rect 왼쪽부터 그리므로, 잘리는 쪽이
 ## 글의 머리다(clip_text 가 없으면 대신 화면 밖으로 넘친다).
 const MENU_KEY_FRAC: float = 0.42
-## 카드 정보 패널의 아래끝과 카드 줄 제목 사이 간격.
-const MENU_CARD_GAP_Y: float = 14.0
 
 # ─── 지속 효과 썸네일 (일러스트 좌측 하단) ──────────────────────────────────
 # **지금 이 파일럿에게 걸려 있는 것만** 뜬다 — 걸려 있지도 않은 효과의 빈 칸이
@@ -204,6 +202,11 @@ const FX_BG := Color(0.10, 0.12, 0.18, 0.94)
 const FX_BG_HL := Color(0.17, 0.22, 0.34, 0.98)
 const FX_SHORT_FONT: int = 21
 const FX_VALUE_FONT: int = 16
+## 카드 일러스트 썸네일 — 효과를 건 카드를 알 때는 두 글자 약칭 대신 그 카드의
+## 아트를 칸 가득 둥근 사각형으로 깎아 깔고, 값은 아래 띠에 얹는다.
+const FX_ART_SHADER: Shader = preload("res://resources/shaders/rounded_rect_mask.gdshader")
+const FX_ART_INSET: float = 3.0
+const FX_VALUE_BAND := Color(0.0, 0.0, 0.0, 0.62)
 ## 썸네일 줄의 왼쪽 끝.
 const FX_LEFT_X: float = 26.0
 ## 한 줄이 쓸 수 있는 폭 — 정보 칼럼(x 600)과 부딪히지 않는 선. 여섯 칸이 든다.
@@ -212,48 +215,39 @@ const FX_ROW_W: float = 520.0
 ## 아래로 자라면 두 줄짜리 효과 목록이 카드 부채꼴 위로 내려앉는다.
 const FX_ABOVE_TITLE_GAP: float = 20.0
 
-# ─── 카드 (핸드처럼 부채꼴, 화면 하단) ──────────────────────────────────────
-# 손패와 **같은 카드 노드**(`Card.tscn`)를 세운다. 다른 그림으로 그리면 "이 카드가
-# 그 카드"라는 연결이 끊긴다 — 그래서 배치도 손패와 같은 부채꼴이고 자리도
-# 손패와 같은 **화면 하단 전체 폭**이다.
+# ─── 카드 (손패와 같은 부채꼴, 정보 칼럼 아래 · 화면 오른쪽 아래) ──────────
+# 손패와 **같은 카드 노드**(`Card.tscn`)를 손패와 **같은 모습**으로 세운다 —
+# 같은 부채꼴 기하(`BattleSim.BS_HAND_*`), 같은 호버(가리키면 `Card.HOVER_SCALE`
+# 로 커지고 밝아지며 이웃이 비켜남), 같은 드로우 인트로(뒷면으로 화면 왼쪽
+# 바깥에서 날아와 뒤집히며 안착). 다른 그림이면 "이 카드가 그 카드"라는 연결이
+# 끊긴다.
 #
-# **예전에는 정보 칼럼 안의 3열 격자였다.** 칸이 칼럼(폭 452)에 갇혀 있어 카드
-# 한 장이 128×176 밖에 못 됐고, 그 크기의 설명문은 읽는 글이 아니라 무늬였다.
-# 격자를 그대로 두고 2배로 키우는 길은 없다 — 3열이면 800px 로 칼럼을 348px,
-# 화면 오른쪽을 146px 넘고 2행이면 세로도 화면 밖으로 나간다. 부채꼴은 카드를
-# **겹쳐** 세우므로 같은 폭에 같은 장수를 넣으면서 장당 크기를 2배로 키운다.
+# **크기는 손패의 80%**(`FAN_SIZE_VS_HAND`) — `CardPhaseManager.HAND_CARD_SCALE`
+# × 0.8. 손패 기하의 길이 값(반지름 · 간격 · 밀어내기)도 같은 배율로 줄여서
+# 기울기와 겹침 비율이 손패와 똑같다.
+#
+# **자리는 정보 칼럼 아래, 화면 오른쪽 아래**(x `FAN_X` .. `FAN_X + FAN_W`).
+# 예전에는 화면 하단 전체 폭에 ×1.60 카드가 섰는데, 왼쪽 일러스트의 다리를
+# 덮고 정보 칼럼과는 따로 놀았다.
 #
 # **인게임 탭은 6장 전부**(파일럿 3 → 메크 3), 파일럿 / 메크 탭은 그 탭의 3장이
-# 같은 자리에 선다 — 이 파일럿이 무엇을 들고 시작했는지는 탭을 오가지 않고 한
-# 화면에서 읽혀야 한다.
-## 장당 배율. 격자 시절 0.80(128×176)의 **2배** — 256×352.
-const CARD_VIEW_SCALE: float = 1.60
-## 부채꼴이 쓰는 화면 좌우 여백. **기울어진 카드의 바깥 모서리**가 여기에 닿는다
-## — 양 끝 카드는 9° 가까이 기울어 있어 세로로 긴 카드의 아래 모서리가 폭의
-## 절반보다 27px 더 밖으로 나간다(실측: 여백 24 에서 양 끝이 3px 씩 잘렸다).
-const FAN_MARGIN: float = 52.0
-## 장수가 적을 때의 카드 사이 간격 상한(= 겹치지 않는 배치). 장수가 늘면
-## 여백 안에 들어가도록 이 값 아래로 압축된다.
-const FAN_GAP: float = 14.0
-## 카드 중심이 타는 원의 반지름. 손패(3200)보다 작은 것은 카드가 2배로 커져
-## 부채꼴의 span 자체가 넓어졌기 때문이다 — 같은 반지름이면 기울기가 거의
-## 안 붙어 부채꼴로 안 읽힌다. 6장이면 양 끝이 ±9.3° 로 서고 31px 처진다.
-const FAN_RADIUS: float = 2400.0
-## 가장 깊이 처지는 카드(= 양 끝) 몫으로 아래에 비워 두는 높이 — 호 처짐(27px)에
-## 기울기가 만드는 아래 모서리 돌출(17px)까지 든다.
-const FAN_DROP_RESERVE: float = 44.0
-## 그 아래, 화면 바닥까지의 여백.
+# 같은 자리에 선다.
+## 손패 대비 카드 크기.
+const FAN_SIZE_VS_HAND: float = 0.80
+## 부채꼴이 쓰는 가로 구간 — 정보 칼럼 받침과 같은 폭.
+const FAN_X: float = STAT_X - 22.0
+const FAN_W: float = STAT_W + 44.0
+## 양 끝 카드 가장자리가 구간 안쪽으로 물러나는 거리 — 기울기와 호버 확대가
+## 바깥 모서리를 밀어내므로 화면 오른쪽 끝(1080)에 닿지 않게 한다.
+const FAN_EDGE_INSET: float = 14.0
+## 가장 깊이 처지는 카드 + 호버 확대(×1.2)가 아래로 늘어나는 몫.
+const FAN_DROP_RESERVE: float = 30.0
+## 그 아래, 안전 영역 바닥까지의 여백.
 const FAN_BOTTOM_PAD: float = 26.0
-## 카드 줄 제목이 부채꼴 윗변에서 위로 떨어진 거리. **`FAN_LIFT_PX` 보다 커야
-## 한다** — 정보 패널이 열린 카드는 그만큼 솟으므로, 좁으면 솟은 카드가 제목을
-## 밀고 올라온다.
+## 카드 줄 제목이 부채꼴 윗변에서 위로 떨어진 거리. 호버로 커진 카드(위로 ≈17px)
+## 가 제목을 덮지 않을 만큼.
 const FAN_TITLE_GAP: float = 64.0
 const FAN_TITLE_FONT: int = 26
-## 정보 패널이 열린 카드가 부채꼴에서 위로 솟는 높이. 격자 시절에는 버튼에
-## 테두리를 둘러 강조했는데, 부채꼴의 버튼은 카드 rect 가 아니라 **보이는
-## 밴드**라 테두리가 카드가 아닌 띠를 두른다 — 겹친 카드에서 "이것"을 말하는
-## 방법은 앞으로 끌어내는 것이다.
-const FAN_LIFT_PX: float = 30.0
 
 # ─── 하: 닫기 ────────────────────────────────────────────────────────────────
 # **받침 아래끝에 붙어 다닌다.** 탭마다 내용 높이가 달라(인게임 ~360 / 파일럿
@@ -340,6 +334,21 @@ var _menu_root: Control = null
 
 var _close_btn: Button = null
 
+# 보유 카드 부채꼴 상태. `_build_card_fan` 이 채우고 `_rebuild_body` 가 비운다.
+var _fan_nodes: Array = []             # Array[Card], 왼쪽부터
+var _fan_keys: Array = []              # 같은 순서의 `card:` 키
+var _fan_dx: PackedFloat32Array = PackedFloat32Array()   # 쉬는 자리의 중심 dx
+var _fan_cx: float = 0.0
+var _fan_spacing: float = 0.0
+## 지금 가리키는 카드(밴드 호버). -1 = 없음 — 그때는 정보 패널이 열린 카드가 초점.
+var _fan_hover: int = -1
+var _fan_relayout_queued: bool = false
+## 다음 `_build_card_fan` 이 드로우 인트로를 틀 것인가 — 열 때와 탭을 바꿀 때만.
+## 효과 구성 변화로 `refresh()` 가 본문을 다시 세울 때는 틀지 않는다.
+var _fan_intro_pending: bool = false
+## 부채꼴 세대. 다시 세우면 올라가고, 옛 세대의 인트로 코루틴은 그걸 보고 멈춘다.
+var _fan_gen: int = 0
+
 ## 열면서 숨긴 스트립의 팀. 닫을 때 그 스트립만 되돌린다.
 var _hidden_team: int = -1
 
@@ -368,6 +377,7 @@ func open(p: PilotData) -> void:
 		close()
 	_pilot = p
 	_tab = Tab.INGAME
+	_fan_intro_pending = true
 	_build()
 	if _bs.hud != null:
 		_hidden_team = p.team
@@ -384,6 +394,7 @@ func close() -> void:
 	_close_btn = null
 	_targets.clear()
 	_fx_keys.clear()
+	_reset_fan()
 	_growth_label = null
 	_tab_buttons.clear()
 	_art_pilot = null
@@ -627,6 +638,7 @@ func _on_tab_pressed(idx: int) -> void:
 	_close_menu()
 	_refresh_tab_styles()
 	_apply_focus(true)
+	_fan_intro_pending = true
 	_rebuild_body()
 
 
@@ -640,6 +652,7 @@ func _rebuild_body() -> void:
 		_root.remove_child(_body_root)
 		_body_root.queue_free()
 	_targets.clear()
+	_reset_fan()
 	_fx_keys = _fx_signature()
 
 	_body_root = Control.new()
@@ -688,7 +701,7 @@ func _rebuild_body() -> void:
 func _build_body_content() -> float:
 	var y: float = _build_chip_grid(STAT_TOP, _chip_defs())
 
-	# 카드는 칼럼의 흐름에 없다 — 화면 하단 전체 폭에 자기 자리를 갖는다(아래
+	# 카드는 칼럼의 흐름에 없다 — 칼럼 아래 화면 오른쪽 아래에 자기 자리를 갖는다(아래
 	# `_build_card_fan`). 그래서 반환값(= 받침 높이)에 얹히지 않는다.
 	if _tab != Tab.INGAME:
 		var slot: String = "pilot" if _tab == Tab.PILOT else "mech"
@@ -708,7 +721,7 @@ func _build_body_content() -> float:
 		y += 30.0
 
 	# 지속 효과와 카드는 둘 다 칼럼 밖에 산다 — 효과는 일러스트 좌측 하단,
-	# 카드는 화면 하단 전체 폭. 그래서 칼럼의 흐름은 칩 → 스킬로 곧장 이어지고
+	# 카드는 칼럼 아래 오른쪽 구석. 그래서 칼럼의 흐름은 칩 → 스킬로 곧장 이어지고
 	# 받침 높이(반환값)에도 둘이 얹히지 않는다.
 	_build_effect_thumbs()
 	# 인게임 탭의 카드는 **여섯 장 전부**. 파일럿 3 → 메크 3 순서라 부채꼴의
@@ -860,18 +873,10 @@ func _style_target(key: String, highlighted: bool) -> void:
 		csb.bg_color = Color(0, 0, 0, 0)
 		for cstate in ["normal", "hover", "pressed", "focus"]:
 			btn.add_theme_stylebox_override(cstate, csb)
-		# 강조는 **카드를 부채꼴에서 앞으로 끌어내는 것**이다 — 위로 솟고 형제
-		# 순서 맨 끝(= 맨 앞)으로 간다. 겹쳐 있는 카드 하나를 가리키는 방법은
-		# 그것뿐이고, 손패에서 카드를 집는 동작과도 같은 그림이다.
-		var node := rec.get("node") as Card
-		if node != null and is_instance_valid(node):
-			var base: Vector2 = rec.get("base_pos", node.position) as Vector2
-			node.position = base + (Vector2(0.0, -FAN_LIFT_PX) if highlighted
-					else Vector2.ZERO)
-			var holder: Node = node.get_parent()
-			if holder != null:
-				holder.move_child(node, holder.get_child_count() - 1
-						if highlighted else int(rec.get("index", 0)))
+		# 강조는 **손패의 호버와 같은 자세**다 — 정보 패널이 열린 카드가 부채꼴의
+		# 초점이 되어 커지고 앞으로 나오며 이웃이 비켜선다(`_relayout_fan`).
+		# 이전 / 새 키가 같은 프레임에 연달아 오므로 한 번으로 모은다.
+		_queue_fan_relayout()
 		return
 
 	var sb := StyleBoxFlat.new()
@@ -994,6 +999,7 @@ func _effect_defs() -> Array:
 		var up: bool = _pilot.lane_stat_mod > 0.0
 		out.append({
 			"key": "fx:lane",
+			"src": String(_pilot.fx_src.get("lane", "")),
 			"short": "라인",
 			"title": "라인전 스탯",
 			"value": "%+d%%" % roundi(_pilot.lane_stat_mod * 100.0),
@@ -1002,6 +1008,7 @@ func _effect_defs() -> Array:
 	if not is_zero_approx(_pilot.eva_card_mod):
 		out.append({
 			"key": "fx:eva",
+			"src": String(_pilot.fx_src.get("eva", "")),
 			"short": "회피",
 			"title": "전장 회피 (카드)",
 			"value": "%+d%%" % roundi(_pilot.eva_card_mod * 100.0),
@@ -1010,6 +1017,7 @@ func _effect_defs() -> Array:
 	if _pilot.ambush_hold:
 		out.append({
 			"key": "fx:ambush",
+			"src": String(_pilot.fx_src.get("ambush", "")),
 			"short": "매복",
 			"title": "매복",
 			"value": "고정",
@@ -1018,6 +1026,7 @@ func _effect_defs() -> Array:
 	if not is_equal_approx(_pilot.growth_rate_mult, 1.0):
 		out.append({
 			"key": "fx:rate",
+			"src": String(_pilot.fx_src.get("rate", "")),
 			"short": "적립",
 			"title": "성장치 적립 배율",
 			"value": "%+d%%" % roundi((_pilot.growth_rate_mult - 1.0) * 100.0),
@@ -1034,6 +1043,7 @@ func _effect_defs() -> Array:
 	if _pilot.shield > 0:
 		out.append({
 			"key": "fx:shield",
+			"src": String(_pilot.fx_src.get("shield", "")),
 			"short": "보호",
 			"title": "보호막",
 			"value": str(_pilot.shield),
@@ -1078,6 +1088,7 @@ func _append_card_fx(out: Array) -> void:
 		var src: String = String(e["src"])
 		out.append({
 			"key": "fx:src:%s|%s" % [kind, src],
+			"src": src,
 			"short": _fx_short(src),
 			"title": src,
 			"value": _fx_value(kind, amount),
@@ -1174,6 +1185,14 @@ func _make_fx_thumb(d: Dictionary, pos: Vector2) -> void:
 	btn.pressed.connect(_on_target_pressed.bind(key))
 	_body_root.add_child(btn)
 
+	# 출처 카드를 알면 그 카드 일러스트가 곧 아이콘이다.
+	var art: Texture2D = CardImages.art_for(String(d.get("src", "")))
+	if art != null:
+		_make_fx_art_thumb(btn, art, String(d["value"]))
+		_targets[key] = {"button": btn, "style": TargetStyle.FX}
+		_style_target(key, false)
+		return
+
 	var short_lbl := _make_label(String(d["short"]), FX_SHORT_FONT,
 			d["color"] as Color, HORIZONTAL_ALIGNMENT_CENTER)
 	short_lbl.position = Vector2(0.0, 8.0)
@@ -1190,6 +1209,45 @@ func _make_fx_thumb(d: Dictionary, pos: Vector2) -> void:
 
 	_targets[key] = {"button": btn, "style": TargetStyle.FX}
 	_style_target(key, false)
+
+
+## 썸네일 안쪽 — 카드 아트(둥근 사각형) + 아래 값 띠. 버튼 테두리(강조 표시)가
+## 보이도록 `FX_ART_INSET` 만큼 안으로 들인다.
+func _make_fx_art_thumb(btn: Button, art: Texture2D, value: String) -> void:
+	var inner: float = FX_SIZE - FX_ART_INSET * 2.0
+	var tex := TextureRect.new()
+	tex.texture = art
+	tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	tex.position = Vector2(FX_ART_INSET, FX_ART_INSET)
+	tex.size = Vector2(inner, inner)
+	tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var mat := ShaderMaterial.new()
+	mat.shader = FX_ART_SHADER
+	mat.set_shader_parameter("rect_size", tex.size)
+	mat.set_shader_parameter("radius", float(FX_RADIUS) - FX_ART_INSET)
+	tex.material = mat
+	btn.add_child(tex)
+
+	var band := Panel.new()
+	band.position = Vector2(FX_ART_INSET, FX_SIZE - FX_ART_INSET - 24.0)
+	band.size = Vector2(inner, 24.0)
+	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = FX_VALUE_BAND
+	var r: int = int(float(FX_RADIUS) - FX_ART_INSET)
+	sb.corner_radius_bottom_left = r
+	sb.corner_radius_bottom_right = r
+	sb.anti_aliasing = true
+	band.add_theme_stylebox_override("panel", sb)
+	btn.add_child(band)
+
+	var val_lbl := _make_label(value, FX_VALUE_FONT, VALUE_COLOR,
+			HORIZONTAL_ALIGNMENT_CENTER)
+	val_lbl.position = band.position
+	val_lbl.size = band.size
+	val_lbl.clip_text = true
+	btn.add_child(val_lbl)
 
 
 # ─── 카드 ────────────────────────────────────────────────────────────────────
@@ -1214,52 +1272,50 @@ func _build_section_head(start_y: float, title: String, head_h: float) -> float:
 	return start_y + head_h + 14.0
 
 
-## 보유 카드를 **손패와 같은 부채꼴로** 화면 하단 전체 폭에 세운다.
-## `key_prefix` 는 카드마다 붙는 정보 패널 키의 앞자리(`card:all:2`).
+## 보유 카드를 **손패와 같은 부채꼴로** 정보 칼럼 아래(화면 오른쪽 아래)에
+## 세운다. `key_prefix` 는 카드마다 붙는 정보 패널 키의 앞자리(`card:all:2`).
 ##
-## 기하는 손패(`CardPhaseManager` 의 부채꼴)와 같은 규칙이다 — 카드 **중심**이
-## 행 아래에 놓인 원 위를 타므로 기울기와 세로 처짐이 언제나 일치하고, 가운데
-## 카드가 가장 높으며 양 끝이 아래로 말린다. 카드 노드의 `pivot_offset` 을
-## 가운데로 잡았기 때문에 배율을 아무리 키워도 중심이 안 움직인다(왼쪽 위를
-## 기준으로 잡으면 배율을 바꿀 때마다 부채꼴이 오른쪽 아래로 흐른다).
+## 기하는 손패(`CardPhaseManager.slot_center_dx` / `_fan_angle` /
+## `_fan_arc_drop`)와 같은 규칙을 `FAN_SIZE_VS_HAND` 배율로 줄인 것이다 — 카드
+## **중심**이 행 아래에 놓인 원 위를 타므로 기울기와 세로 처짐이 언제나 일치한다.
 ##
 ## **입력은 카드 rect 가 아니라 밴드가 받는다.** 겹친 카드 중 나중 카드가 앞에
 ## 서므로 카드 i 가 실제로 보이는 폭은 자기 왼쪽 변부터 **다음 카드의 왼쪽
-## 변**까지다 — 그 폭이 그대로 버튼 하나가 된다. 카드 rect 를 그대로 덮으면
-## 오른쪽 이웃의 버튼이 이 카드의 보이는 면을 통째로 가려, 눌리는 카드와 보이는
-## 카드가 어긋난다(손패의 `_apply_hit_bands` 와 같은 문제, 같은 계산).
+## 변**까지다 — 그 폭이 그대로 버튼 하나가 된다(손패의 `_apply_hit_bands` 와 같은
+## 계산). 밴드는 **쉬는 자리**에 고정이다 — 호버로 카드가 비켜설 때마다 밴드까지
+## 움직이면 커서 밑의 밴드가 바뀌어 초점이 떨린다.
 ##
-## 버튼을 따로 두는 이유는 격자 시절과 같다 — `Card` 는 손패에서 호버 · 드래그
-## 배선을 스스로 쥐고 있는 노드라 여기서 입력을 직접 받게 하면 그 기계가 함께
-## 깨어난다. 카드는 `CardFan`, 버튼은 그 **뒤에 붙는** `CardFanHits` 에 담아
-## 버튼 쪽이 언제나 위에서 픽을 받고, 카드끼리의 z-order(강조 시 앞으로 끌어냄)는
-## `CardFan` 안에서만 흔들린다.
+## 카드는 `CardFan`, 버튼은 그 **뒤에 붙는** `CardFanHits` 에 담아 버튼 쪽이
+## 언제나 위에서 픽을 받고, 카드끼리의 z-order 는 `CardFan` 안에서만 흔들린다.
 func _build_card_fan(title: String, cards: Array, key_prefix: String) -> void:
+	var intro: bool = _fan_intro_pending
+	_fan_intro_pending = false
 	var n: int = cards.size()
 	if n <= 0:
 		return
-	var vp_w: float = ScreenMetrics.vp_w()
-	var cw: float = Card.CARD_W * CARD_VIEW_SCALE
-	var ch: float = Card.CARD_H * CARD_VIEW_SCALE
+	var s: float = _fan_scale()
+	var cw: float = Card.CARD_W * s
+	var ch: float = Card.CARD_H * s
 	var top_y: float = _fan_top_y()
 
 	var head := _make_label(title, FAN_TITLE_FONT, SECTION_COLOR,
 			HORIZONTAL_ALIGNMENT_CENTER)
-	head.position = Vector2(0.0, top_y - FAN_TITLE_GAP)
-	head.size = Vector2(vp_w, 34.0)
+	head.position = Vector2(FAN_X, top_y - FAN_TITLE_GAP)
+	head.size = Vector2(FAN_W, 34.0)
 	_body_root.add_child(head)
 
-	# 간격은 겹치지 않는 폭(cw + 여백)에서 시작해, 양 끝이 화면 여백에 닿도록
-	# 압축된다. 6장이면 155px(카드 폭의 61% 가 보인다), 7장이면 129px.
-	var spacing: float = cw + FAN_GAP
+	# 간격은 손패와 같다 — 겹치지 않는 폭(cw + 간격)에서 시작해 구간을 넘으면
+	# 고르게 압축된다.
+	var inner_w: float = FAN_W - FAN_EDGE_INSET * 2.0
+	_fan_spacing = cw + BattleSim.BS_HAND_CARD_GAP * FAN_SIZE_VS_HAND
 	if n > 1:
-		spacing = minf(spacing,
-				maxf(24.0, (vp_w - FAN_MARGIN * 2.0 - cw) / float(n - 1)))
+		_fan_spacing = minf(_fan_spacing, (inner_w - cw) / float(n - 1))
+	_fan_cx = FAN_X + FAN_W * 0.5
 
 	var fan_root := Control.new()
 	fan_root.name = "CardFan"
 	fan_root.position = Vector2.ZERO
-	fan_root.size = Vector2(vp_w, ScreenMetrics.vp_h())
+	fan_root.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
 	fan_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_body_root.add_child(fan_root)
 
@@ -1270,68 +1326,214 @@ func _build_card_fan(title: String, cards: Array, key_prefix: String) -> void:
 	hits.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_body_root.add_child(hits)
 
-	var band_h: float = ch + _fan_arc_drop(float(n - 1) * 0.5 * spacing)
-	var centers: PackedFloat32Array = PackedFloat32Array()
+	var band_h: float = ch + _fan_arc_drop(float(n - 1) * 0.5 * _fan_spacing)
 	for i in n:
-		var dx: float = (float(i) - float(n - 1) * 0.5) * spacing
-		var cx: float = vp_w * 0.5 + dx
-		var cy: float = top_y + ch * 0.5 + _fan_arc_drop(dx)
-		centers.append(cx)
-
+		var dx: float = (float(i) - float(n - 1) * 0.5) * _fan_spacing
+		_fan_dx.append(dx)
 		var node := _bs.CARD_SCENE.instantiate() as Card
+		node.pivot_offset = Vector2(Card.CARD_W * 0.5, Card.CARD_H * 0.5)
+		# 배율은 트리에 들어가기 전에(손패 `spawn_card_node` 와 같은 순서) — 아래
+		# `tween_to` 는 인트로의 첫 비행 트윈이 곧바로 끊어 버리므로 그것만으로는
+		# 배율이 안 들어간다.
+		node.scale = Vector2.ONE * s
 		# add_child BEFORE setup — Card.gd 의 @onready 참조가 트리 진입 후에야
 		# 풀린다 (CardPileViewer._build_grid 와 동일).
 		fan_root.add_child(node)
-		# is_player_card=false → 호버 브라이튼 / 그림자가 붙지 않는다. IGNORE 와
-		# 합쳐 `Card._refresh_float_state`(= scale 의 주인)가 영영 돌지 않으므로
-		# 여기서 준 배율이 그대로 남는다.
-		node.setup(cards[i] as CardData, false, true)
+		# is_player_card=true — 손패와 같은 그림(시전자 리본 · 그림자 · 호버
+		# 확대/밝기)을 그대로 쓴다. 입력은 받지 않는다(밴드 버튼이 받는다).
+		node.setup(cards[i] as CardData, true, not intro)
 		node.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		node.pivot_offset = Vector2(Card.CARD_W * 0.5, Card.CARD_H * 0.5)
-		node.scale = Vector2(CARD_VIEW_SCALE, CARD_VIEW_SCALE)
-		node.rotation = _fan_angle(dx)
-		node.position = Vector2(cx - Card.CARD_W * 0.5, cy - Card.CARD_H * 0.5)
+		var slot: Vector2 = _fan_slot_pos(i, 0.0)
+		if intro:
+			# 뒷면으로, 화면 왼쪽 바깥에서 출발(손패 `_draw_entry_position`).
+			node.intro_active = true
+			node.position = Vector2(-Card.CARD_W - CardPhaseManager.DRAW_ENTRY_PAD_PX,
+					slot.y)
+		else:
+			node.position = slot
+			node.rotation = _fan_angle(dx)
+		# `tween_to` 를 한 번 태워 `Card._base_scale` 을 기록한다 — 그래야 호버
+		# 확대(×`HOVER_SCALE`)가 이 배율 위에 곱해진다.
+		node.tween_to(node.position, node.rotation, Vector2.ONE * s, 0.01)
 
 		var key: String = "card:%s:%d" % [key_prefix, i]
+		_fan_nodes.append(node)
+		_fan_keys.append(key)
 		_targets[key] = {"button": null, "style": TargetStyle.CARD,
-				"card": cards[i], "node": node, "base_pos": node.position,
-				"index": i}
+				"card": cards[i], "node": node}
 
 	for i in n:
 		# 양 끝 카드만 자기 변까지 밴드를 넓힌다 — 왼쪽 끝은 왼쪽으로 가려질
 		# 것이 없고, 오른쪽 끝은 맨 앞에 서 있어 카드 전체가 보인다.
-		var left: float = centers[i] - cw * 0.5
-		var right: float = centers[i] + cw * 0.5
+		var cx: float = _fan_cx + _fan_dx[i]
+		var left: float = cx - cw * 0.5
+		var right: float = cx + cw * 0.5
 		if i < n - 1:
-			right = centers[i + 1] - cw * 0.5
-		var key2: String = "card:%s:%d" % [key_prefix, i]
+			right = _fan_cx + _fan_dx[i + 1] - cw * 0.5
+		var key2: String = String(_fan_keys[i])
 		var btn := Button.new()
 		btn.position = Vector2(left, top_y)
 		btn.size = Vector2(maxf(12.0, right - left), band_h)
 		btn.focus_mode = Control.FOCUS_NONE
 		btn.pressed.connect(_on_target_pressed.bind(key2))
+		btn.mouse_entered.connect(_on_fan_band_hover.bind(i, true))
+		btn.mouse_exited.connect(_on_fan_band_hover.bind(i, false))
 		hits.add_child(btn)
 		(_targets[key2] as Dictionary)["button"] = btn
 		_style_target(key2, false)
 
+	if intro:
+		var gen: int = _fan_gen
+		for i in n:
+			_play_fan_intro(_fan_nodes[i], i, gen)
 
-## 부채꼴 윗변(= 가운데 카드의 윗변) y. 화면 바닥에서 역산한다 — 카드 높이가
-## 배율에서 나오므로 상수로 박으면 배율을 만질 때마다 부채꼴이 화면을 넘거나
-## 뜬다.
+
+## 부채꼴 카드 배율 = 손패 배율 × `FAN_SIZE_VS_HAND`.
+static func _fan_scale() -> float:
+	return CardPhaseManager.HAND_CARD_SCALE * FAN_SIZE_VS_HAND
+
+
+## 부채꼴 상태를 비운다. 세대를 올려 돌고 있던 인트로 코루틴을 멈춘다.
+func _reset_fan() -> void:
+	_fan_nodes.clear()
+	_fan_keys.clear()
+	_fan_dx = PackedFloat32Array()
+	_fan_hover = -1
+	_fan_gen += 1
+
+
+## 카드 i 의 자리(왼쪽 위, 배율 전 좌표 — 손패 `slot_position` 과 같은 규약).
+## `push` 는 초점 카드를 피해 비켜서는 가로 거리.
+func _fan_slot_pos(i: int, push: float) -> Vector2:
+	var dx: float = _fan_dx[i]
+	var cy: float = _fan_top_y() + Card.CARD_H * _fan_scale() * 0.5 + _fan_arc_drop(dx)
+	return Vector2(_fan_cx + dx + push - Card.CARD_W * 0.5, cy - Card.CARD_H * 0.5)
+
+
+## 부채꼴 윗변(= 가운데 카드의 윗변) y. **안전 영역 바닥**에서 역산한다 — 홈 바 /
+## 제스처 띠에 걸린 카드는 눌리지 않는다(`docs/mobile_safe_area.md`).
 func _fan_top_y() -> float:
-	return ScreenMetrics.vp_h() - FAN_BOTTOM_PAD - FAN_DROP_RESERVE \
-			- Card.CARD_H * CARD_VIEW_SCALE
+	return ScreenMetrics.bottom_y() - FAN_BOTTOM_PAD - FAN_DROP_RESERVE \
+			- Card.CARD_H * _fan_scale()
 
 
-## 부채꼴 원 위에서의 기울기(라디안). 왼쪽 절반은 음수(왼쪽으로 기움).
+## 부채꼴 원 위에서의 기울기(라디안) — 손패 반지름을 같은 배율로 줄인 원.
 static func _fan_angle(dx: float) -> float:
-	return asin(clampf(dx / FAN_RADIUS, -1.0, 1.0))
+	return asin(clampf(dx / _fan_radius(), -1.0, 1.0))
 
 
 ## 그 카드가 부채꼴 꼭대기보다 아래로 처지는 높이(px). 가운데에서 0.
 static func _fan_arc_drop(dx: float) -> float:
-	var d: float = clampf(absf(dx), 0.0, FAN_RADIUS)
-	return FAN_RADIUS - sqrt(FAN_RADIUS * FAN_RADIUS - d * d)
+	var r: float = _fan_radius()
+	var d: float = clampf(absf(dx), 0.0, r)
+	return r - sqrt(r * r - d * d)
+
+
+static func _fan_radius() -> float:
+	return BattleSim.BS_HAND_FAN_RADIUS * FAN_SIZE_VS_HAND
+
+
+# ─── 부채꼴 초점 (손패 호버와 같은 동작) ─────────────────────────────────────
+func _on_fan_band_hover(i: int, entered: bool) -> void:
+	if entered:
+		_fan_hover = i
+	elif _fan_hover == i:
+		_fan_hover = -1
+	_queue_fan_relayout()
+
+
+## 초점 카드 — 가리키는 카드가 우선, 없으면 정보 패널이 열린 카드. -1 = 없음.
+func _fan_focus() -> int:
+	if _fan_hover >= 0 and _fan_hover < _fan_nodes.size():
+		return _fan_hover
+	return _fan_keys.find(_menu_key) if _menu_key != "" else -1
+
+
+## 밴드를 옮겨 가면 exit / enter 가 한 프레임에 연달아 온다 — 둘을 한 번으로
+## 모아야 트윈끼리 서로 죽이지 않는다(손패 `_queue_hand_reflow` 와 같은 이유).
+func _queue_fan_relayout() -> void:
+	if _fan_relayout_queued:
+		return
+	_fan_relayout_queued = true
+	_relayout_fan.call_deferred()
+
+
+## 모든 카드를 지금 초점에 맞는 자리로 트윈한다. 초점 카드는 `set_hovered` 로
+## 커지고 밝아지며 맨 앞에 서고, 나머지는 손패와 같은 감쇠로 비켜선다.
+func _relayout_fan() -> void:
+	_fan_relayout_queued = false
+	var n: int = _fan_nodes.size()
+	if n == 0:
+		return
+	var focus: int = _fan_focus()
+	var s: float = _fan_scale()
+	for i in n:
+		if not is_instance_valid(_fan_nodes[i]):
+			continue
+		var c := _fan_nodes[i] as Card
+		# 인트로 중인 카드는 인트로가 자리의 주인이다(손패 `relayout_hand` 와 같다).
+		if c.intro_active:
+			continue
+		c.set_hovered(i == focus)
+		c.tween_to(_fan_slot_pos(i, _fan_push(i, focus, n)), _fan_angle(_fan_dx[i]),
+				Vector2.ONE * s, BattleSim.BS_HAND_SPRING_DURATION,
+				BattleSim.BS_HAND_TWEEN_EASE, BattleSim.BS_HAND_TWEEN_TRANS)
+	# z-order — 왼쪽부터 쌓고(오른쪽 카드가 위) 초점 카드만 맨 앞으로.
+	for i in n:
+		if is_instance_valid(_fan_nodes[i]):
+			var c2 := _fan_nodes[i] as Card
+			c2.get_parent().move_child(c2, i)
+	if focus >= 0 and is_instance_valid(_fan_nodes[focus]):
+		var cf := _fan_nodes[focus] as Card
+		cf.get_parent().move_child(cf, n - 1)
+
+
+## 초점 옆 카드가 비켜서는 거리 — 손패 `hover_push_offset` 과 같은 식(양 끝은
+## 고정, 감쇠 `BS_HAND_HOVER_FALLOFF_POW`), 길이 값만 `FAN_SIZE_VS_HAND` 배.
+func _fan_push(i: int, focus: int, n: int) -> float:
+	if focus < 0 or i == focus or n <= 1:
+		return 0.0
+	var steps_to_end: int = (n - 1 - focus) if i > focus else focus
+	if steps_to_end <= 0:
+		return 0.0
+	var clearance: float = Card.CARD_W * _fan_scale() * Card.HOVER_SCALE * 0.5 \
+			+ BattleSim.BS_HAND_HOVER_MIN_STRIP * FAN_SIZE_VS_HAND
+	var amount: float = maxf(BattleSim.BS_HAND_HOVER_PUSH * FAN_SIZE_VS_HAND,
+			clearance - _fan_spacing)
+	var t: float = float(absi(i - focus)) / float(steps_to_end)
+	var push: float = amount * (1.0 - pow(t, BattleSim.BS_HAND_HOVER_FALLOFF_POW))
+	return push if i > focus else -push
+
+
+# ─── 부채꼴 드로우 인트로 (손패 `_play_draw_intro` 와 같은 세 박자) ──────────
+## 뒷면으로 화면 왼쪽 바깥에서 날아와 → 자기 자리 위에서 뒤집히고 → 내려앉는다.
+## 손패와 같은 상수(`CardPhaseManager.DRAW_*`)를 쓴다. 박자는 트윈의 `finished`
+## 가 아니라 타이머로 기다린다 — 탭 전환 / 닫기로 카드가 도중에 free 되면
+## `finished` 는 영영 오지 않는다. 그래서 인자도 `Variant` 다(free 된 노드를
+## `Card` 로 받으면 호출 자체가 터진다).
+func _play_fan_intro(node: Variant, i: int, gen: int) -> void:
+	var delay: float = float(i) * CardPhaseManager.DRAW_STAGGER_SEC
+	if delay > 0.0:
+		await get_tree().create_timer(delay).timeout
+	if not _fan_intro_alive(node, gen):
+		return
+	var staging: Vector2 = _fan_slot_pos(i, 0.0) \
+			+ Vector2(0.0, -CardPhaseManager.DRAW_FLIP_LIFT_PX * FAN_SIZE_VS_HAND)
+	(node as Card).tween_to(staging, 0.0, Vector2.ONE * _fan_scale(),
+			CardPhaseManager.DRAW_FLY_SEC, Tween.EASE_IN_OUT, Tween.TRANS_SINE)
+	await get_tree().create_timer(CardPhaseManager.DRAW_FLY_SEC).timeout
+	if not _fan_intro_alive(node, gen):
+		return
+	(node as Card).play_flip_reveal()
+	await get_tree().create_timer(Card.FLIP_HALF_SEC * 2.0).timeout
+	if not _fan_intro_alive(node, gen):
+		return
+	(node as Card).intro_active = false
+	_queue_fan_relayout()
+
+
+func _fan_intro_alive(node: Variant, gen: int) -> bool:
+	return gen == _fan_gen and is_instance_valid(node)
 
 
 ## 파일럿 스킬 한 블록. 스킬이 없는 파일럿(모브)에게는 한 줄만 남긴다 —
@@ -1548,7 +1750,8 @@ func _build_menu_content() -> void:
 	# 서너 줄까지 가므로 44px 로 못 박아 두면 아랫줄이 판 밖으로 흘러나간다.
 	var note_h: float = 0.0
 	if note != "":
-		note_h = _text_height(note, inner_w, MENU_NOTE_FONT) + 10.0
+		note_h = _text_height(StrategyIcon.measure_text(note), inner_w,
+				MENU_NOTE_FONT) + 10.0
 	var body_h: float = 44.0 + float(rows.size()) * MENU_ROW_H + note_h
 
 	var src_btn := (_targets[_menu_key] as Dictionary)["button"] as Button
@@ -1556,14 +1759,10 @@ func _build_menu_content() -> void:
 	var x: float = STAT_X - MENU_GAP_X - MENU_W
 	# 누른 것과 같은 높이에서 시작하되 화면 위아래로는 넘기지 않는다.
 	var y: float = clampf(src_btn.position.y - MENU_PAD.y, 20.0,
-			maxf(20.0, ScreenMetrics.vp_h() - panel_h - 20.0))
-	if _menu_key.begins_with("card:"):
-		# **카드만 예외다.** 칩과 효과는 정보 칼럼 · 화면 왼쪽에 있어 "누른 것과
-		# 같은 높이"가 그 옆의 빈 자리를 가리키지만, 카드는 화면 하단 부채꼴에
-		# 있어서 같은 규칙이 **방금 누른 카드 위**를 가리킨다 — 판이 그 카드를
-		# 통째로 덮는다. 그래서 카드 줄 제목 위로 올려 붙인다. x 는 그대로
-		# 왼쪽이라 오른쪽 아래의 닫기 버튼을 가리지 않는다.
-		y = maxf(20.0, _fan_top_y() - FAN_TITLE_GAP - MENU_CARD_GAP_Y - panel_h)
+			maxf(20.0, ScreenMetrics.bottom_y() - panel_h - 20.0))
+	# 카드도 같은 규칙이다 — 부채꼴이 정보 칼럼 아래(오른쪽)로 옮겨 오면서 판은
+	# 그 **왼쪽 옆**에 서고 카드를 덮지 않는다. (화면 하단 전체 폭이던 시절에는
+	# 카드 줄 제목 위로 올려 붙이는 예외가 있었다.)
 
 	var panel := Panel.new()
 	panel.position = Vector2(x, y)
@@ -1609,7 +1808,14 @@ func _build_menu_content() -> void:
 		panel.add_child(v)
 		iy += MENU_ROW_H
 
-	if note != "":
+	if note != "" and _menu_key.begins_with("card:"):
+		# 카드 설명문은 "전략 점수" 앞에 팔각형 아이콘이 선다(`StrategyIcon`).
+		var rn := StrategyIcon.make_rich_label(note, MENU_NOTE_FONT,
+				Color(0.62, 0.66, 0.76))
+		rn.position = Vector2(MENU_PAD.x, iy + 6.0)
+		rn.size = Vector2(inner_w, note_h)
+		panel.add_child(rn)
+	elif note != "":
 		var n := _make_label(note, MENU_NOTE_FONT, Color(0.62, 0.66, 0.76),
 				HORIZONTAL_ALIGNMENT_LEFT)
 		n.vertical_alignment = VERTICAL_ALIGNMENT_TOP

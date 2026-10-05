@@ -652,10 +652,63 @@ Exia / Mahiroo / Marasai 세 장의 무기 끝 44~64px 뿐이다.
 드래프트 상세 · 밴픽 메크 격자 · 메크 상세 · 훈련 코스 목록 — 은 각자 부른다.
 인게임(BattleSim)의 더미 열람 · 찾기 그리드에는 아직 안 붙였다.
 
+### StrategyIcon.gd
+`class_name StrategyIcon`, extends `RefCounted`, static only. **The strategy-point
+shape** — a regular octagon in two poses:
+- **pointy top / bottom** (`flat = false`, vertex 0 at 12 o'clock, clockwise;
+  face 0 = the upper-right face) — the `CostDonut` gauges only.
+- **flat top / bottom** (`flat = true`) — the **point indicator**: black fill +
+  thick blue rim (`INDICATOR_FILL`, `COLOR`, rim = `INDICATOR_RIM_RATIO` of the
+  radius). At icon size the pointy pose reads as a circle, so the inline icon
+  before "전략 점수" uses this one.
+
+| API | Use |
+|---|---|
+| `points(c, r, flat)` | 8 vertices, clockwise |
+| `draw(ci, c, r, fill, rim, rim_w, flat)` | filled octagon (+ optional rim; AA edge otherwise) |
+| `make_badge(parent, center, r, fill, text, font_size, text_color, rim, rim_w)` | octagon Control with a centred number |
+| `texture(px)` | cached indicator ImageTexture for inline use (flat sides touch the square) |
+| `raster_convex(w, h, pts, fill, rim, rim_w)` | bakes any convex clockwise polygon into an AA texture with an inner rim (also used by `CostRibbon`) |
+| `make_rich_label(text, font_size, color)` / `fill_rich(rtl, text, font_size)` | description `RichTextLabel`: indicator before every "전략 점수", cost ribbon before every "비용" (`add_text` / `add_image`, no BBCode — `[캐시]` stays literal). Icon and word are joined by a no-break space; text goes through `UiHelpers.keep_words` |
+| `measure_text(text)` | stand-in string for `get_multiline_string_size` (octagon ≈ two glyphs, ribbon ≈ one; same break rules as `fill_rich`) |
+
+### CostRibbon.gd
+`class_name CostRibbon`, extends `RefCounted`, static only. **The cost shape** —
+a tall right trapezoid hanging from its top edge; only the bottom edge is
+slanted, the bottom-left lower than the bottom-right (`SLANT_RATIO` 0.14 of the
+height; the inline icon uses `ICON_SLANT_RATIO` 0.30 so it doesn't read as a
+plain rectangle). **No rim anywhere.** The ribbon is opaque white (`FILL`) with
+dark ink (`INK`) and a downward drop shadow (`draw(..., shadow = true)`, stacked
+offset copies — `SHADOW_*`). Used by the card's top-left cost ribbon
+(`Card._draw_cost_badge`, big number), the small ribbon left of the
+name in `CardDescBox`, and the inline icon before "비용" in descriptions (filled
+with the strategy colour, `ICON_COLOR`). Descriptions always write cost changes
+as "<value> 비용" (`+1 비용`, `-1 비용`, `0 비용`), so the icon lands between the
+number and the word.
+
+**The small badge is baked, not drawn.** `draw()` anti-aliases by stroking a
+1px same-colour `draw_polyline(..., true)` round the polygon; on the 26×36
+description-panel badge that line's feather read as a **grey rim** on the dark
+panel, and the drop shadow read as a black rim under the slant. `make_badge`
+therefore paints a coverage-AA texture (`fill_texture`, baked at 2× and drawn
+down) and only lays the shadow when asked — `CardDescBox` passes `shadow =
+light`, so the in-game (dark) panel has none.
+
+| API | Use |
+|---|---|
+| `points(rect, slant)` | TL → TR → BR → BL |
+| `draw(ci, rect, fill, slant, shadow)` | filled ribbon (AA edge), optional drop shadow |
+| `make_badge(parent, rect, text, font_size, text_color, fill, shadow)` | small ribbon Control (baked texture, optional shadow) and a dark number in its upper part |
+| `fill_texture(w, h, fill, slant)` | cached rimless ribbon texture, 1px coverage AA |
+| `icon_texture(w, h)` | cached inline icon (strategy colour, no rim) — `fill_texture` with `ICON_SLANT_RATIO` |
+
 ### UiHelpers.gd
 `class_name UiHelpers`, extends `RefCounted`. Static helpers for
-procedurally-built UI panels — currently `mk_label(...)` shared by MatchFlow
-controllers and HudBuilder.
+procedurally-built UI panels — `mk_label(...)` shared by MatchFlow controllers
+and HudBuilder, and `keep_words(text)`: inserts U+2060 WORD JOINER between
+adjacent non-space characters so autowrapped Korean breaks only at spaces (ICU
+otherwise breaks between any two Hangul syllables — "비/용"). Measure the same
+joined text, or the height disagrees with the label.
 
 ### OutgameTheme.gd
 `class_name OutgameTheme`, extends `RefCounted`. **아웃게임 화면의 모든 색이
@@ -774,9 +827,10 @@ p.assigned_mech = m
 `ui/PilotStrip.gd` 가 칸마다 `ColorRect` 에 물린다(TextureRect 가 아닌 이유: 이미지가
 없어도 원은 그려야 한다). 칸 아래쪽에 팀색 원(지름 = 칸 폭)을 그리고 그 위에
 `strip/N_strip.png` 흉상을 얹되, **원 중심 아래는 원 모양으로, 위는 칸 좌우로만**
-잘라 머리가 원 위로 튀어나오게 한다. 원 테두리 · 스킬 준비도 딤(`fill` / `dim`) ·
-쓰러짐 틴트(`tint`)도 같은 쉐이더가 한다 — 겹쳐 얹는 사각형은 원 바깥 빈 모서리까지
-칠해 버린다. `rect_size` 유니폼은 노드 크기로 넣어야 한다(마스크를 로컬 픽셀로 잰다).
+잘라 머리가 원 위로 튀어나오게 한다. 원 테두리(`rim_width` — 지금 스트립은 0 을
+넘겨 **테두리 없음**, 0 이면 링을 아예 안 그린다)와 쓰러짐 틴트(`tint` — **흉상에만**
+곱한다, 팀색 원은 그대로)도 같은 쉐이더가 한다 — 겹쳐 얹는 사각형은 원 바깥 빈
+모서리까지 칠해 버린다. 예전의 스킬 준비도 딤(`fill` / `dim`)은 삭제됐다. `rect_size` 유니폼은 노드 크기로 넣어야 한다(마스크를 로컬 픽셀로 잰다).
 
 ### 카드 아트 모서리 쉐이더 (`shaders/rounded_top_mask.gdshader`)
 `Card._apply_art` 가 아트 `TextureRect` 에 물린다. 위 두 모서리를 `radius` 로 깎되
@@ -785,6 +839,11 @@ p.assigned_mech = m
 픽셀(`VERTEX`)로 재므로 `rect_size` 유니폼을 노드 크기로 넣어야 한다 —
 `STRETCH_KEEP_ASPECT_COVERED` 는 텍스처 일부 영역만 그려 UV 가 rect 를 덮지 않는다.
 아랫변은 흐리지 않는다(박스를 `radius` 만큼 아래로 늘려 계산).
+
+### 카드 아트 둥근 사각형 쉐이더 (`shaders/rounded_rect_mask.gdshader`)
+`rounded_top_mask` 의 네 모서리판. 같은 SDF + `fwidth` 안티앨리어싱, 같은 로컬 픽셀
+측정(`rect_size` 를 노드 크기로). 파일럿 상세 패널의 지속 효과 썸네일이 카드 아트에
+물린다(`PilotDetailPanel._make_fx_art_thumb`).
 
 ### 캐릭터 실루엣 쉐이더 (지금은 쓰는 자리가 없다)
 `resources/shaders/silhouette.gdshader` + `resources/SilhouetteFx.gd` 는

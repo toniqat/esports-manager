@@ -42,17 +42,45 @@ var _hand_hit_layer: Control = null
 var _hit_bands: Array[Vector2] = []
 
 # ─── Description box ─────────────────────────────────────────────────────────
-# 카드 앞면에는 설명문이 없다(`Card.gd` 앞면 두 층) — 글은 이 상자 하나가 든다.
-# 상자는 **손패 바로 위**, 가로 가운데에 앉는다: 들어 올린 카드의 윗단에서
-# `DESC_BOX_GAP` 위가 상자의 아랫변이다. 예전에는 화면 상단(상단 패널 밑)에
-# 떴는데, 카드를 보는 눈과 글을 읽는 눈이 화면 높이만큼 오가야 했다.
+# 카드 앞면에는 설명문이 없다(`Card.gd` 앞면 두 층) — 글은 이 판 하나가 든다.
+# 판은 **가리킨(확대된) 카드 바로 옆**에 카드처럼 세로로 길게 선다: 카드 중심이
+# 화면 가운데이거나 그 오른쪽이면 카드 왼쪽에, 가운데보다 왼쪽이면 카드 오른쪽에.
+# 키워드 풀이는 그 판의 바깥쪽에 별도 판(`_keyword_box`)으로 붙는다 — 바깥쪽에
+# 자리가 없으면 카드 반대편으로 넘어간다. 예전에는 손패 위 가로로 긴 판이었는데,
+# 카드를 보는 눈과 글을 읽는 눈이 위아래로 오가야 했다.
+#
+# 판은 이웃 카드를 **그림으로는 덮지만 터치는 막지 않는다** — 두 판과 그 자식이
+# 전부 `MOUSE_FILTER_IGNORE` 라, 판 아래를 누르면 손패 히트 레이어가 그 자리의
+# 카드를 고른다(포커스가 바뀌면 판이 그 카드 옆으로 옮겨 간다).
 #
 # 뜨는 조건은 그대로다 — **가리키기만 해도** 뜬다. 어느 카드를 보여 줄지는
 # 손패 포커스와 같은 질문이라 `_push_focus_card()` 하나가 답한다: 끌고 있는
-# 카드가 있으면 그것, 없으면 커서 아래 카드. 상자는 마우스를 먹지 않으므로
-# 그 위를 지나가는 드래그를 막지 않는다. 높이는 내용이 정한다(`CardDescBox`).
-const DESC_BOX_W   := 640.0
-const DESC_BOX_GAP := 14.0
+# 카드가 있으면 그것, 없으면 커서 아래 카드. 높이는 내용이 정한다(`CardDescBox`,
+# 하한 없음). 카드를 끌어 손패가 비켜 내려가면 판은 손패 위 모서리로 옮겨 간다
+# (`_desc_box_spots`).
+const DESC_BOX_W   := 240.0
+const KEYWORD_BOX_W := 210.0
+## 카드 ↔ 설명판 ↔ 키워드판 사이 간격.
+const DESC_BOX_GAP := 20.0
+## 등장 / 퇴장 — 나타날 때는 `DESC_ANIM_RISE` 아래에서 올라오며 페이드 인,
+## 사라질 때는 그만큼 내려가며 페이드 아웃(등장 `DESC_ANIM_IN_TIME` 0.2초 · 퇴장 `DESC_ANIM_OUT_TIME` 0.1초). 퇴장하는 판은
+## 트윈이 끝난 뒤에 지워지므로, 포커스가 옮겨 가면 옛 판이 내려가는 동안 새 판이
+## 올라온다.
+const DESC_ANIM_IN_TIME := 0.2
+const DESC_ANIM_OUT_TIME := 0.1
+const DESC_ANIM_RISE := 24.0
+## 드래그로 손패가 비킬 때 판이 손패 위 모서리로 옮겨 가는 시간(`_reflow_description_box`).
+const DESC_MOVE_TIME := 0.18
+## 화면 가장자리 여백.
+const DESC_BOX_MARGIN := 8.0
+## 설명 판 전용 CanvasLayer — `_bs.canvas`(layer 1) 바로 위. 손패 카드는
+## `_reorder_hand_nodes` 가 끊임없이 캔버스 자식 목록 끝으로 올리므로 같은 캔버스
+## 안에서는 판이 카드 아래로 깔린다. 층을 하나 올려 **그림은 손패 위**에 두고,
+## 판은 마우스를 먹지 않으므로 **터치 판정은 그대로 손패(`HandHitLayer`)** 가 한다.
+## 모달 오버레이(layer 10)보다는 아래다.
+const DESC_LAYER := 2
+var _desc_layer: CanvasLayer = null
+var _keyword_box: Panel = null
 ## 지금 설명 상자가 보여 주고 있는 카드. 포커스가 실제로 바뀔 때만 다시 짓는다.
 var _desc_card: Card = null
 
@@ -113,6 +141,12 @@ var _drag_follows_cursor: bool = false
 ## 순간에만** 감촉이 한 번 튄다 — 유효 대상 위로 들어섰다는 신호이고, 매
 ## 프레임 울리면 그것은 신호가 아니라 진동이 된다.
 var _drag_hot_last: bool = false
+## 끌린 카드(커서)가 **화면 중앙 판정 범위에 닿았는가** — 커서가 드롭 존
+## (`drop_zone_rect`) 아랫변 위로 올라가 있으면 참. 이 값이 참인 동안만 손패 ·
+## 아군 스트립이 아래로, 상단 적 UI 가 위로 비켜 전장을 비운다
+## (`_drag_lowers_hand` / `_set_drag_reached_field`). 드래그를 시작하자마자 비키면
+## 손패 안에서 카드를 잠깐 들었다 놓는 것만으로 화면 위아래가 출렁인다.
+var _drag_reached_field: bool = false
 ## 카드와 커서를 잇는 조준 화살표. 대상 지정 카드에서만 뜬다.
 var _drag_arrow: CardDragArrow = null
 var _drop_zone: Panel = null
@@ -1603,7 +1637,7 @@ func _fan_arc_drop(dx: float) -> float:
 ## 스트립도 세이프 에어리어 오프셋(`HudBuilder.bottom_offset`)을 이미 먹은 값이라
 ## 둘의 차만 재면 기기와 무관하게 "절반쯤 가려진다"가 유지된다.
 func hand_drop_offset() -> float:
-	if not _hand_is_lowered():
+	if not _hand_is_lowered() and not _drag_lowers_hand():
 		return 0.0
 	var strip_top: float = _bs.hud.player_strip_backdrop_top()
 	return maxf(0.0, strip_top - Card.CARD_H * 0.5 - _bs.BS_HAND_CENTER.y)
@@ -1615,6 +1649,49 @@ func hand_drop_offset() -> float:
 ## 내려가지 않는다 — 그때 내려가면 모달 한 번마다 손패가 오르내린다.
 func _hand_is_lowered() -> bool:
 	return _bs.game_phase != GameEnums.BattlePhase.CARD_PHASE
+
+
+## **카드를 끌어 화면 중앙 판정 범위에 닿으면**(`_drag_reached_field`) 손패가
+## 같은 자리로 내려간다 — 끌린 카드를 뺀 나머지가
+## 화면 아래로 비켜 전장을 비우고, 아군 스트립도 어두워지며 함께 내려간다
+## (`HudBuilder.set_player_strip_dropped`). 놓거나 취소하면 `_drag_card` 가 비면서
+## 다음 레이아웃이 그대로 되돌린다. 버리기 픽 중에는 내려가지 않는다 — 그때의
+## 드래그는 카드를 내는 것이 아니다.
+##
+## z-order 는 `_hand_is_lowered` 만 따른다: 드래그 중에는 카드가 스트립 뒤로
+## 숨지 않는다(끌린 카드가 언제나 맨 위여야 한다).
+func _drag_lowers_hand() -> bool:
+	return (_drag_card != null and is_instance_valid(_drag_card)
+			and _drag_reached_field and not _in_discard_pick_mode())
+
+
+## 커서가 중앙 판정 범위에 **닿았는가** — 드롭 존 아랫변보다 위에 있으면 참.
+## 존 안만 보지 않고 아랫변 하나만 보는 이유: 대상 지정 카드는 존 위쪽(전장 윗줄)
+## 까지 겨누는데, 거기서 손패가 다시 올라오면 겨누는 도중에 화면이 출렁인다.
+func _cursor_reached_field(p: Vector2) -> bool:
+	return p.y <= drop_zone_rect().end.y
+
+
+## 판정 범위에 들고 날 때 — 손패를 다시 깔고 위아래 UI 를 비키거나 되돌린다.
+func _set_drag_reached_field(on: bool) -> void:
+	if _drag_reached_field == on:
+		return
+	_drag_reached_field = on
+	var lowers: bool = _drag_lowers_hand()
+	_bs.hud.set_player_strip_dropped(lowers)
+	_bs.hud.set_enemy_top_raised(lowers)
+	if _drag_card != null and is_instance_valid(_drag_card):
+		relayout_hand(_bs.player_card_nodes, _drag_card)
+	_reflow_description_box()
+
+
+## 끌린 카드가 서는 자리 — 손패가 드래그로 내려가 있어도 **원래(올라온) 슬롯**.
+## 대상 지정 카드는 손패가 비켜 내려가는 동안 그 자리에 그대로 떠 있다.
+func _card_rest_slot(card: Card, idx: int, total: int) -> Vector2:
+	var slot: Vector2 = slot_position(idx, total)
+	if card == _drag_card and not _hand_is_lowered():
+		slot.y -= hand_drop_offset()
+	return slot
 
 
 func slot_position(index: int, total: int) -> Vector2:
@@ -1928,6 +2005,10 @@ func _on_hit_layer_gui_input(event: InputEvent) -> void:
 	# undo when the player simply lets go.
 	_press_card = _grabbable_card_at(p)
 	_press_pos = p
+	# 누른 순간부터 시전자가 강조된다(전장 네온 + 하단 스트립). 효과 미리보기는
+	# 끌기 시작할 때 붙는다(`_begin_drag`).
+	if _press_card != null and _bs.card_preview != null 			and not _in_discard_pick_mode():
+		_bs.card_preview.show_caster(_press_card.data)
 
 
 ## The card a press at `p` could pick up, or null. Mirrors the gates
@@ -1956,6 +2037,8 @@ func _finish_press(p: Vector2) -> void:
 	_press_card = null
 	if was_dragging:
 		_end_drag(p)
+	elif _bs.card_preview != null:
+		_bs.card_preview.clear()
 
 
 func _on_hit_layer_mouse_exited() -> void:
@@ -1993,6 +2076,9 @@ func _begin_drag(p: Vector2) -> void:
 		_press_card = null
 		return
 	_drag_card = card
+	# 손패 · 스트립은 아직 그대로다 — 커서가 판정 범위에 닿아야 비킨다
+	# (끝의 `_update_drag(p)` 가 이미 닿아 있으면 곧바로 비킨다).
+	_drag_reached_field = false
 	# set_dragging locks in the "lifted highest of all" look (1.2× + tallest
 	# shadow) so the card holds that pose once the cursor walks off the row. It
 	# kills the layout tween on the way in, so whichever pose we choose below is
@@ -2015,6 +2101,8 @@ func _begin_drag(p: Vector2) -> void:
 		card.begin_free_drag()
 	else:
 		_pose_selected_card(card)
+	if _bs.card_preview != null and not _in_discard_pick_mode():
+		_bs.card_preview.begin(card.data)
 	_show_drop_zone(card)
 	_refresh_description_box()
 	# 카드가 손을 떠났다 — 값이 바뀌었을 뿐 확정된 것은 없으므로 가장 작은 톡.
@@ -2028,6 +2116,7 @@ func _update_drag(p: Vector2) -> void:
 		return
 	if _drag_follows_cursor:
 		_drag_card.follow_cursor(p)
+	_set_drag_reached_field(_cursor_reached_field(p))
 	var hot: bool = _update_drop_feedback(p)
 	# 유효 대상 / 드롭 존에 **막 들어선** 순간에만 한 번. 화살표가 시안으로
 	# 바뀌는 바로 그 박자라, 눈을 안 봐도 겨눠졌다는 것이 손에서 읽힌다.
@@ -2054,10 +2143,14 @@ func _update_drop_feedback(p: Vector2) -> bool:
 		"pilot":
 			var picked: PilotData = to.hit_test_pilot_at(p)
 			to.preview_drag_target(picked)
+			if _bs.card_preview != null:
+				_bs.card_preview.set_target(picked)
 			return picked != null
 		"location":
 			var cell: Variant = to.hit_test_cell_at(p)
 			to.preview_drag_target(cell)
+			if _bs.card_preview != null:
+				_bs.card_preview.set_target(cell)
 			return cell != null
 		_:
 			var hot: bool = drop_zone_rect().has_point(p)
@@ -2123,6 +2216,8 @@ func _end_drag(p: Vector2) -> void:
 	var card: Card = _drag_card
 	_hide_drop_zone()
 	_hide_drag_arrow()
+	if _bs.card_preview != null:
+		_bs.card_preview.clear()
 	if card == null or not is_instance_valid(card):
 		_drag_card = null
 		_drag_follows_cursor = false
@@ -2147,6 +2242,9 @@ func _end_drag(p: Vector2) -> void:
 	_drag_hot_last = false
 	_drag_card = null
 	_drag_follows_cursor = false
+	_drag_reached_field = false
+	_bs.hud.set_player_strip_dropped(false)
+	_bs.hud.set_enemy_top_raised(false)
 	_clear_targeting()
 	# Refresh the cursor's card first so the reflow below resolves to the right
 	# focus, then lay the whole row out — that is what walks a missed card back
@@ -2193,8 +2291,13 @@ func _cancel_drag() -> void:
 	_drag_card = null
 	_drag_follows_cursor = false
 	_press_card = null
+	_drag_reached_field = false
+	_bs.hud.set_player_strip_dropped(false)
+	_bs.hud.set_enemy_top_raised(false)
 	_hide_drop_zone()
 	_hide_drag_arrow()
+	if _bs.card_preview != null:
+		_bs.card_preview.clear()
 
 
 ## Tears down the 대상 지정 오버레이 if it is still up. Idempotent — the confirm
@@ -2224,7 +2327,7 @@ func _pose_selected_card(card: Card) -> void:
 	# slot — lift and drop are exact opposites without a push-free special case,
 	# and the card can't inherit a sideways shift from whichever card the cursor
 	# happened to open the row around before this one was clicked.
-	var slot := slot_position(idx, total)
+	var slot := _card_rest_slot(card, idx, total)
 	var rot := slot_rotation(idx, total)
 	# The card keeps its fan tilt and slides out along its OWN up-axis rather
 	# than along screen-up — straight out of the fan, the way a card is drawn
@@ -2254,15 +2357,15 @@ func drop_zone_rect() -> Rect2:
 	return Rect2(0.0, vp.y * 0.5 - h * 0.5, vp.x, h)
 
 
-## 드래그를 시작할 때 구역을 띄운다 — **대상 지정 카드에는 띄우지 않는다**:
-## 그 카드들의 드롭 지점은 대상 그 자체라, 구역까지 깔면 "여기 놓으면 되나"로
-## 읽혀 오해만 부른다.
+## 드래그를 시작할 때 구역을 띄운다 — **버리기:N 픽 중에만** 보인다. 카드를 낼
+## 때는 구역이 그려지지 않는다(예전 "여기에 놓아 사용" 띠 삭제): 대신 손패와
+## 아군 스트립이 아래로 비켜 전장을 비우는 것(`_drag_lowers_hand`)이 "위로 끌어
+## 놓으면 쓴다"를 말한다. 구역 rect(`drop_zone_rect`) 자체는 그대로 판정에 쓰인다.
 func _show_drop_zone(card: Card) -> void:
-	if _card_uses_drag_arrow(card):
+	if _card_uses_drag_arrow(card) or not _in_discard_pick_mode():
 		return
 	_build_drop_zone()
-	_drop_zone_label.text = "여기에 놓아 버리기" if _in_discard_pick_mode() \
-			else "여기에 놓아 사용"
+	_drop_zone_label.text = "여기에 놓아 버리기"
 	# 버리기 픽 중에는 `CardSelectOverlay._battle_dim` 이 같은 캔버스의 자식
 	# 인덱스 0 을 차지하고 있다 — 구역을 0 에 두면 그 딤 **아래**로 들어가 통째로
 	# 눌려 보이지 않는다. 딤 바로 위(1)로 올린다.
@@ -2291,7 +2394,7 @@ func _build_drop_zone() -> void:
 
 	_drop_zone_label = Label.new()
 	_drop_zone_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_drop_zone_label.text = "여기에 놓아 사용"
+	_drop_zone_label.text = "여기에 놓아 버리기"
 	_drop_zone_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_drop_zone_label.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
 	_drop_zone_label.add_theme_font_size_override("font_size", 34)
@@ -2642,6 +2745,9 @@ func _show_description_box(card: Card) -> void:
 	_hide_description_box()
 	if card == null or not is_instance_valid(card) or card.data == null:
 		return
+	var idx: int = _bs.player_card_nodes.find(card)
+	if idx < 0:
+		return
 
 	var eff_cost: int = _bs.effective_cost_for(card.data, true)
 	# Same colour ramp as the card's top-left cost (white/green/red) so the
@@ -2651,32 +2757,154 @@ func _show_description_box(card: Card) -> void:
 		cost_col = Card.COST_COLOR_REDUCED
 	elif eff_cost > card.data.cost:
 		cost_col = Card.COST_COLOR_INCREASED
-	var cost_txt: String = Card.UNPLAYABLE_COST_TEXT if not card.data.is_playable() \
-			else str(eff_cost)
-	var box: Panel = CardDescBox.build(card.data, DESC_BOX_W, false, cost_txt, cost_col)
-	# 손패 바로 위 — 포커스 카드가 가장 높이 솟은 자세(호버 배율 + 드래그 리프트)
-	# 의 윗단에서 `DESC_BOX_GAP` 만큼 띄운다. 그래야 끌어 올린 카드도 상자를
-	# 파고들지 않는다.
-	var screen_w: float = _bs.canvas.get_viewport().get_visible_rect().size.x
-	var card_mid_y: float = _bs.BS_HAND_CENTER.y + hand_drop_offset() + Card.CARD_H * 0.5
-	var lifted_top: float = card_mid_y \
-			- Card.CARD_H * 0.5 * HAND_CARD_SCALE * Card.HOVER_SCALE - Card.PRESS_LIFT
-	box.position = Vector2((screen_w - DESC_BOX_W) * 0.5,
-			lifted_top - DESC_BOX_GAP - box.size.y)
+	var cost_txt: String = (Card.UNPLAYABLE_COST_TEXT if not card.data.is_playable()
+			else str(eff_cost))
 
-	# **This box has no buttons.** It is a read-out, not a control surface:
-	# playing a card is a drop, and so is picking one for 버리기:N. The old
-	# "카드 내기" and "버리기" buttons both went with the selection state that
-	# used to make them reachable.
-	_bs.canvas.add_child(box)
+	# 높이는 내용이 정한다(하한 없음) — 한 줄짜리 카드는 판도 짧다.
+	var box: Panel = CardDescBox.build(card.data, DESC_BOX_W, false, cost_txt, cost_col,
+			false, 0.0)
+	var kw_box: Panel = CardDescBox.build_keyword_panel(card.data, KEYWORD_BOX_W)
+	var spots: Array = _desc_box_spots(card, idx, box.size.y,
+			kw_box.size.y if kw_box != null else 0.0)
+	box.position = spots[0]
+	_desc_parent().add_child(box)
+	_animate_desc_in(box)
+	if kw_box != null:
+		kw_box.position = spots[1]
+		_desc_parent().add_child(kw_box)
+		_animate_desc_in(kw_box)
+
+	# **These panels have no buttons and never pick the mouse.** They are a
+	# read-out, not a control surface: playing a card is a drop, and so is
+	# picking one for 버리기:N.
 	_description_box = box
+	_keyword_box = kw_box
 	_desc_card = card
 
 
+## 설명판 · 키워드판의 자리 `[box_pos, kw_pos]`.
+##
+## • 평소 — 확대된 카드 바로 옆, 카드 윗단에 맞춘다. 카드가 화면 가운데이거나
+##   오른쪽이면 판은 왼쪽, 아니면 오른쪽. 키워드판은 그 바깥쪽(자리가 없으면 카드
+##   반대편).
+## • 드래그로 손패 · 스트립이 비켜 내려간 동안(`_drag_lowers_hand`) — 카드 옆은
+##   전장 한복판이라 판이 겨누는 자리를 덮는다. 판은 **손패 바로 위 모서리**로
+##   물러난다: 끌린 카드의 슬롯이 화면 오른쪽 절반이면 왼쪽 위(전략 점수 도넛을
+##   덮는다), 아니면 오른쪽 위(전장 오른쪽 아래 빈자리). 아랫변을 손패 윗선에
+##   맞추고, 키워드판은 그 안쪽(화면 가운데 쪽)에 같은 아랫변으로 선다. 판정은
+##   슬롯 기준이라 드래그 동안 고정이다 — 커서를 따라 판이 오가지 않는다.
+func _desc_box_spots(card: Card, idx: int, box_h: float, kw_h: float) -> Array:
+	var screen: Vector2 = _bs.canvas.get_viewport().get_visible_rect().size
+	var center: Vector2 = (_card_rest_slot(card, idx, _bs.player_card_nodes.size())
+			+ Vector2(Card.CARD_W, Card.CARD_H) * 0.5)
+	var on_left: bool = center.x >= screen.x * 0.5
+	if card == _drag_card and _drag_lowers_hand():
+		var bottom: float = (_bs.BS_HAND_CENTER.y
+				+ Card.CARD_H * 0.5 * (1.0 - HAND_CARD_SCALE) - DESC_BOX_GAP)
+		var bx: float = (DESC_BOX_MARGIN if on_left
+				else screen.x - DESC_BOX_W - DESC_BOX_MARGIN)
+		var kx_in: float = (bx + DESC_BOX_W + DESC_BOX_GAP if on_left
+				else bx - DESC_BOX_GAP - KEYWORD_BOX_W)
+		return [Vector2(bx, maxf(DESC_BOX_MARGIN, bottom - box_h)),
+				Vector2(kx_in, maxf(DESC_BOX_MARGIN, bottom - kw_h))]
+
+	# 확대된 카드의 화면 rect — 슬롯(레이아웃 좌상단) + 한가운데 피벗, 손패 배율 ×
+	# 호버 배율. 기울기는 무시한다(몇 도라 판 자리에 차이가 없다).
+	var half: Vector2 = (Vector2(Card.CARD_W, Card.CARD_H) * 0.5
+			* HAND_CARD_SCALE * Card.HOVER_SCALE)
+	var card_rect := Rect2(center - half, half * 2.0)
+	var box_x: float = (card_rect.position.x - DESC_BOX_GAP - DESC_BOX_W if on_left
+			else card_rect.end.x + DESC_BOX_GAP)
+	box_x = clampf(box_x, DESC_BOX_MARGIN, screen.x - DESC_BOX_W - DESC_BOX_MARGIN)
+	# 바깥쪽(설명판 너머)에 자리가 없으면 카드 반대편.
+	var kx: float = (box_x - DESC_BOX_GAP - KEYWORD_BOX_W if on_left
+			else box_x + DESC_BOX_W + DESC_BOX_GAP)
+	if kx < DESC_BOX_MARGIN or kx + KEYWORD_BOX_W > screen.x - DESC_BOX_MARGIN:
+		kx = (card_rect.end.x + DESC_BOX_GAP if on_left
+				else card_rect.position.x - DESC_BOX_GAP - KEYWORD_BOX_W)
+	kx = clampf(kx, DESC_BOX_MARGIN, screen.x - KEYWORD_BOX_W - DESC_BOX_MARGIN)
+	return [Vector2(box_x, _desc_box_y(card_rect.position.y, box_h, screen.y)),
+			Vector2(kx, _desc_box_y(card_rect.position.y, kw_h, screen.y))]
+
+
+## 드래그가 판정 범위에 들고 날 때 — 떠 있는 판을 새 자리로 미끄러뜨린다
+## (다시 짓지 않는다: 같은 카드라 내용이 같다).
+func _reflow_description_box() -> void:
+	if _desc_card == null or not is_instance_valid(_desc_card) 			or _description_box == null or not is_instance_valid(_description_box):
+		return
+	var idx: int = _bs.player_card_nodes.find(_desc_card)
+	if idx < 0:
+		return
+	var kw_valid: bool = _keyword_box != null and is_instance_valid(_keyword_box)
+	var spots: Array = _desc_box_spots(_desc_card, idx, _description_box.size.y,
+			_keyword_box.size.y if kw_valid else 0.0)
+	_slide_desc_to(_description_box, spots[0])
+	if kw_valid:
+		_slide_desc_to(_keyword_box, spots[1])
+
+
+func _slide_desc_to(box: Control, to: Vector2) -> void:
+	if box.has_meta("desc_tween"):
+		var old: Tween = box.get_meta("desc_tween")
+		if old != null and old.is_valid():
+			old.kill()
+	var tw := box.create_tween().set_parallel()
+	box.set_meta("desc_tween", tw)
+	tw.tween_property(box, "position", to, DESC_MOVE_TIME).set_trans(
+			Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.tween_property(box, "modulate:a", 1.0, DESC_MOVE_TIME)
+
+
+## 등장 — 제자리보다 `DESC_ANIM_RISE` 아래 · 투명에서 시작해 올라오며 나타난다.
+func _animate_desc_in(box: Control) -> void:
+	var rest_y: float = box.position.y
+	box.position.y = rest_y + DESC_ANIM_RISE
+	box.modulate.a = 0.0
+	var tw := box.create_tween().set_parallel()
+	box.set_meta("desc_tween", tw)
+	tw.tween_property(box, "position:y", rest_y, DESC_ANIM_IN_TIME).set_trans(
+			Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.tween_property(box, "modulate:a", 1.0, DESC_ANIM_IN_TIME)
+
+
+## 퇴장 — 내려가며 사라진 뒤 지운다. 등장 트윈이 아직 돌고 있으면 그 자리에서
+## 바로 이어 내려간다(`create_tween` 은 노드에 붙은 옛 트윈을 죽이지 않으므로
+## 직접 죽인다).
+func _animate_desc_out(box: Control) -> void:
+	if box == null or not is_instance_valid(box) or box.is_queued_for_deletion():
+		return
+	if box.has_meta("desc_tween"):
+		var old: Tween = box.get_meta("desc_tween")
+		if old != null and old.is_valid():
+			old.kill()
+	var tw := box.create_tween().set_parallel()
+	box.set_meta("desc_tween", tw)
+	tw.tween_property(box, "position:y", box.position.y + DESC_ANIM_RISE,
+			DESC_ANIM_OUT_TIME).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	tw.tween_property(box, "modulate:a", 0.0, DESC_ANIM_OUT_TIME)
+	tw.chain().tween_callback(box.queue_free)
+
+
+func _desc_parent() -> CanvasLayer:
+	if _desc_layer == null or not is_instance_valid(_desc_layer):
+		_desc_layer = CanvasLayer.new()
+		_desc_layer.name = "CardDescLayer"
+		_desc_layer.layer = DESC_LAYER
+		_bs.add_child(_desc_layer)
+	return _desc_layer
+
+
+## 판의 윗변 — 확대된 카드 윗단에 맞추되, 판이 길어 화면 아래로 넘치면 올린다.
+func _desc_box_y(card_top: float, h: float, screen_h: float) -> float:
+	return clampf(card_top, DESC_BOX_MARGIN,
+			maxf(DESC_BOX_MARGIN, screen_h - h - DESC_BOX_MARGIN))
+
+
 func _hide_description_box() -> void:
-	if _description_box != null and is_instance_valid(_description_box):
-		_description_box.queue_free()
+	_animate_desc_out(_description_box)
+	_animate_desc_out(_keyword_box)
 	_description_box = null
+	_keyword_box = null
 	_desc_card = null
 
 
@@ -3431,6 +3659,31 @@ func apply_and_dispose_ai_card(cd: CardData) -> String:
 # Returns true if `cd`'s effect chain contains an `engage:N` clause. Public so
 # AiCardPlayer can decide whether to await the engage modal between plays
 # without reaching into _parse_effect_chain.
+## 이 카드의 효과 체인 — 절 딕셔너리(`name` / `value` / `flags`)의 배열.
+## 손패 미리보기(`CardPlayPreview`)가 "이 카드를 쓰면 무엇이 일어나는가"를 읽는다.
+func effect_clauses(cd: CardData) -> Array:
+	if cd == null:
+		return []
+	return _parse_effect_chain(cd.effect)
+
+
+## 공격 한 대가 `t` 에게 들어갈 피해의 **예상치** — `_apply_attack_damage` 와 같은
+## 배율을 곱하되 아무것도 바꾸지 않는다(반응 장갑 소모 · 보호막 차감 없음).
+## 손패 미리보기가 대상 체력 링에 깎일 몫을 그린다.
+func estimate_attack_damage(caster: PilotData, t: PilotData, n: int) -> int:
+	if t == null:
+		return 0
+	var atk_value: int = caster.atk if caster != null else 100
+	var dmg: int = max(1, atk_value * n)
+	if _bs.skill != null:
+		dmg = maxi(1, roundi(float(dmg)
+				* _bs.skill.damage_out_mult(caster)
+				* _bs.skill.damage_in_mult(t)))
+	if _bs.mech_skill != null:
+		dmg = maxi(1, roundi(float(dmg) * _bs.mech_skill.damage_taken_mult(t, caster)))
+	return dmg
+
+
 func card_has_engage(cd: CardData) -> bool:
 	for clause in _parse_effect_chain(cd.effect):
 		if String(clause["name"]) == "engage":
@@ -3541,7 +3794,82 @@ func _parse_effect_chain(raw: String) -> Array:
 	return out
 
 
+## 절 하나를 돌리고, 그 절이 **파일럿에게 효과를 거는 절**이면 그 파일럿의
+## 전장 초상 위에 버프 배너(카드 아트 + 이름)를 띄운다. 플레이어 체인과 AI 가
+## 둘 다 이 함수를 지나므로 배너도 한 군데서만 뜬다.
 func _apply_single_effect(e: Dictionary, is_player: bool, caster: PilotData,
+		ally_team: int, enemy_team: int,
+		selected_target: Variant = null) -> String:
+	var msg: String = await _dispatch_single_effect(e, is_player, caster,
+			ally_team, enemy_team, selected_target)
+	_announce_buff(e, caster, ally_team, selected_target)
+	return msg
+
+
+## 버프 배너를 띄우는 절 → 누구에게 거는가.
+##   caster  — 언제나 시전자
+##   target  — 찍은 파일럿(없으면 띄우지 않는다)
+##   subject — `|self` 면 시전자, 아니면 찍은 파일럿, 그것도 없으면 시전자
+##   team    — 시전자 팀 전원
+const BUFF_CLAUSE_SUBJECT := {
+	"lane_stat": "caster", "growth": "caster", "atk_pct": "caster",
+	"hp_pct": "caster", "eva_buff": "caster",
+	"growth_perm": "subject", "heal_pct": "subject", "max_hp": "subject",
+	"atk_add": "subject", "shield_atk": "subject", "reactive_armor": "subject",
+	"shield_pct": "target", "growth_eff": "target", "dmg_taken": "target",
+	"bounty": "target", "mark_target": "target", "track": "target",
+	"stun_next": "target", "no_engage_phase": "target", "growth_link": "target",
+	"link_engage": "target", "attack_bounty": "target",
+	"growth_until_phase": "team",
+}
+## 이번 카드에서 이미 배너를 띄운 파일럿 — 한 장이 같은 사람에게 절 두 개를
+## 걸어도(워밍업: 공격력 % + 체력 %) 배너는 하나다.
+var _banner_card: CardData = null
+var _banner_seen: Dictionary = {}
+
+
+func _announce_buff(e: Dictionary, caster: PilotData, ally_team: int,
+		selected_target: Variant) -> void:
+	var ename: String = String(e["name"])
+	if not BUFF_CLAUSE_SUBJECT.has(ename) or _current_card == null:
+		return
+	if _bs.renderer == null:
+		return
+	if _banner_card != _current_card:
+		_banner_card = _current_card
+		_banner_seen.clear()
+	var flags: Array = e.get("flags", []) as Array
+	var picked: PilotData = _as_pilot(selected_target)
+	var who: Array = []
+	match String(BUFF_CLAUSE_SUBJECT[ename]):
+		"caster":
+			who.append(caster)
+		"target":
+			who.append(picked)
+		"subject":
+			if "self" in flags:
+				who.append(caster)
+			elif "all_allies" in flags:
+				for raw in _bs.pilots:
+					var p := raw as PilotData
+					if p.team == ally_team:
+						who.append(p)
+			else:
+				who.append(picked if picked != null else caster)
+		"team":
+			for raw in _bs.pilots:
+				var p := raw as PilotData
+				if p.team == ally_team:
+					who.append(p)
+	for raw in who:
+		var p := raw as PilotData
+		if p == null or not p.alive or _banner_seen.has(p):
+			continue
+		_banner_seen[p] = true
+		_bs.renderer.spawn_buff_banner(p, _current_card)
+
+
+func _dispatch_single_effect(e: Dictionary, is_player: bool, caster: PilotData,
 		ally_team: int, enemy_team: int,
 		selected_target: Variant = null) -> String:
 	var ename: String = String(e["name"])
@@ -3705,7 +4033,7 @@ func _effect_discard(is_player: bool, n: int) -> String:
 	var discard: Array = _bs.player_discard if is_player else _bs.ai_discard
 	var moved: int = 0
 	for i in n:
-		var bag: Array = _discardable(hand)
+		var bag: Array = discardable(hand)
 		if bag.is_empty():
 			break
 		var pick := bag[randi() % bag.size()] as CardData
@@ -3900,14 +4228,14 @@ func _resolve_attack_victims(flags: Array, caster: PilotData, enemy_team: int,
 		for _i in picks:
 			out.append(bag[randi() % bag.size()])
 		return out
-	var self_r: int = _flag_int(flags, "self_range", -1)
+	var self_r: int = flag_int(flags, "self_range", -1)
 	if self_r >= 0 and caster != null:
 		return _victims_around(caster.grid_pos, self_r, enemy_team)
 	# `|around_target:N` — **찍은 대상이 아군인** 카드의 반경 공격([공격 명령]).
 	# `|area:N` 과 기하는 같지만 원점이 적이 아니라 아군이라 따로 있다: `picked`
 	# 가 아군이면 아래 `area` 분기의 `picked.grid_pos` 는 맞아도 그 앞뒤의
 	# "지정한 적 하나" 폴백들이 전부 팀 검사에 걸려 엉뚱한 적 한 명을 집었다.
-	var around_r: int = _flag_int(flags, "around_target", -1)
+	var around_r: int = flag_int(flags, "around_target", -1)
 	if around_r >= 0:
 		if picked != null:
 			return _victims_around(picked.grid_pos, around_r, enemy_team)
@@ -3915,7 +4243,7 @@ func _resolve_attack_victims(flags: Array, caster: PilotData, enemy_team: int,
 			return _victims_around(_pending_target_cell() as Vector2i,
 					around_r, enemy_team)
 		return out
-	var area_r: int = _flag_int(flags, "area", -1)
+	var area_r: int = flag_int(flags, "area", -1)
 	if area_r >= 0:
 		var origin: Vector2i = Vector2i(-999, -999)
 		if picked != null:
@@ -4207,7 +4535,7 @@ func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 	var drop_in: bool = "drop_in" in flags
 	var move_in: bool = drop_in or "move_in" in flags
 	var center: Vector2i = Vector2i(-999, -999)
-	var radius: int = maxi(1, _flag_int(flags, "self_range", 1))
+	var radius: int = maxi(1, flag_int(flags, "self_range", 1))
 	if "at_target" in flags:
 		if _current_target is PilotData:
 			center = (_current_target as PilotData).grid_pos
@@ -4316,6 +4644,7 @@ func _effect_shield_pct(pct: int, ally_team: int,
 		return "보호막 (대상 없음)"
 	var amount: int = int(t.max_hp * pct / 100)
 	t.shield += amount
+	_note_fx_src(t, "shield")
 	return "보호막 +%d %s" % [amount, _bs.pilot_label(t)]
 
 
@@ -4484,8 +4813,9 @@ func _effect_cost_inc_phase(n: int, is_player: bool) -> String:
 func _effect_lane_stat(pct: int, flags: Array, caster: PilotData) -> String:
 	if caster == null:
 		return "라인전 스탯 (시전자 없음)"
-	var turns: int = _flag_int(flags, "turns", 0)
+	var turns: int = flag_int(flags, "turns", 0)
 	caster.lane_stat_mod = float(pct) / 100.0
+	_note_fx_src(caster, "lane")
 	caster.lane_stat_expire_turn = (_bs.turn_count + turns) if turns > 0 else -1
 	return "%s 라인전 스탯 %+d%% (%d턴)" % [_bs.pilot_label(caster), pct, turns]
 
@@ -4496,7 +4826,7 @@ func _effect_lane_stat(pct: int, flags: Array, caster: PilotData) -> String:
 func _effect_growth_rate(pct: int, flags: Array, caster: PilotData) -> String:
 	if caster == null:
 		return "성장 (시전자 없음)"
-	var turns: int = _flag_int(flags, "turns", 0)
+	var turns: int = flag_int(flags, "turns", 0)
 	# `|charge` — 배율이 **태운 토큰 수만큼** 곱해진다([성장 가속]: 토큰당 +10%).
 	if "charge" in flags:
 		var tokens: int = _charge_spent if _current_card != null \
@@ -4505,6 +4835,7 @@ func _effect_growth_rate(pct: int, flags: Array, caster: PilotData) -> String:
 			return "%s 성장 (토큰 없음)" % _bs.pilot_label(caster)
 		pct *= tokens
 	caster.growth_rate_mult        = 1.0 + float(pct) / 100.0
+	_note_fx_src(caster, "rate")
 	caster.growth_rate_expire_turn = (_bs.turn_count + turns) if turns > 0 else -1
 	caster.growth_until_phase      = false
 	return "%s 성장 %+d%% (%d턴)" % [_bs.pilot_label(caster), pct, turns]
@@ -4537,6 +4868,21 @@ func _effect_growth_perm(pct: int, ally_team: int, picked: PilotData,
 			_bs.pilot_label(target), pct,
 			roundi(target.growth_rate_bonus * 100.0)])
 	return "%s 성장 효율 %+d%% (영구)" % [_bs.pilot_label(target), pct]
+
+
+## 예약 효과(다음 단계 정산)를 지금 도는 카드가 걸었다고 적는다 — 전략 점수
+## 도넛 옆 예약 칩(`ui/ReservationChips.gd`)이 그 카드 아트를 띄운다. 표시용.
+func _note_reserve(kind: String, is_player: bool) -> void:
+	if _current_card == null:
+		return
+	_bs.reserve_src["%s_%s" % [kind, "p" if is_player else "ai"]] = _current_card.card_name
+
+
+## 슬롯 효과(`PilotData.fx_src`)를 지금 도는 카드가 걸었다고 적는다 — 표시용.
+func _note_fx_src(target: PilotData, slot: String) -> void:
+	if target == null or _current_card == null:
+		return
+	target.fx_src[slot] = _current_card.card_name
 
 
 ## 지속 효과 장부에 한 줄. **출처는 지금 도는 카드**(`_current_card`)이므로
@@ -4645,6 +4991,7 @@ func _effect_growth_until_phase(pct: int, ally_team: int) -> String:
 		if p.team != ally_team:
 			continue
 		p.growth_rate_mult        = 1.0 + float(pct) / 100.0
+		_note_fx_src(p, "rate")
 		p.growth_rate_expire_turn = -1
 		p.growth_until_phase      = true
 		count += 1
@@ -4656,7 +5003,7 @@ func _effect_growth_until_phase(pct: int, ally_team: int) -> String:
 # 효과, `BattleSim.preserved_cards_*`)은 상한 초과 자동 버리기로부터만 지켜 준다.
 #
 # **`보존` 키워드는 다르다.** 카드 자신이 달고 있는 것이라 강제 버리기도 뚫지
-# 못한다 — 그래서 이 절 전체가 `_discardable()` 로 손패를 거른다. 오브젝트
+# 못한다 — 그래서 이 절 전체가 `discardable()` 로 손패를 거른다. 오브젝트
 # 보상은 한 매치에 한 장 나오는 카드이므로 재고 한 번에 날아가면 안 된다.
 
 ## 버려지는 카드 한 장을 더미로 보낸다 — **버리기의 유일한 출구**다.
@@ -4685,7 +5032,7 @@ func send_to_discard(cd: CardData, discard: Array) -> bool:
 
 ## 지금 버릴 수 있는 손패 카드들 — `보존` 키워드를 단 카드는 빠진다.
 ## 강제 버리기 계열이 전부 이 한 함수를 지나므로 규칙이 한 군데에만 산다.
-func _discardable(hand: Array) -> Array:
+func discardable(hand: Array) -> Array:
 	var out: Array = []
 	for raw in hand:
 		var cd := raw as CardData
@@ -4701,7 +5048,7 @@ func _discard_whole_hand(is_player: bool) -> int:
 	var hand:    Array = _bs.player_hand    if is_player else _bs.ai_hand
 	var discard: Array = _bs.player_discard if is_player else _bs.ai_discard
 	var moved: int = 0
-	for raw in _discardable(hand):
+	for raw in discardable(hand):
 		var cd := raw as CardData
 		hand.erase(cd)
 		send_to_discard(cd, discard)
@@ -4764,7 +5111,7 @@ func _effect_discard_other_pilots(flags: Array, is_player: bool,
 		caster: PilotData) -> String:
 	if caster == null:
 		return "솔로 퍼포먼스 (시전자 없음)"
-	var per: int = _flag_int(flags, "strategy_each", 0)
+	var per: int = flag_int(flags, "strategy_each", 0)
 	var hand:    Array = _bs.player_hand    if is_player else _bs.ai_hand
 	var discard: Array = _bs.player_discard if is_player else _bs.ai_discard
 	var moved: int = 0
@@ -4831,6 +5178,7 @@ func _effect_strategy_next_phase(n: int, is_player: bool) -> String:
 		_bs.next_phase_strategy_p += n
 	else:
 		_bs.next_phase_strategy_ai += n
+	_note_reserve("strategy", is_player)
 	return "다음 작전 단계 전략 점수 %+d" % n
 
 
@@ -4842,6 +5190,7 @@ func _effect_strategy_on_kill(n: int, is_player: bool) -> String:
 		_bs.kill_bounty_p = maxi(_bs.kill_bounty_p, n)
 	else:
 		_bs.kill_bounty_ai = maxi(_bs.kill_bounty_ai, n)
+	_note_reserve("bounty", is_player)
 	return "이번 단계 처치 시 전략 점수 +%d (예약)" % n
 
 
@@ -4858,7 +5207,7 @@ func _effect_end_phase() -> String:
 ## Pulls an int off a `flag:value` modifier attached to **this** clause.
 ## `_clause_int_flag` scans the whole chain instead and is kept for min_range,
 ## where the flag can only appear once anyway.
-func _flag_int(flags: Array, flag_name: String, default_value: int) -> int:
+func flag_int(flags: Array, flag_name: String, default_value: int) -> int:
 	for f in flags:
 		var fs: String = f as String
 		if fs.begins_with(flag_name + ":"):
@@ -5019,6 +5368,7 @@ func _effect_shield_atk(pct: int, flags: Array, caster: PilotData,
 	for raw in targets:
 		var p := raw as PilotData
 		p.shield += amount
+		_note_fx_src(p, "shield")
 		if _bs.mech_skill != null:
 			_bs.mech_skill.shield_source[p] = caster
 	return "보호막 +%d ×%d" % [amount, targets.size()]
@@ -5138,7 +5488,7 @@ func _merge_keywords(base: String, add: Array) -> String:
 ## 있으므로 모달이 없다 — 고를 것이 없는 선택은 클릭 한 번을 버리는 일이다.
 func _effect_search_card(card_id: int, flags: Array, caster: PilotData,
 		is_player: bool) -> String:
-	var want: int = maxi(1, _flag_int(flags, "count", 1))
+	var want: int = maxi(1, flag_int(flags, "count", 1))
 	var deck: Array = _bs.player_deck if is_player else _bs.ai_deck
 	var taken: int = 0
 	var label: String = ""
@@ -5179,7 +5529,7 @@ func _effect_search_discard(n: int, is_player: bool) -> String:
 ## `|cost_reduce:N` 이 붙으면 그렇게 올라온 카드만 비용이 내려간다(변덕).
 func _effect_draw_discard(n: int, flags: Array, is_player: bool) -> String:
 	var discard: Array = _bs.player_discard if is_player else _bs.ai_discard
-	var cut: int = _flag_int(flags, "cost_reduce", 0)
+	var cut: int = flag_int(flags, "cost_reduce", 0)
 	var taken: int = 0
 	for _i in n:
 		if discard.is_empty():
@@ -5203,7 +5553,7 @@ func _effect_push(steps: int, flags: Array, caster: PilotData) -> String:
 		return "밀기 (시전자 없음)"
 	var log_lines: Array = []
 	_bs.sim_core.advance_pilot(caster, steps, log_lines)
-	var bonus: int = _flag_int(flags, "bonus_clear", 0)
+	var bonus: int = flag_int(flags, "bonus_clear", 0)
 	var clear: bool = true
 	for raw in _bs.pilots:
 		var p := raw as PilotData
@@ -5257,7 +5607,7 @@ func _effect_pull_to_caster(flags: Array, caster: PilotData,
 		enemy_team: int) -> String:
 	if caster == null or not caster.alive:
 		return "끌어오기 (시전자 없음)"
-	var radius: int = _flag_int(flags, "self_range", -1)
+	var radius: int = flag_int(flags, "self_range", -1)
 	var moved: int = 0
 	for raw in _bs.pilots:
 		var p := raw as PilotData
@@ -5498,7 +5848,7 @@ func _effect_execute(pct: int, flags: Array, caster: PilotData,
 		picked: Variant) -> String:
 	if caster == null or _bs.mech_skill == null:
 		return "처형 (시전자 없음)"
-	var need: int = maxi(1, _flag_int(flags, "charge", 5))
+	var need: int = maxi(1, flag_int(flags, "charge", 5))
 	if _bs.mech_skill.charge_of(caster) < need:
 		return "처형 불발 (토큰 %d/%d)" % [
 				_bs.mech_skill.charge_of(caster), need]
@@ -5641,8 +5991,9 @@ func _effect_hp_pct(pct: int, caster: PilotData) -> String:
 func _effect_eva_buff(pct: int, flags: Array, caster: PilotData) -> String:
 	if caster == null:
 		return "회피 (시전자 없음)"
-	var turns: int = _flag_int(flags, "turns", 0)
+	var turns: int = flag_int(flags, "turns", 0)
 	caster.eva_card_mod = float(pct) / 100.0
+	_note_fx_src(caster, "eva")
 	caster.eva_card_expire_turn = (_bs.turn_count + turns) if turns > 0 else -1
 	return "%s 전장 회피 %+d%% (%d턴)" % [_bs.pilot_label(caster), pct, turns]
 
@@ -5655,7 +6006,7 @@ func _effect_retreat_turret(caster: PilotData) -> String:
 		return "후퇴 (시전자 없음)"
 	if _bs.skill != null and _bs.skill.blocks_move(caster):
 		return "후퇴 (위치 고정)"
-	var dest: Vector2i = _nearest_own_turret_cell(caster)
+	var dest: Vector2i = nearest_own_turret_cell(caster)
 	if dest == caster.grid_pos:
 		return "후퇴 %s (제자리)" % _bs.pilot_label(caster)
 	var orig := caster.grid_pos
@@ -5666,7 +6017,7 @@ func _effect_retreat_turret(caster: PilotData) -> String:
 	return "후퇴 %s → (%d,%d)" % [_bs.pilot_label(caster), dest.x, dest.y]
 
 
-func _nearest_own_turret_cell(caster: PilotData) -> Vector2i:
+func nearest_own_turret_cell(caster: PilotData) -> Vector2i:
 	var best_lane: Variant = null
 	var best_lane_d: int = 1 << 30
 	var best_any: Variant = null
@@ -5704,6 +6055,7 @@ func _effect_ambush(caster: PilotData, picked: Variant) -> String:
 		_bs.blog.log_move(caster, orig, cell, "card-ambush")
 		_bs.anim_pilot_move(caster, orig)
 	caster.ambush_hold = true
+	_note_fx_src(caster, "ambush")
 	return "매복 %s (%d,%d)" % [_bs.pilot_label(caster), cell.x, cell.y]
 
 
@@ -5714,6 +6066,7 @@ func _effect_ambush_search(n: int, caster: PilotData, is_player: bool) -> String
 		return ""
 	var list: Array = _bs.ambush_search_p if is_player else _bs.ambush_search_ai
 	list.append({"caster": caster, "n": n})
+	_note_reserve("ambush", is_player)
 	return "다음 작전 단계에 교전 카드 탐색 %d" % n
 
 
@@ -5777,6 +6130,7 @@ func _effect_draw_next_phase(n: int, is_player: bool) -> String:
 		_bs.next_phase_draw_p += n
 	else:
 		_bs.next_phase_draw_ai += n
+	_note_reserve("draw", is_player)
 	return "다음 작전 단계 뽑기 %d" % n
 
 

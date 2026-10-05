@@ -55,7 +55,7 @@ id,mech_id,name,count,cost,cast_method,target,cast_range,area,keyword,charge_max
 54,19,수호,1,2,instant,hand,0,0,,0,shield_atk:200|all_allies,,전장 내 모든 아군에게 시전자 공격력의 200% 보호막 생성
 55,20,강타,1,1,target,ally,99,0,,0,stun_next,,전장 내 아군 지정 — 대상이 다음 교전에서 적에게 피해를 주면 그 적을 기절. 한 교전 내에 같은 적에게 두 번 이상 적용되지 않음
 56,20,탈진,1,2,target,enemy,1,0,,0,attack:1;on_hit;no_engage_phase,,사거리 1 내 적 지정 공격. 명중 시 대상은 이번 작전 단계 동안 교전 참여 불가
-57,20,변덕,1,0,instant,hand,0,0,,0,draw_discard:3|cost_reduce:1,,묘지 뽑기: 3. 이번 작전 단계 동안 해당 카드들은 비용 1 감소
+57,20,변덕,1,0,instant,hand,0,0,,0,draw_discard:3|cost_reduce:1,,묘지 뽑기: 3. 이번 작전 단계 동안 해당 카드들은 -1 비용
 58,21,밸런스,1,-1,instant,hand,0,0,,0,hand_passive:balance,,이 카드가 핸드에 있을 때 이 메크의 다른 카드가 성장 점수를 소모하지 않음
 59,21,파란 약,1,3,target,ally,99,0,,0,score_cost:100;growth_eff:20,,전장 내 아군 지정 — 시전자의 성장 점수 100 소모 및 대상이 전장 이탈까지 성장 효율 +20%
 60,21,붉은 가루,1,2,target,ally,99,0,,0,score_cost:100;max_hp:20,,전장 내 아군 지정 — 시전자의 성장 점수 100 소모 및 대상 최대 체력 20 증가

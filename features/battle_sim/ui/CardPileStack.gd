@@ -50,8 +50,6 @@ const LAYER_DY        := 5.5
 const MAX_LAYERS      := 8
 ## 한 층이 대변하는 카드 수.
 const CARDS_PER_LAYER := 4.0
-## 뭉치 바닥과 제목 라벨 사이 여백.
-const TITLE_GAP       := 6.0
 
 # ── 색 ───────────────────────────────────────────────────────────────────────
 ## 아래 층들 — 카드의 "옆면 / 종이 단면".
@@ -63,12 +61,12 @@ const EDGE_LINE   := Color(0.16, 0.14, 0.22, 1.0)
 ## **뒷면은 이 색 하나로 균일하게 칠한다.** 예전에는 면 안쪽으로 물러난 사다리꼴
 ## 하나를 accent 색(덱 보라 / 버린 더미 적갈, alpha 0.55)으로 덧그려 "뒤집힌
 ## 카드"라는 무늬를 넣었는데, 뭉치가 워낙 작아 그 액자가 무늬가 아니라 **면에
-## 얹힌 계조**로 읽혔다. 두 더미는 아래 제목 라벨이 이미 갈라 준다.
+## 얹힌 계조**로 읽혔다. 두 더미는 손패 왼쪽 / 오른쪽이라는 자리가 갈라 준다
+## (아래 제목 라벨 "Deck" / "Discard" 는 삭제됐다).
 const BACK_FILL   := Color(0.08, 0.05, 0.18, 1.0)
 const BACK_LINE   := Color(0.40, 0.30, 0.60, 1.0)
 ## 빈 더미 — 테두리만 남는다.
 const EMPTY_LINE  := Color(0.55, 0.55, 0.62, 0.40)
-const TITLE_COL   := Color(0.85, 0.85, 0.85)
 const COUNT_COL   := Color(1.0, 1.0, 1.0)
 const COUNT_OUTLINE_COL := Color(0.0, 0.0, 0.0, 0.85)
 ## 목록을 열 수 없는 상태에서 뭉치 전체에 씌우는 알파.
@@ -87,12 +85,9 @@ const GHOST_HANDOFF_ALPHA := 0.30
 const GHOST_STAGGER_SEC := 0.08
 
 # ── 상태 ─────────────────────────────────────────────────────────────────────
-## 뭉치 아래 제목("Deck" / "Discard"). HudBuilder 가 setup 으로 넣는다.
-var title: String = ""
 ## 표시 중인 장수. 리셔플 트윈 때문에 소수가 들어온다.
 var count: float = 0.0
 
-var _lbl_title: Label = null
 var _count_font_size: int = 24
 ## 진행 중인 잔상들. 각 항목은 `{t: float, land: bool, delay: float}`.
 ## 트윈이 아니라 `_process` 로 굴린다 — 한 프레임에 여러 장이 겹칠 수 있고,
@@ -106,20 +101,11 @@ func _ready() -> void:
 	set_process(false)
 
 
-## `title_font_size` 는 거터 폭에서 유도된 값 — HudBuilder 가 계산해 넘긴다.
-func setup(title_text: String, title_font_size: int) -> void:
-	title = title_text
+## 숫자 폰트는 거터 폭(`size.x`)에서 유도한다 — size 를 넣은 뒤에 부른다.
+## 뭉치 아래 제목 라벨("Deck" / "Discard")은 삭제됐다 — 두 더미는 손패 양옆
+## 자리로 갈린다.
+func setup() -> void:
 	_count_font_size = clampi(int(size.x / 3.0), 14, 30)
-
-	_lbl_title = Label.new()
-	_lbl_title.text = title_text
-	_lbl_title.add_theme_font_size_override("font_size", title_font_size)
-	_lbl_title.add_theme_color_override("font_color", TITLE_COL)
-	_lbl_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_lbl_title.vertical_alignment   = VERTICAL_ALIGNMENT_TOP
-	_lbl_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_lbl_title)
-	_relayout_title(title_font_size)
 	queue_redraw()
 
 
@@ -196,16 +182,10 @@ func _stack_h() -> float:
 	return _card_h() + float(MAX_LAYERS - 1) * LAYER_DY
 
 
-## 맨 아래 층의 **아랫변** y. 뭉치는 여기서 위로만 자란다.
-func _base_y(title_h: float) -> float:
-	var block_h: float = _stack_h() + TITLE_GAP + title_h
-	return (size.y - block_h) * 0.5 + _stack_h()
-
-
-func _relayout_title(title_font_size: int) -> void:
-	var title_h: float = float(title_font_size) + 6.0
-	_lbl_title.size     = Vector2(size.x, title_h)
-	_lbl_title.position = Vector2(0.0, _base_y(title_h) + TITLE_GAP)
+## 맨 아래 층의 **아랫변** y. 뭉치는 여기서 위로만 자란다 — `MAX_LAYERS` 뭉치가
+## rect 세로 가운데에 오는 자리.
+func _base_y() -> float:
+	return (size.y - _stack_h()) * 0.5 + _stack_h()
 
 
 func _layer_count() -> int:
@@ -215,13 +195,18 @@ func _layer_count() -> int:
 
 
 # ── 그리기 ───────────────────────────────────────────────────────────────────
+## 맨 위 카드(누운 사다리꼴)의 **윗변 y** — 이 노드 로컬. rect 는 손패 띠 전체
+## 높이라 뭉치 그림보다 훨씬 위까지 차 있다; 그 위에 무언가를 얹는 쪽
+## (`CardPlayPreview` 의 chevron 기둥)은 이 값을 기준으로 삼는다.
+func stack_top_local() -> float:
+	var n: int = maxi(1, _layer_count())
+	return _base_y() - float(n - 1) * LAYER_DY - _card_h()
+
+
 func _draw() -> void:
 	if size.x <= 1.0:
 		return
-	var title_h: float = 0.0
-	if _lbl_title != null:
-		title_h = _lbl_title.size.y
-	var base_y: float = _base_y(title_h)
+	var base_y: float = _base_y()
 	var card_h: float = _card_h()
 	var cx: float     = size.x * 0.5
 	var n: int        = _layer_count()

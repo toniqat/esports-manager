@@ -2,8 +2,8 @@ id,name,cost,uses,cast_method,target,cast_range,area,keyword,effect,description,
 1,교전 개시,6,1,range,caster,0,1,,engage:3,교전 3턴 — 시전자 1칸 이내 모두 참여,top|mid|jungle|support,1,pilot,engage,,0
 2,완벽한 기회,8,1,range,caster,0,1,,engage:4,교전 4턴 — 시전자 1칸 이내 모두 참여,top|mid|jungle|support,1,pilot,engage,,0
 3,결투,6,1,target,enemy,1,0,,duel,결투: 한 명이 처치될 때까지 (최대 10턴),top|mid|jungle|support,0,pilot,engage,,0
-5,전투 준비,2,1,location,location,3,0,,move;cost_reduce_engage:1,"지정 위치로 이동. 다음 교전 카드 비용 -1",jungle,1,pilot,jungle,,0
-6,정밀 이동,0,1,location,location,1,0,reposition,move;self_cost:1,"지정 위치로 이동. 이 게임 동안 비용 +1",jungle,1,pilot,jungle,,0
+5,전투 준비,2,1,location,location,3,0,,move;cost_reduce_engage:1,"지정 위치로 이동. 다음 교전 카드 -1 비용",jungle,1,pilot,jungle,,0
+6,정밀 이동,0,1,location,location,1,0,reposition,move;self_cost:1,"지정 위치로 이동. 이 게임 동안 +1 비용",jungle,1,pilot,jungle,,0
 7,찌르기,1,1,target,enemy,1,0,,attack:1,공격: 1,lane,1,pilot,attack,,0
 8,정밀 공격,2,1,target,enemy,1,0,,attack:1|pierce,"공격: 1, 필중",lane,1,pilot,attack,,0
 9,연속 공격,3,1,target,enemy,1,0,,attack:1|repeat,"공격: 1, 명중 시 이 카드 효과를 반복",any,1,pilot,attack,,0
@@ -12,9 +12,9 @@ id,name,cost,uses,cast_method,target,cast_range,area,keyword,effect,description,
 13,조정,0,3,instant,hand,0,0,exhaust,draw:1;strategy:1,"뽑기: 1, 전략 점수: 1",any,1,pilot,draw,,0
 14,임기응변,0,3,instant,hand,0,0,exhaust,search:1,찾기: 1,any,1,pilot,draw,,0
 15,재빠른 사고,0,3,instant,hand,0,0,exhaust,draw:2,뽑기: 2,any,1,pilot,draw,,0
-16,집중,0,3,instant,hand,0,0,exhaust,cost_reduce_draw_phase:1,이번 작전 단계에서 뽑는 카드 비용 -1,any,1,pilot,draw,,0
-17,사전 준비,2,1,instant,hand,0,0,,cost_reduce_hand:1,손패의 모든 카드 비용 -1,any,1,pilot,draw,,0
-18,아드레날린,2,1,instant,hand,0,0,exhaust,strategy:6;strategy_next_phase:-2,"전략 점수: 6, 다음 작전 단계 시작 시 전략 점수 -2",any,1,pilot,draw,,0
+16,집중,0,3,instant,hand,0,0,exhaust,cost_reduce_draw_phase:1,이번 작전 단계에서 뽑는 카드 -1 비용,any,1,pilot,draw,,0
+17,사전 준비,2,1,instant,hand,0,0,,cost_reduce_hand:1,손패의 모든 카드 -1 비용,any,1,pilot,draw,,0
+18,아드레날린,0,1,instant,hand,0,0,exhaust,strategy:4;strategy_next_phase:-2,"전략 점수 +4, 다음 작전 단계 시작 시 전략 점수 -2",any,1,pilot,draw,,0
 19,계획 살인,2,1,instant,hand,0,0,,strategy_on_kill:4,"사용 후, 이번 작전 단계에서 적을 처치했다면 전략 점수: 4",any,1,pilot,draw,,0
 21,복귀,0,1,target,ally,99,0,,recall_ally,아군을 본진으로 귀환,any,1,pilot,utility,,0
 22,보호,2,1,target,ally,99,0,,shield_pct:20,보호막: 아군 체력의 20%,any,1,pilot,defense,,0
@@ -31,14 +31,14 @@ id,name,cost,uses,cast_method,target,cast_range,area,keyword,effect,description,
 33,용 보상,0,1,target,ally,99,0,exhaust,draw:1;growth_perm:5,"뽑기: 1, 지정한 아군 파일럿의 성장 효율 +5%",any,0,pilot,-,,0
 34,핫핸드,1,1,instant,hand,0,0,exhaust,draw:1;growth_perm:5,"뽑기: 1, 이 파일럿의 성장 적립 +5%",any,0,pilot,draw,,0
 35,이동,0,1,location,location,2,0,exhaust,move,지정 위치로 이동,any,0,pilot,-,,0
-36,골드러시,1,1,instant,hand,0,0,reposition,hand_passive:gold_rush;token:1;self_cost:1,"손에 있는 동안 성장 +(토큰 수×8)%. 사용 시 토큰 +1, 이 게임 동안 비용 +1",top|mid|carry|jungle,1,pilot,growth,,0
+36,골드러시,1,1,instant,hand,0,0,reposition,hand_passive:gold_rush;token:1;self_cost:1,"손에 있는 동안 성장 +(토큰 수×8)%. 사용 시 토큰 +1, 이 게임 동안 +1 비용",top|mid|carry|jungle,1,pilot,growth,,0
 37,몰입,3,1,instant,hand,0,0,exhaust,atk_pct:5;growth_perm:7,"공격력 +5%, 성장 +7%",top|mid|carry|jungle,1,pilot,growth,,0
 38,워밍업,1,1,instant,hand,0,0,,atk_pct:5;hp_pct:5;draw:1,"공격력 +5%, 체력 +5%. 뽑기: 1",top|mid|carry|jungle,1,pilot,growth,,0
-39,신중한 예산,2,1,instant,hand,0,0,,growth:15|turns:5;free_in_phase,"5턴 동안 성장 +15%. 작전 단계 중 손패에 들어오면 그 작전 단계 동안 비용 0",top|mid|carry|jungle,1,pilot,growth,,0
+39,신중한 예산,2,1,instant,hand,0,0,,growth:15|turns:5;free_in_phase,"5턴 동안 성장 +15%. 작전 단계 중 손패에 들어오면 그 작전 단계 동안 0 비용",top|mid|carry|jungle,1,pilot,growth,,0
 40,성장 가속,2,1,instant,hand,0,0,charge,growth:10|turns:5|charge,"사용 시 모든 토큰 소모 — 5턴 동안 성장 +(토큰 수×10)%",top|mid|carry|jungle,1,pilot,growth,,5
 41,대결,4,1,target,enemy,1,1,,engage:2|at_target,"사거리 1 내 적 지정 — 대상 1칸 이내 모두 교전 2턴",top|mid|jungle|support,1,pilot,engage,,0
 42,매복,4,1,location,location,2,0,,ambush;ambush_search:1,"사거리 2 내 정글 타일로 이동해 다음 작전 단계까지 그 자리에 머문다. 다음 작전 단계에 시전자의 교전 카드 탐색: 1",top|mid|jungle|support,1,pilot,ambush,,0
 43,무모한 돌격,2,1,target,enemy,2,0,,attack:2;retaliate:2,"사거리 2 내 적 지정 공격: 2. 대상이 시전자를 2회 공격",lane,1,pilot,attack,,0
 44,자신감,-1,1,instant,hand,0,0,reposition,hand_passive:confidence,"손에 있는 동안 전장 명중 +15%. 교전에서 생존 시 재배치",any,1,pilot,utility,,0
-45,맑은 정신,-1,1,instant,hand,0,0,,hand_passive:clear_mind,손에 있는 동안 양 옆 카드 비용 -1,any,1,pilot,utility,,0
+45,맑은 정신,-1,1,instant,hand,0,0,,hand_passive:clear_mind,손에 있는 동안 양 옆 카드 -1 비용,any,1,pilot,utility,,0
 46,준비 태세,3,1,instant,hand,0,0,,strategy_next_phase:3;draw_next_phase:3,"다음 작전 단계 시작 시 전략 점수 +3, 뽑기: 3",any,1,pilot,utility,,0

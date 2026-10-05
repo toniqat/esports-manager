@@ -48,12 +48,9 @@ const TEAM_COLORS := [
 const TITLE_COLOR   := Color(1.0, 0.95, 0.55, 1.0)
 const TIME_COLOR    := Color(0.92, 0.96, 1.0, 1.0)
 const TIME_LOW      := Color(1.0, 0.55, 0.40, 1.0)
+## 결과 화면의 남은 체력 바(교전 중에는 그리지 않는다 — 무대 초상의 HP 링이 말한다).
 const HP_BAR_BG     := Color(0.06, 0.06, 0.08, 1.0)
 const HP_BAR_FILL   := Color(0.30, 0.85, 0.45, 1.0)
-const HP_BAR_LOW    := Color(0.90, 0.55, 0.25, 1.0)
-const SHIELD_FILL   := Color(0.85, 0.85, 0.30, 0.85)
-## HP 바가 경고색으로 바뀌는 비율.
-const LOW_HP_RATIO: float = 0.30
 
 # ─── 무대 (밴드) ───────────────────────────────────────────────
 ## 교전 그래픽이 그려지는 유일한 사각형. 이 밖으로 나간 것은 잘린다.
@@ -130,10 +127,10 @@ const STRIP_HP_GAP: float = 8.0
 ## 지금 차례를 가진 유닛의 테두리 두께 / 평소 테두리 두께.
 const STRIP_RIM_ACT: float = 4.0
 const STRIP_RIM_IDLE: float = 2.0
-## 체력 바 밑의 **두 번째 줄**. 교전 중에는 비어 있고, 결과 화면에서 이 교전으로
-## 번 성장치가 여기 앉는다. 예전에는 역할 이름(`T0` / `F1`)이 상시로 찍혔는데,
-## 그 표는 초상화가 이미 말하고 있는 것을 90px 칸에 한 번 더 적을 뿐이었다.
-## 개시 확인 화면(EngageIntro)은 이 줄 밑단에서 부제목과 버튼 자리를 잰다.
+## 체력 바 밑의 **두 번째 줄**. 교전 중에는 체력 바도 이 줄도 비어 있고(체력은
+## 무대 초상의 HP 링이 전장 마커와 같은 모양으로 말한다), 결과 화면에서 남은
+## 체력 바와 이 교전으로 번 성장치가 앉는다. 개시 확인 화면(EngageIntro)은 이 줄
+## 밑단에서 부제목과 버튼 자리를 잰다.
 const STRIP_SUB_Y: float = STRIP_TOP + STRIP_PORTRAIT_H + STRIP_HP_GAP \
 		+ STRIP_HP_H + 4.0
 const STRIP_BOTTOM: float = STRIP_SUB_Y + 24.0
@@ -238,6 +235,11 @@ var _dim: ColorRect = null
 ## 그때는 `_process` 가 돌지 않고(시뮬레이터도 아직 `begin()` 전이다) 입력도
 ## 가로채지 않는다.
 var _preview: bool = false
+## HP 링 조각 — 전장 렌더러와 같은 감지 · 연출(`BattleRenderer.draw_hp_chip`).
+## PilotData → 마지막으로 본 Vector2i(hp, shield).
+var _hp_seen: Dictionary = {}
+## {"p": PilotData, "segs": Array, "t": float}
+var _hp_chips: Array = []
 
 
 func _ready() -> void:
@@ -402,6 +404,7 @@ func _process(delta: float) -> void:
 	_refresh_header()
 	_update_camera(delta, false)
 	_drain_popups()
+	_advance_hp_chips(delta)
 	_world.queue_redraw()
 	_hud.queue_redraw()
 	_roster.queue_redraw()
@@ -528,6 +531,28 @@ func mark_engage_over(reason: String) -> void:
 			.set_ease(Tween.EASE_IN_OUT)
 
 
+
+
+# HP · 보호막이 줄어든 것을 감지해 조각을 띄우고, 떠 있는 조각의 시간을 민다.
+# 피해는 시뮬레이터가 `PilotData` 에 직접 넣으므로 여기서 값을 비교한다.
+func _advance_hp_chips(delta: float) -> void:
+	for raw in _sim.units:
+		var p: PilotData = (raw as TurnEngageSim.EUnit).pilot
+		var now := Vector2i(p.hp, p.shield)
+		var seen: Vector2i = _hp_seen.get(p, now)
+		if (now.x < seen.x or now.y < seen.y) and p.max_hp > 0:
+			var segs: Array = BattleRenderer.hp_loss_segments(
+					seen.x, seen.y, now.x, now.y, p.max_hp)
+			if not segs.is_empty():
+				_hp_chips.append({"p": p, "segs": segs, "t": 0.0})
+		_hp_seen[p] = now
+	var keep: Array = []
+	for raw in _hp_chips:
+		var ch: Dictionary = raw
+		ch["t"] = float(ch["t"]) + delta
+		if float(ch["t"]) < BattleRenderer.HP_CHIP_DUR:
+			keep.append(ch)
+	_hp_chips = keep
 
 
 # 시뮬레이터가 쌓아 둔 데미지 팝업을 Label 로 꺼내 띄우고 큐를 비운다.
@@ -740,11 +765,12 @@ func _draw_unit(c: CanvasItem, u: TurnEngageSim.EUnit) -> void:
 				Color(ACT_RING_COLOR.r, ACT_RING_COLOR.g, ACT_RING_COLOR.b,
 						0.55), 4.0)
 
-	# ④ 초상. 시신에는 **불투명한 받침 원**을 먼저 깐다 — `circle` 컷 일부는
-	# 원 안쪽에 알파 구멍이 있어(전장 마커가 흰 원을 까는 것과 같은 이유)
-	# 받침이 없으면 밝기를 눌러 놓아도 그 구멍으로 뒤 유닛이 비친다.
-	if dead:
-		c.draw_circle(body, r, Color(0.06, 0.07, 0.10, 1.0))
+	# ④ 초상 — **전장 마커와 같은 모양**이다: 검은 원판(HP 링의 외곽선) →
+	# 받침 원 → 초상 → HP 링(보호막은 밝은 회색으로 이어 붙는다). 받침 원은
+	# `circle` 컷 일부의 원 안쪽 알파 구멍으로 뒤 유닛이 비치지 않게 한다.
+	c.draw_circle(body, BattleRenderer.marker_outer_radius(r), Color(0, 0, 0, 1.0))
+	c.draw_circle(body, maxf(1.0, r - 1.0),
+			Color(0.06, 0.07, 0.10, 1.0) if dead else Color(1, 1, 1, 1))
 	var portrait: Texture2D = PilotImages.circle_for(u.pilot.pilot_id)
 	if portrait != null:
 		c.draw_texture_rect(portrait,
@@ -753,12 +779,19 @@ func _draw_unit(c: CanvasItem, u: TurnEngageSim.EUnit) -> void:
 	else:
 		c.draw_circle(body, r, col)
 
-	# 팀색 테두리 — 빈사면 붉게 맥동한다.
-	var rim: Color = col
-	if not dead and u.hp_ratio() < LOW_HP_RATIO:
-		var pulse: float = 0.5 + 0.5 * sin(float(Time.get_ticks_msec()) * 0.012)
-		rim = col.lerp(Color(1.0, 0.35, 0.30), 0.35 + 0.45 * pulse)
-	c.draw_arc(body, r + 3.0, 0.0, TAU, 40, Color(rim.r, rim.g, rim.b, 1.0), 5.0)
+	# HP 링 + 방금 잃은 조각 — 전장 마커와 같은 함수 · 같은 팀색.
+	var ring_col: Color = BattleRenderer.TEAM_RING_COLORS[u.team]
+	if dead:
+		ring_col = Color(ring_col.r * DEAD_DIM, ring_col.g * DEAD_DIM, ring_col.b * DEAD_DIM)
+	var p: PilotData = u.pilot
+	BattleRenderer.draw_hp_ring(c, body, r, p.hp, p.shield, p.max_hp, ring_col, 1.0)
+	for raw in _hp_chips:
+		var ch: Dictionary = raw
+		if ch["p"] != p:
+			continue
+		var k: float = clampf(float(ch["t"]) / BattleRenderer.HP_CHIP_DUR, 0.0, 1.0)
+		for seg in ch["segs"]:
+			BattleRenderer.draw_hp_chip(c, body, r, seg as Array, ring_col, k, 1.0)
 
 	# ⑤ 피격 플래시.
 	if u.hit_flash > 0.0:
@@ -889,20 +922,21 @@ func _draw_roster_cell(c: CanvasItem, u: TurnEngageSim.EUnit, cx: float,
 	c.draw_rect(rect, Color(rim.r, rim.g, rim.b, alpha), false,
 			STRIP_RIM_ACT if acting else STRIP_RIM_IDLE)
 
-	# 체력 바 — 초상화 바로 아래.
+	# 남은 체력 바 — **결과 화면에서만**. 교전 중에는 무대가 보이고 그 초상의
+	# HP 링이 체력을 말하지만, 결과 화면은 무대를 걷으므로 여기서 다시 말한다.
+	# 보호막은 링과 같은 규칙으로 추가 체력처럼 이어 붙는다(밝은 회색).
+	if not _result_mode or p.max_hp <= 0:
+		return
 	var bar_x: float = cx - STRIP_HP_W * 0.5
 	var bar_y: float = y + STRIP_PORTRAIT_H + STRIP_HP_GAP
 	c.draw_rect(Rect2(bar_x, bar_y, STRIP_HP_W, STRIP_HP_H), HP_BAR_BG, true)
-	var ratio: float = u.hp_ratio()
-	var fill_w: float = STRIP_HP_W * ratio
-	c.draw_rect(Rect2(bar_x, bar_y, fill_w, STRIP_HP_H),
-			HP_BAR_FILL if ratio >= LOW_HP_RATIO else HP_BAR_LOW, true)
-	# 보호막은 남은 체력 바 오른쪽에 이어 붙인다.
-	if p.shield > 0 and p.max_hp > 0:
-		var shield_w: float = STRIP_HP_W * clampf(
-				float(p.shield) / float(p.max_hp), 0.0, 1.0)
-		c.draw_rect(Rect2(bar_x + fill_w, bar_y, shield_w, STRIP_HP_H),
-				SHIELD_FILL, true)
+	var span: float = BattleRenderer.hp_ring_span(p.hp, p.shield, p.max_hp)
+	var hp_w: float = STRIP_HP_W * clampf(float(maxi(p.hp, 0)) / span, 0.0, 1.0)
+	c.draw_rect(Rect2(bar_x, bar_y, hp_w, STRIP_HP_H), HP_BAR_FILL, true)
+	if p.shield > 0:
+		var sh_w: float = STRIP_HP_W * clampf(float(p.shield) / span, 0.0, 1.0)
+		c.draw_rect(Rect2(bar_x + hp_w, bar_y, sh_w, STRIP_HP_H),
+				BattleRenderer.SHIELD_RING_COLOR, true)
 	c.draw_rect(Rect2(bar_x, bar_y, STRIP_HP_W, STRIP_HP_H),
 			Color(0.4, 0.45, 0.6, 0.8), false, 1.5)
 

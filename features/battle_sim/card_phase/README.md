@@ -7,9 +7,10 @@
 | `CardSelectOverlay.gd` | CardSelectOverlay | 버리기:N / 찾기:N / 보존:N 모달 픽 |
 | `CardTargetingOverlay.gd` | CardTargetingOverlay | 카드 드래그 = 대상 지정 오버레이 |
 | `CardPileViewer.gd` | CardPileViewer | Deck / Discard 목록 열람 (읽기 전용) |
-| `CardDragArrow.gd` | CardDragArrow | 카드 ↔ 커서를 잇는 조준 화살표 (2차 베지어) |
+| `CardDragArrow.gd` | CardDragArrow | 카드 ↔ 커서를 잇는 조준 화살표 (2차 베지어 위 같은 굵기 chevron 사슬 + 흐르는 빛) |
+| `CardPlayPreview.gd` | CardPlayPreview | **손패 미리보기** — 누르면 시전자 강조, 끌면 효과 미리보기(덱/버린 더미 chevron · 버려질 카드 · 찾기/보존 아이콘 + 전장 · 도넛 · 비용 원에 상태를 건다). 아래 *손패 미리보기* 절 |
 | `AiCardPlayer.gd` | AiCardPlayer | AI 카드 사용 애니메이션 (중앙 카드 + 그 아래 설명판) |
-| `CardDescBox.gd` | CardDescBox | **카드 설명판** — 이름 · 비용 · 설명문. 카드 앞면에 설명문이 없으므로 글을 보여 주는 모든 자리(손패 위 상자 · AI 카드 · 찾기/열람 격자 · 밴픽 시트 · 메크 상세)가 이것 하나로 짓는다. `build(data, width, light)` 는 높이를 글꼴로 직접 재 돌려주고(`light` = 아웃게임 흰 판), `place_near` 는 카드 옆 자리를 잡는다 |
+| `CardDescBox.gd` | CardDescBox | **카드 설명판** — 이름 · 비용 · 키워드 · 설명문 · 키워드 풀이. 카드 앞면에 설명문이 없으므로 글을 보여 주는 모든 자리(손패 옆 판 · AI 카드 · 찾기/열람 격자 · 밴픽 시트 · 메크 상세)가 이것 하나로 짓는다. **판에는 테두리가 없다.** 머리줄은 **[작은 비용 리본] 이름** 한 덩어리가 판 가운데에 선다(`CostRibbon.make_badge`, `COST_RIBBON_SIZE` 26×36). `build(data, width, light, cost_text, cost_color, with_notes, min_h)` 는 높이를 글꼴로 직접 재 돌려주고(`light` = 아웃게임 흰 판), `with_notes = false` 면 키워드 풀이를 빼고 짓는다 — 손패는 풀이를 `build_keyword_panel` 의 별도 판에 세운다. `place_near` 는 카드 위/아래 자리를 잡는다. 설명문의 비용 표기는 언제나 **"<수치> {비용 아이콘} 비용"**(`+1 비용`, `-1 비용`, `0 비용`)이다. 설명문은 `RichTextLabel` 로 "전략 점수" 앞마다 팔각형 인디케이터, "비용" 앞마다 비용 리본 아이콘(전략 점수 색, 테두리 없음)을 끼워 찍는다(`StrategyIcon.make_rich_label`; 상세 패널의 카드 설명도 같다). 한글은 띄어쓰기에서만 접힌다(`UiHelpers.keep_words`) |
 
 ## CardPhaseManager.gd
 `extends Node` — child of BattleSim.
@@ -672,15 +673,28 @@ re-evaluates the dim state.
   (140 samples): exactly one hovered card per frame, always at scale 1.2 and
   always topmost, every other card at 1.0, zero engine errors.
 - **Description box** (`_refresh_description_box` / `_show_description_box`):
-  a `CardDescBox` panel **just above the hand** — `DESC_BOX_W` 640 px wide,
-  horizontally centred, its bottom edge `DESC_BOX_GAP` (14) above the highest
-  pose the focus card can take (hover scale × hand scale + `PRESS_LIFT`), so a
-  lifted card never pokes into it. Height follows the text. Header row: card
-  name on the left, the effective cost on the right (white / green / red
-  mirroring the card's top-left cost); then the full description.
-  **카드 앞면에는 설명문이 없으므로 이 상자가 손패에서 글을 읽는 유일한 자리다.**
-  > 예전에는 화면 상단 고정(`DESC_BOX_TOP` 142, 상단 패널 아래 띠)이었다 —
-    카드를 보는 눈과 글을 읽는 눈이 화면 높이만큼 오가야 했다.
+  a `CardDescBox` panel **right beside the focused (enlarged) card**, portrait
+  like a card — `DESC_BOX_W` 240 wide, never shorter than the enlarged card
+  (`CARD_H × HAND_CARD_SCALE × HOVER_SCALE`), height otherwise follows the text.
+  Side: card centre at or right of the screen middle → panel on the card's
+  **left**; left of the middle → on its **right**. Top edge = the enlarged
+  card's top, pushed up only if the panel would leave the screen
+  (`_desc_box_y`). The card rect comes from `slot_position` + centre pivot, not
+  from the live node (which may still be tweening).
+  Keyword notes go in a **second panel** (`_keyword_box`,
+  `CardDescBox.build_keyword_panel`, `KEYWORD_BOX_W` 210) on the far side of the
+  description panel; if that side has no room it flips to the card's other side.
+  Header row: [small cost ribbon with the effective cost — white / green / red
+  mirroring the card's ribbon] + name, centred; then keyword tags, then the
+  description.
+  **The panels cover neighbouring cards visually but never take a touch** —
+  both are `MOUSE_FILTER_IGNORE` down to every child, so a press over them lands
+  on the `HandHitLayer` band underneath and picks that card (the panels then
+  move next to it).
+  **카드 앞면에는 설명문이 없으므로 이 판이 손패에서 글을 읽는 유일한 자리다.**
+  > 예전에는 손패 바로 위 가운데의 가로로 긴 판(`DESC_BOX_W` 640)이었고, 그
+    전에는 화면 상단 고정(`DESC_BOX_TOP` 142)이었다 — 카드를 보는 눈과 글을
+    읽는 눈이 위아래로 오가야 했다.
   - **It opens on hover.** Which card it shows is the same question as which
     card the row spreads around, so it reads `_push_focus_card()` — the card
     being dragged if there is one, else the card under the cursor. It is
@@ -734,7 +748,7 @@ re-evaluates the dim state.
 - **대상 지정 카드가 자리에 남는 이유**: 카드가 커서에 붙어 날아다니면 겨누려는
   대상 — 커진 파일럿 초상 / 초록 유효 셀 — 을 카드가 자기 몸으로 덮어 버려,
   정작 놓는 순간에 무엇 위에 있는지가 보이지 않는다. 대신 **카드 위쪽 끝에서
-  커서까지 2차 베지어 곡선**이 이어진다(`CardDragArrow.gd`, 아래 절).
+  커서까지 2차 베지어 곡선을 따라 chevron 사슬**이 이어진다(`CardDragArrow.gd`, 아래 절).
 - **대상이 없는 카드가 커서를 따라가는 이유**: 겨눌 대상이 없으니 가릴 것도
   없다. 손에 든 카드를 그대로 구역에 내려놓는 조작이 되고, 화살표가 필요 없어진다.
   `Card.begin_free_drag()` 이 부채꼴 기울기를 `FREE_DRAG_STRAIGHTEN_SEC`(0.10초)
@@ -754,10 +768,30 @@ re-evaluates the dim state.
   기록되는데, 이 함수는 `_begin_drag` 이 걸 게이트(작전 단계인가 / 입력이
   막혀 있지 않은가 / 손패에 실재하는가)를 그대로 미리 본다 — 드래그가 될 수 없는
   누름은 아예 기록되지 않는다.
+- **끌어서 화면 중앙 판정 범위에 닿으면 손패가 비켜 내려간다**
+  (`_drag_lowers_hand`) — 드래그를 **시작할 때가 아니라**, 커서가 드롭 존
+  (`drop_zone_rect`) 아랫변(1080×1920 에서 y 1344) 위로 올라간 순간
+  (`_cursor_reached_field` → `_set_drag_reached_field`, 상태는
+  `_drag_reached_field`)이다. 존 안만 보지 않고 아랫변 하나만 보는 이유: 대상
+  지정 카드는 존 위쪽(전장 윗줄)까지 겨누는데 거기서 손패가 다시 올라오면 겨누는
+  도중에 화면이 출렁인다. 커서가 다시 아랫변 밑(손패 쪽)으로 내려오면 손패 ·
+  스트립이 되돌아온다. 같은 순간 **상단 적 스트립 · 상대 손패가 위로 비켜
+  올라가며 어두워지고 전장 아래 층으로 깔린다**(`HudBuilder.set_enemy_top_raised`,
+  `ui/README.md` "상단 적 UI 층"). 판정 범위에 닿으면 끌린 카드를 뺀 손패가 `hand_drop_offset()` 만큼(내 차례가 아닐 때와
+  같은 깊이) 아래로 가고, 아군 스트립도 어두워지며 `STRIP_DRAG_DROP`(120) 내려간다
+  (`HudBuilder.set_player_strip_dropped`). 대상 지정 카드는 **원래 손패의 리프트
+  자세 그대로** 남는다(`_card_rest_slot` 이 드래그 하강분을 빼 준다) — 내려가는
+  것은 나머지 손패뿐이다. 놓거나 취소하면(`_end_drag` / `_cancel_drag`)
+  `_drag_card` 가 비어 다음 레이아웃이 손패를, 같은 호출이 스트립을 되돌린다.
+  버리기:N 픽 중에는 내려가지 않는다. z-order 는 바뀌지 않는다(카드가 스트립 뒤로
+  숨지 않는다 — 그건 내 차례가 아닐 때만).
+  하단 스트립 초상의 **시전자 네온은 삭제됐다**(`PilotStrip.set_highlight` /
+  `HudBuilder.set_strip_caster` 삭제) — 전장 마커 쪽 네온(`CardPlayPreview.neon_pilot`)은 그대로다.
 - **드롭 존**(`drop_zone_rect`) — 화면 세로 중앙 기준 화면 높이의
   `DROP_ZONE_H_RATIO`(0.40), 가로는 전체 폭. 1080×1920 에서 `(0, 576) 1080×768`.
-  대상 지정 카드에는 **띄우지 않는다**: 그 카드의 드롭 지점은 대상 그 자체라,
-  구역까지 깔면 "여기 놓아도 되나"로 읽힌다. 안내 문구는 구역 **위쪽**에
+  **카드를 낼 때는 그려지지 않는다** — 예전의 "여기에 놓아 사용" 띠는 삭제됐고,
+  rect 는 대상 없는 카드의 드롭 판정에만 쓰인다. 화면에 뜨는 것은 **버리기:N 픽
+  중**("여기에 놓아 버리기")뿐이다. 안내 문구는 구역 **위쪽**에
   붙는다(`DROP_ZONE_LABEL_TOP`) — 구역 한가운데는 전장 한복판이라 글자가 타일
   위에 겹쳐 읽힌다. 커서가 구역 안에 들어오면 채움과 테두리가
   밝아진다(`_set_drop_zone_hot`).
@@ -799,7 +833,11 @@ re-evaluates the dim state.
   - **대상 지정 카드 드래그** — 오버레이 `mode = PILOT`(또는 LOCATION), 화살표
     노드 visible, 드롭 존 **안 뜸**, 카드는 슬롯에서 24~27px(리프트)만 벗어난다.
   - **대상 없는 카드 드래그** — 오버레이 `mode = INSTANT`, 화살표 **안 뜸**,
-    드롭 존 visible, 카드가 슬롯에서 774~856px 이동(커서 추적).
+    카드가 슬롯에서 774~856px 이동(커서 추적). (드롭 존은 지금은 그려지지 않는다.)
+  - **판정 범위 진입**(창 810×1440, 합성 드래그) — 손패 안(y ≈ 1340)에서
+    끌기 시작: `_drag_reached_field = false`, 손패 · 스트립 제자리. 커서를
+    (540, 700)으로: `true`, 손패 · 아군 스트립 하강, `EnemyTopLayer` 층 −1 ·
+    offset (0, −120). 커서를 (540, 1500)으로 되돌림: `false`, 층 1 · offset 0.
   - **빗나간 드롭** — 손패 크기 · 작전 점수 모두 불변, 카드가 자기 슬롯으로
     오차 **0.00px** / 회전 오차 **0.0000** 복귀.
   - **드롭 존에 놓기** — 손패 −1 · 점수 −cost · 오버레이 `mode = NONE`.
@@ -807,7 +845,7 @@ re-evaluates the dim state.
     2장을 채우면 오버레이 확인으로 정상 정산.
 
 ##### 조준 화살표의 기하 (`CardDragArrow.gd`)
-2차 베지어 하나가 전부다.
+2차 베지어 하나 위에 chevron 을 늘어놓는다.
 
 | 점 | 어디 |
 |---|---|
@@ -824,13 +862,19 @@ re-evaluates the dim state.
 - **제어점이 카드의 up 축 위에 있는 이유**: 부채꼴에서 기울어 있는 카드는 그
   기울기 방향으로 화살을 쏜다. 커서가 카드보다 아래에 있으면 내적이 음수라
   `BOW_MIN` 으로 잘려 **고리를 만들지 않는다**.
-- **촉의 밑변(neck)은 `p1`→`p2` 선분 위**에 있고 베지어는 거기서 끝난다. 그래서
-  곡선의 끝 접선과 촉의 방향이 정확히 일치해 이음매가 꺾이지 않는다. 촉이
-  들어갈 자리가 모자라면(`HEAD_LEN` > 남은 거리의 절반) 촉이 함께 줄어든다.
-- **리본은 조각마다 사다리꼴 하나씩** 칠한다(`SEGMENTS` 26). 곡선 전체를 한
-  폴리곤으로 만들면 급하게 굽은 구간에서 좌우 오프셋이 서로를 지나 자기교차하고,
-  삼각분할이 뒤집힌 조각을 만든다. 조각들은 같은 두 꼭짓점을 공유하므로 이음매에
-  틈이 없다. 어두운 테두리(`OUTLINE_PAD`)를 한 겹 먼저 깔고 본색을 얹는다.
+- **화살표는 이어진 리본이 아니라 chevron 사슬이다.** 같은 굵기
+  (`CHEVRON_WIDTH` 7, 팔 길이 `CHEVRON_LEN` 16 · 반폭 `CHEVRON_HALF` 17)의 chevron 을
+  곡선 길이 `CHEVRON_SPACING`(30)마다 하나씩 놓는다. **맨 끝 chevron 의 꼭짓점이
+  커서에 닿고** 거기서 카드 쪽으로 거슬러 놓으므로 사슬이 언제나 커서에서 끝난다.
+  각 chevron 은 그 자리 곡선 접선을 향한다(`SAMPLES` 48 조각의 누적 길이표로
+  자리를 찾는다). 어두운 테두리(`OUTLINE_PAD`)를 **전부 먼저** 깔고 본색을 얹는다
+  — 하나씩 번갈아 그리면 이웃 chevron 의 테두리가 본색을 덮는다. 예전에는 카드
+  쪽이 가늘고(`WIDTH_START` 6) 촉 쪽이 굵은(`WIDTH_END` 14) 이어진 리본 + 큰 삼각
+  촉이었다(**삭제됨**).
+- **빛 띠가 카드 → 커서로 흐른다.** chevron 색은 어두운 색(`COLOR_*_DIM`)과 밝은
+  색 사이를 오가고, 밝은 띠가 `GLOW_WAVE`(150px)마다 하나씩 초당 `GLOW_SPEED`(260px)
+  로 진행 방향을 따라 지나간다(`GLOW_SHARPNESS` 3 = 띠 폭). 화살표가 켜져 있는
+  동안만 `_process` 가 돌며 다시 그린다.
 - **색은 지금 놓으면 나가는지를 말한다** — 평소 `COLOR_BASE`(금색, 드롭 존과 같은
   계열), 커서가 유효 대상/셀 위면 `COLOR_HOT`(시안, 대상 지정 링과 같은 계열).
   판정은 `_update_drop_feedback` 이 이미 굴리고 있던 것을 bool 로 돌려받는 것뿐이라
@@ -843,6 +887,61 @@ re-evaluates the dim state.
   / `_despawn_player_card_node()` / `EngagePhaseManager` / `CardSelectOverlay`
   의 숨김이 부르므로, 끌던 카드가 단계 전환이나 재시작을 넘어 살아남지 못한다.
 - `apply_card_effect(cd, is_player)` → String log message
+
+### 손패 미리보기 (`CardPlayPreview`)
+손패 카드를 **누르는 순간** 시전자가 강조되고(전장 마커 뒤 하얀 네온 + 하단
+스트립 원 뒤 네온), **끌기 시작하면** "이 카드를 쓰면 무엇이 일어나는가"가 미리
+그려진다. 놓거나 취소하면 전부 걷힌다 — 실제로 일어난 일은 각자의 연출(드로우
+인트로 · 버리기 연출 · 명중 연출 · 버프 배너)이 따로 보여 준다.
+
+배선은 `CardPhaseManager` 다섯 자리뿐이다: 누름(`_on_hit_layer_gui_input` →
+`show_caster`), 끌기 시작(`_begin_drag` → `begin`), 대상 갱신
+(`_update_drop_feedback` → `set_target`), 놓기 / 클릭으로 끝(`_end_drag` /
+`_finish_press` → `clear`), 강제 해체(`_cancel_drag` → `clear`). 버리기 픽
+중에는 켜지 않는다.
+
+`_compute_spec` 이 효과 체인(`effect_clauses`)을 훑어 무엇을 보일지 정한다.
+`on_hit` / `on_miss` 뒤의 조건부 절은 결과를 미리 알 수 없어 건너뛴다. 손패
+질문("오른쪽 N장")은 **끄는 카드를 뺀 손패**에 대해 묻는다 — 카드는 나가는 순간
+손패를 떠난다.
+
+| 절 | 어디에 | 무엇을 |
+|---|---|---|
+| `draw` · `discard_hand_draw` · `draw_discarded` | 덱 더미 위 | 위로 흐르는 chevron 3개 + `+N` |
+| `search` · `search_card` | 덱 더미 위 | 돋보기 + 장수 (`search_discard` 는 버린 더미 위) |
+| `draw_discard` | 버린 더미 위 | 위로 흐르는 chevron + `+N` |
+| `discard` (고르는 버리기) | 버린 더미 위 | 아래로 흐르는 chevron + `-N` |
+| `discard_hand` · `discard_hand_draw` · `discard_right` · `discard_left` · `discard_other_pilots` | **그 카드들 위** | 붉은 딤 + 카드 가운데로 아래 chevron (보존 키워드는 각 효과와 같은 규칙으로 제외) |
+| `preserve` | 손패 행 위 가운데 | 자물쇠 + `보존 N` |
+| `strategy` · `discard_other_pilots\|strategy_each` | 전략 점수 도넛 | 하이라이트 + 위에 **더해질 값** + 가운데 숫자 = **비용까지 치른 결과**(색 변경, 게이지 반영) — `CostDonut.set_preview` |
+| `cost_reduce_hand` · `cost_reduce_engage` | 영향받는 손패 카드 | 비용 원이 맥박치며 바뀔 값(초록) — `Card.set_cost_preview` |
+| `cost_reduce_draw_phase` · `draw_discard|cost_reduce` | 덱 더미 윗단 |\|cost_reduce` | 덱 더미 아래 | `비용 -N` 꼬리표 |
+| `move` · `ambush` | 전장 | **겨눈 타일 한가운데에 반투명 고스트 초상 하나**(경로 · 점선 없음, 정글 캠프 위여도 얻을 성장치는 표시하지 않는다). 예전의 칸 단위 BFS 경로 + chevron + 도착 링은 삭제 |
+| `attack` (찍은 적) | 대상 마커 | 깎일 HP 구간 깜빡임(보호막 먼저) + `명중 N%` · `-피해`(치명이면 `처치`) |
+| `shield_pct` · `shield_atk` · `heal_pct` · `recall_ally` | 대상 마커 | 차오를 HP(초록) / 보호막(시안) 구간 깜빡임 + 값 |
+| `recall_ally` · `retreat_turret` | 전장 | 도착 자리에 반투명 고스트 초상 + 경로(복귀는 점선) |
+| `steal_camp` | 전장 | 캠프 → 시전자 영혼 궤적 + `+980` |
+
+다음 단계 예약(`strategy_next_phase` · `draw_next_phase` · `strategy_on_kill` ·
+`ambush_search`)은 미리보기 대신 **시전 뒤 예약 칩**이 남는다
+(`ui/ReservationChips.gd`, 출처 카드는 `_note_reserve` 가 `BattleSim.reserve_src` 에 적는다).
+
+수치는 실제 판정과 **같은 함수**를 지난다: 명중률은 `SimulationCore.hit_chance_of`
+(`roll_hit` 이 굴리는 확률 그 자체), 피해는 `estimate_attack_damage`
+(`_apply_attack_damage` 와 같은 배율, 상태를 바꾸지 않는다). 미리보기가 쓰려고
+공개로 바뀐 것: `flag_int` · `discardable` · `nearest_own_turret_cell`(예전 `_` 접두).
+
+#### 버프 배너 (시전 확정 뒤)
+파일럿에게 효과를 거는 절이 실제로 돌면 그 파일럿의 전장 초상 위에 배너가
+뜬다(왼쪽 둥근 사각형 카드 아트 + 오른쪽 카드 이름, 1.9초). 진입점은
+`_apply_single_effect` 하나다 — 절을 `_dispatch_single_effect` 로 돌린 뒤
+`_announce_buff` 가 `BUFF_CLAUSE_SUBJECT`(절 → caster / target / subject / team)로
+대상을 정한다. 한 카드가 같은 파일럿에게 절 두 개를 걸어도 배너는 하나(`_banner_seen`).
+플레이어 · AI 가 같은 길을 지난다. 그리기는 `BattleRenderer.spawn_buff_banner`.
+
+슬롯 효과(서로 덮어쓰는 한 칸 — 라인전 · 적립 배율 · 회피 · 매복 · 보호막)는
+`_note_fx_src` 가 `PilotData.fx_src` 에 출처 카드를 적는다. 상세 패널의 지속 효과
+썸네일이 그 카드 일러스트를 띄우는 데만 쓰인다.
 
 ### Per-pilot decks (메크 카드 + 고정 파일럿 카드 3장)
 - `build_starter_decks()` — for each pilot on each side, deals a `CardData` copy
@@ -968,21 +1067,31 @@ charge`)를 단 카드는 **손패에 들어올 때마다** 자기 토큰(`CardD
     아이콘 파일명 접두사로 답한다 — `wpn` 무기 `#A86A22` · `spt` 스피릿 `#7E4FB0` ·
     `vit` 활력 `#5A8A16`(deadlock.wiki 색을 흰 글씨가 읽히게 어둡게 깐 것), 타입이
     없는 카드는 `NAME_PLATE_NEUTRAL_COLOR`.
-  - **좌측 상단 비용 원** (`CostBadge` + `CostLabel`, `COST_BADGE_SIZE` 42,
-    카드 모서리 밖으로 (-9, -9)). 손패는 카드끼리 절반 넘게 겹치는 부채꼴이라
-    (오른쪽 카드가 왼쪽 카드를 덮는다) **왼쪽 위 모서리가 각 카드에서 언제나
-    보이는 유일한 구석**이고, 원이 그 밖으로 걸쳐 있으면 겹친 줄에서도 비용이
-    한 줄로 읽힌다. 알맹이는 어두운 중립색(`COST_BADGE_FILL_COLOR`), 테두리는
-    밝은 링이라 밝은 아트 위에 걸쳐도 원이 원으로 읽힌다(비용별 색은 없다).
+  - **좌측 상단 비용 리본** (`CostBadge` + `CostLabel`, `COST_RIBBON_RECT`
+    (10, -3, 38×73)). 윗변이 카드 윗변보다 `COST_RIBBON_POKE`(3px) 위로 튀어나오고
+    (아랫변 · 숫자 자리는 예전 (10, 0, 38×70) 그대로), 카드 윗변에서 아래로 늘어진 **세로로 긴 직각사다리꼴**
+    (`CostRibbon`) — 아랫변만 비스듬해 왼쪽 아래가 더 내려가고 오른쪽 아래가
+    살짝 짧다. 위쪽 띠(`COST_NUMBER_H` 50)에 큰 숫자(`COST_FONT_SIZE` 32).
+    **불투명한 흰 알맹이에 어두운 숫자**(`CostRibbon.INK`, 외곽선 없음), 아랫변
+    밑으로 시전자 초상 리본처럼 드롭 섀도(`CostRibbon.SHADOW_*`). 테두리도 안쪽
+    아이콘도 없다(전략 점수 팔각형을 넣었다가 뺐다). 리본은
+    카드 둥근 모서리 안쪽에서 시작하므로 카드 안에 있다. 씬에서는 `CardFront`
+    자식이지만 런타임에 루트 맨 뒤로 옮겨져 사용 불가 슬래브 · 보존 테두리 · 초상
+    리본보다 위에 그려진다. 손패는 카드끼리 절반 넘게 겹치는 부채꼴이라
+    (오른쪽 카드가 왼쪽 카드를 덮는다) **왼쪽 위가 각 카드에서 언제나 보이는
+    유일한 구석**이다. 리본 알맹이는 `COST_BADGE_FILL_COLOR`(= `CostRibbon.FILL`, 흰색).
+    숫자 색 `COST_COLOR_BASE` / `_REDUCED` / `_INCREASED` 는 흰 바탕용 어두운 잉크 ·
+    진한 초록 · 진한 빨강이다(설명판 머리줄 리본도 같은 셋).
+    > 예전에는 카드 모서리 밖 (-9, -9) 로 튀어나온 42px 팔각형이었다.
     `Card.update_displayed_cost(eff)` 가 숫자를 다시 칠한다 — 매칭이면 흰색,
     할인(사전 준비 / 전투 준비 / 집중 / 신중한 예산 / 맑은 정신)이면 초록,
     증세(`cost_inc_phase`, 지금 풀에 그 절을 단 카드는 없다)면 빨강. **정밀 이동 ·
     골드러시의 +1 은 수정자가 아니다** — `self_cost:1` 이 카드 자신의 `cost` 를
     올리므로 돌아온 카드는 새 가격에 흰색으로 찍힌다. `CardPhaseManager.highlight_affordable_cards` 가 보이는
     카드마다 불러 비용 수정자와 카드 표시가 어긋나지 않게 한다.
-    **사용 불가 슬래브는 카드 사각형까지만 덮으므로** 밖으로 나간 원은
-    `_refresh_block_overlay` 가 `COST_BADGE_BLOCKED_TINT` 로 직접 눌러 준다 —
-    안 그러면 잠긴 카드에서 비용만 밝게 남는다.
+    **리본은 슬래브보다 위에 앉으므로** `_refresh_block_overlay` 가
+    `COST_BADGE_BLOCKED_TINT` 로 직접 눌러 준다 — 안 그러면 잠긴 카드에서 비용만
+    밝게 남는다.
   - **오른쪽 위 모서리 = 시전자 초상 리본** (`OwnerRibbon`). 카드 윗변 ·
     오른변에 두 직각변(`RIBBON_LEG` 60)이 붙은 **직각삼각형**이고, 그 안에
     파일럿의 두 눈이 보이게 잘려 있다. 빗변 테두리는 없고 빗변 아래로만 그림자가
@@ -1273,7 +1382,7 @@ The DB column is a `;`-separated chain of clauses. Each clause is
 | `discard_right:N` | yes | 과감한 정리 — 손패 **오른쪽**(가장 최근에 들어온 쪽) N장을 discard. `hand.pop_back()` × N. |
 | `discard_other_pilots\|strategy_each:M` | yes | 솔로 퍼포먼스 — `owner_pilot != caster` 인 손패 카드를 전부 버리고 장당 전략 점수 +M. 시전자가 없으면 "본인 카드"를 가릴 수 없으므로 아무것도 하지 않는다(손패 전멸 사고 방지). |
 | `preserve:N` | yes | 계획 중시 — **Player**: `CardSelectOverlay.start_preserve` 가 찾기와 같은 그리드로 **손패**를 펼쳐 N장을 고르게 한다(카드는 손패에서 빠지지 않는다). **AI**: 손패에서 무작위 N장. 픽은 `BattleSim.preserved_cards_p/ai` 에 올라가 `_trim_hand_overflow` 로부터만 보호된다 — 강제 버리기는 무시한다. 다음 작전 단계 진입 시 통째로 해제. |
-| `strategy_next_phase:N` | yes | 아드레날린의 뒷절 — `_bs.next_phase_strategy_p/ai += N`(음수 가능). 다음 작전 단계 진입 시 정산되고 점수는 0 아래로 안 내려간다. |
+| `strategy_next_phase:N` | yes | 아드레날린(비용 0 · `strategy:4`)의 뒷절 — `_bs.next_phase_strategy_p/ai += N`(음수 가능). 다음 작전 단계 진입 시 정산되고 점수는 0 아래로 안 내려간다. |
 | `end_phase` | yes | 완벽한 마무리의 마지막 절 — **여기서 단계를 닫지 않는다.** 체인이 도는 동안 카드는 손패 밖에 떠 있어서, 지금 닫으면 소멸 / discard 라우팅 전에 문이 닫힌다. `_end_phase_requested` 플래그만 세우고, **Player**: `_finalize_pending_play` 말미가, **AI**: `AiCardPlayer` 의 플레이 루프가(교전 아레나를 기다린 **뒤**에) `consume_end_phase_request()` 로 받아 간다. |
 | `move\|own_jungle` | yes | 정글 파밍 — `compute_valid_location_targets` 가 `compute_own_jungle_targets` 로 분기해 유효 셀을 **시전자 팀이 소유한 정글 셀**로 좁힌다. 약탈과 마찬가지로 `cast_range`(99)는 무시 — 사거리로 묶으면 정글 반대편 캠프가 영영 닿지 않는다. 제자리 셀은 뺀다. 소유 판정이 `neutral_zone_cells` 를 직접 읽으므로 정글러가 밟아 점령한 칸도 T1 파괴 보상으로 넘어온 칸도 그 자리에서 목표가 된다. **AI**: `_ai_pick_target` 이 같은 함수를 쓰므로 그대로 따라간다. |
 | `phase_b` | yes | [단계 B] 의 뒷절 — **바로 앞 `engage` 절의 결과**가 다음 카드를 정한다. 시전자가 적을 눕혔으면 덱에 [단계 C](id 40), 아니면 [단계 A](id 38). 처치 수는 `EngagePhaseManager.last_engage_kills` 가 답한다(무대가 치워진 뒤라 `_sim` 이 아니라 그 사본 `_last_stats` 를 읽는다). 강화 [베타] 예약이 있으면 여기서 소모하며 +100 충전. |
@@ -1748,7 +1857,10 @@ keyword check has always fired first, so they are 소멸 on their first play.
   (`draw_center = false`, so it doesn't darken the card). Driven from
   `highlight_affordable_cards`, which reads `_bs.preserved_cards_p`. It is
   deliberately *not* part of `_refresh_block_overlay`'s dim logic — 보존 is a
-  guarantee, not a restriction, so the card stays bright.
+  guarantee, not a restriction, so the card stays bright. The cost badge sits
+  **above** the border: `_build_block_overlay` reparents `CostBadge` out of
+  `CardFront` to the root's last child, so the cyan stroke never covers the
+  cost number. `_sync_face_visibility` toggles it together with `CardFront`.
 - **Phase-end gate**: `can_end_card_phase()` returns false while
   `card_select_overlay.is_active()` so the player can't 턴 넘기기 their
   way out of an unfinished pick.
@@ -1827,9 +1939,9 @@ either of them covers both).
 | 카드 드래그 앤 드롭 | **카드를 끌어다 놓는 것이 카드를 집는 유일한 조작이다.** **카드 선택 상태는 삭제됐다** — 클릭해도 아무 일도 일어나지 않고, 누른 채 `DRAG_THRESHOLD_PX`(10px) 넘게 움직여야 비로소 카드가 손을 떠난다. 예전에는 클릭하면 카드가 리프트된 채 대상 지정이 켜져 남아, 다시 끌거나 다른 곳을 눌러 해제해야 했다 — 조작이 둘로 갈려 있었고(클릭→끌기 / 클릭→클릭 해제) 카드를 낼 수 있는 경로는 어차피 드롭 하나뿐이라 중간 상태가 하는 일이 없었다. `_selected_card` / `_select_card` / `Card.is_selected` / `Card.card_clicked` / 바깥 클릭 해제가 전부 그때 사라졌고, `deselect_current_card()` 는 이름만 남아 '진행 중인 드래그와 대상 지정을 강제로 걷는다' 를 뜻한다. **끌린 카드의 자세는 대상 유무가 가른다.** (1) **대상 지정 카드(PILOT / LOCATION)는 손패에 남는다** — 리프트 자세(`Card.PRESS_LIFT`) 그대로 부채꼴 기울기를 유지하고, 카드 **위쪽 끝에서 커서까지 2차 베지어 조준 화살표**(`card_phase/CardDragArrow.gd`)가 이어진다. 카드가 커서에 붙어 날아다니면 겨누려는 대상(커진 초상 / 초록 유효 셀)을 카드가 자기 몸으로 덮어 정작 놓는 순간에 무엇 위인지가 안 보인다. 화살표 노드는 `_bs.canvas` 의 **자식 인덱스 0**(카드보다 뒤)이고 시작점을 `ARROW_TUCK_PX`(42px)만큼 카드 안으로 파묻어 두므로 화살이 카드 **밑에서** 뻗어 나온 것처럼 읽힌다. 제어점은 **카드 자신의 위쪽 축** 위라 기울어 있는 카드는 그 기울기대로 쏘고, 커서가 카드보다 아래면 `BOW_MIN` 으로 잘려 고리를 만들지 않는다. 색은 지금 놓으면 나가는지를 말한다 — 평소 금색, 유효 대상/셀 위에서 시안. (2) **대상이 없는 카드는 커서를 따라다닌다**(`Card.follow_cursor`) — 겨눌 대상이 없으니 가릴 것도 없고, `Card.begin_free_drag()` 이 부채꼴 기울기를 `FREE_DRAG_STRAIGHTEN_SEC`(0.10초) 동안 0 으로 펴서 '손에서 뽑아 든' 자세를 만든다. 이 카드에는 화살표 대신 드롭 존이 신호다. **원래 자리는 어느 쪽이든 빈 채로 유지된다** — `relayout_hand` 이 `is_dragging` 카드를 건너뛰므로 남은 카드는 자리를 지키고, 빗나간 드롭은 그 자리로 오차 0.00px 로 돌아온다. 놓는 곳이 곧 무엇을 하는가다: **대상 지정 카드는 대상 위에**(커진 파일럿 초상 / 초록 유효 셀), **대상이 없는 카드는 화면 중앙 드롭 존**(`CardPhaseManager.drop_zone_rect` — 세로 중앙 기준 화면 높이의 40%, 가로 전체), **버리기:N 픽 중에도 같은 중앙 구역**이다 — `drop_zone_rect()` 는 모드를 보지 않고 언제나 같은 rect 를 돌려주고 골라 둔 카드가 늘어서는 줄도 그 중심에서 나온다(`CardSelectOverlay.to_discard_center_y()`). 문구만 "여기에 놓아 버리기"로 바뀌고, 그때는 구역 노드를 캔버스 자식 인덱스 **1** 로 올린다(0 은 버리기 딤이 차지하고 있어 그대로 두면 구역이 딤 아래로 눌린다). 예전에는 버리기만 `TO_DISCARD_CENTER_Y`(700) 중심의 `DISCARD_ZONE_H`(440px) 짜리 별도 띠를 썼는데, **같은 조작이 무엇을 하느냐에 따라 놓을 자리가 달라져** 낼 때와 버릴 때 매번 다시 겨눠야 했다(두 상수는 함께 삭제됐다). **골라 둔 카드를 누르면 손패로 돌아간다**(`CardSelectOverlay.remove_card_from_discard`) — 카드 위에 투명 버튼 한 장(`UnpickHit`)을 얹어 그 클릭을 받고, 되돌아가는 자리는 **떠나올 때의 인덱스**다(뒤에 붙이면 무른 카드가 손패 오른쪽 끝으로 순간이동해 "무른 것"이 아니라 "새로 뽑은 것"처럼 읽힌다). **빗나가면 카드가 제자리로 돌아갈 뿐 비용도 카드도 그대로다.** 확정은 `CardTargetingOverlay.confirm_with` → `_on_selection_confirm` 한 경로뿐이라 비용 차감 / 카드 소비 / effect chain 이 두 벌 생기지 않는다(`_end_drag` 은 그 콜백이 동기적으로 되돌아올 때까지 `_drag_card` 를 살려 둔다). 입력은 전부 `HandHitLayer` 하나가 받는다 — 버튼을 쥔 컨트롤이 마우스 포커스를 유지하므로 커서가 전장으로 나가도 motion/release 가 계속 들어오고, 전장 쪽에는 드래그 배선이 없다. |
 | 드로우 연출 (카드가 손패에 들어오는 길) | 뽑힌 카드는 자기 슬롯에 그냥 나타나지 않는다 — **먼저 덱 뭉치에서 카드 한 장이 떠오르며 사라지고**(`CardPileStack.play_pop`, 위 "뭉치를 오가는 카드" 항목 — 알파가 30% 남은 0.182초 시점에 아래 박자가 이어받는다), **뒷면인 채로 화면 왼쪽 바깥에서 나타나**(`_draw_entry_position`) **손패 오른쪽 끝(새 카드가 앉을 자리) 위로 날아가고**(`DRAW_FLY_SEC` 0.28초, `EASE_IN_OUT`/`SINE` — 앞이 무거운 감속 곡선은 1200px 를 0.1초에 77% 지나가 "왼쪽에서 왔다"가 안 읽혔다), **그 자리에서 뒤집혀**(`Card.play_flip_reveal`, `FLIP_HALF_SEC` 0.09초 ×2, `scale.x` 를 0 까지 접었다 펴며 폭이 0 인 프레임에 앞/뒷면 교체) **슬롯에 안착한다**(`relayout_hand`). 뒤집는 지점은 슬롯보다 `DRAW_FLIP_LIFT_PX`(78px) 위다 — 행 안에서 뒤집으면 이웃 카드가 절반을 가리고 안착이 눈에 보이는 동작으로 남지 않는다. 연출이 도는 동안 `Card.intro_active` 가 그 카드를 손패의 일원에서 빼므로 **레이아웃 · 호버 · 잡기가 전부 비켜 간다**(나머지 손패는 이미 새 카드 몫까지 자리를 좁힌 채 기다린다). 비행은 `Card.tween_to`(= `_active_tween`)를 쓴다 — 카드 자신이 쥔 트윈이라야 버리기 연출이 걷어 낼 수 있고, 상한 초과 정리는 **가장 오래된 카드**(= 아직 날아오는 중일 수 있는 카드)를 버린다. 같은 프레임에 여러 장이면 `DRAW_STAGGER_SEC`(0.07초)씩 밀려 출발한다. 각 박자는 트윈의 `finished` 가 아니라 타이머로 기다린다 — 카드가 도중에 free 되면 그 신호는 영영 오지 않는다. **인트로를 끄는 두 자리**: 정밀 이동의 손패 왼쪽 복귀(`at_left`, 방향이 어긋난다)와 `_restore_from_snapshot`(취소 롤백이 새 손패처럼 보인다). |
 | 버리기 연출 | 손패를 떠나 버려지는 카드는 **부채꼴 기울기와 무관하게 화면 Y축으로만** 곧장 내려가며 투명해지고 (`Card.DISCARD_DROP_PX` **150px** / `DISCARD_FADE_SEC` 0.30초 — 화면 아래로 멀리 빠져나가기보다 손패 바로 밑에서 사라지는 쪽이 "버렸다"로 읽힌다. **낙하 곡선은 `EASE_OUT`** — 손을 떠나는 순간 확 튕겨 내려간 뒤 아래에서 서서히 멎는다. 예전 `EASE_IN` 은 떨어져 나가는 순간이 가장 흐릿하고 다 사라질 때 제일 빨라 무게가 끝에 실렸다) 다 내려가면 스스로 `queue_free` 한다. **그 낙하가 끝난 뒤에야 버린 더미가 카드를 받는다** — `CardPileStack.play_land` 가 `PILE_LAND_DELAY_SEC`(= `Card.DISCARD_FADE_SEC` 0.30초) 뒤에 시작해 두 연출이 겹치지 않고 이어 붙고(예전 0.16초는 카드가 아직 떨어지는 중에 더미가 먼저 받아 같은 카드가 두 군데에 있었다), **장수와 뭉치 두께는 그 착지 잔상이 다 내려앉은 뒤에 오른다**(`CardPhaseManager._discard_pending` / `_commit_discard_gain` — 표시값은 언제나 `배열 크기 − pending`). 델타 0 인 단순 갱신은 정산을 건드리지 않는다 — 거기서 pending 을 밀면 갱신 한 번에 지연이 통째로 날아간다 — 리프트(`PRESS_LIFT`)가 카드 자신의 up 축을 타는 것과 반대다(버려지는 카드는 뽑히는 게 아니라 떨어지는 것이라, 기울기를 타면 기울어진 카드만 옆으로 새 나간다). 진입점은 `CardPhaseManager.play_discard_fx(node)` 하나이고 **노드는 부르기 전에 이미 `player_card_nodes` 에서 빠져 있어야 한다** — 0.3초 동안 레이아웃 · 호버 · 히트 밴드가 그 카드를 손패로 세면 남은 카드들이 빈자리를 메우지 못한다. 진행 중이던 레이아웃 / 호버 / 그림자 / 뒤집기 트윈은 전부 kill 하고 시작한다. **버리기:N 으로 화면 중앙에 늘어세운 카드들도 확정 시 같은 연출로 내려간다**(`CardSelectOverlay._commit_discard` 가 `to_discard_nodes` 를 목록에서 먼저 떼어 낸 뒤 넘긴다 — 안 그러면 `_teardown` 이 그 자리에서 free 한다). **취소는 예외** — 버려지지 않은 카드가 떨어질 이유가 없으므로 즉시 free 하고 스냅샷이 손패를 다시 세운다. |
-| 카드 앞면 (아트 · 이름 · 비용 원 · 초상) | **앞면은 위에서부터 아트 → 이름판 두 층**이고, 왼쪽 구석에 비용 원과 시전자 얼굴이 세로로 얹힌다. **설명문은 카드에 없다** — 글은 `card_phase/CardDescBox.gd` 설명판이 화면마다 든다(손패 = 손패 바로 위 상자 · AI 가 낸 카드 = 중앙 카드 아래 · 찾기/선택 그리드와 더미 열람 = 가리키거나 누른 카드 옆 · 밴픽 시트와 메크 상세 = 누른 카드 위). 160×220 에 최장 128자를 8pt 로 욱여넣던 설명판(`DescPlate` / `_fit_desc_font_size`, **삭제됨**)은 읽으라고 있는 글씨가 아니었고, 그 자리를 아트가 가져가 카드가 **그림으로** 알아보인다. **아트는 이름판 위 전부**(y 0..184, 카드 끝까지 — 위 두 모서리는 `rounded_top_mask` 쉐이더가 안티앨리어싱으로 깎는다)이고 그림은 `CardImages.art_for(카드 이름)` 이 준다 — 전용 아트가 없으면 `CardImages.ITEM_ART` 가 짝지은 Deadlock 아이템 아이콘(`images/ground/deadlock_items/`, 효과가 비슷한 아이템)이고, 표에도 없으면 `images/ground/` 다섯 장 중 **이름 해시로 고른** 한 장이라 같은 카드는 언제나 같은 그림을 단다. 카드에는 테두리가 없다(비용색 바탕 · 노란 테두리 삭제). **이름판**은 카드 아랫단 전폭(y 184..220)을 아이템 타입색(무기 · 스피릿 · 활력)으로만 채운 판이고, 아트와의 경계에 그림자는 없다(예전 `ArtShadow` 띠 삭제). 충전 카드의 `N/M` 배지는 그 바로 위 아트 오른쪽 아래에 앉는다. **비용은 카드 모서리 밖으로 걸친 원**(`CostBadge`, 지름 42, (-9, -9)) 안에 찍히고 **시전자 원형 초상은 그 바로 아래**(`PORTRAIT_TOP` 34)에 앉는다 — 손패는 카드끼리 절반 넘게 겹치는 부채꼴이라(오른쪽 카드가 왼쪽 카드를 덮는다) **왼쪽 위 모서리가 각 카드에서 언제나 보이는 유일한 구석**이고, 그래서 비용과 얼굴을 그 한 구석에 모은다. 사용 불가 슬래브는 카드 사각형까지만 덮으므로 **밖으로 나간 비용 원은 따로 눌러 준다**(`COST_BADGE_BLOCKED_TINT`) — 안 그러면 잠긴 카드에서 비용만 밝게 남는다. 초상은 여전히 **손패에서만** 그린다(`Card.is_player_card` — 상세 패널 · 더미 열람 · 밴픽 · 드래프트에는 시전자가 없거나 의미가 없고, 상대 손패 peek 은 뒷면이다). **예전에는 초상이 오른쪽 위**였는데 겹치는 부채꼴에서 오른쪽 절반은 옆 카드에 가려지는 쪽이라 "누구 카드인가"가 손패를 펼쳐 봐야만 읽혔고, 그보다 더 예전에는 얼굴(`face_for`)이 **본체를 가득 채워** 일러스트 자리를 차지했다. |
+| 카드 앞면 (아트 · 이름 · 비용 리본 · 초상) | **앞면은 위에서부터 아트 → 이름판 두 층**이고, 왼쪽 위에 비용 리본이 얹힌다. **설명문은 카드에 없다** — 글은 `card_phase/CardDescBox.gd` 설명판이 화면마다 든다(손패 = 가리킨 카드 옆 세로 판 · AI 가 낸 카드 = 중앙 카드 아래 · 찾기/선택 그리드와 더미 열람 = 가리키거나 누른 카드 옆 · 밴픽 시트와 메크 상세 = 누른 카드 위). 160×220 에 최장 128자를 8pt 로 욱여넣던 설명판(`DescPlate` / `_fit_desc_font_size`, **삭제됨**)은 읽으라고 있는 글씨가 아니었고, 그 자리를 아트가 가져가 카드가 **그림으로** 알아보인다. **아트는 이름판 위 전부**(y 0..184, 카드 끝까지 — 위 두 모서리는 `rounded_top_mask` 쉐이더가 안티앨리어싱으로 깎는다)이고 그림은 `CardImages.art_for(카드 이름)` 이 준다 — 전용 아트가 없으면 `CardImages.ITEM_ART` 가 짝지은 Deadlock 아이템 아이콘(`images/ground/deadlock_items/`, 효과가 비슷한 아이템)이고, 표에도 없으면 `images/ground/` 다섯 장 중 **이름 해시로 고른** 한 장이라 같은 카드는 언제나 같은 그림을 단다. 카드에는 테두리가 없다(비용색 바탕 · 노란 테두리 삭제). **이름판**은 카드 아랫단 전폭(y 184..220)을 아이템 타입색(무기 · 스피릿 · 활력)으로만 채운 판이고, 아트와의 경계에 그림자는 없다(예전 `ArtShadow` 띠 삭제). 충전 카드의 `N/M` 배지는 그 바로 위 아트 오른쪽 아래에 앉는다. **비용은 카드 안 왼쪽 위에 매달린 세로 직각사다리꼴 리본**(`CostBadge`, `COST_RIBBON_RECT`; Panel 스타일박스는 비우고 `draw` 신호로 `CostRibbon.draw` + `StrategyIcon.draw_indicator` 를 그린다)에 찍힌다 — 손패는 카드끼리 절반 넘게 겹치는 부채꼴이라(오른쪽 카드가 왼쪽 카드를 덮는다) **왼쪽 위 모서리가 각 카드에서 언제나 보이는 유일한 구석**이고, 그래서 비용을 그 구석에 둔다. 리본은 사용 불가 슬래브보다 위에 그려지므로 **따로 눌러 준다**(`COST_BADGE_BLOCKED_TINT`) — 안 그러면 잠긴 카드에서 비용만 밝게 남는다. 초상은 여전히 **손패에서만** 그린다(`Card.is_player_card` — 상세 패널 · 더미 열람 · 밴픽 · 드래프트에는 시전자가 없거나 의미가 없고, 상대 손패 peek 은 뒷면이다). **예전에는 초상이 오른쪽 위**였는데 겹치는 부채꼴에서 오른쪽 절반은 옆 카드에 가려지는 쪽이라 "누구 카드인가"가 손패를 펼쳐 봐야만 읽혔고, 그보다 더 예전에는 얼굴(`face_for`)이 **본체를 가득 채워** 일러스트 자리를 차지했다. |
 | 핸드 오르내림 (내 차례가 아닐 때) | **내 작전 단계가 아니면 손패가 화면 아래로 물러나 아군 파일럿 스트립 뒤로 숨는다.** 카드 절반쯤이 스트립 뒤판에 가려지고, 내 차례가 되면 그대로 올라온다. 조건은 `_hand_is_lowered()` = `game_phase != CARD_PHASE` 하나이고, 딤(`_apply_hand_dim_state`)보다 **좁다** — 내 차례 안에서 잠깐 입력이 막히는 구간(명중 연출 · 모달 픽 · 차례 배너)에는 손패가 어두워질 뿐 내려가지 않는다(그때도 내려가면 모달 한 번마다 손패가 오르내린다). **자리**는 `hand_drop_offset()` 이 `slot_position()` 에 더하며 상수가 아니라 스트립 뒤판에서 역산한다(`hud.player_strip_backdrop_top() − Card.CARD_H × 0.5 − BS_HAND_CENTER.y`) — 둘 다 세이프 에어리어 오프셋을 이미 먹은 값이라 기기와 무관하게 "절반쯤 가려진다"가 유지된다(1080×1920 에서 **206px**). **z-order** 는 `_reorder_hand_nodes()` 가 바꾼다: 내려간 것만으로는 카드가 판 **위에** 걸쳐 있어 가려지지 않으므로, 스트립 뒤판을 마커로 잡고 그 바로 앞자리에 카드를 차례로 꽂아 덩어리째 판 아래로 내린다(내 차례에는 예전처럼 자식 목록 맨 끝). **그림자**는 `Card.set_lowered()` 가 `SHADOW_FAR_*`(offset 1×4 · blur 3 · spread 0.98)로 바꾼다 — **카드에 바짝 붙은 짧은 그림자 = 카메라에서 멀다**가 이 연출의 전부이고, 내 차례에는 평소의 rest / hover / drag 세 단계로 돌아온다. 히트 레이어도 같은 오프셋을 타므로(`_fit_hit_layer`) 카드가 없는 자리에서 전장 클릭을 삼키지 않는다. |
-| 카드 설명 상자 | **손패 바로 위**, 가로 가운데(`CardPhaseManager.DESC_BOX_W` 640, 높이는 글이 정한다 — `CardDescBox`). 아랫변은 포커스 카드가 가장 높이 솟은 자세(손패 배율 × 호버 배율 + `PRESS_LIFT`)의 윗단에서 `DESC_BOX_GAP`(14) 위라 끌어 올린 카드도 상자를 파고들지 않는다. 카드 앞면에 설명문이 없으므로 **손패에서 글을 읽는 유일한 자리**다. 예전에는 화면 상단 고정(`DESC_BOX_TOP` 142, **삭제됨**)이라 카드를 보는 눈과 글을 읽는 눈이 화면 높이만큼 오갔고, 그보다 더 예전에는 든 카드 좌/우 옆에 붙어 드래그하는 커서 앞을 가로막았다. **가리키기만 해도 뜬다** — 보여 줄 카드는 손패 포커스와 같은 질문이라 `_push_focus_card()`(끌고 있는 카드 > 호버) 하나가 답한다. **버튼은 하나도 없다** — 카드를 내는 것도 드롭이고 버리기:N 픽도 드롭이다. 상자는 `MOUSE_FILTER_IGNORE` 라 그 위(전장 아랫단)를 지나는 드래그를 막지 않는다. |
+| 카드 설명 판 | **가리킨(확대된) 카드 옆 `DESC_BOX_GAP`(20) 거리**에 카드처럼 세로로 긴 판(`CardPhaseManager.DESC_BOX_W` 240, **높이는 글이 정한다** — 하한 없이 `CardDescBox.build(..., min_h = 0)`, 예전 하한 = 확대된 카드 높이는 삭제). **카드를 끌어 손패 · 스트립이 비켜 내려가면**(`_drag_lowers_hand`) 판은 카드 옆(= 전장 한복판)을 떠나 **손패 바로 위 모서리**로 미끄러진다(`_desc_box_spots` / `_reflow_description_box`, `DESC_MOVE_TIME` 0.18초): 끌린 카드의 손패 슬롯이 화면 오른쪽 절반이면 **왼쪽 위**(전략 점수 도넛을 덮는다), 아니면 **오른쪽 위**(전장 오른쪽 아래 빈자리). 아랫변을 손패 윗선 − `DESC_BOX_GAP` 에 맞추고, 키워드판은 그 안쪽(화면 가운데 쪽)에 같은 아랫변으로 선다. 판정은 슬롯 기준이라 드래그 동안 고정이다 — 커서를 따라 판이 오가지 않는다. 카드 중심이 화면 가운데이거나 그 오른쪽이면 판은 카드 왼쪽, 가운데보다 왼쪽이면 카드 오른쪽. 키워드 풀이는 그 바깥쪽 별도 판(`_keyword_box`, `KEYWORD_BOX_W` 210)이고 바깥에 자리가 없으면 카드 반대편으로 넘어간다. 판은 옆 손패 카드를 **그림으로 덮지만 터치는 막지 않는다** — 판은 손패 캔버스(layer 1) 위의 전용 `CanvasLayer`(`DESC_LAYER` 2)에 서서 언제나 카드 위에 그려지고(같은 캔버스면 `_reorder_hand_nodes` 가 카드를 자식 목록 끝으로 올려 판을 덮는다), 판과 자식 전부 `MOUSE_FILTER_IGNORE` 라 그 자리를 누르면 `HandHitLayer` 가 아래 카드를 고른다. 카드 앞면에 설명문이 없으므로 **손패에서 글을 읽는 유일한 자리**다. 예전에는 손패 바로 위 가운데 가로 판(640)이었고, 그 전에는 화면 상단 고정(`DESC_BOX_TOP` 142, **삭제됨**)이었다. **가리키기만 해도 뜬다** — 보여 줄 카드는 손패 포커스와 같은 질문이라 `_push_focus_card()`(끌고 있는 카드 > 호버) 하나가 답한다. 판은 불투명하고, 나타날 때 `DESC_ANIM_RISE`(24) 아래에서 올라오며 페이드 인, 사라질 때 그만큼 내려가며 페이드 아웃한 뒤 지워진다(등장 `DESC_ANIM_IN_TIME` 0.2초 · 퇴장 `DESC_ANIM_OUT_TIME` 0.1초, `_animate_desc_in` / `_animate_desc_out` — 포커스가 옮겨 가면 옛 판이 내려가는 동안 새 판이 올라온다). **버튼은 하나도 없다** — 카드를 내는 것도 드롭이고 버리기:N 픽도 드롭이다. |
 | 공격 카드 명중 판정 | `attack:N` 카드도 전장과 **같은 명중 판정**을 굴린다 — `SimulationCore.roll_hit` (`hit/(hit+evasion)`). 빗나가면 데미지가 0이고 로그에 "빗나감"이 남는다. `pierce`(필중)는 판정을 건너뛰고, `repeat`(연속 공격)은 **명중할 때마다** 같은 공격을 다시 굴려 빗나가거나 대상이 쓰러질 때까지 이어진다 — 무한 루프 방지 상한은 `CardPhaseManager.MAX_ATTACK_REPEATS`(5타). **타격마다 명중 연출이 붙고 `_effect_attack` 이 그것을 `await` 한다** — 아래 "공격 명중 연출" 항목. |
 | 핸드 상한 10장 | `MAX_HAND_SIZE` = 10. **내 차례가 아닐 때**(작전 점수가 다시 차오르는 동안) 도는 자동 드로우는 핸드가 꽉 차 있어도 무조건 뽑고, 넘친 만큼 **가장 오래된** 카드부터 discard 로 보낸다(양 팀 동일) — 단 **계획 중시로 보존된 카드는 건너뛴다**. 예전처럼 드로우를 건너뛰면 덱이 돌지 않아 손이 그대로 굳어 있었다. 반면 **내 턴에 카드 효과로 뽑은 카드는 상한을 넘겨도 버리지 않는다** — 턴이 끝난 뒤 첫 자동 드로우가 정리한다. 덱이 비면 discard 전체를 되섞어 덱으로 되돌리는 건 기존과 동일(`draw_card`). |
 | 카드 시전자 제약 (`scope`) | `cards.csv` 의 `scope` 가 카드를 가질 수 있는 **포지션**을 정한다 — `any` 단독 = 전부, `lane` 단독 = 탑 · 미드 · 원딜 · 서폿, 그 밖에는 `jungle` / `top` / `mid` / `carry` / `support` 의 `\|` 목록. 판정은 고정 파일럿 카드를 고를 때(`GameManager.pilot_card_ids_for` / `roll_pilot_card_ids`)와 폴백 풀(`_pool_for_pilot`)에서 한다. 펼치기는 `CardData.positions_of` 하나다. |

@@ -146,18 +146,21 @@ const NAME_PLATE_NEUTRAL_COLOR := Color(0.18, 0.16, 0.24, 1.0)
 const NAME_FONT_SIZE := 23
 const NAME_FONT_MIN := 14
 
-# ── 비용 배지 (좌측 상단, 카드 밖으로 걸친다) ──────────────────
-# 비용은 카드 **모서리 밖으로 살짝 튀어나온 원** 안에 찍힌다. 손패는 카드끼리
-# 절반 넘게 겹치는 부채꼴이라(오른쪽 카드가 왼쪽 카드를 덮는다) 왼쪽 위 모서리가
-# 각 카드에서 언제나 보이는 유일한 구석이고, 원이 그 밖으로 나가 있으면 겹친
-# 줄에서도 비용이 한 줄로 읽힌다.
-const COST_BADGE_SIZE := 42.0
-const COST_BADGE_FILL_COLOR := Color(0.08, 0.06, 0.14, 0.95)
-const COST_BADGE_RING_COLOR := Color(0.98, 0.96, 0.90, 0.95)
-const COST_BADGE_RING_WIDTH := 3
-const COST_FONT_SIZE := 22
-## 사용 불가 슬래브는 카드 사각형만 덮으므로 **밖으로 나간 원은 안 덮인다**.
-## 배지를 따로 어둡게 해 잠긴 카드에서 비용만 밝게 남지 않게 한다.
+# ── 비용 리본 (좌측 상단, 카드 안에 매달린다) ──────────────────
+# 비용은 카드 윗변에서 아래로 늘어진 **세로로 긴 직각사다리꼴 리본**(`CostRibbon`)
+# 위쪽에 큰 숫자로 찍힌다. 테두리도 안쪽 아이콘도 없는 어두운 알맹이뿐이다. 손패는 카드끼리 절반 넘게 겹치는 부채꼴이라(오른쪽 카드가 왼쪽 카드를
+# 덮는다) 왼쪽 위가 각 카드에서 언제나 보이는 유일한 구석이다. 리본은 카드 둥근
+# 모서리(`CARD_RADIUS`) 안쪽에서 시작하므로 윗변이 곧게 붙는다. 윗변은 카드
+# 윗변보다 `COST_RIBBON_POKE` 만큼 **위로 튀어나와** 리본이 카드에 매달린 것으로
+# 읽힌다(아랫변 · 숫자 자리는 그대로다).
+const COST_RIBBON_POKE := 3.0
+const COST_RIBBON_RECT := Rect2(10.0, -COST_RIBBON_POKE, 38.0, 70.0 + COST_RIBBON_POKE)
+const COST_BADGE_FILL_COLOR := CostRibbon.FILL
+## 숫자가 앉는 리본 위쪽 띠 높이.
+const COST_NUMBER_H := 50.0
+const COST_FONT_SIZE := 32
+## 비용 배지는 사용 불가 슬래브 · 보존 테두리보다 **위**에 앉으므로(`_build_block_overlay`)
+## 슬래브에 덮이지 않는다. 배지를 따로 어둡게 해 잠긴 카드에서 비용만 밝게 남지 않게 한다.
 const COST_BADGE_BLOCKED_TINT := Color(0.42, 0.42, 0.42, 1.0)
 
 # ── 파일럿 초상 리본 (우측 상단 직각삼각형) ─────────────────
@@ -204,6 +207,11 @@ var is_animating: bool = false
 ## longer speaks for this card. Layout passes leave it alone (`relayout_hand`
 ## skips it).
 var is_dragging: bool = false
+## 비용 미리보기(`set_cost_preview`) 상태와 그 맥박 트윈.
+var _cost_preview_on: bool = false
+var _cost_pulse: Tween = null
+const COST_PULSE_SCALE: float = 1.28
+const COST_PULSE_HALF: float = 0.28
 ## True from the moment a drawn card is spawned (face-down, off the left edge of
 ## the screen) until it has flown in, flipped face-up and been handed back to the
 ## layout. `CardPhaseManager.relayout_hand` skips these cards — the intro owns
@@ -276,8 +284,7 @@ func setup(card_data: CardData, player_card: bool, start_face_up: bool = false) 
 	face_up = start_face_up
 	_apply_data()
 	_apply_back_style()
-	card_front.visible = start_face_up
-	card_back.visible = not start_face_up
+	_sync_face_visibility(start_face_up)
 	# setup() may run before or after _ready() depending on the caller's
 	# add_child ordering, so both paths re-assert the shadow visibility.
 	if _shadow != null:
@@ -417,6 +424,20 @@ func _build_block_overlay() -> void:
 	move_child(_block_overlay, get_child_count() - 1)
 	move_child(_respawn_label, get_child_count() - 1)
 	move_child(_preserve_mark, get_child_count() - 1)
+	# 비용 배지는 그보다도 위다 — 보존 테두리가 왼쪽 위 모서리에서 비용 숫자를
+	# 가리지 않게 `CardFront` 밖(루트 맨 뒤)으로 옮긴다. `CardFront` 는 카드 원점에
+	# 붙어 있어 로컬 좌표가 그대로이고, 표시 여부는 `_sync_face_visibility` 가
+	# 앞면과 맞춘다.
+	cost_badge.reparent(self, false)
+	move_child(cost_badge, get_child_count() - 1)
+
+
+## 앞/뒷면 표시를 바꾼다. 비용 배지는 `CardFront` 밖으로 나가 있으므로 앞면과
+## 함께 켜고 끈다.
+func _sync_face_visibility(show_front: bool) -> void:
+	card_front.visible = show_front
+	card_back.visible = not show_front
+	cost_badge.visible = show_front
 
 
 ## 토큰 배지와 시전자 초상 리본을 지금 상태에 맞춘다. `CardPhaseManager` 가
@@ -454,7 +475,7 @@ func _refresh_block_overlay() -> void:
 		_respawn_label.text = str(_respawn_turns)
 	if _preserve_mark != null and is_instance_valid(_preserve_mark):
 		_preserve_mark.visible = showable and _preserved
-	# 슬래브는 카드 사각형까지만 덮는다 — 밖으로 걸친 비용 원은 직접 눌러 준다.
+	# 비용 배지는 슬래브 위에 앉으므로 슬래브에 덮이지 않는다 — 직접 눌러 준다.
 	if cost_badge != null and is_instance_valid(cost_badge):
 		cost_badge.modulate = (COST_BADGE_BLOCKED_TINT
 				if _block_overlay.visible else Color.WHITE)
@@ -529,13 +550,15 @@ func _apply_back_style() -> void:
 	card_back.add_theme_stylebox_override("panel", style)
 
 
-## Cost number colours: white when the displayed cost matches the card's
-## printed (data.cost) value, green when reduced by an active modifier, red
-## when increased. Surfaced via update_displayed_cost so CardPhaseManager can
-## refresh the card whenever effective_cost_for changes.
-const COST_COLOR_BASE     := Color(1.0, 1.0, 1.0)
-const COST_COLOR_REDUCED  := Color(0.45, 1.0, 0.45)
-const COST_COLOR_INCREASED := Color(1.0, 0.45, 0.45)
+## Cost number colours — ink on the white cost ribbon: dark (`CostRibbon.INK`)
+## when the displayed cost matches the card's printed (data.cost) value, green
+## when reduced by an active modifier, red when increased. Surfaced via
+## update_displayed_cost so CardPhaseManager can refresh the card whenever
+## effective_cost_for changes. Dark enough to read on white — the description
+## panel's header ribbon uses the same three.
+const COST_COLOR_BASE     := CostRibbon.INK
+const COST_COLOR_REDUCED  := Color(0.10, 0.58, 0.18)
+const COST_COLOR_INCREASED := Color(0.82, 0.16, 0.14)
 
 
 func _apply_data() -> void:
@@ -587,29 +610,29 @@ func _apply_art() -> void:
 	art_frame.add_theme_stylebox_override("panel", sb)
 
 
-## 좌측 상단 비용 원. 알맹이는 어두운 중립색이고 테두리는 밝은 링이라, 밝은
-## 아트 위에 걸쳐도 원이 원으로 읽힌다.
+## 좌측 상단 비용 리본 — 세로로 긴 직각사다리꼴(`CostRibbon`), 불투명한 흰 알맹이에
+## 어두운 큰 숫자, 아랫변 밑으로 드롭 섀도.
+## Panel 의 스타일박스는 비우고 `draw` 신호로 도형을 그린다.
 func _apply_cost_badge() -> void:
 	if cost_badge == null or cost_label == null:
 		return
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = COST_BADGE_FILL_COLOR
-	sb.border_color = COST_BADGE_RING_COLOR
-	sb.border_width_top    = COST_BADGE_RING_WIDTH
-	sb.border_width_bottom = COST_BADGE_RING_WIDTH
-	sb.border_width_left   = COST_BADGE_RING_WIDTH
-	sb.border_width_right  = COST_BADGE_RING_WIDTH
-	var r: int = int(COST_BADGE_SIZE * 0.5)
-	sb.corner_radius_top_left     = r
-	sb.corner_radius_top_right    = r
-	sb.corner_radius_bottom_left  = r
-	sb.corner_radius_bottom_right = r
-	cost_badge.add_theme_stylebox_override("panel", sb)
+	cost_badge.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	cost_badge.position = COST_RIBBON_RECT.position
+	cost_badge.size = COST_RIBBON_RECT.size
+	cost_label.position = Vector2(0.0, 2.0 + COST_RIBBON_POKE)
+	cost_label.size = Vector2(COST_RIBBON_RECT.size.x, COST_NUMBER_H)
+	if not cost_badge.draw.is_connected(_draw_cost_badge):
+		cost_badge.draw.connect(_draw_cost_badge)
+	cost_badge.queue_redraw()
 	cost_label.text = UNPLAYABLE_COST_TEXT if not data.is_playable() else str(data.cost)
 	cost_label.add_theme_font_size_override("font_size", COST_FONT_SIZE)
 	cost_label.add_theme_color_override("font_color", COST_COLOR_BASE)
-	cost_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
-	cost_label.add_theme_constant_override("outline_size", 3)
+	cost_label.add_theme_constant_override("outline_size", 0)
+
+
+func _draw_cost_badge() -> void:
+	CostRibbon.draw(cost_badge, Rect2(Vector2.ZERO, cost_badge.size),
+			COST_BADGE_FILL_COLOR, -1.0, true)
 
 
 ## 이름판 — 카드 아랫단 전폭을 타입색으로 채운 판(테두리 없음). 아래 두 모서리가
@@ -737,8 +760,7 @@ func play_flip_reveal() -> void:
 
 func _reveal_face() -> void:
 	face_up = true
-	card_front.visible = true
-	card_back.visible = false
+	_sync_face_visibility(true)
 	# 뒷면인 동안은 `_refresh_block_overlay` 가 슬래브를 무조건 숨겼으므로
 	# (뒷면에는 읽을 비용도 시전자도 없다) 앞면이 된 지금 다시 판정한다.
 	_refresh_block_overlay()
@@ -808,6 +830,9 @@ func is_hovered() -> bool:
 func update_displayed_cost(effective_cost: int) -> void:
 	if data == null:
 		return
+	# 미리보기가 걸려 있는 동안은 그 값이 이긴다 — 걷히면 다시 불린다.
+	if _cost_preview_on:
+		return
 	# 비용 -1 은 값이 아니라 **낼 수 없다는 표시**다 — 할인도 증세도 얹히지 않고
 	# 언제나 같은 글자를 찍는다.
 	if not data.is_playable():
@@ -821,6 +846,39 @@ func update_displayed_cost(effective_cost: int) -> void:
 	elif effective_cost > data.cost:
 		col = COST_COLOR_INCREASED
 	cost_label.add_theme_color_override("font_color", col)
+
+
+## 손패 미리보기 — 끌고 있는 카드가 이 카드의 비용을 바꿀 때([사전 준비] ·
+## [전투 준비] …) **바뀔 값**을 미리 찍고 비용 배지를 맥박치게 한다.
+## `clear_cost_preview` 뒤에는 부르는 쪽이 `update_displayed_cost` 로 원래 값을
+## 다시 칠한다(`CardPhaseManager.highlight_affordable_cards`).
+func set_cost_preview(cost_after: int) -> void:
+	if cost_label == null or cost_badge == null:
+		return
+	_cost_preview_on = true
+	cost_label.text = str(cost_after)
+	cost_label.add_theme_color_override("font_color", COST_COLOR_REDUCED)
+	if _cost_pulse != null and _cost_pulse.is_valid():
+		return
+	cost_badge.pivot_offset = cost_badge.size * 0.5
+	_cost_pulse = create_tween().set_loops()
+	_cost_pulse.tween_property(cost_badge, "scale", Vector2.ONE * COST_PULSE_SCALE,
+			COST_PULSE_HALF).set_trans(Tween.TRANS_SINE)
+	_cost_pulse.tween_property(cost_badge, "scale", Vector2.ONE,
+			COST_PULSE_HALF).set_trans(Tween.TRANS_SINE)
+
+
+func has_cost_preview() -> bool:
+	return _cost_preview_on
+
+
+func clear_cost_preview() -> void:
+	_cost_preview_on = false
+	if _cost_pulse != null and _cost_pulse.is_valid():
+		_cost_pulse.kill()
+	_cost_pulse = null
+	if cost_badge != null:
+		cost_badge.scale = Vector2.ONE
 
 
 ## 핸드가 내려가 있는가(= 내 차례가 아닌가)를 알린다. 바꾸는 것은 **그림자

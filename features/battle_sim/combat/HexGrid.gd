@@ -5,15 +5,23 @@ extends Node
 const COLS := 9
 const ROWS := 11
 
-# Multiplier applied to the BattleField sprite render and to hex geometry. All
-# pilot/HUD draw sizes that should track tile size derive from `hex_size`, so
-# changing this value scales the whole battlefield display in lockstep.
+# **Two scales.** `DISPLAY_SCALE` sizes everything drawn *on* the field —
+# pilot portraits, HP rings, popups, preview strokes (BattleRenderer multiplies
+# its base px by it). `FIELD_SCALE` sizes the field itself — the BattleField
+# sprite render and the hex geometry (`hex_size` / `hex_height`), so anything
+# that should track tile size derives from `hex_size` instead.
 #
 # 1.35 = 예전 값 1.5 의 **90%**. 전장 픽셀 박스가 990×1092 → 891×983 으로
 # 줄면서, 화면 중앙(y 860)에 정렬된 전장의 상단이 314 → 369, 하단이
 # 1406 → 1351 로 각각 55px 안쪽으로 들어온다. 핸드 행(`BattleSim.BS_HAND_CENTER`)
 # 은 그 하단이 올라간 만큼 함께 위로 올려 카드와 전장 사이의 간격을 유지한다.
 const DISPLAY_SCALE := 1.35
+## 타일(전장) 배율 — `DISPLAY_SCALE` 의 **90%**(1.215). 전장만 10% 줄이고 초상화
+## 크기는 그대로 두려고 둘을 갈랐다. 전장 픽셀 박스는 891×983 → 약 802×885 로
+## 줄고, 전장 중심은 그대로라 상하단이 각각 ~49px 안쪽으로 들어온다. 손패
+## (`BattleSim.BS_HAND_CENTER`)는 이번에는 따라 올리지 않았다 — 카드와 전장
+## 사이 간격이 그만큼 넓어진다.
+const FIELD_SCALE := DISPLAY_SCALE * 0.9
 
 # ─── Layout vars (computed in _ready) ────────────────────────────────────────
 var hex_size:      float  # circumradius of each flat-top hex
@@ -46,29 +54,29 @@ func _ready() -> void:
 
 
 ## Derives hex geometry from the TileMapLayer's actual map_to_local() output,
-## applies DISPLAY_SCALE to the BattleField parent so tiles/buildings/waypoints
+## applies FIELD_SCALE to the BattleField parent so tiles/buildings/waypoints
 ## render at the chosen scale, computes the pixel bounding box of all used
 ## tiles, and centres that bounding box on screen. Returns the position
 ## BattleField must be set to.
 ## Call this from BattleSim._ready() after load_field(), passing the current viewport size.
 func init_from_tilemap(tm: TileMapLayer, vp_size: Vector2) -> Vector2:
-	# 0. Apply DISPLAY_SCALE to the BattleField parent so tile sprites,
+	# 0. Apply FIELD_SCALE to the BattleField parent so tile sprites,
 	#    buildings, and waypoints all render at the same enlarged size. The
 	#    hex geometry below is computed against this scale so pilot positions
 	#    (drawn outside BattleField by BattleRenderer) line up with tile centres.
 	var bf := tm.get_parent() as Node2D
 	if bf != null:
-		bf.scale = Vector2(DISPLAY_SCALE, DISPLAY_SCALE)
+		bf.scale = Vector2(FIELD_SCALE, FIELD_SCALE)
 
 	# 1. Sample hex geometry from TileMap output.
 	#    Use two even-col cells 2 apart for a clean x-delta, and adjacent rows for y-delta.
 	var p00 := tm.map_to_local(Vector2i(0, 0))
 	var p20 := tm.map_to_local(Vector2i(2, 0))
 	var p01 := tm.map_to_local(Vector2i(0, 1))
-	# Multiply by DISPLAY_SCALE because tm.map_to_local() returns unscaled
+	# Multiply by FIELD_SCALE because tm.map_to_local() returns unscaled
 	# tilemap-local positions; the world distances are scaled by the parent.
-	hex_size   = (p20.x - p00.x) / 3.0 * DISPLAY_SCALE  # circumradius; col pitch = hex_size * 1.5
-	hex_height = (p01.y - p00.y) * DISPLAY_SCALE        # row pitch = tile height
+	hex_size   = (p20.x - p00.x) / 3.0 * FIELD_SCALE  # circumradius; col pitch = hex_size * 1.5
+	hex_height = (p01.y - p00.y) * FIELD_SCALE        # row pitch = tile height
 
 	# 2. Compute the pixel bounding box of all placed tile centres (TileMapLayer local space).
 	var min_local := Vector2(INF, INF)
@@ -82,17 +90,17 @@ func init_from_tilemap(tm: TileMapLayer, vp_size: Vector2) -> Vector2:
 	# Expand cell centres by half-tile to reach the true pixel edges.
 	# `hex_size` / `hex_height` are already scaled, so undo that here for
 	# the unscaled local-space bounds.
-	min_local -= Vector2(hex_size, hex_height * 0.5) / DISPLAY_SCALE
-	max_local += Vector2(hex_size, hex_height * 0.5) / DISPLAY_SCALE
+	min_local -= Vector2(hex_size, hex_height * 0.5) / FIELD_SCALE
+	max_local += Vector2(hex_size, hex_height * 0.5) / FIELD_SCALE
 
 	# 3. Centre the SCALED tile bounding box on screen.
-	#    World pos of a local point p = bf_pos + (tm.position + p) * DISPLAY_SCALE.
+	#    World pos of a local point p = bf_pos + (tm.position + p) * FIELD_SCALE.
 	var grid_center_local := (min_local + max_local) * 0.5
-	var bf_pos := vp_size * 0.5 - (tm.position + grid_center_local) * DISPLAY_SCALE
+	var bf_pos := vp_size * 0.5 - (tm.position + grid_center_local) * FIELD_SCALE
 
 	# 4. Derive grid_origin_x / grid_top so hex_to_screen() aligns with the SCALED TileMap.
-	#    Anchoring on cell (0,0): hex_to_screen(0,0) = bf_pos + (tm.position + p00) * DISPLAY_SCALE.
-	var screen_00 := bf_pos + (tm.position + p00) * DISPLAY_SCALE
+	#    Anchoring on cell (0,0): hex_to_screen(0,0) = bf_pos + (tm.position + p00) * FIELD_SCALE.
+	var screen_00 := bf_pos + (tm.position + p00) * FIELD_SCALE
 	grid_origin_x = screen_00.x - hex_size
 	grid_top      = screen_00.y - hex_height * 0.5
 

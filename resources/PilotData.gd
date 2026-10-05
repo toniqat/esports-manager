@@ -191,6 +191,11 @@ const FX_ATK         := "atk"
 const FX_ATK_PCT     := "atk_pct"   # 공격력 배율 % ([몰입] · [워밍업])
 const FX_HP_PCT      := "hp_pct"    # 최대 체력 배율 % ([워밍업])
 var persistent_fx: Array = []   # Array[Dictionary] {src, kind, amount}
+## **슬롯 효과의 출처 카드 이름** — 서로 덮어쓰는 한 칸짜리 효과(`lane` 라인전 ·
+## `rate` 적립 배율 · `eva` 회피 · `ambush` 매복 · `shield` 보호막)를 마지막으로
+## 건 카드. 상세 패널의 지속 효과 썸네일이 그 카드 일러스트를 띄우는 데 쓴다.
+## 계산에는 쓰이지 않는다.
+var fx_src: Dictionary = {}
 
 
 ## 장부에 한 줄 적는다(같은 카드 · 같은 종류면 합친다). 실제 스탯은 부르는

@@ -333,6 +333,9 @@ var ambush_search_ai: Array = []
 # 심어 두고, `mark_pilot_dead` 가 상대 팀 파일럿의 사망을 볼 때 한 번 지급하고
 # 소모한다. 그 작전 단계가 끝나면 미사용분은 사라진다.
 var kill_bounty_p:  int = 0
+## 예약 효과의 출처 카드 이름 — `"<strategy|draw|bounty|ambush>_<p|ai>"` → 카드 이름.
+## 예약 칩(`ui/ReservationChips.gd`)의 썸네일 전용이고 계산에는 쓰이지 않는다.
+var reserve_src: Dictionary = {}
 var kill_bounty_ai: int = 0
 
 # Gambit state — gambit_lanes is filled by GambitPhaseManager.auto_assign_lanes()
@@ -348,6 +351,8 @@ var cost_donut:       CostDonut = null
 var cost_donut_enemy: CostDonut = null
 # Deck / Discard 카드 뭉치 — 핸드 행 양옆 거터. 앞으로 누운 카드 뭉치이자
 # 장수 카운터이자 목록 열람 버튼(위에 투명 Button 이 얹힌다).
+## 손패 카드 미리보기(시전자 네온 · 효과 미리보기) — `card_phase/CardPlayPreview.gd`.
+var card_preview: CardPlayPreview = null
 var pile_deck:    CardPileStack = null
 var pile_discard: CardPileStack = null
 
@@ -1528,6 +1533,22 @@ func turret_hit_offset(td: TurretData) -> Vector2:
 	return Vector2(sin(t * TAU * 3.0) * ANIM_TURRET_HIT_AMP_PX * (1.0 - t), 0.0)
 
 # ─── Public helpers (used by modules) ────────────────────────────────────────
+## `_draw` 로만 그리는 텍스처를 GPU 에 올려 둔다 — 씬 트리의 CanvasItem 에 한 번도
+## 붙지 않은 `CompressedTexture2D` 는 `draw_*` 에서 흰 상자로 그려진다
+## (`PilotImages.prime_into` 와 같은 문제). 화면 밖 Sprite2D 하나를 텍스처마다
+## 한 번 붙인다. 버프 배너 · 예약 칩의 카드 아트가 쓴다.
+var _primed_textures: Dictionary = {}
+
+func prime_texture(tex: Texture2D) -> void:
+	if tex == null or _primed_textures.has(tex):
+		return
+	var spr := Sprite2D.new()
+	spr.texture = tex
+	spr.position = Vector2(-9999.0, -9999.0)
+	add_child(spr)
+	_primed_textures[tex] = spr
+
+
 func cell_center(pos: Vector2i) -> Vector2:
 	return hex_grid.hex_to_screen(pos.x, pos.y)
 

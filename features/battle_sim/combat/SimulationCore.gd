@@ -659,6 +659,12 @@ func _apply_turret_siege(attackers: Array, defenders: Array, td: TurretData,
 ## 먼저 곱해진다 — 확률을 직접 밀면 구간 밖으로 나가거나 상한에 막혀
 ## 배율이 조용히 사라진다.
 func roll_hit(attacker: PilotData, defender: PilotData) -> bool:
+	return randf() < hit_chance_of(attacker, defender)
+
+
+## `roll_hit` 이 굴리는 확률 그 자체(0..1). 손패 미리보기가 공격 카드의 명중률을
+## 대상 위에 찍는다 — 판정과 같은 함수라 화면의 % 와 실제 확률이 어긋날 수 없다.
+func hit_chance_of(attacker: PilotData, defender: PilotData) -> float:
 	var sk: PilotSkillSystem = _bs.skill
 	var hit_m: float = sk.hit_mult(attacker)      if sk != null else 1.0
 	var eva_m: float = sk.evasion_mult(defender)  if sk != null else 1.0
@@ -669,7 +675,7 @@ func roll_hit(attacker: PilotData, defender: PilotData) -> bool:
 	eva_m *= 1.0 + defender.eva_card_mod
 	var atk_stat := maxi(1, roundi(float(lane_adjusted(attacker.hit, attacker)) * hit_m))
 	var def_stat := maxi(1, roundi(float(lane_adjusted(defender.evasion, defender)) * eva_m))
-	return randf() < PilotData.hit_chance(atk_stat, def_stat)
+	return PilotData.hit_chance(atk_stat, def_stat)
 
 
 ## 라인전 스탯 배율을 먹인 hit / evasion 값. 최소 1 을 보장해 −100% 같은 값이

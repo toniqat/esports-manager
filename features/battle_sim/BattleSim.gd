@@ -292,7 +292,7 @@ var blue_team: int = 0
 # phase_cost_inc_*: add-on applied to every card play during the current
 #   작전 단계 (cost_inc_phase). Reset on phase entry. **No card in the pool
 #   carries that clause right now** — 정밀 이동 used to, but its +1 is now
-#   self-only and lands on the card's own cost via return_left:1.
+#   self-only and lands on the card's own cost via `self_cost:1`.
 # phase_draw_discount_*: discount applied to every card drawn during the
 #   current 작전 단계 (집중 cost_reduce_draw_phase). Mutates the drawn
 #   CardData.cost directly so the cheaper cost survives even if the draw
@@ -315,6 +315,13 @@ var preserved_cards_ai: Array = []
 # 더해질 값(음수 가능). 적용 후 0으로 리셋되며 점수는 0 아래로 내려가지 않는다.
 var next_phase_strategy_p:  int = 0
 var next_phase_strategy_ai: int = 0
+# 준비 태세 (`draw_next_phase:N`) — 다음 작전 단계 진입 시 뽑을 장수.
+var next_phase_draw_p:  int = 0
+var next_phase_draw_ai: int = 0
+# 매복 (`ambush_search:N`) — 다음 작전 단계 진입 시 **그 시전자의 교전 카드**를
+# 덱에서 N장 탐색한다. `[{"caster": PilotData, "n": int}, …]`.
+var ambush_search_p:  Array = []
+var ambush_search_ai: Array = []
 # 계획 살인 (`strategy_on_kill:N`) — **선불 예약형** 현상금. 카드를 낸 시점에
 # 심어 두고, `mark_pilot_dead` 가 상대 팀 파일럿의 사망을 볼 때 한 번 지급하고
 # 소모한다. 그 작전 단계가 끝나면 미사용분은 사라진다.
@@ -372,6 +379,7 @@ var card_pile_viewer: CardPileViewer = null
 # 아트, 우측에 아웃게임 / 인게임 / 메크 스탯. **자기 작전 단계에서만** 열리며
 # 단계를 벗어나면 HudBuilder 가 닫는다. lazy-add in _ready().
 var pilot_detail: PilotDetailPanel = null
+var marker_touch: MarkerTouch = null
 ## 정글 시작 방향을 고르는 개시 전 오버레이 — 비워진 손패 자리에 아군 정글러의
 ## 원형 초상화를 놓고, 그것을 좌 / 우 정글 무리로 끌어다 놓게 한다.
 ## `GambitPhaseManager` 가 **`match_ctx.active` 일 때만** 세운다 — 단독 실행
@@ -491,6 +499,11 @@ func _ready() -> void:
 	pilot_detail.name = "PilotDetailPanel"
 	add_child(pilot_detail)
 	pilot_detail.bind(self)
+	# 전장 초상 누르기 — 누르면 커지고 맨 위로, 꾹 누르면 위 상세 패널.
+	marker_touch = MarkerTouch.new()
+	marker_touch.name = "MarkerTouch"
+	add_child(marker_touch)
+	marker_touch.bind(self)
 	# 오브젝트 보상 미리보기 — 상단 패널의 시계가 연다.
 	objective_reward = ObjectiveRewardPopup.new()
 	objective_reward.name = "ObjectiveRewardPopup"
@@ -691,9 +704,11 @@ func _ai_turn_active() -> bool:
 
 
 ## **BATTLE 안에서 시뮬레이션을 붙잡고 있는 것이 있는가.** `game_phase` 를 바꾸지
-## 않은 채 턴을 멈추는 사유가 둘이다.
+## 않은 채 턴을 멈추는 사유가 셋이다.
 ##
 ##   • 상대 차례 — `CardPhaseManager._run_ai_turn` 이 BATTLE 안에서 돈다.
+##   • 상세 패널 — 자동 진행 중에도 스트립 / 전장 초상 꾹 누르기로 열 수 있고,
+##     열려 있는 동안 딤 뒤에서 턴이 흐르면 보고 있는 숫자가 낡는다.
 ##   • 오브젝트 — 참여 / 미참여 결정 창이 떠 있는 동안은 아직 BATTLE 이다
 ##     (뒤이어 열리는 교전 무대는 `game_phase = ENGAGE` 로도 막히지만, 그 앞의
 ##     결정 구간은 이 가드만이 막는다).
@@ -702,6 +717,8 @@ func _ai_turn_active() -> bool:
 ## 않는다.
 func _battle_tick_held() -> bool:
 	if _ai_turn_active():
+		return true
+	if pilot_detail != null and pilot_detail.is_active():
 		return true
 	return objective != null and objective.is_busy()
 
@@ -764,6 +781,7 @@ func mark_pilot_dead(p: PilotData, killer: PilotData = null) -> void:
 	p.hp            = 0
 	p.alive         = false
 	p.recall_hold   = false   # 복귀 대기 중 죽으면 대기도 함께 사라진다
+	p.ambush_hold   = false   # 매복도 함께 풀린다
 	p.shield        = 0
 	p.respawn_timer = respawn_turns_now()
 	p.atk_buff      = 0   # 카드가 걸어 둔 일시 공격력은 죽으면 사라진다
@@ -937,8 +955,11 @@ const SCORE_ASSIST_WINDOW_TURNS: int = 15
 #
 # 진입점은 `award_score` 하나이고, 조용히 적립만 하는 `add_score` 와 그 한 겹이
 # 갈라져 있다 — 어느 적립처가 화면에 뜨는지가 호출부에서 읽혀야 한다.
-## 팝업 글자색 — 성장치 숫자(스트립)와 같은 계열의 금색.
-const SCORE_POPUP_COLOR := Color(1.00, 0.86, 0.36)
+## 팝업 글자색 — 흰 글자 + 굵은 검은 외곽선(`BattleRenderer.SCORE_POPUP_OUTLINE_PX`).
+## 금색은 글자 왼쪽의 소울 아이콘(`SCORE_POPUP_ICON`)이 대신 맡는다.
+const SCORE_POPUP_COLOR := Color(1.0, 1.0, 1.0)
+## 숫자 왼쪽에 붙는 아이콘(28×28).
+const SCORE_POPUP_ICON: Texture2D = preload("res://resources/images/DeadlockSoulsTurq-28x.png")
 ## 화면에 머무는 시간(s). 피해 숫자(0.30초)보다 한참 길다 — 피해는 연속 타격의
 ## 리듬에 맞춰 스쳐 가면 되지만 성장치는 **읽으라고 띄우는 값**이다.
 const SCORE_POPUP_DUR := 1.10
@@ -976,7 +997,9 @@ func add_score(p: PilotData, delta: float) -> float:
 		# 셋을 합쳐 한 번에 곱하므로 라인전 카드가 오브젝트 보상이나 스킬을
 		# 덮어쓰지 않는다 — PilotData.growth_rate_bonus 주석 참조.
 		var skill_add: float = skill.growth_rate_add(p) if skill != null else 0.0
-		delta *= p.growth_rate_mult + p.growth_rate_bonus + skill_add
+		# [골드러시] — 손에 들고 있는 동안 토큰 수만큼 적립 배율이 붙는다.
+		var hand_add: float = card_phase.hand_growth_add(p) if card_phase != null else 0.0
+		delta *= p.growth_rate_mult + p.growth_rate_bonus + skill_add + hand_add
 	# 매혹([매혹] 카드) — 이 파일럿이 버는 만큼을 걸어 둔 쪽이 **그대로 한 벌
 	# 더** 번다. 복사이지 이전이 아니라서 원래 주인의 몫은 줄지 않는다. 복사본에
 	# 다시 링크가 걸려 있어도 한 겹에서 끊는다(`_score_link_depth`) — A→B→A 같은
@@ -1058,7 +1081,8 @@ func refresh_growth_stats(p: PilotData) -> void:
 	# 확정한 뒤** 공격력을 다시 계산한다.
 	var m_atk: float = mech_skill.atk_mult(p) if mech_skill != null else 1.0
 	var new_max: int = maxi(1, roundi(
-			float(p.base_max_hp) * (1.0 + p.growth_hp) * s_hp)) + p.bonus_max_hp
+			float(p.base_max_hp) * (1.0 + p.growth_hp) * s_hp
+			* (1.0 + p.bonus_max_hp_mult))) + p.bonus_max_hp
 	p.atk = maxi(1, roundi(float(p.base_atk) * (1.0 + p.growth)
 			* s_atk * m_atk * (1.0 + p.bonus_atk_mult))) 			+ p.bonus_atk_flat + p.atk_buff
 	if mech_skill != null:
@@ -1218,6 +1242,13 @@ static func fmt_score(v: float) -> String:
 	if absf(v) >= 10.0:
 		return "%.1fk" % v
 	return "%.2fk" % v
+
+
+## 성장치 **획득량** 표기 — k 로 접지 않고 정수 전체(0.3 → "300").
+## 전장 팝업과 교전 결과 성장 줄이 쓴다. 누적 성장치(스트립 · 상세 패널)는
+## 칸이 좁아 `fmt_score` 의 k 표기를 유지한다.
+static func fmt_score_gain(v: float) -> String:
+	return str(int(round(v * 1000.0)))
 
 
 # ─── Pilot animation driver ──────────────────────────────────────────────────
@@ -1536,11 +1567,19 @@ func effective_cost_for(cd: CardData, is_player: bool) -> int:
 	# 낼 수 있는 카드"로 읽혔다.
 	if not cd.is_playable():
 		return cd.cost
+	# [신중한 예산] — 작전 단계 중 손패에 들어온 카드는 그 단계 동안 공짜다.
+	# 다른 수정자를 볼 것도 없이 0 이다.
+	if cd.free_this_phase:
+		return 0
 	var inc: int = phase_cost_inc_p if is_player else phase_cost_inc_ai
 	var c: int = cd.cost + inc
 	var disc: int = engage_discount_p if is_player else engage_discount_ai
 	if disc > 0 and card_phase != null and card_phase.card_has_engage(cd):
 		c = max(0, c - disc)
+	# [맑은 정신] — 손패에서 바로 옆에 붙어 있는 카드의 비용을 깎는다. 손패
+	# 자리를 아는 쪽이 카드 페이즈라 그쪽에 묻는다.
+	if card_phase != null:
+		c -= card_phase.hand_neighbor_discount(cd, is_player)
 	return max(0, c)
 
 
@@ -1586,6 +1625,8 @@ func _on_restart_pressed() -> void:
 	phase_draw_discount_p = 0; phase_draw_discount_ai = 0
 	preserved_cards_p.clear(); preserved_cards_ai.clear()
 	next_phase_strategy_p = 0; next_phase_strategy_ai = 0
+	next_phase_draw_p = 0; next_phase_draw_ai = 0
+	ambush_search_p.clear(); ambush_search_ai.clear()
 	kill_bounty_p = 0; kill_bounty_ai = 0
 	_clear_turret_hit_visuals()
 	_score_popup_hold.clear()

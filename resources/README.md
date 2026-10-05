@@ -15,22 +15,30 @@ One row from the `cards` SQLite table, plus a few runtime fields:
 - `target: String` — `caster / enemy / ally / pilot / hand / location`
 - `cast_range: int` — tiles from caster (0 = self, 99 = unbounded)
 - `area: int` — AoE radius around target (0 = single)
-- `keyword: String` — empty or `"exhaust"` (소멸)
+- `card_id: int` — cards.csv 행 id(메크 카드는 -1). 고정 파일럿 카드
+  (`PlayerData.pilot_cards`)가 이 값으로 카드를 가리킨다.
+- `keyword: String` — `|` 목록(`exhaust` 소멸 / `preserve` 보존 / `volatile`
+  휘발성 / `charge` 충전 / `reposition` 재배치). `has_keyword()` 로만 읽고, 화면
+  이름 · 풀이는 `keyword_label()` / `keyword_note()`(`KEYWORD_LABELS` /
+  `KEYWORD_NOTES`). **충전은 키워드, 충전으로 쌓이는 것은 토큰**(`charge` 필드)
 - `effect: String` — semicolon-chain dispatched by `CardPhaseManager`
   (e.g. `"draw:2;discard:2"`, `"attack:1|pierce"`)
 - `description: String` — 카드 앞면 **아트 아래 설명판**에 그대로 찍히고(글자 크기는 넘칠 때만 줄어든다 — `Card._fit_desc_font_size`), 화면 상단 설명 상자에도 같은 문장이 뜬다
-- `scope: String` — `any` / `lane` / `jungle` (`SCOPE_*` consts). 시전자 제약;
-  read once, at deal time, by `CardPhaseManager._pool_for_pilot` via
-  `allowed_for_guerrilla(is_guerrilla)`. `lane` cards never reach a 정글러 and
-  `jungle` cards never reach a 레인 파일럿. Unknown values = unrestricted.
-- `pool: int` — `1` = in the random starter-deck pool, `0` = excluded (결투).
-- `card_type: String` — `mech` / `pilot` (`TYPE_*` consts). 덱 구성의 1차 분류:
-  파일럿마다 `mech` 3장 + `pilot` 3장을 받는다.
-- `card_cat: String` — `-` / `lane` / `draw` / `jungle` / `common` (`CAT_*`
-  consts). 파일럿 카드의 슬롯 분류. `fits_category(cat)` 가 매칭을 답하고,
-  **`common` 은 라인전 슬롯과 정글 슬롯 양쪽에 든다** — 복귀(id 21) 하나뿐이며,
-  라인전 카드이면서 정글러도 뽑을 수 있어야 하기 때문. `scope` 와 역할이
-  다르다: `scope` 는 *누가 가질 수 있는가*, `card_cat` 은 *어느 슬롯을 채우는가*.
+- `scope: String` — **포지션 목록**. `any` 단독 = 전부, `lane` 단독 = 탑 ·
+  미드 · 원딜 · 서폿, 그 밖에는 `jungle` / `top` / `mid` / `carry` / `support` 의
+  `|` 목록. `positions_of(scope)` 가 펼치고(알 수 없는 토큰뿐이면 전부),
+  `allowed_for_position(pos)` 가 판정하며, `scope_label(scope)` 가 "탑 · 미드 · 원딜"
+  처럼 읽는 말로 바꾼다.
+- `pool: int` — `1` = 파일럿 카드 후보, `0` = 제외(결투 · 오브젝트 보상 · 스킬 생성 카드).
+- `card_type: String` — cards.csv 는 전부 `pilot`. `mech` 는 `make_mech_card` 가
+  `mech_cards.csv` 행에만 찍는다.
+- `card_cat: String` — **분류 `|` 목록**(`CAT_*`: growth / engage / ambush /
+  attack / defense / utility / draw / jungle / lane, 지급 전용 `-`). `categories()` /
+  `fits_any_category(cats)` / `category_label()`. 포지션 슬롯 표의 칸이 이 값으로
+  후보를 고른다.
+- `charge_max: int` / `charge: int` — 충전 상한 / 지금 토큰 수. `shows_tokens()`
+  가 카드 앞면 배지를 켤지 답한다(충전 카드 + `token:N` 절을 단 골드러시).
+- `free_this_phase: bool` (runtime) — [신중한 예산] 의 "이번 작전 단계 동안 비용 0".
 - `owner_pilot: PilotData` (runtime, **not** `@export`) — the 시전자, set
   by `CardPhaseManager.build_starter_decks()`
 
@@ -55,6 +63,10 @@ Shared enum definitions:
   두 열거값은 세이브 호환을 위해 자리만 지킨다
 - `JungleStartDir { LEFT, RIGHT }` — assassin's jungle entry side
 - `DraftSide { BLUE, RED }` — ban/pick draft sides
+- **포지션 키** `POS_TOP` / `POS_JUNGLE` / `POS_MID` / `POS_CARRY` / `POS_SUPPORT`
+  (`"top"` …), `POSITION_KEYS`(라인 순서), `LANE_POSITIONS`(`scope = lane` 의 넷),
+  `POSITION_LABELS`, `position_key(role)` — 카드 `scope` 와 `pilot_card_slots.position`
+  이 쓰는 문자열이다(CSV 에 사람이 직접 적는 값이라 열거값이 아니다)
 
 **열거값 말고 표가 하나 더 있다 — `ROLE_DISPLAY_ORDER`.**
 ```gdscript
@@ -161,6 +173,18 @@ MOBA 의 골드에 해당한다(개시 1.00k → 50턴 25k → 캐리 40k+). 적
 `roll_hit` 을 쓰므로 둘 다 반영되고, 교전 무대는 자기 확률 구간을 쓰므로
 반영되지 않는다.
 
+**카드 회피 배율** — `eva_card_mod` / `eva_card_expire_turn`([소극적인 태세] +0.20).
+라인전 스탯과 달리 **회피에만** 곱해진다(`roll_hit` 의 방어자 쪽). 만료는
+`SimulationCore.tick_growth_and_expiries`.
+
+**매복** — `ambush_hold: bool`. 그 팀의 다음 작전 단계 진입 정산까지 이동 패스
+(`resolve_movement`)와 위치 이탈 귀환(`RecallSystem`)이 그 파일럿을 건너뛴다. 사망 ·
+본진 복귀 · 복귀 카드 · 후퇴 카드도 푼다.
+
+**영구 배율 가산** — `bonus_atk_mult`(영혼 수확 · [몰입] · [워밍업])와
+`bonus_max_hp_mult`([워밍업]). `refresh_growth_stats` 가 성장 공격력 · 성장 체력에
+곱한다. 지속 효과 장부 종류에 `FX_ATK_PCT` / `FX_HP_PCT` 가 더해졌다(상세 패널이 %로 찍는다).
+
 **`prev_grid_pos: Vector2i` 는 삭제됐다.** 유일한 소비자가
 `BattleRenderer._pilot_travel_dir`(초상화를 "온 방향의 반대쪽"에 앉히던 규칙)
 였는데, 초상화 자리가 **팀 고정**(아래 진영 = 타일 아래 / 위 진영 = 타일 위)으로
@@ -215,6 +239,7 @@ via `BattleSim.turret_hit_offset(td)`.
 
 Out-game player persona consumed by MatchFlow / BattleSim:
 - `id, name, role (GameEnums.Role), team_id (0=player, 1=enemy)`
+- `pilot_cards: Array` — **고정 파일럿 카드 3장**(`cards.id`, `players.pilot_cards`). 세이브에 함께 저장되고, 비어 있으면(옛 세이브) `GameManager.pilot_card_ids_for` 가 같은 id 의 DB 행 → 씨앗 뽑기 순으로 채운다.
 - **선수 스탯 6종** — `field_hit` 전장 명중 / `field_eva` 전장 회피 /
   `engage_hit` 교전 명중 / `engage_eva` 교전 회피 / `atk_growth` 공격력 성장 계수 /
   `hp_growth` 체력 성장 계수. **하한 1, 상한 없다**(주간 훈련이 100 을 넘겨 올린다).
@@ -444,7 +469,7 @@ API 는 다섯이다 — `make_material()` / `apply(ci)` / `set_reveal(ci, v)` /
 | `type_for(card_name)` | `ITEM_ART` 값의 접두사 → `TYPE_WEAPON` / `TYPE_SPIRIT` / `TYPE_VITALITY` (`""` = 표에 없음) | `Card._apply_name_plate` (이름판 타입색 `Card.TYPE_COLORS`) |
 | `ground_for(card_name)` | `images/ground/N.png` (`GROUND_COUNT` 5장) | 〃 (`ITEM_ART` 표에도 없는 카드) |
 
-**지금 모든 카드(cards.csv 32 + mech_cards.csv 64 = 96장)는 아이템 아이콘을 단다.**
+**지금 모든 카드(cards.csv 43 + mech_cards.csv 64 = 107장)는 아이템 아이콘을 단다.**
 `ITEM_ART` 는 카드 이름 → Deadlock 아이템 파일명 표이고, 효과가 비슷한 아이템을
 골랐다(예: `필중` → Sharpshooter, `보호` → Grit, `몸집 불리기` → Colossus, `캐시` →
 Golden Goose Egg; 효과 출처 https://deadlock.wiki/Items). **한 아이템은 한 카드에만**

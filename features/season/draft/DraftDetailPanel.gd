@@ -12,17 +12,14 @@ extends CanvasLayer
 # `TeamDraft` 인스턴스를 요구하지 않는다 — 필요한 것은 `PlayerData` 한 장과
 # 오토로드 `GameManager` 뿐이다.
 #
-# **카드는 보여 주지 않는다.** 예전에는 여기 "받게 될 파일럿 카드" 절이 있어
-# 역할별 후보 풀 전부(7~14장)를 카드 노드로 깔았는데, 그 목록이 답하는 질문이
-# 없었다 — 실제 3장은 경기 시작 시 표집되므로 드래프트에서 본 후보와 인게임에서
-# 손에 잡히는 카드가 다르고, 후보 풀은 **역할이 정하는 것이라 선수를 고르는
-# 판단에 들어가지 않는다**(같은 역할이면 누구를 뽑아도 같은 목록이다). 의미를
-# 갖는 것은 인게임에서 확정된 카드뿐이고, 그건 `battle_sim/ui/PilotDetailPanel`
-# 이 `BattleSim.starter_cards` 를 읽어 보여 준다. 그때 `TeamDraft` 의 후보 풀
-# 헬퍼 넷(`pilot_card_slots_for_role` / `candidate_cards_for_role` /
-# `slot_summary_for_role` / `cat_label`)도 함께 삭제됐다 — 이 팝업이 유일한
-# 소비자였다. 배분 규칙 자체는 `CardPhaseManager._pilot_slots_for` 가 그대로
-# 들고 있다(그쪽이 원본이다).
+# **파일럿 카드 3장을 보여 준다.** 파일럿 카드는 이제 **선수마다 고정**이라
+# (`GameManager.pilot_card_ids_for` — `players.pilot_cards`, 비었으면 선수 id 를
+# 씨앗 삼은 결정적 뽑기) 여기서 본 3장이 인게임에서 손에 잡히는 바로 그 3장이고,
+# 같은 역할이라도 선수마다 다르므로 **선수를 고르는 판단에 들어간다**. 카드는
+# 설명판(`CardDescBox`, 흰 판)으로 쌓는다 — 키워드 줄과 풀이가 함께 붙는다.
+#
+# 예전에는 3장이 경기 시작 시 표집돼 드래프트에서 보여 줄 것이 역할별 후보 풀뿐
+# 이었고, 그 목록은 누구를 뽑아도 같아서 절째로 지웠었다.
 #
 # 인게임의 `features/battle_sim/ui/PilotDetailPanel.gd` 와 **같은 언어**를 쓰되
 # 같은 클래스가 아니다 — 저쪽은 `BattleSim` 오케스트레이터와 `PilotData`(런타임
@@ -89,6 +86,8 @@ const SKILL_META_COLOR := OutgameTheme.TEXT_SUB
 const SKILL_DESC_COLOR := OutgameTheme.TEXT
 
 const CLOSE_H: float = 84.0
+## 파일럿 카드 설명판 사이 간격.
+const CARD_GAP: float = 12.0
 
 const ROLE_NAMES: Array = ["TANK", "FIGHTER", "ASSASSIN", "SUPPORT", "SNIPER"]
 ## 역할 색은 팔레트가 소유한다 — 화면마다 자기 배열을 들면 같은 역할이
@@ -111,8 +110,8 @@ func _init() -> void:
 	layer = OVERLAY_LAYER
 
 
-## 팝업을 연다. 필요한 것은 파일럿 한 명뿐이다 — 스킬 행과 카드 풀은 오토로드
-## `GameManager` 에서 직접 읽는다.
+## 팝업을 연다. 필요한 것은 파일럿 한 명뿐이다 — 스킬 행과 파일럿 카드는
+## 오토로드 `GameManager` 에서 직접 읽는다.
 func open(p: PlayerData) -> void:
 	close()
 	_pilot = p
@@ -226,6 +225,7 @@ func _build_panel() -> void:
 	y = _build_header(body, inner_w, y)
 	y = _build_stat_chips(body, inner_w, y + 18.0)
 	y = _build_skill_block(body, inner_w, y + 22.0)
+	y = _build_pilot_cards(body, inner_w, y + 22.0)
 
 	body.custom_minimum_size = Vector2(inner_w, y + 12.0)
 	body.size = Vector2(inner_w, y + 12.0)
@@ -331,6 +331,27 @@ func _build_skill_block(body: Control, w: float, y: float) -> float:
 
 	return y + _wrapped_label(body, w, y, String(sk.get("description", "")),
 			SKILL_DESC_FONT, SKILL_DESC_COLOR)
+
+
+## 이 선수의 고정 파일럿 카드 3장 — 설명판을 위에서부터 쌓는다.
+func _build_pilot_cards(body: Control, w: float, y: float) -> float:
+	y = _section(body, w, y, "파일럿 카드")
+	var gm: Node = get_node_or_null("/root/GameManager")
+	if gm == null:
+		return y
+	var placed: int = 0
+	for raw in gm.pilot_card_ids_for(_pilot):
+		var def: Dictionary = gm.card_def(int(raw))
+		if def.is_empty():
+			continue
+		if placed > 0:
+			y += CARD_GAP
+		var box := CardDescBox.build(CardData.from_def(def), w, true)
+		box.position = Vector2(0, y)
+		body.add_child(box)
+		y += box.size.y
+		placed += 1
+	return y
 
 
 ## 줄바꿈되는 문단 한 덩이. **실제 높이는 폰트가 정한다** — 손으로 재면 긴

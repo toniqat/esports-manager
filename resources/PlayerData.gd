@@ -74,6 +74,10 @@ const STAT_MIN: int = 1
 # 모브 파일럿 — 스킬이 없고 스탯이 네임드보다 낮으며 초상화가 실루엣으로
 # 나온다. 스탯 하향은 CSV 값에 이미 반영돼 있으므로 런타임 분기가 없다.
 @export var is_mob: bool = false
+# **고정 파일럿 카드 3장** — `cards.id` 목록(`players.pilot_cards`). 매 판 같은
+# 3장이 이 선수의 파일럿 카드로 덱에 들어간다. 비어 있으면
+# `GameManager.pilot_card_ids_for` 가 선수 id 를 씨앗 삼아 결정적으로 채운다.
+@export var pilot_cards: Array = []
 
 # Set during the assign phase: which mech this player is piloting this match.
 var assigned_mech: MechData = null

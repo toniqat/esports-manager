@@ -96,7 +96,7 @@ esports-manager/
 | MatchFlow→BattleSim handoff (`match_ctx`) | `features/match_flow/README.md`, `features/battle_sim/README.md` |
 | BattleSim module architecture, side (blue/red), growth & 성장치, economy gate, field size | `features/battle_sim/README.md` |
 | Lane combat, turrets, recall, jungle / camps, front line, stats & hit chance | `features/battle_sim/combat/README.md` |
-| Card phase, drag & drop, hand layout, deck slots, keywords, AI turn | `features/battle_sim/card_phase/README.md` |
+| Card phase, drag & drop, hand layout, keywords, AI turn, **fixed pilot cards (3 per player) · card scope / categories** | `features/battle_sim/card_phase/README.md` |
 | Engage stage, VS intro, start positions, result screen | `features/battle_sim/engage/README.md` |
 | Marker layout / glide, camp outline, death / popup FX | `features/battle_sim/rendering/README.md` |
 | Pilot strips, top chrome, kill feed, detail panel, card piles, safe-area offsets | `features/battle_sim/ui/README.md` |

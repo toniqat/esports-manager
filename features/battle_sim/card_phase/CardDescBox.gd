@@ -1,7 +1,11 @@
 class_name CardDescBox
 extends RefCounted
 
-# 카드 한 장의 **설명판** — 이름 · 비용 · 설명문.
+# 카드 한 장의 **설명판** — 이름 · 비용 · 키워드 · 설명문 · 키워드 풀이.
+#
+# **키워드는 설명문에 다시 적지 않는다.** 판이 이름 아래에 키워드 줄(소멸 ·
+# 재배치 · 충전 5 …)을 세우고, 맨 아래에 키워드마다 한 줄 풀이를 단다 — 그래서
+# 설명문에는 그 카드만의 효과만 남아 짧아진다.
 #
 # 카드 앞면에서 설명문이 걷히면서(`Card.gd` 앞면 두 층) 그 글을 들 자리가 화면마다
 # 필요해졌다: 손패는 가리킨 카드 위(`CardPhaseManager`), 밴픽 시트와 메크 상세는
@@ -19,6 +23,8 @@ const GAP := 8.0
 const NAME_FONT := 22
 const COST_FONT := 26
 const DESC_FONT := 18
+const KW_FONT := 18
+const NOTE_FONT := 15
 ## 설명이 아무리 짧아도 판이 이 높이 아래로 줄지 않는다 — 한 줄짜리 카드에서
 ## 판이 띠처럼 납작해지면 카드마다 판 크기가 들쭉날쭉해 보인다.
 const MIN_H := 110.0
@@ -67,6 +73,16 @@ static func build(data: CardData, width: float, light: bool = false,
 	# 프레임에 자리를 정해야 하는데 autowrap 라벨의 최소 크기는 폭이 정해진
 	# 뒤에야 나온다.
 	var desc_y: float = PAD + HEADER_H + GAP
+	var kws: Array = data.keyword_list()
+	if not kws.is_empty():
+		var tags: Array = []
+		for kw in kws:
+			tags.append(data.keyword_label(String(kw)))
+		var kw_col: Color = OutgameTheme.ACCENT_TEXT if light else Color(0.55, 0.85, 1.0)
+		var kw_lbl := UiHelpers.mk_label(box, " · ".join(tags), KW_FONT, kw_col,
+				Vector2(PAD, desc_y), Vector2(inner_w, float(KW_FONT) * 1.4))
+		kw_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		desc_y += float(KW_FONT) * 1.4 + 4.0
 	var desc_h: float = _text_height(data.description, inner_w, DESC_FONT)
 	var desc := Label.new()
 	desc.text = data.description
@@ -79,7 +95,30 @@ static func build(data: CardData, width: float, light: bool = false,
 	desc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(desc)
 
-	box.size = Vector2(width, maxf(MIN_H, desc_y + desc_h + PAD))
+	# 키워드 풀이 — 키워드마다 한 줄. 설명문보다 작고 흐리게.
+	var bottom: float = desc_y + desc_h
+	var notes: Array = []
+	for kw in kws:
+		var note: String = data.keyword_note(String(kw))
+		if not note.is_empty():
+			notes.append("%s: %s" % [data.keyword_label(String(kw)), note])
+	if not notes.is_empty():
+		var note_text: String = "\n".join(notes)
+		var note_h: float = _text_height(note_text, inner_w, NOTE_FONT)
+		var note_col: Color = OutgameTheme.TEXT_SUB if light else Color(0.70, 0.70, 0.74)
+		var note_lbl := Label.new()
+		note_lbl.text = note_text
+		note_lbl.add_theme_font_size_override("font_size", NOTE_FONT)
+		note_lbl.add_theme_color_override("font_color", note_col)
+		note_lbl.add_theme_constant_override("line_spacing", 0)
+		note_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		note_lbl.position = Vector2(PAD, bottom + GAP)
+		note_lbl.size = Vector2(inner_w, note_h)
+		note_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(note_lbl)
+		bottom += GAP + note_h
+
+	box.size = Vector2(width, maxf(MIN_H, bottom + PAD))
 	return box
 
 

@@ -14,7 +14,8 @@ extends Node2D
 #
 # **이 배율은 초상만이 아니라 배치도 탄다.** 한 칸에 두세 명이 서 있으면 커진
 # 얼굴들이 서로를 덮어 어느 쪽을 눌렀는지 알 수 없게 되므로,
-# `_build_pilot_render_layout` 이 육각 링의 반지름을 같은 배율로 벌린다
+# `_build_pilot_render_layout` 이 **강조된 파일럿(과 그 바깥 링)의** 슬롯 벡터를
+# 같은 배율로 벌린다 — 대상이 아닌 파일럿은 제자리다(`_pilot_spread`).
 # (그리고 `_draw_arrow_to_tile` 이 그만큼 긴 화살표를 그린다).
 const TARGET_EMPHASIS_SCALE: float = 1.5
 
@@ -73,9 +74,10 @@ var _glide: Dictionary = {}
 
 # ─── 마커 위 플로팅 숫자 ─────────────────────────────────────────────────────
 # 두 종류가 같은 배열을 쓴다 — 공격 카드의 **피해 수치**(붉은 `-N`, 0.30초)와
-# 성장치가 크게 오른 순간의 **성장치 팝업**(금색 `+1.50k`, 1.10초). 각 항목은
+# 성장치가 크게 오른 순간의 **성장치 팝업**(소울 아이콘 + 흰 글자·굵은 검은 외곽선 `+1500`, 1.10초 — `fmt_score_gain`, k 로 접지 않는다). 각 항목은
 #   {"pos": Vector2, "text": String, "color": Color, "t": float,
-#    "delay": float, "dur": float, "rise": float}
+#    "delay": float, "dur": float, "rise": float, "icon": Texture2D|null}
+# `icon` 이 있는 항목(성장치 팝업)은 글자 왼쪽에 아이콘을 붙이고 굵은 외곽선으로 그린다.
 # 이고 `pos` 는 **띄운 순간의 마커 좌표를 그대로 고정**한다 — 대상이 그 사이
 # 쓰러지거나 밀려나도 숫자가 따라다니지 않게 하기 위함.
 #
@@ -89,6 +91,14 @@ const POPUP_MISS_COLOR   := Color(0.78, 0.80, 0.86)
 const POPUP_DAMAGE_COLOR := Color(1.00, 0.42, 0.36)
 const POPUP_SHIELD_COLOR := Color(0.45, 0.85, 1.00)
 const POPUP_FONT_SIZE_BASE := 26
+## 성장치 팝업의 검은 외곽선 두께(px, DISPLAY_SCALE 이 곱해진다) — 피해 숫자의
+## 4방향 2px 외곽선보다 굵다.
+const SCORE_POPUP_OUTLINE_PX := 7.0
+## 아이콘과 숫자 사이 간격(px, DISPLAY_SCALE 이 곱해진다).
+const SCORE_POPUP_ICON_GAP := 4.0
+## 아이콘 외곽선 두께(px, DISPLAY_SCALE 이 곱해진다). 글자 외곽선(지름 기준)의
+## 절반쯤이 테두리 바깥으로 나오므로 그와 비슷한 굵기로 보이는 값.
+const SCORE_POPUP_ICON_OUTLINE_PX := 3.0
 
 
 # ─── 공격 카드 명중 파티클 ───────────────────────────────────────────────────
@@ -127,6 +137,41 @@ const CAST_BEAM_W_RATIO: float = 0.62
 const CAST_COLOR := Color(1.0, 1.0, 1.0)
 
 
+# ─── HP 링 조각 (피해를 입은 만큼 잘려 나가 커지며 사라진다) ─────────────────
+# 링은 `pilot.hp` 를 그대로 읽으므로 피해가 들어온 프레임에 그냥 짧아진다 —
+# 얼마나 깎였는지가 한 프레임에 지나가 버린다. 그래서 **방금 잃은 구간**을
+# 떼어 내 마커 중심 기준으로 키우며 투명하게 날린다.
+#
+# 감지는 호출부가 아니라 여기서 한다(`_hp_seen` 과 지금 hp 를 비교) — 피해 경로가
+# 전장 교전 · 공격 카드 · 포탑 · 교전 아레나 · 스킬로 흩어져 있어 한 곳에 걸면
+# 나머지가 빠진다. 교전이 도는 동안은 감지를 미룬다: 아레나가 전장을 덮고 있어
+# 아무도 못 보므로, 무대가 걷힌 뒤 깎인 총량이 한 조각으로 떨어진다(성장치
+# 팝업의 `_score_popup_hold` 와 같은 이유).
+## PilotData → 마지막으로 본 hp.
+var _hp_seen: Dictionary = {}
+## {"p": PilotData, "from": float, "to": float, "t": float} — from/to 는 max_hp
+## 대비 비율(from < to, 잃은 구간).
+var _hp_chips: Array = []
+const HP_CHIP_DUR: float = 0.45
+## 끝날 때 조각의 반지름 · 두께 배율(마커 중심 기준).
+const HP_CHIP_SCALE: float = 1.45
+
+
+# ─── 초상 누르기 (커지고 맨 위로) ───────────────────────────────────────────
+# 전장 초상은 이웃 칸 마커와 겹치기도 한다. 누른 초상은 **누르는 동안
+# `PRESS_SCALE` 로 커지고**, 떼면 크기만 돌아온다 — **맨 위 순서는 다른 초상을
+# 누를 때까지 유지된다**(`_top_pilot`). 입력은 `ui/MarkerTouch.gd` 가 받는다.
+#
+# 이 배율은 **그리기만** 탄다(`_pilot_draw_scale`). 대상 지정 강조와 달리 배치
+# (`_pilot_spread`)에는 들어가지 않는다 — 누를 때마다 이웃이 비켜 앉으면 방금
+# 보려던 무리가 흔들린다.
+const PRESS_SCALE: float = 1.3
+const PRESS_TWEEN_SEC: float = 0.08
+var _press_pilot: PilotData = null
+var _top_pilot: PilotData = null
+var _press_now: Dictionary = {}
+
+
 func _process(delta: float) -> void:
 	# 상시 갱신이 필요한 것은 셋이다 — 피해 수치 팝업, 켜지거나 꺼지는 중인 대상
 	# 강조, 그리고 미끄러지는 중인 마커. 전부 멈춰 있으면 재draw 하지 않는다
@@ -136,6 +181,10 @@ func _process(delta: float) -> void:
 	if _advance_bursts(delta):
 		dirty = true
 	if _advance_emphasis(delta):
+		dirty = true
+	if _advance_press(delta):
+		dirty = true
+	if _advance_hp_chips(delta):
 		dirty = true
 	# 목표 자리를 먼저 훑어 새 글라이드를 띄운 다음 시간을 민다. BattleSim 은
 	# 이동 타이머를 더 이상 들고 있지 않으므로 이 구간의 프레임은 여기서 만든다.
@@ -170,6 +219,89 @@ func _advance_emphasis(delta: float) -> bool:
 	return moving
 
 
+## 누른 초상의 배율을 `PRESS_SCALE` / 1.0 쪽으로 민다. 움직이는 중이면 true.
+func _advance_press(delta: float) -> bool:
+	var step: float = (PRESS_SCALE - 1.0) * (delta / maxf(0.0001, PRESS_TWEEN_SEC))
+	var moving: bool = false
+	if _press_pilot != null and not _press_now.has(_press_pilot):
+		_press_now[_press_pilot] = 1.0
+	for raw in _press_now.keys():
+		var p := raw as PilotData
+		var want: float = PRESS_SCALE if p == _press_pilot else 1.0
+		var have: float = float(_press_now[p])
+		if is_equal_approx(have, want):
+			if want == 1.0:
+				_press_now.erase(p)
+			continue
+		_press_now[p] = move_toward(have, want, step)
+		moving = true
+	return moving
+
+
+## 초상을 눌렀다 — 커지기 시작하고 맨 위로 올라온다(뗀 뒤에도 맨 위는 남는다).
+func press_marker(p: PilotData) -> void:
+	_press_pilot = p
+	_top_pilot = p
+	queue_redraw()
+
+
+## 손을 뗐다 — 크기만 돌아온다.
+func release_marker() -> void:
+	_press_pilot = null
+
+
+## `pos` 아래의 초상(살아 있는 파일럿만). 맨 위 초상이 먼저 답하고, 나머지는
+## 그려진 마커 중심이 가장 가까운 쪽이다 — 겹친 두 얼굴 중 뒤에 깔린 쪽의
+## 드러난 부분을 누르면 대개 그쪽 중심이 더 가깝다.
+func marker_at(pos: Vector2) -> PilotData:
+	var markers: Dictionary = _pilot_render_layout
+	if markers.is_empty():
+		markers = pilot_marker_positions()
+	if _top_pilot != null and markers.has(_top_pilot) and _top_pilot.alive:
+		var top_r: float = marker_outer_radius(pilot_marker_radius(_top_pilot))
+		if (markers[_top_pilot] as Vector2).distance_to(pos) <= top_r:
+			return _top_pilot
+	var best: PilotData = null
+	var best_d: float = INF
+	for raw in markers.keys():
+		var p := raw as PilotData
+		if not p.alive:
+			continue
+		var d: float = (markers[p] as Vector2).distance_to(pos)
+		if d <= marker_outer_radius(pilot_marker_radius(p)) and d < best_d:
+			best_d = d
+			best = p
+	return best
+
+
+## HP 감소를 감지해 조각을 띄우고, 떠 있는 조각의 시간을 민다. 그릴 조각이
+## 남아 있으면 true.
+func _advance_hp_chips(delta: float) -> bool:
+	var engage_busy: bool = _bs.engage_phase != null and _bs.engage_phase.is_active()
+	if not engage_busy:
+		for raw in _bs.pilots:
+			var p := raw as PilotData
+			var seen: int = int(_hp_seen.get(p, p.hp))
+			if p.hp < seen and p.max_hp > 0:
+				_hp_chips.append({
+					"p": p,
+					"from": clampf(float(p.hp) / float(p.max_hp), 0.0, 1.0),
+					"to": clampf(float(seen) / float(p.max_hp), 0.0, 1.0),
+					"t": 0.0,
+				})
+			_hp_seen[p] = p.hp
+	if _hp_chips.is_empty():
+		return false
+	var keep: Array = []
+	for raw in _hp_chips:
+		var c: Dictionary = raw
+		c["t"] = float(c["t"]) + delta
+		if float(c["t"]) < HP_CHIP_DUR:
+			keep.append(c)
+	_hp_chips = keep
+	return true
+
+
 ## Ticks every live popup and drops the expired ones. Returns true while at
 ## least one is still on screen so the caller keeps redrawing.
 func _advance_popups(delta: float) -> bool:
@@ -189,7 +321,8 @@ func _advance_popups(delta: float) -> bool:
 ## members of a 연속 공격 chain so several numbers off the same swing don't
 ## stack on one pixel.
 func spawn_pilot_popup(p: PilotData, text: String, color: Color,
-		delay: float = 0.0, dur: float = -1.0, rise: float = -1.0) -> void:
+		delay: float = 0.0, dur: float = -1.0, rise: float = -1.0,
+		icon: Texture2D = null) -> void:
 	if p == null:
 		return
 	var markers: Dictionary = _build_pilot_render_layout()
@@ -203,6 +336,7 @@ func spawn_pilot_popup(p: PilotData, text: String, color: Color,
 		"delay": max(0.0, delay),
 		"dur":   _bs.DMG_POPUP_DUR if dur <= 0.0 else dur,
 		"rise":  _bs.DMG_POPUP_RISE_PX if rise <= 0.0 else rise,
+		"icon":  icon,
 	})
 	queue_redraw()
 
@@ -213,9 +347,10 @@ func spawn_pilot_popup(p: PilotData, text: String, color: Color,
 func spawn_score_popup(p: PilotData, amount: float) -> void:
 	if amount <= 0.0:
 		return
-	spawn_pilot_popup(p, "+" + BattleSim.fmt_score(amount),
+	spawn_pilot_popup(p, "+" + BattleSim.fmt_score_gain(amount),
 			BattleSim.SCORE_POPUP_COLOR, 0.0,
-			BattleSim.SCORE_POPUP_DUR, BattleSim.SCORE_POPUP_RISE_PX)
+			BattleSim.SCORE_POPUP_DUR, BattleSim.SCORE_POPUP_RISE_PX,
+			BattleSim.SCORE_POPUP_ICON)
 
 
 ## Ticks every live burst and drops the expired ones. Same shape as
@@ -310,6 +445,11 @@ func _draw_pilot_cast_fx() -> void:
 func clear_popups() -> void:
 	_popups.clear()
 	_bursts.clear()
+	_hp_chips.clear()
+	_hp_seen.clear()
+	_press_now.clear()
+	_press_pilot = null
+	_top_pilot = null
 	queue_redraw()
 
 
@@ -329,6 +469,10 @@ func _draw_pilot_popups() -> void:
 		var alpha: float = 1.0 if k < 0.6 else 1.0 - (k - 0.6) / 0.4
 		var txt: String = String(e["text"])
 		var tsz := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz)
+		var icon := e.get("icon") as Texture2D
+		if icon != null:
+			_draw_icon_popup(font, fsz, txt, tsz, icon, e, rise, alpha)
+			continue
 		var base: Vector2 = (e["pos"] as Vector2) \
 				+ Vector2(-tsz.x * 0.5, -PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE - rise)
 		# 검은 외곽선 먼저 — 전장 타일 위에서도 숫자가 읽히도록.
@@ -339,6 +483,27 @@ func _draw_pilot_popups() -> void:
 						HORIZONTAL_ALIGNMENT_LEFT, -1, fsz, outline)
 		draw_string(font, base, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz,
 				_alpha_mul(e["color"] as Color, alpha))
+
+
+## 아이콘 + 숫자 한 줄(성장치 팝업). 아이콘은 글자 높이에 맞춰 늘리고, 둘을 합친
+## 폭의 가운데를 마커 위에 맞춘다. 글자는 굵은 검은 외곽선을 먼저 깐다.
+func _draw_icon_popup(font: Font, fsz: int, txt: String, tsz: Vector2,
+		icon: Texture2D, e: Dictionary, rise: float, alpha: float) -> void:
+	var icon_sz: float = font.get_height(fsz)
+	var gap: float = SCORE_POPUP_ICON_GAP * HexGrid.DISPLAY_SCALE
+	var total_w: float = icon_sz + gap + tsz.x
+	var base: Vector2 = (e["pos"] as Vector2) \
+			+ Vector2(-total_w * 0.5, -PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE - rise)
+	# `base.y` 는 글자 기준선 — 줄 상단은 ascent 만큼 위다.
+	var line_top: float = base.y - font.get_ascent(fsz)
+	draw_outlined_icon(self, icon, Rect2(base.x, line_top, icon_sz, icon_sz),
+			SCORE_POPUP_ICON_OUTLINE_PX * HexGrid.DISPLAY_SCALE, alpha)
+	var text_at := Vector2(base.x + icon_sz + gap, base.y)
+	var outline_px: int = maxi(1, int(round(SCORE_POPUP_OUTLINE_PX * HexGrid.DISPLAY_SCALE)))
+	draw_string_outline(font, text_at, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz,
+			outline_px, _alpha_mul(Color(0.0, 0.0, 0.0), alpha))
+	draw_string(font, text_at, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz,
+			_alpha_mul(e["color"] as Color, alpha))
 
 
 func _draw() -> void:
@@ -352,6 +517,7 @@ func _draw() -> void:
 	# targeting dim overlay agree on where each pilot's marker landed within
 	# its team's offset row above / below the tile.
 	_pilot_render_layout = _build_pilot_render_layout()
+	_draw_field_outline()
 	_draw_front_line_overlays()
 	_draw_captured_tile_overlays()
 	_draw_jungle_camps()
@@ -539,6 +705,61 @@ func _draw_jungle_path_pill(c: Vector2, visits: Array) -> void:
 			HORIZONTAL_ALIGNMENT_LEFT, -1, fsz, JungleStartOverlay.PATH_TEXT)
 
 
+## 전장 외곽선 — 타일이 있는 칸 전체를 **한 덩어리**로 보고 그 바깥 윤곽만
+## 긋는다. 한 변을 긋는 조건은 하나, 그 변 너머에 유효한 칸이 없을 것
+## (`_neighbor_across_edge` 가 센티널을 돌려준다). 이웃끼리 맞닿은 변에는 선이
+## 없어 타일이 이어져 보인다 — 그래서 타일 PNG(`hexa-tileset.png` 0행)도 테두리
+## 없이 면만 칠하고 1.5px 크게 그려 이웃과 겹치게 했다(경계 솔기 방지).
+##
+## 변을 낱개 `draw_line` 으로 그으면 굵은 선의 120° 꺾임마다 이가 빠지므로,
+## 바깥 변들을 꼭짓점으로 이어 닫힌 고리로 만든 뒤 `draw_polyline` 한 번에
+## 그린다. 맨 먼저 그려 점령 면 · 캠프 테두리가 그 위에 얹힌다.
+const FIELD_OUTLINE_COLOR: Color = Color(1.0, 1.0, 1.0, 1.0)
+const FIELD_OUTLINE_WIDTH: float = 4.0
+
+func _draw_field_outline() -> void:
+	for loop in _field_outline_loops():
+		draw_polyline(loop, FIELD_OUTLINE_COLOR, FIELD_OUTLINE_WIDTH, true)
+
+
+## 바깥 변을 이어 붙인 닫힌 고리들(첫 점이 끝에 한 번 더 들어간다).
+## 꼭짓점은 서로 다른 칸 중심에서 계산돼 부동소수 오차가 있으므로 0.1px 로
+## 반올림한 키로 잇는다.
+func _field_outline_loops() -> Array:
+	var hg: HexGrid = _bs.hex_grid
+	var next_of: Dictionary = {}   # 시작점 키 → 끝점
+	var start_of: Dictionary = {}  # 시작점 키 → 시작점
+	for raw in _bs.tiles_layer.get_used_cells():
+		var cell := raw as Vector2i
+		var center := _bs.cell_center(cell)
+		var pts := hg.hex_corners(center)
+		for i in range(6):
+			var a: Vector2 = pts[i]
+			var b: Vector2 = pts[(i + 1) % 6]
+			if _neighbor_across_edge(cell, center, (a + b) * 0.5).x != -9999:
+				continue    # 안쪽 변 — 이웃과 이어진다
+			# hex_corners 는 화면에서 시계방향이라 바깥 변도 모두 같은 방향으로
+			# 감긴다 → 한 변의 끝점이 곧 다음 변의 시작점이다.
+			next_of[_outline_key(a)] = b
+			start_of[_outline_key(a)] = a
+	var loops: Array = []
+	while not next_of.is_empty():
+		var k0: Vector2i = next_of.keys()[0]
+		var loop := PackedVector2Array([start_of[k0]])
+		var k := k0
+		while next_of.has(k):
+			var nxt: Vector2 = next_of[k]
+			next_of.erase(k)
+			loop.append(nxt)
+			k = _outline_key(nxt)
+		loops.append(loop)
+	return loops
+
+
+func _outline_key(p: Vector2) -> Vector2i:
+	return Vector2i(roundi(p.x * 10.0), roundi(p.y * 10.0))
+
+
 # Captured jungle/neutral tiles use saturated team-coloured atlas tiles. We
 # overlay a translucent white polygon on owned cells so the team identity
 # still reads but the tile no longer competes with pilot markers / HP bars.
@@ -673,6 +894,13 @@ func _draw_pilot_groups() -> void:
 	for pos in by_cell.keys():
 		var pv := pos as Vector2i
 		_draw_pilot_cell(pv, by_cell[pv] as Array)
+	# **맨 위 초상**(마지막으로 누른 것)은 칸 순회에서 빠져 있다가 맨 끝에
+	# 그림자째 다시 그려진다 — 이웃 칸 마커에 가려져 있던 얼굴이 위로 올라온다.
+	var top := _top_pilot
+	if top != null and _is_renderable(top) and not _hidden_during_jungle_pick(top):
+		var radius: float = PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE
+		_draw_marker_shadow(top, radius)
+		_draw_pilot_marker(top, radius)
 
 
 # Group renderable pilots by their *render* cell (not grid_pos): a pilot in
@@ -730,8 +958,13 @@ func _build_pilot_render_layout() -> Dictionary:
 	return _compose_positions(solution)
 
 
-# PilotData → {"cell": Vector2i, "slot": int}. 모든 렌더 가능한 파일럿이 자기
-# 슬롯을 받는다 — `+N` 오버플로 원은 사라졌고, 7명째부터는 바깥 링으로 나간다.
+# PilotData → {"cell": Vector2i, "vec": 타일 중심에서의 변위, "ring": 몇 번째
+# 겹인가, "grp": 같은 가로 줄 번호(육각 링 폴백은 -1)}. 모든 렌더 가능한 파일럿이
+# 자기 자리를 받는다 — `+N` 오버플로 원은 사라졌다.
+#
+# **먼저 가로 줄로 앉힌다**(`_row_blocks` → `_pick_row_seats`): 팀 블록이 타일
+# 아래(팀0) / 위(팀1)에 한 줄로 나란히 서고, 아군 홈 구역에서는 아군도 위로
+# 올라간다. 줄이 세 겹 어디에도 안 들어갈 때만 아래의 육각 링 배치로 떨어진다.
 #
 # 배정은 **전장 전체를 한 번에 훑는 그리디**이되, 낱개가 아니라 **블록 단위**다:
 # 같은 칸에서 기본 방향이 같은 파일럿들(= 같은 팀)은 한 덩어리로 묶여 자리표의
@@ -754,21 +987,231 @@ func _solve_slots() -> Dictionary:
 	# 두기 위한 것이다 — 강조까지 반영하면 카드를 집을 때마다 전장의 슬롯이 새로
 	# 풀려 배치가 통째로 다시 섞인 것처럼 보인다.
 	var placed: Array = []
+	# 블록마다 `{"pilots", "center", "v", "cap", "bias", "row": 가로 줄이면 true,
+	# "seats": [{"vec", "ring", "row"}]}` — 꼬리 겹침 보정(`_repair_arrow_overlaps`)이
+	# 가로 줄 블록을 다시 앉힐 수 있도록 그리디가 끝날 때까지 결과를 모아 둔다.
+	var entries: Array = []
 	for raw_cell in cells:
 		var cell := raw_cell as Vector2i
 		var tile_center := _bs.cell_center(cell)
 		var used: Dictionary = {}
-		for raw_block in _slot_blocks(by_cell[cell] as Array):
+		for raw_block in _row_blocks(cell, by_cell[cell] as Array):
 			var block: Dictionary = raw_block
 			var members: Array = block["pilots"] as Array
-			var slots: Array = _pick_block_slots(tile_center, int(block["dir"]),
-					_block_seat_bias(members), members.size(), base_r, used, placed)
-			for i in range(members.size()):
-				var slot: int = int(slots[i])
-				used[slot] = true
-				placed.append(tile_center + _slot_offset(slot, base_r))
-				out[members[i]] = {"cell": cell, "slot": slot}
+			var v: float = float(block["v"])
+			var bias: int = _block_seat_bias(members)
+			var entry: Dictionary = {"pilots": members, "cell": cell, "center": tile_center,
+					"v": v, "cap": int(block["cap"]), "bias": bias, "row": true}
+			var seats: Array = _pick_row_seats(tile_center, members.size(), v,
+					int(block["cap"]), bias, base_r, placed)
+			if seats.is_empty():
+				# 줄이 어디에도 안 들어가면 예전 육각 링 배치로 떨어진다.
+				entry["row"] = false
+				for raw_slot in _pick_block_slots(tile_center, 3 if v > 0.0 else 0,
+						bias, members.size(), base_r, used, placed):
+					var slot: int = int(raw_slot)
+					used[slot] = true
+					seats.append({"vec": _slot_offset(slot, base_r),
+							"ring": floori(float(slot) / 6.0), "row": -1})
+			for raw_seat in seats:
+				placed.append(tile_center + ((raw_seat as Dictionary)["vec"] as Vector2))
+			entry["seats"] = seats
+			entries.append(entry)
+	_repair_arrow_overlaps(entries, base_r)
+	# 가로 줄 하나마다 붙는 번호 — `_pilot_spread` 가 같은 줄을 한 배율로 벌린다.
+	var next_grp: int = 0
+	for raw_entry in entries:
+		var entry: Dictionary = raw_entry
+		var members: Array = entry["pilots"] as Array
+		var seats: Array = entry["seats"] as Array
+		var grp_of_row: Dictionary = {}
+		for i in range(members.size()):
+			var seat: Dictionary = seats[i]
+			var grp: int = -1
+			var row_i: int = int(seat["row"])
+			if row_i >= 0:
+				if not grp_of_row.has(row_i):
+					grp_of_row[row_i] = next_grp
+					next_grp += 1
+				grp = int(grp_of_row[row_i])
+			out[members[i]] = {"cell": entry["cell"], "vec": seat["vec"] as Vector2,
+					"ring": int(seat["ring"]), "grp": grp}
 	return out
+
+
+## **초상이 남의 꼬리를 덮으면 그 초상이 비켜 앉는다.** 그리디는 초상끼리의 겹침만
+## 보므로, 위아래로 붙은 두 칸에서 먼저 앉은 쪽(위 칸 아군의 S)을 피해 뒤에 온
+## 쪽(아래 칸 적)이 옆으로 비켜 앉으면 그 꼬리가 대각선으로 먼저 앉은 초상 밑을
+## 지나간다 — 꼬리가 가려져 적이 어느 칸에 있는지가 사라진다.
+##
+## 그래서 그리디가 끝난 뒤 블록을 배정 순서대로 한 번 훑으며, 구성원 중 하나라도
+## **다른 블록의 꼬리**에 닿은 가로 줄 블록을 `strict` 판정(초상 ↔ 초상, 초상 ↔
+## 꼬리, 내 꼬리 ↔ 남의 초상)으로 다시 앉힌다. 깨끗한 자리가 없으면 그대로 둔다.
+## 다시 앉은 블록은 다른 누구의 꼬리 · 초상과도 닿지 않으므로 새 겹침을 만들지
+## 않는다. 같은 블록 안(뒷줄 꼬리가 앞줄 밑을 지나는 것)은 보지 않는다.
+func _repair_arrow_overlaps(entries: Array, r: float) -> void:
+	var outer: float = marker_outer_radius(r)
+	for i in range(entries.size()):
+		var e: Dictionary = entries[i]
+		if not bool(e["row"]):
+			continue
+		var others_disc: Array = []
+		var others_arrow: Array = []
+		for j in range(entries.size()):
+			if j != i:
+				_collect_block_shapes(entries[j], r, others_disc, others_arrow)
+		var tc: Vector2 = e["center"] as Vector2
+		var hit: bool = false
+		for raw_seat in e["seats"] as Array:
+			if _disc_hits_arrows(tc + ((raw_seat as Dictionary)["vec"] as Vector2),
+					outer, others_arrow):
+				hit = true
+				break
+		if not hit:
+			continue
+		var seats: Array = _pick_row_seats(tc, (e["pilots"] as Array).size(), float(e["v"]),
+				int(e["cap"]), int(e["bias"]), r, others_disc, others_arrow, true)
+		if not seats.is_empty():
+			e["seats"] = seats
+
+
+## 블록의 초상 중심과 꼬리 외곽 다각형(강조 이전, 배율 1)을 두 배열에 덧붙인다.
+func _collect_block_shapes(e: Dictionary, r: float, discs: Array, arrows: Array) -> void:
+	var tc: Vector2 = e["center"] as Vector2
+	for raw_seat in e["seats"] as Array:
+		var pos: Vector2 = tc + ((raw_seat as Dictionary)["vec"] as Vector2)
+		discs.append(pos)
+		var arrow := _arrow_outline_polygon(pos, tc, r, 1.0)
+		if not arrow.is_empty():
+			arrows.append(arrow)
+
+
+func _disc_hits_arrows(pos: Vector2, outer: float, arrows: Array) -> bool:
+	for raw in arrows:
+		if _point_polygon_distance(pos, raw as PackedVector2Array) < outer:
+			return true
+	return false
+
+
+## 점에서 볼록 다각형까지의 거리 — 안에 있으면 0.
+func _point_polygon_distance(pt: Vector2, poly: PackedVector2Array) -> float:
+	if Geometry2D.is_point_in_polygon(pt, poly):
+		return 0.0
+	var best: float = INF
+	for k in range(poly.size()):
+		var q := Geometry2D.get_closest_point_to_segment(pt, poly[k], poly[(k + 1) % poly.size()])
+		best = minf(best, pt.distance_to(q))
+	return best
+
+
+## 한 칸의 블록을 **가로 줄 배치 단위**로 나눈다. 각 항목은
+## `{"pilots": Array, "v": +1(타일 아래) / -1(타일 위), "cap": 한 줄 정원}`.
+##
+## 보통 칸: 팀0 = 아래, 팀1 = 위, 한 줄 3명(넘치면 다음 줄).
+## **아군 홈 구역**(`_is_home_zone` — 아군 HQ 와 거기 붙은 아군 포탑 칸)은 화면
+## 맨 아래라 타일 아래의 초상이 손패 · 하단 UI 에 가려진다. 그래서 **모두 위로**
+## 올리고 위쪽은 한 줄에 `HOME_TOP_CAP`(5)명까지 받는다 — 아군 블록이 먼저 위를
+## 잡고, 위가 다 차면 그 뒤에 오는 사람(대개 다이브한 적)부터 아래로 내려간다.
+func _row_blocks(cell: Vector2i, pilots: Array) -> Array:
+	var blocks: Array = _slot_blocks(pilots)
+	var out: Array = []
+	if not _is_home_zone(cell):
+		for raw in blocks:
+			var b: Dictionary = raw
+			out.append({"pilots": b["pilots"], "v": 1.0 if int(b["dir"]) == 3 else -1.0,
+					"cap": ROW_CAP})
+		return out
+	# 아군(팀0) 블록이 위쪽 정원을 먼저 쓴다.
+	blocks.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return int(a["dir"]) == 3 and int(b["dir"]) != 3)
+	var top_left: int = HOME_TOP_CAP
+	for raw in blocks:
+		var members: Array = (raw as Dictionary)["pilots"] as Array
+		var up: int = mini(members.size(), top_left)
+		top_left -= up
+		if up > 0:
+			out.append({"pilots": members.slice(0, up), "v": -1.0, "cap": HOME_TOP_CAP})
+		if up < members.size():
+			out.append({"pilots": members.slice(up), "v": 1.0, "cap": ROW_CAP})
+	return out
+
+
+## 아군 홈 구역 — 아군 HQ 칸과 **그 HQ 에 붙은 아군 포탑 칸**(지금 맵에선 2차
+## 포탑 셋). 포탑이 부서져도 자리는 그대로다(그 칸이 화면 아래라는 사실은 안
+## 변한다).
+func _is_home_zone(cell: Vector2i) -> bool:
+	var hq: Vector2i = _bs.PLAYER_HQ_POS
+	if cell == hq:
+		return true
+	if _bs.hex_grid.hex_distance(cell, hq) != 1:
+		return false
+	for raw in _bs.turrets:
+		var td := raw as TurretData
+		if td.team == 0 and td.grid_pos == cell:
+			return true
+	return false
+
+
+## 블록 `n` 명이 앉을 **가로 줄** 자리들(구성원 순서 = 왼쪽부터). 각 항목은
+## `{"vec": 타일 중심에서의 변위, "ring": 타일에서 몇 번째 줄인가, "row": 블록 안 줄 번호}`.
+##
+## 줄은 `cap` 명씩 끊는다(보통 3 → 4명이면 3+1, 5명이면 3+2). 첫 줄이 타일에서
+## `지름 + 여백`(= 육각 링 0번 반지름) 만큼 떨어진 곳에 가운데 정렬로 서고, 다음
+## 줄은 그만큼 더 바깥이다. 이웃 칸 마커와 겹치면 (1) **줄째 좌우로 반 칸씩** 밀어
+## 보고(레인 쏠림 쪽 먼저, `_block_seat_bias`), (2) 그래도 막히면 **한 줄 더
+## 바깥**에서 같은 순서로 다시 본다. `SLOT_RINGS` 줄을 다 봐도 막히면 빈 배열 —
+## 호출자가 육각 링 배치(`_pick_block_slots`)로 떨어진다.
+##
+## `strict` 이면 꼬리까지 본다(`_seat_crosses_arrows`) — 꼬리 겹침 보정
+## (`_repair_arrow_overlaps`)이 다시 앉힐 때만 쓴다.
+func _pick_row_seats(tile_center: Vector2, n: int, v: float, cap: int, bias: int,
+		r: float, placed: Array, arrows: Array = [], strict: bool = false) -> Array:
+	var counts: Array = []
+	var left: int = n
+	while left > 0:
+		var c: int = mini(left, cap)
+		counts.append(c)
+		left -= c
+	var step: float = r * 2.0 + MARKER_GAP
+	var side: float = 1.0 if bias > 0 else -1.0
+	var shifts: Array = [0.0, 0.5 * side, -0.5 * side, side, -side]
+	for o in range(SLOT_RINGS):
+		for raw_s in shifts:
+			var s: float = float(raw_s)
+			var cand: Array = []
+			var ok: bool = true
+			for ri in range(counts.size()):
+				var c: int = int(counts[ri])
+				var y: float = v * step * float(o + ri + 1)
+				for k in range(c):
+					var vec := Vector2((float(k) - float(c - 1) * 0.5 + s) * step, y)
+					if _slot_collides(tile_center + vec, r, placed) or (strict
+							and _seat_crosses_arrows(tile_center, vec, r, placed, arrows)):
+						ok = false
+						break
+					cand.append({"vec": vec, "ring": o + ri, "row": ri})
+				if not ok:
+					break
+			if ok:
+				return cand
+	return []
+
+
+## 이 자리의 초상이 남의 꼬리에 닿거나, 이 자리에서 뻗을 꼬리가 남의 초상에
+## 닿는가. 초상은 HP 링 · 외곽선까지 친 바깥 반지름으로 잰다.
+func _seat_crosses_arrows(tile_center: Vector2, vec: Vector2, r: float,
+		placed: Array, arrows: Array) -> bool:
+	var outer: float = marker_outer_radius(r)
+	var pos: Vector2 = tile_center + vec
+	if _disc_hits_arrows(pos, outer, arrows):
+		return true
+	var mine := _arrow_outline_polygon(pos, tile_center, r, 1.0)
+	if mine.is_empty():
+		return false
+	for raw in placed:
+		if _point_polygon_distance(raw as Vector2, mine) < outer:
+			return true
+	return false
 
 
 ## 한 칸의 파일럿을 **기본 방향이 같은 블록**으로 묶는다. 블록은 한 덩어리로
@@ -917,8 +1360,8 @@ func _compare_seat_windows(a: Dictionary, b: Dictionary, bias: int) -> bool:
 	return int(a["start"]) < int(b["start"])
 
 
-# 지금 프레임의 마커 좌표 표. 글라이드가 낸 **중심 + 슬롯 벡터**에 그 칸의 강조
-# 배율을 곱하고(= 무리가 함께 벌어진다) 화면 밖으로 나간 무리를 통째로 밀어 넣는다.
+# 지금 프레임의 마커 좌표 표. 글라이드가 낸 **중심 + 슬롯 벡터**에 파일럿별 강조
+# 배율(`_pilot_spread`)을 곱하고 화면 밖으로 나간 벌어진 마커들을 통째로 밀어 넣는다.
 #
 # 배율을 타일 중심이 아니라 **글라이드 중심**에 걸어야 한다는 것이 요점이다 —
 # 칸을 건너는 중인 파일럿을 도착 타일 기준으로 부풀리면 아직 도착하지도 않은
@@ -934,14 +1377,25 @@ func _compose_positions(solution: Dictionary) -> Dictionary:
 	var base_r: float = PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE
 	for raw_cell in by_cell.keys():
 		var pilots: Array = by_cell[raw_cell] as Array
-		var em: float = _group_emphasis(pilots)
-		var positions: Array = []
+		var spread: Dictionary = _pilot_spread(pilots, solution)
+		# 벌어진(배율 > 1) 마커만 한 덩어리로 화면 안에 밀어 넣는다 — 제자리인
+		# 마커까지 같이 밀면 대상이 아닌 적 초상이 함께 끌려간다.
+		var moved: Array = []
+		var moved_pos: Array = []
+		var max_em: float = 1.0
 		for raw in pilots:
 			var g: Dictionary = _glide[raw]
-			positions.append((g["center"] as Vector2) + (g["vec"] as Vector2) * em)
-		positions = _clamp_group_on_screen(positions, base_r * em)
-		for i in range(pilots.size()):
-			out[pilots[i]] = positions[i] as Vector2
+			var em: float = float(spread[raw])
+			var pos: Vector2 = (g["center"] as Vector2) + (g["vec"] as Vector2) * em
+			if em > 1.0:
+				moved.append(raw)
+				moved_pos.append(pos)
+				max_em = maxf(max_em, em)
+			else:
+				out[raw] = pos
+		moved_pos = _clamp_group_on_screen(moved_pos, base_r * max_em)
+		for i in range(moved.size()):
+			out[moved[i]] = moved_pos[i] as Vector2
 	return out
 
 
@@ -957,25 +1411,23 @@ func _compare_cells(a: Vector2i, b: Vector2i) -> bool:
 ## 않는다** — 미는 것은 `_advance_glide` 하나뿐이라, 한 프레임에 이 함수가 몇 번
 ## 불려도(그리기 · 히트 테스트 · 팝업) 연출이 되감기지 않는다.
 func _sync_glide(solution: Dictionary) -> void:
-	var base_r: float = PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE
 	for raw in solution.keys():
 		var p := raw as PilotData
 		var e: Dictionary = solution[p]
 		var cell := e["cell"] as Vector2i
-		var slot: int = int(e["slot"])
 		var center := _bs.cell_center(cell)
-		var vec := _slot_offset(slot, base_r)
+		var vec: Vector2 = e["vec"] as Vector2
 		if not _glide.has(p):
-			_glide[p] = _settled_glide(cell, slot, center, vec)
+			_glide[p] = _settled_glide(cell, center, vec)
 			continue
 		var g: Dictionary = _glide[p]
-		if (g["cell"] as Vector2i) == cell and int(g["slot"]) == slot:
+		if (g["cell"] as Vector2i) == cell and (g["to_vec"] as Vector2).is_equal_approx(vec):
 			continue
 		# 순간이동이 **맞는** 경우 — 복귀 / 부활은 페이드가 자리 이동을 덮고,
 		# 시신은 쓰러진 칸에 붙박여 있어야 한다. 미끄러뜨리면 사라지는 몸이
 		# 화면을 가로지른다.
 		if p.anim_recall_phase != 0 or p.anim_death_phase != 0:
-			_glide[p] = _settled_glide(cell, slot, center, vec)
+			_glide[p] = _settled_glide(cell, center, vec)
 			continue
 		var from_center: Vector2 = g["center"] as Vector2
 		var from_vec: Vector2 = g["vec"] as Vector2
@@ -986,14 +1438,18 @@ func _sync_glide(solution: Dictionary) -> void:
 			path.append(center)
 		# 출발점은 **지금 실제로 그려지고 있는 중심**이다 — 이전 글라이드가 아직
 		# 안 끝났으면 기록된 출발 칸으로 되감기는 대신 그 자리에서 이어 간다.
-		path[0] = from_center
+		# 한 점짜리(= 이번 이동 경로가 없던 순간이동)는 그 점이 **도착점**이므로
+		# 덮어쓰지 않고 앞에 붙인다 — 덮으면 마커가 출발 칸에 붙박인다.
+		if path.size() < 2:
+			path.insert(0, from_center)
+		else:
+			path[0] = from_center
 		# 길이(= 링)가 바뀌는 경우에만 도착 후 정착 구간을 단다.
 		var settle: float = 0.0
 		if not is_equal_approx(from_vec.length(), vec.length()):
 			settle = MARKER_RADIUS_SETTLE_SEC
 		var ng: Dictionary = {
 			"cell":     cell,
-			"slot":     slot,
 			"path":     path,
 			"from_vec": from_vec,
 			"to_vec":   vec,
@@ -1012,11 +1468,9 @@ func _sync_glide(solution: Dictionary) -> void:
 
 
 ## 아무 데도 가지 않는(= 이미 도착해 있는) 상태.
-func _settled_glide(cell: Vector2i, slot: int, center: Vector2,
-		vec: Vector2) -> Dictionary:
+func _settled_glide(cell: Vector2i, center: Vector2, vec: Vector2) -> Dictionary:
 	return {
 		"cell":     cell,
-		"slot":     slot,
 		"path":     PackedVector2Array([center]),
 		"from_vec": vec,
 		"to_vec":   vec,
@@ -1170,6 +1624,22 @@ func _draw_turret_hp_bar(td: TurretData) -> void:
 # tile size. Base values are calibrated against the unscaled (1.0x) hex.
 const PILOT_RADIUS_BASE := 31.5
 
+## 마커(초상 + HP 링 + 꼬리)의 외곽 — 전부 px, 강조 배율은 타지 않는다.
+## HP 링 두께와 초상 가장자리에서 링까지의 틈.
+const HP_RING_W := 8.0
+const HP_RING_GAP := 1.0
+## 굵은 검은 외곽선 — HP 링 바깥과 화살표 둘레가 **같은 두께**를 쓴다.
+const MARKER_OUTLINE_W := 5.0
+## HP 링 25 단위 구분선 — 외곽선 두께의 절반.
+const HP_TICK_W := MARKER_OUTLINE_W * 0.5
+## 화살표 폭 배율 — 예전 폭(`clamp(반지름 × 0.9, 10, 18)`)의 90%.
+const ARROW_WIDTH_SCALE := 0.9
+## 뾰족한 외곽선 끝이 채움 끝보다 앞으로 나가는 최대 거리(px).
+const ARROW_TIP_MITER_MAX := 10.0
+## 초상 + 화살표 아래로 떨어지는 그림자.
+const MARKER_SHADOW_OFFSET := Vector2(0.0, 8.0)
+const MARKER_SHADOW_COLOR := Color(0.0, 0.0, 0.0, 0.45)
+
 ## 초상화가 앉을 수 있는 6방향 — 육각 이웃과 정확히 같은 방향이고, 배열 순서가
 ## **시계방향**(화면 기준 y 아래)이다.
 ## 인덱스: 0=N 1=NE 2=SE 3=S 4=SW 5=NW.
@@ -1217,15 +1687,47 @@ const MARKER_GAP := 6.0
 ## 칸에 몰려도(10명) 남는다. 이 위로는 겹치더라도 자리를 준다.
 const SLOT_RINGS := 3
 
+## 가로 줄 배치(`_pick_row_seats`)에서 보통 칸의 한 줄 정원. 넷부터는 다음 줄.
+const ROW_CAP := 3
 
-# 이 무리(= 같은 셀에 선 **양 팀 전원**)의 배치에 곱해지는 배율. 강조된 파일럿이
-# 한 명이라도 있으면 무리 전체가 그 배율로 벌어진다 — 슬롯은 셀 단위로 풀리므로
-# 사람마다 다른 간격을 줄 수 없고, 겹치지 않으려면 가장 큰 쪽에 맞춰야 한다.
-func _group_emphasis(pilots: Array) -> float:
-	var em: float = 1.0
+## 아군 홈 구역(`_is_home_zone`)에서 타일 **위** 한 줄에 앉는 최대 인원 — 이걸
+## 넘는 사람부터 아래로 내려간다.
+const HOME_TOP_CAP := 5
+
+
+# PilotData → 슬롯 벡터에 곱할 배율. **파일럿마다 다르다**: 자기 강조 배율과
+# 같은 칸 **안쪽 링**에 앉은 파일럿들의 강조 배율 중 큰 값이다.
+#
+# 예전에는 칸 전원(양 팀)에 그 칸의 최대 배율을 곱했다 — 아군만 대상인 카드를
+# 들어도 같은 칸 적 초상(기본 자리 N)이 크기는 그대로인 채 위로 밀려났다.
+#
+# 같은 링 이웃끼리는 겹치지 않는다: 60° 간격이라 한쪽만 1.5배여도 중심 거리가
+# √(1.5² + 1 − 1.5)·d ≈ 1.32d 이고, 필요한 거리는 (1.5r + r) ≈ 1.2d 다
+# (d = 링 반지름 = 2r + MARKER_GAP). 반면 **안쪽 링이 커지면 바깥 링을 덮는다**
+# (같은 방향이면 1.5d 와 2d 사이가 0.5d 뿐) — 그래서 바깥 링은 안쪽의 배율을
+# 물려받아 함께 밀려난다.
+#
+# **가로 줄은 줄째 같은 배율이다**(`"grp"` 이 같은 파일럿끼리). 줄 이웃은 60°
+# 링이 아니라 수평으로 d 간격이라, 한 명만 1.5배로 밀면 옆 사람과 ≈101px 로
+# 붙어(필요 ≈106px) 얼굴이 살짝 겹친다 — 줄 전체를 같이 벌리면 간격도 1.5배다.
+func _pilot_spread(pilots: Array, solution: Dictionary) -> Dictionary:
+	var ring_of: Dictionary = {}
+	var grp_of: Dictionary = {}
 	for raw in pilots:
-		em = maxf(em, _pilot_emphasis_scale(raw as PilotData))
-	return em
+		var e: Dictionary = solution[raw]
+		ring_of[raw] = int(e["ring"])
+		grp_of[raw] = int(e["grp"])
+	var out: Dictionary = {}
+	for raw in pilots:
+		var em: float = _pilot_emphasis_scale(raw as PilotData)
+		var ring: int = int(ring_of[raw])
+		var grp: int = int(grp_of[raw])
+		for other in pilots:
+			if int(ring_of[other]) < ring \
+					or (grp >= 0 and int(grp_of[other]) == grp):
+				em = maxf(em, _pilot_emphasis_scale(other as PilotData))
+		out[raw] = em
+	return out
 
 
 ## 링 `ring`(0부터)의 반지름. **이웃 슬롯이 60° 간격이므로 반지름 d 인 링에서
@@ -1349,33 +1851,124 @@ func _clamp_group_on_screen(positions: Array, draw_r: float) -> Array:
 # 두었고, 딤 오버레이와 히트 테스트도 같은 표를 읽는다.
 func _draw_pilot_cell(_cell: Vector2i, pilots: Array) -> void:
 	var radius: float = PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE
+	# **그림자는 한 칸 전원을 먼저 깐다** — 마커마다 바로 밑에 깔면 나중에 그린
+	# 사람의 그림자가 먼저 그린 사람의 초상 위로 떨어진다.
+	# 맨 위 초상(`_top_pilot`)은 여기서 빠지고 `_draw_pilot_groups` 끝에서 그려진다.
 	for raw in pilots:
-		var pilot := raw as PilotData
-		var is_enemy: bool = pilot.team == 1
-		var team_color := Color(0.9, 0.2, 0.2) if is_enemy else Color(0.2, 0.5, 0.9)
-		var pos := _pilot_marker_pos(pilot) + _pilot_anim_offset(pilot)
-		var alpha := _pilot_anim_alpha(pilot)
-		# 쓰러진 파일럿은 팀 색까지 함께 죽여 딤드로 읽히게 한다. 초상 자체의
-		# 딤은 _draw_pilot_circle 이 같은 배율로 건다.
-		var marker_color: Color = team_color
-		if pilot.anim_death_phase != 0:
-			marker_color = team_color * _bs.ANIM_DEATH_TINT
-		# 화살표 배율은 **그 파일럿 자신의** 강조다(무리 전체가 아니라):
-		# 한 무리 안에 강조 대상과 아닌 사람이 섞이면 초상 크기가 서로
-		# 다르고, 화살표는 자기 초상 바깥에서 시작해야 한다.
-		# 끝점은 **글라이드 중인 타일 중심**이다 — 초상이 실제로 미끄러지므로
-		# 꼬리도 같은 박자로 따라간다. 링이 그대로면 이동 내내 길이가 한 픽셀도
-		# 변하지 않고, 바깥 링으로 밀려날 때만 도착 후에 늘어난다(`_eval_glide`).
-		# 정글 시작 선택 동안의 아군 정글러는 **끌리는 물건**이다 — 자리는
-		# 오버레이가 정하고(손가락 밑 / 고른 칸 / HQ), 가리킬 타일이 아직 없으니
-		# 말풍선 꼬리도 없다.
-		var jp: JungleStartOverlay = _bs.jungle_pick
-		if jp != null and jp.is_active() and pilot == jp.jungler():
-			_draw_pilot_circle(pilot, jp.marker_pos(pos), radius, marker_color, alpha)
+		if raw != _top_pilot:
+			_draw_marker_shadow(raw as PilotData, radius)
+	for raw in pilots:
+		if raw != _top_pilot:
+			_draw_pilot_marker(raw as PilotData, radius)
+
+
+# 파일럿 한 명의 마커 — 꼬리 · 초상 · HP 링, 그리고 그 위의 HP 조각.
+func _draw_pilot_marker(pilot: PilotData, radius: float) -> void:
+	var is_enemy: bool = pilot.team == 1
+	var team_color := Color(0.9, 0.2, 0.2) if is_enemy else Color(0.2, 0.5, 0.9)
+	var anim_off := _pilot_anim_offset(pilot)
+	var pos := _pilot_marker_pos(pilot) + anim_off
+	var alpha := _pilot_anim_alpha(pilot)
+	# 쓰러진 파일럿은 팀 색까지 함께 죽여 딤드로 읽히게 한다. 초상 자체의
+	# 딤은 _draw_pilot_circle 이 같은 배율로 건다.
+	var marker_color: Color = team_color
+	if pilot.anim_death_phase != 0:
+		marker_color = team_color * _bs.ANIM_DEATH_TINT
+	# 화살표 배율은 **그 파일럿 자신의** 강조다(무리 전체가 아니라):
+	# 한 무리 안에 강조 대상과 아닌 사람이 섞이면 초상 크기가 서로
+	# 다르고, 화살표는 자기 초상 바깥에서 시작해야 한다.
+	# 끝점은 **글라이드 중인 타일 중심**이다 — 초상이 실제로 미끄러지므로
+	# 꼬리도 같은 박자로 따라간다. 링이 그대로면 이동 내내 길이가 한 픽셀도
+	# 변하지 않고, 바깥 링으로 밀려날 때만 도착 후에 늘어난다(`_eval_glide`).
+	# 정글 시작 선택 동안의 아군 정글러는 **끌리는 물건**이다 — 자리는
+	# 오버레이가 정하고(손가락 밑 / 고른 칸 / HQ), 가리킬 타일이 아직 없으니
+	# 말풍선 꼬리도 없다.
+	var jp: JungleStartOverlay = _bs.jungle_pick
+	if jp != null and jp.is_active() and pilot == jp.jungler():
+		_draw_pilot_circle(pilot, jp.marker_pos(pos), radius, marker_color, alpha)
+		return
+	# **연출 오프셋(복귀 · 전사 상승, 피격 흔들림)은 끝점에도 똑같이 얹는다.**
+	# 초상만 떠오르고 끝점이 타일에 남으면 꼬리가 상승 거리만큼 늘어났다 —
+	# 화살표는 초상에 붙은 채 통째로 따라가고, 타일을 다시 겨누는 것은
+	# 턴 이동(글라이드)뿐이다.
+	_draw_arrow_to_tile(pos, _marker_center(pilot) + anim_off,
+			radius, marker_color, alpha, _pilot_draw_scale(pilot))
+	_draw_pilot_circle(pilot, pos, radius, marker_color, alpha)
+	_draw_hp_chips(pilot, pos, radius * _pilot_draw_scale(pilot), marker_color, alpha)
+
+
+# 방금 잃은 HP 구간 — 링에서 떨어져 나와 마커 중심 기준으로 커지며 사라진다.
+# 각도 · 반지름은 `_draw_pilot_circle` 의 HP 링과 같은 식이라 떨어지는 순간에는
+# 링의 빈자리에 정확히 겹친다. 검은 외곽을 한 겹 깔아 밝은 타일 위에서도 읽힌다.
+func _draw_hp_chips(pilot: PilotData, pos: Vector2, draw_radius: float,
+		color: Color, alpha: float) -> void:
+	for raw in _hp_chips:
+		var c: Dictionary = raw
+		if c["p"] != pilot:
 			continue
-		_draw_arrow_to_tile(pos, _marker_center(pilot),
-				radius, marker_color, alpha, _pilot_emphasis_scale(pilot))
-		_draw_pilot_circle(pilot, pos, radius, marker_color, alpha)
+		var k: float = clampf(float(c["t"]) / HP_CHIP_DUR, 0.0, 1.0)
+		var grow: float = 1.0 - pow(1.0 - k, 3.0)          # ease-out
+		var s: float = lerpf(1.0, HP_CHIP_SCALE, grow)
+		var a: float = alpha * (1.0 - k * k)               # 끝으로 갈수록 빨리 사라진다
+		var ring_r: float = (draw_radius + HP_RING_W * 0.5 + HP_RING_GAP) * s
+		var w: float = HP_RING_W * s
+		var start_a: float = -PI * 0.5
+		var a0: float = start_a + TAU * float(c["from"])
+		var a1: float = start_a + TAU * float(c["to"])
+		var seg: int = maxi(4, int(36.0 * (float(c["to"]) - float(c["from"]))))
+		draw_arc(pos, ring_r, a0, a1, seg,
+				_alpha_mul(Color(0.0, 0.0, 0.0), a * 0.8), w + MARKER_OUTLINE_W)
+		draw_arc(pos, ring_r, a0, a1, seg,
+				_alpha_mul(color.lightened(0.35), a), w)
+
+
+## 그림자 가장자리의 흐림 폭(px)과 겹 수. 실루엣을 `-폭/2 … +폭/2` 로 깎고
+## 부풀린 겹을 같은 알파로 포개면 안쪽일수록 겹이 많이 쌓여 진하고 바깥으로
+## 갈수록 옅어진다 — 셰이더 없이 만드는 그라데이션 테두리다.
+const MARKER_SHADOW_BLUR: float = 16.0
+const MARKER_SHADOW_LAYERS: int = 7
+
+
+# 초상 + 화살표 실루엣을 합친 한 덩어리를 아래로 밀어 반투명 검정으로 깐다.
+# 둘을 따로 깔면 겹친 부분만 두 배로 진해지므로 `merge_polygons` 로 합친다.
+# 자리 · 연출 오프셋 · 꼬리 끝점은 `_draw_pilot_marker` 의 본 그리기와 같은 식이다.
+# 가장자리는 `MARKER_SHADOW_LAYERS` 겹으로 흐린다 — 한가운데가 겹 전부가 쌓인
+# 자리라 그 합이 `MARKER_SHADOW_COLOR.a` 가 되도록 겹 하나의 알파를 역산한다.
+func _draw_marker_shadow(pilot: PilotData, radius: float) -> void:
+	var anim_off := _pilot_anim_offset(pilot)
+	var pos := _pilot_marker_pos(pilot) + anim_off
+	var alpha := _pilot_anim_alpha(pilot)
+	var em: float = _pilot_draw_scale(pilot)
+	var arrow := PackedVector2Array()
+	var jp: JungleStartOverlay = _bs.jungle_pick
+	if jp != null and jp.is_active() and pilot == jp.jungler():
+		pos = jp.marker_pos(pos)
+	else:
+		arrow = _arrow_outline_polygon(pos, _marker_center(pilot) + anim_off, radius, em)
+	var disc := _circle_polygon(pos, marker_outer_radius(radius * em), 40)
+	var shapes: Array = [disc]
+	if not arrow.is_empty():
+		shapes = Geometry2D.merge_polygons(disc, arrow)
+	var disc_cw: bool = Geometry2D.is_polygon_clockwise(disc)
+	var core_a: float = MARKER_SHADOW_COLOR.a * alpha
+	var layer_a: float = 1.0 - pow(1.0 - core_a, 1.0 / float(MARKER_SHADOW_LAYERS))
+	var col := Color(MARKER_SHADOW_COLOR.r, MARKER_SHADOW_COLOR.g,
+			MARKER_SHADOW_COLOR.b, layer_a)
+	for raw in shapes:
+		var poly := raw as PackedVector2Array
+		if Geometry2D.is_polygon_clockwise(poly) != Geometry2D.is_polygon_clockwise(disc):
+			continue   # 구멍 — 초상과 꼬리 사이에 생길 일은 없지만 칠하지 않는다
+		var moved := PackedVector2Array()
+		for v in poly:
+			moved.append(v + MARKER_SHADOW_OFFSET)
+		for i in MARKER_SHADOW_LAYERS:
+			var f: float = float(i) / float(MARKER_SHADOW_LAYERS - 1) - 0.5
+			for layer in Geometry2D.offset_polygon(moved, f * MARKER_SHADOW_BLUR,
+					Geometry2D.JOIN_ROUND):
+				var lp := layer as PackedVector2Array
+				if Geometry2D.is_polygon_clockwise(lp) != disc_cw:
+					continue   # offset 결과의 구멍
+				draw_colored_polygon(lp, col)
 
 
 # ─── Animation helpers ───────────────────────────────────────────────────────
@@ -1577,7 +2170,7 @@ func _draw_targeting_pilot_dim() -> void:
 		# Cover the HP ring outside the portrait too — slightly larger than
 		# the portrait radius. 딤드 대상은 강조 대상이 아니므로 배율은 사실상
 		# 1.0 이지만, 반지름은 그리는 쪽과 같은 한 곳에서 받아 온다.
-		draw_circle(marker_pos, pilot_marker_radius(p) + 4.0, dim_color)
+		draw_circle(marker_pos, marker_outer_radius(pilot_marker_radius(p)), dim_color)
 
 
 # Rendered marker position for the pilot — reads the cached layout built in
@@ -1595,8 +2188,11 @@ func _pilot_marker_pos(p: PilotData) -> Vector2:
 ## `CardTargetingOverlay` 의 폴백 경로가 같은 답을 써야 하기 때문이다.
 func pilot_marker_pos_fallback(p: PilotData) -> Vector2:
 	var base_r: float = PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE
-	return _bs.cell_center(_render_cell(p)) \
-			+ _slot_offset(pilot_display_dir_index(p), base_r)
+	var cell := _render_cell(p)
+	var dir: int = pilot_display_dir_index(p)
+	if _is_home_zone(cell):
+		dir = 0   # 아군 홈 구역은 위 — `_row_blocks`
+	return _bs.cell_center(cell) + _slot_offset(dir, base_r)
 
 
 ## Fresh `PilotData → Vector2` marker map — the same per-cell stack solve
@@ -1614,13 +2210,25 @@ func pilot_marker_positions() -> Dictionary:
 ## 2배가 된 초상은 타일 반지름보다 커서, 고정 상수로 재면 얼굴 바깥 테두리를
 ## 눌렀을 때 대상이 잡히지 않는다.
 func pilot_marker_radius(p: PilotData) -> float:
-	return PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE * _pilot_emphasis_scale(p)
+	return PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE * _pilot_draw_scale(p)
+
+
+## 초상 반지름 → 마커 맨 바깥(HP 링 바깥의 검은 외곽선 끝) 반지름. 뒤 원판 ·
+## 그림자 · 딤 원판이 전부 이 값을 쓴다.
+func marker_outer_radius(draw_radius: float) -> float:
+	return draw_radius + HP_RING_GAP + HP_RING_W + MARKER_OUTLINE_W
 
 
 # 지금 프레임의 강조 배율 — `_advance_emphasis` 가 목표값으로 밀고 있는 값이다.
 # 그리기 · 배치 · 히트 반경이 전부 여기를 읽으므로 셋이 어긋날 수 없다.
 func _pilot_emphasis_scale(p: PilotData) -> float:
 	return float(_emphasis_now.get(p, 1.0))
+
+
+# 실제로 그리는 배율 — 대상 지정 강조 × 누르기. 배치는 강조만 읽는다
+# (`_pilot_emphasis_scale`); 초상 · 꼬리 · 그림자 · 히트 반경은 이 값을 읽는다.
+func _pilot_draw_scale(p: PilotData) -> float:
+	return _pilot_emphasis_scale(p) * float(_press_now.get(p, 1.0))
 
 
 # 이 파일럿이 **지금 찍을 수 있는 대상인가** — 보간의 목표값(1.0 또는
@@ -1643,6 +2251,14 @@ func _pilot_emphasis_target(p: PilotData) -> float:
 	return TARGET_EMPHASIS_SCALE if emphasized else 1.0
 
 
+func _circle_polygon(center: Vector2, r: float, n: int) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for i in n:
+		var ang: float = float(i) / float(n) * TAU
+		out.append(center + Vector2(cos(ang), sin(ang)) * r)
+	return out
+
+
 func _close_polygon(pts: PackedVector2Array) -> PackedVector2Array:
 	if pts.is_empty():
 		return pts
@@ -1651,6 +2267,20 @@ func _close_polygon(pts: PackedVector2Array) -> PackedVector2Array:
 		out.append(v)
 	out.append(pts[0])
 	return out
+
+
+## 텍스처를 검은 외곽선과 함께 그린다 — 같은 텍스처를 검은색으로 물들여
+## (modulate 는 곱셈이라 알파 모양만 남는다) 둘레 8방향으로 `outline_px` 만큼
+## 밀어 깐 뒤 원본을 덮는다. `ci` 가 그리기 상태일 때(_draw / draw 시그널)만
+## 부를 것. 성장치 팝업과 교전 결과의 성장 줄이 같이 쓴다.
+static func draw_outlined_icon(ci: CanvasItem, tex: Texture2D, rect: Rect2,
+		outline_px: float, alpha: float = 1.0) -> void:
+	var shadow := Color(0.0, 0.0, 0.0, alpha)
+	for i in 8:
+		var ang: float = float(i) / 8.0 * TAU
+		var off := Vector2(cos(ang), sin(ang)) * outline_px
+		ci.draw_texture_rect(tex, Rect2(rect.position + off, rect.size), false, shadow)
+	ci.draw_texture_rect(tex, rect, false, Color(1.0, 1.0, 1.0, alpha))
 
 
 func _alpha_mul(c: Color, alpha: float) -> Color:
@@ -1669,42 +2299,100 @@ func _alpha_mul(c: Color, alpha: float) -> Color:
 func _draw_arrow_to_tile(circle_pos: Vector2, aim_point: Vector2,
 		radius: float, color: Color, alpha: float = 1.0,
 		em: float = 1.0) -> void:
+	var fill := _arrow_fill_polygon(circle_pos, aim_point, radius, em)
+	if fill.is_empty():
+		return
+	# **검은 외곽선 = 끝까지 뾰족한 한 겹 바깥 삼각형**(`_arrow_outline_polygon`).
+	# HP 링 외곽선과 같은 두께다. 꼬리 밑동은 초상 원판 안쪽에 묻히고, 원판 쪽
+	# 외곽선은 그 위에 그려지므로 원 둘레의 검은 선이 꼬리에 가려 끊기지 않는다.
+	var outline := _arrow_outline_polygon(circle_pos, aim_point, radius, em)
+	var black := _alpha_mul(Color(0.0, 0.0, 0.0), alpha)
+	draw_colored_polygon(outline, black)
+	draw_polyline(_close_polygon(outline), black, 1.0, true)
+	var fill_col := _alpha_mul(color.darkened(0.1), alpha)
+	draw_colored_polygon(fill, fill_col)
+	draw_polyline(_close_polygon(fill), fill_col, 1.0, true)
+
+
+# 꼬리의 축 — `{"dir", "perp", "apex_len", "base_len", "base_half"}`(채움 기준).
+# 비어 있으면 그릴 꼬리가 없다(초상이 타일에 너무 붙었다).
+#
+# **끝은 언제나 타일 중심 바로 앞이다.** 예전에는 마커 반지름에서 길이를
+# 뽑았는데(반지름 + 24px), 7명째부터 바깥 링에 앉는 마커는 타일에서 두 배로
+# 멀어져 그 길이로는 허공에 짧은 삼각형만 남고 어느 칸 이야기인지가 사라진다.
+# 거리에서 역산하면 멀어진 만큼 화살표가 길어져 "약간 멀어져 앉되 가리키는
+# 칸은 분명하다"가 성립한다. 중심을 찔러 넘어가지는 않는다 — 넘어가면 옆 칸을
+# 가리키는 것처럼 읽힌다.
+func _arrow_axis(circle_pos: Vector2, aim_point: Vector2,
+		radius: float, em: float) -> Dictionary:
 	var to_tile := aim_point - circle_pos
 	var dist: float = to_tile.length()
 	if dist < 1.0:
-		return
+		return {}
 	var dir := to_tile / dist
-	var perp := Vector2(-dir.y, dir.x)
 	var draw_radius: float = radius * em
-	var base_half: float = clamp(radius * 0.9, 10.0, 18.0) * em
-	# **끝은 언제나 타일 중심 바로 앞이다.** 예전에는 마커 반지름에서 길이를
-	# 뽑았는데(반지름 + 24px), 7명째부터 바깥 링에 앉는 마커는 타일에서 두 배로
-	# 멀어져 그 길이로는 허공에 짧은 삼각형만 남고 어느 칸 이야기인지가 사라진다.
-	# 거리에서 역산하면 멀어진 만큼 화살표가 길어져 "약간 멀어져 앉되 가리키는
-	# 칸은 분명하다"가 성립한다. 중심을 찔러 넘어가지는 않는다 — 넘어가면 옆 칸을
-	# 가리키는 것처럼 읽힌다.
 	var tip_inset: float = clamp(radius * 0.55, 10.0, 26.0)
 	var apex_len: float = dist - tip_inset
 	if apex_len <= draw_radius * 0.75:
-		return
-	var apex := circle_pos + dir * apex_len
-	var base := circle_pos + dir * (draw_radius * 0.6)
-	var pts := PackedVector2Array([
-		apex,
-		base + perp * base_half,
-		base - perp * base_half,
+		return {}
+	return {"dir": dir, "perp": Vector2(-dir.y, dir.x), "apex_len": apex_len,
+			"base_len": draw_radius * 0.6,
+			"base_half": clamp(radius * 0.9, 10.0, 18.0) * em * ARROW_WIDTH_SCALE}
+
+
+# 꼬리 채움 — 끝이 **뾰족한** 삼각형. 비어 있으면 그릴 꼬리가 없다.
+func _arrow_fill_polygon(circle_pos: Vector2, aim_point: Vector2,
+		radius: float, em: float) -> PackedVector2Array:
+	var ax := _arrow_axis(circle_pos, aim_point, radius, em)
+	if ax.is_empty():
+		return PackedVector2Array()
+	var dir: Vector2 = ax["dir"]
+	var perp: Vector2 = ax["perp"]
+	var half: float = float(ax["base_half"])
+	var base := circle_pos + dir * float(ax["base_len"])
+	return PackedVector2Array([
+		circle_pos + dir * float(ax["apex_len"]),
+		base + perp * half,
+		base - perp * half,
 	])
-	draw_colored_polygon(pts, _alpha_mul(color.darkened(0.1), alpha))
-	# White outline so the arrow stays distinguishable against captured tiles.
-	draw_polyline(_close_polygon(pts),
-			_alpha_mul(Color(1.0, 1.0, 1.0), alpha), 2.5, true)
+
+
+# 꼬리 외곽(검은 판) — 채움을 `MARKER_OUTLINE_W` 만큼 **모서리를 세운 채** 부풀린
+# 삼각형이다. 그림자와 자리 배정의 꼬리 겹침 판정도 이 모양을 쓴다.
+#
+# 예전에는 채움을 둥근 모서리로 부풀려(`JOIN_ROUND`) 끝이 뭉툭했다. 정확한 마이터
+# 끝은 꼬리가 길수록(각이 좁을수록) 한없이 뻗으므로 채움 끝에서
+# `ARROW_TIP_MITER_MAX` 까지만 내민다 — 그만큼 끝 근처의 검은 테가 가늘어져
+# 오히려 더 뾰족하게 읽힌다.
+func _arrow_outline_polygon(circle_pos: Vector2, aim_point: Vector2,
+		radius: float, em: float) -> PackedVector2Array:
+	var ax := _arrow_axis(circle_pos, aim_point, radius, em)
+	if ax.is_empty():
+		return PackedVector2Array()
+	var dir: Vector2 = ax["dir"]
+	var perp: Vector2 = ax["perp"]
+	var w: float = MARKER_OUTLINE_W
+	var apex_len: float = float(ax["apex_len"])
+	var base_len: float = float(ax["base_len"])
+	var half: float = float(ax["base_half"])
+	var half_ang: float = atan2(half, apex_len - base_len)
+	var push: float = minf(w / maxf(sin(half_ang), 0.05), ARROW_TIP_MITER_MAX)
+	# 밑변을 w 만큼 물린 자리의 반폭 — 채움 옆선을 그 자리까지 연장한 폭 + 옆선이
+	# w 만큼 밖으로 나간 몫.
+	var back_half: float = half * (apex_len - base_len + w) / (apex_len - base_len) 			+ w / cos(half_ang)
+	var base := circle_pos + dir * (base_len - w)
+	return PackedVector2Array([
+		circle_pos + dir * (apex_len + push),
+		base + perp * back_half,
+		base - perp * back_half,
+	])
 
 
 func _draw_pilot_circle(pilot: PilotData, pos: Vector2, radius: float,
 		color: Color, alpha: float = 1.0) -> void:
 	# 찍을 수 있는 대상은 베이스 반지름에 TARGET_EMPHASIS_SCALE 을 곱해 크게
 	# 그린다 — 나머지는 전부 딤드되므로 커진 얼굴만 남는다.
-	var draw_radius: float = radius * _pilot_emphasis_scale(pilot)
+	var draw_radius: float = radius * _pilot_draw_scale(pilot)
 	# Pilot portrait fills the slot. The team-colour HP ring (drawn outside the
 	# portrait) is now the sole faction marker — the previous ring directly on
 	# the portrait edge has been removed to avoid the double outline.
@@ -1718,6 +2406,12 @@ func _draw_pilot_circle(pilot: PilotData, pos: Vector2, radius: float,
 	# 원 그림 자체가 정사각형에 내접해 있으므로 같은 반지름의 원이 정확히 맞고,
 	# 1px 줄여 안티에일리어싱된 가장자리 바깥으로 흰 테가 삐져나오지 않게 한다.
 	# 딤/페이드는 초상과 같은 tint·alpha 를 타므로 배경만 밝게 남는 일은 없다.
+	# **마커 뒤 검은 원판** — 초상 · HP 링 · 외곽선을 한 장으로 받친다. 초상과
+	# 링 사이 틈이나 반투명한 가장자리로 타일 색이 비치지 않고, 이 원판의 바깥
+	# 띠가 그대로 HP 링의 굵은 검은 외곽선이 된다(꼬리보다 나중에 그려지므로
+	# 꼬리에 가려지지 않는다). 사망 딤 / 복귀 페이드는 alpha 로 함께 탄다.
+	draw_circle(pos, marker_outer_radius(draw_radius),
+			_alpha_mul(Color(0.0, 0.0, 0.0), alpha), true, -1.0, true)
 	draw_circle(pos, maxf(1.0, draw_radius - 1.0), _alpha_mul(portrait_tint, alpha))
 	if portrait != null:
 		var rect := Rect2(pos.x - draw_radius, pos.y - draw_radius,
@@ -1727,8 +2421,8 @@ func _draw_pilot_circle(pilot: PilotData, pos: Vector2, radius: float,
 		draw_circle(pos, draw_radius, _alpha_mul(color, alpha))
 	# Circular HP ring hugging the outside of the pilot circle. Width is
 	# doubled vs. the old marker; colour now matches faction (was green).
-	var hp_ring_w := 8.0
-	var hp_ring_r := draw_radius + hp_ring_w * 0.5 + 1.0
+	var hp_ring_w := HP_RING_W
+	var hp_ring_r := draw_radius + hp_ring_w * 0.5 + HP_RING_GAP
 	draw_arc(pos, hp_ring_r, 0.0, TAU, 36,
 			_alpha_mul(Color(0.15, 0.15, 0.15), alpha), hp_ring_w)
 	var hp_frac: float = clamp(float(pilot.hp) / float(pilot.max_hp), 0.0, 1.0)
@@ -1752,7 +2446,7 @@ func _draw_pilot_circle(pilot: PilotData, pos: Vector2, radius: float,
 			var ang: float = start_a + TAU * frac
 			var dirv := Vector2(cos(ang), sin(ang))
 			draw_line(pos + dirv * tick_inner, pos + dirv * tick_outer,
-					tick_col, 1.5)
+					tick_col, HP_TICK_W)
 	# 보호막 ring — cyan band stacked just outside the HP ring, length = shield / max_hp.
 	if pilot.shield > 0:
 		var sh_frac: float = clamp(float(pilot.shield) / float(pilot.max_hp), 0.0, 1.0)

@@ -251,6 +251,7 @@ func load_match_data() -> Dictionary:
 			# 옛 game.db(스킬 이전)도 열리도록 기본값과 함께 읽는다 — 그때는
 			# 전원이 "스킬 없는 네임드"가 되고 그림도 평소 컷 그대로다.
 			int(row.get("skill_id", -1)), int(row.get("is_mob", 0)) != 0))
+		(players[-1] as PlayerData).pilot_cards = parse_card_ids(String(row.get("pilot_cards", "")))
 
 	db.query("SELECT * FROM mechs ORDER BY id")
 	if db.query_result.is_empty():
@@ -360,6 +361,7 @@ func _load_intl_pool() -> Dictionary:
 			int(row["field_hit"]), int(row["field_eva"]),
 			int(row["engage_hit"]), int(row["engage_eva"]),
 			int(row["atk_growth"]), int(row["hp_growth"])))
+		(pilots[-1] as PlayerData).pilot_cards = parse_card_ids(String(row.get("pilot_cards", "")))
 	db.close_db()
 	return {"teams": teams, "pilots": pilots}
 
@@ -398,11 +400,12 @@ var active_save_slot: int = -1
 # Each entry mirrors a row from the cards table. CardPhaseManager pulls 6 random
 # entries per pilot at match start, wraps each in a CardData instance, and tags
 # it with the owning PilotData (시전자 rule).
-var card_pool_bs: Array = []  # Array of {id,name,cost,uses,cast_method,target,cast_range,area,keyword,effect,description,scope,pool}
+var card_pool_bs: Array = []  # Array of {id,name,cost,uses,cast_method,target,cast_range,area,keyword,effect,description,scope,pool,card_type,card_cat,excl_group,charge_max}
 
 
 func _ready() -> void:
 	_load_card_pool_bs()
+	_load_pilot_card_slots()
 	_load_pilot_skills()
 	_load_mech_skills()
 	_load_training_tiles()
@@ -433,15 +436,178 @@ func _load_card_pool_bs() -> void:
 			# columns existed still loads — every card just reads as "any / in pool".
 			"scope":       String(row.get("scope", "any")),
 			"pool":        int(row.get("pool", 1)),
-			# card_type / card_cat 도 같은 이유로 기본값과 함께 읽는다. 옛 game.db
-			# 는 전부 "메크 카드 / 분류 없음"으로 읽혀 덱 구성이 폴백 경로를 탄다.
-			"card_type":   String(row.get("card_type", CardData.TYPE_MECH)),
+			# card_type / card_cat 도 같은 이유로 기본값과 함께 읽는다.
+			"card_type":   String(row.get("card_type", CardData.TYPE_PILOT)),
 			"card_cat":    String(row.get("card_cat", CardData.CAT_NONE)),
 			# 상호 배타 그룹 — 비어 있으면 제약 없음.
 			"excl_group":  String(row.get("excl_group", "")),
+			# 충전 상한 — `charge` 키워드를 단 카드만 읽는다.
+			"charge_max":  int(row.get("charge_max", 0)),
 		})
 	db.close_db()
 	print("GameManager: card pool loaded — %d cards" % card_pool_bs.size())
+
+
+## cards 테이블 한 행을 id 로. 없으면 빈 Dictionary.
+func card_def(card_id: int) -> Dictionary:
+	for raw in card_pool_bs:
+		var def: Dictionary = raw as Dictionary
+		if int(def.get("id", -1)) == card_id:
+			return def
+	return {}
+
+
+# ── 고정 파일럿 카드 (pilot_card_slots + players.pilot_cards) ─────────────────
+# 선수마다 파일럿 카드 3장이 **고정**이다 — 매 판 새로 뽑지 않는다. 원본은
+# `players.csv` / `intl_players.csv` 의 `pilot_cards`(카드 id 를 `|` 로 이은 것)이고,
+# 그 칸이 비었거나 깨졌으면 `pilot_card_slots` 로 **선수 id 를 씨앗 삼아** 결정적으로
+# 뽑는다 — 같은 선수는 언제 몇 번을 물어도 같은 3장을 받는다.
+#
+# 슬롯 표는 포지션마다 세 칸이고, 각 칸은 카드 분류(`cards.card_cat`) 목록이다.
+# 한 칸은 **분류가 하나라도 겹치고 시전자 제약(`scope`)이 그 포지션을 허락하는**
+# 풀 카드(`pool = 1`) 중 하나로 채운다. 같은 카드는 두 번 들지 않는다.
+const PILOT_CARDS_PER_PLAYER: int = 3
+var pilot_card_slots: Dictionary = {}   # String position → Array[Array[String]] (칸마다 분류 목록)
+## DB 의 `pilot_cards` 원문 캐시 — 선수 id → Array[int]. 옛 세이브에서 복원한
+## 선수(필드가 비어 있다)를 같은 선수의 DB 행으로 채우는 데 쓴다.
+var _db_pilot_cards: Dictionary = {}
+var _db_pilot_cards_loaded: bool = false
+
+
+## `"12|36|41"` → `[12, 36, 41]`. 빈 조각과 숫자가 아닌 조각은 버린다.
+static func parse_card_ids(raw: String) -> Array:
+	var out: Array = []
+	for part in raw.split("|", false):
+		var t: String = (part as String).strip_edges()
+		if t.is_valid_int():
+			out.append(int(t))
+	return out
+
+
+func _load_pilot_card_slots() -> void:
+	var db := SQLite.new()
+	db.path = db_path()
+	db.verbosity_level = SQLite.QUIET
+	if not db.open_db():
+		return
+	db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='pilot_card_slots'")
+	if not db.query_result.is_empty():
+		db.query("SELECT * FROM pilot_card_slots")
+		for row in db.query_result:
+			var slots: Array = []
+			for col in ["slot1", "slot2", "slot3"]:
+				var cats: Array = []
+				for part in String(row.get(col, "")).split("|", false):
+					var c: String = (part as String).strip_edges()
+					if not c.is_empty():
+						cats.append(c)
+				slots.append(cats)
+			pilot_card_slots[String(row["position"])] = slots
+	db.close_db()
+
+
+func _ensure_db_pilot_cards() -> void:
+	if _db_pilot_cards_loaded:
+		return
+	_db_pilot_cards_loaded = true
+	var db := SQLite.new()
+	db.path = db_path()
+	db.verbosity_level = SQLite.QUIET
+	if not db.open_db():
+		return
+	for table in ["players", "intl_players"]:
+		db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='%s'" % table)
+		if db.query_result.is_empty():
+			continue
+		db.query("SELECT * FROM %s" % table)
+		for row in db.query_result:
+			_db_pilot_cards[int(row["id"])] = parse_card_ids(String(row.get("pilot_cards", "")))
+	db.close_db()
+
+
+## 이 선수의 고정 파일럿 카드 id 3개. 우선순위는 선수 자신의 값 → 같은 id 의 DB
+## 행 → 씨앗 뽑기. 앞의 둘에서 온 id 라도 표에 없거나 포지션이 막는 카드는 빼고,
+## 모자란 칸은 씨앗 뽑기로 채운다(CSV 오타가 덱을 짧게 만들지 않는다).
+func pilot_card_ids_for(pd: PlayerData) -> Array:
+	if pd == null:
+		return []
+	var pos: String = GameEnums.position_key(pd.role)
+	var src: Array = pd.pilot_cards
+	if src.is_empty():
+		_ensure_db_pilot_cards()
+		src = _db_pilot_cards.get(pd.id, [])
+	var out: Array = []
+	for raw in src:
+		var id: int = int(raw)
+		if out.has(id) or out.size() >= PILOT_CARDS_PER_PLAYER:
+			continue
+		var def: Dictionary = card_def(id)
+		if def.is_empty():
+			continue
+		if not CardData.positions_of(String(def.get("scope", "any"))).has(pos):
+			continue
+		out.append(id)
+	if out.size() < PILOT_CARDS_PER_PLAYER:
+		out = roll_pilot_card_ids(pos, 7919 + pd.id, out)
+	return out
+
+
+## 포지션 슬롯 표로 3장을 **결정적으로** 뽑는다. `keep` 은 이미 정해진 id 들이고
+## 그 수만큼 앞 칸을 건너뛴다. 씨앗이 같으면 결과도 같다.
+func roll_pilot_card_ids(pos: String, seed_value: int, keep: Array = []) -> Array:
+	var out: Array = keep.duplicate()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value
+	var slots: Array = pilot_card_slots.get(pos, [])
+	var claimed: Dictionary = {}
+	for id in out:
+		var g: String = String(card_def(int(id)).get("excl_group", ""))
+		if not g.is_empty():
+			claimed[g] = true
+	var slot_i: int = out.size()
+	while out.size() < PILOT_CARDS_PER_PLAYER:
+		var cats: Array = slots[slot_i] if slot_i < slots.size() else []
+		slot_i += 1
+		var bag: Array = _slot_candidates(pos, cats, out, claimed)
+		if bag.is_empty():
+			# 칸의 분류에 맞는 카드가 없으면 포지션이 허락하는 풀 전체로 물러선다 —
+			# 파일럿 카드 3장은 깨져서는 안 되는 불변식이다.
+			bag = _slot_candidates(pos, [], out, claimed)
+		if bag.is_empty():
+			break
+		var def: Dictionary = bag[rng.randi_range(0, bag.size() - 1)]
+		out.append(int(def["id"]))
+		var grp: String = String(def.get("excl_group", ""))
+		if not grp.is_empty():
+			claimed[grp] = true
+	return out
+
+
+## 슬롯 한 칸의 후보 행들. `cats` 가 비어 있으면 분류를 보지 않는다.
+func _slot_candidates(pos: String, cats: Array, taken: Array, claimed: Dictionary) -> Array:
+	var out: Array = []
+	for raw in card_pool_bs:
+		var def: Dictionary = raw as Dictionary
+		if int(def.get("pool", 1)) == 0:
+			continue
+		var id: int = int(def.get("id", -1))
+		if taken.has(id):
+			continue
+		if not CardData.positions_of(String(def.get("scope", "any"))).has(pos):
+			continue
+		var grp: String = String(def.get("excl_group", ""))
+		if not grp.is_empty() and claimed.has(grp):
+			continue
+		if not cats.is_empty():
+			var hit: bool = false
+			for part in String(def.get("card_cat", "")).split("|", false):
+				if cats.has((part as String).strip_edges()):
+					hit = true
+					break
+			if not hit:
+				continue
+		out.append(def)
+	return out
 
 
 # ── 파일럿 스킬 (used by PilotSkillSystem in battle sim) ──────────────────────
@@ -573,8 +739,7 @@ func _load_mech_skills() -> void:
 		push_error("GameManager: cannot open data/game.db")
 		return
 	# 두 표가 없는 옛 game.db 에서도 조용히 넘어간다 — 그때는 모든 메크가
-	# 패시브도 고유 카드도 없는 상태로 굴러가고, 덱 구성은 공용 메크 카드
-	# 폴백(cards.csv 의 card_type = mech)을 탄다.
+	# 패시브도 고유 카드도 없는 상태로 굴러가고 덱에는 파일럿 카드만 들어간다.
 	db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='mech_passives'")
 	if not db.query_result.is_empty():
 		db.query("SELECT * FROM mech_passives ORDER BY id")

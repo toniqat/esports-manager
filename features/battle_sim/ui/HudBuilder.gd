@@ -481,7 +481,7 @@ func _build_kill_feed() -> void:
 func _on_pilot_strip_pressed(p: PilotData) -> void:
 	if _bs.pilot_detail == null:
 		return
-	if _bs.game_phase != GameEnums.BattlePhase.CARD_PHASE:
+	if not _bs.pilot_detail.can_open():
 		return
 	_bs.pilot_detail.open(p)
 
@@ -798,7 +798,7 @@ func update_hud() -> void:
 	var in_card_phase := _bs.game_phase == GameEnums.BattlePhase.CARD_PHASE
 	_update_cost_donuts(in_card_phase)
 	_update_pile_buttons()
-	_update_pilot_strips(in_card_phase)
+	_update_pilot_strips()
 	update_time_label()
 
 
@@ -853,7 +853,9 @@ static func _lane_seat_less(a: PilotData, b: PilotData) -> bool:
 # (`BattleSim.player_data_for` 가 그 인덱스로 로스터를 찾는다). 그래서 여기서는
 # **사본을 정렬**한다 — 원본을 sort_custom 하면 아웃게임 스탯이 엉뚱한
 # 파일럿에게 붙는다.
-func _update_pilot_strips(in_card_phase: bool) -> void:
+func _update_pilot_strips() -> void:
+	# 스트립 버튼은 상세 패널을 열 수 있을 때만 산다 — 작전 단계 + 자동 진행.
+	var can_open: bool = _bs.pilot_detail != null and _bs.pilot_detail.can_open()
 	var team0: Array = []
 	var team1: Array = []
 	for p in _bs.pilots:
@@ -863,10 +865,10 @@ func _update_pilot_strips(in_card_phase: bool) -> void:
 	team1.sort_custom(_lane_seat_less)
 	if _player_strip != null:
 		_player_strip.set_pilots(team0)
-		_player_strip.set_interactive_enabled(in_card_phase)
+		_player_strip.set_interactive_enabled(can_open)
 	if _enemy_strip != null:
 		_enemy_strip.set_pilots(team1)
-		_enemy_strip.set_interactive_enabled(in_card_phase)
+		_enemy_strip.set_interactive_enabled(can_open)
 	for raw in _obj_timers:
 		(raw as ObjectiveTimer).queue_redraw()
 	if _bs.pilot_detail != null:

@@ -42,6 +42,10 @@ func process_phase_end_recalls(log_lines: Array) -> void:
 		if float(p.hp) / float(p.max_hp) <= _bs.RECALL_HP_THRESHOLD:
 			return_to_hq(p, log_lines, "저HP")
 			continue
+		# 매복 중인 파일럿은 **일부러** 정글에 있다 — 매복이 풀린 뒤의 작전
+		# 단계 끝에서야 평소의 위치 이탈 규칙이 다시 본다.
+		if p.ambush_hold:
+			continue
 		if _is_out_of_position(p):
 			return_to_hq(p, log_lines, "위치 이탈")
 
@@ -92,6 +96,7 @@ func return_to_hq(p: PilotData, log_lines: Array, reason: String) -> void:
 	p.shield       = 0   # 보호막 is consumed on 본진 복귀
 	p.waypoint_idx = 0
 	p.recall_hold  = true
+	p.ambush_hold  = false   # 매복 자리를 떠났다
 	_bs.blog.log_move(p, orig_pos, p.grid_pos, "recall",
 			"%s — 본진 복귀, hp %d→%d/%d, 다음 턴부터 레인 복귀"
 					% [reason, hp_before, p.hp, p.max_hp])

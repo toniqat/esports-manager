@@ -25,10 +25,12 @@ extends Node
 # 나온 값인지는 칩을 눌러야 나온다(`_open_menu`) — 평소에는 읽고, 궁금할 때만
 # 파고든다.
 #
-# 여는 조건은 **자기 작전 단계**뿐이다 — `HudBuilder._update_pilot_strips` 가
-# 스트립 버튼을 그때만 활성화하고, `close_if_phase_left()` 가 단계를 벗어나면
-# 강제로 닫는다. BATTLE 이 흐르는 동안 열려 있으면 화면이 딤드된 채 전장이
-# 굴러가 버린다.
+# 여는 곳은 둘 — 스트립의 얼굴을 누르거나, 전장 초상을 **꾹 누르거나**
+# (`ui/MarkerTouch.gd`). 여는 조건은 `can_open()` 하나다: **작전 단계와 자동
+# 진행(BATTLE) 양쪽**에서 열린다(예전에는 자기 작전 단계뿐이었다). BATTLE 중에
+# 열면 `BattleSim._battle_tick_held` 가 이 패널을 보고 **턴을 붙잡는다** — 딤 뒤에서
+# 전장이 굴러가면 지금 보고 있는 숫자가 낡는다. 교전 무대 · 개시 전(GAMBIT) ·
+# 경기 종료에는 열리지 않고, 그 상태로 넘어가면 `close_if_phase_left()` 가 닫는다.
 #
 # 열려 있는 동안 **누른 쪽 스트립은 숨긴다**. 딤 위로 스트립만 남으면 "지금 뭘
 # 보고 있는지"가 흐려지고, 딤 아래로 넣으면 방금 누른 얼굴이 어두워져 연결이
@@ -393,11 +395,22 @@ func close() -> void:
 	_hidden_team = -1
 
 
-## 작전 단계를 벗어나면 닫는다. `HudBuilder.update_hud` 가 매 갱신마다 부른다 —
-## 열어 둔 채로 BATTLE 이 흐르면 딤 뒤에서 전장이 굴러간다.
+## 열 수 없는 상태(`can_open`)로 넘어가면 닫는다. `HudBuilder.update_hud` 가 매
+## 갱신마다 부른다.
 func close_if_phase_left() -> void:
-	if is_active() and _bs.game_phase != GameEnums.BattlePhase.CARD_PHASE:
+	if is_active() and not can_open():
 		close()
+
+
+## 지금 열 수 있는가 — 작전 단계 또는 자동 진행 중, 교전 무대가 없고 경기가
+## 끝나지 않았을 때. 스트립 버튼 활성화와 전장 꾹 누르기가 같은 답을 읽는다.
+func can_open() -> bool:
+	if _bs == null or _bs.game_over:
+		return false
+	if _bs.engage_phase != null and _bs.engage_phase.is_active():
+		return false
+	return _bs.game_phase == GameEnums.BattlePhase.CARD_PHASE \
+			or _bs.game_phase == GameEnums.BattlePhase.BATTLE
 
 
 ## 열려 있는 동안 값을 현재 값으로 다시 쓴다. `HudBuilder.update_hud` 가 매
@@ -982,9 +995,25 @@ func _effect_defs() -> Array:
 		out.append({
 			"key": "fx:lane",
 			"short": "라인",
-			"title": "공격적인 라인전" if up else "안전한 파밍",
+			"title": "라인전 스탯",
 			"value": "%+d%%" % roundi(_pilot.lane_stat_mod * 100.0),
 			"color": Color(1.00, 0.62, 0.48) if up else Color(0.55, 0.82, 1.00),
+		})
+	if not is_zero_approx(_pilot.eva_card_mod):
+		out.append({
+			"key": "fx:eva",
+			"short": "회피",
+			"title": "전장 회피 (카드)",
+			"value": "%+d%%" % roundi(_pilot.eva_card_mod * 100.0),
+			"color": Color(0.55, 0.82, 1.00),
+		})
+	if _pilot.ambush_hold:
+		out.append({
+			"key": "fx:ambush",
+			"short": "매복",
+			"title": "매복",
+			"value": "고정",
+			"color": Color(0.62, 0.90, 0.55),
 		})
 	if not is_equal_approx(_pilot.growth_rate_mult, 1.0):
 		out.append({
@@ -1021,12 +1050,20 @@ const FX_KIND_COLOR := {
 	PilotData.FX_GROWTH_RATE: Color(1.00, 0.55, 0.28),
 	PilotData.FX_MAX_HP:      Color(0.55, 0.95, 0.62),
 	PilotData.FX_ATK:         Color(1.00, 0.72, 0.36),
+	PilotData.FX_ATK_PCT:     Color(1.00, 0.72, 0.36),
+	PilotData.FX_HP_PCT:      Color(0.55, 0.95, 0.62),
 }
 const FX_KIND_NAME := {
 	PilotData.FX_GROWTH_RATE: "성장 적립",
 	PilotData.FX_MAX_HP:      "최대 체력",
 	PilotData.FX_ATK:         "공격력",
+	PilotData.FX_ATK_PCT:     "공격력 %",
+	PilotData.FX_HP_PCT:      "최대 체력 %",
 }
+## 단위가 %인 종류(나머지는 스탯 값 그대로).
+const FX_PCT_KINDS: Array = [
+	PilotData.FX_GROWTH_RATE, PilotData.FX_ATK_PCT, PilotData.FX_HP_PCT,
+]
 
 
 ## 장부(`PilotData.persistent_fx`)의 한 줄 = 썸네일 한 칸. **카드 이름이 곧
@@ -1055,6 +1092,8 @@ func _append_residual_fx(out: Array) -> void:
 		[PilotData.FX_GROWTH_RATE, "적립", _pilot.growth_rate_bonus],
 		[PilotData.FX_MAX_HP, "체력", float(_pilot.bonus_max_hp)],
 		[PilotData.FX_ATK, "공격", float(_pilot.bonus_atk_flat)],
+		[PilotData.FX_ATK_PCT, "공%", _pilot.bonus_atk_mult],
+		[PilotData.FX_HP_PCT, "체%", _pilot.bonus_max_hp_mult],
 	]
 	for raw in specs:
 		var spec: Array = raw as Array
@@ -1078,9 +1117,9 @@ static func _fx_short(src: String) -> String:
 	return compact.substr(0, 2) if compact.length() >= 2 else compact
 
 
-## 종류마다 단위가 다르다 — 적립 배율은 %, 나머지 둘은 스탯 값 그대로.
+## 종류마다 단위가 다르다 — 배율 종류는 %, 나머지는 스탯 값 그대로.
 static func _fx_value(kind: String, amount: float) -> String:
-	if kind == PilotData.FX_GROWTH_RATE:
+	if kind in FX_PCT_KINDS:
 		return "%+d%%" % roundi(amount * 100.0)
 	return "%+d" % roundi(amount)
 
@@ -1728,6 +1767,14 @@ func _fx_rows(key: String) -> Array:
 						_pilot.growth_until_phase)],
 				["영구 가산", "%+d%%" % roundi(_pilot.growth_rate_bonus * 100.0)],
 				["성장치", BattleSim.fmt_score(_pilot.score)]]
+		"fx:eva":
+			return [
+				["전장 회피", "%+d%%" % roundi(_pilot.eva_card_mod * 100.0)],
+				["남은 시간", _remain_label(_pilot.eva_card_expire_turn, false)]]
+		"fx:ambush":
+			return [
+				["상태", "다음 작전 단계까지 이동 없음"],
+				["위치", "(%d, %d)" % [_pilot.grid_pos.x, _pilot.grid_pos.y]]]
 		"fx:atk":
 			return [
 				["일시 가산", "%+d" % _pilot.atk_buff],
@@ -1764,6 +1811,12 @@ func _fx_card_rows(key: String) -> Array:
 		PilotData.FX_ATK:
 			rows.append(["영구 가산 합계", "%+d" % _pilot.bonus_atk_flat])
 			rows.append(["최종 공격력", str(_pilot.atk)])
+		PilotData.FX_ATK_PCT:
+			rows.append(["영구 배율 합계", "%+d%%" % roundi(_pilot.bonus_atk_mult * 100.0)])
+			rows.append(["최종 공격력", str(_pilot.atk)])
+		PilotData.FX_HP_PCT:
+			rows.append(["영구 배율 합계", "%+d%%" % roundi(_pilot.bonus_max_hp_mult * 100.0)])
+			rows.append(["최대 체력", str(_pilot.max_hp)])
 	return rows
 
 
@@ -1774,26 +1827,19 @@ func _card_rows(key: String) -> Array:
 	if cd == null:
 		return []
 	var rows: Array = [
-		["비용", str(cd.cost)],
-		["종류", "메크 카드" if cd.card_type == CardData.TYPE_MECH else "파일럿 카드"],
-		["시전자", _scope_label(cd.scope)]]
+		["비용", str(cd.cost) if cd.is_playable() else Card.UNPLAYABLE_COST_TEXT],
+		["종류", "메크 카드" if cd.card_type == CardData.TYPE_MECH else "파일럿 카드"]]
+	if cd.card_type != CardData.TYPE_MECH:
+		rows.append(["분류", cd.category_label()])
+		rows.append(["포지션", CardData.scope_label(cd.scope)])
 	var kws: Array = []
-	if cd.has_keyword(CardData.KW_EXHAUST):
-		kws.append("소멸")
-	if cd.has_keyword(CardData.KW_PRESERVE):
-		kws.append("보존")
+	for kw in cd.keyword_list():
+		kws.append(cd.keyword_label(String(kw)))
 	if not kws.is_empty():
 		rows.append(["키워드", " · ".join(kws)])
+	if cd.shows_tokens():
+		rows.append(["토큰", str(cd.charge)])
 	return rows
-
-
-static func _scope_label(scope: String) -> String:
-	match scope:
-		CardData.SCOPE_LANE:
-			return "레인 전용"
-		CardData.SCOPE_JUNGLE:
-			return "정글러 전용"
-	return "제약 없음"
 
 
 ## 남은 수명을 **한 칸짜리 값**으로. `_remain_txt` 는 값 뒤에 괄호로 붙는

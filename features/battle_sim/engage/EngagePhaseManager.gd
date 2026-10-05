@@ -63,7 +63,7 @@ var _phase_before: int = GameEnums.BattlePhase.CARD_PHASE
 # Hand-off back to CardPhaseManager for UI refresh after engage closes.
 var _on_done: Callable = Callable()
 
-## 아레나 제목. 빈 문자열이면 "전투 개시" / "결투" 기본값을 쓴다. 오브젝트
+## 아레나 제목. 빈 문자열이면 "교전" / "결투" 기본값을 쓴다. 오브젝트
 ## 교전이 "전령" / "용" 을 넣는다.
 var _arena_title: String = ""
 
@@ -143,7 +143,7 @@ func start_engage(caster: PilotData, rounds_total: int, exclude_lane: bool,
 		if p.alive:
 			(t0 if p.team == 0 else t1).append(p)
 	if t0.is_empty() or t1.is_empty():
-		_bs.last_log = "[전투 개시] 대상 부족"
+		_bs.last_log = "[교전] 대상 부족"
 		if on_done.is_valid():
 			on_done.call()
 		return
@@ -396,7 +396,7 @@ func _end_banner_text() -> String:
 		return "교전 종료 — 적군 전멸"
 	if t0_out:
 		return "교전 종료 — 아군 전멸"
-	return "교전 종료 — %d라운드 완료" % _sim.total_rounds
+	return "교전 종료 — %d턴 완료" % _sim.total_rounds
 
 
 # ─── Participant gathering ───────────────────────────────────────────────────
@@ -457,6 +457,9 @@ func _finish_engage() -> void:
 	# 교전 한 번**짜리 상태가 여기서 걷힌다(`on_engage_start` 의 짝이다).
 	if _bs.mech_skill != null:
 		_bs.mech_skill.on_engage_end(_team_pilots[0] + _team_pilots[1])
+	# 파일럿 카드 쪽 교전 종료 훅 — 살아남은 참가자의 [자신감] 이 재배치된다.
+	if _bs.card_phase != null:
+		_bs.card_phase.on_engage_end(_team_pilots[0] + _team_pilots[1])
 	_bs.last_log = _result_log()
 	_bs.blog.log_event("ENGAGE", "전투 개시 종료 — t0=%s t1=%s"
 			% [_engage_side_str(0), _engage_side_str(1)])
@@ -525,7 +528,7 @@ func _result_log() -> String:
 	for p in _sim.stats:
 		var s: Dictionary = _sim.stats[p]
 		kills[(p as PilotData).team] += int(s["kills"])
-	return "[교전] %d라운드 · 아군 처치 %d / 적군 처치 %d" % [
+	return "[교전] %d턴 · 아군 처치 %d / 적군 처치 %d" % [
 		_sim.round_index, kills[0], kills[1]]
 
 
@@ -581,7 +584,7 @@ func _open_overlay() -> void:
 	_overlay_layer.add_child(_arena)
 	var title: String = _arena_title
 	if title.is_empty():
-		title = "결투" if _is_duel else "전투 개시"
+		title = "결투" if _is_duel else "교전"
 	_arena.setup(_bs, _sim, title, _is_duel)
 
 

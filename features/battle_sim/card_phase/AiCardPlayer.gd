@@ -76,6 +76,17 @@ const CLAUSE_WEIGHT: Dictionary = {
 	"steal_camp": 1.2,
 	"move": 0.6,
 	"push": 0.6,
+	# 파일럿 카드 추가분 — 성장 · 영구 스탯은 드로우보다 조금 앞에, 매복과 후퇴는
+	# 뒤에 둔다(둘 다 낸 그 차례에는 아무 일도 일어나지 않는 카드다).
+	"atk_pct": 1.3,
+	"hp_pct": 1.2,
+	"growth_perm": 1.2,
+	"growth": 1.1,
+	"token": 1.0,
+	"draw_next_phase": 1.0,
+	"strategy_next_phase": 0.9,
+	"ambush": 0.8,
+	"retreat_turret": 0.7,
 }
 ## 표에 없는 절의 기본 점수. 0 이 아니라 낮은 양수인 것은 "모르는 카드"가
 ## 아예 안 나가는 것보다 마지막에라도 나가는 쪽이 낫기 때문이다.

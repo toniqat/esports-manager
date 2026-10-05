@@ -240,6 +240,9 @@ func tick_growth_and_expiries() -> void:
 		if p.lane_stat_expire_turn >= 0 and turn >= p.lane_stat_expire_turn:
 			p.lane_stat_mod        = 0.0
 			p.lane_stat_expire_turn = -1
+		if p.eva_card_expire_turn >= 0 and turn >= p.eva_card_expire_turn:
+			p.eva_card_mod        = 0.0
+			p.eva_card_expire_turn = -1
 		_bs.refresh_growth_stats(p)
 
 
@@ -659,6 +662,11 @@ func roll_hit(attacker: PilotData, defender: PilotData) -> bool:
 	var sk: PilotSkillSystem = _bs.skill
 	var hit_m: float = sk.hit_mult(attacker)      if sk != null else 1.0
 	var eva_m: float = sk.evasion_mult(defender)  if sk != null else 1.0
+	# 카드 쪽 두 배율 — [자신감] 을 손에 든 공격자의 명중, [소극적인 태세] 가 건
+	# 방어자의 회피. 스킬 배율과 곱으로 쌓인다.
+	if _bs.card_phase != null:
+		hit_m *= 1.0 + _bs.card_phase.hand_hit_add(attacker)
+	eva_m *= 1.0 + defender.eva_card_mod
 	var atk_stat := maxi(1, roundi(float(lane_adjusted(attacker.hit, attacker)) * hit_m))
 	var def_stat := maxi(1, roundi(float(lane_adjusted(defender.evasion, defender)) * eva_m))
 	return randf() < PilotData.hit_chance(atk_stat, def_stat)
@@ -841,6 +849,10 @@ func resolve_movement(advance_set: Dictionary, retreat_set: Dictionary,
 		if p.recall_hold:
 			p.recall_hold = false
 			_bs.blog.log_block(p, "본진 복귀 — 이번 턴 대기")
+			continue
+		# [매복] — 자기 팀의 다음 작전 단계까지 그 칸에 박혀 있다. 밀려나지도
+		# 않는다(밀기 결과로 움직이면 매복이 아니다).
+		if p.ambush_hold:
 			continue
 		var kind: String = MOVE_KIND_FREE
 		if advance_set.has(p):

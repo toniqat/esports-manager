@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://c6i2h0mb2lupy"
+
+[deps]
+
+files=["res://data/csv/pilot_card_slots.slot1.translation", "res://data/csv/pilot_card_slots.slot2.translation", "res://data/csv/pilot_card_slots.slot3.translation"]
+
+source_file="res://data/csv/pilot_card_slots.csv"
+dest_files=["res://data/csv/pilot_card_slots.slot1.translation", "res://data/csv/pilot_card_slots.slot2.translation", "res://data/csv/pilot_card_slots.slot3.translation"]
+
+[params]
+
+compress=true
+delimiter=0

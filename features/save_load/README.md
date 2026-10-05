@@ -54,7 +54,9 @@ routes "이어하기" to MatchFlow.tscn instead of Season.tscn.
 `season_state` is a Dictionary of mostly-primitive values plus a few
 Resource-typed entries:
 - `all_pilots` / `intl_pilots` are `Array[PlayerData]`. Persisted as plain
-  Dicts via `_pilots_to_array` / `_array_to_pilots`. `assigned_mech` is
+  Dicts via `_pilots_to_array` / `_array_to_pilots` — **`pilot_cards`(고정 파일럿
+  카드 3장의 id)도 함께 저장한다.** 그 키가 없는 옛 세이브는 빈 배열로 복원되고
+  `GameManager.pilot_card_ids_for` 가 같은 선수의 DB 행으로 채운다. `assigned_mech` is
   runtime-only (set in match flow) and is rebuilt on resume from
   `match_resume.{player,enemy}_assigned_mech_ids`, so it isn't persisted on
   the PlayerData rows themselves.

@@ -20,17 +20,18 @@ const DB_PATH = "res://data/game.db"
 # Required columns and primary key per table
 const SCHEMAS: Dictionary = {
 	"pilots":      {"req": ["id","name","abbrev","hp","atk","heal"],           "pk": "id"},
-	"cards":       {"req": ["id","name","cost","uses","cast_method","target","cast_range","area","keyword","effect","description","scope","pool","card_type","card_cat","excl_group"], "pk": "id"},
+	"cards":       {"req": ["id","name","cost","uses","cast_method","target","cast_range","area","keyword","effect","description","scope","pool","card_type","card_cat","excl_group","charge_max"], "pk": "id"},
 	"game_config": {"req": ["key","value"],                                     "pk": "key"},
 	"lane_config": {"req": ["lane_id","name","max_pilots","mid_col","mid_row"], "pk": "lane_id"},
-	"players":     {"req": ["id","team_id","name","role","field_hit","field_eva","engage_hit","engage_eva","atk_growth","hp_growth","skill_id","is_mob"], "pk": "id"},
+	"players":     {"req": ["id","team_id","name","role","field_hit","field_eva","engage_hit","engage_eva","atk_growth","hp_growth","skill_id","is_mob","pilot_cards"], "pk": "id"},
 	"pilot_skills": {"req": ["id","key","name","role","type","p1","p2","keyword","description"], "pk": "id"},
 	"mechs":       {"req": ["id","name","role","hp","atk","presence"],          "pk": "id"},
 	"mech_passives": {"req": ["id","mech_id","key","name","p1","p2","keyword","description"], "pk": "id"},
 	"mech_cards":    {"req": ["id","mech_id","name","count","cost","cast_method","target","cast_range","area","keyword","charge_max","effect","trigger","description"], "pk": "id"},
 	"teams":       {"req": ["id","name","short_name"],                          "pk": "id"},
 	"intl_teams":   {"req": ["id","name","short_name"],                         "pk": "id"},
-	"intl_players": {"req": ["id","team_id","name","role","field_hit","field_eva","engage_hit","engage_eva","atk_growth","hp_growth"], "pk": "id"},
+	"intl_players": {"req": ["id","team_id","name","role","field_hit","field_eva","engage_hit","engage_eva","atk_growth","hp_growth","pilot_cards"], "pk": "id"},
+	"pilot_card_slots": {"req": ["position","slot1","slot2","slot3"], "pk": "position"},
 	"training_tiles": {"req": ["id","name","grade","shape","exp","effect"], "pk": "id"},
 }
 
@@ -56,22 +57,22 @@ const TABLE_DEFS: Dictionary = {
 		"keyword":     {"data_type": "text", "not_null": true},
 		"effect":      {"data_type": "text", "not_null": true},
 		"description": {"data_type": "text", "not_null": true},
-		# 시전자 제약: any = 누구나, lane = 레인 파일럿 전용, jungle = 정글러 전용.
-		# CardPhaseManager._deal_team_deck 가 스타터 덱을 돌릴 때 참조한다.
+		# 시전자 제약(포지션). `any` 단독 = 모든 포지션, `lane` 단독 = 탑/미드/원딜/서폿,
+		# 그 밖에는 jungle / top / mid / carry / support 를 `|` 로 이은 목록.
 		"scope":       {"data_type": "text", "not_null": true},
 		# 1 = 랜덤 카드풀에 포함, 0 = 제외(메크 고유 카드 등 별도 경로로만 지급).
 		"pool":        {"data_type": "int",  "not_null": true},
-		# 카드가 메크에 붙는가(mech) 파일럿에 붙는가(pilot). 파일럿마다 메크 3장
-		# + 파일럿 3장을 받는 덱 구성의 1차 분류다.
+		# 카드 종류. cards.csv 의 행은 **전부 pilot** 이다 — 메크 카드는 mech_cards 에 산다.
 		"card_type":   {"data_type": "text", "not_null": true},
-		# 파일럿 카드의 하위 분류 — lane / draw / jungle / common. 메크 카드는 "-".
-		# common 은 라인전 슬롯과 정글 슬롯 **양쪽** 후보에 들어간다(복귀).
+		# 카드 분류 — `|` 로 여러 개를 달 수 있다(growth / engage / ambush / attack /
+		# defense / utility / draw / jungle / lane). 지급 전용 카드는 "-".
+		# pilot_card_slots 의 각 칸이 이 값으로 후보를 고른다.
 		"card_cat":    {"data_type": "text", "not_null": true},
 		# 상호 배타 그룹. 비어 있지 않은 같은 값끼리는 **한 파일럿이 하나만**
-		# 가질 수 있다 — 안전한 파밍 ↔ 공격적인 라인전이 첫 사례다. 둘은 같은
-		# `lane_stat` 슬롯을 정반대 방향으로 밀어서 한 사람이 둘 다 들면 서로를
-		# 지운다(나중에 낸 쪽이 덮어쓴다). CardPhaseManager._sample 이 본다.
+		# 가질 수 있다(지금은 쓰는 카드가 없다). 고정 카드를 뽑을 때 본다.
 		"excl_group":  {"data_type": "text", "not_null": true},
+		# 충전 상한(`charge` 키워드를 단 카드만 읽는다, 그 밖에는 0) — mech_cards 와 같은 뜻.
+		"charge_max":  {"data_type": "int",  "not_null": true},
 	},
 	"game_config": {
 		"key":   {"data_type": "text", "primary_key": true, "not_null": true},
@@ -101,6 +102,10 @@ const TABLE_DEFS: Dictionary = {
 		# 실루엣 컷으로 나온다(PilotImages.set_mob_ids). 스탯 하향은 런타임
 		# 계수가 아니라 **CSV 값 자체**에 이미 반영돼 있다.
 		"is_mob":    {"data_type": "int",  "not_null": true},
+		# 이 선수의 **고정 파일럿 카드 3장** — `cards.id` 를 `|` 로 이은 것.
+		# 비어 있으면 GameManager 가 `pilot_card_slots` 로 선수 id 를 씨앗 삼아
+		# 결정적으로 뽑는다(매 판 같은 3장).
+		"pilot_cards": {"data_type": "text", "not_null": true},
 	},
 	"pilot_skills": {
 		"id":          {"data_type": "int",  "primary_key": true, "not_null": true},
@@ -202,6 +207,16 @@ const TABLE_DEFS: Dictionary = {
 		"engage_eva": {"data_type": "int",  "not_null": true},
 		"atk_growth": {"data_type": "int",  "not_null": true},
 		"hp_growth":  {"data_type": "int",  "not_null": true},
+		"pilot_cards": {"data_type": "text", "not_null": true},
+	},
+	# 포지션별 파일럿 카드 슬롯 3칸. 각 칸은 `|` 로 이은 카드 분류(`cards.card_cat`)
+	# 목록이고, 그 칸은 분류가 하나라도 겹치는 카드 중에서 채운다. 위치 키는
+	# top / jungle / mid / carry / support (`GameEnums.position_key`).
+	"pilot_card_slots": {
+		"position":  {"data_type": "text", "primary_key": true, "not_null": true},
+		"slot1":     {"data_type": "text", "not_null": true},
+		"slot2":     {"data_type": "text", "not_null": true},
+		"slot3":     {"data_type": "text", "not_null": true},
 	},
 	# 주간 훈련판에 올리는 코스 타일. `shape` 은 `/` 로 줄을 나눈
 	# 색 문자열(한 줄 = 하루, 한 글자 = 선수 한 명), `exp` 은 `|` 로 이은

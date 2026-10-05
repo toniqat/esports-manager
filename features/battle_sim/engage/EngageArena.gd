@@ -214,7 +214,7 @@ var _cam_target_center: Vector2 = Vector2.ZERO
 var _cam_target_zoom: float = 1.0
 var _cam_min_zoom: float = 1.0
 
-## 라운드 표시 ("라운드 2 / 3"). 결투는 라운드 예산이 없으므로 진행 라운드만.
+## 라운드 표시 ("턴 2 / 3" — 화면 용어는 **턴**이다). 결투는 예산이 없으므로 진행 턴만.
 var _round_lbl: Label = null
 ## 지금 누구 차례인가 / 종료 사유 배너.
 var _phase_lbl: Label = null
@@ -490,10 +490,10 @@ static func _clamp_cam_center(c: Vector2, zoom: float) -> Vector2:
 func _refresh_header() -> void:
 	if _round_lbl != null:
 		if _is_duel:
-			_round_lbl.text = "라운드 %d" % _sim.round_index
+			_round_lbl.text = "턴 %d" % _sim.round_index
 			_round_lbl.add_theme_color_override("font_color", TIME_COLOR)
 		else:
-			_round_lbl.text = "라운드 %d / %d" % [_sim.round_index, _sim.total_rounds]
+			_round_lbl.text = "턴 %d / %d" % [_sim.round_index, _sim.total_rounds]
 			_round_lbl.add_theme_color_override("font_color",
 					TIME_LOW if _sim.round_index >= _sim.total_rounds else TIME_COLOR)
 	if _phase_lbl == null or _preview:
@@ -503,7 +503,7 @@ func _refresh_header() -> void:
 	elif _sim.finished:
 		_phase_lbl.text = "교전 종료"
 	elif _sim.flow == TurnEngageSim.Flow.ROUND_START:
-		_phase_lbl.text = "라운드 %d 시작" % _sim.round_index
+		_phase_lbl.text = "턴 %d 시작" % _sim.round_index
 	else:
 		var who: String = _sim.actor_label()
 		_phase_lbl.text = "" if who == "" else "%s 의 차례" % who
@@ -1031,21 +1031,53 @@ func _build_result_labels() -> void:
 			add_child(_growth_label(u.pilot, cx))
 
 
-## 성장 줄 — `+2.15k`. 못 벌었으면 `—` 한 글자다(0.00k 은 자릿수만 차지한다).
-func _growth_label(p: PilotData, cx: float) -> Label:
+## 성장 줄 — 소울 아이콘 + `+2150`(`fmt_score_gain`). 전장 성장치 팝업과 같은
+## 얼굴이다: 흰 글자 · 굵은 검은 외곽선 · 외곽선 두른 아이콘(`BattleRenderer.
+## draw_outlined_icon`). 못 벌었으면 회색 `—` 한 글자다.
+func _growth_label(p: PilotData, cx: float) -> Control:
 	var s: Dictionary = _sim.stats.get(p, {})
 	var delta: float = p.score - float(s.get("score0", p.score))
-	var gained: bool = delta > 0.005
-	var text: String = ("+" + BattleSim.fmt_score(delta)) if gained else "—"
-	var lbl := _make_label(text, 20,
-			GROWTH_GAIN_COLOR if gained else GROWTH_FLAT_COLOR,
-			HORIZONTAL_ALIGNMENT_CENTER)
-	lbl.position = Vector2(cx - STRIP_PORTRAIT_W * 0.5, STRIP_SUB_Y)
-	lbl.size = Vector2(STRIP_PORTRAIT_W, 24)
-	# 가운데 정렬 Label 은 글자가 rect 보다 넓으면 정렬을 포기하고 옆 칸을
-	# 침범한다 — 90px 칸에서는 clip 이 필수다.
-	lbl.clip_text = true
-	return lbl
+	if delta <= 0.005:
+		var flat := _make_label("—", GROWTH_FONT_SIZE, GROWTH_FLAT_COLOR,
+				HORIZONTAL_ALIGNMENT_CENTER)
+		flat.position = Vector2(cx - STRIP_PORTRAIT_W * 0.5, STRIP_SUB_Y)
+		flat.size = Vector2(STRIP_PORTRAIT_W, 24)
+		return flat
+	var text: String = "+" + BattleSim.fmt_score_gain(delta)
+	# 외곽선이 위아래로 삐져나오므로 칸을 24px 보다 넉넉히 잡고, 가운데는
+	# 예전 24px 줄과 같은 높이에 맞춘다.
+	var box := Control.new()
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.position = Vector2(cx - STRIP_PORTRAIT_W * 0.5,
+			STRIP_SUB_Y + 12.0 - GROWTH_BOX_H * 0.5)
+	box.size = Vector2(STRIP_PORTRAIT_W, GROWTH_BOX_H)
+	# 90px 칸 — 큰 값이 옆 칸을 침범하지 않게 자른다.
+	box.clip_contents = true
+	var lbl := _make_label(text, GROWTH_FONT_SIZE, BattleSim.SCORE_POPUP_COLOR,
+			HORIZONTAL_ALIGNMENT_LEFT)
+	lbl.add_theme_constant_override("outline_size", GROWTH_OUTLINE_PX)
+	lbl.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0))
+	var font: Font = lbl.get_theme_font("font")
+	# 다섯 자리(`+12300`)부터는 90px 칸을 넘는다 — 그때만 글자를 줄여 맞춘다.
+	var avail: float = STRIP_PORTRAIT_W - GROWTH_ICON_SZ - GROWTH_ICON_GAP \
+			- GROWTH_ICON_OUTLINE_PX - GROWTH_OUTLINE_PX
+	var fsz: int = GROWTH_FONT_SIZE
+	var text_w: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz).x
+	while text_w > avail and fsz > 12:
+		fsz -= 1
+		text_w = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz).x
+	lbl.add_theme_font_size_override("font_size", fsz)
+	var total_w: float = GROWTH_ICON_SZ + GROWTH_ICON_GAP + text_w
+	var x0: float = maxf(GROWTH_ICON_OUTLINE_PX, (STRIP_PORTRAIT_W - total_w) * 0.5)
+	lbl.position = Vector2(x0 + GROWTH_ICON_SZ + GROWTH_ICON_GAP, 0.0)
+	lbl.size = Vector2(STRIP_PORTRAIT_W - lbl.position.x, GROWTH_BOX_H)
+	box.add_child(lbl)
+	var icon_rect := Rect2(x0, (GROWTH_BOX_H - GROWTH_ICON_SZ) * 0.5,
+			GROWTH_ICON_SZ, GROWTH_ICON_SZ)
+	box.draw.connect(func() -> void:
+		BattleRenderer.draw_outlined_icon(box, BattleSim.SCORE_POPUP_ICON,
+				icon_rect, GROWTH_ICON_OUTLINE_PX))
+	return box
 
 
 ## 확인 — 성장 줄 밑에 한 칸 띄우고 놓는다.
@@ -1067,9 +1099,17 @@ static func fmt_damage(v: float) -> String:
 	return str(int(round(v)))
 
 
-## 성장 줄의 색 — 이번 교전에서 번 성장치는 금색, 못 벌었으면 회색.
-const GROWTH_GAIN_COLOR: Color = Color(1.0, 0.84, 0.36)
+## 성장 줄 — 번 성장치는 흰 글자(`BattleSim.SCORE_POPUP_COLOR`) + 소울 아이콘,
+## 못 벌었으면 회색 `—`.
 const GROWTH_FLAT_COLOR: Color = Color(0.62, 0.64, 0.70)
+const GROWTH_FONT_SIZE: int = 20
+## 글자 외곽선 두께(Label `outline_size`).
+const GROWTH_OUTLINE_PX: int = 6
+const GROWTH_ICON_SZ: float = 22.0
+const GROWTH_ICON_GAP: float = 3.0
+const GROWTH_ICON_OUTLINE_PX: float = 2.5
+## 성장 줄 칸 높이 — 외곽선이 잘리지 않게 글자보다 넉넉하다.
+const GROWTH_BOX_H: float = 32.0
 ## 확인 버튼.
 const RES_BTN_W: float = 260.0
 const RES_BTN_H: float = 72.0

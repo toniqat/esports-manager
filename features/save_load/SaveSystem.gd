@@ -234,6 +234,9 @@ static func _pilots_to_array(pilots: Array) -> Array:
 			# 세이브가 복원하는 것은 CSV 행이 아니라 이 배열이라, 빼면 이어하기한
 			# 선수가 전원 스킬 없는 네임드로 부활한다.
 			"skill_id": p.skill_id, "is_mob": p.is_mob,
+			# 고정 파일럿 카드 3장. 옛 세이브에는 없다 — 그때는 비어 있는 채로
+			# 복원되고 `GameManager.pilot_card_ids_for` 가 DB 의 같은 선수 행에서 채운다.
+			"pilot_cards": p.pilot_cards.duplicate(),
 		})
 	return out
 
@@ -242,13 +245,17 @@ static func _array_to_pilots(rows: Array) -> Array:
 	var out: Array = []
 	for r in rows:
 		var d: Dictionary = r
-		out.append(PlayerData.new(
+		var pd := PlayerData.new(
 			int(d.get("id", 0)), String(d.get("name", "")),
 			int(d.get("role", 0)), int(d.get("team_id", 0)),
 			int(d.get("field_hit", 50)), int(d.get("field_eva", 50)),
 			int(d.get("engage_hit", 50)), int(d.get("engage_eva", 50)),
 			int(d.get("atk_growth", 50)), int(d.get("hp_growth", 50)),
-			int(d.get("skill_id", -1)), bool(d.get("is_mob", false))))
+			int(d.get("skill_id", -1)), bool(d.get("is_mob", false)))
+		# JSON 은 숫자를 float 로 돌려준다 — 카드 id 는 int 로 되돌린다.
+		for raw_id in (d.get("pilot_cards", []) as Array):
+			pd.pilot_cards.append(int(raw_id))
+		out.append(pd)
 	return out
 
 

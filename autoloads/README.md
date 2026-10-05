@@ -11,6 +11,19 @@ quirk) — access at runtime via `get_node("/root/GameManager")`.
 
 ---
 
+#### 고정 파일럿 카드 — `pilot_card_ids_for(pd)`
+선수마다 파일럿 카드 3장이 **고정**이다. 답하는 함수는 이것 하나이고 인게임 덱
+(`CardPhaseManager._pilot_cards_for`)과 드래프트 상세 팝업이 함께 부른다.
+
+- `pilot_card_ids_for(pd) -> Array[int]` — 우선순위: `pd.pilot_cards`(CSV / 세이브)
+  → 같은 id 의 DB 행(옛 세이브 복원용 캐시 `_db_pilot_cards`) → 씨앗 뽑기. 없는 id ·
+  포지션이 막는 id 는 빼고 모자란 칸만 씨앗 뽑기로 채운다.
+- `roll_pilot_card_ids(pos, seed, keep = [])` — `pilot_card_slots`(포지션마다 세 칸,
+  칸마다 분류 목록)로 결정적으로 뽑는다. 씨앗은 선수면 `7919 + id`, 단독 실행이면
+  팀 · 역할.
+- `card_def(id)` — `card_pool_bs` 한 행. `parse_card_ids("12|36|41")` — CSV 칸 파서.
+- `pilot_card_slots: Dictionary` — `_ready` 에서 `pilot_card_slots` 테이블을 읽는다.
+
 #### game.db 경로 — `db_path()`
 
 **런타임에 SQLite 에 넘기는 경로는 반드시 이 함수에서 나온다.** 하드코딩한
@@ -211,6 +224,7 @@ Do NOT add `class_name` to autoload scripts in Godot 4.5 — causes parse errors
 | 교전 결과(승 / 패 / 무) | `EngagePhaseManager` 대시보드 진입 | `SUCCESS` / `ERROR` / `MEDIUM` |
 | 오브젝트 획득(아군 / 적군) | `ObjectiveSystem._grant_reward` | `SUCCESS` / `WARNING` |
 | 경기 승 / 패 | `SimulationCore.check_win_condition` | `SUCCESS` / `ERROR` |
+| 전장 초상 누름 / **꾹 눌러 상세 패널** | `battle_sim/ui/MarkerTouch` | `SELECT` / `MEDIUM` |
 | 정글 시작 — 마커 집기 / **놓을 수 있는 칸마다 스냅** / 칸 결정 | `gambit/JungleStartOverlay` | `SELECT` / `LIGHT` / `MEDIUM` |
 | 훈련 타일 — 집기 / **놓을 수 있는 칸마다 스냅** / 배치 | `season/training/TrainingView` | `SELECT` / `LIGHT` / `SOFT` |
 | 훈련 타일 — 판에서 탭해 걷어냄 | `season/training/TrainingView._on_grid_input` | `LIGHT` |

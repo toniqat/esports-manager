@@ -1,0 +1,6 @@
+position,slot1,slot2,slot3
+top,growth|engage|ambush|attack|defense|utility|draw|lane,growth|engage|ambush|attack|defense|utility|draw|lane,growth|engage|ambush|attack|defense|utility|draw|lane
+jungle,growth|engage|ambush|utility|draw|jungle,growth|engage|ambush|utility|draw|jungle,growth|engage|ambush|utility|draw|jungle
+mid,growth|engage|ambush|attack|defense|utility|draw|lane,growth|engage|ambush|attack|defense|utility|draw|lane,growth|engage|ambush|attack|defense|utility|draw|lane
+carry,growth|attack|defense|utility|draw|lane,growth|attack|defense|utility|draw|lane,growth|attack|defense|utility|draw|lane
+support,engage|ambush|attack|defense|utility|draw|lane,engage|ambush|attack|defense|utility|draw|lane,engage|ambush|attack|defense|utility|draw|lane

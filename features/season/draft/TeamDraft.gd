@@ -133,12 +133,9 @@ func _rebuild_rosters_from_pool() -> void:
 
 # ─── 카드 후보 풀 — **삭제됨** ────────────────────────────────────────────────
 # `pilot_card_slots_for_role` / `candidate_cards_for_role` / `slot_summary_for_role`
-# / `cat_label` 넷이 여기 있었고, 유일한 소비자는 `DraftDetailPanel` 의 "받게 될
-# 파일럿 카드" 절이었다. 그 절이 없어지며(후보는 역할이 정하는 것이라 선수를
-# 고르는 판단에 들어가지 않고, 실제 3장은 경기 시작 시 표집된다) 넷 다 함께
-# 사라졌다. **배분 규칙의 원본은 `CardPhaseManager._pilot_slots_for` 다** —
-# 여기 있던 표는 그것을 역할 기준으로 옮겨 적은 사본이었으므로, 되살릴 일이
-# 생기면 사본을 다시 만들지 말고 그쪽을 부를 것.
+# / `cat_label` 넷이 여기 있었다. 지금 파일럿 카드는 선수마다 고정 3장이고 그
+# 원본은 `GameManager.pilot_card_ids_for` 하나다 — `DraftDetailPanel` 도 그것을
+# 부른다. 역할별 후보 표를 여기에 다시 만들지 말 것.
 
 
 # ─── 파일럿 스킬 ─────────────────────────────────────────────────────────────

@@ -124,6 +124,8 @@ var bonus_atk_mult: float = 0.0
 ## 최대 체력 고정 가산([몸집 불리기] +20, [붉은 가루] +20, 영혼 수확 +5/타,
 ## 고통과 쾌감 패시브의 피해 20%).
 var bonus_max_hp: int = 0
+## 최대 체력 배율 가산([워밍업] +5%). 공격력의 `bonus_atk_mult` 와 짝이다.
+var bonus_max_hp_mult: float = 0.0
 
 # ─── 성장 (인게임 누적) ───────────────────────────────────────────────────────
 # **성장은 시간이 아니라 성장치(`score`)가 만든다.** 예전에는 살아 있기만 하면
@@ -186,6 +188,8 @@ var growth_rate_bonus: float = 0.0
 const FX_GROWTH_RATE := "growth_rate"
 const FX_MAX_HP      := "max_hp"
 const FX_ATK         := "atk"
+const FX_ATK_PCT     := "atk_pct"   # 공격력 배율 % ([몰입] · [워밍업])
+const FX_HP_PCT      := "hp_pct"    # 최대 체력 배율 % ([워밍업])
 var persistent_fx: Array = []   # Array[Dictionary] {src, kind, amount}
 
 
@@ -246,6 +250,18 @@ var damage_credit: Dictionary = {}
 # 구간을 따로 쓰므로 이 값을 읽지 않는다.
 var lane_stat_mod: float  = 0.0
 var lane_stat_expire_turn: int = -1   # -1 = 없음
+## 카드가 거는 **전장 회피** 배율 가산분([소극적인 태세] +0.20). 라인전 스탯과
+## 달리 회피에만 곱해진다(`SimulationCore.roll_hit`). 같은 파일럿에 다시 걸면 덮어쓴다.
+var eva_card_mod: float = 0.0
+var eva_card_expire_turn: int = -1    # -1 = 없음
+
+# ─── 매복 ─────────────────────────────────────────────────────────────────────
+## [매복] — 정글 타일에 들어가 **자기 팀의 다음 작전 단계까지** 움직이지 않는다.
+## `SimulationCore.resolve_movement` 가 이동에서 빼고, `RecallSystem` 의 위치
+## 이탈 판정도 건너뛴다(레인 파일럿이 정글에 있는 것이 매복의 요점이다).
+## 그 팀의 작전 단계가 열릴 때(`CardPhaseManager._apply_phase_entry_carryovers`),
+## 그리고 사망 · 본진 복귀 때 풀린다.
+var ambush_hold: bool = false
 
 # ─── Animation state (UI-only; SimulationCore does NOT read these) ────────────
 # 이동 연출의 **경로**. `[출발 칸, …, 도착 칸]` 이고, 두 칸 이상 움직인 턴에는

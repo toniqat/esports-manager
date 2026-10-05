@@ -23,17 +23,17 @@ extends RefCounted
 const CARD_DIR: String = "res://resources/images/card/"
 const GROUND_DIR: String = "res://resources/images/ground/"
 const ITEM_DIR: String = "res://resources/images/ground/deadlock_items/"
-## 카드 이름 → Deadlock 아이템 파일명(확장자 없이, 타입 접두사 포함). cards.csv + mech_cards.csv 96장 전부,
+## 카드 이름 → Deadlock 아이템 파일명(확장자 없이, 타입 접두사 포함). cards.csv + mech_cards.csv 107장 전부,
 ## 한 아이템은 한 카드에만 쓴다. 카드를 더하거나 이름을 바꾸면 여기도 고친다
 ## (빠지면 조용히 배경 5종으로 떨어진다).
 const ITEM_ART: Dictionary = {
-	"전투 개시": "wpn_Opening Rounds",
+	"교전 개시": "wpn_Opening Rounds",
 	"완벽한 기회": "vit_Cloak of Opportunity",
 	"결투": "wpn_Point Blank",
 	"전투 준비": "wpn_Active Reload",
 	"정밀 이동": "wpn_Kinetic Dash",
-	"공격": "wpn_Rapid Rounds",
-	"필중": "wpn_Sharpshooter",
+	"찌르기": "wpn_Rapid Rounds",
+	"정밀 공격": "wpn_Sharpshooter",
 	"연속 공격": "wpn_Burst Fire",
 	"전진": "wpn_Fleetfoot",
 	"교환": "spt_Quicksilver Reload",
@@ -47,7 +47,7 @@ const ITEM_ART: Dictionary = {
 	"복귀": "vit_Rescue Beam",
 	"보호": "vit_Grit",
 	"약탈": "spt_Spirit Snatch",
-	"안전한 파밍": "vit_Battle Vest",
+	"소극적인 태세": "vit_Battle Vest",
 	"공격적인 라인전": "wpn_Close Quarters",
 	"재고": "spt_Refresher",
 	"완벽한 마무리": "vit_Eternal Gift",
@@ -59,6 +59,17 @@ const ITEM_ART: Dictionary = {
 	"용 보상": "vit_Trophy Collector",
 	"핫핸드": "wpn_Lucky Shot",
 	"이동": "vit_Sprint Boots",
+	"골드러시": "wpn_Intensifying Magazine",
+	"몰입": "wpn_Berserker",
+	"워밍업": "vit_Extra Stamina",
+	"신중한 예산": "spt_Superior Duration",
+	"성장 가속": "spt_Extra Charge",
+	"대결": "vit_Shadow Strike",
+	"매복": "wpn_Shadow Weave",
+	"무모한 돌격": "vit_Return Fire",
+	"자신감": "wpn_Headshot Booster",
+	"맑은 정신": "vit_Dispel Magic",
+	"준비 태세": "wpn_Capacitor",
 	"천둥 폭풍": "spt_Lightning Scroll",
 	"천공의 일격": "spt_Spirit Strike",
 	"꿰뚫는 번개": "wpn_Tesla Bullets",

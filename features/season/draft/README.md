@@ -111,25 +111,22 @@ CONFIRM 의 주 행동은 **"게임 시작"**(예전 "드래프트 확정")이�
 영역 비율(174 : 351 = `PilotImages.BUST_ASPECT` 0.496)은 칸 비율(204 : 412 =
 0.495)과 같게 잡아 늘어남이 없다 — 둘 중 하나만 바꾸면 얼굴이 찌그러진다.
 
-## 카드는 보여 주지 않는다 — 후보 풀 절은 **삭제됐다**
-상세 팝업에 "받게 될 파일럿 카드" 절이 있었다. 역할이 확정하는 슬롯 내역
-(정글러 정글 2 + 드로우 1 / 서포터 라인전 1 + 드로우 2 / 나머지 라인전 2 +
-드로우 1)과 그 슬롯에 들어갈 수 있는 **후보 카드 전부**(역할에 따라 7~14장)를
-`Card.tscn` 실물로 3열 격자에 깔았다.
+## 파일럿 카드 3장 — 선수마다 고정이라 다시 보여 준다
+상세 팝업 맨 아래에 **"파일럿 카드"** 절이 있다(`DraftDetailPanel._build_pilot_cards`).
+그 선수의 고정 3장(`GameManager.pilot_card_ids_for(pd)`)을 설명판
+(`CardDescBox.build(cd, w, light = true)`)으로 위에서부터 쌓는다 — 이름 · 비용 ·
+키워드 줄 · 설명문 · 키워드 풀이가 한 판에 다 들어 있어 카드 노드 격자가 필요 없다.
 
-**그 목록이 답하는 질문이 없었다.** (1) 실제 3장은 경기 시작 시
-`CardPhaseManager._deal_team_deck` 이 표집하므로 드래프트에서 본 후보와 인게임에서
-손에 잡히는 카드가 다르고, (2) 후보 풀은 **역할이 정하는 것이라** 같은 역할이면
-누구를 뽑아도 같은 목록이 나온다 — 선수를 고르는 판단에 들어갈 수가 없다.
-의미를 갖는 것은 인게임에서 **확정된** 카드뿐이고, 그건
-`battle_sim/ui/PilotDetailPanel` 이 `BattleSim.starter_cards` 를 읽어 보여 준다.
+**지금은 이 절이 판단의 근거가 된다.** 파일럿 카드가 경기 시작 시 표집되던 시절에는
+드래프트에서 보여 줄 수 있는 것이 역할별 **후보 풀**뿐이었고, 그 목록은 같은 역할이면
+누구를 뽑아도 같아서 절째로 지웠었다. 지금은 선수마다 고정(`players.pilot_cards`,
+비었으면 선수 id 씨앗 뽑기)이라 여기서 본 3장이 인게임에서 손에 잡히는 바로 그 3장이고,
+같은 역할이라도 선수마다 다르다.
 
-함께 삭제된 것 — `DraftDetailPanel` 의 `_build_card_sections` / `_cards_in_cat` /
-`_build_card_grid` 와 `CARD_*` 상수 여섯, 그리고 `TeamDraft` 의 후보 풀 헬퍼 넷
-(`pilot_card_slots_for_role` / `candidate_cards_for_role` / `slot_summary_for_role`
-/ `cat_label`). 이 팝업이 넷의 유일한 소비자였다. **배분 규칙의 원본은
-`CardPhaseManager._pilot_slots_for` 이므로** 되살릴 일이 생기면 사본을 다시 만들지
-말고 그쪽을 부를 것.
+그때 함께 삭제된 것 — `DraftDetailPanel` 의 `_build_card_sections` / `_cards_in_cat` /
+`_build_card_grid`, 그리고 `TeamDraft` 의 후보 풀 헬퍼 넷(`pilot_card_slots_for_role` /
+`candidate_cards_for_role` / `slot_summary_for_role` / `cat_label`) — 은 되살리지
+않는다. 카드의 원본은 `GameManager.pilot_card_ids_for` 하나다.
 
 **받침 높이가 내용을 따라가게 됐다.** 카드 격자가 있을 때는 우측 패널이 언제나
 꽉 차서 `PANEL_TOP` ~ `PANEL_BOTTOM` 고정으로 충분했는데, 스탯 칩과 스킬 한

@@ -8,7 +8,7 @@ extends Control
 #   • 적 팀 — 화면 **최상단**, 시간·팀 점수 줄 바로 아래. 표시 전용.
 #            (`HudBuilder._build_top_panel` 이 상단 패널의 자식으로 만든다)
 #   • 아군  — **핸드 행보다 아래**. 누르면 파일럿 상세 패널이 열린다
-#            (자기 작전 단계에 한함 — `set_interactive_enabled` 로 게이트).
+#            (작전 단계 + 자동 진행 — `PilotDetailPanel.can_open`, `set_interactive_enabled` 로 게이트).
 #            (`HudBuilder._build_player_strip`)
 #
 # 예전에는 열 명이 전부 상단 점수 패널 양옆에 84px 슬롯으로 몰려 있었다.

@@ -122,7 +122,7 @@ const BLESSING_DRAW: int = 2
 # 전부 `pool = 0` 이라 스타터 덱에는 들어가지 않는다. 손패에 놓는 것들은
 # `휘발성`이 붙어 **안 쓰고 버려지면 그대로 사라진다** — 스킬은 카드를 주는
 # 것이지 덱을 불리는 것이 아니다.
-const CARD_ENGAGE_START: int = 1     # 전투 개시  (격전)
+const CARD_ENGAGE_START: int = 1     # 교전 개시  (격전)
 const CARD_ADVANCE: int     = 11     # 전진       (공격적인 전진)
 const CARD_ADRENALINE: int  = 18     # 아드레날린 (고양감)
 const CARD_RECALL: int      = 21     # 복귀       (복귀 명령)
@@ -132,7 +132,7 @@ const CARD_MOVE: int        = 35     # 이동       (배회)
 
 ## 배회가 값을 깎을 "이동 카드"의 판정 — effect chain 에 이 절이 있는 카드.
 const MOVE_CLAUSE: String = "move"
-## 격전이 덱에서 찾을 "전투 개시 카드"의 판정.
+## 격전이 덱에서 찾을 "교전 카드"의 판정.
 const ENGAGE_CLAUSE: String = "engage"
 
 # ─── 상태 ────────────────────────────────────────────────────────────────────
@@ -318,11 +318,11 @@ func status_text(p: PilotData) -> String:
 			var left: int = cooldown_left(p)
 			return "사용 가능" if left <= 0 else "재사용까지 %d턴" % left
 		TYPE_CHARGE:
-			return "충전 %d / %d · 사용에 %d 충전" % [
+			return "토큰 %d / %d · 사용에 토큰 %d" % [
 					int(st["charge"]), int(d["p2"]), int(d["p1"])]
 		_:
 			if int(d["p2"]) > 0:
-				return "패시브 · 충전 %d / %d" % [int(st["charge"]), int(d["p2"])]
+				return "패시브 · 토큰 %d / %d" % [int(st["charge"]), int(d["p2"])]
 			return "패시브 · 상시 적용"
 
 
@@ -464,7 +464,7 @@ func _act_dragon_blessing(p: PilotData) -> String:
 			_bs.card_phase.spawn_card_node(cd)
 			drew += 1
 		_refresh_hand()
-	return "전략 점수 +%d · 드로우 %d" % [BLESSING_STRATEGY, drew]
+	return "전략 점수 +%d · 뽑기 %d" % [BLESSING_STRATEGY, drew]
 
 
 ## 격전 — 덱에서 **자기 것인** 전투 개시 카드를 한 장 끌어온다. 없으면 대신
@@ -478,7 +478,7 @@ func _act_fierce_battle(p: PilotData) -> String:
 			found = cd
 			break
 	if found == null:
-		return _grant_volatile(p, CARD_ENGAGE_START, "전투 개시")
+		return _grant_volatile(p, CARD_ENGAGE_START, "교전 개시")
 	_bs.player_deck.erase(found)
 	if _bs.card_phase != null:
 		_bs.card_phase.add_card_to_hand(found, true)
@@ -486,7 +486,7 @@ func _act_fierce_battle(p: PilotData) -> String:
 	else:
 		_bs.player_hand.append(found)
 	_refresh_hand()
-	return "[%s] 드로우" % found.card_name
+	return "[%s] 뽑기" % found.card_name
 
 
 ## 전투 명령 — 이번 작전 단계 동안 전투 개시 카드가 싸지고 라운드가 하나 줄어든다.
@@ -496,7 +496,7 @@ func _act_battle_order(p: PilotData) -> String:
 	_bs.engage_discount_p += BATTLE_ORDER_DISCOUNT
 	_phase_round_delta[0] += BATTLE_ORDER_ROUNDS
 	_refresh_hand()
-	return "전투 개시 비용 −%d · 라운드 %+d" % [
+	return "교전 카드 비용 −%d · 교전 턴 %+d" % [
 			BATTLE_ORDER_DISCOUNT, BATTLE_ORDER_ROUNDS]
 
 
@@ -504,7 +504,7 @@ func _act_battle_order(p: PilotData) -> String:
 ## 단계가 아니라 카드 한 장에 붙으므로 언제 쓸지가 곧 선택이다.
 func _act_siege(p: PilotData) -> String:
 	_next_engage_bonus[0] += SIEGE_ROUNDS
-	return "다음 전투 개시 라운드 +%d" % SIEGE_ROUNDS
+	return "다음 교전 턴 +%d" % SIEGE_ROUNDS
 
 
 ## 스킬이 만들어 주는 손패 카드 한 장. `휘발성`을 덧붙여 안 쓰고 버려지면

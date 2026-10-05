@@ -40,6 +40,30 @@ static func role_seat(role: int) -> int:
 	return idx if idx >= 0 else ROLE_DISPLAY_ORDER.size()
 
 
+# ─── 포지션 키 (카드 시전자 제약 · 파일럿 카드 슬롯) ─────────────────────────
+# `cards.scope` 와 `pilot_card_slots.position` 이 쓰는 문자열. 역할 열거값이 아니라
+# 문자열인 이유는 CSV 에 사람이 직접 적는 값이기 때문이다.
+const POS_TOP     := "top"
+const POS_JUNGLE  := "jungle"
+const POS_MID     := "mid"
+const POS_CARRY   := "carry"
+const POS_SUPPORT := "support"
+## 라인 순서(탑 · 정글 · 미드 · 원딜 · 서폿) — `ROLE_DISPLAY_ORDER` 와 같은 줄.
+const POSITION_KEYS: Array = [POS_TOP, POS_JUNGLE, POS_MID, POS_CARRY, POS_SUPPORT]
+## `scope = lane` 이 뜻하는 네 포지션.
+const LANE_POSITIONS: Array = [POS_TOP, POS_MID, POS_CARRY, POS_SUPPORT]
+const POSITION_LABELS: Dictionary = {
+	POS_TOP: "탑", POS_JUNGLE: "정글", POS_MID: "미드",
+	POS_CARRY: "원딜", POS_SUPPORT: "서폿",
+}
+
+
+## 역할 → 포지션 키. 범위 밖 역할은 빈 문자열.
+static func position_key(role: int) -> String:
+	var idx: int = ROLE_DISPLAY_ORDER.find(role)
+	return String(POSITION_KEYS[idx]) if idx >= 0 else ""
+
+
 enum SeasonPhase {
 	PRESEASON,        # Dec      — short league before first international
 	PRESEASON_INTL,   # Jan      — international tournament #1

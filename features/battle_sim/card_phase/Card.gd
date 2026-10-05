@@ -125,10 +125,8 @@ const CHARGE_BADGE_TEXT_COLOR := Color(1.0, 0.92, 0.45)
 # 아래 모서리는 이름판 `StyleBoxFlat` 의 둥근 모서리가 맡는다.
 #
 # **이름판은 카드 아랫단 전폭**을 아이템 타입색(`TYPE_COLORS`)으로 채운 판이다.
-# 그 윗변에 아트가 아래로만 드리우는 그림자(`ART_SHADOW_*`)를 깔아, 아트가 이름판
-# 위에 살짝 떠 있는 것처럼 보이게 한다 — 그림자 띠는 이름판 안에만 있으므로
-# 아트의 좌 · 우 · 위로는 번지지 않는다. 좌표는 전부 `scenes/Card.tscn` 과 같은
-# 절대 좌표다.
+# 아트와의 경계에는 그림자를 깔지 않는다(예전 `ArtShadow` 띠는 삭제). 좌표는 전부
+# `scenes/Card.tscn` 과 같은 절대 좌표다.
 const CARD_RADIUS := 10.0
 const NAME_PLATE_H := 36.0
 ## 이름판 윗변(184) = 아트 아랫변.
@@ -144,7 +142,9 @@ const TYPE_COLORS: Dictionary = {
 }
 const NAME_PLATE_NEUTRAL_COLOR := Color(0.18, 0.16, 0.24, 1.0)
 
-const NAME_FONT_SIZE := 15
+## 1.5x the old 15. Names wider than the plate (148px) shrink via `_fit_name_font_size`.
+const NAME_FONT_SIZE := 23
+const NAME_FONT_MIN := 14
 
 # ── 비용 배지 (좌측 상단, 카드 밖으로 걸친다) ──────────────────
 # 비용은 카드 **모서리 밖으로 살짝 튀어나온 원** 안에 찍힌다. 손패는 카드끼리
@@ -419,15 +419,19 @@ func _build_block_overlay() -> void:
 	move_child(_preserve_mark, get_child_count() - 1)
 
 
-## 충전 배지와 시전자 초상 리본을 지금 상태에 맞춘다. `CardPhaseManager` 가
-## 충전이 오르거나 내릴 때마다 부른다.
+## 토큰 배지와 시전자 초상 리본을 지금 상태에 맞춘다. `CardPhaseManager` 가
+## 토큰이 오르거나 내릴 때마다 부른다. 충전 카드는 `토큰/상한`, 상한 없이 쌓이는
+## 카드([골드러시])는 토큰 수만 찍는다.
 func refresh_charge_badge() -> void:
 	var showable: bool = face_up and is_player_card
 	if _charge_badge != null and is_instance_valid(_charge_badge):
-		var on: bool = showable and data != null and data.is_charge_card()
+		var on: bool = showable and data != null and data.shows_tokens()
 		_charge_badge.visible = on
 		if on:
-			_charge_badge.text = "%d/%d" % [data.charge, maxi(1, data.charge_max)]
+			if data.is_charge_card():
+				_charge_badge.text = "%d/%d" % [data.charge, maxi(1, data.charge_max)]
+			else:
+				_charge_badge.text = str(data.charge)
 	if _portrait != null and is_instance_valid(_portrait):
 		var pid: int = -1
 		if data != null and data.owner_pilot != null:
@@ -538,9 +542,9 @@ func _apply_data() -> void:
 	if data == null:
 		return
 	name_label.text = data.card_name
-	name_label.add_theme_font_size_override("font_size", NAME_FONT_SIZE)
 	name_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 	name_label.add_theme_constant_override("outline_size", 3)
+	name_label.add_theme_font_size_override("font_size", _fit_name_font_size())
 	# 앞면 판 자체는 아무것도 그리지 않는다 — 아트와 이름판이 카드를 다 덮고,
 	# 그 밑에 깔린 판이 있으면 둥근 모서리의 흐린 가장자리로 비쳐 나온다.
 	card_front.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
@@ -548,6 +552,17 @@ func _apply_data() -> void:
 	_apply_cost_badge()
 	_apply_name_plate()
 	refresh_charge_badge()
+
+
+## Largest font size (capped at `NAME_FONT_SIZE`) at which the name fits the plate width.
+func _fit_name_font_size() -> int:
+	var font: Font = name_label.get_theme_font("font")
+	var avail: float = name_label.size.x - 2.0 * name_label.get_theme_constant("outline_size")
+	var fs: int = NAME_FONT_SIZE
+	while fs > NAME_FONT_MIN and font.get_string_size(name_label.text,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > avail:
+		fs -= 1
+	return fs
 
 
 ## 카드 아트 — 이름판 위 전부. 전용 아트가 없는 카드는 `CardImages` 가 이름으로 고른
@@ -598,8 +613,7 @@ func _apply_cost_badge() -> void:
 
 
 ## 이름판 — 카드 아랫단 전폭을 타입색으로 채운 판(테두리 없음). 아래 두 모서리가
-## 카드 모서리다. 이름 라벨은 판의 형제로 같은 자리에 앉고, 그 사이에 아트의
-## 그림자 띠가 낀다.
+## 카드 모서리다. 이름 라벨은 판의 형제로 같은 자리에 앉는다.
 func _apply_name_plate() -> void:
 	if name_plate == null:
 		return
@@ -788,8 +802,9 @@ func is_hovered() -> bool:
 ## red when increased, white when unchanged. CardPhaseManager calls this
 ## from highlight_affordable_cards so every modifier (사전 준비 / 전투 준비
 ## / 집중 / cost_inc_phase) repaints the cost in sync with affordability.
-## 정밀 이동's +1 is NOT a modifier — `return_left:1` bumps the card's own
-## `cost`, so a returned card reads white at its new printed price.
+## 정밀 이동 / 골드러시's +1 is NOT a modifier — `self_cost:1` bumps the card's
+## own `cost`, so a repositioned card reads white at its new printed price.
+## [신중한 예산] 의 "이번 단계 0" 과 [맑은 정신] 의 이웃 할인은 수정자라 초록으로 찍힌다.
 func update_displayed_cost(effective_cost: int) -> void:
 	if data == null:
 		return

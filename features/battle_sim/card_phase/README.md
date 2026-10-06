@@ -243,6 +243,44 @@ An objective reward that drops once per match must not vanish to a single 재고
 scan rather than `pop_front()` so it does not stop when a kept card sits at the front of the hand, and
 even in the extreme where the whole hand is kept (impossible in practice, since there are at most 2) no infinite loop occurs.
 `_prune_preserved` removes entries that have left the hand on every trim, preventing ghost references.
+
+#### Maximum hand size — verified limit (T5, `HAND_CARD_SCALE` 0.96)
+- **Resting cap = 12.** `MAX_HAND_SIZE` (10) + the only positive `hand_size` trait
+  (`traits.csv` id 12 넓은 손, +2). A preset can't equip the same trait twice
+  (`TraitSystem.validate_equip`), so 12 is the most the auto-draw trim ever leaves.
+  `first_draw` (+1) only changes the first auto-draw count; the same tick's trim still
+  cuts back to the cap.
+- **Transient overshoot is possible** mid-turn: effect draws carry no cap guard, so e.g.
+  `draw:2` (net +1) or 과감한 정리 (discard 3, draw 5, net +1) can push a 12-card hand to
+  13–15+ until the next auto-draw trims. Bounded only by deck size + strategy points.
+- **Measured** (throwaway harness: forced hand via `draw_card` + `spawn_card_node`,
+  trait read through `match_ctx.traits` → `TraitHooks.load_from_ctx`, input injected with
+  `Viewport.push_input`; windowed at 9:16, 9:19.5 + `ESM_SAFE_AREA=0,162,0,90`, and 3:4):
+
+  | hand | spacing | push | rest bounds x | worst neighbour strip while focused |
+  |---|---|---|---|---|
+  | 10 | 83.2 | 41.0 | 77..1003 | 44.0px |
+  | 12 | 68.0 | 56.1 | 77..1003 | **25.5px** (focus 9 → 10) |
+  | 14 | 57.6 | 66.6 | 77..1003 | 12.7px |
+  | 15 | 53.5 | 70.7 | 77..1003 | 7.7px |
+
+  (Phone widths, 1080 viewport — identical at 9:16 and 9:19.5. At 3:4 the viewport is
+  1440 wide, `BS_HAND_WIDTH` 1298: 12 cards = spacing 104, push 28, strip ≥ 32 — all pass.)
+
+  At every size: row inside the safe area (bottom 1616 / 1946 vs safe bottom 1920 / 2250,
+  above the ally strip backdrop), max tilt 6.72°, fresh hover at every band centre picks
+  its own card, ±2px at every band edge picks the side's card, slow (3px/2 frames) and fast
+  (14px/frame) sweeps visit every card in order with no cascade, every neighbour of a
+  focused card is still reachable, and press → drag to the drop zone → return works from
+  every index (card returns to its own slot, 0.0px error). The 14→12 trim (`_trim_hand_overflow`, cap 12) keeps nodes and
+  data in sync. Draw-preview chevrons (+2 on the deck pile) render with the hand lowered.
+- **Known soft spot**: the neighbour on the *anchored-end* side of a focus near the row's end
+  only gets `ramp` (e.g. 0.75) of the push, so its exposed strip drops below
+  `BS_HAND_HOVER_MIN_STRIP` (32): 25.5px at 12, ~8px at a 15-card overshoot. It stays
+  reachable (and is trivially reached by moving focus from the far side), so nothing was
+  changed; revisit if touch testing on device finds it too thin.
+- The 12-card figures quoted elsewhere in this README predate the 0.96 scale (spacing 64.5,
+  28px strip, row 89..991); the table above is the current measurement.
 - `start_card_phase()` — transitions to CARD_PHASE and clears
   `_player_pass_lock` (your own turn opening is itself what it means for the lock to be released).
   Awaits `HudBuilder.play_turn_announce(true)` so the "당신의 차례" banner

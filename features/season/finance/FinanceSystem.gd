@@ -48,6 +48,7 @@ static func init_run(state: Dictionary, team_id: int) -> void:
 		"week_wins": 0,
 		"week_losses": 0,
 		"week_no": 0,
+		"manual_profit_weeks": 0,
 		"history": [],
 	}
 
@@ -60,11 +61,11 @@ static func settle_week(state: Dictionary) -> Dictionary:
 	var lvl: int = facility_level(state)
 	var row: Dictionary = facility_row(lvl)
 	var income_pct: int = int(row.get("income_pct", 100))
-	var sponsor: int = int(round(float(f.get("sponsor_base", 0)) * float(income_pct) / 100.0))
+	var sponsor: int = sponsor_income(state, lvl)
 	var bonus: int = int(f.get("week_bonus", 0))
 	var income: int = sponsor + bonus
 	var salaries: int = StaffSystem.weekly_salary_total(state)
-	var upkeep: int = int(row.get("upkeep", 0))
+	var upkeep: int = upkeep_cost(state, lvl)
 	var expense: int = salaries + upkeep
 	var net: int = income - expense
 
@@ -77,6 +78,9 @@ static func settle_week(state: Dictionary) -> Dictionary:
 	var reserve: int = 0
 	var unpaid: int = 0
 	var delegated: bool = StaffSystem.is_delegated(state, "finance")
+	# M8 — trait unlock `finance_manual_profit:N` counts surplus weeks run by the manager.
+	if net >= 0 and StaffSystem.owner(state, "finance") == StaffSystem.OWNER_MANAGER:
+		f["manual_profit_weeks"] = int(f.get("manual_profit_weeks", 0)) + 1
 
 	if net >= 0:
 		reserve = _pct_of(net, clampi(ConstTable.int_of("FINANCE_RESERVE_PCT"), 0, 100))
@@ -124,6 +128,8 @@ static func settle_week(state: Dictionary) -> Dictionary:
 		"phase_week": int(state.get("phase_week", 1)),
 		"sponsor": sponsor,
 		"income_pct": income_pct,
+		"trait_income_pct": TraitSystem.run_mod(state, "income_pct"),
+		"trait_upkeep_pct": TraitSystem.run_mod(state, "upkeep_pct"),
 		"bonus": bonus,
 		"wins": int(f.get("week_wins", 0)),
 		"losses": int(f.get("week_losses", 0)),
@@ -211,17 +217,37 @@ static func history(state: Dictionary) -> Array:
 	return (state.get("finance", {}) as Dictionary).get("history", [])
 
 
+## Weekly sponsor income at facility `level` — sponsor base × facility `income_pct`
+## × trait `income_pct` (M8, `TraitSystem.run_pct_mult`). `settle_week` and
+## `projection` both read it so the panel and the settlement cannot disagree.
+static func sponsor_income(state: Dictionary, level: int) -> int:
+	var f: Dictionary = state.get("finance", {})
+	var row: Dictionary = facility_row(level)
+	return int(round(float(f.get("sponsor_base", 0)) * float(row.get("income_pct", 100)) / 100.0
+			* TraitSystem.run_pct_mult(state, "income_pct")))
+
+
+## Weekly facility upkeep at `level` × trait `upkeep_pct` (M8).
+static func upkeep_cost(state: Dictionary, level: int) -> int:
+	return int(round(float(facility_row(level).get("upkeep", 0))
+			* TraitSystem.run_pct_mult(state, "upkeep_pct")))
+
+
+## Surplus weeks settled while the manager ran finance (trait unlock counter, M8).
+static func manual_profit_weeks(state: Dictionary) -> int:
+	return int((state.get("finance", {}) as Dictionary).get("manual_profit_weeks", 0))
+
+
 ## Weekly fixed cost at the current level — salaries + upkeep.
 static func weekly_fixed_cost(state: Dictionary) -> int:
-	return StaffSystem.weekly_salary_total(state) + int(facility_row(facility_level(state)).get("upkeep", 0))
+	return StaffSystem.weekly_salary_total(state) + upkeep_cost(state, facility_level(state))
 
 
 ## What the coming week-end settlement looks like so far (bonus accrued to date).
 ## → `{sponsor, bonus, income, expense, net}`.
 static func projection(state: Dictionary) -> Dictionary:
 	var f: Dictionary = state.get("finance", {})
-	var row: Dictionary = facility_row(facility_level(state))
-	var sponsor: int = int(round(float(f.get("sponsor_base", 0)) * float(row.get("income_pct", 100)) / 100.0))
+	var sponsor: int = sponsor_income(state, facility_level(state))
 	var bonus: int = int(f.get("week_bonus", 0))
 	var expense: int = weekly_fixed_cost(state)
 	return {"sponsor": sponsor, "bonus": bonus, "income": sponsor + bonus,

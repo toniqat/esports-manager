@@ -33,7 +33,8 @@ All tuning numbers are `MASTERY_*` keys in `data/csv/const.csv` — none are wri
   - training tile `M`: `add_training_exp(state, pid, amount)` (called by the training board) —
     `amount × MASTERY_TRAIN_SCALE` to the research mech, or to the coach's choice if none is set.
   - Multiplier, **my pilots only**: `knowledge_mult` (`MASTERY_KNOW_BASE + MASTERY_KNOW_PER ×
-    StaffSystem.effective("knowledge")`) × `FinanceSystem.mastery_mult`. Opponent pilots gain the raw
+    StaffSystem.effective("knowledge")`) × `FinanceSystem.mastery_mult` × trait `mastery_pct`
+    (`TraitSystem.run_pct_mult`, M8). Opponent pilots gain the raw
     amount. Each gain is at least 1, capped at `MASTERY_MAX`.
 - **Auto vs manual** (`StaffSystem.is_delegated(state, "knowledge")`):
   - delegated → the sheet shows `코치에게 맡기기` (`auto_assign_all`), and `settle_week` fills empty

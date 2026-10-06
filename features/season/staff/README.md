@@ -20,6 +20,7 @@ Contract §11.2 — `hub_summary(state)` / `open(host)`; draws only, every value
 | Card | `위임 n/6` (stats whose `owner` is not the manager), `약점 <stat> <value>` (lowest effective), owner badge = assistant name or `감독`, alert dot while any negative `staff_mods` entry is active |
 | Sheet · 능력치 | Six rows: effective value + 1..20 bar, who covers it (`감독 (직접)` / job label + name), and every cover-rule candidate (`감독 v (±mod) · 어시 v · <job> v`). Green lead bar = delegated, amber = manager |
 | Sheet · 일시 보정 | Active `staff_mods` (stat, delta, weeks left, source) |
+| Sheet · 장착 특성 | Run's equipped manager traits (`TraitSystem.run_traits`, M8): +/− chip and lead bar (green / red), name, `desc_of`, rarity chip; header = `run_setup.bonus_points` and `n/TRAIT_SLOTS`. Empty → `장착한 특성 없음` |
 | Sheet · 스태프 | Run staff list — name, job label, field value (assistant: top two stats), weekly salary; header shows `weekly_salary_total` |
 | Sheet · 직접 해야 하는 일 | One line per non-delegated stat (`DIRECT_TASKS`), plus interviews / outings, which always read the manager's own mental |
 

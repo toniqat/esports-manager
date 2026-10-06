@@ -26,7 +26,8 @@ the evening card + incident card live on the week screen (`features/season/week/
     hits next Monday — `end_week` carries it over).
   - Interview / outing checks are judged with the manager's own mental.
 - **Incidents** roll once per Mon–Fri when the week screen first shows that day:
-  chance `MENTAL_INCIDENT_CHANCE × FinanceSystem.incident_mult(state)`, target = a random pilot of mine.
+  chance `MENTAL_INCIDENT_CHANCE × FinanceSystem.incident_mult(state) × TraitSystem.run_pct_mult(state, "incident_pct")`,
+  target = a random pilot of mine.
   A pending incident opens its dialog by itself and must be answered; checks use
   `StaffSystem.effective_for_incident(state)` (staff can cover).
 - **Press** (once per week before training): one `press` row per week. Rows with `mention=mvp|worst`
@@ -97,6 +98,9 @@ Columns: `id, kind, manager_type, stage, cond, lines, choices, effects, weight`.
 | `week>=N` / `week<N` | `phase_week` |
 | `last=win` / `last=loss` | last own match result (`run_stats.matches`) |
 | `mention=mvp` / `mention=worst` | press only — picks the target (last match MVP if mine / my lowest MVP metric); row skipped when none |
+
+- **Trait `trust_gain`** (M8): `add_trust` adjusts only a rise — `max(0, delta + Σp1)` — so a
+  rise never becomes a loss; drops pass through untouched.
 
 ## API (static, `state` = `season_state`)
 `init_run` · `end_week` · `training_exp_mult(state, pid, day)` · `trust` · `outings` · `add_trust` ·

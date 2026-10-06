@@ -32,16 +32,21 @@ missing keys (pre-M6 save) is re-initialised lazily by `_fin`, keeping what was 
 | `penalty_weeks` | int | Weeks left of the unpaid-training penalty. |
 | `week_bonus` · `week_wins` · `week_losses` | int | Match bonus accrued since the last settlement (reset by `settle_week`). |
 | `week_no` | int | Settlements done this run (history label "N주차"). |
+| `manual_profit_weeks` | int | Settled weeks with `net ≥ 0` while `StaffSystem.owner(state, "finance") == "manager"` — trait unlock `finance_manual_profit:N` (M8). Read via `manual_profit_weeks(state)`. |
 | `history` | Array of entries | Last `FINANCE_HISTORY_WEEKS` settlements, oldest first. |
 
 History entry (also what `settle_week` returns, plus `toast`):
-`{week_no, phase, phase_week, sponsor, income_pct, bonus, wins, losses, income, salaries, upkeep,
+`{week_no, phase, phase_week, sponsor, income_pct, trait_income_pct, trait_upkeep_pct, bonus, wins, losses, income, salaries, upkeep,
 expense, net, reserve, alloc{training, facility, welfare} (amounts), unpaid, balance, fund, level,
 delegated, cuts: Array[String]}`.
 
 ## Week-end settlement (`settle_week`)
-1. `income = round(sponsor_base × income_pct / 100) + week_bonus` (bonus may be negative).
-2. `expense = StaffSystem.weekly_salary_total + upkeep` (current level).
+1. `income = sponsor_income(state, level) + week_bonus` (bonus may be negative), where
+   `sponsor_income = round(sponsor_base × income_pct / 100 × TraitSystem.run_pct_mult(state, "income_pct"))`.
+2. `expense = StaffSystem.weekly_salary_total + upkeep_cost(state, level)`, where
+   `upkeep_cost = round(facility upkeep × TraitSystem.run_pct_mult(state, "upkeep_pct"))` (M8 traits).
+   `projection()` / `weekly_fixed_cost()` call the same two helpers, so the panel and the settlement agree.
+   The history entry's `income_pct` stays the facility percent; the trait sums are `trait_income_pct` / `trait_upkeep_pct`.
 3. `net = income − expense`. One penalty week is consumed.
 4. **Surplus (`net ≥ 0`)**: `FINANCE_RESERVE_PCT` of it is added to the balance; the rest (the
    pool) is split by `allocation_shares` (each share floored, rounding remainder to the largest share):

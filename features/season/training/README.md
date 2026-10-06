@@ -298,6 +298,8 @@ once per cell in `TrainingBoard.cell_exp()` step 3. The outside multiplier per c
 
 ```
 training-stat mult × FinanceSystem.training_exp_mult(state) × MentalSystem.training_exp_mult(state, pilot_id, day)
+  × TraitSystem.run_pct_mult(state, "train_exp_pct")        (M8 manager traits, whole board)
+  × (1 + PlayerData.train_bonus_pct / 100)                    (M10 breakthrough, that pilot's column only)
 ```
 
 This is the single place they are multiplied (plan §11.3). Preview (`compute_gains` →

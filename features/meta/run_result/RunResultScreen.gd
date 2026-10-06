@@ -4,7 +4,11 @@ extends Control
 # 계약: docs/outgame_dev_plan.md §10.3. 계산은 `RunResult.gd`, 여기는 그리기만.
 #
 # 위에서부터: 결과 머리(클리어 / 실패 / 포기) · 시나리오와 팀 · (테스트 런 칩) →
-# 스크롤 본문 카드 넷(진척 · 점수 내역 · 보상 · 이번 런 업적) → 전폭 하단 바 하나.
+# 스크롤 본문 카드(진엔딩 · 새 특성 해금 · 진척 · 점수 내역 · 보상 · 선수 성장 ·
+# 이번 런 업적, 앞 둘은 있을 때만) → 전폭 하단 바 하나.
+# M8~M10 rewards (both currencies, pass EXP, manager level, pilot max level, new
+# traits) are drawn from `result.profile_delta` (the before/after settlement wrote
+# into the profile) — test runs have no such key, so only computed values show.
 # 하단 바는 평소 `로비로`, 로비에서 런을 포기하고 왔으면(`outcome == "abandon"`)
 # `새 런`(→ 런 준비). 결과가 비어 있으면(씬을 바로 연 경우) 빈 상태 한 장.
 #
@@ -25,6 +29,9 @@ const PORTRAIT_D: float = 76.0
 const BODY_TOP: float = 360.0
 const TRUE_END_ROW_H: float = 184.0
 const TRUE_END_PORTRAIT_D: float = 128.0
+const TRAIT_ROW_H: float = 104.0
+const GROWTH_ROW_H: float = 88.0
+const GROWTH_PORTRAIT_D: float = 60.0
 
 const OUTCOME_TITLES: Dictionary = {
 	"clear":   "런 클리어",
@@ -109,9 +116,14 @@ func _build_body() -> void:
 	# M7 — the true ending leads the body: it is the rarest thing a run can show.
 	if not (_result.get("true_endings", []) as Array).is_empty():
 		y = _build_true_ending_card(body, y) + CARD_GAP
+	# M8 — newly unlocked traits come next: they change what the next run can equip.
+	if not _new_trait_ids().is_empty():
+		y = _build_unlocked_traits_card(body, y) + CARD_GAP
 	y = _build_progress_card(body, y) + CARD_GAP
 	y = _build_score_card(body, y) + CARD_GAP
 	y = _build_reward_card(body, y) + CARD_GAP
+	if not (_result.get("pilots", []) as Array).is_empty():
+		y = _build_growth_card(body, y) + CARD_GAP
 	y = _build_achievement_card(body, y) + CARD_GAP
 	body.custom_minimum_size.y = y
 
@@ -173,7 +185,7 @@ func _build_score_card(parent: Control, y: float) -> float:
 		["승리 × %d" % int(_result.get("wins", 0)), int(bd.get("wins", 0))],
 		["대회 우승 × %d" % int(_result.get("titles", 0)), int(bd.get("titles", 0))],
 		["클리어 보너스", int(bd.get("clear", 0))],
-		["보너스 점수", int(bd.get("bonus", _result.get("bonus_points", 0)))],
+		["특성 보너스 × %d" % int(_result.get("bonus_points", 0)), int(bd.get("bonus", 0))],
 	]
 	# 합계 줄은 구분선 + 큰 글씨라 한 줄 반을 쓴다.
 	var card: Panel = _section_card(parent, y, "점수", rows.size() + 2)
@@ -193,18 +205,118 @@ func _build_score_card(parent: Control, y: float) -> float:
 	return y + card.size.y
 
 
+## Rewards: both currencies, pass EXP (+ pass level change, overflow payout),
+## manager EXP (+ level change and the removal points it grants). Level changes
+## come from `profile_delta` only — a test run has none.
 func _build_reward_card(parent: Control, y: float) -> float:
 	var test_run: bool = bool(_result.get("test_run", false))
-	var card: Panel = _section_card(parent, y, "보상", 3 if test_run else 2)
-	var cur: int = int((_result.get("currency", {}) as Dictionary).get("outgame", 0))
+	var delta: Dictionary = _profile_delta()
+	var cur: Dictionary = _result.get("currency", {})
+	var rows: Array = [
+		["아웃게임 재화", "+%d" % int(cur.get("outgame", 0)), OutgameTheme.POSITIVE],
+		["레벨업 재화", "+%d" % int(cur.get("levelup", 0)), OutgameTheme.POSITIVE],
+	]
+	var pass_d: Dictionary = delta.get("pass", {})
+	var pass_txt: String = "+%d" % int(_result.get("pass_exp", 0))
+	var pass_up: bool = int(pass_d.get("to", 0)) > int(pass_d.get("from", 0))
+	if pass_up:
+		pass_txt += "  ·  Lv %d → %d" % [int(pass_d["from"]), int(pass_d["to"])]
+	rows.append(["주간 패스 EXP", pass_txt,
+			OutgameTheme.ACCENT_TEXT if pass_up else OutgameTheme.POSITIVE])
+	var overflow: int = int(pass_d.get("overflow_outgame", 0))
+	if overflow > 0:
+		rows.append(["패스 초과분 → 아웃게임 재화", "+%d" % overflow, OutgameTheme.POSITIVE])
+	var mgr_d: Dictionary = delta.get("manager", {})
+	var mgr_from: int = int(mgr_d.get("from", 0))
+	var mgr_to: int = int(mgr_d.get("to", 0))
+	var mgr_up: bool = mgr_to > mgr_from
+	var mgr_txt: String = "+%d" % int(_result.get("manager_exp", 0))
+	if mgr_up:
+		mgr_txt += "  ·  Lv %d → %d" % [mgr_from, mgr_to]
+	rows.append(["감독 EXP", mgr_txt, OutgameTheme.ACCENT_TEXT if mgr_up else OutgameTheme.POSITIVE])
+	if mgr_up:
+		var pts: int = (mgr_to - mgr_from) * maxi(0, ConstTable.int_of("MANAGER_REMOVE_PER_LEVEL"))
+		rows.append(["새 제거 포인트 (감독 탭)", "+%d" % pts, OutgameTheme.ACCENT_TEXT])
+
+	var card: Panel = _section_card(parent, y, "보상", rows.size() + (1 if test_run else 0))
 	var ry: float = SECTION_TITLE_H + CARD_PAD * 0.5
-	_row(card, ry, "아웃게임 재화", "+%d" % cur, OutgameTheme.POSITIVE)
-	_row(card, ry + ROW_H, "감독 EXP", "+%d" % int(_result.get("manager_exp", 0)),
-			OutgameTheme.POSITIVE)
+	for r in rows:
+		_row(card, ry, String(r[0]), String(r[1]), r[2] as Color)
+		ry += ROW_H
 	if test_run:
 		UiHelpers.mk_label(card, "테스트 런이라 프로필에 더하지 않았습니다", 22,
-				OutgameTheme.TEXT_FAINT, Vector2(CARD_PAD, ry + ROW_H * 2.0),
+				OutgameTheme.TEXT_FAINT, Vector2(CARD_PAD, ry),
 				Vector2(CARD_W - CARD_PAD * 2.0, ROW_H))
+	return y + card.size.y
+
+
+## Pilot growth (M10): per pilot the run's pilot EXP (`pilot_exp`) and, when the
+## profile raised it, the max-level change (`profile_delta.pilots`, amber chip).
+func _build_growth_card(parent: Control, y: float) -> float:
+	var pilots: Array = _result.get("pilots", [])
+	var pexp: Dictionary = _result.get("pilot_exp", {})
+	var pdelta: Dictionary = _profile_delta().get("pilots", {})
+	var card: Panel = OutgameTheme.add_card(parent, Vector2(_card_x(), y),
+			Vector2(CARD_W, SECTION_TITLE_H + CARD_PAD * 1.5 + pilots.size() * GROWTH_ROW_H), 24)
+	_section_title(card, "선수 성장")
+	var ry: float = SECTION_TITLE_H + CARD_PAD * 0.5
+	for p in pilots:
+		var pd: Dictionary = p
+		var pid: int = int(pd.get("id", -1))
+		OutgameTheme.add_round_portrait(card, PilotImages.circle_for(pid),
+				Vector2(CARD_PAD, ry + (GROWTH_ROW_H - GROWTH_PORTRAIT_D) * 0.5), GROWTH_PORTRAIT_D)
+		var tx: float = CARD_PAD + GROWTH_PORTRAIT_D + 20.0
+		UiHelpers.mk_label(card, String(pd.get("name", "")), 26, OutgameTheme.TEXT,
+				Vector2(tx, ry + 12.0), Vector2(360, 36))
+		UiHelpers.mk_label(card, "선수 EXP +%d" % int(pexp.get(str(pid), 0)), 20,
+				OutgameTheme.TEXT_SUB, Vector2(tx, ry + 48.0), Vector2(360, 28))
+		var d: Dictionary = pdelta.get(str(pid), {})
+		if int(d.get("to", 0)) > int(d.get("from", 0)):
+			var chip_w: float = 240.0
+			OutgameTheme.add_chip(card, "최대 Lv %d → %d" % [int(d["from"]), int(d["to"])],
+					Vector2(CARD_W - CARD_PAD - chip_w, ry + (GROWTH_ROW_H - 40.0) * 0.5),
+					Vector2(chip_w, 40), OutgameTheme.ACCENT_DIM, OutgameTheme.ACCENT_TEXT, 20)
+		ry += GROWTH_ROW_H
+	return y + card.size.y
+
+
+## Newly unlocked traits (M8) — amber card like the true ending: +/- chip, name,
+## filled-in description, rarity chip.
+func _build_unlocked_traits_card(parent: Control, y: float) -> float:
+	var ids: Array = _new_trait_ids()
+	var test_run: bool = bool(_result.get("test_run", false))
+	var note_h: float = 40.0
+	var card: Panel = OutgameTheme.add_card(parent, Vector2(_card_x(), y),
+			Vector2(CARD_W, SECTION_TITLE_H + CARD_PAD * 1.5 + note_h + ids.size() * TRAIT_ROW_H),
+			24, OutgameTheme.ACCENT_DIM)
+	UiHelpers.mk_label(card, "새 특성 해금", 24, OutgameTheme.ACCENT_TEXT,
+			Vector2(CARD_PAD, CARD_PAD * 0.5 + 8.0), Vector2(CARD_W - CARD_PAD * 2.0, 34))
+	OutgameTheme.add_divider(card, Vector2(CARD_PAD, SECTION_TITLE_H + 8.0),
+			CARD_W - CARD_PAD * 2.0, OutgameTheme.ACCENT)
+	var ry: float = SECTION_TITLE_H + CARD_PAD * 0.5
+	var note: String = "테스트 런 — 프로필에 지급하지 않았습니다" if test_run \
+			else "다음 런부터 감독 탭에서 장착할 수 있습니다"
+	UiHelpers.mk_label(card, note, 20, OutgameTheme.TEXT_SUB,
+			Vector2(CARD_PAD, ry), Vector2(CARD_W - CARD_PAD * 2.0, 30))
+	ry += note_h
+	for raw in ids:
+		var tid: int = int(raw)
+		var r: Dictionary = TraitSystem.row(tid)
+		var pos: bool = TraitSystem.is_positive(tid)
+		var sign_color: Color = OutgameTheme.POSITIVE if pos else OutgameTheme.NEGATIVE
+		var row_card: Panel = OutgameTheme.add_card(card, Vector2(CARD_PAD, ry + 6.0),
+				Vector2(CARD_W - CARD_PAD * 2.0, TRAIT_ROW_H - 12.0), 16)
+		var rw: float = row_card.size.x
+		OutgameTheme.add_chip(row_card, "+" if pos else "−", Vector2(20, 24), Vector2(44, 44),
+				sign_color, OutgameTheme.TEXT_ON_FILL, 26)
+		UiHelpers.mk_label(row_card, String(r.get("name", "#%d" % tid)), 28, OutgameTheme.TEXT,
+				Vector2(84, 8), Vector2(rw - 260, 38))
+		UiHelpers.mk_label(row_card, TraitSystem.desc_of(tid), 20, OutgameTheme.TEXT_SUB,
+				Vector2(84, 48), Vector2(rw - 260, 30))
+		OutgameTheme.add_chip(row_card, TraitSystem.rarity_name(int(r.get("rarity", 0))),
+				Vector2(rw - 156, 26), Vector2(132, 40), OutgameTheme.ACCENT,
+				OutgameTheme.TEXT_ON_FILL, 20)
+		ry += TRAIT_ROW_H
 	return y + card.size.y
 
 
@@ -298,6 +410,23 @@ func _count_chip(card: Control, text: String, lit: bool, pos: Vector2, w: float)
 	OutgameTheme.add_chip(card, text, pos, Vector2(w, 40),
 			OutgameTheme.ACCENT_DIM if lit else OutgameTheme.SURFACE_SUNK,
 			OutgameTheme.ACCENT_TEXT if lit else OutgameTheme.TEXT_FAINT, 20)
+
+
+## `result.profile_delta` — what settlement changed in the profile (empty for test runs).
+func _profile_delta() -> Dictionary:
+	var d: Variant = _result.get("profile_delta", {})
+	return d if typeof(d) == TYPE_DICTIONARY else {}
+
+
+## Trait ids for the 새 특성 해금 card: granted ones (`profile_delta.traits`), or for a
+## test run the computed `unlocked_traits` (not granted).
+func _new_trait_ids() -> Array:
+	var delta: Dictionary = _profile_delta()
+	if delta.has("traits"):
+		return delta["traits"]
+	if bool(_result.get("test_run", false)):
+		return _result.get("unlocked_traits", [])
+	return []
 
 
 func _phase_name(idx: int) -> String:

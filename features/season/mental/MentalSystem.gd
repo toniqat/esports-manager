@@ -94,9 +94,14 @@ static func my_pilot_ids(state: Dictionary) -> Array:
 
 ## Change trust, clamped. Returns the delta actually applied.
 static func add_trust(state: Dictionary, pilot_id: int, delta: int) -> int:
+	# M8 trait `trust_gain`: only a rise is adjusted, and never below 0 (a rise
+	# cannot turn into a loss). Drops pass through untouched.
+	var applied: int = delta
+	if delta > 0:
+		applied = maxi(0, delta + TraitSystem.run_mod(state, "trust_gain"))
 	var t: Dictionary = state.get("trust", {})
 	var before: int = trust(state, pilot_id)
-	var after: int = clampi(before + delta, ConstTable.int_of("TRUST_MIN"), ConstTable.int_of("TRUST_MAX"))
+	var after: int = clampi(before + applied, ConstTable.int_of("TRUST_MIN"), ConstTable.int_of("TRUST_MAX"))
 	t[str(pilot_id)] = after
 	state["trust"] = t
 	return after - before
@@ -232,7 +237,7 @@ static func outing_row(state: Dictionary, pilot_id: int) -> Dictionary:
 
 # ── Incidents (rolled on Mon–Fri day screens) ────────────────────────────────
 ## Roll that weekday's incident once (chance `MENTAL_INCIDENT_CHANCE` ×
-## `FinanceSystem.incident_mult`). Returns the incident record or {} (none).
+## `FinanceSystem.incident_mult` × trait `incident_pct`, M8). Returns the incident record or {} (none).
 ## `{event, pilot_id, choice(-1 = unresolved), outcome{}}`.
 static func ensure_incident(state: Dictionary, day: int) -> Dictionary:
 	if not CalendarSystem.is_training_day(day):
@@ -243,7 +248,8 @@ static func ensure_incident(state: Dictionary, day: int) -> Dictionary:
 	var inc: Dictionary = {}
 	var rng := RandomNumberGenerator.new()
 	rng.seed = _seed(state, day, "incident", 0)
-	var chance: float = ConstTable.num("MENTAL_INCIDENT_CHANCE") * FinanceSystem.incident_mult(state)
+	var chance: float = ConstTable.num("MENTAL_INCIDENT_CHANCE") * FinanceSystem.incident_mult(state) \
+			* TraitSystem.run_pct_mult(state, "incident_pct")
 	var mine: Array = my_pilot_ids(state)
 	if rng.randf() < chance and not mine.is_empty():
 		var pid: int = int(mine[rng.randi_range(0, mine.size() - 1)])

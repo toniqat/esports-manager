@@ -266,6 +266,8 @@ var _team_names: Dictionary = {}   # side(int) → String
 # All empty / false when MatchFlow runs standalone (no active season), so the
 # screen and the AI behave exactly as before.
 var _mastery_on: bool = false
+## Quirks (§14, T1) — on in a season run (`QuirkSystem.is_enabled`). My pilots only.
+var _quirk_on: bool = false
 ## Analysis reveals the enemy's likely picks (`StaffSystem.analysis_tier >= 2`).
 var _show_enemy_likely: bool = false
 ## Analysis is delegated → the analyst also marks recommended bans.
@@ -393,6 +395,7 @@ func _sorted_for_grid(mechs: Array) -> Array:
 func _setup_mastery() -> void:
 	var s: Dictionary = _gm.season_state
 	_mastery_on = MechMastery.is_enabled(s)
+	_quirk_on = QuirkSystem.is_enabled(s)
 	_enemy_likely = {}
 	_show_enemy_likely = false
 	_show_analyst_bans = false
@@ -467,6 +470,37 @@ func _mastery_rows(side: int, mech_id: int, seat: int) -> Array:
 		out.append({"name": pd.name, "value": v, "tier": t,
 				"bonus": MechMastery.bonus_text(t), "current": st == seat})
 	return out
+
+
+# ── Quirk helpers (§14, T1) — my pilots only ─────────────────────────────────
+## Quirk stat total of `pd` riding `mech_id` (unconditional + conditions met).
+## 0 when quirks are off or `pd` is not one of mine.
+func _quirk_total(side: int, pd: PlayerData, mech_id: int) -> int:
+	if not _quirk_on or side != _player_side or pd == null:
+		return 0
+	return QuirkSystem.bonus_total(_gm.season_state, pd, mech_id)
+
+
+## Quirk rows for `MechDetailPanel` — the pilot on `seat` (my side only):
+## `{pilot, slots, rows: [{name, grade, effect, active}]}`; `active` = the
+## condition holds with this mech (or there is none). {} when nothing to show.
+func _quirk_rows(side: int, mech_id: int, seat: int) -> Dictionary:
+	if not _quirk_on or side != _player_side:
+		return {}
+	var pd: PlayerData = _pilot_at(side, seat)
+	if pd == null:
+		return {}
+	var s: Dictionary = _gm.season_state
+	var rows: Array = []
+	for id in QuirkSystem.quirks_of(s, pd.id):
+		var r: Dictionary = QuirkSystem.row(int(id))
+		if r.is_empty():
+			continue
+		rows.append({"name": String(r["name"]), "grade": int(r["grade"]),
+				"effect": QuirkSystem.effect_text(int(id), true),
+				"active": QuirkSystem.cond_holds(s, pd, mech_id, String(r["cond"]))})
+	return {"pilot": pd.name, "slots": QuirkSystem.slots_of(s, pd.id),
+			"total": QuirkSystem.bonus_total(s, pd, mech_id), "rows": rows}
 
 
 # ── 레이아웃 계산 ────────────────────────────────────────────────────────────
@@ -855,6 +889,7 @@ func _build_pilot_portrait(holder: Control, side: int, seat: int,
 	rim_sb.border_width_right = 2
 	rim.add_theme_stylebox_override("panel", rim_sb)
 	holder.add_child(rim)
+	_build_portrait_quirk_badge(holder, side, p, pos, sz)
 
 	var hit := Button.new()
 	hit.flat = true
@@ -867,6 +902,25 @@ func _build_pilot_portrait(holder: Control, side: int, seat: int,
 	hit.pressed.connect(_on_pilot_portrait_pressed.bind(side, seat))
 	holder.add_child(hit)
 	return hit
+
+
+## Quirk badge on my pilot's portrait (bottom-right): `기벽 n` filled with the
+## colour of that pilot's highest quirk grade (§14, T1). Nothing when the pilot
+## has no quirk, for the enemy, or outside a run.
+func _build_portrait_quirk_badge(holder: Control, side: int, p: PlayerData,
+		pos: Vector2, sz: Vector2) -> void:
+	if not _quirk_on or side != _player_side or p == null:
+		return
+	var ids: Array = QuirkSystem.quirks_of(_gm.season_state, p.id)
+	if ids.is_empty():
+		return
+	var top: int = 0
+	for id in ids:
+		top = maxi(top, int(QuirkSystem.row(int(id)).get("grade", 0)))
+	var bw: float = minf(sz.x - 8.0, 86.0)
+	OutgameTheme.add_chip(holder, "기벽 %d" % ids.size(),
+			pos + Vector2(sz.x - bw - 4.0, sz.y - 30.0), Vector2(bw, 26.0),
+			QuirkSystem.grade_color(top), OutgameTheme.TEXT_ON_FILL, 16)
 
 
 ## 자리(화면 순서) → 그 팀의 파일럿. 로스터는 역할 0..4 순으로 들어오므로
@@ -971,6 +1025,20 @@ func _build_mech_slot(parent: Control, pos: Vector2, sz: Vector2,
 	mtag_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	mtag_lbl.clip_text = true
 
+	# Quirk tag (under the mastery tag) — "기벽 +N", my seats only (§14, T1).
+	var qtag := Panel.new()
+	qtag.position = Vector2(4.0, 36.0)
+	qtag.size = Vector2(minf(sz.x - 8.0, 104.0), 28.0)
+	qtag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	qtag.visible = false
+	qtag.add_theme_stylebox_override("panel",
+			OutgameTheme.flat_style(QuirkSystem.grade_color(2), 8))
+	frame.add_child(qtag)
+	var qtag_lbl := UiHelpers.mk_label(qtag, "", 17, OutgameTheme.TEXT_ON_FILL,
+			Vector2.ZERO, qtag.size, HORIZONTAL_ALIGNMENT_CENTER)
+	qtag_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	qtag_lbl.clip_text = true
+
 	# 상대 팀 칸의 탭 버튼. 아군 칸은 드래그 배선(`_bind_slot_drag`)이 탭까지
 	# 함께 받으므로 이 버튼을 켜지 않는다 — 켜면 그 버튼이 press 를 가져가
 	# 드래그가 시작되지 않는다.
@@ -987,7 +1055,7 @@ func _build_mech_slot(parent: Control, pos: Vector2, sz: Vector2,
 
 	return {"frame": frame, "art": art, "band": band, "name": nm, "hit": hit,
 			"style": sb, "side_col": side_col, "seat": seat, "pos": pos,
-			"mtag": mtag, "mtag_lbl": mtag_lbl}
+			"mtag": mtag, "mtag_lbl": mtag_lbl, "qtag": qtag, "qtag_lbl": qtag_lbl}
 
 
 # ── 픽창 배경판 ──────────────────────────────────────────────────────────────
@@ -1396,8 +1464,10 @@ func _build_sheet_mastery(m: MechData, pos: Vector2, sz: Vector2) -> void:
 	if rider != null:
 		var v: int = _mastery(rider, m.id)
 		var t: int = MechMastery.tier_of(v)
-		var l1 := UiHelpers.mk_label(_sheet, "%s  %s %d  (스탯 %s)" % [
-				rider.name, MechMastery.tier_name(t), v, MechMastery.bonus_text(t)],
+		var qt: int = _quirk_total(_player_side, rider, m.id)
+		var l1 := UiHelpers.mk_label(_sheet, "%s  %s %d  (스탯 %s%s)" % [
+				rider.name, MechMastery.tier_name(t), v, MechMastery.bonus_text(t),
+				(" · 기벽 +%d" % qt) if qt > 0 else ""],
 				21, MechMastery.tier_color(t), pos, Vector2(sz.x, sz.y * 0.5))
 		l1.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		l1.clip_text = true
@@ -1674,6 +1744,7 @@ func _refresh_side_block(side: int) -> void:
 			sty.bg_color = SLOT_EMPTY_COLOR
 			sty.border_color = side_col.lerp(OutgameTheme.SURFACE, 0.55)
 		_refresh_slot_mastery(side, slot, int(ids[i]) if i < ids.size() else -1)
+		_refresh_slot_quirk(side, slot, int(ids[i]) if i < ids.size() else -1)
 
 
 ## The seat's mastery tag: my seats always (the slot row is "the mech of the
@@ -1694,6 +1765,21 @@ func _refresh_slot_mastery(side: int, slot: Dictionary, mech_id: int) -> void:
 	tag.add_theme_stylebox_override("panel",
 			OutgameTheme.flat_style(MechMastery.tier_color(t), 8))
 	(slot["mtag_lbl"] as Label).text = "%s %s" % [MechMastery.tier_name(t), MechMastery.bonus_text(t)]
+
+
+## The seat's quirk tag `기벽 +N` — total quirk stat bonus of my pilot on that
+## seat riding that mech (conditional quirks follow the mech, so dragging a slot
+## updates it). Hidden for enemy seats, empty seats and a 0 total.
+func _refresh_slot_quirk(side: int, slot: Dictionary, mech_id: int) -> void:
+	var tag := slot.get("qtag", null) as Panel
+	if tag == null:
+		return
+	var total: int = 0
+	if mech_id >= 0:
+		total = _quirk_total(side, _pilot_at(side, int(slot["seat"])), mech_id)
+	tag.visible = total > 0
+	if total > 0:
+		(slot["qtag_lbl"] as Label).text = "기벽 +%d" % total
 
 
 ## 상대가 지금 집어 보는 기체가 `side` 블록의 몇 번째 칸(밴 칩 / 픽 슬롯)에
@@ -2229,7 +2315,7 @@ func _open_mech_detail(mech_id: int, side: int, seat: int) -> void:
 		_mech_detail = MechDetailPanel.new()
 		add_child(_mech_detail)
 	_close_detail_panels()
-	_mech_detail.open(m, _mastery_rows(side, mech_id, seat))
+	_mech_detail.open(m, _mastery_rows(side, mech_id, seat), _quirk_rows(side, mech_id, seat))
 
 
 ## 두 팝업은 **동시에 뜨지 않는다** — 파일럿과 메크를 한 화면에 겹치지 않는

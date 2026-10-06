@@ -17,8 +17,8 @@ too** — the only place that needs weekday names is the **week-progress screen 
 ## Files
 | File | Role |
 |---|---|
-| `TrainingTile.gd` | `class_name TrainingTile` — one CSV row = one tile. **Grammar parsing lives only here** (shape · colour · EXP · mastery · effect clauses). Also owns the colour table · grade table and the **staff-stat lookups** (grade unlock from tactics, per-grade placement limit and EXP multiplier from training — see "Manager / staff stats" below). |
-| `TrainingBoard.gd` | `class_name TrainingBoard` — headless board. Staff stats (`training_stat` / `tactics_stat` / `limit_of` / `is_unlocked` / `can_take_more`), placement checks (`can_place` / `place` / `remove_at`), settlement (`cell_exp` / `exp_mult_table` / `compute_gains` / `compute_day_gains`), mastery (`cell_mastery` / `compute_mastery`), **weekday application** (`apply_day_training`), preview (`projected_stats`), auto-arrange (`auto_arrange`), week-progress reset (`reset_week_progress`). The `TrainingBoard` node in Season.tscn. |
+| `TrainingTile.gd` | `class_name TrainingTile` — one CSV row = one tile. **Grammar parsing lives only here** (shape · colour · EXP · mastery · effect clauses · quirk ops). Also owns the colour table · grade table and the **staff-stat lookups** (grade unlock from tactics, per-grade placement limit and EXP multiplier from training — see "Manager / staff stats" below). |
+| `TrainingBoard.gd` | `class_name TrainingBoard` — headless board. Staff stats (`training_stat` / `tactics_stat` / `limit_of` / `is_unlocked` / `can_take_more`), placement checks (`can_place` / `place` / `remove_at`), settlement (`cell_exp` / `exp_mult_table` / `compute_gains` / `compute_day_gains`), mastery (`cell_mastery` / `compute_mastery`), quirk ops (`day_quirk_ops`), **weekday application** (`apply_day_training`), preview (`projected_stats`), auto-arrange (`auto_arrange`), week-progress reset (`reset_week_progress`). The `TrainingBoard` node in Season.tscn. |
 | `TrainingView.gd` | Planning screen — staff line + 5 portraits + 5×5 board + horizontally scrolling course cards + bottom bar ("판 비우기" · "코치 추천" · "훈련 확정"). Drag & drop. Layout · reading conventions are in "Screen layout" below. |
 
 ## Board axes
@@ -69,6 +69,7 @@ Same order as `PlayerData.STAT_KEYS`.
 | `P` | Green | HP growth `hp_growth` |
 | `K` | Black | **0 EXP** — the self cell of an amplifier tile |
 | `M` | Teal | **Mastery** — 0 stat EXP; yields `mastery:N` mech-mastery EXP instead |
+| `Q` | Pink | **Quirk** — 0 stat EXP; the tile's `quirk:*` clauses act on this cell's pilot (see "Quirk tiles") |
 | `W` | Grey | Neutral — all six stats evenly |
 
 Colour is currently only a display pairing with `exp`, but it is kept as the hook for the original's
@@ -79,6 +80,7 @@ holds per-cell colours, so only one clause needs adding.
 ```
 mult:<scope>:<pct>            multiply cell EXP in that scope by pct% (100 = no change)
 flat:<scope>:<stat>:<n>       add n stat EXP to cells in that scope
+quirk:gain|reroll|slot        no scope — acts on the pilot of each Q cell (see "Quirk tiles")
 ```
 | scope | Meaning |
 |---|---|
@@ -137,8 +139,10 @@ week-progress screen (`features/season/week/`) started asking "what happened tha
 weekday, settlement was split per day too.
 
 It returns the row list that screen reads — in seat order,
-`Array[{pilot_id, name, role, seat, before, after, ups, exp, carry, mastery}]`
-(`mastery` = mech-mastery EXP handed to `MechMastery.add_training_exp` that day, M3).
+`Array[{pilot_id, name, role, seat, before, after, ups, exp, carry, mastery, quirk}]`
+(`mastery` = mech-mastery EXP handed to `MechMastery.add_training_exp` that day, M3;
+`quirk` = quirk ops run on that pilot that day, `[{kind, result, id?, from?, to?, slots?}]`, empty
+array when none — see "Quirk tiles").
 `ups` is the points actually gained that day, `exp` the EXP earned that day, `carry` the remainder
 left in the bank after settlement (the screen shows "until the next point" as `carry/EXP_PER_POINT`).
 
@@ -320,6 +324,27 @@ tiles with an `M` shape, e.g. `M` (one day) and `M/M` (one pilot, two days).
   research mech is M4's business) and adds `mastery` to that seat's row.
 - Display: the popover's EXP line is `TrainingTile.exp_summary()`, which appends
   `메크 숙련도 +N (연구 메크)` for mastery tiles.
+
+## Quirk tiles (colour `Q`, §14 T1)
+A `Q` cell gives **no stat EXP** (like `K` / `M`); the tile's quirk clauses act on the pilot of that
+cell on that cell's day — so a tile costs those training days. Parsing lives in `TrainingTile`
+(`quirk_ops`, kept out of `clauses` so EXP settlement never sees them; `is_quirk_cell(i)`,
+`has_quirk()`); `effect_summary()` adds one `훈련한 선수: …` line per op.
+
+| Clause | Effect (`QuirkSystem`, rules in `features/season/quirk/README.md`) |
+|---|---|
+| `quirk:gain` | `gain_random` — a random quirk into an empty quirk slot (`full` = nothing) |
+| `quirk:reroll` | `reroll` — redraw every equipped quirk |
+| `quirk:slot` | `add_slot` — +1 quirk slot (up to `QUIRK_SLOTS_MAX`) |
+
+- **Settlement**: `day_quirk_ops(day)` collects the ops of the `Q` cells on that row (`{seat: [op]}`,
+  order slot → reroll → gain so a new slot can be filled the same day); `apply_day_training` runs
+  them through `_apply_quirk_ops` **once per pilot per settled day** and writes the row's `quirk`.
+  A pilot has one cell per day, so a multi-day tile acts once per `Q` day — `Q/K` acts once.
+- Tiles (placeholders): `T18 기벽 발굴` (C, `Q`, gain) · `T19 기벽 재조정` (B, `Q`, reroll) ·
+  `T20 동반 발굴` (B, `QQ`, gain for two pilots) · `T21 잠재력 개방` (A, `Q/K`, slot — two days of one
+  pilot). They compete with stat tiles for the per-grade placement limit and for the day itself.
+- Auto-arrange never places them in practice: they add no EXP, so `_auto_place_one` rejects them.
 
 ## Auto-arrange — "코치 추천" (M3)
 When training is **delegated** (`StaffSystem.is_delegated(state, "training")` — a coach or the

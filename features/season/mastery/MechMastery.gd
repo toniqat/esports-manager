@@ -281,6 +281,20 @@ static func settle_week(state: Dictionary) -> void:
 			set_research(state, pd.id, mech)
 		if mech >= 0:
 			gain(state, pd.id, mech, amount)
+			_research_quirk_roll(state, pd.id)
+
+
+## Research also turns up quirks (§14, T1): `QUIRK_RESEARCH_CHANCE`% per pilot
+## with a research mech → `QuirkSystem.gain_random` (a full pilot gets nothing).
+## Seeded per run · week · pilot, so reloading the week close never rerolls.
+static func _research_quirk_roll(state: Dictionary, pilot_id: int) -> void:
+	if not QuirkSystem.is_enabled(state):
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash([int(state.get("run_seed", 0)), int(state.get("current_phase", 0)),
+			int(state.get("phase_week", 1)), pilot_id, "quirk_research"])
+	if rng.randi_range(1, 100) <= ConstTable.int_of("QUIRK_RESEARCH_CHANCE"):
+		QuirkSystem.gain_random(state, pilot_id)
 
 
 # ── Pilots ───────────────────────────────────────────────────────────────────

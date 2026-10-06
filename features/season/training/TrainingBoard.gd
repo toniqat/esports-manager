@@ -528,6 +528,9 @@ func exp_carry() -> Dictionary:
 ## 원딜 · 서폿)대로 늘어선 `Array[{pilot_id, name, role, seat, before, after,
 ## ups, exp, carry}]`. `ups` 는 이번 날 실제로 오른 포인트, `exp` 는 그날 번
 ## EXP, `carry` 는 정산 **뒤에** 통장에 남은 나머지다.
+## Also `mastery` (mastery EXP sent to the research mech) and `quirk` — the
+## quirk ops run on that pilot today, `[{kind, result, id?, from?, to?, slots?}]`
+## (empty array when none; `_apply_quirk_ops`).
 ##
 ## `carry` 를 줄에 실어 보내는 것은 화면 때문이다 — 기초 코스만 깔린 판에서는
 ## 하루 EXP 가 `EXP_PER_POINT` 에 못 미쳐 월~목이 전부 `+0` 으로 보이고 금요일에
@@ -541,6 +544,7 @@ func exp_carry() -> Dictionary:
 func apply_day_training(day: int) -> Array:
 	var gains: Dictionary = compute_day_gains(day)
 	var mastery: Dictionary = compute_mastery(day)
+	var quirk_ops: Dictionary = day_quirk_ops(day)
 	var pilots: Array = player_pilots_by_seat()
 	var carry: Dictionary = exp_carry()
 	var rows: Array = []
@@ -575,8 +579,61 @@ func apply_day_training(day: int) -> Array:
 			"seat": seat, "before": before, "after": snapshot(p),
 			"ups": ups, "exp": exp, "carry": pocket.duplicate(),
 			"mastery": mastery_exp,
+			"quirk": _apply_quirk_ops(int(p.id), quirk_ops.get(seat, [])),
 		})
 	return rows
+
+
+# ── Quirk tiles (§14, T1) ────────────────────────────────────────────────────
+## Quirk ops of the `Q` cells settled on `day`, `{seat: [op]}` in
+## `TrainingTile.QUIRK_OPS` order. A seat has one cell per day, so each pilot
+## gets a tile's ops at most once per settled day.
+func day_quirk_ops(day: int) -> Dictionary:
+	var out: Dictionary = {}
+	for e_raw in board():
+		var e: Dictionary = e_raw
+		var t: TrainingTile = tile(String(e.get("tile", "")))
+		if t == null or not t.has_quirk():
+			continue
+		var ox: int = int(e.get("x", 0))
+		var oy: int = int(e.get("y", 0))
+		for i in t.cells.size():
+			if not t.is_quirk_cell(i):
+				continue
+			var at := Vector2i(ox + (t.cells[i] as Vector2i).x, oy + (t.cells[i] as Vector2i).y)
+			if at.y != day or at.x < 0 or at.x >= COLS:
+				continue
+			var ops: Array = out.get(at.x, [])
+			for op in t.quirk_ops:
+				if not ops.has(op):
+					ops.append(op)
+			out[at.x] = ops
+	return out
+
+
+## Runs the ops on one pilot through `QuirkSystem` and returns the row's
+## `quirk` list `[{kind, result, id?, from?, to?, slots?}]` (empty when nothing ran).
+func _apply_quirk_ops(pilot_id: int, ops: Array) -> Array:
+	var out: Array = []
+	var state: Dictionary = _gm.season_state
+	if ops.is_empty() or not QuirkSystem.is_enabled(state):
+		return out
+	for op_raw in ops:
+		var op: String = String(op_raw)
+		var r: Dictionary = {}
+		match op:
+			"slot":
+				r = QuirkSystem.add_slot(state, pilot_id)
+			"reroll":
+				r = QuirkSystem.reroll(state, pilot_id)
+			"gain":
+				r = QuirkSystem.gain_random(state, pilot_id)
+			_:
+				continue
+		var rec: Dictionary = r.duplicate(true)
+		rec["kind"] = op
+		out.append(rec)
+	return out
 
 
 ## 이번 판을 그대로 돌렸을 때의 예상 최종 스탯. 화면의 미리보기가 쓴다 —

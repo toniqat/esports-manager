@@ -38,6 +38,12 @@ extends RefCounted
 #   `flat:<scope>:<stat>:<n>`   그 범위의 칸에 stat EXP 를 n 더한다
 # scope 는 아래 `SCOPES`. 배율은 **곱해서 쌓인다**(두 배율이 겹치면 곱) — 더하기로
 # 쌓으면 증폭 타일 셋만 붙여 놓아도 배율이 선형으로 폭주한다.
+#
+# Quirk clauses (§14, T1) take no scope: `quirk:gain` / `quirk:reroll` /
+# `quirk:slot`. They act on the pilot of each quirk (`Q`) cell on the day that
+# cell is settled (`TrainingBoard.apply_day_training` → `QuirkSystem`), once per
+# pilot per day. They live in `quirk_ops`, not `clauses`, so the EXP settlement
+# never sees them.
 
 
 ## 색 기호 → 그 색이 주는 스탯. `PlayerData.STAT_KEYS` 와 **같은 순서**다.
@@ -57,6 +63,17 @@ const COLOR_GRAY:  String = "W"   # 무속성 — 여섯 스탯을 고루 준다
 ## mech-mastery EXP that day settlement hands to `MechMastery.add_training_exp`
 ## (the pilot's weekly research mech). Written in `exp` as `mastery:N`.
 const COLOR_MASTERY: String = "M"
+## Quirk cell (§14, T1). Gives **no stat EXP**; the tile's `quirk:*` clauses act
+## on the pilot of this cell on its day (`TrainingBoard.apply_day_training`).
+const COLOR_QUIRK: String = "Q"
+## `quirk:<op>` clause ops, in the order a day applies them (a new slot first,
+## so a gain on the same cell can fill it).
+const QUIRK_OPS: Array = ["slot", "reroll", "gain"]
+const QUIRK_OP_LABELS: Dictionary = {
+	"gain":   "기벽 획득 — 남은 기벽 칸에 무작위 장착 (지식이 높을수록 고등급)",
+	"reroll": "기벽 재굴림 — 장착한 기벽을 전부 새로 뽑음",
+	"slot":   "기벽 칸 +1",
+}
 
 ## 화면에 쓰는 색. 검정 칸이 진짜 검정인 것은 "여긴 아무것도 안 준다"가
 ## 한눈에 읽혀야 하기 때문이다.
@@ -70,6 +87,7 @@ const COLOR_RGB: Dictionary = {
 	"K": Color(0.34, 0.34, 0.38),
 	"W": Color(0.80, 0.80, 0.84),
 	"M": Color(0.30, 0.78, 0.74),
+	"Q": Color(0.93, 0.55, 0.80),
 }
 
 ## 등급 이름과 색. `grade` 는 0=D … 4=S.
@@ -171,6 +189,8 @@ var per_cell_exp: Dictionary = {}
 var per_cell_mastery: int = 0
 ## 효과 절. `{kind, scope, pct}` 또는 `{kind, scope, stat, amount}`.
 var clauses: Array = []
+## Quirk ops of the `quirk:<op>` clauses (`QUIRK_OPS` order, no duplicates).
+var quirk_ops: Array = []
 
 
 ## CSV / DB 한 행을 타일 하나로. **static 인 것이 요점이다** — 인벤토리 목록,
@@ -221,8 +241,14 @@ func _parse_exp(raw: String) -> void:
 
 func _parse_effect(raw: String) -> void:
 	clauses.clear()
+	quirk_ops.clear()
 	for part in raw.split(";", false):
 		var bits: PackedStringArray = String(part).strip_edges().split(":", false)
+		if bits.size() == 2 and String(bits[0]).strip_edges() == "quirk":
+			var op: String = String(bits[1]).strip_edges()
+			if op in QUIRK_OPS and not quirk_ops.has(op):
+				quirk_ops.append(op)
+			continue
 		if bits.size() < 3:
 			continue
 		var kind: String = String(bits[0]).strip_edges()
@@ -236,6 +262,7 @@ func _parse_effect(raw: String) -> void:
 			if stat_key == "all" or stat_key in PlayerData.STAT_KEYS:
 				clauses.append({"kind": "flat", "scope": scope,
 						"stat": stat_key, "amount": int(String(bits[3]))})
+	quirk_ops.sort_custom(func(a, b): return QUIRK_OPS.find(a) < QUIRK_OPS.find(b))
 
 
 # ── 조회 ─────────────────────────────────────────────────────────────────────
@@ -323,7 +350,7 @@ func exp_of_cell(cell_idx: int) -> Dictionary:
 	if cell_idx < 0 or cell_idx >= cell_colors.size():
 		return {}
 	var sym: String = String(cell_colors[cell_idx])
-	if sym == COLOR_BLACK or sym == COLOR_MASTERY:
+	if sym == COLOR_BLACK or sym == COLOR_MASTERY or sym == COLOR_QUIRK:
 		return {}
 	return per_cell_exp
 
@@ -341,12 +368,28 @@ func has_mastery() -> bool:
 	return per_cell_mastery > 0 and cell_colors.has(COLOR_MASTERY)
 
 
+## Does this cell carry the tile's quirk ops (a `Q` cell of a tile with ops)?
+func is_quirk_cell(cell_idx: int) -> bool:
+	if quirk_ops.is_empty() or cell_idx < 0 or cell_idx >= cell_colors.size():
+		return false
+	return String(cell_colors[cell_idx]) == COLOR_QUIRK
+
+
+## A quirk tile (`Q` cells + `quirk:*` clauses). The coach's auto-arrange can
+## use this to leave such tiles to the player, like mastery tiles.
+func has_quirk() -> bool:
+	return not quirk_ops.is_empty() and cell_colors.has(COLOR_QUIRK)
+
+
 ## 정보 팝오버에 적는 한 줄 요약 — "전 스탯 +N" / "전장 회피 +N".
 ## **약칭이 아니라 온전한 이름**(`STAT_LABELS`)을 쓴다: 카드가 아니라 눌러서
 ## 여는 팝오버라 폭이 348px 이고, 여기서 답해야 하는 질문이 "이 코스가 무엇을
 ## 올리는가" 하나뿐이라 `전회` 를 다시 풀어 읽을 이유가 없다.
 func exp_summary() -> String:
 	var stat_part: String = _stat_exp_summary()
+	if has_quirk() and per_cell_exp.is_empty() and not has_mastery():
+		# Quirk cells give no EXP — say what the day is spent on instead.
+		return "경험치 없음 — 그날은 기벽 훈련"
 	if not has_mastery():
 		return stat_part
 	# Mastery cells name what they feed — the pilot's weekly research mech.
@@ -399,5 +442,8 @@ func effect_summary() -> String:
 			if i >= 0:
 				stat_label = String(PlayerData.STAT_LABELS[i])
 		parts.append("%s %s %+d" % [scope_label, stat_label, int(cl["amount"])])
+	# Quirk ops act on the pilot of each quirk (`Q`) cell.
+	for op in quirk_ops:
+		parts.append("훈련한 선수: " + String(QUIRK_OP_LABELS.get(op, op)))
 	return "
 ".join(parts)

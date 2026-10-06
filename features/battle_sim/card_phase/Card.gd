@@ -824,7 +824,7 @@ func is_hovered() -> bool:
 ## red when increased, white when unchanged. CardPhaseManager calls this
 ## from highlight_affordable_cards so every modifier (사전 준비 / 전투 준비
 ## / 집중 / cost_inc_phase) repaints the cost in sync with affordability.
-## 정밀 이동 / 골드러시's +1 is NOT a modifier — `self_cost:1` bumps the card's
+## 정밀 이동 / 골드러시's increase is NOT a modifier — `self_cost:N` bumps the card's
 ## own `cost`, so a repositioned card reads white at its new printed price.
 ## [신중한 예산] 의 "이번 단계 0" 과 [맑은 정신] 의 이웃 할인은 수정자라 초록으로 찍힌다.
 func update_displayed_cost(effective_cost: int) -> void:

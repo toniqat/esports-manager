@@ -108,7 +108,7 @@ const OBJ_TIMER_LEFT_X  := 26.0
 # 카드 밑단 ≈ 1633 이 뒤판 위끝(1634) 바로 위에 선다(아래 옛 계산과 같은 규칙).
 #
 # (옛 값) y 1766 은 카드 밑단에서 계산해 나온 값이다. 부채꼴의 **양 끝 카드는 가운데보다
-# 21.4px 아래로 처지고**(12장 기준), 호버/선택 시 `Card.HOVER_SCALE`(1.2)로
+# 가장 많이 아래로 처지고**(손패 상한 `MAX_HAND_SIZE`(game_config) 기준), 호버/선택 시 `Card.HOVER_SCALE`(1.2)로
 # 커지므로 최악의 경우 카드 밑단이 y ≈ 1763 까지 내려온다. 1724 에 두었더니
 # 카드가 초상화 윗부분을 덮었다(실측 확인). 아이폰 홈 바를 위해 바닥 ~32px 도
 # 남긴다 — 위아래가 다 막힌 122px 안에 초상화 · 체력 바 · 성장치가 들어간다.
@@ -175,9 +175,6 @@ const DONUT_FILL_ENEMY  := Color(0.95, 0.35, 0.25)
 const DONUT_HAND_GAP    := 24.0
 ## Vertical gap between the AI hand peek's bottom edge and the enemy donut.
 const DONUT_AI_HAND_GAP := 20.0
-## Fallback 100% mark used before DataLoader fills PHASE_THRESHOLD.
-const DONUT_DEFAULT_MAX := 8
-
 # ── 파일럿 스트립 refs ────────────────────────────────────────────────────────
 var _enemy_strip:  PilotStrip = null   # team 1, 화면 상단
 var _player_strip: PilotStrip = null   # team 0, 핸드 행 아래
@@ -859,13 +856,102 @@ func _build_cost_donuts() -> void:
 			+ Vector2(CostDonut.RADIUS, CostDonut.RADIUS))
 
 
+## 결과 화면의 MVP 한 줄(원형 초상 + 이름 + K/D/A). `_build_victory_panel` 이
+## 자리를 비워 두고 `BattleSim.end_match` 가 `set_victory_mvp` 로 채운다.
+var _victory_mvp_row: Control = null
+## 결과 화면 크기 — MVP 한 줄이 들어가도록 예전(400)보다 높다.
+const VICTORY_PANEL_SIZE := Vector2(700.0, 520.0)
+const VICTORY_MVP_Y := 170.0
+const VICTORY_MVP_H := 120.0
+const VICTORY_BTN_Y := 360.0
+const VICTORY_MVP_PORTRAIT := 96.0
+const VICTORY_MVP_LABEL_COLOR := Color(1.0, 0.85, 0.35)
+## 결과 화면 전용 CanvasLayer — HUD(`_bs.canvas`)와 전장 위, MVP 뷰
+## (`MvpView.OVERLAY_LAYER`) 아래. 예전에는 HUD 캔버스에 같이 있어서 반투명 판 너머로
+## 전장 타일 · 마커가 비쳤고, 판 밖의 HUD 띠 · 마커가 결과 화면과 같은 밝기로 경쟁했다.
+const VICTORY_LAYER: int = 50
+## 결과 화면 뒤 전체 화면 딤 — 판 밖의 전장 · HUD 를 가라앉히고 입력도 막는다.
+const VICTORY_BACKDROP_COLOR := Color(0.0, 0.0, 0.0, 0.65)
+
+
+## 결과 화면의 MVP 한 줄을 채운다. `p` 가 null 이면(이긴 팀이 비어 있는 기묘한
+## 경우) 줄을 숨긴다.
+func set_victory_mvp(p: PilotData, row: Dictionary) -> void:
+	if _victory_mvp_row == null:
+		return
+	for c in _victory_mvp_row.get_children():
+		c.queue_free()
+	_victory_mvp_row.visible = p != null
+	if p == null:
+		return
+	var tag := Label.new()
+	tag.text = "MVP"
+	tag.add_theme_font_size_override("font_size", 30)
+	tag.add_theme_color_override("font_color", VICTORY_MVP_LABEL_COLOR)
+	tag.position = Vector2(40.0, 0.0)
+	tag.size = Vector2(90.0, VICTORY_MVP_H)
+	tag.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_victory_mvp_row.add_child(tag)
+
+	var tex: Texture2D = PilotImages.circle_for(MvpView.portrait_id(p))
+	var portrait_y: float = (VICTORY_MVP_H - VICTORY_MVP_PORTRAIT) * 0.5
+	if tex != null:
+		var portrait_rect := TextureRect.new()
+		portrait_rect.texture = tex
+		portrait_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		portrait_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		portrait_rect.position = Vector2(140.0, portrait_y)
+		portrait_rect.size = Vector2(VICTORY_MVP_PORTRAIT, VICTORY_MVP_PORTRAIT)
+		_victory_mvp_row.add_child(portrait_rect)
+
+	var name_lbl := Label.new()
+	name_lbl.text = MvpView.display_name(_bs, p)
+	name_lbl.add_theme_font_size_override("font_size", 34)
+	name_lbl.position = Vector2(256.0, 14.0)
+	name_lbl.size = Vector2(420.0, 48.0)
+	name_lbl.clip_text = true
+	_victory_mvp_row.add_child(name_lbl)
+
+	var kda := Label.new()
+	kda.text = "%s · %s" % [MvpView.role_label(p), MvpView.kda_text(row)]
+	kda.add_theme_font_size_override("font_size", 26)
+	kda.add_theme_color_override("font_color", Color(0.80, 0.84, 0.92))
+	kda.position = Vector2(256.0, 62.0)
+	kda.size = Vector2(420.0, 40.0)
+	_victory_mvp_row.add_child(kda)
+
+
 func _build_victory_panel() -> void:
 	_bs.panel_victory = Panel.new()
 	var vp := ScreenMetrics.viewport_size()
-	_bs.panel_victory.size     = Vector2(700.0, 400.0)
+	_bs.panel_victory.size     = VICTORY_PANEL_SIZE
+	# 어두운 **불투명** 판 — 반투명이면 전장 타일 · 마커가 비쳐 MVP 한 줄이 묻힌다.
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.05, 0.06, 0.10, 1.0)
+	sb.border_color = Color(1.0, 0.80, 0.30, 0.75)
+	sb.set_border_width_all(3)
+	sb.set_corner_radius_all(18)
+	_bs.panel_victory.add_theme_stylebox_override("panel", sb)
 	_bs.panel_victory.position = (vp - _bs.panel_victory.size) * 0.5
 	_bs.panel_victory.visible  = false
-	_bs.canvas.add_child(_bs.panel_victory)
+
+	# 판은 HUD 캔버스가 아니라 자기 레이어에, 전체 화면 딤 위에 선다. 딤은 판의
+	# 표시 여부를 그대로 따른다 — `panel_victory.visible` 을 켜고 끄는 자리
+	# (`BattleSim.end_match` / `_on_mvp_view_closed` / `_on_restart_pressed`)는 그대로다.
+	var layer := CanvasLayer.new()
+	layer.name = "VictoryLayer"
+	layer.layer = VICTORY_LAYER
+	_bs.add_child(layer)
+	var backdrop := ColorRect.new()
+	backdrop.name = "VictoryBackdrop"
+	backdrop.color = VICTORY_BACKDROP_COLOR
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	backdrop.visible = false
+	layer.add_child(backdrop)
+	layer.add_child(_bs.panel_victory)
+	_bs.panel_victory.visibility_changed.connect(
+			func() -> void: backdrop.visible = _bs.panel_victory.visible)
 
 	_bs.lbl_victory = Label.new()
 	_bs.lbl_victory.add_theme_font_size_override("font_size", 48)
@@ -874,12 +960,20 @@ func _build_victory_panel() -> void:
 	_bs.lbl_victory.size     = Vector2(700.0, 80.0)
 	_bs.panel_victory.add_child(_bs.lbl_victory)
 
+	_victory_mvp_row = Control.new()
+	_victory_mvp_row.name = "MvpRow"
+	_victory_mvp_row.position = Vector2(0.0, VICTORY_MVP_Y)
+	_victory_mvp_row.size = Vector2(VICTORY_PANEL_SIZE.x, VICTORY_MVP_H)
+	_victory_mvp_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_victory_mvp_row.visible = false
+	_bs.panel_victory.add_child(_victory_mvp_row)
+
 	# Standalone runs replay the same battle; Season-driven runs return to the
 	# campaign hub so LeagueManager can record the result.
 	var season_mode: bool = _bs.gm.season_state.get("pending_match", null) != null
 	var rb := Button.new()
 	rb.text = "다음 →" if season_mode else "Play Again"
-	rb.position = Vector2(200.0, 240.0)
+	rb.position = Vector2(200.0, VICTORY_BTN_Y)
 	rb.size     = Vector2(300.0, 80.0)
 	rb.add_theme_font_size_override("font_size", 32)
 	if season_mode:
@@ -900,10 +994,12 @@ func update_hud() -> void:
 
 
 # The ring is full at PHASE_THRESHOLD; the number in the middle is the raw
-# point total, so boost cards read as "8+ on a full ring".
+# point total, so boost cards read as "more than PHASE_THRESHOLD on a full ring".
 # The player donut only accepts the flip → 턴 넘기기 during 작전 단계.
 func _update_cost_donuts(in_card_phase: bool) -> void:
-	var maxv: int = _bs.PHASE_THRESHOLD if _bs.PHASE_THRESHOLD > 0 else DONUT_DEFAULT_MAX
+	# 100% 표시는 `PHASE_THRESHOLD`(game_config) 하나만 따른다 — 로드 전에는 0 이고
+	# `CostDonut.set_value` 가 분모를 1 이상으로 묶는다.
+	var maxv: int = _bs.PHASE_THRESHOLD
 	if _bs.cost_donut_enemy != null:
 		_bs.cost_donut_enemy.set_value(_bs.ai_cost, maxv)
 	if _bs.cost_donut != null:

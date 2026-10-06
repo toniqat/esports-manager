@@ -62,8 +62,8 @@ const BS_HAND_HOVER_FALLOFF_POW := 2.0
 # that circle, whose pivot sits directly below the hand row, so the middle card
 # is the highest point and the row curves down toward both ends. Smaller radius
 # = deeper curve and stronger card tilt — see CardPhaseManager._fan_angle() /
-# _fan_arc_drop(). At the 12-card cap the outermost cards tilt ~6.7° and hang
-# ~22px below the middle one.
+# _fan_arc_drop(). With a full hand (`MAX_HAND_SIZE`, game_config) the outermost
+# cards tilt and hang furthest below the middle one.
 const BS_HAND_FAN_RADIUS := 3200.0
 
 # ─── Pilot battlefield animation consts (fit within AUTO_PLAY_INTERVAL=0.5s) ─
@@ -155,6 +155,8 @@ const BS_HAND_TWEEN_EASE  : int = 1   # Tween.EASE_OUT
 const BS_HAND_TWEEN_TRANS : int = 10  # Tween.TRANS_SPRING
 
 # ─── DB-driven vars (populated from DataLoader in _ready) ─────────────────────
+# 값은 전부 `data/csv/game_config.csv` 에 있다 — 아래 초기값은 로드 전 자리
+# 채움일 뿐이고 튜닝 값이 아니다.
 var GRID_COLS:               int   = 0
 var GRID_ROWS:               int   = 0
 var HQ_MAX_HP:               int   = 0
@@ -164,54 +166,51 @@ var TURRET_ATK:              int   = 0
 var RECALL_HP_THRESHOLD:     float = 0.0
 ## 전장 교전이 **파일럿에게** 넣는 피해에 곱하는 배율. 포탑 / HQ 피해와
 ## 공격 카드 · 교전 아레나는 이 배율을 타지 않는다.
-var BATTLE_PILOT_DMG_MULT:   float = 1.0
+var BATTLE_PILOT_DMG_MULT:   float = 0.0
 var MAX_HAND_SIZE:           int   = 0
 ## 블루 진영이 개시 시점에 선점하는 전략 포인트. 밴픽에서 후밴/후픽을 하는
 ## 대가로 인게임 선을 잡게 하는 노브다 (see `blue_team`).
 var BLUE_COST_HEAD_START:    int   = 0
 var COST_RECOVERY:           int   = 0
-var CARD_DRAW_INTERVAL:      int   = 1
-var COST_RECOVERY_INTERVAL:  int   = 1
+var CARD_DRAW_INTERVAL:      int   = 0
+var COST_RECOVERY_INTERVAL:  int   = 0
 var PHASE_THRESHOLD:         int   = 0
 ## 카드 경제(전략 점수 회복 + 자동 드로우)가 처음 도는 턴. 그 전 턴들에는
 ## 회복도 드로우도 없고 **개시 손패도 없다** — 0턴에 들어가는 것은 블루 선점
 ## (`BLUE_COST_HEAD_START`) 하나뿐이고, 양 팀은 빈 손으로 이 턴까지 순수
 ## 라인전만 한다. 성장은 이 게이트를 타지 않는다(1턴부터 돈다).
-var ECONOMY_START_TURN:      int   = 1
+var ECONOMY_START_TURN:      int   = 0
 ## 파일럿 한 명이 **포탑 / HQ 에 한 번에 넣는 고정 피해**. `atk` 와 무관하다.
 ##
-## 예전에는 `atk` 전량이 들어갔는데, 성장이 공격력을 ×3 까지 밀어 올리는 지금
+## 예전에는 `atk` 전량이 들어갔는데, 성장이 공격력을 몇 배로 밀어 올리는 지금
 ## 그대로 두면 후반 포탑이 한 턴에 녹아 경기 길이가 성장에 반비례해 무너진다.
 ## 구조물이 빨리 무너지는 이유는 **공격력이 커져서가 아니라 수비수가 저HP
 ## 복귀·사망으로 전장을 비웠기 때문**이어야 한다 — 그래서 피해는 고정이고,
-## 대신 포탑 체력이 16 까지 내려와 무방비면 8턴에 철거된다.
-var PILOT_STRUCTURE_DMG:     int   = 2
+## 무방비 포탑이 버티는 턴 수는 `TURRET_HP` / `PILOT_STRUCTURE_DMG`(둘 다
+## game_config)로 정해진다. 둘은 함께 맞춰 둔 값이므로 같이 바꾼다.
+var PILOT_STRUCTURE_DMG:     int   = 0
 
 # ─── 오브젝트 (전령 / 용) ────────────────────────────────────────────────────
 # 좌측 중립 칸에 전령, 우측 중립 칸에 용이 정해진 턴에 열린다. 자세한 규칙은
 # `objective/README.md`. 여기 있는 것은 전부 `game_config` 노브다.
-## 전령이 처음 열리는 턴. **용보다 10턴 늦다** — 두 오브젝트가 같은 구간에
-## 겹쳐 열리면 정글러와 중앙이 양쪽에 끌려다니느라 어느 쪽도 결정이 되지 않는다.
-## 순서를 용 먼저로 둔 이유는 보상의 성격이다: 용은 경기 내내 천천히 도는 성장
-## 이득이라 일찍 먹을수록 값이 커지고, 전령의 포탑 8 피해는 늦게 먹어도 값이
-## 그대로다.
-var OBJ_HERALD_FIRST_TURN:   int   = 35
+## 전령이 처음 열리는 턴. **용(`OBJ_DRAGON_FIRST_TURN`)보다 늦다** — 두 오브젝트가
+## 같은 구간에 겹쳐 열리면 정글러와 중앙이 양쪽에 끌려다니느라 어느 쪽도 결정이
+## 되지 않는다. 순서를 용 먼저로 둔 이유는 보상의 성격이다: 용은 경기 내내 천천히
+## 도는 성장 이득이라 일찍 먹을수록 값이 커지고, 전령의 포탑 피해
+## ([전령 제압] 카드의 `turret_damage` 절)는 늦게 먹어도 값이 그대로다.
+var OBJ_HERALD_FIRST_TURN:   int   = 0
 ## 용이 처음 열리는 턴. **두 오브젝트 중 먼저 열린다.**
-var OBJ_DRAGON_FIRST_TURN:   int   = 25
+var OBJ_DRAGON_FIRST_TURN:   int   = 0
 ## **결판이 난 뒤** 같은 오브젝트가 다시 열리기까지의 턴 수. 한 팀이 가져갔든
 ## 교전 끝에 아무도 못 가져갔든 같은 값이다 — 자리는 소모되지 않는다.
-var OBJ_RESPAWN_TURNS:       int   = 20
+var OBJ_RESPAWN_TURNS:       int   = 0
 ## **양 팀이 모두 미참여**해서 무산됐을 때의 재시도 간격. 결판 간격보다 짧다:
 ## 아무 일도 일어나지 않았으므로 자원을 그만큼 오래 재워 둘 이유가 없다.
-var OBJ_RETRY_TURNS:         int   = 15
-## 오브젝트 교전의 라운드 수. 카드 전투 개시(3) 보다 길다.
-var OBJ_ENGAGE_ROUNDS:       int   = 4
-## [전령 제압] 카드가 최외곽 적 포탑에 넣는 고정 피해.
-var OBJ_HERALD_TURRET_DMG:   int   = 8
+var OBJ_RETRY_TURNS:         int   = 0
+## 오브젝트 교전의 라운드 수. 카드 [교전 개시] 의 `engage:N` 보다 길다.
+var OBJ_ENGAGE_ROUNDS:       int   = 0
 ## 용을 가져간 팀의 덱에 섞여 들어가는 [용 보상] 카드 장수.
-var OBJ_DRAGON_CARD_COUNT:   int   = 3
-## [용 보상] 한 장이 지정한 파일럿에게 **영구로** 얹는 성장 적립 배율(%).
-var OBJ_DRAGON_GROWTH_PCT:   int   = 5
+var OBJ_DRAGON_CARD_COUNT:   int   = 0
 
 # Derived after DB load
 var PLAYER_HQ_POS: Vector2i = Vector2i.ZERO
@@ -298,8 +297,8 @@ var blue_team: int = 0
 #   side plays (전투 준비). Consumed on use.
 # phase_cost_inc_*: add-on applied to every card play during the current
 #   작전 단계 (cost_inc_phase). Reset on phase entry. **No card in the pool
-#   carries that clause right now** — 정밀 이동 used to, but its +1 is now
-#   self-only and lands on the card's own cost via `self_cost:1`.
+#   carries that clause right now** — 정밀 이동 used to, but its increase is now
+#   self-only and lands on the card's own cost via `self_cost:N`.
 # phase_draw_discount_*: discount applied to every card drawn during the
 #   current 작전 단계 (집중 cost_reduce_draw_phase). Mutates the drawn
 #   CardData.cost directly so the cheaper cost survives even if the draw
@@ -345,6 +344,9 @@ var gambit_lanes: Array   = [-1, -1, -1, -1, -1]
 var canvas: CanvasLayer
 var panel_victory: Panel
 var lbl_victory: Label
+## 경기 끝의 MVP 전용 뷰(`ui/MvpView.gd`). 떠 있는 동안만 있다 — `end_match` 가
+## 만들고 "계속"이 치운 뒤 결과 화면(`panel_victory`)을 연다.
+var mvp_view: MvpView = null
 # 전략 포인트 도넛 게이지. `cost_donut` (player) doubles as the 턴 넘기기
 # button once tapped; `cost_donut_enemy` is a readout only.
 var cost_donut:       CostDonut = null
@@ -624,33 +626,41 @@ func seed_side_costs() -> void:
 	ai_cost     = BLUE_COST_HEAD_START if blue_team == 1 else 0
 
 
+# game_config 한 키를 읽는다. **기본값을 두지 않는다** — 예전의 `cfg.get(key, "기본값")`
+# 은 CSV 와 같은 값을 코드에 한 번 더 적은 것이라, CSV 를 고칠 때마다 조용히 낡았다.
+# 키가 없으면 push_error 로 알리고 0 을 돌려준다.
+func _cfg_num(cfg: Dictionary, key: String) -> float:
+	if not cfg.has(key):
+		push_error("BattleSim: game_config.csv 에 '%s' 키가 없다 — CSV 에 행을 넣고 Rebuild game.db 를 돌릴 것." % key)
+		return 0.0
+	return float(cfg[key])
+
+
 func _populate_from_data_loader() -> void:
 	var cfg: Dictionary = _data_loader.game_cfg
 
-	GRID_COLS               = int(cfg.get("GRID_COLS", "9"))
-	GRID_ROWS               = int(cfg.get("GRID_ROWS", "11"))
-	HQ_MAX_HP               = int(cfg.get("HQ_MAX_HP", "500"))
-	RESPAWN_TURNS           = int(cfg.get("RESPAWN_TURNS", "5"))
-	TURRET_HP               = int(cfg.get("TURRET_HP", "150"))
-	TURRET_ATK              = int(cfg.get("TURRET_ATK", "8"))
-	RECALL_HP_THRESHOLD     = float(cfg.get("RECALL_HP_THRESHOLD", "0.2"))
-	BATTLE_PILOT_DMG_MULT   = float(cfg.get("BATTLE_PILOT_DMG_MULT", "0.5"))
-	MAX_HAND_SIZE           = int(cfg.get("MAX_HAND_SIZE", "10"))
-	BLUE_COST_HEAD_START    = int(cfg.get("BLUE_COST_HEAD_START", "1"))
-	COST_RECOVERY           = int(cfg.get("COST_RECOVERY", "1"))
-	CARD_DRAW_INTERVAL      = max(1, int(cfg.get("CARD_DRAW_INTERVAL", "1")))
-	COST_RECOVERY_INTERVAL  = max(1, int(cfg.get("COST_RECOVERY_INTERVAL", "1")))
-	PHASE_THRESHOLD         = int(cfg.get("PHASE_THRESHOLD", "8"))
-	ECONOMY_START_TURN      = max(1, int(cfg.get("ECONOMY_START_TURN", "1")))
-	PILOT_STRUCTURE_DMG     = max(1, int(cfg.get("PILOT_STRUCTURE_DMG", "2")))
-	OBJ_HERALD_FIRST_TURN   = max(1, int(cfg.get("OBJ_HERALD_FIRST_TURN", "35")))
-	OBJ_DRAGON_FIRST_TURN   = max(1, int(cfg.get("OBJ_DRAGON_FIRST_TURN", "25")))
-	OBJ_RESPAWN_TURNS       = max(1, int(cfg.get("OBJ_RESPAWN_TURNS", "20")))
-	OBJ_RETRY_TURNS         = max(1, int(cfg.get("OBJ_RETRY_TURNS", "15")))
-	OBJ_ENGAGE_ROUNDS       = max(1, int(cfg.get("OBJ_ENGAGE_ROUNDS", "4")))
-	OBJ_HERALD_TURRET_DMG   = max(1, int(cfg.get("OBJ_HERALD_TURRET_DMG", "8")))
-	OBJ_DRAGON_CARD_COUNT   = max(1, int(cfg.get("OBJ_DRAGON_CARD_COUNT", "3")))
-	OBJ_DRAGON_GROWTH_PCT   = max(0, int(cfg.get("OBJ_DRAGON_GROWTH_PCT", "5")))
+	GRID_COLS               = int(_cfg_num(cfg, "GRID_COLS"))
+	GRID_ROWS               = int(_cfg_num(cfg, "GRID_ROWS"))
+	HQ_MAX_HP               = int(_cfg_num(cfg, "HQ_MAX_HP"))
+	RESPAWN_TURNS           = int(_cfg_num(cfg, "RESPAWN_TURNS"))
+	TURRET_HP               = int(_cfg_num(cfg, "TURRET_HP"))
+	TURRET_ATK              = int(_cfg_num(cfg, "TURRET_ATK"))
+	RECALL_HP_THRESHOLD     = _cfg_num(cfg, "RECALL_HP_THRESHOLD")
+	BATTLE_PILOT_DMG_MULT   = _cfg_num(cfg, "BATTLE_PILOT_DMG_MULT")
+	MAX_HAND_SIZE           = int(_cfg_num(cfg, "MAX_HAND_SIZE"))
+	BLUE_COST_HEAD_START    = int(_cfg_num(cfg, "BLUE_COST_HEAD_START"))
+	COST_RECOVERY           = int(_cfg_num(cfg, "COST_RECOVERY"))
+	CARD_DRAW_INTERVAL      = max(1, int(_cfg_num(cfg, "CARD_DRAW_INTERVAL")))
+	COST_RECOVERY_INTERVAL  = max(1, int(_cfg_num(cfg, "COST_RECOVERY_INTERVAL")))
+	PHASE_THRESHOLD         = int(_cfg_num(cfg, "PHASE_THRESHOLD"))
+	ECONOMY_START_TURN      = max(1, int(_cfg_num(cfg, "ECONOMY_START_TURN")))
+	PILOT_STRUCTURE_DMG     = max(1, int(_cfg_num(cfg, "PILOT_STRUCTURE_DMG")))
+	OBJ_HERALD_FIRST_TURN   = max(1, int(_cfg_num(cfg, "OBJ_HERALD_FIRST_TURN")))
+	OBJ_DRAGON_FIRST_TURN   = max(1, int(_cfg_num(cfg, "OBJ_DRAGON_FIRST_TURN")))
+	OBJ_RESPAWN_TURNS       = max(1, int(_cfg_num(cfg, "OBJ_RESPAWN_TURNS")))
+	OBJ_RETRY_TURNS         = max(1, int(_cfg_num(cfg, "OBJ_RETRY_TURNS")))
+	OBJ_ENGAGE_ROUNDS       = max(1, int(_cfg_num(cfg, "OBJ_ENGAGE_ROUNDS")))
+	OBJ_DRAGON_CARD_COUNT   = max(1, int(_cfg_num(cfg, "OBJ_DRAGON_CARD_COUNT")))
 	# Init counters so first event fires on turn 1
 	draw_counter = CARD_DRAW_INTERVAL - 1
 	cost_counter = COST_RECOVERY_INTERVAL - 1
@@ -758,13 +768,14 @@ func get_elapsed_ingame_seconds() -> int:
 
 # ─── Respawn timing ──────────────────────────────────────────────────────────
 ## 이번 사망에 걸리는 리스폰 턴 수. 초반 사망은 싸게, 후반 사망은 비싸게 —
-## `RESPAWN_TURNS`(기본 5) 에 경과 턴의 1/10 을 더한다. 예전에는 DB 값 하나가
-## 전 구간에 그대로 쓰여서(16턴) 개전 직후 한 번 죽으면 초반 라인전이 통째로
-## 날아갔다.
+## `RESPAWN_TURNS` 에 경과 턴을 `BATTLE_RESPAWN_TURN_SCALE_DIV`(const.csv) 로
+## 나눈 몫을 더한다. 예전에는 DB 값 하나가 전 구간에 그대로 쓰여서 개전 직후
+## 한 번 죽으면 초반 라인전이 통째로 날아갔다.
 ##
 ## **모든 사망 판정은 이 함수를 통과해야 한다** — 전장 교전, 공격 카드, 교전
 ## 아레나가 각자 `RESPAWN_TURNS` 를 직접 읽으면 스케일링이 한쪽에만 붙는다.
-const RESPAWN_TURN_SCALE_DIV: int = 10
+## 값은 data/csv/const.csv — ConstTable 로 읽는다.
+static var RESPAWN_TURN_SCALE_DIV: int = ConstTable.int_of("BATTLE_RESPAWN_TURN_SCALE_DIV")
 
 func respawn_turns_now() -> int:
 	@warning_ignore("integer_division")
@@ -796,28 +807,42 @@ func turns_until_return(p: PilotData) -> int:
 ##
 ## **사망 자체에는 점수 벌점이 없다.** 벌점은 죽어 있는 동안 전선 수입과 캠프가
 ## 통째로 멈추는 것 — 그것이 리스폰 턴 수(경기 후반일수록 길어진다)에 비례하는
-## 진짜 비용이다. 예전의 −0.10k 는 25k 스케일에서 아무 의미가 없는 데다 같은
-## 손해를 두 번 매기는 것이었다.
+## 진짜 비용이다. 예전의 사망 벌점은 후반 성장치 스케일에서 아무 의미가 없는
+## 데다 같은 손해를 두 번 매기는 것이었다.
 func mark_pilot_dead(p: PilotData, killer: PilotData = null) -> void:
+	# 피해 없이 쓰러지는 길(처형 같은 즉사)은 남은 체력이 통째로 사라진다 —
+	# 경기 기록에는 그 몫도 받은 피해 / 준 피해로 남긴다. 피해로 쓰러진 길은
+	# `apply_pilot_damage` 가 이미 0 까지 깎아 두었으므로 여기서 더해지는 것이 없다.
+	if p.hp > 0:
+		p.dmg_taken += p.hp
+		if killer != null and killer.team != p.team:
+			killer.dmg_dealt += p.hp
 	p.hp            = 0
 	p.alive         = false
 	p.recall_hold   = false   # 복귀 대기 중 죽으면 대기도 함께 사라진다
 	p.ambush_hold   = false   # 매복도 함께 풀린다
 	p.shield        = 0
+	p.shield_grants.clear()
 	p.respawn_timer = respawn_turns_now()
 	p.atk_buff      = 0   # 카드가 걸어 둔 일시 공격력은 죽으면 사라진다
+	# **`_payout_kill_bounty` 보다 먼저** — 막타 · 어시스트 명단이 `damage_credit`
+	# 에서 나오는데 그 정산이 장부를 비운다. 파일럿 스킬의 처치 관여 훅도
+	# 같은 장부를 읽으므로 같은 이유로 이 앞에 선다.
+	var roster: Array = kill_roster(p, killer)
+	var last_hit: PilotData = roster[0] as PilotData
 	p.deaths += 1
-	if killer != null and killer.team != p.team:
-		killer.kills += 1
+	# 처치 · 어시스트는 **킬로그에 뜨는 얼굴 그대로** 센다 — 화면의 한 줄과
+	# 경기 기록(MVP 지표)이 갈리지 않는다.
+	if last_hit != null and last_hit.team != p.team:
+		last_hit.kills += 1
+	for raw in roster[1] as Array:
+		(raw as PilotData).assists += 1
 	# 전장에서 가장 무거운 한 건. 어느 팀이 쓰러졌든 같은 세기다 — 내 쪽이
 	# 죽은 것과 적을 눕힌 것을 감촉으로 가르려 들면 둘 다 흐려지고, 어느
 	# 쪽인지는 화면(킬로그 · 초상 딤)이 이미 말한다.
 	Haptics.play(Haptics.Kind.HEAVY)
 	anim_pilot_death(p)
-	# **`_payout_kill_bounty` 보다 먼저** — 어시스트 명단이 `damage_credit`
-	# 에서 나오는데 그 정산이 장부를 비운다. 파일럿 스킬의 처치 관여 훅도
-	# 같은 장부를 읽으므로 같은 이유로 이 앞에 선다.
-	_push_kill_feed(p, killer)
+	_push_kill_feed(p, roster)
 	if skill != null:
 		skill.on_kill(p, killer)
 	if mech_skill != null:
@@ -826,16 +851,16 @@ func mark_pilot_dead(p: PilotData, killer: PilotData = null) -> void:
 	_payout_kill_bounty(p, killer)
 
 
-## 킬로그 한 줄. 막타(`killer`)를 앞에 세우고, 같은 대상에게 피해를 넣은 나머지를
-## **피해가 큰 순**으로 어시스트에 붙인다 — 성장치 어시스트 배분과 같은 표를
-## 읽으므로 화면에 뜬 얼굴과 점수를 받은 얼굴이 어긋나지 않는다.
+## 처치 한 건의 명단 `[막타, 어시스트 배열]`. 막타(`killer`)를 앞에 세우고, 같은
+## 대상에게 피해를 넣은 나머지를 **피해가 큰 순**으로 어시스트에 붙인다 — 성장치
+## 어시스트 배분과 같은 표를 읽으므로 화면에 뜬 얼굴과 점수를 받은 얼굴이
+## 어긋나지 않는다. 킬로그와 경기 기록(처치 · 어시스트 수)이 이 한 함수를 읽는다.
 ##
 ## `killer` 가 null 로 들어오는 경로가 있다(라스트힛을 적어 두는
 ## `SimulationCore._last_hitter` 는 매 턴 비워진다). 그때는 가장 많이 때린
-## 사람을 막타 자리에 세운다 — 빈 칸을 두는 것보다 낫다.
-func _push_kill_feed(victim: PilotData, killer: PilotData) -> void:
-	if kill_feed == null:
-		return
+## 사람을 막타 자리에 세운다 — 빈 칸을 두는 것보다 낫다. 아무도 안 때렸으면
+## 막타도 null 이다(교전 무대의 포탑 처치).
+func kill_roster(victim: PilotData, killer: PilotData) -> Array:
 	var credit: Dictionary = live_damage_credit(victim)
 	var contributors: Array = credit.keys()
 	contributors.sort_custom(func(a: PilotData, b: PilotData) -> bool:
@@ -848,7 +873,14 @@ func _push_kill_feed(victim: PilotData, killer: PilotData) -> void:
 		var a := raw as PilotData
 		if a != last_hit:
 			assists.append(a)
-	kill_feed.push_kill(last_hit, victim, assists)
+	return [last_hit, assists]
+
+
+## 킬로그 한 줄 — `kill_roster` 가 만든 명단 그대로.
+func _push_kill_feed(victim: PilotData, roster: Array) -> void:
+	if kill_feed == null:
+		return
+	kill_feed.push_kill(roster[0] as PilotData, victim, roster[1] as Array)
 
 
 ## 계획 살인의 지급 지점. 전장에는 제3세력이 없으므로 "누가 죽였는가"를 따로
@@ -865,10 +897,10 @@ func _award_kill_bounty(dead_team: int) -> void:
 
 
 # ─── 성장치 (파일럿 점수) ────────────────────────────────────────────────────
-# 파일럿의 **성장 통화**. MOBA 의 골드에 해당하고, 개시 0.50k 에서 시작해 50턴
-# 평균 25.00k / 잘 큰 캐리 40.00k 을 넘긴다. 파일럿 스트립의 체력 바 아래에
-# 찍히고, 상단 중앙의 팀 점수는 그 팀 다섯 명의 **합산**이다(개시 2.50k).
-# 상한이 없으므로 게이지가 아니라 숫자로만 보여 준다.
+# 파일럿의 **성장 통화**. MOBA 의 골드에 해당하고, 개시값(`SCORE_START`)에서
+# 시작해 경기 내내 쌓인다 — 잘 큰 캐리는 평균보다 한참 위로 올라간다. 파일럿
+# 스트립의 체력 바 아래에 찍히고, 상단 중앙의 팀 점수는 그 팀 다섯 명의
+# **합산**이다. 상한이 없으므로 게이지가 아니라 숫자로만 보여 준다.
 #
 # **성장(`PilotData.growth`)은 이 값에서 파생된다** — `refresh_growth_stats`.
 # 예전에는 둘이 완전히 무관해서(성장은 시간 경과, 성장치는 표시용 기록) 킬을
@@ -877,106 +909,107 @@ func _award_kill_bounty(dead_team: int) -> void:
 #
 # 적립처는 셋뿐이다.
 #   • **전선 체류** — 살아서 자기 레인의 전선(양 팀 최전방 포탑 사이) 안에
-#     서 있는 턴마다 `SCORE_FRONTLINE_PER_TURN`. 수입의 60%가 여기서 나온다.
+#     서 있는 턴마다 `SCORE_FRONTLINE_PER_TURN`. 수입의 대부분이 여기서 나온다.
 #   • **정글 캠프** — 정글러가 자기 팀 소유(또는 중립) 정글 칸의 살아 있는
 #     캠프를 밟으면 `SCORE_JUNGLE_CAMP`. 캠프는 `JUNGLE_CAMP_RESPAWN_TURNS`
 #     마다 되살아나므로 정글러는 쉬지 않고 순회해야 라이너만큼 번다.
 #   • **처치 현상금** — 라스트힛이 전액, 그 대상에게 피해를 넣은 아군이
-#     피해 비례로 최대 50%를 더 받는다(어시스트). 아래 `mark_pilot_dead`.
+#     피해 비례로 최대 `SCORE_ASSIST_MAX_SHARE` 를 더 받는다(어시스트).
+#     아래 `mark_pilot_dead`.
 #
-# 포탑/HQ **피해**는 더 이상 점수를 주지 않는다 — 피해가 고정 2 로 바뀌면서
-# 한 경기에 굴러 봐야 0.01k 수준이라 노이즈였다. 대신 **철거**에 한 번 지급한다.
-## 개시값. 1.00k 였다가 0.50k 로 내렸다 — 성장은 `score - SCORE_START` 에서
-## 나오므로 개시값을 바꿔도 개시 스탯은 그대로이고, 줄어드는 것은 시작 잔고뿐이다.
-const SCORE_START: float = 0.5
+# 포탑/HQ **피해**는 더 이상 점수를 주지 않는다 — 피해가 고정값으로 바뀌면서
+# 한 경기에 굴러 봐야 노이즈 수준이었다. 대신 **철거**에 한 번 지급한다.
+#
+# 값은 data/csv/const.csv — ConstTable 로 읽는다.
+## 개시값.
+static var SCORE_START: float = ConstTable.num("SCORE_START")
 ## 아무리 죽어도 여기 아래로는 내려가지 않는다.
-const SCORE_MIN: float = 0.10
+static var SCORE_MIN: float = ConstTable.num("SCORE_MIN")
 ## 전선 안에 살아서 서 있는 1턴당 적립. **이 값 하나가 성장 속도의 주 노브다.**
 ##
-## 0.50 은 헤드리스 실측에서 역산한 값이다. 목표는 "50턴에 평균 25k(= atk ×3)"
-## 이고, 파일럿이 실제로 전선에서 버는 턴은 50턴 중 약 46턴(HQ 에서 걸어 나오는
-## 초반 몇 턴과 복귀·사망 구간이 빠진다) → 24k / 46 ≈ 0.52.
+## 헤드리스 실측에서 역산한 값이다. 목표 성장치(경기 종료 시점의 평균 공격력
+## 배율)를, 파일럿이 실제로 전선에서 버는 턴 수(HQ 에서 걸어 나오는 초반 몇 턴과
+## 복귀·사망 구간을 뺀 것)로 나눴다.
 ##
-## 처음에는 "전선 15k + 킬 8k = 25k" 를 겨냥해 0.35 로 잡았는데, 실측이 두 가정을
-## 모두 비껴갔다 — 전선 체류율이 예상보다 높아 전선만으로 17.8k 를 벌었고(예상
-## 15k), 반대로 **킬이 거의 안 났다**(전장 자동 교전은 `BATTLE_PILOT_DMG_MULT`
-## 0.35 때문에 한 대에 2~9 밖에 안 들어가 라인전만으로는 사람이 죽지 않는다.
-## 처치는 사실상 교전·공격 카드에서만 나오므로 플레이어가 얼마나 싸우느냐에
-## 통째로 달려 있다). 그래서 **아무도 싸우지 않은 하한선**이 목표에 닿도록
-## 전선 수입을 올리고, 킬은 그 위에 얹히는 가속으로 둔다.
-const SCORE_FRONTLINE_PER_TURN: float = 0.50
-## 정글 캠프 1개. **라이너의 턴당 수입(0.50)보다 훨씬 크다** — 캠프를 먹으려면
-## 그 칸까지 걸어가야 하고 재생성을 기다려야 하므로, 캠프당 값이 같으면
-## 정글러의 턴당 수입은 구조적으로 라이너보다 낮다.
+## 처음에는 "전선 수입 + 킬 수입" 을 나눠 겨냥해 더 낮게 잡았는데, 실측이 두
+## 가정을 모두 비껴갔다 — 전선 체류율이 예상보다 높아 전선만으로 예상보다 더
+## 벌었고, 반대로 **킬이 거의 안 났다**(전장 자동 교전은 `BATTLE_PILOT_DMG_MULT`
+## 때문에 한 대가 얕아 라인전만으로는 사람이 죽지 않는다. 처치는 사실상 교전·
+## 공격 카드에서만 나오므로 플레이어가 얼마나 싸우느냐에 통째로 달려 있다).
+## 그래서 **아무도 싸우지 않은 하한선**이 목표에 닿도록 전선 수입을 올리고,
+## 킬은 그 위에 얹히는 가속으로 둔다.
+static var SCORE_FRONTLINE_PER_TURN: float = ConstTable.num("SCORE_FRONTLINE_PER_TURN")
+## 정글 캠프 1개. **라이너의 턴당 수입(`SCORE_FRONTLINE_PER_TURN`)보다 훨씬
+## 크다** — 캠프를 먹으려면 그 칸까지 걸어가야 하고 재생성을 기다려야 하므로,
+## 캠프당 값이 같으면 정글러의 턴당 수입은 구조적으로 라이너보다 낮다.
 ##
-## 0.65 는 헤드리스 실측에서 역산한 값이었다. 기준선은 **"50턴 · 포탑이 하나도
-## 안 부서지고 적 정글도 안 뺏은"** 판이다(포탑을 불사로 만들어 T1 파괴 보상과
-## 전선 확장을 둘 다 없앤 4회 평균): 캠프값 0.50 · 재생성 4턴에서 정글러 18.4k /
-## 라이너 평균 23.5k = **0.78배**였고, 필요한 배수 22.45 / 17.375 = 1.29 를
-## 곱해 0.65 가 나왔다(적용 후 0.98배).
+## 헤드리스 실측에서 역산한 값이다. 기준선은 **"포탑이 하나도 안 부서지고 적
+## 정글도 안 뺏은"** 판이다(포탑을 불사로 만들어 T1 파괴 보상과 전선 확장을
+## 둘 다 없앤 여러 판 평균): 정글러 수입 / 라이너 평균 수입의 비를 재고, 그
+## 비가 1 에 가깝도록 필요한 배수를 곱했다.
 ##
-## **재생성이 4턴 → 6턴으로 늦춰지면서 0.98 로 다시 올렸다.** 캠프 획득 빈도가
-## 그대로 재생성 주기에 반비례하므로(정글러 수입은 전부 캠프다) 주기를 1.5배로
-## 늘리면 값도 1.5배여야 같은 수입이 나온다: 0.65 × 1.5 ≈ 0.98. 늦춘 것은
-## **순회 리듬**이지 정글러의 몫이 아니다 — 한 칸이 되살아나기를 더 오래 기다리는
-## 대신 한 번 먹을 때 더 크게 먹는다.
+## **재생성 주기(`JUNGLE_CAMP_RESPAWN_TURNS`)를 바꾸면 이 값도 같은 비율로
+## 바꿔야 한다.** 캠프 획득 빈도가 그대로 재생성 주기에 반비례하므로(정글러
+## 수입은 전부 캠프다) 주기를 늘린 만큼 값도 늘려야 같은 수입이 나온다. 주기를
+## 늦춘 것은 **순회 리듬**이지 정글러의 몫이 아니다 — 한 칸이 되살아나기를 더
+## 오래 기다리는 대신 한 번 먹을 때 더 크게 먹는다.
 ##
 ## 적 정글까지 점령하면 돌 캠프가 늘어 라이너를 추월한다 — 그것이 정글 점령의
 ## 값이고, 이 상수는 **점령이 없는 하한선**을 라이너와 나란히 놓을 뿐이다.
 ##
-## 한때 1.15 였다 — 좌우 중립 두 칸이 오브젝트 전용 자리가 되어 캠프가 서는 칸이
-## 14 → 12 로 줄었을 때 그 몫(× 14/12)을 얹은 값이다. 두 칸이 다시 평범한 정글
-## 칸으로 돌아오면서(캠프도, 점령도 그대로다) 그 보정은 근거를 잃어 0.98 로
-## 되돌렸다. 전령 / 용은 **같은 자리를 무대로 빌려 쓸 뿐** 캠프를 밀어내지 않는다.
+## 한때 좌우 중립 두 칸이 오브젝트 전용 자리가 되어 캠프가 서는 칸 수가 줄었을
+## 때 그 몫을 얹은 값을 쓴 적이 있다. 두 칸이 다시 평범한 정글 칸으로
+## 돌아오면서(캠프도, 점령도 그대로다) 그 보정은 근거를 잃어 되돌렸다. 전령 /
+## 용은 **같은 자리를 무대로 빌려 쓸 뿐** 캠프를 밀어내지 않는다.
 ##
-## **0.98 → 0.78 (−20%)** — 재생성을 6 → 7턴으로 늦추면서 값을 보전하지 않고
-## 오히려 깎았다. 정글러의 몫 자체를 줄인 의도된 너프다(위 1.5배 보정과 반대).
-const SCORE_JUNGLE_CAMP: float = 0.78
-## 캠프가 다시 차오르기까지의 턴 수. 4턴은 한쪽 정글(4칸)에서 **매 턴 정확히
-## 한 칸**이 되살아나 정글러가 발밑을 뜰 이유가 없었다 — 6턴이면 그 칸이
-## 비어 있는 구간이 생겨 반대쪽으로 넘어가는 순회가 강제된다. 이후 7턴으로
-## 한 턴 더 늦췄다(캠프값 감소와 함께 정글 수입을 줄이는 너프).
-const JUNGLE_CAMP_RESPAWN_TURNS: int = 7
+## 이후 재생성 주기를 한 턴 늦추면서 값을 보전하지 않고 오히려 깎았다 — 정글러의
+## 몫 자체를 줄인 의도된 너프다.
+static var SCORE_JUNGLE_CAMP: float = ConstTable.num("SCORE_JUNGLE_CAMP")
+## 캠프가 다시 차오르기까지의 턴 수. 주기가 한쪽 정글의 칸 수와 같으면 **매 턴
+## 정확히 한 칸**이 되살아나 정글러가 발밑을 뜰 이유가 없다 — 주기가 그보다
+## 길어야 그 칸이 비어 있는 구간이 생겨 반대쪽으로 넘어가는 순회가 강제된다.
+## 거기서 한 턴 더 늦춘 것은 캠프값 감소와 함께 정글 수입을 줄이는 너프다.
+static var JUNGLE_CAMP_RESPAWN_TURNS: int = ConstTable.int_of("JUNGLE_CAMP_RESPAWN_TURNS")
 ## **방치 할인** — 차 있는 채로 놀고 있는 캠프가 거리 한 칸을 되사는 데 걸리는
 ## 턴 수. 정글러의 목표 선택(`SimulationCore._best_ready_camp`)은 거리에서
 ## `방치 턴 / 이 값` 을 뺀 값이 가장 작은 캠프를 고르므로, 멀리 있어 계속
 ## 미뤄지던 캠프도 언젠가는 가장 싼 목표가 된다.
 ##
-## 이것이 없으면 정글러는 **자기 발밑 4칸에 갇힌다**: 한쪽 정글이 4칸이라
-## 재생성 주기가 그 칸 수에 가까우면 매 턴 한 칸이 되살아나고, 거리만 보는 그리디는
-## 언제나 거리 1짜리 캠프를 찾아내고 반대쪽 정글은 개시부터 끝까지 캠프가 꽉
-## 찬 채로 남는다(실측: 팀0 정글러가 30턴 동안 (0,0)/(0,-1)/(1,0) 을 한 번도
-## 밟지 않았다). 할인이 붙으면 방치된 쪽이 주기적으로 가장 싸져 정글러가
-## 좌우를 오가는 **순회**가 된다.
-const JUNGLE_CAMP_STALE_PER_STEP: int = 3
+## 이것이 없으면 정글러는 **자기 발밑에 갇힌다**: 재생성 주기가 한쪽 정글의
+## 칸 수에 가까우면 매 턴 한 칸이 되살아나고, 거리만 보는 그리디는 언제나
+## 거리 1짜리 캠프를 찾아내고 반대쪽 정글은 개시부터 끝까지 캠프가 꽉 찬 채로
+## 남는다(실측: 팀0 정글러가 경기 대부분 동안 반대편 캠프를 한 번도 밟지
+## 않았다). 할인이 붙으면 방치된 쪽이 주기적으로 가장 싸져 정글러가 좌우를
+## 오가는 **순회**가 된다.
+static var JUNGLE_CAMP_STALE_PER_STEP: int = ConstTable.int_of("JUNGLE_CAMP_STALE_PER_STEP")
 ## 처치 기본 현상금 — 누구를 잡아도 이만큼은 나온다.
-const SCORE_KILL_BASE: float = 1.5
+static var SCORE_KILL_BASE: float = ConstTable.num("SCORE_KILL_BASE")
 ## 앞서가는 적 현상금. 피해자가 처치자 팀 평균보다 앞선 만큼의 이 비율이
-## 기본값 위에 얹힌다. 10k 앞선 에이스를 잡으면 1.5 + 2.0 = 3.5k.
-const SCORE_KILL_BOUNTY_RATE: float = 0.20
+## 기본값(`SCORE_KILL_BASE`) 위에 얹힌다 — 크게 앞선 에이스일수록 비싸다.
+static var SCORE_KILL_BOUNTY_RATE: float = ConstTable.num("SCORE_KILL_BOUNTY_RATE")
 ## 어시스트 전원이 나눠 갖는 현상금의 상한 비율. 각자의 몫은
-## `현상금 × 0.5 × (내 피해 / 그 대상이 이번 생에 받은 총 피해)` 라, 라스트힛만
-## 넣고 딜을 안 넣은 파일럿과 끝까지 두들긴 파일럿이 구분된다.
-const SCORE_ASSIST_MAX_SHARE: float = 0.50
+## `현상금 × SCORE_ASSIST_MAX_SHARE × (내 피해 / 그 대상이 이번 생에 받은 총 피해)`
+## 라, 라스트힛만 넣고 딜을 안 넣은 파일럿과 끝까지 두들긴 파일럿이 구분된다.
+static var SCORE_ASSIST_MAX_SHARE: float = ConstTable.num("SCORE_ASSIST_MAX_SHARE")
 ## 포탑 한 기를 처음부터 끝까지 갈아 냈을 때 그 레인이 벌어 가는 성장치 총액.
 ##
 ## 예전에는 이 값이 **철거하는 순간** 마지막 한 대를 넣은 파일럿에게 통째로
-## 갔다(`SCORE_TURRET_KILL`). 그러면 8턴 동안 밀어붙인 파일럿과 마지막 2 를
-## 넣은 파일럿의 몫이 같았고, 포탑을 반쯤 갈아 놓고 죽은 사람은 한 푼도 못
+## 갔다(`SCORE_TURRET_KILL`). 그러면 여러 턴 동안 밀어붙인 파일럿과 마지막 한
+## 대를 넣은 파일럿의 몫이 같았고, 포탑을 반쯤 갈아 놓고 죽은 사람은 한 푼도 못
 ## 받았다 — 공성은 한 번의 사건이 아니라 여러 턴에 걸친 노동이다. 지금은
 ## **깎아 낸 체력 1점당**으로 쪼개 실제로 민 만큼 나눠 갖는다
 ## (`score_turret_damage`). 총액은 그대로라 포탑 하나의 값어치는 안 달라졌다.
-const SCORE_TURRET_FULL: float = 1.0
+static var SCORE_TURRET_FULL: float = ConstTable.num("SCORE_TURRET_FULL")
 ## 처치 관여(어시스트)가 살아 있는 기간(턴). 이보다 오래된 피해는 현상금
-## 배분에서도 킬로그 명단에서도 빠진다 — 20턴 전에 한 대 긁어 놓은 것이
+## 배분에서도 킬로그 명단에서도 빠진다 — 한참 전에 한 대 긁어 놓은 것이
 ## 지금의 처치에 지분을 갖는 것은 "관여"가 아니다. 판정은
 ## `live_damage_credit` 한 곳뿐이고 만료된 기록은 그 자리에서 지워진다.
-const SCORE_ASSIST_WINDOW_TURNS: int = 15
+static var SCORE_ASSIST_WINDOW_TURNS: int = ConstTable.int_of("SCORE_ASSIST_WINDOW_TURNS")
 
 # ─── 성장치 팝업 (전장 초상화 위) ────────────────────────────────────────────
 # 성장치가 오르는 자리 중 **한 번에 크게 들어오는 것**만 초상화 위에 숫자로
 # 띄운다 — 처치 현상금(막타 · 어시스트), 포탑 피해, 그리고 교전에서 번 총액.
-# 전선 체류(턴당 0.50k)와 정글 캠프는 뺐다: 매 턴 열 명의 얼굴 위에서 숫자가
+# 전선 체류(턴당 `SCORE_FRONTLINE_PER_TURN`)와 정글 캠프는 뺐다: 매 턴 열 명의 얼굴 위에서 숫자가
 # 튀면 그게 곧 배경이 되어 정작 큰 한 건이 묻힌다.
 #
 # 진입점은 `award_score` 하나이고, 조용히 적립만 하는 `add_score` 와 그 한 겹이
@@ -994,15 +1027,17 @@ const SCORE_POPUP_DUR := 1.10
 const SCORE_POPUP_RISE_PX := 72.0
 
 # ─── 성장 환산 (성장치 → 스탯) ───────────────────────────────────────────────
-# **공격력이 체력의 4배 속도로 자란다.** 이 비대칭이 성장 체감의 전부다 —
-# 둘이 같은 비율이면 `atk/max_hp` 가 불변이라 "몇 대 맞아야 죽는가"가 50턴이
-# 지나도 1타도 안 줄어든다(예전 설계의 구조적 결함).
+# **공격력이 체력보다 몇 배 빠르게 자란다.** 이 비대칭이 성장 체감의 전부다 —
+# 둘이 같은 비율이면 `atk/max_hp` 가 불변이라 "몇 대 맞아야 죽는가"가 경기가
+# 끝나도 1타도 안 줄어든다(예전 설계의 구조적 결함).
 #
-# 기준점: 성장치 25k(= 개시분을 뺀 24k) 에서 **공격력 ×3.0 / 최대 체력 ×1.5**.
-# 격투가 atk 16 → 48, 탱커 hp 220 → 330 이라 교전 타수가 14타 → 7타로 준다.
-# 스나이퍼(hp 75 → 113)는 3타에 무너지고, 40k 캐리는 ×4.25 로 2타에 끝낸다.
-const GROWTH_ATK_PER_SCORE: float = 2.0 / 24.0   # +8.33%p / 1k
-const GROWTH_HP_PER_SCORE:  float = 0.5 / 24.0   # +2.08%p / 1k
+# 기준점: 목표 성장치(개시분을 뺀 몫)에서 공격력 배율이 체력 배율보다 훨씬 크게
+# 오르도록 두 계수를 잡았다 — 그래서 성장할수록 교전 타수가 줄고, 체력이 낮은
+# 스나이퍼는 잘 큰 캐리에게 몇 대 만에 무너진다. 두 계수는 "목표 배율 증가분 /
+# 목표 성장치(개시분 제외)" 로 계산한 1k 당 증가율이다.
+# 값은 data/csv/const.csv — ConstTable 로 읽는다.
+static var GROWTH_ATK_PER_SCORE: float = ConstTable.num("GROWTH_ATK_PER_SCORE")
+static var GROWTH_HP_PER_SCORE:  float = ConstTable.num("GROWTH_HP_PER_SCORE")
 
 
 ## 모든 성장치 변동이 지나는 한 지점. 하한만 지키고(상한 없음), **적립 배율**
@@ -1149,12 +1184,113 @@ func record_pilot_damage(attacker: PilotData, victim: PilotData, amount: int) ->
 		return
 	if attacker.team == victim.team:
 		return
+	# 경기 기록의 "준 피해"도 장부와 같은 값을 센다 — 세 무대가 모두 여기를 지난다.
+	attacker.dmg_dealt += amount
 	var entries: Array = victim.damage_credit.get(attacker, [])
 	if not entries.is_empty() and (entries[-1] as Vector2i).x == turn_count:
 		entries[-1] = (entries[-1] as Vector2i) + Vector2i(0, amount)
 	else:
 		entries.append(Vector2i(turn_count, amount))
 	victim.damage_credit[attacker] = entries
+
+
+# ─── 경기 기록 (MVP 지표) — 피해 · 보호막 · 회복의 단일 지점 ──────────────────
+# 받은 피해(`dmg_taken`)와 돌봄(`care`)은 **체력과 보호막이 실제로 움직이는
+# 자리**에서만 셀 수 있다 — 그래서 전장 자동 교전 · 카드 전진 · 공격 카드 ·
+# [확신] · 교전 무대가 저마다 들고 있던 "보호막 먼저, 남은 몫이 체력" 블록을
+# 아래 한 함수로 모았다. 보호막을 거는 자리도 `grant_shield`, 회복도
+# `apply_heal` 하나뿐이다. 경기 끝의 집계는 `build_pilot_stats`.
+
+## 파일럿 피해 한 건을 적용한다 — 보호막이 먼저 받고(흡수분은 보호막을 건
+## 아군의 돌봄으로), 남은 몫이 체력을 깎는다(0 아래로는 내려가지 않는다).
+## **실제로 깎인 체력**을 돌려주고 그 값을 받은 피해로 센다(오버킬 제외).
+## 사망 처리는 하지 않는다 — 부르는 쪽이 `hp <= 0` 을 보고 `mark_pilot_dead` 를 부른다.
+func apply_pilot_damage(victim: PilotData, amount: int) -> int:
+	if victim == null or amount <= 0:
+		return 0
+	var dmg: int = amount
+	if victim.shield > 0:
+		var absorbed: int = mini(victim.shield, dmg)
+		_drain_shield_grants(victim, absorbed)
+		victim.shield -= absorbed
+		dmg -= absorbed
+	var hp_lost: int = clampi(dmg, 0, maxi(victim.hp, 0))
+	victim.hp = maxi(0, victim.hp - dmg)
+	victim.dmg_taken += hp_lost
+	return hp_lost
+
+
+## 보호막을 건다. `source` 는 건 파일럿(시전자 없는 카드면 null) — 그 보호막이
+## 나중에 흡수한 몫이 `source` 의 돌봄이 된다(자기 자신 · 상대 팀이면 세지 않는다).
+func grant_shield(target: PilotData, amount: int, source: PilotData) -> void:
+	if target == null or amount <= 0:
+		return
+	target.shield += amount
+	target.shield_grants.append({"src": source, "amt": amount})
+
+
+## 회복. 최대 체력을 넘는 몫(오버힐)은 버리고 **실제로 오른 체력**을 돌려준다.
+## 다른 아군을 회복시킨 몫만 `healer` 의 돌봄이 된다.
+func apply_heal(target: PilotData, amount: int, healer: PilotData) -> int:
+	if target == null or amount <= 0:
+		return 0
+	var before: int = target.hp
+	target.hp = mini(target.max_hp, target.hp + amount)
+	var healed: int = maxi(0, target.hp - before)
+	_credit_care(healer, target, healed)
+	return healed
+
+
+## 흡수된 `absorbed` 를 보호막 장부에서 먼저 건 것부터 깎고 출처에게 돌봄을 준다.
+## 장부 합계가 지금 보호막보다 크면(복귀가 보호막을 장부 밖에서 비웠다) 오래된
+## 것부터 버려 맞춘다 — 남아 있는 보호막은 가장 최근에 건 몫이라고 본다.
+func _drain_shield_grants(p: PilotData, absorbed: int) -> void:
+	var total: int = 0
+	for raw in p.shield_grants:
+		total += int((raw as Dictionary)["amt"])
+	var excess: int = total - p.shield
+	while excess > 0 and not p.shield_grants.is_empty():
+		var head: Dictionary = p.shield_grants[0]
+		var cut: int = mini(excess, int(head["amt"]))
+		head["amt"] = int(head["amt"]) - cut
+		excess -= cut
+		if int(head["amt"]) <= 0:
+			p.shield_grants.pop_front()
+	var left: int = absorbed
+	while left > 0 and not p.shield_grants.is_empty():
+		var g: Dictionary = p.shield_grants[0]
+		var take: int = mini(left, int(g["amt"]))
+		_credit_care(g["src"] as PilotData, p, take)
+		g["amt"] = int(g["amt"]) - take
+		left -= take
+		if int(g["amt"]) <= 0:
+			p.shield_grants.pop_front()
+
+
+func _credit_care(giver: PilotData, target: PilotData, amount: int) -> void:
+	if giver == null or target == null or amount <= 0:
+		return
+	if giver == target or giver.team != target.team:
+		return
+	giver.care += amount
+
+
+## 열 명의 경기 기록 — `pending_match.pilot_stats` 의 모양(docs/outgame_dev_plan.md
+## §10.4). 행 순서는 `pilots` 순서(0..4 = 내 팀, 5..9 = 상대)라 인덱스로 전장의
+## `PilotData` 를 되찾을 수 있다. `pilot_id` 는 선수(`PlayerData.id`) — 단독
+## 실행처럼 선수가 없으면 `PilotData.pilot_id`(대개 -1)다.
+func build_pilot_stats() -> Array:
+	var rows: Array = []
+	for raw in pilots:
+		var p := raw as PilotData
+		var pd: PlayerData = player_data_for(p)
+		rows.append({
+			"pilot_id": pd.id if pd != null else p.pilot_id,
+			"side": p.team, "role": p.role,
+			"k": p.kills, "d": p.deaths, "a": p.assists,
+			"dmg": p.dmg_dealt, "taken": p.dmg_taken, "care": p.care,
+		})
+	return rows
 
 
 ## 지금 이 순간 유효한 기여만 남긴 `공격자 → 누적 피해` 표. 현상금 배분 ·
@@ -1186,7 +1322,7 @@ func live_damage_credit(victim: PilotData) -> Dictionary:
 ## 처치 현상금 정산. 라스트힛(`killer`)이 전액을 받고, 그 대상에게 피해를 넣은
 ## 다른 아군이 **피해 비례로 최대 `SCORE_ASSIST_MAX_SHARE`** 를 더 받는다.
 ## 분모는 피해자가 이번 생에 받은 총 피해라, 라스트힛이 딜의 대부분을 넣었다면
-## 어시스트 총합은 50% 에 한참 못 미친다.
+## 어시스트 총합은 상한에 한참 못 미친다.
 ##
 ## `killer` 가 null 이어도(포탑 처치) 어시스트는 지급된다 — 끝까지 두들긴
 ## 사람에게 아무것도 안 주는 쪽이 더 이상하다.
@@ -1194,7 +1330,7 @@ func _payout_kill_bounty(victim: PilotData, killer: PilotData) -> void:
 	var killer_team: int = killer.team if killer != null else 1 - victim.team
 	var lead: float = maxf(0.0, victim.score - team_avg_score(killer_team))
 	var bounty: float = SCORE_KILL_BASE + lead * SCORE_KILL_BOUNTY_RATE
-	# **만료를 지난 피해는 분모에도 안 들어간다** — 15턴 전에 긁어 놓은 딜이
+	# **만료를 지난 피해는 분모에도 안 들어간다** — 관여 기간(`SCORE_ASSIST_WINDOW_TURNS`) 전에 긁어 놓은 딜이
 	# 분모를 부풀리면 정작 지금 잡은 사람들의 몫이 조용히 깎인다.
 	var credit: Dictionary = live_damage_credit(victim)
 	var total_dmg: float = 0.0
@@ -1216,8 +1352,7 @@ func _payout_kill_bounty(victim: PilotData, killer: PilotData) -> void:
 ## 오버킬까지 값으로 치면 마지막 한 대에 인원이 몰릴수록 포탑 총액이 불어난다.
 ##
 ## 한 점당 값은 `SCORE_TURRET_FULL / TURRET_HP` 라, 한 기를 통째로 갈아 내면
-## 예전의 철거 일시불과 정확히 같은 총액이 나온다(지금 설정 = 체력 16 · 고정
-## 피해 2 이므로 한 대에 0.13k, 여덟 대에 1.0k).
+## 예전의 철거 일시불과 정확히 같은 총액이 나온다.
 func score_turret_damage(attacker: PilotData, hp_removed: int) -> void:
 	if attacker == null or hp_removed <= 0:
 		return
@@ -1636,6 +1771,47 @@ func pilot_marker_pos_solo(p: PilotData) -> Vector2:
 		return renderer.pilot_marker_pos_fallback(p)
 	return cell_center(p.grid_pos)
 
+# ─── 경기 끝 ──────────────────────────────────────────────────────────────────
+## 경기 끝의 단일 지점(`SimulationCore.check_win_condition` 이 한 번 부른다).
+##   1. 결과 기록 — 시즌에서 들어온 경기면 `pending_match` 에 `winner_side`,
+##      `pilot_stats`(열 명, §10.4) · `mvp_pilot_id` 를 적는다. SeasonHub 가 씬 전환
+##      뒤에 읽는다. 단독 실행(`pending_match` 없음)은 아무것도 쓰지 않는다.
+##   2. MVP 뷰 — 이긴 팀 다섯 중 `RunStats.mvp_score` 최고 1명(단독 실행도 같은
+##      규칙으로 살아 있는 기록을 보여 준다). 계속을 누르면
+##   3. 기존 승패 결과 화면 — MVP 한 줄이 붙는다.
+func end_match(winner_side: int) -> void:
+	game_over = true
+	lbl_victory.text = "Player Team Wins!" if winner_side == 0 else "Opponent Team Wins!"
+	Haptics.play(Haptics.Kind.SUCCESS if winner_side == 0 else Haptics.Kind.ERROR)
+	var rows: Array = build_pilot_stats()
+	var mvp_idx: int = RunStats.pick_mvp_index(rows, winner_side)
+	var pm = gm.season_state.get("pending_match", null) if gm != null else null
+	if pm != null:
+		pm["winner_side"] = winner_side
+		pm["pilot_stats"] = rows
+		pm["mvp_pilot_id"] = int((rows[mvp_idx] as Dictionary)["pilot_id"]) \
+				if mvp_idx >= 0 else -1
+	var mvp: PilotData = pilots[mvp_idx] as PilotData if mvp_idx >= 0 else null
+	var mvp_row: Dictionary = rows[mvp_idx] as Dictionary if mvp_idx >= 0 else {}
+	hud.set_victory_mvp(mvp, mvp_row)
+	if mvp == null:
+		panel_victory.visible = true
+		return
+	mvp_view = MvpView.new()
+	mvp_view.name = "MvpView"
+	add_child(mvp_view)
+	mvp_view.closed.connect(_on_mvp_view_closed)
+	mvp_view.open(self, mvp, mvp_row)
+
+
+## MVP 뷰의 "계속" — 뷰를 치우고 기존 결과 화면을 연다.
+func _on_mvp_view_closed() -> void:
+	if mvp_view != null:
+		mvp_view.queue_free()
+		mvp_view = null
+	panel_victory.visible = true
+
+
 # ─── Button callbacks ─────────────────────────────────────────────────────────
 # Season-mode return: the win panel "다음 →" button hands control back to the
 # campaign hub. SeasonHub._ready() picks up season_state.pending_match.winner_side
@@ -1653,6 +1829,9 @@ func _on_restart_pressed() -> void:
 	field_ready   = false
 	gambit_lanes = [-1, -1, -1, -1, -1]
 	panel_victory.visible = false
+	if mvp_view != null:
+		mvp_view.queue_free()
+		mvp_view = null
 	pilots.clear()
 	turrets.clear()
 	player_hand.clear();    ai_hand.clear()

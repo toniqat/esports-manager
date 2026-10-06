@@ -9,40 +9,40 @@ Shared data definitions used across features.
 
 One row from the `cards` SQLite table, plus a few runtime fields:
 - `card_name: String`
-- `cost: int` — 작전 점수 cost
+- `cost: int` — operation points (작전 점수) cost
 - `uses: int` — max plays per match (0 = unlimited)
 - `cast_method: String` — `range / target / location / instant`
 - `target: String` — `caster / enemy / ally / pilot / hand / location`
 - `cast_range: int` — tiles from caster (0 = self, 99 = unbounded)
 - `area: int` — AoE radius around target (0 = single)
-- `card_id: int` — cards.csv 행 id(메크 카드는 -1). 고정 파일럿 카드
-  (`PlayerData.pilot_cards`)가 이 값으로 카드를 가리킨다.
-- `keyword: String` — `|` 목록(`exhaust` 소멸 / `preserve` 보존 / `volatile`
-  휘발성 / `charge` 충전 / `reposition` 재배치). `has_keyword()` 로만 읽고, 화면
-  이름 · 풀이는 `keyword_label()` / `keyword_note()`(`KEYWORD_LABELS` /
-  `KEYWORD_NOTES`). **충전은 키워드, 충전으로 쌓이는 것은 토큰**(`charge` 필드)
-- `SPECIAL_NOTES` — 특수 키워드(설명문의 `[용어]`) 풀이 표: 추적 · 반응 장갑 · 목표 ·
-  현상금 · 기절 · 취약. 표에 없는 `[이름]` 은 카드 이름으로 읽힌다
-  (`features/battle_sim/card_phase/README.md` "설명문 표기")
+- `card_id: int` — cards.csv row id (mech cards use -1). Fixed pilot cards
+  (`PlayerData.pilot_cards`) point at a card by this value.
+- `keyword: String` — `|` list (`exhaust` 소멸 / `preserve` 보존 (keep) / `volatile`
+  휘발성 / `charge` 충전 (Charge) / `reposition` 재배치). Read it only through `has_keyword()`; the
+  on-screen name and explanation come from `keyword_label()` / `keyword_note()` (`KEYWORD_LABELS` /
+  `KEYWORD_NOTES`). **Charge is the keyword; what Charge accumulates is tokens** (the `charge` field)
+- `SPECIAL_NOTES` — explanation table for special keywords (`[term]` in descriptions): 추적 (track) ·
+  반응 장갑 (reactive armor) · 목표 (mark) · 현상금 (bounty) · 기절 (stun) · 취약 (vulnerable). A `[name]` not in
+  the table is read as a card name (`features/battle_sim/card_phase/README.md` "설명문 표기")
 - `effect: String` — semicolon-chain dispatched by `CardPhaseManager`
-  (e.g. `"draw:2;discard:2"`, `"attack:1|pierce"`)
-- `description: String` — 카드 앞면 **아트 아래 설명판**에 그대로 찍히고(글자 크기는 넘칠 때만 줄어든다 — `Card._fit_desc_font_size`), 화면 상단 설명 상자에도 같은 문장이 뜬다
-- `scope: String` — **포지션 목록**. `any` 단독 = 전부, `lane` 단독 = 탑 ·
-  미드 · 원딜 · 서폿, 그 밖에는 `jungle` / `top` / `mid` / `carry` / `support` 의
-  `|` 목록. `positions_of(scope)` 가 펼치고(알 수 없는 토큰뿐이면 전부),
-  `allowed_for_position(pos)` 가 판정하며, `scope_label(scope)` 가 "탑 · 미드 · 원딜"
-  처럼 읽는 말로 바꾼다.
-- `pool: int` — `1` = 파일럿 카드 후보, `0` = 제외(결투 · 오브젝트 보상 · 스킬 생성 카드).
-- `card_type: String` — cards.csv 는 전부 `pilot`. `mech` 는 `make_mech_card` 가
-  `mech_cards.csv` 행에만 찍는다.
-- `card_cat: String` — **분류 `|` 목록**(`CAT_*`: growth / engage / ambush /
-  attack / defense / utility / draw / jungle / lane, 지급 전용 `-`). `categories()` /
-  `fits_any_category(cats)` / `category_label()`. 포지션 슬롯 표의 칸이 이 값으로
-  후보를 고른다.
-- `charge_max: int` / `charge: int` — 충전 상한 / 지금 토큰 수. `shows_tokens()`
-  가 카드 앞면 배지를 켤지 답한다(충전 카드 + `token:N` 절을 단 골드러시).
-- `free_this_phase: bool` (runtime) — [신중한 예산] 의 "이번 작전 단계 동안 비용 0".
-- `owner_pilot: PilotData` (runtime, **not** `@export`) — the 시전자, set
+  (e.g. `"draw:N;discard:N"`, `"attack:N|pierce"`)
+- `description: String` — printed verbatim on the **description plate under the art** on the card face (font size shrinks only when it overflows — `Card._fit_desc_font_size`); the same sentence also appears in the description box at the top of the screen
+- `scope: String` — **position list**. `any` alone = all, `lane` alone = top ·
+  mid · carry · support, otherwise a `|` list of `jungle` / `top` / `mid` / `carry` / `support`.
+  `positions_of(scope)` expands it (if only unknown tokens, all positions),
+  `allowed_for_position(pos)` checks it, and `scope_label(scope)` turns it into readable text
+  like "탑 · 미드 · 원딜" (Top · Mid · Carry).
+- `pool: int` — `1` = pilot card candidate, `0` = excluded (duel · objective reward · skill-generated cards).
+- `card_type: String` — every row in cards.csv is `pilot`. `mech` is stamped by `make_mech_card`
+  only on `mech_cards.csv` rows.
+- `card_cat: String` — **category `|` list** (`CAT_*`: growth / engage / ambush /
+  attack / defense / utility / draw / jungle / lane; grant-only `-`). `categories()` /
+  `fits_any_category(cats)` / `category_label()`. Cells in the position slot table pick
+  candidates by this value.
+- `charge_max: int` / `charge: int` — Charge cap / current token count. `shows_tokens()`
+  answers whether to show the badge on the card face (Charge cards + 골드러시 (Gold Rush) with a `token:N` clause).
+- `free_this_phase: bool` (runtime) — [신중한 예산] (Careful Budget)'s "free during this operation phase (작전 단계)".
+- `owner_pilot: PilotData` (runtime, **not** `@export`) — the caster (시전자), set
   by `CardPhaseManager.build_starter_decks()`
 
 Instantiated at runtime by `CardPhaseManager.build_starter_decks()` from the
@@ -56,63 +56,63 @@ Shared enum definitions:
 - `LanePosition { LEFT, CENTER, RIGHT, GUERRILLA }` — battle-lane slot
 - `Lane { LEFT, CENTER, RIGHT }` — waypoint/building lanes (no GUERRILLA)
 - `BattlePhase { GAMBIT, CARD_PHASE, BATTLE, ENGAGE }` — in-battle phase
-  machine. **`GAMBIT` 은 빈 단계가 아니다** — 전장이 다 선 채로 여기 머물며
-  정글 시작 방향을 묻는다(`battle_sim/gambit/JungleStartOverlay.gd`)
+  machine. **`GAMBIT` is not an empty phase** — the battlefield (전장) is fully set up while it sits
+  here asking for the jungle start (정글 시작) direction (`battle_sim/gambit/JungleStartOverlay.gd`)
 - `TowerLevel { HQ, LEVEL_2, LEVEL_1 }` — building atlas selector
 - `MatchPhase { LOAD, PREP, BAN_PICK, ASSIGN, JUNGLE_START, LAUNCH }` — out-of-battle
-  pipeline. **`ASSIGN` 과 `JUNGLE_START` 는 더 이상 지나지 않는다** — 메크 배정은
-  밴픽 화면 안으로(`ban_pick/BanPickController._enter_assign_mode`), 정글 시작
-  방향은 BattleSim 안으로(`battle_sim/gambit/JungleStartOverlay.gd`) 들어갔다.
-  두 열거값은 세이브 호환을 위해 자리만 지킨다
+  pipeline. **`ASSIGN` and `JUNGLE_START` are no longer passed through** — mech assignment moved
+  into the ban/pick screen (`ban_pick/BanPickController._enter_assign_mode`), and the jungle start
+  direction moved into BattleSim (`battle_sim/gambit/JungleStartOverlay.gd`).
+  Both enum values only hold their slots for save compatibility
 - `JungleStartDir { LEFT, RIGHT }` — assassin's jungle entry side
 - `DraftSide { BLUE, RED }` — ban/pick draft sides
-- **포지션 키** `POS_TOP` / `POS_JUNGLE` / `POS_MID` / `POS_CARRY` / `POS_SUPPORT`
-  (`"top"` …), `POSITION_KEYS`(라인 순서), `LANE_POSITIONS`(`scope = lane` 의 넷),
-  `POSITION_LABELS`, `position_key(role)` — 카드 `scope` 와 `pilot_card_slots.position`
-  이 쓰는 문자열이다(CSV 에 사람이 직접 적는 값이라 열거값이 아니다)
+- **Position keys** `POS_TOP` / `POS_JUNGLE` / `POS_MID` / `POS_CARRY` / `POS_SUPPORT`
+  (`"top"` …), `POSITION_KEYS` (lane order), `LANE_POSITIONS` (the four of `scope = lane`),
+  `POSITION_LABELS`, `position_key(role)` — the strings used by card `scope` and
+  `pilot_card_slots.position` (they are values humans type directly into CSV, so they are not enum values)
 
-**열거값 말고 표가 하나 더 있다 — `ROLE_DISPLAY_ORDER`.**
+**Besides the enums there is one more table — `ROLE_DISPLAY_ORDER`.**
 ```gdscript
 const ROLE_DISPLAY_ORDER: Array = [Role.TANK, Role.ASSASSIN, Role.FIGHTER, Role.SNIPER, Role.SUPPORT]
-static func role_seat(role: int) -> int   # 역할 → 화면 자리 0..4
+static func role_seat(role: int) -> int   # role → screen seat 0..4
 ```
-파일럿 다섯을 화면에 늘어놓는 순서 — **탑 · 정글 · 미드 · 원딜 · 서폿**이고,
-전장을 왼쪽부터 오른쪽으로 훑은 순서(LEFT · GUERRILLA · CENTER · RIGHT · RIGHT)와도
-같다. `Role` 열거값 순서를 그대로 쓰면 정글러가 세 번째, 원딜이 다섯 번째로 앉는데
-그 배열은 플레이어가 아는 라인업과도 지도와도 대응하지 않는다.
+The order in which five pilots (파일럿) are laid out on screen — **top · jungle · mid · carry · support** — which
+is also the order you get scanning the battlefield left to right (LEFT · GUERRILLA · CENTER · RIGHT · RIGHT).
+Using the `Role` enum order as-is would seat the jungler third and the carry fifth, an arrangement
+that matches neither the lineup the player knows nor the map.
 
-**인게임과 아웃게임이 이 표 하나를 함께 읽는다** — 전장 파일럿 스트립
-(`HudBuilder._lane_seat_less`), 밴픽 화면의 양 팀 블록, 시즌 허브 로스터, 훈련
-격자와 훈련 결과, 경기 전 대시보드, 드래프트 슬롯(`TeamDraft.SLOT_ROLES` 는 이제
-이 상수 자체다). 예전에는 화면마다 자기 순서를 들고 있어 **같은 다섯 명이 화면마다
-다른 자리에** 앉았고, 전장 스트립은 `PilotData.lane` 으로 정렬해서 우측 레인의 두
-명(스나이퍼 · 서포터) 앞뒤가 `sort_custom` 의 불안정성에 맡겨져 있었다.
+**In-game and outgame both read this one table** — battlefield pilot strips (스트립)
+(`HudBuilder._lane_seat_less`), both team blocks on the ban/pick screen, the season hub roster, the training
+grid and training results, the pre-match dashboard, and the draft slots (`TeamDraft.SLOT_ROLES` is now
+this constant itself). Previously every screen carried its own order, so **the same five people sat in
+different seats on different screens**, and the battlefield strip sorted by `PilotData.lane`, leaving the
+front/back order of the two right-lane pilots (sniper · supporter) to the instability of `sort_custom`.
 
 ### PilotData.gd
 `class_name PilotData`, extends `RefCounted`.
 
 In-battle pilot state: role, hp/max_hp, atk, team, grid_pos, lane, waypoint_idx,
 `move_range` (cells per minute), `jungle_start_pref` (GameEnums.JungleStartDir
-or -1), `jungle_start_cell` (개시 전에 고른 정글 시작 칸 — 도달할 때까지 정글러의
-첫 목표, (-1,-1) = 없음), plus **두 벌의 명중 스탯**과 **두 개의 성장 계수 배율**, 전부 PlayerData 에서
-온다: `hit` / `evasion` ← `field_hit` / `field_eva` (전장), `engage_hit` /
-`engage_eva` ← 같은 이름 (교전 무대), `atk_growth_mult` / `hp_growth_mult` ←
+or -1), `jungle_start_cell` (the jungle start cell chosen before the opening (개시) — the jungler's
+first target until reached, (-1,-1) = none), plus **two sets of hit (명중) stats** and **two growth-coefficient multipliers**, all from
+PlayerData: `hit` / `evasion` ← `field_hit` / `field_eva` (battlefield), `engage_hit` /
+`engage_eva` ← same names (engage (교전) stage (무대)), `atk_growth_mult` / `hp_growth_mult` ←
 `PlayerData.growth_mult(atk_growth / hp_growth)`.
 
-`PilotData.hit_chance(hit, eva, range_mult = 1.0)` 는 **두 무대가 공유하는 명중
-공식**이다 — 비율 `hit/(hit+eva)` 를 `HIT_MIN`(0.80) ~ `HIT_MAX`(1.00) 에 선형으로
-얹으므로 대등하면 90%. 스탯에 상한이 없으므로 비율을 그대로 확률로 쓰면 격차가
-벌어졌을 때 한쪽이 아무것도 못 맞히는 경기가 나온다. `range_mult` 는 거리 계수
-자리이고 지금은 언제나 1.0 이다(전장이 같은 칸 교전뿐이라 거리가 없다).
+`PilotData.hit_chance(hit, eva, range_mult = 1.0)` is **the hit formula shared by both
+stages** — it maps the ratio `hit/(hit+eva)` linearly onto `HIT_MIN` ~ `HIT_MAX` (const.csv
+`PILOT_HIT_MIN` / `PILOT_HIT_MAX`), so equal stats land at the midpoint of that band. Stats have no cap, so using the ratio directly as a probability would
+produce matches where one side can't hit anything once the gap widens. `range_mult` is a slot for a
+distance coefficient and is currently always 1.0 (the battlefield only has same-cell fights, so there is no distance).
 
-`presence` is copied from the assigned mech and is **read only by the 교전 무대**
+`presence` is copied from the assigned mech (메크) and is **read only by the engage stage**
 (`TurnEngageSim`) as the target aggro weight. The battlefield ignores it.
-Fallback when no mech is assigned (standalone battle): 4 melee / 2 ranged.
+Fallback when no mech is assigned (standalone battle): a fixed melee / ranged default set in code (melee higher).
 
-> **`speed` 는 삭제됐다.** 교전이 ATB 실시간에서 **라운드 기반 턴제**로 바뀌면서
-> 라운드마다 전원이 정확히 한 번씩 행동하므로, "행동 빈도"를 가르는 스탯이
-> 존재하지 않는다. `mechs.csv` 컬럼 · `MechData.speed` · `PilotData.speed` ·
-> `game_config.TURRET_SPEED` 가 모두 제거됐다 — 되살리지 말 것.
+> **`speed` has been deleted.** Since engage changed from ATB real-time to **round-based turns**,
+> everyone acts exactly once per round (라운드), so no stat deciding "action frequency"
+> exists. The `mechs.csv` column · `MechData.speed` · `PilotData.speed` ·
+> `game_config.TURRET_SPEED` were all removed — do not bring them back.
 
 `respawn_timer: int` is the off-field clock and **death is the only thing that
 puts a pilot off the field**. It counts down from `BattleSim.respawn_turns_now()`
@@ -121,7 +121,7 @@ directly to show "turns left"** — call `BattleSim.turns_until_return(p)`, whic
 also floors the answer at 1 for a downed pilot so a card doesn't flicker
 unlocked on the tick before the return.
 
-`recall_hold: bool` is the 본진 복귀 cost. A recall (`RecallSystem.return_to_hq`)
+`recall_hold: bool` is the return-to-base (본진 복귀) cost. A recall (`RecallSystem.return_to_hq`)
 lands the pilot in its HQ at full HP **without touching `alive`** — it is in
 play the whole time — and sets this flag; `SimulationCore.resolve_movement`
 spends it to skip the pilot for exactly one movement pass, so the lane walk
@@ -129,92 +129,95 @@ restarts from waypoint 0 the next turn. Nothing else reads it. (The former
 model — off the field, healing `RECALL_HEAL_RATIO` per turn until full — and its
 `is_recalling` flag are both gone.)
 
-**성장 필드 8개** — `base_atk` / `base_max_hp` / `growth` / `growth_hp` /
+**8 growth (성장) fields** — `base_atk` / `base_max_hp` / `growth` / `growth_hp` /
 `atk_buff` / `growth_rate_mult` / `growth_rate_expire_turn` / `growth_until_phase`.
 
-**성장은 시간이 아니라 성장치(`score`)가 만든다.** 예전에는
-`SimulationCore.tick_growth_and_expiries` 가 매 턴 `GROWTH_PER_TURN` 을 누적했는데,
-그러면 (1) 아무것도 안 해도 자라 킬·포탑·파밍이 성장에 아무 영향이 없었고,
-(2) `atk` 와 `max_hp` 가 **같은 비율**로 자라 "몇 대 맞아야 죽는가"가 영원히
-그대로였다. `GROWTH_PER_TURN` 은 game_config 에서 삭제됐다.
+**Growth comes from growth points (성장치, `score`), not time.** Previously
+`SimulationCore.tick_growth_and_expiries` accumulated `GROWTH_PER_TURN` every turn, which meant
+(1) pilots grew even doing nothing, so kills · turrets · farming had no effect on growth, and
+(2) `atk` and `max_hp` grew at **the same rate**, so "how many hits until death" never
+changed. `GROWTH_PER_TURN` was deleted from game_config.
 
-지금은 `BattleSim.refresh_growth_stats` 가 성장치에서 둘을 파생시킨다 —
-`growth` = 공격력분(+8.33%p per 1k), `growth_hp` = 최대 체력분(+2.08%p per 1k).
-**공격력이 4배 빠르게 자라는 이 비대칭이 성장 체감의 전부다**(25k 에서 atk ×3.0 /
-hp ×1.5). 스탯은 매 턴 곱해 나가는 대신 두 원본에서 **다시 계산**한다(반올림
-오차 누적 방지). 두 원본은 `_init` 이 채운다 — 메크 스탯 주입
-(`SimulationCore._stats_for`)이 생성자를 거치므로 어떤 스폰 경로에서도 비지
-않는다. 재계산은 점수가 움직이는 그 순간(`add_score`)에 돈다.
+Now `BattleSim.refresh_growth_stats` derives both from growth points —
+`growth` = attack share (`GROWTH_ATK_PER_SCORE` per 1k), `growth_hp` = max-HP share
+(`GROWTH_HP_PER_SCORE` per 1k) — both in const.csv.
+**This asymmetry — attack growing several times faster than HP — is the whole feel of growth**, so
+tune the two keys together. Instead of multiplying each turn, stats are **recomputed** from the two originals (prevents
+rounding-error accumulation). `_init` fills the two originals — mech stat injection
+(`SimulationCore._stats_for`) goes through the constructor, so they are never empty on any spawn
+path. The recompute runs the moment the score moves (`add_score`).
 
-`atk_buff` 는 카드가 거는 **일시** 공격력 가산이다. `atk` 를 직접 밀면 턴
-한가운데의 재계산에 지워지고 턴 끝의 되돌리기가 원본을 깎으므로, 별도 필드로
-들고 있다가 `base × (1 + growth) + atk_buff` 로 마지막에 더한다.
+`atk_buff` is a **temporary** attack bonus applied by cards. Pushing `atk` directly would get wiped by
+a mid-turn recompute and the end-of-turn revert would eat into the original, so it is held in a
+separate field and added last: `base × (1 + growth) + atk_buff`.
 
-`growth_rate_mult` 는 이제 성장이 아니라 **성장치 적립**에 곱해진다(안전한
-파밍 턴 만료 / 완벽한 마무리 작전 단계 만료) — 결과는 같고 배선이 한 겹 준다.
-둘이 같은 필드를 공유하므로 나중에 건 쪽이 덮어쓴다.
+`growth_rate_mult` now multiplies **growth-point accrual** rather than growth (expires at the
+end of the safe-farming turn / at the end of the perfect-finish operation phase) — same result, one less layer of wiring.
+Both share the same field, so whichever is applied later overwrites.
 
-**성장치 `score`** (개시 1.0) — 위의 성장의 **원천**이다. 파일럿의 성장 통화이고
-MOBA 의 골드에 해당한다(개시 0.50k → 50턴 25k → 캐리 40k+). 적립처는 셋이다:
-**전선 체류**(턴당 0.50k) / **정글 캠프**(0.50k, 4턴 리스폰, 정글러) / **처치
-현상금**(라스트힛 1.5k + 앞선 격차 20%, 어시스트가 피해 비례로 최대 50%). 포탑
-철거 +1.0k. **포탑/HQ 피해와 사망 벌점은 삭제됐다.** 상한 없음, 하한 0.10k.
-파일럿 스트립에 `18.05k` 형식으로 찍히고 팀 점수는 팀원 합산이다. 규칙과 상수는
-전부 `BattleSim` 의 `SCORE_*` 절에 있고 변동은 `BattleSim.add_score` 한 곳만
-지난다 — 하한 · 적립 배율 · 스탯 재계산을 한 자리에서만 처리하기 위해서다.
+**Growth points `score`** (opening `SCORE_START`) — the **source** of the growth above. It is the pilot's growth currency,
+equivalent to gold in a MOBA. There are three sources:
+**front line (전선) presence** (`SCORE_FRONTLINE_PER_TURN`) / **jungle camp (캠프)** (`SCORE_JUNGLE_CAMP`,
+respawn `JUNGLE_CAMP_RESPAWN_TURNS`, jungler) / **kill (처치) bounty** (last hit `SCORE_KILL_BASE` +
+`SCORE_KILL_BOUNTY_RATE` of the lead gap; assists get up to `SCORE_ASSIST_MAX_SHARE` proportional to damage).
+Turret (포탑) demolition `SCORE_TURRET_FULL`. **Turret/HQ damage and death penalties were deleted.** No cap,
+floor `SCORE_MIN`. All of these keys live in const.csv.
+Shown on the pilot strip in `18.05k` format; team score is the sum of its members. All rules
+live in the `SCORE_*` section of `BattleSim` (values from const.csv), and every change passes through `BattleSim.add_score` alone —
+so that the floor · accrual multiplier · stat recompute are handled in one place only.
 
-**`damage_credit: Dictionary`** (`공격자 → 이번 생에 받은 누적 피해`) — 피해는
-곧장 점수가 되지 않고 **피해자의 이 장부**에 쌓였다가, 그 대상이 쓰러질 때
-`BattleSim._payout_kill_bounty` 가 라스트힛과 어시스트에게 나눠 주고 비운다.
-전장 자동 교전 · 공격 카드 · 교전 무대가 전부 `BattleSim.record_pilot_damage`
-한 지점을 지나므로 표가 하나다.
+**`damage_credit: Dictionary`** (`attacker → cumulative damage received this life`) — damage does not
+become score immediately; it accumulates in **the victim's ledger**, and when that target falls
+`BattleSim._payout_kill_bounty` splits it between the last hit and assists, then clears it.
+Battlefield auto-combat · attack cards · the engage stage all pass through the single point
+`BattleSim.record_pilot_damage`, so there is one table.
 
-**라인전 스탯 2개** — `lane_stat_mod` (±0.10) / `lane_stat_expire_turn`.
-`SimulationCore.roll_hit` **한 곳에서만** 읽히며, 공격자의 `hit` 과 방어자의
-`evasion` 에 각자 자기 배율이 곱해진다(`lane_adjusted`). `atk` / `max_hp` 는
-건드리지 않는다 — 그쪽은 성장 담당이다. 전장 자동 교전과 공격 카드가 같은
-`roll_hit` 을 쓰므로 둘 다 반영되고, 교전 무대는 자기 확률 구간을 쓰므로
-반영되지 않는다.
+**2 laning stats** — `lane_stat_mod` (signed ratio, e.g. skill keys `SKILL_HOLD_LANE_STAT` / `SKILL_BACKBONE_LANE_STAT`) / `lane_stat_expire_turn`.
+Read **only in `SimulationCore.roll_hit`**: the attacker's `hit` and the defender's
+`evasion` are each multiplied by their own multiplier (`lane_adjusted`). `atk` / `max_hp` are
+not touched — those belong to growth. Battlefield auto-combat and attack cards use the same
+`roll_hit`, so both reflect it; the engage stage uses its own probability band, so it
+does not.
 
-**카드 회피 배율** — `eva_card_mod` / `eva_card_expire_turn`([소극적인 태세] +0.20).
-라인전 스탯과 달리 **회피에만** 곱해진다(`roll_hit` 의 방어자 쪽). 만료는
+**Card evasion multiplier** — `eva_card_mod` / `eva_card_expire_turn` ([소극적인 태세] (Passive Stance) — the amount is that card's `effect` clause in cards.csv).
+Unlike the laning stat it multiplies **evasion only** (the defender side of `roll_hit`). Expiry is in
 `SimulationCore.tick_growth_and_expiries`.
 
-**매복** — `ambush_hold: bool`. 그 팀의 다음 작전 단계 진입 정산까지 이동 패스
-(`resolve_movement`)와 위치 이탈 귀환(`RecallSystem`)이 그 파일럿을 건너뛴다. 사망 ·
-본진 복귀 · 복귀 카드 · 후퇴 카드도 푼다.
+**Ambush** — `ambush_hold: bool`. Until that team's next operation-phase entry settlement, the movement pass
+(`resolve_movement`) and out-of-position recall (`RecallSystem`) skip that pilot. Death ·
+return-to-base · return cards · retreat cards also release it.
 
-**영구 배율 가산** — `bonus_atk_mult`(영혼 수확 · [몰입] · [워밍업])와
-`bonus_max_hp_mult`([워밍업]). `refresh_growth_stats` 가 성장 공격력 · 성장 체력에
-곱한다. 지속 효과 장부 종류에 `FX_ATK_PCT` / `FX_HP_PCT` 가 더해졌다(상세 패널이 %로 찍는다).
+**Permanent multiplier bonuses** — `bonus_atk_mult` (Soul Harvest · [몰입] (Immersion) · [워밍업] (Warm-up)) and
+`bonus_max_hp_mult` ([워밍업]). `refresh_growth_stats` multiplies them into growth attack · growth HP.
+`FX_ATK_PCT` / `FX_HP_PCT` were added to the persistent-effect ledger kinds (the detail panel prints them as %).
 
-**`prev_grid_pos: Vector2i` 는 삭제됐다.** 유일한 소비자가
-`BattleRenderer._pilot_travel_dir`(초상화를 "온 방향의 반대쪽"에 앉히던 규칙)
-였는데, 초상화 자리가 **팀 고정**(아래 진영 = 타일 아래 / 위 진영 = 타일 위)으로
-바뀌면서 아무도 읽지 않게 됐다. 갱신 배선(`anim_pilot_move` /
-`anim_pilot_move_path` / 복귀 / 부활 4곳)도 함께 걷어 냈다 — 되살릴 일이 생기면
-커밋 64bec06 을 볼 것. 아래 `anim_move_path` 와 헷갈리지 말 것: 저쪽은 연출용
-경로이고 렌더러가 읽는 즉시 비운다.
+**`prev_grid_pos: Vector2i` has been deleted.** Its only consumer was
+`BattleRenderer._pilot_travel_dir` (the rule that seated the portrait (초상화) "opposite the direction it came from"),
+and once the portrait position became **team-fixed** (bottom side = below the tile / top side = above the tile)
+nobody read it any more. The update wiring (`anim_pilot_move` /
+`anim_pilot_move_path` / return / respawn, 4 places) was removed too — if it is ever needed again, see
+commit 64bec06. Do not confuse it with `anim_move_path` below: that one is a presentation path
+and the renderer clears it as soon as it reads it.
 
-`anim_move_path: Array[Vector2i]` 는 **이번에 실제로 밟은 칸의 경로**
-(`[출발 칸, …, 도착 칸]`)다. `SimulationCore.resolve_movement` 이 락스텝
-라운드마다 칸을 붙이고(`move_range` 2), 전진 카드는 같은 프레임의 걸음을
-`BattleSim.anim_pilot_move` 가 이어 붙인다. `BattleRenderer._sync_glide` 가
-읽는 즉시 `clear()` 하므로, 다음 턴 이동은 빈 배열에서 새 경로로 시작한다.
-**연출 시간은 여기 없다** — 타이머는 렌더러(`_glide`)가 쥐고 있고, 예전의
-`anim_prev_grid_pos` / `anim_move_t` / `anim_move_dur` 는 삭제됐다.
+`anim_move_path: Array[Vector2i]` is **the path of cells actually stepped on this time**
+(`[start cell, …, end cell]`). `SimulationCore.resolve_movement` appends a cell each lockstep
+round (`move_range` 2), and for advance cards `BattleSim.anim_pilot_move` appends that frame's steps.
+`BattleRenderer._sync_glide` calls `clear()` as soon as it reads it, so the next turn's movement starts a
+new path from an empty array.
+**Presentation timing does not live here** — the timer is held by the renderer (`_glide`), and the former
+`anim_prev_grid_pos` / `anim_move_t` / `anim_move_dur` were deleted.
 
 `jungle_roam_target: Vector2i` ((-1,-1) = none) is the jungler's sticky roam
 destination, held across turns by `SimulationCore._jungle_goal_for` so the
 target cannot flip mid-route and bounce the jungler between two cells. Only
 that function writes it; nothing else on `PilotData` reads it.
 
-`shield: int` is the 보호막 pool granted by the 보호 card. Both card attacks
+`shield: int` is the shield (보호막) pool granted by the 보호 (Protect) card. Both card attacks
 and battlefield damage (the `damage_map` apply step in `SimulationCore.simulate_turn`)
-subtract from `shield` first, then `hp`. Cleared on every 본진 복귀 path:
-`RecallSystem.return_to_hq` (저HP / 위치 이탈 복귀),
-`CardPhaseManager._effect_recall_ally` (복귀 card),
-`SimulationCore.process_respawns` (부활) and
+subtract from `shield` first, then `hp`. Cleared on every return-to-base path:
+`RecallSystem.return_to_hq` (low-HP / out-of-position return),
+`CardPhaseManager._effect_recall_ally` (복귀 (Return to Base) card),
+`SimulationCore.process_respawns` (respawn) and
 `BattleSim.mark_pilot_dead` (death).
 `BattleRenderer._draw_pilot_circle` paints a cyan ring just outside the HP ring
 sized by `shield / max_hp` so the buff is visible on the field.
@@ -223,14 +226,14 @@ UI animation fields (`anim_move_path`, `anim_shake_t/dur/amp`,
 `anim_recall_phase/t/dur/orig`, `anim_death_phase/t/dur/cell`) are mutated by
 `BattleSim.anim_pilot_*` helpers and read only by `BattleRenderer` — the
 simulation never reads them. The recall sequence always plays both halves
-(fade-out at the old cell → fade-in at HQ), since a 복귀 never removes the pilot
+(fade-out at the old cell → fade-in at HQ), since a return-to-base never removes the pilot
 from the field; the `anim_death_*` group is what keeps a killed pilot on screen
 (dimmed, then fading upward) after `alive` has already flipped to false.
 
 ### TurretData.gd
 In-battle turret state — see `features/battle_sim/README.md`.
 
-`anim_hit_t` / `anim_hit_dur` are the 피격 연출 timer, set by
+`anim_hit_t` / `anim_hit_dur` are the on-hit presentation timer, set by
 `BattleSim.anim_turret_hit` and consumed by `BattleSim._advance_turret_animations`.
 Like the `PilotData.anim_*` group the simulation never reads them, but the
 consumer differs: the shake/flash is written onto the turret's `Building` node
@@ -242,15 +245,15 @@ via `BattleSim.turret_hit_offset(td)`.
 
 Out-game player persona consumed by MatchFlow / BattleSim:
 - `id, name, role (GameEnums.Role), team_id (0=player, 1=enemy)`
-- `pilot_cards: Array` — **고정 파일럿 카드 3장**(`cards.id`, `players.pilot_cards`). 세이브에 함께 저장되고, 비어 있으면(옛 세이브) `GameManager.pilot_card_ids_for` 가 같은 id 의 DB 행 → 씨앗 뽑기 순으로 채운다.
-- **선수 스탯 6종** — `field_hit` 전장 명중 / `field_eva` 전장 회피 /
-  `engage_hit` 교전 명중 / `engage_eva` 교전 회피 / `atk_growth` 공격력 성장 계수 /
-  `hp_growth` 체력 성장 계수. **하한 1, 상한 없다**(주간 훈련이 100 을 넘겨 올린다).
-  표는 `STAT_KEYS` / `STAT_LABELS` / `STAT_SHORT` / `STAT_NOTES` 넷이고 모든 화면이
-  그것을 읽는다. 전력 합산은 `stat_total()` / `stat_avg()`, 성장 계수 → 배율 환산은
-  `static growth_mult(v)` = `v / GROWTH_STAT_BASE`(80). 예전 5종(`laning` /
-  `mechanics` / `gamesense` / `teamfight` / `mental`)은 삭제됐다
-- `assigned_mech: MechData` — 밴픽 화면의 배정 단계(`ban_pick/BanPickController._finish`)가 새긴다. 예전에는 별도 화면이던 `AssignController` 의 몫이었다
+- `pilot_cards: Array` — **3 fixed pilot cards** (`cards.id`, `players.pilot_cards`). Saved with the save file; if empty (old save), `GameManager.pilot_card_ids_for` fills it from the DB row with the same id → then a seeded draw, in that order.
+- **6 player (선수) stats** — `field_hit` battlefield hit / `field_eva` battlefield evasion /
+  `engage_hit` engage hit / `engage_eva` engage evasion / `atk_growth` attack growth coefficient /
+  `hp_growth` HP growth coefficient. **Floor `STAT_MIN` (const.csv `PLAYER_STAT_MIN`), no cap** (weekly training pushes them past 100).
+  The tables are the four `STAT_KEYS` / `STAT_LABELS` / `STAT_SHORT` / `STAT_NOTES`, and every screen
+  reads them. Power totals are `stat_total()` / `stat_avg()`; growth coefficient → multiplier conversion is
+  `static growth_mult(v)` = `v / GROWTH_STAT_BASE` (const.csv `PLAYER_GROWTH_STAT_BASE`). The old 5 stats (`laning` /
+  `mechanics` / `gamesense` / `teamfight` / `mental`) were deleted
+- `assigned_mech: MechData` — written by the assignment step of the ban/pick screen (`ban_pick/BanPickController._finish`). Previously this was the job of `AssignController`, which was a separate screen
 
 Loaded from the `players` table (CSV-seeded via `addons/csv_to_db`).
 
@@ -260,13 +263,13 @@ Loaded from the `players` table (CSV-seeded via `addons/csv_to_db`).
 Mech with **no role/position** — any mech is assignable to any player slot:
 - `id, name`
 - Combat stats `hp, atk` — drive PilotData stats when piloted
-- `presence` (4 = melee / 2 = ranged) — **교전 무대 전용**. 타겟 어그로 가중치
-  (높을수록 자주 표적이 된다)
+- `presence` (melee higher than ranged; values in mechs.csv) — **engage stage only**. Target aggro weight
+  (higher = targeted more often)
 
-> **`speed` 는 삭제됐다** — 교전이 라운드 기반 턴제가 되면서 행동 빈도 개념이
-> 사라졌다. `mechs.csv` 의 컬럼과 `csv_to_db.gd` 의 스키마에서도 빠졌으므로,
-> 되살리려면 CSV 컬럼 · 스키마 · `GameManager` 로더 · `_stats_for` 를 함께
-> 되돌려야 한다.
+> **`speed` has been deleted** — once engage became round-based turns, the concept of action frequency
+> disappeared. It was also removed from the `mechs.csv` columns and the `csv_to_db.gd` schema, so
+> reviving it means reverting the CSV column · schema · `GameManager` loader · `_stats_for`
+> together.
 
 Loaded from the `mechs` table.
 
@@ -277,230 +280,230 @@ under `BattleField/BuildingLayer` and `BattleField/WaypointLayer`.
 ### PilotImages.gd
 `class_name PilotImages`, extends `RefCounted`. Static lookup for the pilot
 portraits under `resources/images/pilot/{faces,circle,eye,tall,full,ribbon,strip}/`, plus the
-**모브 실루엣** set that mirrors them under `pilot/mob/`.
+**mob silhouette (모브 실루엣)** set that mirrors them under `pilot/mob/`.
 
-| 함수 | 파일 | 크기 | 소비자 |
+| Function | File | Size | Consumer |
 |---|---|---|---|
-| `face_for` | `faces/N_rect.png` | 256² | 드래프트 격자 썸네일 (`season/draft/PilotThumb.gd`) |
-| `circle_for` | `circle/N_circle.png` | 256² 원형 | 전장 마커 · 교전 무대 초상화 |
-| `eye_for` | `eye/N_eye.png` | **480×200** | 킬로그 · 훈련 격자 · 밴픽 (전장 파일럿 스트립은 이제 `strip_for`) |
-| `strip_for` | `strip/N_strip.png` | **256×320** (`STRIP_ASPECT` 0.8, 투명 배경) | 전장 파일럿 스트립 원형 초상 (`ui/PilotStrip.gd`) — `make_strip_crops.py` 가 굽고 원 마스킹은 `shaders/pilot_bust_mask.gdshader` |
-| `tall_for` | `tall/N_tall.png` | **210×700** | 교전 아레나 하단 스트립 (`engage/EngageArena.gd`) |
-| `bust_for` | `tall/` 의 **윗부분** `AtlasTexture` | 174×351 (`BUST_ASPECT` 0.496) | 드래프트 선택 5인 칸 · 밴픽 **배정 단계**의 아군 파일럿 칸 |
-| `full_for` | `full/N_full.png` | 가변 × 1024 | 파일럿 상세 패널 (`ui/PilotDetailPanel.gd`) |
-| `ribbon_for` | `ribbon/N_ribbon.png` | **120×136** (카드 단위 60×68 의 2배) | 손패 카드 우측 상단 삼각형 리본 (`card_phase/Card.gd`) |
+| `face_for` | `faces/N_rect.png` | 256² | Draft grid thumbnail (`meta/run_setup/PilotThumb.gd`) |
+| `circle_for` | `circle/N_circle.png` | 256² circular | Battlefield marker · engage stage portrait |
+| `eye_for` | `eye/N_eye.png` | **480×200** | Kill log · training grid · ban/pick (the battlefield pilot strip now uses `strip_for`) |
+| `strip_for` | `strip/N_strip.png` | **256×320** (`STRIP_ASPECT` 0.8, transparent background) | Battlefield pilot strip circular portrait (`ui/PilotStrip.gd`) — baked by `make_strip_crops.py`, circle masking by `shaders/pilot_bust_mask.gdshader` |
+| `tall_for` | `tall/N_tall.png` | **210×700** | Engage arena bottom strip (`engage/EngageArena.gd`) |
+| `bust_for` | **upper part** of `tall/` as `AtlasTexture` | 174×351 (`BUST_ASPECT` 0.496) | Draft pick 5-person slots · ally pilot slots in the ban/pick **assignment step** |
+| `full_for` | `full/N_full.png` | variable × 1024 | Pilot detail panel (`ui/PilotDetailPanel.gd`) |
+| `ribbon_for` | `ribbon/N_ribbon.png` | **120×136** (2× the card unit 60×68) | Top-right triangular ribbon (리본) on hand (손패) cards (`card_phase/Card.gd`) |
 
-**`ribbon/` 도 손으로 만들지 말 것** — `make_ribbon_crops.py` 가 eye 와 같은
-템플릿 매칭으로 `full/` 에서 굽는다. 직각삼각형 마스크 · 카드 둥근 모서리 ·
-빗변 아래 그림자 · 투명부 받침색까지 PNG 에 들어 있어(런타임 마스크 쉐이더를
-피하려는 것) 모브는 `mob/full/` 실루엣으로 같은 크롭을 한 벌 더 굽는다
-(`mob/ribbon/`). 기하는 `Card.RIBBON_LEG` / `RIBBON_SHADOW_PAD` 와 묶여 있다.
+**Do not make `ribbon/` by hand either** — `make_ribbon_crops.py` bakes it from `full/` with the same
+template matching as eye. The right-triangle mask · card rounded corner ·
+shadow under the hypotenuse · backing colour for transparent areas are all in the PNG (to avoid a
+runtime mask shader), so for mobs the same crop is baked once more from the `mob/full/` silhouettes
+(`mob/ribbon/`). The geometry is tied to `Card.RIBBON_LEG` / `RIBBON_SHADOW_PAD`.
 
-**`bust_for` 는 파일이 아니라 크롭이다** — `tall` 컷(210×700, 머리~허벅지)의
-윗부분을 `AtlasTexture` 로 잘라 돌려주므로 원본을 한 벌 더 굽지 않는다.
-`full` 에서 직접 자르지 않는 것이 요점이다: full 은 파일럿마다 인물 배율이 달라
-다섯 칸의 얼굴 크기가 들쭉날쭉해지는데, `tall` 은 이미 얼굴 사각형을 템플릿
-매칭으로 찾아 배율을 통일해 둔 컷이다. **두 화면이 이 한 함수를 함께 읽는다**
-(드래프트 선택 칸 / 밴픽 배정 단계) — 각자 자기 `Rect2` 를 들고 있으면 한쪽만
-고쳐도 두 화면의 얼굴 크기가 갈린다. 칸 비율은 반드시 `BUST_ASPECT` 여야 한다.
+**`bust_for` is a crop, not a file** — it cuts the upper part of the `tall` cut (210×700, head~thigh)
+as an `AtlasTexture`, so no extra copy of the source is baked.
+The point is not cropping directly from `full`: in full, figure scale differs per pilot, so
+face sizes across the five slots would be uneven, whereas `tall` is a cut whose scale was already unified by
+finding the face rectangle via template matching. **Two screens read this one function**
+(draft pick slots / ban/pick assignment step) — if each held its own `Rect2`, fixing only one
+would make face sizes diverge between the screens. The slot aspect must be `BUST_ASPECT`.
 
-**`eye/` 는 손으로 자르지 말 것** — `resources/images/pilot/make_eye_crops.py`
-가 `full/` 아트에서 자동으로 만든다. 얼굴 위치를 추측하지 않고 `faces/N_rect.png`
-를 `full/` 안에서 **다중 스케일 템플릿 매칭**으로 되찾아(실측 상관계수 0.84~0.99)
-그 사각형 높이의 0.38 지점을 눈 중심으로 잡고 2.4:1 밴드를 잘라 낸다. 손으로
-자르면 파일럿마다 얼굴 배율이 어긋나 스트립이 들쭉날쭉해진다. **예외 1건**:
-pid 16 은 `faces/16_rect.png` 가 `full/16_full.png` 와 **다른 일러스트**(다른
-코스튬 · 포즈)라 매칭이 0.554 로 떨어지고 무기 부품에 오매칭된다 — 스크립트의
-`OVERRIDE` 에 눈 좌표를 직접 박아 두었다.
+**Do not crop `eye/` by hand** — `resources/images/pilot/make_eye_crops.py`
+generates it automatically from the `full/` art. Rather than guessing the face position, it re-finds `faces/N_rect.png`
+inside `full/` with **multi-scale template matching** (measured (실측) correlation 0.84~0.99),
+takes the point at 0.38 of that rectangle's height as the eye centre, and cuts a 2.4:1 band. Cropping by
+hand would misalign face scale per pilot and make the strip uneven. **One exception**:
+for pid 16, `faces/16_rect.png` is a **different illustration** from `full/16_full.png` (different
+costume · pose), so matching drops to 0.554 and mismatches onto a weapon part — the eye coordinates are
+hard-coded in the script's `OVERRIDE`.
 
-**`tall/` 도 손으로 자르지 말 것** — `make_tall_crops.py` 가 같은 얼굴 템플릿
-매칭으로 `full/` 에서 만든다(같은 `OVERRIDE` 예외 1건). 구도는 **머리~허벅지**:
-얼굴 사각형 위로 `TOP_PAD`(얼굴 높이 ×0.30)만큼 여백을 두고 아래로
-`BUST_H`(×4.40) 내려간 세로 밴드를 잘라, 폭은 **얼굴 높이 × `BAND_W_FACES`
-1.32** 로 정한다(`ASPECT` 는 그 둘에서 유도되는 0.30).
+**Do not crop `tall/` by hand either** — `make_tall_crops.py` makes it from `full/` with the same face template
+matching (same single `OVERRIDE` exception). The composition is **head~thigh**:
+it leaves a margin of `TOP_PAD` (face height ×0.30) above the face rectangle and cuts a vertical band
+going down `BUST_H` (×4.40), with width set to **face height × `BAND_W_FACES`
+1.32** (`ASPECT` is the 0.30 derived from those two).
 
-**밴드 폭(얼굴 높이 ×1.32)은 고정 상수로 두고 길이만 만진다.** 스트립 칸 폭이
-90px 로 고정이라 이 값이 곧 화면에서의 얼굴 크기다 — `BUST_H` 를 늘릴 때 폭까지
-같이 늘리면 얼굴이 작아져 스트립에서 안 읽힌다. 지금 값은 세로 1920 화면에서
-스트립 아래로 556px 가 그냥 비어 있던 것을 메우려고 **2.40(머리~가슴, 220×400)
-에서 4.40 으로 늘린 것**이고, 화면 칸도 90×164 → **90×300** 으로 함께 커졌다.
-둘은 `STRIP_PORTRAIT_H = 90 × BUST_H / 1.32` 로 묶여 있으니 반드시 같이 고칠 것.
-폭을 어깨 실루엣에 맞추면 파일럿마다 인물 크기가 달라진다 — 출력 비율을 고정하는
-쪽이 열 명이 한 줄에 섰을 때 얼굴 크기를 고르게 만든다.
+**Keep the band width (face height ×1.32) a fixed constant and only adjust the length.** The strip slot width is
+fixed at 90px, so this value is the on-screen face size — if you widen the width along with
+`BUST_H`, faces get smaller and become unreadable in the strip. The current value was
+**increased from 2.40 (head~chest, 220×400) to 4.40** to fill the 556px that sat empty below the strip on a
+1920-tall screen, and the on-screen slot grew from 90×164 → **90×300** at the same time.
+The two are tied by `STRIP_PORTRAIT_H = 90 × BUST_H / 1.32`, so always change them together.
+Fitting the width to the shoulder silhouette makes the figure size differ per pilot — fixing the output aspect
+is what keeps face sizes even when ten people stand in one row.
 
-`prime_into(parent)` 는 **circle / face / tall** 을 프라임한다. eye / full 은
-`TextureRect` 노드에만 쓰이고 노드에 할당하는 경로는 GPU 업로드가 보장되므로
-대상이 아니지만, **tall 은 `draw_texture_rect` 로 그려지므로 프라임이 필수다** —
-빠뜨리면 교전 스트립의 초상화 열 칸이 통째로 흰 사각형으로 나온다(실측 확인).
+`prime_into(parent)` primes **circle / face / tall**. eye / full are
+used only on `TextureRect` nodes, and assigning to a node guarantees GPU upload, so they are not
+targets, but **tall is drawn with `draw_texture_rect`, so priming is mandatory** —
+skip it and all ten portrait slots of the engage strip come out as white rectangles (measured, confirmed).
 
-**id ↔ file ↔ 이름은 한 줄로 묶여 있다.** `players.csv` 의 pilot id `N` 은
-`N+1_rect.png` / `N+1_circle.png` 를 쓰고(파일명은 1-based, id 는 0-based),
-그 그림이 **어떤 젠레스 존 제로 에이전트인지**가 곧 `players.csv` 의 `name`
-이다 — 40장 전부 공식 에이전트 아이콘 아트와 1:1로 대조해 붙인 이름이다.
-그러므로 **`players.csv` 의 행 순서나 id 를 바꾸면 이름과 초상화가 어긋난다.**
-스탯을 옮기고 싶으면 id 는 고정한 채 스탯 열만 옮길 것.
+**id ↔ file ↔ name are bound in one line.** Pilot id `N` in `players.csv` uses
+`N+1_rect.png` / `N+1_circle.png` (filenames are 1-based, ids are 0-based),
+and **which Zenless Zone Zero agent** that picture is, is exactly the `name` in `players.csv`
+— all 40 names were assigned by matching 1:1 against the official agent icon art.
+Therefore **changing the row order or ids in `players.csv` misaligns names and portraits.**
+If you want to move stats, keep the id fixed and move only the stat columns.
 
-네 자리는 같은 캐릭터의 **대체 코스튬 아트**라 원래 이름을 쓸 수 없어 별도 태그를
-붙였다 — id 6 `Soldier 0`(Soldier 0 - Anby, id 13 `Anby` 와 동일 인물의 별개
-에이전트), id 26 `Chandelier`(Astra Yao / Chandelier, id 25 `Astra`),
-id 28 `Teatime`(Sunna / Afternoon Tea Break, id 27 `Sunna`),
-id 36 `Ink`(Yixuan / Trails of Ink, id 35 `Yixuan`).
+Four slots are **alternate-costume art** of the same character, so the original name could not be used and a separate tag
+was attached — id 6 `Soldier 0` (Soldier 0 - Anby, a separate agent of the same person as id 13 `Anby`),
+id 26 `Chandelier` (Astra Yao / Chandelier, id 25 `Astra`),
+id 28 `Teatime` (Sunna / Afternoon Tea Break, id 27 `Sunna`),
+id 36 `Ink` (Yixuan / Trails of Ink, id 35 `Yixuan`).
 
-INTL 파일럿(id ≥ 100)은 초상화가 없다 — `has_image()` 가 false 를 돌려주고
-호출자가 플레이스홀더로 대체한다. `intl_players.csv` 의 이름은 그래서 초상화
-제약 없이 **남은 에이전트 중에서** 골라 붙였다.
+INTL pilots (id ≥ 100) have no portrait — `has_image()` returns false and the
+caller substitutes a placeholder. So the names in `intl_players.csv` were picked **from the remaining
+agents** without portrait constraints.
 
-#### 모브 파일럿 실루엣 (`pilot/mob/`)
-`pilot_skills.csv` 가 25개뿐이라 40명 중 **15명은 고유 스킬이 없다**
-(`players.csv` 의 `is_mob = 1`). 그 15명은 이름표가 아니라 **그림**이 "이 선수는
-이름 없는 선수다"를 말한다 — 다섯 컷이 통째로 실루엣 한 벌 더 있고,
-`GameManager.load_match_data()` 가 `PilotImages.set_mob_ids()` 로 id 목록을 한
-번 심으면 그 뒤의 모든 조회(전장 마커 · 스트립 · 교전 무대 · 상세 패널)가 자동으로
-`pilot/mob/{faces,circle,eye,tall,full}/` 쪽으로 갈린다. 파일명은 원본과 같다.
-목록이 비어 있으면(BattleSim 단독 실행) 전원이 평소 컷으로 나온다 — 폴백이
-원본이라 심는 것을 잊어도 흰 사각형이 뜨지는 않는다.
+#### Mob pilot silhouettes (`pilot/mob/`)
+There are only 25 entries in `pilot_skills.csv`, so **15 of the 40 have no unique skill**
+(`is_mob = 1` in `players.csv`). For those 15, it is the **picture**, not a name tag, that says "this player
+is a nameless player" — the five cuts each have a full extra silhouette set, and once
+`GameManager.load_match_data()` plants the id list via `PilotImages.set_mob_ids()`, every subsequent lookup
+(battlefield marker · strip · engage stage · detail panel) automatically switches to
+`pilot/mob/{faces,circle,eye,tall,full}/`. Filenames match the originals.
+If the list is empty (BattleSim run standalone) everyone shows the normal cuts — the fallback is the
+original, so forgetting to plant it does not produce white rectangles.
 
-**만드는 것은 `make_mob_silhouettes.py`** 이고 다섯 컷 모두 **알파는 그대로 둔 채
-RGB 를 단색(`38,42,60`)으로 덮는다** — 얼굴이 조금이라도 읽히면 실루엣이 아니다.
+**`make_mob_silhouettes.py` makes them**, and for all five cuts it **leaves alpha untouched and
+covers RGB with a single colour (`38,42,60`)** — if the face is even slightly readable, it is not a silhouette.
 
-문제는 **`faces` / `circle` / `eye` 셋이 얼굴이 프레임을 꽉 채운 크롭**이라는
-것이다. 알파가 사실상 통짜 사각형이라(실측: eye 밴드의 **97.7%** 가 불투명) 그
-자리에서 단색으로 칠하면 검은 원 하나 · 검은 막대 하나가 나온다 — 얼굴은
-가려지지만 사람인지도 알 수 없다. 그래서 셋은 **`full` 아트에서 머리~어깨를 다시
-잘라** 만든다:
+The problem is that **`faces` / `circle` / `eye` are crops where the face fills the frame**.
+Their alpha is effectively a solid rectangle (measured: **97.7%** of the eye band is opaque), so painting
+in place with a single colour yields one black circle · one black bar — the face is hidden, but you can't
+even tell it's a person. So those three are made by **re-cropping head~shoulders from the `full`
+art**:
 
-| 컷 | 방식 | 창 (얼굴 높이 배수) |
+| Cut | Method | Window (multiples of face height) |
 |---|---|---|
-| `full` · `tall` | 제자리에서 단색으로 칠하기만 | — (알파가 이미 인물 윤곽) |
-| `faces` · `circle` | `full` 실루엣에서 버스트 재크롭 | 높이 3.3 / 얼굴 위 여백 0.62 |
-| `eye` | 같은 재크롭 (2.4:1 밴드) | 높이 3.0 / 얼굴 위 여백 0.55 |
+| `full` · `tall` | only paint in place with a single colour | — (alpha is already the figure outline) |
+| `faces` · `circle` | bust re-crop from the `full` silhouette | height 3.3 / margin above face 0.62 |
+| `eye` | same re-crop (2.4:1 band) | height 3.0 / margin above face 0.55 |
 
-재크롭 쪽은 `full` 의 알파가 곧 인물 윤곽이라 **배경이 투명하게 남아** 머리
-모양과 어깨선이 실루엣으로 읽힌다. 얼굴 사각형은 `make_eye_crops.py` /
-`make_tall_crops.py` 와 **같은 템플릿 매칭**으로 찾으므로(실측 상관계수
-0.85~0.99, 15명 전원) 세 스크립트의 인물 배율이 서로 어긋나지 않는다. 창이 아트
-밖으로 나가도 안쪽으로 밀어 넣지 않고 **투명하게 채운다** — 밀어 넣으면
-파일럿마다 인물이 프레임 안에서 다른 자리에 앉는다.
+For the re-crops, `full`'s alpha is the figure outline, so **the background stays transparent** and the
+head shape and shoulder line read as a silhouette. The face rectangle is found with **the same template
+matching** as `make_eye_crops.py` / `make_tall_crops.py` (measured correlation
+0.85~0.99, all 15), so figure scale does not diverge between the three scripts. When the window goes outside the
+art, it is not pushed inward but **filled with transparency** — pushing it in would seat the figure
+at a different spot in the frame per pilot.
 
-**`circle` 만 불투명한 원 바탕(`108,114,132`)을 구워 넣는다.** 전장 마커는 초상
-뒤에 흰 원을 깔고(`BattleRenderer._draw_pilot_circle`) 교전 아레나는 아무것도 안
-까는데(`EngageArena._draw_unit`), 투명한 채로 두면 같은 그림이 한쪽에선 흰 배지,
-다른 쪽에선 배경이 비치는 구멍이 된다.
+**Only `circle` bakes in an opaque circular background (`108,114,132`).** The battlefield marker lays a white
+circle behind the portrait (`BattleRenderer._draw_pilot_circle`) while the engage arena lays nothing
+(`EngageArena._draw_unit`); left transparent, the same picture would be a white badge on one side and a
+hole showing the background on the other.
 
-**되살리지 말 것 — 밝기만 누르던 첫 두 판.** (1) "투명 픽셀 비율이 10% 이상이면
-단색"이라는 자동 규칙은 `circle` 이 마스크 모서리 때문에 20.8% 가 투명이라 그냥
-검은 원 하나를 만들었다. (2) 그 다음 판은 `circle`/`faces`/`eye` 의 밝기를 어두운
-띠(0.10~0.46)로 눌렀는데, **색만 빠진 초상화라 이목구비가 그대로 읽혔다** — 어두운
-초상화는 실루엣이 아니다. 프레임을 지키려다 실루엣을 잃은 셈이고, 지금은 반대로
-프레임을 놓고 실루엣을 지킨다(모브 칸만 인물이 네임드보다 작게 잡힌다).
+**Do not revive — the first two versions that only darkened brightness.** (1) The automatic rule "single colour
+if the transparent-pixel ratio is ≥ 10%" just produced a black circle, because `circle` is 20.8% transparent
+due to the mask corners. (2) The next version pressed the brightness of `circle`/`faces`/`eye` into a dark
+band (0.10~0.46), but **as a portrait with only colour removed, facial features still read clearly** — a dark
+portrait is not a silhouette. That traded the silhouette away to keep the frame; now it does the reverse,
+giving up the frame to keep the silhouette (only mob slots frame the figure smaller than named ones).
 
-모브는 이름도 스탯도 그대로 쓰되 **스탯이 네임드보다 10% 낮다** — 그 하향은
-런타임 계수가 아니라 `players.csv` 값 자체에 이미 반영돼 있어서, 나중에 난이도
-배율을 넣을 자리가 비어 있다. 시즌 드래프트 격자에서도 빠진다
-(`features/season/draft/README.md`).
+Mobs keep their names and stats, but **their stats are lower than named pilots** — that reduction is
+not a runtime coefficient but already baked into the `players.csv` values themselves, leaving room to add a difficulty
+multiplier later. They are also excluded from the run-setup lineup grid
+(`features/meta/run_setup/README.md`).
 
-`prime_into(parent)` 는 반드시 `BattleSim._ready()` 같은 진입 시점에 한 번
-불러야 한다 — 안 부르면 `draw_texture_rect` 가 흰 사각형을 그린다.
+`prime_into(parent)` must be called once at an entry point such as `BattleSim._ready()`
+— otherwise `draw_texture_rect` draws white rectangles.
 
 ### SilhouetteFx.gd + `shaders/silhouette.gdshader`
 
-**캐릭터 실루엣을 런타임에 씌우는 한 벌.** 쉐이더가 그림을 그리고
-`SilhouetteFx`(static 전용, `class_name`)가 그것을 노드에 물린다 — 화면마다
-`ShaderMaterial.new()` 를 손으로 세우면 같은 실루엣이 화면마다 다른 회색이 된다
-(`OutgameTheme` 이 색을 소유하는 것과 같은 이유).
+**One kit for overlaying a character silhouette at runtime.** The shader draws it and
+`SilhouetteFx` (static-only, `class_name`) attaches it to nodes — if each screen hand-builds
+`ShaderMaterial.new()`, the same silhouette becomes a different grey on every screen
+(same reason `OutgameTheme` owns colours).
 
-**구운 모브 실루엣 PNG(`images/pilot/mob/`)와 다른 물건이다.** 그쪽은 "이 선수는
-이름 없는 선수다"를 **상시로** 말하는 에셋이고 이쪽은 **한 번 지나가는 연출**이다.
-쉐이더가 그 PNG 들을 대신하지 않는 이유도 거기 있다 — `faces` / `circle` / `eye`
-세 컷은 알파가 통짜 사각형이라(eye 밴드의 97.7% 가 불투명) 런타임에 칠하면 검은
-막대가 되고, 그래서 그 셋은 지금도 `full` 에서 다시 잘라 굽는다.
+**This is a different thing from the baked mob silhouette PNGs (`images/pilot/mob/`).** Those are assets that
+**permanently** say "this player is a nameless player"; this is **a one-off presentation effect**.
+That is also why the shader does not replace those PNGs — the `faces` / `circle` / `eye`
+cuts have a solid-rectangle alpha (97.7% of the eye band is opaque), so painting them at runtime yields a black
+bar, which is why those three are still re-cropped from `full` and baked.
 
-| 파라미터 | 뜻 |
+| Parameter | Meaning |
 |---|---|
-| `fill_color` | 채움 단색. 기본값은 구운 실루엣과 **같은** (38, 42, 60) |
-| `outline_color` / `outline_width` | 윤곽 **바깥**에 두르는 테두리. 폭의 단위는 **텍스처 픽셀**이라 노드가 커지면 테두리도 함께 두꺼워진다. 테두리가 설 자리는 **아트를 그 폭만큼 안으로 물려서** 만든다 — 아래 절 |
-| `reveal` | 0 = 실루엣, 1 = 원본 그대로(테두리 폭만큼 안으로 물린 자리에). 그래서 재료를 붙여 둔 채 잊어도 화면이 달라지지 않는다 |
-| `reveal_soft` / `reveal_dir` | 벗겨지는 경계의 흐린 폭과 방향(기본 아래→위) |
-| `sweep_color` / `sweep_width` | 경계에 얹히는 빛. `reveal` 이 0 이거나 1 이면 저절로 꺼진다 |
+| `fill_color` | Solid fill colour. Default is **the same** (38, 42, 60) as the baked silhouettes |
+| `outline_color` / `outline_width` | Border drawn **outside** the outline. Width is in **texture pixels**, so the border gets thicker as the node grows. Room for the border is made by **insetting the art inward by that width** — section below |
+| `reveal` | 0 = silhouette, 1 = original as-is (in the spot inset by the border width). So forgetting a material attached does not change the screen |
+| `reveal_soft` / `reveal_dir` | Blur width and direction of the peeling edge (default bottom→top) |
+| `sweep_color` / `sweep_width` | Light laid on the edge. Turns itself off when `reveal` is 0 or 1 |
 
-API 는 다섯이다 — `make_material()` / `apply(ci)` / `set_reveal(ci, v)` /
-`play_reveal(ci, dur, delay)` / `clear(ci)`. **재료는 노드 하나에 한 장씩**
-만든다(공유하면 한 노드의 `reveal` 트윈이 같은 재료를 쓰는 다른 노드까지 함께
-벗긴다). `play_reveal` 은 노드가 트리 밖이면 **원본을 그대로 켜고 물러난다** —
-실패한 연출이 인물을 영영 실루엣으로 덮어 두는 쪽이 훨씬 나쁜 실패다.
+There are five APIs — `make_material()` / `apply(ci)` / `set_reveal(ci, v)` /
+`play_reveal(ci, dur, delay)` / `clear(ci)`. **Make one material per node**
+(if shared, one node's `reveal` tween also peels other nodes using the same material).
+If the node is outside the tree, `play_reveal` **turns the original on as-is and backs off** —
+a failed effect leaving the figure covered by a silhouette forever is a far worse failure.
 
-**지금 쓰는 자리는 없다.** 아웃게임 파일럿 상세 팝업
-(`season/draft/DraftDetailPanel.gd`)의 등장 컷이 유일한 소비자였는데 그 적용이
-걷히면서 호출부가 통째로 사라졌다 — 쉐이더와 배선은 다음에 쓸 자리를 위해 남겨
-둔 도구이고, `reveal` 기본값이 1 이라 재료만 붙여 두어도 화면은 원본 그대로다.
+**Nothing uses it right now.** The entry cut of the outgame pilot detail popup
+(`meta/run_setup/DraftDetailPanel.gd`) was the only consumer, and when that usage was
+removed the call site disappeared entirely — the shader and wiring are a tool kept for the next
+use, and since `reveal` defaults to 1, just attaching the material leaves the screen showing the original.
 
-#### 테두리 자리는 아트를 안으로 물려서 만든다
-파일럿 전신 아트 40장은 **네 변에 인물이 닿아 있다**(실측: 인물 상단 y = 0,
-좌우 여백 0). 테두리를 윤곽 **바깥**에 그리는데 그릴 픽셀이 없으니 머리 위
-테두리가 통째로 잘려 나갔다 — 처음 붙였을 때 실제로 그렇게 나왔다. 그렇다고
-안쪽에 그리면 실루엣을 파먹어 어깨선이 얇아진다.
+#### Make room for the border by insetting the art
+All 40 pilot full-body artworks **have the figure touching all four edges** (measured: figure top y = 0,
+left/right margin 0). The border is drawn **outside** the outline, but there were no pixels to draw on, so the
+border above the head was cut off entirely — that is literally what happened when it was first attached.
+Drawing it inside instead eats into the silhouette and thins the shoulder line.
 
-그래서 쉐이더가 **그리는 사각형은 그대로 두고 그 안에서 텍스처만
-`outline_width` 만큼 좁혀 그린다**(`pad = TEXTURE_PIXEL_SIZE * outline_width`).
-전신 아트 기준 0.5% 안쪽으로 물러나는 대신 네 변 전부에 테두리가 선다
-(실측: 테두리가 채움보다 위 4px · 좌우 3px · 아래 2px 바깥에 있다).
-**폭이 0 이면 물림도 0** 이라, 테두리를 안 쓰는 호출부는 픽셀 그대로다.
+So the shader **keeps the drawn rectangle as-is and draws only the texture shrunk by
+`outline_width` inside it** (`pad = TEXTURE_PIXEL_SIZE * outline_width`).
+In exchange for retreating 0.5% inward on full-body art, a border stands on all four edges
+(measured: the border sits 4px above · 3px left/right · 2px below outside the fill).
+**Width 0 means inset 0**, so call sites that don't use a border stay pixel-identical.
 
-#### 이 쉐이더를 만지기 전에 알아야 하는 함정 셋 (전부 실측)
-1. **프래그먼트의 `COLOR` 는 이미 `texture(TEXTURE, UV) × modulate` 다.**
-   `COLOR = col * COLOR` 로 쓰면 평평해야 할 실루엣에 원본이 한 번 더 곱해져
-   이목구비가 그대로 읽힌다(순수 빨강 채움이 (170,0,0), 남색 채움이 (11,9,13) 로
-   픽셀마다 다르게 나왔다). 대입만 한다.
-2. **`MODULATE` 내장은 이 버전의 canvas_item 프래그먼트에 없다**
-   (`Unknown identifier`). 노드 modulate 가 필요하면 `vertex()` 의 `COLOR` 를
-   varying 으로 날라야 한다.
-3. **`TEXTURE` / `TEXTURE_PIXEL_SIZE` 는 전역 함수 안에서 못 쓴다** — 테두리
-   샘플링 루프가 `fragment()` 안에 인라인으로 있는 이유다.
+#### Three traps to know before touching this shader (all measured)
+1. **In the fragment, `COLOR` is already `texture(TEXTURE, UV) × modulate`.**
+   Writing `COLOR = col * COLOR` multiplies the original once more into a silhouette that should be flat,
+   so facial features read clearly (a pure red fill came out (170,0,0), a navy fill (11,9,13),
+   differing per pixel). Assign only.
+2. **The `MODULATE` built-in does not exist in this version's canvas_item fragment**
+   (`Unknown identifier`). If you need node modulate, carry `COLOR` from `vertex()` via a
+   varying.
+3. **`TEXTURE` / `TEXTURE_PIXEL_SIZE` cannot be used inside global functions** — that is why the border
+   sampling loop is inlined inside `fragment()`.
 
-그리고 경계는 **반드시 오름차순**으로 넘긴다(`smoothstep(front - soft, front, p)`).
-거꾸로 부르면 GLSL 규격상 결과가 정의되지 않아 화면 전체가 어중간한 값을 받는다.
+And always pass edges **in ascending order** (`smoothstep(front - soft, front, p)`).
+Calling it reversed is undefined per the GLSL spec, and the whole screen gets an in-between value.
 
 ### CardImages.gd
-`class_name CardImages`, extends `RefCounted`. **카드 한 장의 일러스트 조회** —
-`PilotImages` / `MechImages` 와 같은 자리이고, 규칙도 같다(그림을 어디서
-가져오는지는 이 파일 하나만 안다. `load()` 를 그냥 부르지 않고
-`ResourceLoader.exists()` 로 먼저 묻는다).
+`class_name CardImages`, extends `RefCounted`. **Illustration lookup for a single card** —
+same place as `PilotImages` / `MechImages`, and same rules (only this one file knows where
+pictures come from; it never calls `load()` blindly but asks
+`ResourceLoader.exists()` first).
 
-| 함수 | 파일 | 소비자 |
+| Function | File | Consumer |
 |---|---|---|
-| `art_for(card_name)` | `images/card/<이름>.png` → 아이템 아이콘 → 배경 | `Card._apply_art` (카드 앞면 아트 액자) |
-| `item_for(card_name)` | `images/ground/deadlock_items/<타입>_<아이템>.png` (`ITEM_ART` 표) | 〃 (전용 아트가 없는 카드) |
-| `type_for(card_name)` | `ITEM_ART` 값의 접두사 → `TYPE_WEAPON` / `TYPE_SPIRIT` / `TYPE_VITALITY` (`""` = 표에 없음) | `Card._apply_name_plate` (이름판 타입색 `Card.TYPE_COLORS`) |
-| `ground_for(card_name)` | `images/ground/N.png` (`GROUND_COUNT` 5장) | 〃 (`ITEM_ART` 표에도 없는 카드) |
+| `art_for(card_name)` | `images/card/<이름>.png` (name) → item icon → background | `Card._apply_art` (card face art frame) |
+| `item_for(card_name)` | `images/ground/deadlock_items/<타입>_<아이템>.png` (type_item; `ITEM_ART` table) | 〃 (cards without dedicated art) |
+| `type_for(card_name)` | prefix of the `ITEM_ART` value → `TYPE_WEAPON` / `TYPE_SPIRIT` / `TYPE_VITALITY` (`""` = not in table) | `Card._apply_name_plate` (nameplate (이름판) type colour `Card.TYPE_COLORS`) |
+| `ground_for(card_name)` | `images/ground/N.png` (`GROUND_COUNT` 5 images) | 〃 (cards not even in the `ITEM_ART` table) |
 
-**지금 모든 카드(cards.csv 43 + mech_cards.csv 64 = 107장)는 아이템 아이콘을 단다.**
-`ITEM_ART` 는 카드 이름 → Deadlock 아이템 파일명 표이고, 효과가 비슷한 아이템을
-골랐다(예: `필중` → Sharpshooter, `보호` → Grit, `몸집 불리기` → Colossus, `캐시` →
-Golden Goose Egg; 효과 출처 https://deadlock.wiki/Items). **한 아이템은 한 카드에만**
-쓴다. **아이콘 파일명 앞에는 타입 접두사가 붙어 있다** — `wpn_` 무기 · `spt_` 스피릿 ·
-`vit_` 활력(173장 전부: 56 · 56 · 61). 분류는 https://deadlock.wiki/Items 의 Weapon /
-Spirit / Vitality 이고, 위키 목록에 안 잡힌 4장(Extended Magazine · Stalker → 무기,
-Bullet Lifesteal · Spirit Lifesteal → 활력)은 MediaWiki API 의 아이템 페이지 카테고리로
-확인했다. 새 아이콘을 넣을 때도 접두사를 붙인다 — `type_for` 가 이것만 읽는다.
-아이콘은 200×200 정사각(베이지 바탕 불투명)이라 160×184 아트 칸에
-`STRETCH_KEEP_ASPECT_COVERED` 로 좌우가 조금 잘린다 — 문양은 가운데에 있어 안 다친다.
-카드를 더하거나 이름을 바꾸면 표에도 넣는다; 빠지면 오류 없이 아래 배경 5종으로 떨어진다.
+**Every card right now (cards.csv 43 + mech_cards.csv 64 = 107) carries an item icon.**
+`ITEM_ART` is a card name → Deadlock item filename table, picking items with similar effects
+(e.g. `필중` (Sure Hit) → Sharpshooter, `보호` (Protect) → Grit, `몸집 불리기` (Bulk Up) → Colossus, `캐시` (Cache) →
+Golden Goose Egg; effect source https://deadlock.wiki/Items). **Each item is used for only one card.**
+**Icon filenames carry a type prefix** — `wpn_` weapon · `spt_` spirit ·
+`vit_` vitality (all 173: 56 · 56 · 61). The classification is Weapon /
+Spirit / Vitality from https://deadlock.wiki/Items; the 4 not caught by the wiki list (Extended Magazine · Stalker → weapon,
+Bullet Lifesteal · Spirit Lifesteal → vitality) were confirmed via the item page categories in the MediaWiki API.
+Add the prefix when adding new icons too — `type_for` reads only that.
+Icons are 200×200 squares (opaque beige background), so in the 160×184 art slot
+`STRETCH_KEEP_ASPECT_COVERED` trims the left/right a little — the emblem is centred, so it is unharmed.
+When adding or renaming a card, add it to the table too; if missing, it falls back without error to the 5 backgrounds below.
 
-**배경은 카드 이름으로 고른다**(`card_name.hash() % GROUND_COUNT`). 무작위로
-고르면 같은 카드가 뽑을 때마다 다른 그림을 달고 나와 "이 그림이 이 카드"라는
-연결이 서지 않고, 순번으로 고르면 손패에 들어온 순서가 그림을 정해 같은 카드가
-자리마다 달라진다. 이름 해시는 실행과 무관하게 같은 답을 주므로 전용 아트가
-채워지기 전까지도 카드 한 장이 자기 그림을 계속 들고 다닌다. **전용 아트가 생기면
-`images/card/` 에 카드 이름으로 넣기만 하면 그쪽이 이긴다** — 코드는 안 고친다.
+**The background is picked by card name** (`card_name.hash() % GROUND_COUNT`). Picking at random
+would give the same card a different picture each draw so no "this picture = this card" link
+forms; picking by sequence would let the order of entering the hand decide the picture, so the same card
+would differ per slot. A name hash gives the same answer regardless of run, so even before dedicated art
+is filled in, each card keeps carrying its own picture. **Once dedicated art exists, just drop it into
+`images/card/` under the card name and it wins** — no code change.
 
-#### 카드 배경 (`resources/images/ground/N.png`)
-480×660(= 카드 표시 크기 160×220 의 3배)이고 **비율이 카드와 같은 8:11** 이다.
-원본은 1080×1440(3:4) 풀아트 랜드 다섯 장이라 두 번 손봤다 — (1) 아래 110px 의
-작가명 · ⓒ 글자 띠를 잘라 내고, (2) 남은 그림에서 8:11 을 가운데로 크롭한 뒤
-480×660 으로 리샘플. 카드 앞면의 아트 액자는 150×74 라 표시 배율이 3배 안팎이고,
-호버 1.2배와 상세 패널까지 감안해도 3배면 충분하다(원본 1080폭은 5장에 9.5MB 라
-pck 만 무겁게 한다). 그림 자체는 **가로가 긴 풍경**인데 액자는 2:1 에 가까워
-`STRETCH_KEEP_ASPECT_COVERED` 로 가운데를 채운다.
+#### Card backgrounds (`resources/images/ground/N.png`)
+480×660 (= 3× the card display size 160×220), **same 8:11 aspect as the card**.
+The originals were five 1080×1440 (3:4) full-art lands, touched up twice — (1) cut off the bottom 110px
+artist name · ⓒ text strip, (2) centre-crop 8:11 from what remains, then
+resample to 480×660. The card face art frame is 150×74, so display scale is around 3×,
+and even accounting for hover 1.2× and the detail panel, 3× is enough (the 1080-wide originals were 9.5MB for 5 images,
+only bloating the pck). The pictures themselves are **wide landscapes** while the frame is close to 2:1, so
+`STRETCH_KEEP_ASPECT_COVERED` fills the middle.
 
 ### SkillImages.gd
 `class_name SkillImages`, extends `RefCounted`, static only. **Pilot skill icon
@@ -509,7 +512,7 @@ lookup** — same role as `CardImages` / `MechImages`.
 | Function | Source | Used by |
 |---|---|---|
 | `icon_for(skill_key)` | `images/skill/skill_<English_Name>.png` via `ICON` (`pilot_skills.key` → file) | `ui/PilotDetailPanel.gd` skill block (left of the name, tinted with the name colour), `ui/SkillBadge.gd` (strip badge), `ui/SkillPopup.gd` |
-| `make_icon_tile(skill_key, px, bg, icon_color, shadow_color, shadow_px = 14)` | `icon_for` inside a `px`×`px` rounded-square `Panel` (radius `px*0.22`, fill `bg`, anti-aliased `StyleBoxFlat` soft shadow: `shadow_size = shadow_px`, offset `(0, shadow_px*0.4)`), icon inset 16% per side and tinted via `modulate` | `ui/PilotDetailPanel.gd` skill block, `season/draft/DraftDetailPanel.gd` skill block |
+| `make_icon_tile(skill_key, px, bg, icon_color, shadow_color, shadow_px = 14)` | `icon_for` inside a `px`×`px` rounded-square `Panel` (radius `px*0.22`, fill `bg`, anti-aliased `StyleBoxFlat` soft shadow: `shadow_size = shadow_px`, offset `(0, shadow_px*0.4)`), icon inset 16% per side and tinted via `modulate` | `ui/PilotDetailPanel.gd` skill block, `meta/run_setup/DraftDetailPanel.gd` skill block |
 
 `make_icon_tile` is all `MOUSE_FILTER_IGNORE`; an unmapped key still returns the
 empty tile. The shadow paints **outside** the rect — leave about `shadow_px` of
@@ -525,157 +528,183 @@ skill, chosen by effect); the rest are spare. A new skill key without a row
 returns null and the panel just omits the icon.
 
 ### MechImages.gd
-`class_name MechImages`, extends `RefCounted`. `PilotImages` 와 같은 역할의
-메크(기체) 일러스트 조회. **에셋 30장이 그대로 남아 있고 `mechs.csv` 는 21행으로
-줄었다** — 메크 스킬(기체마다 고유 패시브 + 고유 카드 셋)이 들어오면서 시트에 없는
-9대를 지웠는데, **살아남은 id 는 건드리지 않았다**: 파일 이름이 id 에 묶여 있어
-번호를 다시 매기면 그림과 스탯이 통째로 어긋난다. 그래서 지금은 id 에 구멍이 있고
-(3·4·5 / 10·11 / 16·17 / 23 / 29), 그 자리의 `N_full.png` 는 아무도 안 읽는 채로
-남아 있다 — 나중에 기체를 다시 늘릴 때 그 칸부터 채우면 된다. 출처와 배치 규칙은
-바로 아래 절.
+`class_name MechImages`, extends `RefCounted`. Mech (frame) illustration lookup in the same
+role as `PilotImages`. **All 30 assets remain while `mechs.csv` shrank to 21 rows**
+— when mech skills (a unique passive + unique card set per mech) came in, the 9 mechs not in the sheet
+were removed, but **surviving ids were not touched**: filenames are bound to ids, so
+renumbering would misalign pictures and stats wholesale. So ids now have gaps
+(3·4·5 / 10·11 / 16·17 / 23 / 29), and those `N_full.png` files remain unread
+— when adding mechs again later, fill those slots first. Source and placement rules are in the
+sections right below.
 
-| 함수 | 파일 | 소비자 |
+| Function | File | Consumer |
 |---|---|---|
-| `full_for(mech_id)` | `resources/images/mech/N_full.png` | 파일럿 상세 패널 (`ui/PilotDetailPanel.gd`), 밴픽 하단 시트 |
-| `portrait_for(mech_id)` | `resources/images/mech/portrait/N_portrait.png` | 밴픽 격자 · 밴 칩 · 팀 블록의 메크 칸 |
-| `has_image(mech_id)` | `N_full.png` 의 존재 여부 | 플레이스홀더 판정 |
+| `full_for(mech_id)` | `resources/images/mech/N_full.png` | Pilot detail panel (`ui/PilotDetailPanel.gd`), ban/pick bottom sheet |
+| `portrait_for(mech_id)` | `resources/images/mech/portrait/N_portrait.png` | Ban/pick grid · ban chips · mech slots in team blocks |
+| `has_image(mech_id)` | whether `N_full.png` exists | placeholder decision |
 
-- **`N` 은 `mechs.csv` 의 `id` 그대로다** — 파일럿 쪽의 +1 오프셋(40장을 1..40 으로
-  받아 온 역사적 사정)은 여기서 반복하지 않는다. 파일은 파일럿과 달리 `full/`
-  하위 폴더 없이 `mech/` 바로 아래에 **평평하게** 놓인다.
-- **`load()` 를 그냥 부르지 않는다.** 파일이 없으면 Godot 이 에러를 뱉으며 null 을
-  돌려주므로 `ResourceLoader.exists()` 로 먼저 물어보고 없으면 조용히 null 을 준다.
-  지금은 쓰이는 21칸이 다 차 있어 플레이스홀더 경로가 돌지 않지만, `mechs.csv` 에
-  행을 더하면 다시 살아나는 길이라 그대로 둔다.
+- **`N` is the `mechs.csv` `id` as-is** — the pilots' +1 offset (a historical artefact of receiving 40 images
+  as 1..40) is not repeated here. Unlike pilots, files sit **flat** directly under `mech/` without a `full/`
+  subfolder.
+- **Never call `load()` blindly.** When a file is missing Godot spits an error and returns null,
+  so ask `ResourceLoader.exists()` first and quietly return null if absent.
+  Right now all 21 used slots are filled, so the placeholder path doesn't run, but it comes back to life
+  if rows are added to `mechs.csv`, so it stays.
 
-#### 메크 정사각 초상화 (`resources/images/mech/portrait/N_portrait.png`)
-전신 아트에서 **머리~상반신만** 잘라 구운 256² 정사각 컷이다. 밴픽 격자 칸은
-200px 도 안 되는데 전신 아트는 1024² 캔버스에 기체가 온몸으로 서 있는 그림이라,
-그대로 넣으면 기체가 콩알만 하게 들어가 **어느 기체인지가 안 읽힌다**. 챔피언
-아이콘과 같은 성격의 컷이고, 상세 시트만 여전히 원본 전신 아트를 쓴다(거기서는
-한 번에 한 대뿐이다).
+#### Mech square portraits (`resources/images/mech/portrait/N_portrait.png`)
+256² square cuts baked by cropping **only head~upper body** from the full-body art. A ban/pick grid slot
+is under 200px, while the full-body art is a mech standing full-length on a 1024² canvas, so
+dropping it in as-is makes the mech pea-sized and **you can't tell which mech it is**. It is the same kind of
+cut as a champion icon; only the detail sheet still uses the original full-body art (there it shows
+one at a time).
 
-다시 구울 때는 **`resources/images/mech/make_mech_portraits.py` 를 돌릴 것** —
-손으로 자르면 기체마다 인물 배율이 어긋난다(파일럿 `eye` / `tall` 컷이 스크립트
-생성인 것과 같은 이유). 머리를 찾는 방식이 요점이다: 알파 바운딩 박스의 위끝을
-머리로 치면 안 된다 — 21대 중 열 대 넘게 라이플 · 안테나 · 날개가 머리 위로
-뻗어 있어 그 자리에서 자르면 프레임이 무기로 가득 찬다. 그래서 알파를 **침식**
-(`MinFilter(31)`)해 얇은 구조물을 지운 뒤 남은 덩어리의 위끝을 머리로 삼고, 가로
-중심도 같은 마스크의 **중앙값**으로 잡는다(평균이면 한쪽으로 뻗은 팔 하나가
-중심을 통째로 끌고 간다). 크기는 기체 전체 높이의 58%.
+To rebake, **run `resources/images/mech/make_mech_portraits.py`** —
+cropping by hand misaligns figure scale per mech (same reason the pilot `eye` / `tall` cuts are
+script-generated). How the head is found is the key: do not treat the top of the alpha bounding box as
+the head — more than ten of the 21 mechs have a rifle · antenna · wings extending above the head, so cropping there
+fills the frame with weapons. So the alpha is **eroded**
+(`MinFilter(31)`) to remove thin structures, the top of the remaining blob is taken as the head, and the horizontal
+centre is the **median** of the same mask (a mean would let a single arm stretched to one side drag the
+centre wholesale). Size is 58% of the mech's total height.
 
-자동 판정이 어긋나는 기체만 스크립트의 `OVERRIDES` 가 손으로 잡는다 — 지금은
-넷이고, 그중 **0(Juggernaut)과 20(Caprice)은 절대 좌표 상자**를 준다(전자는
-방패가 몸통을 가로질러 침식 덩어리의 위끝이 머리가 아니고, 후자는 옆으로 뻗은
-라이플이 무게중심을 끌어간다). **`portrait/` 에도 30칸이 다 있다** — 스크립트가
-`*_full.png` 를 통째로 도는 것이라 쓰이지 않는 9칸도 함께 구워진다.
+Only mechs where the automatic decision goes wrong are pinned by hand in the script's `OVERRIDES` — currently
+four, and of those **0 (Juggernaut) and 20 (Caprice) get absolute-coordinate boxes** (for the former, a
+shield crosses the torso so the top of the eroded blob is not the head; for the latter, a rifle stretched sideways
+drags the centre of mass). **`portrait/` also has all 30 slots** — the script iterates every
+`*_full.png`, so the 9 unused slots get baked too.
 
-#### 메크 전신 아트 (`resources/images/mech/N_full.png`)
-출처는 **Gundam Evolution**(반다이남코, 2022–2023 서비스 종료)의 기체 렌더
-24종이고, Gundam Wiki 의 해당 문서 갤러리에서 받았다. 원본이 이미 **배경 없는
-투명 PNG** 라 배경 제거 작업은 없었다. 개인 프로젝트용 임시 에셋이며 배포용이
-아니다(파일럿 초상화가 젠레스 존 제로 아트인 것과 같은 성격).
+#### Mech full-body art (`resources/images/mech/N_full.png`)
+The source is 24 mech renders from **Gundam Evolution** (Bandai Namco, service ended 2022–2023),
+downloaded from the galleries of the corresponding Gundam Wiki articles. The originals were already **transparent PNGs
+with no background**, so no background removal was needed. These are temporary assets for a personal project, not for
+distribution (same nature as the pilot portraits being Zenless Zone Zero art).
 
-**규격은 파일럿 전신 아트를 따르되 정규화 기준 하나가 다르다.** 세로 1024 ·
-알파 크롭 · 바닥 정렬까지는 같지만, 크기는 **바운딩 박스 높이가 아니라 불투명
-픽셀 면적의 제곱근**으로 맞췄다 — 기체 렌더는 검·날개·라이플이 옆으로 뻗어
-바운딩 박스 비율이 0.62~1.51 로 흩어지고, 높이로 맞추면 넓은 포즈일수록 본체가
-쪼그라든다. 면적 기준은 얇은 칼끝이 크기 계산에 거의 기여하지 않아 **본체
-겉보기 크기**가 고르게 맞는다. 캔버스는 **1024×1024 고정**이다(가로 중앙 · 세로
-바닥 정렬). 파일럿 아트처럼 폭을 각자 다르게 두면 상세 패널이 높이로 정규화할 때
-비율 1.5짜리 기체가 화면 폭의 두 배로 벌어진다. 이 규격에서 잘려 나가는 것은
-Exia / Mahiroo / Marasai 세 장의 무기 끝 44~64px 뿐이다.
+**The spec follows the pilot full-body art, except for one normalisation basis.** Height 1024 ·
+alpha crop · bottom alignment are the same, but size is matched by **the square root of the opaque-pixel area,
+not bounding-box height** — mech renders have swords · wings · rifles stretching sideways, so
+bounding-box aspect scatters across 0.62~1.51, and matching by height shrinks the body for wider poses.
+With the area basis, thin blade tips barely contribute to size, so **apparent body
+size** matches evenly. The canvas is **fixed at 1024×1024** (horizontally centred · vertically
+bottom-aligned). If widths varied as with pilot art, when the detail panel normalises by height
+a mech with aspect 1.5 would spread to twice the screen width. The only things cut off by this spec are
+44~64px of weapon tips on three images: Exia / Mahiroo / Marasai.
 
-**id 배치는 `mechs.csv` 의 스탯 아키타입을 따른다** — 이름(`Juggernaut` 등)은
-그대로 두었으므로 이름과 기체는 서로 무관하고, **맞춰야 할 것은 스탯이다**.
+**id placement follows the stat archetypes in `mechs.csv`** — names (`Juggernaut` etc.) were
+left as-is, so names and mechs are unrelated; **what has to match is stats**.
 
-**아래 표는 30대 시절의 배치이고 지금 `mechs.csv` 가 쓰는 것은 그중 21칸이다.**
-남은 id 는 역할군별로 이렇다 — 탱커 0·1·2 / 격투가 6·7·8·9 / 암살자 12·13·14·15 /
-서포터 18·19·20·21·22 / 스나이퍼 24·25·26·27·28. 지워진 칸은 24종 중 **중복 배치**
-였던 자리와 겹치도록 골랐으므로 실제로 화면에서 사라진 기체는 없다.
+**The table below is the placement from the 30-mech era; `mechs.csv` now uses 21 of those slots.**
+Remaining ids by role group — tank 0·1·2 / fighter 6·7·8·9 / assassin 12·13·14·15 /
+supporter 18·19·20·21·22 / sniper 24·25·26·27·28. The removed slots were chosen to overlap the
+**duplicate placements** among the 24 renders, so no mech actually disappeared from the screen.
 
-| id | 아키타입 | 기체 |
+| id | Archetype | Mech |
 |---|---|---|
-| 0–5 | 탱커 (hp 195–240 / atk 6–10) | Sazabi · DOM Trooper · Guntank · Pale Rider · Mahiroo · Zaku II [Melee] |
-| 6–11 | 격투가 (hp 135–170 / atk 13–18) | RX-78-2 · Kämpfer · GM · Marasai · Barbatos · *(Kämpfer 재사용)* |
-| 12–17 | 암살자 (hp 80–110 / atk 22–30) | Exia · Susanowo · Zeta · Unicorn · Asshimar · *(Exia 재사용)* |
-| 18–23 | 서포터 (presence 2 / atk 8–11) | Methuss · ∀ Gundam · Hyperion · ν Gundam · *(Methuss)* · *(Hyperion)* |
-| 24–29 | 스나이퍼 (presence 2 / atk 19–25) | GM Sniper II · Dynames · Heavyarms Custom EW · Zaku II [Shooting] · *(GM Sniper II)* · *(Dynames)* |
+| 0–5 | Tank (highest hp / lowest atk) | Sazabi · DOM Trooper · Guntank · Pale Rider · Mahiroo · Zaku II [Melee] |
+| 6–11 | Fighter (mid hp / mid atk) | RX-78-2 · Kämpfer · GM · Marasai · Barbatos · *(Kämpfer reused)* |
+| 12–17 | Assassin (lowest hp / highest atk) | Exia · Susanowo · Zeta · Unicorn · Asshimar · *(Exia reused)* |
+| 18–23 | Supporter (ranged presence / low atk) | Methuss · ∀ Gundam · Hyperion · ν Gundam · *(Methuss)* · *(Hyperion)* |
+| 24–29 | Sniper (ranged presence / high atk) | GM Sniper II · Dynames · Heavyarms Custom EW · Zaku II [Shooting] · *(GM Sniper II)* · *(Dynames)* |
 
-24종으로 30칸을 채우므로 **6칸이 중복**이고, 중복은 언제나 **같은 아키타입 안에서**
-원본과 떨어뜨려 배치했다(밴픽 화면에 같은 그림이 나란히 서지 않게). 24종을 넘는
-그림이 생기면 중복 칸부터 채우면 된다.
+24 renders fill 30 slots, so **6 slots are duplicates**, and duplicates are always placed **within the same
+archetype**, away from the original (so the same picture doesn't stand side by side on the ban/pick screen). If more than
+24 pictures become available, fill the duplicate slots first.
+
+### ConstTable.gd
+`class_name ConstTable`, extends `RefCounted` — **static accessor for the `const` table**
+(`data/csv/const.csv` → game.db `const`, see `data/README.md`). It holds the gameplay tuning
+constants that used to be hard-coded `const`s in scripts.
+- `num(key) -> float` / `int_of(key) -> int` (rounded) / `has(key) -> bool`.
+- **Lazy cache** — the first call opens game.db once (path from `GameDb.path()`), reads every
+  `key, value` row into a static Dictionary and closes the DB; later calls only hit the cache.
+- **A missing key calls `push_error` and returns 0** — never silently; an empty / missing table also
+  reports an error (run Rebuild game.db).
+- Consumers keep the old constant name as a `static var` initialised from it, e.g.
+  `static var MOVE_SPEED_MELEE: float = ConstTable.num("ENGAGE_MOVE_SPEED_MELEE")`, so external
+  call sites (`TurnEngageSim.MOVE_SPEED_MELEE`) are unchanged.
+- **Why static, not an autoload:** `static var` initialisers can run before autoloads are in the tree,
+  so the table must be reachable without `/root/GameManager`.
+- Values change only in the CSV (+ Rebuild game.db). Docs and comments name keys, never values.
+
+### GameDb.gd
+`class_name GameDb`, extends `RefCounted` — **the single place that resolves the game.db path**
+(moved here from `GameManager`). `GameDb.path()` returns `res://data/game.db` in the editor; in an
+exported build `_extract_to_user()` copies the DB packed in the `.pck` to `user://data/game.db`
+**on every run** (SQLite cannot open a path inside the pck; overwriting each run means a stale DB from
+an old build can never linger) and returns that copy. Computed once per run and cached.
+It is static for the same reason as `ConstTable` (which needs the path before autoloads exist);
+`GameManager.db_path()` now simply delegates to `GameDb.path()`. Details: `autoloads/README.md`,
+`docs/ios_testbuild.md`.
 
 ### ScreenMetrics.gd
-`class_name ScreenMetrics`, extends `RefCounted` — **정적 함수만** 있다
-(창의 루트 뷰포트를 직접 읽으므로 노드가 필요 없다).
+`class_name ScreenMetrics`, extends `RefCounted` — **static functions only**
+(it reads the window's root viewport directly, so no node is needed).
 
-**이 저장소의 모든 화면 좌표가 지나는 한 곳이다.** 스트레치가 `expand` 라
-기기마다 뷰포트 크기가 다르고, 그 위에 OS 가 못 쓰게 막는 띠(노치 · 다이나믹
-아일랜드 · 홈 인디케이터 · 제스처 바)가 얹힌다. 아래쪽 띠는 **가려지는 것이
-아니라 터치를 빼앗기는** 구간이라 거기 놓인 버튼은 보이지만 눌리지 않는다.
+**The single place every screen coordinate in this repo passes through.** Stretch is `expand`, so
+viewport size differs per device, and on top of it sit strips the OS blocks off (notch · Dynamic
+Island · home indicator · gesture bar). The bottom strip is a zone where **touches are stolen rather than
+content hidden**, so a button placed there is visible but can't be pressed.
 
-| 함수 | 답 |
+| Function | Answer |
 |---|---|
-| `viewport_size()` / `vp_w()` / `vp_h()` | 스트레치가 먹은 뒤의 뷰포트 크기 |
-| `insets()` | `(좌, 위, 우, 아래)` 인셋 — **뷰포트 단위**로 환산해서 |
-| `safe_rect()` | 안전 영역 사각형 |
-| `top_y()` / `bottom_y()` | 첫 · 마지막으로 쓸 수 있는 y. **터치 대상의 아래끝은 `bottom_y()` 를 넘으면 안 된다** |
-| `left_x()` / `right_x()` / `center_x()` | 가로. `center_x()` 가 하드코딩된 `540` 을 대신한다 |
-| `safe_h()` | 안전 영역 높이 = `indent_to_safe_top()` 한 화면의 로컬 바닥 |
-| `design_offset_y/x/()` | 1080×1920 짜리 화면 한 장을 안전 영역 안에서 가운데로 놓을 때 밀 양 |
-| `indent_to_safe_top(c)` | 전체 화면 Control 을 통째로 안전 영역 위끝까지 내린다(`offset_top`) |
-| `extend_background(c)` | 그 자식 중 **배경판**만 도로 화면 끝까지 늘린다 |
-| `backfill_top(panel, color)` | 배경이 판 자신의 StyleBox 일 때, 비워진 위쪽 띠를 같은 색으로 메운다 |
-| `gesture_edge_w()` | 안드로이드 뒤로 가기 제스처가 가져가는 좌우 폭 — **인셋이 아니라 경고선** |
+| `viewport_size()` / `vp_w()` / `vp_h()` | viewport size after stretch |
+| `insets()` | `(left, top, right, bottom)` insets — converted to **viewport units** |
+| `safe_rect()` | safe area (안전 영역) rectangle |
+| `top_y()` / `bottom_y()` | first · last usable y. **The bottom edge of a touch target must not exceed `bottom_y()`** |
+| `left_x()` / `right_x()` / `center_x()` | horizontal. `center_x()` replaces a hard-coded `540` |
+| `safe_h()` | safe-area height = local bottom of a screen after `indent_to_safe_top()` |
+| `design_offset_y/x/()` | amount to shift a single 1080×1920 screen to centre it inside the safe area |
+| `indent_to_safe_top(c)` | moves a full-screen Control down as a whole to the top of the safe area (`offset_top`) |
+| `extend_background(c)` | stretches only the **background panel** among its children back out to the screen edges |
+| `backfill_top(panel, color)` | when the background is the panel's own StyleBox, fills the emptied top strip with the same colour |
+| `gesture_edge_w()` | left/right width taken by the Android back gesture — **a warning line, not an inset** |
 
-`DisplayServer.get_display_safe_area()` 는 **네이티브 화면 픽셀**로 답하므로
-그대로 쓰면 안 된다 — 창 크기 대 뷰포트 크기의 비를 곱해 논리 좌표로 옮기는
-것이 `_compute_insets` 가 하는 일이고, 결과는 창/뷰포트 크기를 키로 캐시된다.
+`DisplayServer.get_display_safe_area()` answers in **native screen pixels**, so it must not be
+used as-is — moving it into logical coordinates by multiplying the window-size-to-viewport-size ratio is
+what `_compute_insets` does, and the result is cached keyed by window/viewport size.
 
-데스크톱에서 기기 인셋을 흉내 내려면 환경 변수 `ESM_SAFE_AREA="좌,위,우,아래"`
-또는 사용자 인자 `-- --safe-area=0,162,0,90`. 배치 규약 세 가지와 기기별
-수치표는 **`docs/mobile_safe_area.md`**.
+To fake device insets on desktop, use the environment variable `ESM_SAFE_AREA="좌,위,우,아래"` (left,top,right,bottom)
+or the user argument `-- --safe-area=0,162,0,90`. The three placement conventions and the per-device
+numbers table are in **`docs/mobile_safe_area.md`**.
 
 ### SceneFade.gd
-`class_name SceneFade`, extends `RefCounted` (static only). **암전 → 가짜 로딩 →
-밝아짐** 전환 — 한 장면이 넘어갔다는 연출. `play(tree, on_covered)` 는 화면이 다
-가려진 순간 `on_covered` 를 한 번 부르고, `change_scene(tree, path)` 는 그 자리에서
-`change_scene_to_file` 한다. 덮개는 **SceneTree root 의 `CanvasLayer`(layer 100)**
-라 씬 전환을 건너 살아남고 트윈도 그 레이어가 쥔다. 타이밍은 `FADE_OUT_SEC` 0.30 /
-`LOAD_SEC` 0.50 / `FADE_IN_SEC` 0.35. 쓰는 자리: 드래프트 "게임 시작"
-(`TeamDraftView._play_launch_transition`), 밴픽 확정 → 전장
+`class_name SceneFade`, extends `RefCounted` (static only). **Fade to black → fake loading →
+fade back in** transition — the effect that says a scene has passed. `play(tree, on_covered)` calls
+`on_covered` once at the moment the screen is fully covered, and `change_scene(tree, path)` does
+`change_scene_to_file` at that point. The cover is a **`CanvasLayer` (layer 100) on the SceneTree root**,
+so it survives the scene change, and that layer also holds the tweens. Timing is `FADE_OUT_SEC` 0.30 /
+`LOAD_SEC` 0.50 / `FADE_IN_SEC` 0.35. Used at: run setup "게임 시작" (Start game)
+(`RunSetupScreen._on_start_requested`), ban/pick confirm → battlefield
 (`MatchFlow._launch_battle`).
 
 ### DragScroll.gd
-`class_name DragScroll`, extends `Node`. **손가락 / 마우스로 끌어 `ScrollContainer`
-를 굴린다.** `DragScroll.attach(scroll, horizontal = false, releases_cross = false)`
-한 줄로 붙고, 그 스크롤의 자식(Control 이 아니라 내용 계산에 안 낀다)으로 산다.
+`class_name DragScroll`, extends `Node`. **Scrolls a `ScrollContainer` by finger / mouse
+drag.** Attaches with the one line `DragScroll.attach(scroll, horizontal = false, releases_cross = false)`
+and lives as a child of that scroll (it is not a Control, so it doesn't take part in content sizing).
 
-**엔진의 터치 드래그를 끄고 대신 굴린다.** 엔진 경로는 `is_touchscreen_available()`
-일 때만 켜져 데스크톱 마우스로는 아예 안 굴렀고, 폰에서도 스크롤 위의 탭 대상과
-얽혀 "안 굴러간다"는 보고가 계속 나왔다. 이 노드는 마우스와 (에뮬레이트된) 터치를
-같은 코드로 받으므로 **데스크톱에서 마우스로 끌어 본 결과가 곧 폰의 결과**다.
+**It turns off the engine's touch drag and scrolls instead.** The engine path only turns on when
+`is_touchscreen_available()`, so it didn't scroll at all with a desktop mouse, and on phones it got tangled
+with tap targets on top of the scroll, producing a steady stream of "it won't scroll" reports. This node takes mouse and (emulated) touch
+through the same code, so **what you get dragging with a mouse on desktop is exactly what you get on the phone**.
 
-| 상태 | 무엇을 하나 |
+| State | What it does |
 |---|---|
-| PENDING | 스크롤 안에서 눌렸다. `THRESHOLD_PX`(14) 안의 흔들림은 **삼킨다** — 탭이 탭으로 남고, 내장 드래그가 작은 흔들림에 먼저 시작되지 않는다. |
-| SCROLL | 문턱을 넘었고 스크롤 축 방향. 그 순간 **눌려 있던 버튼의 눌림을 취소**한다(`disabled` 를 켰다 끄면 엔진이 press_attempt 를 비운다 → 떼도 `pressed` 가 안 온다). 손을 떼면 관성(`FLING_DECAY`). |
-| CROSS | 문턱을 넘었는데 축을 **가로지른다**(`cross_axis_releases` 일 때만). `cross_drag_started(press_pos)` 를 쏘고 이후 이동은 손대지 않는다 — 화면이 그 신호로 `force_drag` 를 연다. |
+| PENDING | Pressed inside the scroll. Jitter within `THRESHOLD_PX` (14) is **swallowed** — a tap stays a tap, and the built-in drag doesn't start first on a small wobble. |
+| SCROLL | Past the threshold and along the scroll axis. At that moment it **cancels the press of the button that was held** (toggling `disabled` on and off makes the engine clear press_attempt → no `pressed` arrives on release). On release, inertia (`FLING_DECAY`). |
+| CROSS | Past the threshold but **crossing** the axis (only when `cross_axis_releases`). Emits `cross_drag_started(press_pos)` and leaves subsequent movement alone — the screen opens `force_drag` on that signal. |
 
-규약 셋.
-- **눌림의 출처는 GUI 가 판정한다** — 스크롤 노드의 `gui_input` 시그널로 받는다.
-  `_input` 에서 사각형만 재면 위를 덮은 팝업의 탭까지 스크롤로 잡힌다. 그래서
-  스크롤 아래의 `MOUSE_FILTER_STOP` 은 **전부 PASS 로 내린다**(`_sweep_filters`,
-  노드가 들어올 때마다 지연 실행). PASS 는 자기도 이벤트를 받으므로 탭은 그대로다.
-- **그 눌림을 받아 둔다**(`accept_event`) — 엔진의 터치 드래그가 함께 시작되면
-  한 손가락에 스크롤이 두 배로 간다.
-- **버튼이 아닌 탭 대상**(떼기를 `gui_input` 으로 받는 패널)은 `moved` 를 보고
-  스크롤 · 가로지르기였던 떼기를 무시한다(훈련 코스 카드가 그렇다).
+Three conventions.
+- **The GUI decides where the press came from** — it is received via the scroll node's `gui_input` signal.
+  Measuring only the rectangle in `_input` would also capture taps on a popup covering it as scrolls. So
+  every `MOUSE_FILTER_STOP` under the scroll is **lowered to PASS** (`_sweep_filters`,
+  deferred each time a node enters). PASS still receives events itself, so taps work as before.
+- **It accepts that press** (`accept_event`) — if the engine's touch drag also started,
+  one finger would scroll twice as far.
+- **Tap targets that are not buttons** (panels receiving release via `gui_input`) check `moved` and
+  ignore releases that were scrolls · crossings (the training course cards work this way).
 
-`OutgameTheme.add_vscroll` 은 자동으로 붙인다. 손으로 세운 스크롤 — 드래프트 격자 ·
-드래프트 상세 · 밴픽 메크 격자 · 메크 상세 · 훈련 코스 목록 — 은 각자 부른다.
-인게임(BattleSim)의 더미 열람 · 찾기 그리드에는 아직 안 붙였다.
+`OutgameTheme.add_vscroll` attaches it automatically. Hand-built scrolls — draft grid ·
+draft detail · ban/pick mech grid · mech detail · training course list — each call it themselves.
+It is not yet attached to the in-game (BattleSim) pile browse · search grids.
 
 ### StrategyIcon.gd
 `class_name StrategyIcon`, extends `RefCounted`, static only. **The strategy-point
@@ -805,74 +834,74 @@ otherwise breaks between any two Hangul syllables — "비/용"). Measure the sa
 joined text, or the height disagrees with the label.
 
 ### OutgameTheme.gd
-`class_name OutgameTheme`, extends `RefCounted`. **아웃게임 화면의 모든 색이
-여기를 지난다** — 시즌 허브 · 기자회견 · 훈련판 · 시간 경과 · 순위 · 브래킷 ·
-드래프트. 화면마다 자기 `Color(...)` 리터럴을 들고 있으면 같은 카드가 화면마다
-다른 회색으로 그려지고, 팔레트를 한 번 손보는 일이 파일 열몇 개를 훑는 일이 된다.
-**인게임(BattleSim)은 이 표를 쓰지 않는다** — 전장은 어두운 화면이고 거기서
-흰 카드는 눈부신 판이 된다.
+`class_name OutgameTheme`, extends `RefCounted`. **Every colour on outgame screens passes
+through here** — season hub · press conference (기자회견) · training board · time-passing · standings · brackets ·
+draft. If each screen held its own `Color(...)` literals, the same card would be drawn in a different grey
+per screen, and touching up the palette once would mean combing through a dozen-odd files.
+**In-game (BattleSim) does not use this table** — the battlefield is a dark screen, and there
+a white card becomes a glaring slab.
 
-참고 디자인은 `docs/ref_image.jpg`(하얀 종이 위에 색이 있는 카드). 규칙 셋:
+The design principle is coloured cards on white paper. Three rules:
 
-1. 바탕은 `BG`, 내용은 그보다 **더 흰** `SURFACE` 카드 위에. 경계는 선이 아니라
-   **그림자와 밝기 차이**가 만든다(`BORDER` 는 아주 옅다).
-2. 강조는 색면 하나(`ACCENT`)로만 — 지금 어느 요일인가, 지금 누를 버튼은 무엇인가.
-   **글자에 쓸 앰버는 `ACCENT_TEXT`** 다(`ACCENT` 를 흰 종이 위 글자에 그대로
-   쓰면 대비가 모자란다. `const` 자리에서 `darkened()` 가 상수식이 아니라
-   리터럴로 따로 둔 것이다).
-3. 분류는 카드 왼쪽 색 띠(`lead_bar_style`) 또는 카드 색면(`CARD_TINTS`)이 한다.
-   역할 색 다섯(`ROLE_COLORS`)과 역할 이름(`ROLE_NAMES`)도 여기가 소유한다 —
-   순서는 `GameEnums.Role`(자리 순서가 아니다).
+1. Background is `BG`; content sits on `SURFACE` cards that are **even whiter**. Boundaries are made not by lines
+   but by **shadow and brightness difference** (`BORDER` is very faint).
+2. Emphasis uses one colour field (`ACCENT`) only — which weekday it is now, which button to press now.
+   **Amber for text is `ACCENT_TEXT`** (using `ACCENT` as-is for text on white paper
+   lacks contrast. It is a separate literal because `darkened()` is not a constant expression in a
+   `const` slot).
+3. Classification is done by the card's left colour bar (`lead_bar_style`) or card colour field (`CARD_TINTS`).
+   The five role colours (`ROLE_COLORS`) and role names (`ROLE_NAMES`) are also owned here —
+   in `GameEnums.Role` order (not seat order).
 
-| 묶음 | 내보내는 것 |
+| Group | Exports |
 |---|---|
-| 색 | `BG` `SURFACE` `SURFACE_SUNK` `RAIL` `RAIL_TEXT` / `TEXT` `TEXT_SUB` `TEXT_FAINT` `TEXT_ON_FILL` / `ACCENT` `ACCENT_DIM` `ACCENT_TEXT` `LINK` / `POSITIVE` `NEGATIVE` `NEUTRAL` / `BORDER` `BORDER_STRONG` `SHADOW` / `CARD_TINTS` `ROLE_COLORS` `ROLE_NAMES` `DAY_LETTERS` `DAY_NAMES` |
+| Colour | `BG` `SURFACE` `SURFACE_SUNK` `RAIL` `RAIL_TEXT` / `TEXT` `TEXT_SUB` `TEXT_FAINT` `TEXT_ON_FILL` / `ACCENT` `ACCENT_DIM` `ACCENT_TEXT` `LINK` / `POSITIVE` `NEGATIVE` `NEUTRAL` / `BORDER` `BORDER_STRONG` `SHADOW` / `CARD_TINTS` `ROLE_COLORS` `ROLE_NAMES` `DAY_LETTERS` `DAY_NAMES` |
 | StyleBox | `card_style` `flat_style` `lead_bar_style` `set_corner_radius` |
-| 버튼 | `style_primary_button`(앰버, 한 화면에 하나) `style_ghost_button` `style_text_button` `style_dark_button`(어두운 색면 — "이 화면을 떠난다") |
-| 하단 바 | `BOTTOM_BAR_H`(128) `bottom_bar_top()` `add_bottom_bar(parent, specs)` `layout_bottom_bar(buttons, specs)` `style_bottom_button(b, style, font)` |
-| 조각 | `add_background`(안이 `ScreenMetrics.extend_background` 를 부른다) `add_card` `add_divider` `add_round_portrait` `add_chip` `add_vscroll` |
+| Button | `style_primary_button` (amber, one per screen) `style_ghost_button` `style_text_button` `style_dark_button` (dark colour field — "leave this screen") |
+| Bottom bar | `BOTTOM_BAR_H` (128) `bottom_bar_top()` `add_bottom_bar(parent, specs)` `layout_bottom_bar(buttons, specs)` `style_bottom_button(b, style, font)` |
+| Pieces | `add_background` (internally calls `ScreenMetrics.extend_background`) `add_card` `add_divider` `add_round_portrait` `add_chip` `add_vscroll` |
 
-**버튼 스타일은 색만 정한다 — 감촉은 여기서 정하지 않는다.** 한때는 이 네
-함수가 `HapticUi.kind` 로 세기까지 정했지만(primary · dark = `MEDIUM` / ghost =
-`LIGHT` / text = `SELECT`) 그 표는 폐기됐다. 지금은 **모든 버튼이 종류와
-무관하게 같은 두 박자**를 낸다 — 누를 때 `LIGHT`, 뗄 때 `SOFT`. 확정인지 탭
-전환인지는 화면이 말하는 것이고, 손에 오는 감촉이 화면마다 흔들리면 그것이
-도리어 잡음이었다. 배선 전체는 `autoloads/README.md` 의 `HapticUi.gd` 절.
+**Button styles decide colour only — feel is not decided here.** At one point these four
+functions also set the strength via `HapticUi.kind` (primary · dark = `MEDIUM` / ghost =
+`LIGHT` / text = `SELECT`), but that table was scrapped. Now **every button gives the same two beats
+regardless of kind** — `LIGHT` on press, `SOFT` on release. Whether it is a confirm or a tab
+switch is for the screen to say; a feel in the hand that wobbled per screen was itself
+noise. The full wiring is in the `HapticUi.gd` section of `autoloads/README.md`.
 
-### 하단 액션 바 (`add_bottom_bar`)
-**아웃게임 화면의 주된 행동은 화면 한가운데 떠 있는 도형이 아니라 하단 구간
-전체다.** 좌우 여백 0, 아래는 안전선에 밀착, 모서리는 각지게 — 그래서 바가
-화면의 한 구획이 되고 "여기 아래는 전부 이 행동"이 자리만으로 읽힌다. 버튼이
-여럿이면 그 구간을 **무게 비율대로** 나눠 갖고, 관례는 **주 행동 2 : 보조 1** 에
-**주 행동이 오른쪽 끝**이다(엄지가 닿는 자리이고 훑는 눈이 마지막에 멎는 자리다).
+### Bottom action bar (`add_bottom_bar`)
+**The main action on an outgame screen is not a shape floating in the middle of the screen but the whole bottom
+zone.** Zero left/right margin, bottom flush to the safe line, square corners — so the bar becomes
+a section of the screen and "everything down here is this action" reads from position alone. With
+several buttons they split that zone **by weight ratio**, and the convention is **primary 2 : secondary 1** with
+**the primary at the far right** (where the thumb reaches and where the scanning eye stops last).
 
-쓰는 화면 여덟: 시즌 허브(`리그 순위` 1 / `이번 주 시작 →` 2) · 일상 훈련
-(`판 비우기` 1 / `훈련 확정` 2) · 드래프트(`뒤로` 1 / `다음`·`게임 시작` 2) ·
-리그 순위 · 플레이오프 · 국제대회 브래킷 · 시간 경과(각 `확인` 하나로 전폭) ·
-엔딩 / 게임오버(`타이틀로` 1 / `다시 시작` 2).
+Eight screens use it: season hub (`리그 순위` (League standings) 1 / `이번 주 시작 →` (Start this week →) 2) · daily training (일상 훈련)
+(`판 비우기` (Clear board) 1 / `훈련 확정` (Confirm training) 2) · draft (`뒤로` (Back) 1 / `다음` (Next)·`게임 시작` (Start game) 2) ·
+league standings · playoffs · international tournament (국제대회) brackets · time-passing (each a single full-width `확인` (OK)) ·
+ending / game over (a single full-width `정산` (Settle)), lobby (`새 런` 1 / `이어하기` 2, no run → `새 런` full width).
 
-규약 넷.
-- **본문 높이는 `bottom_bar_top()` 에서 역산한다.** 바 높이를 화면마다 상수로
-  다시 적으면 바를 한 번 손볼 때마다 그 화면들의 목록이 조용히 바 밑으로 들어간다.
-- **색면은 안전선 아래까지 내려가고 글자는 안전선 위에 남는다.** 홈 인디케이터 /
-  제스처 바 자리를 비워 두면 바 밑에 배경색 띠가 한 줄 남아 바가 떠 보인다.
-  버튼 사각형을 뷰포트 바닥까지 늘리되 `content_margin_bottom` 에 인셋을 얹으면
-  Button 이 글자를 그 안쪽 사각형 한가운데에 놓으므로, 눌리는 자리와 읽히는
-  자리가 둘 다 안전 영역 안이다.
-- **칸이 접히는 화면은 `layout_bottom_bar` 를 다시 부른다.** 보이는 칸만 무게를
-  나눠 가지므로 드래프트의 PICK 상태에서는 "다음"이 화면 폭을 통째로 쓴다.
-- **옷을 갈아입히는 버튼은 `style_bottom_button` 을 쓴다.** `style_dark_button`
-  을 직접 부르면 둥근 모서리가 되살아나 그 칸만 화면에서 도로 떠오른다
-  (시간 경과 화면의 "경기 시작"이 그렇게 바뀐다).
+Four conventions.
+- **Derive body height backwards from `bottom_bar_top()`.** If each screen re-wrote the bar height as a constant,
+  every time the bar was touched those screens' lists would quietly slide under the bar.
+- **The colour field extends below the safe line; the text stays above it.** Leaving the home indicator /
+  gesture bar area empty leaves a strip of background colour under the bar, making the bar look like it floats.
+  Stretch the button rectangle down to the viewport bottom but add the inset to `content_margin_bottom`, and
+  Button places the text at the centre of that inner rectangle, so both the press area and the read area
+  are inside the safe area.
+- **Screens whose slots collapse call `layout_bottom_bar` again.** Only visible slots share the weight,
+  so in the draft's PICK state "다음" (Next) uses the full screen width.
+- **Buttons that change outfits use `style_bottom_button`.** Calling `style_dark_button`
+  directly brings back rounded corners and that slot alone pops back up off the screen
+  (the time-passing screen's "경기 시작" (Start match) switches this way).
 
-**`add_round_portrait` 은 `clip_contents` 로 만들지 않는다.** 그것은 Control 의
-사각 rect 로 자르지 StyleBox 의 모서리 반지름으로 자르지 않아서, `Panel`
-(radius = 지름/2) 안에 `TextureRect` 를 넣어 봐야 텍스처가 둥근 모서리를 그대로
-덮어 **모서리만 살짝 둥근 사각형**이 나온다(실측). 그래서 텍스처를 입힌 **원형
-폴리곤**을 직접 그린다(`draw_colored_polygon(points, WHITE, uvs, tex)`), UV 는
-`KEEP_ASPECT_COVERED` 와 같게(짧은 축을 꽉 채우고 긴 축은 가운데를 잘라 낸다).
-반환값은 자식을 얹어도 되는 `Control` 이다 — Control 의 `_draw` 는 자식보다
-**먼저** 나가므로 원이 배경, 자식이 그 위다.
+**`add_round_portrait` is not built with `clip_contents`.** That clips by the Control's
+rectangle, not the StyleBox corner radius, so putting a `TextureRect` inside a `Panel`
+(radius = diameter/2) lets the texture cover the rounded corners as-is, giving **a rectangle with only
+slightly rounded corners** (measured). So it draws a **textured circular polygon** directly
+(`draw_colored_polygon(points, WHITE, uvs, tex)`), with UVs matching
+`KEEP_ASPECT_COVERED` (fill the short axis fully, crop the centre of the long axis).
+The return value is a `Control` you may add children to — a Control's `_draw` runs
+**before** its children, so the circle is the background and the children sit on top.
 
 ## Usage Pattern
 ```gdscript
@@ -880,33 +909,33 @@ joined text, or the height disagrees with the label.
 GameEnums.MatchPhase.BAN_PICK
 
 # Create card data
-var card = CardData.new("Strike", 1, "A basic attack.")
+var card = CardData.new("Strike", cost, "A basic attack.")
 
 # Match-flow data
-var p := PlayerData.new(0, "Corin", GameEnums.Role.ASSASSIN, 0, 95, 95, 98, 95, 98)
-var m := MechData.new(12, "Overdrive", 90, 26, 4)   # id, name, hp, atk, presence
+var p := PlayerData.new(0, "Corin", GameEnums.Role.ASSASSIN, 0, <stats…>)   # stat values come from players.csv
+var m := MechData.new(12, "Overdrive", hp, atk, presence)   # values come from mechs.csv
 p.assigned_mech = m
 ```
 
-## 메크 스킬과 이 폴더의 관계
-`MechData` 에 **`role` 필드가 생겼다**(GameEnums.Role, -1 = 없음). 예전 주석은
-"메크는 역할이 없다 — 어느 슬롯에도 앉힐 수 있다" 였는데, 기체마다 고유 카드 셋이
-붙으면서 그 카드들이 역할군을 전제하게 됐다. **배정 자체는 여전히 자유다** — 이
-값은 밴픽 화면의 분류와 데이터 검증에 쓰이고 ASSIGN 을 막지 않는다.
+## How mech skills relate to this folder
+**`MechData` gained a `role` field** (GameEnums.Role, -1 = none). The old comment said
+"mechs have no role — they can be seated in any slot", but once each mech got a unique card set,
+those cards came to presuppose a role group. **Assignment itself is still free** — this
+value is used for ban/pick screen classification and data validation, and does not block ASSIGN.
 
-`CardData` 에는 다섯이 붙었다 — `mech_card_id` / `mech_id`(어느 기체의 몇 번 카드인가),
-`trigger`(그 카드에 붙은 사건 훅), `charge_max`(충전 상한, `mech_cards.charge_max`),
-`charge`(지금 쌓인 충전). 그리고 키워드에 **`charge`** 가 더해졌고,
-**`cost = -1` 은 "낼 수 없는 카드"** 를 뜻한다(`is_playable()`) — **비용 -1 은
-할인도 증세도 받지 않는다**: `BattleSim.effective_cost_for` 가 그대로 -1 을
-돌려주고 `_effect_cost_reduce_hand`(사전 준비)도 건너뛴다. 예전에는 -1 이 그냥
-수로 취급돼 `max(0, …)` 를 지나며 0 이 됐고, 그러면 `is_playable()` 를 안 보는
-자리마다 그 카드가 "공짜로 낼 수 있는 카드"로 읽혔다.
-`stack_count` 와 키워드 `stack`(핸드에서 뭉치기)은 충전으로 대체되며 삭제됐다.
+`CardData` gained five — `mech_card_id` / `mech_id` (which card number of which mech),
+`trigger` (the event hook attached to that card), `charge_max` (Charge cap, `mech_cards.charge_max`),
+`charge` (Charge accumulated now). The keyword **`charge`** was also added, and
+**`cost = -1` means "a card that cannot be played"** (`is_playable()`) — **cost -1 receives
+neither discounts nor increases**: `BattleSim.effective_cost_for` returns -1 as-is
+and `_effect_cost_reduce_hand` (사전 준비 (Preparation)) skips it too. Previously -1 was treated as a plain
+number and became 0 by passing through `max(0, …)`, and then every place that didn't check
+`is_playable()` read that card as "a card you can play for free".
+`stack_count` and the keyword `stack` (bundling in hand) were deleted, replaced by Charge.
 
-`PilotData` 에는 메크가 거는 지속 상태 열두 개와 영구 스탯 보정 세 개가 붙었다 —
-자세한 내용은 그 파일의 "메크가 거는 지속 상태" 절과
-[`docs/mech_skills_design.md`](../docs/mech_skills_design.md).
+`PilotData` gained twelve persistent states applied by mechs and three permanent stat modifiers —
+for details see that file's "메크가 거는 지속 상태" (Persistent states applied by mechs) section and the
+"Persistent state" (지속 상태) section of [`features/battle_sim/mech/README.md`](../features/battle_sim/mech/README.md).
 
 
 ## Detail moved from root CLAUDE.md
@@ -915,54 +944,55 @@ p.assigned_mech = m
 
 | System | Description |
 |---|---|
-| 모브 파일럿 | **스킬 없는 15명.** 스킬이 25개뿐이라 40명을 다 채울 수 없고, 남는 15명은 이름표가 아니라 **그림**이 "이름 없는 선수"임을 말한다 — 다섯 컷(circle / eye / faces / tall / full)이 통째로 실루엣 한 벌 더 있고(`resources/images/pilot/mob/`), `GameManager.load_match_data()` 가 `PilotImages.set_mob_ids()` 로 목록을 한 번 심으면 그 뒤의 모든 초상화 조회가 자동으로 갈린다. 실루엣은 다섯 컷 모두 **알파는 그대로 둔 채 RGB 를 단색으로 덮는다** — 어두운 초상화는 실루엣이 아니다(밝기만 누르던 예전 방식은 색만 빠질 뿐 이목구비가 그대로 읽혔다). 다만 `faces` / `circle` / `eye` 는 얼굴이 프레임을 꽉 채운 크롭이라(실측: eye 밴드의 97.7% 가 불투명) 그 자리에서 칠하면 검은 원 하나 · 검은 막대 하나가 되므로, 셋만 **`full` 아트에서 머리~어깨를 다시 잘라** 만든다 — full 의 알파가 곧 인물 윤곽이라 배경이 투명하게 남아 머리 모양과 어깨선이 실루엣으로 읽힌다(얼굴 사각형은 `make_eye_crops.py` 와 **같은 템플릿 매칭**으로 찾으므로 인물 배율이 다른 컷과 어긋나지 않는다). 대신 모브 칸만 프레이밍이 달라 네임드보다 인물이 작게 잡힌다. **`circle` 만 불투명한 원 바탕을 구워 넣는다** — 전장 마커는 초상 뒤에 흰 원을 깔고 교전 아레나는 아무것도 안 깔아서, 투명한 채로 두면 같은 그림이 한쪽에선 흰 배지 · 다른 쪽에선 배경이 비치는 구멍이 된다. 스탯은 네임드보다 **10% 낮고** 그 하향은 런타임 계수가 아니라 **`players.csv` 값 자체**에 반영돼 있다 — 나중에 난이도 배율을 곱할 자리를 비워 둔 것이다. **시즌 드래프트 격자에서 빠지지만**(`TeamDraft.get_pool_grid`) 팀에는 그대로 앉아 있어 적으로는 여전히 만난다. 네임드 25명은 **8팀에 고르게 흩어져 있다** — 팀 0(플레이어 시작 팀)이 5명, 나머지 20명이 7개 AI 팀에 2~3명씩. 팀 0 이 전원 네임드인 것은 드래프트의 맞교환이 네임드끼리만 일어나야 팀별 네임드 수가 흔들리지 않기 때문이다. |
+| Mob pilots (모브 파일럿) | **15 without skills.** There are only 25 skills, so not all 40 can be filled, and for the remaining 15 it is the **picture**, not a name tag, that says "nameless player" — the five cuts (circle / eye / faces / tall / full) each have a full extra silhouette set (`resources/images/pilot/mob/`), and once `GameManager.load_match_data()` plants the list via `PilotImages.set_mob_ids()`, every subsequent portrait lookup switches automatically. For all five cuts the silhouette **leaves alpha untouched and covers RGB with a single colour** — a dark portrait is not a silhouette (the old method of only darkening brightness just removed colour, and facial features still read clearly). However, `faces` / `circle` / `eye` are crops where the face fills the frame (measured: 97.7% of the eye band is opaque), so painting in place gives one black circle · one black bar; only those three are made by **re-cropping head~shoulders from the `full` art** — full's alpha is the figure outline, so the background stays transparent and the head shape and shoulder line read as a silhouette (the face rectangle is found with **the same template matching** as `make_eye_crops.py`, so figure scale does not diverge from other cuts). In exchange, only mob slots frame differently, with the figure smaller than named ones. **Only `circle` bakes in an opaque circular background** — the battlefield marker lays a white circle behind the portrait while the engage arena lays nothing, so left transparent, the same picture would be a white badge on one side · a hole showing the background on the other. Stats are **10% lower** than named pilots, and that reduction is baked into **the `players.csv` values themselves**, not a runtime coefficient — leaving room to multiply in a difficulty factor later. **They are excluded from the run-setup lineup grid** (`TeamDraft.get_pool_grid`) but still sit on their teams, so you still meet them as opponents. `players.team_id` is only the **default affiliation shown in UI** — at run start `GameManager.start_run` puts my 5 on the chosen team and `RunRoster` shuffles the other 35 (named + mob) one per role onto the 7 AI teams by `run_seed` (`features/season/README.md` "Entry point"). |
 
-### 파일럿 스트립 원형 초상 쉐이더 (`shaders/pilot_bust_mask.gdshader`)
-`ui/PilotStrip.gd` 가 칸마다 `ColorRect` 에 물린다(TextureRect 가 아닌 이유: 이미지가
-없어도 원은 그려야 한다). 칸 아래쪽에 팀색 원(지름 = 칸 폭)을 그리고 그 위에
-`strip/N_strip.png` 흉상을 얹되, **원 중심 아래는 원 모양으로, 위는 칸 좌우로만**
-잘라 머리가 원 위로 튀어나오게 한다. 원 테두리(`rim_width` — 지금 스트립은 0 을
-넘겨 **테두리 없음**, 0 이면 링을 아예 안 그린다)와 쓰러짐 틴트(`tint` — **흉상에만**
-곱한다, 팀색 원은 그대로)도 같은 쉐이더가 한다 — 겹쳐 얹는 사각형은 원 바깥 빈
-모서리까지 칠해 버린다. 예전의 스킬 준비도 딤(`fill` / `dim`)은 삭제됐다. `rect_size` 유니폼은 노드 크기로 넣어야 한다(마스크를 로컬 픽셀로 잰다).
+### Pilot strip circular portrait shader (`shaders/pilot_bust_mask.gdshader`)
+`ui/PilotStrip.gd` attaches it to a `ColorRect` per slot (not a TextureRect: the circle must be drawn
+even without an image). It draws a team-colour circle (diameter = slot width) at the bottom of the slot and
+lays the `strip/N_strip.png` bust over it, clipped **to the circle below the circle's centre and only to the
+slot's left/right edges above it**, so the head pokes out above the circle. The circle rim (`rim_width` — the
+strip currently passes 0 = **no rim**; 0 skips the ring entirely) and the downed tint (`tint` — multiplied
+**into the bust only**, the team circle stays) are done by the same shader — an overlaid rectangle would also
+paint the empty corners outside the circle. The old skill-readiness dim (`fill` / `dim`) was deleted. The
+`rect_size` uniform must be set to the node size (the mask is measured in local pixels).
 
-### 카드 아트 모서리 쉐이더 (`shaders/rounded_top_mask.gdshader`)
-`Card._apply_art` 가 아트 `TextureRect` 에 물린다. 위 두 모서리를 `radius` 로 깎되
-둥근 사각형 SDF + `fwidth` 로 덮임을 계산해 곡선이 화면 1px 에 걸쳐 흐려진다
-(안티앨리어싱 — `clip_children` 의 계단이 없다). 마스크는 UV 가 아니라 노드 로컬
-픽셀(`VERTEX`)로 재므로 `rect_size` 유니폼을 노드 크기로 넣어야 한다 —
-`STRETCH_KEEP_ASPECT_COVERED` 는 텍스처 일부 영역만 그려 UV 가 rect 를 덮지 않는다.
-아랫변은 흐리지 않는다(박스를 `radius` 만큼 아래로 늘려 계산).
+### Card art corner shader (`shaders/rounded_top_mask.gdshader`)
+`Card._apply_art` attaches it to the art `TextureRect`. It rounds off the top two corners by `radius`,
+computing coverage with a rounded-rectangle SDF + `fwidth` so the curve blurs across 1 screen px
+(anti-aliasing — no `clip_children` staircase). The mask is measured in node-local
+pixels (`VERTEX`), not UV, so the `rect_size` uniform must be set to the node size —
+`STRETCH_KEEP_ASPECT_COVERED` draws only part of the texture, so UV doesn't cover the rect.
+The bottom edge is not blurred (computed by extending the box downward by `radius`).
 
-### 카드 아트 둥근 사각형 쉐이더 (`shaders/rounded_rect_mask.gdshader`)
-`rounded_top_mask` 의 네 모서리판. 같은 SDF + `fwidth` 안티앨리어싱, 같은 로컬 픽셀
-측정(`rect_size` 를 노드 크기로). 파일럿 상세 패널의 지속 효과 썸네일이 카드 아트에
-물린다(`PilotDetailPanel._make_fx_art_thumb`).
+### Card art rounded-rectangle shader (`shaders/rounded_rect_mask.gdshader`)
+Four-corner version of `rounded_top_mask`. Same SDF + `fwidth` anti-aliasing, same local-pixel
+measurement (`rect_size` = node size). Used on card art in the pilot detail panel's lasting-effect
+thumbnails (`PilotDetailPanel._make_fx_art_thumb`).
 
-### 캐릭터 실루엣 쉐이더 (지금은 쓰는 자리가 없다)
-`resources/shaders/silhouette.gdshader` + `resources/SilhouetteFx.gd` 는
-**서 있기만 하고 어느 화면도 부르지 않는다.** 한때 아웃게임 파일럿 상세 팝업
-(`season/draft/DraftDetailPanel.gd`)의 전신 아트가 실루엣으로 서 있다가 아래에서
-위로 벗겨지는 등장 컷이 있었지만 **그 적용은 걷혔다** — 팝업은 이제 아트를 그대로
-켠다(`ART_SIL_REVEAL_SEC` / `_DELAY` 와 `SilhouetteFx.apply` / `play_reveal` 호출이
-함께 사라졌다). 쉐이더와 배선은 다음에 쓸 자리를 위해 남겨 둔 도구다.
+### Character silhouette shader (currently unused)
+`resources/shaders/silhouette.gdshader` + `resources/SilhouetteFx.gd`
+**exist but no screen calls them.** There used to be an entry cut in the outgame pilot detail popup
+(`meta/run_setup/DraftDetailPanel.gd`) where the full-body art stood as a silhouette and peeled away from bottom
+to top, but **that usage was removed** — the popup now shows the art as-is
+(`ART_SIL_REVEAL_SEC` / `_DELAY` and the `SilhouetteFx.apply` / `play_reveal` calls disappeared
+together). The shader and wiring are a tool kept for the next use.
 
-**구운 모브 실루엣 PNG(`images/pilot/mob/`)를 대체하는 것이 아니다.** 그쪽은
-"이름 없는 선수"를 상시로 말하는 에셋이고, 무엇보다 `faces` / `circle` / `eye`
-세 컷은 알파가 통짜 사각형이라 런타임에 칠하면 검은 막대가 된다. 쉐이더가 살 수
-있는 자리는 **알파가 곧 인물 윤곽인 컷**(`full` / `tall` 계열)이다.
+**It does not replace the baked mob silhouette PNGs (`images/pilot/mob/`).** Those are
+assets that permanently say "nameless player", and above all the `faces` / `circle` / `eye`
+cuts have solid-rectangle alpha, so painting them at runtime yields a black bar. The places where the shader can live
+are **cuts whose alpha is the figure outline** (the `full` / `tall` family).
 
-테두리가 설 자리는 아트를 그 폭만큼 안으로 물려서 만든다(전신 아트 40장이 네 변에
-인물이 닿아 있어 안 그러면 머리 위 테두리가 잘린다). 파라미터 표와 쉐이더를
-만지기 전에 볼 함정 셋(프래그먼트 `COLOR` 는 이미 텍스처가 곱해진 채 들어온다 ·
-`MODULATE` 내장이 없다 · 전역 함수에서 `TEXTURE` 를 못 읽는다)은
-`resources/README.md` 에 실측과 함께 적혀 있다.
+Room for the border is made by insetting the art by that width (all 40 full-body artworks have the figure touching
+all four edges, so otherwise the border above the head gets cut off). The parameter table and the three traps to see
+before touching the shader (the fragment `COLOR` already arrives multiplied by the texture ·
+no `MODULATE` built-in · `TEXTURE` can't be read in global functions) are written down with measurements in
+`resources/README.md`.
 
 ---
 
 ### `CardData.from_def()` is static (moved from root CLAUDE.md)
 
-`CardData.gd` — `from_def()` 는 **static** —
-`cards.csv` 한 행을 카드 한 장으로 조립하는 유일한 자리라
-BattleSim 없이도 돌아야 한다(밴픽 하단 시트 · 메크 상세가 쓴다.
-드래프트 상세 팝업도 썼지만 그 화면의 후보 카드 절은 삭제됐다)
+`CardData.gd` — `from_def()` is **static** —
+it is the only place that assembles one `cards.csv` row into a card, so
+it must run without BattleSim (used by the ban/pick bottom sheet · mech detail.
+The draft detail popup used it too, but that screen's candidate-card section was deleted)

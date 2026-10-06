@@ -3,8 +3,8 @@
 ## BanPickController.gd
 `extends Node` — child of MatchFlow.
 
-Implements the LoL-international ban/pick draft against an AI opponent that
-"만지작거린다" — 아래 Opponent AI 절.
+Implements the LoL-international ban/pick (밴픽) draft against an AI opponent that
+"fidgets" (만지작거린다) — see the Opponent AI section below.
 
 ### Sequence (14 actions)
 Pattern: `B-B-P-PP-PP-P-B-B-PP-PP` — 4 bans + 10 picks total. Each side ends
@@ -28,209 +28,217 @@ with **2 bans + 5 picks**.
 | 13 | Red | Pick |
 
 The constant `SEQUENCE` encodes this directly. `player_side` (BLUE or RED) is
-passed in by MatchFlow — 지금은 **항상 BLUE 로 고정**이다(`match_flow/README.md`
-의 진영 절 참조).
+passed in by MatchFlow — it is currently **always fixed to BLUE** (see the side section of
+`match_flow/README.md`, "Side (`player_side`) — currently always BLUE").
 
 ---
 
-## 화면
+## Screen
 
-세로 한 장을 **위 / 가운데 / 아래** 세 덩이로 나눈다.
+One vertical sheet is divided into three blocks: **top / middle / bottom**.
 
 ```
-┌──────────────────────────────────────────┐ ← 상대 팀 블록
+┌──────────────────────────────────────────┐ ← opponent team block
 │ RED · Team 1                    BAN ✕ ▫  │
-│ ▓▓  ▓▓  ▓▓  ▓▓  ▓▓   눈높이 초상화 5인      │
-│ 이름 이름 이름 이름 이름                    │
-│ [메크][메크][픽3][픽4][픽5]  픽 슬롯        │
-├──────────────────────────────────────────┤ ← 픽창 (흰 카드 한 장)
-│            ▲  (상대 차례면 위로 오간다)     │
-│ ▬▬[✕]▬▬▬▬▬▬▬▬▬▬▬  순서 줄 (14칸)           │
-│     ▼  (내 차례면 아래로 오간다)            │
+│ ▓▓  ▓▓  ▓▓  ▓▓  ▓▓   5 eye-level portraits │
+│ name name name name name                 │
+│ [mech][mech][pick3][pick4][pick5] pick slots │
+├──────────────────────────────────────────┤ ← pick pane (one white card)
+│            ▲  (bobs upward on opponent's turn) │
+│ ▬▬[✕]▬▬▬▬▬▬▬▬▬▬▬  order row (14 cells)      │
+│     ▼  (bobs downward on my turn)          │
 │ [전체][TANK][FIGHTER][ASSASSIN][SUP][SNP] │
-│ ▤ ▤ ▤ ▤ ▤    ← 5열                       │
-│ ▤ ▤ ▤ ▤ ▤      3.5줄이 보이는 수직 스크롤    │
+│ ▤ ▤ ▤ ▤ ▤    ← 5 columns                  │
+│ ▤ ▤ ▤ ▤ ▤      vertical scroll showing 3.5 rows │
 │ ▤ ▤ ▤ ▤ ▤                                │
-│ ▤ ▤ ▤ ▤ ▤    (넷째 줄은 반쯤 잘린다)         │
-├──────────────────────────────────────────┤ ← 아군 팀 블록 (거울)
-│ [메크][메크][픽3][픽4][픽5]                 │
-│ 이름 이름 이름 이름 이름                    │
+│ ▤ ▤ ▤ ▤ ▤    (the fourth row is half cut) │
+├──────────────────────────────────────────┤ ← ally team block (mirrored)
+│ [mech][mech][pick3][pick4][pick5]         │
+│ name name name name name                 │
 │ ▓▓  ▓▓  ▓▓  ▓▓  ▓▓                        │
 │ BLUE · Team 0                   BAN ✕ ▫  │
 └──────────────────────────────────────────┘
 ```
 
-### 색 — 아웃게임 흰 배경 계통
-바탕은 `OutgameTheme.BG`, 픽창 · 시트는 그림자 진 흰 카드(`card_style`), 빈 칸은
-`SURFACE_SUNK`, 글자는 `TEXT` / `TEXT_SUB`, 강조는 앰버(`ACCENT`)다 — 시즌 화면
-(허브 · 시간 경과 · 순위)과 같은 표. 진영색만 흰 바탕에서 읽히도록 인게임보다 한
-단계 짙게 따로 둔다(`BLUE_COLOR` / `RED_COLOR`). 예전의 어두운 판은 이 화면 하나만
-인게임처럼 보여 "경기가 이미 시작됐나"로 읽혔다.
+(`[전체]` = All.)
 
-### 순서 줄 (14칸) — 픽창 맨 위, 역할군 필터 바로 위
-예전에는 화면 **최상단**에 있었다 — 지금 누구 차례인지를 보려고 시선이 화면 끝까지
-올라갔다 내려와야 했다. 지금은 고르는 곳 바로 위다(`PIPS_ROW_H` 띠).
-- 칸 색은 그 수의 진영색이고 **진할수록 지금**이다(지난 수 반쯤 · 남은 수 거의 바탕).
-- **지금 칸은 두꺼워지고**(`PIP_H` 12 → `PIP_ACTIVE_H` 26, `PIP_GROW_SEC` 트윈)
-  가운데에 **밴이면 ✕, 픽이면 ✓ 아이콘**이 든다 — `resources/images/ui/banpick/`
-  의 `ban_x.svg` / `pick_v.svg`(흰 선, 칸 색 위에 그대로 얹는다).
-- 지금 칸에 **삼각형**(`turn_arrow.svg`)이 붙는다 — 내 차례면 칸 **아래**에서
-  아래(우리 팀 블록)를 가리키며 아래로, 상대 차례면 칸 **위**에서 위(상대 팀
-  블록)를 가리키며 위로 `TURN_ARROW_BOB_PX` 만큼 `TURN_ARROW_BOB_SEC` 주기로
-  천천히 오간다(`_process`, (1 − cos)/2 곡선이라 양 끝에서 느려지고 칸이 바뀐
-  순간 튀지 않는다). 아이콘 · 삼각형은 칸마다 두지 않고 한 벌이 지금 칸으로
-  옮겨 다닌다(`_refresh_pips`).
-- **같은 팀의 같은 행동이 이어지는 수는 캡슐 하나로 붙는다**(`_same_run` /
-  `_seq_run` — 지금 순서표에서는 픽 2연속 넷). 캡슐 안에는 틈이 없고 바깥 모서리만
-  둥글며, 이음매에 `PIP_DIVIDER_W`(2px) 바탕색 **구분선**이 서서 몇 수짜리인지가
-  읽힌다(구분선은 칸보다 나중에 붙인다 — 형제 순서가 곧 그리는 순서다). 지금 수가
-  캡슐 안에 있으면 **캡슐 전체가** 두꺼워진다(한 칸만 두꺼우면 계단이 진다). 그중
-  지금 칸만 진한 색 + ✕/✓ 아이콘 + **맥박**(`PIP_PULSE_SEC` 0.9초 주기로 알파가
-  1 ↔ 1 − `PIP_PULSE_DEPTH` 0.38, `_process`)을 갖고, 캡슐의 다음 수는 남은 수보다
-  한 단계 진한 색(`_seq_color` state 3)이다.
-- 배정 단계에서는 픽창과 함께 걷힌다.
+### Colour — outgame white-background family
+Background is `OutgameTheme.BG`, pick pane · sheet are shadowed white cards (`card_style`), empty
+cells are `SURFACE_SUNK`, text is `TEXT` / `TEXT_SUB`, accent is amber (`ACCENT`) — the same table as
+the season screens (hub · week progress (시간 경과) · standings). Only the side colours are kept
+separately, one step darker than in-game, so they read on white (`BLUE_COLOR` / `RED_COLOR`). The old
+dark board made this one screen look in-game, reading as "has the match already started?".
 
-### 차례 배너
-수가 넘어갈 때마다 화면 가운데를 **진영색 띠**가 가로지른다 — `내 차례 밴` /
-`상대 차례 밴` / `내 차례 픽` / `상대 차례 픽`. 인게임 "당신의 차례" 배너와 같은
-모양(가운데에서 양옆으로 펼쳐짐 → 머묾 → 옅어짐, `BANNER_*`)이고 **입력을 막지
-않는다**. 판(`_panel`)이 아니라 같은 캔버스의 형제(`_banner_root`)에 서서 나중에
-붙는 시트에도 덮이지 않는다. 다음 수가 먼저 오면 이전 배너를 걷는다(`_banner_gen`).
-**차례가 넘어가거나 밴 ↔ 픽이 바뀔 때만 뜬다** — 같은 팀이 같은 행동을 이어서
-하는 수(캡슐의 둘째 칸)에는 띠가 다시 뜨지 않는다. 말할 것이 바로 앞 수와 같고,
-그 이어짐은 순서 줄의 캡슐이 말한다. 상대의 생각 시간(`_maybe_run_ai` 의 대기)은
-띠가 없어도 그대로다.
+### Order row (14 cells) — top of the pick pane, right above the role-class filter
+It used to be at the **very top** of the screen — to see whose turn it was, the eye had to travel to
+the screen edge and back. Now it is right above where you choose (`PIPS_ROW_H` strip).
+- A cell's colour is that move's side colour, and **the darker, the more current** (past moves about
+  half · remaining moves nearly background).
+- **The current cell thickens** (`PIP_H` 12 → `PIP_ACTIVE_H` 26, `PIP_GROW_SEC` tween) and holds
+  **a ✕ icon for a ban, ✓ for a pick** in the centre — `ban_x.svg` / `pick_v.svg` in
+  `resources/images/ui/banpick/` (white lines, laid directly over the cell colour).
+- A **triangle** (`turn_arrow.svg`) attaches to the current cell — on my turn it sits **below** the
+  cell pointing down (toward our team block) and bobs downward; on the opponent's turn it sits
+  **above** pointing up (toward the opponent block) and bobs upward, by `TURN_ARROW_BOB_PX` with
+  period `TURN_ARROW_BOB_SEC` (`_process`; a (1 − cos)/2 curve, so it slows at both ends and doesn't
+  jump when the cell changes). Icon · triangle aren't per cell; a single set moves to the current
+  cell (`_refresh_pips`).
+- **Consecutive moves of the same action by the same team join into one capsule** (`_same_run` /
+  `_seq_run` — in the current order table, the four double-picks). The capsule has no gaps inside and
+  only its outer corners are rounded, and at each joint a `PIP_DIVIDER_W` (2px) background-colour
+  **divider** stands so you can read how many moves it spans (dividers are attached after the cells —
+  sibling order is draw order). If the current move is inside a capsule, **the whole capsule**
+  thickens (thickening one cell alone makes a step). Within it, only the current cell has the dark
+  colour + ✕/✓ icon + **pulse** (alpha 1 ↔ 1 − `PIP_PULSE_DEPTH` 0.38 with period `PIP_PULSE_SEC`
+  0.9 s, `_process`), and the capsule's next move is one step darker than the remaining moves
+  (`_seq_color` state 3).
+- In the assignment step it is removed along with the pick pane.
 
-### 파일럿 초상화 (위 = 적 / 아래 = 아군)
-전장 스트립과 **같은 eye 크롭**(`PilotImages.eye_for`, 480×200)이다 — 인게임
-상단 / 하단에서 보던 얼굴이 밴픽에서도 같은 자리에 선다. 칸 높이는 그 비율
-(`EYE_ASPECT` 2.4)에서 유도한다: 임의 높이로 늘리면 얼굴이 찌그러진다.
+### Turn banner
+Each time a move passes, a **side-coloured band** sweeps across the screen centre — `내 차례 밴`
+(My ban) / `상대 차례 밴` (Opponent's ban) / `내 차례 픽` (My pick) / `상대 차례 픽` (Opponent's
+pick). Same shape as the in-game "당신의 차례" (Your turn) banner (spreads from the centre to both
+sides → holds → fades, `BANNER_*`) and **does not block input**. It stands not on the board
+(`_panel`) but on a sibling in the same canvas (`_banner_root`), so sheets attached later don't
+cover it. If the next move arrives first, the previous banner is removed (`_banner_gen`).
+**It appears only when the turn passes or ban ↔ pick switches** — for a move where the same team
+continues the same action (the capsule's second cell) the band doesn't reappear. What it would say
+is the same as the move just before, and the order row's capsule already conveys the continuation.
+The opponent's thinking time (the wait in `_maybe_run_ai`) is unchanged even without the band.
 
-> **`TextureRect.expand_mode` 를 `texture` 보다 먼저 준다.** 기본
-> `EXPAND_KEEP_SIZE` 에서는 텍스처 크기가 그대로 **최소 크기**가 되어, 그 뒤에
-> 준 `size` 가 위로 잡아당겨진다 — 480×200 짜리 eye 크롭이 192×80 칸을 뚫고
-> 나와 아래 이름·픽 슬롯을 통째로 덮었고, 1024² 메크 아트는 시트 전체를
-> 가렸다(둘 다 실측). 이 파일의 `TextureRect` 다섯 자리가 전부 그 순서를 지킨다.
+### Pilot portraits (top = enemy / bottom = ally)
+The **same eye crop** as the battlefield (전장) strip (스트립) (`PilotImages.eye_for`, 480×200) — the
+faces seen at the in-game top / bottom stand in the same places in ban/pick. Cell height is derived
+from that ratio (`EYE_ASPECT` 2.4): stretching to an arbitrary height squashes faces.
 
-### 픽 슬롯 = 자리표 (아군은 밴픽 중에도 옮긴다)
-메크 칸의 내용은 `_seat_mechs[side]`(자리 → mech_id, -1 = 빈 자리)이고, 새 픽은
-**왼쪽부터 첫 빈 자리**에 앉는다. **아군 칸은 밴픽 중에도 끌어 다른 선수 자리로
-옮길 수 있다**(`_bind_slot_drag` 를 `_build_team_block` 이 아군 블록에 붙인다 —
-찬 자리면 맞바꿈, 빈 자리면 이동). 그래서 아군 칸은 처음부터 "그 위 선수의 기체"
-이고, 배정 단계는 그 배치를 이어받는다. 탭은 그 기체의 하단 시트를 연다(확정은
-잠겨 있다). 상대 칸은 밴픽 동안 픽 순서 그대로이고 배정 단계에서 포지션에 맞게
-다시 앉는다(`match_flow/README.md` 의 배정 절). 상대가 집어 보는 픽 미리보기도
-첫 빈 자리에 앉는다(`_ai_hover_slot`).
+> **Set `TextureRect.expand_mode` before `texture`.** With the default
+> `EXPAND_KEEP_SIZE`, the texture size becomes the **minimum size** as is, so a `size` given
+> afterwards gets pulled up — a 480×200 eye crop burst out of a 192×80 cell and covered the whole
+> name·pick slots below it, and the 1024² mech art covered the entire sheet (both measured). All
+> five `TextureRect` sites in this file keep that order.
 
-아래 블록은 위 블록을 **거울로 뒤집은 순서**(픽 → 이름 → 초상화 → 밴)다. 두
-팀의 픽 슬롯이 격자를 사이에 두고 마주 보므로 지금까지 어느 쪽이 뭘 가져갔나가
-격자 위아래 한 줄씩으로 읽힌다.
+### Pick slots = seat table (ally slots move even during ban/pick)
+A mech slot's content is `_seat_mechs[side]` (seat → mech_id, -1 = empty seat), and a new pick sits
+in **the first empty seat from the left**. **Ally slots can be dragged to another player's seat even
+during ban/pick** (`_build_team_block` attaches `_bind_slot_drag` to the ally block — swap if
+occupied, move if empty). So an ally slot is "the machine of the player above it" from the start,
+and the assignment step inherits that arrangement. A tap opens that machine's bottom sheet (commit
+is locked). Opponent slots stay in pick order during ban/pick and are re-seated by position in the
+assignment step (the assignment section of `match_flow/README.md`, "Assignment (inside the ban/pick
+screen)"). The pick preview of what the opponent is hovering also sits in the first empty seat
+(`_ai_hover_slot`).
 
-### 메크 격자
-`GRID_COLS` 5열, `GRID_VISIBLE_ROWS` **3.5줄**. 정수가 아닌 것이 요점이다 —
-넷째 줄이 반쯤 잘려 보이는 것이 "아래로 더 있다"는 유일한 신호다. 칸 **폭**은
-열 수가, **높이**는 남은 세로 공간에서 3.5로 나눠 역산한다(`_layout()`) — 그래야
-안전 영역이 다른 기기에서도 "3.5줄"이 지켜진다.
+The bottom block is the top block **in mirrored order** (picks → names → portraits → bans). The two
+teams' pick slots face each other across the grid, so who took what so far reads as one row each
+above and below the grid.
 
-한 칸에 들어가는 것: 역할군 태그 · 기체 아트 · 기체명 · `HP / ATK / 존재감` ·
-**패시브 이름**. 패시브를 칸에 그대로 적는 이유는 기체를 고르는 순간 패시브
-하나가 함께 정해지기 때문이다 — 그걸 보려고 매번 시트를 열어야 하면 21대를
-훑는 데 탭이 21번 든다. 자세한 설명문만 시트가 들고 있다.
+### Mech grid
+`GRID_COLS` 5 columns, `GRID_VISIBLE_ROWS` **3.5 rows**. Being non-integer is the point — the fourth
+row showing half cut is the only signal that "there's more below". Cell **width** comes from the
+column count, **height** is derived by dividing the remaining vertical space by 3.5 (`_layout()`) —
+so "3.5 rows" holds even on devices with different safe areas (안전 영역).
 
-밴 / 픽된 기체는 칸 전체가 슬래브로 덮이고 한가운데에 `BAN` / `BLUE` / `RED`
-가 찍힌다(색도 함께 바뀐다). 여전히 눌러서 **볼 수는** 있고 확정만 막힌다.
+What goes in one cell: role-class tag · machine art · machine name · `HP / ATK / 존재감` (presence) ·
+**passive name**. The passive is written right in the cell because picking a machine fixes one
+passive along with it — if you had to open the sheet every time to see it, scanning 21 machines
+would take 21 taps. Only the detailed description lives in the sheet.
 
-**썸네일은 구워서 쓴다** — 원본 메크 아트는 1024² 무압축이라 21대를 그대로
-들고 있으면 VRAM 88MB 다. `_bake_thumbs()` 가 `THUMB_PX`(256) 로 한 번 줄여
-`ImageTexture` 로 굽고 원본 참조를 놓아 준다. 시트만 원본 전신 아트를 쓰고,
-그건 언제나 한 대뿐이다.
+A banned / picked machine has its whole cell covered by a slab with `BAN` / `BLUE` / `RED` stamped
+in the centre (the colour changes too). It can still be tapped **to view**; only committing is
+blocked.
 
-### 역할군 필터
-`[전체][TANK][FIGHTER][ASSASSIN][SUPPORT][SNIPER]` 여섯 탭이 **격자를 걸러
-낸다**. 걸러진 칸은 숨기고 **자리도 비운다** — 빈 칸을 남기면 그 역할군에 몇
-대가 있는지가 안 읽힌다(`_apply_filter()` 가 유일하게 자리를 흘려 놓는 곳).
+**Thumbnails are baked** — the original mech art is 1024² uncompressed, so holding all 21 as is costs
+88MB of VRAM. `_bake_thumbs()` shrinks them once to `THUMB_PX` (256), bakes them into
+`ImageTexture`, and releases the original reference. Only the sheet uses the original full-body art,
+and that's always just one machine.
 
-### 하단 시트 (1탭 선택 → 2탭 확정)
-메크를 한 번 누르면 격자 위로 시트가 올라와 그 기체의 **스탯 · 패시브(이름 ·
-키워드 · 설명문) · 카드 셋**을 보여 준다. 확정은 시트의 `밴 확정` / `픽 확정`
-버튼이거나 **같은 메크를 한 번 더 누르는 것**이다. 한 번 누르면 곧장 나가던
-예전 방식은 되돌릴 수 없는 선택에서 실수 한 번이 경기를 통째로 바꿨다.
+### Role-class filter
+Six tabs `[전체][TANK][FIGHTER][ASSASSIN][SUPPORT][SNIPER]` (전체 = All) **filter the grid**. Filtered
+cells are hidden **and their positions vacated** — leaving empty cells makes it unreadable how many
+machines a role class has (`_apply_filter()` is the only place that reflows positions).
 
-- 시트는 **내 차례가 아닐 때도 열린다** — 상대가 고민하는 동안 다음에 뭘 고를지
-  들여다보는 것이 밴픽 화면이 하는 일의 절반이다. 그때는 확정 버튼만 잠기고
-  `상대 차례` / `선택 불가` 로 이유를 적는다.
-- 딤은 **격자와 필터 탭만** 덮는다 — 위아래 팀 블록은 지금까지의 밴픽 상황이라
-  시트를 보는 동안에도 보여야 한다(무엇이 이미 나갔는지 모르면 이 기체를 고를지
-  판단할 수 없다). 딤을 누르면 닫힌다.
-- 카드는 손패와 **같은 노드**(`Card.tscn`, `SHEET_CARD_SCALE` 0.9)다 — 따로 그린
-  그림이면 실제로 덱에 들어갈 카드와 같은 것인지 확인할 길이 없다. `CardData`
-  조립은 `CardData.from_def()` 한 곳을 지난다(`DraftDetailPanel` 과 같은 경로).
-  `add_child` 를 `setup` 보다 **먼저** 부를 것 — `Card.gd` 의 `@onready` 참조는
-  트리에 들어간 뒤에야 풀린다.
-- **카드를 누르면 카드 줄 위에 설명판이 뜬다**(`CardDescBox`, 흰 판). 카드 앞면에
-  설명문이 없으므로 그 기체의 카드가 무엇을 하는지는 여기서 읽는다. 같은 카드를
-  다시 누르면 닫히고, 다른 카드를 누르면 갈아탄다. 판은 패시브 설명을 잠시 덮는다
-  — 카드를 누른 손이 보려는 것은 지금 그 카드다. 배정 단계의 `MechDetailPanel`
-  도 같은 규칙이다(누른 카드 위쪽).
-- 카드 밑의 배지는 `count` 다. `count = 0` 인 카드는 덱에 처음부터 들어가지 않고
-  패시브나 다른 카드가 만들어 줄 때만 세상에 나오므로 `생성 전용` 이라 적는다 —
-  그 사정을 적어 두지 않으면 "왜 이 카드가 손에 안 들어오나"가 화면 어디에도 없다.
-- 왼쪽 아트 칸은 **폭만 상수**(`SHEET_ART_W`)이고 높이는 시트에서 남는 만큼을
-  통째로 쓴 뒤 그 안에서 세로 가운데 정렬한다 — 아트를 위에 붙이면 그 밑에
-  아무것도 없는 구멍이 300px 넘게 남는다(정사각 아트라 폭을 늘리는 것 말고는
-  커지지 않는다).
+### Bottom sheet (1st tap select → 2nd tap commit)
+Tapping a mech once raises a sheet over the grid showing that machine's **stats · passive (name ·
+keyword · description) · card set**. Committing is the sheet's `밴 확정` (Confirm ban) / `픽 확정`
+(Confirm pick) button, or **tapping the same mech once more**. The old way, where one tap committed
+immediately, let a single mistake change the whole match in an irreversible choice.
 
-### 진입 (`enter`)
+- The sheet **opens even when it is not my turn** — peeking at what to pick next while the opponent
+  deliberates is half of what a ban/pick screen does. In that case only the commit button is locked,
+  with the reason written as `상대 차례` (Opponent's turn) / `선택 불가` (Unavailable).
+- The dim covers **only the grid and filter tabs** — the top and bottom team blocks are the ban/pick
+  situation so far and must stay visible while looking at the sheet (without knowing what's already
+  gone you can't judge whether to pick this machine). Tapping the dim closes it.
+- Cards are **the same node** as the hand (손패) (`Card.tscn`, `SHEET_CARD_SCALE` 0.9) — a separately
+  drawn picture would give no way to confirm it's the same card that actually goes into the deck.
+  `CardData` assembly goes through one place, `CardData.from_def()` (the same path as
+  `DraftDetailPanel`). Call `add_child` **before** `setup` — `Card.gd`'s `@onready` references only
+  resolve after entering the tree.
+- **Tapping a card shows a description box above the card row** (`CardDescBox`, white box). The card
+  face has no description, so this is where you read what that machine's cards do. Tapping the same
+  card again closes it; tapping another card switches. The box briefly covers the passive
+  description — the hand that tapped a card wants to see that card right now. The assignment step's
+  `MechDetailPanel` follows the same rule (above the tapped card).
+- The badge under a card is `count`. A card with `count = 0` is never in the deck from the start and
+  only comes into the world when a passive or another card creates it, so it's labelled `생성 전용`
+  (Generated only) — without writing that down, "why doesn't this card ever reach my hand" would be
+  answered nowhere on screen.
+- The left art cell has **only its width constant** (`SHEET_ART_W`); its height takes all the space
+  left in the sheet and centres vertically within it — attaching the art to the top would leave a
+  hole of 300px+ with nothing under it (square art can't grow except by widening).
+
+### Entry (`enter`)
 ```gdscript
 enter(all_mechs, player_side,
-      player_roster, enemy_roster,        # Array[PlayerData] (역할 0..4 정렬)
+      player_roster, enemy_roster,        # Array[PlayerData] (sorted by role 0..4)
       player_team_name, enemy_team_name)  # String
 ```
-로스터와 팀명은 위아래 초상화 줄을 세우는 데 쓰인다. 뒤 네 개는 기본값이
-있으므로 BanPick 만 따로 띄우는 경우에도 돌아간다(초상화 자리는 빈 뒤판).
+Rosters and team names are used to build the top and bottom portrait rows. The last four have
+defaults, so it still runs when BanPick is launched on its own (portrait spots become empty
+backplates (뒤판)).
 
-### Opponent AI — 만지작거리기
-상대는 곧장 두지 않는다(`_maybe_run_ai`). 차례 배너가 지나간 뒤, 그 상황에 **실제로
-고를 만한 후보**를 점수로 늘어놓고(`_ai_rank`) 그 상위 `AI_CONSIDER_TOP`(5)대 중
-0~`AI_HOVER_MAX_COUNT`(2)대를 차례로 **집어 보았다가** 1위를 집어 확정한다. 한 번
-집는 시간은 `AI_HOVER_MIN..MAX`(0.3~0.8초) 무작위.
+### Opponent AI — fidgeting
+The opponent doesn't move right away (`_maybe_run_ai`). After the turn banner passes, it ranks the
+**candidates actually worth picking** in that situation by score (`_ai_rank`), **hovers over** 0 to
+`AI_HOVER_MAX_COUNT` (2) of the top `AI_CONSIDER_TOP` (5) in turn, then picks the #1 and commits.
+Each hover lasts a random `AI_HOVER_MIN..MAX` (0.3–0.8 s).
 
-점수 — **픽**은 아직 자기 팀에 없는 역할군 +3(이미 있으면 −2), **밴**은 상대(=
-플레이어) 팀에 아직 없는 역할군 +2.5(채울 자리를 뺏는 밴), 패시브가 있는 기체
-+1, 그리고 흔들림 `randf() × 1.5`.
+Score — for a **pick**, a role class the own team doesn't have yet +3 (−2 if already present); for a
+**ban**, a role class the opponent (= player) team doesn't have yet +2.5 (a ban that steals a seat
+to be filled); a machine with a passive +1; plus jitter `randf() × 1.5`.
 
-집어 보는 동안(`_ai_hover_id`) 그 격자 칸이 **상대 진영색 두꺼운 테두리**를 두르고,
-상대 팀의 **다음 칸**(픽이면 픽 슬롯, 밴이면 밴 칩)에 그 기체가 흐리게(α 0.45)
-미리 앉는다(`_ai_hover_slot`). 기다리는 사이 수가 넘어갔거나 화면이 걷혔으면
-조용히 손을 뗀다.
+While hovering (`_ai_hover_id`), that grid cell wears a **thick border in the opponent's side
+colour**, and the machine sits faintly (α 0.45) in the opponent team's **next slot** (pick slot for
+a pick, ban chip for a ban) as a preview (`_ai_hover_slot`). If the move passed or the screen was
+removed during the wait, it quietly lets go.
 
 ### Output
 Emits `phase_finished({banned, player_picks, enemy_picks})` once index 14 is
 reached. `player_picks` / `enemy_picks` are mapped from blue/red to the user's
-perspective. 밴은 합법성 판정용 `_banned`(양 팀 합본)와 표시용
-`_side_bans[side]` 두 벌로 산다 — 예전에는 한 배열에서 `SEQUENCE` 를 되짚어
-어느 쪽 밴인지 역산했고 그 계산이 틀려 있었다.
+perspective. Bans live in two sets: `_banned` (both teams combined) for legality checks and
+`_side_bans[side]` for display — previously a single array was walked back through `SEQUENCE` to
+infer whose ban each was, and that calculation was wrong.
 
-### 화면 대응 (세이프 에어리어)
-판째 `ScreenMetrics.indent_to_safe_top()` 로 내리고 `backfill_top()` 으로 위쪽
-띠를 메운다. 세로 좌표는 전부 `ScreenMetrics.safe_h()` 에서 계산해 나오므로
-(`_layout()`) 상수를 하나씩 기기 대응으로 고칠 자리가 없다. 검증은 창으로 띄워
-`ESM_SAFE_AREA` 로 인셋을 흉내 낸다 — 헤드리스로는 못 한다
+### Screen fit (safe area)
+The whole board is pushed down with `ScreenMetrics.indent_to_safe_top()` and the top strip is filled
+with `backfill_top()`. Every vertical coordinate is computed from `ScreenMetrics.safe_h()`
+(`_layout()`), so there are no constants to fix one by one per device. Verification is done by
+running in a window and faking insets with `ESM_SAFE_AREA` — it can't be done headless
 (`docs/mobile_safe_area.md`).
 
 ### Mechs have a role, but assignment is still free
-`mechs.role` 은 이 화면의 필터 · 데이터 검증 · **상대의 자동 배정**(자리마다 그
-선수 역할과 같은 역할군의 기체를 앉힌다)에 쓰인다. 플레이어가 어느 자리에 어느
-기체를 앉힐지는 여전히 자유다.
+`mechs.role` is used by this screen's filter · data validation · **the opponent's auto-assignment**
+(at each seat it puts a machine of the same role class as that player's role). Which machine the
+player puts in which seat is still free.
 
 ---
 
-## 격자 스크롤 — 메크 칸이 `MOUSE_FILTER_PASS` 인 이유
+## Grid scrolling — why mech cells are `MOUSE_FILTER_PASS`
 
-`_build_mech_cell` 의 `Button` 은 필터를 **PASS 로 내려 둔다**(기본값 STOP).
-STOP 이면 폰에서 메크 격자가 전혀 안 굴러간다 — 드래그 스크롤은 터치에서
-에뮬레이트된 마우스 press 가 `ScrollContainer` 까지 올라와야 시작되는데
-STOP 이 그걸 끊기 때문이고, 칸이 격자를 빈틈없이 덮으므로 예외 자리가 없다.
-`_grid_content` 가 `IGNORE` 인 것도 같은 사슬의 일부다(몸통이 STOP 이면 칸
-사이 빈 자리를 눌러도 거기서 끊긴다). 데스크톱은 휠이 STOP 을 뚫어서 이
-결함이 안 보인다. 규칙과 검증법은 **`docs/mobile_safe_area.md` §5**.
+The `Button` in `_build_mech_cell` has its filter **lowered to PASS** (default is STOP).
+With STOP the mech grid doesn't scroll at all on phones — drag scrolling starts only when the mouse
+press emulated from touch reaches the `ScrollContainer`, and STOP cuts that off; since the cells
+cover the grid with no gaps, there's no spot that escapes. `_grid_content` being `IGNORE` is part of
+the same chain (if the body were STOP, even pressing the empty space between cells would cut it
+there). On desktop the wheel pierces STOP, so this defect isn't visible. Rules and how to verify:
+**`docs/mobile_safe_area.md` §5**.

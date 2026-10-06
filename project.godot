@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="EsportsManager"
-run/main_scene="res://scenes/TitleScreen.tscn"
+run/main_scene="res://scenes/Lobby.tscn"
 config/features=PackedStringArray("4.5", "Mobile")
 boot_splash/bg_color=Color(0, 0, 0, 1)
 boot_splash/show_image=false
@@ -22,6 +22,7 @@ config/icon="res://icon.svg"
 
 MCPGameBridge="res://addons/godot_mcp/game_bridge/mcp_game_bridge.gd"
 GameManager="res://autoloads/GameManager.gd"
+ProfileManager="*res://autoloads/ProfileManager.gd"
 Haptics="*res://autoloads/Haptics.gd"
 HapticUi="*res://autoloads/HapticUi.gd"
 

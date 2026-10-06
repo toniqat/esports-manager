@@ -39,14 +39,14 @@ const KW_VOLATILE := "volatile"
 ##
 ## **충전은 키워드이고, 충전으로 채워지는 것은 토큰이다.** 카드 위의 토큰 수가
 ## `charge` 필드다(이름은 예전 그대로 둔다 — 세이브 · 효과 문법이 이미 그 이름을
-## 쓴다). 토큰은 충전만 채우는 것이 아니다 — [골드러시]는 쓸 때마다 `token:1`
+## 쓴다). 토큰은 충전만 채우는 것이 아니다 — [골드러시]는 쓸 때마다 `token:N`
 ## 절로 자기 토큰을 올리고, 충전 카드가 아니라 토큰이 사용으로 사라지지 않는다.
 ##
 ## 예전에는 같은 카드를 **손패에서 한 장으로 뭉치는** `스택` 키워드였다. 뭉치는
 ## 표현은 손패 크기 · 상한 정리 · 부채꼴 · 히트 밴드를 건드리지 않는다는 장점이
 ## 있었지만, 더미로 내려갈 때마다 낱장으로 흩어야 했고(안 그러면 리셔플 한 번에
 ## 덱 장수가 준다) "덱에 몇 장 넣을 것인가"(count)가 곧 세기의 상한이라
-## 카드마다 3~5장씩 덱을 불렸다.
+## 카드마다 여러 장씩 덱을 불렸다.
 const KW_CHARGE := "charge"
 ## 재배치 — **손패 맨 왼쪽으로 이동한다.** 낼 수 있는 카드는 쓰고 나면 버린
 ## 더미 대신 손패 맨 왼쪽으로 돌아온다(정밀 이동 · 골드러시 — 둘 다 그때마다
@@ -116,7 +116,7 @@ const CATEGORY_LABELS: Dictionary = {
 @export var cast_range: int = 0           # tiles from caster (0 = self, 99 = unbounded)
 @export var area: int = 0                 # AoE radius around target (0 = single)
 @export var keyword: String = ""          # `|` 로 구분된 키워드 목록 — has_keyword() 로만 읽는다
-@export var effect: String = ""           # semicolon list, e.g. "draw:2;discard:2"
+@export var effect: String = ""           # semicolon list, e.g. "draw:N;discard:N"
 @export var description: String = ""
 # 시전자 제약(포지션 목록). 고정 파일럿 카드를 고를 때와 손패 시전자 판정이 읽는다.
 @export var scope: String = SCOPE_ANY
@@ -182,7 +182,7 @@ func keyword_list() -> Array:
 	return out
 
 
-## 키워드 하나의 화면 이름. 충전은 상한을 붙인다("충전 5").
+## 키워드 하나의 화면 이름. 충전은 상한을 붙인다("충전 N").
 func keyword_label(kw: String) -> String:
 	var label: String = String(KEYWORD_LABELS.get(kw, kw))
 	if kw == KW_CHARGE:

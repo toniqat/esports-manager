@@ -2,212 +2,212 @@
 
 | File | class_name | Role |
 |---|---|---|
-| `Card.gd` | Card | 카드 한 장의 시각 노드 |
-| `CardPhaseManager.gd` | CardPhaseManager | 작전 단계 전체 — 덱 / 핸드 / 카드 효과 |
-| `CardSelectOverlay.gd` | CardSelectOverlay | 버리기:N / 보존:N 손패 픽(중앙 구역에 드롭) · 찾기:N / 강화 3택 그리드 픽 |
-| `CardTargetingOverlay.gd` | CardTargetingOverlay | 카드 드래그 = 대상 지정 오버레이 |
-| `CardPileViewer.gd` | CardPileViewer | Deck / Discard 목록 열람 (읽기 전용) |
-| `CardDragArrow.gd` | CardDragArrow | 카드 ↔ 커서를 잇는 조준 화살표 (2차 베지어 위 chevron 사슬, 커서 쪽 맨 끝만 원래 크기 · 나머지 75%) |
-| `CardPlayPreview.gd` | CardPlayPreview | **손패 미리보기** — 누르면 시전자 강조, 끌면 효과 미리보기(덱/버린 더미 chevron · 버려질 카드 · 찾기/보존 아이콘 + 전장 · 도넛 · 비용 원에 상태를 건다). 아래 *손패 미리보기* 절 |
-| `AiCardPlayer.gd` | AiCardPlayer | AI 카드 사용 애니메이션 (중앙 카드 + 그 오른쪽 설명판 — 키워드 풀이 없음, `DESC_BOX_W` 340, 윗변 = 카드 윗단) |
-| `CardDescBox.gd` | CardDescBox | **카드 설명판** — 이름 · 비용 · 키워드 · 설명문 · 키워드 풀이. 카드 앞면에 설명문이 없으므로 글을 보여 주는 모든 자리(손패 옆 판 · AI 카드 · 찾기/열람 격자 · 밴픽 시트 · 메크 상세)가 이것 하나로 짓는다. **판에는 테두리가 없다.** 인게임 판은 아래로 흐릿한 드롭 섀도를 단다(`panel_style`, `DARK_SHADOW_*`; 판 안에 끼운 판은 `_tint_nested` 가 섀도를 끈다). 머리줄은 **[작은 비용 리본] 이름** 한 덩어리가 판 가운데에 선다(`CostRibbon.make_badge`, `COST_RIBBON_SIZE` 26×36). `build(data, width, light, cost_text, cost_color, with_notes, min_h)` 는 높이를 글꼴로 직접 재 돌려주고(`light` = 아웃게임 흰 판), `with_notes = false` 면 키워드 풀이를 빼고 짓는다 — 손패는 풀이를 `build_keyword_panel` 의 별도 판에 세운다. `place_near` 는 카드 위/아래 자리를 잡는다. 설명문 표기 규칙은 아래 **설명문 표기** 절. 설명문은 `resolve_text(data)` 로 계산식(`{식|문구}`)과 `\n` 을 푼 뒤 `RichTextLabel` 로 "전략 점수" 앞마다 팔각형 인디케이터, "비용" 앞마다 비용 리본 아이콘(전략 점수 색, 테두리 없음), 키워드 낱말(`KeywordIcon.WORDS`)과 "N턴" 앞마다 키워드 아이콘(`resources/KeywordIcon.gd`, 키워드 색 — 인게임 하늘색 / 아웃게임 `ACCENT_TEXT`; 뽑기 초록 · 버리기 빨강 · 대상은 카드가 겨누는 편 색)을 끼워 찍는다(`StrategyIcon.make_rich_label`; 상세 패널의 카드 설명도 같다, 대괄호 안 카드 이름에는 안 끼운다). **설명문 글자 크기(`DESC_FONT`)는 머리줄 이름과 같은 22**(예전 18). 키워드 줄 아래에는 **속성 줄**이 선다 — `card_attributes(data)` 가 `[아이콘] 값` 으로 **대상**(`target` → 적 / 아군 / 적 또는 포탑 / 타일 / 자신 …) · **사거리**(대상 · 칸 지정 카드의 `cast_range`, 99 이상 = 전장) · **시전 범위**(`area` 컬럼 · 효과의 `area` / `around_target` / `self_range` · 교전 반경 중 최대)를 늘어놓고(**지속시간은 속성 줄에 없다** — 설명문이 "3턴 간 교전" 으로 적는다), 해당 없는 항목은 빠진다(손패 전용 카드는 대개 줄 자체가 없다). 좁은 손패 판(240)에서는 줄이 접히므로 높이를 대역 문자열(`_attr_measure`, 아이콘 = 글자 셋)로 잰다. 한글은 띄어쓰기에서만 접힌다(`UiHelpers.keep_words`) |
+| `Card.gd` | Card | Visual node for a single card (카드) |
+| `CardPhaseManager.gd` | CardPhaseManager | The whole operation phase (작전 단계) — deck (덱) / hand (손패) / card effects |
+| `CardSelectOverlay.gd` | CardSelectOverlay | 버리기:N (Discard:N) / 보존:N (Keep:N) hand pick (drop onto the central zone) · 찾기:N (Search:N) / pick-1-of-3 boon grid pick |
+| `CardTargetingOverlay.gd` | CardTargetingOverlay | Card drag = targeting overlay |
+| `CardPileViewer.gd` | CardPileViewer | Browse (열람) the Deck / Discard lists (read-only) |
+| `CardDragArrow.gd` | CardDragArrow | Aiming arrow linking card ↔ cursor (a chevron chain along a quadratic Bézier; only the last chevron at the cursor end is full size, the rest 75%) |
+| `CardPlayPreview.gd` | CardPlayPreview | **Hand preview (손패 미리보기)** — pressing highlights the caster, dragging previews the effect (deck / discard pile chevrons · cards that will be discarded · search / keep icons + battlefield · puts preview state on the donut and cost ribbons). See the *Hand preview* section below |
+| `AiCardPlayer.gd` | AiCardPlayer | AI card-play animation (centre card + description panel to its right — no keyword notes, `DESC_BOX_W` 340, top edge = card top) |
+| `CardDescBox.gd` | CardDescBox | **Card description panel** — name · cost · keywords · description text · keyword notes. The card face has no description text, so every place that shows the text (panel beside the hand card · AI card · search/browse grid · ban/pick (밴픽) sheet · mech (메크) detail) builds it with this one class. **The panel has no border.** In-game panels cast a soft drop shadow downwards (`panel_style`, `DARK_SHADOW_*`; a panel nested inside a panel has its shadow turned off by `_tint_nested`). The header is one **[small cost ribbon] name** group centred in the panel (`CostRibbon.make_badge`, `COST_RIBBON_SIZE` 26×36). `build(data, width, light, cost_text, cost_color, with_notes, min_h)` measures the height directly from the font and returns it (`light` = outgame white panel); `with_notes = false` builds it without keyword notes — the hand puts the notes on separate panels from `build_keyword_panels`. `place_near` picks a spot above/below the card. Description notation rules: the **Description notation** section below. The text is resolved by `resolve_text(data)` (formulas `{expr|phrase}` and `\n`), then a `RichTextLabel` inlines an octagon indicator before every "전략 점수" (strategy points), a cost ribbon icon before every "비용" (cost) (strategy-point colour, no border), and a keyword icon before keyword words (`KeywordIcon.WORDS`) and "N턴" (N turns) (`resources/KeywordIcon.gd`, keyword colour — sky blue in-game / `ACCENT_TEXT` outgame; draw green · discard red · target in the colour of the side the card aims at) (`StrategyIcon.make_rich_label`; the detail panel's card text works the same; card names inside brackets get no icon). **Description font size (`DESC_FONT`) is 22, the same as the header name** (was 18). Below the keyword row sits an **attribute row** — `card_attributes(data)` lists `[icon] value` for **target** (`target` → enemy / ally / enemy or turret / tile / self …) · **range** (`cast_range` of target / cell cards, 99 or more = whole battlefield) · **cast area** (largest of the `area` column · the effect's `area` / `around_target` / `self_range` · engage radius) (**duration is not on the attribute row** — the text says it, e.g. "3턴 간 교전"); items that don't apply are left out (hand-only cards usually have no row at all). On the narrow hand panel (240) the row wraps, so its height is measured with a stand-in string (`_attr_measure`, icon = three characters). Korean wraps only at spaces (`UiHelpers.keep_words`) |
 
 
-## 설명문 표기
+## Description notation (설명문 표기)
 
-`cards.csv` · `mech_cards.csv` 의 `description` 이 따르는 규칙. 아이콘은 낱말에서
-자동으로 붙으므로(`StrategyIcon._tokens`) **규칙대로 쓰면 아이콘이 따라온다.**
+Rules that `description` in `cards.csv` · `mech_cards.csv` follows. Icons attach automatically from
+words (`StrategyIcon._tokens`), so **write by the rules and the icons follow.**
 
-- **속성 줄이 말하는 것은 설명문에 다시 적지 않는다** — "사거리 N 내 적 지정 —",
-  "전장 내 적 지정" 같은 머리말은 없다. 시전자 · 대상 주변 효과는 **"범위 내 모든 적"**
-  (반경은 속성 줄의 범위 값). 지칭어로 쓰는 "대상"(대상의 타일로 · 대상 체력)은 남는다.
-- **대상 아이콘** = `CardDescBox.target_info(data)` 하나가 정하고 속성 줄과 설명문의
-  "대상" 이 같이 읽는다. 파일럿 · 포탑은 사람 아이콘(적 · 포탑 빨강, 아군 초록, 아군
-  또는 적 회색). **타일 대상(`target = location`)은 육각 타일 아이콘** — 효과가
-  `own_jungle` 이면 "아군 정글 타일"(초록), `steal_camp` 면 "적 정글 타일"(빨강),
-  `ambush` 면 "정글 타일", 그 밖은 "타일"(회색). 효과 절이 전부 `|self` 인 즉시
-  카드(몸집 불리기)는 대상 "자신". 대상 타일은 속성 줄이 말하므로 설명문은 "이동" 만.
-- **체력**: "체력" · "최대 체력" 모두 하트 아이콘. 수치 변화는 "최대 체력 +20" ·
-  "공격력 +2" 꼴("20 증가" 로 쓰지 않는다).
-- **비용**: "비용 +1" · "비용 -1" · "비용 0" (낱말이 먼저, 수치가 뒤).
-- **공격**: 1회는 "공격", 여러 번은 "공격 2회". 필중은 언제나 **"필중 공격"** 한
-  덩어리(필중 아이콘 하나).
-- **지속시간**: "3턴 간 교전", "10턴 동안 …" — "N턴" 앞에 모래시계가 선다.
-- **카드 수**: "뽑기 2장" · "버리기 1장" · "찾기 1장" (뽑기 초록 · 버리기 빨강 아이콘).
-  보존은 자물쇠.
-- **찾기 = 덱에서 찾기.** 그냥 "찾기" 면 출처는 언제나 덱이라 "덱에서" 를 적지 않는다
-  (`search:N` · `search_card` · `ambush_search` — "[미사일] 찾기 2장"). 덱이 아닌 곳은
-  **"버린 더미에서 찾기"**(`search_discard`)만 출처를 적는다. 예전의 "탐색" 은 없다.
-  돋보기 아이콘.
-- **버린 더미**: "묘지" 는 쓰지 않는다(버린 더미에서 찾기 · 버린 더미에서 뽑기). 눕힌 카드 더미 아이콘.
-- **생성**은 카드를 만들 때만 쓴다(손에 [락온] 생성) — 보호막 · 반응 장갑은 "부여".
-- **보호막**(방패) · **회복**(하트) · **처치**(해골, "처치 관여" 도 같은 아이콘).
-- **손**: "손패" · "핸드" 는 쓰지 않는다 — 언제나 "손"(손의 모든 카드, 손에 생성).
-- **특수 키워드** `[이름]`: 설명문에서 대괄호로 감싼 말. 화면에는 **대괄호 없이 특수
-  키워드 색**(보라, `KeywordIcon.SPECIAL_COLOR_*`)으로 찍히고 풀이는 설명문에 적지 않는다
-  — 설명판이 풀이 판을 단다(손패는 키워드 판 열에 키워드 판 다음으로, 그 밖의 판은 맨
-  아래에). 두 종류:
-  - **효과 용어** — `CardData.SPECIAL_NOTES` 의 표(추적 · 반응 장갑 · 목표 · 현상금 · 기절 ·
-    취약). 풀이 한 줄짜리 판. 용어 앞에는 전용 아이콘(`KeywordIcon.SPECIAL_ICONS`)이
-    설명문 · 판 제목 · 아래 풀이 줄 모두에 선다. 새 용어는 이 표에 풀이를 더하고(아이콘이
-    있으면 `SPECIAL_ICONS` 에도) 설명문에서 `[용어]` 로 감싼다.
-  - **카드 이름** — 표에 없는 `[이름]`. 풀이 대신 **그 카드의 설명판**(비용 · 이름 · 키워드
-    · 설명문, `CardDescBox.build(ref, …, with_notes = false)` — 한 단계만 펼친다)을 세운다.
-    이름은 메크 카드 표 → 파일럿 카드 표 순으로 찾는다(`card_by_name`, 캐시 — `ui/SkillPopup.gd` 카드 미리보기도 쓴다). 자기 이름은
-    펼치지 않는다.
-  - 조사는 대괄호에 붙여 쓴다(`[목표]가`). 계산식 문구 안에는 대괄호를 쓰지 않는다.
-- **소지 중**: 손에 있는 동안 일하는 카드는 **"소지 중: …"** 으로 시작한다(손바닥
-  아이콘). 사용 효과가 따로 있으면 `\n사용: …` 로 줄을 나눈다.
-- **계산식** `{식|문구}`: 전투 중(`CardDescBox.live_vars` 가 유효)에는 식의 값,
-  밖(밴픽 · 메크 상세 · 드래프트)에서는 "(문구)". 전투 중이라도 `build(…, live = false)`
-  / `resolve_text(cd, false)` 면 "(문구)" 다 — 파일럿 상세 패널의 보유 카드가 쓴다
-  (손에 든 카드가 아니라 값이 없다). 식의 이름은 `charge`(카드 위 토큰)
-  와 `chain`(시전 파일럿의 [영혼 포식] 토큰, `CardPhaseManager.desc_live_vars`).
-  문구에는 "토큰" 대신 효과에 맞는 말을 쓴다(사용 횟수 · 충전 횟수).
-  예: `소지 중: 성장 +{charge*8|사용 횟수×8}%`.
+- **Don't repeat what the attribute row says** — no preambles like "사거리 N 내 적 지정 —" /
+  "전장 내 적 지정". Effects around the caster · target are **"범위 내 모든 적"** (all enemies in range;
+  the radius is the attribute row's area value). "대상" used as a reference word (대상의 타일로 · 대상 체력) stays.
+- **Target icon** = decided by `CardDescBox.target_info(data)` alone; the attribute row and the
+  text's "대상" both read it. Pilots · turrets get a person icon (enemy · turret red, ally green, ally
+  or enemy grey). **Tile targets (`target = location`) get a hex tile icon** — "아군 정글 타일" (green)
+  if the effect is `own_jungle`, "적 정글 타일" (red) for `steal_camp`, "정글 타일" for `ambush`,
+  otherwise "타일" (grey). An instant card whose clauses are all `|self` (몸집 불리기) has target
+  "자신" (self). The attribute row states the target tile, so the text just says "이동".
+- **HP**: "체력" · "최대 체력" both get the heart icon. Write changes as "최대 체력 +20" ·
+  "공격력 +2" (not "20 증가").
+- **Cost**: "비용 +1" · "비용 -1" · "비용 0" (word first, number after).
+- **Attack**: once = "공격", several = "공격 2회". Sure hit is always the single unit
+  **"필중 공격"** (one sure-hit icon).
+- **Duration**: "3턴 간 교전", "10턴 동안 …" — an hourglass stands before "N턴".
+- **Card counts**: "뽑기 2장" · "버리기 1장" · "찾기 1장" (draw green · discard red icon).
+  Keep (보존) is a padlock.
+- **찾기 = search the deck.** A bare "찾기" always means the deck, so "덱에서" is not written
+  (`search:N` · `search_card` · `ambush_search` — "[미사일] 찾기 2장"). Only the non-deck source is
+  spelled out: **"버린 더미에서 찾기"** (`search_discard`). The old "탐색" is gone. Magnifier icon.
+- **Discard pile**: never "묘지" (버린 더미에서 찾기 · 버린 더미에서 뽑기). Icon: a pile of cards lying down.
+- **생성** (create) only for making cards (손에 [락온] 생성) — shields · reactive armour are "부여" (grant).
+- **보호막** (shield icon) · **회복** (heart) · **처치** (skull; "처치 관여" uses the same icon).
+- **Hand**: never "손패" · "핸드" — always "손" (손의 모든 카드, 손에 생성).
+- **Special keywords** `[name]`: words wrapped in brackets in the text. On screen they print **without
+  brackets in the special keyword colour** (purple, `KeywordIcon.SPECIAL_COLOR_*`) and their gloss is not
+  written in the text — the description panel adds a note panel (the hand: in the keyword panel column
+  after the keyword panels; other panels: at the bottom). Two kinds:
+  - **Effect terms** — the table in `CardData.SPECIAL_NOTES` (추적 · 반응 장갑 · 목표 · 현상금 · 기절 ·
+    취약). A one-line note panel. A dedicated icon (`KeywordIcon.SPECIAL_ICONS`) precedes the term in
+    the text · the panel title · the note line. For a new term, add its note to that table (and to
+    `SPECIAL_ICONS` if it has an icon) and wrap it as `[term]` in the text.
+  - **Card names** — any `[name]` not in the table. Instead of a note it raises **that card's
+    description panel** (cost · name · keywords · text, `CardDescBox.build(ref, …, with_notes = false)` —
+    expanded one level only). Names are looked up in the mech card table, then the pilot card table
+    (`card_by_name`, cached — `ui/SkillPopup.gd`'s card preview uses it too). A card's own name is not expanded.
+  - Particles attach directly to the bracket (`[목표]가`). No brackets inside formula phrases.
+- **소지 중** (while held): a card that works while in hand starts with **"소지 중: …"** (open-palm
+  icon). If it also has a use effect, split the line with `\n사용: …`.
+- **Formulas** `{expr|phrase}`: in battle (`CardDescBox.live_vars` valid) the expression's value; outside
+  (ban/pick · mech detail · draft) "(phrase)". Even in battle, `build(…, live = false)` /
+  `resolve_text(cd, false)` gives "(phrase)" — the pilot detail panel's owned cards use it (not cards in
+  hand, so there is no value). Expression names are `charge` (tokens on the card) and `chain` (the
+  casting pilot's [영혼 포식] tokens, `CardPhaseManager.desc_live_vars`). In the phrase, use a word that
+  fits the effect instead of "토큰" (사용 횟수 · 충전 횟수).
+  Example: `소지 중: 성장 +{charge*8|사용 횟수×8}%`.
 
 ## CardPhaseManager.gd
 `extends Node` — child of BattleSim.
 
-Manages the **작전 단계** (card draw / play overlay) that gates each battle turn.
-The cost label is surfaced as "작전 점수" in the HUD; one tick of `simulate_turn`
-is referred to as "1분".
+Manages the **operation phase** (card draw / play overlay) that gates each battle turn.
+The cost label is surfaced as "작전 점수" (operation points) in the HUD; one tick of `simulate_turn`
+is referred to as "1분" (1 minute).
 
 ### Turn flow
 - `do_battle_turn()` — calls `_bs.sim_core.simulate_turn()`, accumulates 작전 점수,
-  draws cards, then hands the tick to whichever side's own 점수 has reached
+  draws cards, then hands the tick to whichever side's own 점수 (points) has reached
   `PHASE_THRESHOLD`. After the AI
   draws, `_bs.hud.update_ai_hand_visuals()` reflows the face-down peek row
   under the score panel. It also re-runs `highlight_affordable_cards()` every
-  tick so the 부활 countdown printed on each card face stays current.
+  tick so the 부활 (respawn) countdown printed on each card face stays current.
 
-#### 카드 경제 게이트 (`ECONOMY_START_TURN`)
-전략 점수 회복과 자동 드로우는 **`ECONOMY_START_TURN`(game_config, 10)턴부터**
-돈다. 그 전에는 두 카운터를 아예 굴리지 않으므로 게이트가 열리는 턴에 밀린
-회복이 한꺼번에 터지지도 않는다. **개시 손패는 없다** — 그 구간의 양 팀은
-손패가 0장이고 블루 선점 1점만 들고 순수 라인전으로 보낸다는 규칙이다.
+#### Card economy gate (`ECONOMY_START_TURN`)
+Strategy-point (전략 점수) recovery and auto-draw run **from turn `ECONOMY_START_TURN` (game_config.csv)**.
+Before that the two counters do not tick at all, so the backlog of recovery does not
+burst out all at once on the turn the gate opens. **There is no opening hand (개시 손패)** — the rule is that during that stretch both teams
+have 0 cards in hand, hold only Blue's `BLUE_COST_HEAD_START` head start, and play pure laning.
 
-게이트가 걸리는 것은 **카드 경제뿐**이다:
+The gate applies **only to the card economy**:
 
-| 항목 | 게이트 |
+| Item | Gate |
 |---|---|
-| 블루 선점 (`BLUE_COST_HEAD_START`) | ❌ 0턴에 그대로 들어간다 |
-| `COST_RECOVERY` / `CARD_DRAW_INTERVAL` | ✅ `ECONOMY_START_TURN` 부터 |
-| 성장 (`GROWTH_PER_TURN`) | ❌ 1턴부터 |
+| Blue head start (`BLUE_COST_HEAD_START`) | ❌ applied as-is on turn 0 |
+| `COST_RECOVERY` / `CARD_DRAW_INTERVAL` | ✅ from `ECONOMY_START_TURN` |
+| Growth (성장) (`GROWTH_PER_TURN`) | ❌ from turn 1 |
 
-##### 문턱 위에서는 회복하지 않는다
-`COST_RECOVERY` 는 **자기 점수가 `PHASE_THRESHOLD` 미만인 쪽에만** 들어간다
-(양 팀 같은 규칙). 점수는 차례를 기다리는 자원이지 쌓아 두는 자원이 아니라는
-것이고, 턴을 넘길 때 문턱 초과분이 소멸하는 규칙(`end_card_phase`)과 짝을
-이룬다 — 둘이 합쳐 **전략 점수의 실질 상한이 문턱**이 된다. 카드 효과
-(아드레날린)만이 그 위로 올려놓을 수 있고, 그렇게 올라간 점수도 그 차례를
-넘기는 순간 문턱으로 깎인다.
+##### No recovery above the threshold
+`COST_RECOVERY` is applied **only to a side whose own points are below `PHASE_THRESHOLD`**
+(same rule for both teams). Points are a resource for waiting for your turn, not one to stockpile.
+This pairs with the rule that the excess above the threshold is lost when passing the turn (`end_card_phase`)
+— together they make **the threshold the effective cap on strategy points**. Only a card effect
+(아드레날린 (Adrenaline)) can push points above it, and points raised that way are also cut back to the threshold
+the moment that turn is passed.
 
-`simulate_turn()` 이 자기 초입에서 `turn_count` 를 올리므로 게이트를 보는 시점의
-`turn_count` 는 **방금 끝난 턴의 번호**(1-based)다. 카운터는 개시 시
-`INTERVAL - 1` 로 놓여 있어 게이트가 열리는 첫 턴에 곧바로 발동한다.
+`simulate_turn()` increments `turn_count` at its own start, so at the time the gate is checked
+`turn_count` is **the number of the turn that just ended** (1-based). The counters are set to
+`INTERVAL - 1` at the opening (개시), so they fire immediately on the first turn the gate opens.
 
-**실측** (standalone, PHASE_THRESHOLD 8 · COST_RECOVERY_INTERVAL 2 ·
-CARD_DRAW_INTERVAL 2 · 블루 선점 1): 1~9턴은 `cost_p = 1 / 손패 0장` 으로 완전히
-멈춰 있고, 10턴에 첫 회복 + 첫 드로우가 동시에 들어간다. 이후 회복·드로우가
-10·12·14·16·18·20·22턴에 7회씩 — **첫 작전 단계는 22턴, 손패 7장**
-(`player 8 / ai 7`)이다. 4턴 게이트 시절에는 16턴이었고, 게이트 이전에는 13턴이었다.
+**Measured (실측)** (standalone): every turn before `ECONOMY_START_TURN` sits completely frozen at
+`cost_p = BLUE_COST_HEAD_START / 0 cards in hand`, and on the gate turn the first recovery + first draw land
+together. After that recovery fires every `COST_RECOVERY_INTERVAL` turns and draw every `CARD_DRAW_INTERVAL`
+turns, so **the first operation phase comes once Blue's points climb from the head start to `PHASE_THRESHOLD`**,
+with one card in hand per draw tick by then. An earlier, shorter gate brought the first operation phase sooner,
+and before the gate existed it came sooner still.
 
-> **standalone 주의**: `match_ctx` 없이 BattleSim.tscn 을 직접 돌리면 `ROLE_STATS`
-> 기본값으로 HQ 가 **20턴께 무너진다** — 첫 작전 단계(22턴)에 닿기 전에 판이 끝나므로
-> 카드 흐름을 CLI 로 볼 때는 HQ HP 를 올리거나 카운터를 직접 굴려야 한다.
+> **Standalone caveat**: running BattleSim.tscn directly without `match_ctx` uses `ROLE_STATS`
+> defaults and the HQ **falls before the first operation phase** — the match ends before cards ever come into play, so
+> to watch card flow via CLI, raise HQ HP or tick the counters manually.
 
-#### 두 쪽이 각자 자기 점수로 턴을 갖는다
+#### Each side gets its turn on its own points
 The two sides' turns are **independent**. `do_battle_turn` closes by asking
 `_next_turn_side()` who gets this tick — `1` → `await _run_ai_turn()`,
 `0` → `start_card_phase()`, `-1` → refresh the hand / HUD and keep ticking —
 and stamps the answer into `_last_turn_side`.
 
 The AI turn used to be bolted onto the end of the player's — `end_card_phase`
-announced "상대 차례" and ran the AI loop unconditionally, so passing the turn
+announced "상대 차례" (Opponent's turn) and ran the AI loop unconditionally, so passing the turn
 flashed the banner even when the opponent was at 0 점 and did nothing. Now the
 banner marks a real handover.
 
-##### `_next_turn_side()` — 블루 우선 + 교대
+##### `_next_turn_side()` — Blue priority + alternation
 Two lines decide it:
 
-1. 한 쪽만 준비됐으면 그 쪽.
-2. 양쪽 다 준비됐으면 **직전에 차례를 잡지 않은 쪽**, 아직 아무도 잡은 적이
-   없으면 **블루**(`BattleSim.blue_team`).
+1. If only one side is ready, that side.
+2. If both sides are ready, **the side that did not take the previous turn**; if nobody has taken
+   one yet, **Blue** (`BattleSim.blue_team`).
 
 Line 2 carries two separate jobs.
 
-**같은 점수면 블루 먼저.** 개시 시점에는 `_last_turn_side == -1` 이라 블루가
-무조건 선을 잡는다. 보통은 블루의 점수 선점(`BattleSim.BLUE_COST_HEAD_START`,
-아래 개시 상태)만으로 블루가 문턱에 먼저 닿지만, 카드로 점수를 쓴 뒤 양쪽이
-같은 틱에 다시 닿는 경우의 타이브레이크는 이 규칙이 맡는다.
+**Blue first on equal points.** At the opening `_last_turn_side == -1`, so Blue
+always takes the first turn. Normally Blue's points head start (`BattleSim.BLUE_COST_HEAD_START`,
+see Opening state below) alone gets Blue to the threshold first, but this rule handles the tiebreak when both sides
+reach it again on the same tick after spending points on cards.
 
-**굶주림 방지.** 예전 코드는 여기서 AI 를 **무조건 먼저** 검사해 굶주림을
-막았다: 0코스트 카드만 내고 턴을 넘긴 플레이어는 다음 틱에도
-`player_cost >= PHASE_THRESHOLD` 라 자기 단계에 재진입하고, 그렇게 AI 를 영원히
-굶길 수 있었기 때문이다. 블루 우선으로 뒤집으면 그 방어가 사라지므로 교대
-규칙이 그 자리를 대신한다 — 방금 차례를 잡은 쪽은 상대가 한 번 잡기 전까지
-다시 잡지 못한다. 상대가 문턱 아래면 교대할 상대가 없으므로 연속 진입은 그대로
-허용된다(규칙 1). `_last_turn_side` 는 `build_starter_decks` 가 새 판마다 -1 로
-되돌리는 이 규칙의 유일한 상태다.
+**Starvation prevention.** The old code prevented starvation here by checking the AI **unconditionally first**:
+a player who played only free cards and passed the turn would still have
+`player_cost >= PHASE_THRESHOLD` on the next tick, re-enter their own phase, and could starve the AI
+forever that way. Flipping to Blue priority removes that defence, so the alternation
+rule takes its place — the side that just took a turn cannot take another until the opponent
+has taken one. If the opponent is below the threshold there is no one to alternate with, so consecutive entry
+is still allowed (rule 1). `_last_turn_side` is this rule's only state, which `build_starter_decks`
+resets to -1 every new match.
 
-**준비 판정은 이제 양쪽이 같다** — 점수가 문턱 위이고 **낼 수 있는 카드가 손에
-한 장이라도 있어야** 한다(`_player_turn_ready` / `_ai_turn_ready`). 플레이어
-쪽에는 그 위에 패스 잠금(아래)이 하나 더 붙는다.
+**Readiness is now the same for both sides** — points must be at or above the threshold and **there must be at least one
+playable card in hand** (`_player_turn_ready` / `_ai_turn_ready`). The player
+side additionally has the pass lock (below) on top.
 
-예전에는 플레이어만 점수로 진입했다. 아군 다섯이 모두 쓰러지면 손패의 모든
-카드가 시전자 사망으로 잠기는데(`respawn_turns_for`) 점수는 문턱에 걸려 있으므로,
-자동 드로우가 손패를 바꿀 때마다 패스 잠금이 풀려 "당신의 차례"가 0.5초마다
-열렸다 닫히기만 했다 — 그 차례에 할 수 있는 일은 턴을 넘기는 것뿐이었다.
+Previously only the player entered on points alone. When all five allies (아군) were down, every card
+in hand was locked by caster (시전자) death (`respawn_turns_for`) while points sat at the threshold,
+so each time the auto-draw changed the hand the pass lock was released and "당신의 차례" (Your turn)
+just opened and closed every 0.5 s — the only thing you could do on that turn was pass it.
 
-`_player_turn_ready` 가 `is_playable()` 을 따로 묻는 것은 `card_is_playable` 이
-비용만 견주기 때문이다: **비용 -1**(사용 불가) 카드는 `-1 > player_cost` 가
-거짓이라 그 검사를 통과한다(`ai_can_play` 가 같은 이유로 같은 줄을 갖고 있다).
+`_player_turn_ready` asks `is_playable()` separately because `card_is_playable`
+only compares cost: a **cost -1** (unusable) card passes that check since `-1 > player_cost`
+is false (`ai_can_play` has the same line for the same reason).
 
-**손패 상한 초과 버리기는 그대로 돈다** — 그건 차례와 무관하게 BATTLE 의 자동
-드로우가 하는 일이고, 덱을 돌리는 것이 그 규칙의 목적이다.
+**Discarding over the hand cap still runs** — that is done by BATTLE's auto-draw
+regardless of whose turn it is, and cycling the deck is the purpose of that rule.
 
-##### 패스 잠금 (`_player_pass_lock`)
-플레이어 쪽 준비 판정에는 조건이 하나 더 붙는다 — **방금 넘긴 차례는 곧바로
-돌아오지 않는다.**
+##### Pass lock (`_player_pass_lock`)
+The player-side readiness check has one more condition — **a turn you just passed does not come
+straight back.**
 
-턴 넘기기의 조건이 "카드를 한 장 이상 낼 것"이었을 때는 그 규칙이 곧 "넘기고
-나면 점수가 문턱 아래로 내려간다"의 보증이었다. 지금은 한 장도 안 내고 넘길
-수 있고 문턱 초과분만 깎이므로, 넘긴 직후에도 점수는 정확히 문턱에 걸려 있다 —
-규칙 1 그대로라면 다음 틱(0.5초)에 "당신의 차례"가 다시 뜬다. 그래서
-`end_card_phase` 가 잠금을 세우고, 푸는 자리는 둘뿐이다.
+When the condition for passing the turn was "play at least one card", that rule itself guaranteed
+"after passing, points drop below the threshold". Now you can pass without playing a single card
+and only the excess above the threshold is cut, so right after passing the points sit exactly at the threshold —
+under rule 1 alone, "당신의 차례" would pop up again on the next tick (0.5 s). So
+`end_card_phase` sets the lock, and there are only two places that release it.
 
-| 푸는 자리 | 왜 |
+| Release point | Why |
 |---|---|
-| `do_battle_turn` 의 자동 드로우 (카드가 실제로 들어왔을 때) | 손패가 바뀌었으면 낼 것이 생겼을 수 있다 |
-| `_run_ai_turn` 종료 | 상대가 한 번 차례를 가졌다 = 판이 움직였다 |
+| Auto-draw in `do_battle_turn` (when a card actually arrived) | If the hand changed, there may now be something to play |
+| End of `_run_ai_turn` | The opponent had a turn = the match moved |
 
-`start_card_phase` 도 진입 시 한 번 더 백지로 돌린다(다음 넘기기가 깨끗한
-잠금으로 시작하도록). 새 판은 `build_starter_decks` 가 되돌린다.
-잠긴 동안 BATTLE 은 평소대로 흐르고, 덱과 discard 가 모두 마른 극단에서만
-플레이어 차례가 영영 열리지 않는다 — 그때는 회복도 멈춰 있어 어차피 바뀔 것이
-없는 상태다.
+`start_card_phase` also wipes it once more on entry (so the next pass starts with a clean
+lock). A new match is reset by `build_starter_decks`.
+While locked, BATTLE flows as usual; only in the extreme where both deck and discard are dry does
+the player's turn never open — at that point recovery is also stopped, so nothing would change
+anyway.
 
-### 개시 상태 (진영 + 빈 손)
-- **블루가 선을 잡는다.** `BattleSim.blue_team` (0 = 플레이어 팀) 은
-  `match_ctx.player_side` 에서 유도되고, `BattleSim.seed_side_costs()` 가 그 팀의
-  작전 점수를 `BLUE_COST_HEAD_START`(1) 로 심는다. COST_RECOVERY 는 양 팀에 같은
-  틱에 같은 양이 들어가므로 그 차이는 그대로 유지되고, 블루가 항상 문턱에 먼저
-  닿는다. 밴픽에서 후밴/후픽을 하는 대가다 — 지금은 `MatchFlow` 가 플레이어를
-  항상 BLUE 로 고정한다.
-- **개시 손패는 없다 — 양 팀 다 빈 손으로 시작한다.** `build_starter_decks` 는
-  덱을 섞고 `_clear_hands()` 로 손패를 비우는 데서 끝나고, 손패는 오직
-  `ECONOMY_START_TURN`(10)부터 도는 BATTLE 자동 드로우로만 찬다. 예전에는
-  `INITIAL_HAND_SIZE`(5)장을 `_deal_initial_hands()` 로 미리 돌려 첫 차례를 상한에
-  꽉 찬 손으로 맞게 했는데, 지금은 그 반대가 규칙이다 — 초반 9턴은 카드가 아예
-  없는 라인전이고 첫 작전 단계(22턴)의 손패는 7장이다. `INITIAL_HAND_SIZE` 키와
-  `_deal_initial_hands()` 는 함께 삭제됐다.
+### Opening state (side + empty hand)
+- **Blue takes the first turn.** `BattleSim.blue_team` (0 = player team) is
+  derived from `match_ctx.player_side`, and `BattleSim.seed_side_costs()` seeds that team's
+  operation points with `BLUE_COST_HEAD_START` (game_config.csv). COST_RECOVERY gives both teams the same amount on the same
+  tick, so that gap is preserved and Blue always reaches the threshold
+  first. It is the compensation for banning/picking last in ban/pick — currently `MatchFlow` always fixes the player
+  to BLUE.
+- **There is no opening hand — both teams start with empty hands.** `build_starter_decks`
+  ends by shuffling the deck and emptying the hands with `_clear_hands()`, and hands fill only
+  through BATTLE auto-draw, which runs from `ECONOMY_START_TURN` (game_config.csv). Previously
+  `INITIAL_HAND_SIZE` cards were dealt up front by `_deal_initial_hands()` so the first turn met a hand full
+  to the cap; now the opposite is the rule — every turn before the gate is laning with no cards
+  at all, and the hand at the first operation phase holds only what the auto-draw has delivered since. The `INITIAL_HAND_SIZE` key and
+  `_deal_initial_hands()` were deleted together.
 
 ### Hand overflow (BATTLE auto-draw only)
-`MAX_HAND_SIZE` is **10**. The auto-draws that tick by while 작전 점수 climbs
+The cap is `MAX_HAND_SIZE` (game_config.csv). The auto-draws that tick by while 작전 점수 climbs
 back to `PHASE_THRESHOLD` — i.e. the stretch when it is *not* the player's turn
 — always draw, even on a full hand, and `_trim_hand_overflow(is_player)` then
-discards from the **front** of the hand (oldest first) until it is back at 10.
+discards from the **front** of the hand (oldest first) until it is back at the cap.
 Both sides run the same rule; only the player side despawns card nodes and
 relayouts. The old behaviour was to skip the draw when the hand was full, which
 stalled the deck and left the same dead hand sitting there for the whole wait.
@@ -218,89 +218,89 @@ away mid-turn. `_effect_draw` and `_on_search_overlay_complete` therefore carry
 **no** `MAX_HAND_SIZE` guard (only an exhausted deck+discard stops them); the
 first auto-draw after the turn ends is what trims the excess.
 
-**보존이 둘이다 — 수명이 다르다.**
+**There are two kinds of keep (보존) — with different lifetimes.**
 
-| | 계획 중시 (`preserve:N` 효과) | `보존` 키워드 (`keyword` 컬럼) |
+| | 계획 중시 (Prioritize the Plan) (`preserve:N` effect) | `보존` keyword (`keyword` column) |
 |---|---|---|
-| 어디에 산다 | `BattleSim.preserved_cards_p/ai` 목록 | 카드 자신 (`CardData.has_keyword`) |
-| 수명 | 그 팀의 **다음 작전 단계 시작까지** | 영구 |
-| 막는 것 | 상한 초과 자동 버리기**만** | **모든 버리기** |
-| 다는 카드 | (손패의 아무 카드나 지정) | [전령 제압] (오브젝트 보상) |
+| Where it lives | `BattleSim.preserved_cards_p/ai` list | The card itself (`CardData.has_keyword`) |
+| Lifetime | **Until the start of that team's next operation phase** | Permanent |
+| What it blocks | Over-cap auto-discard **only** | **All discards** |
+| Cards that carry it | (any card in hand, chosen) | [전령 제압] (Herald Subdued) (objective (오브젝트) reward) |
 
-`_trim_hand_overflow` 는 둘 다 건너뛴다. 카드 효과에 의한 **강제** 버리기
-(재고 / 완벽한 마무리 / 과감한 정리 / 솔로 퍼포먼스 / 버리기:N)는 계획 중시의
-보존을 보지 않지만, **`보존` 키워드는 그것도 뚫지 못한다** — 강제 버리기 넷이
-전부 `_discardable(hand)` 로 손패를 거르고, 플레이어의 버리기 모달도
-`add_card_to_discard` 에서 거부하며 `target_count` 를 **버릴 수 있는 카드 수**로
-잡는다(손패 크기로 잡으면 확인 버튼이 영영 잠긴 모달이 만들어진다).
-한 매치에 한 장 나오는 오브젝트 보상이 재고 한 번에 사라지면 안 되기 때문이다. 루프가 `pop_front()` 가 아니라 인덱스
-스캔인 것은 보존 카드가 손패 앞쪽에 있어도 멈추지 않기 위해서이고, 손패가 통째로
-보존되는 극단(최대 2장이라 실제로는 불가능)에서도 무한 루프가 나지 않는다.
-`_prune_preserved` 가 매 트림마다 손패를 떠난 항목을 걷어 유령 참조를 막는다.
+`_trim_hand_overflow` skips both. **Forced** discards from card effects
+(재고 (Reconsider) / 완벽한 마무리 (Perfect Finish) / 과감한 정리 (Bold Cleanup) / 솔로 퍼포먼스 (Solo Performance) / 버리기:N) ignore 계획 중시's
+keep, but **they cannot break through the `보존` keyword either** — all four forced discards
+filter the hand through `_discardable(hand)`, and the player's discard modal also
+rejects it in `add_card_to_discard` and sets `target_count` to **the number of discardable cards**
+(setting it to the hand size would create a modal whose confirm button is locked forever).
+An objective reward that drops once per match must not vanish to a single 재고. The loop is an index
+scan rather than `pop_front()` so it does not stop when a kept card sits at the front of the hand, and
+even in the extreme where the whole hand is kept (impossible in practice, since there are at most 2) no infinite loop occurs.
+`_prune_preserved` removes entries that have left the hand on every trim, preventing ghost references.
 - `start_card_phase()` — transitions to CARD_PHASE and clears
-  `_player_pass_lock` (자기 차례가 열렸다는 것이 곧 잠금이 풀렸다는 뜻이다).
+  `_player_pass_lock` (your own turn opening is itself what it means for the lock to be released).
   Awaits `HudBuilder.play_turn_announce(true)` so the "당신의 차례" banner
   sweeps in / holds / fades out before the player can interact; the player
   hand stays dimmed for that whole interval via `_apply_hand_dim_state()`.
-- `can_end_card_phase()` → bool — **자기 차례는 언제든 넘길 수 있다.** 카드를
-  한 장도 내지 않아도 되고, 점수를 한 점도 쓰지 않아도 된다. 남은 false 조건은
-  전부 "지금 닫으면 무언가가 중간에 끊긴다"는 것뿐이다:
-  `_player_turn_announce_in_progress`, 모달 오버레이(버리기·찾기 / 더미 열람 /
-  전투 개시 VS 확인), AI 플레이 루프, 그리고 공격 카드의 명중 연출
-  (`_attack_anim_active` — 연출 중간에 단계가 닫히면 시전 빛과 파티클이
-  화면에 남은 채로 BATTLE 이 재개된다).
+- `can_end_card_phase()` → bool — **you can pass your own turn at any time.** You need not
+  play a single card, nor spend a single point. The remaining false conditions are
+  all just "closing now would cut something off midway":
+  `_player_turn_announce_in_progress`, modal overlays (discard·search / pile browse /
+  battle-start VS confirm), the AI play loop, and an attack card's hit (명중) animation
+  (`_attack_anim_active` — if the phase closes mid-animation, the cast glow and particles
+  stay on screen while BATTLE resumes).
 
-  **규칙의 이력.** 처음 게이트는 `player_cost < card_phase_entry_cost` (진입
-  시점의 점수 스냅샷)였고 이건 단계를 통째로 교착시켰다: 28장 중 9장이 0코스트
-  (임기응변 / 정밀 이동 / 복귀 / 집중 …)이고 조정은 오히려 총량을 *올리므로*,
-  낼 수 있는 카드가 전부 무료인 손은 점수를 영영 못 내려 턴 넘기기 면이
-  활성화되지 않았다 — 작전 단계 동안 BATTLE 이 멈추므로 새 카드도 안 온다.
-  그래서 **"카드를 한 장 이상 냈을 것"**(`cards_played_this_phase > 0`)으로
-  바뀌었고, 낼 게 하나도 없는 손만 `_has_any_playable_card()` 탈출구로
-  통과시켰다. 지금은 그 예외가 규칙을 삼켰다 — 점수는 문턱 위인데 손에 낼 게
-  없거나 지금은 쓰고 싶지 않은 경우가 실제로 흔하고, "무언가 하나는 내라"를
-  강제하면 아무 카드나 버리듯 내게 된다. `cards_played_this_phase` 와
-  `_has_any_playable_card()` 는 함께 **삭제됐다**.
+  **History of the rule.** The first gate was `player_cost < card_phase_entry_cost` (a points
+  snapshot at entry), and it deadlocked the phase entirely: a good share of the cards are free
+  (임기응변 (Improvise) / 정밀 이동 (Precise Move) / 복귀 (Return to Base) / 집중 (Focus) …) and 조정 (Adjust) actually *raises* the total,
+  so a hand whose playable cards were all free could never bring points down and the pass-turn face
+  never activated — and since BATTLE stops during the operation phase, no new cards arrived either.
+  So it changed to **"must have played at least one card"** (`cards_played_this_phase > 0`),
+  and only a hand with nothing playable was let through via the `_has_any_playable_card()` escape hatch.
+  Now that exception has swallowed the rule —
+  it is actually common to have points above the threshold but nothing playable, or nothing you want to use right now, and
+  forcing "play something" makes players dump any card as if discarding it. `cards_played_this_phase` and
+  `_has_any_playable_card()` were **deleted** together.
 - `end_card_phase()` — the player's turn only: drops the selection, runs
   `recall_sys.process_phase_end_recalls()` (HP threshold + out-of-position
   card-displaced pilots) and returns to BATTLE. Also zeroes `kill_bounty_p` —
-  계획 살인's reservation only lives for the phase that placed it. 넘기는 순간
-  세 가지가 함께 일어난다.
+  계획 살인 (Planned Kill)'s reservation only lives for the phase that placed it. At the moment of passing,
+  three things happen together.
 
-  1. **문턱 초과분 소멸** — `player_cost` 는 정확히 `PHASE_THRESHOLD` 로 깎인다
-     (소멸량은 로그에 남는다). 차례를 쓰지 않고 넘긴 대가이고, 문턱 위에서
-     회복이 멈추는 규칙과 짝을 이룬다.
-  2. **패스 잠금** — `_player_pass_lock` 을 세운다(위 절).
-  3. **상대가 문턱 위면 그 자리에서 상대 차례** — `_ai_turn_ready()` 가 true 면
-     `_last_turn_side = 1` 을 찍고 `await _run_ai_turn()` 한다. 다음 BATTLE
-     틱을 기다리지 않고, 내 점수와도 무관하다(내 차례는 방금 끝났으므로).
-     점수만 보지 않고 `_ai_turn_ready()` 로 묻는 것은 아무것도 안 하는
-     "상대 차례" 배너를 띄우지 않기 위해서다. **넘기기 자체에는 여전히 배너가
-     없다** — 배너가 뜬다면 그건 상대가 실제로 행동한다는 뜻이다.
+  1. **Excess above the threshold is lost** — `player_cost` is cut to exactly `PHASE_THRESHOLD`
+     (the amount lost is logged). It is the price of passing without using the turn, and pairs with
+     the rule that recovery stops above the threshold.
+  2. **Pass lock** — sets `_player_pass_lock` (section above).
+  3. **If the opponent is above the threshold, the opponent's turn starts on the spot** — if `_ai_turn_ready()` is true,
+     it stamps `_last_turn_side = 1` and does `await _run_ai_turn()`. It does not wait for the next BATTLE
+     tick and is independent of my points (my turn just ended).
+     It asks `_ai_turn_ready()` rather than looking only at points so as not to show a do-nothing
+     "상대 차례" banner. **Passing itself still has no
+     banner** — if a banner appears, it means the opponent actually acts.
 
-  이 마지막 절 때문에 `end_card_phase` 는 **코루틴**이다. `CostDonut.
-  end_turn_pressed` 는 그대로 연결해 두면 되고(시그널은 코루틴 핸들러를 받는다),
-  `_finalize_pending_play` 의 완벽한 마무리 경로도 `await` 없이 부른다.
-- AI 차례 종료(`_run_ai_turn`)에도 같은 소멸 규칙이 걸린다 — `ai_cost` 역시
-  문턱으로 깎이고, 그 자리에서 플레이어의 패스 잠금이 풀린다.
+  Because of this last clause `end_card_phase` is a **coroutine**. `CostDonut.
+  end_turn_pressed` can stay connected as-is (signals accept coroutine handlers),
+  and the 완벽한 마무리 path in `_finalize_pending_play` also calls it without `await`.
+- The same loss rule applies at the end of the AI turn (`_run_ai_turn`) — `ai_cost` is likewise
+  cut to the threshold, and the player's pass lock is released right there.
 
-#### 작전 단계 진입 정산 (`_apply_phase_entry_carryovers`)
-지연 효과 셋이 자기 팀의 **다음 작전 단계 진입 시점**에 한꺼번에 정산된다.
-플레이어는 `start_card_phase`, AI 는 `_run_ai_turn` 이 부른다.
+#### Operation-phase entry settlement (`_apply_phase_entry_carryovers`)
+The deferred effects are settled all at once at **the moment their team next enters the operation phase**.
+For the player, `start_card_phase` calls it; for the AI, `_run_ai_turn`.
 
-| 상태 | 카드 | 정산 |
+| State | Card | Settlement |
 |---|---|---|
-| `preserved_cards_*` | 계획 중시 | 통째로 비운다 — 보존은 BATTLE 구간 한 번만 버틴다 |
-| `next_phase_strategy_*` | 아드레날린 | 작전 점수에 더한다(음수 가능, `maxi(0, …)` 로 바닥 고정) |
-| `growth_until_phase` | 완벽한 마무리 | `SimulationCore.clear_growth_until_phase(team)` 가 팀 전원의 성장 배율을 1.0 으로 되돌린다 |
-| `ambush_hold` | 매복 | 그 팀 파일럿의 매복을 푼다 |
-| `next_phase_draw_*` | 준비 태세 | 그만큼 뽑는다 — 이미 그 쪽 작전 단계 안이라 이렇게 들어온 신중한 예산은 공짜가 된다 |
-| `ambush_search_*` | 매복 | 시전자의 교전 카드를 덱에서 탐색한다 |
+| `preserved_cards_*` | 계획 중시 | Cleared entirely — the keep survives only one BATTLE stretch |
+| `next_phase_strategy_*` | 아드레날린 | Added to operation points (may be negative, floored with `maxi(0, …)`) |
+| `growth_until_phase` | 완벽한 마무리 | `SimulationCore.clear_growth_until_phase(team)` resets the whole team's growth multiplier to 1.0 |
+| `ambush_hold` | 매복 (Ambush) | Releases that team's pilots' ambush |
+| `next_phase_draw_*` | 준비 태세 (Readiness) | Draws that many — since it is already inside that side's operation phase, 신중한 예산 (Careful Budget) cards drawn this way become free |
+| `ambush_search_*` | 매복 | Searches the deck for the caster's engage card (교전 카드) |
 
-작전 단계가 **닫힐 때**는 `_clear_phase_free(is_player)` 가 신중한 예산의 "이번 단계 0"
-을 걷는다(`end_card_phase` / `_run_ai_turn` 끝).
+When the operation phase **closes**, `_clear_phase_free(is_player)` clears 신중한 예산's "0 this phase"
+(at the end of `end_card_phase` / `_run_ai_turn`).
 
-### 상대 차례 (`_run_ai_turn`)
+### Opponent's turn (`_run_ai_turn`)
 - `_ai_turn_ready()` — `ai_cost >= PHASE_THRESHOLD` **and** at least one card
   in `ai_hand` the AI can pay for, tested with the same
   `effective_cost_for(cd, false) <= ai_cost` filter
@@ -329,7 +329,7 @@ first auto-draw after the turn ends is what trims the excess.
 `_apply_hand_dim_state()` toggles `Card.set_dimmed(true|false)` on every
 player hand node based on `_is_player_input_blocked() or game_phase != CARD_PHASE`.
 That covers BATTLE auto-tick, the player turn-start banner, the AI run loop,
-any active modal overlay, and the 공격 명중 연출 (`_attack_anim_active`). `Card.set_dimmed(true)` darkens the modulate,
+any active modal overlay, and the attack hit animation (공격 명중 연출) (`_attack_anim_active`). `Card.set_dimmed(true)` darkens the modulate,
 suppresses hover brighten, and ignores `_gui_input` clicks; `set_dimmed(false)`
 restores `Color.WHITE`. `highlight_affordable_cards()` always tail-calls
 `_apply_hand_dim_state()` so every overlay-close path that funnels through it
@@ -345,126 +345,126 @@ re-evaluates the dim state.
   to 0 while the deck count grows over `BS_RESHUFFLE_TWEEN_DUR` (~0.55s).
 - `spawn_card_node(cd, at_left = false, animate = true)` — instantiates a player
   Card.tscn into `_bs.canvas`. The AI hand is logical-only — no card backs are
-  spawned for the enemy. `animate` runs the 드로우 인트로 below.
+  spawned for the enemy. `animate` runs the draw intro (드로우 인트로) below.
 
-#### 드로우 인트로 (뽑힌 카드가 손패에 들어오는 길)
-뽑힌 카드는 자기 슬롯에 그냥 나타나지 않는다. **덱 뭉치에서 한 장이 떠오르며
-사라지고 → 뒷면인 채로 화면 왼쪽 바깥에서 나타나 → 손패 오른쪽 끝(새 카드가
-앉을 자리) 위로 날아가 → 그 자리에서 뒤집혀 내용을 드러내며 → 슬롯에
-안착한다.** 네 박자가 각각 다른 질문에 답한다: 어디서 왔는가(덱 뭉치 →
-왼쪽) → 어디에 앉는가(행의 오른쪽 끝) → 무엇인가(드러나는 앞면).
+#### Draw intro (the path a drawn card takes into the hand)
+A drawn card does not just appear in its slot. **One card rises off the deck stack (뭉치)
+and fades → appears face-down from off-screen left → flies to a point above the right end
+of the hand (where the new card will sit) → flips there to reveal its face → settles
+into the slot.** Each of the beats answers a different question: where did it come from (deck stack →
+left) → where does it sit (right end of the row) → what is it (the revealed face).
 
-| 박자 | 담당 | 시간 |
+| Beat | Owner | Time |
 |---|---|---|
-| 덱 뭉치에서 떠오르며 사라짐 | `_play_draw_intro` ⓪, `CardPileStack.play_pop()` | `GHOST_SEC` **0.26s** (이어받기는 **0.182s** 에) |
-| 왼쪽 바깥 → 오른쪽 끝 위 | `_play_draw_intro` ①, `Card.tween_to` | `DRAW_FLY_SEC` **0.28s** |
-| 뒤집기 | `Card.play_flip_reveal()` | `Card.FLIP_HALF_SEC` × 2 = **0.18s** |
-| 안착 | `_play_draw_intro` ③ → `relayout_hand` | `BS_HAND_SPRING_DURATION` 0.18s |
+| Rises off the deck stack and fades | `_play_draw_intro` ⓪, `CardPileStack.play_pop()` | `GHOST_SEC` **0.26s** (hand-off at **0.182s**) |
+| Off-screen left → above the right end | `_play_draw_intro` ①, `Card.tween_to` | `DRAW_FLY_SEC` **0.28s** |
+| Flip | `Card.play_flip_reveal()` | `Card.FLIP_HALF_SEC` × 2 = **0.18s** |
+| Settle | `_play_draw_intro` ③ → `relayout_hand` | `BS_HAND_SPRING_DURATION` 0.18s |
 
-- **⓪ 과 ① 은 겹친다.** 왼쪽 진입은 잔상이 다 사라진 뒤가 아니라 알파가
-  `CardPileStack.GHOST_HANDOFF_ALPHA`(0.30) 만큼 남은 시점
-  (`CardPileStack.ghost_handoff_delay()` = 0.182s)에 시작한다 — 완전히 사라진
-  뒤에 시작하면 카드 한 장이 두 번 나온 것처럼 끊겨 보인다. 뭉치가 아직
-  없으면(`pile_deck == null`, HUD 가 세워지기 전의 개시 배분) 이 박자는 통째로
-  건너뛴다. 잔상 자체는 `ui/README.md` → 오가는 카드 = 잔상.
-- **출발점** `_draw_entry_position()` = `(-CARD_W - DRAW_ENTRY_PAD_PX, BS_HAND_CENTER.y)`
-  — 카드 폭만큼 더 나가 있어 첫 프레임에 화면 안쪽으로 삐져나오지 않는다.
-- **뒤집는 지점은 최종 슬롯보다 `DRAW_FLIP_LIFT_PX`(78px) 위**다. 행 안에서
-  뒤집으면 이웃 카드에 절반이 가리고, 마지막 "안착"이 눈에 보이는 동작으로
-  남지 않는다.
-- **비행 곡선은 `EASE_IN_OUT` / `TRANS_SINE`.** 처음엔 `EASE_OUT` / `TRANS_CUBIC`
-  이었는데 앞이 무거운 감속 곡선이라 1200px 를 0.10초 만에 77% 지나가 "왼쪽에서
-  왔다"가 읽히지 않았다(실측). 대칭 곡선이 가로지르는 구간을 눈에 남긴다.
-- **비행은 `Card.tween_to`(= `_active_tween`)를 그대로 쓴다.** 카드 자신이 쥔
-  트윈이라야 `begin_discard_fx` 가 걷어 낼 수 있기 때문이다 — 상한 초과 정리는
-  **가장 오래된 카드**를 버리는데 그 카드가 아직 날아오는 중일 수 있고, 죽지 않은
-  비행 트윈이 남으면 떨어지는 카드를 도로 손패 쪽으로 끌어올린다.
-- **`Card.intro_active` 가 그 카드를 손패의 일원에서 잠시 뺀다**:
-  `relayout_hand` 이 건너뛰고(위치의 주인은 인트로다), `Card.set_hovered` 와
-  `_grabbable_card_at` 이 거절한다(아직 잡을 수 있는 카드가 아니다). 나머지
-  손패는 스폰 즉시 **새 카드 몫까지 좁혀 놓고** 기다린다 — `relayout_hand` 은
-  총 장수로 이미 돌았다.
-- **뒤집기는 `scale.x` 를 0 까지 접었다 펴는 2D 흉내**이고, 앞/뒷면 교체는 폭이
-  0 인 그 프레임에 일어난다. 도는 동안 `Card._flip_active` 가 서고
-  `_refresh_float_state` 는 `scale` 에서 손을 뗀다 — 호버 확대와 같은 프로퍼티를
-  두고 다투면 카드가 납작한 채로 굳는다.
-- **같은 프레임에 여러 장이 뽑히면**(개시 5장 / `draw:N` / 재고) 출발 시각이
-  `DRAW_STAGGER_SEC`(0.07s)씩 밀린다. 없으면 다섯 장이 정확히 겹쳐 날아가 한 장
-  처럼 보인다. 간격은 `_draw_intro_active`(진행 중인 인트로 수)로 잰다.
-- **각 박자는 트윈의 `finished` 가 아니라 `SceneTreeTimer` 로 기다린다.** 카드가
-  도중에 free 되면(재시작 / 스냅샷 롤백 / 상한 초과 정리) 그 트윈의 `finished` 는
-  영영 오지 않아 코루틴이 매달린 채 카운터를 붙잡는다. 매 박자 앞에
-  `_intro_alive(node)` 를 다시 묻는다.
-- **인트로를 끄는 두 호출자**: `at_left` 복귀(정밀 이동 — 왼쪽으로 되돌아오는
-  카드라 오른쪽 끝으로 날아가는 연출이 방향부터 어긋난다)와
-  `_restore_from_snapshot`(취소 롤백은 손패를 통째로 다시 세우는 작업이라,
-  연출을 태우면 되돌린 손패 전체가 새로 뽑힌 것처럼 보인다).
-- **실측**(헤드리스): 스폰 직후 `intro_active = true` · `face_up = false` ·
-  `position = (-300, 1440)`; 인트로 종료 시 `face_up = true` · `scale = (1,1)`;
-  안착 후 슬롯과의 오차 **0.00px** / 회전 오차 **0.0000**.
+- **⓪ and ① overlap.** The entry from the left starts not after the ghost has fully faded but when its alpha
+  has `CardPileStack.GHOST_HANDOFF_ALPHA` (0.30) left
+  (`CardPileStack.ghost_handoff_delay()` = 0.182s) — starting after it has fully
+  faded makes one card look like it came out twice, a visible stutter. If the stack does not
+  exist yet (`pile_deck == null`, the opening deal (개시 배분) before the HUD is built) this beat is skipped
+  entirely. The ghost itself: `ui/README.md` → Cards coming and going = ghosts.
+- **Start point** `_draw_entry_position()` = `(-CARD_W - DRAW_ENTRY_PAD_PX, BS_HAND_CENTER.y)`
+  — one more card width out, so it doesn't poke into the screen on the first frame.
+- **The flip point is `DRAW_FLIP_LIFT_PX` (78px) above the final slot.** Flipping
+  inside the row hides half of it behind the neighbour cards, and the final "settle" would not
+  remain as a visible motion.
+- **The flight curve is `EASE_IN_OUT` / `TRANS_SINE`.** It used to be `EASE_OUT` / `TRANS_CUBIC`,
+  a front-loaded deceleration curve that covered 77% of 1200px in 0.10s, so "it came from
+  the left" didn't read (measured (실측)). A symmetric curve keeps the crossing visible.
+- **The flight reuses `Card.tween_to` (= `_active_tween`).** It must be a tween the card itself holds
+  so `begin_discard_fx` can clear it — the over-cap trim discards
+  **the oldest card**, which may still be in flight, and a surviving
+  flight tween would drag the falling card back up toward the hand.
+- **`Card.intro_active` temporarily removes that card from the hand's membership**:
+  `relayout_hand` skips it (the intro owns its position), and `Card.set_hovered` and
+  `_grabbable_card_at` reject it (it is not a grabbable card yet). The rest of
+  the hand **narrows to make room for the new card** immediately at spawn and waits — `relayout_hand`
+  already ran with the total count.
+- **The flip is a 2D fake that folds `scale.x` down to 0 and back open**; the front/back swap happens on the frame where the
+  width is 0. While it turns, `Card._flip_active` is set and
+  `_refresh_float_state` lets go of `scale` — fighting over the same property as the
+  hover enlargement would freeze the card flat.
+- **When several cards are drawn in the same frame** (5 at opening / `draw:N` / restock) their start times
+  are staggered by `DRAW_STAGGER_SEC` (0.07s). Without it the five fly exactly on top of each other and look like
+  one card. The offset is measured by `_draw_intro_active` (number of intros in progress).
+- **Each beat waits on a `SceneTreeTimer`, not on the tween's `finished`.** If the card is
+  freed midway (restart / snapshot rollback / over-cap trim) that tween's `finished`
+  never arrives, and the coroutine hangs holding the counter. Before every beat it
+  re-asks `_intro_alive(node)`.
+- **Two callers turn the intro off**: the `at_left` return (precise move — a card coming back
+  to the left, so a flight to the right end would be wrong even in direction) and
+  `_restore_from_snapshot` (a cancel rollback rebuilds the whole hand, so
+  running the effect would make the entire restored hand look freshly drawn).
+- **Measured** (headless): right after spawn `intro_active = true` · `face_up = false` ·
+  `position = (-300, 1440)`; at intro end `face_up = true` · `scale = (1,1)`;
+  after settling, offset from the slot **0.00px** / rotation error **0.0000**.
 
-#### 버리기 연출 (`Card.begin_discard_fx`)
-손패를 떠나 버려지는 카드는 **부채꼴 기울기와 무관하게 화면 Y축으로만** 곧장
-내려가며 투명해지고(`DISCARD_DROP_PX` **150px** / `DISCARD_FADE_SEC` 0.30s) 다
-내려가면 스스로 `queue_free` 한다. 리프트(`PRESS_LIFT`)가 카드 자신의 up 축을
-타는 것과 반대다 — 버려지는 카드는 손에서 뽑히는 게 아니라 아래로 떨어지는
-것이라, 기울기를 타면 기울어진 카드만 옆으로 새 나가 줄이 흐트러져 보인다.
-(부모가 `CanvasLayer` 라 회전이 없으므로 `position.y` 를 더하는 것이 곧 순수
-화면 Y축 이동이다.)
+#### Discard effect (`Card.begin_discard_fx`)
+A card leaving the hand to be discarded goes **straight down the screen Y axis only, regardless of its fan tilt**,
+fading as it goes (`DISCARD_DROP_PX` **150px** / `DISCARD_FADE_SEC` 0.30s), and once it is all the way
+down it `queue_free`s itself. This is the opposite of the lift (`PRESS_LIFT`), which rides the card's own up
+axis — a discarded card is not pulled out of the hand but falls down, so
+riding the tilt would make only the tilted cards slide sideways and the row would look messy.
+(The parent is a `CanvasLayer` with no rotation, so adding to `position.y` is a pure
+screen-Y move.)
 
-- **낙하 곡선은 `EASE_OUT`** — 손을 떠나는 순간 확 튕겨 내려간 뒤 아래에서
-  서서히 멎는다. 예전에는 `EASE_IN` 이라 처음엔 굼뜨다가 마지막에 빨라졌고,
-  그러면 카드가 손패에서 **떨어져 나가는** 순간이 가장 흐릿하고 정작 다 사라질
-  때 제일 빨라 "버렸다"의 무게가 끝에 실렸다. 페이드(`modulate`)는 그대로
-  `EASE_IN` 이라 카드는 다 내려가 멎은 자리에서 마저 지워진다.
-- **버린 더미 쪽에도 반대 방향의 잔상이 내려앉는다** — 카드 한 장이 뭉치 위에서
-  아래로 내려오며 나타난다(`CardPileStack.play_land`). **손패 카드의 낙하가 다
-  끝난 뒤에 시작한다**: `PILE_LAND_DELAY_SEC` = `Card.DISCARD_FADE_SEC`(0.30s)
-  로 묶여 있어 두 연출이 겹치지 않고 이어 붙는다 — 한 장의 카드가 손에서 떨어져
-  더미로 들어가는 **한 동작**으로 읽히게 하기 위해서다. 예전 0.16s 는 카드가
-  아직 반쯤 떨어지는 중에 더미가 먼저 받아, 같은 카드가 두 군데에 동시에 있었다.
-  **부르는 자리는 한 곳, `_notice_discard_gain()` 이다**: 버린 더미가 카드를 받는
-  코드는 일곱 군데(카드 사용 / 버리기:N / 상한 초과 정리 / 과감한 정리 …)나
-  되므로 전부를 부르는 대신 `update_deck_discard_labels` 에서 **장수가 늘어난 것을
-  알아챈다** — 어차피 일곱 군데가 모두 지나는 자리이고(숫자가 안 바뀌면 화면도
-  안 바뀐다), 리셔플처럼 줄어드는 경우는 델타가 음수라 저절로 걸러진다. 한 번에
-  띄우는 잔상은 `PILE_LAND_MAX_GHOSTS`(3장)까지다 — 그 이상은 겹쳐 뭉개지기만
-  한다. **소멸(`exhaust`)은 버린 더미로 가지 않으므로 잔상도 없다** —
-  `play_discard_fx` 가 아니라 장수를 기준으로 삼은 것이 그대로 그 규칙이 된다.
-- **숫자와 두께는 잔상이 다 내려앉은 뒤에 오른다.** `_discard_pending` 이 "배열
-  에는 들어왔지만 아직 화면에 없는 장수"를 들고 있고, 표시값은 언제나
-  `배열 크기 − _discard_pending` 이다. `_commit_discard_gain(n, wait)` 이
-  `PILE_LAND_DELAY_SEC + (장수−1)×GHOST_STAGGER_SEC + GHOST_SEC` 뒤에 그만큼을
-  털어 내면서 숫자와 뭉치 두께가 함께 오른다 — 카드가 뭉치에 **닿는** 순간과
-  더미가 두꺼워지는 순간이 같아진다. 대기는 트윈이 아니라 `SceneTreeTimer` 다
-  (드로우 인트로와 같은 이유: 노드가 도중에 사라져도 코루틴이 매달리지 않는다).
-  - **델타 0 은 정산을 건드리지 않는다.** `update_deck_discard_labels` 은 대부분
-    델타 0 인 단순 갱신으로 불리므로(드로우 / 손패 재배치 / HUD 갱신 …), 거기서
-    `_discard_pending` 을 0 으로 밀면 갱신 한 번에 지연이 통째로 날아가 잔상이
-    채 내려앉기도 전에 숫자가 올라간다(구현 중 실측으로 잡은 버그). 0 으로
-    되돌리는 것은 **줄어든 경우(리셔플)뿐**이고, `_animate_reshuffle_counts` 도
-    자기 초입에서 `_discard_seen` / `_discard_pending` 을 다시 잡는다.
-  - **실측**(헤드리스): 배열에 1장 추가 직후 `displayed` 그대로 · `pending 1`
-    → 0.30s 시점에도 그대로 → 0.65s 시점에 `displayed 1.0` · `pending 0`.
-- 진입점은 `CardPhaseManager.play_discard_fx(node)` 하나이고, **노드는 부르기
-  전에 이미 `player_card_nodes` 에서 빠져 있어야 한다** — 연출이 도는 0.3초
-  동안 레이아웃 · 호버 · 히트 밴드가 그 카드를 여전히 손패로 세면 남은 카드들이
-  빈자리를 메우지 못한다. `_despawn_player_card_node` 가 erase → play 순서로
-  부른다.
-- 진행 중이던 레이아웃 / 호버 / 그림자 / 뒤집기 트윈을 전부 killed 한 뒤 건다.
-  같은 `position` · `modulate` 를 두고 다투는 트윈이 남으면 카드가 제자리로
-  끌려 올라간다.
-- **버리기:N 의 중앙 줄도 같은 연출로 내려간다.** `CardSelectOverlay._commit_discard`
-  가 `to_discard_nodes` 를 목록에서 먼저 떼어 내고(안 그러면 `_teardown` 이 그
-  자리에서 free 한다) 한 장씩 `play_discard_fx` 로 넘긴다. **취소 경로는
-  예외다** — `_on_cancel_pressed` → `_teardown` 은 그대로 즉시 free 하고
-  `_restore_from_snapshot` 이 손패를 다시 세운다. 버려지지 않은 카드가 떨어질
-  이유가 없다.
-- **실측**(헤드리스, 낙하 거리 260px 시절): 배열에서는 즉시 빠지고 노드는 살아
-  있음 → 0.15초 시점에 `dy = +37.2px` · `dx = 0.00` · `rot_delta = 0.0000` ·
-  `alpha = 0.73` → 0.45초 시점에 free 완료. 지금 거리는 **150px** 이다 —
-  카드가 화면 아래로 멀리 빠져나가기보다 손패 바로 밑에서 사라지는 쪽이
-  "버렸다"로 읽힌다.
+- **The drop curve is `EASE_OUT`** — it snaps down the moment it leaves the hand, then
+  slowly comes to rest below. It used to be `EASE_IN`: sluggish at first, fast at the end,
+  which made the moment the card **breaks away** from the hand the blurriest and the
+  fastest part was when it vanished, putting the weight of "discarded" at the end. The fade (`modulate`) is still
+  `EASE_IN`, so the card finishes erasing where it came to rest at the bottom.
+- **A ghost lands on the discard pile from the opposite direction too** — one card appears coming down
+  onto the stack from above (`CardPileStack.play_land`). **It starts only after the hand card's
+  drop has finished**: `PILE_LAND_DELAY_SEC` is tied to `Card.DISCARD_FADE_SEC` (0.30s)
+  so the two effects don't overlap but join end to end — so it reads as **one motion** of a single card
+  falling from the hand into the pile. The old 0.16s had the pile receive the card while it was
+  still half-way down, so the same card was in two places at once.
+  **It is called from one place, `_notice_discard_gain()`**: code that adds cards to the discard pile
+  lives in seven places (card play / 버리기:N (discard:N) / over-cap trim / 과감한 정리 (Bold Cleanup) …),
+  so instead of calling it from all of them, `update_deck_discard_labels` **notices that the count went
+  up** — all seven pass through there anyway (if the number doesn't change, the screen doesn't
+  change either), and shrinking cases like a reshuffle have a negative delta and are filtered out automatically. Ghosts spawned
+  at once are capped at `PILE_LAND_MAX_GHOSTS` (3) — any more just overlap into
+  a smear. **Exhaust (`exhaust`, 소멸) does not go to the discard pile, so it has no ghost** —
+  basing this on the count rather than on `play_discard_fx` is exactly what makes that rule.
+- **The number and the thickness rise only after the ghost has landed.** `_discard_pending` holds "cards that are in
+  the array but not on screen yet", and the displayed value is always
+  `array size − _discard_pending`. `_commit_discard_gain(n, wait)` clears that amount
+  after `PILE_LAND_DELAY_SEC + (count−1)×GHOST_STAGGER_SEC + GHOST_SEC`,
+  raising the number and the stack thickness together — the moment the card **touches** the stack and
+  the moment the pile thickens coincide. The wait is a `SceneTreeTimer`, not a tween
+  (same reason as the draw intro: the coroutine doesn't hang if the node disappears midway).
+  - **A delta of 0 does not touch the settlement.** `update_deck_discard_labels` is mostly called as
+    a plain refresh with delta 0 (draw / hand relayout / HUD refresh …), so
+    resetting `_discard_pending` to 0 there would wipe the whole delay in one refresh and the number would rise
+    before the ghost even landed (a bug caught by measurement during implementation). It is reset to 0
+    **only when the count shrank (reshuffle)**, and `_animate_reshuffle_counts` also
+    re-captures `_discard_seen` / `_discard_pending` at its start.
+  - **Measured** (headless): right after adding 1 card to the array, `displayed` unchanged · `pending 1`
+    → still unchanged at 0.30s → at 0.65s `displayed 1.0` · `pending 0`.
+- The single entry point is `CardPhaseManager.play_discard_fx(node)`, and **the node must already be
+  removed from `player_card_nodes` before the call** — if during the 0.3s the effect
+  runs layout · hover · hit bands still counted that card as part of the hand, the remaining cards
+  couldn't fill the gap. `_despawn_player_card_node` calls them in erase → play
+  order.
+- It is started only after killing every in-progress layout / hover / shadow / flip tween.
+  If a tween fighting over the same `position` · `modulate` survived, the card would be
+  dragged back up to its spot.
+- **The centre row of 버리기:N (discard:N) goes down with the same effect.** `CardSelectOverlay._commit_discard`
+  first detaches `to_discard_nodes` from the list (otherwise `_teardown` would free them
+  on the spot) and hands them one at a time to `play_discard_fx`. **The cancel path is
+  the exception** — `_on_cancel_pressed` → `_teardown` still frees immediately and
+  `_restore_from_snapshot` rebuilds the hand. A card that wasn't discarded has no reason
+  to fall.
+- **Measured** (headless, back when the drop distance was 260px): removed from the array immediately while the node stays
+  alive → at 0.15s `dy = +37.2px` · `dx = 0.00` · `rot_delta = 0.0000` ·
+  `alpha = 0.73` → freed by 0.45s. The distance is now **150px** —
+  a card vanishing just below the hand reads as "discarded" better than one sliding
+  far off the bottom of the screen.
 - **The fan is one circle.** Every card centre rides a circle of radius
   `BS_HAND_FAN_RADIUS` (3200px) whose pivot sits directly *below* the row, and
   both readings of the fan come off it: a card's tilt is its angle on the circle
@@ -475,40 +475,40 @@ re-evaluates the dim state.
   outermost cards tilt ±6.7° and hang 21.4px below the middle pair; a 5-card
   hand splays ±6.2° / 18.5px (its spacing is uncompressed, so it's just as wide).
   Shrink the radius for a deeper curve.
-  > The 12-card figures quoted throughout this section are now **one card past
-  > the cap** — `MAX_HAND_SIZE` is **10**, and with the 개시 손패 gone the hand
-  > only ever touches 10 mid-match (a 작전 단계 드로우 can overshoot it until the
+  > The 12-card figures quoted throughout this section are a **large-hand sample**,
+  > not the cap — the cap is `MAX_HAND_SIZE` (game_config.csv), and with the opening hand (개시 손패) gone the hand
+  > only reaches it mid-match (an operation phase (작전 단계) draw can overshoot it until the
   > next auto-draw trims). They're kept as the measured worst case: every layout
-  > quantity here is monotonic in hand size, so 12 bounds 10 and re-measuring
-  > would only move the numbers slightly inward. The 8-card figures also quoted
+  > quantity here is monotonic in hand size, so a larger sample bounds a smaller hand and re-measuring
+  > would only move the numbers slightly. The 8-card figures also quoted
   > below are just a mid-size sample, not the cap.
-##### 손패 카드 배율 (`HAND_CARD_SCALE` 0.96)
-**손패의 카드는 `Card.CARD_W/H`(160×220)와 따로 자기 배율로 그려진다 — 153.6×211.2** (1.2 → 0.96, 20% 축소). 카드
-규격 자체를 키우지 않는 이유는 그 상수를 밴픽 시트 · 더미 열람 · 파일럿 상세
-팝업까지 열 몇 화면이 함께 읽기 때문이다(키우면 그 화면들의 격자가 통째로
-어긋난다). 그래서 손패만 자기 배율을 갖고, `hand_card_w()` / `hand_card_h()`
-두 헬퍼가 "보이는 크기"를 답한다.
+##### Hand card scale (`HAND_CARD_SCALE` 0.96)
+**Cards in the hand are drawn at their own scale, separate from `Card.CARD_W/H` (160×220) — 153.6×211.2** (1.2 → 0.96, 20% smaller). The
+card spec itself isn't enlarged because a dozen-odd screens read that constant — the ban/pick (밴픽) sheet · pile browse · pilot detail
+popup and more (enlarging it would throw off those screens' grids
+wholesale). So only the hand has its own scale, and the two helpers `hand_card_w()` / `hand_card_h()`
+answer "the visible size".
 
-**레이아웃 좌표는 배율을 타지 않는다.** 카드의 `pivot_offset` 이 한가운데라
-`position`(= 확대 전 왼쪽 위)에 배율을 곱해도 **중심이 안 움직인다** — 그래서
-`slot_position` / `_apply_hit_bands` 의 "중심 = position + CARD_W/2" 도,
-`hand_drop_offset()` 의 "카드 절반이 스트립 뒤판에 가린다"도 한 글자 안 바뀌었다.
-배율을 알아야 하는 자리는 **보이는 폭을 재는 곳** 셋뿐이다:
+**Layout coordinates don't ride the scale.** The card's `pivot_offset` is its centre, so
+multiplying the scale onto `position` (= top-left before scaling) **does not move the centre** — so
+"centre = position + CARD_W/2" in `slot_position` / `_apply_hit_bands`, and
+"half the card is hidden behind the strip backplate" in `hand_drop_offset()`, didn't change by a single character.
+Only three places need to know the scale — **those that measure the visible width**:
 
-| 자리 | 무엇을 재는가 |
+| Place | What it measures |
 |---|---|
-| `slot_spacing` | 겹치지 않는 간격 / 압축 한계 |
-| `_hover_push_amount` | 포커스 카드가 이웃을 덮는 폭 |
-| `_fit_hit_layer` 의 `grow_x/y` | 슬롯 rect 밖으로 나가는 여유 = `HAND_CARD_SCALE × HOVER_SCALE − 1` |
+| `slot_spacing` | non-overlapping spacing / compression limit |
+| `_hover_push_amount` | how far the focus card covers its neighbours |
+| `grow_x/y` in `_fit_hit_layer` | margin outside the slot rect = `HAND_CARD_SCALE × HOVER_SCALE − 1` |
 
-아래 실측 수치는 배율이 1.2 이던 시절 값이다(0.96 으로 줄인 뒤 다시 재지 않았다):
-4장 간격 204 · 행 138..942, 12장 간격 64.5 · 행 89..991, 히트 레이어가 호버
-카드의 시각 rect 와 **정확히** 일치. 1.2배 시절에는 같은 배율이 `AiCardPlayer` 의 중앙 카드(`SCALE_BIG` 1.35 → **1.62**,
-`SCALE_SMALL` 0.85 → **1.02**)와 `CardSelectOverlay` 의 버리기 픽 줄에도 걸린다
-— 후자는 손패에서 그대로 들려 나온 **같은 노드**라 지금도 `HAND_CARD_SCALE` 을
-그대로 따라간다. `AiCardPlayer` 의 두 상수와 `ObjectiveRewardFx.CARD_SCALE`(1.35)
-은 하드코딩이라 손패를 0.96 으로 줄일 때 **그대로 두었다**(중앙에 읽으라고 띄우는
-카드는 손패보다 커야 한다 — 여전히 성립).
+The measured figures below are from when the scale was 1.2 (not re-measured after shrinking to 0.96):
+4 cards spacing 204 · row 138..942, 12 cards spacing 64.5 · row 89..991, the hit layer matching the hovered
+card's visual rect **exactly**. In the 1.2× days the same scale also applied to `AiCardPlayer`'s centre card (`SCALE_BIG` 1.35 → **1.62**,
+`SCALE_SMALL` 0.85 → **1.02**) and to `CardSelectOverlay`'s discard-pick row
+— the latter is **the same node** lifted straight out of the hand, so it still follows `HAND_CARD_SCALE`
+as-is. `AiCardPlayer`'s two constants and `ObjectiveRewardFx.CARD_SCALE` (1.35)
+are hard-coded and were **left unchanged** when the hand shrank to 0.96 (a card floated in the centre to be read
+must be bigger than the hand — still true).
 
 - `slot_spacing(total)` — uniform centre-to-centre spacing.
   `hand_card_w() + BS_HAND_CARD_GAP` until the natural span exceeds
@@ -519,7 +519,7 @@ re-evaluates the dim state.
   drop) is derived from this one number, so the three can never disagree.
   **There is no push-free variant.** A card has exactly one slot; the focus
   card's own push is 0 by construction, so the lifted-card poses read the same
-  slot as everyone else (see 핸드 포커스 below).
+  slot as everyone else (see Hand focus below).
 - `slot_position(index, total)` — top-left viewport
   position: `BS_HAND_CENTER + (dx, _fan_arc_drop(dx))`. `BS_HAND_CENTER.x` is
   set in `BattleSim._ready` to *the top-left a centred card would take*
@@ -529,7 +529,7 @@ re-evaluates the dim state.
   same `dx`. Cards pivot around their own centre (`pivot_offset` set in
   `spawn_card_node`), so the slot X positions are unaffected.
 
-##### 핸드 포커스 — who does the row spread around?
+##### Hand focus — who does the row spread around?
 - `_push_focus_card()` — **the single home of that question**: the *dragged*
   card if there is one, else the card under the cursor. A dragged card is the
   hand's focus in exactly the same way a hovered one is, so it opens the row the
@@ -592,20 +592,20 @@ re-evaluates the dim state.
   rotation and scale.
 - `update_deck_discard_labels()` / `_refresh_count_labels()` — snap the visible
   Deck count to `player_deck.size()`; the Discard count lags by
-  `_discard_pending` until its 착지 잔상 lands (see 버리기 연출). The counts go into the
-  two `CardPileStack` 뭉치 (`_bs.pile_deck` / `_bs.pile_discard`) as **floats**,
+  `_discard_pending` until its landing ghost (착지 잔상) lands (see Discard effect). The counts go into the
+  two `CardPileStack` stacks (`_bs.pile_deck` / `_bs.pile_discard`) as **floats**,
   so during a reshuffle tween the stack's thickness rides the same curve the
-  number does. See `ui/README.md` → 덱 / 버린 더미 뭉치.
+  number does. See `ui/README.md` → Deck / discard piles.
 - `highlight_affordable_cards()` — re-reads every visible card's playability:
   `set_affordable(eff <= player_cost)`, `set_respawn_turns(respawn_turns_for(cd))`,
   and `update_displayed_cost(eff)`. Tail-calls `_apply_hand_dim_state()` and
   `_refresh_play_allowed()`, so every path that funnels through it also
   re-evaluates the hand dim and the drop gate.
 - `respawn_turns_for(cd)` / `card_is_playable(cd)` — the two playability
-  questions. `respawn_turns_for` returns 0 while the 시전자 is alive and
+  questions. `respawn_turns_for` returns 0 while the caster (시전자) is alive and
   **at least 1** while they are down (never 0 for a dead pilot, so the card
   can't flicker back to playable on the tick the timer hits 0).
-  `card_is_playable` = 시전자 alive **and** affordable **and**
+  `card_is_playable` = caster alive **and** affordable **and**
   `card_has_valid_targets`.
 
 ### Card interaction (hover → drag → drop)
@@ -613,13 +613,13 @@ re-evaluates the dim state.
   viewport. The row moved up 60px when the battlefield shrank to 90%
   (`HexGrid.DISPLAY_SCALE` 1.5 → 1.35 put the field's bottom edge at 1351
   instead of 1406), which keeps the ~90px gap between the field and the cards.
-  Everything positioned off `BS_HAND_CENTER.y` — the 전략 포인트 도넛, the
+  Everything positioned off `BS_HAND_CENTER.y` — the 전략 포인트 (strategy point) donut, the
   Deck / Discard counters, the hit layer — followed it automatically; there are
-  no literals to chase. (The 확인 / 취소 row used to sit in that band too; it is
+  no literals to chase. (The 확인 / 취소 (Confirm / Cancel) row used to sit in that band too; it is
   gone, but `CardTargetingOverlay.BTN_H` / `BTN_HAND_GAP` still reserve the gap
   so the donut doesn't land on the cards' top edge.)
   `BS_HAND_AREA_MARGIN` (130px) on each side is reserved for the
-  Deck / Discard 뭉치 and shrinks the inner `BS_HAND_WIDTH`, which is
+  Deck / Discard piles (뭉치) and shrinks the inner `BS_HAND_WIDTH`, which is
   then widened by `BS_HAND_WIDTH_SCALE` (1.10) → **902px** on a 1080-wide
   screen (row spans x=89..991). That eats into the pile gutters, so
   `HudBuilder._build_hand_indicators` derives its gutter from the real hand
@@ -633,15 +633,15 @@ re-evaluates the dim state.
   card resting near the table, `SHADOW_HOVER_OFFSET` (24px, blur 26, alpha
   0.36) while hovered, `SHADOW_SELECTED_OFFSET` (32px, blur 32, alpha 0.32)
   while lifted — **or aiming**: `is_dragging` reads as "highest of all" for both
-  the shadow and the 1.2× scale, so a card whose 조준 화살표 has followed the
+  the shadow and the 1.2× scale, so a card whose aiming arrow (조준 화살표) has followed the
   cursor out over the battlefield keeps its raised look even though the cursor
   is no longer over any hover band. The slab's own `bg_color` alpha also drops from 0.8 → 0.55
   on the blurred states so a high shadow reads as a soft pool, not a black
-  rectangle trailing the card. Non-player cards (AI hand peek, 찾기 grid)
+  rectangle trailing the card. Non-player cards (AI hand peek, search (찾기) grid)
   keep the shadow hidden — `setup()` gates `_shadow.visible` on
   `is_player_card`.
 - **Hover** (`on_card_hovered` / `on_card_unhovered`, driven by the hand hit
-  layer — see 핸드 히트 레이어 below): face-up player cards
+  layer — see Hand hit layer (핸드 히트 레이어) below): face-up player cards
   brighten via a `modulate` tween and scale up to `Card.HOVER_SCALE` (1.2×)
   around their own centre, coming "closer to the screen" — the shadow drops
   to its hover pose at the same time. All three reactions run on
@@ -665,7 +665,7 @@ re-evaluates the dim state.
 - **Grab** (`_on_hit_layer_gui_input` press → `_begin_drag` once the cursor
   passes `DRAG_THRESHOLD_PX`). A press on its own records `_press_card` and does
   nothing else — **a click that never moves is not an action.** When the drag
-  does fire, a 대상 지정 card pops out by `Card.PRESS_LIFT` (40px) **along its
+  does fire, a targeting (대상 지정) card pops out by `Card.PRESS_LIFT` (40px) **along its
   own up-axis while keeping its fan rotation** —
   `slot + Vector2(0, -PRESS_LIFT).rotated(slot_rotation(...))`, so a card on the
   left half of the fan travels up-left and one on the right half travels
@@ -673,7 +673,7 @@ re-evaluates the dim state.
   never plain screen-up-and-right. Sideways travel is
   `PRESS_LIFT × sin(fan angle)` = ±4.6px on the outermost card of a 12-card hand;
   tighten `BS_HAND_FAN_RADIUS` if the splay should read more strongly.
-  (A card with no target leaves the row entirely instead — see 드래그 앤 드롭.)
+  (A card with no target leaves the row entirely instead — see Drag and drop.)
   **Grabbing makes the card the row's focus, so `_begin_drag` reflows the whole
   row around it before posing the lift** — the neighbours give way exactly as
   they would on a hover, and because the focus card's own push is 0, its pushed
@@ -728,8 +728,9 @@ re-evaluates the dim state.
   always topmost, every other card at 1.0, zero engine errors.
 - **Description box** (`_refresh_description_box` / `_show_description_box`):
   a `CardDescBox` panel **right beside the focused (enlarged) card**, portrait
-  like a card — `DESC_BOX_W` 240 wide, never shorter than the enlarged card
-  (`CARD_H × HAND_CARD_SCALE × HOVER_SCALE`), height otherwise follows the text.
+  like a card — `DESC_BOX_W` 240 wide, `DESC_BOX_GAP` (20) from the card; its
+  height follows the text with no lower bound (`CardDescBox.build(..., min_h = 0)`
+  — the old floor of the enlarged card's height was dropped).
   Side: card centre at or right of the screen middle → panel on the card's
   **left**; left of the middle → on its **right**. Top edge = the enlarged
   card's top, pushed up only if the panel would leave the screen
@@ -739,7 +740,7 @@ re-evaluates the dim state.
   `CardDescBox.build_keyword_panels`, `KEYWORD_BOX_W` 210), stacked top-down
   (`KEYWORD_BOX_STACK_GAP` 10) in a column on the far side of the description
   panel; if that side has no room the column flips to the card's other side.
-  (예전에는 키워드 풀이를 판 하나에 몰아 담았다 — 키워드가 둘이면 판도 둘이다.)
+  (Keyword notes used to share one panel — two keywords now make two panels.)
   Header row: [small cost ribbon with the effective cost — white / green / red
   mirroring the card's ribbon] + name, centred; then keyword tags, then the
   description.
@@ -751,15 +752,24 @@ re-evaluates the dim state.
   card left − `DESC_BOX_GAP`, top = card top (clamped on screen); if there is
   no room on the left it flips to the card's right. Hover → drag on the same
   card keeps the panel (no rebuild) and only kills its rise tween; a drag that
-  misses rebuilds it with the keyword panel back.
+  misses rebuilds it with the keyword panels back. (It used to slide to the
+  top corner of the hand when the hand lowered — `_reflow_description_box` ·
+  `DESC_MOVE_TIME`, **deleted**.)
   **The panels cover neighbouring cards visually but never take a touch** —
-  both are `MOUSE_FILTER_IGNORE` down to every child, so a press over them lands
-  on the `HandHitLayer` band underneath and picks that card (the panels then
-  move next to it).
-  **카드 앞면에는 설명문이 없으므로 이 판이 손패에서 글을 읽는 유일한 자리다.**
-  > 예전에는 손패 바로 위 가운데의 가로로 긴 판(`DESC_BOX_W` 640)이었고, 그
-    전에는 화면 상단 고정(`DESC_BOX_TOP` 142)이었다 — 카드를 보는 눈과 글을
-    읽는 눈이 위아래로 오가야 했다.
+  they live on their own `CanvasLayer` (`DESC_LAYER` 2) above the hand canvas
+  (layer 1), so they always draw over the cards (on the same canvas
+  `_reorder_hand_nodes` would raise cards above them), and they are
+  `MOUSE_FILTER_IGNORE` down to every child, so a press over them lands on the
+  `HandHitLayer` band underneath and picks that card (the panels then move next
+  to it).
+  **Animation**: the panel is opaque; it rises `DESC_ANIM_RISE` (24) from below
+  while fading in (`DESC_ANIM_IN_TIME` 0.2s) and sinks the same distance while
+  fading out (`DESC_ANIM_OUT_TIME` 0.1s) before being freed (`_animate_desc_in` /
+  `_animate_desc_out`) — when focus moves, the old panel sinks while the new one rises.
+  **The card face carries no description text, so this panel is the only place to read text in the hand.**
+  > It used to be a wide panel centred just above the hand (`DESC_BOX_W` 640), and
+    before that pinned to the top of the screen (`DESC_BOX_TOP` 142) — the eye had
+    to travel up and down between looking at the card and reading its text.
   - **It opens on hover.** Which card it shows is the same question as which
     card the row spreads around, so it reads `_push_focus_card()` — the card
     being dragged if there is one, else the card under the cursor. It is
@@ -768,465 +778,464 @@ re-evaluates the dim state.
     / `_end_drag` / `deselect_current_card`, and from `_apply_hand_dim_state`
     (a dimmed hand has no focus to describe). `_desc_card` tracks what is on
     screen so an unchanged focus rebuilds nothing.
-  - **Why it is not glued to the card.** It used to sit beside the lifted card
-    (320×220, on whichever side had more room). Dragging made that untenable:
-    a box glued to the card is exactly where the cursor is about to go. Above
-    the whole row it is the same place for every card — no side-flipping.
-  - The box is `MOUSE_FILTER_IGNORE`: it sits over the bottom of the
-    battlefield and must not catch a drag passing through.
-  - **The box has no buttons at all.** It is a read-out, not a control surface:
-    playing a card is a drop, and so is picking one for 버리기:N. The 카드 내기
-    button went with the 확인 row, and the 버리기 button went with the selection
+  - **Why it sits beside the card again.** An early version (320×220, beside the
+    lifted card) blocked the dragging cursor's path; the wide box above the row
+    fixed that but made the eye travel. Now the panel stays beside the focused
+    card on hover and, during a drag, follows the card on its **left** (see above).
+  - **The panel has no buttons at all.** It is a read-out, not a control surface:
+    playing a card is a drop, and so is picking one for `버리기:N` (Discard:N). The 카드 내기 (Play card)
+    button went with the 확인 (Confirm) row, and the 버리기 (Discard) button went with the selection
     state that used to make it reachable.
 - **Dragging a card *is* the targeting step** (`_begin_drag` →
   `targeting_overlay.start_card_selection`): pulling a card out of the row
   immediately dims everything that is not a legal drop target and grows the
   ones that are (over `BattleRenderer.EMPHASIS_TWEEN_SEC`, **0.05s** — the
   emphasis has to be finished *before* the cursor reaches the target, not still
-  growing under it). Nothing is spent until the drop — see the 대상 지정 section.
+  growing under it). Nothing is spent until the drop — see the Targeting section.
 
-#### 드래그 앤 드롭 (카드를 집는 **유일한** 조작)
-**카드 선택 상태는 없다.** 카드를 클릭해도 아무 일도 일어나지 않는다 — 누른 채
-`DRAG_THRESHOLD_PX`(10px) 넘게 움직여야 비로소 카드가 손을 떠나고, 그 순간이
-대상 지정 단계의 시작이다. 손을 떼면 드롭이 성립했든 빗나갔든 그 상태는 통째로
-사라진다.
+#### Drag and drop (the **only** way to pick up a card)
+**There is no card-selected state.** Clicking a card does nothing — only when you hold and
+move more than `DRAG_THRESHOLD_PX` (10px) does the card leave the hand, and that moment is
+the start of the targeting step. On release, that state vanishes entirely, whether the drop
+landed or missed.
 
-> **예전에는 "선택"이라는 중간 상태가 있었다.** 클릭하면 카드가 리프트되고 대상
-> 지정이 켜진 채 남아, 다시 끌거나 다른 곳을 눌러 해제해야 했다. 조작이 둘로
-> 갈려 있었고(클릭→끌기 / 클릭→클릭 해제), 카드를 낼 수 있는 경로는 어차피 드롭
-> 하나뿐이라 중간 상태가 하는 일이 없었다. `_selected_card` · `_select_card` ·
-> `Card.is_selected` · `Card.card_clicked` · `CardPhaseManager._unhandled_input`
-> 의 바깥 클릭 해제가 전부 그때 사라졌다. `deselect_current_card()` 라는 **이름만**
-> 남아 있는데, 지금 하는 일은 "진행 중인 드래그와 대상 지정을 강제로 걷는다"이고
-> 호출 측(단계 종료 / 재시작 / 교전 아레나 오픈 / 버리기 숨김)이 원하는 것도
-> 정확히 그것이다.
+> **There used to be an intermediate "selected" state.** A click lifted the card and left
+> targeting on, and you then had to drag it or click elsewhere to clear it. The interaction was
+> split in two (click→drag / click→click to clear), and since a drop was the only way to play a
+> card anyway, the intermediate state did nothing. `_selected_card` · `_select_card` ·
+> `Card.is_selected` · `Card.card_clicked` · the outside-click deselect in
+> `CardPhaseManager._unhandled_input` were all removed then. Only the **name** `deselect_current_card()`
+> remains; what it does now is "forcibly tear down any in-progress drag and targeting", and
+> that is exactly what its callers (phase end / restart / engage arena open / discard hide)
+> want.
 
-**끌린 카드의 자세는 대상 유무가 가른다.**
+**The dragged card's pose depends on whether it has a target.**
 
-| `targeting_kind` | 끌리는 동안의 카드 | 조준 화살표 | 드롭 지점 |
+| `targeting_kind` | Card while dragged | Aiming arrow | Drop point |
 |---|---|---|---|
-| `pilot` | **손패에 남는다** (`Card.PRESS_LIFT` 리프트, 부채꼴 기울기 유지) | ✅ | 1.5배로 커진 유효 파일럿 마커 위 |
-| `location` | 〃 | ✅ | 초록 유효 셀 위 |
-| `preview` / `none` | **커서를 따라다닌다** (`Card.follow_cursor`, 기울기는 0 으로 펴진다) | ❌ | 화면 중앙 **드롭 존** |
-| 버리기:N 픽 중 | 〃 | ❌ | 중앙 **버리기 구역** |
+| `pilot` | **Stays in the hand** (`Card.PRESS_LIFT` lift, fan tilt kept) | ✅ | On a valid pilot marker, grown to 1.5× |
+| `location` | 〃 | ✅ | On a green valid cell |
+| `preview` / `none` | **Follows the cursor** (`Card.follow_cursor`, tilt straightens to 0) | ❌ | Screen-centre **drop zone** |
+| During a 버리기:N (Discard:N) pick | 〃 | ❌ | Central **discard zone** |
 
-- **대상 지정 카드가 자리에 남는 이유**: 카드가 커서에 붙어 날아다니면 겨누려는
-  대상 — 커진 파일럿 초상 / 초록 유효 셀 — 을 카드가 자기 몸으로 덮어 버려,
-  정작 놓는 순간에 무엇 위에 있는지가 보이지 않는다. 대신 **카드 위쪽 끝에서
-  커서까지 2차 베지어 곡선을 따라 chevron 사슬**이 이어진다(`CardDragArrow.gd`, 아래 절).
-- **대상이 없는 카드가 커서를 따라가는 이유**: 겨눌 대상이 없으니 가릴 것도
-  없다. 손에 든 카드를 그대로 구역에 내려놓는 조작이 되고, 화살표가 필요 없어진다.
-  `Card.begin_free_drag()` 이 부채꼴 기울기를 `FREE_DRAG_STRAIGHTEN_SEC`(0.10초)
-  동안 0 으로 펴서 "손에서 뽑아 든" 자세를 만든다.
-- **원래 자리는 빈 채로 유지된다.** `relayout_hand` 이 `is_dragging` 카드를
-  건너뛰므로 남은 카드는 자리를 지키고, 카드가 빠진 만큼 행이 좁혀 들지 않는다.
-  빗나간 드롭은 그 자리로 그대로 돌아온다(실측 오차 0.00px).
+- **Why a targeting card stays in place**: if the card flew around stuck to the cursor, it would
+  cover the very target it is aiming at — the enlarged pilot portrait / green valid cell — with its
+  own body, so at the moment of release you couldn't see what it was over. Instead a
+  **chain of chevrons runs along a quadratic Bézier from the card's top edge to the cursor**
+  (`CardDragArrow.gd`, section below).
+- **Why a card with no target follows the cursor**: with nothing to aim at, there is nothing to
+  hide. The interaction becomes setting the held card down in a zone, and no arrow is needed.
+  `Card.begin_free_drag()` straightens the fan tilt to 0 over `FREE_DRAG_STRAIGHTEN_SEC` (0.10s)
+  to give a "drawn out of the hand and held" pose.
+- **The original slot stays empty.** `relayout_hand` skips the `is_dragging` card, so the
+  remaining cards keep their slots and the row does not close up over the missing card.
+  A missed drop returns straight to that slot (measured error 0.00px).
 
-**빗나간 드롭은 카드를 제자리로 돌려보낼 뿐이다.** 비용도 카드도 확정 전에는
-건드리지 않으므로 되돌릴 상태가 애초에 없다. (`_end_drag` 은 reflow 전에
-`_update_hover_at(p)` 로 커서 위치를 먼저 갱신한다 — 올바른 포커스로 풀리도록.)
+**A missed drop only sends the card back to its slot.** Neither cost nor card is touched before
+confirmation, so there is no state to roll back in the first place. (`_end_drag` updates the cursor
+position via `_update_hover_at(p)` before the reflow — so it unwinds to the correct focus.)
 
-- **입력은 전부 핸드 히트 레이어 하나가 처리한다.** 버튼을 누른 컨트롤이 뗄
-  때까지 Godot 의 마우스 포커스를 쥐고 있으므로, 커서가 레이어 밖(전장 위)으로
-  나가도 motion 과 release 가 계속 그 레이어로 들어온다. 덕분에 전장 쪽에는
-  드래그를 받기 위한 배선이 하나도 없다. 누른 카드는 `_grabbable_card_at(p)` 로
-  기록되는데, 이 함수는 `_begin_drag` 이 걸 게이트(작전 단계인가 / 입력이
-  막혀 있지 않은가 / 손패에 실재하는가)를 그대로 미리 본다 — 드래그가 될 수 없는
-  누름은 아예 기록되지 않는다.
-- **끌어서 화면 중앙 판정 범위에 닿으면 손패가 비켜 내려간다**
-  (`_drag_lowers_hand`) — 드래그를 **시작할 때가 아니라**, 커서가 드롭 존
-  (`drop_zone_rect`) 아랫변(1080×1920 에서 y 1344) 위로 올라간 순간
-  (`_cursor_reached_field` → `_set_drag_reached_field`, 상태는
-  `_drag_reached_field`)이다. 존 안만 보지 않고 아랫변 하나만 보는 이유: 대상
-  지정 카드는 존 위쪽(전장 윗줄)까지 겨누는데 거기서 손패가 다시 올라오면 겨누는
-  도중에 화면이 출렁인다. 커서가 다시 아랫변 밑(손패 쪽)으로 내려오면 손패 ·
-  스트립이 되돌아온다. 같은 순간 **상단 적 스트립 · 상대 손패가 위로 비켜
-  올라가며 어두워지고 전장 아래 층으로 깔린다**(`HudBuilder.set_enemy_top_raised`,
-  `ui/README.md` "상단 적 UI 층"). 판정 범위에 닿으면 끌린 카드를 뺀 손패가 `hand_drop_offset()` 만큼(내 차례가 아닐 때와
-  같은 깊이) 아래로 가고, 아군 스트립도 어두워지며 `STRIP_DRAG_DROP`(120) 내려간다
-  (`HudBuilder.set_player_strip_dropped`). 대상 지정 카드는 **원래 손패의 리프트
-  자세 그대로** 남는다(`_card_rest_slot` 이 드래그 하강분을 빼 준다) — 내려가는
-  것은 나머지 손패뿐이다. 놓거나 취소하면(`_end_drag` / `_cancel_drag`)
-  `_drag_card` 가 비어 다음 레이아웃이 손패를, 같은 호출이 스트립을 되돌린다.
-  버리기:N 픽 중에는 내려가지 않는다. z-order 는 바뀌지 않는다(카드가 스트립 뒤로
-  숨지 않는다 — 그건 내 차례가 아닐 때만).
-  하단 스트립 초상의 **시전자 네온은 삭제됐다**(`PilotStrip.set_highlight` /
-  `HudBuilder.set_strip_caster` 삭제) — 전장 마커 쪽 네온(`CardPlayPreview.neon_pilot`)은 그대로다.
-- **드롭 존**(`drop_zone_rect`) — 화면 세로 중앙 기준 화면 높이의
-  `DROP_ZONE_H_RATIO`(0.40), 가로는 전체 폭. 1080×1920 에서 `(0, 576) 1080×768`.
-  **카드를 낼 때는 그려지지 않는다** — 예전의 "여기에 놓아 사용" 띠는 삭제됐고,
-  rect 는 대상 없는 카드의 드롭 판정에만 쓰인다. 화면에 뜨는 것은 **버리기:N 픽
-  중**("여기에 놓아 버리기")뿐이다. 안내 문구는 구역 **위쪽**에
-  붙는다(`DROP_ZONE_LABEL_TOP`) — 구역 한가운데는 전장 한복판이라 글자가 타일
-  위에 겹쳐 읽힌다. 커서가 구역 안에 들어오면 채움과 테두리가
-  밝아진다(`_set_drop_zone_hot`).
-- **버리기:N 픽 중에도 같은 구역이다.** `drop_zone_rect()` 는 모드를 보지 않고
-  언제나 같은 rect 를 돌려주며, 골라 둔 카드가 늘어서는 줄도 그 rect 의 중심에서
-  나온다(`CardSelectOverlay.to_discard_center_y()`). 문구만 "여기에 놓아 버리기"로
-  바뀌고, 대상 지정 오버레이는 아예 켜지지 않는다(`_begin_drag`). 확정은 예전대로
-  오버레이의 확인 버튼이다 — 드롭은 "버릴 카드로 넘긴다"까지만 한다.
-  > 예전에는 버리기만 `TO_DISCARD_CENTER_Y`(700)를 중심으로 한 `DISCARD_ZONE_H`
-    (440px) 짜리 별도 띠를 썼다. **같은 조작(카드를 끌어다 놓는다)이 무엇을
-    하느냐에 따라 놓을 자리가 달라져** 카드를 낼 때와 버릴 때 매번 다시 겨눠야
-    했고, 골라 둔 카드가 늘어서는 줄과 구역의 중심도 서로 달랐다. 두 상수는
-    함께 삭제됐다.
-  > **구역 노드는 이때 캔버스 자식 인덱스 1 로 올라간다.** 평소에는 0(맨 뒤)이
-  > 지만, 버리기 모드에서는 `CardSelectOverlay._battle_dim` 이 0 을 차지하고
-  > 있어서 그대로 두면 구역이 딤 **아래**로 들어가 통째로 눌려 보이지 않는다.
-- **확정 경로는 하나다.** 드롭은 대상만 손에 들고
-  `CardTargetingOverlay.confirm_with(target)` 로 들어가고, 그 함수가
-  `_play_allowed` 게이트를 지나 `_on_selection_confirm` 을 부른다 — 비용 차감 /
-  카드 소비 / effect chain 은 전부 그 뒤에 있다. 드래그 중에는 커서 아래의 대상이
-  `preview_drag_target` 으로 미리 찍혀 시안 링이 따라다닌다. **그 `pending_pick`
-  은 순수한 미리보기다** — 놓지 않고 손을 떼면 그대로 사라진다.
-  `_end_drag` 은 `_try_drop_play` 가 끝날 때까지 `_drag_card` 를 살려 둔다:
-  확정 콜백이 동기적으로 되돌아와 그 참조로 카드를 찾기 때문이다.
-- **`Card` 쪽 계약**: `set_dragging(true)` 는 **자세만** 고정한다 — 커서가
-  손패 밖으로 나가 호버가 풀려도 1.2배 확대와 가장 긴 그림자가 유지된다(히트
-  레이어의 호버 장부가 더 이상 이 카드를 대변하지 않으므로 필요하다). 들어갈 때
-  진행 중이던 레이아웃 트윈을 끊으므로 `_begin_drag` 이 곧바로 자세를 다시
-  세운다(`_pose_selected_card` 또는 `begin_free_drag`) — 안 그러면 카드가
-  올라가던 도중에 얼어붙는다. 끝낼 때 `set_hovered(false)` 도 함께 거는데, 버리기
-  줄로 넘어간 카드는 `_update_hover_at` 의 손패 순회에 더 이상 잡히지 않아
-  1.2배로 굳은 채 남기 때문이다.
-- 드래그를 걷어 가는 모든 경로(`deselect_current_card` / `end_card_phase` /
-  `build_starter_decks` / `_despawn_player_card_node`)가 `_cancel_drag()` 를
-  지나므로, 진행 중인 드래그가 단계 전환이나 재시작을 넘어 살아남지 못한다.
-- **실측**(헤드리스, 작전 단계 강제 진입 후 합성 입력):
-  - **클릭만** — `is_dragging_card() = false`, 오버레이 `mode = NONE`, 손패 크기
-    불변. 선택 상태가 실제로 없다.
-  - **대상 지정 카드 드래그** — 오버레이 `mode = PILOT`(또는 LOCATION), 화살표
-    노드 visible, 드롭 존 **안 뜸**, 카드는 슬롯에서 24~27px(리프트)만 벗어난다.
-  - **대상 없는 카드 드래그** — 오버레이 `mode = INSTANT`, 화살표 **안 뜸**,
-    카드가 슬롯에서 774~856px 이동(커서 추적). (드롭 존은 지금은 그려지지 않는다.)
-  - **판정 범위 진입**(창 810×1440, 합성 드래그) — 손패 안(y ≈ 1340)에서
-    끌기 시작: `_drag_reached_field = false`, 손패 · 스트립 제자리. 커서를
-    (540, 700)으로: `true`, 손패 · 아군 스트립 하강, `EnemyTopLayer` 층 −1 ·
-    offset (0, −120). 커서를 (540, 1500)으로 되돌림: `false`, 층 1 · offset 0.
-  - **빗나간 드롭** — 손패 크기 · 작전 점수 모두 불변, 카드가 자기 슬롯으로
-    오차 **0.00px** / 회전 오차 **0.0000** 복귀.
-  - **드롭 존에 놓기** — 손패 −1 · 점수 −cost · 오버레이 `mode = NONE`.
-  - **버리기 구역에 놓기** — 손패 −1 · `to_discard` +1, 빗나가면 둘 다 불변,
-    2장을 채우면 오버레이 확인으로 정상 정산.
+- **All input is handled by the single hand hit layer.** The control that received the press holds
+  Godot's mouse focus until release, so even when the cursor leaves the layer (over the battlefield),
+  motion and release keep arriving at that layer. Thanks to that, the battlefield side has no wiring
+  at all for receiving drags. The pressed card is recorded via `_grabbable_card_at(p)`, which
+  previews exactly the gates `_begin_drag` will apply (is it the operation phase (작전 단계) / is input not
+  blocked / does the card really exist in the hand) — a press that cannot become a drag
+  is never recorded at all.
+- **Dragging into the central field zone moves the hand out of the way**
+  (`_drag_lowers_hand`) — **not when the drag starts**, but the moment the cursor rises above the
+  bottom edge of the drop zone (`drop_zone_rect`; y 1344 on 1080×1920)
+  (`_cursor_reached_field` → `_set_drag_reached_field`, state in `_drag_reached_field`). Only the
+  bottom edge is checked, not "inside the zone": targeting cards aim up to the top rows of the
+  battlefield above the zone, and if the hand rose back there the screen would lurch mid-aim.
+  When the cursor comes back below that edge (towards the hand), hand · strip return. At the same
+  moment **the top enemy strip · opponent hand slide up, darken and drop under the battlefield
+  layer** (`HudBuilder.set_enemy_top_raised`, `ui/README.md` "Top enemy UI layer"). Once in the
+  zone, the hand minus the dragged card moves down by `hand_drop_offset()` (the same depth as when
+  it is not my turn), and the allied strip darkens and drops `STRIP_DRAG_DROP` (120)
+  (`HudBuilder.set_player_strip_dropped`). A targeting card **stays in its original lifted hand
+  pose** (`_card_rest_slot` subtracts the drag drop) — only the rest of the hand goes down. On drop or
+  cancel (`_end_drag` / `_cancel_drag`) `_drag_card` empties, so the next layout restores the hand and
+  the same call restores the strip. It does not lower during a 버리기:N pick. Z-order is unchanged
+  (cards don't hide behind the strip — that happens only when it is not my turn).
+  The **caster neon on the bottom strip portrait was deleted** (`PilotStrip.set_highlight` /
+  `HudBuilder.set_strip_caster` removed) — the neon on the battlefield marker
+  (`CardPlayPreview.neon_pilot`) remains.
+- **Drop zone** (`drop_zone_rect`) — `DROP_ZONE_H_RATIO` (0.40) of the screen height, centred on the
+  screen's vertical middle; full width horizontally. On 1080×1920: `(0, 576) 1080×768`.
+  **It is not drawn when playing a card** — the old "여기에 놓아 사용" (Drop here to use) band was
+  deleted, and the rect is only used for the drop test of cards with no target. It shows on screen
+  **only during a 버리기:N pick** ("여기에 놓아 버리기"). The hint text sits **above** the zone
+  (`DROP_ZONE_LABEL_TOP`) — the middle of the zone is the middle of the battlefield, where the text
+  would overlap the tiles. When the cursor enters the zone, its fill and border
+  brighten (`_set_drop_zone_hot`).
+- **The same zone is used during a 버리기:N pick.** `drop_zone_rect()` ignores the mode and
+  always returns the same rect, and the row where picked cards line up also comes from that rect's
+  centre (`CardSelectOverlay.to_discard_center_y()`). Only the text changes to "여기에 놓아 버리기" (Drop here to discard),
+  and the targeting overlay is not turned on at all (`_begin_drag`). Confirmation is, as before,
+  the overlay's confirm button — the drop only goes as far as "move it to the cards to discard".
+  > Discard alone used to use a separate band, `DISCARD_ZONE_H`
+    (440px), centred on `TO_DISCARD_CENTER_Y` (700). **The same interaction (drag a card and drop it)
+    had a different drop spot depending on what it did**, so you had to re-aim every time between
+    playing and discarding, and the row of picked cards and the zone's centre didn't match either.
+    Both constants were deleted together.
+  > **At that point the zone node is raised to canvas child index 1.** Normally it is 0 (rearmost),
+  > but in discard mode `CardSelectOverlay._battle_dim` occupies 0, so left as is the zone would
+  > go **under** the dim and be pressed out of sight entirely.
+- **There is one confirmation path.** A drop carries only the target into
+  `CardTargetingOverlay.confirm_with(target)`, which passes the
+  `_play_allowed` gate and calls `_on_selection_confirm` — cost deduction /
+  card consumption / effect chain all live after that. During a drag the target under the cursor is
+  pre-marked via `preview_drag_target` and a cyan ring follows it. **That `pending_pick`
+  is a pure preview** — releasing without a valid drop just makes it vanish.
+  `_end_drag` keeps `_drag_card` alive until `_try_drop_play` finishes:
+  the confirm callback returns synchronously and uses that reference to find the card.
+- **Contract on the `Card` side**: `set_dragging(true)` locks **only the pose** — even when the cursor
+  leaves the hand and hover drops, the 1.2× enlargement and the tallest shadow are kept (needed because
+  the hit layer's hover bookkeeping no longer speaks for this card). On entry it kills
+  any layout tween in progress, so `_begin_drag` immediately re-establishes the pose
+  (`_pose_selected_card` or `begin_free_drag`) — otherwise the card freezes
+  partway up. On exit it also calls `set_hovered(false)`, because a card moved to the discard
+  row is no longer caught by `_update_hover_at`'s hand traversal and would
+  stay stuck at 1.2×.
+- Every path that tears down a drag (`deselect_current_card` / `end_card_phase` /
+  `build_starter_decks` / `_despawn_player_card_node`) goes through `_cancel_drag()`,
+  so an in-progress drag cannot survive a phase transition or restart.
+- **Measured** (headless, synthetic input after forcing entry into the operation phase):
+  - **Click only** — `is_dragging_card() = false`, overlay `mode = NONE`, hand size
+    unchanged. There really is no selected state.
+  - **Dragging a targeting card** — overlay `mode = PILOT` (or LOCATION), arrow
+    node visible, drop zone **not shown**, card leaves its slot by only 24–27px (the lift).
+  - **Dragging a card with no target** — overlay `mode = INSTANT`, arrow **not shown**,
+    card moves 774–856px from its slot (tracking the cursor). (The drop zone is no longer drawn.)
+  - **Reaching the field zone** (window 810×1440, synthetic drag) — start dragging inside the hand
+    (y ≈ 1340): `_drag_reached_field = false`, hand · strip in place. Cursor to (540, 700): `true`,
+    hand · allied strip lowered, `EnemyTopLayer` layer −1 · offset (0, −120). Cursor back to
+    (540, 1500): `false`, layer 1 · offset 0.
+  - **Missed drop** — hand size · operation points both unchanged, card returns to its own slot
+    with error **0.00px** / rotation error **0.0000**.
+  - **Drop on the drop zone** — hand −1 · points −cost · overlay `mode = NONE`.
+  - **Drop on the discard zone** — hand −1 · `to_discard` +1; on a miss both unchanged;
+    after filling 2 cards, the overlay's confirm settles normally.
 
-##### 조준 화살표의 기하 (`CardDragArrow.gd`)
-2차 베지어 하나 위에 chevron 을 늘어놓는다.
+##### Aiming arrow geometry (`CardDragArrow.gd`)
+Chevrons laid out along a single quadratic Bézier.
 
-| 점 | 어디 |
+| Point | Where |
 |---|---|
-| `p0` (시작) | 카드 위쪽 끝에서 `ARROW_TUCK_PX`(42px)만큼 **카드 안으로** 파묻은 점 |
-| `p1` (제어) | `p0` 에서 **카드 자신의 위쪽 축**으로 `(커서까지 거리·`BOW_RATIO` 0.55)`, `BOW_MIN`(40) ~ `BOW_MAX`(300) 사이 |
-| `p2` (끝) | 커서 |
+| `p0` (start) | A point buried `ARROW_TUCK_PX` (42px) **inside the card** from the card's top edge |
+| `p1` (control) | From `p0` along **the card's own up-axis** by `(distance to cursor·`BOW_RATIO` 0.55)`, clamped between `BOW_MIN` (40) and `BOW_MAX` (300) |
+| `p2` (end) | The cursor |
 
-- **시작점을 카드 안으로 파묻는 이유**: 화살표 노드는 `_bs.canvas` 의 **자식
-  인덱스 0**(= 손패 카드와 모든 HUD 위젯보다 뒤)이라 시작부가 카드에 가려진다.
-  그래서 화살이 카드 **밑에서** 뻗어 나온 것처럼 읽힌다. 카드는
-  `_reorder_hand_nodes` 가 매번 자식 목록 끝으로 올리므로 이 자리는 유지된다.
-  드롭 존도 인덱스 0 을 쓰지만 둘은 **동시에 뜨지 않는다**(화살표 = 대상 지정
-  카드, 드롭 존 = 그 나머지).
-- **제어점이 카드의 up 축 위에 있는 이유**: 부채꼴에서 기울어 있는 카드는 그
-  기울기 방향으로 화살을 쏜다. 커서가 카드보다 아래에 있으면 내적이 음수라
-  `BOW_MIN` 으로 잘려 **고리를 만들지 않는다**.
-- **화살표는 이어진 리본이 아니라 chevron 사슬이다.** 촉
-  chevron(`CHEVRON_WIDTH` 7, 팔 길이 `CHEVRON_LEN` 16 · 반폭 `CHEVRON_HALF` 17)과 그 뒤 chevron 들을
-  곡선 길이 `CHEVRON_SPACING`(30)마다 하나씩 놓는다. **맨 끝 chevron 의 꼭짓점이
-  커서에 닿고** 거기서 카드 쪽으로 거슬러 놓으므로 사슬이 언제나 커서에서 끝난다.
-  각 chevron 은 그 자리 곡선 접선을 향한다(`SAMPLES` 48 조각의 누적 길이표로
-  자리를 찾는다). 어두운 테두리(`OUTLINE_PAD`)를 **전부 먼저** 깔고 본색을 얹는다
-  — 하나씩 번갈아 그리면 이웃 chevron 의 테두리가 본색을 덮는다. 예전에는 카드
-  쪽이 가늘고(`WIDTH_START` 6) 촉 쪽이 굵은(`WIDTH_END` 14) 이어진 리본 + 큰 삼각
-  촉이었다(**삭제됨**).
-- **촉은 크기로 읽힌다.** 커서 쪽 맨 끝 chevron 만 위 원래 크기이고, 그 뒤를
-  따르는 나머지는 `TRAIL_SCALE`(0.75)배(팔 길이 · 반폭 · 선 굵기 · 테두리 모두)다.
-  사슬은 한 색이고 애니메이션이 없다 — 예전의 흐르는 빛 띠(`GLOW_*`,
-  `COLOR_*_DIM`, `_process` 재그리기)는 **삭제됨**. `aim()` 이 불릴 때만 다시 그린다.
-- **색은 지금 놓으면 나가는지를 말한다** — 평소 `COLOR_BASE`(금색, 드롭 존과 같은
-  계열), 커서가 유효 대상/셀 위면 `COLOR_HOT`(시안, 대상 지정 링과 같은 계열).
-  판정은 `_update_drop_feedback` 이 이미 굴리고 있던 것을 bool 로 돌려받는 것뿐이라
-  화살표 색과 시안 링이 어긋날 수 없다.
-- **바깥 클릭 해제는 삭제됐다** (`CardPhaseManager._unhandled_input` 통째로).
-  해제할 선택 상태가 없으니 들을 이유도 없다 — 카드는 손을 떼는 순간 이미
-  제자리로 돌아가 있다.
-- `deselect_current_card()` 는 이름만 남은 강제 정리 함수다: 진행 중인 드래그와
-  대상 지정을 걷고 행을 다시 눕힌다. `end_card_phase()` / `build_starter_decks()`
-  / `_despawn_player_card_node()` / `EngagePhaseManager` / `CardSelectOverlay`
-  의 숨김이 부르므로, 끌던 카드가 단계 전환이나 재시작을 넘어 살아남지 못한다.
+- **Why the start point is buried inside the card**: the arrow node is **child index 0** of `_bs.canvas`
+  (= behind the hand cards and every HUD widget), so its start is hidden by the card.
+  That makes the arrow read as if it extends from **under** the card. The card is
+  raised to the end of the child list by `_reorder_hand_nodes` every time, so this ordering holds.
+  The drop zone also uses index 0, but the two **never show at the same time** (arrow = targeting
+  card, drop zone = everything else).
+- **Why the control point lies on the card's up-axis**: a card tilted in the fan shoots its arrow
+  in its tilt direction. When the cursor is below the card, the dot product is negative, so it is
+  clamped to `BOW_MIN` and **does not form a loop**.
+- **The arrow is a chain of chevrons, not a continuous ribbon.** The head chevron
+  (`CHEVRON_WIDTH` 7, arm length `CHEVRON_LEN` 16 · half-width `CHEVRON_HALF` 17) and the chevrons
+  behind it are placed one every `CHEVRON_SPACING` (30) of curve length. **The tip of the last chevron
+  touches the cursor** and placement runs back towards the card from there, so the chain always ends at
+  the cursor. Each chevron faces the local curve tangent (positions come from a cumulative-length table
+  over `SAMPLES` 48 pieces). The dark outline (`OUTLINE_PAD`) is laid down for **all** chevrons first,
+  then the main colour on top — alternating per chevron would let a neighbour's outline cover the main
+  colour. It used to be a continuous ribbon, thin at the card end (`WIDTH_START` 6) and thick at the
+  head end (`WIDTH_END` 14), plus a big triangular head (**deleted**).
+- **The head reads by size.** Only the last chevron at the cursor end is full size; the trailing ones
+  are `TRAIL_SCALE` (0.75)× (arm length · half-width · stroke · outline all). The chain is one colour
+  with no animation — the old flowing light band (`GLOW_*`, `COLOR_*_DIM`, `_process` redraw) was
+  **deleted**. It redraws only when `aim()` is called.
+- **The colour says whether dropping now would play it** — normally `COLOR_BASE` (gold, same family
+  as the drop zone); over a valid target/cell, `COLOR_HOT` (cyan, same family as the targeting ring).
+  The decision is just the bool returned from what `_update_drop_feedback` was already computing, so
+  the arrow colour and the cyan ring can't disagree.
+- **Outside-click deselect was deleted** (`CardPhaseManager._unhandled_input` in its entirety).
+  With no selected state to clear, there's no reason to listen — the card is already back in its
+  slot the moment you release.
+- `deselect_current_card()` is a forced-cleanup function that survives in name only: it tears down any
+  in-progress drag and targeting and lays the row back down. `end_card_phase()` / `build_starter_decks()`
+  / `_despawn_player_card_node()` / `EngagePhaseManager` / `CardSelectOverlay`'s
+  hide call it, so a dragged card cannot survive a phase transition or restart.
 - `apply_card_effect(cd, is_player)` → String log message
 
-### 손패 미리보기 (`CardPlayPreview`)
-손패 카드를 **누르는 순간** 시전자가 강조되고(전장 마커 뒤 하얀 네온 + 하단
-스트립 원 뒤 네온), **끌기 시작하면** "이 카드를 쓰면 무엇이 일어나는가"가 미리
-그려진다. 놓거나 취소하면 전부 걷힌다 — 실제로 일어난 일은 각자의 연출(드로우
-인트로 · 버리기 연출 · 명중 연출 · 버프 배너)이 따로 보여 준다.
+### Hand preview (손패 미리보기, `CardPlayPreview`)
+The moment a hand card is **pressed**, its caster is highlighted (white neon behind the battlefield
+marker); once **dragging starts**, "what happens if this card is used" is drawn in advance. Drop or
+cancel clears all of it — what actually happened is shown by each effect's own FX (draw intro ·
+discard FX · hit FX · buff banner).
 
-배선은 `CardPhaseManager` 다섯 자리뿐이다: 누름(`_on_hit_layer_gui_input` →
-`show_caster`), 끌기 시작(`_begin_drag` → `begin`), 대상 갱신
-(`_update_drop_feedback` → `set_target`), 놓기 / 클릭으로 끝(`_end_drag` /
-`_finish_press` → `clear`), 강제 해체(`_cancel_drag` → `clear`). 버리기 픽
-중에는 켜지 않는다.
+It is wired into only five places in `CardPhaseManager`: press (`_on_hit_layer_gui_input` →
+`show_caster`), drag start (`_begin_drag` → `begin`), target update
+(`_update_drop_feedback` → `set_target`), drop / click end (`_end_drag` /
+`_finish_press` → `clear`), forced teardown (`_cancel_drag` → `clear`). It is not turned on during a
+discard pick.
 
-`_compute_spec` 이 효과 체인(`effect_clauses`)을 훑어 무엇을 보일지 정한다.
-`on_hit` / `on_miss` 뒤의 조건부 절은 결과를 미리 알 수 없어 건너뛴다. 손패
-질문("오른쪽 N장")은 **끄는 카드를 뺀 손패**에 대해 묻는다 — 카드는 나가는 순간
-손패를 떠난다.
+`_compute_spec` walks the effect chain (`effect_clauses`) to decide what to show. Conditional clauses
+after `on_hit` / `on_miss` are skipped, since their outcome can't be known in advance. Hand questions
+("the right N cards") are asked of **the hand minus the dragged card** — the card leaves the hand the
+moment it goes out.
 
-| 절 | 어디에 | 무엇을 |
+| Clause | Where | What |
 |---|---|---|
-| `draw` · `discard_hand_draw` · `draw_discarded` | 덱 더미 위 | 위로 흐르는 chevron 3개 + `+N` |
-| `search` · `search_card` | 덱 더미 위 | 돋보기 + 장수 (`search_discard` 는 버린 더미 위) |
-| `draw_discard` | 버린 더미 위 | 위로 흐르는 chevron + `+N` |
-| `discard` (고르는 버리기) | 버린 더미 위 | 아래로 흐르는 chevron + `-N` |
-| `discard_hand` · `discard_hand_draw` · `discard_right` · `discard_left` · `discard_other_pilots` | **그 카드들 위** | 붉은 딤 + 카드 가운데로 아래 chevron (보존 키워드는 각 효과와 같은 규칙으로 제외) |
-| `preserve` | 손패 행 위 가운데 | 자물쇠 + `보존 N` |
-| `strategy` · `discard_other_pilots\|strategy_each` | 전략 점수 도넛 | 하이라이트 + 위에 **더해질 값** + 가운데 숫자 = **비용까지 치른 결과**(색 변경, 게이지 반영) — `CostDonut.set_preview` |
-| `cost_reduce_hand` · `cost_reduce_engage` | 영향받는 손패 카드 | 비용 원이 맥박치며 바뀔 값(초록) — `Card.set_cost_preview` |
-| `cost_reduce_draw_phase` · `draw_discard|cost_reduce` | 덱 더미 윗단 |\|cost_reduce` | 덱 더미 아래 | `비용 -N` 꼬리표 |
-| `move` · `ambush` | 전장 | **겨눈 타일 한가운데에 반투명 고스트 초상 하나**(경로 · 점선 없음, 정글 캠프 위여도 얻을 성장치는 표시하지 않는다). 예전의 칸 단위 BFS 경로 + chevron + 도착 링은 삭제 |
-| `attack` (찍은 적) | 대상 마커 | 깎일 HP 구간 깜빡임(보호막 먼저) + `명중 N%` · `-피해`(치명이면 `처치`) |
-| `shield_pct` · `shield_atk` · `heal_pct` · `recall_ally` | 대상 마커 | 차오를 HP(초록) / 보호막(시안) 구간 깜빡임 + 값 |
-| `recall_ally` · `retreat_turret` | 전장 | 도착 자리에 반투명 고스트 초상 + 경로(복귀는 점선) |
-| `steal_camp` | 전장 | 캠프 → 시전자 영혼 궤적 + `+980` |
+| `draw` · `discard_hand_draw` · `draw_discarded` | Above the deck pile | 3 upward-flowing chevrons + `+N` |
+| `search` · `search_card` | Above the deck pile | Magnifier + count (`search_discard`: above the discard pile) |
+| `draw_discard` | Above the discard pile | Upward-flowing chevrons + `+N` |
+| `discard` (chosen discard) | Above the discard pile | Downward-flowing chevrons + `-N` |
+| `discard_hand` · `discard_hand_draw` · `discard_right` · `discard_left` · `discard_other_pilots` | **On those cards** | Red dim + a downward chevron at the card centre (cards with the keep keyword excluded by the same rule as each effect) |
+| `preserve` | Centred above the hand row | Padlock + `보존 N` |
+| `strategy` · `discard_other_pilots\|strategy_each` | Strategy point donut | Highlight + **the amount to be added** above it + centre number = **the result after paying the cost** (colour change, reflected in the gauge) — `CostDonut.set_preview` |
+| `cost_reduce_hand` · `cost_reduce_engage` | Affected hand cards | The cost ribbon pulses with the new value (green) — `Card.set_cost_preview` |
+| `cost_reduce_draw_phase` · `draw_discard\|cost_reduce` | On the deck pile | `비용 -N` tag |
+| `move` · `ambush` | Battlefield | **One translucent ghost portrait in the middle of the aimed tile** (no path · no dotted line; no growth shown even over a jungle camp). The old per-cell BFS path + chevrons + arrival ring were deleted |
+| `attack` (picked enemy) | Target marker | Blinking HP segment to be lost (shield first) + `명중 N%` · `-damage` (`처치` if lethal) |
+| `shield_pct` · `shield_atk` · `heal_pct` · `recall_ally` | Target marker | Blinking HP (green) / shield (cyan) segment to be gained + value |
+| `recall_ally` · `retreat_turret` | Battlefield | Translucent ghost portrait at the destination + path (dotted for recall) |
+| `steal_camp` | Battlefield | Soul trail from camp → caster + `+SCORE_JUNGLE_CAMP` |
 
-다음 단계 예약(`strategy_next_phase` · `draw_next_phase` · `strategy_on_kill` ·
-`ambush_search`)은 미리보기 대신 **시전 뒤 예약 칩**이 남는다
-(`ui/ReservationChips.gd`, 출처 카드는 `_note_reserve` 가 `BattleSim.reserve_src` 에 적는다).
+Next-phase reservations (`strategy_next_phase` · `draw_next_phase` · `strategy_on_kill` ·
+`ambush_search`) get no preview; instead a **reservation chip stays after casting**
+(`ui/ReservationChips.gd`; the source card is recorded into `BattleSim.reserve_src` by `_note_reserve`).
 
-수치는 실제 판정과 **같은 함수**를 지난다: 명중률은 `SimulationCore.hit_chance_of`
-(`roll_hit` 이 굴리는 확률 그 자체), 피해는 `estimate_attack_damage`
-(`_apply_attack_damage` 와 같은 배율, 상태를 바꾸지 않는다). 미리보기가 쓰려고
-공개로 바뀐 것: `flag_int` · `discardable` · `nearest_own_turret_cell`(예전 `_` 접두).
+The numbers go through **the same functions** as the real resolution: hit chance via
+`SimulationCore.hit_chance_of` (the very probability `roll_hit` rolls), damage via
+`estimate_attack_damage` (same multipliers as `_apply_attack_damage`, no state change). Made public
+for the preview: `flag_int` · `discardable` · `nearest_own_turret_cell` (formerly `_`-prefixed).
 
-#### 버프 배너 (시전 확정 뒤)
-파일럿에게 효과를 거는 절이 실제로 돌면 그 파일럿의 전장 초상 위에 배너가
-뜬다(왼쪽 둥근 사각형 카드 아트 + 오른쪽 카드 이름, 1.9초). 진입점은
-`_apply_single_effect` 하나다 — 절을 `_dispatch_single_effect` 로 돌린 뒤
-`_announce_buff` 가 `BUFF_CLAUSE_SUBJECT`(절 → caster / target / subject / team)로
-대상을 정한다. 한 카드가 같은 파일럿에게 절 두 개를 걸어도 배너는 하나(`_banner_seen`).
-플레이어 · AI 가 같은 길을 지난다. 그리기는 `BattleRenderer.spawn_buff_banner`.
+#### Buff banner (after the cast is confirmed)
+When a clause that puts an effect on a pilot actually runs, a banner appears above that pilot's
+battlefield portrait (rounded-square card art on the left + card name on the right, 1.9s). The single
+entry point is `_apply_single_effect` — after running the clause through `_dispatch_single_effect`,
+`_announce_buff` picks the subject via `BUFF_CLAUSE_SUBJECT` (clause → caster / target / subject / team).
+A card that puts two clauses on the same pilot still shows one banner (`_banner_seen`). Player and AI
+take the same path. Drawing is `BattleRenderer.spawn_buff_banner`.
 
-슬롯 효과(서로 덮어쓰는 한 칸 — 라인전 · 적립 배율 · 회피 · 매복 · 보호막)는
-`_note_fx_src` 가 `PilotData.fx_src` 에 출처 카드를 적는다. 상세 패널의 지속 효과
-썸네일이 그 카드 일러스트를 띄우는 데만 쓰인다.
+Slot effects (single overwriting slots — laning · accrual multiplier · evasion · ambush · shield) record
+the source card into `PilotData.fx_src` via `_note_fx_src` (shields: `_bs.grant_shield(...)` followed by
+`_note_fx_src(...)`). It is used only so the detail panel's lasting-effect thumbnail can show that
+card's illustration.
 
-### Per-pilot decks (메크 카드 + 고정 파일럿 카드 3장)
+### Per-pilot decks (mech cards + 3 fixed pilot cards)
 - `build_starter_decks()` — for each pilot on each side, deals a `CardData` copy
-  per card and tags each with that pilot as 시전자 (`owner_pilot`). All 5
+  per card and tags each with that pilot as caster (시전자) (`owner_pilot`). All 5
   stacks shuffle into the team deck. Player and AI sides build identically; the
   AI hand is logical-only but its cards still carry an enemy-pilot owner.
-- **메크 카드는 뽑는 것이 아니라 따라온다.** 배정된 기체의 카드 목록
-  (`mech_cards.csv`)을 `count` 만큼 펼친 것이 그 파일럿의 메크 카드 전부이고,
-  기체마다 **2~7장**이라 덱 크기가 조합에 따라 달라진다. `_mech_card_defs_for(p)` 가
-  그 기체의 행들을 돌려준다.
-- **파일럿 카드 3장은 선수마다 고정이다** (`_pilot_cards_for(p, pool)`). 매 판
-  새로 굴리지 않는다 — 같은 선수는 언제나 같은 3장을 들고 들어온다.
-  - 원본은 `players.csv` / `intl_players.csv` 의 **`pilot_cards`**(카드 id 를 `|`
-    로 이은 것) → `PlayerData.pilot_cards`. 답은 `GameManager.pilot_card_ids_for(pd)`
-    하나가 하고, 드래프트 상세 팝업(`season/draft/DraftDetailPanel`)도 같은 함수를
-    불러 같은 3장을 보여 준다.
-  - 그 칸이 비었거나 깨졌으면(없는 id · 포지션이 막는 카드) 모자란 만큼을
-    **포지션 슬롯 표**(`data/csv/pilot_card_slots.csv`)로 채운다. 포지션마다 세
-    칸이고, 각 칸은 카드 분류(`card_cat`) 목록이다 — 분류가 하나라도 겹치고
-    `scope` 가 그 포지션을 허락하는 `pool = 1` 카드 중 하나를 고른다(같은 카드는
-    두 번 들지 않는다, `excl_group` 은 지킨다). 뽑기는 **선수 id 를 씨앗**으로 한
-    `RandomNumberGenerator` 라 같은 선수는 몇 번을 물어도 같은 답이다
+- **Mech cards (메크 카드) are not drawn; they come with the mech.** The assigned mech's card list
+  (`mech_cards.csv`) expanded by `count` is the whole of that pilot's mech cards, and
+  the number differs per mech, so the deck size varies with the lineup. `_mech_card_defs_for(p)`
+  returns that mech's rows.
+- **The 3 pilot cards (파일럿 카드) are fixed per player (선수)** (`_pilot_cards_for(p, pool)`). They are not
+  re-rolled every match — the same player always brings the same 3 cards.
+  - The source is the **`pilot_cards`** column of `players.csv` / `intl_players.csv` (card ids joined
+    with `|`) → `PlayerData.pilot_cards`. `GameManager.pilot_card_ids_for(pd)` is the single
+    source of the answer, and the run-setup draft detail popup (`meta/run_setup/DraftDetailPanel`) calls the same
+    function to show the same 3 cards.
+  - If that cell is empty or broken (missing id · a card the position blocks), the shortfall is
+    filled from the **position slot table** (`data/csv/pilot_card_slots.csv`). Each position has three
+    slots, and each slot is a list of card categories (`card_cat`) — it picks one `pool = 1` card that
+    shares at least one category and whose `scope` allows that position (the same card is never
+    held twice; `excl_group` is respected). The roll uses a `RandomNumberGenerator` **seeded with the
+    player id**, so the same player gets the same answer however many times it is asked
     (`GameManager.roll_pilot_card_ids`).
-  - 선수 데이터가 없는 단독 실행은 팀 · 역할로 씨앗을 삼아 같은 표를 굴린다.
-    GameManager 도 DB 도 없으면 포지션 필터만 통과한 풀에서 무작위 3장.
-  - CSV 의 지금 값은 슬롯 표로 한 번 굴려 채운 것이다. **다시 굴리려면 그 칸을
-    비운다**(빈 칸 = 씨앗 뽑기).
-- **예전의 "공용 메크 카드"는 없어졌다.** cards.csv 의 `card_type = mech` 행(전투
-  개시 · 공격 · 필중 …)은 전부 파일럿 카드가 됐고 `MECH_CARDS_PER_PILOT` 폴백과
-  역할별 슬롯 표(`_pilot_slots_for` — 정글 2 + 드로우 1 …)도 함께 삭제됐다.
-  기체가 없는 단독 실행 덱에는 파일럿 카드만 들어간다.
-- **`count = 0` 인 메크 카드도 배분 표에는 적는다.** 덱에는 안 들어가지만
-  (승전보 · 철거 · 처형 · 락온 · 고통과 쾌감 · 단계 B/C — 패시브나 다른 카드가
-  만들어 줄 때만 나온다) 상세 패널의 메크 탭이 "이 기체가 무엇을 하는 기체인가"를
-  보여 주는 자리라, 조건부로만 나오는 카드가 거기서 빠지면 기체를 반만 읽게 된다.
-- **배분 표는 `BattleSim.starter_cards` 에 남는다** — `PilotData →
-  {"mech": [CardData …], "pilot": [CardData ×3]}`. `_deal_one()` 이 덱에 넣는
-  **그 사본**을 그대로 적으므로, 사본에만 찍히는 값(정밀 이동 · 골드러시의
-  `self_cost` 비용 증가, 골드러시의 토큰)까지 표를 통해 보인다. 유일한 소비자는
-  상세 패널의 파일럿 / 메크 탭(`ui/PilotDetailPanel.gd`)이고, 손패 · 덱 · 버린
-  더미를 훑어 **역산하지 않는 이유**가 이것이다: 소멸(`exhaust`)한 카드는 세 더미
-  어디에도 없어서 역산하면 목록에서 조용히 사라진다. 표는 `build_starter_decks` 가
-  새 판마다 `clear()` 한다.
+  - A standalone run without player data seeds the same table with team · role.
+    With neither GameManager nor the DB, it takes 3 random cards from the pool that passed only the position filter.
+  - The current CSV values were filled by rolling the slot table once. **To re-roll, clear that
+    cell** (empty cell = seeded roll).
+- **The old "shared mech cards" (공용 메크 카드) are gone.** The `card_type = mech` rows in cards.csv
+  (전투 개시 (Start Battle) · 공격 (Attack) · 필중 (Sure Hit) …) all became pilot cards, and the `MECH_CARDS_PER_PILOT` fallback and
+  the per-role slot table (`_pilot_slots_for` — jungle (정글) 2 + draw 1 …) were deleted along with them.
+  A standalone-run deck with no mech contains only pilot cards.
+- **Mech cards with `count = 0` are still listed in the allocation table.** They don't go into the deck
+  (승전보 (Victory Report) · 철거 (Demolish) · 처형 (Execute) · 락온 (Lock-on) · 고통과 쾌감 (Pain and Pleasure) · 단계 B/C (Stage B/C) — they appear only when a passive or another card
+  creates them), but the detail panel's mech tab is the place that shows "what this mech does",
+  so if conditional-only cards were missing there you would read only half the mech.
+- **The allocation table stays in `BattleSim.starter_cards`** — `PilotData →
+  {"mech": [CardData …], "pilot": [CardData ×3]}`. It records **the very copies** that `_deal_one()` puts
+  into the deck, so values stamped only on the copies (the `self_cost` cost increase of 정밀 이동 (Precise Move) ·
+  골드러시 (Gold Rush), 골드러시's token) also show through the table. Its only consumer is
+  the detail panel's pilot / mech tabs (`ui/PilotDetailPanel.gd`), and this is **why it does not
+  reverse-derive** the list by scanning hand · deck · discard pile: an exhausted (`exhaust`) card is in none
+  of the three piles, so reverse-derivation would silently drop it from the list. `build_starter_decks`
+  `clear()`s the table every new match.
 - `make_card_copy(src)` — copies every CSV column (including `card_id` / `scope` /
   `pool` / `card_type` / `card_cat`) AND `owner_pilot`. Use this any time you need a
   deck-safe duplicate.
 
-### 충전 (카드가 자기 안에 쌓는 세기)
-**충전은 키워드이고, 충전으로 채워지는 것은 토큰이다.** `충전` 키워드(`keyword =
-charge`)를 단 카드는 **손패에 들어올 때마다** 자기 토큰(`CardData.charge`)을 하나
-올리고(상한 `charge_max` — 두 CSV 모두 같은 컬럼), 사용하면 쌓인 토큰이 한꺼번에
-나가며 0 으로 돌아간다. 지금 네 장이 쓴다 — 미사일(3) · 전장 강타(5) · 약자 멸시(3)
-· **성장 가속(5, 파일럿 카드)**. 공격 명령은 충전을 버리고 **처치마다 손패에 생성**
-되는 쪽으로 갔다. 화면 · 카드 문구 · 스킬 문구는 전부 이 용어를 쓴다("토큰 +1",
-"토큰 5개를 소모하여") — 스킬 · 메크 패시브의 내부 카운터도 화면에서는 토큰이다.
+### Charge (power a card stores inside itself)
+**Charge (충전) is a keyword; what charge fills is tokens (토큰).** A card with the `충전` keyword (`keyword =
+charge`) raises its own token count (`CardData.charge`) by one **every time it enters the hand**
+(cap `charge_max` — the same column in both CSVs), and when used, all stored tokens are spent at once
+and it returns to 0. Four cards use it now — 미사일 (Missile) · 전장 강타 (Battlefield Smash) · 약자 멸시 (Scorn the Weak)
+· **성장 가속 (Growth Acceleration) (pilot card)** — each with its own `charge_max`. 공격 명령 (Attack Order) dropped charge and moved to **being generated into the hand on every kill**
+instead. Screen · card text · skill text all use this term ("토큰 +1" (Token +1),
+"토큰 N개를 소모하여" (spending N tokens)) — the internal counters of skills · mech passives are also tokens on screen.
 
-**토큰은 충전만 채우는 것이 아니다.** [골드러시]는 충전 카드가 아니고, 쓸 때마다
-`token:1` 절로 자기 토큰을 올린다 — 충전 카드가 아니므로 사용으로 사라지지 않고
-게임 내내 쌓인다(`_burn_charge` 는 충전 카드만 태운다).
+**Tokens are not filled only by charge.** [골드러시] is not a charge card; each use raises its own token
+via a `token:N` clause — since it is not a charge card, use does not clear it and it keeps
+stacking for the whole game (`_burn_charge` burns only charge cards).
 
-- 오르는 자리는 손패 진입 훅 **`_on_enter_hand(cd, is_player)`** 하나다 —
-  `add_card_to_hand()` · `draw_card()` · 찾기 확정 · 재배치 복귀가 전부 지난다.
-  훅은 `CardData.gain_charge()` 를 부르고 [신중한 예산] 표시도 같이 세운다.
-- 태우는 자리는 하나다: `_burn_charge(cd)` — 카드가 손을 떠날 때 한 번 돌고,
-  태운 수를 **`_charge_spent`** 에 적어 둔다. 절이 아니라 카드 단위인 이유는
-  "사용 시 모든 충전을 소모"가 효과 개수와 무관하기 때문이고, 값이 카드가 아니라
-  매니저에 사는 이유는 그 시점에 `charge` 가 이미 0 이기 때문이다(효과 체인은
-  오버레이 때문에 여러 프레임에 걸쳐 돈다).
-- 효과 쪽 플래그는 **`|charge`** 다. `attack:1|area:0|charge`(미사일)는 각 대상을
-  충전 수만큼 때리고, `attack:1|random|charge`(전장 강타)는 **충전 수 + 1** 명을
-  무작위로 뽑는다(+1 은 상수항이라 충전 0 이어도 한 번은 나간다).
-- 화면은 `Card.refresh_charge_badge()` — 카드 **오른쪽 아래**의 `N/M` 배지
-  (`CardData.shows_tokens()` — 충전 카드는 `토큰/상한`, 골드러시는 토큰 수만).
-  오른쪽 위는 시전자 초상 리본이, 왼쪽 위는 카드 밖으로 걸친 비용 원이 쓴다.
+- The only place it rises is the hand-entry hook **`_on_enter_hand(cd, is_player)`** —
+  `add_card_to_hand()` · `draw_card()` · search (찾기) confirm · return from rearrangement all pass through it.
+  The hook calls `CardData.gain_charge()` and also sets the [신중한 예산] (Careful Budget) indicator.
+- There is one place it burns: `_burn_charge(cd)` — runs once when the card leaves the hand, and
+  records the burned count in **`_charge_spent`**. It is per card rather than per clause because
+  "사용 시 모든 충전을 소모" (spend all charge on use) is independent of the number of effects, and the value lives on the
+  manager rather than the card because `charge` is already 0 at that point (the effect chain
+  runs over several frames because of overlays).
+- The effect-side flag is **`|charge`**. `attack:N|area:N|charge` (미사일) hits each target
+  as many times as the charge, and `attack:N|random|charge` (전장 강타) picks **charge + 1**
+  random targets (the +1 is a constant term, so it fires once even at 0 charge).
+- On screen it is `Card.refresh_charge_badge()` — the `N/M` badge at the card's **bottom right**
+  (`CardData.shows_tokens()` — charge cards show `토큰/상한` (tokens/cap), 골드러시 shows the token count only).
+  The top right is used by the caster portrait ribbon, the top left by the cost ribbon.
 
-> **예전에는 `스택` 이었다** — 같은 카드가 손패에서 한 장으로 뭉치고
-> `stack_count` 가 몇 장인지를 들고 있었다. 뭉치는 표현은 손패 크기 · 상한 정리 ·
-> 부채꼴 · 히트 밴드를 손대지 않아도 된다는 장점이 있었지만 대가가 둘이었다:
-> 더미로 내려갈 때마다 낱장으로 다시 흩어야 했고(안 그러면 리셔플 한 번에 덱
-> 장수가 준다), 세기의 상한이 곧 `count` 라 카드 한 종류가 덱을 3~5장씩 불렸다.
-> 충전은 `count = 1` 로 그 둘을 다 없앤다. `stacks_with` / `stack_count` /
-> `last_draw_merged` / `refresh_stack_badge` 는 그때 함께 삭제됐다.
+> **It used to be `스택` (stack)** — identical cards merged into one card in the hand and
+> `stack_count` held how many there were. The merged representation had the advantage of not touching hand size · cap trimming ·
+> the fan · hit bands, but it cost two things:
+> every time it went down to a pile it had to be scattered back into single cards (otherwise one reshuffle shrinks
+> the deck's card count), and the power cap was `count` itself, so one card type bloated the deck by several cards.
+> Charge removes both with a single copy per card in `count`. `stacks_with` / `stack_count` /
+> `last_draw_merged` / `refresh_stack_badge` were deleted at that time.
 
-### 코스트 -1 (사용할 수 없는 카드)
-`cost = -1` 은 값이 아니라 **낼 수 없다는 표시**다(캐시 · 계시 · 약자 멸시 ·
-밸런스 · 자신감 · 맑은 정신 — 손에 들고 있는 것만으로 일한다). `CardData.is_playable()` 이 그 판정이고
-세 곳이 읽는다 — `Card._apply_data` / `update_displayed_cost` 는 비용 칸에 숫자
-대신 `—` 를 찍고(할인도 증세도 얹지 않는다), `highlight_affordable_cards` 는 점수와
-무관하게 지불 불가로 잠그며, `_begin_drag` 은 드래그 자체를 거부한다. **단 버리기
-픽 중에는 끌린다**: 못 내는 카드라고 못 버리는 것은 아니다.
-- Card front layout — **앞면은 위에서부터 아트 → 이름판 두 층**이고, 그 위에
-  왼쪽 위에 비용 원, 오른쪽 위 모서리에 시전자 초상 리본이 얹힌다. **설명문은 카드에 없다** —
-  손패는 위의 설명 상자, AI 가 낸 카드는 그 카드 오른쪽의 설명판(키워드 풀이 없음)
-  (`AiCardPlayer`), 찾기 · 선택 그리드와 더미 열람은 가리키거나 누른 카드 옆의
-  설명판, 밴픽 시트와 메크 상세는 누른 카드 위의 설명판이 든다(전부
-  `CardDescBox`). 160×220 에 최장 128자를 8pt 로 욱여넣던 설명판은 어차피 읽으라고
-  있는 글씨가 아니었고, 그 자리를 아트가 가져가 카드가 **그림으로** 알아보인다.
-  두 층은 **절대 좌표**다(카드는 160×220 고정, `scenes/Card.tscn` 과 같은 값).
-  **카드에는 테두리가 없다** — 두 층이 카드 사각형을 빈틈없이 나눠 채우고,
-  `CardFront` 판 자체는 `StyleBoxEmpty` 다(밑에 판을 깔면 깎인 모서리로 그 판의
-  흐린 가장자리가 비친다). 비용색 바탕과 '낼 수 있음' 노란 테두리는 지웠다 —
-  못 내는 카드는 사용 불가 슬래브 하나로 읽힌다.
-  - **아트** (`ArtFrame` + `Art`, 0..160 × 0..184 = `NAME_TOP`, 카드 끝까지).
-    그림은 `CardImages.art_for(card_name)` 이 준다 — `images/card/<이름>.png` 가
-    있으면 그것, 없으면 `CardImages.ITEM_ART` 가 짝지은 Deadlock 아이템 아이콘
-    (`images/ground/deadlock_items/`, 지금 96장 전부), 표에도 없으면
-    `images/ground/N.png` 다섯 장 중 **이름 해시로 고른** 한 장이다.
-    **위 두 모서리는 `resources/shaders/rounded_top_mask.gdshader` 가 카드
-    모서리(`CARD_RADIUS` 10)에 맞춰 깎는다** — 둥근 사각형 SDF 로 덮임을 계산해
-    곡선이 화면 1px 에 걸쳐 흐려지므로(`fwidth`, 호버 확대에도 따라간다) 계단이
-    없다. 마스크는 UV 가 아니라 노드 로컬 픽셀(`VERTEX`)로 잰다 —
-    `STRETCH_KEEP_ASPECT_COVERED` 는 텍스처 일부만 그려 UV 가 rect 를 덮지 않는다.
-    아랫변은 흐리지 않는다(이름판과 맞닿는 이음매에 어두운 줄이 생긴다).
-    `clip_children` 은 카드마다 백버퍼를 뜨고 가장자리가 계단이라 쓰지 않는다.
-    그림이 아예 없을 때만 `ArtFrame` 이 어두운 바탕(`ART_BACK_COLOR`)을 그린다.
-    > 예전에는 위쪽 1/3(`ART_H` 74)만 아트였고 그 아래가 이름 한 줄 + 설명판이었다.
-    > 그다음엔 액자가 테두리에서 5px 물러나 앉아(`ART_INSET`) 비용색 바탕이 그림을 둘렀다.
-  - **이름판** (`NamePlate` + `NameLabel`, 0..160 × 184..220, `NAME_PLATE_H` 36).
+### Cost -1 (unplayable cards)
+`cost = -1` is not a value but **a mark that the card cannot be played** (캐시 (Cash) · 계시 (Revelation) · 약자 멸시 ·
+밸런스 (Balance) · 자신감 (Confidence) · 맑은 정신 (Clear Mind) — they work just by being held in hand). `CardData.is_playable()` is that check and
+three places read it — `Card._apply_data` / `update_displayed_cost` print `—` in the cost slot instead of a
+number (no discount or increase applied on top), `highlight_affordable_cards` locks it as unaffordable regardless of
+points, and `_begin_drag` refuses the drag itself. **But it can be dragged during a discard (버리기)
+pick**: a card you can't play is not a card you can't discard.
+- Card front layout — **the front is two layers, from the top: art → nameplate (이름판)**, and on top of them
+  the cost ribbon sits at the top left and the caster portrait (초상) ribbon (리본) at the top-right corner. **The card has no description text** —
+  for the hand it is the description panel beside the focused card; for a card the AI played, the description panel to the right of that card
+  (no keyword notes, `AiCardPlayer`); for search · selection grids and pile browsing (열람), the description panel beside the pointed-at or pressed
+  card; for the ban/pick (밴픽) sheet and mech detail, the description panel above the pressed card (all
+  `CardDescBox`). The description panel that crammed up to 128 characters at 8pt into 160×220 was never really
+  text meant to be read anyway; the art took that space, so the card is recognizable **by its picture**.
+  The two layers use **absolute coordinates** (the card is fixed at 160×220, same values as `scenes/Card.tscn`).
+  **The card has no border** — the two layers split and fill the card rect with no gap,
+  and the `CardFront` panel itself is `StyleBoxEmpty` (a panel laid underneath would show its blurry
+  edge through the clipped corners). The cost-coloured background and the yellow 'playable' border were removed —
+  an unplayable card reads by the single unplayable slab.
+  - **Art** (`ArtFrame` + `Art`, 0..160 × 0..184 = `NAME_TOP`, to the card edge).
+    The image comes from `CardImages.art_for(card_name)` — `images/card/<이름>.png` (<이름> = name) if it
+    exists, otherwise the Deadlock item icon paired by `CardImages.ITEM_ART`
+    (`images/ground/deadlock_items/`, all 96 now), and if not in the table either, one of the five
+    `images/ground/N.png` **chosen by name hash**.
+    **The two top corners are clipped by `resources/shaders/rounded_top_mask.gdshader` to match the card
+    corner (`CARD_RADIUS` 10)** — coverage is computed with a rounded-rect SDF so the
+    curve blurs over 1 screen px (`fwidth`; it follows hover enlargement too), so there is no
+    stair-stepping. The mask measures in node-local pixels (`VERTEX`), not UV —
+    `STRETCH_KEEP_ASPECT_COVERED` draws only part of the texture, so the UV does not cover the rect.
+    The bottom edge is not blurred (a dark line would appear at the seam with the nameplate).
+    `clip_children` is not used: it takes a back buffer per card and its edges are stair-stepped.
+    Only when there is no image at all does `ArtFrame` draw a dark background (`ART_BACK_COLOR`).
+    > Previously only the top 1/3 (`ART_H` 74) was art, and below it came one name line + the description panel.
+    > After that the frame sat 5px in from the border (`ART_INSET`) and the cost-coloured background surrounded the image.
+  - **Nameplate** (`NamePlate` + `NameLabel`, 0..160 × 184..220, `NAME_PLATE_H` 36).
     Name text is `NAME_FONT_SIZE` 23 (was 15); a name wider than the label (148px)
     steps down to fit via `_fit_name_font_size` (floor `NAME_FONT_MIN` 14).
-    카드 아랫단 전폭, 테두리 없이 **아이템 타입색**(`Card.TYPE_COLORS`)으로만 채운
-    판이고 아래 두 모서리가 곧 카드 모서리다. 타입은 `CardImages.type_for` 가
-    아이콘 파일명 접두사로 답한다 — `wpn` 무기 `#A86A22` · `spt` 스피릿 `#7E4FB0` ·
-    `vit` 활력 `#5A8A16`(deadlock.wiki 색을 흰 글씨가 읽히게 어둡게 깐 것), 타입이
-    없는 카드는 `NAME_PLATE_NEUTRAL_COLOR`.
-  - **좌측 상단 비용 리본** (`CostBadge` + `CostLabel`, `COST_RIBBON_RECT`
-    (10, -3, 38×73)). 윗변이 카드 윗변보다 `COST_RIBBON_POKE`(3px) 위로 튀어나오고
-    (아랫변 · 숫자 자리는 예전 (10, 0, 38×70) 그대로), 카드 윗변에서 아래로 늘어진 **세로로 긴 직각사다리꼴**
-    (`CostRibbon`) — 아랫변만 비스듬해 왼쪽 아래가 더 내려가고 오른쪽 아래가
-    살짝 짧다. 위쪽 띠(`COST_NUMBER_H` 50)에 큰 숫자(`COST_FONT_SIZE` 32).
-    **불투명한 흰 알맹이에 어두운 숫자**(`CostRibbon.INK`, 외곽선 없음), 아랫변
-    밑으로 시전자 초상 리본처럼 드롭 섀도(`CostRibbon.SHADOW_*`). 테두리도 안쪽
-    아이콘도 없다(전략 점수 팔각형을 넣었다가 뺐다). 리본은
-    카드 둥근 모서리 안쪽에서 시작하므로 카드 안에 있다. 씬에서는 `CardFront`
-    자식이지만 런타임에 루트 맨 뒤로 옮겨져 사용 불가 슬래브 · 보존 테두리 · 초상
-    리본보다 위에 그려진다. 손패는 카드끼리 절반 넘게 겹치는 부채꼴이라
-    (오른쪽 카드가 왼쪽 카드를 덮는다) **왼쪽 위가 각 카드에서 언제나 보이는
-    유일한 구석**이다. 리본 알맹이는 `COST_BADGE_FILL_COLOR`(= `CostRibbon.FILL`, 흰색).
-    숫자 색 `COST_COLOR_BASE` / `_REDUCED` / `_INCREASED` 는 흰 바탕용 어두운 잉크 ·
-    진한 초록 · 진한 빨강이다(설명판 머리줄 리본도 같은 셋).
-    > 예전에는 카드 모서리 밖 (-9, -9) 로 튀어나온 42px 팔각형이었다.
-    `Card.update_displayed_cost(eff)` 가 숫자를 다시 칠한다 — 매칭이면 흰색,
-    할인(사전 준비 / 전투 준비 / 집중 / 신중한 예산 / 맑은 정신)이면 초록,
-    증세(`cost_inc_phase`, 지금 풀에 그 절을 단 카드는 없다)면 빨강. **정밀 이동 ·
-    골드러시의 +1 은 수정자가 아니다** — `self_cost:1` 이 카드 자신의 `cost` 를
-    올리므로 돌아온 카드는 새 가격에 흰색으로 찍힌다. `CardPhaseManager.highlight_affordable_cards` 가 보이는
-    카드마다 불러 비용 수정자와 카드 표시가 어긋나지 않게 한다.
-    **리본은 슬래브보다 위에 앉으므로** `_refresh_block_overlay` 가
-    `COST_BADGE_BLOCKED_TINT` 로 직접 눌러 준다 — 안 그러면 잠긴 카드에서 비용만
-    밝게 남는다.
-  - **오른쪽 위 모서리 = 시전자 초상 리본** (`OwnerRibbon`). 카드 윗변 ·
-    오른변에 두 직각변(`RIBBON_LEG` 60)이 붙은 **직각삼각형**이고, 그 안에
-    파일럿의 두 눈이 보이게 잘려 있다. 빗변 테두리는 없고 빗변 아래로만 그림자가
-    떨어진다(노드 높이 = `RIBBON_LEG + RIBBON_SHADOW_PAD`).
-    **런타임 마스킹이 아니라 파일럿별로 구운 PNG** 다 —
+    Full width along the card's bottom, a plate with no border filled only with the **item type colour** (`Card.TYPE_COLORS`);
+    its two bottom corners are the card's corners. The type is answered by `CardImages.type_for`
+    from the icon filename prefix — `wpn` weapon `#A86A22` · `spt` spirit `#7E4FB0` ·
+    `vit` vitality `#5A8A16` (deadlock.wiki colours darkened so white text stays readable); cards with no
+    type use `NAME_PLATE_NEUTRAL_COLOR`.
+  - **Top-left cost ribbon** (`CostBadge` + `CostLabel`, `COST_RIBBON_RECT`
+    (10, -3, 38×73)). Its top edge pokes `COST_RIBBON_POKE` (3px) above the card's top edge (the bottom
+    edge · number slot are unchanged from the old (10, 0, 38×70)); a **tall right trapezoid** hanging down
+    from the card's top edge (`CostRibbon`) — only the bottom edge is slanted, so the bottom-left reaches
+    lower and the bottom-right is slightly shorter. A big number (`COST_FONT_SIZE` 32) in the top band
+    (`COST_NUMBER_H` 50). **Opaque white fill with a dark number** (`CostRibbon.INK`, no outline), and a
+    drop shadow below the bottom edge like the caster portrait ribbon (`CostRibbon.SHADOW_*`). No border
+    and no inner icon (a strategy-point octagon was tried and removed). The ribbon starts inside the
+    card's rounded corner, so it stays within the card. In the scene it is a `CardFront` child, but at
+    runtime it is moved to the root's last child so it draws above the unplayable slab · keep border ·
+    portrait ribbon. The hand is a fan where cards overlap by more than half (the right card covers the
+    left one), so **the top left is the only corner always visible on each card**. The ribbon fill is
+    `COST_BADGE_FILL_COLOR` (= `CostRibbon.FILL`, white). The number colours `COST_COLOR_BASE` /
+    `_REDUCED` / `_INCREASED` are dark ink · deep green · deep red for a white background (the
+    description panel's header ribbon uses the same three).
+    > It used to be a 42px octagon sticking out of the card corner at (-9, -9).
+    `Card.update_displayed_cost(eff)` repaints the number — base colour if it matches,
+    green if discounted (사전 준비 (Preparation) / 전투 준비 (Battle Prep) / 집중 (Focus) / 신중한 예산 / 맑은 정신),
+    red if increased (`cost_inc_phase`; no card in the current pool has that clause). **The cost increase of 정밀 이동 ·
+    골드러시 is not a modifier** — `self_cost:N` raises the card's own `cost`,
+    so a returned card is printed at its new price in the base colour. `CardPhaseManager.highlight_affordable_cards` calls it
+    for every visible card so the cost modifiers and the card display never disagree.
+    **The ribbon sits above the slab**, so `_refresh_block_overlay` dims it directly with
+    `COST_BADGE_BLOCKED_TINT` — otherwise only the cost would stay bright on a locked card.
+  - **Top-right corner = caster portrait ribbon** (`OwnerRibbon`). A **right triangle** whose two legs
+    (`RIBBON_LEG` 60) lie along the card's top and right edges, with the pilot cropped inside it
+    so both eyes show. There is no hypotenuse border; a shadow falls only below
+    the hypotenuse (node height = `RIBBON_LEG + RIBBON_SHADOW_PAD`).
+    **It is a PNG baked per pilot, not runtime masking** —
     `PilotImages.ribbon_for(owner.pilot_id)` (`pilot/ribbon/N_ribbon.png`,
-    `make_ribbon_crops.py`). 삼각형 · 둥근 카드 모서리 · 안티앨리어싱 · 그림자가
-    전부 그림에 들어 있어 Card 는 평범한 `TextureRect` 하나만 둔다. 마스크
-    쉐이더로 하면 손패 카드마다 `ShaderMaterial` 이 붙어 모바일에서 첫 사용
-    파이프라인 컴파일 · 배치 분리 비용이 생기고, 빗변 · 둥근 모서리 AA 를 위해
-    SDF 계산까지 얹어야 한다 — 미미해도 0 은 아니라서 굽는 쪽을 골랐다.
-    크기를 바꾸면 `Card.RIBBON_*` 과 스크립트의 `LEG` / `SHADOW_PAD` 를 함께
-    고치고 다시 굽는다.
-    **손패에서만 그린다**(`is_player_card`) — 상세 패널 · 더미 열람 · 밴픽 ·
-    드래프트처럼 "이 기체가 주는 카드"를 보여 주는 자리에서는 시전자가 없거나
-    의미가 없고, 상대 손패 peek 은 뒷면이라 그릴 것이 없다. 사용 불가 슬래브
-    **아래**에 앉으므로 잠긴 카드에서는 얼굴도 같이 어두워진다.
-    > **겹침은 감수한 선택이다.** 손패가 7장을 넘으면 오른쪽 카드가 왼쪽 카드의
-      우측 1/3 이상을 덮어, 리본은 맨 오른쪽 카드와 가리킨 카드(줄이 벌어진다)
-      에서만 온전히 보인다. 예전 왼쪽 위 원형 초상이 그 이유로 옮겨 갔던 것을
-      되돌린 것이다(사용자 결정, 2026-10).
-    > 그보다 더 예전에는 시전자 얼굴(`PilotImages.face_for`)이 **카드 본체를
-      가득 채웠고**, 손패 밖의 모든 카드 표시(상세 패널 · 열람 · 밴픽)에도 같은
-      얼굴이 깔려 "이 카드는 누구 것인가"가 맥락과 무관하게 반복됐다.
-  - **아트 오른쪽 아래, 이름판 바로 위**: 토큰 배지 `N/M` / `N`
-    (`CHARGE_BADGE_SIZE` 52×30). 토큰을 쓰지 않는 카드면 꺼진다. 이름판 위로 올린
-    것은 이름을 가리지 않기 위해서다.
+    `make_ribbon_crops.py`). The triangle · rounded card corner · anti-aliasing · shadow are
+    all in the image, so Card holds just one plain `TextureRect`. With a mask
+    shader, every hand card would get a `ShaderMaterial`, costing first-use
+    pipeline compilation · batch breaking on mobile, plus SDF math for the hypotenuse · rounded-corner AA
+    on top — small but not zero, so baking was chosen.
+    If you change the size, update `Card.RIBBON_*` and the script's `LEG` / `SHADOW_PAD` together
+    and re-bake.
+    **Drawn only in the hand** (`is_player_card`) — in places that show "the cards this mech gives",
+    like the detail panel · pile browse · ban/pick · draft, there is no caster or it is
+    meaningless, and the opponent hand peek is face-down so there is nothing to draw. It sits **below**
+    the unplayable slab, so on a locked card the face dims too.
+    > **The overlap is an accepted trade-off.** Past 7 cards in hand, the right card covers at least the
+      right 1/3 of the left card, so the ribbon is fully visible only on the rightmost card and the pointed-at card (the row
+      spreads apart). This undoes the earlier move to a round top-left portrait, which was made for exactly that
+      reason (user decision, 2026-10).
+    > Even earlier, the caster's face (`PilotImages.face_for`) **filled the whole card
+      body**, and the same face was laid on every card display outside the hand too (detail panel · browse · ban/pick),
+      repeating "whose card is this" regardless of context.
+  - **Bottom right of the art, just above the nameplate**: token badge `N/M` / `N`
+    (`CHARGE_BADGE_SIZE` 52×30). Hidden for cards that don't use tokens. It sits above the nameplate
+    so it doesn't cover the name.
   - **Unplayable dim** (`BlockOverlay`): a `Panel` at the **end** of the child
     list — above `CardFront`, so it darkens the art, portrait, name, cost and
     description together — filled `BLOCKED_OVERLAY_COLOR` (black α 0.58) with
     the card's own 10 px corner radius. It goes up for either of two reasons,
     tracked independently and merged by `_refresh_block_overlay()`:
     `set_affordable(false)` (can't pay) or `set_respawn_turns(n > 0)`
-    (시전자 부활 대기). `set_affordable` no longer repaints the card body grey
+    (caster awaiting respawn). `set_affordable` no longer repaints the card body grey
     — the grey panel sat *under* the portrait, which stayed bright and read as
     playable. The card has no border any more, so the slab is the only cue.
   - **Respawn countdown** (`RespawnCountdown`): a `Label` next to the slab,
     `RESPAWN_FONT_SIZE` 76 with a 10 px outline, showing the turns left until
-    the 시전자 comes back. Visible only while `set_respawn_turns(n)` is
+    the caster comes back. Visible only while `set_respawn_turns(n)` is
     non-zero. `Card.is_playable()` returns false whenever either reason holds.
     Both nodes must be `MOUSE_FILTER_IGNORE` — see the filter note below.
   - **No role badge.** Role is conveyed by the owner portrait badge.
 
-#### 핸드 오르내림 — 내 차례가 아니면 손패가 물러난다
-**내 작전 단계가 아니면 손패는 화면 아래로 내려가 아군 파일럿 스트립 뒤로 숨는다.**
-카드 절반쯤이 스트립 뒤판에 가려지고, 내 차례가 되면 그대로 올라온다.
+#### Hand raise/lower — when it is not my turn, the hand pulls back
+**Outside my operation phase (작전 단계), the hand drops toward the bottom of the screen and hides behind the ally (아군) pilot strip (스트립).**
+About half of each card is hidden by the strip backplate (뒤판), and when my turn (차례) comes it rises straight back up.
 
-- 조건은 `_hand_is_lowered()` = `game_phase != CARD_PHASE` 하나다. 딤
-  (`_apply_hand_dim_state`)보다 **좁은** 조건인 것이 요점이다 — 내 차례 안에서
-  잠깐 입력이 막히는 구간(명중 연출 · 모달 픽 · 차례 배너)에는 손패가 어두워질
-  뿐 내려가지 않는다. 그때도 내려가면 모달 한 번마다 손패가 오르내린다.
-- **자리**는 `hand_drop_offset()` 이 `slot_position()` 에 더한다. 값은 상수가
-  아니라 스트립 뒤판에서 역산한다 — `_bs.hud.player_strip_backdrop_top()
-  − Card.CARD_H × 0.5 − BS_HAND_CENTER.y`. 둘 다 세이프 에어리어 오프셋을 이미
-  먹은 값이라 기기와 무관하게 "절반쯤 가려진다"가 유지된다(1080×1920 기준 **206px**).
-- **z-order**는 `_reorder_hand_nodes()` 가 바꾼다. 내려간 것만으로는 카드가
-  스트립 판 **위에** 걸쳐 있어 가려지지 않으므로, 그 판(`player_strip_backdrop()`)을
-  마커로 잡고 그 **바로 앞자리**에 카드를 차례로 꽂아 덩어리째 판 아래로 내린다.
-  카드가 마커보다 뒤에 있었으면 빼내도 마커 인덱스가 그대로이므로 그 자리에,
-  앞에 있었으면 마커가 한 칸 당겨지므로 한 칸 앞에 넣는다. 되돌리는 쪽(내 차례)은
-  예전처럼 자식 목록 맨 끝이다. 조기 종료 판정(`sorted`)도 그 기준으로 다시
-  계산하므로 반복 호출이 트리를 건드리지 않는다.
-- **그림자**는 `Card.set_lowered()` 가 `SHADOW_FAR_*`(offset 1×4, blur 3,
-  spread 0.98)로 바꾼다. **카드에 바짝 붙은 짧은 그림자 = 카메라에서 멀다**가
-  이 연출의 전부다 — 내 차례에는 평소의 rest / hover / drag 세 단계로 돌아온다.
-  그 상태에서는 호버도 드래그도 없으므로 네 갈래가 서로 다투지 않는다.
-- **히트 레이어도 같이 내려간다**(`_fit_hit_layer` 이 `hand_drop_offset()` 을 탄다).
-  안 따라가면 카드가 없는 자리에서 전장 위의 클릭을 삼킨다.
+- The condition is just `_hand_is_lowered()` = `game_phase != CARD_PHASE`. The key point is that it is **narrower**
+  than the dim condition (`_apply_hand_dim_state`) — during brief input-blocked stretches inside my turn (hit (명중) FX ·
+  modal pick · turn banner) the hand only darkens and does not drop. If it dropped then too, the hand would go up and
+  down on every modal.
+- **Position**: `hand_drop_offset()` is added to `slot_position()`. The value is not a constant;
+  it is back-calculated from the strip backplate — `_bs.hud.player_strip_backdrop_top()
+  − Card.CARD_H × 0.5 − BS_HAND_CENTER.y`. Both already include the safe area (안전 영역) offset,
+  so "about half hidden" holds regardless of device (**206px** at 1080×1920).
+- **z-order** is changed by `_reorder_hand_nodes()`. Dropping alone leaves the cards drawn
+  **over** the strip panel, not hidden, so it takes that panel (`player_strip_backdrop()`)
+  as a marker and inserts the cards one by one **right before** it, moving the whole batch below the panel.
+  If a card was after the marker, removing it leaves the marker index unchanged, so it goes at that index;
+  if it was before, the marker shifts back one, so it goes one slot earlier. The reverse (my turn)
+  is the end of the child list, as before. The early-exit check (`sorted`) is also recomputed
+  on that basis, so repeated calls don't touch the tree.
+- **Shadow**: `Card.set_lowered()` switches it to `SHADOW_FAR_*` (offset 1×4, blur 3,
+  spread 0.98). **A short shadow hugging the card = far from the camera** is the
+  whole effect — on my turn it returns to the usual three stages rest / hover / drag.
+  In the lowered state there is neither hover nor drag, so the four branches never conflict.
+- **The hit layer drops too** (`_fit_hit_layer` applies `hand_drop_offset()`).
+  Otherwise it would swallow clicks on the battlefield (전장) where there are no cards.
 
-#### 핸드 히트 레이어 — draw order must not decide hit-testing
+#### Hand hit layer — draw order must not decide hit-testing
 Player hand cards do **not** pick the mouse. `spawn_card_node` runs
 `_set_subtree_mouse_ignore(node)` over the card and every descendant, and one
 transparent `Control` (`HandHitLayer`, built by `_fit_hit_layer`) sits over the
@@ -1269,11 +1278,11 @@ focus card covers.
   whole mechanism behind dragging a card out over the battlefield, and it is why
   no other node needs drag wiring.
 - `Card.set_hovered(bool)` is the hover entry point. `_on_mouse_entered` /
-  `_on_mouse_exited` still forward to it for the AI peek row and the 찾기 grid,
+  `_on_mouse_exited` still forward to it for the AI peek row and the search grid,
   which are flat and don't overlap.
 - The layer is sized to the band the cards already occupy (row span + hover
   enlargement, plus the lift only while a card is being dragged), so it can't swallow
-  anything the cards weren't covering. It clears the player 전략 포인트 도넛
+  anything the cards weren't covering. It clears the player strategy point (전략 포인트) donut
   (bottom 1350 vs layer top 1378). The description box no longer competes with
   it at all — it moved to the top of the screen and is `MOUSE_FILTER_IGNORE`.
 
@@ -1307,7 +1316,7 @@ parent chain, the Card still lit up — which reads exactly like the hit layer
 working and made this a slow one to find. Same defaults as above, opposite
 direction.
 
-### cards.csv 컬럼 — `scope` / `pool` / `card_type` / `card_cat` / `excl_group` / `charge_max`
+### cards.csv columns — `scope` / `pool` / `card_type` / `card_cat` / `excl_group` / `charge_max`
 All flow `cards.csv` → `addons/csv_to_db/csv_to_db.gd` (SCHEMAS + TABLE_DEFS) →
 `GameManager.card_pool_bs` → `CardData.from_def`. **Adding a column means running
 Project → Tools → Rebuild game.db**; until then `GameManager` reads them with
@@ -1315,98 +1324,98 @@ defaults so an older game.db still loads.
 
 | Column | Values | Meaning |
 |---|---|---|
-| `scope` | 포지션 목록 | **시전자 제약 — 어느 포지션이 가질 수 있는가.** `any` 단독 = 다섯 포지션 전부, `lane` 단독 = 탑 · 미드 · 원딜 · 서폿, 그 밖에는 `jungle` / `top` / `mid` / `carry` / `support` 를 `\|` 로 잇는다(`top\|mid\|carry` …). 펼치기는 `CardData.positions_of` 하나이고 알 수 없는 토큰만 있으면 다섯 전부로 읽는다. 역할 → 포지션 키는 `GameEnums.position_key(role)`. 고정 파일럿 카드를 고를 때 판정한다. |
-| `pool`  | `1` / `0` | `0` = 파일럿 카드 후보가 아니다(결투 · 전령 제압 · 용 보상 · 핫핸드 · 이동 — 오브젝트 보상과 스킬이 만들어 주는 카드). |
-| `card_type` | `pilot` | **cards.csv 는 전부 파일럿 카드다.** `mech` 는 `mech_cards.csv` 에서 만든 카드에만 찍힌다(`make_mech_card`). |
-| `card_cat` | 분류 목록 | 카드 분류 — `\|` 로 여러 개(`growth` 성장 · `engage` 교전 · `ambush` 매복 · `attack` 공격 · `defense` 방어 · `utility` 유틸리티 · `draw` 뽑기 · `jungle` 정글 · `lane` 라인전). 슬롯 표의 칸이 이 값으로 후보를 고른다. 지급 전용 카드는 `-`. |
-| `excl_group` | 빈 문자열 / 그룹 이름 | **상호 배타 그룹.** 값이 같은 카드끼리는 한 파일럿이 **하나만** 갖는다. 지금 쓰는 카드는 없다(안전한 파밍이 소극적인 태세로 바뀌며 `laning` 짝이 사라졌다). |
-| `charge_max` | 정수 | 충전 상한. `charge` 키워드를 단 카드만 읽는다(성장 가속 5). |
+| `scope` | list of positions | **Caster (시전자) constraint — which positions may hold the card.** `any` alone = all five positions, `lane` alone = top · mid · carry · support (탑 · 미드 · 원딜 · 서폿); otherwise `jungle` / `top` / `mid` / `carry` / `support` joined with `\|` (`top\|mid\|carry` …). Expansion is done only by `CardData.positions_of`; if it contains only unknown tokens it is read as all five. Role → position key is `GameEnums.position_key(role)`. Checked when choosing fixed pilot (파일럿) cards (카드). |
+| `pool`  | `1` / `0` | `0` = not a pilot card candidate (결투 (Duel) · 전령 제압 (Herald Subdued) · 용 보상 (Dragon Reward) · 핫핸드 (Hot Hand) · 이동 (Move) — cards produced by objective (오브젝트) rewards and skills). |
+| `card_type` | `pilot` | **Every row in cards.csv is a pilot card.** `mech` is stamped only on cards built from `mech_cards.csv` (`make_mech_card`). |
+| `card_cat` | list of categories | Card category — several joined with `\|` (`growth` 성장 (growth) · `engage` 교전 (engage) · `ambush` 매복 (ambush) · `attack` 공격 (attack) · `defense` 방어 (defense) · `utility` 유틸리티 (utility) · `draw` 뽑기 (draw) · `jungle` 정글 (jungle) · `lane` 라인전 (laning)). The slot table's columns pick candidates by this value. Grant-only cards use `-`. |
+| `excl_group` | empty string / group name | **Mutually exclusive group.** Among cards with the same value, a pilot holds **only one**. No card uses it now (the `laning` pair disappeared when 안전한 파밍 (Safe Farming) turned into 소극적인 태세 (Passive Stance)). |
+| `charge_max` | integer | Charge (충전) cap. Read only for cards with the `charge` keyword (성장 가속 (Growth Acceleration)). |
 
-`keyword` 컬럼은 **`|` 로 구분된 목록**이다(`exhaust` / `preserve` / `volatile` /
-`charge` / **`reposition`**). 판정은 반드시 `CardData.has_keyword(kw)` 를 지나야
-한다. **키워드는 설명문에 다시 적지 않는다** — 설명판(`CardDescBox`)이 이름 아래에
-키워드 줄을, 맨 아래에 키워드마다 한 줄 풀이(`CardData.keyword_label` /
-`keyword_note`)를 그린다. 그래서 두 CSV 의 설명문에서 "소멸." · "충전. 내 핸드에
-들어올 때 충전 +1 (최대 3)." 같은 머리말이 걷혔다.
+The `keyword` column is a **`|`-separated list** (`exhaust` / `preserve` / `volatile` /
+`charge` / **`reposition`**). Checks must always go through
+`CardData.has_keyword(kw)`. **Keywords are not repeated in the description text** — the description box (`CardDescBox`) draws a keyword
+line under the name, and at the very bottom a one-line explanation per keyword (`CardData.keyword_label` /
+`keyword_note`). That is why lead-ins such as "소멸." (Exhaust.) · "충전. 내 핸드에
+들어올 때 충전 +1 (최대 N)." (Charge. When it enters my hand, Charge +1 (max N).) were stripped from the description text of both CSVs.
 
-#### 지금 43행의 분류
-| 분류 | 카드 |
+#### Categories of the current 43 rows
+| Category | Cards |
 |---|---|
-| 교전 | 교전 개시 · 완벽한 기회 · 대결 · 결투(`pool=0`) |
-| 매복 | 매복 |
-| 공격 | 찌르기 · 정밀 공격 · 연속 공격 · 무모한 돌격 |
-| 방어 | 보호 · 소극적인 태세 |
-| 성장 | 골드러시 · 몰입 · 워밍업 · 신중한 예산 · 성장 가속 |
-| 유틸리티 | 복귀 · 자신감 · 맑은 정신 · 준비 태세 |
-| 뽑기 | 교환 · 조정 · 임기응변 · 재빠른 사고 · 집중 · 사전 준비 · 아드레날린 · 계획 살인 · 재고 · 완벽한 마무리 · 계획 중시 · 과감한 정리 · 솔로 퍼포먼스 · 핫핸드(`pool=0`) |
-| 정글 | 전투 준비 · 정밀 이동 · 약탈 · 정글 파밍 |
-| 라인전 | 전진 · 공격적인 라인전 |
-| `-` (지급 전용) | 전령 제압 · 용 보상 · 이동 |
+| 교전 (engage) | 교전 개시 (Engage Start) · 완벽한 기회 (Perfect Opportunity) · 대결 (Showdown) · 결투 (`pool=0`) |
+| 매복 (ambush) | 매복 (Ambush) |
+| 공격 (attack) | 찌르기 (Jab) · 정밀 공격 (Precise Attack) · 연속 공격 (Combo Attack) · 무모한 돌격 (Reckless Charge) |
+| 방어 (defense) | 보호 (Protect) · 소극적인 태세 |
+| 성장 (growth) | 골드러시 (Gold Rush) · 몰입 (Immersion) · 워밍업 (Warm-up) · 신중한 예산 (Careful Budget) · 성장 가속 |
+| 유틸리티 (utility) | 복귀 (Return to Base) · 자신감 (Confidence) · 맑은 정신 (Clear Mind) · 준비 태세 (Readiness) |
+| 뽑기 (draw) | 교환 (Exchange) · 조정 (Adjust) · 임기응변 (Improvise) · 재빠른 사고 (Quick Thinking) · 집중 (Focus) · 사전 준비 (Preparation) · 아드레날린 (Adrenaline) · 계획 살인 (Planned Kill) · 재고 (Reconsider) · 완벽한 마무리 (Perfect Finish) · 계획 중시 (Prioritize the Plan) · 과감한 정리 (Bold Cleanup) · 솔로 퍼포먼스 (Solo Performance) · 핫핸드(`pool=0`) |
+| 정글 (jungle) | 전투 준비 (Battle Prep) · 정밀 이동 (Precise Move) · 약탈 (Plunder) · 정글 파밍 (Jungle Farming) |
+| 라인전 (laning) | 전진 (Advance) · 공격적인 라인전 (Aggressive Laning) |
+| `-` (grant-only) | 전령 제압 · 용 보상 · 이동 |
 
-**이름이 바뀐 넷** — 교전 개시(← 전투 개시, id 1) · 찌르기(← 공격, id 7) · 정밀
-공격(← 필중, id 8, 효과는 그대로 필중) · 소극적인 태세(← 안전한 파밍, id 24, 효과도
-교체). 이름 충돌을 피하려고 새 카드 셋은 계획서 이름을 바꿨다 — **몰입**(← 집중력,
-`집중` id 16 과 충돌), **성장 가속**(← 성장 집중), **자신감**(← 고양감, 파일럿 스킬
-[고양감]과 충돌). id 는 그대로라 세이브 · 배분 표 · 스킬의 카드 id 상수가 깨지지 않는다
-— 바뀐 것은 이름과 아트 표(`CardImages.ITEM_ART`) 키뿐이다.
+**The four that were renamed** — 교전 개시 (← 전투 개시 (Start Battle), id 1) · 찌르기 (← 공격 (Attack), id 7) · 정밀
+공격 (← 필중 (Sure Hit), id 8, effect still sure-hit) · 소극적인 태세 (← 안전한 파밍, id 24, effect also
+replaced). To avoid name clashes, three new cards were renamed from the plan doc — **몰입** (← 집중력 (Concentration),
+clashes with `집중` id 16), **성장 가속** (← 성장 집중 (Growth Focus)), **자신감** (← 고양감 (Elation), clashes with pilot skill
+[고양감]). ids are unchanged, so saves · the distribution table · skills' card-id constants don't break
+— only the names and the art table (`CardImages.ITEM_ART`) keys changed.
 
-**오브젝트 보상 카드 두 장은 시전자가 없다** (`owner_pilot == null`) — 팀이 먹은
-것이지 누가 먹은 것이 아니고, 시전자를 붙이면 그 파일럿이 쓰러져 있는 동안 보상이
-통째로 잠긴다. 그래서 `scope` 판정도 지나지 않고
-`CardPhaseManager.grant_cards_to_hand` / `grant_cards_to_deck` 로만 나온다.
-사거리 기준점이 없으므로 대상 계산이 `caster == null` 을 **"전장 전체가 사거리"**
-로 읽는다(`compute_valid_pilot_targets` / `compute_valid_location_targets` /
-`CardTargetingOverlay.start_card_selection`). 교전(PREVIEW)만은 예외로 시전자를
-요구한다 — 참가자를 시전자 칸 주변에서 모으기 때문. 전체 규칙은
+**The two objective reward cards have no caster** (`owner_pilot == null`) — the team earned
+them, not any one pilot, and attaching a caster would lock the reward entirely while that pilot
+is down. So they skip the `scope` check too and come out only via
+`CardPhaseManager.grant_cards_to_hand` / `grant_cards_to_deck`.
+With no range origin, target computation reads `caster == null` as **"the whole battlefield (전장) is in range"**
+(`compute_valid_pilot_targets` / `compute_valid_location_targets` /
+`CardTargetingOverlay.start_card_selection`). Only engage (PREVIEW) is the exception and requires a
+caster — because it gathers participants around the caster's cell. Full rules in
 `objective/README.md`.
 
-**이름이 비슷한 두 장**: **재빠른 사고**(id 15, `draw:2`)와 **과감한 정리**
-(id 29, `discard_right:3;draw:5`)는 다른 카드다.
+**Two cards with similar names**: **재빠른 사고** (id 15, `draw:N`) and **과감한 정리**
+(id 29, `discard_right:N;draw:N`) are different cards.
 
-### 파일럿 카드 추가분 — 손패 상주 · 작전 단계 · 매복
-- **손패 상주 파일럿 카드**(`hand_passive:<key>`). 메크 쪽 상주 카드(캐시 · 계시 …)는
-  `MechSkillSystem` 이 읽지만 아래 셋은 `CardPhaseManager` 가 읽고, 계산하는 자리가
-  오케스트레이터를 거쳐 묻는다.
+### Pilot card additions — hand-resident · operation phase · ambush
+- **Hand-resident pilot cards** (`hand_passive:<key>`). Mech-side (메크) resident cards (캐시 (Cash) · 계시 (Revelation) …) are
+  read by `MechSkillSystem`, but the three below are read by `CardPhaseManager`; the place that computes the value
+  asks through the orchestrator.
 
-  | 카드 | 묻는 자리 | 함수 |
+  | Card | Where it is asked | Function |
   |---|---|---|
-  | 골드러시 — 토큰당 성장 +8% | `BattleSim.add_score` (적립 배율 가산) | `hand_growth_add(p)` |
-  | 자신감 — 전장 명중 +15% | `SimulationCore.roll_hit` (공격자 명중 배율) | `hand_hit_add(p)` |
-  | 맑은 정신 — 양 옆 카드 비용 -1 | `BattleSim.effective_cost_for` | `hand_neighbor_discount(cd, is_player)` |
+  | 골드러시 — growth +`GOLD_RUSH_GROWTH_PER_TOKEN` per token (토큰) (const.csv `CARD_GOLD_RUSH_GROWTH_PER_TOKEN`) | `BattleSim.add_score` (adds to accrual multiplier) | `hand_growth_add(p)` |
+  | 자신감 — battlefield hit (명중) +`CONFIDENCE_HIT_BONUS` (const.csv `CARD_CONFIDENCE_HIT_BONUS`) | `SimulationCore.roll_hit` (attacker hit multiplier) | `hand_hit_add(p)` |
+  | 맑은 정신 — cost cut by `CLEAR_MIND_COST_CUT` for the cards on both sides (const.csv `CARD_CLEAR_MIND_COST_CUT`) | `BattleSim.effective_cost_for` | `hand_neighbor_discount(cd, is_player)` |
 
-  셋 다 **그 파일럿이 손에 든 카드**만 센다(같은 카드 여러 장이면 합산). 맑은 정신은
-  손패 **자리**를 보므로 AI 가 비용을 재는 시점(`run_ai_plays` — 손패에서 빼기 전)과
-  플레이어가 내는 시점(`_play_card_direct` — 빼기 전)이 둘 다 그 자리를 본다.
-- **자신감은 재배치되지 않는다** — 예전의 "교전 생존 시 손패 맨 왼쪽으로 재배치"
-  (`on_engage_end` · `_reposition_in_hand`)와 `reposition` 키워드는 삭제됐다.
-- **신중한 예산**(`free_in_phase` 표지 절) — 카드가 **그 쪽 작전 단계 도중에** 손패로
-  들어오면(`_on_enter_hand` → `_side_in_phase`: 플레이어는 CARD_PHASE, AI 는 자기 차례
-  `_ai_play_in_progress`) `CardData.free_this_phase` 가 서고 `effective_cost_for` 가
-  0 을 답한다. 그 쪽 작전 단계가 닫힐 때 `_clear_phase_free(is_player)` 가 손패 · 덱 ·
-  버린 더미를 훑어 걷는다. BATTLE 의 자동 뽑기는 작전 단계가 아니므로 해당하지 않는다
-  — 실제로는 작전 단계 중의 뽑기 · 찾기 · 준비 태세의 단계 시작 뽑기가 이 카드를 공짜로
-  만든다.
-- **매복** — `ambush` 절이 시전자를 사거리 2 안의 **정글 타일**(`compute_ambush_targets`,
-  소유 무관, 제자리 포함)로 옮기고 `PilotData.ambush_hold` 를 세운다. 그동안
-  `SimulationCore.resolve_movement` 가 그 파일럿을 이동에서 빼고(밀기로도 안 움직인다)
-  `RecallSystem.process_phase_end_recalls` 가 위치 이탈 판정을 건너뛴다. 그 팀의 다음
-  작전 단계 진입 정산에서 풀리고(사망 · 본진 복귀 · 복귀 카드에서도 풀린다), 같은
-  자리에서 `ambush_search:1` 예약이 **그 시전자의 교전 카드**(`is_engage_card` —
-  `engage` 또는 `duel` 절)를 덱에서 탐색한다(지목형이라 모달이 없다). 매복이 풀린 뒤에도
-  정글에 서 있는 레인 파일럿은 그 작전 단계 끝에 평소처럼 위치 이탈로 귀환된다.
+  All three count **only cards in that pilot's hand (손패)** (multiple copies of the same card add up). 맑은 정신
+  looks at hand **position**, so both the moment the AI measures cost (`run_ai_plays` — before removing from hand) and
+  the moment the player plays (`_play_card_direct` — before removing) look at that position.
+- **자신감 is not repositioned** — the old "move to the leftmost slot of the hand on surviving an engage"
+  (`on_engage_end` · `_reposition_in_hand`) and its `reposition` keyword on 자신감 were deleted.
+- **신중한 예산** (`free_in_phase` marker clause) — if the card enters the hand **during that side's operation phase (작전 단계)**
+  (`_on_enter_hand` → `_side_in_phase`: player = CARD_PHASE, AI = its own turn
+  `_ai_play_in_progress`), `CardData.free_this_phase` is set and `effective_cost_for` answers
+  0. When that side's operation phase closes, `_clear_phase_free(is_player)` sweeps the hand · deck (덱) ·
+  discard (버리기) pile and clears it. BATTLE's auto-draw is not an operation phase, so it doesn't apply
+  — in practice draws · searches (찾기) during the operation phase and 준비 태세's phase-start draw make this card
+  free.
+- **매복** — the `ambush` clause moves the caster to a **jungle tile** within its `cast_range` (`compute_ambush_targets`,
+  any owner, staying in place included) and sets `PilotData.ambush_hold`. Meanwhile
+  `SimulationCore.resolve_movement` excludes that pilot from movement (pushes don't move it either) and
+  `RecallSystem.process_phase_end_recalls` skips its out-of-position check. It is released in the entry settlement of that team's next
+  operation phase (also released by death · return-to-base (복귀) to base (본진) · the 복귀 card), and at the same
+  point an `ambush_search:N` reservation searches the deck for **that caster's engage card** (`is_engage_card` —
+  an `engage` or `duel` clause) (it is targeted, so there is no modal). A lane pilot still standing in the
+  jungle after the ambush is released is recalled (귀환) as usual for being out of position at the end of that operation phase.
 
 ### Effect chain encoding (cards.csv `effect` column)
 The DB column is a `;`-separated chain of clauses. Each clause is
 `name[:value][|flag[:value]]…`. Examples:
-- `draw:2;discard:2`            — two clauses run in order
-- `attack:1|pierce`             — one clause + one modifier flag
-- `engage:3|exclude_lane`       — engage with lane-exclusion modifier
+- `draw:N;discard:N`            — two clauses run in order
+- `attack:N|pierce`             — one clause + one modifier flag
+- `engage:N|exclude_lane`       — engage with lane-exclusion modifier
                                  (parsed and honoured, but no card in the pool
-                                  carries it since 교전 was removed)
+                                  carries it since 교전 (Engage) was removed)
 
 `apply_card_effect()` parses the chain, dispatches each clause through
 `_apply_single_effect`, and returns one log line of the form
-`<시전자> [<카드명>] · <효과 요약>, <효과 요약>…`.
+`<시전자> [<카드명>] · <효과 요약>, <효과 요약>…` (`<caster> [<card name>] · <effect summary>, <effect summary>…`).
 
 ### Effect handlers
 > **Note on the "opens CardTargetingOverlay …" wording below**: the target is
@@ -1418,67 +1427,67 @@ The DB column is a `;`-separated chain of clauses. Each clause is
 | name | Implemented | Behaviour |
 |---|---|---|
 | `draw:N` | yes | Pull N from deck (reshuffles discard if empty); spawns visual node for the player |
-| `search:N` | yes | **Player**: opens CardSelectOverlay search grid — pick exactly N from the deck via 확인. **AI**: same as `draw:N` (random top-of-deck). |
-| `discard:N` | yes | **Player**: opens CardSelectOverlay discard pick — **drag** exactly N cards onto the centred 버리기 구역, then press 확인 to commit. The played 버리기 card is non-cancellable (no 버리기 취소 button). **AI**: random N from hand. |
-| `strategy:N` | yes | +N 작전 점수 to playing side |
-| `attack:N` | yes | **Player**: opens CardTargetingOverlay PILOT mode — battle tiles dim, valid enemy pilots ringed, click an enemy to commit. **AI**: random valid pilot (range-aware). **Rolls `SimulationCore.roll_hit` (`hit/(hit+evasion)`, the same roll the battlefield uses) — a miss deals nothing.** Damage on a hit = `caster.atk × N`; 보호막 absorbs first. `pierce` (필중) skips the roll; `repeat` (연속 공격) re-rolls the same attack after every landed hit, stopping on a miss, on the target's death, or at `MAX_ATTACK_REPEATS` (5). `min_range:N` filters out pilots closer than N (parsed, but no card in the pool carries it since 저격 was removed). **Every swing floats its verdict over the target** via `BattleRenderer.spawn_pilot_popup`: `MISS` on a miss, `-N` on a hit, `흡수` when 보호막 ate the whole hit (the handler returns HP damage, so that case would otherwise read `-0`). **한 타격마다 명중 연출(시전 빛 → 조각 + 쉐이크)이 붙고 이 절은 그것을 `await` 한다** — 아래 *공격 명중 연출* 절 참조. **대상 집합은 플래그가 정한다**(`_resolve_attack_victims`): `\|all` 전장 내 모든 적 / `\|random` 무작위 / `\|self_range:N` 시전자 반경 / `\|area:N` **찍은 적** 반경 / `\|around_target:N` **찍은 아군** 반경([공격 명령]) / `\|damaged` 이번 단계에 때린 적 / `\|line` 레인 통로 / `\|turret_only` 지정 포탑. `around_target` 이 `area` 와 따로 있는 이유는 원점의 팀이다 — `picked` 가 아군이면 기본형의 "지정한 적 하나" 폴백들이 전부 팀 검사에 걸려 **엉뚱한 적 한 명**을 집었다(오래 살아 있던 [공격 명령] 버그). |
-| `shield_pct:N` | yes | **Player**: PILOT mode → click an ally; gains shield = N% of max_hp. **AI**: random ally. Cleared on 본진 복귀. |
+| `search:N` | yes | **Player**: opens CardSelectOverlay search grid — pick exactly N from the deck via 확인 (Confirm). **AI**: same as `draw:N` (random top-of-deck). |
+| `discard:N` | yes | **Player**: opens CardSelectOverlay discard pick — **drag** exactly N cards onto the centred 버리기 구역 (discard zone), then press 확인 to commit. The played 버리기 (Discard) card is non-cancellable (no 버리기 취소 (Cancel discard) button). **AI**: random N from hand. |
+| `strategy:N` | yes | +N 작전 점수 (operation points) to playing side |
+| `attack:N` | yes | **Player**: opens CardTargetingOverlay PILOT mode — battle tiles dim, valid enemy pilots ringed, click an enemy to commit. **AI**: random valid pilot (range-aware). **Rolls `SimulationCore.roll_hit` (`hit/(hit+evasion)`, the same roll the battlefield uses) — a miss deals nothing.** Damage on a hit = `caster.atk × N`; 보호막 (shield) absorbs first. `pierce` (필중, sure hit) skips the roll; `repeat` (연속 공격) re-rolls the same attack after every landed hit, stopping on a miss, on the target's death, or at `MAX_ATTACK_REPEATS` (const.csv `CARD_MAX_ATTACK_REPEATS`). `min_range:N` filters out pilots closer than N (parsed, but no card in the pool carries it since 저격 (Snipe) was removed). **Every swing floats its verdict over the target** via `BattleRenderer.spawn_pilot_popup`: `MISS` on a miss, `-N` on a hit, `흡수` (Absorbed) when 보호막 ate the whole hit (the handler returns HP damage, so that case would otherwise read `-0`). **Each strike gets a hit FX (cast flash → shards + shake) and this clause `await`s it** — see the *Attack hit FX* section below. **The flags decide the target set** (`_resolve_attack_victims`): `\|all` every enemy on the battlefield / `\|random` random / `\|self_range:N` radius around the caster / `\|area:N` radius around the **picked enemy** / `\|around_target:N` radius around the **picked ally** ([공격 명령] (Attack Order)) / `\|damaged` enemies hit this phase / `\|line` lane corridor / `\|turret_only` the designated turret (포탑). `around_target` exists separately from `area` because of the origin's team — when `picked` was an ally, the default form's "the one designated enemy" fallbacks all failed the team check and picked **some unrelated enemy** (the long-lived [공격 명령] bug). |
+| `shield_pct:N` | yes | **Player**: PILOT mode → click an ally; gains shield = N% of max_hp. **AI**: random ally. Cleared on 본진 복귀 (return to base). Granted through `BattleSim.grant_shield` with the caster as source (`shield_atk` too) and `heal_pct` heals through `BattleSim.apply_heal` — the caster earns match-stat **care** for what it absorbs / heals on other allies (`combat/README.md` "Match stats"). |
 | `recall_ally` | yes | **Player**: PILOT mode → click an ally; teleports to HQ at full HP, shield reset, waypoint reset. **AI**: random ally. |
-| `exhaust_choice:N` | yes (random) | Random N from hand → removed (소멸). Parsed and honoured, but no card in the pool carries it since 차선책 was removed. |
-| `engage:N` | yes | **Player**: dragging it opens CardTargetingOverlay PREVIEW mode (caster cell + 6 neighbours highlighted); dropping it in the centre drop zone **submits** the card, which puts up the VS 개시 확인 화면 (`engage/EngageIntro.gd`) — 확인 launches the arena, 취소 rolls the whole play back via `_on_overlay_cancel`. **AI**: same flow via AiCardPlayer. `exclude_lane` flag propagates. **N 은 라운드 수 그대로다** — `engage:3` = 3라운드이고, 한 라운드 안에서 참가자 전원이 한 명씩 차례대로 한 번 행동한다(예전의 "N × 3초" 환산은 삭제). **이 절은 무대가 닫힐 때까지 `engage_finished` 를 await 한다** — 뒤에 오는 절이 교전 결과를 묻기 때문이다([우세한 전장] 의 `gen_hand:19\|per_kill`, [단계 B] 의 `phase_b`). 기다리지 않으면 그 둘이 첫 라운드가 돌기도 전에, 즉 처치 수가 언제나 0 인 시점에 정산된다. 돌아온 뒤 `_last_attack_kills` 에 **이 교전에서 시전자가 눕힌 수**를 얹으므로 `per_kill` 이 절 종류를 몰라도 같은 질문을 그대로 한다(쓰러진 시전자는 0 — "생존할 시"). |
-| `duel` | yes | **Player**: PILOT mode → click an enemy in range; opens the turn-based arena restricted to caster + target with the round counter running up instead of a budget, ends on first KO — 이탈이 없으므로 KO 아니면 `DUEL_MAX_ROUNDS`(10라운드) 상한까지 간다. **AI**: random enemy in range. Routes through `EngagePhaseManager.start_duel`. **결투 (id 3) is `pool = 0`** — fully implemented but no longer dealt at random; it is reserved as a future mech-unique card. |
-| `steal_camp:N` | yes | 약탈 — **적 소유 정글 칸의 차 있는 캠프 하나를 원격으로 가로챈다.** **Player**: LOCATION mode over `compute_steal_camp_targets` — 적 팀이 소유하고 **캠프가 차 있는** 정글 셀 전부, 사거리 무시(`cast_range` 99). 정산은 `SimulationCore.steal_camp_point` 하나이고 값(`SCORE_JUNGLE_CAMP`)도 재생성 시계(`JUNGLE_CAMP_RESPAWN_TURNS`)도 **밟아서 먹는 것과 같다** — 카드 한 장이 "발로 밟은 한 번"을 거리 무시로 사는 것이다. **소유권은 바뀌지 않는다.** `N` 은 읽히지 않는다(자리만 남겨 둔 값). **AI**: random valid cell. 예전에는 **점령** 카드였다 — 아군 정글과 인접한 적 정글 셀을 N턴 동안 자기 색으로 뒤집고 `temp_zone_overrides` 가 만료 시 되돌렸는데, 그 배선과 `process_temp_zone_expiries` 는 함께 삭제됐다. |
-| `move` | yes | **Player**: LOCATION mode → click any cell in `cast_range` (jungle cells included; the lane-pilot displacement recall pulls them back at phase end if needed). **AI**: random valid cell. Caster's `grid_pos` snaps to the picked cell and `BattleSim.anim_pilot_move` plays the tween. Decorators on the same chain (`self_cost:N`, `cost_reduce_engage:N`) run separately; 재배치 is the `reposition` keyword, resolved at disposal. |
-| `self_cost:N` | yes | 지금 도는 카드 **그 사본**의 `cost` 를 N 올린다(영구, 누적). 재배치 카드(정밀 이동 · 골드러시)가 단다 — 손패로 돌아온 카드가 같은 값에 다시 나가면 AI 루프가 끝나지 않으므로 이 절이 그 상한이다. 예전의 `return_left:N`(손패 복귀 + 비용 증가를 한 절이 하던 것)은 **재배치 키워드 + 이 절**로 갈렸다. |
+| `exhaust_choice:N` | yes (random) | Random N from hand → removed (소멸, exhaust). Parsed and honoured, but no card in the pool carries it since 차선책 (Plan B) was removed. |
+| `engage:N` | yes | **Player**: dragging it opens CardTargetingOverlay PREVIEW mode (caster cell + its engage area highlighted); dropping it in the centre drop zone **submits** the card, which puts up the VS 개시 확인 화면 (opening (개시) confirmation screen) (`engage/EngageIntro.gd`) — 확인 launches the arena, 취소 (Cancel) rolls the whole play back via `_on_overlay_cancel`. **AI**: same flow via AiCardPlayer. `exclude_lane` flag propagates. **N is the number of rounds (라운드) as-is** — within one round every participant acts once, one at a time, in turn (the old "N × 3 seconds" conversion was deleted). **This clause awaits `engage_finished` until the stage (무대) closes** — because later clauses ask about the engage result ([우세한 전장] (Dominant Battlefield)'s `gen_hand:19\|per_kill`, [단계 B] (Phase B)'s `phase_b`). Without waiting, those two would settle before the first round even runs, i.e. at a point where the kill count is always 0. On return it puts **the number of kills the caster scored in this engage** into `_last_attack_kills`, so `per_kill` asks the same question unchanged without knowing the clause type (a downed caster = 0 — "if it survives"). |
+| `duel` | yes | **Player**: PILOT mode → click an enemy in range; opens the turn-based arena restricted to caster + target with the round counter running up instead of a budget, ends on first KO — there is no disengage, so unless someone is KO'd it runs up to the `DUEL_MAX_ROUNDS` cap (const.csv `ENGAGE_DUEL_MAX_ROUNDS`). **AI**: random enemy in range. Routes through `EngagePhaseManager.start_duel`. **결투 (id 3) is `pool = 0`** — fully implemented but no longer dealt at random; it is reserved as a future mech-unique card. |
+| `steal_camp:N` | yes | 약탈 — **remotely steals one filled camp (캠프) from a jungle cell owned by the enemy.** **Player**: LOCATION mode over `compute_steal_camp_targets` — every jungle cell owned by the enemy team **whose camp is filled**, ignoring range (`cast_range` is unlimited). Settlement is only `SimulationCore.steal_camp_point`, and both the value (`SCORE_JUNGLE_CAMP`) and the respawn clock (`JUNGLE_CAMP_RESPAWN_TURNS`) are **the same as eating it by stepping on it** — one card buys "one step on it" regardless of distance. **Ownership does not change.** `N` is not read (a placeholder value). **AI**: random valid cell. It used to be the **점령** (Capture) card — it flipped enemy jungle cells adjacent to allied jungle to its own colour for N turns and `temp_zone_overrides` reverted them on expiry; that wiring and `process_temp_zone_expiries` were deleted together. |
+| `move` | yes | **Player**: LOCATION mode → click any cell in `cast_range` (jungle cells included; the lane-pilot displacement recall pulls them back at phase end if needed). **AI**: random valid cell. Caster's `grid_pos` snaps to the picked cell and `BattleSim.anim_pilot_move` plays the tween. Decorators on the same chain (`self_cost:N`, `cost_reduce_engage:N`) run separately; 재배치 (reposition) is the `reposition` keyword, resolved at disposal. |
+| `self_cost:N` | yes | Raises the `cost` of **that copy** of the card currently resolving by N (permanent, cumulative). Reposition cards (정밀 이동 · 골드러시) carry it — if a card returned to hand went out again at the same cost the AI loop would never end, so this clause is the cap. The old `return_left:N` (one clause doing return-to-hand + cost increase) was split into **the reposition keyword + this clause**. |
 | `cost_reduce_engage:N` | yes | One-shot pending discount on the side's next engage card. Stored on `_bs.engage_discount_p/ai`; consumed in `_play_card_direct` / `AiCardPlayer.run_ai_plays`. |
 | `cost_reduce_hand:N` | yes | Mutates every card currently in hand — `cost = max(0, cost - N)`. The played card is already gone from hand by the time this fires. |
 | `cost_reduce_draw_phase:N` | yes | Phase-bound draw discount; `draw_card` mutates each drawn `CardData.cost` while `_bs.phase_draw_discount_*` is active. Reset on `start_card_phase`. |
-| `cost_inc_phase:N` | yes | Phase-bound additive cost bump on every card play during this 작전 단계. Stored on `_bs.phase_cost_inc_*`; consumed by `effective_cost_for`. Reset on `start_card_phase`. **No card in the pool carries it** — 정밀 이동 used to, but its +1 is now self-only (`self_cost:1`). The clause is parsed and honoured, so any future card can take it. |
+| `cost_inc_phase:N` | yes | Phase-bound additive cost bump on every card play during this 작전 단계. Stored on `_bs.phase_cost_inc_*`; consumed by `effective_cost_for`. Reset on `start_card_phase`. **No card in the pool carries it** — 정밀 이동 used to, but its increase is now self-only (`self_cost:N`). The clause is parsed and honoured, so any future card can take it. |
 | `advance:N` | yes | Caster runs `N` mini-ticks of lane push through `SimulationCore.advance_pilot`. Each tick resolves combat at the caster's cell as usual **but forces the push result: the caster's side always wins the cell** (damage rolls are untouched — only who gets pushed is fixed). The caster **plus every same-cell, same-scope ally** steps forward and every same-cell enemy is pushed back one cell. If the next cell is a **same-lane enemy turret** the group holds one tile short and sieges it instead (turret takes `atk`, defenders on the turret cell roll back at the attackers, no knockback) — the siege waits a tick when the group just pushed an enemy onto that cell. A caster already standing on an enemy turret cell hits it and falls back one tile; that is the only way 전진 ever moves backwards. |
-| `strategy_on_kill:N` | yes | 계획 살인 — **선불 예약형**. 카드를 낸 시점에 `_bs.kill_bounty_p/ai = N` 을 심고, `BattleSim.mark_pilot_dead` 가 상대 팀 파일럿의 사망을 볼 때 한 번 지급하고 0으로 소모한다. 전장에 제3세력이 없으므로 처치자는 "죽은 파일럿의 반대 팀"으로 충분하다 — `mark_pilot_dead` 에 처치자 인자를 추가하지 않았다. 같은 단계에 두 장을 내면 큰 쪽 하나만 남는다(현상금은 처치 한 번분). 미사용분은 `end_card_phase` / `_run_ai_turn` 종료 시 사라진다. |
-| `lane_stat:N\|turns:T` | yes | 공격적인 라인전 — 시전자의 `lane_stat_mod = N/100`, `lane_stat_expire_turn = turn_count + T`. **전장 명중 판정 전용**: `SimulationCore.roll_hit` 이 공격자의 `hit` 과 방어자의 `evasion` 에 각자 자기 배율을 곱한다. `atk` / `max_hp` 는 건드리지 않는다(그쪽은 성장 담당). 같은 파일럿에 두 번 걸면 **덮어쓴다**. |
-| `growth:N\|turns:T` | yes | 신중한 예산 · 성장 가속 · 소극적인 태세 — 시전자의 성장 **획득 배율**을 `1 + N/100` 로. 성장률 자체가 아니라 그 배수다(+10% → 턴당 +1%p 가 +1.1%p). 만료는 `SimulationCore.tick_growth_and_expiries` 가 매 턴 확인. **`\|charge`** 가 붙으면 N 에 **태운 토큰 수**를 곱한다(성장 가속: 토큰당 +10%, 토큰 0 이면 아무 일도 없다). 슬롯 하나를 덮어쓰는 효과라 나중에 건 쪽이 이긴다. |
-| `growth_until_phase:N` | yes | 완벽한 마무리 — 시전자 **팀 전원**의 성장 획득 배율을 `1 + N/100` 로 올리고 `growth_until_phase` 를 세운다. 그 팀의 다음 작전 단계 진입 시 `_apply_phase_entry_carryovers` 가 걷는다. `growth:N` 과 같은 필드를 쓰므로 나중에 건 쪽이 이긴다. |
-| `growth_perm:N` | yes | [용 보상] — **지정한 아군 파일럿 한 명**의 성장 적립 배율에 N%p 를 **영구로 누적**. 만료도 해제도 없다. 위 두 절이 쓰는 `growth_rate_mult`(서로 덮어쓰는 슬롯)이 아니라 별도 필드 `PilotData.growth_rate_bonus` 에 얹는다 — 슬롯에 넣으면 용을 여러 번 먹어도 +5% 에서 멈추고 그 뒤 라인전 카드 한 장이 그걸 지운다. 최종 배율은 `BattleSim.add_score` 에서 `growth_rate_mult + growth_rate_bonus` 로 합쳐진다. **대상이 안 찍힌 카드는 시전자 자신에게** 건다 — [핫핸드]가 그 경우다(대상 지정 없는 `instant` 카드라 `picked` 가 언제나 null). 표시는 합계 슬롯이 아니라 **카드 단위 장부**(`PilotData.persistent_fx`)를 읽는다 — 아래 *지속 효과 장부* 절. **Player**: PILOT mode(`target=ally`, `cast_range` 99 — 시전자가 없으므로 전장 전체). **AI**: random ally. |
-| `turret_damage:N` | yes | [전령 제압] — 찍은 칸의 포탑에 **명중 판정 없이** N 피해. 유효 대상은 `compute_turret_damage_targets` → `SimulationCore.outermost_enemy_turrets(team)`: **레인마다 T1 → T2 순으로 훑어 처음 만난 살아 있는 적 포탑**뿐이다(안쪽 포탑 저격 불가; T1 이 무너진 레인은 T2 가 그 자리를 물려받아 후반에도 쓸 곳이 남는다). 적용은 `SimulationCore.apply_card_turret_damage` → 전장의 `_apply_card_damage` 를 그대로 재사용하므로 흔들림 연출 · 킬로그 · `Building` 노드 해제 · T1 파괴 시 정글 획득이 한 군데서만 일어난다. **무저항이면 2배**: 그 레인의 전선(`SimulationCore.front_line_cells` — 양 팀 최전방 포탑 사이, 화면의 금색 테두리와 같은 집합)에 적 파일럿이 한 명도 없으면 피해가 두 배다. 전령은 라인을 밀고 들어가는 사건이라, 막아설 사람이 없는 라인과 다섯이 버티는 라인이 같은 값이면 "언제 어디에 쓸 것인가"가 사라진다. **성장치는 그 레인 아군이 균등하게 나눠 받는다**(`_award_turret_damage_to_lane`, 우측 레인은 스나이퍼 · 서포터 둘이라 반씩) — 전령은 시전자가 없는 팀 보상이라 평소의 귀속 경로(`apply_card_turret_damage` → `score_turret_damage(attacker, …)`)가 아무에게도 닿지 않고, 그 레인을 미느라 버틴 사람들이 공성의 임자다. 한 점당 값은 `SCORE_TURRET_FULL / TURRET_HP` 로 걸어가 갈아 낸 포탑과 같다. **Player**: LOCATION mode. **AI**: random valid cell. |
-| `discard_hand` | yes | 완벽한 마무리의 첫 절 — 손패 전부 discard. 보존을 **무시한다**. |
-| `discard_hand_draw` | yes | 재고 — 손패 전부 버리고 **버린 장수만큼** 다시 뽑는다. 손패 크기는 그대로고 내용만 갈린다(덱+discard 가 마르면 뽑은 만큼만). |
-| `discard_right:N` | yes | 과감한 정리 — 손패 **오른쪽**(가장 최근에 들어온 쪽) N장을 discard. `hand.pop_back()` × N. |
-| `discard_other_pilots\|strategy_each:M` | yes | 솔로 퍼포먼스 — `owner_pilot != caster` 인 손패 카드를 전부 버리고 장당 전략 점수 +M. 시전자가 없으면 "본인 카드"를 가릴 수 없으므로 아무것도 하지 않는다(손패 전멸 사고 방지). |
-| `preserve:N` | yes | 계획 중시 — **Player**: `CardSelectOverlay.start_preserve` — 버리기처럼 손패에서 N장을 중앙 구역에 끌어다 놓아 고른다(확인하면 고른 카드는 손패 원래 자리로 돌아간다). **AI**: 손패에서 무작위 N장. 픽은 `BattleSim.preserved_cards_p/ai` 에 올라가 `_trim_hand_overflow` 로부터만 보호된다 — 강제 버리기는 무시한다. 다음 작전 단계 진입 시 통째로 해제. |
-| `strategy_next_phase:N` | yes | 아드레날린(비용 0 · `strategy:4`)의 뒷절 — `_bs.next_phase_strategy_p/ai += N`(음수 가능). 다음 작전 단계 진입 시 정산되고 점수는 0 아래로 안 내려간다. |
-| `end_phase` | yes | 완벽한 마무리의 마지막 절 — **여기서 단계를 닫지 않는다.** 체인이 도는 동안 카드는 손패 밖에 떠 있어서, 지금 닫으면 소멸 / discard 라우팅 전에 문이 닫힌다. `_end_phase_requested` 플래그만 세우고, **Player**: `_finalize_pending_play` 말미가, **AI**: `AiCardPlayer` 의 플레이 루프가(교전 아레나를 기다린 **뒤**에) `consume_end_phase_request()` 로 받아 간다. |
-| `move\|own_jungle` | yes | 정글 파밍 — `compute_valid_location_targets` 가 `compute_own_jungle_targets` 로 분기해 유효 셀을 **시전자 팀이 소유한 정글 셀**로 좁힌다. 약탈과 마찬가지로 `cast_range`(99)는 무시 — 사거리로 묶으면 정글 반대편 캠프가 영영 닿지 않는다. 제자리 셀은 뺀다. 소유 판정이 `neutral_zone_cells` 를 직접 읽으므로 정글러가 밟아 점령한 칸도 T1 파괴 보상으로 넘어온 칸도 그 자리에서 목표가 된다. **AI**: `_ai_pick_target` 이 같은 함수를 쓰므로 그대로 따라간다. |
-| `phase_b` | yes | [단계 B] 의 뒷절 — **바로 앞 `engage` 절의 결과**가 다음 카드를 정한다. 시전자가 적을 눕혔으면 덱에 [단계 C](id 40), 아니면 [단계 A](id 38). 처치 수는 `EngagePhaseManager.last_engage_kills` 가 답한다(무대가 치워진 뒤라 `_sim` 이 아니라 그 사본 `_last_stats` 를 읽는다). 강화 [베타] 예약이 있으면 여기서 소모하며 +100 충전. |
-| `phase_c` | yes | [단계 C] 의 뒷절 — **강화 3택**. **Player**: `_process_pending_chain` 이 이 절을 가로채 `CardSelectOverlay.start_choice` 로 강화 카드 세 장을 펼친다(찾기와 같은 그리드, **취소 없음** — 카드는 이미 나갔고 앞 절도 이미 돌았다). **AI**: `_effect_phase_c_auto` 가 무작위로 고른다. 두 경로가 `register_phase_boon` 한 함수로 모인다. 강화 [감마] 정산은 **새 강화를 고르기 전에** 한다 — 순서를 뒤집으면 방금 고른 감마가 그 자리에서 되먹힌다. |
-| `token:N` | yes | 지금 도는 카드 위에 토큰 N([골드러시]). 충전 카드가 아니라 사용으로 사라지지 않는다. |
-| `atk_pct:N` | yes | 시전자 공격력 배율 **영구** +N%(`bonus_atk_mult`, 누적) — 몰입 · 워밍업. 장부 종류 `FX_ATK_PCT`. |
-| `hp_pct:N` | yes | 시전자 최대 체력 배율 **영구** +N%(`bonus_max_hp_mult`, 누적) — 워밍업. `refresh_growth_stats` 가 성장 체력에 곱하고, 늘어난 만큼 현재 체력도 오른다. 장부 종류 `FX_HP_PCT`. |
-| `eva_buff:N\|turns:T` | yes | 소극적인 태세 — 시전자 **전장 회피**에만 N% 배율(`eva_card_mod`, 만료 `eva_card_expire_turn`). `roll_hit` 이 방어자 회피에 곱한다. 덮어쓰기. |
-| `retreat_turret` | yes | 소극적인 태세 — 시전자가 **가장 가까운 아군 포탑** 칸으로 이동. 자기 레인의 살아 있는 포탑이 먼저, 없으면 다른 레인, 그것도 없으면 본진. 위치 고정 스킬이면 막힌다. |
-| `ambush` | yes | 매복 — LOCATION(`compute_ambush_targets`: 사거리 안 정글 타일). 이동 + `ambush_hold`. 위 *파일럿 카드 추가분* 절. |
-| `ambush_search:N` | yes | 매복의 뒷절 — 다음 작전 단계 진입 시 시전자의 교전 카드 N장 탐색 예약(`BattleSim.ambush_search_p/ai`). |
-| `retaliate:N` | yes | 무모한 돌격 — 지정한 적이 시전자를 **N번** 친다. 판정은 전장 명중을 굴린다(주먹다짐의 필중 반격과 다르다). 앞의 `attack:2` 는 평소처럼 2배 피해 한 번이다. |
-| `draw_next_phase:N` | yes | 준비 태세 — 다음 작전 단계 진입 시 N장 뽑기(`BattleSim.next_phase_draw_p/ai`). 함께 다는 `strategy_next_phase:3` 은 아드레날린의 뒷절과 같은 장부다. |
-| `free_in_phase` | yes | 신중한 예산의 **표지** — 낼 때는 아무 일도 없고 손패 진입 훅이 읽는다. |
-| `hand_passive:<key>` | yes | 손패 상주 표지 — `gold_rush` / `confidence` / `clear_mind`(파일럿 카드, 이 매니저가 읽는다)와 `cash` / `revelation` / `contempt` / `balance`(메크 카드, `MechSkillSystem`). 골드러시는 낼 수 있는 카드라 이 절 뒤에 `token` · `self_cost` 가 이어진다. |
+| `strategy_on_kill:N` | yes | 계획 살인 — **prepaid reservation**. When the card is played it plants `_bs.kill_bounty_p/ai = N`; when `BattleSim.mark_pilot_dead` sees an opposing-team pilot die, it pays out once and consumes it to 0. There is no third faction on the battlefield, so "the team opposite the dead pilot" suffices as the killer — no killer argument was added to `mark_pilot_dead`. Playing two in the same phase leaves only the larger one (the bounty covers one kill). Unused amounts vanish at `end_card_phase` / end of `_run_ai_turn`. |
+| `lane_stat:N\|turns:T` | yes | 공격적인 라인전 — caster's `lane_stat_mod = N/100`, `lane_stat_expire_turn = turn_count + T`. **Battlefield hit roll only**: `SimulationCore.roll_hit` multiplies the attacker's `hit` and the defender's `evasion` by each one's own multiplier. Does not touch `atk` / `max_hp` (those belong to growth). Applying it twice to the same pilot **overwrites**. |
+| `growth:N\|turns:T` | yes | 신중한 예산 · 성장 가속 · 소극적인 태세 — sets the caster's growth (성장) **gain multiplier** to `1 + N/100`. It is a multiple of the growth rate, not an amount added to the rate itself (+N% scales the per-turn rate by `1 + N/100`). Expiry is checked every turn by `SimulationCore.tick_growth_and_expiries`. With **`\|charge`**, N is multiplied by **the number of tokens burned** (성장 가속: its `growth` N per token; with 0 tokens nothing happens). It is an effect that overwrites one slot, so the later one wins. |
+| `growth_until_phase:N` | yes | 완벽한 마무리 — raises the growth gain multiplier of **every member of the caster's team** to `1 + N/100` and sets `growth_until_phase`. `_apply_phase_entry_carryovers` clears it when that team enters its next operation phase. Uses the same field as `growth:N`, so the later one wins. |
+| `growth_perm:N` | yes | [용 보상] — **permanently accumulates** N%p onto the growth accrual multiplier of **one designated allied pilot**. No expiry, no removal. It does not go into the `growth_rate_mult` used by the two clauses above (a slot they overwrite) but into a separate field `PilotData.growth_rate_bonus` — in the slot, eating the Dragon (용) several times would stop at a single Dragon's worth and a single laning card afterwards would wipe it. This clause is the **only** source of Dragon growth (the old `OBJ_DRAGON_GROWTH_PCT` game_config key was deleted). The final multiplier is combined in `BattleSim.add_score` as `growth_rate_mult + growth_rate_bonus`. **A card with no picked target applies it to the caster itself** — [핫핸드] is that case (an untargeted `instant` card, so `picked` is always null). The display reads the **per-card ledger** (`PilotData.persistent_fx`), not the total slot — see the *Persistent-effect ledger* section below. **Player**: PILOT mode (`target=ally`, unlimited `cast_range` — no caster, so the whole battlefield). **AI**: random ally. |
+| `turret_damage:N` | yes | [전령 제압] — N damage to the turret on the picked cell **with no hit roll**. Valid targets are `compute_turret_damage_targets` → `SimulationCore.outermost_enemy_turrets(team)`: only **the first living enemy turret met when scanning each lane T1 → T2** (no sniping inner turrets; in a lane whose T1 has fallen, T2 inherits the spot so there is still somewhere to use it late game). Application reuses `SimulationCore.apply_card_turret_damage` → the battlefield's `_apply_card_damage` as-is, so the shake FX · kill log · `Building` node release · jungle gain on T1 destruction happen in one place only. **Doubled if unopposed**: if there is not a single enemy pilot on that lane's front line (전선) (`SimulationCore.front_line_cells` — between both teams' front-most turrets, the same set as the gold outline on screen), damage is doubled. The Herald (전령) is an event of pushing into a lane, so if an undefended lane and a lane held by five were worth the same, "when and where to use it" would vanish. **Growth points (성장치) are split evenly among allies in that lane** (`_award_turret_damage_to_lane`; the right lane has two, sniper · supporter, so half each) — the Herald is a team reward with no caster, so the usual attribution path (`apply_card_turret_damage` → `score_turret_damage(attacker, …)`) reaches no one, and the ones who held that lane while pushing own the siege. Value per point is `SCORE_TURRET_FULL / TURRET_HP`, the same as a turret ground down on foot. **Player**: LOCATION mode. **AI**: random valid cell. |
+| `discard_hand` | yes | First clause of 완벽한 마무리 — discard the whole hand. **Ignores** keep (보존). |
+| `discard_hand_draw` | yes | 재고 — discard the whole hand and draw again **as many as were discarded**. Hand size stays the same, only its contents change (if deck + discard run dry, only as many as could be drawn). |
+| `discard_right:N` | yes | 과감한 정리 — discard N cards from the **right** of the hand (the most recently entered side). `hand.pop_back()` × N. |
+| `discard_other_pilots\|strategy_each:M` | yes | 솔로 퍼포먼스 — discards every hand card with `owner_pilot != caster` and gives +M strategy points per card. With no caster it cannot tell "own cards", so it does nothing (prevents wiping the whole hand by accident). |
+| `preserve:N` | yes | 계획 중시 — **Player**: `CardSelectOverlay.start_preserve` — like discard, drag N cards from the hand onto the central zone to pick them (on confirm the picked cards return to their original hand slots). **AI**: random N cards from hand. Picks go onto `BattleSim.preserved_cards_p/ai` and are protected only from `_trim_hand_overflow` — forced discards ignore it. Cleared entirely on entering the next operation phase. |
+| `strategy_next_phase:N` | yes | Back clause of 아드레날린 (cost 0, front clause `strategy:N`) — `_bs.next_phase_strategy_p/ai += N` (may be negative). Settled on entering the next operation phase; points don't drop below 0. |
+| `end_phase` | yes | Last clause of 완벽한 마무리 — **does not close the phase here.** While the chain runs the card floats outside the hand, so closing now would shut the door before exhaust / discard routing. It only sets the `_end_phase_requested` flag, and **Player**: the tail of `_finalize_pending_play`, **AI**: `AiCardPlayer`'s play loop (**after** waiting for the engage arena) picks it up via `consume_end_phase_request()`. |
+| `move\|own_jungle` | yes | 정글 파밍 — `compute_valid_location_targets` branches to `compute_own_jungle_targets` and narrows valid cells to **jungle cells owned by the caster's team**. As with 약탈, `cast_range` (unlimited) is ignored — bounded by range, camps on the far side of the jungle would never be reachable. The cell it stands on is excluded. The ownership check reads `neutral_zone_cells` directly, so cells the jungler captured by stepping on them and cells handed over as a T1-destruction reward become targets right away. **AI**: `_ai_pick_target` uses the same function, so it follows along. |
+| `phase_b` | yes | Back clause of [단계 B] — **the result of the immediately preceding `engage` clause** decides the next card. If the caster downed an enemy, [단계 C] (Phase C) (id 40) goes into the deck, otherwise [단계 A] (Phase A) (id 38). The kill count is answered by `EngagePhaseManager.last_engage_kills` (it runs after the stage is cleared, so it reads the copy `_last_stats`, not `_sim`). If a boon [베타] (Beta) reservation exists it is consumed here for its token bonus (`PHASE_BOON_BETA_CHARGE`). |
+| `phase_c` | yes | Back clause of [단계 C] — **pick 1 of 3 boons**. **Player**: `_process_pending_chain` intercepts this clause and spreads three boon cards with `CardSelectOverlay.start_choice` (same grid as search, **no cancel** — the card has already gone out and the earlier clauses have already run). **AI**: `_effect_phase_c_auto` picks at random. Both paths converge on the single function `register_phase_boon`. The boon [감마] (Gamma) settlement happens **before picking the new boon** — reverse the order and the 감마 just picked would feed back on the spot. |
+| `token:N` | yes | N tokens on the card currently resolving ([골드러시]). It is not a Charge card, so they don't disappear on use. |
+| `atk_pct:N` | yes | Caster attack multiplier **permanent** +N% (`bonus_atk_mult`, cumulative) — 몰입 · 워밍업. Ledger kind `FX_ATK_PCT`. |
+| `hp_pct:N` | yes | Caster max HP (체력) multiplier **permanent** +N% (`bonus_max_hp_mult`, cumulative) — 워밍업. `refresh_growth_stats` multiplies it into growth HP, and current HP rises by the increase. Ledger kind `FX_HP_PCT`. |
+| `eva_buff:N\|turns:T` | yes | 소극적인 태세 — N% multiplier on the caster's **battlefield evasion** only (`eva_card_mod`, expiry `eva_card_expire_turn`). `roll_hit` multiplies it into the defender's evasion. Overwrites. |
+| `retreat_turret` | yes | 소극적인 태세 — caster moves to the **nearest allied turret** cell. A living turret in its own lane first, else another lane, else base. Blocked by position-lock skills. |
+| `ambush` | yes | 매복 — LOCATION (`compute_ambush_targets`: jungle tiles in range). Move + `ambush_hold`. See the *Pilot card additions* section above. |
+| `ambush_search:N` | yes | Back clause of 매복 — reserves a search for N of the caster's engage cards on entering the next operation phase (`BattleSim.ambush_search_p/ai`). |
+| `retaliate:N` | yes | 무모한 돌격 — the designated enemy hits the caster **N times**. Each rolls the battlefield hit roll (unlike 주먹다짐 (Brawl)'s sure-hit counter). The preceding `attack:N` is one N× damage hit as usual. |
+| `draw_next_phase:N` | yes | 준비 태세 — draw N on entering the next operation phase (`BattleSim.next_phase_draw_p/ai`). The accompanying `strategy_next_phase:N` uses the same ledger as 아드레날린's back clause. |
+| `free_in_phase` | yes | **Marker** of 신중한 예산 — nothing happens when played; the enter-hand hook reads it. |
+| `hand_passive:<key>` | yes | Hand-resident marker — `gold_rush` / `confidence` / `clear_mind` (pilot cards, read by this manager) and `cash` / `revelation` / `contempt` / `balance` (mech cards, `MechSkillSystem`). 골드러시 is a playable card, so `token` · `self_cost` follow this clause. |
 
-#### 지속 효과 장부 (`PilotData.persistent_fx`)
-`growth_perm` / `growth_eff` / `max_hp` / `atk_add` 네 절은 **합계 슬롯**
-(`growth_rate_bonus` / `bonus_max_hp` / `bonus_atk_flat`)에 값을 얹는다 —
-성장 재계산(`BattleSim.refresh_growth_stats`)이 읽는 곳은 한 군데여야 하기
-때문이다. 그러면 상세 패널이 그 숫자만 읽어서는 [용 보상]과 [핫핸드]가 한 칸에
-뭉쳐 `+10%` 로만 보이고, 무엇을 이미 먹었는지가 그 한 칸에서 사라진다.
+#### Persistent-effect ledger (`PilotData.persistent_fx`)
+The four clauses `growth_perm` / `growth_eff` / `max_hp` / `atk_add` add their values onto **total slots**
+(`growth_rate_bonus` / `bonus_max_hp` / `bonus_atk_flat`) —
+because the growth recalculation (`BattleSim.refresh_growth_stats`) must read from one place
+only. But then, if the detail panel read only that number, [용 보상] and [핫핸드] would be lumped into one cell
+showing only their summed value, and what had already been eaten would vanish from that one cell.
 
-그래서 네 절은 값을 민 **직후** `_log_persistent_fx(target, kind, amount)` 로
-장부에 한 줄을 더 적는다. 출처는 그때 도는 카드(`_current_card.card_name`)이므로
-절 함수마다 이름을 인자로 끌고 다닐 필요가 없고, 항목은 `(카드, 종류)` 로
-합쳐지므로 같은 카드를 두 번 쓰면 한 줄에서 값이 커진다.
+So **right after** pushing the value, the four clauses write one more line into the ledger with
+`_log_persistent_fx(target, kind, amount)`. The source is the card resolving at that moment (`_current_card.card_name`), so
+no clause function has to drag the name along as an argument, and entries are
+merged by `(card, kind)`, so using the same card twice grows the value on one line.
 
-**계산은 합계 슬롯이 하고 표시만 장부를 읽는다.** 장부에 없는 몫(메크 패시브가
-`bonus_*` 를 직접 미는 영혼 수확 · 조준 보정 …)은 상세 패널이 합계에서 장부를
-뺀 **잔여분**으로 따로 한 칸 세운다 — 자세한 표시 규칙은 `ui/README.md` 의
-"지속 효과 썸네일" 절.
+**The total slots do the computing; only the display reads the ledger.** Shares not in the ledger (mech passives
+that push `bonus_*` directly — 영혼 수확 (Soul Harvest) · 조준 보정 (Aim Assist) …) get their own cell in the detail panel as the
+**remainder** = total minus ledger — detailed display rules in the `ui/README.md`
+"Lasting effect thumbnails" section.
 
 #### Effective cost & affordability
 `BattleSim.effective_cost_for(cd, is_player)` is the single source of truth
@@ -1490,47 +1499,47 @@ an `engage` clause), clamped at 0. The affordability highlight in
 `AiCardPlayer.run_ai_plays` all consult this helper so the four cost-modifier
 effects stay in sync.
 
-### 소멸 / 재배치 routing
+### Exhaust (소멸) / reposition (재배치) routing
 `_dispose_used_card(cd, is_player)` runs after every play and routes the card
-three ways, **재배치 first**:
-- `cd.is_reposition_card()` (`reposition` 키워드, **재배치**) → back to the
+three ways, **reposition first**:
+- `cd.is_reposition_card()` (`reposition` keyword, **재배치**) → back to the
   **leftmost slot of the hand** (정밀 이동 · 골드러시). Never reaches the discard
   pile and is never 소멸.
-- `cd.has_keyword("exhaust")` → removed permanently (소멸). **문자열 비교가
-  아니라 헬퍼를 쓴다** — `keyword` 는 `|` 로 여러 개를 달 수 있다.
-- anything else → `send_to_discard(cd, discard)` (아래)
+- `cd.has_keyword("exhaust")` → removed permanently (소멸). **Use the helper,
+  not a string comparison** — `keyword` can carry several values joined with `|`.
+- anything else → `send_to_discard(cd, discard)` (below)
 
-`_dispose_used_card` 는 **카드 한 장이 실제로 나갔다는 유일한 신호**이기도 하다
-— 파일럿 스킬의 `on_card_played` 훅(퍼포먼스의 토큰)이 여기서 걸린다. 손패를
-떠나는 모든 경로가 이 함수를 지나므로 플레이어 카드와 AI 카드가 같은 박자로
-세어진다.
+`_dispose_used_card` is also **the only signal that a card was actually played**
+— the pilot skill `on_card_played` hook (퍼포먼스 (Performance)'s tokens) hangs off it. Every path
+that leaves the hand passes through this function, so player cards and AI cards are counted
+on the same beat.
 
-#### 휘발성 (`volatile`) — 버리기의 유일한 출구
-버려지는 카드는 전부 **`send_to_discard(cd, discard)`** 한 곳을 지난다(상한 초과
-정리 · 버리기:N 모달 · 재고 · 완벽한 마무리 · 과감한 정리 · 솔로 퍼포먼스 ·
-`_dispose_used_card`, 일곱 자리). `KW_VOLATILE` 을 단 카드는 더미에 앉지 않고
-**그 자리에서 사라지고**, 함수는 `false` 를 돌려준다.
+#### Volatile (휘발성, `volatile`) — the only exit for discards
+Every discarded card passes through the single **`send_to_discard(cd, discard)`** (over-cap
+trimming · the 버리기:N modal · 재고 · 완벽한 마무리 · 과감한 정리 · 솔로 퍼포먼스 ·
+`_dispose_used_card`, seven call sites). A card carrying `KW_VOLATILE` doesn't land on the pile but
+**vanishes on the spot**, and the function returns `false`.
 
-**소멸과 휘발성은 다른 것이다.** 소멸은 **쓰면** 사라지고, 휘발성은 **안 쓰고
-버려지면** 사라진다. 파일럿 스킬이 손패에 만들어 주는 카드(이동 · 복귀 · 교전
-개시 · 아드레날린 · 약탈)가 둘을 함께 달아, 스킬이 카드를 주되 **덱을 불리지는
-않게** 한다 — `../skill/README.md` 참조.
+**Exhaust and volatile are different things.** Exhaust vanishes **when used**; volatile vanishes **when
+discarded without being used**. Cards that pilot skills create in the hand (이동 · 복귀 · 교전
+개시 · 아드레날린 · 약탈) carry both, so a skill grants a card **without
+bloating the deck** — see `../skill/README.md`.
 
-호출 측은 손패에서 빼는 것까지만 하고 이 함수에 넘긴다. 카드 노드를 지우는 것
-(`_despawn_player_card_node`)은 어느 쪽이든 똑같이 필요하므로 여기서 하지 않는다.
+Callers only remove the card from the hand and pass it to this function. Removing the card node
+(`_despawn_player_card_node`) is needed either way, so it is not done here.
 
-#### 재배치 (`reposition` 키워드 — 손패 맨 왼쪽으로 이동)
+#### Reposition (`reposition` keyword — move to the leftmost slot of the hand)
 `_return_card_to_hand_left(cd, is_player)`:
 
-- **비용은 여기서 올리지 않는다.** 같은 카드의 `self_cost:N` 절이 체인 안에서 그
-  사본의 `cost` 를 이미 올렸다. `cd` 는 `build_starter_decks` 가 `make_card_copy`
-  로 뜬 시전자 전용 사본이라 그 증가는 그 한 장에만 남고 **쓸 때마다 누적된다**
-  (정밀 이동 0 → 1 → 2 …, 골드러시 1 → 2 → 3 …).
-- 손패 진입 훅(`_on_enter_hand`)을 지난다.
+- **Cost is not raised here.** The same card's `self_cost:N` clause already raised that
+  copy's `cost` inside the chain. `cd` is the caster-only copy that `build_starter_decks` cut with `make_card_copy`,
+  so the increase stays on that one card only and **accumulates on every use**
+  (정밀 이동 · 골드러시 each climb by their `self_cost` N per play).
+- It passes through the enter-hand hook (`_on_enter_hand`).
 - Player side: `player_hand.insert(0, cd)` + `spawn_card_node(cd, true)`.
   The `at_left` flag puts the node at the **head** of `player_card_nodes`;
   `relayout_hand` derives every slot from the array index, so that one flag is
-  the whole "맨 왼쪽" rule. The two arrays must be inserted at the same end.
+  the whole "맨 왼쪽" (leftmost) rule. The two arrays must be inserted at the same end.
 - AI side: `ai_hand.insert(0, cd)` + `HudBuilder.update_ai_hand_visuals()`.
 - **No `MAX_HAND_SIZE` guard.** The card left the hand and came back, so the
   hand can't grow past where it started.
@@ -1538,15 +1547,15 @@ three ways, **재배치 first**:
   pops from — so once its accumulated cost makes it dead weight, the first
   BATTLE auto-draw that overfills the hand discards it.
 
-> **낼 수 있는 재배치 카드는 쓸 때마다 비용이 올라야 한다(`self_cost`).**
+> **A playable reposition card must get more expensive on every use (`self_cost`).**
 > `AiCardPlayer.run_ai_plays` loops while it can afford *something* in
-> `ai_hand`; a 0-cost card that returns to hand at 0 cost would never leave the
+> `ai_hand`; a card that returns to hand at an unchanged cost would never leave the
 > affordable set and the loop would never terminate. Keep that property if
 > another card ever takes the keyword.
 
 > **`uses` no longer decides anything.** The rule used to be "`uses > 0` →
-> decrement `remaining_uses`, remove at 0", but `cards.csv` gives **every**
-> non-exhaust card `uses = 1`, so a single play destroyed it — 전투 개시
+> decrement `remaining_uses`, remove at 0", but the `uses` values in `cards.csv`
+> let **every** non-exhaust card be played only once, so a single play destroyed it — 전투 개시
 > included. The deck never cycled: it only shrank, the discard pile only ever
 > filled from 버리기 clauses, and the reshuffle path in `draw_card` was
 > effectively dead. `CardData.remaining_uses` is gone; the `uses` column is
@@ -1554,121 +1563,121 @@ three ways, **재배치 first**:
 > 소멸" mechanic) but nothing reads it.
 
 Note that the five `exhaust` cards (조정 / 임기응변 / 재빠른 사고 / 집중 /
-아드레날린) carry `uses = 3` in the CSV. That has never meant anything — the
+아드레날린) carry a larger `uses` value in the CSV. That has never meant anything — the
 keyword check has always fired first, so they are 소멸 on their first play.
 
-### 공격 명중 연출 (`attack:N`)
-공격 카드를 내면 **두 초상 위에서 동시에** 일이 벌어진다 — 시전자 초상에서
-하얀 빛이 솟아오르고, 피격자 초상에서 조각이 사방으로 퍼지며 초상이 격하게
-흔들린다. 한 타격이 두 박자다:
+### Attack hit FX (`attack:N`)
+Playing an attack card makes things happen **on both portraits (초상) at once** — white light rises from the
+caster (시전자) portrait, and on the target's portrait fragments scatter in every direction while the portrait
+shakes violently. One strike is two beats:
 
-| 박자 | 담당 | 시간 |
+| Beat | Owner | Time |
 |---|---|---|
-| 시전 (빛) | `BattleSim.anim_pilot_cast(caster)` | `ANIM_CAST_DUR` **0.12s** |
-| 명중 (조각 + 쉐이크 + 팝업) | `BattleSim.anim_pilot_impact(target)` + `_effect_attack` | `ANIM_HIT_HOLD_SEC` **0.20s** |
+| Cast (light) | `BattleSim.anim_pilot_cast(caster)` | `ANIM_CAST_DUR` **0.12s** |
+| Hit (fragments + shake + popup) | `BattleSim.anim_pilot_impact(target)` + `_effect_attack` | `ANIM_HIT_HOLD_SEC` **0.20s** |
 
-- **한 타격의 총 연출 시간은 두 값의 합, 0.32초다** — 돌진 시절과 같은 길이로
-  맞춘 값이라 연속 공격(`repeat`, 최대 5타)의 상한도 그대로 1.6초다.
-  **두 값을 만질 때는 `DMG_POPUP_DUR`(0.30)이 합보다 짧도록 함께 조정할 것** —
-  아니면 연속 타격의 숫자가 같은 자리에 겹쳐 쌓인다(팝업 좌표는 띄운 순간에
-  고정된다).
-- **시전 빛은 명중 여부와 무관하게 먼저 돈다.** 빗나간 공격도 쏘기는 쐈고,
-  `MISS` 팝업은 그 다음 자리에서 뜬다(빗나간 타격에는 조각이 없고 여운만 있다).
-- **맞는 쪽의 흔들림은 전장 교전보다 훨씬 격렬하다** —
-  `_apply_attack_damage` 가 `anim_pilot_shake` 에 `ANIM_SHAKE_CARD_DUR`(0.26s) /
-  `ANIM_SHAKE_CARD_AMP_PX`(20px)를 넘긴다(전장 기본은 0.18s / 6px). 매 턴
-  자동으로 오가는 교전 피해와 달리 카드 명중은 플레이어가 방금 고른 한 방이라,
-  같은 세기로 흔들면 카드가 아무 일도 안 한 것처럼 읽힌다. 세기는
-  `PilotData.anim_shake_amp` 로 실려 가고 진동 수는 지속시간을 따라 늘어난다
-  (주파수 고정) — 자세한 내용은 `rendering/README.md`.
-- **쉐이크만 `_apply_attack_damage` 안에 있다.** 조각(`spawn_pilot_burst`)은
-  `_effect_attack` 이 뿌린다 — 전자는 전장 자동 교전 · 파일럿 스킬의 한 방과
-  **같은 피해 진입점**이라 거기서 조각까지 뿌리면 카드가 아닌 피해에도 파티클이
-  붙는다. 매 턴 도는 피해까지 조각을 뿌리면 그게 곧 배경이 된다.
-- **포탑에는 조각이 없다.** `_impact_anchor` 가 `TurretData` 에 null 을 돌려주고
-  `anim_pilot_impact` 은 여운만 둔다 — 포탑은 자기 피격 연출
-  (`BattleSim.anim_turret_hit`, 흔들림 + 붉은 섬광)을 따로 갖고 있다.
-- **연속 공격(`repeat`)은 두 박자를 타수만큼 반복한다.** 1타 0.32초, 2타
-  0.64초, 상한(5타) 1.6초. 팝업이 서로 겹칠 일이 없어져 `DMG_POPUP_STAGGER` 는
-  연출이 붙지 않는 경우(시전자 없는 레거시 카드)에만 쓰인다.
-- **연출이 끝나야 다음 카드를 낼 수 있다.** `_attack_anim_active` 가
-  `_is_player_input_blocked()`(손패 딤 + 클릭 차단)와 `can_end_card_phase()`
-  (턴 넘기기 잠금) 양쪽에 걸린다. `_set_attack_anim_active` 가 양쪽 가장자리에서
-  `_apply_hand_dim_state()` + `hud.update_hud()` 를 불러 이미 화면에 떠 있는
-  상태를 깨운다.
-- **AI 도 같은 연출을 쓴다.** 그래서 `_effect_attack` 의 `await` 하나가
+- **The total FX time of one strike is the sum of the two, 0.32s** — tuned to the same length as the lunge
+  era, so a full chain of repeated attacks (`repeat`, capped at `MAX_ATTACK_REPEATS` ← const.csv `CARD_MAX_ATTACK_REPEATS`) still takes as long as it used to.
+  **When touching either value, also adjust so `DMG_POPUP_DUR` (0.30) stays shorter than the sum** —
+  otherwise the numbers of consecutive hits stack on the same spot (popup coordinates are fixed at the
+  moment the popup spawns).
+- **The cast light runs first, regardless of hit or miss.** A missed attack was still fired, and
+  the `MISS` popup appears in the next slot (a missed strike has no fragments, only the hold).
+- **The shake on the receiving side is far more violent than in battlefield (전장) engage (교전)** —
+  `_apply_attack_damage` passes `ANIM_SHAKE_CARD_DUR` (0.26s) /
+  `ANIM_SHAKE_CARD_AMP_PX` (20px) to `anim_pilot_shake` (battlefield default is 0.18s / 6px). Unlike engage
+  damage, which goes back and forth automatically every turn (턴), a card hit is a single blow the player just chose,
+  so shaking it at the same strength reads as if the card did nothing. The strength is
+  carried by `PilotData.anim_shake_amp`, and the oscillation count grows with the duration
+  (fixed frequency) — details in `rendering/README.md`.
+- **Only the shake lives inside `_apply_attack_damage`.** The fragments (`spawn_pilot_burst`) are
+  spawned by `_effect_attack` — the former is the **same damage entry point** as battlefield auto engage and
+  pilot (파일럿) skill blows, so spawning fragments there would attach particles to damage that isn't
+  from a card. If damage that runs every turn also spawned fragments, they would simply become the background.
+- **Turrets (포탑) get no fragments.** `_impact_anchor` returns null for `TurretData`, and
+  `anim_pilot_impact` keeps only the hold — turrets have their own hit FX
+  (`BattleSim.anim_turret_hit`, shake + red flash).
+- **Repeated attacks (`repeat`) repeat the two beats per hit.** 1 hit 0.32s, 2 hits
+  0.64s, and so on up to the `MAX_ATTACK_REPEATS` cap. Since popups no longer overlap, `DMG_POPUP_STAGGER` is
+  used only when no FX is attached (legacy cards with no caster).
+- **The next card can only be played after the FX finishes.** `_attack_anim_active` is wired into both
+  `_is_player_input_blocked()` (hand (손패) dim + click block) and `can_end_card_phase()`
+  (turn-pass lock). `_set_attack_anim_active` calls `_apply_hand_dim_state()` + `hud.update_hud()` on both
+  edges to wake up the state already shown
+  on screen.
+- **The AI uses the same FX.** So the single `await` in `_effect_attack` turns
   `_apply_single_effect` → `_process_pending_chain` / `apply_card_effect` →
-  `apply_and_dispose_ai_card` → `AiCardPlayer.run_ai_plays` 를 줄줄이 코루틴으로
-  만든다. 넷 다 그 호출이 마지막 문장이거나 `await` 로 받으므로 순서가 어긋나지
-  않는다. 연출이 없는 절은 그 자리에서 값을 돌려주므로 대기가 붙지 않는다.
-- `_process_pending_chain` 은 await 뒤에 `_pending_play.is_empty()` 를 다시
-  본다 — 연출이 도는 사이 취소 경로가 판을 비웠을 수 있다.
-- 사망 / 복귀 / 부활은 `anim_pilot_cast_clear` 로 시전 빛을 걷어 낸다 —
-  시신 위에 빛이 남아 있으면 아직 뭔가를 쏘는 중으로 읽힌다.
-- 렌더러 쪽 배선은 `rendering/README.md` — `_draw_pilot_cast_fx`(빛기둥)와
-  `_draw_pilot_bursts`(조각).
+  `apply_and_dispose_ai_card` → `AiCardPlayer.run_ai_plays` into a chain of coroutines.
+  In all four, the call is either the last statement or received with `await`, so the order never
+  goes out of sync. Clauses with no FX return their value on the spot, so no wait is attached.
+- `_process_pending_chain` re-checks `_pending_play.is_empty()` after the await
+  — a cancel path may have cleared the board while the FX was running.
+- Death / return-to-base (복귀) / revive clear the cast light with `anim_pilot_cast_clear` —
+  light left over a corpse reads as still firing something.
+- Renderer-side wiring is in `rendering/README.md` — `_draw_pilot_cast_fx` (light pillar) and
+  `_draw_pilot_bursts` (fragments).
 
-#### 예전의 **돌진(몸통 박치기)** — 되살리지 말 것
-시전자 초상이 대상 초상까지 **실제로 파고들었다**(`ANIM_LUNGE_IN_DUR`) 붕 뜬 채
-돌아오는(`ANIM_LUNGE_OUT_DUR`) 세 박자였다. 초상을 옮기는 연출이라 딸린 장치가
-셋이었고 지금은 전부 삭제됐다:
+#### The old **lunge (돌진, body slam)** — do not revive
+It was three beats: the caster portrait **actually dove into** the target portrait (`ANIM_LUNGE_IN_DUR`) and came
+back floating (`ANIM_LUNGE_OUT_DUR`). Because the FX moved the portrait, it needed three
+supporting mechanisms, all of which are now deleted:
 
-- **방향 계산** — 거리를 `BattleRenderer.pilot_marker_positions()` 의 그려진
-  마커로 재야 했다. 타일 중심으로 재면 같은 칸의 적에게 돌진할 때 방향이 아예
-  반대가 되기 때문(마커는 적 위 / 아군 아래로 밀려나 있다).
-- **그리기 순서** — `BattleRenderer._lunging_cells_last` 가 돌진 중인 칸을 맨
-  마지막으로 미뤄야 했다. 아니면 파고든 얼굴이 대상 칸 뒤로 숨는다.
-- **변위 정리** — 사망 / 복귀 / 부활마다 `anim_pilot_lunge_clear`.
+- **Direction calculation** — the distance had to be measured using the drawn markers from
+  `BattleRenderer.pilot_marker_positions()`. Measuring from tile centres made the direction fully
+  reversed when lunging at an enemy (적) in the same cell (markers are pushed up for enemies / down for allies (아군)).
+- **Draw order** — `BattleRenderer._lunging_cells_last` had to defer the lunging cell to the very
+  end. Otherwise the diving face would hide behind the target cell.
+- **Displacement cleanup** — `anim_pilot_lunge_clear` on every death / return-to-base / revive.
 
-지금은 두 초상이 제자리에 있고 그 위에 이펙트만 얹히므로 셋 다 필요가 없다.
-삭제된 이름: `BattleSim.anim_pilot_lunge` / `anim_pilot_lunge_return` /
+Now both portraits stay in place with only effects layered on top, so none of the three is needed.
+Deleted names: `BattleSim.anim_pilot_lunge` / `anim_pilot_lunge_return` /
 `anim_pilot_lunge_clear` / `pilot_lunge_offset`, `ANIM_LUNGE_IN_DUR` /
 `ANIM_LUNGE_OUT_DUR` / `ANIM_LUNGE_HOP_PX` / `ANIM_LUNGE_OVERLAP`,
 `PilotData.anim_lunge_phase` / `anim_lunge_t` / `anim_lunge_dur` /
 `anim_lunge_vec`, `BattleRenderer._lunging_cells_last`,
-`CardPhaseManager._lunge_anchor`(→ `_impact_anchor` 로 이름만 남았다).
+`CardPhaseManager._lunge_anchor` (→ only the name survives, as `_impact_anchor`).
 
-### 대상 지정 (CardTargetingOverlay)
+### Targeting (CardTargetingOverlay)
 - `CardTargetingOverlay.gd` — sibling of `CardPhaseManager`. **It owns no nodes
-  at all now.** It used to hold a CanvasLayer at layer 11 for the PREVIEW 좌/우
-  팀 패널; those moved to the post-submit VS screen (`engage/EngageIntro.gd`),
-  and the 확인 / 취소 버튼 had already gone, so the layer went with them. What is
+  at all now.** It used to hold a CanvasLayer at layer 11 for the PREVIEW left/right
+  team panels; those moved to the post-submit VS screen (`engage/EngageIntro.gd`),
+  and the 확인 / 취소 (Confirm / Cancel) buttons had already gone, so the layer went with them. What is
   left is pure state that `BattleRenderer` reads.
 - **There is no modal step any more.** `Mode` is now just "what kind of card is
   being dragged": `NONE / INSTANT / PILOT / LOCATION / PREVIEW`. One entry
   point, `start_card_selection(cd, on_confirm)`, is called from
   `CardPhaseManager._begin_drag` the moment a card leaves the row;
   `clear_selection()` runs from `_end_drag` / `deselect_current_card`. The
-  targeting state therefore lives exactly as long as the drag does — 턴 넘기기
+  targeting state therefore lives exactly as long as the drag does — 턴 넘기기 (End turn)
   stays live, and `_is_player_input_blocked()` / `can_end_card_phase()` never
   consult this overlay.
-- **확인 / 취소 버튼은 삭제됐다 — 카드를 내는 조작은 드래그 드롭 하나뿐이다.**
-  예전에는 (1) 대상을 탭해 `pending_pick` 을 찍고 (2) 우하단 확인을 눌러
-  확정하는 두 박자 경로가 드래그와 **나란히** 존재했는데, 같은 일을 하는 두 번째
-  조작일 뿐이었고 화면 아래쪽에 상시 버튼 행을 차지했다. 지금은:
-  - 카드를 대상 위(무대상 카드라면 드롭 존)에 **놓는 것**만이 확정이다.
-  - **빗나간 드롭 = 취소** — 카드가 자기 슬롯으로 돌아가고 오버레이가 꺼진다.
-  - 삭제된 것: `_btn_confirm` / `_btn_cancel` / `_build_buttons` / `_make_btn` /
+- **The 확인 / 취소 buttons are deleted — the only way to play a card is drag and drop.**
+  There used to be a two-beat path — (1) tap a target to set `pending_pick`, (2) press Confirm at the bottom right
+  to commit — existing **alongside** the drag; it was just a second control doing the same
+  thing, and it permanently occupied a button row at the bottom of the screen. Now:
+  - **Dropping** the card onto a target (or onto the drop zone for a targetless card) is the only commit.
+  - **Missed drop = cancel** — the card returns to its slot and the overlay turns off.
+  - Deleted: `_btn_confirm` / `_btn_cancel` / `_build_buttons` / `_make_btn` /
     `_btn_top_y` / `_on_confirm_pressed` / `_on_cancel_pressed` /
     `_refresh_confirm_disabled` / `BTN_W` / `BTN_SIDE_MARGIN` /
-    `CONFIRM_BTN_GAP`, 그리고 `CardPhaseManager._on_selection_cancel`.
-    `start_card_selection` 의 `on_cancel` 인자도 함께 사라졌다.
-  - **`BTN_H`(56) / `BTN_HAND_GAP`(10)만 남긴다.** `HudBuilder` 가 이 둘로
-    전략 포인트 도넛의 세로 위치를 잡는데, 도넛이 핸드 행에 바로 붙으면 카드
-    윗단과 겹친다. 이제 그 값들이 뜻하는 것은 버튼이 아니라 **빈 띠**다.
+    `CONFIRM_BTN_GAP`, and `CardPhaseManager._on_selection_cancel`.
+    The `on_cancel` argument of `start_card_selection` disappeared too.
+  - **Only `BTN_H` (56) / `BTN_HAND_GAP` (10) are kept.** `HudBuilder` uses these two to
+    set the vertical position of the strategy point donut; if the donut sat directly against the hand row it would overlap
+    the top edge of the cards. What those values mean now is not a button but an **empty band**.
 - **Nothing is spent until the drop.** Cost deduction, card destruction and the
   effect chain all happen in `_play_card_direct(card, pre_target)`, which the
   overlay's confirm callback (`_on_selection_confirm`) invokes with the already
   resolved target. That removed the whole targeting-cancel refund path.
-  (The snapshot/refund machinery still exists for 버리기 / 찾기 clauses, which
+  (The snapshot/refund machinery still exists for 버리기 / 찾기 (discard / search) clauses, which
   mutate state mid-chain.)
 - **Drop gating**: `set_play_allowed(bool)` carries
-  `CardPhaseManager.card_is_playable(cd)` (cost + 시전자 생존 + 유효 대상) into
+  `CardPhaseManager.card_is_playable(cd)` (cost + caster alive + valid target) into
   the overlay; `confirm_with(target)` refuses unless `_play_allowed` **and**
   `has_required_pick()`. `has_required_pick()` is true immediately for PREVIEW /
   INSTANT and only after `pending_pick` is set for PILOT / LOCATION.
   `highlight_affordable_cards()` → `_refresh_play_allowed()` re-pushes the
-  verdict, so a 시전자 killed by an engage earlier in the same phase makes the
+  verdict, so a caster killed by an engage earlier in the same phase makes the
   lifted card undroppable. `_on_selection_confirm` re-checks `card_is_playable`
   rather than trusting that gate.
 - **Battlefield clicks are swallowed** in PILOT / LOCATION mode, and they do
@@ -1679,65 +1688,65 @@ keyword check has always fired first, so they are 소멸 on their first play.
   battlefield press can't arrive mid-aim in the first place. It stays because
   the cost is one line and the failure it guards against (a press leaking into
   whatever else listens on unhandled input) is silent.
-- **Pending pick** is now **드래그 미리보기 전용**: while a drag is in flight,
+- **Pending pick** is now **drag-preview only**: while a drag is in flight,
   hovering a valid pilot or cell stores it via `preview_drag_target`, and
   `BattleRenderer._draw_pending_pick_highlight()` paints a cyan ring on that
   marker (or a thicker cyan outline on that cell) so the player can see what
   letting go would commit. The ring's radius follows the (animated) 1.5× target
   emphasis so it hugs the enlarged marker. Releasing without a valid pick drops
   it along with the drag.
-- **드롭 진입점** (드래그가 쓰는 세 개의 공개 함수): `hit_test_pilot_at(pos)` /
-  `hit_test_cell_at(pos)` 는 모드에 맞는 히트 테스트를 돌려 **유효 대상일 때만**
-  값을 내고, `confirm_with(target)` 이 확정 경로를 탄다
-  (`_play_allowed` 게이트 → `_teardown` → 확인 콜백). 실패하면 false 를 돌려
-  호출 측이 카드를 손패로 되돌린다.
-- **시전자(`card_caster`)는 어느 모드에서도 딤드되지 않는다.** 모든 모드에서
-  채워지며 하는 일은 그 하나뿐이다(`should_dim_pilot` 의 첫 줄) — 딤은 "여기엔
-  놓을 수 없다"는 말인데 카드를 쏘는 당사자에게 그 말은 성립하지 않고, LOCATION
-  의 "파일럿 전원 딤" 규칙에 걸리면 지금 움직이려는 그 파일럿이 화면에서 가장
-  어두웠다. **대신 강조 대상은 아니다** — 커지는 것은 "놓을 수 있는 곳"이라는
-  신호이므로, 시전자는 자기가 그 카드의 유효 대상일 때(보호 / 복귀 같은
-  `target=ally` 카드는 거리 0 이라 `compute_valid_pilot_targets` 가 자기 자신을
-  포함시킨다)만 `valid_pilots` 를 통해 커진다.
+- **Drop entry points** (the three public functions the drag uses): `hit_test_pilot_at(pos)` /
+  `hit_test_cell_at(pos)` run the hit test matching the mode and return a value **only for a valid
+  target**, and `confirm_with(target)` takes the commit path
+  (`_play_allowed` gate → `_teardown` → confirm callback). On failure it returns false and
+  the caller returns the card to the hand.
+- **The caster (`card_caster`) is never dimmed in any mode.** It is filled in for every mode and
+  that is its only job (the first line of `should_dim_pilot`) — dim means "you can't
+  drop here", which makes no sense for the one firing the card, and under LOCATION's
+  "dim every pilot" rule the very pilot about to move was the darkest thing on screen.
+  **It is not an emphasis target either, though** — growing is the signal "you can drop here", so the
+  caster grows via `valid_pilots` only when it is itself a valid target of that card (for
+  `target=ally` cards like 보호 (Protect) / 복귀 (Return to Base) the distance is 0, so `compute_valid_pilot_targets`
+  includes the caster itself).
 - Driven by `CardData.cast_method` / `target` fields (see `targeting_kind`).
-  **표시 규칙은 "놓을 수 있는 곳만 밝다" 하나다** — 자세한 표는
-  `rendering/README.md` 의 *Targeting dim + 강조*:
+  **The display rule is just one: "only droppable places are lit"** — detailed table in
+  `rendering/README.md` *Targeting dim + emphasis*:
   - `cast_method == "target"` (target=enemy/ally/pilot) → **PILOT** mode.
-    **시전자 사거리 밖 타일이 딤드된다**(사거리 무제한이면 딤 없음). `valid_pilots`
-    는 `TARGET_EMPHASIS_SCALE`(**1.5**)로 커진 채 밝게 남고(그리고 같은 칸의
-    무리는 겹치지 않도록 좌우로 벌어진다), 나머지 파일럿은
-    마커 단위로 딤드된다. 보이는 마커가 곧 드롭 지점이다.
+    **Tiles outside the caster's range are dimmed** (no dim when range is unlimited). `valid_pilots`
+    stay bright, enlarged by `TARGET_EMPHASIS_SCALE` (**1.5**) (and a group in the same cell
+    spreads left/right so they don't overlap), and the remaining pilots are
+    dimmed per marker. The visible markers are the drop points.
     Range honours `cd.cast_range` and the `min_range:N` flag.
-    `target=pilot`(매혹)은 양 팀 모두 유효 대상이다(예전에는 아군만 잡혔다).
-    **대상을 가리키면** 그 카드 효과가 닿을 파일럿(`pick_pilots`)만 커지고
-    **밝게 남는다** — 다른 유효 대상은 원래 크기로 돌아오며 **딤드**된다. 타일도
-    사거리 대신 **효과 범위**(`pick_bright_cells()` = `pick_cells` + 대상 칸; 범위
-    없는 단일 대상 카드는 대상 칸 하나)만 밝고 나머지는 딤드, 범위 칸은 노랗게
-    칠해진다. 가리킨 대상의 초상(`picked_pilot()`)은 **딤 위 맨 위에** 다시
-    그려진다(`BattleRenderer._pick_top`). 벗어나면 다시 유효 대상 전원이 커진다. 규칙 표는
-    `rendering/README.md` *Targeting dim + 강조*, 범위 계산은
+    `target=pilot` (매혹) accepts pilots of both teams (it used to catch allies only).
+    **While a target is pointed at**, only the pilots that card's effect would reach (`pick_pilots`)
+    stay enlarged and **bright** — the other valid targets shrink back to normal size and are
+    **dimmed**. Tiles, too, light only the **effect area** instead of the range (`pick_bright_cells()` =
+    `pick_cells` + the target cell; a single-target card with no area = the target cell alone); the rest
+    is dimmed and the area cells are painted yellow. The pointed-at portrait (`picked_pilot()`) is redrawn
+    **on top of the dim** (`BattleRenderer._pick_top`). Moving off restores every valid target's
+    enlargement. Rule table: `rendering/README.md` *Targeting dim + emphasis*; area computation:
     `CardPhaseManager.compute_pick_affected`.
-  - `cast_method == "location"` → **LOCATION** mode. `valid_cells` 만 초록
-    채움 + 외곽선으로 밝게 남고 **사거리 밖 셀이 딤드**되며, 파일럿은
-    **시전자와 (`foe` 카드라면) 유효 칸의 적을 뺀** 전원이 딤드된다 — `foe` 카드의
-    유효 칸 적은 PILOT 카드의 유효 대상처럼 커진다.
-  - **`cast_range ≥ CardTargetingOverlay.UNLIMITED_RANGE` (99) = 사거리 무시**
-    (복귀 / 보호 / 약탈 / 정글 파밍 / 강습). `range_unlimited` → `is_in_range_cell`
-    이 모든 칸에 참이라 타일 딤이 없다.
+  - `cast_method == "location"` → **LOCATION** mode. Only `valid_cells` stay bright with a green
+    fill + outline, **cells outside the range are dimmed**, and every pilot **except the caster and
+    (for `foe` cards) the enemies on valid cells** is dimmed — on a `foe` card those enemies grow like a
+    PILOT card's valid targets.
+  - **`cast_range ≥ CardTargetingOverlay.UNLIMITED_RANGE` (99) = range ignored**
+    (복귀 / 보호 / 약탈 (Plunder) / 정글 파밍 (Jungle Farming) / 강습). `range_unlimited` → `is_in_range_cell`
+    is true for every cell, so there is no tile dim.
   - `cast_method == "range" and target == "caster"` → **PREVIEW** mode
-    (engage cards only; 전진은 target=enemy 라 PREVIEW 가 아니라 즉시 발동).
-    The cells within the engage radius (`engage_radius(cd)` = the engage clause's
-    `self_range`, default 1) show a soft yellow fill with full outline
+    (engage cards only; 전진 (Advance) is target=enemy, so it fires immediately instead of PREVIEW).
+    The cells within the engage radius (`compute_engage_area` with `engage_radius(cd)` = the engage
+    clause's `self_range`, default 1) show a soft yellow fill with full outline
     and the participants inside it are emphasised; cells outside the engage area
-    get the black out-of-range dim. 따로 찍을 대상이 없으므로 **화면 중앙 드롭
-    존**에 놓으면 곧바로 나간다 → `_play_card_direct(card, null)`.
-    > **참가자 명단은 여기 없다.** 예전에는 카드를 고르는 순간 화면 좌/우에 세로
-    > 팀 패널 두 개가 떠서 참가 파일럿을 나열했다. 지금 그 명단은 **카드를 제출한
-    > 뒤** `engage/EngageIntro.gd` 의 VS 화면이 보여 준다 — 이유는
-    > `engage/README.md` 의 *개시 확인 화면* 절.
+    get the black out-of-range dim. There is no separate target to pick, so dropping it on the **screen-centre
+    drop zone** sends it out immediately → `_play_card_direct(card, null)`.
+    > **The participant roster is not here.** When a card was picked, two vertical
+    > team panels used to pop up on the screen's left/right listing the participating pilots. Now that roster is shown
+    > **after the card is submitted** by the VS screen in `engage/EngageIntro.gd` — the reason is in
+    > the *Opening confirmation screen* (개시 확인 화면) section of `engage/README.md`.
   - anything else → **INSTANT**. No caster, no range, nothing painted on the
     battlefield (`is_visualizing()` is false, so BattleRenderer skips the dim
-    entirely) — 드롭 존만 뜬다.
+    entirely); the card is dropped on the drop zone rect, which is not drawn.
 - Hit-testing:
   - **PILOT mode** uses `_hit_test_pilot`, which aims at the pilot's **drawn**
     marker: it reads `BattleRenderer.pilot_marker_positions()` — a fresh run of
@@ -1745,15 +1754,15 @@ keyword check has always fired first, so they are 소멸 on their first play.
     whose marker is closest to the drop point, within `hex_size * 0.85`. A drop
     that lands on no marker but inside a pilot's own tile still resolves, ranked
     by marker distance, so releasing over the tile itself keeps working.
-    (`hit_test_pilot_at` / `hit_test_cell_at` 이 그 유일한 소비자다 — 전장
-    클릭 경로는 사라졌다.)
+    (`hit_test_pilot_at` / `hit_test_cell_at` are its only consumers — the battlefield
+    click path is gone.)
     > This is the fix for a real bug. The probes used to be the tile centre and
     > `BattleSim.pilot_marker_pos_solo`, both of which depend only on
     > `grid_pos` — so every pilot sharing a cell had the *same* probe point and
     > the first one in `valid_pilots` (the leftmost drawn portrait) won every
-    > click, whichever face the player tapped. 지금은 렌더 가능한 파일럿이
-    > 전원 슬롯을 받으므로 폴백(`pilot_marker_pos_solo` → 렌더러의
-    > `pilot_marker_pos_fallback`)은 사실상 걸리지 않는다.
+    > click, whichever face the player tapped. Now every renderable pilot
+    > gets a slot, so the fallback (`pilot_marker_pos_solo` → the renderer's
+    > `pilot_marker_pos_fallback`) is effectively never hit.
   - **LOCATION mode checks portraits first, then the cell.** `hit_test_cell_at`
     runs the same marker probe (`_hit_test_marker`, no tile fallback) over
     `_location_marker_candidates()` — for `foe` cards (적 또는 포탑) only the
@@ -1765,12 +1774,12 @@ keyword check has always fired first, so they are 소멸 on their first play.
     로켓 펀치 · 일격 miss when dropped on the enemy's face — you had to aim at the
     tile underneath. The PICK_STICKY_SCALE hysteresis also covers this path via
     `_marker_pick` (the pilot whose portrait produced the held cell).
-- The 전략 포인트 도넛 is **no longer locked** while a card is selected — with
+- The strategy point donut is **no longer locked** while a card is selected — with
   the modal gone there is nothing to protect: 턴 넘기기 during a selection just
   ends the phase, and `end_card_phase` opens with `deselect_current_card()`
   which tears the overlay down.
 
-### AI 카드 사용 애니메이션 (AiCardPlayer)
+### AI card play animation (AiCardPlayer)
 - `AiCardPlayer.gd` — sibling of `CardPhaseManager`, runs the AI's hand
   one card at a time inside `_run_ai_turn()`'s `await` chain.
 - Each play pops the rightmost card-back from the AI hand peek
@@ -1786,40 +1795,42 @@ keyword check has always fired first, so they are 소멸 on their first play.
 - After the visual completes, `apply_and_dispose_ai_card(pick)` runs the
   effect chain. `engage` / `duel` cards route through
   `EngagePhaseManager.start_engage()` / `start_duel()`; the loop gates on
-  `engage_phase.is_active()` (not on the effect chain, so 결투 is covered
+  `engage_phase.is_active()` (not on the effect chain, so 결투 (Duel) is covered
   too) and `await`s the `engage_finished` signal so the arena fully
   resolves before the next AI play starts.
 - The loop then checks `card_phase.consume_end_phase_request()` and breaks if
-  the card carried `end_phase` (완벽한 마무리). The check sits **after** the
-  arena await on purpose — breaking first would close 상대 차례 with the
+  the card carried `end_phase` (완벽한 마무리 (Perfect Finish)). The check sits **after** the
+  arena await on purpose — breaking first would close 상대 차례 (Opponent's turn) with the
   engage the card just opened still on screen.
-- **카드 선택은 무작위가 아니라 우선순위 점수제다** (`_pick_best_card` /
-  `_score_card`). 목표는 강한 AI 가 아니라 **눈에 띄게 덜 헛도는** AI 다 —
-  예전에는 사거리 안에 적이 없는 공격 카드나 만피 아군에게 거는 회복이 무작위로
-  튀어나와, 상대 차례가 중앙 애니메이션만 돌고 아무 일도 일어나지 않는 구간이
-  됐다. 규칙은 넷이다.
-  - **낼 수 없으면 뺀다** — `CardPhaseManager.ai_can_play` 가 지불 가능 ·
-    시전자 생존 · `CardData.is_playable()` 을 함께 본다. 마지막 하나가 새로
-    생긴 것으로, `effective_cost_for` 는 결과를 0 아래로 깎지 않아 **비용 -1
-    (사용 불가)** 카드가 "0 코스트"로 읽혔다 — 그 한 줄이 없으면 AI 가 캐시 ·
-    계시 · 약자 멸시 · 밸런스를 그냥 태워 버린다. `_ai_turn_ready` 도 같은
-    함수를 읽는다(한쪽만 통과하면 배너만 뜨고 아무 카드도 안 나가는 차례가
-    생긴다).
-  - **고를 대상이 없으면 뺀다** — `card_needs_target` 이 true 인데
-    `ai_target_for` 가 null 이면 그 카드는 후보에서 빠진다.
-  - **절 이름이 점수를 정한다** (`CLAUSE_WEIGHT`). 카드 한 장이 절을 여럿 달고
-    있으면 **가장 높은 절**이 그 카드의 성격이다 — 간보기는
-    `attack;on_hit;engage;on_miss;strategy` 인데 그 카드가 하는 일은 공격이지
-    전략 점수가 아니다. 회복 · 보호막 계열은 `_support_bias` 가 상황을 본다:
-    가장 다친 아군이 `SUPPORT_HP_RATIO`(0.70) 위면 `SUPPORT_IDLE_PENALTY`(2.5)
-    만큼 후순위로 밀린다(막지는 않는다 — 손에 그것밖에 없을 수도 있다).
-  - **비용은 감점, 동점은 흔들림으로 가른다** — `COST_PENALTY`(0.15/점)로 싼
-    카드를 먼저 내 한 차례에 더 많은 카드가 나가게 하고, `JITTER`(0.4)가 없으면
-    같은 손패가 매번 같은 순서로 나가 상대 차례가 기계적으로 읽힌다.
-- **`MAX_PLAYS_PER_TURN` (12)** caps one AI turn. The loop's real exit is "no
+- **Card selection is not random but priority-scored** (`_pick_best_card` /
+  `_score_card`). The goal is not a strong AI but an AI that **visibly spins its wheels less** —
+  attack cards with no enemy in range, or heals cast on full-HP allies, used to pop out at random,
+  turning the opponent's turn into a stretch where only the centre animation ran and nothing
+  happened. There are four rules.
+  - **Exclude if unplayable** — `CardPhaseManager.ai_can_play` checks affordability ·
+    caster alive · `CardData.is_playable()` together. The last one is new:
+    `effective_cost_for` doesn't clamp results below 0, so a **cost -1
+    (unusable)** card read as "0 cost" — without that one line the AI just burns 캐시 (Cash) ·
+    계시 (Revelation) · 약자 멸시 (Scorn the Weak) · 밸런스 (Balance). `_ai_turn_ready` reads the same
+    function too (if only one side passes, you get a turn where only the banner shows and no card
+    goes out).
+  - **Exclude if there is no target to pick** — if `card_needs_target` is true but
+    `ai_target_for` is null, the card drops out of the candidates.
+  - **Clause names set the score** (`CLAUSE_WEIGHT`). If one card carries several clauses,
+    **the highest clause** is that card's character — 간보기 (Probe) is
+    `attack;on_hit;engage;on_miss;strategy`, but what that card does is attack, not
+    strategy points. Heal · shield cards have `_support_bias` look at the situation:
+    if the most-wounded ally is above `SUPPORT_HP_RATIO`, it is pushed back by
+    `SUPPORT_IDLE_PENALTY` (not blocked — it might be the only thing in hand).
+  - **Cost is a penalty, ties are broken by jitter** — `COST_PENALTY` (per point) plays cheap
+    cards first so more cards go out per turn, and without `JITTER`
+    the same hand would go out in the same order every time and the opponent's turn would read as mechanical.
+  All of these (`CLAUSE_WEIGHT_DEFAULT` · `SUPPORT_HP_RATIO` · `SUPPORT_IDLE_PENALTY` · `COST_PENALTY` · `JITTER`)
+  now live in const.csv under `AI_CARD_<name>`.
+- **`MAX_PLAYS_PER_TURN`** (const.csv `AI_CARD_MAX_PLAYS_PER_TURN`) caps one AI turn. The loop's real exit is "no
   playable card left", but a card that costs nothing and *rotates* the hand
-  can defer that forever — 재고 (비용 0, 손패를 전부 버리고 같은 수를 다시
-  뽑는다) re-draws itself until deck + discard run dry. The cap is a structural
+  can defer that forever — 재고 (Reconsider) (free, discards the whole hand and draws the same
+  number back) re-draws itself until deck + discard run dry. The cap is a structural
   backstop, not a balance knob; a normal hand never reaches it.
 - `_ai_play_in_progress` blocks re-entry of `_run_ai_turn`, holds the BATTLE
   auto-tick (via `is_ai_turn_active()`) and disables the donut's 턴 넘기기
@@ -1827,24 +1838,24 @@ keyword check has always fired first, so they are 소멸 on their first play.
   `_begin_drag` / `on_card_hovered` so the player can't grab a card or pop the
   description box mid-AI animation.
 
-### 버리기 / 찾기 / 보존 / 강화 3택 modal pick (player only)
+### Discard (버리기) / search (찾기) / keep (보존) / 3-way boon pick (강화 3택) modal pick (player only)
 - `CardSelectOverlay.gd` (sibling of `CardPhaseManager`, instantiated from
   `BattleSim._ready` once the HUD canvas exists). Owns one
   `CanvasLayer` (`layer = 10`) and rebuilds its UI on every `start_*()`.
   AI plays bypass this overlay and keep the synchronous `apply_card_effect`
-  path (random discard, search aliased to draw, 강화 3택 무작위).
-- **`Mode.CHOICE` — 강화 3택 (단계 C).** 카드를 고르는 것이 아니라 **선택지를
-  고르는** 모드다. 그리드도 픽 규칙도 SEARCH 와 같고 다른 것이 셋뿐이다.
-  - 펼치는 것이 더미가 아니라 **호출 측이 만든 표시용 카드**다
-    (`CardPhaseManager.build_phase_boon_cards` — 비용 -1 이라 그 자리에 숫자가
-    아니라 `—` 가 찍힌다: 이건 내는 카드가 아니라 고르는 선택지다). 고른 카드는
-    어느 더미에도 들어가지 않고, 남는 것은 `phase_boon:<key>` 를 읽어 옮긴
-    예약뿐이다.
-  - **이름순 정렬을 하지 않는다** (`_build_search_grid(source, false)`) — 알파 ·
-    베타 · 감마는 정해진 순서가 있는 목록이라, 이름순으로 다시 세우면 감마 ·
-    베타 · 알파가 되어 카드 설명문의 차례와 어긋난다.
-  - **취소 버튼이 없다** — 여기까지 온 시점에 카드는 이미 나갔고 앞선 절
-    (`gen_deck:38`)도 이미 돌았다. 되돌아갈 곳 없는 취소를 놓지 않는다.
+  path (random discard, search aliased to draw, 강화 3택 picked at random).
+- **`Mode.CHOICE` — 강화 3택 (phase C / 단계 C).** This mode picks **an option**,
+  not a card. The grid and the pick rules are the same as SEARCH; only three things differ.
+  - What it lays out is not a pile but **display-only cards built by the caller**
+    (`CardPhaseManager.build_phase_boon_cards` — their cost is -1, so the cost slot shows
+    `—` instead of a number: these are options to choose, not cards to play). The chosen card
+    goes into no pile; all that remains is the reservation carried over by reading
+    `phase_boon:<key>`.
+  - **No sorting by name** (`_build_search_grid(source, false)`) — 알파 (Alpha) ·
+    베타 (Beta) · 감마 (Gamma) is an ordered list; re-sorting by name would give 감마 ·
+    베타 · 알파, out of step with the order in the card's description text.
+  - **No cancel button** — by this point the card has already been played and the earlier
+    clause (`gen_deck:38`) has already run. No cancel is offered when there is nowhere to go back to.
 - **Async chain pattern** in `CardPhaseManager._play_card_direct`:
   1. Snapshot `player_hand` / `player_deck` / `player_discard` /
      `player_cost` BEFORE deducting cost or removing the played card. Stored
@@ -1860,12 +1871,12 @@ keyword check has always fired first, so they are 소멸 on their first play.
      respectively, then calls `_process_pending_chain()` again to continue the
      chain.
   4. When the chain drains, `_finalize_pending_play()` disposes the played
-     card (사용 횟수 / 소멸 routing) and writes the combined log line.
+     card (use count (사용 횟수) / exhaust (소멸) routing) and writes the combined log line.
 - **Cancel = full refund** (`_on_overlay_cancel` → `_restore_from_snapshot`):
   drops any in-flight drag, frees every player card node, restores
   hand/deck/discard/cost from the snapshot verbatim, and respawns nodes for
   every CardData now back in `player_hand`. This rolls back even prior
-  clauses in a chain (e.g. cancelling 교환 returns the 2 drawn cards to the
+  clauses in a chain (e.g. cancelling 교환 (Exchange) returns the drawn cards to the
   deck along with refunding the 교환 card itself). The snapshot also carries
   `engage_discount_p` and the **preserve list**, and the restore clears any
   `end_phase` request the cancelled card had raised.
@@ -1873,34 +1884,34 @@ keyword check has always fired first, so they are 소멸 on their first play.
   - **Battle dim** = `ColorRect` covering y=0..BS_HAND_CENTER.y, parented
     into `_bs.canvas` and moved to child position 0 so HUD + hand still
     draw on top of it.
-  - **픽은 드래그다.** 손패는 계속 살아 있고, 카드를 **중앙 구역**으로 끌어다
-    놓으면 그 카드가 버릴 카드로 넘어간다
-    (`CardPhaseManager._try_drop_play` → `add_card_to_discard`). 구역은
-    **카드를 낼 때와 같은 `drop_zone_rect()`** 이고, 문구만 "여기에 놓아 버리기"다.
-    대상 지정 오버레이는 이 모드에서 아예 켜지지 않는다.
-    > 예전에는 카드를 **선택**한 뒤 설명 상자에 뜨는 "버리기" 버튼을 누르는
-    > 두 박자였다. 선택 상태 자체가 사라지면서(위 *드래그 앤 드롭* 절) 그
-    > 버튼이 갈 곳이 없어졌고, 손패에서 카드를 빼내는 조작은 전부 드래그
-    > 하나로 통일됐다.
+  - **The pick is a drag.** The hand stays live; dragging a card into the **centre zone**
+    and dropping it moves that card to the to-discard set
+    (`CardPhaseManager._try_drop_play` → `add_card_to_discard`). The zone is
+    **the same `drop_zone_rect()` as when playing a card**; only the caption changes, to "여기에 놓아 버리기" (Drop here to discard).
+    The targeting overlay never turns on in this mode at all.
+    > It used to be two beats: **select** a card, then press the "버리기" (Discard) button that
+    > appeared in the description box. Once the selection state itself was removed (see the
+    > *Drag and drop* section above) that button had nowhere to live, and every action that
+    > takes a card out of the hand was unified into a single drag.
   - Picked cards are laid out in a centered fan (`to_discard_center_y()` =
     the shared drop zone's centre, fan width = `BS_HAND_WIDTH`, same spacing
     rules as the hand row).
-  - **골라 둔 카드를 누르면 손패로 돌아간다** (`remove_card_from_discard`).
-    카드 자신은 손패에서와 같이 마우스를 잡지 않으므로(`MOUSE_FILTER_IGNORE`),
-    투명 `Button` 한 장(`UnpickHit`)을 카드 위에 얹어 그 클릭을 받는다 — 찾기
-    그리드가 쓰는 것과 같은 수법이다. 되돌아가는 자리는 **떠나올 때의 인덱스**
-    (`_to_discard_slots`)다: 뒤에 붙이면 골랐다 무른 카드가 손패 오른쪽 끝으로
-    순간이동해 "무른 것"이 아니라 "새로 뽑은 것"처럼 읽힌다. 버튼은 `queue_free`
-    **전에 `remove_child`** 로 떼어 낸다 — 안 그러면 그 프레임이 끝날 때까지
-    버튼이 남아 이미 목록에서 빠진 노드로 무르기가 한 번 더 돈다.
-    > 예전에는 무르는 길이 없어(`mouse_filter = IGNORE` 로 못 박아 두었다)
-      잘못 고른 카드를 확인 버튼까지 그대로 안고 가야 했다.
+  - **Pressing a picked card returns it to the hand** (`remove_card_from_discard`).
+    The card itself doesn't take the mouse, same as in the hand (`MOUSE_FILTER_IGNORE`),
+    so one transparent `Button` (`UnpickHit`) is laid over the card to catch the click — the
+    same trick the search grid uses. It returns to **the index it left from**
+    (`_to_discard_slots`): appending it instead would teleport an un-picked card to the right
+    end of the hand, reading as "newly drawn" rather than "undone". The button is detached with
+    **`remove_child` before `queue_free`** — otherwise the button lingers until the end of that
+    frame and the un-pick runs once more on a node already removed from the list.
+    > There used to be no way to undo a pick (it was nailed down with `mouse_filter = IGNORE`),
+      so a wrongly picked card had to be carried all the way to the confirm button.
   - **No auto-commit and no cancel (of the card itself).** A 버리기:N card is
     non-cancellable:
-    the only top-right button is **확인**, disabled until exactly
+    the only top-right button is **확인** (Confirm), disabled until exactly
     `target_count` cards are in the to-discard fan. `target_count` is
     clamped to `min(N, hand.size())`. Pressing 확인 is the sole exit.
-  - Bottom-left **숨김** (toggles `hidden_state`; relabels to **표시** while
+  - Bottom-left **숨김** (Hide) (toggles `hidden_state`; relabels to **표시** (Show) while
     hidden, drops any in-flight drag on press) is still available so the player
     can peek at the battle before committing.
 - **Search mode UI** (`Mode.SEARCH`):
@@ -1917,62 +1928,62 @@ keyword check has always fired first, so they are 소멸 on their first play.
     `is_player_card=false` so `Card._on_mouse_entered` short-circuits and
     its hover-brighten tween doesn't fight the `SELECTED_TINT` modulate; a
     transparent flat `Button` child captures clicks ahead of `Card._gui_input`.
-  - Bottom-left **숨김**, bottom-right **찾기 취소**, **확인** to its left.
+  - Bottom-left **숨김**, bottom-right **찾기 취소** (Cancel search), **확인** to its left.
     확인 stays disabled until exactly `target_count` cards are selected
     (`target_count = min(N, deck.size())`); on commit, picks move from
     `player_deck` to `player_hand` (capped at `MAX_HAND_SIZE`) and visual
     nodes spawn via `spawn_card_node`.
-- **Preserve mode UI** (`Mode.PRESERVE`, 계획 중시 · 계략 스킬): **버리기와 같은
-  손패 픽**이다(`is_hand_pick_mode()` = DISCARD 또는 PRESERVE). 손패가 살아 있고,
-  카드를 중앙 구역("여기에 놓아 보존")에 끌어다 놓으면 골라 둔 줄로 빠지며
-  (`add_card_to_pick`), 누르면 원래 자리로 돌아간다(`remove_card_from_pick`).
-  버리기와 다른 점은 셋:
-  - **확인**(`_commit_preserve`)은 골라 둔 카드를 **고른 역순으로** 손패의
-    원래 인덱스에 다시 꽂고(`_return_all_picks_to_hand`) 픽을 돌려준다 — 보존
-    표시는 콜백(`_on_preserve_overlay_complete` / 계략 `_on_scheme_picked`)이 건다.
-  - **보존 취소** 버튼이 있다. 누르면 골라 둔 카드를 먼저 손패로 돌려놓은 뒤
-    취소 콜백을 부른다 — 계략은 스냅샷 복원이 없어서, 안 돌려놓으면 `_teardown`
-    이 줄에 남은 카드 노드를 해제해 그 카드가 사라진다.
-  - `보존` 키워드 카드도 고를 수 있다(버리기만 거부한다).
-  > 예전에는 손패를 찾기와 같은 **그리드로 한 벌 더 펼쳐** 골랐다 — 손에 든
-  > 카드를 고르는데 화면 전체가 다른 목록으로 덮였다. 지금 그리드
-  > (`_is_grid_mode()`)는 SEARCH · CHOICE 둘만 쓴다.
-- **보존 표시**: `Card.set_preserved(true)` draws a cyan `PreserveMark` border
+- **Preserve mode UI** (`Mode.PRESERVE`, 계획 중시 (Prioritize the Plan) · the 계략 (Scheme) skill): **the same
+  hand pick as discard** (`is_hand_pick_mode()` = DISCARD or PRESERVE). The hand stays live; dragging a
+  card onto the central zone ("여기에 놓아 보존", Drop here to keep) moves it into the picked row
+  (`add_card_to_pick`), and pressing it sends it back to its slot (`remove_card_from_pick`).
+  Three differences from discard:
+  - **확인** (Confirm) (`_commit_preserve`) puts the picked cards back into their original hand indices
+    **in reverse pick order** (`_return_all_picks_to_hand`) and returns the picks — the keep mark is set
+    by the callback (`_on_preserve_overlay_complete` / 계략's `_on_scheme_picked`).
+  - There is a **보존 취소** (Cancel keep) button. It first returns the picked cards to the hand, then
+    calls the cancel callback — 계략 has no snapshot restore, so without returning them `_teardown`
+    would free the card nodes left in the row and those cards would vanish.
+  - Cards with the `보존` keyword can be picked (only discard refuses them).
+  > It used to spread the hand **as a second copy in the search grid** — picking from cards already in
+  > hand covered the whole screen with another list. The grid (`_is_grid_mode()`) is now used only by
+  > SEARCH · CHOICE.
+- **Keep marker (보존 표시)**: `Card.set_preserved(true)` draws a cyan `PreserveMark` border
   (`draw_center = false`, so it doesn't darken the card). Driven from
   `highlight_affordable_cards`, which reads `_bs.preserved_cards_p`. It is
-  deliberately *not* part of `_refresh_block_overlay`'s dim logic — 보존 is a
+  deliberately *not* part of `_refresh_block_overlay`'s dim logic — keep (보존) is a
   guarantee, not a restriction, so the card stays bright. The cost badge sits
   **above** the border: `_build_block_overlay` reparents `CostBadge` out of
   `CardFront` to the root's last child, so the cyan stroke never covers the
   cost number. `_sync_face_visibility` toggles it together with `CardFront`.
 - **Phase-end gate**: `can_end_card_phase()` returns false while
-  `card_select_overlay.is_active()` so the player can't 턴 넘기기 their
+  `card_select_overlay.is_active()` so the player can't 턴 넘기기 (End turn) their
   way out of an unfinished pick.
 
-### Deck / Discard 목록 열람 (CardPileViewer)
+### Deck / discard pile browse (CardPileViewer)
 `CardPileViewer.gd` — sibling of `CardPhaseManager`, created in
 `BattleSim._ready()` and owning a `CanvasLayer` at **layer 12** (above the
-버리기/찾기 overlay's 10 and the targeting overlay's 11, so a list opened over
+discard/search overlay's 10 and the targeting overlay's 11, so a list opened over
 either of them covers both).
 
-- **Entry point**: the two hand-row 뭉치. `HudBuilder._build_hand_indicators`
+- **Entry point**: the two hand-row piles (뭉치). `HudBuilder._build_hand_indicators`
   lays a transparent flat `Button` over each `CardPileStack`
   (`_make_pile_button`) — the pile sets itself to `MOUSE_FILTER_IGNORE` and
   can't take a click itself — and the press calls
   `CardPileViewer.open(Pile.DECK | Pile.DISCARD)`.
-- **When it opens**: `CardPhaseManager.can_browse_piles()` — 작전 단계 only, and
-  not while the turn banner, the AI's play loop, a 버리기/찾기 overlay or the
+- **When it opens**: `CardPhaseManager.can_browse_piles()` — operation phase (작전 단계) only, and
+  not while the turn banner, the AI's play loop, a discard/search overlay or the
   engage arena owns the screen. `HudBuilder._update_pile_buttons()` (called from
   `update_hud`) disables both buttons and dims both piles
   (`CardPileStack.set_dimmed(true)`) whenever the answer is no, so "you can't
   open this right now" is visible rather than a dead tap.
-- **Contents**: the same 5-column `ScrollContainer` grid the 찾기 overlay uses,
+- **Contents**: the same 5-column `ScrollContainer` grid the search overlay uses,
   **sorted by card name** (`_sorted_cards()`, ties broken by cost) on a
   *duplicate* — the live pile order is never touched, and the deck's real draw
   order is never revealed. Cards are spawned `is_player_card = false` +
   `MOUSE_FILTER_IGNORE`: nothing in the list is selectable. An empty pile shows
-  "비어 있음" instead of a grid.
-- **Exits**: the 닫기 button (same bottom-right band as 확인/취소) or a press
+  "비어 있음" (Empty) instead of a grid.
+- **Exits**: the 닫기 (Close) button (same bottom-right band as 확인/취소 (Confirm/Cancel)) or a press
   anywhere on the dim.
 - **What it locks while open.** Three gates read `is_active()`, because the
   overlay's dim alone is not enough:
@@ -1983,24 +1994,24 @@ either of them covers both).
   straight through the dim. `open()` / `close()` call
   `highlight_affordable_cards()` (which tail-calls `_apply_hand_dim_state()`)
   and `hud.update_hud()` so all three re-evaluate on both edges.
-- 열람은 **드래그 중에는 열 수 없다**(카운터 버튼이 손패 행 옆에 있고, 드래그가
-  포인터를 쥐고 있다). 반대로 열려 있는 동안에는 손패 입력이 통째로 막히므로
-  (`_is_player_input_blocked`) 드래그가 시작되지도 않는다. 예전에는 "선택된
-  카드는 열람 중에도 선택된 채 남는다"는 규칙이 있었는데, 선택 상태 자체가
-  사라지면서 함께 없어졌다.
+- Browse **cannot be opened during a drag** (the counter buttons sit beside the hand row, and the
+  drag holds the pointer). Conversely, while it is open the hand input is blocked entirely
+  (`_is_player_input_blocked`), so a drag never even starts. There used to be a rule that "a
+  selected card stays selected while browsing"; it went away together with the selection
+  state itself.
 
 ---
 
-## 카드 그리드 스크롤 (찾기 / 버리기 / 더미 열람)
+## Card grid scroll (search / discard / pile browse)
 
-`CardSelectOverlay._build_search_grid` 와 `CardPileViewer._build_grid` 의
-스크롤 몸통 `inner` 는 **`MOUSE_FILTER_IGNORE`** 이고, 찾기 그리드의 투명
-픽 버튼(`_attach_search_pick_overlay` 의 `hit`)은 **`MOUSE_FILTER_PASS`** 다.
-둘 다 기본값(STOP)이면 폰에서 그리드가 안 굴러간다 — Godot 의 드래그 스크롤은
-터치에서 에뮬레이트된 마우스 press 가 `ScrollContainer` 까지 올라와야
-시작되는데 STOP 이 그 전파를 끊는다. 카드 노드 자체는 이미 IGNORE 라 문제가
-없었고, 막고 있던 것은 그 위/아래의 두 겹이다. 데스크톱에서는 휠이 STOP 을
-뚫도록 엔진이 예외를 두어 이 결함이 드러나지 않는다. 규칙과 검증법은
+The scroll body `inner` of `CardSelectOverlay._build_search_grid` and `CardPileViewer._build_grid`
+is **`MOUSE_FILTER_IGNORE`**, and the search grid's transparent
+pick button (`hit` in `_attach_search_pick_overlay`) is **`MOUSE_FILTER_PASS`**.
+If both were the default (STOP), the grid would not scroll on a phone — Godot's drag scroll
+only starts when the mouse press emulated from touch bubbles up to the `ScrollContainer`,
+and STOP cuts that propagation. The card nodes themselves were already IGNORE and were
+fine; what blocked it was the two layers above/below them. On desktop the engine makes an
+exception that lets the wheel pass through STOP, so this defect never shows. Rules and how to verify:
 **`docs/mobile_safe_area.md` §5**.
 
 
@@ -2010,41 +2021,41 @@ either of them covers both).
 
 | System | Description |
 |---|---|
-| 개시 손패 (없음) | **양 팀은 빈 손으로 시작한다.** `build_starter_decks` 는 덱을 섞고 `_clear_hands()` 로 손패를 비우는 데서 끝나고, 손패는 오직 `ECONOMY_START_TURN`(10)부터 도는 BATTLE 자동 드로우로만 찬다 — 1~9턴은 카드가 아예 없는 순수 라인전이다. 예전에는 `INITIAL_HAND_SIZE`(game_config, 5)장을 `_deal_initial_hands()` 로 미리 돌려 첫 차례를 상한에 꽉 찬 손으로 맞게 했는데, 그 키와 함수는 **삭제됐다**. 실측: 첫 작전 단계가 **22턴 · 손패 7장**(player 8 / ai 7). |
-| 상대 차례 (AI 턴) | **양 팀이 각자 자기 작전 점수로 턴을 갖는다.** **준비 판정은 이제 양쪽이 같다** — 점수가 문턱 위이고 **낼 수 있는 카드가 손에 한 장이라도 있어야** 한다(`_player_turn_ready` / `_ai_turn_ready`). 예전에는 플레이어만 점수로 진입했는데, 아군이 전멸하면 손패 전체가 시전자 사망으로 잠기는데도 점수는 문턱에 걸려 있어 자동 드로우가 손패를 바꿀 때마다 "당신의 차례"가 열렸다 닫히기만 했다(그 차례에 할 수 있는 일은 턴을 넘기는 것뿐이다). 손패 상한 초과 버리기는 차례와 무관하게 그대로 돈다 — 덱을 돌리는 것이 그 규칙의 목적이다. `_player_turn_ready` 가 `is_playable()` 을 따로 묻는 것은 `card_is_playable` 이 비용만 견주기 때문이다(비용 -1 은 `-1 > player_cost` 가 거짓이라 통과한다). 플레이어가 턴을 넘긴 순간 **상대가 이미 문턱 위(＋낼 카드 보유)면 그 자리에서 상대 차례가 시작된다** — 다음 BATTLE 틱을 기다리지 않고, 내 점수와도 무관하다(`end_card_phase` 말미의 `_ai_turn_ready()` → `await _run_ai_turn()`). 상대가 문턱 아래면 예전처럼 배너 없이 곧장 BATTLE 로 돌아간다. AI 턴은 그 밖에도 BATTLE 틱에서 `ai_cost ≥ PHASE_THRESHOLD` **이고** 낼 수 있는 카드가 손에 있을 때 `CardPhaseManager._run_ai_turn()` 으로 발동하며, "상대 차례" 배너는 이때만 뜬다(예전엔 상대가 0점이라 아무것도 안 해도 매번 떴다). **양쪽이 동시에 준비되면 `_next_turn_side()` 가 중재한다 — 아직 아무도 안 잡았으면 블루, 그 뒤로는 직전에 잡지 않은 쪽이 잡는 교대다.** 예전엔 이 자리에서 **AI 를 무조건 먼저** 검사해 굶주림을 막았는데(0코스트 카드만 내고 턴을 넘긴 플레이어는 다음 틱에도 점수가 문턱 위라 자기 단계에 재진입해 AI 를 영원히 굶길 수 있다), 블루 우선으로 뒤집으면서 그 방어를 교대 규칙이 대신한다 — 방금 잡은 쪽은 상대가 한 번 잡기 전까지 다시 잡지 못한다. 반대쪽 굶주림(점수만 차고 낼 카드가 없어 배너만 매 틱 뜨는 것)은 `_ai_turn_ready()` 가 `AiCardPlayer` 와 **같은 지불 가능 필터**로 막는다. AI 턴 끝에도 플레이어 턴과 같은 복귀 스윕(`process_phase_end_recalls`)이 돈다. |
-| 단계 사슬 (단계 A → B → C) | **카드 한 장이 자기 다음 상태를 정하는 유일한 자리.** 암살 P(Overdrive)의 카드 셋이고, [단계 A]가 덱에 [단계 B]를 세우면 그 [단계 B]가 연 **교전의 결과**가 다음 장을 정한다 — 적을 눕혔으면 [단계 C], 아니면 다시 [단계 A]. **그게 성립하려면 `engage` 절이 무대가 닫힐 때까지 기다려야 한다**: `CardPhaseManager._effect_engage` 가 `engage_finished` 를 await 하게 된 것이 그 때문이고, 같은 변경이 [우세한 전장]의 `gen_hand:19\|per_kill`("교전에서 생존할 시 처치한 적 수만큼")도 함께 고친다 — 예전에는 둘 다 첫 라운드가 돌기도 전에, 즉 처치 수가 언제나 0 인 시점에 정산됐다. 교전 성적표는 무대가 치워진 뒤에도 답해야 하므로 `EngagePhaseManager._last_stats` 에 사본으로 남는다(`_sim` 은 대시보드를 닫을 때 버려진다). [단계 C]는 **강화 3택**(알파 = 다음 [단계 A]가 [단계 B]를 핸드에 / 베타 = 다음 [단계 B]에 +100 충전 / 감마 = 다음 [단계 C]에 성장 점수 +10%)을 고르게 하고, 그 예약은 파일럿당 하나이며 **다음 한 번**에만 쓰인다. 플레이어는 `CardSelectOverlay` 의 `CHOICE` 모드(찾기와 같은 그리드, **이름순 정렬 없음**, **취소 없음** — 카드는 이미 나갔다)로 고르고 AI 는 무작위로 고르되, 둘이 `register_phase_boon` 한 함수로 모여 규칙이 갈라지지 않는다. 감마 정산은 **새 강화를 고르기 전에** 한다 — 순서를 뒤집으면 방금 고른 감마가 그 자리에서 되먹힌다. |
-| 충전 (`charge`) | **충전은 키워드, 채워지는 것은 토큰이다.** 충전 카드는 **손패에 들어올 때마다** 토큰(`CardData.charge`)이 1 오르고(상한 `charge_max`, 두 CSV 같은 컬럼), 사용하면 쌓인 토큰이 한꺼번에 나가며 0 으로 돌아간다. 오르는 자리는 손패 진입 훅 `_on_enter_hand` 하나, 태우는 자리는 `_burn_charge(cd)` 하나다(태운 수는 `_charge_spent`). 효과 쪽 플래그는 **`\|charge`** — 미사일 · 전장 강타 · 성장 가속(`growth:10\|turns:5\|charge`)이 쓴다. 화면은 카드 오른쪽 아래의 `N/M` 배지. 쓰는 카드 — 미사일(3) · 전장 강타(5) · 약자 멸시(3) · 성장 가속(5). 골드러시는 충전 카드가 아니지만 `token:1` 로 토큰을 쌓고 배지는 수만 찍는다. 예전의 `스택` 은 삭제됐다. |
-| 공격 명령 (처치마다 손패에 생성) | **충전이 아니라 카드 자체가 생긴다.** 지원-A(mech 18)의 카드이고 `trigger = death_hand` 를 달아, 아군이든 적이든 **누가 쓰러질 때마다** 그 카드를 들고 오는 기체의 파일럿 손패에 한 장이 생긴다(`MechSkillSystem._grant_death_cards`). **대상 반경은 `attack:1|around_target:1`** — 지정한 **아군** 1칸 이내의 모든 적이다. `|area:N` 과 기하는 같지만 원점이 적이 아니라 아군이라 `_resolve_attack_victims` 에 분기가 따로 있다: 그 분기가 없으면 `picked` 가 아군이라 기본형의 "지정한 적 하나" 폴백들이 전부 팀 검사에 걸려 **엉뚱한 적 한 명**만 맞았다. 판정은 배분 표(`starter_cards`)를 읽는 `_owns_trigger_card` 라 그 카드가 지금 손패에 있든 더미에 있든 이미 소멸했든 답이 같다 — 훅은 **기체의 성질**이지 카드 한 장의 소재가 아니다. `소멸`(exhaust)이 붙어 쓰면 사라지므로 처치가 없으면 덱에도 남지 않는다. 예전에는 `death_stack` 으로 **손패에 있는 그 카드의 스택을 올리는** 훅이었는데, 스택이 충전으로 바뀌면서 충전은 손패 진입에서만 오도록 규칙을 하나로 모으고 "처치가 곧 명령"은 카드를 주는 쪽으로 옮겼다. |
-| 코스트 -1 (사용 불가) | **낼 수 없는 카드.** 손에 들고 있는 것만으로 일하는 네 장(캐시 · 계시 · 약자 멸시 · 밸런스)이 쓴다. 비용 칸에 숫자 대신 `—` 가 찍히고, `highlight_affordable_cards` 가 지불 불가로 잠가 슬래브가 덮이며, `_begin_drag` 이 드래그 자체를 거부한다 — 놓을 곳이 없는 카드를 끌어낼 수 있으면 매번 제자리로 돌아오는 헛동작만 남는다. **단 버리기 픽 중에는 끌린다**: 못 내는 카드라고 못 버리는 것은 아니다. 0 코스트와 헷갈리지 말 것 — 0 은 공짜로 낼 수 있다는 뜻이고 -1 은 낼 수 없다는 뜻이다. **비용 -1 은 할인도 증세도 받지 않는다**: `BattleSim.effective_cost_for` 가 그대로 -1 을 돌려주고(예전에는 `max(0, …)` 를 지나며 0 이 되어, `is_playable()` 를 안 보는 자리마다 "공짜 카드"로 읽혔다) `_effect_cost_reduce_hand`(사전 준비)와 `draw_card` 의 집중 할인도 이 카드를 건너뛴다. 효과 문법은 `hand_passive:<key>` 한 줄뿐이고 실제 동작은 `MechSkillSystem` 이 손패를 훑어 직접 읽는다(절은 카드가 **나갈 때** 도는 것이라 태울 수 없다). |
-| 보존 키워드 | `보존`(`keyword` 에 `preserve`)을 단 카드는 **어떤 버리기에도 걸리지 않는다** — 손패 상한 초과 자동 버리기(`_trim_hand_overflow`)도, 강제 버리기 넷(재고 / 완벽한 마무리 / 과감한 정리 / 솔로 퍼포먼스)도, 버리기:N 모달도. 강제 버리기는 전부 `_discardable(hand)` 를 지나고, 모달은 `add_card_to_discard` 에서 거부하며 `target_count` 를 **버릴 수 있는 카드 수**로 잡는다(손패 크기로 잡으면 확인 버튼이 영영 잠긴 모달이 된다). 작전 단계 한 번짜리인 계획 중시(`preserve:N` 효과, `BattleSim.preserved_cards_*` 목록)와는 **수명도 막는 범위도 다르다** — 그쪽은 상한 초과 버리기만 막고 다음 작전 단계에 풀린다. 화면 표시(시안 테두리)는 둘이 같다: 플레이어에게 두 보존은 "이 카드는 버려지지 않는다" 한 가지 의미다. |
-| 작전 단계 (CARD_PHASE) | Triggered at `player_cost ≥ PHASE_THRESHOLD`. 작전 점수 read out on the 전략 포인트 donut gauges — **둘 다 화면 좌측 거터**(player: 핸드 행 좌측 상단 = Deck 카운터 위; enemy: 좌측 상단 = 상대 핸드 peek 아래). Tapping the player donut flips it into a circular 턴 넘기기 button — **카드를 한 장도 내지 않아도 언제든 넘길 수 있다**(잠기는 것은 배너 / 모달 / 돌진 연출처럼 지금 닫으면 무언가가 끊기는 상태뿐). 규칙은 두 번 바뀌었다: "작전 점수를 1 이상 써야 한다" → 28장 중 9장이 0코스트라 무료 카드만 있는 손은 점수가 줄지 않아 턴을 영영 못 넘겼고, 그래서 "카드를 한 장 이상 낼 것"(`cards_played_this_phase`)이 됐다가, 지금은 그 마저도 없앴다 — 점수는 문턱 위인데 손에 낼 게 없는 상황이 흔하고, 강제하면 아무 카드나 버리듯 내게 되기 때문이다. `cards_played_this_phase` 와 `_has_any_playable_card()` 는 함께 **삭제됐다**. Tapping elsewhere flips it back. |
-| 턴 넘기기의 대가 (초과분 소멸 · 패스 잠금) | 카드를 안 내고도 넘길 수 있는 대신 세 규칙이 붙는다(양 팀 동일). (1) **문턱 초과 소멸** — 차례를 놓는 순간 점수는 정확히 `PHASE_THRESHOLD`(8)로 깎인다(`end_card_phase` / `_run_ai_turn` 말미, 소멸량은 로그에 남는다). (2) **문턱 위에서는 회복 정지** — `COST_RECOVERY` 는 자기 점수가 문턱 **미만인 쪽에만** 들어간다(`do_battle_turn`). 둘이 합쳐 전략 점수의 실질 상한이 문턱이 되고, 카드 효과(아드레날린)로 그 위에 올라간 점수도 차례를 넘기면 깎인다. (3) **패스 잠금**(`CardPhaseManager._player_pass_lock`) — 넘긴 직후에도 점수는 문턱에 걸려 있으므로 그대로 두면 **다음 틱(0.5초)에 내 차례가 다시 열린다**. 그래서 넘긴 쪽은 **자동 드로우로 손패가 바뀌거나 상대가 한 번 차례를 가질 때까지** `_next_turn_side()` 에서 준비되지 않은 것으로 친다. 그 사이 BATTLE 은 평소대로 흐른다. |
-| 카드 드래그 = 대상 지정 | **카드를 끌어내는 순간이 곧 대상 지정 단계다** — 클릭만으로는 아무 일도 일어나지 않는다(아래 '카드 드래그 앤 드롭' 항목). 설명 상자의 "카드 내기" 버튼도, 화면 우하단의 확인 / 취소 버튼도 없다 — **카드를 내는 조작은 끌어다 놓기 하나뿐**이고, 카드가 손을 떠나는 즉시 **놓을 수 없는 곳이 전부 딤드**된다. 딤 규칙은 모드가 가른다: **PILOT 은 타일을 전부 딤드하고**(타일은 대상이 아니다) 유효 대상 파일럿만 **1.5배로 커진 채**(`BattleRenderer.TARGET_EMPHASIS_SCALE`, 예전 2.0 에서 낮췄다 — 2배는 무리를 화면 밖까지 밀어내고 얼굴이 옆 레인을 침범했다) 밝게 남기며 나머지 파일럿은 딤드한다. **커지는 것은 초상만이 아니라 배치도다** — 한 칸에 두세 명이 서 있으면 커진 얼굴이 서로를 덮어 겨눌 수 없으므로, `_build_pilot_render_layout` 이 그 칸 육각 링의 **반지름**을 같은 배율로 벌린다 — 링 정의(`지름 + 여백`)가 곧 비겹침 조건이라 배율을 곱해도 조건이 유지되고, 타일에서 물러난 만큼 화살표가 길어진다. **슬롯 배정 자체는 강조를 보지 않는다**(겹침 판정은 강조 이전 좌표로 돌린다) — 강조까지 반영하면 카드를 집을 때마다 전장의 슬롯이 새로 풀려 배치가 통째로 다시 섞인 것처럼 보인다. 벌어진 무리가 화면 밖으로 나가면 `_clamp_group_on_screen` 이 칸째 평행 이동해 화면 안에 넣는다. 히트 반경도 `BattleRenderer.pilot_marker_radius(p)` 에서 받아 커진 얼굴 테두리까지 잡힌다. **확대·축소는 즉시 튀지 않고 `BattleRenderer.EMPHASIS_TWEEN_SEC`(**0.05초**) 동안 보간된다** — 한 프레임 만에 얼굴 서넛이 부풀고 무리가 벌어지면 무엇이 대상인지보다 화면이 흔들렸다는 인상이 먼저 온다. 예전 0.15초는 그 인상은 지웠지만 카드를 든 손이 이미 대상 위에 가 있는데 얼굴이 아직 자라는 중인 구간을 남겼다 — 강조는 겨누기 **전에** 끝나 있어야 하는 신호다. 목표값(`_pilot_emphasis_target`)과 지금 값(`_pilot_emphasis_scale`)이 갈라져 있고, 그리기·배치·히트 반경이 전부 후자 한 곳을 읽으므로 보간 중에도 셋이 어긋나지 않는다. 도달하면 미동도 없다 — 예전의 펄스와는 다른 것이다. **LOCATION 은 유효 셀만 초록으로 남기고** 나머지 셀과 **파일럿 전원**을 딤드한다(사거리 노란 채움과 `range_unlimited` 특례는 삭제 — 사거리가 무제한이어도 갈 수 있는 칸만 밝다). **단 시전자는 어느 모드에서도 딤드되지 않는다**(`CardTargetingOverlay.card_caster`) — 카드를 쏘는 당사자에게 "여기엔 놓을 수 없다"는 말은 성립하지 않는다. 대신 강조 대상도 아니어서, 시전자가 자기 카드의 유효 대상일 때(보호 / 복귀 같은 `target=ally`)만 커진다. **확정 전까지 비용도 빠지지 않고 카드도 핸드에 남으므로 되돌릴 것이 없다** — **드래그를 빗나가게 놓으면 카드가 제자리로 돌아가고 오버레이가 꺼진다.** 대상 지정 상태는 드래그와 정확히 같은 수명을 가지므로 '탈출' 이라는 개념 자체가 없다(손을 떼면 끝난다). 모달이 아니라서 턴 넘기기는 계속 살아 있다. **오버레이는 이제 노드를 하나도 소유하지 않는다** — PREVIEW 의 좌/우 팀 패널이 제출 후 VS 화면으로 옮겨 가면서 그 CanvasLayer 도 사라졌다. |
-| 카드 드래그 앤 드롭 | **카드를 끌어다 놓는 것이 카드를 집는 유일한 조작이다.** **카드 선택 상태는 삭제됐다** — 클릭해도 아무 일도 일어나지 않고, 누른 채 `DRAG_THRESHOLD_PX`(10px) 넘게 움직여야 비로소 카드가 손을 떠난다. 예전에는 클릭하면 카드가 리프트된 채 대상 지정이 켜져 남아, 다시 끌거나 다른 곳을 눌러 해제해야 했다 — 조작이 둘로 갈려 있었고(클릭→끌기 / 클릭→클릭 해제) 카드를 낼 수 있는 경로는 어차피 드롭 하나뿐이라 중간 상태가 하는 일이 없었다. `_selected_card` / `_select_card` / `Card.is_selected` / `Card.card_clicked` / 바깥 클릭 해제가 전부 그때 사라졌고, `deselect_current_card()` 는 이름만 남아 '진행 중인 드래그와 대상 지정을 강제로 걷는다' 를 뜻한다. **끌린 카드의 자세는 대상 유무가 가른다.** (1) **대상 지정 카드(PILOT / LOCATION)는 손패에 남는다** — 리프트 자세(`Card.PRESS_LIFT`) 그대로 부채꼴 기울기를 유지하고, 카드 **위쪽 끝에서 커서까지 2차 베지어 조준 화살표**(`card_phase/CardDragArrow.gd`)가 이어진다. 카드가 커서에 붙어 날아다니면 겨누려는 대상(커진 초상 / 초록 유효 셀)을 카드가 자기 몸으로 덮어 정작 놓는 순간에 무엇 위인지가 안 보인다. 화살표 노드는 `_bs.canvas` 의 **자식 인덱스 0**(카드보다 뒤)이고 시작점을 `ARROW_TUCK_PX`(42px)만큼 카드 안으로 파묻어 두므로 화살이 카드 **밑에서** 뻗어 나온 것처럼 읽힌다. 제어점은 **카드 자신의 위쪽 축** 위라 기울어 있는 카드는 그 기울기대로 쏘고, 커서가 카드보다 아래면 `BOW_MIN` 으로 잘려 고리를 만들지 않는다. 색은 지금 놓으면 나가는지를 말한다 — 평소 금색, 유효 대상/셀 위에서 시안. (2) **대상이 없는 카드는 커서를 따라다닌다**(`Card.follow_cursor`) — 겨눌 대상이 없으니 가릴 것도 없고, `Card.begin_free_drag()` 이 부채꼴 기울기를 `FREE_DRAG_STRAIGHTEN_SEC`(0.10초) 동안 0 으로 펴서 '손에서 뽑아 든' 자세를 만든다. 이 카드에는 화살표 대신 드롭 존이 신호다. **원래 자리는 어느 쪽이든 빈 채로 유지된다** — `relayout_hand` 이 `is_dragging` 카드를 건너뛰므로 남은 카드는 자리를 지키고, 빗나간 드롭은 그 자리로 오차 0.00px 로 돌아온다. 놓는 곳이 곧 무엇을 하는가다: **대상 지정 카드는 대상 위에**(커진 파일럿 초상 / 초록 유효 셀), **대상이 없는 카드는 화면 중앙 드롭 존**(`CardPhaseManager.drop_zone_rect` — 세로 중앙 기준 화면 높이의 40%, 가로 전체), **버리기:N 픽 중에도 같은 중앙 구역**이다 — `drop_zone_rect()` 는 모드를 보지 않고 언제나 같은 rect 를 돌려주고 골라 둔 카드가 늘어서는 줄도 그 중심에서 나온다(`CardSelectOverlay.to_discard_center_y()`). 문구만 "여기에 놓아 버리기"로 바뀌고, 그때는 구역 노드를 캔버스 자식 인덱스 **1** 로 올린다(0 은 버리기 딤이 차지하고 있어 그대로 두면 구역이 딤 아래로 눌린다). 예전에는 버리기만 `TO_DISCARD_CENTER_Y`(700) 중심의 `DISCARD_ZONE_H`(440px) 짜리 별도 띠를 썼는데, **같은 조작이 무엇을 하느냐에 따라 놓을 자리가 달라져** 낼 때와 버릴 때 매번 다시 겨눠야 했다(두 상수는 함께 삭제됐다). **골라 둔 카드를 누르면 손패로 돌아간다**(`CardSelectOverlay.remove_card_from_discard`) — 카드 위에 투명 버튼 한 장(`UnpickHit`)을 얹어 그 클릭을 받고, 되돌아가는 자리는 **떠나올 때의 인덱스**다(뒤에 붙이면 무른 카드가 손패 오른쪽 끝으로 순간이동해 "무른 것"이 아니라 "새로 뽑은 것"처럼 읽힌다). **빗나가면 카드가 제자리로 돌아갈 뿐 비용도 카드도 그대로다.** 확정은 `CardTargetingOverlay.confirm_with` → `_on_selection_confirm` 한 경로뿐이라 비용 차감 / 카드 소비 / effect chain 이 두 벌 생기지 않는다(`_end_drag` 은 그 콜백이 동기적으로 되돌아올 때까지 `_drag_card` 를 살려 둔다). 입력은 전부 `HandHitLayer` 하나가 받는다 — 버튼을 쥔 컨트롤이 마우스 포커스를 유지하므로 커서가 전장으로 나가도 motion/release 가 계속 들어오고, 전장 쪽에는 드래그 배선이 없다. |
-| 드로우 연출 (카드가 손패에 들어오는 길) | 뽑힌 카드는 자기 슬롯에 그냥 나타나지 않는다 — **먼저 덱 뭉치에서 카드 한 장이 떠오르며 사라지고**(`CardPileStack.play_pop`, 위 "뭉치를 오가는 카드" 항목 — 알파가 30% 남은 0.182초 시점에 아래 박자가 이어받는다), **뒷면인 채로 화면 왼쪽 바깥에서 나타나**(`_draw_entry_position`) **손패 오른쪽 끝(새 카드가 앉을 자리) 위로 날아가고**(`DRAW_FLY_SEC` 0.28초, `EASE_IN_OUT`/`SINE` — 앞이 무거운 감속 곡선은 1200px 를 0.1초에 77% 지나가 "왼쪽에서 왔다"가 안 읽혔다), **그 자리에서 뒤집혀**(`Card.play_flip_reveal`, `FLIP_HALF_SEC` 0.09초 ×2, `scale.x` 를 0 까지 접었다 펴며 폭이 0 인 프레임에 앞/뒷면 교체) **슬롯에 안착한다**(`relayout_hand`). 뒤집는 지점은 슬롯보다 `DRAW_FLIP_LIFT_PX`(78px) 위다 — 행 안에서 뒤집으면 이웃 카드가 절반을 가리고 안착이 눈에 보이는 동작으로 남지 않는다. 연출이 도는 동안 `Card.intro_active` 가 그 카드를 손패의 일원에서 빼므로 **레이아웃 · 호버 · 잡기가 전부 비켜 간다**(나머지 손패는 이미 새 카드 몫까지 자리를 좁힌 채 기다린다). 비행은 `Card.tween_to`(= `_active_tween`)를 쓴다 — 카드 자신이 쥔 트윈이라야 버리기 연출이 걷어 낼 수 있고, 상한 초과 정리는 **가장 오래된 카드**(= 아직 날아오는 중일 수 있는 카드)를 버린다. 같은 프레임에 여러 장이면 `DRAW_STAGGER_SEC`(0.07초)씩 밀려 출발한다. 각 박자는 트윈의 `finished` 가 아니라 타이머로 기다린다 — 카드가 도중에 free 되면 그 신호는 영영 오지 않는다. **인트로를 끄는 두 자리**: 정밀 이동의 손패 왼쪽 복귀(`at_left`, 방향이 어긋난다)와 `_restore_from_snapshot`(취소 롤백이 새 손패처럼 보인다). |
-| 버리기 연출 | 손패를 떠나 버려지는 카드는 **부채꼴 기울기와 무관하게 화면 Y축으로만** 곧장 내려가며 투명해지고 (`Card.DISCARD_DROP_PX` **150px** / `DISCARD_FADE_SEC` 0.30초 — 화면 아래로 멀리 빠져나가기보다 손패 바로 밑에서 사라지는 쪽이 "버렸다"로 읽힌다. **낙하 곡선은 `EASE_OUT`** — 손을 떠나는 순간 확 튕겨 내려간 뒤 아래에서 서서히 멎는다. 예전 `EASE_IN` 은 떨어져 나가는 순간이 가장 흐릿하고 다 사라질 때 제일 빨라 무게가 끝에 실렸다) 다 내려가면 스스로 `queue_free` 한다. **그 낙하가 끝난 뒤에야 버린 더미가 카드를 받는다** — `CardPileStack.play_land` 가 `PILE_LAND_DELAY_SEC`(= `Card.DISCARD_FADE_SEC` 0.30초) 뒤에 시작해 두 연출이 겹치지 않고 이어 붙고(예전 0.16초는 카드가 아직 떨어지는 중에 더미가 먼저 받아 같은 카드가 두 군데에 있었다), **장수와 뭉치 두께는 그 착지 잔상이 다 내려앉은 뒤에 오른다**(`CardPhaseManager._discard_pending` / `_commit_discard_gain` — 표시값은 언제나 `배열 크기 − pending`). 델타 0 인 단순 갱신은 정산을 건드리지 않는다 — 거기서 pending 을 밀면 갱신 한 번에 지연이 통째로 날아간다 — 리프트(`PRESS_LIFT`)가 카드 자신의 up 축을 타는 것과 반대다(버려지는 카드는 뽑히는 게 아니라 떨어지는 것이라, 기울기를 타면 기울어진 카드만 옆으로 새 나간다). 진입점은 `CardPhaseManager.play_discard_fx(node)` 하나이고 **노드는 부르기 전에 이미 `player_card_nodes` 에서 빠져 있어야 한다** — 0.3초 동안 레이아웃 · 호버 · 히트 밴드가 그 카드를 손패로 세면 남은 카드들이 빈자리를 메우지 못한다. 진행 중이던 레이아웃 / 호버 / 그림자 / 뒤집기 트윈은 전부 kill 하고 시작한다. **버리기:N 으로 화면 중앙에 늘어세운 카드들도 확정 시 같은 연출로 내려간다**(`CardSelectOverlay._commit_discard` 가 `to_discard_nodes` 를 목록에서 먼저 떼어 낸 뒤 넘긴다 — 안 그러면 `_teardown` 이 그 자리에서 free 한다). **취소는 예외** — 버려지지 않은 카드가 떨어질 이유가 없으므로 즉시 free 하고 스냅샷이 손패를 다시 세운다. |
-| 카드 앞면 (아트 · 이름 · 비용 리본 · 초상) | **앞면은 위에서부터 아트 → 이름판 두 층**이고, 왼쪽 위에 비용 리본이 얹힌다. **설명문은 카드에 없다** — 글은 `card_phase/CardDescBox.gd` 설명판이 화면마다 든다(손패 = 가리킨 카드 옆 세로 판 · AI 가 낸 카드 = 중앙 카드 오른쪽(키워드 풀이 없음) · 찾기/선택 그리드와 더미 열람 = 가리키거나 누른 카드 옆 · 밴픽 시트와 메크 상세 = 누른 카드 위). 160×220 에 최장 128자를 8pt 로 욱여넣던 설명판(`DescPlate` / `_fit_desc_font_size`, **삭제됨**)은 읽으라고 있는 글씨가 아니었고, 그 자리를 아트가 가져가 카드가 **그림으로** 알아보인다. **아트는 이름판 위 전부**(y 0..184, 카드 끝까지 — 위 두 모서리는 `rounded_top_mask` 쉐이더가 안티앨리어싱으로 깎는다)이고 그림은 `CardImages.art_for(카드 이름)` 이 준다 — 전용 아트가 없으면 `CardImages.ITEM_ART` 가 짝지은 Deadlock 아이템 아이콘(`images/ground/deadlock_items/`, 효과가 비슷한 아이템)이고, 표에도 없으면 `images/ground/` 다섯 장 중 **이름 해시로 고른** 한 장이라 같은 카드는 언제나 같은 그림을 단다. 카드에는 테두리가 없다(비용색 바탕 · 노란 테두리 삭제). **이름판**은 카드 아랫단 전폭(y 184..220)을 아이템 타입색(무기 · 스피릿 · 활력)으로만 채운 판이고, 아트와의 경계에 그림자는 없다(예전 `ArtShadow` 띠 삭제). 충전 카드의 `N/M` 배지는 그 바로 위 아트 오른쪽 아래에 앉는다. **비용은 카드 안 왼쪽 위에 매달린 세로 직각사다리꼴 리본**(`CostBadge`, `COST_RIBBON_RECT`; Panel 스타일박스는 비우고 `draw` 신호로 `CostRibbon.draw` + `StrategyIcon.draw_indicator` 를 그린다)에 찍힌다 — 손패는 카드끼리 절반 넘게 겹치는 부채꼴이라(오른쪽 카드가 왼쪽 카드를 덮는다) **왼쪽 위 모서리가 각 카드에서 언제나 보이는 유일한 구석**이고, 그래서 비용을 그 구석에 둔다. 리본은 사용 불가 슬래브보다 위에 그려지므로 **따로 눌러 준다**(`COST_BADGE_BLOCKED_TINT`) — 안 그러면 잠긴 카드에서 비용만 밝게 남는다. 초상은 여전히 **손패에서만** 그린다(`Card.is_player_card` — 상세 패널 · 더미 열람 · 밴픽 · 드래프트에는 시전자가 없거나 의미가 없고, 상대 손패 peek 은 뒷면이다). **예전에는 초상이 오른쪽 위**였는데 겹치는 부채꼴에서 오른쪽 절반은 옆 카드에 가려지는 쪽이라 "누구 카드인가"가 손패를 펼쳐 봐야만 읽혔고, 그보다 더 예전에는 얼굴(`face_for`)이 **본체를 가득 채워** 일러스트 자리를 차지했다. |
-| 핸드 오르내림 (내 차례가 아닐 때) | **내 작전 단계가 아니면 손패가 화면 아래로 물러나 아군 파일럿 스트립 뒤로 숨는다.** 카드 절반쯤이 스트립 뒤판에 가려지고, 내 차례가 되면 그대로 올라온다. 조건은 `_hand_is_lowered()` = `game_phase != CARD_PHASE` 하나이고, 딤(`_apply_hand_dim_state`)보다 **좁다** — 내 차례 안에서 잠깐 입력이 막히는 구간(명중 연출 · 모달 픽 · 차례 배너)에는 손패가 어두워질 뿐 내려가지 않는다(그때도 내려가면 모달 한 번마다 손패가 오르내린다). **자리**는 `hand_drop_offset()` 이 `slot_position()` 에 더하며 상수가 아니라 스트립 뒤판에서 역산한다(`hud.player_strip_backdrop_top() − Card.CARD_H × 0.5 − BS_HAND_CENTER.y`) — 둘 다 세이프 에어리어 오프셋을 이미 먹은 값이라 기기와 무관하게 "절반쯤 가려진다"가 유지된다(1080×1920 에서 **206px**). **z-order** 는 `_reorder_hand_nodes()` 가 바꾼다: 내려간 것만으로는 카드가 판 **위에** 걸쳐 있어 가려지지 않으므로, 스트립 뒤판을 마커로 잡고 그 바로 앞자리에 카드를 차례로 꽂아 덩어리째 판 아래로 내린다(내 차례에는 예전처럼 자식 목록 맨 끝). **그림자**는 `Card.set_lowered()` 가 `SHADOW_FAR_*`(offset 1×4 · blur 3 · spread 0.98)로 바꾼다 — **카드에 바짝 붙은 짧은 그림자 = 카메라에서 멀다**가 이 연출의 전부이고, 내 차례에는 평소의 rest / hover / drag 세 단계로 돌아온다. 히트 레이어도 같은 오프셋을 타므로(`_fit_hit_layer`) 카드가 없는 자리에서 전장 클릭을 삼키지 않는다. |
-| 카드 설명 판 | **가리킨(확대된) 카드 옆 `DESC_BOX_GAP`(20) 거리**에 카드처럼 세로로 긴 판(`CardPhaseManager.DESC_BOX_W` 240, **높이는 글이 정한다** — 하한 없이 `CardDescBox.build(..., min_h = 0)`, 예전 하한 = 확대된 카드 높이는 삭제). **카드를 끌면 키워드판은 내려가고 설명판만 끌린 카드 왼쪽에 붙어 따라다닌다**(`_desc_follows_drag` / `_follow_drag_desc`, 매 프레임 카드의 실제 변환에서 자리를 잡는다 — 오른변 = 카드 왼변 − `DESC_BOX_GAP`, 윗변 = 카드 윗단, 왼쪽에 자리가 없으면 카드 오른쪽). 예전에는 손패가 비켜 내려가면 판이 손패 위 모서리로 미끄러졌다(`_reflow_description_box` · `DESC_MOVE_TIME`, **삭제됨**). 카드 중심이 화면 가운데이거나 그 오른쪽이면 판은 카드 왼쪽, 가운데보다 왼쪽이면 카드 오른쪽. 키워드 풀이는 그 바깥쪽 별도 판(`_keyword_box`, `KEYWORD_BOX_W` 210)이고 바깥에 자리가 없으면 카드 반대편으로 넘어간다. 판은 옆 손패 카드를 **그림으로 덮지만 터치는 막지 않는다** — 판은 손패 캔버스(layer 1) 위의 전용 `CanvasLayer`(`DESC_LAYER` 2)에 서서 언제나 카드 위에 그려지고(같은 캔버스면 `_reorder_hand_nodes` 가 카드를 자식 목록 끝으로 올려 판을 덮는다), 판과 자식 전부 `MOUSE_FILTER_IGNORE` 라 그 자리를 누르면 `HandHitLayer` 가 아래 카드를 고른다. 카드 앞면에 설명문이 없으므로 **손패에서 글을 읽는 유일한 자리**다. 예전에는 손패 바로 위 가운데 가로 판(640)이었고, 그 전에는 화면 상단 고정(`DESC_BOX_TOP` 142, **삭제됨**)이었다. **가리키기만 해도 뜬다** — 보여 줄 카드는 손패 포커스와 같은 질문이라 `_push_focus_card()`(끌고 있는 카드 > 호버) 하나가 답한다. 판은 불투명하고, 나타날 때 `DESC_ANIM_RISE`(24) 아래에서 올라오며 페이드 인, 사라질 때 그만큼 내려가며 페이드 아웃한 뒤 지워진다(등장 `DESC_ANIM_IN_TIME` 0.2초 · 퇴장 `DESC_ANIM_OUT_TIME` 0.1초, `_animate_desc_in` / `_animate_desc_out` — 포커스가 옮겨 가면 옛 판이 내려가는 동안 새 판이 올라온다). **버튼은 하나도 없다** — 카드를 내는 것도 드롭이고 버리기:N · 보존:N 픽도 드롭이다. |
-| 공격 카드 명중 판정 | `attack:N` 카드도 전장과 **같은 명중 판정**을 굴린다 — `SimulationCore.roll_hit` (`hit/(hit+evasion)`). 빗나가면 데미지가 0이고 로그에 "빗나감"이 남는다. `pierce`(필중)는 판정을 건너뛰고, `repeat`(연속 공격)은 **명중할 때마다** 같은 공격을 다시 굴려 빗나가거나 대상이 쓰러질 때까지 이어진다 — 무한 루프 방지 상한은 `CardPhaseManager.MAX_ATTACK_REPEATS`(5타). **타격마다 명중 연출이 붙고 `_effect_attack` 이 그것을 `await` 한다** — 아래 "공격 명중 연출" 항목. |
-| 핸드 상한 10장 | `MAX_HAND_SIZE` = 10. **내 차례가 아닐 때**(작전 점수가 다시 차오르는 동안) 도는 자동 드로우는 핸드가 꽉 차 있어도 무조건 뽑고, 넘친 만큼 **가장 오래된** 카드부터 discard 로 보낸다(양 팀 동일) — 단 **계획 중시로 보존된 카드는 건너뛴다**. 예전처럼 드로우를 건너뛰면 덱이 돌지 않아 손이 그대로 굳어 있었다. 반면 **내 턴에 카드 효과로 뽑은 카드는 상한을 넘겨도 버리지 않는다** — 턴이 끝난 뒤 첫 자동 드로우가 정리한다. 덱이 비면 discard 전체를 되섞어 덱으로 되돌리는 건 기존과 동일(`draw_card`). |
-| 카드 시전자 제약 (`scope`) | `cards.csv` 의 `scope` 가 카드를 가질 수 있는 **포지션**을 정한다 — `any` 단독 = 전부, `lane` 단독 = 탑 · 미드 · 원딜 · 서폿, 그 밖에는 `jungle` / `top` / `mid` / `carry` / `support` 의 `\|` 목록. 판정은 고정 파일럿 카드를 고를 때(`GameManager.pilot_card_ids_for` / `roll_pilot_card_ids`)와 폴백 풀(`_pool_for_pilot`)에서 한다. 펼치기는 `CardData.positions_of` 하나다. |
-| 카드 분류 / 고정 파일럿 카드 (`card_cat` · `pilot_card_slots`) | cards.csv 는 **전부 파일럿 카드**다(`card_type = pilot`). `card_cat` 은 `\|` 로 여러 개를 다는 분류(성장 · 교전 · 매복 · 공격 · 방어 · 유틸리티 · 뽑기 · 정글 · 라인전). 파일럿 카드 3장은 **선수마다 고정**(`players.pilot_cards`), 비었으면 `pilot_card_slots.csv`(포지션마다 세 칸, 칸마다 분류 목록)로 선수 id 를 씨앗 삼아 결정적으로 뽑는다. 배분 내역은 `BattleSim.starter_cards` 에 남아 상세 패널이 읽는다. 위 *Per-pilot decks* 절. |
-| 지연 효과 3종 (작전 단계 진입 정산) | `CardPhaseManager._apply_phase_entry_carryovers(is_player)` 가 **자기 팀의 다음 작전 단계 진입 시점**에 한꺼번에 정산한다. (1) **계획 중시**의 보존 목록(`BattleSim.preserved_cards_p/ai`)을 비운다 — 보존은 BATTLE 구간 한 번만 버틴다. (2) **아드레날린**의 `next_phase_strategy_*`(−2)를 점수에 더한다(0 아래로는 안 내려간다). (3) **완벽한 마무리**의 팀 성장 배율을 1.0 으로 되돌린다. 한편 **계획 살인**의 예약(`kill_bounty_*`)은 그 단계가 끝날 때(`end_card_phase` / AI 턴 종료) 사라진다. |
-| 계획 중시 (보존) | 보존은 **상한 초과 자동 버리기(`_trim_hand_overflow`)로부터만** 지켜 준다. 카드 효과에 의한 강제 버리기(재고 / 완벽한 마무리 / 과감한 정리 / 솔로 퍼포먼스)는 보존을 무시한다. 플레이어는 버리기처럼 **손패에서 끌어다 놓아** 고르고(`CardSelectOverlay.start_preserve`), 확인하면 고른 카드는 손패 원래 자리로 돌아간다 — 오버레이는 픽만 돌려주고 등록은 `CardPhaseManager` 가 한다. 표시는 `Card` 의 시안 테두리(`PreserveMark`)이며 카드를 어둡게 하지 않는다(보존은 제약이 아니라 보증). |
-| 계획 살인 (처치 현상금) | **선불 예약형**이다. 카드를 낸 시점에 `BattleSim.kill_bounty_p/ai` 를 심고, **모든 사망이 지나는 유일한 지점**인 `mark_pilot_dead` 가 쓰러진 파일럿의 **반대 팀**에 한 번 지급하고 0으로 소모한다. 전장에 제3세력이 없으므로 처치자 인자를 따로 넘기지 않는다. 같은 단계에 두 장을 내면 큰 쪽 하나만 남는다. |
-| 완벽한 마무리 (`end_phase`) | 이 절은 **자리에서 단계를 닫지 않는다.** 효과 체인이 도는 동안 카드는 손패 밖에 떠 있어서, 지금 닫으면 소멸 / discard 라우팅 전에 문이 닫힌다. `_end_phase_requested` 플래그만 세우고 **플레이어는 `_finalize_pending_play` 말미**가, **AI 는 `AiCardPlayer` 의 플레이 루프**가(교전 아레나를 기다린 **뒤**에) `consume_end_phase_request()` 로 받아 간다. |
-| AI 카드 선택 (우선순위 점수제) | **AI 는 낼 수 있는 카드 중 무작위가 아니라 점수가 가장 높은 한 장을 낸다**(`AiCardPlayer._pick_best_card`). 목표는 강한 AI 가 아니라 **눈에 띄게 덜 헛도는** AI 다 — 예전에는 사거리 안에 적이 없는 공격 카드나 만피 아군에게 거는 회복이 무작위로 튀어나와, 상대 차례가 중앙 애니메이션만 돌고 아무 일도 일어나지 않는 구간이 됐다. 규칙은 넷 — (1) **못 내는 카드는 뺀다**(`CardPhaseManager.ai_can_play`: 지불 가능 · 시전자 생존 · `CardData.is_playable()`. 마지막 하나가 새로 생겼다: `effective_cost_for` 는 결과를 0 아래로 깎지 않아 **비용 -1**(사용 불가) 카드가 "0 코스트"로 읽혔고, 그래서 AI 가 캐시 · 계시 · 약자 멸시 · 밸런스를 그냥 태웠다. `_ai_turn_ready` 도 같은 함수를 읽는다), (2) **고를 대상이 없으면 뺀다**, (3) **절 이름이 점수를 정한다**(`CLAUSE_WEIGHT`, 카드가 절을 여럿 달았으면 가장 높은 절이 그 카드의 성격이다 — 간보기는 공격 카드이지 전략 점수 카드가 아니다. 회복 · 보호막은 가장 다친 아군이 70% 위면 후순위로 밀린다), (4) **비용은 감점, 동점은 흔들림으로 가른다**(흔들림이 없으면 같은 손패가 매번 같은 순서로 나가 상대 차례가 기계적으로 읽힌다). |
-| AI 한 차례 플레이 상한 | `AiCardPlayer.MAX_PLAYS_PER_TURN`(12). 루프의 실제 종료 조건은 "낼 수 있는 카드가 없을 때"인데, **재고**(비용 0, 손패를 전부 버리고 같은 수를 다시 뽑는다)처럼 비용을 안 쓰고 손패를 회전시키는 카드가 그 조건을 덱+discard 가 마를 때까지 미룰 수 있다. 구조적 루프를 끊는 백스톱이지 밸런스 노브가 아니다. |
-| 휘발성 (`volatile`) | **버려질 때 버린 더미로 가지 않고 그 자리에서 사라진다.** 파일럿 스킬이 손패에 직접 만들어 주는 카드들이 단다(배회의 [이동], 복귀 명령의 [복귀], 격전의 [전투 개시], 고양감의 [아드레날린], 약탈자의 [약탈]). **소멸과 짝이지 같은 것이 아니다** — 소멸은 **쓰면** 사라지는 것이고 휘발성은 **안 쓰고 버려지면** 사라지는 것이라, 둘을 함께 달면 스킬이 준 카드가 어느 쪽으로도 덱을 불리지 않는다. 판정은 **`CardPhaseManager.send_to_discard(cd, discard)` 한 곳**을 지난다 — 버려지는 모든 경로(상한 초과 정리 · 버리기:N 모달 · 재고 · 완벽한 마무리 · 과감한 정리 · 솔로 퍼포먼스 · `_dispose_used_card`, 일곱 자리)가 그 함수를 부르므로 규칙이 한 군데에만 산다. |
-| 상호 배타 (`excl_group`) | 같은 `excl_group` 값을 가진 카드는 **한 파일럿이 하나만** 갖는다 — 고정 카드 뽑기(`roll_pilot_card_ids`)가 지킨다. 지금은 쓰는 카드가 없다(안전한 파밍 ↔ 공격적인 라인전 짝이 사라졌다). |
-| 랜덤 풀 제외 (`pool = 0`) | `pool = 0` 인 카드는 `_build_pool_from_db` 가 걸러 내 랜덤 스타터 덱에 절대 들어가지 않는다. **결투(id 3)** 가 첫 사례 — 구현과 효과 처리는 전부 살아 있지만 아무에게도 지급되지 않으며, 특정 메크 고유 카드로 전환할 자리로 남겨 둔 것이다. |
-| 재배치 (`reposition`) | **손패 맨 왼쪽으로 이동.** 낼 수 있는 카드(정밀 이동 · 골드러시)는 쓰고 나면 discard 대신 손패 맨 왼쪽으로 돌아오고, 같은 카드의 `self_cost:1` 이 그 사본의 비용을 쓸 때마다 올린다(AI 루프의 상한). 라우팅은 `_dispose_used_card`. |
-| 카드 소멸 규칙 | **소멸은 `exhaust` 키워드 하나로만 결정된다.** `keyword` 컬럼은 **`|` 로 구분된 목록**이므로 판정은 반드시 `CardData.has_keyword("exhaust")` 를 지난다 — 통짜 문자열 비교는 두 번째 키워드가 붙는 순간(전령 제압 = `exhaust\|preserve`) 소멸을 조용히 꺼 버린다. 손패 복귀 카드를 뺀 나머지는 전부 discard 로 간다. 예전엔 `uses > 0` 인 카드가 사용 횟수를 다 쓰면 사라졌는데, `cards.csv` 는 exhaust 가 아닌 카드도 거의 전부 `uses = 1` 이라 **전투 개시를 포함한 대부분의 카드가 한 번 내면 그대로 소멸**했다 — 덱이 돌지 않고 매치 내내 줄어들기만 했고, discard 는 버리기 카드로만 찼다. `CardData.remaining_uses` 는 삭제됐고 `uses` 컬럼은 로드만 될 뿐 아무도 읽지 않는다(향후 "N회 사용 후 소멸" 용으로 남겨 둔 자리). |
-| Deck / Discard 목록 열람 | 핸드 행 양옆의 **Deck / Discard 뭉치를 누르면** 그 더미의 카드가 찾기 그리드와 같은 5열 목록으로 펼쳐진다(`card_phase/CardPileViewer.gd`, 읽기 전용). **정렬은 이름 오름차순** — 실제 덱 순서를 보여 주면 다음 드로우가 그대로 읽히기 때문이며, 찾기(`search:N`) 그리드도 같은 규칙으로 정렬한다. 열리는 시점은 **작전 단계뿐**(`CardPhaseManager.can_browse_piles()`); 못 여는 상태에서는 버튼이 비활성이고 뭉치가 흐려진다. 열려 있는 동안 핸드 입력 · 턴 넘기기 · 도넛 플립이 모두 잠긴다 — 특히 `CostDonut` 은 `_input` 으로 듣기 때문에 딤만으로는 막히지 않아 `set_flip_allowed` 를 따로 끈다. 닫기는 닫기 버튼 또는 딤 클릭. |
-| 사용 불가 카드 표시 | 마나 부족 / 시전자 부활 대기는 **카드 전체를 덮는 반투명 슬래브**(`Card.BlockOverlay`)로 표현한다 — 카드 배경만 회색으로 칠하면 그 위의 파일럿 일러스트가 밝게 남아 쓸 수 있는 카드처럼 읽혔다. 시전자가 쓰러져 있으면 그 위에 **부활까지 남은 턴 수**가 카드 한가운데 큰 폰트로 찍히고, 그 동안 확인 버튼은 비활성이다. |
-| 손패 카드 배율 | **손패의 카드는 `Card.CARD_W/H`(160×220)보다 크게 그려진다 — `CardPhaseManager.HAND_CARD_SCALE`(1.2) → 192×264.** 카드 규격 자체를 키우지 않는 것은 그 상수를 밴픽 시트 · 더미 열람 · 파일럿 상세 팝업까지 열 몇 화면이 함께 읽기 때문이다(키우면 그 격자들이 통째로 어긋난다). **레이아웃 좌표는 배율을 타지 않는다** — `pivot_offset` 이 카드 한가운데라 `position`(확대 전 왼쪽 위)에 배율을 곱해도 **중심이 안 움직이고**, 그래서 슬롯 좌표 · 히트 밴드의 중심 계산 · 손패 내림(`hand_drop_offset`)이 한 글자도 안 바뀌었다. 배율을 아는 자리는 **보이는 폭을 재는 곳 셋**뿐이다(`slot_spacing` 의 간격 압축, `_hover_push_amount` 의 가림 계산, `_fit_hit_layer` 의 `grow_x/y` = `HAND_CARD_SCALE × HOVER_SCALE − 1`). 같은 1.2배가 **상대가 내는 카드**(`AiCardPlayer.SCALE_BIG` 1.35 → **1.62** / `SCALE_SMALL` 0.85 → **1.02**)와 **버리기 픽 줄**(`CardSelectOverlay._layout_to_discard_row` — 손패에서 그대로 들려 나온 같은 노드라 1.0 으로 돌리면 골라 둘 때 작아지고 무를 때 커진다)에도 걸리고, `ObjectiveRewardFx.CARD_SCALE` 은 1.05 → **1.35** 로 함께 올라갔다(중앙에 읽으라고 띄우는 카드는 손패보다 커야 한다). 실측: 4장 간격 204 · 행 138..942, 12장 간격 64.5 · 행 89..991, 카드 아래끝이 아군 스트립 뒤판에서 59px(호버 33px) 떨어진다. |
-| 핸드 레이아웃 | Row top is `BS_HAND_CENTER.y` = **1370** (아군 파일럿 스트립이 원형 초상으로 2배 높아지며 1440 에서 70px 올렸다). 이전 값 **1440** (전장이 90%로 줄며 하단이 55px 올라간 만큼 60px 위로 옮겼다 — 카드 윗단과 전장 아랫단 사이 ~90px 간격 유지). 확인/취소 행 · 전략 포인트 도넛 · Deck/Discard 카운터 · 히트 레이어가 전부 이 값에서 역산되므로 함께 따라온다. Row is `BS_HAND_WIDTH` = (viewport − 2×`BS_HAND_AREA_MARGIN`) × `BS_HAND_WIDTH_SCALE` (1.10) = 902px wide; the Deck/Discard labels re-derive their gutter from the real hand edge. **The fan is one circle**: every card centre rides a circle of radius `BS_HAND_FAN_RADIUS` (3200px) pivoted *below* the row, so tilt and vertical offset always agree and **the middle card is the highest while both ends curve down** (12-card hand: ±6.7°, ends hanging 21.4px below the middle). A plain click does nothing at all — see 카드 드래그 앤 드롭. Each player card casts a `DropShadow` child whose offset/blur grows with height — rest 10px → hover 24px → dragged 32px. **The row spreads around one "focus" card — `_push_focus_card()` = the card being dragged, else the hovered one** — so grabbing a card opens the hand exactly as hovering it does. Focus scales the card to `Card.HOVER_SCALE` (1.2×, cubic EASE_OUT in 0.04s) and slides its neighbours away by `_hover_push_amount` — solved from the coverage it must prevent (96px enlarged half-width + `BS_HAND_HOVER_MIN_STRIP` 32px clickable sliver − the row's own spacing), so **it grows with the hand size**: `BS_HAND_HOVER_PUSH` 28px floor up to 8 cards → 60.5px at 12 cards. **The hand's width is fixed**: the two end cards are anchors, and the push ramps to exactly 0 at them via `1 − (steps/steps_to_end)^BS_HAND_HOVER_FALLOFF_POW` (2.0, so near neighbours keep nearly the full push) — the row redistributes rather than growing. Dragging a 대상 지정 card lifts it by `Card.PRESS_LIFT` **along its own up-axis, keeping its fan rotation** (±4.6px sideways at the ends of a 12-card hand); `_begin_drag` reflows the whole row around it first, and since the focus card's own push is 0 there is no push-free slot variant — lift and drop are exact opposites. `_reorder_hand_nodes` raises the dragged — else hovered — card above all others. A hover reflow lays out the **incoming focus card too** — only the *dragged* card is skipped — otherwise it stays stranded at the push the previous focus gave it. **Hand cards don't pick the mouse**: `spawn_card_node` sets the whole card subtree to `MOUSE_FILTER_IGNORE` (PASS is not enough — a PASS container is still returned by picking) and one `HandHitLayer` Control over the row routes hover/clicks by cursor x, using bands cut at the midpoints between card centres, with the focus card holding the cursor while it's on its enlarged face. Rect picking let the focus card cover its right-hand neighbour down to 0–17px. Hover reflows are **deferred + coalesced** (`move_child` re-fires mouse_entered/exited synchronously — see card_phase/README.md), and `scale` is owned solely by `Card._refresh_float_state`. Card layout tweens `position`, never `global_position` (the latter is scale-coupled — see card_phase/README.md). |
-| 공격 명중 연출 | **공격 카드를 내면 두 초상 위에서 동시에 일이 벌어진다** — 시전자 초상에서 **하얀 빛이 솟아오르고**, 피격자 초상에서 **조각이 사방으로 퍼지며** 초상이 **격하게 흔들린다**. 한 타격이 두 박자다 — **시전**(`BattleSim.anim_pilot_cast`, `ANIM_CAST_DUR` **0.12초**. 마커 폭의 하얀 기둥이 `ANIM_CAST_RISE_PX` 54px 솟으며 옅어지고 앞머리에 원이 하나 뜬다. **명중 여부와 무관하게 먼저 돈다** — 빗나간 공격도 쏘기는 쐈다) → **명중**(`anim_pilot_impact`, `ANIM_HIT_HOLD_SEC` **0.20초**. `BattleRenderer.spawn_pilot_burst` 가 조각 `BURST_COUNT` 12개를 균등 분할 ±0.22rad 각도로 뿌리고 `BURST_DUR` 0.18초 동안 감속하며 날린다 — **각도·거리·크기를 띄울 때 굳혀 배열에 담는다**. 매 프레임 `randf()` 를 다시 굴리면 퍼지는 조각이 아니라 매 프레임 다른 자리에서 깜빡이는 점이 된다. **맞는 쪽의 쉐이크는 전장 자동 교전보다 훨씬 격렬하다**: `ANIM_SHAKE_CARD_DUR` 0.26초 / `ANIM_SHAKE_CARD_AMP_PX` **20px** vs 전장 기본 0.18초 / 6px. 세기는 `PilotData.anim_shake_amp` 로 실려 가고 렌더러는 **주파수를 고정한 채 진동 수를 지속시간에 비례**시킨다 — 진동 수를 고정하면 길게 흔들라는 지시가 "느리게 흔들라"가 되어 격렬함이 사라진다). **쉐이크만 `_apply_attack_damage` 안에 있고 조각은 `_effect_attack` 이 뿌린다** — 전자는 전장 자동 교전 · 파일럿 스킬의 한 방과 같은 피해 진입점이라 거기서 조각까지 뿌리면 매 턴 도는 피해에도 파티클이 붙어 그게 곧 배경이 된다. **포탑에는 조각이 없다**(초상화가 없다 — 포탑은 `anim_turret_hit` 를 따로 갖는다). **한 타격의 총 연출 시간은 두 값의 합, 0.32초다** — 연속 공격(`repeat`, 최대 5타)이 두 박자를 타수만큼 반복하므로 상한이 1.6초이고, 그동안 손패도 턴 넘기기도 잠긴다. `DMG_POPUP_DUR`(**0.30**)이 그 합보다 짧아야 한다 — 길면 연속 타격의 숫자가 같은 자리에 겹쳐 쌓인다(팝업 좌표는 띄운 순간에 고정된다). **연출이 끝나야 다음 카드를 낼 수 있다** — `CardPhaseManager._attack_anim_active` 가 손패 딤(`_is_player_input_blocked`)과 턴 넘기기(`can_end_card_phase`) 양쪽을 잠근다. **AI 공격도 같은 연출을 쓴다**: `_effect_attack` 의 `await` 하나가 `_apply_single_effect` → `_process_pending_chain` / `apply_card_effect` → `apply_and_dispose_ai_card` → `AiCardPlayer.run_ai_plays` 를 줄줄이 코루틴으로 만든다. 사망 / 복귀 / 부활은 `anim_pilot_cast_clear` 로 빛을 걷어 낸다. **예전에는 돌진(몸통 박치기)이었다** — 시전자 초상이 대상 초상까지 **실제로 파고들었다**(`ANIM_LUNGE_IN_DUR`) 붕 뜬 채 돌아오는(`ANIM_LUNGE_OUT_DUR`) 세 박자. 초상을 옮기는 연출이라 딸린 장치가 셋이었고 지금은 전부 삭제됐다 — (1) 방향을 `pilot_marker_positions()` 의 그려진 마커로 재야 했고(타일 중심으로 재면 같은 칸의 적에게 돌진할 때 방향이 반대가 된다), (2) 파고든 얼굴이 대상 칸 뒤로 숨지 않게 `BattleRenderer._lunging_cells_last` 가 그 칸을 맨 마지막에 그렸으며, (3) 사망 · 복귀 · 부활마다 `anim_pilot_lunge_clear` 로 변위를 걷어 내야 했다. 지금은 두 초상이 제자리에 있고 그 위에 이펙트만 얹히므로 셋 다 필요가 없다 — **되살리지 말 것**. 삭제된 이름: `anim_pilot_lunge` / `anim_pilot_lunge_return` / `anim_pilot_lunge_clear` / `pilot_lunge_offset`, `ANIM_LUNGE_*` 넷, `PilotData.anim_lunge_*` 넷(→ `anim_cast_t` / `anim_cast_dur` 로 대체), `_lunging_cells_last`. |
-| 상대 카드는 똑바로 서서 나온다 | AI 가 낸 카드를 화면 중앙으로 날리는 `AiCardPlayer._show_card_centre` 는 **회전도 0 으로 편다**. 뽑혀 나온 카드는 상대 부채꼴이 준 기울기(`HudBuilder._layout_ai_hand` 의 `rotation = -theta`)를 그대로 달고 있고 `pop_ai_hand_card_node()` 는 위치와 배율만 보존하므로, 안 펴면 화면 한가운데에 **비스듬히 선 채로** 뒤집히고 사라졌다. 손에서 뽑아 든 카드가 똑바로 서는 것은 플레이어 쪽 자유 드래그(`Card.begin_free_drag` 이 `FREE_DRAG_STRAIGHTEN_SEC` 동안 기울기를 편다)와 같은 규칙이다. |
-| 피해 수치 표시 | **공격 카드(`attack:N`) 전용.** 판정마다 대상 마커 위로 `-N` / `MISS` / `흡수`(보호막이 전부 먹은 경우)가 떠올랐다 사라진다(`BattleRenderer.spawn_pilot_popup`). 연속 공격은 타수마다 돌진 연출(0.32초)이 통째로 끼므로 팝업이 겹칠 일이 없다(`DMG_POPUP_DUR` 0.30 < 0.32) — `DMG_POPUP_STAGGER` 는 연출이 붙지 않는 경우(시전자 없는 레거시 카드)에만 남는다. 좌표는 띄운 순간에 고정되므로 대상이 쓰러져도 숫자가 끝까지 재생된다. 전장 자동 교전은 기존대로 흔들림만. |
+| Opening hand (none) | **Both teams start with an empty hand.** `build_starter_decks` ends by shuffling the deck and emptying the hand with `_clear_hands()`; the hand fills only through the BATTLE auto-draw, which runs from `ECONOMY_START_TURN` (game_config.csv) — every turn before it is a pure laning phase with no cards at all. It used to pre-deal `INITIAL_HAND_SIZE` (game_config) cards via `_deal_initial_hands()` so the first turn started with a hand full to the cap; that key and that function **have been deleted**. Measured: the first operation phase comes only after the gate opens and Blue's points climb from the head start to `PHASE_THRESHOLD`. |
+| Opponent's turn (AI turn) | **Each team gets turns from its own operation points.** **The readiness check is now the same for both sides** — points must be above the threshold **and there must be at least one playable card in hand** (`_player_turn_ready` / `_ai_turn_ready`). It used to be that only the player entered on points alone: when all allies died, the whole hand was locked by caster death, yet the points still sat on the threshold, so every time the auto-draw changed the hand, "당신의 차례" (Your turn) just opened and closed (the only thing you could do on that turn was pass). Discarding over the hand cap still runs regardless of whose turn it is — cycling the deck is the purpose of that rule. `_player_turn_ready` asks `is_playable()` separately because `card_is_playable` only compares cost (cost -1 passes, since `-1 > player_cost` is false). The moment the player passes, **if the opponent is already above the threshold (+ holds a playable card), the opponent's turn starts right there** — without waiting for the next BATTLE tick, and regardless of my points (`_ai_turn_ready()` → `await _run_ai_turn()` at the end of `end_card_phase`). If the opponent is below the threshold, it goes straight back to BATTLE with no banner, as before. Otherwise the AI turn also fires on a BATTLE tick via `CardPhaseManager._run_ai_turn()` when `ai_cost ≥ PHASE_THRESHOLD` **and** a playable card is in hand, and the "상대 차례" (Opponent's turn) banner appears only then (it used to appear every time even when the opponent had 0 points and did nothing). **When both sides are ready at the same time, `_next_turn_side()` arbitrates — if nobody has taken a turn yet, blue; after that, it alternates to whichever side did not take the previous one.** This spot used to **always check the AI first** to prevent starvation (a player who played only free cards and passed would still be above the threshold on the next tick, re-enter their own phase, and could starve the AI forever); now that it is flipped to blue-first, the alternation rule provides that protection instead — the side that just took a turn cannot take another until the opponent has taken one. The opposite starvation (points full but no playable card, so only the banner pops every tick) is prevented by `_ai_turn_ready()` using **the same affordability filter** as `AiCardPlayer`. At the end of the AI turn, the same return-to-base sweep (`process_phase_end_recalls`) as the player turn also runs. |
+| Stage chain (단계 A → B → C) | **The only place where one card decides its own next state.** It is the card set of Assassin P (Overdrive): [단계 A] (Stage A) puts [단계 B] (Stage B) into the deck, and the **result of the engage** that [단계 B] opens decides the next card — if it took down an enemy, [단계 C] (Stage C); otherwise [단계 A] again. **For that to work, the `engage` clause must wait until the stage closes**: that is why `CardPhaseManager._effect_engage` now awaits `engage_finished`, and the same change also fixes `gen_hand:19\|per_kill` of [우세한 전장] (Dominant Battlefield) ("교전에서 생존할 시 처치한 적 수만큼" — "if you survive the engage, as many as enemies killed") — previously both were settled before the first round even ran, i.e. at a point where the kill count was always 0. The engage scorecard must still answer after the stage is cleared, so it is kept as a copy in `EngagePhaseManager._last_stats` (`_sim` is discarded when the dashboard closes). [단계 C] offers a **choice of 3 boons** (Alpha = the next [단계 A] puts [단계 B] into the hand / Beta = +`PHASE_BOON_BETA_CHARGE` Charge on the next [단계 B] / Gamma = +`PHASE_BOON_GAMMA_RATE` growth points on the next [단계 C]; both in const.csv as `MECH_PHASE_BOON_*`); that reservation is one per pilot and is used **only on the next one**. The player picks with `CardSelectOverlay`'s `CHOICE` mode (same grid as search, **no name sort**, **no cancel** — the card has already been played) and the AI picks at random, but both converge on the single function `register_phase_boon` so the rules do not diverge. Gamma is settled **before picking the new boon** — if the order were reversed, the Gamma just picked would feed back on the spot. |
+| Charge (`charge`) | **Charge (충전) is the keyword; what fills up is the token (토큰).** A Charge card gains 1 token (`CardData.charge`) **each time it enters the hand** (cap `charge_max`, same column in both CSVs); when used, all accumulated tokens are spent at once and it resets to 0. The only place it rises is the hand-entry hook `_on_enter_hand`; the only place it burns is `_burn_charge(cd)` (the burned count is `_charge_spent`). The effect-side flag is **`\|charge`** — used by 미사일 (Missile) · 전장 강타 (Battlefield Smash) · 성장 가속 (Growth Acceleration) (`growth:N\|turns:T\|charge`). On screen it is the `N/M` badge at the card's bottom right. Cards that use it — 미사일 · 전장 강타 · 약자 멸시 (Scorn the Weak) · 성장 가속, each capped by its own `charge_max`. 골드러시 (Gold Rush) is not a Charge card, but it stacks tokens with `token:N` and its badge shows only the count. The old `스택` (stack) has been deleted. |
+| Attack order (created in hand on each kill) | **Not Charge — the card itself is created.** It is the card of Support-A (mech 18) and carries `trigger = death_hand`, so **whenever anyone falls**, ally or enemy, one copy is created in the hand of the pilot whose mech brings that card (`MechSkillSystem._grant_death_cards`). **Its target radius is `attack:N|around_target:N`** — every enemy within that radius of the chosen **ally**. Geometrically the same as `|area:N`, but the origin is an ally, not an enemy, so `_resolve_attack_victims` has a separate branch for it: without that branch, `picked` is an ally, so all of the base form's "the one chosen enemy" fallbacks failed the team check and only **one unrelated enemy** got hit. The check is `_owns_trigger_card`, which reads the allocation table (`starter_cards`), so the answer is the same whether the card is currently in hand, in a pile, or already exhausted — the hook is **a property of the mech**, not of where one card happens to be. It has `소멸` (exhaust), so it disappears when used; with no kills it does not even stay in the deck. It used to be a `death_stack` hook that **raised the stack of that card in hand**; when stacks became Charge, the rule was unified so Charge comes only from hand entry, and "a kill is an order" moved to granting a card. |
+| Cost -1 (unplayable) | **A card that cannot be played.** Used by four cards that work just by being held in hand (캐시 (Cash) · 계시 (Revelation) · 약자 멸시 · 밸런스 (Balance)). The cost slot shows `—` instead of a number, `highlight_affordable_cards` locks it as unaffordable so the slab covers it, and `_begin_drag` refuses the drag itself — if you could drag out a card with nowhere to drop, all that remains is a pointless motion that snaps back every time. **But it can be dragged during a discard pick**: being unplayable does not mean it cannot be discarded. Do not confuse with 0 cost — 0 means it can be played for free; -1 means it cannot be played. **Cost -1 gets neither discounts nor surcharges**: `BattleSim.effective_cost_for` returns -1 as is (it used to pass through `max(0, …)` and become 0, so every place that did not check `is_playable()` read it as a "free card"), and `_effect_cost_reduce_hand` (사전 준비, Preparation) and `draw_card`'s focus discount also skip this card. The effect grammar is a single `hand_passive:<key>` line; the actual behaviour is read directly by `MechSkillSystem` scanning the hand (clauses run when the card **is played**, so they cannot carry it). |
+| Keep keyword | A card with `보존` (Keep) (`preserve` in `keyword`) **is never hit by any discard** — not the automatic over-cap discard (`_trim_hand_overflow`), not the four forced discards (재고 (Reconsider) / 완벽한 마무리 (Perfect Finish) / 과감한 정리 (Bold Cleanup) / 솔로 퍼포먼스 (Solo Performance)), and not the discard:N modal. Every forced discard goes through `_discardable(hand)`; the modal rejects it in `add_card_to_discard` and sets `target_count` to **the number of discardable cards** (setting it to the hand size would make a modal whose confirm button is locked forever). It **differs in lifetime and in what it blocks** from 계획 중시 (Prioritize the Plan), which lasts one operation phase (`preserve:N` effect, `BattleSim.preserved_cards_*` lists) — that one blocks only the over-cap discard and is released at the next operation phase. The on-screen display (cyan outline) is the same for both: to the player, both kinds of keep mean one thing, "this card will not be discarded". |
+| Operation phase (CARD_PHASE) | Triggered at `player_cost ≥ PHASE_THRESHOLD`. Operation points are read out on the 전략 포인트 (Strategy points) donut gauges — **both in the screen's left gutter** (player: top-left of the hand row = above the Deck counter; enemy: top-left = below the opponent hand peek). Tapping the player donut flips it into a circular 턴 넘기기 (End turn) button — **you can pass at any time, even without playing a single card** (it is locked only in states where closing now would cut something off, such as a banner / modal / charge animation). The rule changed twice: "you must spend at least 1 operation point" → a good share of the cards are free, so a hand of only free cards never reduced points and could never pass, so it became "play at least one card" (`cards_played_this_phase`); now even that has been removed — being above the threshold with nothing playable in hand is common, and forcing it makes you play any card as if discarding it. `cards_played_this_phase` and `_has_any_playable_card()` **were deleted** together. Tapping elsewhere flips it back. |
+| The price of passing (excess burned · pass lock) | In exchange for being able to pass without playing a card, three rules apply (same for both teams). (1) **Excess over the threshold burns** — the moment you give up the turn, points are cut to exactly `PHASE_THRESHOLD` (game_config.csv) (at the end of `end_card_phase` / `_run_ai_turn`; the burned amount is logged). (2) **No recovery above the threshold** — `COST_RECOVERY` is applied **only to a side whose points are below** the threshold (`do_battle_turn`). Together these make the threshold the effective cap on strategy points, and points pushed above it by a card effect (아드레날린, Adrenaline) are also cut when you pass. (3) **Pass lock** (`CardPhaseManager._player_pass_lock`) — even right after passing, the points are still sitting on the threshold, so left alone **my turn would reopen on the next tick (0.5 s)**. So the side that passed counts as not ready in `_next_turn_side()` **until the auto-draw changes its hand or the opponent takes a turn once**. Meanwhile BATTLE runs as usual. |
+| Card drag = targeting | **The moment you drag a card out is the targeting step** — a click alone does nothing (see the 'Card drag and drop' entry below). There is no "카드 내기" (Play card) button in the description box and no confirm / cancel buttons at the screen's bottom right — **the only way to play a card is drag and drop**, and as soon as the card leaves the hand, **every place it cannot be dropped is dimmed**. The dim rule depends on the mode: **PILOT dims all tiles** (tiles are not targets) and leaves only valid target pilots bright, **enlarged 1.5×** (`BattleRenderer.TARGET_EMPHASIS_SCALE`, lowered from the former 2.0 — 2× pushed groups off screen and faces spilled into the neighbouring lane), dimming the remaining pilots. **What grows is not just the portrait but the layout** — when two or three stand on one tile, the enlarged faces cover each other and cannot be aimed at, so `_build_pilot_render_layout` widens the **radius** of that tile's hex ring by the same factor — the ring definition (`지름 + 여백`, diameter + margin) is itself the non-overlap condition, so multiplying by the factor keeps the condition, and the arrows get longer by as much as the faces move away from the tile. **Slot assignment itself ignores the emphasis** (overlap is checked on pre-emphasis coordinates) — if it included the emphasis, the battlefield slots would be re-solved every time you pick up a card and the layout would look reshuffled wholesale. If a widened group goes off screen, `_clamp_group_on_screen` translates the whole tile to bring it on screen. The hit radius also comes from `BattleRenderer.pilot_marker_radius(p)`, so it covers the enlarged face outline. **Scaling up/down does not pop instantly; it is interpolated over `BattleRenderer.EMPHASIS_TWEEN_SEC` (**0.05 s**)** — if three or four faces swell and the group spreads in a single frame, the impression that the screen jolted comes before what the target is. The former 0.15 s removed that impression, but left a window where the hand holding the card was already over the target while the face was still growing — emphasis is a signal that must be done **before** you aim. The target value (`_pilot_emphasis_target`) and the current value (`_pilot_emphasis_scale`) are separate, and drawing, layout and hit radius all read the latter in one place, so the three stay in sync even mid-interpolation. Once reached, it does not move at all — this is different from the old pulse. **LOCATION leaves only valid cells green** and dims the remaining cells and **every pilot** (the yellow range fill and the `range_unlimited` special case were deleted — even with unlimited range, only reachable tiles are bright). **But the caster is never dimmed in any mode** (`CardTargetingOverlay.card_caster`) — "you can't drop here" makes no sense for the one casting the card. It is not an emphasis target either, so the caster grows only when it is a valid target of its own card (`target=ally` like protect / return-to-base). **Until confirmation, no cost is deducted and the card stays in hand, so there is nothing to undo** — **if the drag is dropped off target, the card returns to its place and the overlay turns off.** The targeting state has exactly the same lifetime as the drag, so there is no concept of 'escaping' at all (releasing ends it). It is not modal, so pass turn stays live. **The overlay now owns no nodes at all** — when PREVIEW's left/right team panels moved to the VS screen after submission, that CanvasLayer disappeared too. |
+| Card drag and drop | **Dragging and dropping a card is the only way to pick one up.** **The card selection state has been deleted** — clicking does nothing; the card leaves the hand only once you press and move more than `DRAG_THRESHOLD_PX` (10px). It used to be that clicking lifted the card and left targeting on, so you had to drag again or click elsewhere to release — the controls were split in two (click→drag / click→click to release), and since a drop was the only path to play a card anyway, the intermediate state did nothing. `_selected_card` / `_select_card` / `Card.is_selected` / `Card.card_clicked` / click-outside-to-release all disappeared then, and `deselect_current_card()` survives only in name, meaning 'forcibly tear down the in-progress drag and targeting'. **The dragged card's pose depends on whether it has a target.** (1) **Targeted cards (PILOT / LOCATION) stay in the hand** — they keep the fan tilt in the lift pose (`Card.PRESS_LIFT`), and a **quadratic Bézier aiming arrow** (`card_phase/CardDragArrow.gd`) runs **from the card's top edge to the cursor**. If the card flew around stuck to the cursor, its own body would cover the target you are aiming at (enlarged portrait / green valid cell), hiding what it is over at the very moment you drop. The arrow node is **child index 0** of `_bs.canvas` (behind the cards) and its start point is buried `ARROW_TUCK_PX` (42px) into the card, so the arrow reads as extending from **under** the card. The control point lies on **the card's own up axis**, so a tilted card shoots along its tilt, and when the cursor is below the card it is clamped by `BOW_MIN` so it does not loop. The colour says whether dropping now would play it — gold normally, cyan over a valid target/cell. (2) **Untargeted cards follow the cursor** (`Card.follow_cursor`) — there is no target to aim at, so nothing to hide, and `Card.begin_free_drag()` straightens the fan tilt to 0 over `FREE_DRAG_STRAIGHTEN_SEC` (0.10 s) to make a 'pulled out of the hand' pose. For these cards the drop zone is the signal instead of an arrow. **Either way, the original slot stays empty** — `relayout_hand` skips `is_dragging` cards, so the remaining cards hold their places, and a missed drop returns to that spot with 0.00px error. Where you drop is what it does: **targeted cards onto the target** (enlarged pilot portrait / green valid cell), **untargeted cards onto the screen-centre drop zone** (`CardPhaseManager.drop_zone_rect` — 40% of screen height centred vertically, full width), and **during a discard:N pick, the same central zone** — `drop_zone_rect()` ignores the mode and always returns the same rect, and the row where picked cards line up also comes from its centre (`CardSelectOverlay.to_discard_center_y()`). Only the text changes to "여기에 놓아 버리기" (Drop here to discard), and at that time the zone node is raised to canvas child index **1** (index 0 is taken by the discard dim, so leaving it would press the zone under the dim). Previously only discard used a separate band of `DISCARD_ZONE_H` (440px) centred at `TO_DISCARD_CENTER_Y` (700), so **the same gesture had a different drop spot depending on what it did**, and you had to re-aim each time between playing and discarding (both constants were deleted together). **Pressing a picked card returns it to the hand** (`CardSelectOverlay.remove_card_from_discard`) — a transparent button (`UnpickHit`) laid over the card takes that click, and it returns to **the index it left from** (appending it would teleport the undone card to the hand's right end so it reads as "newly drawn" rather than "undone"). **On a miss the card just returns to its place; cost and card are unchanged.** Confirmation has only one path, `CardTargetingOverlay.confirm_with` → `_on_selection_confirm`, so cost deduction / card consumption / effect chain never exist in two copies (`_end_drag` keeps `_drag_card` alive until that callback returns synchronously). All input is received by a single `HandHitLayer` — the control holding the button keeps mouse focus, so motion/release keep arriving even when the cursor leaves onto the battlefield, and the battlefield side has no drag wiring. |
+| Draw animation (the path a card takes into the hand) | A drawn card does not just appear in its slot — **first a card rises out of the deck pile and fades** (`CardPileStack.play_pop`, the "Cards moving between piles" entry above — the next beat takes over at 0.182 s, when 30% alpha remains), **appears face-down from outside the screen's left edge** (`_draw_entry_position`), **flies to above the hand's right end (where the new card will sit)** (`DRAW_FLY_SEC` 0.28 s, `EASE_IN_OUT`/`SINE` — a front-heavy deceleration curve covered 77% of the 1200px in 0.1 s, so "it came from the left" did not read), **flips there** (`Card.play_flip_reveal`, `FLIP_HALF_SEC` 0.09 s ×2, folding `scale.x` to 0 and back, swapping front/back on the zero-width frame), and **settles into its slot** (`relayout_hand`). The flip point is `DRAW_FLIP_LIFT_PX` (78px) above the slot — flipping inside the row would have neighbouring cards hide half of it, and the settle would not remain as a visible motion. While the animation runs, `Card.intro_active` removes that card from hand membership, so **layout · hover · grab all pass it by** (the rest of the hand has already narrowed to make room for the new card and waits). The flight uses `Card.tween_to` (= `_active_tween`) — it must be a tween held by the card itself so the discard animation can tear it down, since over-cap cleanup discards **the oldest card** (= possibly one still in flight). If several arrive in the same frame, each departs `DRAW_STAGGER_SEC` (0.07 s) later. Each beat waits on a timer, not the tween's `finished` — if the card is freed midway, that signal never arrives. **Two places turn the intro off**: precision move's return to the hand's left (`at_left`, the direction would be wrong) and `_restore_from_snapshot` (a cancel rollback would look like a new hand). |
+| Discard animation | A card leaving the hand to be discarded goes straight down **along the screen Y axis only, regardless of fan tilt**, while fading out (`Card.DISCARD_DROP_PX` **150px** / `DISCARD_FADE_SEC` 0.30 s — vanishing just below the hand reads as "discarded" better than travelling far off the bottom of the screen. **The fall curve is `EASE_OUT`** — it snaps down the moment it leaves the hand, then slowly comes to rest below. The former `EASE_IN` was faintest at the moment of falling away and fastest when it had almost vanished, putting the weight at the end), and when it finishes falling it `queue_free`s itself. **Only after that fall ends does the discard pile receive the card** — `CardPileStack.play_land` starts after `PILE_LAND_DELAY_SEC` (= `Card.DISCARD_FADE_SEC` 0.30 s), so the two animations chain without overlapping (the former 0.16 s had the pile receive it while the card was still falling, so the same card was in two places), and **the count and pile thickness rise only after that landing afterimage has fully settled** (`CardPhaseManager._discard_pending` / `_commit_discard_gain` — the displayed value is always `배열 크기 − pending` = array size − pending). A plain refresh with delta 0 does not touch the settlement — pushing pending there would wipe out the whole delay in one refresh — this is the opposite of the lift (`PRESS_LIFT`), which rides the card's own up axis (a discarded card is falling, not being drawn, so riding the tilt would make only tilted cards drift sideways). The single entry point is `CardPhaseManager.play_discard_fx(node)`, and **the node must already be removed from `player_card_nodes` before calling it** — if layout · hover · hit band counted that card as in hand for those 0.3 s, the remaining cards could not fill the gap. Any in-progress layout / hover / shadow / flip tweens are all killed before starting. **Cards lined up in the screen centre by discard:N also go down with the same animation on confirm** (`CardSelectOverlay._commit_discard` detaches `to_discard_nodes` from the list first and then hands them over — otherwise `_teardown` frees them on the spot). **Cancel is the exception** — a card that was not discarded has no reason to fall, so it is freed immediately and the snapshot rebuilds the hand. |
+| Card face (art · name · cost ribbon · portrait) | **From the top, the face has two layers: art → nameplate**, with the cost ribbon on the top left. **There is no description text on the card** — the text is carried per screen by the `card_phase/CardDescBox.gd` description panel (hand = portrait panel beside the pointed-at card · card played by the AI = right of the centre card (no keyword notes) · search/select grid and pile browse = beside the hovered or pressed card · ban/pick sheet and mech detail = above the pressed card). The description plate that crammed up to 128 characters into 160×220 at 8pt (`DescPlate` / `_fit_desc_font_size`, **deleted**) was not lettering meant to be read; the art took over that space, so the card is recognised **by its picture**. **The art is everything above the nameplate** (y 0..184, to the card's edge — the two top corners are cut with anti-aliasing by the `rounded_top_mask` shader), and the image comes from `CardImages.art_for(카드 이름)` (card name) — without dedicated art it is the Deadlock item icon paired by `CardImages.ITEM_ART` (`images/ground/deadlock_items/`, an item with a similar effect), and if not in that table either, one of the five images in `images/ground/` **chosen by name hash**, so the same card always gets the same picture. The card has no border (cost-coloured background · yellow border deleted). The **nameplate** is a plate filling the full width of the card's bottom band (y 184..220) with just the item type colour (weapon · spirit · vitality), and there is no shadow at its boundary with the art (the former `ArtShadow` strip deleted). A Charge card's `N/M` badge sits at the bottom right of the art just above it. **The cost is printed on a tall right-trapezoid ribbon hanging inside the card's top-left corner** (`CostBadge`, `COST_RIBBON_RECT`; the Panel stylebox is left empty and its `draw` signal draws `CostRibbon.draw` + `StrategyIcon.draw_indicator`) — the hand is a fan where cards overlap by more than half (the right card covers the left one), so **the top-left corner is the only corner always visible on each card**, which is why the cost goes there. The ribbon draws above the unplayable slab, so **it is dimmed separately** (`COST_BADGE_BLOCKED_TINT`) — otherwise only the cost would stay bright on a locked card. The caster portrait ribbon (top-right corner, see *Card front layout*) is drawn **only in the hand** (`Card.is_player_card` — the detail panel · pile browse · ban/pick · draft have no caster or it is meaningless, and the opponent hand peek is face-down). Even earlier, the face (`face_for`) **filled the whole body**, taking the illustration's place. |
+| Hand lowering / raising (when it is not my turn) | **When it is not my operation phase, the hand retreats down the screen and hides behind the ally pilot strip.** About half of each card is hidden by the strip backplate, and when my turn comes it rises back up. The condition is just `_hand_is_lowered()` = `game_phase != CARD_PHASE`, which is **narrower** than the dim (`_apply_hand_dim_state`) — during windows inside my turn where input is briefly blocked (hit animation · modal pick · turn banner), the hand only darkens and does not lower (if it lowered then too, the hand would bob up and down with every modal). **The position** is added to `slot_position()` by `hand_drop_offset()`, derived not from a constant but back-computed from the strip backplate (`hud.player_strip_backdrop_top() − Card.CARD_H × 0.5 − BS_HAND_CENTER.y`) — both values already include the safe-area offset, so "about half hidden" holds regardless of device (**206px** at 1080×1920). **z-order** is changed by `_reorder_hand_nodes()`: lowering alone leaves the cards hanging **over** the plate, not hidden, so it takes the strip backplate as a marker and inserts the cards one by one into the slots right before it, pushing the whole bunch under the plate (on my turn, they go to the end of the child list as before). **The shadow** is switched by `Card.set_lowered()` to `SHADOW_FAR_*` (offset 1×4 · blur 3 · spread 0.98) — **a short shadow hugging the card = far from the camera** is the whole of this effect, and on my turn it returns to the usual three levels rest / hover / drag. The hit layer rides the same offset (`_fit_hit_layer`), so it does not swallow battlefield clicks where there are no cards. |
+| Card description panel | A portrait panel like a card, **`DESC_BOX_GAP` (20) beside the pointed-at (enlarged) card** (`CardPhaseManager.DESC_BOX_W` 240; **the text sets the height** — no lower bound, `CardDescBox.build(..., min_h = 0)`; the old floor of the enlarged card's height was deleted). **Dragging a card drops the keyword panels and the description panel alone sticks to the dragged card's left** (`_desc_follows_drag` / `_follow_drag_desc`, positioned every frame from the card's live transform — right edge = card left − `DESC_BOX_GAP`, top = card top; with no room on the left it goes to the card's right). It used to slide to the top corner of the hand when the hand lowered (`_reflow_description_box` · `DESC_MOVE_TIME`, **deleted**). Card centre at or right of the screen middle → panel on the card's left; left of the middle → on its right. Keyword notes are separate panels further out (`_keyword_boxes`, `KEYWORD_BOX_W` 210, one per keyword), flipping to the card's other side if there is no room outside. The panels **cover neighbouring hand cards visually but never block touches** — they live on a dedicated `CanvasLayer` (`DESC_LAYER` 2) above the hand canvas (layer 1), so they always draw over the cards (on the same canvas `_reorder_hand_nodes` would raise cards to the end of the child list and over the panel), and the panels and all their children are `MOUSE_FILTER_IGNORE`, so pressing there lets `HandHitLayer` pick the card underneath. The card face has no description text, so this is **the only place to read text in the hand**. It used to be a wide panel centred just above the hand (640), and before that fixed at the top of the screen (`DESC_BOX_TOP` 142, **deleted**). **It appears on hover alone** — which card to show is the same question as hand focus, so a single `_push_focus_card()` (dragged card > hover) answers it. The panel is opaque; it rises `DESC_ANIM_RISE` (24) from below while fading in and sinks the same distance while fading out before being freed (in `DESC_ANIM_IN_TIME` 0.2s · out `DESC_ANIM_OUT_TIME` 0.1s, `_animate_desc_in` / `_animate_desc_out` — when focus moves, the old panel sinks while the new one rises). **There are no buttons at all** — playing a card is a drop, and so are the 버리기:N · 보존:N picks. |
+| Attack card hit roll | `attack:N` cards roll **the same hit check** as the battlefield (전장): `SimulationCore.roll_hit` (`hit/(hit+evasion)`). On a miss the damage is 0 and the log records "빗나감" (Miss). `pierce` (sure hit) skips the roll. `repeat` (consecutive attack) re-rolls the same attack **after every hit**, continuing until it misses or the target goes down; the cap that prevents infinite loops is `CardPhaseManager.MAX_ATTACK_REPEATS` (const.csv `CARD_MAX_ATTACK_REPEATS`). **Every hit gets a hit animation, and `_effect_attack` `await`s it** (see the "Attack hit animation" row below). |
+| Hand cap | `MAX_HAND_SIZE` (game_config.csv). The automatic draw that runs **when it is not my turn** (while operation points refill) always draws, even with a full hand, and sends the overflow to discard **oldest card first** (same for both teams), **skipping cards kept by 계획 중시 (Prioritize the Plan)**. Previously the draw was skipped, so the deck never cycled and the hand stayed frozen. In contrast, **cards drawn by a card effect during my own turn are not discarded even above the cap**; the first automatic draw after the turn ends cleans them up. When the deck runs out, the whole discard is reshuffled back into the deck, as before (`draw_card`). |
+| Card caster (시전자) restriction (`scope`) | `scope` in `cards.csv` sets which **positions** may own the card: `any` alone = all, `lane` alone = top · mid · carry (원딜) · support, otherwise a `\|` list of `jungle` / `top` / `mid` / `carry` / `support`. The check runs when picking fixed pilot cards (`GameManager.pilot_card_ids_for` / `roll_pilot_card_ids`) and in the fallback pool (`_pool_for_pilot`). Expansion is done by `CardData.positions_of` alone. |
+| Card categories / fixed pilot cards (`card_cat` · `pilot_card_slots`) | cards.csv contains **only pilot cards** (`card_type = pilot`). `card_cat` is a multi-value category list separated by `\|` (성장 (Growth) · 교전 (Engage) · 매복 (Ambush) · 공격 (Attack) · 방어 (Defense) · 유틸리티 (Utility) · 뽑기 (Draw) · 정글 (Jungle) · 라인전 (Laning)). The 3 pilot cards are **fixed per player** (`players.pilot_cards`); if empty, they are drawn deterministically from `pilot_card_slots.csv` (three slots per position, each slot a category list) using the player id as the seed. The allocation is recorded in `BattleSim.starter_cards`, which the detail panel reads. See the *Per-pilot decks* section above. |
+| 3 deferred effects (settled on operation phase entry) | `CardPhaseManager._apply_phase_entry_carryovers(is_player)` settles them all at once **when that team next enters its operation phase (작전 단계)**. (1) Clears the **계획 중시** keep list (`BattleSim.preserved_cards_p/ai`); a keep survives only one BATTLE segment. (2) Adds **아드레날린** (Adrenaline)'s `next_phase_strategy_*` (its negative `strategy_next_phase` clause) to the points (never below 0). (3) Resets **완벽한 마무리** (Perfect Finish)'s team growth multiplier to 1.0. Meanwhile, the **계획 살인** (Planned Kill) reservation (`kill_bounty_*`) vanishes when that phase ends (`end_card_phase` / end of the AI turn). |
+| 계획 중시 (keep) | Keep protects **only against the automatic over-cap discard (`_trim_hand_overflow`)**. Forced discards by card effects (재고 (Reconsider) / 완벽한 마무리 / 과감한 정리 (Bold Cleanup) / 솔로 퍼포먼스 (Solo Performance)) ignore keep. The player picks like a discard, **by dragging cards out of the hand and dropping them** (`CardSelectOverlay.start_preserve`); on confirm the picked cards return to their original hand slots. The overlay only returns the picks; `CardPhaseManager` does the registration. The marker is a cyan border on `Card` (`PreserveMark`) and does not darken the card (keep is a guarantee, not a restriction). |
+| 계획 살인 (kill bounty) | **Prepaid reservation.** When the card is played it plants `BattleSim.kill_bounty_p/ai`; `mark_pilot_dead`, **the single point every death passes through**, pays it once to the **opposite team** of the fallen pilot and consumes it to 0. There is no third faction on the battlefield, so no killer argument is passed. If two are played in the same phase, only the larger one remains. |
+| 완벽한 마무리 (`end_phase`) | This clause **does not close the phase on the spot.** While the effect chain runs, the card floats outside the hand, so closing now would shut the door before exhaust / discard routing. It only sets the `_end_phase_requested` flag; **for the player, the tail of `_finalize_pending_play`**, and **for the AI, the `AiCardPlayer` play loop** (**after** waiting for the engage arena), pick it up via `consume_end_phase_request()`. |
+| AI card selection (priority scoring) | **The AI plays not a random playable card but the single highest-scoring one** (`AiCardPlayer._pick_best_card`). The goal is not a strong AI but one that **visibly spins its wheels less**: previously attack cards with no enemy in range, or heals on full-HP allies, popped out at random, so the opponent's turn became a stretch where only the centre animation ran and nothing happened. Four rules: (1) **Drop unplayable cards** (`CardPhaseManager.ai_can_play`: affordable · caster alive · `CardData.is_playable()`. The last one is new: `effective_cost_for` does not clamp the result below 0, so **cost -1** (unusable) cards read as "0 cost", and the AI just burned 캐시 (Cash) · 계시 (Revelation) · 약자 멸시 (Scorn the Weak) · 밸런스 (Balance). `_ai_turn_ready` reads the same function). (2) **Drop cards with no valid target.** (3) **The clause name sets the score** (`CLAUSE_WEIGHT`; if a card has several clauses, the highest one is the card's character, e.g. 간보기 (Probe) is an attack card, not a strategy-point card. Heal · shield are deprioritized when the most-wounded ally is above `SUPPORT_HP_RATIO`, const.csv `AI_CARD_SUPPORT_HP_RATIO`). (4) **Cost is a penalty; ties are broken by jitter** (without jitter the same hand plays out in the same order every time, and the opponent's turn reads as mechanical). |
+| AI plays-per-turn cap | `AiCardPlayer.MAX_PLAYS_PER_TURN` (const.csv `AI_CARD_MAX_PLAYS_PER_TURN`). The loop's real exit condition is "no playable card left", but cards that cycle the hand without spending cost, like **재고** (free, discards the whole hand and draws the same number again), can postpone that condition until deck + discard run dry. This is a backstop that breaks a structural loop, not a balance knob. |
+| Volatile (`volatile`) | **When discarded, the card vanishes on the spot instead of going to the discard pile.** Carried by cards that pilot skills create directly in the hand (배회 (Roam)'s [이동] (Move), 복귀 명령 (Return Order)'s [복귀] (Return to Base), 격전 (Fierce Battle)'s [전투 개시] (Start Battle), 고양감 (Elation)'s [아드레날린] (Adrenaline), 약탈자 (Raider)'s [약탈] (Plunder)). **It pairs with exhaust but is not the same thing**: exhaust vanishes **when used**, volatile vanishes **when discarded unused**, so with both a skill-granted card never bloats the deck either way. The check passes through **one place, `CardPhaseManager.send_to_discard(cd, discard)`**: every discard path (over-cap trim · discard:N modal · 재고 · 완벽한 마무리 · 과감한 정리 · 솔로 퍼포먼스 · `_dispose_used_card`, seven sites) calls that function, so the rule lives in one place only. |
+| Mutual exclusion (`excl_group`) | Cards with the same `excl_group` value can be owned **only one per pilot**; the fixed-card roll (`roll_pilot_card_ids`) enforces it. No card uses it now (the 안전한 파밍 (Safe Farming) ↔ 공격적인 라인전 (Aggressive Laning) pair is gone). |
+| Excluded from random pool (`pool = 0`) | Cards with `pool = 0` are filtered out by `_build_pool_from_db` and never enter a random starter deck. **결투 (Duel) (id 3)** is the first case: its implementation and effect handling are fully alive, but it is granted to no one; it is kept as a slot to convert into a specific mech's unique card. |
+| Reposition (`reposition`) | **Moves to the far left of the hand.** Playable cards (정밀 이동 (Precise Move) · 골드러시 (Gold Rush)) return to the far left of the hand instead of discard after use, and the same card's `self_cost:N` raises that copy's cost each use (the cap for the AI loop). Routing is `_dispose_used_card`. |
+| Card exhaust rule | **Exhaust is decided solely by the `exhaust` keyword.** The `keyword` column is a **`|`-separated list**, so the check must go through `CardData.has_keyword("exhaust")`; a whole-string comparison silently turns exhaust off the moment a second keyword is added (전령 제압 (Herald Subdued) = `exhaust\|preserve`). Everything except return-to-hand cards goes to discard. Previously a card with `uses > 0` vanished once its uses ran out, but the `uses` values in `cards.csv` allowed almost every non-exhaust card only a single use, so **most cards, including 전투 개시, exhausted after a single play**: the deck never cycled and only shrank over the match, and the discard filled only with discard-effect cards. `CardData.remaining_uses` was deleted; the `uses` column is loaded but read by nobody (a slot kept for a future "exhaust after N uses"). |
+| Browsing the Deck / Discard lists | **Pressing the Deck / Discard piles** on either side of the hand row spreads that pile's cards in the same 5-column list as the search grid (`card_phase/CardPileViewer.gd`, read-only). **Sorted by name, ascending**, because showing the real deck order would reveal the next draw; the search (`search:N`) grid sorts by the same rule. It can be opened **only during the operation phase** (`CardPhaseManager.can_browse_piles()`); when it can't be opened, the button is disabled and the pile is dimmed. While it is open, hand input · ending the turn · donut flip are all locked; in particular `CostDonut` listens via `_input`, so the dim alone doesn't block it, and `set_flip_allowed` is turned off separately. Close with the close button or by clicking the dim. |
+| Unusable card display | Not enough mana / caster waiting to respawn is shown with **a translucent slab covering the whole card** (`Card.BlockOverlay`); greying only the card background left the pilot illustration on top bright, so it read as a usable card. If the caster is down, **the number of turns until respawn** is stamped on top in a large font at the card's centre, and the confirm button is disabled meanwhile. |
+| Hand card scale | **Cards in the hand are drawn larger than `Card.CARD_W/H` (160×220): `CardPhaseManager.HAND_CARD_SCALE` (1.2) → 192×264.** The card size itself is not enlarged because that constant is read by a dozen-odd screens, from the ban/pick (밴픽) sheet · pile browser · pilot detail popup (enlarging it would throw all those grids off). **Layout coordinates don't take the scale**: `pivot_offset` is the card's centre, so multiplying `position` (top-left before scaling) by the scale **does not move the centre**; hence slot coordinates · hit-band centre computation · hand lowering (`hand_drop_offset`) didn't change a single character. The only places that know the scale are **the three that measure visible width** (spacing compression in `slot_spacing`, occlusion computation in `_hover_push_amount`, and `grow_x/y` = `HAND_CARD_SCALE × HOVER_SCALE − 1` in `_fit_hit_layer`). The same 1.2× also applies to **cards the opponent plays** (`AiCardPlayer.SCALE_BIG` 1.35 → **1.62** / `SCALE_SMALL` 0.85 → **1.02**) and to **the discard pick row** (`CardSelectOverlay._layout_to_discard_row`: it is the same node lifted straight out of the hand, so resetting to 1.0 would shrink it when picked and grow it when undone), and `ObjectiveRewardFx.CARD_SCALE` went up together from 1.05 → **1.35** (a card floated in the centre to be read must be larger than the hand). Measured (실측): 4 cards spacing 204 · row 138..942; 12 cards spacing 64.5 · row 89..991; the card's bottom edge is 59px (hover 33px) from the ally (아군) strip's backplate (뒤판). |
+| Hand layout | Row top is `BS_HAND_CENTER.y` = **1370** (raised 70px from 1440 when the allied pilot strip doubled in height with round portraits). The earlier **1440** had moved up 60px to match the battlefield shrinking to 90% and its bottom rising 55px, keeping a ~90px gap between the card tops and the battlefield's bottom edge. The confirm/cancel row · strategy point donut · Deck/Discard counters · hit layer are all back-derived from this value, so they follow along. Row is `BS_HAND_WIDTH` = (viewport − 2×`BS_HAND_AREA_MARGIN`) × `BS_HAND_WIDTH_SCALE` (1.10) = 902px wide; the Deck/Discard labels re-derive their gutter from the real hand edge. **The fan is one circle**: every card centre rides a circle of radius `BS_HAND_FAN_RADIUS` (3200px) pivoted *below* the row, so tilt and vertical offset always agree and **the middle card is the highest while both ends curve down** (12-card hand: ±6.7°, ends hanging 21.4px below the middle). A plain click does nothing at all — see Drag and drop (카드 드래그 앤 드롭). Each player card casts a `DropShadow` child whose offset/blur grows with height — rest 10px → hover 24px → dragged 32px. **The row spreads around one "focus" card — `_push_focus_card()` = the card being dragged, else the hovered one** — so grabbing a card opens the hand exactly as hovering it does. Focus scales the card to `Card.HOVER_SCALE` (1.2×, cubic EASE_OUT in 0.04s) and slides its neighbours away by `_hover_push_amount` — solved from the coverage it must prevent (96px enlarged half-width + `BS_HAND_HOVER_MIN_STRIP` 32px clickable sliver − the row's own spacing), so **it grows with the hand size**: `BS_HAND_HOVER_PUSH` 28px floor up to 8 cards → 60.5px at 12 cards. **The hand's width is fixed**: the two end cards are anchors, and the push ramps to exactly 0 at them via `1 − (steps/steps_to_end)^BS_HAND_HOVER_FALLOFF_POW` (2.0, so near neighbours keep nearly the full push) — the row redistributes rather than growing. Dragging a targeted (대상 지정) card lifts it by `Card.PRESS_LIFT` **along its own up-axis, keeping its fan rotation** (±4.6px sideways at the ends of a 12-card hand); `_begin_drag` reflows the whole row around it first, and since the focus card's own push is 0 there is no push-free slot variant — lift and drop are exact opposites. `_reorder_hand_nodes` raises the dragged — else hovered — card above all others. A hover reflow lays out the **incoming focus card too** — only the *dragged* card is skipped — otherwise it stays stranded at the push the previous focus gave it. **Hand cards don't pick the mouse**: `spawn_card_node` sets the whole card subtree to `MOUSE_FILTER_IGNORE` (PASS is not enough — a PASS container is still returned by picking) and one `HandHitLayer` Control over the row routes hover/clicks by cursor x, using bands cut at the midpoints between card centres, with the focus card holding the cursor while it's on its enlarged face. Rect picking let the focus card cover its right-hand neighbour down to 0–17px. Hover reflows are **deferred + coalesced** (`move_child` re-fires mouse_entered/exited synchronously — see card_phase/README.md), and `scale` is owned solely by `Card._refresh_float_state`. Card layout tweens `position`, never `global_position` (the latter is scale-coupled — see card_phase/README.md). |
+| Attack hit animation | **Playing an attack card makes things happen on two portraits (초상) at once**: **white light rises** from the caster's portrait, and on the target's portrait **fragments burst outward** while the portrait **shakes violently**. One hit is two beats: **cast** (`BattleSim.anim_pilot_cast`, `ANIM_CAST_DUR` **0.12s**. A marker-wide white pillar rises `ANIM_CAST_RISE_PX` 54px while fading, with a circle at its head. **It always runs first, hit or miss**: a missed attack was still fired) → **impact** (`anim_pilot_impact`, `ANIM_HIT_HOLD_SEC` **0.20s**. `BattleRenderer.spawn_pilot_burst` scatters `BURST_COUNT` 12 fragments at evenly divided angles ±0.22rad and flies them with deceleration over `BURST_DUR` 0.18s; **angle · distance · size are fixed into an array at spawn time**. Re-rolling `randf()` every frame turns a spreading burst into dots blinking in a different place each frame. **The target's shake is far more violent than in battlefield auto-combat**: `ANIM_SHAKE_CARD_DUR` 0.26s / `ANIM_SHAKE_CARD_AMP_PX` **20px** vs the battlefield default 0.18s / 6px. Intensity is carried via `PilotData.anim_shake_amp`, and the renderer **keeps the frequency fixed and makes the number of oscillations proportional to the duration**; fixing the oscillation count would turn "shake longer" into "shake slower" and the violence would be lost). **Only the shake lives inside `_apply_attack_damage`; the fragments are spawned by `_effect_attack`**: the former is the same damage entry point as battlefield auto-combat · a pilot skill's hit, so spawning fragments there would attach particles to the damage that runs every turn, and they would become background noise. **Turrets get no fragments** (they have no portrait; turrets have their own `anim_turret_hit`). **The total animation time of one hit is the sum of the two values, 0.32s**: consecutive attack (`repeat`, up to `MAX_ATTACK_REPEATS` hits) repeats both beats per hit, so the worst case is that many × 0.32s, during which the hand and ending the turn are both locked. `DMG_POPUP_DUR` (**0.30**) must be shorter than that sum; if longer, numbers from consecutive hits stack in the same spot (popup coordinates are fixed at spawn). **The next card can be played only after the animation finishes**: `CardPhaseManager._attack_anim_active` locks both the hand dim (`_is_player_input_blocked`) and ending the turn (`can_end_card_phase`). **AI attacks use the same animation**: the single `await` in `_effect_attack` turns `_apply_single_effect` → `_process_pending_chain` / `apply_card_effect` → `apply_and_dispose_ai_card` → `AiCardPlayer.run_ai_plays` into a chain of coroutines. Death / return-to-base (복귀) / respawn clear the light via `anim_pilot_cast_clear`. **It used to be a lunge (body slam)**: three beats where the caster's portrait **actually dug into** the target's portrait (`ANIM_LUNGE_IN_DUR`) and came back while floating (`ANIM_LUNGE_OUT_DUR`). Because it moved the portrait, it needed three supporting mechanisms, all now deleted: (1) direction had to be measured from the drawn markers of `pilot_marker_positions()` (measuring from tile centres reversed the direction when lunging at an enemy in the same cell), (2) `BattleRenderer._lunging_cells_last` drew that cell last so the lunging face didn't hide behind the target cell, and (3) every death · return-to-base · respawn had to clear the offset with `anim_pilot_lunge_clear`. Now both portraits stay in place with only effects layered on top, so none of the three is needed: **do not bring them back**. Deleted names: `anim_pilot_lunge` / `anim_pilot_lunge_return` / `anim_pilot_lunge_clear` / `pilot_lunge_offset`, the four `ANIM_LUNGE_*`, the four `PilotData.anim_lunge_*` (→ replaced by `anim_cast_t` / `anim_cast_dur`), `_lunging_cells_last`. |
+| Opponent cards come out standing upright | `AiCardPlayer._show_card_centre`, which flies a card the AI played to the screen centre, **also straightens its rotation to 0**. The drawn card still carries the tilt the opponent's fan gave it (`rotation = -theta` in `HudBuilder._layout_ai_hand`), and `pop_ai_hand_card_node()` preserves only position and scale, so without straightening it flipped and vanished **standing askew** in the middle of the screen. A card pulled from the hand standing upright is the same rule as the player's free drag (`Card.begin_free_drag` straightens the tilt over `FREE_DRAG_STRAIGHTEN_SEC`). |
+| Damage number display | **Attack cards (`attack:N`) only.** For each roll, `-N` / `MISS` / `흡수` (Absorbed; when the shield ate it all) floats up over the target marker and fades (`BattleRenderer.spawn_pilot_popup`). In a consecutive attack each hit carries the whole lunge animation (0.32s), so popups never overlap (`DMG_POPUP_DUR` 0.30 < 0.32); `DMG_POPUP_STAGGER` remains only for cases with no animation (legacy cards with no caster). Coordinates are fixed at spawn, so the number plays to the end even if the target goes down. Battlefield auto-combat keeps just the shake, as before. |

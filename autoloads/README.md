@@ -11,41 +11,47 @@ quirk) — access at runtime via `get_node("/root/GameManager")`.
 
 ---
 
-#### 고정 파일럿 카드 — `pilot_card_ids_for(pd)`
-선수마다 파일럿 카드 3장이 **고정**이다. 답하는 함수는 이것 하나이고 인게임 덱
-(`CardPhaseManager._pilot_cards_for`)과 드래프트 상세 팝업이 함께 부른다.
+#### Fixed pilot cards — `pilot_card_ids_for(pd)`
+Each player has **3 fixed** pilot (파일럿) cards. This is the only function that answers
+"which ones", and both the in-game deck (`CardPhaseManager._pilot_cards_for`) and the
+draft detail popup call it.
 
-- `pilot_card_ids_for(pd) -> Array[int]` — 우선순위: `pd.pilot_cards`(CSV / 세이브)
-  → 같은 id 의 DB 행(옛 세이브 복원용 캐시 `_db_pilot_cards`) → 씨앗 뽑기. 없는 id ·
-  포지션이 막는 id 는 빼고 모자란 칸만 씨앗 뽑기로 채운다.
-- `roll_pilot_card_ids(pos, seed, keep = [])` — `pilot_card_slots`(포지션마다 세 칸,
-  칸마다 분류 목록)로 결정적으로 뽑는다. 씨앗은 선수면 `7919 + id`, 단독 실행이면
-  팀 · 역할.
-- `card_def(id)` — `card_pool_bs` 한 행. `parse_card_ids("12|36|41")` — CSV 칸 파서.
-- `card_costs_by_name()` — 카드 이름 → 기본 비용(`card_pool_bs` + `mech_card_defs`, 이름이
-  겹치면 파일럿 카드가 이긴다). 처음 부를 때 한 번 만들어 캐시한다. 스킬 설명문의
-  `[카드명]` 앞 비용 리본(`StrategyIcon.fill_rich(..., card_costs)`)용.
-- `pilot_card_slots: Dictionary` — `_ready` 에서 `pilot_card_slots` 테이블을 읽는다.
+- `pilot_card_ids_for(pd) -> Array[int]` — priority: `pd.pilot_cards` (CSV / save)
+  → the DB row with the same id (cache `_db_pilot_cards`, used to restore old saves) → seeded roll.
+  Ids that don't exist or are blocked by the position are dropped, and only the missing
+  slots are filled by the seeded roll.
+- `roll_pilot_card_ids(pos, seed, keep = [])` — rolls deterministically from `pilot_card_slots`
+  (three slots per position, a category list per slot). The seed is `7919 + id` for a player;
+  in a standalone run it is team · role.
+- `card_def(id)` — one row of `card_pool_bs`. `parse_card_ids("12|36|41")` — CSV cell parser.
+- `card_costs_by_name()` — card name → base cost (`card_pool_bs` + `mech_card_defs`; on a name
+  clash the pilot card wins). Built once on first call and cached. Feeds the cost ribbon drawn
+  before `[card name]` in skill descriptions (`StrategyIcon.fill_rich(..., card_costs)`).
+- `pilot_card_slots: Dictionary` — read from the `pilot_card_slots` table in `_ready`.
 
-#### game.db 경로 — `db_path()`
+#### game.db path — `db_path()`
 
-**런타임에 SQLite 에 넘기는 경로는 반드시 이 함수에서 나온다.** 하드코딩한
-`"res://data/game.db"` 를 쓰면 에디터에서만 돌고 익스포트 빌드에서는 열리지
-않는다 — `res://` 가 `.pck` 안으로 들어가는데 SQLite 는 디스크 위의 진짜
-파일을 요구하기 때문이다.
+**Every path handed to SQLite at runtime must come from this function.** A hardcoded
+`"res://data/game.db"` works only in the editor and fails to open in an exported build —
+`res://` lives inside the `.pck`, and SQLite needs a real file on disk.
 
-- `db_path() -> String` — 에디터면 `res://data/game.db`, 아니면
-  `user://data/game.db`. 한 실행에 한 번만 계산해 `_db_path` 에 물고 있는다.
-- `_extract_db_to_user() -> String` — pck 안의 DB 를 `user://` 로 꺼낸다.
-  **매 실행마다 덮어쓴다**: DB 는 읽기 전용이고 96KB 라 캐시 무효화를
-  둘 이유가 없고, 그래야 새 빌드에 옫 빌드의 DB 가 남는 사고가 불가능해진다.
-  실패하면 원본 경로를 그대로 돌려준다 — 호출부마다 있는 `open_db()` 실패
-  경로가 에러를 대신 말해 준다.
+**The path logic moved to `resources/GameDb.gd`** (static class) — `ConstTable` must open the
+DB while other scripts' `static var` initialisers run, i.e. possibly before autoloads exist.
+`GameManager.db_path()` is kept and now simply returns `GameDb.path()`.
 
-외부 소비자는 `features/battle_sim/data/DataLoader.gd` 하나이고
-`get_node_or_null("/root/GameManager")` 로 받아 쓴다. 편집 도구인
-`addons/csv_to_db/csv_to_db.gd` 만 여전히 `res://data/game.db` 에 **쓴다** —
-그것이 원본이기 때문이다. 자세한 배경은 `docs/ios_testbuild.md`.
+- `GameDb.path() -> String` — `res://data/game.db` in the editor, otherwise
+  `user://data/game.db`. Computed once per run and cached.
+- `GameDb._extract_to_user() -> String` — copies the DB inside the pck out to `user://`.
+  **It overwrites on every run**: the DB is read-only and 96KB, so there is no reason
+  for cache invalidation, and this makes it impossible for an old build's DB to survive
+  into a new build. On failure it returns the original path unchanged — the `open_db()`
+  failure path at each call site reports the error instead.
+
+External consumers: `features/battle_sim/data/DataLoader.gd` (via `GameManager.db_path()`,
+reached with `get_node_or_null("/root/GameManager")`) and `resources/ConstTable.gd` (calls
+`GameDb.path()` directly). Only the editor tool
+`addons/csv_to_db/csv_to_db.gd` still **writes** to `res://data/game.db` — because that is
+the source copy. Full background: `docs/ios_testbuild.md`.
 
 ---
 
@@ -84,104 +90,149 @@ API:
 When `match_ctx.active == false`, BattleSim falls back to `ROLE_STATS` defaults
 (loaded from `pilots.csv`).
 
+#### Run start — `start_run(run_setup) -> String`, `init_season()`, `default_run_setup()`
+`start_run` is the only run entry (validate → season skeleton → `run_seed` → AI
+rosters via `RunRoster` → level my 5 → `team_rosters` → `season_state.run_setup`).
+`init_season(team_id := 0)` = `start_run(default_run_setup(team_id))` (editor
+direct-run default). Test runs (`use_test_run`) skip the profile ownership check.
+Full contract → `features/season/README.md` "Entry point".
+
+#### Run save target — `use_test_run`
+`var use_test_run: bool = true`. `SaveSystem.run_path()` reads it: `true` →
+`user://run_test.save` (hidden test run, used when Season / MatchFlow is run directly
+from the editor), `false` → `user://run.save`. The lobby sets it to `false` in `_ready`.
+(Replaces the old `active_save_slot`.) → `features/save_load/README.md`
+
+### ProfileManager.gd
+**Account (profile) state** — permanent progress that outlives a run. One JSON file,
+`user://profile.save` (schema: `docs/outgame_dev_plan.md` §4). No `class_name`;
+access via `get_node("/root/ProfileManager").profile`. Run state is **not** here
+(that is `season_state` → `user://run.save`).
+
+- `profile: Dictionary`, `default_profile()`, `load_profile() -> String` (called in `_ready`),
+  `save_profile() -> String`.
+- Missing file → default profile written. Corrupt file → warning, original copied to
+  `user://profile.save.bak`, default written.
+- Loaded data is laid over the defaults: missing top-level keys, and missing keys one level
+  down in `manager` (+ `manager.alloc`) / `currency` / `traits` / `pass`, get default values;
+  a top-level value of the wrong type is dropped. JSON floats are cast back to int for
+  `version`, `active_preset`, manager ints, alloc, currency and `pass.exp`.
+- M0 only creates / loads it; later milestones write to it (M1 collection, M2 run results …).
+- **Collection (M1)** — `profile.collection`: `"<pilot_id>" → {owned, max_level,
+  breakthrough, dupes}`.
+  - `ensure_starter_collection() -> bool` — on an empty collection grants every
+    `players.starter = 1` pilot at `max_level` 1 (called in `_ready`, saved if it granted).
+  - `owned_pilot_ids() -> Array` (int, ascending), `max_level_of(pilot_id) -> int`
+    (0 = not owned), `owned_max_levels() -> {"<pilot_id>": max_level}` — the shape
+    `RunRules.validate_lineup` and `GameManager.start_run` read.
+- `apply_run_result(result) -> String` (M2, called only by `RunResult.settle_current_run`
+  for non-test runs; shape `docs/outgame_dev_plan.md` §10.3): adds `currency.outgame` and
+  `manager.exp` (no level-ups until M9), adds this run's `mvp` / `pom` into
+  `achievements[pid]` for my pilots (new entries `{pom, mvp, true_ending: false}`; all-zero
+  pilots skipped), appends `{id, scenario, team, score, result: "clear"|"fail", phase_reached, at}`
+  to `runs` (abandon is recorded as `"fail"`; oldest dropped past `RUNS_HISTORY_MAX`), then saves.
+  Idempotent: a `result.id` already in `runs` is a no-op.
+
 ### Haptics.gd
-**iOS / Android 햅틱 피드백** — 별도 저장소로 굴리는 `godot-haptics` 포크의
-GDScript 래퍼다. **이 프로젝트가 원본이 아니므로 여기서 고치지 말 것**:
-포크 저장소의 `autoload/godot_4/Haptics.gd` 를 고치고 이리로 복사한다.
+**iOS / Android haptic feedback** — the GDScript wrapper of a `godot-haptics` fork that is
+maintained in a separate repository. **This project is not the source, so do not edit it here**:
+edit `autoload/godot_4/Haptics.gd` in the fork repo and copy it over.
 
-`GameManager` 와 달리 **`*` 를 달아 등록한다**(`project.godot`) — 플러그인 API
-전체가 전역 이름 `Haptics` 를 전제로 쓰여 있어서다. 그래서 호출은
-`get_node("/root/Haptics")` 가 아니라 그냥 `Haptics.play(...)` 다.
+Unlike `GameManager`, **it is registered with `*`** (`project.godot`) — the whole plugin API
+is written assuming the global name `Haptics`. So calls are plain `Haptics.play(...)`, not
+`get_node("/root/Haptics")`.
 
-두 층이 있고 **게임 코드는 위층만 부른다**:
+There are two layers, and **game code calls only the upper one**:
 
 ```gdscript
-Haptics.play(Haptics.Kind.SELECT)    # 손가락 밑에서 값이 바뀌었다
-Haptics.play(Haptics.Kind.MEDIUM)    # 확정 동작
-Haptics.play(Haptics.Kind.SUCCESS)   # 결과가 이쪽에 유리하게 났다
+Haptics.play(Haptics.Kind.SELECT)    # a value changed under the finger
+Haptics.play(Haptics.Kind.MEDIUM)    # confirm action
+Haptics.play(Haptics.Kind.SUCCESS)   # the result went our way
 ```
 
-위층이 **`enabled` 토글 · 플랫폼 검사 · 플러그인 부재 폴백을 통째로 흡수**하므로
-호출부에 분기가 없다. 아래층(`selection()` / `rigid()` /
-`impact(style, intensity)`)은 크로스 플랫폼 의미가 없는 iOS 고유 스타일이나
-세기를 직접 지정할 때만 쓴다.
+The upper layer **fully absorbs the `enabled` toggle · platform check · missing-plugin
+fallback**, so call sites have no branches. The lower layer (`selection()` / `rigid()` /
+`impact(style, intensity)`) is only for directly specifying iOS-specific styles or
+intensities that have no cross-platform meaning.
 
-- **데스크톱에서는 전부 조용한 no-op** 이라 에디터 실행에 가드가 필요 없다.
-- **`enabled` 는 설정 화면 토글이고 세이브에 실어야 한다** — iOS 시스템 설정의
-  햅틱 스위치는 Godot 에서 읽을 수 없어서, 게임 안에서 끄는 길이 이것뿐이다.
-- **`prepare()`** 는 탭틱 엔진을 미리 깨운다. 세션 첫 햅틱은 안 그러면 눈에 띄게
-  늦게 온다 — 화면을 열 때처럼 한 박자 앞서 부른다(Android 에서는 no-op).
-- **남발하면 배경이 된다.** 매 턴 도는 사건에 붙이면 정작 큰 한 건이 묻힌다 —
-  전선 체류 성장치 팝업을 안 띄우는 것과 같은 이유다.
+- **On desktop everything is a silent no-op**, so editor runs need no guards.
+- **`enabled` is a settings-screen toggle and must be stored in the save** — Godot cannot
+  read the haptics switch in iOS system settings, so this is the only way to turn it off in-game.
+- **`prepare()`** wakes the Taptic Engine ahead of time. Otherwise the first haptic of a
+  session arrives noticeably late — call it one beat early, e.g. when opening a screen
+  (no-op on Android).
+- **Overuse turns it into background noise.** Attach it to events that fire every turn and
+  the one big event gets buried — the same reason the front-line (전선) dwell growth points
+  (성장치) popup is not shown.
 
-**네이티브 바이너리는 CI 가 굽는다** — `.github/workflows/ios-testbuild.yml` 이
-매 iOS 빌드에서 그 Godot 버전의 헤더로 다시 컴파일해 `ios/plugins/haptics/` 에
-놓고, 세 겹의 게이트로 그것이 실제로 링크됐는지까지 확인한다
-(`ios/plugins/README.md`). 그러므로 **CI 아티팩트에서는 폴백이 돌지 않는다**.
-윈도우에서 로컬로 익스포트한 빌드에는 플러그인이 없으므로 그때만
-`Input.vibrate_handheld` 폴백이 돌고 경고가 한 번 찍힌다.
+**CI builds the native binary** — `.github/workflows/ios-testbuild.yml` recompiles it on every
+iOS build against that Godot version's headers, places it in `ios/plugins/haptics/`, and
+uses three layers of gates to verify it was actually linked
+(`ios/plugins/README.md`). Therefore **the fallback never runs in CI artifacts**.
+A build exported locally on Windows has no plugin, so only then does the
+`Input.vibrate_handheld` fallback run, and a warning is printed once.
 
 
 ### HapticUi.gd
-**버튼 햅틱을 한 곳에서 배선한다** — `Haptics` 위에 얹은 이 저장소 쪽 층이고,
-그쪽과 달리 **여기서 고쳐도 된다**(포크에서 복사해 오는 파일이 아니다).
-`Haptics` 와 같은 이유로 `*` 를 달아 전역 이름 `HapticUi` 로 등록한다.
+**Wires button haptics in one place** — this repo's own layer on top of `Haptics`; unlike
+that one, **it may be edited here** (it is not a file copied from the fork).
+For the same reason as `Haptics`, it is registered with `*` under the global name `HapticUi`.
 
-#### 규칙을 뒤집는다 — 예외만 적는다
-눌리는 것이 백 개가 넘고(화면 버튼 · 초상화 위의 투명 히트 버튼 · 필터 칩 ·
-딤 뒤판) 그 전부에 손으로 `Haptics.play(...)` 를 적으면 **새로 만드는 버튼마다
-빠뜨릴 자리가 하나씩 생긴다**. 그래서 `get_tree().node_added` 하나가
-**트리에 들어오는 모든 `BaseButton`** 에 감촉을 물린다. 예외를 적는 쪽이
-규칙을 적는 쪽보다 짧다.
+#### Invert the rule — write only the exceptions
+There are over a hundred pressable things (screen buttons · transparent hit buttons over
+portraits · filter chips · dim backplates), and writing `Haptics.play(...)` by hand on all of
+them means **every new button is one more place to forget it**. So a single
+`get_tree().node_added` attaches feel to **every `BaseButton` that enters the tree**. Writing the
+exceptions is shorter than writing the rule.
 
 ```gdscript
-HapticUi.mute(btn)                           # 같은 누름에 다른 자리가 이미 낸다
-HapticUi.kind(btn, Haptics.Kind.MEDIUM)      # 이 버튼만 뗄 때를 다르게
-HapticUi.down_kind_for(btn, HapticUi.NONE)   # 이 버튼만 누름 박자를 뺀다
+HapticUi.mute(btn)                           # another place already fires for the same press
+HapticUi.kind(btn, Haptics.Kind.MEDIUM)      # different release feel for this button only
+HapticUi.down_kind_for(btn, HapticUi.NONE)   # drop the press beat for this button only
 ```
 
-#### 한 번 누르면 두 박자가 온다
+#### One press gives two beats
 
-| 사건 | 기본 감촉 | 무엇을 말하는가 |
+| Event | Default feel | What it says |
 |---|---|---|
-| `button_down` (손가락이 닿음) | `SOFT` | **뭉툭하게** — 닿았다 |
-| `pressed` (손가락을 뗌 = 활성화) | `RIGID` | **딱 끊기게** — 눌렸다 |
+| `button_down` (finger touches) | `SOFT` | **blunt** — touched |
+| `pressed` (finger lifts = activation) | `RIGID` | **crisp** — pressed |
 
-- **예전에는 `pressed` 한 박자뿐이었다.** 그런데 감촉이 뗄 때만 오면 **누른
-  순간에는 아무 일도 안 일어난다** — 화면이 바뀌기 전까지 눌렸는지 확인할
-  길이 없다. 지금은 닿는 순간 물렁한 한 겹이 먼저 오고, 손을 뗄 때 딱 끊기는
-  톡이 그것을 닫는다.
-- **두 박자의 순서는 한 번 뒤집혔다.** 예전에는 닿음이 `LIGHT`, 뗌이 `SOFT`
-  였다(가벼운 톡 → 뭉툭한 마감). 지금은 그 반대로 **무른 것이 먼저 오고
-  단단한 것이 닫는다** — 딸깍이는 실물 버튼처럼 끝이 또렷한 쪽이 활성화를
-  맡아야 눌렸다는 사실이 손에 남는다.
-- **누름 박자는 취소될 수 있다.** 눌렀다가 손가락을 밖으로 빼면 `pressed` 가
-  안 오므로 뗌 박자가 없다 — 무른 한 겹만 남고 딱딱한 닫음이 없는 것이 곧
-  "아무 일도 일어나지 않았다"이다. 그래서 **또렷한 쪽을 뗄 때에 둔다.**
-- **세기 표는 폐기됐다.** 한때는 버튼마다 뗄 때의 세기가 달랐지만(주요 버튼
-  `MEDIUM` · 탭 `SELECT` …) 지금은 종류와 무관하게 같은 두 박자다. 확정인지
-  탭 전환인지는 화면이 말하는 것이고, 손에 오는 감촉이 화면마다 흔들리면
-  그것이 도리어 잡음이었다. `OutgameTheme` 의 버튼 스타일 넷 · 밴픽 필터 칩 ·
-  확정 버튼들에 있던 `kind()` 호출이 그때 전부 사라졌다.
-- **기본값은 `down_kind` / `up_kind`**(`_ready` 에서 채운다 — `Haptics` 는
-  오토로드라 `const` 초기화 시점에는 아직 없다).
-- **종류는 누를 때 읽는다.** 그래서 `kind()` 를 `add_child` 앞에 부르든 뒤에
-  부르든 같다. 자동 배선은 노드가 트리에 들어오는 순간 한 번만 걸린다
-  (`haptic_bound` 메타 도장 — 떼었다 다시 붙이는 노드가 두 번 물려 한 번
-  눌러 두 번 울리는 것을 막는다).
-- **`mute()` 는 두 박자를 다 끈다.** 두 번 눌러야 지워지는 삭제 버튼처럼 같은
-  누름에 대해 다른 자리가 이미 내고 있을 때다(`save_load/SlotCard`).
-- **`button_down` 에는 `Haptics.prepare()` 도 함께 붙는다**: 손가락이 닿는
-  순간부터 손을 떼는 순간까지가 정확히 탭틱 엔진을 깨울 여유이고, 그 여유가
-  **딱 끊기는 닫음을 제때 오게 한다**.
-- `enabled` 는 **이 층만** 끈다(`Haptics.enabled` 는 게임 전체).
+- **It used to be a single `pressed` beat.** But if feel only comes on release, **nothing
+  happens at the moment of pressing** — there is no way to confirm the press until the
+  screen changes. Now a soft layer comes first on touch, and a crisp tap closes it on release.
+- **The order of the two beats was flipped once.** Previously touch was `LIGHT` and release
+  was `SOFT` (light tap → blunt close). Now it is the reverse: **the soft one comes first and
+  the hard one closes** — like a clicky physical button, the sharp-ended beat must own
+  activation for the fact of the press to stay in the hand.
+- **The press beat can be cancelled.** Press, then slide the finger off, and `pressed` never
+  fires, so there is no release beat — only the soft layer remains with no hard close, and that
+  itself means "nothing happened". That is why **the sharp beat goes on release.**
+- **The intensity table was retired.** At one point each button had a different release
+  intensity (primary buttons `MEDIUM` · tabs `SELECT` …), but now every kind gets the same two
+  beats. Whether it is a confirm or a tab switch is the screen's job to say; feel that wobbled
+  from screen to screen was itself noise. The `kind()` calls on `OutgameTheme`'s four button
+  styles · ban/pick (밴픽) filter chips · confirm buttons were all removed at that time.
+- **Defaults are `down_kind` / `up_kind`** (filled in `_ready` — `Haptics` is an autoload and
+  does not yet exist at `const` initialization time).
+- **The kind is read at press time.** So calling `kind()` before or after `add_child` is the
+  same. Auto-wiring is applied only once, when the node enters the tree
+  (`haptic_bound` meta stamp — prevents a node that is removed and re-added from being wired
+  twice and buzzing twice per press).
+- **`mute()` turns off both beats.** Use it when another place already fires for the same
+  press, like the lobby's `새 런` with a run, or a danger `ConfirmPopup` confirm (`meta/lobby/`).
+- **`button_down` also gets `Haptics.prepare()`**: the time from finger touch to finger lift
+  is exactly the slack needed to wake the Taptic Engine, and that slack **makes the crisp close
+  arrive on time**.
+- `enabled` turns off **this layer only** (`Haptics.enabled` is game-wide).
 
-#### 자동 배선이 닿지 않는 자리
-`BaseButton` 이 아닌 것 — 카드 드래그, 전략 포인트 도넛(`_input`), 훈련 타일
-드래그(집기 · 칸마다 스냅 · 놓기), 정글 시작 정글러 마커 드래그, 밴픽의 메크 칸
-드래그, 그리고 **버튼과 무관한 사건**
-(명중 · 처치 · 포탑 철거 · 교전 결과 · 오브젝트 획득 · 승패). 그 자리들은
-`Haptics.play(...)` 를 직접 부른다 — 표는 루트 `CLAUDE.md` 의 "햅틱 (감촉)" 항목.
+#### Places auto-wiring does not reach
+Things that are not `BaseButton` — card drag, the strategy point donut (`_input`), training
+tile drag (pick up · snap per cell · drop), the jungler marker drag in jungle start (정글 시작),
+the mech (메크) slot drag in ban/pick, and **events unrelated to buttons**
+(hit · kill · turret destroyed · engage result · objective captured · win/loss). Those places
+call `Haptics.play(...)` directly — the table is in the "Haptics (feel)" section below
+(moved here from root `CLAUDE.md`).
 
 ---
 
@@ -191,90 +242,93 @@ Do NOT add `class_name` to autoload scripts in Godot 4.5 — causes parse errors
 
 ## Detail moved from root CLAUDE.md
 
-### 햅틱 (감촉) — 아웃게임 · 인게임 공통
-**손에 무엇이 전해지는가를 정하는 표는 하나다.** 배선은 두 층이고, 어느 쪽도
-화면마다 세기를 손으로 적지 않는다.
+### Haptics (feel) — shared by outgame and in-game
+**There is one table that decides what reaches the hand.** Wiring has two layers, and neither
+writes intensities by hand per screen.
 
-1. **버튼은 `autoloads/HapticUi.gd` 가 자동으로 배선하고, 한 번 누르면 두 박자가
-   온다** — `node_added` 하나가 트리에 들어오는 **모든 `BaseButton`** 의
-   `button_down` 과 `pressed` **양쪽**에 감촉을 문다: **누를 때(닿음) `SOFT`,
-   뗄 때(활성화) `RIGID`**. 감촉이 뗄 때만 오면 누른 순간에는 아무 일도 안
-   일어나고, 화면이 바뀌기 전까지 눌렸는지 확인할 길이 없다 — 그래서 닿는
-   순간 물렁한 한 겹이 먼저 오고 딱 끊기는 톡이 그것을 닫는다. **두 박자의
-   순서는 한 번 뒤집혔다**(예전에는 `LIGHT` → `SOFT`) — 딸깍이는 실물 버튼처럼
-   **끝이 또렷한 쪽이 활성화**를 맡아야 눌렸다는 사실이 손에 남는다. 눌렀다가
-   손가락을 밖으로 빼면 `pressed` 가 안 오므로 **닫는 박자가 없는 것이 곧
-   "아무 일도 일어나지 않았다"**이고, 그래서 또렷한 쪽을 뗄 때에 둔다. **버튼 세기 표는
-   폐기됐다** — 예전에는 `OutgameTheme` 의 버튼 스타일이 곧 세기였지만
-   (primary · dark = `MEDIUM`, ghost = `LIGHT`, text = `SELECT`) 지금은 종류와
-   무관하게 같은 두 박자다(확정인지 탭 전환인지는 화면이 말한다). 예외만
-   `HapticUi.mute(btn)`(두 박자 다 끔) / `kind(btn, …)`(뗄 때) /
-   `down_kind_for(btn, …)`(누를 때) 로 적는다. `button_down` 에는
-   `Haptics.prepare()` 도 함께 붙어 누름과 활성화 사이에 탭틱 엔진이 깨어난다.
-2. **버튼이 아닌 것은 그 사건이 일어나는 자리에서 직접 부른다**(`Haptics.play`).
+1. **Buttons are wired automatically by `autoloads/HapticUi.gd`, and one press gives two
+   beats** — a single `node_added` attaches feel to **both** `button_down` and `pressed` of
+   **every `BaseButton`** entering the tree: **`SOFT` on press (touch), `RIGID` on release
+   (activation)**. If feel only comes on release, nothing happens at the moment of pressing,
+   and there is no way to confirm the press until the screen changes — so a soft layer comes
+   first on touch and a crisp tap closes it. **The order of the two beats was flipped once**
+   (previously `LIGHT` → `SOFT`) — like a clicky physical button, **the sharp-ended beat owns
+   activation** so the fact of the press stays in the hand. Press and slide the finger off, and
+   `pressed` never fires, so **the absence of the closing beat itself means "nothing
+   happened"** — that is why the sharp beat goes on release. **The button intensity table was
+   retired** — previously `OutgameTheme`'s button style was the intensity
+   (primary · dark = `MEDIUM`, ghost = `LIGHT`, text = `SELECT`); now every kind gets the same
+   two beats (whether it is a confirm or a tab switch is for the screen to say). Only exceptions
+   are written, via `HapticUi.mute(btn)` (both beats off) / `kind(btn, …)` (release) /
+   `down_kind_for(btn, …)` (press). `button_down` also gets
+   `Haptics.prepare()`, so the Taptic Engine wakes between press and activation.
+2. **Non-buttons call it directly where the event happens** (`Haptics.play`).
 
-| 사건 | 자리 | 감촉 |
+| Event | Where | Feel |
 |---|---|---|
-| 카드를 손패에서 끌어냄 | `CardPhaseManager._begin_drag` | `SELECT` |
-| 끌린 카드가 **유효 대상 / 드롭 존에 막 들어섬** | `CardPhaseManager._update_drag` (`_drag_hot_last` 전이) | `SELECT` |
-| 카드가 실제로 나감 / 버릴 카드로 넘어감 | `CardPhaseManager._end_drag` | `MEDIUM` |
-| 공격 카드 **명중 한 방** | `CardPhaseManager._effect_attack` | `MEDIUM` |
-| 공격 카드 **빗나감** | 〃 | `LIGHT` |
-| 파일럿 처치(양 팀) | `BattleSim.mark_pilot_dead` | `HEAVY` |
-| 포탑 철거 | `BattleSim.score_turret_kill` | `HEAVY` |
-| 내 작전 단계 개시 | `CardPhaseManager.start_card_phase` | `MEDIUM` |
-| 턴 넘기기 / 도넛 뒤집기 | `ui/CostDonut._input` | `MEDIUM` / `SELECT` |
-| 교전 결과(승 / 패 / 무) | `EngagePhaseManager` 대시보드 진입 | `SUCCESS` / `ERROR` / `MEDIUM` |
-| 오브젝트 획득(아군 / 적군) | `ObjectiveSystem._grant_reward` | `SUCCESS` / `WARNING` |
-| 경기 승 / 패 | `SimulationCore.check_win_condition` | `SUCCESS` / `ERROR` |
-| 전장 초상 누름 / **꾹 눌러 상세 패널** | `battle_sim/ui/MarkerTouch` | `SELECT` / `MEDIUM` |
-| 정글 시작 — 마커 집기 / **놓을 수 있는 칸마다 스냅** / 칸 결정 | `gambit/JungleStartOverlay` | `SELECT` / `LIGHT` / `MEDIUM` |
-| 훈련 타일 — 집기 / **놓을 수 있는 칸마다 스냅** / 배치 | `season/training/TrainingView` | `SELECT` / `LIGHT` / `SOFT` |
-| 훈련 타일 — 판에서 탭해 걷어냄 | `season/training/TrainingView._on_grid_input` | `LIGHT` |
-| 밴픽 메크 칸 — 들어올림 / 맞바꿈 | `ban_pick/BanPickController` | `SELECT` / `MEDIUM` |
-| 세이브 삭제 — 무장 / 실행 | `save_load/SlotCard._on_delete` | `WARNING` / `ERROR` |
-| 캠페인 종료 / 우승 | `GameOverView` / `EndingView.ensure_view` | `ERROR` / `SUCCESS` |
+| Card dragged out of the hand (손패) | `CardPhaseManager._begin_drag` | `SELECT` |
+| Dragged card **just entered a valid target / drop zone** | `CardPhaseManager._update_drag` (`_drag_hot_last` transition) | `SELECT` |
+| Card actually played / moved to discard | `CardPhaseManager._end_drag` | `MEDIUM` |
+| Attack card **single hit** | `CardPhaseManager._effect_attack` | `MEDIUM` |
+| Attack card **miss** | 〃 | `LIGHT` |
+| Pilot kill (both teams) | `BattleSim.mark_pilot_dead` | `HEAVY` |
+| Turret (포탑) destroyed | `BattleSim.score_turret_kill` | `HEAVY` |
+| My operation phase (작전 단계) opening | `CardPhaseManager.start_card_phase` | `MEDIUM` |
+| End turn / flip donut | `ui/CostDonut._input` | `MEDIUM` / `SELECT` |
+| Engage (교전) result (win / loss / draw) | `EngagePhaseManager` dashboard entry | `SUCCESS` / `ERROR` / `MEDIUM` |
+| Objective captured (ally / enemy) | `ObjectiveSystem._grant_reward` | `SUCCESS` / `WARNING` |
+| Match win / loss | `SimulationCore.check_win_condition` | `SUCCESS` / `ERROR` |
+| Battlefield (전장) portrait press / **long-press for detail panel** | `battle_sim/ui/MarkerTouch` | `SELECT` / `MEDIUM` |
+| Jungle start — pick up marker / **snap per droppable cell** / cell chosen | `gambit/JungleStartOverlay` | `SELECT` / `LIGHT` / `MEDIUM` |
+| Training tile — pick up / **snap per droppable cell** / place | `season/training/TrainingView` | `SELECT` / `LIGHT` / `SOFT` |
+| Training tile — tap on board to remove | `season/training/TrainingView._on_grid_input` | `LIGHT` |
+| Ban/pick mech slot — lift / swap | `ban_pick/BanPickController` | `SELECT` / `MEDIUM` |
+| Abandon run — open confirm / delete | `meta/lobby/LobbyScreen` (`새 런` / `_on_abandon_confirmed`) | `WARNING` / `ERROR` |
+| Campaign over / championship | `GameOverView` / `EndingView.ensure_view` | `ERROR` / `SUCCESS` |
 
-**규칙 셋.**
-- **매 턴 도는 사건에는 안 붙인다** — 전장 자동 교전의 한 대, 전선 체류
-  성장치, 캠프 획득. 남발하면 감촉이 배경이 되어 정작 큰 한 건이 묻힌다
-  (성장치 팝업이 전선 수입을 안 띄우는 것과 같은 이유).
-- **한 사건은 한 번만 운다.** 처치로 끝난 명중은 `MEDIUM` 을 건너뛴다 —
-  `mark_pilot_dead` 가 이미 `HEAVY` 를 냈고, 겹치면 처치가 평타처럼 뭉개진다.
-  같은 이유로 두 번 눌러야 지워지는 삭제 버튼은 자동 배선을 `mute` 한다.
-- **드래그는 "들어섬"만 운다 — 다만 칸 단위로 스냅하는 판에서는 칸마다 운다.**
-  벗어나는 쪽은 어디서든 조용하고(놓을 수 있게 됐다는 것이 신호다) 매 **프레임**
-  울리는 것도 여전히 금지다(그것은 신호가 아니라 진동이다). 훈련판이 칸마다
-  `LIGHT` 를 내는 것은 그 화면의 미리보기가 자유 좌표가 아니라 **칸에 물려**
-  움직이기 때문이다 — 한 톡이 곧 "한 칸 넘었다"라서 판 위를 끌면 따다닥 걸리는
-  손맛이 된다. 카드 드래그(`_drag_hot_last`)처럼 대상이 연속인 자리는 여전히
-  전이 한 번만 운다.
-- **끌어다 놓는 조작도 무거운 한 겹으로 닫는다.** 훈련 타일이 판에 물리는
-  순간은 `SOFT` 다 — 집기(`SELECT`) · 칸 넘김(`LIGHT`)보다 무거운 한 겹이 와야
-  그 셋이 한 동작의 처음 · 중간 · 끝으로 읽힌다.
+**Three rules.**
+- **Don't attach to events that fire every turn** — a single hit of auto-combat on the
+  battlefield, front-line dwell growth points, camp (캠프) capture. Overuse makes feel
+  background and buries the one big event
+  (same reason the growth points popup doesn't show front-line income).
+- **One event buzzes once.** A hit that ends in a kill skips `MEDIUM` —
+  `mark_pilot_dead` already fired `HEAVY`, and overlapping would blur the kill into a normal
+  hit. For the same reason, the two-press delete button `mute`s auto-wiring.
+- **Drag buzzes only on "enter" — except on boards that snap per cell, where it buzzes per
+  cell.** Leaving is silent everywhere (becoming droppable is the signal), and buzzing every
+  **frame** is still forbidden (that is vibration, not a signal). The training board fires
+  `LIGHT` per cell because that screen's preview moves **locked to cells**, not free
+  coordinates — one tap means "crossed one cell", so dragging across the board gives a
+  ratcheting click feel. Places with a continuous target, like card drag (`_drag_hot_last`),
+  still buzz once per transition.
+- **Drag-and-drop also closes with a heavier layer.** The moment a training tile locks onto
+  the board is `SOFT` — a layer heavier than pick up (`SELECT`) · cell crossing (`LIGHT`) is
+  needed for the three to read as the start · middle · end of one gesture.
 
-**데스크톱에서는 전부 조용한 no-op** 이므로 에디터 실행에 가드가 필요 없다.
-다만 **`--check-only --script` 는 오토로드 식별자를 모른다** — `Haptics` /
-`HapticUi` 를 부르는 파일은 그 검사에서 `Identifier not found` 가 뜨지만
-실제 실행에는 문제가 없다. 검산은 씬을 띄워서 한다.
+**On desktop everything is a silent no-op**, so editor runs need no guards.
+However, **`--check-only --script` doesn't know autoload identifiers** — files that call
+`Haptics` / `HapticUi` show `Identifier not found` in that check, but actual runs are fine.
+Verify by running a scene.
 
 ### `res://data/game.db` → `user://data/game.db`
 
-**SQLite 는 디스크 위의 진짜 파일을 열어야 한다.** 에디터에서는 `res://` 가
-그대로 실제 폴더라 그냥 열리지만, 익스포트한 빌드에서는 `res://` 가 `.pck` 안으로
-들어가 SQLite 가 그 경로를 열지 못한다 — 손대지 않았다면 아이폰에서 타이틀 화면부터
-DB 오류로 멈추었을 자리다. 그래서 모든 런타임 DB 접근은 **`GameManager.db_path()`**
-한 곳을 지난다 — 에디터에서는 `res://data/game.db` 그대로(CSV→DB 재빌드가 곷바로
-반영돼야 하므로), 기기에서는 pck 안의 DB 를 `user://data/game.db` 로 꺼낸 사본을
-돌려준다. **매 실행마다 덮어쓴다** — DB 는 런타임에 읽기 전용이고(세이브는
-`user://saves/*.save`) 96KB 뿐이라, 뭐가 바뀜는지 비교하는 캐시 무효화 장치를 두는 것보다
-그냥 복사하는 쪽이 언제나 옳다(새 빌드를 깔았는데 옫 빌드의 game.db 가 남아 있는 사고가
-구조적으로 불가능해진다). 편집 도구인 `addons/csv_to_db/csv_to_db.gd` 만 여전히
-`res://data/game.db` 에 **쓴다** — 그것이 원본이기 때문이다.
+**SQLite must open a real file on disk.** In the editor `res://` is a real folder, so it just
+opens, but in an exported build `res://` lives inside the `.pck` and SQLite cannot open that
+path — left untouched, the iPhone build would have stopped at the title screen with a DB
+error. So all runtime DB access goes through one place, **`GameDb.path()`** (`resources/GameDb.gd`;
+`GameManager.db_path()` delegates to it) — in the
+editor it returns `res://data/game.db` as-is (CSV→DB rebuilds must take effect immediately);
+on device it returns a copy of the pck's DB extracted to `user://data/game.db`. **It
+overwrites on every run** — the DB is read-only at runtime (saves are
+`user://saves/*.save`) and only 96KB, so simply copying is always better than a cache
+invalidation mechanism that compares what changed (it becomes structurally impossible for an
+old build's game.db to survive after installing a new build). Only the editor tool
+`addons/csv_to_db/csv_to_db.gd` still **writes** to `res://data/game.db` — because that is
+the source copy.
 
-`data/game.db` 는 **리소스가 아니므로** 그냥 두면 pck 에 안 들어간다.
-`export_presets.cfg` 의 `include_filter="data/game.db"` 가 그걸 넣는 자리이고,
-워크플로의 포장 단계가 pck 안에서 그 문자열을 실제로 찾아 확인한다 — 필터가 조용히
-빗나가면 빌드는 초록불인데 게임만 죽는 조합이 나오기 때문이다.
+`data/game.db` is **not a resource**, so by default it is not packed into the pck.
+`include_filter="data/game.db"` in `export_presets.cfg` is what includes it, and the
+workflow's packaging step actually searches for that string inside the pck to confirm — if
+the filter silently misses, you get a combination where the build is green but the game dies.
 
 ---

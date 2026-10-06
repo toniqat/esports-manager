@@ -4,7 +4,8 @@ extends Control
 # Phase 8 — campaign-ending screen. Reached when the player wins
 # REGULAR_INTL. Shows a "WORLD CHAMPION" banner, a 6-event recap of every
 # phase result (league playoff + INTL champion), and the final 5-pilot
-# roster. "다시 시작" wipes season_state and reloads Season.tscn.
+# roster. SeasonHub settles the run (RunResult, outcome "clear") before this
+# screen shows, so run.save is already gone. Only action: `정산` → RunResult.tscn.
 
 const PHASE_ORDER: Array = [
 	GameEnums.SeasonPhase.PRESEASON,
@@ -79,14 +80,11 @@ func _build() -> void:
 				HORIZONTAL_ALIGNMENT_LEFT)
 		_roster_lines.append(lbl)
 
-	# **하단 구간을 둘이 2:1 로 나눠 갖는다** — 다시 시작이 주 행동이라 오른쪽
-	# 3분의 2, 타이틀로 나가는 길이 왼쪽 3분의 1이다(`OutgameTheme.add_bottom_bar`).
+	# 갈 길은 하나 — 정산 화면. 하단 구간 전폭(`OutgameTheme.add_bottom_bar`).
 	var bar: Array = OutgameTheme.add_bottom_bar(self, [
-		{"text": "타이틀로",  "style": "ghost",   "font": 32, "weight": 1.0},
-		{"text": "다시 시작", "style": "primary", "font": 32, "weight": 2.0},
+		{"text": "정산", "style": "primary", "font": 32},
 	])
-	(bar[0] as Button).pressed.connect(_on_title_pressed)
-	(bar[1] as Button).pressed.connect(_on_restart_pressed)
+	(bar[0] as Button).pressed.connect(_on_settle_pressed)
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────
@@ -173,12 +171,7 @@ func _refresh_roster() -> void:
 			_roster_lines[seat].text = "%s  —" % ROLE_NAMES[r]
 
 
-func _on_restart_pressed() -> void:
-	_gm.reset_season_state()
-	get_tree().change_scene_to_file("res://scenes/Season.tscn")
-
-
-func _on_title_pressed() -> void:
-	_gm.reset_season_state()
-	_gm.active_save_slot = -1
-	get_tree().change_scene_to_file("res://scenes/TitleScreen.tscn")
+# 정산(프로필 반영 · run.save 삭제)은 SeasonHub 가 이 화면에 들어서며 이미 했다.
+# 여기서는 결과 화면으로 넘어가기만 한다.
+func _on_settle_pressed() -> void:
+	get_tree().change_scene_to_file(RunResult.SCENE_PATH)

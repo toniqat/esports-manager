@@ -4,8 +4,8 @@
 Tactical battle simulator on a hex grid. Five pilot roles per team
 (Tank, Fighter, Assassin, Support, Sniper) push down a 3-lane map flanked by
 jungle. **BATTLE auto-progresses** in 1-minute (`AUTO_PLAY_INTERVAL`) ticks;
-players intervene during the threshold-gated **작전 단계** (CARD_PHASE) to spend
-작전 점수 on cards.
+players intervene during the threshold-gated **operation phase (작전 단계)** (CARD_PHASE) to spend
+operation points (작전 점수) on cards.
 
 ## Entry point
 Normally entered from `scenes/MatchFlow.tscn` via `change_scene_to_file`.
@@ -18,13 +18,28 @@ On `_ready()`, BattleSim reads `GameManager.match_ctx`:
 | match_ctx field | Used by |
 |---|---|
 | `player_roster[i].assigned_mech` | `SimulationCore._stats_for()` → PilotData hp/atk |
-| `player_roster[i].field_hit` / `.field_eva` | PilotData.hit / .evasion (전장 명중 판정) |
-| `player_roster[i].engage_hit` / `.engage_eva` | PilotData.engage_hit / .engage_eva (교전 무대 명중 판정) |
-| `player_roster[i].atk_growth` / `.hp_growth` | PilotData.atk_growth_mult / .hp_growth_mult (성장 계수 배율) |
+| `player_roster[i].field_hit` / `.field_eva` | PilotData.hit / .evasion (battlefield (전장) hit (명중) rolls) |
+| `player_roster[i].engage_hit` / `.engage_eva` | PilotData.engage_hit / .engage_eva (engage (교전) stage (무대) hit rolls) |
+| `player_roster[i].atk_growth` / `.hp_growth` | PilotData.atk_growth_mult / .hp_growth_mult (growth (성장) coefficient multipliers) |
 | `enemy_roster[i].assigned_mech` / stats | same, for team 1 |
 | `jungle_start_dir` | PilotData.jungle_start_pref on the player-team assassin |
-| `player_side` | `BattleSim.blue_team` via `seed_side_costs()` — 블루 진영의 전략 포인트 선점 + 선턴 |
-| `active = false` | Triggers fallback to ROLE_STATS (no MatchFlow ran); 진영도 플레이어=블루로 떨어진다 |
+| `player_side` | `BattleSim.blue_team` via `seed_side_costs()` — the blue side gets the strategy-point head start + first turn |
+| `active = false` | Triggers fallback to ROLE_STATS (no MatchFlow ran); the side also falls back to player = blue |
+
+### Match result payload (`season_state.pending_match`)
+At match end `BattleSim.end_match(winner_side)` (called once by
+`SimulationCore.check_win_condition`) writes, **only when `pending_match` exists** (standalone
+runs write nothing):
+
+| Key | Value |
+|---|---|
+| `winner_side` | 0 = my team (team 0), 1 = opponent |
+| `pilot_stats` | 10 rows in `pilots` order (0..4 = my team): `{"pilot_id", "side", "role", "k", "d", "a", "dmg", "taken", "care"}` — `pilot_id` = `PlayerData.id` (falls back to `PilotData.pilot_id`), `role` = `GameEnums.Role`. Contract: `docs/outgame_dev_plan.md` §10.4; how each number is counted: `combat/README.md` "Match stats" |
+| `mvp_pilot_id` | winning team's best `RunStats.mvp_score(row)` (`features/season/run_stats/README.md`), -1 if none |
+
+Then the **MVP view** opens, and its "계속" opens the existing result panel (now with an MVP
+line) — `ui/README.md` "Match end — MVP view → result panel". SeasonHub consumes the payload
+(`RunStats.record_match`).
 
 ---
 
@@ -43,18 +58,18 @@ And accesses shared state via `_bs.pilots`, `_bs.turn_count`, etc.
 | RecallSystem   | Node | `combat/RecallSystem.gd`   | Instant HQ teleport at HP ≤ threshold; phase-end out-of-position recheck |
 | Pathfinding    | Node | `combat/Pathfinding.gd`    | BFS + greedy fallback (hex distance) |
 | BattleRenderer | Node2D | `rendering/BattleRenderer.gd` | HQ/turret HP bars + per-cell pilot rendering |
-| CardPhaseManager | Node | `card_phase/CardPhaseManager.gd` | 작전 단계 turn flow, deck, fanned hand layout, phase-end gating |
-| GambitPhaseManager | Node | `gambit/GambitPhaseManager.gd` | 개시 전 단계 — 역할 고정 레인 배정 + 전장 세우기(`prepare_field`) + **정글 시작 오버레이** + 개시(`begin_battle`). `gambit/README.md` 참조 |
-| JungleStartOverlay | Node | `gambit/JungleStartOverlay.gd` | **정글 시작 칸** — 전장에 서 있는 아군 정글러 마커(꼬리 없이)를 직접 끌어다 우리 정글 / 중립 칸 하나에 놓고(상대 정글은 비활성, HQ→그 칸 + 도착 뒤 6턴 경로를 턴 번호와 함께 표시 — `SimulationCore.predict_jungle_path`) "전투 시작"으로 확정. 그 칸이 정글러의 첫 목표(`PilotData.jungle_start_cell`)가 된다. `match_ctx.active` 일 때만 열린다. Lazily added by `GambitPhaseManager`. |
-| EngagePhaseManager | Node | `engage/EngagePhaseManager.gd` | 전투 개시(engage) modal — **라운드 턴제 사이드뷰 벨트 교전** (`engage/TurnEngageSim.gd` 헤드리스 시뮬 + `engage/EngageArena.gd` 렌더러) triggered by `engage:N` / `duel` cards. Lazily added in `_ready()`. |
-| HudBuilder     | Node | `ui/HudBuilder.gd`         | HUD construction; 전략 포인트 도넛 (`ui/CostDonut.gd`), **양 팀 파일럿 스트립** (`ui/PilotStrip.gd`, 상단 적 / 하단 아군), 우측 상단 **킬로그** (`ui/KillFeed.gd`), 적 스트립 양옆 **오브젝트 시계** (`ui/ObjectiveTimer.gd`) |
-| ObjectiveSystem | Node | `objective/ObjectiveSystem.gd` | **오브젝트(전령 / 용)** — 좌우 중립 칸에서 정해진 턴마다 열리는 교전 사건. 시계 · 참여 결정 · 정산. 결정 창과 무대는 교전 모듈의 VS 화면과 아레나를 빌려 쓴다. Lazily added in `_ready()` **after** config load. |
-| ObjectiveRewardFx | Node | `objective/ObjectiveRewardFx.gd` | **오브젝트 보상 획득 연출** — 보상 카드를 화면 한가운데에 펼쳤다가 들어갈 자리(덱 뭉치 / 손패 왼쪽 끝 / 상대 손패)로 날려 보낸다. `ObjectiveSystem._grant_reward` 가 **지급 직전에** await 한다. |
-| MarkerTouch | Node | `ui/MarkerTouch.gd` | 전장 초상 누르기 — 누르면 커지고 맨 위로, 꾹 누르면 상세 패널. Added in `_ready()`. |
-| PilotDetailPanel | Node | `ui/PilotDetailPanel.gd` | 파일럿 상세 모달 — 스트립의 얼굴을 누르거나 전장 초상을 꾹 누르면 열린다(작전 단계 + 자동 진행, 자동 진행 중이면 턴이 멈춘다). 머리글(이름 · 기체명 · 성장치)이 탭과 분리돼 늘 보이고, 탭이 바꾸는 것은 아래 상세 패널뿐이다. Lazily added in `_ready()`. |
-| ObjectiveRewardPopup | Node | `ui/ObjectiveRewardPopup.gd` | 오브젝트 보상 미리보기 — 상단 패널의 시계를 누르면 그 오브젝트가 주는 카드를 실물로 띄운다. **전장을 붙잡지 않는다.** Lazily added in `_ready()`. |
-| PilotSkillSystem | Node | `skill/PilotSkillSystem.gd` | **파일럿 스킬** — 선수마다 붙는 고유 능력(쿨타임 / 충전식 / 패시브). 상태 · 활성화 · 사건 훅 · 패시브 질의. Lazily added in `_ready()` **after** `build_starter_decks()` (짝을 로스터에서 찾고 백본 패시브가 덱을 만진다). `skill/README.md` 참조 |
-| MechSkillSystem | Node | `mech/MechSkillSystem.gd` | **메크 스킬** — 배정된 **기체**에 붙는 패시브 15종과 그 기체 카드들이 남기는 지속 상태(취약 · 반응 장갑 · 목표 · 추적 · 현상금 · 결속 · 탈진 …). 파일럿 스킬 바로 옆에서 `_ready()` 말미에 세워진다(같은 전제 — 로스터 + 덱이 이미 서 있어야 한다). 패시브 보정은 **질의 함수로만** 나가고 계산은 원래 하던 자리가 한다. `mech/README.md` 와 `docs/mech_skills_design.md` 참조 |
+| CardPhaseManager | Node | `card_phase/CardPhaseManager.gd` | Operation-phase turn flow, deck, fanned hand layout, phase-end gating |
+| GambitPhaseManager | Node | `gambit/GambitPhaseManager.gd` | Pre-opening (개시 전) phase — role-fixed lane assignment + battlefield setup (`prepare_field`) + **jungle start (정글 시작) overlay** + opening (`begin_battle`). See `gambit/README.md` |
+| JungleStartOverlay | Node | `gambit/JungleStartOverlay.gd` | **Jungle start cell** — the player drags the ally jungler marker standing on the battlefield (no tail) directly onto one of our jungle / neutral cells (the enemy jungle is disabled; shows HQ→that cell + the 6-turn path after arrival with turn numbers — `SimulationCore.predict_jungle_path`) and confirms with "전투 시작" (Start battle). That cell becomes the jungler's first target (`PilotData.jungle_start_cell`). Opens only when `match_ctx.active`. Lazily added by `GambitPhaseManager`. |
+| EngagePhaseManager | Node | `engage/EngagePhaseManager.gd` | Battle-start (engage) modal — **round-based turn side-view belt engage** (`engage/TurnEngageSim.gd` headless sim + `engage/EngageArena.gd` renderer) triggered by `engage:N` / `duel` cards. Lazily added in `_ready()`. |
+| HudBuilder     | Node | `ui/HudBuilder.gd`         | HUD construction; strategy-point donut (`ui/CostDonut.gd`), **both teams' pilot strips** (`ui/PilotStrip.gd`, enemy on top / ally at bottom), top-right **kill feed** (`ui/KillFeed.gd`), **objective timers** on both sides of the enemy strip (`ui/ObjectiveTimer.gd`) |
+| ObjectiveSystem | Node | `objective/ObjectiveSystem.gd` | **Objectives (Herald (전령) / Dragon (용))** — engage events that open on the left/right neutral cells at set turns. Timer · participation decision · settlement. The decision window and stage borrow the engage module's VS screen and arena. Lazily added in `_ready()` **after** config load. |
+| ObjectiveRewardFx | Node | `objective/ObjectiveRewardFx.gd` | **Objective reward pickup effect** — spreads the reward card in the centre of the screen, then flies it to where it goes (deck pile / left end of the hand / opponent's hand). `ObjectiveSystem._grant_reward` awaits it **right before granting**. |
+| MarkerTouch | Node | `ui/MarkerTouch.gd` | Battlefield portrait press — press to enlarge and bring to front, long-press for the detail panel. Added in `_ready()`. |
+| PilotDetailPanel | Node | `ui/PilotDetailPanel.gd` | Pilot detail modal — opens by tapping a face in the strip or long-pressing a battlefield portrait (operation phase + auto-progress; during auto-progress the turn pauses). The header (name · mech name · growth points) is separate from the tabs and always visible; tabs change only the detail panel below. Lazily added in `_ready()`. |
+| ObjectiveRewardPopup | Node | `ui/ObjectiveRewardPopup.gd` | Objective reward preview — tapping a timer in the top panel shows the real card that objective grants. **Does not hold the battlefield.** Lazily added in `_ready()`. |
+| PilotSkillSystem | Node | `skill/PilotSkillSystem.gd` | **Pilot skills** — a unique ability attached to each player (cooldown / charge-based / passive). State · activation · event hooks · passive queries. Lazily added in `_ready()` **after** `build_starter_decks()` (it finds partners in the roster, and backbone passives touch the deck). See `skill/README.md` |
+| MechSkillSystem | Node | `mech/MechSkillSystem.gd` | **Mech skills** — 15 passives attached to the assigned **mech** and the persistent states its mech cards leave (vulnerable · reactive armour · target · tracking · bounty · bond · exhaustion …). Built at the end of `_ready()` right next to pilot skills (same precondition — roster + deck must already exist). Passive modifiers go out **only through query functions**; the computation happens where it always did. See `mech/README.md` (includes the 21-mech list · clause grammar) |
 | BattleLogger   | Node | `debug/BattleLogger.gd`    | Full action log (console + `user://battle_logs/`) and enemy cross-over detector. Lazily added in `_ready()` after pilots spawn; reachable as `_bs.blog`. |
 
 Cross-module calls go through `_bs`:
@@ -74,18 +89,18 @@ Responsibilities:
 - Public **coordinate helpers**: `cell_center(pos)`, `pilot_label(p)`, `role_stats_str(role)`
 - **Lifecycle**: `_ready()`, `_process(delta)`
   - `_ready` calls `_gambit.auto_assign_lanes()` then `_gambit.launch_battle()`.
-    그 안에서 전장이 다 서고(`field_ready = true`), **경기로 들어온 경우
-    (`match_ctx.active`)에는 GAMBIT 에 머물러 정글 시작 오버레이를 연다** —
-    BATTLE 은 그 화면의 "전투 시작"이 부른다. 단독 실행(BattleSim.tscn 직접
-    실행 / 헤드리스 검증)은 물을 상대가 없으므로 곧장 BATTLE 이다. 어느 쪽이든
-    `_ready` 는 그대로 이어서 덱 배분 · 파일럿/메크 스킬 · 로거를 배선한다
-    (전장은 이미 다 섰고 BATTLE 틱만 미뤄진 것이다).
-  - **`field_ready`** 는 `BattleRenderer._draw` 의 유일한 게이트다. 예전에는
-    `game_phase == GAMBIT` 이면 통째로 안 그렸는데, 정글 시작 선택이 그 GAMBIT
-    안으로 들어오면서 개시 전에도 전장이 보여야 하게 됐다.
+    Inside it the battlefield is fully set up (`field_ready = true`), and **when entered from a match
+    (`match_ctx.active`) it stays in GAMBIT and opens the jungle start overlay** —
+    BATTLE is invoked by that screen's "전투 시작". Standalone runs (launching BattleSim.tscn directly
+    / headless verification) have nobody to ask, so they go straight to BATTLE. Either way
+    `_ready` continues to wire deck distribution · pilot/mech skills · logger
+    (the battlefield is already fully set up; only the BATTLE ticks are deferred).
+  - **`field_ready`** is the only gate on `BattleRenderer._draw`. Previously it drew nothing at all
+    while `game_phase == GAMBIT`, but once jungle start selection moved inside that GAMBIT,
+    the battlefield had to be visible before the opening too.
   - `_process` auto-ticks `card_phase.do_battle_turn()` every `AUTO_PLAY_INTERVAL`
     seconds while `game_phase == BATTLE`. CARD_PHASE pauses the tick, and so does
-    the 상대 차례 — that one runs *inside* BATTLE, so the guard also reads
+    the opponent's turn (상대 차례) — that one runs *inside* BATTLE, so the guard also reads
     `_ai_turn_active()` (`card_phase.is_ai_turn_active()`). The same flag freezes
     `get_elapsed_ingame_seconds()`.
 - **Button callbacks**: `_on_restart_pressed()` (the only manual entry point left).
@@ -96,10 +111,10 @@ Responsibilities:
 
 | File | class_name | Description |
 |---|---|---|
-| `resources/PilotData.gd` | PilotData | role, hp/max_hp, atk, team, grid_pos, lane, waypoint_idx, **move_range**, **hit**, **evasion**, **jungle_start_pref**, **respawn_timer** (death-only off-field clock — see `BattleSim.turns_until_return`), **recall_hold** (본진 복귀한 턴의 이동 1회 스킵), **anim_move_path** (이번에 밟은 칸의 경로 — 렌더러가 읽고 비운다), **kills / deaths** (이번 매치 누적 — `mark_pilot_dead` 한 곳에서만 오르고, 경쟁 심리 스킬이 상대 라이너와 견주는 데 쓴다) |
+| `resources/PilotData.gd` | PilotData | role, hp/max_hp, atk, team, grid_pos, lane, waypoint_idx, **move_range**, **hit**, **evasion**, **jungle_start_pref**, **respawn_timer** (death-only off-field clock — see `BattleSim.turns_until_return`), **recall_hold** (skip one move on the turn of a return-to-base (본진 복귀)), **anim_move_path** (path of cells stepped this time — the renderer reads and clears it), **kills / deaths** (cumulative this match — incremented only in `mark_pilot_dead`, kills credited to the kill feed's last hit; the competitive-spirit skill uses them to compare against the opposing laner), **match stats** `assists` / `dmg_dealt` / `dmg_taken` / `care` + the shield-source ledger `shield_grants` (see `combat/README.md` "Match stats") |
 | `resources/TurretData.gd` | TurretData | team, grid_pos, hp, tier, lane, alive |
-| `resources/PlayerData.gd` | PlayerData | id, name, role, team_id, **선수 스탯 6종** (field_hit / field_eva / engage_hit / engage_eva / atk_growth / hp_growth — 표는 `STAT_KEYS` / `STAT_LABELS` / `STAT_SHORT` / `STAT_NOTES`, 하한 1 · 상한 없음), `assigned_mech`, **`skill_id`** (pilot_skills.id, -1 = 없음), **`is_mob`** (실루엣 초상화 · 스킬 없음 · 드래프트 제외) |
-| `resources/MechData.gd` | MechData | id, name, hp, atk, **presence** (4=melee/2=ranged; engage 무대의 타겟 어그로 가중치로만 사용). **`speed` 는 삭제됐다** — 교전이 라운드 턴제가 되면서 행동 빈도 개념이 사라졌다 |
+| `resources/PlayerData.gd` | PlayerData | id, name, role, team_id, **6 player (선수) stats** (field_hit / field_eva / engage_hit / engage_eva / atk_growth / hp_growth — tables are `STAT_KEYS` / `STAT_LABELS` / `STAT_SHORT` / `STAT_NOTES`, floor 1 · no cap), `assigned_mech`, **`skill_id`** (pilot_skills.id, -1 = none), **`is_mob`** (silhouette portrait · no skill · excluded from draft) |
+| `resources/MechData.gd` | MechData | id, name, hp, atk, **presence** (mechs.csv `presence` — higher for melee, lower for ranged; used only as the target aggro weight on the engage stage). **`speed` has been deleted** — once engage became round-based turns, the concept of action frequency disappeared |
 
 ---
 
@@ -137,9 +152,9 @@ Responsibilities:
   (jungler vs lane pilot) are ignored, so a jungler crossing a lane never
   freezes on — or is blocked by — a lane enemy.
 - **Pilots are not attacked by turrets.**
-- **전진 = 라인 푸쉬, 그리고 포탑 칸에 실제로 올라선다.** A lane pilot whose next
+- **Advancing = lane push, and the pilot actually steps onto the turret (포탑) cell.** A lane pilot whose next
   lane step is a same-lane enemy turret **occupies that cell** — free walk-ups,
-  engagement winners following the losers in, and the 전진 card alike. There is
+  engagement winners following the losers in, and the 전진 (Advance) card alike. There is
   no adjacent "step in and bounce out" siege any more; entering costs a turn and
   deals no damage.
 - **A pilot standing on an enemy turret cell attacks it that turn, with no hit
@@ -153,7 +168,7 @@ Responsibilities:
   - The one extra bounce: an **unattackable** turret (T2 while its own-lane T1
     stands) never holds an attacker — nothing to grind, so it retreats. Only
     card displacement can put a pilot there.
-- **농성 중인 수비자도 맞는다** — the turret takes its damage first and
+- **A defender camping the turret gets hit too** — the turret takes its damage first and
   unconditionally, and *on top of that* the attacker rolls on the defender
   standing on it. Camping a turret used to be a free beating of the attacker
   (attackers dealt zero to defenders); now it is a mutual exchange. A defender is
@@ -170,10 +185,10 @@ Responsibilities:
   sprite disappears from the field.
 
 ### Recall / Respawn
-- **복귀 = 본진 귀환.** Two triggers, one path (`RecallSystem.return_to_hq`):
+- **Return-to-base (복귀) = recall (귀환) to base.** Two triggers, one path (`RecallSystem.return_to_hq`):
   HP ≤ `RECALL_HP_THRESHOLD`, **or** a card effect that dropped the pilot on a
   jungle cell / on **another lane's corridor**.
-- **복귀는 전장을 비우지 않는다.** The pilot lands in its own HQ **at full HP**
+- **Return-to-base does not empty the field.** The pilot lands in its own HQ **at full HP**
   on the spot, `alive` untouched — a pilot only ever leaves the field by dying.
   The cost is the walk back: `return_to_hq` sets `PilotData.recall_hold`, and
   the next `resolve_movement` spends it to hold the pilot still for exactly one
@@ -183,19 +198,19 @@ Responsibilities:
   game_config key.
 - A deep jump along the pilot's **own** lane is legal, however far into enemy
   territory it lands. That is a split push, not a displacement.
-- The 복귀 (`recall_ally`) card is the same teleport minus the hold: instant
+- The 복귀 (Return; `recall_ally`) card is the same teleport minus the hold: instant
   full-HP HQ landing, free to walk out the same turn.
 - **Only the dead are off the field** (`alive = false`), so `respawn_timer` and
   **`BattleSim.turns_until_return(p)`** are death-only clocks. Anything needing
   "turns left" still calls the helper rather than reading the timer.
 - **Respawn length scales with match time**: `BattleSim.respawn_turns_now()` =
-  `RESPAWN_TURNS` (game_config, default **5**) + `turn_count / 10`. An early
-  death costs 5 turns, a late one grows with the clock. The DB value used to be
-  a flat 16, which meant one death in the opening minutes erased the whole
-  laning phase. **`BattleSim.mark_pilot_dead(p)` is the only place a pilot
-  dies** — battlefield combat, 전진, 공격 카드 and the engage arena all funnel
-  through it, so the scaling and the 전사 연출 can never be wired into one path
-  and forgotten in another. It is also where **계획 살인** pays out: the
+  `RESPAWN_TURNS` (game_config.csv) + `turn_count / BATTLE_RESPAWN_TURN_SCALE_DIV`
+  (const.csv). An early death costs about `RESPAWN_TURNS`, a late one grows with
+  the clock. The DB value used to be a much larger flat value, which meant one
+  death in the opening minutes erased the whole laning phase. **`BattleSim.mark_pilot_dead(p)` is the only place a pilot
+  dies** — battlefield combat, 전진 (Advance), attack cards and the engage arena all funnel
+  through it, so the scaling and the death (전사) effect can never be wired into one path
+  and forgotten in another. It is also where **계획 살인** (Planned Murder) pays out: the
   reserved `kill_bounty_p/ai` goes to the *opposite* team of the pilot who
   fell (`_award_kill_bounty`). No killer argument was added — the battlefield
   has no third faction, so "the other team did it" is exact.
@@ -225,8 +240,8 @@ Responsibilities:
 
 ### Jungle
 - Map starts with both jungles fully captured. `(-3,-1)` and `(1,-1)` are
-  **permanently neutral** — they are the 오브젝트 자리(전령 / 용), not camps.
-  See 오브젝트 below.
+  **permanently neutral** — they are the objective (오브젝트) spots (Herald / Dragon), not camps.
+  See Objectives below.
 - Junglers do not push lanes. They roam own-captured cells harvesting camps.
 - Jungler-vs-jungler combat in a contested cell uses the same hit/evasion roll.
   A loser is pushed to the nearest own-captured jungle cell.
@@ -240,252 +255,254 @@ Responsibilities:
   **The old side-neutral override is gone**: `(-3,-1)`/`(1,-1)` can never be
   owned by anyone now, so that branch could never fire.
 
-### 오브젝트 (전령 / 용)
-좌우 중립 칸에서 **정해진 턴마다 열리는 교전 사건**. 전체 규칙 · 노브 · 보상
-카드는 `objective/README.md`. 요약:
+### Objectives (Herald / Dragon)
+**Engage events that open on the left/right neutral cells at set turns**. Full rules · knobs · reward
+cards are in `objective/README.md`. Summary:
 
-- **좌측 = 전령(12턴 첫 등장, 참가 3인: LEFT/CENTER/JUNGLE)**,
-  **우측 = 용(15턴, 참가 4인: RIGHT×2/CENTER/JUNGLE)**. 결판 후 15턴,
-  양 팀 미참여로 무산되면 10턴 뒤 재시도. 남은 턴 수는 타일 위에 상시 표시.
-- **차례와 상관없이 발생한다** — `CardPhaseManager.do_battle_turn()` 이
-  `simulate_turn()` 직후, 카드 경제보다 **앞**에서 `await` 한다.
-- **회피할 수 있다.** 플레이어는 참여 / 미참여 두 버튼(VS 화면 재사용), AI 는
-  양 팀 참가자의 `(hp+shield)×atk` 합으로 승률을 내 0.45 미만이면 물러난다.
-  한쪽만 참여하면 전투 없이 그쪽이 가져가고, 양쪽이면 4라운드 교전
-  (`EngagePhaseManager.start_objective_engage`) 뒤 **생존 인원 → 잔여 HP 비율
-  합**으로 승자를 가린다. 사망한 파일럿은 참여 불가라 그만큼 불리하다.
-- **보상** — 전령: [전령 제압](0코, 보존+소멸) 1장을 손패로. 최외곽 적 포탑에
-  피해 8(그 레인 전선에 적이 없으면 **16**), 그만큼의 성장치를 **그 레인 아군이
-  균등하게** 나눠 받는다. 용: [용 보상](0코, 소멸) 3장을 덱에 섞어 넣는다. 드로우 1 + 지정한
-  아군의 성장 적립 배율 **영구** +5%(`PilotData.growth_rate_bonus`, 누적).
-  두 카드 모두 `pool = 0` 이고 **시전자가 없다**(`owner_pilot == null`).
-- **보상은 연출을 거쳐 들어온다**(`objective/ObjectiveRewardFx.gd`) — 용은
-  N장이 중앙에 부채꼴로 펼쳐졌다가 한 장처럼 겹쳐져 **좌측 아래 덱 뭉치**로,
-  전령은 한 장이 떠올랐다가 **손패 맨 왼쪽 자리**로 내려앉는다. 적이 가져가면
-  둘 다 **상단 상대 손패 왼쪽 끝**으로 사라진다. `_grant_reward` 가 연출을
-  `await` 한 **뒤에** 지급하므로 같은 카드가 두 군데에 보이지 않는다.
-- **오브젝트는 그 좌표를 무대로 빌려 쓸 뿐, 두 칸은 평범한 정글 칸이다** —
-  캠프가 서고, 정글러가 밟아 점령하고, 사이드 T1 파괴로 주인이 바뀐다. 한때는
-  상시 중립이라 캠프 칸이 14 → 12 로 줄었고 그만큼 `SCORE_JUNGLE_CAMP` 이
-  0.98 → 1.15 로 올라 있었는데, 두 칸이 돌아오면서 **0.98 로 되돌렸다**.
-- 남은 턴 수는 **상단 패널**의 `ui/ObjectiveTimer.gd` 두 칸에 상시 표시된다
-  (적 스트립 양옆, 좌 전령 / 우 용). 전장 타일 위에 찍던 절
-  (`BattleRenderer._draw_objectives`)은 삭제됐다.
+- **Left = Herald (first spawn `OBJ_HERALD_FIRST_TURN`, 3 participants: LEFT/CENTER/JUNGLE)**,
+  **right = Dragon (first spawn `OBJ_DRAGON_FIRST_TURN`, 4 participants: RIGHT×2/CENTER/JUNGLE)**. Respawns
+  `OBJ_RESPAWN_TURNS` after it is decided; if it falls through because neither team joins, retry after
+  `OBJ_RETRY_TURNS` (all game_config.csv). Turns remaining are always shown on the timer.
+- **It happens regardless of whose turn it is** — `CardPhaseManager.do_battle_turn()`
+  `await`s it right after `simulate_turn()`, **before** the card economy.
+- **It can be avoided.** The player gets two buttons, join / skip (VS screen reused); the AI
+  computes a win rate from the sum of `(hp+shield)×atk` of both teams' participants and backs off below 0.45.
+  If only one side joins, that side takes it without a fight; if both do, after an `OBJ_ENGAGE_ROUNDS`-round engage
+  (`EngagePhaseManager.start_objective_engage`) the winner is decided by **survivor count → sum of
+  remaining HP ratios**. Dead pilots can't participate, which is a corresponding disadvantage.
+- **Rewards** — Herald: 1 [전령 제압] (Herald Subdued) (cost = its cards.csv `cost`, keep (보존) + exhaust) into the hand. Deals
+  its `turret_damage` clause (cards.csv) as damage to the outermost enemy turret (doubled if there are no enemies on that lane's
+  front line), and **allies in that lane split that much growth points evenly**. Dragon: `OBJ_DRAGON_CARD_COUNT`
+  [용 보상] (Dragon Reward) (cost = its cards.csv `cost`, exhaust) shuffled into the deck. Its `draw:N` clause + a **permanent**
+  growth accrual multiplier from its `growth_perm:N` clause (cards.csv) for a chosen ally (`PilotData.growth_rate_bonus`, cumulative).
+  The old `OBJ_DRAGON_GROWTH_PCT` game_config key was deleted — the card clause is the only source.
+  Both cards are `pool = 0` and **have no caster** (`owner_pilot == null`).
+- **Rewards come in through an effect** (`objective/ObjectiveRewardFx.gd`) — for Dragon,
+  N cards fan out in the centre, stack as one, and go to the **deck pile at the bottom left**;
+  for Herald, one card floats up and settles into **the leftmost hand slot**. If the enemy takes it,
+  both vanish to **the left end of the opponent's hand at the top**. `_grant_reward` grants **after**
+  `await`ing the effect, so the same card is never visible in two places.
+- **The objective only borrows those coordinates as a stage; the two cells are ordinary jungle cells** —
+  camps stand there, junglers step on them to capture, and side T1 destruction changes their owner. At one point
+  they were permanently neutral, so camp cells dropped 14 → 12 and `SCORE_JUNGLE_CAMP` had been raised
+  to compensate; with the two cells back, **it was reverted to its previous value**.
+- Turns remaining are always shown in the two `ui/ObjectiveTimer.gd` slots in the **top panel**
+  (on both sides of the enemy strip, left Herald / right Dragon). The section that printed them on battlefield tiles
+  (`BattleRenderer._draw_objectives`) was deleted.
 
-### Card Phase (작전 단계)
+### Card Phase (operation phase)
 
-> **덱 구성이 바뀌었다.** 파일럿이 받던 "메크 카드 3장"이 사라지고, **배정된
-> 기체가 자기 카드 셋을 통째로 들고 온다**(`mech_cards.csv`, `count` 만큼 펼침 —
-> 기체마다 2~7장). 파일럿 카드 3장은 그대로다. 덱 크기가 30장 고정에서
-> 25~50장으로 열렸고, 그 차이 자체가 기체 선택의 일부다. 신규 키워드 **충전**
-> (손패에 들어올 때마다 세기가 쌓이고 사용 시 통째로 나간다)과 **코스트 -1**
-> (낼 수 없는 카드)도 여기 붙는다 — `card_phase/README.md` 의 해당 절 참조.
+> **Deck composition changed.** The "3 mech cards" pilots used to receive are gone; **the assigned
+> mech brings its whole card set** (`mech_cards.csv`, expanded by `count` —
+> 2~7 cards per mech). The 3 pilot cards remain. Deck size opened up from a fixed 30 to
+> 25~50, and that difference itself is part of choosing a mech. The new keyword **Charge (충전)**
+> (strength accumulates every time it enters the hand and is spent all at once on use) and **cost -1**
+> (a card that cannot be played) also attach here — see the corresponding section in `card_phase/README.md`.
 
 - Triggered when `player_cost >= PHASE_THRESHOLD`.
-- **개시 상태는 진영이 정한다.** `BattleSim.blue_team` (match_ctx.player_side
-  에서 유도; MatchFlow 는 지금 플레이어를 항상 BLUE 로 고정) 쪽이
-  `BLUE_COST_HEAD_START`(1) 만큼 전략 포인트를 선점한 채 시작하므로 문턱에 먼저
-  닿는다 — 밴픽에서 후밴/후픽을 하는 대가다. **개시 손패는 없다** — 양 팀 다
-  0장으로 시작하고, 손패는 `ECONOMY_START_TURN`(10)부터 도는 자동 드로우로만
-  찬다. 실측 기준 첫 작전 단계는 **22턴 · 손패 7장**이고 상한
-  `MAX_HAND_SIZE` 는 **10**이다.
-- Ending the phase goes through the player's 전략 포인트 도넛: tap it once to
-  flip it into a circular 턴 넘기기 button, tap again to end. **카드를 한 장도
-  내지 않아도 넘길 수 있다** — 면이 회색으로 잠기는 것은 배너 / 모달 / 공격
-  명중 연출처럼 지금 닫으면 무언가가 끊기는 상태뿐이다.
+- **The opening state is decided by side.** The `BattleSim.blue_team` side (derived from
+  match_ctx.player_side; MatchFlow currently always fixes the player to BLUE) starts with a head start of
+  `BLUE_COST_HEAD_START` strategy points, so it reaches the threshold first
+  — the price for banning/picking second in ban/pick. **There is no opening hand** — both teams
+  start with 0 cards, and the hand fills only through auto-draw running from `ECONOMY_START_TURN`.
+  The hand cap is `MAX_HAND_SIZE` (all game_config.csv).
+- Ending the phase goes through the player's strategy-point donut: tap it once to
+  flip it into a circular 턴 넘기기 (End turn) button, tap again to end. **You can pass without playing a single
+  card** — the face greys out and locks only in states where closing now would cut something off, such as
+  a banner / modal / attack-hit effect.
   Tapping anywhere else flips it back to the point readout.
 - Phase end re-runs recalls (HP threshold + out-of-position card displacement)
-  and drops straight back to BATTLE. 그때 **문턱을 넘은 전략 점수는 소멸하고**
-  (`player_cost` = `PHASE_THRESHOLD`), 넘긴 쪽은 손패가 바뀌거나 상대가 한 번
-  차례를 갖기 전까지 다시 차례를 받지 못한다(패스 잠금). 상대가 이미 문턱 위
-  라면 다음 틱을 기다리지 않고 **그 자리에서 상대 차례로 넘어간다**. 짝이 되는
-  규칙이 하나 더 있다 — **문턱 위에서는 `COST_RECOVERY` 가 들어오지 않는다**
-  (양 팀 동일). 셋이 합쳐 전략 점수의 실질 상한이 문턱이 된다.
+  and drops straight back to BATTLE. At that point **strategy points over the threshold are lost**
+  (`player_cost` = `PHASE_THRESHOLD`), and the side that passed cannot get the turn again until its hand
+  changes or the opponent has had one turn (pass lock). If the opponent is already above the threshold
+  it switches **to the opponent's turn on the spot** without waiting for the next tick. There is one more
+  paired rule — **above the threshold, `COST_RECOVERY` does not come in**
+  (same for both teams). Together the three make the threshold the effective cap on strategy points.
 - **The AI's turn is its own**, no longer stapled to the player's phase end:
   it fires from the BATTLE tick when `ai_cost >= PHASE_THRESHOLD` *and* the AI
-  holds a card it can pay for, and only then does the "상대 차례" banner show.
+  holds a card it can pay for, and only then does the "상대 차례" (Opponent's turn) banner show.
   It runs inside BATTLE with the auto-tick held, then runs the same recall
   sweep. When **both** sides are over the threshold on the same tick,
-  `CardPhaseManager._next_turn_side()` arbitrates: 블루 먼저, 그 다음부터는
-  직전에 잡지 않은 쪽이 잡는 **교대**. 교대가 굶주림 방지를 맡으므로 예전의
-  "AI 를 무조건 먼저 검사한다" 규칙은 사라졌다.
+  `CardPhaseManager._next_turn_side()` arbitrates: blue first, and from then on
+  **alternation** — the side that didn't take it last time takes it. Alternation handles starvation prevention, so the old
+  "always check the AI first" rule is gone.
   See [`card_phase/README.md`](card_phase/README.md).
 
-### Engage (전투 개시) — 사이드뷰 벨트 교전 (라운드 턴제)
+### Engage (전투 개시) — side-view belt engage (round-based turns)
 Card-driven sub-phase: `engage:N` opens a **turn-based side-view belt stage**
-(관전 전용 — no player input). On close it returns to the phase that opened it —
-CARD_PHASE for a player card, BATTLE for an AI card played during 상대 차례 —
+(spectate-only — no player input). On close it returns to the phase that opened it —
+CARD_PHASE for a player card, BATTLE for an AI card played during the opponent's turn —
 see [`engage/README.md`](engage/README.md) for details. Key contract:
 - Participants = pilots in radius-1 hex from caster (caster cell + 6 neighbors).
   `exclude_lane` drops lane pilots still on their lane row; junglers and
   displaced-into-jungle lane pilots stay in. Still supported end-to-end, but
-  the only card that used it (교전, id 4) has been removed from the pool.
-- **`engage:N` 의 N 은 라운드 수다** (engage:3 = 3라운드). 예전의
-  "N × 3초" 환산은 삭제됐다. `duel` 은 첫 처치까지 돌고 `DUEL_MAX_ROUNDS`(10)
-  상한만 둔다.
-- **한 라운드 = 참가자 전원이 정확히 한 번씩 행동.** 무대에는 언제나 **한 명만**
-  나와 있고(`current_actor`), 그 한 차례(접근 → 공격 → 정착)가 끝나면 다음
-  순서로 넘어간다. 순서 끝에 닿으면 라운드가 오르고 **다시 시전자부터**.
-- **행동 순서는 개시 시 한 번 정해지고 매 라운드 반복된다** — 시전자 팀부터
-  한 명씩 **팀 교대**, 팀 안에서는 **역할 고정**(암살자 → 격투가 → 탱커 →
-  스나이퍼 → 서포터), 단 **시전자는 자기 팀 맨 앞으로 당겨진다**. 포탑은 파일럿
-  전원이 돈 뒤 시전자 팀 포탑부터 한 번씩. 죽은 행동자는 건너뛴다.
-- **메크 `speed` 스탯은 삭제됐다** — 라운드마다 전원이 한 번씩 행동하므로 행동
-  빈도를 가르는 스탯이 없다. `game_config.TURRET_SPEED` 도 함께 사라졌다.
-- **전장 셀 위치는 배치에 반영되지 않는다.** 무대는 팀0 왼쪽 / 팀1 오른쪽으로
-  마주 선 평면 벨트이고, 자리는 역할이 정한다 — 근접은 앞줄, 원거리는 뒷줄.
-- 근접은 밀착(88px)까지, 원거리는 **최대 사거리의 90%**(270px)까지 파고든 다음
-  때린다. 사거리 판정에는 `STRIKE_DIST_EPSILON` 여유가 붙는다 — 없으면 사거리에
-  딱 맞춰 선 유닛이 부동소수 오차로 판정을 통과하지 못해 공격이 아예 성립하지
-  않는다. **원위치 복귀는 없다** — 공격을 끝낸 자리가 새 앵커다. 명중하면 대상이
-  넉백되고 **밀려난 자리도 새 앵커가 된다**(피해에는 얹히지 않고 위치와 재접근
-  거리만 바꾼다).
-- **교전 중 이탈은 없다** — 아무도 무대를 뜰 수 없다. 종료는 라운드 소진 또는
-  한 쪽 전멸뿐. 빈사(HP<30%)여도 후퇴하지 않는다.
-- **종료 → 대시보드 사이에 `EngagePhaseManager.END_HOLD_SEC`(2.0초) 유예**가
-  있다. 마지막 처치가 결과창에 먹히지 않도록 전투만 멈춘 무대를 2초 더
-  보여 주고(잔여 연출은 `TurnEngageSim.step_afterglow`), 상단에 종료
-  사유 배너(`적군 전멸` / `N라운드 완료` …)를 띄운다. 유예 동안 `round_index` 는
-  멈추므로 대시보드의 라운드 수는 실제로 싸운 라운드 수 그대로다.
-- **암살자는 적 뒷줄(원거리)을 우선 타겟으로 삼는다** (`DIVE_FOCUS`). 이
-  분기가 없으면 앞줄이 더 가깝고 존재감도 두 배라 원거리 메크가 교전 내내
-  한 대도 맞지 않는다 — 실측으로 확인된 구멍이다.
-- **포탑은 사거리 존이 아니라 참가자다**: **적이 걸어온 교전에서** 참가 파일럿이
-  자기 팀 포탑 칸 위에 서 있으면 그 포탑이 가담해 **라운드마다 한 번 적 파일럿을
-  공격한다** (사거리 제한 없음, 명중 판정은 굴린다). 무대에서 포탑 HP 는 깎이지
-  않는다. **가담하지 않는 경우가 둘** — **시전자 팀의 포탑**(교전을 연 쪽이 곧
-  강제한 쪽이다. 포탑 칸에 눌러앉아 카드로 교전을 여는 쪽이 포탑까지 끼면 그
-  칸이 일방적인 안전지대가 된다)과 **오브젝트 교전**(시전자가 없어 "누가
-  걸었는가"가 없고 무대도 중립 칸에서 열린다) — `engage/README.md` 의 포탑 절.
-- Damage (atk 1회분 + shield-first) matches the battlefield, but **명중률은
-  별개**: 교전은 전장 확률 `base` 를 **80~100% 구간**으로 리맵한다
-  (`ENGAGE_HIT_MIN` 0.80 / `ENGAGE_HIT_MAX` 1.00 → 스탯이 대등하면 90%).
+  the only card that used it (교전 (Engage), id 4) has been removed from the pool.
+- **The N in `engage:N` is the number of rounds** (`engage:N` = N rounds). The old
+  "N × 3 seconds" conversion was deleted. `duel` runs until the first kill with only a
+  `DUEL_MAX_ROUNDS` cap (const.csv `ENGAGE_DUEL_MAX_ROUNDS`).
+- **One round = every participant acts exactly once.** There is always **only one** unit
+  out on the stage (`current_actor`), and when that turn (approach → attack → settle) ends it moves to
+  the next in order. On reaching the end of the order the round increments and it goes **back to the caster**.
+- **The action order is fixed once at the opening and repeats every round** — starting with the caster's team,
+  **alternating teams** one at a time, and within a team **fixed by role** (assassin → fighter → tank →
+  sniper → supporter), except that **the caster is pulled to the front of its own team**. Turrets act once each
+  after all pilots, starting with the caster team's turrets. Dead actors are skipped.
+- **The mech `speed` stat has been deleted** — since everyone acts once per round, there is no stat
+  deciding action frequency. `game_config.TURRET_SPEED` disappeared with it.
+- **Battlefield cell positions are not reflected in the layout.** The stage is a flat belt with team 0 on the left /
+  team 1 on the right facing each other, and position is decided by role — melee in the front row, ranged in the back.
+- Melee closes in to contact (`ENGAGE_MELEE_REACH`), ranged to `ENGAGE_RANGED_APPROACH_RATIO` **of max
+  range** (`ENGAGE_RANGE_RANGED`, all const.csv), then strikes. Range checks get a `STRIKE_DIST_EPSILON` slack — without it a unit standing exactly
+  at range fails the check due to floating-point error and the attack never happens.
+  **There is no return to the original position** — where the attack ended is the new anchor. On a hit the target is
+  knocked back and **the spot it was pushed to also becomes its new anchor** (it doesn't add to damage; it only changes
+  position and re-approach distance).
+- **No leaving mid-engage** — nobody can leave the stage. It ends only when rounds run out or
+  one side is wiped. Even near death (HP<30%) units don't retreat.
+- **Between end → dashboard there is an `EngagePhaseManager.END_HOLD_SEC` grace** (const.csv `ENGAGE_END_HOLD_SEC`).
+  So the last kill isn't swallowed by the result window, it shows the stage with only combat stopped for that
+  long (remaining effects via `TurnEngageSim.step_afterglow`) and puts up an end-reason banner at the top
+  (`적군 전멸` (Enemy wiped out) / `N라운드 완료` (N rounds complete) …). `round_index` stops during the grace,
+  so the dashboard's round count is exactly the number of rounds actually fought.
+- **Assassins prioritise the enemy back row (ranged)** (`DIVE_FOCUS`). Without this
+  branch the front row is closer and has higher presence (mechs.csv), so ranged mechs never take a single hit
+  the whole engage — a hole confirmed by measurement.
+- **Turrets are participants, not range zones**: **in an engage the enemy started**, if a participating pilot
+  stands on its own team's turret cell, that turret joins and **attacks an enemy pilot once per
+  round** (no range limit; the hit roll is rolled). Turret HP is not reduced on the stage.
+  **Two cases where it does not join** — **the caster team's turret** (the side that opened the engage is the side that
+  forced it; if a side squatting on a turret cell and opening engages by card also got its turret, that
+  cell would become a one-sided safe zone) and **objective engages** (there is no caster, so there is no "who
+  started it", and the stage opens on a neutral cell) — the turret section of `engage/README.md`.
+- Damage (one atk's worth + shield-first) matches the battlefield, but **hit chance is
+  separate**: engage remaps the battlefield probability `base` into **the band
+  [`PILOT_HIT_MIN`, `PILOT_HIT_MAX`]** (const.csv; equal stats land at the band's midpoint). The old
+  engage-only `ENGAGE_HIT_MIN` / `_MAX` were deleted.
   KO routes through `BattleSim.mark_pilot_dead(victim, killer)`, so an arena kill
   gets the same scaled respawn timer (`respawn_turns_now()`) and the same
-  성장치 정산 a battlefield kill does. `grid_pos` is never modified by an engage.
-- 화면은 가로로 납작한 **시네마 밴드** 하나(1032×500)와 그 **아래 참가자
-  초상화 스트립**(체력은 무대 초상의 HP 링 — 전장 마커와 같은 모양)으로 구성된다. 상단 헤더는 **라운드 카운터
-  (`라운드 2 / 3`) + 라운드 칸 + "누구의 차례"** 두 줄이다(실시간 시절의 남은
-  시간 바는 삭제). Dashboard shows per-pilot dealt / taken / kills before resuming.
-- 실측(헤드리스 5v5 ×8, engage:3): **13.3초 · 처치 1.0건**. ATB 시절(9초에
-  처치 2.75건)보다 훨씬 온건하다 — 라운드마다 한 명이 한 번씩만 때리므로
-  3라운드 = 최대 30타다.
+  growth-point settlement a battlefield kill does. `grid_pos` is never modified by an engage.
+- The screen consists of one horizontally flat **cinema band** (1032×500) and, **below it, a strip of participant
+  portraits** (HP is shown by the HP ring on the stage portraits — the same shape as the battlefield marker). The top header is two lines: **round counter
+  (`라운드 2 / 3` (Round 2 / 3)) + round pips + "whose turn"** (the remaining-time bar from the real-time era
+  was deleted). Dashboard shows per-pilot dealt / taken / kills before resuming.
+- Measured (headless 5v5 ×8, 3-round engage): much milder than the ATB era — each unit hits only once per
+  round, so 3 rounds = at most 30 hits.
 
-### 성장치 (파일럿 점수) — 성장 통화
-파일럿마다 **개시 0.50k** 에서 시작해 경기 내내 누적되는 **성장 통화**. MOBA 의
-골드에 해당한다. 파일럿 스트립의 체력 바 아래에 숫자로 찍히고, 상단 중앙의 팀
-점수는 그 팀 다섯 명의 **합산**이다(개시 `2.50k - 2.50k`). 상한이 없으므로
-게이지가 아니라 숫자다.
+### Growth points (성장치, pilot score) — growth currency
+A **growth currency** each pilot starts with at `SCORE_START` (const.csv; lowered in the growth-economy rebalance) and accumulates throughout the match. Equivalent to
+gold in a MOBA. It is printed as a number under the HP bar on the pilot strip, and the team
+score at top centre is the **sum** of that team's five. There is no cap, so
+it is a number, not a gauge.
 
-**`PilotData.growth` 는 이 값에서 파생된다** — 예전에는 둘이 완전히 무관해서
-(성장은 시간 경과, 성장치는 표시용 기록) 킬을 따도 포탑을 밀어도 스탯이 1도
-변하지 않았다. 환산과 그 이유는 `combat/README.md` 의 "성장 / 라인전 스탯".
+**`PilotData.growth` is derived from this value** — previously the two were completely unrelated
+(growth was elapsed time, growth points were a display-only record), so neither taking kills nor pushing turrets changed
+stats one bit. The conversion and the reasons are in "Growth / laning stats" in `combat/README.md`.
 
-| 적립처 | 값 | 누가 |
+All values below live in const.csv (`TURRET_HP` in game_config.csv).
+
+| Source | Value | Who |
 |---|---|---|
-| 전선 체류 (턴당) | `SCORE_FRONTLINE_PER_TURN` **0.50k** — **결속 중이면 −20% (0.40k)** | 레인 파일럿 |
-| 정글 캠프 1개 | `SCORE_JUNGLE_CAMP` **0.78k** (7턴 리스폰) | 정글러 |
-| 처치 — 라스트힛 | `SCORE_KILL_BASE` **1.5k** + 앞선 격차 × **20%** | 전원 |
-| 처치 — 어시스트 | 현상금 × **50%** × (내 피해 / 총 피해) | 전원 |
-| 포탑 피해 | `SCORE_TURRET_FULL` **1.0k** ÷ `TURRET_HP`(**24**) ≈ **0.042k / 1피해** | 레인 파일럿 |
+| Front-line presence (per turn) | `SCORE_FRONTLINE_PER_TURN` — **cut by `SimulationCore.BOND_INCOME_CUT` while lane-bonded** | lane pilots |
+| One jungle camp | `SCORE_JUNGLE_CAMP` (respawns after `JUNGLE_CAMP_RESPAWN_TURNS`) | jungler |
+| Kill — last hit | `SCORE_KILL_BASE` + lead gap × `SCORE_KILL_BOUNTY_RATE` | everyone |
+| Kill — assist | bounty × `SCORE_ASSIST_MAX_SHARE` × (my damage / total damage) | everyone |
+| Turret damage | `SCORE_TURRET_FULL` ÷ `TURRET_HP` per 1 damage | lane pilots |
 
-**포탑의 몫은 철거가 아니라 노동에 붙는다.** 예전에는 철거하는 순간 마지막 한
-대를 넣은 파일럿이 1.0k 를 통째로 받았는데(`SCORE_TURRET_KILL`), 그러면 여덟 턴
-동안 밀어붙인 파일럿과 마지막 2 를 넣은 파일럿의 몫이 같았고 반쯤 갈아 놓고
-죽은 사람은 한 푼도 못 받았다. 지금은 **깎아 낸 체력 1점당**으로 쪼개져 있어
-(`BattleSim.score_turret_damage`) 실제로 민 만큼 나눠 갖는다 — 한 기를 통째로
-갈아 내면 총액은 예전과 정확히 같은 1.0k 다(체력 **24** · 고정 피해 2 → 한 대에
-0.083k, **열두 대**에 1.0k). **포탑 체력은 16 에서 24 로 1.5배가 됐다** — 무방비
-공성이 8턴에서 **12턴**으로 늘고 수비가 붙으면 24턴이다. 한 기의 값어치(1.0k)는
-그대로이므로 한 점당 값만 0.0625k → 0.042k 로 내려갔다. 오버킬은 잘라 낸다:
-체력 2 짜리 포탑에 셋이 6 을 몰아
-넣어도 나가는 것은 2 점어치다. 적립 지점은 둘 — 턴 전투의
-`SimulationCore._credit_turret_damage` 와 카드 피해의 `apply_card_turret_damage`.
-`score_turret_kill` 은 이제 킬로그 한 줄과 사건 훅만 담당한다.
+**The turret's share goes to the labour, not the demolition.** Previously the pilot who landed the last hit
+at the moment of demolition took the whole turret value (`SCORE_TURRET_KILL`), so a pilot who pushed for many turns
+got the same share as one who put in the last hit, and someone who ground it halfway and
+died got nothing. Now it is split **per HP point chipped off**
+(`BattleSim.score_turret_damage`), so shares match how much each actually pushed — grinding down a whole turret
+gives exactly `SCORE_TURRET_FULL` in total, as before. **`TURRET_HP` was raised** (tuned against
+`PILOT_STRUCTURE_DMG` — change them together, since together they set how many turns an undefended / defended
+siege takes). A turret's worth (`SCORE_TURRET_FULL`) is unchanged, so only the per-point value dropped.
+Overkill is cut off: even if three pilots pour more into a turret than its remaining HP,
+only the remaining HP's worth pays out. There are two accrual points — turn combat's
+`SimulationCore._credit_turret_damage` and card damage's `apply_card_turret_damage`.
+`score_turret_kill` now only handles the kill feed line and the event hook.
 
-**빠진 것들이 요점이다.** HQ **피해**는 여전히 점수를 주지 않는다(HQ 가 깎이는
-것은 이미 승리에 가까워지는 것이다). 파일럿 피해도 그 자리에서는 점수가 아니라
-장부에 적힐 뿐이다(`SCORE_PER_PILOT_DMG` / `_HQ_DMG` 삭제). **사망 벌점도
-없다**(`SCORE_DEATH` 삭제) —
-벌점은 죽어 있는 동안 전선 수입과 캠프가 통째로 멈추는 것이고, 그게 리스폰 턴
-수에 비례하는 진짜 비용이다. 같은 손해를 두 번 매길 이유가 없다.
+**What's missing is the point.** HQ **damage** still gives no score (chipping the HQ
+is already getting closer to victory). Pilot damage too is only written to a ledger at that moment,
+not scored (`SCORE_PER_PILOT_DMG` / `_HQ_DMG` deleted). **There is no death penalty
+either** (`SCORE_DEATH` deleted) —
+the penalty is that front-line income and camps stop entirely while dead, and that is the real cost,
+proportional to respawn turns. No reason to charge the same loss twice.
 
-**어시스트 = 따라잡기 장치.** 현상금이 "피해자가 처치자 팀 평균보다 앞선 만큼"
-에 비례하므로, 10k 앞선 에이스를 잡으면 3.5k / 20k 앞서면 5.5k 가 나온다. 뒤처진
-팀도 한 번의 좋은 교전으로 따라붙을 수 있고, 앞선 쪽이 손해 보지는 않는다.
+**Assist = catch-up mechanism.** The bounty is proportional to "how far the victim is ahead of the killer team's average",
+so catching an ace far ahead pays much more than a plain kill. A team that is behind
+can catch up with one good engage, and the side ahead doesn't lose out.
 
-상수는 전부 `BattleSim` 의 `SCORE_*` 절에 모여 있고, 모든 변동은
-`BattleSim.add_score` 한 곳을 지난다 — 하한(`SCORE_MIN` 0.10k), 적립 배율
-(`growth_rate_mult`), 스탯 재계산을 한 자리에서만 처리하기 위해서다.
+All constants are gathered in the `SCORE_*` section of `BattleSim`, and every change passes through
+`BattleSim.add_score` alone — so that the floor (`SCORE_MIN`, const.csv), accrual multiplier
+(`growth_rate_mult`) and stat recompute are handled in one place only.
 
-**피해 귀속의 배선**: 피해는 곧장 점수가 되지 않는다. `BattleSim.record_pilot_damage`
-가 **피해자의 장부**(`PilotData.damage_credit`, `공격자 → [(턴, 그 턴의 피해)]`)에
-적어 두고, 그 대상이 실제로 쓰러질 때 `_payout_kill_bounty` 가 라스트힛과
-어시스트에게 나눠 준 뒤 장부를 비운다. 전장 자동 교전 · 공격 카드 · 교전 무대가
-전부 그 한 지점을 지나므로 표가 하나다.
+**Damage attribution wiring**: damage does not become score immediately. `BattleSim.record_pilot_damage`
+writes it in **the victim's ledger** (`PilotData.damage_credit`, `attacker → [(turn, that turn's damage)]`),
+and when the target actually falls, `_payout_kill_bounty` splits it between the last hit and
+assists, then clears the ledger. Battlefield auto-combat · attack cards · the engage stage
+all pass through that single point, so there is one table.
 
-**처치 관여는 `SCORE_ASSIST_WINDOW_TURNS`(15턴) 짜리 창이다.** 기록마다 턴
-도장이 함께 찍히고(같은 턴의 피해는 한 항목으로 합쳐진다), 그보다 오래된 항목은
-어시스트 배분에서도 **분모에서도** 빠진다 — 20턴 전에 한 대 긁어 놓은 것이 지금
-난 처치에 지분을 갖는 것은 관여가 아니고, 만료분이 분모에 남아 있으면 정작 지금
-잡은 사람들의 몫이 조용히 깎인다. 판정은 `BattleSim.live_damage_credit(victim)`
-**한 함수**뿐이고 읽는 김에 만료된 항목을 실제로 지운다. 세 소비자(현상금 배분 ·
-킬로그 명단 · `PilotSkillSystem.on_kill` 의 처치 관여 훅)가 모두 그 함수를 읽으므로
-화면에 뜬 얼굴과 점수를 받은 얼굴이 갈릴 수 없다 — `damage_credit` 을 직접 훑는
-코드가 있으면 그 순간 규칙이 둘이 된다.
+**Kill involvement is a `SCORE_ASSIST_WINDOW_TURNS` (const.csv) window.** Each record carries a turn
+stamp (damage in the same turn is merged into one entry), and entries older than that drop out of both
+assist distribution **and the denominator** — a scratch landed long before the window having a stake in a kill
+made now isn't involvement, and if expired entries stayed in the denominator, the shares of the people who actually
+got the kill now would be quietly cut. The decision is made only by **one function**, `BattleSim.live_damage_credit(victim)`,
+which actually deletes expired entries while reading. All three consumers (bounty distribution ·
+kill feed roster · the kill-involvement hook in `PilotSkillSystem.on_kill`) read that function, so
+the faces on screen and the faces that got score can't diverge — if any code iterates `damage_credit` directly,
+at that moment there are two rules.
 
-**라스트힛이 누구인가**는 별개 문제다: 전장 피해는 판정 단계(`_resolve_*` 가
-`damage_map` 에 양만 쌓는다)와 적용 단계(그걸 소진하며 HP 를 깎는다)로 갈라져
-있고, 적용 단계에는 **누가 때렸는지가 남아 있지 않다**. 그래서 `SimulationCore`
-가 `_credit_pilot_damage` / `_credit_turret_damage` 에서 "마지막으로 이 대상을
-때린 자"를 `_last_hitter` / `_last_turret_hitter` 에 적어 두고, 적용 단계가
-그것을 `mark_pilot_dead(victim, killer)` / `score_turret_kill(killer, td)` 에 넘긴다. 두
-dict 는 **매 턴과 매 전진 카드 시작 시 비운다** — 턴을 넘겨 살아남으면 엉뚱한
-사람에게 처치가 붙는다. 교전 무대와 공격 카드는 공격자를 손에 들고 있으므로 이
-우회가 필요 없다.
+**Who the last hit is** is a separate problem: battlefield damage is split into a decision stage (`_resolve_*`
+only accumulates amounts into `damage_map`) and an apply stage (which drains it to reduce HP),
+and in the apply stage **who hit is no longer recorded**. So `SimulationCore`
+writes "the last one who hit this target" in `_last_hitter` / `_last_turret_hitter` inside
+`_credit_pilot_damage` / `_credit_turret_damage`, and the apply stage passes
+it to `mark_pilot_dead(victim, killer)` / `score_turret_kill(killer, td)`. The two
+dicts are **cleared at the start of every turn and every advance card** — if they survived across turns, the kill
+would be credited to the wrong person. The engage stage and attack cards hold the attacker in hand, so they don't need
+this detour.
 
-**킬로그도 이 표를 그대로 읽는다** — `mark_pilot_dead` 안에서 정산
-(`_payout_kill_bounty`)보다 **먼저** `_push_kill_feed` 가 돌아 막타 + 어시스트
-명단을 `ui/KillFeed.gd` 에 넘긴다(정산이 `damage_credit` 을 비우기 때문). 그래서
-화면 우측 상단에 뜬 얼굴과 성장치를 받은 얼굴이 어긋날 수 없다. 포탑 철거는
-`score_turret_kill` 이, 오브젝트 획득은 `ObjectiveSystem._push_feed` 가 같은
-피드에 넘긴다 — 자세한 내용은 `ui/README.md` 의 "킬로그" 절.
+**The kill feed reads this same table** — inside `mark_pilot_dead`, `_push_kill_feed` runs **before** settlement
+(`_payout_kill_bounty`) and hands the last hit + assist
+roster to `ui/KillFeed.gd` (because settlement clears `damage_credit`). So
+the faces shown at the top right of the screen and the faces that received growth points can't diverge. Turret demolition
+is handed to the same feed by `score_turret_kill`, and objective captures by `ObjectiveSystem._push_feed` — details in the
+"Kill log" section of `ui/README.md`.
 
-### 성장치 팝업 (전장 초상화 위)
-성장치가 **한 번에 크게** 오르는 순간에만 그 파일럿 얼굴 위로 소울 아이콘 + 흰 글자(굵은 검은 외곽선) `+1500` 이
-떠오른다(`BattleRenderer.spawn_score_popup`, 1.10초 · 72px). **획득량은 k 로 접지 않고
-정수 전체로 찍는다**(`BattleSim.fmt_score_gain`, 0.3 → `300`) — 교전 결과 화면의 성장 줄도
-같다. 누적 성장치(스트립 · 상세 패널)는 칸이 좁아 `fmt_score` 의 k 표기를 유지한다. 숫자가 스트립 칸에서
-조용히 바뀌기만 하면 "방금 그 한 방이 무슨 값이었나"가 화면에 남지 않는다.
+### Growth-point popup (above battlefield portraits)
+Only at moments when growth points rise **by a large amount at once** does a soul icon + white text (thick black outline) `+N`
+float up over that pilot's face (`BattleRenderer.spawn_score_popup`, 1.10 s · 72px). **Gains are not folded into k;
+they are printed as full integers** (`BattleSim.fmt_score_gain`, 0.3 → `300`) — the growth line on the engage result screen
+does the same. Cumulative growth points (strip · detail panel) keep the k notation of `fmt_score` because the slots are narrow. If the number
+just changed quietly in the strip slot, "what was that one hit worth" would not stay on screen.
 
-| 뜨는 자리 | 계기 |
+| Where it appears | Trigger |
 |---|---|
-| 포탑 피해 | `score_turret_damage` — 한 대마다 (지금 설정 0.13k) |
-| 처치 현상금 | 막타와 어시스트 각각 (`_payout_kill_bounty`) |
-| 교전 총액 | 무대가 닫힌 뒤 참가자마다 **한 장으로 합쳐** |
+| Turret damage | `score_turret_damage` — every hit |
+| Kill bounty | last hit and each assist separately (`_payout_kill_bounty`) |
+| Engage total | after the stage closes, **merged into one** per participant |
 
-| 정글 캠프 | `SimulationCore.harvest_camp_under` / `steal_camp_point` — 한 번마다 0.78k |
-| [캐시] 이자 | `MechSkillSystem._payout_cash` — 카드가 나갈 때마다 보유자 성장치의 4% |
+| Jungle camp | `SimulationCore.harvest_camp_under` / `steal_camp_point` — `SCORE_JUNGLE_CAMP` each time |
+| [캐시] (Cash) interest | `MechSkillSystem._payout_cash` — `MECH_CASH_RATE` (const.csv) of the holder's growth points each time a card is played |
 
-**전선 체류(턴당 0.50k)만 뺐다** — 매 턴 열 명의 얼굴 위에서 숫자가 튀면 그게 곧
-배경이 되어 정작 큰 한 건이 묻힌다. 정글 캠프는 반대다: 순회 리듬이 곧 정글러의
-플레이인데 그 한 박자가 화면에 남지 않았고, 획득이 턴마다 열 명이 아니라 한 명에게
-한 번씩만 일어나므로 배경이 되지 않는다. [캐시]도 같은 이유다 — 흔적이 없으면
-그 카드를 손에 들고 있는 것과 없는 것이 화면에서 구분되지 않는다.
+**Only front-line presence (`SCORE_FRONTLINE_PER_TURN` per turn) is left out** — if numbers popped over ten faces every turn they would
+become the background and bury the one big gain. Jungle camps are the opposite: the patrol rhythm is the jungler's
+play, yet that beat left no trace on screen, and the gain happens once to one pilot, not to ten every turn,
+so it doesn't become background. [캐시] is the same reason — without a trace,
+holding that card in hand and not holding it would be indistinguishable on screen.
 
-배선은 한 겹이다: 조용히 적립만 하는 `add_score` 와, 거기에 팝업을 붙인
-`award_score` 가 갈라져 있고 **어느 적립처가 화면에 뜨는지가 호출부에서 읽힌다**.
-`add_score` 는 이제 하한과 적립 배율이 먹은 **실제 증가분**을 돌려주므로 팝업에는
-요청한 값이 아니라 들어간 값이 뜬다.
+The wiring is one layer: `add_score`, which only accrues silently, is split from
+`award_score`, which adds a popup on top, so **which sources show on screen is readable at the call site**.
+`add_score` now returns **the actual increase** after the floor and accrual multiplier, so the popup shows
+the amount that went in, not the amount requested.
 
-두 가지는 띄우지 않는다. **죽어 있는 파일럿** — 시신은 1.45초 뒤 전장을 뜨고
-그 뒤에 뜬 숫자는 아무 얼굴 위에도 서 있지 않다(어시스트는 자기가 죽은 뒤에도
-들어오므로 실제로 걸리는 경로다). 그리고 **교전이 도는 동안** — 아레나가 화면을
-덮고 있어 아무도 못 보고, 팝업 좌표는 띄운 순간의 마커 자리에 고정되므로 무대가
-치워질 때쯤엔 엉뚱한 곳에 떠 있다. 그 사이의 적립은 `BattleSim._score_popup_hold`
-에 쌓였다가 `EngagePhaseManager._on_dashboard_confirmed` 가 부르는
-`flush_score_popups()` 에서 **파일럿당 한 장**으로 풀린다(킬로그의 `_pending` 과
-같은 자리, 같은 이유).
+Two things don't get popups. **Dead pilots** — the body leaves the battlefield after 1.45 s, and
+a number shown after that stands over no face (assists still arrive after the assister is dead,
+so this path really is hit). And **while an engage is running** — the arena covers the screen
+so nobody sees it, and popup coordinates are fixed to the marker position at the moment of spawning, so by the time the
+stage is cleared they would float somewhere wrong. Accruals in between pile up in `BattleSim._score_popup_hold`
+and are released as **one popup per pilot** in `flush_score_popups()`, called by
+`EngagePhaseManager._on_dashboard_confirmed` (same place and same reason as the kill feed's `_pending`).
 
 ### Action logging (`debug/BattleLogger.gd`)
 Every turn writes a full transcript to the console **and** to
@@ -507,16 +524,16 @@ visual transitions. All durations fit inside the 0.5s `AUTO_PLAY_INTERVAL`.
 
 | Trigger | Site | Visual |
 |---|---|---|
-| Combat damage (전장 자동 교전) | `SimulationCore` damage_map apply | `anim_pilot_shake(p)` → `ANIM_SHAKE_DUR` 0.18s / `ANIM_SHAKE_AMP_PX` 6px horizontal jitter (decaying) |
-| 공격 카드 명중 | `CardPhaseManager._apply_attack_damage` | same call with `ANIM_SHAKE_CARD_DUR` 0.26s / `ANIM_SHAKE_CARD_AMP_PX` **20px** — 매 턴 자동으로 오가는 교전 피해와 달리 카드 명중은 플레이어가 방금 고른 한 방이라 훨씬 격렬하게 흔든다. 주파수는 같으므로 진동 수가 4 → 5.8회로 함께 는다 |
-| Movement (free + push advance + push retreat) | `resolve_movement` (once per pilot per turn) | `anim_pilot_move_path(p, path)` → 렌더러가 **실제로 밟은 칸의 폴리라인**을 따라 0.30s smoothstep 으로 미끄러뜨린다 (`BattleRenderer._glide`). 슬롯이 바뀌기만 해도 같은 글라이드가 걸린다 — 초상화는 어떤 경우에도 순간이동하지 않는다 |
-| 카드 이동 / 전진 (`move`, `advance:N`) | `SimulationCore._step_pilot` | `anim_pilot_move(p, orig)` — 같은 프레임의 걸음은 **경로에 이어 붙는다**, 그래서 `advance:3` 이 세 칸을 순서대로 걷는다 |
-| Recall — 저HP / 위치 이탈 | `RecallSystem.return_to_hq` | `anim_pilot_recall(p, orig)` → 0.20s fade-out + rise at `orig`, then 0.25s fade-in + descend at HQ. Both halves always play — the pilot never leaves the field, and it is holding still that turn, so the fade-in stays anchored at the HQ |
-| Recall — 복귀 카드 | `CardPhaseManager._effect_recall_ally` | same `anim_pilot_recall(p, orig)` sequence |
-| Respawn (사망 후 부활) | `SimulationCore.process_respawns` | `anim_pilot_respawn` → fade-in + descend at HQ only (skip phase 1); also clears any leftover 전사 연출 |
-| 사망 | `BattleSim.mark_pilot_dead` | `anim_pilot_death` → `ANIM_DEATH_HOLD_DUR` (1.0s) dimmed-in-place at the cell they fell on, then `ANIM_DEATH_FADE_DUR` (0.45s) fading out while rising `ANIM_DEATH_RISE_PX`, then off the field |
-| 공격 카드 명중 / 빗나감 | `CardPhaseManager._effect_attack` | `BattleRenderer.spawn_pilot_popup` → `-N` / `MISS` / `흡수` floating over the target's marker |
-| 포탑 피격 | `SimulationCore` turret_dmg apply (`simulate_turn` + `_apply_card_damage`), survivors only | `anim_turret_hit(td)` → `ANIM_TURRET_HIT_DUR` (0.26s) of decaying horizontal jitter (`ANIM_TURRET_HIT_AMP_PX` 9px) plus an `ANIM_TURRET_HIT_TINT` red flash fading back to white |
+| Combat damage (battlefield auto-combat) | `SimulationCore` damage_map apply | `anim_pilot_shake(p)` → `ANIM_SHAKE_DUR` 0.18s / `ANIM_SHAKE_AMP_PX` 6px horizontal jitter (decaying) |
+| Attack card hit | `CardPhaseManager._apply_attack_damage` | same call with `ANIM_SHAKE_CARD_DUR` 0.26s / `ANIM_SHAKE_CARD_AMP_PX` **20px** — unlike engagement damage that happens automatically every turn, a card hit is the one blow the player just chose, so it shakes much more violently. The frequency is the same, so the oscillation count rises from 4 → 5.8 along with it |
+| Movement (free + push advance + push retreat) | `resolve_movement` (once per pilot per turn) | `anim_pilot_move_path(p, path)` → the renderer glides it along **the polyline of cells actually stepped on** with a 0.30s smoothstep (`BattleRenderer._glide`). Even a mere slot change gets the same glide — the portrait never teleports under any circumstances |
+| Card move / advance (`move`, `advance:N`) | `SimulationCore._step_pilot` | `anim_pilot_move(p, orig)` — steps in the same frame are **appended to the path**, so `advance:N` walks N cells in order |
+| Recall — low HP / out of position | `RecallSystem.return_to_hq` | `anim_pilot_recall(p, orig)` → 0.20s fade-out + rise at `orig`, then 0.25s fade-in + descend at HQ. Both halves always play — the pilot never leaves the field, and it is holding still that turn, so the fade-in stays anchored at the HQ |
+| Recall — 복귀 (Return to Base) card | `CardPhaseManager._effect_recall_ally` | same `anim_pilot_recall(p, orig)` sequence |
+| Respawn (after death) | `SimulationCore.process_respawns` | `anim_pilot_respawn` → fade-in + descend at HQ only (skip phase 1); also clears any leftover death effect |
+| Death | `BattleSim.mark_pilot_dead` | `anim_pilot_death` → `ANIM_DEATH_HOLD_DUR` (1.0s) dimmed-in-place at the cell they fell on, then `ANIM_DEATH_FADE_DUR` (0.45s) fading out while rising `ANIM_DEATH_RISE_PX`, then off the field |
+| Attack card hit / miss | `CardPhaseManager._effect_attack` | `BattleRenderer.spawn_pilot_popup` → `-N` / `MISS` / `흡수` (Absorbed) floating over the target's marker |
+| Turret hit | `SimulationCore` turret_dmg apply (`simulate_turn` + `_apply_card_damage`), survivors only | `anim_turret_hit(td)` → `ANIM_TURRET_HIT_DUR` (0.26s) of decaying horizontal jitter (`ANIM_TURRET_HIT_AMP_PX` 9px) plus an `ANIM_TURRET_HIT_TINT` red flash fading back to white |
 
 `BattleSim._process` runs `_advance_pilot_animations(delta)` **and**
 `_advance_turret_animations(delta)` every frame (both, never short-circuited)
@@ -529,7 +546,7 @@ and calls `renderer.queue_redraw()` while any timer is active. Constants live on
 `ANIM_TURRET_HIT_AMP_PX` / `ANIM_TURRET_HIT_TINT`, and the popup trio
 `DMG_POPUP_DUR` / `DMG_POPUP_RISE_PX` / `DMG_POPUP_STAGGER`.
 
-**포탑 연출만 렌더러 밖에 있다.** A turret's sprite is a `Building` node under
+**Only the turret effect lives outside the renderer.** A turret's sprite is a `Building` node under
 `BattleField/BuildingLayer`, not something `BattleRenderer._draw()` paints, so
 `BattleSim._apply_turret_hit_visual` writes the shake/flash straight onto that
 node's `position` / `modulate` (base position cached per cell in
@@ -540,16 +557,16 @@ turret HP bar by reading `BattleSim.turret_hit_offset(td)`.
 `BattleRenderer` decides *whether* to draw a pilot with `_is_renderable(p)`
 (alive, or mid-death, or mid-recall-fade-out — the last two run after `alive`
 is already false), groups them by `_render_cell(p)` (`anim_recall_orig` during
-fade-out, `anim_death_cell` during the 전사 연출, otherwise `grid_pos`) and
+fade-out, `anim_death_cell` during the death effect, otherwise `grid_pos`) and
 applies per-pilot pixel offset and alpha via `_pilot_anim_offset` /
 `_pilot_anim_alpha`.
 
-**이동만은 렌더러가 통째로 소유한다.** `BattleSim` 은 이동 타이머를 들고 있지
-않고(`anim_prev_grid_pos` / `anim_move_t` / `anim_move_dur` 는 삭제됐다),
-`PilotData.anim_move_path` 에 **밟은 칸의 경로**만 남긴다. 마커 좌표의 보간과
-그동안의 재draw 는 `BattleRenderer._glide` 가 맡는다 — 자세한 규칙(폴리라인,
-각도와 길이의 박자 분리, 스냅하는 경우)은 [`rendering/README.md`](rendering/README.md)
-의 *마커 글라이드* 절.
+**Movement alone is owned entirely by the renderer.** `BattleSim` holds no movement timer
+(`anim_prev_grid_pos` / `anim_move_t` / `anim_move_dur` were deleted),
+and only leaves **the path of stepped cells** in `PilotData.anim_move_path`. Interpolating marker coordinates and
+redrawing meanwhile is handled by `BattleRenderer._glide` — detailed rules (polyline,
+separate beats for angle and length, cases where it snaps) are in the *Marker glide* section of
+[`rendering/README.md`](rendering/README.md).
 
 ---
 
@@ -568,12 +585,12 @@ applies per-pilot pixel offset and alpha via `_pilot_anim_offset` /
 
 | System | Description |
 |---|---|
-| Auto BATTLE | BATTLE auto-ticks every 0.5s (1 tick = "1분"). No Next-Turn or Auto-Play buttons. CARD_PHASE pauses the tick, and so does 상대 차례 — that one runs *inside* BATTLE without changing `game_phase`, so `BattleSim._process` also gates on `card_phase.is_ai_turn_active()` (same flag freezes the MM:SS clock). |
-| 진영 (블루 / 레드) | `BattleSim.blue_team` (0 = 플레이어 팀) 은 `match_ctx.player_side` 에서 유도된다. **레드 = 밴픽 선밴/선픽, 블루 = 후밴/후픽 + 인게임 선**. 블루의 인게임 이득은 둘이다 — (1) `BattleSim.seed_side_costs()` 가 개시 시점에 전략 포인트를 `BLUE_COST_HEAD_START`(game_config, 1) 로 심어 문턱에 먼저 닿게 하고(COST_RECOVERY 는 양 팀에 같은 틱에 같은 양이 들어가므로 격차가 유지된다), (2) 양 팀이 같은 틱에 문턱 위에 있을 때 **먼저 차례를 잡는다**. **현재 `MatchFlow` 는 플레이어를 항상 BLUE 로 고정한다** — 예전의 매 경기 랜덤 추첨은 제거됐고, 되살릴 때는 `MatchFlow._ready()` 의 fresh-entry 한 줄만 되돌리면 된다. |
-| 10턴 경제 게이트 (`ECONOMY_START_TURN`) | 전략 점수 회복과 자동 드로우는 **10턴부터** 돈다(`CardPhaseManager.do_battle_turn`). 그 전에는 두 카운터를 아예 굴리지 않아 게이트가 열릴 때 밀린 회복이 몰려 터지지도 않는다. 개시 손패가 없어졌으므로 **0턴에 들어가는 것은 블루 선점 1점뿐**이고, 1~9턴은 양 팀 다 손패 0장 · 점수 고정(블루 1 / 레드 0)인 순수 라인전 구간이다. **성장은 게이트를 타지 않는다**(1턴부터). 실측: 회복·드로우가 10·12·14·16·18·20·22턴에 7회씩 들어가 첫 작전 단계가 **22턴 · 손패 7장**(player 8 / ai 7) — 4턴 게이트 시절 16턴, 게이트 이전 13턴. `match_ctx` 없이 BattleSim.tscn 을 직접 돌리면 HQ 가 20턴께 무너져 **첫 작전 단계에 닿기도 전에 판이 끝난다**. |
-| 성장 (인게임 누적) | **성장은 시간이 아니라 성장치(`PilotData.score`)가 만든다.** 예전에는 살아 있기만 하면 매 턴 `GROWTH_PER_TURN` 만큼 `atk` 와 `max_hp` 가 함께 늘었는데, 그 설계에는 결함이 둘 있었다 — (1) 아무것도 안 해도 자라서 킬·포탑·파밍이 성장에 **아무 영향이 없었고**, (2) 둘이 **같은 비율**로 자라 "몇 대 맞아야 죽는가"가 수학적으로 불변이었다(50턴에 둘 다 ×1.5 여도 교전 타수는 1타도 안 줄었다). 성장이 안 보인 게 아니라 구조상 보일 수 없었다. `GROWTH_PER_TURN` 은 game_config 에서 **삭제됐다**. 지금은 `BattleSim.refresh_growth_stats` 한 곳이 성장치에서 스탯을 파생시킨다: **공격력 `GROWTH_ATK_PER_SCORE`(2.0/24 = +8.33%p per 1k) / 최대 체력 `GROWTH_HP_PER_SCORE`(0.5/24 = +2.08%p per 1k)** — 공격력이 **4배 빠르게** 자라는 이 비대칭이 성장 체감의 전부다. 기준점은 성장치 25k(개시 1k 를 뺀 24k)에서 **atk ×3.0 / max_hp ×1.5**(실측 정확), 40k 캐리는 ×4.25 / ×1.81. 스탯은 매 턴 곱해 나가는 대신 `base_atk` / `base_max_hp` 에서 **다시 계산**한다(반올림 누적 오차 방지). 최대 체력 증가분만큼 현재 체력도 함께 오른다. 재계산은 **점수가 움직이는 그 순간**(`add_score`)에 돌아 "킬을 땄더니 세졌다"가 한 박자로 읽히고, `SimulationCore.tick_growth_and_expiries` 는 배율 만료만 걷는 보험으로 남았다. 카드가 거는 **일시** 공격력은 `atk` 가 아니라 `PilotData.atk_buff` 에 얹는다 — `atk` 를 직접 밀면 턴 한가운데의 재계산에 지워지고 턴 끝의 되돌리기가 원본을 깎는다. 획득 배율(`growth_rate_mult`)은 이제 **성장이 아니라 성장치 적립**에 곱해지며(결과는 같고 배선이 한 겹 준다) **신중한 예산 · 성장 가속 · 소극적인 태세**(턴 만료)와 **완벽한 마무리**(+25%, 다음 작전 단계까지, 팀 전원)가 건드린다 — 같은 필드라 나중에 건 쪽이 덮어쓴다. `add_score` 의 최종 배율에는 [골드러시] 몫(`CardPhaseManager.hand_growth_add` — 손에 든 골드러시의 토큰 × 8%)도 더해진다. 최대 체력에는 `bonus_max_hp_mult`([워밍업])가 성장 체력과 함께 곱해진다. |
-| 성장치 (파일럿 점수) | 파일럿의 **성장 통화**. MOBA 의 골드에 해당하고 개시 **0.50k** 에서(예전 1.00k — 아래 실측치는 그 시절 값) 시작해 경기 내내 누적된다(`PilotData.score`). 실측(헤드리스 5v5, 실제 메크 스탯 주입, 전체 루프 — **플레이어가 카드를 한 장도 안 낸 하한선**): 10턴 4.9k / 30턴 15.2k / **50턴 24.9k** / 70턴 33.9k / 90턴 43.5k. 위 성장 항목의 환산을 그대로 태우면 **50턴 atk ×3.01 · max_hp ×1.50** 으로 설계 기준점과 정확히 맞고, 90턴이면 ×4.4 다. 두 적립 상수(0.50k)는 이 실측에서 **역산한 값**이다 — 처음에는 "전선 15k + 킬 8k" 를 겨냥해 0.35k 로 잡았는데, 전선 체류율이 예상보다 높아 전선만으로 17.8k 를 벌었고 반대로 **킬이 거의 안 났다**(전장 자동 교전은 `BATTLE_PILOT_DMG_MULT` 0.35 때문에 한 대에 2~9 밖에 안 들어가 라인전만으로는 사람이 죽지 않는다 — 처치는 사실상 교전·공격 카드에서만 나오므로 플레이어가 얼마나 싸우느냐에 통째로 달려 있다). 그래서 **아무도 싸우지 않은 하한선**이 목표에 닿도록 전선 수입을 올렸고, 킬은 그 위에 얹히는 가속으로 둔다. **바로 위의 `growth` 와는 다른 것이 아니라 그 원천이다** — 예전에는 둘이 완전히 무관해서(성장은 시간, 성장치는 표시용 기록) 킬을 따도 스탯이 1도 변하지 않았다. 적립처는 셋뿐이다. **(1) 전선 체류** — 살아서 자기 레인의 전선 안에 서 있는 턴마다 `SCORE_FRONTLINE_PER_TURN`(0.50k). 수입의 대부분이 여기서 나온다(아래 "전선" 항목). **(2) 정글 캠프** — 정글러 전용, `SCORE_JUNGLE_CAMP`(**0.78k**, 재생성 7턴)(아래 "정글 캠프" 항목). **캠프값이 라이너의 턴당 수입(0.50k)보다 훨씬 큰 것은 의도된 보정이다** — 캠프는 걸어가야 하고 재생성(6턴)을 기다려야 해서 획득 빈도가 턴당 1회에 못 미치므로, 캠프당 값이 같으면 정글러의 턴당 수입이 구조적으로 라이너보다 낮다(재생성 4턴 · 0.50k 시절 실측 **0.78배** → 0.65k 로 올려 **0.98배**, 재생성을 6턴으로 늦추며 ×1.5 한 0.98k). 대신 정글러는 밀려나거나 복귀로 수입이 끊기는 일이 없다. **(3) 처치 현상금** — 라스트힛이 `SCORE_KILL_BASE`(1.5k) + 피해자가 처치자 팀 평균보다 앞선 만큼의 `SCORE_KILL_BOUNTY_RATE`(20%)를 전액 받고, 그 대상에게 피해를 넣은 다른 아군이 **피해 비례로 최대 `SCORE_ASSIST_MAX_SHARE`(50%)** 를 더 받는다(`현상금 × 0.5 × 내 피해 / 그 대상이 이번 생에 받은 총 피해`). 이것이 "약한 따라잡기" 장치다 — 10k 앞선 에이스를 잡으면 3.5k, 20k 앞서면 5.5k(실측 정확). **(4) 포탑 피해** — 깎아 낸 체력 1점당 `SCORE_TURRET_FULL`(1.0k) ÷ `TURRET_HP`(**24**) ≈ **0.042k**(고정 피해 2 이므로 한 대에 0.083k, 열두 대에 1.0k). 예전에는 **철거하는 순간** 마지막 한 대를 넣은 파일럿이 1.0k 를 통째로 받았는데(`SCORE_TURRET_KILL`, **삭제됨**), 그러면 여덟 턴 동안 밀어붙인 파일럿과 마지막 2 를 넣은 파일럿의 몫이 같았고 반쯤 갈아 놓고 죽은 사람은 한 푼도 못 받았다 — 공성은 한 번의 사건이 아니라 여러 턴에 걸친 노동이다. 총액은 그대로라 포탑 하나의 값어치는 안 달라졌고, **오버킬은 잘라 낸다**(체력 2 짜리 포탑에 셋이 6 을 몰아 넣어도 나가는 것은 2 점어치). 적립은 `BattleSim.score_turret_damage` 한 함수를 지나고 부르는 자리는 둘이다 — 턴 전투의 `SimulationCore._credit_turret_damage` 와 카드 피해의 `apply_card_turret_damage`. `score_turret_kill` 은 이제 킬로그 한 줄과 사건 훅만 담당한다. **HQ 피해는 여전히 점수를 주지 않는다**(`SCORE_PER_PILOT_DMG` / `_HQ_DMG` 삭제). **사망 벌점도 없다**(`SCORE_DEATH` 삭제) — 벌점은 죽어 있는 동안 전선 수입과 캠프가 통째로 멈추는 것이고, 그게 리스폰 턴 수에 비례하는 진짜 비용이다. 상수는 `BattleSim` 의 `SCORE_*` 절에 모여 있고 모든 변동은 `BattleSim.add_score` 한 곳을 지난다(하한 `SCORE_MIN` 0.10k 과 적립 배율을 한 자리에서만 처리하기 위해). 그 위에 팝업 한 겹을 얹은 `award_score` 가 따로 있다 — 아래 "성장치 팝업" 항목. 표시는 `fmt_score` 이고 상한이 없으므로 **게이지가 아니라 숫자**다 — 자릿수가 늘면 소수 자리를 줄인다(`1.00k` → `24.9k` → 팀 합산 `125k`). 개시 구간에서 숫자가 움직이는 것을 보여 주려면 소수 둘째 자리가 필요하지만, 후반에 그 자리를 유지하면 좁은 스트립 칸에서 자릿수가 밀려 옆 칸을 침범한다. 팀 점수(`team_score`)는 팀원 합산이라 개시값이 `5.00k - 5.00k` 이며 죽어 있는 파일럿도 포함한다. **피해 귀속의 배선**: 피해는 곧장 점수가 되지 않고 **피해자의 장부**(`PilotData.damage_credit`, `공격자 → [(때린 턴, 그 턴의 피해 합)]`)에 쌓였다가 그 대상이 실제로 쓰러질 때 정산된다 — 전장 자동 교전 · 공격 카드 · 교전 무대가 전부 `BattleSim.record_pilot_damage` 한 지점을 지나므로 표가 하나다. 장부는 정산 시 비운다. **처치 관여는 `SCORE_ASSIST_WINDOW_TURNS`(15턴) 짜리 창이다** — 기록마다 턴 도장이 찍히고(같은 턴의 피해는 한 항목으로 합쳐진다) 그보다 오래된 항목은 어시스트 배분에서도 **분모에서도** 빠진다(만료분이 분모에 남으면 지금 잡은 사람들의 몫이 조용히 깎인다). 판정은 `BattleSim.live_damage_credit(victim)` **한 함수**뿐이고 읽는 김에 만료된 항목을 실제로 지운다 — 세 소비자(현상금 배분 · 킬로그 명단 · `PilotSkillSystem.on_kill`)가 그 함수를 함께 읽으므로 화면에 뜬 얼굴과 점수를 받은 얼굴이 갈릴 수 없다. 한편 **라스트힛이 누구인가**는 별개 문제다: 전장 피해는 판정 단계(`damage_map` 에 양만 쌓기)와 적용 단계(HP 깎기)로 갈라져 있어 적용 시점에는 공격자가 남아 있지 않으므로, `SimulationCore._credit_pilot_damage` / `_credit_turret_damage` 가 "마지막으로 때린 자"를 `_last_hitter` / `_last_turret_hitter` 에 적어 두고 적용 단계가 `mark_pilot_dead(victim, killer)` / `score_turret_kill(killer, td)` 에 넘긴다. 두 dict 는 **매 턴과 매 전진 카드 시작 시 비운다**. **킬로그도 같은 표를 읽는다** — 위 "킬로그" 항목. 교전 무대와 공격 카드는 공격자를 손에 들고 있어 이 우회가 필요 없다. |
-| 전장 크기 | **배율이 둘이다.** `HexGrid.FIELD_SCALE` = **1.215** (`DISPLAY_SCALE` 의 90%) 가 타일·건물·웨이포인트 스케일과 hex 기하(`hex_size` / `hex_height`)를 정하고, `HexGrid.DISPLAY_SCALE` = **1.35** 가 전장 **위에** 그리는 것 — 파일럿 초상 / HP 링 / 팝업 / 미리보기 선 굵기 · 폰트 — 을 정한다. 전장만 10% 줄이고 초상화 크기는 그대로 두려고 갈랐다(그 전에는 1.35 하나가 둘 다였다). 전장 픽셀 박스는 891×983 → 약 802×885, 전장 중심은 그대로라 상하단이 각각 ~49px 안쪽으로 들어온다. 손패(`BS_HAND_CENTER`)는 이번에는 따라 올리지 않았다. 타일 크기를 따라야 하는 것은 `hex_size` 에서, 초상 크기를 따라야 하는 것은 `DISPLAY_SCALE` 에서 유도한다. |
+| Auto BATTLE | BATTLE auto-ticks every 0.5s (1 tick = "1분" (1 minute)). No Next-Turn or Auto-Play buttons. CARD_PHASE pauses the tick, and so does the opponent's turn — that one runs *inside* BATTLE without changing `game_phase`, so `BattleSim._process` also gates on `card_phase.is_ai_turn_active()` (same flag freezes the MM:SS clock). |
+| Side (blue / red) (진영) | `BattleSim.blue_team` (0 = player team) is derived from `match_ctx.player_side`. **Red = first ban/first pick in ban/pick, blue = second ban/second pick + first in-game**. Blue has two in-game advantages — (1) `BattleSim.seed_side_costs()` seeds strategy points at `BLUE_COST_HEAD_START` (game_config.csv) at the opening so it reaches the threshold first (COST_RECOVERY gives both teams the same amount on the same tick, so the gap persists), and (2) when both teams are above the threshold on the same tick, **it takes the turn first**. **`MatchFlow` currently always fixes the player to BLUE** — the old random draw every match was removed; to revive it, revert just the single fresh-entry line in `MatchFlow._ready()`. |
+| Economy gate (`ECONOMY_START_TURN`) | Strategy-point recovery and auto-draw run **from turn `ECONOMY_START_TURN`** (game_config.csv, `CardPhaseManager.do_battle_turn`). Before that the two counters don't roll at all, so backed-up recovery doesn't burst out when the gate opens. Since the opening hand is gone, **the only thing in at turn 0 is blue's `BLUE_COST_HEAD_START` head start**, and the turns before the gate are a pure laning stretch with both teams at 0 cards in hand · fixed points. **Growth does not ride the gate** (from turn 1). Recovery and draw then come in every `COST_RECOVERY_INTERVAL` / `CARD_DRAW_INTERVAL` turns until a side reaches `PHASE_THRESHOLD`; the gate was moved later over time, pushing the first operation phase later with it. Running BattleSim.tscn directly without `match_ctx`, the HQ can collapse **before the game even reaches the first operation phase**. |
+| Growth (in-game accumulation) | **Growth comes from growth points (`PilotData.score`), not time.** Previously, merely being alive made `atk` and `max_hp` grow together by `GROWTH_PER_TURN` every turn, and that design had two flaws — (1) pilots grew even doing nothing, so kills·turrets·farming had **no effect** on growth, and (2) both grew at **the same rate**, so "how many hits until death" was mathematically invariant (even with both ×1.5 at turn 50, engage hit counts didn't drop by a single hit). It wasn't that growth went unseen; structurally it couldn't be seen. `GROWTH_PER_TURN` was **deleted** from game_config. Now the single place `BattleSim.refresh_growth_stats` derives stats from growth points: **attack `GROWTH_ATK_PER_SCORE` / max HP `GROWTH_HP_PER_SCORE`** (const.csv, multiplier gain per 1k) — attack is tuned to grow **much faster** than max HP, and that asymmetry is the whole feel of growth. The two are tuned against a reference growth-point total reached around mid-game (see `combat/README.md`). Instead of multiplying each turn, stats are **recomputed** from `base_atk` / `base_max_hp` (prevents accumulated rounding error). Current HP rises along with the max-HP increase. The recompute runs **the moment the score moves** (`add_score`), so "took a kill, got stronger" reads as one beat, and `SimulationCore.tick_growth_and_expiries` remains as insurance that only clears multiplier expiries. **Temporary** attack applied by cards goes onto `PilotData.atk_buff`, not `atk` — pushing `atk` directly would be wiped by a mid-turn recompute and the end-of-turn revert would eat into the original. The gain multiplier (`growth_rate_mult`) now multiplies **growth-point accrual, not growth** (same result, one less layer of wiring), and is touched by **신중한 예산 (Careful Budget) · 성장 가속 (Growth Acceleration) · 소극적인 태세 (Passive Stance)** (turn expiry) and **완벽한 마무리 (Perfect Finish)** (its cards.csv clause, until the next operation phase, whole team) — same field, so whichever is applied later overwrites. `add_score`'s final multiplier also adds the [골드러시] (Gold Rush) share (`CardPhaseManager.hand_growth_add` — tokens on Gold Rush cards held in hand × `CARD_GOLD_RUSH_GROWTH_PER_TOKEN`, const.csv). Max HP is multiplied by `bonus_max_hp_mult` ([워밍업] (Warm-up)) together with growth HP. |
+| Growth points (pilot score) (성장치) | The pilot's **growth currency**. Equivalent to gold in a MOBA, it starts at `SCORE_START` (const.csv) at the opening and accumulates throughout the match (`PilotData.score`). `SCORE_START` was lowered in the growth-economy rebalance; the measurement below predates that, so it was taken with the old, higher opening value. The accrual constants were **derived backwards** from a headless measurement (5v5, real mech stats injected, full loop — **the floor where the player plays not a single card**) so that this floor, fed through the growth conversion above, lands on the design reference point around mid-game. They were initially set lower, aiming at a front-line + kills split, but front-line presence rates were higher than expected while **almost no kills happened** (battlefield auto-combat damage is scaled down by `BATTLE_PILOT_DMG_MULT` (game_config.csv), so laning alone doesn't kill anyone — kills effectively come only from engages·attack cards, so they depend entirely on how much the player fights). So front-line income was raised so that **the floor where nobody fights** reaches the target, and kills are an acceleration layered on top. **It is not something different from `growth` right above; it is its source** — previously the two were completely unrelated (growth was time, growth points a display-only record), so taking kills didn't change stats one bit. There are only three sources. **(1) Front-line presence** — `SCORE_FRONTLINE_PER_TURN` for each turn alive standing inside your own lane's front line. Most income comes from here (the "Front line" entry below). **(2) Jungle camps** — jungler only, `SCORE_JUNGLE_CAMP` (the "Jungle camp" entry below). **The camp value being much larger than a laner's per-turn income (`SCORE_FRONTLINE_PER_TURN`) is an intended correction** — camps must be walked to and their respawn (`JUNGLE_CAMP_RESPAWN_TURNS`) waited for, so pickup frequency is under once per turn, and with equal per-camp value the jungler's per-turn income is structurally lower than a laner's. The camp value was raised until jungler income roughly matched a laner's, and raised again in proportion when the respawn was slowed — **change `SCORE_JUNGLE_CAMP` and `JUNGLE_CAMP_RESPAWN_TURNS` together**. The growth-economy rebalance then slowed the respawn once more and **cut** the camp value — a deliberate jungle nerf, not an income-preserving correction. In return, a jungler's income is never cut off by being pushed back or by return-to-base. **(3) Kill bounty** — the last hit gets the full `SCORE_KILL_BASE` + `SCORE_KILL_BOUNTY_RATE` of how far the victim is ahead of the killer team's average, and other allies who damaged that target get **up to `SCORE_ASSIST_MAX_SHARE` in proportion to damage** on top (`bounty × SCORE_ASSIST_MAX_SHARE × my damage / total damage that target took this life`). This is the "weak catch-up" mechanism — catching an ace far ahead pays much more than a plain kill. **(4) Turret damage** — `SCORE_TURRET_FULL` ÷ `TURRET_HP` per HP point chipped off (per hit that is times `PILOT_STRUCTURE_DMG`). Previously **at the moment of demolition** the pilot who landed the last hit took the whole turret value (`SCORE_TURRET_KILL`, **deleted**), so a pilot who pushed for many turns got the same share as one who put in the last hit, and someone who ground it halfway and died got nothing — a siege is not a single event but labour over many turns. The total is unchanged, so a turret's worth didn't change, and **overkill is cut off** (even if three pour more into a turret than its remaining HP, only the remaining HP's worth pays out). Accrual passes through the single function `BattleSim.score_turret_damage`, called from two places — turn combat's `SimulationCore._credit_turret_damage` and card damage's `apply_card_turret_damage`. `score_turret_kill` now only handles the kill feed line and the event hook. **HQ damage still gives no score** (`SCORE_PER_PILOT_DMG` / `_HQ_DMG` deleted). **There is no death penalty either** (`SCORE_DEATH` deleted) — the penalty is that front-line income and camps stop entirely while dead, and that is the real cost, proportional to respawn turns. Constants are gathered in the `SCORE_*` section of `BattleSim`, and every change passes through `BattleSim.add_score` alone (so that the floor `SCORE_MIN` and the accrual multiplier are handled in one place only). On top of that is a separate `award_score` that adds one popup layer — the "Growth-point popup" entry below. Display is `fmt_score`, and since there is no cap it is **a number, not a gauge** — as digits grow, decimal places shrink (e.g. `1.00k` → `24.9k` → team total `125k`). Showing the number move in the opening stretch needs two decimal places, but keeping them late pushes digits out of the narrow strip slot into the neighbouring slot. Team score (`team_score`) is the sum of members (opening value five × `SCORE_START`), and it includes dead pilots. **Damage attribution wiring**: damage does not become score immediately; it accumulates in **the victim's ledger** (`PilotData.damage_credit`, `attacker → [(turn hit, total damage that turn)]`) and is settled when that target actually falls — battlefield auto-combat · attack cards · the engage stage all pass through the single point `BattleSim.record_pilot_damage`, so there is one table. The ledger is cleared on settlement. **Kill involvement is a `SCORE_ASSIST_WINDOW_TURNS` (const.csv) window** — each record gets a turn stamp (damage in the same turn is merged into one entry), and entries older than that drop out of assist distribution **and the denominator** (if expired entries stayed in the denominator, the shares of those who got the kill now would be quietly cut). The decision is made only by **one function**, `BattleSim.live_damage_credit(victim)`, which actually deletes expired entries while reading — all three consumers (bounty distribution · kill feed roster · `PilotSkillSystem.on_kill`) read that function together, so the faces on screen and the faces that got score can't diverge. Meanwhile **who the last hit is** is a separate problem: battlefield damage is split into a decision stage (only accumulating amounts in `damage_map`) and an apply stage (reducing HP), and the attacker no longer remains at apply time, so `SimulationCore._credit_pilot_damage` / `_credit_turret_damage` write "the last one who hit" in `_last_hitter` / `_last_turret_hitter`, and the apply stage passes it to `mark_pilot_dead(victim, killer)` / `score_turret_kill(killer, td)`. The two dicts are **cleared at the start of every turn and every advance card**. **The kill feed reads the same table too** — the "Kill feed" entry above. The engage stage and attack cards hold the attacker in hand, so they don't need this detour. |
+| Battlefield size | **There are two scales.** `HexGrid.FIELD_SCALE` (90% of `DISPLAY_SCALE`) sets tile·building·waypoint scale and hex geometry (`hex_size` / `hex_height`), and `HexGrid.DISPLAY_SCALE` = **1.35** sets what is drawn **on** the battlefield — pilot portraits / HP rings / popups / preview line widths · fonts. They were split to shrink only the battlefield by 10% while keeping portrait size (before, the single 1.35 did both). The battlefield pixel box went 891×983 → about 802×885; the field centre is unchanged, so top and bottom each move ~49px inward. The hand (`BS_HAND_CENTER`) was not moved up to follow this time. Anything that must track tile size derives from `hex_size`; anything that must track portrait size derives from `DISPLAY_SCALE`. |
 
 ### Module Architecture table (moved from root CLAUDE.md)
 `BattleSim.gd` is a **thin orchestrator** (`class_name BattleSim extends Node2D`).
@@ -586,17 +603,17 @@ Each child module has `@onready var _bs: BattleSim = get_parent() as BattleSim` 
 | Pathfinding | `combat/Pathfinding.gd` | BFS + greedy movement |
 | BattleRenderer | `rendering/BattleRenderer.gd` | All `_draw()` logic (extends Node2D) |
 | CardPhaseManager | `card_phase/CardPhaseManager.gd` | Card turn flow, deck, hand, card effects |
-| GambitPhaseManager | `gambit/GambitPhaseManager.gd` | 개시 전 단계 — 역할 고정 레인 배정 + 전장 세우기(`prepare_field`) + 정글 시작 오버레이 + 개시(`begin_battle`) |
-| JungleStartOverlay | `gambit/JungleStartOverlay.gd` | **정글 시작 칸** — 전장에 서 있는 아군 정글러 마커(꼬리 없이)를 직접 끌어다 우리 정글 / 중립 칸 하나에 놓고(상대 정글은 비활성, HQ→그 칸 + 도착 뒤 6턴 경로를 턴 번호와 함께 표시 — `SimulationCore.predict_jungle_path`) "전투 시작"으로 확정. 그 칸이 정글러의 첫 목표(`PilotData.jungle_start_cell`)가 된다. `match_ctx.active` 일 때만 열린다 |
-| ObjectiveSystem | `objective/ObjectiveSystem.gd` | 오브젝트(전령 / 용) — 좌우 중립 칸의 시계 · 참여 결정 · 정산. 결정 창과 무대는 교전 모듈의 VS 화면과 아레나를 빌려 쓴다 |
-| ObjectiveRewardFx | `objective/ObjectiveRewardFx.gd` | 오브젝트 **보상 획득 연출** — 보상 카드를 화면 한가운데에 펼쳤다가 들어갈 자리(덱 뭉치 / 손패 왼쪽 끝 / 상대 손패)로 날려 보낸다. `_grant_reward` 가 **지급 직전에** await 한다 |
-| MechSkillSystem | `mech/MechSkillSystem.gd` | 메크 스킬 — 배정된 **기체**에 붙는 패시브 15종과 그 기체 카드들이 남기는 지속 상태(취약 · 반응 장갑 · 목표 · 추적 · 현상금 …). 계산은 원래 하던 자리가 하고 이 모듈은 질의 함수만 내보낸다 |
-| PilotSkillSystem | `skill/PilotSkillSystem.gd` | 파일럿 스킬 — 선수마다 붙는 고유 능력 25종(쿨타임 / 충전식 / 패시브). 상태 · 활성화 · 사건 훅 · 패시브 질의 |
-| EngagePhaseManager | `engage/EngagePhaseManager.gd` | 탑뷰 교전 오케스트레이터 — `engage/TurnEngageSim.gd`(헤드리스 라운드 턴제 시뮬. `prepare_sim` 이 **미리** 세운다) → `engage/EngageIntro.gd`(제출 직후 VS 확인 화면, 그 무대를 정지 화면으로 보여 준다) → `engage/EngageArena.gd`(렌더러) 를 잇는다 |
-| HudBuilder | `ui/HudBuilder.gd` | HUD construction and update (incl. `ui/CostDonut.gd` 전략 포인트 도넛 ×2, `ui/PilotStrip.gd` 파일럿 스트립 ×2, `ui/CardPileStack.gd` 덱 / 버린 더미 뭉치 ×2, `ui/KillFeed.gd` 킬로그, `ui/ObjectiveTimer.gd` 오브젝트 시계 ×2) |
-| ObjectiveRewardPopup | `ui/ObjectiveRewardPopup.gd` | 오브젝트 보상 미리보기 — 시계를 누르면 그 오브젝트가 주는 카드를 실물로 띄운다. 전장을 붙잡지 않는다 |
-| PilotDetailPanel | `ui/PilotDetailPanel.gd` | 파일럿 상세 모달 — 스트립의 얼굴 / 전장 초상 꾹 누르기로 열린다 (작전 단계 + 자동 진행). 머리글(이름 / 그 아래 기체명 / 오른쪽 성장치) + 인게임 / 파일럿 / 메크 탭 3개 + 화면 하단 전체 폭의 보유 카드 부채꼴 |
-| BattleLogger | `debug/BattleLogger.gd` | 전 행동 로그 + 적 파일럿 교차(cross-over) 자동 감지 |
+| GambitPhaseManager | `gambit/GambitPhaseManager.gd` | Pre-opening phase — role-fixed lane assignment + battlefield setup (`prepare_field`) + jungle start overlay + opening (`begin_battle`) |
+| JungleStartOverlay | `gambit/JungleStartOverlay.gd` | **Jungle start cell** — the player drags the ally jungler marker standing on the battlefield (no tail) directly onto one of our jungle / neutral cells (the enemy jungle is disabled; shows HQ→that cell + the 6-turn path after arrival with turn numbers — `SimulationCore.predict_jungle_path`) and confirms with "전투 시작" (Start battle). That cell becomes the jungler's first target (`PilotData.jungle_start_cell`). Opens only when `match_ctx.active` |
+| ObjectiveSystem | `objective/ObjectiveSystem.gd` | Objectives (Herald / Dragon) — timers · participation decision · settlement on the left/right neutral cells. The decision window and stage borrow the engage module's VS screen and arena |
+| ObjectiveRewardFx | `objective/ObjectiveRewardFx.gd` | Objective **reward pickup effect** — spreads the reward card in the centre of the screen, then flies it to where it goes (deck pile / left end of the hand / opponent's hand). `_grant_reward` awaits it **right before granting** |
+| MechSkillSystem | `mech/MechSkillSystem.gd` | Mech skills — 15 passives attached to the assigned **mech** and the persistent states its mech cards leave (vulnerable · reactive armour · target · tracking · bounty …). The computation happens where it always did; this module only exports query functions |
+| PilotSkillSystem | `skill/PilotSkillSystem.gd` | Pilot skills — 25 unique abilities attached to each player (cooldown / charge-based / passive). State · activation · event hooks · passive queries |
+| EngagePhaseManager | `engage/EngagePhaseManager.gd` | Top-view engage orchestrator — chains `engage/TurnEngageSim.gd` (headless round-based turn sim; `prepare_sim` builds it **in advance**) → `engage/EngageIntro.gd` (VS confirm screen right after submission, showing that stage as a still frame) → `engage/EngageArena.gd` (renderer) |
+| HudBuilder | `ui/HudBuilder.gd` | HUD construction and update (incl. `ui/CostDonut.gd` strategy-point donut ×2, `ui/PilotStrip.gd` pilot strip ×2, `ui/CardPileStack.gd` deck / discard pile stacks ×2, `ui/KillFeed.gd` kill feed, `ui/ObjectiveTimer.gd` objective timer ×2) |
+| ObjectiveRewardPopup | `ui/ObjectiveRewardPopup.gd` | Objective reward preview — tapping a timer shows the real card that objective grants. Does not hold the battlefield |
+| PilotDetailPanel | `ui/PilotDetailPanel.gd` | Pilot detail modal — opens by tapping a face in the strip / long-pressing a battlefield portrait (operation phase + auto-progress). Header (name / mech name below it / growth points on the right) + 3 tabs In-game / Pilot / Mech + a full-width fan of held cards at the bottom of the screen |
+| BattleLogger | `debug/BattleLogger.gd` | Full action log + automatic enemy-pilot cross-over detection |
 
 ### Match Flow → Battle Sim handoff
 `MatchFlow` populates `GameManager.match_ctx` (player_roster, enemy_roster,

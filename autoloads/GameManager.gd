@@ -23,8 +23,10 @@ func reset_match_ctx() -> void:
 		"player_side":   GameEnums.DraftSide.BLUE,
 		"banned_mech_ids": [],
 		"all_mechs":      [],
-		# 오브젝트 오판 확률 — MatchFlow 가 상대 리그 순위로 매긴다(5%~60%).
-		"enemy_misjudge_chance": 0.325,
+		# 오브젝트 오판 확률 — MatchFlow 가 상대 리그 순위로 매긴다
+		# (`OBJ_MISJUDGE_MIN` ~ `OBJ_MISJUDGE_MAX`). 기본값은
+		# `ObjectiveSystem.AI_MISJUDGE_DEFAULT` 와 같은 const.csv 키.
+		"enemy_misjudge_chance": ConstTable.num("OBJ_AI_MISJUDGE_DEFAULT"),
 	}
 
 
@@ -62,8 +64,9 @@ var season_state: Dictionary = {
 	# 을 부르는 `WeekProgressView` 하나다 — 이미 있으면 다시 정산하지
 	# 않으므로 경기를 치르고 같은 요일로 돌아와도 훈련이 두 번 먹지 않는다.
 	"week_day_log": {},
-	# 훈련 EXP 의 **나머지 통장**. `seat(int) → {stat: int}`. EXP 40 이 스탯 1
-	# 인데 요일마다 따로 나누면 하루 30 씩 다섯 날이 매일 0 점이 된다 —
+	# 훈련 EXP 의 **나머지 통장**. `seat(int) → {stat: int}`. `TRAINING_EXP_PER_POINT`
+	# (const.csv) 가 스탯 1 인데 요일마다 따로 나누면 문턱에 못 미치는 하루치가
+	# 다섯 날 매일 0 점이 된다 —
 	# 나머지를 다음 날로 넘겨야 다섯 날의 합이 한 주 한 번과 같아진다.
 	# 주가 시작될 때 비운다(`TrainingBoard.reset_week_progress`).
 	"training_exp_carry": {},
@@ -104,6 +107,17 @@ var season_state: Dictionary = {
 	# Only `phase` and `player_side` are required at BAN_PICK; the other fields
 	# are filled in at the post-gambit save.
 	"match_resume": null,
+	# ── 런 (M1 / M2) — 계약: docs/outgame_dev_plan.md §10 ─────────────────
+	# 런 시드. AI 로스터 분배 등 런 시작 때의 무작위가 모두 이 값에서 나온다.
+	"run_seed": 0,
+	# 런 설정 스냅샷 — 런 중 바뀌지 않는다. 모양은 §10.2:
+	#   {scenario: int, team_id: int, pilot_ids: Array[int](5, 역할 순),
+	#    pilot_levels: {"<pilot_id>": int}, salary_cap: int, salary_total: int}
+	"run_setup": {},
+	# 경기 MVP / 페이즈 POM 집계(`RunStats`). 문자열 키만 쓴다 — §10.4.
+	"run_stats": {},
+	# 정산이 끝난 런(`RunResult.settle_current_run`). true 면 자동 저장하지 않는다.
+	"run_over": false,
 }
 
 
@@ -133,18 +147,186 @@ func reset_season_state() -> void:
 		"intl_team_meta": [],
 		"intl_pilots": [],
 		"match_resume": null,
+		"run_seed": 0,
+		"run_setup": {},
+		"run_stats": {},
+		"run_over": false,
 	}
 
 
-# Loads the 40-pilot pool, builds per-team rosters keyed by team_id, primes
-# empty league standings + default training schedules. Returns "" on success
-# or an error string. Caller (Season hub) is responsible for marking active.
-func init_season(player_team_id: int = 0) -> String:
-	reset_season_state()
+# ── 런 시작 (M1) ─────────────────────────────────────────────────────────────
+# 마지막으로 정산된 런의 결과 — `RunResult.settle_current_run` 이 채우고 정산
+# 화면(`scenes/RunResult.tscn`)이 읽는다. 메모리에만 산다(정산은 이미 프로필에 썼다).
+var last_run_result: Dictionary = {}
+
+
+## 런 준비 화면(`features/meta/run_setup/`)이 부르는 **유일한 런 시작 입구**.
+## `run_setup` 모양은 `docs/outgame_dev_plan.md` §10.2. 성공이면 "" — 이후
+## `Season.tscn` 은 DRAFT 없이 HUB 부터 연다. 실패면 사람이 읽는 한 줄이고
+## `season_state` 는 건드리지 않은(검증 실패) 또는 비운(분배 실패) 상태다.
+##
+## 순서: 검증(`RunRules.validate_lineup`, Lv1 풀 · 프로필 보유 레벨) → 시즌 뼈대
+## (`_init_season_core`) → `run_seed` → 내 5인을 내 팀으로 · `RunRules.apply_level`
+## → 나머지 선수 AI 분배(`RunRoster`) → `team_rosters` 재구성 → `run_setup` 스냅샷.
+##
+## 테스트 런(`use_test_run`, 에디터 직접 실행)은 프로필 보유를 보지 않는다 —
+## 네임드 선수 누구나 최대 레벨까지 고를 수 있다(샐러리캡 · 역할 규칙은 그대로).
+func start_run(run_setup: Dictionary) -> String:
 	var data := load_match_data()
 	if data.has("error"):
 		return data["error"]
-	var pilots: Array = data["players"]
+	var pool: Array = data["players"]
+	var team_id: int = int(run_setup.get("team_id", 0))
+	if team_id < 0 or team_id >= TEAM_COUNT:
+		return "알 수 없는 팀 id %d" % team_id
+	var scenario_id: int = int(run_setup.get("scenario", 0))
+	if RunRules.scenario(scenario_id).is_empty():
+		return "알 수 없는 시나리오 id %d" % scenario_id
+
+	var pilot_ids: Array = []
+	for raw in (run_setup.get("pilot_ids", []) as Array):
+		pilot_ids.append(int(raw))
+	var levels: Dictionary = {}
+	var raw_levels: Dictionary = run_setup.get("pilot_levels", {})
+	for pid in pilot_ids:
+		levels[str(pid)] = int(raw_levels.get(str(pid), 1))
+	var err: String = RunRules.validate_lineup(pilot_ids, levels, scenario_id, pool,
+			_owned_levels_for_run(pool))
+	if err != "":
+		return err
+
+	err = _init_season_core(team_id, pool)
+	if err != "":
+		return err
+	var pilots: Array = season_state["all_pilots"]
+	var run_seed: int = _fresh_run_seed()
+	season_state["run_seed"] = run_seed
+
+	var assignment: Dictionary = RunRoster.assign(pilots, team_id, pilot_ids, run_seed, TEAM_COUNT)
+	if String(assignment.get("error", "")) != "":
+		reset_season_state()
+		return String(assignment["error"])
+	RunRoster.apply(pilots, assignment["teams"])
+
+	# 내 5인 — 레벨은 런 사본(all_pilots)에만 얹는다. 스냅샷은 역할 순으로 적는다.
+	var picked: Array = []
+	for raw in pilots:
+		var pd := raw as PlayerData
+		if pilot_ids.has(pd.id):
+			RunRules.apply_level(pd, int(levels[str(pd.id)]))
+			picked.append(pd)
+	picked.sort_custom(func(a, b): return (a as PlayerData).role < (b as PlayerData).role)
+	var ordered_ids: Array = []
+	var applied_levels: Dictionary = {}
+	for raw in picked:
+		var pd := raw as PlayerData
+		ordered_ids.append(pd.id)
+		applied_levels[str(pd.id)] = pd.level
+	season_state["team_rosters"] = RunRoster.build_rosters(pilots, TEAM_COUNT)
+
+	# 캡 · 합계는 화면이 보낸 값을 믿지 않고 여기서 다시 낸다(샐러리는 Lv1 기준
+	# `pd.salary` + 레벨 가산이라 레벨을 얹은 뒤에도 같은 식이 맞다).
+	season_state["run_setup"] = {
+		"scenario": scenario_id,
+		"team_id": team_id,
+		"pilot_ids": ordered_ids,
+		"pilot_levels": applied_levels,
+		"salary_cap": RunRules.salary_cap(scenario_id),
+		"salary_total": RunRules.lineup_salary(picked, applied_levels),
+	}
+	return ""
+
+
+## 에디터 직접 실행용 기본 편성 — 샐러리캡이 가장 높은 시나리오, `team_id` 팀,
+## 역할마다 스타터(`players.starter = 1`) 중 id 가 가장 낮은 선수, 전원 Lv1.
+## 스타터가 없는 역할은 그 역할의 네임드 중 id 가 가장 낮은 선수로 채운다.
+func default_run_setup(team_id: int = 0) -> Dictionary:
+	var scenario_id: int = 0
+	var best_cap: int = -1
+	for s in RunRules.scenarios():
+		var cap: int = int((s as Dictionary).get("salary_cap", 0))
+		if cap > best_cap:
+			best_cap = cap
+			scenario_id = int((s as Dictionary)["id"])
+
+	var starters: Dictionary = {}
+	var db := SQLite.new()
+	db.path = db_path()
+	db.verbosity_level = SQLite.QUIET
+	if db.open_db():
+		db.query("SELECT id FROM players WHERE starter = 1")
+		for row in db.query_result:
+			starters[int(row["id"])] = true
+		db.close_db()
+
+	var data := load_match_data()
+	# role → 정렬 키(스타터가 아니면 큰 수를 더해 뒤로 민다). 작을수록 앞.
+	var non_starter_rank: int = 1 << 30
+	var best: Dictionary = {}
+	for raw in (data.get("players", []) as Array):
+		var pd := raw as PlayerData
+		if pd.is_mob:
+			continue
+		var key: int = pd.id + (0 if starters.has(pd.id) else non_starter_rank)
+		if not best.has(pd.role) or key < int(best[pd.role]):
+			best[pd.role] = key
+	var pilot_ids: Array = []
+	var levels: Dictionary = {}
+	for r in GameEnums.Role.size():
+		if best.has(r):
+			var pid: int = int(best[r]) % non_starter_rank
+			pilot_ids.append(pid)
+			levels[str(pid)] = 1
+	return {
+		"scenario": scenario_id,
+		"team_id": team_id,
+		"pilot_ids": pilot_ids,
+		"pilot_levels": levels,
+		"salary_cap": RunRules.salary_cap(scenario_id),
+		"salary_total": 0,   # start_run 이 다시 낸다
+	}
+
+
+# `validate_lineup` 의 `owned_max_levels`. 테스트 런은 네임드 전원 최대 레벨,
+# 아니면 프로필 컬렉션.
+func _owned_levels_for_run(pool: Array) -> Dictionary:
+	if not use_test_run:
+		var pm: Node = get_node_or_null("/root/ProfileManager")
+		if pm != null:
+			return pm.owned_max_levels()
+	var out: Dictionary = {}
+	var top: int = RunRules.max_level()
+	for raw in pool:
+		var pd := raw as PlayerData
+		if not pd.is_mob:
+			out[str(pd.id)] = top
+	return out
+
+
+# 0 이 아닌 새 런 시드. 0 은 "런 시드 없음"(옛 세이브 · 시작 전)으로 읽힌다.
+func _fresh_run_seed() -> int:
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var s: int = 0
+	while s == 0:
+		s = int(rng.randi())
+	return s
+
+
+## 에디터에서 `Season.tscn` 을 바로 실행했을 때(`season_state.active == false`)
+## SeasonHub 가 부르는 기본 경로. 직접 실행도 정식 런과 **같은 길**을 타도록
+## `start_run(default_run_setup(player_team_id))` 와 같다.
+func init_season(player_team_id: int = 0) -> String:
+	return start_run(default_run_setup(player_team_id))
+
+
+# Season skeleton shared by every run start: resets season_state, stores the
+# 40-pilot pool (Lv1 copies straight from game.db) with its CSV team ids, team
+# meta, INTL pool, CSV-based rosters, empty standings and an empty training
+# board, and marks the state active. `start_run` then re-distributes rosters.
+# Returns "" on success or an error string. Never calls start_run / init_season.
+func _init_season_core(player_team_id: int, pilots: Array) -> String:
+	reset_season_state()
 	if pilots.size() != TEAM_COUNT * 5:
 		return "Expected %d pilots, got %d — rebuild game.db" % [TEAM_COUNT * 5, pilots.size()]
 
@@ -155,13 +337,7 @@ func init_season(player_team_id: int = 0) -> String:
 	season_state["intl_team_meta"] = intl["teams"]
 	season_state["intl_pilots"]    = intl["pilots"]
 
-	# Build team_rosters
-	var rosters: Dictionary = {}
-	for t in TEAM_COUNT:
-		rosters[t] = []
-	for p in pilots:
-		rosters[p.team_id].append(p.id)
-	season_state["team_rosters"] = rosters
+	season_state["team_rosters"] = RunRoster.build_rosters(pilots, TEAM_COUNT)
 
 	# Empty league standings
 	var standings: Dictionary = {}
@@ -178,54 +354,11 @@ func init_season(player_team_id: int = 0) -> String:
 
 
 # ── Game DB 경로 ──────────────────────────────────────────────────────
-# SQLite 는 **디스크 위의 진짜 파일**을 열어야 한다. 에디터에서는 `res://` 가
-# 그대로 실제 폴더라 그냥 열리지만, 익스포트한 빌드에서는 `res://` 가 `.pck`
-# 안으로 들어가 SQLite 가 그 경로를 열 수 없다 — iOS / Android 빌드가
-# 타이틀 화면부터 DB 오류로 멈추는 진짜 이유가 이것이다. 그래서 기기에서는
-# 패킹된 DB 를 `user://` 로 한 번 뽑아낸 뒤 그 사본을 열어 준다.
-#
-# **매 실행마다 덮어쓴다.** 런타임에 DB 는 읽기 전용이고(세이브는
-# `user://saves/*.save` JSON 으로 따로 산다) 크기도 96KB 라, 뭐가 바뀜는지
-# 비교하는 캐시 무효화 장치를 두는 것보다 그냥 복사하는 쪽이 언제나 옳다 —
-# 새 빌드를 깔아 섬었는데 옫 빌드의 game.db 가 `user://` 에 남아 있는 사고가
-# 구조적으로 불가능해진다.
-#
-# `data/game.db` 는 **리소스가 아니므로** 그냥 두면 pck 에 안 들어간다 —
-# `export_presets.cfg` 의 `include_filter` 가 그걸 넣는 자리다.
-const DB_SOURCE_PATH:  String = "res://data/game.db"
-const DB_RUNTIME_PATH: String = "user://data/game.db"
-
-var _db_path: String = ""
-
-
-# 런타임에 SQLite 에 넘길 game.db 경로. 에디터에서는 res:// 그대로,
-# 익스포트 빌드에서는 pck 에서 뽑아낸 user:// 사본. 한 실행에 한 번만 복사한다.
+# 경로 결정(에디터 = res://, 기기 = pck 에서 user:// 로 뽑은 사본)은
+# `resources/GameDb.gd` 한 곳에 산다 — `ConstTable` 이 오토로드보다 먼저
+# DB 를 열어야 해서 정적 클래스로 옮겼다. 여기는 기존 호출부를 위한 창구다.
 func db_path() -> String:
-	if _db_path != "":
-		return _db_path
-	if OS.has_feature("editor"):
-		_db_path = DB_SOURCE_PATH
-	else:
-		_db_path = _extract_db_to_user()
-	return _db_path
-
-
-# pck 안의 game.db 를 user:// 로 꺼낸다. 실패하면 원본 경로를 그대로
-# 돌려준다 — 어차피 열리지 않지만, 호출부마다 있는 open_db 실패 경로가
-# 에러를 대신 말해 주므로 여기서 null 을 새로 만들 이유가 없다.
-func _extract_db_to_user() -> String:
-	var bytes: PackedByteArray = FileAccess.get_file_as_bytes(DB_SOURCE_PATH)
-	if bytes.is_empty():
-		push_error("GameManager: %s 가 빌드에 안 들어있다 — export_presets.cfg 의 include_filter 를 확인할 것." % DB_SOURCE_PATH)
-		return DB_SOURCE_PATH
-	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(DB_RUNTIME_PATH).get_base_dir())
-	var f: FileAccess = FileAccess.open(DB_RUNTIME_PATH, FileAccess.WRITE)
-	if f == null:
-		push_error("GameManager: %s 에 쓸 수 없다 (%d)" % [DB_RUNTIME_PATH, FileAccess.get_open_error()])
-		return DB_SOURCE_PATH
-	f.store_buffer(bytes)
-	f.close()
-	return DB_RUNTIME_PATH
+	return GameDb.path()
 
 
 # Loads players + mechs from game.db. Returns {"players": Array[PlayerData], "mechs": Array[MechData]}.
@@ -252,6 +385,8 @@ func load_match_data() -> Dictionary:
 			# 전원이 "스킬 없는 네임드"가 되고 그림도 평소 컷 그대로다.
 			int(row.get("skill_id", -1)), int(row.get("is_mob", 0)) != 0))
 		(players[-1] as PlayerData).pilot_cards = parse_card_ids(String(row.get("pilot_cards", "")))
+		(players[-1] as PlayerData).salary = int(row.get("salary", 0))
+		(players[-1] as PlayerData).rarity = int(row.get("rarity", 0))
 
 	db.query("SELECT * FROM mechs ORDER BY id")
 	if db.query_result.is_empty():
@@ -390,10 +525,11 @@ func _synth_intl_pool() -> Dictionary:
 
 
 # ── Save System ──────────────────────────────────────────────────────────────
-# Set by TitleScreen when the player picks a slot. SaveSystem.save_slot uses
-# this on every phase-boundary auto-save. -1 means "no slot" (e.g. running
-# Season.tscn directly from the editor) — auto-save becomes a no-op.
-var active_save_slot: int = -1
+# Which run file autosave / load goes to (SaveSystem.run_path()). Defaults to
+# true so running Season.tscn / MatchFlow.tscn directly from the editor
+# autosaves into the hidden test run file (user://run_test.save) instead of the
+# real run. The lobby (`features/meta/lobby/`) sets it to false on _ready.
+var use_test_run: bool = true
 
 
 # ── Card Pool (used by CardPhaseManager in battle sim) ────────────────────────

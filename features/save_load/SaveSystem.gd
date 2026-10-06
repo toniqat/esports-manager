@@ -1,109 +1,96 @@
 class_name SaveSystem
 extends RefCounted
 
-# Static helpers for the title-screen save/load system.
+# Static helpers for the run save (one in-progress run at a time).
 #
-# Three slots are stored as JSON files under user://saves/slot{0,1,2}.save.
-# Each file holds {version, meta, season_state}. The `meta` block lets the
-# title screen list slots without reconstructing the full season state.
+# The run lives in a single JSON file, user://run.save, holding
+# {version, meta, season_state}. The `meta` block lets the lobby show the
+# "이어하기" (continue) card without reconstructing the full season state.
+# Account-level progress is NOT here — it lives in user://profile.save
+# (autoload ProfileManager).
+#
+# Test run file: GameManager.use_test_run defaults to true, so running
+# Season.tscn / MatchFlow.tscn directly from the editor autosaves into
+# user://run_test.save instead of the real run. The lobby sets it to false.
+#
+# Old 3-slot files (user://saves/slot*.save) are ignored — no migration.
 #
 # Auto-save trigger points (all wired outside this file):
-#   1. SeasonHub: DRAFT → HUB transition (post-draft).
+#   1. SeasonHub: first HUB entry after GameManager.start_run (post-run-start).
 #   2. MatchFlow: right before BAN_PICK starts (pre-match).
-#   3. MatchFlow: right after JUNGLE_START finishes, before BattleSim launch
-#      (post-gambit). season_state.match_resume captures the locked-in match
-#      state so resume re-enters MatchFlow at LAUNCH (→ BattleSim) directly.
+#   3. MatchFlow: right after ban/pick + mech assignment, before BattleSim
+#      launch (post-ban-pick). season_state.match_resume captures the locked-in
+#      match state so resume re-enters MatchFlow at LAUNCH (→ BattleSim) directly.
 #   4. SeasonHub: right after _consume_pending_match_result clears the
 #      finished match (post-match).
 # No save fires while BattleSim is running. Manual saving is not exposed.
+# The run file is deleted when the run is settled (RunResult.settle_current_run —
+# ENDING / GAME_OVER entry or a lobby abandon).
 
-const SAVE_DIR: String = "user://saves"
-const SLOT_COUNT: int = 3
+const RUN_PATH: String = "user://run.save"
+const TEST_RUN_PATH: String = "user://run_test.save"
 const SAVE_VERSION: int = 1
 
 
-static func slot_path(idx: int) -> String:
-	return "%s/slot%d.save" % [SAVE_DIR, idx]
+# The file every run read / write goes to — the hidden test run when
+# GameManager.use_test_run is set (direct editor runs), else the real run.
+static func run_path() -> String:
+	var gm: Node = _get_game_manager()
+	if gm != null and bool(gm.use_test_run):
+		return TEST_RUN_PATH
+	return RUN_PATH
 
 
-static func ensure_save_dir() -> void:
-	if not DirAccess.dir_exists_absolute(SAVE_DIR):
-		DirAccess.make_dir_recursive_absolute(SAVE_DIR)
+static func has_run() -> bool:
+	return FileAccess.file_exists(run_path())
 
 
-static func slot_exists(idx: int) -> bool:
-	return FileAccess.file_exists(slot_path(idx))
-
-
-# Returns Array[Dictionary] of length SLOT_COUNT. Each entry is the meta
-# block ({phase, year, month, day, weekday, team_name, trophies, rank, wins,
-# losses, saved_at}) or {} for empty / corrupted slots.
-static func list_slots() -> Array:
-	var out: Array = []
-	for i in SLOT_COUNT:
-		out.append(_read_slot_meta(i))
-	return out
-
-
-static func _read_slot_meta(idx: int) -> Dictionary:
-	if not slot_exists(idx):
-		return {}
-	var f: FileAccess = FileAccess.open(slot_path(idx), FileAccess.READ)
-	if f == null:
-		return {}
-	var raw: String = f.get_as_text()
-	f.close()
-	var parsed: Variant = JSON.parse_string(raw)
-	if typeof(parsed) != TYPE_DICTIONARY:
-		return {}
-	var meta: Variant = (parsed as Dictionary).get("meta", null)
+# Returns the run's meta block ({phase, year, month, day, weekday, team_name,
+# trophies, rank, wins, losses, saved_at, match_in_progress, scenario,
+# scenario_name}) or {} when there
+# is no run / the file is corrupted.
+static func read_run_meta() -> Dictionary:
+	var payload: Dictionary = _read_payload()
+	var meta: Variant = payload.get("meta", null)
 	if typeof(meta) != TYPE_DICTIONARY:
 		return {}
 	return meta
 
 
-# Save the current GameManager.season_state into slot `idx`. Returns "" on
-# success or an error string. No-op (returns "") when idx < 0 — running
-# Season.tscn directly without a slot selected shouldn't crash auto-save.
-static func save_slot(idx: int) -> String:
-	if idx < 0:
-		return ""
+# Save the current GameManager.season_state into the run file. Returns "" on
+# success or an error string.
+static func save_run() -> String:
 	var gm: Node = _get_game_manager()
 	if gm == null:
 		return "GameManager not found"
 	if not bool(gm.season_state.get("active", false)):
 		return "season_state inactive — nothing to save"
-	ensure_save_dir()
 	var payload: Dictionary = {
 		"version": SAVE_VERSION,
 		"meta": _build_meta(gm),
 		"season_state": _serialize_season_state(gm.season_state),
 	}
-	var f: FileAccess = FileAccess.open(slot_path(idx), FileAccess.WRITE)
+	var path: String = run_path()
+	var f: FileAccess = FileAccess.open(path, FileAccess.WRITE)
 	if f == null:
-		return "Cannot open slot %d for write" % idx
+		return "Cannot open %s for write (err=%d)" % [path, FileAccess.get_open_error()]
 	f.store_string(JSON.stringify(payload))
 	f.close()
 	return ""
 
 
-# Read slot `idx` from disk and overwrite GameManager.season_state. Returns
-# "" on success or an error string.
-static func load_slot(idx: int) -> String:
-	if not slot_exists(idx):
-		return "Slot %d is empty" % idx
-	var f: FileAccess = FileAccess.open(slot_path(idx), FileAccess.READ)
-	if f == null:
-		return "Cannot open slot %d for read" % idx
-	var raw: String = f.get_as_text()
-	f.close()
-	var parsed: Variant = JSON.parse_string(raw)
-	if typeof(parsed) != TYPE_DICTIONARY:
-		return "Slot %d corrupted (not a JSON object)" % idx
-	var payload: Dictionary = parsed
+# Read the run file and overwrite GameManager.season_state. Returns "" on
+# success or an error string.
+static func load_run() -> String:
+	var path: String = run_path()
+	if not FileAccess.file_exists(path):
+		return "No run saved (%s)" % path
+	var payload: Dictionary = _read_payload()
+	if payload.is_empty():
+		return "Run file corrupted (not a JSON object)"
 	var ss: Variant = payload.get("season_state", null)
 	if typeof(ss) != TYPE_DICTIONARY:
-		return "Slot %d corrupted (no season_state)" % idx
+		return "Run file corrupted (no season_state)"
 	var gm: Node = _get_game_manager()
 	if gm == null:
 		return "GameManager not found"
@@ -111,13 +98,30 @@ static func load_slot(idx: int) -> String:
 	return ""
 
 
-static func delete_slot(idx: int) -> String:
-	if not slot_exists(idx):
+static func delete_run() -> String:
+	var path: String = run_path()
+	if not FileAccess.file_exists(path):
 		return ""
-	var err: int = DirAccess.remove_absolute(slot_path(idx))
+	var err: int = DirAccess.remove_absolute(path)
 	if err != OK:
-		return "Failed to delete slot %d (err=%d)" % [idx, err]
+		return "Failed to delete run (err=%d)" % err
 	return ""
+
+
+# Parsed run file, or {} when missing / unreadable / not a JSON object.
+static func _read_payload() -> Dictionary:
+	var path: String = run_path()
+	if not FileAccess.file_exists(path):
+		return {}
+	var f: FileAccess = FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		return {}
+	var raw: String = f.get_as_text()
+	f.close()
+	var parsed: Variant = JSON.parse_string(raw)
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return {}
+	return parsed
 
 
 static func _get_game_manager() -> Node:
@@ -159,6 +163,11 @@ static func _serialize_season_state(s: Dictionary) -> Dictionary:
 		"pending_match":     s.get("pending_match", null),
 		"current_tournament": s.get("current_tournament", null),
 		"match_resume":      s.get("match_resume", null),
+		# 런 단위 상태(M1/M2). 모두 **문자열 키** 딕셔너리라 그대로 왕복한다.
+		"run_seed":          int(s.get("run_seed", 0)),
+		"run_setup":         s.get("run_setup", {}),
+		"run_stats":         s.get("run_stats", {}),
+		"run_over":          bool(s.get("run_over", false)),
 	}
 
 
@@ -178,7 +187,7 @@ static func _deserialize_season_state(s: Dictionary) -> Dictionary:
 		"match_schedule":    s.get("match_schedule", []),
 		"all_pilots":        _array_to_pilots(s.get("all_pilots", [])),
 		"intl_pilots":       _array_to_pilots(s.get("intl_pilots", [])),
-		"team_rosters":      _int_keyed_dict_in(s.get("team_rosters", {})),
+		"team_rosters":      _rosters_in(s.get("team_rosters", {})),
 		"league_standings":  _int_keyed_dict_in(s.get("league_standings", {})),
 		"training_board":    _board_in(s.get("training_board", [])),
 		# 주 진행 상태 셋. 둘 다 **정수 키** dict 이라 되돌리는 손질이
@@ -191,7 +200,46 @@ static func _deserialize_season_state(s: Dictionary) -> Dictionary:
 		"pending_match":     s.get("pending_match", null),
 		"current_tournament": s.get("current_tournament", null),
 		"match_resume":      s.get("match_resume", null),
+		"run_seed":          int(s.get("run_seed", 0)),
+		"run_setup":         _run_setup_in(s.get("run_setup", {})),
+		"run_stats":         s.get("run_stats", {}),
+		"run_over":          bool(s.get("run_over", false)),
 	}
+
+
+## 런 설정 스냅샷(`GameManager.start_run`, 계획서 §10.2)을 정수로 되돌린다.
+## JSON 을 지나면 `pilot_ids` 가 실수 배열이 되는데, 그대로 두면
+## `pilot_ids.has(pd.id)` 같은 비교가 조용히 false 가 된다. `pilot_levels` 는
+## 원래 문자열 키라 키는 그대로, 값만 정수로 돌린다. 옛 세이브(빈 딕셔너리)는 빈 채로.
+static func _run_setup_in(d: Dictionary) -> Dictionary:
+	if d.is_empty():
+		return {}
+	var out: Dictionary = d.duplicate(true)
+	for key in ["scenario", "team_id", "salary_cap", "salary_total"]:
+		if out.has(key):
+			out[key] = int(out[key])
+	var ids: Array = []
+	for raw in (d.get("pilot_ids", []) as Array):
+		ids.append(int(raw))
+	out["pilot_ids"] = ids
+	var levels: Dictionary = {}
+	var raw_levels: Dictionary = d.get("pilot_levels", {})
+	for k in raw_levels.keys():
+		levels[str(k)] = int(raw_levels[k])
+	out["pilot_levels"] = levels
+	return out
+
+
+## team_id(int) → Array[int]. 키도 값도 JSON 을 지나며 문자열 / 실수가 된다 —
+## 값이 실수로 남으면 `roster.has(pilot_id)` 가 정수 id 를 못 찾는다.
+static func _rosters_in(d: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	for k in d.keys():
+		var ids: Array = []
+		for raw in (d[k] as Array):
+			ids.append(int(raw))
+		out[int(k)] = ids
+	return out
 
 
 ## 훈련판 배치를 정수 좌표로 되돌린다. JSON 은 수를 전부 실수로 되돌려 주므로
@@ -237,6 +285,8 @@ static func _pilots_to_array(pilots: Array) -> Array:
 			# 고정 파일럿 카드 3장. 옛 세이브에는 없다 — 그때는 비어 있는 채로
 			# 복원되고 `GameManager.pilot_card_ids_for` 가 DB 의 같은 선수 행에서 채운다.
 			"pilot_cards": p.pilot_cards.duplicate(),
+			# 런 준비 — Lv1 샐러리 · 등급 · 이 런의 레벨(스탯은 이미 레벨 반영 값).
+			"salary": p.salary, "rarity": p.rarity, "level": p.level,
 		})
 	return out
 
@@ -255,6 +305,9 @@ static func _array_to_pilots(rows: Array) -> Array:
 		# JSON 은 숫자를 float 로 돌려준다 — 카드 id 는 int 로 되돌린다.
 		for raw_id in (d.get("pilot_cards", []) as Array):
 			pd.pilot_cards.append(int(raw_id))
+		pd.salary = int(d.get("salary", 0))
+		pd.rarity = int(d.get("rarity", 0))
+		pd.level = int(d.get("level", 1))
 		out.append(pd)
 	return out
 
@@ -270,7 +323,7 @@ static func _int_keyed_dict_in(d: Dictionary) -> Dictionary:
 	return out
 
 
-# ── Slot meta (for TitleScreen cards) ────────────────────────────────────────
+# ── Run meta (for the lobby continue card) ──────────────────────────────────
 
 static func _build_meta(gm: Node) -> Dictionary:
 	var s: Dictionary = gm.season_state
@@ -285,9 +338,15 @@ static func _build_meta(gm: Node) -> Dictionary:
 	var saved_at: String = "%04d-%02d-%02d %02d:%02d" % [
 		dt["year"], dt["month"], dt["day"], dt["hour"], dt["minute"],
 	]
-	# Mid-match flag: true when the slot was saved between BAN_PICK start and
-	# BattleSim launch. Used by SlotCard to show an "경기 진행 중" indicator.
+	# Mid-match flag: true when the run was saved between BAN_PICK start and
+	# BattleSim launch. The lobby shows an "경기 진행 중" indicator for it.
 	var match_in_progress: bool = (s.get("match_resume", null) != null)
+	# 런 시나리오(§10.2 run_setup). 옛 세이브 / 런 설정이 없으면 -1 · 빈 문자열.
+	var run_setup: Dictionary = s.get("run_setup", {})
+	var scenario_id: int = int(run_setup.get("scenario", -1))
+	var scenario_name: String = ""
+	if not run_setup.is_empty():
+		scenario_name = String(RunRules.scenario(scenario_id).get("name", ""))
 	return {
 		"phase":     int(s.get("current_phase", 0)),
 		"year":      int(s.get("year", 1)),
@@ -301,6 +360,8 @@ static func _build_meta(gm: Node) -> Dictionary:
 		"losses":    int(rank_data.get("losses", 0)),
 		"saved_at":  saved_at,
 		"match_in_progress": match_in_progress,
+		"scenario":  scenario_id if not run_setup.is_empty() else -1,
+		"scenario_name": scenario_name,
 	}
 
 
@@ -319,7 +380,7 @@ static func _count_trophies(s: Dictionary, pid: int) -> int:
 
 
 # Mirrors LeagueManager.standings_ranked() without depending on the node
-# (TitleScreen runs before SeasonHub exists).
+# (the lobby runs before SeasonHub exists).
 static func _player_rank(s: Dictionary, pid: int) -> Dictionary:
 	var standings: Dictionary = s.get("league_standings", {})
 	var rows: Array = []

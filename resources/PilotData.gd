@@ -18,10 +18,27 @@ var alive: bool           = true
 # 이 타이머를 쓰지 않는다: 죽지 않는 한 파일럿은 항상 전장 위에 있다.
 var respawn_timer: int    = 0
 # 이번 매치의 처치 수 / 사망 수. `BattleSim.mark_pilot_dead` 한 곳에서만 오른다.
-# 킬로그와 성장치는 각자 다른 표를 쓰므로(피해 장부 / 킬 피드) 이 둘은 순수한
-# 누적 카운터이고, 지금은 경쟁 심리(파일럿 스킬)가 상대 라이너와 견주는 데 쓴다.
+# 처치는 **킬로그의 막타**와 같은 사람에게 붙는다(`BattleSim.kill_roster` —
+# 마지막 타격자를 모르면 그 생에 가장 많이 때린 적). 경쟁 심리(파일럿 스킬)가
+# 상대 라이너와 견주는 데 쓰고, 경기 끝의 MVP 지표(`pilot_stats`)가 읽는다.
 var kills: int            = 0
 var deaths: int           = 0
+
+# ─── 경기 기록 (MVP 지표) ─────────────────────────────────────────────────────
+# 위의 `kills` / `deaths` 와 한 벌인 이번 경기의 누적 통계. 경기 끝에
+# `BattleSim.build_pilot_stats` 가 이 값으로 `pending_match.pilot_stats` 한 줄을
+# 만든다(docs/outgame_dev_plan.md §10.4). 세는 자리는 전부 `BattleSim` 의 훅이다.
+## 어시스트 — 킬로그와 같은 명단(`BattleSim.kill_roster`)에서 막타를 뺀 사람들.
+var assists: int          = 0
+## 적 파일럿에게 준 피해 — 피해 장부(`BattleSim.record_pilot_damage`)에 적힌 값의 합
+## (장부와 같은 값: 보호막에 먹힌 몫 포함) + 처형처럼 장부를 거치지 않은 즉사의 남은 체력.
+var dmg_dealt: int        = 0
+## 받은 피해 — 보호막을 뺀, 실제로 깎인 체력(오버킬 제외). `BattleSim.apply_pilot_damage`.
+var dmg_taken: int        = 0
+## 돌봄 — 내가 **다른 아군**에게 건 보호막이 실제로 흡수한 피해 + 다른 아군에게
+## 준 회복(오버힐 제외). 자기 자신에게 건 보호막 · 회복은 세지 않는다 — 자기 몸을
+## 지킨 몫은 이미 "받은 피해"가 덜 오르는 것으로 드러나고, 돌봄은 남을 지킨 값이다.
+var care: int             = 0
 # 본진 복귀한 그 턴에는 HQ 에 서 있기만 하고 움직이지 않는다는 표시.
 # RecallSystem.return_to_hq 가 켜고, 다음 이동 패스(SimulationCore.resolve_movement)
 # 가 한 턴을 걸러 내면서 스스로 끈다 — 그래서 "복귀 → 다음 턴부터 레인으로".
@@ -54,21 +71,26 @@ var evasion: int          = 50
 var engage_hit: int       = 50
 var engage_eva: int       = 50
 # 성장 계수 배율 — `BattleSim.refresh_growth_stats` 가 `GROWTH_ATK_PER_SCORE` /
-# `GROWTH_HP_PER_SCORE` 에 곱한다. 1.0 이 기준(`PlayerData.GROWTH_STAT_BASE` = 50).
+# `GROWTH_HP_PER_SCORE` 에 곱한다. 1.0 이 기준(스탯이 `PlayerData.GROWTH_STAT_BASE` 일 때).
 # **스탯을 직접 밀지 않고 성장률을 민다** — 전자는 재계산 한 번에 지워지고,
 # 훈련이 바꾸는 것은 개시 스탯이 아니라 경기가 흘랬가는 기울기다.
 var atk_growth_mult: float = 1.0
 var hp_growth_mult: float  = 1.0
-# 존재감 — 전투 개시(engage)에서만 참조. 근접 메크 4, 원거리 메크 2.
+# 존재감 — 전투 개시(engage)에서만 참조. 값은 mechs.csv — 근접 메크가 원거리 메크보다 높다.
 # 피격 가중치(높을수록 자주 표적이 됨).
 #
 # **속도(speed)는 삭제됐다** — 교전이 라운드 기반 턴제가 되면서 라운드마다
 # 전원이 한 번씩 행동하므로 행동 빈도를 가르는 스탯이 없다. 되살리지 말 것.
 var presence: int         = 4
-# 보호막. Granted by the 보호 card; removed on 본진 복귀 (RecallSystem clears it).
-# Damage absorption isn't wired into SimulationCore yet — this field is the
-# data hook for future integration so card effects can build up the value now.
+# 보호막. 카드(보호 · 수호 …)가 쌓고 모든 파일럿 피해가 HP 보다 먼저 깎는다 —
+# 흡수는 `BattleSim.apply_pilot_damage` 한 곳이다. 본진 복귀 · 사망이 0 으로 비운다.
+# 걸 때는 `BattleSim.grant_shield` 를 지나야 아래 장부에 출처가 남는다.
 var shield: int           = 0
+## 보호막 출처 장부 — `[{"src": PilotData 또는 null, "amt": int}, …]`, 건 순서대로.
+## 흡수는 **먼저 건 것부터** 깎고(FIFO), 흡수된 몫은 그 출처의 `care` 로 간다.
+## `shield` 를 장부 밖에서 비우는 자리(복귀 · 사망)가 있어도 어긋나지 않도록,
+## 흡수 직전에 장부 합계를 `shield` 이하로 잘라 맞춘다(오래된 것부터 버린다).
+var shield_grants: Array = []
 
 # ─── 메크가 거는 지속 상태 ────────────────────────────────────────────────────
 # 아래 필드는 전부 **메크 패시브와 메크 카드**(`mech_passives` / `mech_cards`)가
@@ -76,17 +98,18 @@ var shield: int           = 0
 # (`SimulationCore` 의 피해·명중, `BattleSim.refresh_growth_stats`,
 # `TurnEngageSim`)다 — 파일럿 스킬과 같은 규칙이다.
 
-## 취약 — **1마다 받는 피해 +1%.** 원딜 A(취약 각인)가 쌓는다. 누적되며 상한이
+## 취약 — **1마다 받는 피해 +`MECH_VULNERABLE_PER_STACK`(const.csv).** 원딜 A(취약 각인)가 쌓는다. 누적되며 상한이
 ## 없고, 자기 작전 단계가 끝나면 걷힌다(각인 자체가 "이번 작전 단계 동안"이다).
 var vulnerable: int = 0
-## 반응 장갑 — **공격을 한 번 받을 때마다 그 피해를 90% 줄이고 1 소모한다.**
+## 반응 장갑 — **공격을 한 번 받을 때마다 그 피해를 `MECH_REACTIVE_ARMOR_CUT`
+## (const.csv) 만큼 줄이고 1 소모한다.**
 ## 탱커 G 의 패시브와 두 카드가 쌓는다. 보호막과 달리 값이 아니라 **횟수**다.
 var reactive_armor: int = 0
-## 받는 피해 배율 가산분(죽음의 손가락 +0.25). 전장 이탈(복귀/사망)까지 남는다.
+## 받는 피해 배율 가산분(죽음의 손가락의 `dmg_taken` 절). 전장 이탈(복귀/사망)까지 남는다.
 var damage_taken_bonus: float = 0.0
 ## 현상금 — 지원 V 가 찍는다. [확신] 이 이 값의 몇 %를 피해로 바꾼다.
 var bounty: float = 0.0
-## 목표 — 이 파일럿을 지목한 시전자와 그가 얹는 피해 배율(단계 A: +0.15).
+## 목표 — 이 파일럿을 지목한 시전자와 그가 얹는 피해 배율(단계 A 의 `mark_target` 절).
 ## 한 명만 지목할 수 있다: 새로 찍으면 앞의 것을 덮는다.
 var marked_by: PilotData = null
 var marked_bonus: float = 0.0
@@ -117,14 +140,14 @@ var phase_return_cell: Vector2i = NO_RETURN
 # 계산**하므로, 메크가 얹는 증가분은 `atk` / `max_hp` 를 직접 밀면 그 재계산
 # 한 번에 지워진다. 그래서 카드의 일시 공격력(`atk_buff`)과 같은 이유로 별도
 # 필드로 산다 — 이쪽은 만료가 없는 **영구** 몫이라는 점만 다르다.
-## 공격력 고정 가산(조준 보정 +1/명중, [녹색 병] +2).
+## 공격력 고정 가산(조준 보정 명중당 `p1`, [녹색 병] 의 `atk_add` 절).
 var bonus_atk_flat: int = 0
-## 공격력 배율 가산(영혼 수확 +1%/타).
+## 공격력 배율 가산(영혼 수확 타당 `p1`%).
 var bonus_atk_mult: float = 0.0
-## 최대 체력 고정 가산([몸집 불리기] +20, [붉은 가루] +20, 영혼 수확 +5/타,
-## 고통과 쾌감 패시브의 피해 20%).
+## 최대 체력 고정 가산([몸집 불리기] · [붉은 가루] 의 `max_hp` 절, 영혼 수확 타당 `p2`,
+## 고통과 쾌감 패시브의 피해 `p1`%).
 var bonus_max_hp: int = 0
-## 최대 체력 배율 가산([워밍업] +5%). 공격력의 `bonus_atk_mult` 와 짝이다.
+## 최대 체력 배율 가산([워밍업] 의 `hp_pct` 절). 공격력의 `bonus_atk_mult` 와 짝이다.
 var bonus_max_hp_mult: float = 0.0
 
 # ─── 성장 (인게임 누적) ───────────────────────────────────────────────────────
@@ -136,7 +159,8 @@ var bonus_max_hp_mult: float = 0.0
 #
 # 지금은 둘이 갈라져 있다. `growth` 는 공격력, `growth_hp` 는 최대 체력이고
 # 둘 다 `score` 에서 파생된다(`BattleSim.refresh_growth_stats`) — 공격력이
-# 4배 빠르게 자라므로 성장치가 쌓일수록 TTK 가 실제로 줄어든다.
+# 훨씬 빠르게 자라므로(`GROWTH_ATK_PER_SCORE` > `GROWTH_HP_PER_SCORE`, const.csv)
+# 성장치가 쌓일수록 TTK 가 실제로 줄어든다.
 #
 # `base_atk` / `base_max_hp` 는 `_init` 이 채운다. 스폰 시점의 메크 스탯 주입
 # (`SimulationCore._stats_for`)이 생성자를 거치므로, 성장 이전의 원본은 언제나
@@ -145,14 +169,14 @@ var base_atk: int         = 0
 var base_max_hp: int      = 0
 ## 공격력 성장 배율분. `atk = base_atk × (1 + growth) + atk_buff`.
 var growth: float         = 0.0
-## 최대 체력 성장 배율분. 공격력의 1/4 속도로 자란다.
+## 최대 체력 성장 배율분. 공격력보다 느리게 자란다(`GROWTH_HP_PER_SCORE`).
 var growth_hp: float      = 0.0
 # 카드가 거는 **일시적** 공격력 가산(전투 준비 등). `atk` 를 직접 밀면 성장
 # 재계산이 그 사이에 끼었을 때 가산분이 통째로 지워지거나 두 번 빠진다 —
 # 성장은 이제 점수가 바뀔 때마다(= 턴 한가운데서도) 다시 계산되므로 별도
 # 필드로 들고 있어야 한다.
 var atk_buff: int         = 0
-# 성장치 **획득** 배율. 안전한 파밍(+10% → 1.10) / 완벽한 마무리(+25% → 1.25).
+# 성장치 **획득** 배율. 안전한 파밍(`growth:N` → 1 + N%) / 완벽한 마무리(`growth_until_phase:N`).
 # 예전에는 성장 배율이었지만 성장이 점수에서 파생되면서 적립 배율이 됐다 —
 # 결과는 같고(더 번 만큼 더 큰다) 배선이 한 겹 준다.
 # 두 카드는 같은 필드를 쓰므로 **나중에 건 쪽이 덮어쓴다**(합산 아님).
@@ -161,9 +185,9 @@ var growth_rate_mult: float = 1.0
 var growth_rate_expire_turn: int = -1
 # 작전 단계 만료형 적립 배율 표시. (완벽한 마무리) — 다음 작전 단계 진입 시 해제.
 var growth_until_phase: bool = false
-# **영구 적립 배율 가산분.** 용 보상(`growth_perm:10`)이 얹는다. 위의 세 필드와
+# **영구 적립 배율 가산분.** 용 보상(`growth_perm:N`)이 얹는다. 위의 세 필드와
 # 달리 만료도 해제도 없고 **누적된다** — 같은 파일럿에게 용 보상을 두 장 쓰면
-# +20% 다. 별도 필드인 이유가 그 누적이다: `growth_rate_mult` 은 카드끼리 덮어
+# 두 장 몫이 그대로 더해진다. 별도 필드인 이유가 그 누적이다: `growth_rate_mult` 은 카드끼리 덮어
 # 쓰는 슬롯이라(안전한 파밍 ↔ 완벽한 마무리) 거기에 얹으면 라인전 카드 한 장이
 # 오브젝트 보상을 지워 버린다. 최종 배율은 `BattleSim.add_score` 에서
 # `growth_rate_mult + growth_rate_bonus` 로 합쳐진다.
@@ -172,7 +196,7 @@ var growth_rate_bonus: float = 0.0
 # ─── 지속 효과 장부 (카드 한 장 단위) ────────────────────────────────────────
 # **누가 걸었는가**를 들고 있는 표. 위의 `growth_rate_bonus` / `bonus_max_hp` /
 # `bonus_atk_flat` 은 여러 카드가 함께 쌓는 **합계 슬롯**이라, 상세 패널이 그
-# 숫자만 읽으면 [용 보상]과 [핫핸드]가 한 칸에 뭉쳐 `+10%` 로만 보인다 —
+# 숫자만 읽으면 [용 보상]과 [핫핸드]가 한 칸에 뭉쳐 합계 하나로만 보인다 —
 # 무엇을 더 먹어야 하고 무엇이 이미 걸려 있는지가 그 한 칸에서 사라진다.
 #
 # 그래서 계산은 그대로 합계 슬롯이 하고(성장 재계산이 읽는 곳은 한 군데여야
@@ -222,8 +246,8 @@ func persistent_fx_total(kind: String) -> float:
 
 
 # ─── 성장치 (파일럿 점수) ─────────────────────────────────────────────────────
-# 개시 0.50k 에서 시작해 경기 내내 누적되는 파일럿의 성장 통화 — MOBA 의 골드에
-# 해당한다. 50턴 평균 25.00k, 잘 큰 캐리는 40.00k 을 넘긴다. 파일럿 스트립에
+# 개시값(`SCORE_START`, const.csv)에서 시작해 경기 내내 누적되는 파일럿의 성장
+# 통화 — MOBA 의 골드에 해당한다. 잘 큰 캐리는 평균을 크게 웃돈다. 파일럿 스트립에
 # 숫자로 찍히고 팀 점수는 팀원 합산이며 상한이 없다.
 #
 # **`growth` 는 여기서 파생된다** — 위의 성장 절 참조. 예전에는 둘이 완전히
@@ -233,11 +257,11 @@ func persistent_fx_total(kind: String) -> float:
 # 적립처는 셋이다: **전선 체류**(턴당), **정글 캠프**(정글러), **처치 현상금**
 # (라스트힛 + 피해 비례 어시스트). 규칙과 상수는 전부 `BattleSim` 의 `SCORE_*`
 # 절에 있고, 변동은 `BattleSim.add_score` 한 곳만 지난다.
-var score: float          = 0.5   # = BattleSim.SCORE_START
+var score: float          = ConstTable.num("SCORE_START")   # = BattleSim.SCORE_START
 
 # 이번 생에 **나를 때린 사람들**의 피해 기록. `PilotData attacker →
 # Array[Vector2i]` 이고 각 항목은 `(때린 턴, 그 턴의 피해 합)` 이다 — 같은 턴에
-# 들어온 피해는 한 항목으로 합쳐지므로 항목 수는 어시스트 창(15턴)을 넘지 않는다.
+# 들어온 피해는 한 항목으로 합쳐지므로 항목 수는 어시스트 창(`SCORE_ASSIST_WINDOW_TURNS`)을 넘지 않는다.
 # 내가 쓰러질 때 `BattleSim.mark_pilot_dead` 가 이걸 읽어 현상금을 라스트힛과
 # 어시스트에게 나눠 주고 비운다. 피해가 굴려지는 그 지점에서 쌓으므로
 # (`BattleSim.record_pilot_damage`) 전장·교전 무대·공격 카드가 같은 표를 쓴다.
@@ -249,13 +273,13 @@ var score: float          = 0.5   # = BattleSim.SCORE_START
 var damage_credit: Dictionary = {}
 
 # ─── 라인전 스탯 ──────────────────────────────────────────────────────────────
-# **전장 명중 판정 전용** 배율 (+0.10 / −0.10). `SimulationCore.roll_hit` 이
+# **전장 명중 판정 전용** 배율 (`lane_stat:N` → ±N%). `SimulationCore.roll_hit` 이
 # 공격자의 `hit` 과 방어자의 `evasion` 에 각각 곱한다. `atk` / `max_hp` 는 건드리지
 # 않는다 — 그쪽은 성장이 담당한다. 교전 무대(TurnEngageSim)는 자기 명중률
 # 구간을 따로 쓰므로 이 값을 읽지 않는다.
 var lane_stat_mod: float  = 0.0
 var lane_stat_expire_turn: int = -1   # -1 = 없음
-## 카드가 거는 **전장 회피** 배율 가산분([소극적인 태세] +0.20). 라인전 스탯과
+## 카드가 거는 **전장 회피** 배율 가산분([소극적인 태세] 의 `eva_buff` 절). 라인전 스탯과
 ## 달리 회피에만 곱해진다(`SimulationCore.roll_hit`). 같은 파일럿에 다시 걸면 덮어쓴다.
 var eva_card_mod: float = 0.0
 var eva_card_expire_turn: int = -1    # -1 = 없음
@@ -345,8 +369,8 @@ func _init(p_role: int, p_team: int, p_pos: Vector2i, stats: Dictionary) -> void
 
 # ─── 명중 확률 ──────────────────────────────────────────────────
 ## 명중 확률은 **상대값이 정한다** — `hit/(hit+eva)` 를
-## [`HIT_MIN`, `HIT_MAX`] 구간에 선형으로 엹는다. 둘이 대등하면 90%,
-## 한쪽으로 완전히 기울어야 80% / 100% 에 닿는다.
+## [`HIT_MIN`, `HIT_MAX`] 구간에 선형으로 엹는다. 둘이 대등하면 구간의
+## 한가운데, 한쪽으로 완전히 기울어야 양 끝에 닿는다.
 ##
 ## **전장과 교전이 같은 공식을 쓴다** — 입력만 다르다(전장은
 ## `hit`/`evasion`, 교전은 `engage_hit`/`engage_eva`). 예전에는 전장이
@@ -356,8 +380,9 @@ func _init(p_role: int, p_team: int, p_pos: Vector2i, stats: Dictionary) -> void
 ## 구간을 바닥까지 안 내리는 이유: 스탯이 훈련으로 100 을 넘어 계속
 ## 자라므로 비율 그대로를 확률로 쓰면 상대적 격차가 명중을 0 근처까지
 ## 끜어내려 한 팀이 아무것도 못 하는 경기가 난다.
-const HIT_MIN: float = 0.80
-const HIT_MAX: float = 1.00
+## 값은 data/csv/const.csv(`PILOT_HIT_MIN` / `PILOT_HIT_MAX`) — ConstTable 로 읽는다.
+static var HIT_MIN: float = ConstTable.num("PILOT_HIT_MIN")
+static var HIT_MAX: float = ConstTable.num("PILOT_HIT_MAX")
 
 ## 거리 계수 자리. 지금은 전장이 **같은 칸 교전**뿐이라 거리라는
 ## 개념이 없어 항상 1.0 을 넘긴다. 사거리 규칙이 생기면 호출부가 이

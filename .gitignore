@@ -17,3 +17,13 @@
 # GODOT_VERSION 을 올리는 순간 낡은 .a 가 조용히 안 맞게 된다.
 /ios/plugins/haptics/
 /.haptics-src/
+
+# 에디터 개인 설정은 PC 마다 다르다(Godot 실행 파일 경로 등) — 커밋하지 않는다.
+# 템플릿만 올리고, 각 PC 에서 settings.example.json 을 settings.json 으로 복사해 경로를 고친다.
+/.vscode/*
+!/.vscode/settings.example.json
+
+# Claude Code 개인 설정(PC 별 권한·경로) — 커밋하지 않는다. 공용 설정은 .claude/settings.json 에 둔다.
+/.claude/settings.local.json
+# 병렬 에이전트 작업용 git worktree — 커밋하지 않는다.
+/.claude/worktrees/

@@ -7,22 +7,22 @@ Pre-battle pipeline that runs **before** `BattleSim.tscn`:
 LOAD → PREP → BAN_PICK → LAUNCH (change_scene → BattleSim)
 ```
 
-**열거값 둘이 자리만 지킨다 — `ASSIGN` 과 `JUNGLE_START`.**
+**Two enum values only hold their place — `ASSIGN` and `JUNGLE_START`.**
 
-- **메크 배정**이 밴픽 화면 안으로 들어갔고(아래 BAN_PICK 절),
-  `assign/AssignController.gd` 는 삭제됐다.
-- **정글 시작 방향**은 **BattleSim 안으로 들어갔다**
-  (`features/battle_sim/gambit/JungleStartOverlay.gd`). 좌우 중 어느 정글로
-  갈지는 정글 소유 · 캠프 · 우리 정글러의 자리를 보고 정하는 선택인데, 예전의
-  `jungle_start/JungleStartController.gd` 는 전장을 한 픽셀도 보여 주지 않은 채
-  "← LEFT / RIGHT →" 두 버튼만 세웠다 — 그 화면에서 고르는 것은 동전 던지기와
-  다르지 않았다. 그 폴더는 삭제됐다.
+- **Mech (메크) assignment** moved inside the ban/pick (밴픽) screen (see the BAN_PICK section below),
+  and `assign/AssignController.gd` was deleted.
+- **Jungle start (정글 시작) direction** **moved inside BattleSim**
+  (`features/battle_sim/gambit/JungleStartOverlay.gd`). Which jungle (left or right) to go to is a
+  choice made by looking at jungle ownership · camps · our jungler's position, but the old
+  `jungle_start/JungleStartController.gd` showed not a single pixel of the battlefield (전장) and
+  just stood up two buttons, "← LEFT / RIGHT →" — choosing on that screen was no different from a
+  coin toss. That folder was deleted.
 
-두 열거값은 세이브 호환(`match_resume.phase`)을 위해 남는다.
+The two enum values remain for save compatibility (`match_resume.phase`).
 
 PREP is the pre-match dashboard — both rosters' stats laid out side by
 side so the player can review who they're up against before committing
-to BAN_PICK. Pressing "경기 시작" advances to BAN_PICK and triggers the
+to BAN_PICK. Pressing "경기 시작" (Start match) advances to BAN_PICK and triggers the
 pre-ban-pick autosave.
 
 Entry point: `scenes/MatchFlow.tscn`. Resume saves skip PREP and jump
@@ -41,134 +41,139 @@ Three child controllers each build their own UI on `enter()` and emit
 | Node | Script | Responsibility |
 |---|---|---|
 | MatchPrepController | `match_prep/MatchPrepController.gd` | Pre-match dashboard — both rosters with stats. "경기 시작" → BAN_PICK. |
-| BanPickController | `ban_pick/BanPickController.gd` | LoL-international ban/pick (4 bans + 10 picks) with random AI, **그리고 그 자리에서 이어지는 메크 배정**. 아래 두 절 참조 |
+| BanPickController | `ban_pick/BanPickController.gd` | LoL-international ban/pick (4 bans + 10 picks) with random AI, **plus the mech assignment that follows on the same screen**. See the two sections below |
 
-배정 단계가 여는 상세 팝업 둘은 컨트롤러의 형제 파일이다:
+The two detail popups opened by the assignment step are sibling files of the controller:
 
 | File | Purpose |
 |---|---|
-| `ban_pick/MechDetailPanel.gd` | `class_name MechDetailPanel extends CanvasLayer` — 메크 상세(좌 전신 아트 / 우 스탯 칩 3 → 패시브 → 메크 카드 격자 / 하 닫기) |
-| `season/draft/DraftDetailPanel.gd` | 파일럿 상세 — **드래프트 화면과 같은 팝업을 그대로 쓴다**(`open(p: PlayerData)` 하나면 열린다) |
+| `ban_pick/MechDetailPanel.gd` | `class_name MechDetailPanel extends CanvasLayer` — mech detail (left full-body art / right 3 stat chips → passive → mech card grid / bottom close) |
+| `meta/run_setup/DraftDetailPanel.gd` | Pilot detail — **reuses the very same popup as the draft screen** (`open(p: PlayerData)` is all it takes to open) |
 
-`BanPickController.enter()` 는 다른 둘과 달리 **로스터와 팀명까지 받는다** —
-밴픽 화면이 위/아래에 양 팀 파일럿 초상화를 세우고, 14수가 끝나면 그 로스터에
-배정을 직접 새기기 때문이다.
+Unlike the other two, `BanPickController.enter()` **also receives the rosters and team names** —
+because the ban/pick screen stands both teams' pilot portraits (초상화) at top/bottom, and once the
+14 moves are done it writes the assignments directly into those rosters.
 
 ---
 
-## BAN_PICK 화면
+## BAN_PICK screen
 
-세로 한 장을 **위 / 가운데 / 아래** 세 덩이로 나눈다.
+One vertical sheet is divided into three blocks: **top / middle / bottom**.
 
 ```
-위     밴 칩 2개 → 메크 칸 5개 → 파일럿 초상화 5인      (상대 팀)
-가운데 픽창 = 역할군 필터 탭 + 메크 격자 (정사각 칸, 4.5줄 스크롤)
-아래   파일럿 초상화 5인 → 메크 칸 5개 → 밴 칩 2개      (아군, 거울)
+top     2 ban chips → 5 mech slots → 5 pilot portraits      (opponent team)
+middle  pick pane = role-class filter tabs + mech grid (square cells, 4.5-row scroll)
+bottom  5 pilot portraits → 5 mech slots → 2 ban chips      (ally, mirrored)
 ```
 
-- **메크 칸은 파일럿 칸보다 세로로 두 배 길다**(`MECH_H_RATIO`) — 파일럿은
-  눈높이 밴드(2.4:1)라 납작하고 메크는 정사각 초상화라, 같은 폭에서 메크가 두 배
-  높이를 가져야 두 그림이 각자 제 비율로 앉는다.
-- **거울 배치**라 안쪽(전장 쪽)에 언제나 파일럿 얼굴이 오고 바깥쪽에 메크가 온다.
-- **화면은 아웃게임 흰 배경 계통이다**(`OutgameTheme`) — 바탕은 옅은 회색이고
-  픽창만 그림자 진 흰 카드 한 장이라, 판 하나가 "여기가 고르는 곳"과 "여기는 양
-  팀 상황"을 가른다. 예전에는 어두운 판이었다.
-- **격자 칸은 정사각 초상화 + 아래 이름 한 줄이 전부다.** 왼쪽 위에 역할군 배지
-  (역할 색으로 채운 둥근 사각형 + 하얀 두 글자 `Tk/As/Fi/Sn/Su`)가 붙는다. 예전에는
-  칸마다 `HP · ATK · 존재감` 과 패시브 이름이 두 줄 더 붙었는데, 스물한 대를 훑는
-  화면에서 칸마다 다섯 줄을 읽게 하면 정작 **그림으로 알아보는** 일이 안 된다 —
-  숫자와 패시브 설명은 한 번 눌러 여는 하단 시트가 통째로 들고 있다.
-- 초상화는 `MechImages.portrait_for()` 가 주는 **미리 구운 256² 정사각 컷**이다.
-  예전의 "전신 아트를 런타임에 격자 크기로 줄여 굽기"(`_bake_thumbs` / `THUMB_PX`)는
-  삭제됐다.
-- **다섯 칸의 순서는 `GameEnums.ROLE_DISPLAY_ORDER`**(탑 · 정글 · 미드 · 원딜 ·
-  서폿)다. 그래서 파일럿 초상화에 이름표도 역할 태그도 붙지 않는다 — 자리가 곧
-  역할이고, 인게임 스트립도 같은 순서로 선다.
-- **진행 상태 줄(칩 14개)은 픽창 맨 위, 역할군 필터 바로 위**에 선다(예전엔 화면
-  최상단). 지금 칩은 두꺼워져 밴 ✕ / 픽 ✓ 아이콘(SVG)을 품고, 그 아래(내 차례) 또는
-  위(상대 차례)에서 삼각형이 그 팀 쪽을 가리키며 천천히 오간다. 수가 넘어갈 때마다
-  화면 가운데로 **차례 배너**(`내 차례 밴` / `상대 차례 픽` …)가 지나간다.
-- **상대는 만지작거린다** — 고를 만한 후보 0~2대를 0.3~0.8초씩 집어 보았다가
-  (칸 테두리 + 상대 팀 다음 칸 미리보기) 한 대를 확정한다. 자세한 것은
+- **Mech slots are twice as tall as pilot slots** (`MECH_H_RATIO`) — pilots are an eye-level band
+  (2.4:1) and therefore flat, mechs are square portraits, so at the same width the mech must take
+  double the height for each image to sit at its own ratio.
+- Thanks to the **mirrored layout**, pilot faces always come on the inside (battlefield side) and
+  mechs on the outside.
+- **The screen uses the outgame white-background family** (`OutgameTheme`) — the background is a
+  pale grey and only the pick pane is a single shadowed white card, so one board separates "this is
+  where you choose" from "this is both teams' situation". It used to be a dark board.
+- **A grid cell is just a square portrait + one name line below.** A role-class badge (a rounded
+  rectangle filled with the role colour + two white letters `Tk/As/Fi/Sn/Su`) sits at top left.
+  Each cell used to carry two more lines, `HP · ATK · 존재감` (presence) and the passive name, but
+  on a screen for scanning twenty-one mechs, making people read five lines per cell defeats
+  **recognising by picture** — numbers and passive descriptions are carried entirely by the bottom
+  sheet opened with one tap.
+- Portraits are **pre-baked 256² square cuts** from `MechImages.portrait_for()`.
+  The old "shrink and bake full-body art to grid size at runtime" (`_bake_thumbs` / `THUMB_PX`) was
+  deleted.
+- **The order of the five slots is `GameEnums.ROLE_DISPLAY_ORDER`** (Top · Jungle · Mid · ADC ·
+  Support). That's why pilot portraits carry no name tag or role tag — the seat is the role, and the
+  in-game strip (스트립) stands in the same order.
+- **The progress row (14 chips) sits at the very top of the pick pane, right above the role-class
+  filter** (formerly at the very top of the screen). The chips are now thicker and hold ban ✕ /
+  pick ✓ icons (SVG), and below them (my turn) or above them (opponent's turn) a triangle points
+  toward that team, slowly bobbing. Each time a move passes, a **turn banner** (`내 차례 밴` (My ban)
+  / `상대 차례 픽` (Opponent's pick) …) sweeps across the screen centre.
+- **The opponent fidgets** — it picks up 0–2 plausible candidates for 0.3–0.8 s each (cell border +
+  preview in the opponent team's next slot) before committing to one. Details in
   `ban_pick/README.md`.
 
-조작은 그대로 **1탭 = 선택(하단 시트 열기), 같은 메크 2탭 = 확정**이고, 시트는
-내 차례가 아닐 때도 열린다(확정 버튼만 잠긴다).
+Controls are still **1 tap = select (opens the bottom sheet), 2nd tap on the same mech = commit**,
+and the sheet opens even when it is not my turn (only the commit button is locked).
 
 ---
 
-## 배정 (밴픽 화면 안에서)
+## Assignment (inside the ban/pick screen)
 
-**아군 메크 칸은 밴픽 중에도 끌어 옮길 수 있다.** 칸의 내용은 픽 순서가 아니라
-자리표(`_seat_mechs[side]`, 자리 → mech_id, -1 = 빈 자리)이고, 새 픽은 왼쪽부터
-첫 빈 자리에 앉는다. 칸을 다른 자리에 놓으면 찬 자리는 맞바꿈, 빈 자리는 이동이다
-— 밴픽 중에는 눈높이 초상화 바로 밑의 메크 칸이 곧 "이 선수의 기체"다. 탭은
-그 기체의 하단 시트를 연다(이미 가져간 기체라 확정은 잠겨 있다).
+**Ally mech slots can be dragged around even during ban/pick.** A slot's content is not pick order
+but a seat table (`_seat_mechs[side]`, seat → mech_id, -1 = empty seat), and a new pick sits in the
+first empty seat from the left. Dropping a slot on another seat swaps if occupied, moves if empty —
+during ban/pick, the mech slot right under the eye-level portrait is "this player's machine". A tap
+opens that machine's bottom sheet (it's already taken, so commit is locked).
 
-14수가 끝나면 **화면을 갈아타지 않는다** — `_enter_assign_mode()` 가 픽창(탭 +
-격자 + 배경판 + 순서 줄)을 걷어 내고, 하단 구간에 **"게임 시작" 바**
-(`OutgameTheme.add_bottom_bar`)를 세운 뒤, 아군 블록을 다시 세운다:
+When the 14 moves are done, **the screen is not switched** — `_enter_assign_mode()` removes the pick
+pane (tabs + grid + backing board + order row), stands a **"게임 시작" (Start game) bar**
+(`OutgameTheme.add_bottom_bar`) in the bottom section, then rebuilds the ally block:
 
 ```
-파일럿 상체 일러스트 5인  (`PilotImages.bust_for` — 드래프트 화면의 선택 칸과
-                          같은 크롭 · 같은 비율)
-메크 칸 5개               (끌 수 있음, 밴픽 중에 옮겨 둔 자리 그대로)
-"드래그 드롭으로 메크-파일럿 지정 변경"   (메크 줄 오른쪽 아래, 17pt)
-밴 칩 2개
+5 pilot upper-body illustrations  (`PilotImages.bust_for` — same crop · same ratio as the
+                                   draft screen's picked slots)
+5 mech slots                      (draggable, in the seats arranged during ban/pick)
+"드래그 드롭으로 메크-파일럿 지정 변경"   (bottom right of the mech row, 17pt)
+2 ban chips
 ```
 
-**파일럿이 위, 메크가 아래다.** 배정은 "이 사람이 무엇을 타는가"를 정하는
-일이고, 그 문장의 주어가 위에 와야 한 칸을 세로로 훑는 것이 곧 한 문장이 된다.
-예전에는 메크가 위였다 — 끄는 손가락이 그 밑의 "어느 파일럿 자리인가"를 가리지
-않게 하려는 배치였는데, 그러면 목적어가 주어보다 먼저 와서 다섯 칸이 무엇을
-정하는 화면인지가 뒤집혀 읽혔다. 초상화가 상체 일러스트로 커진 지금은 손가락이
-덮을 수 있는 넓이보다 칸이 훨씬 커서 그 걱정 자체가 없다.
+("드래그 드롭으로 메크-파일럿 지정 변경" = "Drag and drop to change mech–pilot assignment".)
 
-초상화 높이는 폭에서 유도한다 — `portrait_w / PilotImages.BUST_ASPECT`
-(`_lay["assign_portrait_h"]`). 예전의 정사각 `faces` 크롭은 삭제됐다. 어느
-크롭을 쓸지는 **칸 비율이 정한다**(`_build_pilot_portrait`): 가로로 납작하면
-눈높이 밴드(밴픽 단계), 세로로 길면 상체 일러스트(배정 단계).
+**Pilots on top, mechs below.** Assignment decides "what does this person ride", and the subject of
+that sentence must be on top so scanning one slot vertically reads as one sentence. Mechs used to be
+on top — a layout meant to keep the dragging finger from hiding "which pilot seat" below it — but
+then the object came before the subject and what the five slots decide read backwards. Now that
+portraits have grown into upper-body illustrations, the slots are much larger than a finger can
+cover, so that concern is gone.
 
-메크 칸을 **끌어다 다른 칸에 놓으면 둘이 맞바뀐다**(`_swap_assign`). 드롭했을
-때만 바뀌고, `DRAG_THRESHOLD_PX`(8px)를 못 넘긴 것은 **탭**이라 그 칸의 메크
-상세를 연다. 끄는 동안 원래 칸은 자국으로 남고(α 0.35) 커서 밑의 칸은 테두리가
-금색으로 굵어진다. 입력은 칸마다 붙은 `gui_input` 하나가 받는다 — 누른 컨트롤이
-마우스 포커스를 유지하므로 커서가 칸 밖으로 나가도 motion / release 가 계속
-들어온다.
+Portrait height is derived from width — `portrait_w / PilotImages.BUST_ASPECT`
+(`_lay["assign_portrait_h"]`). The old square `faces` crop was deleted. Which crop to use **is
+decided by the slot ratio** (`_build_pilot_portrait`): flat and wide → eye-level band (ban/pick
+step), tall → upper-body illustration (assignment step).
 
-**진입 연출**(`_play_assign_intro`) — 두 팀 블록이 비워진 픽창 자리로 **화면
-가운데(하단 바 위 본문의 세로 가운데)에 모이고**(`GATHER_SEC`, `_lay["gather_*_y"]`),
-이어서 **상대 메크 칸이 포지션에 맞는 선수 자리로 옮겨 앉는다**
-(`_enemy_role_order` → `_play_enemy_reassign`). 상대 배정은 자리마다 그 선수의
-역할과 같은 역할군의 기체를 앉히고, 맞는 기체가 없는 자리는 남은 기체로 픽 순서대로
-채운다 — 예전의 무작위 섞기는 삭제됐다. 옮겨 앉는 연출은 칸 노드를 실제로 미끄러뜨린
-뒤 제자리로 되돌리고 자리표를 바꿔 끼운다(칸 노드가 언제나 자기 자리에 있다는 전제를
-탭 버튼과 갱신이 쓴다). **연출이 끝날 때까지 "게임 시작"은 잠겨 있다** — 재배치 전에
-넘어가면 본 배정과 실제 배정이 갈린다. 상대 블록은 다시 세우지 않는다(밴픽 내내 서
-있던 그림이 그대로 남아야 "저쪽이 무엇을 골랐나"를 두 번 읽지 않는다).
+**Dragging a mech slot onto another slot swaps the two** (`_swap_assign`). It changes only on drop;
+anything that doesn't cross `DRAG_THRESHOLD_PX` (8px) is a **tap** and opens that slot's mech
+detail. While dragging, the original slot stays as a ghost (α 0.35) and the slot under the cursor
+gets a thick gold border. Input is received by one `gui_input` attached to each slot — the pressed
+control keeps mouse focus, so motion / release keep coming even when the cursor leaves the slot.
 
-### 배정 단계의 상세 팝업 (양 팀 전부 눌린다)
-- **파일럿 초상화** → `DraftDetailPanel`(드래프트 화면과 같은 팝업)
-- **메크 초상화** → `MechDetailPanel`
+**Entry animation** (`_play_assign_intro`) — the two team blocks **gather at the screen centre (the
+vertical centre of the body above the bottom bar)** into the vacated pick pane area (`GATHER_SEC`,
+`_lay["gather_*_y"]`), then **the opponent's mech slots move over to the player seats matching their
+positions** (`_enemy_role_order` → `_play_enemy_reassign`). The opponent's assignment seats, at each
+seat, a machine of the same role class as that player's role, and seats with no matching machine are
+filled with the remaining ones in pick order — the old random shuffle was deleted. The move animation
+actually slides the slot nodes, then puts them back and swaps the seat table (tap buttons and refresh
+rely on the premise that a slot node is always at its own seat). **"게임 시작" stays locked until the
+animation ends** — moving on before the reassignment would make the seen assignment and the actual
+one diverge. The opponent block is not rebuilt (the picture that stood throughout ban/pick must stay
+as is so "what did they pick" doesn't have to be read twice).
 
-배정은 스탯을 보고 하는 일인데 그 스탯을 볼 자리가 없으면 픽 순서 그대로 두는
-것 말고 할 수 있는 것이 없다. **인게임 상세 패널과는 다르다** — 인게임 탭
-(체력 · 공격력 · 지속 효과)이 없고, 파일럿과 메크를 한 화면에 겹치지도 않는다:
-아직 경기가 시작되지 않아 인게임 상태라는 것이 존재하지 않고, 지금 묻는 질문은
-"이 사람" 또는 "이 기체" 한 쪽이다. 두 팝업은 동시에 뜨지 않는다
-(`_close_detail_panels`) — 딤이 두 겹 쌓이면 뒤엣것이 앞엣것을 어둡게 덮는다.
+### Detail popups in the assignment step (both teams are tappable)
+- **Pilot portrait** → `DraftDetailPanel` (the same popup as the draft screen)
+- **Mech portrait** → `MechDetailPanel`
 
-탭 배선은 칸마다 얹은 **투명 Button** 이고 배정에 들어갈 때만 켜진다
-(`_set_block_tappable`). **아군 메크 칸만은 예외**로 그 버튼을 켜지 않는다 —
-그쪽 탭은 드래그 배선(`_on_slot_input`)이 함께 받으므로, 버튼을 켜면 그 버튼이
-press 를 가져가 드래그가 영영 시작되지 않는다.
+Assignment is done by looking at stats, and without a place to see them there's nothing to do but
+leave pick order as is. **It differs from the in-game detail panel** — no in-game tabs
+(HP (체력) · attack · lasting effects), and pilot and mech are not overlaid on one screen: the match
+hasn't started, so in-game state doesn't exist yet, and the question being asked is one side only,
+"this person" or "this machine". The two popups never show at once
+(`_close_detail_panels`) — two stacked dims make the rear one darken over the front one.
 
-"게임 시작"이 `_finish()` 를 부르고, 거기서 **양 팀 모두** 자리(seat) → 역할 변환
-(`ROLE_DISPLAY_ORDER` 한 겹, `_write_assignment`)을 거쳐 `PlayerData.assigned_mech` 를 채운 뒤
-`phase_finished` 로 로스터를 그대로 넘긴다. **로스터 배열 자체는 역할 0..4 순서를
-지킨다** — `MatchFlow._roster_mech_ids` 의 재개 스냅샷이 그 순서를 전제한다.
-팝업 둘도 여기서 닫는다 — `CanvasLayer` 라 `_panel` 을 지워도 따라 사라지지
-않아, 열어 둔 채 넘어가면 딤이 BattleSim 위에 그대로 남는다.
+Tap wiring is a **transparent Button** laid over each slot, enabled only on entering assignment
+(`_set_block_tappable`). **Ally mech slots alone are the exception** and don't enable that button —
+their taps are also received by the drag wiring (`_on_slot_input`), so enabling the button would let
+it take the press and the drag would never start.
+
+"게임 시작" calls `_finish()`, where for **both teams** the seat → role conversion
+(one layer of `ROLE_DISPLAY_ORDER`, `_write_assignment`) fills `PlayerData.assigned_mech`, then the
+rosters are passed as-is via `phase_finished`. **The roster array itself keeps role 0..4 order** —
+`MatchFlow._roster_mech_ids`'s resume snapshot assumes that order.
+Both popups are also closed here — they're `CanvasLayer`s, so freeing `_panel` doesn't take them
+along, and moving on with one open leaves its dim on top of BattleSim.
 
 Each controller accesses the orchestrator via:
 ```gdscript
@@ -193,32 +198,32 @@ GameManager.match_ctx = {
 	"player_side":   int (BLUE|RED),
 	"banned_mech_ids": Array[int],
 	"all_mechs":      Array[MechData],
-	"enemy_misjudge_chance": float,       # 오브젝트 오판 확률 (5%..60%)
+	"enemy_misjudge_chance": float,       # objective misjudge chance (OBJ_MISJUDGE_MIN..OBJ_MISJUDGE_MAX)
 }
 ```
 
-`enemy_misjudge_chance` 는 `_launch_battle()` 이 `_misjudge_chance_for(enemy_team_id)`
-로 매긴다 — 상대의 리그 순위 1위 5% → 꼴찌 60% 선형(동률은 팀 평균 스탯,
-국제대회 외부 팀은 5%, 시즌 밖은 32.5%). 재개 경로도 `_launch_battle()` 을
-지나므로 따로 저장하지 않는다. 읽는 곳은 `objective/ObjectiveSystem._ai_wants_to_join`.
+`enemy_misjudge_chance` is set by `_launch_battle()` via `_misjudge_chance_for(enemy_team_id)` —
+linear from the opponent's league rank 1st `OBJ_MISJUDGE_MIN` → last `OBJ_MISJUDGE_MAX` (const.csv; ties broken by team average stats,
+international tournament (국제대회) external teams `OBJ_MISJUDGE_MIN`, outside a season the midpoint of the two). The resume path also
+goes through `_launch_battle()`, so it isn't saved separately. It is read by
+`objective/ObjectiveSystem._ai_wants_to_join`.
 
 `BattleSim.gd` reads `match_ctx.active` to decide whether to inject mech stats
 into pilots; otherwise it falls back to `ROLE_STATS` defaults.
 
-### 진영 (`player_side`) — 지금은 항상 BLUE
-`player_side` 는 밴픽 순서와 인게임 선을 **동시에** 정하는 한 값이다:
+### Side (`player_side`) — currently always BLUE
+`player_side` is one value that decides ban/pick order and in-game priority **at the same time**:
 
-| 진영 | 밴픽 | 인게임 |
+| Side | Ban/pick | In-game |
 |---|---|---|
-| RED  | 선밴 / 선픽 | — |
-| BLUE | 후밴 / 후픽 | 전략 포인트 `BLUE_COST_HEAD_START` 선점 + 같은 점수일 때 선턴 |
+| RED  | First ban / first pick | — |
+| BLUE | Second ban / second pick | Strategy points `BLUE_COST_HEAD_START` head start + first turn on equal score |
 
-`_ready()` 의 fresh-entry 경로는 예전에 매 경기 이 값을 랜덤으로 뽑았지만,
-지금은 **플레이어를 항상 `DraftSide.BLUE` 로 고정**한다 — 두 축(밴픽 이득 /
-인게임 이득)이 균형을 갖출 때까지 한쪽으로 못 박아 둔 것이다. 되살릴 때는 그 한
-줄만 되돌리면 되고, 아래 흐름과 `BattleSim.seed_side_costs()` 는 이미
-`match_ctx.player_side` 를 그대로 읽어 진영을 판정한다. 재개(resume) 경로는
-저장된 `player_side` 를 그대로 복원하므로 이 고정과 무관하다.
+The fresh-entry path of `_ready()` used to draw this value at random every match, but it now **always
+fixes the player to `DraftSide.BLUE`** — pinned to one side until the two axes (ban/pick advantage /
+in-game advantage) are balanced. To revive it, revert just that one line; the flow below and
+`BattleSim.seed_side_costs()` already read `match_ctx.player_side` directly to decide the side. The
+resume path restores the saved `player_side` as is, so it is unaffected by this pin.
 
 ---
 
@@ -236,8 +241,27 @@ into pilots; otherwise it falls back to `ROLE_STATS` defaults.
 |---|---|
 | `MatchFlow.gd` | State machine orchestrator |
 | `match_prep/MatchPrepController.gd` | Pre-match dashboard |
-| `ban_pick/BanPickController.gd` | Ban/Pick + 메크 배정 — 양 팀 초상화 + 메크 격자 + 하단 상세 시트 + 드래그 배정 |
-| `ban_pick/MechDetailPanel.gd` | 배정 단계의 메크 상세 팝업 |
+| `ban_pick/BanPickController.gd` | Ban/Pick + mech assignment — both teams' portraits + mech grid + bottom detail sheet + drag assignment |
+| `ban_pick/MechDetailPanel.gd` | Mech detail popup for the assignment step |
+| `MatchCheatMenu.gd` | Editor-only cheat menu (top left) — see "Cheat menu" below |
+
+---
+
+## Cheat menu (editor runs only)
+For run testing. `MatchFlow._setup_cheats()` creates a `MatchCheatMenu` (`CanvasLayer`, layer 50 —
+above the detail popups, below `SceneFade`) **only when `OS.has_feature("editor")` and the match came
+from a season (`pending_match` exists)** — exported builds and standalone MatchFlow never see it.
+
+- A `CHEAT` button sits at the top left of the safe area; tapping it unfolds the cheat buttons below.
+- The menu doesn't know what to offer — `MatchFlow._refresh_cheats()` swaps the list on every
+  `_enter_phase` (`set_actions([{label, call}])`; an empty list hides the menu). Add cheats for
+  other phases there.
+- **PREP · BAN_PICK**: `즉시 승리 (MVP 아군 탑)` (Instant win) / `즉시 패배 (MVP 상대 탑)` (Instant loss)
+  → `_cheat_finish(winner_side)` writes `pending_match` in the same shape as `BattleSim.end_match`
+  (`winner_side`, `pilot_stats` = ten all-zero rows, `mvp_pilot_id` = the winning team's top via
+  `RunStats.top_role()`), clears `match_resume`, and fades to `Season.tscn` — SeasonHub settles it
+  through the normal post-match path (RunStats, standings / bracket, post-match autosave).
+- One press locks the menu (the list is cleared) so a double tap can't fire during the fade.
 
 ---
 
@@ -249,12 +273,12 @@ two live in `SeasonHub`):
   presses "경기 시작" on the PREP dashboard. Writes
   `season_state.match_resume = {phase: BAN_PICK, player_side, ...empty
   arrays}`. Skipped when running MatchFlow standalone (no `pending_match`).
-- **Post-ban-pick** — fires in `_on_ban_pick_finished()` right after 배정
-  완료, before `_launch_battle` scene-changes to BattleSim. 예전에는 정글
-  방향까지 여기 들어와 이 저장이 `_on_jungle_finished()` 에 있었지만, 그 선택이
-  BattleSim 으로 옮겨 가면서 저장 시점이 한 단계 앞으로 당겨졌다 — 재개는
-  어차피 전투를 처음부터 다시 돌리므로 정글 방향도 그때 다시 묻는다
-  (스냅샷의 `jungle_start_dir` 은 상대 정글러와 폴백을 위한 기본값 LEFT 다).
+- **Post-ban-pick** — fires in `_on_ban_pick_finished()` right after assignment
+  completes, before `_launch_battle` scene-changes to BattleSim. The jungle direction used
+  to come in here too and this save lived in `_on_jungle_finished()`, but once that choice moved
+  to BattleSim the save point was pulled one step earlier — resume replays the battle from scratch
+  anyway, so the jungle direction is asked again then
+  (the snapshot's `jungle_start_dir` is the default LEFT, for the opponent jungler and fallback).
   Writes the full match snapshot:
   `{phase: LAUNCH, player_side, banned_mech_ids, player_picked_mech_ids,
   enemy_picked_mech_ids, player_assigned_mech_ids, enemy_assigned_mech_ids,
@@ -268,8 +292,8 @@ player already committed when the save was written) and:
 - `phase == LAUNCH` → `_resume_at_launch(resume)` rebuilds `match_ctx`
   from the resume payload (rosters via `_team_roster()`, mechs via
   `_find_mech()`) and scene-changes to BattleSim immediately. No UI
-  controllers run — 정글 시작 화면은 BattleSim 이 열므로 재개해도 그 한
-  물음은 다시 나온다.
+  controllers run — the jungle start screen is opened by BattleSim, so that one question
+  comes up again even on resume.
 
 `match_resume` is cleared in-memory on consumption; on disk it's only
 overwritten by the next post-ban-pick or post-week save. Closing mid-battle
@@ -278,30 +302,29 @@ replays the battle from scratch with the same locked-in picks.
 
 ---
 
-## 화면 대응 (세이프 에어리어)
+## Screen fit (safe area)
 
-두 컨트롤러(PREP / BAN_PICK)는 모두 `_mf.canvas` 아래에
-전체 화면 `Panel` 하나를 세우고 거기에 절대 좌표로 그린다. `_panel` 을 만든
-직후 두 줄이 따라온다.
+Both controllers (PREP / BAN_PICK) stand one full-screen `Panel` under `_mf.canvas` and draw on it in
+absolute coordinates. Right after creating `_panel`, two lines follow.
 
 ```gdscript
 _mf.canvas.add_child(_panel)
-ScreenMetrics.indent_to_safe_top(_panel)          # 판째 노치 밑으로
-ScreenMetrics.backfill_top(_panel, <판 배경색>)   # 비워진 위쪽 띠를 메운다
+ScreenMetrics.indent_to_safe_top(_panel)          # push the whole panel below the notch
+ScreenMetrics.backfill_top(_panel, <panel background colour>)   # fill the vacated top strip
 ```
 
-배경이 **판 자신의 StyleBox** 라 판을 위로 늘릴 수 없다(늘리면 안쪽 좌표계가
-같이 움직여 내용이 도로 노치 밑으로 들어간다). 그래서 시즌 뷰의
-`extend_background()` 대신 띠 한 장을 판의 **첫 자식**으로 까는
-`backfill_top()` 을 쓴다.
+The background is **the panel's own StyleBox**, so the panel can't be stretched upward (stretching
+moves the inner coordinate system too, putting the content back under the notch). So instead of the
+season views' `extend_background()`, it uses `backfill_top()`, which lays one strip as the panel's
+**first child**.
 
-내려간 판 안에서 하단 버튼은 `ScreenMetrics.safe_h()` 기준이다 —
-`MatchPrepController` 는 `safe_h() - 70 - h`. `BanPickController` 는 버튼이 아니라
-**블록 전체**를 `safe_h()` 에서 역산한다(`_lay["bot_block_y"]` /
-`_lay["assign_block_y"]`), 그리고 픽창 높이는 위아래 블록이 먹고 남은 띠에서
-나온다 — 그래서 어느 화면에서나 격자 칸은 정사각으로 남고 보이는 줄 수만 바뀐다.
+Inside the pushed-down panel, bottom buttons are based on `ScreenMetrics.safe_h()` —
+`MatchPrepController` uses `safe_h() - 70 - h`. `BanPickController` derives **the whole block**, not
+a button, back from `safe_h()` (`_lay["bot_block_y"]` / `_lay["assign_block_y"]`), and the pick pane
+height comes from the strip left after the top and bottom blocks — so on any screen the grid cells
+stay square and only the number of visible rows changes.
 
-자세한 내용: **`docs/mobile_safe_area.md`**
+Details: **`docs/mobile_safe_area.md`**
 
 
 ## Detail moved from root CLAUDE.md
@@ -309,8 +332,8 @@ ScreenMetrics.backfill_top(_panel, <판 배경색>)   # 비워진 위쪽 띠를 
 ### Match Flow → Battle Sim handoff
 `MatchFlow` populates `GameManager.match_ctx` (player_roster, enemy_roster,
 jungle_start_dir, banned_mech_ids, …) then changes scene to BattleSim **behind
-the fake loading cover** — `SceneFade.change_scene` (암전 0.30초 → `LOADING` 막대
-0.50초 → 밝아짐 0.35초, the same transition as the draft's "게임 시작"). The
+the fake loading cover** — `SceneFade.change_scene` (fade to black 0.30 s → `LOADING` bar
+0.50 s → fade in 0.35 s, the same transition as the draft's "게임 시작" (Start game)). The
 cover is a `CanvasLayer` on the tree root so it survives the scene swap, and
 BattleSim's heavy `_ready` runs behind it. Resume-at-LAUNCH goes through the
 same `_launch_battle`, so it fades too.

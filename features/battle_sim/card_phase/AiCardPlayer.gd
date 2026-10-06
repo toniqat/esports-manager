@@ -39,11 +39,12 @@ const DESC_EXTRA_HOLD_SEC := 0.45
 # 한 차례에 AI 가 낼 수 있는 최대 카드 수.
 #
 # 루프의 종료 조건은 "낼 수 있는 카드가 없을 때"인데, 비용을 쓰지 않으면서
-# 손패를 회전시키는 카드가 그 조건을 영원히 미룰 수 있다 — 재고(비용 0, 손패를
+# 손패를 회전시키는 카드가 그 조건을 영원히 미룰 수 있다 — 재고(비용 없이 손패를
 # 전부 버리고 같은 수를 다시 뽑는다)가 대표적으로, 덱 + discard 가 마르기
 # 전까지 무한히 다시 뽑힌다. 이 상한은 그 구조적 루프를 끊는 백스톱이지
 # 밸런스 노브가 아니다 — 정상적인 손패라면 절대 닿지 않는다.
-const MAX_PLAYS_PER_TURN := 12
+# 값은 data/csv/const.csv — ConstTable 로 읽는다.
+static var MAX_PLAYS_PER_TURN: int = ConstTable.int_of("AI_CARD_MAX_PLAYS_PER_TURN")
 
 # ─── 우선순위 점수제 ─────────────────────────────────────────────────────────
 # AI 는 이제 낼 수 있는 카드 중 **무작위**가 아니라 **점수가 가장 높은** 한 장을
@@ -89,19 +90,20 @@ const CLAUSE_WEIGHT: Dictionary = {
 	"ambush": 0.8,
 	"retreat_turret": 0.7,
 }
+## 아래 값들은 data/csv/const.csv — ConstTable 로 읽는다.
 ## 표에 없는 절의 기본 점수. 0 이 아니라 낮은 양수인 것은 "모르는 카드"가
 ## 아예 안 나가는 것보다 마지막에라도 나가는 쪽이 낫기 때문이다.
-const CLAUSE_WEIGHT_DEFAULT: float = 0.5
+static var CLAUSE_WEIGHT_DEFAULT: float = ConstTable.num("AI_CARD_CLAUSE_WEIGHT_DEFAULT")
 ## 비용 한 점당 깎이는 점수. 싼 카드를 먼저 내면 한 차례에 더 많은 카드가 나간다.
-const COST_PENALTY: float = 0.15
+static var COST_PENALTY: float = ConstTable.num("AI_CARD_COST_PENALTY")
 ## 동점을 가르는 흔들림. 없으면 같은 손패가 매번 같은 순서로 나가 상대 차례가
 ## 기계적으로 읽힌다.
-const JITTER: float = 0.4
+static var JITTER: float = ConstTable.num("AI_CARD_JITTER")
 ## 회복 · 보호막이 제값을 하는 아군 체력 비율. 이 위면 후순위로 밀린다.
-const SUPPORT_HP_RATIO: float = 0.70
+static var SUPPORT_HP_RATIO: float = ConstTable.num("AI_CARD_SUPPORT_HP_RATIO")
 ## 그 후순위의 크기. 낮추기만 하고 막지는 않는다 — 만피에 거는 보호막도
 ## 무의미하지는 않고, 손에 그것밖에 없을 수도 있다.
-const SUPPORT_IDLE_PENALTY: float = 2.5
+static var SUPPORT_IDLE_PENALTY: float = ConstTable.num("AI_CARD_SUPPORT_IDLE_PENALTY")
 
 var _bs: BattleSim = null
 

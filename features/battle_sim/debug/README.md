@@ -38,8 +38,8 @@ which pass of the tick produced it:
 | `4-damage` | damage/turret application, deaths |
 | `5-move` | `resolve_movement` — free moves *and* pushes, `kind` says which |
 | `6-hq` | HQ chip damage |
-| `7-zones` | neutral capture + 약탈 expiry |
-| `card-phase` / `phase-end` / `card-adv` | 작전 단계 entry, exit, 전진 card |
+| `7-zones` | neutral capture + 약탈 (plunder) expiry |
+| `card-phase` / `phase-end` / `card-adv` | operation phase (작전 단계) entry, exit, 전진 (Advance) card |
 
 Categories: `TURN SNAP CELL FIGHT SETS MOVE BLOCK DMG DEATH TURRET HQ ZONE
 CARD PHASE ENGAGE !!SWAP !!CROSS`.
@@ -83,7 +83,7 @@ vacated, so the pair traded places without engaging. Two `!!SWAP`s in a
 the single lockstep pass `resolve_movement`; zero reports in 241 turns
 afterwards.
 
-**2 — 밀어내도 라인이 밀리지 않던 문제** *(fixed)*. Not a cross-detector hit —
+**2 — winning a push did not push the line** *(fixed)*. Not a cross-detector hit —
 this one is only visible by reading `MOVE` lines side by side, which is exactly
 what the per-stage log is for. A push looks like this, and it is **correct**:
 
@@ -105,8 +105,10 @@ cannot retreat (`_veto_advance_over_stuck_enemy`), and reads
 [T0006][5-move][BLOCK] T1  @(-4, -2) halted — push-advance held — T0 가 (-4, -2) 에서 밀려나지 못했다
 ```
 
+(Log text: "T0 could not be pushed out of (-4, -2)".)
+
 A push that stops because the tile ahead is an enemy turret logs the siege
-bounce instead (`공성 — … 적 포탑 칸에 진입 후 한 칸 후퇴`).
+bounce instead (`공성 — … 적 포탑 칸에 진입 후 한 칸 후퇴` — "siege — … entered the enemy turret cell, then fell back one cell").
 
 Details for both in [`../combat/README.md`](../combat/README.md) → "Movement".
 
@@ -117,4 +119,4 @@ Details for both in [`../combat/README.md`](../combat/README.md) → "Movement".
 
 | System | Description |
 |---|---|
-| 전투 행동 로그 | `debug/BattleLogger.gd` (`_bs.blog`). 매 턴 전/후 위치 스냅샷 + 리스폰·리콜·교전·데미지·사망·자유이동(스텝 단위)·푸시·포탑·HQ·정글·카드까지 콘솔과 `user://battle_logs/battle_<timestamp>.log` 양쪽에 기록. 턴 종료 시 같은 스코프의 적끼리 자리를 맞바꾸면 `!!SWAP` / `!!CROSS` 로 표시하고 두 파일럿의 이동 이력을 되짚어 준다. 기본 ON — `blog.enabled` 로 끈다. |
+| Battle action log | `debug/BattleLogger.gd` (`_bs.blog`). Every turn: before/after position snapshots + respawn · recall · engage · damage · death · free movement (per step) · push · turret · HQ · jungle · cards, written to both the console and `user://battle_logs/battle_<timestamp>.log`. At turn end, if two same-scope enemies traded places it flags `!!SWAP` / `!!CROSS` and replays both pilots' move history. ON by default — turn off with `blog.enabled`. |

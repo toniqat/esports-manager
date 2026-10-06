@@ -21,10 +21,10 @@ extends Resource
 # | `atk_growth` 공격력 성장 계수 | `BattleSim.refresh_growth_stats` |
 # | `hp_growth`  체력 성장 계수   | `BattleSim.refresh_growth_stats` |
 #
-# 명중 넷은 **비율**로 읽힌다 — `hit/(hit+eva)` 를 80~100% 구간에 리맵하므로
+# 명중 넷은 **비율**로 읽힌다 — `hit/(hit+eva)` 를 [`PILOT_HIT_MIN`, `PILOT_HIT_MAX`] 구간에 리맵하므로
 # (`PilotData.hit_chance`) 절대값이 아니라 상대 파일럿과의 비가 확률을 정한다.
-# 성장 계수 둘은 `GROWTH_STAT_BASE`(50)를 1.0 으로 보는 **배율**이다 — 100 이면
-# 성장이 두 배, 25 면 절반.
+# 성장 계수 둘은 `GROWTH_STAT_BASE` 를 1.0 으로 보는 **배율**이다 — 그 두 배면
+# 성장이 두 배, 절반이면 절반.
 @export var field_hit: int   = 50
 @export var field_eva: int   = 50
 @export var engage_hit: int  = 50
@@ -49,23 +49,24 @@ const STAT_NOTES: Array = [
 	"전장에서 맞을 확률을 낮춘다. 상대 전장 명중과의 비가 확률을 정한다.",
 	"교전 무대에서만 읽는 명중. 전장 명중과 따로 산다.",
 	"교전 무대에서만 읽는 회피. 전장 회피와 따로 산다.",
-	"성장치가 공격력으로 바뀌는 기울기. 50 이 기준(×1.0)이고 상한이 없다.",
-	"성장치가 최대 체력으로 바뀌는 기울기. 50 이 기준(×1.0)이고 상한이 없다.",
+	"성장치가 공격력으로 바뀌는 기울기. 기준치에서 ×1.0 이고 상한이 없다.",
+	"성장치가 최대 체력으로 바뀌는 기울기. 기준치에서 ×1.0 이고 상한이 없다.",
 ]
 
 ## 성장 계수 배율의 기준점 — 이 값에서 배율이 정확히 1.0 이 되고, 그 1.0 이
 ## 지금의 밸런스(`BattleSim.GROWTH_ATK_PER_SCORE` 그대로)다.
 ##
-## **50 이 아니라 80 인 것은 실측에서 나온 값이다** — `players.csv` 40명의
-## 성장 계수 평균이 78.2 / 75.5 이고 네임드만 보면 85 다(스탯 1~100 의 한가운데가
-## 아니라 위쪽에 몰려 있는 표다). 기준을 50 으로 두면 개시부터 전원이 ×1.56 으로
-## 자라 "성장 계수를 도입했더니 아무도 안 건드린 밸런스가 56% 밀렸다"가 된다.
-## 80 이면 평균이 ×0.98, 모브가 ×0.83, 최상위가 ×1.13 이라 계수가 **차이를
-## 만들되 기준선을 옮기지는 않는다**. 훈련으로 100 을 넘기면 그때부터 ×1.25 이상.
-const GROWTH_STAT_BASE: float = 80.0
+## **스탯 범위의 한가운데가 아니라 실측에서 나온 값이다** — `players.csv` 선수들의
+## 성장 계수 평균에 맞췄다(표가 스탯 범위의 한가운데가 아니라 위쪽에 몰려 있다).
+## 기준을 범위 중앙에 두면 개시부터 전원이 기준보다 빨리 자라 "성장 계수를
+## 도입했더니 아무도 안 건드린 밸런스가 밀렸다"가 된다. 평균 근처에 두면 평균이
+## 거의 ×1.0, 모브는 그 아래, 최상위는 그 위라 계수가 **차이를 만들되 기준선을
+## 옮기지는 않는다**. 훈련으로 스탯을 더 올리면 그만큼 배율이 오른다.
+## 값은 data/csv/const.csv — ConstTable 로 읽는다.
+static var GROWTH_STAT_BASE: float = ConstTable.num("PLAYER_GROWTH_STAT_BASE")
 
-## 스탯 하한. 상한은 **없다** — 훈련으로 100 을 넘겨 계속 자란다.
-const STAT_MIN: int = 1
+## 스탯 하한. 상한은 **없다** — 훈련으로 계속 자란다.
+static var STAT_MIN: int = ConstTable.int_of("PLAYER_STAT_MIN")
 
 # ─── 파일럿 스킬 / 모브 ───────────────────────────────────────────────────────
 # 이 선수의 고유 파일럿 스킬 id(`pilot_skills.id`), -1 = 없음. 스킬은 라인에
@@ -78,6 +79,16 @@ const STAT_MIN: int = 1
 # 3장이 이 선수의 파일럿 카드로 덱에 들어간다. 비어 있으면
 # `GameManager.pilot_card_ids_for` 가 선수 id 를 씨앗 삼아 결정적으로 채운다.
 @export var pilot_cards: Array = []
+
+# ─── 런 준비 (샐러리캡 · 레벨) ────────────────────────────────────────────────
+# `salary` 는 **Lv1 기준** 샐러리(`players.salary`). 레벨 가산은 `RunRules` 가
+# `pilot_levels.csv` 에서 더한다 — 레벨이 반영된 샐러리는 `RunRules.salary_of(pd)`.
+@export var salary: int = 0
+# 등급(자리표시, `players.rarity`). 가챠 등급 표는 M10.
+@export var rarity: int = 0
+# 이 런에서 쓰는 선수 레벨(1..10). 런 시작 때 `RunRules.apply_level` 이 스탯에
+# 가산을 **이미 얹은 뒤** 이 값을 적는다 — 스탯 필드는 언제나 레벨 반영 후 값이다.
+@export var level: int = 1
 
 # Set during the assign phase: which mech this player is piloting this match.
 var assigned_mech: MechData = null
@@ -114,6 +125,6 @@ func stat_avg() -> float:
 	return float(stat_total()) / float(STAT_KEYS.size())
 
 
-## 성장 계수 하나를 배율로. 50 → 1.0, 100 → 2.0, 25 → 0.5.
+## 성장 계수 하나를 배율로. `GROWTH_STAT_BASE` → 1.0, 그 두 배 → 2.0.
 static func growth_mult(stat_value: int) -> float:
 	return maxf(0.0, float(stat_value) / GROWTH_STAT_BASE)

@@ -7,7 +7,7 @@ extends CanvasLayer
 #   우: 머리글(기체명 · 역할군) → 스탯 칩 3개 → 메크 패시브 → 메크 카드
 #   하: 닫기
 #
-# `features/season/draft/DraftDetailPanel.gd`(파일럿 상세)와 **좌우 구성이
+# `features/meta/run_setup/DraftDetailPanel.gd`(파일럿 상세)와 **좌우 구성이
 # 같다** — 배정 단계에서는 같은 줄의 얼굴과 기체를 번갈아 누르게 되므로, 둘이
 # 다른 모양으로 열리면 무엇을 보고 있는지가 매번 새로 읽힌다. 공유하는 것은
 # 그 모양이지 구현이 아니다: 이쪽이 다루는 것은 `MechData` 와 메크 카드 표이고

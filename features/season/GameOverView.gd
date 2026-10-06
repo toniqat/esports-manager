@@ -1,10 +1,12 @@
 class_name GameOverView
 extends Control
 
-# Phase 7 — game-over screen. Shown when the player team failed to make the
-# top-PLAYOFF_TEAMS cut on the final regular-season standings (and later in
-# Phase 8, when an INTL run ends in elimination). Only action: restart the
-# campaign (resets season_state and reloads Season.tscn).
+# Game-over screen. Six tournaments, any non-title ends the run (§3 M2):
+#   - a league phase's playoff cut missed      (playoff_failed_qualification)
+#   - a league phase's playoff SF / F lost     (playoff_lost)
+#   - any INTL lost, in any round              (intl_failed_campaign)
+# SeasonHub settles the run (RunResult, outcome "fail") before this screen
+# shows, so run.save is already gone. Only action: `정산` → RunResult.tscn.
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 @onready var _gm: Node = get_node("/root/GameManager")
@@ -55,14 +57,11 @@ func _build() -> void:
 	_summary_lbl = UiHelpers.mk_label(self, "", 22, OutgameTheme.TEXT_SUB,
 			Vector2(0, 800), Vector2(1080, 30), HORIZONTAL_ALIGNMENT_CENTER)
 
-	# **하단 구간을 둘이 2:1 로 나눠 갖는다** — 다시 시작이 주 행동이라 오른쪽
-	# 3분의 2, 타이틀로 나가는 길이 왼쪽 3분의 1이다(`OutgameTheme.add_bottom_bar`).
+	# 갈 길은 하나 — 정산 화면. 하단 구간 전폭(`OutgameTheme.add_bottom_bar`).
 	var bar: Array = OutgameTheme.add_bottom_bar(self, [
-		{"text": "타이틀로",  "style": "ghost",   "font": 32, "weight": 1.0},
-		{"text": "다시 시작", "style": "primary", "font": 32, "weight": 2.0},
+		{"text": "정산", "style": "primary", "font": 32},
 	])
-	(bar[0] as Button).pressed.connect(_on_title_pressed)
-	(bar[1] as Button).pressed.connect(_on_restart_pressed)
+	(bar[0] as Button).pressed.connect(_on_settle_pressed)
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────
@@ -73,17 +72,46 @@ func refresh() -> void:
 	var phase: int = int(s["current_phase"])
 	var phase_name: String = HubView.PHASE_NAMES.get(phase, "—")
 
-	# Phase 8 REGULAR_INTL elimination has a different copy than Phase 7
-	# playoff-miss. Detect by phase + whether an INTL bracket was active.
+	# 어느 대회에서 끝났는가는 페이즈가, 어떻게 끝났는가는 phase_results 와
+	# 아직 남아 있는 대진표(탈락 직후라 페이즈가 넘어가지 않았다)가 말해 준다.
 	var is_intl: bool = (phase == GameEnums.SeasonPhase.PRESEASON_INTL
 			or phase == GameEnums.SeasonPhase.MIDSEASON_INTL
 			or phase == GameEnums.SeasonPhase.REGULAR_INTL)
+	var lost_at: String = _lost_round_label()
 	if is_intl:
-		_reason_lbl.text = "최종 국제대회에서 우승하지 못했습니다."
-		_summary_lbl.text = _intl_summary_text()
+		_reason_lbl.text = "%s %s에서 탈락했습니다." % [phase_name, lost_at] if lost_at != "" 				else "%s에서 우승하지 못했습니다." % phase_name
+		_summary_lbl.text = _title_summary_text()
+	elif bool(s.get("phase_results", {}).get(phase, {}).get("made_playoffs", false)):
+		_reason_lbl.text = "%s 플레이오프 %s에서 탈락했습니다." % [phase_name, lost_at] if lost_at != "" 				else "%s 플레이오프에서 우승하지 못했습니다." % phase_name
+		_summary_lbl.text = _title_summary_text()
 	else:
 		_reason_lbl.text = "%s 플레이오프 진출에 실패했습니다." % phase_name
 		_summary_lbl.text = _league_rank_text()
+
+
+## 지금 대진표에서 플레이어 팀이 진 경기의 라운드 이름("4강 1경기" · "결승" …).
+## 대진표가 없거나 진 경기가 없으면 "".
+func _lost_round_label() -> String:
+	if _hub == null:
+		return ""
+	var s: Dictionary = _gm.season_state
+	var t = s.get("current_tournament", null)
+	if t == null:
+		return ""
+	var pid: int = int(s["player_team_id"])
+	var b: Array = t.get("bracket", [])
+	for i in b.size():
+		var m: Dictionary = b[i]
+		if not bool(m["played"]) or int(m["winner"]) == pid:
+			continue
+		if int(m["team_a"]) != pid and int(m["team_b"]) != pid:
+			continue
+		if String(t.get("type", "")) == "INTL":
+			var intl: InternationalTournament = _hub.get_node_or_null("InternationalTournament") as InternationalTournament
+			return intl.slot_label(i) if intl != null else ""
+		var tm: TournamentManager = _hub.get_node_or_null("TournamentManager") as TournamentManager
+		return tm.slot_label(i) if tm != null else ""
+	return ""
 
 
 func _league_rank_text() -> String:
@@ -104,7 +132,7 @@ func _league_rank_text() -> String:
 	return ""
 
 
-func _intl_summary_text() -> String:
+func _title_summary_text() -> String:
 	var pr: Dictionary = _gm.season_state.get("phase_results", {})
 	var wins: int = 0
 	for k in pr.keys():
@@ -116,17 +144,8 @@ func _intl_summary_text() -> String:
 	return "캠페인 우승 %d회 — 캠페인 종료" % wins
 
 
-# ── Button handlers ─────────────────────────────────────────────────────────
-func _on_restart_pressed() -> void:
-	# In-place restart on the same save slot. The next DRAFT → HUB transition
-	# auto-saves, overwriting the lost campaign in this slot.
-	_gm.reset_season_state()
-	get_tree().change_scene_to_file("res://scenes/Season.tscn")
-
-
-func _on_title_pressed() -> void:
-	# Back to the title screen — lets the player switch slots or delete the
-	# lost-campaign save before starting over.
-	_gm.reset_season_state()
-	_gm.active_save_slot = -1
-	get_tree().change_scene_to_file("res://scenes/TitleScreen.tscn")
+# ── Button handler ──────────────────────────────────────────────────────────
+# 정산(프로필 반영 · run.save 삭제)은 SeasonHub 가 이 화면에 들어서며 이미 했다.
+# 여기서는 결과 화면으로 넘어가기만 한다.
+func _on_settle_pressed() -> void:
+	get_tree().change_scene_to_file(RunResult.SCENE_PATH)

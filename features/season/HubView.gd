@@ -207,19 +207,11 @@ func _on_intl_started(_phase: int) -> void:
 	_flash_toast("국제대회 진입! — 8팀 토너먼트")
 
 
-func _on_intl_completed(_phase: int, champion_team_id: int) -> void:
+# intl_completed 는 우리 팀이 우승했을 때만 온다 — 탈락은 intl_failed_campaign
+# 으로 바로 GAME_OVER 다(남의 우승을 알리고 계속하는 길은 없다).
+func _on_intl_completed(_phase: int, _champion_team_id: int) -> void:
 	refresh()
-	if _hub == null:
-		return
-	var intl: InternationalTournament = _hub.get_node_or_null("InternationalTournament") as InternationalTournament
-	if intl == null:
-		_flash_toast("국제대회 종료")
-		return
-	var pid: int = int(_gm.season_state["player_team_id"])
-	var msg: String = "국제대회 우승: %s" % intl.team_name(champion_team_id)
-	if champion_team_id == pid:
-		msg = "국제대회 우승! — 우리 팀이 챔피언입니다"
-	_flash_toast(msg)
+	_flash_toast("국제대회 우승! — 우리 팀이 챔피언입니다")
 
 
 func _on_week_advanced(_d: Dictionary) -> void:

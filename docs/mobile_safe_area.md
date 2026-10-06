@@ -1,23 +1,22 @@
-# 모바일 화면 대응 — 세이프 에어리어 / 화면비 / 제스처 구역
+# Mobile screen support — safe area / aspect ratio / gesture zones
 
-이 문서 하나가 **UI 를 어디에 놓아도 되고 어디에 놓으면 안 되는가**에 대한
-저장소의 유일한 답이다. 새 화면을 짜기 전에 읽고, 다 짠 뒤 아래
-"체크리스트"로 검산한다.
+This document is the repo's single answer to **where UI may and may not be placed**. Read it
+before building a new screen, and check against the "Checklist" below when done.
 
-핵심 명제 셋:
+Three core propositions:
 
-1. **기종별 수치 표를 코드에 넣지 않는다.** 기종은 매년 늘고 폴더블 · 태블릿
-   까지 가면 표가 못 따라간다. 인셋은 **런타임에 OS 에게 묻는다.**
-2. **화면 아래쪽은 가려지는 것이 아니라 터치를 빼앗긴다.** 홈으로 나가는
-   스와이프가 앱보다 우선하므로, 거기 놓은 버튼은 **보이지만 눌리지 않는다.**
-   위쪽 노치는 반대로 가려질 뿐이라 훨씬 가벼운 문제다.
-3. **여백은 요소마다 주는 것이 아니라 화면째 준다.** 제목만 내리면 본문은
-   제자리에 남아 둘이 겹친다(실제로 타이틀 화면의 제목이 세이브 슬롯 카드
-   밑으로 들어갔다 — 이 문서를 쓰게 만든 버그다).
+1. **Don't put per-device value tables in code.** Devices multiply every year, and with
+   foldables · tablets a table can't keep up. Insets are **asked of the OS at runtime.**
+2. **The bottom of the screen isn't covered — it steals touches.** The swipe to go home takes
+   priority over the app, so a button placed there is **visible but not pressable.**
+   The top notch, by contrast, only covers things, a much lighter problem.
+3. **Margins are applied per screen, not per element.** Move only the title down and the body
+   stays put, so the two overlap (the title screen's title really did slide under the save slot
+   cards — the bug that prompted this document).
 
 ---
 
-## 1. 화면비 — `expand` 가 하는 일
+## 1. Aspect ratio — what `expand` does
 
 `project.godot`:
 
@@ -25,329 +24,331 @@
 window/size/viewport_width=1080
 window/size/viewport_height=1920
 window/stretch/mode="canvas_items"
-window/stretch/aspect="expand"      ← 예전에는 없었다(= 기본값 keep)
+window/stretch/aspect="expand"      ← previously absent (= default keep)
 ```
 
-`expand` 의 성질 한 줄: **좁은 축은 기준값 그대로 남고 넓은 축만 늘어난다.**
-배율은 `min(화면가로/1080, 화면세로/1920)` 이고, 남는 쪽이 그 배율로 펴진다.
+`expand` in one line: **the narrow axis stays at the base value and only the wide axis grows.**
+The scale is `min(screenW/1080, screenH/1920)`, and the leftover axis is stretched at that scale.
 
-| 기기 형태 | 화면 | 뷰포트 | 뜻 |
+| Device form | Screen | Viewport | Meaning |
 |---|---|---|---|
-| 9:16 (기준) | 1080×1920 | **1080×1920** | 디자인 그대로 |
-| 아이폰 15 Pro (9:19.5) | 1179×2556 | **1080×2341** | 가로는 정확히 1080, 세로만 늘어남 |
-| 갤럭시 S 계열 (9:19.3) | 1080×2340 | **1080×2340** | 〃 |
-| 아이패드 (3:4) | 1536×2048 | **1440×1920** | 세로가 1920, 가로가 넓어짐 |
+| 9:16 (base) | 1080×1920 | **1080×1920** | Design as-is |
+| iPhone 15 Pro (9:19.5) | 1179×2556 | **1080×2341** | Width exactly 1080, only height grows |
+| Galaxy S series (9:19.3) | 1080×2340 | **1080×2340** | 〃 |
+| iPad (3:4) | 1536×2048 | **1440×1920** | Height 1920, width widens |
 
-**따라서 뷰포트는 절대 기준값보다 작아지지 않는다.** 실전에서 중요한 결론
-둘이다.
+**So the viewport never gets smaller than the base value.** Two conclusions that matter in
+practice.
 
-* **폰에서 가로는 언제나 정확히 1080** 이다. 코드에 흩어져 있는 `1080` 가로
-  리터럴은 폰에서 한 픽셀도 어긋나지 않는다. 손봐야 하는 것은 **세로**다.
-  (태블릿까지 정확히 맞추려면 `ScreenMetrics.vp_w()` / `center_x()` 로
-  바꿔야 하고, 아래 "남은 일"에 목록이 있다.)
-* 세로로 긴 폰에서는 **세로 여유가 400px 안팎 생긴다.** 그 여유를 어떻게
-  쓸지가 곧 아래 §3 의 배치 규약이다.
+* **On phones the width is always exactly 1080.** The `1080` width literals scattered through
+  the code are off by not a single pixel on phones. What needs care is **height**.
+  (To be exact on tablets too they'd need to become `ScreenMetrics.vp_w()` / `center_x()`; the
+  list is under "Remaining work" below.)
+* Tall phones get **roughly 400px of extra height.** How that slack is used is the placement
+  convention in §3 below.
 
-### 왜 기본값 `keep` 을 버렸나
+### Why the default `keep` was dropped
 
-`keep` 은 9:16 을 고집하고 남는 곳에 검은 띠를 넣는다. 요즘 폰에서는 위아래로
-각각 200px 남짓이 검게 남는다. 공교롭게도 그 띠가 노치와 홈 인디케이터를
-**덮어 주기 때문에** 세이프 에어리어 문제가 저절로 사라지지만, 대가로 화면의
-17% 를 버린다. 화면을 다 쓰기로 했으므로 인셋은 우리가 직접 다룬다.
-
----
-
-## 2. 못 쓰는 띠 네 개
-
-### 위 — 상태 표시줄 / 노치 / 다이나믹 아일랜드
-
-**가려진다.** 여기 놓인 글자는 시계·배터리와 겹치거나 아일랜드에 잘린다.
-누를 수는 있다.
-
-대표값(**참고용이다 — 코드에 적지 말 것**):
-
-| 기기 | 세로 상단 인셋 | 이 프로젝트의 뷰포트 단위 |
-|---|---|---|
-| 아이폰 SE 계열(홈 버튼) | 20pt | 약 58 |
-| 아이폰 X ~ 14 (노치) | 44pt | 약 120 |
-| 아이폰 14 Pro / 15 이후 (다이나믹 아일랜드) | 59pt | **약 162** |
-| 안드로이드 상태 표시줄 | 24dp 안팎 | 약 65~110 |
-| 안드로이드 컷아웃 | 제조사마다 다름 | — |
-
-pt → 뷰포트 단위 환산은 `1080 / 화면가로(pt)` 를 곱하는 것이다. 아이폰 15
-Pro 는 가로 393pt 이므로 59pt × (1080/393) ≈ 162.
-
-### 아래 — 홈 인디케이터 / 제스처 바
-
-**터치를 빼앗긴다.** 이 문서에서 가장 중요한 구역이다.
-
-| 기기 | 세로 하단 인셋 | 뷰포트 단위 |
-|---|---|---|
-| 아이폰 (홈 인디케이터 있는 전 기종) | 34pt | **약 90~93** |
-| 아이폰 SE 계열 | 0 | 0 |
-| 안드로이드 제스처 내비 | 24dp 안팎 | 약 65~90 |
-| 안드로이드 3버튼 내비 | 바가 창 밖이면 0 | 0 |
-
-### 좌우 — 안드로이드 뒤로 가기 제스처
-
-안드로이드 10+ 의 제스처 내비는 **좌우 가장자리 각 24dp 안팎**을 "뒤로 가기"
-스와이프로 가져간다. 이 값은 **OS 가 안전 영역으로 보고하지 않는다** — 보고
-했다면 모든 안드로이드에서 가로 48dp 를 버려야 한다.
-
-그래서 `ScreenMetrics.insets()` 에도 **넣지 않았다.** 대신
-`ScreenMetrics.gesture_edge_w()` 가 경고선으로만 답한다. 규칙:
-
-> **가장자리에서 시작하는 가로 드래그**는 시스템에 먹힐 수 있다. 탭은 괜찮다.
-
-이 게임에서 걸리는 곳은 **손패 부채꼴의 양 끝 카드**뿐이다. 근본 해결책은
-안드로이드의 `setSystemGestureExclusionRects` 인데 Godot 이 노출하지 않으므로
-지금은 **알려진 한계**로 둔다(§6).
-
-### 그 밖 — 접히는 화면 / 멀티윈도우
-
-이 프로젝트는 `window/handheld/orientation=1`(세로 고정)이고 멀티윈도우를
-전제하지 않는다. 폴더블에서 창 크기가 바뀌면 뷰포트도 바뀌지만, 지금 UI 는
-**빌드 시점에 한 번** 자리를 계산하므로 재배치되지 않는다(§6).
+`keep` insists on 9:16 and fills the rest with black bars. On current phones about 200px each
+is left black top and bottom. Coincidentally those bars **cover** the notch and home indicator,
+so the safe area problem vanishes by itself, but at the cost of throwing away 17% of the
+screen. We chose to use the whole screen, so we handle insets ourselves.
 
 ---
 
-## 3. 이 저장소의 규약
+## 2. The four unusable bands
 
-모든 화면 좌표는 **`resources/ScreenMetrics.gd`** 를 지난다. 정적 함수 모음
-이라 노드가 필요 없다(창의 루트 뷰포트를 직접 읽는다).
+### Top — status bar / notch / Dynamic Island
+
+**Covered.** Text placed here overlaps the clock·battery or is clipped by the island.
+It can still be pressed.
+
+Typical values (**for reference only — don't write them in code**):
+
+| Device | Top inset (portrait) | This project's viewport units |
+|---|---|---|
+| iPhone SE series (home button) | 20pt | ~58 |
+| iPhone X – 14 (notch) | 44pt | ~120 |
+| iPhone 14 Pro / 15 and later (Dynamic Island) | 59pt | **~162** |
+| Android status bar | ~24dp | ~65–110 |
+| Android cutout | Varies by manufacturer | — |
+
+Converting pt → viewport units means multiplying by `1080 / screenWidth(pt)`. iPhone 15 Pro is
+393pt wide, so 59pt × (1080/393) ≈ 162.
+
+### Bottom — home indicator / gesture bar
+
+**Steals touches.** The most important zone in this document.
+
+| Device | Bottom inset (portrait) | Viewport units |
+|---|---|---|
+| iPhone (all models with a home indicator) | 34pt | **~90–93** |
+| iPhone SE series | 0 | 0 |
+| Android gesture navigation | ~24dp | ~65–90 |
+| Android 3-button navigation | 0 if the bar is outside the window | 0 |
+
+### Left/right — Android back gesture
+
+Android 10+ gesture navigation takes **about 24dp on each side edge** for the "back" swipe.
+**The OS does not report this as safe area** — if it did, every Android device would have to
+give up 48dp of width.
+
+So it is **not included** in `ScreenMetrics.insets()` either. Instead
+`ScreenMetrics.gesture_edge_w()` answers only as a warning line. Rule:
+
+> **A horizontal drag that starts at the edge** may be eaten by the system. Taps are fine.
+
+In this game the only affected spots are **the cards at both ends of the hand (손패) fan**. The
+root fix is Android's `setSystemGestureExclusionRects`, but Godot doesn't expose it, so for now
+it stays a **known limitation** (§7).
+
+### Others — folding screens / multi-window
+
+This project is `window/handheld/orientation=1` (portrait locked) and does not assume
+multi-window. If the window size changes on a foldable the viewport changes too, but current UI
+computes positions **once at build time**, so it doesn't relayout (§7).
+
+---
+
+## 3. This repo's conventions
+
+All screen coordinates pass through **`resources/ScreenMetrics.gd`**. It is a collection of
+static functions, so no node is needed (it reads the window's root viewport directly).
 
 ```gdscript
-ScreenMetrics.viewport_size()   # 지금 뷰포트 (스트레치 먹은 뒤)
+ScreenMetrics.viewport_size()   # current viewport (after stretch)
 ScreenMetrics.vp_w() / vp_h()
-ScreenMetrics.insets()          # (좌, 위, 우, 아래) — 뷰포트 단위
-ScreenMetrics.top_y()           # 첫 번째로 쓸 수 있는 y
-ScreenMetrics.bottom_y()        # 마지막으로 쓸 수 있는 y  ← 터치 대상의 아래끝
-ScreenMetrics.safe_h()          # 안전 영역 높이 (아래 패턴 B 전용)
-ScreenMetrics.center_x()        # 하드코딩된 540 대신
-ScreenMetrics.gesture_edge_w()  # 안드로이드 뒤로 가기 가장자리 (경고선)
+ScreenMetrics.insets()          # (left, top, right, bottom) — viewport units
+ScreenMetrics.top_y()           # first usable y
+ScreenMetrics.bottom_y()        # last usable y  ← bottom edge for touch targets
+ScreenMetrics.safe_h()          # safe area height (pattern B below only)
+ScreenMetrics.center_x()        # instead of hardcoded 540
+ScreenMetrics.gesture_edge_w()  # Android back-gesture edge (warning line)
 ```
 
-배치 패턴은 **셋뿐**이다. 새 UI 는 반드시 이 중 하나에 속한다.
+There are **only three** placement patterns. New UI must belong to one of them.
 
-### 패턴 A — 인게임 HUD: 덩어리째 민다
+### Pattern A — in-game HUD: shift whole blocks
 
-`features/battle_sim/ui/HudBuilder.gd` 의 상수들은 **1080×1920 디자인 값
-그대로** 두고, 스칼라 두 개로 위/아래 덩어리를 통째로 민다.
+The constants in `features/battle_sim/ui/HudBuilder.gd` stay **at the 1080×1920 design
+values**, and two scalars shift the top/bottom blocks wholesale.
 
 ```gdscript
 HudBuilder.top_offset()      # = ScreenMetrics.top_y()
 HudBuilder.bottom_offset()   # = ScreenMetrics.bottom_y() − 1920
 ```
 
-상단 패널 ↔ 상대 손패 peek ↔ 적 도넛 ↔ 킬로그가 픽셀 단위로 맞물려 있고
-(HudBuilder 머리말의 "사슬"), 하단도 핸드 부채꼴 ↔ 카드 밑단 ↔ 아군 스트립이
-마찬가지다. **상수를 하나씩 기기 대응으로 고치면 그 관계가 조용히 어긋난다.**
-스칼라 두 개면 관계가 전부 보존된다.
+Top panel ↔ opponent hand peek ↔ enemy donut ↔ kill log interlock pixel by pixel
+(the "chain" in the HudBuilder header), and the bottom is the same with hand fan ↔ card bottom
+edge ↔ ally strip. **Adapting constants one by one per device silently breaks those
+relations.** Two scalars preserve them all.
 
-`BattleSim.BS_HAND_CENTER.y` 도 `_ready` 에서 같은 `bottom_offset()` 을 탄다 —
-그래서 핸드 ↔ 스트립 간격은 어느 기기에서나 그대로다.
+`BattleSim.BS_HAND_CENTER.y` also rides the same `bottom_offset()` in `_ready` — so the
+hand ↔ strip gap is the same on every device.
 
-### 패턴 B — 아웃게임 화면: 화면째 내리고 바닥에 매단다
+### Pattern B — outgame screens: shift the whole screen down and hang from the bottom
 
-시즌 / 매치플로 / 타이틀 화면은 전체 화면 Control 하나에 절대 좌표로 그린다.
-빌드 함수 첫 줄에서 화면째 내린다.
+Season / MatchFlow / title screens draw with absolute coordinates in one full-screen Control.
+The first line of the build function shifts the whole screen down.
 
 ```gdscript
 func _build() -> void:
-	ScreenMetrics.indent_to_safe_top(self)      # 또는 (_panel)
+	ScreenMetrics.indent_to_safe_top(self)      # or (_panel)
 	...
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	ScreenMetrics.extend_background(bg)          # 배경만 노치 자리까지 덮는다
+	ScreenMetrics.extend_background(bg)          # only the background covers the notch area
 ```
 
-내리는 수단은 `position` 이 아니라 **`offset_top`** 이다 — 전체 화면 앵커가
-걸린 Control 의 `position` 은 다음 레이아웃 때 앵커가 덮어쓴다.
+The shift is done with **`offset_top`**, not `position` — the anchors overwrite `position` of a
+full-screen-anchored Control on the next layout.
 
-**내려간 화면 안에서는 `bottom_y()` 를 쓰면 안 된다.** 그건 뷰포트 좌표라
-내려놓은 만큼 두 번 더해진다. 로컬 좌표계의 바닥은 **`safe_h()`** 다.
+**Inside a shifted screen, don't use `bottom_y()`.** It is in viewport coordinates, so the
+shift amount gets added twice. The local coordinate bottom is **`safe_h()`**.
 
 ```gdscript
-# 하단 액션 바 — 디자인 화면에서 바닥까지 80px 를 남겼다면
+# bottom action bar — if the design screen left 80px to the bottom
 var y: float = ScreenMetrics.safe_h() - 80.0 - h
 ```
 
-배경 처리가 두 갈래인 이유: 배경이 **자식 `ColorRect`** 면
-`extend_background(bg)` 로 위로 늘리면 되고(시즌 뷰 전부), 배경이 **판 자신의
-StyleBox** 면 판을 늘릴 수 없으므로(늘리면 안쪽 좌표계가 같이 움직인다)
-`backfill_top(_panel, color)` 로 띠 한 장을 첫 자식으로 깐다(매치플로 4종).
+Why background handling has two branches: if the background is a **child `ColorRect`**,
+just stretch it upward with `extend_background(bg)` (all season views); if the background is
+**the panel's own StyleBox**, the panel can't be stretched (stretching moves the inner
+coordinate system too), so `backfill_top(_panel, color)` lays a single band as the first child
+(the 4 MatchFlow screens).
 
-> 노치 자리는 **쓰지 않을 곳**이지 **비워 둘 곳**이 아니다. 배경까지 물러나면
-> 그 띠만 엔진 기본 배경색으로 남아 화면이 잘린 것처럼 보인다.
+> The notch area is **a place not to use**, not **a place to leave empty**. If the background
+> retreats too, that band alone stays the engine's default background colour and the screen
+> looks cut off.
 
-### 패턴 C — 전체 화면 모달: 딤은 뷰포트, 내용은 절대 좌표
+### Pattern C — full-screen modal: dim = viewport, content = absolute coordinates
 
-교전 무대 · 파일럿 상세 · 카드 고르기 · 더미 열람 · 보상 연출.
+Engage stage (교전 무대) · pilot (파일럿) detail · card picker · pile browse · reward FX.
 
 ```gdscript
-dim.size = ScreenMetrics.viewport_size()   # 반드시 뷰포트 전체
+dim.size = ScreenMetrics.viewport_size()   # always the whole viewport
 ```
 
-**딤이 뷰포트 전체를 덮지 않으면 화면 끝에 안 덮인 띠가 남는다.** 예전의
-`Vector2(1080, 1920)` 리터럴이 정확히 그 버그였다. 내용은 절대 좌표 그대로
-두어도 되고(§6 "남은 일" 참조), 화면 아래쪽에 붙는 버튼만 `bottom_y()` 에
-매단다.
+**If the dim doesn't cover the whole viewport, an uncovered band remains at the screen edge.**
+The old `Vector2(1080, 1920)` literal was exactly that bug. Content may stay at absolute
+coordinates (see §7 "Remaining work"); only buttons attached to the bottom of the screen hang
+from `bottom_y()`.
 
 ---
 
-## 4. 새 UI 체크리스트
+## 4. New UI checklist
 
-- [ ] **터치 대상의 아래끝이 `ScreenMetrics.bottom_y()` 를 넘지 않는가.**
-      넘으면 보이지만 눌리지 않는다.
-- [ ] 제목 · 상태 표시가 `ScreenMetrics.top_y()` 아래에서 시작하는가.
-- [ ] 배경이 안전 영역이 **아니라** 화면 전체를 덮는가.
-- [ ] 전체 화면 딤이 `viewport_size()` 인가 (`1920` 리터럴이 아닌가).
-- [ ] 세로 가운데를 잡을 때 `1920 * 0.5` 가 아니라 뷰포트 / 안전 영역
-      기준인가.
-- [ ] 패턴 B 화면 안에서 `bottom_y()` 대신 `safe_h()` 를 썼는가.
-- [ ] 가로 드래그가 화면 가장자리에서 시작되지는 않는가(안드로이드).
-- [ ] **`ScrollContainer` 안에 놓은 탭 대상이 `MOUSE_FILTER_PASS` 인가**
-      (§5). STOP 이면 그 화면은 폰에서 스크롤이 통째로 죽는다.
-
----
-
-## 5. 스크롤 — 손가락으로 굴러가게 하기
-
-데스크톱에서 멀쩡하던 `ScrollContainer` 가 **폰에서만 통째로 안 움직이는**
-함정이 있다. 원인은 화면비도 세이프 에어리어도 아니라 **입력 전파**다.
-
-> **지금 아웃게임의 스크롤은 엔진 경로를 쓰지 않는다** — `resources/DragScroll.gd`
-> 가 마우스와 (에뮬레이트된) 터치를 한 경로로 받아 직접 굴리고, 문턱을 넘는
-> 순간 눌려 있던 버튼을 취소한다. 붙이는 법과 규약은 `resources/README.md` 의
-> `DragScroll.gd` 절. 아래는 엔진 경로가 왜 죽었는지의 기록이고, 탭 대상이 PASS
-> 여야 한다는 규칙(1)은 `DragScroll` 에도 그대로 필요하다(눌림이 스크롤까지
-> 올라가야 판정이 시작된다 — `DragScroll` 이 스크롤 아래의 STOP 을 알아서 PASS 로
-> 내린다). 데스크톱 마우스로 끌어 본 결과가 곧 폰의 결과다.
-
-### 왜 죽는가
-
-Godot 의 드래그 스크롤은 `DisplayServer.is_touchscreen_available()` 이 참일 때
-켜지는데, 그 구현이 읽는 것은 터치 이벤트가 아니라 **터치에서 에뮬레이트된
-마우스 press / motion** 이다(`emulate_mouse_from_touch`, 기본 켜짐). 즉
-`ScrollContainer` 가 그 **press 를 직접 받아야** 드래그가 시작된다.
-
-그런데 `Control` 의 기본 `mouse_filter` 는 `STOP` 이고, **STOP 은 마우스
-이벤트의 부모 전파를 끊는다**. 격자 칸이 `Button`(기본 STOP)이거나 칸을 담는
-몸통 `Control` 이 기본값 그대로면, 손가락이 그 위에서 시작한 순간
-`ScrollContainer` 는 press 를 영영 못 본다. 칸이 스크롤 영역을 빈틈없이 덮으므로
-**어디에 손가락을 대도 안 굴러간다.**
-
-데스크톱에서 안 드러나는 이유는 **휠**이다 — 휠은 STOP 을 뚫고 부모까지
-올라가도록 엔진이 예외를 두고 있어서, 마우스로는 멀쩡히 스크롤된다.
-
-### 규칙
-
-1. **스크롤 안의 탭 대상은 `MOUSE_FILTER_PASS`.** PASS 는 자기도 이벤트를 받고
-   부모로도 넘긴다 — 탭은 그대로 동작하고, 드래그가 시작되면 엔진이 그 눌림을
-   알아서 취소한다(실측: 10px 만 움직여도 오발동 0건).
-2. **탭 대상이 아닌 몸통 `Control` 은 `IGNORE`.** 스크롤 몸통은 히트 테스트에서
-   아예 빠져야 빈 자리를 눌렀을 때 `ScrollContainer` 가 직접 받는다.
-   `Control.new()` 를 그냥 쓰면 STOP 이라는 것을 잊기 쉽다.
-3. **탭 허용 오차는 `gui/common/default_scroll_deadzone`.** 엔진 기본값 0 이면
-   손가락이 몇 px 만 흔들려도 그 제스처가 스크롤로 먹혀 탭이 사라진다
-   (실측: 9px 흔들림 → 스크롤 26px + 버튼 미발동). 이 저장소는 **24**(뷰포트
-   픽셀, 1080 폭 기준 아이폰에서 약 9pt)로 둔다. 스크롤 자체는 손해 보지
-   않는다 — 문턱을 넘은 뒤의 이동량은 그대로 반영된다.
-
-### 데스크톱에서 검증하기
-
-휠로 굴려 보는 것은 검증이 **아니다**(위의 예외 때문에 언제나 성공한다).
-`Input.set_emulate_touch_from_mouse(true)` 를 켜면 데스크톱에서도
-`is_touchscreen_available()` 이 참이 되어 폰과 **같은 경로**를 탄다. 그 뒤
-`Input.parse_input_event()` 로 `InputEventScreenTouch` → `ScreenDrag` ×N →
-`ScreenTouch(released)` 를 넣고 `scroll_vertical` 이 움직이는지 본다
-(`parse_input_event` 는 스트레치 변환을 먹으므로 좌표는 **창** 좌표로 넣는다).
-
-주의: 세로로 긴 폰(9:19.5)에서는 내용이 다 들어가 스크롤 범위가 아예 0 이 되는
-화면이 있다(드래프트 격자가 그렇다). 검증은 **9:16 쪽**에서 해야 재현된다.
+- [ ] **Does no touch target's bottom edge go past `ScreenMetrics.bottom_y()`?**
+      If it does, it's visible but not pressable.
+- [ ] Do titles · status displays start below `ScreenMetrics.top_y()`?
+- [ ] Does the background cover the whole screen, **not** just the safe area?
+- [ ] Is the full-screen dim `viewport_size()` (not a `1920` literal)?
+- [ ] When centring vertically, is it based on the viewport / safe area, not
+      `1920 * 0.5`?
+- [ ] Inside pattern B screens, did you use `safe_h()` instead of `bottom_y()`?
+- [ ] Does no horizontal drag start at the screen edge (Android)?
+- [ ] **Are tap targets placed inside a `ScrollContainer` `MOUSE_FILTER_PASS`?**
+      (§5). If STOP, scrolling on that screen dies completely on the phone.
 
 ---
 
-## 6. 데스크톱에서 검증하기
+## 5. Scrolling — making it roll under a finger
 
-기기가 없어도 인셋을 **흉내 낼 수 있다.** `ScreenMetrics` 가 오버라이드를
-읽는다 — 환경 변수 `ESM_SAFE_AREA="좌,위,우,아래"`(뷰포트 단위) 또는
-사용자 인자 `-- --safe-area=0,162,0,90`.
+There's a trap where a `ScrollContainer` that works fine on desktop **doesn't move at all, only
+on the phone**. The cause is neither aspect ratio nor safe area but **input propagation**.
 
-창 비율로 기기 형태를 흉내 낸다(`--resolution`). 창이 작아도 뷰포트는 스트레치
-되므로 비율만 맞으면 된다.
+> **Outgame scrolling currently doesn't use the engine path** — `resources/DragScroll.gd`
+> receives mouse and (emulated) touch through one path and scrolls directly, cancelling the
+> pressed button the moment the threshold is crossed. How to attach it and its conventions: the
+> `DragScroll.gd` section of `resources/README.md`. Below is the record of why the engine path
+> died; rule (1), that tap targets must be PASS, is still needed for `DragScroll` (the press
+> must reach the scroll for detection to start — `DragScroll` itself demotes STOP below the
+> scroll to PASS). What you get dragging with a desktop mouse is what you get on the phone.
+
+### Why it dies
+
+Godot's drag scrolling turns on when `DisplayServer.is_touchscreen_available()` is true, but
+what that implementation reads is not touch events but **mouse press / motion emulated from
+touch** (`emulate_mouse_from_touch`, on by default). That is, the `ScrollContainer` must
+**receive that press directly** for the drag to start.
+
+But `Control`'s default `mouse_filter` is `STOP`, and **STOP cuts off parent propagation of mouse
+events**. If grid cells are `Button`s (STOP by default) or the body `Control` holding the cells
+is left at default, then the moment a finger starts on top of them the `ScrollContainer` never
+sees the press. Since cells cover the scroll area without gaps, **it won't roll wherever you put
+your finger.**
+
+The reason it doesn't show on desktop is **the wheel** — the engine makes an exception so the
+wheel punches through STOP up to the parent, so it scrolls fine with a mouse.
+
+### Rules
+
+1. **Tap targets inside a scroll are `MOUSE_FILTER_PASS`.** PASS receives the event itself and
+   also passes it to the parent — taps still work, and when a drag starts the engine cancels
+   that press by itself (measured: 0 misfires even with only 10px of movement).
+2. **Body `Control`s that aren't tap targets are `IGNORE`.** The scroll body must be excluded
+   from hit testing entirely so the `ScrollContainer` receives presses on empty spots directly.
+   It's easy to forget that a plain `Control.new()` is STOP.
+3. **Tap tolerance is `gui/common/default_scroll_deadzone`.** At the engine default of 0, a
+   finger wobbling just a few px makes that gesture count as a scroll and the tap disappears
+   (measured: 9px wobble → 26px scroll + button not fired). This repo uses **24** (viewport
+   pixels, about 9pt on an iPhone at 1080 width). Scrolling itself loses nothing — movement
+   after the threshold is reflected in full.
+
+### Verifying on desktop
+
+Rolling with the wheel is **not** verification (it always succeeds due to the exception above).
+Turning on `Input.set_emulate_touch_from_mouse(true)` makes `is_touchscreen_available()` true on
+desktop too, taking **the same path** as the phone. Then feed `InputEventScreenTouch` →
+`ScreenDrag` ×N → `ScreenTouch(released)` via `Input.parse_input_event()` and see whether
+`scroll_vertical` moves (`parse_input_event` goes through the stretch transform, so give
+coordinates in **window** coordinates).
+
+Caution: on tall phones (9:19.5) some screens fit everything so the scroll range is exactly 0
+(the draft grid is like that). Verification must be done on the **9:16 side** to reproduce.
+
+---
+
+## 6. Verifying on desktop
+
+Insets can be **simulated** without a device. `ScreenMetrics` reads an override — env var
+`ESM_SAFE_AREA="좌,위,우,아래"` (left,top,right,bottom; viewport units) or the user argument
+`-- --safe-area=0,162,0,90`.
+
+Simulate device form with the window ratio (`--resolution`). The viewport is stretched even if
+the window is small, so only the ratio needs to match.
 
 ```bash
-# 9:16 기준 — 예전과 한 픽셀도 달라지면 안 된다
-godot.exe --path <proj> --resolution 540x960 res://scenes/TitleScreen.tscn
+# 9:16 base — must not differ by a single pixel from before
+godot.exe --path <proj> --resolution 540x960 res://scenes/Lobby.tscn
 
-# 아이폰 15 Pro 형태 (9:19.5) + 다이나믹 아일랜드 + 홈 인디케이터
+# iPhone 15 Pro form (9:19.5) + Dynamic Island + home indicator
 ESM_SAFE_AREA=0,162,0,90 \
-godot.exe --path <proj> --resolution 540x1170 res://scenes/TitleScreen.tscn
+godot.exe --path <proj> --resolution 540x1170 res://scenes/Lobby.tscn
 ```
 
-스크린샷은 `--headless` 없이 창으로 띄운 뒤 게임 안에서 저장하는 방식이
-가장 간단하다(`await RenderingServer.frame_post_draw` → `get_viewport()
+For screenshots, the simplest way is to launch windowed without `--headless` and save from
+inside the game (`await RenderingServer.frame_post_draw` → `get_viewport()
 .get_texture().get_image().save_png(...)`).
 
-**헤드리스는 이 검증에 쓸 수 없다** — 더미 디스플레이 서버가 `--resolution`
-을 무시하고 창 크기를 1920×1920 으로 답한다(실측). 반드시 창으로 띄운다.
+**Headless can't be used for this verification** — the dummy display server ignores
+`--resolution` and reports the window size as 1920×1920 (measured). Always launch windowed.
 
-### 실측 (배선 후)
+### Measured (after wiring)
 
-`ESM_SAFE_AREA=0,162,0,90`, 창 540×1170 → 뷰포트 1080×2340, 안전 영역
+`ESM_SAFE_AREA=0,162,0,90`, window 540×1170 → viewport 1080×2340, safe area
 y 162..2250.
 
-| 항목 | 9:16 · 인셋 0 | 긴 화면 · 인셋 있음 |
+| Item | 9:16 · inset 0 | Tall screen · with insets |
 |---|---|---|
-| 상단 패널 | y 0 .. 248 | y 162 .. 410 |
-| 아군 스트립 뒤판 아래끝 | 1898 (바닥까지 22) | 2228 (안전 바닥까지 **22**) |
-| 핸드 행 y | 1370 | 1700 |
-| 킬로그 위끝 | 256 | 418 |
-| 드래프트 하단 바 | 1702 .. 1900 | 2032 .. 2230 |
-| 드래프트 썸네일 격자 높이 | 950 | **1280** (한 줄 더 보인다) |
-| 카드 고르기 숨김 버튼 아래끝 | 1886 | 2216 |
+| Top panel | y 0 .. 248 | y 162 .. 410 |
+| Ally strip backplate bottom edge | 1898 (22 to the bottom) | 2228 (**22** to the safe bottom) |
+| Hand row y | 1370 | 1700 |
+| Kill log top edge | 256 | 418 |
+| Draft bottom bar | 1702 .. 1900 | 2032 .. 2230 |
+| Draft thumbnail grid height | 950 | **1280** (one more row visible) |
+| Card picker hide button bottom edge | 1886 | 2216 |
 
-9:16 열은 **배선 전 값과 완전히 같다.** 인셋이 0 이면 두 오프셋이 모두 0 이라
-예전 배치가 그대로 나온다는 것이 이 설계의 요점이다.
-
----
-
-## 7. 알려진 한계 / 남은 일
-
-고친 것보다 **안 고친 것**을 아는 편이 중요하다.
-
-1. **패턴 C 모달의 세로 구성은 위에 붙어 있다.** 교전 무대 · 파일럿 상세 ·
-   드래프트 상세는 세로 1920 을 꽉 채우도록 그려져 있어서, 뷰포트가 2340 이면
-   아래에 400px 남짓 빈 띠가 생긴다. **기능 문제는 아니다**(내용이 2010 에서
-   끝나는데 안전 바닥은 2250 이라 아무것도 제스처 구역에 걸리지 않는다).
-   고치려면 각 모달에 딤과 분리된 `_content` 노드를 하나 두고 그 위치를
-   `ScreenMetrics.design_offset()` 으로 잡으면 된다 — 그 헬퍼는 이미 있다.
-2. **가로 리터럴 `1080` 이 아직 여럿 남아 있다.** 폰에서는 뷰포트 가로가
-   정확히 1080 이라 무해하고, **태블릿에서만** 가운데 정렬이 어긋난다.
-   대상은 시즌 뷰들의 `(1080.0 - w) / 2.0` 꼴과 `BanPickController` ·
-   `PilotDetailPanel` 의 고정 칼럼 좌표다.
-3. **창 크기가 바뀌어도 재배치되지 않는다.** 자리는 화면을 세울 때 한 번
-   계산한다. 세로 고정 + 전체 화면이라 실기기에서는 문제가 없지만, 폴더블
-   접기/펴기나 안드로이드 멀티윈도우에서는 어긋난다. 필요해지면
-   `get_viewport().size_changed` 에 재빌드를 걸어야 한다.
-4. **안드로이드 뒤로 가기 제스처 구역을 앱이 빼앗아 오지 못한다**(§2).
-5. **`ScreenMetrics` 는 루트 뷰포트를 읽는다.** UI 를 `SubViewport` 안에 넣게
-   되면 그쪽에서는 이 표를 쓰면 안 된다.
-6. **안드로이드에서만 하단 인셋에 하한(뷰포트 높이의 4%)을 건다.** iOS 는
-   OS 값을 그대로 믿는다 — 거기에 하한을 걸면 홈 버튼 기기(아래 인셋이 정말
-   0)에서 화면 아래 4% 를 근거 없이 버린다.
+The 9:16 column is **exactly the same as before wiring.** The point of this design is that with
+0 insets both offsets are 0, so the old layout comes out unchanged.
 
 ---
 
-## 8. 1차 출처
+## 7. Known limitations / remaining work
 
-기종 표를 직접 확인해야 할 때만 본다. 코드는 여전히 OS 에게 물어야 한다.
+Knowing what is **not fixed** matters more than what is.
 
-| 무엇 | 어디 |
+1. **Pattern C modals' vertical layout is pinned to the top.** The engage stage · pilot detail ·
+   draft detail are drawn to fill 1920 in height, so with a 2340 viewport there's an empty band
+   of about 400px at the bottom. **It's not a functional problem** (content ends at 2010 and the
+   safe bottom is 2250, so nothing falls into the gesture zone).
+   To fix, give each modal a `_content` node separate from the dim and position it with
+   `ScreenMetrics.design_offset()` — that helper already exists.
+2. **Several horizontal `1080` literals remain.** On phones the viewport width is exactly 1080
+   so they're harmless; **only on tablets** centring goes off.
+   Targets are the `(1080.0 - w) / 2.0` forms in season views and the fixed column coordinates
+   in `BanPickController` · `PilotDetailPanel`.
+3. **No relayout when the window size changes.** Positions are computed once when the screen is
+   built. Portrait-locked + full-screen means no problem on real devices, but folding/unfolding
+   a foldable or Android multi-window breaks it. If needed, hook a rebuild to
+   `get_viewport().size_changed`.
+4. **The app can't reclaim the Android back-gesture zone** (§2).
+5. **`ScreenMetrics` reads the root viewport.** If UI is ever placed inside a `SubViewport`,
+   this table must not be used there.
+6. **A floor on the bottom inset (4% of viewport height) applies only on Android.** iOS trusts
+   the OS value as-is — a floor there would throw away the bottom 4% of the screen for no reason
+   on home-button devices (where the bottom inset really is 0).
+
+---
+
+## 8. Primary sources
+
+Look only when you need to check device tables directly. Code must still ask the OS.
+
+| What | Where |
 |---|---|
-| iOS 세이프 에어리어 · 홈 인디케이터 · 다이나믹 아일랜드 | Apple *Human Interface Guidelines* → Layout |
-| Android 디스플레이 컷아웃 · edge-to-edge insets · 제스처 내비 | Android Developers → *Display cutout*, *Edge-to-edge*, *Gesture navigation* |
-| Godot 쪽 API | `DisplayServer.get_display_safe_area()`, `DisplayServer.get_display_cutouts()` (안드로이드 전용), `ProjectSettings` → `display/window/stretch/*` |
+| iOS safe area · home indicator · Dynamic Island | Apple *Human Interface Guidelines* → Layout |
+| Android display cutout · edge-to-edge insets · gesture navigation | Android Developers → *Display cutout*, *Edge-to-edge*, *Gesture navigation* |
+| Godot-side API | `DisplayServer.get_display_safe_area()`, `DisplayServer.get_display_cutouts()` (Android only), `ProjectSettings` → `display/window/stretch/*` |
 
-Godot 에는 `SafeAreaContainer` 같은 내장 노드가 **없다.** 그 자리를 메우는
-것이 `resources/ScreenMetrics.gd` 다.
+Godot has **no** built-in node like `SafeAreaContainer`. `resources/ScreenMetrics.gd` fills
+that gap.

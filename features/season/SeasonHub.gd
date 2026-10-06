@@ -27,7 +27,7 @@ extends Control
 # 그날 경기가 배정돼 있지 않으면 그 요일은 그냥 넘어간다.
 #
 # Autosave triggers (5):
-#   1. Post-draft         — DRAFT → HUB on a fresh campaign.
+#   1. Post-run-start     — first HUB entry of a fresh run (`_is_run_start`).
 #   2. Pre-ban-pick       — MatchFlow.gd, after PREP confirmation.
 #   3. Post-gambit        — MatchFlow.gd, after jungle direction picked.
 #   4. Post-match         — returning from BattleSim, once the result is applied.
@@ -35,11 +35,12 @@ extends Control
 
 @onready var _gm: Node = get_node("/root/GameManager")
 @onready var _placeholder: Label = get_node_or_null("Placeholder")
-@onready var _draft: Control = get_node_or_null("TeamDraft")
 
-enum Screen { DRAFT, HUB, PRESS, TRAINING, WEEK, LEAGUE, PLAYOFF, INTL_BRACKET, GAME_OVER, ENDING }
+# 런 준비(시나리오 · 팀 · 5인 편성)는 시즌 밖(`features/meta/run_setup/`)으로
+# 나갔다 — 시즌은 언제나 HUB 부터 연다.
+enum Screen { HUB, PRESS, TRAINING, WEEK, LEAGUE, PLAYOFF, INTL_BRACKET, GAME_OVER, ENDING }
 
-var current_screen: int = Screen.DRAFT
+var current_screen: int = Screen.HUB
 var _hub_view: HubView = null
 var _press_view: PressConferenceView = null
 var _training_view: TrainingView = null
@@ -49,6 +50,8 @@ var _bracket_view: BracketView = null
 var _intl_bracket_view: IntlBracketView = null
 var _game_over_view: GameOverView = null
 var _ending_view: EndingView = null
+# 이 런의 결론 화면(Screen.GAME_OVER / ENDING), 아직 없으면 -1.
+var _run_end_screen: int = -1
 
 
 func _ready() -> void:
@@ -66,6 +69,8 @@ func _ready() -> void:
 	if tm != null:
 		if not tm.playoff_failed_qualification.is_connected(_on_playoff_failed):
 			tm.playoff_failed_qualification.connect(_on_playoff_failed)
+		if not tm.playoff_lost.is_connected(_on_playoff_lost):
+			tm.playoff_lost.connect(_on_playoff_lost)
 
 	# Phase 8 — INTL signals.
 	var intl: InternationalTournament = get_node_or_null("InternationalTournament") as InternationalTournament
@@ -74,6 +79,11 @@ func _ready() -> void:
 			intl.intl_completed.connect(_on_intl_completed)
 		if not intl.intl_failed_campaign.is_connected(_on_intl_failed_campaign):
 			intl.intl_failed_campaign.connect(_on_intl_failed_campaign)
+
+	# 페이즈 POM — 페이즈가 넘어가는 순간 직전 페이즈를 닫는다(`RunStats.finalize_phase`).
+	var cal: CalendarSystem = get_node_or_null("CalendarSystem") as CalendarSystem
+	if cal != null and not cal.phase_changed.is_connected(_on_phase_changed_close_pom):
+		cal.phase_changed.connect(_on_phase_changed_close_pom)
 
 	# Returning from BattleSim: a pending_match with winner_side set means we
 	# just finished a match. Apply the result, resolve the AI matches of that
@@ -87,7 +97,9 @@ func _ready() -> void:
 	# REGULAR_INTL win/loss paths). Respect that — only fall back to
 	# STANDINGS if nothing else routed us.
 	if _consume_pending_match_result():
-		if current_screen == Screen.DRAFT:
+		# 결론 핸들러(`_enter_run_end`)는 `_run_end_screen` 을 동기로 세운다 —
+		# 아직 아무도 결론을 내지 않았을 때만 순위 / 브래킷 화면으로 간다.
+		if _run_end_screen < 0:
 			current_screen = _post_match_screen()
 		_gm.season_state["match_resume"] = null
 		var md: int = CalendarSystem.matchday_of(week_day())
@@ -106,20 +118,13 @@ func _ready() -> void:
 
 # Switch the active screen.
 func goto(screen: int) -> void:
-	# DRAFT → HUB is the brand-new-campaign save trigger. After this point the
-	# slot has at least one valid save to load on the title screen.
-	var was_draft: bool = current_screen == Screen.DRAFT
 	current_screen = screen
 	_route()
-	if was_draft and screen == Screen.HUB:
-		_autosave("DRAFT→HUB")
 
 
 func _route() -> void:
 	print("SeasonHub: route to %s" % Screen.keys()[current_screen])
 	match current_screen:
-		Screen.DRAFT:
-			_show_draft()
 		Screen.HUB:
 			_show_hub()
 		Screen.PRESS:
@@ -143,8 +148,6 @@ func _route() -> void:
 
 
 func _hide_all_screens() -> void:
-	if _draft:
-		_draft.visible = false
 	if _hub_view:
 		_hub_view.visible = false
 	if _press_view:
@@ -167,17 +170,11 @@ func _hide_all_screens() -> void:
 		_placeholder.visible = false
 
 
-func _show_draft() -> void:
-	if _draft and _draft.has_method("ensure_view"):
-		_draft.ensure_view()
-	_hide_all_screens()
-	if _draft:
-		_draft.visible = true
-
-
 func _show_hub() -> void:
 	_ensure_hub_view()
-	# First-time HUB entry (post-draft) seeds the PRESEASON schedule. Idempotent
+	# 런 시작 직후의 첫 HUB 인지는 일정을 깔기 **전에** 잰다(아래 참고).
+	var run_start: bool = _is_run_start()
+	# First-time HUB entry (post-run-start) seeds the PRESEASON schedule. Idempotent
 	# afterwards. Also bootstraps any pending tournament that should be active
 	# this week (covers the "load a save mid-INTL or mid-playoff" path).
 	var league: LeagueManager = get_node_or_null("LeagueManager") as LeagueManager
@@ -193,6 +190,26 @@ func _show_hub() -> void:
 	if _hub_view:
 		_hub_view.ensure_view()
 		_hub_view.visible = true
+	# 자동 저장 1번 — 런 시작 후. 런 준비(`RunSetupScreen` → `start_run`)든
+	# 에디터 직접 실행(`init_season`)이든 새 런의 첫 HUB 에서 한 번.
+	if run_start:
+		_autosave("run_start")
+
+
+## 새 런의 첫 HUB 인가 — **저장 키를 늘리지 않고 상태에서 읽는다.** PRESEASON
+## 일정은 첫 HUB 진입(`ensure_phase_scheduled`)이 깔고, 그 직후의 저장부터는
+## 언제나 일정이 들어 있다. 그래서 "PRESEASON 1주차, 주 시작 전, PRESEASON
+## 일정 없음" 은 런을 막 연 순간에만 참이다.
+func _is_run_start() -> bool:
+	var s: Dictionary = _gm.season_state
+	if int(s.get("current_phase", -1)) != GameEnums.SeasonPhase.PRESEASON:
+		return false
+	if int(s.get("phase_week", 0)) != 1 or int(s.get("week_day", -1)) != -1:
+		return false
+	for m in s.get("match_schedule", []):
+		if int((m as Dictionary).get("phase", -1)) == GameEnums.SeasonPhase.PRESEASON:
+			return false
+	return true
 
 
 func _show_training() -> void:
@@ -244,6 +261,7 @@ func _show_intl_bracket() -> void:
 
 
 func _show_game_over() -> void:
+	_settle_run("fail")
 	_ensure_game_over_view()
 	_hide_all_screens()
 	if _game_over_view:
@@ -252,6 +270,7 @@ func _show_game_over() -> void:
 
 
 func _show_ending() -> void:
+	_settle_run("clear")
 	_ensure_ending_view()
 	_hide_all_screens()
 	if _ending_view:
@@ -593,6 +612,12 @@ func _consume_pending_match_result() -> bool:
 	var winner_team_id: int = pid if winner_side == 0 else enemy_id
 	var source: String = String(pm.get("source", "league"))
 
+	# 경기 통계 · MVP 집계(`season_state.run_stats`) — 결과를 일정에 반영하기
+	# **전에** 한 번. 반영이 신호를 타고 곧장 엔딩 / 게임오버 정산까지 갈 수
+	# 있는데(정산이 지금 페이즈의 POM 을 닫는다), 그보다 늦으면 마지막 경기가
+	# 집계에서 빠진다. 두 번 불려도 `stats_recorded` 표시로 한 번만 센다.
+	RunStats.record_match(s, pm as Dictionary)
+
 	if source == "playoff":
 		_apply_playoff_result(idx, winner_team_id)
 	elif source == "intl":
@@ -602,6 +627,13 @@ func _consume_pending_match_result() -> bool:
 
 	s["pending_match"] = null
 	return true
+
+
+## 페이즈는 언제나 한 칸씩만 넘어가므로(`CalendarSystem._advance_phase`) 닫을
+## 페이즈는 `new_phase - 1` 이다. 이미 닫혔거나 경기가 없던 페이즈면 무위다.
+func _on_phase_changed_close_pom(new_phase: int) -> void:
+	if new_phase > 0:
+		RunStats.finalize_phase(_gm.season_state, new_phase - 1)
 
 
 func _apply_league_result(idx: int, winner_team_id: int) -> void:
@@ -631,36 +663,74 @@ func _apply_intl_result(idx: int, winner_team_id: int) -> void:
 	intl.record_result(idx, winner_team_id)
 
 
-# ── Phase 7 — playoff qualification failure ────────────────────────────────
+# ── Run end — six titles or bust (§3 M2) ───────────────────────────────────
+# 여섯 대회 중 하나라도 우승을 놓치면 그 결과 직후 GAME_OVER, 마지막
+# REGULAR_INTL 우승이면 ENDING. 두 화면 다 들어서는 순간 정산한다.
+
+## 리그 페이즈 플레이오프 진출 실패.
 func _on_playoff_failed(_phase: int) -> void:
-	current_screen = Screen.GAME_OVER
-	_route()
+	_enter_run_end(Screen.GAME_OVER)
 
 
-# ── Phase 8 — INTL completion / campaign end ───────────────────────────────
+## 리그 페이즈 플레이오프 4강 / 결승 패배.
+func _on_playoff_lost(_phase: int) -> void:
+	_enter_run_end(Screen.GAME_OVER)
+
+
+## 국제대회 우승. 앞의 두 국제대회는 다음 리그 페이즈로 이어진다 — 주 마감이
+## 페이즈를 넘긴다. 마지막(REGULAR_INTL)만 엔딩.
 func _on_intl_completed(phase: int, champion_team_id: int) -> void:
 	if phase != GameEnums.SeasonPhase.REGULAR_INTL:
 		return
-	var pid: int = int(_gm.season_state["player_team_id"])
-	if champion_team_id == pid:
-		current_screen = Screen.ENDING
-	else:
-		current_screen = Screen.GAME_OVER
-	_route()
+	if champion_team_id != int(_gm.season_state["player_team_id"]):
+		return   # InternationalTournament 는 이 경우 intl_failed_campaign 을 쏜다
+	_enter_run_end(Screen.ENDING)
 
 
+## 국제대회 탈락(어느 국제대회든).
 func _on_intl_failed_campaign(_phase: int) -> void:
-	current_screen = Screen.GAME_OVER
+	_enter_run_end(Screen.GAME_OVER)
+
+
+## 런의 결론(GAME_OVER / ENDING)을 정한다. 결론은 처음 것 하나로 고정되고,
+## 정산은 **지금 바로**(뒤따르는 `_autosave` 가 쓰지 않게), 화면 전환은
+## **프레임 끝에** 한다 — 시그널은 `_end_week` 의 달력 굴리기나 `_show_hub` 의
+## `ensure_active()` 한가운데서 터질 수 있고, 거기서 바로 그리면 그 함수의
+## 나머지가 허브를 다시 세워 결론 화면을 덮는다.
+func _enter_run_end(screen: int) -> void:
+	if _run_end_screen < 0:
+		_run_end_screen = screen
+	current_screen = _run_end_screen
+	_settle_run("clear" if _run_end_screen == Screen.ENDING else "fail")
+	_show_run_end.call_deferred()
+
+
+func _show_run_end() -> void:
+	var view: Control = _ending_view if _run_end_screen == Screen.ENDING else _game_over_view
+	if current_screen == _run_end_screen and view != null and view.visible:
+		return   # 이미 그 화면이다(경기 직후 `_ready` 가 먼저 그렸다)
+	current_screen = _run_end_screen
 	_route()
+
+
+## 런 정산은 한 런에 한 번 — GAME_OVER / ENDING 에 처음 들어설 때.
+## 정산이 `run.save` 를 지우고 `run_over` 를 세우면 그 뒤 `_autosave` 는 쓰지 않는다.
+func _settle_run(outcome: String) -> void:
+	if bool(_gm.season_state.get("run_over", false)):
+		return
+	RunResult.settle_current_run(outcome)
+	_gm.season_state["run_over"] = true
 
 
 # ── Save system — autosave helper ──────────────────────────────────────────
 func _autosave(reason: String) -> void:
-	var slot: int = int(_gm.active_save_slot)
-	if slot < 0:
+	# 정산이 끝난 런은 저장하지 않는다 — 경기 직후 저장(`_ready`)이나 주 마감
+	# 저장이 결과 처리 뒤에 와도 지워진 run.save 가 되살아나지 않게.
+	if bool(_gm.season_state.get("run_over", false)):
+		print("SeasonHub: autosave (%s) skipped — run is over" % reason)
 		return
-	var err: String = SaveSystem.save_slot(slot)
+	var err: String = SaveSystem.save_run()
 	if err != "":
 		push_warning("SeasonHub: autosave (%s) failed — %s" % [reason, err])
 	else:
-		print("SeasonHub: autosave (%s) → slot %d" % [reason, slot])
+		print("SeasonHub: autosave (%s) → %s" % [reason, SaveSystem.run_path()])

@@ -69,6 +69,15 @@ const CARD_GAP: float    = 14.0
 const MATCH_CARD_H: float = 168.0
 const PORTRAIT_D: float  = 88.0
 
+# ── 오늘 저녁 (evening) card — M7 ──
+const EVE_SLOT_TOP: float = 104.0
+const EVE_SLOT_H: float   = 170.0
+const EVE_PORTRAIT_D: float = 84.0
+const EVE_BTN_H: float    = 84.0
+const EVE_CARD_H: float   = EVE_SLOT_TOP + EVE_SLOT_H + 24.0 + EVE_BTN_H + 28.0
+const EVE_DONE_H: float   = 150.0
+const INCIDENT_H: float   = 150.0
+
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 @onready var _gm: Node = get_node("/root/GameManager")
 
@@ -85,6 +94,12 @@ var _date_big_lbl: Label
 var _list_body: Control
 var _list_scroll: ScrollContainer
 var _action_btn: Button
+
+# M7 — evening / incident dialogs.
+var _sel_pid: int = -1                # pilot picked on the evening card
+var _sel_day: int = -1                # weekday `_sel_pid` belongs to
+var _overlay: MessengerView = null    # dialog on top of the screen, null when closed
+var _overlay_kind: String = ""        # "evening" / "incident"
 
 
 func _ready() -> void:
@@ -204,10 +219,20 @@ func refresh() -> void:
 	_day = clampi(int(_gm.season_state.get("week_day", 0)), 0,
 			CalendarSystem.DAYS_PER_WEEK - 1)
 	_settle_day_if_needed()
+	# M7 — the incident roll happens once per weekday (recorded, seeded).
+	MentalSystem.ensure_incident(_gm.season_state, _day)
 	_refresh_rail()
 	_refresh_header()
 	_rebuild_list()
 	_refresh_action_button()
+	# An unresolved incident (or an evening dialog left open by a reload) opens
+	# by itself — the day cannot be confirmed past it.
+	if _overlay == null:
+		if MentalSystem.incident_pending(_gm.season_state, _day):
+			_open_incident.call_deferred()
+		elif _evening_open():
+			_open_evening_session.call_deferred(MentalSystem.begin_evening(
+					_gm.season_state, _day, "", -1))
 
 
 ## 훈련일에 처음 닿았으면 그날 훈련을 정산한다. **기록이 이미 있으면 아무것도
@@ -292,6 +317,10 @@ func _rebuild_list() -> void:
 		y = _add_match_cards(w, y, md)
 
 	if CalendarSystem.is_training_day(_day):
+		# M7 — the day's incident (if any) and the evening action sit above
+		# the training results: they are what the player still has to decide.
+		y = _add_incident_card(w, y)
+		y = _add_evening_card(w, y)
 		var rows: Array = _week_log().get(_day, [])
 		if rows.is_empty():
 			y = _add_note_card(w, y, "훈련 기록이 없습니다")
@@ -506,9 +535,270 @@ func _refresh_action_button() -> void:
 
 
 func _on_action_pressed() -> void:
-	if _hub == null:
+	if _hub == null or _overlay != null:
 		return
 	if _hub.has_player_match_on_day(_day):
 		_hub.on_week_day_match_start()
 		return
+	# Leaving a weekday without choosing = the evening was passed.
+	if CalendarSystem.is_training_day(_day) \
+			and not MentalSystem.evening_done(_gm.season_state, _day):
+		MentalSystem.begin_evening(_gm.season_state, _day, MentalSystem.ACTION_PASS, -1)
 	_hub.on_week_day_confirmed()
+
+
+# ── 오늘 저녁 · 사건 (M7) ─────────────────────────────────────────────────────
+# One evening action per Mon–Fri: interview / outing / pass. The card picks a
+# pilot (portrait row) and an action; the dialog itself is a `MessengerView`
+# overlay. State, limits and idempotency live in `MentalSystem` — this screen
+# only draws records and forwards taps.
+
+## The evening dialog was started but not answered (e.g. the game was reloaded).
+func _evening_open() -> bool:
+	if not CalendarSystem.is_training_day(_day):
+		return false
+	var e: Dictionary = MentalSystem.evening(_gm.season_state, _day)
+	return not e.is_empty() and String(e.get("action", "")) != MentalSystem.ACTION_PASS \
+			and int(e.get("choice", -1)) < 0
+
+
+func _add_evening_card(w: float, y: float) -> float:
+	var s: Dictionary = _gm.season_state
+	var e: Dictionary = MentalSystem.evening(s, _day)
+	if MentalSystem.evening_done(s, _day):
+		return _add_evening_done_card(w, y, e)
+
+	var mine: Array = _my_pilots_in_seat_order()
+	if _sel_day != _day or not mine.has(_sel_pid):
+		_sel_day = _day
+		_sel_pid = int(mine[0]) if not mine.is_empty() else -1
+
+	var card := OutgameTheme.add_card(_list_body, Vector2(0, y), Vector2(w, EVE_CARD_H), 18)
+	UiHelpers.mk_label(card, "오늘 저녁", 32, OutgameTheme.TEXT,
+			Vector2(28, 22), Vector2(300, 42))
+	var limits: String = "면담 %d/%d · 외출 %d/%d" % [
+		MentalSystem.interviews_left(s), MentalSystem.interviews_per_week(s),
+		MentalSystem.outings_left(s), ConstTable.int_of("MENTAL_OUTINGS_PER_WEEK")]
+	UiHelpers.mk_label(card, limits, 22, OutgameTheme.TEXT_SUB,
+			Vector2(w - 428, 30), Vector2(400, 32), HORIZONTAL_ALIGNMENT_RIGHT)
+	UiHelpers.mk_label(card, "선수를 고르고 오늘 저녁 할 일을 정하세요 (하루 한 번)", 20,
+			OutgameTheme.TEXT_FAINT, Vector2(28, 66), Vector2(w - 56, 28))
+
+	# Pilot row — tap to select. Trust in amber once the outing is unlocked.
+	var slot_w: float = (w - 40.0) / float(maxi(1, mine.size()))
+	for i in mine.size():
+		var pid: int = int(mine[i])
+		var sx: float = 20.0 + slot_w * float(i)
+		var picked: bool = pid == _sel_pid
+		if picked:
+			var hl := Panel.new()
+			hl.add_theme_stylebox_override("panel",
+					OutgameTheme.flat_style(OutgameTheme.ACCENT_DIM, 16))
+			hl.position = Vector2(sx + 4.0, EVE_SLOT_TOP)
+			hl.size = Vector2(slot_w - 8.0, EVE_SLOT_H)
+			hl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			card.add_child(hl)
+		OutgameTheme.add_round_portrait(card, PilotImages.circle_for(pid),
+				Vector2(sx + (slot_w - EVE_PORTRAIT_D) * 0.5, EVE_SLOT_TOP + 12.0),
+				EVE_PORTRAIT_D, OutgameTheme.ACCENT if picked else OutgameTheme.BORDER)
+		var name_lbl := UiHelpers.mk_label(card, MentalEvents.pilot_name(s, pid), 22,
+				OutgameTheme.TEXT, Vector2(sx, EVE_SLOT_TOP + 102.0), Vector2(slot_w, 30),
+				HORIZONTAL_ALIGNMENT_CENTER)
+		name_lbl.clip_text = true
+		var unlocked: bool = MentalSystem.outing_unlocked(s, pid)
+		UiHelpers.mk_label(card, "신뢰 %d · 외출 %d" % [MentalSystem.trust(s, pid),
+				MentalSystem.outings(s, pid)], 18,
+				OutgameTheme.ACCENT_TEXT if unlocked else OutgameTheme.TEXT_SUB,
+				Vector2(sx, EVE_SLOT_TOP + 134.0), Vector2(slot_w, 26),
+				HORIZONTAL_ALIGNMENT_CENTER)
+		var hit := Button.new()
+		hit.flat = true
+		hit.focus_mode = Control.FOCUS_NONE
+		hit.position = Vector2(sx, EVE_SLOT_TOP)
+		hit.size = Vector2(slot_w, EVE_SLOT_H)
+		OutgameTheme.style_text_button(hit, 20)
+		hit.pressed.connect(_on_evening_pilot_picked.bind(pid))
+		card.add_child(hit)
+
+	# Actions. Disabled buttons say why on their own label.
+	var by: float = EVE_SLOT_TOP + EVE_SLOT_H + 24.0
+	var gap: float = 16.0
+	var bw: float = (w - 56.0 - gap * 2.0) / 3.0
+	var can_iv: bool = MentalSystem.can_interview(s) and _sel_pid >= 0
+	var can_out: bool = MentalSystem.can_outing(s, _sel_pid) and _sel_pid >= 0
+	var out_text: String = "외출"
+	if MentalSystem.outings_left(s) <= 0:
+		out_text = "외출 (이번 주 끝)"
+	elif not MentalSystem.outing_unlocked(s, _sel_pid):
+		out_text = "외출 (신뢰 %d↑)" % ConstTable.int_of("TRUST_OUTING_MIN")
+	var specs: Array = [
+		["면담" if MentalSystem.can_interview(s) else "면담 (이번 주 끝)", "primary",
+				can_iv, MentalSystem.ACTION_INTERVIEW],
+		[out_text, "ghost", can_out, MentalSystem.ACTION_OUTING],
+		["패스", "text", true, MentalSystem.ACTION_PASS],
+	]
+	for i in specs.size():
+		var spec: Array = specs[i]
+		var b := Button.new()
+		b.text = String(spec[0])
+		b.focus_mode = Control.FOCUS_NONE
+		b.position = Vector2(28.0 + (bw + gap) * float(i), by)
+		b.size = Vector2(bw, EVE_BTN_H)
+		match String(spec[1]):
+			"primary": OutgameTheme.style_primary_button(b, 26)
+			"ghost": OutgameTheme.style_ghost_button(b, 26)
+			_: OutgameTheme.style_text_button(b, 26)
+		b.disabled = not bool(spec[2])
+		b.pressed.connect(_on_evening_action.bind(String(spec[3])))
+		card.add_child(b)
+	return y + EVE_CARD_H + CARD_GAP
+
+
+func _add_evening_done_card(w: float, y: float, e: Dictionary) -> float:
+	var s: Dictionary = _gm.season_state
+	var action: String = String(e.get("action", MentalSystem.ACTION_PASS))
+	var pid: int = int(e.get("pilot_id", -1))
+	var card := OutgameTheme.add_card(_list_body, Vector2(0, y), Vector2(w, EVE_DONE_H), 18)
+	var tx: float = 28.0
+	if pid >= 0:
+		OutgameTheme.add_round_portrait(card, PilotImages.circle_for(pid),
+				Vector2(24, (EVE_DONE_H - 84.0) * 0.5), 84.0)
+		tx = 132.0
+	var head: String = "오늘 저녁 — 쉬었습니다"
+	if action == MentalSystem.ACTION_INTERVIEW:
+		head = "오늘 저녁 — %s 면담" % MentalEvents.pilot_name(s, pid)
+	elif action == MentalSystem.ACTION_OUTING:
+		head = "오늘 저녁 — %s 외출" % MentalEvents.pilot_name(s, pid)
+	UiHelpers.mk_label(card, head, 28, OutgameTheme.TEXT,
+			Vector2(tx, 30), Vector2(w - tx - 28.0, 40))
+	var notes: Array = (e.get("outcome", {}) as Dictionary).get("notes", [])
+	var line: String = " · ".join(PackedStringArray(notes)) if not notes.is_empty() \
+			else ("내일을 위해 일찍 쉬었다" if action == MentalSystem.ACTION_PASS else "변화 없음")
+	var l := UiHelpers.mk_label(card, line, 21, OutgameTheme.TEXT_SUB,
+			Vector2(tx, 76), Vector2(w - tx - 28.0, 60))
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	return y + EVE_DONE_H + CARD_GAP
+
+
+## The day's incident: resolved → summary; pending → a tap target that reopens it.
+func _add_incident_card(w: float, y: float) -> float:
+	var s: Dictionary = _gm.season_state
+	var view: Dictionary = MentalSystem.session_view(s, MentalSystem.incident_session(s, _day))
+	if view.is_empty():
+		return y
+	var inc: Dictionary = (((s.get("mental", {}) as Dictionary).get("days", {}) as Dictionary) \
+			.get(str(_day), {}) as Dictionary).get("incident", {})
+	var pid: int = int(view["pilot_id"])
+	var card := Panel.new()
+	card.add_theme_stylebox_override("panel", OutgameTheme.lead_bar_style(OutgameTheme.NEGATIVE))
+	card.position = Vector2(0, y)
+	card.size = Vector2(w, INCIDENT_H)
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_list_body.add_child(card)
+	OutgameTheme.add_round_portrait(card, PilotImages.circle_for(pid),
+			Vector2(28, (INCIDENT_H - 84.0) * 0.5), 84.0)
+	UiHelpers.mk_label(card, "사건 — %s · %s" % [String(view["tag"]),
+			MentalEvents.pilot_name(s, pid)], 28, OutgameTheme.TEXT,
+			Vector2(136, 30), Vector2(w - 164, 40))
+	var pending: bool = int(inc.get("choice", -1)) < 0
+	var notes: Array = (inc.get("outcome", {}) as Dictionary).get("notes", [])
+	var line: String = "눌러서 대응하기" if pending else (
+			" · ".join(PackedStringArray(notes)) if not notes.is_empty() else "큰 탈 없이 지나갔다")
+	var l := UiHelpers.mk_label(card, line, 21,
+			OutgameTheme.NEGATIVE if pending else OutgameTheme.TEXT_SUB,
+			Vector2(136, 76), Vector2(w - 164, 60))
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if pending:
+		var hit := Button.new()
+		hit.flat = true
+		hit.focus_mode = Control.FOCUS_NONE
+		hit.size = card.size
+		OutgameTheme.style_text_button(hit, 20)
+		hit.pressed.connect(_open_incident)
+		card.add_child(hit)
+	return y + INCIDENT_H + CARD_GAP
+
+
+func _my_pilots_in_seat_order() -> Array:
+	var s: Dictionary = _gm.season_state
+	var ids: Array = MentalSystem.my_pilot_ids(s)
+	ids.sort_custom(func(a, b):
+		var pa: PlayerData = MentalEvents.pilot_of(s, int(a))
+		var pb: PlayerData = MentalEvents.pilot_of(s, int(b))
+		var ra: int = GameEnums.role_seat(pa.role) if pa != null else 99
+		var rb: int = GameEnums.role_seat(pb.role) if pb != null else 99
+		return ra < rb)
+	return ids
+
+
+func _on_evening_pilot_picked(pid: int) -> void:
+	if _overlay != null:
+		return
+	_sel_pid = pid
+	_sel_day = _day
+	_rebuild_list()
+
+
+func _on_evening_action(action: String) -> void:
+	if _overlay != null:
+		return
+	var session: Dictionary = MentalSystem.begin_evening(_gm.season_state, _day, action, _sel_pid)
+	if action == MentalSystem.ACTION_PASS or session.is_empty():
+		_rebuild_list()
+		return
+	_open_evening_session(session)
+
+
+func _open_evening_session(session: Dictionary) -> void:
+	if _overlay != null or session.is_empty():
+		return
+	var s: Dictionary = _gm.season_state
+	var view: Dictionary = MentalSystem.session_view(s, session)
+	if view.is_empty():
+		return
+	var pid: int = int(view["pilot_id"])
+	var sub: String = "%s 저녁 · 면담" % OutgameTheme.DAY_NAMES[_day]
+	if String(view["kind"]) == MentalEvents.KIND_OUTING:
+		sub = "%s 저녁 · 외출 %d회째" % [OutgameTheme.DAY_NAMES[_day],
+				MentalSystem.outings(s, pid) + 1]
+	_open_overlay("evening", sub, MentalEvents.pilot_name(s, pid), pid, view)
+
+
+func _open_incident() -> void:
+	if _overlay != null or not MentalSystem.incident_pending(_gm.season_state, _day):
+		return
+	var s: Dictionary = _gm.season_state
+	var view: Dictionary = MentalSystem.session_view(s, MentalSystem.incident_session(s, _day))
+	if view.is_empty():
+		return
+	var pid: int = int(view["pilot_id"])
+	_open_overlay("incident", "%s · 사건 발생 · %s" % [OutgameTheme.DAY_NAMES[_day],
+			MentalEvents.pilot_name(s, pid)], String(view["tag"]), pid, view)
+
+
+func _open_overlay(kind: String, sub: String, title: String, pid: int, view: Dictionary) -> void:
+	_overlay_kind = kind
+	_overlay = MessengerView.new()
+	add_child(_overlay)
+	_overlay.choice_picked.connect(_on_overlay_choice)
+	_overlay.closed.connect(_on_overlay_closed)
+	_overlay.open(sub, title, PilotImages.circle_for(pid), view["lines"], view["choices"])
+
+
+func _on_overlay_choice(idx: int) -> void:
+	var s: Dictionary = _gm.season_state
+	var out: Dictionary
+	if _overlay_kind == "incident":
+		out = MentalSystem.resolve_incident(s, _day, idx)
+	else:
+		out = MentalSystem.finish_evening(s, _day, idx)
+	if _overlay != null:
+		_overlay.show_result(out)
+
+
+func _on_overlay_closed() -> void:
+	if _overlay != null:
+		_overlay.queue_free()
+		_overlay = null
+	_overlay_kind = ""
+	refresh()

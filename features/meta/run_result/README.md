@@ -45,12 +45,17 @@ Autoloads are fetched via `Engine.get_main_loop().root` (static class, no `@onre
 - Extra display keys beyond §10.3: `id` (unique per settlement — the profile's idempotency key),
   `phases_cleared`, `breakdown`, `team_name`, `scenario_name`, `pilots` (`[{id, name, role}]`
   in `GameEnums.role_seat` order) — the screen draws without `season_state`.
+- `true_endings` (M7) — **only on a clear**: `MentalSystem.true_ending_pilots(state)` (my pilots
+  with outings ≥ `TRUE_ENDING_OUTINGS`). Absent on fail / abandon. `ProfileManager.apply_run_result`
+  sets `achievements[pid].true_ending = true` for each.
 
 ## RunResultScreen
 White outgame theme, pattern B of `docs/mobile_safe_area.md` (`indent_to_safe_top` + `add_background`).
 - Header: 런 클리어 (amber) / 런 실패 (red) / 런 포기 (grey), scenario · team, and a
   "테스트 런 — 프로필 미반영" chip when `test_run`.
-- Scroll body (`OutgameTheme.add_vscroll`, ends at `bottom_bar_top()`): cards 진척 (phase reached,
+- Scroll body (`OutgameTheme.add_vscroll`, ends at `bottom_bar_top()`): when `true_endings` is
+  non-empty a **진엔딩** card leads (amber-tinted; per pilot a large amber-ringed portrait, name,
+  a closing line and an `외출 N회 · 약속을 지켰다` chip — N from `TRUE_ENDING_OUTINGS`), then cards 진척 (phase reached,
   W-L, titles) · 점수 (breakdown + total) · 보상 (outgame currency, manager EXP) · 이번 런 업적
   (round portrait `PilotImages.circle_for`, name, role, MVP / POM chips — lit when > 0).
 - Bottom bar, one full-width primary button: `로비로` → `Lobby.tscn`; when `outcome == "abandon"`

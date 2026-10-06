@@ -137,7 +137,7 @@ static func build_result(state: Dictionary, outcome: String, test_run: bool) -> 
 		achievements[key] = {"mvp": int(mvp.get(key, 0)), "pom": pom_n}
 
 	var at: String = _now_string()
-	return {
+	var result: Dictionary = {
 		"outcome": outcome,
 		"scenario": scenario_id,
 		"team_id": team_id,
@@ -163,6 +163,11 @@ static func build_result(state: Dictionary, outcome: String, test_run: bool) -> 
 		"scenario_name": String(RunRules.scenario(scenario_id).get("name", "")),
 		"pilots": _pilot_rows(state, mine),
 	}
+	# M7 — true endings: run cleared + outings with that pilot ≥ `TRUE_ENDING_OUTINGS`.
+	# Present **only on a clear** (`ProfileManager.apply_run_result` records them).
+	if cleared:
+		result["true_endings"] = MentalSystem.true_ending_pilots(state)
+	return result
 
 
 # ── 집계 ─────────────────────────────────────────────────────────────────────

@@ -10,7 +10,8 @@ HubView "이번 주 시작 →"  →  PRESS  →  (pick an answer)  →  TRAININ
 
 | File | Role |
 |---|---|
-| `PressConferenceView.gd` | `class_name PressConferenceView extends Control` — the whole screen |
+| `PressConferenceView.gd` | `class_name PressConferenceView extends Control` — the screen: draws this week's `MentalSystem.press_session` in a `MessengerView`, applies the answer with `MentalSystem.resolve_press`, then `SeasonHub.on_press_finished()` |
+| `MessengerView.gd` | `class_name MessengerView extends Control` — **shared messenger dialogue** (press conference here; interview / outing / incident overlays on the week screen). API: `open(sub, title, portrait, lines, choices)` → signal `choice_picked(idx)` → `show_result(outcome)` / `show_outcome(reply_lines, notes, verdict)` → signal `closed`. `outcome_hint` = bottom hint after the outcome. Line grammar: plain = left speaker, `>text` = manager (right), `*text` = narration (see `features/season/mental/README.md`). |
 
 ## Screen
 
@@ -39,27 +40,24 @@ something prepared." / "That question is a bit rude."; hint "Tap the screen to c
 * Reporter lines appear **one at a time**. Tapping anywhere on the screen appends the next line
   (bottom hint is `화면을 눌러 계속` (Tap the screen to continue)); once all are shown, the answer
   choices appear at bottom right (`답변을 고르세요` (Choose an answer)).
-* Picking one appends that answer as a player bubble and **0.7 s later** goes to the training plan
-  screen via `SeasonHub.on_press_finished()`. Moving on immediately would make the just-picked
-  answer vanish before it ever shows on screen.
+* Picking one appends that answer as a player bubble, applies it (`MentalSystem.resolve_press`),
+  and shows the effects as centred chips (plus a `멘탈 판정 성공 / 실패` chip when the entry rolls a
+  check). The hint becomes `화면을 눌러 계속`; the next tap goes to the training plan via
+  `SeasonHub.on_press_finished()` — the player must be able to read what the answer did.
 
-## Currently only a skeleton
+## Data (M7)
 
-Lines · choices are placeholder data hard-coded in `_SCRIPT_POOL`, and the rule for choosing a
-script is just `phase_week % pool size`. Answers change no state
-(`_on_answer_picked` only `print`s the chosen index).
+Questions are `mental_events.csv` rows of kind `press` (grammar: `features/season/mental/README.md`).
+The `@` line is the outlet shown in the header (`… · <outlet> 기자`). One question per week,
+drawn by `MentalSystem.press_session` (seeded per run + week, kept in `season_state.mental.press`) —
+reopening the screen in the same week shows the same question and a second answer is not applied.
+Generic questions move whole-team trust (`trust_all`) or add a temporary manager-stat mod (`smod`);
+`mention=mvp|worst` questions name a pilot from the last own match and move that pilot's trust.
 
-Three places to hook in:
+Reporter portrait: still the microphone drawn by `MessengerView._draw_reporter_glyph` (passed as
+`portrait = null`). When reporter art exists, pass the texture to `open()`.
 
-1. **Line pool as a table** — create a table such as `data/csv/press_lines.csv` and choose by
-   phase · standing · last match result.
-2. **Answer effects** — move state such as team morale / player condition / reputation.
-   `_on_answer_picked(idx, text)` is the entry point.
-3. **Reporter portrait** — currently a microphone shape drawn by `_draw_reporter_glyph`.
-   When real art exists, pass it as the second argument of `add_round_portrait` and delete just
-   that one child `Control`.
-
-## Implementation notes
+## Implementation notes (all in `MessengerView`)
 
 * **The bubble tail is drawn by a dedicated `Control` with no children** (`_add_wedge`).
   A Control's `_draw` runs **before** its children, so putting it inside the bubble `Panel` would
@@ -76,10 +74,20 @@ Three places to hook in:
   they are flagged with `_press_outside_scroll` to avoid reading the previous scroll's `moved` value.
   A tap board laid down as a sibling is useless — input propagates only upward, never sideways.
   Answer `Button`s still fire their own `pressed` even when lowered to PASS (by `DragScroll`'s
-  sweep), and while answers are showing, `_show_answers` ignores screen taps.
+  sweep) — **but because they are PASS, that same release then bubbles on to the view's
+  `gui_input`.** Taken as a tap it would close the outcome in the same instant (measured with
+  injected clicks: the overlay was freed by the answer tap). `_picked_frame` ignores taps from the
+  frame the answer was picked in.
+* **The view is created from code, so `_ready` uses `set_anchors_and_offsets_preset(FULL_RECT)`.**
+  Godot 4's `set_anchors_preset` alone keeps the current rect — a `.new()` Control stays 0×0, its
+  background never paints and its STOP hit area is empty (measured: the week overlay showed the
+  week screen through it).
+* The root is `MOUSE_FILTER_STOP`, so a copy laid over another screen (the week screen's
+  interview / incident overlay) blocks everything underneath, including that screen's bottom bar.
 * The height of wrapped text is not measured by standing up a `Label`; **the font is asked
   directly** (`_text_block_height`) — a label just created for measuring has size 0 in that frame.
-* `ensure_view()` **opens a fresh conference every time** (`_restart`). `_built` guards only the
-  skeleton — the same conference must not appear to carry over from week to week.
-* All colours come from `OutgameTheme`; layout uses `ScreenMetrics.indent_to_safe_top` +
-  `OutgameTheme.add_background` (which internally calls `extend_background`).
+* `PressConferenceView.ensure_view()` re-opens the messenger every time (`_restart`) with this
+  week's session. `_built` guards only the skeleton.
+* The messenger never indents itself — the owning screen calls `ScreenMetrics.indent_to_safe_top`;
+  the messenger paints `OutgameTheme.add_background` (which extends into the notch). The bottom
+  hint sits at `safe_h() - 50`. All colours come from `OutgameTheme`.

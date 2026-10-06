@@ -321,23 +321,38 @@ tiles with an `M` shape, e.g. `M` (one day) and `M/M` (one pilot, two days).
 - Display: the popover's EXP line is `TrainingTile.exp_summary()`, which appends
   `메크 숙련도 +N (연구 메크)` for mastery tiles.
 
-## Auto-arrange — "코치 추천" (M3)
+## Auto-arrange — "코치 추천" (M3, reworked §14 T6)
 When training is **delegated** (`StaffSystem.is_delegated(state, "training")` — a coach or the
 assistant covers it), the bottom bar shows a third slot `코치 추천` between `판 비우기` and
 `훈련 확정`; when the manager owns training the slot is hidden and the bar is re-laid out
 (`OutgameTheme.layout_bottom_bar`). Pressing it calls `TrainingBoard.auto_arrange()`, and the
 player can edit the result as usual.
 
-It is a **plain rule, not an optimiser** (plan §11.0 — no bonus either way):
-1. clear the board;
-2. walk unlocked grades from the highest down to C (D is the filler);
-3. within a grade, round-robin over its stat tiles (bigger shapes first, then id), one copy per
-   turn, until the grade limit is hit or nothing fits;
-4. a copy goes to the first position in day-then-seat order that **raises the board's total EXP**
-   (`board_total_exp`) — so a 0-EXP amplifier with nothing to amplify yet, or a focused single-stat
-   tile that is worth less in total than the filler it replaces, is skipped.
+It is **per-pilot weak-stat reinforcement + grade balance** — still a **plain rule, not an
+optimiser** (plan §11.0 / §14.0 — no bonus either way), and deterministic (fixed tie-breaks, no RNG).
+The M3 version only asked "does this raise the board's total EXP", which a focused single-stat tile
+never does (it gives less in total than the all-stat filler), so a C-only team got nothing but `T02`.
 
-Mastery tiles are never auto-placed — what to research is a separate decision.
+1. Clear the board. `coach_needs()` ranks each pilot's six stats by **deficit against the role
+   average** (every pilot of that role in `all_pilots`; ties keep `PlayerData.STAT_KEYS` order) and
+   keeps the top `COACH_WEAK_RANK`.
+2. Walk unlocked grades from the highest down to C (D is the filler). Inside a grade:
+   - **focus pass** — up to `COACH_FOCUS_PCT`% of the grade limit (rounded up) goes to **focused**
+     tiles (`is_focused_tile`: trains fewer than six stats). Pilots take turns (fewest reinforced
+     stats first, then the largest deficit, then seat); each turn aims at that pilot's weakest stat
+     not yet reinforced that some tile trains, and picks the tile + origin covering that pilot's
+     column with the **largest gain in that stat for that pilot** (ties: earliest day, then leftmost).
+     A tile with a downside clause (e.g. `mult:day_prev_all:50`) is thereby placed where the
+     downside costs least;
+   - **broad pass** — the rest of the limit goes to broad tiles (all-stat / amplifiers) by the M3
+     rule: first day-then-seat position that raises `board_total_exp`;
+   - whatever the broad pass could not use goes back to the focus pass.
+3. One more broad sweep over all grades (an amplifier placed before what it amplifies gets a
+   second chance).
+
+**Never auto-placed** (`coach_may_use`): mastery tiles (`M` cells / `mastery:N`) and any tile whose
+raw `effect` has a clause kind other than `mult` / `flat` (e.g. T1's `quirk:*`) — what to research and
+which quirk to chase are separate decisions. Keys: `COACH_FOCUS_PCT`, `COACH_WEAK_RANK`.
 
 ## Drag & drop (`TrainingView`)
 Uses Godot's built-in drag (`set_drag_forwarding`). There are two origins.

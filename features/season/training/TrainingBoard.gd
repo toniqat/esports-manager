@@ -618,47 +618,261 @@ func player_pilots_by_seat() -> Array:
 	return by_seat
 
 
-# ── Auto-arrange ("코치 추천", M3) ───────────────────────────────────────────
+# ── Auto-arrange ("코치 추천", M3 · §14 T6) ─────────────────────────────────
 # Shown only when training is delegated (`StaffSystem.is_delegated`). It is a
-# **plain rule, not an optimiser** (plan §11.0 — no manual bonus either way):
-#   1. clear the board;
-#   2. walk unlocked grades from the highest down to C (D = the filler course);
-#   3. inside a grade, round-robin over its stat tiles (bigger shapes first, then
-#      id) placing one copy per turn until the grade limit or no room is left;
-#   4. a copy goes to the first position in day-then-seat order that **raises the
-#      board's total EXP** — so a 0-EXP amplifier is skipped when it has nothing
-#      to amplify yet.
-# Mastery (`M`) tiles are left out — what to research is a separate decision.
+# **plain rule, not an optimiser** (plan §11.0 / §14.0 — no manual bonus either
+# way), and deterministic (no randomness, fixed tie-breaks):
+#   1. clear the board; rank each pilot's stats by **deficit against the role
+#      average** (`coach_needs` — every pilot of that role in `all_pilots`);
+#   2. walk unlocked grades from the highest down to C (D = the filler course).
+#      Inside a grade:
+#      a. focus pass — up to `COACH_FOCUS_PCT`% of the grade limit goes to
+#         **focused** tiles (fewer than six stats) on the neediest pilots, one
+#         pilot per turn, each copy aimed at that pilot's weakest not-yet-
+#         reinforced stat among the top `COACH_WEAK_RANK`, at the position that
+#         raises that pilot's EXP in that stat the most;
+#      b. broad pass — the rest goes to broad tiles (all-stat / amplifiers) by
+#         the old rule: first day-then-seat position that raises the board's
+#         total EXP (`board_total_exp`);
+#      c. whatever the broad pass could not use goes back to the focus pass;
+#   3. one more broad sweep over all grades — amplifiers placed before the
+#      tiles they amplify get a second chance.
+# Never auto-placed: mastery (`M`) tiles and any tile whose effect has a clause
+# other than `mult` / `flat` (quirk tiles, T1) — those are separate decisions.
 
 ## Rebuilds the board with the coach's arrangement. Returns the tiles placed.
 func auto_arrange() -> int:
 	clear_board()
 	var top: int = TrainingTile.max_unlocked_grade(tactics_stat())
+	var needs: Dictionary = coach_needs()
+	var reinforced: Dictionary = {}     # seat → {stat: true}
 	var placed: int = 0
 	for g in range(top, 0, -1):
-		var pool: Array = []
-		for t_raw in all_tiles():
-			var t: TrainingTile = t_raw
-			if t.grade == g and not t.has_mastery():
-				pool.append(t)
-		pool.sort_custom(_auto_order)
-		var progress: bool = true
-		while progress:
-			progress = false
-			for t2_raw in pool:
-				var t2: TrainingTile = t2_raw
-				if not grade_slot_free(t2):
-					break
-				if _auto_place_one(t2):
-					placed += 1
-					progress = true
+		var pool: Array = _coach_pool(g)
+		if pool.is_empty():
+			continue
+		var limit: int = limit_of(pool[0])
+		var quota: int = limit
+		if limit > 0:
+			quota = ceili(float(limit) * clampf(ConstTable.num("COACH_FOCUS_PCT"), 0.0, 100.0) / 100.0)
+		placed += _coach_focus_pass(pool, needs, reinforced, quota)
+		placed += _coach_broad_pass(pool)
+		placed += _coach_focus_pass(pool, needs, reinforced, 1 << 20)
+	for g2 in range(top, 0, -1):
+		placed += _coach_broad_pass(_coach_pool(g2))
 	return placed
+
+
+## Coach's view of each pilot: `{seat: {stats: Array[stat], deficit: float}}` —
+## the six stats ordered by deficit against the role average (largest first; ties
+## keep `STAT_KEYS` order), cut to the top `COACH_WEAK_RANK`; `deficit` = the
+## largest one (turn order). Seats without a pilot are absent.
+func coach_needs() -> Dictionary:
+	var pilots: Array = player_pilots_by_seat()
+	var avg: Dictionary = _role_stat_avgs()
+	var rank_n: int = clampi(ConstTable.int_of("COACH_WEAK_RANK"), 1, PlayerData.STAT_KEYS.size())
+	var out: Dictionary = {}
+	for seat in COLS:
+		var p: PlayerData = pilots[seat]
+		if p == null:
+			continue
+		var role_avg: Dictionary = avg.get(int(p.role), {})
+		var rows: Array = []
+		for i in PlayerData.STAT_KEYS.size():
+			var key: String = String(PlayerData.STAT_KEYS[i])
+			var deficit: float = float(role_avg.get(key, 0.0)) - float(int(p.get(key)))
+			rows.append({"stat": key, "deficit": deficit, "i": i})
+		rows.sort_custom(func(x, y):
+			if not is_equal_approx(float(x["deficit"]), float(y["deficit"])):
+				return float(x["deficit"]) > float(y["deficit"])
+			return int(x["i"]) < int(y["i"]))
+		var ranked: Array = []
+		for r in rows.slice(0, rank_n):
+			ranked.append(String((r as Dictionary)["stat"]))
+		out[seat] = {"stats": ranked, "deficit": float((rows[0] as Dictionary)["deficit"])}
+	return out
+
+
+# `{role: {stat: float}}` — average of every pilot of that role in the run pool.
+func _role_stat_avgs() -> Dictionary:
+	var sums: Dictionary = {}
+	var counts: Dictionary = {}
+	for raw in (_gm.season_state.get("all_pilots", []) as Array):
+		var p := raw as PlayerData
+		if p == null:
+			continue
+		var role: int = int(p.role)
+		if not sums.has(role):
+			sums[role] = {}
+			counts[role] = 0
+		counts[role] = int(counts[role]) + 1
+		for sk in PlayerData.STAT_KEYS:
+			var key: String = String(sk)
+			sums[role][key] = float((sums[role] as Dictionary).get(key, 0.0)) + float(int(p.get(key)))
+	var out: Dictionary = {}
+	for role2 in sums.keys():
+		var n: float = maxf(1.0, float(counts[role2]))
+		var row: Dictionary = {}
+		for key2 in (sums[role2] as Dictionary).keys():
+			row[key2] = float(sums[role2][key2]) / n
+		out[role2] = row
+	return out
+
+
+# Tiles of grade `g` the coach may use, in a fixed order (bigger shapes first,
+# then id). Locked grades give an empty pool.
+func _coach_pool(g: int) -> Array:
+	var pool: Array = []
+	for t_raw in all_tiles():
+		var t: TrainingTile = t_raw
+		if t.grade == g and is_unlocked(t) and coach_may_use(t):
+			pool.append(t)
+	pool.sort_custom(_auto_order)
+	return pool
+
+
+## Mastery tiles and tiles carrying any effect clause other than `mult` / `flat`
+## (e.g. T1's `quirk:*`) are never auto-placed. Reads the raw CSV effect so a
+## clause kind `TrainingTile` does not parse still counts.
+func coach_may_use(t: TrainingTile) -> bool:
+	if t == null or t.has_mastery() or t.cell_colors.has(TrainingTile.COLOR_MASTERY):
+		return false
+	var raw: String = String(_gm.training_tile_def(t.id).get("effect", ""))
+	for part in raw.split(";", false):
+		var kind: String = String(part).strip_edges().get_slice(":", 0)
+		if kind != "" and kind != "mult" and kind != "flat":
+			return false
+	return true
+
+
+## A focused tile trains fewer than six stats.
+static func is_focused_tile(t: TrainingTile) -> bool:
+	return not t.per_cell_exp.is_empty() and t.per_cell_exp.size() < PlayerData.STAT_KEYS.size()
 
 
 static func _auto_order(a: TrainingTile, b: TrainingTile) -> bool:
 	if a.size_cells() != b.size_cells():
 		return a.size_cells() > b.size_cells()
 	return a.id < b.id
+
+
+# Focus pass: up to `quota` focused tiles from `pool`, one per pilot per round.
+# Pilots take turns fewest-reinforced first, then the largest deficit, then seat.
+# Returns the tiles placed.
+func _coach_focus_pass(pool: Array, needs: Dictionary, reinforced: Dictionary, quota: int) -> int:
+	var focused: Array = []
+	for t_raw in pool:
+		if is_focused_tile(t_raw):
+			focused.append(t_raw)
+	if focused.is_empty() or needs.is_empty():
+		return 0
+	var placed: int = 0
+	var progress: bool = true
+	while progress and placed < quota and grade_slot_free(focused[0]):
+		progress = false
+		for seat in _coach_seat_order(needs, reinforced):
+			if placed >= quota or not grade_slot_free(focused[0]):
+				break
+			if _coach_reinforce(int(seat), focused, needs, reinforced):
+				placed += 1
+				progress = true
+	return placed
+
+
+# Seats in turn order: fewest reinforced stats first, then the largest top
+# deficit, then seat.
+func _coach_seat_order(needs: Dictionary, reinforced: Dictionary) -> Array:
+	var seats: Array = needs.keys()
+	seats.sort_custom(func(a, b):
+		var na: int = (reinforced.get(a, {}) as Dictionary).size()
+		var nb: int = (reinforced.get(b, {}) as Dictionary).size()
+		if na != nb:
+			return na < nb
+		var da: float = float((needs[a] as Dictionary)["deficit"])
+		var db: float = float((needs[b] as Dictionary)["deficit"])
+		if not is_equal_approx(da, db):
+			return da > db
+		return int(a) < int(b))
+	return seats
+
+
+# One focused tile for `seat`: the weakest stat not yet reinforced that some
+# tile in `focused` trains, at the best position. Returns true if placed.
+func _coach_reinforce(seat: int, focused: Array, needs: Dictionary, reinforced: Dictionary) -> bool:
+	var done: Dictionary = reinforced.get(seat, {})
+	for stat_raw in ((needs.get(seat, {}) as Dictionary).get("stats", []) as Array):
+		var stat: String = String(stat_raw)
+		if done.has(stat):
+			continue
+		var best: Dictionary = {}
+		for t_raw in focused:
+			var t: TrainingTile = t_raw
+			if not t.per_cell_exp.has(stat):
+				continue
+			var cand: Dictionary = _coach_best_spot(t, seat, stat)
+			if not cand.is_empty() and (best.is_empty() or int(cand["gain"]) > int(best["gain"])):
+				best = cand
+		if best.is_empty():
+			continue
+		if place(String(best["tile"]), best["origin"]) < 0:
+			continue
+		done[stat] = true
+		reinforced[seat] = done
+		return true
+	return false
+
+
+# Best legal origin for `t` that covers `seat`'s column: the largest gain in
+# `stat` EXP for that seat (ties → earliest day, then leftmost). {} if no
+# position gains anything.
+func _coach_best_spot(t: TrainingTile, seat: int, stat: String) -> Dictionary:
+	var before: int = _seat_stat_exp(seat, stat)
+	var best: Dictionary = {}
+	for y in ROWS:
+		var tried: Dictionary = {}
+		for c_raw in t.cells:
+			var o := Vector2i(seat - (c_raw as Vector2i).x, y - (c_raw as Vector2i).y)
+			if tried.has(o) or not can_place(t, o):
+				continue
+			tried[o] = true
+			var idx: int = place(t.id, o)
+			if idx < 0:
+				continue
+			var gain: int = _seat_stat_exp(seat, stat) - before
+			remove_entry(idx)
+			if gain <= 0:
+				continue
+			if best.is_empty() or gain > int(best["gain"]) \
+					or (gain == int(best["gain"]) and (o.y < (best["origin"] as Vector2i).y
+					or (o.y == (best["origin"] as Vector2i).y and o.x < (best["origin"] as Vector2i).x))):
+				best = {"tile": t.id, "origin": o, "gain": gain}
+	return best
+
+
+# Week EXP of one stat for one seat on the current board.
+func _seat_stat_exp(seat: int, stat: String) -> int:
+	return int((compute_gains().get(seat, {}) as Dictionary).get(stat, 0))
+
+
+# Broad pass (the M3 rule): round-robin over the pool's non-focused tiles, one
+# copy per turn, each at the first position that raises the board total EXP.
+func _coach_broad_pass(pool: Array) -> int:
+	var broad: Array = []
+	for t_raw in pool:
+		if not is_focused_tile(t_raw):
+			broad.append(t_raw)
+	var placed: int = 0
+	var progress: bool = true
+	while progress:
+		progress = false
+		for t2_raw in broad:
+			var t2: TrainingTile = t2_raw
+			if not grade_slot_free(t2):
+				break
+			if _auto_place_one(t2):
+				placed += 1
+				progress = true
+	return placed
 
 
 func _auto_place_one(t: TrainingTile) -> bool:

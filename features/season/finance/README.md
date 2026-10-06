@@ -1,13 +1,14 @@
 # finance/ — budget · facilities (M6)
 
-Contract: `docs/outgame_dev_plan.md` §11. State `season_state.finance` (shape owned here).
-Tuning values live only in `data/csv/const.csv` (`FINANCE_*`) and `data/csv/facilities.csv` —
-this README names keys, never numbers.
+Contract: `docs/outgame_dev_plan.md` §11 (M6) and §14 (T6 — finance stat, special spending).
+State `season_state.finance` (shape owned here). Tuning values live only in `data/csv/const.csv`
+(`FINANCE_*` · `FINANCE_STAT_*` · `FSPEC_*`), `data/csv/facilities.csv` and
+`data/csv/finance_specials.csv` — this README names keys, never numbers.
 
 | File | Role |
 |---|---|
-| `FinanceSystem.gd` | `class_name FinanceSystem` (static). Run init, week-end settlement, match bonus, allocation, facility upgrade, the three multipliers, number formatting (`fmt` / `fmt_signed`). |
-| `FinancePanel.gd` | Hub manage card 「재무」 (`hub_summary`) + `HubSheet` detail (`open`). |
+| `FinanceSystem.gd` | `class_name FinanceSystem` (static). Run init, week-end settlement, match bonus, allocation, facility upgrade, `income_mult` / `upkeep_mult` / `salary_cost` (traits × finance stat × specials), the three outside multipliers, special spending (rows, block reasons, buy, week tick), number formatting (`fmt` / `fmt_signed`). |
+| `FinancePanel.gd` | Hub manage card 「재무」 (`hub_summary`) + `HubSheet` detail (`open`), incl. the 특별 지출 section. |
 
 ## Entry points (called by base-owned code)
 | Caller | Call |
@@ -33,20 +34,38 @@ missing keys (pre-M6 save) is re-initialised lazily by `_fin`, keeping what was 
 | `week_bonus` · `week_wins` · `week_losses` | int | Match bonus accrued since the last settlement (reset by `settle_week`). |
 | `week_no` | int | Settlements done this run (history label "N주차"). |
 | `manual_profit_weeks` | int | Settled weeks with `net ≥ 0` while `StaffSystem.owner(state, "finance") == "manager"` — trait unlock `finance_manual_profit:N` (M8). Read via `manual_profit_weeks(state)`. |
+| `specials` | Array of `{id, name, kind, p1, p2, weeks_left, cost, bought_week}` | Running special spending (§14). Params are a snapshot of the CSV row at purchase (p1 / p2 stay strings). `weeks_left` loses one per `settle_week`; the entry is dropped at 0. |
+| `week_special_spend` · `week_special_buys` | int · Array[String] | Spent on specials since the last settlement and the names bought (history / toast), reset by `settle_week`. |
 | `history` | Array of entries | Last `FINANCE_HISTORY_WEEKS` settlements, oldest first. |
 
 History entry (also what `settle_week` returns, plus `toast`):
-`{week_no, phase, phase_week, sponsor, income_pct, trait_income_pct, trait_upkeep_pct, bonus, wins, losses, income, salaries, upkeep,
+`{week_no, phase, phase_week, sponsor, income_pct, trait_income_pct, trait_upkeep_pct, finance_stat,
+special_income_pct, special_upkeep_pct, special_salary_pct, specials: Array[id] (running during the week),
+special_spend, special_buys: Array[name], specials_expired: Array[name], bonus, wins, losses, income, salaries, upkeep,
 expense, net, reserve, alloc{training, facility, welfare} (amounts), unpaid, balance, fund, level,
 delegated, cuts: Array[String]}`.
 
 ## Week-end settlement (`settle_week`)
 1. `income = sponsor_income(state, level) + week_bonus` (bonus may be negative), where
-   `sponsor_income = round(sponsor_base × income_pct / 100 × TraitSystem.run_pct_mult(state, "income_pct"))`.
-2. `expense = StaffSystem.weekly_salary_total + upkeep_cost(state, level)`, where
-   `upkeep_cost = round(facility upkeep × TraitSystem.run_pct_mult(state, "upkeep_pct"))` (M8 traits).
-   `projection()` / `weekly_fixed_cost()` call the same two helpers, so the panel and the settlement agree.
-   The history entry's `income_pct` stays the facility percent; the trait sums are `trait_income_pct` / `trait_upkeep_pct`.
+   `sponsor_income = round(sponsor_base × income_pct / 100 × income_mult(state))`.
+2. `expense = salary_cost(state) + upkeep_cost(state, level)`, where
+   `upkeep_cost = round(facility upkeep × upkeep_mult(state))` and
+   `salary_cost = round(StaffSystem.weekly_salary_total × (1 + special_pct(salary) / 100))`.
+   `projection()` / `weekly_fixed_cost()` call the same helpers, so the panel and the settlement agree.
+   The history entry's `income_pct` stays the facility percent; the trait sums are `trait_income_pct` / `trait_upkeep_pct`,
+   the finance stat used is `finance_stat`, the special sums `special_*_pct`.
+
+### `income_mult` / `upkeep_mult` — the single sponsor × / upkeep × the UI reads
+| Function | Formula |
+|---|---|
+| `income_mult` | `TraitSystem.run_pct_mult(income_pct) × finance_stat_income_mult × (1 + special_pct(income)/100)` |
+| `upkeep_mult` | `TraitSystem.run_pct_mult(upkeep_pct) × finance_stat_upkeep_mult × (1 + special_pct(upkeep)/100)` |
+| `finance_stat_income_mult` | `1 + (F − FINANCE_STAT_PIVOT) × FINANCE_STAT_INCOME_STEP / 100` (floored at 0) |
+| `finance_stat_upkeep_mult` | `max(FINANCE_STAT_UPKEEP_MULT_MIN, 1 − (F − FINANCE_STAT_PIVOT) × FINANCE_STAT_UPKEEP_STEP / 100)` |
+
+`F = StaffSystem.effective(state, "finance")` — the **cover rule** value (manager + mods, assistant, finance
+staff, whichever is highest), so it is continuous: a good finance staffer earns more and pays less, a weak
+manager running finance alone pays a little extra. Who decides the allocation (`is_delegated`) is separate.
 3. `net = income − expense`. One penalty week is consumed.
 4. **Surplus (`net ≥ 0`)**: `FINANCE_RESERVE_PCT` of it is added to the balance; the rest (the
    pool) is split by `allocation_shares` (each share floored, rounding remainder to the largest share):
@@ -92,9 +111,40 @@ A "hard cut" (steps 3–4) lights the hub card alert and marks the history row �
 ## Multipliers
 | Function | Formula |
 |---|---|
-| `training_exp_mult` | `train_exp_pct/100 × (1 + effects.training_pct/100) × (penalty ? 1 − FINANCE_UNPAID_TRAIN_PENALTY_PCT/100 : 1)` |
+| `training_exp_mult` | `train_exp_pct/100 × (1 + effects.training_pct/100) × (1 + special_pct(train)/100) × (penalty ? 1 − FINANCE_UNPAID_TRAIN_PENALTY_PCT/100 : 1)` |
 | `mastery_mult` | `mastery_pct/100` |
-| `incident_mult` | `max(FINANCE_INCIDENT_MULT_MIN, incident_pct/100 × (1 − effects.welfare_pct/100))` |
+| `incident_mult` | `max(FINANCE_INCIDENT_MULT_MIN, incident_pct/100 × (1 − effects.welfare_pct/100) × (1 + special_pct(incident)/100))` |
+
+## Special spending (특별 지출, §14 T6)
+The sink for surplus balance, and the low-budget tools M6 left for later. Rows live in
+`data/csv/finance_specials.csv` (`id, name, kind, cost, p1, p2, weeks, cond, desc`, Korean names / desc).
+Bought from the sheet, **paid from the balance at once** (not part of the week's `net`), effect for
+`weeks` settlements.
+
+| `kind` | `p1` | `p2` | Effect |
+|---|---|---|---|
+| `coach_hire` | stat key (`StaffSystem.STATS`) | delta | `StaffSystem.add_mod(state, p1, p2, weeks, "특별 지출 · <name>")` — lifts the **manager's** value; decayed by `StaffSystem.decay_mods` on the same cadence |
+| `camp` | train EXP % | — | `special_pct(train)` |
+| `sponsor_deal` | income % | train EXP % (downside, may be 0) | `special_pct(income)`, `special_pct(train)` |
+| `upkeep_delay` | upkeep % | incident % (downside) | `special_pct(upkeep)`, `special_pct(incident)` |
+| `salary_cut` | salary % | train EXP % (downside) | `special_pct(salary)`, `special_pct(train)` |
+
+`special_pct(state, axis)` sums `p1` / `p2` of running entries per `SPECIAL_AXES`. Kinds map to the low-budget
+tools of the plan: `sponsor_deal` (sponsor deals), `upkeep_delay` (maintenance delay), `salary_cut` (salary
+renegotiation); `coach_hire` / `camp` / the expensive `sponsor_deal` rows are the rich-team sinks.
+
+**Condition** (`cond`, clauses joined by `&`, all must hold; `special_cond_reason`): `facility_min:N`,
+`facility_max:N`, `sponsor_max:N` (team `sponsor_base`), `balance_max:N`, `last_wins_min:N` (wins in the last
+settled week). An unknown clause blocks the row (`조건 오류`).
+
+**Block reasons** (`special_block_reason`, in order — the button shows the first): unknown row · already running
+(`진행 중 — n주 남음`, one entry per id) · `FSPEC_MAX_ACTIVE` running · condition unmet · no effect
+(`coach_hire` whose lifted manager value would not beat the current cover — `coach_hire_gain`; `salary_cut`
+with no staff salaries; `upkeep_delay` with no upkeep) · balance < cost.
+
+**Week end**: `settle_week` computes everything with the running specials, then `_tick_specials` lowers
+`weeks_left` and drops finished ones; their names go to `specials_expired` and the toast
+(`… · 특별 지출 N · 만료: <names>`).
 
 ## UI
 - **Hub card**: title `재무 · 시설 LvN`, value = balance, sub = last week's net (`· 삭감` after a hard cut,
@@ -102,9 +152,9 @@ A "hard cut" (steps 3–4) lights the hub card alert and marks the history row �
   balance < one week of fixed cost (`is_low_balance`), a training penalty is running, or last week had a hard cut.
 - **Sheet** (`HubSheet`, rebuilt in place after every change): balance + fund, owner line, this week's
   projection (`projection`), warnings; 지난 주 정산 (income / expense lines, net, where the surplus went,
-  cut lines); 흑자 배분 (bars, steppers when manual, active effects); 시설 (current / next level effects,
-  cost, upgrade button); 최근 기록 (latest `RECENT_ROWS` weeks).
-
-## Out of scope (later)
-Low-budget tools — sponsor deals, maintenance delay, salary renegotiation. A rich team at max level
-accumulates balance with nothing to spend it on yet; those tools are the intended sink.
+  cut lines, special spend / expiries); 흑자 배분 (bars, steppers when manual, active effects); 시설 (current /
+  next level effects, cost, upgrade button); 특별 지출 (running entries, then one row per CSV row: name,
+  effect line `special_effect_text` · weeks, desc, and a two-step button — `구매 −N` / `계약 무료` →
+  「한 번 더 눌러 확정」 → buy; disabled with the block reason); 최근 기록 (latest `RECENT_ROWS` weeks).
+  Only one special row is armed at a time (`_render(…, special_armed)`).
+- The sponsor × text in 지난 주 정산 is owned by §14 T3 (it reads `income_mult`).

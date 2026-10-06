@@ -759,10 +759,76 @@ func _build_cost_donuts() -> void:
 	_bs.cost_donut.end_turn_pressed.connect(_bs.card_phase.end_card_phase)
 
 
+## 결과 화면의 MVP 한 줄(원형 초상 + 이름 + K/D/A). `_build_victory_panel` 이
+## 자리를 비워 두고 `BattleSim.end_match` 가 `set_victory_mvp` 로 채운다.
+var _victory_mvp_row: Control = null
+## 결과 화면 크기 — MVP 한 줄이 들어가도록 예전(400)보다 높다.
+const VICTORY_PANEL_SIZE := Vector2(700.0, 520.0)
+const VICTORY_MVP_Y := 170.0
+const VICTORY_MVP_H := 120.0
+const VICTORY_BTN_Y := 360.0
+const VICTORY_MVP_PORTRAIT := 96.0
+const VICTORY_MVP_LABEL_COLOR := Color(1.0, 0.85, 0.35)
+
+
+## 결과 화면의 MVP 한 줄을 채운다. `p` 가 null 이면(이긴 팀이 비어 있는 기묘한
+## 경우) 줄을 숨긴다.
+func set_victory_mvp(p: PilotData, row: Dictionary) -> void:
+	if _victory_mvp_row == null:
+		return
+	for c in _victory_mvp_row.get_children():
+		c.queue_free()
+	_victory_mvp_row.visible = p != null
+	if p == null:
+		return
+	var tag := Label.new()
+	tag.text = "MVP"
+	tag.add_theme_font_size_override("font_size", 30)
+	tag.add_theme_color_override("font_color", VICTORY_MVP_LABEL_COLOR)
+	tag.position = Vector2(40.0, 0.0)
+	tag.size = Vector2(90.0, VICTORY_MVP_H)
+	tag.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_victory_mvp_row.add_child(tag)
+
+	var tex: Texture2D = PilotImages.circle_for(MvpView.portrait_id(p))
+	var portrait_y: float = (VICTORY_MVP_H - VICTORY_MVP_PORTRAIT) * 0.5
+	if tex != null:
+		var portrait_rect := TextureRect.new()
+		portrait_rect.texture = tex
+		portrait_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		portrait_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		portrait_rect.position = Vector2(140.0, portrait_y)
+		portrait_rect.size = Vector2(VICTORY_MVP_PORTRAIT, VICTORY_MVP_PORTRAIT)
+		_victory_mvp_row.add_child(portrait_rect)
+
+	var name_lbl := Label.new()
+	name_lbl.text = MvpView.display_name(_bs, p)
+	name_lbl.add_theme_font_size_override("font_size", 34)
+	name_lbl.position = Vector2(256.0, 14.0)
+	name_lbl.size = Vector2(420.0, 48.0)
+	name_lbl.clip_text = true
+	_victory_mvp_row.add_child(name_lbl)
+
+	var kda := Label.new()
+	kda.text = "%s · %s" % [MvpView.role_label(p), MvpView.kda_text(row)]
+	kda.add_theme_font_size_override("font_size", 26)
+	kda.add_theme_color_override("font_color", Color(0.80, 0.84, 0.92))
+	kda.position = Vector2(256.0, 62.0)
+	kda.size = Vector2(420.0, 40.0)
+	_victory_mvp_row.add_child(kda)
+
+
 func _build_victory_panel() -> void:
 	_bs.panel_victory = Panel.new()
 	var vp := ScreenMetrics.viewport_size()
-	_bs.panel_victory.size     = Vector2(700.0, 400.0)
+	_bs.panel_victory.size     = VICTORY_PANEL_SIZE
+	# 어두운 판 — 기본 테마의 반투명 회색은 전장 타일이 비쳐 MVP 한 줄이 묻힌다.
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.05, 0.06, 0.10, 0.94)
+	sb.border_color = Color(1.0, 0.80, 0.30, 0.75)
+	sb.set_border_width_all(3)
+	sb.set_corner_radius_all(18)
+	_bs.panel_victory.add_theme_stylebox_override("panel", sb)
 	_bs.panel_victory.position = (vp - _bs.panel_victory.size) * 0.5
 	_bs.panel_victory.visible  = false
 	_bs.canvas.add_child(_bs.panel_victory)
@@ -774,12 +840,20 @@ func _build_victory_panel() -> void:
 	_bs.lbl_victory.size     = Vector2(700.0, 80.0)
 	_bs.panel_victory.add_child(_bs.lbl_victory)
 
+	_victory_mvp_row = Control.new()
+	_victory_mvp_row.name = "MvpRow"
+	_victory_mvp_row.position = Vector2(0.0, VICTORY_MVP_Y)
+	_victory_mvp_row.size = Vector2(VICTORY_PANEL_SIZE.x, VICTORY_MVP_H)
+	_victory_mvp_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_victory_mvp_row.visible = false
+	_bs.panel_victory.add_child(_victory_mvp_row)
+
 	# Standalone runs replay the same battle; Season-driven runs return to the
 	# campaign hub so LeagueManager can record the result.
 	var season_mode: bool = _bs.gm.season_state.get("pending_match", null) != null
 	var rb := Button.new()
 	rb.text = "다음 →" if season_mode else "Play Again"
-	rb.position = Vector2(200.0, 240.0)
+	rb.position = Vector2(200.0, VICTORY_BTN_Y)
 	rb.size     = Vector2(300.0, 80.0)
 	rb.add_theme_font_size_override("font_size", 32)
 	if season_mode:

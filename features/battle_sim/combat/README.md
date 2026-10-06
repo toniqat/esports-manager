@@ -635,6 +635,28 @@ bump `turn_count`. Win condition
 is rechecked at the end so a turret-destruction kill via 전진 resolves
 immediately.
 
+### Match stats (MVP metric) — damage / shield / heal hook points
+Per-pilot match counters live on `PilotData` (`kills` · `deaths` · `assists` · `dmg_dealt` ·
+`dmg_taken` · `care`) and are only ever moved by **a handful of `BattleSim` hooks**, so no damage
+path can forget one:
+
+| Counter | Hook | Paths that reach it |
+|---|---|---|
+| `kills` / `deaths` / `assists` | `BattleSim.mark_pilot_dead` via `kill_roster(victim, killer)` — the **same roster the kill feed shows** (last hit = `killer`, or the top damage contributor when unknown; assists = everyone else in `live_damage_credit`) | every death (battlefield, advance card, attack cards, [확신], execute, engage stage) |
+| `dmg_dealt` | `BattleSim.record_pilot_damage` (the bounty ledger — same value, shield-absorbed share included) + the remaining HP of an instant kill in `mark_pilot_dead` (execute) | battlefield `_credit_pilot_damage`, attack cards, [확신], engage strikes |
+| `dmg_taken` | `BattleSim.apply_pilot_damage(victim, amount)` — shield first, then HP (floored at 0); counts **HP actually lost** (no overkill) | `simulate_turn` step 4, `_apply_card_damage` (advance card), `CardPhaseManager._apply_attack_damage`, `_effect_attack_bounty`, `TurnEngageSim._apply_damage` (pilot strikes **and** turret shots; 불굴 (Last Stand) gives the 1 HP back to the counter too). Execute: remaining HP in `mark_pilot_dead` |
+| `care` | shield absorption inside `apply_pilot_damage` (credited to the **grantor** of the absorbed shield) + `BattleSim.apply_heal(target, amount, healer)` (overheal dropped) | shields: `grant_shield` from `shield_pct` / `shield_atk` cards; heals: `heal_pct` |
+
+- **Shield attribution**: `BattleSim.grant_shield(target, amount, source)` appends
+  `{src, amt}` to `PilotData.shield_grants`; absorption drains it **FIFO** and credits each
+  grant's source. Places that zero `shield` outside the ledger (return to base, card recall,
+  death) need no hook — before draining, the ledger is trimmed (oldest first) to the current
+  `shield`, so a stale grant is never credited.
+- **Care counts other allies only** — a self-shield / self-heal, or a shield whose source is on
+  the other team, credits nobody. Protecting yourself already shows as lower `dmg_taken`.
+- `BattleSim.build_pilot_stats()` turns the ten pilots into `pending_match.pilot_stats` rows
+  (shape in `features/battle_sim/README.md` "Match result payload").
+
 ### Misc helpers
 - `t1_alive_in_lane`, `any_t2_destroyed`, `has_enemy_turret_at`
 - `process_respawns`

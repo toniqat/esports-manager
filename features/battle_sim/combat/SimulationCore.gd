@@ -114,13 +114,9 @@ func simulate_turn() -> void:
 	_bs.blog.stage("4-damage")
 	for k in damage_map.keys():
 		var p := k as PilotData
-		var dmg: int = damage_map[k]
 		var shield_before: int = p.shield
-		if dmg > 0 and p.shield > 0:
-			var absorbed: int = min(p.shield, dmg)
-			p.shield -= absorbed
-			dmg -= absorbed
-		p.hp -= dmg
+		# 보호막 먼저 → 체력. 경기 기록(받은 피해 · 보호막 돌봄)도 이 한 지점에서 센다.
+		_bs.apply_pilot_damage(p, int(damage_map[k]))
 		_bs.blog.log_event("DMG", "%-4s -%d (shield %d→%d) hp→%d @%s" % [
 				_bs.pilot_label(p), int(damage_map[k]), shield_before, p.shield,
 				maxi(p.hp, 0), str(p.grid_pos)])
@@ -1616,12 +1612,7 @@ func _apply_card_damage(damage_map: Dictionary, turret_dmg: Dictionary,
 		log_lines: Array) -> void:
 	for k in damage_map.keys():
 		var dp := k as PilotData
-		var dmg: int = damage_map[k]
-		if dmg > 0 and dp.shield > 0:
-			var absorbed: int = min(dp.shield, dmg)
-			dp.shield -= absorbed
-			dmg -= absorbed
-		dp.hp -= dmg
+		_bs.apply_pilot_damage(dp, int(damage_map[k]))
 		_bs.blog.log_event("DMG", "%-4s -%d hp→%d @%s" % [
 				_bs.pilot_label(dp), int(damage_map[k]), maxi(dp.hp, 0),
 				str(dp.grid_pos)])
@@ -2162,26 +2153,12 @@ func spawn_turrets() -> void:
 
 # ─── Win Condition ────────────────────────────────────────────────────────────
 
+## HQ 가 무너졌는지 본다. 경기 끝의 일(결과 기록 · 경기 통계 · MVP 뷰 → 결과
+## 화면)은 전부 `BattleSim.end_match` 가 한다 — 한 번만 불리도록 여기서 거른다.
 func check_win_condition() -> void:
-	if _bs.enemy_hq_hp <= 0:
-		_bs.game_over = true
-		_bs.lbl_victory.text       = "Player Team Wins!"
-		_bs.panel_victory.visible = true
-		Haptics.play(Haptics.Kind.SUCCESS)
-		_record_season_winner(0)
-	elif _bs.player_hq_hp <= 0:
-		_bs.game_over = true
-		_bs.lbl_victory.text       = "Opponent Team Wins!"
-		_bs.panel_victory.visible = true
-		Haptics.play(Haptics.Kind.ERROR)
-		_record_season_winner(1)
-
-
-# When BattleSim was launched from a Season campaign, write the winning side
-# back into season_state.pending_match so SeasonHub can pick it up after the
-# scene change. Standalone runs (no pending_match) are a no-op.
-func _record_season_winner(winner_side: int) -> void:
-	var pm = _bs.gm.season_state.get("pending_match", null)
-	if pm == null:
+	if _bs.game_over:
 		return
-	pm["winner_side"] = winner_side
+	if _bs.enemy_hq_hp <= 0:
+		_bs.end_match(0)
+	elif _bs.player_hq_hp <= 0:
+		_bs.end_match(1)

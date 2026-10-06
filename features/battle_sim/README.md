@@ -26,6 +26,21 @@ On `_ready()`, BattleSim reads `GameManager.match_ctx`:
 | `player_side` | `BattleSim.blue_team` via `seed_side_costs()` — the blue side gets the strategy-point head start + first turn |
 | `active = false` | Triggers fallback to ROLE_STATS (no MatchFlow ran); the side also falls back to player = blue |
 
+### Match result payload (`season_state.pending_match`)
+At match end `BattleSim.end_match(winner_side)` (called once by
+`SimulationCore.check_win_condition`) writes, **only when `pending_match` exists** (standalone
+runs write nothing):
+
+| Key | Value |
+|---|---|
+| `winner_side` | 0 = my team (team 0), 1 = opponent |
+| `pilot_stats` | 10 rows in `pilots` order (0..4 = my team): `{"pilot_id", "side", "role", "k", "d", "a", "dmg", "taken", "care"}` — `pilot_id` = `PlayerData.id` (falls back to `PilotData.pilot_id`), `role` = `GameEnums.Role`. Contract: `docs/outgame_dev_plan.md` §10.4; how each number is counted: `combat/README.md` "Match stats" |
+| `mvp_pilot_id` | winning team's best `RunStats.mvp_score(row)` (`features/season/run_stats/README.md`), -1 if none |
+
+Then the **MVP view** opens, and its "계속" opens the existing result panel (now with an MVP
+line) — `ui/README.md` "Match end — MVP view → result panel". SeasonHub consumes the payload
+(`RunStats.record_match`).
+
 ---
 
 ## Module Architecture
@@ -96,7 +111,7 @@ Responsibilities:
 
 | File | class_name | Description |
 |---|---|---|
-| `resources/PilotData.gd` | PilotData | role, hp/max_hp, atk, team, grid_pos, lane, waypoint_idx, **move_range**, **hit**, **evasion**, **jungle_start_pref**, **respawn_timer** (death-only off-field clock — see `BattleSim.turns_until_return`), **recall_hold** (skip one move on the turn of a return-to-base (본진 복귀)), **anim_move_path** (path of cells stepped this time — the renderer reads and clears it), **kills / deaths** (cumulative this match — incremented only in `mark_pilot_dead`; the competitive-spirit skill uses them to compare against the opposing laner) |
+| `resources/PilotData.gd` | PilotData | role, hp/max_hp, atk, team, grid_pos, lane, waypoint_idx, **move_range**, **hit**, **evasion**, **jungle_start_pref**, **respawn_timer** (death-only off-field clock — see `BattleSim.turns_until_return`), **recall_hold** (skip one move on the turn of a return-to-base (본진 복귀)), **anim_move_path** (path of cells stepped this time — the renderer reads and clears it), **kills / deaths** (cumulative this match — incremented only in `mark_pilot_dead`, kills credited to the kill feed's last hit; the competitive-spirit skill uses them to compare against the opposing laner), **match stats** `assists` / `dmg_dealt` / `dmg_taken` / `care` + the shield-source ledger `shield_grants` (see `combat/README.md` "Match stats") |
 | `resources/TurretData.gd` | TurretData | team, grid_pos, hp, tier, lane, alive |
 | `resources/PlayerData.gd` | PlayerData | id, name, role, team_id, **6 player (선수) stats** (field_hit / field_eva / engage_hit / engage_eva / atk_growth / hp_growth — tables are `STAT_KEYS` / `STAT_LABELS` / `STAT_SHORT` / `STAT_NOTES`, floor 1 · no cap), `assigned_mech`, **`skill_id`** (pilot_skills.id, -1 = none), **`is_mob`** (silhouette portrait · no skill · excluded from draft) |
 | `resources/MechData.gd` | MechData | id, name, hp, atk, **presence** (mechs.csv `presence` — higher for melee, lower for ranged; used only as the target aggro weight on the engage stage). **`speed` has been deleted** — once engage became round-based turns, the concept of action frequency disappeared |

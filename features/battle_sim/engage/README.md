@@ -682,7 +682,7 @@ the result window** and you get "who just died?". So the manager puts an
 - Setting the grace to 0 goes straight back to the immediate dashboard.
 
 ### Applying to the battlefield state
-- Damage is applied **directly** to `PilotData.hp` / `.shield`. When the engage ends it carries
+- Damage is applied **directly** to `PilotData.hp` / `.shield` through `BattleSim.apply_pilot_damage` (the battlefield's single shield → HP point, which also counts match stats — `combat/README.md` "Match stats"). When the engage ends it carries
   over to the battlefield as is.
 - Kill → `_bs.mark_pilot_dead(pilot, killer)`. It is the same death path as the battlefield, so
   respawn-turn scaling (`respawn_turns_now()` = `RESPAWN_TURNS` (game_config.csv) + elapsed turns / `BATTLE_RESPAWN_TURN_SCALE_DIV` (const.csv)), the death animation, and

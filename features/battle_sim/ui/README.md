@@ -11,6 +11,7 @@
 | `PilotDetailPanel.gd` | PilotDetailPanel | Pilot detail modal — left: 2 full-body arts (+ lasting effects at bottom-left) / right: header + 3 tabs + stat chips + **pilot skill block** / full-width bottom: **fan of held cards** |
 | `MarkerTouch.gd` | MarkerTouch | Pressing a battlefield (전장) portrait — while held it grows to `PRESS_SCALE` and moves to the top (it stays on top after release); **long-press (0.45 s) opens the detail panel** |
 | `KillFeed.gd` | KillFeed | Kill log — top-right, one line per kill (처치) / turret (포탑) demolition / objective capture. Kills during an engage (교전) are flushed together after the arena closes |
+| `MvpView.gd` | MvpView | **Match MVP view** — full-screen dark card shown at match end **before** the victory/defeat panel: MVP's full-body art + name · side · position · K/D/A · key-metric line, "계속" (Continue). Also hosts the shared display strings (`display_name` · `role_label` · `kda_text` · `metric_text`) the result panel's MVP line uses. See "Match end — MVP view → result panel" below |
 
 ## HudBuilder.gd
 `extends Node` — child of BattleSim.
@@ -906,6 +907,29 @@ victim cell always lands at the same x.
 - With 4 lines the bottom stops at y **334**, **above the top of the battlefield pixels
   (369)** (when the top panel was 168 it was a close call at 354). Raising `MAX_ROWS` /
   `ROW_STEP` much covers the battlefield.
+
+### Match end — MVP view → result panel (`MvpView.gd` + `_build_victory_panel`)
+Flow (owner: `BattleSim.end_match(winner_side)`, called once from
+`SimulationCore.check_win_condition`):
+
+1. The win/loss haptic plays (`SUCCESS` / `ERROR`, unchanged) and the match stats are frozen
+   (`BattleSim.build_pilot_stats`, see `combat/README.md` "Match stats").
+2. **MVP** = winning team's best `RunStats.mvp_score(row)` (`RunStats.pick_mvp_index`). The
+   view is a `CanvasLayer` at `MvpView.OVERLAY_LAYER` (above every other overlay): dimmed
+   background → "MATCH MVP" title → **full-body art** (`PilotImages.full_for(p.pilot_id)` — mobs get
+   the silhouette cut automatically; no image (INTL / unknown id) → a placeholder slab with the
+   role name) → info panel (name · `아군`/`상대 팀` · position label · K / D / A · key metric line)
+   → full-width "계속" button. The metric line follows the MVP formula's terms: support =
+   care + damage taken, top = damage dealt + taken, others = damage dealt.
+3. "계속" (or a tap anywhere after `TAP_ARM_SEC`, so the tap that ended the match can't skip it)
+   → `closed` → `BattleSim._on_mvp_view_closed` frees the view and shows `panel_victory`.
+4. The result panel (`panel_victory`) is taller now (`VICTORY_PANEL_SIZE`) and carries an
+   **MVP line** (`HudBuilder.set_victory_mvp`): circle portrait + name + position · K/D/A.
+
+Every coordinate is inside `ScreenMetrics` (title from `top_y()`, button stacked up from
+`bottom_y()` — clear of the bottom gesture band, `docs/mobile_safe_area.md`); the art height
+is whatever is left between title and info panel. Standalone runs show the same view from live
+stats; "Play Again" (`_on_restart_pressed`) frees any open view.
 
 ### update_hud() (per-turn)
 - Calls `_update_cost_donuts(in_card_phase)` — pushes both sides' operation points

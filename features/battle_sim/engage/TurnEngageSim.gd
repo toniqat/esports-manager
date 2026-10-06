@@ -1314,16 +1314,11 @@ static func _hit_chance(hit: int, evasion: int) -> float:
 
 
 func _apply_damage(d: PilotData, amount: int) -> int:
-	var dmg := amount
-	var absorbed := 0
-	if d.shield > 0:
-		absorbed = min(d.shield, dmg)
-		d.shield -= absorbed
-		dmg -= absorbed
-	var hp_dmg := 0
-	if dmg > 0:
-		hp_dmg = min(dmg, d.hp)
-		d.hp = max(0, d.hp - dmg)
+	# 보호막 먼저 → 체력. 전장과 같은 한 지점(`BattleSim.apply_pilot_damage`)이
+	# 경기 기록(받은 피해 · 보호막 돌봄)도 함께 센다.
+	var shield_before: int = d.shield
+	var hp_dmg: int = _bs.apply_pilot_damage(d, amount)
+	var absorbed: int = shield_before - d.shield
 	# 불굴(지원 V) — 이 교전에서 **팀 전원이 한 번씩**, 체력 1 아래로 내려가지
 	# 않는다. 판정을 여기 두는 이유는 포탑 사격도 같은 함수를 지나기 때문이다 —
 	# 파일럿 공격에만 걸면 포탑 한 방에 죽는 구멍이 남는다.
@@ -1332,6 +1327,7 @@ func _apply_damage(d: PilotData, amount: int) -> int:
 		_bs.mech_skill.consume_last_stand(d)
 		d.hp = 1
 		hp_dmg = maxi(0, hp_dmg - 1)   # 실제로 깎인 만큼만 센다
+		d.dmg_taken = maxi(0, d.dmg_taken - 1)   # 경기 기록도 같은 1 을 돌려놓는다
 		var u: EUnit = _unit_for(d)
 		if u != null:
 			popups.append({"pos": u.pos, "text": "불굴!",

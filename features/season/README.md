@@ -404,3 +404,11 @@ Contract: `docs/outgame_dev_plan.md` §10.1 / §10.3.
 - GameOverView / EndingView keep their presentation; their single bottom-bar
   button `정산` goes to `RunResult.SCENE_PATH`. They no longer delete the run or
   reset `season_state` — the RunResult screen owns what happens next.
+
+### Season — Match MVP · phase POM (M2) → `run_stats/README.md`
+- `_consume_pending_match_result` calls `RunStats.record_match(state, pending_match)` **before**
+  applying the result to the schedule (the apply can cascade straight into run-end settlement,
+  which closes the current phase's POM — the last match must already be counted).
+- `_on_phase_changed_close_pom` (connected to `CalendarSystem.phase_changed` in `_ready`) closes
+  the phase that just ended: `RunStats.finalize_phase(state, new_phase - 1)`. Settlement
+  (`RunResult`) closes the current phase the same way; both are idempotent.

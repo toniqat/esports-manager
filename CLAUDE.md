@@ -64,6 +64,7 @@ esports-manager/
     │   ├── week/             ← 시간 경과 (Time passing) screen (day rail + day cards)
     │   ├── training/         ← daily training (일상 훈련) tile board
     │   ├── league/           ← LeagueManager + LeagueView (2 rounds / week)
+    │   ├── run_stats/        ← RunStats: match MVP metric, phase POM (season_state.run_stats)
     │   └── tournament/       ← playoff + INTL brackets (no README — see season/README.md)
     ├── match_flow/           ← PREP → BAN_PICK → BattleSim handoff
     │   ├── match_prep/
@@ -106,6 +107,7 @@ esports-manager/
 | Weekly progression contract, Weekdays and match days | `features/season/calendar/README.md` |
 | Season→MatchFlow→BattleSim handoff, playoff / INTL brackets | `features/season/README.md` |
 | MatchFlow→BattleSim handoff (`match_ctx`) | `features/match_flow/README.md`, `features/battle_sim/README.md` |
+| Match stats (K/D/A · damage · care), MVP metric, MVP view, phase POM | `features/battle_sim/combat/README.md`, `features/season/run_stats/README.md` |
 | BattleSim module architecture, side (blue/red), growth & growth points (성장치), economy gate, field size | `features/battle_sim/README.md` |
 | Lane combat, turrets, recall, jungle / camps, front line, stats & hit chance | `features/battle_sim/combat/README.md` |
 | Card phase, drag & drop, hand layout, keywords, AI turn, **fixed pilot cards (3 per player) · card scope / categories** | `features/battle_sim/card_phase/README.md` |

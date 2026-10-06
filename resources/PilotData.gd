@@ -18,10 +18,27 @@ var alive: bool           = true
 # 이 타이머를 쓰지 않는다: 죽지 않는 한 파일럿은 항상 전장 위에 있다.
 var respawn_timer: int    = 0
 # 이번 매치의 처치 수 / 사망 수. `BattleSim.mark_pilot_dead` 한 곳에서만 오른다.
-# 킬로그와 성장치는 각자 다른 표를 쓰므로(피해 장부 / 킬 피드) 이 둘은 순수한
-# 누적 카운터이고, 지금은 경쟁 심리(파일럿 스킬)가 상대 라이너와 견주는 데 쓴다.
+# 처치는 **킬로그의 막타**와 같은 사람에게 붙는다(`BattleSim.kill_roster` —
+# 마지막 타격자를 모르면 그 생에 가장 많이 때린 적). 경쟁 심리(파일럿 스킬)가
+# 상대 라이너와 견주는 데 쓰고, 경기 끝의 MVP 지표(`pilot_stats`)가 읽는다.
 var kills: int            = 0
 var deaths: int           = 0
+
+# ─── 경기 기록 (MVP 지표) ─────────────────────────────────────────────────────
+# 위의 `kills` / `deaths` 와 한 벌인 이번 경기의 누적 통계. 경기 끝에
+# `BattleSim.build_pilot_stats` 가 이 값으로 `pending_match.pilot_stats` 한 줄을
+# 만든다(docs/outgame_dev_plan.md §10.4). 세는 자리는 전부 `BattleSim` 의 훅이다.
+## 어시스트 — 킬로그와 같은 명단(`BattleSim.kill_roster`)에서 막타를 뺀 사람들.
+var assists: int          = 0
+## 적 파일럿에게 준 피해 — 피해 장부(`BattleSim.record_pilot_damage`)에 적힌 값의 합
+## (장부와 같은 값: 보호막에 먹힌 몫 포함) + 처형처럼 장부를 거치지 않은 즉사의 남은 체력.
+var dmg_dealt: int        = 0
+## 받은 피해 — 보호막을 뺀, 실제로 깎인 체력(오버킬 제외). `BattleSim.apply_pilot_damage`.
+var dmg_taken: int        = 0
+## 돌봄 — 내가 **다른 아군**에게 건 보호막이 실제로 흡수한 피해 + 다른 아군에게
+## 준 회복(오버힐 제외). 자기 자신에게 건 보호막 · 회복은 세지 않는다 — 자기 몸을
+## 지킨 몫은 이미 "받은 피해"가 덜 오르는 것으로 드러나고, 돌봄은 남을 지킨 값이다.
+var care: int             = 0
 # 본진 복귀한 그 턴에는 HQ 에 서 있기만 하고 움직이지 않는다는 표시.
 # RecallSystem.return_to_hq 가 켜고, 다음 이동 패스(SimulationCore.resolve_movement)
 # 가 한 턴을 걸러 내면서 스스로 끈다 — 그래서 "복귀 → 다음 턴부터 레인으로".
@@ -65,10 +82,15 @@ var hp_growth_mult: float  = 1.0
 # **속도(speed)는 삭제됐다** — 교전이 라운드 기반 턴제가 되면서 라운드마다
 # 전원이 한 번씩 행동하므로 행동 빈도를 가르는 스탯이 없다. 되살리지 말 것.
 var presence: int         = 4
-# 보호막. Granted by the 보호 card; removed on 본진 복귀 (RecallSystem clears it).
-# Damage absorption isn't wired into SimulationCore yet — this field is the
-# data hook for future integration so card effects can build up the value now.
+# 보호막. 카드(보호 · 수호 …)가 쌓고 모든 파일럿 피해가 HP 보다 먼저 깎는다 —
+# 흡수는 `BattleSim.apply_pilot_damage` 한 곳이다. 본진 복귀 · 사망이 0 으로 비운다.
+# 걸 때는 `BattleSim.grant_shield` 를 지나야 아래 장부에 출처가 남는다.
 var shield: int           = 0
+## 보호막 출처 장부 — `[{"src": PilotData 또는 null, "amt": int}, …]`, 건 순서대로.
+## 흡수는 **먼저 건 것부터** 깎고(FIFO), 흡수된 몫은 그 출처의 `care` 로 간다.
+## `shield` 를 장부 밖에서 비우는 자리(복귀 · 사망)가 있어도 어긋나지 않도록,
+## 흡수 직전에 장부 합계를 `shield` 이하로 잘라 맞춘다(오래된 것부터 버린다).
+var shield_grants: Array = []
 
 # ─── 메크가 거는 지속 상태 ────────────────────────────────────────────────────
 # 아래 필드는 전부 **메크 패시브와 메크 카드**(`mech_passives` / `mech_cards`)가

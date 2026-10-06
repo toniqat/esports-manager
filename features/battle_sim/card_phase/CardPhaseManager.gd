@@ -3560,7 +3560,7 @@ func _apply_single_effect(e: Dictionary, is_player: bool, caster: PilotData,
 		"attack":   return await _effect_attack(value, flags, caster, enemy_team,
 				_as_pilot(selected_target))
 		"shield_pct": return _effect_shield_pct(value, ally_team,
-				_as_pilot(selected_target))
+				_as_pilot(selected_target), caster)
 		"recall_ally": return _effect_recall_ally(ally_team,
 				_as_pilot(selected_target))
 		"exhaust_choice": return _effect_exhaust_choice(is_player, value)
@@ -4123,13 +4123,11 @@ func _apply_attack_damage(t: PilotData, caster: PilotData, n: int) -> int:
 		if _bs.mech_skill.consume_reactive_armor(t):
 			dmg = maxi(1, roundi(float(dmg) * (1.0 - MechSkillSystem.REACTIVE_ARMOR_CUT)))
 	var rolled: int = dmg
-	# 보호막 absorbs first, HP next.
-	if t.shield > 0:
-		var absorbed: int = min(t.shield, dmg)
-		t.shield -= absorbed
-		dmg -= absorbed
-	if dmg > 0:
-		t.hp = max(0, t.hp - dmg)
+	# 보호막 먼저 → 체력. 경기 기록(받은 피해 · 보호막 돌봄)도 이 한 지점에서 센다.
+	# 아래 훅 · 반환값의 `dmg` 는 예전처럼 "보호막이 먹고 남은 몫"이다.
+	var shield_before: int = t.shield
+	_bs.apply_pilot_damage(t, dmg)
+	dmg -= shield_before - t.shield
 	# 피해는 **피해자의 장부**에 적힌다 — 성장치는 그 대상이 실제로 쓰러질 때
 	# 현상금을 나누며 정산된다(전장 · 교전 무대와 같은 규칙). 적는 값은 굴린
 	# 피해 전체다: 보호막에 먹힌 몫도 기여다.
@@ -4304,8 +4302,9 @@ func _on_engage_finished() -> void:
 	_bs.renderer.queue_redraw()
 
 
+## `caster` 는 보호막의 출처로 장부에 남는다(경기 기록의 돌봄) — 효과는 그대로다.
 func _effect_shield_pct(pct: int, ally_team: int,
-		picked: PilotData = null) -> String:
+		picked: PilotData = null, caster: PilotData = null) -> String:
 	var t: PilotData = picked
 	if t == null or not t.alive or t.team != ally_team:
 		t = null
@@ -4317,7 +4316,7 @@ func _effect_shield_pct(pct: int, ally_team: int,
 	if t == null:
 		return "보호막 (대상 없음)"
 	var amount: int = int(t.max_hp * pct / 100)
-	t.shield += amount
+	_bs.grant_shield(t, amount, caster)
 	return "보호막 +%d %s" % [amount, _bs.pilot_label(t)]
 
 
@@ -4963,9 +4962,8 @@ func _effect_heal_pct(pct: int, flags: Array, caster: PilotData,
 	var healed: int = 0
 	for _i in times:
 		var amount: int = int(t.max_hp * pct / 100)
-		var before: int = t.hp
-		t.hp = mini(t.max_hp, t.hp + amount)
-		healed += t.hp - before
+		# 오버힐을 버린 실제 회복량 — 다른 아군을 살린 몫은 시전자의 돌봄이 된다.
+		healed += _bs.apply_heal(t, amount, caster)
 	return "회복 +%d %s" % [healed, _bs.pilot_label(t)]
 
 
@@ -5020,7 +5018,7 @@ func _effect_shield_atk(pct: int, flags: Array, caster: PilotData,
 		return "보호막 (대상 없음)"
 	for raw in targets:
 		var p := raw as PilotData
-		p.shield += amount
+		_bs.grant_shield(p, amount, caster)
 		if _bs.mech_skill != null:
 			_bs.mech_skill.shield_source[p] = caster
 	return "보호막 +%d ×%d" % [amount, targets.size()]
@@ -5544,12 +5542,7 @@ func _effect_attack_bounty(pct: int, caster: PilotData,
 	var dmg: int = maxi(1, int(picked.bounty / MechSkillSystem.SCORE_COST_UNIT
 			* float(pct) / 100.0))
 	var before: int = picked.hp
-	if picked.shield > 0:
-		var absorbed: int = mini(picked.shield, dmg)
-		picked.shield -= absorbed
-		dmg -= absorbed
-	if dmg > 0:
-		picked.hp = maxi(0, picked.hp - dmg)
+	_bs.apply_pilot_damage(picked, dmg)
 	_bs.record_pilot_damage(caster, picked, before - picked.hp)
 	if _bs.renderer != null:
 		_bs.renderer.spawn_pilot_popup(picked, "-%d" % (before - picked.hp),

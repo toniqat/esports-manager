@@ -80,6 +80,11 @@ func _ready() -> void:
 		if not intl.intl_failed_campaign.is_connected(_on_intl_failed_campaign):
 			intl.intl_failed_campaign.connect(_on_intl_failed_campaign)
 
+	# 페이즈 POM — 페이즈가 넘어가는 순간 직전 페이즈를 닫는다(`RunStats.finalize_phase`).
+	var cal: CalendarSystem = get_node_or_null("CalendarSystem") as CalendarSystem
+	if cal != null and not cal.phase_changed.is_connected(_on_phase_changed_close_pom):
+		cal.phase_changed.connect(_on_phase_changed_close_pom)
+
 	# Returning from BattleSim: a pending_match with winner_side set means we
 	# just finished a match. Apply the result, resolve the AI matches of that
 	# **same match day**, then route to the standings/bracket screen. The
@@ -607,6 +612,12 @@ func _consume_pending_match_result() -> bool:
 	var winner_team_id: int = pid if winner_side == 0 else enemy_id
 	var source: String = String(pm.get("source", "league"))
 
+	# 경기 통계 · MVP 집계(`season_state.run_stats`) — 결과를 일정에 반영하기
+	# **전에** 한 번. 반영이 신호를 타고 곧장 엔딩 / 게임오버 정산까지 갈 수
+	# 있는데(정산이 지금 페이즈의 POM 을 닫는다), 그보다 늦으면 마지막 경기가
+	# 집계에서 빠진다. 두 번 불려도 `stats_recorded` 표시로 한 번만 센다.
+	RunStats.record_match(s, pm as Dictionary)
+
 	if source == "playoff":
 		_apply_playoff_result(idx, winner_team_id)
 	elif source == "intl":
@@ -616,6 +627,13 @@ func _consume_pending_match_result() -> bool:
 
 	s["pending_match"] = null
 	return true
+
+
+## 페이즈는 언제나 한 칸씩만 넘어가므로(`CalendarSystem._advance_phase`) 닫을
+## 페이즈는 `new_phase - 1` 이다. 이미 닫혔거나 경기가 없던 페이즈면 무위다.
+func _on_phase_changed_close_pom(new_phase: int) -> void:
+	if new_phase > 0:
+		RunStats.finalize_phase(_gm.season_state, new_phase - 1)
 
 
 func _apply_league_result(idx: int, winner_team_id: int) -> void:

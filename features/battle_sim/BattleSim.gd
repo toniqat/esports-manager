@@ -334,6 +334,9 @@ var gambit_lanes: Array   = [-1, -1, -1, -1, -1]
 var canvas: CanvasLayer
 var panel_victory: Panel
 var lbl_victory: Label
+## 경기 끝의 MVP 전용 뷰(`ui/MvpView.gd`). 떠 있는 동안만 있다 — `end_match` 가
+## 만들고 "계속"이 치운 뒤 결과 화면(`panel_victory`)을 연다.
+var mvp_view: MvpView = null
 # 전략 포인트 도넛 게이지. `cost_donut` (player) doubles as the 턴 넘기기
 # button once tapped; `cost_donut_enemy` is a readout only.
 var cost_donut:       CostDonut = null
@@ -786,25 +789,39 @@ func turns_until_return(p: PilotData) -> int:
 ## 진짜 비용이다. 예전의 사망 벌점은 후반 성장치 스케일에서 아무 의미가 없는
 ## 데다 같은 손해를 두 번 매기는 것이었다.
 func mark_pilot_dead(p: PilotData, killer: PilotData = null) -> void:
+	# 피해 없이 쓰러지는 길(처형 같은 즉사)은 남은 체력이 통째로 사라진다 —
+	# 경기 기록에는 그 몫도 받은 피해 / 준 피해로 남긴다. 피해로 쓰러진 길은
+	# `apply_pilot_damage` 가 이미 0 까지 깎아 두었으므로 여기서 더해지는 것이 없다.
+	if p.hp > 0:
+		p.dmg_taken += p.hp
+		if killer != null and killer.team != p.team:
+			killer.dmg_dealt += p.hp
 	p.hp            = 0
 	p.alive         = false
 	p.recall_hold   = false   # 복귀 대기 중 죽으면 대기도 함께 사라진다
 	p.ambush_hold   = false   # 매복도 함께 풀린다
 	p.shield        = 0
+	p.shield_grants.clear()
 	p.respawn_timer = respawn_turns_now()
 	p.atk_buff      = 0   # 카드가 걸어 둔 일시 공격력은 죽으면 사라진다
+	# **`_payout_kill_bounty` 보다 먼저** — 막타 · 어시스트 명단이 `damage_credit`
+	# 에서 나오는데 그 정산이 장부를 비운다. 파일럿 스킬의 처치 관여 훅도
+	# 같은 장부를 읽으므로 같은 이유로 이 앞에 선다.
+	var roster: Array = kill_roster(p, killer)
+	var last_hit: PilotData = roster[0] as PilotData
 	p.deaths += 1
-	if killer != null and killer.team != p.team:
-		killer.kills += 1
+	# 처치 · 어시스트는 **킬로그에 뜨는 얼굴 그대로** 센다 — 화면의 한 줄과
+	# 경기 기록(MVP 지표)이 갈리지 않는다.
+	if last_hit != null and last_hit.team != p.team:
+		last_hit.kills += 1
+	for raw in roster[1] as Array:
+		(raw as PilotData).assists += 1
 	# 전장에서 가장 무거운 한 건. 어느 팀이 쓰러졌든 같은 세기다 — 내 쪽이
 	# 죽은 것과 적을 눕힌 것을 감촉으로 가르려 들면 둘 다 흐려지고, 어느
 	# 쪽인지는 화면(킬로그 · 초상 딤)이 이미 말한다.
 	Haptics.play(Haptics.Kind.HEAVY)
 	anim_pilot_death(p)
-	# **`_payout_kill_bounty` 보다 먼저** — 어시스트 명단이 `damage_credit`
-	# 에서 나오는데 그 정산이 장부를 비운다. 파일럿 스킬의 처치 관여 훅도
-	# 같은 장부를 읽으므로 같은 이유로 이 앞에 선다.
-	_push_kill_feed(p, killer)
+	_push_kill_feed(p, roster)
 	if skill != null:
 		skill.on_kill(p, killer)
 	if mech_skill != null:
@@ -813,16 +830,16 @@ func mark_pilot_dead(p: PilotData, killer: PilotData = null) -> void:
 	_payout_kill_bounty(p, killer)
 
 
-## 킬로그 한 줄. 막타(`killer`)를 앞에 세우고, 같은 대상에게 피해를 넣은 나머지를
-## **피해가 큰 순**으로 어시스트에 붙인다 — 성장치 어시스트 배분과 같은 표를
-## 읽으므로 화면에 뜬 얼굴과 점수를 받은 얼굴이 어긋나지 않는다.
+## 처치 한 건의 명단 `[막타, 어시스트 배열]`. 막타(`killer`)를 앞에 세우고, 같은
+## 대상에게 피해를 넣은 나머지를 **피해가 큰 순**으로 어시스트에 붙인다 — 성장치
+## 어시스트 배분과 같은 표를 읽으므로 화면에 뜬 얼굴과 점수를 받은 얼굴이
+## 어긋나지 않는다. 킬로그와 경기 기록(처치 · 어시스트 수)이 이 한 함수를 읽는다.
 ##
 ## `killer` 가 null 로 들어오는 경로가 있다(라스트힛을 적어 두는
 ## `SimulationCore._last_hitter` 는 매 턴 비워진다). 그때는 가장 많이 때린
-## 사람을 막타 자리에 세운다 — 빈 칸을 두는 것보다 낫다.
-func _push_kill_feed(victim: PilotData, killer: PilotData) -> void:
-	if kill_feed == null:
-		return
+## 사람을 막타 자리에 세운다 — 빈 칸을 두는 것보다 낫다. 아무도 안 때렸으면
+## 막타도 null 이다(교전 무대의 포탑 처치).
+func kill_roster(victim: PilotData, killer: PilotData) -> Array:
 	var credit: Dictionary = live_damage_credit(victim)
 	var contributors: Array = credit.keys()
 	contributors.sort_custom(func(a: PilotData, b: PilotData) -> bool:
@@ -835,7 +852,14 @@ func _push_kill_feed(victim: PilotData, killer: PilotData) -> void:
 		var a := raw as PilotData
 		if a != last_hit:
 			assists.append(a)
-	kill_feed.push_kill(last_hit, victim, assists)
+	return [last_hit, assists]
+
+
+## 킬로그 한 줄 — `kill_roster` 가 만든 명단 그대로.
+func _push_kill_feed(victim: PilotData, roster: Array) -> void:
+	if kill_feed == null:
+		return
+	kill_feed.push_kill(roster[0] as PilotData, victim, roster[1] as Array)
 
 
 ## 계획 살인의 지급 지점. 전장에는 제3세력이 없으므로 "누가 죽였는가"를 따로
@@ -1135,12 +1159,113 @@ func record_pilot_damage(attacker: PilotData, victim: PilotData, amount: int) ->
 		return
 	if attacker.team == victim.team:
 		return
+	# 경기 기록의 "준 피해"도 장부와 같은 값을 센다 — 세 무대가 모두 여기를 지난다.
+	attacker.dmg_dealt += amount
 	var entries: Array = victim.damage_credit.get(attacker, [])
 	if not entries.is_empty() and (entries[-1] as Vector2i).x == turn_count:
 		entries[-1] = (entries[-1] as Vector2i) + Vector2i(0, amount)
 	else:
 		entries.append(Vector2i(turn_count, amount))
 	victim.damage_credit[attacker] = entries
+
+
+# ─── 경기 기록 (MVP 지표) — 피해 · 보호막 · 회복의 단일 지점 ──────────────────
+# 받은 피해(`dmg_taken`)와 돌봄(`care`)은 **체력과 보호막이 실제로 움직이는
+# 자리**에서만 셀 수 있다 — 그래서 전장 자동 교전 · 카드 전진 · 공격 카드 ·
+# [확신] · 교전 무대가 저마다 들고 있던 "보호막 먼저, 남은 몫이 체력" 블록을
+# 아래 한 함수로 모았다. 보호막을 거는 자리도 `grant_shield`, 회복도
+# `apply_heal` 하나뿐이다. 경기 끝의 집계는 `build_pilot_stats`.
+
+## 파일럿 피해 한 건을 적용한다 — 보호막이 먼저 받고(흡수분은 보호막을 건
+## 아군의 돌봄으로), 남은 몫이 체력을 깎는다(0 아래로는 내려가지 않는다).
+## **실제로 깎인 체력**을 돌려주고 그 값을 받은 피해로 센다(오버킬 제외).
+## 사망 처리는 하지 않는다 — 부르는 쪽이 `hp <= 0` 을 보고 `mark_pilot_dead` 를 부른다.
+func apply_pilot_damage(victim: PilotData, amount: int) -> int:
+	if victim == null or amount <= 0:
+		return 0
+	var dmg: int = amount
+	if victim.shield > 0:
+		var absorbed: int = mini(victim.shield, dmg)
+		_drain_shield_grants(victim, absorbed)
+		victim.shield -= absorbed
+		dmg -= absorbed
+	var hp_lost: int = clampi(dmg, 0, maxi(victim.hp, 0))
+	victim.hp = maxi(0, victim.hp - dmg)
+	victim.dmg_taken += hp_lost
+	return hp_lost
+
+
+## 보호막을 건다. `source` 는 건 파일럿(시전자 없는 카드면 null) — 그 보호막이
+## 나중에 흡수한 몫이 `source` 의 돌봄이 된다(자기 자신 · 상대 팀이면 세지 않는다).
+func grant_shield(target: PilotData, amount: int, source: PilotData) -> void:
+	if target == null or amount <= 0:
+		return
+	target.shield += amount
+	target.shield_grants.append({"src": source, "amt": amount})
+
+
+## 회복. 최대 체력을 넘는 몫(오버힐)은 버리고 **실제로 오른 체력**을 돌려준다.
+## 다른 아군을 회복시킨 몫만 `healer` 의 돌봄이 된다.
+func apply_heal(target: PilotData, amount: int, healer: PilotData) -> int:
+	if target == null or amount <= 0:
+		return 0
+	var before: int = target.hp
+	target.hp = mini(target.max_hp, target.hp + amount)
+	var healed: int = maxi(0, target.hp - before)
+	_credit_care(healer, target, healed)
+	return healed
+
+
+## 흡수된 `absorbed` 를 보호막 장부에서 먼저 건 것부터 깎고 출처에게 돌봄을 준다.
+## 장부 합계가 지금 보호막보다 크면(복귀가 보호막을 장부 밖에서 비웠다) 오래된
+## 것부터 버려 맞춘다 — 남아 있는 보호막은 가장 최근에 건 몫이라고 본다.
+func _drain_shield_grants(p: PilotData, absorbed: int) -> void:
+	var total: int = 0
+	for raw in p.shield_grants:
+		total += int((raw as Dictionary)["amt"])
+	var excess: int = total - p.shield
+	while excess > 0 and not p.shield_grants.is_empty():
+		var head: Dictionary = p.shield_grants[0]
+		var cut: int = mini(excess, int(head["amt"]))
+		head["amt"] = int(head["amt"]) - cut
+		excess -= cut
+		if int(head["amt"]) <= 0:
+			p.shield_grants.pop_front()
+	var left: int = absorbed
+	while left > 0 and not p.shield_grants.is_empty():
+		var g: Dictionary = p.shield_grants[0]
+		var take: int = mini(left, int(g["amt"]))
+		_credit_care(g["src"] as PilotData, p, take)
+		g["amt"] = int(g["amt"]) - take
+		left -= take
+		if int(g["amt"]) <= 0:
+			p.shield_grants.pop_front()
+
+
+func _credit_care(giver: PilotData, target: PilotData, amount: int) -> void:
+	if giver == null or target == null or amount <= 0:
+		return
+	if giver == target or giver.team != target.team:
+		return
+	giver.care += amount
+
+
+## 열 명의 경기 기록 — `pending_match.pilot_stats` 의 모양(docs/outgame_dev_plan.md
+## §10.4). 행 순서는 `pilots` 순서(0..4 = 내 팀, 5..9 = 상대)라 인덱스로 전장의
+## `PilotData` 를 되찾을 수 있다. `pilot_id` 는 선수(`PlayerData.id`) — 단독
+## 실행처럼 선수가 없으면 `PilotData.pilot_id`(대개 -1)다.
+func build_pilot_stats() -> Array:
+	var rows: Array = []
+	for raw in pilots:
+		var p := raw as PilotData
+		var pd: PlayerData = player_data_for(p)
+		rows.append({
+			"pilot_id": pd.id if pd != null else p.pilot_id,
+			"side": p.team, "role": p.role,
+			"k": p.kills, "d": p.deaths, "a": p.assists,
+			"dmg": p.dmg_dealt, "taken": p.dmg_taken, "care": p.care,
+		})
+	return rows
 
 
 ## 지금 이 순간 유효한 기여만 남긴 `공격자 → 누적 피해` 표. 현상금 배분 ·
@@ -1605,6 +1730,47 @@ func pilot_marker_pos_solo(p: PilotData) -> Vector2:
 		return renderer.pilot_marker_pos_fallback(p)
 	return cell_center(p.grid_pos)
 
+# ─── 경기 끝 ──────────────────────────────────────────────────────────────────
+## 경기 끝의 단일 지점(`SimulationCore.check_win_condition` 이 한 번 부른다).
+##   1. 결과 기록 — 시즌에서 들어온 경기면 `pending_match` 에 `winner_side`,
+##      `pilot_stats`(열 명, §10.4) · `mvp_pilot_id` 를 적는다. SeasonHub 가 씬 전환
+##      뒤에 읽는다. 단독 실행(`pending_match` 없음)은 아무것도 쓰지 않는다.
+##   2. MVP 뷰 — 이긴 팀 다섯 중 `RunStats.mvp_score` 최고 1명(단독 실행도 같은
+##      규칙으로 살아 있는 기록을 보여 준다). 계속을 누르면
+##   3. 기존 승패 결과 화면 — MVP 한 줄이 붙는다.
+func end_match(winner_side: int) -> void:
+	game_over = true
+	lbl_victory.text = "Player Team Wins!" if winner_side == 0 else "Opponent Team Wins!"
+	Haptics.play(Haptics.Kind.SUCCESS if winner_side == 0 else Haptics.Kind.ERROR)
+	var rows: Array = build_pilot_stats()
+	var mvp_idx: int = RunStats.pick_mvp_index(rows, winner_side)
+	var pm = gm.season_state.get("pending_match", null) if gm != null else null
+	if pm != null:
+		pm["winner_side"] = winner_side
+		pm["pilot_stats"] = rows
+		pm["mvp_pilot_id"] = int((rows[mvp_idx] as Dictionary)["pilot_id"]) \
+				if mvp_idx >= 0 else -1
+	var mvp: PilotData = pilots[mvp_idx] as PilotData if mvp_idx >= 0 else null
+	var mvp_row: Dictionary = rows[mvp_idx] as Dictionary if mvp_idx >= 0 else {}
+	hud.set_victory_mvp(mvp, mvp_row)
+	if mvp == null:
+		panel_victory.visible = true
+		return
+	mvp_view = MvpView.new()
+	mvp_view.name = "MvpView"
+	add_child(mvp_view)
+	mvp_view.closed.connect(_on_mvp_view_closed)
+	mvp_view.open(self, mvp, mvp_row)
+
+
+## MVP 뷰의 "계속" — 뷰를 치우고 기존 결과 화면을 연다.
+func _on_mvp_view_closed() -> void:
+	if mvp_view != null:
+		mvp_view.queue_free()
+		mvp_view = null
+	panel_victory.visible = true
+
+
 # ─── Button callbacks ─────────────────────────────────────────────────────────
 # Season-mode return: the win panel "다음 →" button hands control back to the
 # campaign hub. SeasonHub._ready() picks up season_state.pending_match.winner_side
@@ -1622,6 +1788,9 @@ func _on_restart_pressed() -> void:
 	field_ready   = false
 	gambit_lanes = [-1, -1, -1, -1, -1]
 	panel_victory.visible = false
+	if mvp_view != null:
+		mvp_view.queue_free()
+		mvp_view = null
 	pilots.clear()
 	turrets.clear()
 	player_hand.clear();    ai_hand.clear()

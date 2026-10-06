@@ -33,8 +33,8 @@ The table is `data/csv/pilot_skills.csv` (**25 rows**); the pairing is held by `
 
 **Skills are bound to a lane** — they attach only to pilots of the same role, 5 per role.
 With only 25, **15 of the 40 players (mobs) have no skill** (`skill_id = -1`, `is_mob = 1`).
-Their portraits are silhouette (실루엣) cuts and they are also excluded from the season draft grid —
-see the mob pilot (모브 파일럿) entry in `resources/README.md` and `features/season/draft/README.md`.
+Their portraits are silhouette (실루엣) cuts and they are also excluded from the run-setup draft grid —
+see the mob pilot (모브 파일럿) entry in `resources/README.md` and `features/meta/run_setup/README.md`.
 
 ### Why effects were not made into a grammar
 Cards are written by combining clauses like `draw:2;discard:2`, but the 25 skills all hook into different

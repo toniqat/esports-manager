@@ -161,6 +161,11 @@ static func _serialize_season_state(s: Dictionary) -> Dictionary:
 		"pending_match":     s.get("pending_match", null),
 		"current_tournament": s.get("current_tournament", null),
 		"match_resume":      s.get("match_resume", null),
+		# 런 단위 상태(M1/M2). 모두 **문자열 키** 딕셔너리라 그대로 왕복한다.
+		"run_seed":          int(s.get("run_seed", 0)),
+		"run_setup":         s.get("run_setup", {}),
+		"run_stats":         s.get("run_stats", {}),
+		"run_over":          bool(s.get("run_over", false)),
 	}
 
 
@@ -193,6 +198,10 @@ static func _deserialize_season_state(s: Dictionary) -> Dictionary:
 		"pending_match":     s.get("pending_match", null),
 		"current_tournament": s.get("current_tournament", null),
 		"match_resume":      s.get("match_resume", null),
+		"run_seed":          int(s.get("run_seed", 0)),
+		"run_setup":         s.get("run_setup", {}),
+		"run_stats":         s.get("run_stats", {}),
+		"run_over":          bool(s.get("run_over", false)),
 	}
 
 
@@ -239,6 +248,8 @@ static func _pilots_to_array(pilots: Array) -> Array:
 			# 고정 파일럿 카드 3장. 옛 세이브에는 없다 — 그때는 비어 있는 채로
 			# 복원되고 `GameManager.pilot_card_ids_for` 가 DB 의 같은 선수 행에서 채운다.
 			"pilot_cards": p.pilot_cards.duplicate(),
+			# 런 준비 — Lv1 샐러리 · 등급 · 이 런의 레벨(스탯은 이미 레벨 반영 값).
+			"salary": p.salary, "rarity": p.rarity, "level": p.level,
 		})
 	return out
 
@@ -257,6 +268,9 @@ static func _array_to_pilots(rows: Array) -> Array:
 		# JSON 은 숫자를 float 로 돌려준다 — 카드 id 는 int 로 되돌린다.
 		for raw_id in (d.get("pilot_cards", []) as Array):
 			pd.pilot_cards.append(int(raw_id))
+		pd.salary = int(d.get("salary", 0))
+		pd.rarity = int(d.get("rarity", 0))
+		pd.level = int(d.get("level", 1))
 		out.append(pd)
 	return out
 

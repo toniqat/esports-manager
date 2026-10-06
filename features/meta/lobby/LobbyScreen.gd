@@ -14,6 +14,8 @@ extends Control
 const PHASE_NAMES: Dictionary = HubView.PHASE_NAMES
 const WEEKDAY_NAMES: Array = OutgameTheme.DAY_LETTERS
 
+const RUN_SETUP_SCENE: String = "res://scenes/RunSetup.tscn"
+
 const CARD_X: float = 80.0
 const CARD_W: float = 920.0
 const CARD_TOP: float = 420.0
@@ -212,4 +214,4 @@ func _on_abandon_confirmed() -> void:
 
 func _start_new_run() -> void:
 	_gm.reset_season_state()
-	get_tree().change_scene_to_file("res://scenes/Season.tscn")
+	get_tree().change_scene_to_file(RUN_SETUP_SCENE)

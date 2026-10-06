@@ -80,6 +80,16 @@ static var STAT_MIN: int = ConstTable.int_of("PLAYER_STAT_MIN")
 # `GameManager.pilot_card_ids_for` 가 선수 id 를 씨앗 삼아 결정적으로 채운다.
 @export var pilot_cards: Array = []
 
+# ─── 런 준비 (샐러리캡 · 레벨) ────────────────────────────────────────────────
+# `salary` 는 **Lv1 기준** 샐러리(`players.salary`). 레벨 가산은 `RunRules` 가
+# `pilot_levels.csv` 에서 더한다 — 레벨이 반영된 샐러리는 `RunRules.salary_of(pd)`.
+@export var salary: int = 0
+# 등급(자리표시, `players.rarity`). 가챠 등급 표는 M10.
+@export var rarity: int = 0
+# 이 런에서 쓰는 선수 레벨(1..10). 런 시작 때 `RunRules.apply_level` 이 스탯에
+# 가산을 **이미 얹은 뒤** 이 값을 적는다 — 스탯 필드는 언제나 레벨 반영 후 값이다.
+@export var level: int = 1
+
 # Set during the assign phase: which mech this player is piloting this match.
 var assigned_mech: MechData = null
 

@@ -118,8 +118,8 @@ effective(stat) = max(감독[stat] + 일시 보정, 어시스턴트[stat], 담�
 | 마일스톤 | 상태 | 완료일 | 비고 |
 |---|---|---|---|
 | M0 세이브 구조 전환 | ✅ 완료 | 2026-10-06 | §9 구현 기록 |
-| M1 런 준비 | ⏭ 다음 | | 착수 전 §8 #3 · #4 확정 |
-| M2 런 종료 | ⬜ 대기 | | |
+| M1 런 준비 | 🔨 진행 중 | | §10 계약 · 병렬 개발 |
+| M2 런 종료 | 🔨 진행 중 | | §10 계약 · 병렬 개발 |
 | M3 감독 · 스태프 | ⬜ 대기 | | |
 | M4 지식 — 메크 숙련도 | ⬜ 대기 | | |
 | M5 분석 — 상대 전력 | ⬜ 대기 | | |
@@ -298,9 +298,9 @@ effective(stat) = max(감독[stat] + 일시 보정, 어시스턴트[stat], 담�
 |---|---|---|
 | 1 | 진엔딩의 "리그 우승" 판정 — 게임오버 강화로 생존한 런은 이미 모든 플레이오프를 이긴다. "외출 5회 달성 시점 이후의 첫 리그 우승" / "런 클리어 시 외출 5회" 중 무엇인가 | M7 |
 | 2 | "선수 파편 스킬"(지식 스탯)의 정의 | M4 |
-| 3 | 프로필 초기 보유 선수 구성(역할별 1명? 무작위? 선택?) | M1 |
-| 4 | 저캡 / 고캡 시나리오의 캡 값, 레벨당 스탯 · 샐러리 상승치, 선수별 Lv1 샐러리 | M1 |
-| 5 | 점수 · 재화 공식, 감독 EXP 곡선 | M2 / M9 |
+| 3 | ~~프로필 초기 보유 선수 구성~~ — **역할별 2명 = 10인**(`players.starter`), 전원 Lv1 | M1 |
+| 4 | ~~캡 · 레벨 수치~~ — 자리표시 값으로 확정(`scenarios.csv` · `pilot_levels.csv` · `players.salary`) | M1 |
+| 5 | 점수 · 재화 공식 — 자리표시(`RUN_*` const 키), 감독 EXP 곡선은 M9 | M2 / M9 |
 | 6 | 잔고 음수(예산 파산) 처리 | M6 |
 | 7 | 첫 특성 묶음 목록(기본 제공 · 해금형 · 인게임 훅) | M8 |
 | 8 | 감독 타입별 초기 스탯, 감독 스탯 총합 | M3 |
@@ -319,3 +319,90 @@ effective(stat) = max(감독[stat] + 일시 보정, 어시스턴트[stat], 담�
 - 새 런 포기 확인은 **모달 팝업**(`meta/lobby/ConfirmPopup.gd`, 재사용 가능) — 두 번 탭 방식은 쓰지 않는다.
 - 런 종료: `EndingView` / `GameOverView` 의 두 버튼이 `delete_run()` 후 이동(`로비로` / `다시 시작`). M2 정산은 이 삭제 직전에 끼운다.
 - `ProfileManager` 는 M0 에서 생성 · 로드 · 기본값 채우기만(깨진 파일은 `.bak` 로 백업 후 기본값). 아직 쓰는 곳은 없다.
+
+---
+
+## 10. M1 · M2 작업 계약 (2026-10-06 확정, 병렬 개발용)
+
+질의응답으로 확정한 결정과, 기능별 병렬 작업이 서로 기대는 **인터페이스**. 기반 커밋이
+데이터 표 · `RunRules` · `ProfileManager` 컬렉션 API · 스텁 씬/스크립트를 먼저 넣었다.
+
+### 10.1 결정 (M1 · M2)
+| 항목 | 결정 |
+|---|---|
+| 초기 보유 | 네임드 **역할별 2명 = 10인**(`players.starter = 1`), 전원 `max_level` 1. 레벨업 수단은 M10 |
+| 수치 | 캡 · 레벨 · 샐러리 · 점수 공식 모두 **자리표시**(CSV / const) |
+| 런 준비 위치 | **편성까지 전부 `meta/run_setup/`** — `season/draft/` 는 `meta/run_setup/` 으로 옮기고 지운다. Season 은 DRAFT 없이 HUB 부터 |
+| 단계 | 시나리오 → 팀 → 5인 편성(레벨 · 캡). 감독 프리셋 단계는 M3/M9 까지 **생략**(단계 목록만 늘릴 수 있게) |
+| 팀 패키지 | `teams.csv` 의 `budget` · `facility_level` · `manual_areas` · `desc` — **표시 · 스냅샷만**, 효과는 M3/M6 |
+| AI 로스터 | 내 5인을 뺀 35명(고른 팀의 원래 선수 포함)을 역할별로 섞어 7개 AI 팀에 1명씩, `run_seed` 로 재현 |
+| 게임오버 | 6개 대회 중 하나라도 우승 못 하면 즉시 종료(§3 M2) |
+| 종료 흐름 | Ending / GameOver 연출 → **정산 화면**(`scenes/RunResult.tscn`) → 로비 |
+| 정산 시점 | **GAME_OVER / ENDING 진입 즉시** 프로필에 쓰고 `run.save` 삭제. 테스트 런(`use_test_run`)은 화면만, 프로필 미반영 |
+| 포기 | 로비에서 포기 = 그 시점 진척으로 **실패 정산**(`abandon`) → 정산 화면 → 런 준비 |
+| 경기 MVP | **내 경기만**, **이긴 팀 5명 중** 지표 최고 1명. 경기 끝 → **MVP 전용 뷰(전신 일러스트)** → BattleSim 결과 화면에 MVP 한 줄 |
+| MVP 지표 | d = max(데스, 1). 탑 · 정글 · 미드 · 원딜 = `W_KDA·(1.5k + a)/d + W_DMG·딜량/d` (+ 탑만 `W_TANK·받은 피해/d`). 서폿 = `W_KDA·(k + 1.5a)/d + W_SUP_CARE·(보호막 흡수 + 아군 회복 + 받은 피해)/d`. 가중치 `MVP_*` |
+| 페이즈 POM | 6개 페이즈 각각 끝날 때 1명: `POM_W_MVP·(그 페이즈 MVP 횟수) + POM_W_SCORE·(그 페이즈 MVP 지표 합)` 최고 |
+| 업적 | 프로필 `achievements[pid].mvp` += 경기 MVP 횟수, `.pom` += 페이즈 POM 횟수 — **내 선수만** |
+
+### 10.2 런 시작 — `GameManager.start_run(run_setup) -> String`
+```
+run_setup = {
+  "scenario": int, "team_id": int,
+  "pilot_ids": Array[int],              # 5명, GameEnums.Role 순
+  "pilot_levels": {"<pilot_id>": int},  # 5명 모두
+  "salary_cap": int, "salary_total": int,
+}
+```
+- 런 준비 화면은 `RunRules.validate_lineup(...)` 이 "" 일 때만 시작을 허락하고, `start_run` 이 `""` 를 돌려주면 `Season.tscn` 으로 간다.
+- `start_run` 은 `init_season` → `run_seed` → 내 5인 `team_id = team_id` · `RunRules.apply_level` → 나머지 35명 AI 분배 → `team_rosters` 재구성 → `season_state.run_setup` 저장.
+- 에디터에서 Season 을 바로 실행(`season_state.active == false`)하면 `init_season()` 기본 경로가 **스타터 중 역할별 첫 선수 Lv1** 로 기본 `run_setup` 을 만들어 같은 길을 탄다.
+- `Season.tscn` 첫 HUB 진입이 "런 시작 후" 자동 저장 지점이다.
+
+### 10.3 런 정산 — `RunResult.settle_current_run(outcome) -> Dictionary`
+`outcome` = `"clear"` | `"fail"` | `"abandon"`. 한 런에 한 번만(`season_state.run_over`).
+```
+result = {
+  "outcome": String, "scenario": int, "team_id": int,
+  "phase_reached": int, "wins": int, "losses": int, "titles": int,
+  "score": int, "bonus_points": 0,
+  "currency": {"outgame": int}, "manager_exp": int,
+  "mvp": {"<pilot_id>": int}, "pom": {"<phase>": pilot_id},   # 내 선수 기준 집계 포함
+  "achievements": {"<pilot_id>": {"mvp": int, "pom": int}},
+  "test_run": bool, "at": String,
+}
+```
+- 순서: `RunStats.finalize_phase(지금 페이즈)` → 점수 계산 → (테스트 런이 아니면) `ProfileManager.apply_run_result(result)` + `SaveSystem.delete_run()` → `GameManager.last_run_result = result`.
+- `season_state.run_over == true` 이면 `SeasonHub._autosave` 는 쓰지 않는다(정산 뒤 run.save 가 되살아나지 않게).
+- 정산 화면 하단 바: 평소 `로비로`, 포기에서 왔으면 `새 런`(→ `RunSetup.tscn`). 구분은 `outcome == "abandon"`.
+
+### 10.4 경기 통계 · MVP — `pending_match.pilot_stats` / `season_state.run_stats`
+BattleSim 이 경기 끝에 `pending_match["pilot_stats"]` 를 채운다(단독 실행 = pending_match 없음 → 아무 일 없음):
+```
+pilot_stats = [ {"pilot_id": int, "side": 0|1 (0 = 내 팀), "role": int,
+                 "k": int, "d": int, "a": int, "dmg": int, "taken": int, "care": int}, ... ]   # 10명
+```
+`care` = 그 선수가 아군에게 준 보호막이 실제로 흡수한 피해 + 아군 회복량(오버힐 제외). 경기 MVP 는
+BattleSim 이 같은 지표(`RunStats.mvp_score(row)`, static)로 뽑아 `pending_match["mvp_pilot_id"]` 에 적고 MVP 뷰를 띄운다.
+
+`season_state.run_stats` (모든 키 문자열):
+```
+{ "matches": [ {"phase": int, "won": bool, "mvp": pilot_id, "scores": {"<pid>": float}} ],
+  "mvp_count": {"<phase>": {"<pid>": int}},
+  "score_sum": {"<phase>": {"<pid>": float}},
+  "pom_by_phase": {"<phase>": pilot_id},
+  "wins": int, "losses": int }
+```
+- `RunStats.record_match(state, pending_match)` — `SeasonHub._consume_pending_match_result` 에서 승패 반영 직후 1회.
+- `RunStats.finalize_phase(state, phase)` — 페이즈가 바뀔 때(`CalendarSystem` phase_changed) 직전 페이즈, 그리고 정산 때 지금 페이즈.
+
+### 10.5 파일 소유 (병렬 작업)
+| 작업 | 소유 |
+|---|---|
+| RunSetup UI (M1) | `features/meta/run_setup/*`(RunRoster 제외), `season/draft/` 이동 · 삭제, `Season.tscn` 의 TeamDraft 노드, `SeasonHub` DRAFT 화면 제거, `scenes/RunSetup.tscn` |
+| RunCore (M1) | `GameManager.start_run` / `init_season` 기본 run_setup, `features/meta/run_setup/RunRoster.gd`, `SaveSystem`(필요 시) |
+| GameOver (M2) | `features/season/tournament/*`, `SeasonHub` 게임오버 · 엔딩 · 자동 저장 처리, `EndingView` / `GameOverView` |
+| RunResult (M2) | `features/meta/run_result/*`, `scenes/RunResult.tscn`, `ProfileManager.apply_run_result`, `LobbyScreen` 포기 처리 |
+| MVP/POM (M2) | `features/battle_sim/**` 통계 · MVP 뷰 · 결과 화면, `features/season/run_stats/*`, `SeasonHub` 경기 결과 소비 지점 · 페이즈 전환 훅 |
+
+CSV · `const.csv` · `game.db` 는 기반 커밋 소유 — 작업 중 값 조정이 필요하면 자기 키(`MVP_*` 등)만 고치고 병합 후 한 번 다시 굽는다.

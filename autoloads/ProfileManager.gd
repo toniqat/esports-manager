@@ -30,6 +30,64 @@ func _ready() -> void:
 	var err: String = load_profile()
 	if err != "":
 		push_warning("ProfileManager: %s" % err)
+	if ensure_starter_collection():
+		save_profile()
+
+
+# ── 컬렉션 (M1) ──────────────────────────────────────────────────────────────
+## 컬렉션이 비어 있으면 `players.starter = 1` 인 선수들을 Lv1 로 지급한다.
+## 무언가 지급했으면 true(호출자가 저장한다).
+func ensure_starter_collection() -> bool:
+	var col: Dictionary = profile["collection"]
+	if not col.is_empty():
+		return false
+	var db := SQLite.new()
+	db.path = GameDb.path()
+	db.verbosity_level = SQLite.QUIET
+	if not db.open_db():
+		push_warning("ProfileManager: cannot open game.db for starter pilots")
+		return false
+	db.query("SELECT id FROM players WHERE starter = 1 ORDER BY id")
+	for row in db.query_result:
+		col[str(int(row["id"]))] = {"owned": true, "max_level": 1, "breakthrough": 0, "dupes": 0}
+	db.close_db()
+	return not col.is_empty()
+
+
+## 보유한 선수 id 목록(int, 오름차순).
+func owned_pilot_ids() -> Array:
+	var out: Array = []
+	for k in (profile["collection"] as Dictionary).keys():
+		var e: Dictionary = profile["collection"][k]
+		if bool(e.get("owned", false)):
+			out.append(int(k))
+	out.sort()
+	return out
+
+
+## 달성 최대 레벨. 보유하지 않았으면 0.
+func max_level_of(pilot_id: int) -> int:
+	var e: Variant = (profile["collection"] as Dictionary).get(str(pilot_id), null)
+	if typeof(e) != TYPE_DICTIONARY or not bool((e as Dictionary).get("owned", false)):
+		return 0
+	return maxi(1, int((e as Dictionary).get("max_level", 1)))
+
+
+## `RunRules.validate_lineup` 의 `owned_max_levels` 모양 — {"<pilot_id>": max_level}.
+func owned_max_levels() -> Dictionary:
+	var out: Dictionary = {}
+	for pid in owned_pilot_ids():
+		out[str(pid)] = max_level_of(int(pid))
+	return out
+
+
+# ── 런 정산 (M2) ─────────────────────────────────────────────────────────────
+## 정산 결과를 프로필에 반영하고 저장한다. `result` 모양은
+## `docs/outgame_dev_plan.md` §10.3. 성공이면 "".
+##
+## (기반 커밋의 자리표시 — RunResult 작업이 구현한다.)
+func apply_run_result(_result: Dictionary) -> String:
+	return ""
 
 
 func default_profile() -> Dictionary:

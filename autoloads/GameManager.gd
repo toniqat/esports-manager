@@ -107,6 +107,17 @@ var season_state: Dictionary = {
 	# Only `phase` and `player_side` are required at BAN_PICK; the other fields
 	# are filled in at the post-gambit save.
 	"match_resume": null,
+	# ── 런 (M1 / M2) — 계약: docs/outgame_dev_plan.md §10 ─────────────────
+	# 런 시드. AI 로스터 분배 등 런 시작 때의 무작위가 모두 이 값에서 나온다.
+	"run_seed": 0,
+	# 런 설정 스냅샷 — 런 중 바뀌지 않는다. 모양은 §10.2:
+	#   {scenario: int, team_id: int, pilot_ids: Array[int](5, 역할 순),
+	#    pilot_levels: {"<pilot_id>": int}, salary_cap: int, salary_total: int}
+	"run_setup": {},
+	# 경기 MVP / 페이즈 POM 집계(`RunStats`). 문자열 키만 쓴다 — §10.4.
+	"run_stats": {},
+	# 정산이 끝난 런(`RunResult.settle_current_run`). true 면 자동 저장하지 않는다.
+	"run_over": false,
 }
 
 
@@ -136,7 +147,31 @@ func reset_season_state() -> void:
 		"intl_team_meta": [],
 		"intl_pilots": [],
 		"match_resume": null,
+		"run_seed": 0,
+		"run_setup": {},
+		"run_stats": {},
+		"run_over": false,
 	}
+
+
+# ── 런 시작 (M1) ─────────────────────────────────────────────────────────────
+# 마지막으로 정산된 런의 결과 — `RunResult.settle_current_run` 이 채우고 정산
+# 화면(`scenes/RunResult.tscn`)이 읽는다. 메모리에만 산다(정산은 이미 프로필에 썼다).
+var last_run_result: Dictionary = {}
+
+
+## 런 준비 화면(`features/meta/run_setup/`)이 부르는 **유일한 런 시작 입구**.
+## `run_setup` 모양은 `docs/outgame_dev_plan.md` §10.2. 성공이면 "" — 이후
+## `Season.tscn` 은 DRAFT 없이 HUB 부터 연다.
+##
+## (기반 커밋의 자리표시 구현 — RunCore 작업이 AI 로스터 재분배 · 레벨 적용 ·
+## 시드로 바꾼다.)
+func start_run(run_setup: Dictionary) -> String:
+	var err: String = init_season(int(run_setup.get("team_id", 0)))
+	if err != "":
+		return err
+	season_state["run_setup"] = run_setup.duplicate(true)
+	return ""
 
 
 # Loads the 40-pilot pool, builds per-team rosters keyed by team_id, primes
@@ -212,6 +247,8 @@ func load_match_data() -> Dictionary:
 			# 전원이 "스킬 없는 네임드"가 되고 그림도 평소 컷 그대로다.
 			int(row.get("skill_id", -1)), int(row.get("is_mob", 0)) != 0))
 		(players[-1] as PlayerData).pilot_cards = parse_card_ids(String(row.get("pilot_cards", "")))
+		(players[-1] as PlayerData).salary = int(row.get("salary", 0))
+		(players[-1] as PlayerData).rarity = int(row.get("rarity", 0))
 
 	db.query("SELECT * FROM mechs ORDER BY id")
 	if db.query_result.is_empty():

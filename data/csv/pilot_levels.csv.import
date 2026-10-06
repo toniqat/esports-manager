@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://bxsx4i4x1qm0f"
+
+[deps]
+
+files=["res://data/csv/pilot_levels.stat.translation", "res://data/csv/pilot_levels.salary.translation"]
+
+source_file="res://data/csv/pilot_levels.csv"
+dest_files=["res://data/csv/pilot_levels.stat.translation", "res://data/csv/pilot_levels.salary.translation"]
+
+[params]
+
+compress=true
+delimiter=0

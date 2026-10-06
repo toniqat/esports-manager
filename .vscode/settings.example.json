@@ -1,0 +1,5 @@
+{
+    // 이 파일을 .vscode/settings.json 으로 복사한 뒤 이 PC 의 Godot 4.5 실행 파일 경로로 고친다.
+    // settings.json 은 .gitignore 대상이라 커밋되지 않는다.
+    "godotTools.editorPath.godot4": "C:\path\to\Godot_v4.5-stable_win64.exe"
+}

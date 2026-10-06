@@ -28,6 +28,10 @@ add them to the owning folder's README and at most a one-line pointer here.
   no save inside BattleSim → `features/save_load/README.md`.
 - **Screen coordinates** all pass through `ScreenMetrics` (safe area) →
   `docs/mobile_safe_area.md`.
+- **Dev setup per PC**: `.mcp.json` registers `godot-mcp` pinned to the addon's
+  version (`addons/godot_mcp/plugin.cfg`, currently 2.17.0 — bump both together);
+  `.vscode/` is gitignored — copy `.vscode/settings.example.json` → `settings.json`
+  and set the local Godot path.
 
 ---
 
@@ -36,6 +40,7 @@ add them to the owning folder's README and at most a one-line pointer here.
 ```
 esports-manager/
 ├── CLAUDE.md                 ← YOU ARE HERE (map only)
+├── .mcp.json                 ← godot-mcp server (Claude Code), version pinned to addon
 ├── export_presets.cfg        ← iOS export preset (read by CI)
 ├── .github/workflows/ios-testbuild.yml ← unsigned .ipa build → docs/ios_testbuild.md
 ├── ios/plugins/              ← iOS native plugins (Haptics built by CI) → README.md

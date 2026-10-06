@@ -5,8 +5,9 @@ extends Control
 # 없으면 빈 상태 한 줄과 전폭 `새 런` 하나.
 #
 # `새 런` 을 누를 때 런이 이미 있으면 **포기 확인 모달**(`ConfirmPopup`)을
-# 띄운다 — 확인하면 `run.save` 를 지우고 새 시즌을 연다. (포기 = 실패 정산은
-# M2 이후에 붙는다.)
+# 띄운다 — 확인하면 그 런을 **포기로 정산**(`RunResult.settle_current_run("abandon")`,
+# 실패 정산이지만 보상은 준다)하고 정산 화면으로 간다. 그 화면의 `새 런` 이
+# 런 준비로 잇는다.
 #
 # 이후 마일스톤에서 런 카드 아래에 메뉴 진입점(컬렉션 / 감독 / 특성 / 상점)이
 # 붙는다 — 그때 `_build_menu()` 같은 구획을 하나 더 세운다. 지금은 비워 둔다.
@@ -197,18 +198,29 @@ func _on_new_run_pressed() -> void:
 	# 아직 안 지웠다 — 다만 이 누름이 평범한 누름이 아님은 말해야 한다.
 	Haptics.play(Haptics.Kind.WARNING)
 	_confirm.open("진행 중인 런을 포기할까요?",
-			"지금 진행 중인 런의 저장 기록이 삭제됩니다.\n삭제한 런은 되돌릴 수 없습니다.",
-			"취소", "포기하고 새 런", true)
+			"지금까지의 진척으로 실패 정산하고 런을 끝냅니다.\n점수 · 재화 보상은 받지만 런은 되돌릴 수 없습니다.",
+			"취소", "포기하고 정산", true)
 
 
 func _on_abandon_confirmed() -> void:
+	# 포기 = 그 시점 진척으로 실패 정산(`docs/outgame_dev_plan.md` §10.3) — 셀 수
+	# 있게 런을 먼저 싣는다. 정산이 프로필에 쓰고 run.save 를 지운다.
+	var lerr: String = SaveSystem.load_run()
+	if lerr == "":
+		# 되돌릴 수 없는 종료. 아웃게임에서 가장 무거운 조작이다.
+		Haptics.play(Haptics.Kind.ERROR)
+		RunResult.settle_current_run(RunResult.OUTCOME_ABANDON)
+		get_tree().change_scene_to_file(RunResult.SCENE_PATH)
+		return
+	# 깨진 런 — 정산할 것이 없다. 예전처럼 지우고 새 런으로.
+	push_warning("Lobby: abandon could not load run (%s) — deleting without settlement" % lerr)
 	var err: String = SaveSystem.delete_run()
 	if err != "":
 		_toast_lbl.text = "런 삭제 실패: " + err
 		Haptics.play(Haptics.Kind.ERROR)
 		return
-	# 되돌릴 수 없는 파괴. 아웃게임에서 가장 무거운 조작이다.
 	Haptics.play(Haptics.Kind.ERROR)
+	_toast_lbl.text = "런을 읽을 수 없어 정산 없이 삭제했습니다"
 	_start_new_run()
 
 

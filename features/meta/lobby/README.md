@@ -21,9 +21,13 @@ theme (`OutgameTheme`), bottom action bar. Replaces the old 3-slot TitleScreen
 - Bottom bar: with a run `새 런`(ghost, 1) / `이어하기`(primary, 2); without, `새 런` full width.
 - `이어하기` → `load_run()` → `MatchFlow.tscn` if `season_state.match_resume != null`,
   else `Season.tscn`. Error → red toast above the bar + ERROR haptic.
+- `새 런` without a run → `reset_season_state()` → `RunSetup.tscn`.
 - `새 런` with a run → WARNING haptic + `ConfirmPopup` ("진행 중인 런을 포기할까요?",
-  danger style). Confirm → `delete_run()` → `reset_season_state()` → `Season.tscn`.
-  Until M2, abandoning only deletes the file (no fail settlement yet).
+  danger style; body: settled as a failure, score / currency rewards still paid, irreversible;
+  confirm "포기하고 정산"). Confirm (`_on_abandon_confirmed`) → `SaveSystem.load_run()` →
+  `RunResult.settle_current_run("abandon")` (writes the profile, deletes `run.save`) →
+  `RunResult.SCENE_PATH`, whose `새 런` goes on to `RunSetup.tscn` (`../run_result/README.md`).
+  Load fails (corrupt run) → warning, `delete_run()` and straight to a new run without settlement.
 - Later milestones add menu entries (컬렉션 / 감독 / 특성 / 상점) below the run card.
 
 ## ConfirmPopup

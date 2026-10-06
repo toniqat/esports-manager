@@ -24,7 +24,8 @@ extends RefCounted
 #   4. SeasonHub: right after _consume_pending_match_result clears the
 #      finished match (post-match).
 # No save fires while BattleSim is running. Manual saving is not exposed.
-# The run file is deleted when the run ends (EndingView / GameOverView).
+# The run file is deleted when the run is settled (RunResult.settle_current_run —
+# ENDING / GAME_OVER entry or a lobby abandon).
 
 const RUN_PATH: String = "user://run.save"
 const TEST_RUN_PATH: String = "user://run_test.save"

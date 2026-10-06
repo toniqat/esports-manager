@@ -108,6 +108,13 @@ access via `get_node("/root/ProfileManager").profile`. Run state is **not** here
   a top-level value of the wrong type is dropped. JSON floats are cast back to int for
   `version`, `active_preset`, manager ints, alloc, currency and `pass.exp`.
 - M0 only creates / loads it; later milestones write to it (M1 collection, M2 run results …).
+- `apply_run_result(result) -> String` (M2, called only by `RunResult.settle_current_run`
+  for non-test runs; shape `docs/outgame_dev_plan.md` §10.3): adds `currency.outgame` and
+  `manager.exp` (no level-ups until M9), adds this run's `mvp` / `pom` into
+  `achievements[pid]` for my pilots (new entries `{pom, mvp, true_ending: false}`; all-zero
+  pilots skipped), appends `{id, scenario, team, score, result: "clear"|"fail", phase_reached, at}`
+  to `runs` (abandon is recorded as `"fail"`; oldest dropped past `RUNS_HISTORY_MAX`), then saves.
+  Idempotent: a `result.id` already in `runs` is a no-op.
 
 ### Haptics.gd
 **iOS / Android haptic feedback** — the GDScript wrapper of a `godot-haptics` fork that is

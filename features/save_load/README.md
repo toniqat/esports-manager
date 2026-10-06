@@ -28,9 +28,10 @@ Auto-save fires at four discrete points (no manual save UI):
 No save fires while BattleSim is running — closing mid-battle resumes from
 the post-ban-pick snapshot and replays the battle (the jungle start screen shows again too).
 
-**Run end** — `EndingView` / `GameOverView` call `SaveSystem.delete_run()` from both
-buttons (`다시 시작` → Season.tscn, `로비로` → Lobby.tscn). M2 inserts the run-result
-settlement (write to profile) right before that delete.
+**Run end** — `RunResult.settle_current_run(outcome)` (SeasonHub on ENDING / GAME_OVER
+entry, the lobby on abandon) writes the profile (non-test runs), calls `SaveSystem.delete_run()`
+and sets `season_state.run_over`, after which `SeasonHub._autosave` writes nothing.
+→ `features/meta/run_result/README.md`
 
 ## Entry point
 `scenes/Lobby.tscn` (`features/meta/lobby/`) — `run/main_scene` in `project.godot`.
@@ -159,8 +160,9 @@ leaves `match_resume` non-null on disk. On `이어하기` (Continue) in the lobb
 - **새 런, no run**: `reset_season_state()` → Season.tscn. SeasonHub sees
   `season_state.active == false`, runs `init_season()` and DRAFT. First save fires at DRAFT → HUB.
 - **새 런, run exists**: modal warning popup (`진행 중인 런을 포기할까요?`). Confirm →
-  `SaveSystem.delete_run()` → `reset_season_state()` → Season.tscn. Cancel / tapping the
-  dim closes it. (Abandon = delete only until M2 adds the fail settlement.)
+  `SaveSystem.load_run()` → `RunResult.settle_current_run("abandon")` (fail settlement,
+  deletes the run file) → RunResult.tscn → `새 런` → RunSetup.tscn. Unreadable run →
+  `delete_run()` and a new run without settlement. Cancel / tapping the dim closes it.
 - **이어하기**: `SaveSystem.load_run()` overwrites `season_state` (active=true) →
   MatchFlow.tscn if `match_resume != null`, else Season.tscn (skips `init_season()`).
 

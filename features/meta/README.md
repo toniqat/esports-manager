@@ -13,14 +13,18 @@ Two layers of state (plan §2.1):
 |---|---|---|
 | `lobby/` | M0 ✅ | Project entry (`scenes/Lobby.tscn`): continue / new run, abandon confirm → `lobby/README.md` |
 | `run_setup/` | M1 | scenario → team → manager preset → 5-pilot lineup (salary cap) |
-| `run_result/` | M2 | run-end settlement (score, currency, manager EXP, unlocks) |
+| `run_result/` | M2 | Run-end settlement (`RunResult.settle_current_run`: score, currency, manager EXP, MVP/POM achievements → profile) + result screen `scenes/RunResult.tscn` → `run_result/README.md` |
 | `collection/` · `manager/` · `traits/` · `shop/` | M8–M10 | profile screens |
 
 Only folders that exist are real; the rest are created when their milestone starts.
 
-## Flow (M0)
+## Flow (M2)
 ```
 Lobby ── 이어하기 ──▶ load_run ──▶ MatchFlow.tscn (match_resume) / Season.tscn
-  └──── 새 런 ──(run exists → ConfirmPopup → delete_run)──▶ reset_season_state ──▶ Season.tscn (DRAFT)
-Ending / GameOver ── delete_run ──▶ 로비로 (Lobby.tscn) / 다시 시작 (Season.tscn)
+  └──── 새 런 ── no run ──▶ reset_season_state ──▶ RunSetup.tscn
+                 run exists → ConfirmPopup → load_run → settle_current_run("abandon")
+                                            ──▶ RunResult.tscn ── 새 런 ──▶ RunSetup.tscn
+                 (run file unreadable → delete_run ──▶ RunSetup.tscn, no settlement)
+Season ENDING / GAME_OVER ── settle_current_run("clear" / "fail") ──▶ RunResult.tscn ── 로비로 ──▶ Lobby.tscn
 ```
+Settlement writes the profile (unless test run) and deletes the run file — see `run_result/README.md`.

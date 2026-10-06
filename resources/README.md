@@ -730,7 +730,7 @@ several buttons they split that zone **by weight ratio**, and the convention is 
 Eight screens use it: season hub (`리그 순위` (League standings) 1 / `이번 주 시작 →` (Start this week →) 2) · daily training (일상 훈련)
 (`판 비우기` (Clear board) 1 / `훈련 확정` (Confirm training) 2) · draft (`뒤로` (Back) 1 / `다음` (Next)·`게임 시작` (Start game) 2) ·
 league standings · playoffs · international tournament (국제대회) brackets · time-passing (each a single full-width `확인` (OK)) ·
-ending / game over (`로비로` (To lobby) 1 / `다시 시작` (Restart) 2), lobby (`새 런` 1 / `이어하기` 2, no run → `새 런` full width).
+ending / game over (a single full-width `정산` (Settle)), lobby (`새 런` 1 / `이어하기` 2, no run → `새 런` full width).
 
 Four conventions.
 - **Derive body height backwards from `bottom_bar_top()`.** If each screen re-wrote the bar height as a constant,

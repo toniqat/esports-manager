@@ -8,8 +8,10 @@ events from December → next year:
 PRESEASON → PRESEASON_INTL → MIDSEASON → MIDSEASON_INTL → REGULAR → REGULAR_INTL
 ```
 
-Win the final REGULAR_INTL = ending. Fail to make playoffs in any league
-phase = game over. The campaign progresses **one week at a time** — the
+Win the final REGULAR_INTL = ending. **All six tournaments must be won** —
+missing a league phase's playoff cut, losing a playoff SF / F, or being
+eliminated from any INTL ends the run right after that result (see
+"Run end" below). The campaign progresses **one week at a time** — the
 calendar internally rolls 7 days per "다음 주" (Next week) press, but the player only
 sees a phase / week counter.
 
@@ -27,7 +29,7 @@ primary action at the right end**.
 | TeamDraftView | PICK = `다음` (Next) full width · CONFIRM = `뒤로` (Back) (1) / `게임 시작` (Start game) (2) |
 | LeagueView · BracketView · IntlBracketView | `확인` (OK) full width |
 | WeekProgressView | `확인` / `주 마감 →` (End of week) / `경기 시작` (Start match) (dark) — always exactly one, full width |
-| EndingView · GameOverView | `로비로` (To lobby) (1, ghost) / `다시 시작` (Restart) (2, primary) — both delete `run.save` first |
+| EndingView · GameOverView | `정산` (Settle) full width → `RunResult.SCENE_PATH` (the run is already settled on entry) |
 
 The four conventions (body height is derived back from `bottom_bar_top()` · the colour fill extends
 below the safe line but the text stays above it · when a cell collapses, call `layout_bottom_bar`
@@ -140,7 +142,7 @@ and exposes intent methods on the hub. Pattern mirrors `BattleSim`:
 | LeagueView               | `league/LeagueView.gd`                       | Standings screen — "다음 주 →" advances week, "돌아가기" (Go back) returns to HUB. |
 | BracketView              | `tournament/BracketView.gd`                  | Phase-7 playoff bracket UI (3 panels: SF1/SF2/F)                 |
 | IntlBracketView          | `tournament/IntlBracketView.gd`              | Phase-8 INTL bracket UI (7 panels: 4 QF / 2 SF / F)              |
-| GameOverView             | `GameOverView.gd`                            | Game-over screen — playoff miss (Phase 7) or REGULAR_INTL loss   |
+| GameOverView             | `GameOverView.gd`                            | Game-over screen — playoff cut missed, playoff SF/F lost, or any INTL lost (reason line names the round) |
 | EndingView               | `EndingView.gd`                              | World-champion ending screen — REGULAR_INTL win                  |
 
 ## Phase week budget (CalendarSystem.PHASE_WEEKS)
@@ -234,6 +236,10 @@ palette once would mean combing through a dozen-plus files.
    (banned/picked/assigned mech IDs) into `match_resume`.
 4. **Post-week-end** — `SeasonHub._end_week` after `advance_week` (the
    Sunday close). Captures both post-match weeks and no-match weeks.
+
+**No autosave after the run ends** — `SeasonHub._autosave` is a no-op while
+`season_state.run_over` is true, so the post-match / post-week saves that
+follow a game-over / ending result never resurrect the deleted `run.save`.
 
 No save fires inside BattleSim. Closing mid-battle leaves the disk save at
 trigger #3; resume re-enters BattleSim with the locked-in picks but the
@@ -350,7 +356,10 @@ resolve via `TournamentManager.resolve_current_week()` during the post-
 match sweep, player matches go through the MatchFlow → BattleSim handoff
 with `pending_match.source = "playoff"`. The F result writes
 `phase_results[phase] = {made_playoffs, champion}` and emits
-`playoff_completed`.
+`playoff_completed`. **A player loss in SF or F** (only `record_result` can
+eliminate the player) marks the bracket `player_eliminated` / `eliminated_slot`,
+writes `phase_results[phase] = {made_playoffs: true, champion: -1}` if the
+final hasn't been played, and emits `playoff_lost` once → `Screen.GAME_OVER`.
 
 ### Season — INTL bracket (Phase 8)
 Each *_INTL phase (`PRESEASON_INTL`, `MIDSEASON_INTL`, `REGULAR_INTL`) is
@@ -366,11 +375,32 @@ matches resolve via `InternationalTournament.resolve_current_week()`;
 player matches use the MatchFlow → BattleSim handoff with
 `pending_match.source = "intl"` → `InternationalTournament.record_result`.
 `MatchFlow._team_roster()` reads from `season_state.intl_pilots` when
-`team_id >= 100`. **REGULAR_INTL is the campaign-end gate**: win F →
-`Screen.ENDING`; lose F or get eliminated mid-bracket → `Screen.GAME_OVER`
-(via `intl_failed_campaign` for fail-fast). PRESEASON_INTL and
-MIDSEASON_INTL just toast and continue. Phase results: INTL phases store
+`team_id >= 100`. **Every INTL must be won**: player eliminated in any
+round of any INTL → `intl_failed_campaign` (once — the bracket is marked
+`player_eliminated`) → `Screen.GAME_OVER`. Winning F → `intl_completed`
+(only ever carries the player's team; marked `completed` so later sweeps
+don't re-emit): REGULAR_INTL → `Screen.ENDING`, PRESEASON_INTL /
+MIDSEASON_INTL → HubView toast and the campaign continues. Phase results: INTL phases store
 `{intl_played, intl_champion}` under `phase_results[phase]`; league
 phases store `{made_playoffs, champion}`. HubView's third action button
 toggles 3-way: INTL active → "국제대회" (International tournament), PLAYOFF active → "플레이오프"
 (Playoffs), else → "리그 순위" (League standings).
+
+### Season — Run end (M2)
+Contract: `docs/outgame_dev_plan.md` §10.1 / §10.3.
+- Six tournaments, any non-title = run over immediately: `playoff_failed_qualification`,
+  `playoff_lost`, `intl_failed_campaign` → `SeasonHub._enter_run_end(GAME_OVER)`;
+  REGULAR_INTL `intl_completed` → `_enter_run_end(ENDING)`.
+- `_enter_run_end` fixes the first conclusion, **settles right away**
+  (`_settle_run` → `RunResult.settle_current_run("fail" | "clear")`, guarded by
+  `season_state.run_over` so it runs once per run) and routes **deferred** — the
+  signals can fire mid-`_end_week` (calendar tick) or mid-`_show_hub`
+  (`ensure_active()`), whose remaining code would otherwise redraw the hub over
+  the end screen. `_show_game_over` / `_show_ending` also call `_settle_run`
+  as a backstop.
+- Settlement deletes `run.save`; with `run_over` set `_autosave` does nothing, so a
+  run file can never be left pointing at a GAME_OVER / ENDING state (continue
+  always resumes from the last pre-end save, or there is no run).
+- GameOverView / EndingView keep their presentation; their single bottom-bar
+  button `정산` goes to `RunResult.SCENE_PATH`. They no longer delete the run or
+  reset `season_state` — the RunResult screen owns what happens next.

@@ -6,8 +6,8 @@ Contract: `docs/outgame_dev_plan.md` §10 (M1). Replaces the old in-season DRAFT
 (`features/season/draft/`, deleted — Season now always opens at HUB).
 
 ```
-Lobby 새 런 ─▶ 1 시나리오 ─▶ 2 팀 ─▶ 3 편성 (PICK ↔ CONFIRM) ── 게임 시작 ──▶ start_run ──▶ Season.tscn (HUB)
-     ◀── 뒤로 ──┘   ◀── 뒤로 ──┘   ◀── 뒤로 (PICK) ──┘
+Lobby 새 런 ─▶ 1 시나리오 ─▶ 2 팀 ─▶ 3 감독 ─▶ 4 편성 (PICK ↔ CONFIRM) ── 게임 시작 ──▶ start_run ──▶ Season.tscn (HUB)
+     ◀── 뒤로 ──┘   ◀── 뒤로 ──┘  ◀── 뒤로 ──┘  ◀── 뒤로 (PICK) ──┘
 ```
 
 What `start_run` does with the result (validation, `run_seed`, AI roster distribution,
@@ -21,17 +21,18 @@ level application) is documented in `features/season/README.md` "Entry point"
 | `ChoiceListView.gd` | `class_name ChoiceListView extends Control` | Shared "pick one card" step: hint line → scrolling card list → bar `뒤로`(1) / `다음`(2). Subclasses fill `_items` / `_card_h` / `_fill_card` / `_hint_text`. Signals `back_requested` / `next_requested`, value `selected_id`. **Nothing is pre-selected** — `다음` stays disabled until the player taps a card, so the rules (cap, team package) are read rather than skipped by tapping `다음` repeatedly. |
 | `ScenarioStepView.gd` | `class_name ScenarioStepView extends ChoiceListView` | Step 1 — `RunRules.scenarios()`: name, salary-cap chip, desc. |
 | `TeamStepView.gd` | `class_name TeamStepView extends ChoiceListView` | Step 2 — `RunRules.team_packages()` (8): name · short name, budget (+ bar relative to the highest budget), facility level, "직접 해야 하는 일" (`manual_areas` → `RunRules.area_label`, empty = "없음"), desc. Hint: higher budget = easier. Display / snapshot only — effects are M3 / M6. |
-| `TeamDraft.gd` | `class_name TeamDraft extends Control` | Step 3 data layer: owned pool (`get_pool_grid()`), chosen levels (`levels`, `set_level`, `leveled()`), salary (`salary_of`, `lineup_salary`, `salary_cap`), `validate()` = `RunRules.validate_lineup`. Slot table `SLOT_ROLES` / `SLOT_NAMES` / `slot_of_role`, `skill_type_label`. Signals `back_requested`, `start_requested(pilot_ids)`. |
-| `TeamDraftView.gd` | `class_name TeamDraftView extends Control` | Step 3 screen: salary gauge, 5 role-fixed slots with level steppers, role filter, scrolling thumbnail grid, PICK ↔ CONFIRM. Child of `TeamDraft`. |
+| `ManagerStepView.gd` | `class_name ManagerStepView extends Control` | Step 3 감독 (M8/M9) — preset chips, the preset's six stats, `TraitPickerView` (from `../manager/`) with in-place trait swaps; `preset_idx`, `selected_traits()`, `validation_error()`. Signals `back_requested` / `next_requested`. |
+| `TeamDraft.gd` | `class_name TeamDraft extends Control` | Step 4 data layer: owned pool (`get_pool_grid()`), chosen levels (`levels`, `set_level`, `leveled()`), salary (`salary_of`, `lineup_salary`, `salary_cap` = `RunRules.salary_cap_with(scenario, trait_ids)`), `set_traits` / `cap_bonus()` (trait `salary_cap` Σ), `validate()` = `RunRules.validate_lineup(..., cap_bonus())`. Slot table `SLOT_ROLES` / `SLOT_NAMES` / `slot_of_role`, `skill_type_label`. Signals `back_requested`, `start_requested(pilot_ids)`. |
+| `TeamDraftView.gd` | `class_name TeamDraftView extends Control` | Step 4 screen: salary gauge, 5 role-fixed slots with level steppers, role filter, scrolling thumbnail grid, PICK ↔ CONFIRM. Child of `TeamDraft`. |
 | `PilotThumb.gd` | `class_name PilotThumb extends Button` | One grid cell: square face crop + top-left role badge + gold border / check when selected + bottom-right salary tag (`set_tag`). Static helpers `add_rounded_art` / `add_role_badge` shared with the slot illustrations. |
 | `DraftDetailPanel.gd` | `class_name DraftDetailPanel extends CanvasLayer` | Pilot detail popup — **also used by ban/pick** (`features/match_flow/ban_pick/`). `open(p: PlayerData)` only. |
 | `RunRoster.gd` | `class_name RunRoster` | AI roster distribution used by `GameManager.start_run` — owned by RunCore, see `features/season/README.md`. |
 
 ## Steps — one table
 `RunSetupScreen.STEPS` is the single list (`{id, label}`) the header and `뒤로` / `다음`
-navigation read. **To add a step** (manager preset, M3/M9): add one row and one branch in
+navigation read. **To add a step**: add one row and one branch in
 `_make_step_view(id)` that builds the view and wires its back / next signals to
-`_prev_step` / `_next_step`. Nothing else changes.
+`_prev_step` / `_next_step`. Nothing else changes. Rows: `scenario` · `team` · `manager` · `lineup`.
 
 - Each step view is built the first time it is entered and then only hidden / shown, so going
   back to the team step and forward again keeps the lineup picks and levels. Entering the
@@ -41,6 +42,20 @@ navigation read. **To add a step** (manager preset, M3/M9): add one row and one 
 - The pilot pool is read **once** from `GameManager.load_match_data()["players"]` (Lv1 CSV
   copies) — `season_state` is not initialised yet during run setup. A load error is shown as a
   red line on the lineup step.
+
+## Manager step (감독) — M8/M9, plan §12.0 / §12.2
+`ManagerStepView`: status line at `content_top()`, then one `DragScroll` body down to the bar:
+preset chips (`ManagerUi.add_preset_chips`) → stats card (`<type> 감독 · Lv n`, the preset's six stats via
+`ManagerUi.add_stat_cells`, specialised part in amber, `manager_all` trait note) → `TraitPickerView`.
+- **The active preset is preselected** — the "nothing preselected" rule is for the choice lists; a
+  preset is a loadout already built in the lobby `감독` tab.
+- Trait taps edit a draft copy of the chosen preset (`ManagerProgress.toggle_trait`). Whenever the
+  draft is valid it is written back (`store_preset`) and the profile saved — the preset itself is
+  edited. An invalid draft (bonus < 0) is never saved; switching chips drops it.
+- `다음` is disabled while `ManagerProgress.validate_preset` fails; the reason replaces the status line
+  (red). A prestige preset can't be edited here (reset it in the lobby tab).
+- Specialisation (stat alloc) is not editable here — lobby tab only.
+- `다음` → `RunSetupScreen.manager_preset = preset_idx`; `manager_traits()` feeds the lineup cap.
 
 ## Lineup step (편성) — the old draft, adapted
 **Uma Musume–style character pick.** Bottom half: scrolling grid of owned pilots; above it
@@ -60,7 +75,8 @@ salary (`RunRules.salary_at`) and overall stat at that level. Buttons disable at
 the detail popup read `TeamDraft.leveled(pid)`, a duplicate with `RunRules.apply_level`.
 
 ### Rules are visible while picking
-The gauge card shows `<scenario> · 샐러리캡`, `total / cap` and a bar; **over cap → red**
+The gauge card shows `<scenario> · 샐러리캡` (+ ` (특성 ±n)` when the preset's traits move the cap —
+the cap is `RunRules.salary_cap_with`, re-read on every entry via `TeamDraft.set_traits`), `total / cap` and a bar; **over cap → red**
 (even before all five are picked). The line below it is the rule state:
 `포지션마다 1명씩 — n / 5명` → `샐러리캡 초과 …` (red) → any other `validate_lineup` error (red)
 → `편성 완료 — 남은 샐러리 n` (green). `다음` and `게임 시작` are disabled whenever
@@ -78,7 +94,8 @@ While animating (`_busy`) all input is ignored.
    the screen) and emits `TeamDraft.start_requested(pilot_ids)` in `GameEnums.Role` order.
 2. `RunSetupScreen.build_run_setup` builds the §10.2 dictionary:
    `scenario`, `team_id`, `pilot_ids` (Role order), `pilot_levels` (String keys),
-   `salary_cap`, `salary_total`.
+   `salary_cap` (`salary_cap_with` the preset's traits), `salary_total`, `preset` (§12.2 — the
+   감독 step's index; `start_run` re-validates it and snapshots traits / stats).
 3. `SceneFade.play` (fade to black → fake loading → fade in, a root `CanvasLayer` that
    survives the scene change). **At the moment the screen is covered**: close the detail
    popup, `GameManager.start_run(run_setup)`; `""` → `change_scene_to_file(Season.tscn)`

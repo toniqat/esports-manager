@@ -2,7 +2,7 @@ class_name RunSetupScreen
 extends Control
 
 # 런 준비 화면(`scenes/RunSetup.tscn`) — 오케스트레이터.
-# 시나리오 → 팀 → 5인 편성(레벨 · 샐러리캡) → `GameManager.start_run(run_setup)`
+# 시나리오 → 팀 → 감독(프리셋 · 특성) → 5인 편성(레벨 · 샐러리캡) → `GameManager.start_run(run_setup)`
 # → `Season.tscn`(HUB 부터). 계약: `docs/outgame_dev_plan.md` §10.2.
 #
 # **단계는 표 하나(`STEPS`)다.** 맨 위 단계 머리글도, `뒤로` / `다음` 의 이동도
@@ -19,6 +19,7 @@ const SEASON_SCENE: String = "res://scenes/Season.tscn"
 const STEPS: Array = [
 	{"id": "scenario", "label": "시나리오"},
 	{"id": "team",     "label": "팀"},
+	{"id": "manager",  "label": "감독"},    # M8/M9 — preset + traits (ManagerStepView)
 	{"id": "lineup",   "label": "편성"},
 ]
 
@@ -42,6 +43,9 @@ static func content_top() -> float:
 
 var scenario_id: int = -1
 var team_id: int = -1
+## Manager preset chosen on the 감독 step (-1 = active preset — `start_run` resolves it).
+var manager_preset: int = -1
+var _manager_view: ManagerStepView = null
 
 var _step: int = -1
 var _views: Dictionary = {}          # step id → Control
@@ -130,6 +134,12 @@ func _make_step_view(id: String) -> Control:
 			tv.back_requested.connect(_prev_step)
 			tv.next_requested.connect(_on_team_next.bind(tv))
 			return tv
+		"manager":
+			_manager_view = ManagerStepView.new()
+			add_child(_manager_view)
+			_manager_view.back_requested.connect(_prev_step)
+			_manager_view.next_requested.connect(_on_manager_next)
+			return _manager_view
 		"lineup":
 			_draft = TeamDraft.new()
 			_draft.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -147,6 +157,8 @@ func _on_step_entered(id: String) -> void:
 	_error_lbl.visible = false
 	if id == "lineup":
 		if _draft != null:
+			# Trait `salary_cap` moves the cap — set before the scenario redraws the gauge.
+			_draft.set_traits(manager_traits())
 			_draft.set_scenario(scenario_id)
 		if _load_error != "":
 			_show_error("선수 데이터를 읽지 못했습니다: " + _load_error)
@@ -160,6 +172,16 @@ func _on_scenario_next(view: ScenarioStepView) -> void:
 func _on_team_next(view: TeamStepView) -> void:
 	team_id = view.selected_id
 	_next_step()
+
+
+func _on_manager_next() -> void:
+	manager_preset = _manager_view.preset_idx
+	_next_step()
+
+
+## Trait ids of the chosen preset (empty before the 감독 step was built).
+func manager_traits() -> Array:
+	return _manager_view.selected_traits() if _manager_view != null else []
 
 
 # ── 런 시작 ──────────────────────────────────────────────────────────────────
@@ -176,8 +198,10 @@ func build_run_setup(pilot_ids: Array) -> Dictionary:
 		"team_id": team_id,
 		"pilot_ids": ids,
 		"pilot_levels": levels,
-		"salary_cap": RunRules.salary_cap(scenario_id),
+		"salary_cap": RunRules.salary_cap_with(scenario_id, manager_traits()),
 		"salary_total": _draft.lineup_salary(ids),
+		# M9 — profile preset index; `GameManager.start_run` validates and snapshots it.
+		"preset": manager_preset,
 	}
 
 

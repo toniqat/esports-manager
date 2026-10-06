@@ -35,6 +35,8 @@ signal start_requested(pilot_ids: Array)
 var scenario_id: int = 0
 ## 고른 레벨 — `{"<pilot_id>": int}`. 보유 선수 전원이 Lv1 로 시작한다.
 var levels: Dictionary = {}
+## M8 — trait ids of the chosen manager preset; their `salary_cap` sum moves the cap.
+var trait_ids: Array = []
 
 var _pool: Array = []                 # Array[PlayerData] — CSV Lv1 사본 40명
 var _by_id: Dictionary = {}           # int id → PlayerData
@@ -61,6 +63,17 @@ func set_scenario(p_scenario_id: int) -> void:
 	scenario_id = p_scenario_id
 	if _view != null:
 		_view.refresh_rules()
+
+
+## The 감독 step's preset traits (set on every entry to the lineup step). The caller
+## follows with `set_scenario`, which redraws the gauge.
+func set_traits(ids: Array) -> void:
+	trait_ids = ids.duplicate()
+
+
+## Σ `salary_cap` p1 of the equipped traits (0 when none) — the gauge shows it.
+func cap_bonus() -> int:
+	return TraitSystem.sum_p1(trait_ids, "salary_cap")
 
 
 func ensure_view() -> void:
@@ -146,7 +159,7 @@ func salary_of(pilot_id: int) -> int:
 
 # ── 편성 ─────────────────────────────────────────────────────────────────────
 func salary_cap() -> int:
-	return RunRules.salary_cap(scenario_id)
+	return RunRules.salary_cap_with(scenario_id, trait_ids)
 
 
 ## 고른 선수들(일부여도 된다)의 샐러리 합.
@@ -161,7 +174,8 @@ func lineup_salary(pilot_ids: Array) -> int:
 
 ## 편성 검증 — "" 면 시작할 수 있다. 시작이 거절하는 규칙과 같은 함수다.
 func validate(pilot_ids: Array) -> String:
-	return RunRules.validate_lineup(pilot_ids, levels, scenario_id, _pool, _owned_max)
+	return RunRules.validate_lineup(pilot_ids, levels, scenario_id, _pool, _owned_max,
+			cap_bonus())
 
 
 # ─── 파일럿 스킬 ─────────────────────────────────────────────────────────────

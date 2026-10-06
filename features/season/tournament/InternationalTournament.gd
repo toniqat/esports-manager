@@ -10,15 +10,20 @@ extends Node
 # AI matches resolve at week-advance time; player matches go through
 # SeasonHub → MatchFlow → BattleSim with pending_match.source = "intl".
 #
-# REGULAR_INTL is the campaign-end gate:
-#   - Player wins F   → intl_completed → SeasonHub routes to ENDING
-#   - Player loses    → intl_failed_campaign → SeasonHub routes to GAME_OVER
-# PRESEASON_INTL / MIDSEASON_INTL only emit intl_completed; the campaign
-# rolls into the next league phase regardless of who wins.
+# Every INTL must be won (§3 M2 — six tournaments, any non-title ends the run):
+#   - Player eliminated (any round, any INTL) → intl_failed_campaign
+#     → SeasonHub routes to GAME_OVER right after that result
+#   - Player wins F → intl_completed(phase, player) → SeasonHub routes to
+#     ENDING on REGULAR_INTL; PRESEASON_INTL / MIDSEASON_INTL roll into the
+#     next league phase.
+# intl_completed only ever carries the player's team as champion — a final
+# without the player means the player was already eliminated (failed fires
+# instead). The bracket remembers the elimination (`player_eliminated`) so
+# the failure fires once even if AI resolution keeps touching the bracket.
 
 signal intl_started(phase: int)
-signal intl_completed(phase: int, champion_team_id: int)
-signal intl_failed_campaign(phase: int)   # REGULAR_INTL player elimination only
+signal intl_completed(phase: int, champion_team_id: int)   # player won the final
+signal intl_failed_campaign(phase: int)   # player eliminated — run over
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 @onready var _gm: Node = get_node("/root/GameManager")
@@ -228,19 +233,28 @@ func _maybe_complete() -> void:
 	var phase: int = int(t["phase_at_start"])
 	var pid: int = int(s["player_team_id"])
 
+	if bool(t.get("player_eliminated", false)) or bool(t.get("completed", false)):
+		return   # 이미 결론이 났다 — 시그널은 한 번만
+
 	if b.size() >= 7 and bool(b[6]["played"]):
 		var champ: int = int(b[6]["winner"])
 		_record_phase_results(phase, champ)
-		if phase == GameEnums.SeasonPhase.REGULAR_INTL and champ != pid:
-			intl_failed_campaign.emit(phase)
-		else:
+		if champ == pid:
+			t["completed"] = true
 			intl_completed.emit(phase, champ)
+		else:
+			_fail(phase)
 		return
 
-	# REGULAR_INTL only — mid-bracket fail-fast.
-	if phase == GameEnums.SeasonPhase.REGULAR_INTL and not _player_still_alive():
+	# 대회 중간 탈락 — 어느 국제대회든 그 결과 직후 런이 끝난다.
+	if not _player_still_alive():
 		_record_phase_results(phase, -1)
-		intl_failed_campaign.emit(phase)
+		_fail(phase)
+
+
+func _fail(phase: int) -> void:
+	_gm.season_state["current_tournament"]["player_eliminated"] = true
+	intl_failed_campaign.emit(phase)
 
 
 func _record_phase_results(phase: int, champ: int) -> void:

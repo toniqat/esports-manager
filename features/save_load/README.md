@@ -28,9 +28,11 @@ Auto-save fires at four discrete points (no manual save UI):
 No save fires while BattleSim is running — closing mid-battle resumes from
 the post-ban-pick snapshot and replays the battle (the jungle start screen shows again too).
 
-**Run end** — `EndingView` / `GameOverView` call `SaveSystem.delete_run()` from both
-buttons (`다시 시작` → Season.tscn, `로비로` → Lobby.tscn). M2 inserts the run-result
-settlement (write to profile) right before that delete.
+**Run end** — `SeasonHub` settles the run the moment it enters GAME_OVER / ENDING
+(`RunResult.settle_current_run`, which writes the profile and deletes the run file).
+From then on `season_state.run_over` is true and `SeasonHub._autosave` is a no-op, so
+the post-match / post-week saves that follow the deciding result never recreate it.
+`EndingView` / `GameOverView` only offer `정산` → RunResult.tscn.
 
 ## Entry point
 `scenes/Lobby.tscn` (`features/meta/lobby/`) — `run/main_scene` in `project.godot`.

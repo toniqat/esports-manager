@@ -4,12 +4,20 @@ extends Node
 # Phase 7 — playoff bracket manager. Activates on the first week after the
 # league weeks end. 4-team single elimination: SF1 (#1 vs #4), SF2 (#2 vs #3),
 # then F. Distributed across 2 weeks (SF week + F week) since the campaign
-# now progresses one match per week per team. If the player team did not
-# finish top-4 the run is over — emits playoff_failed_qualification so
-# SeasonHub can route to the game-over screen.
+# now progresses one match per week per team.
+#
+# Every league phase must end with a title (§3 M2 — six tournaments, any
+# non-title ends the run). Two ways out, both routed to GAME_OVER by SeasonHub:
+#   - the player team did not finish top-4 → playoff_failed_qualification
+#   - the player team lost its SF or F     → playoff_lost (right after that
+#     result, before any further bracket resolution)
+# The player can only be eliminated by its own match, so only record_result
+# emits playoff_lost; the bracket remembers it (`player_eliminated`) so the
+# signal fires once even if AI resolution keeps touching the bracket.
 
 signal playoff_started(phase: int)
 signal playoff_failed_qualification(phase: int)
+signal playoff_lost(phase: int)
 signal playoff_completed(phase: int, champion_team_id: int)
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
@@ -176,6 +184,31 @@ func record_result(slot: int, winner: int) -> void:
 	b[slot]["winner"] = winner
 	_seed_next_round(slot, winner)
 	_maybe_complete()
+	_check_player_eliminated(slot)
+
+
+## 플레이어 팀이 방금 그 경기에서 졌으면 탈락을 기록하고 `playoff_lost` 를
+## 한 번만 쏜다. 결승 패배도 여기로 온다(`_maybe_complete` 가 우승팀을 이미 적었다).
+func _check_player_eliminated(slot: int) -> void:
+	var s: Dictionary = _gm.season_state
+	var t: Dictionary = s["current_tournament"]
+	if bool(t.get("player_eliminated", false)):
+		return
+	var m: Dictionary = (t["bracket"] as Array)[slot]
+	var pid: int = int(s["player_team_id"])
+	if int(m["team_a"]) != pid and int(m["team_b"]) != pid:
+		return
+	if int(m["winner"]) == pid:
+		return
+	t["player_eliminated"] = true
+	t["eliminated_slot"] = slot
+	var phase: int = int(t["phase_at_start"])
+	var pr: Dictionary = s.get("phase_results", {})
+	if not pr.has(phase):
+		# 4강 탈락 — 결승이 아직 안 열렸으니 우승팀 칸은 비워 둔다.
+		pr[phase] = {"made_playoffs": true, "champion": -1}
+		s["phase_results"] = pr
+	playoff_lost.emit(phase)
 
 
 # SF1 winner → F.team_a; SF2 winner → F.team_b. Stage promotes once both

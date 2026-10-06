@@ -49,6 +49,8 @@ var _bracket_view: BracketView = null
 var _intl_bracket_view: IntlBracketView = null
 var _game_over_view: GameOverView = null
 var _ending_view: EndingView = null
+# 이 런의 결론 화면(Screen.GAME_OVER / ENDING), 아직 없으면 -1.
+var _run_end_screen: int = -1
 
 
 func _ready() -> void:
@@ -66,6 +68,8 @@ func _ready() -> void:
 	if tm != null:
 		if not tm.playoff_failed_qualification.is_connected(_on_playoff_failed):
 			tm.playoff_failed_qualification.connect(_on_playoff_failed)
+		if not tm.playoff_lost.is_connected(_on_playoff_lost):
+			tm.playoff_lost.connect(_on_playoff_lost)
 
 	# Phase 8 — INTL signals.
 	var intl: InternationalTournament = get_node_or_null("InternationalTournament") as InternationalTournament
@@ -244,6 +248,7 @@ func _show_intl_bracket() -> void:
 
 
 func _show_game_over() -> void:
+	_settle_run("fail")
 	_ensure_game_over_view()
 	_hide_all_screens()
 	if _game_over_view:
@@ -252,6 +257,7 @@ func _show_game_over() -> void:
 
 
 func _show_ending() -> void:
+	_settle_run("clear")
 	_ensure_ending_view()
 	_hide_all_screens()
 	if _ending_view:
@@ -631,31 +637,72 @@ func _apply_intl_result(idx: int, winner_team_id: int) -> void:
 	intl.record_result(idx, winner_team_id)
 
 
-# ── Phase 7 — playoff qualification failure ────────────────────────────────
+# ── Run end — six titles or bust (§3 M2) ───────────────────────────────────
+# 여섯 대회 중 하나라도 우승을 놓치면 그 결과 직후 GAME_OVER, 마지막
+# REGULAR_INTL 우승이면 ENDING. 두 화면 다 들어서는 순간 정산한다.
+
+## 리그 페이즈 플레이오프 진출 실패.
 func _on_playoff_failed(_phase: int) -> void:
-	current_screen = Screen.GAME_OVER
-	_route()
+	_enter_run_end(Screen.GAME_OVER)
 
 
-# ── Phase 8 — INTL completion / campaign end ───────────────────────────────
+## 리그 페이즈 플레이오프 4강 / 결승 패배.
+func _on_playoff_lost(_phase: int) -> void:
+	_enter_run_end(Screen.GAME_OVER)
+
+
+## 국제대회 우승. 앞의 두 국제대회는 다음 리그 페이즈로 이어진다 — 주 마감이
+## 페이즈를 넘긴다. 마지막(REGULAR_INTL)만 엔딩.
 func _on_intl_completed(phase: int, champion_team_id: int) -> void:
 	if phase != GameEnums.SeasonPhase.REGULAR_INTL:
 		return
-	var pid: int = int(_gm.season_state["player_team_id"])
-	if champion_team_id == pid:
-		current_screen = Screen.ENDING
-	else:
-		current_screen = Screen.GAME_OVER
-	_route()
+	if champion_team_id != int(_gm.season_state["player_team_id"]):
+		return   # InternationalTournament 는 이 경우 intl_failed_campaign 을 쏜다
+	_enter_run_end(Screen.ENDING)
 
 
+## 국제대회 탈락(어느 국제대회든).
 func _on_intl_failed_campaign(_phase: int) -> void:
-	current_screen = Screen.GAME_OVER
+	_enter_run_end(Screen.GAME_OVER)
+
+
+## 런의 결론(GAME_OVER / ENDING)을 정한다. 결론은 처음 것 하나로 고정되고,
+## 정산은 **지금 바로**(뒤따르는 `_autosave` 가 쓰지 않게), 화면 전환은
+## **프레임 끝에** 한다 — 시그널은 `_end_week` 의 달력 굴리기나 `_show_hub` 의
+## `ensure_active()` 한가운데서 터질 수 있고, 거기서 바로 그리면 그 함수의
+## 나머지가 허브를 다시 세워 결론 화면을 덮는다.
+func _enter_run_end(screen: int) -> void:
+	if _run_end_screen < 0:
+		_run_end_screen = screen
+	current_screen = _run_end_screen
+	_settle_run("clear" if _run_end_screen == Screen.ENDING else "fail")
+	_show_run_end.call_deferred()
+
+
+func _show_run_end() -> void:
+	var view: Control = _ending_view if _run_end_screen == Screen.ENDING else _game_over_view
+	if current_screen == _run_end_screen and view != null and view.visible:
+		return   # 이미 그 화면이다(경기 직후 `_ready` 가 먼저 그렸다)
+	current_screen = _run_end_screen
 	_route()
+
+
+## 런 정산은 한 런에 한 번 — GAME_OVER / ENDING 에 처음 들어설 때.
+## 정산이 `run.save` 를 지우고 `run_over` 를 세우면 그 뒤 `_autosave` 는 쓰지 않는다.
+func _settle_run(outcome: String) -> void:
+	if bool(_gm.season_state.get("run_over", false)):
+		return
+	RunResult.settle_current_run(outcome)
+	_gm.season_state["run_over"] = true
 
 
 # ── Save system — autosave helper ──────────────────────────────────────────
 func _autosave(reason: String) -> void:
+	# 정산이 끝난 런은 저장하지 않는다 — 경기 직후 저장(`_ready`)이나 주 마감
+	# 저장이 결과 처리 뒤에 와도 지워진 run.save 가 되살아나지 않게.
+	if bool(_gm.season_state.get("run_over", false)):
+		print("SeasonHub: autosave (%s) skipped — run is over" % reason)
+		return
 	var err: String = SaveSystem.save_run()
 	if err != "":
 		push_warning("SeasonHub: autosave (%s) failed — %s" % [reason, err])

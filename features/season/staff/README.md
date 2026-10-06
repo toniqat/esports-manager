@@ -11,6 +11,11 @@ Rules
 - Stats are 1..20 (`STAT_MIN` / `STAT_MAX`), six keys `StaffSystem.STATS`.
 - One dedicated staff per field (`JOB_STAT`), one assistant per team (all stats). Ties go staff → assistant → manager (the delegated side wins).
 - Interviews / outings read `manager_value(state, "mental")` only; incidents read `effective_for_incident`.
+- The **finance** stat has a real effect besides "who allocates": `effective(state, "finance")` scales sponsor
+  income and upkeep continuously (`FinanceSystem.finance_stat_income_mult` / `finance_stat_upkeep_mult`,
+  `FINANCE_STAT_*`) — see `features/season/finance/README.md`.
+- `staff_mods` sources include the finance sheet's `coach_hire` specials (`특별 지출 · <name>`), bought with
+  balance (`FinanceSystem.buy_special`).
 
 ## Hub card + sheet (`StaffPanel.gd`)
 Contract §11.2 — `hub_summary(state)` / `open(host)`; draws only, every value comes from `StaffSystem`.

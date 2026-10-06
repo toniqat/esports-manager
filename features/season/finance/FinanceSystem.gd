@@ -15,6 +15,11 @@ extends RefCounted
 #              allocation stops → balance → facility fund → one forced cut
 #              (facility downgrade, or a training penalty at level 1).
 #
+# §14 T6: the effective finance stat scales sponsor income / upkeep
+# (`FINANCE_STAT_*`, inside `income_mult` / `upkeep_mult`), and the sheet's
+# special spending (`finance_specials.csv`, `FSPEC_*`) buys timed effects that
+# fold into the same multipliers (`specials`, decremented by `settle_week`).
+#
 # All numbers are tuning values in `const.csv` (`FINANCE_*`) and
 # `facilities.csv`. Saved state goes through JSON, so every read is `int()` /
 # `float()`-wrapped.
@@ -26,7 +31,18 @@ const AXIS_LABELS: Dictionary = {
 ## Manual allocation the run starts with (percent, sums to 100, step-aligned).
 const DEFAULT_ALLOC: Dictionary = {"training": 40, "facility": 30, "welfare": 30}
 
+## Special spending kinds (`finance_specials.kind`) and which effect axis
+## (`special_pct`) each param feeds. coach_hire is a `StaffSystem` mod instead.
+const SPECIAL_KINDS: Array = ["coach_hire", "camp", "sponsor_deal", "upkeep_delay", "salary_cut"]
+const SPECIAL_AXES: Dictionary = {
+	"camp": {"p1": "train"},
+	"sponsor_deal": {"p1": "income", "p2": "train"},
+	"upkeep_delay": {"p1": "upkeep", "p2": "incident"},
+	"salary_cut": {"p1": "salary", "p2": "train"},
+}
+
 static var _facilities: Dictionary = {}   # int level → row Dictionary
+static var _specials: Array = []          # finance_specials rows, CSV order
 static var _max_level: int = 1
 static var _loaded: bool = false
 
@@ -49,6 +65,9 @@ static func init_run(state: Dictionary, team_id: int) -> void:
 		"week_losses": 0,
 		"week_no": 0,
 		"manual_profit_weeks": 0,
+		"specials": [],
+		"week_special_spend": 0,
+		"week_special_buys": [],
 		"history": [],
 	}
 
@@ -64,7 +83,7 @@ static func settle_week(state: Dictionary) -> Dictionary:
 	var sponsor: int = sponsor_income(state, lvl)
 	var bonus: int = int(f.get("week_bonus", 0))
 	var income: int = sponsor + bonus
-	var salaries: int = StaffSystem.weekly_salary_total(state)
+	var salaries: int = salary_cost(state)
 	var upkeep: int = upkeep_cost(state, lvl)
 	var expense: int = salaries + upkeep
 	var net: int = income - expense
@@ -130,6 +149,13 @@ static func settle_week(state: Dictionary) -> Dictionary:
 		"income_pct": income_pct,
 		"trait_income_pct": TraitSystem.run_mod(state, "income_pct"),
 		"trait_upkeep_pct": TraitSystem.run_mod(state, "upkeep_pct"),
+		"finance_stat": StaffSystem.effective(state, "finance"),
+		"special_income_pct": special_pct(state, "income"),
+		"special_upkeep_pct": special_pct(state, "upkeep"),
+		"special_salary_pct": special_pct(state, "salary"),
+		"specials": _active_ids(state),
+		"special_spend": int(f.get("week_special_spend", 0)),
+		"special_buys": (f.get("week_special_buys", []) as Array).duplicate(),
 		"bonus": bonus,
 		"wins": int(f.get("week_wins", 0)),
 		"losses": int(f.get("week_losses", 0)),
@@ -158,6 +184,10 @@ static func settle_week(state: Dictionary) -> Dictionary:
 		"welfare_pct": _spend_effect(int(spent["welfare"]),
 				"FINANCE_WELFARE_FULL_SPEND", "FINANCE_WELFARE_MAX_PCT"),
 	}
+	var expired: Array = _tick_specials(state)
+	entry["specials_expired"] = expired
+	f["week_special_spend"] = 0
+	f["week_special_buys"] = []
 	f["week_bonus"] = 0
 	f["week_wins"] = 0
 	f["week_losses"] = 0
@@ -174,6 +204,10 @@ static func settle_week(state: Dictionary) -> Dictionary:
 		out["toast"] = "재무 적자 %s · 긴급 삭감 %d건 — 재무 카드 확인" % [fmt_signed(net), cuts.size()]
 	else:
 		out["toast"] = "재무 정산 %s · 잔고 %s" % [fmt_signed(net), fmt(balance_now)]
+	if int(entry["special_spend"]) > 0:
+		out["toast"] += " · 특별 지출 %s" % fmt(int(entry["special_spend"]))
+	if not expired.is_empty():
+		out["toast"] += " · 만료: " + ", ".join(PackedStringArray(expired))
 	return out
 
 
@@ -233,15 +267,37 @@ static func upkeep_cost(state: Dictionary, level: int) -> int:
 			* upkeep_mult(state)))
 
 
-## Every sponsor-income multiplier on top of the facility percent (traits; §14 adds
-## the finance stat and specials). The single number the UI shows as the sponsor ×.
+## Every sponsor-income multiplier on top of the facility percent — traits ×
+## finance stat × special spending (sponsor deals). The single number the UI
+## shows as the sponsor ×.
 static func income_mult(state: Dictionary) -> float:
-	return TraitSystem.run_pct_mult(state, "income_pct")
+	return TraitSystem.run_pct_mult(state, "income_pct") * finance_stat_income_mult(state) 			* _pct_mult(special_pct(state, "income"))
 
 
-## Every upkeep multiplier (traits; §14 adds the finance stat).
+## Every upkeep multiplier — traits × finance stat × special spending (upkeep delay).
 static func upkeep_mult(state: Dictionary) -> float:
-	return TraitSystem.run_pct_mult(state, "upkeep_pct")
+	return TraitSystem.run_pct_mult(state, "upkeep_pct") * finance_stat_upkeep_mult(state) 			* _pct_mult(special_pct(state, "upkeep"))
+
+
+## Finance-stat part of `income_mult`: `1 + (stat − PIVOT) × INCOME_STEP / 100`,
+## continuous in the effective finance stat (`StaffSystem.effective`).
+static func finance_stat_income_mult(state: Dictionary) -> float:
+	var d: float = float(StaffSystem.effective(state, "finance")) - ConstTable.num("FINANCE_STAT_PIVOT")
+	return maxf(0.0, 1.0 + d * ConstTable.num("FINANCE_STAT_INCOME_STEP") / 100.0)
+
+
+## Finance-stat part of `upkeep_mult`: `1 − (stat − PIVOT) × UPKEEP_STEP / 100`,
+## floored at `FINANCE_STAT_UPKEEP_MULT_MIN`.
+static func finance_stat_upkeep_mult(state: Dictionary) -> float:
+	var d: float = float(StaffSystem.effective(state, "finance")) - ConstTable.num("FINANCE_STAT_PIVOT")
+	return maxf(ConstTable.num("FINANCE_STAT_UPKEEP_MULT_MIN"),
+			1.0 - d * ConstTable.num("FINANCE_STAT_UPKEEP_STEP") / 100.0)
+
+
+## Weekly staff salaries × special spending (salary renegotiation).
+static func salary_cost(state: Dictionary) -> int:
+	return int(round(float(StaffSystem.weekly_salary_total(state))
+			* _pct_mult(special_pct(state, "salary"))))
 
 
 ## Surplus weeks settled while the manager ran finance (trait unlock counter, M8).
@@ -251,7 +307,7 @@ static func manual_profit_weeks(state: Dictionary) -> int:
 
 ## Weekly fixed cost at the current level — salaries + upkeep.
 static func weekly_fixed_cost(state: Dictionary) -> int:
-	return StaffSystem.weekly_salary_total(state) + upkeep_cost(state, facility_level(state))
+	return salary_cost(state) + upkeep_cost(state, facility_level(state))
 
 
 ## What the coming week-end settlement looks like so far (bonus accrued to date).
@@ -282,11 +338,12 @@ static func effects(state: Dictionary) -> Dictionary:
 
 
 # ── Multipliers ──────────────────────────────────────────────────────────────
-## Training EXP multiplier (facility × training allocation × unpaid penalty).
-## `TrainingBoard` multiplies by it.
+## Training EXP multiplier (facility × training allocation × special spending
+## (camps, sponsor / salary downsides) × unpaid penalty). `TrainingBoard` multiplies by it.
 static func training_exp_mult(state: Dictionary) -> float:
 	var m: float = float(facility_row(facility_level(state)).get("train_exp_pct", 100)) / 100.0
 	m *= 1.0 + float(effects(state)["training_pct"]) / 100.0
+	m *= _pct_mult(special_pct(state, "train"))
 	if penalty_weeks(state) > 0:
 		m *= 1.0 - float(ConstTable.int_of("FINANCE_UNPAID_TRAIN_PENALTY_PCT")) / 100.0
 	return maxf(0.0, m)
@@ -297,10 +354,12 @@ static func mastery_mult(state: Dictionary) -> float:
 	return float(facility_row(facility_level(state)).get("mastery_pct", 100)) / 100.0
 
 
-## Incident chance multiplier (facility × welfare allocation). `MentalSystem` multiplies by it.
+## Incident chance multiplier (facility × welfare allocation × special spending
+## (upkeep delay)). `MentalSystem` multiplies by it.
 static func incident_mult(state: Dictionary) -> float:
 	var m: float = float(facility_row(facility_level(state)).get("incident_pct", 100)) / 100.0
 	m *= 1.0 - float(effects(state)["welfare_pct"]) / 100.0
+	m *= _pct_mult(special_pct(state, "incident"))
 	return maxf(ConstTable.num("FINANCE_INCIDENT_MULT_MIN"), m)
 
 
@@ -420,6 +479,208 @@ static func upgrade_facility(state: Dictionary) -> String:
 	return ""
 
 
+# ── Special spending (§14 T6) ────────────────────────────────────────────────
+# `finance_specials.csv` rows bought from the sheet. Paid from the balance at
+# once; active ones live in `finance.specials` as
+# `{id, name, kind, p1, p2, weeks_left, cost, bought_week}` (params snapshotted
+# so a later CSV edit cannot change a running effect) and lose one week per
+# `settle_week`. coach_hire adds a `StaffSystem.add_mod` for the same weeks
+# (decayed by `StaffSystem.decay_mods`); every other kind feeds `special_pct`.
+
+## Every special row, CSV order: `{id, name, kind, cost, p1, p2, weeks, cond, desc}`.
+static func special_rows() -> Array:
+	_ensure_loaded()
+	return _specials
+
+
+static func special_row(special_id: String) -> Dictionary:
+	for raw in special_rows():
+		if String((raw as Dictionary)["id"]) == special_id:
+			return raw
+	return {}
+
+
+## Running specials (the saved entries).
+static func active_specials(state: Dictionary) -> Array:
+	return (state.get("finance", {}) as Dictionary).get("specials", [])
+
+
+## Weeks left of a running special, 0 when it is not running.
+static func special_weeks_left(state: Dictionary, special_id: String) -> int:
+	for raw in active_specials(state):
+		var e: Dictionary = raw
+		if String(e.get("id", "")) == special_id:
+			return int(e.get("weeks_left", 0))
+	return 0
+
+
+## Summed percent of running specials on one effect axis
+## (`income` / `upkeep` / `salary` / `train` / `incident`, see `SPECIAL_AXES`).
+static func special_pct(state: Dictionary, axis: String) -> int:
+	var total: int = 0
+	for raw in active_specials(state):
+		var e: Dictionary = raw
+		var axes: Dictionary = SPECIAL_AXES.get(String(e.get("kind", "")), {})
+		for param in axes.keys():
+			if String(axes[param]) == axis:
+				total += String(e.get(param, "0")).to_int()
+	return total
+
+
+## "" when `special_id` can be bought now, otherwise the Korean reason
+## (running, too many running, condition unmet, no effect, short of money).
+static func special_block_reason(state: Dictionary, special_id: String) -> String:
+	var row: Dictionary = special_row(special_id)
+	if row.is_empty() or not SPECIAL_KINDS.has(String(row["kind"])):
+		return "알 수 없는 항목"
+	var left: int = special_weeks_left(state, special_id)
+	if left > 0:
+		return "진행 중 — %d주 남음" % left
+	var cap: int = maxi(1, ConstTable.int_of("FSPEC_MAX_ACTIVE"))
+	if active_specials(state).size() >= cap:
+		return "동시 진행 최대 %d건" % cap
+	var why: String = special_cond_reason(state, String(row["cond"]))
+	if why != "":
+		return why
+	match String(row["kind"]):
+		"coach_hire":
+			if coach_hire_gain(state, row) <= 0:
+				return "담당 %s 쪽이 더 높아 효과 없음" % StaffSystem.owner_name(state, String(row["p1"]))
+		"salary_cut":
+			if StaffSystem.weekly_salary_total(state) <= 0:
+				return "스태프 연봉이 없어 효과 없음"
+		"upkeep_delay":
+			if int(facility_row(facility_level(state)).get("upkeep", 0)) <= 0:
+				return "유지비가 없어 효과 없음"
+	if balance(state) < int(row["cost"]):
+		return "잔고 부족 — %s 필요" % fmt(int(row["cost"]))
+	return ""
+
+
+## Condition grammar (`finance_specials.cond`, clauses joined by `&`, all must hold):
+## `facility_min:N` · `facility_max:N` · `sponsor_max:N` (team sponsor base) ·
+## `balance_max:N` · `last_wins_min:N` (wins in the last settled week).
+## "" when met (or empty), otherwise the Korean reason.
+static func special_cond_reason(state: Dictionary, cond: String) -> String:
+	for part in cond.split("&", false):
+		var kv: PackedStringArray = String(part).strip_edges().split(":", false)
+		if kv.size() != 2:
+			return "조건 오류"
+		var key: String = String(kv[0]).strip_edges()
+		var n: int = String(kv[1]).strip_edges().to_int()
+		match key:
+			"facility_min":
+				if facility_level(state) < n:
+					return "시설 Lv%d 이상 필요" % n
+			"facility_max":
+				if facility_level(state) > n:
+					return "시설 Lv%d 이하 팀 전용" % n
+			"sponsor_max":
+				if int((state.get("finance", {}) as Dictionary).get("sponsor_base", 0)) > n:
+					return "주간 스폰서 %s 이하 팀 전용" % fmt(n)
+			"balance_max":
+				if balance(state) > n:
+					return "잔고 %s 이하일 때만" % fmt(n)
+			"last_wins_min":
+				if int(last_week(state).get("wins", 0)) < n:
+					return "지난 주 %d승 이상 필요" % n
+			_:
+				return "조건 오류"
+	return ""
+
+
+## How much a coach_hire row would raise the effective stat right now
+## (the mod only lifts the manager's value — a better staff cover hides it).
+static func coach_hire_gain(state: Dictionary, row: Dictionary) -> int:
+	var stat: String = String(row.get("p1", ""))
+	if not StaffSystem.STATS.has(stat):
+		return 0
+	var lifted: int = clampi(StaffSystem.manager_value(state, stat) + String(row.get("p2", "0")).to_int(),
+			StaffSystem.STAT_MIN, StaffSystem.STAT_MAX)
+	return maxi(0, lifted - StaffSystem.effective(state, stat))
+
+
+## Buys `special_id`: pays from the balance, starts the effect. Returns "" on
+## success or the reason it was refused (`special_block_reason`).
+static func buy_special(state: Dictionary, special_id: String) -> String:
+	var why: String = special_block_reason(state, special_id)
+	if why != "":
+		return why
+	var row: Dictionary = special_row(special_id)
+	var f: Dictionary = _fin(state)
+	var cost: int = maxi(0, int(row["cost"]))
+	var weeks: int = maxi(1, int(row["weeks"]))
+	f["balance"] = balance(state) - cost
+	var specials: Array = f.get("specials", [])
+	specials.append({
+		"id": special_id, "name": String(row["name"]), "kind": String(row["kind"]),
+		"p1": String(row["p1"]), "p2": String(row["p2"]),
+		"weeks_left": weeks, "cost": cost, "bought_week": int(f.get("week_no", 0)) + 1,
+	})
+	f["specials"] = specials
+	f["week_special_spend"] = int(f.get("week_special_spend", 0)) + cost
+	var buys: Array = f.get("week_special_buys", [])
+	buys.append(String(row["name"]))
+	f["week_special_buys"] = buys
+	if String(row["kind"]) == "coach_hire":
+		StaffSystem.add_mod(state, String(row["p1"]), String(row["p2"]).to_int(), weeks,
+				"특별 지출 · " + String(row["name"]))
+	return ""
+
+
+## One-line Korean effect of a special row (or a running entry — same keys).
+static func special_effect_text(row: Dictionary) -> String:
+	var p1: int = String(row.get("p1", "0")).to_int()
+	var p2: int = String(row.get("p2", "0")).to_int()
+	var parts: Array = []
+	match String(row.get("kind", "")):
+		"coach_hire":
+			parts.append("감독 %s %+d" % [String(StaffSystem.STAT_LABELS.get(String(row.get("p1", "")), "?")), p2])
+		"camp":
+			parts.append("훈련 EXP %+d%%" % p1)
+		"sponsor_deal":
+			parts.append("스폰서 수입 %+d%%" % p1)
+			if p2 != 0:
+				parts.append("훈련 EXP %+d%%" % p2)
+		"upkeep_delay":
+			parts.append("시설 유지비 %+d%%" % p1)
+			if p2 != 0:
+				parts.append("사건 확률 %+d%%" % p2)
+		"salary_cut":
+			parts.append("스태프 연봉 %+d%%" % p1)
+			if p2 != 0:
+				parts.append("훈련 EXP %+d%%" % p2)
+	return " · ".join(PackedStringArray(parts))
+
+
+# Running special ids (history entry).
+static func _active_ids(state: Dictionary) -> Array:
+	var out: Array = []
+	for raw in active_specials(state):
+		out.append(String((raw as Dictionary).get("id", "")))
+	return out
+
+
+# Week end: every running special loses a week; returns the names that ended.
+static func _tick_specials(state: Dictionary) -> Array:
+	var f: Dictionary = _fin(state)
+	var kept: Array = []
+	var expired: Array = []
+	for raw in (f.get("specials", []) as Array):
+		var e: Dictionary = (raw as Dictionary).duplicate()
+		e["weeks_left"] = int(e.get("weeks_left", 0)) - 1
+		if int(e["weeks_left"]) > 0:
+			kept.append(e)
+		else:
+			expired.append(String(e.get("name", e.get("id", ""))))
+	f["specials"] = kept
+	return expired
+
+
+static func _pct_mult(pct: int) -> float:
+	return maxf(0.0, 1.0 + float(pct) / 100.0)
+
+
 # ── Formatting ───────────────────────────────────────────────────────────────
 ## 1234567 → "1,234,567".
 static func fmt(n: int) -> String:
@@ -498,4 +759,12 @@ static func _ensure_loaded() -> void:
 			"income_pct": int(row["income_pct"]),
 		}
 		_max_level = maxi(_max_level, lvl)
+	db.query("SELECT * FROM finance_specials")
+	for row2 in db.query_result:
+		_specials.append({
+			"id": String(row2["id"]), "name": String(row2["name"]), "kind": String(row2["kind"]),
+			"cost": int(row2["cost"]), "p1": String(row2["p1"]), "p2": String(row2["p2"]),
+			"weeks": int(row2["weeks"]), "cond": String(row2["cond"]), "desc": String(row2["desc"]),
+		})
+	_specials.sort_custom(func(x, y): return String(x["id"]) < String(y["id"]))
 	db.close_db()

@@ -10,6 +10,10 @@ extends RefCounted
 # Every tap target lives inside the sheet's `DragScroll` body, so they are plain
 # `Button`s (taps survive; a vertical drag scrolls) — no `HSlider`, whose drag
 # the scroll would swallow. Allocation is a −/+ stepper per axis instead.
+#
+# 특별 지출 (§14 T6): one row per `finance_specials.csv` entry with a two-step
+# buy button (like the facility upgrade). Only one row can be armed at a time —
+# `_render`'s `special_armed` is that row's id.
 
 const ROW_H: float = 42.0
 const SECTION_GAP: float = 36.0
@@ -51,7 +55,8 @@ static func open(host: Node) -> void:
 
 
 # ── Sheet ────────────────────────────────────────────────────────────────────
-static func _render(sheet: HubSheet, state: Dictionary, upgrade_armed: bool) -> void:
+static func _render(sheet: HubSheet, state: Dictionary, upgrade_armed: bool,
+		special_armed: String = "") -> void:
 	var body: Control = sheet.body
 	for c in body.get_children():
 		body.remove_child(c)
@@ -67,6 +72,7 @@ static func _render(sheet: HubSheet, state: Dictionary, upgrade_armed: bool) -> 
 	y = _build_last_week(body, state, w, y + SECTION_GAP)
 	y = _build_allocation(sheet, state, w, y + SECTION_GAP)
 	y = _build_facility(sheet, state, w, y + SECTION_GAP, upgrade_armed)
+	y = _build_specials(sheet, state, w, y + SECTION_GAP, special_armed)
 	y = _build_history(body, state, w, y + SECTION_GAP)
 	sheet.set_body_height(y + 24.0)
 
@@ -140,6 +146,17 @@ static func _build_last_week(body: Control, state: Dictionary, w: float, y: floa
 		y += 34.0
 	for cut in (last.get("cuts", []) as Array):
 		_lbl(body, "삭감 · " + String(cut), 22, OutgameTheme.NEGATIVE, Vector2(0, y), Vector2(w, 30))
+		y += 34.0
+	var spend: int = int(last.get("special_spend", 0))
+	if spend > 0:
+		_lbl(body, "특별 지출 −%s (구매 즉시 잔고에서 차감 · %s)" % [FinanceSystem.fmt(spend),
+				", ".join(PackedStringArray(last.get("special_buys", [])))],
+				22, OutgameTheme.TEXT_SUB, Vector2(0, y), Vector2(w, 30))
+		y += 34.0
+	var ended: Array = last.get("specials_expired", [])
+	if not ended.is_empty():
+		_lbl(body, "특별 지출 만료 · " + ", ".join(PackedStringArray(ended)), 22,
+				OutgameTheme.TEXT_SUB, Vector2(0, y), Vector2(w, 30))
 		y += 34.0
 	return y
 
@@ -252,6 +269,64 @@ static func _build_facility(sheet: HubSheet, state: Dictionary, w: float, y: flo
 	return y + 96.0
 
 
+# 특별 지출 — running specials, then every row with its two-step buy button
+# (disabled with the reason from `FinanceSystem.special_block_reason`).
+static func _build_specials(sheet: HubSheet, state: Dictionary, w: float, y: float,
+		armed: String) -> float:
+	var body: Control = sheet.body
+	y = _section(body, "특별 지출", w, y)
+	_lbl(body, "잔고에서 바로 냅니다 · 효과는 정해진 주 수 동안 (동시 %d건까지)" % \
+			maxi(1, ConstTable.int_of("FSPEC_MAX_ACTIVE")),
+			22, OutgameTheme.TEXT_SUB, Vector2(0, y), Vector2(w, 30))
+	y += 38.0
+	var running: Array = FinanceSystem.active_specials(state)
+	for raw in running:
+		var e: Dictionary = raw
+		_lbl(body, "진행 중 · %s — %s · %d주 남음" % [String(e.get("name", "")),
+				FinanceSystem.special_effect_text(e), int(e.get("weeks_left", 0))],
+				22, OutgameTheme.POSITIVE, Vector2(0, y), Vector2(w, 30))
+		y += 34.0
+	if not running.is_empty():
+		y += 8.0
+	var btn_w: float = 300.0
+	var text_w: float = w - btn_w - 16.0
+	for raw2 in FinanceSystem.special_rows():
+		var row: Dictionary = raw2
+		var sid: String = String(row["id"])
+		var cost: int = int(row["cost"])
+		var why: String = FinanceSystem.special_block_reason(state, sid)
+		var name_col: Color = OutgameTheme.TEXT if why == "" else OutgameTheme.TEXT_SUB
+		_lbl(body, String(row["name"]), 28, name_col, Vector2(0, y), Vector2(text_w, 38))
+		_lbl(body, "%s · %d주" % [FinanceSystem.special_effect_text(row), int(row["weeks"])],
+				22, OutgameTheme.ACCENT_TEXT if why == "" else OutgameTheme.TEXT_FAINT,
+				Vector2(0, y + 40), Vector2(text_w, 30))
+		var btn := Button.new()
+		btn.focus_mode = Control.FOCUS_NONE
+		btn.clip_text = true
+		var price: String = "무료" if cost <= 0 else "−" + FinanceSystem.fmt(cost)
+		if why == "":
+			if armed == sid:
+				btn.text = "한 번 더 눌러 확정"
+				OutgameTheme.style_dark_button(btn, 24)
+			else:
+				btn.text = "%s  %s" % ["계약" if cost <= 0 else "구매", price]
+				OutgameTheme.style_primary_button(btn, 26)
+			btn.pressed.connect(_on_special.bind(sheet, state, sid, armed == sid))
+		else:
+			btn.text = why
+			btn.disabled = true
+			OutgameTheme.style_ghost_button(btn, 20)
+		btn.position = Vector2(w - btn_w, y)
+		btn.size = Vector2(btn_w, 72)
+		body.add_child(btn)
+		var desc := _lbl(body, String(row["desc"]), 20, OutgameTheme.TEXT_SUB,
+				Vector2(0, y + 76), Vector2(w, 28))
+		desc.clip_text = true
+		desc.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		y += 116.0
+	return y
+
+
 static func _build_history(body: Control, state: Dictionary, w: float, y: float) -> float:
 	y = _section(body, "최근 기록", w, y)
 	var hist: Array = FinanceSystem.history(state)
@@ -290,6 +365,15 @@ static func _on_upgrade(sheet: HubSheet, state: Dictionary, armed: bool) -> void
 		return
 	# A refusal needs no message — the re-render shows the button's reason.
 	FinanceSystem.upgrade_facility(state)
+	_render(sheet, state, false)
+
+
+static func _on_special(sheet: HubSheet, state: Dictionary, special_id: String, armed: bool) -> void:
+	if not armed:
+		_render(sheet, state, false, special_id)
+		return
+	# Same as the upgrade: a refusal shows up as the re-rendered button's reason.
+	FinanceSystem.buy_special(state, special_id)
 	_render(sheet, state, false)
 
 

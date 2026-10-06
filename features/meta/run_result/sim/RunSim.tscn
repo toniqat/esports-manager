@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" uid="uid://twpayc4eaudp" path="res://features/meta/run_result/sim/RunSim.gd" id="1_runsim"]
+
+[node name="RunSim" type="Node"]
+script = ExtResource("1_runsim")

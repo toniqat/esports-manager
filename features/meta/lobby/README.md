@@ -10,7 +10,7 @@ theme (`OutgameTheme`), bottom action bar. Replaces the old 3-slot TitleScreen
 | `LobbyScreen.gd` | `class_name LobbyScreen extends Control` (scene root) | **Tab host** (M8~M10): currency strip, tab bar, per-tab action bar, toast, confirm popup, manager type popup |
 | `HomeTab.gd` | `class_name HomeTab extends Control` | 홈 tab — run card, continue / new run / abandon (the old lobby body) |
 | `ConfirmPopup.gd` | `class_name ConfirmPopup extends CanvasLayer` | Reusable modal confirm (dim + white card + cancel / confirm) |
-| `ManagerTypePopup.gd` | `class_name ManagerTypePopup extends CanvasLayer` | First-lobby manager type pick (운영형 / 실전형), not dismissible (M3) |
+| `ManagerTypePopup.gd` | `class_name ManagerTypePopup extends CanvasLayer` | First-lobby manager type pick (운영형 / 실전형), not dismissible (M3); prestige re-pick mode, dismissible (M9) |
 
 ## Tab host (M8~M10) — `docs/outgame_dev_plan.md` §12.6
 ```
@@ -79,6 +79,11 @@ profile**; changing it later is only via prestige (M9).
 - Layout: CanvasLayer 20, pattern C (dim = viewport, card centred between `ScreenMetrics.top_y()`
   and `bottom_y()`), card 920 wide like `ConfirmPopup`. The run uses the type through
   `GameManager.start_run` → `StaffSystem.snapshot_for_run`.
+- **Prestige mode (M9)** — `open(true, current_type)`, opened by the `감독` tab
+  (`../manager/README.md`) after its prestige confirm. Title "프레스티지 — 감독 유형 재선택", the current
+  type carries a `현재` chip, confirm reads "<이름> 감독으로 프레스티지". It **is dismissible**: a tap on
+  the dim or the ghost `취소` (1 : 2 with confirm) calls `cancel()` → `cancelled` signal, nothing changes.
+  First-lobby mode (`open()`) is unchanged.
 
 ## Safe area
 Pattern B of `docs/mobile_safe_area.md`: `ScreenMetrics.indent_to_safe_top(self)` +

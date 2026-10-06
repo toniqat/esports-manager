@@ -13,11 +13,17 @@ extends CanvasLayer
 # Options come from `StaffSystem.manager_types()` (`manager_types.csv`): name,
 # description and the six stats (1..20) in `StaffSystem.STATS` order.
 #
+# **Prestige mode** (M9, `open(true, current_type)`): opened by the lobby `감독` tab
+# after the prestige confirm. Same option cards, but the title / body talk about
+# prestige, the current type carries a "현재" chip, and it *is* dismissible — a dim tap
+# or the ghost `취소` emits `cancelled` (nothing changes). Confirm emits `chosen`.
+#
 # Layout follows `ConfirmPopup` (pattern C of `docs/mobile_safe_area.md`): dim =
 # whole viewport, white card centred in the safe area so its button stays above
 # the gesture zone.
 
 signal chosen(type_id: int)
+signal cancelled
 
 const OVERLAY_LAYER: int = 20
 const DIM_COLOR := Color(0.11, 0.11, 0.18, 0.58)
@@ -30,20 +36,26 @@ const OPT_H: float = 268.0
 const OPT_GAP: float = 20.0
 const OPT_PAD: float = 28.0
 const BTN_H: float = 112.0
+const BTN_GAP: float = 20.0
 
 var _root: Control = null
 var _types: Array = []
 var _selected: int = -1
 var _options: Array = []        # Panel per type, same order as `_types`
 var _confirm_btn: Button = null
+var _prestige_mode: bool = false
+var _current_type: int = -1
 
 
 func _init() -> void:
 	layer = OVERLAY_LAYER
 
 
-func open() -> void:
+## `prestige_mode` = M9 re-selection (dismissible); `current_type` gets a "현재" chip.
+func open(prestige_mode: bool = false, current_type: int = -1) -> void:
 	close()
+	_prestige_mode = prestige_mode
+	_current_type = current_type
 	_types = StaffSystem.manager_types()
 	_selected = -1
 	_build()
@@ -68,8 +80,10 @@ func _build() -> void:
 	# A Control under a CanvasLayer doesn't resolve anchor presets — size it.
 	_root.position = Vector2.ZERO
 	_root.size = vp
-	_root.mouse_filter = Control.MOUSE_FILTER_STOP   # swallow, never close
+	_root.mouse_filter = Control.MOUSE_FILTER_STOP   # swallow; closes only in prestige mode
 	add_child(_root)
+	if _prestige_mode:
+		_root.gui_input.connect(_on_dim_input)
 
 	var dim_rect := ColorRect.new()
 	dim_rect.color = DIM_COLOR
@@ -91,15 +105,18 @@ func _build() -> void:
 	card.mouse_filter = Control.MOUSE_FILTER_STOP
 
 	var y: float = CARD_PAD
-	UiHelpers.mk_label(card, "감독 유형 선택", 36, OutgameTheme.TEXT,
-			Vector2(CARD_PAD, y), Vector2(inner_w, TITLE_H))
+	UiHelpers.mk_label(card, "프레스티지 — 감독 유형 재선택" if _prestige_mode else "감독 유형 선택",
+			36, OutgameTheme.TEXT, Vector2(CARD_PAD, y), Vector2(inner_w, TITLE_H))
 	y += TITLE_H + 12.0
-	var sub := UiHelpers.mk_label(card,
-			"첫 런을 시작하기 전에 감독 유형을 고르세요. 스태프가 없는 영역은 감독 스탯으로 운영합니다.",
+	var sub_text: String = "첫 런을 시작하기 전에 감독 유형을 고르세요. 스태프가 없는 영역은 감독 스탯으로 운영합니다."
+	if _prestige_mode:
+		sub_text = "새 감독 유형을 고르면 프레스티지가 끝납니다. 같은 유형을 다시 골라도 됩니다."
+	var sub := UiHelpers.mk_label(card, sub_text,
 			22, OutgameTheme.TEXT_SUB, Vector2(CARD_PAD, y), Vector2(inner_w, SUB_H))
 	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	y += SUB_H
-	UiHelpers.mk_label(card, "이후 변경은 프레스티지로만 가능합니다.", 22,
+	UiHelpers.mk_label(card, "Lv1 · 스탯 제거가 초기화됩니다." if _prestige_mode
+			else "이후 변경은 프레스티지로만 가능합니다.", 22,
 			OutgameTheme.ACCENT_TEXT, Vector2(CARD_PAD, y), Vector2(inner_w, NOTE_H))
 	y += NOTE_H + 24.0
 
@@ -108,12 +125,27 @@ func _build() -> void:
 		y += OPT_H + OPT_GAP
 	y += 36.0 - OPT_GAP
 
+	var confirm_x: float = CARD_PAD
+	var confirm_w: float = inner_w
+	if _prestige_mode:
+		# Dismissible: ghost cancel on the left, 1 : 2 like `ConfirmPopup`.
+		var cancel_w: float = floorf((inner_w - BTN_GAP) / 3.0)
+		var cancel_btn := Button.new()
+		cancel_btn.text = "취소"
+		cancel_btn.focus_mode = Control.FOCUS_NONE
+		OutgameTheme.style_ghost_button(cancel_btn, 30)
+		cancel_btn.position = Vector2(CARD_PAD, y)
+		cancel_btn.size = Vector2(cancel_w, BTN_H)
+		cancel_btn.pressed.connect(cancel)
+		card.add_child(cancel_btn)
+		confirm_x = CARD_PAD + cancel_w + BTN_GAP
+		confirm_w = inner_w - cancel_w - BTN_GAP
 	_confirm_btn = Button.new()
 	_confirm_btn.text = "유형을 고르세요"
 	_confirm_btn.focus_mode = Control.FOCUS_NONE
 	OutgameTheme.style_primary_button(_confirm_btn, 30)
-	_confirm_btn.position = Vector2(CARD_PAD, y)
-	_confirm_btn.size = Vector2(inner_w, BTN_H)
+	_confirm_btn.position = Vector2(confirm_x, y)
+	_confirm_btn.size = Vector2(confirm_w, BTN_H)
 	_confirm_btn.disabled = true
 	_confirm_btn.pressed.connect(_on_confirm)
 	card.add_child(_confirm_btn)
@@ -133,6 +165,9 @@ func _build_option(card: Control, row: Dictionary, idx: int, pos: Vector2,
 	var inner: float = w - OPT_PAD * 2.0
 	UiHelpers.mk_label(opt, String(row.get("name", "")), 32, OutgameTheme.TEXT,
 			Vector2(OPT_PAD, 20), Vector2(inner, 44))
+	if _prestige_mode and int(row.get("id", -1)) == _current_type:
+		OutgameTheme.add_chip(opt, "현재", Vector2(w - OPT_PAD - 90.0, 24), Vector2(90, 36),
+				OutgameTheme.SURFACE_SUNK, OutgameTheme.TEXT_SUB, 20)
 	var desc := UiHelpers.mk_label(opt, String(row.get("desc", "")), 21,
 			OutgameTheme.TEXT_SUB, Vector2(OPT_PAD, 68), Vector2(inner, 60))
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -184,7 +219,8 @@ func select(idx: int) -> void:
 		(_options[i] as Panel).add_theme_stylebox_override("panel", _option_style(i == idx))
 	if _confirm_btn != null:
 		_confirm_btn.disabled = false
-		_confirm_btn.text = "%s 감독으로 시작" % String((_types[idx] as Dictionary).get("name", ""))
+		_confirm_btn.text = ("%s 감독으로 프레스티지" if _prestige_mode else "%s 감독으로 시작") \
+				% String((_types[idx] as Dictionary).get("name", ""))
 
 
 func _on_confirm() -> void:
@@ -193,3 +229,17 @@ func _on_confirm() -> void:
 	var type_id: int = int((_types[_selected] as Dictionary).get("id", 0))
 	close()
 	chosen.emit(type_id)
+
+
+## Prestige mode only — closes without choosing.
+func cancel() -> void:
+	if not _prestige_mode or not is_open():
+		return
+	close()
+	cancelled.emit()
+
+
+func _on_dim_input(event: InputEvent) -> void:
+	var mb := event as InputEventMouseButton
+	if mb != null and not mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+		cancel()

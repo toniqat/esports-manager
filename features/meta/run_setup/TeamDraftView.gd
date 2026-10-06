@@ -646,6 +646,10 @@ func _refresh_rules() -> void:
 	var over: bool = cap > 0 and total > cap
 	var scen: Dictionary = RunRules.scenario(_draft.scenario_id)
 	_gauge_title.text = "%s · 샐러리캡" % String(scen.get("name", "?"))
+	# M8 — trait `salary_cap` adjustment, when the manager preset carries one.
+	var trait_adj: int = _draft.cap_bonus()
+	if trait_adj != 0:
+		_gauge_title.text += " (특성 %s)" % ManagerUi.signed(trait_adj)
 	_gauge_value.text = "%d / %d" % [total, cap]
 	_gauge_value.add_theme_color_override("font_color",
 			OutgameTheme.NEGATIVE if over else OutgameTheme.TEXT)

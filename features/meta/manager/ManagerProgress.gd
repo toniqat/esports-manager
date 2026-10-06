@@ -289,6 +289,51 @@ static func prestige(profile: Dictionary, new_type: int) -> Dictionary:
 	return {"rewards": rewards}
 
 
+# ── UI helpers (manager tab / run setup step) ────────────────────────────────
+## Progress inside the current level: `{level, into, span, is_max}` — `into` = exp
+## past this level's threshold, `span` = exp from this level to the next (0 at max).
+static func level_progress(profile: Dictionary) -> Dictionary:
+	var lv: int = level_of(profile)
+	var at: int = exp_for_level(lv)
+	if lv >= max_level():
+		return {"level": lv, "into": maxi(0, exp_of(profile) - at), "span": 0, "is_max": true}
+	var span: int = maxi(1, exp_for_level(lv + 1) - at)
+	return {"level": lv, "into": clampi(exp_of(profile) - at, 0, span), "span": span,
+			"is_max": false}
+
+
+## Equips / unequips `trait_id` on `preset.traits` (rewritten as Array[int]). "" on success.
+## Over-budget sets (bonus < 0) are allowed here on purpose — screens show the red
+## state and `validate_preset` blocks saving / starting.
+static func toggle_trait(preset: Dictionary, trait_id: int, owned_traits: Array) -> String:
+	var cur: Array = []
+	for raw in (preset.get("traits", []) as Array):
+		cur.append(int(raw))
+	if cur.has(trait_id):
+		cur.erase(trait_id)
+	else:
+		if not owned_traits.has(trait_id):
+			return "아직 잠긴 특성입니다"
+		if cur.size() >= TraitSystem.slot_count():
+			return "장착 칸이 가득 찼습니다 (%d칸) — 하나를 빼고 고르세요" % TraitSystem.slot_count()
+		cur.append(trait_id)
+	preset["traits"] = cur
+	return ""
+
+
+## Deep copy of preset `idx` for editing (`{}` when out of range).
+static func preset_copy(profile: Dictionary, idx: int) -> Dictionary:
+	return preset_at(profile, idx).duplicate(true)
+
+
+## Writes an edited copy back over preset `idx` (no validation, no save).
+static func store_preset(profile: Dictionary, idx: int, preset: Dictionary) -> void:
+	var ps: Array = presets(profile)
+	if idx < 0 or idx >= ps.size():
+		return
+	ps[idx] = preset.duplicate(true)
+
+
 # ── Internals ────────────────────────────────────────────────────────────────
 static func _mgr(profile: Dictionary) -> Dictionary:
 	if not profile.has("manager") or typeof(profile["manager"]) != TYPE_DICTIONARY:

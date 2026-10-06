@@ -25,11 +25,13 @@ const EMPTY_CARD_H: float = 220.0
 const CARD_PAD: float = 44.0
 
 @onready var _gm: Node = get_node("/root/GameManager")
+@onready var _pm: Node = get_node("/root/ProfileManager")
 
 var _has_run: bool = false
 var _meta: Dictionary = {}
 var _toast_lbl: Label
 var _confirm: ConfirmPopup
+var _manager_popup: ManagerTypePopup = null
 var _built: bool = false
 
 
@@ -81,6 +83,14 @@ func _build() -> void:
 	_confirm = ConfirmPopup.new()
 	add_child(_confirm)
 	_confirm.confirmed.connect(_on_abandon_confirmed)
+
+	# First lobby of a profile: the manager type must be chosen before anything
+	# else (plan §11.0). The popup can't be dismissed without choosing.
+	if not _pm.manager_type_chosen():
+		_manager_popup = ManagerTypePopup.new()
+		add_child(_manager_popup)
+		_manager_popup.chosen.connect(_on_manager_type_chosen)
+		_manager_popup.open()
 
 
 ## 태블릿처럼 뷰포트가 1080 보다 넓으면 카드도 가운데로.
@@ -222,6 +232,14 @@ func _on_abandon_confirmed() -> void:
 	Haptics.play(Haptics.Kind.ERROR)
 	_toast_lbl.text = "런을 읽을 수 없어 정산 없이 삭제했습니다"
 	_start_new_run()
+
+
+func _on_manager_type_chosen(type_id: int) -> void:
+	var err: String = _pm.set_manager_type(type_id)
+	if err != "":
+		# Profile write failed — say so; the choice still holds for this session.
+		_toast_lbl.text = "감독 유형 저장 실패: " + err
+		Haptics.play(Haptics.Kind.ERROR)
 
 
 func _start_new_run() -> void:

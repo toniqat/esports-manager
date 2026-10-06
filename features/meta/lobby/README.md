@@ -9,6 +9,7 @@ theme (`OutgameTheme`), bottom action bar. Replaces the old 3-slot TitleScreen
 |---|---|---|
 | `LobbyScreen.gd` | `extends Control` (scene only) | Builds the lobby, routes continue / new run |
 | `ConfirmPopup.gd` | `class_name ConfirmPopup extends CanvasLayer` | Reusable modal confirm (dim + white card + cancel / confirm) |
+| `ManagerTypePopup.gd` | `class_name ManagerTypePopup extends CanvasLayer` | First-lobby manager type pick (운영형 / 실전형), not dismissible (M3) |
 
 ## LobbyScreen
 - `_ready` sets **`GameManager.use_test_run = false`** first — runs entered through the
@@ -39,6 +40,25 @@ signals `confirmed` / `cancelled`.
   buttons stay above the gesture zone; card is `MOUSE_FILTER_STOP` so taps on it don't close it.
 - Buttons ghost cancel / primary confirm at 1:2; `danger=true` paints confirm `NEGATIVE` red.
 - Body area is a fixed 150px (~4 lines) — a wrapped Label measures 0 before it enters the tree.
+
+## ManagerTypePopup (M3)
+Plan `docs/outgame_dev_plan.md` §11.0: the manager type is chosen **once, on the first lobby of a
+profile**; changing it later is only via prestige (M9).
+- `LobbyScreen._build` opens it when `ProfileManager.manager_type_chosen()` is false (on top of the
+  normal lobby, after the bottom bar and `ConfirmPopup` are built).
+- Options = `StaffSystem.manager_types()` (`manager_types.csv`): name, `desc`, and the six stats
+  (`StaffSystem.STATS` order, labels `STAT_LABELS`, 1..20) as one row of six cells.
+- **Cannot be dismissed without choosing**: the dim is a STOP `Control` that swallows taps (no
+  close), there is no cancel button, and the full-width primary confirm starts disabled
+  ("유형을 고르세요") until an option is tapped (then "<이름> 감독으로 시작"). A one-line accent
+  note says later changes need prestige.
+- Confirm emits `chosen(type_id)`; the lobby saves it with `ProfileManager.set_manager_type(id)`
+  (`_on_manager_type_chosen`). A save error shows the red toast + ERROR haptic.
+- `select(idx)` is public (tap path + headless checks). Selected option = `ACCENT_DIM` fill with an
+  `ACCENT` border.
+- Layout: CanvasLayer 20, pattern C (dim = viewport, card centred between `ScreenMetrics.top_y()`
+  and `bottom_y()`), card 920 wide like `ConfirmPopup`. The run uses the type through
+  `GameManager.start_run` → `StaffSystem.snapshot_for_run`.
 
 ## Safe area
 Pattern B of `docs/mobile_safe_area.md`: `ScreenMetrics.indent_to_safe_top(self)` +

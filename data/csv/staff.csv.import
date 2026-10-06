@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://h5ax11ggc52t"
+
+[deps]
+
+files=["res://data/csv/staff.name.translation", "res://data/csv/staff.job.translation", "res://data/csv/staff.training.translation", "res://data/csv/staff.tactics.translation", "res://data/csv/staff.knowledge.translation", "res://data/csv/staff.mental.translation", "res://data/csv/staff.analysis.translation", "res://data/csv/staff.finance.translation", "res://data/csv/staff.salary.translation"]
+
+source_file="res://data/csv/staff.csv"
+dest_files=["res://data/csv/staff.name.translation", "res://data/csv/staff.job.translation", "res://data/csv/staff.training.translation", "res://data/csv/staff.tactics.translation", "res://data/csv/staff.knowledge.translation", "res://data/csv/staff.mental.translation", "res://data/csv/staff.analysis.translation", "res://data/csv/staff.finance.translation", "res://data/csv/staff.salary.translation"]
+
+[params]
+
+compress=true
+delimiter=0

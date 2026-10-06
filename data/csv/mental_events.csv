@@ -1,0 +1,2 @@
+id,kind,manager_type,stage,cond,lines,choices,effects,weight
+I01,interview,-1,0,,요즘 훈련이 조금 버거워요.|감독님은 어떻게 생각하세요?,잘하고 있어. 조금만 더 버티자.|힘들면 강도를 조절해 줄게.|프로라면 견뎌야지.,trust:+4|trust:+6|trust:-2,1

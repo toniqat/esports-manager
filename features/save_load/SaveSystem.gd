@@ -168,6 +168,16 @@ static func _serialize_season_state(s: Dictionary) -> Dictionary:
 		"run_setup":         s.get("run_setup", {}),
 		"run_stats":         s.get("run_stats", {}),
 		"run_over":          bool(s.get("run_over", false)),
+		# M3~M7 — 문자열 키만 쓰므로 그대로 왕복한다(§11). 깊은 사본은 세이브
+		# 도중 원본이 바뀌어도 쓰는 내용이 흔들리지 않게.
+		"staff_mods":        (s.get("staff_mods", []) as Array).duplicate(true),
+		"pilot_mods":        (s.get("pilot_mods", []) as Array).duplicate(true),
+		"mech_mastery":      (s.get("mech_mastery", {}) as Dictionary).duplicate(true),
+		"mastery_research":  (s.get("mastery_research", {}) as Dictionary).duplicate(true),
+		"finance":           (s.get("finance", {}) as Dictionary).duplicate(true),
+		"trust":             (s.get("trust", {}) as Dictionary).duplicate(true),
+		"outings":           (s.get("outings", {}) as Dictionary).duplicate(true),
+		"mental":            (s.get("mental", {}) as Dictionary).duplicate(true),
 	}
 
 
@@ -204,6 +214,16 @@ static func _deserialize_season_state(s: Dictionary) -> Dictionary:
 		"run_setup":         _run_setup_in(s.get("run_setup", {})),
 		"run_stats":         s.get("run_stats", {}),
 		"run_over":          bool(s.get("run_over", false)),
+		# M3~M7 — 문자열 키만 쓰므로 그대로 왕복한다(§11). 깊은 사본은 세이브
+		# 도중 원본이 바뀌어도 쓰는 내용이 흔들리지 않게.
+		"staff_mods":        (s.get("staff_mods", []) as Array).duplicate(true),
+		"pilot_mods":        (s.get("pilot_mods", []) as Array).duplicate(true),
+		"mech_mastery":      (s.get("mech_mastery", {}) as Dictionary).duplicate(true),
+		"mastery_research":  (s.get("mastery_research", {}) as Dictionary).duplicate(true),
+		"finance":           (s.get("finance", {}) as Dictionary).duplicate(true),
+		"trust":             (s.get("trust", {}) as Dictionary).duplicate(true),
+		"outings":           (s.get("outings", {}) as Dictionary).duplicate(true),
+		"mental":            (s.get("mental", {}) as Dictionary).duplicate(true),
 	}
 
 
@@ -215,7 +235,7 @@ static func _run_setup_in(d: Dictionary) -> Dictionary:
 	if d.is_empty():
 		return {}
 	var out: Dictionary = d.duplicate(true)
-	for key in ["scenario", "team_id", "salary_cap", "salary_total"]:
+	for key in ["scenario", "team_id", "salary_cap", "salary_total", "manager_type"]:
 		if out.has(key):
 			out[key] = int(out[key])
 	var ids: Array = []
@@ -227,6 +247,24 @@ static func _run_setup_in(d: Dictionary) -> Dictionary:
 	for k in raw_levels.keys():
 		levels[str(k)] = int(raw_levels[k])
 	out["pilot_levels"] = levels
+	# M3 — 감독 스탯 · 스태프 스냅샷(`StaffSystem.snapshot_for_run`).
+	var mstats: Dictionary = {}
+	var raw_mstats: Dictionary = d.get("manager_stats", {})
+	for k in raw_mstats.keys():
+		mstats[str(k)] = int(raw_mstats[k])
+	out["manager_stats"] = mstats
+	var staff: Array = []
+	for raw in (d.get("staff", []) as Array):
+		var e: Dictionary = (raw as Dictionary).duplicate(true)
+		e["id"] = int(e.get("id", 0))
+		e["salary"] = int(e.get("salary", 0))
+		var st: Dictionary = {}
+		var raw_st: Dictionary = e.get("stats", {})
+		for k in raw_st.keys():
+			st[str(k)] = int(raw_st[k])
+		e["stats"] = st
+		staff.append(e)
+	out["staff"] = staff
 	return out
 
 
@@ -287,6 +325,7 @@ static func _pilots_to_array(pilots: Array) -> Array:
 			"pilot_cards": p.pilot_cards.duplicate(),
 			# 런 준비 — Lv1 샐러리 · 등급 · 이 런의 레벨(스탯은 이미 레벨 반영 값).
 			"salary": p.salary, "rarity": p.rarity, "level": p.level,
+			"main_mechs": p.main_mechs.duplicate(),
 		})
 	return out
 
@@ -308,6 +347,8 @@ static func _array_to_pilots(rows: Array) -> Array:
 		pd.salary = int(d.get("salary", 0))
 		pd.rarity = int(d.get("rarity", 0))
 		pd.level = int(d.get("level", 1))
+		for raw_mech in (d.get("main_mechs", []) as Array):
+			pd.main_mechs.append(int(raw_mech))
 		out.append(pd)
 	return out
 

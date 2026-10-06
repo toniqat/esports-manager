@@ -118,6 +118,25 @@ var season_state: Dictionary = {
 	"run_stats": {},
 	# 정산이 끝난 런(`RunResult.settle_current_run`). true 면 자동 저장하지 않는다.
 	"run_over": false,
+	# ── 감독 · 스태프 · 숙련도 · 재무 · 멘탈 (M3~M7) — 계약: 계획서 §11 ─────
+	# 모두 **문자열 키** 딕셔너리 / 배열이라 세이브를 그대로 왕복한다(숫자는 읽는
+	# 쪽이 int() 로 되돌린다).
+	# 감독 스탯 일시 보정 `[{stat, delta, weeks_left, source}]` — `StaffSystem`.
+	"staff_mods": [],
+	# 선수 일시 보정 `[{pilot_id, stat, delta, weeks_left, source}]` —
+	# weeks_left -1 = 다음 경기까지. `PilotMods`(멘탈 소유).
+	"pilot_mods": [],
+	# 메크 숙련도 `{"<pilot_id>": {"<mech_id>": int}}` — `MechMastery`.
+	"mech_mastery": {},
+	# 주간 연구 메크 `{"<pilot_id>": mech_id}` — `MechMastery`.
+	"mastery_research": {},
+	# 재무 · 시설 — 모양은 `FinanceSystem` 이 소유한다(§11).
+	"finance": {},
+	# 신뢰도 `{"<pilot_id>": int}` · 외출 횟수 `{"<pilot_id>": int}` · 나머지
+	# 멘탈 상태(주간 면담 사용량, 요일 행동 기록 등) — `MentalSystem`.
+	"trust": {},
+	"outings": {},
+	"mental": {},
 }
 
 
@@ -151,6 +170,14 @@ func reset_season_state() -> void:
 		"run_setup": {},
 		"run_stats": {},
 		"run_over": false,
+		"staff_mods": [],
+		"pilot_mods": [],
+		"mech_mastery": {},
+		"mastery_research": {},
+		"finance": {},
+		"trust": {},
+		"outings": {},
+		"mental": {},
 	}
 
 
@@ -234,7 +261,24 @@ func start_run(run_setup: Dictionary) -> String:
 		"salary_cap": RunRules.salary_cap(scenario_id),
 		"salary_total": RunRules.lineup_salary(picked, applied_levels),
 	}
+	# M3 — 감독 스탯 · 팀 스태프 스냅샷(`StaffSystem.snapshot_for_run`): run_setup
+	# 에 `manager_type` / `manager_stats` / `staff` 가 더해진다. 런 중 바뀌지 않는다.
+	(season_state["run_setup"] as Dictionary).merge(
+			StaffSystem.snapshot_for_run(team_id, _manager_type_for_run()), true)
+	# M4 · M6 · M7 — 런 한정 상태의 초기값.
+	MechMastery.init_run(season_state)
+	FinanceSystem.init_run(season_state, team_id)
+	MentalSystem.init_run(season_state)
 	return ""
+
+
+# 런에 쓸 감독 타입 — 프로필의 `manager.type`(첫 프로필 생성 때 로비가 고른다).
+# 프로필이 없으면(단독 실행) 0.
+func _manager_type_for_run() -> int:
+	var pm: Node = get_node_or_null("/root/ProfileManager")
+	if pm == null:
+		return 0
+	return int((pm.profile.get("manager", {}) as Dictionary).get("type", 0))
 
 
 ## 에디터 직접 실행용 기본 편성 — 샐러리캡이 가장 높은 시나리오, `team_id` 팀,
@@ -387,6 +431,7 @@ func load_match_data() -> Dictionary:
 		(players[-1] as PlayerData).pilot_cards = parse_card_ids(String(row.get("pilot_cards", "")))
 		(players[-1] as PlayerData).salary = int(row.get("salary", 0))
 		(players[-1] as PlayerData).rarity = int(row.get("rarity", 0))
+		(players[-1] as PlayerData).main_mechs = parse_card_ids(String(row.get("main_mechs", "")))
 
 	db.query("SELECT * FROM mechs ORDER BY id")
 	if db.query_result.is_empty():
@@ -497,6 +542,7 @@ func _load_intl_pool() -> Dictionary:
 			int(row["engage_hit"]), int(row["engage_eva"]),
 			int(row["atk_growth"]), int(row["hp_growth"])))
 		(pilots[-1] as PlayerData).pilot_cards = parse_card_ids(String(row.get("pilot_cards", "")))
+		(pilots[-1] as PlayerData).main_mechs = parse_card_ids(String(row.get("main_mechs", "")))
 	db.close_db()
 	return {"teams": teams, "pilots": pilots}
 

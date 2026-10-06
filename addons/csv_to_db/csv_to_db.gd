@@ -24,18 +24,23 @@ const SCHEMAS: Dictionary = {
 	"game_config": {"req": ["key","value"],                                     "pk": "key"},
 	"const":       {"req": ["key","value","module","note"],                     "pk": "key"},
 	"lane_config": {"req": ["lane_id","name","max_pilots","mid_col","mid_row"], "pk": "lane_id"},
-	"players":     {"req": ["id","team_id","name","role","field_hit","field_eva","engage_hit","engage_eva","atk_growth","hp_growth","skill_id","is_mob","pilot_cards","salary","rarity","starter"], "pk": "id"},
+	"players":     {"req": ["id","team_id","name","role","field_hit","field_eva","engage_hit","engage_eva","atk_growth","hp_growth","skill_id","is_mob","pilot_cards","salary","rarity","starter","main_mechs"], "pk": "id"},
 	"pilot_skills": {"req": ["id","key","name","role","type","p1","p2","keyword","description"], "pk": "id"},
 	"mechs":       {"req": ["id","name","role","hp","atk","presence"],          "pk": "id"},
 	"mech_passives": {"req": ["id","mech_id","key","name","p1","p2","keyword","description"], "pk": "id"},
 	"mech_cards":    {"req": ["id","mech_id","name","count","cost","cast_method","target","cast_range","area","keyword","charge_max","effect","trigger","description"], "pk": "id"},
-	"teams":       {"req": ["id","name","short_name","budget","facility_level","manual_areas","desc"], "pk": "id"},
+	"teams":       {"req": ["id","name","short_name","budget","facility_level","staff_ids","manual_areas","desc"], "pk": "id"},
 	"intl_teams":   {"req": ["id","name","short_name"],                         "pk": "id"},
-	"intl_players": {"req": ["id","team_id","name","role","field_hit","field_eva","engage_hit","engage_eva","atk_growth","hp_growth","pilot_cards"], "pk": "id"},
+	"intl_players": {"req": ["id","team_id","name","role","field_hit","field_eva","engage_hit","engage_eva","atk_growth","hp_growth","pilot_cards","main_mechs"], "pk": "id"},
 	"pilot_card_slots": {"req": ["position","slot1","slot2","slot3"], "pk": "position"},
 	"training_tiles": {"req": ["id","name","grade","shape","exp","effect"], "pk": "id"},
 	"scenarios":   {"req": ["id","name","salary_cap","desc"], "pk": "id"},
 	"pilot_levels": {"req": ["level","stat_bonus","salary_bonus"], "pk": "level"},
+	# M3~M7 (감독 · 스태프 · 재무 · 멘탈) — 계약: docs/outgame_dev_plan.md §11
+	"manager_types": {"req": ["id","name","gender","training","tactics","knowledge","mental","analysis","finance","desc"], "pk": "id"},
+	"staff":         {"req": ["id","name","job","training","tactics","knowledge","mental","analysis","finance","salary"], "pk": "id"},
+	"facilities":    {"req": ["level","upkeep","upgrade_cost","train_exp_pct","mastery_pct","incident_pct","income_pct"], "pk": "level"},
+	"mental_events": {"req": ["id","kind","manager_type","stage","cond","lines","choices","effects","weight"], "pk": "id"},
 }
 
 # SQLite column definitions per table
@@ -123,6 +128,8 @@ const TABLE_DEFS: Dictionary = {
 		"rarity":    {"data_type": "int",  "not_null": true},
 		# 1 = 프로필 첫 생성 때 지급하는 초기 보유 선수(ProfileManager).
 		"starter":   {"data_type": "int",  "not_null": true},
+		# 주력 메크 — `mechs.id` 를 `|` 로(M4). 런 시작 숙련도가 높게 시작한다.
+		"main_mechs": {"data_type": "text", "not_null": true},
 	},
 	"pilot_skills": {
 		"id":          {"data_type": "int",  "primary_key": true, "not_null": true},
@@ -212,6 +219,8 @@ const TABLE_DEFS: Dictionary = {
 		"facility_level": {"data_type": "int",  "not_null": true},
 		# 감독이 직접 해야 하는 영역 — `training|knowledge|analysis|finance` 를 `|` 로.
 		"manual_areas":   {"data_type": "text", "not_null": true},
+		# 팀의 초기 스태프 — `staff.id` 를 `|` 로(M3). 빈 칸 = 스태프 없음.
+		"staff_ids":      {"data_type": "text", "not_null": true},
 		"desc":           {"data_type": "text", "not_null": true},
 	},
 	"intl_teams": {
@@ -231,6 +240,8 @@ const TABLE_DEFS: Dictionary = {
 		"atk_growth": {"data_type": "int",  "not_null": true},
 		"hp_growth":  {"data_type": "int",  "not_null": true},
 		"pilot_cards": {"data_type": "text", "not_null": true},
+		# 주력 메크 — `mechs.id` 를 `|` 로(M4). 런 시작 숙련도가 높게 시작한다.
+		"main_mechs":  {"data_type": "text", "not_null": true},
 	},
 	# 포지션별 파일럿 카드 슬롯 3칸. 각 칸은 `|` 로 이은 카드 분류(`cards.card_cat`)
 	# 목록이고, 그 칸은 분류가 하나라도 겹치는 카드 중에서 채운다. 위치 키는
@@ -264,6 +275,57 @@ const TABLE_DEFS: Dictionary = {
 		"level":        {"data_type": "int", "primary_key": true, "not_null": true},
 		"stat_bonus":   {"data_type": "int", "not_null": true},
 		"salary_bonus": {"data_type": "int", "not_null": true},
+	},
+	# ── M3~M7 ──────────────────────────────────────────────────────────────
+	# 감독 타입(운영형 / 실전형) — 초기 감독 스탯 6종(1~20).
+	"manager_types": {
+		"id":        {"data_type": "int",  "primary_key": true, "not_null": true},
+		"name":      {"data_type": "text", "not_null": true},
+		"gender":    {"data_type": "text", "not_null": true},
+		"training":  {"data_type": "int",  "not_null": true},
+		"tactics":   {"data_type": "int",  "not_null": true},
+		"knowledge": {"data_type": "int",  "not_null": true},
+		"mental":    {"data_type": "int",  "not_null": true},
+		"analysis":  {"data_type": "int",  "not_null": true},
+		"finance":   {"data_type": "int",  "not_null": true},
+		"desc":      {"data_type": "text", "not_null": true},
+	},
+	# 스태프 — `job` 은 coach_training / coach_tactics / coach_knowledge /
+	# analyst / finance / assistant. 스탯 6종(1~20), `salary` 는 주급.
+	"staff": {
+		"id":        {"data_type": "int",  "primary_key": true, "not_null": true},
+		"name":      {"data_type": "text", "not_null": true},
+		"job":       {"data_type": "text", "not_null": true},
+		"training":  {"data_type": "int",  "not_null": true},
+		"tactics":   {"data_type": "int",  "not_null": true},
+		"knowledge": {"data_type": "int",  "not_null": true},
+		"mental":    {"data_type": "int",  "not_null": true},
+		"analysis":  {"data_type": "int",  "not_null": true},
+		"finance":   {"data_type": "int",  "not_null": true},
+		"salary":    {"data_type": "int",  "not_null": true},
+	},
+	# 시설 레벨 1..5 — 주간 유지비, 다음 레벨 업그레이드 비용(최고 레벨 0),
+	# 효과 배율 넷(100 = 변화 없음).
+	"facilities": {
+		"level":         {"data_type": "int", "primary_key": true, "not_null": true},
+		"upkeep":        {"data_type": "int", "not_null": true},
+		"upgrade_cost":  {"data_type": "int", "not_null": true},
+		"train_exp_pct": {"data_type": "int", "not_null": true},
+		"mastery_pct":   {"data_type": "int", "not_null": true},
+		"incident_pct":  {"data_type": "int", "not_null": true},
+		"income_pct":    {"data_type": "int", "not_null": true},
+	},
+	# 멘탈 이벤트(면담 · 외출 · 사건 · 기자회견) — 문법은 features/season/mental/README.md.
+	"mental_events": {
+		"id":           {"data_type": "text", "primary_key": true, "not_null": true},
+		"kind":         {"data_type": "text", "not_null": true},
+		"manager_type": {"data_type": "int",  "not_null": true},
+		"stage":        {"data_type": "int",  "not_null": true},
+		"cond":         {"data_type": "text", "not_null": true},
+		"lines":        {"data_type": "text", "not_null": true},
+		"choices":      {"data_type": "text", "not_null": true},
+		"effects":      {"data_type": "text", "not_null": true},
+		"weight":       {"data_type": "int",  "not_null": true},
 	},
 }
 

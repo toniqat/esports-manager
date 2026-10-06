@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://b83eav0h6hk63"
+
+[deps]
+
+files=["res://data/csv/mental_events.kind.translation", "res://data/csv/mental_events.manager.translation", "res://data/csv/mental_events.stage.translation", "res://data/csv/mental_events.cond.translation", "res://data/csv/mental_events.lines.translation", "res://data/csv/mental_events.choices.translation", "res://data/csv/mental_events.effects.translation", "res://data/csv/mental_events.weight.translation"]
+
+source_file="res://data/csv/mental_events.csv"
+dest_files=["res://data/csv/mental_events.kind.translation", "res://data/csv/mental_events.manager.translation", "res://data/csv/mental_events.stage.translation", "res://data/csv/mental_events.cond.translation", "res://data/csv/mental_events.lines.translation", "res://data/csv/mental_events.choices.translation", "res://data/csv/mental_events.effects.translation", "res://data/csv/mental_events.weight.translation"]
+
+[params]
+
+compress=true
+delimiter=0

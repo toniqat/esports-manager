@@ -123,6 +123,13 @@ func apply_run_result(result: Dictionary) -> String:
 			e["true_ending"] = false
 		ach[key] = e
 
+	# M7 — 진엔딩(런 클리어 + 외출 조건)을 본 선수. 한 번 켜지면 꺼지지 않는다.
+	for raw_pid in (result.get("true_endings", []) as Array):
+		var tkey: String = str(int(raw_pid))
+		var te: Dictionary = ach.get(tkey, {"pom": 0, "mvp": 0, "true_ending": false})
+		te["true_ending"] = true
+		ach[tkey] = te
+
 	runs.append({
 		"id": run_id,
 		"scenario": int(result.get("scenario", 0)),
@@ -137,6 +144,20 @@ func apply_run_result(result: Dictionary) -> String:
 	return save_profile()
 
 
+# ── 감독 (M3) ────────────────────────────────────────────────────────────────
+## 감독 타입(`manager_types.id`)을 정하고 저장한다. 첫 로비의 타입 선택 팝업이
+## 부른다 — 이후 바꾸는 길은 프레스티지(M9)뿐.
+func set_manager_type(type_id: int) -> String:
+	var mgr: Dictionary = profile["manager"]
+	mgr["type"] = type_id
+	mgr["type_chosen"] = true
+	return save_profile()
+
+
+func manager_type_chosen() -> bool:
+	return bool((profile["manager"] as Dictionary).get("type_chosen", false))
+
+
 func default_profile() -> Dictionary:
 	return {
 		"version": PROFILE_VERSION,
@@ -144,6 +165,8 @@ func default_profile() -> Dictionary:
 		"collection": {},
 		"manager": {
 			"type": 0,
+			# 감독 타입을 고른 적이 있는가 — 첫 로비가 타입 선택 팝업을 띄우는 근거(M3).
+			"type_chosen": false,
 			"level": 1,
 			"exp": 0,
 			"prestige": 0,
@@ -231,6 +254,7 @@ func _merge_over_defaults(loaded: Dictionary) -> Dictionary:
 	var mgr: Dictionary = out["manager"]
 	for mk in _MANAGER_INT_KEYS:
 		mgr[mk] = int(mgr.get(mk, 0))
+	mgr["type_chosen"] = bool(mgr.get("type_chosen", false))
 	# alloc 는 한 단계 더 안쪽이지만 전문화 축이 늘어날 자리라 같이 채운다.
 	var alloc: Dictionary = (default_profile()["manager"] as Dictionary)["alloc"]
 	var src_alloc: Variant = mgr.get("alloc", null)

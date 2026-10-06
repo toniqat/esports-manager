@@ -89,6 +89,9 @@ static var STAT_MIN: int = ConstTable.int_of("PLAYER_STAT_MIN")
 # 이 런에서 쓰는 선수 레벨(1..10). 런 시작 때 `RunRules.apply_level` 이 스탯에
 # 가산을 **이미 얹은 뒤** 이 값을 적는다 — 스탯 필드는 언제나 레벨 반영 후 값이다.
 @export var level: int = 1
+# 주력 메크 `mechs.id` 목록(`players.main_mechs`, M4). 런 시작 메크 숙련도가
+# 이 메크들만 높게 시작한다(`MechMastery.init_run`).
+@export var main_mechs: Array = []
 
 # Set during the assign phase: which mech this player is piloting this match.
 var assigned_mech: MechData = null

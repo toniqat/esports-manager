@@ -1,9 +1,9 @@
-id,name,short_name,budget,facility_level,manual_areas,desc
-0,Cunning Hares,CNH,1000,5,,최상위 예산 — 전략 카드 운영과 선수 면담만 직접
-1,Victoria Co.,VIC,900,4,,상위 예산
-2,Belobog Heavy,BHI,800,4,training,중상위 — 훈련 일정 편성 직접
-3,Section 6,S6,700,3,training,중위
-4,Sons of Calydon,SOC,600,3,training|knowledge,중위 — 메크 숙련도 관리 직접
-5,Response Team,SRT,500,2,training|knowledge|analysis,중하위 — 상대 분석 해석 직접
-6,Obol Squad,OBS,400,2,training|knowledge|analysis,하위
-7,Spook Shack,SPK,300,1,training|knowledge|analysis|finance,최하위 — 예산 배분 · 시설 · 연봉까지 직접
+id,name,short_name,budget,facility_level,staff_ids,manual_areas,desc
+0,Cunning Hares,CNH,1000,5,1|11|21|31|41|51,,최상위 예산 — 전략 카드 운영과 선수 면담만 직접
+1,Victoria Co.,VIC,900,4,2|12|22|32|42|52,,상위 예산
+2,Belobog Heavy,BHI,800,4,33|43|53,training,중상위 — 훈련 일정 편성 직접
+3,Section 6,S6,700,3,34|44|54,training,중위
+4,Sons of Calydon,SOC,600,3,45|55,training|knowledge,중위 — 메크 숙련도 관리 직접
+5,Response Team,SRT,500,2,56,training|knowledge|analysis,중하위 — 상대 분석 해석 직접
+6,Obol Squad,OBS,400,2,57,training|knowledge|analysis,하위
+7,Spook Shack,SPK,300,1,,training|knowledge|analysis|finance,최하위 — 예산 배분 · 시설 · 연봉까지 직접

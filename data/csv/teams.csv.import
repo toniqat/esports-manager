@@ -6,10 +6,10 @@ uid="uid://dws2wra5werpa"
 
 [deps]
 
-files=["res://data/csv/teams.name.translation", "res://data/csv/teams.short.translation", "res://data/csv/teams.budget.translation", "res://data/csv/teams.facility.translation", "res://data/csv/teams.manual.translation", "res://data/csv/teams.desc.translation"]
+files=["res://data/csv/teams.name.translation", "res://data/csv/teams.short.translation", "res://data/csv/teams.budget.translation", "res://data/csv/teams.facility.translation", "res://data/csv/teams.staff.translation", "res://data/csv/teams.manual.translation", "res://data/csv/teams.desc.translation"]
 
 source_file="res://data/csv/teams.csv"
-dest_files=["res://data/csv/teams.name.translation", "res://data/csv/teams.short.translation", "res://data/csv/teams.budget.translation", "res://data/csv/teams.facility.translation", "res://data/csv/teams.manual.translation", "res://data/csv/teams.desc.translation"]
+dest_files=["res://data/csv/teams.name.translation", "res://data/csv/teams.short.translation", "res://data/csv/teams.budget.translation", "res://data/csv/teams.facility.translation", "res://data/csv/teams.staff.translation", "res://data/csv/teams.manual.translation", "res://data/csv/teams.desc.translation"]
 
 [params]
 

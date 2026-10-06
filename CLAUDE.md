@@ -65,6 +65,10 @@ esports-manager/
     │   ├── training/         ← daily training (일상 훈련) tile board
     │   ├── league/           ← LeagueManager + LeagueView (2 rounds / week)
     │   ├── run_stats/        ← RunStats: match MVP metric, phase POM (season_state.run_stats)
+│   ├── staff/            ← StaffSystem: manager · staff stats, cover rule (effective), StaffPanel
+│   ├── mastery/          ← MechMastery: mech mastery (run-only), 메크 연구 hub card
+│   ├── finance/          ← FinanceSystem: weekly budget, facilities, allocation
+│   ├── mental/           ← MentalSystem (trust · interview · outing · incident), PilotMods
     │   └── tournament/       ← playoff + INTL brackets (no README — see season/README.md)
     ├── match_flow/           ← PREP → BAN_PICK → BattleSim handoff
     │   ├── match_prep/
@@ -120,6 +124,8 @@ esports-manager/
 | Mob pilots (silhouettes), silhouette shader, image lookups | `resources/README.md` |
 | CSV tables, SQLite API, Rebuild game.db | `data/README.md` |
 | Tuning constants (const.csv / ConstTable), no values in docs | `data/README.md` |
+| M3~M7 contract (state keys, week-end order, file ownership) | `docs/outgame_dev_plan.md` §11 |
+| Manager · staff stats, cover rule, hub manage cards (`HubSheet`) | `features/season/staff/README.md` |
 | iOS test build, downloading the .ipa | `docs/ios_testbuild.md`, `build/README.md` |
 
 ---

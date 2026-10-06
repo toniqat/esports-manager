@@ -29,6 +29,8 @@ var _week_lbl: Label
 var _next_match_lbl: Label
 var _toast_lbl: Label
 var _roster_widgets: Array = []   # 5 dicts of {name, total, stats}
+# 관리 카드 줄(스태프 · 메크 연구 · 재무) — 3 dicts of {panel_cls, title, value, sub, owner, alert}
+var _manage_widgets: Array = []
 var _start_btn: Button
 var _standings_btn: Button
 var _built: bool = false
@@ -70,6 +72,7 @@ func _build() -> void:
 			Vector2(40, 134), Vector2(1000, 30), HORIZONTAL_ALIGNMENT_LEFT)
 
 	_build_roster_block()
+	_build_manage_row()
 	_build_buttons()
 
 	# 토스트는 하단 바 **바로 위**에 뜬다 — 바 높이를 상수로 다시 적으면
@@ -82,7 +85,8 @@ func _build() -> void:
 func _build_roster_block() -> void:
 	var x0: float = 30.0
 	var y0: float = 240.0
-	var row_h: float = 220.0
+	# 190 — 아래에 관리 카드 줄(`_build_manage_row`)이 들어갈 자리를 내준다.
+	var row_h: float = 190.0
 	var row_gap: float = 12.0
 	var width: float = 1020.0
 
@@ -141,6 +145,86 @@ func _build_roster_block() -> void:
 		_roster_widgets.append({
 			"name": name_lbl, "total": total_lbl, "stats": stat_lbls, "face": face_rect,
 		})
+
+
+# ── 관리 카드 줄 (M3~M6) ─────────────────────────────────────────────────────
+## 로스터 아래 가로 한 줄에 작은 카드 셋 — 스태프 · 메크 연구 · 재무.
+## 카드 내용은 각 기능의 패널이 소유한다(`<Panel>.hub_summary(state)` →
+## `{title, value, sub, owner, alert}`), 누르면 `<Panel>.open(self)` 가
+## `HubSheet` 를 띄운다. 시트가 닫히면 허브 전체를 다시 그린다 — 시트 안에서
+## 바꾼 값(연구 메크 · 배분 · 업그레이드)이 허브 숫자에 바로 비치게.
+# 클래스 참조는 상수식이 아니라 `const` 로 못 둔다 — 함수로 돌려준다.
+static func _manage_panels() -> Array:
+	return [StaffPanel, MasteryPanel, FinancePanel]
+const MANAGE_Y: float = 1250.0
+const MANAGE_H: float = 176.0
+const MANAGE_GAP: float = 16.0
+
+
+func _build_manage_row() -> void:
+	var x0: float = 30.0
+	var width: float = 1020.0
+	var n: int = _manage_panels().size()
+	var card_w: float = (width - MANAGE_GAP * float(n - 1)) / float(n)
+	for i in n:
+		var pos := Vector2(x0 + i * (card_w + MANAGE_GAP), MANAGE_Y)
+		var card: Panel = OutgameTheme.add_card(self, pos, Vector2(card_w, MANAGE_H), 16)
+		var title := UiHelpers.mk_label(card, "", 22, OutgameTheme.TEXT_SUB,
+				Vector2(20, 14), Vector2(card_w - 40, 28))
+		var value := UiHelpers.mk_label(card, "", 34, OutgameTheme.TEXT,
+				Vector2(20, 48), Vector2(card_w - 40, 44))
+		var sub := UiHelpers.mk_label(card, "", 20, OutgameTheme.TEXT_SUB,
+				Vector2(20, 96), Vector2(card_w - 40, 26))
+		var owner := UiHelpers.mk_label(card, "", 18, OutgameTheme.ACCENT_TEXT,
+				Vector2(20, 132), Vector2(card_w - 40, 26))
+		# 처리할 일이 있으면(연구 미지정 · 잔고 위험) 오른쪽 위 점.
+		var alert := ColorRect.new()
+		alert.color = OutgameTheme.NEGATIVE
+		alert.position = Vector2(card_w - 30, 16)
+		alert.size = Vector2(14, 14)
+		alert.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		alert.visible = false
+		card.add_child(alert)
+		# 카드 전체가 버튼이다 — 납작한 Button 을 맨 위에 덮는다.
+		var hit := Button.new()
+		hit.flat = true
+		hit.focus_mode = Control.FOCUS_NONE
+		hit.position = Vector2.ZERO
+		hit.size = Vector2(card_w, MANAGE_H)
+		hit.pressed.connect(_on_manage_pressed.bind(i))
+		card.add_child(hit)
+		_manage_widgets.append({
+			"title": title, "value": value, "sub": sub, "owner": owner, "alert": alert,
+		})
+
+
+func _refresh_manage_row() -> void:
+	var s: Dictionary = _gm.season_state
+	for i in _manage_widgets.size():
+		var w: Dictionary = _manage_widgets[i]
+		var sm: Dictionary = _manage_panels()[i].hub_summary(s)
+		(w["title"] as Label).text = String(sm.get("title", ""))
+		(w["value"] as Label).text = String(sm.get("value", ""))
+		(w["sub"] as Label).text = String(sm.get("sub", ""))
+		var who: String = String(sm.get("owner", ""))
+		(w["owner"] as Label).text = ("담당: " + who) if who != "" else ""
+		(w["alert"] as ColorRect).visible = bool(sm.get("alert", false))
+
+
+func _on_manage_pressed(i: int) -> void:
+	_manage_panels()[i].open(self)
+	# 시트가 방금 붙었다 — 닫힐 때 허브를 다시 그린다.
+	var sheet: HubSheet = null
+	for c in get_children():
+		if c is HubSheet:
+			sheet = c
+	if sheet != null and not sheet.closed.is_connected(refresh):
+		sheet.closed.connect(refresh)
+
+
+## 허브 하단 토스트 — 다른 화면(주 마감 수지 등)이 허브로 돌아오며 띄운다.
+func show_toast(msg: String) -> void:
+	_flash_toast(msg)
 
 
 ## **하단 구간을 둘이 2:1 로 나눠 갖는다** — 주 행동인 "이번 주 시작"이 오른쪽
@@ -241,6 +325,7 @@ func refresh() -> void:
 
 	_refresh_next_match()
 	_refresh_roster()
+	_refresh_manage_row()
 	_refresh_standings_btn()
 
 

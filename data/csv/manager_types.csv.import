@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://dvhvq0iffldfy"
+
+[deps]
+
+files=["res://data/csv/manager_types.name.translation", "res://data/csv/manager_types.gender.translation", "res://data/csv/manager_types.training.translation", "res://data/csv/manager_types.tactics.translation", "res://data/csv/manager_types.knowledge.translation", "res://data/csv/manager_types.mental.translation", "res://data/csv/manager_types.analysis.translation", "res://data/csv/manager_types.finance.translation", "res://data/csv/manager_types.desc.translation"]
+
+source_file="res://data/csv/manager_types.csv"
+dest_files=["res://data/csv/manager_types.name.translation", "res://data/csv/manager_types.gender.translation", "res://data/csv/manager_types.training.translation", "res://data/csv/manager_types.tactics.translation", "res://data/csv/manager_types.knowledge.translation", "res://data/csv/manager_types.mental.translation", "res://data/csv/manager_types.analysis.translation", "res://data/csv/manager_types.finance.translation", "res://data/csv/manager_types.desc.translation"]
+
+[params]
+
+compress=true
+delimiter=0

@@ -3,7 +3,7 @@
 > 작성일 2026-10-06 · 원본 기획 `docs/esports-manager-outgame.md`
 > 대상 `autoloads/` · `features/save_load/` · `features/season/` · `features/match_flow/`
 > · `features/battle_sim/`(특성 훅만) · `data/csv/` · `resources/`
-> 상태: **진행 중 — M0 · M1 · M2 완료, 다음 M3.** 정식 문서는 `CLAUDE.md` / 각 폴더 `README.md` 이며, 이 파일은
+> 상태: **진행 중 — M0 · M1 · M2 완료, M3~M7 병렬 개발 중(§11 계약).** 정식 문서는 `CLAUDE.md` / 각 폴더 `README.md` 이며, 이 파일은
 > 마일스톤이 끝날 때마다 맨 아래 **§9 구현 기록**에 달라진 점을 적는 이력 문서다.
 
 ---
@@ -296,14 +296,14 @@ effective(stat) = max(감독[stat] + 일시 보정, 어시스턴트[stat], 담�
 
 | # | 항목 | 마일스톤 |
 |---|---|---|
-| 1 | 진엔딩의 "리그 우승" 판정 — 게임오버 강화로 생존한 런은 이미 모든 플레이오프를 이긴다. "외출 5회 달성 시점 이후의 첫 리그 우승" / "런 클리어 시 외출 5회" 중 무엇인가 | M7 |
+| 1 | ~~진엔딩의 "리그 우승" 판정~~ — **런 클리어 + 외출 5회**(§11) | M7 |
 | 2 | "선수 파편 스킬"(지식 스탯)의 정의 | M4 |
 | 3 | ~~프로필 초기 보유 선수 구성~~ — **역할별 2명 = 10인**(`players.starter`), 전원 Lv1 | M1 |
 | 4 | ~~캡 · 레벨 수치~~ — 자리표시 값으로 확정(`scenarios.csv` · `pilot_levels.csv` · `players.salary`) | M1 |
 | 5 | 점수 · 재화 공식 — 자리표시(`RUN_*` const 키), 감독 EXP 곡선은 M9 | M2 / M9 |
-| 6 | 잔고 음수(예산 파산) 처리 | M6 |
+| 6 | ~~잔고 음수(예산 파산) 처리~~ — **음수 불가, 지출 강제 삭감**(§11) | M6 |
 | 7 | 첫 특성 묶음 목록(기본 제공 · 해금형 · 인게임 훅) | M8 |
-| 8 | 감독 타입별 초기 스탯, 감독 스탯 총합 | M3 |
+| 8 | ~~감독 타입별 초기 스탯, 감독 스탯 총합~~ — 1~20 척도, 자리표시(`manager_types.csv`, 총합 36) | M3 |
 | 9 | 6대회 전승 필수로 난이도가 급격히 높아지는 점 — 저예산 팀 · 저캡 시나리오 밸런스 점검 필요 | M2 이후 |
 | 10 | ~~신규 폴더 구조(§2.2) 승인~~ — **승인됨**(M0, 2026-10-06) | M0 착수 시 |
 
@@ -419,3 +419,85 @@ BattleSim 이 같은 지표(`RunStats.mvp_score(row)`, static)로 뽑아 `pendin
 | MVP/POM (M2) | `features/battle_sim/**` 통계 · MVP 뷰 · 결과 화면, `features/season/run_stats/*`, `SeasonHub` 경기 결과 소비 지점 · 페이즈 전환 훅 |
 
 CSV · `const.csv` · `game.db` 는 기반 커밋 소유 — 작업 중 값 조정이 필요하면 자기 키(`MVP_*` 등)만 고치고 병합 후 한 번 다시 굽는다.
+
+---
+
+## 11. M3~M7 작업 계약 (2026-10-06 확정, 병렬 개발용)
+
+기반 커밋이 데이터 표 · `StaffSystem`(완성) · `PilotMods`(완성) · 시스템 스텁 · 상태 키 ·
+허브 관리 카드 줄 · 주 마감/경기 결과 훅을 먼저 넣었다. 기능 작업은 **스텁의 몸통을 채우고
+자기 화면을 만든다** — 시그니처를 바꾸지 않는다(바꿔야 하면 보고에 적는다).
+
+### 11.0 결정 (질의응답)
+| 항목 | 결정 |
+|---|---|
+| 스탯 척도 | 감독 · 스태프 스탯 **1~20**(FM식). 감독 타입 초기값은 자리표시(`manager_types.csv`, 총합 36, 고른 분배), 스태프 전문 스탯 10~17 |
+| 감독 타입 선택 | **첫 프로필 생성 시 로비 팝업**(이후 변경은 M9 프레스티지). `ProfileManager.set_manager_type` / `manager_type_chosen` |
+| 훈련 / 전술 | **전술 = 훈련 등급 해금**(D→C→B→A→S, 문턱 const), **훈련 = 등급별 배치 상한 + 타일 EXP 배율** |
+| 자동 / 수동 | **일부 자동화** — 스태프(어시스턴트 포함)가 맡은 영역은 화면에 자동 버튼: 훈련판 자동 편성 · 연구 메크 자동 지정 · 분석 해석(추천 밴 · 한 줄 해설) · 예산 자동 배분. 자동안은 **무난한 규칙일 뿐 최적이 아니다**(수동 보너스 수치 없음) |
+| 어시스턴트 매니저 | 예산 상위 팀(0 · 1)만 |
+| 스태프 UI | 허브 관리 카드 + `HubSheet` 상세 시트. 런 준비 팀 카드는 **지금처럼 `manual_areas` 텍스트만** |
+| 숙련도 효과 | 숙련도 0..100 → 등급(미숙/보통/능숙/마스터) → 선수 스탯 6종에 **등급별 고정치**(미숙은 음수). MatchFlow 가 로스터 **사본**에 얹는다 — BattleSim 무수정 |
+| 숙련도 초기값 | `players.main_mechs`(네임드 2 · 모브 1, `intl_players` 도) — 주력은 높게, 나머지 낮게 |
+| 숙련도 획득 | 그 메크로 경기 출전 · 주간 연구 메크(허브 「메크 연구」 카드) · 훈련판 숙련도 타일(색 `M`). 지식 스탯 · 시설이 배율 |
+| AI 숙련도 | 주력 메크 기반 초기값 + **내 경기에 출전한 상대 선수만** 경기 반영. AI 밴픽은 숙련도 높은 메크를 선호 |
+| 분석 | **단계적 공개**(`StaffSystem.analysis_tier` 0..3): 이름·역할 → 스탯(대략) → 숙련도 상위 메크 → 파일럿 카드 3장. MatchFlow PREP + **리그 팀 상세**. 밴픽에 상대 예상 픽 표시, 상대 주력 메크 밴 = 숙련도가 만드는 자연 패널티 |
+| 예산 | `teams.budget` = **주간 스폰서 수입**. 주 마감 정산 = 수입(× 시설) + 성적 보너스 − 스태프 연봉 − 시설 유지비 |
+| 배분 | 남는 예산을 **훈련 · 시설 · 복지** 3축으로. 관리 위임 = 균등 자동, 감독 직접 = 슬라이더 |
+| 파산 | **잔고 음수 불가 — 지출 강제 삭감**(배분 → 시설 등급 순, 규칙은 finance README) |
+| 저예산 도구 | 스폰서 계약 · 유지보수 연기 · 연봉 재협상은 **후속** |
+| 시설 효과 | 훈련 EXP · 숙련도 획득 배율 · 사건 확률 감소 · 주간 수입 증가(`facilities.csv`) |
+| 진엔딩 | **런 클리어 + 외출 5회**(그 선수). 정산 결과 `true_endings` → 프로필 `achievements[pid].true_ending` |
+| 면담 · 외출 시점 | **월~금 요일 화면(시간 경과)** 마다 "오늘 저녁" 카드 — **하루 1행동**(면담 / 외출 / 패스). 면담은 주 N회(감독 멘탈 비례), 외출은 신뢰도 문턱 이상 · 주 1회 |
+| 면담 | 메신저 대화 + 2~3 선택지(기자회견 화면 구조 재사용), 감독 멘탈이 높을수록 좋은 결과 확률 ↑ |
+| 외출 | 외출 횟수 +1 · 신뢰도 + 작은 일시 보정(다음 경기까지) · 대가로 **다음 훈련일** EXP 일부 손실 |
+| 사건 | 월~금 요일 화면에서 확률 발생(시설 · 복지가 낮춤) → 선택지, 결과는 `effective_for_incident` 로 판정, 효과는 선수 일시 보정 n주 |
+| 신뢰도 효과 | **외출 해금 · 진엔딩만**(경기 수치 영향 없음) |
+| 기자회견 | 대사를 `mental_events.csv`(kind `press`)로 옮기고, **범용 질문(팀 전체 신뢰도 ± / 감독 일시 보정) + 선수 언급 질문(그 선수 신뢰도 ±)** 을 섞는다 |
+| 콘텐츠 양 | 구조 + 범용 자리표시(면담 5~8 · 외출 3~5 · 사건 6~8 · 기자회견 6~10). 감독 타입 분기는 컬럼만 + 일부 |
+| 개발 방식 | 기반 커밋 + 기능별 워크트리 5개 병렬 → 병합. 검증 = 헤드리스 + 창 스크린샷. 기능별 커밋, main 병합까지(푸시 없음) |
+| 폴더 | 숙련도는 `features/season/mastery/`(§2.2 의 "match_flow 쪽" 대신 — 상태 · 허브 카드가 시즌 쪽이라서) |
+
+### 11.1 상태 키 (`season_state`, 모두 문자열 키 — 세이브 그대로 왕복, 숫자는 읽는 쪽이 `int()`)
+| 키 | 모양 | 소유 |
+|---|---|---|
+| `run_setup.manager_type` · `.manager_stats` · `.staff` | `int` · `{stat: int}` · `[{id, name, job, stats{}, salary}]` | `StaffSystem.snapshot_for_run`(start_run) |
+| `staff_mods` | `[{stat, delta, weeks_left, source}]` | `StaffSystem.add_mod / decay_mods` |
+| `pilot_mods` | `[{pilot_id, stat("all" 가능), delta, weeks_left(-1 = 다음 경기까지), source}]` | `PilotMods` |
+| `mech_mastery` · `mastery_research` | `{"<pid>": {"<mech>": int}}` · `{"<pid>": mech_id}` | `MechMastery` (M4) |
+| `finance` | 자유(M6 이 README 에 적는다). `balance` · `facility_level` 키는 고정 | `FinanceSystem` (M6) |
+| `trust` · `outings` · `mental` | `{"<pid>": int}` · `{"<pid>": int}` · 자유 | `MentalSystem` (M7) |
+
+**주 마감 순서**(`SeasonHub._end_week`, 달력 전): `FinanceSystem.settle_week` → `MechMastery.settle_week`
+→ `MentalSystem.end_week` → `StaffSystem.decay_mods` → `PilotMods.decay_week`.
+`settle_week` 결과의 `toast` 문자열은 다음 HUB 에서 허브 토스트로 뜬다(`SeasonHub.hub_toasts`).
+
+**내 경기 결과 소비**(`SeasonHub._consume_pending_match_result`, 결과 반영 전): `RunStats.record_match`
+→ `MechMastery.record_match(state, pm)` → `FinanceSystem.record_match(state, pm, won)` → `PilotMods.consume_match`.
+`pm.assigned_mechs = {"<pid>": mech_id}`(양 팀 10명)는 **M4(MatchFlow)가 출발 전에 적는다**.
+
+**런 시작**(`GameManager.start_run` 끝): `StaffSystem.snapshot_for_run` 병합 → `MechMastery.init_run`
+→ `FinanceSystem.init_run(state, team_id)` → `MentalSystem.init_run`.
+
+### 11.2 허브 관리 카드 줄
+`HubView` 로스터 아래 카드 셋 = `[StaffPanel, MasteryPanel, FinancePanel]`. 각 패널은
+`static hub_summary(state) -> {title, value, sub, owner, alert}` 와 `static open(host)`(→ `HubSheet.open_on`)
+만 구현한다. 시트가 닫히면 허브가 `refresh()` 한다. `HubView.show_toast(msg)` 공개.
+
+### 11.3 일시 보정 · 배율이 만나는 자리
+- 훈련 EXP = 타일 EXP × 훈련 스탯 배율(M3) × `FinanceSystem.training_exp_mult` × `MentalSystem.training_exp_mult(pid, day)` — 곱하는 곳은 `TrainingBoard`(M3 소유) 한 곳.
+- 경기 로스터 = 원본 선수의 **사본**(`PlayerData.duplicate()`) + `PilotMods.apply_to` + 숙련도 고정치 — 만드는 곳은 `MatchFlow`(M4 소유) 한 곳. **원본(`all_pilots`)에는 절대 쓰지 않는다.**
+- 숙련도 획득 = 원값 × 지식 배율 × `FinanceSystem.mastery_mult` — `MechMastery.gain` 안에서.
+- 사건 확률 = 기본 × `FinanceSystem.incident_mult` — `MentalSystem` 안에서.
+
+### 11.4 파일 소유 (병렬 작업)
+| 작업 | 소유 |
+|---|---|
+| **A · M3 감독 · 훈련** | `features/season/training/*`, `features/meta/lobby/*`(감독 타입 팝업), `training_tiles.csv`(숙련도 타일 `M`), const `TRAINING_STAT_*` · `TACTICS_*` |
+| **B · M4 숙련도 · 밴픽** | `features/season/mastery/*`, `features/match_flow/MatchFlow.gd` · `ban_pick/*`, `players.csv` / `intl_players.csv` 의 `main_mechs` 값, const `MASTERY_*` |
+| **C · M5 분석 · 스태프 패널** | `features/season/staff/StaffPanel.gd`(+ README), `features/match_flow/match_prep/*`, `features/season/league/LeagueView.gd`(팀 상세), const `ANALYSIS_*` |
+| **D · M6 재무 · 시설** | `features/season/finance/*`, `facilities.csv`, const `FINANCE_*` · `FACILITY_*`, `calendar/README.md` 주 마감 순서 |
+| **E · M7 멘탈** | `features/season/mental/*`, `features/season/press/*`, `features/season/week/*`, `features/meta/run_result/*`(진엔딩 표시), `mental_events.csv`, const `MENTAL_*` · `TRUST_*` · `TRUE_ENDING_*` |
+
+- 기반 소유 파일(`SeasonHub` · `HubView` · `GameManager` · `SaveSystem` · `ProfileManager` · `StaffSystem` · `PilotMods` · `csv_to_db.gd` · `HubSheet`)은 **고치지 않는다.** 꼭 필요하면 최소 수정 + 보고.
+- `const.csv` 는 **자기 접두사 키를 맨 끝에 추가**만. `data/game.db` · `data/csv/*.translation` 은 **커밋하지 않는다**(로컬 재빌드는 자유 — 커밋 전 `git checkout` 으로 되돌림). 병합 후 한 번 다시 굽는다.

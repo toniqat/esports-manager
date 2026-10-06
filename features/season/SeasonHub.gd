@@ -52,6 +52,9 @@ var _game_over_view: GameOverView = null
 var _ending_view: EndingView = null
 # 이 런의 결론 화면(Screen.GAME_OVER / ENDING), 아직 없으면 -1.
 var _run_end_screen: int = -1
+## 다음 HUB 표시 때 허브 하단 토스트로 띄울 줄들(주 마감 수지 등). 여러 줄이면
+## 차례로 하나씩이 아니라 마지막 것 하나만 보인다 — 같은 순간에 둘을 쌓지 않는다.
+var hub_toasts: Array = []
 
 
 func _ready() -> void:
@@ -190,6 +193,9 @@ func _show_hub() -> void:
 	if _hub_view:
 		_hub_view.ensure_view()
 		_hub_view.visible = true
+		if not hub_toasts.is_empty():
+			_hub_view.show_toast(String(hub_toasts.back()))
+			hub_toasts.clear()
 	# 자동 저장 1번 — 런 시작 후. 런 준비(`RunSetupScreen` → `start_run`)든
 	# 에디터 직접 실행(`init_season`)이든 새 런의 첫 HUB 에서 한 번.
 	if run_start:
@@ -447,6 +453,16 @@ func on_standings_confirmed() -> void:
 func _end_week() -> void:
 	# 혼자 남은 AI 경기(예: 배정이 어긋난 주)가 있으면 여기서 정리된다.
 	_resolve_remaining_ai_for_week()
+	# 주 마감 정산(M3~M7) — **달력이 넘어가기 전**, 순서 고정(계획서 §11.1):
+	# 재무 수지 → 메크 연구 → 멘탈 주간 초기화 → 감독 · 선수 일시 보정 감소.
+	var s: Dictionary = _gm.season_state
+	var fin: Dictionary = FinanceSystem.settle_week(s)
+	if String(fin.get("toast", "")) != "":
+		hub_toasts.append(String(fin["toast"]))
+	MechMastery.settle_week(s)
+	MentalSystem.end_week(s)
+	StaffSystem.decay_mods(s)
+	PilotMods.decay_week(s)
 	var cal: CalendarSystem = get_node_or_null("CalendarSystem") as CalendarSystem
 	if cal != null:
 		cal.advance_week()
@@ -617,6 +633,11 @@ func _consume_pending_match_result() -> bool:
 	# 있는데(정산이 지금 페이즈의 POM 을 닫는다), 그보다 늦으면 마지막 경기가
 	# 집계에서 빠진다. 두 번 불려도 `stats_recorded` 표시로 한 번만 센다.
 	RunStats.record_match(s, pm as Dictionary)
+	# M4 · M6 · M7 — 숙련도(출전 메크) · 성적 보너스 · "다음 경기까지" 보정 소비.
+	# RunStats 와 같은 이유로 결과 반영(→ 정산이 될 수 있다) **전에**.
+	MechMastery.record_match(s, pm as Dictionary)
+	FinanceSystem.record_match(s, pm as Dictionary, winner_side == 0)
+	PilotMods.consume_match(s)
 
 	if source == "playoff":
 		_apply_playoff_result(idx, winner_team_id)

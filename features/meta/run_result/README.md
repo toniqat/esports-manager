@@ -35,7 +35,7 @@ Autoloads are fetched via `Engine.get_main_loop().root` (static class, no `@onre
   `INTL_ROUNDS` wins (bracket shape, not tuning). Lost past tournaments are unknown → not counted (lower bound).
 - `titles` — `phase_results` entries whose `champion` or `intl_champion` is the player team.
 - `score` = `phases_cleared·RUN_SCORE_PER_PHASE + wins·RUN_SCORE_PER_WIN +
-  titles·RUN_SCORE_PER_TITLE + (clear ? RUN_SCORE_CLEAR_BONUS : 0) + bonus_points·RUN_SCORE_PER_BONUS` (M8 trait bonus points).
+  titles·RUN_SCORE_PER_TITLE + (clear ? RUN_SCORE_CLEAR_BONUS : 0) + bonus_points·phases_cleared·RUN_SCORE_PER_BONUS` (M8 trait bonus points, per cleared phase).
   `breakdown` holds each term.
 - `currency.outgame` = floor(score · `RUN_CURRENCY_PER_SCORE`), `manager_exp` =
   floor(score · `RUN_MGR_EXP_PER_SCORE`) (tiny epsilon guards float error).

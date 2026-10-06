@@ -37,7 +37,7 @@ conditions can be met (`runs:N` sees 1) — and nothing is granted.
 - Run: `season_state.run_setup.traits` / `.bonus_points` (snapshot by `GameManager.start_run`).
   Outgame systems read `TraitSystem.run_mod(state, key)` (Σ p1, 0 when none).
 - In-game traits go to BattleSim as `match_ctx.traits` (`features/battle_sim/trait/`).
-- Score: `RunResult` adds `bonus × RUN_SCORE_PER_BONUS`.
+- Score: `RunResult` adds `bonus × phases_cleared × RUN_SCORE_PER_BONUS` (per cleared phase — equip-and-abandon earns nothing).
 - Outgame effect hooks (§12.3): `train_exp_pct` → `TrainingBoard.exp_mult_table` (with the
   breakthrough `PlayerData.train_bonus_pct` per pilot), `mastery_pct` → `MechMastery.gain_mult`,
   `income_pct` / `upkeep_pct` → `FinanceSystem.sponsor_income` / `upkeep_cost`, `trust_gain` →

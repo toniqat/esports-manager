@@ -95,7 +95,9 @@ static func build_result(state: Dictionary, outcome: String, test_run: bool) -> 
 	var losses: int = int(record["losses"])
 	var titles: int = count_titles(state)
 	var cleared: bool = outcome == OUTCOME_CLEAR
-	# M8 — 감독 특성 보너스 점수(런 시작 스냅샷). 점수 = 보너스 × RUN_SCORE_PER_BONUS.
+	# M8 — trait bonus points (run-start snapshot). Scored per **cleared phase**
+	# (bonus × phases_cleared × RUN_SCORE_PER_BONUS) so equipping negatives and
+	# abandoning at once earns nothing.
 	var bonus_points: int = maxi(0, int(run_setup.get("bonus_points", 0)))
 
 	var breakdown: Dictionary = {
@@ -103,7 +105,7 @@ static func build_result(state: Dictionary, outcome: String, test_run: bool) -> 
 		"wins":   wins * ConstTable.int_of("RUN_SCORE_PER_WIN"),
 		"titles": titles * ConstTable.int_of("RUN_SCORE_PER_TITLE"),
 		"clear":  ConstTable.int_of("RUN_SCORE_CLEAR_BONUS") if cleared else 0,
-		"bonus":  bonus_points * ConstTable.int_of("RUN_SCORE_PER_BONUS"),
+		"bonus":  bonus_points * phases_cleared * ConstTable.int_of("RUN_SCORE_PER_BONUS"),
 	}
 	var score: int = 0
 	for k in breakdown.keys():

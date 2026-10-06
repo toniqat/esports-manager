@@ -54,7 +54,9 @@ var _tab_badges: Dictionary = {}     # id → Control (dot)
 var _bar: Array = []                 # Array[Button] — current action bar
 var _bar_specs: Array = []
 var _currency_labels: Dictionary = {}
+var _toast: Panel
 var _toast_lbl: Label
+var _toast_tween: Tween
 var _confirm: ConfirmPopup
 var _confirm_cb: Callable = Callable()
 var _manager_popup: ManagerTypePopup = null
@@ -93,10 +95,19 @@ func _build() -> void:
 	OutgameTheme.add_background(self)
 	_build_currency_strip()
 	_build_tab_bar()
-	_toast_lbl = UiHelpers.mk_label(self, "", 24, OutgameTheme.NEGATIVE,
-			Vector2(0, action_bar_top() - 64.0), Vector2(ScreenMetrics.vp_w(), 34),
-			HORIZONTAL_ALIGNMENT_CENTER)
-	_toast_lbl.z_index = 5
+	# Toast = an opaque pill above the action bar (it floats over scrolling tab bodies,
+	# so bare text would be unreadable); fades out after TOAST_SEC.
+	_toast = Panel.new()
+	_toast.position = Vector2(40.0, action_bar_top() - 88.0)
+	_toast.size = Vector2(ScreenMetrics.vp_w() - 80.0, 68.0)
+	_toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_toast.z_index = 5
+	_toast.visible = false
+	add_child(_toast)
+	_toast_lbl = UiHelpers.mk_label(_toast, "", 26, OutgameTheme.TEXT_ON_FILL,
+			Vector2(16, 0), _toast.size - Vector2(32, 0), HORIZONTAL_ALIGNMENT_CENTER)
+	_toast_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_toast_lbl.clip_text = true
 
 	_confirm = ConfirmPopup.new()
 	add_child(_confirm)
@@ -194,7 +205,7 @@ func switch_tab(id: String) -> void:
 				OutgameTheme.ACCENT_TEXT if on else OutgameTheme.TEXT_SUB)
 		(_tab_buttons[k] as Button).add_theme_color_override("font_hover_color",
 				OutgameTheme.ACCENT_TEXT if on else OutgameTheme.TEXT)
-	_toast_lbl.text = ""
+	_hide_toast()
 	rebuild_bar()
 	tab.call("on_shown")
 	refresh_currency()
@@ -276,12 +287,31 @@ func refresh_badges() -> void:
 	set_tab_badge("manager", not pending.is_empty())
 
 
+const TOAST_SEC: float = 2.4
+
+
 func show_toast(msg: String, is_error: bool = false) -> void:
-	_toast_lbl.add_theme_color_override("font_color",
-			OutgameTheme.NEGATIVE if is_error else OutgameTheme.POSITIVE)
+	_toast.add_theme_stylebox_override("panel", OutgameTheme.flat_style(
+			OutgameTheme.NEGATIVE if is_error else OutgameTheme.RAIL, 34))
 	_toast_lbl.text = msg
+	_toast.modulate.a = 1.0
+	_toast.visible = msg != ""
+	if _toast_tween != null:
+		_toast_tween.kill()
+	_toast_tween = create_tween()
+	_toast_tween.tween_interval(TOAST_SEC)
+	_toast_tween.tween_property(_toast, "modulate:a", 0.0, 0.3)
+	_toast_tween.tween_callback(func() -> void: _toast.visible = false)
 	if is_error:
 		Haptics.play(Haptics.Kind.ERROR)
+
+
+func _hide_toast() -> void:
+	if _toast_tween != null:
+		_toast_tween.kill()
+		_toast_tween = null
+	_toast.visible = false
+	_toast_lbl.text = ""
 
 
 ## Modal confirm; `on_confirm` runs when confirmed.

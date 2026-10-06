@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://dun5um70kk3wb"
+
+[deps]
+
+files=["res://data/csv/quirks.name.translation", "res://data/csv/quirks.grade.translation", "res://data/csv/quirks.stats.translation", "res://data/csv/quirks.cond.translation", "res://data/csv/quirks.cond.translation", "res://data/csv/quirks.weight.translation", "res://data/csv/quirks.desc.translation"]
+
+source_file="res://data/csv/quirks.csv"
+dest_files=["res://data/csv/quirks.name.translation", "res://data/csv/quirks.grade.translation", "res://data/csv/quirks.stats.translation", "res://data/csv/quirks.cond.translation", "res://data/csv/quirks.cond.translation", "res://data/csv/quirks.weight.translation", "res://data/csv/quirks.desc.translation"]
+
+[params]
+
+compress=true
+delimiter=0

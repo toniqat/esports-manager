@@ -16,10 +16,26 @@ static var _rewards: Dictionary = {}    # int level → {currency, amount}
 static var _loaded: bool = false
 
 
-## "YYYY-Www" (ISO-8601 week) of the device clock.
+## "YYYY-Www" (ISO-8601 week) of the device clock, in **local** time — the week turns
+## at Monday 00:00 on the device, matching the countdown (`seconds_until_reset`).
 static func week_id_now() -> String:
-	var unix: int = int(Time.get_unix_time_from_system())
-	return week_id_of(unix)
+	return week_id_of(local_unix_now())
+
+
+## Device clock as a "local unix" (UTC seconds shifted by the time-zone bias), so the
+## UTC date helpers below read local calendar fields.
+static func local_unix_now() -> int:
+	var bias_min: int = int(Time.get_time_zone_from_system().get("bias", 0))
+	return int(Time.get_unix_time_from_system()) + bias_min * 60
+
+
+## Seconds from `local_unix` until the next Monday 00:00 (the weekly reset).
+static func seconds_until_reset(local_unix: int = -1) -> int:
+	var t: int = local_unix_now() if local_unix < 0 else local_unix
+	var d: Dictionary = Time.get_datetime_dict_from_unix_time(t)
+	var iso_wd: int = 7 if int(d["weekday"]) == 0 else int(d["weekday"])
+	var day_start: int = t - posmod(t, 86400)
+	return day_start + (8 - iso_wd) * 86400 - t
 
 
 static func week_id_of(unix: int) -> String:
@@ -100,9 +116,57 @@ static func is_claimed(profile: Dictionary, level: int) -> bool:
 	return false
 
 
-## Claims one reached, unclaimed level. "" on success — feature E implements.
-static func claim(_profile: Dictionary, _level: int) -> String:
-	return "미구현"
+## Claims one reached, unclaimed level: its reward goes into `profile.currency` and the
+## level into `claimed`. "" on success, else why not (nothing changes). Week check first.
+static func claim(profile: Dictionary, level: int) -> String:
+	ensure_week(profile)
+	if level < 1 or level > max_level():
+		return "없는 단계입니다"
+	if level > level_of(profile):
+		return "아직 도달하지 않은 단계입니다"
+	if is_claimed(profile, level):
+		return "이미 수령했습니다"
+	var rw: Dictionary = reward_at(level)
+	if rw.is_empty():
+		return "보상이 없는 단계입니다"
+	var cur: Dictionary = profile.get("currency", {})
+	var key: String = String(rw["currency"])
+	cur[key] = maxi(0, int(cur.get(key, 0)) + int(rw["amount"]))
+	profile["currency"] = cur
+	var claimed: Array = _pass(profile).get("claimed", [])
+	claimed.append(level)
+	_pass(profile)["claimed"] = claimed
+	return ""
+
+
+## Reached, unclaimed levels that have a reward (ascending).
+static func claimable_levels(profile: Dictionary) -> Array:
+	ensure_week(profile)
+	var out: Array = []
+	for lv in range(1, level_of(profile) + 1):
+		if not is_claimed(profile, lv) and not reward_at(lv).is_empty():
+			out.append(lv)
+	return out
+
+
+## Claims every claimable level. → `{count, gained: {currency: amount}}`.
+static func claim_all(profile: Dictionary) -> Dictionary:
+	var gained: Dictionary = {}
+	var n: int = 0
+	for lv in claimable_levels(profile):
+		if claim(profile, int(lv)) == "":
+			n += 1
+			var rw: Dictionary = reward_at(int(lv))
+			var key: String = String(rw["currency"])
+			gained[key] = int(gained.get(key, 0)) + int(rw["amount"])
+	return {"count": n, "gained": gained}
+
+
+## Exp inside the current level → `{into, need}` (`need` 0 at the max level).
+static func level_progress(profile: Dictionary) -> Dictionary:
+	if level_of(profile) >= max_level():
+		return {"into": 0, "need": 0}
+	return {"into": exp_of(profile) % exp_per_level(), "need": exp_per_level()}
 
 
 static func _pass(profile: Dictionary) -> Dictionary:

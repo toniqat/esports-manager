@@ -17,9 +17,9 @@ too** — the only place that needs weekday names is the **week-progress screen 
 ## Files
 | File | Role |
 |---|---|
-| `TrainingTile.gd` | `class_name TrainingTile` — one CSV row = one tile. **Grammar parsing lives only here** (shape · colour · EXP · effect clauses). Also owns the colour table · grade table · per-grade placement limits. |
-| `TrainingBoard.gd` | `class_name TrainingBoard` — headless board. Placement checks (`can_place` / `place` / `remove_at`), settlement (`cell_exp` / `compute_gains` / `compute_day_gains`), **weekday application** (`apply_day_training`), preview (`projected_stats`), week-progress reset (`reset_week_progress`). The `TrainingBoard` node in Season.tscn. |
-| `TrainingView.gd` | Planning screen — 5 portraits + 5×5 board + horizontally scrolling course cards + "훈련 확정" (Confirm training). Drag & drop. Layout · reading conventions are in "Screen layout" below. |
+| `TrainingTile.gd` | `class_name TrainingTile` — one CSV row = one tile. **Grammar parsing lives only here** (shape · colour · EXP · mastery · effect clauses). Also owns the colour table · grade table and the **staff-stat lookups** (grade unlock from tactics, per-grade placement limit and EXP multiplier from training — see "Manager / staff stats" below). |
+| `TrainingBoard.gd` | `class_name TrainingBoard` — headless board. Staff stats (`training_stat` / `tactics_stat` / `limit_of` / `is_unlocked` / `can_take_more`), placement checks (`can_place` / `place` / `remove_at`), settlement (`cell_exp` / `exp_mult_table` / `compute_gains` / `compute_day_gains`), mastery (`cell_mastery` / `compute_mastery`), **weekday application** (`apply_day_training`), preview (`projected_stats`), auto-arrange (`auto_arrange`), week-progress reset (`reset_week_progress`). The `TrainingBoard` node in Season.tscn. |
+| `TrainingView.gd` | Planning screen — staff line + 5 portraits + 5×5 board + horizontally scrolling course cards + bottom bar ("판 비우기" · "코치 추천" · "훈련 확정"). Drag & drop. Layout · reading conventions are in "Screen layout" below. |
 
 ## Board axes
 ```
@@ -48,7 +48,7 @@ every clause would become a lie each time the board is rotated.
 | `id` | `T01` … (text PK) |
 | `grade` | 0=D 1=C 2=B 3=A 4=S |
 | `shape` | Colour string with rows separated by `/`. **One row = one day, one character = one player.** `W`=1 cell, `WW`=two on the same weekday, `W/W`=one player for two days, `CC/DD`=two × two days, `WWWWW`=one day for all five |
-| `exp` | `stat:value` joined by `\|`. `all:N` = all six stats. **Value given per cell**, so an n-cell tile gives n times |
+| `exp` | `stat:value` joined by `\|`. `all:N` = all six stats. **Value given per cell**, so an n-cell tile gives n times. `mastery:N` = mech-mastery EXP per mastery (`M`) cell (see "Mastery tiles") |
 | `effect` | Clauses joined by `;` |
 
 **There is no `description` column.** There used to be one, and the info popover printed it
@@ -68,6 +68,7 @@ Same order as `PlayerData.STAT_KEYS`.
 | `A` | Orange | Attack growth `atk_growth` |
 | `P` | Green | HP growth `hp_growth` |
 | `K` | Black | **0 EXP** — the self cell of an amplifier tile |
+| `M` | Teal | **Mastery** — 0 stat EXP; yields `mastery:N` mech-mastery EXP instead |
 | `W` | Grey | Neutral — all six stats evenly |
 
 Colour is currently only a display pairing with `exp`, but it is kept as the hook for the original's
@@ -136,7 +137,8 @@ week-progress screen (`features/season/week/`) started asking "what happened tha
 weekday, settlement was split per day too.
 
 It returns the row list that screen reads — in seat order,
-`Array[{pilot_id, name, role, seat, before, after, ups, exp, carry}]`.
+`Array[{pilot_id, name, role, seat, before, after, ups, exp, carry, mastery}]`
+(`mastery` = mech-mastery EXP handed to `MechMastery.add_training_exp` that day, M3).
 `ups` is the points actually gained that day, `exp` the EXP earned that day, `carry` the remainder
 left in the bank after settlement (the screen shows "until the next point" as `carry/EXP_PER_POINT`).
 
@@ -148,6 +150,12 @@ after playing a match.
 ## Screen layout
 
 Four vertical blocks — **five portraits → 5×5 board → one row of course cards → bottom action bar (하단 액션 바)**.
+
+**Staff line (M3).** Right under the title one centred line says who covers the two stats this
+screen depends on and their effective value — `훈련: 강민호 코치 17 · 전술: 감독 6`
+(`TrainingView._owner_text`: `StaffSystem.owner_name` + `코치` / `어시스턴트` suffix + `effective`).
+The right end of the "훈련 코스" label row says what that means for the courses —
+`훈련 효과 ×N · 사용 가능 X 등급까지` (`_refresh_staff`). `_block_y()` starts below the staff line.
 
 **There is one horizontal baseline, `_grid_x()`.** The board sits at the screen centre (100..980 on
 1080), and the portraits and drop preview all derive from that value. Previously the board's left
@@ -256,10 +264,78 @@ gets pressed instead, so the popover just opened closes on the spot or switches 
 course (the popover covers two or so cards, so this always happens).
 
 ## Placement constraint — per-grade count limits
-Tiles **can be reused any number of times** (there is no owned quantity). So
-`TrainingTile.GRADE_PLACE_LIMIT` = `[-1, 8, 4, 2, 1]` (D unlimited · C 8 · B 4 · A 2 · S 1) is the
-**only** mechanism that prevents "plaster the board with the strongest tile". Each inventory card
-shows `놓임/상한`, and cards of a grade that hit its limit are locked.
+Tiles **can be reused any number of times** (there is no owned quantity). So the per-grade
+placement limit is the **only** mechanism that prevents "plaster the board with the strongest
+tile". D is always unlimited (it is the filler course). The C/B/A/S limits are no longer a fixed
+table — they come from the effective **training** stat (next section). Each inventory card shows
+`놓임/상한`, and cards of a grade that hit its limit are locked.
+
+## Manager / staff stats (M3)
+Contract: `docs/outgame_dev_plan.md` §11. Both stats are read only through
+`StaffSystem.effective(state, stat)` (manager + temporary mods, assistant, or the dedicated coach —
+whichever is highest), via `TrainingBoard.training_stat()` / `tactics_stat()`. The lookups that
+turn a stat into a rule live in `TrainingTile` (static, so they take the stat as an argument). All
+numbers are in `data/csv/const.csv` — this README names keys only.
+
+| Stat | Rule | Keys |
+|---|---|---|
+| **Tactics** | Highest usable grade. D always; C/B/A/S unlock at their thresholds (`TrainingTile.max_unlocked_grade` / `grade_unlocked` / `required_tactics`). `can_place` refuses a locked grade. | `TACTICS_GRADE_C/B/A/S` |
+| **Training** | Per-grade placement limit = top-tier limit × tier percentage (rounded, at least 1). The stat picks the tier (`TrainingTile.limit_tier`). `TrainingTile.place_limit_for(grade, stat)`. | `TRAINING_STAT_LIMIT_C/B/A/S`, `TRAINING_STAT_TIER_2/3`, `TRAINING_STAT_LIMIT_PCT_1/2/3` |
+| **Training** | Tile EXP multiplier `1 + (stat − pivot) × step` (`TrainingTile.training_exp_mult`). | `TRAINING_STAT_EXP_PIVOT`, `TRAINING_STAT_EXP_STEP` |
+
+Thresholds are placeholders tuned so a manager alone (no coach, starting manager stats) gets D·C
+and the lowest limit tier, and a good dedicated coach reaches A/S and the top tier.
+
+**Locked-grade cards are still shown** — a dark chip on the shape well says what they need
+(`전술 N 필요`), the content fades, and the info popover adds one red line
+(`전술 N 필요 (지금 전술 M)`). Like limit-locked cards they can be selected but not picked up
+(`TrainingView._card_locked` = `not TrainingBoard.can_take_more(t)`).
+
+### Where the EXP multipliers meet
+Final cell EXP = (tile EXP × clause multipliers + clause additions) × **outside multiplier**, rounded
+once per cell in `TrainingBoard.cell_exp()` step 3. The outside multiplier per cell comes from
+`exp_mult_table()`:
+
+```
+training-stat mult × FinanceSystem.training_exp_mult(state) × MentalSystem.training_exp_mult(state, pilot_id, day)
+```
+
+This is the single place they are multiplied (plan §11.3). Preview (`compute_gains` →
+`projected_stats`) and day settlement (`compute_day_gains` → `apply_day_training`) both read
+`cell_exp()`, so they cannot disagree (verified headless: the sum of the five settled days equals
+the week preview, and stats after five days equal `projected_stats`).
+
+## Mastery tiles (colour `M`, M3)
+An `M` cell gives **no stat EXP** (like `K`) — instead each `M` cell yields `mastery:N` mech-mastery
+EXP (`TrainingTile.per_cell_mastery` / `mastery_of_cell`). Rows in `training_tiles.csv` are ordinary
+tiles with an `M` shape, e.g. `M` (one day) and `M/M` (one pilot, two days).
+
+- **Raw amounts.** Clauses (`mult` / `flat`) and the outside multipliers above do **not** touch
+  mastery EXP; `MechMastery` applies its own knowledge / facility multipliers (plan §11.3).
+- `TrainingBoard.cell_mastery()` → `Vector2i(seat, day) → int`; `compute_mastery(day)` folds per seat.
+- **Settlement**: `apply_day_training(day)` calls
+  `MechMastery.add_training_exp(state, pilot_id, amount)` for each seat with mastery that day (the
+  research mech is M4's business) and adds `mastery` to that seat's row.
+- Display: the popover's EXP line is `TrainingTile.exp_summary()`, which appends
+  `메크 숙련도 +N (연구 메크)` for mastery tiles.
+
+## Auto-arrange — "코치 추천" (M3)
+When training is **delegated** (`StaffSystem.is_delegated(state, "training")` — a coach or the
+assistant covers it), the bottom bar shows a third slot `코치 추천` between `판 비우기` and
+`훈련 확정`; when the manager owns training the slot is hidden and the bar is re-laid out
+(`OutgameTheme.layout_bottom_bar`). Pressing it calls `TrainingBoard.auto_arrange()`, and the
+player can edit the result as usual.
+
+It is a **plain rule, not an optimiser** (plan §11.0 — no bonus either way):
+1. clear the board;
+2. walk unlocked grades from the highest down to C (D is the filler);
+3. within a grade, round-robin over its stat tiles (bigger shapes first, then id), one copy per
+   turn, until the grade limit is hit or nothing fits;
+4. a copy goes to the first position in day-then-seat order that **raises the board's total EXP**
+   (`board_total_exp`) — so a 0-EXP amplifier with nothing to amplify yet, or a focused single-stat
+   tile that is worth less in total than the filler it replaces, is skipped.
+
+Mastery tiles are never auto-placed — what to research is a separate decision.
 
 ## Drag & drop (`TrainingView`)
 Uses Godot's built-in drag (`set_drag_forwarding`). There are two origins.
@@ -349,6 +425,8 @@ screens in this folder read it too. **Minimum 1, no maximum** — keeps growing 
 Details in the "Player stats (six)" entry of `features/battle_sim/combat/README.md` "Active Systems" (moved there from root `CLAUDE.md`).
 
 ## Bottom action bar
+With training delegated the bar is `판 비우기` (1) · `코치 추천` (1) · `훈련 확정` (2); otherwise the
+middle slot is hidden and the two below share the bar as described (see "Auto-arrange").
 "판 비우기" (Clear board) (1) and "훈련 확정" (Confirm training) (2) **split the bottom section 2:1** —
 edge to edge left to right, bottom flush to the safe line, square corners. Conventions and pitfalls
 are in the "Bottom action bar" section of `resources/README.md`; this screen knows one special thing —

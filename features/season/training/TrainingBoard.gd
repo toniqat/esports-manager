@@ -112,13 +112,54 @@ func placed_count_of_grade(grade: int) -> int:
 	return n
 
 
+# ── Staff stats (M3) ─────────────────────────────────────────────────────────
+# Every staff-stat read on this board goes through these three, which in turn
+# go through `StaffSystem.effective` — the view, placement checks, settlement
+# and auto-arrange all see the same numbers.
+
+## The run state the board reads (the view uses it for `StaffSystem` labels).
+func season_state() -> Dictionary:
+	return _gm.season_state
+
+
+## Effective manager/staff stat for this run (1..20).
+func staff_stat(stat: String) -> int:
+	return StaffSystem.effective(_gm.season_state, stat)
+
+
+func training_stat() -> int:
+	return staff_stat("training")
+
+
+func tactics_stat() -> int:
+	return staff_stat("tactics")
+
+
+## Placement limit of this tile's grade right now. -1 = unlimited.
+func limit_of(t: TrainingTile) -> int:
+	if t == null:
+		return 0
+	return t.place_limit(training_stat())
+
+
+## Is this tile's grade unlocked by the current tactics stat?
+func is_unlocked(t: TrainingTile) -> bool:
+	return t != null and t.is_unlocked(tactics_stat())
+
+
+## Can one more of this tile go on the board (grade unlocked and under its limit)?
+## Used by the view to lock inventory cards — placement position is separate.
+func can_take_more(t: TrainingTile) -> bool:
+	return is_unlocked(t) and grade_slot_free(t)
+
+
 ## 그 타일을 지금 한 장 더 놓을 수 있는가 — **등급 상한만** 본다(자리는 별개).
 ## 타일은 몇 번이든 다시 쓸 수 있으므로(보유 수량이 없다) 이 상한 하나가
 ## "가장 센 타일로 도배"를 막는 유일한 장치다.
 func grade_slot_free(t: TrainingTile, ignore_entry: int = -1) -> bool:
 	if t == null:
 		return false
-	var limit: int = t.place_limit()
+	var limit: int = limit_of(t)
 	if limit < 0:
 		return true
 	var n: int = 0
@@ -137,6 +178,8 @@ func grade_slot_free(t: TrainingTile, ignore_entry: int = -1) -> bool:
 ## 이동이 언제나 "겹친다"로 거절된다.
 func can_place(t: TrainingTile, origin: Vector2i, ignore_entry: int = -1) -> bool:
 	if t == null:
+		return false
+	if not is_unlocked(t):
 		return false
 	if not grade_slot_free(t, ignore_entry):
 		return false
@@ -281,11 +324,17 @@ func cell_exp() -> Dictionary:
 
 	# (3) 칸마다 배율 · 가산을 적용해 굳힌다. **반올림은 칸 단위로 한 번만**
 	# 한다 — 여기서 굳혀 두어야 "요일 다섯의 합"과 "한 주 한 번"이 같은 수가 된다.
+	# The outside multipliers (training stat × finance × mental, `exp_mult_table`)
+	# are applied here too, before that single rounding — this is the **only**
+	# place they meet, so preview (`compute_gains` → `projected_stats`) and day
+	# settlement (`compute_day_gains` → `apply_day_training`) cannot disagree.
+	var outer: Dictionary = exp_mult_table()
 	var out: Dictionary = {}
 	for seat in COLS:
 		for day in ROWS:
 			var c4 := Vector2i(seat, day)
 			var m: float = maxf(0.0, float(mult[c4]))
+			var om: float = float(outer.get(c4, 1.0))
 			var cell_base: Dictionary = base[c4]
 			var cell_bonus: Dictionary = bonus[c4]
 			var acc: Dictionary = {}
@@ -293,8 +342,66 @@ func cell_exp() -> Dictionary:
 				var key: String = String(sk3)
 				var v: float = float(int(cell_base.get(key, 0))) * m
 				v += float(int(cell_bonus.get(key, 0)))
-				acc[key] = int(round(v))
+				acc[key] = int(round(v * om))
 			out[c4] = acc
+	return out
+
+
+## Outside EXP multiplier per cell, `Vector2i(seat, day) → float`:
+## training-stat mult (`TrainingTile.training_exp_mult`) ×
+## `FinanceSystem.training_exp_mult(state)` ×
+## `MentalSystem.training_exp_mult(state, pilot_id, day)` (plan §11.3).
+## Seats without a pilot get the shared part only.
+func exp_mult_table() -> Dictionary:
+	var state: Dictionary = _gm.season_state
+	var shared: float = TrainingTile.training_exp_mult(training_stat()) \
+			* FinanceSystem.training_exp_mult(state)
+	var pilots: Array = player_pilots_by_seat()
+	var out: Dictionary = {}
+	for seat in COLS:
+		var p: PlayerData = pilots[seat]
+		for day in ROWS:
+			var m: float = shared
+			if p != null:
+				m *= MentalSystem.training_exp_mult(state, int(p.id), day)
+			out[Vector2i(seat, day)] = m
+	return out
+
+
+## Mech-mastery EXP per cell, `Vector2i(seat, day) → int` — only cells covered by
+## a mastery (`M`) cell of a placed tile. Raw amounts: clauses and the stat-EXP
+## multipliers do not touch them (`MechMastery` applies its own multipliers).
+func cell_mastery() -> Dictionary:
+	var out: Dictionary = {}
+	for e_raw in board():
+		var e: Dictionary = e_raw
+		var t: TrainingTile = tile(String(e.get("tile", "")))
+		if t == null or not t.has_mastery():
+			continue
+		var ox: int = int(e.get("x", 0))
+		var oy: int = int(e.get("y", 0))
+		for i in t.cells.size():
+			var amount: int = t.mastery_of_cell(i)
+			if amount <= 0:
+				continue
+			var at := Vector2i(ox + (t.cells[i] as Vector2i).x, oy + (t.cells[i] as Vector2i).y)
+			if at.x < 0 or at.x >= COLS or at.y < 0 or at.y >= ROWS:
+				continue
+			out[at] = int(out.get(at, 0)) + amount
+	return out
+
+
+## Mastery EXP folded per seat, `{seat: int}`. `day < 0` = the whole week.
+func compute_mastery(day: int = -1) -> Dictionary:
+	var cells: Dictionary = cell_mastery()
+	var out: Dictionary = {}
+	for seat in COLS:
+		var total: int = 0
+		for d in ROWS:
+			if day >= 0 and d != day:
+				continue
+			total += int(cells.get(Vector2i(seat, d), 0))
+		out[seat] = total
 	return out
 
 
@@ -427,6 +534,7 @@ func exp_carry() -> Dictionary:
 ## 계산이 무너지지 않는다.
 func apply_day_training(day: int) -> Array:
 	var gains: Dictionary = compute_day_gains(day)
+	var mastery: Dictionary = compute_mastery(day)
 	var pilots: Array = player_pilots_by_seat()
 	var carry: Dictionary = exp_carry()
 	var rows: Array = []
@@ -451,10 +559,16 @@ func apply_day_training(day: int) -> Array:
 			if up != 0:
 				p.set(key, maxi(PlayerData.STAT_MIN, int(p.get(key)) + up))
 		carry[seat] = pocket
+		# Mastery cells of this day go to the pilot's research mech (M4 owns
+		# what happens there — multipliers, no-research-mech handling).
+		var mastery_exp: int = int(mastery.get(seat, 0))
+		if mastery_exp > 0:
+			MechMastery.add_training_exp(_gm.season_state, int(p.id), mastery_exp)
 		rows.append({
 			"pilot_id": int(p.id), "name": p.name, "role": int(p.role),
 			"seat": seat, "before": before, "after": snapshot(p),
 			"ups": ups, "exp": exp, "carry": pocket.duplicate(),
+			"mastery": mastery_exp,
 		})
 	return rows
 
@@ -496,6 +610,75 @@ func player_pilots_by_seat() -> Array:
 		if p.team_id == pid and p.role >= 0 and p.role < 5:
 			by_seat[GameEnums.role_seat(int(p.role))] = p
 	return by_seat
+
+
+# ── Auto-arrange ("코치 추천", M3) ───────────────────────────────────────────
+# Shown only when training is delegated (`StaffSystem.is_delegated`). It is a
+# **plain rule, not an optimiser** (plan §11.0 — no manual bonus either way):
+#   1. clear the board;
+#   2. walk unlocked grades from the highest down to C (D = the filler course);
+#   3. inside a grade, round-robin over its stat tiles (bigger shapes first, then
+#      id) placing one copy per turn until the grade limit or no room is left;
+#   4. a copy goes to the first position in day-then-seat order that **raises the
+#      board's total EXP** — so a 0-EXP amplifier is skipped when it has nothing
+#      to amplify yet.
+# Mastery (`M`) tiles are left out — what to research is a separate decision.
+
+## Rebuilds the board with the coach's arrangement. Returns the tiles placed.
+func auto_arrange() -> int:
+	clear_board()
+	var top: int = TrainingTile.max_unlocked_grade(tactics_stat())
+	var placed: int = 0
+	for g in range(top, 0, -1):
+		var pool: Array = []
+		for t_raw in all_tiles():
+			var t: TrainingTile = t_raw
+			if t.grade == g and not t.has_mastery():
+				pool.append(t)
+		pool.sort_custom(_auto_order)
+		var progress: bool = true
+		while progress:
+			progress = false
+			for t2_raw in pool:
+				var t2: TrainingTile = t2_raw
+				if not grade_slot_free(t2):
+					break
+				if _auto_place_one(t2):
+					placed += 1
+					progress = true
+	return placed
+
+
+static func _auto_order(a: TrainingTile, b: TrainingTile) -> bool:
+	if a.size_cells() != b.size_cells():
+		return a.size_cells() > b.size_cells()
+	return a.id < b.id
+
+
+func _auto_place_one(t: TrainingTile) -> bool:
+	var before: int = board_total_exp()
+	for y in ROWS:
+		for x in COLS:
+			var o := Vector2i(x, y)
+			if not can_place(t, o):
+				continue
+			var idx: int = place(t.id, o)
+			if idx < 0:
+				continue
+			if board_total_exp() > before:
+				return true
+			remove_entry(idx)
+	return false
+
+
+## Sum of every stat EXP over the whole board (all seats, all days).
+func board_total_exp() -> int:
+	var total: int = 0
+	var cells: Dictionary = cell_exp()
+	for c in cells.keys():
+		for v in (cells[c] as Dictionary).values():
+			total += int(v)
+	return total
 
 
 ## 한 주가 끝나면 판을 비운다. 예전 `TrainingScheduler.refill_player_team_defaults`

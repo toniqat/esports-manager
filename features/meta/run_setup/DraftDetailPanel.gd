@@ -97,6 +97,8 @@ const SKILL_TILE_Y: float = 4.0
 const SKILL_TILE_GAP: float = 16.0
 
 const CLOSE_H: float = 84.0
+## Breakthrough chip row under the header (only when `breakthrough > 0`).
+const BT_CHIP_H: float = 36.0
 ## 파일럿 카드 설명판 사이 간격.
 const CARD_GAP: float = 12.0
 
@@ -268,7 +270,26 @@ func _build_header(body: Control, w: float, y: float) -> float:
 			"%s · %s · 원소속 %s" % [slot_name, role_name, _team_short(_pilot.team_id)],
 			HDR_SUB_FONT, role_col, Vector2(0, y), Vector2(w, 28))
 	sub.clip_text = true
-	return y + 30.0
+	y += 30.0
+	# M10 — breakthrough stage. The copy handed in already carries it (stats, salary,
+	# swapped pilot card: `RunRules.apply_breakthrough` on the pool / run copies), so
+	# this chip only names *why* the numbers below differ from the base pilot.
+	if _pilot.breakthrough > 0:
+		y += 8.0
+		var x: float = _hdr_chip(body, "돌파 %d" % _pilot.breakthrough, 0.0, y,
+				OutgameTheme.ACCENT_DIM, OutgameTheme.ACCENT_TEXT)
+		if _pilot.train_bonus_pct != 0:
+			_hdr_chip(body, "훈련 EXP +%d%%" % _pilot.train_bonus_pct, x, y,
+					OutgameTheme.SURFACE_SUNK, OutgameTheme.TEXT)
+		y += BT_CHIP_H
+	return y
+
+
+## Header pill sized to its text; returns the x after it.
+func _hdr_chip(body: Control, text: String, x: float, y: float, bg: Color, fg: Color) -> float:
+	var cw: float = 28.0 + 13.0 * float(text.length())
+	OutgameTheme.add_chip(body, text, Vector2(x, y), Vector2(cw, BT_CHIP_H), bg, fg, 20)
+	return x + cw + 8.0
 
 
 func _build_stat_chips(body: Control, w: float, y: float) -> float:

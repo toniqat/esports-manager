@@ -13,10 +13,15 @@ extends Node
 #     profile.save.bak 으로 옮겨 두고 기본 프로필로 덮어쓴다.
 #   - 읽은 값은 기본 프로필 위에 얹는다 — 새 버전에서 늘어난 최상위 키,
 #     manager / currency 안의 빠진 키가 기본값으로 채워진다.
+#
+# M8~M10 (계획서 §12): 특성 보유 · 프리셋 · 감독 성장 · 재화 · 선수 성장 · 패스.
+# 규칙은 순수 모듈이 갖고(`TraitSystem` · `ManagerProgress` · `PassSystem` · `RunRules`),
+# 여기는 그 규칙을 프로필에 적용하는 얇은 API 다. **M8 이후의 변경 함수는 저장하지
+# 않는다** — 화면이 한 번의 조작 끝에 `save_profile()` 을 부른다.
 
 const PROFILE_PATH := "user://profile.save"
 const PROFILE_BACKUP_PATH := "user://profile.save.bak"
-const PROFILE_VERSION := 1
+const PROFILE_VERSION := 2
 
 # 하위 키 하나까지 기본값으로 채우는 딕셔너리들.
 const _NESTED_FILL_KEYS: Array = ["manager", "currency", "traits", "pass"]
@@ -26,13 +31,16 @@ const _MANAGER_INT_KEYS: Array = ["type", "level", "exp", "prestige"]
 const RUNS_HISTORY_MAX: int = 50
 
 var profile: Dictionary = {}
+var _rarity_cache: Dictionary = {}   # int pilot_id → players.rarity
 
 
 func _ready() -> void:
 	var err: String = load_profile()
 	if err != "":
 		push_warning("ProfileManager: %s" % err)
-	if ensure_starter_collection():
+	var changed: bool = ensure_starter_collection()
+	changed = ensure_default_traits() or changed
+	if changed:
 		save_profile()
 
 
@@ -51,9 +59,13 @@ func ensure_starter_collection() -> bool:
 		return false
 	db.query("SELECT id FROM players WHERE starter = 1 ORDER BY id")
 	for row in db.query_result:
-		col[str(int(row["id"]))] = {"owned": true, "max_level": 1, "breakthrough": 0, "dupes": 0}
+		col[str(int(row["id"]))] = _new_collection_entry()
 	db.close_db()
 	return not col.is_empty()
+
+
+func _new_collection_entry() -> Dictionary:
+	return {"owned": true, "max_level": 1, "breakthrough": 0, "dupes": 0, "exp": 0}
 
 
 ## 보유한 선수 id 목록(int, 오름차순).
@@ -83,6 +95,156 @@ func owned_max_levels() -> Dictionary:
 	return out
 
 
+## M10 — 돌파 단계. 보유하지 않았으면 0.
+func breakthrough_of(pilot_id: int) -> int:
+	if max_level_of(pilot_id) <= 0:
+		return 0
+	return int((profile["collection"][str(pilot_id)] as Dictionary).get("breakthrough", 0))
+
+
+## M10 — 보유 선수의 돌파 `{"<pilot_id>": stage}`(0 단계는 빠진다). 런 시작 · 편성 풀이 쓴다.
+func owned_breakthroughs() -> Dictionary:
+	var out: Dictionary = {}
+	for pid in owned_pilot_ids():
+		var st: int = breakthrough_of(int(pid))
+		if st > 0:
+			out[str(pid)] = st
+	return out
+
+
+## M10 — 선수 EXP(누적).
+func pilot_exp_of(pilot_id: int) -> int:
+	var e: Variant = (profile["collection"] as Dictionary).get(str(pilot_id), null)
+	return int((e as Dictionary).get("exp", 0)) if typeof(e) == TYPE_DICTIONARY else 0
+
+
+## M10 — 선수 획득(가챠 · 확정 구매). 미보유 → 새로 보유(Lv1). 보유 중 → 중복:
+## 돌파 단계 +1(`BREAKTHROUGH_MAX` 까지), 그 뒤로는 선수 파편
+## (`SHARD_PER_EXTRA_DUPE` × 등급). → `{result: "new"|"breakthrough"|"shard", stage, shards}`.
+func grant_pilot(pilot_id: int) -> Dictionary:
+	var col: Dictionary = profile["collection"]
+	var key: String = str(pilot_id)
+	if max_level_of(pilot_id) <= 0:
+		var fresh: Dictionary = _new_collection_entry()
+		var old: Variant = col.get(key, null)
+		if typeof(old) == TYPE_DICTIONARY:
+			fresh["exp"] = int((old as Dictionary).get("exp", 0))
+		col[key] = fresh
+		return {"result": "new", "stage": 0, "shards": 0}
+	var e: Dictionary = col[key]
+	e["dupes"] = int(e.get("dupes", 0)) + 1
+	if int(e.get("breakthrough", 0)) < RunRules.breakthrough_max():
+		e["breakthrough"] = int(e.get("breakthrough", 0)) + 1
+		return {"result": "breakthrough", "stage": int(e["breakthrough"]), "shards": 0}
+	var shards: int = maxi(1, ConstTable.int_of("SHARD_PER_EXTRA_DUPE") * maxi(1, pilot_rarity(pilot_id)))
+	add_currency("pilot_shard", shards)
+	return {"result": "shard", "stage": int(e["breakthrough"]), "shards": shards}
+
+
+## M10 — 선수 EXP 를 더하고 최대 레벨을 EXP 표(`pilot_levels.exp_required`)까지
+## 자동으로 올린다(내리지는 않는다). → `{from, to}`.
+func add_pilot_exp(pilot_id: int, amount: int) -> Dictionary:
+	var from_lv: int = max_level_of(pilot_id)
+	if from_lv <= 0:
+		return {"from": 0, "to": 0}
+	var e: Dictionary = profile["collection"][str(pilot_id)]
+	e["exp"] = int(e.get("exp", 0)) + maxi(0, amount)
+	var to_lv: int = maxi(from_lv, mini(RunRules.max_level(), RunRules.level_for_exp(int(e["exp"]))))
+	e["max_level"] = to_lv
+	return {"from": from_lv, "to": to_lv}
+
+
+## M10 — 최대 레벨 +1 에 드는 레벨업 재화. 올릴 수 없으면 -1.
+func level_up_cost(pilot_id: int) -> int:
+	var lv: int = max_level_of(pilot_id)
+	if lv <= 0 or lv >= RunRules.max_level():
+		return -1
+	return RunRules.levelup_cost(lv + 1)
+
+
+## M10 — 레벨업 재화로 최대 레벨 +1. 성공이면 "".
+func level_up_pilot(pilot_id: int) -> String:
+	var cost: int = level_up_cost(pilot_id)
+	if cost < 0:
+		return "더 올릴 수 없습니다"
+	if not spend_currency("levelup", cost):
+		return "레벨업 재화가 부족합니다 (%d 필요)" % cost
+	var e: Dictionary = profile["collection"][str(pilot_id)]
+	e["max_level"] = int(e.get("max_level", 1)) + 1
+	return ""
+
+
+## `players.rarity` (캐시). 모르는 선수는 0.
+func pilot_rarity(pilot_id: int) -> int:
+	if _rarity_cache.is_empty():
+		var db := SQLite.new()
+		db.path = GameDb.path()
+		db.verbosity_level = SQLite.QUIET
+		if db.open_db():
+			db.query("SELECT id, rarity FROM players")
+			for row in db.query_result:
+				_rarity_cache[int(row["id"])] = int(row["rarity"])
+			db.close_db()
+	return int(_rarity_cache.get(pilot_id, 0))
+
+
+
+# ── 재화 (M10) ───────────────────────────────────────────────────────────────
+## 재화 키는 `default_profile().currency` 의 여덟 개.
+func currency_of(key: String) -> int:
+	return int((profile["currency"] as Dictionary).get(key, 0))
+
+
+func add_currency(key: String, amount: int) -> void:
+	var cur: Dictionary = profile["currency"]
+	cur[key] = maxi(0, int(cur.get(key, 0)) + amount)
+
+
+## 모자라면 아무것도 하지 않고 false.
+func spend_currency(key: String, amount: int) -> bool:
+	if amount < 0 or currency_of(key) < amount:
+		return false
+	add_currency(key, -amount)
+	return true
+
+
+# ── 특성 (M8) ────────────────────────────────────────────────────────────────
+## 보유 특성이 비어 있으면 `traits.default_owned = 1` 인 것을 지급한다. 지급했으면 true.
+func ensure_default_traits() -> bool:
+	var tr: Dictionary = profile["traits"]
+	if not (tr.get("owned", []) as Array).is_empty():
+		return false
+	var ids: Array = TraitSystem.default_owned_ids()
+	tr["owned"] = ids.duplicate()
+	return not ids.is_empty()
+
+
+func owned_trait_ids() -> Array:
+	var out: Array = []
+	for raw in ((profile["traits"] as Dictionary).get("owned", []) as Array):
+		out.append(int(raw))
+	return out
+
+
+func owns_trait(trait_id: int) -> bool:
+	return owned_trait_ids().has(trait_id)
+
+
+## 특성 획득(해금 · 가챠 · 제작). 미보유 → 보유. 보유 중 → 특성 재료
+## (`TRAIT_DUPE_MAT` × (등급 + 1)). → `{result: "new"|"material", amount}`.
+func grant_trait(trait_id: int) -> Dictionary:
+	var tr: Dictionary = profile["traits"]
+	var owned: Array = tr.get("owned", [])
+	if not owned_trait_ids().has(trait_id):
+		owned.append(trait_id)
+		tr["owned"] = owned
+		return {"result": "new", "amount": 0}
+	var rar: int = int(TraitSystem.row(trait_id).get("rarity", 0))
+	var mat: int = maxi(1, ConstTable.int_of("TRAIT_DUPE_MAT") * (rar + 1))
+	add_currency("trait_mat", mat)
+	return {"result": "material", "amount": mat}
+
+
 # ── 런 정산 (M2) ─────────────────────────────────────────────────────────────
 ## 정산 결과를 프로필에 반영하고 저장한다. `result` 모양은
 ## `docs/outgame_dev_plan.md` §10.3. 성공이면 "".
@@ -101,11 +263,38 @@ func apply_run_result(result: Dictionary) -> String:
 			if typeof(r) == TYPE_DICTIONARY and String((r as Dictionary).get("id", "")) == run_id:
 				return ""
 
-	var cur: Dictionary = profile["currency"]
-	var gained: int = int((result.get("currency", {}) as Dictionary).get("outgame", 0))
-	cur["outgame"] = int(cur.get("outgame", 0)) + maxi(0, gained)
-	var mgr: Dictionary = profile["manager"]
-	mgr["exp"] = int(mgr.get("exp", 0)) + maxi(0, int(result.get("manager_exp", 0)))
+	# M10 — every currency the result pays (`outgame`, `levelup`, …).
+	var gained: Dictionary = result.get("currency", {})
+	for ck in gained.keys():
+		add_currency(String(ck), maxi(0, int(gained[ck])))
+	# M9 — manager exp → level-ups (removal points follow the level).
+	var delta: Dictionary = {}
+	delta["manager"] = ManagerProgress.add_exp(profile, int(result.get("manager_exp", 0)))
+	# M10 — pilot exp (my five) → automatic max-level ups.
+	var pilot_delta: Dictionary = {}
+	var pexp: Dictionary = result.get("pilot_exp", {})
+	for pk in pexp.keys():
+		var d: Dictionary = add_pilot_exp(int(pk), int(pexp[pk]))
+		if int(d["to"]) > int(d["from"]):
+			pilot_delta[str(int(pk))] = d
+	delta["pilots"] = pilot_delta
+	# M10 — weekly pass exp.
+	delta["pass"] = PassSystem.add_exp(profile, int(result.get("pass_exp", 0)))
+	# M8 — traits unlocked by this run (`TraitSystem.evaluate_unlocks`).
+	var new_traits: Array = []
+	var tr: Dictionary = profile["traits"]
+	var pending: Array = tr.get("unlocked_pending", [])
+	for raw in (result.get("unlocked_traits", []) as Array):
+		var tid: int = int(raw)
+		if owns_trait(tid):
+			continue
+		grant_trait(tid)
+		new_traits.append(tid)
+		if not pending.has(tid):
+			pending.append(tid)
+	tr["unlocked_pending"] = pending
+	delta["traits"] = new_traits
+	result["profile_delta"] = delta
 
 	var ach: Dictionary = profile["achievements"]
 	var run_ach: Dictionary = result.get("achievements", {})
@@ -171,25 +360,37 @@ func default_profile() -> Dictionary:
 			"exp": 0,
 			"prestige": 0,
 			"last_prestige_season": "",
+			# M9 — permanent removals per stat (until prestige) — `ManagerProgress`.
+			"removed": {},
 			"alloc": {
 				"training": 0, "tactics": 0, "knowledge": 0,
 				"mental": 0, "analysis": 0, "finance": 0,
 			},
 		},
+		# M8 — owned trait ids, ids unlocked but not yet seen on the manager screen.
 		"traits": {"owned": [], "unlocked_pending": []},
-		"presets": [{"kind": "normal", "alloc": {}, "traits": []}],
+		# M9 — presets `{kind: normal|prestige, alloc: {stat: int}, traits: [id]}`.
+		"presets": _default_presets(),
 		"active_preset": 0,
 		"currency": {
 			"outgame": 0, "levelup": 0,
 			"gacha_ticket_pilot": 0, "gacha_ticket_trait": 0,
 			"trait_mat": 0, "cosmetic": 0, "premium": 0, "pilot_shard": 0,
 		},
-		"pass": {"week_id": "", "exp": 0, "claimed": []},
+		# M10 — weekly pass `{week_id, exp, claimed: [level], overflow}` — `PassSystem`.
+		"pass": {"week_id": "", "exp": 0, "claimed": [], "overflow": 0},
 		# pilot_id(String) → {pom, mvp, true_ending}
 		"achievements": {},
 		# Array of {scenario, team, score, result, phase_reached, at}
 		"runs": [],
 	}
+
+
+func _default_presets() -> Array:
+	var out: Array = []
+	for i in maxi(1, ConstTable.int_of("PRESET_BASE_COUNT")):
+		out.append(ManagerProgress.new_preset())
+	return out
 
 
 # 디스크에서 프로필을 읽어 `profile` 에 싣는다. 성공이면 "" — 파일이 없거나
@@ -262,12 +463,64 @@ func _merge_over_defaults(loaded: Dictionary) -> Dictionary:
 		for ak in (src_alloc as Dictionary).keys():
 			alloc[String(ak)] = int((src_alloc as Dictionary)[ak])
 	mgr["alloc"] = alloc
+	var removed_d: Dictionary = {}
+	var src_rm: Variant = mgr.get("removed", null)
+	if typeof(src_rm) == TYPE_DICTIONARY:
+		for rk in (src_rm as Dictionary).keys():
+			removed_d[String(rk)] = int((src_rm as Dictionary)[rk])
+	mgr["removed"] = removed_d
 	var cur: Dictionary = out["currency"]
 	for ck in cur.keys():
 		cur[ck] = int(cur[ck])
 	var pass_d: Dictionary = out["pass"]
 	pass_d["exp"] = int(pass_d.get("exp", 0))
+	pass_d["overflow"] = int(pass_d.get("overflow", 0))
+	pass_d["claimed"] = _int_array(pass_d.get("claimed", []))
+	# M8 — trait ids back to int.
+	var tr: Dictionary = out["traits"]
+	tr["owned"] = _int_array(tr.get("owned", []))
+	tr["unlocked_pending"] = _int_array(tr.get("unlocked_pending", []))
+	# M9 — presets: normalise each, pad up to PRESET_BASE_COUNT (v1 had one).
+	var presets: Array = []
+	var src_ps: Variant = out.get("presets", [])
+	if typeof(src_ps) == TYPE_ARRAY:
+		for raw in (src_ps as Array):
+			if typeof(raw) != TYPE_DICTIONARY:
+				continue
+			var p: Dictionary = ManagerProgress.new_preset(
+					String((raw as Dictionary).get("kind", ManagerProgress.KIND_NORMAL)))
+			var src_a: Variant = (raw as Dictionary).get("alloc", {})
+			if typeof(src_a) == TYPE_DICTIONARY:
+				for ak2 in (src_a as Dictionary).keys():
+					if (p["alloc"] as Dictionary).has(String(ak2)):
+						p["alloc"][String(ak2)] = int((src_a as Dictionary)[ak2])
+			p["traits"] = _int_array((raw as Dictionary).get("traits", []))
+			presets.append(p)
+	while presets.size() < maxi(1, ConstTable.int_of("PRESET_BASE_COUNT")):
+		presets.append(ManagerProgress.new_preset())
+	out["presets"] = presets
+	out["active_preset"] = clampi(int(out["active_preset"]), 0, presets.size() - 1)
+	# M10 — collection entries: ints, `exp` added.
+	var col: Dictionary = out["collection"]
+	for pk in col.keys():
+		var e: Variant = col[pk]
+		if typeof(e) != TYPE_DICTIONARY:
+			col.erase(pk)
+			continue
+		var ed: Dictionary = e
+		for ik in ["max_level", "breakthrough", "dupes", "exp"]:
+			ed[ik] = int(ed.get(ik, 1 if ik == "max_level" else 0))
+		ed["owned"] = bool(ed.get("owned", false))
+	out["version"] = PROFILE_VERSION
 	return out
+
+
+func _int_array(v: Variant) -> Array:
+	var out_a: Array = []
+	if typeof(v) == TYPE_ARRAY:
+		for raw in (v as Array):
+			out_a.append(int(raw))
+	return out_a
 
 
 func _is_number(v: Variant) -> bool:

@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://dufka86iwo6qh"
+
+[deps]
+
+files=["res://data/csv/gacha_rates.pool.translation", "res://data/csv/gacha_rates.rarity.translation", "res://data/csv/gacha_rates.weight.translation"]
+
+source_file="res://data/csv/gacha_rates.csv"
+dest_files=["res://data/csv/gacha_rates.pool.translation", "res://data/csv/gacha_rates.rarity.translation", "res://data/csv/gacha_rates.weight.translation"]
+
+[params]
+
+compress=true
+delimiter=0

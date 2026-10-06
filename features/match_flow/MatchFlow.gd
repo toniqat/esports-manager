@@ -217,6 +217,9 @@ func _launch_battle() -> void:
 	gm.match_ctx["banned_mech_ids"] = banned_mech_ids
 	gm.match_ctx["all_mechs"]       = all_mechs
 	gm.match_ctx["enemy_misjudge_chance"] = _misjudge_chance_for(enemy_team_id)
+	# M8 — my team's in-game traits (`features/battle_sim/trait/TraitHooks.gd`).
+	gm.match_ctx["traits"] = TraitSystem.ingame_traits(gm.season_state) \
+			if bool(gm.season_state.get("active", false)) else []
 	# 밴픽(흰 화면) → 전장(어두운 화면)은 한 장면이 넘어가는 자리라 그냥 갈아
 	# 끼우지 않고 암전 → 가짜 로딩 → 밝아짐으로 덮는다. 덮개는 root 에 붙어
 	# 씬 전환을 건너 살아남고, BattleSim 의 무거운 `_ready` 가 그 뒤에서 돈다.

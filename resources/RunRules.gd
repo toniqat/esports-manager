@@ -13,7 +13,8 @@ extends RefCounted
 # 세이브(JSON)를 지나도 모양이 같도록.
 
 static var _scenarios: Array = []
-static var _levels: Dictionary = {}       # int level → {stat_bonus, salary_bonus}
+static var _levels: Dictionary = {}       # int level → {stat_bonus, salary_bonus, levelup_cost, exp_required}
+static var _breakthrough: Dictionary = {} # int pilot_id → Array[{stage, kind, value, desc}] by stage
 static var _teams: Array = []
 static var _loaded: bool = false
 
@@ -35,6 +36,12 @@ static func scenario(scenario_id: int) -> Dictionary:
 
 static func salary_cap(scenario_id: int) -> int:
 	return int(scenario(scenario_id).get("salary_cap", 0))
+
+
+## Cap including the equipped traits' `salary_cap` bonus (M8). The run setup lineup
+## step and `GameManager.start_run` both read this — never `salary_cap` + their own sum.
+static func salary_cap_with(scenario_id: int, trait_ids: Array) -> int:
+	return maxi(0, salary_cap(scenario_id) + TraitSystem.sum_p1(trait_ids, "salary_cap"))
 
 
 ## 팀 선택 화면용 패키지. `[{id, name, short_name, budget, facility_level,
@@ -75,6 +82,28 @@ static func salary_bonus_at(level: int) -> int:
 	return int((_levels.get(level, {}) as Dictionary).get("salary_bonus", 0))
 
 
+## M10 — levelup currency to raise the max level **to** `level` (0 at Lv1 / unknown).
+static func levelup_cost(level: int) -> int:
+	_ensure_loaded()
+	return int((_levels.get(level, {}) as Dictionary).get("levelup_cost", 0))
+
+
+## M10 — cumulative pilot exp at which the max level reaches `level` automatically.
+static func exp_required(level: int) -> int:
+	_ensure_loaded()
+	return int((_levels.get(level, {}) as Dictionary).get("exp_required", 0))
+
+
+## M10 — highest level whose `exp_required` ≤ `exp_total`.
+static func level_for_exp(exp_total: int) -> int:
+	_ensure_loaded()
+	var lv: int = 1
+	for k in _levels.keys():
+		if exp_total >= exp_required(int(k)):
+			lv = maxi(lv, int(k))
+	return lv
+
+
 static func salary_at(base_salary: int, level: int) -> int:
 	return base_salary + salary_bonus_at(level)
 
@@ -96,6 +125,56 @@ static func apply_level(pd: PlayerData, level: int) -> void:
 	pd.level = lv
 
 
+# ── 돌파 (M10) ───────────────────────────────────────────────────────────────
+static func breakthrough_max() -> int:
+	return maxi(0, ConstTable.int_of("BREAKTHROUGH_MAX"))
+
+
+## `[{stage, kind, value: String, desc}]` of one pilot, stage order (empty for mobs).
+static func breakthrough_rows(pilot_id: int) -> Array:
+	_ensure_loaded()
+	return _breakthrough.get(pilot_id, [])
+
+
+## Raises `pd` from its current `pd.breakthrough` to `stage` (cumulative stages,
+## applied once each — calling again with the same stage does nothing). Effects:
+## `stat_flat` +v to the six stats, `salary_down` −v to the Lv1 salary (≥ 0),
+## `stat_growth` +v% to `pd.train_bonus_pct`, `card_swap` "slot:card_id" replaces
+## that pilot-card slot. Run copies / run setup pool only — never CSV values.
+static func apply_breakthrough(pd: PlayerData, stage: int) -> void:
+	var target: int = clampi(stage, 0, breakthrough_max())
+	for raw in breakthrough_rows(pd.id):
+		var r: Dictionary = raw
+		var st: int = int(r["stage"])
+		if st <= pd.breakthrough or st > target:
+			continue
+		var v: String = String(r["value"])
+		match String(r["kind"]):
+			"stat_flat":
+				for key in PlayerData.STAT_KEYS:
+					pd.set(key, maxi(PlayerData.STAT_MIN, int(pd.get(key)) + int(v)))
+			"salary_down":
+				pd.salary = maxi(0, pd.salary - int(v))
+			"stat_growth":
+				pd.train_bonus_pct += int(v)
+			"card_swap":
+				var parts: PackedStringArray = v.split(":")
+				if parts.size() == 2:
+					var slot: int = int(parts[0])
+					if slot >= 0 and slot < pd.pilot_cards.size():
+						pd.pilot_cards[slot] = int(parts[1])
+	pd.breakthrough = maxi(pd.breakthrough, target)
+
+
+## Applies `{"<pilot_id>": stage}` to the matching pilots of `pool` (others untouched).
+static func apply_breakthroughs(pool: Array, stages: Dictionary) -> void:
+	for raw in pool:
+		var pd := raw as PlayerData
+		var st: int = int(stages.get(str(pd.id), 0))
+		if st > 0:
+			apply_breakthrough(pd, st)
+
+
 # ── 편성 ─────────────────────────────────────────────────────────────────────
 ## 고른 선수들의 샐러리 합. `levels` 에 없는 선수는 Lv1.
 static func lineup_salary(pilots: Array, levels: Dictionary) -> int:
@@ -111,8 +190,9 @@ static func lineup_salary(pilots: Array, levels: Dictionary) -> int:
 ##   levels           : {"<pilot_id>": level}
 ##   pool             : Array[PlayerData] — id 를 찾을 선수 목록(CSV Lv1 사본)
 ##   owned_max_levels : {"<pilot_id>": 달성 최대 레벨} — 보유 컬렉션
+##   cap_bonus        : M8 — the equipped traits' `salary_cap` sum (`TraitSystem.sum_p1`)
 static func validate_lineup(pilot_ids: Array, levels: Dictionary, scenario_id: int,
-		pool: Array, owned_max_levels: Dictionary) -> String:
+		pool: Array, owned_max_levels: Dictionary, cap_bonus: int = 0) -> String:
 	if pilot_ids.size() != 5:
 		return "선수 5명을 골라야 합니다 (%d명)" % pilot_ids.size()
 	var by_id: Dictionary = {}
@@ -134,7 +214,7 @@ static func validate_lineup(pilot_ids: Array, levels: Dictionary, scenario_id: i
 		if lv < 1 or lv > int(owned_max_levels[str(id_i)]):
 			return "%s 의 레벨 %d 은(는) 고를 수 없습니다" % [pd.name, lv]
 		picked.append(pd)
-	var cap: int = salary_cap(scenario_id)
+	var cap: int = maxi(0, salary_cap(scenario_id) + cap_bonus)
 	var total: int = lineup_salary(picked, levels)
 	if cap > 0 and total > cap:
 		return "샐러리캡 초과 (%d / %d)" % [total, cap]
@@ -165,9 +245,21 @@ static func _ensure_loaded() -> void:
 			_levels[int(row["level"])] = {
 				"stat_bonus": int(row["stat_bonus"]),
 				"salary_bonus": int(row["salary_bonus"]),
+				"levelup_cost": int(row.get("levelup_cost", 0)),
+				"exp_required": int(row.get("exp_required", 0)),
 			}
 	if _levels.is_empty():
 		_levels[1] = {"stat_bonus": 0, "salary_bonus": 0}
+	if _has_table(db, "pilot_breakthrough"):
+		db.query("SELECT * FROM pilot_breakthrough ORDER BY pilot_id, stage")
+		for row in db.query_result:
+			var pid: int = int(row["pilot_id"])
+			var list: Array = _breakthrough.get(pid, [])
+			list.append({
+				"stage": int(row["stage"]), "kind": String(row["kind"]),
+				"value": String(row["value"]), "desc": String(row["desc"]),
+			})
+			_breakthrough[pid] = list
 	db.query("SELECT * FROM teams ORDER BY id")
 	for row in db.query_result:
 		var areas: Array = []

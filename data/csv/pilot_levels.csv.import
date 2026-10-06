@@ -6,10 +6,10 @@ uid="uid://bxsx4i4x1qm0f"
 
 [deps]
 
-files=["res://data/csv/pilot_levels.stat.translation", "res://data/csv/pilot_levels.salary.translation"]
+files=["res://data/csv/pilot_levels.stat.translation", "res://data/csv/pilot_levels.salary.translation", "res://data/csv/pilot_levels.levelup.translation", "res://data/csv/pilot_levels.exp.translation"]
 
 source_file="res://data/csv/pilot_levels.csv"
-dest_files=["res://data/csv/pilot_levels.stat.translation", "res://data/csv/pilot_levels.salary.translation"]
+dest_files=["res://data/csv/pilot_levels.stat.translation", "res://data/csv/pilot_levels.salary.translation", "res://data/csv/pilot_levels.levelup.translation", "res://data/csv/pilot_levels.exp.translation"]
 
 [params]
 

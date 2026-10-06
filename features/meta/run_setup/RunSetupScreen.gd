@@ -74,6 +74,8 @@ func _ready() -> void:
 		_load_error = String(data["error"])
 	else:
 		_pool = data["players"]
+		# M10 — owned pilots show (and are capped) at their breakthrough stage.
+		RunRules.apply_breakthroughs(_pool, _pm.owned_breakthroughs())
 	go_to_step(0)
 
 

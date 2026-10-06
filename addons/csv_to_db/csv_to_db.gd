@@ -35,12 +35,18 @@ const SCHEMAS: Dictionary = {
 	"pilot_card_slots": {"req": ["position","slot1","slot2","slot3"], "pk": "position"},
 	"training_tiles": {"req": ["id","name","grade","shape","exp","effect"], "pk": "id"},
 	"scenarios":   {"req": ["id","name","salary_cap","desc"], "pk": "id"},
-	"pilot_levels": {"req": ["level","stat_bonus","salary_bonus"], "pk": "level"},
+	"pilot_levels": {"req": ["level","stat_bonus","salary_bonus","levelup_cost","exp_required"], "pk": "level"},
 	# M3~M7 (감독 · 스태프 · 재무 · 멘탈) — 계약: docs/outgame_dev_plan.md §11
 	"manager_types": {"req": ["id","name","gender","training","tactics","knowledge","mental","analysis","finance","desc"], "pk": "id"},
 	"staff":         {"req": ["id","name","job","training","tactics","knowledge","mental","analysis","finance","salary"], "pk": "id"},
 	"facilities":    {"req": ["level","upkeep","upgrade_cost","train_exp_pct","mastery_pct","incident_pct","income_pct"], "pk": "level"},
 	"mental_events": {"req": ["id","kind","manager_type","stage","cond","lines","choices","effects","weight"], "pk": "id"},
+	# M8~M10 (특성 · 감독 성장 · 수집 경제) — 계약: docs/outgame_dev_plan.md §12
+	"traits":        {"req": ["id","key","name","rarity","polarity","bonus_cost","layer","p1","p2","unlock","default_owned","craft_cost","desc"], "pk": "id"},
+	"manager_levels": {"req": ["level","exp_required"], "pk": "level"},
+	"pilot_breakthrough": {"req": ["id","pilot_id","stage","kind","value","desc"], "pk": "id"},
+	"gacha_rates":   {"req": ["id","pool","rarity","weight"], "pk": "id"},
+	"pass_rewards":  {"req": ["level","currency","amount"], "pk": "level"},
 }
 
 # SQLite column definitions per table
@@ -275,6 +281,10 @@ const TABLE_DEFS: Dictionary = {
 		"level":        {"data_type": "int", "primary_key": true, "not_null": true},
 		"stat_bonus":   {"data_type": "int", "not_null": true},
 		"salary_bonus": {"data_type": "int", "not_null": true},
+		# M10 — 최대 레벨을 이 레벨로 올리는 레벨업 재화(`currency.levelup`, Lv1 = 0).
+		"levelup_cost": {"data_type": "int", "not_null": true},
+		# M10 — 이 최대 레벨에 자동으로 닿는 **누적** 선수 EXP(런 출전으로 쌓인다).
+		"exp_required": {"data_type": "int", "not_null": true},
 	},
 	# ── M3~M7 ──────────────────────────────────────────────────────────────
 	# 감독 타입(운영형 / 실전형) — 초기 감독 스탯 6종(1~20).
@@ -326,6 +336,55 @@ const TABLE_DEFS: Dictionary = {
 		"choices":      {"data_type": "text", "not_null": true},
 		"effects":      {"data_type": "text", "not_null": true},
 		"weight":       {"data_type": "int",  "not_null": true},
+	},
+	# ── M8~M10 ─────────────────────────────────────────────────────────────
+	# 감독 특성 — `key` 는 런타임 분기(효과 표는 features/meta/traits/README.md),
+	# `polarity` "+" = 긍정(보너스 점수 `bonus_cost` 소모) / "-" = 부정(제공),
+	# `layer` outgame / ingame, `unlock` 해금 조건 식(빈 칸 = 조건 없음),
+	# `default_owned` 1 = 처음부터 보유, `craft_cost` 특성 재료(0 = 제작 불가).
+	"traits": {
+		"id":            {"data_type": "int",  "primary_key": true, "not_null": true},
+		"key":           {"data_type": "text", "not_null": true},
+		"name":          {"data_type": "text", "not_null": true},
+		"rarity":        {"data_type": "int",  "not_null": true},
+		"polarity":      {"data_type": "text", "not_null": true},
+		"bonus_cost":    {"data_type": "int",  "not_null": true},
+		"layer":         {"data_type": "text", "not_null": true},
+		"p1":            {"data_type": "int",  "not_null": true},
+		"p2":            {"data_type": "int",  "not_null": true},
+		"unlock":        {"data_type": "text", "not_null": true},
+		"default_owned": {"data_type": "int",  "not_null": true},
+		"craft_cost":    {"data_type": "int",  "not_null": true},
+		"desc":          {"data_type": "text", "not_null": true},
+	},
+	# 감독 레벨 1..25 — 그 레벨에 닿는 **누적** 감독 EXP.
+	"manager_levels": {
+		"level":        {"data_type": "int", "primary_key": true, "not_null": true},
+		"exp_required": {"data_type": "int", "not_null": true},
+	},
+	# 선수 돌파 1..5 단계(선수별). `kind` stat_flat(여섯 스탯 +value) /
+	# salary_down(Lv1 샐러리 −value) / stat_growth(그 선수 훈련 EXP +value%) /
+	# card_swap(value = "칸:카드id", 0 부터 센 파일럿 카드 칸을 교체). 단계는 누적.
+	"pilot_breakthrough": {
+		"id":       {"data_type": "int",  "primary_key": true, "not_null": true},
+		"pilot_id": {"data_type": "int",  "not_null": true},
+		"stage":    {"data_type": "int",  "not_null": true},
+		"kind":     {"data_type": "text", "not_null": true},
+		"value":    {"data_type": "text", "not_null": true},
+		"desc":     {"data_type": "text", "not_null": true},
+	},
+	# 가챠 등급 가중치 — `pool` pilot / trait.
+	"gacha_rates": {
+		"id":     {"data_type": "int",  "primary_key": true, "not_null": true},
+		"pool":   {"data_type": "text", "not_null": true},
+		"rarity": {"data_type": "int",  "not_null": true},
+		"weight": {"data_type": "int",  "not_null": true},
+	},
+	# 주간패스(무료) 레벨 보상 — `currency` 는 프로필 재화 키.
+	"pass_rewards": {
+		"level":    {"data_type": "int",  "primary_key": true, "not_null": true},
+		"currency": {"data_type": "text", "not_null": true},
+		"amount":   {"data_type": "int",  "not_null": true},
 	},
 }
 

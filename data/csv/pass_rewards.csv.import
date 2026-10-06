@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://s8na5tm3n6wf"
+
+[deps]
+
+files=["res://data/csv/pass_rewards.currency.translation", "res://data/csv/pass_rewards.amount.translation"]
+
+source_file="res://data/csv/pass_rewards.csv"
+dest_files=["res://data/csv/pass_rewards.currency.translation", "res://data/csv/pass_rewards.amount.translation"]
+
+[params]
+
+compress=true
+delimiter=0

@@ -14,9 +14,12 @@ Two layers of state (plan §2.1):
 | `lobby/` | M0 ✅ | Project entry (`scenes/Lobby.tscn`): continue / new run, abandon confirm → `lobby/README.md` |
 | `run_setup/` | M1 ✅ | Run setup (`scenes/RunSetup.tscn`): scenario → team → 5-pilot lineup (levels · salary cap) → `GameManager.start_run` → `Season.tscn`. Manager-preset step slots in later (M3/M9) → `run_setup/README.md` |
 | `run_result/` | M2 | Run-end settlement (`RunResult.settle_current_run`: score, currency, manager EXP, MVP/POM achievements → profile) + result screen `scenes/RunResult.tscn` → `run_result/README.md` |
-| `collection/` · `manager/` · `traits/` · `shop/` | M8–M10 | profile screens |
+| `traits/` | M8 | `TraitSystem` — trait table, bonus points, run-time effect reads, unlocks → `traits/README.md` |
+| `manager/` | M9 | `ManagerProgress` (levels, removal / specialisation, presets, prestige) + lobby `감독` tab → `manager/README.md` |
+| `collection/` | M10 | Lobby `컬렉션` tab — pilots, levels, breakthroughs → `collection/README.md` |
+| `shop/` | M10 | `PassSystem` + lobby `상점` / `패스` tabs (gacha, shards, crafting, pass) → `shop/README.md` |
 
-Only folders that exist are real; the rest are created when their milestone starts.
+The lobby is a **tab host** (홈 · 컬렉션 · 감독 · 상점 · 패스) — tab contract in `lobby/README.md`.
 
 ## Flow (M2)
 ```

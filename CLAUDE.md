@@ -54,9 +54,14 @@ esports-manager/
 │                               outgame_dev_plan.md (outgame meta development plan, 아웃게임 메타 개발 계획)
 ├── addons/godot_mcp/         ← MCP editor plugin (do not modify)
 └── features/
-    ├── meta/                 ← outgame outside a run (lobby, run setup; later result / collection) → README.md
-    │   ├── lobby/            ← project entry: continue / new run, abandon confirm popup
-    │   └── run_setup/        ← run setup: scenario → team → 5-pilot lineup (levels, salary cap) → start_run
+    ├── meta/                 ← outgame outside a run (lobby tabs, run setup, result, traits, manager, collection, shop) → README.md
+    │   ├── lobby/            ← project entry = tab host (홈 · 컬렉션 · 감독 · 상점 · 패스), abandon confirm popup
+    │   ├── run_setup/        ← run setup: scenario → team → manager preset → 5-pilot lineup (levels, salary cap) → start_run
+    │   ├── run_result/       ← run-end settlement + result screen
+    │   ├── traits/           ← TraitSystem: manager traits, bonus points, unlocks (M8)
+    │   ├── manager/          ← ManagerProgress: levels, specialisation, presets, prestige + 감독 tab (M9)
+    │   ├── collection/       ← 컬렉션 tab: pilot levels, breakthroughs (M10)
+    │   └── shop/             ← 상점 / 패스 tabs: gacha, shards, crafting, PassSystem (M10)
     ├── save_load/            ← run save (SaveSystem), autosave, mid-match resume
     ├── season/               ← outgame campaign (SeasonHub orchestrator, handoffs, brackets)
     │   ├── calendar/         ← week clock, weekdays / match days, phase transitions
@@ -125,6 +130,7 @@ esports-manager/
 | CSV tables, SQLite API, Rebuild game.db | `data/README.md` |
 | Tuning constants (const.csv / ConstTable), no values in docs | `data/README.md` |
 | M3~M7 contract (state keys, week-end order, file ownership) | `docs/outgame_dev_plan.md` §11 |
+| M8~M10 contract (traits, presets, profile v2, lobby tabs, gacha, pass) | `docs/outgame_dev_plan.md` §12 |
 | Manager · staff stats, cover rule, hub manage cards (`HubSheet`) | `features/season/staff/README.md` |
 | iOS test build, downloading the .ipa | `docs/ios_testbuild.md`, `build/README.md` |
 

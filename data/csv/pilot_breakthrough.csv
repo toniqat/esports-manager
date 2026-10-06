@@ -1,0 +1,126 @@
+id,pilot_id,stage,kind,value,desc
+1,2,1,stat_growth,10,훈련 EXP +10%
+2,2,2,stat_flat,2,스탯 여섯 모두 +2
+3,2,3,salary_down,3,샐러리 −3
+4,2,4,stat_flat,3,스탯 여섯 모두 +3
+5,2,5,card_swap,2:30,세 번째 파일럿 카드 교체
+6,3,1,stat_flat,2,스탯 여섯 모두 +2
+7,3,2,salary_down,3,샐러리 −3
+8,3,3,stat_growth,10,훈련 EXP +10%
+9,3,4,stat_flat,3,스탯 여섯 모두 +3
+10,3,5,card_swap,2:21,세 번째 파일럿 카드 교체
+11,5,1,stat_growth,10,훈련 EXP +10%
+12,5,2,stat_flat,2,스탯 여섯 모두 +2
+13,5,3,salary_down,3,샐러리 −3
+14,5,4,stat_flat,3,스탯 여섯 모두 +3
+15,5,5,card_swap,2:46,세 번째 파일럿 카드 교체
+16,6,1,stat_flat,3,스탯 여섯 모두 +3
+17,6,2,salary_down,5,샐러리 −5
+18,6,3,stat_growth,14,훈련 EXP +14%
+19,6,4,stat_flat,4,스탯 여섯 모두 +4
+20,6,5,card_swap,2:17,세 번째 파일럿 카드 교체
+21,7,1,salary_down,3,샐러리 −3
+22,7,2,stat_flat,2,스탯 여섯 모두 +2
+23,7,3,stat_flat,3,스탯 여섯 모두 +3
+24,7,4,stat_growth,10,훈련 EXP +10%
+25,7,5,card_swap,2:30,세 번째 파일럿 카드 교체
+26,8,1,stat_growth,10,훈련 EXP +10%
+27,8,2,stat_flat,2,스탯 여섯 모두 +2
+28,8,3,salary_down,3,샐러리 −3
+29,8,4,stat_flat,3,스탯 여섯 모두 +3
+30,8,5,card_swap,2:15,세 번째 파일럿 카드 교체
+31,9,1,stat_flat,2,스탯 여섯 모두 +2
+32,9,2,salary_down,3,샐러리 −3
+33,9,3,stat_growth,10,훈련 EXP +10%
+34,9,4,stat_flat,3,스탯 여섯 모두 +3
+35,9,5,card_swap,2:11,세 번째 파일럿 카드 교체
+36,10,1,salary_down,4,샐러리 −4
+37,10,2,stat_flat,3,스탯 여섯 모두 +3
+38,10,3,stat_flat,4,스탯 여섯 모두 +4
+39,10,4,stat_growth,12,훈련 EXP +12%
+40,10,5,card_swap,2:28,세 번째 파일럿 카드 교체
+41,11,1,stat_growth,10,훈련 EXP +10%
+42,11,2,stat_flat,2,스탯 여섯 모두 +2
+43,11,3,salary_down,3,샐러리 −3
+44,11,4,stat_flat,3,스탯 여섯 모두 +3
+45,11,5,card_swap,2:17,세 번째 파일럿 카드 교체
+46,12,1,stat_flat,4,스탯 여섯 모두 +4
+47,12,2,salary_down,6,샐러리 −6
+48,12,3,stat_growth,16,훈련 EXP +16%
+49,12,4,stat_flat,5,스탯 여섯 모두 +5
+50,12,5,card_swap,2:42,세 번째 파일럿 카드 교체
+51,13,1,salary_down,4,샐러리 −4
+52,13,2,stat_flat,3,스탯 여섯 모두 +3
+53,13,3,stat_flat,4,스탯 여섯 모두 +4
+54,13,4,stat_growth,12,훈련 EXP +12%
+55,13,5,card_swap,2:16,세 번째 파일럿 카드 교체
+56,14,1,stat_growth,14,훈련 EXP +14%
+57,14,2,stat_flat,3,스탯 여섯 모두 +3
+58,14,3,salary_down,5,샐러리 −5
+59,14,4,stat_flat,4,스탯 여섯 모두 +4
+60,14,5,card_swap,2:37,세 번째 파일럿 카드 교체
+61,15,1,stat_flat,3,스탯 여섯 모두 +3
+62,15,2,salary_down,4,샐러리 −4
+63,15,3,stat_growth,12,훈련 EXP +12%
+64,15,4,stat_flat,4,스탯 여섯 모두 +4
+65,15,5,card_swap,2:22,세 번째 파일럿 카드 교체
+66,16,1,salary_down,5,샐러리 −5
+67,16,2,stat_flat,3,스탯 여섯 모두 +3
+68,16,3,stat_flat,4,스탯 여섯 모두 +4
+69,16,4,stat_growth,14,훈련 EXP +14%
+70,16,5,card_swap,2:45,세 번째 파일럿 카드 교체
+71,17,1,stat_growth,16,훈련 EXP +16%
+72,17,2,stat_flat,4,스탯 여섯 모두 +4
+73,17,3,salary_down,6,샐러리 −6
+74,17,4,stat_flat,5,스탯 여섯 모두 +5
+75,17,5,card_swap,2:15,세 번째 파일럿 카드 교체
+76,18,1,stat_flat,3,스탯 여섯 모두 +3
+77,18,2,salary_down,4,샐러리 −4
+78,18,3,stat_growth,12,훈련 EXP +12%
+79,18,4,stat_flat,4,스탯 여섯 모두 +4
+80,18,5,card_swap,2:21,세 번째 파일럿 카드 교체
+81,19,1,salary_down,4,샐러리 −4
+82,19,2,stat_flat,3,스탯 여섯 모두 +3
+83,19,3,stat_flat,4,스탯 여섯 모두 +4
+84,19,4,stat_growth,12,훈련 EXP +12%
+85,19,5,card_swap,2:29,세 번째 파일럿 카드 교체
+86,20,1,stat_growth,12,훈련 EXP +12%
+87,20,2,stat_flat,3,스탯 여섯 모두 +3
+88,20,3,salary_down,4,샐러리 −4
+89,20,4,stat_flat,4,스탯 여섯 모두 +4
+90,20,5,card_swap,2:7,세 번째 파일럿 카드 교체
+91,21,1,stat_flat,3,스탯 여섯 모두 +3
+92,21,2,salary_down,5,샐러리 −5
+93,21,3,stat_growth,14,훈련 EXP +14%
+94,21,4,stat_flat,4,스탯 여섯 모두 +4
+95,21,5,card_swap,2:9,세 번째 파일럿 카드 교체
+96,22,1,salary_down,6,샐러리 −6
+97,22,2,stat_flat,4,스탯 여섯 모두 +4
+98,22,3,stat_flat,5,스탯 여섯 모두 +5
+99,22,4,stat_growth,16,훈련 EXP +16%
+100,22,5,card_swap,2:29,세 번째 파일럿 카드 교체
+101,23,1,stat_growth,12,훈련 EXP +12%
+102,23,2,stat_flat,3,스탯 여섯 모두 +3
+103,23,3,salary_down,4,샐러리 −4
+104,23,4,stat_flat,4,스탯 여섯 모두 +4
+105,23,5,card_swap,2:1,세 번째 파일럿 카드 교체
+106,24,1,stat_flat,3,스탯 여섯 모두 +3
+107,24,2,salary_down,5,샐러리 −5
+108,24,3,stat_growth,14,훈련 EXP +14%
+109,24,4,stat_flat,4,스탯 여섯 모두 +4
+110,24,5,card_swap,2:16,세 번째 파일럿 카드 교체
+111,25,1,salary_down,3,샐러리 −3
+112,25,2,stat_flat,2,스탯 여섯 모두 +2
+113,25,3,stat_flat,3,스탯 여섯 모두 +3
+114,25,4,stat_growth,10,훈련 EXP +10%
+115,25,5,card_swap,2:44,세 번째 파일럿 카드 교체
+116,36,1,stat_flat,2,스탯 여섯 모두 +2
+117,36,2,salary_down,3,샐러리 −3
+118,36,3,stat_growth,10,훈련 EXP +10%
+119,36,4,stat_flat,3,스탯 여섯 모두 +3
+120,36,5,card_swap,2:43,세 번째 파일럿 카드 교체
+121,39,1,stat_flat,2,스탯 여섯 모두 +2
+122,39,2,salary_down,3,샐러리 −3
+123,39,3,stat_growth,10,훈련 EXP +10%
+124,39,4,stat_flat,3,스탯 여섯 모두 +3
+125,39,5,card_swap,2:21,세 번째 파일럿 카드 교체

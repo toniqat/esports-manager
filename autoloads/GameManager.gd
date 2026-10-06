@@ -11,6 +11,7 @@ var match_ctx: Dictionary = {
 	"player_side":   GameEnums.DraftSide.BLUE,
 	"banned_mech_ids": [],     # Array[int]
 	"all_mechs":      [],      # Array[MechData]
+	"traits":         [],      # M8 — Array[{id, key, p1, p2}], my team only
 }
 
 
@@ -23,6 +24,9 @@ func reset_match_ctx() -> void:
 		"player_side":   GameEnums.DraftSide.BLUE,
 		"banned_mech_ids": [],
 		"all_mechs":      [],
+		# M8 — 내 팀의 인게임 특성 `[{id, key, p1, p2}]`(`TraitSystem.ingame_traits`).
+		# 비어 있으면 BattleSim 은 특성 없이 지금과 똑같이 돈다.
+		"traits": [],
 		# 오브젝트 오판 확률 — MatchFlow 가 상대 리그 순위로 매긴다
 		# (`OBJ_MISJUDGE_MIN` ~ `OBJ_MISJUDGE_MAX`). 기본값은
 		# `ObjectiveSystem.AI_MISJUDGE_DEFAULT` 와 같은 const.csv 키.
@@ -217,8 +221,23 @@ func start_run(run_setup: Dictionary) -> String:
 	var raw_levels: Dictionary = run_setup.get("pilot_levels", {})
 	for pid in pilot_ids:
 		levels[str(pid)] = int(raw_levels.get(str(pid), 1))
+
+	# M8 / M9 — manager preset (stats + traits). `run_setup.preset` = profile preset index.
+	var mgr_setup: Dictionary = _manager_setup_for_run(int(run_setup.get("preset", -1)))
+	if String(mgr_setup.get("error", "")) != "":
+		return String(mgr_setup["error"])
+	var traits: Array = mgr_setup["traits"]
+	# M10 — breakthroughs of **my five only** (an unpicked owned pilot goes to an AI
+	# team at its base strength). Applied before validation: `salary_down` moves the cap.
+	var bts: Dictionary = {}
+	var owned_bts: Dictionary = _owned_breakthroughs_for_run()
+	for pid in pilot_ids:
+		if owned_bts.has(str(pid)):
+			bts[str(pid)] = int(owned_bts[str(pid)])
+	RunRules.apply_breakthroughs(pool, bts)
+
 	var err: String = RunRules.validate_lineup(pilot_ids, levels, scenario_id, pool,
-			_owned_levels_for_run(pool))
+			_owned_levels_for_run(pool), TraitSystem.sum_p1(traits, "salary_cap"))
 	if err != "":
 		return err
 
@@ -258,18 +277,60 @@ func start_run(run_setup: Dictionary) -> String:
 		"team_id": team_id,
 		"pilot_ids": ordered_ids,
 		"pilot_levels": applied_levels,
-		"salary_cap": RunRules.salary_cap(scenario_id),
+		"salary_cap": RunRules.salary_cap_with(scenario_id, traits),
 		"salary_total": RunRules.lineup_salary(picked, applied_levels),
+		# M8 / M9 / M10 — §12.
+		"preset": int(mgr_setup["preset"]),
+		"traits": traits,
+		"bonus_points": TraitSystem.bonus_points(traits),
+		"pilot_breakthrough": bts,
 	}
 	# M3 — 감독 스탯 · 팀 스태프 스냅샷(`StaffSystem.snapshot_for_run`): run_setup
 	# 에 `manager_type` / `manager_stats` / `staff` 가 더해진다. 런 중 바뀌지 않는다.
+	# M9 — 감독 스탯은 프리셋 값(+ `manager_all` 특성).
 	(season_state["run_setup"] as Dictionary).merge(
-			StaffSystem.snapshot_for_run(team_id, _manager_type_for_run()), true)
+			StaffSystem.snapshot_for_run(team_id, _manager_type_for_run(),
+				mgr_setup["manager_stats"]), true)
 	# M4 · M6 · M7 — 런 한정 상태의 초기값.
 	MechMastery.init_run(season_state)
 	FinanceSystem.init_run(season_state, team_id)
 	MentalSystem.init_run(season_state)
 	return ""
+
+
+# M8 / M9 — the manager side of a run from profile preset `preset_idx` (-1 = active).
+# → `{preset, traits: Array[int], manager_stats: {stat: int}}` or `{error}`.
+# Stats = `ManagerProgress.preset_stats` + the `manager_all` traits (clamped by
+# `StaffSystem.snapshot_for_run`). An invalid preset is an error for a real run; a
+# test run (editor direct launch) falls back to no traits and the type's stats.
+func _manager_setup_for_run(preset_idx: int) -> Dictionary:
+	var pm: Node = get_node_or_null("/root/ProfileManager")
+	if pm == null:
+		return {"preset": -1, "traits": [], "manager_stats": {}}
+	var prof: Dictionary = pm.profile
+	var idx: int = ManagerProgress.active_index(prof) if preset_idx < 0 else preset_idx
+	var preset: Dictionary = ManagerProgress.preset_at(prof, idx)
+	var perr: String = ManagerProgress.validate_preset(prof, preset, pm.owned_trait_ids())
+	if perr != "":
+		if not use_test_run:
+			return {"error": "감독 프리셋: " + perr}
+		return {"preset": idx, "traits": [], "manager_stats": ManagerProgress.base_stats(prof)}
+	var traits: Array = []
+	for raw in (preset.get("traits", []) as Array):
+		traits.append(int(raw))
+	var stats: Dictionary = ManagerProgress.preset_stats(prof, preset)
+	var all_bonus: int = TraitSystem.sum_p1(traits, "manager_all")
+	for s in stats.keys():
+		stats[s] = int(stats[s]) + all_bonus
+	return {"preset": idx, "traits": traits, "manager_stats": stats}
+
+
+# M10 — breakthrough stages for the run (test runs: none).
+func _owned_breakthroughs_for_run() -> Dictionary:
+	if use_test_run:
+		return {}
+	var pm: Node = get_node_or_null("/root/ProfileManager")
+	return pm.owned_breakthroughs() if pm != null else {}
 
 
 # 런에 쓸 감독 타입 — 프로필의 `manager.type`(첫 프로필 생성 때 로비가 고른다).
@@ -328,6 +389,7 @@ func default_run_setup(team_id: int = 0) -> Dictionary:
 		"pilot_levels": levels,
 		"salary_cap": RunRules.salary_cap(scenario_id),
 		"salary_total": 0,   # start_run 이 다시 낸다
+		"preset": -1,        # 활성 프리셋
 	}
 
 

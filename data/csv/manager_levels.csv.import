@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://cmfy8odvh6s40"
+
+[deps]
+
+files=["res://data/csv/manager_levels.exp.translation"]
+
+source_file="res://data/csv/manager_levels.csv"
+dest_files=["res://data/csv/manager_levels.exp.translation"]
+
+[params]
+
+compress=true
+delimiter=0

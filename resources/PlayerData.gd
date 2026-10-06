@@ -92,6 +92,11 @@ static var STAT_MIN: int = ConstTable.int_of("PLAYER_STAT_MIN")
 # 주력 메크 `mechs.id` 목록(`players.main_mechs`, M4). 런 시작 메크 숙련도가
 # 이 메크들만 높게 시작한다(`MechMastery.init_run`).
 @export var main_mechs: Array = []
+# M10 — breakthrough stage 0..5 applied to this copy (`RunRules.apply_breakthrough`
+# already folded its stat / salary / card effects into the fields above).
+@export var breakthrough: int = 0
+# M10 — extra training EXP % from the `stat_growth` breakthrough (TrainingBoard multiplies).
+@export var train_bonus_pct: int = 0
 
 # Set during the assign phase: which mech this player is piloting this match.
 var assigned_mech: MechData = null

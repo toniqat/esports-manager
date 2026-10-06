@@ -7,12 +7,32 @@ theme (`OutgameTheme`), bottom action bar. Replaces the old 3-slot TitleScreen
 ## Files
 | File | Class | Purpose |
 |---|---|---|
-| `LobbyScreen.gd` | `extends Control` (scene only) | Builds the lobby, routes continue / new run |
+| `LobbyScreen.gd` | `class_name LobbyScreen extends Control` (scene root) | **Tab host** (M8~M10): currency strip, tab bar, per-tab action bar, toast, confirm popup, manager type popup |
+| `HomeTab.gd` | `class_name HomeTab extends Control` | 홈 tab — run card, continue / new run / abandon (the old lobby body) |
 | `ConfirmPopup.gd` | `class_name ConfirmPopup extends CanvasLayer` | Reusable modal confirm (dim + white card + cancel / confirm) |
 | `ManagerTypePopup.gd` | `class_name ManagerTypePopup extends CanvasLayer` | First-lobby manager type pick (운영형 / 실전형), not dismissible (M3) |
 
-## LobbyScreen
-- `_ready` sets **`GameManager.use_test_run = false`** first — runs entered through the
+## Tab host (M8~M10) — `docs/outgame_dev_plan.md` §12.6
+```
+┌ currency strip (CURRENCY_H) — outgame · levelup · tickets · shards ┐
+│ tab body (current tab's Control)                                   │
+├ action bar (only when the tab's bar_specs() is non-empty)          ┤
+└ tab bar (홈 · 컬렉션 · 감독 · 상점 · 패스), extends into the bottom inset ┘
+```
+- `TABS` is the one table; `_make_tab(id)` builds `HomeTab` / `CollectionTab` / `ManagerTab` /
+  `ShopTab` / `PassTab` lazily on first open, then hides / shows.
+- Tab duck-typed contract: `bar_specs() -> Array` (fixed has-bar / no-bar per tab), `setup(host)`,
+  `on_bar_pressed(i)`, `on_shown()` (every activation — redraw from the profile).
+- Host services: `show_toast(msg, is_error)`, `refresh_currency()`, `rebuild_bar()` / `relayout_bar()` /
+  `bar_buttons()`, `switch_tab(id)`, `set_tab_badge(id, on)` / `refresh_badges()` (감독 = unseen
+  unlocked traits), `open_confirm(title, body, cancel, confirm, danger, callback)`.
+- **Bottom-bar exception**: only the lobby puts the tab bar at the very bottom; the action bar
+  (`OutgameTheme.add_bottom_bar` specs, weights, primary on the right) is lifted on top of it
+  (`action_bar_top()`), its bottom inset padding removed.
+- Static layout helpers: `tab_bar_top()`, `action_bar_top()`, `content_rect(has_bar)`.
+
+## HomeTab (was LobbyScreen body)
+- The host's `_ready` sets **`GameManager.use_test_run = false`** first — runs entered through the
   lobby save to `user://run.save`; direct editor runs of Season / MatchFlow keep `true`
   and save to the hidden `user://run_test.save`.
 - Run exists (`SaveSystem.has_run()`) → run card from `SaveSystem.read_run_meta()`:
@@ -29,7 +49,7 @@ theme (`OutgameTheme`), bottom action bar. Replaces the old 3-slot TitleScreen
   `RunResult.settle_current_run("abandon")` (writes the profile, deletes `run.save`) →
   `RunResult.SCENE_PATH`, whose `새 런` goes on to `RunSetup.tscn` (`../run_result/README.md`).
   Load fails (corrupt run) → warning, `delete_run()` and straight to a new run without settlement.
-- Later milestones add menu entries (컬렉션 / 감독 / 특성 / 상점) below the run card.
+- A summary line under the title: manager level · owned pilots · owned traits.
 
 ## ConfirmPopup
 `open(title, body, cancel_text, confirm_text, danger)`, `close()`, `is_open()`;

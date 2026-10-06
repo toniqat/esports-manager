@@ -82,17 +82,21 @@ static func team_staff_ids(team_id: int) -> Array:
 
 
 # ── Run snapshot ─────────────────────────────────────────────────────────────
-## The piece merged into `run_setup` at run start. Manager stats = the type's initial
-## values (no specialisation until M9); staff = the team's initial staff as-is
+## The piece merged into `run_setup` at run start. Manager stats = `manager_stats`
+## when given (M9 — the preset's stats incl. trait bonuses, `GameManager.start_run`),
+## else the type's initial values; staff = the team's initial staff as-is
 ## (nobody leaves during a run).
 ## → `{manager_type, manager_stats{stat: int}, staff: [{id, name, job, stats{}, salary}]}`
-static func snapshot_for_run(team_id: int, manager_type: int) -> Dictionary:
+static func snapshot_for_run(team_id: int, manager_type: int, manager_stats: Dictionary = {}) -> Dictionary:
 	var row: Dictionary = manager_type_row(manager_type)
 	if row.is_empty() and not manager_types().is_empty():
 		row = manager_types()[0]
 	var mstats: Dictionary = {}
 	for s in STATS:
-		mstats[s] = clampi(int((row.get("stats", {}) as Dictionary).get(s, STAT_MIN)), STAT_MIN, STAT_MAX)
+		var v: int = int((row.get("stats", {}) as Dictionary).get(s, STAT_MIN))
+		if manager_stats.has(s):
+			v = int(manager_stats[s])
+		mstats[s] = clampi(v, STAT_MIN, STAT_MAX)
 	var staff: Array = []
 	for sid in team_staff_ids(team_id):
 		var e: Dictionary = staff_row(int(sid))
@@ -187,13 +191,14 @@ static func weekly_salary_total(state: Dictionary) -> int:
 
 ## Analysis reveal tier 0..3 — how many `ANALYSIS_TIER_1..3` (const.csv) thresholds are met.
 ## 0 = name · role, 1 = + rough stats, 2 = + top-mastery mechs, 3 = + pilot cards.
+## M8 — the `analysis_tier` traits shift the result (clamped 0..3).
 static func analysis_tier(state: Dictionary) -> int:
 	var v: int = effective(state, "analysis")
 	var tier: int = 0
 	for i in range(1, 4):
 		if v >= ConstTable.int_of("ANALYSIS_TIER_%d" % i):
 			tier = i
-	return tier
+	return clampi(tier + TraitSystem.run_mod(state, "analysis_tier"), 0, 3)
 
 
 # ── Temporary mods ───────────────────────────────────────────────────────────

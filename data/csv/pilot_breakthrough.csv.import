@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://c610u2cg1jync"
+
+[deps]
+
+files=["res://data/csv/pilot_breakthrough.pilot.translation", "res://data/csv/pilot_breakthrough.stage.translation", "res://data/csv/pilot_breakthrough.kind.translation", "res://data/csv/pilot_breakthrough.value.translation", "res://data/csv/pilot_breakthrough.desc.translation"]
+
+source_file="res://data/csv/pilot_breakthrough.csv"
+dest_files=["res://data/csv/pilot_breakthrough.pilot.translation", "res://data/csv/pilot_breakthrough.stage.translation", "res://data/csv/pilot_breakthrough.kind.translation", "res://data/csv/pilot_breakthrough.value.translation", "res://data/csv/pilot_breakthrough.desc.translation"]
+
+[params]
+
+compress=true
+delimiter=0

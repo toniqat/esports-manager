@@ -3,7 +3,7 @@
 > 작성일 2026-10-06 · 원본 기획 `docs/esports-manager-outgame.md`
 > 대상 `autoloads/` · `features/save_load/` · `features/season/` · `features/match_flow/`
 > · `features/battle_sim/`(특성 훅만) · `data/csv/` · `resources/`
-> 상태: **진행 중 — M0 ~ M7 완료, 다음 M8.** 정식 문서는 `CLAUDE.md` / 각 폴더 `README.md` 이며, 이 파일은
+> 상태: **진행 중 — M0 ~ M7 완료, M8 ~ M10 개발 중(§12 계약).** 정식 문서는 `CLAUDE.md` / 각 폴더 `README.md` 이며, 이 파일은
 > 마일스톤이 끝날 때마다 맨 아래 **§9 구현 기록**에 달라진 점을 적는 이력 문서다.
 
 ---
@@ -125,9 +125,9 @@ effective(stat) = max(감독[stat] + 일시 보정, 어시스턴트[stat], 담�
 | M5 분석 — 상대 전력 | ✅ 완료 | 2026-10-06 | §9 구현 기록 · §11 계약 |
 | M6 관리 — 예산 · 시설 | ✅ 완료 | 2026-10-06 | §9 구현 기록 · §11 계약 |
 | M7 멘탈 | ✅ 완료 | 2026-10-06 | §9 구현 기록 · §11 계약 |
-| M8 감독 특성 | ⬜ 대기 | | |
-| M9 감독 성장 | ⬜ 대기 | | |
-| M10 수집 경제 | ⬜ 대기 | | |
+| M8 감독 특성 | 🔧 개발 중 | | §12 계약 |
+| M9 감독 성장 | 🔧 개발 중 | | §12 계약 |
+| M10 수집 경제 | 🔧 개발 중 | | §12 계약 |
 | M11 서버 (범위 밖) | — | | |
 
 ### M0. 세이브 구조 전환 — 프로필 1 + 런 1 ✅
@@ -302,7 +302,7 @@ effective(stat) = max(감독[stat] + 일시 보정, 어시스턴트[stat], 담�
 | 4 | ~~캡 · 레벨 수치~~ — 자리표시 값으로 확정(`scenarios.csv` · `pilot_levels.csv` · `players.salary`) | M1 |
 | 5 | 점수 · 재화 공식 — 자리표시(`RUN_*` const 키), 감독 EXP 곡선은 M9 | M2 / M9 |
 | 6 | ~~잔고 음수(예산 파산) 처리~~ — **음수 불가, 지출 강제 삭감**(§11) | M6 |
-| 7 | 첫 특성 묶음 목록(기본 제공 · 해금형 · 인게임 훅) | M8 |
+| 7 | ~~첫 특성 묶음 목록~~ — **24종**(`traits.csv`, §12) | M8 |
 | 8 | ~~감독 타입별 초기 스탯, 감독 스탯 총합~~ — 1~20 척도, 자리표시(`manager_types.csv`, 총합 36) | M3 |
 | 9 | 6대회 전승 필수로 난이도가 급격히 높아지는 점 — 저예산 팀 · 저캡 시나리오 밸런스 점검 필요 | M2 이후 |
 | 10 | ~~신규 폴더 구조(§2.2) 승인~~ — **승인됨**(M0, 2026-10-06) | M0 착수 시 |
@@ -525,3 +525,113 @@ CSV · `const.csv` · `game.db` 는 기반 커밋 소유 — 작업 중 값 조�
 
 - 기반 소유 파일(`SeasonHub` · `HubView` · `GameManager` · `SaveSystem` · `ProfileManager` · `StaffSystem` · `PilotMods` · `csv_to_db.gd` · `HubSheet`)은 **고치지 않는다.** 꼭 필요하면 최소 수정 + 보고.
 - `const.csv` 는 **자기 접두사 키를 맨 끝에 추가**만. `data/game.db` · `data/csv/*.translation` 은 **커밋하지 않는다**(로컬 재빌드는 자유 — 커밋 전 `git checkout` 으로 되돌림). 병합 후 한 번 다시 굽는다.
+
+---
+
+## 12. M8~M10 작업 계약 (2026-10-06 확정, 병렬 개발용)
+
+기반 커밋이 데이터 표 · 프로필 v2 스키마와 API · 순수 규칙 모듈(`TraitSystem` ·
+`ManagerProgress` · `PassSystem` · `RunRules` 돌파/레벨업) · 런 시작 / 정산 / match_ctx 연결 ·
+**탭 로비 뼈대**(+ 탭 스텁)를 먼저 넣었다. 기능 작업은 **스텁을 채우고 자기 화면을 만든다** —
+시그니처를 바꾸지 않는다(바꿔야 하면 보고에 적는다).
+
+### 12.0 결정 (질의응답)
+| 항목 | 결정 |
+|---|---|
+| 특성 묶음 | **24종** — 긍정 14(아웃게임 9 · 인게임 5) + 부정 10(아웃게임 7 · 인게임 3), 레어리티 0..4, 기본 보유 6종(`default_owned`). 수치 자리표시 |
+| 장착 | **프리셋 + 런 준비 단계** — 로비 `감독` 탭에서 프리셋(전문화 분배 + 특성) 편집, 런 준비에 `감독` 단계(팀 다음 · 편성 앞)에서 프리셋 고르기 · 그 자리 특성 교체(= 그 프리셋을 고쳐 저장). 보너스 점수 < 0 이면 `다음` 비활성 |
+| 장착 칸 | `TRAIT_SLOTS` 칸(긍정 · 부정 합산), 프레스티지와 무관 |
+| 보너스 점수 | Σ부정 `bonus_cost` − Σ긍정 `bonus_cost`, **런 점수에 비례 가산**: `breakdown.bonus = bonus × RUN_SCORE_PER_BONUS` |
+| 특성 획득 | 기본 보유 · **런 조건 해금**(정산에서 판정, 다음 런부터) · 특성 가챠 · 제작(M10) |
+| 인게임 훅 | **개시 + 턴 중 일부**: 개시 전략 포인트 · 첫 드로우 · 손패 상한 · 작전 단계 첫 카드 비용 · N턴마다 전략 포인트. **내 팀만**(AI 무특성) |
+| 감독 성장 | 레벨업마다 **제거 포인트** `MANAGER_REMOVE_PER_LEVEL` → 스탯 하나 −1(1 이면 불가, **영구 — 프레스티지까지**) → **전문화 포인트** +1 → 프리셋마다 자유 분배(붙였다 뗐다). 총합 불변 |
+| 감독 스탯 상한 | **15**(`MANAGER_STAT_CAP`) — 분배 후 값. 일시 보정 · `manager_all` 특성은 런 안에서 20 까지 |
+| 감독 EXP | 기존 정산 EXP(점수 × 계수) + `manager_levels.csv`(1..25 누적) |
+| 프레스티지 | **시즌 제한 없음**(Lv `PRESTIGE_LEVEL`). 레벨 · EXP · 제거 초기화, **타입 재선택**, 기존 프리셋 → 프레스티지 프리셋(재설정 전 사용 불가), 새 일반 프리셋 +1(최대 `PRESET_MAX_COUNT`) 자동 장착, **재화 보상** `PRESTIGE_REWARD_*` |
+| 프리셋 | 기본 `PRESET_BASE_COUNT`개 |
+| 재화 | **8종 전부**: outgame(런 정산) · levelup(정산 + 상점) · 가챠권 2종 · trait_mat(특성 중복 · 패스) · cosmetic(패스, 기록만) · premium(로컬 숫자, 개발용 버튼) · pilot_shard(돌파 끝 중복) |
+| 선수 가챠 | 네임드 25인, **등급별 가중치**(`gacha_rates.csv`). 중복 → 돌파 1..5 → 그 뒤 파편(× 등급). 파편으로 원하는 선수 **확정 구매** |
+| 돌파 | **선수별 표**(`pilot_breakthrough.csv`, 25 × 5). 종류 stat_flat · salary_down · stat_growth · card_swap |
+| 선수 레벨업 | **둘 다** — 런 출전 EXP 로 최대 레벨 자동 상승(`pilot_levels.exp_required`) + 레벨업 재화로 +1(`levelup_cost`) |
+| 주간패스 | `pass_rewards.csv` 25단, 런 점수 → 패스 EXP, 레벨당 고정 EXP, **수동 수령**, 26+ 는 아웃게임 재화, ISO 주(기기 시각) 리셋 |
+| 로비 | **하단 탭 내비게이션**(홈 · 컬렉션 · 감독 · 상점 · 패스) + 탭 바 위 행동 바, 위 재화 줄 |
+| 개발 방식 | 기반 커밋 + 기능별 워크트리 5개 병렬 → 병합. 검증 = 헤드리스 + 창 스크린샷 |
+
+### 12.1 프로필 v2 (`ProfileManager`, `PROFILE_VERSION` 2)
+v1 을 읽으면 빠진 칸이 기본값으로 채워진다(프리셋 5개로 패딩, `manager.removed` · 컬렉션 `exp` · 특성 int).
+**M8 이후 변경 함수는 저장하지 않는다** — 화면이 한 조작 끝에 `save_profile()`.
+| 키 | 모양 | 규칙 소유 |
+|---|---|---|
+| `manager.removed` | `{stat: int}` 영구 제거 | `ManagerProgress` |
+| `presets` · `active_preset` | `[{kind: normal\|prestige, alloc: {stat: int}, traits: [id]}]` · int | `ManagerProgress` |
+| `traits.owned` · `.unlocked_pending` | `[id]` · `[id]`(새로 해금 · 아직 안 본 것 — 감독 탭 배지) | `ProfileManager.grant_trait` |
+| `collection[pid]` | `{owned, max_level, breakthrough, dupes, exp}` | `ProfileManager.grant_pilot / add_pilot_exp / level_up_pilot` |
+| `currency` | 8종 int | `currency_of / add_currency / spend_currency` |
+| `pass` | `{week_id, exp, claimed: [lv], overflow}` | `PassSystem` |
+
+API(기반 완성): `grant_pilot(pid)` → `{result: new|breakthrough|shard, stage, shards}` · `grant_trait(id)` →
+`{result: new|material, amount}` · `level_up_cost(pid)` / `level_up_pilot(pid)` · `add_pilot_exp` ·
+`owned_trait_ids` · `owned_breakthroughs` · `breakthrough_of` · `pilot_rarity`.
+
+### 12.2 런 시작 · run_setup 추가 키
+`run_setup.preset`(-1 = 활성 프리셋)만 화면이 보낸다. `GameManager.start_run` 이 프리셋을 검증
+(`ManagerProgress.validate_preset`, 실패 = 시작 거절 · 테스트 런은 특성 없이 진행)하고 스냅샷한다:
+`preset` · `traits: [id]` · `bonus_points` · `pilot_breakthrough: {"<pid>": stage}`(내 5인만) ·
+`salary_cap`(= `RunRules.salary_cap_with`) · `manager_stats`(= 프리셋 값 + `manager_all`).
+돌파는 **내 5인에게만** 적용된다(안 뽑은 보유 선수는 AI 팀에 원래 세기로 간다).
+
+### 12.3 특성 효과 키 (`traits.key`, p1 합산)
+| key | 층 | 읽는 곳 (소유) | 뜻 |
+|---|---|---|---|
+| `train_exp_pct` | out | `TrainingBoard.cell_exp` (A) | 훈련 EXP ×(1 + Σ/100). 같은 자리에서 `PlayerData.train_bonus_pct`(돌파) 도 곱한다 |
+| `mastery_pct` | out | `MechMastery.gain_mult` (A) | 내 선수 숙련도 획득 % |
+| `income_pct` | out | `FinanceSystem.settle_week` 스폰서 (A) | 주간 스폰서 수입 % |
+| `upkeep_pct` | out | `FinanceSystem` 유지비 (A) | 시설 유지비 % |
+| `trust_gain` | out | `MentalSystem.add_trust` (A) | 신뢰도가 **오를 때** ±Σ(오름이 0 아래로 가지 않게) |
+| `incident_pct` | out | `MentalSystem` 사건 확률 (A) | 사건 확률 % |
+| `analysis_tier` | out | `StaffSystem.analysis_tier` (기반 ✅) | 공개 단계 ±, 0..3 |
+| `salary_cap` | out | `RunRules.salary_cap_with` (기반 ✅) | 캡 ± |
+| `manager_all` | out | `GameManager._manager_setup_for_run` (기반 ✅) | 감독 스탯 여섯 + |
+| `open_cost` | in | `BattleSim.seed_side_costs` (B) | 개시 내 전략 포인트 + |
+| `first_draw` | in | 첫 자동 드로우 (B) | 그 드로우 장수 ±(0 미만 없음) |
+| `hand_size` | in | 내 손패 상한 (B) | ± |
+| `first_card_cost` | in | `BattleSim.effective_cost_for` (B) | 작전 단계마다 내 첫 카드 비용 ±(0 미만 없음) |
+| `cost_tick` | in | BATTLE 틱 (B) | `ECONOMY_START_TURN` 부터 p2 턴마다 내 전략 포인트 +p1 |
+
+아웃게임은 `TraitSystem.run_mod(state, key)` / `run_pct_mult(state, key)`, 인게임은
+`match_ctx.traits = [{id, key, p1, p2}]`(비면 BattleSim 은 지금과 같다).
+
+### 12.4 해금 조건 문법 (`traits.unlock`, `TraitSystem.evaluate_unlocks` — A)
+정산 결과 `result` · `season_state` · 프로필로 판정, 이미 보유한 특성은 빼고 돌려준다.
+`clear` · `wins:N` · `titles:N` · `phase:N`(`phases_cleared` ≥ N) · `win_streak:N`(`run_stats.matches` 의
+최장 연승) · `outings:N`(내 선수 외출 최대) · `mvp:N`(이번 런 내 MVP 합) · `finance_manual_profit:N`
+(관리 담당이 감독일 때 흑자 주 수 — `finance.manual_profit_weeks`, A 가 셈) · `true_ending` ·
+`runs:N`(프로필 런 수 + 이번 런) · `team:T`(팀 T 로 한 페이즈 이상 끝냄) · `bonus:N`(보너스 ≥ N 으로
+한 페이즈 이상 끝냄). 테스트 런은 프로필이 비어 런 조건만 본다.
+
+### 12.5 정산 결과 추가 키 (`RunResult.build_result` → `ProfileManager.apply_run_result`)
+`currency: {outgame, levelup}` · `pass_exp` · `pilot_exp: {"<pid>": n}`(경기 · 승 · MVP) ·
+`unlocked_traits: [id]` · `bonus_points` + `breakdown.bonus`. 반영 후 `result.profile_delta =
+{manager: {from, to}, pilots: {"<pid>": {from, to}}, pass: {from, to, overflow_outgame}, traits: [id]}` —
+정산 화면(A)이 그린다.
+
+### 12.6 로비 탭 계약 (`features/meta/lobby/LobbyScreen.gd` 머리말)
+탭 = `extends Control` + `bar_specs()` · `setup(host)` · `on_bar_pressed(i)` · `on_shown()`.
+host 서비스: `show_toast` · `refresh_currency` · `rebuild_bar` · `relayout_bar` · `bar_buttons` ·
+`switch_tab` · `set_tab_badge` · `refresh_badges` · `open_confirm`. 탭 본문 rect 는 host 가 정한다
+(재화 줄 아래 ~ 행동 바 / 탭 바 위). 팝업은 탭이 자기 CanvasLayer 로 띄운다.
+
+### 12.7 파일 소유 (병렬 작업)
+| 작업 | 소유 |
+|---|---|
+| **A · M8 특성 아웃게임 · 해금 · 정산 화면** | `TraitSystem.evaluate_unlocks` 몸통 + `features/meta/traits/README.md`, `features/season/training/TrainingBoard.gd`(배율), `features/season/mastery/MechMastery.gd`, `features/season/finance/FinanceSystem.gd`, `features/season/mental/MentalSystem.gd`, `features/season/staff/StaffPanel.gd`(장착 특성 표시), `features/meta/run_result/RunResultScreen.gd` + README, const `TRAIT_*`(새 키) |
+| **B · M8 인게임 훅** | `features/battle_sim/trait/*`(신규 `TraitHooks.gd` + README), `BattleSim.gd` · `card_phase/*` 의 훅 자리(최소), `ui/*`(장착 특성 표시, 선택), `features/battle_sim/README.md` 모듈 표, const `TRAITHOOK_*` |
+| **C · M8/M9 감독 탭 · 런 준비 감독 단계** | `features/meta/manager/*`(ManagerTab, 프리셋 · 분배 · 특성 장착 · 레벨 · 프레스티지, README; `ManagerProgress` 는 함수 추가만), `features/meta/run_setup/*`(**`DraftDetailPanel.gd` 제외**: 감독 단계, 편성 캡 = `salary_cap_with` + `validate_lineup` 의 `cap_bonus`, `build_run_setup.preset`), `features/meta/lobby/ManagerTypePopup.gd`(프레스티지 재선택 모드) |
+| **D · M10 컬렉션** | `features/meta/collection/*`(CollectionTab, 선수 상세 · 레벨업 · 돌파 표, README), `features/meta/run_setup/DraftDetailPanel.gd`(돌파 단계 표시) |
+| **E · M10 상점 · 패스** | `features/meta/shop/*`(ShopTab: 선수 · 특성 가챠 · 파편 확정 구매 · 특성 제작 · 재화 교환 · 개발용 유료 재화, `Gacha.gd`, PassTab, `PassSystem.claim` 몸통, README), const `GACHA_*` · `SHOP_*` |
+
+- 기반 소유(`ProfileManager` · `GameManager` · `RunRules` · `RunResult.gd` · `SaveSystem` · `StaffSystem` ·
+  `LobbyScreen` · `HomeTab` · `TraitSystem`(해금 몸통 제외) · `PassSystem`(claim 제외) · `csv_to_db.gd`)은
+  **고치지 않는다**. 꼭 필요하면 최소 수정 + 보고.
+- `const.csv` 는 **자기 접두사 키를 맨 끝에 추가**만. `data/game.db` · `data/csv/*.translation` 은
+  **커밋하지 않는다**(로컬 재빌드는 자유 — 커밋 전 `git checkout` 으로 되돌림). 병합 후 한 번 다시 굽는다.

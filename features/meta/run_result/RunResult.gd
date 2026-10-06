@@ -95,20 +95,24 @@ static func build_result(state: Dictionary, outcome: String, test_run: bool) -> 
 	var losses: int = int(record["losses"])
 	var titles: int = count_titles(state)
 	var cleared: bool = outcome == OUTCOME_CLEAR
-	var bonus_points: int = 0   # 감독 특성 보너스 점수 — M8 에서 채운다.
+	# M8 — 감독 특성 보너스 점수(런 시작 스냅샷). 점수 = 보너스 × RUN_SCORE_PER_BONUS.
+	var bonus_points: int = maxi(0, int(run_setup.get("bonus_points", 0)))
 
 	var breakdown: Dictionary = {
 		"phase":  phases_cleared * ConstTable.int_of("RUN_SCORE_PER_PHASE"),
 		"wins":   wins * ConstTable.int_of("RUN_SCORE_PER_WIN"),
 		"titles": titles * ConstTable.int_of("RUN_SCORE_PER_TITLE"),
 		"clear":  ConstTable.int_of("RUN_SCORE_CLEAR_BONUS") if cleared else 0,
-		"bonus":  bonus_points,
+		"bonus":  bonus_points * ConstTable.int_of("RUN_SCORE_PER_BONUS"),
 	}
 	var score: int = 0
 	for k in breakdown.keys():
 		score += int(breakdown[k])
 	var currency: int = int(floor(score * ConstTable.num("RUN_CURRENCY_PER_SCORE") + _FLOOR_EPS))
 	var manager_exp: int = int(floor(score * ConstTable.num("RUN_MGR_EXP_PER_SCORE") + _FLOOR_EPS))
+	# M10 — levelup currency and weekly-pass exp scale with the score too.
+	var levelup: int = int(floor(score * ConstTable.num("RUN_LEVELUP_PER_SCORE") + _FLOOR_EPS))
+	var pass_exp: int = int(floor(score * ConstTable.num("PASS_EXP_PER_SCORE") + _FLOOR_EPS))
 
 	var mine: Array = my_pilot_ids(state)
 	var mvp: Dictionary = {}
@@ -147,8 +151,11 @@ static func build_result(state: Dictionary, outcome: String, test_run: bool) -> 
 		"titles": titles,
 		"score": score,
 		"bonus_points": bonus_points,
-		"currency": {"outgame": currency},
+		"currency": {"outgame": currency, "levelup": levelup},
 		"manager_exp": manager_exp,
+		# M10 — §12.
+		"pass_exp": pass_exp,
+		"pilot_exp": pilot_exp_for(state, mine),
 		"mvp": mvp,
 		"pom": pom,
 		"achievements": achievements,
@@ -167,7 +174,35 @@ static func build_result(state: Dictionary, outcome: String, test_run: bool) -> 
 	# Present **only on a clear** (`ProfileManager.apply_run_result` records them).
 	if cleared:
 		result["true_endings"] = MentalSystem.true_ending_pilots(state)
+	# M8 — traits whose unlock condition this run met (granted by apply_run_result).
+	var pm: Node = _autoload("ProfileManager")
+	var prof: Dictionary = pm.profile if pm != null and not test_run else {}
+	result["unlocked_traits"] = TraitSystem.evaluate_unlocks(state, result, prof)
 	return result
+
+
+## M10 — pilot exp per my pilot `{"<pid>": int}`: every recorded match
+## (`run_stats.matches`) × `PILOT_EXP_PER_MATCH`, + `PILOT_EXP_PER_WIN` per win,
+## + `PILOT_EXP_PER_MVP` per match MVP.
+static func pilot_exp_for(state: Dictionary, mine: Array) -> Dictionary:
+	var run_stats: Dictionary = _dict(state.get("run_stats", {}))
+	var played: int = 0
+	var won: int = 0
+	var mvps: Dictionary = {}
+	for raw in (run_stats.get("matches", []) as Array):
+		var m: Dictionary = _dict(raw)
+		played += 1
+		if bool(m.get("won", false)):
+			won += 1
+		var mk: String = str(int(m.get("mvp", -1)))
+		mvps[mk] = int(mvps.get(mk, 0)) + 1
+	var out: Dictionary = {}
+	for pid in mine:
+		var key: String = str(int(pid))
+		out[key] = played * ConstTable.int_of("PILOT_EXP_PER_MATCH") \
+				+ won * ConstTable.int_of("PILOT_EXP_PER_WIN") \
+				+ int(mvps.get(key, 0)) * ConstTable.int_of("PILOT_EXP_PER_MVP")
+	return out
 
 
 # ── 집계 ─────────────────────────────────────────────────────────────────────

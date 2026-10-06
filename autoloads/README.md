@@ -132,6 +132,13 @@ access via `get_node("/root/ProfileManager").profile`. Run state is **not** here
   pilots skipped), appends `{id, scenario, team, score, result: "clear"|"fail", phase_reached, at}`
   to `runs` (abandon is recorded as `"fail"`; oldest dropped past `RUNS_HISTORY_MAX`), then saves.
   Idempotent: a `result.id` already in `runs` is a no-op.
+- **v2 (M8~M10, `docs/outgame_dev_plan.md` §12.1)** — presets (`ManagerProgress`), `manager.removed`,
+  owned traits (`ensure_default_traits` in `_ready`, `grant_trait`), currencies (`currency_of` /
+  `add_currency` / `spend_currency`), pilot growth (`grant_pilot` dupes → breakthrough → shards,
+  `add_pilot_exp`, `level_up_cost` / `level_up_pilot`, `owned_breakthroughs`, `pilot_rarity`), weekly pass
+  (`PassSystem`). **These mutators do not save** — the screen calls `save_profile()` once per action.
+  `apply_run_result` also pays every `result.currency` key, manager exp (→ level-ups), `pilot_exp`,
+  `pass_exp`, grants `unlocked_traits` (+ `traits.unlocked_pending`) and writes `result.profile_delta`.
 
 ### Haptics.gd
 **iOS / Android haptic feedback** — the GDScript wrapper of a `godot-haptics` fork that is

@@ -235,7 +235,8 @@ static func _run_setup_in(d: Dictionary) -> Dictionary:
 	if d.is_empty():
 		return {}
 	var out: Dictionary = d.duplicate(true)
-	for key in ["scenario", "team_id", "salary_cap", "salary_total", "manager_type"]:
+	for key in ["scenario", "team_id", "salary_cap", "salary_total", "manager_type",
+			"preset", "bonus_points"]:
 		if out.has(key):
 			out[key] = int(out[key])
 	var ids: Array = []
@@ -265,6 +266,16 @@ static func _run_setup_in(d: Dictionary) -> Dictionary:
 		e["stats"] = st
 		staff.append(e)
 	out["staff"] = staff
+	# M8 — equipped traits (ids) · M10 — breakthrough stages of my five.
+	var traits: Array = []
+	for raw in (d.get("traits", []) as Array):
+		traits.append(int(raw))
+	out["traits"] = traits
+	var bts: Dictionary = {}
+	var raw_bts: Dictionary = d.get("pilot_breakthrough", {})
+	for k in raw_bts.keys():
+		bts[str(k)] = int(raw_bts[k])
+	out["pilot_breakthrough"] = bts
 	return out
 
 
@@ -326,6 +337,8 @@ static func _pilots_to_array(pilots: Array) -> Array:
 			# 런 준비 — Lv1 샐러리 · 등급 · 이 런의 레벨(스탯은 이미 레벨 반영 값).
 			"salary": p.salary, "rarity": p.rarity, "level": p.level,
 			"main_mechs": p.main_mechs.duplicate(),
+			# M10 — breakthrough (effects already folded into the fields above).
+			"breakthrough": p.breakthrough, "train_bonus_pct": p.train_bonus_pct,
 		})
 	return out
 
@@ -349,6 +362,8 @@ static func _array_to_pilots(rows: Array) -> Array:
 		pd.level = int(d.get("level", 1))
 		for raw_mech in (d.get("main_mechs", []) as Array):
 			pd.main_mechs.append(int(raw_mech))
+		pd.breakthrough = int(d.get("breakthrough", 0))
+		pd.train_bonus_pct = int(d.get("train_bonus_pct", 0))
 		out.append(pd)
 	return out
 

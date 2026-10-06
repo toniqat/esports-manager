@@ -12,7 +12,7 @@ free weekly pass. Contract: `docs/outgame_dev_plan.md` §12 (row E). Tab contrac
 | `PassSystem.gd` | `class_name PassSystem extends RefCounted` (static) | Weekly pass rules over the profile dict: ISO-week reset (device clock, local time), exp → level, overflow → outgame currency, `pass_rewards.csv`, `claim` / `claim_all` |
 | `ShopTab.gd` | `class_name ShopTab extends Control` | 상점 tab — segmented control (선수 영입 · 특성 연구 · 파편 상점 · 특성 제작 · 교환소), no action bar |
 | `PassTab.gd` | `class_name PassTab extends Control` | 패스 tab — header (week · reset countdown · level · exp bar) + 25 reward rows, action bar `모두 수령` |
-| `ShopPopup.gd` | `class_name ShopPopup extends CanvasLayer` | Modal for both tabs: gacha / purchase **reveal** cards and the **rates** table. Also owns `rarity_color`, `currency_label` (`CURRENCY_LABELS`), `wrap_label` |
+| `ShopPopup.gd` | `class_name ShopPopup extends CanvasLayer` | Modal for both tabs: gacha / purchase **reveal** cards and the **rates** table. Also owns `rarity_color` (delegates to `TraitUi.rarity_color` — one rarity palette for both pools), `currency_label` (`CURRENCY_LABELS`), `wrap_label` |
 
 ## Gacha rules (`Gacha`)
 - Pools `pilot` / `trait`. Rarity is rolled by the pool's `gacha_rates.csv` weights

@@ -214,9 +214,8 @@ static func _traits_block(body: Control, y: float, w: float, state: Dictionary) 
 				Vector2(78, 8), Vector2(w - 260, 32))
 		UiHelpers.mk_label(card, TraitSystem.desc_of(tid), 18, OutgameTheme.TEXT_SUB,
 				Vector2(78, 44), Vector2(w - 260, 26))
-		OutgameTheme.add_chip(card, TraitSystem.rarity_name(int(r.get("rarity", 0))),
-				Vector2(w - 150, 22), Vector2(128, 38), OutgameTheme.SURFACE_SUNK,
-				OutgameTheme.TEXT_SUB, 18)
+		TraitUi.add_rarity_chip(card, int(r.get("rarity", 0)),
+				Vector2(w - 150, 22), Vector2(128, 38), 18)
 		y += row_h + 8.0
 	return y + 4.0
 

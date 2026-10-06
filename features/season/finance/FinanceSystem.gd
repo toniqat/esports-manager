@@ -150,6 +150,9 @@ static func settle_week(state: Dictionary) -> Dictionary:
 		"trait_income_pct": TraitSystem.run_mod(state, "income_pct"),
 		"trait_upkeep_pct": TraitSystem.run_mod(state, "upkeep_pct"),
 		"finance_stat": StaffSystem.effective(state, "finance"),
+		# Multipliers this settlement used — FinancePanel labels last week with these.
+		"income_mult": income_mult(state),
+		"upkeep_mult": upkeep_mult(state),
 		"special_income_pct": special_pct(state, "income"),
 		"special_upkeep_pct": special_pct(state, "upkeep"),
 		"special_salary_pct": special_pct(state, "salary"),

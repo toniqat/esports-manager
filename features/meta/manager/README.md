@@ -33,7 +33,7 @@ target inside is a `MOUSE_FILTER_PASS` Button (`docs/mobile_safe_area.md` §5). 
 4. **Traits** (`TraitPickerView`) — header `장착 n / TRAIT_SLOTS`; bonus gauge (`보너스 점수`, provided /
    consumed split; red card + "0 미만이면 저장 · 사용할 수 없습니다" when < 0); slot row (tap = unequip);
    `보유 특성` rows (positives first, tap = equip / unequip; polarity badge, rarity chip
-   `TraitSystem.rarity_name`, layer chip, `NEW` chip, `보너스 ±n`, `장착 중`); `잠긴 특성` rows greyed
+   `TraitSystem.rarity_name` on `TraitUi.rarity_color`, layer chip, `NEW` chip, `보너스 ±n`, `장착 중`); `잠긴 특성` rows greyed
    with `해금 조건 · <ManagerUi.unlock_text>`.
 
 ### Editing model

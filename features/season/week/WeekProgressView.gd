@@ -68,6 +68,7 @@ const CARD_H: float      = 148.0
 const CARD_GAP: float    = 14.0
 const MATCH_CARD_H: float = 168.0
 const PORTRAIT_D: float  = 88.0
+const QUIRK_LINE_H: float = 34.0     # one quirk event line under a training card
 
 # ── 오늘 저녁 (evening) card — M7 ──
 const EVE_SLOT_TOP: float = 104.0
@@ -326,8 +327,7 @@ func _rebuild_list() -> void:
 			y = _add_note_card(w, y, "훈련 기록이 없습니다")
 		else:
 			for i in rows.size():
-				_add_pilot_card(w, y, rows[i])
-				y += CARD_H + CARD_GAP
+				y += _add_pilot_card(w, y, rows[i]) + CARD_GAP
 	elif md >= 0:
 		pass   # 주말 — 경기 카드가 이미 그 자리를 답했다
 	else:
@@ -457,14 +457,19 @@ static func _team_name(namer: Node, team_id: int) -> String:
 
 
 ## 선수 한 명의 그날 훈련 결과 카드.
-func _add_pilot_card(w: float, y: float, row_raw: Variant) -> void:
+## One training card; returns its height (CARD_H + one line per quirk event).
+func _add_pilot_card(w: float, y: float, row_raw: Variant) -> float:
 	var row: Dictionary = row_raw
 	var role: int = int(row["role"])
+	var quirk_lines: Array = _quirk_lines(row.get("quirk", []))
+	var card_h: float = CARD_H
+	if not quirk_lines.is_empty():
+		card_h += QUIRK_LINE_H * float(quirk_lines.size()) + 8.0
 	var card := Panel.new()
 	card.add_theme_stylebox_override("panel",
 			OutgameTheme.lead_bar_style(OutgameTheme.ROLE_COLORS[role]))
 	card.position = Vector2(0, y)
-	card.size = Vector2(w, CARD_H)
+	card.size = Vector2(w, card_h)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_list_body.add_child(card)
 
@@ -477,6 +482,13 @@ func _add_pilot_card(w: float, y: float, row_raw: Variant) -> void:
 	UiHelpers.mk_label(card, String(OutgameTheme.ROLE_NAMES[role]), 22,
 			OutgameTheme.ROLE_COLORS[role],
 			Vector2(132, 74), Vector2(240, 28), HORIZONTAL_ALIGNMENT_LEFT)
+
+	# Mech mastery of the day (§14 T4, row key `mastery` = raw tile EXP).
+	var mastery_txt: String = _mastery_text(int(row["pilot_id"]), int(row.get("mastery", 0)))
+	if mastery_txt != "":
+		var ml := UiHelpers.mk_label(card, mastery_txt, 18, OutgameTheme.LINK,
+				Vector2(132, 106), Vector2(250, 26), HORIZONTAL_ALIGNMENT_LEFT)
+		ml.clip_text = true
 
 	# 스탯 여섯 칸 — 이름 / 지금 값 / 이번 날의 결과.
 	#
@@ -510,6 +522,94 @@ func _add_pilot_card(w: float, y: float, row_raw: Variant) -> void:
 			size = 21
 		UiHelpers.mk_label(card, txt, size, col,
 				Vector2(cx, 100), Vector2(col_w, 26), HORIZONTAL_ALIGNMENT_CENTER)
+
+	# Quirk events of the day (§14 T1 row key `quirk`), one line each under the card body.
+	var qy: float = CARD_H - 6.0
+	if not quirk_lines.is_empty():
+		OutgameTheme.add_divider(card, Vector2(26, qy - 4.0), w - 52.0)
+	for raw_line in quirk_lines:
+		var line: Array = raw_line
+		var ql := UiHelpers.mk_label(card, String(line[0]), 20, line[1] as Color,
+				Vector2(132, qy), Vector2(w - 132 - 24, QUIRK_LINE_H), HORIZONTAL_ALIGNMENT_LEFT)
+		ql.clip_text = true
+		qy += QUIRK_LINE_H
+	return card_h
+
+
+## "숙련 +12 · <mech>" — what the day's mastery cells actually added to the pilot's
+## research mech: the same steps as `MechMastery.add_training_exp` (train scale, then
+## `gain_preview`'s multipliers). Empty when nothing was earned or mastery is off.
+func _mastery_text(pilot_id: int, raw: int) -> String:
+	var state: Dictionary = _gm.season_state
+	if raw <= 0 or not MechMastery.is_enabled(state):
+		return ""
+	var amount: int = MechMastery.gain_preview(state, pilot_id,
+			roundi(float(raw) * ConstTable.num("MASTERY_TRAIN_SCALE")))
+	var txt: String = "숙련 +%d" % amount
+	var mech: int = MechMastery.research_mech(state, pilot_id)
+	if mech < 0:   # same fallback as `add_training_exp` — the coach's pick
+		var pd: PlayerData = MechMastery.find_pilot(state, pilot_id)
+		if pd != null:
+			mech = MechMastery.auto_research_mech(state, pd)
+	if mech >= 0:
+		txt += " · " + MechMastery.mech_name(mech)
+	return txt
+
+
+## Quirk events → `[[text, colour]]`. Row shape (§14.1):
+## `[{kind: gain|reroll|slot, result, id?, from?, to?}]`; a missing key = empty list.
+## Results that changed nothing ("full" / "max" / "none") are shown faint so the player
+## sees the tile fired but had no room.
+static func _quirk_lines(events_raw: Variant) -> Array:
+	var out: Array = []
+	if not (events_raw is Array):
+		return out
+	for raw in events_raw:
+		if not (raw is Dictionary):
+			continue
+		var e: Dictionary = raw
+		var kind: String = String(e.get("kind", ""))
+		var result: String = String(e.get("result", ""))
+		match kind:
+			"gain":
+				if result == "gain":
+					out.append(["기벽 획득 · %s" % _quirk_name(int(e.get("id", -1))),
+							OutgameTheme.ACCENT_TEXT])
+				elif result == "full":
+					out.append(["기벽 칸이 가득 차 획득하지 못했습니다", OutgameTheme.TEXT_FAINT])
+			"reroll":
+				if result == "reroll":
+					out.append(["기벽 재굴림 · %s → %s" % [_quirk_names(e.get("from", [])),
+							_quirk_names(e.get("to", []))], OutgameTheme.ACCENT_TEXT])
+				else:
+					out.append(["재굴림할 기벽이 없습니다", OutgameTheme.TEXT_FAINT])
+			"slot":
+				if result == "slot":
+					var txt: String = "기벽 칸 +1"
+					if e.has("to"):
+						txt += " (%d칸)" % int(e["to"])
+					out.append([txt, OutgameTheme.POSITIVE])
+				else:
+					out.append(["기벽 칸이 이미 최대입니다", OutgameTheme.TEXT_FAINT])
+	return out
+
+
+## Quirk display name — `QuirkSystem.row(id).name`, "기벽 #id" when the table has no row.
+static func _quirk_name(id: int) -> String:
+	if id < 0:
+		return "기벽"
+	var name_v: String = String(QuirkSystem.row(id).get("name", ""))
+	return name_v if name_v != "" else "기벽 #%d" % id
+
+
+static func _quirk_names(ids_raw: Variant) -> String:
+	var names: Array = []
+	if ids_raw is Array:
+		for id in ids_raw:
+			names.append(_quirk_name(int(id)))
+	elif ids_raw != null:
+		names.append(_quirk_name(int(ids_raw)))
+	return "없음" if names.is_empty() else ", ".join(names)
 
 
 func _add_note_card(w: float, y: float, text: String) -> float:

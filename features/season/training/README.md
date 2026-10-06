@@ -160,6 +160,12 @@ screen depends on and their effective value — `훈련: 강민호 코치 17 · 
 (`TrainingView._owner_text`: `StaffSystem.owner_name` + `코치` / `어시스턴트` suffix + `effective`).
 The right end of the "훈련 코스" label row says what that means for the courses —
 `훈련 효과 ×N · 사용 가능 X 등급까지` (`_refresh_staff`). `_block_y()` starts below the staff line.
+`×N` is the **team-wide** EXP multiplier — training stat × `FinanceSystem.training_exp_mult` × trait
+`train_exp_pct` (`_shared_parts`, the same calls `TrainingBoard.exp_mult_table` multiplies). When
+finance or traits move it, the breakdown follows in parentheses (`(스태프 ×a · 재무 ×b · 특성 ×c)`,
+parts at ×1.00 left out). Per-pilot parts (breakthrough `train_bonus_pct`) show as a green
+`EXP ×r` chip on that pilot's portrait — `r` = the pilot's best day in `exp_mult_table` ÷ the
+team-wide value, so it reads straight from what settlement multiplies (`_refresh_exp_chips`).
 
 **There is one horizontal baseline, `_grid_x()`.** The board sits at the screen centre (100..980 on
 1080), and the portraits and drop preview all derive from that value. Previously the board's left

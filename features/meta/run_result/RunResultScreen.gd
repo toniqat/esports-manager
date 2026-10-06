@@ -281,7 +281,7 @@ func _build_growth_card(parent: Control, y: float) -> float:
 
 
 ## Newly unlocked traits (M8) — amber card like the true ending: +/- chip, name,
-## filled-in description, rarity chip.
+## filled-in description, rarity chip (`TraitUi.rarity_color`).
 func _build_unlocked_traits_card(parent: Control, y: float) -> float:
 	var ids: Array = _new_trait_ids()
 	var test_run: bool = bool(_result.get("test_run", false))
@@ -313,9 +313,8 @@ func _build_unlocked_traits_card(parent: Control, y: float) -> float:
 				Vector2(84, 8), Vector2(rw - 260, 38))
 		UiHelpers.mk_label(row_card, TraitSystem.desc_of(tid), 20, OutgameTheme.TEXT_SUB,
 				Vector2(84, 48), Vector2(rw - 260, 30))
-		OutgameTheme.add_chip(row_card, TraitSystem.rarity_name(int(r.get("rarity", 0))),
-				Vector2(rw - 156, 26), Vector2(132, 40), OutgameTheme.ACCENT,
-				OutgameTheme.TEXT_ON_FILL, 20)
+		TraitUi.add_rarity_chip(row_card, int(r.get("rarity", 0)),
+				Vector2(rw - 156, 26), Vector2(132, 40), 20)
 		ry += TRAIT_ROW_H
 	return y + card.size.y
 

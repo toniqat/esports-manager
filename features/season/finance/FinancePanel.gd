@@ -124,12 +124,11 @@ static func _build_last_week(body: Control, state: Dictionary, w: float, y: floa
 		_lbl(body, "아직 정산 기록이 없습니다 — 일요일 주 마감에 정산됩니다", 22,
 				OutgameTheme.TEXT_SUB, Vector2(0, y), Vector2(w, 30))
 		return y + 36.0
-	y = _amount_row(body, "스폰서 수입 (시설 ×%.2f)" % (float(last.get("income_pct", 100)) / 100.0),
-			int(last.get("sponsor", 0)), w, y)
+	y = _amount_row(body, _sponsor_label(last, state), int(last.get("sponsor", 0)), w, y)
 	y = _amount_row(body, "성적 보너스 (%d승 %d패)" % [int(last.get("wins", 0)), int(last.get("losses", 0))],
 			int(last.get("bonus", 0)), w, y)
 	y = _amount_row(body, "스태프 연봉", -int(last.get("salaries", 0)), w, y)
-	y = _amount_row(body, "시설 유지비", -int(last.get("upkeep", 0)), w, y)
+	y = _amount_row(body, _upkeep_label(last, state), -int(last.get("upkeep", 0)), w, y)
 	OutgameTheme.add_divider(body, Vector2(0, y + 4), w)
 	y += 12.0
 	var net: int = int(last.get("net", 0))
@@ -382,6 +381,25 @@ static func _on_special(sheet: HubSheet, state: Dictionary, special_id: String, 
 # downgrade, or training penalty.
 static func _hard_cut(entry: Dictionary) -> bool:
 	return (entry.get("cuts", []) as Array).size() > 1 or int(entry.get("unpaid", 0)) > 0
+
+
+## "스폰서 수입 (시설 ×1.10 · 보정 ×1.05)" — the facility percent of that week plus every
+## other sponsor multiplier (`FinanceSystem.income_mult`: traits, finance stat, specials).
+## The ledger entry's own `income_mult` wins when it records one; else the current value.
+static func _sponsor_label(last: Dictionary, state: Dictionary) -> String:
+	var txt: String = "스폰서 수입 (시설 ×%.2f" % (float(last.get("income_pct", 100)) / 100.0)
+	var m: float = float(last.get("income_mult", FinanceSystem.income_mult(state)))
+	if absf(m - 1.0) >= 0.005:
+		txt += " · 보정 ×%.2f" % m
+	return txt + ")"
+
+
+## "시설 유지비 (보정 ×0.90)" — `FinanceSystem.upkeep_mult` when it moves the upkeep.
+static func _upkeep_label(last: Dictionary, state: Dictionary) -> String:
+	var m: float = float(last.get("upkeep_mult", FinanceSystem.upkeep_mult(state)))
+	if absf(m - 1.0) >= 0.005:
+		return "시설 유지비 (보정 ×%.2f)" % m
+	return "시설 유지비"
 
 
 static func _facility_effects(row: Dictionary) -> String:

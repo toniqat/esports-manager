@@ -198,8 +198,7 @@ func _build_row(pos: Vector2, width: float, r: Dictionary, on: bool, is_owned: b
 			String(r["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 28).x)
 	var cx: float = x + name_w + 14.0
 	_chip(b, TraitSystem.rarity_name(int(r["rarity"])), Vector2(cx, 20), 78,
-			OutgameTheme.ACCENT_DIM if int(r["rarity"]) >= 3 else OutgameTheme.SURFACE_SUNK,
-			OutgameTheme.ACCENT_TEXT if int(r["rarity"]) >= 3 else OutgameTheme.TEXT_SUB)
+			TraitUi.rarity_color(int(r["rarity"])), OutgameTheme.TEXT_ON_FILL)
 	cx += 90.0
 	_chip(b, "아웃게임" if String(r["layer"]) == TraitSystem.LAYER_OUTGAME else "인게임",
 			Vector2(cx, 20), 96, OutgameTheme.SURFACE_SUNK, OutgameTheme.TEXT_SUB)

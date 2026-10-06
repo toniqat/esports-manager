@@ -8,7 +8,7 @@ State `season_state.finance` (shape owned here). Tuning values live only in `dat
 | File | Role |
 |---|---|
 | `FinanceSystem.gd` | `class_name FinanceSystem` (static). Run init, week-end settlement, match bonus, allocation, facility upgrade, `income_mult` / `upkeep_mult` / `salary_cost` (traits × finance stat × specials), the three outside multipliers, special spending (rows, block reasons, buy, week tick), number formatting (`fmt` / `fmt_signed`). |
-| `FinancePanel.gd` | Hub manage card 「재무」 (`hub_summary`) + `HubSheet` detail (`open`), incl. the 특별 지출 section. |
+| `FinancePanel.gd` | Hub manage card 「재무」 (`hub_summary`) + `HubSheet` detail (`open`), incl. the 특별 지출 section. The 지난 주 정산 sponsor / upkeep labels show `보정 ×m` from `income_mult` / `upkeep_mult` (the entry's own value if recorded, else the current one; hidden at ×1.00) — `_sponsor_label` / `_upkeep_label`. |
 
 ## Entry points (called by base-owned code)
 | Caller | Call |
@@ -39,7 +39,7 @@ missing keys (pre-M6 save) is re-initialised lazily by `_fin`, keeping what was 
 | `history` | Array of entries | Last `FINANCE_HISTORY_WEEKS` settlements, oldest first. |
 
 History entry (also what `settle_week` returns, plus `toast`):
-`{week_no, phase, phase_week, sponsor, income_pct, trait_income_pct, trait_upkeep_pct, finance_stat,
+`{week_no, phase, phase_week, sponsor, income_pct, trait_income_pct, trait_upkeep_pct, finance_stat, income_mult, upkeep_mult,
 special_income_pct, special_upkeep_pct, special_salary_pct, specials: Array[id] (running during the week),
 special_spend, special_buys: Array[name], specials_expired: Array[name], bonus, wins, losses, income, salaries, upkeep,
 expense, net, reserve, alloc{training, facility, welfare} (amounts), unpaid, balance, fund, level,

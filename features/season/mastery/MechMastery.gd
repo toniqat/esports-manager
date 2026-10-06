@@ -158,11 +158,13 @@ static func knowledge_mult(state: Dictionary) -> float:
 			+ ConstTable.num("MASTERY_KNOW_PER") * float(StaffSystem.effective(state, "knowledge")))
 
 
-## Total gain multiplier for a pilot — knowledge × facility for MY pilots, 1.0 otherwise.
+## Total gain multiplier for a pilot — knowledge × facility × trait `mastery_pct`
+## (M8, `TraitSystem.run_pct_mult`) for MY pilots, 1.0 otherwise.
 static func gain_mult(state: Dictionary, pilot_id: int) -> float:
 	if not is_my_pilot(state, pilot_id):
 		return 1.0
-	return knowledge_mult(state) * FinanceSystem.mastery_mult(state)
+	return knowledge_mult(state) * FinanceSystem.mastery_mult(state) \
+			* TraitSystem.run_pct_mult(state, "mastery_pct")
 
 
 ## What `gain(state, pilot_id, _, amount)` would actually add (before the cap).

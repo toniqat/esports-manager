@@ -143,12 +143,96 @@ static func ingame_traits(state: Dictionary) -> Array:
 	return out
 
 
-# ── Unlocks (feature A fills the body — signature fixed) ─────────────────────
+# ── Unlocks (grammar: features/meta/traits/README.md) ─────────────────────
 ## Trait ids whose `unlock` condition this run met and that the profile does not own
 ## yet. Called by `RunResult.build_result` (pure — no profile writes). `profile` is the
 ## ProfileManager dictionary (may be empty for test runs → judge run-only conditions).
-static func evaluate_unlocks(_state: Dictionary, _result: Dictionary, _profile: Dictionary) -> Array:
-	return []
+static func evaluate_unlocks(state: Dictionary, result: Dictionary, profile: Dictionary) -> Array:
+	var owned: Array = []
+	var ptr: Variant = profile.get("traits", {})
+	if typeof(ptr) == TYPE_DICTIONARY:
+		for raw in ((ptr as Dictionary).get("owned", []) as Array):
+			owned.append(int(raw))
+	var out: Array = []
+	for r in rows():
+		var tid: int = int((r as Dictionary)["id"])
+		var cond: String = String((r as Dictionary)["unlock"]).strip_edges()
+		if cond == "" or owned.has(tid):
+			continue
+		if unlock_met(cond, state, result, profile):
+			out.append(tid)
+	return out
+
+
+## One `unlock` condition (grammar: `features/meta/traits/README.md`). Unknown
+## condition → warning, not met.
+static func unlock_met(cond: String, state: Dictionary, result: Dictionary, profile: Dictionary) -> bool:
+	var head: String = cond
+	var arg: String = ""
+	var colon: int = cond.find(":")
+	if colon >= 0:
+		head = cond.substr(0, colon).strip_edges()
+		arg = cond.substr(colon + 1).strip_edges()
+	var n: int = int(arg) if arg.is_valid_int() else 0
+	var cleared_phase: bool = int(result.get("phases_cleared", 0)) >= 1
+	match head:
+		"clear":
+			return String(result.get("outcome", "")) == "clear"
+		"wins":
+			return int(result.get("wins", 0)) >= n
+		"titles":
+			return int(result.get("titles", 0)) >= n
+		"phase":
+			return int(result.get("phases_cleared", 0)) >= n
+		"win_streak":
+			return longest_win_streak(state) >= n
+		"outings":
+			return max_outings(state) >= n
+		"mvp":
+			var total: int = 0
+			var mvp: Variant = result.get("mvp", {})
+			if typeof(mvp) == TYPE_DICTIONARY:
+				for k in (mvp as Dictionary).keys():
+					total += int((mvp as Dictionary)[k])
+			return total >= n
+		"finance_manual_profit":
+			return FinanceSystem.manual_profit_weeks(state) >= n
+		"true_ending":
+			return not (result.get("true_endings", []) as Array).is_empty()
+		"runs":
+			var runs: Variant = profile.get("runs", [])
+			var past: int = (runs as Array).size() if typeof(runs) == TYPE_ARRAY else 0
+			return past + 1 >= n
+		"team":
+			return arg.is_valid_int() and int(result.get("team_id", -1)) == n and cleared_phase
+		"bonus":
+			return int(result.get("bonus_points", 0)) >= n and cleared_phase
+	push_warning("TraitSystem: unknown unlock condition '%s'" % cond)
+	return false
+
+
+## Longest run of consecutive `won` entries in `run_stats.matches` (my matches, in order).
+static func longest_win_streak(state: Dictionary) -> int:
+	var best: int = 0
+	var cur: int = 0
+	var rs: Variant = state.get("run_stats", {})
+	if typeof(rs) != TYPE_DICTIONARY:
+		return 0
+	for raw in ((rs as Dictionary).get("matches", []) as Array):
+		if typeof(raw) == TYPE_DICTIONARY and bool((raw as Dictionary).get("won", false)):
+			cur += 1
+			best = maxi(best, cur)
+		else:
+			cur = 0
+	return best
+
+
+## Most outings any of my pilots went on this run (`MentalSystem.outings`).
+static func max_outings(state: Dictionary) -> int:
+	var best: int = 0
+	for pid in MentalSystem.my_pilot_ids(state):
+		best = maxi(best, MentalSystem.outings(state, int(pid)))
+	return best
 
 
 # ── Loading ──────────────────────────────────────────────────────────────────

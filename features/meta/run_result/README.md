@@ -35,7 +35,7 @@ Autoloads are fetched via `Engine.get_main_loop().root` (static class, no `@onre
   `INTL_ROUNDS` wins (bracket shape, not tuning). Lost past tournaments are unknown → not counted (lower bound).
 - `titles` — `phase_results` entries whose `champion` or `intl_champion` is the player team.
 - `score` = `phases_cleared·RUN_SCORE_PER_PHASE + wins·RUN_SCORE_PER_WIN +
-  titles·RUN_SCORE_PER_TITLE + (clear ? RUN_SCORE_CLEAR_BONUS : 0) + bonus_points` (bonus 0 until M8).
+  titles·RUN_SCORE_PER_TITLE + (clear ? RUN_SCORE_CLEAR_BONUS : 0) + bonus_points·RUN_SCORE_PER_BONUS` (M8 trait bonus points).
   `breakdown` holds each term.
 - `currency.outgame` = floor(score · `RUN_CURRENCY_PER_SCORE`), `manager_exp` =
   floor(score · `RUN_MGR_EXP_PER_SCORE`) (tiny epsilon guards float error).
@@ -56,8 +56,19 @@ White outgame theme, pattern B of `docs/mobile_safe_area.md` (`indent_to_safe_to
 - Scroll body (`OutgameTheme.add_vscroll`, ends at `bottom_bar_top()`): when `true_endings` is
   non-empty a **진엔딩** card leads (amber-tinted; per pilot a large amber-ringed portrait, name,
   a closing line and an `외출 N회 · 약속을 지켰다` chip — N from `TRUE_ENDING_OUTINGS`), then cards 진척 (phase reached,
-  W-L, titles) · 점수 (breakdown + total) · 보상 (outgame currency, manager EXP) · 이번 런 업적
+  W-L, titles) · 점수 (breakdown + total) · 보상 · 선수 성장 · 이번 런 업적
   (round portrait `PilotImages.circle_for`, name, role, MVP / POM chips — lit when > 0).
+- M8~M10 rewards (contract §12.5) — level changes come only from `result.profile_delta`
+  (`ProfileManager.apply_run_result`); a test run has none, so it shows computed values only:
+  - **새 특성 해금** card (amber, right after 진엔딩): ids from `profile_delta.traits`, or for a
+    test run `unlocked_traits` (with a "not granted" note). Per trait: +/− chip, name,
+    `TraitSystem.desc_of`, rarity chip.
+  - 점수: `특성 보너스 × <bonus_points>` row = `breakdown.bonus`.
+  - 보상: `currency.outgame` · `currency.levelup` · `pass_exp` (+ `Lv a → b` from `profile_delta.pass`,
+    plus a row for `overflow_outgame` when > 0) · `manager_exp` (+ `Lv a → b` from
+    `profile_delta.manager`, then a `새 제거 포인트` row = level gain × `MANAGER_REMOVE_PER_LEVEL`).
+    Level-ups are amber text.
+  - **선수 성장**: per pilot `pilot_exp` and an amber `최대 Lv a → b` chip from `profile_delta.pilots`.
 - Bottom bar, one full-width primary button: `로비로` → `Lobby.tscn`; when `outcome == "abandon"`
   `새 런` → `RunSetup.tscn`. Both call `reset_season_state()` first.
 - `last_run_result` empty (scene opened directly) → empty-state card + `로비로`.

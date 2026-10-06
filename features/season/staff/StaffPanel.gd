@@ -8,7 +8,8 @@ extends RefCounted
 # Card : delegated count (n/6), weakest area, assistant (or 감독) as owner,
 #        alert dot while a negative temporary mod is active.
 # Sheet: six stat rows (effective value, who covers it, manager vs staff
-#        values — cover rule = max), active `staff_mods`, staff list with job
+#        values — cover rule = max), active `staff_mods`, equipped manager
+#        traits + bonus points (M8), staff list with job
 #        and weekly salary, and the areas the manager handles personally.
 
 ## What the manager does by hand when a stat is not delegated.
@@ -65,6 +66,12 @@ static func open(host: Node) -> void:
 	y += 14.0
 	y = _section(body, y, w, "일시 보정", "")
 	y = _mods_block(body, y, w, state)
+
+	y += 14.0
+	y = _section(body, y, w, "장착 특성", "보너스 점수 %d · 장착 %d/%d" % [
+			int((state.get("run_setup", {}) as Dictionary).get("bonus_points", 0)),
+			TraitSystem.run_traits(state).size(), TraitSystem.slot_count()])
+	y = _traits_block(body, y, w, state)
 
 	y += 14.0
 	y = _section(body, y, w, "스태프", "주급 합계 %d" % StaffSystem.weekly_salary_total(state))
@@ -176,6 +183,41 @@ static func _mods_block(body: Control, y: float, w: float, state: Dictionary) ->
 				OutgameTheme.POSITIVE if delta > 0 else OutgameTheme.NEGATIVE,
 				Vector2(0, y), Vector2(w, 32))
 		y += 38.0
+	return y + 4.0
+
+
+## Equipped manager traits of the run (M8, `run_setup.traits`) — name, rarity,
+## +/- polarity and the filled-in description. Lead bar green = "+", red = "-".
+static func _traits_block(body: Control, y: float, w: float, state: Dictionary) -> float:
+	var ids: Array = TraitSystem.run_traits(state)
+	if ids.is_empty():
+		UiHelpers.mk_label(body, "장착한 특성 없음", 22, OutgameTheme.TEXT_FAINT,
+				Vector2(0, y), Vector2(w, 32))
+		return y + 40.0
+	var row_h: float = 84.0
+	for raw in ids:
+		var tid: int = int(raw)
+		var r: Dictionary = TraitSystem.row(tid)
+		if r.is_empty():
+			continue
+		var pos: bool = TraitSystem.is_positive(tid)
+		var sign_color: Color = OutgameTheme.POSITIVE if pos else OutgameTheme.NEGATIVE
+		var card := Panel.new()
+		card.add_theme_stylebox_override("panel", OutgameTheme.lead_bar_style(sign_color, 12))
+		card.position = Vector2(0, y)
+		card.size = Vector2(w, row_h)
+		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		body.add_child(card)
+		OutgameTheme.add_chip(card, "+" if pos else "−", Vector2(22, 22), Vector2(40, 40),
+				sign_color, OutgameTheme.TEXT_ON_FILL, 24)
+		UiHelpers.mk_label(card, String(r.get("name", "")), 24, OutgameTheme.TEXT,
+				Vector2(78, 8), Vector2(w - 260, 32))
+		UiHelpers.mk_label(card, TraitSystem.desc_of(tid), 18, OutgameTheme.TEXT_SUB,
+				Vector2(78, 44), Vector2(w - 260, 26))
+		OutgameTheme.add_chip(card, TraitSystem.rarity_name(int(r.get("rarity", 0))),
+				Vector2(w - 150, 22), Vector2(128, 38), OutgameTheme.SURFACE_SUNK,
+				OutgameTheme.TEXT_SUB, 18)
+		y += row_h + 8.0
 	return y + 4.0
 
 

@@ -350,20 +350,26 @@ func cell_exp() -> Dictionary:
 ## Outside EXP multiplier per cell, `Vector2i(seat, day) → float`:
 ## training-stat mult (`TrainingTile.training_exp_mult`) ×
 ## `FinanceSystem.training_exp_mult(state)` ×
-## `MentalSystem.training_exp_mult(state, pilot_id, day)` (plan §11.3).
+## `MentalSystem.training_exp_mult(state, pilot_id, day)` (plan §11.3) ×
+## trait `train_exp_pct` (`TraitSystem.run_pct_mult`, M8) ×
+## the pilot's breakthrough `PlayerData.train_bonus_pct` (plan §12.3).
 ## Seats without a pilot get the shared part only.
 func exp_mult_table() -> Dictionary:
 	var state: Dictionary = _gm.season_state
 	var shared: float = TrainingTile.training_exp_mult(training_stat()) \
-			* FinanceSystem.training_exp_mult(state)
+			* FinanceSystem.training_exp_mult(state) \
+			* TraitSystem.run_pct_mult(state, "train_exp_pct")
 	var pilots: Array = player_pilots_by_seat()
 	var out: Dictionary = {}
 	for seat in COLS:
 		var p: PlayerData = pilots[seat]
+		var pilot_mult: float = 1.0
+		if p != null:
+			pilot_mult = maxf(0.0, 1.0 + float(p.train_bonus_pct) / 100.0)
 		for day in ROWS:
 			var m: float = shared
 			if p != null:
-				m *= MentalSystem.training_exp_mult(state, int(p.id), day)
+				m *= pilot_mult * MentalSystem.training_exp_mult(state, int(p.id), day)
 			out[Vector2i(seat, day)] = m
 	return out
 

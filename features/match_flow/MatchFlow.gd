@@ -47,6 +47,13 @@ var player_side: int             = GameEnums.DraftSide.BLUE
 # 에디터 실행 + 시즌 경기일 때만 생긴다(`_setup_cheats`). 그 밖에는 null.
 var _cheat_menu: MatchCheatMenu = null
 
+# Match rosters are **copies** of the season pilots (`PlayerData.duplicate()`),
+# built once per team id by `_team_roster` — ban/pick writes `assigned_mech` and
+# `_finalize_rosters` adds pilot mods + mech mastery on them, so the originals
+# in `season_state.all_pilots` / `intl_pilots` are never touched (plan §11.3).
+var _roster_cache: Dictionary = {}   # team_id(int) → Array[PlayerData] (copies, role 0..4)
+var _rosters_finalized: bool = false
+
 
 func _ready() -> void:
 	gm.reset_match_ctx()
@@ -176,6 +183,9 @@ func _on_ban_pick_finished(result: Dictionary) -> void:
 	enemy_picked_mech_ids  = result["enemy_picks"]
 	gm.match_ctx["player_roster"] = result["player_roster"]
 	gm.match_ctx["enemy_roster"]  = result["enemy_roster"]
+	# Mechs are assigned — pilot mods + mastery go onto the copies, and the
+	# pairing is recorded in pending_match before the post-ban-pick save.
+	_finalize_rosters(result["player_roster"], result["enemy_roster"])
 	# 정글 시작 방향은 이제 BattleSim 이 묻는다 — 여기서는 기본값만 심어 둔다
 	# (상대 정글러와 단독 실행이 읽는 값이고, 아군 정글러의 값은 개시 직전에
 	# `JungleStartOverlay` 가 덮어쓴다).
@@ -280,7 +290,36 @@ func _resume_at_launch(resume: Dictionary) -> void:
 	gm.match_ctx["player_roster"]    = p_roster
 	gm.match_ctx["enemy_roster"]     = e_roster
 	gm.match_ctx["jungle_start_dir"] = int(resume.get("jungle_start_dir", GameEnums.JungleStartDir.LEFT))
+	_finalize_rosters(p_roster, e_roster)
 	_launch_battle()
+
+
+## After mech assignment (fresh or resumed): add the run's temporary pilot mods
+## (`PilotMods.apply_to`) and the mech mastery bonus (`MechMastery.apply_to`) to
+## the roster **copies**, then write `pending_match.assigned_mechs`
+## (`{"<pilot_id>": mech_id}`, both teams) for `MechMastery.record_match`.
+## Standalone MatchFlow (no active season) leaves the rosters as they are.
+## Runs once — the resume path and the fresh path never both reach here.
+func _finalize_rosters(p_roster: Array, e_roster: Array) -> void:
+	if _rosters_finalized:
+		return
+	_rosters_finalized = true
+	var s: Dictionary = gm.season_state
+	if not bool(s.get("active", false)):
+		return
+	var assigned: Dictionary = {}
+	for roster in [p_roster, e_roster]:
+		for raw in roster:
+			var pd := raw as PlayerData
+			if pd == null:
+				continue
+			PilotMods.apply_to(s, pd)
+			MechMastery.apply_to(s, pd)
+			if pd.assigned_mech != null:
+				assigned[str(pd.id)] = pd.assigned_mech.id
+	var pm = s.get("pending_match", null)
+	if typeof(pm) == TYPE_DICTIONARY:
+		(pm as Dictionary)["assigned_mechs"] = assigned
 
 
 # Extract the mech IDs from a role-sorted Array[PlayerData] (5 entries).
@@ -367,10 +406,13 @@ func _cheat_finish(winner_side: int) -> void:
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 func _team_roster(team_id: int) -> Array:
-	# Returns 5 PlayerData objects sorted by role 0..4 for the given team.
+	# Returns 5 PlayerData **copies** sorted by role 0..4 for the given team,
+	# cached so every phase (PREP, BAN_PICK, launch, cheat) sees the same objects.
 	# League teams (id < 100) live in `all_players`; INTL teams (id >= 100)
 	# live in season_state.intl_pilots — only relevant when launched from
 	# Season into an INTL phase. Standalone MatchFlow only uses league teams.
+	if _roster_cache.has(team_id):
+		return _roster_cache[team_id]
 	var pool: Array = all_players
 	if team_id >= 100:
 		pool = gm.season_state.get("intl_pilots", []) if gm.season_state.get("active", false) else []
@@ -379,9 +421,20 @@ func _team_roster(team_id: int) -> Array:
 		for p_raw in pool:
 			var p := p_raw as PlayerData
 			if p.team_id == team_id and p.role == r:
-				out.append(p)
+				out.append(_copy_pilot(p))
 				break
+	_roster_cache[team_id] = out
 	return out
+
+
+# `Resource.duplicate()` copies the exported fields; the list fields are
+# re-copied so the match copy shares no container with the season original.
+static func _copy_pilot(p: PlayerData) -> PlayerData:
+	var c := p.duplicate() as PlayerData
+	c.pilot_cards = p.pilot_cards.duplicate()
+	c.main_mechs = p.main_mechs.duplicate()
+	c.assigned_mech = null
+	return c
 
 
 func _team_name(team_id: int) -> String:

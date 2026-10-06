@@ -206,6 +206,10 @@ Each hover lasts a random `AI_HOVER_MIN..MAX` (0.3–0.8 s).
 Score — for a **pick**, a role class the own team doesn't have yet +3 (−2 if already present); for a
 **ban**, a role class the opponent (= player) team doesn't have yet +2.5 (a ban that steals a seat
 to be filled); a machine with a passive +1; plus jitter `randf() × 1.5`.
+In a season run, mech mastery is added (see "Mech mastery" below): a pick gets
+`MASTERY_AI_PICK_W × mastery / MASTERY_MAX` of the own pilot whose role matches the machine's role
+class, a ban gets `MASTERY_AI_BAN_W × mastery / MASTERY_MAX` of the player's pilot of that role — so
+the AI tends to pick its mains and ban the player's.
 
 While hovering (`_ai_hover_id`), that grid cell wears a **thick border in the opponent's side
 colour**, and the machine sits faintly (α 0.45) in the opponent team's **next slot** (pick slot for
@@ -228,8 +232,31 @@ running in a window and faking insets with `ESM_SAFE_AREA` — it can't be done 
 
 ### Mechs have a role, but assignment is still free
 `mechs.role` is used by this screen's filter · data validation · **the opponent's auto-assignment**
-(at each seat it puts a machine of the same role class as that player's role). Which machine the
-player puts in which seat is still free.
+(`_enemy_role_order`: a greedy pairing scored role match first, then the seat pilot's mastery with
+the machine — so each seat gets a machine of its role class, the one that pilot rides best, and an
+off-role leftover goes to whoever handles it best; without mastery it is the old role-then-pick-order
+rule). Which machine the player puts in which seat is still free.
+
+---
+
+## Mech mastery (M4) and analysis markers
+
+Active only in a season run (`MechMastery.is_enabled(season_state)`, read once per `enter` by
+`_setup_mastery`); standalone MatchFlow shows none of it and the AI scores as before. Rules and
+numbers live in `features/season/mastery/README.md` / `MASTERY_*` in const.csv.
+
+| Where | What |
+|---|---|
+| Mech slots (`_refresh_slot_mastery`) | Top-left tag `<tier> <bonus>` (e.g. `능숙 +2`) filled with the tier colour — the pilot on that seat with that machine. **My slots always** (also during ban/pick, so dragging a slot shows the change at once); **enemy slots** only when analysis reveals mastery (`StaffSystem.analysis_tier >= 2`) and after the assign intro re-seats them by pilot (`_enemy_seated`). |
+| Grid cells (`_refresh_cell_marks`) | Bottom-left: my natural rider's tier when 능숙 or better. Top-right: `예상 픽` (red) = an enemy pilot's top-mastery machine (`_enemy_likely`, analysis tier ≥ 2), or `추천 밴` (amber) = analyst's recommended ban. Taken cells show no tags. |
+| Bottom sheet (`_build_sheet_mastery`) | Under the art, left of the buttons: my natural rider's `name tier value (스탯 bonus)`, and the analysis line (`상대 예상 픽 — pilot` / `분석가 추천 밴 — pilot 의 주력`). |
+| `MechDetailPanel` | A `숙련도` block — that team's five pilots with this machine (tier · value · bonus), the tapped seat's pilot marked ▶ (`_mastery_rows`; enemy only with analysis tier ≥ 2). |
+
+**Recommended bans** (`_analyst_bans`) appear when the analysis area is delegated
+(`StaffSystem.is_delegated(state, "analysis")`) and I still have bans left: the
+`MASTERY_ANALYST_BANS` highest-mastery enemy likely picks that are still legal. Like every
+delegated automation it is a plain rule, not an optimal one. Banning an enemy main is the natural
+mastery penalty — that pilot falls back to a lower-mastery machine.
 
 ---
 

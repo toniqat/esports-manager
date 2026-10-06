@@ -155,7 +155,8 @@ as is so "what did they pick" doesn't have to be read twice).
 
 ### Detail popups in the assignment step (both teams are tappable)
 - **Pilot portrait** → `DraftDetailPanel` (the same popup as the draft screen)
-- **Mech portrait** → `MechDetailPanel`
+- **Mech portrait** → `MechDetailPanel` (in a season run it also lists that team's mech mastery with
+  the mech — the enemy only with analysis tier ≥ 2; see `ban_pick/README.md` "Mech mastery")
 
 Assignment is done by looking at stats, and without a place to see them there's nothing to do but
 leave pick order as is. **It differs from the in-game detail panel** — no in-game tabs
@@ -211,6 +212,23 @@ goes through `_launch_battle()`, so it isn't saved separately. It is read by
 
 `BattleSim.gd` reads `match_ctx.active` to decide whether to inject mech stats
 into pilots; otherwise it falls back to `ROLE_STATS` defaults.
+
+### Match rosters are copies (M4)
+`_team_roster(team_id)` returns **copies** of the season pilots (`_copy_pilot` =
+`PlayerData.duplicate()` + fresh `pilot_cards` / `main_mechs` arrays, `assigned_mech` cleared),
+built once per team id and cached in `_roster_cache` — PREP, BAN_PICK, the resume path and the cheat
+menu all see the same five objects. Ban/pick writes `assigned_mech` onto these copies, and
+`season_state.all_pilots` / `intl_pilots` are **never** written by a match (plan §11.3).
+
+Once mechs are assigned — `_on_ban_pick_finished` (before the post-ban-pick autosave) or
+`_resume_at_launch` — `_finalize_rosters(p_roster, e_roster)` runs once (`_rosters_finalized`):
+1. `PilotMods.apply_to(state, copy)` — the run's temporary pilot mods (M7 incidents / outings).
+2. `MechMastery.apply_to(state, copy)` — the mech mastery tier bonus on all six stats
+   (`features/season/mastery/README.md`).
+3. `pending_match.assigned_mechs = {"<pilot_id>": mech_id}` for both teams (10 entries) —
+   `SeasonHub` hands it to `MechMastery.record_match` when the result is consumed.
+
+Standalone MatchFlow (no active season) skips all three; BattleSim never knows mastery exists.
 
 ### Side (`player_side`) — currently always BLUE
 `player_side` is one value that decides ban/pick order and in-game priority **at the same time**:

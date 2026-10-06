@@ -5,6 +5,8 @@ extends CanvasLayer
 #
 #   좌: 전신 아트 한 장
 #   우: 머리글(기체명 · 역할군) → 스탯 칩 3개 → 메크 패시브 → 메크 카드
+#   (in a season run a mastery block sits between the stat chips and the passive
+#    — `open(m, mastery_rows)`, rows built by `BanPickController._mastery_rows`)
 #   하: 닫기
 #
 # `features/meta/run_setup/DraftDetailPanel.gd`(파일럿 상세)와 **좌우 구성이
@@ -80,6 +82,10 @@ const CARD_NOTE_COLOR := Color(0.62, 0.66, 0.76)
 
 const CLOSE_H: float = 84.0
 
+# ─── Mastery rows ────────────────────────────────────────────────────────────
+const MASTERY_FONT: int = 21
+const MASTERY_ROW_H: float = 32.0
+
 const ROLE_NAMES: Array = ["TANK", "FIGHTER", "ASSASSIN", "SUPPORT", "SNIPER"]
 const ROLE_COLORS: Array = [
 	Color(0.30, 0.55, 1.00),
@@ -90,6 +96,9 @@ const ROLE_COLORS: Array = [
 ]
 
 var _mech: MechData = null
+## Mastery rows `[{name, value, tier, bonus, current}]` (BanPickController
+## `_mastery_rows`) — empty outside a season run or for an unanalysed enemy.
+var _mastery_rows: Array = []
 var _root: Control = null
 ## 누른 카드의 설명판(`CardDescBox`) — 카드 앞면에 설명문이 없으므로 그 글은
 ## 카드를 누르면 카드 **위쪽**에 뜨는 이 판이 든다. 같은 카드를 다시 누르면 닫힌다.
@@ -101,9 +110,10 @@ func _init() -> void:
 	layer = OVERLAY_LAYER
 
 
-func open(m: MechData) -> void:
+func open(m: MechData, mastery_rows: Array = []) -> void:
 	close()
 	_mech = m
+	_mastery_rows = mastery_rows
 	if m == null:
 		return
 	_build()
@@ -214,6 +224,7 @@ func _build_panel() -> void:
 	var y: float = 0.0
 	y = _build_header(body, inner_w, y)
 	y = _build_stat_chips(body, inner_w, y + 18.0)
+	y = _build_mastery_block(body, inner_w, y + 22.0)
 	y = _build_passive_block(body, inner_w, y + 22.0)
 	y = _build_card_section(body, inner_w, y + 22.0)
 
@@ -246,6 +257,31 @@ func _build_stat_chips(body: Control, w: float, y: float) -> float:
 		_mk_chip(body, at, Vector2(chip_w, CHIP_H),
 				String(keys[i]), str(int(values[i])))
 	return y + CHIP_H
+
+
+## Mastery of each pilot of that team with this mech — the pilot on the tapped
+## seat is marked ▶ and drawn bright. Skipped when there are no rows.
+func _build_mastery_block(body: Control, w: float, y: float) -> float:
+	if _mastery_rows.is_empty():
+		return y - 22.0
+	y = _section(body, w, y, "숙련도 (등급 보정 = 스탯 6종)")
+	for raw in _mastery_rows:
+		var r: Dictionary = raw
+		var cur: bool = bool(r.get("current", false))
+		var t: int = int(r.get("tier", 0))
+		var nm := UiHelpers.mk_label(body, ("▶ " if cur else "   ") + String(r.get("name", "")),
+				MASTERY_FONT, CHIP_VALUE_COLOR if cur else CHIP_NAME_COLOR,
+				Vector2(0, y), Vector2(w * 0.46, MASTERY_ROW_H))
+		nm.clip_text = true
+		UiHelpers.mk_label(body, "%s %d" % [MechMastery.tier_name(t), int(r.get("value", 0))],
+				MASTERY_FONT, MechMastery.tier_color(t).lightened(0.25),
+				Vector2(w * 0.46, y), Vector2(w * 0.32, MASTERY_ROW_H))
+		UiHelpers.mk_label(body, String(r.get("bonus", "")), MASTERY_FONT,
+				CHIP_VALUE_COLOR if cur else CHIP_NAME_COLOR,
+				Vector2(w * 0.78, y), Vector2(w * 0.22, MASTERY_ROW_H),
+				HORIZONTAL_ALIGNMENT_RIGHT)
+		y += MASTERY_ROW_H
+	return y
 
 
 func _mk_chip(body: Control, at: Vector2, sz: Vector2, key: String,

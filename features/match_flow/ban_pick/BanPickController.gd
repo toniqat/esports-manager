@@ -262,6 +262,20 @@ var _side_picks: Dictionary = {}   # side(int) → Array[int]
 var _rosters: Dictionary    = {}   # side(int) → Array[PlayerData] (역할 0..4 순)
 var _team_names: Dictionary = {}   # side(int) → String
 
+# ── Mech mastery (M4) / analysis markers (M5 decision) ──────────────────────
+# All empty / false when MatchFlow runs standalone (no active season), so the
+# screen and the AI behave exactly as before.
+var _mastery_on: bool = false
+## Analysis reveals the enemy's likely picks (`StaffSystem.analysis_tier >= 2`).
+var _show_enemy_likely: bool = false
+## Analysis is delegated → the analyst also marks recommended bans.
+var _show_analyst_bans: bool = false
+## mech_id(int) → {"pilot": String, "value": int} — each enemy pilot's top mech.
+var _enemy_likely: Dictionary = {}
+## The enemy's mech slots are re-seated by pilot (assign step) — only then does
+## a seat's mastery label describe the right pilot.
+var _enemy_seated: bool = false
+
 ## 배정 단계인가. true 면 격자가 사라지고 아군 블록이 드래그 가능한 배정판이 된다.
 var _assign_mode: bool = false
 ## side → 자리(seat, 화면 순서 0..4) → mech_id (-1 = 빈 자리). **밴픽 중에도
@@ -353,6 +367,8 @@ func enter(all_mechs: Array, player_side: int,
 	_seat_mechs = {player_side: _empty_seats(), enemy_side: _empty_seats()}
 	_start_btn = null
 	_ai_hover_id = -1
+	_enemy_seated = false
+	_setup_mastery()
 	_build_ui()
 	_refresh_ui()
 	_play_turn_banner()
@@ -368,6 +384,88 @@ func _sorted_for_grid(mechs: Array) -> Array:
 		if ra != rb:
 			return ra < rb
 		return (a as MechData).id < (b as MechData).id)
+	return out
+
+
+# ── Mastery helpers ──────────────────────────────────────────────────────────
+## Reads the run state once per `enter`: is mastery on, what does analysis
+## reveal, and which mechs are the enemy pilots' top-mastery mechs.
+func _setup_mastery() -> void:
+	var s: Dictionary = _gm.season_state
+	_mastery_on = MechMastery.is_enabled(s)
+	_enemy_likely = {}
+	_show_enemy_likely = false
+	_show_analyst_bans = false
+	if not _mastery_on:
+		return
+	_show_enemy_likely = StaffSystem.analysis_tier(s) >= 2
+	_show_analyst_bans = StaffSystem.is_delegated(s, "analysis")
+	for raw in _rosters.get(_other_side(_player_side), []):
+		var pd := raw as PlayerData
+		if pd == null:
+			continue
+		var top: Array = MechMastery.top_mechs(s, pd.id, 1)
+		if top.is_empty():
+			continue
+		var mid: int = int((top[0] as Dictionary)["mech_id"])
+		var v: int = int((top[0] as Dictionary)["value"])
+		if not _enemy_likely.has(mid) or int((_enemy_likely[mid] as Dictionary)["value"]) < v:
+			_enemy_likely[mid] = {"pilot": pd.name, "value": v}
+
+
+## Mastery of `pd` with `mech_id` (0 when mastery is off).
+func _mastery(pd: PlayerData, mech_id: int) -> int:
+	if not _mastery_on or pd == null or mech_id < 0:
+		return 0
+	return MechMastery.value(_gm.season_state, pd.id, mech_id)
+
+
+## The pilot of `side` whose role matches the mech's role class — the natural rider.
+func _rider_for(side: int, m: MechData) -> PlayerData:
+	var roster: Array = _rosters.get(side, [])
+	if m == null or m.role < 0 or m.role >= roster.size():
+		return null
+	return roster[m.role] as PlayerData
+
+
+## Analyst's recommended bans right now: the highest-mastery enemy likely picks
+## that are still legal, while I still have bans left. Empty when not delegated.
+func _analyst_bans() -> Array:
+	if not _show_analyst_bans or _assign_mode:
+		return []
+	if (_side_bans.get(_player_side, []) as Array).size() >= 2:
+		return []
+	var rows: Array = []
+	for k in _enemy_likely.keys():
+		if _is_legal(int(k)):
+			rows.append([int((_enemy_likely[k] as Dictionary)["value"]), int(k)])
+	rows.sort_custom(func(a, b):
+		if int(a[0]) != int(b[0]):
+			return int(a[0]) > int(b[0])
+		return int(a[1]) < int(b[1]))
+	var out: Array = []
+	for r in rows.slice(0, ConstTable.int_of("MASTERY_ANALYST_BANS")):
+		out.append(int(r[1]))
+	return out
+
+
+## Mastery rows for `MechDetailPanel`: every pilot of `side` (seat order) with
+## this mech — `[{name, value, tier, bonus, current}]`. `current` marks the pilot
+## sitting on `seat`. Empty when mastery is off, or for the enemy without analysis.
+func _mastery_rows(side: int, mech_id: int, seat: int) -> Array:
+	if not _mastery_on:
+		return []
+	if side != _player_side and not _show_enemy_likely:
+		return []
+	var out: Array = []
+	for st in range(SLOT_COUNT):
+		var pd: PlayerData = _pilot_at(side, st)
+		if pd == null:
+			continue
+		var v: int = _mastery(pd, mech_id)
+		var t: int = MechMastery.tier_of(v)
+		out.append({"name": pd.name, "value": v, "tier": t,
+				"bonus": MechMastery.bonus_text(t), "current": st == seat})
 	return out
 
 
@@ -860,6 +958,19 @@ func _build_mech_slot(parent: Control, pos: Vector2, sz: Vector2,
 			HORIZONTAL_ALIGNMENT_CENTER)
 	nm.clip_text = true
 
+	# Mastery tag (top-left) — "<tier> <bonus>" of the pilot sitting on this seat
+	# with this mech. Filled by `_refresh_side_block`; hidden without mastery.
+	var mtag := Panel.new()
+	mtag.position = Vector2(4.0, 4.0)
+	mtag.size = Vector2(minf(sz.x - 8.0, 104.0), 28.0)
+	mtag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mtag.visible = false
+	frame.add_child(mtag)
+	var mtag_lbl := UiHelpers.mk_label(mtag, "", 17, OutgameTheme.TEXT_ON_FILL,
+			Vector2.ZERO, mtag.size, HORIZONTAL_ALIGNMENT_CENTER)
+	mtag_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	mtag_lbl.clip_text = true
+
 	# 상대 팀 칸의 탭 버튼. 아군 칸은 드래그 배선(`_bind_slot_drag`)이 탭까지
 	# 함께 받으므로 이 버튼을 켜지 않는다 — 켜면 그 버튼이 press 를 가져가
 	# 드래그가 시작되지 않는다.
@@ -875,7 +986,8 @@ func _build_mech_slot(parent: Control, pos: Vector2, sz: Vector2,
 	parent.add_child(hit)
 
 	return {"frame": frame, "art": art, "band": band, "name": nm, "hit": hit,
-			"style": sb, "side_col": side_col, "seat": seat, "pos": pos}
+			"style": sb, "side_col": side_col, "seat": seat, "pos": pos,
+			"mtag": mtag, "mtag_lbl": mtag_lbl}
 
 
 # ── 픽창 배경판 ──────────────────────────────────────────────────────────────
@@ -1025,6 +1137,15 @@ func _build_mech_cell(m: MechData) -> Dictionary:
 	nm.clip_text = true
 	nm.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
+	# Mastery / analysis markers (filled by `_refresh_grid_cells`, hidden by
+	# default): top-right = enemy likely pick / analyst ban, bottom-left = my
+	# rider's tier when it is 능숙 or better.
+	var mark_w: float = minf(84.0, art_sz * 0.48)
+	var intel := _mk_cell_tag(btn, Vector2(pad + art_sz - 4.0 - mark_w, pad + 4.0),
+			Vector2(mark_w, 28.0))
+	var mine := _mk_cell_tag(btn, Vector2(pad + 4.0, pad + art_sz - 32.0),
+			Vector2(mark_w, 28.0))
+
 	# 상태 슬래브 (밴 / 픽) — 칸 전체를 덮고 그 위에 태그 한 줄.
 	var veil := ColorRect.new()
 	veil.position = Vector2.ZERO
@@ -1042,7 +1163,33 @@ func _build_mech_cell(m: MechData) -> Dictionary:
 	tag.visible = false
 	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	return {"btn": btn, "art": art, "veil": veil, "tag": tag, "mech": m}
+	return {"btn": btn, "art": art, "veil": veil, "tag": tag, "mech": m,
+			"intel": intel, "mine": mine}
+
+
+## A small filled tag on a grid cell (`{panel, label}`), hidden until set.
+func _mk_cell_tag(parent: Control, pos: Vector2, sz: Vector2) -> Dictionary:
+	var p := Panel.new()
+	p.position = pos
+	p.size = sz
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	p.visible = false
+	parent.add_child(p)
+	var l := UiHelpers.mk_label(p, "", 17, OutgameTheme.TEXT_ON_FILL,
+			Vector2.ZERO, sz, HORIZONTAL_ALIGNMENT_CENTER)
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	l.clip_text = true
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return {"panel": p, "label": l}
+
+
+func _set_cell_tag(tag: Dictionary, text: String, bg: Color) -> void:
+	var p := tag["panel"] as Panel
+	p.visible = text != ""
+	if text == "":
+		return
+	p.add_theme_stylebox_override("panel", OutgameTheme.flat_style(bg, 8))
+	(tag["label"] as Label).text = text
 
 
 ## 역할군 배지 — 역할 색으로 채운 둥근 사각형 안에 하얀 두 글자. 글자가 아니라
@@ -1236,6 +1383,35 @@ func _build_sheet_body(m: MechData, sw: float, sh: float) -> void:
 	_sheet_confirm.pressed.connect(_on_confirm_pressed)
 	_sheet.add_child(_sheet_confirm)
 	_refresh_sheet_confirm()
+	_build_sheet_mastery(m, Vector2(SHEET_PAD, by),
+			Vector2(close_btn.position.x - 12.0 - SHEET_PAD, SHEET_BTN_H))
+
+
+## Left of the sheet buttons (under the art): my natural rider's mastery with
+## this mech, and what analysis knows about the enemy wanting it.
+func _build_sheet_mastery(m: MechData, pos: Vector2, sz: Vector2) -> void:
+	if not _mastery_on:
+		return
+	var rider: PlayerData = _rider_for(_player_side, m)
+	if rider != null:
+		var v: int = _mastery(rider, m.id)
+		var t: int = MechMastery.tier_of(v)
+		var l1 := UiHelpers.mk_label(_sheet, "%s  %s %d  (스탯 %s)" % [
+				rider.name, MechMastery.tier_name(t), v, MechMastery.bonus_text(t)],
+				21, MechMastery.tier_color(t), pos, Vector2(sz.x, sz.y * 0.5))
+		l1.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		l1.clip_text = true
+	var intel: String = ""
+	if m.id in _analyst_bans():
+		intel = "분석가 추천 밴 — %s 의 주력" % String((_enemy_likely[m.id] as Dictionary)["pilot"])
+	elif _show_enemy_likely and _enemy_likely.has(m.id):
+		intel = "상대 예상 픽 — %s" % String((_enemy_likely[m.id] as Dictionary)["pilot"])
+	if intel != "":
+		var l2 := UiHelpers.mk_label(_sheet, intel, 19,
+				OutgameTheme.ACCENT_TEXT if m.id in _analyst_bans() else RED_COLOR,
+				pos + Vector2(0.0, sz.y * 0.5), Vector2(sz.x, sz.y * 0.5))
+		l2.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		l2.clip_text = true
 
 
 ## 메크 카드들을 손패와 **같은 노드**(`Card.tscn`)로 늘어놓는다 — 따로 그린
@@ -1361,6 +1537,7 @@ func _refresh_ui() -> void:
 func _refresh_grid_cells() -> void:
 	var blue_picks: Array = _picks_of(GameEnums.DraftSide.BLUE)
 	var red_picks: Array  = _picks_of(GameEnums.DraftSide.RED)
+	var rec_bans: Array = _analyst_bans()
 	for id in _cells.keys():
 		var cell: Dictionary = _cells[id]
 		var veil := cell["veil"] as ColorRect
@@ -1392,6 +1569,30 @@ func _refresh_grid_cells() -> void:
 			veil.visible = false
 			tag.visible = false
 			art.modulate = Color(1, 1, 1)
+		_refresh_cell_marks(cell, mid, rec_bans)
+
+
+## Mastery / analysis tags of one grid cell. Taken (banned / picked) cells show
+## none — the slab already says everything.
+func _refresh_cell_marks(cell: Dictionary, mid: int, rec_bans: Array) -> void:
+	if not cell.has("intel"):
+		return
+	var available: bool = _is_legal(mid)
+	var intel_txt: String = ""
+	var intel_col: Color = OutgameTheme.ACCENT
+	if available and mid in rec_bans:
+		intel_txt = "추천 밴"
+	elif available and _show_enemy_likely and _enemy_likely.has(mid):
+		intel_txt = "예상 픽"
+		intel_col = RED_COLOR
+	_set_cell_tag(cell["intel"], intel_txt, intel_col)
+	var mine_txt: String = ""
+	var t: int = 0
+	if available and _mastery_on:
+		t = MechMastery.tier_of(_mastery(_rider_for(_player_side, cell["mech"] as MechData), mid))
+		if t >= 2:
+			mine_txt = MechMastery.tier_name(t)
+	_set_cell_tag(cell["mine"], mine_txt, MechMastery.tier_color(t))
 
 
 ## 칸 테두리 — 내가 시트로 열어 본 칸은 앰버, **상대가 집어 보고 있는 칸**은
@@ -1472,6 +1673,27 @@ func _refresh_side_block(side: int) -> void:
 			band.visible = false
 			sty.bg_color = SLOT_EMPTY_COLOR
 			sty.border_color = side_col.lerp(OutgameTheme.SURFACE, 0.55)
+		_refresh_slot_mastery(side, slot, int(ids[i]) if i < ids.size() else -1)
+
+
+## The seat's mastery tag: my seats always (the slot row is "the mech of the
+## pilot above it" from the first pick), enemy seats only once analysis reveals
+## mastery and the enemy mechs are re-seated by pilot in the assign step.
+func _refresh_slot_mastery(side: int, slot: Dictionary, mech_id: int) -> void:
+	var tag := slot.get("mtag", null) as Panel
+	if tag == null:
+		return
+	var wanted: bool = _mastery_on and mech_id >= 0 \
+			and (side == _player_side or (_show_enemy_likely and _enemy_seated))
+	var pd: PlayerData = _pilot_at(side, int(slot["seat"])) if wanted else null
+	if pd == null:
+		tag.visible = false
+		return
+	var t: int = MechMastery.tier_of(_mastery(pd, mech_id))
+	tag.visible = true
+	tag.add_theme_stylebox_override("panel",
+			OutgameTheme.flat_style(MechMastery.tier_color(t), 8))
+	(slot["mtag_lbl"] as Label).text = "%s %s" % [MechMastery.tier_name(t), MechMastery.bonus_text(t)]
 
 
 ## 상대가 지금 집어 보는 기체가 `side` 블록의 몇 번째 칸(밴 칩 / 픽 슬롯)에
@@ -1613,6 +1835,9 @@ func _maybe_run_ai() -> void:
 ## **픽**은 아직 자기 팀에 없는 역할군을, **밴**은 상대(= 이쪽에서 보면 플레이어)
 ## 팀에 아직 없는 역할군을 노리고(채울 자리를 뺏는 밴), 패시브가 있는 기체에
 ## 조금 더 얹는다. 흔들림(`randf`)이 있어 같은 판에서도 매번 같은 순서가 아니다.
+## Mastery (season only): a pick adds `MASTERY_AI_PICK_W × mastery/MAX` of our
+## rider of that role class; a ban adds `MASTERY_AI_BAN_W × mastery/MAX` of the
+## opponent's rider — so the AI picks its mains and bans the player's.
 func _ai_rank(side: int, kind: int) -> Array:
 	var own_roles: Array = []
 	for id in _picks_of(side):
@@ -1622,6 +1847,9 @@ func _ai_rank(side: int, kind: int) -> Array:
 	for id in _picks_of(_other_side(side)):
 		var m := _find_mech(int(id))
 		if m != null: opp_roles.append(m.role)
+	var pick_w: float = ConstTable.num("MASTERY_AI_PICK_W") if _mastery_on else 0.0
+	var ban_w: float = ConstTable.num("MASTERY_AI_BAN_W") if _mastery_on else 0.0
+	var mmax: float = maxf(1.0, float(MechMastery.max_value())) if _mastery_on else 1.0
 	var scored: Array = []
 	for m_raw in _all_mechs:
 		var m := m_raw as MechData
@@ -1632,8 +1860,13 @@ func _ai_rank(side: int, kind: int) -> Array:
 			s += 1.0
 		if kind == ACTION_PICK:
 			s += 3.0 if not (m.role in own_roles) else -2.0
-		elif not (m.role in opp_roles):
-			s += 2.5
+			# Mastery: prefer what our natural rider of that role rides well.
+			s += pick_w * float(_mastery(_rider_for(side, m), m.id)) / mmax
+		else:
+			if not (m.role in opp_roles):
+				s += 2.5
+			# Mastery: ban what the opponent's rider of that role rides well.
+			s += ban_w * float(_mastery(_rider_for(_other_side(side), m), m.id)) / mmax
 		scored.append([s, m])
 	scored.sort_custom(func(a, b): return float(a[0]) > float(b[0]))
 	var out: Array = []
@@ -1781,20 +2014,38 @@ func _play_assign_intro(enemy_side: int) -> void:
 ## 상대의 배정 — 각 자리에 **그 선수의 역할과 같은 역할군의 기체**를 앉히고,
 ## 맞는 기체가 없는 자리는 남은 기체로 픽 순서대로 채운다. 상대가 다섯 대를
 ## 역할군대로 골랐다면 자리마다 제 역할의 기체가 앉는다.
+##
+## With mastery on, the pairing is greedy over (role match first, then the
+## seat pilot's mastery with the mech) — so among two mechs of the same role
+## class the pilot gets the one they ride best, and an off-role leftover goes to
+## whoever handles it best. Without mastery the score is the role match alone
+## and the order falls back to pick order, as before.
 func _enemy_role_order(side: int) -> Array:
 	var picks: Array = (_picks_of(side) as Array).duplicate()
-	var out: Array = _empty_seats()
+	var pairs: Array = []   # [score, pick_index, seat, mech_id]
 	for seat in range(SLOT_COUNT):
 		var role: int = int(GameEnums.ROLE_DISPLAY_ORDER[seat])
-		for id in picks:
-			var m := _find_mech(int(id))
-			if m != null and m.role == role:
-				out[seat] = int(id)
-				picks.erase(id)
-				break
-	for seat in range(SLOT_COUNT):
-		if int(out[seat]) < 0 and not picks.is_empty():
-			out[seat] = int(picks.pop_front())
+		var pd: PlayerData = _pilot_at(side, seat)
+		for pi in picks.size():
+			var mid: int = int(picks[pi])
+			var m := _find_mech(mid)
+			var score: int = (1000 if m != null and m.role == role else 0) + _mastery(pd, mid)
+			pairs.append([score, pi, seat, mid])
+	pairs.sort_custom(func(a, b):
+		if int(a[0]) != int(b[0]):
+			return int(a[0]) > int(b[0])
+		if int(a[1]) != int(b[1]):
+			return int(a[1]) < int(b[1])
+		return int(a[2]) < int(b[2]))
+	var out: Array = _empty_seats()
+	var used: Dictionary = {}
+	for p in pairs:
+		var seat: int = int(p[2])
+		var mid: int = int(p[3])
+		if int(out[seat]) >= 0 or used.has(mid):
+			continue
+		out[seat] = mid
+		used[mid] = true
 	return out
 
 
@@ -1842,6 +2093,7 @@ func _play_enemy_reassign(side: int, new_order: Array) -> void:
 				frame.position = slot["pos"]
 				frame.z_index = 0
 	_seat_mechs[side] = new_order
+	_enemy_seated = true
 	_refresh_side_block(side)
 
 
@@ -1964,10 +2216,12 @@ func _on_mech_slot_tapped(side: int, seat: int) -> void:
 			_open_sheet(int(ids[seat]))
 			_refresh_cell_selection()
 		return
-	_open_mech_detail(int(ids[seat]))
+	_open_mech_detail(int(ids[seat]), side, seat)
 
 
-func _open_mech_detail(mech_id: int) -> void:
+## `side` / `seat` say whose slot was tapped — the panel lists that team's
+## mastery with the mech and highlights the pilot on that seat.
+func _open_mech_detail(mech_id: int, side: int, seat: int) -> void:
 	var m := _find_mech(mech_id)
 	if m == null:
 		return
@@ -1975,7 +2229,7 @@ func _open_mech_detail(mech_id: int) -> void:
 		_mech_detail = MechDetailPanel.new()
 		add_child(_mech_detail)
 	_close_detail_panels()
-	_mech_detail.open(m)
+	_mech_detail.open(m, _mastery_rows(side, mech_id, seat))
 
 
 ## 두 팝업은 **동시에 뜨지 않는다** — 파일럿과 메크를 한 화면에 겹치지 않는

@@ -178,7 +178,11 @@ effective(stat) = max(감독[stat] + 일시 보정, 어시스턴트[stat], 담�
 - 획득: 그 메크로 경기 출전, 훈련(지식 스탯이 배율), 새 메크 적응은 낮은 값에서 시작.
 - 효과: MatchFlow 가 밴픽 배정 직후 **로스터 사본의 스탯에 숙련도 보정**을 얹어 `match_ctx` 로 보낸다 → **BattleSim 은 수정하지 않는다.**
 - 밴픽 배정 단계 / `MechDetailPanel` 에 숙련도 표시.
-- 기획서의 "선수 파편 스킬"은 정의가 없어 **보류**(§8 미결).
+- 기획서의 "선수 파편 스킬"은 **기벽**으로 이름을 바꿔 정의했다(§8 #2) — 재화(`pilot_shard`)와 무관.
+  - **런 한정 선수 패시브**, 긍정 효과만, 효과는 **스탯 보정만**(숙련도처럼 MatchFlow 가 로스터 사본에 얹는다 → BattleSim 수정 없음).
+  - 0개로 시작, 칸 2개. **훈련 타일 · 메크 연구 카드**로 획득하면 무작위 기벽이 빈 칸에 **강제 장착**.
+  - 별도 훈련으로 **재굴림**, 별도 훈련으로 칸을 **최대 5개**까지 확장.
+  - **지식 스탯** → 좋은(고등급) 기벽이 뽑힐 가중치.
 - 문서: `features/match_flow/README.md`, `ban_pick/` README.
 
 ### M5. 분석 — 상대 전력 공개
@@ -297,14 +301,13 @@ effective(stat) = max(감독[stat] + 일시 보정, 어시스턴트[stat], 담�
 | # | 항목 | 마일스톤 |
 |---|---|---|
 | 1 | ~~진엔딩의 "리그 우승" 판정~~ — **런 클리어 + 외출 5회**(§11) | M7 |
-| 2 | "선수 파편 스킬"(지식 스탯)의 정의 | M4 |
+| 2 | ~~"선수 파편 스킬"(지식 스탯)의 정의~~ — **기벽**(런 한정 긍정 스탯 패시브, §3 M4) | M4 |
 | 3 | ~~프로필 초기 보유 선수 구성~~ — **역할별 2명 = 10인**(`players.starter`), 전원 Lv1 | M1 |
 | 4 | ~~캡 · 레벨 수치~~ — 자리표시 값으로 확정(`scenarios.csv` · `pilot_levels.csv` · `players.salary`) | M1 |
-| 5 | 점수 · 재화 공식 — 자리표시(`RUN_*` const 키), 감독 EXP 곡선은 M9 | M2 / M9 |
+| 5 | 점수 · 재화 공식 — 자리표시(`RUN_*` const 키), 감독 EXP 곡선은 M9. **헤드리스 런 시뮬로 페이즈 도달률 · 점수 분포를 뽑아 역산**하기로 결정 | M2 / M9 |
 | 6 | ~~잔고 음수(예산 파산) 처리~~ — **음수 불가, 지출 강제 삭감**(§11) | M6 |
 | 7 | ~~첫 특성 묶음 목록~~ — **24종**(`traits.csv`, §12) | M8 |
 | 8 | ~~감독 타입별 초기 스탯, 감독 스탯 총합~~ — 1~20 척도, 자리표시(`manager_types.csv`, 총합 36) | M3 |
-| 9 | 6대회 전승 필수로 난이도가 급격히 높아지는 점 — 저예산 팀 · 저캡 시나리오 밸런스 점검 필요 | M2 이후 |
 | 10 | ~~신규 폴더 구조(§2.2) 승인~~ — **승인됨**(M0, 2026-10-06) | M0 착수 시 |
 
 ---
@@ -658,3 +661,71 @@ host 서비스: `show_toast` · `refresh_currency` · `rebuild_bar` · `relayout
   **고치지 않는다**. 꼭 필요하면 최소 수정 + 보고.
 - `const.csv` 는 **자기 접두사 키를 맨 끝에 추가**만. `data/game.db` · `data/csv/*.translation` 은
   **커밋하지 않는다**(로컬 재빌드는 자유 — 커밋 전 `git checkout` 으로 되돌림). 병합 후 한 번 다시 굽는다.
+
+---
+
+## 13. 다음 작업 목록 (2026-10-06 확정, 다른 세션에서 진행)
+
+§8 질의응답과 §9 후속 과제에서 고른 것. 착수 전 해당 폴더 README 를 먼저 읽는다. 순서는 미정 — 착수 세션에서 정한다.
+
+| # | 작업 | 내용 | 주 위치 |
+|---|---|---|---|
+| T1 | **기벽**(§3 M4, §8 #2) | 런 한정 선수 패시브 · 긍정만 · 스탯 보정만(MatchFlow 가 로스터 사본에 얹음, BattleSim 무수정). 0개 시작, 칸 2 → 훈련으로 최대 5. 획득 = 훈련 타일 · `메크 연구` 카드 → 무작위 기벽을 빈 칸에 강제 장착. 별도 훈련으로 재굴림. 지식 스탯 = 좋은 기벽 가중치. 표(`quirks.csv` 가칭) · `season_state` 키 · 세이브 · 표시 지점(밴픽 · 컬렉션 상세 · 허브)은 착수 시 계약으로 확정 | `season/mastery/`, `season/training/`, `match_flow/` |
+| T2 | **점수 · 재화 · EXP 공식 산출**(§8 #5) | 헤드리스 런 시뮬레이션 스크립트로 N회 자동 진행 → 페이즈 도달률 · 점수 · 재화 · 감독 EXP 분포 → 목표치에서 `RUN_*` · 레벨 곡선 · 패스 EXP 역산 | `meta/run_result/`, `data/csv/const.csv` |
+| T3 | **특성 배율 UI 반영** | `FinancePanel` 스폰서 배율 글자, `TrainingView` "훈련 효과 ×" 글자에 특성 배율 포함. 특성 레어리티별 색 통일(정산 카드 앰버 고정 해소) | `season/finance/`, `season/training/`, `meta/traits/`, `meta/run_result/` |
+| T4 | **허브 · 주간 표시 보강** | 허브에 선수 신뢰도 표시, 시간 경과 화면에 숙련도 획득 표시 | `season/` (HubView), `season/week/`, `season/mental/` |
+| T5 | **12장 손패 부채꼴 확인** | 드로우 특성으로 손패 12장일 때 배치 · `HandHitLayer` 판정 검증, 깨지면 수정 | `battle_sim/card_phase/` |
+| T6 | **코치 추천 · 감독 관리 스탯** | 저스탯 팀 코치 추천 개선(지금은 `T02` 만), 감독 관리 스탯에 담당자 판정 외 실효과 부여, 부자 팀 잉여 잔고 사용처(저예산 도구 후속 포함) | `season/training/`, `season/staff/`, `season/finance/` |
+
+- 제외: 코스메틱 재화 사용처(기록만 — 결정 유지), 치트 즉시 결과의 숙련도 미지급.
+- §8 #9(6대회 전승 난이도)는 **의도된 난이도**라 목록에서 뺐다.
+
+---
+
+## 14. §13 작업 계약 (2026-10-06 확정, 병렬 개발용)
+
+기반 커밋이 기벽 상태 키(`season_state.quirks`) · 세이브 왕복 · `QuirkSystem` 스텁(시그니처 고정) ·
+`MatchFlow._finalize_rosters` 의 `QuirkSystem.apply_to` 호출 · `GameManager.start_run` 의
+`QuirkSystem.init_run` · 표 스키마 2개(`quirks` · `finance_specials`, 헤더만 있는 CSV) ·
+`FinanceSystem.income_mult` / `upkeep_mult`(지금은 특성 배율만)를 먼저 넣었다.
+작업 단위는 **5개**: T1 · T2 · T3+T4 · T5 · T6.
+
+### 14.0 결정 (질의응답)
+| 항목 | 결정 |
+|---|---|
+| 기벽 표 | **18종 · 3등급**(0 일반 / 1 희귀 / 2 영웅, 각 6종). 효과 = 스탯 1~2개 고정 가산(`stats`), 영웅은 조건부 추가(`cond` + `cond_stats`, 예: 특정 역할 메크 탑승). 수치 자리표시 |
+| 기벽 등급 가중치 | 유효 지식 스탯(`StaffSystem.effective(state, "knowledge")`)이 희귀 · 영웅 확률을 올린다 — `QUIRK_*` const |
+| 기벽 획득 · 재굴림 · 칸 | 훈련 타일 효과 절 `quirk:gain` / `quirk:reroll` / `quirk:slot` — 그 요일 정산에서 **타일이 덮은 칸의 선수**에게 적용(칸마다 아니고 선수마다 한 번). `메크 연구` 카드 = 주간 연구 정산(`MechMastery.settle_week`)에서 연구 메크가 있는 내 선수마다 `QUIRK_RESEARCH_CHANCE`% 확률로 `gain_random` |
+| 기벽 칸 | 시작 `QUIRK_SLOTS_START`(2), 최대 `QUIRK_SLOTS_MAX`(5). 빈 칸이 없으면 획득은 "full"(아무 일도 없음 — 재굴림으로 바꾼다) |
+| 기벽 표시 | 밴픽(슬롯 태그 · 선수 시트), `메크 연구` 시트의 선수 카드, 시간 경과 화면의 요일 행. 컬렉션 상세는 런 밖이라 **표시하지 않는다** |
+| T2 목표치 | 평균 런(페이즈 1~2 도달) ≈ 선수 가챠 1회분 아웃게임 재화 · 감독 Lv25 ≈ 40런 · 패스 25단 ≈ 주 7런 · 클리어 런 점수 ≈ 평균 런의 5배. 시뮬 결과 리포트 + const 반영 |
+| T6 재무 스탯 | 유효 재무 스탯이 스폰서 수입 % · 유지비 할인 %에 **연속 보정**(`FINANCE_STAT_*`) — `income_mult` / `upkeep_mult` 에 곱해 넣는다(UI 는 이 둘만 읽는다) |
+| T6 잔고 사용처 | 재무 시트의 **특별 지출** 목록(`finance_specials.csv`): 단기 코치 고용(`StaffSystem.add_mod` 일시 스탯), 집중 캠프(N주 훈련 EXP %), 스폰서 계약(N주 수입 % — 조건부). 잔고에서 즉시 차감 |
+| T6 코치 추천 | `TrainingBoard.auto_arrange` 를 **선수별 약한 스탯 보강 + 등급 균형**으로 개선(T02 만 깔던 문제). 여전히 최적화기는 아니다 |
+
+### 14.1 상태 키 · 인터페이스
+| 키 / 함수 | 모양 | 소유 |
+|---|---|---|
+| `season_state.quirks` | `{"<pilot_id>": {"slots": int, "ids": [quirk_id]}}` — 내 5인만 | T1 (`QuirkSystem`) |
+| `QuirkSystem.*` | `features/season/quirk/QuirkSystem.gd` 스텁 시그니처 그대로 | T1 |
+| `apply_day_training` 행 | 기존 키 + **`quirk: [{kind: gain\|reroll\|slot, result, id?, from?, to?}]`**(없으면 빈 배열) | T1 이 채움, T3+T4 가 그림 |
+| `apply_day_training` 행 `mastery` | 기존 그대로 — 시간 경과 화면에 표시 | T3+T4 가 그림 |
+| `season_state.finance.specials` | `[{id, weeks_left, ...}]` 진행 중 특별 지출 | T6 (`FinanceSystem`) |
+| `FinanceSystem.income_mult(state)` / `upkeep_mult(state)` | float — 특성 × 재무 스탯 × 특별 지출 | 몸통 T6, 글자 T3 |
+| `FinanceSystem.training_exp_mult` | 기존 + 집중 캠프 | T6 |
+| 특성 레어리티 색 | 공용 함수 하나(`features/meta/traits/TraitUi.gd` 신규, `rarity_color(rarity)`) | T3 |
+
+### 14.2 파일 소유 (병렬 작업)
+| 작업 | 소유 |
+|---|---|
+| **T1 · 기벽** | `features/season/quirk/*`(+ README), `data/csv/quirks.csv`, `data/csv/training_tiles.csv`(기벽 타일 추가), `features/season/training/TrainingTile.gd`(효과 절 파싱 · 요약), `TrainingBoard.apply_day_training` 의 기벽 적용 부분, `MechMastery.settle_week`(연구 확률 획득 한 자리), `features/season/mastery/MasteryPanel.gd`(시트에 기벽 줄), `features/match_flow/ban_pick/*`(기벽 표시), const `QUIRK_*` |
+| **T2 · 공식 산출** | 신규 시뮬 스크립트(`features/meta/run_result/sim/`), 리포트 `docs/run_balance.md`, `data/csv/const.csv` 의 기존 `RUN_*` · `PASS_*` · `MANAGER_*` **값만**, `data/csv/manager_levels.csv` · `pilot_levels.csv`(EXP 곡선), `features/meta/run_result/README.md` |
+| **T3+T4 · 표시 보강** | `features/season/training/TrainingView.gd`(훈련 효과 × 글자), `features/season/finance/FinancePanel.gd` 의 **스폰서 배율 글자 줄만**, `features/meta/traits/TraitUi.gd`(신규) + 레어리티 색 쓰는 화면(`RunResultScreen` · `StaffPanel` · `ManagerUi` / `TraitPickerView` · `ShopTab` 의 색 줄만), `features/season/HubView.gd`(신뢰도), `features/season/week/*`(숙련도 · 기벽 표시) |
+| **T5 · 12장 손패** | `features/battle_sim/card_phase/*`(+ README) — 검증만 하고 깨질 때만 수정, const `HAND_*` |
+| **T6 · 코치 추천 · 재무** | `TrainingBoard.auto_arrange`(+ 보조 함수), `features/season/finance/FinanceSystem.gd`, `FinancePanel.gd`(특별 지출 섹션 — 스폰서 배율 글자 줄 제외), `data/csv/finance_specials.csv`, `features/season/finance/README.md`, `features/season/training/README.md` 코치 추천 절, const `FINANCE_STAT_*` · `FSPEC_*` · `COACH_*` |
+
+- 같은 파일을 두 작업이 만지는 곳(`TrainingBoard.gd`: T1 = `apply_day_training`, T6 = `auto_arrange`;
+  `FinancePanel.gd`: T3 = 배율 글자 줄, T6 = 특별 지출 섹션; `training/README.md`: 각자 자기 절)은 **자기 함수 / 절만**.
+- 기반 소유(`GameManager` · `SaveSystem` · `MatchFlow.gd` · `csv_to_db.gd` · `StaffSystem` · `TraitSystem` ·
+  `ProfileManager`)는 고치지 않는다. 꼭 필요하면 최소 수정 + 보고.
+- `const.csv` 는 **자기 접두사 키를 맨 끝에 추가**만(T2 는 기존 값 수정). `data/game.db` · `*.translation` 은 커밋하지 않는다.

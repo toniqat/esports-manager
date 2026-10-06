@@ -224,13 +224,24 @@ static func sponsor_income(state: Dictionary, level: int) -> int:
 	var f: Dictionary = state.get("finance", {})
 	var row: Dictionary = facility_row(level)
 	return int(round(float(f.get("sponsor_base", 0)) * float(row.get("income_pct", 100)) / 100.0
-			* TraitSystem.run_pct_mult(state, "income_pct")))
+			* income_mult(state)))
 
 
 ## Weekly facility upkeep at `level` × trait `upkeep_pct` (M8).
 static func upkeep_cost(state: Dictionary, level: int) -> int:
 	return int(round(float(facility_row(level).get("upkeep", 0))
-			* TraitSystem.run_pct_mult(state, "upkeep_pct")))
+			* upkeep_mult(state)))
+
+
+## Every sponsor-income multiplier on top of the facility percent (traits; §14 adds
+## the finance stat and specials). The single number the UI shows as the sponsor ×.
+static func income_mult(state: Dictionary) -> float:
+	return TraitSystem.run_pct_mult(state, "income_pct")
+
+
+## Every upkeep multiplier (traits; §14 adds the finance stat).
+static func upkeep_mult(state: Dictionary) -> float:
+	return TraitSystem.run_pct_mult(state, "upkeep_pct")
 
 
 ## Surplus weeks settled while the manager ran finance (trait unlock counter, M8).

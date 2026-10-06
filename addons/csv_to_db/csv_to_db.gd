@@ -47,6 +47,9 @@ const SCHEMAS: Dictionary = {
 	"pilot_breakthrough": {"req": ["id","pilot_id","stage","kind","value","desc"], "pk": "id"},
 	"gacha_rates":   {"req": ["id","pool","rarity","weight"], "pk": "id"},
 	"pass_rewards":  {"req": ["level","currency","amount"], "pk": "level"},
+	# §14 (기벽 · 재무 특별 지출) — 계약: docs/outgame_dev_plan.md §14
+	"quirks":        {"req": ["id","name","grade","stats","cond","cond_stats","weight","desc"], "pk": "id"},
+	"finance_specials": {"req": ["id","name","kind","cost","p1","p2","weeks","cond","desc"], "pk": "id"},
 }
 
 # SQLite column definitions per table
@@ -385,6 +388,33 @@ const TABLE_DEFS: Dictionary = {
 		"level":    {"data_type": "int",  "primary_key": true, "not_null": true},
 		"currency": {"data_type": "text", "not_null": true},
 		"amount":   {"data_type": "int",  "not_null": true},
+	},
+	# ── §14 ───────────────────────────────────────────────────────────────
+	# 기벽(런 한정 선수 패시브, 긍정 스탯 보정만) — `grade` 0 일반 / 1 희귀 / 2 영웅,
+	# `stats` "stat:n|stat:n" 상시 가산, `cond` 빈 칸 또는 조건식(features/season/quirk/README.md),
+	# `cond_stats` 조건 충족 시 추가 가산, `weight` 같은 등급 안 뽑기 가중치.
+	"quirks": {
+		"id":         {"data_type": "int",  "primary_key": true, "not_null": true},
+		"name":       {"data_type": "text", "not_null": true},
+		"grade":      {"data_type": "int",  "not_null": true},
+		"stats":      {"data_type": "text", "not_null": true},
+		"cond":       {"data_type": "text", "not_null": true},
+		"cond_stats": {"data_type": "text", "not_null": true},
+		"weight":     {"data_type": "int",  "not_null": true},
+		"desc":       {"data_type": "text", "not_null": true},
+	},
+	# 재무 특별 지출(잉여 잔고 사용처) — `kind` 별 p1 · p2 뜻은 features/season/finance/README.md,
+	# `weeks` 지속 주(0 = 즉시), `cond` 구매 조건식(빈 칸 = 없음).
+	"finance_specials": {
+		"id":    {"data_type": "text", "primary_key": true, "not_null": true},
+		"name":  {"data_type": "text", "not_null": true},
+		"kind":  {"data_type": "text", "not_null": true},
+		"cost":  {"data_type": "int",  "not_null": true},
+		"p1":    {"data_type": "text", "not_null": true},
+		"p2":    {"data_type": "text", "not_null": true},
+		"weeks": {"data_type": "int",  "not_null": true},
+		"cond":  {"data_type": "text", "not_null": true},
+		"desc":  {"data_type": "text", "not_null": true},
 	},
 }
 

@@ -132,6 +132,8 @@ esports-manager/
 | Tuning constants (const.csv / ConstTable), no values in docs | `data/README.md` |
 | M3~M7 contract (state keys, week-end order, file ownership) | `docs/outgame_dev_plan.md` §11 |
 | M8~M10 contract (traits, presets, profile v2, lobby tabs, gacha, pass) | `docs/outgame_dev_plan.md` §12 |
+| Next outgame task list (기벽 quirks, score formula sim, UI follow-ups) | `docs/outgame_dev_plan.md` §13 |
+| §13 task contract (quirk state, finance specials, file ownership) | `docs/outgame_dev_plan.md` §14 |
 | Manager · staff stats, cover rule, hub manage cards (`HubSheet`) | `features/season/staff/README.md` |
 | iOS test build, downloading the .ipa | `docs/ios_testbuild.md`, `build/README.md` |
 

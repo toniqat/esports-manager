@@ -318,6 +318,7 @@ func _finalize_rosters(p_roster: Array, e_roster: Array) -> void:
 				continue
 			PilotMods.apply_to(s, pd)
 			MechMastery.apply_to(s, pd)
+			QuirkSystem.apply_to(s, pd)
 			if pd.assigned_mech != null:
 				assigned[str(pd.id)] = pd.assigned_mech.id
 	var pm = s.get("pending_match", null)

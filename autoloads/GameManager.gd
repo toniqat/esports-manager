@@ -134,6 +134,8 @@ var season_state: Dictionary = {
 	"mech_mastery": {},
 	# 주간 연구 메크 `{"<pilot_id>": mech_id}` — `MechMastery`.
 	"mastery_research": {},
+	# 기벽 `{"<pilot_id>": {"slots": int, "ids": [int]}}` — 내 선수만. `QuirkSystem` (§14).
+	"quirks": {},
 	# 재무 · 시설 — 모양은 `FinanceSystem` 이 소유한다(§11).
 	"finance": {},
 	# 신뢰도 `{"<pilot_id>": int}` · 외출 횟수 `{"<pilot_id>": int}` · 나머지
@@ -178,6 +180,7 @@ func reset_season_state() -> void:
 		"pilot_mods": [],
 		"mech_mastery": {},
 		"mastery_research": {},
+		"quirks": {},
 		"finance": {},
 		"trust": {},
 		"outings": {},
@@ -293,6 +296,7 @@ func start_run(run_setup: Dictionary) -> String:
 				mgr_setup["manager_stats"]), true)
 	# M4 · M6 · M7 — 런 한정 상태의 초기값.
 	MechMastery.init_run(season_state)
+	QuirkSystem.init_run(season_state)
 	FinanceSystem.init_run(season_state, team_id)
 	MentalSystem.init_run(season_state)
 	return ""

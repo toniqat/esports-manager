@@ -243,6 +243,25 @@ resume path restores the saved `player_side` as is, so it is unaffected by this 
 | `match_prep/MatchPrepController.gd` | Pre-match dashboard |
 | `ban_pick/BanPickController.gd` | Ban/Pick + mech assignment — both teams' portraits + mech grid + bottom detail sheet + drag assignment |
 | `ban_pick/MechDetailPanel.gd` | Mech detail popup for the assignment step |
+| `MatchCheatMenu.gd` | Editor-only cheat menu (top left) — see "Cheat menu" below |
+
+---
+
+## Cheat menu (editor runs only)
+For run testing. `MatchFlow._setup_cheats()` creates a `MatchCheatMenu` (`CanvasLayer`, layer 50 —
+above the detail popups, below `SceneFade`) **only when `OS.has_feature("editor")` and the match came
+from a season (`pending_match` exists)** — exported builds and standalone MatchFlow never see it.
+
+- A `CHEAT` button sits at the top left of the safe area; tapping it unfolds the cheat buttons below.
+- The menu doesn't know what to offer — `MatchFlow._refresh_cheats()` swaps the list on every
+  `_enter_phase` (`set_actions([{label, call}])`; an empty list hides the menu). Add cheats for
+  other phases there.
+- **PREP · BAN_PICK**: `즉시 승리 (MVP 아군 탑)` (Instant win) / `즉시 패배 (MVP 상대 탑)` (Instant loss)
+  → `_cheat_finish(winner_side)` writes `pending_match` in the same shape as `BattleSim.end_match`
+  (`winner_side`, `pilot_stats` = ten all-zero rows, `mvp_pilot_id` = the winning team's top via
+  `RunStats.top_role()`), clears `match_resume`, and fades to `Season.tscn` — SeasonHub settles it
+  through the normal post-match path (RunStats, standings / bracket, post-match autosave).
+- One press locks the menu (the list is cleared) so a double tap can't fire during the fade.
 
 ---
 

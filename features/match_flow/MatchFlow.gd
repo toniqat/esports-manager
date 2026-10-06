@@ -44,6 +44,9 @@ var player_picked_mech_ids: Array = []  # Array[int]
 var enemy_picked_mech_ids: Array  = []  # Array[int]
 var player_side: int             = GameEnums.DraftSide.BLUE
 
+# 에디터 실행 + 시즌 경기일 때만 생긴다(`_setup_cheats`). 그 밖에는 null.
+var _cheat_menu: MatchCheatMenu = null
+
 
 func _ready() -> void:
 	gm.reset_match_ctx()
@@ -56,6 +59,7 @@ func _ready() -> void:
 		enemy_team_id  = int(pending["enemy_team_id"])
 	if not _load_data():
 		return
+	_setup_cheats()
 
 	# Mid-match resume path: title-screen "이어하기" landed here because the
 	# slot was saved between BAN_PICK start and BattleSim launch. Skip ahead
@@ -124,6 +128,7 @@ func _load_data() -> bool:
 func _enter_phase(p: int) -> void:
 	phase = p
 	phase_changed.emit(p)
+	_refresh_cheats()
 	match p:
 		GameEnums.MatchPhase.PREP:
 			var p_roster := _team_roster(player_team_id)
@@ -306,6 +311,58 @@ func _autosave(reason: String) -> void:
 		push_warning("MatchFlow: autosave (%s) failed — %s" % [reason, err])
 	else:
 		print("MatchFlow: autosave (%s) → %s" % [reason, SaveSystem.run_path()])
+
+
+# ── 치트 (에디터 실행 전용) ───────────────────────────────────────────────────
+# 런 테스트용. 경기 시작 전(PREP · BAN_PICK)에 그 경기를 전투 없이 끝낸다.
+# 결과는 BattleSim.end_match 가 적는 것과 같은 모양으로 `pending_match` 에
+# 적고 시즌으로 돌아간다 — SeasonHub 가 평소의 경기 끝 경로로 정산한다.
+# 결과를 받을 `pending_match` 가 없는 단독 실행에서는 메뉴를 만들지 않는다.
+func _setup_cheats() -> void:
+	if not OS.has_feature("editor"):
+		return
+	if not gm.season_state.get("active", false) or gm.season_state.get("pending_match", null) == null:
+		return
+	_cheat_menu = MatchCheatMenu.new()
+	_cheat_menu.name = "MatchCheatMenu"
+	add_child(_cheat_menu)
+	_refresh_cheats()
+
+
+func _refresh_cheats() -> void:
+	if _cheat_menu == null:
+		return
+	var actions: Array = []
+	if phase == GameEnums.MatchPhase.PREP or phase == GameEnums.MatchPhase.BAN_PICK:
+		actions.append({"label": "즉시 승리 (MVP 아군 탑)", "call": _cheat_finish.bind(0)})
+		actions.append({"label": "즉시 패배 (MVP 상대 탑)", "call": _cheat_finish.bind(1)})
+	_cheat_menu.set_actions(actions)
+
+
+## 이 경기를 `winner_side`(0 = 내 팀) 승리로 끝낸다. 열 명의 기록은 전부 0,
+## MVP 는 이긴 팀의 탑(`RunStats.top_role`).
+func _cheat_finish(winner_side: int) -> void:
+	var pm = gm.season_state.get("pending_match", null)
+	if pm == null:
+		return
+	var rows: Array = []
+	var mvp_id: int = -1
+	var sides: Array = [_team_roster(player_team_id), _team_roster(enemy_team_id)]
+	for side in sides.size():
+		for raw in sides[side]:
+			var pd := raw as PlayerData
+			rows.append({
+				"pilot_id": pd.id, "side": side, "role": pd.role,
+				"k": 0, "d": 0, "a": 0, "dmg": 0, "taken": 0, "care": 0,
+			})
+			if side == winner_side and pd.role == RunStats.top_role():
+				mvp_id = pd.id
+	pm["winner_side"]  = winner_side
+	pm["pilot_stats"]  = rows
+	pm["mvp_pilot_id"] = mvp_id
+	gm.season_state["match_resume"] = null
+	print("MatchFlow: CHEAT — match resolved, winner_side=%d mvp=%d" % [winner_side, mvp_id])
+	SceneFade.change_scene(get_tree(), "res://scenes/Season.tscn")
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────

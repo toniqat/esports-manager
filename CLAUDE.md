@@ -1,195 +1,116 @@
 # EsportsManager — Project Navigation Map
 
-## Workflow Instructions
-**Read this file first every session.** It is a map only: find the feature
-folder for the task, then read that folder's `README.md` (and the submodule's
-README for battle_sim / season / match_flow) before touching any code.
-Detail lives in the READMEs — **do not grow this file with system specs**;
-add them to the owning folder's README and at most a one-line pointer here.
+**Read this file first every session.** It is a map, not a spec:
+1. find the folder(s) for the task in **Feature folders** below;
+2. read that folder's `README.md` — and every parent / sibling README the row points to —
+   **before touching code**;
+3. after changing a folder, update its `README.md`. Detail lives in READMEs; this file only
+   gets a one-line pointer when the structure changes (new folder, moved responsibility).
 
 ---
 
-## Project Overview
-- **Engine**: Godot 4.5-stable, GDScript · **Target**: 2D mobile portrait 1080×1920
-- **Main scene**: `res://scenes/Lobby.tscn` (lobby: continue → `Season.tscn`; new run → `RunSetup.tscn` → `Season.tscn`)
-- **Campaign**: `PRESEASON → PRESEASON_INTL → MIDSEASON → MIDSEASON_INTL → REGULAR → REGULAR_INTL`.
-  Win final REGULAR_INTL = ending; miss any phase's playoffs = game over.
-- **Week**: advances one week at a time, run day by day 월~일 (Mon–Sun)
-  (`season_state["week_day"]`). 월~금 (Mon–Fri) = training days, 토·일 (Sat·Sun) = match days.
-  `CalendarSystem.advance_week()` is called only from `SeasonHub._end_week()`.
-- **Weekly flow**: HUB → PRESS (press conference) → TRAINING (tile board) → WEEK (weekday rail) →
-  on match day MatchFlow (PREP → BAN_PICK (ban/pick + mech assignment) → BattleSim) →
-  STANDINGS → back to WEEK → Sunday "주 마감" (End week) → HUB.
-- **Outgame = white theme**: every colour goes through `resources/OutgameTheme.gd`
-  (white paper, coloured cards); primary actions use the full-width bottom bar
-  (`OutgameTheme.add_bottom_bar`, rules in `resources/README.md` "Bottom action bar").
-  **BattleSim uses neither** — the battlefield is a dark screen.
-- **Save / load**: profile 1 (`user://profile.save`, `ProfileManager`) + run 1
-  (`user://run.save`), 4 autosave points, no save inside BattleSim → `features/save_load/README.md`.
-- **Screen coordinates** all pass through `ScreenMetrics` (safe area) →
-  `docs/mobile_safe_area.md`.
-- **Dev setup per PC**: `.mcp.json` registers `godot-mcp` pinned to the addon's
-  version (`addons/godot_mcp/plugin.cfg`, currently 2.17.0 — bump both together);
-  `.vscode/` is gitignored — copy `.vscode/settings.example.json` → `settings.json`
-  and set the local Godot path.
+## Architecture
 
----
-
-## Directory Map
+Godot 4.5-stable, GDScript · 2D mobile portrait 1080×1920 · main scene `res://scenes/Lobby.tscn`.
 
 ```
-esports-manager/
-├── CLAUDE.md                 ← YOU ARE HERE (map only)
-├── .mcp.json                 ← godot-mcp server (Claude Code), version pinned to addon
-├── export_presets.cfg        ← iOS export preset (read by CI)
-├── .github/workflows/ios-testbuild.yml ← unsigned .ipa build → docs/ios_testbuild.md
-├── ios/plugins/              ← iOS native plugins (Haptics built by CI) → README.md
-├── build/                    ← where the phone build (.ipa) is downloaded → README.md
-├── data/                     ← CSV tables, game.db, SQLite addon usage, table list → README.md
-├── autoloads/                ← GameManager, ProfileManager, Haptics, HapticUi (+ haptics table, db_path) → README.md
-├── resources/                ← shared data classes, enums, image lookups, OutgameTheme,
-│                               ScreenMetrics, DragScroll, UiHelpers, ConstTable, GameDb, shaders → README.md
-├── scenes/                   ← Lobby / Season / MatchFlow / BattleSim / BattleField / Card .tscn
-├── docs/                     ← ios_testbuild.md, mobile_safe_area.md,
-│                               outgame_dev_plan.md (outgame meta development plan, 아웃게임 메타 개발 계획)
-├── addons/godot_mcp/         ← MCP editor plugin (do not modify)
-└── features/
-    ├── meta/                 ← outgame outside a run (lobby tabs, run setup, result, traits, manager, collection, shop) → README.md
-    │   ├── lobby/            ← project entry = tab host (홈 · 컬렉션 · 감독 · 상점 · 패스), abandon confirm popup
-    │   ├── run_setup/        ← run setup: scenario → team → manager preset → 5-pilot lineup (levels, salary cap) → start_run
-    │   ├── run_result/       ← run-end settlement + result screen
-    │   ├── traits/           ← TraitSystem: manager traits, bonus points, unlocks (M8)
-    │   ├── manager/          ← ManagerProgress: levels, specialisation, presets, prestige + 감독 tab (M9)
-    │   ├── collection/       ← 컬렉션 tab: pilot levels, breakthroughs (M10)
-    │   └── shop/             ← 상점 / 패스 tabs: gacha, shards, crafting, PassSystem (M10)
-    ├── save_load/            ← run save (SaveSystem), autosave, mid-match resume
-    ├── season/               ← outgame campaign (SeasonHub orchestrator, handoffs, brackets)
-    │   ├── calendar/         ← week clock, weekdays / match days, phase transitions
-    │   ├── press/            ← press conference (기자회견) messenger screen
-    │   ├── week/             ← 시간 경과 (Time passing) screen (day rail + day cards)
-    │   ├── training/         ← daily training (일상 훈련) tile board
-    │   ├── league/           ← LeagueManager + LeagueView (2 rounds / week)
-    │   ├── run_stats/        ← RunStats: match MVP metric, phase POM (season_state.run_stats)
-│   ├── staff/            ← StaffSystem: manager · staff stats, cover rule (effective), StaffPanel
-│   ├── mastery/          ← MechMastery: mech mastery (run-only), 메크 연구 hub card
-│   ├── finance/          ← FinanceSystem: weekly budget, facilities, allocation
-│   ├── mental/           ← MentalSystem (trust · interview · outing · incident), PilotMods
-    │   └── tournament/       ← playoff + INTL brackets (no README — see season/README.md)
-    ├── match_flow/           ← PREP → BAN_PICK → BattleSim handoff
-    │   ├── match_prep/
-    │   └── ban_pick/         ← ban/pick + mech assignment, MechDetailPanel
-    └── battle_sim/           ← battle simulation (PRIMARY FOCUS) — module table in README.md
-        ├── combat/           ← SimulationCore, recall, hex grid, pathfinding, lanes, jungle, growth income
-        ├── rendering/        ← BattleRenderer (all _draw), marker layout / glide / popups
-        ├── card_phase/       ← cards, hand, drag & drop, targeting, deck rules, AI card play
-        ├── engage/           ← round-based turn engage stage, VS intro, result screen
-        ├── objective/        ← Herald (전령) / Dragon (용) objectives + reward FX
-        ├── skill/            ← pilot skills (25)
-        ├── mech/             ← mech passives (15) + mech card hooks
-        ├── trait/            ← manager in-game trait hooks (TraitHooks, opening banner)
-        ├── gambit/           ← pre-battle setup + jungle start overlay
-        ├── buildings/        ← @tool Building / Waypoint nodes
-        ├── debug/            ← BattleLogger
-        ├── data/             ← DataLoader, FieldLoader
-        └── ui/               ← HUD, pilot strips, detail panel, kill feed, timers, card piles
+Lobby ──new run──▶ RunSetup ──start_run──▶ Season (SeasonHub) ◀──────────┐
+  │  (tabs: 홈 · 컬렉션 · 감독 · 상점 · 패스)     │ week: HUB → PRESS → TRAINING → WEEK │
+  └──continue─────────────────────────────▶   │ match day ▼                       │
+                                               MatchFlow (PREP → BAN_PICK) ──▶ BattleSim
+                                               run over ▶ RunResult ▶ Lobby     (result back)
 ```
 
----
-
-## Feature Map
-
-| Feature | Scene | Script | Read |
-|---|---|---|---|
-| Lobby (main entry) | `scenes/Lobby.tscn` | `features/meta/lobby/LobbyScreen.gd` | `features/meta/lobby/README.md` |
-| Run setup | `scenes/RunSetup.tscn` | `features/meta/run_setup/RunSetupScreen.gd` | `features/meta/run_setup/README.md` |
-| Season | `scenes/Season.tscn` | `features/season/SeasonHub.gd` | `features/season/README.md` + submodule |
-| Match Flow | `scenes/MatchFlow.tscn` | `features/match_flow/MatchFlow.gd` | `features/match_flow/README.md` |
-| Battle Sim | `scenes/BattleSim.tscn` | `features/battle_sim/BattleSim.gd` | `features/battle_sim/README.md` + submodule |
-
-### Where to look for a topic
-| Topic | README |
-|---|---|
-| Haptics table & rules, `game.db` res→user copy | `autoloads/README.md` |
-| Profile / run save, autosave, mid-match resume, test run file | `features/save_load/README.md` |
-| Lobby → Season handoff, abandon-run confirm | `features/meta/lobby/README.md` |
-| Run setup steps, lineup (levels · salary cap), pilot detail popup (`DraftDetailPanel`) | `features/meta/run_setup/README.md` |
-| ProfileManager (profile.save) | `autoloads/README.md` |
-| Weekly progression contract, Weekdays and match days | `features/season/calendar/README.md` |
-| Season→MatchFlow→BattleSim handoff, playoff / INTL brackets | `features/season/README.md` |
-| MatchFlow→BattleSim handoff (`match_ctx`) | `features/match_flow/README.md`, `features/battle_sim/README.md` |
-| Match stats (K/D/A · damage · care), MVP metric, MVP view, phase POM | `features/battle_sim/combat/README.md`, `features/season/run_stats/README.md` |
-| BattleSim module architecture, side (blue/red), growth & growth points (성장치), economy gate, field size | `features/battle_sim/README.md` |
-| Lane combat, turrets, recall, jungle / camps, front line, stats & hit chance | `features/battle_sim/combat/README.md` |
-| Card phase, drag & drop, hand layout, keywords, AI turn, **fixed pilot cards (3 per player) · card scope / categories** | `features/battle_sim/card_phase/README.md` |
-| Hand-card press/drag preview (caster neon, draw/discard chevrons, path, hit %), buff banners, reservation chips | `features/battle_sim/card_phase/README.md` (손패 미리보기) |
-| Engage stage, VS intro, start positions, result screen | `features/battle_sim/engage/README.md` |
-| Marker layout / glide, camp outline, death / popup FX | `features/battle_sim/rendering/README.md` |
-| Pilot strips, top chrome, kill feed, detail panel, card piles, safe-area offsets | `features/battle_sim/ui/README.md` |
-| Objectives (Herald / Dragon) | `features/battle_sim/objective/README.md` |
-| Pilot skills / mech passives | `features/battle_sim/skill/README.md`, `features/battle_sim/mech/README.md` |
-| Mob pilots (silhouettes), silhouette shader, image lookups | `resources/README.md` |
-| CSV tables, SQLite API, Rebuild game.db | `data/README.md` |
-| Tuning constants (const.csv / ConstTable), no values in docs | `data/README.md` |
-| M3~M7 contract (state keys, week-end order, file ownership) | `docs/outgame_dev_plan.md` §11 |
-| M8~M10 contract (traits, presets, profile v2, lobby tabs, gacha, pass) | `docs/outgame_dev_plan.md` §12 |
-| Next outgame task list (기벽 quirks, score formula sim, UI follow-ups) | `docs/outgame_dev_plan.md` §13 |
-| §13 task contract (quirk state, finance specials, file ownership) | `docs/outgame_dev_plan.md` §14 |
-| Manager · staff stats, cover rule, hub manage cards (`HubSheet`) | `features/season/staff/README.md` |
-| iOS test build, downloading the .ipa | `docs/ios_testbuild.md`, `build/README.md` |
-
----
-
-## Critical Patterns
-
-### Autoload Access (Godot 4.5)
-Do NOT use `class_name` on autoload scripts. Access at runtime:
-```gdscript
-@onready var _gm: Node = get_node("/root/GameManager")
-```
-`--check-only --script` doesn't know autoload identifiers (`Haptics`, `HapticUi`)
-— verify by running a scene instead.
-
-### Module Communication
-All cross-module calls go through the BattleSim orchestrator:
-```gdscript
-_bs.sim_core.simulate_turn()
-_bs.pathfinder.bfs_next_step(...)
-_bs.renderer.queue_redraw()
-```
-
-### Enums & role order
-All shared enums live in `resources/GameEnums.gd` (`class_name GameEnums`).
-`GameEnums.ROLE_DISPLAY_ORDER` / `role_seat(role)` (탑 · 정글 · 미드 · 원딜 · 서폿 = top · jungle · mid · ADC · support)
-is the **single** order every screen (in-game and outgame) uses to line up five pilots.
-
-### Scene → Script Relationship
-Each `.tscn` references its script by UID. When moving scripts, update both the
-`.uid` file and the `path=` in the `.tscn`.
-
-### Variable Naming Convention (lint-driven)
-Godot 4.5's `UNUSED_PRIVATE_CLASS_VARIABLE` treats a leading underscore as "private".
-
-| Prefix | Meaning | Use when |
+| Layer | What | Where |
 |---|---|---|
-| `_foo` | private — used **only inside this script** | helper state, internal cache, local nodes |
-| `foo`  | public — read or called from **other scripts** | `_bs.foo`, `gm.foo`, signal payloads, etc. |
+| Scenes | One `.tscn` per screen, each driven by one orchestrator script | `scenes/` → script in `features/*` |
+| State | **Profile** (meta, `user://profile.save`, `ProfileManager`) · **run** (`GameManager.season_state`, `user://run.save`) · **match** (`GameManager.match_ctx`, handoff MatchFlow → BattleSim, never saved) | `autoloads/`, `features/save_load/` |
+| Rules | Static `class_name` systems per feature (`*System.gd`, `RunRules`, …) — screens draw, systems decide | each feature folder |
+| Data | `data/csv/*.csv` → `data/game.db` (SQLite) → `GameDb` / `ConstTable`; tuning numbers only in `const.csv` | `data/`, `resources/` |
+| UI kit | Outgame = white theme via `OutgameTheme` + bottom action bar; screen coords via `ScreenMetrics`. BattleSim = dark, its own UI | `resources/`, `docs/mobile_safe_area.md` |
 
-- Referenced from another script → MUST NOT have a leading underscore; never touched outside → SHOULD.
-- `@export` / `@export_tool_button` vars count as public.
-- Locals must not shadow `Node` / `CanvasItem` / `Control` properties (`visible`, `position`, `name`, `owner`) — suffix them (`visible_count`).
-- Fix the cause, not the symptom: drop the underscore / rename the local. No `@warning_ignore(...)`.
-- Exceptions: `_bs` (orchestrator handle) and `_on_*` signal handlers keep the underscore.
+Campaign = 6 phases (`PRESEASON` … `REGULAR_INTL`), one week at a time, days 월~금 training /
+토·일 matches; rules in `features/season/README.md` + `calendar/README.md`.
 
 ---
 
-## Session Checklist
-1. Read `CLAUDE.md` (this file)
-2. Identify the target feature (`season`, `match_flow`, `battle_sim`, …)
-3. Read `features/<feature>/README.md`
-4. For multi-module features also read the relevant submodule's README
-5. Make focused changes only in that feature's folder; update its README afterwards
-6. After adding tables/columns to CSV: run **Project → Tools → Rebuild game.db** (`data/README.md`)
-7. After an iOS CI build: download the `.ipa` into `build/` (short SHA in the name),
-   delete stale artifacts — `build/README.md`
-8. After placing / moving UI: check against **`docs/mobile_safe_area.md`** —
-   the bottom gesture zone eats touches
+## Feature folders
+
+Read the README of every row your task touches. Indented rows are submodules — also read the parent.
+
+| Folder | Covers | README |
+|---|---|---|
+| `autoloads/` | `GameManager` (run / match state, `start_run`), `ProfileManager`, `Haptics` · `HapticUi`, game.db copy | `autoloads/README.md` |
+| `resources/` | Shared data classes, `GameEnums`, `OutgameTheme`, `ScreenMetrics`, `DragScroll`, `UiHelpers`, `ConstTable`, `GameDb`, image lookups, shaders | `resources/README.md` |
+| `data/` | CSV tables, SQLite API, **Rebuild game.db**, const table rules | `data/README.md` |
+| `features/save_load/` | Profile / run save, autosave points, mid-match resume, test run file | `features/save_load/README.md` |
+| `features/meta/` | Outgame outside a run | `features/meta/README.md` |
+| ↳ `lobby/` | Entry scene = tab host, confirm popup, manager type popup | `features/meta/lobby/README.md` |
+| ↳ `run_setup/` | Scenario → team → manager preset → 5-pilot lineup (levels, salary cap), `DraftDetailPanel` | `features/meta/run_setup/README.md` |
+| ↳ `run_result/` | Run settlement (`RunResult`), result screen, run balance sim | `features/meta/run_result/README.md` |
+| ↳ `traits/` | Manager traits, bonus points, unlocks (`TraitSystem`) | `features/meta/traits/README.md` |
+| ↳ `manager/` | Manager levels, specialisation, presets, prestige, 감독 tab | `features/meta/manager/README.md` |
+| ↳ `collection/` | 컬렉션 tab: pilot levels, breakthroughs | `features/meta/collection/README.md` |
+| ↳ `shop/` | 상점 / 패스 tabs: gacha, shards, crafting, `PassSystem` | `features/meta/shop/README.md` |
+| `features/season/` | In-run campaign: `SeasonHub` orchestrator, `HubView`, handoffs, playoff / INTL brackets (`tournament/`) | `features/season/README.md` |
+| ↳ `calendar/` | Week clock, weekdays / match days, phase transitions | `features/season/calendar/README.md` |
+| ↳ `press/` | Press conference messenger screen | `features/season/press/README.md` |
+| ↳ `training/` | Daily training tile board, coach auto-arrange | `features/season/training/README.md` |
+| ↳ `week/` | 시간 경과 screen (day rail, day cards) | `features/season/week/README.md` |
+| ↳ `league/` | `LeagueManager`, standings view | `features/season/league/README.md` |
+| ↳ `run_stats/` | Match MVP metric, phase POM | `features/season/run_stats/README.md` |
+| ↳ `staff/` | Manager · staff stats, cover rule, hub manage cards (`HubSheet`) | `features/season/staff/README.md` |
+| ↳ `mastery/` | Mech mastery, 메크 연구 card | `features/season/mastery/README.md` |
+| ↳ `quirk/` | 기벽 — run-only pilot passives | `features/season/quirk/README.md` |
+| ↳ `finance/` | Weekly budget, facilities, allocation, special spending | `features/season/finance/README.md` |
+| ↳ `mental/` | Trust, interviews, outings, incidents, `PilotMods` | `features/season/mental/README.md` |
+| `features/match_flow/` | PREP → BAN_PICK → BattleSim handoff (`match_ctx`), cheat menu | `features/match_flow/README.md` |
+| ↳ `match_prep/` | Opponent intel / analysis tiers | `features/match_flow/match_prep/README.md` |
+| ↳ `ban_pick/` | Ban / pick, mech assignment, `MechDetailPanel` | `features/match_flow/ban_pick/README.md` |
+| `features/battle_sim/` | Battle simulation orchestrator, module table, sides, growth, economy gate, field size | `features/battle_sim/README.md` |
+| ↳ `combat/` | Sim core, hex grid, pathfinding, lanes, turrets, recall, jungle, match stats | `features/battle_sim/combat/README.md` |
+| ↳ `card_phase/` | Cards, hand layout / hit layer, drag & drop, targeting, deck rules, AI turn | `features/battle_sim/card_phase/README.md` |
+| ↳ `engage/` | Round-based engage stage, VS intro, result screen | `features/battle_sim/engage/README.md` |
+| ↳ `rendering/` | `BattleRenderer`, marker layout / glide, death / popup FX | `features/battle_sim/rendering/README.md` |
+| ↳ `ui/` | HUD, pilot strips, detail panel, kill feed, timers, card piles | `features/battle_sim/ui/README.md` |
+| ↳ `objective/` | Herald / Dragon objectives | `features/battle_sim/objective/README.md` |
+| ↳ `skill/` · `mech/` | Pilot skills · mech passives | `features/battle_sim/skill/README.md`, `mech/README.md` |
+| ↳ `trait/` | Manager in-game trait hooks | `features/battle_sim/trait/README.md` |
+| ↳ `gambit/` · `debug/` | Pre-battle setup, jungle start · `BattleLogger` | `gambit/README.md`, `debug/README.md` |
+| ↳ `buildings/` · `data/` | `@tool` Building / Waypoint nodes · `DataLoader`, `FieldLoader` | *(no README — see `features/battle_sim/README.md`)* |
+| `ios/plugins/` · `build/` | iOS native plugins · downloaded `.ipa` | `ios/plugins/README.md`, `build/README.md` |
+| `addons/godot_mcp/` | MCP editor plugin — **do not modify** | — |
+
+### Docs (`docs/`)
+| File | Read when |
+|---|---|
+| `outgame_dev_plan.md` | Outgame milestones and **parallel-work contracts** (§10 M1·M2, §11 M3~M7, §12 M8~M10, §13 task list, §14 §13 contract) |
+| `mobile_safe_area.md` | Placing / moving any UI |
+| `ios_testbuild.md` | iOS CI build, `.ipa` download |
+| `run_balance.md` | Score / currency / EXP formula derivation (run sim) |
+
+---
+
+## Critical patterns (cross-cutting)
+
+- **Autoloads have no `class_name`** — `get_node("/root/GameManager")` at runtime. `--check-only --script`
+  doesn't know autoload identifiers (`Haptics`, `HapticUi`) — verify by running a scene.
+- **BattleSim modules talk through the orchestrator** — `_bs.sim_core…`, `_bs.renderer…`, never sideways.
+- **Enums** live in `resources/GameEnums.gd`; `GameEnums.ROLE_DISPLAY_ORDER` / `role_seat(role)`
+  (탑 · 정글 · 미드 · 원딜 · 서폿) is the single pilot order on every screen.
+- **Scene ↔ script by UID** — moving a script means updating its `.uid` and the `.tscn` `path=`.
+- **Run state is JSON-round-tripped** — string keys only, wrap numeric reads in `int()` / `float()`.
+- **Naming (lint-driven)**: `_foo` = used only inside its script; anything read from another script,
+  `@export` vars, signal payloads = no underscore. Exceptions: `_bs`, `_on_*` handlers. Locals must not
+  shadow `Node` / `Control` properties (`visible`, `position`, `name`, `owner`). Fix the cause — no `@warning_ignore`.
+- **Dev setup per PC**: `.mcp.json` pins `godot-mcp` to `addons/godot_mcp/plugin.cfg`'s version (bump both);
+  copy `.vscode/settings.example.json` → `settings.json` and set the local Godot path.
+
+---
+
+## Session checklist
+1. Read this file → pick the folder rows → read those READMEs (parent + submodule).
+2. Change code only inside the owning folder(s); update their README afterwards.
+3. CSV tables / columns changed → **Project → Tools → Rebuild game.db** (`data/README.md`).
+4. UI placed / moved → check `docs/mobile_safe_area.md` (the bottom gesture zone eats touches).
+5. iOS CI build run → download the `.ipa` into `build/` (short SHA in the name), delete stale ones.

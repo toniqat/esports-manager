@@ -304,7 +304,7 @@ effective(stat) = max(감독[stat] + 일시 보정, 어시스턴트[stat], 담�
 | 2 | ~~"선수 파편 스킬"(지식 스탯)의 정의~~ — **기벽**(런 한정 긍정 스탯 패시브, §3 M4) | M4 |
 | 3 | ~~프로필 초기 보유 선수 구성~~ — **역할별 2명 = 10인**(`players.starter`), 전원 Lv1 | M1 |
 | 4 | ~~캡 · 레벨 수치~~ — 자리표시 값으로 확정(`scenarios.csv` · `pilot_levels.csv` · `players.salary`) | M1 |
-| 5 | 점수 · 재화 공식 — 자리표시(`RUN_*` const 키), 감독 EXP 곡선은 M9. **헤드리스 런 시뮬로 페이즈 도달률 · 점수 분포를 뽑아 역산**하기로 결정 | M2 / M9 |
+| 5 | ~~점수 · 재화 공식~~ — **헤드리스 런 시뮬로 역산**(§14 T2, `docs/run_balance.md`) | M2 / M9 |
 | 6 | ~~잔고 음수(예산 파산) 처리~~ — **음수 불가, 지출 강제 삭감**(§11) | M6 |
 | 7 | ~~첫 특성 묶음 목록~~ — **24종**(`traits.csv`, §12) | M8 |
 | 8 | ~~감독 타입별 초기 스탯, 감독 스탯 총합~~ — 1~20 척도, 자리표시(`manager_types.csv`, 총합 36) | M3 |
@@ -382,6 +382,27 @@ effective(stat) = max(감독[stat] + 일시 보정, 어시스턴트[stat], 담�
 - **후속 과제**: 수치 전부 자리표시(특성 · 가챠 · 패스 · 레벨 곡선), 12장 손패 부채꼴 배치 미확인,
   `FinancePanel` 의 스폰서 배율 글자 · `TrainingView` 의 "훈련 효과 ×" 글자가 특성 배율을 아직 안 보여 줌,
   코스메틱 재화 사용처 없음(결정대로 기록만), 특성 레어리티별 색 통일(정산 카드는 앰버 고정).
+
+### §13 후속 T1 ~ T6 (2026-10-07)
+기반 커밋(§14 계약 · `QuirkSystem` 스텁 · 표 스키마 2개 · `income_mult` / `upkeep_mult`) 위에서 다섯 작업을 워크트리
+병렬로 개발해 병합했다. 충돌은 `const.csv` 합집합과 README 절 순서뿐.
+- **T1 기벽**: `features/season/quirk/`(18종 · 3등급, `cond` 문법 `main` · `own_role` · `mech_role:n` · `tier:n`),
+  기벽 타일 `T18`~`T21`(색 `Q`, 효과 절 `quirk:*` — §14 의 "덮은 칸" 을 **`Q` 칸만**으로 좁힘), 연구 정산 확률 획득,
+  메크 연구 시트 · 밴픽(슬롯 태그 · `MechDetailPanel`) 표시. RNG 는 런 시드 기반이라 재로드해도 같은 결과.
+- **T2 공식 산출**: `features/meta/run_result/sim/RunSim.tscn`(씬 — `--script` 는 `Haptics` 때문에 불가). 플레이어
+  경기는 AI 경기와 같은 가중 동전 × `--edge`(기준 4.0). `RUN_*` · `PASS_*` 값과 `pilot_levels` 곡선 조정, 근거는
+  `docs/run_balance.md`. 목표치는 "평균 런(페이즈 1~2에서 끝난 런)" 기준 — 전체 기대값 기준이면 약 1.3배 빠르다.
+- **T3+T4 표시**: `TrainingView` 훈련 효과 × (스태프 · 재무 · 특성 분해, 돌파는 초상화 칩), `FinancePanel` 지난 주
+  스폰서 / 유지비 `보정 ×`(정산 기록의 `income_mult` / `upkeep_mult`), `TraitUi.rarity_color` 로 특성 레어리티
+  색 통일(`ShopPopup` 도 따름), 허브 신뢰도 칩 + 게이지, 시간 경과 화면 숙련도 · 기벽 줄.
+- **T5 12장 손패**: 코드 변경 없음. 실제 상한은 12(`MAX_HAND_SIZE` + `hand_size` 특성). 끝 쪽 이웃 카드 노출
+  폭이 목표(`BS_HAND_HOVER_MIN_STRIP`)보다 좁지만 판정은 전부 정상 — README 에 기록.
+- **T6 코치 · 재무**: `auto_arrange` 를 선수별 약점 보강 + 등급 균형으로(기벽 · 숙련도 타일 제외), 재무 스탯이
+  수입 · 유지비 배율에 연속 보정, 특별 지출 5종(`coach_hire` · `camp` · `sponsor_deal` + 저예산용 `upkeep_delay` ·
+  `salary_cut`).
+- **후속 과제**: 연구로 얻은 기벽 알림 없음 · `DraftDetailPanel` 기벽 미표시 · 영웅 기벽이 숙련도 대비 강할 수 있음
+  (자리표시) · 허브 재무 카드에 진행 중 특별 지출 미표시 · `coach_hire` 는 감독이 그 스탯 담당일 때만 효과 ·
+  런 시뮬은 특성 · 멘탈 · 기자회견 미반영(`RUN_SCORE_PER_BONUS` 미검증) · `RunSim` 이 `SeasonHub` 의 `_` 함수를 직접 부름.
 
 ---
 
@@ -664,7 +685,7 @@ host 서비스: `show_toast` · `refresh_currency` · `rebuild_bar` · `relayout
 
 ---
 
-## 13. 다음 작업 목록 (2026-10-06 확정, 다른 세션에서 진행)
+## 13. 다음 작업 목록 (2026-10-06 확정 · 2026-10-07 완료 — §9 기록)
 
 §8 질의응답과 §9 후속 과제에서 고른 것. 착수 전 해당 폴더 README 를 먼저 읽는다. 순서는 미정 — 착수 세션에서 정한다.
 

@@ -1,23 +1,24 @@
 class_name StaffSystem
 extends RefCounted
 
-# ── 감독 · 스태프 유효 스탯 (M3) — 런 안의 단일 진입점 ────────────────────────
-# 감독 스탯을 읽는 모든 자리는 `effective(state, stat)` 하나를 거친다
+# ── Manager · staff effective stats (M3) — the single entry point inside a run ──
+# Every read of a manager stat goes through `effective(state, stat)`
 # (`docs/outgame_dev_plan.md` §2.3 · §11).
 #
-#   effective(stat) = max(감독[stat] + 일시 보정, 어시스턴트[stat], 담당 일반 스태프[stat])
+#   effective(stat) = max(manager[stat] + temporary mods, assistant[stat], dedicated staff[stat])
 #
-# - 일반 스태프는 **분야당 1명**(`JOB_STAT`), 어시스턴트 매니저는 팀에 1명이고
-#   여러 스탯을 동시에 메운다. 여러 빈자리를 메우는 것은 감독과 어시스턴트뿐.
-# - 멘탈은 예외: 면담 · 외출은 `manager_value(state, "mental")`(감독 값만),
-#   사건 처리만 `effective_for_incident`(누구든 가장 높은 멘탈).
-# - `owner(state, stat)` 이 "manager" 가 아니면 그 영역은 **위임**된 것이다 —
-#   화면이 자동 버튼(훈련 자동 편성 · 연구 자동 지정 · 분석 해석 · 예산 자동
-#   배분)을 보여 주는 근거(`is_delegated`).
+# - Regular staff: **one per field** (`JOB_STAT`). The assistant manager is one per
+#   team and covers several stats at once. Only the manager and the assistant fill
+#   several gaps at the same time.
+# - Mental is the exception: interviews · outings read `manager_value(state, "mental")`
+#   (manager only); only incidents read `effective_for_incident` (highest mental of anyone).
+# - When `owner(state, stat)` is not "manager" the area is **delegated** — the basis
+#   for the screens' auto buttons (training auto-arrange · research auto-assign ·
+#   analysis interpretation · budget auto-split), see `is_delegated`.
 #
-# 입력은 언제나 `season_state` 딕셔너리다(오토로드에 기대지 않는다 — 헤드리스
-# 단위 확인을 위해). 스냅샷은 런 시작 때 `snapshot_for_run` 이 `run_setup` 에
-# 고정한다: `run_setup.manager_type` / `.manager_stats` / `.staff`.
+# Input is always the `season_state` dictionary (no autoload dependency — so it can
+# be unit-checked headlessly). `snapshot_for_run` freezes the snapshot into
+# `run_setup` at run start: `run_setup.manager_type` / `.manager_stats` / `.staff`.
 
 const STATS: Array = ["training", "tactics", "knowledge", "mental", "analysis", "finance"]
 const STAT_LABELS: Dictionary = {
@@ -27,7 +28,7 @@ const STAT_LABELS: Dictionary = {
 const STAT_MIN: int = 1
 const STAT_MAX: int = 20
 
-## 일반 스태프 직업 → 맡는 스탯. 어시스턴트(`assistant`)는 여기 없다 — 전 스탯.
+## Regular staff job → the stat it covers. The assistant is not here — it has all stats.
 const JOB_STAT: Dictionary = {
 	"coach_training": "training",
 	"coach_tactics": "tactics",
@@ -49,14 +50,14 @@ const OWNER_MANAGER: String = "manager"
 const OWNER_ASSISTANT: String = "assistant"
 const OWNER_STAFF: String = "staff"
 
-static var _types: Array = []          # manager_types 행
-static var _staff: Dictionary = {}     # int id → staff 행 {id, name, job, stats{}, salary}
+static var _types: Array = []          # manager_types rows
+static var _staff: Dictionary = {}     # int id → staff row {id, name, job, stats{}, salary}
 static var _team_staff: Dictionary = {}  # int team_id → Array[int] staff ids
 static var _loaded: bool = false
 
 
-# ── 표 ───────────────────────────────────────────────────────────────────────
-## `[{id, name, gender, stats{stat: int}, desc}]`, id 순.
+# ── Tables ───────────────────────────────────────────────────────────────────
+## `[{id, name, gender, stats{stat: int}, desc}]`, by id.
 static func manager_types() -> Array:
 	_ensure_loaded()
 	return _types
@@ -69,7 +70,7 @@ static func manager_type_row(type_id: int) -> Dictionary:
 	return {}
 
 
-## `{id, name, job, stats{stat: int}, salary}`. 없으면 빈 Dictionary.
+## `{id, name, job, stats{stat: int}, salary}`. Empty Dictionary when missing.
 static func staff_row(staff_id: int) -> Dictionary:
 	_ensure_loaded()
 	return _staff.get(staff_id, {})
@@ -80,9 +81,10 @@ static func team_staff_ids(team_id: int) -> Array:
 	return (_team_staff.get(team_id, []) as Array).duplicate()
 
 
-# ── 런 스냅샷 ────────────────────────────────────────────────────────────────
-## 런 시작 때 `run_setup` 에 합칠 조각. 감독 스탯은 타입 초기값(M9 전까지
-## 전문화 분배 없음), 스태프는 팀의 초기 스태프 그대로(런 중 이탈 없음).
+# ── Run snapshot ─────────────────────────────────────────────────────────────
+## The piece merged into `run_setup` at run start. Manager stats = the type's initial
+## values (no specialisation until M9); staff = the team's initial staff as-is
+## (nobody leaves during a run).
 ## → `{manager_type, manager_stats{stat: int}, staff: [{id, name, job, stats{}, salary}]}`
 static func snapshot_for_run(team_id: int, manager_type: int) -> Dictionary:
 	var row: Dictionary = manager_type_row(manager_type)
@@ -103,15 +105,15 @@ static func snapshot_for_run(team_id: int, manager_type: int) -> Dictionary:
 	}
 
 
-# ── 판정 ─────────────────────────────────────────────────────────────────────
-## 감독의 스냅샷 값(보정 전).
+# ── Judgement ────────────────────────────────────────────────────────────────
+## The manager's snapshot value (before mods).
 static func manager_base(state: Dictionary, stat: String) -> int:
 	var setup: Dictionary = state.get("run_setup", {})
 	var m: Dictionary = setup.get("manager_stats", {})
 	return int(m.get(stat, STAT_MIN))
 
 
-## 이 스탯에 걸린 일시 보정의 합(`staff_mods`).
+## Sum of temporary mods on this stat (`staff_mods`).
 static func mod_total(state: Dictionary, stat: String) -> int:
 	var total: int = 0
 	for raw in (state.get("staff_mods", []) as Array):
@@ -121,12 +123,12 @@ static func mod_total(state: Dictionary, stat: String) -> int:
 	return total
 
 
-## 감독 값 = 스냅샷 + 일시 보정, [STAT_MIN, STAT_MAX].
+## Manager value = snapshot + temporary mods, clamped to [STAT_MIN, STAT_MAX].
 static func manager_value(state: Dictionary, stat: String) -> int:
 	return clampi(manager_base(state, stat) + mod_total(state, stat), STAT_MIN, STAT_MAX)
 
 
-## 어시스턴트 매니저 한 명(없으면 빈 Dictionary).
+## The assistant manager (empty Dictionary when none).
 static func assistant(state: Dictionary) -> Dictionary:
 	for raw in _run_staff(state):
 		var e: Dictionary = raw
@@ -135,7 +137,7 @@ static func assistant(state: Dictionary) -> Dictionary:
 	return {}
 
 
-## 이 스탯 전담 일반 스태프(분야당 1명, 없으면 빈 Dictionary).
+## The dedicated regular staff for this stat (one per field; empty when none).
 static func staff_for(state: Dictionary, stat: String) -> Dictionary:
 	for raw in _run_staff(state):
 		var e: Dictionary = raw
@@ -148,14 +150,13 @@ static func effective(state: Dictionary, stat: String) -> int:
 	return int(_best(state, stat)["value"])
 
 
-## 누가 이 스탯을 맡는가 — "manager" / "assistant" / "staff". 같은 값이면
-## 스태프 → 어시스턴트 → 감독 순으로 넘긴다(위임이 되는 쪽이 이긴다 — 같은
-## 결과라면 손이 덜 가는 편).
+## Who covers this stat — "manager" / "assistant" / "staff". Ties go
+## staff → assistant → manager (the delegated side wins: same result, less hands-on work).
 static func owner(state: Dictionary, stat: String) -> String:
 	return String(_best(state, stat)["owner"])
 
 
-## 담당자의 표시 이름(감독이면 "감독").
+## Display name of whoever covers it ("감독" for the manager).
 static func owner_name(state: Dictionary, stat: String) -> String:
 	var b: Dictionary = _best(state, stat)
 	if String(b["owner"]) == OWNER_MANAGER:
@@ -163,12 +164,12 @@ static func owner_name(state: Dictionary, stat: String) -> String:
 	return String((b["who"] as Dictionary).get("name", "—"))
 
 
-## 위임되었는가 — 자동 버튼을 보일지의 근거.
+## Is the area delegated — whether screens show their auto button.
 static func is_delegated(state: Dictionary, stat: String) -> bool:
 	return owner(state, stat) != OWNER_MANAGER
 
 
-## 사건 처리 멘탈 — 감독(보정 포함) · 어시스턴트 · **아무 스태프**의 멘탈 중 최댓값.
+## Incident-handling mental — max of manager (with mods), assistant and **any** staff mental.
 static func effective_for_incident(state: Dictionary) -> int:
 	var v: int = manager_value(state, "mental")
 	for raw in _run_staff(state):
@@ -176,7 +177,7 @@ static func effective_for_incident(state: Dictionary) -> int:
 	return v
 
 
-## 스태프 주급 합(재무 지출).
+## Sum of staff weekly salaries (finance expense).
 static func weekly_salary_total(state: Dictionary) -> int:
 	var total: int = 0
 	for raw in _run_staff(state):
@@ -184,8 +185,8 @@ static func weekly_salary_total(state: Dictionary) -> int:
 	return total
 
 
-## 분석 공개 단계 0..3 — `ANALYSIS_TIER_1..3`(const.csv) 문턱을 넘은 수.
-## 0 = 이름 · 역할, 1 = + 스탯(대략), 2 = + 숙련도 상위 메크, 3 = + 파일럿 카드.
+## Analysis reveal tier 0..3 — how many `ANALYSIS_TIER_1..3` (const.csv) thresholds are met.
+## 0 = name · role, 1 = + rough stats, 2 = + top-mastery mechs, 3 = + pilot cards.
 static func analysis_tier(state: Dictionary) -> int:
 	var v: int = effective(state, "analysis")
 	var tier: int = 0
@@ -195,8 +196,8 @@ static func analysis_tier(state: Dictionary) -> int:
 	return tier
 
 
-# ── 일시 보정 ────────────────────────────────────────────────────────────────
-## 감독 스탯 일시 보정. `weeks` 주 동안(주 마감마다 1 줄어 0 이면 사라진다).
+# ── Temporary mods ───────────────────────────────────────────────────────────
+## Temporary manager-stat mod for `weeks` weeks (minus one per week end, gone at 0).
 static func add_mod(state: Dictionary, stat: String, delta: int, weeks: int, source: String = "") -> void:
 	if not STATS.has(stat) or delta == 0 or weeks <= 0:
 		return
@@ -205,7 +206,7 @@ static func add_mod(state: Dictionary, stat: String, delta: int, weeks: int, sou
 	state["staff_mods"] = mods
 
 
-## 주 마감(`SeasonHub._end_week`)에 한 번.
+## Once per week end (`SeasonHub._end_week`).
 static func decay_mods(state: Dictionary) -> void:
 	var kept: Array = []
 	for raw in (state.get("staff_mods", []) as Array):
@@ -216,12 +217,12 @@ static func decay_mods(state: Dictionary) -> void:
 	state["staff_mods"] = kept
 
 
-# ── 내부 ─────────────────────────────────────────────────────────────────────
+# ── Internals ────────────────────────────────────────────────────────────────
 static func _run_staff(state: Dictionary) -> Array:
 	return (state.get("run_setup", {}) as Dictionary).get("staff", [])
 
 
-# {value, owner, who} — 스태프 → 어시스턴트 → 감독 순으로 동점을 가져간다.
+# {value, owner, who} — ties are taken staff → assistant → manager.
 static func _best(state: Dictionary, stat: String) -> Dictionary:
 	var best: Dictionary = {"value": manager_value(state, stat), "owner": OWNER_MANAGER, "who": {}}
 	var asst: Dictionary = assistant(state)

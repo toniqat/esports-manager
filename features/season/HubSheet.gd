@@ -1,21 +1,21 @@
 class_name HubSheet
 extends CanvasLayer
 
-# 허브 관리 카드(스태프 · 메크 연구 · 재무)가 여는 **공용 상세 시트**.
-# 화면 전체를 딤으로 덮고, 안전 영역 안에 흰 판 한 장(제목 · 세로 스크롤 본문 ·
-# 하단 `닫기`)을 띄운다. 패턴은 `meta/lobby/ConfirmPopup.gd` 와 같다 — CanvasLayer
-# 라서 좌표는 뷰포트 기준이고(`docs/mobile_safe_area.md` 패턴 C) 판은 안전 영역
-# 안에 선다.
+# The **shared detail sheet** opened by the hub manage cards (staff · mech research · finance).
+# Dims the whole screen and shows one white card inside the safe area (title · vertically
+# scrolling body · bottom `닫기`). Same pattern as `meta/lobby/ConfirmPopup.gd` — being a
+# CanvasLayer its coordinates are viewport-based (`docs/mobile_safe_area.md` pattern C)
+# and the card sits inside the safe area.
 #
-# 쓰는 법 (각 패널의 `open(host)`):
+# Usage (each panel's `open(host)`):
 #   var sheet := HubSheet.open_on(host, "스태프")
-#   var body: Control = sheet.body          # 폭 = sheet.body_w(), 절대 좌표로 얹는다
-#   ... body 에 자식을 얹고 ...
-#   sheet.set_body_height(y)                # 스크롤 높이
-#   sheet.closed.connect(...)               # 닫힐 때(허브 갱신 등)
+#   var body: Control = sheet.body          # width = sheet.body_w(), place children absolutely
+#   ... add children to body ...
+#   sheet.set_body_height(y)                # scroll height
+#   sheet.closed.connect(...)               # on close
 #
-# 시트 안에서 상태를 바꾸는 패널은 닫힐 때 허브가 `refresh()` 하도록
-# `HubView` 가 `closed` 를 이미 잇는다 — 패널이 따로 허브를 부를 필요 없다.
+# `HubView` already connects `closed` to its `refresh()`, so panels that change state
+# inside the sheet don't need to call the hub themselves.
 
 signal closed
 
@@ -37,7 +37,7 @@ func _init() -> void:
 	layer = OVERLAY_LAYER
 
 
-## `host` 아래에 시트를 열어 돌려준다.
+## Opens a sheet under `host` and returns it.
 static func open_on(host: Node, title: String) -> HubSheet:
 	var sheet := HubSheet.new()
 	host.add_child(sheet)
@@ -45,19 +45,19 @@ static func open_on(host: Node, title: String) -> HubSheet:
 	return sheet
 
 
-## 본문 폭(스크롤 안쪽).
+## Body width (inside the scroll).
 func body_w() -> float:
 	return _card_w - PAD * 2.0
 
 
-## 본문 높이를 알린다(스크롤 범위).
+## Tells the scroll how tall the body is.
 func set_body_height(h: float) -> void:
 	if body != null:
 		body.custom_minimum_size.y = h
 
 
-## 판 위에 고정 버튼 줄이 더 필요할 때(예: 재무의 `업그레이드`) 닫기 버튼
-## 왼쪽에 둘 자리 — 판 기준 좌표. 버튼은 부르는 쪽이 만든다.
+## The card itself, for callers that need fixed controls outside the scroll
+## (card-local coordinates). Callers create those controls.
 func card() -> Panel:
 	return _card
 
@@ -78,7 +78,7 @@ func _build(title: String) -> void:
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_root)
 
-	# 딤은 뒤의 허브로 입력이 새지 않게 먹는다. 빈 곳 누름 = 닫기.
+	# The dim eats input so nothing leaks to the hub behind. Tapping empty space closes.
 	var dim := Button.new()
 	dim.flat = true
 	dim.focus_mode = Control.FOCUS_NONE
@@ -100,7 +100,7 @@ func _build(title: String) -> void:
 	_card = OutgameTheme.add_card(_root,
 			Vector2(ScreenMetrics.center_x() - _card_w * 0.5, top),
 			Vector2(_card_w, card_h), 24)
-	# 판 위 누름이 딤까지 내려가 시트를 닫으면 안 된다.
+	# A press on the card must not fall through to the dim and close the sheet.
 	_card.mouse_filter = Control.MOUSE_FILTER_STOP
 
 	UiHelpers.mk_label(_card, title, 40, OutgameTheme.TEXT,

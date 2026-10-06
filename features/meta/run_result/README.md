@@ -26,14 +26,15 @@ Autoloads are fetched via `Engine.get_main_loop().root` (static class, no `@onre
 
 ### Fields
 - `phase_reached` = index of `current_phase` in `CAMPAIGN_ORDER` (0-based);
-  `phase_reached_count` = that + 1 (phases entered, incl. the current one).
+  `phases_cleared` = phases **finished** — `phase_reached` for fail / abandon (the current
+  phase is the one the run ended in, so it doesn't count), `phase_reached + 1` for clear.
 - `wins` / `losses` — `player_record(state)`: `run_stats.wins/losses` when either key exists,
   else `derive_record(state)`: played player matches in `match_schedule` (all phases accumulate),
   played player matches in the live `current_tournament.bracket`, and for **past** tournaments
   (brackets are cleared on phase change) only the won ones, counted as `PLAYOFF_ROUNDS` /
   `INTL_ROUNDS` wins (bracket shape, not tuning). Lost past tournaments are unknown → not counted (lower bound).
 - `titles` — `phase_results` entries whose `champion` or `intl_champion` is the player team.
-- `score` = `phase_reached_count·RUN_SCORE_PER_PHASE + wins·RUN_SCORE_PER_WIN +
+- `score` = `phases_cleared·RUN_SCORE_PER_PHASE + wins·RUN_SCORE_PER_WIN +
   titles·RUN_SCORE_PER_TITLE + (clear ? RUN_SCORE_CLEAR_BONUS : 0) + bonus_points` (bonus 0 until M8).
   `breakdown` holds each term.
 - `currency.outgame` = floor(score · `RUN_CURRENCY_PER_SCORE`), `manager_exp` =
@@ -42,7 +43,7 @@ Autoloads are fetched via `Engine.get_main_loop().root` (static class, no `@onre
   `mvp` = per-pilot sum over `run_stats.mvp_count` phases; `pom` = `run_stats.pom_by_phase`
   entries whose pilot is mine; `achievements` = `{pid: {mvp, pom}}` for all 5.
 - Extra display keys beyond §10.3: `id` (unique per settlement — the profile's idempotency key),
-  `phase_reached_count`, `breakdown`, `team_name`, `scenario_name`, `pilots` (`[{id, name, role}]`
+  `phases_cleared`, `breakdown`, `team_name`, `scenario_name`, `pilots` (`[{id, name, role}]`
   in `GameEnums.role_seat` order) — the screen draws without `season_state`.
 
 ## RunResultScreen

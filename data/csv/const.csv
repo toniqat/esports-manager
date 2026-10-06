@@ -93,7 +93,7 @@ MECH_CASH_RATE,0.04,MechSkillSystem.gd,캐시 — 카드 한 장 나갈 때마�
 MECH_SCORE_COST_UNIT,0.01,MechSkillSystem.gd,score_cost:N 의 N 하나가 성장치(k)로 얼마인지 환산 계수 (k/단위)
 MECH_PHASE_BOON_BETA_CHARGE,100,MechSkillSystem.gd,단계 C 강화 [베타] — 다음 [단계 B] 사용 시 들어오는 충전 (충전)
 MECH_PHASE_BOON_GAMMA_RATE,0.10,MechSkillSystem.gd,단계 C 강화 [감마] — 다음 [단계 C] 사용 시 버는 자기 성장치 비율 (비율)
-RUN_SCORE_PER_PHASE,100,RunResult.gd,런 점수 — 도달한 페이즈 하나당 (점)
+RUN_SCORE_PER_PHASE,100,RunResult.gd,런 점수 — 끝낸 페이즈 하나당 (실패 · 포기한 페이즈는 제외) (점)
 RUN_SCORE_PER_WIN,10,RunResult.gd,런 점수 — 내 경기 승리 한 번당 (점)
 RUN_SCORE_PER_TITLE,200,RunResult.gd,런 점수 — 대회(플레이오프 · INTL) 우승 한 번당 (점)
 RUN_SCORE_CLEAR_BONUS,500,RunResult.gd,런 점수 — 6개 대회 전승(엔딩) 보너스 (점)

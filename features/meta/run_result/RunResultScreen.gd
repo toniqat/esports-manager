@@ -9,7 +9,7 @@ extends Control
 # `새 런`(→ 런 준비). 결과가 비어 있으면(씬을 바로 연 경우) 빈 상태 한 장.
 #
 # 결과 딕셔너리만으로 그린다 — 표시용 키(`team_name` · `scenario_name` · `pilots` ·
-# `breakdown` · `phase_reached_count`)를 `RunResult.build_result` 가 미리 담아 둔다.
+# `breakdown` · `phases_cleared`)를 `RunResult.build_result` 가 미리 담아 둔다.
 
 const LOBBY_SCENE: String = "res://scenes/Lobby.tscn"
 const RUN_SETUP_SCENE: String = "res://scenes/RunSetup.tscn"
@@ -113,9 +113,8 @@ func _build_body() -> void:
 
 func _build_progress_card(parent: Control, y: float) -> float:
 	var rows: Array = [
-		["도달 페이즈", "%s (%d/%d)" % [
-				_phase_name(int(_result.get("phase_reached", 0))),
-				int(_result.get("phase_reached_count", 0)),
+		["도달 페이즈", _phase_name(int(_result.get("phase_reached", 0)))],
+		["끝낸 페이즈", "%d / %d" % [int(_result.get("phases_cleared", 0)),
 				RunResult.CAMPAIGN_ORDER.size()]],
 		["전적", "%d승 %d패" % [int(_result.get("wins", 0)), int(_result.get("losses", 0))]],
 		["대회 우승", "%d회" % int(_result.get("titles", 0))],
@@ -130,7 +129,7 @@ func _build_progress_card(parent: Control, y: float) -> float:
 func _build_score_card(parent: Control, y: float) -> float:
 	var bd: Dictionary = _result.get("breakdown", {})
 	var rows: Array = [
-		["페이즈 도달 × %d" % int(_result.get("phase_reached_count", 0)), int(bd.get("phase", 0))],
+		["끝낸 페이즈 × %d" % int(_result.get("phases_cleared", 0)), int(bd.get("phase", 0))],
 		["승리 × %d" % int(_result.get("wins", 0)), int(bd.get("wins", 0))],
 		["대회 우승 × %d" % int(_result.get("titles", 0)), int(bd.get("titles", 0))],
 		["클리어 보너스", int(bd.get("clear", 0))],

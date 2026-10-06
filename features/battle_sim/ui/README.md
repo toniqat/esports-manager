@@ -925,6 +925,11 @@ Flow (owner: `BattleSim.end_match(winner_side)`, called once from
    → `closed` → `BattleSim._on_mvp_view_closed` frees the view and shows `panel_victory`.
 4. The result panel (`panel_victory`) is taller now (`VICTORY_PANEL_SIZE`) and carries an
    **MVP line** (`HudBuilder.set_victory_mvp`): circle portrait + name + position · K/D/A.
+   It lives on **its own CanvasLayer** (`VICTORY_LAYER` — above the HUD canvas, below
+   `MvpView.OVERLAY_LAYER`) over a full-screen dim (`VICTORY_BACKDROP_COLOR`, blocks input) that
+   follows the panel's visibility, and the panel itself is opaque. It used to sit on the HUD
+   canvas with a translucent fill, so battlefield tiles · markers showed through the panel and
+   the HUD strips · markers around it stayed at full brightness.
 
 Every coordinate is inside `ScreenMetrics` (title from `top_y()`, button stacked up from
 `bottom_y()` — clear of the bottom gesture band, `docs/mobile_safe_area.md`); the art height

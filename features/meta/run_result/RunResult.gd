@@ -79,7 +79,7 @@ static func settle_current_run(outcome: String) -> Dictionary:
 
 ## 정산 결과를 순수하게 계산한다(프로필 · 파일을 건드리지 않는다).
 ## 모양은 §10.3 에 화면용 표시 키(`team_name` · `scenario_name` · `pilots` ·
-## `phase_reached_count` · `breakdown` · `id`)를 더한 것.
+## `phases_cleared` · `breakdown` · `id`)를 더한 것.
 static func build_result(state: Dictionary, outcome: String, test_run: bool) -> Dictionary:
 	var run_setup: Dictionary = _dict(state.get("run_setup", {}))
 	var run_stats: Dictionary = _dict(state.get("run_stats", {}))
@@ -87,7 +87,9 @@ static func build_result(state: Dictionary, outcome: String, test_run: bool) -> 
 	var scenario_id: int = int(run_setup.get("scenario", 0))
 
 	var phase_reached: int = maxi(0, CAMPAIGN_ORDER.find(int(state.get("current_phase", 0))))
-	var phase_count: int = phase_reached + 1
+	# 점수는 **끝낸** 페이즈만 센다 — 지금 페이즈는 이번 런을 끝낸(진) 자리라
+	# 실패 · 포기에서는 빠지고, 클리어(마지막 페이즈 우승)일 때만 들어간다.
+	var phases_cleared: int = phase_reached + (1 if outcome == OUTCOME_CLEAR else 0)
 	var record: Dictionary = player_record(state)
 	var wins: int = int(record["wins"])
 	var losses: int = int(record["losses"])
@@ -96,7 +98,7 @@ static func build_result(state: Dictionary, outcome: String, test_run: bool) -> 
 	var bonus_points: int = 0   # 감독 특성 보너스 점수 — M8 에서 채운다.
 
 	var breakdown: Dictionary = {
-		"phase":  phase_count * ConstTable.int_of("RUN_SCORE_PER_PHASE"),
+		"phase":  phases_cleared * ConstTable.int_of("RUN_SCORE_PER_PHASE"),
 		"wins":   wins * ConstTable.int_of("RUN_SCORE_PER_WIN"),
 		"titles": titles * ConstTable.int_of("RUN_SCORE_PER_TITLE"),
 		"clear":  ConstTable.int_of("RUN_SCORE_CLEAR_BONUS") if cleared else 0,
@@ -155,7 +157,7 @@ static func build_result(state: Dictionary, outcome: String, test_run: bool) -> 
 		# ── 표시용 (계약 밖, 화면이 season_state 없이 그릴 수 있게) ──
 		# 정산 한 번마다 다른 값 — 프로필이 같은 결과를 두 번 반영하지 않는 열쇠.
 		"id": "%d-%s-%d" % [int(state.get("run_seed", 0)), at, Time.get_ticks_usec()],
-		"phase_reached_count": phase_count,
+		"phases_cleared": phases_cleared,
 		"breakdown": breakdown,
 		"team_name": _team_name(state, team_id),
 		"scenario_name": String(RunRules.scenario(scenario_id).get("name", "")),

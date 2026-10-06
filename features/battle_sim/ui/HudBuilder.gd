@@ -769,6 +769,12 @@ const VICTORY_MVP_H := 120.0
 const VICTORY_BTN_Y := 360.0
 const VICTORY_MVP_PORTRAIT := 96.0
 const VICTORY_MVP_LABEL_COLOR := Color(1.0, 0.85, 0.35)
+## 결과 화면 전용 CanvasLayer — HUD(`_bs.canvas`)와 전장 위, MVP 뷰
+## (`MvpView.OVERLAY_LAYER`) 아래. 예전에는 HUD 캔버스에 같이 있어서 반투명 판 너머로
+## 전장 타일 · 마커가 비쳤고, 판 밖의 HUD 띠 · 마커가 결과 화면과 같은 밝기로 경쟁했다.
+const VICTORY_LAYER: int = 50
+## 결과 화면 뒤 전체 화면 딤 — 판 밖의 전장 · HUD 를 가라앉히고 입력도 막는다.
+const VICTORY_BACKDROP_COLOR := Color(0.0, 0.0, 0.0, 0.65)
 
 
 ## 결과 화면의 MVP 한 줄을 채운다. `p` 가 null 이면(이긴 팀이 비어 있는 기묘한
@@ -822,16 +828,33 @@ func _build_victory_panel() -> void:
 	_bs.panel_victory = Panel.new()
 	var vp := ScreenMetrics.viewport_size()
 	_bs.panel_victory.size     = VICTORY_PANEL_SIZE
-	# 어두운 판 — 기본 테마의 반투명 회색은 전장 타일이 비쳐 MVP 한 줄이 묻힌다.
+	# 어두운 **불투명** 판 — 반투명이면 전장 타일 · 마커가 비쳐 MVP 한 줄이 묻힌다.
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.05, 0.06, 0.10, 0.94)
+	sb.bg_color = Color(0.05, 0.06, 0.10, 1.0)
 	sb.border_color = Color(1.0, 0.80, 0.30, 0.75)
 	sb.set_border_width_all(3)
 	sb.set_corner_radius_all(18)
 	_bs.panel_victory.add_theme_stylebox_override("panel", sb)
 	_bs.panel_victory.position = (vp - _bs.panel_victory.size) * 0.5
 	_bs.panel_victory.visible  = false
-	_bs.canvas.add_child(_bs.panel_victory)
+
+	# 판은 HUD 캔버스가 아니라 자기 레이어에, 전체 화면 딤 위에 선다. 딤은 판의
+	# 표시 여부를 그대로 따른다 — `panel_victory.visible` 을 켜고 끄는 자리
+	# (`BattleSim.end_match` / `_on_mvp_view_closed` / `_on_restart_pressed`)는 그대로다.
+	var layer := CanvasLayer.new()
+	layer.name = "VictoryLayer"
+	layer.layer = VICTORY_LAYER
+	_bs.add_child(layer)
+	var backdrop := ColorRect.new()
+	backdrop.name = "VictoryBackdrop"
+	backdrop.color = VICTORY_BACKDROP_COLOR
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	backdrop.visible = false
+	layer.add_child(backdrop)
+	layer.add_child(_bs.panel_victory)
+	_bs.panel_victory.visibility_changed.connect(
+			func() -> void: backdrop.visible = _bs.panel_victory.visible)
 
 	_bs.lbl_victory = Label.new()
 	_bs.lbl_victory.add_theme_font_size_override("font_size", 48)

@@ -85,6 +85,23 @@ explicit: `SeasonHub` calls `_resolve_ai_for_matchday(md)` **per match day**
 (not for the whole week — the standings shown after Saturday's match must not include
 Sunday results that have not been played yet), never on signal.
 
+### Week-end order (`SeasonHub._end_week`)
+Runs when Sunday is closed, **before** `advance_week()` — every step still sees the
+week that just ended (`current_phase` / `phase_week`). Order is fixed (plan §11.1):
+1. `_resolve_remaining_ai_for_week()` — leftover AI matches.
+2. `FinanceSystem.settle_week(state)` — income − expense, surplus allocation or the
+   bankruptcy rule, history (`features/season/finance/README.md`). Its `toast` is queued in
+   `SeasonHub.hub_toasts` and shown on the next HUB.
+3. `MechMastery.settle_week(state)` — weekly research mech.
+4. `MentalSystem.end_week(state)` — weekly mental reset.
+5. `StaffSystem.decay_mods(state)` → `PilotMods.decay_week(state)` — temporary mods tick down.
+6. `CalendarSystem.advance_week()` → `week_advanced` (+ `phase_changed`).
+7. `TrainingBoard.reset_for_new_week()` — the next week's board starts empty.
+
+Finance runs first so that this week's match bonus (accrued by `FinanceSystem.record_match`
+when each result was consumed) is paid in the same week, and so that the allocation effects
+it sets (`training_exp_mult` / `incident_mult`) are in place for the coming Mon–Fri.
+
 ### Weekdays and match days (inside a week)
 A week is seven days, Mon–Sun, and the current weekday is held in `season_state["week_day"]`
 (0..6; **-1 means the week has not been opened yet**). The five days Mon–Fri are the five rows

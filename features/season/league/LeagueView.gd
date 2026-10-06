@@ -9,6 +9,10 @@ extends Control
 # 주를 넘기는 일이 시간 경과 화면의 일요일 마감으로 옮겨 가면서 이 화면에 남은
 # 행동은 "다 봤다" 하나가 됐다. 돌아갈 자리는 버튼이 아니라 **주 진행 상태**가
 # 정한다(`SeasonHub.on_standings_confirmed` — 주가 돌고 있으면 그 요일로, 아니면 허브로).
+#
+# Tapping a row opens that team's detail sheet (`HubSheet`): record + the five
+# pilots under the analysis reveal rule (`OpponentIntel` / `IntelView`, the same
+# builder MatchFlow PREP uses). The own team is always fully visible.
 
 const PHASE_NAMES: Dictionary = {
 	GameEnums.SeasonPhase.PRESEASON:      "프리시즌",
@@ -30,6 +34,7 @@ var _league: LeagueManager = null
 var _phase_lbl: Label
 var _next_match_lbl: Label
 var _row_widgets: Array = []   # 8 dicts of {panel, stylebox, rank, name, wl, pct, po}
+var _row_team_ids: Array = [-1, -1, -1, -1, -1, -1, -1, -1]   # team shown on each row
 var _ok_btn: Button
 var _built: bool = false
 
@@ -120,11 +125,23 @@ func _build_rows() -> void:
 				Vector2(840, (ROW_H - 32) / 2.0), Vector2(144, 32),
 				HORIZONTAL_ALIGNMENT_CENTER)
 
+		# The whole row is a tap target → team detail sheet.
+		var hit := Button.new()
+		hit.flat = true
+		hit.focus_mode = Control.FOCUS_NONE
+		hit.position = Vector2.ZERO
+		hit.size = Vector2(ROW_W, ROW_H)
+		hit.pressed.connect(_on_row_pressed.bind(r))
+		panel.add_child(hit)
+
 		_row_widgets.append({
 			"panel": panel, "stylebox": sty,
 			"rank": rank_lbl, "name": name_lbl,
 			"wl": wl_lbl, "pct": pct_lbl, "po": po_lbl,
 		})
+	UiHelpers.mk_label(self, "팀을 누르면 로스터와 분석 자료를 봅니다", 20, OutgameTheme.TEXT_SUB,
+			Vector2(x0, grid_y + 8 * (ROW_H + ROW_GAP) + 8.0), Vector2(ROW_W, 28),
+			HORIZONTAL_ALIGNMENT_CENTER)
 
 
 ## 확인 하나뿐이라 **하단 구간을 통째로 차지한다** — 좌우 끝에서 끝까지,
@@ -173,6 +190,7 @@ func refresh() -> void:
 			w["wl"].text   = ""
 			w["pct"].text  = ""
 			w["po"].text   = ""
+			_row_team_ids[r] = -1
 			sty.bg_color = OutgameTheme.SURFACE_SUNK
 			sty.border_color = OutgameTheme.BORDER
 			sty.set_border_width_all(1)
@@ -180,6 +198,7 @@ func refresh() -> void:
 
 		var row: Dictionary = ranked[r]
 		var tid: int = int(row["team_id"])
+		_row_team_ids[r] = tid
 		var wins: int = int(row["wins"])
 		var losses: int = int(row["losses"])
 		var played: int = wins + losses
@@ -218,3 +237,36 @@ func refresh() -> void:
 func _on_ok_pressed() -> void:
 	if _hub != null and _hub.has_method("on_standings_confirmed"):
 		_hub.on_standings_confirmed()
+
+
+# ── Team detail sheet ─────────────────────────────────────────────────────────
+func _on_row_pressed(r: int) -> void:
+	var tid: int = int(_row_team_ids[r]) if r < _row_team_ids.size() else -1
+	if tid < 0 or _league == null:
+		return
+	open_team_detail(tid, r + 1)
+
+
+## Opens the detail sheet of `tid` (ranked `rank`) — record + five pilots under
+## the analysis reveal rule. Public so a harness / other screens can open it.
+func open_team_detail(tid: int, rank: int) -> HubSheet:
+	var state: Dictionary = _gm.season_state
+	var is_own: bool = tid == int(state["player_team_id"])
+	var sheet := HubSheet.open_on(self, "%s  (%s)" % [
+			_league.team_name(tid), _league.team_short_name(tid)])
+	var body: Control = sheet.body
+	var w: float = sheet.body_w() - 16.0   # leave room for the scroll bar
+	var table: Dictionary = state.get("league_standings", {})
+	var rec: Dictionary = table.get(tid, table.get(str(tid), {}))
+	var y: float = 0.0
+	UiHelpers.mk_label(body, "%d위 · %d승 %d패%s" % [rank, int(rec.get("wins", 0)),
+			int(rec.get("losses", 0)), "  · 내 팀" if is_own else ""],
+			24, OutgameTheme.TEXT_SUB, Vector2(0, y), Vector2(w, 34))
+	y += 48.0
+	var intel: Dictionary = OpponentIntel.build(state,
+			OpponentIntel.team_roster(state, tid), is_own)
+	y += IntelView.add_tier_header(body, Vector2(0, y), w, intel)
+	y += IntelView.add_analyst_note(body, Vector2(0, y), w, intel)
+	y += IntelView.add_rows(body, Vector2(0, y), w, intel)
+	sheet.set_body_height(y + 20.0)
+	return sheet

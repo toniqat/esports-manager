@@ -110,3 +110,5 @@ POM_W_SCORE,1,RunStats.gd,페이즈 POM 점수 — 그 페이즈 MVP 지표 점�
 ANALYSIS_TIER_1,8,StaffSystem.gd,분석 공개 1단계(상대 스탯 대략) 문턱 — 유효 분석 스탯 (1~20)
 ANALYSIS_TIER_2,12,StaffSystem.gd,분석 공개 2단계(상대 숙련도 상위 메크) 문턱 — 유효 분석 스탯 (1~20)
 ANALYSIS_TIER_3,16,StaffSystem.gd,분석 공개 3단계(상대 파일럿 카드) 문턱 — 유효 분석 스탯 (1~20)
+ANALYSIS_APPROX_STEP,10,OpponentIntel.gd,분석 1단계에서 상대 스탯을 보여 주는 구간 폭 — 값이 이 폭의 구간(예: 60~69)으로만 보인다 (스탯)
+ANALYSIS_TOP_MECHS,2,OpponentIntel.gd,분석 2단계 이상에서 선수마다 보여 줄 숙련도 상위 메크 수 (개)

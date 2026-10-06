@@ -88,3 +88,8 @@ for save metadata and the lobby run card, never for match-day filtering.
   moved to the Sunday close on the week-progress screen, and where to return is decided by the
   week-progress state, not by a button (`SeasonHub.on_standings_confirmed`). Colours come from
   `OutgameTheme` — a card list on white paper.
+  **Tapping a row opens the team detail** (`open_team_detail(team_id, rank)` → `HubSheet`): rank ·
+  record, then the five pilots under the analysis reveal rule — the same `OpponentIntel` /
+  `IntelView` pair MatchFlow PREP uses (`features/match_flow/match_prep/README.md`). The own team
+  is always fully visible; other teams follow `StaffSystem.analysis_tier`, with an analyst note
+  when analysis is delegated.

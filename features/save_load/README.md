@@ -18,7 +18,7 @@ never shows the test run.
 
 Auto-save fires at four discrete points (no manual save UI):
 
-1. **Post-run-start** — first DRAFT → HUB transition (SeasonHub).
+1. **Post-run-start** — first HUB entry of a fresh run (`SeasonHub._is_run_start`).
 2. **Pre-ban-pick** — MatchFlow `_ready()`, right before BAN_PICK starts.
 3. **Post-ban-pick** — `_on_ban_pick_finished` in MatchFlow, right after
    mech (메크) assignment finishes and just before BattleSim launches.
@@ -147,7 +147,7 @@ Resource-typed entries:
 
 | # | When | Where | match_resume |
 |---|---|---|---|
-| 1 | DRAFT → HUB | `SeasonHub.goto()` | null (cleared) |
+| 1 | First HUB entry after `start_run` | `SeasonHub._show_hub()` (`_is_run_start`) | null (cleared) |
 | 2 | Pre-ban-pick (MatchFlow entry, before BAN_PICK starts) | `MatchFlow._ready()` | `{phase: BAN_PICK, ...}` |
 | 3 | Post-ban-pick (after mech assignment is done, before BattleSim) | `MatchFlow._on_ban_pick_finished()` | `{phase: LAUNCH, ...}` |
 | 4 | Post-match (return from BattleSim, result applied) | `SeasonHub._ready()` | null (cleared by `_consume_pending_match_result`) |
@@ -174,8 +174,8 @@ leaves `match_resume` non-null on disk. On `이어하기` (Continue) in the lobb
   picks.
 
 ## New-run vs continue flow (lobby)
-- **새 런, no run**: `reset_season_state()` → Season.tscn. SeasonHub sees
-  `season_state.active == false`, runs `init_season()` and DRAFT. First save fires at DRAFT → HUB.
+- **새 런, no run**: `reset_season_state()` → RunSetup.tscn (`features/meta/run_setup/`) →
+  `GameManager.start_run(run_setup)` → Season.tscn at HUB. First save fires on that first HUB entry.
 - **새 런, run exists**: modal warning popup (`진행 중인 런을 포기할까요?`). Confirm →
   `SaveSystem.load_run()` → `RunResult.settle_current_run("abandon")` (fail settlement,
   deletes the run file) → RunResult.tscn → `새 런` → RunSetup.tscn. Unreadable run →

@@ -267,7 +267,7 @@ effective(stat) = max(감독[stat] + 일시 보정, 어시스턴트[stat], 담�
 |---|---|---|
 | 로비 | `meta/lobby/` | `새 런`(1) / `이어하기`(2) — 런 없으면 `새 런` 전폭 |
 | 시나리오 · 팀 선택 | `meta/run_setup/` | `뒤로`(1) / `다음`(2) |
-| 5인 편성 (기존 드래프트 확장) | `season/draft/` | 기존 PICK / CONFIRM |
+| 시나리오 · 팀 · 5인 편성 (기존 드래프트 확장) | `meta/run_setup/` | `뒤로` / `다음`, 편성은 PICK / CONFIRM |
 | 런 결과 정산 | `meta/run_result/` | `로비로` 전폭 |
 | 컬렉션 · 감독 · 특성 · 상점 · 패스 | `meta/*` | 화면별 |
 | 허브 확장(스태프 · 예산 · 면담 · 외출) | `season/HubView.gd` | 기존 유지, 행동은 카드 안 |

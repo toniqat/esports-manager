@@ -50,7 +50,8 @@ esports-manager/
 ├── resources/                ← shared data classes, enums, image lookups, OutgameTheme,
 │                               ScreenMetrics, DragScroll, UiHelpers, shaders → README.md
 ├── scenes/                   ← TitleScreen / Season / MatchFlow / BattleSim / BattleField / Card .tscn
-├── docs/                     ← ios_testbuild.md, mobile_safe_area.md
+├── docs/                     ← ios_testbuild.md, mobile_safe_area.md,
+│                               outgame_dev_plan.md (아웃게임 메타 개발 계획)
 ├── addons/godot_mcp/         ← MCP editor plugin (do not modify)
 └── features/
     ├── save_load/            ← title screen, 3-slot save/load, autosave, mid-match resume

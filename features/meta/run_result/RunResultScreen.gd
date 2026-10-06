@@ -23,6 +23,8 @@ const ROW_H: float = 48.0
 const PILOT_ROW_H: float = 104.0
 const PORTRAIT_D: float = 76.0
 const BODY_TOP: float = 360.0
+const TRUE_END_ROW_H: float = 184.0
+const TRUE_END_PORTRAIT_D: float = 128.0
 
 const OUTCOME_TITLES: Dictionary = {
 	"clear":   "런 클리어",
@@ -104,11 +106,49 @@ func _build_body() -> void:
 			Vector2(ScreenMetrics.vp_w(), h))
 	var body: Control = sv["body"]
 	var y: float = 0.0
+	# M7 — the true ending leads the body: it is the rarest thing a run can show.
+	if not (_result.get("true_endings", []) as Array).is_empty():
+		y = _build_true_ending_card(body, y) + CARD_GAP
 	y = _build_progress_card(body, y) + CARD_GAP
 	y = _build_score_card(body, y) + CARD_GAP
 	y = _build_reward_card(body, y) + CARD_GAP
 	y = _build_achievement_card(body, y) + CARD_GAP
 	body.custom_minimum_size.y = y
+
+
+## True-ending section (M7): one row per pilot in `result.true_endings` —
+## large ringed portrait, name, the promise line. Names come from `pilots`.
+func _build_true_ending_card(parent: Control, y: float) -> float:
+	var ids: Array = _result.get("true_endings", [])
+	var names: Dictionary = {}
+	for p in (_result.get("pilots", []) as Array):
+		names[int((p as Dictionary).get("id", -1))] = String((p as Dictionary).get("name", ""))
+	var card: Panel = OutgameTheme.add_card(parent, Vector2(_card_x(), y),
+			Vector2(CARD_W, SECTION_TITLE_H + CARD_PAD * 1.5 + ids.size() * TRUE_END_ROW_H),
+			24, OutgameTheme.ACCENT_DIM)
+	UiHelpers.mk_label(card, "진엔딩", 24, OutgameTheme.ACCENT_TEXT,
+			Vector2(CARD_PAD, CARD_PAD * 0.5 + 8.0), Vector2(CARD_W - CARD_PAD * 2.0, 34))
+	OutgameTheme.add_divider(card, Vector2(CARD_PAD, SECTION_TITLE_H + 8.0),
+			CARD_W - CARD_PAD * 2.0, OutgameTheme.ACCENT)
+	var ry: float = SECTION_TITLE_H + CARD_PAD * 0.5
+	for raw in ids:
+		var pid: int = int(raw)
+		var nm: String = String(names.get(pid, "#%d" % pid))
+		OutgameTheme.add_round_portrait(card, PilotImages.circle_for(pid),
+				Vector2(CARD_PAD, ry + (TRUE_END_ROW_H - TRUE_END_PORTRAIT_D) * 0.5),
+				TRUE_END_PORTRAIT_D, OutgameTheme.ACCENT)
+		var tx: float = CARD_PAD + TRUE_END_PORTRAIT_D + 28.0
+		var tw: float = CARD_W - tx - CARD_PAD
+		UiHelpers.mk_label(card, nm, 34, OutgameTheme.TEXT,
+				Vector2(tx, ry + 22.0), Vector2(tw, 44))
+		var l1 := UiHelpers.mk_label(card, "우승 트로피를 들고, %s 선수가 미뤄 둔 말을 꺼냈다." % nm,
+				22, OutgameTheme.TEXT_SUB, Vector2(tx, ry + 70.0), Vector2(tw, 60))
+		l1.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		OutgameTheme.add_chip(card, "외출 %d회 · 약속을 지켰다" % ConstTable.int_of("TRUE_ENDING_OUTINGS"),
+				Vector2(tx, ry + 128.0), Vector2(300, 36), OutgameTheme.SURFACE,
+				OutgameTheme.ACCENT_TEXT, 18)
+		ry += TRUE_END_ROW_H
+	return y + card.size.y
 
 
 func _build_progress_card(parent: Control, y: float) -> float:

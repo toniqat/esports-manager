@@ -67,6 +67,25 @@ Lists every match of that match day, with **the player's match on top** in a dar
 otherwise the league schedule (`_matches_on_day`). The status cell is `예정` (Scheduled) /
 `승` (Win) / `패` (Loss) / `<팀> 승` (<team> wins).
 
+### Mon–Fri: incident card + 오늘 저녁 (evening) card — M7
+
+Rules and state are in `features/season/mental/README.md` (`MentalSystem`); this screen only draws
+records and forwards taps. On a training day the list order is **incident → evening → training cards**.
+
+* **Incident** — `refresh()` calls `MentalSystem.ensure_incident(state, day)` right after the
+  training settle (rolled once per weekday, seeded). A pending incident opens its dialog **by
+  itself** (`_open_incident`, deferred); the card (red lead bar) shows `사건 — <name> · <pilot>` and
+  either `눌러서 대응하기` (reopens the dialog) or the effect notes once resolved.
+* **오늘 저녁** — five portrait slots (seat order; tap to select, amber highlight; trust is amber
+  once the outing is unlocked) + `면담` / `외출` / `패스`. The header shows the remaining weekly
+  `면담 n/N · 외출 n/M`. Disabled buttons say why (`면담 (이번 주 끝)`, `외출 (신뢰 N↑)` with N =
+  `TRUST_OUTING_MIN`). After the action the card collapses to a one-line
+  summary with the effect notes. Pressing the bottom `확인` without choosing records a **pass**.
+* **Dialog overlay** — interview / outing / incident open a `MessengerView`
+  (`features/season/press/MessengerView.gd`) as the last child of this screen (`_overlay`); its
+  STOP root blocks the list and the bottom bar until it closes, then the screen `refresh()`es.
+  An evening dialog left open by a reload (record with `choice = -1`) reopens itself with the same event.
+
 ## Never settle twice
 
 A weekday's result is kept in `season_state["week_day_log"][day]`, and **if it already exists it is
@@ -90,6 +109,11 @@ There are three pieces of week-progress state (all in `season_state`, all saved)
 
 All three are cleared by `TrainingBoard.reset_week_progress()`, which runs in two places:
 **training confirm** (`SeasonHub.on_training_confirmed`) and **week end** (`reset_for_new_week`).
+
+The M7 evening action and incident follow the same rule with their own record,
+`season_state.mental.days["<day>"]` (`MentalSystem`): the incident is rolled once and the evening
+dialog's event is stored before it opens, so re-entering the weekday (after a match, after load)
+redraws from the record and never rerolls or re-applies. `MentalSystem.end_week` clears it.
 
 ## Exchanges with SeasonHub
 

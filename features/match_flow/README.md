@@ -20,10 +20,11 @@ LOAD → PREP → BAN_PICK → LAUNCH (change_scene → BattleSim)
 
 The two enum values remain for save compatibility (`match_resume.phase`).
 
-PREP is the pre-match dashboard — both rosters' stats laid out side by
-side so the player can review who they're up against before committing
-to BAN_PICK. Pressing "경기 시작" (Start match) advances to BAN_PICK and triggers the
-pre-ban-pick autosave.
+PREP is the pre-match scouting sheet (white outgame paper) — opponent on top, own team below.
+**How much of the opponent is visible follows the analysis reveal tier** (M5 — name/role → stat
+ranges → exact stats + top mechs → pilot cards; own team always full), with an analyst note when
+analysis is delegated. Details: `match_prep/README.md`. Pressing "경기 시작" (Start match) advances
+to BAN_PICK and triggers the pre-ban-pick autosave.
 
 Entry point: `scenes/MatchFlow.tscn`. Resume saves skip PREP and jump
 directly to BAN_PICK (or LAUNCH for post-gambit saves) since the player
@@ -40,7 +41,7 @@ Three child controllers each build their own UI on `enter()` and emit
 
 | Node | Script | Responsibility |
 |---|---|---|
-| MatchPrepController | `match_prep/MatchPrepController.gd` | Pre-match dashboard — both rosters with stats. "경기 시작" → BAN_PICK. |
+| MatchPrepController | `match_prep/MatchPrepController.gd` | Pre-match scouting sheet — opponent (analysis reveal tier) + own roster. "경기 시작" → BAN_PICK. |
 | BanPickController | `ban_pick/BanPickController.gd` | LoL-international ban/pick (4 bans + 10 picks) with random AI, **plus the mech assignment that follows on the same screen**. See the two sections below |
 
 The two detail popups opened by the assignment step are sibling files of the controller:
@@ -240,7 +241,8 @@ resume path restores the saved `player_side` as is, so it is unaffected by this 
 | File | Purpose |
 |---|---|
 | `MatchFlow.gd` | State machine orchestrator |
-| `match_prep/MatchPrepController.gd` | Pre-match dashboard |
+| `match_prep/MatchPrepController.gd` | Pre-match scouting sheet (analysis reveal) |
+| `match_prep/OpponentIntel.gd` · `IntelView.gd` | Reveal rule builder + its drawer, shared with the league team detail — `match_prep/README.md` |
 | `ban_pick/BanPickController.gd` | Ban/Pick + mech assignment — both teams' portraits + mech grid + bottom detail sheet + drag assignment |
 | `ban_pick/MechDetailPanel.gd` | Mech detail popup for the assignment step |
 | `MatchCheatMenu.gd` | Editor-only cheat menu (top left) — see "Cheat menu" below |
@@ -319,7 +321,8 @@ season views' `extend_background()`, it uses `backfill_top()`, which lays one st
 **first child**.
 
 Inside the pushed-down panel, bottom buttons are based on `ScreenMetrics.safe_h()` —
-`MatchPrepController` uses `safe_h() - 70 - h`. `BanPickController` derives **the whole block**, not
+`MatchPrepController` uses the outgame bottom bar (`OutgameTheme.add_bottom_bar`, top =
+`bottom_bar_top()` = `safe_h() - BOTTOM_BAR_H`) and ends its scroll above it. `BanPickController` derives **the whole block**, not
 a button, back from `safe_h()` (`_lay["bot_block_y"]` / `_lay["assign_block_y"]`), and the pick pane
 height comes from the strip left after the top and bottom blocks — so on any screen the grid cells
 stay square and only the number of visible rows changes.

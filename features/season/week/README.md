@@ -1,97 +1,103 @@
-# 시간 경과 (week)
+# Week progress (시간 경과) (week)
 
-주가 **월요일부터 일요일까지 하루씩** 흘러가는 화면. `SeasonHub` 의
-`Screen.WEEK`.
+The screen where the week passes **one day at a time, Monday to Sunday**. `Screen.WEEK` in
+`SeasonHub`.
 
-| 파일 | 역할 |
+| File | Role |
 |---|---|
-| `WeekProgressView.gd` | `class_name WeekProgressView extends Control` — 화면 전부 |
+| `WeekProgressView.gd` | `class_name WeekProgressView extends Control` — the whole screen |
 
-## 화면
+## Screen
 
 ```
 ┌──────────────────────────────────────────┐
-│ 1주  월  화  수  목 [금]  토  일            │  ← 상단 가로 요일 레일
+│ 1주  월  화  수  목 [금]  토  일            │  ← top horizontal weekday rail
 └──────────────────────────────────────────┘
   프리시즌 · 3주차                  1년 12월
   금요일                                5
  ──────────────────────────────────────────
-  ▌(○) Evelyn      전명 전회 교명 …          ← 세로 스크롤
+  ▌(○) Evelyn      전명 전회 교명 …          ← vertical scroll
   ▌    탱커         86   87   83
   ▌(○) Seed  …
         [               확인               ]
 ```
 
-* **상단 가로 레일** — 화면 폭을 다 쓰는 어두운 알약 위에, 왼쪽 끝에 `N주`,
-  그 오른쪽에 요일 칩 일곱이 **왼쪽 → 오른쪽**으로 고르게 선다. **지금 요일 한
-  칸만 앰버로 채워진다.** 지나온 날은 흰 글자, 남은 날은 흐린 글자 — 그 대비가
-  "며칠 남았나"를 레일만 보고 읽게 한다. 예전에는 **왼쪽 세로 기둥**이었는데
-  (참고 디자인 그대로), 폭 152px 를 레일이 가져가 카드의 스탯 여섯 칸이 좁았고
-  요일이 위에서 아래로 흐르는 것이 달력을 읽는 방향과 어긋났다.
-* **머리글**(레일 아래) — 왼쪽에 페이즈 · 주차와 큰 요일 이름, 오른쪽에 `1년 12월`
-  과 그날의 **일(日)** 큰 숫자. 날짜는 그 주 월요일(`season_state.year/month/day`)
-  에 요일만큼 더해 만든다(`_date_of_day`, 달을 넘길 수 있으므로
-  `CalendarSystem.DAYS_IN_MONTH` 를 지난다).
-* **본문** — 카드 목록, 세로 스크롤(`OutgameTheme.add_vscroll` → `DragScroll` 로 끌어 굴린다).
-* **아래 버튼** — 보통 `확인`(앰버), 일요일이면 `주 마감 →`, 그날 플레이어
-  경기가 남아 있으면 **`경기 시작`**(어두운 색면 — "이 화면을 떠난다"는 뜻).
+(Mockup uses in-game Korean text: `1주` = Week 1, 월화수목금토일 = Mon–Sun, "프리시즌 · 3주차" =
+Preseason · Week 3, "1년 12월" = Year 1, December, "금요일" = Friday, 탱커 = tank, stat
+abbreviations such as 전명 / 전회 / 교명, `확인` = OK.)
 
-## 요일이 하는 일
+* **Top horizontal rail** — on a dark pill spanning the full screen width, `N주` (Week N) at the
+  left end, then seven weekday (요일) chips spaced evenly **left → right**. **Only the current
+  weekday's chip is filled amber.** Past days have white text, remaining days dim text — that
+  contrast lets you read "how many days left" from the rail alone. It used to be a **left vertical
+  column** (exactly as in the reference design), but the rail took 152 px of width, squeezing the
+  card's six stat cells, and weekdays flowing top-to-bottom clashed with how calendars are read.
+* **Header** (below the rail) — on the left, phase · week number and a large weekday name; on the
+  right, `1년 12월` (Year 1, December) and a large number for that day's **day of month (日)**. The
+  date is built by adding the weekday offset to that week's Monday
+  (`season_state.year/month/day`) (`_date_of_day`; it can cross a month, so it goes through
+  `CalendarSystem.DAYS_IN_MONTH`).
+* **Body** — the card list, vertical scroll (`OutgameTheme.add_vscroll` → drag-scrolled by `DragScroll`).
+* **Bottom button** — normally `확인` (OK) (amber); on Sunday `주 마감 →` (End of week); if the
+  player still has a match that day, **`경기 시작`** (Start match) (dark fill — meaning "you are
+  leaving this screen").
 
-| 요일 | 하는 일 |
+## What each weekday does
+
+| Weekday | What happens |
 |---|---|
-| 월~금 | **훈련일.** 그 요일에 처음 닿을 때 `TrainingBoard.apply_day_training(day)` 가 판의 그 줄을 정산해 선수 스탯을 실제로 올린다. |
-| 토 · 일 | **경기일**(`CalendarSystem.MATCH_DAYS` — 토 = 경기일 0, 일 = 경기일 1). 그날 배정된 경기가 카드로 뜬다. |
+| 월~금 (Mon–Fri) | **Training days.** On first reaching that weekday, `TrainingBoard.apply_day_training(day)` settles that row of the board and actually raises player stats. |
+| 토 · 일 (Sat · Sun) | **Match days (경기일)** (`CalendarSystem.MATCH_DAYS` — Sat = match day 0, Sun = match day 1). That day's scheduled matches show up as cards. |
 
-### 훈련 카드
+### Training card
 
-선수 한 명이 한 장. 왼쪽에 역할 색 띠(`OutgameTheme.lead_bar_style`), 원형
-초상화, 이름 · 역할, 오른쪽에 여섯 스탯이 `이름 / 지금 값 / 이번 날의 결과`
-세 줄로 선다.
+One card per player (선수). On the left a role-colour strip (`OutgameTheme.lead_bar_style`), a
+round portrait, name · role; on the right six stats, each in three lines:
+`name / current value / today's result`.
 
-세 번째 줄이 **오른 포인트가 있으면 `+N`(초록), 없으면 `27/40`**(다음 한 점까지
-모인 EXP)이다. 기초 코스만 깔린 판은 하루 EXP 가 `EXP_PER_POINT`(40)에 못 미쳐
-월~목이 전부 `—` 로 보이고 금요일에 한꺼번에 오르는데(실측: 닷새에 스탯 총합
-+6), 그러면 이 화면이 매일 답해야 하는 "오늘 뭐가 늘었나"에 나흘 동안 답이 없다.
+The third line is **`+N` (green) if points were gained, otherwise `carry/EXP_PER_POINT`** (EXP accumulated toward
+the next point; `EXP_PER_POINT` = const.csv `TRAINING_EXP_PER_POINT`). On a board with only basic courses, daily EXP falls short of `EXP_PER_POINT`,
+so a points-only line would show `—` Mon–Thu and everything would rise at once on Friday — then for four days this screen would have no answer to the question it must answer every day,
+"what improved today?".
 
-### 경기 카드
+### Match card
 
-그 경기일의 경기를 전부 늘어놓되 **플레이어 경기가 맨 위**이고 어두운 색면이다
-(나머지는 흰 카드에 절반 높이). 출처는 둘 — 토너먼트가 돌고 있으면 대진표,
-아니면 리그 스케줄(`_matches_on_day`). 상태 칸은 `예정` / `승` / `패` /
-`<팀> 승`.
+Lists every match of that match day, with **the player's match on top** in a dark fill
+(the rest are white cards at half height). Two sources — the bracket if a tournament is running,
+otherwise the league schedule (`_matches_on_day`). The status cell is `예정` (Scheduled) /
+`승` (Win) / `패` (Loss) / `<팀> 승` (<team> wins).
 
-## 두 번 정산하지 않는다
+## Never settle twice
 
-그 요일의 결과는 `season_state["week_day_log"][day]` 에 남고, **이미 있으면 다시
-정산하지 않는다**(`_settle_day_if_needed`). 경기를 치르고 같은 요일로 돌아오는
-경로가 실제로 있다 —
+A weekday's result is kept in `season_state["week_day_log"][day]`, and **if it already exists it is
+not settled again** (`_settle_day_if_needed`). There really is a path that returns to the same
+weekday after playing a match —
 
 ```
-WEEK 토  →  경기 시작  →  MatchFlow → BattleSim  →  Season 재진입
-        →  SeasonHub 가 결과 적용 + 그 경기일 AI 정산  →  STANDINGS
-        →  확인  →  WEEK 토 (그 경기는 이제 played 라 버튼이 다시 "확인")
-        →  확인  →  WEEK 일
+WEEK Sat  →  경기 시작  →  MatchFlow → BattleSim  →  re-enter Season
+        →  SeasonHub applies the result + settles that match day's AI matches  →  STANDINGS
+        →  확인  →  WEEK Sat (that match is now played, so the button is "확인" again)
+        →  확인  →  WEEK Sun
 ```
 
-주 진행 상태는 셋이다(전부 `season_state`, 세이브에 실린다).
+There are three pieces of week-progress state (all in `season_state`, all saved).
 
-| 키 | 뜻 |
+| Key | Meaning |
 |---|---|
-| `week_day` | 지금 보고 있는 요일 0..6. **-1 은 주가 아직 안 열렸다는 뜻** — 허브 · 기자회견 · 훈련 계획 구간이 전부 -1 이고, 그 값이 순위표의 "확인"이 주로 돌아갈지 허브로 돌아갈지를 가른다(`SeasonHub.on_standings_confirmed`). |
-| `week_day_log` | `day(int) → Array[줄]`. 정수 키라 세이브에서 `_int_keyed_dict_in` 을 지난다 — 안 지나면 `log[3]` 이 영원히 빈 배열을 돌려줘 같은 요일 훈련이 두 번 먹는다. |
-| `training_exp_carry` | 나머지 EXP 통장. `TrainingBoard` 항목 참조. |
+| `week_day` | The weekday currently shown, 0..6. **-1 means the week has not been opened yet** — the hub · press conference (기자회견) · training plan stretch is all -1, and that value decides whether the standings' "확인" returns to the week or to the hub (`SeasonHub.on_standings_confirmed`). |
+| `week_day_log` | `day(int) → Array[row]`. Integer keys, so on load it goes through `_int_keyed_dict_in` — otherwise `log[3]` returns an empty array forever and the same weekday's training is applied twice. |
+| `training_exp_carry` | The leftover-EXP bank. See the `TrainingBoard` entry. |
 
-셋 다 `TrainingBoard.reset_week_progress()` 가 비우고, 그것은 **훈련 확정**
-(`SeasonHub.on_training_confirmed`)과 **주 종료**(`reset_for_new_week`) 두 곳에서 돈다.
+All three are cleared by `TrainingBoard.reset_week_progress()`, which runs in two places:
+**training confirm** (`SeasonHub.on_training_confirmed`) and **week end** (`reset_for_new_week`).
 
-## SeasonHub 와 주고받는 것
+## Exchanges with SeasonHub
 
-| 부르는 쪽 | 함수 |
+| Direction | Functions |
 |---|---|
-| 화면 → 허브 | `has_player_match_on_day(day)` · `opponent_name_on_day(day)` · `on_week_day_match_start()` · `on_week_day_confirmed()` |
-| 허브 → 화면 | `ensure_view()` (라우팅할 때마다) |
+| Screen → hub | `has_player_match_on_day(day)` · `opponent_name_on_day(day)` · `on_week_day_match_start()` · `on_week_day_confirmed()` |
+| Hub → screen | `ensure_view()` (on every routing) |
 
-`on_week_day_confirmed()` 는 **넘어가기 전에** 그날의 AI 경기를 쓸어 담는다
-(`_resolve_ai_for_matchday`) — 플레이어가 그날 경기가 없어 그냥 넘어가는
-경우에도 그날 리그는 돌아가야 하고, 그래야 다음에 보는 순위표가 날짜와 맞는다.
+`on_week_day_confirmed()` sweeps up that day's AI matches **before moving on**
+(`_resolve_ai_for_matchday`) — even when the player has no match that day and just moves on, that
+day's league must still run, so the next standings shown match the date.

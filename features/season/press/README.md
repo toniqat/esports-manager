@@ -1,16 +1,18 @@
-# 기자회견 (press)
+# Press conference (기자회견) (press)
 
-주 시작 직전에 한 번 열리는 **메신저 화면**. `SeasonHub` 의 `Screen.PRESS`.
+A **messenger screen** that opens once right before the week starts. `Screen.PRESS` in `SeasonHub`.
 
 ```
-HubView "이번 주 시작 →"  →  PRESS  →  (답변 선택)  →  TRAINING
+HubView "이번 주 시작 →"  →  PRESS  →  (pick an answer)  →  TRAINING
 ```
 
-| 파일 | 역할 |
+("이번 주 시작 →" = Start this week.)
+
+| File | Role |
 |---|---|
-| `PressConferenceView.gd` | `class_name PressConferenceView extends Control` — 화면 전부 |
+| `PressConferenceView.gd` | `class_name PressConferenceView extends Control` — the whole screen |
 
-## 화면
+## Screen
 
 ```
 프리시즌 · 3주차 · e스포츠 데일리 기자
@@ -25,54 +27,59 @@ HubView "이번 주 시작 →"  →  PRESS  →  (답변 선택)  →  TRAINING
                     화면을 눌러 계속
 ```
 
-* **왼쪽 = 기자.** 원형 초상화(`OutgameTheme.add_round_portrait`) + 그 초상화를
-  가리키는 **쐐기**가 붙은 흰 말풍선. 같은 기자가 이어 말하는 두 번째 줄부터는
-  초상화와 쐐기를 반복하지 않는다.
-* **오른쪽 = 플레이어.** 앰버 색면 + 흰 글자, 쐐기는 오른쪽을 향한다.
-* 기자 대사는 **한 줄씩** 나온다. 화면 아무 데나 누르면 다음 줄이 붙고(하단
-  안내가 `화면을 눌러 계속`), 다 나오면 답변 선택지가 오른쪽 아래에 뜬다
-  (`답변을 고르세요`).
-* 하나를 고르면 그 답이 플레이어 말풍선으로 붙고 **0.7초 뒤** `SeasonHub.
-  on_press_finished()` 로 훈련 계획 화면에 넘어간다. 곧장 넘기면 방금 고른
-  답이 화면에 뜨지도 못한 채 사라진다.
+(Mockup uses the in-game Korean text: header "Preseason · Week 3 · e-sports Daily reporter" /
+"Press conference"; reporter: "Many say your weekend opponent is tough. / Honestly, are you
+confident you'll win?"; answers: "I trust our players." / "It won't be easy, but we have
+something prepared." / "That question is a bit rude."; hint "Tap the screen to continue".)
 
-## 지금은 틀만이다
+* **Left = reporter.** Round portrait (초상화) (`OutgameTheme.add_round_portrait`) + a white speech
+  bubble with a **wedge** pointing at that portrait. From the second consecutive line by the same
+  reporter on, the portrait and wedge are not repeated.
+* **Right = player.** Amber fill + white text; the wedge points right.
+* Reporter lines appear **one at a time**. Tapping anywhere on the screen appends the next line
+  (bottom hint is `화면을 눌러 계속` (Tap the screen to continue)); once all are shown, the answer
+  choices appear at bottom right (`답변을 고르세요` (Choose an answer)).
+* Picking one appends that answer as a player bubble and **0.7 s later** goes to the training plan
+  screen via `SeasonHub.on_press_finished()`. Moving on immediately would make the just-picked
+  answer vanish before it ever shows on screen.
 
-대사 · 선택지는 `_SCRIPT_POOL` 에 박아 둔 임시 데이터이고 대본을 고르는 규칙도
-`phase_week % 풀 크기` 하나다. 답변은 아무 상태도 움직이지 않는다
-(`_on_answer_picked` 이 고른 인덱스를 `print` 로만 남긴다).
+## Currently only a skeleton
 
-붙일 자리는 셋이다.
+Lines · choices are placeholder data hard-coded in `_SCRIPT_POOL`, and the rule for choosing a
+script is just `phase_week % pool size`. Answers change no state
+(`_on_answer_picked` only `print`s the chosen index).
 
-1. **대사 풀을 표로** — `data/csv/press_lines.csv` 같은 표를 만들고 페이즈 ·
-   순위 · 직전 경기 결과로 고른다.
-2. **답변의 효과** — 팀 사기 / 선수 컨디션 / 평판 같은 상태를 움직인다.
-   `_on_answer_picked(idx, text)` 가 그 진입점이다.
-3. **기자 초상화** — 지금은 `_draw_reporter_glyph` 가 그리는 마이크 도형이다.
-   실제 아트가 생기면 `add_round_portrait` 의 두 번째 인자로 넘기고 그 자식
-   `Control` 하나만 지우면 된다.
+Three places to hook in:
 
-## 구현 메모
+1. **Line pool as a table** — create a table such as `data/csv/press_lines.csv` and choose by
+   phase · standing · last match result.
+2. **Answer effects** — move state such as team morale / player condition / reputation.
+   `_on_answer_picked(idx, text)` is the entry point.
+3. **Reporter portrait** — currently a microphone shape drawn by `_draw_reporter_glyph`.
+   When real art exists, pass it as the second argument of `add_round_portrait` and delete just
+   that one child `Control`.
 
-* **말풍선 꼬리는 자식이 없는 전용 `Control` 이 그린다**(`_add_wedge`).
-  Control 의 `_draw` 는 자식보다 **먼저** 나가므로 말풍선 `Panel` 안에 넣으면
-  글자 밑에 깔린다.
-* **탭은 화면 자신(`gui_input`)이 받되, 누를 때가 아니라 *뗄 때* 받는다.**
-  `OutgameTheme.add_vscroll` 이 붙이는 `DragScroll` 이 스크롤 안의 **누름**을
-  `accept_event()` 로 삼키기 때문이다(엔진 터치 드래그와 이중으로 굴지 않게).
-  누름에 반응하던 시절에는 그 탓에 말풍선 자리 전부에서 탭이 화면까지 올라오지
-  못해 **기자 대사가 첫 줄에서 멈췄다**(실측: 수정 전 탭 두 번에 `_shown` 1 → 1,
-  수정 후 1 → 2 → 답변). 떼기는 삼키지 않으므로 마우스 포커스를 쥔 스크롤에서
-  **부모 사슬**을 타고 올라온다 — 그래서 스크롤과 판은 `MOUSE_FILTER_PASS` 여야
-  하고(STOP 이면 사슬이 거기서 끊긴다), 끌어서 굴린 제스처는 `_drag.moved` 로
-  걸러 탭으로 치지 않는다. 스크롤 바깥(머리글)의 누름은 화면에 곧장 오므로
-  `_press_outside_scroll` 로 표시해 직전 스크롤의 `moved` 값을 보지 않는다.
-  형제로 깔아 둔 탭 판은 소용이 없다 — 입력 전파는 위로만 가지 옆으로는 안 간다.
-  답변 `Button` 은 PASS 로 내려가 있어도(`DragScroll` 의 스윕) 자기 `pressed` 를
-  그대로 쏘고, 답변이 떠 있는 동안 화면 탭은 `_show_answers` 가 무시한다.
-* 줄바꿈된 글의 높이는 `Label` 을 세워 재지 않고 **폰트에게 직접 묻는다**
-  (`_text_block_height`) — 재려고 방금 세운 라벨은 그 프레임에 크기가 0 이다.
-* `ensure_view()` 는 **매번 회견을 새로 연다**(`_restart`). `_built` 는 뼈대만
-  지킨다 — 주마다 같은 회견이 이어져 보이면 안 된다.
-* 색은 전부 `OutgameTheme`, 배치는 `ScreenMetrics.indent_to_safe_top` +
-  `OutgameTheme.add_background`(안이 `extend_background` 를 부른다).
+## Implementation notes
+
+* **The bubble tail is drawn by a dedicated `Control` with no children** (`_add_wedge`).
+  A Control's `_draw` runs **before** its children, so putting it inside the bubble `Panel` would
+  put it under the text.
+* **Taps are received by the screen itself (`gui_input`), but on *release*, not on press.**
+  The `DragScroll` that `OutgameTheme.add_vscroll` attaches swallows **presses** inside the scroll
+  with `accept_event()` (so it doesn't double up with the engine's touch drag). Back when it reacted
+  to presses, taps over the whole bubble area therefore never reached the screen, and **reporter
+  lines stopped at the first line** (measured: before the fix, two taps gave `_shown` 1 → 1; after
+  the fix 1 → 2 → answers). Releases are not swallowed, so they bubble up the **parent chain** from
+  the scroll that holds mouse focus — hence the scroll and the board must be `MOUSE_FILTER_PASS`
+  (with STOP the chain breaks there), and drag-scroll gestures are filtered out via `_drag.moved`
+  so they don't count as taps. Presses outside the scroll (header) come straight to the screen, so
+  they are flagged with `_press_outside_scroll` to avoid reading the previous scroll's `moved` value.
+  A tap board laid down as a sibling is useless — input propagates only upward, never sideways.
+  Answer `Button`s still fire their own `pressed` even when lowered to PASS (by `DragScroll`'s
+  sweep), and while answers are showing, `_show_answers` ignores screen taps.
+* The height of wrapped text is not measured by standing up a `Label`; **the font is asked
+  directly** (`_text_block_height`) — a label just created for measuring has size 0 in that frame.
+* `ensure_view()` **opens a fresh conference every time** (`_restart`). `_built` guards only the
+  skeleton — the same conference must not appear to carry over from week to week.
+* All colours come from `OutgameTheme`; layout uses `ScreenMetrics.indent_to_safe_top` +
+  `OutgameTheme.add_background` (which internally calls `extend_background`).

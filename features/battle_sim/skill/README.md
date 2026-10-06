@@ -1,235 +1,240 @@
-# features/battle_sim/skill — 파일럿 스킬
+# features/battle_sim/skill — pilot skills
 
-선수 한 명에게 붙는 **고유 능력**. 카드가 메크와 파일럿이 나눠 주는 공용 자원이라면,
-스킬은 그 선수가 아니면 낼 수 없는 한 수다.
+A **unique ability** attached to one player (선수). If cards (카드) are a shared resource handed out by
+mechs (메크) and pilots (파일럿), a skill is the one move only that player can make.
 
-| 파일 | 역할 |
+| File | Role |
 |---|---|
-| `PilotSkillSystem.gd` | `class_name PilotSkillSystem` — 상태 보관 · 활성화 · 사건 훅 · 패시브 질의 |
+| `PilotSkillSystem.gd` | `class_name PilotSkillSystem` — state storage · activation · event hooks · passive queries |
 
-`BattleSim` 이 **파일럿 스폰과 덱 배분이 모두 끝난 뒤** 코드로 만들어 붙인다
-(`skill = PilotSkillSystem.new()`). 짝을 `player_data_for` 로 찾고 백본 패시브가
-이미 돌아간 덱을 만지므로 그 순서가 아니면 안 된다. 접근은 `_bs.skill`.
+`BattleSim` creates and attaches it in code **after pilot spawning and deck (덱) distribution are both done**
+(`skill = PilotSkillSystem.new()`). It finds pairs via `player_data_for` and touches the deck that the
+백본 (Backbone) passive has already run on, so it must be in that order. Access is `_bs.skill`.
 
 ---
 
-## 데이터
+## Data
 
-표는 `data/csv/pilot_skills.csv`(**25행**), 짝은 `players.csv` 의 `skill_id` 가
-들고 있다. `GameManager._load_pilot_skills` 가 시작 시 한 번 읽어
-`gm.pilot_skills`(id → 행)에 담고, `gm.skill_def(id)` 로 꺼낸다.
+The table is `data/csv/pilot_skills.csv` (**25 rows**); the pairing is held by `skill_id` in
+`players.csv`. `GameManager._load_pilot_skills` reads it once at startup into
+`gm.pilot_skills` (id → row), and `gm.skill_def(id)` fetches it.
 
-| 컬럼 | 뜻 |
+| Column | Meaning |
 |---|---|
-| `id` | 0..24. `players.skill_id` 가 가리키는 값 |
-| `key` | 런타임 분기 키(snake_case). `PilotSkillSystem.KEY_*` 상수와 1:1 |
-| `name` | 화면에 뜨는 이름 |
-| `role` | `GameEnums.Role`. 탑=TANK / 미드=FIGHTER / 정글=ASSASSIN / 서포터=SUPPORT / 원딜=SNIPER |
+| `id` | 0..24. The value `players.skill_id` points to |
+| `key` | Runtime branch key (snake_case). 1:1 with `PilotSkillSystem.KEY_*` constants |
+| `name` | Name shown on screen |
+| `role` | `GameEnums.Role`. 탑 (top)=TANK / 미드 (mid)=FIGHTER / 정글 (jungle)=ASSASSIN / 서포터 (support)=SUPPORT / 원딜 (ADC)=SNIPER |
 | `type` | `cooldown` / `charge` / `passive` |
-| `p1` | 쿨타임 턴 수, 또는 활성화에 드는 충전 수 |
-| `p2` | 최대 충전 수 (0 = 충전 없음) |
-| `keyword` | 분류 꼬리표(표시 전용) |
-| `description` | 상세 패널에 그대로 뜨는 설명문 |
+| `p1` | Cooldown in turns, or the number of charges activation costs |
+| `p2` | Max charges (0 = no charges) |
+| `keyword` | Category tag (display only) |
+| `description` | Description text shown as-is in the detail panel |
 
-**스킬은 라인에 묶여 있다** — 같은 역할의 파일럿에게만 붙고, 역할당 5개씩이다.
-25개뿐이라 40명 중 **15명(모브)은 스킬이 없다**(`skill_id = -1`, `is_mob = 1`).
-그쪽은 초상화도 실루엣 컷으로 나오고 시즌 드래프트 격자에서도 빠진다 —
-`resources/README.md` 의 모브 항목과 `features/season/draft/README.md` 참조.
+**Skills are bound to a lane** — they attach only to pilots of the same role, 5 per role.
+With only 25, **15 of the 40 players (mobs) have no skill** (`skill_id = -1`, `is_mob = 1`).
+Their portraits are silhouette (실루엣) cuts and they are also excluded from the season draft grid —
+see the mob pilot (모브 파일럿) entry in `resources/README.md` and `features/season/draft/README.md`.
 
-### 효과를 문법으로 만들지 않은 이유
-카드는 `draw:2;discard:2` 처럼 절을 조합해 쓰지만, 스킬 25개는 전부 서로 다른
-사건에 걸린다(포탑 파괴 · 오브젝트 승리 · 처치 관여 · 공격 카드 명중 · 상대
-라이너와의 비교 …). 절 문법을 만들어 봐야 절이 25개 생길 뿐이라, 여기서는
-CSV 의 `key` 로 갈라 쓴다 — 한 스킬을 고치려면 그 `KEY_*` 상수를 grep 하면 그
-스킬이 걸리는 자리가 전부 나온다.
+### Why effects were not made into a grammar
+Cards are written by combining clauses like `draw:2;discard:2`, but the 25 skills all hook into different
+events (turret destroyed · objective won · kill participation · attack card hit · comparison with the
+opposing laner …). A clause grammar would just produce 25 clauses, so here we branch on the CSV
+`key` — to change one skill, grep its `KEY_*` constant and every place that skill hooks into shows up.
 
 ---
 
-## 세 가지 타입
+## Three types
 
-| 타입 | 준비 조건 | 초상화 와이프 | 초상화 옆 숫자 |
+| Type | Ready condition | Portrait wipe | Number next to portrait |
 |---|---|---|---|
-| `cooldown` | 마지막 사용 뒤 `p1` 턴 | 경과 비율 | 남은 턴 (준비되면 빈칸) |
-| `charge` | 충전 ≥ `p1` | 충전 / `p1` | 충전 수 |
-| `passive` | 누를 수 없음 | **언제나 100%** | 충전 수 (`p2 > 0` 인 것만) |
+| `cooldown` | `p1` turns since last use | elapsed ratio | turns left (blank when ready) |
+| `charge` | charges ≥ `p1` | charges / `p1` | charge count |
+| `passive` | cannot be pressed | **always 100%** | charge count (only when `p2 > 0`) |
 
-패시브가 언제나 100% 인 것은 규칙의 예외가 아니라 정의다 — 누를 수 없는 대신
-상시 적용이라 "아직 안 됐다"가 성립하지 않는다. 충전을 쌓는 패시브(퍼포먼스 ·
-축적 · 신예 · 몰아치기 · 전리품 수집가)의 충전은 활성화의 연료가 아니라
-**효과의 세기** 자체이고, 그 값은 초상화 옆 숫자가 말한다.
+A passive always being 100% is not an exception to the rule but its definition — it cannot be pressed but
+applies constantly, so "not ready yet" does not exist. For charge-stacking passives (퍼포먼스 (Performance) ·
+축적 (Accumulation) · 신예 (Rookie) · 몰아치기 (Onslaught) · 전리품 수집가 (Trophy Collector)) the charge is not fuel for activation but
+**the strength of the effect** itself, and the number next to the portrait tells that value.
 
 ---
 
-## 화면
+## Screen
 
-| 어디 | 무엇 |
+| Where | What |
 |---|---|
-| `ui/PilotStrip.gd` | **아군 스트립만** — 초상화가 어둡게 덮여 있고 준비된 만큼 **왼쪽부터** 밝아진다. 오른쪽 위에 숫자 |
-| `ui/PilotDetailPanel.gd` | 인게임 탭 **카드 줄 아래** 전용 블록 — 이름 · 타입 · 키워드 · 설명문 · 상태 한 줄 · 큰 **사용** 버튼 |
+| `ui/PilotStrip.gd` | **Ally strips only** — the portrait is covered dark and brightens **from the left** as it gets ready. Number at top right |
+| `ui/PilotDetailPanel.gd` | Dedicated block **below the card row** in the in-game tab — name · type · keyword · description · one status line · a big **사용** (Use) button |
 
-와이프는 밝은 쪽에 사각형을 얹는 대신 **어두운 쪽(딤)의 왼쪽 끝을 밀어낸다** —
-얹는 방식은 채움 100% 에서도 한 겹이 남지만, 좁히는 방식은 폭 0 이 되어 초상화가
-원래 색 그대로가 된다.
+The wipe does not lay a rectangle over the bright side; it **pushes the left edge of the dark side (dim)** —
+the overlay approach still leaves one layer at 100% fill, while the shrinking approach reaches width 0 and
+the portrait shows its original colours.
 
-적 스트립에는 표시하지 않는다. 스킬은 아군만 누를 수 있고, 적 칸까지 어둡게
-덮으면 상대 얼굴이 스킬과 무관하게 흐려 보인다.
+Not shown on enemy strips. Only allies can press skills, and dimming enemy slots too would make the
+opponent's faces look faded for reasons unrelated to skills.
 
-**사용 버튼을 누르면 상세 패널이 닫힌다.** 결과가 손패 · 전장 · 스트립에
-나타나는데 딤이 그 위를 덮고 있으면 아무 일도 안 일어난 것처럼 보이고, 계략처럼
-자기 오버레이(`CardSelectOverlay`, 레이어 10)를 여는 스킬은 이 패널(레이어 13)
-뒤에 깔려 아예 보이지 않는다.
+**Pressing the Use button closes the detail panel.** The result appears in the hand · battlefield · strip,
+and if the dim covers it, it looks as if nothing happened; a skill that opens its own overlay like
+계략 (Scheme) (`CardSelectOverlay`, layer 10) would sit behind this panel (layer 13) and not be visible at all.
 
-### 활성화 게이트
-`can_activate(p)` = **아군(team 0) · 살아 있음 · 자기 작전 단계 · AI 턴 아님 ·
-자원 준비됨**. 전략 점수는 들지 않고 한 작전 단계에 몇 개를 써도 된다 — 절제는
-쿨타임과 충전이 이미 강제한다.
+### Activation gate
+`can_activate(p)` = **ally (team 0) · alive · own operation phase (작전 단계) · not the AI turn ·
+resource ready**. It costs no strategy points, and any number can be used in one operation phase —
+cooldowns and charges already enforce restraint.
 
-**AI 팀은 패시브와 충전만 굴러가고 활성화는 하지 않는다.** 첫 버전의 의도된
-한계다(`AiCardPlayer` 에 스킬 판단 로직이 없다).
+**The AI team only ticks passives and charges; it does not activate.** This is an intended limitation
+of the first version (`AiCardPlayer` has no skill decision logic).
 
-### 자원은 효과가 성공했을 때만 나간다
-`activate()` 는 `_run_activation` 이 빈 문자열을 돌려주면 쿨타임도 충전도
-건드리지 않는다 — 손패가 꽉 찼거나 카드 표가 비어 아무 일도 못 일어난 발동으로
-쿨타임을 먹으면 플레이어가 잃은 것을 되돌릴 방법이 없다.
+### Resources are spent only when the effect succeeds
+`activate()` touches neither cooldown nor charges when `_run_activation` returns an empty string —
+if an activation where nothing could happen (hand full, card table empty) ate the cooldown, the player
+would have no way to get back what was lost.
 
 ---
 
-## 스킬이 만들어 주는 카드
+## Cards that skills create
 
-전부 `cards.csv` 의 `pool = 0` 행이라 스타터 덱에는 절대 들어가지 않는다.
-손패에 놓는 것들은 `_grant_volatile` 이 **`exhaust|volatile`** 을 덧씌운다.
+All are `pool = 0` rows in `cards.csv`, so they never enter the starter deck.
+Those placed in the hand get **`exhaust|volatile`** applied on top by `_grant_volatile`.
 
-| 스킬 | 카드 | id | 어디로 |
+| Skill | Card | id | Where |
 |---|---|---|---|
-| 배회 | 이동 | 35 | 손패 (휘발성) |
-| 복귀 명령 | 복귀 | 21 | 손패 (휘발성) |
-| 격전 | 전투 개시 | 1 | 손패 (휘발성) — 덱에 자기 교전 카드가 없을 때만 |
-| 고양감 | 아드레날린 | 18 | 손패 (휘발성) |
-| 약탈자 | 약탈 | 23 | 손패 (휘발성) |
-| 신예 | 핫핸드 | 34 | **덱** (섞어서) |
+| 배회 (Roam) | 이동 (Move) | 35 | hand (volatile) |
+| 복귀 명령 (Return Order) | 복귀 (Return to Base) | 21 | hand (volatile) |
+| 격전 (Fierce Battle) | 전투 개시 (Start Battle) | 1 | hand (volatile) — only when the deck has none of your own engage cards |
+| 고양감 (Elation) | 아드레날린 (Adrenaline) | 18 | hand (volatile) |
+| 약탈자 (Raider) | 약탈 (Plunder) | 23 | hand (volatile) |
+| 신예 (Rookie) | 핫핸드 (Hot Hand) | 34 | **deck** (shuffled in) |
 
-**소멸(`exhaust`)과 휘발성(`volatile`)은 다른 것이다.** 소멸은 **쓰면** 사라지고,
-휘발성은 **안 쓰고 버려지면** 사라진다 — 둘을 함께 달면 스킬이 준 카드가 어느
-쪽으로도 덱을 불리지 않는다. 판정은 `CardPhaseManager.send_to_discard` 한 곳을
-지난다(`card_phase/README.md` 참조).
+**Exhaust (`exhaust`) and volatile (`volatile`) are different things.** Exhaust disappears **when used**;
+volatile disappears **when discarded unused** — with both attached, a skill-granted card never grows the
+deck either way. The check passes through one place, `CardPhaseManager.send_to_discard`
+(see `card_phase/README.md`).
 
-신예의 [핫핸드]만 덱으로 가는 이유는 15턴마다 손에 한 장씩 꽂히면 손패 상한
-정리를 계속 유발하기 때문이다.
+Only 신예's [핫핸드] goes to the deck because one card slotted into the hand every `p2` turns would keep
+triggering hand-limit cleanup.
 
 ---
 
-## 사건 훅 — 어디서 불리는가
+## Event hooks — where they are called
 
-| 훅 | 부르는 곳 | 쓰는 스킬 |
+| Hook | Called from | Skills that use it |
 |---|---|---|
-| `on_turn_advanced()` | `SimulationCore.simulate_turn` 8단계 뒤 | 축적 · 신예(충전), 사냥의 보상 · 위치 고정(만료) |
+| `on_turn_advanced()` | after step 8 of `SimulationCore.simulate_turn` | 축적 · 신예 (charge), 사냥의 보상 (Hunter's Reward) · 위치 고정 (Hold Position) (expiry) |
 | `on_card_played(cd, is_player)` | `CardPhaseManager._dispose_used_card` | 퍼포먼스 |
 | `on_attack_hit(caster)` | `CardPhaseManager._apply_attack_damage` | 몰아치기 |
-| `on_kill(victim, killer)` | `BattleSim.mark_pilot_dead` | 사냥의 보상 · 약탈자 · 전리품 수집가 · 퍼포먼스 · 신예 · 기회주의자 |
-| `on_turret_destroyed(killer)` | `BattleSim.score_turret_kill` | 공성전 |
-| `on_dragon_spawned()` | `ObjectiveSystem._resolve_objective` | 용의 가호 |
+| `on_kill(victim, killer)` | `BattleSim.mark_pilot_dead` | 사냥의 보상 · 약탈자 · 전리품 수집가 · 퍼포먼스 · 신예 · 기회주의자 (Opportunist) |
+| `on_turret_destroyed(killer)` | `BattleSim.score_turret_kill` | 공성전 (Siege) |
+| `on_dragon_spawned()` | `ObjectiveSystem._resolve_objective` | 용의 가호 (Dragon's Blessing) |
 | `on_objective_won(team)` | `ObjectiveSystem._run_objective_engage` | 고양감 |
-| `on_engage_started()` | `EngagePhaseManager._begin` | 기회주의자(장부 초기화) |
-| `on_phase_end(is_player)` | `end_card_phase` / `_run_ai_turn` | 몰아치기(충전 초기화) · 전투 명령(단계 효과 해제) |
+| `on_engage_started()` | `EngagePhaseManager._begin` | 기회주의자 (ledger reset) |
+| `on_phase_end(is_player)` | `end_card_phase` / `_run_ai_turn` | 몰아치기 (charge reset) · 전투 명령 (Battle Command) (stage effect cleared) |
 
-**`on_kill` 은 `_payout_kill_bounty` 보다 먼저 불려야 한다** — 처치 관여 명단의
-출처인 `victim.damage_credit` 을 그 정산이 비운다. 킬로그가 같은 이유로 같은
-자리에 있다. 명단은 그 사전을 직접 훑지 않고 **`BattleSim.live_damage_credit`**
-을 지난다 — `SCORE_ASSIST_WINDOW_TURNS`(15턴)보다 오래된 피해는 관여가 아니고,
-그 만료 규칙은 현상금 배분 · 킬로그 · 이 훅이 **한 함수를 함께 읽어야** 셋이
-같은 얼굴을 가리킨다.
+**`on_kill` must be called before `_payout_kill_bounty`** — that payout clears `victim.damage_credit`,
+the source of the kill-participation list. The kill log sits in the same spot for the same reason. The list does not
+scan that dictionary directly but goes through **`BattleSim.live_damage_credit`** —
+damage older than `SCORE_ASSIST_WINDOW_TURNS` (const.csv) is not participation, and that expiry rule must be
+read by **one shared function** for bounty distribution · kill log · this hook so all three point at
+the same faces.
 
-**`on_objective_won` 은 교전으로 이긴 경우에만** 불린다. 아무도 안 나와 거저
-가져간 경우(`_award_uncontested`)는 CSV 문구의 "전투에서 승리"가 아니다.
+**`on_objective_won` is called only when won through an engage.** Taking it free because nobody showed up
+(`_award_uncontested`) is not "전투에서 승리" (won in battle) as the CSV text says.
 
 ---
 
-## 패시브 질의 — 계산은 원래 하던 곳이 한다
+## Passive queries — the original site does the calculation
 
-이 모듈은 **얼마를 얹을지만** 답하고, 곱하는 것은 원래의 계산 지점이다.
-스킬이 스탯을 직접 밀면 성장 재계산 한 번에 지워지기 때문이고, 카드의 일시
-공격력이 `PilotData.atk_buff` 로 따로 사는 것과 같은 이유다.
+This module answers only **how much to add**; the multiplication happens at the original calculation point.
+This is because if a skill pushed stats directly, a single growth recalculation would wipe it — the same reason a card's
+temporary attack lives separately as `PilotData.atk_buff`.
 
-| 질의 | 읽는 곳 | 쓰는 스킬 |
+| Query | Read by | Skills that use it |
 |---|---|---|
-| `growth_rate_add(p)` | `BattleSim.add_score` | 축적 · 사냥의 보상 · 위치 고정 · 경쟁 심리 |
-| `atk_mult(p)` / `hp_mult(p)` | `BattleSim.refresh_growth_stats` | 퍼포먼스 · 전리품 수집가 · 만능 · 경쟁 심리 |
-| `hit_mult(p)` / `evasion_mult(p)` | `SimulationCore.roll_hit` | 노련함 · 몰아치기 · 퍼포먼스 |
+| `growth_rate_add(p)` | `BattleSim.add_score` | 축적 · 사냥의 보상 · 위치 고정 · 경쟁 심리 (Rivalry) |
+| `atk_mult(p)` / `hp_mult(p)` | `BattleSim.refresh_growth_stats` | 퍼포먼스 · 전리품 수집가 · 만능 (All-Rounder) · 경쟁 심리 |
+| `hit_mult(p)` / `evasion_mult(p)` | `SimulationCore.roll_hit` | 노련함 (Veteran) · 몰아치기 · 퍼포먼스 |
 | `lane_stat_add(p)` | `SimulationCore.lane_adjusted` | 백본 · 위치 고정 |
-| `damage_out_mult` / `damage_in_mult` | `SimulationCore._pilot_hit_damage`, `CardPhaseManager._apply_attack_damage`, `TurnEngageSim._resolve_attack` | 불안정한 대포 |
-| `presence_delta(p)` | 교전 표적 가중치 | 만능 |
+| `damage_out_mult` / `damage_in_mult` | `SimulationCore._pilot_hit_damage`, `CardPhaseManager._apply_attack_damage`, `TurnEngageSim._resolve_attack` | 불안정한 대포 (Unstable Cannon) |
+| `presence_delta(p)` | engage target weighting | 만능 |
 | `blocks_move(p)` / `blocks_objective(p)` | `_effect_move`, `ObjectiveSystem.participants_for` | 위치 고정 |
-| `engage_round_delta(team, consume)` | `EngagePhaseManager.start_engage` | 전투 명령(단계) · 공성전(다음 한 장) |
+| `engage_round_delta(team, consume)` | `EngagePhaseManager.start_engage` | 전투 명령 (stage) · 공성전 (next one card) |
 | `engage_bonus_rounds_from_kills()` | `TurnEngageSim._advance_order` | 기회주의자 |
-| `engage_focus_role(p)` / `engage_focus_atk_mult(p)` | `TurnEngageSim._pick_target` / `_resolve_attack` | 원딜 사냥꾼 |
+| `engage_focus_role(p)` / `engage_focus_atk_mult(p)` | `TurnEngageSim._pick_target` / `_resolve_attack` | 원딜 사냥꾼 (ADC Hunter) |
 
-**충전이 스탯을 바꾸는 스킬은 충전이 오를 때 `refresh_growth_stats` 를 함께
-부른다** — 그러지 않으면 다음 점수 변동까지 화면의 숫자가 옛 값에 머문다.
-
----
-
-## 25개 목록
-
-### 탑 (TANK)
-| 이름 | 타입 | 요약 |
-|---|---|---|
-| 공성전 | 충전식 5/5 | 충전 5로 시작. 포탑 파괴 시 +1. 5 충전 → 다음 전투 개시 카드 라운드 +3 |
-| 만능 | 패시브 | 체력형 메크면 존재감 +1 · 최대 체력 +20%, 공격형이면 존재감 −1 · 공격력 +20% |
-| 원딜 사냥꾼 | 패시브 | 교전 **첫 공격**은 반드시 적 원딜에게, 그 타격 공격력 +20% |
-| 공격적인 전진 | 쿨타임 10 | 휘발성 [전진] 생성 |
-| 경쟁 심리 | 패시브 | 상대 같은 레인 파일럿 대비 성장치 열세 → 적립 +10% / 처치 열세 → 공격력 +10% / 죽음 우세 → 최대 체력 +10% |
-
-### 미드 (FIGHTER)
-| 이름 | 타입 | 요약 |
-|---|---|---|
-| 배회 | 쿨타임 15 | 손패의 가장 싼 이동 카드 비용 0. 이동 카드가 없거나 이미 0코면 휘발성 [이동] 생성 |
-| 위치 고정 | 쿨타임 25 | 20턴 간 적립 +20% · 라인전 −20% · 이동 카드 불가 · 오브젝트 불참 |
-| 퍼포먼스 | 패시브 0/25 | 이 선수의 카드 사용마다 +1 충전. 충전당 자신의 모든 능력치 +2%. 사망 시 −10 충전 |
-| 기회주의자 | 패시브 | 교전 중 처치를 냈으면 그 교전의 라운드 +1 (교전당 한 번) |
-| 축적 | 패시브 0/100 | 매 턴 +1 충전. 충전당 성장 적립 +1% |
-
-### 정글 (ASSASSIN)
-| 이름 | 타입 | 요약 |
-|---|---|---|
-| 고양감 | 충전식 1/3 | 오브젝트 **교전 승리** 시 +1. 1 충전 → 휘발성 [아드레날린] 생성 |
-| 격전 | 쿨타임 25 | 덱에서 자기 전투 개시 카드 드로우. 없으면 휘발성 [전투 개시] 생성 |
-| 전투 명령 | 쿨타임 25 | 이번 작전 단계 전투 개시 비용 −3, 전투 라운드 −1 |
-| 약탈자 | 충전식 1/2 | 처치 관여 시 +1. 1 충전 → 휘발성 [약탈] 생성 |
-| 전리품 수집가 | 패시브 0/5 | 처치 관여한 적 **역할 종류**마다 공격력 +6%. 5종 전부면 +10% 추가(최대 +40%) |
-
-### 서포터 (SUPPORT)
-| 이름 | 타입 | 요약 |
-|---|---|---|
-| 작전 준비 | 쿨타임 35 | 이번 작전 단계 모든 카드 비용 −1 |
-| 계략 | 쿨타임 10 | 손패 1장에 보존 부여(찾기와 같은 그리드로 고른다) |
-| 복귀 명령 | 쿨타임 15 | 휘발성 [복귀] 생성 |
-| 노련함 | 패시브 | 명중 +10% · 회피 −5%. 50턴부터 명중 +20% |
-| 용의 가호 | 충전식 1/1 | 용 **등장** 시 +1. 1 충전 → 전략 점수 +3, 드로우 2 |
-
-### 원딜 (SNIPER)
-| 이름 | 타입 | 요약 |
-|---|---|---|
-| 사냥의 보상 | 패시브 | 처치 관여 시 15턴 간 성장 적립 +25% |
-| 불안정한 대포 | 패시브 | 주는 피해 +10% · 받는 피해 +10%. 50턴부터 각 +20% |
-| 백본 | 패시브 | 게임 시작에 자기 카드를 전부 버린 더미로. 50턴부터 라인전 +20% |
-| 신예 | 패시브 0/15 | 매 턴 +1 충전. 만충 시 [핫핸드]를 덱에 생성하고 충전 초기화. 사망 시 초기화 |
-| 몰아치기 | 패시브 0/4 | 공격 카드 명중마다 +1 충전. 충전당 명중 +5%. 작전 단계 종료 시 초기화 |
+**Skills whose charges change stats call `refresh_growth_stats` when the charge goes up** —
+otherwise the on-screen numbers stay at the old values until the next score change.
 
 ---
 
-## 튜닝
+## List of 25
 
-상수는 전부 `PilotSkillSystem` 의 "튜닝 상수" 절에 모여 있다. CSV 의 `p1` / `p2`
-는 **쿨타임 턴 수 · 충전 비용 · 최대 충전**만 정하고, 배율(몇 %인가)은 코드
-상수다 — 배율까지 CSV 로 빼면 스킬마다 의미가 다른 숫자 칸이 대여섯 개 생긴다.
+Cooldown / charge numbers are the CSV `p1` / `p2` and are not restated below. Effect sizes are const.csv keys
+(`SKILL_*`, exposed on `PilotSkillSystem` as `static var` without the `SKILL_` prefix); "late game" means
+from turn `SKILL_LATE_GAME_TURN`.
 
-원본 기획표에서 옮기며 두 값을 바꿨다.
-* **퍼포먼스** — "충전마다 모든 파일럿 능력치 +10%"를 그대로 읽으면 25충전에
-  +250% 다. 충전당 **+2%**, **자기 자신만**으로 낮췄다(만충 +50%).
-* **만능** — "최대 체력이 공격력보다 높을 시"는 생값으로는 갈리지 않는다(체력은
-  200대, 공격력은 10대라 어떤 메크를 태워도 언제나 체력이 크다). **메크 id
-  구간**으로 판정한다: 암살 12–17 · 스나이퍼 24–29 = 공격형, 나머지 = 체력형
-  (`MECH_ATK_ARCHETYPE_RANGES`). 메크가 없는 단독 실행에서는 존재감으로 가른다.
+### Top (탑, TANK)
+| Name | Type | Summary |
+|---|---|---|
+| 공성전 (Siege) | charge | Starts with full charges. +1 on turret destroyed. `p1` charges → next Start Battle card's rounds + `SKILL_SIEGE_ROUNDS` |
+| 만능 (All-Rounder) | passive | HP-type mech: presence +1 · max HP + `SKILL_VERSATILE_MULT`; attack-type: presence −1 · attack + `SKILL_VERSATILE_MULT` |
+| 원딜 사냥꾼 (ADC Hunter) | passive | The **first attack** of an engage always targets the enemy ADC, with attack + `SKILL_ADC_HUNTER_ATK` on that hit |
+| 공격적인 전진 (Aggressive Advance) | cooldown | Creates a volatile [전진] (Advance) |
+| 경쟁 심리 (Rivalry) | passive | Vs. the opponent's same-lane pilot: behind in growth points → accrual + `SKILL_RIVALRY_GROWTH` / behind in kills → attack + `SKILL_RIVALRY_ATK` / ahead in deaths → max HP + `SKILL_RIVALRY_HP` |
+
+### Mid (미드, FIGHTER)
+| Name | Type | Summary |
+|---|---|---|
+| 배회 (Roam) | cooldown | The cheapest move card in hand costs 0. If there is no move card or it already costs 0, creates a volatile [이동] (Move) |
+| 위치 고정 (Hold Position) | cooldown | For `SKILL_HOLD_TURNS`: accrual + `SKILL_HOLD_GROWTH_RATE` · laning + `SKILL_HOLD_LANE_STAT` (negative) · move cards disabled · no objective participation |
+| 퍼포먼스 (Performance) | passive (charges) | +1 charge per card this player uses. `SKILL_PERFORMANCE_PER_CHARGE` to all of own stats per charge. Loses `SKILL_PERFORMANCE_DEATH_LOSS` charges on death |
+| 기회주의자 (Opportunist) | passive | If it got a kill during an engage, that engage gets + `SKILL_OPPORTUNIST_ROUNDS` round(s) (once per engage) |
+| 축적 (Accumulation) | passive (charges) | +1 charge each turn. `SKILL_ACCUMULATE_PER_CHARGE` growth accrual per charge |
+
+### Jungle (정글, ASSASSIN)
+| Name | Type | Summary |
+|---|---|---|
+| 고양감 (Elation) | charge | +1 on objective **engage win**. `p1` charge(s) → creates a volatile [아드레날린] (Adrenaline) |
+| 격전 (Fierce Battle) | cooldown | Draws your own Start Battle card from the deck. If none, creates a volatile [전투 개시] (Start Battle) |
+| 전투 명령 (Battle Command) | cooldown | This operation phase: Start Battle cost − `SKILL_BATTLE_ORDER_DISCOUNT`, battle rounds + `SKILL_BATTLE_ORDER_ROUNDS` (negative) |
+| 약탈자 (Raider) | charge | +1 on kill participation. `p1` charge(s) → creates a volatile [약탈] (Plunder) |
+| 전리품 수집가 (Trophy Collector) | passive (charges) | Attack + `SKILL_LOOT_ATK_PER_CHARGE` per enemy **role type** whose kill it participated in. All 5 types gives an extra `SKILL_LOOT_ATK_FULL_BONUS` |
+
+### Support (서포터, SUPPORT)
+| Name | Type | Summary |
+|---|---|---|
+| 작전 준비 (Operation Prep) | cooldown | All card costs −1 this operation phase |
+| 계략 (Scheme) | cooldown | Grants keep (보존) to 1 card in hand (chosen with the same grid as search (찾기)) |
+| 복귀 명령 (Return Order) | cooldown | Creates a volatile [복귀] (Return to Base) |
+| 노련함 (Veteran) | passive | Hit + `SKILL_VETERAN_HIT_EARLY` · evasion + `SKILL_VETERAN_EVASION` (negative). Late game: hit + `SKILL_VETERAN_HIT_LATE` |
+| 용의 가호 (Dragon's Blessing) | charge | +1 when the Dragon (용) **spawns**. `p1` charge(s) → strategy points + `SKILL_BLESSING_STRATEGY`, draw `SKILL_BLESSING_DRAW` |
+
+### ADC (원딜, SNIPER)
+| Name | Type | Summary |
+|---|---|---|
+| 사냥의 보상 (Hunter's Reward) | passive | On kill participation, growth accrual + `SKILL_HUNT_REWARD_RATE` for `SKILL_HUNT_REWARD_TURNS` |
+| 불안정한 대포 (Unstable Cannon) | passive | Damage dealt and damage taken both + `SKILL_CANNON_EARLY`. Late game: + `SKILL_CANNON_LATE` each |
+| 백본 (Backbone) | passive | At game start sends all of own cards to the discard pile. Late game: laning + `SKILL_BACKBONE_LANE_STAT` |
+| 신예 (Rookie) | passive (charges) | +1 charge each turn. When full, creates [핫핸드] (Hot Hand) in the deck and resets charges. Resets on death |
+| 몰아치기 (Onslaught) | passive (charges) | +1 charge per attack card hit. Hit + `SKILL_SURGE_HIT_PER_CHARGE` per charge. Resets at the end of the operation phase |
+
+---
+
+## Tuning
+
+The CSV `p1` / `p2` only set **cooldown turns · charge cost · max charges**. Effect sizes (how many %,
+how many rounds / turns) now live in `data/csv/const.csv` under `SKILL_*` keys, read through `ConstTable`
+into the "튜닝 상수" (tuning constants) section of `PilotSkillSystem` as `static var`s keeping the old
+const names (e.g. `PilotSkillSystem.HOLD_TURNS` ← `SKILL_HOLD_TURNS`). They were kept out of
+`pilot_skills.csv` because that would create five or six number columns whose meaning differs per skill.
+Values themselves are not restated here — read const.csv.
+
+Two values were changed when porting from the original design sheet.
+* **퍼포먼스 (Performance)** — read literally, the sheet's per-charge bonus to "all pilot stats" was far
+  too large at max charges (`p2`). Lowered (`SKILL_PERFORMANCE_PER_CHARGE`), **self only**.
+* **만능 (All-Rounder)** — "when max HP is higher than attack" does not split on raw values (mech HP
+  values are far larger than attack values in mechs.csv, so HP is always larger whatever mech is used). It is decided by **mech id
+  ranges**: assassin 12–17 · sniper 24–29 = attack-type, the rest = HP-type
+  (`MECH_ATK_ARCHETYPE_RANGES`). In a standalone run without mechs it splits by presence.
 
 
 ## Detail moved from root CLAUDE.md
@@ -238,4 +243,4 @@ CSV 의 `key` 로 갈라 쓴다 — 한 스킬을 고치려면 그 `KEY_*` 상�
 
 | System | Description |
 |---|---|
-| 파일럿 스킬 | **선수 한 명에게 붙는 고유 능력.** 카드가 메크와 파일럿이 나눠 주는 공용 자원이라면, 스킬은 그 선수가 아니면 낼 수 없는 한 수다. 표는 `data/csv/pilot_skills.csv`(**25행**)이고 짝은 `players.csv` 의 `skill_id` 가 든다. **스킬은 라인에 묶여 있어** 같은 역할의 파일럿에게만 붙고 역할당 5개씩이다(탑=TANK / 미드=FIGHTER / 정글=ASSASSIN / 서포터=SUPPORT / 원딜=SNIPER). 25개뿐이라 **40명 중 15명(모브)은 스킬이 없다** — 아래 "모브 파일럿" 항목. 타입은 셋이다 — **쿨타임**(쓰면 `p1` 턴 뒤 재사용) · **충전식**(정해진 사건마다 충전이 쌓이고 `p1` 충전을 태워 발동) · **패시브**(누를 수 없고 상시 또는 자동 발동). 충전을 쌓는 패시브(퍼포먼스 · 축적 · 신예 · 몰아치기 · 전리품 수집가)의 충전은 활성화의 연료가 아니라 **효과의 세기** 자체다. **효과는 문법이 아니라 `key` 로 갈라 쓴다** — 25개가 전부 다른 사건에 걸려서(포탑 파괴 · 오브젝트 승리 · 처치 관여 · 공격 카드 명중 · 상대 라이너와의 비교) 절 문법을 만들어 봐야 절이 25개 생길 뿐이다. **패시브 보정은 이 모듈이 질의 함수로만 내보내고 계산은 원래 하던 자리가 그대로 한다**(`BattleSim.refresh_growth_stats` / `add_score`, `SimulationCore.roll_hit` / `lane_adjusted` / `_pilot_hit_damage`, `TurnEngageSim`) — 스킬이 스탯을 직접 밀면 성장 재계산 한 번에 지워진다(카드의 일시 공격력이 `atk_buff` 로 따로 사는 것과 같은 이유). **화면**: 아군 스트립의 초상화가 기본적으로 어둡게 덮여 있고 **준비된 만큼 왼쪽부터 밝아지며**(딤의 왼쪽 끝을 미는 방식 — 얹는 방식은 100%에서도 한 겹이 남는다), 오른쪽 위에 **쿨타임이면 남은 턴 / 충전식이면 충전 수**가 찍힌다. 패시브는 **언제나 100% 밝다**(누를 수 없는 대신 상시 적용이라 "아직 안 됐다"가 성립하지 않는다). 적 스트립에는 표시하지 않는다. 상세 패널 **인게임 탭의 카드 줄 아래**에 이름 · 타입 · 키워드 · 설명문 · 상태 · 큰 **사용** 버튼이 서고, **누르면 패널이 닫힌다**(결과가 손패·전장·스트립에 나타나는데 딤이 덮고 있으면 아무 일도 안 일어난 것처럼 보이고, 계략처럼 자기 오버레이를 여는 스킬은 레이어 10 이라 이 패널 13 뒤에 깔린다). **활성화는 무료이고 한 단계에 몇 개를 써도 된다** — 절제는 쿨타임과 충전이 이미 강제한다. 게이트는 아군 · 살아 있음 · 자기 작전 단계 셋이고, **AI 팀은 패시브와 충전만 굴러가고 활성화는 하지 않는다**(첫 버전의 의도된 한계). 자원은 **효과가 성공했을 때만** 나간다 — 손패가 꽉 차 아무 일도 못 일어난 발동으로 쿨타임을 먹으면 되돌릴 방법이 없다. 스킬이 손패에 만들어 주는 카드(이동 · 복귀 · 전투 개시 · 아드레날린 · 약탈)는 전부 `pool = 0` 에 **`exhaust\|volatile`** 이라 어느 쪽으로도 덱을 불리지 않는다. 25개 목록과 튜닝 상수는 `skill/README.md`. |
+| Pilot skills | **A unique ability attached to one player.** If cards are a shared resource handed out by mechs and pilots, a skill is the one move only that player can make. The table is `data/csv/pilot_skills.csv` (**25 rows**) and the pairing is held by `skill_id` in `players.csv`. **Skills are bound to a lane**, attaching only to pilots of the same role, 5 per role (탑=TANK / 미드=FIGHTER / 정글=ASSASSIN / 서포터=SUPPORT / 원딜=SNIPER). With only 25, **15 of the 40 players (mobs) have no skill** — see the "Mob pilots" entry. There are three types — **cooldown** (reusable `p1` turns after use) · **charge** (charges stack on set events and `p1` charges are burned to activate) · **passive** (cannot be pressed; always on or auto-triggered). For charge-stacking passives (퍼포먼스 · 축적 · 신예 · 몰아치기 · 전리품 수집가) the charge is not fuel for activation but **the strength of the effect** itself. **Effects branch on `key`, not a grammar** — all 25 hook into different events (turret destroyed · objective won · kill participation · attack card hit · comparison with the opposing laner), so a clause grammar would just produce 25 clauses. **This module exports passive modifiers only as query functions, and the calculation stays where it always was** (`BattleSim.refresh_growth_stats` / `add_score`, `SimulationCore.roll_hit` / `lane_adjusted` / `_pilot_hit_damage`, `TurnEngageSim`) — if a skill pushed stats directly, one growth recalculation would wipe it (same reason a card's temporary attack lives separately as `atk_buff`). **Screen**: the portrait in ally strips is covered dark by default and **brightens from the left as it gets ready** (by pushing the dim's left edge — the overlay approach leaves one layer even at 100%), with **turns left for cooldown / charge count for charge** at top right. Passives are **always 100% bright** (they cannot be pressed but always apply, so "not ready yet" does not exist). Not shown on enemy strips. **Below the card row of the detail panel's in-game tab** stand name · type · keyword · description · status · a big **사용** (Use) button, and **pressing it closes the panel** (the result appears in hand·battlefield·strip and if the dim covers it, it looks like nothing happened; a skill that opens its own overlay like 계략 is layer 10 and sits behind this panel at 13). **Activation is free and any number can be used per phase** — cooldowns and charges already enforce restraint. The gate is three conditions: ally · alive · own operation phase; **the AI team only ticks passives and charges and does not activate** (intended limitation of the first version). Resources are spent **only when the effect succeeds** — if an activation where nothing could happen because the hand was full ate the cooldown, there would be no way to undo it. Cards that skills create in hand (이동 · 복귀 · 전투 개시 · 아드레날린 · 약탈) are all `pool = 0` with **`exhaust\|volatile`**, so they never grow the deck either way. The list of 25 is in `skill/README.md`; tuning constants are `SKILL_*` in const.csv. |

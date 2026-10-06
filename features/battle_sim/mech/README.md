@@ -1,396 +1,408 @@
-# `features/battle_sim/mech/` — 메크 스킬
+# `features/battle_sim/mech/` — Mech (메크) skills
 
-배정된 **기체**에 붙는 상시 능력(패시브)과 그 기체가 덱에 들고 오는 카드들의
-런타임 상태를 맡는다. 파일럿 스킬(`../skill/`)과 나란히 서는 형제 모듈이고,
-같은 이유로 **스폰과 덱 배분이 모두 끝난 뒤에** 세워진다.
+Owns the runtime state of the permanent abilities (passives) attached to the assigned **machine**
+and of the cards that machine brings into the deck (덱). It is a sibling module standing next to
+pilot skills (`../skill/`), and for the same reason it is set up **after spawning and deck
+distribution are both finished**.
 
-| 파일 | 역할 |
+| File | Role |
 |---|---|
-| `MechSkillSystem.gd` | `class_name MechSkillSystem` — 패시브 상태 · 충전 · 사건 훅 · 질의 함수 |
+| `MechSkillSystem.gd` | `class_name MechSkillSystem` — passive state · Charge · event hooks · query functions |
 
-**파일럿 스킬이 선수에게 붙는 한 수라면, 메크 스킬은 기체가 하는 일이다.**
-밴픽에서 기체를 고르는 순간 그 파일럿의 덱 절반과 상시 능력 하나가 함께 정해진다.
-21대 목록 · 키워드 · 메크 카드 전용 절 문법도 이 문서에 있다(예전
-`docs/mech_skills_design.md` 를 옮겨 왔다).
+**If a pilot skill is a move attached to the player, a mech skill is what the machine does.**
+The moment a machine is picked in ban/pick (밴픽), half of that pilot's deck and one permanent
+ability are decided along with it. The list of 21 machines · keywords · mech-card-only clause
+grammar also live in this doc (moved from the former `docs/mech_skills_design.md`).
 
 ---
 
-## 데이터
+## Data
 
-| 표 | 행 | 키 |
+| Table | Rows | Key |
 |---|---|---|
-| `data/csv/mech_passives.csv` | 15 | `mech_id` → 패시브 하나 (21대 중 6대는 없음) |
-| `data/csv/mech_cards.csv` | 64 | `mech_id` → 카드 배열, `id` → 카드 하나 |
+| `data/csv/mech_passives.csv` | 15 | `mech_id` → one passive (6 of the 21 machines have none) |
+| `data/csv/mech_cards.csv` | 64 | `mech_id` → card array, `id` → one card |
 
-`GameManager` 가 셋으로 들고 있다 — `mech_passives`(mech_id → 행),
-`mech_cards`(mech_id → 배열), `mech_card_defs`(카드 id → 행). 마지막 것이 따로
-있는 이유는 효과가 카드를 **지목해서** 만드는 절이 열 개가 넘어서다
-(`gen_hand:13` / `gen_deck:39` / `search_card:7`) — 매번 배열을 뒤지면 같은 선형
-탐색이 카드 한 장마다 다시 돈다.
+`GameManager` holds them as three — `mech_passives` (mech_id → row),
+`mech_cards` (mech_id → array), `mech_card_defs` (card id → row). The last one exists separately
+because more than ten clauses create cards **by pointing at them**
+(`gen_hand:13` / `gen_deck:39` / `search_card:7`) — searching the array each time would rerun the
+same linear search for every card.
 
-## 메크 21대
+## The 21 mechs
 
-기획 시트의 A~W 를 `mechs.csv` 의 살아남은 21행에 얹었다. **id 는 그대로 두고 9행을
-지웠다** — `resources/images/mech/{id}_full.png` 가 id 에 묶여 있어서, 번호를 다시
-매기면 그림과 스탯이 통째로 어긋난다. 그래서 id 에 구멍이 있다(3·4·5, 10·11,
-16·17, 23, 29). 코드 주석과 README 의 "탱커 E", "암살 P" 같은 표기는 **시트 문자**다.
+The design sheet's A–W were laid onto the 21 surviving rows of `mechs.csv`. **The ids were kept and
+9 rows were deleted** — `resources/images/mech/{id}_full.png` is bound to the id, so renumbering
+would misalign art and stats wholesale. Hence the gaps in ids (3·4·5, 10·11, 16·17, 23, 29).
+Notation like "탱커 E" (Tank E) or "암살 P" (Assassin P) in code comments and READMEs is the **sheet
+letter**.
 
-| 시트 | id | 이름 | 역할군 | hp | atk | 패시브 | 카드 (덱 장수) |
-|---|---|---|---|---|---|---|---|
-| E | 0 | Juggernaut | 탱커 | 220 | 7 | 과적재 | 몸집 불리기 1 · 추적 1 · 강습 1 (3) |
-| G | 1 | Bastion | 탱커 | 200 | 8 | 반응 장갑 전개 | 최첨단 보호 1 · 초고출력 1 · 개시 1 (3) |
-| N | 2 | Ironhide | 탱커 | 240 | 6 | 고통과 쾌감 | 주먹다짐 2 · 고통과 쾌감 0 · 제압 전투 1 (3) |
-| D | 6 | Triumph | 전사 | 160 | 14 | 승전보 | 승전보 0 · 돌격 1 · 질주 2 (3) |
-| F | 7 | Wrecker | 전사 | 145 | 16 | 철거 명령 | 철거 0 · 우세한 전장 1 · 격렬한 돌진 2 (3) |
-| H | 8 | Headsman | 전사 | 170 | 13 | 처형 준비 | 처형 0 · 일격 1 · 휩쓸기 1 (2) |
-| L | 9 | Reaper | 전사 | 155 | 15 | 영혼 수확 | 유령의 올가미 1 · 전쟁의 사슬 1 · 영혼 포식 1 (3) |
-| P | 12 | Overdrive | 암살자 | 90 | 26 | 오버클럭 | 리부트 3 · 단계 A 1 · 단계 B 0 · 단계 C 0 (4) |
-| R | 13 | Blitz | 암살자 | 85 | 28 | — | 약자 멸시 1 · 전격전 1 · 즉발 베기 1 (3) |
-| T | 14 | Zephyr | 암살자 | 100 | 24 | 무념 | 명상 3 · 질풍 1 · 신속 1 (5) |
-| W | 15 | Siren | 암살자 | 80 | 30 | — | 최면 1 · 매혹적인 침공 1 · 매혹 1 (3) |
-| K | 18 | Marshal | 지원 | 130 | 9 | — | 공격 명령 1 · 투자 1 · 간보기 1 (3) |
-| Q | 19 | Guardian | 지원 | 120 | 10 | 수호 연계 | 지원 보호 2 · 수호 1 (3) |
-| S | 20 | Caprice | 지원 | 140 | 8 | — | 강타 1 · 탈진 1 · 변덕 1 (3) |
-| U | 21 | Alchemist | 지원 | 115 | 11 | — | 밸런스 1 · 파란 약 1 · 붉은 가루 1 · 녹색 병 1 (4) |
-| V | 22 | Verdict | 지원 | 135 | 9 | 불굴 | 죽음의 손가락 1 · 확신 1 · 사형 선고 1 (3) |
-| A | 24 | Tempest | 원딜 | 75 | 24 | 취약 각인 | 천둥 폭풍 1 · 천공의 일격 1 · 꿰뚫는 번개 3 (5) |
-| B | 25 | Scavenger | 원딜 | 85 | 22 | — | 캐시 1 · 스캐빈저 1 · 로켓 펀치 1 (3) |
-| C | 26 | Payload | 원딜 | 90 | 21 | 미사일 적재 | 미사일 1 · 미사일 준비 1 · 정밀 폭격 1 (3) |
-| I | 27 | Barrage | 원딜 | 80 | **12** | 전탄 발사 | 전장 강타 1 · 계시 1 · 결속 1 (3) |
-| J | 28 | Deadeye | 원딜 | 95 | 20 | 조준 보정 | 락온 0 · 테러 1 · 파괴 1 (2) |
+Passive and card names below are the Korean data strings (as in the CSVs), glossed in English.
 
-**Barrage(I)의 공격력만 12 다** — 시트가 "다른 sniper 메크 공격력의 절반"이라고 못
-박아 둔 값이고, 그 대가가 전탄 발사(교전 공격이 적 전원 대상)다.
+| Sheet | id | Name | Role class | Passive | Cards |
+|---|---|---|---|---|---|
+| E | 0 | Juggernaut | Tank | 과적재 (Overload) | 몸집 불리기 (Bulk Up) · 추적 (Track) · 강습 (Assault) |
+| G | 1 | Bastion | Tank | 반응 장갑 전개 (Deploy Reactive Armor) | 최첨단 보호 (Cutting-edge Protection) · 초고출력 (Overpower) · 개시 (Initiate) |
+| N | 2 | Ironhide | Tank | 고통과 쾌감 (Pain and Pleasure) | 주먹다짐 (Brawl) · 고통과 쾌감 · 제압 전투 (Suppression Fight) |
+| D | 6 | Triumph | Fighter | 승전보 (Victory Report) | 승전보 · 돌격 (Rush) · 질주 (Sprint) |
+| F | 7 | Wrecker | Fighter | 철거 명령 (Demolition Order) | 철거 (Demolish) · 우세한 전장 (Dominant Battlefield) · 격렬한 돌진 (Fierce Rush) |
+| H | 8 | Headsman | Fighter | 처형 준비 (Execution Prep) | 처형 (Execute) · 일격 (Strike) · 휩쓸기 (Sweep) |
+| L | 9 | Reaper | Fighter | 영혼 수확 (Soul Harvest) | 유령의 올가미 (Ghost Snare) · 전쟁의 사슬 (Chains of War) · 영혼 포식 (Soul Devour) |
+| P | 12 | Overdrive | Assassin | 오버클럭 (Overclock) | 리부트 (Reboot) · 단계 A (Phase A) · 단계 B (Phase B) · 단계 C (Phase C) |
+| R | 13 | Blitz | Assassin | — | 약자 멸시 (Scorn the Weak) · 전격전 (Blitzkrieg) · 즉발 베기 (Instant Slash) |
+| T | 14 | Zephyr | Assassin | 무념 (No-mind) | 명상 (Meditate) · 질풍 (Gust) · 신속 (Swift) |
+| W | 15 | Siren | Assassin | — | 최면 (Hypnosis) · 매혹적인 침공 (Alluring Invasion) · 매혹 (Charm) |
+| K | 18 | Marshal | Support | — | 공격 명령 (Attack Order) · 투자 (Invest) · 간보기 (Probe) |
+| Q | 19 | Guardian | Support | 수호 연계 (Guardian Link) | 지원 보호 (Support Shield) · 수호 (Guard) |
+| S | 20 | Caprice | Support | — | 강타 (Smash) · 탈진 (Exhaust) · 변덕 (Caprice) |
+| U | 21 | Alchemist | Support | — | 밸런스 (Balance) · 파란 약 (Blue Pill) · 붉은 가루 (Red Powder) · 녹색 병 (Green Bottle) |
+| V | 22 | Verdict | Support | 불굴 (Indomitable) | 죽음의 손가락 (Finger of Death) · 확신 (Conviction) · 사형 선고 (Death Sentence) |
+| A | 24 | Tempest | ADC (원딜) | 취약 각인 (Vulnerability Mark) | 천둥 폭풍 (Thunderstorm) · 천공의 일격 (Sky Strike) · 꿰뚫는 번개 (Piercing Lightning) |
+| B | 25 | Scavenger | ADC | — | 캐시 (Cash) · 스캐빈저 (Scavenger) · 로켓 펀치 (Rocket Punch) |
+| C | 26 | Payload | ADC | 미사일 적재 (Missile Stock) | 미사일 (Missile) · 미사일 준비 (Missile Prep) · 정밀 폭격 (Precision Bombing) |
+| I | 27 | Barrage | ADC | 전탄 발사 (Full Barrage) | 전장 강타 (Battlefield Smash) · 계시 (Revelation) · 결속 (Bond) |
+| J | 28 | Deadeye | ADC | 조준 보정 (Aim Assist) | 락온 (Lock-on) · 테러 (Terror) · 파괴 (Destroy) |
 
-**덱 크기** — 메크 카드는 배정된 기체의 카드를 `count` 만큼 펼친 것(2~5장)이고
-파일럿 카드는 선수당 고정 3장이다. 서로 다른 기체 다섯이면 팀 덱은
-**28장**(H · J + 3장짜리 셋)에서 **36장**(A · T · P · U + 3장짜리 하나) 사이다.
-장수 차이 자체가 기체 선택의 일부다.
+**Barrage (I)'s attack was deliberately lowered** — the sheet pinned it as "half the attack of the
+other sniper mechs", the price paid for 전탄 발사 (engage attacks target all enemies).
 
-## 메크 키워드 넷
+**Deck size** — mech cards are the assigned machine's cards spread out `count` times (the sum of
+its rows' `count`, mech_cards.csv), and pilot cards are a fixed 3 per player. Machines differ in how
+many cards they bring, so the team deck size depends on which five machines were picked.
+The difference in card count is itself part of choosing a machine.
 
-| 키워드 | 뜻 | 메모 |
+## The four mech keywords
+
+| Keyword | Meaning | Notes |
 |---|---|---|
-| **충전** `charge` | 핸드에 들어올 때마다 충전 +1(상한 `charge_max`), 사용 시 전부 소모하고 그만큼 세진다 | 세기가 카드 **한 장의 상태**(`CardData.charge`)라 `count = 1` 로 족하다. 오르는 자리는 `add_card_to_hand` / `draw_card` 둘(둘 다 `CardData.gain_charge()`), 태우는 자리는 `_burn_charge(cd)` 하나 — 태운 수를 `_charge_spent` 에 적는다(효과 체인이 여러 프레임에 걸쳐 돌아 그 시점의 `charge` 는 이미 0 이다). 쓰는 카드: 미사일(C, 3) · 전장 강타(I, 5 — 충전 + 1 명) · 약자 멸시(R, 3) |
-| **count** | 채용 시 덱에 들어가는 장수 | `count = 0` 인 여섯 장(승전보 · 철거 · 처형 · 락온 · 고통과 쾌감 · 단계 B/C)은 다른 효과가 만들어 줄 때만 나온다. 그래도 배분 표(`BattleSim.starter_cards`)에는 적는다 — 상세 패널의 메크 탭이 기체를 반만 보여 주지 않게 |
-| **코스트 -1** | 낼 수 없음 — 핸드에 있는 것만으로 효과 | 캐시(B) · 계시(I) · 약자 멸시(R) · 밸런스(U). 비용 칸에 `—`, 슬래브가 덮이고 드래그 거부, **단 버리기 픽 중에는 끌린다**. 효과는 `hand_passive:<key>` 한 줄이고 실제 동작은 `MechSkillSystem` 이 손패를 훑어 읽는다. 0 코스트(공짜로 낼 수 있음)와 다르다 |
-| **휘발성** `volatile` | 안 쓰고 버려지면 버린 더미 대신 제거 | 철거(F) · 락온(J), 정밀 폭격이 만드는 임시 미사일. 소멸(쓰면 사라짐)과 함께 달면 어느 쪽으로도 덱을 불리지 않는다 |
+| **Charge (충전)** `charge` | Charge +1 each time it enters the hand (cap `charge_max`); on use, all Charge is spent and it gets that much stronger | The strength is **the state of one card** (`CardData.charge`), so a single copy (`count`) suffices. It rises in two places, `add_card_to_hand` / `draw_card` (both `CardData.gain_charge()`), and burns in one, `_burn_charge(cd)` — it records the burned amount in `_charge_spent` (the effect chain runs over several frames, so by then `charge` is already 0). Cards that use it (cap = `charge_max`, mech_cards.csv): 미사일 (C) · 전장 강타 (I — Charge + 1 targets) · 약자 멸시 (R) |
+| **count** | Number of copies put in the deck when adopted | The six cards with `count = 0` (승전보 · 철거 · 처형 · 락온 · 고통과 쾌감 · 단계 B/C) only appear when another effect creates them. They are still written in the distribution table (`BattleSim.starter_cards`) — so the detail panel's mech tab doesn't show only half the machine |
+| **Cost -1** | Cannot be played — has its effect just by being in the hand | 캐시 (B) · 계시 (I) · 약자 멸시 (R) · 밸런스 (U). Cost cell shows `—`, covered by a slab, drag refused, **except it can be dragged during a discard pick**. The effect is a single `hand_passive:<key>` line, and the actual behaviour is read by `MechSkillSystem` scanning the hand. Different from cost 0 (playable for free) |
+| **Volatile** `volatile` | If discarded unused, it is removed instead of going to the discard pile | 철거 (F) · 락온 (J), and the temporary missiles made by 정밀 폭격. Combined with exhaust (소멸, disappears when used), it bloats the deck in neither direction |
 
-> **충전은 예전에 `스택` 이었다** — 같은 카드가 손패에서 한 장으로 뭉치고
-> `stack_count` 가 장수를 들었는데, 더미로 갈 때마다 낱장으로 다시 흩어야 했고
-> 세기 상한이 곧 `count` 라 카드 한 종류가 덱을 3~5장씩 불렸다. **공격 명령(K)** 은
-> 이 전환에서 충전을 버리고 `death_hand` 훅으로 갔다.
+> **Charge used to be `스택` (stack)** — copies of the same card merged into one in the hand and
+> `stack_count` held the number of copies, but they had to be split back into singles every time
+> they went to a pile, and the strength cap was the `count` itself, so one card type bloated the deck
+> by several cards. **공격 명령 (K)** dropped Charge in this switch and moved to the `death_hand` hook.
 
-## 효과 문법 — 메크 카드 전용 절
+## Effect grammar — mech-card-only clauses
 
-공용 절(`draw` / `discard` / `strategy` / `attack` / `engage` / `move` / `shield_pct` …)은
-`../card_phase/README.md` 의 효과 표에 있고(`around_target` · `discard_right` ·
-`move|own_jungle` · `phase_b` / `phase_c` 도 거기), 아래는 메크 카드만 쓰는 것이다.
-**이름을 공용 절과 겹치지 않게 지은 것은 의도된 것** — `effect` 문자열만 보고도
-"기체가 주는 카드"임이 읽혀야 한다.
+Shared clauses (`draw` / `discard` / `strategy` / `attack` / `engage` / `move` / `shield_pct` …) are
+in the effect table of `../card_phase/README.md` (`around_target` · `discard_right` ·
+`move|own_jungle` · `phase_b` / `phase_c` are there too); below are the ones only mech cards use.
+**Naming them so they don't collide with shared clauses is intentional** — looking at just the
+`effect` string should tell you "this is a card a machine provides".
 
-**체인 제어** — `on_hit`(앞선 공격 절이 한 대라도 맞았으면 이후 절 실행) /
-`on_miss`(전부 빗나갔으면). 절 하나에 조건을 매다는 대신 체인을 두 토막으로
-자른다 — 카드 문장이 언제나 "명중 시 A, 빗나갈 시 B" 두 갈래이고 갈래마다 절이
-여럿이기 때문이다. 예: 간보기 `attack:1;on_hit;engage:3|at_target;on_miss;strategy:4`.
+**Chain control** — `on_hit` (run the following clauses if the preceding attack clause hit at least
+once) / `on_miss` (if everything missed). Instead of hanging a condition on one clause, the chain is
+cut in two — card text is always two branches, "on hit A, on miss B", and each branch has several
+clauses. Example: 간보기 `attack:N;on_hit;engage:N|at_target;on_miss;strategy:N`.
 
-**공격 절 플래그** — `attack:N` 은 "적 하나를 N × ATK 로 한 번"이 기본형이고 플래그가
-대상 집합을 넓힌다. 대상은 `PilotData` 이거나 `TurretData` 이며, 둘을 가르는 자리는
-피해를 넣는 두 함수뿐이다(명중 판정 · 돌진 연출 · 팝업은 공유).
+**Attack clause flags** — `attack:N` defaults to "one enemy, once, for N × ATK", and flags widen the
+target set. A target is either `PilotData` or `TurretData`, and the only places that tell them apart
+are the two functions that apply damage (hit check · rush animation · popups are shared).
 
-| 플래그 | 대상 | 쓰는 카드 |
+| Flag | Targets | Cards using it |
 |---|---|---|
-| `all` | 전장 내 모든 적 파일럿 | 천둥 폭풍 |
-| `random` | 무작위 적 (`charge` 와 함께면 **충전 수 + 1** 명) | 전장 강타 |
-| `self_range:N` | 시전자 기준 N칸 내 적 + 포탑 | 테러 · 초고출력 · 영혼 포식 · 휩쓸기 · 즉발 베기 |
-| `area:N` | 지정 대상 기준 N칸 내 적 + 포탑 | 정밀 폭격 · 파괴 |
-| `damaged` | 이번 작전 단계에 이 메크가 때린 적 전부 | 락온 · 신속 |
-| `line` | 아군 HQ ~ 지정 포탑까지의 레인 전부 | 꿰뚫는 번개 |
-| `turret_only` | 지정한 적 포탑 하나 | 철거 |
-| `charge` | **각 대상을** 충전 수만큼 반복 | 미사일 · 전장 강타 |
-| `pierce` / `repeat` | (공용) 필중 / 명중마다 반복 | |
+| `all` | All enemy pilots on the battlefield (전장) | 천둥 폭풍 |
+| `random` | Random enemy (with `charge`, **Charge count + 1** targets) | 전장 강타 |
+| `self_range:N` | Enemies + turrets (포탑) within N cells of the caster (시전자) | 테러 · 초고출력 · 영혼 포식 · 휩쓸기 · 즉발 베기 |
+| `area:N` | Enemies + turrets within N cells of the chosen target | 정밀 폭격 · 파괴 |
+| `damaged` | All enemies this mech hit during this operation phase (작전 단계) | 락온 · 신속 |
+| `line` | The entire lane (레인) from the allied HQ to the chosen turret | 꿰뚫는 번개 |
+| `turret_only` | One chosen enemy turret | 철거 |
+| `charge` | Repeat **for each target** as many times as the Charge count | 미사일 · 전장 강타 |
+| `pierce` / `repeat` | (shared) guaranteed hit / repeat per hit | |
 
-**파일럿→포탑 카드 피해는 고정값**(`PILOT_STRUCTURE_DMG`)이다 — `atk` 비례로 두면
-성장이 공격력을 ×3 까지 미는 후반에 카드 한 장이 포탑을 통째로 지운다.
+**Pilot→turret card damage is a fixed value** (`PILOT_STRUCTURE_DMG`) — if it scaled with `atk`, one
+card would wipe a whole turret in the late game when growth multiplies attack several times over.
 
-**나머지 절**
+**Remaining clauses**
 
-| 절 | 뜻 | 플래그 |
+| Clause | Meaning | Flags |
 |---|---|---|
-| `heal_pct:N` | 대상 최대 체력의 N% 회복 | `self` `per_hit` |
-| `max_hp:N` | 최대 체력 **영구** +N | `self` `per_hit` |
-| `atk_add:N` | 공격력 **영구** +N | `self` |
-| `shield_atk:N` | **시전자 공격력의** N% 보호막 | `all_allies` |
-| `reactive_armor:N` | 반응 장갑 N겹 | `self` `per_hit` |
-| `charge:N` | 메크 패시브 충전 +N | `per_hit` |
-| `score_cost:N` | 성장 점수 N 소모 (**N=100 이 1.00k**) | |
-| `growth_eff:N` | 성장 적립 +N% (전장 이탈까지, 누적) | |
-| `gen_hand:ID` / `gen_deck:ID` | 그 메크 카드를 만들어 손패 / 덱에 | `per_hit` `per_kill` `temp` |
-| `search_card:ID` | 덱에서 그 카드를 찾아 손패로 | `count:N` |
-| `search_discard:N` | 묘지 탐색 — 버린 더미를 **펼쳐 고른다** | |
-| `draw_discard:N` | 묘지 드로우 — 위에서부터 N장 | `cost_reduce:N` |
-| `push:N` | 밀기 N칸 | `bonus_clear:N` |
-| `move_target:N` | **적을** N칸 민다 | |
-| `move_to_target` | 시전자가 대상 칸으로 뛰어든다 | |
-| `pull_to_caster` | 적을 시전자 칸으로 끌어온다 | `self_range:N` |
-| `mark_target:N` | 목표 — 시전자에게 받는 피해 +N% | |
-| `track:N` | 추적 N턴 | |
-| `link_engage` | 결속 | |
-| `stun_next` | 강타 | |
-| `no_engage_phase` | 탈진 | |
-| `dmg_taken:N` | 받는 피해 +N% (중첩 없음) | |
-| `bounty:N` | 현상금 = 대상 성장치의 N% | |
-| `attack_bounty:N` | 현상금의 N% 를 피해로 | |
-| `mutual_attack:N` | 서로 N번씩 (대상 쪽은 필중) | |
-| `taunt_all` | 모든 적이 시전자를 필중 공격 | |
-| `execute:N` | 최대 체력 N% 이하면 처치 | `charge:N` |
-| `growth_link:N` | 매혹 N턴 | |
-| `discard_left` / `draw_discarded` | 이 카드 왼쪽을 버리고 그만큼 드로우 | |
-| `hand_passive:<key>` | 비용 -1 카드의 표지 (실행되지 않음) | |
+| `heal_pct:N` | Heal N% of the target's max HP | `self` `per_hit` |
+| `max_hp:N` | Max HP **permanently** +N | `self` `per_hit` |
+| `atk_add:N` | Attack **permanently** +N | `self` |
+| `shield_atk:N` | Shield of N% **of the caster's attack** | `all_allies` |
+| `reactive_armor:N` | N layers of reactive armor | `self` `per_hit` |
+| `charge:N` | Mech passive Charge +N | `per_hit` |
+| `score_cost:N` | Spend N growth score (in units of `MECH_SCORE_COST_UNIT`, const.csv) | |
+| `growth_eff:N` | Growth accrual +N% (until leaving the battlefield, cumulative) | |
+| `gen_hand:ID` / `gen_deck:ID` | Create that mech card into hand / deck | `per_hit` `per_kill` `temp` |
+| `search_card:ID` | Search (찾기) the deck for that card and put it in hand | `count:N` |
+| `search_discard:N` | Graveyard search — **spread out the discard pile and choose** | |
+| `draw_discard:N` | Graveyard draw — N cards from the top | `cost_reduce:N` |
+| `push:N` | Push N cells | `bonus_clear:N` |
+| `move_target:N` | Push **the enemy** N cells | |
+| `move_to_target` | Caster leaps into the target's cell | |
+| `pull_to_caster` | Pull the enemy to the caster's cell | `self_range:N` |
+| `mark_target:N` | Mark — damage taken from the caster +N% | |
+| `track:N` | Track for N turns | |
+| `link_engage` | 결속 (Bond) | |
+| `stun_next` | 강타 (Smash) | |
+| `no_engage_phase` | 탈진 (Exhaust) | |
+| `dmg_taken:N` | Damage taken +N% (doesn't stack) | |
+| `bounty:N` | Bounty = N% of the target's growth points (성장치) | |
+| `attack_bounty:N` | Deal N% of the bounty as damage | |
+| `mutual_attack:N` | Each attacks the other N times (the target side always hits) | |
+| `taunt_all` | All enemies attack the caster with guaranteed hits | |
+| `execute:N` | Kill if at or below N% of max HP | `charge:N` |
+| `growth_link:N` | Charm for N turns | |
+| `discard_left` / `draw_discarded` | Discard the cards left of this card and draw that many | |
+| `hand_passive:<key>` | Marker of a cost -1 card (not executed) | |
 
-**교전 절 플래그**
+**Engage clause flags**
 
-| 플래그 | 뜻 | 쓰는 카드 |
+| Flag | Meaning | Cards using it |
 |---|---|---|
-| `at_target` | 지정한 **적 주변**에서 연다 | 돌격 · 강습 · 간보기 |
-| `at_marked` | 목표가 찍힌 적 주변에서 | 단계 B |
-| `self_range:N` | 시전자 중심 반경 N | 우세한 전장 · 개시 · 제압 전투 |
-| `charge_rounds` | 라운드 수를 영혼 포식 충전으로 갈음 | 전쟁의 사슬 |
-| `move_in` | 시전자가 대상 칸으로 **전장에서 이동**한 뒤 교전 (무대 낙하 없음) | 돌격 |
-| `drop_in` | `move_in` + 무대에서 적 진형 한가운데에 낙하 | 강습 |
+| `at_target` | Open **around the chosen enemy** | 돌격 · 강습 · 간보기 |
+| `at_marked` | Around the marked enemy | 단계 B |
+| `self_range:N` | Radius N centred on the caster | 우세한 전장 · 개시 · 제압 전투 |
+| `charge_rounds` | Replace the round count with 영혼 포식 Charge | 전쟁의 사슬 |
+| `move_in` | Caster **moves on the battlefield** to the target's cell, then engage (no stage (무대) drop) | 돌격 |
+| `drop_in` | `move_in` + drop into the middle of the enemy formation on the stage | 강습 |
 
-`EngagePhaseManager._gather_participants` 가 `center` / `radius` 를 받는다(기본값은
-시전자 칸 + 인접 6칸).
+`EngagePhaseManager._gather_participants` takes `center` / `radius` (defaults are the caster's cell
++ the 6 adjacent cells).
 
-**대상 종류 (`target` 컬럼)** — `foe`(적 파일럿 **또는** 포탑 — 칸을 고르게 하고 그 칸의
-무엇을 때리는지는 공격 절이 정한다, 파일럿이 먼저. 대상 지정 오버레이는 초상화와 칸
-중 하나만 다루는데 포탑에는 초상화가 없다) · `turret_outer`(레인별 최외곽 적 포탑) ·
-`turret_any`(살아 있는 적 포탑 전부, 사거리 무시) · `pilot`(아군과 적을 **둘 다**
-고를 수 있다 — 매혹).
+**Target kinds (`target` column)** — `foe` (enemy pilot **or** turret — you choose a cell and the
+attack clause decides what in that cell gets hit, pilot first. The targeting overlay handles only one
+of portrait (초상화) or cell, and turrets have no portrait) · `turret_outer` (outermost enemy turret
+per lane) · `turret_any` (all living enemy turrets, ignoring range) · `pilot` (can choose **both**
+allies and enemies — 매혹).
 
-## 지속 상태 — `PilotData` 필드
+## Persistent state — `PilotData` fields
 
-메크가 거는 상태는 전부 `PilotData` 에 살고 이 모듈이 켜고 끈다.
+Every state a mech applies lives in `PilotData`, and this module turns it on and off.
 
-| 필드 | 뜻 | 읽는 자리 |
+| Field | Meaning | Read at |
 |---|---|---|
-| `vulnerable` | 취약 — 1마다 받는 피해 +1% | `damage_taken_mult` |
-| `reactive_armor` | 반응 장갑 — 한 대당 90% 감소 후 1 소모 | `consume_reactive_armor` |
-| `damage_taken_bonus` | 받는 피해 배율 가산 (죽음의 손가락) | `damage_taken_mult` |
-| `bounty` | 현상금 | `attack_bounty` |
-| `marked_by` / `marked_bonus` | 목표 (그 시전자에게만) | `damage_taken_mult` |
-| `tracked_by` | 추적 — 이 적이 싸우면 끌려 들어올 사람들 | `_gather_participants` |
-| `engage_link` | 결속 | `_gather_participants` |
-| `engage_locked` | 탈진 | `_gather_participants` |
-| `stun_charge` / `stunned_rounds` | 강타 / 기절 | `TurnEngageSim` |
-| `growth_link_to` | 매혹 | `BattleSim.add_score` |
-| `bonus_atk_flat` / `bonus_atk_mult` / `bonus_max_hp` | 영구 스탯 보정 | `refresh_growth_stats` |
-| `phase_return_cell` | 자리 되돌리기 예약 (질풍) | `on_phase_end` |
+| `vulnerable` | Vulnerable — damage taken + `MECH_VULNERABLE_PER_STACK` per point | `damage_taken_mult` |
+| `reactive_armor` | Reactive armor — `MECH_REACTIVE_ARMOR_CUT` reduction per hit, then 1 consumed | `consume_reactive_armor` |
+| `damage_taken_bonus` | Additive damage-taken multiplier (죽음의 손가락) | `damage_taken_mult` |
+| `bounty` | Bounty | `attack_bounty` |
+| `marked_by` / `marked_bonus` | Mark (only against that caster) | `damage_taken_mult` |
+| `tracked_by` | Track — the people who get pulled in when this enemy fights | `_gather_participants` |
+| `engage_link` | 결속 (Bond) | `_gather_participants` |
+| `engage_locked` | 탈진 (Exhaust) | `_gather_participants` |
+| `stun_charge` / `stunned_rounds` | 강타 (Smash) / stun | `TurnEngageSim` |
+| `growth_link_to` | 매혹 (Charm) | `BattleSim.add_score` |
+| `bonus_atk_flat` / `bonus_atk_mult` / `bonus_max_hp` | Permanent stat modifiers | `refresh_growth_stats` |
+| `phase_return_cell` | Scheduled position return (질풍) | `on_phase_end` |
 
-**반응 장갑은 보호막보다 먼저 걸린다** — 90%를 깎고 남은 10%를 보호막이 받아야 두
-방어가 겹쳐 읽힌다. 반대면 보호막이 온전한 피해를 먼저 먹고 장갑은 잔량에만 걸린다.
-**취약 · 죽음의 손가락 · 목표는 곱이 아니라 합이다** — 셋 다 "받는 피해 +N%"라는 같은
-문장이고, 곱으로 쌓으면 취약 100 에 죽음의 손가락이 겹친 순간 배율이 2.5 를 넘는다.
+**Reactive armor applies before shields** — it cuts `MECH_REACTIVE_ARMOR_CUT` and the shield takes the remainder, so
+the two defences read as layered. The other way round, the shield would eat the full damage first
+and the armor would only apply to the remainder.
+**Vulnerable · 죽음의 손가락 · Mark are additive, not multiplicative** — all three are the same
+sentence, "damage taken +N%", and stacking multiplicatively would make the multiplier balloon the
+moment 죽음의 손가락 lands on a heavily stacked Vulnerable.
 
-## 패시브 15개
+## The 15 passives
 
-`type` 이 없다 — 전부 상시/자동이고 누를 수 있는 것은 없다. 충전을 쓰는 패시브의
-충전은 **효과의 조건**이지 활성화의 연료가 아니다.
+There is no `type` — all are permanent/automatic, and none can be pressed. For passives that use
+Charge, Charge is **the condition of the effect**, not fuel for activation.
 
-| 기체 | 키 | 하는 일 |
+| Machine | Key | What it does |
 |---|---|---|
-| E 0 | `bulk_power` | 최대 체력 10마다 공격력 +1 (체력 확정 **뒤**에 더한다) |
-| G 1 | `reactive_plating` | 교전 시 자신에게 반응 장갑 2 |
-| N 2 | `pain_pleasure` | 피해를 주고받은 20%만큼 최대 체력 증가 / 자기 레인 포탑을 **자기가** 부수면 덱에 [고통과 쾌감] |
-| D 6 | `victory_report` | 오브젝트 승리 시 핸드에 [승전보] |
-| F 7 | `demolition_order` | 오브젝트 승리 시 핸드에 [철거] |
-| H 8 | `execution_charge` | 처치/철거마다 +1 충전(최대 5) / 최대 충전 시 핸드에 [처형] |
-| L 9 | `soul_harvest` | 명중·교전 피해마다 공격력 +1%, 최대 체력 +5 |
-| P 12 | `overclock` | 시작 +20 충전(최대 100) / 교전 피해 시 1충전당 1% 로 추가 공격 + 충전 절반 소모 |
-| T 14 | `zen_charge` | 카드 사용/버리기마다 +1 충전(최대 6) / 최대 충전 시 전부 태워 사거리 1 내 광역 공격 |
-| Q 19 | `guardian_link` | 이 메크의 보호막을 받은 아군이 피해를 주면 이 메크도 그 적을 공격 |
-| V 22 | `last_stand` | 교전 시 **팀 전원**이 한 번에 한해 체력 1 이하로 안 내려감 |
-| A 24 | `vulnerability_mark` | 이번 작전 단계 동안 카드 명중마다 대상에게 취약 10 |
-| C 26 | `missile_stock` | **자신 레인의** 포탑이 어느 팀 것이든 무너질 때마다 덱에 [미사일] |
-| I 27 | `barrage` | 교전 중 공격이 적 전원을 대상으로 (대가: 공격력 절반) |
-| J 28 | `calibration` | 전장 카드 명중마다 공격력 +1 |
+| E 0 | `bulk_power` | Attack +1 per `p1` max HP (added **after** HP is finalised) |
+| G 1 | `reactive_plating` | On engage, `p1` layers of reactive armor on self |
+| N 2 | `pain_pleasure` | Max HP increases by `p1`% of damage dealt and taken / if it destroys a turret in its own lane **by itself**, [고통과 쾌감] into the deck |
+| D 6 | `victory_report` | On objective (오브젝트) win, [승전보] into hand |
+| F 7 | `demolition_order` | On objective win, [철거] into hand |
+| H 8 | `execution_charge` | +1 Charge per kill/demolish (max `p2`) / at max Charge, [처형] into hand |
+| L 9 | `soul_harvest` | Per hit·engage damage, attack +`p1`%, max HP +`p2` |
+| P 12 | `overclock` | Starts with +`p1` Charge (max `p2`) / on engage damage, extra attack at `MECH_OVERCLOCK_PROC_PER_CHARGE` per Charge + spend half the Charge |
+| T 14 | `zen_charge` | +1 Charge per card played/discarded (max `p2`) / at max Charge, burn it all for an area attack within range 1 |
+| Q 19 | `guardian_link` | When an ally shielded by this mech deals damage, this mech also attacks that enemy |
+| V 22 | `last_stand` | On engage, **the whole team** can't drop below 1 HP, once each |
+| A 24 | `vulnerability_mark` | During this operation phase, Vulnerable `p1` on the target per card hit |
+| C 26 | `missile_stock` | Each time a turret **in its own lane** falls, whichever team it belongs to, [미사일] into the deck |
+| I 27 | `barrage` | During engage, attacks target all enemies (price: half attack) |
+| J 28 | `calibration` | Attack +`p1` per battlefield card hit |
 
-패시브가 없는 여섯: **B(25) · K(18) · R(13) · S(20) · U(21) · W(15)** — 카드로만 논다.
+The six without passives: **B(25) · K(18) · R(13) · S(20) · U(21) · W(15)** — they play with cards only.
 
-**카드에 붙은 사건 훅**(`mech_cards.trigger`)은 패시브가 아니라 그 카드가 존재를 얻는
-조건이라 카드 쪽에 산다 — `turret_kill_deck`(꿰뚫는 번개: 적 포탑을 부술 때마다 덱에
-1장) · `death_hand`(공격 명령: 누가 죽을 때마다 손패에 1장). 훅이 걸린 카드를 그
-기체가 들고 오는가는 배분 표(`starter_cards`)로 판정한다 — 지금 손패/덱/더미 어디에
-있든(소멸했어도) 답이 같다.
+**Event hooks attached to cards** (`mech_cards.trigger`) are not passives but conditions under which
+that card comes into existence, so they live on the card side — `turret_kill_deck` (꿰뚫는 번개: 1
+copy into the deck each time an enemy turret is destroyed) · `death_hand` (공격 명령: 1 copy into
+hand each time someone dies). Whether a machine brings a hooked card is decided by the distribution
+table (`starter_cards`) — the answer is the same wherever it is now, hand/deck/pile (even if
+exhausted).
 
-## 이 모듈이 하지 않는 것
+## What this module does not do
 
-**카드 효과는 여기 없다.** 절 문법은 전부 `CardPhaseManager._apply_single_effect`
-가 처리하고(위 "효과 문법" 절), 이 모듈은 그 절들이 남기는 **상태**와 그 상태를 읽는
-**질의 함수**만 맡는다. 경계가 흐려지면 카드 한 장을 고치려고 두 파일을 열게 된다.
+**Card effects are not here.** All clause grammar is handled by `CardPhaseManager._apply_single_effect`
+(the "Effect grammar" section above); this module owns only the **state** those clauses leave behind
+and the **query functions** that read it. If the boundary blurs, fixing one card means opening two
+files.
 
-**스탯을 직접 밀지 않는다.** 패시브 보정은 질의 함수로만 내보내고 계산은 원래
-하던 자리가 그대로 한다:
+**It doesn't push stats directly.** Passive modifiers are exported only via query functions, and the
+calculation stays where it always was:
 
-| 질의 | 읽는 곳 |
+| Query | Read at |
 |---|---|
 | `atk_mult` / `bulk_power_atk` | `BattleSim.refresh_growth_stats` |
 | `damage_taken_mult` / `consume_reactive_armor` | `SimulationCore._pilot_hit_damage`, `CardPhaseManager._apply_attack_damage` |
 | `engage_targets_all` / `overclock_extra_attack` / `last_stand_available` | `TurnEngageSim` |
 | `contempt_active` / `consume_contempt` | `TurnEngageSim._pick_target` (약자 멸시) |
-| `try_stun` / `consume_stun_turn` | `TurnEngageSim` (강타 / 기절) |
+| `try_stun` / `consume_stun_turn` | `TurnEngageSim` (강타 / stun) |
 | `consume_phase_boon` | `CardPhaseManager._effect_gen_card` · `_effect_phase_b` · `_phase_c_payout` |
-| `chain_rounds` | `CardPhaseManager._effect_engage` (`charge_rounds` 플래그) |
+| `chain_rounds` | `CardPhaseManager._effect_engage` (`charge_rounds` flag) |
 | `score_cost_waived` | `CardPhaseManager._effect_score_cost` |
 
-`atk` / `max_hp` 를 여기서 밀면 성장 재계산(`refresh_growth_stats`) 한 번에
-지워진다. 영구 증가분은 `PilotData.bonus_atk_flat` / `bonus_atk_mult` /
-`bonus_max_hp` 로 산다 — 그 셋은 재계산 식 **안에** 들어가 있다.
+Pushing `atk` / `max_hp` here would be wiped by a single growth recalculation
+(`refresh_growth_stats`). Permanent increases live in `PilotData.bonus_atk_flat` / `bonus_atk_mult` /
+`bonus_max_hp` — those three are **inside** the recalculation formula.
 
-## 사건 훅 — 누가 언제 부르나
+## Event hooks — who calls them and when
 
-| 훅 | 부르는 곳 |
+| Hook | Caller |
 |---|---|
-| `init_for_match()` | `BattleSim._ready` (덱 배분 뒤) |
+| `init_for_match()` | `BattleSim._ready` (after deck distribution) |
 | `on_card_played(cd, is_player)` | `CardPhaseManager._dispose_used_card` |
-| `on_card_discarded(cd, is_player)` | `CardPhaseManager.send_to_discard` (지금 도는 카드는 제외 — 두 번 세지 않기 위해) |
+| `on_card_discarded(cd, is_player)` | `CardPhaseManager.send_to_discard` (excluding the card currently resolving — to avoid counting twice) |
 | `on_card_attack_hit(a, t, dealt)` | `CardPhaseManager._apply_attack_damage` |
-| `on_card_damage_for_revelation(t, src)` | 같은 자리 (계시) |
+| `on_card_damage_for_revelation(t, src)` | Same place (계시) |
 | `on_engage_damage(a, t, dealt)` | `TurnEngageSim._strike_one` |
 | `on_shielded_ally_damage(a, t)` | `SimulationCore._flush_guardian_rides`, `CardPhaseManager._apply_attack_damage` |
 | `on_engage_end(participants)` | `EngagePhaseManager._finish_engage` |
 | `on_kill(victim, killer)` | `BattleSim.mark_pilot_dead` |
 | `on_turret_destroyed(killer, td)` | `BattleSim.score_turret_kill` |
-| `on_objective_win(team)` | `ObjectiveSystem` (교전 정산 · 무혈 획득 양쪽) |
+| `on_objective_win(team)` | `ObjectiveSystem` (both engage settlement · uncontested capture) |
 | `on_engage_start(participants)` | `EngagePhaseManager._begin` |
 | `on_phase_end(is_player)` | `CardPhaseManager._notify_skill_phase_end` |
 | `clear_field_effects(p)` | `RecallSystem.return_to_hq`, `on_kill` |
 | `tick_expiries(turn)` | `SimulationCore.tick_growth_and_expiries` |
 
-## 충전
+## Charge
 
-`add_charge` 한 곳에서만 오르고, **상한에 닿는 순간**의 보상(`_on_charge_full`)도
-그 안에서 판정한다 — 충전이 오르는 자리가 여럿이라 호출 측에 맡기면 조건 검사가
-그 수만큼 복제된다. 지금 상한에 반응하는 것은 둘이다.
+It rises only in `add_charge`, and the reward **at the moment it hits the cap** (`_on_charge_full`)
+is also decided inside it — Charge rises in several places, so leaving it to callers would duplicate
+the condition check that many times. Two things currently react to the cap.
 
-- **처형 준비**(H) — 핸드에 [처형] 한 장 (이미 들고 있으면 만들지 않는다)
-- **무념**(T) — 충전을 전부 태워 사거리 1 내 광역 공격 (패시브가 직접 때리는 유일한 자리)
+- **처형 준비** (H) — one [처형] into hand (not created if already held)
+- **무념** (T) — burn all Charge for an area attack within range 1 (the only place a passive hits directly)
 
-## 교전 무대에서 걸리는 것들
+## What applies on the engage stage
 
-무대 자체는 `../engage/TurnEngageSim.gd` 가 굴리고, 이 모듈은 **질의 함수만**
-내보낸다. 다섯 자리다.
+The stage itself is run by `../engage/TurnEngageSim.gd`; this module exports **only query
+functions**. Five places.
 
-| 무엇 | 어디서 | 규칙 |
+| What | Where | Rule |
 |---|---|---|
-| 전탄 발사(I) | `_resolve_attack` | `engage_targets_all` 이 true 면 대상 집합이 **적 전원**이 된다. 대가(공격력 절반)는 `mechs.csv` 의 atk 12 에 이미 들어가 있다 |
-| 오버클럭(P) | `_strike_one` | 피해 직후 `overclock_extra_attack` 을 굴려 **같은 대상에게** 한 번 더. 추가 공격은 다시 굴리지 않는다(`allow_extra = false`) — 그러면 한 차례가 확률에 따라 무한히 늘어난다 |
-| 불굴(V) | `_apply_damage` | 체력이 0 이하로 떨어지는 순간 1 로 붙잡고 소모. **포탑 사격도 같은 함수를 지나므로** 파일럿 공격에만 걸면 포탑 한 방에 죽는 구멍이 남는다 |
-| 약자 멸시(R) | `setup` → `_contempt_opening` | **1라운드가 돌기 전에** `take_contempt_charges` 로 손패의 [약자 멸시] 충전을 통째로 태우고, 그 수만큼 **체력이 가장 적은 적**(비율이 아니라 절대값)을 공격력 50% 로 때린다. 예전의 "스택이 남은 동안 겨눔 강제"는 교전 라운드 수에 값이 매달려 삭제됐다 |
-| 강타([강타] 카드) | `_strike_one` | 때린 쪽이 장전돼 있으면 맞은 적의 다음 차례가 통째로 사라진다. `_stun_applied` 가 **같은 적 두 번**을 막고, 없으면 근접 하나가 한 적을 교전 내내 잠재운다 |
+| 전탄 발사 (I) | `_resolve_attack` | If `engage_targets_all` is true, the target set becomes **all enemies**. The price (half attack) is already baked into its `atk` in `mechs.csv` |
+| 오버클럭 (P) | `_strike_one` | Right after damage, roll `overclock_extra_attack` for one more hit **on the same target**. The extra attack isn't rolled again (`allow_extra = false`) — otherwise one turn could grow indefinitely by chance |
+| 불굴 (V) | `_apply_damage` | The moment HP drops to 0 or below, hold it at 1 and consume. **Turret fire goes through the same function too**, so applying it only to pilot attacks would leave a hole where one turret shot kills |
+| 약자 멸시 (R) | `setup` → `_contempt_opening` | **Before round 1 runs**, `take_contempt_charges` burns all Charge of the [약자 멸시] cards in hand, and hits **the enemy with the lowest HP** (absolute value, not ratio) that many times at `ENGAGE_CONTEMPT_DMG_MULT` (const.csv) of attack. The old "force targeting while stacks remain" was deleted because its value hung on the engage round count |
+| 강타 ([강타] card) | `_strike_one` | If the attacker is loaded, the hit enemy loses its entire next turn. `_stun_applied` prevents **the same enemy twice**; without it, one melee unit could keep one enemy asleep for the whole engage |
 
-교전 한 번짜리 상태(`_stun_applied` · `_last_stand_*`)는
-`on_engage_start` 가 켜고 `on_engage_end` 가 걷는다. **반응 장갑은 그 짝에
-없다** — 남은 겹수가 곧 다음 교전까지 가는 값이라 교전이 아니라 전장을 떠날 때
-(`clear_field_effects`) 걷힌다.
+Single-engage state (`_stun_applied` · `_last_stand_*`) is turned on by `on_engage_start` and cleared
+by `on_engage_end`. **Reactive armor is not in that pair** — the remaining layers carry over to the
+next engage, so it is cleared not on engage end but when leaving the battlefield
+(`clear_field_effects`).
 
-## 수호 연계(Q)의 편승 공격
+## 수호 연계 (Guardian Link) (Q) ride-along attack
 
-"이 메크의 보호막을 두른 아군이 피해를 주면 이 메크도 그 적을 친다."
-`shield_source`(아군 → 그 보호막을 건 메크)를 읽는 유일한 소비자이고, 게이트가
-셋이다 — 그 아군이 **지금도** 보호막을 두르고 있을 것(다 깎이면 연계도 끝난다),
-편승하는 메크가 자기 자신이 아닐 것([수호]는 시전자에게도 보호막을 건다),
-그리고 `_guardian_busy` 재진입 금지(두 메크가 서로에게 보호막을 걸면 고리가
-실제로 닫힌다).
+"When an ally wearing this mech's shield deals damage, this mech also hits that enemy."
+It is the only consumer reading `shield_source` (ally → the mech that applied its shield), and has
+three gates — that ally must **still** be wearing the shield (once it's depleted the link ends too),
+the riding mech must not be itself ([수호] also shields the caster), and `_guardian_busy` re-entry
+prevention (if two mechs shield each other, the loop actually closes).
 
-**부르는 자리가 두 곳이고 타이밍이 다르다.**
+**It is called from two places with different timing.**
 
-- **카드 피해**(`CardPhaseManager._apply_attack_damage`) — 그 자리에서 곧장.
-  카드 피해는 판정과 적용이 갈려 있지 않다.
-- **전장 자동 교전** — `SimulationCore._credit_pilot_damage` 는 **적어만 두고**
-  (`_guardian_rides`), 이번 턴의 피해가 전부 적용된 뒤 `_flush_guardian_rides`
-  가 굴린다. 판정 단계에서 곧장 때리면 편승 한 방이 아직 적용되지 않은 피해보다
-  먼저 상대를 눕혀, 같은 턴의 나머지 판정이 이미 죽은 사람을 상대로 굴러간다.
+- **Card damage** (`CardPhaseManager._apply_attack_damage`) — immediately, right there.
+  Card damage doesn't separate judgement and application.
+- **Battlefield auto-combat** — `SimulationCore._credit_pilot_damage` **only records it**
+  (`_guardian_rides`), and `_flush_guardian_rides` rolls it after all of this turn's damage has been
+  applied. Hitting immediately at the judgement stage would let the ride-along hit drop the opponent
+  before damage not yet applied, so the rest of that turn's judgements would run against someone
+  already dead.
 
-교전 무대는 부르지 않는다 — 편승할 메크가 그 무대에 없을 수 있고, 있으면 자기
-차례에 이미 때린다.
+The engage stage doesn't call it — the riding mech may not be on that stage, and if it is, it already
+hits on its own turn.
 
-## 단계 A → B → C 사슬 (암살 P)
+## Phase A → B → C chain (Assassin P)
 
-세 장이 서로를 만들어 주며 도는 고리다.
+A loop of three cards that create each other.
 
 ```
-[리부트] → 덱에서 [단계 A] 탐색
-[단계 A] → 덱에 [단계 B] + 지정한 적에게 목표(+15%)
-[단계 B] → 목표 주변에서 교전 3라운드
-             ├ 적을 눕혔으면 → 덱에 [단계 C]
-             └ 아니면        → 덱에 [단계 A]   (고리를 한 바퀴 더)
-[단계 C] → 덱에 [단계 A] + 강화 3택
+[리부트] → search the deck for [단계 A]
+[단계 A] → [단계 B] into the deck + Mark (`mark_target:N`) on the chosen enemy
+[단계 B] → engage (`engage:N` rounds) around the marked enemy
+             ├ if an enemy was downed → [단계 C] into the deck
+             └ otherwise              → [단계 A] into the deck   (one more lap of the loop)
+[단계 C] → [단계 A] into the deck + choose 1 of 3 boons
 ```
 
-**`phase_b` 가 성립하려면 `engage` 절이 무대가 닫힐 때까지 기다려야 한다.**
-`CardPhaseManager._effect_engage` 가 `engage_finished` 를 await 하도록 바뀐 것이
-그 때문이고, 같은 변경이 [우세한 전장] 의 `gen_hand:19|per_kill` 도 함께 고친다
-(둘 다 예전에는 첫 라운드가 돌기도 전에, 즉 처치 수가 언제나 0 인 시점에
-정산됐다). 교전의 처치 수는 `EngagePhaseManager.last_engage_kills` 가 답한다 —
-무대가 치워진 뒤라 `_sim` 이 아니라 그 사본(`_last_stats`)을 읽는다.
+**For `phase_b` to work, the `engage` clause must wait until the stage closes.**
+That's why `CardPhaseManager._effect_engage` was changed to await `engage_finished`, and the same
+change also fixes [우세한 전장]'s `gen_hand:19|per_kill` (both used to settle before the first round
+even ran, i.e. when the kill count was always 0). The engage's kill count is answered by
+`EngagePhaseManager.last_engage_kills` — the stage has been cleared by then, so it reads not `_sim`
+but its copy (`_last_stats`).
 
-**강화 3택**(`BOON_DEFS`)은 다음 한 번에만 쓰이고 파일럿당 하나만 예약된다.
+**The 3 boons** (`BOON_DEFS`) are used only for the next single occasion, and only one is reserved
+per pilot.
 
-| 키 | 걸리는 카드 | 하는 일 | 소모하는 자리 |
+| Key | Card it applies to | What it does | Consumed at |
 |---|---|---|---|
-| `alpha` | [단계 A] | [단계 B] 를 덱이 아니라 **핸드**에 | `_effect_gen_card` |
-| `beta` | [단계 B] | +100 충전 | `_effect_phase_b` |
-| `gamma` | [단계 C] | 성장 점수 +10% | `_phase_c_payout` |
+| `alpha` | [단계 A] | Puts [단계 B] into the **hand** instead of the deck | `_effect_gen_card` |
+| `beta` | [단계 B] | + `MECH_PHASE_BOON_BETA_CHARGE` Charge | `_effect_phase_b` |
+| `gamma` | [단계 C] | Growth score + `MECH_PHASE_BOON_GAMMA_RATE` of own | `_phase_c_payout` |
 
-**감마 정산은 새 강화를 고르기 전에** 한다 — 순서를 뒤집으면 방금 고른 감마가
-그 자리에서 되먹힌다. 플레이어는 `CardSelectOverlay` 의 `CHOICE` 모드(찾기와
-같은 그리드, **취소 없음**)로 고르고, AI 는 무작위로 고른다. 두 경로가
-`CardPhaseManager.register_phase_boon` 한 함수로 모이므로 규칙이 갈라질 수 없다.
+**Gamma payout happens before choosing the new boon** — reversing the order would make the
+just-chosen gamma feed back on the spot. The player chooses via `CardSelectOverlay`'s `CHOICE` mode
+(the same grid as search, **no cancel**), and the AI chooses at random. Both paths converge on one
+function, `CardPhaseManager.register_phase_boon`, so the rules can't diverge.
 
-## 튜닝 상수
+## Tuning constants
 
-| 상수 | 값 | 뜻 |
+The values now live in `data/csv/const.csv` (read through `ConstTable`); `MechSkillSystem` exposes
+them as `static var`s keeping the old const names. Values are not restated here — read const.csv.
+
+| Constant (`MechSkillSystem.`) | const.csv key | Meaning |
 |---|---|---|
-| `VULNERABLE_PER_STACK` | 0.01 | 취약 1당 받는 피해 배율 |
-| `REACTIVE_ARMOR_CUT` | 0.90 | 반응 장갑 한 겹이 깎는 비율 |
-| `OVERCLOCK_PROC_PER_CHARGE` | 0.01 | 충전 1당 교전 추가 공격 확률 |
-| `CASH_RATE` | 0.04 | [캐시] 가 카드 한 장마다 버는 자기 성장치 비율. 적립은 `award_score` 를 지나 **초상화 위에 팝업이 뜬다** — 흔적이 없으면 그 카드를 손에 들고 있는 것과 없는 것이 화면에서 구분되지 않는다 |
-| `SCORE_COST_UNIT` | 0.01 | `score_cost:N` 의 단위 — **N=100 이 1.00k** |
-| `PHASE_BOON_BETA_CHARGE` | 100 | 강화 베타가 [단계 B] 에 얹는 충전 |
-| `PHASE_BOON_GAMMA_RATE` | 0.10 | 강화 감마가 [단계 C] 에서 버는 자기 성장치 비율 |
+| `VULNERABLE_PER_STACK` | `MECH_VULNERABLE_PER_STACK` | Damage-taken multiplier per 1 Vulnerable |
+| `REACTIVE_ARMOR_CUT` | `MECH_REACTIVE_ARMOR_CUT` | Fraction one layer of reactive armor cuts |
+| `OVERCLOCK_PROC_PER_CHARGE` | `MECH_OVERCLOCK_PROC_PER_CHARGE` | Engage extra-attack chance per 1 Charge |
+| `CASH_RATE` | `MECH_CASH_RATE` | Fraction of own growth points [캐시] earns per card. Accrual goes through `award_score`, so **a popup appears above the portrait** — without a trace, holding that card and not holding it would look the same on screen |
+| `SCORE_COST_UNIT` | `MECH_SCORE_COST_UNIT` | Unit of `score_cost:N` (growth points per N) |
+| `PHASE_BOON_BETA_CHARGE` | `MECH_PHASE_BOON_BETA_CHARGE` | Charge that boon beta puts on [단계 B] |
+| `PHASE_BOON_GAMMA_RATE` | `MECH_PHASE_BOON_GAMMA_RATE` | Fraction of own growth points boon gamma earns at [단계 C] |
 
-배율(몇 %인가)이 CSV 가 아니라 여기 사는 이유는 파일럿 스킬과 같다: 패시브마다
-의미가 다른 숫자 칸을 대여섯 개 만들지 않기 위해서다. CSV 의 `p1` / `p2` 는
-패시브마다 뜻이 다른 두 숫자이고(시작 충전 · 최대 충전 · 취약 수치 · 피해 비율),
-그 뜻은 `KEY_*` 상수 옆 주석에 적혀 있다.
+Multipliers (what %) live in const.csv rather than in `mech_passives.csv` for the same reason as pilot skills: to avoid
+creating five or six number columns whose meaning differs per passive. The CSV's `p1` / `p2` are two
+numbers whose meaning differs per passive (starting Charge · max Charge · Vulnerable amount · damage
+ratio), and that meaning is written in the comments next to the `KEY_*` constants.
 
-## 아직 남은 것
+## Still remaining
 
-| 항목 | 왜 |
+| Item | Why |
 |---|---|
-| **강화 3택의 AI 판단** | AI 는 알파 · 베타 · 감마를 무작위로 고른다. 파일럿 스킬 AI 가 활성화를 아예 하지 않는 것과 같은 1차 한계이고, 규칙을 세우려면 "지금 이 사슬이 몇 바퀴째인가"를 AI 가 알아야 한다 |
-| **기절의 라운드 길이** | 언제나 1라운드(다음 차례 하나)다. 카드 텍스트가 길이를 말하지 않아 최소값을 골랐다 |
+| **AI judgement for the 3 boons** | The AI picks alpha · beta · gamma at random. It's the same first-order limit as the pilot-skill AI not activating at all, and setting a rule requires the AI to know "which lap of the chain this is" |
+| **Stun round length** | Always 1 round (one next turn). The card text doesn't state a length, so the minimum was chosen |
 
-## 검증
+## Verification
 
-전체 루프 스모크(헤드리스, `match_ctx` 를 손으로 채운 하네스, 60턴 · 역할군 회전
-여러 벌: 스크립트 오류 0 · 충전 누적 확인)로는 60턴 안에 닿지 않는 자리가 있어
-표적 검사를 따로 부른다.
+The full-loop smoke test (headless, a harness with `match_ctx` filled by hand, 60 turns · several
+role-class rotations: 0 script errors · Charge accumulation confirmed) has spots it doesn't reach
+within 60 turns, so targeted checks are called separately.
 
-| 검사 | 확인하는 것 |
+| Check | What it confirms |
 |---|---|
-| `passive/*` | 패시브가 배정된 기체에서 실제로 읽힌다 |
-| `stun/*` | 한 교전에 같은 적 한 번, 차례 하나를 소모, 교전 종료 시 장전 해제 |
-| `contempt/*` | 교전 개시 직후 충전 수만큼 최저 HP 적을 공격력 50% 로 때리고 충전이 0 이 된다 |
-| `last_stand/*` | **팀 전원**에게 걸리고 각자 한 번씩 |
-| `overclock/*` | 충전이 가득하면 반드시 발동하고 절반이 날아간다 |
-| `engage/*` | 전탄 발사 · 오버클럭 · 불굴이 얹힌 5v5 가 끝까지 굴러가고 피해가 흐른다 |
-| `phase_b/*` | 처치 있음 → 덱에 [단계 C], 없음 → [단계 A] |
-| `boon/alpha` · `boon/gamma` | 예약이 걸리고 **한 번만** 쓰인다 |
-| `gust/return` | 뛰어들고 단계 종료 시 원래 칸으로 |
-| `guardian/*` | 편승 공격이 실제로 들어가고, **보호막이 없으면 안 들어간다** |
-| `ai/*` | 비용 -1 카드를 거르고, 사거리 밖 공격 카드를 거르고, 사거리 안이면 점수를 준다 |
+| `passive/*` | Passives are actually read on the assigned machine |
+| `stun/*` | Same enemy once per engage, consumes one turn, unloaded at engage end |
+| `contempt/*` | Right after engage start, hits the lowest-HP enemy at `ENGAGE_CONTEMPT_DMG_MULT` of attack as many times as the Charge count, and Charge goes to 0 |
+| `last_stand/*` | Applies to **the whole team**, once each |
+| `overclock/*` | At full Charge it always fires and half is lost |
+| `engage/*` | A 5v5 with 전탄 발사 · 오버클럭 · 불굴 runs to the end and damage flows |
+| `phase_b/*` | Kill → [단계 C] into the deck, none → [단계 A] |
+| `boon/alpha` · `boon/gamma` | The reservation is applied and used **only once** |
+| `gust/return` | Leaps in and returns to the original cell at phase end |
+| `guardian/*` | The ride-along attack actually lands, and **doesn't land without a shield** |
+| `ai/*` | Filters out cost -1 cards, filters out out-of-range attack cards, and scores in-range ones |
 
 
 ## Detail moved from root CLAUDE.md
@@ -399,4 +411,4 @@
 
 | System | Description |
 |---|---|
-| 메크 스킬 | **기체 한 대에 붙는 고유 능력과 고유 카드 셋.** 파일럿 스킬이 선수에게 붙는 한 수라면 이쪽은 그 선수가 타고 있는 기체가 하는 일이라, **밴픽에서 기체를 고르는 순간 그 파일럿의 덱 절반과 상시 능력 하나가 함께 정해진다**. 표는 `data/csv/mech_passives.csv`(**15행**)와 `data/csv/mech_cards.csv`(**64행**)이고 짝은 `mechs.id` 다 — `players.skill_id` 같은 포인터 컬럼이 없는 것은 기체 한 대가 자기 패시브 하나와 자기 카드 셋을 통째로 소유하기 때문이다. **메크는 21대**이고(원딜 5 · 전사 4 · 탱커 3 · 지원 5 · 암살 4) 그중 15대만 패시브를 갖는다. **덱 구성이 바뀌었다** — 예전의 "공용 메크 카드 풀에서 3장 뽑기"가 사라지고 배정된 기체의 카드 목록을 `count` 만큼 펼친 것이 그 자리를 통째로 채운다(기체마다 2~7장이라 **덱 크기 자체가 기체 선택의 일부**다). 그 폴백(`MECH_CARDS_PER_PILOT` — cards.csv 의 "공용 메크 카드" 3장)도 **삭제됐다** — cards.csv 의 mech 행이 전부 파일럿 카드가 되면서 기체가 없는 단독 실행 덱에는 파일럿 카드만 들어간다. 메크 카드 설명문은 키워드 머리말("소멸." · "충전. …")을 걷었고, 패시브 · 카드의 내부 카운터는 화면에서 **토큰**이다. 패시브 보정은 **질의 함수로만** 나가고 계산은 원래 하던 자리가 한다(`BattleSim.refresh_growth_stats` / `SimulationCore._pilot_hit_damage` / `CardPhaseManager._apply_attack_damage`) — 스탯을 직접 밀면 성장 재계산 한 번에 지워지기 때문이고, 영구 증가분은 `PilotData.bonus_atk_flat` / `bonus_atk_mult` / `bonus_max_hp` 로 따로 산다. **메크에 `role` 컬럼이 생겼다** — 카드 셋이 역할군을 전제하게 됐기 때문이며, 다만 **배정은 여전히 자유다**(어느 역할 슬롯에 어느 기체를 앉혀도 된다 — 분류와 데이터 검증용). **교전 무대까지 전부 배선됐다** — 전탄 발사(공격이 적 전원) · 오버클럭(피해 직후 한 번 더) · 불굴(팀 전원 1회 사망 방지) · 약자 멸시(**1라운드 전** 충전 수만큼 최저 HP 적을 공격력 50% 로) · 강타/기절(맞은 적이 다음 차례를 잃음)이 `TurnEngageSim` 에서 실제로 걸리고, 그 다섯은 전부 `MechSkillSystem` 의 질의 함수를 지난다. **수호 연계**(이 메크의 보호막을 두른 아군이 때리면 메크도 얹는다)는 전장 자동 교전에서 **판정이 아니라 적용이 끝난 뒤** 굴린다(`SimulationCore._flush_guardian_rides`) — 판정 단계에서 곧장 때리면 편승 한 방이 아직 적용되지 않은 피해보다 먼저 상대를 눕혀 같은 턴의 나머지 판정이 시체를 상대로 굴러간다. **단계 A→B→C 사슬**과 강화 3택도 섰다 — 아래 "단계 사슬" 항목. 21대 목록 · 키워드 · 절 문법 · 코드 쪽 규약은 전부 이 README 위쪽 절들. |
+| Mech skills | **A unique ability and a unique card set attached to one machine.** If a pilot skill is a move attached to the player, this is what the machine that player rides does, so **the moment a machine is picked in ban/pick, half of that pilot's deck and one permanent ability are decided along with it**. The tables are `data/csv/mech_passives.csv` (**15 rows**) and `data/csv/mech_cards.csv` (**64 rows**), paired by `mechs.id` — there's no pointer column like `players.skill_id` because one machine wholly owns its one passive and its card set. **There are 21 mechs** (ADC 5 · Fighter 4 · Tank 3 · Support 5 · Assassin 4), of which only 15 have passives. **Deck composition changed** — the old "draw 3 from the shared mech card pool" is gone, and the assigned machine's card list spread out `count` times fills that space entirely (machines bring different numbers of cards, so **deck size itself is part of choosing a machine**). Its fallback (`MECH_CARDS_PER_PILOT` — the 3 "공용 메크 카드" (shared mech cards) in cards.csv) **was deleted too** — with all the mech rows in cards.csv now being pilot cards, a standalone-run deck with no machine gets only pilot cards. Mech card descriptions dropped their keyword prefixes ("소멸." (Exhaust.) · "충전. …" (Charge. …)), and the internal counters of passives · cards are **tokens (토큰)** on screen. Passive modifiers are exported **only via query functions**, and the calculation stays where it always was (`BattleSim.refresh_growth_stats` / `SimulationCore._pilot_hit_damage` / `CardPhaseManager._apply_attack_damage`) — because pushing stats directly would be wiped by a single growth recalculation; permanent increases live separately in `PilotData.bonus_atk_flat` / `bonus_atk_mult` / `bonus_max_hp`. **Mechs gained a `role` column** — because card sets came to presuppose a role class, but **assignment is still free** (any machine can sit in any role slot — it's for classification and data validation). **Everything is wired up to the engage stage** — 전탄 발사 (attacks hit all enemies) · 오버클럭 (one more hit right after damage) · 불굴 (whole team, one death prevention each) · 약자 멸시 (**before round 1**, hit the lowest-HP enemy at `ENGAGE_CONTEMPT_DMG_MULT` of attack as many times as the Charge count) · 강타/stun (the hit enemy loses its next turn) actually apply in `TurnEngageSim`, and all five go through `MechSkillSystem`'s query functions. **수호 연계** (when an ally wearing this mech's shield hits, the mech piles on) is rolled in battlefield auto-combat **after application finishes, not at judgement** (`SimulationCore._flush_guardian_rides`) — hitting immediately at the judgement stage would let the ride-along hit drop the opponent before damage not yet applied, so the rest of that turn's judgements would run against a corpse. **The Phase A→B→C chain** and the 3 boons are in place too — see the "Phase A → B → C chain" section above. The list of 21 machines · keywords · clause grammar · code-side conventions are all in the sections above in this README. |

@@ -3,14 +3,14 @@
 | File | class_name | Role |
 |---|---|---|
 | `HudBuilder.gd` | HudBuilder | Builds and updates the whole battle HUD |
-| `CostDonut.gd`  | CostDonut  | 전략 포인트 ring gauge; the player's one doubles as the 턴 넘기기 button |
-| `CardPileStack.gd` | CardPileStack | 덱 / 버린 더미 — 앞으로 누운 카드 뭉치 + 장수 |
-| `PilotStrip.gd` | PilotStrip | 파일럿 5인 스트립 — 눈높이 초상화 + 체력 바 + 성장치. 상단(적) / 하단(아군) 두 벌, **양쪽 다 누르면 상세가 열린다**. 아군 칸에는 **파일럿 스킬 준비도 딤 + 숫자**가 얹힌다 |
-| `ObjectiveTimer.gd` | ObjectiveTimer | 오브젝트 등장 시계 — 적 스트립 양옆에 아이콘 + 남은 턴(좌 전령 / 우 용). **누르면 보상 팝업이 열린다** |
-| `ObjectiveRewardPopup.gd` | ObjectiveRewardPopup | 오브젝트 보상 미리보기 — 시계를 누르면 그 오브젝트가 주는 카드를 실물로 띄운다 |
-| `PilotDetailPanel.gd` | PilotDetailPanel | 파일럿 상세 모달 — 좌 전신 아트 2장(+ 좌측 하단 지속 효과) / 우 머리글 + 탭 3개 + 스탯 칩 + **파일럿 스킬 블록** / 하단 전체 폭에 **보유 카드 부채꼴** |
-| `MarkerTouch.gd` | MarkerTouch | 전장 초상 누르기 — 누르는 동안 `PRESS_SCALE` 로 커지고 맨 위로(뗀 뒤에도 맨 위는 남는다), **꾹 누르면(0.45초) 상세 패널** |
-| `KillFeed.gd` | KillFeed | 킬로그 — 우측 상단에 처치 / 포탑 철거 / 오브젝트 획득을 한 줄씩. 교전 중 처치는 아레나가 닫힌 뒤 몰아서 |
+| `CostDonut.gd`  | CostDonut  | Strategy points (전략 포인트) ring gauge; the player's one doubles as the "턴 넘기기" (End turn) button |
+| `CardPileStack.gd` | CardPileStack | Deck (덱) / discard pile (버린 더미) — a stack of cards lying face-down, tilted away + card count |
+| `PilotStrip.gd` | PilotStrip | 5-pilot (파일럿) strip (스트립) — eye-level portrait (초상화) + HP (체력) bar + growth points (성장치). Two copies, top (enemy (적)) / bottom (ally (아군)); **pressing either opens the detail panel**. Ally cells also carry a **pilot skill readiness dim + number** |
+| `ObjectiveTimer.gd` | ObjectiveTimer | Objective (오브젝트) spawn clock — icon + turns remaining on either side of the enemy strip (left Herald (전령) / right Dragon (용)). **Pressing it opens the reward popup** |
+| `ObjectiveRewardPopup.gd` | ObjectiveRewardPopup | Objective reward preview — pressing a clock shows the actual cards that objective grants |
+| `PilotDetailPanel.gd` | PilotDetailPanel | Pilot detail modal — left: 2 full-body arts (+ lasting effects at bottom-left) / right: header + 3 tabs + stat chips + **pilot skill block** / full-width bottom: **fan of held cards** |
+| `MarkerTouch.gd` | MarkerTouch | Pressing a battlefield (전장) portrait — while held it grows to `PRESS_SCALE` and moves to the top (it stays on top after release); **long-press (0.45 s) opens the detail panel** |
+| `KillFeed.gd` | KillFeed | Kill log — top-right, one line per kill (처치) / turret (포탑) demolition / objective capture. Kills during an engage (교전) are flushed together after the arena closes |
 
 ## HudBuilder.gd
 `extends Node` — child of BattleSim.
@@ -18,16 +18,19 @@
 Builds the battle HUD and updates it via `update_hud()` (per-turn) and
 `update_time_label()` (every frame from `BattleSim._process`).
 
-### `set_pregame_chrome_visible(on)` — 개시 전에 걷는 HUD
-정글 시작 선택(`gambit/JungleStartOverlay.gd`)이 열려 있는 동안 **지금 쓸 수
-없는 것들만** 숨는다 — 손패 행 양옆의 덱 / 버린 더미 뭉치와 그 히트 버튼,
-전략 포인트 도넛 둘, 상단 패널의 오브젝트 등장 시계 둘. 셋 다 아직 존재하지
-않는 것을 0 으로 보여 주는 자리이고, 특히 손패 자리는 정글러 초상화가 통째로
-쓴다. **파일럿 스트립과 상단 패널은 남는다** — 개시 직전에 양 팀 로스터를 다시
-확인하는 것은 그 화면이 하는 일의 일부다. 오버레이가 닫힐 때 그대로 되돌린다.
+### `set_pregame_chrome_visible(on)` — HUD hidden before the opening (개시)
+While the jungle start (정글 시작) choice (`gambit/JungleStartOverlay.gd`) is open,
+**only the things that can't be used yet** hide — the deck / discard piles either side
+of the hand (손패) row and their hit buttons, both strategy point donuts, and both
+objective spawn clocks in the top panel. All three are spots that would show
+something that doesn't exist yet as 0, and the hand area in particular is taken over
+entirely by the junglers' portraits. **The pilot strips and the top panel stay** —
+re-checking both teams' rosters just before the opening is part of what that screen
+does. Everything is restored as-is when the overlay closes.
 
-`set_strip_visible(team, on)`(상세 패널이 부른다)과는 **다른 함수, 다른 이유**다:
-저쪽은 딤 위에 남을 것을 치우는 것이고 이쪽은 아직 뜻이 없는 것을 치우는 것이다.
+This is a **different function for a different reason** from `set_strip_visible(team, on)`
+(called by the detail panel): that one clears what would sit on top of the dim; this
+one clears what has no meaning yet.
 
 ### build_ui()
 Creates UI inside `_bs.canvas` (a CanvasLayer added to BattleSim):
@@ -68,7 +71,7 @@ Creates UI inside `_bs.canvas` (a CanvasLayer added to BattleSim):
   **`ai_hand_left_anchor()`** re-runs that same solve for index 0 of a hand one
   card **larger** than the current one, so it answers "where would the next
   leftmost AI card sit?". Its only consumer is the objective reward FX
-  (`objective/ObjectiveRewardFx.gd`) — when the enemy takes 전령 / 용, the reward
+  (`objective/ObjectiveRewardFx.gd`) — when the enemy takes Herald / Dragon, the reward
   cards fly into that point. The AI's *deck* is nowhere on screen, so the hand's
   left edge is the only coordinate that can say "this became theirs".
 
@@ -76,14 +79,15 @@ Creates UI inside `_bs.canvas` (a CanvasLayer added to BattleSim):
   the fan's `-θ`, and `AiCardPlayer._show_card_centre` tweens it to 0 during the
   fly-out. Without that the AI's played card stood at the centre of the screen
   visibly tilted, flipped over, and vanished still crooked.
-- **적 스트립 뒤판** (`_enemy_strip_bg`) — 적 파일럿 스트립을 사방으로
-  `ENEMY_BG_PAD`(10) 넓힌 판 한 장. **가로 전폭 패널이 아니다**: 경과 시계와
-  오브젝트 시계 둘은 이 판 **바깥**에 배경 없이 선다. 아군 스트립 뒤판과 같은
-  색·테두리(`STRIP_BG_COLOR` / `STRIP_BG_BORDER`)이고, 여전히 불투명이라
-  상대 핸드 peek 의 윗부분을 가리는 가림막 노릇을 한다(peek 부채꼴은 화면 가로
-  가운데에 서므로 스트립 폭 안에 통째로 들어간다). 아군 스트립은 핸드 행 아래에
-  있다 — 아래 파일럿 스트립 절 참고.
-- **Deck / Discard 카드 뭉치** (in the gutters either side of the card row) —
+- **Enemy strip backplate (뒤판)** (`_enemy_strip_bg`) — one plate that extends the enemy
+  pilot strip by `ENEMY_BG_PAD` (10) on every side. **It is not a full-width panel**: the
+  elapsed-time clock and the two objective clocks stand **outside** this plate with no
+  background. Same colour / border as the ally strip backplate
+  (`STRIP_BG_COLOR` / `STRIP_BG_BORDER`), and still opaque, so it acts as the screen
+  that hides the top of the opponent's (상대) hand peek (the peek fan stands at the
+  horizontal centre of the screen, so it fits entirely within the strip width). The ally
+  strip sits below the hand row — see the Pilot strip section below.
+- **Deck / Discard card piles** (in the gutters either side of the card row) —
   `_bs.pile_deck` (left) and `_bs.pile_discard` (right), two `CardPileStack`
   controls. CardPhaseManager pushes the count on every draw / play and tweens
   it during a deck/discard reshuffle. Built by `_build_hand_indicators()`.
@@ -92,8 +96,8 @@ Creates UI inside `_bs.canvas` (a CanvasLayer added to BattleSim):
   `MOUSE_FILTER_IGNORE` and takes no clicks of its own — and opens
   `CardPileViewer` on that pile. `_update_pile_buttons()` runs from
   `update_hud()` and gates both on `CardPhaseManager.can_browse_piles()`
-  (작전 단계 only), fading the piles via `set_dimmed(true)` while disabled.
-  See `card_phase/README.md` → Deck / Discard 목록 열람. The gutter is
+  (operation phase (작전 단계) only), fading the piles via `set_dimmed(true)` while disabled.
+  See `card_phase/README.md` → Browsing the Deck / Discard lists. The gutter is
   **not** `BS_HAND_AREA_MARGIN` —
   `BS_HAND_WIDTH_SCALE` widens the card row past it, so the gutter is derived
   as `min(BS_HAND_AREA_MARGIN, (screen_w − BS_HAND_WIDTH) / 2)` (89px at 1080)
@@ -101,43 +105,43 @@ Creates UI inside `_bs.canvas` (a CanvasLayer added to BattleSim):
   card ever overlaps a pile. The inset is **4px** (the old labels used 8) —
   the pile's width *is* the card's width, so it takes everything the gutter has.
 
-  > **예전에는 이 자리가 `"Deck\n18"` 두 줄짜리 `Label` 하나였다.** 숫자는
-  > 읽혔지만 더미가 물건으로 보이지 않아서, 손패에 들어오는 카드가 어디서
-  > 오고 버린 카드가 어디로 가는지가 화면 어디에도 없었다. `lbl_deck_count` /
-  > `lbl_discard_count` 는 그때 사라졌다.
-- **전략 포인트 도넛 ×2** — `CostDonut` ring gauges in the **left-hand** gutter
+  > **This spot used to be a single two-line `Label`, `"Deck\n18"`.** The number
+  > was readable, but the pile didn't look like an object, so nowhere on screen showed
+  > where cards entering the hand came from or where discarded cards went.
+  > `lbl_deck_count` / `lbl_discard_count` disappeared then.
+- **Strategy point donuts ×2** — `CostDonut` ring gauges in the **left-hand** gutter
   (see below). Built by `_build_cost_donuts()`.
-- **아군 파일럿 스트립** (y 1766..1888) — 핸드 행 아래. 예전에는 여기가 비어
-  있었다(하단 코스트 바와 사각 단계 넘기기 버튼이 사라진 자리). 바닥 ~32px 는
-  아이폰 홈 바 / 시스템 제스처용으로 남긴다. `_build_player_strip()`.
-  **그 뒤에 뒤판 `Panel` 한 장**(`PlayerStripBackdrop`, y 1756..1898)이 깔린다 —
-  아래 파일럿 스트립 절의 "아군 스트립 뒤판" 참고.
+- **Ally pilot strip** (y 1766..1888) — below the hand row. This used to be empty
+  (where the bottom cost bar and the rectangular phase-skip button were removed). The
+  bottom ~32px is left for the iPhone home bar / system gestures. `_build_player_strip()`.
+  **One backplate `Panel` lies behind it** (`PlayerStripBackdrop`, y 1756..1898) —
+  see "Ally strip backplate" in the Pilot strip section below.
 - **Victory panel** — Win/lose label + Play Again button.
 - **Turn announcer** (built last, full-screen Control overlay) —
   `play_turn_announce(is_player)` sweeps a 110-px-tall coloured bar in
-  from the centre with the message "당신의 차례" (blue) or "상대 차례"
-  (red), holds, then fades out. Awaitable; `CardPhaseManager.start_card_phase`
+  from the centre with the message "당신의 차례" (Your turn) (blue) or "상대 차례"
+  (Opponent's turn) (red), holds, then fades out. Awaitable; `CardPhaseManager.start_card_phase`
   blocks the player hand on the player banner, and
   `CardPhaseManager._run_ai_turn` runs the enemy banner **when the AI's own
-  작전 점수 reaches `PHASE_THRESHOLD`** — not when the player passes the turn.
+  operation points (작전 점수) reach `PHASE_THRESHOLD`** — not when the player passes the turn.
   Passing the turn (`end_card_phase`) shows no banner at all. The on-screen
   battle log was removed; `_bs.last_log` is still updated by effect handlers
   but renders nowhere.
 
 Buttons removed: **Next Turn**, **Auto Play** and the rectangular
-**단계 넘기기** button are all gone — BATTLE auto-ticks every
+**단계 넘기기** (Skip phase) button are all gone — BATTLE auto-ticks every
 `AUTO_PLAY_INTERVAL` (0.5s) inside `BattleSim._process()`, and ending the
-작전 단계 is now done by tapping the player's 전략 포인트 donut twice.
+operation phase is now done by tapping the player's strategy point donut twice.
 
 Connections:
 - `cost_donut.end_turn_pressed` → `_bs.card_phase.end_card_phase` (the manager
   also re-checks `can_end_card_phase()` defensively)
 - Play Again button → `_bs._on_restart_pressed`
 
-### 전략 포인트 도넛 (`CostDonut.gd`)
-Both sides' 작전 점수 read out on a ring gauge in the **left-hand** gutter
+### Strategy point donut (`CostDonut.gd`)
+Both sides' operation points read out on a ring gauge in the **left-hand** gutter
 (`x = BS_HAND_AREA_MARGIN / 2`, i.e. 65 on a 1080-wide screen). The donut column
-and the targeting overlay's 확인 / 취소 row sit on **opposite** sides of the
+and the targeting overlay's "확인" (Confirm) / "취소" (Cancel) row sit on **opposite** sides of the
 screen: donuts left, buttons bottom-right.
 
 | Donut | Position | Interactive |
@@ -151,12 +155,12 @@ vertically. The player donut's y is derived from `BS_HAND_CENTER.y`, so it moved
 up with the hand row when the battlefield shrank to 90% — nothing here is a
 literal.
 
-- Ring is full at `PHASE_THRESHOLD` (8); the number in the middle is the raw
-  point total, so boost cards read as "9 on a full ring".
+- Ring is full at `PHASE_THRESHOLD` (game_config.csv); the number in the middle is the raw
+  point total, so boost cards read as "a number above the threshold on a full ring".
 - Fill sweeps clockwise from 12 o'clock (`START_ANGLE = -PI/2`).
 
-**Player flip → 턴 넘기기** (`CostDonut` owns the whole interaction):
-1. tap the donut during 작전 단계 → the ring unwinds through empty and
+**Player flip → "턴 넘기기"** (`CostDonut` owns the whole interaction):
+1. tap the donut during the operation phase → the ring unwinds through empty and
    re-winds counter-clockwise (`_sweep` tweens `ratio*TAU → -TAU`) while the
    face swaps from the number to "턴 넘기기".
 2. tap it again → `end_turn_pressed` fires (only while `set_end_enabled(true)`;
@@ -175,669 +179,741 @@ outside tap. Presses landing inside the donut are consumed with
 State setters driven from `HudBuilder._update_cost_donuts()`:
 `set_value(cost, PHASE_THRESHOLD)`,
 `set_flip_allowed(in_card_phase and not modal_up)` where `modal_up` is
-"Deck/Discard 열람 중 **or** 전투 개시 VS 확인 화면이 떠 있음" (turning it off
+"Deck/Discard browsing (열람) is open **or** the battle-opening VS confirm screen is up" (turning it off
 un-flips). Both clauses are load-bearing for the same reason: `CostDonut`
 listens on `_input`, which runs ahead of GUI picking, so it stays tappable
 straight through either dim. The VS screen matters because `game_phase` is
 still CARD_PHASE while it is up — the arena has not opened yet, so
 `in_card_phase` alone lets the donut through.
-`set_end_enabled(can_end_card_phase())` — **작전 단계 내내 true** 이고, 배너 /
-모달 / 돌진 연출처럼 지금 닫으면 무언가가 끊기는 상태에서만 false 다. 카드를
-한 장도 내지 않고 넘겨도 된다(see `card_phase/README.md`). `set_locked(…)`
+`set_end_enabled(can_end_card_phase())` — **true throughout the operation phase**, and false
+only in states where closing now would cut something off, such as a banner / modal /
+charge (돌진) animation. Passing without playing a single card is allowed
+(see `card_phase/README.md`). `set_locked(…)`
 still exists on `CostDonut` but **nothing calls it any more** — targeting stopped
 being modal, so there is no state that needs the flip blocked. The donut's y is
 still derived from `CardTargetingOverlay.BTN_HAND_GAP + BTN_H` so it keeps the
-same vertical band the 확인/취소 row occupies on the far side of the screen.
+same vertical band the "확인"/"취소" row occupies on the far side of the screen.
 
-### 덱 / 버린 더미 뭉치 (`CardPileStack.gd`)
-핸드 행 양옆 거터에 **앞으로 누운 카드 뭉치**를 그리는 `Control`. 뒷면이 위를
-향한 카드가 겹쳐 쌓인 모양이고, 그 자체가 카운터이자 열람 버튼의 과녁이다.
+### Deck / discard piles (`CardPileStack.gd`)
+A `Control` that draws a **stack of cards lying down, tilted away** in the gutters either
+side of the hand row. It looks like face-down cards piled on top of each other, and it is
+itself both the counter and the target of the browse button.
 
-**"누워 있다"는 두 가지가 만든다.** (1) 세로를 `FORESHORTEN`(0.55)만큼 눌러
-카드의 220/160 비율을 죽이고, (2) **윗변을 아랫변보다 좁게**
-(`TOP_EDGE_SCALE` 0.78) 그려 원근을 넣는다. 직사각형을 그냥 납작하게만 눌러
-놓으면 누운 카드가 아니라 그냥 얇은 카드로 읽힌다. `FORESHORTEN` 은 0.42 로
-시작했다가 0.55 로 올렸다 — 더 눕히면 맨 위 카드의 면이 숫자보다 얇아져
-뒷면이 아니라 띠가 된다. 세로 자리는 핸드 행 높이(220px)만큼 있고 뭉치는
-100px 도 안 쓰므로 아낄 이유가 없다.
+**Two things make it "lie down".** (1) The height is squashed by `FORESHORTEN` (0.55),
+killing the card's 220/160 ratio, and (2) the **top edge is drawn narrower than the
+bottom edge** (`TOP_EDGE_SCALE` 0.78) to add perspective. A rectangle that is merely
+flattened reads as a thin card, not a card lying down. `FORESHORTEN` started at 0.42 and
+was raised to 0.55 — tilt it further and the top card's face gets thinner than the
+number, so it becomes a band instead of a card back. There is vertical room equal to the
+hand row height (220px) and the stack uses less than 100px, so there's no reason to
+skimp.
 
-**층은 위로 쌓인다.** 층이 올라갈수록 화면 **위쪽**으로 `LAYER_DY`(5.5px)씩
-밀리므로 아래 카드들의 앞쪽 단면이 뭉치 **아래**로 삐져나오고, 위에서 비스듬히
-내려다보는 자세가 된다. 맨 마지막에 그리는 층이 곧 맨 위 카드이고, 장수는 그
-카드 뒷면 한가운데에 찍힌다(외곽선을 함께 깐다 — 아래 층의 밝은 단면과 겹치는
-프레임이 있다). 제목("Deck" / "Discard")은 뭉치 아래 `Label` 자식이다.
+**Layers stack upward.** Each higher layer shifts **up** the screen by `LAYER_DY` (5.5px),
+so the front edges of the cards below poke out **under** the stack, giving a pose looked
+down on obliquely from above. The last layer drawn is the top card, and the count is
+printed in the middle of that card's back (with an outline underneath — in some frames
+it overlaps the bright edges of the layers below). The title ("Deck" / "Discard") is a
+`Label` child below the stack.
 
-**두께 = 장수.** 보이는 층 수는 `ceil(count / CARDS_PER_LAYER)`(4장당 한 층),
-상한 `MAX_LAYERS`(8). **바닥선은 고정이고 뭉치는 위로만 자란다** — 세로 중심을
-고정하면 카드 한 장이 오갈 때마다 뭉치 전체가 아래위로 떨린다. 자리는 언제나
-`MAX_LAYERS` 기준으로 잡아 둔다. `set_count()` 는 `float` 를 받는다:
-`CardPhaseManager._animate_reshuffle_counts` 의 리셔플 트윈이 소수로 굴러들어
-오므로 두께도 숫자와 같은 곡선으로 자라고 줄어든다. 0장이면 테두리만 남은 빈
-슬롯 하나에 흐린 "0".
+**Thickness = count.** Visible layer count is `ceil(count / CARDS_PER_LAYER)` (one layer
+per 4 cards), capped at `MAX_LAYERS` (8). **The baseline is fixed and the stack only
+grows upward** — if the vertical centre were fixed, the whole stack would jitter up and
+down every time a card came or went. The space is always reserved for `MAX_LAYERS`.
+`set_count()` takes a `float`: the reshuffle tween in
+`CardPhaseManager._animate_reshuffle_counts` rolls in fractional values, so the thickness
+grows and shrinks on the same curve as the number. At 0 cards, one empty slot with only
+its border remains, with a faint "0".
 
-맨 위 카드 뒷면 색(`BACK_FILL` / `BACK_LINE`)은 `Card._apply_back_style` 와
-같은 값이라 손패의 뒷면 카드와 같은 물건으로 읽힌다. **뒷면은 이 색 하나로
-균일하게 칠한다** — 예전에는 면 안쪽으로 물러난 사다리꼴을 더미별 accent 색
-(덱 보라 / 버린 더미 적갈, `HudBuilder.PILE_ACCENT_*`)으로 덧그렸는데, 뭉치가
-작아 그 액자가 무늬가 아니라 **면에 얹힌 계조**로 읽혔다. 두 더미는 아래 제목
-라벨이 이미 갈라 주므로 색으로 또 가를 이유가 없다. `accent` 인자와
-`PILE_ACCENT_*` 상수는 그때 함께 사라졌고 `setup()` 은 `(title, font_size)` 다.
+The top card's back colour (`BACK_FILL` / `BACK_LINE`) is the same value as
+`Card._apply_back_style`, so it reads as the same object as the face-down cards in hand.
+**The back is painted uniformly in this one colour** — it used to overdraw an inset
+trapezoid in a per-pile accent colour (deck purple / discard reddish-brown,
+`HudBuilder.PILE_ACCENT_*`), but the stack is small, so that frame read as **a gradient
+sitting on the face** rather than a pattern. The title labels below already tell the two
+piles apart, so there's no reason to separate them by colour too. The `accent` argument
+and the `PILE_ACCENT_*` constants disappeared at the same time; `setup()` is
+`(title, font_size)`.
 
-측정(1080폭, 거터 81px): 카드 한 장 61px · 8층 뭉치 99.5px · 숫자 폰트 27.
+Measured (1080 wide, 81px gutter): one card 61px · 8-layer stack 99.5px · number font 27.
 
-#### 오가는 카드 = 잔상 (`play_pop` / `play_land`)
-숫자만 바뀌면 카드가 **더미에서 나왔다 / 더미로 들어갔다**가 화면에 남지 않는다.
-그래서 뭉치는 맨 위 카드와 같은 모양의 **잔상** 한 장을 더 그린다 — 노드가
-아니라 `_draw()` 안의 사다리꼴 하나라 레이아웃 · 입력 · z-order 에 아무 영향이
-없고, 잔상은 뭉치보다 **뒤에 그리지 않는다**(가려지면 동작의 절반이 사라진다).
+#### Cards coming and going = ghosts (`play_pop` / `play_land`)
+If only the number changes, nothing on screen shows that a card **came out of the pile /
+went into the pile**. So the stack draws one more **ghost** shaped like the top card — it
+is not a node but a single trapezoid inside `_draw()`, so it has no effect on layout ·
+input · z-order, and the ghost is **not drawn behind** the stack (if it's hidden, half the
+motion disappears).
 
-| | 방향 | 알파 | 부르는 곳 |
+| | Direction | Alpha | Called from |
 |---|---|---|---|
-| `play_pop()` (덱) | 맨 위 카드에서 **위로** `GHOST_RISE_PX`(74px) | 1 → 0 | `CardPhaseManager._play_draw_intro` ⓪ |
-| `play_land()` (버린 더미) | 그 높이에서 **아래로** 내려앉음 | 0 → 1 | `CardPhaseManager._notice_discard_gain` |
+| `play_pop()` (deck) | **up** from the top card by `GHOST_RISE_PX` (74px) | 1 → 0 | `CardPhaseManager._play_draw_intro` ⓪ |
+| `play_land()` (discard pile) | settles **down** from that height | 0 → 1 | `CardPhaseManager._notice_discard_gain` |
 
-- 한 장이 도는 시간은 `GHOST_SEC`(0.26s). 잔상은 **여러 장이 동시에** 돌 수
-  있어야 하므로(개시 5장 · 드로우:N · 버리기:N) 트윈이 아니라 `_ghosts` 배열 +
-  `_process` 로 굴린다. 각 항목이 자기 `delay` 와 진행도를 들고 있어 서로를
-  끊지 않는다. `play_burst(land, n, delay)` 가 `GHOST_STAGGER_SEC`(0.08s)씩
-  밀어 넣는다.
-- **드로우와의 이음매**: 왼쪽 진입은 잔상이 다 사라진 뒤가 아니라 알파가
-  `GHOST_HANDOFF_ALPHA`(0.30) 만큼 남은 시점에 시작한다 — 완전히 사라진 뒤에
-  시작하면 한 장이 두 번 나온 것처럼 끊겨 보인다. 그 시각은
-  `CardPileStack.ghost_handoff_delay()`(= 0.182s) 한 곳에서 나온다.
-- **버리기와의 이음매는 반대로 겹치지 않는다.** 착지 잔상은 손패 카드가 다
-  떨어진 **뒤**(`CardPhaseManager.PILE_LAND_DELAY_SEC` = `Card.DISCARD_FADE_SEC`
-  0.30s)에 출발한다 — 드로우는 한 장이 덱에서 손으로 이어 달리는 그림이라
-  겹쳐야 하고, 버리기는 손에서 떨어진 카드가 더미에 **도착**하는 그림이라
-  이어 붙여야 한다. 그리고 **숫자와 두께는 그 잔상이 다 내려앉은 뒤에 오른다**
-  (`CardPhaseManager._discard_pending` / `_commit_discard_gain`) — 카드가 뭉치에
-  닿는 순간과 더미가 두꺼워지는 순간이 같아진다.
+- One card takes `GHOST_SEC` (0.26s). Ghosts must be able to run **several at once**
+  (opening (개시) 5 cards · draw:N · discard:N), so they're driven by a `_ghosts` array +
+  `_process` rather than tweens. Each entry carries its own `delay` and progress so they
+  don't cut each other off. `play_burst(land, n, delay)` pushes them in
+  `GHOST_STAGGER_SEC` (0.08s) apart.
+- **Seam with the draw**: the entry from the left starts not after the ghost has fully
+  vanished but when `GHOST_HANDOFF_ALPHA` (0.30) of its alpha remains — starting after it
+  fully vanishes makes it look choppy, as if one card came out twice. That moment comes
+  from one place, `CardPileStack.ghost_handoff_delay()` (= 0.182s).
+- **The seam with discard, conversely, does not overlap.** The landing ghost departs
+  **after** the hand card has finished falling (`CardPhaseManager.PILE_LAND_DELAY_SEC` =
+  `Card.DISCARD_FADE_SEC` 0.30s) — a draw is a picture of one card running on from deck to
+  hand, so they must overlap; a discard is a picture of a card that left the hand
+  **arriving** at the pile, so they must be joined end to end. And **the number and
+  thickness rise only after that ghost has fully settled**
+  (`CardPhaseManager._discard_pending` / `_commit_discard_gain`) — the moment the card
+  touches the stack and the moment the pile gets thicker coincide.
 
-### 파일럿 스트립 (`PilotStrip.gd`) — 상단 적 / 하단 아군
-예전에는 열 명이 **전부 상단 패널 안에** 84px 슬롯으로 몰려 있었다(아군 좌 /
-점수 중앙 / 적 우). 얼굴이 76px 정사각이라 누가 누구인지 읽히지 않았고, 두 팀이
-같은 줄에 붙어 있어 어느 쪽이 내 팀인지도 한눈에 안 들어왔다. 지금은 두 벌로
-갈라져 있다:
+### Pilot strip (`PilotStrip.gd`) — enemy on top / ally at bottom
+All ten used to be crammed **inside the top panel** in 84px slots (ally left / score
+centre / enemy right). Faces were 76px squares so you couldn't tell who was who, and the
+two teams sat on the same row, so which one was your team wasn't obvious at a glance.
+Now it's split into two copies:
 
-| 스트립 | 위치 | 크기 | 입력 |
+| Strip | Position | Size | Input |
 |---|---|---|---|
-| 적 (`_enemy_strip`) | 캔버스 직속, `ENEMY_STRIP_RECT`(137, 46, 806×100) | 초상화 145×60 | 눌러서 상세 패널 |
-| 아군 (`_player_strip`) | 핸드 행 **아래**, `PLAYER_STRIP_RECT`(25, 1766, 1030×122) | 초상화 190×79 | 눌러서 상세 패널 |
+| Enemy (`_enemy_strip`) | direct child of the canvas, `ENEMY_STRIP_RECT` (137, 46, 806×100) | portrait 145×60 | press for detail panel |
+| Ally (`_player_strip`) | **below** the hand row, `PLAYER_STRIP_RECT` (25, 1766, 1030×122) | portrait 190×79 | press for detail panel |
 
-**적 스트립은 아군의 66%** 이고 가로 가운데에 앉는다. 크기가 네 번 바뀐 자리다:
-처음에는 730×84(초상화 130×54) 축소판이었고 — 같은 얼굴을 위아래에서 두 배 다른
-크기로 보여 주니 상대가 누구인지도 상대 성장치도 아군만큼 읽히지 않았다 — 그래서
-아군과 **똑같은** 1030×122 로 키웠다(상단 패널이 130 → **168** 로 커지고 그 아래
-사슬이 38px 내려간 것이 그때다). 다시 줄인 이유는 자리다: 오브젝트 등장
-시계가 전장 타일에서 이 패널로 올라오면서 **스트립 양옆에 아이콘 + 턴 수가 앉을
-칸**이 필요해졌다(`ObjectiveTimer.gd`). 성장치는 그대로 두 자릿수까지 읽히므로
-"내 것과 나란히 비교한다"는 원래 목적은 살아 있다.
+**The enemy strip is 66% of the ally one** and sits horizontally centred. Its size has
+changed four times: it started as a 730×84 shrunken version (portrait 130×54) — showing
+the same faces at two very different sizes top and bottom meant neither who the opponent
+was nor the opponent's growth points read as well as the ally side — so it was enlarged to
+**exactly** the ally's 1030×122 (that's when the top panel grew 130 → **168** and the chain
+below it moved down 38px). The reason for shrinking it again is space: when the objective
+spawn clocks moved from the battlefield tiles up to this panel, **cells for icon + turn
+count on either side of the strip** were needed (`ObjectiveTimer.gd`). Growth points are
+still readable up to two digits, so the original purpose of "compare side by side with
+mine" survives.
 
-그때의 60%(618×76, 초상화 108×45)는 얼굴이 누구인지 읽히는 하한을 밑돌았다.
-지금 값은 **초상화만 10% 키운 것**이다 — 초상화 폭은 칸 폭에서 유도되므로
-(`setup()` 이 `_cell_w − 16`) 키우는 길은 스트립 폭을 같은 비율로 미는 것뿐이고
-(618 → **672**), 높이도 eye 비(2.4:1)를 따라 76 → **81** 로 함께 올라간다.
-좌우 여백은 그만큼 줄어 시계 칸이 190 → **168** 이 됐고, 스트립 x 는 가운데
-정렬을 유지해 231 → **204** 로 옮겼다.
+The 60% of that time (618×76, portrait 108×45) fell below the minimum at which you can
+tell whose face it is. The current value **enlarges only the portrait by 10%** — portrait
+width is derived from cell width (`setup()` uses `_cell_w − 16`), so the only way to
+enlarge it is to push the strip width by the same ratio (618 → **672**), and the height
+follows the eye ratio (2.4:1) up from 76 → **81** too. The side margins shrank by that
+amount so the clock cells went 190 → **168**, and the strip x moved 231 → **204** to stay
+centred.
 
-**성장치 폰트는 두 스트립이 같다**(`ENEMY_SCORE_FONT` = `PLAYER_SCORE_FONT`
-= 20). 초상화는 아군이 더 크지만 그 숫자는 **내 것과 나란히 견주라고** 있는
-값이라, 크기가 다르면 같은 줄에서 읽는 두 수의 무게가 달라진다 — 얼굴은 작아도
-되고 숫자는 안 된다. 예전 14 는 스트립을 60% 로 줄이던 시절에 칸 폭에서 유도한
-값이었다.
+**The growth point font is the same on both strips** (`ENEMY_SCORE_FONT` =
+`PLAYER_SCORE_FONT` = 20). The ally portraits are bigger, but that number exists **to be
+compared side by side with mine**, so different sizes would give the two numbers read on
+the same line different weight — faces may be small, numbers may not. The old 14 was a
+value derived from cell width back when the strip was shrunk to 60%.
 
-**역할 태그는 삭제됐다.** 초상화 좌하단에 `T` / `F` / `A` 한 글자를 어두운 받침
-위에 찍던 칸인데, 스트립의 **자리 순서 자체가 이미 역할**이다
-(`GameEnums.ROLE_DISPLAY_ORDER` — 탑 · 정글 · 미드 · 원딜 · 서폿, 아웃게임
-화면들과 같은 표). 같은 말을 두 번 하면서 얼굴 아래쪽을 가리기만 했다. 되살릴
-때는 `ROLE_TAG_*` 세 상수와 `_build_cell` 의 `tag_bg` / `role_lbl` 두 노드를
-함께 되돌려야 한다.
+**The role tag was deleted.** It was a cell that printed a single letter `T` / `F` / `A`
+on a dark plate at the portrait's bottom-left, but **the strip's seat order itself
+already is the role** (`GameEnums.ROLE_DISPLAY_ORDER` — 탑 · 정글 · 미드 · 원딜 · 서폿
+(top · jungle · mid · ADC · support), the same table as the outgame screens). It said the
+same thing twice and just covered the bottom of the face. To bring it back, restore the
+three `ROLE_TAG_*` constants and the two nodes `tag_bg` / `role_lbl` in `_build_cell`
+together.
 
-**양쪽 다 눌린다.** 적 파일럿도 아군과 같은 게이트(`PilotDetailPanel.can_open`)에 같은 내용
-(인게임 · 파일럿 · 메크)으로 열린다 — 상대 로스터는 이미 `match_ctx.enemy_roster`
-로 들어와 있어 `BattleSim.player_data_for` 가 인덱스 5..9 로 그대로 찾아 준다.
+**Both sides are pressable.** Enemy pilots open through the same gate as allies
+(`PilotDetailPanel.can_open`) with the same content (in-game · pilot · mech (메크)) — the
+opponent roster has already come in as `match_ctx.enemy_roster`, so
+`BattleSim.player_data_for` finds it directly at indices 5..9.
 
-한 칸의 구성은 위에서 아래로 **눈높이 초상화 → 체력 바 → 성장치 숫자**다.
+A cell is, top to bottom, **eye-level portrait → HP bar → growth point number**.
 
-- **눈높이 초상화** — `PilotImages.eye_for(pilot_id)`. `eye/N_eye.png` 는
-  **양 눈이 보이게 가로로 길게 자른 480×200 크롭**이고, 칸 높이는 그 비율
-  (`EYE_ASPECT` = 2.4)에서 유도한다 — 임의 높이로 늘리면 얼굴이 찌그러진다.
-  이미지가 없으면(단독 실행 / INTL) 뒤판 `ColorRect` 가 그대로 보인다.
-  테두리는 팀색 `Panel` 프레임이고, 쓰러진 파일럿은 `modulate` 로 어두워지며
-  **부활까지 남은 턴 수**가 초상화 한가운데 큰 폰트로 찍힌다.
-- **체력 바** — **`ColorRect` 두 장**(뒤판 + 채움)이다. **`ProgressBar` 를 쓰면
-  안 된다**: 테마 스타일박스의 컨텐트 마진에서 최소 크기를 계산해 `size` 를
-  거기까지 끌어올리므로(기본 테마 약 24px), 6~10px 짜리 바를 요청해도 24px 로
-  그려져 바로 아래의 성장치 라벨을 덮어썼다(실측 확인). 보호막이 붙어 있으면
-  채움이 노란색으로 바뀐다 — 바를 이어 붙이지 않는 이유는 6~10px 로 얇아 두
-  구간이 구분되지 않아서다.
-- **성장치** — `BattleSim.fmt_score(p.score)` → `"24.9k"`(자릿수가 늘면 소수 자리를 줄인다: `1.00k` → `24.9k` → `125k`). **게이지가 아니라
-  숫자다** — 상한이 없어 채울 바탕이 없다. 개시 `1.00k` 에서 50턴 `25.00k`,
-  잘 큰 캐리는 `40.00k` 을 넘긴다. MOBA 중계의 골드 표시에 해당하고, **이 숫자가
-  곧 그 파일럿의 공격력 배율**이다(25k = atk ×3.0) — 두 줄 위의 체력 바가 실제로
-  길어지는 것과 같은 성장을 숫자 쪽에서 읽는 것이다. 적립 규칙은 `BattleSim` 의
-  `SCORE_*` 절 참고.
+- **Eye-level portrait** — `PilotImages.eye_for(pilot_id)`. `eye/N_eye.png` is a
+  **480×200 crop cut wide horizontally so both eyes show**, and the cell height is derived
+  from that ratio (`EYE_ASPECT` = 2.4) — stretching to an arbitrary height distorts the
+  face. With no image (standalone run / INTL) the backing `ColorRect` simply shows.
+  The border is a team-coloured `Panel` frame; a downed pilot is darkened via `modulate`
+  and the **number of turns until revival** is printed in a large font in the middle of
+  the portrait.
+- **HP bar** — **two `ColorRect`s** (backing + fill). **Do not use `ProgressBar`**: it
+  computes a minimum size from the theme stylebox's content margins and pulls `size` up to
+  it (about 24px with the default theme), so even when a 6–10px bar was requested it drew
+  at 24px and overwrote the growth point label right below (confirmed by measurement (실측)).
+  When a shield is attached the fill turns yellow — the reason for not appending a segment
+  to the bar is that at 6–10px it's too thin for the two sections to be distinguishable.
+- **Growth points** — `BattleSim.fmt_score(p.score)` → `"24.9k"` (decimal places drop as
+  digits grow: `1.00k` → `24.9k` → `125k`). **It's a number, not a gauge** — there's no
+  cap, so there's nothing to fill against. It opens at `SCORE_START` (const.csv) and climbs
+  through the match, a well-fed carry well ahead of the rest. It corresponds to the gold display of a MOBA broadcast,
+  and **this number drives that pilot's attack multiplier** (`GROWTH_ATK_PER_SCORE`, const.csv) — it reads, on the
+  number side, the same growth that makes the HP bar two rows up actually get longer. For
+  the accrual rules see the `SCORE_*` section of `BattleSim`.
 
-칸 순서는 **전장을 왼쪽부터 오른쪽으로 훑은 순서**다 — **좌측 → 정글 → 중앙 →
-우측 ×2**(`HudBuilder.LANE_SEAT_ORDER`). `LanePosition` 의 열거값 순서
-(LEFT · CENTER · RIGHT · GUERRILLA)를 그대로 쓰면 정글러가 우측 라이너 **뒤**
-다섯 번째 칸에 앉는데, 정글은 지도에서 좌우 레인 **사이**라 그 자리는 전장
-어디와도 대응하지 않는다. 정렬은 **`_bs.pilots` 의 사본에** 한다 — 원본은 스폰 순서(= 역할 순서)를
-유지해야 `BattleSim.player_data_for` 가 그 인덱스로 로스터를 찾을 수 있다.
+Cell order is **the order you sweep the battlefield from left to right** — **left →
+jungle → centre → right ×2** (`HudBuilder.LANE_SEAT_ORDER`). Using the `LanePosition` enum
+order as-is (LEFT · CENTER · RIGHT · GUERRILLA) seats the jungler in the fifth cell
+**after** the right laner, but the jungle lies **between** the left and right lanes on the
+map, so that seat corresponds to nowhere on the battlefield. Sorting is done **on a copy
+of `_bs.pilots`** — the original must keep spawn order (= role order) so that
+`BattleSim.player_data_for` can find the roster by that index.
 
-**하단 스트립의 y(1766)는 카드 밑단에서 계산해 나온 값이다.** 부채꼴의 양 끝
-카드는 가운데보다 21.4px 아래로 처지고(12장 기준) 호버/선택 시
-`Card.HOVER_SCALE`(1.2)로 커지므로 최악의 경우 카드 밑단이 y ≈ 1763 까지
-내려온다. 1724 에 두었더니 카드가 초상화 윗부분을 덮었다(실측 확인).
+**The bottom strip's y (1766) is computed from the bottom edge of the cards.** The cards
+at both ends of the fan sag 21.4px below the middle (at 12 cards) and grow by
+`Card.HOVER_SCALE` (1.2) when hovered/selected, so in the worst case the card's bottom edge
+comes down to y ≈ 1763. At 1724 the cards covered the top of the portraits (confirmed by
+measurement).
 
-**아군 스트립 뒤판** — `PlayerStripBackdrop`, 스트립 영역을 `PLAYER_BG_PAD`
-(10px) 만큼 사방으로 넓힌 짙은 `Panel` 한 장(y 1756..1898). 색과 테두리는 상단
-패널과 같다. 적 스트립은 상단 패널 위에 앉아 있어 처음부터 받침이 있었지만,
-아군 스트립은 맨 화면 위에 떠 있어 얼굴 · 체력 바 · 성장치 세 줄이 배경 없이
-흩어져 보였다 — 특히 성장치 숫자는 받침이 없으면 어디까지가 한 파일럿의 칸인지가
-읽히지 않는다. **`_build_player_strip()` 이 스트립보다 먼저 붙인다**(형제
-z-order 가 곧 자식 인덱스라, 나중에 붙으면 판이 초상화를 덮는다) 그리고
-**`set_strip_visible(0, on)` 이 스트립과 함께 숨긴다** — 상세 패널이 스트립만
-치우면 빈 판이 딤 위에 덩그러니 남는다.
+**Ally strip backplate** — `PlayerStripBackdrop`, one dark `Panel` that extends the strip
+area by `PLAYER_BG_PAD` (10px) on every side (y 1756..1898). Colour and border match the
+top panel. The enemy strip sits on the top panel so it had backing from the start, but the
+ally strip floated directly on the screen, so the three rows face · HP bar · growth points
+looked scattered with no background — growth point numbers in particular, without backing,
+don't show where one pilot's cell ends. **`_build_player_strip()` adds it before the
+strip** (sibling z-order is child index, so if added later the plate covers the portraits)
+and **`set_strip_visible(0, on)` hides it together with the strip** — if the detail panel
+cleared only the strip, an empty plate would be left alone on top of the dim.
 
-**입력 게이트**: `set_interactive_enabled(pilot_detail.can_open())` — 작전 단계 ·
-자동 진행(BATTLE)이 아니면(교전 무대 · 개시 전 · 경기 종료) 히트 버튼이 `disabled` 다. 히트 판정은 칸 전체를 덮는 투명 `Button` 이
-가져간다(`Label` / `TextureRect` 는 클래스 기본이 `MOUSE_FILTER_IGNORE` 라
-스스로 클릭을 받지 못한다).
+**Input gate**: `set_interactive_enabled(pilot_detail.can_open())` — outside the
+operation phase · auto-run (BATTLE) (engage stage (교전 무대) · before the opening · match
+over), the hit buttons are `disabled`. Hit testing is taken by a transparent `Button`
+covering the whole cell (`Label` / `TextureRect` default to `MOUSE_FILTER_IGNORE` by
+class, so they can't receive clicks themselves).
 
-### 오브젝트 시계 (`ObjectiveTimer.gd`) — 적 스트립 양옆
-**아이콘 하나 + 남은 턴 수** 한 쌍짜리 `Control` 이 둘. 왼쪽이 전령(보랏빛 깃발),
-오른쪽이 용(주홍 날개) — **전장에서 두 오브젝트가 서는 칸의 좌우와 같은 배치**라
-자리가 곧 이름이다. 그래서 이름표가 없다.
+### Objective clocks (`ObjectiveTimer.gd`) — either side of the enemy strip
+Two `Control`s, each a pair of **one icon + turns remaining**. Left is Herald (purple flag),
+right is Dragon (vermilion wings) — **the same left/right arrangement as the cells where
+the two objectives stand on the battlefield**, so the position is the name. That's why
+there are no name labels.
 
-- 상태는 `ObjectiveSystem.turns_until_cell(cell)` 하나에서만 온다. 갱신은
-  `HudBuilder.update_hud` 가 `queue_redraw()` 를 부르는 것뿐이다.
-- **아이콘은 이미지가 아니라 도형이다**(킬로그 글리프와 같은 방식). 좌표는 전부
-  **64×64 기준**으로 적고 `ICON_SIZE / 64` 배율만 곱해 옮기므로, 크기를 바꿀 때
-  숫자를 다시 짤 필요가 없다.
-- **칸은 적 스트립이 남긴 여백이 정한다.** 스트립이 20% 커지면서 이 칸은
-  168 → **101×60** 이 됐고, 시계 쪽은 그 폭에 맞춰 두 군데를 줄였다 —
-  아이콘과 숫자 사이 간격 `ICON_TEXT_GAP` 10 → **4**, 그리고 숫자 옆의
-  **"턴" 글자를 통째로 삭제**(`UNIT_FONT_SIZE` / `UNIT_COLOR` 함께 사라졌다).
-  아이콘 옆에 붙은 숫자가 남은 턴 수 말고 무엇일 수는 없으므로 그 두 글자는
-  숫자를 밀어내기만 했다. 얼굴이 먼저 읽혀야 하는 패널이라 자리를 다툴 때
-  물러나는 쪽은 언제나 시계다.
-- `ICON_SIZE` 는 **49** 그대로다. 한때는 아이콘 62 에 칸 높이가 스트립 띠
-  전체(122)여서 — 클수록 곁눈으로 읽힌다는 이유였다 — 시계가 초상화보다
-  위아래로 튀어나와 상단 패널에서 가장 큰 물체가 됐고, 정작 얼굴로 가야 할
-  시선을 먼저 잡아챘다. 지금은 아이콘이 초상화(60px)보다 살짝 작고 세로
-  가운데에 놓여 좌 시계 · 얼굴 다섯 · 우 시계가 한 줄로 읽힌다.
-- **누를 수 있다.** `mouse_filter` 가 IGNORE → **STOP** 이 되고 `timer_pressed(kind)`
-  를 쏜다. `HudBuilder._on_obj_timer_pressed` 가 받아
-  `BattleSim.objective_reward.toggle(kind)` 를 부른다 — 같은 시계를 다시 누르면
-  닫히므로 여는 손잡이가 곧 닫는 손잡이다.
-- 용의 날개는 **꼭짓점 넷짜리 매끈한 삼각**이다. 처음에는 박쥐 날개처럼 아래에
-  톱니를 넣었는데(꼭짓점 여덟) 그 크기로 줄이면 톱니가 뭉개져 **나뭇잎 한 장**으로
-  보였다 — 이 크기에서 실루엣을 만드는 것은 디테일이 아니라 큰 삼각형 둘의
-  각도다.
-- 숫자는 남은 폭 한가운데에 놓는다(한 자리 ↔ 두 자리에서 자리가 흔들리지
-  않게). 패널 배경이 짙어 얇은 글자는 묻히므로 검은 외곽선을 먼저 깐다.
+- State comes only from `ObjectiveSystem.turns_until_cell(cell)`. Updating is just
+  `HudBuilder.update_hud` calling `queue_redraw()`.
+- **Icons are shapes, not images** (same approach as the kill log glyphs). All
+  coordinates are written **on a 64×64 basis** and moved by multiplying only by
+  `ICON_SIZE / 64`, so changing the size doesn't require redoing the numbers.
+- **The cell is set by the margin the enemy strip leaves.** When the strip grew 20%, this
+  cell became 168 → **101×60**, and the clock was trimmed in two places to fit that width —
+  the icon-to-number gap `ICON_TEXT_GAP` 10 → **4**, and the **"턴" (turn) text next to the
+  number was deleted entirely** (`UNIT_FONT_SIZE` / `UNIT_COLOR` disappeared with it). A
+  number stuck next to the icon can't be anything other than turns remaining, so that text
+  only pushed the number away. This is a panel where faces must read first, so when
+  fighting for space, the clock always gives way.
+- `ICON_SIZE` stays **49**. At one point the icon was 62 and the cell height was the whole
+  strip band (122) — on the grounds that bigger reads better in peripheral vision — so the
+  clocks stuck out above and below the portraits, became the biggest object in the top
+  panel, and grabbed the gaze that should go to the faces first. Now the icon is slightly
+  smaller than the portrait (60px) and vertically centred, so left clock · five faces ·
+  right clock read as one row.
+- **It can be pressed.** `mouse_filter` went IGNORE → **STOP** and it fires
+  `timer_pressed(kind)`. `HudBuilder._on_obj_timer_pressed` receives it and calls
+  `BattleSim.objective_reward.toggle(kind)` — pressing the same clock again closes it, so
+  the handle that opens is also the handle that closes.
+- Dragon's wings are **smooth four-vertex triangles**. At first they had serrations
+  underneath like bat wings (eight vertices), but shrunk to that size the serrations mushed
+  together and looked like **a single leaf** — at this size what makes the silhouette is
+  not detail but the angle of two big triangles.
+- The number is placed in the middle of the remaining width (so its position doesn't
+  wobble between one and two digits). The panel background is dark and thin text gets
+  buried, so a black outline is laid down first.
 
-한때 이 숫자는 **전장 타일 위**에 있었다(`BattleRenderer._draw_objectives`).
-그 칸이 평범한 정글 칸으로 돌아오면서 캠프 아웃라인 · 점령 면 색 · 파일럿
-초상화가 이미 그 칸을 쓰고 있었고, 글자 두 줄이 넷째 손님이 됐다.
+This number was once **on the battlefield tile** (`BattleRenderer._draw_objectives`).
+When that cell went back to being an ordinary jungle cell, the camp outline · capture fill
+colour · pilot portraits were already using it, and two lines of text became a fourth
+guest.
 
-### 오브젝트 보상 미리보기 (`ObjectiveRewardPopup.gd`)
-시계를 누르면 열리는 **정보 팝업**. 자기 `CanvasLayer`(12)에 그린다.
-
-```
-[풀스크린 딤 α 0.78 — 아무 데나 누르면 닫힌다]
-└─ 판 560×내용 (화면 한가운데, 테두리 = 오브젝트 색)
-     ├ 전령 / 용                    (40pt, 보랏빛 / 주홍)
-     ├ N턴 뒤 등장                  (24pt)  ← ObjectiveSystem.turns_until_cell
-     ├ 보상: [전령 제압] — …        (24pt)  ← ObjectiveSystem.reward_text
-     ├ 보상 카드 한 장 (Card.tscn 원본 크기) + 여러 장이면 오른쪽에 ×N
-     ├ 획득 즉시 손패로 / 덱에 섞여  (22pt)
-     └ [닫기]
-```
-
-- **왜 있는가.** 오브젝트는 참여 / 미참여를 고르는 사건인데, 무엇을 주는지는
-  결판이 임박한 그 턴에 뜨는 결정 창의 한 줄 말고는 볼 자리가 경기 내내 없었다.
-  라인을 밀지 정글러를 붙일지는 보상의 값어치를 알아야 정해진다.
-- **전장을 붙잡지 않는다.** `ObjectiveSystem` 의 참여 결정 창과 달리 순수
-  정보이므로 `BattleSim._battle_tick_held()` 가 이 팝업을 읽지 않는다 — BATTLE
-  자동 틱도 MM:SS 시계도 평소대로 흐른다. 대신 딤이 STOP 이라 뒤쪽 입력은 삼킨다.
-- **카드는 진짜 `CardData` 다** — `CardPhaseManager.make_objective_card(id)` 가
-  `cards.csv` 에서 그대로 집어 온다(보상 카드는 `pool = 0` 이라 이 경로로만
-  세상에 나온다). 따로 그린 그림이면 실제로 손에 들어온 카드와 같은 것인지
-  확인할 길이 없다. 카드에 시전자가 없으므로(`owner_pilot == null`) 초상화 자리는
-  빈다 — 손패에서 보게 될 모습 그대로다.
-- 카드가 DB 에서 안 나오면(`make_objective_card` → null) 자리에 한 줄 안내만
-  세운다. 팝업 하나 때문에 매치를 세우지 않는다.
-
-### 파일럿 상세 패널 (`PilotDetailPanel.gd`)
-스트립의 얼굴(**아군 하단 / 적 상단 양쪽**)을 누르면 열리는 **모달**. 자기
-`CanvasLayer`(13)에 그리므로 버리기(10) / 대상 지정(11) / 열람·교전(12) 위다.
+### Objective reward preview (`ObjectiveRewardPopup.gd`)
+An **info popup** that opens when a clock is pressed. Drawn on its own `CanvasLayer` (12).
 
 ```
-[풀스크린 딤 α 0.88]
-├─ 아트 2장 (ArtHolder) — 앞 / 뒤 두 자리를 파일럿과 메크가 나눠 갖는다
-│    앞: 밝게, 가로 중심 ART_FRONT_CENTER_X(320), 높이 ART_H(1400)
-│    뒤: +ART_BACK_SHIFT_PX(400) 오른쪽, ×ART_BACK_SCALE(0.90), ART_BACK_TINT 로 딤드
-│    둘 다 아래끝이 ART_BOTTOM(2010) — 화면(1920)보다 아래라 **하단이 잘린다**
-├─ (인게임 탭) 지속 효과 썸네일 — **일러스트 좌측 하단**, x 26 부터, 68×68,
-│    걸려 있는 것만. 제목 없음. 아래끝을 카드 줄 제목에 붙이고 **위로** 자란다
-├─ 머리글 (자기 받침 Panel, y HDR_TOP 424 .. HDR_BOTTOM 562) — **탭과 분리, 늘 같은 내용**
-│    파일럿명 (40pt) ─────────────────────────────────  성장치 (40pt, 우측)
-│    기체명   (24pt, 아래 줄)
-├─ 탭 3개  [인게임][파일럿][메크]  STAT_X 600, 폭 452/3, TAB_H 62, 위끝 = 머리글 아래끝
-├─ 우: 상세 패널  STAT_X 600, STAT_W 452, STAT_TOP 650 (받침 Panel 이 내용 높이에 맞춰 자람)
-│    ├ 스탯 칩 3열 × N행  (칩 141×92, 위 작게 이름 / 아래 크게 **최종 값**)
-│    └ (인게임 탭) 파일럿 스킬 블록 — 이름 + 타입 배지 / 키워드 / 설명문 / 상태 / [사용]
-├─ 하: [닫기]  받침 아래끝 + BTN_GAP_Y(24) — 탭마다 함께 내려온다
-└─ 화면 하단 전체 폭: **보유 카드 부채꼴** — Card.tscn ×1.60 = 256×352,
-     제목 한 줄(가운데) + 손패와 같은 부채꼴. 6장이면 간격 144 · 양 끝 ±8.6°
+[full-screen dim α 0.78 — tap anywhere to close]
+└─ plate 560×content (centre of screen, border = objective colour)
+     ├ 전령 / 용                    (40pt, purple / vermilion)
+     ├ N턴 뒤 등장                  (24pt)  ← ObjectiveSystem.turns_until_cell   ("spawns in N turns")
+     ├ 보상: [전령 제압] — …        (24pt)  ← ObjectiveSystem.reward_text        ("Reward: [Herald Subdued] — …")
+     ├ one reward card (Card.tscn at native size) + ×N on the right if several
+     ├ 획득 즉시 손패로 / 덱에 섞여  (22pt)   ("straight into hand on capture / shuffled into deck")
+     └ [닫기]   (Close)
 ```
 
-| 탭 | 앞에 선 아트 | 칩 | 그 아래 | 하단 부채꼴 |
+- **Why it exists.** An objective is an event where you choose to participate / not
+  participate, but what it gives was nowhere to be seen throughout the match, except one
+  line in the decision window that pops up on the turn the showdown is imminent. Whether to
+  push the lane or send the jungler depends on knowing what the reward is worth.
+- **It doesn't hold the battlefield.** Unlike `ObjectiveSystem`'s participation decision
+  window it's pure information, so `BattleSim._battle_tick_held()` does not read this
+  popup — the BATTLE auto-tick and the MM:SS clock keep running as usual. Instead the dim
+  is STOP, so it swallows input behind it.
+- **The card is a real `CardData`** — `CardPhaseManager.make_objective_card(id)` takes it
+  straight from `cards.csv` (reward cards are `pool = 0`, so this is the only path by which
+  they come into the world). A separately drawn picture would give no way to confirm it's
+  the same thing as the card that actually lands in hand. The card has no caster (시전자)
+  (`owner_pilot == null`), so the portrait spot is empty — exactly how it'll look in hand.
+- If the card doesn't come out of the DB (`make_objective_card` → null), only a one-line
+  notice stands in its place. A single popup doesn't stop the match.
+
+### Pilot detail panel (`PilotDetailPanel.gd`)
+A **modal** that opens when you press a face on a strip (**both ally bottom / enemy top**).
+It draws on its own `CanvasLayer` (13), so it sits above discard (10) / targeting (11) /
+browse·engage (12).
+
+```
+[full-screen dim α 0.88]
+├─ 2 arts (ArtHolder) — pilot and mech share the two slots front / back
+│    front: bright, horizontal centre ART_FRONT_CENTER_X(320), height ART_H(1400)
+│    back: +ART_BACK_SHIFT_PX(400) to the right, ×ART_BACK_SCALE(0.90), dimmed with ART_BACK_TINT
+│    both have their bottom at ART_BOTTOM(2010) — below the screen (1920), so **the bottom is cut off**
+├─ (in-game tab) lasting effect thumbnails — **bottom-left of the illustration**, from x 26, 68×68,
+│    only those currently applied. No title. Bottom edge attached to the card row title; grows **upward**
+├─ header (own backing Panel, y HDR_TOP 424 .. HDR_BOTTOM 562) — **separate from tabs, always the same content**
+│    pilot name (40pt) ─────────────────────────────────  growth points (40pt, right)
+│    mech name    (24pt, line below)
+├─ 3 tabs  [인게임][파일럿][메크] (In-game / Pilot / Mech)  STAT_X 600, width 452/3, TAB_H 62, top = header bottom
+├─ right: detail panel  STAT_X 600, STAT_W 452, STAT_TOP 650 (backing Panel grows to fit content height)
+│    ├ stat chips 3 columns × N rows  (chip 141×92, small name on top / large **final value** below)
+│    └ (in-game tab) pilot skill block — name + type badge / keywords / description / state / [사용] (Use)
+├─ bottom: [닫기] (Close)  backing bottom + BTN_GAP_Y(24) — moves down with each tab
+└─ full width at screen bottom: **fan of held cards** — Card.tscn ×1.60 = 256×352,
+     one title line (centred) + the same fan as the hand. With 6 cards: spacing 144 · ends ±8.6°
+```
+
+| Tab | Art in front | Chips | Below that | Bottom fan |
 |---|---|---|---|---|
-| 인게임 | 파일럿 | 체력 · 공격력 · 성장 · 전장/교전 명중 · 회피 · 존재감 | (사망 시) `부활까지 N턴` → **파일럿 스킬** | **보유 카드 6장** |
-| 파일럿 | 파일럿 | 선수 스탯 여섯 | — | 파일럿 카드 3장 |
-| 메크 | 메크 | 체력 · 공격력 · 존재감 | — | 메크 카드 (기체마다 2~7장) |
+| 인게임 (In-game) | pilot | HP · attack · growth · battlefield/engage hit (명중) · evasion · presence (체력 · 공격력 · 성장 · 전장/교전 명중 · 회피 · 존재감) | (when dead) `부활까지 N턴` → **pilot skill** | **all 6 held cards** |
+| 파일럿 (Pilot) | pilot | six player (선수) stats | — | 3 pilot cards |
+| 메크 (Mech) | mech | HP · attack · presence (체력 · 공격력 · 존재감) | — | mech cards (2–7 per mech) |
 
-- **머리글은 탭과 분리돼 있다**(`_build_header_block`, `_build` 에서 **한 번만**
-  돈다). 이름 · 기체명 · 성장치는 어느 탭을 보든 같은 파일럿의 것이므로 탭이
-  바뀔 때마다 다시 세울 이유가 없다. 예전에는 이 줄이 본문 안에 있었고 메크
-  탭에서 제목이 기체명으로 바뀌며 **파일럿 이름과 성장치가 화면에서 통째로
-  사라졌다** — 지금 누가 열려 있는지가 탭에 따라 흔들린 셈이다. 탭이 바꾸는
-  것은 그 아래 상세 패널 하나뿐이다.
-- **기체명은 이름 아래 줄에 작게, 늘 보인다.** 메크 탭까지 들어가야 알 수 있는
-  값이 아니다. **예전에는 이름 오른쪽에 `HBoxContainer` 로 이어 붙였는데**, 줄의
-  시작점이 곧 이름 폭이라 파일럿마다 기체명이 다른 x 에서 시작했다 — 어디를 보면
-  기체명인지가 파일럿마다 흔들린 셈이다. 두 줄로 쌓으면 시작점이 언제나 같고
-  글자 폭을 잴 일도 없어져 컨테이너 자체가 사라졌다(각 줄은 `clip_text`). 두 줄이
-  들어가느라 `HDR_TOP` 이 452 → **424** 로 올라갔다 — `HDR_BOTTOM`(562)은 탭 바의
-  윗변이라 못 박혀 있어서 늘어난 만큼은 위로만 갈 수 있다.
-- **인게임 탭은 카드 6장을 다 보여 준다**(파일럿 3 → 메크 3 순서라 부채꼴 왼쪽
-  절반이 사람, 오른쪽 절반이 기체다). 이 파일럿이 무엇을 들고 시작했는지는 한
-  화면에 있어야 하는 정보인데, 예전처럼 두 탭에 3장씩 갈라 두면 여섯 장을 견주려면
-  탭을 오가야 했다. 파일럿 / 메크 탭도 같은 자리에 그 탭의 카드가 선다.
+- **The header is separate from the tabs** (`_build_header_block`, runs **only once** in
+  `_build`). Name · mech name · growth points belong to the same pilot whichever tab you
+  view, so there's no reason to rebuild them on every tab change. This line used to be
+  inside the body, and on the mech tab the title changed to the mech name, so **the pilot
+  name and growth points vanished from the screen entirely** — in effect, who was open
+  wobbled with the tab. The only thing a tab changes is the detail panel below it.
+- **The mech name is small on the line below the name, always visible.** It's not a value
+  you should have to go into the mech tab to learn. **It used to be appended to the right
+  of the name with an `HBoxContainer`**, and since the line's start point was the name's
+  width, the mech name started at a different x for each pilot — in effect, where to look
+  for the mech name wobbled per pilot. Stacking two lines makes the start point always the
+  same and removes the need to measure text width, so the container itself disappeared
+  (each line uses `clip_text`). To fit two lines `HDR_TOP` went up 452 → **424** —
+  `HDR_BOTTOM` (562) is the top edge of the tab bar and is pinned, so the extra height
+  could only go upward.
+- **The in-game tab shows all 6 cards** (pilot 3 → mech 3 order, so the left half of the
+  fan is the person and the right half is the machine). What this pilot started holding is
+  information that must be on one screen; splitting 3 cards each across two tabs as before
+  meant switching tabs to compare the six. The pilot / mech tabs also put that tab's cards
+  in the same spot.
 
-- **스탯은 줄이 아니라 칩이다.** 예전에는 `키 ─ 값` 두 칸짜리 행이 세로로 열몇
-  줄 이어졌는데, 그러면 (1) 어느 값이 중요한지가 순서 말고는 없었고 (2) 값 뒤에
-  `(기본 160)` `(7턴)` `(기본 50 / 50)` 같은 괄호가 줄줄이 붙어 정작 **지금
-  얼마인가**를 읽는 데 시간이 걸렸다. 지금은 칩 한 칸이 **최종 값 하나**만 크게
-  들고 있다. `_row` / `_section` / `ROW_H` / `KEY_FRACTION` / `SECTION_GAP` 은
-  그때 함께 **삭제됐다**.
-#### 정보 패널 — 스탯 칩 · 지속 효과 · 카드가 나눠 쓰는 판 하나
-셋 다 누르면 **정보 칼럼 왼쪽에** 같은 판(`MENU_W` 372)이 펼쳐진다. "지금 무엇을
-보고 있는가"는 한 번에 하나여야 하는 질문이라, 판을 따로 두면 스탯 설명과 효과
-설명이 동시에 떠서 어느 것이 방금 누른 것인지가 흐려진다. 왼쪽에 펼치는 이유는
-둘이다 — 오른쪽은 화면 끝(1080)까지 28px 뿐이고, 누른 것 위에 겹쳐 띄우면 방금
-누른 칩이 자기 설명에 가려진다.
+- **Stats are chips, not rows.** It used to be two-cell `key ─ value` rows running a dozen
+  or so lines down, which meant (1) nothing but order said which value mattered and (2)
+  brackets like `(기본 N)` `(N턴)` `(기본 N / N)` (base N / N turns / base N / N)
+  trailed behind the values, so reading **what it is right now** took time. Now one chip
+  carries just **one final value**, large. `_row` / `_section` / `ROW_H` / `KEY_FRACTION` /
+  `SECTION_GAP` were **deleted** at the same time.
+#### Info panel — one plate shared by stat chips · lasting effects · cards
+Pressing any of the three opens the same plate (`MENU_W` 372) **to the left of the info
+column**. "What am I looking at now" must be one thing at a time; with separate plates, a
+stat explanation and an effect explanation would show at once and blur which one you just
+pressed. There are two reasons for opening to the left — on the right there are only 28px
+to the screen edge (1080), and overlaying it on the pressed item would hide the chip you
+just pressed under its own explanation.
 
-세로 자리는 **누른 것과 같은 높이**이되 `card:` 키만 예외다. 칩과 효과는 칼럼 ·
-화면 왼쪽에 있어 그 규칙이 옆의 빈 자리를 가리키지만, 카드는 화면 하단 부채꼴에
-있어 같은 규칙이 **방금 누른 카드 위**를 가리킨다 — 판이 그 카드를 통째로 덮는다.
-그래서 카드일 때는 카드 줄 제목 위(`MENU_CARD_GAP_Y` 14)로 올려 붙인다. x 는
-그대로 왼쪽이라 오른쪽 아래의 닫기 버튼을 가리지 않는다.
+The vertical position is **the same height as the pressed item**, with `card:` keys as the
+only exception. Chips and effects are on the left side of the column · screen, so that rule
+points to the empty space beside them, but cards are in the fan at the bottom of the screen,
+so the same rule points **on top of the card you just pressed** — the plate covers that card
+entirely. So for cards it is lifted to sit above the card row title (`MENU_CARD_GAP_Y` 14).
+x stays on the left, so it doesn't cover the close button at bottom-right.
 
-**누를 수 있는 것은 전부 `_targets` 한 표에 모인다** — `key → {button, style, …}`.
-키 접두사가 종류를 가른다.
+**Everything pressable is collected in one table, `_targets`** — `key → {button, style, …}`.
+The key prefix distinguishes the kind.
 
-| 키 | 무엇 | 제목 | 행(`_menu_rows`) | 설명(`_menu_note`) |
+| Key | What | Title | Rows (`_menu_rows`) | Note (`_menu_note`) |
 |---|---|---|---|---|
-| `hp` `atk` `growth` … | 스탯 칩 | 칩 이름 | 기본값 · 증가분 · 최종 | 그 값이 뭘 가르는가 |
-| `fx:lane` `fx:rate` `fx:atk` `fx:shield` | 지속 효과 (슬롯) | 온전한 효과 이름 | 어디에 곱해지는가 · 남은 시간 · 최종값 | 규칙 한 줄 |
-| `fx:src:<종류>\|<카드>` `fx:rest:<종류>` | 지속 효과 (카드별 · 잔여분) | 카드 이름 / 종류 이름 | 이 효과 · 남은 시간 · **그 종류의 합계** · 최종값 | 규칙 한 줄 |
-| `card:<slot>:<i>` | 카드 | 카드 이름 | 비용 · 종류 · 분류 · 포지션 · 키워드 · 토큰(파일럿 카드만 분류/포지션, 토큰은 쓰는 카드만) | **카드 설명문 그대로** |
+| `hp` `atk` `growth` … | stat chip | chip name | base value · increase · final | what that value decides |
+| `fx:lane` `fx:rate` `fx:atk` `fx:shield` | lasting effect (slot) | full effect name | where it multiplies · time remaining · final value | one-line rule |
+| `fx:src:<종류>\|<카드>` `fx:rest:<종류>` | lasting effect (per card · remainder) | card name / kind name | this effect · time remaining · **total for that kind** · final value | one-line rule |
+| `card:<slot>:<i>` | card | card name | cost · type · category · position · keywords · tokens (category/position only for pilot cards, tokens only for cards that use them) | **the card's description text verbatim** |
 
-- **뒤판이 클릭을 대신 전달한다**(`_on_menu_backdrop_input`). 뒤판은 여전히 전체
-  화면 STOP 이지만, 예전처럼 무조건 닫지 않고 그 좌표에 있던 **대상 버튼 / 탭 /
-  닫기**를 찾아 대신 눌러 준다. 예전에는 공격력 설명을 열어 둔 채 명중 칩을
-  누르면 첫 클릭이 닫는 데 쓰여 **한 번 더** 눌러야 했다 — 스탯 여섯 개를
-  훑는 동안 클릭이 두 배가 되고 화면이 열림↔닫힘을 반복해 깜빡였다. 정보 패널은
-  서로 갈아타는 것이 기본 동작이다. 아무것도 없는 곳을 누르면 그때 닫힌다.
-  좌표 판정이 단순한 이유는 `_menu_root` · `_body_root` · `_root` 가 모두 (0,0)
-  에 놓인 전체 화면 `Control` 이라 버튼의 `position` 을 그대로 견주면 되기
-  때문이다.
-- **판 높이는 내용이 정한다** — 행 수 × `MENU_ROW_H` + 설명 글의 **실제** 높이
-  (`_text_height`). 설명 높이를 잴 때 **줄바꿈 플래그를 Label 과 맞춰야 한다**:
-  `get_multiline_string_size` 의 기본값은 `BREAK_MANDATORY | BREAK_WORD_BOUND`
-  인데 라벨은 `AUTOWRAP_WORD_SMART`(= `BREAK_GRAPHEME_BOUND` 가 더 붙는다)라,
-  기본값으로 재면 라벨이 한 줄 더 쓰는 경우가 생겨 마지막 줄이 판 밖으로 잘려
-  나간다(실측: 두 줄로 재고 세 줄로 그렸다).
-- **줄바꿈은 크기보다 먼저 켠다.** `Control.size` 의 세터는 요청값을 최소 크기로
-  한 번 걷어 올리는데, 줄바꿈이 꺼진 `Label` 의 최소 폭은 **한 줄로 편 글자 전체
-  폭**이다 — 그 상태로 332px 를 요청하면 라벨이 글자 폭 그대로 부풀고, 뒤늦게
-  줄바꿈을 켜도 이미 커진 rect 는 줄지 않는다. 화면에서는 첫 줄이 판 밖으로
-  삐져나가고 아랫줄이 잘린 것으로 보였다(실측 확인). `clip_text` 도 같은 이유로
-  크기보다 먼저 켠다.
-- **이름 칸은 42%**(`MENU_KEY_FRAC`), 나머지가 값 칸이다. 52% 이던 시절
-  "다음 작전 단계까지" 같은 값이 159px 안에 안 들어가 **왼쪽부터 잘려 나갔다** —
-  오른쪽 정렬 `Label` 은 넘치면 정렬을 포기하고 rect 왼쪽부터 그린다. 값 문구
-  자체도 그때 짧아졌다(`작전 단계까지` / `레인 전용`).
-- **탭이 아트의 앞뒤를 정한다**(`_apply_focus`). 메크 탭이면 기체가 앞, 그 밖에는
-  사람이 앞. 예전의 **"전환" 버튼(파일럿 ↔ 메크 2단 토글)은 삭제됐다** — 정보가
-  셋으로 갈리면서 2단 토글로는 어디에 무엇이 있는지 말할 수 없게 됐다.
-  전환 트윈(`ART_SWAP_SEC` 0.22s)은 그대로다.
-- **머리글 오른쪽의 큰 숫자는 성장치다.** 예전 부제(`역할 · 아군/적군 · 성장치`)는
-  삭제됐다 — 역할과 진영은 방금 누른 초상화가 이미 말해 줬고, 성장치는 부제 끝에
-  묻혀 있을 값이 아니라 이 파일럿을 읽는 첫 숫자다. `라인 / 위치` 행도 함께
-  삭제됐다(전장의 초상화 자리가 이미 말해 준다). 머리글이 탭 밖으로 나오면서
-  **메크 탭에서도 그대로 보인다** — 예전에는 그 탭에서 제목이 기체명이 되며
-  숫자가 사라졌다.
-- **아트는 화면 하단이 자른다.** 아래끝(`ART_BOTTOM`)이 화면 밖이라 다리
-  아랫부분이 잘려 나간다. 예전의 `_knee_crop`(알파 실루엣 높이의
-  `KNEE_FRACTION` 0.80 지점에서 `AtlasTexture.region` 으로 텍스처를 잘라 내던
-  것)은 그래서 **삭제됐다** — 자르는 일은 이제 화면 가장자리가 하고, 어디서
-  잘릴지는 `ART_H` 와 `ART_BOTTOM` 두 상수가 정한다.
-- **크기는 높이로 정규화한다.** 전신 아트는 전부 세로 1024 에 인물이 꽉 차 있고
-  가로만 572~756 으로 제각각이라, 폭으로 맞추면 인물 키가 이미지마다 달라진다.
-  폭은 원본 비율에서 나오므로 `ART_H` 가 곧 화면을 얼마나 채우는가다 — 1400 이면
-  폭 900~1030 이고, 더 키우면 뒤에 선 메크가 오른쪽으로 완전히 밀려 나간다.
-- **뒤로 물러날 때 노드 크기는 그대로 두고 `scale` 만 줄인다.** `pivot_offset`
-  이 노드의 **아래 가운데**라 작아져도 바닥선이 그대로다 — 두 아트가 같은 바닥에
-  선 것처럼 읽히고, 전환 트윈이 `position` / `scale` / `modulate` 세 개만
-  건드리면 된다.
-- **메크 아트 30장이 다 들어와 있다.** `MechImages.full_for(mech.id)` 가
-  `res://resources/images/mech/{id}_full.png` 를 찾는다. 파일럿 아트와 달리 폭이
-  제각각이 아니라 **1024×1024 고정 캔버스**라 어느 기체든 패널에서 같은 폭을
-  차지한다(높이 정규화가 뻗은 무기까지 폭으로 환산하는 것을 막는다). 출처와
-  id ↔ 기체 대응표는 `resources/README.md`.
-  파일이 없을 때의 폴백은 그대로 살아 있다 — 같은 자리에 옅은 실루엣 슬래브 +
-  기체명 플레이스홀더가 선다. 슬래브 알파는 0.30 이다 — 올리면 화면 절반짜리
-  밝은 사각형이 되어 정작 앞에 선 파일럿보다 눈에 띈다.
-- **정보 블록은 아래쪽에 있다**(머리글 452 / 탭 562 / `STAT_TOP` **650**). 아트가 커지면서 화면 위쪽 절반이
-  인물의 머리·상체 자리가 됐고, 스탯이 예전 자리(170)에 남으면 얼굴을 덮는다.
-  글자 뒤에는 받침 `Panel`(α 0.86)을 깐다 — 아트가 이 자리까지 올라오므로 글자만
-  얹으면 일러스트 위에서 읽히지 않는다. 켜진 탭은 **아래 테두리를 그리지 않아**
-  받침과 한 몸으로 이어진다.
-- **닫기 버튼은 받침 아래끝에 붙어 다닌다**(`_reposition_close`). 탭마다 내용
-  높이가 달라(인게임 ~360 / 파일럿 ~600) 한 자리에 못 박아 두면 짧은 탭에서
-  버튼만 화면 한가운데에 떠 있다 — 예전의 고정 `BTN_Y`(1424)가 그랬다. 자리가
-  바뀌는 것은 **탭을 누른 순간**뿐이고 `refresh()` 는 받침을 건드리지 않으므로
-  버튼이 숫자를 따라 위아래로 떨지 않는다.
-#### 보유 카드 — 손패와 같은 부채꼴, 화면 하단 전체 폭 (`_build_card_fan`)
-- **카드는 손패와 같은 노드다** — `_bs.CARD_SCENE.instantiate()` 를
-  `CARD_VIEW_SCALE`(**1.60**)로 세운다 = **256×352**. 다른 그림으로 그리면 "이
-  카드가 그 카드"라는 연결이 끊긴다. `setup(cd, false, true)` +
-  `MOUSE_FILTER_IGNORE` 라 `Card._refresh_float_state`(= `scale` 의 주인)가 영영
-  돌지 않고, 그래서 여기서 준 배율이 그대로 남는다.
-- **예전에는 정보 칼럼 안의 3열 격자였고 배율이 0.80(128×176)이었다.** 칸이
-  칼럼(폭 452)에 갇혀 있어 그보다 키울 수가 없었고, 그 크기의 설명문은 읽는 글이
-  아니라 무늬였다. 격자를 그대로 두고 2배로 키우는 길은 없다 — 3열이면 800px 로
-  칼럼을 348px · 화면 오른쪽을 146px 넘고, 2행이면 세로도 화면 밖으로 나간다
-  (패널 아래끝 ≈1700 → 2052). **부채꼴은 카드를 겹쳐 세우므로** 같은 폭에 같은
-  장수를 넣으면서 장당 크기를 2배로 키운다. 자리를 화면 하단으로 내린 것도 같은
-  계산이다 — 칼럼 폭(452) 안에서 6장을 부채꼴로 펴면 간격이 26px 라 비용 원만
-  보인다. `CARD_GAP` / `CARD_ROW_GAP` / `CARD_SECTION_H` / `CARD_GRID_COLS` 는
-  그때 함께 **삭제됐다**.
-- **기하는 손패의 부채꼴과 같은 규칙**이다: 카드 **중심**이 행 아래에 놓인 원
-  (`FAN_RADIUS` 2400)을 타므로 기울기와 세로 처짐이 언제나 일치하고, 가운데
-  카드가 가장 높으며 양 끝이 아래로 말린다. 노드의 `pivot_offset` 이 한가운데라
-  배율을 바꿔도 중심이 안 움직인다(왼쪽 위를 기준으로 잡으면 배율을 만질 때마다
-  부채꼴이 오른쪽 아래로 흐른다).
-- **여백은 기울어진 모서리가 정한다.** `FAN_MARGIN`(52)이 카드 폭의 절반이 아니라
-  **기울어진 카드의 바깥 아래 모서리**를 받는다 — 양 끝은 9° 가까이 기울어 세로로
-  긴 카드가 폭의 절반보다 27px 더 밖으로 나간다(여백 24 로 두었을 때 양 끝이 3px
-  씩 잘렸다 — 실측). 아래도 같은 이유로 `FAN_DROP_RESERVE`(44) = 호 처짐 27 +
-  모서리 돌출 17 이다. 윗변(`_fan_top_y`)은 그 둘과 `FAN_BOTTOM_PAD`(26)를 화면
-  바닥에서 빼서 얻는다 — 상수로 박으면 배율을 만질 때마다 부채꼴이 화면을 넘거나
-  뜬다(1080×1920 에서 **1498**).
-- **입력은 카드 rect 가 아니라 밴드가 받는다.** 겹친 카드 중 나중 카드가 앞에
-  서므로 카드 i 가 실제로 보이는 폭은 자기 왼쪽 변부터 **다음 카드의 왼쪽 변**
-  까지이고, 그 폭이 그대로 버튼 하나가 된다(손패 `_apply_hit_bands` 와 같은 문제,
-  같은 계산). 카드는 `CardFan`, 버튼은 그 **뒤에 붙는** `CardFanHits` 에 담아
-  버튼이 언제나 위에서 픽을 받고, 카드끼리의 z-order 는 `CardFan` 안에서만 흔들린다.
-- **정보 패널이 열린 카드는 부채꼴에서 앞으로 끌려 나온다** — `FAN_LIFT_PX`(30)
-  만큼 솟고 형제 순서 맨 끝(= 맨 앞)으로 간다. 격자 시절에는 버튼에 테두리를
-  둘렀는데, 부채꼴의 버튼은 카드 rect 가 아니라 밴드라 테두리가 카드가 아닌 띠를
-  두른다. `FAN_TITLE_GAP`(64)이 `FAN_LIFT_PX` 보다 커야 솟은 카드가 제목을 밀고
-  올라오지 않는다.
-- **카드 목록은 `BattleSim.starter_cards` 표에서 온다** — 손패 · 덱 · 버린 더미를
-  훑어 역산하지 **않는다**. 소멸(`exhaust`)한 카드는 세 더미 어디에도 없어서
-  역산하면 목록에서 조용히 사라지는데, "이 파일럿이 무엇을 들고 들어왔는가"는
-  경기 중에 변하지 않는 사실이다. 표는 `CardPhaseManager._deal_team_deck` 이
-  덱을 돌 때 한 번 적는다 — `card_phase/README.md` 참조.
-#### 지속 효과 썸네일 (인게임 탭) — 일러스트 좌측 하단
-**정보 칼럼이 아니라 화면 왼쪽 아래**, 카드 부채꼴 바로 위(`FX_LEFT_X` 26 부터,
-`FX_ROW_W` 520 안에 여섯 칸). 68×68 칸에 위는 두 글자 약칭(효과별 색), 아래는
-지금 값. 아이콘 에셋이 없으므로 **글자가 곧 아이콘**이고, 온전한 이름은 눌러서
-여는 정보 패널의 제목이 들고 있다.
+- **The backdrop forwards clicks** (`_on_menu_backdrop_input`). The backdrop is still a
+  full-screen STOP, but instead of closing unconditionally as before, it finds the **target
+  button / tab / close** at that coordinate and presses it on your behalf. Previously, with
+  the attack explanation open, pressing the hit chip spent the first click on closing, so
+  you had to press **once more** — while skimming six stats the clicks doubled and the
+  screen flickered between open↔closed. Switching between items is the info panel's default
+  behaviour. Pressing an empty spot closes it then. Coordinate testing is simple because
+  `_menu_root` · `_body_root` · `_root` are all full-screen `Control`s placed at (0,0), so
+  the buttons' `position` can be compared as-is.
+- **Plate height is set by content** — row count × `MENU_ROW_H` + the **actual** height of
+  the note text (`_text_height`). When measuring the note height **the line-break flags must
+  match the Label**: `get_multiline_string_size` defaults to
+  `BREAK_MANDATORY | BREAK_WORD_BOUND`, but the label is `AUTOWRAP_WORD_SMART` (which adds
+  `BREAK_GRAPHEME_BOUND`), so measuring with the default sometimes has the label use one more
+  line and the last line is clipped outside the plate (measured: measured as two lines, drew
+  three).
+- **Turn on wrapping before setting size.** The `Control.size` setter clamps the request up
+  to the minimum size once, and the minimum width of a `Label` with wrapping off is **the
+  full width of the text laid out on one line** — requesting 332px in that state inflates the
+  label to the text width, and turning wrapping on afterwards doesn't shrink the already
+  enlarged rect. On screen the first line stuck out of the plate and the lower lines looked
+  clipped (confirmed by measurement). `clip_text` is also turned on before size for the same
+  reason.
+- **The name cell is 42%** (`MENU_KEY_FRAC`), the rest is the value cell. Back at 52%,
+  values like "다음 작전 단계까지" (until the next operation phase) didn't fit in 159px and
+  **were clipped from the left** — a right-aligned `Label` that overflows gives up alignment
+  and draws from the rect's left. The value wording itself got shorter then too
+  (`작전 단계까지` / `레인 전용`).
+- **The tab decides which art is front and back** (`_apply_focus`). On the mech tab the
+  machine is in front; otherwise the person is. The old **"전환" (Switch) button (pilot ↔
+  mech two-state toggle) was deleted** — once the info split into three, a two-state toggle
+  could no longer say what was where. The switch tween (`ART_SWAP_SEC` 0.22s) remains.
+- **The large number on the right of the header is growth points.** The old subtitle
+  (`역할 · 아군/적군 · 성장치`) was deleted — role and side are already told by the portrait
+  you just pressed, and growth points aren't a value to bury at the end of a subtitle but
+  the first number by which you read this pilot. The `라인 / 위치` row was deleted too (the
+  portrait's spot on the battlefield already says it). Since the header moved out of the
+  tabs **it stays visible on the mech tab too** — previously on that tab the title became
+  the mech name and the number disappeared.
+- **The bottom of the screen crops the art.** The bottom edge (`ART_BOTTOM`) is off-screen,
+  so the lower legs are cut off. The old `_knee_crop` (which cut the texture via
+  `AtlasTexture.region` at `KNEE_FRACTION` 0.80 of the alpha silhouette height) was
+  therefore **deleted** — cropping is now done by the screen edge, and where it cuts is
+  decided by two constants, `ART_H` and `ART_BOTTOM`.
+- **Size is normalised by height.** Every full-body art has the figure filling a height of
+  1024, with only widths varying 572–756, so fitting by width would make the figure's height
+  differ per image. Width comes from the source ratio, so `ART_H` is how much of the screen
+  it fills — at 1400 the width is 900–1030, and any bigger pushes the mech standing behind
+  completely off to the right.
+- **When stepping back, the node size stays and only `scale` shrinks.** `pivot_offset` is
+  the node's **bottom centre**, so the baseline stays put as it shrinks — the two arts read
+  as standing on the same floor, and the switch tween only has to touch three things:
+  `position` / `scale` / `modulate`.
+- **All 30 mech arts are in.** `MechImages.full_for(mech.id)` looks up
+  `res://resources/images/mech/{id}_full.png`. Unlike the pilot arts, widths don't vary —
+  it's a **fixed 1024×1024 canvas**, so every mech takes the same width in the panel (it
+  stops height normalisation from converting an outstretched weapon into width). Source and
+  the id ↔ mech table are in `resources/README.md`.
+  The fallback for a missing file is still alive — a faint silhouette slab + mech-name
+  placeholder stands in the same spot. The slab alpha is 0.30 — raise it and it becomes a
+  bright half-screen rectangle that stands out more than the pilot actually in front.
+- **The info block is at the bottom** (header 452 / tabs 562 / `STAT_TOP` **650**). As the
+  art grew, the upper half of the screen became the place for the figure's head·upper body,
+  and stats left in their old spot (170) would cover the face. A backing `Panel` (α 0.86) is
+  laid behind the text — the art comes up to this area, so text alone would be unreadable
+  over the illustration. The active tab **doesn't draw its bottom border**, so it joins the
+  backing as one piece.
+- **The close button follows the backing's bottom edge** (`_reposition_close`). Content
+  height differs per tab (in-game ~360 / pilot ~600), so pinning it in one place leaves just
+  the button floating in the middle of the screen on short tabs — that's what the old fixed
+  `BTN_Y` (1424) did. Its position changes only **at the moment a tab is pressed**, and
+  `refresh()` doesn't touch the backing, so the button doesn't jitter up and down with the
+  numbers.
+#### Held cards — the same fan as the hand, full width at screen bottom (`_build_card_fan`)
+- **The cards are the same nodes as the hand** — `_bs.CARD_SCENE.instantiate()` set up at
+  `CARD_VIEW_SCALE` (**1.60**) = **256×352**. Drawing a different picture would break the
+  link "this card is that card". With `setup(cd, false, true)` + `MOUSE_FILTER_IGNORE`,
+  `Card._refresh_float_state` (= the owner of `scale`) never runs, so the scale given here
+  stays as-is.
+- **It used to be a 3-column grid inside the info column at scale 0.80 (128×176).** The
+  cells were confined to the column (width 452) so they couldn't get bigger than that, and
+  description text at that size was a pattern, not something to read. There's no way to
+  keep the grid and double the size — 3 columns would be 800px, overshooting the column by
+  348px · the right side of the screen by 146px, and 2 rows would also run off the screen
+  vertically (panel bottom ≈1700 → 2052). **A fan overlaps the cards**, so it fits the same
+  number of cards in the same width while doubling the size per card. Moving it down to the
+  bottom of the screen is the same calculation — fanning 6 cards inside the column width
+  (452) gives a 26px spacing, so only the cost circles show. `CARD_GAP` / `CARD_ROW_GAP` /
+  `CARD_SECTION_H` / `CARD_GRID_COLS` were **deleted** at the same time.
+- **The geometry follows the same rule as the hand's fan**: card **centres** ride a circle
+  placed below the row (`FAN_RADIUS` 2400), so tilt and vertical sag always agree; the
+  middle card is highest and both ends curl down. The node's `pivot_offset` is the exact
+  centre, so changing scale doesn't move the centre (anchoring at top-left makes the fan
+  drift down-right every time the scale is touched).
+- **The margin is set by the tilted corner.** `FAN_MARGIN` (52) accommodates not half the
+  card width but **the outer bottom corner of the tilted card** — the ends tilt close to 9°,
+  so the tall card goes 27px further out than half its width (with a margin of 24, both ends
+  were clipped by 3px — measured). Below, for the same reason, `FAN_DROP_RESERVE` (44) = arc
+  sag 27 + corner protrusion 17. The top edge (`_fan_top_y`) is obtained by subtracting those
+  two and `FAN_BOTTOM_PAD` (26) from the screen bottom — hard-coding a constant would make the
+  fan overflow or float off the screen whenever the scale is touched (**1498** at 1080×1920).
+- **Input is taken by bands, not card rects.** Of overlapping cards the later one stands in
+  front, so the width of card i that's actually visible runs from its own left edge to **the
+  next card's left edge**, and that width becomes one button as-is (the same problem as the
+  hand's `_apply_hit_bands`, same calculation). Cards go in `CardFan`, buttons in
+  `CardFanHits` **attached after** it, so the buttons always get the pick on top, and the
+  z-order among cards only shifts inside `CardFan`.
+- **A card whose info panel is open is pulled forward out of the fan** — it rises by
+  `FAN_LIFT_PX` (30) and moves to the end of the sibling order (= frontmost). In the grid days
+  the button got a border, but in the fan the buttons are bands rather than card rects, so a
+  border would wrap a strip rather than the card. `FAN_TITLE_GAP` (64) must be larger than
+  `FAN_LIFT_PX` so the raised card doesn't push up into the title.
+- **The card list comes from the `BattleSim.starter_cards` table** — it is **not**
+  reconstructed by scanning hand · deck · discard pile. An exhausted (`exhaust`) card is in
+  none of the three piles, so a reconstruction would silently drop it from the list, but
+  "what this pilot came in holding" is a fact that doesn't change during the match. The table
+  is written once when `CardPhaseManager._deal_team_deck` goes through the deck — see
+  `card_phase/README.md`.
+#### Lasting effect thumbnails (in-game tab) — bottom-left of the illustration
+**Not in the info column but at the bottom-left of the screen**, right above the card fan
+(from `FX_LEFT_X` 26, six cells within `FX_ROW_W` 520). In a 68×68 cell, the top is a
+two-character abbreviation (colour per effect) and the bottom is the current value. There
+are no icon assets, so **the text is the icon**, and the full name is carried by the title
+of the info panel opened by pressing it.
 
-- **예전에는 스탯 칩과 카드 사이, 칼럼 안이었다.** 거기서 116px 를 먹었고 그만큼
-  아래 사슬(카드 줄 · 스킬 블록 · 닫기 버튼)이 밀려 인게임 탭이 화면 바닥에 닿아
-  있었다. 화면 왼쪽 아래는 아트의 다리와 딤뿐이라 비어 있는 자리이고, 옮기면
-  칼럼에서 칩 ↔ 스킬이 곧바로 이어진다.
-- **제목("지속 효과")은 삭제됐다.** 칼럼 안에서는 위아래 블록과 구분하는 이름표가
-  필요했지만, 화면 구석에 홀로 선 68px 칸들의 머리에 밑줄 달린 절 제목을 붙이면
-  제목이 칸보다 눈에 띈다. 걸린 효과가 없으면 **아무것도 안 그린다** — 예전의
-  "걸려 있는 효과 없음" 한 줄은 제목이 있어야 뜻이 서는 문장이었다.
-- **줄은 위로 자란다**(`_build_effect_thumbs` 가 `_fx_bottom_y()` 에서 역산). 아래로
-  자라게 두면 두 번째 줄이 그대로 카드 부채꼴 위에 내려앉는다.
+- **It used to sit inside the column, between the stat chips and the cards.** It ate 116px
+  there, and the chain below (card row · skill block · close button) was pushed down by that
+  much so the in-game tab touched the bottom of the screen. The bottom-left of the screen
+  holds only the art's legs and the dim, so it's an empty spot, and moving it lets chips ↔
+  skill follow directly in the column.
+- **The title ("지속 효과" (Lasting effects)) was deleted.** Inside the column it needed a
+  label to separate it from the blocks above and below, but putting an underlined section
+  title on top of 68px cells standing alone in a screen corner makes the title stand out more
+  than the cells. With no effects applied it **draws nothing** — the old one-liner "걸려 있는
+  효과 없음" (No active effects) was a sentence that only made sense with a title.
+- **Rows grow upward** (`_build_effect_thumbs` works back from `_fx_bottom_y()`). Letting
+  them grow downward makes the second row land right on top of the card fan.
 
-세 종류가 섞인다.
+Three kinds are mixed.
 
-**(1) 슬롯 효과** — 한 칸을 카드들이 서로 덮어쓰는 것들. 출처를 물어봐야 답이
-하나뿐이라 종류 이름이 곧 칸 이름이다.
+**(1) Slot effects** — ones where cards overwrite each other in one slot. Asking for the
+source has only one answer, so the kind name is the cell name.
 
-| 키 | 뜨는 조건 | 약칭 | 출처 |
+| Key | Shown when | Abbrev. | Source |
 |---|---|---|---|
-| `fx:lane` | `lane_stat_mod != 0` | 라인 | 공격적인 라인전(+), 스킬 |
-| `fx:rate` | `growth_rate_mult != 1` | 적립 | 신중한 예산(+15%) · 성장 가속(+토큰×10%) · 소극적인 태세(+10%) / 완벽한 마무리(+25%) |
-| `fx:eva` | `eva_card_mod != 0` | 회피 | 소극적인 태세(전장 회피 +20%, 10턴) |
-| `fx:ambush` | `ambush_hold` | 매복 | 매복(다음 작전 단계까지 이동 없음) |
-| `fx:atk` | `atk_buff != 0` | 공격 | 전투 준비 등 임시 공격력 |
-| `fx:shield` | `shield > 0` | 보호 | 보호 카드 |
+| `fx:lane` | `lane_stat_mod != 0` | 라인 (Lane) | 공격적인 라인전 (Aggressive Laning) (+), skills |
+| `fx:rate` | `growth_rate_mult != 1` | 적립 (Accrual) | 신중한 예산 (Careful Budget) · 성장 가속 (Growth Acceleration) (per token) · 소극적인 태세 (Passive Stance) / 완벽한 마무리 (Perfect Finish) — amounts are each card's cards.csv clause |
+| `fx:eva` | `eva_card_mod != 0` | 회피 (Evasion) | 소극적인 태세 (battlefield evasion bonus for its clause's turn count, cards.csv) |
+| `fx:ambush` | `ambush_hold` | 매복 (Ambush) | 매복 (Ambush) (no movement until the next operation phase) |
+| `fx:atk` | `atk_buff != 0` | 공격 (Attack) | temporary attack such as 전투 준비 (Battle Prep) |
+| `fx:shield` | `shield > 0` | 보호 (Protect) | 보호 (Protect) cards |
 
-**(2) 카드별 지속 효과** — `PilotData.persistent_fx` 장부의 한 줄이 한 칸이다.
-장부 종류는 다섯이다 — `growth_rate`(적립 %) / `max_hp` / `atk`(값) / **`atk_pct` / `hp_pct`**(배율 %, [몰입] · [워밍업]). 배율 종류는 `FX_PCT_KINDS` 가 %로 찍고, 잔여분 칸도 `bonus_atk_mult` / `bonus_max_hp_mult` 에서 장부를 뺀 몫을 같은 규칙으로 세운다(영혼 수확의 공격력 % 가 이제 보인다).
-키는 `fx:src:<종류>|<카드 이름>` 이고 약칭은 카드 이름 앞 두 글자(공백 제외:
-`용 보상` → `용보`). 예전에는 이쪽도 속성으로 뭉쳐 있어 **`fx:perm` 한 칸이
-[용 보상]과 [핫핸드]를 함께 뜻했고**, `bonus_max_hp` / `bonus_atk_flat` 로 사는
-[붉은 가루] · [녹색 병]은 **아예 표시되지 않았다** — 성장 재계산에 지워지지
-않으려고 별도 필드로 사는 값들이라 어느 칩에도 안 실렸기 때문이다.
+**(2) Per-card lasting effects** — one line of the `PilotData.persistent_fx` ledger is one
+cell. There are five ledger kinds — `growth_rate` (accrual %) / `max_hp` / `atk` (value) /
+**`atk_pct` / `hp_pct`** (multiplier %, [몰입] (Immersion) · [워밍업] (Warm-up)). Multiplier
+kinds are printed as % via `FX_PCT_KINDS`, and the remainder cells are also built by the same
+rule from `bonus_atk_mult` / `bonus_max_hp_mult` minus the ledger (영혼 수확 (Soul Harvest)'s
+attack % is now visible).
+The key is `fx:src:<kind>|<card name>` and the abbreviation is the first two characters of
+the card name (excluding spaces: `용 보상` → `용보`). This side used to be lumped by attribute
+too, so **one `fx:perm` cell meant both [용 보상] (Dragon Reward) and [핫핸드] (Hot Hand)**,
+and [붉은 가루] (Red Powder) · [녹색 병] (Green Bottle), which live in `bonus_max_hp` /
+`bonus_atk_flat`, **weren't shown at all** — they are values living in separate fields so
+the growth recalculation doesn't wipe them, so they weren't carried on any chip.
 
-| 종류 (`PilotData.FX_*`) | 합계 슬롯 | 지금 이 종류를 쓰는 카드 |
+| Kind (`PilotData.FX_*`) | Total slot | Cards currently using this kind |
 |---|---|---|
-| `growth_rate` | `growth_rate_bonus` | 용 보상 · 핫핸드(`growth_perm`) · 파란 약(`growth_eff`) |
-| `max_hp` | `bonus_max_hp` | 붉은 가루 · 몸집 불리기(`max_hp`) |
-| `atk` | `bonus_atk_flat` | 녹색 병(`atk_add`) |
+| `growth_rate` | `growth_rate_bonus` | 용 보상 · 핫핸드 (`growth_perm`) · 파란 약 (Blue Pill) (`growth_eff`) |
+| `max_hp` | `bonus_max_hp` | 붉은 가루 · 몸집 불리기 (Bulk Up) (`max_hp`) |
+| `atk` | `bonus_atk_flat` | 녹색 병 (`atk_add`) |
 
-**계산은 그대로 합계 슬롯이 하고 표시만 장부를 읽는다** — 성장 재계산
-(`BattleSim.refresh_growth_stats`)이 읽는 곳은 한 군데여야 한다. 장부에 적는
-자리는 `CardPhaseManager._log_persistent_fx` 하나이고, 출처는 그때 도는 카드
-(`_current_card`)라 절 함수마다 이름을 인자로 끌고 다닐 필요가 없다.
+**Computation is still done by the total slots; only the display reads the ledger** — the
+growth recalculation (`BattleSim.refresh_growth_stats`) must read from one place only. The
+ledger is written in one place, `CardPhaseManager._log_persistent_fx`, and the source is the
+card running at that moment (`_current_card`), so there's no need to drag the name through
+every clause function as an argument.
 
-**(3) 잔여분** (`fx:rest:<종류>`) — 합계에서 장부를 뺀 나머지. 메크 패시브가
-`bonus_*` 를 직접 미는 몫(영혼 수확 · 조준 보정 …)이라 출처를 카드 이름으로 부를
-수 없다. 합계 슬롯과 장부가 어긋나면 화면이 조용히 거짓말을 하게 되므로 남는 몫을
-감추지 않는다.
+**(3) Remainder** (`fx:rest:<kind>`) — the total minus the ledger. It's the share that mech
+passives push directly into `bonus_*` (영혼 수확 · 조준 보정 (Aim Assist) …), so the
+source can't be named by a card name. If the total slot and the ledger disagree the screen
+would quietly lie, so the leftover share isn't hidden.
 
-- **걸려 있는 것만 뜬다.** 꺼져 있는 칸을 회색으로 늘어놓으면 "몇 개가 켜져
-  있는가"를 도리어 세어야 한다. 하나도 없으면 `걸려 있는 효과 없음` 한 줄.
-- **왜 칩만으로는 안 되는가.** 명중 칩이 55 라고 할 때 그 값이 라인전 카드 때문인지
-  원래 그런지는 칩을 눌러야 나오고, **적립 배율처럼 어느 칩에도 안 실리는** 효과는
-  아예 볼 자리가 없었다.
-- **팀 단위 효과(계획 살인 예약)는 여기 없다.** 파일럿의 것이 아니라 팀의 것이라
-  다섯 명 모두에게 같은 썸네일이 떠 무엇이 누구 것인지가 흐려진다.
-- **구성이 달라졌을 때만 본문을 다시 세운다** — `refresh()` 가 `_fx_signature()`
-  (키 목록)를 지난 값과 견준다. 값만 바뀌었으면 라벨 갱신으로 끝나야 열어 둔
-  정보 패널이 안 닫히고 카드 노드도 다시 인스턴스화되지 않는다. 다시 세운
-  뒤에는 열려 있던 키의 **새 버튼**에 강조를 다시 입힌다(옛 버튼은 free 됐다) —
-  그 키 자체가 없어졌으면 패널을 닫는다.
+- **Only applied effects show.** Laying out inactive cells in grey would force you to count
+  "how many are on". With none at all, the single line `걸려 있는 효과 없음`.
+- **Why chips alone aren't enough.** If the hit chip says 55, whether that's due to a laning
+  card or just how it is only shows when you press the chip, and effects that **aren't
+  carried on any chip, like the accrual multiplier**, had no place to be seen at all.
+- **Team-level effects (계획 살인 (Planned Kill) reservation) aren't here.** They belong to
+  the team, not the pilot, so the same thumbnail would show on all five and blur whose is
+  what.
+- **The body is rebuilt only when the composition changes** — `refresh()` compares
+  `_fx_signature()` (the key list) with the previous value. If only values changed it must
+  end with a label update, so an open info panel doesn't close and card nodes aren't
+  re-instantiated. After a rebuild, the highlight is re-applied to the **new button** of the
+  key that was open (the old button has been freed) — if that key itself is gone, the panel
+  closes.
 
-#### 카드
-- **카드 노드 위에 투명 `Button` 을 한 장 덮는다.** `Card` 는 손패에서 호버 ·
-  드래그 배선을 스스로 쥐고 있는 노드라 여기서 입력을 직접 받게 하면 그 기계가
-  함께 깨어난다. 버튼은 카드와 정확히 같은 자리를 덮으므로 눌리는 곳과 보이는
-  곳이 어긋나지 않는다.
-- **누르면 카드 설명이 정보 패널에 뜬다.** 카드 노드에 적힌 글씨는 ×0.80 으로
-  줄어 있어 읽으라고 있는 것이 아니다.
+#### Cards
+- **A transparent `Button` is laid over the card node.** `Card` is a node that holds its own
+  hover · drag wiring in the hand, so letting it take input directly here would wake that
+  machinery too. The button covers exactly the same spot as the card, so where you press and
+  what you see don't diverge.
+- **Pressing shows the card description in the info panel.** The text written on the card
+  node is shrunk to ×0.80, so it's not meant to be read.
 
-- **보호막은 별도 칩이 아니라 체력 값에 붙는다** — 칩에는 `159 / 322` 만 적히고
-  `보호막 +30` 은 체력 메뉴 안에 있다. 보호막은 그 자체로 읽는 숫자가 아니라
-  "지금 몇 대 더 버티는가"이고, 그 답은 체력과 나란히 놓여야 나온다.
-- **명중 / 회피 칩은 라인전 스탯이 먹은 값이다.** 공격적인 라인전이 미는 것은 `PilotData.hit` / `evasion` 필드가 아니라 **판정 시점의
-  배율**(`lane_stat_mod`)이라, 원본 필드를 그대로 찍으면 카드를 내도 이 값이
-  1 도 움직이지 않는다. 판정과 **같은 함수**(`SimulationCore.lane_adjusted`)를
-  통과시켜 화면의 숫자와 실제로 굴러가는 숫자를 하나로 묶고, 기본값과 배율은
-  메뉴에 적는다(배율이 걸려 있을 때만 그 줄이 생긴다).
-- **`성장` 칩의 큰 숫자는 공격력 성장이고, 최대 체력 성장은 메뉴 안에 있다.**
-  둘은 4배 차이로 **다르게** 자라므로(`GROWTH_ATK_PER_SCORE` vs
-  `GROWTH_HP_PER_SCORE`) 한 칸에 한 숫자만 세울 때 큰 쪽을 세운다. 이 값은
-  성장치에서 파생된 것이고, 카드가 미는 `적립 배율`(`growth_rate_mult`)과는
-  **다른 것**이다 — 이름이 비슷해 헷갈리기 쉬운 자리라 메뉴에서 둘을 나란히 둔다.
-- **아웃게임 스탯(파일럿 탭)은 경기 중에 변하지 않는다** — 훈련으로만 오른다.
-  그래서 메뉴의 `인게임 증가` 행이 언제나 `없음` 이다.
-- **칩 값의 폰트는 글자 수가 정한다**(`_value_font_size`, 4자 이하 38 → 10자 이상
-  22). 칩 폭이 141px 뿐이라 `159 / 322` 를 가장 큰 폰트로 두면 잘린다 —
-  자르느니 한 단계 줄이는 편이 읽힌다.
-- **`refresh()` 는 (지속 효과 구성이 그대로인 한) 트리를 다시 세우지 않는다**
-  (`update_hud` 마다, `close_if_phase_left` 바로 뒤). 칩 값 라벨 · 성장치 ·
-  열려 있는 패널의 글자만 고친다 — 통째로 다시 세우면 카드 노드 셋이 **매 갱신마다** 인스턴스화되고
-  눌러 둔 칩의 강조도 그때마다 깜빡인다. 탭이 바뀔 때만 `_rebuild_body()` 가
-  돈다. 헌 블록은 `queue_free` 만 걸면 이번 프레임까지 그려져 글자가 겹치므로
-  **`remove_child` 를 먼저** 한다. 아트와 앞뒤 자세는 어느 쪽도 건드리지 않는다.
-- **값 라벨에는 `clip_text = true` 가 필수다.** 오른쪽 정렬 `Label` 은 글자가
-  rect 보다 넓으면 정렬을 포기하고 rect 왼쪽부터 그려서 **오른쪽으로 넘쳐 화면을
-  벗어난다**(실측: "아웃게임 데이터 없음" 이 화면 밖에서 잘렸다).
-- **`_body_root` 의 `MOUSE_FILTER_IGNORE` 는 그 노드만 뺀다** — 자식 칩 · 효과 ·
-  카드 버튼은 그대로 눌린다. z-order 는 `_root` 의 자식 순서다: 0 딤 / 1 아트 /
-  2 본문 / 3~5 머리글(받침 · 이름 행 · 성장치) / 6~8 탭 / 9 닫기 / (열려 있으면)
-  정보 패널이 맨 뒤 = 맨 위.
-- 아웃게임 스탯은 `BattleSim.player_data_for(pilot)` 로 찾는다 — `pilots` 배열의
-  인덱스(0..4 = 팀0, 5..9 = 팀1)를 `match_ctx` 의 두 로스터에 그대로 대응시키는
-  방식이라 **`pilots` 를 재정렬하면 이름과 스탯이 어긋난다**. 단독 실행이나
-  INTL 파일럿은 null → 칩 값이 `—`. 적 파일럿이 열리는 것도 이 대응 덕이다.
-- 열려 있는 동안 **누른 쪽 팀의 스트립만 숨긴다**(`HudBuilder.set_strip_visible(team, on)`).
-  딤 위로 스트립만 남으면 지금 무엇을 보고 있는지가 흐려지고, 딤 아래로 넣으면
-  방금 누른 얼굴이 어두워져 연결이 끊긴다. 반대 팀 스트립은 그대로 둔다 —
-  딤에 가려질 뿐이고, 치우면 무엇이 사라졌는지가 더 헷갈린다.
-- `_root` 에 **앵커 프리셋을 걸지 않는다.** `CanvasLayer` 아래의 `Control` 은
-  full-rect 앵커를 해석해 줄 부모 rect 가 없어 크기가 0 으로 남고, 프리셋만
-  걸어 두면 "`_ready` 뒤에 size 가 덮어써진다"는 경고가 남는다. 크기는 명시한다.
-- **여는 조건은 `can_open()` 하나** — 작전 단계 **또는 자동 진행(BATTLE)**, 교전
-  무대가 없고 경기가 안 끝났을 때. 스트립 버튼과 전장 초상 꾹 누르기(`MarkerTouch`)가
-  같은 답을 읽는다. 예전에는 자기 작전 단계뿐이었다.
-- **BATTLE 중에 열면 턴이 멈춘다** — `BattleSim._battle_tick_held` 가 `is_active()` 를
-  본다. 딤 뒤에서 전장이 굴러가면 보고 있는 숫자가 낡는다(시계도 같이 멈춘다).
-- 열 수 없는 상태로 넘어가면 강제로 닫힌다(`close_if_phase_left`, `update_hud` 마다).
+- **Shield attaches to the HP value, not a separate chip** — the chip shows only `159 / 322`,
+  and `보호막 +30` (Shield +30) is inside the HP menu. A shield isn't a number read on its own
+  but "how many more hits can it take now", and that answer only comes when placed beside HP.
+- **The hit / evasion chips are values after the laning stat is applied.** What
+  공격적인 라인전 pushes is not the `PilotData.hit` / `evasion` fields but **a multiplier at resolution
+  time** (`lane_stat_mod`), so printing the raw fields would leave this value unmoved by even
+  1 after playing the card. It goes through **the same function** as resolution
+  (`SimulationCore.lane_adjusted`), tying the on-screen number and the number actually in play
+  together, and the base value and multiplier are written in the menu (the line exists only
+  when a multiplier is applied).
+- **The big number on the `성장` (Growth) chip is attack growth; max HP growth is inside the
+  menu.** The two grow **differently** (`GROWTH_ATK_PER_SCORE` vs
+  `GROWTH_HP_PER_SCORE`, const.csv — attack grows faster), so when one cell gets only one number, the bigger one is shown. This
+  value is derived from growth points and is **different** from the `적립 배율` (accrual
+  multiplier) (`growth_rate_mult`) that cards push — the names are similar and easy to confuse,
+  so the menu puts the two side by side.
+- **Outgame stats (pilot tab) don't change during a match** — they only rise through training.
+  So the menu's `인게임 증가` (in-game increase) row is always `없음` (none).
+- **Chip value font is set by character count** (`_value_font_size`, ≤4 chars 38 → ≥10 chars
+  22). A chip is only 141px wide, so `159 / 322` in the largest font would be clipped — better
+  to drop one size than to clip.
+- **`refresh()` doesn't rebuild the tree (as long as the lasting effect composition is
+  unchanged)** (on every `update_hud`, right after `close_if_phase_left`). It fixes only the
+  chip value labels · growth points · the text of the open panel — rebuilding wholesale would
+  instantiate three card nodes **on every update** and make the pressed chip's highlight
+  flicker each time. `_rebuild_body()` runs only when the tab changes. If the old block is only
+  given `queue_free`, it still draws this frame and the text overlaps, so **`remove_child`
+  first**. Neither the art nor its front/back pose is touched.
+- **`clip_text = true` is mandatory on value labels.** A right-aligned `Label` whose text is
+  wider than its rect gives up alignment and draws from the rect's left, so it **overflows to
+  the right and off the screen** (measured: "아웃게임 데이터 없음" (No outgame data) was cut off
+  outside the screen).
+- **`MOUSE_FILTER_IGNORE` on `_body_root` excludes only that node** — child chip · effect ·
+  card buttons are still pressable. z-order is `_root`'s child order: 0 dim / 1 art / 2 body /
+  3–5 header (backing · name row · growth points) / 6–8 tabs / 9 close / (if open) the info
+  panel last = topmost.
+- Outgame stats are looked up with `BattleSim.player_data_for(pilot)` — it maps the index in
+  the `pilots` array (0..4 = team 0, 5..9 = team 1) directly onto `match_ctx`'s two rosters, so
+  **reordering `pilots` misaligns names and stats**. Standalone runs or INTL pilots → null →
+  chip values `—`. Enemy pilots opening is also thanks to this mapping.
+- While open, **only the strip of the pressed team is hidden**
+  (`HudBuilder.set_strip_visible(team, on)`). If only the strip remained above the dim, what you
+  are looking at would blur; putting it below the dim darkens the face you just pressed and
+  breaks the link. The other team's strip is left alone — it's just covered by the dim, and
+  removing it would make what disappeared more confusing.
+- **No anchor preset on `_root`.** A `Control` under a `CanvasLayer` has no parent rect to
+  resolve full-rect anchors against, so its size stays 0, and setting only the preset leaves a
+  warning that "size is overwritten after `_ready`". The size is set explicitly.
+- **The open condition is `can_open()` alone** — operation phase **or auto-run (BATTLE)**, with
+  no engage stage and the match not over. The strip buttons and battlefield portrait long-press
+  (`MarkerTouch`) read the same answer. It used to be only your own operation phase.
+- **Opening during BATTLE pauses the turn** — `BattleSim._battle_tick_held` checks
+  `is_active()`. If the battlefield kept rolling behind the dim, the numbers you're reading would
+  go stale (the clock stops too).
+- If the state moves to one where it can't be open, it's force-closed (`close_if_phase_left`, on
+  every `update_hud`).
 
-### 전장 초상 누르기 (`MarkerTouch.gd`)
-`_unhandled_input` 이라 GUI(손패 · 스트립 · 버튼)가 먹지 않은 **전장 탭만** 온다.
-카드를 들고 있거나(대상 지정) 다른 모달 · 정글 시작 · 교전 무대가 떠 있으면 무시한다(`_accepting`).
+### Pressing a battlefield portrait (`MarkerTouch.gd`)
+It's `_unhandled_input`, so **only battlefield taps** not consumed by the GUI (hand · strips ·
+buttons) arrive. It ignores input while a card is held (targeting) or another modal · jungle
+start · engage stage is up (`_accepting`).
 
-| 조작 | 결과 | 햅틱 |
+| Action | Result | Haptic |
 |---|---|---|
-| 누름 | `renderer.marker_at` 으로 고른 초상이 `PRESS_SCALE`(1.3) 로 커지고 **맨 위로** | `SELECT` |
-| 뗌 / `MOVE_CANCEL_PX`(28) 이상 움직임 | 크기만 돌아온다 — **맨 위 순서는 다른 초상을 누를 때까지 유지** | — |
-| `LONG_PRESS_SEC`(0.45) 유지 | 크기를 돌리고 `PilotDetailPanel.open` (`can_open` 일 때) | `MEDIUM` |
+| press | the portrait picked by `renderer.marker_at` grows to `PRESS_SCALE` (1.3) and goes **to the top** | `SELECT` |
+| release / moved ≥ `MOVE_CANCEL_PX` (28) | only the size returns — **top order is kept until another portrait is pressed** | — |
+| held `LONG_PRESS_SEC` (0.45) | size restored and `PilotDetailPanel.open` (when `can_open`) | `MEDIUM` |
 
-터치는 마우스로도 에뮬레이트되어 한 누름이 두 이벤트로 오지만, 누름 / 뗌을 상태 전이로만
-처리하므로 두 번째는 아무 일도 안 한다. 그리기 쪽(배율 · 맨 위 순서)은 `rendering/README.md`.
+Touch is also emulated as mouse, so one press arrives as two events, but press / release are
+handled purely as state transitions, so the second one does nothing. The drawing side (scale ·
+top order) is in `rendering/README.md`.
 
-### 상단 chrome (경과 시계 + 적 스트립 뒤판 + 오브젝트 시계 둘)
-**예전에는 화면 가로를 통째로 덮는 패널 한 장이었다.** 그 판이 헤더 줄과 적
-스트립과 오브젝트 시계를 다 담고 있어서, 좌우 끝의 시계가 스트립과 같은 판 위에
-얹힌 것으로 읽혔다 — 시계는 스트립의 일부가 아니라 전장의 사건을 세는 별개의
-물건이다. 지금은 **아군 스트립과 같은 규칙**으로, 뒤판이 초상화 다섯 칸만 감싸고
-(`_enemy_strip_bg`) 시계 둘과 경과 시계는 그 바깥에 배경 없이 선다. 셋 다
-`_bs.canvas`(CanvasLayer) 직속이다.
+### Top chrome (elapsed clock + enemy strip backplate + two objective clocks)
+**It used to be one panel covering the full screen width.** That plate held the header
+row, the enemy strip and the objective clocks, so the clocks at the left and right ends read
+as sitting on the same plate as the strip — but the clocks aren't part of the strip; they are
+a separate object counting battlefield events. Now, **by the same rule as the ally strip**,
+the backplate wraps only the five portrait cells (`_enemy_strip_bg`) and the two clocks and
+the elapsed clock stand outside it with no background. All three are direct children of
+`_bs.canvas` (CanvasLayer).
 
-`TOP_PANEL_Y` 0 / `TOP_PANEL_H` **148** 은 그대로 남아 **그 아래 사슬의 기준
-좌표** 노릇을 한다 — 뒤판은 `ENEMY_STRIP_RECT.y − 10`(= 36)에서 시작해
-`TOP_PANEL_H`(148)에서 끝나므로 peek 을 가리는 양이 예전과 한 픽셀도 다르지
-않다. 적 스트립은 가운데 806px 를 쓰고, **좌우 여백이 오브젝트 시계 두 칸**이다
-(`OBJ_TIMER_LEFT_X` 26, 오른쪽은 뷰포트 가로에서 역산, 각 101×60 — 세로는 적
-초상화 띠와 정확히 같다).
+`TOP_PANEL_Y` 0 / `TOP_PANEL_H` **148** remain and serve as **the reference coordinate for
+the chain below** — the backplate starts at `ENEMY_STRIP_RECT.y − 10` (= 36) and ends at
+`TOP_PANEL_H` (148), so the amount of peek it hides doesn't differ by a single pixel from
+before. The enemy strip uses the middle 806px, and **the side margins are the two objective
+clock cells** (`OBJ_TIMER_LEFT_X` 26, the right one worked back from the viewport width, each
+101×60 — vertically exactly the same as the enemy portrait band).
 
-적 스트립은 두 번 커졌다: 618 → 672(초상화 +10%) → **806**(다시 +20%, 초상화
-145×60). 얼굴이 그 크기에서야 누가 누구인지 읽히고, 성장치도 내 것과 나란히
-비교할 수 있다. 그만큼 시계 칸이 190 → 168 → **101** 로 줄었고, 시계 쪽에서
-아이콘·숫자 간격과 "턴" 글자를 지워 그 폭에 맞췄다 — 자리를 다툴 때 물러나는
-쪽은 언제나 시계다.
+The enemy strip grew twice: 618 → 672 (portrait +10%) → **806** (another +20%, portrait
+145×60). Only at that size do faces tell who is who, and growth points can be compared side
+by side with mine. The clock cells shrank by that much, 190 → 168 → **101**, and on the clock
+side the icon·number gap and the "턴" text were removed to fit that width — when fighting for
+space, the clock always gives way.
 
-그리고 그 아래가 사슬이다: 이 패널이 상대 핸드 peek 의 윗부분을 가리는
-가림막이고(`AI_HAND_TOP_Y` = `TOP_PANEL_H − 50` = **98**, 카드 아래 49px 만
-삐져나온다), peek 카드 아래 끝(y 197)에서 `DONUT_AI_HAND_GAP` 만큼 띄운 자리가
-적 도넛(아래 끝 y **327**)이며, 그 아래가 전장 픽셀 상단(y **369**)이다.
-**패널 높이를 바꾸면 `AI_HAND_TOP_Y` 와 `KillFeed.FEED_TOP`(= `TOP_PANEL_H + 8`)
-을 같은 양만큼 함께 옮겨야 한다** — 전자를 두면 peek 이 패널 뒤로 통째로 숨거나
-(키울 때) 카드 윗부분이 그대로 드러나고(줄일 때), 후자를 두면 킬로그가 패널에서
-떨어져 뜬다. 도넛은 `AI_HAND_TOP_Y` 에서 계산되므로 따로 만질 것이 없다.
-168 → 132 로 줄었다가 스트립이 커지며 **148** 이 됐고, 사슬도 같은 16px 씩
-내려갔다(peek 98 / 도넛 327 / 킬로그 156). 전장까지의 여유는 **42px** 이고, 그
-사이의 빈 띠를 **카드 설명 상자**가 쓴다 — `CardPhaseManager.DESC_BOX_TOP`.
+And below it is the chain: this panel is the screen that hides the top of the opponent's
+hand peek (`AI_HAND_TOP_Y` = `TOP_PANEL_H − 50` = **98**, only 49px of the cards' bottom pokes
+out), the spot offset by `DONUT_AI_HAND_GAP` from the bottom of the peek cards (y 197) is the
+enemy donut (bottom y **327**), and below that is the top of the battlefield pixels
+(y **369**).
+**If you change the panel height, move `AI_HAND_TOP_Y` and `KillFeed.FEED_TOP`
+(= `TOP_PANEL_H + 8`) by the same amount together** — leave the former and the peek either
+hides entirely behind the panel (when growing) or exposes the cards' tops (when shrinking);
+leave the latter and the kill log floats detached from the panel. The donut is computed from
+`AI_HAND_TOP_Y`, so there's nothing to touch separately.
+It shrank 168 → 132, then became **148** when the strip grew, and the chain also moved down
+by the same 16px (peek 98 / donut 327 / kill log 156). The slack to the battlefield is
+**42px**, and the empty band in between is used by the **card description box** —
+`CardPhaseManager.DESC_BOX_TOP`.
 
-- **시간 라벨** — 좌측(x 20), `font_size` 18. **받침이 없으므로** 검은
-  외곽선(4px)으로 읽힘을 지킨다. `UiHelpers.mk_label` 은 `Control` 부모를
-  받는데 캔버스는 `CanvasLayer` 라 여기서는 `Label` 을 직접 세운다 —
-  예전에는 전폭 패널이 그 `Control` 이었다. `MM:SS` (`get_elapsed_ingame_seconds`).
-  **시는 표시하지 않으므로 분이 60을 넘을 수 있다.** BATTLE 중에는 실시간으로
-  초가 흐르고(1턴 = 0.5초 = 인게임 60초, 즉 벽시계의 약 120배), CARD_PHASE /
-  게임오버에는 멈춘다.
-- **팀 합산 점수는 삭제됐다.** 가운데에 `12.4k - 9.8k` 를 찍던 줄인데, 같은
-  수를 스트립의 다섯 칸이 이미 낱개로 보여 주고 있었고 합계는 어느 쪽이 이기고
-  있는지를 한 줄로 말해 주는 대신 정작 **누가** 크고 있는지를 가렸다.
-  `TOTAL_SCORE_FONT` 와 `_lbl_total_score` 는 그때 함께 사라졌다.
-  `BattleSim.team_score()` 는 소비자가 없어졌지만 함수로는 남아 있다.
+- **Time label** — left (x 20), `font_size` 18. **There's no backing**, so a black outline
+  (4px) keeps it readable. `UiHelpers.mk_label` takes a `Control` parent but the canvas is a
+  `CanvasLayer`, so here the `Label` is created directly — previously the full-width panel was
+  that `Control`. `MM:SS` (`get_elapsed_ingame_seconds`).
+  **Hours aren't shown, so minutes can exceed 60.** During BATTLE seconds flow in real time
+  (1 turn = 0.5 s = 60 in-game seconds, i.e. about 120× the wall clock); during CARD_PHASE /
+  game over it stops.
+- **The team total score was deleted.** It was the row printing `12.4k - 9.8k` in the middle,
+  but the strip's five cells already showed the same numbers individually, and the total, while
+  telling in one line which side is winning, hid **who** is actually growing.
+  `TOTAL_SCORE_FONT` and `_lbl_total_score` disappeared at the same time.
+  `BattleSim.team_score()` lost its consumer but remains as a function.
 
-### 킬로그 (`KillFeed.gd`)
-화면 **우측 상단**(상단 패널 밑단에서 8px 아래, y **156** = `TOP_PANEL_H` + 8)에 처치 · 포탑 철거 ·
-오브젝트 획득을 한 줄씩 쌓는다. 전장은 0.5초마다 저 혼자 흐르고 교전은 오버레이가 화면을 덮으므로,
-**무슨 일이 일어났는지가 지나가고 나면 남는 곳이 없었다** — 팀 점수가 조금
-벌어진 것 말고는.
+### Kill log (`KillFeed.gd`)
+Stacks kills · turret demolitions · objective captures one line at a time at the **top-right**
+of the screen (8px below the top panel's bottom edge, y **156** = `TOP_PANEL_H` + 8). The
+battlefield flows on its own every 0.5 s and engages cover the screen with an overlay, so
+**once something happened, there was nowhere it remained** — apart from the team score
+widening a bit.
 
-한 줄은 왼쪽부터 `[막타][어시][어시][아이콘][피해자]` 이고, 모든 줄은
-`feed_width()` 안에서 **오른쪽 정렬**된다 — 어시스트가 몇이든 피해자 칸이 언제나
-같은 x 에 온다.
+A line is, from the left, `[막타][어시][어시][아이콘][피해자]` (last hit / assist / assist / icon /
+victim), and every line is **right-aligned** within `feed_width()` — however many assists, the
+victim cell always lands at the same x.
 
-| 칸 | 폭 | 내용 |
+| Cell | Width | Content |
 |---|---|---|
-| 막타 | `PORTRAIT_W` 96 | 가로로 긴 eye 컷. 이 줄의 주인 |
-| 어시스트 ×0..4 | `ASSIST_W` 32 (= 1/3) | 높이는 같고 폭만 1/3 |
-| 아이콘 | `ICON_W` 32 | 처치 = 교차한 칼, 포탑 철거·오브젝트 획득 = 파열 |
-| 피해자 | 96 | 파일럿이면 eye 컷, 포탑이면 실루엣 + `T1 좌`, 오브젝트면 글리프 + `용` / `전령` |
+| Last hit (막타) | `PORTRAIT_W` 96 | wide eye cut. The owner of this line |
+| Assist ×0..4 | `ASSIST_W` 32 (= 1/3) | same height, only 1/3 width |
+| Icon | `ICON_W` 32 | kill = crossed swords, turret demolition·objective capture = burst |
+| Victim (피해자) | 96 | eye cut for a pilot; for a turret, silhouette + `T1 좌`; for an objective, glyph + `용` / `전령` |
 
-- **적립처는 세 곳이다** — `BattleSim.mark_pilot_dead`(→ `_push_kill_feed`),
-  `BattleSim.score_turret_kill`, 그리고 `ObjectiveSystem._push_feed`
-  (→ `push_objective`). 첫 번째는 **`_payout_kill_bounty` 보다 먼저** 불려야
-  한다: 어시스트 명단이 `PilotData.damage_credit` 에서 나오는데 그 정산이 장부를
-  비운다. 그래서 화면에 뜬 얼굴과 성장치를 받은 얼굴이 같은 표에서 나온다
-  (그 표는 만료를 거른 `BattleSim.live_damage_credit` 한 함수가 만든다).
-- **오브젝트 줄의 대표는 정글러다** — 전령도 용도 양 팀 정글러가 언제나 참가자이고
-  오브젝트를 도는 것 자체가 정글의 일이라, 한 얼굴로 "누가 가져갔나"를 말해야
-  한다면 그 자리는 정글러다(`ObjectiveSystem._feed_order`). 정글러가 못 나왔으면
-  (사망 · 위치 고정 스킬) 남은 참가자 중 첫 사람이 서고, 나머지는 전부 어시스트로
-  붙는다. 명단은 **참여를 고른 시점의 참가자**라 그 뒤 교전에서 쓰러진 사람도
-  그대로 남고, **무혈 획득도 한 줄 뜬다** — 아무도 안 나와 거저 가져간 것이야말로
-  화면에 아무 일도 일어나지 않는 경우라 자국이 더 필요하다.
-- **전령 / 용 그림은 `ObjectiveTimer` 의 static 함수가 그린다**
-  (`draw_kind_glyph` / `kind_color`, 64×64 정규 좌표). 상단 패널의 등장 시계와
-  **같은 함수**라 두 자리의 용이 다른 그림이 될 수 없다. 킬로그 쪽 노드는
-  `ObjGlyph` 이고 `Glyph` 와 따로 있는 이유는 그리는 방식이 아니라 좌표계다.
-- **막타가 null 인 경로가 있다** — `SimulationCore._last_hitter` 는 매 턴 비워지므로
-  타이밍에 따라 비어 들어온다. 그때는 가장 많이 때린 사람을 막타 자리에 세운다.
-- **교전 중 처치는 보류된다** — `_submit` 이 `EngagePhaseManager.is_active()` 를
-  보고 `_pending` 에 쌓고, 결과 대시보드를 닫는 `_on_dashboard_confirmed` 가
-  `flush_pending()` 을 불러 `FLUSH_STAGGER`(0.25초) 간격으로 풀어놓는다. 아레나가
-  화면을 덮고 있는 동안 띄워 봐야 아무도 못 본다.
-- **줄은 위에서 밀고 들어온다** — 새 줄이 y 0, 나머지가 한 칸씩 아래로. `HOLD_SEC`
-  4초 뒤 `FADE_SEC` 0.5초에 걸쳐 지워지고, `MAX_ROWS`(4)를 넘긴 가장 오래된 줄은
-  아래로 밀려나며 페이드한다. 밀려난 줄은 `_rows` 가 아니라 **`_fading` 으로
-  옮긴다** — 자리 계산에서는 빠져야 하지만 페이드는 계속 돌아야 한다(실측: `_rows`
-  에서 빼기만 했더니 그 줄이 화면에 영원히 굳었다).
-- **아이콘은 줄의 `_draw` 가 아니라 자식 `Glyph` 노드다.** Control 의 `_draw` 는
-  자식보다 **먼저** 나가므로 줄 배경(반투명)과 포탑 칸 슬래브(불투명) 밑에 깔린다
-  — 실측에서 칼은 흐려지고 포탑 실루엣은 아예 보이지 않았다.
-- 4줄이면 아래끝이 y **334** 로 **전장 픽셀 상단(369) 위**에서 멈춘다(상단
-  패널이 168 이던 시절에는 354 로 아슬아슬했다). `MAX_ROWS` / `ROW_STEP` 을
-  많이 키우면 전장을 덮는다.
+- **There are three feed sources** — `BattleSim.mark_pilot_dead` (→ `_push_kill_feed`),
+  `BattleSim.score_turret_kill`, and `ObjectiveSystem._push_feed` (→ `push_objective`). The
+  first must be called **before `_payout_kill_bounty`**: the assist list comes from
+  `PilotData.damage_credit`, and that payout empties the ledger. So the faces shown on screen
+  and the faces that received growth points come from the same table (that table is built by
+  one function, `BattleSim.live_damage_credit`, which filters out expired entries).
+- **The representative of an objective line is the jungler** — for both Herald and Dragon the
+  junglers of both teams are always participants, and running objectives is the jungle's job
+  itself, so if one face must say "who took it", that seat is the jungler's
+  (`ObjectiveSystem._feed_order`). If the jungler couldn't come (dead · position-locking skill)
+  the first of the remaining participants stands there, and everyone else attaches as assists.
+  The list is **the participants at the time participation was chosen**, so someone downed in
+  the subsequent engage still stays, and **an uncontested capture also gets a line** — a free
+  take where nobody showed up is precisely the case where nothing happens on screen, so it
+  needs a trace even more.
+- **The Herald / Dragon pictures are drawn by `ObjectiveTimer`'s static functions**
+  (`draw_kind_glyph` / `kind_color`, 64×64 normalised coordinates). It's **the same function**
+  as the spawn clock in the top panel, so the Dragon in the two spots can't become different
+  pictures. The kill log node is `ObjGlyph`; the reason it's separate from `Glyph` is the
+  coordinate system, not the drawing method.
+- **There's a path where the last hitter is null** — `SimulationCore._last_hitter` is cleared
+  every turn, so depending on timing it arrives empty. In that case the person who dealt the
+  most damage takes the last-hit seat.
+- **Kills during an engage are held back** — `_submit` checks `EngagePhaseManager.is_active()`
+  and stacks them in `_pending`, and `_on_dashboard_confirmed`, which closes the result
+  dashboard, calls `flush_pending()` to release them at `FLUSH_STAGGER` (0.25 s) intervals.
+  Showing them while the arena covers the screen means nobody sees them.
+- **Lines push in from the top** — the new line at y 0, the rest one slot down each. After
+  `HOLD_SEC` 4 s they're erased over `FADE_SEC` 0.5 s, and the oldest line beyond `MAX_ROWS`
+  (4) is pushed down and fades. A pushed-out line is **moved to `_fading`**, not left in
+  `_rows` — it must drop out of slot calculation but its fade must keep running (measured: just
+  removing it from `_rows` froze that line on screen forever).
+- **The icon is a child `Glyph` node, not the line's `_draw`.** A Control's `_draw` is emitted
+  **before** its children, so it would lie beneath the line background (translucent) and the
+  turret cell slab (opaque) — in measurement the swords were faded and the turret silhouette
+  didn't show at all.
+- With 4 lines the bottom stops at y **334**, **above the top of the battlefield pixels
+  (369)** (when the top panel was 168 it was a close call at 354). Raising `MAX_ROWS` /
+  `ROW_STEP` much covers the battlefield.
 
 ### update_hud() (per-turn)
-- Calls `_update_cost_donuts(in_card_phase)` — pushes both sides' 작전 점수
-  into their ring gauges and gates the player donut's flip / 턴 넘기기 press
+- Calls `_update_cost_donuts(in_card_phase)` — pushes both sides' operation points
+  into their ring gauges and gates the player donut's flip / "턴 넘기기" press
   on `game_phase == CARD_PHASE` and `card_phase.can_end_card_phase()`.
 - Calls `_update_pilot_strips(in_card_phase)` — sorts a **copy** of `_bs.pilots`
   by team and lane, pushes each five into its `PilotStrip`, gates **both** strips'
-  hit buttons on 작전 단계, refreshes the team-score label, then lets
+  hit buttons on the operation phase, refreshes the team-score label, then lets
   `PilotDetailPanel.close_if_phase_left()` close the modal if the phase moved on
   and `PilotDetailPanel.refresh()` re-write the chip values of one that survived
   (labels only — the node tree is rebuilt on tab switch, never on refresh).
@@ -854,18 +930,19 @@ Convenience helper to create and add a styled Label.
 
 ---
 
-## 파일럿 스킬 표시 (`PilotStrip` 딤 + `PilotDetailPanel` 블록)
+## Pilot skill display (`PilotStrip` dim + `PilotDetailPanel` block)
 
-선수마다 붙는 고유 능력. 규칙과 25개 목록은 `../skill/README.md` 에 있고,
-여기 적는 것은 **화면에 어떻게 나타나는가**뿐이다.
+A unique ability attached to each player. The rules and the list of 25 are in
+`../skill/README.md`; what's written here is only **how it appears on screen**.
 
-### 스트립 — 준비도 와이프 + 숫자
-**초상화는 기본적으로 어둡게 덮여 있고, 스킬이 준비되는 만큼 왼쪽부터 밝아진다.**
-채움 비율은 `PilotSkillSystem.progress(p)` 하나가 답한다 — 쿨타임은 경과 비율,
-충전식은 활성화에 드는 충전 대비 비율, **패시브는 언제나 1.0**(누를 수 없는 대신
-상시 적용이라 "아직 안 됐다"가 성립하지 않는다).
+### Strip — readiness wipe + number
+**The portrait is darkened by default and brightens from the left as the skill gets ready.**
+The fill ratio is answered by one function, `PilotSkillSystem.progress(p)` — for cooldowns
+it's the elapsed ratio, for charge-type skills the ratio against the Charge (충전) needed to
+activate, and **for passives it's always 1.0** (they can't be pressed but always apply, so
+"not ready yet" doesn't exist).
 
-구현은 딤 한 장(`SKILL_DIM`, 검정 α 0.55)의 **왼쪽 끝을 밀어내는** 것이다:
+The implementation **pushes the left edge** of one dim (`SKILL_DIM`, black α 0.55):
 
 ```
 filled = progress(p)
@@ -873,87 +950,88 @@ dim.position.x = px + _portrait_w * filled
 dim.size.x     = _portrait_w * (1 - filled)
 ```
 
-밝은 쪽에 사각형을 얹는 방식이 아닌 이유는 100% 에서다 — 얹으면 채움이 꽉 차도
-한 겹이 남지만, 좁히면 폭이 0 이 되어 초상화가 **원래 색 그대로**가 된다.
+The reason it's not done by laying a rectangle on the bright side is the 100% case — layering
+leaves one coat even when full, while narrowing brings the width to 0 so the portrait returns
+to **exactly its original colour**.
 
-딤은 `eye` 다음 · `rim` **앞**에 붙인다(형제 z-order = 자식 인덱스). 팀색
-테두리가 딤 위에 남아야 어느 팀인지가 준비도에 따라 흐려지지 않는다.
+The dim is attached after `eye` · **before** `rim` (sibling z-order = child index). The team
+colour border must stay above the dim so which team it is doesn't fade with readiness.
 
-숫자는 초상화 **오른쪽 위**의 작은 칸(`SKILL_BADGE_W_RATIO` 0.28 ×
-`SKILL_BADGE_H_RATIO` 0.42, 검정 받침 α 0.55)이고 `badge_text(p)` 가 답한다 —
-쿨타임이면 **남은 턴**(준비되면 빈칸), 충전식과 충전을 쌓는 패시브면 **충전 수**,
-그 밖에는 빈칸이다. 색이 "지금 누를 수 있는가"를 말한다(금색 `SKILL_BADGE_READY`
-/ 회청색 `SKILL_BADGE_WAIT`).
+The number is a small cell at the portrait's **top-right** (`SKILL_BADGE_W_RATIO` 0.28 ×
+`SKILL_BADGE_H_RATIO` 0.42, black backing α 0.55), answered by `badge_text(p)` — for a
+cooldown, **turns remaining** (blank when ready); for charge-type skills and passives that
+stack Charge, **the Charge count**; otherwise blank. The colour says "can it be pressed now"
+(gold `SKILL_BADGE_READY` / slate blue `SKILL_BADGE_WAIT`).
 
-**아군 스트립에만 뜬다**(`_team != 0` 이면 `_apply_skill_state` 가 곧장 돌아온다).
-스킬은 아군만 누를 수 있고, 적 칸까지 어둡게 덮으면 상대 얼굴이 스킬과 무관하게
-흐려 보인다. 칸 크기가 두 스트립에서 다르므로 배지 칸도 **초상화 비율**로 잡는다
-— 역할 태그가 그렇게 하는 것과 같은 이유다(고정 픽셀이면 작은 쪽에서 얼굴을
-덮는다).
+**It shows only on the ally strip** (`_apply_skill_state` returns immediately if
+`_team != 0`). Only allies can press skills, and darkening the enemy cells too would make the
+opponent's faces look faded regardless of skills. Cell size differs between the two strips,
+so the badge cell is also sized **by portrait ratio** — the same reason the role tag did so
+(fixed pixels would cover the face on the smaller one).
 
-갱신은 `HudBuilder.update_hud` → `_update_pilot_strips` → `PilotStrip.refresh()`
-경로 하나뿐이다. 전장 틱과 무관하게 상태가 바뀌는 경로(오브젝트 등장 · 처치
-관여 · 포탑 파괴)를 덮으려고 `PilotSkillSystem.skill_state_changed` 가
-`update_hud` 에 직접 연결돼 있다(`BattleSim._ready`).
+Updating has only one path: `HudBuilder.update_hud` → `_update_pilot_strips` →
+`PilotStrip.refresh()`. To cover paths where state changes independently of battlefield ticks
+(objective spawn · kill involvement · turret destruction), `PilotSkillSystem.skill_state_changed`
+is connected directly to `update_hud` (`BattleSim._ready`).
 
-### 상세 패널 — 인게임 탭 카드 줄 아래
-스킬은 카드와 다른 종류의 자원이라 카드 격자에 섞지 않고 자기 블록을 갖는다.
-지속 효과 썸네일에 한 칸으로 끼워 넣는 길도 있었지만, 그러면 "지금 쓸 수
-있는가"를 알려면 썸네일을 한 번 더 눌러야 한다 — 스킬은 누르라고 있는 것이므로
-버튼이 바로 보여야 한다.
+### Detail panel — below the card row in the in-game tab
+A skill is a different kind of resource from cards, so it isn't mixed into the card grid but
+has its own block. There was also the option of slotting it into the lasting effect
+thumbnails as one cell, but then knowing "can I use it now" would take one more press on the
+thumbnail — a skill exists to be pressed, so its button must be visible right away.
 
 ```
-파일럿 스킬 ──────────────────────────
-공성전 (30pt, 금색)                충전식 (20pt, 우측)
-포탑 파괴, 전투 개시 (19pt, 흐리게)
-충전 5로 시작. 포탑 파괴 시 +1 충전 (최대 5) / 활성화: …   ← 자동 줄바꿈
-충전 0 / 5 · 사용에 5 충전                                  ← 준비되면 초록
-[            사용            ]   폭 STAT_W, 높이 68
+파일럿 스킬 ──────────────────────────                      ("Pilot skill")
+공성전 (30pt, gold)                충전식 (20pt, right)      (skill name "Siege" / type "Charge-type")
+포탑 파괴, 전투 개시 (19pt, faint)                           (keywords: turret destroyed, battle start)
+충전 5로 시작. 포탑 파괴 시 +1 충전 (최대 5) / 활성화: …   ← auto wrap  (description)
+충전 0 / 5 · 사용에 5 충전                                  ← green when ready  (state: "Charge 0 / 5 · 5 Charge to use")
+[            사용            ]   width STAT_W, height 68     ("Use")
 ```
 
-* **배지는 타입 한 단어만**이다. 키워드까지 붙이면 긴 스킬에서 38% 폭을 넘겨
-  오른쪽 정렬이 왼쪽부터 잘려 나간다 — 우측 정렬 `Label` 은 넘칠 때 정렬을
-  포기하고 rect 왼쪽부터 그리기 때문이다(`godot_control_sizing_traps` 와 같은
-  함정). 키워드는 자기 줄에 작고 흐리게 내려왔다.
-* 설명문 높이는 **폰트에게 물어** 잡는다(`Font.get_multiline_string_size`).
-  글자 수로 어림하면 한글/영문 혼용에서 한두 줄씩 어긋나 아래 버튼이 겹치거나
-  뜬다.
-* **패시브에는 버튼이 없다** — 누를 수 없는 것에 비활성 버튼을 두면 "언젠가는
-  눌리는 것"으로 읽힌다. `_skill_use_btn` 이 null 로 남는다.
-* `refresh()` 는 **상태 줄과 버튼 활성만** 다시 쓴다(`_refresh_skill_block`).
-  트리를 다시 세우면 카드 노드가 매 갱신마다 인스턴스화된다 — 이 패널의 다른
-  갱신 경로와 같은 규칙이다.
-* **사용하면 패널이 닫힌다.** 결과가 손패 · 전장 · 스트립에 나타나는데 딤이 그
-  위를 덮고 있으면 아무 일도 안 일어난 것처럼 보이고, 계략처럼 자기 오버레이
-  (`CardSelectOverlay`, 레이어 10)를 여는 스킬은 이 패널(레이어 13) 뒤에 깔려
-  아예 보이지 않는다.
+* **The badge is only one word, the type.** Adding keywords would exceed 38% width on long
+  skills and the right alignment would be clipped from the left — a right-aligned `Label`
+  gives up alignment when it overflows and draws from the rect's left (the same trap as
+  `godot_control_sizing_traps`). Keywords moved down to their own line, small and faint.
+* The description height is obtained by **asking the font** (`Font.get_multiline_string_size`).
+  Estimating from character count is off by a line or two with mixed Korean/English text, so
+  the button below overlaps or floats.
+* **Passives have no button** — a disabled button on something that can't be pressed reads as
+  "something that will be pressable someday". `_skill_use_btn` stays null.
+* `refresh()` rewrites **only the state line and button enabled state**
+  (`_refresh_skill_block`). Rebuilding the tree would instantiate card nodes on every update —
+  the same rule as the other update paths of this panel.
+* **Using it closes the panel.** The result shows up in the hand · battlefield · strips, and
+  with the dim covering them it looks like nothing happened; skills that open their own overlay,
+  like 계략 (Scheme) (`CardSelectOverlay`, layer 10), would sit behind this panel (layer 13) and
+  not be visible at all.
 
 ---
 
-## 화면 대응 (세이프 에어리어)
+## Screen fit (safe area)
 
-`HudBuilder` 의 좌표 상수는 **1080×1920 디자인 값 그대로**이고, 기기 대응은
-그 값을 건드리지 않고 **덩어리째 미는 것**으로 한다.
+`HudBuilder`'s coordinate constants are **the 1080×1920 design values as-is**, and device
+adaptation is done **by shifting whole blocks** without touching those values.
 
-| 스칼라 | 값 | 미는 대상 |
+| Scalar | Value | What it shifts |
 |---|---|---|
-| `HudBuilder.top_offset()` | `ScreenMetrics.top_y()` | 상단 패널 · 상대 손패 peek 루트 · 적 도넛 · `KillFeed` |
-| `HudBuilder.bottom_offset()` | `ScreenMetrics.bottom_y() − 1920` | 아군 스트립(+뒤판) · `BattleSim.BS_HAND_CENTER.y`(→ 덱/버린 더미 · 플레이어 도넛 · 딤이 전부 따라온다) |
+| `HudBuilder.top_offset()` | `ScreenMetrics.top_y()` | top panel · opponent hand peek root · enemy donut · `KillFeed` |
+| `HudBuilder.bottom_offset()` | `ScreenMetrics.bottom_y() − 1920` | ally strip (+backplate) · `BattleSim.BS_HAND_CENTER.y` (→ deck/discard · player donut · dim all follow) |
 
-상수를 하나씩 고치지 않는 이유는 이 파일 머리말의 "사슬" 때문이다 — 상단
-패널 ↔ peek ↔ 도넛 ↔ 킬로그가 픽셀 단위로 맞물려 있어서 하나만 옮기면 관계가
-조용히 어긋난다. 스칼라 두 개면 관계가 전부 보존되고, **인셋이 0 이면 두
-값이 모두 0 이라 예전 배치와 한 픽셀도 다르지 않다**(실측).
+The reason not to fix constants one by one is the "chain" from the head of this file — top
+panel ↔ peek ↔ donut ↔ kill log interlock pixel by pixel, so moving just one quietly breaks
+the relationship. Two scalars preserve all relationships, and **with zero insets both values
+are 0, so the layout doesn't differ by a single pixel from before** (measured).
 
-가로는 `ScreenMetrics.vp_w()` / `center_x()` 에서 온다 — 적 스트립과 오브젝트
-시계는 뷰포트 가로에 맞춰 다시 가운데를 잡고, 시계의 오른쪽 칸은 왼쪽 여백에서
-역산한다(예전 `OBJ_TIMER_RIGHT_X = 953` 은 삭제).
+Horizontal comes from `ScreenMetrics.vp_w()` / `center_x()` — the enemy strip and objective
+clocks re-centre to the viewport width, and the clock's right cell is worked back from the
+left margin (the old `OBJ_TIMER_RIGHT_X = 953` was deleted).
 
-전체 화면 딤(`CardSelectOverlay` · `PilotDetailPanel` · `CardPileViewer` …)은
-반드시 `ScreenMetrics.viewport_size()` 여야 한다. `Vector2(1080, 1920)` 리터럴은
-긴 화면에서 아래쪽에 안 덮인 띠를 남긴다.
+Full-screen dims (`CardSelectOverlay` · `PilotDetailPanel` · `CardPileViewer` …) must use
+`ScreenMetrics.viewport_size()`. A `Vector2(1080, 1920)` literal leaves an uncovered band at
+the bottom on tall screens.
 
-자세한 규약 · 기기별 수치 · 데스크톱 검증법: **`docs/mobile_safe_area.md`**
+Detailed conventions · per-device values · desktop verification: **`docs/mobile_safe_area.md`**
 
 
 ## Detail moved from root CLAUDE.md
@@ -962,14 +1040,14 @@ dim.size.x     = _portrait_w * (1 - filled)
 
 | System | Description |
 |---|---|
-| 파일럿 표시 (스트립 ×2) | 파일럿 다섯 명이 **눈높이 초상화 → 체력 바 → 성장치 숫자** 세 줄로 한 칸을 이루고(성장치는 개시 `1.00k` 에서 후반 `25.00k`+ 까지 오르는 MOBA 중계의 골드 표시에 해당한다), 다섯 칸이 가로로 나란히 선다(`ui/PilotStrip.gd`). **적 팀은 화면 최상단**(`ENEMY_STRIP_RECT` 137,46,806×100 — **아군의 78%** 이고 가로 가운데, **그 뒤에 뒤판 `Panel` 한 장**), **아군은 핸드 행보다 아래**(`PLAYER_STRIP_RECT` 25,1766,1030×122, **그 뒤에 뒤판 `Panel` 한 장** — 아래 항목) — 예전에는 열 명이 전부 상단 패널 양옆에 84px 정사각 슬롯으로 몰려 있어 누가 누구인지도, 어느 쪽이 내 팀인지도 읽히지 않았다. 초상화는 `PilotImages.eye_for` = **`eye/N_eye.png`(480×200, 양 눈이 보이게 가로로 자른 밴드)**이고 칸 높이는 그 비율(`EYE_ASPECT` 2.4)에서 유도한다 — 임의 높이로 늘리면 얼굴이 찌그러진다. 체력 바는 **`ColorRect` 두 장**이다: `ProgressBar` 는 테마 컨텐트 마진에서 최소 크기를 계산해 `size` 를 24px 안팎까지 끌어올리므로 6~10px 바를 요청해도 아래의 성장치 라벨을 덮어썼다(실측 확인). 보호막이 있으면 채움이 노란색이 된다(바를 이어 붙이지 않는 이유는 얇아서 두 구간이 구분되지 않아서다). 쓰러진 파일럿은 초상화가 어두워지고 **부활까지 남은 턴 수**가 한가운데 크게 찍힌다. 하단 스트립의 y(1766)는 **카드 밑단에서 계산해 나온 값**이다 — 부채꼴 양 끝 카드가 가운데보다 21.4px 처지고 호버 시 1.2배로 커져 최악 y≈1763 까지 내려왔었다(핸드 행이 1500 이던 시절). 핸드가 1440 으로 올라간 지금은 최악이 y≈1703 이라 여유가 63px 로 늘었지만, 스트립은 화면 바닥(1888)에 붙어 있어 더 내릴 자리가 없으므로 그대로 둔다. **칸 순서는 `GameEnums.ROLE_DISPLAY_ORDER` 가 정한다 — 탱커 → 암살 → 격투 → 스나이퍼 → 서포터**, 곧 전장을 왼쪽부터 훑은 순서(좌측 → 정글 → 중앙 → 우측 ×2)이고 **아웃게임 화면들과 같은 표**다(시즌 허브 로스터 · 훈련 격자 · 밴픽 화면 · 드래프트 슬롯). `Role` 열거값 순서(TANK · FIGHTER · ASSASSIN · SUPPORT · SNIPER)를 그대로 쓰면 정글러가 세 번째, 원딜이 다섯 번째로 앉는데 그 배열은 지도와도 플레이어가 아는 라인업과도 대응하지 않는다. 예전에는 여기 `HudBuilder.LANE_SEAT_ORDER` 표를 따로 두고 **`PilotData.lane` 으로** 정렬했는데(**삭제됨**), 우측 레인에는 두 명이 앉아 있어(스나이퍼 · 서포터) lane 이 그 둘의 앞뒤를 가르지 못했다 — `sort_custom` 은 안정 정렬이 아니라 같은 lane 두 명의 순서가 실행마다 흔들릴 수 있었다. 역할로 정렬하면 다섯 자리가 전부 유일하게 정해진다. 정렬은 `_bs.pilots` 의 **사본**에 한다 — 원본은 스폰 순서(= 역할 순서)를 유지해야 `BattleSim.player_data_for` 가 그 인덱스로 로스터를 찾을 수 있다. **적 스트립의 크기는 네 번 바뀌었다.** 처음에는 730×84(초상화 130×54) 축소판이었는데 같은 얼굴을 위아래에서 두 배 다른 크기로 보여 줘 상대가 누구인지도 상대 성장치도 아군만큼 읽히지 않았고(그 숫자는 내 것과 나란히 비교하라고 있다), 그래서 아군과 **똑같은** 1030×122 로 키웠다 — 그때 `HudBuilder.TOP_PANEL_H` 가 130 → **168** 로 커지고 그 아래 사슬이 통째로 38px 내려갔다(`AI_HAND_TOP_Y` 80 → **118** = `TOP_PANEL_H − 50` → 적 도넛 아래끝 311 → **349**, 전장 픽셀 상단 369 라 여유 20px). 그 뒤 **60%(618×76)** 로 줄여 가운데에 놓았다 — 오브젝트 등장 시계가 전장 타일에서 이 패널로 올라오면서 **스트립 양옆에 아이콘 + 턴 수가 앉을 칸**이 필요해졌기 때문이다. 다만 그 크기에서는 초상화 108×45 가 누가 누구인지 읽히는 하한을 밑돌았다. 초상화 폭은 칸 폭에서 유도되므로(`PilotStrip.setup` 의 `_cell_w − 16`) 키우는 길은 스트립 폭을 미는 것뿐이라 **두 번 밀었다** — 618 → **672**(초상화 +10%), 다시 672 → **806**(+20%, 초상화 145×60). 높이도 eye 비(2.4:1)를 따라 76 → 81 → **97** 로 함께 올라가고, 가로 가운데 정렬을 지키느라 x 는 231 → 204 → **137** 로 왼쪽으로 밀린다. 좌우 여백이 줄어 시계 칸은 190×122 → 168×49 → **101×60**(`OBJ_TIMER_LEFT_X` 26 / `OBJ_TIMER_RIGHT_X` 953)이 됐다 — 시계 쪽에서 아이콘·숫자 간격을 4 로 줄이고 "턴" 글자를 지워 그 폭에 맞췄다(`ui/ObjectiveTimer.gd`). 얼굴이 먼저 읽혀야 하는 패널이라 자리를 다툴 때 물러나는 쪽은 언제나 시계다. **패널 높이는 이제 내용이 정한다** — `TOP_PANEL_H` 는 168 → 132 → **148**(헤더 4..38 + 스트립 띠 46..143 + 5px)이고, 그 아래 사슬(`AI_HAND_TOP_Y` = `TOP_PANEL_H − 50` = **98**, 적 도넛 아래끝 **327**, `KillFeed.FEED_TOP` = `TOP_PANEL_H + 8` = **156**)이 함께 따라 움직여 전장 상단(369)까지의 여유가 **42px** 로 남는다. 예전 168 은 스트립이 아군과 같은 크기이던 시절의 값이 남아 띠 아래에 27px 짜리 빈 칸을 만들고 있었다. **성장치 폰트는 이제 두 스트립이 같다**(`ENEMY_SCORE_FONT` = `PLAYER_SCORE_FONT` = 20, 예전 14) — 초상화는 아군이 더 크지만 그 숫자는 내 것과 나란히 견주라고 있는 값이라 크기가 다르면 같은 줄에서 읽는 두 수의 무게가 달라진다. 얼굴은 작아도 되고 숫자는 안 된다. **역할 태그(초상화 좌하단의 `T` / `F` 한 글자)는 삭제됐다** — 스트립의 자리 순서 자체가 이미 역할이라 같은 말을 두 번 하면서 얼굴 아래쪽을 가리기만 했다(`ROLE_TAG_*` 세 상수와 `tag_bg` / `role_lbl` 두 노드가 함께 사라졌다). **그리고 전폭 상단 패널이 사라졌다** — 아래 항목 참조. |
-| 상단 chrome (적 스트립 뒤판 + 경과 시계 + 오브젝트 시계) | **예전에는 화면 가로를 통째로 덮는 패널 한 장**(`TOP_PANEL_H` 148)이 헤더 줄과 적 스트립과 오브젝트 시계를 다 담고 있었다. 그러면 좌우 끝의 시계가 스트립과 같은 판 위에 얹힌 것으로 읽히는데, 시계는 스트립의 일부가 아니라 전장의 사건을 세는 별개의 물건이다. 지금은 **아군 스트립과 같은 규칙**으로 뒤판(`_enemy_strip_bg`)이 초상화 다섯 칸만 `ENEMY_BG_PAD`(10)씩 넓혀 감싸고, **경과 시계와 오브젝트 시계 둘은 그 바깥에 배경 없이 선다**(셋 다 `_bs.canvas` 직속). `TOP_PANEL_H` 는 상수로 남아 **그 아래 사슬의 기준 좌표** 노릇을 한다 — 뒤판이 `ENEMY_STRIP_RECT.y − 10`(36)에서 시작해 `TOP_PANEL_H`(148)에서 끝나므로 상대 핸드 peek 을 가리는 양(`AI_HAND_TOP_Y` = `TOP_PANEL_H − 50` = 98)도 적 도넛(327)도 킬로그(`FEED_TOP` = 156)도 한 픽셀도 안 움직였다. peek 부채꼴은 화면 가로 가운데에 서므로 스트립 폭(x 127..953) 안에 통째로 들어가 가림막 노릇도 그대로다. **팀 합산 점수(`12.4k - 9.8k`)는 삭제됐다** — 같은 수를 스트립의 다섯 칸이 이미 낱개로 보여 주고 있었고, 합계는 어느 쪽이 이기고 있는지를 한 줄로 말해 주는 대신 정작 **누가** 크고 있는지를 가렸다(`TOTAL_SCORE_FONT` / `_lbl_total_score` 함께 삭제, `BattleSim.team_score()` 는 소비자 없이 남았다). 경과 시계는 받침이 없으므로 검은 외곽선으로 읽힘을 지키고, `UiHelpers.mk_label` 이 `Control` 부모를 받는 반면 캔버스는 `CanvasLayer` 라 `Label` 을 직접 세운다. |
-| 아군 스트립 뒤판 | 하단 아군 스트립 뒤에 **짙은 `Panel` 한 장**(`PlayerStripBackdrop`, 스트립 영역을 `HudBuilder.PLAYER_BG_PAD` 10px 씩 넓힌 y 1756..1898). 색·테두리는 상단 패널과 같아 위아래 두 스트립이 같은 판 위에 앉은 것으로 읽힌다. 적 스트립은 상단 패널 위에 앉아 있어 처음부터 받침이 있었지만 아군 스트립은 맨 화면 위에 떠 있어 얼굴 · 체력 바 · 성장치 세 줄이 배경 없이 흩어져 보였다 — 특히 성장치 숫자는 받침이 없으면 어디까지가 한 파일럿의 칸인지가 안 읽힌다. **`_build_player_strip` 이 스트립보다 먼저 붙이고**(형제 z-order 가 곧 자식 인덱스라 나중에 붙으면 판이 초상화를 덮는다) **`set_strip_visible(0, on)` 이 스트립과 함께 숨긴다**(상세 패널이 스트립만 치우면 빈 판이 딤 위에 남는다). |
-| 오브젝트 등장 시계 (스트립 양옆) | 적 스트립 좌우 여백에 **아이콘 하나 + 남은 턴 수** 한 쌍씩(`ui/ObjectiveTimer.gd`, 각 101×60). **왼쪽이 전령(보랏빛 깃발) · 오른쪽이 용(주홍 날개)** 이고, 그 좌우는 전장에서 두 오브젝트가 서는 칸의 좌우와 같다 — 자리가 곧 이름이라 이름표가 없다. 적 스트립이 20% 커지며 이 칸이 168 → 101px 로 줄었고, 그에 맞춰 아이콘·숫자 간격이 10 → **4** 가 되고 **숫자 옆의 "턴" 글자가 삭제됐다**(`UNIT_FONT_SIZE` / `UNIT_COLOR` 함께 사라졌다) — 아이콘 옆에 붙은 숫자가 남은 턴 수 말고 무엇일 수는 없으므로 그 두 글자는 숫자를 밀어내기만 했다. `ICON_SIZE` 는 49 그대로이고 세로 가운데에 놓인다(숫자 폰트 32). **누르면 그 오브젝트의 보상 카드가 실물로 뜬다** — `mouse_filter` 가 IGNORE → STOP 이 되고 `timer_pressed(kind)` 를 쏘면 `HudBuilder` 가 `BattleSim.objective_reward.toggle(kind)` 를 부른다(같은 시계를 다시 누르면 닫힌다). 한때는 아이콘 62 에 칸 높이가 스트립 띠 전체(122)여서 — 클수록 곁눈으로 읽힌다는 이유였다 — 시계가 초상화보다 위아래로 튀어나와 상단 패널에서 가장 큰 물체가 됐고 정작 얼굴로 가야 할 시선을 먼저 잡아챘다. 밑단·윗단을 초상화에 맞추면 좌 시계 · 얼굴 다섯 · 우 시계가 한 줄로 읽힌다. 상태는 `ObjectiveSystem.turns_until_cell(cell)` 하나에서만 오고 갱신은 `HudBuilder.update_hud` 의 `queue_redraw()` 뿐이다. **아이콘은 이미지가 아니라 도형이다**(킬로그 글리프와 같은 방식): 좌표를 전부 64×64 기준으로 적고 `ICON_SIZE / 64` 배율만 곱하므로 크기를 바꿔도 숫자를 다시 짜지 않는다. 용의 날개는 **꼭짓점 넷짜리 매끈한 삼각**인데, 처음의 톱니 달린 박쥐 날개(꼭짓점 여덟)는 이 크기로 줄이면 뭉개져 **나뭇잎 한 장**으로 보였다 — 이 크기에서 실루엣을 만드는 것은 디테일이 아니라 큰 삼각형 둘의 각도다. |
-| 킬로그 (처치 / 포탑 철거 / 오브젝트 획득) | 화면 **우측 상단**(상단 패널 밑단에서 8px 아래, y **156** = `TOP_PANEL_H` + 8)에 한 줄씩 쌓인다(`ui/KillFeed.gd`). 전장은 0.5초마다 저 혼자 흐르고 교전은 오버레이가 화면을 덮으므로, **무슨 일이 일어났는지가 지나가고 나면 남는 곳이 없었다** — 팀 점수가 조금 벌어진 것 말고는. 한 줄은 왼쪽부터 `[막타 96px][어시 32px ×0..4][아이콘 32px][피해자 96px]` 이고 모두 eye 컷(`PilotImages.eye_for`)이며, **줄 전체가 오른쪽 정렬**이라 어시스트가 몇이든 피해자 칸이 같은 x 에 온다. 아이콘은 처치 = 교차한 칼, 포탑 철거 = 파열이고 피해자 자리에는 포탑 실루엣 + `T1 좌` 가 온다. **적립처는 셋이다** — `BattleSim.mark_pilot_dead`(→ `_push_kill_feed`), `score_turret_kill(killer, td)`, 그리고 **오브젝트 획득**(`ObjectiveSystem._push_feed` → `KillFeed.push_objective`). 오브젝트 줄은 **대표가 정글러**다(전령도 용도 양 팀 정글러가 언제나 참가자이고 오브젝트를 도는 것 자체가 정글의 일이다 — `_feed_order`). 정글러가 못 나왔으면 남은 참가자 중 첫 사람이 서고 나머지는 어시스트로 붙으며, 명단은 **참여를 고른 시점의 참가자**라 그 뒤 교전에서 쓰러진 사람도 남는다. **무혈 획득도 한 줄 뜬다** — 아무도 안 나와 거저 가져간 것이야말로 화면에 아무 일도 안 일어나는 경우다. 오른쪽 끝 칸에는 전령 / 용 글리프와 이름이 오는데, 그 그림은 상단 패널 등장 시계와 **같은 static 함수**(`ObjectiveTimer.draw_kind_glyph`)가 그린다. 처치 줄의 적립처 둘은 그대로다 — 전자는 반드시 `_payout_kill_bounty` **보다 먼저** 돌아야 한다(그 정산이 어시스트 명단의 출처인 `PilotData.damage_credit` 을 비운다). 그래서 화면에 뜬 얼굴과 성장치를 받은 얼굴이 어긋날 수 없다. 막타가 null 로 들어오면(`_last_hitter` 는 매 턴 비워진다) 가장 많이 때린 사람을 그 자리에 세운다. **교전 중 처치는 그 자리에서 뜨지 않는다** — 아레나가 화면을 덮고 있어 어차피 안 보이므로 `is_active()` 를 보고 `_pending` 에 쌓아 두었다가, 결과 대시보드를 닫는 `EngagePhaseManager._on_dashboard_confirmed` 가 `flush_pending()` 을 불러 `FLUSH_STAGGER`(0.25초) 간격으로 쫘라락 풀어놓는다. 줄은 **위에서 밀고 들어오고**(새 줄이 y 0, 나머지가 한 칸씩 아래로) `HOLD_SEC`(4초) 뒤 `FADE_SEC`(0.5초)에 걸쳐 지워지며, `MAX_ROWS`(4)를 넘긴 가장 오래된 줄은 아래로 밀려나며 페이드한다 — 밀려난 줄은 `_rows` 가 아니라 **`_fading` 으로 옮긴다**(자리 계산에서는 빠지되 페이드는 계속 돌아야 한다. `_rows` 에서 빼기만 했더니 그 줄이 화면에 영원히 굳었다 — 실측). 4줄이면 아래끝이 y **334** 로 전장 픽셀 상단(369) 위에서 멈춘다(상단 패널이 168 이던 시절에는 354 로 아슬아슬했다). **아이콘은 줄의 `_draw` 가 아니라 자식 `Glyph` 노드다** — Control 의 `_draw` 는 자식보다 먼저 나가므로 줄 배경(반투명)과 포탑 칸 슬래브(불투명) 밑에 깔린다(칼은 흐려지고 포탑 실루엣은 아예 안 보였다). |
-| 파일럿 상세 패널 | **자기 작전 단계에** 스트립의 얼굴을 누르면 열리는 모달(`ui/PilotDetailPanel.gd`, 자기 `CanvasLayer` 13 — 버리기 10 / 대상 지정 11 / 열람·교전 12 위). **아군 하단 스트립과 적 상단 스트립 양쪽 다 눌린다** — 적도 같은 게이트에 같은 내용으로 열리며(배분받은 카드 6장까지), 상대 로스터는 이미 `match_ctx.enemy_roster` 로 들어와 있어 `BattleSim.player_data_for` 가 인덱스 5..9 로 그대로 찾아 준다. 화면이 검정 α 0.88 로 딤드되고 **누른 쪽 팀의 스트립만 숨겨진다**(딤 위에 남으면 지금 무엇을 보는지 흐려지고, 딤 아래에 두면 방금 누른 얼굴이 어두워진다. 반대 팀은 딤에 가려질 뿐이므로 그대로 둔다). **좌측에는 전신 아트가 두 장** 겹쳐 서고(파일럿 / 메크), 우측은 **머리글 + 탭 셋 + 상세 패널**이다. **머리글은 탭과 분리돼 있다**(`HDR_TOP` **424** .. `HDR_BOTTOM` 562, 자기 받침 위) — **파일럿 이름 / 그 아래 줄에 작게 기체명 / 오른쪽에 성장치**이고, 어느 탭을 보든 같은 파일럿의 것이라 탭이 바뀌어도 다시 세워지지 않는다(`_build_header_block` 은 `_build` 에서 한 번만 돈다). 예전에는 이 줄이 본문 안에 있어 **메크 탭에서 제목이 기체명으로 바뀌며 파일럿 이름과 성장치가 화면에서 통째로 사라졌다** — 지금 누가 열려 있는지가 탭에 따라 흔들린 셈이다. 기체명이 늘 보이는 것도 같은 이유다(메크 탭까지 들어가야 알 수 있는 값이 아니다). **기체명은 이름 오른쪽에서 아래 줄로 내려왔다** — 예전에는 `HBoxContainer` 로 이어 붙였는데 줄의 시작점이 곧 이름 폭이라 파일럿마다 기체명이 다른 x 에서 시작했다(어디를 보면 기체명인지가 파일럿마다 흔들렸다). 두 줄로 쌓으면 시작점이 언제나 같고 글자 폭을 잴 일이 없어져 컨테이너 자체가 사라졌다. 늘어난 두 줄만큼 `HDR_TOP` 이 위로 올라간 것은 `HDR_BOTTOM` 이 탭 바의 윗변이라 못 박혀 있기 때문이다. 탭이 바꾸는 것은 그 아래 상세 패널 하나다 — **인게임**(체력 · 공격력 · 성장 · 전장/교전 명중 · 회피 · 존재감, 사망 시 `부활까지 N턴` 한 줄, 그 아래 곧바로 **파일럿 스킬 블록**) / **파일럿**(선수 스탯 여섯 = `PlayerData`) / **메크**(체력 · 공격력 · 존재감). 탭이 아트의 앞뒤도 정한다(메크 탭이면 기체가 앞) — 예전의 **전환 버튼은 삭제됐다**. **지속 효과와 보유 카드는 둘 다 정보 칼럼 밖에 산다** — 효과는 **일러스트 좌측 하단**(x 26 부터, 카드 줄 바로 위), 카드는 **화면 하단 전체 폭의 부채꼴**이다. **지속 효과 썸네일**(68×68, 인게임 탭 전용)은 **지금 이 파일럿에게 걸려 있는 것만** 뜨고 여섯 칸을 넘으면 줄이 **위로** 접히며(아래로 접으면 두 번째 줄이 카드 위에 내려앉는다), **제목("지속 효과")은 삭제됐다** — 화면 구석에 홀로 선 칸들의 머리에 밑줄 달린 절 제목을 붙이면 제목이 칸보다 눈에 띄고, 걸린 효과가 없으면 아예 아무것도 안 그린다(예전의 "걸려 있는 효과 없음" 한 줄은 제목이 있어야 뜻이 서는 문장이었다). 옮긴 이유는 자리 다툼이다 — 칼럼 안에서 116px 를 먹어 아래 사슬(카드 줄 · 스킬 블록 · 닫기 버튼)이 통째로 밀렸고, 화면 왼쪽 아래는 아트의 다리와 딤뿐이라 비어 있었다. 세 종류가 섞인다 — **(1) 슬롯 효과** 넷(`fx:lane` 라인전 스탯 / `fx:rate` 적립 배율 / `fx:atk` 일시 공격력 / `fx:shield` 보호막)은 한 칸을 카드들이 서로 덮어쓰므로 종류 이름이 곧 칸 이름이고, **(2) 카드별 지속 효과**(`fx:src:<종류>|<카드 이름>`)는 `PilotData.persistent_fx` 장부의 한 줄이 한 칸이며(약칭은 카드 이름 앞 두 글자 — `용 보상` → `용보`), **(3) 잔여분**(`fx:rest:<종류>`)은 합계에서 장부를 뺀 나머지다(메크 패시브가 `bonus_*` 를 직접 미는 몫이라 출처를 카드 이름으로 부를 수 없다). 예전에는 (2)도 속성으로 뭉쳐 **`fx:perm` 한 칸이 [용 보상]과 [핫핸드]를 함께 뜻했고**, `bonus_max_hp` / `bonus_atk_flat` 로 사는 [붉은 가루] · [녹색 병]은 **아예 표시되지 않았다** — 성장 재계산에 지워지지 않으려고 별도 필드로 사는 값들이라 어느 칩에도 안 실렸기 때문이다. **계산은 그대로 합계 슬롯이 하고 표시만 장부를 읽는다**(장부에 적는 자리는 `CardPhaseManager._log_persistent_fx` 하나이고 출처는 그때 도는 카드다) — 성장 재계산이 읽는 곳은 한 군데여야 한다. 꺼져 있는 칸을 회색으로 늘어놓으면 "몇 개가 켜져 있는가"를 도리어 세어야 하고, 하나도 없으면 `걸려 있는 효과 없음` 한 줄이다. 아이콘 에셋이 없으므로 **두 글자 약칭이 곧 아이콘**이고 온전한 이름은 눌러서 여는 패널의 제목이 들고 있다. 칩만으로는 부족했던 이유가 둘이다 — 명중 칩이 55 일 때 그게 카드 때문인지 원래 그런지가 칩을 눌러야 나왔고, **적립 배율처럼 어느 칩에도 안 실리는** 효과는 볼 자리가 아예 없었다. 팀 단위로 걸리는 계획 살인 예약은 여기 없다(다섯 명 모두에게 같은 썸네일이 떠 누구 것인지가 흐려진다). **스탯 칩 · 지속 효과 · 카드 셋이 같은 정보 패널 하나를 나눠 쓴다**(`_targets` 한 표, 키 접두사가 종류를 가른다 — 없음 = 칩, `fx:` = 효과, `card:` = 카드). 판은 정보 칼럼 왼쪽에 **누른 것과 같은 높이**로 펼쳐지되 **`card:` 만 예외로 카드 줄 제목 위에 올려 붙인다** — 카드는 화면 하단에 있어 같은 규칙이 방금 누른 카드 위를 가리키고, 그러면 판이 그 카드를 통째로 덮는다. "지금 무엇을 보고 있는가"는 한 번에 하나여야 하는 질문이라 판을 따로 두면 둘이 동시에 떠 방금 누른 것이 흐려진다. **카드를 누르면 그 카드의 비용 · 종류 · 시전자 제약과 설명문이 그 패널에 뜬다** — 카드 노드에 적힌 글씨는 ×0.80 으로 줄어 있어 읽으라고 있는 것이 아니다. **뒤판은 클릭을 대신 전달한다**(`_on_menu_backdrop_input`) — 여전히 전체 화면 STOP 이지만 그 좌표에 있던 대상 버튼 / 탭 / 닫기를 찾아 대신 눌러 주므로 **패널을 열어 둔 채 다른 스탯을 누르면 곧장 그쪽으로 갈아탄다**. 예전에는 첫 클릭이 닫는 데 쓰여 한 번 더 눌러야 했고, 스탯 여섯 개를 훑는 동안 클릭이 두 배가 되며 화면이 열림↔닫힘을 반복해 깜빡였다. 아무것도 없는 곳을 누르면 그때 닫힌다. **스탯은 줄이 아니라 칩이다**: 끝이 둥근 사각형 한 칸(141×92, 3열)에 위는 작게 이름, 아래는 크게 **최종 값 하나**뿐이고, 기본값 · 증가분 · 만료 턴은 **칩을 누르면 왼쪽에 펼쳐지는 컨텍스트 메뉴**에 있다(`_menu_rows`, 예: 체력 = 기본 200 / 성장 +61% (+122) / 최대 322 / 현재 159 / 보호막 +30). 예전에는 `키 ─ 값` 행이 열몇 줄 이어지고 값 뒤에 `(기본 160)` `(7턴)` 괄호가 줄줄이 붙어 "지금 얼마인가"를 읽는 데 시간이 걸렸다 — `_row` / `_section` / `ROW_H` / `KEY_FRACTION` 은 그때 함께 삭제됐다. **제목 오른쪽의 큰 숫자가 성장치**이고(예전의 `역할 · 아군/적군 · 성장치` 부제와 `라인 / 위치` 행은 삭제됐다 — 역할과 진영은 방금 누른 초상화가 이미 말했다), **메크 탭에서는 붙지 않는다**(그 제목은 기체명이라 오른쪽 숫자의 임자가 아니다). **보호막은 체력 값이 아니라 체력 메뉴 안에** 있고, **명중 / 회피 칩은 라인전 스탯이 먹은 값**이다(`SimulationCore.lane_adjusted` — 판정과 같은 함수를 통과시킨다. 카드가 미는 것은 `hit` / `evasion` 필드가 아니라 판정 시점의 배율 `lane_stat_mod` 라, 원본 필드를 찍으면 공격적인 라인전을 내도 값이 1 도 안 움직인다). **성장 칩의 큰 숫자는 공격력 성장**이고 최대 체력 성장 · 적립 배율은 메뉴에 있다 — 둘은 4배 차이로 다르게 자라고, 카드가 미는 `적립 배율` 과는 다른 것이다. **보유 카드는 화면 하단 전체 폭에 손패와 같은 부채꼴로 선다** — `Card.tscn` **×1.60 = 256×352**(격자 시절 0.80 = 128×176 의 **2배**)이고 인게임 탭은 6장(파일럿 3 → 메크 3 순서라 왼쪽 절반이 사람, 오른쪽 절반이 기체다), 파일럿 / 메크 탭은 그 탭의 카드가 같은 자리에 선다. **예전에는 정보 칼럼 안의 3열 격자였다**: 칸이 칼럼(폭 452)에 갇혀 있어 그보다 키울 수 없었고, 격자를 그대로 두고 2배로 키우는 길은 없다(3열이면 800px 로 칼럼을 348px · 화면 오른쪽을 146px 넘고, 2행이면 패널 아래끝이 ≈1700 → 2052 로 화면 밖이다). 부채꼴은 카드를 **겹쳐** 세우므로 같은 폭에 같은 장수를 넣으면서 장당 크기를 2배로 키운다. 기하는 손패와 같은 규칙(카드 **중심**이 행 아래 원 위를 탄다)이고, 좌우 여백 `FAN_MARGIN`(52)과 아래 여유 `FAN_DROP_RESERVE`(44)는 폭의 절반이 아니라 **기울어진 카드의 바깥 모서리**를 받는다 — 양 끝은 9° 가까이 기울어 세로로 긴 카드가 폭의 절반보다 27px 더 나간다(여백 24 에서 양 끝이 3px 씩 잘렸다 — 실측). **입력은 카드 rect 가 아니라 그 카드가 보이는 밴드**(자기 왼쪽 변 ~ 다음 카드의 왼쪽 변)가 받고 — 겹친 카드에서 rect 를 그대로 덮으면 오른쪽 이웃의 버튼이 이 카드의 보이는 면을 통째로 가린다 — 정보 패널이 열린 카드는 `FAN_LIFT_PX`(30)만큼 솟아 맨 앞으로 끌려 나온다(격자 시절의 테두리 강조는 카드가 아닌 밴드를 두르게 되므로 삭제). 목록은 `BattleSim.starter_cards` 표에서 온다 — 손패·덱·버린 더미를 훑어 역산하면 소멸(`exhaust`)한 카드가 조용히 사라진다. 열려 있는 동안 `refresh()` 가 `update_hud` 마다 **칩 값 라벨과 열린 메뉴의 글자만** 다시 쓴다(트리를 다시 세우면 카드 노드가 매 갱신마다 인스턴스화된다). **닫기**는 받침 아래끝에 붙어 다닌다 — 탭마다 내용 높이가 달라(인게임 ~360 / 파일럿 ~600) 고정 y 에 두면 짧은 탭에서 버튼만 화면 한가운데에 뜬다. 값 라벨에는 **`clip_text = true` 가 필수** — 오른쪽 정렬 `Label` 은 글자가 rect 보다 넓으면 정렬을 포기하고 rect 왼쪽부터 그려 **오른쪽으로 넘쳐 화면을 벗어난다**(실측 확인). 작전 단계를 벗어나면 `close_if_phase_left()` 가 강제로 닫는다 — 열어 둔 채 BATTLE 이 흐르면 딤 뒤에서 전장이 굴러간다. |
-| 상세 패널의 아트 2장 (파일럿 ↔ 메크) | 앞자리와 뒷자리를 두 아트가 나눠 갖는다. **앞** = 밝게, 가로 중심 `ART_FRONT_CENTER_X`(320). **뒤** = `ART_BACK_SHIFT_PX`(400px) 오른쪽으로 밀리고 `ART_BACK_SCALE`(0.90)로 작아지고 `ART_BACK_TINT`(검정 반투명)로 딤드 — "약간 오른쪽에 반쯤 겹쳐 뒤에 선" 자세다. **탭이 앞뒤를 정한다**(`_apply_focus` — 메크 탭이면 기체가 앞, 그 밖에는 사람이 앞; `ART_SWAP_SEC` 0.22초 트윈으로 자리 · 딤 · z-order 가 한꺼번에 바뀐다). 예전의 **전환 버튼(2단 토글)은 삭제됐다** — 정보가 셋으로 갈리면서 2단 토글로는 어디에 무엇이 있는지 말할 수 없게 됐다. **아트는 화면 하단이 자른다** — 아래끝(`ART_BOTTOM` 2010)이 화면(1920) 밖이라 다리 아랫부분이 잘려 나가고, 예전의 무릎 크롭(`_knee_crop` / `KNEE_FRACTION`, 알파 실루엣 높이의 80% 지점에서 `AtlasTexture.region` 으로 텍스처를 자르던 것)은 **삭제됐다**. **크기는 높이(`ART_H` 1400)로 정규화한다** — 전신 아트는 전부 세로 1024 에 인물이 꽉 차 있고 가로만 572~756 이라 폭으로 맞추면 인물 키가 제각각이 된다. 뒤로 물러날 때 노드 크기는 그대로 두고 **`scale` 만** 줄인다: `pivot_offset` 이 **아래 가운데**라 작아져도 바닥선이 그대로여서 둘이 같은 바닥에 선 것처럼 읽힌다. **메크 아트는 30칸이 전부 채워져 있다** — `MechImages.full_for(mech.id)` 가 `res://resources/images/mech/{id}_full.png` 를 찾는다(없으면 `ResourceLoader.exists` 로 조용히 null → 옅은 α 0.30 실루엣 슬래브 + 기체명 플레이스홀더). 파일럿 아트는 세로 1024 에 폭이 572~756 으로 제각각이지만 **메크 아트는 1024×1024 고정 캔버스**다 — 기체 렌더는 검·날개가 옆으로 뻗어 바운딩 박스 비율이 1.5 까지 가고, 높이 정규화가 그 폭을 그대로 환산하면 화면 폭의 두 배로 벌어지기 때문. 그래서 크기도 바운딩 박스가 아니라 **불투명 픽셀 면적**으로 맞춰 본체 겉보기 크기를 고르게 했다. 출처(Gundam Evolution 기체 렌더 24종)와 id ↔ 기체 대응표는 `resources/README.md`. **정보 블록은 아래로 내려왔다**(`STAT_TOP` 170 → 640 → **650**, 머리글이 452, 탭이 562) — 아트가 커지며 화면 위쪽 절반이 인물의 머리·상체 자리가 됐기 때문이고, 글자 뒤에는 받침 `Panel`(α 0.86)이 내용 높이에 맞춰 깔린다. **닫기 버튼은 받침 아래끝에 붙어 다닌다**(`_reposition_close`) — 자리가 바뀌는 것은 탭을 누른 순간뿐이고 `refresh()` 는 받침을 안 건드리므로 버튼이 숫자를 따라 떨지 않는다. 예전의 고정 y(1424)는 인게임 탭에서 버튼만 화면 한가운데에 띄웠다. |
-| 덱 / 버린 더미 뭉치 | 핸드 행 양옆 거터의 Deck / Discard 는 **앞으로 누운 카드 뭉치**로 그려진다(`ui/CardPileStack.gd`) — 카드 뒷면이 위를 향한 채 겹쳐 쌓이고, 아래 카드들의 단면이 뭉치 밑으로 삐져나온다. 예전에는 `"Deck\n18"` 두 줄짜리 Label 하나였다: 숫자는 읽혔지만 더미가 **물건으로 보이지 않아** 카드가 어디서 오고 어디로 가는지가 화면에 없었다. 누워 보이게 하는 것은 둘이다 — 세로를 `FORESHORTEN`(0.55)만큼 누르고, **윗변을 아랫변보다 좁게**(`TOP_EDGE_SCALE` 0.78) 그려 원근을 넣는다. **두께가 곧 장수다**(4장당 한 층, 상한 8층). **바닥선은 고정이고 위로만 자란다** — 세로 중심을 고정하면 카드 한 장이 오갈 때마다 뭉치가 아래위로 떨린다. 장수는 맨 위 카드 뒷면 한가운데에 찍히고 제목은 뭉치 아래에 붙는다. 카운트는 `float` 로 들어와 리셔플 트윈 동안 두께도 같은 곡선을 탄다. 0장이면 테두리만 남은 빈 슬롯. **뒷면은 `Card._apply_back_style` 와 같은 색 하나로 균일하게 칠한다** — 예전에는 면 안쪽에 더미별 accent 사다리꼴(덱 보라 / 버린 더미 적갈)을 덧그렸는데 뭉치가 작아 그 액자가 무늬가 아니라 **면에 얹힌 계조**로 읽혔고, 두 더미는 아래 제목 라벨이 이미 갈라 준다. |
-| 뭉치를 오가는 카드 (잔상) | 숫자만 바뀌면 카드가 더미에서 **나왔다 / 들어갔다**가 화면에 남지 않는다. 그래서 뭉치는 맨 위 카드와 같은 모양의 **잔상** 한 장을 더 그린다(`_draw()` 안의 사다리꼴 하나 — 노드가 아니라 레이아웃 · 입력 · z-order 에 영향이 없다). **덱은 위로 `GHOST_RISE_PX`(74px) 떠오르며 사라지고**(`play_pop`, 드로우 때), **버린 더미는 그 높이에서 내려앉으며 나타난다**(`play_land`, 버리기 때). 한 장이 도는 시간은 `GHOST_SEC`(0.26초)이고, 여러 장이 동시에 돌 수 있어야 하므로 트윈이 아니라 `_ghosts` 배열 + `_process` 로 굴린다. **두 이음매의 규칙이 정반대다**: 드로우의 왼쪽 진입(`_play_draw_intro` ①)은 잔상이 다 사라진 뒤가 아니라 알파가 `GHOST_HANDOFF_ALPHA`(0.30) 남은 시점(0.182초)에 시작해 **겹친다**(완전히 사라진 뒤에 시작하면 한 장이 두 번 나온 것처럼 끊겨 보인다). 반대로 버리기의 착지 잔상은 손패 카드가 다 떨어진 **뒤**(0.30초)에 출발해 **이어 붙는다** — 드로우는 한 장이 덱에서 손으로 이어 달리는 그림이고, 버리기는 손에서 떨어진 카드가 더미에 도착하는 그림이기 때문이다. 착지 쪽은 **장수가 늘어난 것을 한 곳에서 알아채** 부른다(`CardPhaseManager._notice_discard_gain` ← `update_deck_discard_labels`): 버린 더미가 카드를 받는 코드는 일곱 군데지만 숫자가 바뀌는 자리는 하나이고, 리셔플처럼 줄어드는 경우는 델타가 음수라 저절로 걸러진다. **소멸(`exhaust`)은 버린 더미로 가지 않으므로 잔상도 없다.** |
-| 화면 대응 (세이프 에어리어) | **HUD 상수는 1080×1920 디자인 값 그대로 두고 위/아래 덩어리를 스칼라 두 개로 민다** — `HudBuilder.top_offset()`(= `ScreenMetrics.top_y()`)과 `HudBuilder.bottom_offset()`(= `ScreenMetrics.bottom_y() − 1920`). 상단 패널 ↔ 상대 손패 peek ↔ 적 도넛 ↔ 킬로그가 픽셀 단위로 맞물려 있고 하단도 핸드 부채꼴 ↔ 카드 밑단 ↔ 아군 스트립이 마찬가지라, 상수를 하나씩 기기 대응으로 고치면 그 관계가 조용히 어긋난다. `BattleSim.BS_HAND_CENTER.y` 도 `_ready` 에서 같은 `bottom_offset()` 을 타므로 핸드 ↔ 스트립 간격은 어느 기기에서나 그대로다. 스트레치는 **`expand`** 라 폰에서 가로는 정확히 1080 이고 세로만 늘어난다(인셋 0 · 9:16 이면 두 오프셋이 모두 0 이라 예전 배치와 한 픽셀도 다르지 않다 — 실측). 전체 화면 딤은 `1920` 리터럴이 아니라 반드시 `ScreenMetrics.viewport_size()` 여야 한다. 규약 · 기기별 수치 · 데스크톱 검증법은 **`docs/mobile_safe_area.md`**. |
-| 상대 핸드 레이아웃 | 상대 핸드도 겹쳐진 **부채꼴**이며, 플레이어 핸드를 **상하 반전**한 모양이다: 원의 중심이 카드보다 *위*에 있어 θ=0 지점이 호의 가장 낮은 점이 되고, 따라서 **가운데 카드가 패널 아래로 가장 많이 튀어나오고 양 끝이 위로 말려 올라간다**. 기울기는 `−θ`(플레이어 팬의 좌우 기울기를 거울대칭). `HudBuilder.AI_HAND_FAN_RADIUS` 620 / `AI_HAND_FAN_STEP_DEG` 3.2 / `AI_HAND_FAN_MAX_SPREAD_DEG` 28 로, 카드 간 중심 간격은 34.6px(72px 카드 대비 절반 넘게 겹침)에서 12장 기준 26.9px 까지 좁아진다. 자세한 식은 `ui/README.md`. |
+| Pilot display (strips ×2) | Five pilots each form one cell in three rows, **eye-level portrait → HP bar → growth point number** (growth points correspond to the gold display of a MOBA broadcast, rising from `SCORE_START` (const.csv) at the opening through the match), and the five cells stand side by side horizontally (`ui/PilotStrip.gd`). **The enemy team is at the very top of the screen** (`ENEMY_STRIP_RECT` 137,46,806×100 — **78% of the ally strip**, horizontally centred, **with one backplate `Panel` behind it**), **allies are below the hand row** (`PLAYER_STRIP_RECT` 25,1766,1030×122, **with one backplate `Panel` behind it** — see the row below) — previously all ten were crammed into 84px square slots on both sides of the top panel, so you could tell neither who was who nor which side was your team. The portrait is `PilotImages.eye_for` = **`eye/N_eye.png` (480×200, a band cut horizontally so both eyes show)** and the cell height is derived from that ratio (`EYE_ASPECT` 2.4) — stretching to an arbitrary height distorts the face. The HP bar is **two `ColorRect`s**: `ProgressBar` computes a minimum size from the theme content margins and pulls `size` up to around 24px, so even when a 6–10px bar was requested it overwrote the growth point label below (confirmed by measurement). With a shield the fill turns yellow (the reason for not appending a segment is that it's too thin for two sections to be distinguishable). A downed pilot's portrait darkens and **the number of turns until revival** is printed large in the middle. The bottom strip's y (1766) is **a value computed from the cards' bottom edge** — the cards at both ends of the fan sag 21.4px below the middle and grow 1.2× on hover, coming down to a worst case of y≈1763 (back when the hand row was at 1500). Now that the hand has moved up to 1440 the worst case is y≈1703, so the slack grew to 63px, but the strip is attached to the screen bottom (1888) with no room to go lower, so it stays. **Cell order is set by `GameEnums.ROLE_DISPLAY_ORDER` — tank → assassin → fighter → sniper → supporter**, i.e. the order you sweep the battlefield from the left (left → jungle → centre → right ×2), and **the same table as the outgame screens** (season hub roster · training grid · ban/pick (밴픽) screen · draft slots). Using the `Role` enum order as-is (TANK · FIGHTER · ASSASSIN · SUPPORT · SNIPER) seats the jungler third and the ADC fifth, an arrangement that corresponds neither to the map nor to the lineup the player knows. Previously a separate `HudBuilder.LANE_SEAT_ORDER` table here sorted **by `PilotData.lane`** (**deleted**), but two pilots sit in the right lane (sniper · supporter) and lane couldn't order those two — `sort_custom` is not a stable sort, so the order of the two with the same lane could wobble between runs. Sorting by role uniquely determines all five seats. Sorting is done on a **copy** of `_bs.pilots` — the original must keep spawn order (= role order) so `BattleSim.player_data_for` can find the roster by that index. **The enemy strip's size changed four times.** At first it was a 730×84 shrunken version (portrait 130×54), but showing the same faces at two very different sizes top and bottom meant neither who the opponent was nor the opponent's growth points read as well as the ally side (that number exists to be compared side by side with mine), so it was enlarged to **exactly** the ally's 1030×122 — at that time `HudBuilder.TOP_PANEL_H` grew 130 → **168** and the whole chain below moved down 38px (`AI_HAND_TOP_Y` 80 → **118** = `TOP_PANEL_H − 50` → enemy donut bottom 311 → **349**, battlefield pixel top 369, so 20px of slack). After that it was shrunk to **60% (618×76)** and centred — because when the objective spawn clocks moved from the battlefield tiles to this panel, **cells for icon + turn count on either side of the strip** were needed. But at that size the 108×45 portrait fell below the minimum for telling who is who. Portrait width is derived from cell width (`_cell_w − 16` in `PilotStrip.setup`), so the only way to enlarge it is to push the strip width, and it was **pushed twice** — 618 → **672** (portrait +10%), then 672 → **806** (+20%, portrait 145×60). Height follows the eye ratio (2.4:1) up 76 → 81 → **97**, and to keep horizontal centring x is pushed left 231 → 204 → **137**. The side margins shrank, so the clock cells went 190×122 → 168×49 → **101×60** (`OBJ_TIMER_LEFT_X` 26 / `OBJ_TIMER_RIGHT_X` 953) — on the clock side the icon·number gap was cut to 4 and the "턴" text was removed to fit that width (`ui/ObjectiveTimer.gd`). This is a panel where faces must read first, so when fighting for space the clock always gives way. **The panel height is now set by content** — `TOP_PANEL_H` went 168 → 132 → **148** (header 4..38 + strip band 46..143 + 5px), and the chain below (`AI_HAND_TOP_Y` = `TOP_PANEL_H − 50` = **98**, enemy donut bottom **327**, `KillFeed.FEED_TOP` = `TOP_PANEL_H + 8` = **156**) moves along with it, leaving **42px** of slack to the battlefield top (369). The old 168 was a leftover from when the strip was the same size as the ally one, creating a 27px empty cell below the band. **The growth point font is now the same on both strips** (`ENEMY_SCORE_FONT` = `PLAYER_SCORE_FONT` = 20, formerly 14) — the ally portraits are bigger, but that number exists to be compared side by side with mine, so different sizes would give the two numbers read on the same line different weight. Faces may be small; numbers may not. **The role tag (single letter `T` / `F` at the portrait's bottom-left) was deleted** — the strip's seat order itself already is the role, so it said the same thing twice and just covered the bottom of the face (the three `ROLE_TAG_*` constants and the two nodes `tag_bg` / `role_lbl` disappeared together). **And the full-width top panel disappeared** — see the row below. |
+| Top chrome (enemy strip backplate + elapsed clock + objective clocks) | **Previously one panel covering the full screen width** (`TOP_PANEL_H` 148) held the header row, the enemy strip and the objective clocks. That made the clocks at both ends read as sitting on the same plate as the strip, but the clocks aren't part of the strip; they're a separate object counting battlefield events. Now, **by the same rule as the ally strip**, the backplate (`_enemy_strip_bg`) wraps only the five portrait cells, extended by `ENEMY_BG_PAD` (10), and **the elapsed clock and the two objective clocks stand outside it with no background** (all three direct children of `_bs.canvas`). `TOP_PANEL_H` remains as a constant and serves as **the reference coordinate for the chain below** — the backplate starts at `ENEMY_STRIP_RECT.y − 10` (36) and ends at `TOP_PANEL_H` (148), so neither the amount hiding the opponent hand peek (`AI_HAND_TOP_Y` = `TOP_PANEL_H − 50` = 98) nor the enemy donut (327) nor the kill log (`FEED_TOP` = 156) moved by a single pixel. The peek fan stands at the horizontal centre of the screen, so it fits entirely within the strip width (x 127..953) and still acts as a screen. **The team total score (`12.4k - 9.8k`) was deleted** — the strip's five cells already showed the same numbers individually, and the total, while telling in one line which side is winning, hid **who** is actually growing (`TOTAL_SCORE_FONT` / `_lbl_total_score` deleted together; `BattleSim.team_score()` remains without a consumer). The elapsed clock has no backing, so a black outline keeps it readable, and since `UiHelpers.mk_label` takes a `Control` parent whereas the canvas is a `CanvasLayer`, the `Label` is created directly. |
+| Ally strip backplate | **One dark `Panel`** behind the bottom ally strip (`PlayerStripBackdrop`, the strip area extended by `HudBuilder.PLAYER_BG_PAD` 10px each side, y 1756..1898). Colour·border match the top panel, so the top and bottom strips read as sitting on the same plate. The enemy strip sits on the top panel so it had backing from the start, but the ally strip floated directly on the screen, so the three rows face · HP bar · growth points looked scattered with no background — growth point numbers in particular don't show where one pilot's cell ends without backing. **`_build_player_strip` adds it before the strip** (sibling z-order is child index, so if added later the plate covers the portraits) and **`set_strip_visible(0, on)` hides it together with the strip** (if the detail panel cleared only the strip, an empty plate would remain on top of the dim). |
+| Objective spawn clocks (either side of the strip) | One pair of **one icon + turns remaining** in each of the enemy strip's side margins (`ui/ObjectiveTimer.gd`, each 101×60). **Left is Herald (purple flag) · right is Dragon (vermilion wings)**, and that left/right matches the left/right of the cells where the two objectives stand on the battlefield — position is the name, so there are no name labels. When the enemy strip grew 20% this cell shrank 168 → 101px, and accordingly the icon·number gap became 10 → **4** and **the "턴" text next to the number was deleted** (`UNIT_FONT_SIZE` / `UNIT_COLOR` disappeared with it) — a number stuck next to the icon can't be anything other than turns remaining, so that text only pushed the number away. `ICON_SIZE` stays 49 and is vertically centred (number font 32). **Pressing shows that objective's reward cards as real cards** — `mouse_filter` went IGNORE → STOP, and when it fires `timer_pressed(kind)`, `HudBuilder` calls `BattleSim.objective_reward.toggle(kind)` (pressing the same clock again closes it). At one point the icon was 62 and the cell height was the whole strip band (122) — on the grounds that bigger reads better in peripheral vision — so the clocks stuck out above and below the portraits, became the biggest object in the top panel, and grabbed the gaze that should go to the faces first. Aligning bottom·top edges to the portraits makes left clock · five faces · right clock read as one row. State comes only from `ObjectiveSystem.turns_until_cell(cell)` and updating is only `HudBuilder.update_hud`'s `queue_redraw()`. **Icons are shapes, not images** (same approach as the kill log glyphs): all coordinates are written on a 64×64 basis and only multiplied by `ICON_SIZE / 64`, so changing size doesn't require redoing the numbers. Dragon's wings are **smooth four-vertex triangles**; the original serrated bat wings (eight vertices) mushed together at this size and looked like **a single leaf** — at this size what makes the silhouette is not detail but the angle of two big triangles. |
+| Kill log (kills / turret demolition / objective capture) | Stacks one line at a time at the **top-right** of the screen (8px below the top panel's bottom, y **156** = `TOP_PANEL_H` + 8) (`ui/KillFeed.gd`). The battlefield flows on its own every 0.5 s and engages cover the screen with an overlay, so **once something happened, there was nowhere it remained** — apart from the team score widening a bit. A line is, from the left, `[막타 96px][어시 32px ×0..4][아이콘 32px][피해자 96px]` (last hit / assist / icon / victim), all eye cuts (`PilotImages.eye_for`), and **the whole line is right-aligned**, so however many assists, the victim cell lands at the same x. Icons: kill = crossed swords, turret demolition = burst, and the victim spot gets the turret silhouette + `T1 좌`. **There are three feed sources** — `BattleSim.mark_pilot_dead` (→ `_push_kill_feed`), `score_turret_kill(killer, td)`, and **objective capture** (`ObjectiveSystem._push_feed` → `KillFeed.push_objective`). An objective line's **representative is the jungler** (for both Herald and Dragon both teams' junglers are always participants, and running objectives is the jungle's job itself — `_feed_order`). If the jungler couldn't come, the first of the remaining participants stands there and the rest attach as assists; the list is **the participants at the time participation was chosen**, so someone downed in the subsequent engage stays. **An uncontested capture also gets a line** — a free take where nobody showed up is precisely the case where nothing happens on screen. The rightmost cell gets the Herald / Dragon glyph and name, and that picture is drawn by **the same static function** as the top panel spawn clock (`ObjectiveTimer.draw_kind_glyph`). The two feed sources for kill lines are unchanged — the former must run **before** `_payout_kill_bounty` (that payout empties `PilotData.damage_credit`, the source of the assist list). So the faces shown on screen and the faces that received growth points can't diverge. If the last hitter arrives as null (`_last_hitter` is cleared every turn), the person who dealt the most damage takes that seat. **Kills during an engage don't show on the spot** — the arena covers the screen so they wouldn't be seen anyway, so it checks `is_active()` and stacks them in `_pending`, and `EngagePhaseManager._on_dashboard_confirmed`, which closes the result dashboard, calls `flush_pending()` to release them in a burst at `FLUSH_STAGGER` (0.25 s) intervals. Lines **push in from the top** (the new line at y 0, the rest one slot down), are erased over `FADE_SEC` (0.5 s) after `HOLD_SEC` (4 s), and the oldest line beyond `MAX_ROWS` (4) is pushed down and fades — a pushed-out line is **moved to `_fading`**, not left in `_rows` (it must drop out of slot calculation while its fade keeps running; just removing it from `_rows` froze that line on screen forever — measured). With 4 lines the bottom stops at y **334**, above the top of the battlefield pixels (369) (when the top panel was 168 it was a close call at 354). **The icon is a child `Glyph` node, not the line's `_draw`** — a Control's `_draw` is emitted before its children, so it would lie beneath the line background (translucent) and the turret cell slab (opaque) (the swords were faded and the turret silhouette didn't show at all). |
+| Pilot detail panel | A modal that opens when you press a face on a strip **during your own operation phase** (`ui/PilotDetailPanel.gd`, its own `CanvasLayer` 13 — above discard 10 / targeting 11 / browse·engage 12). **Both the ally bottom strip and the enemy top strip are pressable** — enemies open through the same gate with the same content (down to the 6 dealt cards), and the opponent roster has already come in as `match_ctx.enemy_roster`, so `BattleSim.player_data_for` finds it directly at indices 5..9. The screen is dimmed black α 0.88 and **only the strip of the pressed team is hidden** (left above the dim it blurs what you're looking at; put below the dim the face you just pressed darkens. The other team is just covered by the dim, so it's left alone). **On the left, two full-body arts** stand overlapping (pilot / mech), and the right is **header + three tabs + detail panel**. **The header is separate from the tabs** (`HDR_TOP` **424** .. `HDR_BOTTOM` 562, on its own backing) — **pilot name / the mech name small on the line below / growth points on the right**; it belongs to the same pilot whichever tab you view, so it isn't rebuilt when tabs change (`_build_header_block` runs only once in `_build`). Previously this line was inside the body, so **on the mech tab the title changed to the mech name and the pilot name and growth points vanished from the screen entirely** — in effect, who was open wobbled with the tab. The mech name being always visible is for the same reason (it isn't a value you should have to go into the mech tab to learn). **The mech name moved from the right of the name down to the line below** — it used to be appended with an `HBoxContainer`, but since the line's start point was the name's width, the mech name started at a different x per pilot (where to look for the mech name wobbled per pilot). Stacking two lines makes the start point always the same and removes the need to measure text width, so the container itself disappeared. `HDR_TOP` moving up by the two extra lines is because `HDR_BOTTOM` is the top edge of the tab bar and is pinned. The only thing a tab changes is the detail panel below — **In-game** (HP · attack · growth · battlefield/engage hit · evasion · presence, a `부활까지 N턴` line when dead, then immediately below it the **pilot skill block**) / **Pilot** (six player stats = `PlayerData`) / **Mech** (HP · attack · presence). The tab also decides which art is front and back (on the mech tab the machine is in front) — the old **"전환" (Switch) button was deleted**. **Lasting effects and held cards both live outside the info column** — effects at **the bottom-left of the illustration** (from x 26, right above the card row), cards in **a fan across the full width of the screen bottom**. **Lasting effect thumbnails** (68×68, in-game tab only) show **only what's currently applied to this pilot**, and past six cells the row folds **upward** (folding downward would land the second row on the cards); **the title ("지속 효과") was deleted** — putting an underlined section title on top of cells standing alone in a screen corner makes the title stand out more than the cells, and with no effects applied nothing is drawn at all (the old one-liner "걸려 있는 효과 없음" was a sentence that only made sense with a title). The reason for moving it was competition for space — inside the column it ate 116px and pushed the whole chain below (card row · skill block · close button), while the bottom-left of the screen held only the art's legs and the dim, so it was empty. Three kinds are mixed — **(1) the four slot effects** (`fx:lane` laning stat / `fx:rate` accrual multiplier / `fx:atk` temporary attack / `fx:shield` shield) have cards overwriting each other in one slot, so the kind name is the cell name; **(2) per-card lasting effects** (`fx:src:<kind>|<card name>`) are one cell per line of the `PilotData.persistent_fx` ledger (the abbreviation is the first two characters of the card name — `용 보상` → `용보`); **(3) the remainder** (`fx:rest:<kind>`) is the total minus the ledger (the share mech passives push directly into `bonus_*`, so the source can't be named by a card name). Previously (2) was also lumped by attribute, so **one `fx:perm` cell meant both [용 보상] and [핫핸드]**, and [붉은 가루] · [녹색 병], which live in `bonus_max_hp` / `bonus_atk_flat`, **weren't shown at all** — they are values living in separate fields so the growth recalculation doesn't wipe them, so they weren't carried on any chip. **Computation is still done by the total slots; only the display reads the ledger** (the ledger is written in one place, `CardPhaseManager._log_persistent_fx`, and the source is the card running at that moment) — the growth recalculation must read from one place only. Laying out inactive cells in grey would force you to count "how many are on", and with none at all it's the single line `걸려 있는 효과 없음`. There are no icon assets, so **the two-character abbreviation is the icon** and the full name is carried by the title of the panel opened by pressing it. There were two reasons chips alone weren't enough — when the hit chip says 55, whether that's due to a card or just how it is only showed when you pressed the chip, and effects **not carried on any chip, like the accrual multiplier**, had no place to be seen at all. The team-level 계획 살인 reservation isn't here (the same thumbnail would show on all five and blur whose it is). **Stat chips · lasting effects · cards all share one info panel** (one `_targets` table; the key prefix distinguishes the kind — none = chip, `fx:` = effect, `card:` = card). The plate opens to the left of the info column **at the same height as the pressed item**, with **only `card:` as an exception, lifted to sit above the card row title** — cards are at the bottom of the screen, so the same rule would point on top of the card just pressed, and the plate would cover that card entirely. "What am I looking at now" must be one thing at a time, so separate plates would show two at once and blur what you just pressed. **Pressing a card shows that card's cost · type · caster restriction and description in that panel** — the text written on the card node is shrunk to ×0.80, so it's not meant to be read. **The backdrop forwards clicks** (`_on_menu_backdrop_input`) — it's still a full-screen STOP, but it finds the target button / tab / close at that coordinate and presses it on your behalf, so **pressing another stat with the panel open switches straight to it**. Previously the first click was spent on closing so you had to press once more, and while skimming six stats the clicks doubled and the screen flickered between open↔closed. Pressing an empty spot closes it then. **Stats are chips, not rows**: one rounded rectangle cell (141×92, 3 columns) with a small name on top and only **one final value**, large, below; the base value · increase · expiry turn are in **the context menu that opens to the left when the chip is pressed** (`_menu_rows`, e.g. HP = base N / growth +N% (+N) / max N / current N / shield +N). Previously `key ─ value` rows ran a dozen or so lines with `(기본 N)` `(N턴)` brackets trailing the values, so reading "what it is now" took time — `_row` / `_section` / `ROW_H` / `KEY_FRACTION` were deleted at the same time. **The big number right of the title is growth points** (the old `역할 · 아군/적군 · 성장치` subtitle and `라인 / 위치` row were deleted — role and side were already told by the portrait just pressed), and **it isn't attached on the mech tab** (that title is the mech name, which isn't the owner of the number on the right). **Shield is not in the HP value but inside the HP menu**, and **the hit / evasion chips are values after the laning stat is applied** (`SimulationCore.lane_adjusted` — passed through the same function as resolution. What cards push isn't the `hit` / `evasion` fields but the resolution-time multiplier `lane_stat_mod`, so printing the raw fields would leave the value unmoved by even 1 after playing 공격적인 라인전). **The big number on the growth chip is attack growth**, and max HP growth · accrual multiplier are in the menu — the two grow differently (`GROWTH_ATK_PER_SCORE` vs `GROWTH_HP_PER_SCORE`, const.csv), and it's different from the `적립 배율` that cards push. **Held cards stand in the same fan as the hand across the full width of the screen bottom** — `Card.tscn` **×1.60 = 256×352** (**2×** the grid-era 0.80 = 128×176); the in-game tab has 6 (pilot 3 → mech 3 order, so the left half is the person and the right half the machine), and the pilot / mech tabs put that tab's cards in the same spot. **It used to be a 3-column grid inside the info column**: the cells were confined to the column (width 452) so they couldn't get bigger, and there's no way to keep the grid and double the size (3 columns would be 800px, overshooting the column by 348px · the right side of the screen by 146px, and 2 rows would put the panel bottom at ≈1700 → 2052, off screen). The fan **overlaps** the cards, so it fits the same count in the same width while doubling the size per card. The geometry follows the same rule as the hand (card **centres** ride a circle below the row), and the side margin `FAN_MARGIN` (52) and bottom slack `FAN_DROP_RESERVE` (44) accommodate not half the width but **the outer corner of the tilted card** — the ends tilt close to 9°, so the tall card goes 27px further out than half its width (at margin 24 both ends were clipped by 3px — measured). **Input is taken not by the card rect but by the band where the card is visible** (its own left edge ~ the next card's left edge) — covering rects as-is on overlapping cards would let the right neighbour's button hide this card's visible face entirely — and a card whose info panel is open rises by `FAN_LIFT_PX` (30) and is pulled to the front (the grid-era border highlight was deleted because it would wrap the band rather than the card). The list comes from the `BattleSim.starter_cards` table — reconstructing by scanning hand·deck·discard pile would silently drop exhausted (`exhaust`) cards. While open, `refresh()` rewrites **only the chip value labels and the open menu's text** on every `update_hud` (rebuilding the tree would instantiate card nodes on every update). **Close** follows the backing's bottom edge — content height differs per tab (in-game ~360 / pilot ~600), so at a fixed y the button alone floats in the middle of the screen on short tabs. **`clip_text = true` is mandatory** on value labels — a right-aligned `Label` whose text is wider than its rect gives up alignment and draws from the rect's left, so it **overflows to the right and off the screen** (confirmed by measurement). Leaving the operation phase force-closes it via `close_if_phase_left()` — if BATTLE flowed with it open, the battlefield would roll on behind the dim. |
+| Detail panel's two arts (pilot ↔ mech) | The two arts share the front and back slots. **Front** = bright, horizontal centre `ART_FRONT_CENTER_X` (320). **Back** = pushed right by `ART_BACK_SHIFT_PX` (400px), shrunk by `ART_BACK_SCALE` (0.90), and dimmed with `ART_BACK_TINT` (translucent black) — a pose of "standing behind, slightly to the right, half overlapping". **The tab decides front and back** (`_apply_focus` — on the mech tab the machine is in front, otherwise the person; a `ART_SWAP_SEC` 0.22 s tween changes position · dim · z-order all at once). The old **"전환" button (two-state toggle) was deleted** — once the info split into three, a two-state toggle could no longer say what was where. **The bottom of the screen crops the art** — the bottom edge (`ART_BOTTOM` 2010) is outside the screen (1920), so the lower legs are cut off, and the old knee crop (`_knee_crop` / `KNEE_FRACTION`, which cut the texture via `AtlasTexture.region` at 80% of the alpha silhouette height) was **deleted**. **Size is normalised by height (`ART_H` 1400)** — every full-body art has the figure filling a height of 1024 with only widths of 572–756, so fitting by width would make figure heights vary. When stepping back, the node size stays and **only `scale`** shrinks: `pivot_offset` is the **bottom centre**, so the baseline stays put as it shrinks and the two read as standing on the same floor. **All 30 mech art slots are filled** — `MechImages.full_for(mech.id)` looks up `res://resources/images/mech/{id}_full.png` (if missing, `ResourceLoader.exists` quietly gives null → a faint α 0.30 silhouette slab + mech-name placeholder). Pilot arts are 1024 tall with widths varying 572–756, but **mech arts are a fixed 1024×1024 canvas** — mech renders have swords·wings extending sideways so the bounding box ratio reaches 1.5, and height normalisation converting that width as-is would spread to twice the screen width. So size was also matched by **opaque pixel area** rather than bounding box, to even out the apparent size of the body. Source (24 Gundam Evolution mech renders) and the id ↔ mech table are in `resources/README.md`. **The info block moved down** (`STAT_TOP` 170 → 640 → **650**, header at 452, tabs at 562) — because as the art grew the upper half of the screen became the place for the figure's head·upper body; behind the text a backing `Panel` (α 0.86) is laid to fit the content height. **The close button follows the backing's bottom edge** (`_reposition_close`) — its position changes only at the moment a tab is pressed, and `refresh()` doesn't touch the backing, so the button doesn't jitter with the numbers. The old fixed y (1424) left just the button floating in the middle of the screen on the in-game tab. |
+| Deck / discard piles | The Deck / Discard in the gutters either side of the hand row are drawn as **stacks of cards lying down, tilted away** (`ui/CardPileStack.gd`) — card backs face up, piled on each other, with the edges of the cards below poking out beneath the stack. Previously it was a single two-line Label, `"Deck\n18"`: the number was readable but the pile **didn't look like an object**, so nothing on screen showed where cards came from or went. Two things make it look lying down — the height is squashed by `FORESHORTEN` (0.55), and the **top edge is drawn narrower than the bottom edge** (`TOP_EDGE_SCALE` 0.78) to add perspective. **Thickness is the count** (one layer per 4 cards, capped at 8 layers). **The baseline is fixed and it only grows upward** — fixing the vertical centre makes the stack jitter up and down every time a card comes or goes. The count is printed in the middle of the top card's back and the title is attached below the stack. The count comes in as a `float`, so during the reshuffle tween the thickness rides the same curve. At 0 cards, an empty slot with only its border. **The back is painted uniformly in one colour, the same as `Card._apply_back_style`** — it used to overdraw a per-pile accent trapezoid inside the face (deck purple / discard reddish-brown), but the stack is small, so that frame read as **a gradient sitting on the face** rather than a pattern, and the title labels below already tell the two piles apart. |
+| Cards coming and going on the piles (ghosts) | If only the number changes, nothing on screen shows a card **came out of / went into** the pile. So the stack draws one more **ghost** shaped like the top card (a single trapezoid inside `_draw()` — not a node, so no effect on layout · input · z-order). **The deck's ghost rises by `GHOST_RISE_PX` (74px) and vanishes** (`play_pop`, on draw), and **the discard pile's ghost settles down from that height and appears** (`play_land`, on discard). One card takes `GHOST_SEC` (0.26 s), and several must be able to run at once, so they're driven by a `_ghosts` array + `_process` rather than tweens. **The two seams follow opposite rules**: the draw's entry from the left (`_play_draw_intro` ①) starts not after the ghost has fully vanished but when `GHOST_HANDOFF_ALPHA` (0.30) of its alpha remains (0.182 s), so they **overlap** (starting after it fully vanishes looks choppy, as if one card came out twice). Conversely the discard's landing ghost departs **after** the hand card has finished falling (0.30 s), so they **join end to end** — a draw is a picture of one card running on from deck to hand, while a discard is a picture of a card that left the hand arriving at the pile. The landing side is called by **noticing the count increase in one place** (`CardPhaseManager._notice_discard_gain` ← `update_deck_discard_labels`): there are seven places in code where the discard pile receives cards, but only one place where the number changes, and shrinking cases like a reshuffle have a negative delta so they're filtered out automatically. **Exhaust (`exhaust`) doesn't go to the discard pile, so there's no ghost either.** |
+| Screen fit (safe area) | **The HUD constants stay as the 1080×1920 design values and the top/bottom blocks are shifted by two scalars** — `HudBuilder.top_offset()` (= `ScreenMetrics.top_y()`) and `HudBuilder.bottom_offset()` (= `ScreenMetrics.bottom_y() − 1920`). Top panel ↔ opponent hand peek ↔ enemy donut ↔ kill log interlock pixel by pixel, and at the bottom so do hand fan ↔ card bottom edge ↔ ally strip, so adapting constants one by one per device quietly breaks those relationships. `BattleSim.BS_HAND_CENTER.y` also takes the same `bottom_offset()` in `_ready`, so the hand ↔ strip spacing stays the same on every device. The stretch is **`expand`**, so on a phone the width is exactly 1080 and only the height extends (with zero insets · 9:16 both offsets are 0, so the layout doesn't differ by a single pixel from before — measured). Full-screen dims must use `ScreenMetrics.viewport_size()`, not a `1920` literal. Conventions · per-device values · desktop verification are in **`docs/mobile_safe_area.md`**. |
+| Opponent hand layout | The opponent hand is also an overlapping **fan**, shaped as the player hand **flipped top-to-bottom**: the circle's centre is *above* the cards, so θ=0 is the lowest point of the arc, and therefore **the middle card protrudes furthest down below the panel while both ends curl back up**. Tilt is `−θ` (mirroring the player fan's left/right lean). With `HudBuilder.AI_HAND_FAN_RADIUS` 620 / `AI_HAND_FAN_STEP_DEG` 3.2 / `AI_HAND_FAN_MAX_SPREAD_DEG` 28, the centre spacing between cards narrows from 34.6px (overlapping more than half of a 72px card) down to 26.9px at 12 cards. The detailed formula is in `ui/README.md`. |

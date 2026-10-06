@@ -1,311 +1,310 @@
-# Module: Objective (전령 / 용) — 좌우 중립 칸의 오브젝트
+# Module: Objective (Herald (전령) / Dragon (용)) — objectives on the left/right neutral cells
 
 ## Purpose
-전장 좌우 중립 칸에서 **정해진 턴마다 열리는 교전 사건**. 정글 캠프가 "지나가다
-밟으면 먹는" 수입이라면, 오브젝트는 **양 팀이 같은 순간에 같은 자리를 두고 붙느냐
-마느냐를 고르는** 사건이다.
+An **engage event that opens at fixed turns** on the left/right neutral cells of the battlefield (전장).
+A jungle camp (정글 캠프) is income you "eat by stepping on it in passing"; an objective (오브젝트) is
+an event where **both teams choose, at the same moment, whether to fight over the same spot or not**.
 
-> **좌측 = 전령, 우측 = 용.** 자리는 고정이고 바뀌지 않는다.
+> **Left = Herald, right = Dragon.** The positions are fixed and never change.
 
-> **차례와 상관없이 발생한다.** 작전 단계(카드) 흐름 밖에서, 등장 턴이 오면
-> 그 자리에서 결정 창이 뜬다.
+> **It fires regardless of whose turn (차례) it is.** Outside the operation phase (작전 단계, cards) flow,
+> when the spawn turn comes, the decision window opens on the spot.
 
-> **회피할 수 있다.** 참여 / 미참여 두 갈래이고, 한쪽만 참여하면 전투 없이
-> 그쪽이 가져간다.
+> **It can be avoided.** Two options: join / don't join. If only one side joins, that side
+> takes it without a fight.
 
 ## Files
 | File | Purpose |
 |---|---|
-| `ObjectiveSystem.gd` | `class_name ObjectiveSystem extends Node` — 시계 · 참가자 · 의사 결정 · 정산 전부. 결정 창과 교전 무대는 교전 모듈의 VS 화면(`engage/EngageIntro.gd`)과 무대(`engage/EngageArena.gd`)를 그대로 빌려 쓴다. |
-| `ObjectiveRewardFx.gd` | `class_name ObjectiveRewardFx extends Node` — **보상 획득 연출**. 보상 카드를 화면 한가운데에 펼쳤다가 들어갈 자리로 날려 보낸다. 아래 *보상 획득 연출* 절. |
+| `ObjectiveSystem.gd` | `class_name ObjectiveSystem extends Node` — clock · participants · decisions · resolution, all of it. The decision window and the engage stage borrow the engage module's VS screen (`engage/EngageIntro.gd`) and stage (`engage/EngageArena.gd`) as-is. |
+| `ObjectiveRewardFx.gd` | `class_name ObjectiveRewardFx extends Node` — **reward acquisition FX**. Fans the reward cards out in the middle of the screen, then flies them to where they go. See the *Reward acquisition FX* section below. |
 
-`BattleSim._ready()` 가 둘 다 자식으로 붙이고 `_bs.objective` / `_bs.objective_fx`
-로 잡는다. **설정값을 읽은
-뒤**(`_populate_from_data_loader()`)라야 한다 — 첫 등장 턴이 `game_config` 에서
-온다.
+`BattleSim._ready()` attaches both as children and holds them as `_bs.objective` / `_bs.objective_fx`.
+This must happen **after the config values are read** (`_populate_from_data_loader()`) — the first
+spawn turn comes from `game_config`.
 
-## 진입점은 하나뿐이다
-`CardPhaseManager.do_battle_turn()` 이 `simulate_turn()` **직후**,
-카드 경제(전략 점수 회복 / 자동 드로우)와 작전 단계 판정보다 **앞**에서
-`await _bs.objective.process_turn()` 을 부른다.
+## There is only one entry point
+`CardPhaseManager.do_battle_turn()` calls `await _bs.objective.process_turn()` **right after**
+`simulate_turn()`, and **before** the card economy (strategy-point regen / auto draw) and the
+operation phase check.
 
-이 순서가 곧 "차례와 상관없이 발생한다"의 구현이다. 뒤에 두면 전령이 열리는 턴에
-마침 작전 점수가 문턱을 넘었을 때 오브젝트가 한 턴 밀린다.
+This ordering is the implementation of "fires regardless of whose turn it is". If it came later,
+then on a turn where the Herald opens and the operation points happen to cross the threshold, the
+objective would slip by one turn.
 
-## 시계
-| 노브 (`game_config`) | 기본값 | 뜻 |
-|---|---|---|
-| `OBJ_HERALD_FIRST_TURN` | **35** | 전령이 처음 열리는 턴 |
-| `OBJ_DRAGON_FIRST_TURN` | **25** | 용이 처음 열리는 턴 |
-| `OBJ_RESPAWN_TURNS` | **20** | **결판이 난 뒤** 다시 열리기까지 |
-| `OBJ_RETRY_TURNS` | **15** | **양 팀 미참여로 무산**됐을 때 재시도까지 |
-| `OBJ_ENGAGE_ROUNDS` | 4 | 오브젝트 교전 라운드 수 (카드 전투 개시는 3) |
-| `OBJ_DRAGON_CARD_COUNT` | **3** | 용 보상 카드 장수 (덱에 섞어 넣는다) |
-| `OBJ_DRAGON_GROWTH_PCT` | **5** | [용 보상] 한 장이 주는 성장 적립 영구 +%p |
-
-**용이 먼저, 전령이 10턴 뒤에 열린다.** 예전에는 전령 12 · 용 15 로 전령이
-먼저였고 둘의 간격도 3턴뿐이라, 첫 전령과 첫 용이 사실상 같은 구간에 겹쳐
-열렸다 — 정글러와 중앙(둘 다 양쪽 참가자다)이 좌우로 끌려다니느라 어느 쪽도
-"모여서 붙는다"는 사건이 되지 못했다. 순서를 용 먼저로 뒤집은 것은 보상의
-성격 때문이다: 용의 성장 적립 +5% 는 남은 경기 내내 도는 이득이라 **일찍
-먹을수록 값이 커지고**, 전령의 포탑 8 피해는 언제 먹어도 값이 그대로다.
-
-두 첫 등장이 모두 10턴씩 늦춰지고(12/15 → 35/25) 재등장 간격도 5턴씩 늘어난
-것은 같은 이유다 — 오브젝트가 라인전을 자르고 들어오는 사건이 아니라, 라인이
-한 번 정리된 뒤에 열리는 사건이어야 한다.
-
-**자리는 소모되지 않는다.** 한 팀이 가져가든 교전이 무승부로 끝나든, 같은 칸에서
-`OBJ_RESPAWN_TURNS` 뒤에 다시 열린다. 무산(양 팀 미참여)만 더 짧은
-`OBJ_RETRY_TURNS` 를 쓴다 — 아무 일도 일어나지 않았으므로 자원을 그만큼 오래
-재워 둘 이유가 없다.
-
-남은 턴 수는 **상단 패널에 상시 표시**된다 — 적 파일럿 스트립 양옆의
-`ui/ObjectiveTimer.gd` 두 칸(좌 전령 / 우 용, 아이콘 + 남은 턴. 칸은 101×60 이고
-"턴" 글자는 없다 — 아이콘 옆의 숫자가 남은 턴 수 말고 무엇일 수는 없다).
-언제 열리는지가 안 보이면 미리 라인을 밀어 둘지 정글러를 그쪽에 붙여 둘지를
-판단할 수 없다.
-
-**시계를 누르면 그 오브젝트의 보상 카드가 실물로 뜬다**
-(`ui/ObjectiveRewardPopup.gd`). 오브젝트는 참여 / 미참여를 고르는 사건인데,
-무엇을 주는지는 결판이 임박한 그 턴의 결정 창 한 줄(`reward_text`) 말고는 볼
-자리가 경기 내내 없었다 — 라인을 밀지 정글러를 붙일지는 보상의 값어치를 알아야
-정해진다. 이 팝업은 **순수 정보라 전장을 붙잡지 않는다**(`_battle_tick_held` 가
-읽지 않는다) — 참여 결정 창과 다른 점이 그것이다.
-한때는 **전장 타일 위**에 이름과 턴 수를 찍었는데, 그 칸이 평범한 정글 칸으로
-돌아오면서(캠프 아웃라인 · 점령 면 색 · 초상화가 이미 그 칸을 쓴다) 글자 두 줄이
-넷째 손님이 됐다. 좌 / 우 배치가 지도의 좌 / 우와 같으므로 자리가 곧 이름이다.
-
-## 참가자 — 포지션이 정한다
-| 오브젝트 | 포지션 | 인원 |
-|---|---|---|
-| 전령 (좌) | LEFT · CENTER · GUERRILLA | **3인** |
-| 용 (우) | RIGHT · CENTER · GUERRILLA | **4인** |
-
-우측이 한 명 많은 이유는 RIGHT 레인에 서포터와 스나이퍼 **둘**이 서기 때문이고,
-그래서 용이 전령보다 큰 사건이다.
-
-**사망한 파일럿은 참여할 수 없다.** 목록에서 통째로 빠지므로 그 팀은 그만큼
-수적으로 불리한 채로 붙거나 물러나야 한다 — 오브젝트 직전의 처치가 곧
-오브젝트를 가르는 이유가 여기 있다.
-
-`participants_for(kind, team)` 하나가 결정 창의 명단과 실제 무대에 오르는 명단을
-함께 정한다.
-
-## 의사 결정
-**동시에, 서로 모르는 채로** 내린다. AI 는 창이 뜨기 전에 이미 결정을 마치지만
-그것을 플레이어에게 보여 주지 않는다 — 알려 주면 "적이 물러났으니 나도 그냥
-먹으면 된다"가 되어 결정이 아니라 확인 절차가 된다.
-
-### 플레이어
-`engage/EngageIntro.gd` 의 VS 화면을 그대로 쓰되 버튼 문구만 **참여 / 미참여**로
-바뀐다(`prompt_engage(..., confirm_text, cancel_text, subtitle)`). 결정의 모양이
-카드 교전과 같으므로 — 명단을 보고 두 갈래 중 하나를 고른다 — 화면을 새로 만들
-이유가 없고, 오히려 같은 화면이라야 "이 명단으로 붙는다"가 같은 그림으로 읽힌다.
-라운드 수 아래 한 줄에 보상이 적힌다.
-
-참가 가능한 파일럿이 하나도 없으면 창을 띄우지 않고 자동으로 미참여다.
-
-### AI — 머릿수 + 오판
-```
-머릿수(team) = 참가자 중 살아 있고 체력 ≥ 20% 인 인원   # AI_HEADCOUNT_HP_RATIO
-참여         = 내 머릿수 ≥ 상대 머릿수
-             또는 (열세일 때) randf() < 오판 확률
-```
-**전력 차이(체력 · 공격력 · 성장치)는 보지 않는다** — 수적 열세일 때만 물러난다.
-체력 20% 미만인 파일럿은 무대에 서도 한두 대에 쓰러지므로 양 팀 모두 머릿수에서
-뺀다. 머릿수가 같으면 붙는다.
-
-**오판 확률은 상대 팀의 리그 순위가 정한다** — 1위 5% → 꼴찌 60% 선형
-(`MatchFlow._misjudge_chance_for` 가 `match_ctx.enemy_misjudge_chance` 로 넘긴다).
-승패가 같으면 팀 평균 스탯이 높은 쪽을 위로 쳐서 시즌 초(전원 0-0)에도 강팀이 덜
-오판한다. 국제대회 외부 팀(id ≥ 100)은 각 리그 상위권이므로 최소값 5%, 시즌 밖
-단독 실행은 중간값 32.5%(`AI_MISJUDGE_DEFAULT`). 오판은 하위권 팀이 불리한 싸움에
-끌려 들어오는 약점이고, 플레이어가 수적 우위를 만들어 놓았을 때 그것을 벌 기회다.
-
-예전에는 `(hp + shield) × atk` 합으로 승률을 내 `AI_JOIN_WINRATE`(0.45) 미만이면
-물러났다(**삭제됨**) — 성장 격차가 곧 결정이라 순위와 무관하게 모든 AI 가 같은
-저울을 썼다.
-
-상대가 아무도 못 나오면 무조건 참여한다(공짜 보상).
-
-## 정산
-| 결정 | 결과 |
+## Clock
+| Knob (`game_config.csv`) | Meaning |
 |---|---|
-| 양 팀 참여 | **교전 무대** (`EngagePhaseManager.start_objective_engage`) → 승자가 보상 |
-| 한 팀만 참여 | 전투 없이 그 팀이 보상. 결과 창을 한 번 띄운다 |
-| 양 팀 미참여 | 무산. `OBJ_RETRY_TURNS` 뒤 재시도 |
+| `OBJ_HERALD_FIRST_TURN` | Turn the Herald first opens |
+| `OBJ_DRAGON_FIRST_TURN` | Turn the Dragon first opens (earlier than the Herald) |
+| `OBJ_RESPAWN_TURNS` | Until it reopens **after being decided** |
+| `OBJ_RETRY_TURNS` | Until retry when it **fizzled because neither team joined** (shorter than `OBJ_RESPAWN_TURNS`) |
+| `OBJ_ENGAGE_ROUNDS` | Number of objective engage rounds (a card engage takes its round count from its `engage:N` clause) |
+| `OBJ_DRAGON_CARD_COUNT` | Number of Dragon reward cards (shuffled into the deck) |
 
-### 교전 승패
-**생존 인원 수 → 동률이면 잔여 HP 비율 합.** 둘 다 같으면 무승부이고 아무도
-가져가지 못한다(자리는 `OBJ_RESPAWN_TURNS` 뒤에 다시 열린다).
+The per-card Dragon growth bonus is **not** a config knob — it is the [용 보상] (Dragon Reward) card's
+`growth_perm` clause in `cards.csv` (the former `OBJ_DRAGON_GROWTH_PCT` key was deleted). Likewise the Herald
+turret damage is only the [전령 제압] card's `turret_damage` clause — `OBJ_HERALD_TURRET_DMG` was deleted, and
+`ObjectiveSystem.reward_text` reads the clause from the card row so the reward line cannot drift from the effect.
 
-비율 합을 쓰는 이유는 체력 총량이 역할마다 크게 다르기 때문이다 — 탱커 220 과
-스나이퍼 75 를 절대값으로 더하면 "탱커가 살아 있는 쪽"이 언제나 이긴다.
+**The Dragon opens first, the Herald later.** It used to be Herald
+first with only a short gap, so the first Herald and the first Dragon effectively overlapped in the
+same window — the jungler and center (both participants on either side) got dragged left and right,
+and neither became a "gather and fight" event. The order was flipped to Dragon-first because of the
+nature of the rewards: the Dragon's growth accrual bonus ([용 보상]'s `growth_perm` clause) is a gain that runs for the rest of the match,
+so **its value grows the earlier you take it**, while the Herald's turret damage (its card's `turret_damage` clause) is worth the same
+whenever you take it.
 
-### 오브젝트 교전이 카드 교전과 다른 점
-1. **시전자가 없다.** 카드가 아니라 타이머가 여는 교전이라 "매 라운드 먼저
-   행동하는 한 명"이 없다. 선공 팀은 블루(`BattleSim.blue_team`)가 잡는다
+Both first spawns being pushed back and the respawn intervals growing are for the same reason — an objective should not be an event that cuts into the
+laning phase, but one that opens after the lanes have settled once.
+
+**The spot is not consumed.** Whether a team takes it or the engage ends in a draw, it reopens on the
+same cell after `OBJ_RESPAWN_TURNS`. Only a fizzle (neither team joined) uses the shorter
+`OBJ_RETRY_TURNS` — nothing happened, so there's no reason to keep the resource dormant that long.
+
+The remaining turn count is **always shown in the top panel** — two slots of `ui/ObjectiveTimer.gd`
+on either side of the enemy pilot strip (스트립) (left Herald / right Dragon, icon + remaining turns. Each slot is
+101×60 and there is no "턴" (turn) text — the number next to the icon can't be anything other than the
+remaining turns). If you can't see when it opens, you can't judge whether to push a lane ahead of time
+or attach the jungler to that side.
+
+**Tapping the clock shows that objective's reward card as a real card**
+(`ui/ObjectiveRewardPopup.gd`). An objective is an event where you choose join / don't join, yet what
+it gives could not be seen anywhere for the whole match except one line (`reward_text`) in the decision
+window on the turn it was about to be decided — whether to push a lane or attach the jungler depends on
+knowing the reward's worth. This popup is **pure information, so it does not hold the battlefield**
+(`_battle_tick_held` doesn't read it) — that's how it differs from the join decision window.
+At one time the name and turn count were printed **on the battlefield tile**, but when that cell went
+back to being an ordinary jungle cell (the camp outline · capture fill colour · portraits (초상화) already use
+that cell), the two lines of text became a fourth guest. The left / right layout matches the map's left
+/ right, so the position is the name.
+
+## Participants — decided by position
+| Objective | Positions | Headcount |
+|---|---|---|
+| Herald (left) | LEFT · CENTER · GUERRILLA | **3** |
+| Dragon (right) | RIGHT · CENTER · GUERRILLA | **4** |
+
+The right side has one more because **two** pilots stand in the RIGHT lane, the supporter and the
+sniper — which is why the Dragon is a bigger event than the Herald.
+
+**Dead pilots cannot join.** They are dropped from the list entirely, so that team must fight or
+back off at a numbers disadvantage — this is why a kill (처치) just before an objective decides the objective.
+
+A single `participants_for(kind, team)` decides both the roster in the decision window and the roster
+that actually goes on stage.
+
+## Decision
+Made **simultaneously, without knowing each other's choice**. The AI has already decided before the
+window opens but does not show it to the player — if it did, it would become "the enemy backed off,
+so I'll just take it", a confirmation step instead of a decision.
+
+### Player
+Uses the VS screen of `engage/EngageIntro.gd` as-is, with only the button text changed to
+**참여 / 미참여** (Join / Don't join) (`prompt_engage(..., confirm_text, cancel_text, subtitle)`). The
+shape of the decision is the same as a card engage — look at the roster, pick one of two options — so
+there's no reason to build a new screen; on the contrary, it has to be the same screen for "fight with
+this roster" to read as the same picture. One line under the round count states the reward.
+
+If no pilot can participate, the window is not shown and it automatically counts as not joining.
+
+### AI — headcount + misjudgement
+```
+머릿수(team) = 참가자 중 살아 있고 체력 ≥ OBJ_AI_HEADCOUNT_HP_RATIO 인 인원   # headcount(team) = participants alive with HP ≥ OBJ_AI_HEADCOUNT_HP_RATIO (const.csv)
+참여         = 내 머릿수 ≥ 상대 머릿수                   # join = my headcount ≥ opponent headcount
+             또는 (열세일 때) randf() < 오판 확률         # or (when outnumbered) randf() < misjudge chance
+```
+**It does not look at strength differences (HP · attack · growth points (성장치))** — it backs off only when
+outnumbered. A pilot below `OBJ_AI_HEADCOUNT_HP_RATIO` HP (체력) goes down in one or two hits even on stage, so both teams exclude
+them from the headcount. Equal headcount → fight.
+
+**The misjudge chance is set by the opponent team's league rank** — 1st `OBJ_MISJUDGE_MIN` → last `OBJ_MISJUDGE_MAX` (const.csv), linear
+(`MatchFlow._misjudge_chance_for` passes it as `match_ctx.enemy_misjudge_chance`). On equal win/loss,
+the team with higher average stats ranks higher, so strong teams misjudge less even at season start
+(everyone 0-0). International tournament (국제대회) outside teams (id ≥ 100) are top teams of their own
+leagues, so they get the minimum `OBJ_MISJUDGE_MIN`; a standalone run outside a season uses the midpoint
+`OBJ_AI_MISJUDGE_DEFAULT` (const.csv). Misjudgement is the weakness of low-ranked teams getting dragged into bad
+fights, and the player's chance to punish it after building a numbers advantage.
+
+It used to compute a win rate from the sum of `(hp + shield) × atk` and back off below
+`AI_JOIN_WINRATE` (0.45) (**deleted**) — the growth gap was the decision itself, so every AI used the
+same scale regardless of rank.
+
+If the opponent can't field anyone, it always joins (free reward).
+
+## Resolution
+| Decision | Result |
+|---|---|
+| Both teams join | **Engage stage** (`EngagePhaseManager.start_objective_engage`) → winner gets the reward |
+| Only one team joins | That team gets the reward without a fight. A result window is shown once |
+| Neither team joins | Fizzle. Retry after `OBJ_RETRY_TURNS` |
+
+### Engage win/loss
+**Survivor count → on a tie, sum of remaining HP ratios.** If both are equal it's a draw and nobody
+takes it (the spot reopens after `OBJ_RESPAWN_TURNS`).
+
+The ratio sum is used because total HP differs greatly by role — adding a tank's and a sniper's HP
+as absolute values means "the side with the tank alive" always wins.
+
+### How an objective engage differs from a card engage
+1. **There is no caster (시전자).** It's an engage opened by a timer, not a card, so there's no "one person
+   who acts first every round". The first-acting team is blue (`BattleSim.blue_team`)
    (`TurnEngageSim.setup(..., first_team)`).
-2. **참가자를 시전자 주변에서 모으지 않는다.** 포지션이 정한 명단이 그대로
-   들어온다.
-3. **무대 제목이 오브젝트 이름**이다("전령" / "용").
-4. **포탑이 한 기도 가담하지 않는다.** 카드 교전에서는 걸린 쪽의 포탑 칸에 선
-   참가자가 그 포탑을 끌고 들어오지만(`engage/README.md` 의 포탑 절), 오브젝트
-   교전은 시전자가 없어 "누가 걸었는가"가 없고 무대도 좌우 중립 칸에서 열린다 —
-   걸어 놓을 수비 구조물이 애초에 없는 싸움이다. `TurnEngageSim._build_turrets`
-   가 `_has_caster == false` 면 그 자리에서 되돌아간다.
+2. **Participants are not gathered around a caster.** The roster set by position comes in as-is.
+3. **The stage title is the objective name** ("전령" / "용").
+4. **No turret (포탑) joins at all.** In a card engage, a participant standing on the engaged side's turret
+   cell drags that turret in (turret section of `engage/README.md`), but an objective engage has no
+   caster, so there is no "who engaged", and the stage opens on the left/right neutral cells — it's a
+   fight with no defensive structure to draw in in the first place. `TurnEngageSim._build_turrets`
+   returns immediately when `_has_caster == false`.
 
-나머지 생명주기(라운드 진행 · 종료 유예 · 결과 대시보드 · `engage_finished`)는
-카드 교전과 완전히 같다.
+The rest of the lifecycle (round progression · end grace · result dashboard · `engage_finished`) is
+exactly the same as a card engage.
 
-종료 배너는 카드 교전과 같은 문구(전멸 / N라운드 완료)를 그대로 쓴다. 승패와
-보상은 무대가 닫힌 뒤 `last_log` 가 말한다 — 배너는 종료 판정 직후
-`END_HOLD_SEC` 동안 떠 있고 호출 측이 제어를 되찾는 것은 그 **뒤**라, 승패를
-배너에 실을 수 있는 시점이 애초에 없다.
+The end banner uses the same text as a card engage (전멸 (Wiped out) / N라운드 완료 (N rounds complete)). Win/loss and
+the reward are told by `last_log` after the stage closes — the banner stays up for `END_HOLD_SEC`
+right after the end check, and the caller regains control only **after** that, so there's never a
+moment where the win/loss could be put on the banner.
 
-## 보상
-둘의 차이가 곧 두 오브젝트의 성격이다 — 전령은 지금 당장 쓸 한 방, 용은 경기
-내내 천천히 도는 성장 이득.
+## Rewards
+The difference between the two is the character of the two objectives — the Herald is a one-shot to
+use right now, the Dragon is a growth gain that runs slowly for the whole match.
 
-### 전령 → [전령 제압] 1장을 **손패로 곧장**
+### Herald → 1 [전령 제압] (Herald Subdued) **straight into the hand (손패)**
 ```
-id 32 · 0코 · exhaust|preserve · location / cast_range 99 · turret_damage:8
+id 32 · <cost> · exhaust|preserve · location / cast_range <N> · turret_damage:N
 ```
-- **최외곽 적 포탑에만** 쓸 수 있다 — 레인마다 T1 → T2 순으로 훑어 처음 만난
-  살아 있는 포탑(`SimulationCore.outermost_enemy_turrets`). T1 이 무너진 레인은
-  T2 가 그 자리를 물려받으므로 후반에 먹은 전령도 쓸 곳이 남는다. 안쪽 포탑
-  저격은 여전히 불가.
-- 명중 판정 없이 8 피해(포탑 HP **24** → 1/3). 파괴되면 정글 획득 · 킬로그 ·
-  `Building` 노드 해제까지 전장 규칙 그대로 돈다
-  (`SimulationCore.apply_card_turret_damage` 가 `_apply_card_damage` 를 재사용).
-- **무저항이면 2배(16).** 그 레인의 **전선**(`SimulationCore.front_line_cells` —
-  양 팀 최전방 포탑 사이, 곧 지정한 적 포탑 칸부터 우리 최전방 포탑 칸까지.
-  화면의 금색 테두리와 같은 집합이다)에 적 파일럿이 한 명도 없을 때다. 전령은
-  라인을 밀고 들어가는 사건이므로, 막아설 사람이 아무도 없는 라인과 다섯이
-  버티는 라인이 같은 값이면 "언제 어디에 쓸 것인가"라는 질문 자체가 사라진다.
-  정글러도 센다 — 레인 통로에 서 있다면 그 사람이 곧 그 라인을 막고 있는 사람이다.
-- **성장치는 그 레인 아군이 균등하게 나눠 받는다.** 깎아 낸 체력 1점당
-  `SCORE_TURRET_FULL / TURRET_HP` 를 그 레인의 살아 있는 아군 라이너 수로 나눈다
-  (우측 레인은 스나이퍼 · 서포터 둘이라 반씩). 전령 제압은 **시전자가 없어**
-  (`owner_pilot == null`) 평소의 귀속 경로가 아무에게도 닿지 않는데, 그 레인을
-  미느라 버틴 사람들이 공성의 임자다. 사람이 없으면(그 레인 전멸) 그냥 사라진다 —
-  총액을 보존하려고 엉뚱한 사람에게 주지는 않는다.
-  구현은 `CardPhaseManager._effect_turret_damage` / `_award_turret_damage_to_lane`.
-- `보존` 키워드라 어떤 버리기에도 걸리지 않는다 — 쓸 때를 고를 수 있다.
+- Can be used **only on the outermost enemy turret** — per lane, scan T1 → T2 and take the first living
+  turret (`SimulationCore.outermost_enemy_turrets`). In a lane whose T1 has fallen, T2 inherits that
+  slot, so a Herald taken late still has somewhere to be used. Sniping inner turrets is still not allowed.
+- The card's `turret_damage` amount (cards.csv — the only source) with no
+  hit check, measured against `TURRET_HP`. If destroyed, jungle gain · kill log ·
+  `Building` node release all run by the normal battlefield rules
+  (`SimulationCore.apply_card_turret_damage` reuses `_apply_card_damage`).
+- **Uncontested = double.** That's when there are no enemy pilots at all on that lane's
+  **front line (전선)** (`SimulationCore.front_line_cells` — between both teams' foremost turrets, i.e. from the
+  targeted enemy turret cell to our foremost turret cell. Same set as the gold outline on screen). The
+  Herald is an event of pushing into a lane, so if a lane with nobody blocking and a lane held by five
+  were worth the same, the question "when and where to use it" would vanish entirely. Junglers count
+  too — if one is standing in the lane corridor, that person is the one blocking the lane.
+- **Growth points are split evenly among the allies in that lane.** Per 1 HP chipped off,
+  `SCORE_TURRET_FULL / TURRET_HP` is divided by the number of living allied laners in that lane
+  (the right lane has two, sniper · supporter, so half each). Herald Subdued **has no caster**
+  (`owner_pilot == null`), so the usual attribution path reaches nobody — the people who held that lane
+  while pushing it own the siege. If there's nobody (that lane wiped out), it just disappears — it is
+  not given to an unrelated person just to preserve the total.
+  Implementation: `CardPhaseManager._effect_turret_damage` / `_award_turret_damage_to_lane`.
+- With the `보존` (Keep) keyword it is immune to any discard — you can choose when to use it.
 
-### 용 → [용 보상] 3장을 **덱에 섞어서**
+### Dragon → `OBJ_DRAGON_CARD_COUNT` [용 보상] (Dragon Reward) **shuffled into the deck**
 ```
-id 33 · 0코 · exhaust · target ally / cast_range 99 · draw:1;growth_perm:5
+id 33 · <cost> · exhaust · target ally / cast_range <N> · draw:N;growth_perm:N
 ```
-- 맨 위에 쌓지 않는 이유: 여러 장이 한꺼번에 손에 들어오면 그 다음 몇 번의
-  드로우가 통째로 보상 카드가 되어 덱이 잠긴다. 섞어 넣으면 경기 후반에 걸쳐
-  한 장씩 나온다.
-- 드로우 1 + **지정한 아군 파일럿의 성장 적립 배율 영구 +5%**
-  (`PilotData.growth_rate_bonus`). 만료도 해제도 없고 **누적된다**.
-- **한 번의 용이 주는 총량은 5장 × 10%p 에서 3장 × 5%p 로 내려갔다** — 최대
-  적립 배율이 +50%p 에서 +15%p 가 된다. 용은 세 번 넘게 열리므로 예전 값은
-  후반 성장치 곡선을 통째로 지배했다.
+- Why not stack them on top: if several arrive in hand at once, the next few draws become entirely
+  reward cards and the deck locks up. Shuffled in, they come out one at a time over the late game.
+- Draw (`draw:N`) + **permanent bonus (its `growth_perm` clause) to the growth accrual multiplier of the targeted allied (아군) pilot**
+  (`PilotData.growth_rate_bonus`). No expiry, no removal, and it **stacks**.
+- **The total from one Dragon was cut** — both fewer cards (`OBJ_DRAGON_CARD_COUNT`) and a smaller
+  bonus per card (the `growth_perm` clause). The Dragon opens several times, so the old value
+  dominated the whole late-game growth curve.
 
-### 보상 카드는 시전자가 없다 (`owner_pilot == null`)
-오브젝트는 팀이 먹은 것이지 누가 먹은 것이 아니고, 시전자를 붙이면 그 파일럿이
-쓰러져 있는 동안 보상이 통째로 잠긴다(카드 잠금은 시전자 생존을 본다).
+### Reward cards have no caster (`owner_pilot == null`)
+An objective is taken by the team, not by someone, and attaching a caster would lock the whole reward
+while that pilot is down (card lock checks caster survival).
 
-대신 **사거리 기준점이 사라지므로** 대상 계산이 `caster == null` 을 "전장 전체가
-사거리"로 읽는다 — `CardPhaseManager.compute_valid_pilot_targets` /
+Instead, **the range anchor disappears**, so target computation reads `caster == null` as "the whole
+battlefield is in range" — `CardPhaseManager.compute_valid_pilot_targets` /
 `compute_valid_location_targets`, `CardTargetingOverlay.start_card_selection`.
-교전(PREVIEW)만은 예외로 시전자를 요구한다(참가자를 시전자 칸 주변에서 모은다).
+Only engage (PREVIEW) is an exception and requires a caster (it gathers participants around the caster's cell).
 
-두 카드 모두 `pool = 0` 이라 랜덤 스타터 덱에는 절대 들어가지 않고, 오직
-`grant_cards_to_hand` / `grant_cards_to_deck` 로만 세상에 나온다.
+Both cards have `pool = 0`, so they never enter the random starter deck and only come into the world
+via `grant_cards_to_hand` / `grant_cards_to_deck`.
 
-## 보상 획득 연출 (`ObjectiveRewardFx.gd`)
-보상은 `_grant_reward` 한 줄로 들어간다. 그 결과는 손패가 한 장 늘거나(전령)
-덱 숫자가 다섯 오르는 것(용)뿐이라, 오브젝트 하나를 두고 4인 교전까지 벌인
-끝의 보답치고는 **화면에 아무 일도 일어나지 않았다**. 특히 용은 덱에 섞여
-들어가므로 그 자리에서는 손에 잡히는 것이 하나도 없다 — 무엇을 받았는지는
-카드를 실물로 한 번 보여 줘야 한다.
+## Reward acquisition FX (`ObjectiveRewardFx.gd`)
+The reward goes in with a single `_grant_reward` line. Its result was only the hand growing by one
+(Herald) or the deck count going up (Dragon), so as payback for fighting up to a 4-player
+engage over an objective, **nothing happened on screen**. The Dragon in particular is shuffled into the
+deck, so nothing lands in your hand at that moment — what you got must be shown once as a real card.
 
-**연출이 지급보다 먼저다.** `_grant_reward` 는 코루틴이고, `objective_fx.play()`
-를 `await` 한 **뒤에** `grant_cards_to_hand` / `grant_cards_to_deck` 를 부른다.
-순서를 뒤집으면 연출이 도는 동안 이미 손패에 같은 카드가 서 있어 한 장이 두
-군데에 보인다. 부르는 두 자리(`_run_objective_engage` / `_award_uncontested`)도
-그래서 `await` 로 받는다.
+**FX comes before granting.** `_grant_reward` is a coroutine and calls `grant_cards_to_hand` /
+`grant_cards_to_deck` **after** `await`ing `objective_fx.play()`. If the order were flipped, the same
+card would already be standing in the hand while the FX plays, showing one card in two places. That's
+also why both call sites (`_run_objective_engage` / `_award_uncontested`) receive it with `await`.
 
-| 오브젝트 | 박자 |
+| Objective | Beats |
 |---|---|
-| **용** | 보상 카드 N장이 중앙에 **부채꼴로 펼쳐졌다가**(`SPREAD_SEC` 0.34s + `HOLD_SEC` 0.70s) → **한 장처럼 겹쳐지고**(`COLLAPSE_SEC` 0.26s) → 좌측 아래 **덱 뭉치**로 빨려 들어간다(`FLY_SEC` 0.42s) |
-| **전령** | 보상 카드 1장이 중앙에 떠올랐다가 → **손패 맨 왼쪽 자리**로 내려앉는다 (한 장짜리라 겹치는 박자를 건너뛴다) |
+| **Dragon** | N reward cards **fan out** in the center (`SPREAD_SEC` 0.34s + `HOLD_SEC` 0.70s) → **stack into what looks like one card** (`COLLAPSE_SEC` 0.26s) → get sucked into the **deck pile** at bottom left (`FLY_SEC` 0.42s) |
+| **Herald** | 1 reward card rises in the center → settles into the **leftmost slot of the hand** (it's a single card, so the stacking beat is skipped) |
 
-- **적이 가져가면 둘 다 상단 상대 손패의 왼쪽 끝**으로 날아가 사라진다
-  (`HudBuilder.ai_hand_left_anchor()`). 상대의 덱은 화면에 없으므로 용도 그
-  자리를 쓴다 — 중요한 것은 "누구 것이 됐는가"이고, 그 답은 카드가 위로 갔는지
-  아래로 갔는지가 말한다.
-- **전령의 도착점과 실제 삽입 자리가 같다.** 연출은 `slot_position(0, n+1)` 로
-  잰 **맨 왼쪽 슬롯**을 향하고, 지급도 `grant_cards_to_hand(..., at_left = true)`
-  로 그 자리에 꽂는다. `at_left` 경로는 드로우 인트로도 타지 않는다
-  (`spawn_card_node` 이 끈다) — 화면 왼쪽 밖에서 다시 날아오면 방금 본 비행이
-  두 번 재생된다.
-- **딤은 비행이 시작될 때 걷는다.** 덱 뭉치도 상대 손패도 딤 아래에 있어서,
-  어디로 들어가는지를 보여 주려면 그 순간에 화면이 밝아야 한다.
-- 카드는 손패와 같은 `Card.tscn` 노드다(`ObjectiveRewardPopup` 과 같은 이유 —
-  따로 그린 그림이면 실제로 들어온 카드와 같은 것인지 확인할 길이 없다).
-- **무혈 획득에서는 확인 창을 닫은 뒤에 온다.** 알림 위에 보상 카드가 겹쳐
-  날아다니면 어느 쪽을 보라는 화면인지가 흐려진다.
-- 연출이 도는 동안(약 1.9초) `_busy` 가 그대로 켜져 있으므로 BATTLE 자동 틱과
-  MM:SS 시계는 멈춰 있다 — 이 연출은 `_resolve_objective` 안에서 끝난다.
-- 각 박자는 트윈의 `finished` 가 아니라 **타이머**로 기다린다. 노드가 도중에
-  free 되면(재시작 · 씬 전환) 그 신호는 영영 오지 않아 코루틴이 매달린다
-  (`CardPhaseManager._play_draw_intro` 와 같은 규칙).
+- **If the enemy (적) takes it, both fly to the left end of the opponent's (상대) hand at the top** and vanish
+  (`HudBuilder.ai_hand_left_anchor()`). The opponent's deck isn't on screen, so the Dragon uses that
+  spot too — what matters is "whose did it become", and whether the card went up or down answers that.
+- **The Herald's landing point equals its actual insertion slot.** The FX heads for the **leftmost slot**
+  measured by `slot_position(0, n+1)`, and the grant also inserts it there via
+  `grant_cards_to_hand(..., at_left = true)`. The `at_left` path also skips the draw intro
+  (`spawn_card_node` turns it off) — if it flew in again from off-screen left, the flight you just saw
+  would play twice.
+- **The dim lifts when the flight starts.** The deck pile and the opponent's hand are both under the dim,
+  so the screen must be bright at that moment to show where it goes.
+- The card is the same `Card.tscn` node as the hand (same reason as `ObjectiveRewardPopup` — if it were
+  a separately drawn picture, there'd be no way to confirm it's the same card that actually came in).
+- **On an uncontested take it comes after the confirmation window closes.** If reward cards flew around
+  on top of the notice, it would be unclear which one the screen wants you to look at.
+- While the FX plays (about 1.9s) `_busy` stays on, so the BATTLE auto tick and the MM:SS clock are
+  stopped — this FX finishes inside `_resolve_objective`.
+- Each beat is awaited with a **timer**, not the tween's `finished`. If the node is freed midway
+  (restart · scene change) that signal never comes and the coroutine hangs
+  (same rule as `CardPhaseManager._play_draw_intro`).
 
-## 미리보기와 헷갈리지 말 것
-`ui/ObjectiveRewardPopup.gd` 는 **결판 전에** 시계를 눌러 "무엇을 주는가"를 보는
-정보 팝업이고, `ObjectiveRewardFx.gd` 는 **결판 뒤에** 실제로 받은 카드를 보여
-주는 연출이다. 이름이 비슷할 뿐 여는 사람도(시계 / `ObjectiveSystem`) 수명도
-다르고, 전자는 전장을 붙잡지 않고 후자는 붙잡는다.
+## Don't confuse it with the preview
+`ui/ObjectiveRewardPopup.gd` is an info popup you open by tapping the clock **before resolution** to see
+"what it gives"; `ObjectiveRewardFx.gd` is the FX that shows the cards actually received **after
+resolution**. Only the names are similar — who opens them (clock / `ObjectiveSystem`) and their
+lifetimes differ, and the former doesn't hold the battlefield while the latter does.
 
-## 킬로그 한 줄 (`_push_feed`)
-결판이 나면 화면 우측 상단 킬로그에 **처치 줄과 같은 문법으로** 한 줄이 뜬다 —
-`[대표][어시][파열 아이콘][전령 / 용 글리프 + 이름]`. 그 전에는 결과가
-`last_log` 한 줄뿐이라, 경기의 큰 갈림길이 팀 점수가 조금 벌어진 것 말고는
-아무 자국도 남기지 않았다.
+## Kill feed line (`_push_feed`)
+When it is decided, one line appears in the kill feed at the top right **with the same grammar as a
+kill line** — `[lead][assists][burst icon][Herald / Dragon glyph + name]`. Before this the result was
+only one `last_log` line, so a major turning point of the match left no trace except the team score
+widening a little.
 
-- **대표는 정글러다.** 전령도 용도 양 팀 정글러가 언제나 참가자이고 오브젝트를
-  도는 것 자체가 정글의 일이라, 한 얼굴로 "누가 가져갔나"를 말해야 한다면 그
-  자리는 정글러다(`_feed_order`). 정글러가 못 나왔으면(사망 · 위치 고정 스킬)
-  남은 참가자 중 첫 사람이 서고 나머지는 전부 어시스트로 붙는다.
-- **명단은 참여를 고른 시점의 참가자**(`participants_for` 가 준 그 배열)다. 그
-  뒤 교전에서 쓰러진 사람도 그대로 남는다 — 오브젝트를 가져오는 데 쓴 몸이 곧
-  기여다.
-- **무혈 획득도 한 줄 뜬다.** 아무도 안 나와 거저 가져간 것이야말로 그 순간
-  화면에 아무 일도 일어나지 않는 경우라 자국이 더 필요하다.
-- 교전으로 결판이 난 경우 이 줄은 **교전 중에 밀려 있던 처치 줄들 뒤에** 뜬다 —
-  `_grant_reward` 가 `await engage_finished` 뒤에 오고, 그 시그널은
-  `flush_pending()` 다음에 나가기 때문이다(처치 → 획득 순서가 실제 순서다).
-- 전령 / 용 그림은 상단 패널 등장 시계와 **같은 static 함수**가 그린다
+- **The lead is the jungler.** Both teams' junglers are always participants in both the Herald and
+  the Dragon, and running objectives is the jungle's job itself, so if one face has to say "who took it",
+  that seat is the jungler's (`_feed_order`). If the jungler couldn't come (dead · position-locking
+  skill), the first of the remaining participants takes the lead and all the rest are attached as assists.
+- **The roster is the participants at the moment join was chosen** (the very array `participants_for`
+  returned). People who went down in the engage afterwards stay in — the bodies spent taking the
+  objective are the contribution.
+- **An uncontested take also gets a line.** Taking it for free because nobody showed up is exactly the
+  case where nothing happens on screen at that moment, so it needs a trace even more.
+- When decided by an engage, this line appears **after the kill lines that were queued during the
+  engage** — because `_grant_reward` comes after `await engage_finished`, and that signal is emitted
+  after `flush_pending()` (kill → acquisition is the actual order).
+- The Herald / Dragon art is drawn by **the same static functions** as the top-panel spawn clock
   (`ObjectiveTimer.draw_kind_glyph` / `kind_color`).
 
-## 무대는 빌려 쓰는 것이다 — 중립 칸은 **평범한 정글 칸**
-좌우 중립 두 칸(`SimulationCore.NEUTRAL_LEFT` / `NEUTRAL_RIGHT`)은 오브젝트가
-서는 좌표일 뿐, **타일 규칙은 다른 정글 칸과 한 글자도 다르지 않다**: 캠프가
-서고, 정글러가 밟아 점령하고, 순회 목표가 되고, 사이드 T1 파괴의 측면 중립 탈취
-분기로 주인이 바뀐다. `ObjectiveSystem` 은 그 칸의 소유주도 캠프 상태도 읽지
-않는다 — 오브젝트를 가르는 것은 타일이 아니라 **참가자와 결정**이다.
+## The stage is borrowed — the neutral cells are **ordinary jungle cells**
+The two left/right neutral cells (`SimulationCore.NEUTRAL_LEFT` / `NEUTRAL_RIGHT`) are just the
+coordinates where objectives stand; **their tile rules don't differ by a single letter from other
+jungle cells**: camps spawn there, junglers step on and capture them, they are patrol targets, and they
+change owner via the side-T1-destruction flank-neutral-steal branch. `ObjectiveSystem` reads neither
+that cell's owner nor its camp state — what decides an objective is not the tile but **participants and
+decisions**.
 
-한때는 **상시 중립**이었다(`SimulationCore.is_objective_cell()`). 캠프가 서지
-않고, 정글러가 점령할 수 없고, 순회 목표에서 빠지고, T1 측면 중립 탈취 분기가
-죽은 코드가 되던 시절이다 — `_nearest_uncaptured_neutral()` 은 판정이 영원히
-참이 되어 함수째 삭제돼 있었다. 지금은 그 셋이 전부 되살아났고 캠프 칸도
-12 → **14** 로 돌아왔다. 그래서 그때 얹었던 보정(`BattleSim.SCORE_JUNGLE_CAMP`
-0.98 → 1.15, × 14/12)도 **0.98 로 되돌렸다** — 전령 / 용은 캠프를 밀어낸 적이
-없으므로 되돌려 줄 몫도 없다.
+At one time they were **permanently neutral** (`SimulationCore.is_objective_cell()`). That was the era
+when camps didn't spawn, junglers couldn't capture, they were excluded from patrol targets, and the T1
+flank-neutral-steal branch was dead code — `_nearest_uncaptured_neutral()` had its check become
+permanently true and was deleted as a whole function. Now all three are revived and the camp cells are
+back from 12 → **14**. So the correction applied back then (`SCORE_JUNGLE_CAMP`, now in const.csv,
+scaled up by 14/12) was also **reverted** — Herald / Dragon never pushed camps out, so
+there's nothing to give back.
 
-## 틱 정지
-결정 창이 떠 있는 동안은 아직 `game_phase == BATTLE` 이므로 페이즈 가드만으로는
-자동 틱이 멈추지 않는다. `ObjectiveSystem.is_busy()` 가 그 구간을 덮고,
-`BattleSim._battle_tick_held()` 가 상대 차례와 함께 읽어 자동 틱과 MM:SS 시계를
-동시에 붙잡는다(둘이 같은 답을 읽어야 화면의 시간과 실제 턴이 어긋나지 않는다).
-뒤이어 열리는 교전 무대는 `game_phase = ENGAGE` 로도 막히지만, 그 앞의 결정
-구간은 이 가드만이 막는다.
+## Tick hold
+While the decision window is up, `game_phase == BATTLE` still holds, so the phase guard alone doesn't
+stop the auto tick. `ObjectiveSystem.is_busy()` covers that window, and `BattleSim._battle_tick_held()`
+reads it together with the opponent's turn to hold both the auto tick and the MM:SS clock (both must read
+the same answer so on-screen time and the actual turn don't drift apart). The engage stage that follows
+is also blocked by `game_phase = ENGAGE`, but the decision window before it is blocked only by this guard.
 
 
 ## Detail moved from root CLAUDE.md
@@ -314,5 +313,5 @@ id 33 · 0코 · exhaust · target ally / cast_range 99 · draw:1;growth_perm:5
 
 | System | Description |
 |---|---|
-| 오브젝트 (전령 / 용) | 좌우 중립 칸에서 정해진 턴마다 열리는 교전 사건. **그 두 칸은 평범한 정글 칸이다** — 오브젝트는 좌표를 무대로 빌려 쓸 뿐이라 캠프도 서고 정글러가 점령도 한다(아래 "Jungle (initial)" 항목). **우측 = 용(첫 등장 25턴, 참가 4인: RIGHT×2·CENTER·JUNGLE)** 이 먼저 열리고, **좌측 = 전령(35턴, 참가 3인: LEFT·CENTER·JUNGLE)** 이 그 10턴 뒤다. 결판이 나면 20턴 뒤, 양 팀이 모두 미참여해 무산되면 15턴 뒤 다시 열린다. 예전엔 전령 12 / 용 15 로 전령이 먼저였고 간격도 3턴뿐이라 첫 전령과 첫 용이 사실상 같은 구간에 겹쳐, 양쪽 참가자인 정글러·중앙이 좌우로 끌려다니느라 어느 쪽도 "모여서 붙는" 사건이 되지 못했다. 순서를 뒤집은 것은 보상의 성격 때문이다 — 용의 성장 적립 +10% 는 남은 경기 내내 도는 이득이라 **일찍 먹을수록 값이 커지고**, 전령의 포탑 8 피해는 언제 먹어도 값이 그대로다. 첫 등장을 둘 다 10턴 늦추고 재등장 간격을 5턴씩 늘린 것도 같은 이유로, 오브젝트는 라인전을 자르고 들어오는 사건이 아니라 라인이 한 번 정리된 뒤에 열리는 사건이어야 한다. 남은 턴 수는 **상단 패널의 적 스트립 양옆**에 상시 표시된다(`ui/ObjectiveTimer.gd`, 좌 전령 / 우 용 — 아이콘 + 남은 턴. 지도의 좌우와 같은 배치라 자리가 곧 이름이다. 칸은 101×60 이고 **"턴" 글자는 없다** — 아이콘 옆의 숫자가 남은 턴 수 말고 무엇일 수는 없다). **시계를 누르면 그 오브젝트의 보상 카드가 실물로 뜬다**(`ui/ObjectiveRewardPopup.gd`) — 회피할 수 있는 사건이므로 무엇을 주는지는 결판 전에 볼 수 있어야 하고, 이 팝업은 **순수 정보라 전장을 붙잡지 않는다**(참여 결정 창과 다른 점이 그것이다) — 양 팀이 같은 자리로 모이는 약속이라 언제 열리는지가 안 보이면 미리 라인을 밀지 정글러를 붙일지 판단할 수 없다. 예전에는 이 숫자가 타일 위에 찍혔는데(`BattleRenderer._draw_objectives`, **삭제됨**) 그 칸이 정글로 돌아오며 캠프 아웃라인 · 점령 면 색 · 초상화와 자리를 다퉜다. **차례와 상관없이 발생한다**: `CardPhaseManager.do_battle_turn` 이 `simulate_turn()` 직후 · 카드 경제보다 **앞**에서 `await _bs.objective.process_turn()`. **회피할 수 있다** — 플레이어는 참여 / 미참여 두 버튼(`EngageIntro` VS 화면을 문구만 바꿔 재사용), AI 는 **머릿수만** 센다 — 체력 20% 이상인 참가자 수가 상대보다 적을 때만 물러나고(전력 차이는 안 본다), 그때도 **오판 확률**로 받아들인다(상대 리그 순위 1위 5% → 꼴찌 60%, 동률은 팀 평균 스탯, 국제대회 외부 팀 5% — `MatchFlow._misjudge_chance_for` → `match_ctx.enemy_misjudge_chance`). 결정은 서로 모르는 채 동시에 내려진다. 한쪽만 참여하면 전투 없이 그쪽이 가져가고, 양쪽이면 4라운드 교전(`EngagePhaseManager.start_objective_engage` — 시전자 없이 열리고 선공은 블루, **포탑은 어느 팀도 가담하지 않는다**) 뒤 **생존 인원 수 → 동률이면 잔여 HP 비율 합**으로 승자를 가린다(비율인 이유: 절대값이면 "탱커가 살아 있는 쪽"이 언제나 이긴다). **사망한 파일럿은 참여 불가**라 오브젝트 직전의 처치가 곧 오브젝트를 가른다. 보상 — 전령: **[전령 제압]**(id 32, 0코, `exhaust\|preserve`) 1장을 **손패로 곧장**, 레인별 살아 있는 **가장 바깥** 적 포탑에 무판정 피해 8(T1 이 무너진 레인은 T2 가 그 자리를 물려받는다). **그 레인 전선에 적 파일럿이 한 명도 없으면 피해가 2배**이고(전선 = 양 팀 최전방 포탑 사이 = 지정한 적 포탑 칸부터 우리 최전방 포탑 칸까지, `SimulationCore.front_line_cells` — 화면의 금색 테두리와 같은 집합), **깎아 낸 만큼의 성장치를 그 레인 아군 라이너들이 균등하게 나눠 받는다**(우측 레인은 스나이퍼 · 서포터 둘이라 반씩). 전령 제압은 시전자가 없어 평소의 귀속 경로가 아무에게도 닿지 않는데, 그 레인을 미느라 버틴 사람들이 공성의 임자다. 용: **[용 보상]**(id 33, 0코, `exhaust`) **3장**을 **덱에 섞어서**, 드로우 1 + 지정한 아군의 성장 적립 배율 **영구** **+5%**(`PilotData.growth_rate_bonus`, 누적). 두 카드 모두 `pool = 0` 이고 **시전자가 없다**(`owner_pilot == null` — 팀이 먹은 것이지 누가 먹은 것이 아니고, 시전자를 붙이면 그가 쓰러진 동안 보상이 잠긴다). 결정 창이 떠 있는 동안은 아직 BATTLE 이라 `ObjectiveSystem.is_busy()` + `BattleSim._battle_tick_held()` 가 자동 틱과 MM:SS 시계를 함께 붙잡는다. **보상은 연출을 거쳐 들어온다**(`objective/ObjectiveRewardFx.gd`) — 아래 "오브젝트 보상 획득 연출" 항목. 자세한 내용은 `objective/README.md`. |
-| 오브젝트 보상 획득 연출 | **보상 카드는 실물로 한 번 보여 준 뒤에 들어간다**(`objective/ObjectiveRewardFx.gd`). 예전에는 `_grant_reward` 한 줄로 끝나서, 오브젝트 하나를 두고 4인 교전까지 벌인 끝의 보답인데도 손패가 한 장 늘거나 덱 숫자가 다섯 오르는 것 말고는 화면에 아무 일도 일어나지 않았다 — 특히 용은 **덱에 섞여 들어가므로** 그 자리에서 손에 잡히는 것이 하나도 없다. **용**: 보상 카드 N장이 화면 중앙에 부채꼴로 펼쳐졌다가(`SPREAD_SEC` 0.34초 + `HOLD_SEC` 0.70초, 간격 `FAN_STEP_PX` 118px · 양 끝 기울기 `FAN_TILT_DEG` 7°) **한 장처럼 겹쳐지고**(`COLLAPSE_SEC` 0.26초 — 이 박자가 "이 여러 장이 이제 한 더미가 된다"이다) **좌측 아래 덱 뭉치**로 빨려 들어간다(`FLY_SEC` 0.42초). **전령**: 한 장이 중앙에 떠올랐다가 **손패 맨 왼쪽 자리**로 내려앉는다(한 장짜리라 겹치는 박자를 건너뛴다). **적이 가져가면 둘 다 상단 상대 손패의 왼쪽 끝**으로 날아가 사라진다(`HudBuilder.ai_hand_left_anchor()`) — 상대의 덱은 화면에 없으므로 용도 그 자리를 쓴다. 중요한 것은 "누구 것이 됐는가"이고, 그 답은 카드가 위로 갔는지 아래로 갔는지가 말한다. **전령의 도착점과 실제 삽입 자리가 같다** — 연출은 `slot_position(0, n+1)` 로 잰 맨 왼쪽 슬롯을 향하고 지급도 `grant_cards_to_hand(..., at_left = true)` 로 거기 꽂는다(그 경로는 드로우 인트로도 타지 않는다 — 화면 왼쪽 밖에서 다시 날아오면 방금 본 비행이 두 번 재생된다). **지급보다 연출이 먼저다** — `_grant_reward` 가 코루틴이 되어 `play()` 를 await 한 **뒤에** 넣는다. 순서를 뒤집으면 연출이 도는 동안 이미 손패에 같은 카드가 서 있어 한 장이 두 군데에 보인다. 딤(α 0.55)은 **비행이 시작될 때 걷는다** — 덱 뭉치도 상대 손패도 딤 아래에 있어서 어디로 들어가는지를 보여 주려면 그 순간에 화면이 밝아야 한다. 무혈 획득에서는 **확인 창을 닫은 뒤에** 온다(알림 위에 카드가 겹쳐 날아다니면 어느 쪽을 보라는 화면인지가 흐려진다). 카드는 손패와 같은 `Card.tscn` 노드이고(따로 그린 그림이면 실제로 들어온 카드와 같은 것인지 확인할 길이 없다), 각 박자는 트윈의 `finished` 가 아니라 **타이머**로 기다린다(노드가 도중에 free 되면 그 신호는 영영 오지 않는다). 결판 **전에** 시계를 눌러 여는 `ui/ObjectiveRewardPopup.gd` 와 헷갈리지 말 것 — 그쪽은 무엇을 주는지 미리 보는 정보 팝업이라 전장을 붙잡지 않고, 이쪽은 실제로 받은 카드를 보여 주는 연출이라 `_busy` 가 붙잡는다. |
+| Objectives (Herald / Dragon) | An engage event that opens at fixed turns on the left/right neutral cells. **Those two cells are ordinary jungle cells** — the objective only borrows the coordinates as a stage, so camps spawn and junglers capture there too (the "Jungle (initial)" entry below). **Right = Dragon (first spawn `OBJ_DRAGON_FIRST_TURN`, 4 participants: RIGHT×2·CENTER·JUNGLE)** opens first, and **left = Herald (`OBJ_HERALD_FIRST_TURN`, 3 participants: LEFT·CENTER·JUNGLE)** comes later. Once decided it reopens after `OBJ_RESPAWN_TURNS`; if it fizzles because neither team joined, after `OBJ_RETRY_TURNS` (all game_config.csv). It used to be Herald first with only a short gap, so the first Herald and first Dragon effectively overlapped, and the jungler · center, participants on both sides, got dragged left and right so neither became a "gather and fight" event. The order was flipped because of the rewards' nature — the Dragon's growth accrual bonus ([용 보상]'s `growth_perm` clause, cards.csv) is a gain that runs for the rest of the match, so **its value grows the earlier you take it**, while the Herald's turret damage (its card's `turret_damage` clause) is worth the same whenever you take it. Pushing both first spawns back and lengthening the respawn intervals is for the same reason: an objective should not cut into the laning phase but open after the lanes have settled once. The remaining turns are always shown **on either side of the enemy strip in the top panel** (`ui/ObjectiveTimer.gd`, left Herald / right Dragon — icon + remaining turns. Same layout as the map's left/right, so the position is the name. Each slot is 101×60 and **there is no "턴" (turn) text** — the number next to the icon can't be anything other than remaining turns). **Tapping the clock shows that objective's reward card as a real card** (`ui/ObjectiveRewardPopup.gd`) — it's an avoidable event, so what it gives must be visible before resolution, and this popup is **pure information, so it doesn't hold the battlefield** (that's how it differs from the join decision window) — it's a promise for both teams to gather at the same spot, so if you can't see when it opens, you can't judge whether to push a lane ahead or attach the jungler. This number used to be printed on the tile (`BattleRenderer._draw_objectives`, **deleted**), but when the cell went back to jungle it competed for space with the camp outline · capture fill colour · portraits. **It fires regardless of whose turn it is**: `CardPhaseManager.do_battle_turn` calls `await _bs.objective.process_turn()` right after `simulate_turn()` and **before** the card economy. **It can be avoided** — the player gets two buttons, join / don't join (the `EngageIntro` VS screen reused with only the text changed); the AI **counts heads only** — it backs off only when its participants with HP ≥ `OBJ_AI_HEADCOUNT_HP_RATIO` are fewer than the opponent's (strength differences are ignored), and even then it accepts with the **misjudge chance** (opponent league rank 1st `OBJ_MISJUDGE_MIN` → last `OBJ_MISJUDGE_MAX`, ties by team average stats, international tournament outside teams `OBJ_MISJUDGE_MIN` — `MatchFlow._misjudge_chance_for` → `match_ctx.enemy_misjudge_chance`). Decisions are made simultaneously without knowing each other's. If only one side joins, that side takes it without a fight; if both, after an `OBJ_ENGAGE_ROUNDS`-round engage (`EngagePhaseManager.start_objective_engage` — opens without a caster, blue acts first, **no turret joins for either team**) the winner is decided by **survivor count → on a tie, sum of remaining HP ratios** (why ratios: with absolute values "the side with the tank alive" always wins). **Dead pilots can't join**, so a kill just before an objective decides the objective. Rewards — Herald: 1 **[전령 제압]** (Herald Subdued) (id 32, `exhaust\|preserve`) **straight into the hand**, no-check damage (its `turret_damage` clause) to the **outermost** living enemy turret per lane (in a lane whose T1 fell, T2 inherits the slot). **If there are no enemy pilots on that lane's front line, damage is doubled** (front line = between both teams' foremost turrets = from the targeted enemy turret cell to our foremost turret cell, `SimulationCore.front_line_cells` — same set as the on-screen gold outline), and **the growth points for what was chipped off are split evenly among the allied laners of that lane** (the right lane has two, sniper · supporter, so half each). Herald Subdued has no caster, so the usual attribution path reaches nobody — the people who held that lane while pushing it own the siege. Dragon: **`OBJ_DRAGON_CARD_COUNT`** **[용 보상]** (Dragon Reward) (id 33, `exhaust`) **shuffled into the deck**, a draw + **permanent** `growth_perm` bonus to the targeted ally's growth accrual multiplier (`PilotData.growth_rate_bonus`, stacks). Both cards have `pool = 0` and **no caster** (`owner_pilot == null` — the team took it, not someone, and attaching a caster would lock the reward while that pilot is down). While the decision window is up it's still BATTLE, so `ObjectiveSystem.is_busy()` + `BattleSim._battle_tick_held()` hold the auto tick and the MM:SS clock together. **Rewards come in through FX** (`objective/ObjectiveRewardFx.gd`) — see the "Objective reward acquisition FX" entry below. Details in `objective/README.md`. |
+| Objective reward acquisition FX | **Reward cards go in only after being shown once as real cards** (`objective/ObjectiveRewardFx.gd`). It used to end with one `_grant_reward` line, so even though it was the payback for fighting up to a 4-player engage over an objective, nothing happened on screen except the hand growing by one or the deck count going up — the Dragon in particular is **shuffled into the deck**, so nothing lands in your hand at that moment. **Dragon**: N reward cards fan out in the screen center (`SPREAD_SEC` 0.34s + `HOLD_SEC` 0.70s, spacing `FAN_STEP_PX` 118px · edge tilt `FAN_TILT_DEG` 7°), **stack into what looks like one card** (`COLLAPSE_SEC` 0.26s — this beat says "these several cards now become one pile"), and get sucked into the **deck pile at bottom left** (`FLY_SEC` 0.42s). **Herald**: one card rises in the center and settles into the **leftmost slot of the hand** (single card, so the stacking beat is skipped). **If the enemy takes it, both fly to the left end of the opponent's hand at the top** and vanish (`HudBuilder.ai_hand_left_anchor()`) — the opponent's deck isn't on screen, so the Dragon uses that spot too. What matters is "whose did it become", and whether the card went up or down answers that. **The Herald's landing point equals its actual insertion slot** — the FX heads for the leftmost slot measured by `slot_position(0, n+1)` and the grant inserts it there via `grant_cards_to_hand(..., at_left = true)` (that path also skips the draw intro — if it flew in again from off-screen left, the flight you just saw would play twice). **FX comes before granting** — `_grant_reward` became a coroutine and inserts **after** awaiting `play()`. If the order were flipped, the same card would already be in the hand during the FX, showing one card in two places. The dim (α 0.55) **lifts when the flight starts** — the deck pile and the opponent's hand are both under the dim, so the screen must be bright at that moment to show where it goes. On an uncontested take it comes **after the confirmation window closes** (cards flying over the notice would blur which one the screen wants you to look at). The card is the same `Card.tscn` node as the hand (a separately drawn picture would give no way to confirm it's the same card that came in), and each beat waits on a **timer**, not the tween's `finished` (if the node is freed midway, that signal never comes). Don't confuse it with `ui/ObjectiveRewardPopup.gd`, opened by tapping the clock **before** resolution — that one is an info popup previewing what it gives and doesn't hold the battlefield; this one is FX showing the cards actually received and `_busy` holds it. |

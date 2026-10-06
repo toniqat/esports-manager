@@ -14,15 +14,15 @@ add them to the owning folder's README and at most a one-line pointer here.
 - **Main scene**: `res://scenes/TitleScreen.tscn` (3 save slots → `Season.tscn`)
 - **Campaign**: `PRESEASON → PRESEASON_INTL → MIDSEASON → MIDSEASON_INTL → REGULAR → REGULAR_INTL`.
   Win final REGULAR_INTL = ending; miss any phase's playoffs = game over.
-- **Week**: advances one week at a time, run day by day 월~일
-  (`season_state["week_day"]`). 월~금 = training days, 토·일 = match days.
+- **Week**: advances one week at a time, run day by day 월~일 (Mon–Sun)
+  (`season_state["week_day"]`). 월~금 (Mon–Fri) = training days, 토·일 (Sat·Sun) = match days.
   `CalendarSystem.advance_week()` is called only from `SeasonHub._end_week()`.
-- **Weekly flow**: HUB → PRESS(기자회견) → TRAINING(타일판) → WEEK(요일 레일) →
-  on match day MatchFlow (PREP → BAN_PICK(밴픽 + 메크 배정) → BattleSim) →
-  STANDINGS → back to WEEK → 일요일 "주 마감" → HUB.
+- **Weekly flow**: HUB → PRESS (press conference) → TRAINING (tile board) → WEEK (weekday rail) →
+  on match day MatchFlow (PREP → BAN_PICK (ban/pick + mech assignment) → BattleSim) →
+  STANDINGS → back to WEEK → Sunday "주 마감" (End week) → HUB.
 - **Outgame = white theme**: every colour goes through `resources/OutgameTheme.gd`
   (white paper, coloured cards); primary actions use the full-width bottom bar
-  (`OutgameTheme.add_bottom_bar`, rules in `resources/README.md` "하단 액션 바").
+  (`OutgameTheme.add_bottom_bar`, rules in `resources/README.md` "Bottom action bar").
   **BattleSim uses neither** — the battlefield is a dark screen.
 - **Save / load**: 3 JSON slots `user://saves/slot{0,1,2}.save`, 4 autosave points,
   no save inside BattleSim → `features/save_load/README.md`.
@@ -48,19 +48,19 @@ esports-manager/
 ├── data/                     ← CSV tables, game.db, SQLite addon usage, table list → README.md
 ├── autoloads/                ← GameManager, Haptics, HapticUi (+ haptics table, db_path) → README.md
 ├── resources/                ← shared data classes, enums, image lookups, OutgameTheme,
-│                               ScreenMetrics, DragScroll, UiHelpers, shaders → README.md
+│                               ScreenMetrics, DragScroll, UiHelpers, ConstTable, GameDb, shaders → README.md
 ├── scenes/                   ← TitleScreen / Season / MatchFlow / BattleSim / BattleField / Card .tscn
 ├── docs/                     ← ios_testbuild.md, mobile_safe_area.md,
-│                               outgame_dev_plan.md (아웃게임 메타 개발 계획)
+│                               outgame_dev_plan.md (outgame meta development plan, 아웃게임 메타 개발 계획)
 ├── addons/godot_mcp/         ← MCP editor plugin (do not modify)
 └── features/
     ├── save_load/            ← title screen, 3-slot save/load, autosave, mid-match resume
     ├── season/               ← outgame campaign (SeasonHub orchestrator, handoffs, brackets)
-    │   ├── calendar/         ← week clock, 요일 / 경기일, phase transitions
-    │   ├── press/            ← 기자회견 messenger screen
-    │   ├── week/             ← 시간 경과 screen (day rail + day cards)
+    │   ├── calendar/         ← week clock, weekdays / match days, phase transitions
+    │   ├── press/            ← press conference (기자회견) messenger screen
+    │   ├── week/             ← 시간 경과 (Time passing) screen (day rail + day cards)
     │   ├── draft/            ← initial 5-pilot draft
-    │   ├── training/         ← 일상 훈련 tile board
+    │   ├── training/         ← daily training (일상 훈련) tile board
     │   ├── league/           ← LeagueManager + LeagueView (2 rounds / week)
     │   └── tournament/       ← playoff + INTL brackets (no README — see season/README.md)
     ├── match_flow/           ← PREP → BAN_PICK → BattleSim handoff
@@ -71,7 +71,7 @@ esports-manager/
         ├── rendering/        ← BattleRenderer (all _draw), marker layout / glide / popups
         ├── card_phase/       ← cards, hand, drag & drop, targeting, deck rules, AI card play
         ├── engage/           ← round-based turn engage stage, VS intro, result screen
-        ├── objective/        ← 전령 / 용 objectives + reward FX
+        ├── objective/        ← Herald (전령) / Dragon (용) objectives + reward FX
         ├── skill/            ← pilot skills (25)
         ├── mech/             ← mech passives (15) + mech card hooks
         ├── gambit/           ← pre-battle setup + jungle start overlay
@@ -97,19 +97,20 @@ esports-manager/
 |---|---|
 | Haptics table & rules, `game.db` res→user copy | `autoloads/README.md` |
 | Title→Season handoff, autosave, mid-match resume | `features/save_load/README.md` |
-| Weekly progression contract, 요일과 경기일 | `features/season/calendar/README.md` |
+| Weekly progression contract, Weekdays and match days | `features/season/calendar/README.md` |
 | Season→MatchFlow→BattleSim handoff, playoff / INTL brackets | `features/season/README.md` |
 | MatchFlow→BattleSim handoff (`match_ctx`) | `features/match_flow/README.md`, `features/battle_sim/README.md` |
-| BattleSim module architecture, side (blue/red), growth & 성장치, economy gate, field size | `features/battle_sim/README.md` |
+| BattleSim module architecture, side (blue/red), growth & growth points (성장치), economy gate, field size | `features/battle_sim/README.md` |
 | Lane combat, turrets, recall, jungle / camps, front line, stats & hit chance | `features/battle_sim/combat/README.md` |
 | Card phase, drag & drop, hand layout, keywords, AI turn, **fixed pilot cards (3 per player) · card scope / categories** | `features/battle_sim/card_phase/README.md` |
 | Engage stage, VS intro, start positions, result screen | `features/battle_sim/engage/README.md` |
 | Marker layout / glide, camp outline, death / popup FX | `features/battle_sim/rendering/README.md` |
 | Pilot strips, top chrome, kill feed, detail panel, card piles, safe-area offsets | `features/battle_sim/ui/README.md` |
-| Objectives (전령 / 용) | `features/battle_sim/objective/README.md` |
+| Objectives (Herald / Dragon) | `features/battle_sim/objective/README.md` |
 | Pilot skills / mech passives | `features/battle_sim/skill/README.md`, `features/battle_sim/mech/README.md` |
 | Mob pilots (silhouettes), silhouette shader, image lookups | `resources/README.md` |
 | CSV tables, SQLite API, Rebuild game.db | `data/README.md` |
+| Tuning constants (const.csv / ConstTable), no values in docs | `data/README.md` |
 | iOS test build, downloading the .ipa | `docs/ios_testbuild.md`, `build/README.md` |
 
 ---
@@ -134,7 +135,7 @@ _bs.renderer.queue_redraw()
 
 ### Enums & role order
 All shared enums live in `resources/GameEnums.gd` (`class_name GameEnums`).
-`GameEnums.ROLE_DISPLAY_ORDER` / `role_seat(role)` (탑 · 정글 · 미드 · 원딜 · 서폿)
+`GameEnums.ROLE_DISPLAY_ORDER` / `role_seat(role)` (탑 · 정글 · 미드 · 원딜 · 서폿 = top · jungle · mid · ADC · support)
 is the **single** order every screen (in-game and outgame) uses to line up five pilots.
 
 ### Scene → Script Relationship

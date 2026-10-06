@@ -6,10 +6,10 @@ Each module accesses shared state via `@onready var _bs: BattleSim = get_parent(
 ## Pathfinding.gd
 BFS pathfinding with greedy fallback (hex grid).
 - `bfs_next_step(from, to, forbidden_cells={}, greedy_fallback=true)` → Vector2i
-  (`greedy_fallback = false` 면 길이 없을 때 `UNREACHABLE` 을 돌려준다 — 부르는 쪽이
-  금지 집합을 풀고 다시 묻는 용도. 도달 판정은 bool 로 든다: 예전의
-  `found == (-1,-1)` 센티널은 미드 칸 `(-1,-1)` 이 목표일 때 찾고도 못 찾은 것으로
-  쳤다)
+  (with `greedy_fallback = false` it returns `UNREACHABLE` when there is no path — used by callers
+  that loosen the forbidden set and ask again. Reachability is carried as a bool: the old
+  `found == (-1,-1)` sentinel treated a found path as not found when the mid cell `(-1,-1)`
+  was the goal)
 - `greedy(from, to, forbidden_cells={})` → Vector2i
 - `neighbors(pos, forbidden_cells={})` → Array[Vector2i]
 
@@ -21,10 +21,10 @@ region. SimulationCore uses this to keep lane pilots out of jungle cells, and
 cells whenever a path around exists** (see "Jungler roaming").
 
 ## RecallSystem.gd
-**복귀 = 본진 귀환.** Two triggers, one shared path:
+**복귀 (return-to-base) = going back to base (본진 귀환).** Two triggers, one shared path:
 
-- **저HP 복귀** — at HP ≤ `RECALL_HP_THRESHOLD` the pilot goes home.
-- **위치 이탈 복귀** — a card effect dropped the pilot on a jungle cell or on
+- **Low-HP return (저HP 복귀)** — at HP ≤ `RECALL_HP_THRESHOLD` the pilot goes home.
+- **Out-of-position return (위치 이탈 복귀)** — a card effect dropped the pilot on a jungle cell or on
   **another lane's corridor**.
 
 Both call `return_to_hq(p, log_lines, reason)`, which snaps `grid_pos` to the
@@ -47,7 +47,7 @@ Because recalls never leave the field, `respawn_timer` and
 "turns left" — the card lock overlay, BattleLogger's `dead:N` tag — still goes
 through `turns_until_return` rather than reading the timer directly.
 
-The 복귀 card (`recall_ally`, `CardPhaseManager._effect_recall_ally`) does the
+The 복귀 (Return to Base) card (`recall_ally`, `CardPhaseManager._effect_recall_ally`) does the
 same thing minus the hold: instant HQ teleport at full HP, free to walk out the
 same turn.
 
@@ -68,9 +68,9 @@ Main turn loop and all combat / movement / spawn logic. Each `simulate_turn`
 counts as **1 minute** of in-game time.
 
 ### Turn loop (`simulate_turn`)
-0. **`tick_growth_and_expiries`** — 턴 만료형 버프 회수 + 전원 스탯 재계산.
-   턴의 맨 앞이라야 이번 턴의 교전이 갱신된 스탯으로 굴러간다. 아래
-   "성장 / 라인전 스탯" 참조.
+0. **`tick_growth_and_expiries`** — collects turn-expiring buffs + recalculates everyone's stats.
+   It must be at the very start of the turn so this turn's combat runs on the updated stats. See
+   "Growth / laning stats" below.
 1. `process_respawns` — one sweep over everyone off the field, which now means
    the dead and only the dead: count `respawn_timer` down, return at own HQ at
    full HP when it hits 0.
@@ -91,9 +91,10 @@ counts as **1 minute** of in-game time.
    combat pushes together. See "Movement" below.
 7. HQ damage: any pilot sitting on enemy HQ once any defender T2 is down.
 8. `process_neutral_zone_captures` — junglers stepping on a neutral cell flip it.
-9. **성장치 수입** — `award_frontline_income` + `process_jungle_camps`. 아래
-   "성장치 수입" 참조. **이동과 점령이 다 끝난 뒤**라야 그 턴의 최종 자리로
-   판정된다 — 전선까지 걸어 들어간 턴에는 그 턴부터 벌고, 밀려난 턴에는 못 번다.
+9. **Growth-point income (성장치 수입)** — `award_frontline_income` + `process_jungle_camps`. See
+   "Growth-point income" below. It must run **after movement and capture are both done** so it is judged
+   on that turn's final positions — on the turn a pilot walks into the front line it earns from that turn,
+   and on a turn it is pushed out it earns nothing.
 10. `check_win_condition` — HQ HP ≤ 0 → game over.
 
 **Damage is applied before movement, and movement is a single pass.** Both
@@ -103,129 +104,127 @@ free movement saw the pre-damage world and pushes saw the post-damage one.
 A single movement pass is what makes the pass-through bug structurally
 impossible; the two-pass split is described under "Movement".
 
-### 성장 / 라인전 스탯 (`tick_growth_and_expiries`)
-두 시스템이 **건드리는 스탯이 겹치지 않는다** — 성장은 `atk` / `max_hp`,
-라인전 스탯은 `hit` / `evasion`.
+### Growth / laning stats (`tick_growth_and_expiries`)
+The two systems **do not touch overlapping stats** — growth (성장) touches `atk` / `max_hp`,
+laning stats touch `hit` / `evasion`.
 
-**성장 — 시간이 아니라 성장치(`PilotData.score`)가 만든다.**
-예전에는 이 훅이 살아 있는 파일럿마다 `GROWTH_PER_TURN` 을 누적했다. 그 설계에는
-결함이 둘 있었고 둘 다 치명적이었다.
-- 아무것도 안 해도 자란다 → 킬 · 포탑 · 파밍이 성장에 **아무 영향이 없다**.
-- `atk` 와 `max_hp` 가 **같은 비율**로 자란다 → `atk / max_hp` 가 불변이라
-  "몇 대 맞아야 죽는가"가 50턴이 지나도 1타도 안 줄어든다. 성장이 안 보인 게
-  아니라 구조상 보일 수 없었다.
+**Growth — made by growth points (`PilotData.score`), not by time.**
+This hook used to accumulate `GROWTH_PER_TURN` for every living pilot. That design had
+two flaws, both fatal.
+- Pilots grow even doing nothing → kills · turrets · farming have **no effect** on growth.
+- `atk` and `max_hp` grow at **the same rate** → `atk / max_hp` is invariant, so
+  "how many hits to die" does not drop by even one hit after 50 turns. It is not that growth was
+  invisible — structurally it could not be seen.
 
-지금 성장은 전부 `BattleSim.refresh_growth_stats` 한 곳에서 성장치로부터
-파생된다 — `GROWTH_PER_TURN` 은 game_config 에서 삭제됐다.
-- **공격력이 체력의 4배 속도로 자란다**: `GROWTH_ATK_PER_SCORE`(2.0/24 =
-  +8.33%p per 1k) vs `GROWTH_HP_PER_SCORE`(0.5/24 = +2.08%p per 1k). 성장치
-  25k 에서 정확히 **atk ×3.0 / max_hp ×1.5**, 40k 에서 ×4.25 / ×1.81.
-  이 비대칭 하나가 성장 체감의 전부다.
-- 스탯은 매 턴 곱해 나가는 대신 `PilotData.base_atk` / `base_max_hp` 에서
-  **다시 계산**한다 — 반올림이 반복되면 누적 오차가 성장률을 갉아먹는다.
-  두 원본은 `PilotData._init` 이 채우므로 메크 스탯 주입(`_stats_for`)을 포함한
-  모든 스폰 경로에서 비지 않는다.
-- 최대 체력이 오른 만큼 현재 체력도 같이 올린다(`hp += new_max - max_hp`).
-- 재계산은 **점수가 움직이는 그 순간**(`BattleSim.add_score`)에 돈다 — 턴 경계가
-  아니라 그 자리라야 "킬을 땄더니 세졌다"가 한 박자로 읽힌다. 이 훅에 남은
-  재계산은 **보험**이고, 실제로 하는 일은 배율 만료를 걷는 것이다.
-- 그래서 카드가 거는 **일시** 공격력은 `atk` 가 아니라 `PilotData.atk_buff` 에
-  얹어야 한다. 예전처럼 `atk += buff` 로 밀면 턴 한가운데(처치가 난 자리)의
-  재계산이 가산분을 지우고, 턴 끝의 `atk -= buff` 가 원본을 깎아 버린다.
-  `refresh_growth_stats` 가 `base × (1 + growth) + atk_buff` 로 마지막에 더한다.
-- **죽어 있는 동안은 수입이 없으므로 성장도 멈춘다.** 누적치는 그대로 남아
-  부활하면 죽기 전 성장을 들고 돌아온다.
-- `growth_rate_mult` 는 이제 성장이 아니라 **성장치 적립**에 곱해진다(안전한
-  파밍 턴 만료형 / 완벽한 마무리 작전 단계 만료형). 결과는 같고 배선이 한 겹
-  준다. **같은 필드라 나중에 건 쪽이 덮어쓴다.** 후자의 해제는
-  `clear_growth_until_phase(team)` 를 `CardPhaseManager` 가 그 팀의 다음 작전
-  단계 진입 시 부른다.
+Now all growth is derived from growth points in one place, `BattleSim.refresh_growth_stats`
+— `GROWTH_PER_TURN` was deleted from game_config.
+- **Attack grows much faster than HP**: `GROWTH_ATK_PER_SCORE` vs `GROWTH_HP_PER_SCORE`
+  (const.csv, multiplier gain per 1k growth points). The two are tuned so that a design reference
+  growth-point total reached around mid-game lands on a target atk / max_hp multiplier pair — change
+  them together. This one asymmetry is the whole feel of growth.
+- Instead of multiplying every turn, stats are **recalculated** from `PilotData.base_atk` / `base_max_hp`
+  — repeated rounding would let accumulated error eat into the growth rate.
+  Both originals are filled by `PilotData._init`, so they are never empty on any spawn path,
+  including mech stat injection (`_stats_for`).
+- Current HP rises by however much max HP rose (`hp += new_max - max_hp`).
+- Recalculation runs **the moment the score moves** (`BattleSim.add_score`) — it must be there, not at
+  the turn boundary, so "got a kill and got stronger" reads as one beat. The recalculation left in this
+  hook is **insurance**; what it actually does is sweep multiplier expiries.
+- So **temporary** attack applied by cards must go on `PilotData.atk_buff`, not on `atk`.
+  If pushed as `atk += buff` as before, a recalculation mid-turn (where a kill happened) erases
+  the added amount, and the end-of-turn `atk -= buff` cuts into the original.
+  `refresh_growth_stats` adds it last as `base × (1 + growth) + atk_buff`.
+- **There is no income while dead, so growth stops too.** The accumulated total stays, so on
+  respawn the pilot comes back carrying its pre-death growth.
+- `growth_rate_mult` now multiplies **growth-point accrual**, not growth (turn-expiring for
+  안전한 파밍 (Safe Farming) / operation-phase-expiring for 완벽한 마무리 (Perfect Finish)). Same result, one less layer of
+  wiring. **It is the same field, so whichever is applied later overwrites.** The latter is cleared by
+  `CardPhaseManager` calling `clear_growth_until_phase(team)` when that team enters its next operation
+  phase (작전 단계).
 
-**라인전 스탯** (`lane_stat_mod`, ±0.10) — `roll_hit` **하나에만** 걸린다.
-전장 자동 교전과 공격 카드가 그 함수를 공유하므로 둘 다 반영되고, 교전 무대는
-자기 확률 구간을 쓰므로 반영되지 않는다. 포탑 / HQ 피해는 명중 판정 자체가
-없으므로 무관하다. 만료(`lane_stat_expire_turn`)는 성장 만료와 같은 훅에서
-처리하며, **죽어 있어도 돈다** — 버프의 수명은 전장에 서 있는지와 무관하다.
+**Laning stats** (`lane_stat_mod`, set from the card's `lane_stat:N` clause in cards.csv) — applied to **only** `roll_hit`.
+Battlefield (전장) auto-combat and attack cards share that function so both reflect it; the engage (교전) stage
+uses its own probability bands, so it does not. Turret / HQ damage has no hit check at all,
+so it is unaffected. Expiry (`lane_stat_expire_turn`) is handled in the same hook as growth expiry,
+and **runs even while dead** — a buff's lifetime is independent of standing on the battlefield.
 
-### 성장치 수입 (`award_frontline_income` / `process_jungle_camps`)
-성장이 성장치에서 나오므로, **성장치를 어디서 버는가가 곧 성장 설계**다.
-적립처는 셋이고 둘이 여기 있다(셋째인 처치 현상금은 `BattleSim.mark_pilot_dead`).
+### Growth-point income (`award_frontline_income` / `process_jungle_camps`)
+Since growth comes from growth points (성장치), **where growth points are earned is the growth design itself**.
+There are three sources and two are here (the third, kill bounty, is in `BattleSim.mark_pilot_dead`).
 
-**전선 — 레인 파일럿의 수입.** 레인마다 **양 팀의 살아 있는 최전방 포탑 사이**
-(포탑 칸 포함)가 전선이고, 살아서 그 안에 서 있는 턴마다 0.50k 가 들어온다.
-- 경계는 `_front_boundary_index(team, lane, order)` — 그 팀의 살아 있는 가장
-  바깥 포탑(T1 → T2 순)이고, 둘 다 부서졌으면 통로 끝(그 팀 HQ 쪽)이다.
-  **T1 이 부서지면 전선이 그 팀 쪽으로 넓어진다** — 밀어낸 만큼 벌 자리가 는다.
-- 앞뒤 관계는 `lane_corridor_order(lane)` 이 답한다. 통로를 BFS 로 잇는 그
-  자리에서 팀0 HQ 쪽부터 순번을 매겨 두고, **처음 밟았을 때만** 번호를 적어
-  웨이포인트 사이를 되짚는 구간이 앞뒤를 뒤집지 못하게 한다.
-- 포탑이 부서질 때마다 답이 바뀌므로 `front_line_cells(lane)` 은 **캐시하지
-  않는다**. 레인 셋 × 수십 칸이라 비용이 없다.
-- **HQ 에서 걸어 나오는 동안 · 저HP 복귀 뒤 다시 걸어가는 동안 · 죽어 있는
-  동안은 한 푼도 안 들어온다.** 사망과 복귀의 진짜 비용이 여기 있고, 그래서
-  사망에 점수 벌점을 따로 매기지 않는다.
-- **정글러는 제외** — 정글러의 전선은 정글이다.
+**Front line (전선) — lane pilots' income.** In each lane, the stretch **between both teams' living frontmost turrets**
+(turret cells included) is the front line, and every turn a pilot stands inside it alive it earns `SCORE_FRONTLINE_PER_TURN` (const.csv).
+- The boundary is `_front_boundary_index(team, lane, order)` — that team's living outermost
+  turret (T1 → T2 order); if both are destroyed, the end of the corridor (that team's HQ side).
+  **When T1 falls, the front line widens toward that team** — pushing in creates more room to earn.
+- Front/back ordering is answered by `lane_corridor_order(lane)`. At the place where the corridor is linked
+  with BFS, it numbers cells starting from the team-0 HQ side, writing the number **only on first visit**
+  so segments that double back between waypoints cannot flip front and back.
+- The answer changes whenever a turret falls, so `front_line_cells(lane)` is **not
+  cached**. Three lanes × dozens of cells costs nothing.
+- **Nothing is earned while walking out of HQ · while walking back after a low-HP return · while
+  dead.** This is the real cost of death and return, which is why death carries no separate score
+  penalty.
+- **Junglers are excluded** — a jungler's front line is the jungle.
 
-**정글 캠프 — 정글러의 수입.** 모든 **정글/중립 칸**에 캠프가 하나씩 있고
-(`BattleSim.jungle_camps`, `셀 → ready_turn`), 밟으면 **0.98k** 를 먹고 그 칸은
-**6턴** 뒤에나 다시 찬다. **좌우 중립 두 칸도 포함이다** — 전령 / 용이 그 좌표를
-무대로 빌려 쓸 뿐 타일 규칙은 다른 정글 칸과 같다(`objective/README.md`).
-- **캠프값이 라이너의 턴당 수입(0.50k)보다 큰 이유**: 캠프는 걸어가야 하고
-  재생성을 기다려야 하므로, 캠프당 값이 같으면 정글러의 턴당 수입이 구조적으로
-  낮다. 실측(50턴 · 포탑 무파괴 · 적 정글 미점령, 4회 평균)에서 재생성 4턴 ·
-  캠프값 0.50k 일 때 정글러 18.4k / 라이너 평균 23.5k = **0.78배**였고, 0.65k 로
-  올려 **0.98배**가 됐다. 역산은 `BattleSim.SCORE_JUNGLE_CAMP` 주석 참조.
-- 한때 **1.15k** 였다 — 좌우 중립 두 칸이 오브젝트 전용 자리가 되어 캠프 칸이
-  14 → 12 로 줄었을 때 그 몫(× 14/12)을 얹은 값이다. 두 칸이 다시 평범한 정글
-  칸으로 돌아오면서 그 보정은 근거를 잃어 **0.98k 로 되돌렸다**.
-- **재생성이 4턴 → 6턴으로 늦춰지면서 캠프값도 0.65k → 0.98k 로 함께 올렸다.**
-  정글러 수입은 전량 캠프이고 획득 빈도가 재생성 주기에 반비례하므로, 주기를
-  1.5배로 늘리면 값도 1.5배여야 같은 수입이 나온다. 늦춘 것은 **순회 리듬**이지
-  정글러의 몫이 아니다 — 한 칸이 되살아나기를 더 오래 기다리는 대신 한 번 먹을
-  때 더 크게 먹는다.
-- 판정은 `camp_harvestable(cell, team)` 하나뿐이고 **렌더러도 같은 함수를
-  읽는다** — 화면에 보이는 캠프와 실제로 먹히는 캠프가 어긋날 수 없다.
-  소유권을 빼고 "지금 차 있는가"만 묻는 `camp_charged(cell)` 이 그 안쪽에
-  들어 있고, 렌더러가 **적 소유 칸의 캠프**를 어두운 호박색 아웃라인으로 그릴
-  때 쓴다(`rendering/README.md`).
-- 먹을 수 있는 것은 **자기 팀 소유이거나 아직 중립인** 칸뿐이다. 적 정글을
-  점령하면 돌 캠프가 늘어 라이너를 추월할 수 있다 — 정글 점령의 값이 여기 있다.
-- **정산 함수는 `harvest_camp_under(p)` 하나다.** 턴 루프
-  (`process_jungle_camps`)와 **정글러를 옮기는 카드**(`_effect_move` — 정밀
-  이동 / 정글 파밍)가 같은 함수를 지난다. 카드 쪽이 그 자리에서 먹는 이유는
-  박자다 — 턴 루프까지 기다리면 카드를 낸 순간과 수확 사이가 몇 초 벌어져
-  "카드를 냈는데 아무 일도 안 일어난" 것으로 보이고, 그 사이 적 정글러가 같은
-  칸을 밟으면 통째로 뺏긴다.
-- **약탈(`steal_camp`)은 `steal_camp_point(cell, thief)` 로 그 칸의 캠프를
-  원격으로 가로챈다** — 값도 재생성 시계도 밟아서 먹는 것과 같고, **소유권은
-  건드리지 않는다**. 훔치는 것은 타일이 아니라 그 한 번의 수입이다.
-- **적립은 `award_score` 를 지난다** — 곧 초상화 위에 `+0.98k` 팝업이 뜬다.
-  정글러의 수입은 전부 캠프에서 나오는데 숫자가 스트립 구석에서 조용히 오르기만
-  하면 "캠프를 먹었다"가 화면에 남지 않는다. 순회 리듬이 곧 정글러의 플레이이고,
-  획득이 턴마다 열 명이 아니라 한 명에게 한 번씩만 일어나므로 배경이 되지도
-  않는다(전선 체류는 반대라 여전히 조용한 `add_score` 다). 약탈도 같다.
-- `process_neutral_zone_captures` **뒤**에 돈다: 방금 점령한 중립 칸의 캠프를
-  그 턴에 바로 먹게 하기 위해서다.
-- 정글러의 이동 목표도 이걸 따라간다 — `_jungle_goal_for` 는 아직 안 잡힌 중립
-  칸 다음에 `_best_ready_camp` 을 보고, 먹고 나면 그 칸이 6턴
-  비어 다음 캠프가 자연히 새 목표가 된다. **그 반복이 곧 순회**라 예전의
-  sticky 로밍은 캠프가 하나도 안 찼을 때의 폴백으로만 남았다.
-- **목표를 고르는 비용은 거리가 아니라 `거리 × JUNGLE_CAMP_STALE_PER_STEP −
-  방치 턴 수`다.** 거리만 보면 정글러는 **자기 발밑 4칸에 갇힌다**: 한쪽 정글이
-  4칸이라 재생성 주기가 그 칸 수에 가까우면 매 턴 한 칸이 되살아나고, 최단 거리 그리디는
-  언제나 거리 1짜리 캠프를 찾아냈고, 반대쪽 정글은 개시부터 끝까지 캠프가 꽉 찬
-  채 남았다(실측 60턴: 밟은 칸 **6개**, 오른쪽 정글 세 칸은 한 번도 안 밟음 —
-  화면에는 "먹을 게 남은 칸을 두고 빈 칸만 도는" 것으로 보인다). 차 있는 채
-  놀고 있는 캠프가 턴마다 조금씩 싸지면 방치된 쪽이 주기적으로 가장 싼 목표가
-  되어 좌우를 오가는 순회가 된다(같은 60턴: 밟은 칸 **11개**, 캠프 획득
-  53 → 45회 = 수입 85%. 그 15%가 순회의 이동 시간이다).
-- 목표를 향해 **한 걸음 옮기면 그 목표의 비용은 반드시 더 내려간다**(거리 −1 =
-  −3, 방치 +1 = −1, 합 −4). 다른 캠프는 같은 턴에 −1 밖에 안 싸지므로 가는 도중에
-  목표가 뒤집혀 왕복하는 일이 없다 — 예전 sticky 로밍이 필요했던 이유가 그
-  왕복이었다.
-- **발밑의 캠프가 차 있으면 무조건 그 칸이 목표다.** 이동은
-  `process_jungle_camps` 보다 앞에 오므로 가만히 있기만 하면 이번 턴에 먹는다 —
-  방치 할인에 끌려 떠나면 그 한 턴을 통째로 버린다.
+**Jungle camps (캠프) — the jungler's income.** Every **jungle/neutral cell** has one camp
+(`BattleSim.jungle_camps`, `cell → ready_turn`); stepping on it eats `SCORE_JUNGLE_CAMP` and that cell
+refills only `JUNGLE_CAMP_RESPAWN_TURNS` later (both const.csv). **The two left/right neutral cells are included** — Herald (전령) / Dragon (용) only borrow those
+coordinates as a stage; the tile rules are the same as other jungle cells (`objective/README.md`).
+- **Why the camp value is larger than a laner's per-turn income (`SCORE_FRONTLINE_PER_TURN`)**: camps require walking and
+  waiting for respawn, so with an equal per-camp value the jungler's per-turn income is structurally
+  lower. It was measured (50 turns · no turrets destroyed · enemy jungle not captured, average of 4 runs) and the
+  camp value raised until jungler income roughly matched a laner's. See the `BattleSim.SCORE_JUNGLE_CAMP` comment for the back-calculation.
+- It was once raised further — when the two left/right neutral cells became objective-only spots and camp cells
+  went 14 → 12, their share (× 14/12) was added on. When the two cells went back to being ordinary jungle
+  cells that correction lost its basis and **was reverted**.
+- **When the respawn was slowed, the camp value was raised together in the same proportion.**
+  Jungler income is entirely camps and harvest frequency is inversely proportional to the respawn period, so
+  stretching the period needs a proportionally larger value for the same income — **change `SCORE_JUNGLE_CAMP` and
+  `JUNGLE_CAMP_RESPAWN_TURNS` together**. What was slowed is the **circuit rhythm**,
+  not the jungler's share — waiting longer for a cell to come back, but eating more per harvest.
+- The check is just one function, `camp_harvestable(cell, team)`, and **the renderer reads the same
+  function** — the camps shown on screen and the camps actually harvestable can never diverge.
+  `camp_charged(cell)`, which drops ownership and asks only "is it full now", sits inside it,
+  and the renderer uses it when drawing **camps on enemy-owned cells** with a dark amber outline
+  (`rendering/README.md`).
+- Only cells **owned by your own team or still neutral** can be eaten. Capturing the enemy jungle
+  adds camps to the circuit and can let the jungler overtake laners — that is where the value of jungle capture lies.
+- **The payout function is just `harvest_camp_under(p)`.** The turn loop
+  (`process_jungle_camps`) and **cards that move the jungler** (`_effect_move` — 정밀
+  이동 (Precise Move) / 정글 파밍 (Jungle Farming)) pass through the same function. The card side eats on the spot for
+  timing — waiting for the turn loop would leave a few seconds between playing the card and the harvest,
+  making it look like "I played a card and nothing happened", and if the enemy jungler stepped on the same
+  cell in between, it would be stolen outright.
+- **Plunder (`steal_camp`) remotely intercepts that cell's camp via `steal_camp_point(cell, thief)`**
+  — the value and respawn clock are the same as eating by stepping on it, and **ownership is not
+  touched**. What is stolen is not the tile but that one income.
+- **Accrual goes through `award_score`** — so a growth-point popup appears over the portrait.
+  All jungler income comes from camps, and if the number just quietly rose in a corner of the strip,
+  "ate a camp" would leave no trace on screen. The circuit rhythm is the jungler's play, and harvests happen
+  once for one pilot rather than for ten every turn, so it does not become background noise
+  (front-line presence is the opposite and so remains a quiet `add_score`). Plunder is the same.
+- Runs **after** `process_neutral_zone_captures`: so the camp of a just-captured neutral cell
+  can be eaten that same turn.
+- The jungler's move goal follows this too — `_jungle_goal_for` looks at `_best_ready_camp` after
+  not-yet-taken neutral cells, and once eaten that cell is empty for `JUNGLE_CAMP_RESPAWN_TURNS`,
+  so the next camp naturally becomes the new goal. **That repetition is the circuit**, so the old
+  sticky roaming remains only as the fallback for when no camp is full.
+- **The cost for choosing a goal is not distance but `distance × JUNGLE_CAMP_STALE_PER_STEP −
+  turns neglected`** (`JUNGLE_CAMP_STALE_PER_STEP`, const.csv). With distance alone the jungler **gets trapped in the 4 cells at its feet**: one jungle side is
+  4 cells, so when the respawn period is close to that cell count one cell comes back every turn, nearest-distance greedy
+  always found a distance-1 camp, and the opposite jungle stayed full of camps from opening to end
+  (measured over 60 turns: the three cells of the right jungle never stepped on —
+  on screen it looks like "circling empty cells while cells with food remain"). If a full but idle
+  camp gets slightly cheaper every turn, the neglected side periodically becomes the cheapest goal,
+  producing a left-right circuit (more cells stepped on, at the price of a small share of camp income
+  lost to the circuit's travel time).
+- **Moving one step toward the goal always lowers that goal's cost further** (distance −1 =
+  −`JUNGLE_CAMP_STALE_PER_STEP`, neglect +1 = −1). Other camps only get −1 cheaper in the same turn, so the goal never
+  flips midway into a back-and-forth — that back-and-forth was why the old sticky roaming was needed.
+- **If the camp under the jungler's feet is full, that cell is unconditionally the goal.** Movement comes before
+  `process_jungle_camps`, so just standing still eats it this turn —
+  leaving because of the neglect discount would throw away that whole turn.
 
 ### Combat (`_resolve_cell`)
 Combat happens **only between pilots in the same cell**. There is no
@@ -243,20 +242,21 @@ Per cell with at least one pilot:
     *for damage rolls*. Each pair rolls hit independently. Hit chance =
     `attacker.hit / (attacker.hit + defender.evasion)` (`roll_hit`, public —
     card attacks share it, see `card_phase/README.md`) — **battlefield-only**;
-    the 교전 무대 remaps this into its own 80~100% band
-    (`ENGAGE_HIT_MIN` / `ENGAGE_HIT_MAX`, see `engage/README.md`), and the two
-    are tuned independently. **라인전 스탯**(`lane_stat_mod`)이 붙는 유일한
-    지점도 여기다 — `lane_adjusted()` 가 공격자의 `hit` 과 방어자의 `evasion` 에
-    각자 자기 배율을 곱한다.
+    the engage stage (교전 무대) remaps this into its own band
+    [`PILOT_HIT_MIN`, `PILOT_HIT_MAX`] (const.csv; the old `ENGAGE_HIT_MIN` / `_MAX` were deleted,
+    see `engage/README.md`), and the two are tuned independently. This is also the only place **laning stats** (`lane_stat_mod`)
+    apply — `lane_adjusted()` multiplies the attacker's `hit` and the defender's `evasion`
+    each by its own multiplier.
     Damage per landed hit is `_pilot_hit_damage(attacker)` =
-    `atk × BATTLE_PILOT_DMG_MULT` (game_config, **0.35**), rounded, floored at 1.
+    `atk × BATTLE_PILOT_DMG_MULT` (game_config.csv), rounded, floored at 1.
     That multiplier covers **only damage pilots take from battlefield
     engagement** — the same helper is used by the turret-siege defender rolls.
-    Pilot → turret and pilot → HQ damage stay at raw `atk` (siege speed is match
-    length), and attack cards / the engage arena run their own numbers. It exists
-    because a single unmitigated hit could exceed the whole recall window: an
-    atk-28 opponent against a max_hp-75 sniper takes 37% per hit, so the sniper
-    fell from above the 20% recall line straight to 0 and **the low-HP recall had
+    Pilot → turret and pilot → HQ damage do not read `atk` at all — they use the fixed
+    `PILOT_STRUCTURE_DMG` (game_config.csv; siege speed is match length), and attack
+    cards / the engage arena run their own numbers. It exists
+    because a single unmitigated hit could exceed the whole recall window: a
+    high-atk opponent against a low-max_hp sniper took a large share per hit, so the sniper
+    fell from above the `RECALL_HP_THRESHOLD` line straight to 0 and **the low-HP recall had
     no interval to fire in**. Damage from successful
     hits is applied at step 4 of the loop and only affects paired pilots.
     Push, however, is decided **at the team level for the whole bracket**:
@@ -281,11 +281,11 @@ Per cell with at least one pilot:
     enemy, or dropped there by a card. `resolve_turret_sieges` /
     `_apply_sieges_for` (the old adjacent-siege pass) are **gone**.
     - Judgement (`_apply_turret_siege`), in this order:
-      1. **Turret damage is unconditional** — same-lane attackers put their full
-         `atk` into the turret **with no hit roll** (`BATTLE_PILOT_DMG_MULT` is
-         pilot-damage only). A defender camping the tile does not shield it.
+      1. **Turret damage is unconditional** — same-lane attackers put the fixed
+         `PILOT_STRUCTURE_DMG` (game_config.csv) into the turret **with no hit roll**
+         (`BATTLE_PILOT_DMG_MULT` is pilot-damage only). A defender camping the tile does not shield it.
       2. **Then attackers and defenders trade hit rolls**, paired by ascending
-         HP, both directions dealing the halved `_pilot_hit_damage`. Attackers
+         HP, both directions dealing `_pilot_hit_damage`. Attackers
          used to deal *nothing* to defenders — their whole attack went into the
          turret — so a defender sitting on its turret beat on the attacker for
          free. Now the attacker grinds the turret *and* still rolls on whoever
@@ -325,22 +325,21 @@ it: nobody can move through anybody.
 
 Turrets do not attack pilots (the old retaliation logic has been removed).
 
-### 수호 연계 편승 대기열 (`_guardian_rides`)
+### Guardian Link ride-along queue (`_guardian_rides`)
 
-지원 Q(수호 연계)는 "이 메크의 보호막을 두른 아군이 피해를 주면 이 메크도 그
-적을 친다". 전장 피해는 **판정(`_resolve_*` → `damage_map`)과 적용(HP 깎기)이
-갈려 있으므로**, 편승 공격을 판정 자리에서 곧장 굴리면 안 된다 — 편승은
-`CardPhaseManager.deal_simple_attack` 을 지나 **그 자리에서 HP 를 깎기** 때문에,
-아직 적용되지 않은 이번 턴의 피해보다 먼저 상대를 눕히고 나머지 판정이 시체를
-상대로 계속 굴러간다.
+Support Q (수호 연계, Guardian Link) is "when an ally wrapped in this mech's shield deals damage, this mech also hits that
+enemy". Battlefield damage is **split into judgement (`_resolve_*` → `damage_map`) and application (cutting HP)**,
+so the ride-along attack must not be rolled right at the judgement site — the ride-along goes through
+`CardPhaseManager.deal_simple_attack` and **cuts HP on the spot**, so it would down the opponent before
+this turn's not-yet-applied damage, and the rest of the judgement would keep rolling against a corpse.
 
-그래서 `_credit_pilot_damage` 는 (공격자, 피해자) 쌍을 `_guardian_rides` 에
-**적어만 두고**, 파일럿 피해 적용 루프가 끝난 직후 `_flush_guardian_rides()` 가
-한꺼번에 굴린다. 그때는 이번 턴에 쓰러진 사람이 이미 `alive == false` 라
-`MechSkillSystem.on_shielded_ally_damage` 의 게이트가 그 둘을 걸러 낸다.
-부르는 자리는 둘 — 턴 루프(`simulate_turn`)와 전진 카드 경로
-(`_apply_card_damage`). 카드 공격은 판정과 적용이 갈려 있지 않으므로
-`CardPhaseManager` 가 자기 피해 지점에서 곧장 부른다.
+So `_credit_pilot_damage` **only records** the (attacker, victim) pair in `_guardian_rides`,
+and `_flush_guardian_rides()` rolls them all at once right after the pilot damage application loop ends. By then
+anyone who fell this turn is already `alive == false`, so the gate of
+`MechSkillSystem.on_shielded_ally_damage` filters those two out.
+It is called from two places — the turn loop (`simulate_turn`) and the advance card path
+(`_apply_card_damage`). Card attacks do not split judgement and application, so
+`CardPhaseManager` calls it directly at its own damage point.
 
 ### Debug logging hooks
 Every `grid_pos` mutation in this folder reports to `_bs.blog`
@@ -370,7 +369,7 @@ inside it.**
    (locked in melee), otherwise `free`. Push outranks `engaged`, matching the
    old two-pass behaviour. A pilot carrying `recall_hold` is skipped before any
    of that and the flag is cleared on the spot — that one skipped pass is the
-   whole cost of a 본진 복귀, and clearing it here is what makes it exactly one.
+   whole cost of a return-to-base (본진 복귀), and clearing it here is what makes it exactly one.
 2. **Lockstep rounds** — in each round, every still-moving pilot names its next
    cell against the *same* snapshot; conflicts are arbitrated; the survivors
    commit together. A `move_range` > 1 pilot takes part in more rounds, a push
@@ -502,39 +501,39 @@ TileMap negative-coord system:
 - `process_neutral_zone_captures()` — a jungler standing alone on a neutral
   cell (no enemy in same cell) flips it to their team.
 
-#### 좌우 중립 칸 = 오브젝트 무대, 그러나 **평범한 정글 칸**
-`(-3,-1)` 과 `(1,-1)` 은 전령 / 용이 서는 자리이지만 **타일 규칙은 다른 정글
-칸과 한 글자도 다르지 않다**: 캠프가 서고(`init_jungle_camps`), 정글러가 밟아
-점령하고(`process_neutral_zone_captures`), 순회 목표가 되고, 사이드 T1 파괴의
-**측면 중립 탈취 분기**(`_on_t1_destroyed`)로 주인이 바뀐다.
+#### Left/right neutral cells = objective stage, but **ordinary jungle cells**
+`(-3,-1)` and `(1,-1)` are where Herald / Dragon stand, but **their tile rules do not differ by a single letter
+from other jungle cells**: a camp stands there (`init_jungle_camps`), junglers capture it by stepping on it
+(`process_neutral_zone_captures`), it becomes a circuit goal, and its owner changes through the
+**flank-neutral seizure branch** (`_on_t1_destroyed`) of side T1 destruction.
 
-한때는 **상시 중립**이었다 — 캠프도 점령도 없는 오브젝트 전용 자리. 그때는
-`is_objective_cell()` 이 그 판정이었고 `_nearest_uncaptured_neutral()` 은 판정이
-영원히 참이 되므로 함수째 삭제됐었다. 두 칸이 정글로 돌아오면서 셋 다 되살아
-났고, `is_objective_cell` 은 이제 없다. 오브젝트 쪽은 그 좌표를 **무대로 빌려
-쓸 뿐**이라 타일 상태를 읽지도 쓰지도 않는다 — 남은 턴 수 표시도 타일이 아니라
-상단 패널로 옮겨 갔다(`ui/ObjectiveTimer.gd`). 자세한 내용은
+They were once **permanently neutral** — objective-only spots with no camp and no capture. Back then
+`is_objective_cell()` made that check, and `_nearest_uncaptured_neutral()` was deleted as a whole function since its
+check would be true forever. When the two cells returned to the jungle, all three came back to life,
+and `is_objective_cell` no longer exists. The objective side **only borrows those coordinates as a
+stage**, so it neither reads nor writes tile state — the turns-left display also moved from the tile to
+the top panel (`ui/ObjectiveTimer.gd`). Details in
 `objective/README.md`.
 
 #### Jungler roaming (`_jungle_goal_for`)
-**맨 먼저는 개시 전에 고른 시작 칸**(`PilotData.jungle_start_cell`, 정글 시작
-오버레이가 새긴다)이다 — 그 화면이 그린 경로가 실제 걸음이어야 하므로 도달할
-때까지 다른 무엇보다 앞선다. 도달하거나 그 칸이 상대 것이 되면 비우고 아래
-순서로 넘어간다. 단독 실행에서는 비어 있다. 이 함수를 그대로 앞으로 굴려 정글러의 걸음을 예측하는 것이 `predict_jungle_path(p, turns)` 다(정글 시작 화면의 경로 — 상태를 잠깐 밀었다 되돌린다. 우리 정글러 혼자 걷는다고 보는 단순 예상 루트라 상대 정글러와의 충돌은 계산하지 않는다. `gambit/README.md`).
+**First comes the start cell chosen before the opening** (`PilotData.jungle_start_cell`, written by the jungle start
+overlay) — the path that screen drew must be the real walk, so it takes precedence over everything else until reached.
+When reached or when that cell becomes the opponent's, it is cleared and the order below follows.
+In a standalone run it is empty. Rolling this function forward as-is to predict the jungler's walk is `predict_jungle_path(p, turns)` (the path on the jungle start screen — it pushes state temporarily and restores it. It is a simple expected route that assumes our jungler walks alone, so collisions with the opponent jungler are not computed. `gambit/README.md`).
 
-**한 걸음은 `jungle_step(p, goal)` 이 정한다 — 같은 거리라면 상대 소유 정글 칸을
-피해 간다.** 정글러에게는 금지 칸이 없어 언제나 최단 거리였고, 최단 경로가 여럿이면
-이웃을 훑는 순서(위쪽 먼저)가 길을 정해 팀0 정글러가 좌우 중립을 오갈 때 상대 정글을
-가로질렀다(`(-3,-1)` → `(-2,-2)` → `(-1,-2)` → `(0,-2)` → `(1,-1)`, 넷 중 둘이 상대
-칸). 지금은 상대 소유 정글 칸(목표 칸 자체는 빼고)을 막고 먼저 묻고, 길이 없을 때만
-막지 않고 묻는다. 실측: 놓을 수 있는 8칸 모두 예상 경로에 상대 칸 0, 40턴 동안 상대
-정글 체류 0턴, 같은 경로가 `(-2,-1)` → `(-1,-1)` → `(0,-1)` → `(1,-1)` 로 바뀌었다.
-턴 루프의 세 자리(`_next_step_for` · 밀어붙이기 전진 · 후퇴)와 예측
-(`predict_jungle_path`)이 모두 이 함수를 지난다.
+**A single step is decided by `jungle_step(p, goal)` — at equal distance it routes around opponent-owned jungle
+cells.** Junglers have no forbidden cells, so it was always shortest distance, and when there were several shortest
+paths, the neighbor scan order (top first) picked the route, so the team-0 jungler crossed the opponent jungle
+when moving between the left/right neutrals (`(-3,-1)` → `(-2,-2)` → `(-1,-2)` → `(0,-2)` → `(1,-1)`, two of four were
+opponent cells). Now it first asks with opponent-owned jungle cells (except the goal cell itself) blocked, and only when
+there is no path asks without blocking. Measured: for all 8 droppable cells, 0 opponent cells on the predicted path, 0 turns
+spent in the opponent jungle over 40 turns, and the same path changed to `(-2,-1)` → `(-1,-1)` → `(0,-1)` → `(1,-1)`.
+The three spots in the turn loop (`_next_step_for` · push advance · retreat) and the prediction
+(`predict_jungle_path`) all go through this function.
 
-그 다음, 아직 아무도 점령하지 않은 중립 칸이 **1순위**다(`_nearest_uncaptured_neutral`,
-밴픽에서 고른 `jungle_start_pref` 가 좌우 순서를 정한다) — 밟는 것만으로 지도
-한 칸이 우리 것이 되고 그 칸의 캠프까지 딸려 온다. 그 다음이 the best ready camp
+Next, a neutral cell nobody has captured yet is **priority 1** (`_nearest_uncaptured_neutral`;
+the `jungle_start_pref` chosen in ban/pick sets the left/right order) — just stepping on it makes one cell
+of the map ours, and that cell's camp comes with it. After that comes the best ready camp
 (`_best_ready_camp`). With no camp charged the jungler
 roams to a **sticky** target parked on `PilotData.jungle_roam_target`, and the
 target is only recomputed when it has been reached, was never set, or has
@@ -570,7 +569,7 @@ pilots or turrets — see "Engagement scopes".
 - `spawn_pilots_with_lanes()` — builds 5 player + 5 enemy `PilotData` using
   `GambitPhaseManager.ROLE_TO_LANE`. Stats come from `_stats_for(...)`.
 - `_stats_for(...)` — when match_ctx is active, pulls hp/atk/presence from
-  the assigned mech and everything else from the **선수 스탯 6종**:
+  the assigned mech and everything else from the **6 player stats (선수 스탯 6종)**:
   `field_hit`/`field_eva` → `hit`/`evasion`, `engage_hit`/`engage_eva` →
   the engage-arena pair, `atk_growth`/`hp_growth` → `atk_growth_mult` /
   `hp_growth_mult` (via `PlayerData.growth_mult`). Otherwise falls back to
@@ -590,7 +589,7 @@ pilots or turrets — see "Engagement scopes".
   hardcoded coordinates.
 
 ### Card-driven lane push (`advance_pilot` / `_advance_tick`)
-Public entry point used by the 전진 (advance:N) card. Runs `N` mini-ticks; one
+Public entry point used by the 전진 (Advance, advance:N) card. Runs `N` mini-ticks; one
 tick = `_advance_tick`, which pushes the lane one cell. It reuses the turn
 loop's helpers (`_resolve_cell`, `_desired_push_*_cell`, `_apply_turret_siege`)
 and changes exactly one thing about them: **the caster's side is declared the
@@ -615,7 +614,7 @@ Order inside a tick — the same order `simulate_turn` uses, and it matters:
 
    A caster that is a jungler, or on an *off-lane* enemy turret cell, ignores the
    turret entirely and advances as usual.
-3. **`_apply_card_damage`** — pilots (보호막 first) then turrets, with T1
+3. **`_apply_card_damage`** — pilots (shield (보호막) first) then turrets, with T1
    destruction firing `_on_t1_destroyed`, exactly as step 5 of `simulate_turn`.
    A caster that died here stops the tick before anything moves.
 4. **Movement** — enemies are pushed out first so the group has somewhere to
@@ -648,20 +647,20 @@ logical state so the renderer can soften the transition:
 - `resolve_movement` accumulates each mover's **path** (`m["path"]`, one cell
   appended per committed lockstep round) and calls
   `_bs.anim_pilot_move_path(p, path)` once at the end for every pilot that
-  actually moved. 렌더러는 그 폴리라인을 따라 초상화를 미끄러뜨리므로
-  `move_range` 2 짜리 이동이 중간 칸을 스쳐 지나가지 않고 **꺾여서** 간다.
-  `advance_pilot` 은 미니틱마다 `_step_pilot` → `_bs.anim_pilot_move(p, orig)`
-  를 부르고, 같은 프레임의 걸음은 그쪽에서 같은 경로에 이어 붙는다.
+  actually moved. The renderer slides the portrait along that polyline, so
+  a `move_range` 2 move goes **around the corner** instead of skimming past the middle cell.
+  `advance_pilot` calls `_step_pilot` → `_bs.anim_pilot_move(p, orig)` per mini-tick,
+  and steps in the same frame are appended to the same path on that side.
 - The damage_map application loop calls `_bs.anim_pilot_shake(p)` for surviving
-  pilots that took damage > 0 — **인자 없는 기본 세기**(0.18s / 6px)다. 공격
-  카드는 같은 함수에 자기 상수(`ANIM_SHAKE_CARD_*`, 0.26s / 20px)를 넘겨 훨씬
-  격렬하게 흔든다.
+  pilots that took damage > 0 — this is the **default strength with no arguments** (0.18s / 6px). Attack
+  cards pass their own constants (`ANIM_SHAKE_CARD_*`, 0.26s / 20px) to the same function to shake
+  much more violently.
 - The `turret_dmg` application loop calls `_bs.anim_turret_hit(td)` for turrets
   that took damage > 0 **and survived** — both in `simulate_turn` step 5 and in
   `_apply_card_damage`. A killing blow is skipped: the `Building` node is freed
   on the same line, so there would be nothing left to shake.
 - `process_respawns` calls `_bs.anim_pilot_respawn(p)` after returning a **dead**
-  pilot to HQ; that call also clears any leftover 전사 연출.
+  pilot to HQ; that call also clears any leftover death presentation (전사 연출).
 - `RecallSystem.return_to_hq` calls `_bs.anim_pilot_recall(p, orig_pos)` after
   snapping `grid_pos` to HQ — visuals fade out at `orig_pos`, then fade in at
   HQ. Both halves always play now (there is no "stay hidden for N turns" split
@@ -681,24 +680,24 @@ Logical state is unaffected: the sim never reads animation fields on
 
 | System | Description |
 |---|---|
-| 정글 캠프 값 | 캠프가 서는 칸은 **14칸**(정글 12 + 좌우 중립 2)이고 `BattleSim.SCORE_JUNGLE_CAMP` 은 **0.98k** 다. 한때 중립 두 칸이 오브젝트 전용 자리가 되어 12칸으로 줄었을 때 그 몫(× 14/12)을 얹은 1.15 였는데, 두 칸이 정글로 돌아오면서 되돌렸다 — 전령 / 용은 캠프를 밀어낸 적이 없으므로 되돌려 줄 몫도 없다. |
-| 전선 (前線) — 레인 파일럿의 수입원 | 레인마다 **양 팀의 살아 있는 최전방 포탑 사이**(포탑 칸 포함)가 전선이고, 레인 파일럿은 **살아서 그 안에 서 있는 턴마다** `SCORE_FRONTLINE_PER_TURN`(0.50k)을 번다(`SimulationCore.award_frontline_income`, 턴 루프 8단계 — 이동과 점령이 모두 끝난 **그 턴의 최종 자리**로 판정한다). 외곽(T1)이 부서지면 그 팀 쪽 경계가 T2 로, T2 마저 부서지면 통로 끝(HQ 쪽)으로 물러나 **전선이 넓어진다** — 밀어낸 만큼 벌 자리가 늘어난다. 판정은 `front_line_cells(lane)` 이 매 턴 새로 만든다(포탑이 부서질 때마다 바뀌므로 캐시하지 않는다; 레인 셋 × 수십 칸이라 비용이 없다). 앞뒤 관계는 `lane_corridor_order(lane)` — 통로를 만드는 그 자리에서 팀0 HQ 쪽부터 번호를 매겨 둔 표이고, 처음 밟았을 때만 번호를 적어 되짚는 구간이 앞뒤를 뒤집지 않는다. **HQ 에서 걸어 나오는 동안, 저HP 복귀 뒤 다시 걸어가는 동안, 죽어 있는 동안은 한 푼도 안 들어온다** — 사망과 복귀의 진짜 비용이 여기 있다. **정글러는 제외**(정글러의 전선은 정글이다). 화면에는 전선 셀 테두리가 얇은 금색으로 그려진다(`BattleRenderer._draw_front_line_overlays`) — 수입이 위치에서 나오는데 그 위치가 안 보이면 왜 뒤처지는지 알 수 없기 때문이고, 타일 색(정글 점령)과 경쟁하지 않게 테두리로만 표시한다. |
-| 정글 캠프 — 정글러의 수입원 | **모든 정글/중립 칸에 캠프가 하나씩** 있고(`BattleSim.jungle_camps`, `셀 → ready_turn`), 개시 시점에는 전부 차 있다(`SimulationCore.init_jungle_camps`, `init_neutral_zones` 바로 뒤). 정글러가 **차 있는 캠프** 위에 서면 `SCORE_JUNGLE_CAMP`(**0.98k**)를 먹고 그 칸은 `JUNGLE_CAMP_RESPAWN_TURNS`(**6턴**) 뒤에나 다시 찬다 — 그래서 정글러는 한자리에 머물 수 없고 **계속 순회**해야 라이너의 턴당 수입과 같아진다(자리 지키기와 순회의 비용 차이가 그대로 남는다). **캠프값은 실측에서 역산한 값이다** — 기준선은 "50턴 · 포탑 무파괴 · 적 정글 미점령"(포탑을 불사로 만들어 T1 파괴 보상과 전선 확장을 둘 다 없앤 헤드리스 4회 평균)이고, 재생성 4턴 · 캠프값 0.50k 에서 정글러 18.4k / 라이너 평균 23.5k = **0.78배**였다. 정글러 수입은 전부 캠프(50턴에 약 35회)이므로 필요한 배수는 22.45/17.375 = 1.29 → 0.50 × 1.29 ≈ 0.65(적용 후 실측 0.91~1.07배, 평균 0.98). **재생성이 4턴 → 6턴으로 늦춰지면서 캠프값도 ×1.5 인 0.98k 로 함께 올렸다** — 획득 빈도가 주기에 반비례하므로 그래야 수입이 유지된다. 늦춘 것은 **순회 리듬**이지 정글러의 몫이 아니다(한 칸을 더 오래 기다리는 대신 한 번에 더 크게 먹는다). 적 정글 점령은 그 위에 얹히는 가속이고, 이 상수는 **점령이 없는 하한선**을 라이너와 나란히 놓을 뿐이다. 먹을 수 있는 것은 **자기 팀 소유이거나 아직 중립인** 칸의 캠프뿐이므로, 적 정글을 점령하면(중립 칸 선점 / T1 파괴 보상) 돌 캠프가 늘어 라이너를 추월할 수 있다 — 이것이 정글 점령의 값이다. 판정은 `camp_harvestable(cell, team)` 한 함수이고 **렌더러도 같은 함수를 읽으므로**(그 칸의 **타일 테두리**를 노란 아웃라인으로 두른다) 보이는 캠프와 먹히는 캠프가 어긋날 수 없다. **적 소유 칸의 캠프도 화면에 있다** — 같은 아웃라인을 어두운 호박색(`BattleRenderer.CAMP_LINE_ENEMY_COLOR`)으로 둘러 "있지만 지금 우리 것은 아니다"를 색 하나로 가른다. 소유권을 빼고 "지금 차 있는가"만 묻는 `SimulationCore.camp_charged(cell)` 이 그 판정이며, 뺏을 값어치가 지금 있는지가 안 보이면 약탈이 판단의 대상이 되지 못한다. **아웃라인은 인접한 같은 부류끼리 이어 붙는다** — 아래 "캠프 아웃라인" 항목. 예전에는 칸 한가운데의 작은 **마름모**였다(우리 것 = 꽉 참 / 적 것 = 속 빔). **정산 함수는 `harvest_camp_under(p)` 하나**이고 턴 루프(`process_jungle_camps`)와 **정글러를 옮기는 카드**가 같이 지난다 — 카드로 캠프 위에 내려앉으면 턴 루프를 기다리지 않고 **그 자리에서** 먹는다(아래 "이동 카드" 항목). 정산은 `process_neutral_zone_captures` **뒤**에 돈다 — 방금 점령한 중립 칸의 캠프를 그 턴에 바로 먹게 하기 위해서다. |
-| 이동 카드 = 즉시 캠프 수확 | 정글러를 옮기는 카드(**정밀 이동 / 정글 파밍**, `_effect_move`)가 **차 있는 캠프 위에 내려앉으면 그 자리에서 먹는다** — 턴 루프의 `process_jungle_camps` 를 기다리지 않는다. 진입점은 `SimulationCore.harvest_camp_under(p)` 하나이므로 값도 재생성 시계도 밟아서 먹는 것과 같고, 로그와 카드 결과 문구에 `· 캠프 +0.98k` 가 붙는다. 기다리게 두면 카드를 낸 순간과 수확 사이가 몇 초 벌어져 "카드를 냈는데 아무 일도 안 일어난" 것으로 보였고, 그 사이 적 정글러가 같은 칸을 밟으면 통째로 뺏겼다. |
-| 약탈 (`steal_camp`) | **적 소유 정글 칸의 차 있는 캠프 하나를 원격으로 가로챈다** — 시전자가 `SCORE_JUNGLE_CAMP`(0.98k)를 받고 그 칸은 6턴 재생성으로 들어간다(`SimulationCore.steal_camp_point`). **타일 주인은 바뀌지 않는다**: 훔치는 것은 땅이 아니라 그 한 번의 수입이고, 그래서 적 정글러는 다음 재생성까지 그 칸을 빈손으로 지나간다. 유효 대상은 **적 팀 소유 + 캠프가 차 있는 정글 셀 전부**이며 사거리를 보지 않는다(`compute_steal_camp_targets`, `cast_range` 99) — 비어 있는 칸은 애초에 고를 수 없으므로 헛치기가 없고, 어느 칸에 값이 남아 있는지는 화면의 캠프 아웃라인이 이미 말해 준다. 예전에는 **점령** 카드였다(`capture_jungle:10` — 아군 정글과 인접한 적 정글 셀을 10턴 동안 자기 색으로 뒤집고 `temp_zone_overrides` 가 만료 시 되돌렸다). 그 배선과 `SimulationCore.process_temp_zone_expiries` / `set_zone_cell` 는 함께 **삭제됐다**. |
-| 선수 스탯 (여섯 종) | **선수 한 명이 들고 있는 값은 여섯뿐이고 여섯 다 전투 계산의 입력이다.** `PlayerData` 가 표(`STAT_KEYS` / `STAT_LABELS` / `STAT_SHORT` / `STAT_NOTES`)를 소유하고 모든 화면이 그것을 읽는다 — 예전에는 화면마다 자기 배열을 들고 있었다. **하한 1, 상한 없다** — 일상 훈련으로 100 을 넘겨 계속 자란다(그래서 명중을 비율로 읽는다. 아래 항목). ① **전장 명중 `field_hit`** / ② **전장 회피 `field_eva`** → `PilotData.hit` / `evasion` → `SimulationCore.roll_hit`(전장 자동 교전 + 공격 카드). ③ **교전 명중 `engage_hit`** / ④ **교전 회피 `engage_eva`** → `PilotData.engage_hit` / `engage_eva` → `TurnEngageSim`. 전장과 **따로 사는 것**이 요점이다 — 같은 선수가 라인전에서 강한 것과 한타에서 강한 것은 다른 일이고, 그 둘을 가르는 것이 훈련판의 선택지가 된다. ⑤ **공격력 성장 계수 `atk_growth`** / ⑥ **체력 성장 계수 `hp_growth`** → `PilotData.atk_growth_mult` / `hp_growth_mult` → `BattleSim.refresh_growth_stats` 가 `GROWTH_ATK_PER_SCORE` / `GROWTH_HP_PER_SCORE` 에 곱한다. 배율의 기준점은 `PlayerData.GROWTH_STAT_BASE` = **80** 이고 그 값에서 ×1.0 = 지금 밸런스 그대로다 — 50 이 아닌 것은 실측이다(`players.csv` 40명 평균 78.2 / 네임드 85). 50 으로 두면 개시부터 전원이 ×1.56 이라 아무도 안 건드린 밸런스가 56% 밀린다. **성장 계수는 스탯을 직접 밀지 않는다** — 스탯을 밀면 성장 재계산 한 번에 지워지고, 훈련이 바꾸는 것은 개시 스탯이 아니라 경기가 흘러가는 기울기다. **예전 다섯 종(`laning` / `mechanics` / `gamesense` / `teamfight` / `mental`)은 삭제됐다** — 인게임에서 실제로 읽히는 것은 `mechanics`(→hit) 와 `gamesense`(→evasion) 둘뿐이었고 나머지 셋은 전력 합산에만 쓰였다. 전력 합산은 `PlayerData.stat_total()` / `stat_avg()` 한 쌍으로 모였다(예전에는 다섯 필드를 손으로 더한 식이 여덟 군데에 흩어져 있었다). |
-| 명중 판정 (80~100% 리맵) | **전장과 교전이 같은 공식을 쓴다** — `PilotData.hit_chance(hit, eva)` = `HIT_MIN + (HIT_MAX − HIT_MIN) × hit/(hit+eva)`, 곧 `0.80 + 0.20 × 비율`. 대등하면 90%, 한쪽으로 완전히 기울어야 80% / 100% 에 닿는다(실측: 100 vs 50 → 93.3%, 200 vs 50 → 96.0%, 1 vs 300 → 80.1%). 다른 것은 **입력뿐**이다 — 전장은 `hit`/`evasion`, 교전은 `engage_hit`/`engage_eva`. **예전에는 전장이 비율을 그대로 확률로 썼고(대등 = 50%) 교전만 이 리맵을 했다**(`TurnEngageSim.ENGAGE_HIT_MIN` / `_MAX`, **삭제됨**) — 같은 스탯 차이가 두 무대에서 전혀 다른 크기로 읽혔고, 스탯 상한이 없어진 지금은 격차가 벌어지면 한 팀이 사실상 아무것도 못 맞히는 경기가 난다. **파급: 전장 라인전의 피해 처리량이 대략 1.8배가 됐다**(대등한 상대끼리 50% → 90%). `BATTLE_PILOT_DMG_MULT`(0.35)는 손대지 않았으므로 한 대는 여전히 2~9 지만, "라인전만으로는 사람이 죽지 않는다"는 예전 성질은 약해진다 — 성장치 곡선을 다시 재려면 그 상수가 첫 번째 노브다. **거리 계수 자리는 비워 뒀다** — `hit_chance` 의 세 번째 인자 `range_mult` 가 항상 1.0 이다. 전장은 지금 같은 칸 교전뿐이라 거리라는 개념이 없고, 사거리 규칙이 생기면 호출부가 그 인자에 계수를 실어 보내면 된다(공식 자체는 안 건드린다). **라인전 스탯과 스킬 배율은 이 공식에 들어가기 전 스탯에 먼저 곱해진다** — 확률을 직접 밀면 구간 밖으로 나가거나 상한에 막혀 배율이 조용히 사라진다. |
-| 라인전 스탯 | **`hit` / `evasion` 전용** 배율(±10%)이며 `SimulationCore.roll_hit` **한 곳에서만** 곱해진다 — 공격자의 `hit` 과 방어자의 `evasion` 에 각자 자기 배율이 붙는다. `atk` / `max_hp` 는 성장이 담당하므로 여기서 건드리지 않는다. `roll_hit` 은 전장 자동 교전과 공격 카드가 공유하므로 둘 다 반영되고, **교전 무대는 반영되지 않는다**(공식은 같지만 입력이 `engage_hit`/`engage_eva` 이고 이 배율은 `roll_hit` 안에서만 곱해진다). 같은 파일럿에 두 번 걸면 **덮어쓴다**(합산 아님) — 3종 풀에서 2장 뽑는 구조상 합산을 허용하면 +20~30% 가 그냥 운으로 굴러 나온다. **공격적인 라인전**(+10%). 예전의 안전한 파밍(−10% + 적립 +10%)은 **소극적인 태세**로 바뀌었다 — 라인전 스탯을 건드리지 않고 **전장 회피에만** +20%(`PilotData.eva_card_mod`)를 건다. `roll_hit` 은 그 위에 카드 쪽 배율을 둘 더 곱한다: 공격자 명중 × (1 + `CardPhaseManager.hand_hit_add` — 손에 든 [자신감] 장당 +15%), 방어자 회피 × (1 + `eva_card_mod`). |
-| 매복 고정 (`ambush_hold`) | [매복] 카드가 세우는 플래그. `resolve_movement` 가 그 파일럿을 **이동 후보에서 통째로 뺀다**(자유이동도 밀기 결과도 없다 — `recall_hold` 바로 뒤의 검사). `RecallSystem.process_phase_end_recalls` 도 위치 이탈 판정을 건너뛴다(레인 파일럿이 정글 칸에 있는 것이 매복의 요점이다). 그 팀의 다음 작전 단계 진입 정산, 사망(`mark_pilot_dead`), 본진 복귀(`return_to_hq`), 복귀 카드, 후퇴 카드가 푼다. 풀린 뒤에도 정글에 남은 레인 파일럿은 그 작전 단계 끝에 평소처럼 위치 이탈로 귀환된다. |
-| 이동 해석 (단일 패스) | 자유이동과 교전 푸시는 **하나의 패스**(`SimulationCore.resolve_movement`)에서 **락스텝**으로 해석된다 — 한 라운드 안의 모든 파일럿이 같은 스냅샷을 보고 목적지를 정한 뒤 동시에 커밋하므로, 같은 스코프의 적끼리 자리를 맞바꾸거나 서로를 통과하는 일이 구조적으로 불가능하다. 한 라운드에서 중재되는 충돌은 둘이다. (1) **버티는 적 지나치기** — 전진은 적 HQ 쪽, 후퇴는 자기 HQ 쪽이라 방향이 같으므로 **승자는 밀려난 패자를 따라 들어간다**(= 라인이 한 턴에 한 칸 밀린다). 예전엔 두 목적지가 겹치면 전진 쪽을 취소해 "패자만 쫓겨나고 승자는 그 칸을 지킨다" 였는데, 일직선 레인에서는 목적지가 **항상** 겹쳐서 교전에 이겨도 승자가 영영 한 칸도 나아가지 못했다. 지금은 적이 밀려날 곳이 없어 그 칸에 **남을 때만** 전진을 취소한다(`_veto_advance_over_stuck_enemy`) — 서 있는 적을 스쳐 지나가지 않기 위해서다. 적 포탑 칸은 막지 않는다 — 패자가 자기 포탑 칸으로 밀려나면 승자도 거기까지 따라 들어가고, 그 칸에서 공성이 시작된다. (2) **정면 충돌**(서로의 칸을 노림)은 **푸시 > 자유이동, 동률이면 팀0** 우선순위로 한쪽이 그 칸을 차지하고 다른 쪽이 멈춰 **같은 칸에서 만나** 다음 턴에 교전한다. 데미지 적용은 이동보다 **앞**에 온다(이번 턴에 죽은 파일럿은 움직이지 않는다). |
-| Combat | **Same-cell only** — no adjacent-cell engagement, no attack range. Lane pilots paired 1:1 by HP against enemy lane pilots; each rolls `PilotData.hit_chance(hit, evasion)`(= 비율을 80~100% 에 리맵, 대등하면 90%) for damage — 이 판정에 **라인전 스탯**이 곱해진다(위 항목). **명중 1회 피해 = `atk × BATTLE_PILOT_DMG_MULT`**(game_config, 0.35 — 반올림, 최소 1). 이 배율은 **파일럿이 받는 전장 피해 전용**이다: 파일럿→포탑 / 파일럿→HQ 는 `atk` 를 아예 안 읽고 `PILOT_STRUCTURE_DMG` 고정값을 쓰며(위 "Turret Combat" 항목), 공격 카드와 교전 무대도 각자 계산을 쓴다. 원본 `atk` 로는 한 대가 복귀 구간보다 컸다 — atk 28 상대 vs max_hp 75 스나이퍼는 1타가 최대 체력의 37% 라 20% 복귀선 위에서 곧장 0 으로 떨어졌고, 저HP 복귀가 발동할 구간 자체가 없었다. **Push is team-level**: tally unilateral wins per team across all pairs in the cell; the side with strictly more unilateral wins sweeps — every pilot of that side in the cell (including unpaired pilots in e.g. 2v1) advances, every opposing pilot retreats. Tie/0-0 → no push. Advance and retreat point the **same way** (enemy HQ vs own HQ), so the winners **follow the losers into the next cell** — 교전 칸 전체가 패자 HQ 쪽으로 한 칸 미끄러지고 다음 턴에 거기서 다시 붙는다. 이것이 라인 푸시다. 전진이 취소되는 경우는 **패자가 밀려날 곳이 없어 그 칸에 남을 때** 하나뿐이다 — 앞 칸이 적 포탑이어도 승자는 그 칸까지 따라 들어간다(포탑 공성은 그 다음 턴). `_move_pilot` aborts further multi-step movement only when a *same-scope* enemy enters the cell (jungler-vs-jungler or lane-vs-lane); cross-scope contacts never freeze movement. |
-| 라인 결속 (바텀 듀오) | **같은 팀 · 같은 레인에 배정된 라이너끼리는 결속돼 있다**(지금은 우측 레인 스나이퍼 + 서포터뿐. 판정이 역할이 아니라 `lane` 이라 레인 배정이 바뀌면 따라간다. 정글러는 제외). **같은 칸에 함께 서 있을 때만** 작동하고, 하는 일은 교전 결과 이동(푸시 · 포탑 수비자 피격 넉백)을 묶음 단위로 맞추는 것 하나다 — **밀림이 이긴다**: 한 명이라도 후퇴 판정이면 파트너도 후퇴하고(포탑 칸에서 원딜만 맞아도 서포터까지 물러난다), 전진은 묶음 전원이 갈 수 있을 때만 한다. **카드 · 스킬 · 저HP 복귀 이동은 대상만 움직인다**(결속 코드가 그 경로를 지나지 않는다). 자유 이동도 묶지 않는다. 화면 표시는 없다(로그 `BOND` 만). `SimulationCore.lane_bond_partners` / `_apply_lane_bonds`(판정 직후, 턴 전투 + 전진 카드) / `_enforce_lane_bonds`(이동 라운드 안). 자세한 내용은 `combat/README.md` 의 "Lane bond". |
+| Jungle camp value | Camps stand on **14 cells** (12 jungle + 2 left/right neutral) and `BattleSim.SCORE_JUNGLE_CAMP` (const.csv) is the per-camp value. It was once raised, adding the share (× 14/12) when the two neutral cells became objective-only spots and the count dropped to 12, but it was reverted when the two cells returned to the jungle — Herald / Dragon never pushed camps out, so there is no share to give back. |
+| Front line (전선, 前線) — lane pilots' income source | In each lane, the stretch **between both teams' living frontmost turrets** (turret cells included) is the front line, and lane pilots earn `SCORE_FRONTLINE_PER_TURN` (const.csv) **every turn they stand inside it alive** (`SimulationCore.award_frontline_income`, turn loop step 8 — judged on **that turn's final position** after movement and capture are both done). When the outer turret (T1) falls, that team's boundary retreats to T2, and when T2 falls too, to the end of the corridor (HQ side), so **the front line widens** — pushing in creates more room to earn. The check is built fresh every turn by `front_line_cells(lane)` (not cached since it changes whenever a turret falls; three lanes × dozens of cells costs nothing). Front/back ordering is `lane_corridor_order(lane)` — a table numbered from the team-0 HQ side at the place where the corridor is built; numbers are written only on first visit so doubling-back segments do not flip front and back. **Nothing is earned while walking out of HQ, while walking back after a low-HP return, or while dead** — this is the real cost of death and return. **Junglers are excluded** (a jungler's front line is the jungle). On screen, front-line cell borders are drawn in thin gold (`BattleRenderer._draw_front_line_overlays`) — income comes from position, and if that position were invisible you could not tell why you are falling behind; it is shown only as a border so it does not compete with tile colour (jungle capture). |
+| Jungle camps — the jungler's income source | **Every jungle/neutral cell has one camp** (`BattleSim.jungle_camps`, `cell → ready_turn`), all full at the opening (`SimulationCore.init_jungle_camps`, right after `init_neutral_zones`). When a jungler stands on a **full camp** it eats `SCORE_JUNGLE_CAMP` and that cell refills only `JUNGLE_CAMP_RESPAWN_TURNS` later (both const.csv) — so the jungler cannot stay in one place and must **keep circling** to match a laner's per-turn income (the cost difference between holding ground and circling remains as is). **The camp value is back-calculated from measurement** — the baseline is "50 turns · no turrets destroyed · enemy jungle not captured" (average of 4 headless runs with turrets made immortal, removing both T1 destruction rewards and front-line widening); with an equal per-camp value the jungler earned clearly less than the laner average. Jungler income is entirely camps, so the camp value was scaled up by the measured income ratio until the two roughly matched (the back-calculation is in the `BattleSim.SCORE_JUNGLE_CAMP` comment). **When the respawn was slowed, the camp value was raised in the same proportion** — harvest frequency is inversely proportional to the period, so that keeps income the same; **change `SCORE_JUNGLE_CAMP` and `JUNGLE_CAMP_RESPAWN_TURNS` together**. What was slowed is the **circuit rhythm**, not the jungler's share (waiting longer for a cell but eating more at once). Capturing the enemy jungle is acceleration on top of that; this constant only lines up the **no-capture floor** with laners. Only camps on cells **owned by your own team or still neutral** can be eaten, so capturing the enemy jungle (pre-empting neutral cells / T1 destruction reward) adds camps to the circuit and can let the jungler overtake laners — this is the value of jungle capture. The check is the single function `camp_harvestable(cell, team)` and **the renderer reads the same function** (ringing that cell's **tile border** with a yellow outline), so visible camps and harvestable camps can never diverge. **Camps on enemy-owned cells are on screen too** — the same outline in dark amber (`BattleRenderer.CAMP_LINE_ENEMY_COLOR`) separates "exists but not ours right now" with a single colour. That check is `SimulationCore.camp_charged(cell)`, which drops ownership and asks only "is it full now"; if you could not see whether there is something worth stealing right now, plunder could not be a decision. **Outlines join up between adjacent cells of the same kind** — see the "Camp outline" entry below. They used to be a small **diamond** in the middle of the cell (ours = filled / enemy's = hollow). **The payout function is just `harvest_camp_under(p)`**, shared by the turn loop (`process_jungle_camps`) and **cards that move the jungler** — landing on a camp via a card eats it **on the spot** without waiting for the turn loop (see the "Move cards" entry below). Payout runs **after** `process_neutral_zone_captures` — so a just-captured neutral cell's camp can be eaten that same turn. |
+| Move cards = instant camp harvest | When a card that moves the jungler (**정밀 이동 (Precise Move) / 정글 파밍 (Jungle Farming)**, `_effect_move`) **lands on a full camp, it eats it on the spot** — without waiting for the turn loop's `process_jungle_camps`. The entry point is the single `SimulationCore.harvest_camp_under(p)`, so the value and respawn clock are the same as eating by stepping on it, and `· 캠프 +N` (camp +N) is appended to the log and the card result text. Leaving it to wait opened a few seconds between playing the card and the harvest, so it looked like "I played a card and nothing happened", and if the enemy jungler stepped on the same cell in between, it was stolen outright. |
+| Plunder (약탈, `steal_camp`) | **Remotely intercepts one full camp on an enemy-owned jungle cell** — the caster (시전자) receives `SCORE_JUNGLE_CAMP` and that cell enters its `JUNGLE_CAMP_RESPAWN_TURNS` respawn (`SimulationCore.steal_camp_point`). **The tile owner does not change**: what is stolen is not the land but that one income, so the enemy jungler walks over that cell empty-handed until the next respawn. Valid targets are **all enemy-owned jungle cells with a full camp**, with no range check (`compute_steal_camp_targets`; the card's cards.csv `cast_range` is a whole-field value) — empty cells cannot be chosen at all, so there are no whiffs, and which cells still hold value is already told by the camp outlines on screen. It used to be a **capture** card (`capture_jungle:N` — flipped enemy jungle cells adjacent to allied jungle to your colour for N turns, and `temp_zone_overrides` reverted them on expiry). That wiring and `SimulationCore.process_temp_zone_expiries` / `set_zone_cell` were **deleted** together. |
+| Player stats (six) | **A player holds only six values, and all six are inputs to combat calculation.** `PlayerData` owns the tables (`STAT_KEYS` / `STAT_LABELS` / `STAT_SHORT` / `STAT_NOTES`) and every screen reads them — previously each screen held its own array. **Floor 1, no ceiling** — they keep growing past 100 through daily training (일상 훈련) (which is why hit is read as a ratio; see the next row). ① **Field hit `field_hit`** / ② **field evasion `field_eva`** → `PilotData.hit` / `evasion` → `SimulationCore.roll_hit` (battlefield auto-combat + attack cards). ③ **Engage hit `engage_hit`** / ④ **engage evasion `engage_eva`** → `PilotData.engage_hit` / `engage_eva` → `TurnEngageSim`. The point is that they **live separately** from the battlefield ones — a player being strong in laning and strong in teamfights are different things, and splitting them becomes the choice on the training board. ⑤ **Attack growth coefficient `atk_growth`** / ⑥ **HP growth coefficient `hp_growth`** → `PilotData.atk_growth_mult` / `hp_growth_mult` → `BattleSim.refresh_growth_stats` multiplies them into `GROWTH_ATK_PER_SCORE` / `GROWTH_HP_PER_SCORE`. The multiplier's reference point is `PlayerData.GROWTH_STAT_BASE` (const.csv `PLAYER_GROWTH_STAT_BASE`), where ×1.0 = the current balance unchanged — it is set near the measured average of `players.csv`, not at the mid-scale value 50; with 50, everyone would start well above ×1.0 and the untouched balance would shift. **Growth coefficients do not push stats directly** — pushing stats would be wiped by one growth recalculation, and what training changes is not the opening stats but the slope of how the match unfolds. **The old five (`laning` / `mechanics` / `gamesense` / `teamfight` / `mental`) were deleted** — only `mechanics` (→hit) and `gamesense` (→evasion) were actually read in-game; the other three were used only in strength totals. Strength totals were consolidated into the pair `PlayerData.stat_total()` / `stat_avg()` (previously hand-summed expressions over five fields were scattered across eight places). |
+| Hit check (band remap) | **Battlefield and engage use the same formula** — `PilotData.hit_chance(hit, eva)` = `HIT_MIN + (HIT_MAX − HIT_MIN) × hit/(hit+eva)` (const.csv `PILOT_HIT_MIN` / `PILOT_HIT_MAX`). An even match lands at the band's midpoint; it only reaches either end when fully skewed one way. Only **the inputs** differ — battlefield uses `hit`/`evasion`, engage uses `engage_hit`/`engage_eva`. **Previously the battlefield used the ratio directly as the probability (even = 50%) and only the engage did this remap** (`TurnEngageSim.ENGAGE_HIT_MIN` / `_MAX`, **deleted**) — the same stat gap read at completely different sizes on the two stages, and now that stats have no ceiling, a widening gap would produce matches where one team hits practically nothing. **Knock-on: battlefield laning damage throughput rose sharply** (even opponents went from a 50% ratio to the band midpoint). `BATTLE_PILOT_DMG_MULT` (game_config.csv) was left untouched, so a single hit is unchanged, but the old property "laning alone does not kill anyone" weakens — that constant is the first knob if the growth-point curve needs re-measuring. **A slot for a distance coefficient is left empty** — the third argument of `hit_chance`, `range_mult`, is always 1.0. The battlefield currently has only same-cell combat, so there is no notion of distance; if a range rule appears, callers just pass a coefficient in that argument (the formula itself is not touched). **Laning stats and skill multipliers are multiplied into the stats first, before they enter this formula** — pushing the probability directly would go out of band or hit the cap, and the multiplier would silently vanish. |
+| Laning stats | A multiplier (the card's `lane_stat:N` clause, cards.csv) **for `hit` / `evasion` only**, multiplied in **only one place**, `SimulationCore.roll_hit` — the attacker's `hit` and the defender's `evasion` each get their own multiplier. `atk` / `max_hp` are handled by growth, so they are not touched here. `roll_hit` is shared by battlefield auto-combat and attack cards so both reflect it, and **the engage stage does not** (the formula is the same but its inputs are `engage_hit`/`engage_eva`, and this multiplier is only applied inside `roll_hit`). Applying it twice to the same pilot **overwrites** (not additive) — with a structure drawing 2 cards from a pool of 3, allowing stacking would let a large multiplier roll out by pure luck. **공격적인 라인전 (Aggressive Laning)** (its `lane_stat:N` clause). The old 안전한 파밍 (Safe Farming) (a laning penalty + an accrual bonus) became **소극적인 태세 (Passive Stance)** — it does not touch laning stats and puts its evasion bonus (cards.csv clause) **only on field evasion** (`PilotData.eva_card_mod`). `roll_hit` multiplies two more card-side multipliers on top: attacker hit × (1 + `CardPhaseManager.hand_hit_add` — `CARD_CONFIDENCE_HIT_BONUS` (const.csv) per [자신감] (Confidence) held in hand), defender evasion × (1 + `eva_card_mod`). |
+| Ambush hold (`ambush_hold`) | Flag set by the [매복] (Ambush) card. `resolve_movement` **removes that pilot from movement candidates entirely** (no free movement and no push result — the check right after `recall_hold`). `RecallSystem.process_phase_end_recalls` also skips the out-of-position check (a lane pilot being on a jungle cell is the point of an ambush). It is cleared by that team's next operation phase entry settlement, death (`mark_pilot_dead`), return-to-base (`return_to_hq`), the Return card, and the retreat card. A lane pilot still in the jungle after it clears is recalled as out-of-position as usual at the end of that operation phase. |
+| Movement resolution (single pass) | Free movement and engage pushes are resolved in **lockstep** in **one pass** (`SimulationCore.resolve_movement`) — every pilot in a round picks its destination from the same snapshot and they commit simultaneously, so same-scope enemies swapping places or passing through each other is structurally impossible. Two conflicts are arbitrated per round. (1) **Passing a holding enemy** — advance is toward the enemy HQ and retreat is toward one's own HQ, the same direction, so **the winner follows the pushed-out loser in** (= the lane moves one cell per turn). Previously, when the two destinations overlapped, the advance was cancelled, giving "only the loser is driven out and the winner holds that cell", but on a straight lane the destinations **always** overlap, so even after winning the engage the winner could never move a single cell forward. Now the advance is cancelled **only when the enemy has nowhere to be pushed and stays** in that cell (`_veto_advance_over_stuck_enemy`) — so nobody brushes past a standing enemy. Enemy turret cells do not block — if the loser is pushed onto its own turret cell, the winner follows it in too, and the siege begins from that cell. (2) **Head-on collisions** (each aiming at the other's cell) are resolved by priority **push > free movement, team 0 on ties**: one side takes the cell, the other stops, and they **meet in the same cell** and engage next turn. Damage application comes **before** movement (a pilot killed this turn does not move). |
+| Combat | **Same-cell only** — no adjacent-cell engagement, no attack range. Lane pilots paired 1:1 by HP against enemy lane pilots; each rolls `PilotData.hit_chance(hit, evasion)` (= ratio remapped onto [`PILOT_HIT_MIN`, `PILOT_HIT_MAX`]) for damage — **laning stats** are multiplied into this check (row above). **Damage per hit = `atk × BATTLE_PILOT_DMG_MULT`** (game_config.csv — rounded, minimum 1). This multiplier is **only for battlefield damage pilots take**: pilot→turret / pilot→HQ does not read `atk` at all and uses the fixed `PILOT_STRUCTURE_DMG` (the "Turret Combat" row below), and attack cards and the engage stage each use their own calculation. With raw `atk`, one hit was larger than the return window — a high-atk opponent vs a low-max_hp sniper took a large share of max HP per hit, dropping straight to 0 from above the `RECALL_HP_THRESHOLD` line, so there was no interval at all for the low-HP return to fire. **Push is team-level**: tally unilateral wins per team across all pairs in the cell; the side with strictly more unilateral wins sweeps — every pilot of that side in the cell (including unpaired pilots in e.g. 2v1) advances, every opposing pilot retreats. Tie/0-0 → no push. Advance and retreat point the **same way** (enemy HQ vs own HQ), so the winners **follow the losers into the next cell** — the whole engage cell slides one cell toward the loser's HQ and they clash again there next turn. This is the lane push. The only case where the advance is cancelled is **when the loser has nowhere to be pushed and stays in that cell** — even if the cell ahead is an enemy turret, the winner follows into that cell (turret siege comes the turn after). `_move_pilot` aborts further multi-step movement only when a *same-scope* enemy enters the cell (jungler-vs-jungler or lane-vs-lane); cross-scope contacts never freeze movement. |
+| Lane bond (bottom duo) | **Laners of the same team assigned to the same lane are bonded** (currently only the right-lane sniper + support. The check uses `lane`, not role, so it follows if lane assignment changes. Junglers are excluded). It works **only while standing together in the same cell**, and its one job is to align engage-result movement (push · turret-defender-hit knockback) as a group — **retreat wins**: if even one gets a retreat verdict the partner retreats too (on a turret cell, if only the ADC is hit, the support falls back too), and advance happens only when every member of the group can go. **Card · skill · low-HP return movement moves only the target** (bond code does not run on those paths). Free movement is not bonded either. No on-screen indicator (log `BOND` only). `SimulationCore.lane_bond_partners` / `_apply_lane_bonds` (right after judgement, turn combat + advance card) / `_enforce_lane_bonds` (inside movement rounds). Details in "Lane bond" in `combat/README.md`. |
 | Engagement scopes | Junglers and lane pilots run on **separate engagement brackets**. A jungler never engages an enemy lane pilot, never deals turret damage, and is never paired against attackers as a turret defender. Lane pilots ignore enemy junglers in the same cell. |
-| Turret Combat (포탑 칸 점거) | **Only same-lane lane pilots interact with a turret** (e.g. a RIGHT-lane pilot cannot damage a CENTER turret). 전진하는 레인 파일럿은 같은 레인 적 포탑 칸에 **실제로 올라선다** — 그냥 걸어 올라가든, 교전에서 이겨 밀려나는 적을 따라 들어가든, 전진 카드로 들어가든 같다(예전의 "발만 들였다 빼는" 인접 공성 `resolve_turret_sieges` / `_bounce_off_enemy_turret` 은 삭제). **진입한 턴에는 피해가 없다.** 그 칸에 서서 맞는 **다음 턴**에 `_resolve_turret_combat` 이 돌아 **명중 판정 없이** `PILOT_STRUCTURE_DMG`(game_config, **2**)를 포탑에 넣는다. **`atk` 비례가 아니라 고정값이다** — 성장이 공격력을 ×3 까지 밀어 올리는 지금 `atk` 전량을 그대로 넣으면 후반 포탑이 한 턴에 녹아 경기 길이가 성장에 반비례해 무너진다. 구조물이 빨리 무너지는 이유는 공격력이 커져서가 아니라 **수비수가 저HP 복귀·사망으로 전장을 비웠기 때문**이어야 한다. 포탑 체력 `TURRET_HP` 는 **24** 라 무방비면 **12턴**, 수비가 붙으면 24턴에 철거된다(예전 16 에서 1.5배가 됐다 — 전령 제압의 8 피해가 포탑 절반이던 것을 1/3 로 낮추고 공성이 한 박자 더 걸리게 하는 값이다). **적이 그 칸에서 농성 중이어도 포탑 피해는 반드시 들어간다** — 수비자는 포탑을 가려 주지 못한다. 포탑 피해를 넣은 **다음**, 같은 레인 공격자와 수비자가 **서로 명중 판정을 굴려**(HP 오름차순 1:1 페어링, 양쪽 다 `_pilot_hit_damage`) 피해를 주고받는다. 예전엔 "공격은 전부 포탑으로 간다"며 **공격자가 수비자에게 0 피해**였고, 그래서 포탑에 눌러앉은 수비자는 공격자를 일방적으로 두들길 수 있었다. **포탑을 때렸다고 물러나지 않는다** — 넉백은 **포탑 칸 수비자의 공격이 명중한 공격자만** 직전 칸으로 민다(`_apply_turret_siege` 가 맞은 공격자 집합을 돌려준다). 수비자가 빗나갔거나, 짝이 없어 아무도 노리지 않았거나(2v1 의 남는 한 명), 수비자가 아예 없으면 공격자는 그 자리에 눌러앉아 **매 턴** 포탑을 갈아 낸다. 예전에는 수비자가 있기만 하면 명중 여부와 무관하게 공격자 전원이 물러났다(`_same_lane_defenders_at` 삭제). 예외는 **때릴 수 없는 포탑**(같은 레인 T1 이 살아 있는 T2)뿐 — 갈아 낼 게 없으니 무조건 물러난다(파일럿끼리의 판정은 그래도 굴린다). 결과적으로 포탑 피해는 무방비면 매 턴, 수비가 붙으면 수비자의 명중률(대등하면 90%)만큼 2턴에 1회(진입 → 타격 후 밀려남 → 재진입)에 가깝고 빗나간 턴마다 한 번 더 갈아 낸다. **HQ 도 같은 고정 피해**를 받는다(`HQ_MAX_HP` **40** → 1인 무방비 20턴 / 5인이면 4턴 — HQ 는 1.5배 대상이 아니다). 오프레인 파일럿은 포탑을 무시하고, 양 팀 오프레인끼리는 여전히 파일럿 교전을 한다. **Turrets do NOT attack pilots. Junglers do NOT attack/defend turrets.** T2 는 같은 레인 T1 이 살아 있는 동안 무적. 포탑 파괴 시 `Building` 노드도 해제해 스프라이트가 사라진다. |
-| 전진 카드 (`advance:N`) | 카드 한 장이 **라인을 N 칸 밀어 올린다**. 미니틱 하나가 `SimulationCore._advance_tick` 이고, 전장 규칙을 그대로 쓰되 판정 하나만 강제한다 — **전진을 낸 쪽은 그 칸의 교전에서 무조건 이긴 것으로 친다**(피해 판정은 평소대로 굴리므로 맞을 건 맞는다. 밀리는 쪽만 고정). 그래서 **시전자와 같은 칸·같은 스코프의 아군이 함께 한 칸 전진하고, 같은 칸의 적은 함께 한 칸 밀려난다**. 예전엔 (1) 일방 명중 우세를 그대로 읽어 주사위가 나쁘면 시전자가 자기 HQ 쪽으로 물러났고(= 전진 카드가 후퇴 카드였다), (2) "카드는 한 명만 움직인다"며 진 적을 제자리에 두고 시전자만 옆을 스쳐 갔다. 다음 칸이 **같은 레인 적 포탑**이면 무리는 전장 규칙 그대로 **그 칸에 올라선다**(그 틱에는 포탑 피해 없음). 밀려날 곳이 없어 적이 칸에 남으면 무리도 전진하지 않는다. 시전 시점에 **이미 같은 레인 적 포탑 칸 위**라면 포탑 규칙이 이긴다 — 포탑에 무판정 피해를 넣고, **그 칸 수비자의 공격에 맞은 사람만** 한 칸 후퇴(**전진이 뒤로 가는 유일한 경우**), 나머지는 물러나지 않고 제자리에서 계속 갈아 낸다. |
-| Recall / Respawn | **복귀 = 본진 귀환.** 두 가지 사유가 `RecallSystem.return_to_hq` 한 경로로 들어온다 — (1) HP ≤ `RECALL_HP_THRESHOLD`(20%), (2) 이동 카드가 파일럿을 **정글이나 다른 레인의 통로**에 떨어뜨린 위치 이탈. **복귀는 전장을 비우지 않는다** — 그 턴에 곧장 자기 HQ 에 **만피로** 서고 `alive` 는 계속 true 다. 파일럿이 전장에서 사라지는 사유는 **사망뿐**. 대신 복귀한 턴에는 움직이지 않고(`PilotData.recall_hold` → `resolve_movement` 가 이동 패스 1회를 걸러 내며 플래그를 소비), **다음 턴부터** 웨이포인트 0 부터 자기 레인을 다시 걸어 나간다. 즉 복귀 비용은 회복 대기가 아니라 **HQ 에서 전선까지 다시 걸어가는 시간**이고, 그 시간이 곧 **성장치 수입이 끊긴 시간**이다(위 "전선" 항목) — 사망도 마찬가지라 리스폰 턴 수(경기 후반일수록 길어진다)가 그대로 성장 손실로 환산된다. 그래서 사망에 점수 벌점을 따로 매기지 않는다. **자기 레인 위라면 아무리 깊어도 위치 이탈이 아니다** — 스플릿 푸시는 살려 둔 설계다. 복귀 카드(`recall_ally`)는 여기에 대기 없이 즉시 HQ + 만피. 전장을 비우는 것은 사망뿐이므로 `respawn_timer` 와 **`BattleSim.turns_until_return(p)`** 은 **사망 전용 시계**다 — "남은 턴 수"가 필요한 곳(카드 잠금 표시, 로그 `dead:N`)은 여전히 헬퍼를 거친다. **리스폰 턴 수는 경기 시간에 따라 늘어난다** — `BattleSim.respawn_turns_now()` = `RESPAWN_TURNS`(game_config, 5) + `turn_count / 10`. 사망은 **오직** `BattleSim.mark_pilot_dead(p)` 한 곳을 지난다(전장 교전 / 전진 / 공격 카드 / 교전 무대 공통). |
-| Jungle (initial) | Both jungles start fully captured, **`(-3,-1)` 와 `(1,-1)` 두 칸만 중립으로 남는다**. 그 둘은 전령 / 용이 서는 자리이기도 하지만 **타일 규칙은 다른 정글 칸과 한 글자도 다르지 않다** — 캠프가 서고, 정글러가 밟아 점령하고, 순회 목표가 되고, 사이드 T1 파괴의 측면 중립 탈취 분기로 주인이 바뀐다. 한때는 **상시 중립**(오브젝트 전용)이라 셋 다 막혀 있었고 `is_objective_cell` / `_nearest_uncaptured_neutral` 이 그 판정이었는데, 두 칸이 정글로 돌아오며 전자는 삭제되고 후자는 되살아났다. **목표 선택의 1순위는 아직 아무도 안 잡은 중립 칸**(`_nearest_uncaptured_neutral`, `jungle_start_pref` 가 좌우 순서를 정한다)이고 그 다음이 차 있는 캠프다. **Lane pilots are forbidden from entering any jungle/neutral cell** — Pathfinding receives `_bs.neutral_zone_cells` as the forbidden set for non-junglers. **중립이 다 잡히고 나면 목표는 지금 먹을 수 있는 캠프**(`_best_ready_camp`)다 — 정글러의 수입이 전부 캠프에서 나오므로 캠프가 곧 목표이고, 먹고 나면 그 칸이 4턴 비어 다음 캠프가 자연히 새 목표가 된다. 그 반복이 곧 순회다(위 "정글 캠프" 항목). **그 캠프를 고르는 비용은 거리가 아니라 `거리 × JUNGLE_CAMP_STALE_PER_STEP(3) − 방치 턴 수`다.** 거리만 보면 정글러는 **자기 발밑 4칸에 갇힌다** — 한쪽 정글이 4칸이고 재생성이 4턴이라 매 턴 정확히 한 칸이 되살아나므로 최단 거리 그리디는 언제나 거리 1짜리 캠프를 찾아냈고, 반대쪽 정글은 개시부터 끝까지 캠프가 꽉 찬 채 남았다(실측 60턴: 밟은 칸 **6개**, 오른쪽 정글 세 칸은 한 번도 안 밟음). 화면에는 "먹을 게 남은 칸을 두고 빈 칸만 도는" 것으로 보인다. 차 있는 채 놀고 있는 캠프가 턴마다 조금씩 싸지면 방치된 쪽이 주기적으로 가장 싼 목표가 되어 좌우를 오가는 순회가 된다(같은 60턴: 밟은 칸 **11개**, 캠프 획득 53 → 45회 = 수입 85%. 그 15%가 순회의 이동 시간이고, 그 대가로 정글 전체가 돌아간다). 목표를 향해 한 걸음 옮기면 그 목표의 비용은 반드시 더 내려가므로(−4, 다른 캠프는 −1) 가는 도중에 목표가 뒤집혀 왕복하는 일이 없다. **발밑의 캠프가 차 있으면 무조건 그 칸이 목표다** — 이동이 정산보다 앞에 오므로 가만히 있기만 하면 이번 턴에 먹는다. 캠프가 하나도 안 차 있을 때만 예전의 **sticky** 로밍(`PilotData.jungle_roam_target`, 도달할 때까지 유지)으로 떨어진다 — 매 턴 "가장 먼 아군 칸"을 다시 고르면 한 걸음 옮기는 순간 방금 떠나온 쪽이 가장 멀어져 *미드 레인* 통로 두 칸을 왕복했다. |
-| T1 → Jungle | T1 destroyed in lane L → priority branches off per-lane 취약지점 sets `VULN_TEAM{0,1}_{LEFT,CENTER,RIGHT}` (side lanes 1 cell, mid 2 flanking cells). (1) **Restoration**: if any of capturer's own same-lane vuln cells are loser-owned, restore them, nothing else flips. (2) **Side-neutral override (L/R only)**: if `(-3,-1)`/`(1,-1)` is loser-owned, capturer takes that neutral instead of loser's vuln. (3) **Default**: loser's same-lane vuln cell(s) flip to capturer. Mid has no neutral override. |
+| Turret Combat (turret cell occupation) | **Only same-lane lane pilots interact with a turret** (e.g. a RIGHT-lane pilot cannot damage a CENTER turret). An advancing lane pilot **actually steps onto** the same-lane enemy turret cell — the same whether it simply walks up, follows a pushed-out enemy in after winning an engage, or goes in via an advance card (the old "dip a foot in and pull out" adjacent siege `resolve_turret_sieges` / `_bounce_off_enemy_turret` was deleted). **No damage on the entry turn.** On the **next turn** standing on that cell, `_resolve_turret_combat` runs and puts `PILOT_STRUCTURE_DMG` (game_config.csv) into the turret **with no hit roll**. **It is a fixed value, not proportional to `atk`** — now that growth multiplies attack several times over, putting full `atk` in would melt late-game turrets in one turn, and match length would collapse inversely with growth. Structures should fall fast not because attack got bigger but **because defenders emptied the battlefield through low-HP returns · deaths**. Turret HP `TURRET_HP` (game_config.csv) is tuned against `PILOT_STRUCTURE_DMG` — together they set how many turns an undefended / defended siege takes, so change them together. It was raised from its old value, which also shrank [전령 제압] (Herald Subdued)'s `turret_damage` clause (cards.csv) relative to a turret and made sieges take one more beat. **Turret damage always lands even if an enemy is holding out on that cell** — defenders cannot shield the turret. **After** turret damage, same-lane attackers and defenders **roll hit checks against each other** (1:1 pairing by ascending HP, both sides `_pilot_hit_damage`) and trade damage. Previously, "all attack goes into the turret" meant **attackers dealt 0 damage to defenders**, so a defender squatting on its turret could beat on the attacker one-sidedly. **Hitting the turret does not make you retreat** — knockback pushes back to the previous cell **only attackers hit by the turret-cell defender's attack** (`_apply_turret_siege` returns the set of attackers hit). If the defender missed, if nobody targeted the attacker because it had no pair (the spare in a 2v1), or if there is no defender at all, the attacker stays put and grinds the turret **every turn**. Previously, as long as a defender existed, all attackers retreated regardless of hits (`_same_lane_defenders_at` deleted). The only exception is an **unattackable turret** (a T2 whose same-lane T1 is alive) — there is nothing to grind, so the attacker always retreats (pilot-vs-pilot checks still roll). As a result, turret damage is every turn when undefended, and when defended close to once per 2 turns (enter → hit then pushed out → re-enter) at the defender's hit rate, grinding once more on each turn the defender misses. **The HQ also takes the same fixed damage** (`HQ_MAX_HP`, game_config.csv — the HQ was not part of the turret HP raise). Off-lane pilots ignore the turret, and off-lane pilots of both teams still fight each other as pilots. **Turrets do NOT attack pilots. Junglers do NOT attack/defend turrets.** T2 is invulnerable while the same-lane T1 is alive. When a turret is destroyed the `Building` node is freed too so the sprite disappears. |
+| Advance card (전진, `advance:N`) | One card **pushes the lane up by N cells**. One mini-tick is `SimulationCore._advance_tick`; it uses the battlefield rules as-is but forces one verdict — **the side that played the advance is treated as having won that cell's engage unconditionally** (damage rolls run as usual, so what gets hit gets hit; only who is pushed is fixed). So **the caster and same-cell · same-scope allies advance one cell together, and enemies in that cell are pushed back one cell together**. Previously (1) it read the unilateral-hit advantage as-is, so with bad dice the caster retreated toward its own HQ (= the advance card was a retreat card), and (2) "a card moves only one person" left the beaten enemy in place while only the caster brushed past. If the next cell is a **same-lane enemy turret**, the group **steps onto that cell** per the battlefield rules (no turret damage that tick). If the enemy has nowhere to be pushed and stays in the cell, the group does not advance either. If at cast time the caster is **already on a same-lane enemy turret cell**, the turret rule wins — it puts roll-free damage into the turret, and **only those hit by that cell's defender's attack** retreat one cell (**the only case where advance goes backwards**); the rest do not retreat and keep grinding in place. |
+| Recall / Respawn | **복귀 (return-to-base) = going back to base (본진 귀환).** Two reasons come in through the single path `RecallSystem.return_to_hq` — (1) HP ≤ `RECALL_HP_THRESHOLD` (game_config.csv), (2) out-of-position when a move card dropped the pilot **in the jungle or another lane's corridor**. **Returning does not empty the battlefield** — that same turn the pilot stands at its own HQ **at full HP** and `alive` stays true. The only reason a pilot vanishes from the battlefield is **death**. Instead, it does not move on the turn it returns (`PilotData.recall_hold` → `resolve_movement` filters out one movement pass and consumes the flag), and **from the next turn** walks its lane again from waypoint 0. So the cost of returning is not a recovery wait but **the time to walk from HQ back to the front line**, and that time is **the time growth-point income is cut off** (the "Front line" row above) — death is the same, so the respawn turn count (longer later in the match) converts directly into growth loss. That is why death carries no separate score penalty. **However deep, being on your own lane is not out-of-position** — split push is a design kept alive. The Return card (`recall_ally`) is this with no wait: instant HQ + full HP. Only death empties the battlefield, so `respawn_timer` and **`BattleSim.turns_until_return(p)`** are **death-only clocks** — places that need "turns left" (card lock display, log `dead:N`) still go through the helper. **Respawn turns grow with match time** — `BattleSim.respawn_turns_now()` = `RESPAWN_TURNS` (game_config.csv) + `turn_count / BATTLE_RESPAWN_TURN_SCALE_DIV` (const.csv). Death passes through **only** one place, `BattleSim.mark_pilot_dead(p)` (shared by battlefield combat / advance / attack cards / engage stage). |
+| Jungle (initial) | Both jungles start fully captured, **with only the two cells `(-3,-1)` and `(1,-1)` left neutral**. Those two are also where Herald / Dragon stand, but **their tile rules do not differ by a single letter from other jungle cells** — a camp stands there, junglers capture it by stepping on it, it becomes a circuit goal, and its owner changes through the flank-neutral seizure branch of side T1 destruction. They were once **permanently neutral** (objective-only) so all three were blocked, with `is_objective_cell` / `_nearest_uncaptured_neutral` doing that check; when the two cells returned to the jungle the former was deleted and the latter revived. **Priority 1 in goal selection is a neutral cell nobody has taken yet** (`_nearest_uncaptured_neutral`; `jungle_start_pref` sets the left/right order), followed by full camps. **Lane pilots are forbidden from entering any jungle/neutral cell** — Pathfinding receives `_bs.neutral_zone_cells` as the forbidden set for non-junglers. **Once the neutrals are all taken, the goal is a camp that can be eaten now** (`_best_ready_camp`) — the jungler's income comes entirely from camps, so the camp is the goal, and once eaten that cell is empty for `JUNGLE_CAMP_RESPAWN_TURNS` so the next camp naturally becomes the new goal. That repetition is the circuit (the "Jungle camps" row above). **The cost for choosing that camp is not distance but `distance × JUNGLE_CAMP_STALE_PER_STEP − turns neglected`** (const.csv). With distance alone the jungler **gets trapped in the 4 cells at its feet** — one jungle side is 4 cells, so when the respawn period was close to that count one cell came back every turn, nearest-distance greedy always found a distance-1 camp, and the opposite jungle stayed full of camps from opening to end (measured over 60 turns: the three right-jungle cells never stepped on). On screen it looks like "circling empty cells while cells with food remain". If a full but idle camp gets slightly cheaper every turn, the neglected side periodically becomes the cheapest goal, producing a left-right circuit (more cells stepped on; a small share of camp income is lost to the circuit's travel time, and in exchange the whole jungle gets used). Moving one step toward the goal always lowers its cost further (by `JUNGLE_CAMP_STALE_PER_STEP` + 1, other camps only −1), so the goal never flips midway into a back-and-forth. **If the camp under the jungler's feet is full, that cell is unconditionally the goal** — movement comes before payout, so just standing still eats it this turn. Only when no camp is full does it fall back to the old **sticky** roaming (`PilotData.jungle_roam_target`, kept until reached) — re-picking "the farthest allied cell" every turn made the side just left the farthest after one step, so it shuttled between two cells of the *mid-lane* corridor. |
+| T1 → Jungle | T1 destroyed in lane L → priority branches off per-lane 취약지점 (vulnerable cell) sets `VULN_TEAM{0,1}_{LEFT,CENTER,RIGHT}` (side lanes 1 cell, mid 2 flanking cells). (1) **Restoration**: if any of capturer's own same-lane vuln cells are loser-owned, restore them, nothing else flips. (2) **Side-neutral override (L/R only)**: if `(-3,-1)`/`(1,-1)` is loser-owned, capturer takes that neutral instead of loser's vuln. (3) **Default**: loser's same-lane vuln cell(s) flip to capturer. Mid has no neutral override. |
 | 3-Lane System | Waypoint paths from HQ → side waypoints → enemy HQ. The old minion / lane-strength concept is **removed**. |
-| 수비 개념 없음 | 레인 파일럿의 목표는 **언제나** `current_waypoint(p)` 하나다. 아군 포탑이 맞고 있다고 돌아오는 행동은 존재하지 않는다 — 파일럿은 자기 HQ 에서 출발해 레인 길을 따라가고, 그러다 상대 라이너와 마주치는 것이 설계다. (같은 레인 스나이퍼가 죽으면 서포터가 아군 최전방 포탑을 껴안던 `_supporter_should_fall_back` / `_own_forward_turret_cell` 은 삭제됐다.) |
-| 레인 통로 (`lane_corridor`) | 레인별 실제 통과 셀 집합. 그 레인의 웨이포인트를 정글 금지로 BFS 연결해 **한 번만** 만들고 캐시한다(팀1 경로는 팀0 의 역순이라 셀 집합은 공유). 유일한 소비자는 `RecallSystem._is_out_of_position` — "이동 카드가 이 레인 파일럿을 **남의 레인**에 떨어뜨렸나". 판정은 반드시 **다른 레인에 속함**을 확인하지, 자기 레인에 없음만으로 판정하지 않는다: BFS 타이브레이크가 실제 걸어간 경로와 한 칸 어긋나도 멀쩡한 파일럿을 추방하면 안 되기 때문. `LANE_NAMES` 에는 GUERRILLA 칸도 있으니 순회는 `lane_corridor_count()` 로 한다. |
+| No defense concept | A lane pilot's goal is **always** just `current_waypoint(p)`. There is no behaviour of coming back because an allied turret is being hit — pilots set off from their own HQ, follow the lane road, and running into the opposing laner along the way is the design. (`_supporter_should_fall_back` / `_own_forward_turret_cell`, where the support hugged the frontmost allied turret when the same-lane sniper died, were deleted.) |
+| Lane corridor (`lane_corridor`) | The set of cells each lane actually passes through. Built **only once** by BFS-linking that lane's waypoints with jungle forbidden, then cached (team 1's path is team 0's reversed, so the cell set is shared). Its only consumer is `RecallSystem._is_out_of_position` — "did a move card drop this lane pilot **on someone else's lane**". The check must confirm **membership in another lane**, never judge from absence from its own lane alone: even if the BFS tie-break is one cell off from the actually walked route, a correctly placed pilot must not be exiled. `LANE_NAMES` also has a GUERRILLA slot, so iterate with `lane_corridor_count()`. |

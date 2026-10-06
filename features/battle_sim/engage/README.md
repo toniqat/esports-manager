@@ -1,973 +1,989 @@
-# Module: Engage (전투 개시) — 탑뷰(쿼터뷰) 교전 (라운드 턴제)
+# Module: Engage (전투 개시, battle opening) — top-down (quarter-view) engage (round-based turns)
 
 ## Purpose
-`engage:N` / `duel` 카드 효과로 발동되는 **턴제 교전**. 전장(BattleSim)이 셀
-단위로 굴러가는 것과 달리, 교전은 전용 **탑뷰(쿼터뷰) 무대**에서 참가자들이
-**라운드마다 한 명씩 차례대로** 접근 / 공격을 수행한다.
-**플레이어 입력은 없다 — 관전 전용.**
+A **turn-based engage (교전)** triggered by the `engage:N` / `duel` card effects. Unlike the
+battlefield (전장, BattleSim), which runs cell by cell, an engage runs on its own **top-down
+(quarter-view) stage (무대)** where participants approach / attack **one at a time, in turn,
+every round (라운드)**.
+**There is no player input — spectate only.**
 
-> **시작 위치는 전장 타일이 정한다.** 교전이 열린 칸을 무대 한가운데 두고, 각
-> 참가자가 밟고 있던 칸의 상대 육각 오프셋을 무대 좌표로 환산해 그 자리에
-> 세운다 — 윗타일에 둘 · 아랫타일에 둘 · 왼쪽 정글에 정글러 하나였다면 무대에서도
-> 그 모양이다. 한 칸에 여럿이면 그 칸 구역 안에서 흩어지되 팀0 은 왼쪽 반원,
-> 팀1 은 오른쪽 반원을 쓴다. **연출이지 판정이 아니다** — 라운드마다 전원이 한
-> 번씩 돌아가며 때리는 것은 그대로이고, 시작 자리가 바꾸는 것은 접근 거리와
-> 표적 선택의 거리항뿐이다.
+> **The battlefield tiles decide the start positions.** The cell where the engage opened is
+> placed at the centre of the stage; each participant's hex offset from that cell is converted
+> to stage coordinates and the participant is placed there — two on the upper tile · two on
+> the lower tile · one jungler in the left jungle looks the same on the stage. When several
+> share a cell they scatter inside that cell's area, but team 0 uses the left half-circle and
+> team 1 the right half-circle. **This is presentation, not resolution** — everyone still hits
+> exactly once per round in rotation; the start position only changes the approach distance
+> and the distance term of target selection.
 
-> **그 배치를 개시 확인 화면(VS)이 미리 보여 준다.** 카드를 제출하면 명단이
-> 아니라 **무대 그 자체**가 뜨고, 확인을 누르면 바로 그 무대가 이어진다 —
-> "이 진형으로 붙을 것인가"가 그 화면의 질문이기 때문이다. 아래
-> [개시 확인 화면](#개시-확인-화면-vs) 절 참조.
+> **The opening confirmation screen (VS) previews that layout.** When a card is played, what
+> appears is **the stage itself**, not a roster, and pressing confirm continues straight into
+> that same stage — because the question that screen asks is "do we fight in this formation?".
+> See the [Opening confirmation screen](#opening-confirmation-screen-vs) section below.
 
-> **`engage:N` 의 N 은 라운드 수다.** 초가 아니다. `engage:3` = 3라운드.
+> **The N in `engage:N` is a round count.** Not seconds. `engage:N` = N rounds.
 
-> **한 라운드 = 참가자 전원이 정확히 한 번씩 행동.** 무대에는 언제나 단
-> 한 명(`current_actor`)만 나와 있다. 마지막 순서까지 돌면 라운드가 하나 오르고
-> **다시 시전자부터** 같은 순서를 돈다.
+> **One round = every participant acts exactly once.** Only one unit (`current_actor`) is ever
+> out on the stage at a time. After the last in order, the round counter goes up and the same
+> order runs **again from the caster (시전자)**.
 
-> **교전 중 이탈은 없다.** 라운드가 끝날 때까지 아무도 무대를 뜨지 못한다.
-> 빈사(HP<30%)여도 후퇴하지 않는다.
+> **No one leaves mid-engage.** Nobody can leave the stage until the rounds are over.
+> Even near death (HP < 30%) a unit does not retreat.
 
-> **원위치 복귀도 없다.** 공격을 끝낸 유닛은 그 자리에 눌러앉고, 그 자리가
-> 새 앵커(`anchor_pos`)가 된다. 그래서 교전이 길어질수록 양 팀이 서로에게
-> 파고들어 무대 한쪽으로 뭉친다.
+> **No return to the original spot either.** A unit that finished attacking stays where it is,
+> and that spot becomes its new anchor (`anchor_pos`). So the longer an engage runs, the more
+> both teams dig into each other and bunch up on one side of the stage.
 
-> 직전의 **사이드뷰 벨트**(팀0 왼쪽 · 팀1 오른쪽으로 마주 서고 역할이 앞줄 /
-> 뒷줄을 정하던 평면 벨트, 하늘 · 뒷벽 · 지평선을 그리던 배경)는 여기서
-> 대체됐다. 그 자리가 못 버틴 이유는 하나다 — **화면에 보이는 자리가 전장의
-> 자리와 아무 관계가 없었다.** 위 타일에 둘, 아래 타일에 둘이 서 있는 것을 보고
-> 교전을 여는 것이 이 게임의 판단인데, 무대는 그 판단을 한 글자도 반영하지
-> 않았다. `facing_x`(좌우 부호 하나로 방향을 표현하던 것) · `_place_row` /
-> `_row_x` · `FRONT_OFFSET` / `ROW_GAP` / `DEPTH_MARGIN` / `KNOCK_VERTICAL_SCALE` ·
-> `TURRET_BACK_OFFSET` / `TURRET_BG_Y` / `TURRET_BG_STEP` · 렌더러의
-> `SKY_TOP` / `BACKWALL` / `HORIZON_LINE` / `SIDE_TINT_A` / `TURRET_BG_SCALE` 이
-> 그때 함께 삭제됐다.
+> The previous **side-view belt** (a flat belt where team 0 stood on the left · team 1 on the
+> right facing each other and role decided front row / back row, with a background drawing
+> sky · back wall · horizon) was replaced here. It failed for one reason — **the positions on
+> screen had nothing to do with the positions on the battlefield.** Seeing two on the upper
+> tile and two on the lower tile and deciding to open an engage is this game's decision, and
+> the stage reflected not one letter of it. `facing_x` (direction expressed by a single
+> left/right sign) · `_place_row` / `_row_x` · `FRONT_OFFSET` / `ROW_GAP` / `DEPTH_MARGIN` /
+> `KNOCK_VERTICAL_SCALE` · `TURRET_BACK_OFFSET` / `TURRET_BG_Y` / `TURRET_BG_STEP` · the
+> renderer's `SKY_TOP` / `BACKWALL` / `HORIZON_LINE` / `SIDE_TINT_A` / `TURRET_BG_SCALE` were
+> all deleted at that time.
 
-> 그보다 앞선 **ATB 실시간 모델**(메크 `speed` 스탯으로 차오르는 보이지 않는
-> 게이지가 행동 빈도를 가르고, `engage:N` 을 `N × 3초` 로 환산했던 방식)은
-> 이미 제거되어 있다 — `RealtimeEngageSim.gd` 와 함께 **`speed` 스탯 자체가
-> 데이터에서 사라졌다**(mechs.csv 컬럼 / `MechData.speed` / `PilotData.speed` /
-> `game_config.TURRET_SPEED`). **그 이전의 탑뷰 아레나와 지금의 탑뷰는 다른
-> 것이다** — 옛것은 전장 육각 셀을 그대로 확대 매핑한 좌표계에 카이팅 / 포탑
-> 사거리 회피 / 다이브 판정 / 개전 대쉬까지 얹은 **실시간** 무대였고, 지금
-> 것은 시작 자리만 타일에서 가져오는 **라운드 턴제** 무대다. 그 넷과
-> `EngageOverlay.gd` 턴제 루프는 되살리지 말 것.
+> The even earlier **ATB real-time model** (an invisible gauge filled by the mech `speed` stat
+> decided action frequency, and `engage:N` was converted to `N × 3 seconds`) had already been
+> removed — together with `RealtimeEngageSim.gd`, **the `speed` stat itself disappeared from
+> the data** (mechs.csv column / `MechData.speed` / `PilotData.speed` /
+> `game_config.TURRET_SPEED`). **The top-down arena before that and today's top-down view are
+> different things** — the old one was a **real-time** stage on a coordinate system that
+> magnified the battlefield hex cells 1:1, with kiting / turret-range avoidance / dive checks /
+> opening dash on top; the current one is a **round-based turn** stage that takes only the
+> start positions from the tiles. Do not revive those four or the `EngageOverlay.gd` turn loop.
 
 ## Files
 | File | Purpose |
 |---|---|
-| `EngagePhaseManager.gd` | `class_name EngagePhaseManager extends Node` — 오케스트레이터. 참가자를 모으고, `TurnEngageSim` 을 만들고, `_process` 에서 고정 스텝으로 굴리고, 종료 판정 후 `END_HOLD_SEC`(2.0초) 유예를 두고 대시보드를 띄운다. API: `start_engage(caster, rounds, exclude_lane, on_done, center, radius, drop_in)` / `start_duel(caster, target, on_done)` / **`start_objective_engage(t0, t1, rounds, title, first_team, on_done, origin)`** / `is_active()` / `engage_finished` 시그널, 그리고 개시 확인 화면용 `engage_sides(caster, exclude_lane)` / **`prepare_sim(caster, t0, t1, rounds, duel, first_team, origin, drop_in)`** / `prompt_engage(...) -> bool` / `engage_rounds_for(caster, rounds, consume)` / `is_intro_active()`. |
-| `EngageIntro.gd` | `class_name EngageIntro extends Control` — **개시 확인 화면(VS)**. 카드를 제출한 직후 **교전 무대를 미리보기 모드로 한 장 띄우고**(= `EngageArena`) 그 아래에 확인 / 취소만 얹는다. 아래 [개시 확인 화면](#개시-확인-화면-vs) 절. |
-| `TurnEngageSim.gd` | `class_name TurnEngageSim extends RefCounted` — **헤드리스 시뮬레이터**. 노드를 하나도 만들지 않는다. 무대 좌표, **타일 기반 배치**, 행동 순서, 라운드 진행, 유닛 한 차례, 포탑, 데미지, 종료 판정 전부 여기. 튜닝 상수도 전부 여기 상단에 모여 있다. **`setup()` 과 `begin()` 이 갈라져 있다** — 전자는 자리만 잡고(미리보기가 여기까지만 쓴다) 상태를 바꾸는 것은 전부 후자에 있다. |
-| `EngageArena.gd` | `class_name EngageArena extends Control` — 시뮬레이터 상태를 그리기만 하는 렌더러. 밴드(1032×1000) 안의 탑뷰 무대(바닥 / 포탑 / 유닛 / 투사체)와 밴드 아래 **참가자 초상화 + 체력 바 스트립**(아군 왼쪽 / 적군 오른쪽 한 줄, **얼굴 위주 정사각 썸네일**)을 담당한다. 라운드 카운터 / 차례 표시 / 종료 사유 배너(`mark_engage_over`)와 **결과 화면**(`show_dashboard`)도 여기. `setup(..., preview)` 로 **정지 화면 모드**가 되어 개시 확인 화면의 본문이 된다. |
+| `EngagePhaseManager.gd` | `class_name EngagePhaseManager extends Node` — orchestrator. Gathers participants, builds a `TurnEngageSim`, drives it in fixed steps from `_process`, and after the end check waits the `END_HOLD_SEC` grace (`ENGAGE_END_HOLD_SEC`, const.csv) before showing the dashboard. API: `start_engage(caster, rounds, exclude_lane, on_done, center, radius, drop_in)` / `start_duel(caster, target, on_done)` / **`start_objective_engage(t0, t1, rounds, title, first_team, on_done, origin)`** / `is_active()` / the `engage_finished` signal, plus for the opening confirmation screen `engage_sides(caster, exclude_lane)` / **`prepare_sim(caster, t0, t1, rounds, duel, first_team, origin, drop_in)`** / `prompt_engage(...) -> bool` / `engage_rounds_for(caster, rounds, consume)` / `is_intro_active()`. |
+| `EngageIntro.gd` | `class_name EngageIntro extends Control` — **opening confirmation screen (VS)**. Right after a card is played it **shows one copy of the engage stage in preview mode** (= `EngageArena`) and puts only confirm / cancel under it. See the [Opening confirmation screen](#opening-confirmation-screen-vs) section below. |
+| `TurnEngageSim.gd` | `class_name TurnEngageSim extends RefCounted` — **headless simulator**. Creates no nodes at all. Stage coordinates, **tile-based placement**, action order, round progression, a unit's single turn, turrets, damage, end check — all here. All tuning constants are also gathered at the top of this file as `static var`s whose values now live in `data/csv/const.csv` under `ENGAGE_*` keys (read via `ConstTable`). **`setup()` and `begin()` are split** — the former only places units (the preview uses only this far); everything that changes state is in the latter. |
+| `EngageArena.gd` | `class_name EngageArena extends Control` — a renderer that only draws the simulator state. Owns the top-down stage inside the band (1032×1000) (floor / turrets / units / projectiles) and, below the band, the **participant portrait + HP bar strip** (allies left / enemies right in one row, **face-focused square thumbnails**). The round counter / turn indicator / end-reason banner (`mark_engage_over`) and the **result screen** (`show_dashboard`) are here too. `setup(..., preview)` puts it in **still-image mode**, where it becomes the body of the opening confirmation screen. |
 
-매니저는 `BattleSim._ready()` 에서 자식으로 붙고 `_bs.engage_phase` 에 잡힌다.
-매니저가 소유한 전용 `CanvasLayer`(`ENGAGE_OVERLAY_LAYER = 12`)에 **개시 확인
-화면과 아레나가 차례로** 붙는다(둘은 동시에 뜨지 않는다). 이 레이어는 HUD 캔버스(1), `CardSelectOverlay`(10),
-`CardTargetingOverlay`(11) 위이므로 무대와 대시보드는 항상 핸드 행과
-남아 있는 타게팅 UI 위에 그려진다. (파일럿 상세 패널만 13으로 더 위에 있다.)
+The manager is attached as a child in `BattleSim._ready()` and held in `_bs.engage_phase`.
+The **opening confirmation screen and the arena attach in turn** (never both at once) to a
+dedicated `CanvasLayer` owned by the manager (`ENGAGE_OVERLAY_LAYER = 12`). This layer is above
+the HUD canvas (1), `CardSelectOverlay` (10) and `CardTargetingOverlay` (11), so the stage and
+dashboard always draw above the hand row and any remaining targeting UI. (Only the pilot detail
+panel is higher, at 13.)
 
 ## Trigger flow
-1. 플레이어(또는 AI)가 engage 카드(`engage:3` 전투 개시, `engage:4` 완벽한
-   기회) 또는 결투(`duel`)를 낸다. `engage:N|exclude_lane` 도 그대로
-   동작하지만 현재 이 플래그를 다는 카드는 없다.
-2. `CardPhaseManager._effect_engage()` 가 먼저 `engage_sides()` 로 참가자를
-   팀별로 갈라 보고, 한쪽이라도 비면 그 자리에서 접는다. 아니면
-   **`prompt_engage()` 로 VS 개시 확인 화면을 띄우고 `await` 한다.**
-   취소되면 `_on_overlay_cancel()` 이 카드 제출 자체를 무르고 아레나는 열리지
-   않는다. 확인이면 `EngagePhaseManager.start_engage(...)`. (`_effect_duel()`
-   → `start_duel(...)` 도 같은 확인 화면을 지난다.)
-3. 매니저가 **들어오기 직전의 페이즈를 `_phase_before` 에 적어 두고**
-   `_bs.game_phase = ENGAGE` 로 전환. BATTLE 자동 틱은 멈추고,
-   카드 hover/click 과 턴 넘기기도 `CARD_PHASE` 가드 때문에 차단된다.
-4. 무대가 열리고 매니저의 `_process` 가 시뮬레이터를 고정 스텝
-   (`FIXED_DT = 1/60`, 프레임당 최대 `MAX_STEPS_PER_FRAME = 8` 스텝)으로 굴린다.
-5. 종료 판정 → **`END_HOLD_SEC`(2.0초) 유예** → **결과 화면**(아래
-   [결과 화면](#결과-화면-showdashboard)) → `확인` → 무대 제거,
-   **`phase = _phase_before`**, `on_done` 호출, `engage_finished` emit.
+1. The player (or AI) plays an engage card (`engage:N` — 전투 개시 (Start Battle),
+   완벽한 기회 (Perfect Opportunity)) or a duel (`duel`). `engage:N|exclude_lane` still works,
+   but no card currently carries that flag.
+2. `CardPhaseManager._effect_engage()` first splits the participants per team with
+   `engage_sides()`, and folds right there if either side is empty. Otherwise it
+   **opens the VS opening confirmation screen with `prompt_engage()` and `await`s it.**
+   On cancel, `_on_overlay_cancel()` undoes the card play itself and the arena never opens.
+   On confirm, `EngagePhaseManager.start_engage(...)`. (`_effect_duel()` → `start_duel(...)`
+   goes through the same confirmation screen.)
+3. The manager **records the phase it entered from in `_phase_before`** and switches to
+   `_bs.game_phase = ENGAGE`. The BATTLE auto-tick stops, and card hover/click and end-turn
+   are blocked by the `CARD_PHASE` guard.
+4. The stage opens and the manager's `_process` drives the simulator in fixed steps
+   (`FIXED_DT = 1/60`, at most `MAX_STEPS_PER_FRAME = 8` steps per frame).
+5. End check → **`END_HOLD_SEC` (`ENGAGE_END_HOLD_SEC`) grace** → **result screen** (see
+   [Result screen](#result-screen-show_dashboard) below) → `확인` (Confirm) → stage removed,
+   **`phase = _phase_before`**, `on_done` called, `engage_finished` emitted.
 
-복귀 페이즈를 `CARD_PHASE` 로 못박지 않는 이유: 상대 차례
-(`CardPhaseManager._run_ai_turn`)는 `game_phase` 를 바꾸지 않고 **BATTLE 안에서**
-도므로, AI 가 낸 engage 카드가 끝날 때 CARD_PHASE 로 되돌리면 상대 턴이 끝난
-뒤 전장이 작전 단계에 갇힌 채 남는다. 플레이어 카드로 열린 교전은 어차피
-`_phase_before == CARD_PHASE` 라 동작이 같다.
+Why the return phase is not hard-coded to `CARD_PHASE`: the opponent's turn
+(`CardPhaseManager._run_ai_turn`) runs **inside BATTLE** without changing `game_phase`, so if an
+engage card played by the AI returned to CARD_PHASE when it ended, the battlefield would be left
+stuck in the operation phase (작전 단계) after the opponent's turn. For an engage opened by a
+player card `_phase_before == CARD_PHASE` anyway, so behaviour is identical.
 
-AI 플레이도 같은 무대를 탄다. `AiCardPlayer.run_ai_plays()` 는 매 플레이
-후 `engage_phase.is_active()` 면 `engage_finished` 를 `await` 한다 — 카드의
-effect chain 이 아니라 `is_active()` 로 판정하므로 clause 가 `duel` 인 결투도
-정상적으로 기다려진다.
+AI play uses the same stage. After every play, `AiCardPlayer.run_ai_plays()` `await`s
+`engage_finished` if `engage_phase.is_active()` — it decides by `is_active()`, not by the card's
+effect chain, so a duel whose clause is `duel` is also waited for correctly.
 
-## 오브젝트 교전 (전령 / 용)
-`ObjectiveSystem` 이 여는 교전. 무대와 생명주기는 카드 교전과 **완전히 같고**
-(라운드 진행 · 종료 유예 · 결과 대시보드 · `engage_finished`), 다른 것은 셋뿐이다.
+## Objective engage (Herald (전령) / Dragon (용))
+An engage opened by `ObjectiveSystem`. The stage and lifecycle are **exactly the same** as a
+card engage (round progression · end grace · result dashboard · `engage_finished`); only three
+things differ.
 
-1. **시전자가 없다.** 카드가 아니라 타이머가 여는 교전이라 "매 라운드 먼저
-   행동하는 한 명"이 없다. `TurnEngageSim.setup(..., first_team)` 에 선공 팀을
-   직접 넘기고(오브젝트는 블루), `caster = null` 을 받아들인다 —
-   `_role_sorted` 의 "시전자를 맨 앞으로" 단계만 조용히 건너뛴다.
-2. **참가자를 시전자 주변에서 모으지 않는다.** 포지션이 정한 명단
-   (`ObjectiveSystem.participants_for`)이 그대로 `t0` / `t1` 로 들어온다.
-3. **무대 제목이 오브젝트 이름**이다(`_arena_title`, "전령" / "용").
+1. **There is no caster.** It is opened by a timer, not a card, so there is no "one unit who
+   acts first every round". The first-acting team is passed directly to
+   `TurnEngageSim.setup(..., first_team)` (blue for objectives), and `caster = null` is accepted
+   — only the "caster goes first" step of `_role_sorted` is silently skipped.
+2. **Participants are not gathered around a caster.** The roster decided by position
+   (`ObjectiveSystem.participants_for`) comes in as `t0` / `t1` unchanged.
+3. **The stage title is the objective name** (`_arena_title`, "전령" / "용").
 
-종료 배너는 카드 교전과 같은 문구(전멸 / N라운드 완료)를 그대로 쓴다. 승패와
-보상은 배너가 아니라 무대가 닫힌 뒤 `BattleSim.last_log` 가 말한다 — 배너는 종료
-판정 직후 `END_HOLD_SEC` 동안 떠 있고 호출 측이 제어를 되찾는 것은 그 **뒤**라,
-승패를 배너에 실을 수 있는 시점이 애초에 없다.
+The end banner uses the same wording as a card engage (전멸 (wipe) / N라운드 완료 (N rounds
+complete)). Win/loss and rewards are reported by `BattleSim.last_log` after the stage closes,
+not by the banner — the banner stays up for `END_HOLD_SEC` right after the end check, and the
+caller only regains control **after** that, so there is never a moment when win/loss could be
+put on the banner.
 
-승패 판정은 매니저가 아니라 `ObjectiveSystem._engage_winner` 가 한다 —
-**생존 인원 수 → 동률이면 잔여 HP 비율 합**. 자세한 내용은 `objective/README.md`.
+Win/loss is decided by `ObjectiveSystem._engage_winner`, not the manager —
+**number of survivors → on a tie, sum of remaining HP ratios**. Details in `objective/README.md`.
 
-## 개시 확인 화면 (VS)
-`EngageIntro.gd`. **카드를 제출한 순간** 딤드된 전체 화면 위에 뜬다. 그리고
-이 화면의 본문은 명단이 아니라 **교전 무대 그 자체**다.
+## Opening confirmation screen (VS)
+`EngageIntro.gd`. Appears over a dimmed full screen **the moment a card is played**. And the
+body of this screen is **the engage stage itself**, not a roster.
 
 ```
-              전투 개시                ← 카드 이름 (AI 가 낸 것이면 " (AI)")
+              전투 개시                ← card name (" (AI)" if the AI played it)
              라운드 1 / 3
      시작 위치 — 이대로 교전을 시작한다
   ┌──────────────────────────────┐
   │                              │
-  │   교전 무대 (정지 화면)         │   ← EngageArena 를 preview 모드로 한 장
+  │   교전 무대 (정지 화면)         │   ← one EngageArena in preview mode
   │   시작 위치가 이미 잡혀 있다      │
   │                              │
   └──────────────────────────────┘
-     ▣▣▣▣▣  VS  ▣▣▣▣▣            ← 아레나와 같은 정사각 썸네일 스트립
-            취소   확인            ← 문구는 바꿀 수 있다
+     ▣▣▣▣▣  VS  ▣▣▣▣▣            ← same square-thumbnail strip as the arena
+            취소   확인            ← the wording can be changed
 ```
+(Mock-up text: "라운드 1 / 3" = Round 1 / 3; "시작 위치 — 이대로 교전을 시작한다" = Start
+positions — start the engage as is; "교전 무대 (정지 화면) / 시작 위치가 이미 잡혀 있다" =
+engage stage (still) / start positions already set; "취소 / 확인" = Cancel / Confirm.)
 
-- **무대는 진짜다.** `EngagePhaseManager.prepare_sim(...)` 이 만든
-  `TurnEngageSim` 을 그대로 그린다 — 아직 `begin()` 전이라 피해도 충전 소모도
-  일어나지 않지만 **자리는 이미 다 잡혀 있다**. 확인을 누르면 `_begin` 이
-  `_pending_sim` 을 그대로 이어받으므로 **화면에서 본 배치와 실제로 싸우는
-  배치가 같다**. 다시 만들면 지터와 칸 안 자리가 달라져 "본 것"과 "나온 것"이
-  어긋나고, 그러면 이 화면은 판단이 아니라 확인 절차로 되돌아간다.
-- **명단만으로는 부족했다.** 이 게임에서 교전을 여는 판단은 "누가 있나"가
-  아니라 "어디에 어떻게 서 있나"다 — 위 타일에 둘, 아래 타일에 둘, 왼쪽 정글에
-  정글러 하나. 예전 화면(eye 초상화 두 줄 + 큰 VS)은 그 절반만 답했다.
-- **`_pending_sim` 의 생명 주기.** 프롬프트를 띄우고도 교전이 안 열리는 경로가
-  있다(오브젝트 미참여 · 무혈 획득 알림 · 취소). 그래서 `prompt_engage` 는
-  취소에서 이것을 버리고, `_begin` 은 **명단과 라운드 수가 일치할 때만**
-  이어받는다(`TurnEngageSim.matches`). 어긋나면 조용히 새로 세운다.
-- **라운드 수는 엿보기로 구한다.** 화면에 뜨는 수는 파일럿 스킬 보정([전투
-  명령] −1 / [공성전] +3)까지 먹은 실제 수여야 하는데, [공성전]은 **한 장에만**
-  붙는 보너스라 취소했는데 타 버리면 되돌릴 방법이 없다. 그래서
-  `engage_rounds_for(caster, rounds, consume)` 한 함수를 두고 화면은
-  `consume = false`, `start_engage` 는 `true` 로 부른다. 예전에는 화면이 보정
-  **전**의 수를 띄우고 실제로는 다른 수로 돌았다.
-- 무대가 `RISE_PX`(34px) 아래에서 `FADE_SEC`(0.20초) 동안 떠오르며 나타난다.
-  **버튼은 처음부터 눌린다** — 연출이 입력을 붙잡으면 반복 관전이 느려진다.
-- **버튼 문구와 부제는 인자다.** `setup(bs, sim, title, allow_cancel,
-  confirm_text, cancel_text, subtitle)`. 오브젝트가 이 화면을 **참여 / 미참여**
-  결정 창으로 그대로 재사용한다(부제 = 보상 안내). 오브젝트 쪽은 무대 중심을
-  **오브젝트 칸**으로 넘기므로, 누가 어느 정글 · 어느 레인에서 달려오는지가
-  그대로 배치가 된다 — 참여를 정하는 데 필요한 것이 정확히 그것이다.
-- **취소는 카드 제출 자체를 무른다.**- **취소는 카드 제출 자체를 무른다.** `_effect_engage` 가
-  `CardPhaseManager._on_overlay_cancel()` 을 불러 `_play_card_direct` 가 떠 둔
-  스냅샷(손패 / 덱 / 비용 / engage 할인 / 보존 목록)을 통째로 복원한다 —
-  버리기 / 찾기 오버레이의 취소와 완전히 같은 경로다. 실측: 손패 5 → 4 → **5**,
-  작전 점수 99 → 93 → **99**.
-- **AI 가 낸 카드에는 확인만 뜬다**(`allow_cancel = false`). 플레이어가 무를 수
-  있는 것이 아니므로 "누가 싸우는지 보고 넘긴다"만 남는다.
-- 확인 화면이 떠 있는 동안 `game_phase` 는 아직 **CARD_PHASE**(또는 AI 턴이면
-  BATTLE)다 — 아레나는 열리지 않았다. 그래서 손패 딤과 턴 넘기기 잠금이 페이즈
-  만으로는 걸리지 않고, 셋이 `is_intro_active()` 를 따로 읽는다:
+- **The stage is real.** It draws the `TurnEngageSim` built by
+  `EngagePhaseManager.prepare_sim(...)` as is — it is still before `begin()`, so no damage and
+  no Charge (충전) consumption happen, but **every position is already set**. On confirm `_begin`
+  takes over `_pending_sim` unchanged, so **the layout seen on screen is the layout that
+  actually fights**. Rebuilding it would change jitter and in-cell positions so "what was seen"
+  and "what came out" would differ, and the screen would fall back from a decision to a
+  confirmation formality.
+- **A roster alone was not enough.** In this game the decision to open an engage is not "who is
+  there" but "where and how they stand" — two on the upper tile, two on the lower tile, one
+  jungler in the left jungle. The old screen (two rows of eye portraits + a big VS) answered
+  only half of that.
+- **Lifecycle of `_pending_sim`.** Some paths show the prompt but never open an engage
+  (objective not joined · bloodless capture notice · cancel). So `prompt_engage` discards it on
+  cancel, and `_begin` takes it over **only when the roster and round count match**
+  (`TurnEngageSim.matches`). If they differ it silently builds a new one.
+- **The round count is obtained by peeking.** The number on screen must be the real number
+  after pilot (파일럿) skill modifiers ([전투 명령] (Battle Command) `SKILL_BATTLE_ORDER_ROUNDS` / [공성전] (Siege
+  Warfare) `SKILL_SIEGE_ROUNDS`, const.csv), but [공성전] is a bonus that applies **to one card only**, so if it were spent
+  and then cancelled there would be no way to undo it. So there is a single function
+  `engage_rounds_for(caster, rounds, consume)`; the screen calls it with `consume = false` and
+  `start_engage` with `true`. Previously the screen showed the count **before** modifiers and
+  the engage actually ran with a different count.
+- The stage appears rising from `RISE_PX` (34px) below over `FADE_SEC` (0.20 s).
+  **The buttons are pressable from the start** — if the animation held input, repeated
+  spectating would get slow.
+- **Button wording and subtitle are arguments.** `setup(bs, sim, title, allow_cancel,
+  confirm_text, cancel_text, subtitle)`. Objectives reuse this screen as is as the
+  **join / skip** decision window (subtitle = reward info). The objective side passes the
+  **objective cell** as the stage centre, so who is running in from which jungle · which lane
+  becomes the layout directly — exactly what is needed to decide whether to join.
+- **Cancel undoes the card play itself.** `_effect_engage` calls
+  `CardPhaseManager._on_overlay_cancel()` to restore wholesale the snapshot taken by
+  `_play_card_direct` (hand (손패) / deck / cost / engage discount / keep list) — exactly the
+  same path as cancelling the discard / search overlays. Measured (실측): hand 5 → 4 → **5**,
+  operation points drop by the card's `cost` and come back in full.
+- **A card played by the AI shows confirm only** (`allow_cancel = false`). The player cannot
+  undo it, so all that remains is "see who fights and move on".
+- While the confirmation screen is up, `game_phase` is still **CARD_PHASE** (or BATTLE on an AI
+  turn) — the arena has not opened. So the hand dim and the end-turn lock are not triggered by
+  phase alone, and three gates read `is_intro_active()` separately:
   `CardPhaseManager._is_player_input_blocked()` / `can_end_card_phase()` /
-  `can_browse_piles()`, 그리고 `HudBuilder._update_cost_donuts` 의 도넛 플립
-  (`CostDonut._input` 은 GUI 픽보다 먼저 돌아 딤을 뚫고 눌린다). `prompt_engage`
-  는 화면을 열 때와 닫을 때 `_refresh_hand_gates()` 로 그 게이트들을 깨운다.
-- **앵커를 건드리지 않는다.** CanvasLayer 밑의 Control 에 `PRESET_FULL_RECT` 를
-  걸면 마주 보는 앵커가 서로 달라져 `_ready` 에서 쓴 크기가 레이아웃 패스에
-  덮이고(엔진 경고 그대로), 부모가 rect 를 주지 않으므로 결과는 0×0 이다 —
-  딤도 안 그려지고 `MOUSE_FILTER_STOP` 도 뒤쪽 입력을 못 막는다. 앵커를 기본값
-  (전부 0)으로 두고 `position` / `size` 만 쓰면 그대로 남는다.
+  `can_browse_piles()`, plus the donut flip in `HudBuilder._update_cost_donuts`
+  (`CostDonut._input` runs before the GUI pick and gets pressed through the dim). `prompt_engage`
+  wakes those gates with `_refresh_hand_gates()` when it opens and closes the screen.
+- **Do not touch the anchors.** Applying `PRESET_FULL_RECT` to a Control under a CanvasLayer
+  makes the opposite anchors differ, so the size written in `_ready` is overwritten by the
+  layout pass (exactly the engine warning), and since the parent gives no rect the result is
+  0×0 — the dim is not drawn and `MOUSE_FILTER_STOP` does not block input behind it. Leave the
+  anchors at the default (all 0) and write only `position` / `size`, and it stays.
 
-### 왜 명단이 여기로 옮겨 왔나
-예전에는 `CardTargetingOverlay` 의 PREVIEW 모드가 **카드를 고르는 순간** 화면
-좌/우에 세로 팀 패널 두 개를 띄워 참가자를 나열했다. 둘 다 문제였다:
+### Why the roster moved here
+Previously the PREVIEW mode of `CardTargetingOverlay` showed two vertical team panels on the
+left/right of the screen **the moment a card was picked up**, listing the participants. Both
+were problems:
 
-1. **시점이 틀렸다.** 카드를 집기만 해도 명단이 떠서, 아직 낼지 말지도 정하지
-   않은 상태에서 화면 절반이 표로 덮였다. 정작 명단이 궁금해지는 순간은 카드를
-   낸 **직후** — "이제 누가 싸우는가"가 확정된 시점이다.
-2. **좌/우 세로 패널은 진영을 말하지 않는다.** 나란히 선 스크롤 목록 두 개는
-   어느 쪽이 내 팀인지를 위치로 알려 주지 못한다. 상단 = 적 / 하단 = 아군은
-   전장 화면(`ui/PilotStrip.gd`)이 이미 쓰는 규칙이라 새로 배울 것이 없다.
+1. **Wrong timing.** The roster appeared just by picking up a card, so half the screen was
+   covered by a table before deciding whether to play it at all. The moment the roster actually
+   matters is **right after** the card is played — when "who fights now" is settled.
+2. **Left/right vertical panels do not say which side is which.** Two scroll lists side by side
+   cannot tell by position which one is my team. Top = enemy / bottom = ally is a rule the
+   battlefield screen (`ui/PilotStrip.gd`) already uses, so there is nothing new to learn.
 
-PREVIEW 모드 자체는 남아 있다 — 카드를 끄는 동안 시전자 셀 + 인접 6칸이
-밝아지고 그 안의 참가자가 강조되는 것까지가 그 역할이다.
+PREVIEW mode itself remains — its role is to light up the caster cell + the 6 adjacent cells
+while the card is dragged and highlight the participants inside them.
 
-## 라운드 규칙 (engage:N → N 라운드)
-| 카드 | effect | 지속 |
+## Round rules (engage:N → N rounds)
+| Card | effect | Duration |
 |---|---|---|
-| 전투 개시 | `engage:3` | 3라운드 |
-| 완벽한 기회 | `engage:4` | 4라운드 |
-| 결투 | `duel` | 한 쪽 처치까지 (상한 `DUEL_MAX_ROUNDS` 10라운드) |
+| 전투 개시 (Start Battle) | `engage:N` | N rounds (N = its cards.csv `effect` clause) |
+| 완벽한 기회 (Perfect Opportunity) | `engage:N` | N rounds (longer than 전투 개시) |
+| 결투 (Duel) | `duel` | until one side is killed (cap `DUEL_MAX_ROUNDS` ← `ENGAGE_DUEL_MAX_ROUNDS`, const.csv) |
 
-라운드 예산이 소진되면 그 프레임에 곧바로 전투가 멈춘다(후퇴 연출 없음).
-다만 대시보드는 그 뒤 `END_HOLD_SEC`(2.0초) 유예를 두고 뜬다 — 아래
-[종료](#종료) 참고.
+When the round budget is used up, combat stops on that very frame (no retreat animation).
+The dashboard, however, appears after an `END_HOLD_SEC` (`ENGAGE_END_HOLD_SEC`) grace — see
+[End](#end) below.
 
-**실측 관전 시간**(헤드리스 5v5 ×8, `engage:3`): **평균 13.3초**. 라운드 하나가
-약 4.3초이고, 그 안에 열 명이 각자 접근 → 공격 → 정착을 한 번씩 한다.
+**Spectating time** is set by the pacing keys (see [Throughput](#throughput--measured-headless-5v5-8-3-round-engage)
+below) — in one round ten units each do approach → attack → settle once.
 
 ---
 
-## 행동 순서 — 상황 기반 (팀 교대 + 팀 내 역할 고정)
-`_build_order` 가 **개시 시 한 번** 정하고 그 뒤로 바뀌지 않는다. 매 라운드
-같은 순서를 반복하므로 관전자가 다음 차례를 예측할 수 있고, "매번 시전자부터
-시작"이 자동으로 성립한다.
+## Action order — situational (team alternation + fixed role order within a team)
+`_build_order` decides it **once at the opening** and it never changes afterwards. The same
+order repeats every round, so spectators can predict the next turn, and "always start from the
+caster" holds automatically.
 
-1. **시전자 팀부터** 한 명, 상대 팀에서 한 명씩 **번갈아** 나간다.
-2. 팀 안의 순서는 `ROLE_ACT_ORDER` 로 고정 —
-   **암살자 → 격투가 → 탱커 → 스나이퍼 → 서포터**. 파고드는 역할이 먼저 열고
-   뒤에서 받아 치는 역할이 나중에 정리하는 순서다.
-3. 단 **시전자는 자기 팀 맨 앞으로 당겨진다** — 교전을 연 쪽이 선공한다는 것이
-   전투 개시 카드의 값이다.
-4. **포탑은 파일럿 전원이 돈 뒤**, 시전자 팀 포탑부터 차례를 갖는다 — 다만
-   시전자 팀 포탑은 가담하지 않으므로(아래 [포탑](#포탑--참가자가-아니라-배경-지형))
-   실제로 이 자리에 서는 것은 상대 팀 포탑뿐이다.
+1. One unit from **the caster's team first**, then one from the opposing team, **alternating**.
+2. Order within a team is fixed by `ROLE_ACT_ORDER` —
+   **assassin → fighter → tank → sniper → supporter**. Roles that dive open first; roles that
+   hit back from behind clean up later.
+3. But **the caster is pulled to the front of its own team** — the side that opened the engage
+   striking first is what the battle-opening card is worth.
+4. **Turrets take turns after all pilots**, starting with the caster team's turret — but the
+   caster team's turret does not join (see [Turrets](#turrets--background-terrain-not-participants)
+   below), so in practice only the opposing team's turret stands in that slot.
 
-실측 순서(팀0 탱커가 시전, 5v5): `T0, A1, A0, F1, F0, T1, Sn0, Sn1, Su0, Su1`.
+Measured order (team 0 tank casts, 5v5): `T0, A1, A0, F1, F0, T1, Sn0, Sn1, Su0, Su1`.
 
-> 포탑을 파일럿 사이에 끼우지 않는 이유: 포탑은 무대 참가자가 아니라 배경
-> 지형이고 **카메라가 포탑을 프레이밍하지 않는다**. 파일럿 차례 사이에 끼우면
-> 화면 밖에서 포격만 날아오는 침묵 구간이 생긴다.
+> Why turrets are not interleaved between pilots: a turret is background terrain, not a stage
+> participant, and **the camera does not frame turrets**. Interleaving them between pilot turns
+> would create silent stretches where only shots fly in from off screen.
 
-죽은 행동자는 `_advance_order` 가 건너뛴다. 순서 배열 자체는 그대로 두므로
-라운드가 흘러도 **살아 있는 사람들의 상대 순서는 바뀌지 않는다**.
+Dead actors are skipped by `_advance_order`. The order array itself is left untouched, so as
+rounds go by **the relative order of the living does not change**.
 
-### 진행 상태 (`Flow`)
+### Progress state (`Flow`)
 ```
-ROUND_START ──(ROUND_GAP_SEC 0.45)──▶ ACTING ──▶ ACTOR_GAP ──(0.06)──▶ ACTING …
+ROUND_START ──(ROUND_GAP_SEC)──▶ ACTING ──▶ ACTOR_GAP ──(ACTOR_GAP_SEC)──▶ ACTING …
                                                      │
-                                       (순서 끝) ────┴──▶ ROUND_START (라운드 +1)
-                                                          또는 DONE (예산 소진)
+                                       (end of order) ┴──▶ ROUND_START (round +1)
+                                                          or DONE (budget used up)
 ```
-렌더러는 `flow` 와 `round_index` / `total_rounds` / `actor_label()` 을 읽어
-헤더 두 줄(라운드 카운터 + "누구의 차례")과 라운드 칸 표시를 그린다.
+The renderer reads `flow` and `round_index` / `total_rounds` / `actor_label()` to draw the
+two header lines (round counter + "whose turn") and the round pips.
 
 ---
 
-## 한 차례 (`ACTING`)
+## A single turn (`ACTING`)
 ```
-ADVANCE ──(사거리 진입)──▶ STRIKE ──▶ 정착(그 자리가 새 앵커) ──▶ 다음 순서
+ADVANCE ──(enters range)──▶ STRIKE ──▶ settle (that spot is the new anchor) ──▶ next in order
 ```
 
-| 상태 | 하는 일 |
+| State | What it does |
 |---|---|
-| `IDLE` | 자기 차례가 아니다. 넉백 잔차만 추스른다(`_tick_passive`). |
-| `ADVANCE` | 타겟에게 접근. **근접은 `MELEE_REACH`(88px)**, **원거리는 자기 최대 사거리의 `RANGED_APPROACH_RATIO`(0.9) = 270px** 안에 들면 즉시 타격. 이미 그 안이면 움직이지 않고 바로 STRIKE. `ADVANCE_MAX_SEC`(0.85초)을 넘기면 교착으로 보고 이번 차례를 접는다 — 바닥면이 세로로 두 배 넓어진 만큼 함께 늘렸다(0.55초로는 대각선 반대편 적에게 닿지 못하고 차례가 통째로 '걸어가다 말았다'가 된다) |
-| `STRIKE` | 진입 시점에 공격 판정 1회. 모션 홀드(근접 0.20초 / 원거리 0.26초) 동안 대상 앞에 멈춰 있다 |
-| `DEAD` | 처치됨. 렌더러가 **불투명한 채 밝기만 32%로 눌러** 남긴다(`EngageArena.DEAD_DIM`) — 알파를 내리면 뒤에 선 유닛이 시신을 뚫고 비쳐 겹친 자리에서 누가 살아 있는지가 안 읽힌다 |
+| `IDLE` | Not its turn. Only tidies up knockback residue (`_tick_passive`). |
+| `ADVANCE` | Approaches the target. Strikes immediately once within **`MELEE_REACH` (`ENGAGE_MELEE_REACH`) for melee**, **`RANGED_APPROACH_RATIO` (`ENGAGE_RANGED_APPROACH_RATIO`) of its own max range (`ENGAGE_RANGE_RANGED`) for ranged**. If already inside, it does not move and goes straight to STRIKE. Past `ADVANCE_MAX_SEC` (`ENGAGE_ADVANCE_MAX_SEC`) it is treated as a stalemate and this turn is folded — raised together with the floor becoming twice as tall (with the old, shorter value it could not reach an enemy diagonally opposite and the whole turn became "walked and gave up") |
+| `STRIKE` | One attack check on entry. Stays stopped in front of the target during the motion hold (`ENGAGE_STRIKE_HOLD_MELEE` / `ENGAGE_STRIKE_HOLD_RANGED`) |
+| `DEAD` | Killed. The renderer leaves it **opaque but with brightness pressed down to 32%** (`EngageArena.DEAD_DIM`) — lowering alpha would let a unit standing behind show through the corpse, and in overlapping spots you could not read who is alive |
 
-이동 속도는 근접 **1400px/s**, 원거리 **1100px/s**. ATB 시절(880 / 620)보다
-빠르게 잡혀 있다 — 그때는 열 명이 동시에 움직여 한 사람의 접근이 느려도 무대가
-비지 않았지만, 지금은 **한 번에 한 명뿐이라 접근 시간이 곧 관전자가 기다리는
-시간**이다. 느리게 두면 3라운드가 30초를 넘는다.
+Move speed is `ENGAGE_MOVE_SPEED_MELEE` melee, `ENGAGE_MOVE_SPEED_RANGED` ranged (const.csv). Set faster than in the ATB days
+— back then ten units moved at once, so the stage never went empty even if one
+unit's approach was slow, but now **only one moves at a time, so approach time is exactly the
+time the spectator waits**. Leave it slow and every round drags.
 
-> **사거리 판정에는 `STRIKE_DIST_EPSILON`(0.5px) 여유가 반드시 붙는다.**
-> 접근의 정지점은 `target.pos − dir × strike_dist()` 이고 `_step_toward` 가
-> 거기에 스냅하므로, 한 차례를 끝낸 유닛은 사거리 **딱 그 거리**에 선다. 그
-> 자리에서 다시 잰 거리는 부동소수 오차로 88.0 바로 **위**에 떨어지기 일쑤라
-> 여유 없는 `dist <= strike_dist()` 는 거짓이 되고, 유닛은 이미 도착한 정지점을
-> 향해 0px 씩 "이동"하다가 `ADVANCE_MAX_SEC` 교착으로만 차례를 접는다 —
-> 공격은 한 번도 성립하지 않는다.
+> **The range check must always carry the `STRIKE_DIST_EPSILON` (0.5px) slack.**
+> The approach stop point is `target.pos − dir × strike_dist()` and `_step_toward` snaps to it,
+> so a unit that finished a turn stands at **exactly** the range distance. Re-measuring from
+> that spot often lands just **above** the reach due to floating-point error, so a slack-less
+> `dist <= strike_dist()` is false, and the unit "moves" 0px at a time toward the stop point it
+> already reached until it folds its turn only via the `ADVANCE_MAX_SEC` stalemate — the attack
+> never happens.
 
-### `_settle()` — 원위치로 돌아가지 않는다
-한 차례가 끝나면 `_settle(u)` 가 **지금 서 있는 자리를 `anchor_pos` 로 굳히고**
-IDLE 로 되돌린다. 접근 교착이나 타겟 소실로 차례를 접을 때도 같은 경로다.
-결과:
+### `_settle()` — no return to the original spot
+When a turn ends, `_settle(u)` **fixes the spot it is standing on as `anchor_pos`** and returns
+it to IDLE. Folding a turn due to an approach stalemate or a lost target takes the same path.
+Result:
 
-- 근접은 때린 자리에 눌러앉으므로 **적진 쪽으로 계속 파고든다**. 원거리도
-  270px 안까지 들어간 자리에 남는다.
-- `IDLE` 의 앵커 복원 이동(`SETTLE_SPEED_MULT` 0.85)은 진형으로 돌아가는
-  이동이 아니고, **넉백을 되돌리는 이동도 아니다** — 넉백은 앵커를 함께 밀기
-  때문에(아래 [넉백](#넉백-피격-피드백--재접근-거리) 참고) 밀리는 동안 이
-  드리프트는 할 일이 없다. 남는 역할은 바닥면 클램프 등으로 어긋난 잔차를
-  추스르는 것뿐이다.
-- 타겟 거리(`_pick_target`)도 갱신된 앵커에서 잰다.
+- Melee stays where it hit, so it **keeps digging into the enemy side**. Ranged also stays at
+  the spot it moved into within its approach distance.
+- The anchor-restore movement in `IDLE` (`SETTLE_SPEED_MULT` ← `ENGAGE_SETTLE_SPEED_MULT`) is not a move back into
+  formation, and **not a move that undoes knockback either** — knockback pushes the anchor
+  along with it (see [Knockback](#knockback-hit-feedback--re-approach-distance) below), so this
+  drift has nothing to do while being pushed. Its only remaining role is tidying up residue
+  from things like the floor clamp.
+- Target distance (`_pick_target`) is also measured from the updated anchor.
 
-### 넉백 (피격 피드백 + 재접근 거리)
-명중하면 대상에게 초기 속도가 실리고 `KNOCK_DAMP`(9.0/s)로 지수 감쇠한다 —
-근접 `KNOCK_IMPULSE_MELEE`(420) ≈ 47px, 원거리 `KNOCK_IMPULSE_RANGED`(150)
-≈ 17px 밀려난다. **밀리는 방향은 공격자로부터 멀어지는 그 방향 그대로다** —
-사이드뷰 시절에는 세로 성분을 `KNOCK_VERTICAL_SCALE`(0.35, **삭제됨**)로 눌러
-거의 수평으로만 밀었는데(벨트에서 세로는 원근 표현일 뿐 전술적 의미가 없었다),
-탑뷰에서는 세로도 실제 거리라 누르면 위아래로 선 두 사람 사이에서만 넉백이
-사라진다. **넉백은 상태와 무관하게 매 프레임 흐른다.**
+### Knockback (hit feedback + re-approach distance)
+On a hit, the target gets an initial velocity that decays exponentially with `KNOCK_DAMP`
+(`ENGAGE_KNOCK_DAMP`) — melee `KNOCK_IMPULSE_MELEE` (`ENGAGE_KNOCK_IMPULSE_MELEE`) pushes much further
+than ranged `KNOCK_IMPULSE_RANGED` (`ENGAGE_KNOCK_IMPULSE_RANGED`). **The push direction is exactly away from the attacker** — in the side-view days the
+vertical component was squashed with `KNOCK_VERTICAL_SCALE` (0.35, **deleted**) to push almost
+only horizontally (on the belt vertical was just perspective, with no tactical meaning), but in
+top-down vertical is real distance too, and squashing it would make knockback disappear only
+between two units standing one above the other. **Knockback flows every frame regardless of
+state.**
 
-> **밀려난 만큼 앵커도 같이 밀린다** (`_apply_knockback`). 앵커를 제자리에 두면
-> `_tick_passive` 의 복원 드리프트(`move_speed × SETTLE_SPEED_MULT`)가 넉백 초기
-> 속도보다 빨라서, 맞은 유닛이 **맞은 그 프레임 안에** 앵커로 되돌아간다 —
-> `_step_toward` 는 6px 안이면 목표로 스냅하므로 잔차조차 남지 않는다. 즉
-> 넉백이 화면에 **전혀 보이지 않았다**. 밀려난 자리를 앵커로 함께 옮기면 밀린
-> 만큼이 그대로 남고, 그래서 때린 쪽은 다음 차례에 그 거리를 다시 좁혀야 한다 —
-> 근접이 매 타격마다 파고드는 모션이 여기서 나온다. "밀려난 자리가 새 자리"는
-> `_settle()` 의 "공격을 끝낸 자리가 새 자리"와 같은 규칙이다. 되돌리지 말 것.
+> **The anchor is pushed by the same amount** (`_apply_knockback`). If the anchor stayed put,
+> the restore drift in `_tick_passive` (`move_speed × SETTLE_SPEED_MULT`) is faster than the
+> knockback initial velocity, so the hit unit returned to its anchor **within the very frame it
+> was hit** — `_step_toward` snaps to the goal within 6px, so not even residue remained. That
+> is, knockback was **not visible on screen at all**. Moving the anchor along to the pushed
+> spot keeps the full push, so the attacker has to close that distance again next turn — this
+> is where the melee "dig in on every hit" motion comes from. "The pushed-to spot is the new
+> spot" is the same rule as `_settle()`'s "the spot where the attack finished is the new spot".
+> Do not revert it.
 
-피해나 스탯에 얹히는 효과는 없다 — 넉백이 바꾸는 것은 위치와 그로 인한 재접근
-거리뿐이다.
+There is no effect on damage or stats — knockback changes only position and the resulting
+re-approach distance.
 
-### 타겟 선정 (`_pick_target`)
-점수 = `거리 / 존재감`, **낮을수록 매력적**. 빈사(HP 35% 미만)면
-`LOW_HP_FOCUS`(0.6) 가중, **같은 팀이 이미 노린 적**이면 노린 횟수만큼
-`FOCUS_BONUS`(0.78^n, 하한 0.45) 가중.
+### Target selection (`_pick_target`)
+Score = `distance / presence`, **lower is more attractive**. Near death (HP below `ENGAGE_LOW_HP_FOCUS_RATIO`) applies
+the `LOW_HP_FOCUS` (`ENGAGE_LOW_HP_FOCUS`) weight, and **an enemy the same team has already targeted** gets
+`FOCUS_BONUS` (`ENGAGE_FOCUS_BONUS`^n, floor `ENGAGE_FOCUS_BONUS_FLOOR`) per time targeted.
 
-> 턴제에서는 무대에 한 명만 나와 있으므로 "아군이 이미 물고 있는 적"을
-> **누적 카운터(`_focus_count`)** 로 센다 — 라운드가 넘어가도 비우지 않는다.
-> 라운드 경계에서 끊으면 딜이 흩어져 처치가 거의 안 나온다(실시간 시절에는
-> 동시 행동이 이 역할을 했다).
+> In turn-based play only one unit is on the stage at a time, so "an enemy an ally is already
+> on" is counted with **a cumulative counter (`_focus_count`)** — it is not cleared when the
+> round changes. Resetting it at round boundaries scatters damage so kills almost never happen
+> (in the real-time days simultaneous action played this role).
 
-> **암살자는 예외 — 뒷줄을 노린다** (`dives_backline`). 존재감 어그로를
-> 무시하고 원거리 적에게 `DIVE_FOCUS`(0.40) 가중을 준다. **이 분기가 없으면
-> 원거리 메크가 교전 내내 단 한 대도 맞지 않는다** — 앞줄이 더 가깝고
-> 존재감까지 두 배(4 vs 2)라 모든 근접이 앞줄만 물기 때문. 실측으로 확인된
-> 구멍이라 되돌리지 말 것.
+> **Assassins are the exception — they target the back row** (`dives_backline`). They ignore
+> presence aggro and give ranged enemies a `DIVE_FOCUS` (`ENGAGE_DIVE_FOCUS`) weight. **Without this branch a
+> ranged mech is never hit even once during the whole engage** — the front row is closer and
+> even has higher presence (mechs.csv), so every melee bites only the front row. A hole confirmed
+> by measurement; do not revert.
 
-> **약자 멸시(암살 R)는 표적 선정에 끼지 않는다.** 이 카드는 **1라운드가 돌기
-> 전에** 터지는 선제 타격이다 — `setup()` 이 `_build_order` 뒤에 부르는
-> `_contempt_opening()` 이 손패에 든 [약자 멸시]의 충전을 통째로 태우고
-> (`MechSkillSystem.take_contempt_charges`), 태운 수만큼 **체력이 가장 적은 적**
-> (`_weakest_enemy`, 비율이 아니라 절대값)을 `CONTEMPT_DMG_MULT`(0.5) 배 공격력으로
-> 때린다. 오버클럭은 태우지 않는다(`allow_extra = false`) — 개시 타격이 다시 추가
-> 공격을 낳으면 카드 한 장이 교전을 혼자 끝낼 수 있다.
+> **약자 멸시 (Contempt for the Weak, assassin R) does not take part in target selection.**
+> This card is a pre-emptive strike that fires **before round 1 runs** — `_contempt_opening()`,
+> which `setup()` calls after `_build_order`, burns all the Charge on the [약자 멸시] in hand
+> (`MechSkillSystem.take_contempt_charges`), and for each one burned hits **the enemy with the
+> least HP** (`_weakest_enemy`, absolute value, not ratio) with `CONTEMPT_DMG_MULT` (`ENGAGE_CONTEMPT_DMG_MULT`) ×
+> attack. It does not roll overclock (`allow_extra = false`) — if the opening strike spawned
+> extra attacks again, one card could end an engage on its own.
 >
-> 예전에는 **겨눔 강제**였다: 스택이 남은 동안 그 파일럿이 체력이 가장 적은 적만
-> 노렸고 한 차례에 스택 하나를 소모했다(`u.contempt_pick`). 그러면 카드의 값이
-> "몇 라운드짜리 교전인가"에 통째로 매달려(라운드가 모자라면 스택이 남은 채 교전이
-> 끝난다), 손에 들고 있는 것과 결과가 이어지지 않았다. 지금은 개시 순간에 다 쓰므로
-> 라운드 수와 무관하다.
+> It used to be **forced aiming**: while stacks remained, that pilot targeted only the
+> lowest-HP enemy and spent one stack per turn (`u.contempt_pick`). That hung the card's whole
+> value on "how many rounds is this engage" (if rounds ran short the engage ended with stacks
+> left), so what was in hand did not connect to the outcome. Now it is all spent at the opening
+> moment, so it is independent of the round count.
 
 ---
 
-## 메크가 무대에 얹는 것들
+## What mechs add to the stage
 
-무대의 규칙은 `TurnEngageSim` 이 굴리고, **판정은 전부 `MechSkillSystem` 의
-질의 함수**에 물어본다 — 스탯을 직접 밀지 않는다는 그 모듈의 규약이 여기서도
-그대로다. 다섯 자리다.
+The stage's rules are driven by `TurnEngageSim`, and **every check asks a query function of
+`MechSkillSystem`** — that module's contract of not pushing stats directly holds here too.
+There are five hook points.
 
-| 무엇 | 어디 | 규칙 |
+| What | Where | Rule |
 |---|---|---|
-| **전탄 발사**(원딜 I) | `_resolve_attack` | 이 한 차례의 대상 집합이 **적 전원**이 된다. 대가(공격력 절반)는 `mechs.csv` atk 12 에 이미 들어가 있다 |
-| **오버클럭**(암살 P) | `_strike_one` | 피해 직후 굴려 성공하면 **같은 대상에게** 한 번 더. `allow_extra = false` 로 다시 부르므로 추가 공격이 추가 공격을 낳지 않는다 |
-| **불굴**(지원 V) | `_apply_damage` | 팀 전원이 한 번씩, 체력 1 아래로 내려가지 않는다. **포탑 사격도 같은 함수를 지난다** — 파일럿 공격에만 걸면 포탑 한 방에 죽는 구멍이 남는다 |
-| **약자 멸시**(암살 R) | `setup` → `_contempt_opening` | 1라운드 전에 충전 수만큼 최저 HP 적을 공격력 50% 로 때린다. 위 타겟 선정 절 참조 |
-| **강타 / 기절**([강타] 카드) | `_strike_one` → `_advance_order` | 장전된 파일럿이 때린 적은 **다음 차례를 통째로 잃는다**. 순서 배열에서 빼지 않고 `_advance_order` 가 건너뛰므로 살아 있는 사람들의 상대 순서는 그대로다. `MechSkillSystem._stun_applied` 가 **같은 적 두 번**을 막는다 — 없으면 근접 하나가 한 적을 교전 내내 잠재운다 |
+| **전탄 발사 (Full Barrage, ADC I)** | `_resolve_attack` | The target set for this one turn becomes **every enemy**. The cost (lowered attack) is already baked into Barrage's `atk` in `mechs.csv` |
+| **오버클럭 (Overclock, assassin P)** | `_strike_one` | Rolled right after damage; on success hits **the same target** once more. Called again with `allow_extra = false`, so an extra attack never spawns another extra attack |
+| **불굴 (Indomitable, support V)** | `_apply_damage` | Once per team member, cannot drop below 1 HP. **Turret fire goes through the same function** — hooking only pilot attacks would leave a hole where one turret shot kills |
+| **약자 멸시 (Contempt for the Weak, assassin R)** | `setup` → `_contempt_opening` | Before round 1, hits the lowest-HP enemy once per Charge at `ENGAGE_CONTEMPT_DMG_MULT` × attack. See the Target selection section above |
+| **Smash / stun ([강타] (Smash) card)** | `_strike_one` → `_advance_order` | An enemy hit by a loaded pilot **loses its whole next turn**. It is not removed from the order array; `_advance_order` skips it, so the relative order of the living is unchanged. `MechSkillSystem._stun_applied` blocks **the same enemy twice** — without it a single melee would keep one enemy asleep for the whole engage |
 
-`_resolve_attack` 이 **대상 집합을 정하고** `_strike_one` 이 그 하나하나를
-굴리는 두 층으로 갈린 것이 전탄 발사와 오버클럭 때문이다: 앞은 한 차례에 여러
-대상, 뒤는 같은 대상에 여러 번이라 같은 함수로는 표현되지 않는다.
+`_resolve_attack` **deciding the target set** and `_strike_one` rolling each one are split into
+two layers because of Full Barrage and Overclock: the former is several targets in one turn, the
+latter several hits on the same target, and one function cannot express both.
 
-**피해 훅**: `_strike_one` 이 명중할 때마다 `MechSkillSystem.on_engage_damage`
-를 지나므로 영혼 수확(전사 L)과 고통과 쾌감(탱커 N)이 무대에서도 걸린다.
+**Damage hook**: every hit of `_strike_one` goes through `MechSkillSystem.on_engage_damage`, so
+영혼 수확 (Soul Harvest, warrior L) and 고통과 쾌감 (Pain and Pleasure, tank N) also trigger on
+the stage.
 
-**교전 한 번짜리 상태**는 `on_engage_start`(참가자 확정 직후, `_begin`)가 켜고
-`on_engage_end`(`_finish_engage`)가 걷는다 — 강타 장전과 불굴 장부 둘. 약자 멸시는
-개시 타격 한 번으로 끝나 남는 상태가 없다. 반응 장갑도 그 짝에 없다: 남은 겹수가 곧 다음 교전까지 가는 값이라
-전장을 떠날 때 걷힌다.
+**Per-engage state** is turned on by `on_engage_start` (right after participants are fixed, in
+`_begin`) and cleared by `on_engage_end` (`_finish_engage`) — the Smash load and the Indomitable
+ledger. 약자 멸시 ends with its single opening strike and leaves no state. 반응 장갑 (Reactive
+Armor) is not in that pair either: its remaining layers are exactly the value carried to the next
+engage, so they are cleared when leaving the battlefield.
 
-**파일럿 카드 쪽 종료 훅**: `_finish_engage` 는 메크 훅 바로 뒤에
-`CardPhaseManager.on_engage_end(참가자)` 도 부른다 — 살아남은 참가자가 손에 든
-[자신감] 을 손패 맨 왼쪽으로 재배치한다(`card_phase/README.md`).
+**End hook on the pilot-card side**: right after the mech hook, `_finish_engage` also calls
+`CardPhaseManager.on_engage_end(participants)` — surviving participants move the [자신감]
+(Confidence) in hand to the far left of the hand (`card_phase/README.md`).
 
-## 교전이 끝난 뒤에도 답해야 하는 것 (`_last_stats`)
+## What must still be answerable after the engage ends (`_last_stats`)
 
-`engage:N` 절 **뒤에** 오는 절이 교전 결과를 묻는다 — [우세한 전장] 의
-`gen_hand:19|per_kill`("교전에서 생존할 시 처치한 적 수만큼")과 [단계 B] 의
-`phase_b`("교전에서 적이 처치되면"). 그래서 둘이 성립한다.
+Clauses that come **after** the `engage:N` clause ask about the engage result — [우세한 전장]
+(Dominant Battlefield)'s `gen_hand:19|per_kill` ("교전에서 생존할 시 처치한 적 수만큼" — "if
+you survive the engage, as many as enemies killed") and [단계 B] (Phase B)'s `phase_b`
+("교전에서 적이 처치되면" — "if an enemy is killed in the engage"). So two things must hold.
 
-1. **`CardPhaseManager._effect_engage` 가 `engage_finished` 를 await 한다.**
-   기다리지 않으면 그 절들이 첫 라운드가 돌기도 전에, 즉 처치 수가 언제나 0 인
-   시점에 정산된다.
-2. **`_finish_engage` 가 `_sim.stats` 의 사본을 남긴다.** `_on_dashboard_confirmed`
-   가 `_sim = null` 로 무대를 치우고 **그 뒤에** 효과 체인이 깨어나므로,
-   `last_engage_kills(p)` / `survived_last_engage(p)` 는 사본을 읽는다. 교전
-   하나짜리 값이라 다음 교전이 덮어쓴다.
+1. **`CardPhaseManager._effect_engage` awaits `engage_finished`.** Without waiting, those
+   clauses would settle before even the first round runs, i.e. at a point where the kill count
+   is always 0.
+2. **`_finish_engage` leaves a copy of `_sim.stats`.** `_on_dashboard_confirmed` clears the
+   stage with `_sim = null`, and the effect chain wakes up **after that**, so
+   `last_engage_kills(p)` / `survived_last_engage(p)` read the copy. It is a single-engage value
+   and the next engage overwrites it.
 
 ---
 
-## 무대 — 탑뷰 바닥면, 자리는 전장 타일이 **정한다(방향만)**
-무대는 위에서 살짝 눕혀 내려다본 **바닥면 하나**다. 좌우가 진영을 나누지 않는다 —
-자리를 정하는 것은 **전장 타일**이다. 다만 반영하는 것은 그 칸의 **방향**뿐이고
-**물리적 거리는 반영하지 않는다**: 여덟 칸 떨어져 달려온 정글러와 두 칸 옆의
-정글러가 무대에서는 거의 같은 자리에 선다(둘 다 "왼쪽에서 왔다").
+## Stage — top-down floor; the battlefield tiles **decide the positions (direction only)**
+The stage is **a single floor plane** seen from above, tilted slightly. Left/right does not
+divide the sides — what decides positions is **the battlefield tiles**. But only the
+**direction** of that cell is reflected; **physical distance is not**: a jungler who ran in from
+eight cells away and a jungler two cells over stand in almost the same spot on the stage (both
+"came from the left").
 
 ```
         무대 (1240 × 1180)                 전장에서 이랬다면
   ┌────────────────────────────┐        ┌──────────────┐
-  │               A A          │        │      [A][A]  │   윗타일 2
+  │               A A          │        │      [A][A]  │   upper tile 2
   │                            │        │              │
-  │     J                      │   ←    │  [J]         │   왼쪽 정글 1
+  │     J                      │   ←    │  [J]         │   left jungle 1
   │                            │        │              │
-  │               B B          │        │      [B][B]  │   아랫타일 2
+  │               B B          │        │      [B][B]  │   lower tile 2
   └────────────────────────────┘        └──────────────┘
-      위·아래·왼쪽이라는 **방향**만 남는다. 몇 칸이었는지는 남지 않고,
-      바닥에 칸 윤곽도 그리지 않는다(있지도 않은 축척을 말하게 되므로).
+      Only the **direction** — up · down · left — remains. How many cells it was does not,
+      and no cell outlines are drawn on the floor (they would claim a scale that does not exist).
 ```
+(Diagram labels: "무대" = stage; "전장에서 이랬다면" = if it looked like this on the battlefield.)
 
-| 상수 | 값 | 의미 |
+| Constant | Value | Meaning |
 |---|---|---|
-| `STAGE_W` / `STAGE_H` | 1240 / 1180 | 바닥면 크기. 유닛은 항상 이 안에 갇힌다 |
-| `CELL_SPAN_X` / `CELL_SPAN_Y` | 300 / 235 | **한 칸이 무대에서 차지하는 거리의 기준.** 세로가 짧은 것은 쿼터뷰라 깊이가 눌려 보이기 때문 |
-| `CELL_CLUSTER_RX` / `_RY` | 106 / 60 | 한 칸에 여럿이 설 때 칸 중심에서 흩어지는 반경 |
-| `CELL_CLUSTER_CROWD` | 0.07 | 한 칸 인원이 둘을 넘을 때마다 위 반경에 얹는 비율 |
-| `SLOT_JITTER_X/Y` | 24 / 16 | 완벽한 격자를 깨는 흐트러짐 |
-| `CELL_REACH_MAX` / `CELL_REACH_HALF` | 1.55 / 0.9 (칸) | **거리 포화 곡선.** d 칸 떨어진 참가자는 `MAX × d / (d + HALF)` 칸에 선다 — 1칸 0.82 · 2칸 1.07 · 3칸 1.19 · 5칸 1.31 · 10칸 1.42 · ∞ **1.55 = 465 / 364px**. 방향은 그대로, 거리는 순서만 남기고 상한에 수렴한다 |
-| `STAGE_FIT_MARGIN` | 150 | 오프셋 바운딩 박스가 이 여백 안에 들어가도록 배치를 통째로 줄인다 |
-| `UNIT_RADIUS` | 40 | 초상화 원 반지름 |
-| `STAGE_MARGIN` | 130 | `stage_rect()` — 카메라가 비출 수 있는 범위를 바닥면보다 이만큼 넓힌다. 초상화가 발밑에서 `EngageArena.UNIT_LIFT`(82) 만큼 떠 있어서 딱 맞게 두면 맨 윗줄 얼굴이 잘린다 |
+| `STAGE_W` / `STAGE_H` | 1240 / 1180 | Floor size. Units are always confined inside it |
+| `CELL_SPAN_X` / `CELL_SPAN_Y` | 300 / 235 | **The reference distance one cell occupies on the stage.** Vertical is shorter because quarter-view squashes depth |
+| `CELL_CLUSTER_RX` / `_RY` | 106 / 60 | Radius by which several units on one cell scatter from the cell centre |
+| `CELL_CLUSTER_CROWD` | 0.07 | Ratio added to the radius above for each unit beyond two on one cell |
+| `SLOT_JITTER_X/Y` | 24 / 16 | Scatter that breaks a perfect grid |
+| `CELL_REACH_MAX` / `CELL_REACH_HALF` | 1.55 / 0.9 (cells) | **Distance saturation curve.** A participant d cells away stands at `MAX × d / (d + HALF)` cells — 1 cell 0.82 · 2 cells 1.07 · 3 cells 1.19 · 5 cells 1.31 · 10 cells 1.42 · ∞ **1.55 = 465 / 364px**. Direction is kept; distance keeps only its order and converges to the cap |
+| `STAGE_FIT_MARGIN` | 150 | The whole layout is shrunk so the offset bounding box fits inside this margin |
+| `UNIT_RADIUS` | 40 | Portrait circle radius |
+| `STAGE_MARGIN` | 130 | `stage_rect()` — widens the range the camera may show by this much beyond the floor. The portrait floats `EngageArena.UNIT_LIFT` (82) above the feet, so with an exact fit the top row's faces get cut off |
 
-`STAGE_W` / `STAGE_H` 는 `EngageArena.BAND_RECT`(1032×1000) 와 거의 같은 비율로
-잡혀 있다. **여기를 키우면 카메라 최소 배율이 떨어져 유닛이 잘게 보인다.**
+`STAGE_W` / `STAGE_H` are set at nearly the same ratio as `EngageArena.BAND_RECT` (1032×1000).
+**Enlarging them lowers the camera's minimum zoom and units look small.**
 
-### 타일 → 무대 (`_place_from_grid`)
-1. 참가자를 `grid_pos` 로 묶는다. 가담 포탑의 칸도 같은 표에 넣는다 — 축소
-   배율은 화면에 들어가야 하는 것 **전부**를 보고 정해져야 한다.
-2. 칸마다 오프셋을 낸다(`_cell_offset`). 육각 화면 좌표의 차를 칸 피치로 나눠
-   **칸 단위 벡터**로 만든 다음 — **표를 손으로 적지 않는다.** 육각 오프셋
-   좌표는 홀/짝 열마다 이웃 규칙이 달라 손으로 적은 표가 조용히 틀리기 쉬운
-   자리이고(이 저장소가 이미 부호 버그로 앓은 적이 있다), `hex_to_screen` 은
-   이미 답을 아는 함수다 — 그 **단위 방향만** 남기고 길이를 `CELL_REACH_*`
-   포화 곡선으로 다시 매긴 뒤 `CELL_SPAN_*` 을 성분별로 곱한다(세로 압축).
-3. **바운딩 박스 중심으로 옮긴다**(`_recentre`). 무대 한가운데에 놓아야 하는
-   것은 교전이 열린 칸이 아니라 참가자들이 만든 덩어리다 — 열린 칸을 중심으로
-   못박으면 그 칸이 무리의 끝일 때([돌격] · [강습]처럼 무대를 지정한 적 쪽으로
-   옮기는 카드, 오브젝트 칸에서 열리는 교전) 무대 절반이 통째로 빈다. 옮겨도
-   상대 위치는 한 픽셀도 안 바뀐다.
-4. 바운딩 박스가 무대를 넘으면 **통째로 줄인다**(`_fit_scale`). 배치가 말하는
-   것은 상대 위치 하나뿐이라, 배율이 줄어도 "위 둘 / 아래 둘 / 왼쪽 하나"는
-   그대로 읽힌다. **거리를 압축한 뒤로는 이 축소가 사실상 안 걸린다** — 오프셋
-   상한(465 / 364)이 정반대 방향 둘을 세워도 930 × 728 이라 여백을 뺀 무대
-   (940 × 880) 안에 들어간다. 예전 방식(거리 그대로 + 660/517 클램프)에서는
-   같은 오브젝트 교전이 1260 × 517 로 벌어져 **배율 0.712**, 곧 얼굴이 29%
-   작아진 채 서로 화면 끝에 서 있었다(실측).
-5. 칸 안의 자리(`_seat_cell`) — 혼자면 칸 한가운데, 여럿이면 **팀0 은 왼쪽
-   반원 · 팀1 은 오른쪽 반원**으로 나눠 앉는다. 칸을 벗어나지 않으면서 어느
-   쪽이 내 팀인지가 읽힌다. 팀을 통째로 좌우로 가르는 것과는 다르다 — 가르는
-   단위가 무대 전체가 아니라 **칸 하나**라, 타일 배치는 그대로 남는다.
-6. 포탑은 자기 칸 위에 그대로 선다.
+### Tile → stage (`_place_from_grid`)
+1. Group participants by `grid_pos`. Joining turrets' cells go into the same table too — the
+   shrink factor must be decided by looking at **everything** that has to fit on screen.
+2. Compute an offset per cell (`_cell_offset`). The difference in hex screen coordinates is
+   divided by the cell pitch to make a **vector in cell units** — **do not write a table by
+   hand.** Hex offset coordinates have different neighbour rules for odd/even columns, so a
+   hand-written table silently goes wrong easily (this repo has already suffered a sign bug
+   there), and `hex_to_screen` is a function that already knows the answer — keep only its
+   **unit direction**, re-scale the length with the `CELL_REACH_*` saturation curve, then
+   multiply by `CELL_SPAN_*` per component (vertical compression).
+3. **Shift to the bounding-box centre** (`_recentre`). What belongs at the centre of the stage
+   is the cluster the participants form, not the cell where the engage opened — pinning the
+   opening cell as the centre leaves half the stage empty when that cell is at the edge of the
+   group (cards like [돌격] (Rush) · [강습] (Assault) that move the stage toward the
+   designated enemy, engages opened on an objective cell). Shifting does not change relative
+   positions by a single pixel.
+4. If the bounding box exceeds the stage, **shrink it as a whole** (`_fit_scale`). The only thing
+   the layout states is relative position, so "two up / two down / one left" still reads even at
+   a smaller scale. **Since distance compression, this shrink practically never kicks in** — even
+   two units at the offset cap (465 / 364) in exactly opposite directions are 930 × 728, which
+   fits in the stage minus margins (940 × 880). With the old method (raw distance + a 660/517
+   clamp) the same objective engage spread to 1260 × 517, **scale 0.712**, i.e. faces 29% smaller
+   standing at opposite screen edges (measured).
+5. Seats inside a cell (`_seat_cell`) — alone, at the cell centre; several, split so **team 0
+   sits on the left half-circle · team 1 on the right half-circle**. Which side is my team reads
+   without leaving the cell. This differs from splitting teams left/right as a whole — the unit
+   of splitting is **one cell**, not the whole stage, so the tile layout is preserved.
+6. Turrets stand on their own cell as is.
 
-이 자리는 **개시 시점의 앵커**일 뿐이다 — 첫 공격을 끝내는 순간부터 앵커는
-그때그때 서 있는 자리로 갱신되므로(`_settle`) 배치는 개시 한 번만 의미가 있다.
+These positions are only **the anchors at the opening** — from the moment a unit finishes its
+first attack its anchor is updated to wherever it stands (`_settle`), so the layout matters only
+once, at the opening.
 
-### [강습] — `drop_in`
-`mech_cards.csv` 의 [강습](id 30)만 `engage:3|at_target|drop_in` 을 단다.
-**시전자가 지정한 적의 칸으로 전장 위에서 실제로 이동해 그 교전에 참가한다**
-(`CardPhaseManager._effect_engage`). 예전에는 무대만 대상 주변에서 열리고 명단은
-대상 반경 1칸으로 모았으므로, 멀리서 건 시전자는 **자기가 연 교전에서 빠졌다** —
-그러면 "시전자 팀 선공 + 시전자가 자기 팀 맨 앞"(`_build_order`)이라는 선제
-공격권이 시전자 없는 교전으로 새어 나갔다. 지금은 명단과 무대를 **옮긴 자리에서**
-세우고(그동안만 `grid_pos` 를 대상 칸으로 놓았다가 되돌린다), 개시 확인 화면에서
-**확인을 누른 뒤에** 실제로 옮긴다(`log_move` "card-leap" · `anim_pilot_move` ·
-`harvest_camp_under` — 이동 카드와 같은 배선). 취소가 아무 일도 없던 것이 되려면
-VS 화면이 떠 있는 동안 시전자가 제자리여야 하기 때문이다. 위치 고정 스킬
-(`blocks_move`)이 걸린 시전자는 뛰어들지 않는다. **복귀 규칙은 그대로다** — 남의
-레인 · 정글에 내려앉으면 작전 단계 끝에 위치 이탈로 HQ 에 돌아간다(깊이 뛰어드는
-대가).
+### [강습] (Assault) — `drop_in`
+Only [강습] (id 30) in `mech_cards.csv` carries `engage:N|at_target|drop_in`.
+**The caster actually moves on the battlefield to the designated enemy's cell and joins that
+engage** (`CardPhaseManager._effect_engage`). Previously only the stage opened around the target
+and the roster was gathered within radius 1 of the target, so a caster who cast from afar **was
+left out of the engage it opened** — the first-strike right of "caster team first + caster at the
+front of its team" (`_build_order`) leaked into an engage without the caster. Now the roster and
+stage are set up **at the moved-to spot** (only during that, `grid_pos` is set to the target cell
+and then restored), and the actual move happens **after confirm is pressed** on the opening
+confirmation screen (`log_move` "card-leap" · `anim_pilot_move` · `harvest_camp_under` — same
+wiring as the move cards). For cancel to be as if nothing happened, the caster must stay put
+while the VS screen is up. A caster under a position-lock skill (`blocks_move`) does not leap in.
+**The return-to-base rule is unchanged** — landing on someone else's lane · jungle sends it back
+to HQ for being out of position at the end of the operation phase (the price of diving deep).
 
-무대에서는 시전자만 **적 진형 한가운데(적 유닛 위치의 무게중심)에 낙하**하고,
-렌더러가 그 바닥 마커에 금색 겹링을 하나 더 두른다. 라운드 판정은 다른 교전과
-같다.
+On the stage only the caster **drops into the middle of the enemy formation (centroid of enemy
+unit positions)**, and the renderer draws one more gold double ring around its floor marker.
+Round resolution is the same as any other engage.
 
-**[돌격](id 17)은 `move_in`** — 전장 이동(위 배선 전부)은 `drop_in` 과 같고
-**무대 낙하만 없다**. 시전자는 옮겨 간 칸의 자기 팀 반원에 다른 참가자와 똑같이
-선다(`drop_in` 은 `move_in` 을 함의한다 — `_effect_engage` 의 `move_in` 판정).
+**[돌격] (id 17) is `move_in`** — the battlefield move (all the wiring above) is the same as
+`drop_in`, **only the stage drop is missing**. The caster stands in its team's half-circle on the
+moved-to cell just like any other participant (`drop_in` implies `move_in` — the `move_in` check
+in `_effect_engage`).
 
-### 바닥 마커 충돌 — 발밑 원이 곧 콜리전
-**화면에 그려지는 그 바닥 원이 충돌 판정이다.** 두 유닛의 발밑 타원은 절대
-겹치지 않는다(`TurnEngageSim._separate_units`) — 탑뷰에서 "이 유닛이 어디에 서
-있는가"를 말하는 것은 82px 떠 있는 초상이 아니라 이 원이라, 원이 겹치면 자리
-자체가 안 읽힌다. 그리는 쪽과 부딪히는 쪽이 갈라지지 않도록 `EngageArena` 의
-`GROUND_RX/RY` 는 **시뮬레이터 상수를 그대로 읽는다**(`FOOT_RX` 30 / `FOOT_RY` 13).
+### Floor-marker collision — the circle underfoot is the collider
+**The floor circle drawn on screen is the collision check.** Two units' foot ellipses never
+overlap (`TurnEngageSim._separate_units`) — in top-down what says "where this unit stands" is
+this circle, not the portrait floating 82px up, so if circles overlap the position itself cannot
+be read. So that drawing and colliding never diverge, `EngageArena`'s `GROUND_RX/RY` **read the
+simulator constants directly** (`FOOT_RX` 30 / `FOOT_RY` 13).
 
-- **판정은 정규화한 원 공간에서 한다.** y 를 `FOOT_ASPECT`(= RX/RY ≈ 2.31)배로
-  늘리면 납작한 타원 둘이 반지름 `FOOT_RX` 인 원 둘이 되고, 그러면 겹침도
-  밀어내는 방향도 원 하나로 풀린다 — 타원끼리의 최단 거리에는 닫힌 해가 없다.
-  밀어낸 뒤 y 를 다시 나누어 원래 공간으로 돌린다. 실제 거리로는 **나란히 서면
-  60px · 위아래로 서면 26px** 이 최소 간격이다.
-- **공격 동작과 다투지 않는다.** 최소 간격 60px 이 `MELEE_REACH`(88)보다 작아,
-  붙어서 때리려는 접근이 이 판정에 밀려나는 일이 없다. 실제로 일하는 자리는
-  둘이다 — **개시 배치**(한 칸에 몰린 무리 · 오브젝트 교전 · [강습]의 낙하)와
-  **넉백으로 떠밀린 자리**.
-- **앵커도 같이 민다.** 앵커를 제자리에 두면 IDLE 의 복원 드리프트가 밀어낸
-  만큼을 곧장 되돌려 두 유닛이 겹친 자리에서 밀고 당기며 떤다 —
-  `_apply_knockback` 이 앵커를 함께 옮기는 것과 같은 이유고, 이 모듈에는
-  원위치 복귀가 없으므로 **밀려난 자리가 곧 새 자리**다.
-- **시신은 밀리지 않는다.** 쓰러진 자리에 그대로 남고 산 유닛만 그 밖으로
-  밀려난다. 시신도 바닥 원을 그대로 갖고 있으므로 판정에서 빼면 산 유닛이
-  시신 위에 겹쳐 선다.
-- **겹침은 한 프레임 안에 다 푼다.** 이완 비율을 1 미만으로 두고 몇 프레임에
-  걸쳐 나눠 밀면 넉백처럼 깊이 파고드는 한 방에서 원이 겹친 채로 그려진다
-  (실측: 비율 0.5 · 3회에서 최악 **7.7% 겹침**). 밀린 쪽이 그 자리에서 곧장
-  비켜 주는 편이 도리어 "부딪혀서 밀렸다"로 읽힌다. 한 쌍씩 즉시 반영하는
-  가우스-자이델이라 벽(`_clamp_to_ground`)에 몰려 못 밀린 몫은 다음 쌍이
-  이어받고, 그 사슬이 인원수만큼 길어져서 개시 배치는 16회 · 매 프레임은
-  6회를 돈다.
-- 도는 자리는 셋이다 — `setup()` 의 **낙하까지 끝난 뒤**([강습]의 시전자야말로
-  이미 누가 서 있는 자리로 떨어진다), 그리고 `step()` / `step_afterglow()` 의
-  **맨 끝**(접근 이동보다 뒤라야 그 프레임에 실제로 그려지는 자리가 정리된
-  자리가 된다).
+- **The check is done in normalized circle space.** Stretching y by `FOOT_ASPECT`
+  (= RX/RY ≈ 2.31) turns the two flat ellipses into two circles of radius `FOOT_RX`, so both the
+  overlap and the push direction resolve as circles — the shortest distance between ellipses has
+  no closed-form solution. After pushing, y is divided back to return to the original space. In
+  real distance the minimum gap is **60px side by side · 26px one above the other**.
+- **It does not fight the attack motion.** The minimum gap of 60px is smaller than
+  `MELEE_REACH` (`ENGAGE_MELEE_REACH`), so an approach trying to hit up close is never pushed away by this check.
+  It does real work in two places — **the opening layout** (a crowd on one cell · objective
+  engages · the [강습] drop) and **spots shoved by knockback**.
+- **It pushes the anchor too.** If the anchor stayed put, IDLE's restore drift would immediately
+  undo the push and the two units would jitter, pushing and pulling at the overlap — same reason
+  `_apply_knockback` moves the anchor along, and since this module has no return to the original
+  spot, **the pushed-to spot is the new spot**.
+- **Corpses are not pushed.** They stay where they fell and only living units are pushed out of
+  them. Corpses still have their floor circle, so excluding them from the check would let living
+  units stand on top of corpses.
+- **Overlap is fully resolved within one frame.** With a relaxation ratio below 1, spreading the
+  push over several frames draws circles overlapping on a deep single hit like knockback
+  (measured: ratio 0.5 · 3 iterations gave worst-case **7.7% overlap**). The pushed unit stepping
+  aside right away actually reads better as "bumped and got pushed". It is Gauss-Seidel applying
+  each pair immediately, so the share that could not be pushed because of a wall
+  (`_clamp_to_ground`) is taken over by the next pair, and that chain grows as long as the head
+  count, so the opening layout runs 16 iterations · each frame 6.
+- It runs in three places — at `setup()` **after the drop is done** (the [강습] caster above all
+  lands on a spot where someone already stands), and at the **very end** of `step()` /
+  `step_afterglow()` (it must come after the approach move so the spot actually drawn that frame
+  is the resolved one).
 
-실측(헤드리스, 위 "헤드리스 검증" 방식): 열 명을 **한 칸에 통째로 몰아넣은**
-최악의 배치에서도 개시 최소 간격 `1.000`(= 딱 맞닿음), 3라운드를 다 돌리는
-동안의 최악값도 `1.000`, 바닥면 이탈 0.
+Measured (headless, the "Headless verification" method below): even in the worst layout with
+**all ten crammed onto one cell**, the opening minimum gap is `1.000` (= exactly touching), the
+worst value over all 3 rounds is also `1.000`, and floor escapes are 0.
 
-### 바닥에 그리는 것 (`EngageArena`)
-- **칸 윤곽은 그리지 않는다.** 예전에는 참가자가 밟고 있던 칸마다 납작한
-  육각을 하나씩 깔았다(`_draw_cell_marks` / `_sim.cell_marks` /
-  `cell_mark_radius`, **셋 다 삭제됨**). 거리를 방향으로만 압축한 지금은 무대의
-  한 칸이 전장의 한 칸과 같은 크기가 아니라, 그 육각이 있지도 않은 축척을
-  말하고 유닛이 자기 칸 밖에 서 있는 것처럼 보인다. 배치가 무작위가 아님을
-  말하는 것은 이제 윤곽이 아니라 **방향**이다 — 왼쪽 정글에서 온 정글러는
-  왼쪽에 서고, 위 타일에서 온 둘은 위에 선다.
-- **바닥 격자** — 간격이 칸 피치의 절반이라 거리감이 읽힌다.
-- 유닛 하나는 **세 겹**이다 — 바닥에 누운 타원(정확한 지상 위치) → 그 타원을
-  가리키는 손잡이 쐐기 → 그 위에 뜬 원형 초상(`UNIT_LIFT` 82px). 사이드뷰
-  시절의 쐐기는 "바라보는 좌우"를 말했지만, 탑뷰에서 읽혀야 하는 것은 방향이
-  아니라 **이 얼굴이 바닥 어느 지점에 서 있는가**다(초상이 떠 있어 그대로는
-  자기 자리를 가리키지 못한다). 방향은 `EUnit.facing`(단위 **벡터**)이 들고
-  공격 모션의 각도로만 쓰인다 — 좌우 부호 하나(`facing_x`)로는 위아래로 마주
-  선 둘을 구분할 수 없다.
-- 그리는 순서는 **깊이(y) 오름차순** — 아래쪽(가까운) 유닛이 위에 겹친다.
-
----
-
-## 포탑 — 참가자가 아니라 ---
-
-## 포탑 — 참가자가 아니라 **배경 지형**
-전장에서는 포탑이 파일럿을 공격하지 않지만, 교전에 가담한 포탑은 **공격한다**.
-예전의 "반경 2칸 안의 포탑이 등장하고 사거리원 안이 금지구역" 규칙은 **삭제**
-됐다. 지금 규칙은 하나뿐이다:
-
-> **적이 걸어온 교전에서만**, 그리고 **참가 파일럿이 자기 팀 포탑 칸 위에 서
-> 있을 때만** 그 포탑이 가담한다.
-
-즉 포탑은 **허깅하고 있는 우리 편에게 적이 교전을 강제했을 때** 방어에 나서는
-것이지, 우리가 그 자리에서 먼저 교전을 열 때 따라 나오는 화력이 아니다. 포탑
-칸에 눌러앉아 카드로 교전을 여는 쪽이 포탑까지 끼고 싸우면 그 칸이 일방적인
-안전지대가 되고, 수비 측은 그 자리를 흔들 수단이 없다.
-
-그래서 `TurnEngageSim._build_turrets` 가 거르는 자리가 둘이다.
-
-1. **오브젝트 교전(전령 / 용)에는 어느 팀 포탑도 안 낀다.** 시전자가 없는
-   교전(`_has_caster == false`)이라 "누가 걸었는가"가 없고, 무대도 좌우 중립
-   칸에서 열린다 — 걸어 놓을 수비 구조물이 애초에 없는 싸움이다.
-2. **시전자 팀의 포탑은 빠진다**(`t.team == initiator_team`). 교전을 연 쪽이 곧
-   강제한 쪽이므로, 가담할 수 있는 것은 언제나 **걸린 쪽**의 포탑뿐이다.
-
-결투(`duel`)도 카드가 여는 교전이라 같은 규칙을 탄다 — 대상이 자기 포탑 칸에
-서 있으면 그 포탑이 붙고, 시전자 쪽 포탑은 붙지 않는다.
-
-- 가담한 포탑은 **사거리 제한이 없다** — 무대 전체가 사정권이다.
-- 포탑도 **라운드마다 한 번** 사격한다(파일럿 전원이 돈 뒤, 시전자 팀 먼저).
-  피해는 `TurretData.atk`, 사격 모션은 `TURRET_FIRE_HOLD`(0.30초).
-  예전의 자기 ATB(`game_config.TURRET_SPEED`)는 **키까지 삭제**됐다.
-- 대상은 **포탑에서 가장 가까운 적** — 자기 진영 깊숙이 파고든 유닛이 먼저 맞는다.
-- 포탑도 명중 판정을 굴린다. hit 스탯이 없으므로 `TURRET_HIT`(50) 를 쓴다.
-- 무대에서 **포탑 HP 는 깎이지 않는다** — 포탑 파괴는 전장 쪽 룰로 남는다.
-- 포탑 처치는 **성장치가 어느 파일럿에게도 귀속되지 않는다**
-  (`mark_pilot_dead(victim, null)`).
-
-### 무대 참가자가 아니라 지형 구조물이다
-포탑은 **자기가 실제로 서 있는 칸 위**에 선다 — 파일럿과 같은 `_cell_offset`
-매핑을 지나므로, 가담 조건("우리 편이 그 포탑 칸에 서 있다") 자체가 곧 "포탑과
-허깅하는 아군이 같은 자리에 있다"가 되어 그림이 저절로 맞는다.
-`EngageArena._draw_turrets` 가 유닛보다 **먼저**(= 뒤에) 바닥 타원 + 육각 탑신 +
-포신으로 그린다. 포신은 마지막으로 쏜 대상 쪽을 향한다.
-
-**카메라는 포탑을 프레이밍하지 않는다**(`EngageArena._focus_positions` 는 생존
-유닛의 발밑과 얼굴만 본다). 포탑까지 담으면 무대 끝까지 프레임에 넣느라 배율이
-떨어져 정작 싸우는 유닛이 잘게 보인다. 대신 포탑이 프레임 밖으로 나갈 수
-있다 — 싸움이 한쪽으로 쏠리면 반대편 포탑은 안 보이고 포격만 화면 밖에서
-날아온다.
-
-투사체 출발 높이는 `TURRET_LIFT`(30)이고 `_shot_origin` 이 같은 값을 쓴다 —
-포신 높이를 바꾸면 포격선 출발점이 자동으로 따라온다.
-
-사이드뷰 시절의 **"지평선 한 줄에 나란히"**(`TURRET_BACK_OFFSET` 90 →
-x 225 / 1015, `TURRET_BG_Y` 48, `TURRET_BG_STEP` 160, 렌더러의
-`TURRET_BG_SCALE` 0.58)는 삭제됐다. 그 자리는 무대에 지평선이 있었기에
-성립하던 것이고, 지금은 포탑도 파일럿과 같은 바닥면 위에 있다.
+### What is drawn on the floor (`EngageArena`)
+- **No cell outlines are drawn.** Previously a flat hexagon was laid under every cell a
+  participant stood on (`_draw_cell_marks` / `_sim.cell_marks` / `cell_mark_radius`, **all three
+  deleted**). Now that distance is compressed to direction only, one stage cell is not the same
+  size as one battlefield cell, so those hexagons would claim a scale that does not exist and
+  make units look like they stand outside their own cell. What says the layout is not random is
+  now **direction**, not outlines — the jungler from the left jungle stands on the left, the two
+  from the upper tile stand above.
+- **Floor grid** — spacing is half the cell pitch, so a sense of distance reads.
+- One unit has **three layers** — an ellipse lying on the floor (exact ground position) → a
+  handle wedge pointing at that ellipse → a round portrait floating above it (`UNIT_LIFT` 82px).
+  In the side-view days the wedge said "facing left/right", but in top-down what must read is not
+  direction but **which floor point this face stands on** (the portrait floats, so on its own it
+  cannot point at its spot). Direction is carried by `EUnit.facing` (a unit **vector**) and used
+  only as the attack-motion angle — a single left/right sign (`facing_x`) cannot tell apart two
+  units facing each other vertically.
+- Draw order is **ascending depth (y)** — lower (nearer) units overlap on top.
 
 ---
 
-## 명중 판정---
+## Turrets — **background terrain**, not participants
+On the battlefield turrets (포탑) do not attack pilots, but a turret that joins an engage
+**does attack**. The old rule "turrets within radius 2 appear and their range circle is a
+forbidden zone" was **deleted**. There is now just one rule:
 
-## 명중 판정 — 피해는 전장과 동일, **명중률은 별개**
+> A turret joins **only in an engage the enemy started**, and **only while a participating pilot
+> stands on its own team's turret cell**.
+
+That is, a turret comes out to defend **when the enemy forces an engage on our unit hugging it**;
+it is not firepower that tags along when we open an engage from that spot ourselves. If the side
+sitting on a turret cell and opening engages with cards got to fight with the turret too, that
+cell would become a one-sided safe zone and the defending side would have no way to shake it.
+
+So `TurnEngageSim._build_turrets` filters in two places.
+
+1. **No turret of either team joins an objective engage (Herald / Dragon).** It is an engage
+   without a caster (`_has_caster == false`), so there is no "who started it", and the stage opens
+   on a neutral cell between the sides — a fight with no defensive structure to rely on in the
+   first place.
+2. **The caster team's turret is excluded** (`t.team == initiator_team`). The side that opened the
+   engage is the side that forced it, so only **the challenged side's** turret can ever join.
+
+A duel (`duel`) is also a card-opened engage and follows the same rule — if the target stands on
+its own turret cell that turret joins, and the caster side's turret does not.
+
+- A joining turret has **no range limit** — the whole stage is in range.
+- A turret also fires **once per round** (after all pilots, caster team first).
+  Damage is `TurretData.atk`, fire motion `TURRET_FIRE_HOLD` (`ENGAGE_TURRET_FIRE_HOLD`).
+  Its old ATB (`game_config.TURRET_SPEED`) was **deleted down to the key**.
+- Target is **the enemy closest to the turret** — a unit that dug deep into its side gets hit first.
+- Turrets roll hit checks too. They have no hit stat, so `TURRET_HIT` (`ENGAGE_TURRET_HIT`) is used.
+- On the stage **turret HP is not reduced** — turret destruction remains a battlefield rule.
+- A turret kill **credits growth points (성장치) to no pilot** (`mark_pilot_dead(victim, null)`).
+
+### Terrain structure, not a stage participant
+A turret stands **on the cell it actually occupies** — it goes through the same `_cell_offset`
+mapping as pilots, so the join condition ("our unit stands on that turret cell") itself means
+"the turret and the ally hugging it are in the same spot", and the picture lines up on its own.
+`EngageArena._draw_turrets` draws it **before** units (= behind) as a floor ellipse + hexagonal
+tower body + barrel. The barrel points toward the last target it shot.
+
+**The camera does not frame turrets** (`EngageArena._focus_positions` looks only at the feet and
+faces of living units). Including turrets would lower the zoom to fit the stage edges into frame,
+and the units actually fighting would look small. In exchange a turret can go out of frame — if
+the fight shifts to one side the opposite turret is not visible and only its shots fly in from off
+screen.
+
+Projectile launch height is `TURRET_LIFT` (30), and `_shot_origin` uses the same value — change
+the barrel height and the shot line's starting point follows automatically.
+
+The side-view-era **"side by side on one horizon line"** (`TURRET_BACK_OFFSET` 90 →
+x 225 / 1015, `TURRET_BG_Y` 48, `TURRET_BG_STEP` 160, the renderer's `TURRET_BG_SCALE` 0.58) was
+deleted. That only worked because the stage had a horizon; now turrets are on the same floor
+plane as pilots.
+
+---
+
+## Hit resolution — damage and hit formula same as the battlefield, **hit input is separate**
 ```
-base   = hit / (hit + evasion)                                 # 전장과 같은 기준값
-명중   = randf() < ENGAGE_HIT_MIN + (ENGAGE_HIT_MAX - ENGAGE_HIT_MIN) × base
-피해   = attacker.atk        (보호막부터 흡수, 그 다음 HP)
+base   = engage_hit / (engage_hit + engage_eva)
+명중   = randf() < PilotData.hit_chance(...)  # HIT_MIN + (HIT_MAX - HIT_MIN) × base   # 명중 = hit
+피해   = attacker.atk        (absorbed by shield first, then HP)               # 피해 = damage
 ```
-피해 공식은 전장(`SimulationCore.roll_hit` / `_apply_damage`)과 공유하지만
-**명중 굴림만 교전 전용**이다. 전장보다 훨씬 가까이 붙어 싸운다는 전제라
-**최소 80% / 평균 90% / 최대 100%** 구간으로 리맵한다
-(`ENGAGE_HIT_MIN = 0.80`, `ENGAGE_HIT_MAX = 1.00`).
+The damage formula is shared with the battlefield (`SimulationCore.roll_hit` / `_apply_damage`),
+and so is the hit (명중) remap: `PilotData.hit_chance` maps the ratio linearly onto the band
+`PILOT_HIT_MIN` / `PILOT_HIT_MAX` (const.csv). The engage-only `ENGAGE_HIT_MIN` / `ENGAGE_HIT_MAX`
+were **deleted** — what stays engage-specific is the **input** (`engage_hit` / `engage_eva`
+instead of the battlefield's `hit` / `evasion`).
 
-| hit vs evasion | base | 전장 | 교전 |
-|---|---|---|---|
-| 45 vs 55 | 0.450 | 45.0% | **89.0%** |
-| 50 vs 50 | 0.500 | 50.0% | **90.0%** |
-| 55 vs 45 | 0.550 | 55.0% | **91.0%** |
-| 70 vs 30 | 0.700 | 70.0% | **94.0%** |
+The remap is monotonically increasing, so **the stat ranking order is preserved**. Changing the
+band moves the battlefield and the engage together.
+**Laning stats (`lane_stat_mod`) are not applied in engages** — that multiplier is only applied
+inside `roll_hit`.
 
-보정은 단조 증가라 **스탯 우열 순서는 그대로 보존된다**. 전장 명중률을 바꾸고
-싶으면 `SimulationCore.roll_hit` 쪽을 건드려야 하며, 두 값은 서로 영향을 주지
-않는다. **라인전 스탯(`lane_stat_mod`)은 교전에 반영되지 않는다** — 그 배율은
-`roll_hit` 안에서만 곱해진다.
+### Throughput — measured (headless 5v5 ×8, 3-round engage)
+Stats: one real mechs.csv `hp` / `atk` row per role (tank/fighter/assassin/supporter/sniper) · hit 55 / evasion 45.
 
-### 처리량 — 실측 (헤드리스 5v5 ×8, engage:3 = 3라운드)
-스탯: hp 240/160/90/130/75 · atk 6/14/26/9/24 · hit 55 / evasion 45
-(탱커/격투/암살/서포터/스나이퍼 순, 실제 mechs.csv 값).
-
-| 지표 | 값 |
+| Metric | Value |
 |---|---|
-| 3라운드 관전 시간 | **13.3초** (편차 ±0.2초) |
-| 3라운드당 처치(양 팀 합) | **1.0건** (8회 전부 정확히 1건) |
-| 생존 | 8회 전부 t0=5 / t1=4 |
-| 팀 누적 받은 딜: 근접 vs 원거리 | **2747 vs 468** (약 5.9:1) |
+| Kills per 3 rounds (both teams) | **1.0** (exactly 1 in all 8 runs) |
+| Survivors | t0=5 / t1=4 in all 8 runs |
+| Team cumulative damage taken: melee vs ranged | **2747 vs 468** (about 5.9:1) |
 
-**ATB 시절보다 훨씬 온건하다** — 그때는 9초에 공격 판정 40.9회 / 처치 2.75건
-이었다. 라운드마다 한 명이 한 번씩만 때리므로 3라운드 = 최대 30타(포탑 제외)
-이고, 그래서 한 번의 전투 개시가 교전을 끝장내지 않는다.
+**Much milder than in the ATB days** — back then it was 40.9 attack checks / 2.75 kills in 9 s.
+Each unit hits only once per round, so 3 rounds = at most 30 hits (excluding turrets), which is
+why a single battle opening does not finish off an engage.
 
-교전 치사율을 조절하는 노브는 셋이다. **셋 다 교전 전용이라 전장 밸런스를
-건드리지 않는다**:
-1. **카드의 `engage:N`** — 라운드 수. 가장 직접적인 노브이고 데이터(cards.csv)에
-   있다.
-2. **`ENGAGE_HIT_MIN` / `ENGAGE_HIT_MAX`** (0.80 / 1.00) — 명중률 구간.
-3. **`DIVE_FOCUS`** (0.40) — 암살자가 뒷줄로 얼마나 새는가. 1.0 으로 두면
-   암살자도 앞줄만 물어서 뒷줄이 다시 무적이 된다.
+There are three knobs for engage lethality. **Only 1 and 3 are engage-only** — the hit band is
+shared with the battlefield:
+1. **The card's `engage:N`** — round count. The most direct knob, and it lives in the data
+   (cards.csv).
+2. **`PILOT_HIT_MIN` / `PILOT_HIT_MAX`** (const.csv) — the hit-chance band (formerly the
+   engage-only `ENGAGE_HIT_MIN` / `ENGAGE_HIT_MAX`, deleted).
+3. **`DIVE_FOCUS`** (`ENGAGE_DIVE_FOCUS`) — how much assassins leak to the back row. At 1.0 assassins also bite
+   only the front row and the back row becomes invincible again.
 
-관전 페이싱 노브는 따로다: `MOVE_SPEED_*` / `STRIKE_HOLD_*` /
-`ACTOR_GAP_SEC` / `ROUND_GAP_SEC`. 이들은 피해량에 영향을 주지 않는다.
+Spectating-pace knobs are separate: `ENGAGE_MOVE_SPEED_*` / `ENGAGE_STRIKE_HOLD_*` /
+`ENGAGE_ACTOR_GAP_SEC` / `ENGAGE_ROUND_GAP_SEC` (const.csv). These do not affect damage.
 
-반면 **피해량(atk 1회분)은 전장 룰과 공유**하므로 손대면 전장까지 같이 움직인다.
-
----
-
-## 종료
-- **라운드 소진**: `round_index >= total_rounds` 인 라운드가 끝나면 `finished`.
-- **한쪽 전멸**: `active_count(team) == 0` 이면 즉시 `finished`.
-- **저HP**: 아무 일도 일어나지 않는다. 빈사 유닛도 평소와 똑같이 나가 싸운다.
-  HP 30% 미만은 무대 위 테두리가 붉게 맥동하는 것(`LOW_HP_RATIO`)으로만
-  표시되며 게임플레이 의미는 없다.
-
-### 종료 유예 (`END_HOLD_SEC` = 2.0초)
-`finished` 가 서자마자 대시보드를 띄우면 **마지막 처치가 결과창에 먹혀** "방금
-누가 죽은 거지?" 가 된다. 그래서 매니저는 종료 판정과 대시보드 사이에
-`EngagePhaseManager.END_HOLD_SEC`(2.0초) 유예를 둔다.
-
-- 유예 동안 `_process` 는 `step()` 대신 **`TurnEngageSim.step_afterglow(dt)`**
-  를 부른다 — 투사체 위치 / `hit_flash` / `swing_t` / 넉백 감쇠만 흐르고 전투
-  판정(순서 진행, 이동, 공격, 포탑, 종료)은 일절 돌지 않는다. `round_index` 도
-  멈추므로 **대시보드의 라운드 수는 실제로 싸운 라운드 수 그대로**다.
-- 무대는 계속 `_process` 를 돌리므로 카메라도 살아 있다.
-- 매니저가 `EngageArena.mark_engage_over(reason)` 로 상단 상태 라벨을 종료
-  사유 배너(`교전 종료 — 적군 전멸` / `아군 전멸` / `양측 전멸` /
-  `N라운드 완료`)로 승격시키고 한 번 튕겨(scale 1.18 → 1.0) 시선을 끈다.
-- 유예 값을 0 으로 두면 즉시 대시보드로 돌아간다.
-
-### 전장 상태 반영
-- 데미지는 `PilotData.hp` / `.shield` 에 **직접** 적용된다. 교전이 끝나면
-  전장에 그대로 반영된다.
-- 처치 → `_bs.mark_pilot_dead(pilot, killer)`. 전장과 같은 사망 경로라 리스폰 턴
-  스케일링(`respawn_turns_now()` = 5 + 경과 턴/10)과 전사 연출, **성장치 정산**이
-  무대 처치에도 그대로 걸린다. 준 피해는 `_bs.record_pilot_damage` 로 **피해자의
-  장부**에 적히고, 그 대상이 쓰러질 때 라스트힛 현상금과 피해 비례 어시스트로
-  정산된다(전장·공격 카드와 같은 경로) — 성장치 규칙은 `BattleSim` 의 `SCORE_*`
-  절 참고. 처치가 곧 성장이므로 **교전 한 번이 성장 경쟁의 분기점**이고, 그래서
-  결과 대시보드에 성장 열이 붙는다(바로 아래).
-- **무대에서 난 처치는 킬로그에 바로 뜨지 않는다.** 아레나가 화면을 덮고 있어
-  어차피 보이지 않으므로 `ui/KillFeed.gd` 가 `is_active()` 를 보고 보류했다가,
-  결과 대시보드를 닫는 `_on_dashboard_confirmed` 가 `flush_pending()` 을 불러
-  0.25초 간격으로 한 줄씩 풀어놓는다 — 그 교전에서 무슨 일이 있었는지가 한 번에
-  읽힌다.
-- **`grid_pos` 는 건드리지 않는다.** 살아남은 파일럿은 원래 셀에 그대로 남는다.
-  저HP 파일럿은 작전 단계 종료 시 `RecallSystem.process_phase_end_recalls()`
-  의 HP 임계 복귀가 어차피 본진으로 데려간다.
+On the other hand **damage (one atk's worth) is shared with the battlefield rules**, so touching
+it moves the battlefield too.
 
 ---
 
-## 화면 구성 (`EngageArena`)
+## End
+- **Rounds used up**: `finished` when the round with `round_index >= total_rounds` ends.
+- **One side wiped**: `finished` immediately when `active_count(team) == 0`.
+- **Low HP**: nothing happens. Near-death units go out and fight just as usual.
+  HP below 30% is shown only by the border pulsing red on the stage (`LOW_HP_RATIO`) and has no
+  gameplay meaning.
+
+### End grace (`END_HOLD_SEC` ← `ENGAGE_END_HOLD_SEC`)
+If the dashboard showed up the moment `finished` is set, **the last kill would be swallowed by
+the result window** and you get "who just died?". So the manager puts an
+`EngagePhaseManager.END_HOLD_SEC` (`ENGAGE_END_HOLD_SEC`, const.csv) grace between the end check and the dashboard.
+
+- During the grace `_process` calls **`TurnEngageSim.step_afterglow(dt)`** instead of `step()` —
+  only projectile positions / `hit_flash` / `swing_t` / knockback decay flow, and no combat
+  resolution (order advance, movement, attack, turrets, end check) runs at all. `round_index`
+  also stops, so **the dashboard's round count is exactly the number of rounds actually fought**.
+- The stage keeps running `_process`, so the camera stays alive.
+- The manager promotes the top status label to the end-reason banner with
+  `EngageArena.mark_engage_over(reason)` (`교전 종료 — 적군 전멸` (Engage over — enemy wiped) /
+  `아군 전멸` (ally wiped) / `양측 전멸` (both wiped) / `N라운드 완료` (N rounds complete)) and
+  bounces it once (scale 1.18 → 1.0) to catch the eye.
+- Setting the grace to 0 goes straight back to the immediate dashboard.
+
+### Applying to the battlefield state
+- Damage is applied **directly** to `PilotData.hp` / `.shield`. When the engage ends it carries
+  over to the battlefield as is.
+- Kill → `_bs.mark_pilot_dead(pilot, killer)`. It is the same death path as the battlefield, so
+  respawn-turn scaling (`respawn_turns_now()` = `RESPAWN_TURNS` (game_config.csv) + elapsed turns / `BATTLE_RESPAWN_TURN_SCALE_DIV` (const.csv)), the death animation, and
+  **growth-point settlement** all apply to stage kills too. Damage dealt is written to **the
+  victim's ledger** with `_bs.record_pilot_damage`, and when that target falls it is settled as
+  the last-hit bounty and damage-proportional assists (same path as the battlefield and attack
+  cards) — for growth-point rules see the `SCORE_*` section of `BattleSim`. A kill is growth, so
+  **a single engage is a turning point of the growth race**, which is why the result dashboard
+  has a growth column (right below).
+- **Kills on the stage do not show in the kill log right away.** The arena covers the screen so
+  they would not be visible anyway; `ui/KillFeed.gd` checks `is_active()` and holds them, and
+  `_on_dashboard_confirmed`, which closes the result dashboard, calls `flush_pending()` to release
+  them one line at a time at 0.25 s intervals — what happened in that engage reads at once.
+- **`grid_pos` is not touched.** Surviving pilots stay on their original cell. Low-HP pilots are
+  taken back to base anyway by the HP-threshold return-to-base in
+  `RecallSystem.process_phase_end_recalls()` at the end of the operation phase.
+
+---
+
+## Screen layout (`EngageArena`)
 ```
-EngageArena (Control, 풀스크린, MOUSE_FILTER_STOP)
-├─ dim        ColorRect 풀스크린 (검정 α 0.86)   ← 무대 밖을 눌러 준다
-├─ 타이틀(240) / 라운드 카운터(292) / 라운드 칸(350) / 차례·배너(372)
-├─ _clip      Control BAND_RECT, clip_contents = true   ← 여기서 잘린다
-│   └─ _world DrawProxy(Node2D)  position/scale = 카메라
-│        └─ 데미지 팝업 Label 들 (무대 좌표계)
-├─ _hud       DrawProxy(Node2D) 화면 좌표계 — 밴드 테두리 · 라운드 칸
-├─ _roster    DrawProxy(Node2D) 화면 좌표계 — 하단 정사각 썸네일 + 체력 바
-└─ 아군/적군 헤더 Label 둘
+EngageArena (Control, fullscreen, MOUSE_FILTER_STOP)
+├─ dim        ColorRect fullscreen (black α 0.86)   ← presses down everything outside the stage
+├─ title (240) / round counter (292) / round pips (350) / turn·banner (372)
+├─ _clip      Control BAND_RECT, clip_contents = true   ← clipped here
+│   └─ _world DrawProxy(Node2D)  position/scale = camera
+│        └─ damage popup Labels (stage coordinate system)
+├─ _hud       DrawProxy(Node2D) screen coordinates — band border · round pips
+├─ _roster    DrawProxy(Node2D) screen coordinates — bottom square thumbnails + HP bars
+└─ two ally/enemy header Labels
 ```
-초상화 밑에는 **아무 이름도 적지 않는다.** 예전에는 역할 이름(`T0` / `F1`)이
-상시로 찍혔는데, 90px 칸에서 그 표는 초상화가 이미 말하고 있는 것을 한 번 더
-적을 뿐이었다(`_name_labels` / `_refresh_names` 는 그때 삭제됐다). 그 줄
-(`STRIP_SUB_Y`)은 **결과 화면에서 이 교전으로 번 성장치가 쓴다**.
+**No name is written under portraits.** Previously the role name (`T0` / `F1`) was always
+printed, but in a 90px cell that label only restated what the portrait already said
+(`_name_labels` / `_refresh_names` were deleted then). That line (`STRIP_SUB_Y`) is **used on the
+result screen for the growth points earned in this engage**.
 
-### 헤더 두 줄
-- **라운드 카운터**(`_round_lbl`, y 292) — `턴 2 / 3`. **화면 용어는 턴이다** —
-  코드와 이 문서는 여전히 라운드(`round_index` / `total_rounds`)라 부르지만 플레이어가
-  읽는 글자(카운터 · 시작 배너 · 결과 로그 · 카드 설명문)는 전부 "턴"이다. 마지막
-  턴에 들어가면 색이 `TIME_LOW` 로 바뀐다. 결투는 예산이 없으므로 `턴 2` 만. 아레나
-  기본 제목도 "전투 개시" → **"교전"** 으로 바뀌었다.
-- **차례 표시**(`_phase_lbl`, y 372) — `T0 의 차례` / `턴 2 시작`, 종료
-  후에는 종료 사유 배너. `TurnEngageSim.actor_label()` 이 문자열을 만든다.
-  **미리보기 모드에서는 `set_hint()` 가 이 자리를 쓴다** — 아무도 아직
-  움직이지 않은 화면에서 "지금 누구 차례인가"는 답할 수 없는 질문이다.
-- **라운드 칸**(`_draw_round_pips`, y 350) — 라운드 하나가 칸 하나이고 진행한
-  라운드까지 채워진다. `ROUND_PIP_MAX`(8)를 넘으면 칸이 실처럼 가늘어져
-  오히려 안 읽히므로 연속 바로 바뀐다(결투 상한 10라운드가 여기 걸린다).
-  실시간 시절의 남은 시간 바(MM:SS.s)는 삭제됐다.
+### The two header lines
+- **Round counter** (`_round_lbl`, y 292) — `턴 2 / 3` (Turn 2 / 3). **The on-screen term is turn
+  (턴)** — code and this doc still call it round (`round_index` / `total_rounds`), but every text
+  the player reads (counter · start banner · result log · card description) is "턴". Entering the
+  last turn changes the colour to `TIME_LOW`. A duel has no budget, so just `턴 2`. The arena's
+  default title also changed from "전투 개시" → **"교전"** (Engage).
+- **Turn indicator** (`_phase_lbl`, y 372) — `T0 의 차례` (T0's turn) / `턴 2 시작` (Turn 2
+  start), and after the end, the end-reason banner. `TurnEngageSim.actor_label()` builds the
+  string. **In preview mode `set_hint()` uses this slot** — on a screen where nobody has moved
+  yet, "whose turn is it now" is an unanswerable question.
+- **Round pips** (`_draw_round_pips`, y 350) — one pip per round, filled up to the rounds played.
+  Beyond `ROUND_PIP_MAX` (8) the pips get thread-thin and actually stop reading, so it switches to
+  a continuous bar (a duel, capped at `ENGAGE_DUEL_MAX_ROUNDS`, can hit this). The real-time era's time-remaining bar
+  (MM:SS.s) was deleted.
 
-### 무대 밴드
-`BAND_RECT`(24, 406, 1032×1000) **한 사각형 안에서만** 무대가 보인다. 그 밖
-(전장 · 핸드 행 · HUD)은 풀스크린 딤으로 눌린다. 바닥면(1240×1180)이 가로세로
-모두 거의 딱 맞는 비율이다.
+### Stage band
+The stage is visible **only inside one rectangle**, `BAND_RECT` (24, 406, 1032×1000). Everything
+outside it (battlefield · hand row · HUD) is pressed down by the fullscreen dim. The floor
+(1240×1180) fits it almost exactly in both width and height.
 
-**사이드뷰 시절의 두 배 높이다**(500 → 1000). 벨트에서 세로는 원근 표현이라
-납작해도 됐지만, 탑뷰의 세로는 **실제 거리**다 — 위 타일과 아래 타일이 같은
-밴드 안에 들어가야 배치가 전장과 같은 모양으로 읽힌다. 높이를 벌어 놓은 만큼
-위쪽 블록(제목 240 / 라운드 292 / 칸 350 / 차례 372)은 위로 올라가고, 아래쪽
-스트립은 세로 300짜리 tall 크롭을 포기하고 **90×90 정사각 썸네일**로 내려앉는다.
+**It is twice the height of the side-view era** (500 → 1000). On the belt, vertical was
+perspective so being flat was fine, but in top-down vertical is **real distance** — the upper
+tile and the lower tile must fit inside the same band for the layout to read in the same shape
+as the battlefield. To make that height, the upper block (title 240 / round 292 / pips 350 /
+turn 372) moved up, and the bottom strip gave up its 300-tall crop and settled into **90×90
+square thumbnails**.
 
-**왜 `_draw()` 를 자기 자신에 안 쓰는가****왜 `_draw()` 를 자기 자신에 안 쓰는가**: Control 은 자기 그림을 먼저 그리고
-그 위에 자식을 그린다. 딤 ColorRect 가 자식이므로 자기 `_draw` 로 그린 무대는
-딤 **아래**에 깔려 통째로 어두워진다. 딤보다 뒤에 붙은 프록시 노드에 그려야
-"무대 밖만 딤드"가 성립한다.
+**Why not use `_draw()` on itself**: a Control draws its own drawing first and then its children
+on top. The dim ColorRect is a child, so a stage drawn with its own `_draw` would lie **under**
+the dim and darken entirely. It must be drawn on a proxy node attached after the dim for "only
+outside the stage is dimmed" to hold.
 
-**왜 `DrawProxy` 가 Control 이 아니라 Node2D 인가**: Control 은 DRAW 통지마다
-자기 크기로 `custom_rect` 를 다시 박는다. 크기 0 인 Control 은 빈 사각형으로
-**컬링되어 `_draw` 안의 그림이 통째로 사라진다**(자식 Label 은 자기 rect 가
-있으니 멀쩡히 보여서 더 헷갈린다). Node2D 는 실제 draw 커맨드에서 rect 를
-잡으므로 카메라 변환(scale/position) 아래에서도 안전하다.
+**Why `DrawProxy` is a Node2D, not a Control**: a Control re-stamps `custom_rect` with its own
+size on every DRAW notification. A size-0 Control is **culled as an empty rect and the drawing in
+`_draw` vanishes entirely** (child Labels have their own rect and show fine, which makes it more
+confusing). A Node2D takes its rect from the actual draw commands, so it is safe under the
+camera transform (scale/position).
 
-### 탑뷰 바닥
-지평선도 하늘도 뒷벽도 없다 — 위에서 내려다보는 화면에는 수평선이 없기
-때문이다. 바닥은 위(먼 곳) → 아래(가까운 곳)로 밝아지는 그라디언트
-(`GROUND_FAR` → `GROUND_NEAR`) 하나이고, 그 위에 얹히는 것은 옅은 격자와 무대 테두리뿐이다.
+### Top-down floor
+No horizon, no sky, no back wall — a screen looking down from above has no horizon line. The
+floor is a single gradient brightening from top (far) → bottom (near)
+(`GROUND_FAR` → `GROUND_NEAR`), and on top of it there is only a faint grid and the stage border.
 
-- **바닥 격자** — 간격이 칸 피치(`CELL_SPAN_X/Y`)의 **절반**이라 거리감이 읽힌다.
-- **칸 윤곽은 없다.** 예전에는 참가자가 밟고 있던 칸마다 납작한 육각을 하나씩
-  깔았다(`_draw_cell_marks` + `CELL_MARK_FILL/LINE`, 시뮬레이터가 축소 배율까지
-  먹여 넘긴 `cell_mark_radius` 를 반지름으로 썼다 — **전부 삭제됨**). 시작
-  자리가 타일의 *방향*만 반영하고 거리는 포화 곡선으로 압축된 지금은 무대의 한
-  칸이 전장의 한 칸과 같은 크기가 아니라, 그 육각이 있지도 않은 축척을 말하고
-  유닛이 자기 칸 밖에 서 있는 것처럼 보인다.
+- **Floor grid** — spacing is **half** the cell pitch (`CELL_SPAN_X/Y`), so a sense of distance
+  reads.
+- **No cell outlines.** Previously a flat hexagon was laid under every cell a participant stood
+  on (`_draw_cell_marks` + `CELL_MARK_FILL/LINE`, with the radius taken from `cell_mark_radius`
+  that the simulator passed with the shrink factor already applied — **all deleted**). Now that
+  start positions reflect only the tile's *direction* and distance is compressed by the
+  saturation curve, one stage cell is not the same size as one battlefield cell, so those hexagons
+  would claim a scale that does not exist and make units look like they stand outside their own
+  cell.
 
-바닥면 밖으로는 `BG_BLEED`(260px) 만큼 더 그려 둔다 — 카메라가 가장자리를
-비출 때 빈칸이 생기지 않게 하는 것이 전부다.
+The floor is drawn `BG_BLEED` (260px) beyond its edges — solely so no blank shows when the camera
+looks at the edge.
 
-유닛은 **깊이(y) 순으로 정렬해서** 그린다. 아래쪽(가까운) 유닛이 위에 겹친다.
-시뮬레이터의 `units` 배열은 팀별 순서라 그대로 그리면 원근이 깨진다.
+Units are drawn **sorted by depth (y)**. Lower (nearer) units overlap on top. The simulator's
+`units` array is in per-team order, so drawing it as is breaks perspective.
 
-유닛 하나는 **세 겹**이다.
+One unit has **three layers**.
 
-1. **바닥에 누운 타원**(`GROUND_RX`/`GROUND_RY` 30×13) — 정확한 지상 위치.
-   그림자 → 팀색 면 → 팀색 테두리 순으로 깐다. [강습]으로 낙하한 유닛은
-   여기에 금색 겹링이 하나 더 붙는다.
-2. **쐐기**(`PIN_HALF_W` 10) — 초상화 밑변에서 그 타원 윗변까지.
-3. **원형 초상**(`PilotImages.circle_for`) — 발밑에서 `UNIT_LIFT`(82px) 위.
+1. **An ellipse lying on the floor** (`GROUND_RX`/`GROUND_RY` 30×13) — exact ground position.
+   Laid in order shadow → team-colour fill → team-colour border. A unit that dropped in with
+   [강습] gets one more gold double ring here.
+2. **Wedge** (`PIN_HALF_W` 10) — from the portrait's bottom edge to the ellipse's top edge.
+3. **Round portrait (초상화)** (`PilotImages.circle_for`) — `UNIT_LIFT` (82px) above the feet.
 
-사이드뷰 시절에는 초상화 옆에 "바라보는 좌우"를 가리키는 쐐기가 붙었고 리프트가
-42px 였다. 탑뷰에서 읽혀야 하는 것은 방향이 아니라 **이 얼굴이 바닥 어느 지점에
-서 있는가**이고(초상이 떠 있어 그대로는 자기 자리를 가리키지 못한다), 그 쐐기가
-들어갈 자리를 만드느라 리프트가 82px 로 올라갔다 — 쐐기 높이 = `UNIT_LIFT` −
-`UNIT_RADIUS` − `GROUND_RY` − 5 이므로 리프트를 줄이면 쐐기가 먼저 사라진다.
+In the side-view era a wedge beside the portrait pointed "facing left/right" and the lift was
+42px. In top-down what must read is not direction but **which floor point this face stands on**
+(the portrait floats, so on its own it cannot point at its spot), and the lift went up to 82px to
+make room for that wedge — wedge height = `UNIT_LIFT` − `UNIT_RADIUS` − `GROUND_RY` − 5, so
+lowering the lift makes the wedge disappear first.
 
-방향은 `EUnit.facing`(단위 **벡터**)이 들고 **공격 모션의 각도로만** 쓰인다 —
-근접의 휘두르는 호와 원거리의 총구 섬광. 좌우 부호 하나(`facing_x`, 삭제됨)로는
-위아래로 마주 선 둘을 구분할 수 없다.
+Direction is carried by `EUnit.facing` (a unit **vector**) and used **only as the attack-motion
+angle** — the melee swing arc and the ranged muzzle flash. A single left/right sign (`facing_x`,
+deleted) cannot tell apart two units facing each other vertically.
 
-투사체도 발이 아니라 몸통 높이(`UNIT_LIFT`)에서 출발/착탄한다.
+Projectiles also launch/land at body height (`UNIT_LIFT`), not at the feet.
 
-### 카메라### 카메라
-`_update_camera()` 가 매 프레임 **생존 유닛 전원**의 바운딩 박스를 프레이밍한다.
-**참가 포탑은 넣지 않는다** — 위 [포탑](#무대-참가자가-아니라-지형-구조물이다)
-참고.
+### Camera
+`_update_camera()` frames the bounding box of **all living units** every frame.
+**Joining turrets are not included** — see
+[Turrets](#terrain-structure-not-a-stage-participant) above.
 
-| 상수 | 값 | 의미 |
+| Constant | Value | Meaning |
 |---|---|---|
-| `_cam_min_zoom` | 런타임 계산 ≈ **0.83** | 바닥면 전체(1240×1180)가 밴드에 딱 들어가는 배율. `ground_rect()` 기준 |
-| `CAM_MAX_ZOOM` | 1.55 | 유닛이 뭉쳤을 때의 상한 |
-| `CAM_PAD_X` / `CAM_PAD_Y` | 80 / **130** | 바운딩 박스 바깥 여백(무대 px). `UNIT_RADIUS` 는 별도로 더해진다. 세로가 넉넉한 것은 초상화가 발밑에서 `UNIT_LIFT`(82) 만큼 떠 있기 때문 |
-| `CAM_POS_RATE` / `CAM_ZOOM_RATE` | 4.0 / 2.6 | 지수 감쇠 계수(1/s) |
+| `_cam_min_zoom` | computed at runtime ≈ **0.83** | The zoom at which the whole floor (1240×1180) fits the band exactly. Based on `ground_rect()` |
+| `CAM_MAX_ZOOM` | 1.55 | Upper limit when units bunch up |
+| `CAM_PAD_X` / `CAM_PAD_Y` | 80 / **130** | Padding outside the bounding box (stage px). `UNIT_RADIUS` is added separately. Vertical is generous because the portrait floats `UNIT_LIFT` (82) above the feet |
+| `CAM_POS_RATE` / `CAM_ZOOM_RATE` | 4.0 / 2.6 | Exponential decay coefficients (1/s) |
 
-프레이밍 대상은 생존 유닛의 **발밑과 얼굴 둘 다**다 — 발밑만 넣으면 맨 윗줄의
-얼굴이 밴드 위로 잘린다(사이드뷰 시절에는 리프트가 42px 뿐이라 여백으로 덮였고,
-지금은 82px 다).
+Framing targets **both the feet and the faces** of living units — with only the feet, the top
+row's faces get cut off above the band (in the side-view era the lift was only 42px and the
+padding covered it; now it is 82px).
 
-`_clamp_cam_center()` 가 매 프레임 카메라를 **`stage_rect()`**(바닥면을 사방으로
-`STAGE_MARGIN` 130 넓힌 것) 안에 가둔다 — **뷰는 그려진 것이 없는 곳을 비추지
-않는다.** 클램프 기준이 `ground_rect()` 가 아닌 이유가 그 리프트이고, 최소
-배율은 여전히 `ground_rect()` 로 잡는다(여백까지 담게 하면 유닛이 잘게 보인다).
-뷰가 무대보다 넓은 축은 그냥 중앙에 고정한다. `setup()` 은 첫 프레임을 보간
-없이 스냅한다.
+`_clamp_cam_center()` confines the camera every frame to **`stage_rect()`** (the floor widened by
+`STAGE_MARGIN` 130 on all sides) — **the view never shows a place where nothing is drawn.** That
+lift is why the clamp reference is not `ground_rect()`; the minimum zoom is still taken from
+`ground_rect()` (including the margin would make units look small). On an axis where the view is
+wider than the stage, it is simply pinned to the centre. `setup()` snaps the first frame without
+interpolation.
 
-데미지 팝업은 `_world` 의 자식이라 카메라를 따라 움직이고 뷰 밖에서 잘린다.
-대신 월드 스케일까지 먹으므로 글자 크기가 배율에 휘둘리지 않도록 `1/zoom` 을
-되먹여 화면상 크기를 고정한다.
+Damage popups are children of `_world`, so they follow the camera and get clipped outside the
+view. In exchange they also take the world scale, so `1/zoom` is fed back to keep their on-screen
+size fixed and stop the text size from swinging with zoom.
 
-### 하단 초상화 스트립
-밴드 아래에 참가자 전원이 **한 줄**로 선다 — **아군 왼쪽 / 적군 오른쪽**, 가운데
-`STRIP_MID_GAP`(68px) 홈에 "VS". 5v5 면 `IIIII vs IIIII` 다.
+### Bottom portrait strip
+Below the band all participants stand in **one row** — **allies left / enemies right**, with
+"VS" in the `STRIP_MID_GAP` (68px) groove in the middle. For 5v5 it is `IIIII vs IIIII`.
 
 ```
         아군                              적군
  [I][I][I][I][I]        VS        [I][I][I][I][I]
-  ▔▔ ▔▔ ▔▔ ▔▔ ▔▔                   ▔▔ ▔▔ ▔▔ ▔▔ ▔▔   ← 체력 바 + 이름
+  ▔▔ ▔▔ ▔▔ ▔▔ ▔▔                   ▔▔ ▔▔ ▔▔ ▔▔ ▔▔   ← HP bar + name
  24 ─────────── 506   540   574 ─────────── 1056
 ```
+(Labels: "아군" = allies, "적군" = enemies.)
 
-- **왜 위아래에서 좌우로 옮겼나**: 무대에서 팀0 은 언제나 **왼쪽**에 선다.
-  스트립이 위/아래로 갈라져 있으면 "어느 쪽이 내 팀인가"를 무대와 스트립에서
-  각각 따로 읽어야 했다. 같은 좌우를 쓰면 그 질문 자체가 사라진다.
-- **초상화는 얼굴 위주 정사각 썸네일**(`PilotImages.face_for`, 256×256)을
-  `STRIP_PORTRAIT_W`×`STRIP_PORTRAIT_H`(**90×90**)로 그린다. 칸도 정사각이라
-  비율이 안 깨진다. 사이드뷰 시절에는 세로로 긴 전신 크롭(`tall_for`, 90×300)
-  이었는데, **밴드가 두 배(500 → 1000)로 커지면서 그 길이가 들어갈 자리가
-  없어졌다.** 얼굴만 남기는 편이 자리를 덜 먹고 — 스트립이 답해야 하는 질문은
-  "누구인가 · 얼마나 성한가" 둘뿐이라 — 몸은 무대가 보여 준다.
-  (`tall_for` 자체는 드래프트 · 밴픽이 여전히 쓰므로 남아 있다.)
-- 폭은 `STRIP_WIDTH` 에 **정확히** 들어맞게 잡혀 있다: 5×90 + 4×8 = 482,
-  482×2 + 68 = 1032. 두 팀 다 **가운데 홈에 붙어** 바깥으로 늘어서므로
-  (`_strip_cell_x(team, count, idx)`), 인원이 5명 미만이어도 가운데가 비지 않고
-  "마주 선" 그림이 남는다 — 예전의 "남는 칸을 양쪽으로 나눠 가운데 정렬"은
-  두 무리가 서로 멀어지는 결과가 된다.
-- 초상화 뒤에는 **뒤판**을 먼저 깐다. 얼굴 크롭은 모브 실루엣처럼 알파가
-  뚫리는 경우가 있어 뒤판이 없으면 딤드된 화면이 그대로 비친다.
-- 테두리는 팀색(`STRIP_RIM_IDLE` 2px). **행동 중(ADVANCE/STRIKE)이면 금색으로
-  굵어진다**(`STRIP_RIM_ACT` 4px) — 지금 차례를 가진 게 누구인지 아래에서도
-  읽히게 하는 장치이고, 턴제에서는 언제나 **정확히 한 명**이 금색이다.
-- 처치되면 뒤판이 붉어지고 알파가 35% 로 떨어진다. 이름 라벨은 회색이 될 뿐
-  `(처치)` 를 붙이지 않는다 — 칸이 90px 뿐이고, 처치는 초상화가 이미 말한다.
-  이름 라벨에는 `clip_text = true` 가 붙는다(가운데 정렬 Label 은 넘치면 정렬을
-  포기하고 옆 칸을 침범한다).
-- 체력 바는 초상화 폭 그대로(90×14), 보호막은 남은 체력 오른쪽에 이어 붙는다.
-- **`faces/` 텍스처는 `PilotImages.prime_into` 가 프라임해야 한다.**
-  `draw_texture_rect` 로 그리므로, 빠뜨리면 초상화 열 칸이 통째로 흰 사각형으로
-  나온다(실측 확인). `prime_into` 는 circle / faces / tall 셋을 모두 굽는다.
-- 초상화 / 체력 바는 `_roster` 프록시가 매 프레임 다시 그린다. Label 노드는
-  이름 · 팀 이름 · VS 뿐이라 `_refresh_names()` 만 돈다.
+- **Why it moved from top/bottom to left/right**: on the stage team 0 always stands on the
+  **left**. With the strip split top/bottom, "which side is my team" had to be read separately on
+  the stage and on the strip. Using the same left/right makes the question disappear.
+- **Portraits are face-focused square thumbnails** (`PilotImages.face_for`, 256×256) drawn at
+  `STRIP_PORTRAIT_W`×`STRIP_PORTRAIT_H` (**90×90**). The cell is square too, so the ratio does not
+  break. In the side-view era it was a tall full-body crop (`tall_for`, 90×300), but **when the
+  band doubled (500 → 1000) there was no room left for that height.** Keeping only the face takes
+  less room — the strip only has to answer two questions, "who is it · how healthy" — and the
+  stage shows the body. (`tall_for` itself remains because draft · ban/pick (밴픽) still use it.)
+- The width fits `STRIP_WIDTH` **exactly**: 5×90 + 4×8 = 482, 482×2 + 68 = 1032. Both teams
+  **hug the middle groove** and line up outward (`_strip_cell_x(team, count, idx)`), so even with
+  fewer than 5 the middle does not go empty and the "facing each other" picture remains — the old
+  "split leftover cells to both sides and centre" made the two groups drift apart.
+- A **backplate (뒤판)** is laid behind the portrait first. Face crops can have transparent holes,
+  like mob-pilot silhouettes, and without the backplate the dimmed screen shows through.
+- The border is team colour (`STRIP_RIM_IDLE` 2px). **While acting (ADVANCE/STRIKE) it turns gold
+  and thicker** (`STRIP_RIM_ACT` 4px) — a device so who has the turn now also reads from below; in
+  turn-based play **exactly one** unit is always gold.
+- On a kill the backplate turns red and alpha drops to 35%. The name label only turns grey and does
+  not append `(처치)` (killed) — the cell is only 90px, and the portrait already says it was killed.
+  Name labels have `clip_text = true` (a centred Label that overflows gives up centring and invades
+  the neighbouring cell).
+- The HP bar is the portrait width (90×14); shield is appended to the right of the remaining HP.
+- **`faces/` textures must be primed by `PilotImages.prime_into`.**
+  They are drawn with `draw_texture_rect`, so if missed all ten portrait cells come out as white
+  squares (confirmed by measurement). `prime_into` bakes all three: circle / faces / tall.
+- Portraits / HP bars are redrawn every frame by the `_roster` proxy. The only Label nodes are
+  names · team names · VS, so only `_refresh_names()` runs.
 
-이 스트립은 **아레나 전용**이다. 화면 상단/하단의 상시 파일럿 스트립
-(`ui/PilotStrip.gd`)과는 다른 것이며, 교전 중에는 그쪽이 딤 아래로 눌린 채
-갱신되지 않는다(무대 위 스트립이 권위 있는 표시다).
+This strip is **arena-only**. It is different from the always-on pilot strips at the top/bottom of
+the screen (`ui/PilotStrip.gd`), which stay pressed under the dim and are not updated during an
+engage (the strip on the stage is the authoritative display).
 
 ---
 
-## 참가자 수집 (변경 없음)
-시전자 셀 + 인접 6칸(반경 1 육각). 시전자는 항상 포함. 양 팀의 생존
-파일럿이 그 7칸 안에 있으면 참여한다. 정글러/레인 파일럿의 교전 스코프
-구분은 여기서 적용되지 않는다 — engage 는 그 경계를 명시적으로 넘는다.
+## Participant gathering (unchanged)
+Caster cell + the 6 adjacent cells (radius-1 hex). The caster is always included. Living pilots of
+both teams inside those 7 cells take part. The jungler / lane-pilot engage-scope distinction does
+not apply here — engage explicitly crosses that boundary.
 
-### `exclude_lane` 플래그 (현재 이 플래그를 쓰는 카드는 없음)
-이 플래그를 달고 있던 **교전(id 4) 카드는 `cards.csv` 에서 제거**되어, 지금
-카드 풀에는 이 플래그를 세우는 카드가 하나도 없다. 플래그 자체는
-`CardPhaseManager` → `CardTargetingOverlay` 프리뷰 → `start_engage` 까지
-그대로 파싱·처리되므로, 앞으로 어떤 카드든 `engage:N` 절에 `|exclude_lane`
-을 붙이면 다시 살아난다.
+### `exclude_lane` flag (no card currently uses this flag)
+The **교전 (Engage, id 4) card** that carried this flag was **removed from `cards.csv`**, so no
+card in the current pool sets it. The flag itself is still parsed and handled all the way through
+`CardPhaseManager` → `CardTargetingOverlay` preview → `start_engage`, so any future card can bring
+it back by adding `|exclude_lane` to its `engage:N` clause.
 
 ```gdscript
 # inclusion rule under exclude_lane:
 p.is_guerrilla OR _bs.neutral_zone_cells.has(p.grid_pos)
 ```
 
-## 결과 화면 (`show_dashboard`)
-**패널도 팝업도 아니다.** 무대(밴드) · 밴드 테두리 · 라운드 칸 · 차례 배너 ·
-팀 이름 두 줄을 걷어 내고(`_clip.visible = false` / `_hud.visible = false`),
-교전 내내 서 있던 **초상화 스트립만 그 자리에 남긴 채** 딤드된 배경 위에서
-그대로 성적표가 된다. 딤은 이때 `RES_DIM_COLOR`(α 0.945)로 더 어두워진다 —
-교전 중에는 밴드가 화면 한가운데를 덮고 있어 0.86 으로도 전장이 안 읽혔지만,
-그 밴드가 사라지면 격자와 초상화가 그 자리로 올라와 막대와 자리를 다툰다.
+## Result screen (`show_dashboard`)
+**It is neither a panel nor a popup.** The stage (band) · band border · round pips · turn banner ·
+two team-name lines are removed (`_clip.visible = false` / `_hud.visible = false`), and **only the
+portrait strip that stood there throughout the engage remains in place**, turning into the report
+card on the dimmed background. The dim gets darker at this point, `RES_DIM_COLOR` (α 0.945) —
+during the engage the band covers the middle of the screen so the battlefield was unreadable even
+at 0.86, but once the band disappears the grid and portraits rise into that space and compete with
+the bars.
 
-한 칸이 위에서부터 답하는 것:
+What one cell answers, from top to bottom:
 
-| 자리 | 내용 |
+| Slot | Content |
 |---|---|
-| 막대 위 | **준 피해**. 네 자리부터 `1.2k` 로 접는다(`fmt_damage`) — 칸이 62px 뿐이라 자릿수가 곧 길이가 되어 큰 값 한 칸만 유난히 넓어진다 |
-| 막대 | **준 피해 막대**. 초상화 윗변 바로 위(`RES_BAR_BOTTOM`)에서 위로 자란다 |
-| 막대 안쪽 밑단 | **처치 수**(`처치 2`). **0 은 적지 않는다** — 열 칸에 늘어선 `0` 은 읽을 것 없는 자리를 채울 뿐이고, 없음이 곧 0 이다 |
-| 초상 · 체력 바 | 교전 중 스트립 그대로 |
-| 체력 바 밑(`STRIP_SUB_Y`) | **이번 교전으로 번 성장치**(`+2150` — `fmt_score_gain`, k 로 접지 않는다). 전장 성장치 팝업과 같은 얼굴: 외곽선 두른 소울 아이콘(`BattleRenderer.draw_outlined_icon`) + 흰 글자 · 굵은 검은 외곽선(`GROWTH_*` 상수). 90px 칸을 넘는 다섯 자리부터는 글자만 줄여 맞춘다. 못 벌었으면 회색 `—` |
+| Above the bar | **Damage dealt**. Folded to `1.2k` from four digits (`fmt_damage`) — the cell is only 62px, so digit count becomes width and one big value would make just that cell unusually wide |
+| Bar | **Damage-dealt bar**. Grows upward from just above the portrait's top edge (`RES_BAR_BOTTOM`) |
+| Bottom inside the bar | **Kill count** (`처치 2` — "2 kills"). **0 is not written** — a row of `0`s across ten cells only fills space with nothing to read; absence means 0 |
+| Portrait · HP bar | Same as the strip during the engage |
+| Under the HP bar (`STRIP_SUB_Y`) | **Growth points earned in this engage** (`+2150` — `fmt_score_gain`, not folded to k). Same look as the battlefield growth-point popup: outlined soul icon (`BattleRenderer.draw_outlined_icon`) + white text · thick black outline (`GROWTH_*` constants). From five digits, which overflow the 90px cell, only the text is shrunk to fit. If nothing was earned, a grey `—` |
 
-**받은 피해는 없앴다.** 교전이 끝난 뒤 되짚는 질문은 "누가 얼마나 해냈나"
-하나이고, 맞은 양은 바로 밑의 남은 체력 바가 이미 그림으로 말한다. **총
-성장치도 없앴다**(예전의 `+2.15k → 12.40k`) — 여기서 묻는 것은 총액이 아니라
-이 교전의 몫이고, 총액은 전장 스트립과 파일럿 상세가 상시로 들고 있다.
-개시 시점 값은 `TurnEngageSim` 이 참가자를 배치하며 `stats[p]["score0"]` 에
-찍어 두고, 결과 화면이 지금 값과의 차를 낸다.
+**Damage taken was removed.** The question looked back on after an engage is just "who did how
+much", and the HP bar right below already shows how much was taken as a picture. **Total growth
+points were also removed** (the old `+2.15k → 12.40k`) — what is asked here is not the total but
+this engage's share, and the total is always carried by the battlefield strip and the pilot
+detail. The value at the opening is stamped into `stats[p]["score0"]` by `TurnEngageSim` while
+placing participants, and the result screen computes the difference from the current value.
 
-### 막대 눈금은 그 교전이 정한다
-`_measure_dealt_range()` 가 참가자 전원의 `dealt` 에서 최소 · 최대를 뽑고,
-`_bar_height()` 가 그 구간을 `[RES_BAR_MIN_H 28, RES_BAR_MAX_H 560]` 으로 편다.
-절대 스케일을 쓰면 소규모 교전은 열 칸이 다 밑동만 남고 후반 교전은 다 천장에
-붙어, 어느 쪽에서도 "누가 더 넣었나"가 안 읽힌다. 전원이 사실상 같은 값이면
-기준선을 0 으로 내린다(안 그러면 "다 같이 많이 넣은" 교전이 다 같이 밑동만 남은
-그림이 된다). 0 피해는 `RES_BAR_STUB_H`(6px) 밑동만 남는다.
+### The engage itself sets the bar scale
+`_measure_dealt_range()` picks min · max from all participants' `dealt`, and `_bar_height()`
+spreads that range over `[RES_BAR_MIN_H 28, RES_BAR_MAX_H 560]`. With an absolute scale, a small
+engage leaves all ten cells as stubs and a late-game engage pins them all to the ceiling, so "who
+put in more" reads in neither case. When everyone has practically the same value the baseline is
+lowered to 0 (otherwise an engage where "everyone dealt a lot" would become a picture where
+everyone is a stub). Zero damage leaves only a `RES_BAR_STUB_H` (6px) stub.
 
-### 맨 윗줄 — 승리 / 패배 / 교전 결과
-제목 라벨(`_title_lbl`, y 240)이 교전 제목에서 **결과 한 줄로 갈아 끼워진다**.
-예전의 `교전 결과` 고정 제목과 그 아래 `N라운드 진행` 소제목은 삭제됐다 —
-라운드 수는 이미 다 본 것이고, 그 자리가 답해야 하는 질문은 "그래서 이겼나"다.
+### Top line — win / loss / engage result
+The title label (`_title_lbl`, y 240) is **swapped from the engage title to a one-line result**.
+The old fixed title `교전 결과` (Engage result) and the `N라운드 진행` (N rounds played) subtitle
+under it were deleted — the round count has already been seen, and the question that slot must
+answer is "so did we win?".
 
-판정은 `EngagePhaseManager._result_title()` 이 한다(오브젝트 교전인지를 아는
-것이 그쪽이다). 문자열 세 개(`EngageArena.RESULT_WIN` / `RESULT_LOSE` /
-`RESULT_NEUTRAL`)는 **아레나가 소유한다** — 그 글자에 무슨 색을 입힐지가 이
-화면의 일이기 때문이다.
+The verdict is made by `EngagePhaseManager._result_title()` (it is the side that knows whether it
+is an objective engage). The three strings (`EngageArena.RESULT_WIN` / `RESULT_LOSE` /
+`RESULT_NEUTRAL`) are **owned by the arena** — deciding what colour that text gets is this
+screen's job.
 
-- **오브젝트 교전**(전령 / 용): `ObjectiveSystem.engage_winner()` 를 그대로
-  빌려 쓴다(생존 인원 → 동률이면 잔여 HP 비율 합). 그래야 여기 뜬 글자와 실제로
-  보상을 가져가는 팀이 갈릴 수 없다 — 둘 사이에 상태가 바뀌지 않으므로 같은
-  답이 나온다. 무승부는 `교전 결과`.
-- **카드 교전**: 이런 판정이 원래 없다. 이기고 지는 것이 아니라 **얼마나 이득을
-  봤나**가 전부인 사건이라 승패를 억지로 매기면 대부분의 교전이 무의미한
-  패배로 읽힌다. 그래서 **이겼다고 부를 수 있는 두 모양**만 승리로 친다
-  (`_side_took_engage`): **상대 전멸**, 또는 **처치 1 이상 + 이쪽 전원 생존**.
-  양측이 같은 답이면(둘 다 해당 · 둘 다 아님 — 서로 하나씩 눕힌 교전, 피해만
-  주고받은 교전, 양측 전멸) 승패를 말하지 않고 `교전 결과`로 남는다.
+- **Objective engage** (Herald / Dragon): borrows `ObjectiveSystem.engage_winner()` as is
+  (survivors → on a tie, sum of remaining HP ratios). That way the text shown here and the team
+  that actually takes the reward can never diverge — the state does not change between the two, so
+  the same answer comes out. A draw is `교전 결과`.
+- **Card engage**: there is no such verdict to begin with. It is an event that is all about **how
+  much advantage was gained**, not winning or losing, so forcing a win/loss would make most engages
+  read as meaningless losses. So **only two shapes that can be called a win** count as a win
+  (`_side_took_engage`): **opponent wiped**, or **1+ kills + all of our side alive**. If both sides
+  give the same answer (both qualify · neither does — an engage where each side downed one, an
+  engage that only traded damage, both wiped), win/loss is not stated and it stays `교전 결과`.
 
-### 통계 dict
-PilotData 를 키로 하는 dict:
+### Stats dict
+A dict keyed by PilotData:
 ```gdscript
 { "dealt": int, "taken": int, "kills": int, "score0": float }
 ```
-`dealt` / `taken` 은 실제로 깎인 양(`shield_absorbed + hp_dmg`). 빗나감은
-집계되지 않는다. 포탑에게 맞은 딜은 `taken` 에 잡히지만 `dealt` 는 아무에게도
-귀속되지 않는다. **`taken` 은 이제 화면에 안 뜬다** — 집계는 남겨 둔다(로그와
-밸런스 측정이 읽는다).
+`dealt` / `taken` are the amounts actually removed (`shield_absorbed + hp_dmg`). Misses are not
+counted. Damage taken from turrets is recorded in `taken` but its `dealt` is credited to no one.
+**`taken` is no longer shown on screen** — the tally is kept (the log and balance measurements read
+it).
 
 ## Presence stat
-`presence` 는 **타겟 어그로 가중치**로만 쓰인다(높을수록 자주 표적이 된다).
+`presence` is used **only as a target aggro weight** (higher = targeted more often).
 `mechs.csv → MechData.presence → SimulationCore._stats_for → PilotData.presence`.
-메크가 없을 때(standalone) 기본값은 근접 4 / 원거리 2. 암살자는 이 가중치를
-무시한다 — 위 [타겟 선정](#타겟-선정-_pick_target) 참고.
+Without a mech (standalone) the default is melee 4 / ranged 2. Assassins ignore this weight — see
+[Target selection](#target-selection-_pick_target) above.
 
-**`speed` 는 없다.** 라운드마다 전원이 한 번씩 행동하므로 행동 빈도를 가르는
-스탯이 존재하지 않는다 — mechs.csv 컬럼째로 삭제됐다.
+**There is no `speed`.** Everyone acts once per round, so there is no stat that splits action
+frequency — it was deleted from mechs.csv along with its column.
 
-## 헤드리스 검증
-`TurnEngageSim` 은 `RefCounted` 라 노드/프레임 없이 돌릴 수 있다.
-BattleSim 인스턴스만 하나 있으면:
+## Headless verification
+`TurnEngageSim` is `RefCounted`, so it can run without nodes/frames.
+All you need is one BattleSim instance:
 ```gdscript
 var sim := TurnEngageSim.new()
-sim.setup(bs, caster, team0_pilots, team1_pilots, 3, false)   # 3라운드
+sim.setup(bs, caster, team0_pilots, team1_pilots, 3, false)   # 3 rounds
 while not sim.finished:
     sim.step(1.0 / 60.0)
-    sim.popups.clear()   # 렌더러가 없으면 아무도 비워 주지 않는다
+    sim.popups.clear()   # with no renderer, nobody else clears them
 ```
-⚠ 세 가지 함정:
-1. standalone BattleSim 은 `pilots.csv` 로 폴백하는데 그 `atk` 는
-   160/300/500 이라 한 대에 즉사한다. 밸런스를 보려면 PilotData 에
-   mechs.csv 급 스탯(hp 75~240 / atk 6~26)을 찍고 돌려야 한다. 실제 화면으로
-   교전을 열어 보면 이 폴백 때문에 2라운드에 여덟 명이 쓰러진다 — 버그가
-   아니다.
-2. `BattleSim.tscn` 인스턴스화는 **`SceneTree._initialize` 안에서 하면 매달린다**.
-   던져 놓을 `Node` 씬을 하나 만들어 `_ready` 에서 `await process_frame` 뒤에
-   붙일 것. 렌더까지 보려면 `--headless` 를 빼고 창 모드로 띄운 뒤
-   `get_viewport().get_texture().get_image().save_png(...)` 로 찍는다.
-3. 시뮬레이터를 굴리는 동안 `bs.game_phase` 를 `ENGAGE` 로 세워 두지 않으면
-   BattleSim 의 BATTLE 자동 틱이 같이 돌아 전장 교전이 섞여 든다.
+⚠ Three pitfalls:
+1. A standalone BattleSim falls back to `pilots.csv`, whose `atk` is far larger than any mech's, so units die in
+   one hit. To look at balance, stamp mechs.csv-level `hp` / `atk` onto PilotData
+   before running. If you open an engage on the real screen, eight units fall in round 2 because of
+   this fallback — it is not a bug.
+2. Instantiating `BattleSim.tscn` **hangs if done inside `SceneTree._initialize`**. Make a `Node`
+   scene to throw it into and attach it in `_ready` after `await process_frame`. To also see the
+   render, drop `--headless`, launch in windowed mode, and capture with
+   `get_viewport().get_texture().get_image().save_png(...)`.
+3. If `bs.game_phase` is not set to `ENGAGE` while driving the simulator, BattleSim's BATTLE
+   auto-tick runs alongside and battlefield fights mix in.
 
 
 ## Detail moved from root CLAUDE.md
@@ -976,7 +992,7 @@ while not sim.finished:
 
 | System | Description |
 |---|---|
-| 교전 (ENGAGE) | `engage:N` / `duel` 카드가 여는 **라운드 기반 턴제 탑뷰(쿼터뷰) 교전** (관전 전용, 플레이어 입력 없음). **`engage:N` 의 N 은 라운드 수다** — `engage:3` = 3라운드이고, 예전의 "N × 3초" 환산은 삭제됐다. **한 라운드 = 참가자 전원이 정확히 한 번씩 행동**하며, 무대에는 언제나 **한 명만**(`current_actor`) 나와 있다 — 그 한 차례(`ADVANCE` 접근 → `STRIKE` 공격 → 정착)가 끝나면 다음 순서로 넘어가고, 순서 끝에 닿으면 라운드가 오르며 **다시 시전자부터** 같은 순서를 돈다. **행동 순서는 개시 시 한 번 정해져 매 라운드 반복된다(상황 기반)**: 시전자 팀부터 한 명씩 **팀 교대**, 팀 안에서는 **역할 고정**(암살자 → 격투가 → 탱커 → 스나이퍼 → 서포터), 단 **시전자는 자기 팀 맨 앞으로 당겨진다**(교전을 연 쪽이 선공한다는 것이 카드의 값이다). 포탑은 파일럿 전원이 돈 **뒤** 시전자 팀 포탑부터 한 번씩 — 유닛 사이에 끼우지 않는 이유는 카메라가 포탑을 프레이밍하지 않아 화면 밖에서 포격만 날아오는 침묵 구간이 생기기 때문이다. 죽은 행동자는 건너뛰되 순서 배열은 그대로라 살아 있는 사람들의 상대 순서는 바뀌지 않는다. **메크 `speed` 스탯과 `game_config.TURRET_SPEED` 는 삭제됐다** — 라운드마다 전원이 한 번씩 행동하므로 행동 빈도를 가르는 스탯이 없다(예전 ATB 실시간 모델의 유산이며 되살리지 말 것). **시작 위치는 전장 타일이 정하되 반영하는 것은 방향뿐이다** — 아래 "교전 시작 위치" 항목. 무대는 위에서 살짝 눕혀 내려다본 **바닥면**(`STAGE_W`×`STAGE_H` = 1240×1180)이고, 좌우가 진영을 나누지 않는다. 근접은 밀착(`MELEE_REACH` 88px)까지, 원거리는 **최대 사거리의 90%**(270px)까지 파고든 뒤 때린다. 이동 속도는 근접 1600 / 원거리 1250px/s 이고 접근 상한은 `ADVANCE_MAX_SEC` **0.85초**다 — 셋 다 사이드뷰 벨트(1400 / 1100 / 0.55초)보다 큰데, **바닥면이 세로로 두 배 넓어져** 대각선 반대편까지 걸어가야 하는 차례가 생겼기 때문이다(짧게 두면 그 차례가 통째로 "걸어가다 말았다"가 된다). 한 번에 한 명뿐이라 **접근 시간이 곧 관전자가 기다리는 시간**이다. 사거리 판정에는 `STRIKE_DIST_EPSILON`(0.5px) 여유가 붙는다 — 접근을 끝낸 유닛은 사거리 **딱 그 거리**에 스냅하는데, 부동소수 오차로 그 거리가 사거리 바로 위에 떨어지면 여유 없는 판정이 영원히 실패해 유닛이 `ADVANCE_MAX_SEC` 교착으로만 차례를 접는다. **원위치 복귀는 없다** — 공격을 끝낸 자리가 곧 새 앵커(`anchor_pos`)이므로 양 팀이 서로에게 파고들며 무대 한쪽으로 뭉친다. 명중하면 대상이 넉백되고 **밀려난 자리가 그대로 새 앵커가 된다** — 앵커를 두고 오면 복원 드리프트가 넉백보다 빨라 맞은 프레임에 되돌려 버려 넉백이 아예 안 보이고, 근접이 사거리에 붙어 굳어 공격 모션도 사라진다. 넉백 방향은 **공격자로부터 멀어지는 그 방향 그대로**다(`KNOCK_VERTICAL_SCALE` 삭제 — 탑뷰에서는 세로도 실제 거리라 누르면 위아래로 선 둘 사이에서만 넉백이 사라진다). 피해·스탯에는 얹히지 않고 **위치와 재접근 거리**만 바꾼다. **암살자만 적 원거리 역할을 우선 노린다**(`DIVE_FOCUS`) — 이 분기가 없으면 존재감이 두 배(4 vs 2)라 원거리 메크가 교전 내내 한 대도 맞지 않는다(실측 확인). 집중 사격 가중(`_focus_count`)은 **라운드 경계에서 비우지 않는다** — 끊으면 딜이 흩어져 처치가 거의 안 나온다(실시간 시절에는 동시 행동이 이 역할을 했다). **교전 중 이탈은 없다** — 아무도 무대를 뜰 수 없고, 종료는 **라운드 소진** 또는 한 쪽 전멸뿐이며 빈사여도 후퇴하지 않는다. **종료 판정 후 `EngagePhaseManager.END_HOLD_SEC`(2.0초) 동안 전투만 멈춘 무대를 더 보여 주고(종료 사유 배너 표시) 그 다음 결과 화면이 뜬다** — 마지막 처치가 결과창에 먹히지 않게 하기 위함. **결과는 패널이 아니다** — 아래 "교전 결과 화면" 항목. 유예 동안 `round_index` 는 멈추므로 대시보드의 라운드 수는 실제로 싸운 라운드 수 그대로다. **`setup()` 과 `begin()` 이 갈라져 있다** — 전자는 무대를 세우기만 하고(개시 확인 화면이 여기까지만 쓴다) 상태를 바꾸는 것(약자 멸시의 개시 타격 · 라운드 루프)은 전부 후자에 있다. 취소가 진짜로 아무 일도 없던 것이 되는 근거다. **포탑은 사거리 존도 무대 참가자도 아니라 지형이다**: **적이 걸어온 교전에서** 참가 파일럿이 **자기 팀 포탑 칸 위에 서 있을 때만** 그 포탑이 가담해 **라운드마다 한 번** 적 파일럿을 때린다 — **시전자 팀의 포탑은 가담하지 않고**(`t.team == initiator_team` 이면 거른다) **오브젝트 교전에는 어느 팀 포탑도 안 낀다**(`_has_caster == false`). 포탑은 허깅하는 우리 편에게 적이 교전을 **강제했을 때** 방어에 나서는 것이지, 우리가 그 자리에서 먼저 교전을 열 때 따라 나오는 화력이 아니다 — 포탑 칸에 눌러앉아 카드로 교전을 여는 쪽이 포탑까지 끼면 그 칸이 일방적인 안전지대가 된다(**사거리 제한 없음**, 명중 판정은 굴린다, 무대에서 포탑 HP 는 안 깎인다). **자리는 파일럿과 같은 칸→무대 매핑을 지나 자기 칸 위**다 — 가담 조건 자체가 "우리 편이 그 포탑 칸에 서 있다"이므로 포탑과 허깅하는 아군이 저절로 같은 자리에 선다. 사이드뷰 시절의 "지평선 한 줄에 나란히"(x 225 / 1015, y 48)는 삭제됐다. 피해 공식(atk 1회분, 보호막 우선)은 전장과 공유하지만 **명중률은 전장 확률을 80~100% 구간으로 리맵**한다(`ENGAGE_HIT_MIN` 0.80 / `ENGAGE_HIT_MAX` 1.00 → 스탯이 대등하면 90%). 처치는 `mark_pilot_dead(victim, killer)` 를 지나므로 리스폰 스케일링과 **성장치 정산**이 그대로 걸리고, 준 피해도 `score_pilot_damage` 로 적립된다. `grid_pos` 는 교전으로 바뀌지 않는다. **화면**: `EngageArena.BAND_RECT`(24, 406, 1032×**1000**) 한 창 안에서만 무대가 보이고(`clip_contents`) 그 밖은 검정 α 0.86 으로 딤드된다. 사이드뷰 시절(500)의 **두 배 높이**인데, 벨트에서 세로는 원근 표현이라 납작해도 됐지만 탑뷰의 세로는 실제 거리라 **위 타일과 아래 타일이 같은 밴드에 들어가야** 배치가 전장과 같은 모양으로 읽히기 때문이다. 바닥에 **칸 윤곽은 그리지 않는다**(옅은 격자와 무대 테두리만 남는다) — 시작 자리가 타일의 *방향*만 반영하는 지금 무대의 한 칸은 전장의 한 칸과 같은 크기가 아니라, 육각을 그려 두면 있지도 않은 축척을 말한다. 유닛 하나는 **세 겹**이다: 바닥에 누운 타원(정확한 지상 위치) → 그 타원을 가리키는 쐐기 → `UNIT_LIFT`(82px) 위에 뜬 원형 초상. **그 바닥 타원이 곧 콜리전이라 두 유닛의 발밑 원은 절대 겹치지 않는다** (`TurnEngageSim._separate_units` — 그리는 원과 부딪히는 원이 갈라지지 않게 `EngageArena.GROUND_RX/RY` 가 시뮬레이터의 `FOOT_RX` 30 / `FOOT_RY` 13 을 그대로 읽는다). 판정은 **y 를 `FOOT_ASPECT`(≈2.31)배로 늘린 원 공간**에서 한다 — 타원끼리의 최단 거리에는 닫힌 해가 없다. 실제 최소 간격은 **나란히 60px · 위아래 26px** 이라 `MELEE_REACH`(88)보다 작고, 그래서 **붙어서 때리려는 접근과 다투지 않는다** — 실제로 일하는 자리는 개시 배치(한 칸에 몰린 무리 · 오브젝트 교전 · [강습] 낙하)와 넉백으로 떠밀린 자리 둘이다. **밀 때 앵커도 같이 민다**(안 그러면 IDLE 복원 드리프트가 곧장 되돌려 겹친 자리에서 떤다 — `_apply_knockback` 과 같은 이유) 그리고 **시신은 밀리지 않는다**(쓰러진 자리에 남고 산 유닛만 그 밖으로 밀려난다). 겹침은 **한 프레임 안에 다 푼다** — 나눠 밀면 넉백 한 방에서 원이 겹친 채 그려진다(실측 7.7%). 실측: 열 명을 한 칸에 몰아넣어도 개시·전투 내내 최소 간격이 딱 맞닿음(겹침 0), 바닥면 이탈 0. 사이드뷰의 "바라보는 좌우" 쐐기를 대체한 것으로, 탑뷰에서 읽혀야 하는 것은 방향이 아니라 **이 얼굴이 바닥 어느 지점에 서 있는가**다(초상이 떠 있어 그대로는 자기 자리를 가리키지 못한다). 방향은 `EUnit.facing`(단위 **벡터**, `facing_x` 는 삭제)이 들고 공격 모션의 각도로만 쓰인다. **밴드 아래에 참가자 스트립이 한 줄로 깔린다 — 아군 왼쪽 / 적군 오른쪽, 가운데 VS**(5v5 면 `IIIII vs IIIII`). 무대에서 팀0 이 언제나 왼쪽에 서므로 스트립도 같은 좌우를 쓴다. 초상화는 **얼굴 위주 정사각 썸네일**(`PilotImages.face_for` = `faces/N_rect.png` 256×256, 화면에서 90×90)이다 — 밴드가 두 배로 커지면서 세로 300짜리 tall 크롭이 들어갈 자리가 없어졌고, 스트립이 답해야 하는 질문은 "누구인가 · 얼마나 성한가" 둘뿐이라 몸은 무대가 보여 준다(`tall_for` 는 드래프트 · 밴픽이 여전히 쓴다). 그 아래에 체력 바(보호막은 오른쪽에 이어 붙음). **초상화 밑에 이름은 안 적는다** — 예전에는 역할 이름(`T0` / `F1`)이 상시로 찍혔는데 90px 칸에서 그 표는 초상화가 이미 말하는 것을 한 번 더 적을 뿐이었다(`_name_labels` / `_refresh_names` 삭제). 그 줄(`STRIP_SUB_Y`)은 결과 화면에서 번 성장치가 쓴다. 지금 차례를 가진 **정확히 한 명**의 테두리가 금색으로 굵어지고, 처치되면 뒤판이 붉어지며 알파가 35%로 떨어진다. `faces` 텍스처는 `draw_texture_rect` 로 그리므로 **`PilotImages.prime_into` 프라임 대상이다**(빠뜨리면 열 칸이 통째로 흰 사각형). 상단 헤더는 **제목(240) · 라운드 카운터(292) · 라운드 칸(350) · "누구의 차례"(372)** 네 줄이다 — 실시간 시절의 남은 시간 바(MM:SS.s)는 삭제됐다. 카메라는 **생존 유닛의 발밑과 얼굴**을 프레이밍하고(포탑은 제외 — 담으면 배율이 떨어져 유닛이 잘게 보인다) `stage_rect()`(바닥면 + `STAGE_MARGIN` 130) 밖은 절대 비추지 않는다. 얼굴까지 넣는 것은 초상이 82px 떠 있어 발밑만 담으면 맨 윗줄 얼굴이 잘리기 때문이다. 자세한 내용과 튜닝 상수는 `engage/README.md`. |
-| 교전 결과 화면 | **패널도 팝업도 아니다.** 무대(밴드) · 밴드 테두리 · 라운드 칸 · 차례 배너 · 팀 이름 두 줄을 걷어 내고, 교전 내내 서 있던 **하단 초상화 스트립만 그 자리에 남긴 채** 딤드된 배경(`RES_DIM_COLOR` α 0.945 — 밴드가 사라지면 그 자리로 전장이 올라오므로 교전 중의 0.86 보다 어둡다) 위에서 그대로 성적표가 된다. 한 칸이 위에서부터 답하는 것 — **준 피해 숫자**(네 자리부터 `1.2k`) → **준 피해 막대**(초상화 윗변에서 위로 자란다) → **막대 안쪽 밑단의 처치 수**(`처치 2`, **0 은 안 적는다** — 열 칸에 늘어선 0 은 읽을 것 없는 자리만 채운다) → **초상** → **남은 체력** → **이번 교전으로 번 성장치**(`+2150`, 정수 전체 · 못 벌었으면 `—`). **받은 피해는 없앴다**(맞은 양은 바로 밑 체력 바가 이미 말한다) 그리고 **총 성장치도 없앴다**(예전 `+2.15k → 12.40k` — 여기서 묻는 것은 총액이 아니라 이 교전의 몫이고, 총액은 전장 스트립과 파일럿 상세가 상시로 들고 있다). **막대 눈금은 그 교전이 정한다** — 참가자 전원의 준 피해에서 최소 · 최대를 뽑아 `[28, 560]px` 로 편다(절대 스케일이면 소규모 교전은 다 밑동, 후반 교전은 다 천장이라 어느 쪽에서도 누가 더 넣었는지가 안 읽힌다). **맨 윗줄은 승리 / 패배 / 교전 결과**이고 예전의 `교전 결과` 고정 제목 + `N라운드 진행` 소제목은 삭제됐다 — 라운드 수는 이미 다 본 것이고 그 자리가 답해야 하는 질문은 "그래서 이겼나"다. 판정(`EngagePhaseManager._result_title`)은 둘로 갈린다: **오브젝트 교전**은 `ObjectiveSystem.engage_winner()` 를 그대로 빌려 쓰고(생존 인원 → 잔여 HP 비율 합 — 그래야 뜬 글자와 보상을 가져가는 팀이 갈릴 수 없다), **카드 교전**은 판정이 원래 없으므로 **이겼다고 부를 수 있는 두 모양**만 승리로 친다 — 상대 전멸, 또는 처치 1 이상 + 이쪽 전원 생존. 양측이 같은 답이면(서로 하나씩 눕힌 교전, 피해만 주고받은 교전, 양측 전멸) 승패를 말하지 않고 `교전 결과`로 남는다. |
-| 교전 시작 위치 (타일 기반 — **방향만**) | **무대의 자리는 전장의 자리다 — 다만 반영하는 것은 그 칸의 *방향*뿐이고 물리적 거리는 반영하지 않는다.** 교전이 열린 칸을 무대 한가운데 두고, 각 참가자가 밟고 있던 칸의 **상대 육각 오프셋**을 무대 좌표로 환산해 세우되(`TurnEngageSim._place_from_grid` / `_cell_offset`, `CELL_SPAN_X/Y` = 300 / 235) **단위 방향만 남기고 길이는 포화 곡선으로 다시 매긴다**(`CELL_REACH_MAX` 1.55 / `CELL_REACH_HALF` 0.9 칸 → d 칸 떨어진 참가자는 `1.55 × d/(d+0.9)` 칸에 선다: 1칸 0.82 · 2칸 1.07 · 3칸 1.19 · 5칸 1.31 · 10칸 1.42 · **상한 1.55 = 465 / 364px**). 그래서 윗타일에 둘 · 아랫타일에 둘 · 왼쪽 정글에 정글러 하나였다면 무대에서도 그 모양이지만, 그 정글러가 여덟 칸 떨어져 있었는지 두 칸이었는지는 무대에서 거의 같아 보인다. **예전에는 거리를 그대로 곱하고 상한에서 잘라 냈다**(`MAX_CELL_OFFSET_X/Y` 660 / 517, **삭제됨**) — 그러면 세 칸 넘게 떨어진 참가자가 전부 같은 상한에 붙어 순서는 사라지는데 무대는 최대로 벌어졌고, 참가자가 전장 곳곳에서 모이는 **오브젝트(전령 / 용) 교전**이 특히 그랬다(실측: 오프셋 바운딩 박스 1260 × 517 → `_fit_scale` 0.712, 곧 얼굴이 29% 작아진 채 서로 화면 끝에 서 있었다. 지금은 699 × 294 로 축소가 아예 안 걸린다). 진영으로 좌우를 가르지 않는 것이 요점이다: 같은 칸에서 붙은 두 팀은 무대에서도 한 칸에 섞여 서고, **그 칸 안에서만** 팀0 이 왼쪽 반원 · 팀1 이 오른쪽 반원을 쓴다(가르는 단위가 무대 전체가 아니라 칸 하나라 타일 배치가 그대로 남는다). 자리마다 `SLOT_JITTER_X/Y`(24 / 16) 흐트러짐이 붙어 완벽한 격자가 되지 않는다. 오프셋은 **바운딩 박스 중심으로 옮긴 뒤**(`_recentre`) 무대를 넘으면 **통째로 줄인다**(`_fit_scale`) — 열린 칸을 중심에 못박으면 그 칸이 무리의 끝일 때 무대 절반이 비고, 배치가 말하는 것은 상대 위치뿐이라 옮기고 줄여도 잃는 정보가 없다. 칸→무대 환산은 표가 아니라 `HexGrid.hex_to_screen` 을 지난다 — 육각 오프셋 좌표는 홀/짝 열마다 이웃 규칙이 달라 손으로 적은 표가 조용히 틀리기 쉬운 자리다. **바닥에 칸 윤곽을 그리지 않는다** — 예전에는 참가자가 밟고 있던 칸마다 납작한 육각을 깔았지만(`EngageArena._draw_cell_marks` / `TurnEngageSim.cell_marks` / `cell_mark_radius`, **셋 다 삭제됨**) 거리를 압축한 지금은 무대의 한 칸이 전장의 한 칸과 같은 크기가 아니라 그 육각이 있지도 않은 축척을 말하고, 유닛이 자기 칸 밖에 서 있는 것처럼 보인다. 배치가 무작위가 아님을 말하는 것은 이제 윤곽이 아니라 방향이다. **이 배치는 연출이다** — 라운드마다 전원이 한 번씩 돌아가며 때리는 판정은 그대로이고, 시작 자리가 바꾸는 것은 접근 거리와 표적 선택의 거리항뿐이다. **[강습](mech_cards id 30)만 예외다**: `engage:3|at_target|drop_in` 의 `drop_in` 플래그는 시전자를 **지정한 적의 칸으로 전장 위에서 실제로 이동시켜** 그 교전에 참가시킨다 — 그래야 교전을 연 쪽의 선공(시전자 팀 · 시전자가 맨 앞)이 시전자 자신에게 걸린다(예전에는 대상 반경 1칸으로만 명단을 모아 멀리서 건 시전자가 자기 교전에서 빠졌다). 이동은 개시 확인 화면에서 **확인을 누른 뒤에** 일어나고(취소는 제자리), 남의 레인 · 정글에 내려앉으면 작전 단계 끝에 위치 이탈 복귀가 그대로 걸린다. 무대에서는 시전자만 **적 진형 한가운데(적 유닛 위치의 무게중심)에 낙하**하고 바닥 마커에 금색 겹링이 하나 더 붙는다 — `engage/README.md` 의 "[강습]" 절. |
-| 전투 개시 확인 화면 (VS) | **카드를 제출한 순간 교전 무대가 통째로 미리 뜬다**(`engage/EngageIntro.gd`). 딤드된 전체 화면 위에 `EngageArena` 를 **미리보기 모드**로 한 장 세우고(제목 · 라운드 칸 · 무대 · 하단 정사각 썸네일 스트립이 전부 실제 교전과 같은 자리에 있다) 그 아래에 **취소 / 확인**만 얹는다. **무대는 진짜다** — `EngagePhaseManager.prepare_sim()` 이 만든 `TurnEngageSim` 을 그대로 그리고, 확인을 누르면 `_begin` 이 그 무대(`_pending_sim`)를 이어받으므로 **화면에서 본 배치와 실제로 싸우는 배치가 같다**. 다시 만들면 지터와 칸 안 자리가 달라져 "본 것"과 "나온 것"이 어긋나고, 그러면 이 화면은 판단이 아니라 확인 절차로 되돌아간다. 아직 `begin()` 전이라 피해도 충전 소모도 일어나지 않는다. **명단만으로는 부족했다** — 교전을 여는 판단은 "누가 있나"가 아니라 "어디에 어떻게 서 있나"(위 타일에 둘, 아래 타일에 둘, 왼쪽 정글에 정글러 하나)이기 때문이고, **예전 화면**(딤 위에 상단 = 적군 / 중앙 = VS + N라운드 / 하단 = 아군으로 eye 초상화를 깔던 두 줄)은 그 절반만 답했다. **`_pending_sim` 의 생명 주기**: 프롬프트를 띄우고도 교전이 안 열리는 경로가 있으므로(오브젝트 미참여 · 무혈 획득 알림 · 취소) `prompt_engage` 는 취소에서 버리고 `_begin` 은 **명단과 라운드 수가 일치할 때만** 이어받는다(`TurnEngageSim.matches`). 어긋나면 조용히 새로 세운다. **라운드 수는 엿보기로 구한다** — 화면에 뜨는 수는 파일럿 스킬 보정([전투 명령] −1 / [공성전] +3)까지 먹은 실제 수여야 하는데 [공성전]은 한 장에만 붙는 보너스라 취소했는데 타 버리면 되돌릴 수 없다. 그래서 `engage_rounds_for(caster, rounds, consume)` 한 함수를 두고 화면은 `consume = false`, `start_engage` 는 `true` 로 부른다(예전에는 화면이 보정 **전**의 수를 띄우고 실제로는 다른 수로 돌았다). **취소는 카드 제출 자체를 무른다** — `CardPhaseManager._effect_engage` 가 `_on_overlay_cancel()` 로 `_play_card_direct` 의 스냅샷(손패 / 덱 / 비용 / engage 할인 / 보존 목록)을 통째로 복원하므로 버리기·찾기 취소와 완전히 같은 경로다(실측: 손패 5→4→**5**, 점수 99→93→**99**). **AI 가 낸 카드에는 확인만 뜬다** — 플레이어가 무를 수 있는 것이 아니다. 이 화면이 떠 있는 동안 `game_phase` 는 아직 CARD_PHASE(AI 턴이면 BATTLE)라 아레나는 열리지 않았고, 그래서 손패 딤 · 턴 넘기기 · 더미 열람 · 도넛 플립이 페이즈가 아니라 `EngagePhaseManager.is_intro_active()` 를 따로 읽는다. **오브젝트(전령 / 용)의 참여 / 미참여 창도 같은 화면이다** — 무대 중심을 오브젝트 칸으로 넘기므로 누가 어느 정글 · 어느 레인에서 달려오는지가 그대로 배치가 된다(참여를 정하는 데 필요한 것이 정확히 그것이다). `CardTargetingOverlay` 의 PREVIEW 모드 자체는 남아 있다(끄는 동안 시전자 셀 + 인접 6칸이 밝아지고 참가자가 강조된다). |
+| Engage (ENGAGE) | A **round-based turn-based top-down (quarter-view) engage** opened by `engage:N` / `duel` cards (spectate only, no player input). **The N in `engage:N` is a round count** — `engage:N` = N rounds; the old "N × 3 s" conversion was deleted. **One round = every participant acts exactly once**, and **only one unit** (`current_actor`) is ever on the stage — when that turn (`ADVANCE` approach → `STRIKE` attack → settle) ends it moves to the next in order, and on reaching the end of the order the round goes up and the same order runs **again from the caster**. **The action order is decided once at the opening and repeats every round (situational)**: one unit at a time from the caster's team first, **alternating teams**, with a **fixed role order** within a team (assassin → fighter → tank → sniper → supporter), except that **the caster is pulled to the front of its own team** (the side that opened the engage striking first is what the card is worth). Turrets act once each **after** all pilots, caster team's turret first — the reason they are not interleaved between units is that the camera does not frame turrets, which would create silent stretches where only shots fly in from off screen. Dead actors are skipped but the order array is unchanged, so the relative order of the living does not change. **The mech `speed` stat and `game_config.TURRET_SPEED` were deleted** — everyone acts once per round, so there is no stat that splits action frequency (a legacy of the old ATB real-time model; do not revive). **Start positions are decided by the battlefield tiles, but only direction is reflected** — see the "Engage start positions" entry below. The stage is a **floor plane** seen from above, tilted slightly (`STAGE_W`×`STAGE_H` = 1240×1180), and left/right does not divide the sides. Melee digs in to contact (`MELEE_REACH` ← `ENGAGE_MELEE_REACH`), ranged to **`ENGAGE_RANGED_APPROACH_RATIO` of max range** (`ENGAGE_RANGE_RANGED`), then strikes. Move speed is `ENGAGE_MOVE_SPEED_MELEE` / `ENGAGE_MOVE_SPEED_RANGED` and the approach cap is `ADVANCE_MAX_SEC` (`ENGAGE_ADVANCE_MAX_SEC`) — all three raised from the side-view belt, because **the floor became twice as tall** and some turns now have to walk to the diagonally opposite side (set short, that whole turn becomes "walked and gave up"). Only one moves at a time, so **approach time is exactly the time the spectator waits**. The range check carries `STRIKE_DIST_EPSILON` (0.5px) slack — a unit that finished approaching snaps to **exactly** the range distance, and if floating-point error lands that distance just above the range, a slack-less check fails forever and the unit folds its turn only via the `ADVANCE_MAX_SEC` stalemate. **No return to the original spot** — the spot where an attack finished is the new anchor (`anchor_pos`), so both teams dig into each other and bunch up on one side of the stage. On a hit the target is knocked back and **the pushed-to spot becomes the new anchor as is** — leaving the anchor behind makes the restore drift, which is faster than knockback, pull it back within the hit frame so knockback is never visible, and melee freezes at range so the attack motion also disappears. The knockback direction is **exactly away from the attacker** (`KNOCK_VERTICAL_SCALE` deleted — in top-down vertical is real distance too, and squashing it would make knockback vanish only between two units standing one above the other). It does not touch damage·stats and changes only **position and re-approach distance**. **Only assassins prioritise enemy ranged roles** (`DIVE_FOCUS`) — without this branch, higher presence (mechs.csv) means a ranged mech is never hit once during the whole engage (confirmed by measurement). The focus-fire weight (`_focus_count`) **is not cleared at round boundaries** — resetting it scatters damage so kills almost never happen (in the real-time days simultaneous action played this role). **No one leaves mid-engage** — nobody can leave the stage; the only ends are **rounds used up** or one side wiped, and units do not retreat even near death. **After the end check, the stage with combat stopped is shown for `EngagePhaseManager.END_HOLD_SEC` (`ENGAGE_END_HOLD_SEC`) more (with the end-reason banner) and then the result screen appears** — so the last kill is not swallowed by the result window. **The result is not a panel** — see the "Engage result screen" entry below. During the grace `round_index` stops, so the dashboard's round count is exactly the number of rounds actually fought. **`setup()` and `begin()` are split** — the former only sets up the stage (the opening confirmation screen uses only this far), and everything that changes state (the 약자 멸시 (Scorn the Weak) opening strike · the round loop) is in the latter. This is why cancel really is as if nothing happened. **Turrets are terrain, neither a range zone nor a stage participant**: **only in an engage the enemy started**, and **only while a participating pilot stands on its own team's turret cell**, does that turret join and hit an enemy pilot **once per round** — **the caster team's turret does not join** (filtered when `t.team == initiator_team`) and **no turret of either team joins an objective engage** (`_has_caster == false`). A turret comes out to defend when the enemy **forces** an engage on our unit hugging it; it is not firepower that tags along when we open an engage from that spot first — if the side sitting on a turret cell and opening engages with cards got the turret too, that cell would become a one-sided safe zone (**no range limit**, it does roll hit checks, turret HP is not reduced on the stage). **Its position goes through the same cell→stage mapping as pilots and sits on its own cell** — the join condition itself is "our unit stands on that turret cell", so the turret and the ally hugging it naturally stand in the same spot. The side-view-era "side by side on one horizon line" (x 225 / 1015, y 48) was deleted. The damage formula (one atk's worth, shield first) is shared with the battlefield, and so is the hit-chance formula (`PilotData.hit_chance`, band `PILOT_HIT_MIN` / `PILOT_HIT_MAX` in const.csv — the old engage-only `ENGAGE_HIT_MIN` / `ENGAGE_HIT_MAX` were deleted); only the input differs (`engage_hit` / `engage_eva` on the stage). Kills go through `mark_pilot_dead(victim, killer)`, so respawn scaling and **growth-point settlement** apply as is, and damage dealt is also credited via `score_pilot_damage`. `grid_pos` is not changed by an engage. **Screen**: the stage is visible only inside the single window `EngageArena.BAND_RECT` (24, 406, 1032×**1000**) (`clip_contents`), and outside it is dimmed with black α 0.86. It is **twice the height** of the side-view era (500), because on the belt vertical was perspective so flat was fine, but in top-down vertical is real distance, and **the upper tile and lower tile must fit in the same band** for the layout to read in the same shape as the battlefield. **No cell outlines are drawn** on the floor (only a faint grid and the stage border remain) — now that start positions reflect only the tile's *direction*, one stage cell is not the same size as one battlefield cell, and drawn hexagons would claim a scale that does not exist. One unit has **three layers**: an ellipse lying on the floor (exact ground position) → a wedge pointing at that ellipse → a round portrait floating `UNIT_LIFT` (82px) above. **That floor ellipse is the collider, so two units' foot circles never overlap** (`TurnEngageSim._separate_units` — so the drawn circle and the colliding circle never diverge, `EngageArena.GROUND_RX/RY` read the simulator's `FOOT_RX` 30 / `FOOT_RY` 13 directly). The check is done **in circle space with y stretched by `FOOT_ASPECT` (≈2.31)** — the shortest distance between ellipses has no closed-form solution. The real minimum gap is **60px side by side · 26px one above the other**, smaller than `MELEE_REACH` (`ENGAGE_MELEE_REACH`), so **it does not fight an approach trying to hit up close** — it does real work in two places: the opening layout (a crowd on one cell · objective engages · the [강습] (Assault) drop) and spots shoved by knockback. **When pushing it pushes the anchor too** (otherwise IDLE's restore drift undoes it right away and they jitter at the overlap — same reason as `_apply_knockback`), and **corpses are not pushed** (they stay where they fell and only living units are pushed out of them). Overlap is **fully resolved within one frame** — spreading the push draws circles overlapping on a single knockback hit (measured 7.7%). Measured: even with ten crammed onto one cell, the minimum gap is exactly touching (overlap 0) at the opening and throughout combat, floor escapes 0. This replaced the side-view "facing left/right" wedge; in top-down what must read is not direction but **which floor point this face stands on** (the portrait floats, so on its own it cannot point at its spot). Direction is carried by `EUnit.facing` (a unit **vector**; `facing_x` deleted) and used only as the attack-motion angle. **Below the band a participant strip runs in one row — allies left / enemies right, VS in the middle** (for 5v5, `IIIII vs IIIII`). On the stage team 0 always stands on the left, so the strip uses the same left/right. Portraits are **face-focused square thumbnails** (`PilotImages.face_for` = `faces/N_rect.png` 256×256, 90×90 on screen) — when the band doubled there was no room left for the 300-tall crop, and the strip only has to answer "who is it · how healthy", so the stage shows the body (`tall_for` is still used by draft · ban/pick). Below that is the HP bar (shield appended on the right). **No name is written under portraits** — previously the role name (`T0` / `F1`) was always printed, but in a 90px cell that label only restated what the portrait already said (`_name_labels` / `_refresh_names` deleted). That line (`STRIP_SUB_Y`) is used for growth points earned on the result screen. The border of **exactly the one unit** whose turn it is turns gold and thicker, and on a kill the backplate turns red and alpha drops to 35%. `faces` textures are drawn with `draw_texture_rect`, so **they are `PilotImages.prime_into` prime targets** (missed, all ten cells become white squares). The top header is four lines: **title (240) · round counter (292) · round pips (350) · "whose turn" (372)** — the real-time era's time-remaining bar (MM:SS.s) was deleted. The camera frames **the feet and faces of living units** (turrets excluded — including them lowers the zoom and units look small) and never shows outside `stage_rect()` (floor + `STAGE_MARGIN` 130). Faces are included because the portrait floats 82px up, so framing only feet cuts off the top row's faces. Details and tuning constants in `engage/README.md`. |
+| Engage result screen | **Neither a panel nor a popup.** The stage (band) · band border · round pips · turn banner · two team-name lines are removed, and **only the bottom portrait strip that stood there throughout the engage remains in place**, turning into the report card on the dimmed background (`RES_DIM_COLOR` α 0.945 — once the band disappears the battlefield rises into that space, so it is darker than the 0.86 during the engage). What one cell answers from top to bottom — **damage-dealt number** (`1.2k` from four digits) → **damage-dealt bar** (grows upward from the portrait's top edge) → **kill count at the bottom inside the bar** (`처치 2` — "2 kills"; **0 is not written** — a row of 0s across ten cells only fills space with nothing to read) → **portrait** → **remaining HP** → **growth points earned in this engage** (`+2150`, full integer · `—` if nothing was earned). **Damage taken was removed** (the HP bar right below already says how much was taken) and **total growth points were also removed** (the old `+2.15k → 12.40k` — what is asked here is not the total but this engage's share, and the total is always carried by the battlefield strip and the pilot detail). **The engage itself sets the bar scale** — min · max are taken from all participants' damage dealt and spread over `[28, 560]px` (with an absolute scale small engages are all stubs and late-game engages all hit the ceiling, so who put in more reads in neither case). **The top line is win / loss / engage result**, and the old fixed `교전 결과` (Engage result) title + `N라운드 진행` (N rounds played) subtitle were deleted — the round count has already been seen and the question that slot must answer is "so did we win?". The verdict (`EngagePhaseManager._result_title`) splits two ways: **objective engages** borrow `ObjectiveSystem.engage_winner()` as is (survivors → sum of remaining HP ratios — that way the shown text and the team taking the reward can never diverge), and **card engages** have no verdict to begin with, so **only two shapes that can be called a win** count — opponent wiped, or 1+ kills + all of our side alive. If both sides give the same answer (each side downed one, only traded damage, both wiped), win/loss is not stated and it stays `교전 결과`. |
+| Engage start positions (tile-based — **direction only**) | **Stage positions are battlefield positions — but only the cell's *direction* is reflected, not physical distance.** The cell where the engage opened goes at the centre of the stage, and each participant's **relative hex offset** from it is converted into stage coordinates (`TurnEngageSim._place_from_grid` / `_cell_offset`, `CELL_SPAN_X/Y` = 300 / 235), **keeping only the unit direction and re-scaling the length with a saturation curve** (`CELL_REACH_MAX` 1.55 / `CELL_REACH_HALF` 0.9 cells → a participant d cells away stands at `1.55 × d/(d+0.9)` cells: 1 cell 0.82 · 2 cells 1.07 · 3 cells 1.19 · 5 cells 1.31 · 10 cells 1.42 · **cap 1.55 = 465 / 364px**). So two on the upper tile · two on the lower tile · one jungler in the left jungle looks the same on the stage, but whether that jungler was eight cells or two cells away looks almost the same on the stage. **Previously distance was multiplied as is and clipped at a cap** (`MAX_CELL_OFFSET_X/Y` 660 / 517, **deleted**) — participants more than three cells away all stuck to the same cap so order vanished while the stage spread to the maximum, especially in **objective (Herald / Dragon) engages** where participants gather from all over the battlefield (measured: offset bounding box 1260 × 517 → `_fit_scale` 0.712, i.e. faces 29% smaller standing at opposite screen edges. Now it is 699 × 294 and the shrink never kicks in). The point is not splitting left/right by side: two teams that met on the same cell stand mixed on one cell on the stage too, and **only within that cell** does team 0 use the left half-circle · team 1 the right half-circle (the unit of splitting is one cell, not the whole stage, so the tile layout is preserved). Each spot gets `SLOT_JITTER_X/Y` (24 / 16) scatter so it never becomes a perfect grid. Offsets are **shifted to the bounding-box centre** (`_recentre`) and then **shrunk as a whole** if they exceed the stage (`_fit_scale`) — pinning the opening cell at the centre leaves half the stage empty when that cell is at the edge of the group, and since the layout only states relative positions, shifting and shrinking lose no information. Cell→stage conversion goes through `HexGrid.hex_to_screen`, not a table — hex offset coordinates have different neighbour rules for odd/even columns, so a hand-written table silently goes wrong easily. **No cell outlines are drawn on the floor** — previously a flat hexagon was laid under every cell a participant stood on (`EngageArena._draw_cell_marks` / `TurnEngageSim.cell_marks` / `cell_mark_radius`, **all three deleted**), but now that distance is compressed, one stage cell is not the same size as one battlefield cell, so those hexagons would claim a scale that does not exist and make units look like they stand outside their own cell. What says the layout is not random is now direction, not outlines. **This layout is presentation** — the resolution where everyone hits once per round in rotation is unchanged, and the start position only changes approach distance and the distance term of target selection. **Only [강습] (Assault, mech_cards id 30) is an exception**: the `drop_in` flag of `engage:N|at_target|drop_in` **actually moves the caster on the battlefield to the designated enemy's cell** and makes it join that engage — that way the opening side's first strike (caster team · caster at the front) applies to the caster itself (previously the roster was gathered only within radius 1 of the target, so a caster who cast from afar was left out of its own engage). The move happens **after confirm is pressed** on the opening confirmation screen (cancel stays put), and landing on someone else's lane · jungle still triggers the out-of-position return-to-base at the end of the operation phase. On the stage only the caster **drops into the middle of the enemy formation (centroid of enemy unit positions)** and its floor marker gets one more gold double ring — the "[강습] (Assault)" section of `engage/README.md`. |
+| Battle-opening confirmation screen (VS) | **The moment a card is played, the whole engage stage is previewed** (`engage/EngageIntro.gd`). Over a dimmed full screen it sets up one `EngageArena` in **preview mode** (title · round pips · stage · bottom square-thumbnail strip all sit exactly where they are in the real engage) and puts only **cancel / confirm** under it. **The stage is real** — it draws the `TurnEngageSim` built by `EngagePhaseManager.prepare_sim()` as is, and on confirm `_begin` takes over that stage (`_pending_sim`), so **the layout seen on screen is the layout that actually fights**. Rebuilding would change jitter and in-cell positions so "what was seen" and "what came out" would differ, and the screen would fall back from a decision to a confirmation formality. It is still before `begin()`, so no damage and no Charge consumption happen. **A roster alone was not enough** — the decision to open an engage is not "who is there" but "where and how they stand" (two on the upper tile, two on the lower tile, one jungler in the left jungle), and **the old screen** (two rows of eye portraits laid over the dim: top = enemies / middle = VS + N rounds / bottom = allies) answered only half of that. **Lifecycle of `_pending_sim`**: some paths show the prompt but never open an engage (objective not joined · bloodless capture notice · cancel), so `prompt_engage` discards it on cancel and `_begin` takes it over **only when the roster and round count match** (`TurnEngageSim.matches`). If they differ it silently builds a new one. **The round count is obtained by peeking** — the number on screen must be the real number after pilot skill modifiers ([전투 명령] (Battle Command) `SKILL_BATTLE_ORDER_ROUNDS` / [공성전] (Siege) `SKILL_SIEGE_ROUNDS`), but [공성전] is a bonus that applies to one card only, so if spent and then cancelled it cannot be undone. So there is a single function `engage_rounds_for(caster, rounds, consume)`; the screen calls it with `consume = false` and `start_engage` with `true` (previously the screen showed the count **before** modifiers and the engage actually ran with a different count). **Cancel undoes the card play itself** — `CardPhaseManager._effect_engage` restores wholesale the `_play_card_direct` snapshot (hand / deck / cost / engage discount / keep list) via `_on_overlay_cancel()`, so it is exactly the same path as cancelling discard·search (measured: hand 5→4→**5**, points drop by the card's `cost` and return in full). **A card played by the AI shows confirm only** — it is not something the player can undo. While this screen is up `game_phase` is still CARD_PHASE (BATTLE on an AI turn), so the arena has not opened, which is why hand dim · end turn · pile browse · donut flip read `EngagePhaseManager.is_intro_active()` separately instead of the phase. **The objective (Herald / Dragon) join / skip window is the same screen** — it passes the objective cell as the stage centre, so who is running in from which jungle · which lane becomes the layout directly (exactly what is needed to decide whether to join). The PREVIEW mode of `CardTargetingOverlay` itself remains (while dragging, the caster cell + 6 adjacent cells light up and participants are highlighted). |

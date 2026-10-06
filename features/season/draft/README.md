@@ -1,186 +1,193 @@
 # Team Draft
 
-Initial campaign step: the player picks one pilot per role (5 total) from
-the **네임드 25인** pool. The displaced pilot from team-0 swaps with the picked
+Initial campaign step: the player picks one pilot (파일럿) per role (5 total) from
+the **25 named pilots (네임드 25인)** pool. The displaced pilot from team-0 swaps with the picked
 pilot's prior team — every team always has exactly one pilot per role.
 
-**화면은 우마무스메식 인물 고르기다.** 아래 절반이 스크롤되는 캐릭터 썸네일
-격자이고, 그 위에 역할 필터 한 줄, 그 위에 뽑은 5인의 **상체 일러스트**가
-가로로 선다. 예전의 5열(역할) × 5행(순위) 고정 격자는 25명을 한 화면에
-욱여넣느라 칸을 키울 수 없었고, 그래서 얼굴이 48px 라 "누구를 뽑는가"가
-이름표로만 읽혔다 — 격자가 스크롤되면서 칸 크기가 인원 수에서 풀려났다.
+**The screen is an Uma Musume–style character pick.** The lower half is a scrolling grid of
+character thumbnails, above it one row of role filters, and above that the **upper-body
+illustrations** of the 5 picks stand side by side. The old fixed 5-column (role) × 5-row (rank)
+grid had to cram 25 people onto one screen and could not grow its cells, so faces were 48px and
+"who am I picking" could only be read from name tags — with a scrolling grid, cell size is freed
+from the head count.
 
-## 화면은 두 모드를 오간다 — PICK ↔ CONFIRM
-**PICK** 이 위 그림이고, 하단 바의 **"다음"**(다섯 칸이 다 차야 활성)이
-**CONFIRM** 으로 넘긴다. 넘어가는 동안 **픽창(필터 줄 + 격자 + 뒤판)이 화면
-아래로 빠지고 선택 5인 블록이 화면 세로 가운데로 내려온다** — 두 움직임이 한
-트윈(`MODE_ANIM_SEC` 0.38초, cubic in-out)으로 돌고, "뒤로"는 그 반대를 돈다.
-픽창은 하단 바보다 먼저 붙어 있어 빠져나가는 격자가 바 뒤로 숨는다. 연출이 도는
-동안(`_busy`)은 모든 입력을 무시한다.
+## The screen toggles between two modes — PICK ↔ CONFIRM
+**PICK** is the picture above; the bottom bar's **"다음"** (Next) (enabled only when all five
+slots are filled) moves to **CONFIRM**. During the transition **the pick pane (filter row + grid +
+backplate (뒤판)) slides off the bottom of the screen and the 5-pick block drops to the vertical
+centre of the screen** — both moves run in one tween (`MODE_ANIM_SEC` 0.38 s, cubic in-out), and
+"뒤로" (Back) runs the reverse. The pick pane is attached before the bottom bar, so the exiting
+grid hides behind the bar. While the animation runs (`_busy`), all input is ignored.
 
-CONFIRM 의 주 행동은 **"게임 시작"**(예전 "드래프트 확정")이다. 팀 결성은
-아웃게임의 마지막 화면이고 그 다음부터가 캠페인이라 화면을 그냥 갈아 끼우지 않는다 —
-**암전(0.30초) → 가짜 로딩(0.50초, `LOADING` + 막대) → 밝아짐(0.35초)**
-(`_play_launch_transition` → 공용 `resources/SceneFade.gd`). 덮개는 **root 에
-붙인 `CanvasLayer`(layer 100)** 라 드래프트가 숨겨진 뒤에도 남는다(밴픽 → 전장
-전환도 같은 헬퍼를 쓴다). `validate_draft` 는 **암전 전에** 돌고(거절될
-확정이면 화면을 가리지 않는다), `apply_draft` · 상세 팝업 닫기 · `goto(HUB)`
-(= 드래프트 직후 자동 저장)는 **화면이 다 가려진 순간에** 돈다(`_commit_draft`).
+CONFIRM's primary action is **"게임 시작"** (Start game) (formerly "드래프트 확정" (Confirm draft)).
+Team formation is the last outgame screen and the campaign starts after it, so the screen isn't
+simply swapped — **fade to black (0.30 s) → fake loading (0.50 s, `LOADING` + bar) → fade in
+(0.35 s)** (`_play_launch_transition` → shared `resources/SceneFade.gd`). The cover is **a
+`CanvasLayer` (layer 100) attached to root**, so it survives after the draft is hidden (the
+ban/pick (밴픽) → battlefield transition uses the same helper). `validate_draft` runs **before the
+fade** (a confirm that would be rejected doesn't cover the screen), and `apply_draft` · closing the
+detail popup · `goto(HUB)` (= autosave right after the draft) run **at the moment the screen is
+fully covered** (`_commit_draft`).
 
-**선택 5인 블록은 `_slot_row` 한 Control 의 지역 좌표로 산다.** 그래야 CONFIRM
-이 그 노드의 y 하나만 밀어 블록째 내릴 수 있다. 픽창도 같은 이유로
-`_pick_root` 한 Control 에 모여 있다.
+**The 5-pick block lives in the local coordinates of one Control, `_slot_row`.** That way CONFIRM
+can push just that node's y to move the whole block. The pick pane is gathered under one Control,
+`_pick_root`, for the same reason.
 
-## 화면에서 걷어 낸 것들
-- **제목("TEAM DRAFT")과 인원 수("내 팀 N/5")** — 다섯 칸이 채워지는 것 자체가
-  이미 그 답이다.
-- **썸네일 칸의 역할군 이름 · 파일럿 이름 · 종합 스탯 세 줄** — 그 자리는
-  **왼쪽 위 역할군 배지** 하나로 줄었고(밴픽 메크 격자와 **같은 배지**), 칸은
-  정사각이 되어 얼굴이 칸을 다 쓴다.
-- **일러스트 위의 포지션 글자(탑 · 정글 …)와 아래의 이름** — 역할은 일러스트
-  **왼쪽 위의 역할군 배지**가(격자 썸네일과 같은 `PilotThumb.add_role_badge`,
-  **빈 칸에도 선다** — 빈 칸이 어느 역할의 자리인지를 그 배지가 말한다),
-  이름은 상세 팝업이 들고 있다.
-- **일러스트 밑의 `역할 · 원소속` 한 줄**과 **하단의 파일럿 스킬 구성 패널** —
-  둘 다 상세 팝업이 통째로 들고 있다. 고르는 화면에 요약을 늘어놓으면 그 요약을
-  읽느라 정작 얼굴을 안 본다.
+## Things removed from the screen
+- **The title ("TEAM DRAFT") and head count ("내 팀 N/5" (My team N/5))** — the five slots filling
+  up already answers that.
+- **The three lines of role-class name · pilot name · overall stat in a thumbnail cell** — that
+  space shrank to a single **role-class badge at top left** (the **same badge** as the ban/pick mech
+  grid), and the cell became square so the face fills it.
+- **The position text above the illustration (탑 (Top) · 정글 (Jungle) …) and the name below it** —
+  the role is shown by the **role-class badge at the illustration's top left** (the same
+  `PilotThumb.add_role_badge` as the grid thumbnails; **it stands even on an empty slot** — the badge
+  says which role the empty slot is for), and the name lives in the detail popup.
+- **The `역할 · 원소속` (role · original team) line under the illustration** and **the pilot skill
+  panel at the bottom** — the detail popup carries both entirely. Laying summaries across a picking
+  screen makes people read the summaries instead of looking at the faces.
 
-**상세 팝업을 여는 자리가 이름 칸에서 일러스트 자체로 옮겨 갔다.** 예전에는
-"일러스트를 누르면 슬롯을 비우려는 탭과 헷갈린다"는 이유로 아래 이름 칸이 그
-역할을 했는데, 슬롯을 비우는 조작은 **격자에서 같은 썸네일을 다시 누르는 것**
-하나뿐이라 위 칸에는 애초에 경쟁하는 탭이 없었다. 이제 인게임에서 파일럿 얼굴을
-눌러 상세를 여는 것과 같은 몸짓이다. 이름 칸은 그냥 Label 로 남는다.
+**Where the detail popup opens moved from the name cell to the illustration itself.** Previously
+the name cell below did that job because "tapping the illustration would be confused with the tap
+that empties the slot", but the only way to empty a slot is **tapping the same thumbnail again in
+the grid**, so the upper cell never had a competing tap. It is now the same gesture as tapping a
+pilot face in-game to open details. The name cell stays a plain Label.
 
-**모브 파일럿 15명은 격자에 뜨지 않는다.** `pilot_skills.csv` 가 25개뿐이라
-40명 중 15명은 고유 스킬이 없고(`players.is_mob = 1`), 그쪽은 초상화도 실루엣
-컷인 "이름 없는 선수"다 — 플레이어가 뽑을 대상이 아니라 AI 팀의 머릿수를 채우는
-배경이고, 적으로는 여전히 만난다. `get_pool_grid()` 가 그 필터의 유일한 지점이다.
+**The 15 mob pilots (모브 파일럿) do not appear in the grid.** `pilot_skills.csv` has only 25
+entries, so 15 of the 40 have no unique skill (`players.is_mob = 1`), and their portraits are
+silhouette (실루엣) cut-ins of "nameless players" — they are not draft targets but background
+filling AI team head counts, and you still meet them as enemies. `get_pool_grid()` is the only
+place that filter lives.
 
-**팀 0(플레이어 시작 팀)의 다섯 자리는 전부 네임드다.** `apply_draft` 의 맞교환이
-네임드끼리만 일어나야 팀별 네임드 수가 드래프트로 흔들리지 않는다 — 네임드 25명은
-팀 0 에 5명, 나머지 20명이 7개 AI 팀에 2~3명씩 흩어져 있다(`data/csv/players.csv`).
+**All five seats of team 0 (the player's starting team) are named pilots.** `apply_draft`'s swap
+must only happen between named pilots so per-team named counts are not shaken by the draft — of the
+25 named pilots, 5 are on team 0 and the other 20 are spread 2–3 each over the 7 AI teams
+(`data/csv/players.csv`).
 
 ## Files
 | File | Role |
 |---|---|
-| `TeamDraft.gd`        | `class_name TeamDraft extends Control` — data layer. Owns `validate_draft()`, `apply_draft()`, `get_pool_grid()`, 그리고 화면이 함께 읽는 표 둘 — **슬롯 순서**(`SLOT_ROLES` / `SLOT_NAMES` / `slot_of_role`), **스킬 조회**(`skill_def_for` / `skill_type_label`). 카드 후보 풀 헬퍼 넷은 삭제됐다 — 아래 절. Builds `TeamDraftView` lazily via `ensure_view()` (called by `SeasonHub` after `init_season`). |
-| `TeamDraftView.gd`    | `class_name TeamDraftView extends Control` — procedural UI (선택 5인 일러스트 행 + 필터 행 + 스크롤 썸네일 격자 + 하단 스킬 패널/확정 버튼). Lives as a child of the `TeamDraft` node. |
-| `PilotThumb.gd`       | `class_name PilotThumb extends Button` — 격자 한 칸. **정사각(200×200)이고 얼굴 크롭 하나와 왼쪽 위 역할군 배지가 전부다.** 선택되면 금색 테두리 + 우상단 체크 배지. Emits `thumb_tapped(pilot_id)`. 두 static 헬퍼를 상단 일러스트와 함께 쓴다 — `add_rounded_art`(**둥근 사각형 마스크**: 둥근 `StyleBoxFlat` 을 그리는 `Panel` + `clip_children = CLIP_CHILDREN_ONLY`. 마스크 굴림은 칸 굴림에서 안쪽 여백을 뺀 값이라 테두리와 같은 중심의 곡선이 된다 — `clip_contents` 는 사각형으로만 자른다) · `add_role_badge`. |
-| `DraftDetailPanel.gd` | `class_name DraftDetailPanel extends CanvasLayer` — **파일럿 상세 팝업**. 좌 전신 아트 / 우 스크롤 정보 패널(스탯 칩 6개 → 파일럿 스킬. **받침 높이는 내용이 정한다**). `open(p: PlayerData)` **한 인자뿐이다** — 아래 "두 화면이 함께 쓴다" 절. |
+| `TeamDraft.gd`        | `class_name TeamDraft extends Control` — data layer. Owns `validate_draft()`, `apply_draft()`, `get_pool_grid()`, and two tables the screen also reads — **slot order** (`SLOT_ROLES` / `SLOT_NAMES` / `slot_of_role`), **skill lookup** (`skill_def_for` / `skill_type_label`). The four card candidate-pool helpers were deleted — see the section below. Builds `TeamDraftView` lazily via `ensure_view()` (called by `SeasonHub` after `init_season`). |
+| `TeamDraftView.gd`    | `class_name TeamDraftView extends Control` — procedural UI (5-pick illustration row + filter row + scrolling thumbnail grid + bottom skill panel/confirm button). Lives as a child of the `TeamDraft` node. |
+| `PilotThumb.gd`       | `class_name PilotThumb extends Button` — one grid cell. **Square (200×200), and a single face crop plus a top-left role-class badge is all it has.** When selected: gold border + top-right check badge. Emits `thumb_tapped(pilot_id)`. Two static helpers shared with the top illustrations — `add_rounded_art` (**rounded-rectangle mask**: a `Panel` drawing a rounded `StyleBoxFlat` + `clip_children = CLIP_CHILDREN_ONLY`. The mask radius is the cell radius minus the inner padding, so the curve is concentric with the border — `clip_contents` only clips to a rectangle) · `add_role_badge`. |
+| `DraftDetailPanel.gd` | `class_name DraftDetailPanel extends CanvasLayer` — **pilot detail popup**. Left full-body art / right scrolling info panel (6 stat chips → pilot skill. **The backing height is set by the content**). `open(p: PlayerData)` **takes just one argument** — see the "Shared by two screens" section below. |
 
-`PilotCard.gd` / `PilotCard.tscn` 은 **삭제됐다** — 200×175 칸에 스탯 막대 다섯
-줄을 세우던 예전 격자 카드이고, `PilotThumb` 이 그 자리를 대신한다.
+`PilotCard.gd` / `PilotCard.tscn` were **deleted** — the old grid card that stacked five stat bars
+in a 200×175 cell; `PilotThumb` replaces it.
 
-## 다섯 칸은 역할 고정
-슬롯 순서는 `GameEnums.Role` 의 열거값 순서가 아니라 **MOBA 라인 순서**다 —
-탑(TANK) · 정글(ASSASSIN) · 미드(FIGHTER) · 원딜(SNIPER) · 서폿(SUPPORT),
-`TeamDraft.SLOT_ROLES` 한 표에 있다. 열거값 순서를 그대로 쓰면 정글러가 세 번째,
-서포터가 네 번째로 앉는데 그 배열은 플레이어가 아는 라인업과 대응하지 않는다
-(인게임 파일럿 스트립이 같은 이유로 `HudBuilder.LANE_SEAT_ORDER` 를 따로 든다).
+## The five slots are role-fixed
+Slot order is not the enum order of `GameEnums.Role` but **MOBA lane order** —
+탑 Top (TANK) · 정글 Jungle (ASSASSIN) · 미드 Mid (FIGHTER) · 원딜 ADC (SNIPER) · 서폿 Support (SUPPORT),
+in the single table `TeamDraft.SLOT_ROLES`. Using enum order as-is seats the jungler third and the
+support fourth, which doesn't match the lineup players know
+(the in-game pilot strip (스트립) keeps its own `HudBuilder.LANE_SEAT_ORDER` for the same reason).
 
-**필터 버튼과 위쪽 다섯 칸이 같은 표를 읽으므로** 순서가 갈릴 수 없다 — 필터
-`i = 0` 이 "전체"(-1)이고 그 뒤가 `SLOT_ROLES[i - 1]` 이다.
+**The filter buttons and the five upper slots read the same table**, so their order can't diverge —
+filter `i = 0` is "전체" (All) (-1), followed by `SLOT_ROLES[i - 1]`.
 
-자유 순서(선착순 5칸)를 쓰지 않은 이유는 `validate_draft` 가 "역할당 정확히
-1명"을 강제하기 때문이다. 자유 순서면 화면에서만 가능한 조합이 생겨 규칙을
-확정 버튼에서 처음 거절당한다 — 규칙은 고를 때 보여야 한다.
+Free order (first-come 5 slots) wasn't used because `validate_draft` enforces "exactly 1 per role".
+With free order the screen would allow combinations that are first rejected at the confirm
+button — rules should be visible while picking.
 
-## DraftDetailPanel — 두 화면이 함께 쓴다
-이 팝업은 **아웃게임에서 파일럿 한 명을 들여다보는 유일한 자리**다. 여는 곳이
-둘이다 — 이 화면(선택 슬롯의 상체 일러스트)과 **밴픽의 배정 단계**(양 팀 파일럿
-초상화, `features/match_flow/ban_pick/`). 그래서 `TeamDraft` 인스턴스를 요구하지
-않는다: 필요한 것은 `PlayerData` 한 장과 오토로드 `GameManager` 뿐이다.
+## DraftDetailPanel — shared by two screens
+This popup is **the only place in the outgame to inspect a single pilot**. It opens from two
+places — this screen (the upper-body illustration of a picked slot) and **the assignment step of
+ban/pick** (both teams' pilot portraits (초상화), `features/match_flow/ban_pick/`). So it does not
+require a `TeamDraft` instance: all it needs is one `PlayerData` and the `GameManager` autoload.
 
-그 탈출이 `TeamDraft.skill_def_for` 를 **삭제**했다 — 하단 스킬 패널이 사라지며
-유일한 소비자가 팝업 하나가 됐고, 팝업이 `GameManager.skill_def()` 를 직접 읽는다.
-같은 탈출이 `candidate_cards_for_role` 을 **static** 으로 만들어 카드 풀을 인자로
-받게 했었는데, 후보 카드 절 자체가 없어지며 그 함수도 함께 사라졌다 — 아래 절.
+That escape **deleted** `TeamDraft.skill_def_for` — with the bottom skill panel gone, the popup
+became the only consumer, and the popup reads `GameManager.skill_def()` directly.
+The same escape had made `candidate_cards_for_role` **static** taking the card pool as an argument,
+but the candidate-card section itself was removed and that function went with it — see below.
 
-## 상체 일러스트 (어깨~얼굴) — `PilotImages.bust_for`
-`tall/N_tall.png`(210×700, 머리~허벅지)의 **윗부분**을 `AtlasTexture` 로 잘라
-쓴다(`PilotImages.BUST_REGION` = `Rect2(18, 0, 174, 351)`). `full` 아트에서
-직접 자르지 않는 것이 요점이다 — full 은 파일럿마다 인물 배율이 달라 다섯 칸의
-얼굴 크기가 들쭉날쭉해지는데, `tall` 은 이미 얼굴 사각형을 템플릿 매칭으로 찾아
-배율을 통일해 둔 컷이라 그 위에서 자르면 다섯 얼굴이 같은 크기로 선다
-(`resources/images/pilot/make_tall_crops.py` 참조).
+## Upper-body illustration (shoulders–face) — `PilotImages.bust_for`
+Uses an `AtlasTexture` crop of the **upper part** of `tall/N_tall.png` (210×700, head–thigh)
+(`PilotImages.BUST_REGION` = `Rect2(18, 0, 174, 351)`). The point is not cropping directly from the
+`full` art — full art has a different figure scale per pilot, making the five faces vary in size,
+whereas `tall` is a cut whose scale was already unified by finding the face rectangle via template
+matching, so cropping from it makes the five faces the same size
+(see `resources/images/pilot/make_tall_crops.py`).
 
-**크롭이 `PilotImages` 로 옮겨 갔다**(예전 `TeamDraftView.BUST_REGION`) — 밴픽의
-배정 단계가 같은 크롭을 쓰게 되면서, 두 화면이 각자 자기 `Rect2` 를 들고 있으면
-한쪽만 고쳐도 두 화면의 얼굴 크기가 갈린다.
+**The crop moved to `PilotImages`** (formerly `TeamDraftView.BUST_REGION`) — once the ban/pick
+assignment step started using the same crop, two screens each holding their own `Rect2` would mean
+fixing just one makes the face sizes diverge.
 
-영역 비율(174 : 351 = `PilotImages.BUST_ASPECT` 0.496)은 칸 비율(204 : 412 =
-0.495)과 같게 잡아 늘어남이 없다 — 둘 중 하나만 바꾸면 얼굴이 찌그러진다.
+The region ratio (174 : 351 = `PilotImages.BUST_ASPECT` 0.496) matches the cell ratio (204 : 412 =
+0.495), so there is no stretching — change only one of them and faces get squashed.
 
-## 파일럿 카드 3장 — 선수마다 고정이라 다시 보여 준다
-상세 팝업 맨 아래에 **"파일럿 카드"** 절이 있다(`DraftDetailPanel._build_pilot_cards`).
-그 선수의 고정 3장(`GameManager.pilot_card_ids_for(pd)`)을 설명판
-(`CardDescBox.build(cd, w, light = true)`)으로 위에서부터 쌓는다 — 이름 · 비용 ·
-키워드 줄 · 설명문 · 키워드 풀이가 한 판에 다 들어 있어 카드 노드 격자가 필요 없다.
+## 3 pilot cards — fixed per player, so shown again
+At the very bottom of the detail popup is a **"파일럿 카드"** (Pilot cards) section
+(`DraftDetailPanel._build_pilot_cards`). It stacks that player's fixed 3 cards
+(`GameManager.pilot_card_ids_for(pd)`) top-down as description boxes
+(`CardDescBox.build(cd, w, light = true)`) — name · cost · keyword line · description · keyword
+glossary all fit on one box, so no grid of card nodes is needed.
 
-**지금은 이 절이 판단의 근거가 된다.** 파일럿 카드가 경기 시작 시 표집되던 시절에는
-드래프트에서 보여 줄 수 있는 것이 역할별 **후보 풀**뿐이었고, 그 목록은 같은 역할이면
-누구를 뽑아도 같아서 절째로 지웠었다. 지금은 선수마다 고정(`players.pilot_cards`,
-비었으면 선수 id 씨앗 뽑기)이라 여기서 본 3장이 인게임에서 손에 잡히는 바로 그 3장이고,
-같은 역할이라도 선수마다 다르다.
+**This section is now a basis for decisions.** Back when pilot cards were sampled at match start,
+all the draft could show was the per-role **candidate pool**, and that list was identical for
+anyone picked in the same role, so the whole section was removed. Now cards are fixed per player
+(`players.pilot_cards`; if empty, a draw seeded by the player id), so the 3 cards seen here are
+exactly the 3 you hold in-game, and they differ per player even within the same role.
 
-그때 함께 삭제된 것 — `DraftDetailPanel` 의 `_build_card_sections` / `_cards_in_cat` /
-`_build_card_grid`, 그리고 `TeamDraft` 의 후보 풀 헬퍼 넷(`pilot_card_slots_for_role` /
-`candidate_cards_for_role` / `slot_summary_for_role` / `cat_label`) — 은 되살리지
-않는다. 카드의 원본은 `GameManager.pilot_card_ids_for` 하나다.
+What was deleted back then — `DraftDetailPanel`'s `_build_card_sections` / `_cards_in_cat` /
+`_build_card_grid`, and `TeamDraft`'s four candidate-pool helpers (`pilot_card_slots_for_role` /
+`candidate_cards_for_role` / `slot_summary_for_role` / `cat_label`) — is not revived. The single
+source of cards is `GameManager.pilot_card_ids_for`.
 
-**받침 높이가 내용을 따라가게 됐다.** 카드 격자가 있을 때는 우측 패널이 언제나
-꽉 차서 `PANEL_TOP` ~ `PANEL_BOTTOM` 고정으로 충분했는데, 스탯 칩과 스킬 한
-문단만 남으니 아래 절반이 빈 흰 판이 됐다. 지금은 위쪽만 못박고 아래끝이 내용에
-맞춰 올라오며(넘치면 `PANEL_BOTTOM` 에서 멈추고 그때부터 스크롤이 일한다) **닫기
-버튼이 그 아래끝을 따라간다** — 인게임 상세 패널의 `_reposition_close` 와 같은
-규칙이다.
+**The backing height now follows the content.** When the card grid existed, the right panel was
+always full, so a fixed `PANEL_TOP` ~ `PANEL_BOTTOM` sufficed; with only stat chips and one skill
+paragraph left, the bottom half became an empty white board. Now only the top is pinned and the
+bottom edge rises to fit the content (if it overflows it stops at `PANEL_BOTTOM` and scrolling takes
+over from there), and **the close button follows that bottom edge** — the same rule as the in-game
+detail panel's `_reposition_close`.
 
 ## UI flow
 1. `SeasonHub._show_draft()` calls `TeamDraft.ensure_view()` then sets `TeamDraft.visible = true`.
-2. `TeamDraftView` instantiates one `PilotThumb` per pool entry, laid out 5 columns wide inside a `ScrollContainer`. 격자 순서는 슬롯 순서 안에서 종합 스탯 내림차순. 모브는 `get_pool_grid()` 가 이미 걸러 냈다.
-3. 필터 버튼(전체/탑/정글/미드/원딜/서폿)이 `_reflow_grid()` 를 돌린다 — **보이는 칸만 좌표를 다시 받는다**. 숨긴 칸을 그대로 두고 `visible` 만 끄면 빈 구멍이 남아 5열 배치가 무너진다.
-4. 썸네일을 누르면 그 파일럿이 **자기 역할 칸**에 앉는다. 같은 칸의 같은 사람을 다시 누르면 비고, 다른 사람을 누르면 교체.
-5. 채워진 칸의 **상체 일러스트**를 누르면 `DraftDetailPanel` 이 열린다. 그 칸은 `Button` 이고 **`flat` 이면 안 된다** — flat 버튼은 스타일박스를 통째로 무시해서 빈 칸의 테두리와 바탕이 사라지고 "선택 없음" 글자만 허공에 뜬다(실측).
-6. **"다음"** 은 다섯 칸이 다 찼을 때만 활성화되고, 누르면 CONFIRM 모드로 넘어간다(픽창이 사라지고 5인이 가운데로 내려온다). "뒤로"가 그 반대다.
-7. **"드래프트 확정"** 은 `_picks` 를 **역할 순서**(`GameEnums.Role`)로 다시 정렬해 `apply_draft()` 에 넘긴다 — `validate_draft` 는 순서를 보지 않지만, 화면의 슬롯 순서를 그대로 흘려보내면 이 목록이 무엇의 순서인지가 호출부마다 달라진다.
-8. Confirm → `TeamDraft.apply_draft()` rewires team rosters → **`_detail.close()`** → `SeasonHub.goto(Screen.HUB)`. 팝업은 `CanvasLayer` 라 부모 Control 의 `visible` 을 따르지 않는다 — 열어 둔 채 넘어가면 딤이 화면에 그대로 남는다.
+2. `TeamDraftView` instantiates one `PilotThumb` per pool entry, laid out 5 columns wide inside a `ScrollContainer`. Grid order is overall stat descending within slot order. Mobs were already filtered out by `get_pool_grid()`.
+3. The filter buttons (전체/탑/정글/미드/원딜/서폿 = All/Top/Jungle/Mid/ADC/Support) run `_reflow_grid()` — **only visible cells get re-positioned**. Leaving hidden cells in place and just turning off `visible` leaves holes that break the 5-column layout.
+4. Tapping a thumbnail seats that pilot in **their own role's slot**. Tapping the same person in the same slot again empties it; tapping someone else replaces.
+5. Tapping the **upper-body illustration** of a filled slot opens `DraftDetailPanel`. That slot is a `Button` and **must not be `flat`** — a flat button ignores the stylebox entirely, so an empty slot's border and background vanish and only the "선택 없음" (None selected) text floats in mid-air (measured).
+6. **"다음"** (Next) is enabled only when all five slots are filled; pressing it moves to CONFIRM mode (the pick pane disappears and the 5 picks drop to the centre). "뒤로" (Back) does the reverse.
+7. **"드래프트 확정"** (Confirm draft) re-sorts `_picks` into **role order** (`GameEnums.Role`) before passing them to `apply_draft()` — `validate_draft` ignores order, but passing the screen's slot order straight through would make what this list is ordered by differ per call site.
+8. Confirm → `TeamDraft.apply_draft()` rewires team rosters → **`_detail.close()`** → `SeasonHub.goto(Screen.HUB)`. The popup is a `CanvasLayer`, so it doesn't follow the parent Control's `visible` — moving on with it open leaves the dim on screen.
 
 ## Layout (1080×1920 portrait)
-**아래에서 위로 쌓는다** — 격자를 하단 바에 매달고(`grid_y()`), 필터(`filter_y()`)와
-선택 5인(`pick_row_y()`)이 차례로 그 위에 앉는다. 격자는 **썸네일 3.5줄**
-(`GRID_VISIBLE_ROWS`, 높이 724)이고 줄인 만큼 선택 5인이 내려왔다 — 반 줄이
-잘려 보이는 것이 곧 "아래로 더 있다"이다.
+**Stacked bottom to top** — the grid hangs from the bottom bar (`grid_y()`), and the filter
+(`filter_y()`) and 5 picks (`pick_row_y()`) sit above it in turn. The grid is **3.5 rows of
+thumbnails** (`GRID_VISIBLE_ROWS`, height 724) and the 5 picks came down by as much as it shrank —
+the half-cut row itself says "there is more below".
 
-`_slot_row` 는 **일러스트 한 줄뿐**이다(204×412 버튼 ×5, 간격 12, x0 = 6). 그림은
-역할 색 테두리(3px) 안으로 물려 둥근 마스크로 깎이고, 왼쪽 위에 역할군 배지.
+`_slot_row` is **just the one row of illustrations** (204×412 button ×5, gap 12, x0 = 6). The image
+is inset inside the role-colour border (3px), trimmed by the rounded mask, with the role-class badge
+at top left.
 
-화면 좌표 (세이프 인셋 0 · 9:16 실측):
+Screen coordinates (safe inset 0 · 9:16 measured):
 
 | Y range     | Block |
 |---|---|
-| 520..932    | `_slot_row` (PICK 모드) — `filter_y() − 32 − 412` |
-| 964..1028   | 필터 버튼 6개 (x0 24, 총 폭 1032) |
-| 1056..1780  | 썸네일 격자 뒤판 + `ScrollContainer` (5열 × `PilotThumb` 200×200, 3.5줄) |
-| 하단 바     | PICK = "다음" 전폭. CONFIRM = "뒤로"(1) + "게임 시작"(2) |
-| **754..1166** | CONFIRM 모드의 `_slot_row` — 화면 세로 가운데(`confirm_row_y()`) |
+| 520..932    | `_slot_row` (PICK mode) — `filter_y() − 32 − 412` |
+| 964..1028   | 6 filter buttons (x0 24, total width 1032) |
+| 1056..1780  | Thumbnail grid backplate + `ScrollContainer` (5 cols × `PilotThumb` 200×200, 3.5 rows) |
+| Bottom bar  | PICK = "다음" full width. CONFIRM = "뒤로" (1) + "게임 시작" (2) |
+| **754..1166** | CONFIRM mode `_slot_row` — screen vertical centre (`confirm_row_y()`) |
 
-모든 y 는 상수가 아니라 `OutgameTheme.bottom_bar_top()` 에서 역산한다 — 하단
-버튼은 이 화면에서 가장 아래의 터치 대상이라 홈 인디케이터 / 제스처 바와 맞닿는다.
+Every y is derived back from `OutgameTheme.bottom_bar_top()`, not a constant — the bottom buttons
+are the lowest touch targets on this screen and border the home indicator / gesture bar.
 
-상세 팝업(`DraftDetailPanel`)은 자기 `CanvasLayer`(layer 20) 위에 선다:
-좌 전신 아트(높이 1400, 아래끝 2010, 중심 x 300) / 우 정보 패널
-(x 596, w 460, y 150..1740, 안쪽은 `ScrollContainer`) / 닫기 (1756..1840).
-닫기 버튼에 **불투명 스타일이 필수다** — 그 자리는 드래프트 화면의 "드래프트
-확정" 버튼과 겹치는데, 기본 Button 테마는 반투명이라 딤 아래의 그 글자가 비쳐
-두 라벨이 한 칸에 겹쳐 읽혔다.
+The detail popup (`DraftDetailPanel`) stands on its own `CanvasLayer` (layer 20):
+left full-body art (height 1400, bottom edge 2010, centre x 300) / right info panel
+(x 596, w 460, y 150..1740, inside is a `ScrollContainer`) / close (1756..1840).
+The close button **requires an opaque style** — that spot overlaps the draft screen's "드래프트
+확정" button, and the default Button theme is translucent, so that text showed through under the
+dim and the two labels read as overlapping in one cell.
 
 ---
 
-## 격자 스크롤 — `DragScroll`
+## Grid scrolling — `DragScroll`
 
-격자는 **`DragScroll` 이 굴린다**(`resources/DragScroll.gd`). 엔진의 터치 드래그는
-데스크톱 마우스로는 아예 안 굴렀고 폰에서도 썸네일 위의 탭과 얽혀 "안 굴러간다"는
-보고가 났다. `DragScroll` 은 마우스와 터치를 같은 경로로 받아 14px 문턱을 넘으면
-스크롤로 판정하고, **그 순간 눌려 있던 썸네일의 눌림을 취소**한다 — 스크롤하려던
-손이 파일럿을 고르지 않는다. 썸네일의 `MOUSE_FILTER_PASS` 는 그대로 필요하다
-(눌림이 스크롤까지 올라가야 판정이 시작된다). 상세 팝업의 정보 스크롤도 같다.
+The grid is **scrolled by `DragScroll`** (`resources/DragScroll.gd`). The engine's touch drag did
+not scroll at all with a desktop mouse, and on phones it got tangled with taps on thumbnails,
+leading to "it doesn't scroll" reports. `DragScroll` takes mouse and touch through the same path,
+judges a scroll once a 14px threshold is crossed, and **at that moment cancels the press on the
+thumbnail that was held** — a hand meaning to scroll doesn't pick a pilot. The thumbnails'
+`MOUSE_FILTER_PASS` is still required (the press must reach the scroll for the judgement to start).
+The detail popup's info scroll works the same way.

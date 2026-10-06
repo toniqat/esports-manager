@@ -1,366 +1,372 @@
-# 일상 훈련 (타일 배치판)
+# Daily training (일상 훈련) (tile placement board)
 
-선수들의 훈련을 **5열(선수) × 5행(하루씩) 판에 코스 타일을 끼워 넣어** 짠다.
-원작(Esports Godfather)의 루틴 훈련판을 옮긴 것이다. 원작 87개 타일의 분석 문서는
-지웠고 git `bc52878` 의 `docs/routine.md` 에 남아 있다.
+Players' training is planned by **slotting course tiles into a 5-column (player) × 5-row (one per
+day) board**. It ports the routine training board of the original game (Esports Godfather). The
+analysis doc of the original's 87 tiles was deleted; it remains in `docs/routine.md` at git
+`bc52878`.
 
-**화면에서 "주간"이라는 말과 요일 표시는 뺐다.** 판은 여전히 다섯 줄이고 정산도
-하루씩 먹지만(`apply_day_training`), 여기서 짜는 것은 한 주의 시간표가 아니라
-선수 다섯의 **일상**이다 — 줄마다 월 · 화 · 수를 적어 두면 그 다섯 칸이 달력의
-약속처럼 읽히고, 정작 이 화면이 묻는 것(누구에게 무엇을 얼마나 붙일 것인가)에서
-눈이 멀어진다. 줄의 순서(위에서 아래로) 자체가 이미 앞뒤를 말한다.
-`TrainingBoard.DAY_NAMES` 는 그 글자의 유일한 소비자였으므로 **함께 삭제됐다** —
-요일 이름이 필요한 자리는 **시간 경과 화면**(`features/season/week/`) 하나이고,
-그쪽은 예전부터 `OutgameTheme.DAY_NAMES` 를 읽는다.
+**The word "주간" (weekly) and weekday (요일) labels were removed from the screen.** The board still
+has five rows and is still settled one day at a time (`apply_day_training`), but what you plan here
+is not a week's timetable but the **daily routine** of five players — writing Mon · Tue · Wed on each
+row makes those five cells read like calendar appointments and pulls the eye away from what this
+screen actually asks (who gets what, and how much). The order of the rows (top to bottom) already
+expresses sequence. `TrainingBoard.DAY_NAMES` was the only consumer of that text, so it **was deleted
+too** — the only place that needs weekday names is the **week-progress screen (시간 경과 화면)**
+(`features/season/week/`), which has always read `OutgameTheme.DAY_NAMES`.
 
 ## Files
 | File | Role |
 |---|---|
-| `TrainingTile.gd` | `class_name TrainingTile` — CSV 한 행 = 타일 하나. **문법 해석은 여기에만 있다**(모양 · 색 · EXP · 효과 절). 색 표 · 등급 표 · 등급별 배치 상한도 여기가 소유한다. |
-| `TrainingBoard.gd` | `class_name TrainingBoard` — 머리 없는 판. 배치 판정(`can_place` / `place` / `remove_at`), 정산(`cell_exp` / `compute_gains` / `compute_day_gains`), **요일 적용**(`apply_day_training`), 미리보기(`projected_stats`), 주 진행 초기화(`reset_week_progress`). Season.tscn 의 `TrainingBoard` 노드. |
-| `TrainingView.gd` | 편성 화면 — 초상화 5 + 판 5×5 + 코스 카드 가로 스크롤 + "훈련 확정". 드래그 드롭. 배치·읽기 규약은 아래 "화면 배치". |
+| `TrainingTile.gd` | `class_name TrainingTile` — one CSV row = one tile. **Grammar parsing lives only here** (shape · colour · EXP · effect clauses). Also owns the colour table · grade table · per-grade placement limits. |
+| `TrainingBoard.gd` | `class_name TrainingBoard` — headless board. Placement checks (`can_place` / `place` / `remove_at`), settlement (`cell_exp` / `compute_gains` / `compute_day_gains`), **weekday application** (`apply_day_training`), preview (`projected_stats`), week-progress reset (`reset_week_progress`). The `TrainingBoard` node in Season.tscn. |
+| `TrainingView.gd` | Planning screen — 5 portraits + 5×5 board + horizontally scrolling course cards + "훈련 확정" (Confirm training). Drag & drop. Layout · reading conventions are in "Screen layout" below. |
 
-## 판의 축
+## Board axes
 ```
-        탑    정글   미드   원딜   서폿      ← 열(column) = 한 선수의 한 주
+        탑    정글   미드   원딜   서폿      ← column = one player's week
   월  [    ][    ][    ][    ][    ]
-  화  [    ][    ][    ][    ][    ]   ← 행(row) = 같은 요일 다섯 명
+  화  [    ][    ][    ][    ][    ]   ← row = the five players on the same weekday
   수  [    ][    ][    ][    ][    ]
   목  [    ][    ][    ][    ][    ]
   금  [    ][    ][    ][    ][    ]
 ```
-열 순서는 `GameEnums.ROLE_DISPLAY_ORDER`(전장 스트립 · 허브 로스터 · 밴픽과
-같은 표)다. **토·일은 판에 없다** — 그 이틀은 경기 주말이라 훈련이 아니고,
-예전 7일 격자의 금·토·일 MATCH 잠금이 하던 일을 판 크기 자체가 대신한다.
-**요일 이름은 판 옆에 적지 않는다**(위 머리말) — 위 그림의 `월` … `금` 은
-데이터 축을 설명하는 것이지 화면에 뜨는 글자가 아니다.
+(Columns: Top · Jungle · Mid · ADC · Support; rows: Mon–Fri.)
 
-원작은 이 축이 **반대**다(행이 선수, 열이 교시). 그래서 효과 범위 이름을
-상/하/좌/우가 아니라 **의미**로 지었다(`day_*` / `mate_*`) — 방향으로 적어 두면
-판을 한 번 돌릴 때마다 절이 전부 거짓말이 된다.
+Column order is `GameEnums.ROLE_DISPLAY_ORDER` (the same table as the battlefield strip · hub roster
+· ban/pick). **Sat·Sun are not on the board** — those two days are the match weekend, not training,
+and the board size itself now does what the old 7-day grid's Fri·Sat·Sun MATCH lock used to do.
+**Weekday names are not written beside the board** (see intro above) — `월` … `금` in the diagram
+explain the data axis; they are not text shown on screen.
+
+The original has this axis **reversed** (rows are players, columns are periods). That's why effect
+scope names are by **meaning** (`day_*` / `mate_*`), not up/down/left/right — written as directions,
+every clause would become a lie each time the board is rotated.
 
 ## `data/csv/training_tiles.csv`
-| 컬럼 | 뜻 |
+| Column | Meaning |
 |---|---|
-| `id` | `T01` … (텍스트 PK) |
+| `id` | `T01` … (text PK) |
 | `grade` | 0=D 1=C 2=B 3=A 4=S |
-| `shape` | `/` 로 줄을 나눈 색 문자열. **한 줄 = 하루, 한 글자 = 선수 한 명.** `W`=1칸, `WW`=같은 요일 둘, `W/W`=한 선수 이틀, `CC/DD`=둘×이틀, `WWWWW`=하루를 다섯 명이 |
-| `exp` | `\|` 로 이은 `스탯:값`. `all:8` = 여섯 스탯 전부. **한 칸이 주는 값**이라 n칸 타일은 n배 |
-| `effect` | `;` 로 이은 절 |
+| `shape` | Colour string with rows separated by `/`. **One row = one day, one character = one player.** `W`=1 cell, `WW`=two on the same weekday, `W/W`=one player for two days, `CC/DD`=two × two days, `WWWWW`=one day for all five |
+| `exp` | `stat:value` joined by `\|`. `all:N` = all six stats. **Value given per cell**, so an n-cell tile gives n times |
+| `effect` | Clauses joined by `;` |
 
-**`description` 컬럼은 없다.** 예전에는 있었고 정보 팝오버가 그것을 그대로
-찍었는데, 그 문장은 `effect` 절을 사람이 손으로 옮겨 적은 것이라 절의 숫자를
-고치면 설명만 조용히 거짓말이 됐다. 지금 팝오버의 두 줄은 둘 다 타일 데이터에서
-만들어진다 — `TrainingTile.exp_summary()`(EXP)와 `effect_summary()`(효과).
+**There is no `description` column.** There used to be one, and the info popover printed it
+verbatim, but those sentences were hand-transcriptions of the `effect` clauses, so editing a clause's
+number made only the description silently lie. Both lines of the popover are now built from tile
+data — `TrainingTile.exp_summary()` (EXP) and `effect_summary()` (effect).
 
-### 색 ↔ 스탯
-`PlayerData.STAT_KEYS` 와 같은 순서다.
+### Colour ↔ stat
+Same order as `PlayerData.STAT_KEYS`.
 
-| 기호 | 색 | 스탯 |
+| Symbol | Colour | Stat |
 |---|---|---|
-| `H` | 노랑 | 전장 명중 `field_hit` |
-| `E` | 파랑 | 전장 회피 `field_eva` |
-| `C` | 빨강 | 교전 명중 `engage_hit` |
-| `D` | 보라 | 교전 회피 `engage_eva` |
-| `A` | 주황 | 공격력 성장 `atk_growth` |
-| `P` | 초록 | 체력 성장 `hp_growth` |
-| `K` | 검정 | **경험치 0** — 증폭형 타일의 자기 칸 |
-| `W` | 회색 | 무속성 — 여섯 스탯을 고루 |
+| `H` | Yellow | Battlefield (전장) hit (명중) `field_hit` |
+| `E` | Blue | Battlefield evasion `field_eva` |
+| `C` | Red | Engage (교전) hit `engage_hit` |
+| `D` | Purple | Engage evasion `engage_eva` |
+| `A` | Orange | Attack growth `atk_growth` |
+| `P` | Green | HP growth `hp_growth` |
+| `K` | Black | **0 EXP** — the self cell of an amplifier tile |
+| `W` | Grey | Neutral — all six stats evenly |
 
-색은 지금은 표시와 `exp` 의 짝일 뿐이지만, 원작의 조건형 효과("같은 열의 레드
-개수만큼 방어 +40")를 넣을 자리로 남겨 뒀다 — `TrainingTile.cell_colors` 가
-이미 칸별 색을 들고 있으므로 절 하나만 추가하면 된다.
+Colour is currently only a display pairing with `exp`, but it is kept as the hook for the original's
+conditional effects ("defence +40 per red in the same column") — `TrainingTile.cell_colors` already
+holds per-cell colours, so only one clause needs adding.
 
-### 효과 절
+### Effect clauses
 ```
-mult:<scope>:<pct>            그 범위의 칸 EXP 를 pct% 로 곱한다 (100 = 무변화)
-flat:<scope>:<stat>:<n>       그 범위의 칸에 stat EXP 를 n 더한다
+mult:<scope>:<pct>            multiply cell EXP in that scope by pct% (100 = no change)
+flat:<scope>:<stat>:<n>       add n stat EXP to cells in that scope
 ```
-| scope | 뜻 |
+| scope | Meaning |
 |---|---|
-| `self` | 자기 칸 |
-| `day_next` / `day_prev` | 그 선수의 다음 날 / 전날 한 칸 |
-| `day_all` | 그 선수의 한 주 전체 |
-| `day_prev_all` / `day_next_all` | 그 선수의 앞선 날 / 남은 날 전부 |
-| `mate_left` / `mate_right` | 옆 선수의 같은 요일 |
-| `mate_all` | 그 요일의 다른 선수 전부 |
+| `self` | Own cell |
+| `day_next` / `day_prev` | That player's next day / previous day, one cell |
+| `day_all` | That player's whole week |
+| `day_prev_all` / `day_next_all` | All of that player's earlier days / remaining days |
+| `mate_left` / `mate_right` | The neighbouring player's same weekday |
+| `mate_all` | All other players on that weekday |
 
-화면에 뜨는 문구는 `TrainingTile.SCOPE_LABELS` 표 하나에서 나온다(`day_next` →
-"다음 날", `mate_all` → "같은 날 다른 선수"). 절 이름과 같은 이유로 **방향이
-아니라 의미**로 적는다 — 판을 한 번 돌리면 "위 칸"은 거짓말이 된다.
-`mult` 는 화면에 **차이**를 적는다(`115` → `+15%`): 100 이 무변화이므로 그
-절이 무엇을 바꾸는지에 곧장 답하는 것은 115 가 아니라 +15 다.
+On-screen wording comes from the single table `TrainingTile.SCOPE_LABELS` (`day_next` →
+"다음 날" (Next day), `mate_all` → "같은 날 다른 선수" (Other players, same day)). For the same reason
+as clause names, it is written by **meaning, not direction** — rotate the board once and "the cell
+above" becomes a lie.
+`mult` shows the **difference** on screen (`<pct>` → `+(<pct> − 100)%`): since 100 is no change, what directly
+answers "what does this clause change" is the difference from 100, not the raw pct.
 
-**자기 타일이 덮은 칸은 어느 scope 에도 안 들어간다.** 자기 자신에게 배율을
-거는 절은 그냥 EXP 를 그만큼 더 적으면 되는 값이고, 여러 칸 타일에서는 한 칸이
-다른 칸에 배율을 걸어 배치와 무관한 자기 증폭이 생긴다.
+**Cells covered by the tile itself are in no scope.** A clause that multiplies the tile itself is
+just a value you could write as more EXP, and with multi-cell tiles one cell would multiply another,
+creating self-amplification unrelated to placement.
 
-## 정산 (`cell_exp` → `compute_gains` / `compute_day_gains`)
-3단계이고 **순서가 결과를 바꾸지 않는 것**이 설계의 요점이다.
+## Settlement (`cell_exp` → `compute_gains` / `compute_day_gains`)
+Three stages, and the key design point is that **order doesn't change the result**.
 
-1. 칸마다 기본 EXP 를 깐다. 빈 칸은 기본 코스(`FILLER_TILE_ID` = T01)가 메우므로
-   **"아무것도 안 놓은 판"과 "기본으로 도배한 판"이 같은 결과**를 낸다.
-2. 절을 전부 훑어 **배율 표**와 **가산 표**를 따로 쌓는다. 배율은 곱해서 쌓인다
-   (120% 둘이면 144%) — 더하기로 쌓으면 증폭 타일 셋만 붙여도 폭주한다.
-3. 둘을 칸마다 한 번에 적용해 **칸별 EXP 를 굳힌다**(`cell_exp`,
-   `Vector2i(seat, day) → {stat: int}`). 같은 패스에서 곱하면 절이 도는 순서가
-   결과를 바꾼다("왼쪽 칸 ×0.5" 뒤에 "그 칸 +100" 이 오면 100 이 안 깎인다).
-   **반올림도 여기서 칸당 한 번만** 한다.
+1. Lay down base EXP per cell. Empty cells are filled by the basic course (`FILLER_TILE_ID` = T01),
+   so **"a board with nothing placed" and "a board plastered with basics" give the same result**.
+2. Scan all clauses, building a **multiplier table** and an **additive table** separately.
+   Multipliers stack multiplicatively (two multipliers a% and b% → a×b) — stacking additively would run away with
+   just three amplifier tiles.
+3. Apply both to each cell at once to **fix per-cell EXP** (`cell_exp`,
+   `Vector2i(seat, day) → {stat: int}`). Multiplying in the same pass would make clause order change
+   the result ("left cell ×m" followed by "that cell +n" leaves the n uncut).
+   **Rounding also happens here, once per cell.**
 
-접는 것은 그 다음이다. `compute_gains()` 는 다섯 줄 전부를, `compute_day_gains(day)`
-는 그 줄만 자리별로 더한다. **자기 줄만 다시 계산하지 않는 것**이 요점이다 —
-절의 스코프는 요일을 넘나들므로(`day_next` · `day_prev_all` · `mate_all`) 수요일
-타일이 목요일 칸에 건 배율은 목요일을 정산할 때 살아 있어야 한다. 칸 표를
-판 전체로 한 번 만들고 접기만 나누면 **요일 다섯의 합이 주간 한 번과 한 EXP 도
-어긋날 수 없다**(헤드리스로 검증한다).
+Folding comes after that. `compute_gains()` sums all five rows per seat, `compute_day_gains(day)`
+sums only that row. **Not recomputing just your own row** is the point — clause scopes cross weekdays
+(`day_next` · `day_prev_all` · `mate_all`), so a multiplier that a Wednesday tile put on a Thursday
+cell must still be alive when Thursday is settled. Building the cell table once for the whole board
+and splitting only the folding means **the sum of the five weekdays cannot differ from a single
+weekly settlement by even one EXP** (verified headless).
 
-### EXP 와 나머지 통장
-**EXP 는 스탯 포인트가 아니다** — `EXP_PER_POINT`(40)만큼 모여야 스탯이 1 오른다.
-빈 판은 선수당 스탯 +1/주, 한 스탯에 몰아주면 +5~9/주.
+### EXP and the leftover bank
+**EXP is not stat points** — a stat rises by 1 only once `EXP_PER_POINT` (const.csv `TRAINING_EXP_PER_POINT`) accumulates.
+An empty board gives only a trickle per player per week; focusing courses on one stat is how a stat climbs fast.
 
-나머지는 **주 안에서만 이월된다**(`season_state["training_exp_carry"]`,
-`seat → {stat: 남은 EXP}`). 예전에는 그냥 버렸는데 — 정산이 주 1회라 버려도 한 주에
-한 번뿐이었다 — 정산이 요일 단위로 쪼개지면서 그러면 하루 30 EXP 짜리 판이 닷새
-내내 매일 0 점이 되어 한 주에 한 점도 안 오른다. 통장은 주가 시작될 때
-비운다(`reset_week_progress`) — 주를 넘겨 쌓이면 판을 비워 둔 주가 지난주
-나머지로 스탯을 올린다.
+Leftovers **carry over only within the week** (`season_state["training_exp_carry"]`,
+`seat → {stat: remaining EXP}`). They used to be simply discarded — with settlement once a week,
+discarding happened only once per week — but once settlement was split per weekday, that would make a
+board earning less than `EXP_PER_POINT` per day score 0 every day for five days and gain not a single point all week. The bank
+is emptied at the start of the week (`reset_week_progress`) — if it accumulated across weeks, a week
+with an empty board would raise stats from last week's leftovers.
 
-## 적용 (`apply_day_training(day)`)
-**훈련은 요일 단위로 먹는다.** 예전의 `apply_week_training()` 은 삭제됐다 —
-시간 경과 화면(`features/season/week/`)이 "그날 무슨 일이 있었는가"를 요일마다
-물으면서 정산도 하루씩으로 쪼개졌다.
+## Application (`apply_day_training(day)`)
+**Training is applied per weekday.** The old `apply_week_training()` was deleted — once the
+week-progress screen (`features/season/week/`) started asking "what happened that day" for each
+weekday, settlement was split per day too.
 
-돌려주는 것은 그 화면이 읽는 줄 목록이다 — 자리 순서대로 늘어선
+It returns the row list that screen reads — in seat order,
 `Array[{pilot_id, name, role, seat, before, after, ups, exp, carry}]`.
-`ups` 는 이번 날 실제로 오른 포인트, `exp` 는 그날 번 EXP, `carry` 는 정산 뒤에
-통장에 남은 나머지다(화면이 `27/40` 로 "다음 한 점까지"를 보여 준다).
+`ups` is the points actually gained that day, `exp` the EXP earned that day, `carry` the remainder
+left in the bank after settlement (the screen shows "until the next point" as `carry/EXP_PER_POINT`).
 
-두 번 먹지 않게 하는 장치는 **화면 쪽**에 있다 — 결과를 
-`season_state["week_day_log"][day]` 에 남기고 이미 있으면 다시 부르지 않는다
-(`WeekProgressView._settle_day_if_needed`). 경기를 치르고 같은 요일로 돌아오는
-경로가 실제로 있다.
+The guard against applying twice is **on the screen side** — it stores the result in
+`season_state["week_day_log"][day]` and doesn't call again if one exists
+(`WeekProgressView._settle_day_if_needed`). There really is a path that returns to the same weekday
+after playing a match.
 
-## 화면 배치
+## Screen layout
 
-세로로 네 덩이 — **초상화 다섯 → 판 5×5 → 코스 카드 한 줄 → 하단 액션 바**.
+Four vertical blocks — **five portraits → 5×5 board → one row of course cards → bottom action bar (하단 액션 바)**.
 
-**가로 기준선은 `_grid_x()` 하나다.** 판을 화면 한가운데에 놓고(1080 기준
-100..980) 초상화와 드롭 미리보기가 전부 그 값에서 나온다. 예전에는 판 왼쪽 끝이
-상수(`GRID_X` 80)였고 그 **안쪽**에 요일 글자 칸이 있어 판 오른쪽 끝이 화면
-밖(1102 > 1080)으로 나가 있었다 — 요일 칸이 통째로 사라지며 그 함정도 함께
-없어졌다(`DAY_GUTTER` / `_day_x` 삭제).
+**There is one horizontal baseline, `_grid_x()`.** The board sits at the screen centre (100..980 on
+1080), and the portraits and drop preview all derive from that value. Previously the board's left
+edge was a constant (`GRID_X` 80) with a weekday text column **inside** it, pushing the board's right
+edge off screen (1102 > 1080) — when the weekday column was removed entirely, that trap went with it
+(`DAY_GUTTER` / `_day_x` deleted).
 
-**세로 기준선도 하나이고, 아래에서 위로 쌓는다.** `_inv_y()` 가 코스 목록을 하단
-액션 바(`OutgameTheme.bottom_bar_top()`) 바로 위에 매달고, `_block_y()` 가 남는
-자리를 **판 위와 아래에 고르게 나눈다**. 목록이 카드 한 줄(236px)이라 그 위로
-자리가 넉넉한데, 통째로 위에 붙여 두면 화면 아래쪽이 이유 없이 비고 아래에 붙이면
-제목과 판 사이가 벌어진다. 초상화 줄은 판의 머리글이므로 `_thumb_y()` 가
-`_block_y()` 를 그대로 쓰고 판은 그 아래 `THUMB_GAP` 만큼 떨어져 앉는다 —
-둘이 따로 놀면 열 머리글이 자기 열에서 떨어져 나간다.
+**There is also one vertical baseline, stacked bottom to top.** `_inv_y()` hangs the course list just
+above the bottom action bar (`OutgameTheme.bottom_bar_top()`), and `_block_y()` **splits the remaining
+space evenly above and below the board**. The list is one row of cards (236px), so there's plenty of
+room above it; attaching everything to the top leaves the bottom of the screen pointlessly empty, and
+attaching it to the bottom opens a gap between the title and the board. The portrait row is the
+board's header, so `_thumb_y()` uses `_block_y()` directly and the board sits `THUMB_GAP` below it —
+if the two moved independently, column headers would drift away from their columns.
 
-### 초상화 다섯 (열 머리글)
-인게임 파일럿 스트립과 **같은 가로 초상화**(`PilotImages.eye_for`, 480×200 밴드)
-이고 칸 높이는 그 비율(2.4:1)에서 나온다 — 임의 높이로 늘리면 얼굴이 찌그러진다.
-**누를 수 없고 이름 · 역할 글자도 없다**: 이 줄이 답하는 질문은 "이 열이 누구의
-한 주인가" 하나뿐이라 얼굴이 그 답이고 테두리 색이 역할이다.
+### Five portraits (column headers)
+The **same horizontal portrait (초상화)** as the in-game pilot strip (`PilotImages.eye_for`, 480×200
+band), and the cell height comes from that ratio (2.4:1) — stretching to an arbitrary height squashes
+faces. **Not tappable, no name · role text**: the only question this row answers is "whose week is
+this column", so the face is the answer and the border colour is the role.
 
-예전에는 이 줄이 **누를 수 있었고** 그 아래에 고른 선수의 여섯 스탯을
-`before→after` 로 보여 주는 **예상 변화 한 줄**이 있었다. 초상화가 순수한
-머리글이 되며 고를 주체가 사라졌고, 그 정보는 "훈련 확정" 뒤의 **시간 경과
-화면**(`features/season/week/`)이 요일마다 다섯 명 × 여섯 스탯으로 보여 준다.
-예전에 그 자리를 맡았던 주간 결산 한 장(`TrainingResultView`)은 정산이 요일
-단위로 쪼개지면서 삭제됐다.
+This row used to be **tappable**, with an **expected-change row** below it showing the selected
+player's six stats as `before→after`. Once the portraits became pure headers there was no subject to
+select, and that information is shown after "훈련 확정" by the **week-progress screen**
+(`features/season/week/`), per weekday, five players × six stats. The single weekly summary
+(`TrainingResultView`) that used to fill that role was deleted when settlement was split per weekday.
 
-### 판 (`_draw_grid`)
-칸은 **정사각형**(`CELL` 176)이다 — 색 면이 곧 "한 선수의 하루"라 가로로
-납작하면 여러 칸 타일의 모양(2×2 · 1×3 · 5×1)이 판 위에서 왜곡돼 읽힌다.
+### Board (`_draw_grid`)
+Cells are **square** (`CELL` 176) — a colour patch is "one player's day", so if cells were flat and
+wide, multi-cell tile shapes (2×2 · 1×3 · 5×1) would read distorted on the board.
 
-**빈 칸은 그리지 않는다. 바탕은 선수 한 명당 세로 줄 하나뿐이다**
-(`COLUMN_LINE_W` / `COLUMN_LINE_COLOR` — 열 한가운데를 판 높이만큼 지난다).
-예전에는 칸 스물다섯 개를 `SURFACE_SUNK` 면 + `BORDER` 테두리로 깔았는데,
-그러면 아직 아무것도 안 놓은 판이 이미 무언가로 꽉 찬 것처럼 보이고 놓인 타일이
-그 격자에 묻혔다. 줄은 타일 **밑**을 지나므로 타일이 그 위에 앉아 줄을 덮는다 —
-놓인 자리와 빈 자리가 "줄이 보이는가" 하나로 갈린다.
+**Empty cells are not drawn. The background is just one vertical line per player**
+(`COLUMN_LINE_W` / `COLUMN_LINE_COLOR` — running through the column centre for the board's height).
+It used to lay down twenty-five cells as `SURFACE_SUNK` fills + `BORDER` outlines, but that made a
+board with nothing placed look already full, and placed tiles got buried in that grid. The lines run
+**under** tiles, so a tile sits on top and covers its line — placed and empty spots are distinguished
+by one thing: "is the line visible".
 
-**타일 몸통은 모서리가 둥근 사각형**이다(`TILE_RADIUS` 20). 기하는
-`_tile_cell_box` 한 함수가 소유하고 규칙은 하나다 — **같은 타일의 이웃 칸과
-맞닿은 변에서는 여백(`CELL_PAD`)도 테두리(`TILE_EDGE`)도 모서리 굴림도 버린다**.
-그래서 여러 칸 타일은 칸 사이에 구분선 없이 한 덩어리로 이어지고, 굴림은
-**바깥으로 난 두 변이 만나는 구석에만** 걸려 덩어리 전체가 하나의 둥근 사각형이
-된다. 전장의 캠프 아웃라인이 쓰는 규칙과 같다(그 변 너머의 이웃이 같은 타일이
-아닐 때만 그린다). 색은 **그 변이 속한 칸의 색**이라, 위가 빨강 아래가 보라인
-[합숙 스크림]은 윤곽만 봐도 위아래가 다른 것이 읽힌다.
+**The tile body is a rounded rectangle** (`TILE_RADIUS` 20). One function, `_tile_cell_box`, owns the
+geometry, and the rule is single — **on an edge touching a neighbouring cell of the same tile, drop
+the padding (`CELL_PAD`), the border (`TILE_EDGE`), and the corner rounding**. So multi-cell tiles
+join into one mass with no dividers between cells, and rounding applies **only at corners where two
+outward edges meet**, making the whole mass a single rounded rectangle. It's the same rule the
+battlefield's camp outline uses (draw only when the neighbour beyond that edge is not the same tile).
+Colour is **the colour of the cell that edge belongs to**, so [합숙 스크림] (Training-camp Scrim),
+red on top and purple below, reads as top/bottom-different from its outline alone.
 
-**타일 안쪽 칸 경계는 이음매의 가운데 토막만 남는다**(`_draw_tile_seams`,
-`SEAM_LEN` 32 × `SEAM_W` 2, α `SEAM_ALPHA` 0.45). 이음매를 **연속한 선 하나로**
-보고 그 중점에 짧은 토막을 찍으므로 — 2×2 는 세로 · 가로 이음매가 둘 다 타일
-한가운데에서 잘려 **작은 십자**가 되고, 가로 2칸은 한가운데 **작은 세로 일자**,
-가로 5칸([전지 훈련])은 이음매 넷이 각자 제 자리에서 짧은 세로 토막으로 남는다.
-선을 끝까지 그으면 그것이 곧 "여기서 타일이 끊긴다"로 읽혀 한 장이 여러 장으로
-보인다 — 예전에 안쪽 이음매를 통째로 긋던 방식이 정확히 그랬다.
+**Inside a tile, cell boundaries leave only the middle segment of the seam** (`_draw_tile_seams`,
+`SEAM_LEN` 32 × `SEAM_W` 2, α `SEAM_ALPHA` 0.45). Each seam is treated as **one continuous line**
+with a short segment stamped at its midpoint — so for 2×2 both vertical · horizontal seams are cut
+at the tile centre into **a small cross**, 2 cells wide gives **a small vertical dash** in the
+middle, and 5 cells wide ([전지 훈련] (Field Training Camp)) leaves its four seams as short vertical
+dashes each in its own place. Drawing the lines all the way reads as "the tile breaks here", making
+one tile look like several — exactly what the old way of drawing the inner seams in full did.
 
-타일 위에 남는 글씨는 **이름 하나뿐**이고 타일이 덮은 범위 한가운데에 앉는다.
-EXP 요약은 여기서 빠졌다 — 판이 답해야 하는 질문은 "무엇이 어디에 놓였나"이고
-숫자는 인벤토리의 정보 팝오버가 들고 있다.
+The only text left on a tile is **its name**, sitting in the centre of the area the tile covers. The
+EXP summary was removed here — the board's question is "what was placed where", and the numbers live
+in the inventory's info popover.
 
-**기하를 읽는 곳이 셋이라 한 함수에 있어야 한다** — 판(`_draw_tile_body`), 판
-위의 드롭 미리보기, 그리고 커서를 따라오는 미리보기(`_make_drag_preview` +
-`_add_preview_seams`). 셋 다 `_tile_cell_box` 를 지나므로 둥근 모서리도 이음매
-토막도 같은 자리에 온다: 미리보기와 놓인 결과가 다른 모양이면 미리보기가 아니다.
+**Geometry is read in three places, so it must live in one function** — the board
+(`_draw_tile_body`), the drop preview on the board, and the cursor-following preview
+(`_make_drag_preview` + `_add_preview_seams`). All three go through `_tile_cell_box`, so rounded
+corners and seam segments land in the same spots: if the preview and the placed result differ in
+shape, it isn't a preview.
 
-### 코스 인벤토리 + 정보 팝오버
-**목록은 세로로 선 카드 한 줄의 가로 스크롤이다**(카드 168×236, 간격 14, 화면에
-5장 반이 걸린다 — 반 장이 잘려 보이는 것이 곧 "옆으로 더 있다"이고 스크롤바는
-숨긴다). 예전에는 가로 4칸 × 2.5줄의 **세로** 스크롤이었는데, 판이 목록 바로
-위에 있어 "카드를 판으로 끌어 올리기"와 "목록을 위로 굴리기"가 같은 손짓이었다 —
-실제로는 카드 위에서 시작한 드래그가 전부 타일 집기로 먹혀 목록이 아예 안 굴렀다.
+### Course inventory + info popover
+**The list is a horizontal scroll of one row of upright cards** (card 168×236, gap 14, 5½ cards on
+screen — the half-cut card itself says "more to the side", and the scrollbar is hidden). It used to be
+a **vertical** scroll of 4 across × 2.5 rows, but with the board right above the list, "drag a card up
+onto the board" and "scroll the list up" were the same gesture — in practice every drag starting on a
+card was eaten as a tile pickup and the list never scrolled at all.
 
-**지금은 처음 움직임의 방향이 가른다**(`DragScroll.attach(_inv_scroll, true, true)`):
-14px 문턱을 넘는 순간 **가로면 스크롤, 세로면 그 카드의 타일을 집는다.** 판정은
-한 번뿐이라 그 뒤로 손가락이 비스듬히 흘러도 뜻이 안 바뀐다. 세로 판정은
-`cross_drag_started` 로 오고, 화면이 `force_drag(data, preview)` 로 드래그를 직접
-연다(`_on_inv_cross_drag`) — 카드에 `set_drag_forwarding` 을 걸어 두면 엔진이 10px
-만에 드래그를 시작해 방향 판정보다 먼저 가 버린다. 드롭 쪽(판)은 그대로 내장
-경로다. 어느 카드를 집는지는 눌린 순간 `_on_card_input` 이 적어 둔
-`_inv_press_tile` 이다. 잠긴 카드는 집히지 않는다(고르기는 된다).
+**Now the direction of the first movement decides** (`DragScroll.attach(_inv_scroll, true, true)`):
+the moment the 14px threshold is crossed, **horizontal means scroll, vertical means pick up that
+card's tile.** The decision is made once, so the meaning doesn't change if the finger drifts
+diagonally afterwards. A vertical decision arrives via `cross_drag_started`, and the screen opens the
+drag itself with `force_drag(data, preview)` (`_on_inv_cross_drag`) — with `set_drag_forwarding` on
+the cards, the engine starts a drag after just 10px, getting ahead of the direction decision. The drop
+side (board) still uses the built-in path. Which card is picked up is `_inv_press_tile`, recorded by
+`_on_card_input` at the moment of the press. Locked cards can't be picked up (they can be selected).
 
-카드 한 장은 위에서부터 **등급 띠**(등급 색 22% 면 + 등급 글자 + `놓임/상한`) →
-**오목한 상자 안의 모양 미니어처**(칸 최대 26px) → **이름**(두 줄까지)이다.
-설명문과 EXP 요약은 없다 — 훑어 고를 때 견주는 것은 이름과 모양이다.
+From the top, one card is a **grade band** (22% grade-colour fill + grade letter + `놓임/상한`
+(placed/limit)) → **shape miniature in a sunken box** (cells up to 26px) → **name** (up to two
+lines). No description or EXP summary — when skimming to choose, you compare names and shapes.
 
-**카드를 탭하면 그 위에 정보 팝오버가 뜬다**(`_select_card` → `_build_popover` →
-`_place_popover`) — 등급 · 이름 · 놓임/상한 · **EXP 요약** · **효과 요약** 넷.
-설명문 줄은 없다(위 CSV 절 참조). EXP 는 약칭이 아니라 온전한 스탯 이름을 쓴다
-(`전회 +44` 가 아니라 `전장 회피 +44`) — 폭이 348px 이고 여기서 답할 질문이
-"이 코스가 무엇을 올리는가" 하나뿐이라 다시 풀어 읽을 이유가 없다. 카드 **위**에
-가운데 맞춰 뜨고(카드가 한 줄이라 옆자리는 다른 카드 몫이다) 화면 밖으로 나가면
-끌어들이며, 가리키던 카드가 스크롤 밖으로 밀려나면 함께 숨는다. 스크롤한 떼기는
-탭이 아니다(`DragScroll.moved`). 팝오버는 스크롤 **밖**에 사는 별개의 판이라(안에 두면 스크롤 폭에 잘린다)
-스크롤이 움직이면 `_place_popover` 가 따라간다. 높이는 글자에서 역산한다
-(`TrainingView._text_height`) — 절대 좌표로 짓는 이 화면에서 컨테이너 자동
-크기를 섞으면 자리를 잡는 프레임과 그리는 프레임이 어긋난다. **그 높이는
-`Font.get_multiline_string_size` 를 그대로 쓰면 안 된다**: 그 함수는 글꼴 줄
-높이만 더할 뿐 `Label` 이 줄 사이에 넣는 `line_spacing`(기본 테마 3)을 세지
-않아서, 두 줄짜리 글이 실측 49px 인데 46 이 돌아온다. 그 3px 이 팝오버 아래끝을
-넘어 판 위로 삐져나오던 것이 **설명이 패널을 넘어가던** 원인이다 — `_text_height`
-가 줄 수를 세어 그 몫을 되돌려 준다(실측 1줄 23 · 2줄 49 · 3줄 75 로
-`Label.get_minimum_size().y` 와 정확히 일치). **잠긴 카드(등급
-상한에 닿은 것)도 고를 수 있다** — 못 놓는 것과 무엇인지 못 보는 것은 다른 일이다.
-팝오버 자신이 클릭을 삼키고 **그 클릭으로 닫힌다**: 삼키지 않으면 밑에 깔린
-카드가 대신 눌려 방금 연 것이 그 자리에서 닫히거나 옆 코스로 갈아탄다(팝오버는
-카드 두어 장을 덮으므로 반드시 일어나는 일이다).
+**Tapping a card shows an info popover above it** (`_select_card` → `_build_popover` →
+`_place_popover`) — four items: grade · name · placed/limit · **EXP summary** · **effect summary**.
+No description line (see the CSV section above). EXP uses full stat names, not abbreviations
+(`전장 회피 +N` (Battlefield evasion +N), not `전회 +N`) — it's 348px wide and the only question
+here is "what does this course raise", so there's no reason to make readers decode. It appears
+**above** the card, centred (the cards are one row, so the side spots belong to other cards), is
+pulled back in if it would go off screen, and hides along with its card when that card is scrolled
+out. A release after scrolling is not a tap (`DragScroll.moved`). The popover is a separate board
+living **outside** the scroll (inside, it would be clipped to the scroll width), so `_place_popover`
+follows when the scroll moves. Height is derived from the text (`TrainingView._text_height`) — on a
+screen built with absolute coordinates, mixing in container auto-sizing makes the layout frame and
+the draw frame disagree. **That height must not use `Font.get_multiline_string_size` as is**: it only
+adds the font's line height and doesn't count the `line_spacing` (default theme 3) that `Label` puts
+between lines, so two-line text measured at 49px comes back as 46. Those 3px poking past the
+popover's bottom edge onto the board were the cause of **the description overflowing the panel** —
+`_text_height` counts the lines and adds that share back (measured 1 line 23 · 2 lines 49 · 3 lines
+75, matching `Label.get_minimum_size().y` exactly). **Locked cards (those that hit the grade limit)
+can still be selected** — being unable to place it and being unable to see what it is are different
+things. The popover swallows clicks itself and **closes on that click**: otherwise the card beneath
+gets pressed instead, so the popover just opened closes on the spot or switches to the neighbouring
+course (the popover covers two or so cards, so this always happens).
 
-## 배치 제약 — 등급별 개수 상한
-타일은 **몇 번이든 다시 쓸 수 있다**(보유 수량이 없다). 그래서
-`TrainingTile.GRADE_PLACE_LIMIT` = `[-1, 8, 4, 2, 1]`(D 무제한 · C 8 · B 4 · A 2 ·
-S 1)이 "가장 센 타일로 도배"를 막는 **유일한** 장치다. 인벤토리 카드마다
-`놓임/상한` 이 찍히고 상한에 닿은 등급은 카드가 잠긴다.
+## Placement constraint — per-grade count limits
+Tiles **can be reused any number of times** (there is no owned quantity). So
+`TrainingTile.GRADE_PLACE_LIMIT` = `[-1, 8, 4, 2, 1]` (D unlimited · C 8 · B 4 · A 2 · S 1) is the
+**only** mechanism that prevents "plaster the board with the strongest tile". Each inventory card
+shows `놓임/상한`, and cards of a grade that hit its limit are locked.
 
-## 드래그 드롭 (`TrainingView`)
-Godot 내장 드래그(`set_drag_forwarding`)를 쓴다. 출발점이 둘이다.
+## Drag & drop (`TrainingView`)
+Uses Godot's built-in drag (`set_drag_forwarding`). There are two origins.
 
-* **인벤토리 카드** → 새로 놓는다. **세로로 끌 때만**(가로는 목록 스크롤),
-  그리고 내장 경로가 아니라 `force_drag` 로 열린다(위 인벤토리 절). 카드 어디를
-  잡았는지는 보지 않는다.
-* **판 위의 타일** → 옮긴다. **집는 순간 판에서 걷어 낸다**(안 그러면 한 칸 옆으로
-  미는 이동이 "자기 자신과 겹친다"로 거절된다). 드롭이 실패하면
-  `NOTIFICATION_DRAG_END` 가 원래 자리에 되돌리고, 성공하면 `_grid_drop` 이
-  되돌릴 사본을 지운다(안 지우면 타일이 둘로 늘어난다).
+* **Inventory card** → place new. **Only when dragged vertically** (horizontal is list scroll), and it
+  is opened via `force_drag`, not the built-in path (see the inventory section above). Where on the
+  card you grabbed is ignored.
+* **Tile on the board** → move. **It is removed from the board the moment it is picked up**
+  (otherwise a move one cell over is rejected as "overlaps itself"). If the drop fails,
+  `NOTIFICATION_DRAG_END` restores it to its original spot; on success `_grid_drop` deletes the
+  restore copy (otherwise the tile duplicates).
 
-### 커서는 언제나 타일 한가운데에 있다
-끌려 나온 타일은 **자기 한가운데를 커서에 두고** 따라오고, 그 중심이 어느 칸에
-가장 가까운지가 곧 놓일 자리다(`_origin_for` — 중앙 정렬 → 반올림 → 판 안으로
-clamp). 미리보기와 판 위의 초록 칸이 **같은 한 함수**에서 나오므로 손가락 밑의
-모양과 실제로 놓이는 자리가 갈릴 수 없다. clamp 가 필요한 이유: 5칸짜리
-[전지 훈련]은 x 가 0 일 수밖에 없고, 2칸짜리를 맨 왼쪽 열 한가운데에서 놓으려
-하면 중심이 판 밖을 가리켜 물려 주지 않으면 영영 놓을 수 없는 자리가 생긴다.
+### The cursor is always at the tile's centre
+A dragged tile follows **with its own centre on the cursor**, and whichever cell that centre is
+nearest to is where it lands (`_origin_for` — centre-align → round → clamp into the board). Preview
+and the green cells on the board come from **the same single function**, so the shape under your
+finger and where it actually lands can't diverge. Why clamp is needed: the 5-cell [전지 훈련] can only
+have x = 0, and trying to drop a 2-cell tile at the centre of the leftmost column points its centre
+off the board — without clamping there would be spots you could never place on.
 
-**미리보기 노드가 두 겹인 것은 엔진 때문이다.** `set_drag_preview` 로 넘긴
-노드는 뷰포트가 매 프레임 `set_position(마우스 좌표)` 로 **덮어쓴다** — 그
-노드에 오프셋을 적어 두면 오류도 경고도 없이 사라지고 왼쪽 위 모서리가 커서에
-붙는다. 그래서 바깥 `root` 는 엔진에 자리를 내주고 실제 그림은 그 **자식**이
-`-ext × CELL / 2` 만큼 밀린 채 들고 있다. 예전 코드는 이 사실을 모른 채 `root`
-자신을 밀고 있었고, 그래서 **미리보기는 좌측 상단이 커서에 붙은 채로 뜨는데
-드롭은 잡은 칸 기준으로 들어가** 보이는 자리와 놓이는 자리가 달랐다.
+**The preview node has two layers because of the engine.** The viewport **overwrites** the node passed
+to `set_drag_preview` with `set_position(mouse position)` every frame — an offset written on that node
+vanishes with no error or warning, and its top-left corner sticks to the cursor. So the outer `root`
+yields its position to the engine, and the actual drawing is held by its **child**, shifted by
+`-ext × CELL / 2`. The old code didn't know this and shifted `root` itself, so **the preview appeared
+with its top-left stuck to the cursor while the drop went in relative to the grabbed cell** — the
+shown spot and the landing spot differed.
 
-### 영향 범위 표시 (노란 칸)
-**절을 가진 타일을 끌면 그 타일이 닿는 칸이 노랗게 뜬다** — 지금 커서가 가리키는
-자리에 놓았을 때 배율 · 가산을 받게 되는 칸들이고, 놓는 순간(`_drag_tile` 이
-비는 순간) 함께 사라진다. 목록은 `TrainingBoard.affected_cells(t, origin)` 이
-내는데, 그 함수가 정산(`compute_gains`)과 **같은 `_scope_cells` 를 지나므로**
-화면에 뜬 칸과 실제로 효과를 받는 칸이 갈릴 수 없다.
+### Area-of-effect display (yellow cells)
+**Dragging a tile that has clauses lights up in yellow the cells it reaches** — the cells that would
+receive its multiplier · addition if dropped where the cursor points now, and they disappear at the
+moment of the drop (when `_drag_tile` empties). The list comes from
+`TrainingBoard.affected_cells(t, origin)`, and that function **goes through the same `_scope_cells` as
+settlement (`compute_gains`)**, so the cells shown and the cells actually affected can't diverge.
 
-읽는 규약 셋. **(1) 절이 없는 타일에는 아무것도 안 뜬다** — 남에게 아무 일도 안
-하는 타일에 "영향 범위"를 그리면 그 표시가 무엇을 뜻하는지가 흐려진다.
-**(2) 자기 칸은 빠진다** — 그 자리는 드롭 미리보기(초록 / 빨강)가 이미 말하고
-있고, 표시를 미리보기보다 **먼저** 깔아 겹치는 칸은 미리보기가 위를 덮는다.
-**(3) 놓을 수 없는 자리에서도 뜬다** — 못 놓는 것과 무엇에 닿는지 안 보이는
-것은 다른 일이고, 이 표시를 보고 자리를 옮기는 것이 증폭 타일의 자리를 고르는
-방식이다.
+Three reading conventions. **(1) Tiles without clauses show nothing** — drawing an "area of effect"
+for a tile that does nothing to others blurs what the display means.
+**(2) Own cells are excluded** — the drop preview (green / red) already speaks for that spot, and
+the display is laid **before** the preview so on overlapping cells the preview covers it.
+**(3) It shows even where placement is impossible** — being unable to place and not seeing what it
+touches are different things, and moving around while watching this display is how you choose a spot
+for an amplifier tile.
 
-색은 **칸을 채우는 것이 아니라 테두리로 가리킨다**(`AFFECT_FILL` α 0.16 +
-`AFFECT_LINE`) — 면을 진하게 깔면 그 칸에 이미 놓인 타일이 무슨 색이었는지가
-지워지는데, 증폭 타일이 무엇 위에 걸리는지가 곧 이 표시를 보는 이유다.
+Colour **points with an outline rather than filling the cell** (`AFFECT_FILL` α 0.16 +
+`AFFECT_LINE`) — a dense fill would erase what colour the already-placed tile in that cell was, and
+seeing what an amplifier tile lands on is the whole reason to look at this display.
 
-**탭(움직이지 않은 누름)은 드래그와 다른 일을 한다** — 판 위의 타일은 탭하면
-걷히고, 인벤토리 카드는 탭하면 **골라져 정보 팝오버가 뜬다**. 내장 드래그는
-커서가 움직여야 시작되므로 그냥 누르고 떼는 것은 `_gui_input` 이 따로 받는다.
+**A tap (a press without movement) does something different from a drag** — tapping a tile on the
+board removes it, and tapping an inventory card **selects it and shows the info popover**. The
+built-in drag starts only when the cursor moves, so a plain press-and-release is caught separately by
+`_gui_input`.
 
-### 감촉 — 집고 · 칸마다 걸리고 · 놓는다
-인벤토리 카드도 판도 `BaseButton` 이 아니라 `HapticUi` 의 자동 배선이 닿지
-않는다. 그래서 이 화면은 `Haptics.play(...)` 를 직접 부르고, **한 배치가
-집기 → 칸 넘김 → 놓기로 열리고 닫힌다.**
+### Feel — pick up · click per cell · drop
+Neither inventory cards nor the board are `BaseButton`, so `HapticUi`'s auto-wiring doesn't reach
+them. So this screen calls `Haptics.play(...)` directly, and **one placement opens and closes as
+pick up → cell crossing → drop.**
 
-| 사건 | 자리 | 감촉 |
+| Event | Where | Haptic |
 |---|---|---|
-| 타일을 집어 든다 | `_begin_drag` | `SELECT` |
-| 미리보기가 **놓을 수 있는 칸에 스냅한다** | `_grid_can_drop` | `LIGHT` |
-| 타일이 판에 물린다 | `_grid_drop` | `SOFT` |
-| 판 위의 타일을 탭해서 걷어 낸다 | `_on_grid_input` | `LIGHT` |
+| Pick up a tile | `_begin_drag` | `SELECT` |
+| Preview **snaps to a placeable cell** | `_grid_can_drop` | `LIGHT` |
+| Tile locks onto the board | `_grid_drop` | `SOFT` |
+| Tap a tile on the board to remove it | `_on_grid_input` | `LIGHT` |
 
-**미리보기는 칸을 넘을 때마다 운다.** 판 위를 끌고 다니면 한 칸마다 톡이
-와서 따다닥 걸리고, 그 한 톡이 곧 "한 칸 넘었다"이다 — 미리보기가 자유 좌표가
-아니라 **칸에 물려** 움직이기 때문에 이것이 진동이 아니라 신호가 된다(매
-프레임이 아니라 `origin != _hover_cell` 이 바뀔 때만 운다). **놓을 수 없는
-자리는 조용하다** — 그 침묵이 곧 "여기엔 안 들어간다"이고 빨간 미리보기가
-이미 그것을 말한다. 예전에는 `ok and not _hover_ok` 전이 하나만 봐서 판 위를
-아무리 훑어도 한 번밖에 울지 않았다. **걷어내기가 놓기보다 가벼운 것**은
-그것이 되돌리는 손이지 확정하는 손이 아니기 때문이다.
+**The preview buzzes every time it crosses a cell.** Dragging across the board gives a tick per cell,
+click-click-click, and each tick means "crossed one cell" — because the preview moves **locked to
+cells**, not in free coordinates, this becomes a signal rather than vibration (it fires only when
+`origin != _hover_cell` changes, not every frame). **Unplaceable spots are silent** — that silence
+means "doesn't fit here", and the red preview already says so. It used to look only at the single
+`ok and not _hover_ok` transition, so no matter how much you swept across the board it buzzed only
+once. **Removal is lighter than drop** because it is an undoing hand, not a committing one.
 
-판은 **노드 스물다섯 개가 아니라 `Control` 한 장**이다(`_draw_grid`) — 칸 · 놓인
-타일 · 드롭 미리보기를 한 자리에서 그리고, 히트 테스트와 그리기가 같은
-`occupancy()` 표를 읽으므로 보이는 타일과 잡히는 타일이 갈라지지 않는다.
+The board is **one `Control`, not twenty-five nodes** (`_draw_grid`) — cells · placed tiles · drop
+preview are drawn in one place, and hit testing and drawing read the same `occupancy()` table, so the
+visible tiles and the grabbable tiles can't diverge.
 
-## 저장
+## Save
 `season_state["training_board"]` = `Array of {tile: String, x: int, y: int}`
-(`x` = 선수 자리 0..4, `y` = 요일 0..4). **빈 칸은 적지 않는다.**
-한 주가 끝나면 `SeasonHub.on_proceed_to_next_week` 이 `reset_for_new_week()` 으로
-판을 비운다 — 기본 코스로 미리 채우지 않는 것은 빈 칸이 이미 기본 코스로
-정산되기 때문이고, 비어 있어야 "이번 주에 내가 놓은 것"이 한눈에 보인다.
+(`x` = player seat 0..4, `y` = weekday 0..4). **Empty cells are not stored.**
+When a week ends, `SeasonHub.on_proceed_to_next_week` clears the board via `reset_for_new_week()` —
+it isn't pre-filled with basic courses because empty cells are already settled as basic courses, and
+keeping it empty makes "what I placed this week" visible at a glance.
 
-## 스탯 (여섯 종, `PlayerData`)
-표는 `PlayerData.STAT_KEYS` / `STAT_LABELS` / `STAT_SHORT` / `STAT_NOTES` 하나뿐이고
-이 폴더의 화면 둘도 그것을 읽는다. **하한 1, 상한 없음** — 100 을 넘어 계속 자란다.
-자세한 것은 루트 `CLAUDE.md` 의 "선수 스탯 (여섯 종)" 항목.
+## Stats (six kinds, `PlayerData`)
+The only table is `PlayerData.STAT_KEYS` / `STAT_LABELS` / `STAT_SHORT` / `STAT_NOTES`, and both
+screens in this folder read it too. **Minimum 1, no maximum** — keeps growing past 100.
+Details in the "Player stats (six)" entry of `features/battle_sim/combat/README.md` "Active Systems" (moved there from root `CLAUDE.md`).
 
-## 하단 액션 바
-"판 비우기"(1) 와 "훈련 확정"(2) 이 **하단 구간을 2:1 로 나눠 갖는다** — 좌우
-끝에서 끝까지, 아래는 안전선에 밀착, 모서리는 각지게. 규약과 함정은
-`resources/README.md` 의 "하단 액션 바" 절이고, 이 화면이 특별히 아는 것은
-하나다 — **코스 목록의 높이가 이 바의 윗변에서 역산되므로**(`_inv_y`) 바를
-손보면 목록도 판도 저절로 따라 올라간다. 예전에는 확정 버튼이 화면 가운데에
-460×104 로 떠 있었고 "판 비우기"가 그 왼쪽에 작게 붙어 있었다.
+## Bottom action bar
+"판 비우기" (Clear board) (1) and "훈련 확정" (Confirm training) (2) **split the bottom section 2:1** —
+edge to edge left to right, bottom flush to the safe line, square corners. Conventions and pitfalls
+are in the "Bottom action bar" section of `resources/README.md`; this screen knows one special thing —
+**the course list's height is derived back from this bar's top edge** (`_inv_y`), so adjusting the bar
+makes both the list and the board follow automatically. The confirm button used to float at screen
+centre at 460×104, with "판 비우기" small to its left.
 
 ### `TrainingType` enum removed (moved from root CLAUDE.md)
 
-**`TrainingType` 은 삭제됐다** — 일상 훈련이 "하루에 훈련 종류 하나"에서 타일
-배치판으로 바뀌며 종류라는 개념 자체가 없어졌다. 지금 하루 한 칸이 무엇인가는
-`training_tiles.id` 가 답한다.
+**`TrainingType` was deleted** — when daily training changed from "one training type per day" to the
+tile placement board, the very concept of a type went away. What one cell on one day is now is
+answered by `training_tiles.id`.
 
-## 원작에서 아직 안 옮긴 것
+## Not yet ported from the original
 
-원작 분석(git `bc52878` 의 `docs/routine.md`)에 수치와 원문이 있다 — 넣을 때 그 문서를 되살려 본다.
-* **조건형** — 같은 열·행의 색 개수만큼 가산(탈출 훈련 · 관전 · 학습 요약 …). `cell_colors` 가 자리다.
-* **보정형** — 최저 / 최고 스탯을 골라 올림(약점 보완 · 힘 향상).
-* **대성공** — +50%, 확률을 올리거나 막는 타일(`resultCannotBeVerygood`).
-* **SS 등급 · 비직사각형(구멍 `.`) 타일 · 1열 전용 타일 · 증폭 재료 · 아르바이트(트레이닝 포인트)**.
+The original's analysis (`docs/routine.md` at git `bc52878`) has the numbers and source text — revive
+that doc when adding these.
+* **Conditional** — adds per count of a colour in the same column·row (escape training · spectating · study summary …). `cell_colors` is the hook.
+* **Corrective** — picks the lowest / highest stat to raise (weakness fix · power up).
+* **Great success** — +50%, tiles that raise or block its chance (`resultCannotBeVerygood`).
+* **SS grade · non-rectangular (hole `.`) tiles · column-1-only tiles · amplifier materials · part-time job (training points)**.

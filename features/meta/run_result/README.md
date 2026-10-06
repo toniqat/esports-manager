@@ -8,6 +8,7 @@ Run-end settlement and its screen. Contract: `docs/outgame_dev_plan.md` §10.3
 |---|---|---|
 | `RunResult.gd` | `class_name RunResult extends RefCounted` (static) | Settles the current run: score, rewards, achievements → profile, deletes the run file |
 | `RunResultScreen.gd` | `extends Control` (scene `scenes/RunResult.tscn`) | Draws `GameManager.last_run_result` |
+| `sim/RunSim.gd` + `sim/RunSim.tscn` | `extends Node` (dev tool, headless) | Run simulator for balancing the score / currency / EXP constants — see "Run simulator" below |
 
 ## RunResult.settle_current_run(outcome) -> Dictionary
 `outcome` = `"clear"` | `"fail"` | `"abandon"` (`OUTCOME_*` consts). Callers: SeasonHub on
@@ -74,3 +75,37 @@ White outgame theme, pattern B of `docs/mobile_safe_area.md` (`indent_to_safe_to
   `새 런` → `RunSetup.tscn`. Both call `reset_season_state()` first.
 - `last_run_result` empty (scene opened directly) → empty-state card + `로비로`.
 - SUCCESS haptic on open for a clear.
+
+## Run simulator (`sim/`, T2 — balancing tool, not shipped gameplay)
+Plays N whole runs headlessly through the real season code and prints the
+distributions of phase reached, wins, titles, score and every reward; the
+reverse-solved constants, measured tables and targets live in
+**`docs/run_balance.md`** (numbers stay there and in `const.csv`, not here).
+
+Run (PowerShell 5.1, from the repo root):
+```
+& "D:\Projects\Godot Project\godot.exe" --headless --path . res://features/meta/run_result/sim/RunSim.tscn -- --runs=200 --edge=1.5 "--out=$env:TEMP\t2_runs.csv"
+```
+Args (after `--`): `--runs`, `--edge` (player win-odds multiplier), `--seed`,
+`--level` (my five's level), `--team` / `--scenario` (fixed, else random per run),
+`--no-coach`, `--out` (per-run CSV of raw counts). Filter the console with
+`Select-String "=== RunSim" -Context 0,40` — the hub views log image-load noise headlessly.
+
+How a run is driven:
+- Setup = random team / scenario, one random starter (`players.starter`) per role at
+  `--level`, test run (`use_test_run`, no traits). `GameManager.start_run` as usual.
+- `season_state.run_over` is set **right after** `start_run`: every `SeasonHub._autosave`
+  is skipped and `RunResult.settle_current_run` (profile write, run-file delete) never runs —
+  the sim calls `RunStats.finalize_phase` + `RunResult.build_result(state, outcome, true)`
+  itself. **user:// is never written** (profile, `run.save`, `run_test.save` untouched).
+- A live `Season.tscn` is added under the sim node; each week: coach board
+  (`TrainingBoard.auto_arrange`, skip with `--no-coach`), `apply_day_training` Mon–Fri,
+  on Sat / Sun the player match (if any) then `_resolve_ai_for_matchday`, then
+  `SeasonHub._end_week` (finance / mastery / mental week close, calendar tick, playoff /
+  INTL bootstrap). The run ends when the hub's run-end handlers fire (`_run_end_screen`).
+- **Player match outcome** = the AI quick-sim coin (`InternationalTournament.team_avg_stat`
+  ratio) with the player's side × `--edge`; the result goes through
+  `SeasonHub._consume_pending_match_result` (RunStats, finance, bracket signals) with
+  zeroed stat rows like `MatchFlow._cheat_finish`, MVP = random pilot of the winning side.
+- Not simulated: press answers, mental incidents / evening sessions, finance / staff
+  choices, manager traits / bonus points, match mastery (no mech assignment).

@@ -1,7 +1,7 @@
 # 시간 경과 (week)
 
 주가 **월요일부터 일요일까지 하루씩** 흘러가는 화면. `SeasonHub` 의
-`Screen.WEEK`. 참고 디자인은 `docs/ref_image.jpg`.
+`Screen.WEEK`.
 
 | 파일 | 역할 |
 |---|---|

@@ -21,7 +21,7 @@ add them to the owning folder's README and at most a one-line pointer here.
   on match day MatchFlow (PREP → BAN_PICK(밴픽 + 메크 배정) → BattleSim) →
   STANDINGS → back to WEEK → 일요일 "주 마감" → HUB.
 - **Outgame = white theme**: every colour goes through `resources/OutgameTheme.gd`
-  (ref `docs/ref_image.jpg`); primary actions use the full-width bottom bar
+  (white paper, coloured cards); primary actions use the full-width bottom bar
   (`OutgameTheme.add_bottom_bar`, rules in `resources/README.md` "하단 액션 바").
   **BattleSim uses neither** — the battlefield is a dark screen.
 - **Save / load**: 3 JSON slots `user://saves/slot{0,1,2}.save`, 4 autosave points,
@@ -50,7 +50,7 @@ esports-manager/
 ├── resources/                ← shared data classes, enums, image lookups, OutgameTheme,
 │                               ScreenMetrics, DragScroll, UiHelpers, shaders → README.md
 ├── scenes/                   ← TitleScreen / Season / MatchFlow / BattleSim / BattleField / Card .tscn
-├── docs/                     ← ios_testbuild.md, mobile_safe_area.md, mech_skills_design.md
+├── docs/                     ← ios_testbuild.md, mobile_safe_area.md
 ├── addons/godot_mcp/         ← MCP editor plugin (do not modify)
 └── features/
     ├── save_load/            ← title screen, 3-slot save/load, autosave, mid-match resume

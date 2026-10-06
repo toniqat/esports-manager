@@ -664,7 +664,7 @@ controllers and HudBuilder.
 **인게임(BattleSim)은 이 표를 쓰지 않는다** — 전장은 어두운 화면이고 거기서
 흰 카드는 눈부신 판이 된다.
 
-참고 디자인은 `docs/ref_image.jpg`(하얀 종이 위에 색이 있는 카드). 규칙 셋:
+디자인 원칙은 하얀 종이 위에 색이 있는 카드다. 규칙 셋:
 
 1. 바탕은 `BG`, 내용은 그보다 **더 흰** `SURFACE` 카드 위에. 경계는 선이 아니라
    **그림자와 밝기 차이**가 만든다(`BORDER` 는 아주 옅다).
@@ -758,7 +758,7 @@ p.assigned_mech = m
 
 `PilotData` 에는 메크가 거는 지속 상태 열두 개와 영구 스탯 보정 세 개가 붙었다 —
 자세한 내용은 그 파일의 "메크가 거는 지속 상태" 절과
-[`docs/mech_skills_design.md`](../docs/mech_skills_design.md).
+[`features/battle_sim/mech/README.md`](../features/battle_sim/mech/README.md) 의 "지속 상태" 절.
 
 
 ## Detail moved from root CLAUDE.md

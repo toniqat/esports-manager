@@ -54,7 +54,7 @@ And accesses shared state via `_bs.pilots`, `_bs.turn_count`, etc.
 | PilotDetailPanel | Node | `ui/PilotDetailPanel.gd` | 파일럿 상세 모달 — 스트립의 얼굴을 누르거나 전장 초상을 꾹 누르면 열린다(작전 단계 + 자동 진행, 자동 진행 중이면 턴이 멈춘다). 머리글(이름 · 기체명 · 성장치)이 탭과 분리돼 늘 보이고, 탭이 바꾸는 것은 아래 상세 패널뿐이다. Lazily added in `_ready()`. |
 | ObjectiveRewardPopup | Node | `ui/ObjectiveRewardPopup.gd` | 오브젝트 보상 미리보기 — 상단 패널의 시계를 누르면 그 오브젝트가 주는 카드를 실물로 띄운다. **전장을 붙잡지 않는다.** Lazily added in `_ready()`. |
 | PilotSkillSystem | Node | `skill/PilotSkillSystem.gd` | **파일럿 스킬** — 선수마다 붙는 고유 능력(쿨타임 / 충전식 / 패시브). 상태 · 활성화 · 사건 훅 · 패시브 질의. Lazily added in `_ready()` **after** `build_starter_decks()` (짝을 로스터에서 찾고 백본 패시브가 덱을 만진다). `skill/README.md` 참조 |
-| MechSkillSystem | Node | `mech/MechSkillSystem.gd` | **메크 스킬** — 배정된 **기체**에 붙는 패시브 15종과 그 기체 카드들이 남기는 지속 상태(취약 · 반응 장갑 · 목표 · 추적 · 현상금 · 결속 · 탈진 …). 파일럿 스킬 바로 옆에서 `_ready()` 말미에 세워진다(같은 전제 — 로스터 + 덱이 이미 서 있어야 한다). 패시브 보정은 **질의 함수로만** 나가고 계산은 원래 하던 자리가 한다. `mech/README.md` 와 `docs/mech_skills_design.md` 참조 |
+| MechSkillSystem | Node | `mech/MechSkillSystem.gd` | **메크 스킬** — 배정된 **기체**에 붙는 패시브 15종과 그 기체 카드들이 남기는 지속 상태(취약 · 반응 장갑 · 목표 · 추적 · 현상금 · 결속 · 탈진 …). 파일럿 스킬 바로 옆에서 `_ready()` 말미에 세워진다(같은 전제 — 로스터 + 덱이 이미 서 있어야 한다). 패시브 보정은 **질의 함수로만** 나가고 계산은 원래 하던 자리가 한다. `mech/README.md` 참조(21대 목록 · 절 문법 포함) |
 | BattleLogger   | Node | `debug/BattleLogger.gd`    | Full action log (console + `user://battle_logs/`) and enemy cross-over detector. Lazily added in `_ready()` after pilots spawn; reachable as `_bs.blog`. |
 
 Cross-module calls go through `_bs`:

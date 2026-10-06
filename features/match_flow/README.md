@@ -225,10 +225,12 @@ Once mechs are assigned — `_on_ban_pick_finished` (before the post-ban-pick au
 1. `PilotMods.apply_to(state, copy)` — the run's temporary pilot mods (M7 incidents / outings).
 2. `MechMastery.apply_to(state, copy)` — the mech mastery tier bonus on all six stats
    (`features/season/mastery/README.md`).
-3. `pending_match.assigned_mechs = {"<pilot_id>": mech_id}` for both teams (10 entries) —
+3. `QuirkSystem.apply_to(state, copy)` — my pilots' quirk stat bonuses with the assigned mech
+   (opponents have none; `features/season/quirk/README.md`).
+4. `pending_match.assigned_mechs = {"<pilot_id>": mech_id}` for both teams (10 entries) —
    `SeasonHub` hands it to `MechMastery.record_match` when the result is consumed.
 
-Standalone MatchFlow (no active season) skips all three; BattleSim never knows mastery exists.
+Standalone MatchFlow (no active season) skips all of them; BattleSim never knows mastery or quirks exist.
 
 ### Side (`player_side`) — currently always BLUE
 `player_side` is one value that decides ban/pick order and in-game priority **at the same time**:

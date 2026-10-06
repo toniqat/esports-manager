@@ -30,6 +30,9 @@ All tuning numbers are `MASTERY_*` keys in `data/csv/const.csv` — none are wri
     `pending_match.assigned_mechs` (both teams of **my** match; AI-vs-AI matches give nothing).
     Guarded by `pending_match.mastery_recorded`.
   - research: `settle_week` — `MASTERY_GAIN_RESEARCH` to each of my pilots' research mech.
+    The same pass rolls `QUIRK_RESEARCH_CHANCE`% per pilot with a research mech →
+    `QuirkSystem.gain_random` (`_research_quirk_roll`, seeded per run · week · pilot; §14 T1,
+    `features/season/quirk/README.md`).
   - training tile `M`: `add_training_exp(state, pid, amount)` (called by the training board) —
     `amount × MASTERY_TRAIN_SCALE` to the research mech, or to the coach's choice if none is set.
   - Multiplier, **my pilots only**: `knowledge_mult` (`MASTERY_KNOW_BASE + MASTERY_KNOW_PER ×
@@ -51,6 +54,10 @@ All tuning numbers are `MASTERY_*` keys in `data/csv/const.csv` — none are wri
   portrait, name, current research mech, top-3 mastery line, and a chip per own-role mech
   (`name / tier value`, tier-coloured bar). Tap a chip = set research, tap the selected chip = clear.
   The body is rebuilt **deferred** after a tap (`_refill_deferred`) — the tapped button is inside it.
+- Quirks (§14 T1, only while `QuirkSystem.is_enabled`): a legend line (research quirk chance + grade
+  odds from `QuirkSystem.grade_odds`) above the cards, and under each card's mech chips a
+  `기벽 n / slots` block — one line per quirk (grade pill · name in grade colour · effect line from
+  `QuirkSystem.effect_text`). The card grows by `_quirk_block_h`.
 
 ## Where mastery shows outside this folder
 Ban/pick (`features/match_flow/ban_pick/README.md` "Mech mastery"): slot tags, grid tags, sheet line,

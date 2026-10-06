@@ -8,6 +8,8 @@ extends RefCounted
 # research mech from. When the knowledge area is delegated
 # (`StaffSystem.is_delegated(state, "knowledge")`) a "코치에게 맡기기" button
 # fills all five with the coach's plain rule (`MechMastery.auto_assign_all`).
+# Each pilot card also lists that pilot's quirks (`QuirkSystem`, §14) with
+# `n / slots`; research can turn up quirks at week close.
 
 const ROW_H: float = 232.0
 const ROW_GAP: float = 16.0
@@ -16,6 +18,9 @@ const CHIP_H: float = 92.0
 const CHIP_GAP: float = 10.0
 const ROW_PAD: float = 18.0
 const AUTO_BTN_H: float = 84.0
+## Quirk block under the mech chips (§14, T1): head line + one line per quirk.
+const QUIRK_HEAD_H: float = 36.0
+const QUIRK_LINE_H: float = 58.0
 
 
 ## Card summary — `{title, value, sub, owner, alert}`.
@@ -111,15 +116,71 @@ static func _fill(sheet: HubSheet, state: Dictionary) -> void:
 				OutgameTheme.TEXT_SUB, Vector2(0, y), Vector2(w, 30)).clip_text = true
 		y += 40.0
 
+	if QuirkSystem.is_enabled(state):
+		var odds: Array = QuirkSystem.grade_odds(state)
+		var parts: Array = []
+		for g in QuirkSystem.GRADE_COUNT:
+			parts.append("%s %d%%" % [QuirkSystem.grade_name(g), roundi(float(odds[g]))])
+		UiHelpers.mk_label(body, "기벽 — 연구 메크가 있으면 주 마감 %d%% 확률로 획득  ·  %s" % [
+				ConstTable.int_of("QUIRK_RESEARCH_CHANCE"), "  ".join(parts)],
+				21, OutgameTheme.TEXT_SUB, Vector2(0, y), Vector2(w, 30)).clip_text = true
+		y += 40.0
+
 	for raw in MechMastery.my_pilots(state):
-		_build_pilot_row(sheet, state, raw as PlayerData, y, w)
-		y += ROW_H + ROW_GAP
+		var row_h: float = ROW_H + _quirk_block_h(state, (raw as PlayerData).id)
+		_build_pilot_row(sheet, state, raw as PlayerData, y, w, row_h)
+		y += row_h + ROW_GAP
 	sheet.set_body_height(y)
 
 
-static func _build_pilot_row(sheet: HubSheet, state: Dictionary, pd: PlayerData,
+# ── Quirks (§14, T1) — under the mech chips of each pilot card ───────────────
+## Extra card height for the quirk block (0 outside a run).
+static func _quirk_block_h(state: Dictionary, pilot_id: int) -> float:
+	if not QuirkSystem.is_enabled(state):
+		return 0.0
+	var n: int = QuirkSystem.quirks_of(state, pilot_id).size()
+	return QUIRK_HEAD_H + float(maxi(1, n)) * QUIRK_LINE_H + 6.0
+
+
+## "기벽 n/slots" head, then one line per quirk: grade pill · name · effect.
+static func _build_quirk_block(card: Panel, state: Dictionary, pd: PlayerData,
 		y: float, w: float) -> void:
-	var card: Panel = OutgameTheme.add_card(sheet.body, Vector2(0, y), Vector2(w, ROW_H), 16)
+	var ids: Array = QuirkSystem.quirks_of(state, pd.id)
+	var slots: int = QuirkSystem.slots_of(state, pd.id)
+	var inner_w: float = w - ROW_PAD * 2.0
+	OutgameTheme.add_divider(card, Vector2(ROW_PAD, y), inner_w)
+	UiHelpers.mk_label(card, "기벽  %d / %d" % [ids.size(), slots], 22, OutgameTheme.TEXT,
+			Vector2(ROW_PAD, y + 4.0), Vector2(inner_w * 0.5, 30))
+	UiHelpers.mk_label(card, "최대 %d칸" % QuirkSystem.max_slots(), 19, OutgameTheme.TEXT_FAINT,
+			Vector2(ROW_PAD + inner_w * 0.5, y + 6.0), Vector2(inner_w * 0.5, 28),
+			HORIZONTAL_ALIGNMENT_RIGHT)
+	var ly: float = y + QUIRK_HEAD_H
+	if ids.is_empty():
+		UiHelpers.mk_label(card, "없음 — 기벽 훈련 타일 · 메크 연구로 얻는다", 20,
+				OutgameTheme.TEXT_SUB, Vector2(ROW_PAD, ly + 8.0), Vector2(inner_w, 30)).clip_text = true
+		return
+	for id in ids:
+		var r: Dictionary = QuirkSystem.row(int(id))
+		if r.is_empty():
+			continue
+		var g: int = int(r["grade"])
+		OutgameTheme.add_chip(card, QuirkSystem.grade_name(g), Vector2(ROW_PAD, ly + 4.0),
+				Vector2(64.0, 26.0), QuirkSystem.grade_color(g), OutgameTheme.TEXT_ON_FILL, 17)
+		var nm := UiHelpers.mk_label(card, String(r["name"]), 22, QuirkSystem.grade_color(g),
+				Vector2(ROW_PAD + 74.0, ly + 1.0), Vector2(inner_w - 74.0, 30))
+		nm.clip_text = true
+		var eff := UiHelpers.mk_label(card, QuirkSystem.effect_text(int(id)), 18,
+				OutgameTheme.TEXT_SUB, Vector2(ROW_PAD + 74.0, ly + 29.0),
+				Vector2(inner_w - 74.0, 26))
+		eff.clip_text = true
+		ly += QUIRK_LINE_H
+
+
+static func _build_pilot_row(sheet: HubSheet, state: Dictionary, pd: PlayerData,
+		y: float, w: float, row_h: float = ROW_H) -> void:
+	var card: Panel = OutgameTheme.add_card(sheet.body, Vector2(0, y), Vector2(w, row_h), 16)
+	if row_h > ROW_H:
+		_build_quirk_block(card, state, pd, ROW_H - 6.0, w)
 	var inner_w: float = w - ROW_PAD * 2.0
 	OutgameTheme.add_round_portrait(card, PilotImages.circle_for(pd.id),
 			Vector2(ROW_PAD, ROW_PAD), PORTRAIT,

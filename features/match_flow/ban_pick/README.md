@@ -258,6 +258,20 @@ numbers live in `features/season/mastery/README.md` / `MASTERY_*` in const.csv.
 delegated automation it is a plain rule, not an optimal one. Banning an enemy main is the natural
 mastery penalty — that pilot falls back to a lower-mastery machine.
 
+## Quirks (§14 T1)
+Active while `QuirkSystem.is_enabled(season_state)` (`_quirk_on`, set in `_setup_mastery`). **My
+pilots only** — opponents have no quirks. Rules: `features/season/quirk/README.md`.
+
+| Where | What |
+|---|---|
+| My portraits (`_build_portrait_quirk_badge`) | Bottom-right pill `기벽 n`, filled with the pilot's highest quirk grade colour. |
+| My mech slots (`_refresh_slot_quirk`) | Second tag under the mastery tag: `기벽 +N` = `QuirkSystem.bonus_total` of the seat's pilot with that mech (conditional quirks follow the mech, so dragging a slot updates it). Hidden at 0. |
+| Bottom sheet (`_build_sheet_mastery`) | The rider line gets `· 기벽 +N` next to the mastery stat bonus. |
+| `MechDetailPanel` | A `기벽 — pilot n/slots (스탯 +N)` block for the tapped seat's pilot (`_quirk_rows`): name · grade, effect line; quirks whose condition fails with this mech are dimmed `(조건 미충족)`. |
+
+The pilot detail popup (`DraftDetailPanel`, owned by `features/meta/run_setup/`) does not list
+quirks yet.
+
 ---
 
 ## Grid scrolling — why mech cells are `MOUSE_FILTER_PASS`

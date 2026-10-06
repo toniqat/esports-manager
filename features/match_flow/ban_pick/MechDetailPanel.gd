@@ -85,6 +85,7 @@ const CLOSE_H: float = 84.0
 # ─── Mastery rows ────────────────────────────────────────────────────────────
 const MASTERY_FONT: int = 21
 const MASTERY_ROW_H: float = 32.0
+const QUIRK_EFFECT_FONT: int = 18
 
 const ROLE_NAMES: Array = ["TANK", "FIGHTER", "ASSASSIN", "SUPPORT", "SNIPER"]
 const ROLE_COLORS: Array = [
@@ -99,6 +100,9 @@ var _mech: MechData = null
 ## Mastery rows `[{name, value, tier, bonus, current}]` (BanPickController
 ## `_mastery_rows`) — empty outside a season run or for an unanalysed enemy.
 var _mastery_rows: Array = []
+## Quirks of the tapped seat's pilot (my side only, §14) — BanPickController
+## `_quirk_rows`: `{pilot, slots, total, rows: [{name, grade, effect, active}]}`.
+var _quirk_info: Dictionary = {}
 var _root: Control = null
 ## 누른 카드의 설명판(`CardDescBox`) — 카드 앞면에 설명문이 없으므로 그 글은
 ## 카드를 누르면 카드 **위쪽**에 뜨는 이 판이 든다. 같은 카드를 다시 누르면 닫힌다.
@@ -110,10 +114,11 @@ func _init() -> void:
 	layer = OVERLAY_LAYER
 
 
-func open(m: MechData, mastery_rows: Array = []) -> void:
+func open(m: MechData, mastery_rows: Array = [], quirk_info: Dictionary = {}) -> void:
 	close()
 	_mech = m
 	_mastery_rows = mastery_rows
+	_quirk_info = quirk_info
 	if m == null:
 		return
 	_build()
@@ -225,6 +230,7 @@ func _build_panel() -> void:
 	y = _build_header(body, inner_w, y)
 	y = _build_stat_chips(body, inner_w, y + 18.0)
 	y = _build_mastery_block(body, inner_w, y + 22.0)
+	y = _build_quirk_block(body, inner_w, y + 22.0)
 	y = _build_passive_block(body, inner_w, y + 22.0)
 	y = _build_card_section(body, inner_w, y + 22.0)
 
@@ -281,6 +287,45 @@ func _build_mastery_block(body: Control, w: float, y: float) -> float:
 				Vector2(w * 0.78, y), Vector2(w * 0.22, MASTERY_ROW_H),
 				HORIZONTAL_ALIGNMENT_RIGHT)
 		y += MASTERY_ROW_H
+	return y
+
+
+## Quirks of the tapped seat's pilot with this mech: head `기벽 — name n/slots
+## (스탯 +total)`, then per quirk a grade-coloured name and its effect line.
+## A conditional quirk whose condition fails on this mech is drawn dim.
+func _build_quirk_block(body: Control, w: float, y: float) -> float:
+	if _quirk_info.is_empty():
+		return y - 22.0
+	var rows: Array = _quirk_info.get("rows", [])
+	y = _section(body, w, y, "기벽 — %s  %d / %d  (스탯 +%d)" % [
+			String(_quirk_info.get("pilot", "")), rows.size(),
+			int(_quirk_info.get("slots", 0)), int(_quirk_info.get("total", 0))])
+	if rows.is_empty():
+		UiHelpers.mk_label(body, "장착한 기벽 없음", MASTERY_FONT, CHIP_NAME_COLOR,
+				Vector2(0, y), Vector2(w, MASTERY_ROW_H))
+		return y + MASTERY_ROW_H
+	for raw in rows:
+		var r: Dictionary = raw
+		var on: bool = bool(r.get("active", true))
+		var col: Color = QuirkSystem.grade_color(int(r.get("grade", 0))).lightened(0.35)
+		var nm := UiHelpers.mk_label(body, "%s  · %s" % [String(r.get("name", "")),
+				QuirkSystem.grade_name(int(r.get("grade", 0)))], MASTERY_FONT,
+				col if on else col.darkened(0.35), Vector2(0, y), Vector2(w, MASTERY_ROW_H))
+		nm.clip_text = true
+		y += MASTERY_ROW_H
+		var txt: String = String(r.get("effect", "")) + ("" if on else "  (조건 미충족)")
+		# Measured with the label's font so a long conditional line wraps
+		# instead of running out of the panel.
+		var font: Font = ThemeDB.fallback_font
+		var line_w: float = font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1,
+				QUIRK_EFFECT_FONT).x
+		var lines: int = maxi(1, ceili(line_w / maxf(1.0, w - 24.0)))
+		var eh: float = float(lines) * (QUIRK_EFFECT_FONT + 8.0)
+		var eff := UiHelpers.mk_label(body, txt, QUIRK_EFFECT_FONT,
+				CHIP_NAME_COLOR if on else CARD_NOTE_COLOR.darkened(0.25),
+				Vector2(14, y), Vector2(w - 14.0, eh))
+		eff.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		y += eh + 6.0
 	return y
 
 

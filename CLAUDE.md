@@ -86,6 +86,7 @@ esports-manager/
         ├── objective/        ← Herald (전령) / Dragon (용) objectives + reward FX
         ├── skill/            ← pilot skills (25)
         ├── mech/             ← mech passives (15) + mech card hooks
+        ├── trait/            ← manager in-game trait hooks (TraitHooks, opening banner)
         ├── gambit/           ← pre-battle setup + jungle start overlay
         ├── buildings/        ← @tool Building / Waypoint nodes
         ├── debug/            ← BattleLogger

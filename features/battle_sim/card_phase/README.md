@@ -202,9 +202,15 @@ anyway.
   to the cap; now the opposite is the rule — every turn before the gate is laning with no cards
   at all, and the hand at the first operation phase holds only what the auto-draw has delivered since. The `INITIAL_HAND_SIZE` key and
   `_deal_initial_hands()` were deleted together.
+- **Manager traits (M8, player only)** shift three of these: `open_cost` is added in
+  `seed_side_costs`, `first_draw` changes how many cards the match's **first** auto-draw takes
+  (`TraitHooks.consume_auto_draw_count()`, never below 0), and `cost_tick` adds strategy points
+  every p2 turns after `ECONOMY_START_TURN` inside the same economy gate (same "not above the
+  threshold" rule as `COST_RECOVERY`). See `../trait/README.md`.
 
 ### Hand overflow (BATTLE auto-draw only)
-The cap is `MAX_HAND_SIZE` (game_config.csv). The auto-draws that tick by while 작전 점수 climbs
+The cap is `MAX_HAND_SIZE` (game_config.csv), read through `BattleSim.max_hand_size_for(is_player)`
+— the player's cap takes the `hand_size` trait (floor 1), the AI's never does. The auto-draws that tick by while 작전 점수 climbs
 back to `PHASE_THRESHOLD` — i.e. the stretch when it is *not* the player's turn
 — always draw, even on a full hand, and `_trim_hand_overflow(is_player)` then
 discards from the **front** of the hand (oldest first) until it is back at the cap.
@@ -1498,6 +1504,15 @@ an `engage` clause), clamped at 0. The affordability highlight in
 `set_play_allowed`), the cost subtraction in `_play_card_direct`, and
 `AiCardPlayer.run_ai_plays` all consult this helper so the four cost-modifier
 effects stay in sync.
+
+The `first_card_cost` manager trait (player only) also lives here:
+`TraitHooks.first_card_cost_delta(is_player)` is added before the 0 clamp while
+`TraitHooks.first_card_used` is false. `_play_card_direct` sets it after paying
+(`on_player_card_paid`) and stores the old value in the snapshot as
+`trait_first_used`, so `_restore_from_snapshot` (every cancel path) gives the
+discount back. `start_card_phase` **and** `end_card_phase` reset it — so during
+BATTLE the hand already shows the next phase's first-card price and the
+turn-ready check agrees with it.
 
 ### Exhaust (소멸) / reposition (재배치) routing
 `_dispose_used_card(cd, is_player)` runs after every play and routes the card

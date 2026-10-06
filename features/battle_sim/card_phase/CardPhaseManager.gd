@@ -692,6 +692,13 @@ func do_battle_turn() -> void:
 				_bs.player_cost += _bs.COST_RECOVERY
 			if _bs.ai_cost < _bs.PHASE_THRESHOLD:
 				_bs.ai_cost += _bs.COST_RECOVERY
+		# 감독 특성 `cost_tick` — 내 팀만, 회복과 같은 문턱 규칙.
+		if _bs.trait_hooks != null:
+			var tick_gain: int = _bs.trait_hooks.cost_tick_gain(_bs.turn_count)
+			if tick_gain != 0 and _bs.player_cost < _bs.PHASE_THRESHOLD:
+				_bs.player_cost = maxi(0, _bs.player_cost + tick_gain)
+				_bs.blog.log_event("TRAIT", "작전 가속 — 전략 포인트 %+d (%d)"
+						% [tick_gain, _bs.player_cost])
 		_bs.draw_counter += 1
 		if _bs.draw_counter >= _bs.CARD_DRAW_INTERVAL:
 			_bs.draw_counter = 0
@@ -700,11 +707,16 @@ func do_battle_turn() -> void:
 			# even on a full hand, and the overflow is paid for by discarding the
 			# OLDEST cards. Skipping the draw instead (the old rule) stalled the
 			# deck and left the same dead hand sitting there for the whole wait.
-			var drawn := draw_card(true)
-			if drawn != null:
-				spawn_card_node(drawn)
-				# 손패가 바뀌었다 — 카드 없이 넘긴 차례의 잠금이 풀린다.
-				_player_pass_lock = false
+			# 감독 특성 `first_draw` — 경기 첫 자동 드로우만 장수가 달라진다(0 가능).
+			var player_draws: int = 1
+			if _bs.trait_hooks != null:
+				player_draws = _bs.trait_hooks.consume_auto_draw_count()
+			for _i in player_draws:
+				var drawn := draw_card(true)
+				if drawn != null:
+					spawn_card_node(drawn)
+					# 손패가 바뀌었다 — 카드 없이 넘긴 차례의 잠금이 풀린다.
+					_player_pass_lock = false
 			_trim_hand_overflow(true)
 			# AI hand visuals (face-down card backs) live in HudBuilder; the row
 			# reflows after the draw so the count peek matches state.
@@ -797,7 +809,8 @@ func _trim_hand_overflow(is_player: bool) -> int:
 	var preserved: Array = _bs.preserved_cards_p if is_player else _bs.preserved_cards_ai
 	var dropped: int = 0
 	var i: int = 0
-	while hand.size() > _bs.MAX_HAND_SIZE and i < hand.size():
+	var cap: int = _bs.max_hand_size_for(is_player)
+	while hand.size() > cap and i < hand.size():
 		var oldest := hand[i] as CardData
 		if preserved.has(oldest) or oldest.is_preserved_by_keyword():
 			i += 1
@@ -844,6 +857,9 @@ func start_card_phase() -> void:
 	_bs.phase_cost_inc_ai = 0
 	_bs.phase_draw_discount_p = 0
 	_bs.phase_draw_discount_ai = 0
+	# 감독 특성 `first_card_cost` — 이 단계의 첫 카드가 다시 "첫 카드"다.
+	if _bs.trait_hooks != null:
+		_bs.trait_hooks.reset_phase()
 	_apply_phase_entry_carryovers(true)
 	_bs.renderer.queue_redraw()
 	_bs.hud.update_hud()
@@ -1027,6 +1043,10 @@ func end_card_phase() -> void:
 	if burned > 0:
 		_bs.player_cost = _bs.PHASE_THRESHOLD
 	_player_pass_lock = true
+	# 첫 카드 할인 / 증세는 다음 단계를 기다린다 — BATTLE 동안 손패 비용 표시와
+	# 차례 준비 판정이 다음 단계의 첫 카드 가격을 보게 한다.
+	if _bs.trait_hooks != null:
+		_bs.trait_hooks.reset_phase()
 	# 계획 살인의 예약은 그 작전 단계 안에서만 유효하다 — 안 터졌으면 사라진다.
 	_bs.kill_bounty_p = 0
 	_clear_phase_free(true)
@@ -2991,11 +3011,16 @@ func _play_card_direct(card: Card, pre_target: Variant = null) -> void:
 		"engage_discount_p": _bs.engage_discount_p,
 		# 계획 중시가 체인 중간에서 취소되면 이미 올라간 보존 표시도 되돌린다.
 		"preserved": _bs.preserved_cards_p.duplicate(),
+		# 감독 특성 `first_card_cost` — 취소하면 첫 카드 자격도 돌아온다.
+		"trait_first_used": _bs.trait_hooks.first_card_used
+				if _bs.trait_hooks != null else false,
 	}
 	var eff_cost: int = _bs.effective_cost_for(cd, true)
 	_bs.blog.log_event("CARD", "PLAYER plays [%s] cost=%d effect=%s target=%s" % [
 			cd.card_name, eff_cost, cd.effect, _target_str(pre_target)])
 	_bs.player_cost -= eff_cost
+	if _bs.trait_hooks != null:
+		_bs.trait_hooks.on_player_card_paid()
 	# Consume the engage discount on use so it doesn't double-dip onto a
 	# follow-up engage. If this card is later cancelled, the snapshot
 	# restore puts the discount back.
@@ -3696,6 +3721,8 @@ func _restore_from_snapshot(snap: Dictionary) -> void:
 		_bs.engage_discount_p = int(snap["engage_discount_p"])
 	if snap.has("preserved"):
 		_bs.preserved_cards_p = (snap["preserved"] as Array).duplicate()
+	if snap.has("trait_first_used") and _bs.trait_hooks != null:
+		_bs.trait_hooks.first_card_used = bool(snap["trait_first_used"])
 	# 취소된 카드가 세워 둔 단계 종료 요청도 함께 되돌린다.
 	_end_phase_requested = false
 	# 롤백은 손패를 통째로 다시 세우는 작업이므로 드로우 인트로를 태우지 않는다 —

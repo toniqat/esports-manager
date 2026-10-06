@@ -440,6 +440,10 @@ var skill: PilotSkillSystem = null
 ## 서는 형제 모듈이고, 같은 이유로 스폰과 덱 배분이 모두 끝난 뒤에 세워진다.
 ## `features/battle_sim/mech/MechSkillSystem.gd` 참조.
 var mech_skill: MechSkillSystem = null
+## 감독 특성의 인게임 훅(M8) — `match_ctx.traits` 를 읽어 질의 함수로만 내보낸다.
+## **내 팀만** 받는다. 개시 전략 포인트가 `_populate_from_data_loader()` 안에서
+## 심기므로 그보다 먼저 세운다. `features/battle_sim/trait/TraitHooks.gd` 참조.
+var trait_hooks: TraitHooks = null
 ## 매혹의 성장치 복사가 지금 한 겹 돌고 있는가. 고리를 한 겹에서 끊는 빗장이다.
 var _score_link_depth: int = 0
 ## 교전이 도는 동안 밀어 둔 성장치 팝업. `PilotData → float`(그 교전에서 번 합).
@@ -488,6 +492,10 @@ func _ready() -> void:
 	_bf_pos.y -= FIELD_LIFT
 	$BattleField.position = _bf_pos
 	hex_grid.grid_top   -= FIELD_LIFT  # keep hex_to_screen() aligned with the shifted TileMap
+	# 특성 훅은 seed_side_costs()(아래 _populate 안)보다 먼저 서야 한다.
+	trait_hooks = TraitHooks.new()
+	trait_hooks.name = "TraitHooks"
+	add_child(trait_hooks)
 	_populate_from_data_loader()
 	player_hq_hp = HQ_MAX_HP
 	enemy_hq_hp  = HQ_MAX_HP
@@ -624,6 +632,9 @@ func seed_side_costs() -> void:
 	blue_team = 0 if side == GameEnums.DraftSide.BLUE else 1
 	player_cost = BLUE_COST_HEAD_START if blue_team == 0 else 0
 	ai_cost     = BLUE_COST_HEAD_START if blue_team == 1 else 0
+	# 감독 특성 `open_cost` — 내 팀만.
+	if trait_hooks != null:
+		player_cost += trait_hooks.open_cost_bonus()
 
 
 # game_config 한 키를 읽는다. **기본값을 두지 않는다** — 예전의 `cfg.get(key, "기본값")`
@@ -1757,7 +1768,18 @@ func effective_cost_for(cd: CardData, is_player: bool) -> int:
 	# 자리를 아는 쪽이 카드 페이즈라 그쪽에 묻는다.
 	if card_phase != null:
 		c -= card_phase.hand_neighbor_discount(cd, is_player)
+	# 감독 특성 `first_card_cost` — 작전 단계마다 내 첫 카드만(AI 는 0).
+	if trait_hooks != null:
+		c += trait_hooks.first_card_cost_delta(is_player)
 	return max(0, c)
+
+
+## 한 쪽의 손패 상한. 기본은 `MAX_HAND_SIZE`(game_config)이고, 플레이어만 감독
+## 특성 `hand_size` 를 더한다(1 아래로는 안 내려간다).
+func max_hand_size_for(is_player: bool) -> int:
+	if not is_player or trait_hooks == null:
+		return MAX_HAND_SIZE
+	return maxi(TraitHooks.HAND_SIZE_FLOOR, MAX_HAND_SIZE + trait_hooks.hand_size_delta())
 
 
 # Drawn-position of a pilot marker assuming it sits solo on its tile — the
@@ -1821,6 +1843,8 @@ func _on_return_to_season_pressed() -> void:
 
 
 func _on_restart_pressed() -> void:
+	if trait_hooks != null:
+		trait_hooks.reset_runtime()
 	_populate_from_data_loader()
 	player_hq_hp = HQ_MAX_HP; enemy_hq_hp = HQ_MAX_HP
 	turn_count = 0; game_over = false

@@ -28,7 +28,7 @@ var _phase_lbl: Label
 var _week_lbl: Label
 var _next_match_lbl: Label
 var _toast_lbl: Label
-var _roster_widgets: Array = []   # 5 dicts of {name, total, stats}
+var _roster_widgets: Array = []   # 5 dicts of {name, total, stats, face, trust_chip, trust_fill}
 # 관리 카드 줄(스태프 · 메크 연구 · 재무) — 3 dicts of {panel_cls, title, value, sub, owner, alert}
 var _manage_widgets: Array = []
 var _start_btn: Button
@@ -142,9 +142,65 @@ func _build_roster_block() -> void:
 					Vector2(sx, 88), Vector2(stat_w, 40), HORIZONTAL_ALIGNMENT_CENTER)
 			stat_lbls.append(v_lbl)
 
+		# Trust (M7, §14 T4): chip "신뢰 42" + a thin gauge under the total line.
+		var trust_chip: Panel = OutgameTheme.add_chip(panel, "", Vector2(190, TRUST_Y),
+				Vector2(TRUST_CHIP_W, TRUST_CHIP_H), OutgameTheme.SURFACE_SUNK,
+				OutgameTheme.TEXT_ON_FILL, 20)
+		var gauge := Panel.new()
+		gauge.add_theme_stylebox_override("panel",
+				OutgameTheme.flat_style(OutgameTheme.SURFACE_SUNK, int(TRUST_GAUGE_H * 0.5)))
+		gauge.position = Vector2(190 + TRUST_CHIP_W + 12.0, TRUST_Y + (TRUST_CHIP_H - TRUST_GAUGE_H) * 0.5)
+		gauge.size = Vector2(TRUST_GAUGE_W, TRUST_GAUGE_H)
+		gauge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		panel.add_child(gauge)
+		var fill := Panel.new()
+		fill.position = Vector2.ZERO
+		fill.size = Vector2(0, TRUST_GAUGE_H)
+		fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		gauge.add_child(fill)
+
 		_roster_widgets.append({
 			"name": name_lbl, "total": total_lbl, "stats": stat_lbls, "face": face_rect,
+			"trust_chip": trust_chip, "trust_fill": fill,
 		})
+
+
+# ── Trust (M7 data, shown since §14 T4) ──────────────────────────────────────
+## Row-local placement of the trust chip + gauge (left column, under "TOTAL").
+const TRUST_Y: float = 132.0
+const TRUST_CHIP_W: float = 120.0
+const TRUST_CHIP_H: float = 36.0
+const TRUST_GAUGE_W: float = 140.0
+const TRUST_GAUGE_H: float = 10.0
+
+
+## Trust band colour. Thresholds come from the mental consts — no new numbers:
+## below `TRUST_OUTING_MIN` grey (no outing yet), from there green (outing unlocked),
+## past halfway between that and `TRUST_MAX` amber (close bond).
+static func trust_color(value: int) -> Color:
+	var outing_min: int = ConstTable.int_of("TRUST_OUTING_MIN")
+	var high: int = outing_min + int(float(ConstTable.int_of("TRUST_MAX") - outing_min) * 0.5)
+	if value >= high:
+		return OutgameTheme.ACCENT
+	if value >= outing_min:
+		return OutgameTheme.POSITIVE
+	return OutgameTheme.TEXT_SUB
+
+
+func _refresh_trust(w: Dictionary, p: PlayerData) -> void:
+	var chip: Panel = w["trust_chip"]
+	var fill: Panel = w["trust_fill"]
+	chip.visible = p != null
+	(fill.get_parent() as Control).visible = p != null
+	if p == null:
+		return
+	var value: int = MentalSystem.trust(_gm.season_state, p.id)
+	var col: Color = trust_color(value)
+	(chip.get_child(0) as Label).text = "신뢰 %d" % value
+	chip.add_theme_stylebox_override("panel", OutgameTheme.flat_style(col, int(TRUST_CHIP_H * 0.5)))
+	var t_max: float = maxf(1.0, float(ConstTable.int_of("TRUST_MAX")))
+	fill.size = Vector2(TRUST_GAUGE_W * clampf(float(value) / t_max, 0.0, 1.0), TRUST_GAUGE_H)
+	fill.add_theme_stylebox_override("panel", OutgameTheme.flat_style(col, int(TRUST_GAUGE_H * 0.5)))
 
 
 # ── 관리 카드 줄 (M3~M6) ─────────────────────────────────────────────────────
@@ -400,6 +456,7 @@ func _refresh_roster() -> void:
 			(w["face"] as TextureRect).texture = null
 			for s in STAT_KEYS.size():
 				w["stats"][s].text = ""
+			_refresh_trust(w, null)
 			continue
 		var p: PlayerData = by_role[r]
 		w["name"].text = p.name
@@ -409,6 +466,7 @@ func _refresh_roster() -> void:
 		for s in STAT_KEYS.size():
 			var key: String = STAT_KEYS[s]
 			w["stats"][s].text = "%d" % int(p.get(key))
+		_refresh_trust(w, p)
 
 
 # ── Button handlers ──────────────────────────────────────────────────────────

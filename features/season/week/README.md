@@ -60,6 +60,18 @@ the next point; `EXP_PER_POINT` = const.csv `TRAINING_EXP_PER_POINT`). On a boar
 so a points-only line would show `—` Mon–Thu and everything would rise at once on Friday — then for four days this screen would have no answer to the question it must answer every day,
 "what improved today?".
 
+Two optional extras (§14 T4):
+
+* **Mastery** — under name · role, `숙련 +N · <mech>` (blue) when the row's `mastery` (raw tile EXP)
+  is > 0. `N` is what actually reached the research mech — the same steps as
+  `MechMastery.add_training_exp` (× `MASTERY_TRAIN_SCALE`, then `gain_preview`'s multipliers);
+  the mech is the research mech, or the coach's fallback pick when none is set (`_mastery_text`).
+* **Quirk events** — the row's `quirk: [{kind, result, id?, from?, to?}]` (T1, missing = none) adds
+  one line per event under a divider and the card grows by `QUIRK_LINE_H` each (`_add_pilot_card`
+  returns its height): `기벽 획득 · <name>` / `기벽 재굴림 · a, b → c, d` (amber), `기벽 칸 +1 (n칸)`
+  (green); no-op results (`full` / `none` / `max`) are faint lines. Names come from
+  `QuirkSystem.row(id).name`, falling back to `기벽 #id` (`_quirk_lines` / `_quirk_name`).
+
 ### Match card
 
 Lists every match of that match day, with **the player's match on top** in a dark fill

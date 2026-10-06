@@ -62,7 +62,8 @@ White outgame theme, pattern B of `docs/mobile_safe_area.md` (`indent_to_safe_to
   (`ProfileManager.apply_run_result`); a test run has none, so it shows computed values only:
   - **새 특성 해금** card (amber, right after 진엔딩): ids from `profile_delta.traits`, or for a
     test run `unlocked_traits` (with a "not granted" note). Per trait: +/− chip, name,
-    `TraitSystem.desc_of`, rarity chip.
+    `TraitSystem.desc_of`, rarity chip coloured per rarity (`TraitUi.add_rarity_chip` — the card
+    stays amber, the chip no longer is).
   - 점수: `특성 보너스 × <bonus_points>` row = `breakdown.bonus`.
   - 보상: `currency.outgame` · `currency.levelup` · `pass_exp` (+ `Lv a → b` from `profile_delta.pass`,
     plus a row for `overflow_outgame` when > 0) · `manager_exp` (+ `Lv a → b` from

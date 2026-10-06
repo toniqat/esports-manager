@@ -6,6 +6,7 @@ Contract: `docs/outgame_dev_plan.md` §12 (effect keys §12.3, unlock grammar §
 ## Files
 | File | Class | Role |
 |---|---|---|
+| `TraitUi.gd` | `class_name TraitUi extends RefCounted` (static) | Display helpers: `rarity_color(rarity)` (0 grey · 1 teal · 2 blue · 3 purple · 4 amber, all `OutgameTheme`) and `add_rarity_chip(parent, rarity, pos, sz, font)`. **Every screen that colours a trait by rarity uses it** — run result, hub staff sheet, `TraitPickerView`, shop (`ShopPopup.rarity_color` delegates) |
 | `TraitSystem.gd` | `class_name TraitSystem extends RefCounted` (static) | `traits.csv` cache, bonus points, `validate_equip`, run-time reads (`run_mod` / `run_pct_mult` / `ingame_traits`), `evaluate_unlocks` / `unlock_met` / `longest_win_streak` / `max_outings` |
 
 ## Unlock conditions (`traits.unlock`, `evaluate_unlocks(state, result, profile)`)

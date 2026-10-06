@@ -314,8 +314,7 @@ func _build_craft() -> void:
 		ml.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		UiHelpers.mk_label(row, String(r["name"]), 30, OutgameTheme.TEXT,
 				Vector2(112, 14), Vector2(300, 42))
-		OutgameTheme.add_chip(row, TraitSystem.rarity_name(int(r["rarity"])), Vector2(400, 20),
-				Vector2(96, 34), ShopPopup.rarity_color(int(r["rarity"])), OutgameTheme.TEXT_ON_FILL, 20)
+		TraitUi.add_rarity_chip(row, int(r["rarity"]), Vector2(400, 20), Vector2(96, 34), 20)
 		var dl := UiHelpers.mk_label(row, TraitSystem.desc_of(tid), 22, OutgameTheme.TEXT_SUB,
 				Vector2(112, 66), Vector2(w - 112 - 230, 52))
 		dl.clip_text = true

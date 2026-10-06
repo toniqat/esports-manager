@@ -7,7 +7,7 @@ this README names keys, never numbers.
 | File | Role |
 |---|---|
 | `FinanceSystem.gd` | `class_name FinanceSystem` (static). Run init, week-end settlement, match bonus, allocation, facility upgrade, the three multipliers, number formatting (`fmt` / `fmt_signed`). |
-| `FinancePanel.gd` | Hub manage card 「재무」 (`hub_summary`) + `HubSheet` detail (`open`). |
+| `FinancePanel.gd` | Hub manage card 「재무」 (`hub_summary`) + `HubSheet` detail (`open`). The 지난 주 정산 sponsor / upkeep labels show `보정 ×m` from `FinanceSystem.income_mult` / `upkeep_mult` (the entry's own `income_mult` / `upkeep_mult` if it records one, else the current value; hidden at ×1.00) — `_sponsor_label` / `_upkeep_label`. |
 
 ## Entry points (called by base-owned code)
 | Caller | Call |

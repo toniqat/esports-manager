@@ -38,14 +38,10 @@ func _init() -> void:
 	layer = OVERLAY_LAYER
 
 
-## Rarity 0..4 → colour (all from `OutgameTheme`).
+## Rarity 0..4 → colour — the shared trait table (`TraitUi.rarity_color`), used for
+## both gacha pools so pilot and trait results read the same.
 static func rarity_color(rarity: int) -> Color:
-	match clampi(rarity, 0, 4):
-		0: return OutgameTheme.NEUTRAL
-		1: return OutgameTheme.POSITIVE
-		2: return OutgameTheme.CARD_TINTS[3]
-		3: return OutgameTheme.CARD_TINTS[2]
-	return OutgameTheme.ACCENT
+	return TraitUi.rarity_color(rarity)
 
 
 ## Turns `l` into a word-wrapped block of `sz`. The size is set **after** autowrap: a Label

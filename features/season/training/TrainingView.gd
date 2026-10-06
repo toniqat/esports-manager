@@ -159,6 +159,9 @@ var _inv_drag: DragScroll = null
 var _inv_press_tile: TrainingTile = null
 
 var _thumb_faces: Array = []             # 5 TextureRect
+## Per-pilot EXP chip on each thumbnail (`_refresh_exp_chips`) — shown only when
+## that pilot's multiplier differs from the team-wide one (breakthrough bonus).
+var _thumb_exp_chips: Array = []         # 5 Panel (label = child 0)
 
 # 인벤토리에서 고른 코스와 그 정보 팝오버.
 var _sel_tile: TrainingTile = null
@@ -180,6 +183,7 @@ const STAFF_Y: float = TITLE_Y + TITLE_H + 2.0
 const STAFF_H: float = 30.0
 var _staff_lbl: Label = null
 var _effect_lbl: Label = null
+const EFFECT_W: float = 1080.0 - MARGIN * 2.0 - 140.0
 var _bar_buttons: Array = []
 var _bar_specs: Array = []
 
@@ -289,6 +293,11 @@ func _build_thumbs() -> void:
 		panel.add_child(face)
 		_thumb_faces.append(face)
 
+		var chip: Panel = OutgameTheme.add_chip(panel, "", Vector2(THUMB_W - 104.0, THUMB_H - 32.0),
+				Vector2(98, 28), OutgameTheme.POSITIVE, OutgameTheme.TEXT_ON_FILL, 17)
+		chip.visible = false
+		_thumb_exp_chips.append(chip)
+
 
 static func _thumb_style(role_col: Color) -> StyleBoxFlat:
 	var sty := StyleBoxFlat.new()
@@ -330,8 +339,9 @@ func _build_inventory() -> void:
 	UiHelpers.mk_label(self, "훈련 코스", 22, OutgameTheme.TEXT_SUB,
 			Vector2(MARGIN, top - INV_LABEL_GAP), Vector2(400, 28))
 	# Right side of the same row: what the staff stats do to the courses.
+	# Wide enough for the multiplier breakdown (`_effect_text`); "훈련 코스" keeps ~140px.
 	_effect_lbl = UiHelpers.mk_label(self, "", 20, OutgameTheme.ACCENT_TEXT,
-			Vector2(1080.0 - MARGIN - 600.0, top - INV_LABEL_GAP), Vector2(600, 28),
+			Vector2(1080.0 - MARGIN - EFFECT_W, top - INV_LABEL_GAP), Vector2(EFFECT_W, 28),
 			HORIZONTAL_ALIGNMENT_RIGHT)
 
 	_inv_scroll = ScrollContainer.new()
@@ -398,15 +408,76 @@ func _refresh_staff() -> void:
 			_owner_text(state, "training"), _owner_text(state, "tactics")]
 	if _effect_lbl != null:
 		var top: int = TrainingTile.max_unlocked_grade(_board.tactics_stat())
-		_effect_lbl.text = "훈련 효과 ×%.2f · 사용 가능 %s 등급까지" % [
-			TrainingTile.training_exp_mult(_board.training_stat()),
-			String(TrainingTile.GRADE_NAMES[top])]
+		_effect_lbl.text = "%s · 사용 가능 %s 등급까지" % [
+			_effect_text(_shared_parts(state)), String(TrainingTile.GRADE_NAMES[top])]
+	_refresh_exp_chips(state)
 	if _bar_buttons.size() == 3:
 		var auto_btn: Button = _bar_buttons[1]
 		var show_auto: bool = StaffSystem.is_delegated(state, "training")
 		if auto_btn.visible != show_auto:
 			auto_btn.visible = show_auto
 			OutgameTheme.layout_bottom_bar(_bar_buttons, _bar_specs)
+
+
+## Team-wide EXP multiplier parts — the same calls `TrainingBoard.exp_mult_table`
+## multiplies for every cell (training stat × finance × trait `train_exp_pct`).
+## Per-pilot parts (breakthrough, outing fatigue) are not here; see `_refresh_exp_chips`.
+func _shared_parts(state: Dictionary) -> Array:
+	return [
+		["스태프", TrainingTile.training_exp_mult(_board.training_stat())],
+		["재무", FinanceSystem.training_exp_mult(state)],
+		["특성", TraitSystem.run_pct_mult(state, "train_exp_pct")],
+	]
+
+
+static func _parts_product(parts: Array) -> float:
+	var m: float = 1.0
+	for part in parts:
+		m *= float((part as Array)[1])
+	return m
+
+
+## "훈련 효과 ×1.21" — plus "(스태프 ×1.10 · 특성 ×1.10)" when anything besides the
+## staff stat moves it. Parts at ×1.00 are left out of the breakdown.
+static func _effect_text(parts: Array) -> String:
+	var txt: String = "훈련 효과 ×%.2f" % _parts_product(parts)
+	var shown: Array = []
+	var others_move: bool = false
+	for i in parts.size():
+		var part: Array = parts[i]
+		var v: float = float(part[1])
+		var moves: bool = absf(v - 1.0) >= 0.005
+		if i > 0 and moves:
+			others_move = true
+		if moves or i == 0:
+			shown.append("%s ×%.2f" % [String(part[0]), v])
+	if others_move:
+		txt += " (%s)" % " · ".join(shown)
+	return txt
+
+
+## Thumbnail chips: each pilot's own multiplier relative to the team-wide one, read
+## from `TrainingBoard.exp_mult_table` (what settlement multiplies). A pilot's best
+## day is used, so a single outing-fatigue day does not hide the breakthrough bonus.
+func _refresh_exp_chips(state: Dictionary) -> void:
+	if _thumb_exp_chips.size() != COLS:
+		return
+	var shared: float = _parts_product(_shared_parts(state))
+	var table: Dictionary = _board.exp_mult_table()
+	var pilots: Array = _pilots()
+	for seat in COLS:
+		var chip: Panel = _thumb_exp_chips[seat]
+		var ratio: float = 1.0
+		if pilots[seat] != null and shared > 0.0:
+			var best: float = 0.0
+			for day in TrainingBoard.ROWS:
+				best = maxf(best, float(table.get(Vector2i(seat, day), 0.0)))
+			ratio = best / shared
+		chip.visible = absf(ratio - 1.0) >= 0.005
+		if chip.visible:
+			(chip.get_child(0) as Label).text = "EXP ×%.2f" % ratio
+			chip.add_theme_stylebox_override("panel", OutgameTheme.flat_style(
+					OutgameTheme.POSITIVE if ratio > 1.0 else OutgameTheme.NEGATIVE, 14))
 
 
 ## "훈련: 강민호 코치 17" / "전술: 감독 6" — who covers this stat and its value.

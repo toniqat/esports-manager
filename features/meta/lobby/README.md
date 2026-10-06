@@ -1,0 +1,42 @@
+# Lobby
+
+Project entry point — `scenes/Lobby.tscn` (`run/main_scene`). White outgame
+theme (`OutgameTheme`), bottom action bar. Replaces the old 3-slot TitleScreen
+(save structure is now profile 1 + run 1 — `features/save_load/README.md`).
+
+## Files
+| File | Class | Purpose |
+|---|---|---|
+| `LobbyScreen.gd` | `extends Control` (scene only) | Builds the lobby, routes continue / new run |
+| `ConfirmPopup.gd` | `class_name ConfirmPopup extends CanvasLayer` | Reusable modal confirm (dim + white card + cancel / confirm) |
+
+## LobbyScreen
+- `_ready` sets **`GameManager.use_test_run = false`** first — runs entered through the
+  lobby save to `user://run.save`; direct editor runs of Season / MatchFlow keep `true`
+  and save to the hidden `user://run_test.save`.
+- Run exists (`SaveSystem.has_run()`) → run card from `SaveSystem.read_run_meta()`:
+  phase name (`HubView.PHASE_NAMES`), "경기 진행 중" chip when `match_in_progress`,
+  date + weekday (`OutgameTheme.DAY_LETTERS`), team, trophies, league rank W-L
+  (or "리그 미시작"), last saved time. No run → empty-state card.
+- Bottom bar: with a run `새 런`(ghost, 1) / `이어하기`(primary, 2); without, `새 런` full width.
+- `이어하기` → `load_run()` → `MatchFlow.tscn` if `season_state.match_resume != null`,
+  else `Season.tscn`. Error → red toast above the bar + ERROR haptic.
+- `새 런` with a run → WARNING haptic + `ConfirmPopup` ("진행 중인 런을 포기할까요?",
+  danger style). Confirm → `delete_run()` → `reset_season_state()` → `Season.tscn`.
+  Until M2, abandoning only deletes the file (no fail settlement yet).
+- Later milestones add menu entries (컬렉션 / 감독 / 특성 / 상점) below the run card.
+
+## ConfirmPopup
+`open(title, body, cancel_text, confirm_text, danger)`, `close()`, `is_open()`;
+signals `confirmed` / `cancelled`.
+- CanvasLayer 20; full-viewport flat Button as the dim (`DIM_COLOR`, style from
+  `season/draft/DraftDetailPanel.gd`) — blocks input behind and cancels on tap.
+- White card 920 wide, centred between `ScreenMetrics.top_y()` and `bottom_y()` so the
+  buttons stay above the gesture zone; card is `MOUSE_FILTER_STOP` so taps on it don't close it.
+- Buttons ghost cancel / primary confirm at 1:2; `danger=true` paints confirm `NEGATIVE` red.
+- Body area is a fixed 150px (~4 lines) — a wrapped Label measures 0 before it enters the tree.
+
+## Safe area
+Pattern B of `docs/mobile_safe_area.md`: `ScreenMetrics.indent_to_safe_top(self)` +
+`OutgameTheme.add_background` (extends under the notch). Toast sits at
+`OutgameTheme.bottom_bar_top() - 64`, above the bar and the gesture zone.

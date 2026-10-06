@@ -279,11 +279,11 @@ the window is small, so only the ratio needs to match.
 
 ```bash
 # 9:16 base — must not differ by a single pixel from before
-godot.exe --path <proj> --resolution 540x960 res://scenes/TitleScreen.tscn
+godot.exe --path <proj> --resolution 540x960 res://scenes/Lobby.tscn
 
 # iPhone 15 Pro form (9:19.5) + Dynamic Island + home indicator
 ESM_SAFE_AREA=0,162,0,90 \
-godot.exe --path <proj> --resolution 540x1170 res://scenes/TitleScreen.tscn
+godot.exe --path <proj> --resolution 540x1170 res://scenes/Lobby.tscn
 ```
 
 For screenshots, the simplest way is to launch windowed without `--headless` and save from

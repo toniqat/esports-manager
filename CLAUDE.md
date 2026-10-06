@@ -11,7 +11,7 @@ add them to the owning folder's README and at most a one-line pointer here.
 
 ## Project Overview
 - **Engine**: Godot 4.5-stable, GDScript · **Target**: 2D mobile portrait 1080×1920
-- **Main scene**: `res://scenes/TitleScreen.tscn` (3 save slots → `Season.tscn`)
+- **Main scene**: `res://scenes/Lobby.tscn` (lobby: continue / new run → `Season.tscn`)
 - **Campaign**: `PRESEASON → PRESEASON_INTL → MIDSEASON → MIDSEASON_INTL → REGULAR → REGULAR_INTL`.
   Win final REGULAR_INTL = ending; miss any phase's playoffs = game over.
 - **Week**: advances one week at a time, run day by day 월~일 (Mon–Sun)
@@ -24,8 +24,8 @@ add them to the owning folder's README and at most a one-line pointer here.
   (white paper, coloured cards); primary actions use the full-width bottom bar
   (`OutgameTheme.add_bottom_bar`, rules in `resources/README.md` "Bottom action bar").
   **BattleSim uses neither** — the battlefield is a dark screen.
-- **Save / load**: 3 JSON slots `user://saves/slot{0,1,2}.save`, 4 autosave points,
-  no save inside BattleSim → `features/save_load/README.md`.
+- **Save / load**: profile 1 (`user://profile.save`, `ProfileManager`) + run 1
+  (`user://run.save`), 4 autosave points, no save inside BattleSim → `features/save_load/README.md`.
 - **Screen coordinates** all pass through `ScreenMetrics` (safe area) →
   `docs/mobile_safe_area.md`.
 - **Dev setup per PC**: `.mcp.json` registers `godot-mcp` pinned to the addon's
@@ -46,15 +46,17 @@ esports-manager/
 ├── ios/plugins/              ← iOS native plugins (Haptics built by CI) → README.md
 ├── build/                    ← where the phone build (.ipa) is downloaded → README.md
 ├── data/                     ← CSV tables, game.db, SQLite addon usage, table list → README.md
-├── autoloads/                ← GameManager, Haptics, HapticUi (+ haptics table, db_path) → README.md
+├── autoloads/                ← GameManager, ProfileManager, Haptics, HapticUi (+ haptics table, db_path) → README.md
 ├── resources/                ← shared data classes, enums, image lookups, OutgameTheme,
 │                               ScreenMetrics, DragScroll, UiHelpers, ConstTable, GameDb, shaders → README.md
-├── scenes/                   ← TitleScreen / Season / MatchFlow / BattleSim / BattleField / Card .tscn
+├── scenes/                   ← Lobby / Season / MatchFlow / BattleSim / BattleField / Card .tscn
 ├── docs/                     ← ios_testbuild.md, mobile_safe_area.md,
 │                               outgame_dev_plan.md (outgame meta development plan, 아웃게임 메타 개발 계획)
 ├── addons/godot_mcp/         ← MCP editor plugin (do not modify)
 └── features/
-    ├── save_load/            ← title screen, 3-slot save/load, autosave, mid-match resume
+    ├── meta/                 ← outgame outside a run (lobby; later run setup / result / collection) → README.md
+    │   └── lobby/            ← project entry: continue / new run, abandon confirm popup
+    ├── save_load/            ← run save (SaveSystem), autosave, mid-match resume
     ├── season/               ← outgame campaign (SeasonHub orchestrator, handoffs, brackets)
     │   ├── calendar/         ← week clock, weekdays / match days, phase transitions
     │   ├── press/            ← press conference (기자회견) messenger screen
@@ -87,7 +89,7 @@ esports-manager/
 
 | Feature | Scene | Script | Read |
 |---|---|---|---|
-| Save / Load (main entry) | `scenes/TitleScreen.tscn` | `features/save_load/TitleScreen.gd` | `features/save_load/README.md` |
+| Lobby (main entry) | `scenes/Lobby.tscn` | `features/meta/lobby/LobbyScreen.gd` | `features/meta/lobby/README.md` |
 | Season | `scenes/Season.tscn` | `features/season/SeasonHub.gd` | `features/season/README.md` + submodule |
 | Match Flow | `scenes/MatchFlow.tscn` | `features/match_flow/MatchFlow.gd` | `features/match_flow/README.md` |
 | Battle Sim | `scenes/BattleSim.tscn` | `features/battle_sim/BattleSim.gd` | `features/battle_sim/README.md` + submodule |
@@ -96,7 +98,9 @@ esports-manager/
 | Topic | README |
 |---|---|
 | Haptics table & rules, `game.db` res→user copy | `autoloads/README.md` |
-| Title→Season handoff, autosave, mid-match resume | `features/save_load/README.md` |
+| Profile / run save, autosave, mid-match resume, test run file | `features/save_load/README.md` |
+| Lobby → Season handoff, abandon-run confirm | `features/meta/lobby/README.md` |
+| ProfileManager (profile.save) | `autoloads/README.md` |
 | Weekly progression contract, Weekdays and match days | `features/season/calendar/README.md` |
 | Season→MatchFlow→BattleSim handoff, playoff / INTL brackets | `features/season/README.md` |
 | MatchFlow→BattleSim handoff (`match_ctx`) | `features/match_flow/README.md`, `features/battle_sim/README.md` |

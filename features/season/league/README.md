@@ -79,7 +79,7 @@ Each entry in `season_state["match_schedule"]` is a Dictionary:
 ```
 
 `year/month/day` are stamped to the Monday of the phase_week — used only
-for save metadata and SlotCard display, never for match-day filtering.
+for save metadata and the lobby run card, never for match-day filtering.
 
 ## Files
 - `LeagueManager.gd` — orchestrator (this README's contract).

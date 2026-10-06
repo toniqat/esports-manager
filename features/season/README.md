@@ -27,7 +27,7 @@ primary action at the right end**.
 | TeamDraftView | PICK = `다음` (Next) full width · CONFIRM = `뒤로` (Back) (1) / `게임 시작` (Start game) (2) |
 | LeagueView · BracketView · IntlBracketView | `확인` (OK) full width |
 | WeekProgressView | `확인` / `주 마감 →` (End of week) / `경기 시작` (Start match) (dark) — always exactly one, full width |
-| EndingView · GameOverView | `타이틀로` (To title) (1, ghost) / `다시 시작` (Restart) (2, primary) |
+| EndingView · GameOverView | `로비로` (To lobby) (1, ghost) / `다시 시작` (Restart) (2, primary) — both delete `run.save` first |
 
 The four conventions (body height is derived back from `bottom_bar_top()` · the colour fill extends
 below the safe line but the text stays above it · when a cell collapses, call `layout_bottom_bar`
@@ -36,8 +36,8 @@ again · use `style_bottom_button` to restyle a button) are in the "Bottom actio
 choices standing inside the speech-bubble flow, so they are not pinned to the bottom.
 
 ## Entry point
-`scenes/Season.tscn` — entered from `scenes/TitleScreen.tscn` once the
-player picks a save slot. Root: `Control` with `SeasonHub.gd` attached.
+`scenes/Season.tscn` — entered from the lobby (`scenes/Lobby.tscn`) via
+`새 런` / `이어하기`. Root: `Control` with `SeasonHub.gd` attached.
 SeasonHub branches on `gm.season_state["active"]`: false → run
 `init_season()` and route to DRAFT (new campaign), true → skip init and
 route directly to HUB (loaded campaign). See `features/save_load/` for the
@@ -199,13 +199,13 @@ trigger #3; resume re-enters BattleSim with the locked-in picks but the
 battle replays from scratch.
 
 ## Resume routing
-TitleScreen "이어하기" (Continue) branches on `season_state["match_resume"]`:
+The lobby's "이어하기" (Continue) branches on `season_state["match_resume"]`:
 - Non-null → `MatchFlow.tscn` (MatchFlow consumes the hint and skips
   PREP, jumping directly to BAN_PICK or LAUNCH depending on the saved
   phase).
 - Null → `Season.tscn` → SeasonHub → HUB.
 
-SlotCard shows a "경기 진행 중" (Match in progress) tag when `meta.match_in_progress == true`
+The lobby run card shows a "경기 진행 중" (Match in progress) chip when `meta.match_in_progress == true`
 (set whenever `match_resume` is non-null at save time).
 
 ## SeasonHub screen routing

@@ -656,11 +656,8 @@ func _on_intl_failed_campaign(_phase: int) -> void:
 
 # ── Save system — autosave helper ──────────────────────────────────────────
 func _autosave(reason: String) -> void:
-	var slot: int = int(_gm.active_save_slot)
-	if slot < 0:
-		return
-	var err: String = SaveSystem.save_slot(slot)
+	var err: String = SaveSystem.save_run()
 	if err != "":
 		push_warning("SeasonHub: autosave (%s) failed — %s" % [reason, err])
 	else:
-		print("SeasonHub: autosave (%s) → slot %d" % [reason, slot])
+		print("SeasonHub: autosave (%s) → %s" % [reason, SaveSystem.run_path()])

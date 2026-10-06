@@ -1,33 +1,60 @@
 # Save / Load
 
-Title-screen save-slot system. Three slots persisted as JSON under
-`user://saves/slot{0,1,2}.save`. Auto-save fires at four discrete points
-across the campaign / match-day lifecycle (no manual save UI):
+Two save files (outgame meta plan M0, `docs/outgame_dev_plan.md` §2.1):
 
-1. **Post-draft** — first DRAFT → HUB transition (SeasonHub).
+| File | Owner | Lifetime | Content |
+|---|---|---|---|
+| `user://profile.save` | `ProfileManager` autoload (`autoloads/README.md`) | permanent | account progress — collection, manager, traits, currency, run history (schema: plan §4) |
+| `user://run.save` | `SaveSystem` (this folder) | run start → run end | the in-progress run: `meta` + full `GameManager.season_state` |
+
+There is **one run at a time**. The old 3-slot files (`user://saves/slot{0,1,2}.save`)
+are ignored — no migration.
+
+**Test run file** — `GameManager.use_test_run` defaults to `true`, so running
+`Season.tscn` / `MatchFlow.tscn` directly from the editor still autosaves, but into
+the hidden `user://run_test.save`. The lobby sets it to `false` in `_ready`, so a
+normal boot (Lobby is `run/main_scene`) always uses `user://run.save`. The lobby
+never shows the test run.
+
+Auto-save fires at four discrete points (no manual save UI):
+
+1. **Post-run-start** — first DRAFT → HUB transition (SeasonHub).
 2. **Pre-ban-pick** — MatchFlow `_ready()`, right before BAN_PICK starts.
 3. **Post-ban-pick** — `_on_ban_pick_finished` in MatchFlow, right after
-   mech (메크) assignment finishes and just before BattleSim launches. It used to sit
-   where the following JUNGLE_START finished (`_on_jungle_finished`), but it moved one
-   step earlier when the jungle start (정글 시작) choice moved inside BattleSim.
+   mech (메크) assignment finishes and just before BattleSim launches.
 4. **Post-match** — SeasonHub `_ready()` after `_consume_pending_match_result`
    applies the result and clears `match_resume`.
 
 No save fires while BattleSim is running — closing mid-battle resumes from
 the post-ban-pick snapshot and replays the battle (the jungle start screen shows again too).
 
+**Run end** — `EndingView` / `GameOverView` call `SaveSystem.delete_run()` from both
+buttons (`다시 시작` → Season.tscn, `로비로` → Lobby.tscn). M2 inserts the run-result
+settlement (write to profile) right before that delete.
+
 ## Entry point
-`scenes/TitleScreen.tscn` — set as `run/main_scene` in `project.godot`.
-The player picks a slot, then the scene changes to `Season.tscn`.
+`scenes/Lobby.tscn` (`features/meta/lobby/`) — `run/main_scene` in `project.godot`.
+The lobby reads `SaveSystem.has_run()` / `read_run_meta()` and routes to
+`Season.tscn` / `MatchFlow.tscn` — see `features/meta/README.md`.
 
 ## Files
 | File | Class | Purpose |
 |---|---|---|
-| `SaveSystem.gd`   | `class_name SaveSystem extends RefCounted` | Static helpers for serialize / deserialize / list / save / load / delete |
-| `TitleScreen.gd`  | `extends Control` (no class_name — only used via scene) | Project entry. Builds the 3-slot UI. Routes button presses to GameManager + scene change. |
-| `SlotCard.gd`     | `class_name SlotCard extends Control` | One slot card. Builds its own UI; parent feeds meta + callbacks. |
+| `SaveSystem.gd` | `class_name SaveSystem extends RefCounted` | Static run-file helpers: path / exists / meta / save / load / delete + season_state serialization |
 
-## Slot file schema (v1)
+`ProfileManager` lives in `autoloads/` (it is an autoload, not a feature script).
+
+### SaveSystem API
+| Function | Returns | Notes |
+|---|---|---|
+| `run_path()` | `String` | `TEST_RUN_PATH` when `GameManager.use_test_run`, else `RUN_PATH` |
+| `has_run()` | `bool` | file at `run_path()` exists |
+| `read_run_meta()` | `Dictionary` | the `meta` block, `{}` when missing / corrupt |
+| `save_run()` | `String` | `""` on success; error when `season_state.active` is false |
+| `load_run()` | `String` | overwrites `GameManager.season_state` |
+| `delete_run()` | `String` | `""` also when there is no file |
+
+## Run file schema (v1)
 ```json
 {
   "version": 1,
@@ -43,11 +70,11 @@ The player picks a slot, then the scene changes to `Season.tscn`.
 }
 ```
 
-The `meta` block is denormalized info for the title-screen card, computed
-once at save time. It lets the title screen render slot cards without
-loading the full season_state (and without instantiating LeagueManager).
-`match_in_progress` is true when the slot was saved between BAN_PICK start
-and BattleSim launch — SlotCard surfaces a "경기 진행 중" (Match in progress) tag, and TitleScreen
+The `meta` block is denormalized info for the lobby's run card, computed
+once at save time, so the lobby can render it without loading the full
+season_state (and without instantiating LeagueManager).
+`match_in_progress` is true when the run was saved between BAN_PICK start
+and BattleSim launch — the lobby shows a "경기 진행 중" (Match in progress) chip and
 routes "이어하기" (Continue) to MatchFlow.tscn instead of Season.tscn.
 
 ## Serialization notes
@@ -99,7 +126,6 @@ Resource-typed entries:
   the opening (개시), and resume replays the battle from the start anyway.
 
 ## Auto-save trigger points
-Four trigger points across two scripts:
 
 | # | When | Where | match_resume |
 |---|---|---|---|
@@ -108,16 +134,14 @@ Four trigger points across two scripts:
 | 3 | Post-ban-pick (after mech assignment is done, before BattleSim) | `MatchFlow._on_ban_pick_finished()` | `{phase: LAUNCH, ...}` |
 | 4 | Post-match (return from BattleSim, result applied) | `SeasonHub._ready()` | null (cleared by `_consume_pending_match_result`) |
 
-`active_save_slot` is set on GameManager by TitleScreen. If a session enters
-Season.tscn / MatchFlow.tscn directly (no slot chosen, e.g. running the
-scene from the editor) `active_save_slot == -1` and `SaveSystem.save_slot(-1)`
-is a no-op.
+Both `_autosave` helpers call `SaveSystem.save_run()` unconditionally — which file
+it lands in is decided by `use_test_run` (above).
 
 ## Mid-match resume
 Closing the game between save #2 (pre-ban-pick) and save #4 (post-match)
-leaves `match_resume` non-null on disk. On `이어하기` (Continue):
+leaves `match_resume` non-null on disk. On `이어하기` (Continue) in the lobby:
 
-- TitleScreen branches on `season_state.match_resume`. Non-null →
+- The lobby branches on `season_state.match_resume`. Non-null →
   `MatchFlow.tscn`. Null → `Season.tscn`.
 - `MatchFlow._ready()` reads `season_state.match_resume`, clears it
   in-memory, and skips ahead:
@@ -131,77 +155,18 @@ leaves `match_resume` non-null on disk. On `이어하기` (Continue):
   so the next resume drops back into BattleSim with the same locked-in
   picks.
 
-## New-game vs continue flow
-- **New game on empty slot**: `TitleScreen` calls `gm.reset_season_state()`,
-  sets `active_save_slot = idx`, scene-changes to Season.tscn. SeasonHub
-  sees `season_state["active"] == false`, calls `init_season()`, shows DRAFT.
-  First save fires at DRAFT → HUB transition.
-- **Continue on filled slot**: `SaveSystem.load_slot(idx)` overwrites
-  `gm.season_state` from disk (active=true), `active_save_slot = idx`,
-  scene-changes to Season.tscn. SeasonHub sees active=true, skips
-  `init_season()`, routes straight to HUB.
-- **Delete**: requires double-tap on the SlotCard (first tap arms, second
-  tap deletes). No undo.
-- **New game on filled slot**: not allowed directly — player must delete
-  first. Keeps the destructive path explicit.
+## New-run vs continue flow (lobby)
+- **새 런, no run**: `reset_season_state()` → Season.tscn. SeasonHub sees
+  `season_state.active == false`, runs `init_season()` and DRAFT. First save fires at DRAFT → HUB.
+- **새 런, run exists**: modal warning popup (`진행 중인 런을 포기할까요?`). Confirm →
+  `SaveSystem.delete_run()` → `reset_season_state()` → Season.tscn. Cancel / tapping the
+  dim closes it. (Abandon = delete only until M2 adds the fail settlement.)
+- **이어하기**: `SaveSystem.load_run()` overwrites `season_state` (active=true) →
+  MatchFlow.tscn if `match_resume != null`, else Season.tscn (skips `init_season()`).
 
 ---
 
 ## Screen fit (safe area)
-
-`TitleScreen._build()` shifts the whole screen down to the top of the safe area (안전 영역)
-with `ScreenMetrics.indent_to_safe_top(self)`, and stretches only the background `ColorRect`
-back to the screen edge with `extend_background(bg)` (the notch area is a place not to use,
-not a place to leave empty).
-
-The bottom hint label hangs at `ScreenMetrics.safe_h() - 100`.
-
-**A bug that actually happened here**: only the title label was moved down by `top_y()`, so
-the body (slot cards) stayed put and the title slid under the cards. Margins are applied per
-screen, not per element.
-
+The lobby's safe-area handling (shift to safe top, background extended to the edge,
+bottom action bar above the gesture zone) is described in `features/meta/lobby/README.md`.
 Details: **`docs/mobile_safe_area.md`**
-
-
-## Detail moved from root CLAUDE.md
-
-### TitleScreen → Season handoff
-`TitleScreen.gd` lists three slots (`user://saves/slot{0,1,2}.save`) via
-`SaveSystem.list_slots()`. Each slot card shows phase + date, team + trophy
-count, current league standing, and last-save timestamp. **새 게임** (New game) on an
-empty slot: `gm.reset_season_state()` + `gm.active_save_slot = idx` + scene
-change to Season.tscn → SeasonHub sees `season_state.active == false` and
-runs the DRAFT flow. **이어하기** (Continue) on a filled slot: `SaveSystem.load_slot(idx)`
-overwrites `gm.season_state` from disk + sets `active_save_slot` + scene
-change → SeasonHub skips `init_season()` and routes to HUB. **삭제** (Delete) is
-double-tap-to-confirm (first tap arms the button, second tap deletes).
-GameOverView and EndingView both expose a "타이틀로" (To title) button that resets
-season state + clears `active_save_slot` + returns to TitleScreen.tscn.
-
-### Auto-save
-Four trigger points across SeasonHub and MatchFlow:
-1. **Post-draft** — `SeasonHub.goto(Screen.HUB)` when previous screen was DRAFT.
-2. **Pre-ban-pick** — `MatchFlow._on_prep_finished()` after the player
-   confirms PREP. Writes `season_state.match_resume = {phase: BAN_PICK, player_side, ...}`.
-3. **Post-ban-pick** — `MatchFlow._on_ban_pick_finished()` right before
-   scene-change to BattleSim. Writes the full match snapshot (banned/picked/
-   assigned mech IDs) into `match_resume` with `phase = LAUNCH`. The jungle
-   direction used to be included here too, so the save sat one step later
-   (`_on_jungle_finished`); when that choice moved into BattleSim, the timing moved earlier —
-   resume replays the battle from the start anyway, so the jungle direction is asked again then.
-4. **Post-week-end** — `SeasonHub.on_proceed_to_next_week()` after
-   `CalendarSystem.advance_week()` rolls the calendar. Covers both
-   post-match weeks and no-match weeks.
-
-No save fires inside BattleSim. Closing mid-battle leaves the disk save at
-trigger #3, so resume drops back into BattleSim with the same locked-in
-picks but the battle replays from scratch (the jungle start screen shows again too).
-
-`SaveSystem.save_slot(gm.active_save_slot)` is a no-op when the slot is -1
-(running Season.tscn / MatchFlow.tscn directly from the editor).
-
-### Mid-match resume routing
-TitleScreen "이어하기" branches on `season_state.match_resume`. Non-null →
-`MatchFlow.tscn` (MatchFlow consumes the hint and skips PREP, jumping to
-BAN_PICK or LAUNCH). Null → `Season.tscn`. SlotCard shows a "경기 진행 중"
-(Match in progress) tag when `meta.match_in_progress == true`.

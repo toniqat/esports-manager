@@ -80,12 +80,12 @@ func _build() -> void:
 		_roster_lines.append(lbl)
 
 	# **하단 구간을 둘이 2:1 로 나눠 갖는다** — 다시 시작이 주 행동이라 오른쪽
-	# 3분의 2, 타이틀로 나가는 길이 왼쪽 3분의 1이다(`OutgameTheme.add_bottom_bar`).
+	# 3분의 2, 로비로 나가는 길이 왼쪽 3분의 1이다(`OutgameTheme.add_bottom_bar`).
 	var bar: Array = OutgameTheme.add_bottom_bar(self, [
-		{"text": "타이틀로",  "style": "ghost",   "font": 32, "weight": 1.0},
+		{"text": "로비로",    "style": "ghost",   "font": 32, "weight": 1.0},
 		{"text": "다시 시작", "style": "primary", "font": 32, "weight": 2.0},
 	])
-	(bar[0] as Button).pressed.connect(_on_title_pressed)
+	(bar[0] as Button).pressed.connect(_on_lobby_pressed)
 	(bar[1] as Button).pressed.connect(_on_restart_pressed)
 
 
@@ -173,12 +173,20 @@ func _refresh_roster() -> void:
 			_roster_lines[seat].text = "%s  —" % ROLE_NAMES[r]
 
 
-func _on_restart_pressed() -> void:
+# 런이 끝났으므로 두 버튼 모두 런 파일부터 지운다.
+# M2 에서 RunResult 정산(프로필에 점수 · 재화 · 기록)이 delete_run 앞에 들어온다.
+func _end_run() -> void:
+	var err: String = SaveSystem.delete_run()
+	if err != "":
+		push_warning("EndingView: %s" % err)
 	_gm.reset_season_state()
+
+
+func _on_restart_pressed() -> void:
+	_end_run()
 	get_tree().change_scene_to_file("res://scenes/Season.tscn")
 
 
-func _on_title_pressed() -> void:
-	_gm.reset_season_state()
-	_gm.active_save_slot = -1
-	get_tree().change_scene_to_file("res://scenes/TitleScreen.tscn")
+func _on_lobby_pressed() -> void:
+	_end_run()
+	get_tree().change_scene_to_file("res://scenes/Lobby.tscn")

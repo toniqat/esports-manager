@@ -87,6 +87,28 @@ API:
 When `match_ctx.active == false`, BattleSim falls back to `ROLE_STATS` defaults
 (loaded from `pilots.csv`).
 
+#### Run save target — `use_test_run`
+`var use_test_run: bool = true`. `SaveSystem.run_path()` reads it: `true` →
+`user://run_test.save` (hidden test run, used when Season / MatchFlow is run directly
+from the editor), `false` → `user://run.save`. The lobby sets it to `false` in `_ready`.
+(Replaces the old `active_save_slot`.) → `features/save_load/README.md`
+
+### ProfileManager.gd
+**Account (profile) state** — permanent progress that outlives a run. One JSON file,
+`user://profile.save` (schema: `docs/outgame_dev_plan.md` §4). No `class_name`;
+access via `get_node("/root/ProfileManager").profile`. Run state is **not** here
+(that is `season_state` → `user://run.save`).
+
+- `profile: Dictionary`, `default_profile()`, `load_profile() -> String` (called in `_ready`),
+  `save_profile() -> String`.
+- Missing file → default profile written. Corrupt file → warning, original copied to
+  `user://profile.save.bak`, default written.
+- Loaded data is laid over the defaults: missing top-level keys, and missing keys one level
+  down in `manager` (+ `manager.alloc`) / `currency` / `traits` / `pass`, get default values;
+  a top-level value of the wrong type is dropped. JSON floats are cast back to int for
+  `version`, `active_preset`, manager ints, alloc, currency and `pass.exp`.
+- M0 only creates / loads it; later milestones write to it (M1 collection, M2 run results …).
+
 ### Haptics.gd
 **iOS / Android haptic feedback** — the GDScript wrapper of a `godot-haptics` fork that is
 maintained in a separate repository. **This project is not the source, so do not edit it here**:
@@ -174,7 +196,7 @@ HapticUi.down_kind_for(btn, HapticUi.NONE)   # drop the press beat for this butt
   (`haptic_bound` meta stamp — prevents a node that is removed and re-added from being wired
   twice and buzzing twice per press).
 - **`mute()` turns off both beats.** Use it when another place already fires for the same
-  press, like a delete button that needs two presses (`save_load/SlotCard`).
+  press, like the lobby's `새 런` with a run, or a danger `ConfirmPopup` confirm (`meta/lobby/`).
 - **`button_down` also gets `Haptics.prepare()`**: the time from finger touch to finger lift
   is exactly the slack needed to wake the Taptic Engine, and that slack **makes the crisp close
   arrive on time**.
@@ -237,7 +259,7 @@ writes intensities by hand per screen.
 | Training tile — pick up / **snap per droppable cell** / place | `season/training/TrainingView` | `SELECT` / `LIGHT` / `SOFT` |
 | Training tile — tap on board to remove | `season/training/TrainingView._on_grid_input` | `LIGHT` |
 | Ban/pick mech slot — lift / swap | `ban_pick/BanPickController` | `SELECT` / `MEDIUM` |
-| Save delete — arm / execute | `save_load/SlotCard._on_delete` | `WARNING` / `ERROR` |
+| Abandon run — open confirm / delete | `meta/lobby/LobbyScreen` (`새 런` / `_on_abandon_confirmed`) | `WARNING` / `ERROR` |
 | Campaign over / championship | `GameOverView` / `EndingView.ensure_view` | `ERROR` / `SUCCESS` |
 
 **Three rules.**

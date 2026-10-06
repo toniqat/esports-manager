@@ -350,10 +350,11 @@ func _synth_intl_pool() -> Dictionary:
 
 
 # ── Save System ──────────────────────────────────────────────────────────────
-# Set by TitleScreen when the player picks a slot. SaveSystem.save_slot uses
-# this on every phase-boundary auto-save. -1 means "no slot" (e.g. running
-# Season.tscn directly from the editor) — auto-save becomes a no-op.
-var active_save_slot: int = -1
+# Which run file autosave / load goes to (SaveSystem.run_path()). Defaults to
+# true so running Season.tscn / MatchFlow.tscn directly from the editor
+# autosaves into the hidden test run file (user://run_test.save) instead of the
+# real run. The lobby (`features/meta/lobby/`) sets it to false on _ready.
+var use_test_run: bool = true
 
 
 # ── Card Pool (used by CardPhaseManager in battle sim) ────────────────────────

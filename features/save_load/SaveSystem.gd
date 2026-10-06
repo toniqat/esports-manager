@@ -1,109 +1,94 @@
 class_name SaveSystem
 extends RefCounted
 
-# Static helpers for the title-screen save/load system.
+# Static helpers for the run save (one in-progress run at a time).
 #
-# Three slots are stored as JSON files under user://saves/slot{0,1,2}.save.
-# Each file holds {version, meta, season_state}. The `meta` block lets the
-# title screen list slots without reconstructing the full season state.
+# The run lives in a single JSON file, user://run.save, holding
+# {version, meta, season_state}. The `meta` block lets the lobby show the
+# "이어하기" (continue) card without reconstructing the full season state.
+# Account-level progress is NOT here — it lives in user://profile.save
+# (autoload ProfileManager).
+#
+# Test run file: GameManager.use_test_run defaults to true, so running
+# Season.tscn / MatchFlow.tscn directly from the editor autosaves into
+# user://run_test.save instead of the real run. The lobby sets it to false.
+#
+# Old 3-slot files (user://saves/slot*.save) are ignored — no migration.
 #
 # Auto-save trigger points (all wired outside this file):
-#   1. SeasonHub: DRAFT → HUB transition (post-draft).
+#   1. SeasonHub: DRAFT → HUB transition (post-run-start).
 #   2. MatchFlow: right before BAN_PICK starts (pre-match).
-#   3. MatchFlow: right after JUNGLE_START finishes, before BattleSim launch
-#      (post-gambit). season_state.match_resume captures the locked-in match
-#      state so resume re-enters MatchFlow at LAUNCH (→ BattleSim) directly.
+#   3. MatchFlow: right after ban/pick + mech assignment, before BattleSim
+#      launch (post-ban-pick). season_state.match_resume captures the locked-in
+#      match state so resume re-enters MatchFlow at LAUNCH (→ BattleSim) directly.
 #   4. SeasonHub: right after _consume_pending_match_result clears the
 #      finished match (post-match).
 # No save fires while BattleSim is running. Manual saving is not exposed.
+# The run file is deleted when the run ends (EndingView / GameOverView).
 
-const SAVE_DIR: String = "user://saves"
-const SLOT_COUNT: int = 3
+const RUN_PATH: String = "user://run.save"
+const TEST_RUN_PATH: String = "user://run_test.save"
 const SAVE_VERSION: int = 1
 
 
-static func slot_path(idx: int) -> String:
-	return "%s/slot%d.save" % [SAVE_DIR, idx]
+# The file every run read / write goes to — the hidden test run when
+# GameManager.use_test_run is set (direct editor runs), else the real run.
+static func run_path() -> String:
+	var gm: Node = _get_game_manager()
+	if gm != null and bool(gm.use_test_run):
+		return TEST_RUN_PATH
+	return RUN_PATH
 
 
-static func ensure_save_dir() -> void:
-	if not DirAccess.dir_exists_absolute(SAVE_DIR):
-		DirAccess.make_dir_recursive_absolute(SAVE_DIR)
+static func has_run() -> bool:
+	return FileAccess.file_exists(run_path())
 
 
-static func slot_exists(idx: int) -> bool:
-	return FileAccess.file_exists(slot_path(idx))
-
-
-# Returns Array[Dictionary] of length SLOT_COUNT. Each entry is the meta
-# block ({phase, year, month, day, weekday, team_name, trophies, rank, wins,
-# losses, saved_at}) or {} for empty / corrupted slots.
-static func list_slots() -> Array:
-	var out: Array = []
-	for i in SLOT_COUNT:
-		out.append(_read_slot_meta(i))
-	return out
-
-
-static func _read_slot_meta(idx: int) -> Dictionary:
-	if not slot_exists(idx):
-		return {}
-	var f: FileAccess = FileAccess.open(slot_path(idx), FileAccess.READ)
-	if f == null:
-		return {}
-	var raw: String = f.get_as_text()
-	f.close()
-	var parsed: Variant = JSON.parse_string(raw)
-	if typeof(parsed) != TYPE_DICTIONARY:
-		return {}
-	var meta: Variant = (parsed as Dictionary).get("meta", null)
+# Returns the run's meta block ({phase, year, month, day, weekday, team_name,
+# trophies, rank, wins, losses, saved_at, match_in_progress}) or {} when there
+# is no run / the file is corrupted.
+static func read_run_meta() -> Dictionary:
+	var payload: Dictionary = _read_payload()
+	var meta: Variant = payload.get("meta", null)
 	if typeof(meta) != TYPE_DICTIONARY:
 		return {}
 	return meta
 
 
-# Save the current GameManager.season_state into slot `idx`. Returns "" on
-# success or an error string. No-op (returns "") when idx < 0 — running
-# Season.tscn directly without a slot selected shouldn't crash auto-save.
-static func save_slot(idx: int) -> String:
-	if idx < 0:
-		return ""
+# Save the current GameManager.season_state into the run file. Returns "" on
+# success or an error string.
+static func save_run() -> String:
 	var gm: Node = _get_game_manager()
 	if gm == null:
 		return "GameManager not found"
 	if not bool(gm.season_state.get("active", false)):
 		return "season_state inactive — nothing to save"
-	ensure_save_dir()
 	var payload: Dictionary = {
 		"version": SAVE_VERSION,
 		"meta": _build_meta(gm),
 		"season_state": _serialize_season_state(gm.season_state),
 	}
-	var f: FileAccess = FileAccess.open(slot_path(idx), FileAccess.WRITE)
+	var path: String = run_path()
+	var f: FileAccess = FileAccess.open(path, FileAccess.WRITE)
 	if f == null:
-		return "Cannot open slot %d for write" % idx
+		return "Cannot open %s for write (err=%d)" % [path, FileAccess.get_open_error()]
 	f.store_string(JSON.stringify(payload))
 	f.close()
 	return ""
 
 
-# Read slot `idx` from disk and overwrite GameManager.season_state. Returns
-# "" on success or an error string.
-static func load_slot(idx: int) -> String:
-	if not slot_exists(idx):
-		return "Slot %d is empty" % idx
-	var f: FileAccess = FileAccess.open(slot_path(idx), FileAccess.READ)
-	if f == null:
-		return "Cannot open slot %d for read" % idx
-	var raw: String = f.get_as_text()
-	f.close()
-	var parsed: Variant = JSON.parse_string(raw)
-	if typeof(parsed) != TYPE_DICTIONARY:
-		return "Slot %d corrupted (not a JSON object)" % idx
-	var payload: Dictionary = parsed
+# Read the run file and overwrite GameManager.season_state. Returns "" on
+# success or an error string.
+static func load_run() -> String:
+	var path: String = run_path()
+	if not FileAccess.file_exists(path):
+		return "No run saved (%s)" % path
+	var payload: Dictionary = _read_payload()
+	if payload.is_empty():
+		return "Run file corrupted (not a JSON object)"
 	var ss: Variant = payload.get("season_state", null)
 	if typeof(ss) != TYPE_DICTIONARY:
-		return "Slot %d corrupted (no season_state)" % idx
+		return "Run file corrupted (no season_state)"
 	var gm: Node = _get_game_manager()
 	if gm == null:
 		return "GameManager not found"
@@ -111,13 +96,30 @@ static func load_slot(idx: int) -> String:
 	return ""
 
 
-static func delete_slot(idx: int) -> String:
-	if not slot_exists(idx):
+static func delete_run() -> String:
+	var path: String = run_path()
+	if not FileAccess.file_exists(path):
 		return ""
-	var err: int = DirAccess.remove_absolute(slot_path(idx))
+	var err: int = DirAccess.remove_absolute(path)
 	if err != OK:
-		return "Failed to delete slot %d (err=%d)" % [idx, err]
+		return "Failed to delete run (err=%d)" % err
 	return ""
+
+
+# Parsed run file, or {} when missing / unreadable / not a JSON object.
+static func _read_payload() -> Dictionary:
+	var path: String = run_path()
+	if not FileAccess.file_exists(path):
+		return {}
+	var f: FileAccess = FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		return {}
+	var raw: String = f.get_as_text()
+	f.close()
+	var parsed: Variant = JSON.parse_string(raw)
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return {}
+	return parsed
 
 
 static func _get_game_manager() -> Node:
@@ -270,7 +272,7 @@ static func _int_keyed_dict_in(d: Dictionary) -> Dictionary:
 	return out
 
 
-# ── Slot meta (for TitleScreen cards) ────────────────────────────────────────
+# ── Run meta (for the lobby continue card) ──────────────────────────────────
 
 static func _build_meta(gm: Node) -> Dictionary:
 	var s: Dictionary = gm.season_state
@@ -285,8 +287,8 @@ static func _build_meta(gm: Node) -> Dictionary:
 	var saved_at: String = "%04d-%02d-%02d %02d:%02d" % [
 		dt["year"], dt["month"], dt["day"], dt["hour"], dt["minute"],
 	]
-	# Mid-match flag: true when the slot was saved between BAN_PICK start and
-	# BattleSim launch. Used by SlotCard to show an "경기 진행 중" indicator.
+	# Mid-match flag: true when the run was saved between BAN_PICK start and
+	# BattleSim launch. The lobby shows an "경기 진행 중" indicator for it.
 	var match_in_progress: bool = (s.get("match_resume", null) != null)
 	return {
 		"phase":     int(s.get("current_phase", 0)),
@@ -319,7 +321,7 @@ static func _count_trophies(s: Dictionary, pid: int) -> int:
 
 
 # Mirrors LeagueManager.standings_ranked() without depending on the node
-# (TitleScreen runs before SeasonHub exists).
+# (the lobby runs before SeasonHub exists).
 static func _player_rank(s: Dictionary, pid: int) -> Dictionary:
 	var standings: Dictionary = s.get("league_standings", {})
 	var rows: Array = []

@@ -301,14 +301,11 @@ func _find_mech(id: int) -> MechData:
 
 
 func _autosave(reason: String) -> void:
-	var slot: int = int(gm.active_save_slot)
-	if slot < 0:
-		return
-	var err: String = SaveSystem.save_slot(slot)
+	var err: String = SaveSystem.save_run()
 	if err != "":
 		push_warning("MatchFlow: autosave (%s) failed — %s" % [reason, err])
 	else:
-		print("MatchFlow: autosave (%s) → slot %d" % [reason, slot])
+		print("MatchFlow: autosave (%s) → %s" % [reason, SaveSystem.run_path()])
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────

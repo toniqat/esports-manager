@@ -106,7 +106,7 @@ one per role.
 The only outgame place to inspect one pilot: opened from the lineup slots (with the leveled
 copy) and from the **assignment step of ban/pick** (both teams' portraits). It needs only a
 `PlayerData` and the `GameManager` autoload. Left full-body art / right scrolling info panel:
-header (name · slot · role · original team) → 6 stat chips + total → pilot skill (icon tile +
+header (name · slot · role · original team, + breakthrough chips) → 6 stat chips + total → pilot skill (icon tile +
 rich description) → the pilot's
 **3 fixed pilot cards** (`GameManager.pilot_card_ids_for(pd)`, `CardDescBox.build(..., light = true)`).
 The original-team short name comes from `season_state.team_meta`, or — during run setup, before
@@ -116,6 +116,15 @@ opaque style (it overlaps the bottom bar under the dim).
 
 Candidate-card pools per role (`pilot_card_slots_for_role` …) were deleted long ago and are not
 revived — the single source of cards is `GameManager.pilot_card_ids_for`.
+
+### Breakthrough (M10)
+The panel never applies breakthroughs itself — the `PlayerData` it receives already carries them
+(run setup pool: `RunRules.apply_breakthroughs(_pool, owned_breakthroughs())` in
+`RunSetupScreen`; ban/pick: the run copies from `GameManager.start_run`), so stats, salary and the
+`card_swap`-ed pilot card shown are already the broken-through ones. When `pd.breakthrough > 0` a
+chip row under the header names it: `돌파 n` (amber) and, if `train_bonus_pct ≠ 0`,
+`훈련 EXP +n%`. The full breakthrough table lives in the lobby collection sheet
+(`features/meta/collection/`).
 
 ### Skill block — icon tile + rich description
 `DraftDetailPanel._build_skill_block`: a 64px skill icon tile

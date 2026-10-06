@@ -24,6 +24,7 @@ On `_ready()`, BattleSim reads `GameManager.match_ctx`:
 | `enemy_roster[i].assigned_mech` / stats | same, for team 1 |
 | `jungle_start_dir` | PilotData.jungle_start_pref on the player-team assassin |
 | `player_side` | `BattleSim.blue_team` via `seed_side_costs()` — the blue side gets the strategy-point head start + first turn |
+| `traits` | `[{id, key, p1, p2}]` — manager in-game traits, **my team only** → `TraitHooks` (`trait/README.md`). Empty / ignored when `active = false` → no change |
 | `active = false` | Triggers fallback to ROLE_STATS (no MatchFlow ran); the side also falls back to player = blue |
 
 ### Match result payload (`season_state.pending_match`)
@@ -58,6 +59,7 @@ And accesses shared state via `_bs.pilots`, `_bs.turn_count`, etc.
 | RecallSystem   | Node | `combat/RecallSystem.gd`   | Instant HQ teleport at HP ≤ threshold; phase-end out-of-position recheck |
 | Pathfinding    | Node | `combat/Pathfinding.gd`    | BFS + greedy fallback (hex distance) |
 | BattleRenderer | Node2D | `rendering/BattleRenderer.gd` | HQ/turret HP bars + per-cell pilot rendering |
+| TraitHooks | Node | `trait/TraitHooks.gd` | **Manager in-game traits (M8)** — parses `match_ctx.traits` into `KEY_*` sums and exports query functions only (opening points · first draw · hand cap · first card cost · cost tick); player team only. Added in `_ready()` **before** `_populate_from_data_loader()` (the opening points are seeded there). Spawns `trait/TraitBanner.gd` once at the opening. See `trait/README.md` |
 | CardPhaseManager | Node | `card_phase/CardPhaseManager.gd` | Operation-phase turn flow, deck, fanned hand layout, phase-end gating |
 | GambitPhaseManager | Node | `gambit/GambitPhaseManager.gd` | Pre-opening (개시 전) phase — role-fixed lane assignment + battlefield setup (`prepare_field`) + **jungle start (정글 시작) overlay** + opening (`begin_battle`). See `gambit/README.md` |
 | JungleStartOverlay | Node | `gambit/JungleStartOverlay.gd` | **Jungle start cell** — the player drags the ally jungler marker standing on the battlefield (no tail) directly onto one of our jungle / neutral cells (the enemy jungle is disabled; shows HQ→that cell + the 6-turn path after arrival with turn numbers — `SimulationCore.predict_jungle_path`) and confirms with "전투 시작" (Start battle). That cell becomes the jungler's first target (`PilotData.jungle_start_cell`). Opens only when `match_ctx.active`. Lazily added by `GambitPhaseManager`. |
@@ -305,7 +307,8 @@ cards are in `objective/README.md`. Summary:
   `BLUE_COST_HEAD_START` strategy points, so it reaches the threshold first
   — the price for banning/picking second in ban/pick. **There is no opening hand** — both teams
   start with 0 cards, and the hand fills only through auto-draw running from `ECONOMY_START_TURN`.
-  The hand cap is `MAX_HAND_SIZE` (all game_config.csv).
+  The hand cap is `MAX_HAND_SIZE` (all game_config.csv), read per side through
+  `BattleSim.max_hand_size_for(is_player)` (the player's cap takes the `hand_size` trait).
 - Ending the phase goes through the player's strategy-point donut: tap it once to
   flip it into a circular 턴 넘기기 (End turn) button, tap again to end. **You can pass without playing a single
   card** — the face greys out and locks only in states where closing now would cut something off, such as
@@ -608,6 +611,7 @@ Each child module has `@onready var _bs: BattleSim = get_parent() as BattleSim` 
 | ObjectiveSystem | `objective/ObjectiveSystem.gd` | Objectives (Herald / Dragon) — timers · participation decision · settlement on the left/right neutral cells. The decision window and stage borrow the engage module's VS screen and arena |
 | ObjectiveRewardFx | `objective/ObjectiveRewardFx.gd` | Objective **reward pickup effect** — spreads the reward card in the centre of the screen, then flies it to where it goes (deck pile / left end of the hand / opponent's hand). `_grant_reward` awaits it **right before granting** |
 | MechSkillSystem | `mech/MechSkillSystem.gd` | Mech skills — 15 passives attached to the assigned **mech** and the persistent states its mech cards leave (vulnerable · reactive armour · target · tracking · bounty …). The computation happens where it always did; this module only exports query functions |
+| TraitHooks | `trait/TraitHooks.gd` | Manager in-game traits (`match_ctx.traits`, player only) — query functions read by `seed_side_costs` · `effective_cost_for` · `max_hand_size_for` · the BATTLE economy tick |
 | PilotSkillSystem | `skill/PilotSkillSystem.gd` | Pilot skills — 25 unique abilities attached to each player (cooldown / charge-based / passive). State · activation · event hooks · passive queries |
 | EngagePhaseManager | `engage/EngagePhaseManager.gd` | Top-view engage orchestrator — chains `engage/TurnEngageSim.gd` (headless round-based turn sim; `prepare_sim` builds it **in advance**) → `engage/EngageIntro.gd` (VS confirm screen right after submission, showing that stage as a still frame) → `engage/EngageArena.gd` (renderer) |
 | HudBuilder | `ui/HudBuilder.gd` | HUD construction and update (incl. `ui/CostDonut.gd` strategy-point donut ×2, `ui/PilotStrip.gd` pilot strip ×2, `ui/CardPileStack.gd` deck / discard pile stacks ×2, `ui/KillFeed.gd` kill feed, `ui/ObjectiveTimer.gd` objective timer ×2) |

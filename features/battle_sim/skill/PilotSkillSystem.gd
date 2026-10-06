@@ -19,7 +19,7 @@ extends Node
 #                          연료가 아니라 **효과의 세기** 자체다.
 #
 # ─── 효과를 문법으로 만들지 않은 이유 ───────────────────────────────────────
-# 카드는 `draw:2;discard:2` 처럼 절을 조합해 쓰지만, 스킬 25개는 전부 서로 다른
+# 카드는 `draw:N;discard:N` 처럼 절을 조합해 쓰지만, 스킬 25개는 전부 서로 다른
 # 사건에 걸린다(포탑 파괴 · 오브젝트 승리 · 처치 관여 · 공격 카드 명중 · 상대
 # 라이너와의 비교 …). 절 문법을 만들어 봐야 절이 25개 생길 뿐이라, 여기서는
 # CSV 의 `key` 로 갈라 쓴다 — 한 스킬을 고치려면 그 `KEY_*` 상수를 grep 하면
@@ -69,55 +69,55 @@ const TYPE_CHARGE   := "charge"
 const TYPE_PASSIVE  := "passive"
 
 # ─── 튜닝 상수 ───────────────────────────────────────────────────────────────
+## 값은 data/csv/const.csv — ConstTable 로 읽는다(키 = `SKILL_` + 이름).
 ## 후반 분기를 타는 패시브(노련함 · 불안정한 대포 · 백본)가 강해지는 턴.
-const LATE_GAME_TURN: int = 50
+static var LATE_GAME_TURN: int = ConstTable.int_of("SKILL_LATE_GAME_TURN")
 ## 퍼포먼스 — 충전 1당 이 파일럿의 모든 능력치 배율 가산분.
-const PERFORMANCE_PER_CHARGE: float = 0.02
+static var PERFORMANCE_PER_CHARGE: float = ConstTable.num("SKILL_PERFORMANCE_PER_CHARGE")
 ## 퍼포먼스 — 전투 이탈(사망) 시 잃는 충전.
-const PERFORMANCE_DEATH_LOSS: int = 10
+static var PERFORMANCE_DEATH_LOSS: int = ConstTable.int_of("SKILL_PERFORMANCE_DEATH_LOSS")
 ## 축적 — 충전 1당 성장 적립 배율 가산분.
-const ACCUMULATE_PER_CHARGE: float = 0.01
+static var ACCUMULATE_PER_CHARGE: float = ConstTable.num("SKILL_ACCUMULATE_PER_CHARGE")
 ## 몰아치기 — 충전 1당 전장 명중률 배율 가산분.
-const SURGE_HIT_PER_CHARGE: float = 0.05
+static var SURGE_HIT_PER_CHARGE: float = ConstTable.num("SKILL_SURGE_HIT_PER_CHARGE")
 ## 전리품 수집가 — 처치 관여한 적 역할 하나당 공격력 배율 가산분.
-const LOOT_ATK_PER_CHARGE: float = 0.06
+static var LOOT_ATK_PER_CHARGE: float = ConstTable.num("SKILL_LOOT_ATK_PER_CHARGE")
 ## 전리품 수집가 — 다섯 역할을 다 모았을 때 얹히는 추가 공격력 배율.
-const LOOT_ATK_FULL_BONUS: float = 0.10
+static var LOOT_ATK_FULL_BONUS: float = ConstTable.num("SKILL_LOOT_ATK_FULL_BONUS")
 ## 사냥의 보상 — 처치 관여 시 붙는 성장 적립 가산분과 그 지속 턴.
-const HUNT_REWARD_RATE: float = 0.25
-const HUNT_REWARD_TURNS: int = 15
+static var HUNT_REWARD_RATE: float = ConstTable.num("SKILL_HUNT_REWARD_RATE")
+static var HUNT_REWARD_TURNS: int = ConstTable.int_of("SKILL_HUNT_REWARD_TURNS")
 ## 위치 고정 — 지속 턴 / 성장 적립 가산 / 라인전 배율 가산.
-const HOLD_TURNS: int = 20
-const HOLD_GROWTH_RATE: float = 0.20
-const HOLD_LANE_STAT: float = -0.20
+static var HOLD_TURNS: int = ConstTable.int_of("SKILL_HOLD_TURNS")
+static var HOLD_GROWTH_RATE: float = ConstTable.num("SKILL_HOLD_GROWTH_RATE")
+static var HOLD_LANE_STAT: float = ConstTable.num("SKILL_HOLD_LANE_STAT")
 ## 노련함 — 전·후반 명중 배율 가산분과 회피 배율 가산분.
-const VETERAN_HIT_EARLY: float = 0.10
-const VETERAN_HIT_LATE: float = 0.20
-const VETERAN_EVASION: float = -0.05
+static var VETERAN_HIT_EARLY: float = ConstTable.num("SKILL_VETERAN_HIT_EARLY")
+static var VETERAN_HIT_LATE: float = ConstTable.num("SKILL_VETERAN_HIT_LATE")
+static var VETERAN_EVASION: float = ConstTable.num("SKILL_VETERAN_EVASION")
 ## 불안정한 대포 — 전·후반 주고받는 피해 배율 가산분(양방향에 같은 값을 쓴다).
-const CANNON_EARLY: float = 0.10
-const CANNON_LATE: float = 0.20
+static var CANNON_EARLY: float = ConstTable.num("SKILL_CANNON_EARLY")
+static var CANNON_LATE: float = ConstTable.num("SKILL_CANNON_LATE")
 ## 백본 — 후반 라인전 배율 가산분.
-const BACKBONE_LANE_STAT: float = 0.20
+static var BACKBONE_LANE_STAT: float = ConstTable.num("SKILL_BACKBONE_LANE_STAT")
 ## 만능 — 체력형/공격형 각각의 배율 가산분.
-const VERSATILE_MULT: float = 0.20
+static var VERSATILE_MULT: float = ConstTable.num("SKILL_VERSATILE_MULT")
 ## 원딜 사냥꾼 — 적 원딜을 노릴 때의 공격력 배율 가산분.
-const ADC_HUNTER_ATK: float = 0.20
+static var ADC_HUNTER_ATK: float = ConstTable.num("SKILL_ADC_HUNTER_ATK")
 ## 경쟁 심리 — 세 비교 항목 각각의 가산분.
-const RIVALRY_GROWTH: float = 0.10
-const RIVALRY_ATK: float = 0.10
-const RIVALRY_HP: float = 0.10
+static var RIVALRY_GROWTH: float = ConstTable.num("SKILL_RIVALRY_GROWTH")
+static var RIVALRY_ATK: float = ConstTable.num("SKILL_RIVALRY_ATK")
+static var RIVALRY_HP: float = ConstTable.num("SKILL_RIVALRY_HP")
 ## 전투 명령 — 이번 작전 단계의 전투 개시 비용 감소량과 라운드 증감.
-const BATTLE_ORDER_DISCOUNT: int = 3
-const BATTLE_ORDER_ROUNDS: int = -1
+static var BATTLE_ORDER_DISCOUNT: int = ConstTable.int_of("SKILL_BATTLE_ORDER_DISCOUNT")
+static var BATTLE_ORDER_ROUNDS: int = ConstTable.int_of("SKILL_BATTLE_ORDER_ROUNDS")
 ## 공성전 — 다음 전투 개시 카드에 얹는 라운드.
-const SIEGE_ROUNDS: int = 3
+static var SIEGE_ROUNDS: int = ConstTable.int_of("SKILL_SIEGE_ROUNDS")
 ## 기회주의자 — 교전 중 처치가 그 교전에 얹는 라운드.
-const OPPORTUNIST_ROUNDS: int = 1
+static var OPPORTUNIST_ROUNDS: int = ConstTable.int_of("SKILL_OPPORTUNIST_ROUNDS")
 ## 용의 가호 — 활성화 시의 전략 점수와 드로우 수.
-const BLESSING_STRATEGY: int = 3
-const BLESSING_DRAW: int = 2
-
+static var BLESSING_STRATEGY: int = ConstTable.int_of("SKILL_BLESSING_STRATEGY")
+static var BLESSING_DRAW: int = ConstTable.int_of("SKILL_BLESSING_DRAW")
 # ─── 스킬이 만들어 주는 카드 (cards.csv id) ──────────────────────────────────
 # 전부 `pool = 0` 이라 스타터 덱에는 들어가지 않는다. 손패에 놓는 것들은
 # `휘발성`이 붙어 **안 쓰고 버려지면 그대로 사라진다** — 스킬은 카드를 주는
@@ -179,7 +179,7 @@ func init_for_match() -> void:
 			"def": sdef, "charge": 0, "ready_turn": 0,
 			"killed_roles": {}, "farm_until": -1, "hold_until": -1,
 		}
-		# 공성전만 충전이 찬 채 시작한다(CSV 설명문의 "충전 5로 시작").
+		# 공성전만 충전이 찬 채 시작한다(CSV 설명문대로 — 시작 충전은 `p2`).
 		if String(sdef["key"]) == KEY_SIEGE:
 			st["charge"] = int(sdef["p2"])
 		states[p] = st
@@ -405,7 +405,7 @@ func _act_roam(p: PilotData) -> String:
 	return "[%s] 비용 0" % cheapest.card_name
 
 
-## 위치 고정 — 20턴 동안 성장 적립이 오르고 라인전이 내려가며, 그동안 이 파일럿은
+## 위치 고정 — `SKILL_HOLD_TURNS`(const.csv) 턴 동안 성장 적립이 오르고 라인전이 내려가며, 그동안 이 파일럿은
 ## 이동 카드의 대상이 될 수 없고 오브젝트에도 못 낀다. 라인에 눌러앉아 파밍만
 ## 하겠다는 선언이다.
 func _act_hold_position(p: PilotData) -> String:
@@ -604,7 +604,7 @@ func on_turn_advanced() -> void:
 
 
 ## 신예의 [핫핸드] — 손패가 아니라 **덱**에 섞어 넣는다. 손에 바로 꽂으면 매
-## 15턴마다 손패가 한 장씩 밀려 상한 정리를 유발한다.
+## `p2` 턴마다 손패가 한 장씩 밀려 상한 정리를 유발한다.
 func _spawn_hot_hand(p: PilotData) -> void:
 	if _bs.card_phase == null:
 		return
@@ -927,8 +927,8 @@ func engage_focus_atk_mult(p: PilotData) -> float:
 
 ## 만능 — 이 파일럿의 메크가 **체력형**인가. mechs.csv 는 id 구간이 곧
 ## 아키타입이다(탱커 0–5 / 격투 6–11 / 암살 12–17 / 서포터 18–23 /
-## 스나이퍼 24–29). 생값 비교(max_hp vs atk)로는 갈리지 않는다 — 체력은 200대,
-## 공격력은 10대라 어떤 메크를 태워도 언제나 체력이 크다.
+## 스나이퍼 24–29). 생값 비교(max_hp vs atk)로는 갈리지 않는다 — 체력이 공격력보다
+## 자릿수부터 커서 어떤 메크를 태워도 언제나 체력이 크다.
 const MECH_ATK_ARCHETYPE_RANGES: Array = [[12, 17], [24, 29]]
 
 func _is_hp_archetype(p: PilotData) -> bool:

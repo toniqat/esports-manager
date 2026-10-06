@@ -26,8 +26,8 @@ enum Kind { HERALD = 0, DRAGON = 1 }
 
 ## 보상 카드의 cards.csv id. 둘 다 `pool = 0` 이라 스타터 덱에는 들어가지 않고
 ## 오직 여기서만 세상에 나온다.
-const HERALD_CARD_ID: int = 32   # 전령 제압 — 0코, 보존 + 소멸, 최외곽 포탑에 피해
-const DRAGON_CARD_ID: int = 33   # 용 보상   — 0코, 소멸, 드로우:1 + 성장 효율 영구 +10%
+const HERALD_CARD_ID: int = 32   # 전령 제압 — 보존 + 소멸, 최외곽 포탑에 피해(`turret_damage`)
+const DRAGON_CARD_ID: int = 33   # 용 보상   — 소멸, 드로우 + 성장 효율 영구 가산(`growth_perm`)
 
 ## 이 오브젝트를 두고 싸우는 **포지션**. 사망한 파일럿은 참여할 수 없으므로,
 ## 한쪽이 죽어 있으면 그 팀은 그만큼 수적으로 불리한 채로 붙거나 물러나야 한다.
@@ -46,13 +46,14 @@ const DRAGON_LANES: Array = [
 ]
 
 ## 머릿수에서 빠지는 체력 비율. 이 아래인 파일럿은 무대에 서도 한두 대에
-## 쓰러지므로 AI 는 그를 전력으로 세지 않는다(저HP 복귀선과 같은 20%).
-const AI_HEADCOUNT_HP_RATIO: float = 0.20
+## 쓰러지므로 AI 는 그를 전력으로 세지 않는다(저HP 복귀선과 같은 비율로 둔다).
+## 값은 data/csv/const.csv — ConstTable 로 읽는다.
+static var AI_HEADCOUNT_HP_RATIO: float = ConstTable.num("OBJ_AI_HEADCOUNT_HP_RATIO")
 
 ## 오판 확률 — 수적 열세인데도 교전을 받아들일 확률. `match_ctx` 에
 ## `enemy_misjudge_chance` 가 없으면(단독 실행) 이 값. MatchFlow 가 리그 순위로
-## 5%(1위) ~ 60%(꼴찌)를 매겨 넘긴다.
-const AI_MISJUDGE_DEFAULT: float = 0.325
+## `OBJ_MISJUDGE_MIN`(1위) ~ `OBJ_MISJUDGE_MAX`(꼴찌)를 매겨 넘긴다.
+static var AI_MISJUDGE_DEFAULT: float = ConstTable.num("OBJ_AI_MISJUDGE_DEFAULT")
 
 @onready var _bs: BattleSim = get_parent() as BattleSim
 
@@ -119,8 +120,9 @@ static func kind_name(kind: int) -> String:
 ## 이번 턴에 열릴 오브젝트를 처리한다. `CardPhaseManager.do_battle_turn()` 이
 ## `simulate_turn()` 직후에 **await** 로 부른다.
 ##
-## 둘이 같은 턴에 열리는 일은 현재 설정(전령 12 / 용 15, 이후 각자 15턴)에서는
-## 없지만, 노브를 만지면 생길 수 있으므로 순서대로 하나씩 끝까지 처리한다 —
+## 둘이 같은 턴에 열리는지는 game_config 의 `OBJ_HERALD_FIRST_TURN` /
+## `OBJ_DRAGON_FIRST_TURN` 과 그 뒤의 `OBJ_RESPAWN_TURNS` · `OBJ_RETRY_TURNS` 에
+## 달렸고, 노브를 만지면 언제든 생길 수 있으므로 순서대로 하나씩 끝까지 처리한다 —
 ## 앞의 것이 끝나야 뒤의 것이 시작하므로 무대가 겹치지 않는다.
 func process_turn() -> void:
 	if _bs.game_over or _busy or _state.is_empty():
@@ -239,8 +241,8 @@ func _award_uncontested(st: Dictionary, kind: int, winner: int,
 ## 이번 교전의 승자. **생존 인원 수 → 동률이면 잔여 HP 비율 합**.
 ## 둘 다 같으면 -1(무승부, 아무도 가져가지 못한다).
 ##
-## 비율 합을 쓰는 이유는 체력 총량이 역할마다 크게 다르기 때문이다 — 탱커
-## 220 과 스나이퍼 75 를 절대값으로 더하면 "탱커가 살아 있는 쪽"이 언제나
+## 비율 합을 쓰는 이유는 체력 총량이 역할마다 크게 다르기 때문이다 — 탱커와
+## 스나이퍼의 체력을 절대값으로 더하면 "탱커가 살아 있는 쪽"이 언제나
 ## 이긴다. 비율이면 각자 자기 몫만큼만 낸다.
 ## **결과 화면도 이 함수를 읽는다** — 무대가 닫히기 전에 뜨는 승리 / 패배
 ## 글자와 실제로 보상을 가져가는 팀이 갈릴 수 없어야 한다(둘 사이에 상태가
@@ -300,10 +302,10 @@ func _ask_player(kind: int, cell: Vector2i, t0: Array, t1: Array) -> bool:
 
 ## AI 의 참여 판단. **전력 차이(체력 · 공격력 · 성장치)는 보지 않고 머릿수만
 ## 센다** — 수적 열세일 때만 물러나고, 같거나 많으면 붙는다. 체력이
-## `AI_HEADCOUNT_HP_RATIO`(20%) 미만인 파일럿은 양 팀 모두 머릿수에서 뺀다.
+## `AI_HEADCOUNT_HP_RATIO` 미만인 파일럿은 양 팀 모두 머릿수에서 뺀다.
 ##
 ## 물러나야 할 때도 `enemy_misjudge_chance` 확률로 **오판**해 받아들인다 —
-## 하위권 팀일수록 자주(최대 60%), 상위권일수록 드물게(최소 5%).
+## 하위권 팀일수록 자주(`OBJ_MISJUDGE_MAX` 까지), 상위권일수록 드물게(`OBJ_MISJUDGE_MIN` 까지).
 ##
 ## 상대가 아무도 못 나오는 상황이면 무조건 참여한다(공짜 보상).
 func _ai_wants_to_join(mine: Array, theirs: Array) -> bool:
@@ -362,8 +364,23 @@ func _hp_ratio_sum(group: Array) -> float:
 ## 화면과 로그에 함께 쓰는 보상 한 줄.
 func reward_text(kind: int) -> String:
 	if kind == Kind.HERALD:
-		return "보상: [전령 제압] — 최외곽 적 포탑에 피해 %d" % _bs.OBJ_HERALD_TURRET_DMG
+		return "보상: [전령 제압] — 최외곽 적 포탑에 피해 %d" % _card_clause_int(HERALD_CARD_ID, "turret_damage")
 	return "보상: [용 보상] ×%d 를 덱에 추가" % _bs.OBJ_DRAGON_CARD_COUNT
+
+
+## 카드 `effect` 에서 절 하나의 수치를 읽는다(`turret_damage:N` → N). 보상 안내가
+## 카드 효과와 따로 놀지 않도록 **카드 행이 유일한 원본**이다 — 예전의
+## `OBJ_HERALD_TURRET_DMG`(game_config)는 그래서 삭제됐다. 절이 없으면 0.
+func _card_clause_int(card_id: int, clause: String) -> int:
+	var gm: Node = get_node_or_null("/root/GameManager")
+	if gm == null:
+		return 0
+	var def: Dictionary = gm.card_def(card_id)
+	for part in String(def.get("effect", "")).split(";", false):
+		var kv: PackedStringArray = (part as String).strip_edges().split(":")
+		if kv.size() >= 2 and kv[0] == clause:
+			return int(kv[1])
+	return 0
 
 
 ## 전령은 카드 한 장을 **손패로 곧장**(보존 키워드라 버려지지 않는다), 용은

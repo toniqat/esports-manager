@@ -23,8 +23,10 @@ func reset_match_ctx() -> void:
 		"player_side":   GameEnums.DraftSide.BLUE,
 		"banned_mech_ids": [],
 		"all_mechs":      [],
-		# 오브젝트 오판 확률 — MatchFlow 가 상대 리그 순위로 매긴다(5%~60%).
-		"enemy_misjudge_chance": 0.325,
+		# 오브젝트 오판 확률 — MatchFlow 가 상대 리그 순위로 매긴다
+		# (`OBJ_MISJUDGE_MIN` ~ `OBJ_MISJUDGE_MAX`). 기본값은
+		# `ObjectiveSystem.AI_MISJUDGE_DEFAULT` 와 같은 const.csv 키.
+		"enemy_misjudge_chance": ConstTable.num("OBJ_AI_MISJUDGE_DEFAULT"),
 	}
 
 
@@ -62,8 +64,9 @@ var season_state: Dictionary = {
 	# 을 부르는 `WeekProgressView` 하나다 — 이미 있으면 다시 정산하지
 	# 않으므로 경기를 치르고 같은 요일로 돌아와도 훈련이 두 번 먹지 않는다.
 	"week_day_log": {},
-	# 훈련 EXP 의 **나머지 통장**. `seat(int) → {stat: int}`. EXP 40 이 스탯 1
-	# 인데 요일마다 따로 나누면 하루 30 씩 다섯 날이 매일 0 점이 된다 —
+	# 훈련 EXP 의 **나머지 통장**. `seat(int) → {stat: int}`. `TRAINING_EXP_PER_POINT`
+	# (const.csv) 가 스탯 1 인데 요일마다 따로 나누면 문턱에 못 미치는 하루치가
+	# 다섯 날 매일 0 점이 된다 —
 	# 나머지를 다음 날로 넘겨야 다섯 날의 합이 한 주 한 번과 같아진다.
 	# 주가 시작될 때 비운다(`TrainingBoard.reset_week_progress`).
 	"training_exp_carry": {},
@@ -178,54 +181,11 @@ func init_season(player_team_id: int = 0) -> String:
 
 
 # ── Game DB 경로 ──────────────────────────────────────────────────────
-# SQLite 는 **디스크 위의 진짜 파일**을 열어야 한다. 에디터에서는 `res://` 가
-# 그대로 실제 폴더라 그냥 열리지만, 익스포트한 빌드에서는 `res://` 가 `.pck`
-# 안으로 들어가 SQLite 가 그 경로를 열 수 없다 — iOS / Android 빌드가
-# 타이틀 화면부터 DB 오류로 멈추는 진짜 이유가 이것이다. 그래서 기기에서는
-# 패킹된 DB 를 `user://` 로 한 번 뽑아낸 뒤 그 사본을 열어 준다.
-#
-# **매 실행마다 덮어쓴다.** 런타임에 DB 는 읽기 전용이고(세이브는
-# `user://saves/*.save` JSON 으로 따로 산다) 크기도 96KB 라, 뭐가 바뀜는지
-# 비교하는 캐시 무효화 장치를 두는 것보다 그냥 복사하는 쪽이 언제나 옳다 —
-# 새 빌드를 깔아 섬었는데 옫 빌드의 game.db 가 `user://` 에 남아 있는 사고가
-# 구조적으로 불가능해진다.
-#
-# `data/game.db` 는 **리소스가 아니므로** 그냥 두면 pck 에 안 들어간다 —
-# `export_presets.cfg` 의 `include_filter` 가 그걸 넣는 자리다.
-const DB_SOURCE_PATH:  String = "res://data/game.db"
-const DB_RUNTIME_PATH: String = "user://data/game.db"
-
-var _db_path: String = ""
-
-
-# 런타임에 SQLite 에 넘길 game.db 경로. 에디터에서는 res:// 그대로,
-# 익스포트 빌드에서는 pck 에서 뽑아낸 user:// 사본. 한 실행에 한 번만 복사한다.
+# 경로 결정(에디터 = res://, 기기 = pck 에서 user:// 로 뽑은 사본)은
+# `resources/GameDb.gd` 한 곳에 산다 — `ConstTable` 이 오토로드보다 먼저
+# DB 를 열어야 해서 정적 클래스로 옮겼다. 여기는 기존 호출부를 위한 창구다.
 func db_path() -> String:
-	if _db_path != "":
-		return _db_path
-	if OS.has_feature("editor"):
-		_db_path = DB_SOURCE_PATH
-	else:
-		_db_path = _extract_db_to_user()
-	return _db_path
-
-
-# pck 안의 game.db 를 user:// 로 꺼낸다. 실패하면 원본 경로를 그대로
-# 돌려준다 — 어차피 열리지 않지만, 호출부마다 있는 open_db 실패 경로가
-# 에러를 대신 말해 주므로 여기서 null 을 새로 만들 이유가 없다.
-func _extract_db_to_user() -> String:
-	var bytes: PackedByteArray = FileAccess.get_file_as_bytes(DB_SOURCE_PATH)
-	if bytes.is_empty():
-		push_error("GameManager: %s 가 빌드에 안 들어있다 — export_presets.cfg 의 include_filter 를 확인할 것." % DB_SOURCE_PATH)
-		return DB_SOURCE_PATH
-	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(DB_RUNTIME_PATH).get_base_dir())
-	var f: FileAccess = FileAccess.open(DB_RUNTIME_PATH, FileAccess.WRITE)
-	if f == null:
-		push_error("GameManager: %s 에 쓸 수 없다 (%d)" % [DB_RUNTIME_PATH, FileAccess.get_open_error()])
-		return DB_SOURCE_PATH
-	f.store_buffer(bytes)
-	f.close()
-	return DB_RUNTIME_PATH
+	return GameDb.path()
 
 
 # Loads players + mechs from game.db. Returns {"players": Array[PlayerData], "mechs": Array[MechData]}.

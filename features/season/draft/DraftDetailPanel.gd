@@ -311,7 +311,7 @@ func _build_skill_block(body: Control, w: float, y: float) -> float:
 	y = _section(body, w, y, "파일럿 스킬")
 	var sk: Dictionary = _skill_def()
 	if sk.is_empty():
-		# 모브는 여기서 자기 정체를 말한다 — 스탯 10% 하향보다 이쪽이 크다.
+		# 모브는 여기서 자기 정체를 말한다 — 스탯 하향보다 이쪽이 크다.
 		UiHelpers.mk_label(body, "고유 스킬 없음 (이름 없는 선수)",
 				SKILL_DESC_FONT, SKILL_META_COLOR, Vector2(0, y), Vector2(w, 30))
 		return y + 32.0

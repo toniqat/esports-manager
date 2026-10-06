@@ -815,7 +815,7 @@ const ROUND_BAR_Y: float = 350.0
 ## 라운드 칸 사이 간격.
 const ROUND_PIP_GAP: float = 6.0
 ## 이 개수를 넘으면 칸으로 나누는 대신 연속 바로 그린다 — 칸이 실처럼 가늘어져
-## 오히려 몇 라운드인지 안 읽힌다. 결투(상한 10라운드)가 여기 걸린다.
+## 오히려 몇 라운드인지 안 읽힌다. 결투(상한 `ENGAGE_DUEL_MAX_ROUNDS`, const.csv)가 여기 걸린다.
 const ROUND_PIP_MAX: int = 8
 
 # 남은 시간 바를 대체한 **라운드 칸 표시**. 라운드 하나가 칸 하나이고, 지금

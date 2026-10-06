@@ -22,6 +22,7 @@ const SCHEMAS: Dictionary = {
 	"pilots":      {"req": ["id","name","abbrev","hp","atk","heal"],           "pk": "id"},
 	"cards":       {"req": ["id","name","cost","uses","cast_method","target","cast_range","area","keyword","effect","description","scope","pool","card_type","card_cat","excl_group","charge_max"], "pk": "id"},
 	"game_config": {"req": ["key","value"],                                     "pk": "key"},
+	"const":       {"req": ["key","value","module","note"],                     "pk": "key"},
 	"lane_config": {"req": ["lane_id","name","max_pilots","mid_col","mid_row"], "pk": "lane_id"},
 	"players":     {"req": ["id","team_id","name","role","field_hit","field_eva","engage_hit","engage_eva","atk_growth","hp_growth","skill_id","is_mob","pilot_cards"], "pk": "id"},
 	"pilot_skills": {"req": ["id","key","name","role","type","p1","p2","keyword","description"], "pk": "id"},
@@ -77,6 +78,14 @@ const TABLE_DEFS: Dictionary = {
 	"game_config": {
 		"key":   {"data_type": "text", "primary_key": true, "not_null": true},
 		"value": {"data_type": "text", "not_null": true},
+	},
+	# 스크립트에서 뺀 게임플레이 튜닝 상수 — `ConstTable` 이 소비한다.
+	# `module` 은 그 값을 읽는 스크립트(찾기용), `note` 는 뜻 — **값을 다시 적지 않는다**.
+	"const": {
+		"key":    {"data_type": "text", "primary_key": true, "not_null": true},
+		"value":  {"data_type": "text", "not_null": true},
+		"module": {"data_type": "text", "not_null": true},
+		"note":   {"data_type": "text", "not_null": true},
 	},
 	"lane_config": {
 		"lane_id":    {"data_type": "int",  "primary_key": true, "not_null": true},
@@ -136,7 +145,7 @@ const TABLE_DEFS: Dictionary = {
 		"role":     {"data_type": "int",  "not_null": true},
 		"hp":       {"data_type": "int",  "not_null": true},
 		"atk":      {"data_type": "int",  "not_null": true},
-		# 존재감 — 전투 개시 시 타겟 어그로 가중치. 근접 메크 4, 원거리 메크 2.
+		# 존재감 — 전투 개시 시 타겟 어그로 가중치. 근접 메크가 원거리 메크보다 높다.
 		"presence": {"data_type": "int",  "not_null": true},
 	},
 	# ── 메크 패시브 ──────────────────────────────────────────────────────────

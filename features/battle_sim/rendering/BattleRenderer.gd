@@ -803,7 +803,7 @@ const CAMP_LINE_WIDTH: float = 3.0
 ## 캠프를 다 먹어 **비어 있는** 정글/중립 칸에 덧씌우는 그늘. 테두리가 사라지는
 ## 것만으로는 "여긴 아직 안 먹었다"와 "여긴 방금 먹었다"가 같은 그림이 된다 —
 ## 밝기 한 단계를 내려 두면 정글러가 어디로 돌아야 하는지가 색만으로 읽힌다.
-## 재생성(6턴)이 돌면 그늘이 걷히고 노란 테두리가 돌아온다.
+## 재생성(`JUNGLE_CAMP_RESPAWN_TURNS`(const.csv) 턴)이 돌면 그늘이 걷히고 노란 테두리가 돌아온다.
 const CAMP_SPENT_TINT: Color = Color(0.0, 0.0, 0.05, 0.34)
 
 func _draw_front_line_overlays() -> void:

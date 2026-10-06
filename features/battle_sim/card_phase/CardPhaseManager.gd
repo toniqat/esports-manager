@@ -182,7 +182,8 @@ var _player_pass_lock: bool = false
 
 # 연속 공격(`attack:N|repeat`)이 명중을 이어갈 때 한 번의 사용으로 허용되는
 # 최대 타수. 확률상 거의 닿지 않지만 무한 루프를 구조적으로 막는 상한이다.
-const MAX_ATTACK_REPEATS: int = 5
+# 값은 data/csv/const.csv — ConstTable 로 읽는다.
+static var MAX_ATTACK_REPEATS: int = ConstTable.int_of("CARD_MAX_ATTACK_REPEATS")
 
 ## 지금 도는 효과 체인에서 **공격 절이 한 대라도 맞았는가.** `on_hit` /
 ## `on_miss` 가 읽는 유일한 값이고 공격 절이 결과를 여기에 적는다. 체인
@@ -213,7 +214,7 @@ var _last_discarded_count: int = 0
 # 파일럿마다 두 묶음이 덱에 들어가고, 다섯 명 몫이 한 팀 덱으로 섞인다(양 팀 같은
 # 규칙). 각 카드는 그 파일럿을 시전자로 단 사본이다.
 #   • 메크 카드 — **배정된 기체가 통째로 들고 온다.** `mech_cards.csv` 에서 그
-#     기체의 행을 전부 집어 `count` 만큼 펼친 것이고, 장수가 기체마다 2~7장으로
+#     기체의 행을 전부 집어 `count` 만큼 펼친 것이고, 장수가 기체마다
 #     다르다(덱 크기가 곧 기체 선택의 일부다).
 #   • 파일럿 카드 3장 — **선수마다 고정**이다(`GameManager.pilot_card_ids_for`).
 #     원본은 `players.pilot_cards` 이고, 비었으면 포지션 슬롯 표
@@ -612,14 +613,14 @@ func do_battle_turn() -> void:
 			return
 	# 카드 경제 게이트. `ECONOMY_START_TURN` 전까지는 전략 점수도 자동 드로우도
 	# 멈춰 있다 — 개시 손패가 없으므로 그 구간은 **양 팀 다 빈 손**이고, 0턴에
-	# 들어가 있는 것은 블루 선점 1점뿐이다. 초반 몇 턴은 카드 없이 라인전만
+	# 들어가 있는 것은 블루 선점(`BLUE_COST_HEAD_START`)뿐이다. 초반 몇 턴은 카드 없이 라인전만
 	# 하라는 규칙이다. 카운터 자체를 굴리지 않으므로 게이트가 풀리는 턴에 밀린
 	# 회복이 한꺼번에 터지지도 않는다.
 	#
 	# `simulate_turn()` 이 자기 초입에서 `turn_count` 를 올리므로, 이 시점의
 	# `turn_count` 는 **방금 끝난 턴의 번호**(1-based)다. 카운터는 개시 시
 	# `INTERVAL - 1` 로 놓여 있어 게이트가 열리는 첫 턴에 곧바로 발동한다 —
-	# ECONOMY_START_TURN = 10 이면 10턴째에 첫 회복 / 첫 드로우가 들어간다.
+	# `ECONOMY_START_TURN`(game_config) 턴째에 첫 회복 / 첫 드로우가 들어간다.
 	if _bs.turn_count >= _bs.ECONOMY_START_TURN:
 		_bs.cost_counter += 1
 		if _bs.cost_counter >= _bs.COST_RECOVERY_INTERVAL:
@@ -888,7 +889,7 @@ func _apply_hand_dim_state() -> void:
 # 상대 차례, 명중 연출, VS 확인 화면, 차례 배너).
 #
 # 규칙의 이력이 둘 있다. 처음에는 "점수를 문턱 아래로 내렸을 것"이었는데,
-# 28장 중 9장이 0코스트라 낼 수 있는 카드가 전부 무료면 점수가 줄지 않아
+# 0코스트 카드가 적지 않아 낼 수 있는 카드가 전부 무료면 점수가 줄지 않아
 # 턴을 영영 넘기지 못했다(작전 단계 동안 BATTLE 이 멈추므로 손패도 안 바뀐다).
 # 그래서 "카드를 한 장 이상 냈을 것"으로 바뀌었고, 낼 게 하나도 없는 손만
 # 예외로 통과시켰다. 지금은 그 예외가 규칙을 삼켰다 — 점수는 문턱 위인데
@@ -1131,9 +1132,9 @@ func _run_ai_turn() -> void:
 # (상한은 `charge_max`). 사용하면 쌓인 만큼이 한꺼번에 나가고 0 으로 돌아간다.
 #
 # 예전에는 같은 카드를 손패에서 **한 장으로 뭉치는** `스택` 이었다 — 그때는
-# 카드가 덱에 3~5장씩 들어가 있어야 세기가 붙었고, 더미로 내려갈 때마다 낱장
+# 카드가 덱에 여러 장씩 들어가 있어야 세기가 붙었고, 더미로 내려갈 때마다 낱장
 # 으로 다시 흩어야 했다(`send_to_discard`). 충전은 그 둘을 다 없앤다: 덱에는
-# `count = 1` 로 한 장만 있고, 흩을 뭉치도 없다.
+# 한 장만 있으면 되고, 흩을 뭉치도 없다.
 
 ## 카드 한 장을 손패에 넣는 **유일한 진입점**. 충전 카드면 들어오면서 충전이
 ## 하나 오른다.
@@ -1670,8 +1671,8 @@ func hover_push_offset(index: int, total: int) -> float:
 ## clickable while its centre sits that far off plus `BS_HAND_HOVER_MIN_STRIP`.
 ## The resting spacing already pays part of that bill and pays less the more
 ## cards the hand holds, so the push is whatever is still missing — **it grows
-## with the hand size**: 0 extra up to 6 cards, ~16px at 8, ~61px at the 12-card
-## cap. It never falls below `BS_HAND_HOVER_PUSH` so even a small, roomy hand
+## with the hand size**: nothing extra for a small hand, the most at a full hand
+## (`MAX_HAND_SIZE`, game_config). It never falls below `BS_HAND_HOVER_PUSH` so even a small, roomy hand
 ## still visibly opens around the focus. No edge clamp is needed: the row's
 ## outermost cards are anchored, so it can never grow past its resting span.
 func _hover_push_amount(total: int) -> float:
@@ -1773,7 +1774,7 @@ func _set_subtree_mouse_ignore(node: Node) -> void:
 ##
 ## Draw order and hit-testing are two different questions, and letting the first
 ## answer the second is what made a packed hand unclickable. The cards overlap
-## far more than they are wide (160px on a 67.5px stride at the 12-card cap) and
+## far more than they are wide (at a full hand, `MAX_HAND_SIZE`) and
 ## the focus card is drawn on top at 1.2×, so per-card rect picking let it eat
 ## the only pixels its right-hand neighbour had left — measured at 5–17px across
 ## most focus positions and **0px** with the row's 9th card focused, i.e. that
@@ -2230,8 +2231,8 @@ func _pose_selected_card(card: Card) -> void:
 	# than along screen-up — straight out of the fan, the way a card is drawn
 	# from a real hand. A card on the left half of the fan leans left, so it
 	# travels up-left; one on the right half travels up-right. Sideways travel is
-	# PRESS_LIFT × sin(fan angle): ±4.6px on the outermost card of a 12-card hand,
-	# and it grows if BS_HAND_FAN_RADIUS is tightened.
+	# PRESS_LIFT × sin(fan angle): largest on the outermost card of a full hand
+	# (`MAX_HAND_SIZE`), and it grows if BS_HAND_FAN_RADIUS is tightened.
 	var lifted := slot + Vector2(0.0, -Card.PRESS_LIFT).rotated(rot)
 	card.tween_to(lifted, rot, Vector2.ONE * HAND_CARD_SCALE,
 			_bs.BS_HAND_SPRING_DURATION,
@@ -2420,7 +2421,7 @@ func highlight_affordable_cards() -> void:
 		# Reflect any active cost modifier (사전 준비 / 전투 준비 / 집중 /
 		# cost_inc_phase) on the card's top-left cost number — green when
 		# reduced below the printed cost, red when increased, white when
-		# matched. 정밀 이동's +1 is baked into cd.cost by self_cost, so a
+		# matched. 정밀 이동's increase is baked into cd.cost by self_cost, so a
 		# returned card reads white at its new printed price.
 		c.update_displayed_cost(eff)
 	# Re-evaluate hand dim alongside affordability since both keys off the
@@ -2522,8 +2523,8 @@ func _apply_hand_reflow() -> void:
 	# the new focus is its resting slot (own push = 0), but it is almost never
 	# sitting there: the previous focus had pushed it aside, and skipping it left
 	# it stranded at that stale offset — a card hovered right after its neighbour
-	# stayed displaced by up to a full push (+26.9px at 8 cards, ~60px at the
-	# 12-card cap), so it read as mis-hovered. Only the *dragged* card is skipped
+	# stayed displaced by up to a full push (largest at a full hand,
+	# `MAX_HAND_SIZE`), so it read as mis-hovered. Only the *dragged* card is skipped
 	# (`relayout_hand` would skip it anyway on `is_dragging`); the hovered card's
 	# scale is untouched by `tween_to`, so the layout spring can't fight the
 	# hover tween.
@@ -2686,7 +2687,7 @@ func _hide_description_box() -> void:
 #
 # Snapshots the pre-play state up front so a 버리기 / 찾기 clause inside the
 # effect chain can fully roll back on cancel — even when earlier clauses (e.g.
-# draw:2 inside a draw:2;discard:2 card) already mutated the hand. The chain
+# draw:N inside a draw:N;discard:N card) already mutated the hand. The chain
 # runs to completion synchronously unless it hits a clause that hands off to
 # CardSelectOverlay, in which case _process_pending_chain returns early and the
 # overlay's complete / cancel callback resumes us.
@@ -2925,9 +2926,9 @@ func card_team(cd: CardData) -> int:
 
 
 # 약탈의 유효 대상 — **적 팀이 소유한 정글 셀 중 캠프가 차 있는 것**. 시전자
-# 사거리는 보지 않는다(카드의 cast_range 는 99).
+# 사거리는 보지 않는다(카드의 cast_range 는 무제한 표기 99).
 #
-# 규칙이 두 번 바뀌었다. 처음에는 "사거리(1) 안의 적 소유 정글 셀"이었는데,
+# 규칙이 두 번 바뀌었다. 처음에는 "사거리 안의 적 소유 정글 셀"이었는데,
 # 정글은 레인에서 떨어져 있고 레인 파일럿은 정글 셀에 들어가지도 못하므로
 # 유효 대상이 사실상 항상 비어 있었다 — 카드가 영영 사용 불가였다. 그 다음이
 # "아군 정글과 인접한 적 정글 셀"(전선을 한 칸씩 미는 규칙)이었다.
@@ -2996,7 +2997,7 @@ func compute_steal_camp_targets(caster: PilotData) -> Array:
 
 
 # 정글 파밍(`move|own_jungle`)의 유효 대상 — **시전자 팀이 소유한 정글 셀**
-# 전부. 약탈과 마찬가지로 `cast_range` 는 보지 않는다(카드의 cast_range 는 99):
+# 전부. 약탈과 마찬가지로 `cast_range` 는 보지 않는다(카드의 cast_range 는 무제한 표기 99):
 # 정글러는 자기 정글 어디로든 붙을 수 있어야 하고, 사거리로 묶으면 정글 반대편
 # 캠프가 영영 닿지 않는다. 제자리 셀은 뺀다 — 이동이 no-op 이 되기 때문.
 #
@@ -3060,7 +3061,7 @@ func compute_engage_participants(caster: PilotData, area: Array,
 
 
 # Returns true if any clause in `effect_chain` named `clause_name` carries
-# `flag_name` as a modifier (e.g. has_clause_flag("attack:1|pierce", "attack", "pierce")).
+# `flag_name` as a modifier (e.g. has_clause_flag("attack:N|pierce", "attack", "pierce")).
 func has_clause_flag(effect_chain: String, clause_name: String,
 		flag_name: String) -> bool:
 	for clause in _parse_effect_chain(effect_chain):
@@ -3350,7 +3351,7 @@ func _finalize_pending_play() -> void:
 #
 # 소멸은 `exhaust` 키워드 **하나로만** 결정된다. 예전에는 `uses > 0` 인 카드가
 # 사용 횟수를 다 쓰면 사라졌는데, cards.csv 는 exhaust 가 아닌 카드도 거의 전부
-# `uses = 1` 이라 전투 개시를 포함한 대부분의 카드가 한 번 내면 그대로 소멸했다
+# `uses` 가 채워져 있어 전투 개시를 포함한 대부분의 카드가 한 번 내면 그대로 소멸했다
 # (덱이 돌지 않고 매치 내내 줄어들기만 했다).
 #
 # 손패 복귀가 세 갈래 중 **가장 먼저**다 — 되돌아오는 카드는 discard 로도
@@ -3372,7 +3373,7 @@ func _dispose_used_card(cd: CardData, is_player: bool) -> void:
 
 # 재배치 (`reposition` 키워드) — 쓴 카드가 discard 를 건너뛰고 **손패 맨 왼쪽**
 # 으로 돌아온다. 비용 증가는 여기서 하지 않는다 — 같은 카드의 `self_cost:N` 절이
-# 체인 안에서 그 사본의 비용을 이미 올렸다(정밀 이동 0 → 1 → 2 …). `cd` 는 스타터
+# 체인 안에서 그 사본의 비용을 이미 올렸다(정밀 이동은 쓸 때마다 한 단계씩). `cd` 는 스타터
 # 덱을 돌릴 때 `make_card_copy` 로 뜬 시전자 전용 사본이라 그 증가는 그 한 장에만
 # 남는다.
 #
@@ -3414,9 +3415,9 @@ func _reposition_in_hand(cd: CardData, is_player: bool) -> void:
 # ─── Card effects ─────────────────────────────────────────────────────────────
 # Effect column on cards.csv is a semicolon-separated chain of clauses; each
 # clause is `name[:value][|flag[:value]]…`. Examples:
-#   "draw:2;discard:2"            — two clauses
-#   "attack:1|pierce|min_range:2" — one attack clause with two modifier flags
-#   "engage:3|exclude_lane"       — engage with one modifier
+#   "draw:N;discard:N"            — two clauses
+#   "attack:N|pierce|min_range:M" — one attack clause with two modifier flags
+#   "engage:N|exclude_lane"       — engage with one modifier
 # `caster` (cd.owner_pilot) is the 시전자 — it appears in the log line and is
 # what future combat math will resolve from.
 # Public AI-side wrapper: applies the effect chain AND runs 사용 횟수 / 소멸
@@ -4070,7 +4071,7 @@ func deal_simple_attack(caster: PilotData, target: PilotData, n: int) -> int:
 
 
 ## 파일럿→포탑 카드 피해. 전장과 같은 **고정값**(`PILOT_STRUCTURE_DMG`)을 쓴다 —
-## `atk` 비례로 두면 성장이 공격력을 ×3 까지 미는 후반에 카드 한 장이 포탑을
+## `atk` 비례로 두면 성장이 공격력을 몇 배로 미는 후반에 카드 한 장이 포탑을
 ## 통째로 지운다(전장 공성이 고정 피해로 바뀐 것과 같은 이유다).
 func _apply_attack_damage_turret(td: TurretData, caster: PilotData) -> int:
 	var dmg: int = maxi(1, _bs.PILOT_STRUCTURE_DMG)
@@ -4088,7 +4089,7 @@ func _apply_attack_damage_turret(td: TurretData, caster: PilotData) -> int:
 # the caller can total it across a 연속 공격 chain.
 #
 # Damage = 시전자 ATK × value (value is the design unit, e.g. 공격:1 → 1×ATK).
-# Mech ATK was scaled ×20 in the DB so a 1×ATK card hit lands at a meaningful
+# Mech ATK was scaled up in the DB so a 1×ATK card hit lands at a meaningful
 # share of pilot HP without a separate placeholder multiplier. Caster falls
 # back to a flat 100 only when the card has no owner_pilot (legacy paths).
 ## 명중 연출 잠금의 양쪽 가장자리. 플래그만 세우면 이미 화면에 떠 있는 손패 딤과
@@ -4113,7 +4114,8 @@ func _apply_attack_damage(t: PilotData, caster: PilotData, n: int) -> int:
 				* _bs.skill.damage_out_mult(caster)
 				* _bs.skill.damage_in_mult(t)))
 	# 메크가 거는 받는-피해 배율(취약 · 죽음의 손가락 · 목표)과 반응 장갑.
-	# **반응 장갑이 보호막보다 먼저다** — 90%를 깎고 남은 10%를 보호막이 받는
+	# **반응 장갑이 보호막보다 먼저다** — `MECH_REACTIVE_ARMOR_CUT`(const.csv) 만큼
+	# 깎고 남은 몫을 보호막이 받는
 	# 순서라야 두 방어가 겹쳐 읽힌다(반대로 두면 보호막이 온전한 피해를 먼저
 	# 먹고 장갑은 잔량에만 걸려 사실상 아무 일도 하지 않는다).
 	if _bs.mech_skill != null:
@@ -4195,7 +4197,7 @@ func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 	# 메크 카드가 무대의 **중심**과 **반경**을 바꾼다.
 	#   |at_target   지정한 적 주변에서 연다        (돌격 · 강습 · 간보기)
 	#   |at_marked   목표가 찍힌 적 주변에서 연다   (단계 B)
-	#   |self_range:N 시전자 중심 반경 N            (우세한 전장 3 · 개시 2 …)
+	#   |self_range:N 시전자 중심 반경 N            (우세한 전장 · 개시 …)
 	#   |charge_rounds 라운드 수를 영혼 포식 충전으로 갈음한다 (전쟁의 사슬)
 	#   |drop_in     시전자가 **지정한 대상의 칸으로 이동해** 교전에 참가하고,
 	#                무대에서는 적 진형 한가운데에 낙하한다 (강습)
@@ -4476,7 +4478,7 @@ func _effect_cost_inc_phase(n: int, is_player: bool) -> String:
 # ─── 성장 / 라인전 스탯 카드 ─────────────────────────────────────────────────
 # 안전한 파밍 / 공격적인 라인전. 둘 다 **시전자 한 명**에게만 걸리고, 같은
 # 필드를 두 번 건드리면 **덮어쓴다**(합산 아님). 3종짜리 라인전 풀에서 2장을
-# 뽑는 구조라 같은 카드가 겹치기 쉬운데, 합산을 허용하면 +30% 스노볼이 그냥
+# 뽑는 구조라 같은 카드가 겹치기 쉬운데, 합산을 허용하면 배율 스노볼이 그냥
 # 운으로 굴러 나온다.
 
 ## `lane_stat:N|turns:T` — 시전자의 전장 명중 판정(hit / evasion)에 N% 배율.
@@ -4491,13 +4493,13 @@ func _effect_lane_stat(pct: int, flags: Array, caster: PilotData) -> String:
 
 
 ## `growth:N|turns:T` — 시전자의 성장 **획득 배율**을 N% 올린다(성장률 자체가
-## 아니라 그 배수다: +10% → 턴당 +1%p 가 +1.1%p 가 된다). 작전 단계 만료형
+## 아니라 그 배수다: 턴당 적립이 `1 + N%` 배가 된다). 작전 단계 만료형
 ## (완벽한 마무리)과 같은 필드를 쓰므로 그쪽 표시는 함께 꺼 준다.
 func _effect_growth_rate(pct: int, flags: Array, caster: PilotData) -> String:
 	if caster == null:
 		return "성장 (시전자 없음)"
 	var turns: int = _flag_int(flags, "turns", 0)
-	# `|charge` — 배율이 **태운 토큰 수만큼** 곱해진다([성장 가속]: 토큰당 +10%).
+	# `|charge` — 배율이 **태운 토큰 수만큼** 곱해진다([성장 가속]: 토큰당 N%).
 	if "charge" in flags:
 		var tokens: int = _charge_spent if _current_card != null \
 				and _current_card.is_charge_card() else 1
@@ -4515,7 +4517,7 @@ func _effect_growth_rate(pct: int, flags: Array, caster: PilotData) -> String:
 ##
 ## `growth_rate_mult`(안전한 파밍 / 완벽한 마무리가 서로 덮어쓰는 슬롯)이 아니라
 ## `growth_rate_bonus` 에 얹는 이유가 그 누적이다 — 슬롯에 넣으면 용을 다섯 번
-## 먹어도 +10% 에서 멈추고, 그 뒤에 라인전 카드 한 장이 그걸 지운다.
+## 먹어도 한 번 몫에서 멈추고, 그 뒤에 라인전 카드 한 장이 그걸 지운다.
 ##
 ## 대상이 없으면(파일럿이 그 사이 쓰러졌다) 아무 일도 하지 않는다. 카드 자체는
 ## 이미 소비된 뒤이므로 여기서 되돌릴 것은 없다.
@@ -5350,7 +5352,7 @@ func _effect_phase_b(caster: PilotData, is_player: bool) -> String:
 	if caster == null:
 		return "단계 B (시전자 없음)"
 	var parts: Array = []
-	# 강화 [베타] — 다음 [단계 B] 사용 시 +100 충전. 예약은 여기서 소모된다.
+	# 강화 [베타] — 다음 [단계 B] 사용 시 `MECH_PHASE_BOON_BETA_CHARGE`(const.csv) 충전. 예약은 여기서 소모된다.
 	if _bs.mech_skill != null and _bs.mech_skill.consume_phase_boon(
 			caster, MechSkillSystem.BOON_BETA):
 		_bs.mech_skill.add_charge(caster, MechSkillSystem.PHASE_BOON_BETA_CHARGE)
@@ -5384,7 +5386,8 @@ func _effect_phase_c_auto(caster: PilotData) -> String:
 	return ", ".join(parts)
 
 
-## 강화 [감마] 의 정산 — "다음 [단계 C] 사용 시 성장 점수 +10%". **새 강화를
+## 강화 [감마] 의 정산 — 다음 [단계 C] 사용 시 성장 점수
+## +`MECH_PHASE_BOON_GAMMA_RATE`(const.csv). **새 강화를
 ## 고르기 전에** 부른다: 순서를 뒤집으면 방금 고른 감마가 그 자리에서 되먹힌다.
 func _phase_c_payout(caster: PilotData) -> String:
 	if caster == null or _bs.mech_skill == null:
@@ -5784,12 +5787,13 @@ func _effect_draw_next_phase(n: int, is_player: bool) -> String:
 # 메크 카드의 핸드 상주 카드(캐시 · 계시 …)는 `MechSkillSystem` 이 읽는다. 아래
 # 셋은 파일럿 카드라 이쪽이 읽고, 계산하는 자리(성장 적립 · 명중 판정 · 비용)가
 # 오케스트레이터를 거쳐 묻는다.
-const HAND_GOLD_RUSH  := "gold_rush"    # 골드러시 — 토큰당 성장 +8%
-const HAND_CONFIDENCE := "confidence"   # 자신감 — 전장 명중 +15%, 교전 생존 시 재배치
-const HAND_CLEAR_MIND := "clear_mind"   # 맑은 정신 — 양 옆 카드 비용 -1
-const GOLD_RUSH_GROWTH_PER_TOKEN: float = 0.08
-const CONFIDENCE_HIT_BONUS: float = 0.15
-const CLEAR_MIND_COST_CUT: int = 1
+const HAND_GOLD_RUSH  := "gold_rush"    # 골드러시 — 토큰당 성장 가산
+const HAND_CONFIDENCE := "confidence"   # 자신감 — 전장 명중 가산, 교전 생존 시 재배치
+const HAND_CLEAR_MIND := "clear_mind"   # 맑은 정신 — 양 옆 카드 비용 감소
+# 값은 data/csv/const.csv — ConstTable 로 읽는다.
+static var GOLD_RUSH_GROWTH_PER_TOKEN: float = ConstTable.num("CARD_GOLD_RUSH_GROWTH_PER_TOKEN")
+static var CONFIDENCE_HIT_BONUS: float = ConstTable.num("CARD_CONFIDENCE_HIT_BONUS")
+static var CLEAR_MIND_COST_CUT: int = ConstTable.int_of("CARD_CLEAR_MIND_COST_CUT")
 
 
 func _is_hand_passive(cd: CardData, key: String) -> bool:
@@ -5800,7 +5804,7 @@ func _team_hand(team: int) -> Array:
 	return _bs.player_hand if team == 0 else _bs.ai_hand
 
 
-## [골드러시] — 이 파일럿이 손에 든 골드러시들의 토큰 합 × 8% (적립 배율 가산분).
+## [골드러시] — 이 파일럿이 손에 든 골드러시들의 토큰 합 × `CARD_GOLD_RUSH_GROWTH_PER_TOKEN` (적립 배율 가산분).
 ## `BattleSim.add_score` 가 묻는다.
 func hand_growth_add(p: PilotData) -> float:
 	if p == null:
@@ -5813,7 +5817,7 @@ func hand_growth_add(p: PilotData) -> float:
 	return total
 
 
-## [자신감] — 이 파일럿이 손에 든 자신감 장수 × 15% (전장 명중 배율 가산분).
+## [자신감] — 이 파일럿이 손에 든 자신감 장수 × `CARD_CONFIDENCE_HIT_BONUS` (전장 명중 배율 가산분).
 ## `SimulationCore.roll_hit` 이 공격자 쪽으로 묻는다.
 func hand_hit_add(p: PilotData) -> float:
 	if p == null:

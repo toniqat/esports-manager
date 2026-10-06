@@ -629,7 +629,8 @@ func _apply_turret_siege(attackers: Array, defenders: Array, td: TurretData,
 
 
 # 명중 확률은 `PilotData.hit_chance` 가 정한다 — 비율 `hit/(hit+eva)` 를
-# 80~100% 구간에 선형으로 엹으므로 대등하면 90% 이다.
+# [`PILOT_HIT_MIN`, `PILOT_HIT_MAX`](const.csv) 구간에 선형으로 엹으므로 대등하면
+# 그 한가운데다.
 #
 # **교전 무대와 공식을 공유한다.** 다른 것은 입력뿐이다 — 이쪽은 `hit` /
 # `evasion`(전장 명중 / 전장 회피), 교전은 `engage_hit` / `engage_eva`. 예전에는
@@ -642,13 +643,14 @@ func _apply_turret_siege(attackers: Array, defenders: Array, td: TurretData,
 #
 # **라인전 스탯**(`PilotData.lane_stat_mod`)이 붙는 유일한 지점이기도 하다.
 # 공격자의 `hit` 과 방어자의 `evasion` 에 **각자 자기 배율**이 곱해지므로,
-# 공격적인 라인전(+10%)을 건 파일럿은 때릴 때 더 잘 맞히고 맞을 때 더 잘 피한다.
+# 공격적인 라인전(`lane_stat` 절)을 건 파일럿은 때릴 때 더 잘 맞히고 맞을 때 더 잘 피한다.
 # `atk` / `max_hp` 는 여기서 손대지 않는다 — 그쪽은 성장이 담당한다.
 ## 전장 명중 판정. 라인전 스탯(카드 · 스킬)에 더해 **파일럿 스킬의 명중 / 회피
 ## 배율**(노련함 · 몰아치기 · 퍼포먼스)이 여기서 한 번에 곱해진다 — 판정이 한
 ## 곳뿐이라 전장 자동 교전과 공격 카드가 같은 값을 본다.
 ## 전장 명중 판정. 확률은 `PilotData.hit_chance` 가 정한다 — 비율을
-## 80~100% 구간에 엹으므로 스탯이 밀려도 바닥이 80% 다. 예전에는 비율
+## [`PILOT_HIT_MIN`, `PILOT_HIT_MAX`](const.csv) 구간에 엹으므로 스탯이 밀려도
+## 바닥이 `PILOT_HIT_MIN` 이다. 예전에는 비율
 ## 그대로(`hit/(hit+eva)`)가 확률이어서 대등한 둘이 서로 절반씩만 맞췄고,
 ## 스탯 격차가 벌어지면 한쪽이 사실상 아무것도 못 하는 경기가 나왔다 —
 ## 스탯의 상한을 없애면서 그 꾬려가 실제 위험이 됐다.
@@ -688,15 +690,15 @@ func lane_adjusted(stat_value: int, p: PilotData) -> int:
 
 
 # 명중 1회가 **파일럿에게** 넣는 전장 피해. `BattleSim.BATTLE_PILOT_DMG_MULT`
-# (기본 0.5)를 곱하고 반올림하되 최소 1 은 보장한다 — 배율 때문에 명중이
+# (game_config)를 곱하고 반올림하되 최소 1 은 보장한다 — 배율 때문에 명중이
 # 무의미해지는 일은 없어야 한다.
 #
 # 이 배율은 **파일럿이 받는 피해 전용**이다. 파일럿 → 포탑 / HQ 피해는 원래
 # `atk` 그대로이고(공성 속도 = 경기 길이라 건드리지 않는다), 공격 카드와 교전
-# 아레나도 각자 자기 계산을 쓴다. 전장 교전만 절반이다.
+# 아레나도 각자 자기 계산을 쓴다. 전장 교전만 이 배율을 탄다.
 #
-# 원래는 `damage_map` 에 `atk` 를 그대로 더했다. atk 28 짜리 상대와 max_hp 75
-# 인 스나이퍼가 붙으면 한 대가 최대 체력의 37% 라, 복귀선(20%) 위에서 곧장
+# 원래는 `damage_map` 에 `atk` 를 그대로 더했다. 공격력 높은 상대와 최대 체력이
+# 낮은 스나이퍼가 붙으면 한 대가 최대 체력의 큰 몫이라, 복귀선(`RECALL_HP_THRESHOLD`) 위에서 곧장
 # 0 으로 떨어져 **복귀할 구간 자체가 존재하지 않았다**.
 ##
 ## **파일럿 스킬의 피해 배율**(불안정한 대포)이 여기서 양방향으로 곱해진다 —
@@ -1341,7 +1343,7 @@ func _jungle_goal_for(p: PilotData) -> Vector2i:
 		return nearest_neutral
 	# **그 다음이 차 있는 캠프다.** 정글러의 수입이 전부 캠프에서 나오므로
 	# "가장 먼 아군 칸"으로 순회하는 것보다 "지금 먹을 수 있는 캠프"가 곧 목표다.
-	# 먹고 나면 그 칸의 캠프가 4턴 동안 비므로 다음 캠프가 자연히 새 목표가 되고,
+	# 먹고 나면 그 칸의 캠프가 `JUNGLE_CAMP_RESPAWN_TURNS` 동안 비므로 다음 캠프가 자연히 새 목표가 되고,
 	# 그 반복이 순회가 된다 — 예전의 sticky 왕복이 필요 없다.
 	var camp := _best_ready_camp(p)
 	if camp != Vector2i(-1, -1):
@@ -1364,7 +1366,8 @@ func _jungle_goal_for(p: PilotData) -> Vector2i:
 ## 지금 먹을 수 있는 캠프 중 `p` 가 가야 할 칸. 없으면 (-1,-1).
 ##
 ## **거리만으로 고르면 정글러가 자기 발밑에 갇힌다.** 한쪽 정글이 4칸이고 캠프
-## 재생성이 4턴이라 매 턴 정확히 한 칸이 되살아나므로, 최단 거리 그리디는 영원히
+## 재생성(`JUNGLE_CAMP_RESPAWN_TURNS`)이 그 칸 수와 같으면 매 턴 정확히 한 칸이
+## 되살아나므로, 최단 거리 그리디는 영원히
 ## 거리 1짜리 캠프를 찾아내 그 4칸을 뱅뱅 돈다 — 반대쪽 정글은 개시부터 끝까지
 ## 캠프가 꽉 찬 채로 남는다(실측: 팀0 정글러가 30턴 동안 오른쪽 정글 세 칸을 한
 ## 번도 밟지 않았다). 화면에는 "먹을 게 남아 있는 칸을 두고 빈 칸만 도는" 것으로
@@ -1376,7 +1379,7 @@ func _jungle_goal_for(p: PilotData) -> Vector2i:
 ## 언젠가는 가장 싼 목표가 되어 정글러가 좌우를 오가는 **순회**가 된다.
 ##
 ## **목표를 향해 한 걸음 옮기면 그 목표의 비용은 반드시 더 내려간다**(거리 −1 =
-## −2, 방치 +1 = −1, 합 −3). 다른 캠프는 같은 턴에 −1 밖에 안 싸지므로 가는
+## −`JUNGLE_CAMP_STALE_PER_STEP`, 방치 +1 = −1). 다른 캠프는 같은 턴에 −1 밖에 안 싸지므로 가는
 ## 도중에 목표가 뒤집혀 왕복하는 일이 없다.
 ##
 ## 제자리(이미 서 있는 칸)가 차 있으면 **무조건 그 칸이다** — 이동은
@@ -1767,8 +1770,8 @@ func apply_card_turret_damage(td: TurretData, dmg: int,
 	if td == null or not td.alive or dmg <= 0:
 		return
 	# 턴 전투와 같은 규칙으로 성장치를 적립한다 — 카드로 넣은 피해라고 포탑의
-	# 몫이 달라질 이유가 없다. 오버킬은 잘라 낸다(체력 3 인 포탑에 8 을 넣어도
-	# 3 점어치).
+	# 몫이 달라질 이유가 없다. 오버킬은 잘라 낸다(남은 체력보다 큰 피해를 넣어도
+	# 남은 체력만큼만 점수가 된다).
 	_bs.score_turret_damage(attacker, mini(dmg, td.hp))
 	_last_turret_hitter.clear()
 	if attacker != null:
@@ -2109,8 +2112,8 @@ func _pilot_id_from_roster(ctx_active: bool, roster: Array, idx: int,
 # 전장과 교전으로 갈라져 있고(같은 선수가 라인전과 한타에서 다를 수 있다),
 # 성장 계수 둘은 `BattleSim.refresh_growth_stats` 가 곱하는 배율이다.
 # presence drives 전투 개시(engage) target weighting and is not read by the
-# battlefield. Fallback presence: melee roles (TANK/FIGHTER/ASSASSIN) → 4,
-# ranged (SUPPORT/SNIPER) → 2, matching the mech CSV convention.
+# battlefield. Fallback presence: melee roles (TANK/FIGHTER/ASSASSIN) get the
+# higher value, ranged (SUPPORT/SNIPER) the lower, matching the mech CSV convention.
 # (예전의 `speed` 는 삭제됐다 — 교전이 라운드 기반 턴제가 되면서 행동 빈도
 #  개념이 사라졌다.)
 func _stats_for(ctx_active: bool, roster: Array, idx: int, role_id: int) -> Dictionary:

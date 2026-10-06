@@ -39,9 +39,11 @@ extends RefCounted
 # 반영된다.
 
 # ─── 라운드 / 종료 ───────────────────────────────────────────────────────────
+## 튜닝값(라운드 상한 · 사거리 · 속도 · 홀드 · 넉백 · 표적 가중)은
+## data/csv/const.csv 의 `ENGAGE_*` — ConstTable 로 읽는다. 무대 지오메트리는 코드에 남는다.
 ## 결투(1:1)는 한 쪽이 처치될 때까지 — 다만 서로 못 잡고 버티는 조합(원거리
 ## 미러 등)이 있으므로 관전 페이싱용 라운드 상한을 둔다.
-const DUEL_MAX_ROUNDS: int = 10
+static var DUEL_MAX_ROUNDS: int = ConstTable.int_of("ENGAGE_DUEL_MAX_ROUNDS")
 
 # ─── 무대 지오메트리 (아레나 좌표, 렌더러가 카메라로 화면에 맞춘다) ─────────
 ## 무대 바닥면의 크기. 유닛은 항상 이 안에 갇힌다 — 교전 중 이탈은 없다.
@@ -104,7 +106,7 @@ const STAGE_FIT_MARGIN: float = 150.0
 # 뒤 y 를 다시 나누어 원래 공간으로 돌린다.
 #
 # 실제 거리로는 **나란히 서면 60px · 위아래로 서면 26px** 이 최소 간격이다.
-# 근접 사거리(`MELEE_REACH` 88)보다 작으므로 **공격하러 붙는 동작과 다투지
+# 근접 사거리(`ENGAGE_MELEE_REACH`, const.csv)보다 작으므로 **공격하러 붙는 동작과 다투지
 # 않는다** — 이 판정이 실제로 일하는 자리는 개시 배치(한 칸에 몰린 무리)와
 # 넉백으로 남을 떠밀린 자리 둘이다.
 const FOOT_RX: float = 30.0
@@ -123,62 +125,62 @@ const SEPARATE_ITERS_TICK: int = 6
 
 # ─── 유닛 ────────────────────────────────────────────────────────────────────
 const UNIT_RADIUS: float = 40.0
-## 근접이 공격을 넣기 위해 좁혀야 하는 거리. UNIT_RADIUS 두 개(80)보다 살짝
+## 근접이 공격을 넣기 위해 좁혀야 하는 거리. UNIT_RADIUS 두 개보다 살짝
 ## 커서 초상화가 겹치지 않고 붙는다.
-const MELEE_REACH: float = 88.0
+static var MELEE_REACH: float = ConstTable.num("ENGAGE_MELEE_REACH")
 ## 원거리 사거리. 실제 발사는 이 값의 RANGED_APPROACH_RATIO 안에서만 한다.
-const RANGE_RANGED: float = 300.0
+static var RANGE_RANGED: float = ConstTable.num("ENGAGE_RANGE_RANGED")
 ## "최대 사거리의 이 비율 안까지 들어간 다음 공격한다." 이미 그 안이면 더
 ## 접근하지 않고 제자리에서 쏜다.
-const RANGED_APPROACH_RATIO: float = 0.9
+static var RANGED_APPROACH_RATIO: float = ConstTable.num("ENGAGE_RANGED_APPROACH_RATIO")
 ## 돌진 이동 속도(px/s). 근접이 더 빠르게 파고든다.
 ##
 ## ATB 시절보다 **빠르게** 잡혀 있다. 그때는 10명이 동시에 움직여 한 사람의
 ## 접근이 느려도 무대가 비지 않았지만, 지금은 한 번에 한 명뿐이라 접근 시간이
-## 곧 관전자가 기다리는 시간이다. 3라운드 5v5 가 약 17초에 끝나는 것이 여기서
-## 나온다 — 느리게 잡으면 그대로 30초를 넘긴다.
-const MOVE_SPEED_MELEE: float = 1600.0
-const MOVE_SPEED_RANGED: float = 1250.0
+## 곧 관전자가 기다리는 시간이다. 3라운드 5v5 의 관전 길이가 거의 여기서
+## 정해진다 — 느리게 잡으면 교전이 그대로 늘어진다.
+static var MOVE_SPEED_MELEE: float = ConstTable.num("ENGAGE_MOVE_SPEED_MELEE")
+static var MOVE_SPEED_RANGED: float = ConstTable.num("ENGAGE_MOVE_SPEED_RANGED")
 ## 넉백으로 밀려난 만큼 자기 자리(anchor_pos)로 되돌아오는 드리프트 속도 배율.
 ## **원위치 복귀가 아니다** — 앵커 자체가 마지막으로 공격한 자리로 갱신되므로
 ## 이 드리프트는 벨트 클램프 등으로 어긋난 잔차만 추스른다.
-const SETTLE_SPEED_MULT: float = 0.85
+static var SETTLE_SPEED_MULT: float = ConstTable.num("ENGAGE_SETTLE_SPEED_MULT")
 ## 접근 단계가 이 시간을 넘기면 이번 차례를 접는다(대상이 멀리 밀려나 있는 등의
-## 교착 방지). 접는 자리가 곧 새 앵커다. 사이드뷰 벨트(깊이 400) 시절의 0.55 는
-## 탑뷰 바닥면(1180)에서 **대각선 반대편의 적에게 닿지 못한다** — 그 차례가
+## 교착 방지). 접는 자리가 곧 새 앵커다. 사이드뷰 벨트 시절의 값으로는 그보다
+## 넓은 탑뷰 바닥면(`STAGE_H`)에서 **대각선 반대편의 적에게 닿지 못한다** — 그 차례가
 ## 통째로 "걸어가다 말았다"가 되므로 무대가 커진 만큼 함께 늘렸다.
-const ADVANCE_MAX_SEC: float = 0.85
+static var ADVANCE_MAX_SEC: float = ConstTable.num("ENGAGE_ADVANCE_MAX_SEC")
 ## 공격 모션을 붙잡는 시간. 이 동안 유닛은 대상 앞에 멈춰 서 있다.
-## 원거리는 투사체 비행(최대 270px / PROJECTILE_SPEED ≈ 0.19초)이 끝나기를
+## 원거리는 투사체 비행(발사 거리 / `ENGAGE_PROJECTILE_SPEED`)이 끝나기를
 ## 기다려야 하므로 근접보다 길다.
-const STRIKE_HOLD_MELEE: float = 0.20
-const STRIKE_HOLD_RANGED: float = 0.26
+static var STRIKE_HOLD_MELEE: float = ConstTable.num("ENGAGE_STRIKE_HOLD_MELEE")
+static var STRIKE_HOLD_RANGED: float = ConstTable.num("ENGAGE_STRIKE_HOLD_RANGED")
 ## 한 차례가 끝나고 다음 순서로 넘어가기까지의 짧은 숨.
-const ACTOR_GAP_SEC: float = 0.06
+static var ACTOR_GAP_SEC: float = ConstTable.num("ENGAGE_ACTOR_GAP_SEC")
 ## 라운드 사이의 숨. 렌더러가 이 동안 라운드 배너를 띄운다.
-const ROUND_GAP_SEC: float = 0.45
+static var ROUND_GAP_SEC: float = ConstTable.num("ENGAGE_ROUND_GAP_SEC")
 ## 포탑이 사격 모션을 붙잡는 시간(포탑 차례의 길이).
-const TURRET_FIRE_HOLD: float = 0.30
+static var TURRET_FIRE_HOLD: float = ConstTable.num("ENGAGE_TURRET_FIRE_HOLD")
 ## 앵커에 도착한 것으로 치는 거리.
 const HOME_EPSILON: float = 6.0
 ## 사거리 판정 여유(px). **없으면 근접이 두 번째 공격부터 영영 못 나간다.**
 ## `_tick_advance` 의 정지점은 `target.pos - dir * strike_dist()` 이고
 ## `_step_toward` 가 거기에 스냅하므로, 접근을 끝낸 유닛은 사거리 **딱 그
-## 거리**에 선다. 그 자리에서 다시 잰 거리는 부동소수 오차로 88.0 바로 위에
+## 거리**에 선다. 그 자리에서 다시 잰 거리는 부동소수 오차로 사거리 바로 위에
 ## 떨어지기 일쑤라 `dist <= strike_dist()` 가 거짓이 되고, 유닛은 이미 도착한
 ## 정지점을 향해 0px 씩 "이동"하다가 `ADVANCE_MAX_SEC` 교착으로만 차례를
 ## 접는다 — 공격은 한 번도 성립하지 않는다.
 const STRIKE_DIST_EPSILON: float = 0.5
 
 # ─── 넉백 (피격 피드백 + 재접근 거리) ───────────────────────────────────────
-## 명중 시 대상에게 실리는 초기 속도(px/s). 감쇠까지 합치면 근접 ≈ 47px,
-## 원거리 ≈ 17px 밀려나고, 밀려난 자리가 그대로 새 앵커가 된다
+## 명중 시 대상에게 실리는 초기 속도(px/s). 감쇠(`ENGAGE_KNOCK_DAMP`)까지 합친
+## 거리만큼 밀려나고(근접이 원거리보다 멀리), 밀려난 자리가 그대로 새 앵커가 된다
 ## (`_apply_knockback`). 이 거리가 때린 쪽의 다음 차례 돌진 거리이기도 하다 —
 ## 0 으로 두면 근접이 사거리에 붙어 선 채 굳어 공격 모션이 사라진다.
-const KNOCK_IMPULSE_MELEE: float = 420.0
-const KNOCK_IMPULSE_RANGED: float = 150.0
+static var KNOCK_IMPULSE_MELEE: float = ConstTable.num("ENGAGE_KNOCK_IMPULSE_MELEE")
+static var KNOCK_IMPULSE_RANGED: float = ConstTable.num("ENGAGE_KNOCK_IMPULSE_RANGED")
 ## 넉백 속도의 지수 감쇠 계수(1/s).
-const KNOCK_DAMP: float = 9.0
+static var KNOCK_DAMP: float = ConstTable.num("ENGAGE_KNOCK_DAMP")
 ## 넉백 연출 타이머(렌더러 전용) 길이.
 const KNOCK_FLASH_SEC: float = 0.22
 
@@ -199,13 +201,14 @@ const KNOCK_FLASH_SEC: float = 0.22
 # TURRET_BG_STEP)는 그래서 삭제됐다 — 그 자리는 무대에 지평선이 있었기에
 # 성립하던 것이고, 지금은 포탑도 파일럿과 같은 바닥면 위에 있다.
 ## 포탑 명중 굴림에 쓰는 고정 hit 스탯(포탑에는 hit 스탯이 없다).
-const TURRET_HIT: int = 50
+static var TURRET_HIT: int = ConstTable.int_of("ENGAGE_TURRET_HIT")
 
-const PROJECTILE_SPEED: float = 1400.0
+## 투사체 비행 속도(px/s). 파일럿 · 포탑 사격 모두.
+static var PROJECTILE_SPEED: float = ConstTable.num("ENGAGE_PROJECTILE_SPEED")
 
 # ─── 명중 보정 ────────────────────────────────────────────────────────────
 ## 명중 확률 공식은 **전장과 공유한다** — `PilotData.hit_chance` 가 비율
-## `hit/(hit+eva)` 을 80~100% 구간에 선형으로 엹는다(대등하면 90%).
+## `hit/(hit+eva)` 을 정해진 확률 구간에 선형으로 엹는다(대등하면 구간 한가운데).
 ## 다른 것은 **입력**이다 — 이 무대는 `engage_hit` / `engage_eva`(교전 명중 /
 ## 교전 회피)를 읽고, 전장(`SimulationCore.roll_hit`)은 `hit` / `evasion`을 읽는다.
 ## 그래서 같은 선수가 라인전과 한타에서 다를 수 있고, 그 둘을 가르는 것이
@@ -291,7 +294,7 @@ class EUnit extends RefCounted:
 
 	## 이번 행동에서 공격이 성립하는 거리.
 	func strike_dist() -> float:
-		return MELEE_REACH if is_melee else atk_range * RANGED_APPROACH_RATIO
+		return TurnEngageSim.MELEE_REACH if is_melee else atk_range * TurnEngageSim.RANGED_APPROACH_RATIO
 
 	## 행동 중(= 지금 나와서 때리는 중)인가. 렌더러가 강조 표시에 쓴다.
 	func is_acting() -> bool:
@@ -992,7 +995,7 @@ func _end_actor_turn() -> void:
 
 
 # 접근 — 사거리에 들 때까지 붙는다. 근접은 MELEE_REACH, 원거리는 최대 사거리의
-# RANGED_APPROACH_RATIO(90%). 이미 그 안이면 곧장 공격한다.
+# `RANGED_APPROACH_RATIO`. 이미 그 안이면 곧장 공격한다.
 func _tick_advance(u: EUnit, dt: float) -> void:
 	u.act_t += dt
 	if u.target == null or not u.target.is_active():
@@ -1115,13 +1118,18 @@ func _apply_knockback(u: EUnit, dt: float) -> void:
 # 턴제에서는 무대에 한 명만 나와 있으므로 "아군이 이미 물고 있는 적"은 이번
 # 라운드에서 **아군이 마지막으로 노린 적**을 뜻한다(`_last_focus`). 그래서
 # 라운드 안에서 딜이 한 명에게 모인다.
-const FOCUS_BONUS: float = 0.78     # 같은 팀이 이미 노린 적에게 곱해지는 계수
-const FOCUS_BONUS_FLOOR: float = 0.45
-const LOW_HP_FOCUS: float = 0.6     # 빈사(35% 미만) 적 마무리 가중
+## 값은 data/csv/const.csv — ConstTable 로 읽는다.
+## 같은 팀이 이미 노린 적에게 노린 인원수만큼 거듭 곱해지는 계수. 하한은 FOCUS_BONUS_FLOOR.
+static var FOCUS_BONUS: float = ConstTable.num("ENGAGE_FOCUS_BONUS")
+static var FOCUS_BONUS_FLOOR: float = ConstTable.num("ENGAGE_FOCUS_BONUS_FLOOR")
+## 빈사 적 마무리 가중(점수에 곱함 — 낮을수록 더 노린다).
+static var LOW_HP_FOCUS: float = ConstTable.num("ENGAGE_LOW_HP_FOCUS")
+## 이 체력 비율 아래로 떨어진 적에게 `LOW_HP_FOCUS` 가 곱해진다(빈사 판정 문턱).
+static var LOW_HP_FOCUS_RATIO: float = ConstTable.num("ENGAGE_LOW_HP_FOCUS_RATIO")
 ## 암살자가 적 뒷줄(원거리)에 주는 가중. 낮을수록 더 집요하게 파고든다.
-const DIVE_FOCUS: float = 0.40
-## 약자 멸시의 개시 타격에 곱해지는 공격력 배율 (카드 문안의 "공격력 50%").
-const CONTEMPT_DMG_MULT: float = 0.5
+static var DIVE_FOCUS: float = ConstTable.num("ENGAGE_DIVE_FOCUS")
+## 약자 멸시의 개시 타격에 곱해지는 공격력 배율 (카드 문안의 공격력 비율과 맞춘다).
+static var CONTEMPT_DMG_MULT: float = ConstTable.num("ENGAGE_CONTEMPT_DMG_MULT")
 
 ## 팀별 이번 라운드의 집중 대상 → 몇 명이 노렸는가. 라운드가 넘어가도 그대로
 ## 두는 이유는 집중 사격이 라운드 경계에서 끊기면 처치가 거의 나오지 않기
@@ -1150,12 +1158,12 @@ func _pick_target(u: EUnit) -> EUnit:
 		var score: float
 		if u.dives_backline:
 			# 암살자는 존재감 어그로를 무시하고 **뒷줄을 노린다**. 이 분기가
-			# 없으면 앞줄이 더 가깝고 존재감까지 두 배(4 vs 2)라 원거리 메크가
+			# 없으면 앞줄이 더 가깝고 존재감까지 더 높아 원거리 메크가
 			# 교전 내내 단 한 대도 맞지 않는다 — 실측으로 확인된 구멍이다.
 			score = d * (DIVE_FOCUS if not e.is_melee else 1.0)
 		else:
 			score = d / float(max(1, e.pilot.presence))
-		if e.hp_ratio() < 0.35:
+		if e.hp_ratio() < LOW_HP_FOCUS_RATIO:
 			score *= LOW_HP_FOCUS
 		var n: int = int(_focus_count.get(e, 0))
 		if n > 0:
@@ -1201,13 +1209,15 @@ func _unit_for(p: PilotData) -> EUnit:
 
 
 # ─── 전투 해상도 ─────────────────────────────────────────────────────────────
-# 데미지는 전장과 동일(명중 시 dmg = atk, 보호막부터 흡수)하지만 **명중률만은
-# 전장과 별개**다 — `_hit_chance` 가 80~100% 구간으로 리맵한 확률을 준다.
+# 데미지는 전장과 동일(명중 시 dmg = atk, 보호막부터 흡수)하고 명중 확률 공식도
+# 전장과 **같다** — `_hit_chance` 는 `PilotData.hit_chance` 를 그대로 부른다
+# ([`PILOT_HIT_MIN`, `PILOT_HIT_MAX`](const.csv) 구간). 다른 것은 입력뿐이다 —
+# 이 무대는 `engage_hit` / `engage_eva` 를 넣는다.
 func _resolve_attack(u: EUnit, target: EUnit) -> void:
 	u.swing_t = 0.22
 	var mech: MechSkillSystem = _bs.mech_skill
 	# 전탄 발사(원딜 I) — 이 한 차례의 공격이 **적 전원**에게 간다. 대가는
-	# 기체 공격력 절반이고 그건 데이터(mechs.csv atk 12)에 이미 들어가 있다.
+	# 기체 공격력 절반이고 그건 데이터(mechs.csv 의 `atk`)에 이미 들어가 있다.
 	var victims: Array = [target]
 	if mech != null and mech.engage_targets_all(u.pilot):
 		var all_foes: Array = _living_enemies(u)

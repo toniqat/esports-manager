@@ -47,7 +47,7 @@ const KEY_LAST_STAND         := "last_stand"          # 지원 V — 교전 1회
 const KEY_VULNERABILITY_MARK := "vulnerability_mark"  # 원딜 A — 명중 → 취약
 const KEY_MISSILE_STOCK      := "missile_stock"       # 원딜 C — 레인 포탑 파괴 → [미사일]
 const KEY_BARRAGE            := "barrage"             # 원딜 I — 교전 공격이 전체 대상
-const KEY_CALIBRATION        := "calibration"         # 원딜 J — 전장 명중 → 공격력 +1
+const KEY_CALIBRATION        := "calibration"         # 원딜 J — 전장 명중 → 공격력 +`p1`
 
 # ─── 카드 자신에게 붙는 사건 훅 (`mech_cards.trigger`) ───────────────────────
 ## 적 포탑이 파괴될 때마다 이 카드를 덱에 한 장 만든다 (꿰뚫는 번개).
@@ -61,7 +61,7 @@ const TRIGGER_DEATH_HAND := "death_hand"
 # ─── 핸드 상주 카드 (`hand_passive:<key>`) ───────────────────────────────────
 # 비용 -1 이라 낼 수 없고, **손패에 있는 것만으로** 일하는 네 장이다. 절이
 # `hand_passive:<key>` 하나뿐이라 효과 체인을 타지 않고 여기서 직접 읽는다.
-const HAND_CASH       := "cash"        # 원딜 B — 카드 사용마다 성장치 4%
+const HAND_CASH       := "cash"        # 원딜 B — 카드 사용마다 성장치 `CASH_RATE`
 const HAND_REVELATION := "revelation"  # 원딜 I — 카드 피해에 편승해 추가 공격
 const HAND_CONTEMPT   := "contempt"    # 암살 R — 교전 개시 시 충전만큼 선제 타격
 const HAND_BALANCE    := "balance"     # 지원 U — 이 메크 카드의 성장치 비용 면제
@@ -82,39 +82,40 @@ const CARD_PHASE_B := 39   # 단계 B
 const CARD_PHASE_C := 40   # 단계 C
 
 # ─── 튜닝 상수 ───────────────────────────────────────────────────────────────
+## 값은 data/csv/const.csv — ConstTable 로 읽는다(키 = `MECH_` + 이름).
 ## 취약 1당 받는 피해 배율 가산분.
-const VULNERABLE_PER_STACK: float = 0.01
+static var VULNERABLE_PER_STACK: float = ConstTable.num("MECH_VULNERABLE_PER_STACK")
 ## 반응 장갑이 한 번에 깎아 내는 피해 비율.
-const REACTIVE_ARMOR_CUT: float = 0.90
+static var REACTIVE_ARMOR_CUT: float = ConstTable.num("MECH_REACTIVE_ARMOR_CUT")
 ## 오버클럭 — 충전 1당 교전 추가 공격 확률.
-const OVERCLOCK_PROC_PER_CHARGE: float = 0.01
+static var OVERCLOCK_PROC_PER_CHARGE: float = ConstTable.num("MECH_OVERCLOCK_PROC_PER_CHARGE")
 ## 캐시 — 카드 한 장을 낼 때마다 시전자가 버는 자기 성장치의 비율.
-const CASH_RATE: float = 0.04
-## `score_cost:N` 의 단위. **N = 100 이 성장치 1.00k** 다 — 시트의 "성장 점수 100"
-## 은 게임 안의 `1.00k` 를 가리키고, 그 환산을 여기 한 곳에만 적어 둔다.
-const SCORE_COST_UNIT: float = 0.01
+static var CASH_RATE: float = ConstTable.num("MECH_CASH_RATE")
+## `score_cost:N` 의 단위 — 시트의 "성장 점수 N" 을 게임 안의 성장치(k 단위)로
+## 바꾸는 환산 계수. 그 환산은 `MECH_SCORE_COST_UNIT`(const.csv) 한 곳에만 둔다.
+static var SCORE_COST_UNIT: float = ConstTable.num("MECH_SCORE_COST_UNIT")
 ## 단계 C 의 강화 [베타] — 다음 [단계 B] 를 낼 때 들어오는 충전.
-const PHASE_BOON_BETA_CHARGE: int = 100
+static var PHASE_BOON_BETA_CHARGE: int = ConstTable.int_of("MECH_PHASE_BOON_BETA_CHARGE")
 ## 단계 C 의 강화 [감마] — 다음 [단계 C] 를 낼 때 버는 자기 성장치 비율.
-const PHASE_BOON_GAMMA_RATE: float = 0.10
-
+static var PHASE_BOON_GAMMA_RATE: float = ConstTable.num("MECH_PHASE_BOON_GAMMA_RATE")
 # ─── 단계 C 의 강화 3택 ──────────────────────────────────────────────────────
 # [단계 C] 를 낼 때 하나를 고르고, 그 다음 한 번에만 쓰인다. 세 값이 서로 다른
 # 카드에 걸리므로(알파 = 단계 A, 베타 = 단계 B, 감마 = 단계 C) 파일럿당 하나만
 # 들고 있으면 충분하다 — 새로 고르면 앞의 것을 덮는다.
 const BOON_ALPHA := "alpha"   # 다음 [단계 A] 가 [단계 B] 를 덱이 아닌 핸드에
-const BOON_BETA  := "beta"    # 다음 [단계 B] 사용 시 +100 충전
-const BOON_GAMMA := "gamma"   # 다음 [단계 C] 사용 시 성장 점수 +10%
+const BOON_BETA  := "beta"    # 다음 [단계 B] 사용 시 `PHASE_BOON_BETA_CHARGE` 충전
+const BOON_GAMMA := "gamma"   # 다음 [단계 C] 사용 시 성장 점수 `PHASE_BOON_GAMMA_RATE`
 
 ## 강화 하나의 표시 이름과 설명문. 플레이어가 고르는 3택 모달과 AI 의 무작위
 ## 선택이 **같은 표**를 읽으므로 목록이 갈라질 수 없다.
-const BOON_DEFS: Array[Dictionary] = [
+## 설명문의 수치는 튜닝값에서 만들어 붙인다(const.csv 를 고치면 문구도 따라간다).
+static var BOON_DEFS: Array[Dictionary] = [
 	{"key": BOON_ALPHA, "name": "강화 · 알파",
 		"desc": "다음 [단계 A] 사용 시 [단계 B] 를 덱이 아닌 핸드에 생성"},
 	{"key": BOON_BETA, "name": "강화 · 베타",
-		"desc": "다음 [단계 B] 사용 시 토큰 +100"},
+		"desc": "다음 [단계 B] 사용 시 토큰 +%d" % PHASE_BOON_BETA_CHARGE},
 	{"key": BOON_GAMMA, "name": "강화 · 감마",
-		"desc": "다음 [단계 C] 사용 시 성장 점수 +10%"},
+		"desc": "다음 [단계 C] 사용 시 성장 점수 +%d%%" % roundi(PHASE_BOON_GAMMA_RATE * 100.0)},
 ]
 
 # ─── 상태 ────────────────────────────────────────────────────────────────────
@@ -144,7 +145,7 @@ func chain_rounds(p: PilotData) -> int:
 
 # ─── 개시 ────────────────────────────────────────────────────────────────────
 ## 스폰과 덱 배분이 끝난 뒤 한 번. 파일럿마다 배정된 기체의 패시브 행을 붙이고,
-## 게임 시작 충전(오버클럭 +20)을 심는다.
+## 게임 시작 충전(오버클럭의 `p1`)을 심는다.
 func init_for_match() -> void:
 	_state.clear()
 	damaged_this_phase.clear()
@@ -267,10 +268,10 @@ func bulk_power_atk(p: PilotData, final_max_hp: int) -> int:
 
 
 ## `victim` 이 `attacker` 에게 받는 피해에 곱해지는 배율. 셋이 합쳐진다 —
-## 취약(1당 +1%) · 죽음의 손가락(+25%) · 목표(그 시전자에게만 +15%).
+## 취약(1당 `MECH_VULNERABLE_PER_STACK`) · 죽음의 손가락 · 목표(그 시전자에게만).
 ##
 ## **합산이지 곱셈이 아니다.** 셋 다 "받는 피해 +N%" 라는 같은 문장이고, 곱으로
-## 쌓으면 취약 100 에 죽음의 손가락이 겹친 순간 배율이 2.5 를 넘어 한 대에
+## 쌓으면 취약이 크게 쌓인 데 죽음의 손가락이 겹친 순간 배율이 폭주해 한 대에
 ## 정리되는 구간이 생긴다.
 func damage_taken_mult(victim: PilotData, attacker: PilotData = null) -> float:
 	if victim == null:
@@ -284,8 +285,8 @@ func damage_taken_mult(victim: PilotData, attacker: PilotData = null) -> float:
 
 
 ## 반응 장갑 한 겹을 태운다. 태웠으면 true — 호출 측은 그 타격의 피해를
-## `REACTIVE_ARMOR_CUT` 만큼 깎는다. **보호막보다 먼저** 걸려야 한다: 90% 를
-## 깎고 남은 10% 를 보호막이 받는 순서라야 두 방어가 겹쳐 읽힌다.
+## `REACTIVE_ARMOR_CUT` 만큼 깎는다. **보호막보다 먼저** 걸려야 한다: 장갑이 먼저
+## 깎고 남은 몫을 보호막이 받는 순서라야 두 방어가 겹쳐 읽힌다.
 func consume_reactive_armor(victim: PilotData) -> bool:
 	if victim == null or victim.reactive_armor <= 0:
 		return false
@@ -349,7 +350,7 @@ func on_card_played(cd: CardData, is_player: bool) -> void:
 	if caster != null and has_passive(caster, KEY_ZEN_CHARGE):
 		add_charge(caster, 1)
 	# 캐시(원딜 B) — 손패에 [캐시] 를 들고 있는 파일럿은 아무 카드나 나갈 때마다
-	# 자기 성장치의 4% 를 번다. 카드를 **낸 사람**이 아니라 캐시를 **들고 있는
+	# 자기 성장치의 `CASH_RATE` 를 번다. 카드를 **낸 사람**이 아니라 캐시를 **들고 있는
 	# 사람**이 버는 것이라 손패 전체를 훑는다.
 	_payout_cash(is_player)
 

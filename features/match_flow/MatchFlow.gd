@@ -209,12 +209,13 @@ func _launch_battle() -> void:
 
 
 ## 오브젝트 오판 확률 — 상대 AI 가 수적 열세인데도 오브젝트 교전을 받아들일
-## 확률. 리그 순위 1위 `MISJUDGE_MIN`(5%) → 꼴찌 `MISJUDGE_MAX`(60%) 선형.
+## 확률. 리그 순위 1위 `MISJUDGE_MIN` → 꼴찌 `MISJUDGE_MAX` 선형.
 ## 승패가 같으면 팀 평균 스탯이 높은 쪽이 위다(시즌 초 전원 0-0 에서도 강팀이
 ## 덜 오판하게). 국제대회 외부 팀(id ≥ 100)은 각 리그 상위권이므로 최소값.
 ## 시즌 밖(단독 실행)은 두 끝의 중간값.
-const MISJUDGE_MIN: float = 0.05
-const MISJUDGE_MAX: float = 0.60
+## 값은 data/csv/const.csv(`OBJ_MISJUDGE_MIN` / `OBJ_MISJUDGE_MAX`) — ConstTable 로 읽는다.
+static var MISJUDGE_MIN: float = ConstTable.num("OBJ_MISJUDGE_MIN")
+static var MISJUDGE_MAX: float = ConstTable.num("OBJ_MISJUDGE_MAX")
 
 func _misjudge_chance_for(team_id: int) -> float:
 	if not gm.season_state.get("active", false):

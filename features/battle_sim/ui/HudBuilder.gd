@@ -110,7 +110,7 @@ const OBJ_TIMER_LEFT_X  := 26.0
 # 핸드 행은 y 1500..1720, 그 아래가 통째로 비어 있었다(예전 하단 코스트 바 자리).
 #
 # y 1766 은 카드 밑단에서 계산해 나온 값이다. 부채꼴의 **양 끝 카드는 가운데보다
-# 21.4px 아래로 처지고**(12장 기준), 호버/선택 시 `Card.HOVER_SCALE`(1.2)로
+# 가장 많이 아래로 처지고**(손패 상한 `MAX_HAND_SIZE`(game_config) 기준), 호버/선택 시 `Card.HOVER_SCALE`(1.2)로
 # 커지므로 최악의 경우 카드 밑단이 y ≈ 1763 까지 내려온다. 1724 에 두었더니
 # 카드가 초상화 윗부분을 덮었다(실측 확인). 아이폰 홈 바를 위해 바닥 ~32px 도
 # 남긴다 — 위아래가 다 막힌 122px 안에 초상화 · 체력 바 · 성장치가 들어간다.
@@ -173,9 +173,6 @@ const DONUT_FILL_ENEMY  := Color(0.95, 0.35, 0.25)
 const DONUT_HAND_GAP    := 24.0
 ## Vertical gap between the AI hand peek's bottom edge and the enemy donut.
 const DONUT_AI_HAND_GAP := 20.0
-## Fallback 100% mark used before DataLoader fills PHASE_THRESHOLD.
-const DONUT_DEFAULT_MAX := 8
-
 # ── 파일럿 스트립 refs ────────────────────────────────────────────────────────
 var _enemy_strip:  PilotStrip = null   # team 1, 화면 상단
 var _player_strip: PilotStrip = null   # team 0, 핸드 행 아래
@@ -803,10 +800,12 @@ func update_hud() -> void:
 
 
 # The ring is full at PHASE_THRESHOLD; the number in the middle is the raw
-# point total, so boost cards read as "8+ on a full ring".
+# point total, so boost cards read as "more than PHASE_THRESHOLD on a full ring".
 # The player donut only accepts the flip → 턴 넘기기 during 작전 단계.
 func _update_cost_donuts(in_card_phase: bool) -> void:
-	var maxv: int = _bs.PHASE_THRESHOLD if _bs.PHASE_THRESHOLD > 0 else DONUT_DEFAULT_MAX
+	# 100% 표시는 `PHASE_THRESHOLD`(game_config) 하나만 따른다 — 로드 전에는 0 이고
+	# `CostDonut.set_value` 가 분모를 1 이상으로 묶는다.
+	var maxv: int = _bs.PHASE_THRESHOLD
 	if _bs.cost_donut_enemy != null:
 		_bs.cost_donut_enemy.set_value(_bs.ai_cost, maxv)
 	if _bs.cost_donut != null:

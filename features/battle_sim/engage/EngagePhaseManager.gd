@@ -44,7 +44,8 @@ const MAX_STEPS_PER_FRAME: int = 8
 ## 종료 판정 → 결과 대시보드 사이의 유예(초). 마지막 처치나 시간 만료를 눈으로
 ## 확인할 틈을 준다. 이 동안 전투는 완전히 멈추고(시뮬레이터는 `step_afterglow`
 ## 로 잔여 연출만 굴린다) 아레나 상단에 종료 사유 배너가 뜬다.
-const END_HOLD_SEC: float = 2.0
+## 값은 data/csv/const.csv — ConstTable 로 읽는다.
+static var END_HOLD_SEC: float = ConstTable.num("ENGAGE_END_HOLD_SEC")
 
 # ─── Engage state (cleared in start_engage / start_duel) ─────────────────────
 var _active: bool = false
@@ -120,7 +121,7 @@ func _ready() -> void:
 # `caster`       — the casting PilotData (시전자); defines the participant area
 #                  and acts **first in every round** (선공권).
 # `rounds_total` — the card's engage:N value, used verbatim as the round count
-#                  (engage:3 → 3 라운드).
+#                  (engage:N → N 라운드).
 # `exclude_lane` — true for the 교전 card; filters out lane pilots that are on
 #                  their lane (i.e., not displaced into a jungle cell).
 # `on_done`      — optional Callable invoked once the modal closes and game
@@ -404,7 +405,7 @@ func _end_banner_text() -> String:
 ## 교전 무대에 설 사람들. 기본 무대는 **시전자 칸 + 인접 6칸**이지만, 메크
 ## 카드가 그 둘을 바꿔 부른다 — `center` 로 무대를 시전자가 아닌 **지정한 적
 ## 주변**으로 옮기고([돌격] · [강습] · [간보기]), `radius` 로 넓힌다([우세한
-## 전장] 3, [개시] · [제압 전투] 2). 기본값은 예전 그대로다.
+## 전장] · [개시] · [제압 전투] 의 `self_range`). 기본값은 예전 그대로다.
 func _gather_participants(caster: PilotData, exclude_lane: bool,
 		center: Vector2i = Vector2i(-999, -999), radius: int = 1) -> Array:
 	var origin: Vector2i = center if center != Vector2i(-999, -999) else caster.grid_pos

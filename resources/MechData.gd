@@ -14,7 +14,7 @@ extends Resource
 # Combat stats — drive PilotData hp/atk when this mech is piloted.
 @export var hp: int = 100
 @export var atk: int = 10
-# 존재감 — 전투 개시(engage)에서만 사용. 근접 메크 4, 원거리 메크 2.
+# 존재감 — 전투 개시(engage)에서만 사용. 값은 mechs.csv — 근접 메크가 원거리 메크보다 높다.
 # 피격 확률 가중치(높을수록 자주 표적이 됨).
 #
 # **속도(speed) 스탯은 삭제됐다.** 교전이 ATB 실시간에서 라운드 기반 턴제로

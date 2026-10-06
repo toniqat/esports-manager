@@ -25,3 +25,5 @@
 
 # Claude Code 개인 설정(PC 별 권한·경로) — 커밋하지 않는다. 공용 설정은 .claude/settings.json 에 둔다.
 /.claude/settings.local.json
+# 병렬 에이전트 작업용 git worktree — 커밋하지 않는다.
+/.claude/worktrees/

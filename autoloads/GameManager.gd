@@ -162,27 +162,171 @@ var last_run_result: Dictionary = {}
 
 ## 런 준비 화면(`features/meta/run_setup/`)이 부르는 **유일한 런 시작 입구**.
 ## `run_setup` 모양은 `docs/outgame_dev_plan.md` §10.2. 성공이면 "" — 이후
-## `Season.tscn` 은 DRAFT 없이 HUB 부터 연다.
+## `Season.tscn` 은 DRAFT 없이 HUB 부터 연다. 실패면 사람이 읽는 한 줄이고
+## `season_state` 는 건드리지 않은(검증 실패) 또는 비운(분배 실패) 상태다.
 ##
-## (기반 커밋의 자리표시 구현 — RunCore 작업이 AI 로스터 재분배 · 레벨 적용 ·
-## 시드로 바꾼다.)
+## 순서: 검증(`RunRules.validate_lineup`, Lv1 풀 · 프로필 보유 레벨) → 시즌 뼈대
+## (`_init_season_core`) → `run_seed` → 내 5인을 내 팀으로 · `RunRules.apply_level`
+## → 나머지 선수 AI 분배(`RunRoster`) → `team_rosters` 재구성 → `run_setup` 스냅샷.
+##
+## 테스트 런(`use_test_run`, 에디터 직접 실행)은 프로필 보유를 보지 않는다 —
+## 네임드 선수 누구나 최대 레벨까지 고를 수 있다(샐러리캡 · 역할 규칙은 그대로).
 func start_run(run_setup: Dictionary) -> String:
-	var err: String = init_season(int(run_setup.get("team_id", 0)))
-	if err != "":
-		return err
-	season_state["run_setup"] = run_setup.duplicate(true)
-	return ""
-
-
-# Loads the 40-pilot pool, builds per-team rosters keyed by team_id, primes
-# empty league standings + default training schedules. Returns "" on success
-# or an error string. Caller (Season hub) is responsible for marking active.
-func init_season(player_team_id: int = 0) -> String:
-	reset_season_state()
 	var data := load_match_data()
 	if data.has("error"):
 		return data["error"]
-	var pilots: Array = data["players"]
+	var pool: Array = data["players"]
+	var team_id: int = int(run_setup.get("team_id", 0))
+	if team_id < 0 or team_id >= TEAM_COUNT:
+		return "알 수 없는 팀 id %d" % team_id
+	var scenario_id: int = int(run_setup.get("scenario", 0))
+	if RunRules.scenario(scenario_id).is_empty():
+		return "알 수 없는 시나리오 id %d" % scenario_id
+
+	var pilot_ids: Array = []
+	for raw in (run_setup.get("pilot_ids", []) as Array):
+		pilot_ids.append(int(raw))
+	var levels: Dictionary = {}
+	var raw_levels: Dictionary = run_setup.get("pilot_levels", {})
+	for pid in pilot_ids:
+		levels[str(pid)] = int(raw_levels.get(str(pid), 1))
+	var err: String = RunRules.validate_lineup(pilot_ids, levels, scenario_id, pool,
+			_owned_levels_for_run(pool))
+	if err != "":
+		return err
+
+	err = _init_season_core(team_id, pool)
+	if err != "":
+		return err
+	var pilots: Array = season_state["all_pilots"]
+	var run_seed: int = _fresh_run_seed()
+	season_state["run_seed"] = run_seed
+
+	var assignment: Dictionary = RunRoster.assign(pilots, team_id, pilot_ids, run_seed, TEAM_COUNT)
+	if String(assignment.get("error", "")) != "":
+		reset_season_state()
+		return String(assignment["error"])
+	RunRoster.apply(pilots, assignment["teams"])
+
+	# 내 5인 — 레벨은 런 사본(all_pilots)에만 얹는다. 스냅샷은 역할 순으로 적는다.
+	var picked: Array = []
+	for raw in pilots:
+		var pd := raw as PlayerData
+		if pilot_ids.has(pd.id):
+			RunRules.apply_level(pd, int(levels[str(pd.id)]))
+			picked.append(pd)
+	picked.sort_custom(func(a, b): return (a as PlayerData).role < (b as PlayerData).role)
+	var ordered_ids: Array = []
+	var applied_levels: Dictionary = {}
+	for raw in picked:
+		var pd := raw as PlayerData
+		ordered_ids.append(pd.id)
+		applied_levels[str(pd.id)] = pd.level
+	season_state["team_rosters"] = RunRoster.build_rosters(pilots, TEAM_COUNT)
+
+	# 캡 · 합계는 화면이 보낸 값을 믿지 않고 여기서 다시 낸다(샐러리는 Lv1 기준
+	# `pd.salary` + 레벨 가산이라 레벨을 얹은 뒤에도 같은 식이 맞다).
+	season_state["run_setup"] = {
+		"scenario": scenario_id,
+		"team_id": team_id,
+		"pilot_ids": ordered_ids,
+		"pilot_levels": applied_levels,
+		"salary_cap": RunRules.salary_cap(scenario_id),
+		"salary_total": RunRules.lineup_salary(picked, applied_levels),
+	}
+	return ""
+
+
+## 에디터 직접 실행용 기본 편성 — 샐러리캡이 가장 높은 시나리오, `team_id` 팀,
+## 역할마다 스타터(`players.starter = 1`) 중 id 가 가장 낮은 선수, 전원 Lv1.
+## 스타터가 없는 역할은 그 역할의 네임드 중 id 가 가장 낮은 선수로 채운다.
+func default_run_setup(team_id: int = 0) -> Dictionary:
+	var scenario_id: int = 0
+	var best_cap: int = -1
+	for s in RunRules.scenarios():
+		var cap: int = int((s as Dictionary).get("salary_cap", 0))
+		if cap > best_cap:
+			best_cap = cap
+			scenario_id = int((s as Dictionary)["id"])
+
+	var starters: Dictionary = {}
+	var db := SQLite.new()
+	db.path = db_path()
+	db.verbosity_level = SQLite.QUIET
+	if db.open_db():
+		db.query("SELECT id FROM players WHERE starter = 1")
+		for row in db.query_result:
+			starters[int(row["id"])] = true
+		db.close_db()
+
+	var data := load_match_data()
+	# role → 정렬 키(스타터가 아니면 큰 수를 더해 뒤로 민다). 작을수록 앞.
+	var non_starter_rank: int = 1 << 30
+	var best: Dictionary = {}
+	for raw in (data.get("players", []) as Array):
+		var pd := raw as PlayerData
+		if pd.is_mob:
+			continue
+		var key: int = pd.id + (0 if starters.has(pd.id) else non_starter_rank)
+		if not best.has(pd.role) or key < int(best[pd.role]):
+			best[pd.role] = key
+	var pilot_ids: Array = []
+	var levels: Dictionary = {}
+	for r in GameEnums.Role.size():
+		if best.has(r):
+			var pid: int = int(best[r]) % non_starter_rank
+			pilot_ids.append(pid)
+			levels[str(pid)] = 1
+	return {
+		"scenario": scenario_id,
+		"team_id": team_id,
+		"pilot_ids": pilot_ids,
+		"pilot_levels": levels,
+		"salary_cap": RunRules.salary_cap(scenario_id),
+		"salary_total": 0,   # start_run 이 다시 낸다
+	}
+
+
+# `validate_lineup` 의 `owned_max_levels`. 테스트 런은 네임드 전원 최대 레벨,
+# 아니면 프로필 컬렉션.
+func _owned_levels_for_run(pool: Array) -> Dictionary:
+	if not use_test_run:
+		var pm: Node = get_node_or_null("/root/ProfileManager")
+		if pm != null:
+			return pm.owned_max_levels()
+	var out: Dictionary = {}
+	var top: int = RunRules.max_level()
+	for raw in pool:
+		var pd := raw as PlayerData
+		if not pd.is_mob:
+			out[str(pd.id)] = top
+	return out
+
+
+# 0 이 아닌 새 런 시드. 0 은 "런 시드 없음"(옛 세이브 · 시작 전)으로 읽힌다.
+func _fresh_run_seed() -> int:
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var s: int = 0
+	while s == 0:
+		s = int(rng.randi())
+	return s
+
+
+## 에디터에서 `Season.tscn` 을 바로 실행했을 때(`season_state.active == false`)
+## SeasonHub 가 부르는 기본 경로. 직접 실행도 정식 런과 **같은 길**을 타도록
+## `start_run(default_run_setup(player_team_id))` 와 같다.
+func init_season(player_team_id: int = 0) -> String:
+	return start_run(default_run_setup(player_team_id))
+
+
+# Season skeleton shared by every run start: resets season_state, stores the
+# 40-pilot pool (Lv1 copies straight from game.db) with its CSV team ids, team
+# meta, INTL pool, CSV-based rosters, empty standings and an empty training
+# board, and marks the state active. `start_run` then re-distributes rosters.
+# Returns "" on success or an error string. Never calls start_run / init_season.
+func _init_season_core(player_team_id: int, pilots: Array) -> String:
+	reset_season_state()
 	if pilots.size() != TEAM_COUNT * 5:
 		return "Expected %d pilots, got %d — rebuild game.db" % [TEAM_COUNT * 5, pilots.size()]
 
@@ -193,13 +337,7 @@ func init_season(player_team_id: int = 0) -> String:
 	season_state["intl_team_meta"] = intl["teams"]
 	season_state["intl_pilots"]    = intl["pilots"]
 
-	# Build team_rosters
-	var rosters: Dictionary = {}
-	for t in TEAM_COUNT:
-		rosters[t] = []
-	for p in pilots:
-		rosters[p.team_id].append(p.id)
-	season_state["team_rosters"] = rosters
+	season_state["team_rosters"] = RunRoster.build_rosters(pilots, TEAM_COUNT)
 
 	# Empty league standings
 	var standings: Dictionary = {}

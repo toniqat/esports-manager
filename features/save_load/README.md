@@ -64,7 +64,8 @@ The lobby reads `SaveSystem.has_run()` / `read_run_meta()` and routes to
     "trophies": 0,
     "rank": 3, "wins": 5, "losses": 2,
     "saved_at": "2026-05-05 23:14",
-    "match_in_progress": false
+    "match_in_progress": false,
+    "scenario": 1, "scenario_name": "…"
   },
   "season_state": { ...full GameManager.season_state, JSON-encoded... }
 }
@@ -76,6 +77,8 @@ season_state (and without instantiating LeagueManager).
 `match_in_progress` is true when the run was saved between BAN_PICK start
 and BattleSim launch — the lobby shows a "경기 진행 중" (Match in progress) chip and
 routes "이어하기" (Continue) to MatchFlow.tscn instead of Season.tscn.
+`scenario` / `scenario_name` come from `season_state.run_setup` (-1 / "" for a run
+without one, e.g. an old save) — the lobby may show them; it doesn't have to.
 
 ## Serialization notes
 `season_state` is a Dictionary of mostly-primitive values plus a few
@@ -89,7 +92,20 @@ Resource-typed entries:
   the PlayerData rows themselves.
 - `team_rosters`, `league_standings`, `phase_results` are all
   `Dictionary[int, X]`. JSON.stringify converts int keys to strings;
-  `_int_keyed_dict_in` rebuilds the int keys on load.
+  `_int_keyed_dict_in` rebuilds the int keys on load. `team_rosters` goes through
+  `_rosters_in`, which also casts the pilot ids back to int — a float id is not
+  found by `roster.has(pilot_id)`.
+- **Run keys (M1, written by `GameManager.start_run`)**:
+  - `run_seed` — int, never 0 for a started run (0 = old save / no run). The AI
+    roster distribution (`RunRoster`) is reproducible from it.
+  - `run_setup` — `{scenario, team_id, pilot_ids: Array[int] (role order),
+    pilot_levels: {"<pilot_id>": int}, salary_cap, salary_total}` (plan §10.2).
+    `_run_setup_in` casts the ints back after JSON (ids, level values, scalars);
+    `pilot_levels` keys stay strings. `{}` (old save) stays `{}`.
+  - Each pilot row also carries `salary` (Lv1 base), `rarity` and `level`; the
+    six stats are saved **with the level already applied**, so load does not
+    re-apply it.
+  - `run_stats` (string keys only) and `run_over` round-trip as-is.
 - `training_board` is an `Array` of `{tile: String, x: int, y: int}` (weekly training board).
   JSON returns every number as a float, so `_board_in` casts `x`/`y` back to
   int on load — otherwise it becomes `{x: 0.0}`, every later spot that wraps it in

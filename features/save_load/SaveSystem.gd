@@ -16,7 +16,7 @@ extends RefCounted
 # Old 3-slot files (user://saves/slot*.save) are ignored — no migration.
 #
 # Auto-save trigger points (all wired outside this file):
-#   1. SeasonHub: DRAFT → HUB transition (post-run-start).
+#   1. SeasonHub: first HUB entry after GameManager.start_run (post-run-start).
 #   2. MatchFlow: right before BAN_PICK starts (pre-match).
 #   3. MatchFlow: right after ban/pick + mech assignment, before BattleSim
 #      launch (post-ban-pick). season_state.match_resume captures the locked-in
@@ -45,7 +45,8 @@ static func has_run() -> bool:
 
 
 # Returns the run's meta block ({phase, year, month, day, weekday, team_name,
-# trophies, rank, wins, losses, saved_at, match_in_progress}) or {} when there
+# trophies, rank, wins, losses, saved_at, match_in_progress, scenario,
+# scenario_name}) or {} when there
 # is no run / the file is corrupted.
 static func read_run_meta() -> Dictionary:
 	var payload: Dictionary = _read_payload()
@@ -185,7 +186,7 @@ static func _deserialize_season_state(s: Dictionary) -> Dictionary:
 		"match_schedule":    s.get("match_schedule", []),
 		"all_pilots":        _array_to_pilots(s.get("all_pilots", [])),
 		"intl_pilots":       _array_to_pilots(s.get("intl_pilots", [])),
-		"team_rosters":      _int_keyed_dict_in(s.get("team_rosters", {})),
+		"team_rosters":      _rosters_in(s.get("team_rosters", {})),
 		"league_standings":  _int_keyed_dict_in(s.get("league_standings", {})),
 		"training_board":    _board_in(s.get("training_board", [])),
 		# 주 진행 상태 셋. 둘 다 **정수 키** dict 이라 되돌리는 손질이
@@ -199,10 +200,45 @@ static func _deserialize_season_state(s: Dictionary) -> Dictionary:
 		"current_tournament": s.get("current_tournament", null),
 		"match_resume":      s.get("match_resume", null),
 		"run_seed":          int(s.get("run_seed", 0)),
-		"run_setup":         s.get("run_setup", {}),
+		"run_setup":         _run_setup_in(s.get("run_setup", {})),
 		"run_stats":         s.get("run_stats", {}),
 		"run_over":          bool(s.get("run_over", false)),
 	}
+
+
+## 런 설정 스냅샷(`GameManager.start_run`, 계획서 §10.2)을 정수로 되돌린다.
+## JSON 을 지나면 `pilot_ids` 가 실수 배열이 되는데, 그대로 두면
+## `pilot_ids.has(pd.id)` 같은 비교가 조용히 false 가 된다. `pilot_levels` 는
+## 원래 문자열 키라 키는 그대로, 값만 정수로 돌린다. 옛 세이브(빈 딕셔너리)는 빈 채로.
+static func _run_setup_in(d: Dictionary) -> Dictionary:
+	if d.is_empty():
+		return {}
+	var out: Dictionary = d.duplicate(true)
+	for key in ["scenario", "team_id", "salary_cap", "salary_total"]:
+		if out.has(key):
+			out[key] = int(out[key])
+	var ids: Array = []
+	for raw in (d.get("pilot_ids", []) as Array):
+		ids.append(int(raw))
+	out["pilot_ids"] = ids
+	var levels: Dictionary = {}
+	var raw_levels: Dictionary = d.get("pilot_levels", {})
+	for k in raw_levels.keys():
+		levels[str(k)] = int(raw_levels[k])
+	out["pilot_levels"] = levels
+	return out
+
+
+## team_id(int) → Array[int]. 키도 값도 JSON 을 지나며 문자열 / 실수가 된다 —
+## 값이 실수로 남으면 `roster.has(pilot_id)` 가 정수 id 를 못 찾는다.
+static func _rosters_in(d: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	for k in d.keys():
+		var ids: Array = []
+		for raw in (d[k] as Array):
+			ids.append(int(raw))
+		out[int(k)] = ids
+	return out
 
 
 ## 훈련판 배치를 정수 좌표로 되돌린다. JSON 은 수를 전부 실수로 되돌려 주므로
@@ -304,6 +340,12 @@ static func _build_meta(gm: Node) -> Dictionary:
 	# Mid-match flag: true when the run was saved between BAN_PICK start and
 	# BattleSim launch. The lobby shows an "경기 진행 중" indicator for it.
 	var match_in_progress: bool = (s.get("match_resume", null) != null)
+	# 런 시나리오(§10.2 run_setup). 옛 세이브 / 런 설정이 없으면 -1 · 빈 문자열.
+	var run_setup: Dictionary = s.get("run_setup", {})
+	var scenario_id: int = int(run_setup.get("scenario", -1))
+	var scenario_name: String = ""
+	if not run_setup.is_empty():
+		scenario_name = String(RunRules.scenario(scenario_id).get("name", ""))
 	return {
 		"phase":     int(s.get("current_phase", 0)),
 		"year":      int(s.get("year", 1)),
@@ -317,6 +359,8 @@ static func _build_meta(gm: Node) -> Dictionary:
 		"losses":    int(rank_data.get("losses", 0)),
 		"saved_at":  saved_at,
 		"match_in_progress": match_in_progress,
+		"scenario":  scenario_id if not run_setup.is_empty() else -1,
+		"scenario_name": scenario_name,
 	}
 
 

@@ -87,6 +87,13 @@ API:
 When `match_ctx.active == false`, BattleSim falls back to `ROLE_STATS` defaults
 (loaded from `pilots.csv`).
 
+#### Run start — `start_run(run_setup) -> String`, `init_season()`, `default_run_setup()`
+`start_run` is the only run entry (validate → season skeleton → `run_seed` → AI
+rosters via `RunRoster` → level my 5 → `team_rosters` → `season_state.run_setup`).
+`init_season(team_id := 0)` = `start_run(default_run_setup(team_id))` (editor
+direct-run default). Test runs (`use_test_run`) skip the profile ownership check.
+Full contract → `features/season/README.md` "Entry point".
+
 #### Run save target — `use_test_run`
 `var use_test_run: bool = true`. `SaveSystem.run_path()` reads it: `true` →
 `user://run_test.save` (hidden test run, used when Season / MatchFlow is run directly
@@ -108,6 +115,14 @@ access via `get_node("/root/ProfileManager").profile`. Run state is **not** here
   a top-level value of the wrong type is dropped. JSON floats are cast back to int for
   `version`, `active_preset`, manager ints, alloc, currency and `pass.exp`.
 - M0 only creates / loads it; later milestones write to it (M1 collection, M2 run results …).
+- **Collection (M1)** — `profile.collection`: `"<pilot_id>" → {owned, max_level,
+  breakthrough, dupes}`.
+  - `ensure_starter_collection() -> bool` — on an empty collection grants every
+    `players.starter = 1` pilot at `max_level` 1 (called in `_ready`, saved if it granted).
+  - `owned_pilot_ids() -> Array` (int, ascending), `max_level_of(pilot_id) -> int`
+    (0 = not owned), `owned_max_levels() -> {"<pilot_id>": max_level}` — the shape
+    `RunRules.validate_lineup` and `GameManager.start_run` read.
+- `apply_run_result(result) -> String` — M2 run settlement (plan §10.3).
 
 ### Haptics.gd
 **iOS / Android haptic feedback** — the GDScript wrapper of a `godot-haptics` fork that is

@@ -43,6 +43,47 @@ SeasonHub branches on `gm.season_state["active"]`: false → run
 route directly to HUB (loaded campaign). See `features/save_load/` for the
 save-system contract.
 
+### Run start — `GameManager.start_run(run_setup) -> String`
+The **only** way a run begins (contract: `docs/outgame_dev_plan.md` §10.2). The run
+setup screen (`features/meta/run_setup/`) calls it and opens `Season.tscn` on `""`.
+Steps:
+1. **Validate** with `RunRules.validate_lineup` against the Lv1 pool from `game.db`
+   and `ProfileManager.owned_max_levels()`; also rejects an unknown `team_id` /
+   `scenario`. A rejection leaves `season_state` untouched. **Test runs**
+   (`use_test_run`, editor direct-run) skip the ownership check — any named
+   (non-mob) pilot up to `RunRules.max_level()`; cap and role rules still apply.
+2. `_init_season_core(team_id, pool)` — reset, pilot pool, team meta, INTL pool,
+   standings, empty training board, `active = true`.
+3. `run_seed` — fresh random, never 0 (0 = "no run seed", old saves).
+4. AI rosters — `RunRoster` (below); my 5 go to `team_id`.
+5. `RunRules.apply_level` on my 5 — on the run copy in `season_state.all_pilots`
+   only (stats already include the level; `salary` stays the Lv1 base).
+6. `team_rosters` rebuilt (each team's ids in role order).
+7. `season_state.run_setup` stored — `pilot_ids` sorted into `GameEnums.Role` order,
+   `pilot_levels` string-keyed, `salary_cap` / `salary_total` **recomputed** here
+   (the caller's values are ignored).
+
+**Editor direct-run default.** `init_season(team_id := 0)` is now just
+`start_run(default_run_setup(team_id))`, so SeasonHub's `active == false` path builds a
+real run through the same code. `default_run_setup()` = the scenario with the
+highest `salary_cap`, per role the starter (`players.starter = 1`) with the lowest id
+(falls back to the lowest-id named pilot of that role), all Lv1. `start_run` never
+calls `init_season` (no recursion) — both share `_init_season_core`.
+
+### AI roster distribution — `features/meta/run_setup/RunRoster.gd`
+`class_name RunRoster`, static and pure (no nodes, no global RNG).
+- `assign(pilots, player_team_id, player_pilot_ids, run_seed, team_count)` →
+  `{"error": "", "teams": {pilot_id: team_id}}`. For each role (in enum order) the
+  pilots that are **not** mine — including the chosen team's original pilots — are
+  sorted by id, shuffled (Fisher–Yates) with one `RandomNumberGenerator` seeded from
+  `run_seed`, and dealt one each to the AI teams in ascending id order. Every team
+  ends with exactly one pilot per role. Same seed → same result, regardless of input
+  order. Mismatched counts (pool ≠ teams × roles, not one pick per role, unknown
+  role) return `{"error": String}` instead of crashing.
+- `apply(pilots, teams)` writes `PlayerData.team_id`.
+- `build_rosters(pilots, team_count)` → `team_rosters` (`team_id → Array[int]`,
+  role order).
+
 ## Weekly flow
 The week flows **one day at a time across all seven days, Mon–Sun** (`season_state["week_day"]` 0..6).
 

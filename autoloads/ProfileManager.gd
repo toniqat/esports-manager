@@ -22,6 +22,8 @@ const PROFILE_VERSION := 1
 const _NESTED_FILL_KEYS: Array = ["manager", "currency", "traits", "pass"]
 # JSON 이 실수로 돌려주는 manager 의 정수 칸.
 const _MANAGER_INT_KEYS: Array = ["type", "level", "exp", "prestige"]
+# `runs`(런 기록)에 남기는 최대 줄 수 — 파일이 끝없이 자라지 않게 하는 보관 한도.
+const RUNS_HISTORY_MAX: int = 50
 
 var profile: Dictionary = {}
 
@@ -85,9 +87,54 @@ func owned_max_levels() -> Dictionary:
 ## 정산 결과를 프로필에 반영하고 저장한다. `result` 모양은
 ## `docs/outgame_dev_plan.md` §10.3. 성공이면 "".
 ##
-## (기반 커밋의 자리표시 — RunResult 작업이 구현한다.)
-func apply_run_result(_result: Dictionary) -> String:
-	return ""
+##
+## 쓰는 것: `currency.outgame` += 재화, `manager.exp` += 감독 EXP(레벨업은 M9),
+## `achievements[pid].mvp / .pom` += 이번 런 횟수(내 선수만, 없던 선수는 새 칸),
+## `runs` 맨 뒤에 한 줄(`RUNS_HISTORY_MAX` 를 넘으면 오래된 것부터 버린다).
+## 같은 결과(`result.id`)가 이미 `runs` 에 있으면 아무것도 하지 않는다 — 정산이
+## 두 번 불려도 재화가 두 번 붙지 않게.
+func apply_run_result(result: Dictionary) -> String:
+	var run_id: String = String(result.get("id", ""))
+	var runs: Array = profile["runs"]
+	if run_id != "":
+		for r in runs:
+			if typeof(r) == TYPE_DICTIONARY and String((r as Dictionary).get("id", "")) == run_id:
+				return ""
+
+	var cur: Dictionary = profile["currency"]
+	var gained: int = int((result.get("currency", {}) as Dictionary).get("outgame", 0))
+	cur["outgame"] = int(cur.get("outgame", 0)) + maxi(0, gained)
+	var mgr: Dictionary = profile["manager"]
+	mgr["exp"] = int(mgr.get("exp", 0)) + maxi(0, int(result.get("manager_exp", 0)))
+
+	var ach: Dictionary = profile["achievements"]
+	var run_ach: Dictionary = result.get("achievements", {})
+	for k in run_ach.keys():
+		var add: Dictionary = run_ach[k]
+		var add_mvp: int = int(add.get("mvp", 0))
+		var add_pom: int = int(add.get("pom", 0))
+		if add_mvp <= 0 and add_pom <= 0:
+			continue
+		var key: String = str(int(k))
+		var e: Dictionary = ach.get(key, {"pom": 0, "mvp": 0, "true_ending": false})
+		e["mvp"] = int(e.get("mvp", 0)) + add_mvp
+		e["pom"] = int(e.get("pom", 0)) + add_pom
+		if not e.has("true_ending"):
+			e["true_ending"] = false
+		ach[key] = e
+
+	runs.append({
+		"id": run_id,
+		"scenario": int(result.get("scenario", 0)),
+		"team": int(result.get("team_id", 0)),
+		"score": int(result.get("score", 0)),
+		"result": "clear" if String(result.get("outcome", "")) == "clear" else "fail",
+		"phase_reached": int(result.get("phase_reached", 0)),
+		"at": String(result.get("at", "")),
+	})
+	while runs.size() > RUNS_HISTORY_MAX:
+		runs.pop_front()
+	return save_profile()
 
 
 func default_profile() -> Dictionary:

@@ -122,7 +122,13 @@ access via `get_node("/root/ProfileManager").profile`. Run state is **not** here
   - `owned_pilot_ids() -> Array` (int, ascending), `max_level_of(pilot_id) -> int`
     (0 = not owned), `owned_max_levels() -> {"<pilot_id>": max_level}` — the shape
     `RunRules.validate_lineup` and `GameManager.start_run` read.
-- `apply_run_result(result) -> String` — M2 run settlement (plan §10.3).
+- `apply_run_result(result) -> String` (M2, called only by `RunResult.settle_current_run`
+  for non-test runs; shape `docs/outgame_dev_plan.md` §10.3): adds `currency.outgame` and
+  `manager.exp` (no level-ups until M9), adds this run's `mvp` / `pom` into
+  `achievements[pid]` for my pilots (new entries `{pom, mvp, true_ending: false}`; all-zero
+  pilots skipped), appends `{id, scenario, team, score, result: "clear"|"fail", phase_reached, at}`
+  to `runs` (abandon is recorded as `"fail"`; oldest dropped past `RUNS_HISTORY_MAX`), then saves.
+  Idempotent: a `result.id` already in `runs` is a no-op.
 
 ### Haptics.gd
 **iOS / Android haptic feedback** — the GDScript wrapper of a `godot-haptics` fork that is

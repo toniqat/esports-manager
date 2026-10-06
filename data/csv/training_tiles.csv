@@ -14,3 +14,5 @@ T12,합숙 스크림,3,CC/DD,engage_hit:52|engage_eva:52,
 T13,한계 돌파,3,H/H/H,field_hit:96,mult:day_prev_all:50
 T14,멘토링,3,K/W/W,all:38,mult:mate_all:125
 T15,전지 훈련,4,WWWWW,all:34,mult:day_next:120
+T16,메크 연구,1,M,mastery:4,
+T17,메크 집중 연구,2,M/M,mastery:5,

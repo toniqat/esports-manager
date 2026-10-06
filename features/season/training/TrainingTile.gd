@@ -28,6 +28,9 @@ extends RefCounted
 # `|` 로 이은 `스탯:값` 목록. `all:N` 은 여섯 스탯 전부 +N. **한 칸이 주는 값**
 # 이므로 n칸 타일은 n배가 들어온다. 단 검정(`K`) 칸은 언제나 0 이다 — 그 칸을
 # 차지한 선수는 그날 아무것도 얻지 않는 대신 타일이 주변에 배율을 뿌린다.
+# `mastery:N` (M3) is the mech-mastery EXP of each mastery (`M`) cell — an `M`
+# cell gives no stat EXP and is not touched by clauses or training multipliers
+# (MechMastery applies its own knowledge / facility multipliers).
 #
 # ── effect ───────────────────────────────────────────────────────────────────
 # `;` 로 이은 절 목록. 지금 있는 절은 둘이다.
@@ -50,6 +53,10 @@ const COLOR_STATS: Dictionary = {
 
 const COLOR_BLACK: String = "K"   # 경험치 0 — 증폭형 타일의 자기 칸
 const COLOR_GRAY:  String = "W"   # 무속성 — 여섯 스탯을 고루 준다
+## Mastery cell (M3). Gives **no stat EXP**; instead it yields `per_cell_mastery`
+## mech-mastery EXP that day settlement hands to `MechMastery.add_training_exp`
+## (the pilot's weekly research mech). Written in `exp` as `mastery:N`.
+const COLOR_MASTERY: String = "M"
 
 ## 화면에 쓰는 색. 검정 칸이 진짜 검정인 것은 "여긴 아무것도 안 준다"가
 ## 한눈에 읽혀야 하기 때문이다.
@@ -62,6 +69,7 @@ const COLOR_RGB: Dictionary = {
 	"P": Color(0.53, 0.87, 0.65),
 	"K": Color(0.34, 0.34, 0.38),
 	"W": Color(0.80, 0.80, 0.84),
+	"M": Color(0.30, 0.78, 0.74),
 }
 
 ## 등급 이름과 색. `grade` 는 0=D … 4=S.
@@ -74,11 +82,49 @@ const GRADE_COLORS: Array = [
 	Color(1.00, 0.79, 0.32),
 ]
 
-## **한 주에 몇 장까지 놓을 수 있는가.** 타일은 몇 번이든 다시 쓸 수 있어
-## (보유 수량이 없다) 이 상한 하나가 "가장 센 타일로 도배"를 막는 유일한
-## 장치다 — 등급이 오를수록 판에 들어갈 자리가 줄어든다. D 는 빈 칸을 메우는
-## 기본 코스라 제한이 없다(-1).
-const GRADE_PLACE_LIMIT: Array = [-1, 8, 4, 2, 1]
+## ── Staff stats → grade unlock / placement limit / EXP multiplier (M3) ────────
+## The fixed `GRADE_PLACE_LIMIT` table is gone: limits, unlocks and the EXP
+## multiplier are all derived from the **effective manager/staff stats**
+## (`StaffSystem.effective`) through the static lookups below. Numbers live in
+## const.csv only (`TACTICS_GRADE_*`, `TRAINING_STAT_*`).
+##
+## * Tactics → highest usable grade. D is always usable; C/B/A/S unlock at
+##   `TACTICS_GRADE_C/B/A/S`.
+## * Training → per-grade placement limit. The top-tier limits are
+##   `TRAINING_STAT_LIMIT_C/B/A/S`; the stat picks a tier (`TRAINING_STAT_TIER_2/3`
+##   thresholds) whose `TRAINING_STAT_LIMIT_PCT_n` scales them (round, min 1).
+##   D stays unlimited (-1) — it is the filler course for empty cells.
+## * Training → tile EXP multiplier `1 + (stat − PIVOT) × STEP`.
+##
+## Tiles can be reused any number of times (no owned quantity), so the limit is
+## still the one thing that stops "plaster the board with the strongest tile".
+static var TACTICS_GRADE: Array = [
+	0,
+	ConstTable.int_of("TACTICS_GRADE_C"),
+	ConstTable.int_of("TACTICS_GRADE_B"),
+	ConstTable.int_of("TACTICS_GRADE_A"),
+	ConstTable.int_of("TACTICS_GRADE_S"),
+]
+static var TOP_PLACE_LIMIT: Array = [
+	-1,
+	ConstTable.int_of("TRAINING_STAT_LIMIT_C"),
+	ConstTable.int_of("TRAINING_STAT_LIMIT_B"),
+	ConstTable.int_of("TRAINING_STAT_LIMIT_A"),
+	ConstTable.int_of("TRAINING_STAT_LIMIT_S"),
+]
+## Tier n (1-based) starts at `LIMIT_TIER_MIN[n-1]` effective training.
+static var LIMIT_TIER_MIN: Array = [
+	0,
+	ConstTable.int_of("TRAINING_STAT_TIER_2"),
+	ConstTable.int_of("TRAINING_STAT_TIER_3"),
+]
+static var LIMIT_TIER_PCT: Array = [
+	ConstTable.num("TRAINING_STAT_LIMIT_PCT_1"),
+	ConstTable.num("TRAINING_STAT_LIMIT_PCT_2"),
+	ConstTable.num("TRAINING_STAT_LIMIT_PCT_3"),
+]
+static var EXP_PIVOT: float = ConstTable.num("TRAINING_STAT_EXP_PIVOT")
+static var EXP_STEP: float = ConstTable.num("TRAINING_STAT_EXP_STEP")
 
 ## 효과 범위. 전부 **그 타일이 덮은 칸을 기준으로** 센다.
 ##   self          — 자기 칸(기본. 절에 안 적어도 자기 칸 EXP 는 언제나 들어간다)
@@ -121,6 +167,8 @@ var cells: Array = []                 # Array[Vector2i]
 var cell_colors: Array = []           # Array[String]
 ## 칸 하나가 주는 EXP. `{stat_key: int}` — 검정 칸에는 안 들어간다.
 var per_cell_exp: Dictionary = {}
+## Mastery EXP per `M` cell (`exp` clause `mastery:N`). Other colours ignore it.
+var per_cell_mastery: int = 0
 ## 효과 절. `{kind, scope, pct}` 또는 `{kind, scope, stat, amount}`.
 var clauses: Array = []
 
@@ -155,13 +203,16 @@ func _parse_shape(shape: String) -> void:
 
 func _parse_exp(raw: String) -> void:
 	per_cell_exp.clear()
+	per_cell_mastery = 0
 	for part in raw.split("|", false):
 		var kv: PackedStringArray = String(part).strip_edges().split(":", false)
 		if kv.size() != 2:
 			continue
 		var key: String = String(kv[0]).strip_edges()
 		var amount: int = int(String(kv[1]))
-		if key == "all":
+		if key == "mastery":
+			per_cell_mastery = amount
+		elif key == "all":
 			for stat_key in PlayerData.STAT_KEYS:
 				per_cell_exp[String(stat_key)] = amount
 		elif key in PlayerData.STAT_KEYS:
@@ -202,11 +253,57 @@ func extent() -> Vector2i:
 	return Vector2i(w, h)
 
 
-## 이 타일이 한 주에 몇 장까지 놓이는가. -1 = 무제한.
-func place_limit() -> int:
-	if grade < 0 or grade >= GRADE_PLACE_LIMIT.size():
+## How many tiles of this grade fit on the board for the given effective
+## training stat. -1 = unlimited.
+func place_limit(training_stat: int) -> int:
+	return place_limit_for(grade, training_stat)
+
+
+## Can this tile be used at all with the given effective tactics stat?
+func is_unlocked(tactics_stat: int) -> bool:
+	return grade_unlocked(grade, tactics_stat)
+
+
+## Per-grade placement limit for an effective training stat. -1 = unlimited (D).
+static func place_limit_for(grade_idx: int, training_stat: int) -> int:
+	if grade_idx <= 0 or grade_idx >= TOP_PLACE_LIMIT.size():
 		return -1
-	return int(GRADE_PLACE_LIMIT[grade])
+	var pct: float = float(LIMIT_TIER_PCT[limit_tier(training_stat) - 1])
+	return maxi(1, int(round(float(TOP_PLACE_LIMIT[grade_idx]) * pct / 100.0)))
+
+
+## Placement-limit tier 1..3 for an effective training stat.
+static func limit_tier(training_stat: int) -> int:
+	var tier: int = 1
+	for i in LIMIT_TIER_MIN.size():
+		if training_stat >= int(LIMIT_TIER_MIN[i]):
+			tier = i + 1
+	return tier
+
+
+## Effective tactics needed to use this grade (D = 0).
+static func required_tactics(grade_idx: int) -> int:
+	if grade_idx <= 0 or grade_idx >= TACTICS_GRADE.size():
+		return 0
+	return int(TACTICS_GRADE[grade_idx])
+
+
+static func grade_unlocked(grade_idx: int, tactics_stat: int) -> bool:
+	return tactics_stat >= required_tactics(grade_idx)
+
+
+## Highest grade index usable with this tactics stat (0 = D only).
+static func max_unlocked_grade(tactics_stat: int) -> int:
+	var g: int = 0
+	for i in range(1, TACTICS_GRADE.size()):
+		if grade_unlocked(i, tactics_stat):
+			g = i
+	return g
+
+
+## Tile EXP multiplier from the effective training stat (never below 0).
+static func training_exp_mult(training_stat: int) -> float:
+	return maxf(0.0, 1.0 + (float(training_stat) - EXP_PIVOT) * EXP_STEP)
 
 
 func grade_name() -> String:
@@ -225,9 +322,23 @@ static func color_of(symbol: String) -> Color:
 func exp_of_cell(cell_idx: int) -> Dictionary:
 	if cell_idx < 0 or cell_idx >= cell_colors.size():
 		return {}
-	if String(cell_colors[cell_idx]) == COLOR_BLACK:
+	var sym: String = String(cell_colors[cell_idx])
+	if sym == COLOR_BLACK or sym == COLOR_MASTERY:
 		return {}
 	return per_cell_exp
+
+
+## Mastery EXP one cell yields — only `M` cells, otherwise 0.
+func mastery_of_cell(cell_idx: int) -> int:
+	if cell_idx < 0 or cell_idx >= cell_colors.size():
+		return 0
+	if String(cell_colors[cell_idx]) != COLOR_MASTERY:
+		return 0
+	return per_cell_mastery
+
+
+func has_mastery() -> bool:
+	return per_cell_mastery > 0 and cell_colors.has(COLOR_MASTERY)
 
 
 ## 정보 팝오버에 적는 한 줄 요약 — "전 스탯 +N" / "전장 회피 +N".
@@ -235,6 +346,17 @@ func exp_of_cell(cell_idx: int) -> Dictionary:
 ## 여는 팝오버라 폭이 348px 이고, 여기서 답해야 하는 질문이 "이 코스가 무엇을
 ## 올리는가" 하나뿐이라 `전회` 를 다시 풀어 읽을 이유가 없다.
 func exp_summary() -> String:
+	var stat_part: String = _stat_exp_summary()
+	if not has_mastery():
+		return stat_part
+	# Mastery cells name what they feed — the pilot's weekly research mech.
+	var mastery_part: String = "메크 숙련도 +%d (연구 메크)" % per_cell_mastery
+	if per_cell_exp.is_empty():
+		return mastery_part
+	return stat_part + "\n" + mastery_part
+
+
+func _stat_exp_summary() -> String:
 	if per_cell_exp.is_empty():
 		return "경험치 없음"
 	if per_cell_exp.size() == PlayerData.STAT_KEYS.size():

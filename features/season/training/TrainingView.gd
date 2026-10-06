@@ -173,6 +173,16 @@ var _hover_ok: bool = false
 
 var _built: bool = false
 
+# Staff (M3): who runs training / tactics, the EXP multiplier line, and the
+# "코치 추천" (auto-arrange) slot of the bottom bar — hidden when the manager
+# owns training (`StaffSystem.is_delegated`).
+const STAFF_Y: float = TITLE_Y + TITLE_H + 2.0
+const STAFF_H: float = 30.0
+var _staff_lbl: Label = null
+var _effect_lbl: Label = null
+var _bar_buttons: Array = []
+var _bar_specs: Array = []
+
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -222,7 +232,7 @@ static func _inv_y() -> float:
 ## 없이 비고, 아래에 붙이면 제목과 판 사이가 벌어진다.
 static func _block_y() -> float:
 	var block_h: float = THUMB_H + THUMB_GAP + GRID_H
-	var top: float = TITLE_Y + TITLE_H + 12.0
+	var top: float = STAFF_Y + STAFF_H + 12.0
 	var bottom: float = _inv_y() - INV_LABEL_GAP - 16.0
 	return top + maxf(0.0, bottom - top - block_h) * 0.5
 
@@ -244,6 +254,9 @@ func _build() -> void:
 
 	UiHelpers.mk_label(self, "일상 훈련 편성", 34, OutgameTheme.TEXT,
 			Vector2(0, TITLE_Y), Vector2(ScreenMetrics.vp_w(), TITLE_H),
+			HORIZONTAL_ALIGNMENT_CENTER)
+	_staff_lbl = UiHelpers.mk_label(self, "", 22, OutgameTheme.TEXT_SUB,
+			Vector2(MARGIN, STAFF_Y), Vector2(1080.0 - MARGIN * 2.0, STAFF_H),
 			HORIZONTAL_ALIGNMENT_CENTER)
 
 	_build_thumbs()
@@ -316,6 +329,10 @@ func _build_inventory() -> void:
 
 	UiHelpers.mk_label(self, "훈련 코스", 22, OutgameTheme.TEXT_SUB,
 			Vector2(MARGIN, top - INV_LABEL_GAP), Vector2(400, 28))
+	# Right side of the same row: what the staff stats do to the courses.
+	_effect_lbl = UiHelpers.mk_label(self, "", 20, OutgameTheme.ACCENT_TEXT,
+			Vector2(1080.0 - MARGIN - 600.0, top - INV_LABEL_GAP), Vector2(600, 28),
+			HORIZONTAL_ALIGNMENT_RIGHT)
 
 	_inv_scroll = ScrollContainer.new()
 	_inv_scroll.position = Vector2(MARGIN, top)
@@ -343,13 +360,20 @@ func _build_inventory() -> void:
 ## 3분의 2, 되돌리는 "판 비우기"가 왼쪽 3분의 1이다(`OutgameTheme.add_bottom_bar`).
 ## 코스 목록의 높이가 이 바의 윗변에서 역산되므로(`_inv_y`) 바를 손보면 목록이
 ## 저절로 따라 올라간다.
+##
+## M3: a third slot "코치 추천" sits between them (ghost, weight 1) and is shown
+## only while training is delegated to staff — when hidden, the bar is laid out
+## again so the other two keep the 1:2 split (`OutgameTheme.layout_bottom_bar`).
 func _build_confirm_button() -> void:
-	var bar: Array = OutgameTheme.add_bottom_bar(self, [
+	_bar_specs = [
 		{"text": "판 비우기", "style": "ghost",   "font": 28, "weight": 1.0},
+		{"text": "코치 추천", "style": "ghost",   "font": 28, "weight": 1.0},
 		{"text": "훈련 확정", "style": "primary", "font": 34, "weight": 2.0},
-	])
-	(bar[0] as Button).pressed.connect(_on_clear_pressed)
-	(bar[1] as Button).pressed.connect(_on_confirm_pressed)
+	]
+	_bar_buttons = OutgameTheme.add_bottom_bar(self, _bar_specs)
+	(_bar_buttons[0] as Button).pressed.connect(_on_clear_pressed)
+	(_bar_buttons[1] as Button).pressed.connect(_on_auto_pressed)
+	(_bar_buttons[2] as Button).pressed.connect(_on_confirm_pressed)
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────
@@ -358,8 +382,43 @@ func refresh() -> void:
 		return
 	_rebuild_inventory()
 	_refresh_thumbs()
+	_refresh_staff()
 	if _grid != null:
 		_grid.queue_redraw()
+
+
+## Staff line under the title + effect line above the course list + whether the
+## "코치 추천" slot is shown. Reads only `TrainingBoard` / `StaffSystem`.
+func _refresh_staff() -> void:
+	if _board == null or _hub == null:
+		return
+	var state: Dictionary = _board.season_state()
+	if _staff_lbl != null:
+		_staff_lbl.text = "%s · %s" % [
+			_owner_text(state, "training"), _owner_text(state, "tactics")]
+	if _effect_lbl != null:
+		var top: int = TrainingTile.max_unlocked_grade(_board.tactics_stat())
+		_effect_lbl.text = "훈련 효과 ×%.2f · 사용 가능 %s 등급까지" % [
+			TrainingTile.training_exp_mult(_board.training_stat()),
+			String(TrainingTile.GRADE_NAMES[top])]
+	if _bar_buttons.size() == 3:
+		var auto_btn: Button = _bar_buttons[1]
+		var show_auto: bool = StaffSystem.is_delegated(state, "training")
+		if auto_btn.visible != show_auto:
+			auto_btn.visible = show_auto
+			OutgameTheme.layout_bottom_bar(_bar_buttons, _bar_specs)
+
+
+## "훈련: 강민호 코치 17" / "전술: 감독 6" — who covers this stat and its value.
+static func _owner_text(state: Dictionary, stat: String) -> String:
+	var who: String = StaffSystem.owner_name(state, stat)
+	match StaffSystem.owner(state, stat):
+		StaffSystem.OWNER_STAFF:
+			who += " 코치"
+		StaffSystem.OWNER_ASSISTANT:
+			who += " 어시스턴트"
+	return "%s: %s %d" % [String(StaffSystem.STAT_LABELS.get(stat, stat)), who,
+			StaffSystem.effective(state, stat)]
 
 
 func _refresh_thumbs() -> void:
@@ -811,18 +870,27 @@ func _rebuild_inventory() -> void:
 func _make_inventory_card(t: TrainingTile) -> Control:
 	var w: float = INV_CARD_W
 	var placed: int = _board.placed_count_of_grade(t.grade)
-	var limit: int = t.place_limit()
-	var locked: bool = limit >= 0 and placed >= limit
+	var limit: int = _board.limit_of(t)
+	var grade_locked: bool = not _board.is_unlocked(t)
+	var locked: bool = _card_locked(t)
 
 	var card := Panel.new()
 	card.custom_minimum_size = Vector2(w, INV_CARD_H)
 	card.add_theme_stylebox_override("panel", _card_style(t, locked, false))
 	# **PASS** — 눌림이 스크롤까지 올라가야 `DragScroll` 이 방향을 판정한다.
 	card.mouse_filter = Control.MOUSE_FILTER_PASS
-	card.modulate = Color(1, 1, 1, 0.42) if locked else Color(1, 1, 1, 1)
 	# 탭 = 고르기(정보 팝오버), 세로 드래그 = 집기. **잠긴 카드도 고를 수 있다** —
 	# 못 놓는 것과 무엇인지 못 보는 것은 다른 일이다.
 	card.gui_input.connect(_on_card_input.bind(t, card))
+
+	# Everything but the lock-reason chip lives in `body`, so a locked card fades
+	# its contents while the reason stays fully readable on top.
+	var body := Control.new()
+	body.position = Vector2.ZERO
+	body.size = Vector2(w, INV_CARD_H)
+	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	body.modulate = Color(1, 1, 1, 0.42) if locked else Color(1, 1, 1, 1)
+	card.add_child(body)
 
 	# 등급 띠 — 카드 윗변의 둥근 모서리를 그대로 이어받는다.
 	var g: Color = t.grade_color()
@@ -835,12 +903,12 @@ func _make_inventory_card(t: TrainingTile) -> Control:
 	bsty.corner_radius_top_left  = INV_CARD_RADIUS
 	bsty.corner_radius_top_right = INV_CARD_RADIUS
 	band.add_theme_stylebox_override("panel", bsty)
-	card.add_child(band)
+	body.add_child(band)
 	var grade_lbl := UiHelpers.mk_label(band, t.grade_name(), 22, g,
 			Vector2(MINI_PAD + 2.0, 0), Vector2(40, INV_BAND_H))
 	grade_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	grade_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var cap: String = "∞" if limit < 0 else "%d/%d" % [placed, limit]
+	var cap: String = "" if grade_locked else _cap_text(placed, limit)
 	var cap_lbl := UiHelpers.mk_label(band, cap, 17, OutgameTheme.TEXT_SUB,
 			Vector2(w - 84.0, 0), Vector2(72, INV_BAND_H),
 			HORIZONTAL_ALIGNMENT_RIGHT)
@@ -854,10 +922,10 @@ func _make_inventory_card(t: TrainingTile) -> Control:
 	well.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	well.add_theme_stylebox_override("panel",
 			OutgameTheme.flat_style(OutgameTheme.SURFACE_SUNK, 8))
-	card.add_child(well)
-	_add_shape_mini(card, t, w)
+	body.add_child(well)
+	_add_shape_mini(body, t, w)
 
-	var name_lbl := UiHelpers.mk_label(card, t.tile_name, 19, OutgameTheme.TEXT,
+	var name_lbl := UiHelpers.mk_label(body, t.tile_name, 19, OutgameTheme.TEXT,
 			Vector2(8, INV_NAME_Y),
 			Vector2(w - 16.0, INV_CARD_H - INV_NAME_Y - 8.0),
 			HORIZONTAL_ALIGNMENT_CENTER)
@@ -865,7 +933,32 @@ func _make_inventory_card(t: TrainingTile) -> Control:
 	name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
+	# Grade not unlocked by tactics: say why, on the shape well.
+	if grade_locked:
+		var chip_h: float = 36.0
+		OutgameTheme.add_chip(card, _lock_reason(t),
+				Vector2(MINI_PAD + 6.0, MINI_Y + (MINI_H - chip_h) * 0.5),
+				Vector2(w - (MINI_PAD + 6.0) * 2.0, chip_h),
+				OutgameTheme.TEXT, OutgameTheme.TEXT_ON_FILL, 18)
+
 	return card
+
+
+## Locked = grade not unlocked by tactics, or its placement limit is reached.
+## Locked cards can still be selected (popover), never picked up.
+func _card_locked(t: TrainingTile) -> bool:
+	if _board == null:
+		return true
+	return not _board.can_take_more(t)
+
+
+## "전술 11 필요" — the tactics a locked grade needs.
+static func _lock_reason(t: TrainingTile) -> String:
+	return "전술 %d 필요" % TrainingTile.required_tactics(t.grade)
+
+
+static func _cap_text(placed: int, limit: int) -> String:
+	return "∞" if limit < 0 else "%d/%d" % [placed, limit]
 
 
 static func _card_style(t: TrainingTile, locked: bool, selected: bool) -> StyleBoxFlat:
@@ -920,8 +1013,7 @@ func _on_inv_cross_drag(_press_pos: Vector2) -> void:
 	_inv_press_tile = null
 	if t == null or _board == null or _drag_tile != null:
 		return
-	var limit: int = t.place_limit()
-	if limit >= 0 and _board.placed_count_of_grade(t.grade) >= limit:
+	if _card_locked(t):
 		return   # 잠긴 카드 — 고를 수는 있어도 집을 수는 없다
 	_begin_drag(t, {})
 	force_drag({"tile": t.id, "from": "inventory"}, _make_drag_preview(t))
@@ -952,9 +1044,8 @@ func _select_card(t: TrainingTile, card: Control) -> void:
 	_sel_tile = t
 	_sel_card = card
 	var placed: int = _board.placed_count_of_grade(t.grade)
-	var limit: int = t.place_limit()
-	card.add_theme_stylebox_override("panel",
-			_card_style(t, limit >= 0 and placed >= limit, true))
+	var limit: int = _board.limit_of(t)
+	card.add_theme_stylebox_override("panel", _card_style(t, _card_locked(t), true))
 	_popover = _build_popover(t, placed, limit)
 	add_child(_popover)
 	_place_popover()
@@ -962,10 +1053,8 @@ func _select_card(t: TrainingTile, card: Control) -> void:
 
 func _close_popover() -> void:
 	if _sel_tile != null and _sel_card != null and is_instance_valid(_sel_card):
-		var placed: int = 0 if _board == null else _board.placed_count_of_grade(_sel_tile.grade)
-		var limit: int = _sel_tile.place_limit()
 		_sel_card.add_theme_stylebox_override("panel",
-				_card_style(_sel_tile, limit >= 0 and placed >= limit, false))
+				_card_style(_sel_tile, _card_locked(_sel_tile), false))
 	if _popover != null and is_instance_valid(_popover):
 		_popover.queue_free()
 	_popover = null
@@ -1004,9 +1093,15 @@ func _build_popover(t: TrainingTile, placed: int, limit: int) -> Control:
 	var exp_h: float = _text_height(t.exp_summary(), text_w, 17)
 	var eff: String = t.effect_summary()
 	var eff_h: float = _text_height(eff, text_w, 16)
+	# Locked grade (tactics): one extra line saying what it needs vs. now.
+	var lock: String = ""
+	if _board != null and not _board.is_unlocked(t):
+		lock = "%s (지금 전술 %d)" % [_lock_reason(t), _board.tactics_stat()]
+	var lock_h: float = _text_height(lock, text_w, 16)
 
 	var pop := Panel.new()
-	var body_h: float = exp_h + (0.0 if eff.is_empty() else 10.0 + eff_h)
+	var body_h: float = exp_h + (0.0 if eff.is_empty() else 10.0 + eff_h) \
+			+ (0.0 if lock.is_empty() else 10.0 + lock_h)
 	pop.size = Vector2(POP_W, POP_PAD * 2.0 + 30.0 + 10.0 + body_h)
 	var sty := StyleBoxFlat.new()
 	sty.bg_color = OutgameTheme.SURFACE
@@ -1027,7 +1122,7 @@ func _build_popover(t: TrainingTile, placed: int, limit: int) -> Control:
 	var y: float = POP_PAD
 	UiHelpers.mk_label(pop, "[%s] %s" % [t.grade_name(), t.tile_name], 24,
 			OutgameTheme.TEXT, Vector2(POP_PAD, y), Vector2(text_w - 84.0, 30))
-	var cap: String = "∞" if limit < 0 else "%d/%d" % [placed, limit]
+	var cap: String = "" if not lock.is_empty() else _cap_text(placed, limit)
 	UiHelpers.mk_label(pop, cap, 18, t.grade_color(),
 			Vector2(POP_W - POP_PAD - 80.0, y + 5.0), Vector2(80, 24),
 			HORIZONTAL_ALIGNMENT_RIGHT)
@@ -1042,6 +1137,12 @@ func _build_popover(t: TrainingTile, placed: int, limit: int) -> Control:
 		var eff_lbl := UiHelpers.mk_label(pop, eff, 16,
 				OutgameTheme.ACCENT_TEXT, Vector2(POP_PAD, y), Vector2(text_w, eff_h))
 		eff_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		y += eff_h + 10.0
+
+	if not lock.is_empty():
+		var lock_lbl := UiHelpers.mk_label(pop, lock, 16,
+				OutgameTheme.NEGATIVE, Vector2(POP_PAD, y), Vector2(text_w, lock_h))
+		lock_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 	for child in pop.get_children():
 		(child as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1081,6 +1182,15 @@ func _on_inv_scrolled(_v: float) -> void:
 func _on_clear_pressed() -> void:
 	if _board != null:
 		_board.clear_board()
+	refresh()
+
+
+## "코치 추천" — the delegated coach fills the board (`TrainingBoard.auto_arrange`);
+## the player can still edit it afterwards.
+func _on_auto_pressed() -> void:
+	if _board == null:
+		return
+	_board.auto_arrange()
 	refresh()
 
 

@@ -34,7 +34,7 @@ theme (`OutgameTheme`), bottom action bar. Replaces the old 3-slot TitleScreen
 `open(title, body, cancel_text, confirm_text, danger)`, `close()`, `is_open()`;
 signals `confirmed` / `cancelled`.
 - CanvasLayer 20; full-viewport flat Button as the dim (`DIM_COLOR`, style from
-  `season/draft/DraftDetailPanel.gd`) — blocks input behind and cancels on tap.
+  `meta/run_setup/DraftDetailPanel.gd`) — blocks input behind and cancels on tap.
 - White card 920 wide, centred between `ScreenMetrics.top_y()` and `bottom_y()` so the
   buttons stay above the gesture zone; card is `MOUSE_FILTER_STOP` so taps on it don't close it.
 - Buttons ghost cancel / primary confirm at 1:2; `danger=true` paints confirm `NEGATIVE` red.

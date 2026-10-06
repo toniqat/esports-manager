@@ -27,7 +27,7 @@ extends Control
 # 그날 경기가 배정돼 있지 않으면 그 요일은 그냥 넘어간다.
 #
 # Autosave triggers (5):
-#   1. Post-draft         — DRAFT → HUB on a fresh campaign.
+#   1. Post-run-start     — first HUB entry of a fresh run (`_is_run_start`).
 #   2. Pre-ban-pick       — MatchFlow.gd, after PREP confirmation.
 #   3. Post-gambit        — MatchFlow.gd, after jungle direction picked.
 #   4. Post-match         — returning from BattleSim, once the result is applied.
@@ -35,11 +35,12 @@ extends Control
 
 @onready var _gm: Node = get_node("/root/GameManager")
 @onready var _placeholder: Label = get_node_or_null("Placeholder")
-@onready var _draft: Control = get_node_or_null("TeamDraft")
 
-enum Screen { DRAFT, HUB, PRESS, TRAINING, WEEK, LEAGUE, PLAYOFF, INTL_BRACKET, GAME_OVER, ENDING }
+# 런 준비(시나리오 · 팀 · 5인 편성)는 시즌 밖(`features/meta/run_setup/`)으로
+# 나갔다 — 시즌은 언제나 HUB 부터 연다.
+enum Screen { HUB, PRESS, TRAINING, WEEK, LEAGUE, PLAYOFF, INTL_BRACKET, GAME_OVER, ENDING }
 
-var current_screen: int = Screen.DRAFT
+var current_screen: int = Screen.HUB
 var _hub_view: HubView = null
 var _press_view: PressConferenceView = null
 var _training_view: TrainingView = null
@@ -91,7 +92,9 @@ func _ready() -> void:
 	# REGULAR_INTL win/loss paths). Respect that — only fall back to
 	# STANDINGS if nothing else routed us.
 	if _consume_pending_match_result():
-		if current_screen == Screen.DRAFT:
+		# 결론 핸들러(`_enter_run_end`)는 `_run_end_screen` 을 동기로 세운다 —
+		# 아직 아무도 결론을 내지 않았을 때만 순위 / 브래킷 화면으로 간다.
+		if _run_end_screen < 0:
 			current_screen = _post_match_screen()
 		_gm.season_state["match_resume"] = null
 		var md: int = CalendarSystem.matchday_of(week_day())
@@ -110,20 +113,13 @@ func _ready() -> void:
 
 # Switch the active screen.
 func goto(screen: int) -> void:
-	# DRAFT → HUB is the brand-new-campaign save trigger. After this point the
-	# slot has at least one valid save to load on the title screen.
-	var was_draft: bool = current_screen == Screen.DRAFT
 	current_screen = screen
 	_route()
-	if was_draft and screen == Screen.HUB:
-		_autosave("DRAFT→HUB")
 
 
 func _route() -> void:
 	print("SeasonHub: route to %s" % Screen.keys()[current_screen])
 	match current_screen:
-		Screen.DRAFT:
-			_show_draft()
 		Screen.HUB:
 			_show_hub()
 		Screen.PRESS:
@@ -147,8 +143,6 @@ func _route() -> void:
 
 
 func _hide_all_screens() -> void:
-	if _draft:
-		_draft.visible = false
 	if _hub_view:
 		_hub_view.visible = false
 	if _press_view:
@@ -171,17 +165,11 @@ func _hide_all_screens() -> void:
 		_placeholder.visible = false
 
 
-func _show_draft() -> void:
-	if _draft and _draft.has_method("ensure_view"):
-		_draft.ensure_view()
-	_hide_all_screens()
-	if _draft:
-		_draft.visible = true
-
-
 func _show_hub() -> void:
 	_ensure_hub_view()
-	# First-time HUB entry (post-draft) seeds the PRESEASON schedule. Idempotent
+	# 런 시작 직후의 첫 HUB 인지는 일정을 깔기 **전에** 잰다(아래 참고).
+	var run_start: bool = _is_run_start()
+	# First-time HUB entry (post-run-start) seeds the PRESEASON schedule. Idempotent
 	# afterwards. Also bootstraps any pending tournament that should be active
 	# this week (covers the "load a save mid-INTL or mid-playoff" path).
 	var league: LeagueManager = get_node_or_null("LeagueManager") as LeagueManager
@@ -197,6 +185,26 @@ func _show_hub() -> void:
 	if _hub_view:
 		_hub_view.ensure_view()
 		_hub_view.visible = true
+	# 자동 저장 1번 — 런 시작 후. 런 준비(`RunSetupScreen` → `start_run`)든
+	# 에디터 직접 실행(`init_season`)이든 새 런의 첫 HUB 에서 한 번.
+	if run_start:
+		_autosave("run_start")
+
+
+## 새 런의 첫 HUB 인가 — **저장 키를 늘리지 않고 상태에서 읽는다.** PRESEASON
+## 일정은 첫 HUB 진입(`ensure_phase_scheduled`)이 깔고, 그 직후의 저장부터는
+## 언제나 일정이 들어 있다. 그래서 "PRESEASON 1주차, 주 시작 전, PRESEASON
+## 일정 없음" 은 런을 막 연 순간에만 참이다.
+func _is_run_start() -> bool:
+	var s: Dictionary = _gm.season_state
+	if int(s.get("current_phase", -1)) != GameEnums.SeasonPhase.PRESEASON:
+		return false
+	if int(s.get("phase_week", 0)) != 1 or int(s.get("week_day", -1)) != -1:
+		return false
+	for m in s.get("match_schedule", []):
+		if int((m as Dictionary).get("phase", -1)) == GameEnums.SeasonPhase.PRESEASON:
+			return false
+	return true
 
 
 func _show_training() -> void:

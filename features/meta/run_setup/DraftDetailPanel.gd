@@ -7,7 +7,8 @@ extends CanvasLayer
 #   우: 머리글(이름 · 역할 · 원소속) → 스탯 칩 6개 → 파일럿 스킬
 #   하: 닫기
 #
-# 여는 자리가 둘이다 — **드래프트**(선택 슬롯의 상체 일러스트를 누른다)와
+# 여는 자리가 둘이다 — **런 준비 편성**(선택 슬롯의 상체 일러스트를 누른다,
+# 고른 레벨이 반영된 사본이 넘어온다)과
 # **밴픽의 배정 단계**(양 팀 파일럿 초상화를 누른다). 그래서 이 팝업은
 # `TeamDraft` 인스턴스를 요구하지 않는다 — 필요한 것은 `PlayerData` 한 장과
 # 오토로드 `GameManager` 뿐이다.
@@ -266,8 +267,7 @@ func _build_stat_chips(body: Control, w: float, y: float) -> float:
 	var n: int = STAT_KEYS.size() + 1      # 스탯 여섯 + 종합
 	for i in n:
 		var col: int = i % CHIP_COLS
-		@warning_ignore("integer_division")
-		var row: int = i / CHIP_COLS
+		var row: int = floori(float(i) / float(CHIP_COLS))
 		var at := Vector2(float(col) * (chip_w + CHIP_GAP),
 				y + float(row) * (CHIP_H + CHIP_GAP))
 		var is_total: bool = i == STAT_KEYS.size()
@@ -275,8 +275,7 @@ func _build_stat_chips(body: Control, w: float, y: float) -> float:
 		var val: int = PilotThumb.total_stats(_pilot) if is_total 				else int(_pilot.get(String(PlayerData.STAT_KEYS[i])))
 		_mk_chip(body, at, Vector2(chip_w, CHIP_H), key, str(val),
 				CHIP_TOTAL_COLOR if is_total else CHIP_VALUE_COLOR)
-	@warning_ignore("integer_division")
-	var rows: int = (n + CHIP_COLS - 1) / CHIP_COLS
+	var rows: int = ceili(float(n) / float(CHIP_COLS))
 	return y + CHIP_H * float(rows) + CHIP_GAP * float(rows - 1)
 
 
@@ -423,6 +422,10 @@ func _team_short(team_id: int) -> String:
 	if gm == null:
 		return "T%d" % team_id
 	var meta: Array = gm.season_state.get("team_meta", [])
+	# 런 준비(편성)에서는 시즌이 아직 열리지 않아 team_meta 가 비어 있다 —
+	# 그때는 팀 패키지 표(`teams.csv`)에서 같은 약칭을 찾는다.
+	if meta.is_empty():
+		meta = RunRules.team_packages()
 	if team_id < 0 or team_id >= meta.size():
 		return "T%d" % team_id
 	return String(meta[team_id]["short_name"])

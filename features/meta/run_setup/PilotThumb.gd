@@ -1,7 +1,12 @@
 class_name PilotThumb
 extends Button
 
-# 드래프트 하단 격자의 캐릭터 썸네일 한 칸 — **얼굴 하나와 역할군 배지가 전부다.**
+# 런 준비 편성(`TeamDraftView`) 하단 격자의 캐릭터 썸네일 한 칸 — **얼굴 하나와
+# 역할군 배지, 그리고 오른쪽 아래 샐러리 꼬리표가 전부다.**
+#
+# 샐러리 꼬리표(`set_tag`)는 편성이 샐러리캡을 갖게 되면서 붙었다 — 캡은
+# 고를 때 보여야 하는 규칙이라, 누구를 앉히면 얼마가 드는지가 얼굴 옆에 있어야
+# 위의 게이지가 빨개지기 전에 판단이 선다.
 #
 # 예전에는 얼굴 밑에 역할군 이름 · 파일럿 이름 · 종합 스탯 세 줄이 붙어 있었고,
 # 그 세 줄이 250px 짜리 칸의 3분의 1을 먹었다. 우마무스메식 인물 고르기에서
@@ -60,6 +65,11 @@ var _built: bool = false
 var _face: TextureRect
 var _role_badge: Panel
 var _badge: Panel
+var _tag: Panel
+var _tag_lbl: Label
+
+const TAG_H: float = 34.0
+const TAG_BG := OutgameTheme.RAIL
 
 
 func setup(p: PlayerData, sel: bool) -> void:
@@ -69,6 +79,18 @@ func setup(p: PlayerData, sel: bool) -> void:
 		_built = true
 	_refresh()
 	set_selected(sel)
+
+
+## 오른쪽 아래 꼬리표 글자(샐러리). 빈 문자열이면 숨긴다.
+func set_tag(text: String) -> void:
+	if _tag == null:
+		return
+	_tag.visible = text != ""
+	_tag_lbl.text = text
+	var w: float = maxf(TAG_H, 18.0 + 14.0 * float(text.length()))
+	_tag.size = Vector2(w, TAG_H)
+	_tag.position = Vector2(CELL_W - ART_MARGIN - 6.0 - w, CELL_H - ART_MARGIN - 6.0 - TAG_H)
+	_tag_lbl.size = _tag.size
 
 
 func set_selected(sel: bool) -> void:
@@ -115,6 +137,17 @@ func _build() -> void:
 			HORIZONTAL_ALIGNMENT_CENTER)
 	check.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	check.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	_tag = Panel.new()
+	_tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tag.add_theme_stylebox_override("panel",
+			OutgameTheme.flat_style(TAG_BG, int(TAG_H * 0.5)))
+	_tag.visible = false
+	add_child(_tag)
+	_tag_lbl = UiHelpers.mk_label(_tag, "", 22, OutgameTheme.TEXT_ON_FILL,
+			Vector2.ZERO, Vector2(TAG_H, TAG_H), HORIZONTAL_ALIGNMENT_CENTER)
+	_tag_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_tag_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────

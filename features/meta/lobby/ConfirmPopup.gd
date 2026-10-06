@@ -8,7 +8,7 @@ extends CanvasLayer
 # 행동은 "무엇이 사라지는가"를 글로 읽힌 뒤에 고르게 해야 한다. 같은 버튼을
 # 두 번 누르는 방식은 그 설명을 담을 자리가 없다.
 #
-# 딤 패턴은 `season/draft/DraftDetailPanel.gd` 와 같다 — CanvasLayer 아래에
+# 딤 패턴은 `meta/run_setup/DraftDetailPanel.gd` 와 같다 — CanvasLayer 아래에
 # 뷰포트 전체 크기의 납작한 Button(빈 곳 누르면 취소) + 반투명 ColorRect.
 # CanvasLayer 라서 부모 화면의 `indent_to_safe_top` 을 따라 내려가지 않는다 —
 # 좌표는 뷰포트 기준이고(`docs/mobile_safe_area.md` 패턴 C), 카드는 안전

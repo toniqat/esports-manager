@@ -281,7 +281,7 @@ portraits under `resources/images/pilot/{faces,circle,eye,tall,full,ribbon}/`, p
 
 | Function | File | Size | Consumer |
 |---|---|---|---|
-| `face_for` | `faces/N_rect.png` | 256² | Draft grid thumbnail (`season/draft/PilotThumb.gd`) |
+| `face_for` | `faces/N_rect.png` | 256² | Draft grid thumbnail (`meta/run_setup/PilotThumb.gd`) |
 | `circle_for` | `circle/N_circle.png` | 256² circular | Battlefield marker · engage stage portrait |
 | `eye_for` | `eye/N_eye.png` | **480×200** | Pilot strip (`ui/PilotStrip.gd`) |
 | `tall_for` | `tall/N_tall.png` | **210×700** | Engage arena bottom strip (`engage/EngageArena.gd`) |
@@ -395,8 +395,8 @@ giving up the frame to keep the silhouette (only mob slots frame the figure smal
 
 Mobs keep their names and stats, but **their stats are lower than named pilots** — that reduction is
 not a runtime coefficient but already baked into the `players.csv` values themselves, leaving room to add a difficulty
-multiplier later. They are also excluded from the season draft grid
-(`features/season/draft/README.md`).
+multiplier later. They are also excluded from the run-setup lineup grid
+(`features/meta/run_setup/README.md`).
 
 `prime_into(parent)` must be called once at an entry point such as `BattleSim._ready()`
 — otherwise `draw_texture_rect` draws white rectangles.
@@ -429,7 +429,7 @@ If the node is outside the tree, `play_reveal` **turns the original on as-is and
 a failed effect leaving the figure covered by a silhouette forever is a far worse failure.
 
 **Nothing uses it right now.** The entry cut of the outgame pilot detail popup
-(`season/draft/DraftDetailPanel.gd`) was the only consumer, and when that usage was
+(`meta/run_setup/DraftDetailPanel.gd`) was the only consumer, and when that usage was
 removed the call site disappeared entirely — the shader and wiring are a tool kept for the next
 use, and since `reveal` defaults to 1, just attaching the material leaves the screen showing the original.
 
@@ -646,8 +646,8 @@ fade back in** transition — the effect that says a scene has passed. `play(tre
 `on_covered` once at the moment the screen is fully covered, and `change_scene(tree, path)` does
 `change_scene_to_file` at that point. The cover is a **`CanvasLayer` (layer 100) on the SceneTree root**,
 so it survives the scene change, and that layer also holds the tweens. Timing is `FADE_OUT_SEC` 0.30 /
-`LOAD_SEC` 0.50 / `FADE_IN_SEC` 0.35. Used at: draft "게임 시작" (Start game)
-(`TeamDraftView._play_launch_transition`), ban/pick confirm → battlefield
+`LOAD_SEC` 0.50 / `FADE_IN_SEC` 0.35. Used at: run setup "게임 시작" (Start game)
+(`RunSetupScreen._on_start_requested`), ban/pick confirm → battlefield
 (`MatchFlow._launch_battle`).
 
 ### DragScroll.gd
@@ -796,7 +796,7 @@ for details see that file's "메크가 거는 지속 상태" (Persistent states 
 
 | System | Description |
 |---|---|
-| Mob pilots (모브 파일럿) | **15 without skills.** There are only 25 skills, so not all 40 can be filled, and for the remaining 15 it is the **picture**, not a name tag, that says "nameless player" — the five cuts (circle / eye / faces / tall / full) each have a full extra silhouette set (`resources/images/pilot/mob/`), and once `GameManager.load_match_data()` plants the list via `PilotImages.set_mob_ids()`, every subsequent portrait lookup switches automatically. For all five cuts the silhouette **leaves alpha untouched and covers RGB with a single colour** — a dark portrait is not a silhouette (the old method of only darkening brightness just removed colour, and facial features still read clearly). However, `faces` / `circle` / `eye` are crops where the face fills the frame (measured: 97.7% of the eye band is opaque), so painting in place gives one black circle · one black bar; only those three are made by **re-cropping head~shoulders from the `full` art** — full's alpha is the figure outline, so the background stays transparent and the head shape and shoulder line read as a silhouette (the face rectangle is found with **the same template matching** as `make_eye_crops.py`, so figure scale does not diverge from other cuts). In exchange, only mob slots frame differently, with the figure smaller than named ones. **Only `circle` bakes in an opaque circular background** — the battlefield marker lays a white circle behind the portrait while the engage arena lays nothing, so left transparent, the same picture would be a white badge on one side · a hole showing the background on the other. Stats are **10% lower** than named pilots, and that reduction is baked into **the `players.csv` values themselves**, not a runtime coefficient — leaving room to multiply in a difficulty factor later. **They are excluded from the season draft grid** (`TeamDraft.get_pool_grid`) but still sit on their teams, so you still meet them as opponents. The 25 named pilots are **spread evenly across 8 teams** — team 0 (the player's starting team) has 5, and the other 20 are 2~3 each across 7 AI teams. Team 0 is all named because draft swaps must happen only between named pilots so that each team's named count doesn't shift. |
+| Mob pilots (모브 파일럿) | **15 without skills.** There are only 25 skills, so not all 40 can be filled, and for the remaining 15 it is the **picture**, not a name tag, that says "nameless player" — the five cuts (circle / eye / faces / tall / full) each have a full extra silhouette set (`resources/images/pilot/mob/`), and once `GameManager.load_match_data()` plants the list via `PilotImages.set_mob_ids()`, every subsequent portrait lookup switches automatically. For all five cuts the silhouette **leaves alpha untouched and covers RGB with a single colour** — a dark portrait is not a silhouette (the old method of only darkening brightness just removed colour, and facial features still read clearly). However, `faces` / `circle` / `eye` are crops where the face fills the frame (measured: 97.7% of the eye band is opaque), so painting in place gives one black circle · one black bar; only those three are made by **re-cropping head~shoulders from the `full` art** — full's alpha is the figure outline, so the background stays transparent and the head shape and shoulder line read as a silhouette (the face rectangle is found with **the same template matching** as `make_eye_crops.py`, so figure scale does not diverge from other cuts). In exchange, only mob slots frame differently, with the figure smaller than named ones. **Only `circle` bakes in an opaque circular background** — the battlefield marker lays a white circle behind the portrait while the engage arena lays nothing, so left transparent, the same picture would be a white badge on one side · a hole showing the background on the other. Stats are **10% lower** than named pilots, and that reduction is baked into **the `players.csv` values themselves**, not a runtime coefficient — leaving room to multiply in a difficulty factor later. **They are excluded from the run-setup lineup grid** (`TeamDraft.get_pool_grid`) but still sit on their teams, so you still meet them as opponents. The 25 named pilots are **spread evenly across 8 teams** — team 0 (the player's starting team) has 5, and the other 20 are 2~3 each across 7 AI teams. Team 0 is all named because draft swaps must happen only between named pilots so that each team's named count doesn't shift. |
 
 ### Card art corner shader (`shaders/rounded_top_mask.gdshader`)
 `Card._apply_art` attaches it to the art `TextureRect`. It rounds off the top two corners by `radius`,
@@ -809,7 +809,7 @@ The bottom edge is not blurred (computed by extending the box downward by `radiu
 ### Character silhouette shader (currently unused)
 `resources/shaders/silhouette.gdshader` + `resources/SilhouetteFx.gd`
 **exist but no screen calls them.** There used to be an entry cut in the outgame pilot detail popup
-(`season/draft/DraftDetailPanel.gd`) where the full-body art stood as a silhouette and peeled away from bottom
+(`meta/run_setup/DraftDetailPanel.gd`) where the full-body art stood as a silhouette and peeled away from bottom
 to top, but **that usage was removed** — the popup now shows the art as-is
 (`ART_SIL_REVEAL_SEC` / `_DELAY` and the `SilhouetteFx.apply` / `play_reveal` calls disappeared
 together). The shader and wiring are a tool kept for the next use.

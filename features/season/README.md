@@ -26,7 +26,6 @@ primary action at the right end**.
 |---|---|
 | HubView | `리그 순위` (League standings) (1, ghost) / `이번 주 시작 →` (Start this week) (2, primary) |
 | TrainingView | `판 비우기` (Clear board) (1, ghost) / `훈련 확정` (Confirm training) (2, primary) |
-| TeamDraftView | PICK = `다음` (Next) full width · CONFIRM = `뒤로` (Back) (1) / `게임 시작` (Start game) (2) |
 | LeagueView · BracketView · IntlBracketView | `확인` (OK) full width |
 | WeekProgressView | `확인` / `주 마감 →` (End of week) / `경기 시작` (Start match) (dark) — always exactly one, full width |
 | EndingView · GameOverView | `정산` (Settle) full width → `RunResult.SCENE_PATH` (the run is already settled on entry) |
@@ -40,10 +39,13 @@ choices standing inside the speech-bubble flow, so they are not pinned to the bo
 ## Entry point
 `scenes/Season.tscn` — entered from the lobby (`scenes/Lobby.tscn`) via
 `새 런` / `이어하기`. Root: `Control` with `SeasonHub.gd` attached.
-SeasonHub branches on `gm.season_state["active"]`: false → run
-`init_season()` and route to DRAFT (new campaign), true → skip init and
-route directly to HUB (loaded campaign). See `features/save_load/` for the
-save-system contract.
+**There is no DRAFT screen any more** — run setup (scenario → team → 5-pilot lineup)
+lives outside the season in `features/meta/run_setup/` and ends with
+`GameManager.start_run`, so the season **always opens at HUB**.
+SeasonHub branches on `gm.season_state["active"]`: true → a run already exists
+(fresh from run setup, or loaded) → HUB; false (editor direct-run of `Season.tscn`)
+→ `init_season()` builds the default run (below) → HUB. See `features/save_load/`
+for the save-system contract.
 
 ### Run start — `GameManager.start_run(run_setup) -> String`
 The **only** way a run begins (contract: `docs/outgame_dev_plan.md` §10.2). The run
@@ -131,7 +133,6 @@ and exposes intent methods on the hub. Pattern mirrors `BattleSim`:
 |---|---|---|
 | CalendarSystem           | `calendar/CalendarSystem.gd`                 | `advance_week()` — rolls 7 days, bumps `phase_week`, transitions phase. Emits `week_advanced`, `phase_changed`. |
 | HubView                  | `HubView.gd`                                 | Simplified hub — phase/week counter + roster + "이번 주 시작" (Start this week) + 순위 (standings) buttons. |
-| TeamDraft                | `draft/TeamDraft.gd`                         | Initial 5-player pick (pool of 25 named pilots (네임드)) — 5 role-fixed slots · role filter · scrolling thumbnail grid · detail popup. `draft/README.md` |
 | PressConferenceView      | `press/PressConferenceView.gd`               | **Press conference** — the messenger screen right before the week starts. Currently a skeleton whose lines · choices are placeholder data. `press/README.md` |
 | TrainingBoard            | `training/TrainingBoard.gd`                  | **Daily training (일상 훈련) tile board (타일판)** — 5 columns (players) × 5 rows (one per day; weekdays are not written on screen). Placement checks + settlement (`cell_exp` / `compute_day_gains`) + **weekday application** (`apply_day_training(day)`) + leftover-EXP bank. `training/README.md` |
 | TrainingView             | `training/TrainingView.gd`                   | Schedule editor; "훈련 확정" calls `SeasonHub.on_training_confirmed` — it does not settle the board but **opens the week** (puts the weekday cursor on Monday). |
@@ -227,7 +228,10 @@ palette once would mean combing through a dozen-plus files.
 ## Autosave triggers (5)
 0. **Post-match** — `SeasonHub._ready` right after the BattleSim result is
    applied (so closing on the standings screen preserves the outcome).
-1. **Post-draft** — `SeasonHub.goto(HUB)` when previous screen was DRAFT.
+1. **Post-run-start** — `SeasonHub._show_hub` on the first HUB of a fresh run.
+   Detected from state, no extra save key (`_is_run_start`): PRESEASON, week 1,
+   `week_day == -1` and no PRESEASON entry in `match_schedule` yet — measured before
+   `ensure_phase_scheduled` lays the schedule, so it is true exactly once per run.
 2. **Pre-ban-pick** — `MatchFlow._on_prep_finished` after the player
    confirms PREP. Writes `season_state["match_resume"] = {phase: BAN_PICK,
    player_side, ...}`.
@@ -258,7 +262,6 @@ The lobby run card shows a "경기 진행 중" (Match in progress) chip when `me
 ## SeasonHub screen routing
 `SeasonHub._route()` toggles child controls based on `current_screen`.
 Lazy view builders cache the instance after first creation.
-- `Screen.DRAFT` → `TeamDraft`.
 - `Screen.HUB` → simplified HubView. Calls `LeagueManager.ensure_phase_scheduled()`
   + `TournamentManager.ensure_active()` + `InternationalTournament.ensure_active()`
   to handle save-loads landing on tournament weeks.
@@ -306,10 +309,7 @@ When hanging the bottom action bar inside a pushed-down screen, use **`safe_h()`
 `ScreenMetrics.bottom_y()` (the latter is in viewport coordinates, so the push-down gets added twice).
 `LeagueView` / `BracketView` / `IntlBracketView` / `TrainingView` use
 `safe_h() - 80 - h`, `TrainingResultView` uses `- 70`, `HubView` uses `- 110`,
-and `TeamDraftView`'s `bar_y()` is `safe_h() - 20 - BAR_H`.
-
-`TeamDraftView.grid_h()` is computed from **the remaining space** (`bar_y() - 12 - GRID_Y`) —
-the taller the screen, the more thumbnail rows show (950 at 1920, 1280 at 2340).
+(the lineup screen moved to `features/meta/run_setup/README.md`).
 
 Details: **`docs/mobile_safe_area.md`**
 

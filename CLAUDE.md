@@ -11,7 +11,7 @@ add them to the owning folder's README and at most a one-line pointer here.
 
 ## Project Overview
 - **Engine**: Godot 4.5-stable, GDScript · **Target**: 2D mobile portrait 1080×1920
-- **Main scene**: `res://scenes/Lobby.tscn` (lobby: continue / new run → `Season.tscn`)
+- **Main scene**: `res://scenes/Lobby.tscn` (lobby: continue → `Season.tscn`; new run → `RunSetup.tscn` → `Season.tscn`)
 - **Campaign**: `PRESEASON → PRESEASON_INTL → MIDSEASON → MIDSEASON_INTL → REGULAR → REGULAR_INTL`.
   Win final REGULAR_INTL = ending; miss any phase's playoffs = game over.
 - **Week**: advances one week at a time, run day by day 월~일 (Mon–Sun)
@@ -54,14 +54,14 @@ esports-manager/
 │                               outgame_dev_plan.md (outgame meta development plan, 아웃게임 메타 개발 계획)
 ├── addons/godot_mcp/         ← MCP editor plugin (do not modify)
 └── features/
-    ├── meta/                 ← outgame outside a run (lobby; later run setup / result / collection) → README.md
-    │   └── lobby/            ← project entry: continue / new run, abandon confirm popup
+    ├── meta/                 ← outgame outside a run (lobby, run setup; later result / collection) → README.md
+    │   ├── lobby/            ← project entry: continue / new run, abandon confirm popup
+    │   └── run_setup/        ← run setup: scenario → team → 5-pilot lineup (levels, salary cap) → start_run
     ├── save_load/            ← run save (SaveSystem), autosave, mid-match resume
     ├── season/               ← outgame campaign (SeasonHub orchestrator, handoffs, brackets)
     │   ├── calendar/         ← week clock, weekdays / match days, phase transitions
     │   ├── press/            ← press conference (기자회견) messenger screen
     │   ├── week/             ← 시간 경과 (Time passing) screen (day rail + day cards)
-    │   ├── draft/            ← initial 5-pilot draft
     │   ├── training/         ← daily training (일상 훈련) tile board
     │   ├── league/           ← LeagueManager + LeagueView (2 rounds / week)
     │   └── tournament/       ← playoff + INTL brackets (no README — see season/README.md)
@@ -90,6 +90,7 @@ esports-manager/
 | Feature | Scene | Script | Read |
 |---|---|---|---|
 | Lobby (main entry) | `scenes/Lobby.tscn` | `features/meta/lobby/LobbyScreen.gd` | `features/meta/lobby/README.md` |
+| Run setup | `scenes/RunSetup.tscn` | `features/meta/run_setup/RunSetupScreen.gd` | `features/meta/run_setup/README.md` |
 | Season | `scenes/Season.tscn` | `features/season/SeasonHub.gd` | `features/season/README.md` + submodule |
 | Match Flow | `scenes/MatchFlow.tscn` | `features/match_flow/MatchFlow.gd` | `features/match_flow/README.md` |
 | Battle Sim | `scenes/BattleSim.tscn` | `features/battle_sim/BattleSim.gd` | `features/battle_sim/README.md` + submodule |
@@ -100,6 +101,7 @@ esports-manager/
 | Haptics table & rules, `game.db` res→user copy | `autoloads/README.md` |
 | Profile / run save, autosave, mid-match resume, test run file | `features/save_load/README.md` |
 | Lobby → Season handoff, abandon-run confirm | `features/meta/lobby/README.md` |
+| Run setup steps, lineup (levels · salary cap), pilot detail popup (`DraftDetailPanel`) | `features/meta/run_setup/README.md` |
 | ProfileManager (profile.save) | `autoloads/README.md` |
 | Weekly progression contract, Weekdays and match days | `features/season/calendar/README.md` |
 | Season→MatchFlow→BattleSim handoff, playoff / INTL brackets | `features/season/README.md` |

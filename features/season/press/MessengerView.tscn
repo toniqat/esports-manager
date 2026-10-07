@@ -78,7 +78,7 @@ theme_type_variation = &"Divider"
 
 [node name="Scroll" type="ScrollContainer" parent="SafeArea"]
 unique_name_in_owner = true
-editor_description = "Chat log. PASS (not STOP): releases inside must bubble up to the view's gui_input (taps advance the dialogue). Bubbles / notes / answers are added to Body by code. Grows to the RIGHT only: when the log overflows, the scroll bar adds its width past the screen edge (as the code-built view did) instead of shifting the log left."
+editor_description = "Chat log. PASS (not STOP): releases inside must bubble up to the view's gui_input (taps advance the dialogue). Log items (item scenes) are added to %Log by code; answers to %AnswerList. Grows to the RIGHT only: when the log overflows, the scroll bar adds its width past the screen edge (as the code-built view did) instead of shifting the log left."
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
@@ -88,13 +88,38 @@ offset_bottom = -64.0
 grow_vertical = 2
 horizontal_scroll_mode = 0
 
-[node name="Body" type="Control" parent="SafeArea/Scroll"]
+[node name="Body" type="VBoxContainer" parent="SafeArea/Scroll"]
 unique_name_in_owner = true
-editor_description = "Code places the bubbles here with absolute coordinates (MessengerView._add_* — measured text heights) and grows custom_minimum_size.y."
+editor_description = "The chat column: %Log then %Answers, stacked (no separation — every item scene owns its gap below). Min width = screen width (code sets it to the viewport width); PASS so taps bubble up to the view."
 custom_minimum_size = Vector2(1080, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 1
+theme_override_constants/separation = 0
+
+[node name="Log" type="VBoxContainer" parent="SafeArea/Scroll/Body"]
+unique_name_in_owner = true
+editor_description = "Chat log — code appends one item scene per line: MessengerNpcBubble · MessengerPlayerBubble · MessengerNarration · MessengerNoteChip (all in this folder). Empty in the scene; run it alone (F6) to see a filled log."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Answers" type="MarginContainer" parent="SafeArea/Scroll/Body"]
+unique_name_in_owner = true
+visible = false
+editor_description = "Answer choices under the log, shown while the player picks (code toggles). margin_top = gap above, margin_right = screen edge, margin_bottom = gap below the last answer."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 14
+
+[node name="AnswerList" type="VBoxContainer" parent="SafeArea/Scroll/Body/Answers"]
+unique_name_in_owner = true
+editor_description = "Code adds one MessengerAnswerButton per choice."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 14
 
 [node name="Hint" type="Label" parent="SafeArea"]
 unique_name_in_owner = true

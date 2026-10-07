@@ -1,0 +1,90 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://features/season/press/MessengerNpcBubble.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="Script" path="res://features/season/press/MessengerReporterGlyph.gd" id="3_glyph"]
+[ext_resource type="Script" path="res://features/season/press/MessengerWedge.gd" id="4_wedge"]
+
+[node name="MessengerNpcBubble" type="MarginContainer"]
+editor_description = "One line of the other side (left) in MessengerView's log. Width = the log's; height follows the wrapped text. margin_left = screen edge, margin_bottom = gap to the next line."
+offset_right = 1080.0
+offset_bottom = 94.0
+mouse_filter = 2
+theme = ExtResource("2_theme")
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_bottom = 18
+script = ExtResource("1_script")
+
+[node name="Row" type="HBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="PortraitSlot" type="Control" parent="Row"]
+editor_description = "Keeps the portrait column's width (also on follow-up lines without a portrait). Height 0: the 96 px portrait may hang below a short bubble."
+custom_minimum_size = Vector2(96, 0)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Portrait" type="Control" parent="Row/PortraitSlot"]
+unique_name_in_owner = true
+editor_description = "Round portrait slot — code adds the drawn portrait here (OutgameTheme.add_round_portrait, diameter = this width, BORDER ring)."
+layout_mode = 1
+offset_right = 96.0
+offset_bottom = 96.0
+mouse_filter = 2
+
+[node name="Glyph" type="Control" parent="Row/PortraitSlot"]
+unique_name_in_owner = true
+editor_description = "Reporter microphone (_draw) over the portrait when there is no portrait texture."
+layout_mode = 1
+offset_right = 96.0
+offset_bottom = 96.0
+mouse_filter = 2
+script = ExtResource("3_glyph")
+
+[node name="Gap" type="Control" parent="Row"]
+custom_minimum_size = Vector2(8, 0)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="WedgeSlot" type="MarginContainer" parent="Row"]
+editor_description = "Tail column: width = tail width, margin_top = the tail's drop from the bubble top. Drawn above the bubble (z_index 1) so the tail covers the bubble border where they join."
+z_index = 1
+custom_minimum_size = Vector2(18, 0)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_top = 26
+
+[node name="Wedge" type="Control" parent="Row/WedgeSlot"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(18, 22)
+layout_mode = 2
+size_flags_vertical = 0
+mouse_filter = 2
+script = ExtResource("4_wedge")
+bubble = NodePath("../../Bubble")
+
+[node name="Bubble" type="PanelContainer" parent="Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(700, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+mouse_filter = 2
+theme_type_variation = &"SelectableCard"
+
+[node name="Pad" type="MarginContainer" parent="Row/Bubble"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 26
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 26
+theme_override_constants/margin_bottom = 20
+
+[node name="Text" type="Label" parent="Row/Bubble/Pad"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 27
+text = "주말 경기 상대가 만만치 않다는 평이 많습니다."
+autowrap_mode = 3

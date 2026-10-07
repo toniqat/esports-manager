@@ -1,0 +1,39 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://features/season/press/MessengerNoteChip.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="MessengerNoteChip" type="MarginContainer"]
+editor_description = "A centred effect / verdict pill under the outcome in MessengerView's log. margin_bottom = gap to the next chip."
+offset_right = 1080.0
+offset_bottom = 56.0
+mouse_filter = 2
+theme = ExtResource("2_theme")
+theme_override_constants/margin_bottom = 10
+script = ExtResource("1_script")
+
+[node name="Center" type="CenterContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Chip" type="PanelContainer" parent="Center"]
+unique_name_in_owner = true
+editor_description = "Good note look (AccentChip). A failed check gets a SURFACE_SUNK copy of this stylebox from code."
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"AccentChip"
+
+[node name="Pad" type="MarginContainer" parent="Center/Chip"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_right = 8
+
+[node name="Text" type="Label" parent="Center/Chip/Pad"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"AccentLabel"
+text = "팀 신뢰 +3"
+horizontal_alignment = 1
+vertical_alignment = 1

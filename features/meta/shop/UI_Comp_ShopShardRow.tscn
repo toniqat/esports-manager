@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" path="res://resources/UI_Comp_PositionBadge.tscn" id="pos_badge"]
 
 [node name="ShopShardRow" type="Panel"]
+auto_translate_mode = 2
 editor_description = "파편 상점 row (ShopTab). Outlined white panel = local style (no theme variation yet). Code fills the texts, the round portrait (drawn widget added into FaceSlot), the rarity chip colour and the button state."
 custom_minimum_size = Vector2(0, 132)
 offset_right = 1000.0

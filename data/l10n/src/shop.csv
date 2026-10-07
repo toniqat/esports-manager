@@ -1,0 +1,89 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_SFM8K5H3EW,shop.gacha.bad_count,active,shop rule message (gacha),,,뽑기 횟수가 잘못됐습니다,Invalid number of draws,draft,4eaab4e9
+tx_KCMDA6JCSG,shop.gacha.no_items,active,shop rule message (gacha),,,뽑을 대상이 없습니다,Nothing to pull,draft,fe8552ef
+tx_Y938YWW8E9,shop.pass.no_level,active,shop rule message (pass),,,없는 단계입니다,No such level,draft,a581acb7
+tx_RFC7830G3H,shop.pass.not_reached,active,shop rule message (pass),,,아직 도달하지 않은 단계입니다,Level not reached yet,draft,6599cec4
+tx_GP4MCK7RMY,shop.pass.already_claimed,active,shop rule message (pass),,,이미 수령했습니다,Already claimed,draft,26662a34
+tx_VXNZHCEFAY,shop.pass.no_reward,active,shop rule message (pass),,,보상이 없는 단계입니다,This level has no reward,draft,97778d4d
+tx_51N87FRW51,shop.catalog.not_sold,active,shop rule message (catalog),,,판매하지 않는 선수입니다,This player isn't for sale,draft,d5c6cb67
+tx_2ZE844KZN9,shop.catalog.bt_complete,active,shop rule message (catalog),,,돌파 완료,Breakthrough Maxed,draft,67c4e3cd
+tx_8Z4YRYH43A,shop.catalog.not_enough_shards,active,shop rule message (catalog),,,선수 파편이 부족합니다 ({n} 필요),Not enough player shards ({n} needed),draft,1e5abae6
+tx_F242JS261M,shop.catalog.cannot_craft,active,shop rule message (catalog),,,제작 불가,Can't Craft,draft,02f22fe1
+tx_TB3J7HQJGN,shop.catalog.owned,active,shop rule message (catalog),,,보유 중,Owned,draft,b98e28c9
+tx_9ZR3EBJ3SJ,shop.catalog.not_enough_mat,active,shop rule message (catalog),,,특성 재료가 부족합니다 ({n} 필요),Not enough trait materials ({n} needed),draft,d1fd37d6
+tx_T7H4Y5BKRY,shop.catalog.not_enough_premium,active,shop rule message (catalog),,,유료 재화가 부족합니다 ({n} 필요),Not enough premium currency ({n} needed),draft,a7059e5d
+tx_XTX35YZZ5C,shop.pass.claim_all,active,PassTab,,,모두 수령,Claim All,draft,0fbbcf2c
+tx_6ZYFMH4WG9,shop.pass.nothing_to_claim,active,PassTab,,,받을 보상이 없습니다,No rewards to claim,draft,bc5a89a3
+tx_VD3QJHNXCW,shop.pass.claimed_all_toast,active,PassTab,,,{n}개 수령 · {rewards},Claimed {n} · {rewards},draft,347b34c4
+tx_H1GFQQ83Y3,shop.pass.claimed_toast,active,PassTab,,,Lv {level} 보상 · {currency} +{amount},Lv {level} reward · {currency} +{amount},draft,be018523
+tx_2XPR1E8GP5,shop.pass.week_line,active,PassTab,,,{week} · 초기화까지 {time},{week} · Resets in {time},draft,3185a91c
+tx_ZQZY2WVPR2,shop.pass.info,active,PassTab,,,"런을 마치면 런 점수만큼 패스 EXP 를 얻습니다. Lv {max} 를 넘긴 EXP 는 아웃게임 재화로 바뀝니다. 보상은 직접 수령해야 하며, 매주 월요일 0시(기기 시각)에 초기화됩니다.","Finish a run to earn pass EXP equal to your run score. EXP past Lv {max} turns into outgame currency. Rewards must be claimed manually, and the pass resets every Monday at 00:00 (device time).",draft,ce21316c
+tx_5NS864BVSS,shop.pass.time_dh,active,PassTab,,,{d}일 {h}시간,{d}d {h}h,draft,77c4378d
+tx_GZ735QTDWP,shop.pass.time_hm,active,PassTab,,,{h}시간 {m}분,{h}h {m}m,draft,7f5d96d4
+tx_JXF877Y58D,shop.pass.claimed,active,PassTab,,,수령 완료,Claimed,draft,09472201
+tx_X43BN649C3,shop.currency.outgame,active,ShopPopup.CURRENCY_LABELS - profile currency outgame,,,재화,Coins,draft,cacc3dae
+tx_CT27Z5QXZ6,shop.currency.gacha_ticket_pilot,active,ShopPopup.CURRENCY_LABELS - profile currency gacha_ticket_pilot,,,선수권,Player Ticket,draft,11dcea35
+tx_K2JE76Z638,shop.currency.gacha_ticket_trait,active,ShopPopup.CURRENCY_LABELS - profile currency gacha_ticket_trait,,,특성권,Trait Ticket,draft,6f6a05c5
+tx_HY7DQNPK90,shop.currency.trait_mat,active,ShopPopup.CURRENCY_LABELS - profile currency trait_mat,,,특성 재료,Trait Material,draft,56c35de7
+tx_95RWKDGXRT,shop.currency.cosmetic,active,ShopPopup.CURRENCY_LABELS - profile currency cosmetic,,,치장 재화,Cosmetic Currency,draft,0ce08d4a
+tx_BZBSE52DHH,shop.currency.premium,active,ShopPopup.CURRENCY_LABELS - profile currency premium,,,유료 재화,Premium Currency,draft,e9f94fb1
+tx_V9830054XS,shop.currency.pilot_shard,active,ShopPopup.CURRENCY_LABELS - profile currency pilot_shard,,,선수 파편,Player Shards,draft,c9c8b3c4
+tx_Z70PR5PYNY,shop.popup.rates_note_pilot,active,ShopPopup / ShopRevealItem,,,"대상이 없는 등급이 뽑히면 가장 가까운 등급에서 뽑습니다. 중복 선수는 돌파, 돌파를 다 채운 뒤엔 선수 파편이 됩니다.","If a rarity with no items is rolled, the nearest rarity is used instead. Duplicate players give a breakthrough, then player shards once breakthroughs are maxed.",draft,2dc146c2
+tx_5DHTBBFC6B,shop.popup.rates_note_trait,active,ShopPopup / ShopRevealItem,,,대상이 없는 등급이 뽑히면 가장 가까운 등급에서 뽑습니다. 이미 가진 특성은 특성 재료가 됩니다.,"If a rarity with no items is rolled, the nearest rarity is used instead. Traits you already own become trait materials.",draft,098ddb0b
+tx_ZFYE3A1TJR,shop.popup.rates_title_pilot,active,ShopPopup / ShopRevealItem,,,선수 영입 확률,Player Recruit Rates,draft,4acf1a61
+tx_DZEWNGHZ0V,shop.popup.rates_title_trait,active,ShopPopup / ShopRevealItem,,,특성 연구 확률,Trait Research Rates,draft,706d0d8e
+tx_G2YS4ZSTZT,shop.reveal.tag_new,active,ShopPopup / ShopRevealItem,,,NEW,NEW,draft,66aabd91
+tx_VHPZZPEA36,shop.reveal.tag_breakthrough,active,ShopPopup / ShopRevealItem,,,돌파 {n},Break {n},draft,8ec74860
+tx_AZP00WR13N,shop.reveal.tag_shards,active,ShopPopup / ShopRevealItem,,,파편 +{n},Shards +{n},draft,80fa8f02
+tx_CTPT6ZEXH5,shop.reveal.tag_material,active,ShopPopup / ShopRevealItem,,,재료 +{n},Mats +{n},draft,80c4ad2f
+tx_J2TT6QPKEW,shop.tab.pool_pilot,active,ShopTab,,,선수 영입,Player Recruit,draft,9ac5775d
+tx_7NDPFWQK3B,shop.tab.pool_trait,active,ShopTab,,,특성 연구,Trait Research,draft,abcf7cd0
+tx_PEPY8003ZH,shop.tab.result_pilot,active,ShopTab,,,선수 영입 결과,Recruit Results,draft,25b4e5c4
+tx_W65CM8AH9Y,shop.tab.result_trait,active,ShopTab,,,특성 연구 결과,Research Results,draft,f6223421
+tx_4TEB6HP1KS,shop.tab.banner_sub_pilot,active,ShopTab,,,"네임드 선수 {n}인 중 한 명 · 중복은 돌파, 돌파를 다 채우면 선수 파편","One of {n} named players · Duplicates give breakthroughs, then player shards once maxed",draft,e7a4d9a1
+tx_59WEARXAX8,shop.tab.banner_sub_trait,active,ShopTab,,,감독 특성 {n}종 중 하나 · 이미 가진 특성은 특성 재료,One of {n} manager traits · Traits you own become trait materials,draft,965a5f25
+tx_VX3QB7MM4B,shop.tab.ticket_count,active,ShopTab,,,{n}장,{n},draft,f7fda5d7
+tx_RN8BBG1945,shop.tab.owned_pilots,active,ShopTab,,,보유 선수,Owned Players,draft,940d819a
+tx_8H54MJW9G9,shop.tab.owned_traits,active,ShopTab,,,보유 특성,Owned Traits,draft,fd8fe292
+tx_NKA1HERSF8,shop.tab.pull_one_pilot,active,ShopTab,,,1회 영입\n{cost},Recruit ×1\n{cost},draft,a72b87a4
+tx_PMSGMBWBC3,shop.tab.pull_one_trait,active,ShopTab,,,1회 연구\n{cost},Research ×1\n{cost},draft,0dcb965f
+tx_QX8E358Q6Z,shop.tab.pull_multi_pilot,active,ShopTab,,,{n}회 영입\n{cost},Recruit ×{n}\n{cost},draft,5b35f2b1
+tx_BTVG6HH172,shop.tab.pull_multi_trait,active,ShopTab,,,{n}회 연구\n{cost},Research ×{n}\n{cost},draft,799180a8
+tx_XKMSGF34S8,shop.tab.note,active,ShopTab,,,"{ticket}{i} 먼저 쓰이고, 모자란 만큼 재화로 치릅니다.",{ticket}s are used first; the rest is paid in coins.,draft,efca6f32
+tx_8VFYRT9Z7Z,shop.tab.note_discount_pilot,active,ShopTab,,,"{ticket}{i} 먼저 쓰이고, 모자란 만큼 재화로 치릅니다. {n}회 영입은 재화로 치르는 몫이 {pct}% 할인됩니다.",{ticket}s are used first; the rest is paid in coins. Recruit ×{n} gets {pct}% off the coin part.,draft,fe325b00
+tx_PWWSG8QS24,shop.tab.note_discount_trait,active,ShopTab,,,"{ticket}{i} 먼저 쓰이고, 모자란 만큼 재화로 치릅니다. {n}회 연구는 재화로 치르는 몫이 {pct}% 할인됩니다.",{ticket}s are used first; the rest is paid in coins. Research ×{n} gets {pct}% off the coin part.,draft,3072f5c0
+tx_73MWJV0ATK,shop.tab.holding,active,ShopTab,,,보유 {currency} {n},{currency} owned: {n},draft,4cba6d72
+tx_YB4E1VVJ83,shop.tab.shard_sub,active,ShopTab,,,원하는 선수를 확정 구매합니다. 보유한 선수면 돌파 단계가 오릅니다.,"Buy the player you want. If you already own them, their breakthrough goes up.",draft,dee28fda
+tx_GPSPYQ66XK,shop.tab.bt_progress,active,ShopTab,,,돌파 {n}/{max},Breakthrough {n}/{max},draft,8903fb16
+tx_3HQMAP64E2,shop.tab.buy_breakthrough,active,ShopTab,,,돌파\n파편 {n},Breakthrough\n{n} Shards,draft,e1f78e5d
+tx_QSJ3WK35GE,shop.tab.buy_recruit,active,ShopTab,,,영입\n파편 {n},Recruit\n{n} Shards,draft,340ce32c
+tx_VG3HEEDMGR,shop.tab.bought,active,ShopTab,,,구매 완료,Purchased,draft,f7f33846
+tx_0H7FHR6QYP,shop.tab.craft_sub,active,ShopTab,,,특성 재료로 아직 없는 특성을 만듭니다. 재료는 특성 중복 · 주간패스에서 얻습니다.,Craft traits you don't have yet with trait materials. Materials come from duplicate traits · the weekly pass.,draft,d4990efe
+tx_RJVBAG6C5S,shop.tab.craft_button,active,ShopTab,,,제작\n재료 {n},Craft\n{n} Mats,draft,7b3b1f6f
+tx_MZNWK9RXXF,shop.tab.crafted,active,ShopTab,,,제작 완료,Crafted,draft,a712c00a
+tx_R1XHPF5T43,shop.tab.exchange_sub,active,ShopTab,,,재화를 다른 재화로 바꿉니다.,Trade one currency for another.,draft,01f63d3c
+tx_ZKH36Y2DHV,shop.tab.ex_levelup_title,active,ShopTab,,,레벨업 재화 교환,Level-up Currency Exchange,draft,47258108
+tx_0JRJXF2REY,shop.tab.ex_levelup_desc,active,ShopTab,,,재화 {cost} → 레벨업 재화 {gain},{cost} Coins → {gain} Level-up Currency,draft,da1b32a2
+tx_C9WWYJXBJX,shop.tab.ex_levelup_have,active,ShopTab,,,보유 재화 {coins} · 레벨업 재화 {levelup},Owned: Coins {coins} · Level-up Currency {levelup},draft,f011275f
+tx_E51NFE2PBP,shop.tab.ex_pilot_ticket_title,active,ShopTab,,,선수권 구매,Buy Player Ticket,draft,4b6efef6
+tx_31B82ZYQSQ,shop.tab.ex_pilot_ticket_desc,active,ShopTab,,,유료 재화 {cost} → 선수권 1장,{cost} Premium → 1 Player Ticket,draft,d65c9c76
+tx_QNHGVNK6CC,shop.tab.ex_pilot_ticket_have,active,ShopTab,,,보유 유료 재화 {premium} · 선수권 {tickets},Owned: Premium {premium} · Player Tickets {tickets},draft,b77b000f
+tx_N2B0Y4ARHX,shop.tab.ex_trait_ticket_title,active,ShopTab,,,특성권 구매,Buy Trait Ticket,draft,efa8654f
+tx_AB22WAZYYC,shop.tab.ex_trait_ticket_desc,active,ShopTab,,,유료 재화 {cost} → 특성권 1장,{cost} Premium → 1 Trait Ticket,draft,b34035a8
+tx_MCFZFZ092Q,shop.tab.ex_trait_ticket_have,active,ShopTab,,,보유 유료 재화 {premium} · 특성권 {tickets},Owned: Premium {premium} · Trait Tickets {tickets},draft,e534cf9c
+tx_1EC5FAP3S1,shop.tab.dev_grant,active,ShopTab,,,유료 재화 +{n} (개발용),Premium +{n} (dev),draft,63423b1a
+tx_ZEBPJPHXNM,shop.tab.dev_desc,active,ShopTab,,,유료 재화는 지금 기기 안의 숫자일 뿐입니다 (결제 없음).,Premium currency is only a number on this device (no payments).,draft,32185de5
+tx_FY1VMB56C5,shop.tab.toast_levelup,active,ShopTab,,,레벨업 재화 +{n},Level-up Currency +{n},draft,8821b8f5
+tx_S7SCK16K72,shop.tab.toast_premium,active,ShopTab,,,유료 재화 +{n},Premium Currency +{n},draft,9add0cfb
+tx_45764DJF8W,shop.pass_tab.title,active,UI_View_PassTab.tscn VBox/HeadPad/Head/Pad/VBox/TopRow/Title text,,,주간패스,Weekly Pass,draft,5e956e39
+tx_RXTX0AN6X0,shop.shop_popup.rarity,active,UI_View_ShopPopup.tscn Root/SafeArea/Center/Card/VBox/Scroll/Body/Rates/Head/Rarity text,,,등급,Rarity,draft,89dbf513
+tx_R0CS831APJ,shop.shop_popup.pct,active,UI_View_ShopPopup.tscn Root/SafeArea/Center/Card/VBox/Scroll/Body/Rates/Head/Pct text,,,확률,Rate,draft,a3ffce68
+tx_ERGBMXG6XM,shop.shop_popup.count,active,UI_View_ShopPopup.tscn Root/SafeArea/Center/Card/VBox/Scroll/Body/Rates/Head/Count text,,,대상 수,Items,draft,56193b2a
+tx_VSGTNVA2A5,shop.shop_popup.each,active,UI_View_ShopPopup.tscn Root/SafeArea/Center/Card/VBox/Scroll/Body/Rates/Head/Each text,,,개별 확률,Per Item,draft,ff4f39d8
+tx_PWQQ7TRXFX,shop.shop_tab.seg_pilot,active,UI_View_ShopTab.tscn Segments/Pad/Row/SegPilot text,,,선수 영입,Recruit,draft,9ac5775d
+tx_MMHN8MG47X,shop.shop_tab.seg_trait,active,UI_View_ShopTab.tscn Segments/Pad/Row/SegTrait text,,,특성 연구,Research,draft,abcf7cd0
+tx_G5263CMAY1,shop.shop_tab.seg_shard,active,UI_View_ShopTab.tscn Segments/Pad/Row/SegShard text,,,파편 상점,Shard Shop,draft,e00481cd
+tx_84MYVJ17GD,shop.shop_tab.seg_craft,active,UI_View_ShopTab.tscn Segments/Pad/Row/SegCraft text,,,특성 제작,Craft,draft,2d4e9c04
+tx_NW50K9HBCE,shop.shop_tab.seg_exchange,active,UI_View_ShopTab.tscn Segments/Pad/Row/SegExchange text,,,교환소,Exchange,draft,8470c86f
+tx_33WRAHQJKW,shop.shop_tab.rates_button,active,UI_View_ShopTab.tscn Body/GachaView/VBox/Banner/Pad/VBox/Head/RatesButton text,,,확률 보기,View Rates,draft,b6daf58c
+tx_G4RY3DMSCT,shop.shop_tab.dev_title,active,UI_View_ShopTab.tscn Body/ListView/Scroll/ScrollPad/VBox/DevRow/DevTitle text,,,개발용,Dev Only,draft,f0d13dc0

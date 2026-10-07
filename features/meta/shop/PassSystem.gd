@@ -121,14 +121,14 @@ static func is_claimed(profile: Dictionary, level: int) -> bool:
 static func claim(profile: Dictionary, level: int) -> String:
 	ensure_week(profile)
 	if level < 1 or level > max_level():
-		return "없는 단계입니다"
+		return Loc.t(L.SHOP_PASS_NO_LEVEL)
 	if level > level_of(profile):
-		return "아직 도달하지 않은 단계입니다"
+		return Loc.t(L.SHOP_PASS_NOT_REACHED)
 	if is_claimed(profile, level):
-		return "이미 수령했습니다"
+		return Loc.t(L.SHOP_PASS_ALREADY_CLAIMED)
 	var rw: Dictionary = reward_at(level)
 	if rw.is_empty():
-		return "보상이 없는 단계입니다"
+		return Loc.t(L.SHOP_PASS_NO_REWARD)
 	var cur: Dictionary = profile.get("currency", {})
 	var key: String = String(rw["currency"])
 	cur[key] = maxi(0, int(cur.get(key, 0)) + int(rw["amount"]))

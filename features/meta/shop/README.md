@@ -4,6 +4,10 @@ Lobby `상점` / `패스` tabs — local gacha, shard purchases, trait crafting,
 free weekly pass. Contract: `docs/outgame_dev_plan.md` §12 (row E). Tab contract:
 `features/meta/lobby/LobbyScreen.gd` header.
 
+표시 텍스트는 l10n key (`shop` 도메인 + 공유 `ui.*` · `term.*`) — rule messages (`Gacha.check`, `ShopCatalog`, `PassSystem.claim`)
+are returned already translated (`Loc.t`, never stored); rarity names via `GameEnums.rarity_label`. Scene nodes the scripts
+fill carry `auto_translate_mode = 2` (on the root of the fully code-filled item scenes); fixed captions are key literals.
+
 ## Files
 | File | Class | Role |
 |---|---|---|
@@ -14,7 +18,7 @@ free weekly pass. Contract: `docs/outgame_dev_plan.md` §12 (row E). Tab contrac
 | `UI_Comp_ShopRateChip.tscn` · `UI_Comp_ShopShardRow.tscn` · `UI_Comp_ShopCraftRow.tscn` · `UI_Comp_ShopExchangeRow.tscn` | *(no script)* | ShopTab items: banner rate pill · 파편 상점 row (`%PositionBadge_Position` = `PositionBadge`) · 특성 제작 row · 교환소 row, filled by `ShopTab` |
 | `PassTab.gd` · `UI_View_PassTab.tscn` | `class_name PassTab extends Control` | 패스 tab — header (week · reset countdown · level · exp bar) + 25 reward rows, action bar `모두 수령` |
 | `UI_Comp_PassRow.tscn` | *(no script)* | One pass level row (Lv chip · reward · `수령` button or status), filled by `PassTab` |
-| `ShopPopup.gd` · `UI_View_ShopPopup.tscn` | `class_name ShopPopup extends CanvasLayer` | Modal for both tabs: gacha / purchase **reveal** cards and the **rates** table — see **ShopPopup scene** below. Also owns `rarity_color` (delegates to `TraitUi.rarity_color` — one rarity palette for both pools), `currency_label` (`CURRENCY_LABELS`), `wrap_label` |
+| `ShopPopup.gd` · `UI_View_ShopPopup.tscn` | `class_name ShopPopup extends CanvasLayer` | Modal for both tabs: gacha / purchase **reveal** cards and the **rates** table — see **ShopPopup scene** below. Also owns `rarity_color` (delegates to `TraitUi.rarity_color` — one rarity palette for both pools), `currency_label` (`CURRENCY_LABELS` = l10n keys `shop.currency.*` · `term.currency.levelup`, translated on read), `wrap_label` |
 | `ShopRevealItem.gd` · `UI_Comp_ShopRevealItem.tscn` | `class_name ShopRevealItem extends Panel` | One reveal card (168 × 300 tile) — `show_result(e)` fills it and paints the rarity / result colours |
 | `UI_Comp_ShopRateRow.tscn` | *(no script)* | One rates-table row (divider · rarity chip · % · count · per-item %), filled by `ShopPopup.open_rates` |
 

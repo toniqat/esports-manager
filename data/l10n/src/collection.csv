@@ -1,0 +1,37 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_XJ3733JBC4,collection.bt_kind.stat_flat,active,CollectionDetailSheet breakthrough row kind,,,능력치,Stats,draft,9e9117d0
+tx_YD2EQQHJ2J,collection.bt_kind.salary_down,active,CollectionDetailSheet breakthrough row kind,,,샐러리,Salary,draft,9151baf7
+tx_DWRZXTZQ0S,collection.bt_kind.stat_growth,active,CollectionDetailSheet breakthrough row kind,,,성장,Growth,draft,705103b6
+tx_H8X320PPVZ,collection.bt_kind.card_swap,active,CollectionDetailSheet breakthrough row kind,,,카드,Card,draft,7dedeb82
+tx_PG7FCBCBZW,collection.detail.home_team,active,CollectionDetailSheet hero line; team = short team name,,,원소속 {team},Original team {team},draft,bb18ee78
+tx_5FY78SBB83,collection.detail.chip_max_level,active,CollectionDetailSheet chip,,,최대 Lv {level},Max Lv {level},draft,00277cbe
+tx_CTQQ4XFQEQ,collection.detail.chip_breakthrough,active,CollectionDetailSheet chip,,,돌파 {n} / {max},Breakthrough {n} / {max},draft,099e4889
+tx_9EZ04GCN4E,collection.detail.chip_dupes,active,CollectionDetailSheet chip - duplicate count,,,중복 {n},Dupes {n},draft,07a3bbe9
+tx_PN4P0CH5VW,collection.detail.salary_at_level,active,CollectionDetailSheet salary title,,,샐러리 (Lv {level} 기준),Salary (at Lv {level}),draft,0e26d783
+tx_TR71X7EVNB,collection.detail.exp_maxed,active,CollectionDetailSheet EXP line at max level,,,최대 레벨 도달 · 누적 {exp},Max level reached · Total {exp},draft,88252244
+tx_3VKTC1NERB,collection.detail.stats_title,active,CollectionDetailSheet stats header,,,능력치 · Lv {level},Stats · Lv {level},draft,41afa9b3
+tx_2SNR4GA6TY,collection.detail.stats_title_bt,active,CollectionDetailSheet stats header with breakthrough,,,능력치 · Lv {level} · 돌파 {bt} 반영,Stats · Lv {level} · Breakthrough {bt} applied,draft,97e280a4
+tx_4W7V6DAZPB,collection.detail.stats_title_unowned,active,"CollectionDetailSheet stats header, unowned pilot",,,능력치 · Lv {level} (영입 시),Stats · Lv {level} (when recruited),draft,38862674
+tx_0MBQ7AV2G7,collection.detail.stat_total,active,CollectionDetailSheet stat chip - sum of six stats,,,종합,Total,draft,f7c86d76
+tx_KG9T7XN1BP,collection.detail.bt_after,active,CollectionDetailSheet under the breakthrough table,,,{n}단계 이후의 중복은 선수 파편으로 바뀝니다,Duplicates after stage {n} become player shards,draft,464f8c02
+tx_YV3JCRK2S2,collection.detail.bt_reached,active,CollectionDetailSheet breakthrough row state,,,달성,Reached,draft,f3b8c1b4
+tx_6GEAQ9MXY6,collection.detail.bt_next,active,CollectionDetailSheet breakthrough row state (next stage),,,다음,Next,draft,854c76f3
+tx_HSQ15CV8Y2,collection.detail.cards_title_swapped,active,CollectionDetailSheet cards header when a breakthrough swapped a card,,,파일럿 카드 · 돌파로 교체됨,Pilot Cards · Swapped by Breakthrough,draft,e40aeff2
+tx_XACDTDAQPV,collection.detail.cannot_unowned,active,CollectionDetailSheet status line,,,미보유 선수는 레벨업할 수 없습니다,You can't level up a player you don't own,draft,90d8fbe9
+tx_BJC1VNRZ53,collection.detail.at_max_level,active,CollectionDetailSheet status line,,,최대 레벨입니다 (Lv {level}),Already at max level (Lv {level}),draft,ecf5c6ff
+tx_BVZ98DQNCY,collection.detail.not_enough,active,CollectionDetailSheet status line,,,레벨업 재화가 부족합니다 ({cost} 필요 · 보유 {have}),Not enough level-up currency ({cost} needed · {have} owned),draft,f0396da0
+tx_KQ3ABKZKS0,collection.detail.status_hint,active,CollectionDetailSheet status line (idle),,,레벨업 재화 {have} 보유 · 최대 레벨 +1 = 런에서 고를 수 있는 레벨 +1,{have} level-up currency owned · Max level +1 = +1 level you can pick in runs,draft,df5d8fa8
+tx_92R8M8EJTT,collection.detail.level_up_cost,active,CollectionDetailSheet level-up button with cost,,,레벨업  ·  {cost},Level Up  ·  {cost},draft,f41940e3
+tx_97RM66T6H0,collection.detail.level_up_save_failed,active,CollectionDetailSheet status after level-up,,,Lv {level} — 저장 실패: {error},Lv {level} — Save failed: {error},draft,2f5794c7
+tx_8R6YZ1P81K,collection.detail.level_up_done,active,CollectionDetailSheet status after level-up,,,최대 레벨 Lv {level} 달성,Max level Lv {level} reached,draft,ba15e49f
+tx_2AGPWN10YF,collection.detail.unowned_note,active,UI_View_CollectionDetailSheet UnownedNote (scene),,,아직 보유하지 않은 선수입니다.\n상점의 선수 가챠나 파편 확정 구매로 영입합니다.,You don't own this player yet.\nRecruit them from the shop's player gacha or buy them with shards.,draft,4513c199
+tx_5MS4DQRXJH,collection.tab.load_error,active,CollectionTab load error,,,선수 데이터를 읽지 못했습니다: {error},Couldn't read player data: {error},draft,441b3f67
+tx_GMWHDWE858,collection.tab.toast_leveled,active,CollectionTab toast after level-up,,,{name} 최대 레벨 Lv {level},{name} max level Lv {level},draft,fa7ec11d
+tx_0QNPGM6VF5,collection.collection_cell.hint,active,UI_Comp_CollectionCell.tscn Hint text,,,상점에서 영입,Recruit in the shop,draft,76226b58
+tx_6K04AA443J,collection.collection_detail_sheet.exp_title,active,UI_View_CollectionDetailSheet.tscn Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/Hero/Info/ExpBlock/ExpTitle text,,,선수 EXP,Player EXP,draft,ebeac6e1
+tx_JEPJHXHB1A,collection.collection_detail_sheet.bonus_title,active,UI_View_CollectionDetailSheet.tscn Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/Hero/Info/BonusRow/BonusTitle text,,,훈련 EXP 보너스 (돌파),Training EXP Bonus (Breakthrough),draft,85a038bf
+tx_FN1RTFB39A,collection.collection_detail_sheet.stat_note_label,active,UI_View_CollectionDetailSheet.tscn Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/StatsSection/StatNote/StatNoteLabel text,,,초록 숫자 = Lv1 · 돌파 전 대비,Green numbers = vs. Lv1 · before breakthrough,draft,b715f870
+tx_E8MWC8R25R,collection.collection_detail_sheet.bt_title,active,UI_View_CollectionDetailSheet.tscn Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/BtSection/BtHeader/BtTitle text,,,돌파 — 중복 영입마다 한 단계,Breakthrough — one stage per duplicate recruit,draft,19795320
+tx_MJR84KHMPT,collection.collection_detail_sheet.bt_empty_label,active,UI_View_CollectionDetailSheet.tscn Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/BtSection/BtEmpty/BtEmptyLabel text,,,돌파 표 없음,No breakthrough table,draft,2091a4b7
+tx_WEMGESKYB6,collection.collection_tab.owned_title,active,UI_View_CollectionTab.tscn VBox/Top/TopVBox/Summary/Pad/Content/OwnedTitle text,,,보유 선수,Owned Players,draft,940d819a
+tx_YEC6P2JRFH,collection.collection_tab.shard_title,active,UI_View_CollectionTab.tscn VBox/Top/TopVBox/Summary/Pad/Content/ShardTitle text,,,선수 파편,Player Shards,draft,c9c8b3c4

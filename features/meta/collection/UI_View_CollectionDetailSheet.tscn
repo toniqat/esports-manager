@@ -134,6 +134,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Name" type="Label" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/Hero/Info/TitleBlock"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_hero()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -147,6 +148,7 @@ text = "Corin"
 clip_text = true
 
 [node name="RoleLine" type="Label" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/Hero/Info/TitleBlock"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_hero()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -186,9 +188,10 @@ anchors_preset = -1
 anchor_right = 0.5
 offset_bottom = 32.0
 theme_type_variation = &"CaptionLabel"
-text = "선수 EXP"
+text = "tx_6K04AA443J"
 
 [node name="ExpValue" type="Label" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/Hero/Info/ExpBlock"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_exp()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -241,8 +244,7 @@ offset_bottom = 70.0
 grow_horizontal = 2
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 24
-text = "아직 보유하지 않은 선수입니다.
-상점의 선수 가챠나 파편 확정 구매로 영입합니다."
+text = "tx_2AGPWN10YF"
 autowrap_mode = 3
 
 [node name="SalaryGap" type="Control" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/Hero/Info"]
@@ -256,6 +258,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="SalaryTitle" type="Label" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/Hero/Info/SalaryRow"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_hero()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -292,7 +295,7 @@ anchors_preset = -1
 anchor_right = 0.6
 offset_bottom = 32.0
 theme_type_variation = &"CaptionLabel"
-text = "훈련 EXP 보너스 (돌파)"
+text = "tx_JEPJHXHB1A"
 
 [node name="Bonus" type="Label" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/Hero/Info/BonusRow"]
 editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_hero()"
@@ -319,6 +322,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="StatsTitle" type="Label" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/StatsSection/StatsHeader"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_stats()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -366,7 +370,7 @@ offset_bottom = 36.0
 grow_horizontal = 2
 theme_type_variation = &"FaintLabel"
 theme_override_font_sizes/font_size = 20
-text = "초록 숫자 = Lv1 · 돌파 전 대비"
+text = "tx_FN1RTFB39A"
 horizontal_alignment = 2
 clip_text = true
 
@@ -387,7 +391,7 @@ anchor_right = 1.0
 offset_bottom = 44.0
 grow_horizontal = 2
 theme_type_variation = &"BodyLabel"
-text = "돌파 — 중복 영입마다 한 단계"
+text = "tx_E8MWC8R25R"
 clip_text = true
 
 [node name="Divider" type="HSeparator" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/BtSection/BtHeader"]
@@ -416,6 +420,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="BtAfterLabel" type="Label" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/BtSection/BtAfter"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_breakthrough()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -445,7 +450,7 @@ anchor_right = 1.0
 offset_bottom = 32.0
 grow_horizontal = 2
 theme_type_variation = &"FaintLabel"
-text = "돌파 표 없음"
+text = "tx_MJR84KHMPT"
 
 [node name="CardsSection" type="VBoxContainer" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body"]
 layout_mode = 2
@@ -458,6 +463,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="CardsTitle" type="Label" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/CardsSection/CardsHeader"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_cards()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -508,6 +514,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Status" type="Label" parent="Root/SafeArea/Sheet/VBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_footer()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 40)
@@ -535,9 +542,10 @@ layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"GhostButton"
-text = "닫기"
+text = "tx_R1DMEF1S3E"
 
 [node name="LevelUp" type="Button" parent="Root/SafeArea/Sheet/VBox/Buttons"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_footer() · CollectionDetailSheet.gd _fill_preview() · CollectionDetailSheet.gd _ready()"
 unique_name_in_owner = true
 layout_mode = 2

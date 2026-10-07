@@ -2,6 +2,10 @@
 
 Manager growth and presets between runs. Contract: `docs/outgame_dev_plan.md` §12.
 
+표시 텍스트는 l10n key (`manager` 도메인 + 공유 `ui.*` · `term.*`) — `ManagerProgress` error strings are returned
+already translated (`Loc.t`, never stored), stat names via `StaffSystem.stat_label`, trait rarity via
+`GameEnums.rarity_label`. Scene nodes the scripts fill carry `auto_translate_mode = 2`; fixed captions are key literals.
+
 ## Files
 | File | Class | Role |
 |---|---|---|
@@ -13,7 +17,7 @@ Manager growth and presets between runs. Contract: `docs/outgame_dev_plan.md` §
 | `UI_Comp_TraitPickerRow.tscn` | — (no script) | Item scene: one trait row (Button): `%Badge`/`%Sign`, Head HBox `%Name` + chips (`%Rarity`/`%RarityText`, `%LayerText`, `%New`), `%Desc`, `%Unlock` (locked), `%Cost`, `%Equipped` |
 | `UI_Comp_ManagerPresetChips.tscn` + `.gd` | `class_name ManagerPresetChips extends GridContainer` | Preset chip grid shared with the run setup `감독` step (5 columns, gap 12, equal widths): `fill(profile, selected)`, signal `chip_pressed(idx)`. Placed as a scene instance in both hosts |
 | `UI_Comp_ManagerPresetChip.tscn` | — (no script) | Item scene: one preset chip (Button, h 104): `%Name`, `%Status` |
-| `ManagerUi.gd` | `class_name ManagerUi extends RefCounted` (static) | Shared pieces: read-only `add_stat_cells` (still code-built), `preset_name`, `signed`, `bonus_color`, `unlock_text` (§12.4 grammar → Korean) |
+| `ManagerUi.gd` | `class_name ManagerUi extends RefCounted` (static) | Shared pieces: read-only `add_stat_cells` (still code-built), `preset_name`, `signed`, `bonus_color`, `unlock_text` (§12.4 grammar → `manager.unlock.*` text) |
 
 ## F6 preview (standalone run)
 `ManagerTab` shows dummy data when run on its own (editor "Run Current Scene") — `_ready` →

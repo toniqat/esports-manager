@@ -25,6 +25,7 @@ mouse_filter = 2
 theme_type_variation = &"Divider"
 
 [node name="Key" type="Label" parent="."]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ManagerTab.gd _ready()"
 unique_name_in_owner = true
 layout_mode = 0
@@ -36,6 +37,7 @@ theme_override_font_sizes/font_size = 28
 text = "훈련"
 
 [node name="Parts" type="Label" parent="."]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_stats()"
 unique_name_in_owner = true
 layout_mode = 0
@@ -74,7 +76,7 @@ focus_mode = 0
 mouse_filter = 1
 theme_type_variation = &"GhostButton"
 theme_override_font_sizes/font_size = 24
-text = "제거"
+text = "tx_RH1YF1BXER"
 
 [node name="Minus" type="Button" parent="."]
 editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_stats() · ManagerTab.gd _ready()"

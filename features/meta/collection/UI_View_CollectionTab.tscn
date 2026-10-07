@@ -65,7 +65,7 @@ offset_top = 16.0
 offset_right = 300.0
 offset_bottom = 46.0
 theme_type_variation = &"CaptionLabel"
-text = "보유 선수"
+text = "tx_WEMGESKYB6"
 
 [node name="OwnedCount" type="Label" parent="VBox/Top/TopVBox/Summary/Pad/Content"]
 editor_description = "[필수] 지우면 오류 — CollectionTab.gd _owned_lbl"
@@ -108,7 +108,7 @@ offset_right = -236.0
 offset_bottom = 46.0
 grow_horizontal = 0
 theme_type_variation = &"CaptionLabel"
-text = "레벨업 재화"
+text = "tx_R68VA861B3"
 horizontal_alignment = 2
 
 [node name="Levelup" type="Label" parent="VBox/Top/TopVBox/Summary/Pad/Content"]
@@ -138,7 +138,7 @@ offset_top = 16.0
 offset_bottom = 46.0
 grow_horizontal = 0
 theme_type_variation = &"CaptionLabel"
-text = "선수 파편"
+text = "tx_YEC6P2JRFH"
 horizontal_alignment = 2
 
 [node name="Shards" type="Label" parent="VBox/Top/TopVBox/Summary/Pad/Content"]
@@ -171,42 +171,42 @@ layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"SelectableTile"
-text = "전체"
+text = "tx_18TM214PEP"
 
 [node name="Top" type="Button" parent="VBox/Top/TopVBox/Filters"]
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"SelectableTile"
-text = "탑"
+text = "tx_WGVRW01FAK"
 
 [node name="Jungle" type="Button" parent="VBox/Top/TopVBox/Filters"]
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"SelectableTile"
-text = "정글"
+text = "tx_AEVV05C031"
 
 [node name="Mid" type="Button" parent="VBox/Top/TopVBox/Filters"]
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"SelectableTile"
-text = "미드"
+text = "tx_AJHRSFRY14"
 
 [node name="Adc" type="Button" parent="VBox/Top/TopVBox/Filters"]
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"SelectableTile"
-text = "원딜"
+text = "tx_6FWKS7JH3P"
 
 [node name="Support" type="Button" parent="VBox/Top/TopVBox/Filters"]
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"SelectableTile"
-text = "서폿"
+text = "tx_KAGZSJJGSE"
 
 [node name="Scroll" type="ScrollContainer" parent="VBox"]
 unique_name_in_owner = true
@@ -237,6 +237,7 @@ theme_override_constants/margin_right = 24
 theme_override_constants/margin_bottom = 0
 
 [node name="LoadErrorText" type="Label" parent="VBox/Scroll/Body/LoadError"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — CollectionTab.gd _bind()"
 unique_name_in_owner = true
 layout_mode = 2

@@ -30,7 +30,7 @@ func show_result(e: Dictionary) -> void:
 	band_sb.corner_radius_top_left = 12
 	band_sb.corner_radius_top_right = 12
 	%Band.add_theme_stylebox_override("panel", band_sb)
-	%Rarity.text = TraitSystem.rarity_name(rar)
+	%Rarity.text = GameEnums.rarity_label(rar)
 
 	var id: int = int(e.get("id", -1))
 	var is_pilot: bool = String(e.get("pool", "")) == Gacha.POOL_PILOT
@@ -54,17 +54,17 @@ func _show_tag(e: Dictionary) -> void:
 	var tag_fg: Color = OutgameTheme.TEXT_SUB
 	match String(e.get("result", "")):
 		"new":
-			tag = "NEW"
+			tag = Loc.t(L.SHOP_REVEAL_TAG_NEW)
 			tag_bg = OutgameTheme.ACCENT
 			tag_fg = OutgameTheme.TEXT_ON_FILL
 		"breakthrough":
-			tag = "돌파 %d" % int(e.get("stage", 0))
+			tag = Loc.t(L.SHOP_REVEAL_TAG_BREAKTHROUGH, {"n": int(e.get("stage", 0))})
 			tag_bg = OutgameTheme.CARD_TINTS[3]
 			tag_fg = OutgameTheme.TEXT_ON_FILL
 		"shard":
-			tag = "파편 +%d" % int(e.get("shards", 0))
+			tag = Loc.t(L.SHOP_REVEAL_TAG_SHARDS, {"n": int(e.get("shards", 0))})
 		"material":
-			tag = "재료 +%d" % int(e.get("amount", 0))
+			tag = Loc.t(L.SHOP_REVEAL_TAG_MATERIAL, {"n": int(e.get("amount", 0))})
 	var chip: Panel = %Tag
 	chip.visible = tag != ""
 	if tag == "":

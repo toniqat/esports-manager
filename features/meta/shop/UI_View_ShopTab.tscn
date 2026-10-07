@@ -51,7 +51,7 @@ theme_type_variation = &"GhostButton"
 theme_override_colors/font_color = Color(0.769, 0.521, 0.11, 1)
 theme_override_colors/font_hover_color = Color(0.769, 0.521, 0.11, 1)
 theme_override_font_sizes/font_size = 24
-text = "선수 영입"
+text = "tx_PWQQ7TRXFX"
 
 [node name="SegTrait" type="Button" parent="Segments/Pad/Row"]
 unique_name_in_owner = true
@@ -60,7 +60,7 @@ size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"TextButton"
 theme_override_font_sizes/font_size = 24
-text = "특성 연구"
+text = "tx_MMHN8MG47X"
 
 [node name="SegShard" type="Button" parent="Segments/Pad/Row"]
 unique_name_in_owner = true
@@ -69,7 +69,7 @@ size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"TextButton"
 theme_override_font_sizes/font_size = 24
-text = "파편 상점"
+text = "tx_G5263CMAY1"
 
 [node name="SegCraft" type="Button" parent="Segments/Pad/Row"]
 unique_name_in_owner = true
@@ -78,7 +78,7 @@ size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"TextButton"
 theme_override_font_sizes/font_size = 24
-text = "특성 제작"
+text = "tx_84MYVJ17GD"
 
 [node name="SegExchange" type="Button" parent="Segments/Pad/Row"]
 unique_name_in_owner = true
@@ -87,7 +87,7 @@ size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"TextButton"
 theme_override_font_sizes/font_size = 24
-text = "교환소"
+text = "tx_NW50K9HBCE"
 
 [node name="Body" type="Control" parent="."]
 layout_mode = 1
@@ -152,6 +152,7 @@ mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="BannerTitle" type="Label" parent="Body/GachaView/VBox/Banner/Pad/VBox/Head"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ShopTab.gd _fill_gacha()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 70)
@@ -171,7 +172,7 @@ size_flags_vertical = 0
 focus_mode = 0
 theme_type_variation = &"OnFillTextButton"
 theme_override_font_sizes/font_size = 24
-text = "확률 보기"
+text = "tx_33WRAHQJKW"
 
 [node name="Gap1" type="Control" parent="Body/GachaView/VBox/Banner/Pad/VBox"]
 custom_minimum_size = Vector2(0, 3)
@@ -184,6 +185,7 @@ mouse_filter = 2
 theme_override_constants/margin_right = 10
 
 [node name="BannerSub" type="Label" parent="Body/GachaView/VBox/Banner/Pad/VBox/SubPad"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ShopTab.gd _fill_gacha()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 70)
@@ -236,6 +238,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="TicketLabel" type="Label" parent="Body/GachaView/VBox/Holdings/Ticket"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ShopTab.gd _fill_gacha()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 32)
@@ -250,6 +253,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="TicketValue" type="Label" parent="Body/GachaView/VBox/Holdings/Ticket"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ShopTab.gd _fill_gacha()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 50)
@@ -276,6 +280,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="MoneyLabel" type="Label" parent="Body/GachaView/VBox/Holdings/Money"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ShopTab.gd _fill_gacha()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 32)
@@ -316,6 +321,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="OwnedLabel" type="Label" parent="Body/GachaView/VBox/Holdings/Owned"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ShopTab.gd _fill_gacha()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 32)
@@ -351,6 +357,7 @@ mouse_filter = 2
 theme_override_constants/separation = 20
 
 [node name="PullOne" type="Button" parent="Body/GachaView/VBox/Pulls"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ShopTab.gd _fill_gacha() · ShopTab.gd _fill_preview() · ShopTab.gd _ready()"
 unique_name_in_owner = true
 layout_mode = 2
@@ -361,6 +368,7 @@ text = "1회 영입
 선수권 1"
 
 [node name="PullMulti" type="Button" parent="Body/GachaView/VBox/Pulls"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ShopTab.gd _fill_gacha() · ShopTab.gd _fill_preview() · ShopTab.gd _ready()"
 unique_name_in_owner = true
 layout_mode = 2
@@ -377,6 +385,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Note" type="Label" parent="Body/GachaView/VBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ShopTab.gd _fill_gacha()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 70)
@@ -414,6 +423,7 @@ mouse_filter = 2
 theme_override_constants/separation = 2
 
 [node name="HeadTitle" type="Label" parent="Body/ListView/Head/VBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ShopTab.gd _section_head()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 42)
@@ -423,6 +433,7 @@ theme_override_font_sizes/font_size = 30
 text = "보유 선수 파편 200"
 
 [node name="HeadSub" type="Label" parent="Body/ListView/Head/VBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ShopTab.gd _section_head()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 34)
@@ -486,9 +497,10 @@ offset_bottom = 56.0
 grow_horizontal = 2
 theme_type_variation = &"NegativeLabel"
 theme_override_font_sizes/font_size = 30
-text = "개발용"
+text = "tx_G4RY3DMSCT"
 
 [node name="DevDesc" type="Label" parent="Body/ListView/Scroll/ScrollPad/VBox/DevRow"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ShopTab.gd _ready()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -504,6 +516,7 @@ text = "유료 재화는 지금 기기 안의 숫자일 뿐입니다 (결제 없
 autowrap_mode = 3
 
 [node name="DevGrant" type="Button" parent="Body/ListView/Scroll/ScrollPad/VBox/DevRow"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ShopTab.gd _fill_exchange() · ShopTab.gd _fill_preview() · ShopTab.gd _ready()"
 unique_name_in_owner = true
 layout_mode = 1

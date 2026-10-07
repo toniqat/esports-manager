@@ -3,6 +3,7 @@
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
 [node name="CollectionBreakthroughRow" type="Panel"]
+auto_translate_mode = 2
 editor_description = "One stage of the 돌파 table (CollectionDetailSheet). Row / disc styles and the reached · next colours are data — the sheet applies them."
 custom_minimum_size = Vector2(0, 76)
 offset_right = 960.0

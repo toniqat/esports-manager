@@ -41,6 +41,7 @@ mouse_filter = 2
 color = Color(0.13, 0.68, 0.38, 1)
 
 [node name="Name" type="Label" parent="Frame"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — TraitPickerView.gd"
 unique_name_in_owner = true
 layout_mode = 1
@@ -58,6 +59,7 @@ horizontal_alignment = 1
 clip_text = true
 
 [node name="Cost" type="Label" parent="Frame"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — TraitPickerView.gd"
 unique_name_in_owner = true
 layout_mode = 1
@@ -94,6 +96,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_type_variation = &"FaintLabel"
-text = "빈 칸"
+text = "tx_G048A7DZEH"
 horizontal_alignment = 1
 vertical_alignment = 1

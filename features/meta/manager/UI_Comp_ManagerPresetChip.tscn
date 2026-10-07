@@ -3,6 +3,7 @@
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
 [node name="ManagerPresetChip" type="Button"]
+auto_translate_mode = 2
 editor_description = "One preset chip of ManagerPresetChips (lobby 감독 tab · run setup 감독 step). Frame ManagerPresetChip / ManagerPresetChipOn = selected (code). Name BodyLabel / SubLabel; status line FaintLabel (특성 n) · AccentLabel (● 사용 중) · NegativeLabel (재설정 필요) — picked by ManagerPresetChips.fill. Mouse = Pass (inside a DragScroll)."
 custom_minimum_size = Vector2(0, 104)
 offset_right = 196.0

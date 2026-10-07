@@ -36,7 +36,7 @@ func _ready() -> void:
 
 
 func bar_specs() -> Array:
-	return [{"text": "모두 수령", "style": "primary", "font": 32, "weight": 1.0}]
+	return [{"text": Loc.t(L.SHOP_PASS_CLAIM_ALL), "style": "primary", "font": 32, "weight": 1.0}]
 
 
 func setup(host: LobbyScreen) -> void:
@@ -59,12 +59,13 @@ func on_bar_pressed(_i: int) -> void:
 func claim_all() -> void:
 	var got: Dictionary = PassSystem.claim_all(_pm.profile)
 	if int(got["count"]) <= 0:
-		_host.show_toast("받을 보상이 없습니다", true)
+		_host.show_toast(Loc.t(L.SHOP_PASS_NOTHING_TO_CLAIM), true)
 		return
 	var parts: Array = []
 	for k in (got["gained"] as Dictionary).keys():
 		parts.append("%s +%d" % [ShopPopup.currency_label(String(k)), int(got["gained"][k])])
-	_after_claim("%d개 수령 · %s" % [int(got["count"]), ", ".join(parts)])
+	_after_claim(Loc.t(L.SHOP_PASS_CLAIMED_ALL_TOAST, {"n": int(got["count"]),
+			"rewards": Loc.t(L.UI_LIST_SEPARATOR).join(PackedStringArray(parts))}))
 
 
 func claim_level(level: int) -> void:
@@ -73,8 +74,8 @@ func claim_level(level: int) -> void:
 		_host.show_toast(err, true)
 		return
 	var rw: Dictionary = PassSystem.reward_at(level)
-	_after_claim("Lv %d 보상 · %s +%d" % [level, ShopPopup.currency_label(String(rw["currency"])),
-			int(rw["amount"])])
+	_after_claim(Loc.t(L.SHOP_PASS_CLAIMED_TOAST, {"level": level,
+			"currency": ShopPopup.currency_label(String(rw["currency"])), "amount": int(rw["amount"])}))
 
 
 func _after_claim(msg: String) -> void:
@@ -84,7 +85,7 @@ func _after_claim(msg: String) -> void:
 	_scroll_v = (%Scroll as ScrollContainer).scroll_vertical
 	_rebuild()
 	if err != "":
-		_host.show_toast("저장 실패: " + err, true)
+		_host.show_toast(Loc.t(L.UI_ERROR_SAVE_FAILED, {"error": err}), true)
 	else:
 		_host.show_toast(msg)
 
@@ -102,18 +103,17 @@ func _fill_head() -> void:
 	var p: Dictionary = _pm.profile
 	var max_lv: int = PassSystem.max_level()
 	var week: String = String((p.get("pass", {}) as Dictionary).get("week_id", ""))
-	%Week.text = "%s · 초기화까지 %s" % [week, _reset_text()]
+	%Week.text = Loc.t(L.SHOP_PASS_WEEK_LINE, {"week": week, "time": _reset_text()})
 	%Level.text = "Lv %d" % PassSystem.level_of(p)
 	%MaxLevel.text = "/ %d" % max_lv
 	var prog: Dictionary = PassSystem.level_progress(p)
-	%Exp.text = "최고 레벨" if int(prog["need"]) == 0 			else "EXP %d / %d" % [int(prog["into"]), int(prog["need"])]
+	%Exp.text = Loc.t(L.UI_WORD_MAX_LEVEL) if int(prog["need"]) == 0 			else "EXP %d / %d" % [int(prog["into"]), int(prog["need"])]
 	var frac: float = 1.0 if int(prog["need"]) == 0 else float(prog["into"]) / float(prog["need"])
 	var fill: Control = %Fill
 	fill.visible = frac > 0.0
 	fill.anchor_right = clampf(frac, 0.0, 1.0)
 	fill.offset_right = 0.0
-	%Info.text = UiHelpers.keep_words(
-			"런을 마치면 런 점수만큼 패스 EXP 를 얻습니다. Lv %d 를 넘긴 EXP 는 아웃게임 재화로 바뀝니다. 보상은 직접 수령해야 하며, 매주 월요일 0시(기기 시각)에 초기화됩니다." % max_lv)
+	%Info.text = UiHelpers.keep_words(Loc.t(L.SHOP_PASS_INFO, {"max": max_lv}))
 
 
 func _reset_text() -> String:
@@ -121,8 +121,8 @@ func _reset_text() -> String:
 	var d: int = s / 86400
 	var h: int = (s % 86400) / 3600
 	if d > 0:
-		return "%d일 %d시간" % [d, h]
-	return "%d시간 %d분" % [h, (s % 3600) / 60]
+		return Loc.t(L.SHOP_PASS_TIME_DH, {"d": d, "h": h})
+	return Loc.t(L.SHOP_PASS_TIME_HM, {"h": h, "m": (s % 3600) / 60})
 
 
 func _fill_rows() -> void:
@@ -164,7 +164,8 @@ func _fill_rows() -> void:
 		else:
 			row.get_node("%StatusBox").visible = true
 			var st: Label = row.get_node("%Status")
-			st.text = "수령 완료" if claimed else ("잠김" if not reached else "")
+			st.text = Loc.t(L.SHOP_PASS_CLAIMED) if claimed \
+					else (Loc.t(L.UI_WORD_LOCKED) if not reached else "")
 			st.add_theme_color_override("font_color",
 					OutgameTheme.TEXT_FAINT if not claimed else OutgameTheme.POSITIVE)
 	var target: int = _scroll_v
@@ -181,7 +182,7 @@ func _restore_scroll(sc: ScrollContainer, v: int) -> void:
 ## F6 단독 실행 미리보기 — 실제 프로필의 이번 주 패스 (`resources/UiPreview.gd`).
 ## `on_shown` · `_rebuild` 는 주가 바뀌면 저장하고 호스트의 행동 바를 읽으므로 쓰지 않고
 ## 머리 · 줄만 채운다(주 넘김은 메모리에만). 수령 버튼은 저장하므로 누름을 출력만 한다.
-func _fill_preview() -> void:
+func _fill_preview() -> void:  # l10n-ignore
 	# 호스트가 하듯 탭 루트를 화면 전체로 편다(씬의 1080 × n 은 에디터 미리보기 크기일 뿐).
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	UiPreview.stage(self)

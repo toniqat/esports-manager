@@ -29,10 +29,10 @@ static func shard_price(pilot_id: int) -> int:
 ## "" when the pilot can be bought now (ignoring the price), else why not.
 static func shard_block_reason(pm: Node, pilot_id: int) -> String:
 	if shard_price(pilot_id) < 0:
-		return "판매하지 않는 선수입니다"
+		return Loc.t(L.SHOP_CATALOG_NOT_SOLD)
 	if int(pm.max_level_of(pilot_id)) > 0 \
 			and int(pm.breakthrough_of(pilot_id)) >= RunRules.breakthrough_max():
-		return "돌파 완료"
+		return Loc.t(L.SHOP_CATALOG_BT_COMPLETE)
 	return ""
 
 
@@ -43,7 +43,7 @@ static func buy_pilot(pm: Node, pilot_id: int, grant: Dictionary = {}) -> String
 		return why
 	var price: int = shard_price(pilot_id)
 	if not pm.spend_currency("pilot_shard", price):
-		return "선수 파편이 부족합니다 (%d 필요)" % price
+		return Loc.t(L.SHOP_CATALOG_NOT_ENOUGH_SHARDS, {"n": price})
 	grant.merge(pm.grant_pilot(pilot_id), true)
 	return ""
 
@@ -55,9 +55,9 @@ static func craft_cost(trait_id: int) -> int:
 
 static func craft_block_reason(pm: Node, trait_id: int) -> String:
 	if TraitSystem.row(trait_id).is_empty() or craft_cost(trait_id) <= 0:
-		return "제작 불가"
+		return Loc.t(L.SHOP_CATALOG_CANNOT_CRAFT)
 	if pm.owns_trait(trait_id):
-		return "보유 중"
+		return Loc.t(L.SHOP_CATALOG_OWNED)
 	return ""
 
 
@@ -67,7 +67,7 @@ static func craft_trait(pm: Node, trait_id: int) -> String:
 		return why
 	var cost: int = craft_cost(trait_id)
 	if not pm.spend_currency("trait_mat", cost):
-		return "특성 재료가 부족합니다 (%d 필요)" % cost
+		return Loc.t(L.SHOP_CATALOG_NOT_ENOUGH_MAT, {"n": cost})
 	pm.grant_trait(trait_id)
 	return ""
 
@@ -84,7 +84,7 @@ static func levelup_exchange_gain() -> int:
 static func exchange_levelup(pm: Node) -> String:
 	var cost: int = levelup_exchange_cost()
 	if not pm.spend_currency("outgame", cost):
-		return "재화가 부족합니다 (%d 필요)" % cost
+		return Loc.t(L.UI_ERROR_NOT_ENOUGH_CURRENCY, {"n": cost})
 	pm.add_currency("levelup", levelup_exchange_gain())
 	return ""
 
@@ -97,7 +97,7 @@ static func ticket_premium_price(pool: String) -> int:
 static func buy_ticket(pm: Node, pool: String) -> String:
 	var price: int = ticket_premium_price(pool)
 	if not pm.spend_currency("premium", price):
-		return "유료 재화가 부족합니다 (%d 필요)" % price
+		return Loc.t(L.SHOP_CATALOG_NOT_ENOUGH_PREMIUM, {"n": price})
 	pm.add_currency(Gacha.ticket_key(pool), 1)
 	return ""
 

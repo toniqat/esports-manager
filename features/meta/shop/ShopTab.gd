@@ -58,7 +58,7 @@ func _ready() -> void:
 	%PullOne.pressed.connect(func() -> void: _on_pull(_pool(), 1))
 	%PullMulti.pressed.connect(func() -> void: _on_pull(_pool(), Gacha.multi_count()))
 	%DevGrant.pressed.connect(_on_dev_premium)
-	%DevDesc.text = UiHelpers.keep_words(%DevDesc.text)
+	%DevDesc.text = UiHelpers.keep_words(Loc.t(L.SHOP_TAB_DEV_DESC))
 	# Drag / fling scrolling instead of the engine's touch drag (`DragScroll`).
 	DragScroll.attach(%Scroll)
 	if UiPreview.is_standalone(self):
@@ -144,10 +144,9 @@ func _fill_gacha(pool: String) -> void:
 	var banner := OutgameTheme.variation_box(&"ShopBannerCard")
 	banner.bg_color = tint
 	%Banner.add_theme_stylebox_override("panel", banner)
-	%BannerTitle.text = "선수 영입" if is_pilot else "특성 연구"
-	var sub: String = ("네임드 선수 %d인 중 한 명 · 중복은 돌파, 돌파를 다 채우면 선수 파편" %
-			Gacha.named_pilots().size()) if is_pilot \
-			else ("감독 특성 %d종 중 하나 · 이미 가진 특성은 특성 재료" % TraitSystem.rows().size())
+	%BannerTitle.text = Loc.t(L.SHOP_TAB_POOL_PILOT) if is_pilot else Loc.t(L.SHOP_TAB_POOL_TRAIT)
+	var sub: String = Loc.t(L.SHOP_TAB_BANNER_SUB_PILOT, {"n": Gacha.named_pilots().size()}) if is_pilot \
+			else Loc.t(L.SHOP_TAB_BANNER_SUB_TRAIT, {"n": TraitSystem.rows().size()})
 	%BannerSub.text = UiHelpers.keep_words(sub)
 	# Rate chips — one per rarity.
 	var chips: Node = %RateChips
@@ -158,13 +157,13 @@ func _fill_gacha(pool: String) -> void:
 		var chip: Control = chip_scene.instantiate()
 		chips.add_child(chip)
 		var t: Label = chip.get_node("%Text")
-		t.text = "%s %s%%" % [TraitSystem.rarity_name(int(r["rarity"])), _pct(float(r["pct"]))]
+		t.text = "%s %s%%" % [GameEnums.rarity_label(int(r["rarity"])), _pct(float(r["pct"]))]
 		t.add_theme_color_override("font_color", ShopPopup.rarity_color(int(r["rarity"])))
 
 	# Holdings.
 	var tk: String = Gacha.ticket_key(pool)
 	%TicketLabel.text = ShopPopup.currency_label(tk)
-	%TicketValue.text = "%d장" % int(_pm.currency_of(tk))
+	%TicketValue.text = Loc.t(L.SHOP_TAB_TICKET_COUNT, {"n": int(_pm.currency_of(tk))})
 	%MoneyLabel.text = ShopPopup.currency_label("outgame")
 	%MoneyValue.text = "%d" % int(_pm.currency_of("outgame"))
 	if is_pilot:
@@ -172,26 +171,30 @@ func _fill_gacha(pool: String) -> void:
 		for r in Gacha.named_pilots():
 			if int(_pm.max_level_of(int((r as Dictionary)["id"]))) > 0:
 				owned_named += 1
-		%OwnedLabel.text = "보유 선수"
+		%OwnedLabel.text = Loc.t(L.SHOP_TAB_OWNED_PILOTS)
 		%OwnedValue.text = "%d / %d" % [owned_named, Gacha.named_pilots().size()]
 	else:
-		%OwnedLabel.text = "보유 특성"
+		%OwnedLabel.text = Loc.t(L.SHOP_TAB_OWNED_TRAITS)
 		%OwnedValue.text = "%d / %d" % [(_pm.owned_trait_ids() as Array).size(), TraitSystem.rows().size()]
 
 	# Pull buttons — 1 (ghost) : multi (primary), primary on the right.
 	var multi: int = Gacha.multi_count()
-	var verb: String = "영입" if is_pilot else "연구"
 	var one: Button = %PullOne
-	one.text = "1회 %s\n%s" % [verb, _cost_text(pool, 1)]
+	var one_p: Dictionary = {"cost": _cost_text(pool, 1)}
+	one.text = Loc.t(L.SHOP_TAB_PULL_ONE_PILOT, one_p) if is_pilot else Loc.t(L.SHOP_TAB_PULL_ONE_TRAIT, one_p)
 	one.disabled = Gacha.check(_pm, pool, 1) != ""
 	var many: Button = %PullMulti
-	many.text = "%d회 %s\n%s" % [multi, verb, _cost_text(pool, multi)]
+	var many_p: Dictionary = {"n": multi, "cost": _cost_text(pool, multi)}
+	many.text = Loc.t(L.SHOP_TAB_PULL_MULTI_PILOT, many_p) if is_pilot \
+			else Loc.t(L.SHOP_TAB_PULL_MULTI_TRAIT, many_p)
 	many.disabled = Gacha.check(_pm, pool, multi) != ""
 
 	var disc: int = ConstTable.int_of("GACHA_MULTI_DISCOUNT_PCT")
-	var note_txt: String = "%s이 먼저 쓰이고, 모자란 만큼 재화로 치릅니다." % ShopPopup.currency_label(tk)
+	var note_p: Dictionary = {"ticket": ShopPopup.currency_label(tk), "n": multi, "pct": disc}
+	var note_txt: String = Loc.t(L.SHOP_TAB_NOTE, note_p)
 	if disc > 0:
-		note_txt += " %d회 %s는 재화로 치르는 몫이 %d%% 할인됩니다." % [multi, verb, disc]
+		note_txt = Loc.t(L.SHOP_TAB_NOTE_DISCOUNT_PILOT, note_p) if is_pilot \
+				else Loc.t(L.SHOP_TAB_NOTE_DISCOUNT_TRAIT, note_p)
 	%Note.text = UiHelpers.keep_words(note_txt)
 
 
@@ -201,7 +204,7 @@ func _cost_text(pool: String, count: int) -> String:
 	if int(c["tickets"]) > 0:
 		parts.append("%s %d" % [ShopPopup.currency_label(Gacha.ticket_key(pool)), int(c["tickets"])])
 	if int(c["currency"]) > 0 or parts.is_empty():
-		parts.append("재화 %d" % int(c["currency"]))
+		parts.append("%s %d" % [ShopPopup.currency_label("outgame"), int(c["currency"])])
 	return " + ".join(parts)
 
 
@@ -215,17 +218,15 @@ func _on_pull(pool: String, count: int) -> void:
 		_host.show_toast(String(res["error"]), true)
 		return
 	if String(res["save_error"]) != "":
-		_host.show_toast("저장 실패: " + String(res["save_error"]), true)
+		_host.show_toast(Loc.t(L.UI_ERROR_SAVE_FAILED, {"error": String(res["save_error"])}), true)
 	_after_purchase()
-	_popup.open_reveal("%s 결과" % ("선수 영입" if pool == Gacha.POOL_PILOT else "특성 연구"),
-			res["results"])
+	_popup.open_reveal(Loc.t(L.SHOP_TAB_RESULT_PILOT) if pool == Gacha.POOL_PILOT
+			else Loc.t(L.SHOP_TAB_RESULT_TRAIT), res["results"])
 
 
 # ── Shard shop ───────────────────────────────────────────────────────────────
 func _fill_shard() -> void:
-	_section_head("보유 %s %d" % [ShopPopup.currency_label("pilot_shard"),
-			int(_pm.currency_of("pilot_shard"))],
-			"원하는 선수를 확정 구매합니다. 보유한 선수면 돌파 단계가 오릅니다.")
+	_section_head(_holding("pilot_shard"), Loc.t(L.SHOP_TAB_SHARD_SUB))
 	var pilots: Array = Gacha.named_pilots().duplicate()
 	pilots.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		if int(a["rarity"]) != int(b["rarity"]):
@@ -242,15 +243,20 @@ func _fill_shard() -> void:
 				slot.size.x, rar_col)
 		(row.get_node("%Name") as Label).text = Gacha.pilot_name(pid)
 		_paint_chip(row.get_node("%Chip"), rar_col)
-		(row.get_node("%ChipText") as Label).text = TraitSystem.rarity_name(int(r["rarity"]))
+		(row.get_node("%ChipText") as Label).text = GameEnums.rarity_label(int(r["rarity"]))
 		(row.get_node("%PositionBadge_Position") as PositionBadge).set_role(int(r["role"]))
 		var owned: bool = int(_pm.max_level_of(pid)) > 0
-		(row.get_node("%Status") as Label).text = "돌파 %d/%d" % [
-				int(_pm.breakthrough_of(pid)), RunRules.breakthrough_max()] if owned else "미보유"
+		(row.get_node("%Status") as Label).text = Loc.t(L.SHOP_TAB_BT_PROGRESS, {
+				"n": int(_pm.breakthrough_of(pid)), "max": RunRules.breakthrough_max()}) if owned \
+				else Loc.t(L.UI_WORD_UNOWNED)
 		var why: String = ShopCatalog.shard_block_reason(_pm, pid)
 		var price: int = ShopCatalog.shard_price(pid)
 		var b: Button = row.get_node("%Buy")
-		b.text = "%s\n파편 %d" % ["돌파" if owned else "영입", price] if why == "" else why
+		if why != "":
+			b.text = why
+		else:
+			b.text = Loc.t(L.SHOP_TAB_BUY_BREAKTHROUGH, {"n": price}) if owned \
+					else Loc.t(L.SHOP_TAB_BUY_RECRUIT, {"n": price})
 		b.disabled = why != "" or int(_pm.currency_of("pilot_shard")) < price
 		b.pressed.connect(_on_buy_pilot.bind(pid))
 
@@ -263,16 +269,14 @@ func _on_buy_pilot(pid: int) -> void:
 		return
 	_after_purchase()
 	var r: Dictionary = Gacha.pilot_row(pid)
-	_popup.open_reveal("구매 완료", [{"pool": Gacha.POOL_PILOT, "id": pid,
+	_popup.open_reveal(Loc.t(L.SHOP_TAB_BOUGHT), [{"pool": Gacha.POOL_PILOT, "id": pid,
 			"rarity": int(r.get("rarity", 0)), "result": String(g.get("result", "")),
 			"stage": int(g.get("stage", 0)), "shards": int(g.get("shards", 0))}])
 
 
 # ── Trait craft ──────────────────────────────────────────────────────────────
 func _fill_craft() -> void:
-	_section_head("보유 %s %d" % [ShopPopup.currency_label("trait_mat"),
-			int(_pm.currency_of("trait_mat"))],
-			"특성 재료로 아직 없는 특성을 만듭니다. 재료는 특성 중복 · 주간패스에서 얻습니다.")
+	_section_head(_holding("trait_mat"), Loc.t(L.SHOP_TAB_CRAFT_SUB))
 	var row_scene := load(CRAFT_ROW_SCENE) as PackedScene
 	for raw in TraitSystem.rows():
 		var r: Dictionary = raw
@@ -283,12 +287,12 @@ func _fill_craft() -> void:
 		(row.get_node("%MarkText") as Label).text = "+" if pos_trait else "−"
 		(row.get_node("%Name") as Label).text = TraitSystem.name_of(tid)
 		_paint_chip(row.get_node("%Chip"), TraitUi.rarity_color(int(r["rarity"])))
-		(row.get_node("%ChipText") as Label).text = TraitSystem.rarity_name(int(r["rarity"]))
+		(row.get_node("%ChipText") as Label).text = GameEnums.rarity_label(int(r["rarity"]))
 		(row.get_node("%Desc") as Label).text = TraitSystem.desc_of(tid)
 		var why: String = ShopCatalog.craft_block_reason(_pm, tid)
 		var cost: int = ShopCatalog.craft_cost(tid)
 		var b: Button = row.get_node("%Buy")
-		b.text = ("제작\n재료 %d" % cost) if why == "" else why
+		b.text = Loc.t(L.SHOP_TAB_CRAFT_BUTTON, {"n": cost}) if why == "" else why
 		b.disabled = why != "" or int(_pm.currency_of("trait_mat")) < cost
 		b.pressed.connect(_on_craft.bind(tid))
 
@@ -299,33 +303,32 @@ func _on_craft(tid: int) -> void:
 		_host.show_toast(err, true)
 		return
 	_after_purchase()
-	_popup.open_reveal("제작 완료", [{"pool": Gacha.POOL_TRAIT, "id": tid,
+	_popup.open_reveal(Loc.t(L.SHOP_TAB_CRAFTED), [{"pool": Gacha.POOL_TRAIT, "id": tid,
 			"rarity": int(TraitSystem.row(tid).get("rarity", 0)), "result": "new"}])
 
 
 # ── Exchange ─────────────────────────────────────────────────────────────────
 func _fill_exchange() -> void:
-	_section_head("보유 %s %d" % [ShopPopup.currency_label("premium"), int(_pm.currency_of("premium"))],
-			"재화를 다른 재화로 바꿉니다.")
+	_section_head(_holding("premium"), Loc.t(L.SHOP_TAB_EXCHANGE_SUB))
 	var specs: Array = [
-		{"title": "레벨업 재화 교환",
-		 "desc": "재화 %d → 레벨업 재화 %d" % [ShopCatalog.levelup_exchange_cost(),
-				ShopCatalog.levelup_exchange_gain()],
-		 "have": "보유 재화 %d · 레벨업 재화 %d" % [int(_pm.currency_of("outgame")),
-				int(_pm.currency_of("levelup"))],
-		 "btn": "교환", "ok": int(_pm.currency_of("outgame")) >= ShopCatalog.levelup_exchange_cost(),
+		{"title": Loc.t(L.SHOP_TAB_EX_LEVELUP_TITLE),
+		 "desc": Loc.t(L.SHOP_TAB_EX_LEVELUP_DESC, {"cost": ShopCatalog.levelup_exchange_cost(),
+				"gain": ShopCatalog.levelup_exchange_gain()}),
+		 "have": Loc.t(L.SHOP_TAB_EX_LEVELUP_HAVE, {"coins": int(_pm.currency_of("outgame")),
+				"levelup": int(_pm.currency_of("levelup"))}),
+		 "btn": Loc.t(L.UI_BUTTON_EXCHANGE), "ok": int(_pm.currency_of("outgame")) >= ShopCatalog.levelup_exchange_cost(),
 		 "cb": _on_exchange_levelup},
-		{"title": "선수권 구매",
-		 "desc": "유료 재화 %d → 선수권 1장" % ShopCatalog.ticket_premium_price(Gacha.POOL_PILOT),
-		 "have": "보유 유료 재화 %d · 선수권 %d" % [int(_pm.currency_of("premium")),
-				int(_pm.currency_of("gacha_ticket_pilot"))],
-		 "btn": "구매", "ok": int(_pm.currency_of("premium")) >= ShopCatalog.ticket_premium_price(Gacha.POOL_PILOT),
+		{"title": Loc.t(L.SHOP_TAB_EX_PILOT_TICKET_TITLE),
+		 "desc": Loc.t(L.SHOP_TAB_EX_PILOT_TICKET_DESC, {"cost": ShopCatalog.ticket_premium_price(Gacha.POOL_PILOT)}),
+		 "have": Loc.t(L.SHOP_TAB_EX_PILOT_TICKET_HAVE, {"premium": int(_pm.currency_of("premium")),
+				"tickets": int(_pm.currency_of("gacha_ticket_pilot"))}),
+		 "btn": Loc.t(L.UI_BUTTON_BUY), "ok": int(_pm.currency_of("premium")) >= ShopCatalog.ticket_premium_price(Gacha.POOL_PILOT),
 		 "cb": _on_buy_ticket.bind(Gacha.POOL_PILOT)},
-		{"title": "특성권 구매",
-		 "desc": "유료 재화 %d → 특성권 1장" % ShopCatalog.ticket_premium_price(Gacha.POOL_TRAIT),
-		 "have": "보유 유료 재화 %d · 특성권 %d" % [int(_pm.currency_of("premium")),
-				int(_pm.currency_of("gacha_ticket_trait"))],
-		 "btn": "구매", "ok": int(_pm.currency_of("premium")) >= ShopCatalog.ticket_premium_price(Gacha.POOL_TRAIT),
+		{"title": Loc.t(L.SHOP_TAB_EX_TRAIT_TICKET_TITLE),
+		 "desc": Loc.t(L.SHOP_TAB_EX_TRAIT_TICKET_DESC, {"cost": ShopCatalog.ticket_premium_price(Gacha.POOL_TRAIT)}),
+		 "have": Loc.t(L.SHOP_TAB_EX_TRAIT_TICKET_HAVE, {"premium": int(_pm.currency_of("premium")),
+				"tickets": int(_pm.currency_of("gacha_ticket_trait"))}),
+		 "btn": Loc.t(L.UI_BUTTON_BUY), "ok": int(_pm.currency_of("premium")) >= ShopCatalog.ticket_premium_price(Gacha.POOL_TRAIT),
 		 "cb": _on_buy_ticket.bind(Gacha.POOL_TRAIT)},
 	]
 	var row_scene := load(EXCHANGE_ROW_SCENE) as PackedScene
@@ -342,11 +345,12 @@ func _fill_exchange() -> void:
 
 	# Dev-only premium grant — clearly labelled (premium is a local number, §12.0).
 	%DevRow.visible = true
-	%DevGrant.text = "유료 재화 +%d (개발용)" % ShopCatalog.dev_premium_grant()
+	%DevGrant.text = Loc.t(L.SHOP_TAB_DEV_GRANT, {"n": ShopCatalog.dev_premium_grant()})
 
 
 func _on_exchange_levelup() -> void:
-	_simple_action(ShopCatalog.exchange_levelup(_pm), "레벨업 재화 +%d" % ShopCatalog.levelup_exchange_gain())
+	_simple_action(ShopCatalog.exchange_levelup(_pm),
+			Loc.t(L.SHOP_TAB_TOAST_LEVELUP, {"n": ShopCatalog.levelup_exchange_gain()}))
 
 
 func _on_buy_ticket(pool: String) -> void:
@@ -355,7 +359,8 @@ func _on_buy_ticket(pool: String) -> void:
 
 
 func _on_dev_premium() -> void:
-	_simple_action(ShopCatalog.dev_add_premium(_pm), "유료 재화 +%d" % ShopCatalog.dev_premium_grant())
+	_simple_action(ShopCatalog.dev_add_premium(_pm),
+			Loc.t(L.SHOP_TAB_TOAST_PREMIUM, {"n": ShopCatalog.dev_premium_grant()}))
 
 
 func _simple_action(err: String, ok_msg: String) -> void:
@@ -374,9 +379,15 @@ func _after_purchase() -> bool:
 	_host.refresh_badges()
 	_rebuild()
 	if err != "":
-		_host.show_toast("저장 실패: " + err, true)
+		_host.show_toast(Loc.t(L.UI_ERROR_SAVE_FAILED, {"error": err}), true)
 		return false
 	return true
+
+
+## "보유 <currency> n" — the list head title of a shop section.
+func _holding(currency_key: String) -> String:
+	return Loc.t(L.SHOP_TAB_HOLDING, {"currency": ShopPopup.currency_label(currency_key),
+			"n": int(_pm.currency_of(currency_key))})
 
 
 ## Fills the list head and claims the scroll for this section (its kept position is
@@ -408,7 +419,7 @@ func _paint_chip(p: Panel, col: Color) -> void:
 ## 뽑기 · 구매 · 교환은 프로필을 바꾸고 저장하므로 전부 끊는다: 1회 / 여러 회 버튼은
 ## 프로필을 건드리지 않는 가짜 결과로 결과 팝업만 열고, 목록 칸의 구매 버튼과 개발용 지급은
 ## 누름을 출력만 한다(칸을 바꿀 때마다 새로 생기는 줄도 붙은 뒤에 끊는다).
-func _fill_preview() -> void:
+func _fill_preview() -> void:  # l10n-ignore
 	# 호스트가 하듯 탭 루트를 화면 전체로 편다(씬의 1080 × n 은 에디터 미리보기 크기일 뿐).
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	UiPreview.stage(self)
@@ -424,7 +435,7 @@ func _fill_preview() -> void:
 
 
 ## 미리보기 전용 — 지금 칸의 풀에서 프로필 없이 굴린 가짜 결과로 결과 팝업을 연다.
-func _preview_reveal(count: int) -> void:
+func _preview_reveal(count: int) -> void:  # l10n-ignore
 	var pool: String = _pool()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
@@ -447,7 +458,7 @@ func _preview_reveal(count: int) -> void:
 
 
 ## 미리보기 전용 — 방금 붙은 목록 줄의 구매 버튼을 끊는다(배선은 줄을 붙인 뒤에 이어진다).
-func _preview_mute_row(row: Node) -> void:
+func _preview_mute_row(row: Node) -> void:  # l10n-ignore
 	if not is_instance_valid(row):
 		return
 	var b := row.get_node_or_null("%Buy") as BaseButton

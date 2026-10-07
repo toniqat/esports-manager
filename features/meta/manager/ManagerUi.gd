@@ -12,7 +12,7 @@ const STAT_CELL_H: float = 120.0
 
 
 static func preset_name(idx: int) -> String:
-	return "프리셋 %d" % (idx + 1)
+	return Loc.t(L.MANAGER_PRESET_NAME, {"n": idx + 1})
 
 
 # ── Read-only stats ──────────────────────────────────────────────────────────
@@ -31,7 +31,7 @@ static func add_stat_cells(parent: Control, pos: Vector2, width: float,
 		cell.size = Vector2(cell_w - 8.0, STAT_CELL_H)
 		cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		parent.add_child(cell)
-		UiHelpers.mk_label(cell, String(StaffSystem.STAT_LABELS.get(key, key)), 20,
+		UiHelpers.mk_label(cell, StaffSystem.stat_label(key), 20,
 				OutgameTheme.TEXT_SUB, Vector2(0, 8), Vector2(cell_w - 8.0, 28),
 				HORIZONTAL_ALIGNMENT_CENTER)
 		var v: int = int(stats.get(key, StaffSystem.STAT_MIN))
@@ -40,7 +40,7 @@ static func add_stat_cells(parent: Control, pos: Vector2, width: float,
 				OutgameTheme.ACCENT_TEXT if spec > 0 else OutgameTheme.TEXT,
 				Vector2(0, 36), Vector2(cell_w - 8.0, 48), HORIZONTAL_ALIGNMENT_CENTER)
 		if spec > 0:
-			UiHelpers.mk_label(cell, "전문화 +%d" % spec, 16, OutgameTheme.ACCENT_TEXT,
+			UiHelpers.mk_label(cell, Loc.t(L.MANAGER_STAT_SPEC_PART, {"n": spec}), 16, OutgameTheme.ACCENT_TEXT,
 					Vector2(0, 86), Vector2(cell_w - 8.0, 24), HORIZONTAL_ALIGNMENT_CENTER)
 	return STAT_CELL_H
 
@@ -58,29 +58,29 @@ static func bonus_color(bonus: int) -> Color:
 
 
 # ── Unlock condition text (plan §12.4) ───────────────────────────────────────
-## `traits.unlock` → readable Korean. Empty = obtained only from gacha / crafting.
+## `traits.unlock` → readable text (current locale). Empty = obtained only from gacha / crafting.
 ## Unknown tokens fall back to the raw string so a new condition is never hidden.
 static func unlock_text(cond: String) -> String:
 	var c: String = cond.strip_edges()
 	if c == "":
-		return "특성 가챠 · 제작으로 획득"
+		return Loc.t(L.MANAGER_UNLOCK_GACHA)
 	var parts: PackedStringArray = c.split(":", false, 1)
 	var key: String = parts[0]
 	var arg: String = parts[1] if parts.size() > 1 else ""
 	var n: int = int(arg)
 	match key:
-		"clear":                 return "런 클리어 (최종 국제전 우승)"
-		"true_ending":           return "진엔딩 달성"
-		"wins":                  return "한 런에서 %d승" % n
-		"titles":                return "한 런에서 우승 %d회" % n
-		"phase":                 return "한 런에서 페이즈 %d개 통과" % n
-		"win_streak":            return "한 런에서 %d연승" % n
-		"outings":               return "한 선수와 외출 %d회 (한 런)" % n
-		"mvp":                   return "한 런에서 내 선수 MVP %d회" % n
-		"finance_manual_profit": return "감독이 직접 관리해 흑자 %d주 (한 런)" % n
-		"runs":                  return "런 %d회 완료" % n
-		"team":                  return "%s 팀으로 한 페이즈 이상 마치기" % _team_name(n)
-		"bonus":                 return "보너스 점수 %d 이상으로 한 페이즈 이상 마치기" % n
+		"clear":                 return Loc.t(L.MANAGER_UNLOCK_CLEAR)
+		"true_ending":           return Loc.t(L.MANAGER_UNLOCK_TRUE_ENDING)
+		"wins":                  return Loc.t(L.MANAGER_UNLOCK_WINS, {"n": n})
+		"titles":                return Loc.t(L.MANAGER_UNLOCK_TITLES, {"n": n})
+		"phase":                 return Loc.t(L.MANAGER_UNLOCK_PHASE, {"n": n})
+		"win_streak":            return Loc.t(L.MANAGER_UNLOCK_WIN_STREAK, {"n": n})
+		"outings":               return Loc.t(L.MANAGER_UNLOCK_OUTINGS, {"n": n})
+		"mvp":                   return Loc.t(L.MANAGER_UNLOCK_MVP, {"n": n})
+		"finance_manual_profit": return Loc.t(L.MANAGER_UNLOCK_FINANCE_MANUAL_PROFIT, {"n": n})
+		"runs":                  return Loc.t(L.MANAGER_UNLOCK_RUNS, {"n": n})
+		"team":                  return Loc.t(L.MANAGER_UNLOCK_TEAM, {"team": _team_name(n)})
+		"bonus":                 return Loc.t(L.MANAGER_UNLOCK_BONUS, {"n": n})
 	return c
 
 

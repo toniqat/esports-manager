@@ -3,6 +3,7 @@
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
 [node name="ShopRateRow" type="VBoxContainer"]
+auto_translate_mode = 2
 custom_minimum_size = Vector2(900, 64)
 offset_right = 900.0
 offset_bottom = 64.0

@@ -38,10 +38,9 @@ const SCENE_PATH: String = "res://features/meta/collection/UI_View_CollectionDet
 const STAT_CHIP_SCENE: PackedScene = preload("res://features/meta/collection/UI_Comp_CollectionStatChip.tscn")
 const BT_ROW_SCENE: PackedScene = preload("res://features/meta/collection/UI_Comp_CollectionBreakthroughRow.tscn")
 
-const STAT_NAMES: Array = ["전장 명중", "전장 회피", "교전 명중", "교전 회피", "공격 성장", "체력 성장"]
-const BT_KIND_LABELS: Dictionary = {
-	"stat_flat": "능력치", "salary_down": "샐러리",
-	"stat_growth": "성장", "card_swap": "카드",
+const BT_KIND_LABELS: Dictionary = {  # l10n-keys: collection.bt_kind.*
+	"stat_flat": L.COLLECTION_BT_KIND_STAT_FLAT, "salary_down": L.COLLECTION_BT_KIND_SALARY_DOWN,
+	"stat_growth": L.COLLECTION_BT_KIND_STAT_GROWTH, "card_swap": L.COLLECTION_BT_KIND_CARD_SWAP,
 }
 
 var _pm: Node = null
@@ -148,7 +147,7 @@ func _fill_hero(owned: bool, max_lv: int, stage: int) -> void:
 
 	%Name.text = _base.name
 	# The position is the badge on the bust (`PositionBadge`) — this line only names the home team.
-	%RoleLine.text = "원소속 %s" % _team_short(_base.team_id)
+	%RoleLine.text = Loc.t(L.COLLECTION_DETAIL_HOME_TEAM, {"team": _team_short(_base.team_id)})
 
 	# Chip row: rarity · 최대 Lv · 돌파 · 중복 (or 미보유).
 	var chips: Control = %Chips
@@ -158,12 +157,13 @@ func _fill_hero(owned: bool, max_lv: int, stage: int) -> void:
 	if owned:
 		var dupes: int = int(((_pm.profile["collection"] as Dictionary)
 				.get(str(_base.id), {}) as Dictionary).get("dupes", 0))
-		cx = _chip(chips, "최대 Lv %d" % max_lv, cx, OutgameTheme.ACCENT_DIM, OutgameTheme.ACCENT_TEXT)
-		cx = _chip(chips, "돌파 %d / %d" % [stage, RunRules.breakthrough_max()], cx,
+		cx = _chip(chips, Loc.t(L.COLLECTION_DETAIL_CHIP_MAX_LEVEL, {"level": max_lv}), cx, OutgameTheme.ACCENT_DIM, OutgameTheme.ACCENT_TEXT)
+		cx = _chip(chips, Loc.t(L.COLLECTION_DETAIL_CHIP_BREAKTHROUGH,
+				{"n": stage, "max": RunRules.breakthrough_max()}), cx,
 				OutgameTheme.SURFACE_SUNK, OutgameTheme.TEXT)
-		_chip(chips, "중복 %d" % dupes, cx, OutgameTheme.SURFACE_SUNK, OutgameTheme.TEXT_SUB)
+		_chip(chips, Loc.t(L.COLLECTION_DETAIL_CHIP_DUPES, {"n": dupes}), cx, OutgameTheme.SURFACE_SUNK, OutgameTheme.TEXT_SUB)
 	else:
-		_chip(chips, "미보유", cx, OutgameTheme.RAIL, OutgameTheme.TEXT_ON_FILL)
+		_chip(chips, Loc.t(L.UI_WORD_UNOWNED), cx, OutgameTheme.RAIL, OutgameTheme.TEXT_ON_FILL)
 
 	%ExpBlock.visible = owned
 	%UnownedBlock.visible = not owned
@@ -171,7 +171,7 @@ func _fill_hero(owned: bool, max_lv: int, stage: int) -> void:
 		_fill_exp(max_lv)
 
 	# Salary at the shown level (breakthrough `salary_down` included).
-	%SalaryTitle.text = "샐러리 (Lv %d 기준)" % _fielded.level
+	%SalaryTitle.text = Loc.t(L.COLLECTION_DETAIL_SALARY_AT_LEVEL, {"level": _fielded.level})
 	%Salary.text = str(RunRules.salary_of(_fielded))
 	%BonusRow.visible = _fielded.train_bonus_pct != 0
 	%Bonus.text = "+%d%%" % _fielded.train_bonus_pct
@@ -183,7 +183,7 @@ func _fill_exp(max_lv: int) -> void:
 	var exp_total: int = _pm.pilot_exp_of(_base.id)
 	var at_max: bool = max_lv >= RunRules.max_level()
 	var need: int = 0 if at_max else RunRules.exp_required(max_lv + 1)
-	%ExpValue.text = "최대 레벨 도달 · 누적 %d" % exp_total if at_max \
+	%ExpValue.text = Loc.t(L.COLLECTION_DETAIL_EXP_MAXED, {"exp": exp_total}) if at_max \
 			else "%d / %d  →  Lv %d" % [exp_total, need, max_lv + 1]
 	var ratio: float = 1.0
 	if not at_max:
@@ -196,11 +196,15 @@ func _fill_exp(max_lv: int) -> void:
 
 
 func _fill_stats(owned: bool) -> void:
-	var title: String = "능력치 · Lv %d" % _fielded.level
-	if _fielded.breakthrough > 0:
-		title += " · 돌파 %d 반영" % _fielded.breakthrough
+	# Unowned pilots are shown at stage 0, so the unowned and breakthrough titles never meet.
+	var title: String
 	if not owned:
-		title += " (영입 시)"
+		title = Loc.t(L.COLLECTION_DETAIL_STATS_TITLE_UNOWNED, {"level": _fielded.level})
+	elif _fielded.breakthrough > 0:
+		title = Loc.t(L.COLLECTION_DETAIL_STATS_TITLE_BT,
+				{"level": _fielded.level, "bt": _fielded.breakthrough})
+	else:
+		title = Loc.t(L.COLLECTION_DETAIL_STATS_TITLE, {"level": _fielded.level})
 	%StatsTitle.text = title
 	for i in _stat_chips.size():
 		var chip: Panel = _stat_chips[i]
@@ -209,12 +213,12 @@ func _fill_stats(owned: bool) -> void:
 		var delta: int
 		var is_total: bool = i == PlayerData.STAT_KEYS.size()
 		if is_total:
-			key = "종합"
+			key = Loc.t(L.COLLECTION_DETAIL_STAT_TOTAL)
 			val = _fielded.stat_total()
 			delta = val - _base.stat_total()
 		else:
 			var sk: String = String(PlayerData.STAT_KEYS[i])
-			key = String(STAT_NAMES[i])
+			key = PlayerData.stat_label(i)
 			val = int(_fielded.get(sk))
 			delta = val - int(_base.get(sk))
 		chip.add_theme_stylebox_override("panel", OutgameTheme.card_style(16,
@@ -237,7 +241,7 @@ func _fill_breakthrough(stage: int, owned: bool) -> void:
 	var rows: Array = RunRules.breakthrough_rows(_base.id)
 	%BtEmpty.visible = rows.is_empty()
 	%BtAfter.visible = not rows.is_empty()
-	%BtAfterLabel.text = "%d단계 이후의 중복은 선수 파편으로 바뀝니다" % RunRules.breakthrough_max()
+	%BtAfterLabel.text = Loc.t(L.COLLECTION_DETAIL_BT_AFTER, {"n": RunRules.breakthrough_max()})
 	for raw in rows:
 		var r: Dictionary = raw
 		var st: int = int(r["stage"])
@@ -256,13 +260,14 @@ func _fill_breakthrough(stage: int, owned: bool) -> void:
 				OutgameTheme.TEXT_ON_FILL if reached else OutgameTheme.TEXT_SUB)
 		var kind: String = String(r["kind"])
 		var kind_lbl: Label = row.get_node("%Kind")
-		kind_lbl.text = String(BT_KIND_LABELS.get(kind, kind))
+		kind_lbl.text = Loc.t(String(BT_KIND_LABELS[kind])) if BT_KIND_LABELS.has(kind) else kind  # l10n-dynamic: collection.bt_kind.*
 		kind_lbl.theme_type_variation = &"AccentLabel" if reached else &"CaptionLabel"
 		var desc: Label = row.get_node("%Desc")
 		desc.text = _bt_desc(r)
 		desc.theme_type_variation = &"BodyLabel" if reached or is_next else &"SubLabel"
 		var state: Label = row.get_node("%State")
-		state.text = "달성" if reached else ("다음" if is_next else "")
+		state.text = Loc.t(L.COLLECTION_DETAIL_BT_REACHED) if reached \
+				else (Loc.t(L.COLLECTION_DETAIL_BT_NEXT) if is_next else "")
 		state.theme_type_variation = &"AccentLabel" if reached else &"CaptionLabel"
 
 
@@ -282,7 +287,8 @@ func _bt_desc(r: Dictionary) -> String:
 
 func _fill_cards() -> void:
 	var swapped: bool = _fielded.pilot_cards != _base.pilot_cards
-	%CardsTitle.text = "파일럿 카드" + (" · 돌파로 교체됨" if swapped else "")
+	%CardsTitle.text = Loc.t(L.COLLECTION_DETAIL_CARDS_TITLE_SWAPPED) if swapped \
+			else Loc.t(L.TERM_CARD_PILOT_CARD)
 	var box_parent: Control = %Cards
 	_clear(box_parent)
 	# Before the first layout pass the width is 0 — `_on_cards_resized` builds them then.
@@ -310,22 +316,23 @@ func _fill_footer(owned: bool) -> void:
 	var have: int = _pm.currency_of("levelup")
 	var reason: String = ""
 	if not owned:
-		reason = "미보유 선수는 레벨업할 수 없습니다"
+		reason = Loc.t(L.COLLECTION_DETAIL_CANNOT_UNOWNED)
 	elif cost < 0:
-		reason = "최대 레벨입니다 (Lv %d)" % RunRules.max_level()
+		reason = Loc.t(L.COLLECTION_DETAIL_AT_MAX_LEVEL, {"level": RunRules.max_level()})
 	elif have < cost:
-		reason = "레벨업 재화가 부족합니다 (%d 필요 · 보유 %d)" % [cost, have]
+		reason = Loc.t(L.COLLECTION_DETAIL_NOT_ENOUGH, {"cost": cost, "have": have})
 	var line: String = _status_text if _status_text != "" else reason
 	var st: Label = %Status
 	if line == "":
-		line = "레벨업 재화 %d 보유 · 최대 레벨 +1 = 런에서 고를 수 있는 레벨 +1" % have
+		line = Loc.t(L.COLLECTION_DETAIL_STATUS_HINT, {"have": have})
 		st.remove_theme_color_override("font_color")
 	else:
 		st.add_theme_color_override("font_color", OutgameTheme.POSITIVE
 				if _status_text != "" and _status_ok else OutgameTheme.NEGATIVE)
 	st.text = line
 	var btn: Button = %LevelUp
-	btn.text = "레벨업  ·  %d" % cost if cost >= 0 else "레벨업"
+	btn.text = Loc.t(L.COLLECTION_DETAIL_LEVEL_UP_COST, {"cost": cost}) if cost >= 0 \
+			else Loc.t(L.UI_BUTTON_LEVEL_UP)
 	btn.disabled = reason != ""
 
 
@@ -341,10 +348,10 @@ func _on_level_up_pressed() -> void:
 	var save_err: String = _pm.save_profile()
 	var lv: int = _pm.max_level_of(pid)
 	if save_err != "":
-		_status_text = "Lv %d — 저장 실패: %s" % [lv, save_err]
+		_status_text = Loc.t(L.COLLECTION_DETAIL_LEVEL_UP_SAVE_FAILED, {"level": lv, "error": save_err})
 		_status_ok = false
 	else:
-		_status_text = "최대 레벨 Lv %d 달성" % lv
+		_status_text = Loc.t(L.COLLECTION_DETAIL_LEVEL_UP_DONE, {"level": lv})
 		_status_ok = true
 	Haptics.play(Haptics.Kind.SUCCESS)
 	_fill()            # in place — the scroll position stays
@@ -373,7 +380,7 @@ func _team_short(team_id: int) -> String:
 
 ## F6 단독 실행 미리보기 — 실제 프로필에서 가장 많이 키운 보유 선수(없으면 풀의 첫 선수)로
 ## 연다 (`resources/UiPreview.gd`). 레벨업은 프로필을 저장하므로 누름을 출력만 하게 끊는다.
-func _fill_preview() -> void:
+func _fill_preview() -> void:  # l10n-ignore
 	UiPreview.stage(self)
 	UiPreview.mute(%LevelUp, self, "레벨업")
 	UiPreview.trace(leveled_up)

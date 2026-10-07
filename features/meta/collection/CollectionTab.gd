@@ -132,7 +132,7 @@ func _bind() -> void:
 		cell.cell_tapped.connect(_on_cell_tapped)
 		_cells[p.id] = cell
 	if _load_error != "":
-		%LoadErrorText.text = "선수 데이터를 읽지 못했습니다: " + _load_error
+		%LoadErrorText.text = Loc.t(L.COLLECTION_TAB_LOAD_ERROR, {"error": _load_error})
 		%LoadError.visible = true
 	_sheet = CollectionDetailSheet.create()
 	add_child(_sheet)
@@ -204,13 +204,14 @@ func _on_leveled_up(pilot_id: int, new_level: int) -> void:
 	_refresh_summary()
 	_host.refresh_currency()
 	var p: PlayerData = _by_id.get(pilot_id, null)
-	_host.show_toast("%s 최대 레벨 Lv %d" % [p.name if p != null else "?", new_level])
+	_host.show_toast(Loc.t(L.COLLECTION_TAB_TOAST_LEVELED,
+			{"name": p.name if p != null else "?", "level": new_level}))
 
 
 ## F6 단독 실행 미리보기 — 실제 프로필로 채운 25인 격자 (`resources/UiPreview.gd`).
 ## 호스트(`LobbyScreen`)는 없다. 칸을 누르면 상세 시트가 뜨지만, 레벨업은 프로필을
 ## 저장하므로 시트의 레벨업 누름을 출력만 하게 끊는다.
-func _fill_preview() -> void:
+func _fill_preview() -> void:  # l10n-ignore
 	# 호스트가 하듯 탭 루트를 화면 전체로 편다(씬의 1080 × n 은 에디터 미리보기 크기일 뿐).
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	UiPreview.stage(self)

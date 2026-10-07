@@ -47,13 +47,13 @@ func fill(profile: Dictionary, selected: int) -> void:
 		name_lbl.theme_type_variation = &"BodyLabel" if on else &"SubLabel"
 		var st: Label = chip.get_node("%Status")
 		if String(p.get("kind", ManagerProgress.KIND_NORMAL)) == ManagerProgress.KIND_PRESTIGE:
-			st.text = "재설정 필요"
+			st.text = Loc.t(L.MANAGER_PRESET_NEEDS_RESET)
 			st.theme_type_variation = &"NegativeLabel"
 		elif i == active:
-			st.text = "● 사용 중"
+			st.text = Loc.t(L.MANAGER_PRESET_IN_USE)
 			st.theme_type_variation = &"AccentLabel"
 		else:
-			st.text = "특성 %d" % (p.get("traits", []) as Array).size()
+			st.text = Loc.t(L.MANAGER_PRESET_TRAIT_COUNT, {"n": (p.get("traits", []) as Array).size()})
 			st.theme_type_variation = &"FaintLabel"
 
 

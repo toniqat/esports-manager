@@ -69,7 +69,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 0
 theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 40
-text = "주간패스"
+text = "tx_45764DJF8W"
 
 [node name="WeekBox" type="VBoxContainer" parent="VBox/HeadPad/Head/Pad/VBox/TopRow"]
 layout_mode = 2
@@ -82,6 +82,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Week" type="Label" parent="VBox/HeadPad/Head/Pad/VBox/TopRow/WeekBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — PassTab.gd _fill_head()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(500, 32)
@@ -101,6 +102,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Level" type="Label" parent="VBox/HeadPad/Head/Pad/VBox/LevelRow"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — PassTab.gd _fill_head()"
 unique_name_in_owner = true
 layout_mode = 0
@@ -123,6 +125,7 @@ theme_override_font_sizes/font_size = 28
 text = "/ 25"
 
 [node name="Exp" type="Label" parent="VBox/HeadPad/Head/Pad/VBox/LevelRow"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — PassTab.gd _fill_head()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -167,6 +170,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Info" type="Label" parent="VBox/HeadPad/Head/Pad/VBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — PassTab.gd _fill_head()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 100)

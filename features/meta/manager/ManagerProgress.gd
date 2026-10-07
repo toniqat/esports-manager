@@ -128,11 +128,11 @@ static func base_stats(profile: Dictionary) -> Dictionary:
 ## "" when one removal point can be spent on `stat`.
 static func can_remove(profile: Dictionary, stat: String) -> String:
 	if not StaffSystem.STATS.has(stat):
-		return "알 수 없는 스탯"
+		return Loc.t(L.MANAGER_PROGRESS_UNKNOWN_STAT)
 	if removal_points_left(profile) <= 0:
-		return "제거 포인트가 없습니다"
+		return Loc.t(L.MANAGER_PROGRESS_NO_REMOVAL)
 	if int(base_stats(profile)[stat]) <= StaffSystem.STAT_MIN:
-		return "1 인 스탯은 낮출 수 없습니다"
+		return Loc.t(L.MANAGER_PROGRESS_STAT_AT_MIN)
 	return ""
 
 
@@ -194,14 +194,14 @@ static func preset_stats(profile: Dictionary, preset: Dictionary) -> Dictionary:
 ## "" when `delta` (+1 / −1) can be applied to `preset.alloc[stat]`.
 static func can_alloc(profile: Dictionary, preset: Dictionary, stat: String, delta: int) -> String:
 	if not StaffSystem.STATS.has(stat):
-		return "알 수 없는 스탯"
+		return Loc.t(L.MANAGER_PROGRESS_UNKNOWN_STAT)
 	var cur: int = int((preset.get("alloc", {}) as Dictionary).get(stat, 0))
 	if delta < 0:
-		return "" if cur + delta >= 0 else "더 뺄 전문화 포인트가 없습니다"
+		return "" if cur + delta >= 0 else Loc.t(L.MANAGER_PROGRESS_NO_SPEC_TO_REMOVE)
 	if alloc_used(preset) + delta > spec_points(profile):
-		return "남은 전문화 포인트가 없습니다"
+		return Loc.t(L.MANAGER_PROGRESS_NO_SPEC_LEFT)
 	if int(base_stats(profile)[stat]) + cur + delta > stat_cap():
-		return "스탯 상한 %d" % stat_cap()
+		return Loc.t(L.MANAGER_PROGRESS_STAT_CAP, {"cap": stat_cap()})
 	return ""
 
 
@@ -227,18 +227,20 @@ static func reset_preset(preset: Dictionary) -> void:
 ## "" when the preset may start a run. `owned_traits` = Array[int].
 static func validate_preset(profile: Dictionary, preset: Dictionary, owned_traits: Array) -> String:
 	if preset.is_empty():
-		return "프리셋이 없습니다"
+		return Loc.t(L.MANAGER_PROGRESS_NO_PRESET)
 	if String(preset.get("kind", KIND_NORMAL)) == KIND_PRESTIGE:
-		return "프레스티지 프리셋 — 지금 포인트로 재설정해야 쓸 수 있습니다"
+		return Loc.t(L.MANAGER_PROGRESS_PRESTIGE_PRESET)
 	if alloc_used(preset) > spec_points(profile):
-		return "전문화 포인트 초과 (%d / %d)" % [alloc_used(preset), spec_points(profile)]
+		return Loc.t(L.MANAGER_PROGRESS_SPEC_OVER,
+				{"used": alloc_used(preset), "total": spec_points(profile)})
 	var base: Dictionary = base_stats(profile)
 	var a: Dictionary = preset.get("alloc", {})
 	for s in StaffSystem.STATS:
 		if int(a.get(s, 0)) < 0:
-			return "전문화 포인트가 음수입니다"
+			return Loc.t(L.MANAGER_PROGRESS_SPEC_NEGATIVE)
 		if int(base[s]) + int(a.get(s, 0)) > stat_cap():
-			return "%s 스탯 상한 %d 초과" % [StaffSystem.STAT_LABELS[s], stat_cap()]
+			return Loc.t(L.MANAGER_PROGRESS_STAT_OVER_CAP,
+					{"stat": StaffSystem.stat_label(String(s)), "cap": stat_cap()})
 	return TraitSystem.validate_equip(preset.get("traits", []), owned_traits)
 
 
@@ -249,7 +251,7 @@ static func prestige_level() -> int:
 
 static func can_prestige(profile: Dictionary) -> String:
 	if level_of(profile) < prestige_level():
-		return "감독 Lv%d 부터 프레스티지할 수 있습니다" % prestige_level()
+		return Loc.t(L.MANAGER_PROGRESS_PRESTIGE_LEVEL, {"level": prestige_level()})
 	return ""
 
 
@@ -313,9 +315,9 @@ static func toggle_trait(preset: Dictionary, trait_id: int, owned_traits: Array)
 		cur.erase(trait_id)
 	else:
 		if not owned_traits.has(trait_id):
-			return "아직 잠긴 특성입니다"
+			return Loc.t(L.MANAGER_PROGRESS_TRAIT_LOCKED)
 		if cur.size() >= TraitSystem.slot_count():
-			return "장착 칸이 가득 찼습니다 (%d칸) — 하나를 빼고 고르세요" % TraitSystem.slot_count()
+			return Loc.t(L.MANAGER_PROGRESS_SLOTS_FULL, {"n": TraitSystem.slot_count()})
 		cur.append(trait_id)
 	preset["traits"] = cur
 	return ""

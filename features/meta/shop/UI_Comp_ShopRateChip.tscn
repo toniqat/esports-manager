@@ -3,6 +3,7 @@
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
 [node name="ShopRateChip" type="PanelContainer"]
+auto_translate_mode = 2
 editor_description = "One rarity rate pill on the gacha banner (ShopTab). White pill = SurfaceChip variation; the text colour is the rarity colour (code)."
 custom_minimum_size = Vector2(152, 44)
 offset_right = 152.0

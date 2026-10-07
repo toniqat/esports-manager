@@ -22,12 +22,12 @@ const SCENE_PATH: String = "res://features/meta/shop/UI_View_ShopPopup.tscn"
 const RATE_ROW_SCENE: String = "res://features/meta/shop/UI_Comp_ShopRateRow.tscn"
 const ITEM_COLS: int = 5
 
-## Display names of the eight profile currencies.
-const CURRENCY_LABELS: Dictionary = {
-	"outgame": "재화", "levelup": "레벨업 재화",
-	"gacha_ticket_pilot": "선수권", "gacha_ticket_trait": "특성권",
-	"trait_mat": "특성 재료", "cosmetic": "치장 재화",
-	"premium": "유료 재화", "pilot_shard": "선수 파편",
+## Display-name keys of the eight profile currencies — show them with `currency_label`.
+const CURRENCY_LABELS: Dictionary = {  # l10n-keys: shop.currency.* term.currency.levelup
+	"outgame": L.SHOP_CURRENCY_OUTGAME, "levelup": L.TERM_CURRENCY_LEVELUP,
+	"gacha_ticket_pilot": L.SHOP_CURRENCY_GACHA_TICKET_PILOT, "gacha_ticket_trait": L.SHOP_CURRENCY_GACHA_TICKET_TRAIT,
+	"trait_mat": L.SHOP_CURRENCY_TRAIT_MAT, "cosmetic": L.SHOP_CURRENCY_COSMETIC,
+	"premium": L.SHOP_CURRENCY_PREMIUM, "pilot_shard": L.SHOP_CURRENCY_PILOT_SHARD,
 }
 
 var _fit_queued: bool = false
@@ -67,8 +67,11 @@ static func wrap_label(l: Label, sz: Vector2) -> Label:
 	return l
 
 
+## Currency name in the current locale (unknown keys as they are).
 static func currency_label(key: String) -> String:
-	return String(CURRENCY_LABELS.get(key, key))
+	if not CURRENCY_LABELS.has(key):
+		return key
+	return Loc.t(String(CURRENCY_LABELS[key]))  # l10n-dynamic: shop.currency.* term.currency.levelup
 
 
 func is_open() -> bool:
@@ -109,15 +112,14 @@ func open_rates(pool: String) -> void:
 		chip.add_theme_stylebox_override("panel",
 				OutgameTheme.flat_style(rarity_color(rar), int(chip.size.y * 0.5)))
 		var chip_text: Label = row.get_node("%ChipText")
-		chip_text.text = TraitSystem.rarity_name(rar)
+		chip_text.text = GameEnums.rarity_label(rar)
 		(row.get_node("%Pct") as Label).text = "%.1f%%" % float(r["pct"])
 		(row.get_node("%Count") as Label).text = "%d" % n_items
 		(row.get_node("%Each") as Label).text = "—" if n_items == 0 				else "%.2f%%" % (float(r["pct"]) / float(n_items))
-	%Note.text = UiHelpers.keep_words(
-			"대상이 없는 등급이 뽑히면 가장 가까운 등급에서 뽑습니다. " +
-			("중복 선수는 돌파, 돌파를 다 채운 뒤엔 선수 파편이 됩니다." if pool == Gacha.POOL_PILOT
-			else "이미 가진 특성은 특성 재료가 됩니다."))
-	_show("선수 영입 확률" if pool == Gacha.POOL_PILOT else "특성 연구 확률", false)
+	var is_pilot: bool = pool == Gacha.POOL_PILOT
+	%Note.text = UiHelpers.keep_words(Loc.t(L.SHOP_POPUP_RATES_NOTE_PILOT) if is_pilot
+			else Loc.t(L.SHOP_POPUP_RATES_NOTE_TRAIT))
+	_show(Loc.t(L.SHOP_POPUP_RATES_TITLE_PILOT) if is_pilot else Loc.t(L.SHOP_POPUP_RATES_TITLE_TRAIT), false)
 
 
 # ── Shell ────────────────────────────────────────────────────────────────────
@@ -191,4 +193,4 @@ func _fill_preview() -> void:
 		var t: Dictionary = traits[0]
 		results[results.size() - 1] = {"pool": Gacha.POOL_TRAIT, "id": int(t["id"]),
 				"rarity": int(t["rarity"]), "result": "material", "amount": 2}
-	open_reveal("선수 영입 결과", results)
+	open_reveal(Loc.t(L.SHOP_TAB_RESULT_PILOT), results)

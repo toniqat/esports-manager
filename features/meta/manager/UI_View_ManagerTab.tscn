@@ -70,6 +70,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="TypeTitle" type="Label" parent="Scroll/Body/Sections/Header/Pad/Content"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_header()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -98,6 +99,7 @@ mouse_filter = 2
 theme_type_variation = &"SunkPanel"
 
 [node name="PrestigeChipText" type="Label" parent="Scroll/Body/Sections/Header/Pad/Content/PrestigeChip"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_header()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -113,6 +115,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="Level" type="Label" parent="Scroll/Body/Sections/Header/Pad/Content"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_header()"
 unique_name_in_owner = true
 layout_mode = 0
@@ -147,6 +150,7 @@ mouse_filter = 2
 theme_type_variation = &"ProgressFill"
 
 [node name="ExpText" type="Label" parent="Scroll/Body/Sections/Header/Pad/Content"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_header()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -161,6 +165,7 @@ theme_type_variation = &"CaptionLabel"
 text = "EXP 180 / 450"
 
 [node name="Prestige" type="Button" parent="Scroll/Body/Sections/Header/Pad/Content"]
+auto_translate_mode = 2
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_header() · ManagerTab.gd _fill_preview() · ManagerTab.gd _ready()
 PrimaryButton (26) when prestige is possible, disabled GhostButton (24) `Lv25 프레스티지` otherwise (code)."
@@ -179,6 +184,7 @@ theme_override_font_sizes/font_size = 26
 text = "프레스티지"
 
 [node name="Info" type="Label" parent="Scroll/Body/Sections/Header/Pad/Content"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_header()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -202,7 +208,7 @@ custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 30
-text = "프리셋 — 전문화 분배 + 특성"
+text = "tx_JNX31TB32C"
 
 [node name="ManagerPresetChips_PresetChips" parent="Scroll/Body/Sections/Presets" instance=ExtResource("5_chips")]
 editor_description = "[필수] 지우면 오류 — ManagerTab.gd _preset_chips"
@@ -237,7 +243,7 @@ offset_bottom = 52.0
 grow_horizontal = 2
 theme_type_variation = &"NegativeLabel"
 theme_override_font_sizes/font_size = 24
-text = "프레스티지 프리셋 — 재설정해야 쓸 수 있습니다"
+text = "tx_96VG8VVT6V"
 
 [node name="ResetBody" type="Label" parent="Scroll/Body/Sections/Presets/ResetBox/ResetCard"]
 layout_mode = 1
@@ -250,7 +256,7 @@ offset_bottom = 92.0
 grow_horizontal = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 20
-text = "전문화 분배가 비워지고, 특성은 그대로 남습니다"
+text = "tx_JXE6K3B8JS"
 
 [node name="Reset" type="Button" parent="Scroll/Body/Sections/Presets/ResetBox/ResetCard"]
 editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_preview() · ManagerTab.gd _ready()"
@@ -268,7 +274,7 @@ focus_mode = 0
 mouse_filter = 1
 theme_type_variation = &"PrimaryButton"
 theme_override_font_sizes/font_size = 26
-text = "재설정"
+text = "tx_Z9ZF4N1PB5"
 
 [node name="Stats" type="MarginContainer" parent="Scroll/Body/Sections"]
 layout_mode = 2
@@ -304,7 +310,7 @@ offset_right = 240.0
 offset_bottom = 62.0
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 30
-text = "감독 스탯"
+text = "tx_BG420X1TPQ"
 
 [node name="RemoveChip" type="Panel" parent="Scroll/Body/Sections/Stats/Pad/VBox/Head"]
 unique_name_in_owner = true
@@ -323,6 +329,7 @@ mouse_filter = 2
 theme_type_variation = &"SunkPanel"
 
 [node name="RemoveChipText" type="Label" parent="Scroll/Body/Sections/Stats/Pad/VBox/Head/RemoveChip"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_stats()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -353,6 +360,7 @@ mouse_filter = 2
 theme_type_variation = &"SunkPanel"
 
 [node name="SpecChipText" type="Label" parent="Scroll/Body/Sections/Stats/Pad/VBox/Head/SpecChip"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_stats()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -368,6 +376,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="Formula" type="Label" parent="Scroll/Body/Sections/Stats/Pad/VBox/Head"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_stats()"
 unique_name_in_owner = true
 layout_mode = 1

@@ -1,6 +1,9 @@
 # Collection (M10)
 
-**텍스트는 l10n key — `Loc.t`** — the card_swap breakthrough row names the new card with `Loc.t(card_def.name_key)`.
+**표시 텍스트는 l10n key (`collection` 도메인 + 공유 `ui.*` · `term.*`)** — code uses `Loc.t(L.COLLECTION_…)`, stat names
+`PlayerData.stat_label(i)`, the 돌파 kind table `BT_KIND_LABELS` holds keys (`collection.bt_kind.*`), the card_swap
+breakthrough row names the new card with `Loc.t(card_def.name_key)`. Scene nodes the script fills carry
+`auto_translate_mode = 2` (dummy text stays for WYSIWYG); fixed captions are key literals.
 
 Lobby `컬렉션` tab — owned pilots, levels, breakthroughs, level-up. Contract:
 `docs/outgame_dev_plan.md` §12 (work D); tab contract: `features/meta/lobby/LobbyScreen.gd` header.

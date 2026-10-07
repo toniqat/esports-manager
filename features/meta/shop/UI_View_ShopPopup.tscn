@@ -78,6 +78,7 @@ mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="Title" type="Label" parent="Root/SafeArea/Center/Card/VBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ShopPopup.gd _show()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 52)
@@ -135,28 +136,28 @@ custom_minimum_size = Vector2(270, 0)
 layout_mode = 2
 size_flags_vertical = 1
 theme_type_variation = &"CaptionLabel"
-text = "등급"
+text = "tx_RXTX0AN6X0"
 
 [node name="Pct" type="Label" parent="Root/SafeArea/Center/Card/VBox/Scroll/Body/Rates/Head"]
 custom_minimum_size = Vector2(225, 0)
 layout_mode = 2
 size_flags_vertical = 1
 theme_type_variation = &"CaptionLabel"
-text = "확률"
+text = "tx_R0CS831APJ"
 
 [node name="Count" type="Label" parent="Root/SafeArea/Center/Card/VBox/Scroll/Body/Rates/Head"]
 custom_minimum_size = Vector2(207, 0)
 layout_mode = 2
 size_flags_vertical = 1
 theme_type_variation = &"CaptionLabel"
-text = "대상 수"
+text = "tx_ERGBMXG6XM"
 
 [node name="Each" type="Label" parent="Root/SafeArea/Center/Card/VBox/Scroll/Body/Rates/Head"]
 custom_minimum_size = Vector2(198, 0)
 layout_mode = 2
 size_flags_vertical = 1
 theme_type_variation = &"CaptionLabel"
-text = "개별 확률"
+text = "tx_VSGTNVA2A5"
 
 [node name="RateRows" type="VBoxContainer" parent="Root/SafeArea/Center/Card/VBox/Scroll/Body/Rates"]
 unique_name_in_owner = true
@@ -172,6 +173,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Note" type="Label" parent="Root/SafeArea/Center/Card/VBox/Scroll/Body/Rates"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ShopPopup.gd open_rates()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 80)
@@ -198,4 +200,4 @@ layout_mode = 2
 focus_mode = 0
 theme_type_variation = &"PrimaryButton"
 theme_override_font_sizes/font_size = 30
-text = "확인"
+text = "tx_YE7AM14AWS"

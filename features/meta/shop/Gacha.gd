@@ -134,12 +134,12 @@ static func cost_of(pool: String, count: int, tickets_owned: int) -> Dictionary:
 ## "" when `pm` (ProfileManager) can afford `count` pulls.
 static func check(pm: Node, pool: String, count: int) -> String:
 	if count <= 0:
-		return "뽑기 횟수가 잘못됐습니다"
+		return Loc.t(L.SHOP_GACHA_BAD_COUNT)
 	if resolve_bucket(pool, 0) < 0:
-		return "뽑을 대상이 없습니다"
+		return Loc.t(L.SHOP_GACHA_NO_ITEMS)
 	var c: Dictionary = cost_of(pool, count, int(pm.currency_of(ticket_key(pool))))
 	if int(pm.currency_of("outgame")) < int(c["currency"]):
-		return "재화가 부족합니다 (%d 필요)" % int(c["currency"])
+		return Loc.t(L.UI_ERROR_NOT_ENOUGH_CURRENCY, {"n": int(c["currency"])})
 	return ""
 
 

@@ -35,6 +35,7 @@ size_flags_vertical = 4
 mouse_filter = 2
 
 [node name="ChipText" type="Label" parent="Pad/HBox/Chip"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — PassTab.gd _fill_rows()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -55,6 +56,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Reward" type="Label" parent="Pad/HBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — PassTab.gd _fill_rows()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 42)
@@ -74,7 +76,7 @@ focus_mode = 0
 mouse_filter = 1
 theme_type_variation = &"PrimaryButton"
 theme_override_font_sizes/font_size = 26
-text = "수령"
+text = "tx_6H9P8NYD5D"
 
 [node name="StatusBox" type="MarginContainer" parent="Pad/HBox"]
 editor_description = "[필수] 지우면 오류 — PassTab.gd _fill_rows()"
@@ -85,6 +87,7 @@ mouse_filter = 2
 theme_override_constants/margin_right = 4
 
 [node name="Status" type="Label" parent="Pad/HBox/StatusBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — PassTab.gd _fill_rows()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(196, 36)

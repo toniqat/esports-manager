@@ -48,7 +48,7 @@ func _ready() -> void:
 func fill(equipped: Array, owned: Array, new_ids: Array) -> void:
 	var slots: int = TraitSystem.slot_count()
 	var count: Label = %Count
-	count.text = "장착 %d / %d" % [equipped.size(), slots]
+	count.text = Loc.t(L.MANAGER_TRAIT_PICKER_EQUIPPED_COUNT, {"n": equipped.size(), "max": slots})
 	count.theme_type_variation = &"NegativeLabel" if equipped.size() > slots else &"CaptionLabel"
 	_fill_gauge(equipped)
 	_fill_slots(equipped, slots)
@@ -70,13 +70,13 @@ func fill(equipped: Array, owned: Array, new_ids: Array) -> void:
 			return pa
 		return int(a["id"]) < int(b["id"]))
 
-	(%OwnedTitle as Label).text = "보유 특성 %d — 눌러서 장착 / 해제" % owned_rows.size()
+	(%OwnedTitle as Label).text = Loc.t(L.MANAGER_TRAIT_PICKER_OWNED_TITLE, {"n": owned_rows.size()})
 	_clear(%OwnedRows)
 	for r in owned_rows:
 		var tid: int = int((r as Dictionary)["id"])
 		_add_row(%OwnedRows, r, equipped.has(tid), true, new_ids.has(tid))
 	(%Locked as Control).visible = not locked_rows.is_empty()
-	(%LockedTitle as Label).text = "잠긴 특성 %d" % locked_rows.size()
+	(%LockedTitle as Label).text = Loc.t(L.MANAGER_TRAIT_PICKER_LOCKED_TITLE, {"n": locked_rows.size()})
 	_clear(%LockedRows)
 	for r in locked_rows:
 		_add_row(%LockedRows, r, false, false, false)
@@ -105,9 +105,9 @@ func _fill_gauge(equipped: Array) -> void:
 		bl.theme_type_variation = &"PositiveLabel"
 	else:
 		bl.theme_type_variation = &"CaptionLabel"
-	(%Note as Label).text = "부정 특성 제공 +%d · 긍정 특성 소모 −%d" % [provided, consumed]
+	(%Note as Label).text = Loc.t(L.MANAGER_TRAIT_PICKER_GAUGE_NOTE, {"gain": provided, "cost": consumed})
 	var rule: Label = %Rule
-	rule.text = "0 미만이면 저장 · 사용할 수 없습니다" if bad else "남는 점수는 런 점수에 더해집니다"
+	rule.text = Loc.t(L.MANAGER_TRAIT_PICKER_RULE_BAD) if bad else Loc.t(L.MANAGER_TRAIT_PICKER_RULE_OK)
 	rule.theme_type_variation = &"NegativeLabel" if bad else &"FaintLabel"
 
 
@@ -161,9 +161,10 @@ func _add_row(parent: Container, r: Dictionary, on: bool, is_owned: bool, is_new
 	var rar := OutgameTheme.variation_box(&"AccentChip")
 	rar.bg_color = TraitUi.rarity_color(int(r["rarity"]))
 	(b.get_node("%Rarity") as Panel).add_theme_stylebox_override("panel", rar)
-	(b.get_node("%RarityText") as Label).text = TraitSystem.rarity_name(int(r["rarity"]))
+	(b.get_node("%RarityText") as Label).text = GameEnums.rarity_label(int(r["rarity"]))
 	var outgame: bool = String(r["layer"]) == TraitSystem.LAYER_OUTGAME
-	(b.get_node("%LayerText") as Label).text = "아웃게임" if outgame else "인게임"
+	(b.get_node("%LayerText") as Label).text = Loc.t(L.MANAGER_TRAIT_PICKER_LAYER_OUTGAME) if outgame \
+			else Loc.t(L.MANAGER_TRAIT_PICKER_LAYER_INGAME)
 	(b.get_node("%New") as Control).visible = is_new
 
 	var desc: Label = b.get_node("%Desc")
@@ -172,7 +173,7 @@ func _add_row(parent: Container, r: Dictionary, on: bool, is_owned: bool, is_new
 	var un: Label = b.get_node("%Unlock")
 	un.visible = not is_owned
 	if not is_owned:
-		un.text = "해금 조건 · " + ManagerUi.unlock_text(String(r["unlock"]))
+		un.text = Loc.t(L.MANAGER_TRAIT_PICKER_UNLOCK, {"cond": ManagerUi.unlock_text(String(r["unlock"]))})
 	var cost: Label = b.get_node("%Cost")
 	cost.text = _cost_text(r)
 	cost.theme_type_variation = _pol_label(pos_pol) if is_owned else &"FaintLabel"
@@ -188,8 +189,8 @@ func _clear(box: Node) -> void:
 static func _cost_text(r: Dictionary) -> String:
 	var c: int = int(r.get("bonus_cost", 0))
 	if String(r.get("polarity", "+")) == TraitSystem.POLARITY_POS:
-		return "보너스 −%d" % c
-	return "보너스 +%d" % c
+		return Loc.t(L.MANAGER_TRAIT_PICKER_COST_POS, {"n": c})
+	return Loc.t(L.MANAGER_TRAIT_PICKER_COST_NEG, {"n": c})
 
 
 static func _pol_color(positive: bool) -> Color:

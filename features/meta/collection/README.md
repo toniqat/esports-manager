@@ -8,7 +8,9 @@ Lobby `컬렉션` tab — owned pilots, levels, breakthroughs, level-up. Contrac
 |---|---|---|
 | `CollectionTab.gd` | `class_name CollectionTab extends Control` | The tab: summary card, role filter row, scrolling 4-column grid of the **25 named pilots**, opens the detail sheet. `bar_specs()` = `[]` (no action bar). |
 | `CollectionCell.gd` | `class_name CollectionCell extends Button` | One grid cell (240×330): face + role badge (`PilotThumb` static helpers, read-only reuse) + rarity pill, name, `Lv N` + breakthrough pips. Unowned = dimmed face, `미보유` pill, "상점에서 영입". Static helpers `rarity_color` / `add_rarity_pill` / `add_pips` shared with the sheet. |
-| `CollectionDetailSheet.gd` | `class_name CollectionDetailSheet extends CanvasLayer` | Pilot detail modal (layer 20) + the 레벨업 action. Signal `leveled_up(pilot_id, new_level)`. Static `fielded_copy(base, max_level, stage)`. |
+| `CollectionDetailSheet.tscn` + `.gd` | `class_name CollectionDetailSheet extends CanvasLayer` | Pilot detail modal (layer 20) + the 레벨업 action. **Layout lives in the `.tscn`** (style = `OutgameTheme.tres` variations). `create()` (not `.new()`), signal `leveled_up(pilot_id, new_level)`, static `fielded_copy(base, max_level, stage)`. |
+| `CollectionStatChip.tscn` | — (no script) | Item scene: one 능력치 cell (`%Key` / `%Value` / `%Delta`), 7 instanced into `%StatGrid` once in `_ready`. |
+| `CollectionBreakthroughRow.tscn` | — (no script) | Item scene: one 돌파 stage (`%Disc`/`%Num`, `%Kind`, `%Desc`, `%State`), instanced per row on every fill. |
 
 Rules live elsewhere: `ProfileManager` (`max_level_of`, `breakthrough_of`, `pilot_exp_of`,
 `level_up_cost`, `level_up_pilot`, `currency_of`), `RunRules` (`exp_required`, `apply_level`,
@@ -33,6 +35,39 @@ Rules live elsewhere: `ProfileManager` (`max_level_of`, `breakthrough_of`, `pilo
 Pattern C (`docs/mobile_safe_area.md`): dim = whole viewport (tap closes), sheet from
 `top_y() + 48` to `bottom_y() - 16`, footer buttons end above the gesture zone. Body scrolls; the
 status line and the footer (`닫기` 1 : `레벨업 · cost` 2) are fixed.
+
+Scene (`CollectionDetailSheet.tscn`, scene-authored — `docs/ui_scene_migration.md`):
+```
+CollectionDetailSheet (CanvasLayer 20, visible=false)
+└ Root (full rect, theme = OutgameTheme.tres)
+  ├ %Dim (flat Button, tap = close) · DimRect (DimPanel)
+  └ %SafeArea (full rect; code sets top / bottom to the safe lines)
+    └ Sheet (Panel · SheetCard, offsets 24 / 48 / -24 / -16 = gaps to the safe lines)
+      └ Margin (36 / 27 / 36 / 27) ─ VBox
+        ├ ScrollSlot ─ %Scroll (offset_right 8: bar sits in the right padding; v-mode Reserve)
+        │   ├ DragScroll (node)
+        │   └ %Body (VBox, separation 32 = gap between sections)
+        │     ├ Hero (HBox 28): %Bust (230×464, %BustPlate) │ Info VBox:
+        │     │   TitleBlock (%Name, %RoleLine) · %Chips · gap · %ExpBlock (%ExpValue, %ExpTrack/%ExpFill)
+        │     │   | %UnownedBlock · gap · SalaryRow (%SalaryTitle, %Salary) · %BonusRow (%Bonus)
+        │     ├ StatsSection: header (%StatsTitle + Divider) · %StatGrid (4 cols, 12) · %StatNote
+        │     ├ BtSection: header · %BtRows (VBox 10) · %BtAfter (%BtAfterLabel) | %BtEmpty
+        │     └ CardsSection: header (%CardsTitle) · %Cards (VBox 12) · BottomPad 16
+        ├ gap 6 · Divider · gap 5 · %Status (40) · gap 12
+        └ Buttons (HBox 16): %Close (GhostButton, 1) · %LevelUp (PrimaryButton 32, 2)
+```
+- Text blocks whose labels overlap their nominal box (name 52 pt, salary value 30 pt) are plain
+  `Control`s with a fixed minimum height and the labels placed by offsets inside — the VBox stacks the
+  blocks, not the labels, so a label's font height never pushes the rows below.
+- **Code owns only data**: role-tinted bust plate, the rounded bust art (`PilotThumb.add_rounded_art`,
+  made once in `_ready`) + role badge, chip pills (sized to their text), EXP fill (`anchor_right` =
+  ratio), stat-chip tints (`card_style(16, tint)`), 돌파 row / disc styles, colours with no variation
+  (role line, `POSITIVE` / `NEGATIVE` deltas and status, disc number), `AccentLabel` ↔ `CaptionLabel` /
+  `BodyLabel` ↔ `SubLabel` swaps for reached / next rows, the `CardDescBox` panels, the safe-area offset.
+- Open / close = layer `visible`; nodes are reused. `open(p)` refills and scrolls to the top; 레벨업
+  refills in place (scroll kept). Rows / cards are removed with `remove_child` + `queue_free` so the
+  containers re-lay out in the same frame. `CardDescBox` measures text at a fixed width, so `%Cards`
+  builds at its laid-out width and rebuilds on `resized` when that width changes (first layout pass).
 
 - **Numbers = `fielded_copy`**: a duplicate of the pool pilot (own `pilot_cards` array) with
   `RunRules.apply_level(max_level)` then `RunRules.apply_breakthrough(stage)` — the same calls run

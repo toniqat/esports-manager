@@ -28,6 +28,7 @@ theme = ExtResource("8_theme")
 theme_type_variation = &"ScreenBackground"
 
 [node name="Placeholder" type="Label" parent="."]
+auto_translate_mode = 2
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5

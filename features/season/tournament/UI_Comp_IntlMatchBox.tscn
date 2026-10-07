@@ -4,6 +4,7 @@
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="IntlMatchBox" type="Panel"]
+auto_translate_mode = 2
 custom_minimum_size = Vector2(280, 130)
 offset_right = 280.0
 offset_bottom = 130.0
@@ -11,7 +12,7 @@ mouse_filter = 2
 theme = ExtResource("2_theme")
 theme_type_variation = &"Card"
 script = ExtResource("1_box")
-slot_title = "8강 1경기"
+slot_title = "tx_ZMNJRTQ4RC"
 corner_radius = 6
 
 [node name="Slot" type="Label" parent="."]

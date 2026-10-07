@@ -3,6 +3,7 @@
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
 [node name="WeekEveningSlot" type="Control"]
+auto_translate_mode = 2
 editor_description = "One pilot of the 오늘 저녁 card — tap to select. Code toggles %Highlight, draws the portrait (amber ring when picked) and colours %Trust amber once the outing is unlocked."
 custom_minimum_size = Vector2(0, 170)
 layout_mode = 3

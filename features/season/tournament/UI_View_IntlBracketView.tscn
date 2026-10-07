@@ -35,10 +35,11 @@ offset_top = 18.0
 offset_bottom = 62.0
 grow_horizontal = 2
 theme_type_variation = &"TitleLabel"
-text = "국제대회 브래킷"
+text = "tx_99KJHVTRYT"
 horizontal_alignment = 1
 
 [node name="Phase" type="Label" parent="."]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — IntlBracketView.gd refresh()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -52,6 +53,7 @@ text = "현재 페이즈: 프리시즌"
 horizontal_alignment = 1
 
 [node name="Stage" type="Label" parent="."]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — IntlBracketView.gd refresh()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -65,6 +67,7 @@ text = "단계: 4강 진행 중"
 horizontal_alignment = 1
 
 [node name="NextMatch" type="Label" parent="."]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — IntlBracketView.gd refresh()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -89,7 +92,7 @@ offset_bottom = 756.0
 grow_horizontal = 2
 theme_type_variation = &"FaintLabel"
 theme_override_font_sizes/font_size = 26
-text = "국제대회 진행 전입니다."
+text = "tx_SF22TMBSQP"
 horizontal_alignment = 1
 
 [node name="Bracket" type="HBoxContainer" parent="."]
@@ -122,19 +125,19 @@ layout_mode = 2
 editor_description = "[필수] 지우면 오류 — IntlBracketView.gd _match_boxes()"
 unique_name_in_owner = true
 layout_mode = 2
-slot_title = "8강 2경기"
+slot_title = "tx_D05692FCNM"
 
 [node name="IntlMatchBox_QF3" parent="Bracket/Quarters" instance=ExtResource("3_box")]
 editor_description = "[필수] 지우면 오류 — IntlBracketView.gd _match_boxes()"
 unique_name_in_owner = true
 layout_mode = 2
-slot_title = "8강 3경기"
+slot_title = "tx_89SK9FAWQC"
 
 [node name="IntlMatchBox_QF4" parent="Bracket/Quarters" instance=ExtResource("3_box")]
 editor_description = "[필수] 지우면 오류 — IntlBracketView.gd _match_boxes()"
 unique_name_in_owner = true
 layout_mode = 2
-slot_title = "8강 4경기"
+slot_title = "tx_DNDDCSPQEE"
 
 [node name="GapQS" type="Control" parent="Bracket"]
 custom_minimum_size = Vector2(70, 0)
@@ -157,7 +160,7 @@ editor_description = "[필수] 지우면 오류 — IntlBracketView.gd _match_bo
 unique_name_in_owner = true
 custom_minimum_size = Vector2(280, 150)
 layout_mode = 2
-slot_title = "4강 1경기"
+slot_title = "tx_QXB3XY4AYX"
 
 [node name="MidGap" type="Control" parent="Bracket/Semis"]
 custom_minimum_size = Vector2(0, 180)
@@ -169,7 +172,7 @@ editor_description = "[필수] 지우면 오류 — IntlBracketView.gd _match_bo
 unique_name_in_owner = true
 custom_minimum_size = Vector2(280, 150)
 layout_mode = 2
-slot_title = "4강 2경기"
+slot_title = "tx_XXXNFX172K"
 
 [node name="GapSF" type="Control" parent="Bracket"]
 custom_minimum_size = Vector2(50, 0)
@@ -192,7 +195,7 @@ editor_description = "[필수] 지우면 오류 — IntlBracketView.gd _match_bo
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 170)
 layout_mode = 2
-slot_title = "결승"
+slot_title = "tx_TRMS5ZZQY6"
 
 [node name="OkButton" type="Button" parent="."]
 editor_description = "[필수] 지우면 오류 — IntlBracketView.gd _fill_preview() · IntlBracketView.gd _layout_ok_button() · IntlBracketView.gd _ready()"
@@ -207,4 +210,4 @@ grow_horizontal = 2
 grow_vertical = 0
 focus_mode = 0
 theme_type_variation = &"BarPrimaryButton"
-text = "확인"
+text = "tx_YE7AM14AWS"

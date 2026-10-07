@@ -180,7 +180,7 @@ func _week_log() -> Dictionary:
 
 
 func _refresh_rail() -> void:
-	_week_lbl.text = "%d주" % int(_gm.season_state.get("phase_week", 1))
+	_week_lbl.text = Loc.t(L.TERM_WEEK_COUNT, {"n": int(_gm.season_state.get("phase_week", 1))})
 	for d in _chip_panels.size():
 		var chip: Panel = _chip_panels[d]
 		var lbl: Label = _chip_labels[d]
@@ -199,12 +199,12 @@ func _refresh_rail() -> void:
 func _refresh_header() -> void:
 	var s: Dictionary = _gm.season_state
 	var phase: int = int(s["current_phase"])
-	_phase_lbl.text = "%s · %d주차" % [
-		GameEnums.phase_label(phase), int(s["phase_week"])]
+	_phase_lbl.text = Loc.t(L.SEASON_COMMON_PHASE_WEEK, {
+		"phase": GameEnums.phase_label(phase), "week": int(s["phase_week"])})
 	_title_lbl.text = OutgameTheme.day_name(_day)
 	# 달력은 주의 월요일에 서 있으므로 요일만큼 더해 그날 날짜를 만든다.
 	var date: Dictionary = _date_of_day(_day)
-	_date_small_lbl.text = "%d년 %d월" % [int(date["year"]), int(date["month"])]
+	_date_small_lbl.text = Loc.t(L.SEASON_WEEK_DATE, {"year": int(date["year"]), "month": int(date["month"])})
 	_date_big_lbl.text = "%d" % int(date["day"])
 
 
@@ -249,14 +249,14 @@ func _rebuild_list() -> void:
 		_add_evening_card()
 		var rows: Array = _week_log().get(_day, [])
 		if rows.is_empty():
-			_add_note_card("훈련 기록이 없습니다")
+			_add_note_card(Loc.t(L.SEASON_WEEK_NO_TRAINING_LOG))
 		else:
 			for i in rows.size():
 				_add_pilot_card(rows[i])
 	elif md >= 0:
 		pass   # 주말 — 경기 카드가 이미 그 자리를 답했다
 	else:
-		_add_note_card("일정 없음")
+		_add_note_card(Loc.t(L.SEASON_WEEK_NO_SCHEDULE))
 
 	# The end marker stays last: the separation before it is the gap under the last card.
 	_list_body.move_child(_list_end, -1)
@@ -275,7 +275,7 @@ func _add_item(scene: PackedScene) -> Control:
 func _add_match_cards(matchday: int) -> void:
 	var entries: Array = _matches_on_day(matchday)
 	if entries.is_empty():
-		_add_note_card("%s — 예정된 경기 없음" % OutgameTheme.day_name(_day))
+		_add_note_card(Loc.t(L.SEASON_WEEK_NO_MATCH_DAY, {"day": OutgameTheme.day_name(_day)}))
 		return
 	for e_raw in entries:
 		var e: Dictionary = e_raw
@@ -301,9 +301,9 @@ func _add_match_cards(matchday: int) -> void:
 			hint.add_theme_color_override("font_color", fg_sub)
 			title.add_theme_color_override("font_color", OutgameTheme.TEXT_ON_FILL)
 		var status_col: Color = fg_sub
-		if String(e["status"]) == "승":
+		if String(e["result"]) == "win":
 			status_col = OutgameTheme.POSITIVE
-		elif String(e["status"]) == "패":
+		elif String(e["result"]) == "loss":
 			status_col = OutgameTheme.NEGATIVE
 		status.add_theme_color_override("font_color", status_col)
 
@@ -357,7 +357,7 @@ func _matches_on_day(matchday: int) -> Array:
 				continue
 			if int(m2.get("matchday", 0)) != matchday:
 				continue
-			out.append(_match_row(m2, pid, "리그", league))
+			out.append(_match_row(m2, pid, Loc.t(L.SEASON_WEEK_TAG_LEAGUE), league))
 
 	# 플레이어 경기를 맨 위로.
 	out.sort_custom(func(a, b): return bool(a["player"]) and not bool(b["player"]))
@@ -368,21 +368,25 @@ func _match_row(m: Dictionary, pid: int, tag: String, namer: Node) -> Dictionary
 	var ta: int = int(m["team_a"]); var tb: int = int(m["team_b"])
 	var is_player: bool = (ta == pid or tb == pid)
 	var played: bool = bool(m["played"])
-	var status: String = "예정"
+	# `result` = the player's own outcome ("win" / "loss" / "") and colours the status;
+	# `status` is display text only.
+	var status: String = Loc.t(L.SEASON_WEEK_RESULT_SCHEDULED)
+	var result: String = ""
 	if played:
 		var winner: int = int(m["winner"])
 		if is_player:
-			status = "승" if winner == pid else "패"
+			result = "win" if winner == pid else "loss"
+			status = Loc.t(L.SEASON_WEEK_RESULT_WIN if winner == pid else L.SEASON_WEEK_RESULT_LOSS)
 		else:
-			status = "%s 승" % _team_name(namer, winner)
+			status = Loc.t(L.SEASON_WEEK_TEAM_WIN, {"team": _team_name(namer, winner)})
 	var title: String = "%s  vs  %s" % [_team_name(namer, ta), _team_name(namer, tb)]
 	if is_player:
 		var opp: int = tb if ta == pid else ta
 		title = "vs  %s" % _team_name(namer, opp)
 	return {
-		"player": is_player, "tag": tag, "title": title, "status": status,
-		"hint": "경기를 시작하면 밴픽 화면으로 넘어갑니다" if (is_player and not played)
-				else "이 경기는 끝났습니다",
+		"player": is_player, "tag": tag, "title": title, "status": status, "result": result,
+		"hint": Loc.t(L.SEASON_WEEK_HINT_START if (is_player and not played)
+				else L.SEASON_WEEK_HINT_DONE),
 	}
 
 
@@ -479,15 +483,14 @@ func _mastery_text(pilot_id: int, raw: int) -> String:
 		return ""
 	var amount: int = MechMastery.gain_preview(state, pilot_id,
 			roundi(float(raw) * ConstTable.num("MASTERY_TRAIN_SCALE")))
-	var txt: String = "숙련 +%d" % amount
 	var mech: int = MechMastery.research_mech(state, pilot_id)
 	if mech < 0:   # same fallback as `add_training_exp` — the coach's pick
 		var pd: PlayerData = MechMastery.find_pilot(state, pilot_id)
 		if pd != null:
 			mech = MechMastery.auto_research_mech(state, pd)
 	if mech >= 0:
-		txt += " · " + MechMastery.mech_name(mech)
-	return txt
+		return Loc.t(L.SEASON_WEEK_MASTERY_MECH, {"n": amount, "mech": MechMastery.mech_name(mech)})
+	return Loc.t(L.SEASON_WEEK_MASTERY, {"n": amount})
 
 
 ## Quirk events → `[[text, colour]]`. Row shape (§14.1):
@@ -507,33 +510,33 @@ static func _quirk_lines(events_raw: Variant) -> Array:
 		match kind:
 			"gain":
 				if result == "gain":
-					out.append(["기벽 획득 · %s" % _quirk_name(int(e.get("id", -1))),
+					out.append([Loc.t(L.SEASON_WEEK_QUIRK_GAIN, {"name": _quirk_name(int(e.get("id", -1)))}),
 							OutgameTheme.ACCENT_TEXT])
 				elif result == "full":
-					out.append(["기벽 칸이 가득 차 획득하지 못했습니다", OutgameTheme.TEXT_FAINT])
+					out.append([Loc.t(L.SEASON_WEEK_QUIRK_FULL), OutgameTheme.TEXT_FAINT])
 			"reroll":
 				if result == "reroll":
-					out.append(["기벽 재굴림 · %s → %s" % [_quirk_names(e.get("from", [])),
-							_quirk_names(e.get("to", []))], OutgameTheme.ACCENT_TEXT])
+					out.append([Loc.t(L.SEASON_WEEK_QUIRK_REROLL, {"from": _quirk_names(e.get("from", [])),
+							"to": _quirk_names(e.get("to", []))}), OutgameTheme.ACCENT_TEXT])
 				else:
-					out.append(["재굴림할 기벽이 없습니다", OutgameTheme.TEXT_FAINT])
+					out.append([Loc.t(L.SEASON_WEEK_QUIRK_NO_REROLL), OutgameTheme.TEXT_FAINT])
 			"slot":
 				if result == "slot":
-					var txt: String = "기벽 칸 +1"
+					var txt: String = Loc.t(L.SEASON_WEEK_QUIRK_SLOT)
 					if e.has("to"):
-						txt += " (%d칸)" % int(e["to"])
+						txt = Loc.t(L.SEASON_WEEK_QUIRK_SLOT_TO, {"n": int(e["to"])})
 					out.append([txt, OutgameTheme.POSITIVE])
 				else:
-					out.append(["기벽 칸이 이미 최대입니다", OutgameTheme.TEXT_FAINT])
+					out.append([Loc.t(L.SEASON_WEEK_QUIRK_SLOT_MAX), OutgameTheme.TEXT_FAINT])
 	return out
 
 
 ## Quirk display name — `QuirkSystem.name_of(id)`, "기벽 #id" when the table has no row.
 static func _quirk_name(id: int) -> String:
 	if id < 0:
-		return "기벽"
+		return Loc.t(L.SEASON_WEEK_QUIRK_GENERIC)
 	var name_v: String = QuirkSystem.name_of(id)
-	return name_v if name_v != "" else "기벽 #%d" % id
+	return name_v if name_v != "" else Loc.t(L.SEASON_WEEK_QUIRK_UNKNOWN, {"id": id})
 
 
 static func _quirk_names(ids_raw: Variant) -> String:
@@ -543,7 +546,7 @@ static func _quirk_names(ids_raw: Variant) -> String:
 			names.append(_quirk_name(int(id)))
 	elif ids_raw != null:
 		names.append(_quirk_name(int(ids_raw)))
-	return "없음" if names.is_empty() else ", ".join(names)
+	return Loc.t(L.UI_WORD_NONE) if names.is_empty() else Loc.t(L.UI_LIST_SEPARATOR).join(names)
 
 
 func _add_note_card(text: String) -> void:
@@ -556,12 +559,13 @@ func _refresh_action_button() -> void:
 	if _action_btn == null:
 		return
 	if _hub != null and _hub.has_player_match_on_day(_day):
-		_action_btn.text = "경기 시작"
+		_action_btn.text = Loc.t(L.SEASON_WEEK_BTN_START_MATCH)
 		# 하단 바의 칸이라 **바 변형끼리만 갈아입는다** — `DarkButton` 이면 모서리가
 		# 도로 둥글어져 이 칸만 화면에서 떠오른다. 갈아입은 뒤 인셋 몫을 다시 얹는다.
 		_set_action_kind(&"BarDarkButton")
 		return
-	_action_btn.text = "주 마감 →" if _day >= CalendarSystem.DAYS_PER_WEEK - 1 else "확인"
+	_action_btn.text = Loc.t(L.SEASON_WEEK_BTN_END_WEEK if _day >= CalendarSystem.DAYS_PER_WEEK - 1
+			else L.UI_BUTTON_CONFIRM)
 	_set_action_kind(&"BarPrimaryButton")
 
 
@@ -611,9 +615,9 @@ func _add_evening_card() -> void:
 		_sel_pid = int(mine[0]) if not mine.is_empty() else -1
 
 	var card: Control = _add_item(EVENING_CARD_SCENE)
-	(card.get_node("%Limits") as Label).text = "면담 %d/%d · 외출 %d/%d" % [
-		MentalSystem.interviews_left(s), MentalSystem.interviews_per_week(s),
-		MentalSystem.outings_left(s), ConstTable.int_of("MENTAL_OUTINGS_PER_WEEK")]
+	(card.get_node("%Limits") as Label).text = Loc.t(L.SEASON_WEEK_EVENING_LIMITS, {
+		"iv": MentalSystem.interviews_left(s), "iv_max": MentalSystem.interviews_per_week(s),
+		"out": MentalSystem.outings_left(s), "out_max": ConstTable.int_of("MENTAL_OUTINGS_PER_WEEK")})
 
 	# Pilot row — tap to select. Trust in amber once the outing is unlocked.
 	var slots: Array = _ensure_children(card.get_node("%Slots"), EVENING_SLOT_SCENE, mine.size())
@@ -627,7 +631,8 @@ func _add_evening_card() -> void:
 				OutgameTheme.ACCENT if picked else OutgameTheme.BORDER)
 		(slot.get_node("%Name") as Label).text = MentalEvents.pilot_name(s, pid)
 		var trust: Label = slot.get_node("%Trust")
-		trust.text = "신뢰 %d · 외출 %d" % [MentalSystem.trust(s, pid), MentalSystem.outings(s, pid)]
+		trust.text = Loc.t(L.SEASON_WEEK_SLOT_TRUST,
+				{"trust": MentalSystem.trust(s, pid), "outings": MentalSystem.outings(s, pid)})
 		if MentalSystem.outing_unlocked(s, pid):
 			trust.add_theme_color_override("font_color", OutgameTheme.ACCENT_TEXT)
 		(slot.get_node("%Hit") as Button).pressed.connect(_on_evening_pilot_picked.bind(pid))
@@ -635,13 +640,14 @@ func _add_evening_card() -> void:
 	# Actions. Disabled buttons say why on their own label.
 	var can_iv: bool = MentalSystem.can_interview(s) and _sel_pid >= 0
 	var can_out: bool = MentalSystem.can_outing(s, _sel_pid) and _sel_pid >= 0
-	var out_text: String = "외출"
+	var out_text: String = Loc.t(L.TERM_ACTIVITY_OUTING)
 	if MentalSystem.outings_left(s) <= 0:
-		out_text = "외출 (이번 주 끝)"
+		out_text = Loc.t(L.SEASON_WEEK_OUTING_WEEK_DONE)
 	elif not MentalSystem.outing_unlocked(s, _sel_pid):
-		out_text = "외출 (신뢰 %d↑)" % ConstTable.int_of("TRUST_OUTING_MIN")
+		out_text = Loc.t(L.SEASON_WEEK_OUTING_NEED_TRUST, {"n": ConstTable.int_of("TRUST_OUTING_MIN")})
 	var interview: Button = card.get_node("%Interview")
-	interview.text = "면담" if MentalSystem.can_interview(s) else "면담 (이번 주 끝)"
+	interview.text = Loc.t(L.TERM_ACTIVITY_INTERVIEW if MentalSystem.can_interview(s)
+			else L.SEASON_WEEK_INTERVIEW_WEEK_DONE)
 	interview.disabled = not can_iv
 	interview.pressed.connect(_on_evening_action.bind(MentalSystem.ACTION_INTERVIEW))
 	var outing: Button = card.get_node("%Outing")
@@ -668,15 +674,15 @@ func _add_evening_done_card(e: Dictionary) -> void:
 		# No pilot (pass) — the text moves left onto the portrait's spot.
 		head_lbl.offset_left = DONE_TEXT_X_NO_PORTRAIT
 		line_lbl.offset_left = DONE_TEXT_X_NO_PORTRAIT
-	var head: String = "오늘 저녁 — 쉬었습니다"
+	var head: String = Loc.t(L.SEASON_WEEK_EVENING_RESTED)
 	if action == MentalSystem.ACTION_INTERVIEW:
-		head = "오늘 저녁 — %s 면담" % MentalEvents.pilot_name(s, pid)
+		head = Loc.t(L.SEASON_WEEK_EVENING_INTERVIEW, {"name": MentalEvents.pilot_name(s, pid)})
 	elif action == MentalSystem.ACTION_OUTING:
-		head = "오늘 저녁 — %s 외출" % MentalEvents.pilot_name(s, pid)
+		head = Loc.t(L.SEASON_WEEK_EVENING_OUTING, {"name": MentalEvents.pilot_name(s, pid)})
 	head_lbl.text = head
 	var notes: Array = MentalEvents.note_texts(s, (e.get("outcome", {}) as Dictionary).get("notes", []))
 	line_lbl.text = " · ".join(PackedStringArray(notes)) if not notes.is_empty() \
-			else ("내일을 위해 일찍 쉬었다" if action == MentalSystem.ACTION_PASS else "변화 없음")
+			else Loc.t(L.SEASON_WEEK_RESTED_LINE if action == MentalSystem.ACTION_PASS else L.SEASON_WEEK_NO_CHANGE)
 
 
 ## The day's incident: resolved → summary; pending → a tap target that reopens it.
@@ -692,13 +698,13 @@ func _add_incident_card() -> void:
 	card.add_theme_stylebox_override("panel", OutgameTheme.lead_bar_style(OutgameTheme.NEGATIVE))
 	OutgameTheme.add_round_portrait(card.get_node("%Portrait"), PilotImages.circle_for(pid),
 			Vector2.ZERO, EVE_PORTRAIT_D)
-	(card.get_node("%Head") as Label).text = "사건 — %s · %s" % [String(view["tag"]),
-			MentalEvents.pilot_name(s, pid)]
+	(card.get_node("%Head") as Label).text = Loc.t(L.SEASON_WEEK_INCIDENT_HEAD, {
+			"tag": String(view["tag"]), "name": MentalEvents.pilot_name(s, pid)})
 	var pending: bool = int(inc.get("choice", -1)) < 0
 	var notes: Array = MentalEvents.note_texts(s, (inc.get("outcome", {}) as Dictionary).get("notes", []))
 	var line: Label = card.get_node("%Line")
-	line.text = "눌러서 대응하기" if pending else (
-			" · ".join(PackedStringArray(notes)) if not notes.is_empty() else "큰 탈 없이 지나갔다")
+	line.text = Loc.t(L.SEASON_WEEK_INCIDENT_TAP) if pending else (
+			" · ".join(PackedStringArray(notes)) if not notes.is_empty() else Loc.t(L.SEASON_WEEK_INCIDENT_CALM))
 	if pending:
 		line.theme_type_variation = &"NegativeLabel"
 	var hit: Button = card.get_node("%Hit")
@@ -745,10 +751,10 @@ func _open_evening_session(session: Dictionary) -> void:
 	if view.is_empty():
 		return
 	var pid: int = int(view["pilot_id"])
-	var sub: String = "%s 저녁 · 면담" % OutgameTheme.day_name(_day)
+	var sub: String = Loc.t(L.SEASON_WEEK_SUB_INTERVIEW, {"day": OutgameTheme.day_name(_day)})
 	if String(view["kind"]) == MentalEvents.KIND_OUTING:
-		sub = "%s 저녁 · 외출 %d회째" % [OutgameTheme.day_name(_day),
-				MentalSystem.outings(s, pid) + 1]
+		sub = Loc.t(L.SEASON_WEEK_SUB_OUTING, {"day": OutgameTheme.day_name(_day),
+				"n": MentalSystem.outings(s, pid) + 1})
 	_open_overlay("evening", sub, MentalEvents.pilot_name(s, pid), pid, view)
 
 
@@ -760,8 +766,8 @@ func _open_incident() -> void:
 	if view.is_empty():
 		return
 	var pid: int = int(view["pilot_id"])
-	_open_overlay("incident", "%s · 사건 발생 · %s" % [OutgameTheme.day_name(_day),
-			MentalEvents.pilot_name(s, pid)], String(view["tag"]), pid, view)
+	_open_overlay("incident", Loc.t(L.SEASON_WEEK_SUB_INCIDENT, {"day": OutgameTheme.day_name(_day),
+			"name": MentalEvents.pilot_name(s, pid)}), String(view["tag"]), pid, view)
 
 
 func _open_overlay(kind: String, sub: String, title: String, pid: int, view: Dictionary) -> void:

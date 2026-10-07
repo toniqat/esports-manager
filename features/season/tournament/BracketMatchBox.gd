@@ -11,7 +11,8 @@ extends Panel
 # border (player's match = amber 3px, decided = green 2px, otherwise `BORDER` 2px). The
 # border is data, so the `StyleBoxFlat` is built here — no theme variation carries it.
 
-## Slot title shown top-left ("4강 1경기", "결승" …) — set per instance in the screen scene.
+## Slot title shown top-left — an l10n key (`season.slot.*`, "4강 1경기", "결승" …) set per instance
+## in the screen scene; translated here.
 @export var slot_title: String = ""
 ## Corner radius of the box (the playoff boxes are rounder than the INTL ones).
 @export var corner_radius: int = 8
@@ -29,7 +30,7 @@ func _ready() -> void:
 	_style.shadow_size = 6
 	_style.shadow_offset = Vector2(0, 3)
 	add_theme_stylebox_override("panel", _style)
-	%Slot.text = slot_title
+	%Slot.text = Loc.t(slot_title) if slot_title != "" else ""  # l10n-dynamic: season.slot.*
 	if UiPreview.is_standalone(self):
 		_fill_preview()
 
@@ -49,7 +50,7 @@ func show_match(m: Dictionary, pid: int, team_text: Callable) -> void:
 
 	%TeamA.text = "— TBD —" if ta < 0 else String(team_text.call(ta))
 	%TeamB.text = "— TBD —" if tb < 0 else String(team_text.call(tb))
-	%Date.text = "%d주차" % int(m.get("phase_week", 0))
+	%Date.text = Loc.t(L.TERM_WEEK_NTH, {"n": int(m.get("phase_week", 0))})
 
 	# Winner / loser color treatment.
 	(%TeamA as Label).add_theme_color_override("font_color", team_color(ta, pid, played, winner))
@@ -79,11 +80,11 @@ static func team_color(team_id: int, pid: int, played: bool, winner: int) -> Col
 
 ## F6 단독 실행 미리보기 — 내 팀이 이긴 4강 경기 (`resources/UiPreview.gd`).
 ## 두 아이템 씬(`UI_Comp_BracketMatchBox.tscn` · `UI_Comp_IntlMatchBox.tscn`) 모두 이 스크립트라 같은 값이 뜬다.
-func _fill_preview() -> void:
+func _fill_preview() -> void:  # l10n-ignore
 	UiPreview.stage(self)
 	if slot_title == "":
-		slot_title = "4강 1경기"
-		%Slot.text = slot_title
+		slot_title = L.SEASON_SLOT_SF_1
+		%Slot.text = Loc.t(slot_title)
 	var names: Dictionary = {0: "레드 팰컨즈  (RF)", 3: "아이언 웨일즈  (IW)"}
 	show_match({"team_a": 0, "team_b": 3, "winner": 0, "played": true, "phase_week": 5},
 			0, func(team_id: int) -> String: return String(names.get(team_id, "Team %d" % team_id)))

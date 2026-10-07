@@ -3,6 +3,7 @@
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
 [node name="WeekStatCell" type="Control"]
+auto_translate_mode = 2
 editor_description = "One stat column of a training card: short name / value now / the day's result (+N green, -N red, otherwise faint carry/EXP_PER_POINT — size and colour set by code)."
 custom_minimum_size = Vector2(0, 92)
 layout_mode = 3

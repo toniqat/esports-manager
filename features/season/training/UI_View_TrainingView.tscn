@@ -49,10 +49,11 @@ offset_bottom = 52.0
 grow_horizontal = 2
 theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 34
-text = "일상 훈련 편성"
+text = "tx_T4X3A068J1"
 horizontal_alignment = 1
 
 [node name="StaffLine" type="Label" parent="SafeArea"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — TrainingView.gd _staff_lbl"
 unique_name_in_owner = true
 layout_mode = 1
@@ -164,9 +165,10 @@ offset_right = 400.0
 offset_bottom = 28.0
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 22
-text = "훈련 코스"
+text = "tx_7R4RBG1N47"
 
 [node name="EffectLine" type="Label" parent="SafeArea/Inventory"]
+auto_translate_mode = 2
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — TrainingView.gd _effect_lbl
 What the staff stats do to the courses (multiplier breakdown + top usable grade). Overlaps the label row on purpose — right-aligned, wide enough for the breakdown."
@@ -226,7 +228,7 @@ size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"BarGhostButton"
 theme_override_font_sizes/font_size = 28
-text = "판 비우기"
+text = "tx_GJCV7B4T36"
 
 [node name="Sep" type="Panel" parent="Bar/ClearButton"]
 layout_mode = 1
@@ -248,7 +250,7 @@ size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"BarGhostButton"
 theme_override_font_sizes/font_size = 28
-text = "코치 추천"
+text = "tx_4ZC95B7Y0R"
 
 [node name="Sep" type="Panel" parent="Bar/AutoButton"]
 layout_mode = 1
@@ -270,4 +272,4 @@ size_flags_horizontal = 3
 size_flags_stretch_ratio = 2.0
 focus_mode = 0
 theme_type_variation = &"BarPrimaryButton"
-text = "훈련 확정"
+text = "tx_HN9EHFNSJ1"

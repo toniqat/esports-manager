@@ -78,13 +78,19 @@ func refresh() -> void:
 			or phase == GameEnums.SeasonPhase.REGULAR_INTL)
 	var lost_at: String = _lost_round_label()
 	if is_intl:
-		_reason_lbl.text = "%s %s에서 탈락했습니다." % [phase_name, lost_at] if lost_at != "" 				else "%s에서 우승하지 못했습니다." % phase_name
+		if lost_at != "":
+			_reason_lbl.text = Loc.t(L.SEASON_GAME_OVER_INTL_LOST_AT, {"phase": phase_name, "slot": lost_at})
+		else:
+			_reason_lbl.text = Loc.t(L.SEASON_GAME_OVER_INTL_NOT_WON, {"phase": phase_name})
 		_summary_lbl.text = _title_summary_text()
 	elif bool(s.get("phase_results", {}).get(phase, {}).get("made_playoffs", false)):
-		_reason_lbl.text = "%s 플레이오프 %s에서 탈락했습니다." % [phase_name, lost_at] if lost_at != "" 				else "%s 플레이오프에서 우승하지 못했습니다." % phase_name
+		if lost_at != "":
+			_reason_lbl.text = Loc.t(L.SEASON_GAME_OVER_PLAYOFF_LOST_AT, {"phase": phase_name, "slot": lost_at})
+		else:
+			_reason_lbl.text = Loc.t(L.SEASON_GAME_OVER_PLAYOFF_NOT_WON, {"phase": phase_name})
 		_summary_lbl.text = _title_summary_text()
 	else:
-		_reason_lbl.text = "%s 플레이오프 진출에 실패했습니다." % phase_name
+		_reason_lbl.text = Loc.t(L.SEASON_GAME_OVER_PLAYOFF_MISSED, {"phase": phase_name})
 		_summary_lbl.text = _league_rank_text()
 
 
@@ -127,9 +133,9 @@ func _league_rank_text() -> String:
 	for i in ranked.size():
 		if int(ranked[i]["team_id"]) == pid:
 			var row: Dictionary = ranked[i]
-			return "최종 순위 %d위 — %d승 %d패" % [
-				i + 1, int(row["wins"]), int(row["losses"]),
-			]
+			return Loc.t(L.SEASON_GAME_OVER_FINAL_RANK, {
+				"rank": i + 1, "win": int(row["wins"]), "loss": int(row["losses"]),
+			})
 	return ""
 
 
@@ -142,7 +148,7 @@ func _title_summary_text() -> String:
 			wins += 1
 		if int(r.get("intl_champion", -1)) == int(_gm.season_state["player_team_id"]):
 			wins += 1
-	return "캠페인 우승 %d회 — 캠페인 종료" % wins
+	return Loc.t(L.SEASON_GAME_OVER_TITLE_COUNT, {"n": wins})
 
 
 # ── Button handler ──────────────────────────────────────────────────────────
@@ -178,4 +184,4 @@ func _fill_preview() -> void:
 	var fin: Dictionary = b[2]
 	_tournament.record_result(2, int(fin["team_b"]) if int(fin["team_a"]) == pid else int(fin["team_a"]))
 	%Settle.pressed.disconnect(_on_settle_pressed)
-	UiPreview.trace(%Settle.pressed, "정산")
+	UiPreview.trace(%Settle.pressed, "정산")  # l10n-ignore

@@ -37,7 +37,7 @@ offset_bottom = 236.0
 grow_horizontal = 2
 theme_type_variation = &"AccentLabel"
 theme_override_font_sizes/font_size = 72
-text = "WORLD CHAMPION"
+text = "tx_NSX2CBE8GV"
 horizontal_alignment = 1
 
 [node name="Subtitle" type="Label" parent="."]
@@ -48,7 +48,7 @@ offset_top = 244.0
 offset_bottom = 280.0
 grow_horizontal = 2
 theme_type_variation = &"BodyLabel"
-text = "캠페인 완주 — 정규시즌 국제대회 우승!"
+text = "tx_5WW618WEKX"
 horizontal_alignment = 1
 
 [node name="RecapCaption" type="Label" parent="."]
@@ -60,7 +60,7 @@ offset_bottom = 372.0
 grow_horizontal = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 24
-text = "── 캠페인 기록 ──"
+text = "tx_YD9QSBBE5R"
 horizontal_alignment = 1
 
 [node name="Recap" type="VBoxContainer" parent="."]
@@ -80,6 +80,7 @@ mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="Line0" type="Label" parent="Recap"]
+auto_translate_mode = 2
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 theme_type_variation = &"BodyLabel"
@@ -87,6 +88,7 @@ theme_override_font_sizes/font_size = 22
 text = "프리시즌  —  우승 — Team 0 ★"
 
 [node name="Line1" type="Label" parent="Recap"]
+auto_translate_mode = 2
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 theme_type_variation = &"BodyLabel"
@@ -94,6 +96,7 @@ theme_override_font_sizes/font_size = 22
 text = "프리시즌 국제대회  —  우승 — Team 100"
 
 [node name="Line2" type="Label" parent="Recap"]
+auto_translate_mode = 2
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 theme_type_variation = &"BodyLabel"
@@ -101,6 +104,7 @@ theme_override_font_sizes/font_size = 22
 text = "미드시즌  —  기록 없음"
 
 [node name="Line3" type="Label" parent="Recap"]
+auto_translate_mode = 2
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 theme_type_variation = &"BodyLabel"
@@ -108,6 +112,7 @@ theme_override_font_sizes/font_size = 22
 text = "미드시즌 국제대회  —  기록 없음"
 
 [node name="Line4" type="Label" parent="Recap"]
+auto_translate_mode = 2
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 theme_type_variation = &"BodyLabel"
@@ -115,6 +120,7 @@ theme_override_font_sizes/font_size = 22
 text = "정규시즌  —  기록 없음"
 
 [node name="Line5" type="Label" parent="Recap"]
+auto_translate_mode = 2
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 theme_type_variation = &"BodyLabel"
@@ -130,7 +136,7 @@ offset_bottom = 702.0
 grow_horizontal = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 24
-text = "── 최종 로스터 ──"
+text = "tx_6ZE7NQMPBZ"
 horizontal_alignment = 1
 
 [node name="Roster" type="VBoxContainer" parent="."]
@@ -160,6 +166,7 @@ layout_mode = 2
 text_size = 18
 
 [node name="Text" type="Label" parent="Roster/Line0"]
+auto_translate_mode = 2
 editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — EndingView.gd _refresh_roster()"
 layout_mode = 2
 size_flags_horizontal = 3
@@ -178,6 +185,7 @@ layout_mode = 2
 text_size = 18
 
 [node name="Text" type="Label" parent="Roster/Line1"]
+auto_translate_mode = 2
 editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — EndingView.gd _refresh_roster()"
 layout_mode = 2
 size_flags_horizontal = 3
@@ -196,6 +204,7 @@ layout_mode = 2
 text_size = 18
 
 [node name="Text" type="Label" parent="Roster/Line2"]
+auto_translate_mode = 2
 editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — EndingView.gd _refresh_roster()"
 layout_mode = 2
 size_flags_horizontal = 3
@@ -214,6 +223,7 @@ layout_mode = 2
 text_size = 18
 
 [node name="Text" type="Label" parent="Roster/Line3"]
+auto_translate_mode = 2
 editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — EndingView.gd _refresh_roster()"
 layout_mode = 2
 size_flags_horizontal = 3
@@ -232,6 +242,7 @@ layout_mode = 2
 text_size = 18
 
 [node name="Text" type="Label" parent="Roster/Line4"]
+auto_translate_mode = 2
 editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — EndingView.gd _refresh_roster()"
 layout_mode = 2
 size_flags_horizontal = 3
@@ -273,4 +284,4 @@ size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"BarPrimaryButton"
 theme_override_font_sizes/font_size = 32
-text = "정산"
+text = "tx_43PE998B9Y"

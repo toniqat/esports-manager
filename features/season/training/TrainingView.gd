@@ -293,8 +293,8 @@ func _refresh_staff() -> void:
 			_owner_text(state, "training"), _owner_text(state, "tactics")]
 	if _effect_lbl != null:
 		var top: int = TrainingTile.max_unlocked_grade(_board.tactics_stat())
-		_effect_lbl.text = "%s · 사용 가능 %s 등급까지" % [
-			_effect_text(_shared_parts(state)), String(TrainingTile.GRADE_NAMES[top])]
+		_effect_lbl.text = Loc.t(L.TRAINING_VIEW_EFFECT_LINE, {
+			"effect": _effect_text(_shared_parts(state)), "grade": String(TrainingTile.GRADE_NAMES[top])})
 	_refresh_exp_chips(state)
 	if _bar_buttons.size() == 3:
 		var auto_btn: Button = _bar_buttons[1]
@@ -305,12 +305,13 @@ func _refresh_staff() -> void:
 
 ## Team-wide EXP multiplier parts — the same calls `TrainingBoard.exp_mult_table`
 ## multiplies for every cell (training stat × finance × trait `train_exp_pct`).
+## Part labels are l10n keys, translated in `_effect_text`.
 ## Per-pilot parts (breakthrough, outing fatigue) are not here; see `_refresh_exp_chips`.
 func _shared_parts(state: Dictionary) -> Array:
 	return [
-		["스태프", TrainingTile.training_exp_mult(_board.training_stat())],
-		["재무", FinanceSystem.training_exp_mult(state)],
-		["특성", TraitSystem.run_pct_mult(state, "train_exp_pct")],
+		[L.TERM_PERSON_STAFF, TrainingTile.training_exp_mult(_board.training_stat())],
+		[L.TRAINING_VIEW_PART_FINANCE, FinanceSystem.training_exp_mult(state)],
+		[L.TRAINING_VIEW_PART_TRAIT, TraitSystem.run_pct_mult(state, "train_exp_pct")],
 	]
 
 
@@ -324,7 +325,7 @@ static func _parts_product(parts: Array) -> float:
 ## "훈련 효과 ×1.21" — plus "(스태프 ×1.10 · 특성 ×1.10)" when anything besides the
 ## staff stat moves it. Parts at ×1.00 are left out of the breakdown.
 static func _effect_text(parts: Array) -> String:
-	var txt: String = "훈련 효과 ×%.2f" % _parts_product(parts)
+	var mult: String = "%.2f" % _parts_product(parts)
 	var shown: Array = []
 	var others_move: bool = false
 	for i in parts.size():
@@ -334,10 +335,10 @@ static func _effect_text(parts: Array) -> String:
 		if i > 0 and moves:
 			others_move = true
 		if moves or i == 0:
-			shown.append("%s ×%.2f" % [String(part[0]), v])
+			shown.append("%s ×%.2f" % [Loc.t(String(part[0])), v])  # l10n-dynamic: training.view.part_*
 	if others_move:
-		txt += " (%s)" % " · ".join(shown)
-	return txt
+		return Loc.t(L.TRAINING_VIEW_EFFECT_BREAKDOWN, {"mult": mult, "parts": " · ".join(shown)})
+	return Loc.t(L.TRAINING_VIEW_EFFECT, {"mult": mult})
 
 
 ## Thumbnail chips: each pilot's own multiplier relative to the team-wide one, read
@@ -367,14 +368,17 @@ func _refresh_exp_chips(state: Dictionary) -> void:
 
 ## "훈련: 강민호 코치 17" / "전술: 감독 6" — who covers this stat and its value.
 static func _owner_text(state: Dictionary, stat: String) -> String:
-	var who: String = StaffSystem.owner_name(state, stat)
+	var params: Dictionary = {
+		"stat": StaffSystem.stat_label(stat),
+		"name": StaffSystem.owner_name(state, stat),
+		"value": StaffSystem.effective(state, stat),
+	}
 	match StaffSystem.owner(state, stat):
 		StaffSystem.OWNER_STAFF:
-			who += " 코치"
+			return Loc.t(L.TRAINING_VIEW_OWNER_STAFF, params)
 		StaffSystem.OWNER_ASSISTANT:
-			who += " 어시스턴트"
-	return "%s: %s %d" % [String(StaffSystem.STAT_LABELS.get(stat, stat)), who,
-			StaffSystem.effective(state, stat)]
+			return Loc.t(L.TRAINING_VIEW_OWNER_ASSISTANT, params)
+	return "%s: %s %d" % [params["stat"], params["name"], params["value"]]
 
 
 func _refresh_thumbs() -> void:
@@ -839,7 +843,7 @@ func _card_locked(t: TrainingTile) -> bool:
 
 ## "전술 11 필요" — the tactics a locked grade needs.
 static func _lock_reason(t: TrainingTile) -> String:
-	return "전술 %d 필요" % TrainingTile.required_tactics(t.grade)
+	return Loc.t(L.TRAINING_VIEW_LOCK_REASON, {"n": TrainingTile.required_tactics(t.grade)})
 
 
 static func _cap_text(placed: int, limit: int) -> String:
@@ -890,7 +894,7 @@ func _select_card(t: TrainingTile, card: TrainingCourseCard) -> void:
 	# Locked grade (tactics): one extra line saying what it needs vs. now.
 	var lock: String = ""
 	if _board != null and not _board.is_unlocked(t):
-		lock = "%s (지금 전술 %d)" % [_lock_reason(t), _board.tactics_stat()]
+		lock = Loc.t(L.TRAINING_VIEW_LOCK_NOW, {"reason": _lock_reason(t), "n": _board.tactics_stat()})
 	_popover = TrainingCoursePopover.create()
 	# 팝오버 자신이 클릭을 삼키고(씬에서 STOP) **그 클릭으로 닫힌다**. 삼키지 않으면
 	# 밑에 깔린 카드가 대신 눌려 방금 연 것이 그 자리에서 닫히거나 옆 코스로

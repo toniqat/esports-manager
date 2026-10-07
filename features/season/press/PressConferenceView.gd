@@ -58,12 +58,13 @@ func _restart() -> void:
 	var view: Dictionary = MentalSystem.session_view(s, MentalSystem.press_session(s))
 	if view.is_empty():
 		# No row could be drawn (empty table) — nothing to ask.
-		_messenger.open("", "기자회견", null, ["*오늘은 질문이 없습니다."], [])
+		_messenger.open("", Loc.t(L.TERM_ACTIVITY_PRESS), null,
+				["*" + Loc.t(L.PRESS_CONFERENCE_NO_QUESTION)], [])
 		return
-	var sub: String = "%s · %d주차 · %s 기자" % [
-		GameEnums.phase_label(int(s["current_phase"])), int(s["phase_week"]),
-		String(view["tag"]) if String(view["tag"]) != "" else "e스포츠"]
-	_messenger.open(sub, "기자회견", null, view["lines"], view["choices"])
+	var sub: String = Loc.t(L.PRESS_CONFERENCE_SUB, {
+		"phase": GameEnums.phase_label(int(s["current_phase"])), "week": int(s["phase_week"]),
+		"outlet": String(view["tag"]) if String(view["tag"]) != "" else Loc.t(L.PRESS_CONFERENCE_DEFAULT_OUTLET)})
+	_messenger.open(sub, Loc.t(L.TERM_ACTIVITY_PRESS), null, view["lines"], view["choices"])
 
 
 func _on_answer_picked(idx: int) -> void:

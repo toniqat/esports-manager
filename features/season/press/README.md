@@ -11,7 +11,7 @@ HubView "이번 주 시작 →"  →  PRESS  →  (pick an answer)  →  TRAININ
 | File | Role |
 |---|---|
 | `PressConferenceView.gd` | `class_name PressConferenceView extends Control` — the screen: draws this week's `MentalSystem.press_session` in a `MessengerView`, applies the answer with `MentalSystem.resolve_press`, then `SeasonHub.on_press_finished()` |
-| `UI_View_PressConferenceView.tscn` | The screen scene: root (theme `OutgameTheme.tres`, PASS) + one `UI_View_MessengerView.tscn` instance `%MessengerView_Messenger` whose `outcome_hint` is set in the scene (`화면을 눌러 계속`). Created by `SeasonHub` with `PressConferenceView.create()` |
+| `UI_View_PressConferenceView.tscn` | The screen scene: root (theme `OutgameTheme.tres`, PASS) + one `UI_View_MessengerView.tscn` instance `%MessengerView_Messenger` whose `outcome_hint` is set in the scene (key `ui.button.tap_to_continue` — "화면을 눌러 계속"). Created by `SeasonHub` with `PressConferenceView.create()` |
 | `MessengerView.gd` | `class_name MessengerView extends Control` — **shared messenger dialogue** (press conference here; interview / outing / incident overlays on the week screen). Create with `MessengerView.create()` (`.new()` is an empty Control). API: `open(sub, title, portrait, lines, choices)` → signal `choice_picked(idx)` → `show_result(MentalEvents.outcome_view(state, outcome))` (display text — the stored outcome holds keys / note dicts only) / `show_outcome(reply_lines, notes, verdict)` → signal `closed`. `reveal_all()` shows every remaining line + the choices at once (previews / harnesses). `@export outcome_hint` = bottom hint after the outcome. Line grammar: plain = left speaker, `>text` = manager (right), `*text` = narration (see `features/season/mental/README.md`). |
 | `UI_View_MessengerView.tscn` | The **frame** (below): header, scroll, `%Log` column, `%Answers` block, hint |
 | `UI_Comp_MessengerNpcBubble.tscn` / `.gd` | Item — one line of the other side (left): portrait slot (`%Portrait` + `%Glyph`), tail (`%Wedge`), white bubble (`%Bubble` → `Pad` → `%Text`). `create()` + `setup(text, portrait, with_portrait)` — follow-up lines hide portrait + tail but keep their columns |
@@ -144,3 +144,8 @@ Reporter portrait: still the microphone drawn by `MessengerReporterGlyph` (`%Gly
   the messenger's `%Background` is extended into the notch band (`ScreenMetrics.extend_background`)
   and `%SafeArea` ends on the safe bottom, so the bottom hint sits at `safe_h() - 50`. All colours
   come from `OutgameTheme` variations (code only for the failed-note tint copy).
+
+## Localization
+Display text is l10n keys (`press` domain). `MessengerView.outcome_hint` is a key (default
+`press.messenger.hint_close`; the press screen sets `ui.button.tap_to_continue` in its scene), translated when shown.
+The F6 preview dialogue is `press.preview.*`. Question / answer texts come from `mental_texts.csv` (`mental` domain).

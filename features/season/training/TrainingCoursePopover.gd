@@ -75,7 +75,7 @@ static func _text_height(text: String, width: float, font_size: int) -> float:
 		return 0.0
 	var font: Font = ThemeDB.fallback_font
 	var one: float = maxf(1.0,
-			font.get_string_size("가", HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).y)
+			font.get_string_size("가", HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).y)  # l10n-ignore — glyph probe
 	var total: float = font.get_multiline_string_size(
 			text, HORIZONTAL_ALIGNMENT_LEFT, width, font_size).y
 	var lines: int = maxi(1, int(round(total / one)))
@@ -88,4 +88,5 @@ func _fill_preview() -> void:
 	UiPreview.stage(self)
 	var t := TrainingTile.from_def({"id": "T14", "name_key": "tx_CHY4PWBWTD", "grade": 3,
 			"shape": "K/W/W", "exp": "all:38", "effect": "mult:mate_all:125"})
-	fill(t, "0/2", "전술 11 필요 (지금 전술 9)")
+	fill(t, "0/2", Loc.t(L.TRAINING_VIEW_LOCK_NOW, {
+		"reason": Loc.t(L.TRAINING_VIEW_LOCK_REASON, {"n": 11}), "n": 9}))

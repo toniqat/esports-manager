@@ -86,6 +86,7 @@ mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="Title" type="Label" parent="Root/SafeArea/Card/Pad/VBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — HubSheet.gd _open()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 56)
@@ -147,4 +148,4 @@ custom_minimum_size = Vector2(0, 112)
 layout_mode = 2
 focus_mode = 0
 theme_type_variation = &"GhostButton"
-text = "닫기"
+text = "tx_R1DMEF1S3E"

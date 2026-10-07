@@ -29,7 +29,7 @@ func _fill_preview() -> void:
 	# 홀로 선 루트는 첫 배치(줄바꿈 글 폭 0 → 아주 긴 높이)만큼 커진 채 줄지 않는다 —
 	# 한 프레임 뒤 최소 크기로 되돌린다(로그 안에서는 VBox 가 매번 크기를 정한다).
 	_shrink_preview.call_deferred()
-	setup("쉽지 않겠지만 준비한 게 있습니다. 경기 날 보여 드리겠습니다, 기대하셔도 좋습니다.")
+	setup(Loc.t(L.PRESS_PREVIEW_PLAYER_LONG))
 
 
 func _shrink_preview() -> void:

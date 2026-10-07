@@ -4,6 +4,7 @@
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="TrainingCourseCard" type="Panel"]
+auto_translate_mode = 2
 editor_description = "One course card of the training inventory row (TrainingView %CourseRow). Grade colour (frame border, band fill, grade letter) and the selected look are data: code duplicates CardFrame / GradeBand. PASS so the press reaches the scroll (DragScroll decides scroll vs pick-up)."
 custom_minimum_size = Vector2(168, 236)
 offset_right = 168.0

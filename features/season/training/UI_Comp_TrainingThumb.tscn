@@ -3,6 +3,7 @@
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
 [node name="TrainingThumb" type="Panel"]
+auto_translate_mode = 2
 editor_description = "One column header of the training board (TrainingView %Thumbs). Border colour = the seat's role colour (code duplicates ThumbFrame and sets border_color). Not tappable."
 clip_contents = true
 custom_minimum_size = Vector2(170, 70.83334)

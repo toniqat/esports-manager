@@ -16,6 +16,7 @@ theme_override_constants/separation = 0
 script = ExtResource("1_script")
 
 [node name="Record" type="Label" parent="."]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — LeagueTeamDetail.gd show_detail()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 34)

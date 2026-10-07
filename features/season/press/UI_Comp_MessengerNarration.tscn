@@ -3,6 +3,7 @@
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
 [node name="MessengerNarration" type="MarginContainer"]
+auto_translate_mode = 2
 editor_description = "A centred narration line (`*text`) in MessengerView's log. Code sets %Text. Margins: sides, space above the text, gap below."
 offset_right = 1080.0
 offset_bottom = 63.0

@@ -45,8 +45,9 @@ const ANSWER_SCENE: PackedScene = preload("res://features/season/press/UI_Comp_M
 
 enum Stage { LINES, CHOICES, OUTCOME, DONE }
 
-## Bottom hint once the outcome is shown (the press screen moves on instead of closing).
-@export var outcome_hint: String = "화면을 눌러 닫기"
+## Bottom hint once the outcome is shown (the press screen moves on instead of closing) — an
+## l10n key (`press.messenger.hint_close` / `ui.button.tap_to_continue`), translated when shown.
+@export var outcome_hint: String = L.PRESS_MESSENGER_HINT_CLOSE
 
 var _portrait: Texture2D = null      # null → reporter microphone glyph
 var _lines: Array = []
@@ -110,7 +111,7 @@ func show_outcome(reply_lines: Array, notes: Array, verdict: int = 0) -> void:
 	for l in reply_lines:
 		_add_line(String(l))
 	if verdict != 0:
-		_add_note("멘탈 판정 성공" if verdict > 0 else "멘탈 판정 실패", verdict > 0)
+		_add_note(Loc.t(L.PRESS_MESSENGER_CHECK_PASS if verdict > 0 else L.PRESS_MESSENGER_CHECK_FAIL), verdict > 0)
 	for n in notes:
 		_add_note(String(n), true)
 	_stage = Stage.OUTCOME
@@ -259,11 +260,11 @@ func _refresh_hint() -> void:
 		return
 	match _stage:
 		Stage.LINES:
-			_hint_lbl.text = "화면을 눌러 계속"
+			_hint_lbl.text = Loc.t(L.UI_BUTTON_TAP_TO_CONTINUE)
 		Stage.CHOICES:
-			_hint_lbl.text = "답변을 고르세요"
+			_hint_lbl.text = Loc.t(L.PRESS_MESSENGER_PICK_ANSWER)
 		Stage.OUTCOME:
-			_hint_lbl.text = outcome_hint
+			_hint_lbl.text = Loc.t(outcome_hint)  # l10n-dynamic: press.messenger.hint_close
 		_:
 			_hint_lbl.text = ""
 
@@ -286,16 +287,21 @@ func _fill_preview() -> void:
 	UiPreview.trace(choice_picked)
 	UiPreview.trace(closed)
 	choice_picked.connect(func(_idx: int) -> void:
-		show_outcome(["좋습니다. 주말 경기 기대하겠습니다."], ["팀 신뢰 +3", "감독 멘탈 +1 (2주)"], 1))
-	open("프리시즌 · 3주차 · e스포츠 데일리 기자", "기자회견", null, [
-		"주말 경기 상대가 만만치 않다는 평이 많습니다.",
-		"솔직히, 이길 자신 있으십니까?",
-		"*기자석이 잠시 조용해진다.",
-		">상대 분석은 이미 끝냈습니다.",
-		"그렇다면 이번 주 훈련의 초점은 어디에 두셨나요?",
+		show_outcome([Loc.t(L.PRESS_PREVIEW_REPLY)],
+				[Loc.t(L.PRESS_PREVIEW_NOTE_TRUST), Loc.t(L.PRESS_PREVIEW_NOTE_MENTAL)], 1))
+	var sub: String = Loc.t(L.PRESS_CONFERENCE_SUB, {
+		"phase": GameEnums.phase_label(GameEnums.SeasonPhase.PRESEASON), "week": 3,
+		"outlet": Loc.t(L.PRESS_PREVIEW_OUTLET)})
+	# Line prefixes are markup: `*` = narration, `>` = the manager's own line.
+	open(sub, Loc.t(L.TERM_ACTIVITY_PRESS), null, [
+		Loc.t(L.PRESS_PREVIEW_Q1),
+		Loc.t(L.PRESS_PREVIEW_Q2),
+		"*" + Loc.t(L.PRESS_PREVIEW_NARRATION),
+		">" + Loc.t(L.PRESS_PREVIEW_MY_LINE),
+		Loc.t(L.PRESS_PREVIEW_Q3),
 	], [
-		"저희 선수들을 믿습니다.",
-		"쉽지 않겠지만 준비한 게 있습니다.",
-		"질문이 좀 무례하시네요.",
+		Loc.t(L.PRESS_PREVIEW_A1),
+		Loc.t(L.PRESS_PREVIEW_A2),
+		Loc.t(L.PRESS_PREVIEW_A3),
 	])
 	reveal_all()

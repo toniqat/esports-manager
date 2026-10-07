@@ -39,6 +39,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="Phase" type="Label" parent="Content"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — LeagueView.gd refresh()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -59,9 +60,10 @@ offset_top = 66.0
 offset_bottom = 128.0
 grow_horizontal = 2
 theme_type_variation = &"HeadingLabel"
-text = "리그 순위"
+text = "tx_ST353SNDF5"
 
 [node name="NextMatch" type="Label" parent="Content"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — LeagueView.gd refresh()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -100,7 +102,7 @@ offset_right = 116.0
 offset_bottom = 28.0
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 20
-text = "순위"
+text = "tx_6C8H4243AF"
 horizontal_alignment = 1
 
 [node name="TeamHead" type="Label" parent="Content/Header"]
@@ -110,7 +112,7 @@ offset_right = 496.0
 offset_bottom = 28.0
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 20
-text = "팀"
+text = "tx_JJXZKV6K5R"
 
 [node name="RecordHead" type="Label" parent="Content/Header"]
 layout_mode = 0
@@ -119,7 +121,7 @@ offset_right = 680.0
 offset_bottom = 28.0
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 20
-text = "승-패"
+text = "tx_ESS0Z9GK8W"
 horizontal_alignment = 1
 
 [node name="PctHead" type="Label" parent="Content/Header"]
@@ -129,7 +131,7 @@ offset_right = 840.0
 offset_bottom = 28.0
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 20
-text = "승률"
+text = "tx_H17EQXSJDT"
 horizontal_alignment = 1
 
 [node name="PoHead" type="Label" parent="Content/Header"]
@@ -139,7 +141,7 @@ offset_right = 984.0
 offset_bottom = 28.0
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 20
-text = "PO"
+text = "tx_X5HJZ9N50Q"
 horizontal_alignment = 1
 
 [node name="Body" type="VBoxContainer" parent="Content"]
@@ -171,7 +173,7 @@ mouse_filter = 2
 layout_mode = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 20
-text = "팀을 누르면 로스터와 분석 자료를 봅니다"
+text = "tx_PBF3EV0MYG"
 horizontal_alignment = 1
 
 [node name="OkButton" type="Button" parent="."]
@@ -187,4 +189,4 @@ grow_horizontal = 2
 grow_vertical = 0
 focus_mode = 0
 theme_type_variation = &"BarPrimaryButton"
-text = "확인"
+text = "tx_YE7AM14AWS"

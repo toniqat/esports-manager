@@ -122,3 +122,7 @@ LeagueView (Control, full rect, mouse PASS, theme OutgameTheme)
 ```
 Scene owns: positions, column widths, font sizes / variations, the PO mark colour. Code owns: text,
 row card colours, rank colour, safe-area top indent, bottom-bar inset. The PO mark is `PositiveLabel` 24.
+
+## Localization
+Display text is l10n keys (`season` domain, `season.league.*` · `season.league_*` scene keys; records use
+`term.record.win_loss`).

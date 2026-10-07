@@ -67,6 +67,7 @@ mouse_filter = 2
 theme_override_constants/margin_left = 12
 
 [node name="WeekLabel" type="Label" parent="SafeArea/Rail/Row/WeekSlot"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _week_lbl"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(92, 0)
@@ -99,6 +100,7 @@ mouse_filter = 2
 theme_type_variation = &"WeekDayChip"
 
 [node name="Letter" type="Label" parent="SafeArea/Rail/Row/Days/Day0/Chip"]
+auto_translate_mode = 2
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -123,6 +125,7 @@ mouse_filter = 2
 theme_type_variation = &"WeekDayChip"
 
 [node name="Letter" type="Label" parent="SafeArea/Rail/Row/Days/Day1/Chip"]
+auto_translate_mode = 2
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -147,6 +150,7 @@ mouse_filter = 2
 theme_type_variation = &"WeekDayChipToday"
 
 [node name="Letter" type="Label" parent="SafeArea/Rail/Row/Days/Day2/Chip"]
+auto_translate_mode = 2
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -171,6 +175,7 @@ mouse_filter = 2
 theme_type_variation = &"WeekDayChip"
 
 [node name="Letter" type="Label" parent="SafeArea/Rail/Row/Days/Day3/Chip"]
+auto_translate_mode = 2
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -195,6 +200,7 @@ mouse_filter = 2
 theme_type_variation = &"WeekDayChip"
 
 [node name="Letter" type="Label" parent="SafeArea/Rail/Row/Days/Day4/Chip"]
+auto_translate_mode = 2
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -219,6 +225,7 @@ mouse_filter = 2
 theme_type_variation = &"WeekDayChip"
 
 [node name="Letter" type="Label" parent="SafeArea/Rail/Row/Days/Day5/Chip"]
+auto_translate_mode = 2
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -243,6 +250,7 @@ mouse_filter = 2
 theme_type_variation = &"WeekDayChip"
 
 [node name="Letter" type="Label" parent="SafeArea/Rail/Row/Days/Day6/Chip"]
+auto_translate_mode = 2
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -261,6 +269,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Phase" type="Label" parent="SafeArea"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _phase_lbl"
 unique_name_in_owner = true
 layout_mode = 0
@@ -273,6 +282,7 @@ theme_override_font_sizes/font_size = 24
 text = "프리시즌 · 3주차"
 
 [node name="DateSmall" type="Label" parent="SafeArea"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _date_small_lbl"
 unique_name_in_owner = true
 layout_mode = 1
@@ -309,6 +319,7 @@ horizontal_alignment = 2
 clip_text = true
 
 [node name="Title" type="Label" parent="SafeArea"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _add_match_cards() · WeekProgressView.gd _title_lbl"
 unique_name_in_owner = true
 layout_mode = 0
@@ -364,6 +375,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Action" type="Button" parent="SafeArea"]
+auto_translate_mode = 2
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _action_btn
 Bottom action bar (one full-width slot). Code switches its variation per day (BarPrimaryButton 확인 / 주 마감 →, BarDarkButton 경기 시작) and adds the bottom inset (OutgameTheme.fit_bottom_bar / fit_bar_button — colour runs under the inset, text stays above it)."

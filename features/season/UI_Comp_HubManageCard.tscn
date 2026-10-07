@@ -4,6 +4,7 @@
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="HubManageCard" type="Panel"]
+auto_translate_mode = 2
 custom_minimum_size = Vector2(0, 176)
 offset_right = 329.0
 offset_bottom = 176.0

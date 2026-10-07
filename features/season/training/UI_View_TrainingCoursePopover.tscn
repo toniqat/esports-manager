@@ -4,6 +4,7 @@
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="TrainingCoursePopover" type="Panel"]
+auto_translate_mode = 2
 editor_description = "Info popover over a selected course card (TrainingView). Width and x / font of every line are the scene's; the height and the y of Exp / Effect / Lock are derived from the text in code (placement needs the height in the same frame). Border = grade colour (data, code). STOP — it swallows the tap that closes it."
 offset_right = 380.0
 offset_bottom = 159.0

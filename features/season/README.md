@@ -371,7 +371,7 @@ BracketView (Control, full rect, OutgameTheme)          IntlBracketView — same
 ```
 - Match boxes: `BracketMatchBox.gd` on two item scenes — `UI_Comp_BracketMatchBox.tscn` (playoff: 22/18/28 px
   fonts, radius 8) and `UI_Comp_IntlMatchBox.tscn` (INTL: 18/16/22 px, radius 6). Each instance sets
-  `slot_title` ("4강 1경기" …) in the screen scene; the box size is the instance's minimum size.
+  `slot_title` (an l10n key `season.slot.*` — "4강 1경기" …) in the screen scene; the box size is the instance's minimum size.
   `show_match(m, pid, team_text)` fills team / week text and paints the data colours (team colour by
   player / winner / loser, border amber 3px for the player's match, green 2px decided, `BORDER` 2px
   otherwise — the `StyleBoxFlat` is built in code because the border is data).
@@ -521,3 +521,11 @@ Contract: `docs/outgame_dev_plan.md` §10.1 / §10.3.
 - `_on_phase_changed_close_pom` (connected to `CalendarSystem.phase_changed` in `_ready`) closes
   the phase that just ended: `RunStats.finalize_phase(state, new_phase - 1)`. Settlement
   (`RunResult`) closes the current phase the same way; both are idempotent.
+
+## Localization
+Display text is l10n keys (`season` domain; shared `ui.*` / `term.*` where the word is generic).
+Scene labels that the script fills carry `auto_translate_mode = 2` (placeholder text stays for WYSIWYG);
+fixed captions hold a key literal. Bracket slot names are `season.slot.*` — `TournamentManager.SLOT_LABELS` /
+`InternationalTournament.SLOT_LABELS` (`slot_label(i)` returns translated text) and the `BracketMatchBox.slot_title`
+values in the bracket scenes are the same keys (translated by the box). Week-progress match rows carry a
+logic field `result` (`"win"` / `"loss"` / `""`) — the colour never compares display text.

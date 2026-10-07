@@ -116,5 +116,6 @@ func _fill_preview() -> void:
 	var rec: Dictionary = table.get(tid, table.get(str(tid), {}))
 	var detail := LeagueTeamDetail.create()
 	body.add_child(detail)
-	detail.bind(self, "%d승 %d패  · 내 팀" % [int(rec.get("wins", 0)), int(rec.get("losses", 0))],
+	detail.bind(self, Loc.t(L.SEASON_LEAGUE_RECORD_MINE,
+			{"win": int(rec.get("wins", 0)), "loss": int(rec.get("losses", 0))}),
 			OpponentIntel.build(state, OpponentIntel.team_roster(state, tid), true))

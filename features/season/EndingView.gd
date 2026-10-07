@@ -91,10 +91,10 @@ func _refresh_recap() -> void:
 		if _is_intl_phase(phase):
 			# INTL phases are stored under their own enum key with intl_champion.
 			var champ: int = int(entry.get("intl_champion", -1))
-			line += "  —  " + _format_winner(champ, pid, league, intl)
+			line = "%s  —  %s" % [phase_name, _format_winner(champ, pid, league, intl)]
 		else:
 			var champ_p: int = int(entry.get("champion", -1))
-			line += "  —  " + _format_winner(champ_p, pid, league, intl)
+			line = "%s  —  %s" % [phase_name, _format_winner(champ_p, pid, league, intl)]
 		_phase_lines[i].text = line
 		var color: Color = OutgameTheme.TEXT
 		if _phase_won_by_player(phase, entry, pid):
@@ -123,15 +123,15 @@ func _phase_won_by_player(phase: int, entry: Dictionary, pid: int) -> bool:
 
 func _format_winner(team_id: int, pid: int, league: LeagueManager, intl: InternationalTournament) -> String:
 	if team_id < 0:
-		return "기록 없음"
+		return Loc.t(L.UI_WORD_NO_RECORD)
 	var team_label: String = "Team %d" % team_id
 	if team_id >= 100 and intl != null:
 		team_label = intl.team_name(team_id)
 	elif league != null:
 		team_label = league.team_name(team_id)
 	if team_id == pid:
-		return "우승 — %s ★" % team_label
-	return "우승 — %s" % team_label
+		return Loc.t(L.SEASON_ENDING_CHAMPION_MINE, {"team": team_label})
+	return Loc.t(L.SEASON_ENDING_CHAMPION, {"team": team_label})
 
 
 func _refresh_roster() -> void:
@@ -185,4 +185,4 @@ func _fill_preview() -> void:
 	s["phase_results"] = pr
 	s["current_phase"] = GameEnums.SeasonPhase.REGULAR_INTL
 	%Settle.pressed.disconnect(_on_settle_pressed)
-	UiPreview.trace(%Settle.pressed, "정산")
+	UiPreview.trace(%Settle.pressed, "정산")  # l10n-ignore

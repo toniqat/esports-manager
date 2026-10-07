@@ -43,7 +43,7 @@ func fill(rank: int, team_text: String, wins: int, losses: int,
 	var played: int = wins + losses
 	%Rank.text = "%d" % rank
 	%Team.text = team_text
-	%Record.text = "%d승 %d패" % [wins, losses]
+	%Record.text = Loc.t(L.TERM_RECORD_WIN_LOSS, {"win": wins, "loss": losses})
 	%Pct.text = "—" if played == 0 else "%.3f" % (float(wins) / float(played))
 	%Po.text = "PO" if made_po else ""
 

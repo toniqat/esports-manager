@@ -551,3 +551,8 @@ that doc when adding these.
 * **Corrective** — picks the lowest / highest stat to raise (weakness fix · power up).
 * **Great success** — +50%, tiles that raise or block its chance (`resultCannotBeVerygood`).
 * **SS grade · non-rectangular (hole `.`) tiles · column-1-only tiles · amplifier materials · part-time job (training points)**.
+
+## Localization
+Screen text is l10n keys (`training` domain: `training.view.*` code templates, `training.training_view.*` scene
+captions). The effect-line part labels in `TrainingView._shared_parts` are keys translated in `_effect_text`;
+the staff line translates `StaffSystem.STAT_LABELS` through `Loc.t` (staff module's table).

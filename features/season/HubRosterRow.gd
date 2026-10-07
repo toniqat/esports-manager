@@ -53,7 +53,7 @@ func show_pilot(p: PlayerData, trust: int = 0, trust_max: int = 1) -> void:
 			v = "%d" % int(p.get(PlayerData.STAT_KEYS[s]))
 		(cols[s].get_node("Value") as Label).text = v
 	var col: Color = HubView.trust_color(trust)
-	%TrustText.text = "신뢰 %d" % trust
+	%TrustText.text = Loc.t(L.SEASON_HUB_ROSTER_TRUST, {"n": trust})
 	var chip: Panel = %TrustChip
 	chip.add_theme_stylebox_override("panel",
 			OutgameTheme.flat_style(col, int(chip.custom_minimum_size.y * 0.5)))

@@ -3,6 +3,7 @@
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
 [node name="MessengerAnswerButton" type="Button"]
+auto_translate_mode = 2
 editor_description = "One answer choice in MessengerView's %AnswerList (right-aligned, fixed width, at least 96 tall, grows with wrapped text). Code sets the text and connects pressed."
 custom_minimum_size = Vector2(640, 96)
 offset_right = 640.0

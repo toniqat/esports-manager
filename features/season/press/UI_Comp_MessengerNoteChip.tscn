@@ -4,6 +4,7 @@
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="MessengerNoteChip" type="MarginContainer"]
+auto_translate_mode = 2
 editor_description = "A centred effect / verdict pill under the outcome in MessengerView's log. margin_bottom = gap to the next chip."
 offset_right = 1080.0
 offset_bottom = 56.0

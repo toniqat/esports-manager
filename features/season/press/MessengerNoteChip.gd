@@ -34,4 +34,4 @@ func setup(text: String, good: bool) -> void:
 ## F6 단독 실행 미리보기 — 실패 판정 칩 (좋은 칩은 씬 기본 모양) (`resources/UiPreview.gd`).
 func _fill_preview() -> void:
 	UiPreview.stage(self)
-	setup("멘탈 판정 실패", false)
+	setup(Loc.t(L.PRESS_MESSENGER_CHECK_FAIL), false)

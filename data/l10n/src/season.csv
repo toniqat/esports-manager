@@ -1,0 +1,110 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_NSX2CBE8GV,season.ending_view.title,active,UI_View_EndingView.tscn Title text,,,WORLD CHAMPION,WORLD CHAMPION,draft,f368bb79
+tx_5WW618WEKX,season.ending_view.subtitle,active,UI_View_EndingView.tscn Subtitle text,,,캠페인 완주 — 정규시즌 국제대회 우승!,Campaign complete — Regular Season International champions!,draft,81262d10
+tx_YD9QSBBE5R,season.ending_view.recap_caption,active,UI_View_EndingView.tscn RecapCaption text,,,── 캠페인 기록 ──,── Campaign Record ──,draft,885fb580
+tx_6ZE7NQMPBZ,season.ending_view.roster_caption,active,UI_View_EndingView.tscn RosterCaption text,,,── 최종 로스터 ──,── Final Roster ──,draft,e2d663ed
+tx_43PE998B9Y,season.ending_view.settle,active,UI_View_EndingView.tscn SafeBottom/BottomBar/Settle text,,,정산,Settle,draft,9945e345
+tx_CZ5JRH7TF5,season.game_over_view.title,active,UI_View_GameOverView.tscn Title text,,,GAME OVER,GAME OVER,draft,b1de5c6a
+tx_CPYGV0VH59,season.game_over_view.settle,active,UI_View_GameOverView.tscn SafeBottom/BottomBar/Settle text,,,정산,Settle,draft,9945e345
+tx_EC5JJ7JJ79,season.hub_view.title,active,UI_View_HubView.tscn Title text,,,시즌 허브,Season Hub,draft,3571d86e
+tx_TS2F4HMZ50,season.hub_view.roster_caption,active,UI_View_HubView.tscn RosterCaption text,,,내 팀 로스터,My Roster,draft,a4f5e6f1
+tx_J2MCV2WPXA,season.hub_view.start,active,UI_View_HubView.tscn SafeBottom/BottomBar/Start text,,,이번 주 시작 →,Start Week →,draft,71881960
+tx_ST353SNDF5,season.league_view.title,active,UI_View_LeagueView.tscn Content/Title text,,,리그 순위,League Standings,draft,97f5b49e
+tx_6C8H4243AF,season.league_view.rank_head,active,UI_View_LeagueView.tscn Content/Header/RankHead text,,,순위,Rank,draft,d15876f1
+tx_JJXZKV6K5R,season.league_view.team_head,active,UI_View_LeagueView.tscn Content/Header/TeamHead text,,,팀,Team,draft,90583011
+tx_ESS0Z9GK8W,season.league_view.record_head,active,UI_View_LeagueView.tscn Content/Header/RecordHead text,,,승-패,W-L,draft,9660dd73
+tx_H17EQXSJDT,season.league_view.pct_head,active,UI_View_LeagueView.tscn Content/Header/PctHead text,,,승률,Win %,draft,82cc030f
+tx_X5HJZ9N50Q,season.league_view.po_head,active,UI_View_LeagueView.tscn Content/Header/PoHead text,,,PO,PO,draft,eea0c00c
+tx_PBF3EV0MYG,season.league_view.hint,active,UI_View_LeagueView.tscn Content/Body/Hint text,,,팀을 누르면 로스터와 분석 자료를 봅니다,Tap a team to see its roster and scouting report,draft,b841b264
+tx_ER5MBFDQR0,season.bracket_view.title,active,UI_View_BracketView.tscn Title text,,,플레이오프 브래킷,Playoff Bracket,draft,0018a3cd
+tx_GB3H6SNA3T,season.bracket_view.empty,active,UI_View_BracketView.tscn Empty text,,,플레이오프 진행 전입니다.,The playoffs haven't started yet.,draft,ede3bae9
+tx_99KJHVTRYT,season.intl_bracket_view.title,active,UI_View_IntlBracketView.tscn Title text,,,국제대회 브래킷,International Bracket,draft,e5f503f1
+tx_SF22TMBSQP,season.intl_bracket_view.empty,active,UI_View_IntlBracketView.tscn Empty text,,,국제대회 진행 전입니다.,The international tournament hasn't started yet.,draft,f8e34d32
+tx_191AFE0BN2,season.week_evening_card.head,active,UI_Comp_WeekEveningCard.tscn Head text,,,오늘 저녁,This Evening,draft,8bc5bcbb
+tx_KPSWBTWZA0,season.week_evening_card.hint,active,UI_Comp_WeekEveningCard.tscn Hint text,,,선수를 고르고 오늘 저녁 할 일을 정하세요 (하루 한 번),Pick a player and choose tonight's activity (once per day),draft,33d7fb89
+tx_B7PQ84TQD5,season.week_evening_card.pass,active,UI_Comp_WeekEveningCard.tscn Buttons/Pass text,,,패스,Pass,draft,d2014d28
+tx_G02WWMW0B6,season.common.current_phase,active,HubView / BracketView header,,,현재 페이즈: {phase},Current phase: {phase},draft,85dbbf54
+tx_QBXEZYQKN7,season.common.phase_week,active,LeagueView / WeekProgressView header,,,{phase} · {week}주차,{phase} · Week {week},draft,51e1b11c
+tx_G2CRZNPFG8,season.hub.toast.playoff_started,active,HubView toast,,,플레이오프 진입! — 4강 매치 대기 중,Playoffs! — Semifinal up next,draft,2ccf9e23
+tx_1Q5D5H8MKG,season.hub.toast.playoff_over,active,HubView toast,,,플레이오프 종료,Playoffs over,draft,5a83de19
+tx_SN5F4S50QE,season.hub.toast.playoff_champion,active,HubView toast — another team won the playoffs,,,우승: {team},Champion: {team},draft,1c117285
+tx_AKWBHWXQKP,season.hub.toast.playoff_won,active,HubView toast,,,우리 팀 우승!,We won the title!,draft,ef1938e6
+tx_9FQ300Q5NC,season.hub.toast.intl_started,active,HubView toast,,,국제대회 진입! — 8팀 토너먼트,International tournament! — 8-team bracket,draft,aaab6200
+tx_8MBQAK3YCS,season.hub.toast.intl_won,active,HubView toast,,,국제대회 우승! — 우리 팀이 챔피언입니다,International title! — We are the champions,draft,59fa6e0f
+tx_64YSN9ZDR8,season.hub.toast.phase_entered,active,HubView toast,,,페이즈 진입: {phase},New phase: {phase},draft,4c31ebbc
+tx_KMTPJRSHS8,season.hub.week_progress,active,HubView week counter,,,{week} / {max}주차,Week {week} / {max},draft,d4bc7a94
+tx_X85R7MCQ0K,season.hub.match_bracket,active,HubView next match (bracket),,,이번 주 경기: {slot} — vs {team},This week: {slot} — vs {team},draft,30bcd058
+tx_X1ZR4PHHXN,season.hub.match_league,active,HubView next match (league),,,이번 주 경기: vs {team},This week: vs {team},draft,ba798190
+tx_0JANWJ7HMM,season.hub.no_match,active,HubView next match,,,이번 주 경기 없음,No match this week,draft,d51f282c
+tx_DAGRD2AVXH,season.hub.btn_playoff,active,HubView standings button while playoffs run,,,플레이오프,Playoffs,draft,4651993c
+tx_1ABQDHR4ZF,season.hub.btn_standings,active,HubView standings button,,,리그 순위,Standings,draft,97f5b49e
+tx_QQV79NETS2,season.hub_card.owner,active,HubManageCard owner line,,,담당: {name},In charge: {name},draft,1a5438b5
+tx_7T45Q9QVT8,season.hub_roster.trust,active,HubRosterRow trust chip,,,신뢰 {n},Trust {n},draft,5e831137
+tx_KZRN3TT8CK,season.ending.champion,active,EndingView recap line,,,우승 — {team},Champion — {team},draft,b83347be
+tx_7CKXJ6SNJY,season.ending.champion_mine,active,"EndingView recap line, my team",,,우승 — {team} ★,Champion — {team} ★,draft,8c0dff81
+tx_BK6M8XCBA6,season.game_over.intl_lost_at,active,GameOverView reason; slot = bracket slot name,,,{phase} {slot}에서 탈락했습니다.,Eliminated in {slot} of the {phase}.,draft,4dacd92a
+tx_44WZH96TAR,season.game_over.intl_not_won,active,GameOverView reason,,,{phase}에서 우승하지 못했습니다.,Failed to win the {phase}.,draft,27239bc5
+tx_75WBMWK3YQ,season.game_over.playoff_lost_at,active,GameOverView reason,,,{phase} 플레이오프 {slot}에서 탈락했습니다.,Eliminated in {slot} of the {phase} playoffs.,draft,0a5d5c2c
+tx_G91QZKMCGS,season.game_over.playoff_not_won,active,GameOverView reason,,,{phase} 플레이오프에서 우승하지 못했습니다.,Failed to win the {phase} playoffs.,draft,5ab66f7b
+tx_G2TKVCGN91,season.game_over.playoff_missed,active,GameOverView reason,,,{phase} 플레이오프 진출에 실패했습니다.,Failed to qualify for the {phase} playoffs.,draft,e9ddb6e7
+tx_0CPR1H6FJX,season.game_over.final_rank,active,GameOverView summary,,,최종 순위 {rank}위 — {win}승 {loss}패,Final rank #{rank} — {win}W {loss}L,draft,89396d12
+tx_36VP9BEFGS,season.game_over.title_count,active,GameOverView summary,,,캠페인 우승 {n}회 — 캠페인 종료,Campaign titles: {n} — Campaign over,draft,457289f9
+tx_GA7T767F1Z,season.league.no_next,active,LeagueView next match,,,다음 경기 없음,No upcoming match,draft,9b580d12
+tx_GE4R14G0HE,season.league.next_match,active,LeagueView next match; day = short weekday,,,다음 경기: {week}주차 {day} — vs {team},Next match: Week {week} {day} — vs {team},draft,bdef8a28
+tx_TESCZQ8CKB,season.league.detail_record,active,League team detail record,,,{rank}위 · {win}승 {loss}패,#{rank} · {win}W {loss}L,draft,dee15f6f
+tx_PK7CX8K2WS,season.league.detail_record_mine,active,"League team detail record, my team",,,{rank}위 · {win}승 {loss}패  · 내 팀,#{rank} · {win}W {loss}L  · My team,draft,e73764fa
+tx_NK31W4V7FT,season.league.record_mine,active,"HubSheet preview record, my team",,,{win}승 {loss}패  · 내 팀,{win}W {loss}L  · My team,draft,73aaead8
+tx_DET3QJHZGK,season.bracket.stage,active,Bracket header,,,단계: {stage},Stage: {stage},draft,91f2aa68
+tx_09XMB9SGJS,season.bracket.no_player_match,active,Bracket next match,,,플레이어 경기 없음 / 종료됨,No player match / finished,draft,5758a2e8
+tx_KXMPKY0FJ4,season.bracket.next_match,active,Bracket next match,,,다음 매치: {slot} — {week}주차 vs {team},Next match: {slot} — Week {week} vs {team},draft,52270aaa
+tx_TK9A1AK7XE,season.bracket.stage_qf,active,Bracket stage,,,8강 진행 중,Quarterfinals in progress,draft,c1148e91
+tx_QC6GN1KKC4,season.bracket.stage_sf,active,Bracket stage,,,4강 진행 중,Semifinals in progress,draft,9c81ae91
+tx_EVYVY83XJ6,season.bracket.stage_f,active,Bracket stage,,,결승 진행 중,Final in progress,draft,79e1aa55
+tx_RTQWKSAYPK,season.bracket.stage_champion,active,Bracket stage,,,우승 결정,Champion decided,draft,71b8b870
+tx_ZMNJRTQ4RC,season.slot.qf_1,active,Bracket slot name,,,8강 1경기,Quarterfinal 1,draft,3ca7f3ac
+tx_D05692FCNM,season.slot.qf_2,active,Bracket slot name,,,8강 2경기,Quarterfinal 2,draft,21f66011
+tx_89SK9FAWQC,season.slot.qf_3,active,Bracket slot name,,,8강 3경기,Quarterfinal 3,draft,44e22839
+tx_DNDDCSPQEE,season.slot.qf_4,active,Bracket slot name,,,8강 4경기,Quarterfinal 4,draft,e689fe12
+tx_QXB3XY4AYX,season.slot.sf_1,active,Bracket slot name,,,4강 1경기,Semifinal 1,draft,4e0bdafa
+tx_XXXNFX172K,season.slot.sf_2,active,Bracket slot name,,,4강 2경기,Semifinal 2,draft,f0c7e58e
+tx_TRMS5ZZQY6,season.slot.final,active,Bracket slot name,,,결승,Final,draft,adf4229b
+tx_NCAC0FXRKV,season.week.date,active,WeekProgressView small date,,,{year}년 {month}월,Year {year} · Month {month},draft,80831819
+tx_1K2R63NYA9,season.week.no_training_log,active,WeekProgressView note card,,,훈련 기록이 없습니다,No training records,draft,ca977c39
+tx_Q5HXG4JY2G,season.week.no_schedule,active,WeekProgressView note card,,,일정 없음,Nothing scheduled,draft,c271bd9c
+tx_77T88FPPVZ,season.week.no_match_day,active,WeekProgressView note card; day = weekday name,,,{day} — 예정된 경기 없음,{day} — No matches scheduled,draft,6b061c7e
+tx_N3T6WKR43W,season.week.result_win,active,Match card status — my win,,,승,W,draft,3b1908b7
+tx_E1RYA0YP6M,season.week.result_loss,active,Match card status — my loss,,,패,L,draft,36260e2c
+tx_ZM7B38RP90,season.week.result_scheduled,active,Match card status,,,예정,Scheduled,draft,7ba9542c
+tx_34Y51VRWE3,season.week.team_win,active,Match card status — other teams' match,,,{team} 승,{team} win,draft,8c968cef
+tx_5MEB8RS07D,season.week.tag_league,active,Match card tag,,,리그,League,draft,6d7fd269
+tx_1C5DFDPJPM,season.week.hint_start,active,Match card hint,,,경기를 시작하면 밴픽 화면으로 넘어갑니다,Starting the match takes you to ban/pick,draft,54fa5547
+tx_28YWCR88Y0,season.week.hint_done,active,Match card hint,,,이 경기는 끝났습니다,This match is over,draft,52b70519
+tx_PEFCADMPP3,season.week.mastery,active,Pilot card mastery line,,,숙련 +{n},Mastery +{n},draft,ddca75a1
+tx_29AYJHE9CP,season.week.mastery_mech,active,Pilot card mastery line with mech name,,,숙련 +{n} · {mech},Mastery +{n} · {mech},draft,76c73a7f
+tx_GJ061P5G7K,season.week.quirk_gain,active,Pilot card quirk line,,,기벽 획득 · {name},Quirk gained · {name},draft,ec640ff5
+tx_BKSSGAQEKK,season.week.quirk_full,active,Pilot card quirk line,,,기벽 칸이 가득 차 획득하지 못했습니다,Quirk slots full — nothing gained,draft,60b01dc8
+tx_0HWTY9MN62,season.week.quirk_reroll,active,Pilot card quirk line,,,기벽 재굴림 · {from} → {to},Quirks rerolled · {from} → {to},draft,0c29e6ca
+tx_4WNY7FEE6D,season.week.quirk_no_reroll,active,Pilot card quirk line,,,재굴림할 기벽이 없습니다,No quirks to reroll,draft,987abcba
+tx_YFPQYV0C4S,season.week.quirk_slot,active,Pilot card quirk line,,,기벽 칸 +1,Quirk slot +1,draft,589745bd
+tx_0QN35YWVZQ,season.week.quirk_slot_to,active,Pilot card quirk line,,,기벽 칸 +1 ({n}칸),Quirk slot +1 ({n} slots),draft,da404380
+tx_ABWK6EAGAM,season.week.quirk_slot_max,active,Pilot card quirk line,,,기벽 칸이 이미 최대입니다,Quirk slots already at max,draft,763bfa60
+tx_FZ9J5EYXJH,season.week.quirk_generic,active,Quirk name fallback,,,기벽,Quirk,draft,df890c72
+tx_55ZT5D24ZK,season.week.quirk_unknown,active,Quirk name fallback (no table row),,,기벽 #{id},Quirk #{id},draft,aa348be9
+tx_0H7MR6XZ5Q,season.week.btn_start_match,active,WeekProgressView bottom button,,,경기 시작,Start Match,draft,dfb0f596
+tx_QBJC7HSWEH,season.week.btn_end_week,active,WeekProgressView bottom button,,,주 마감 →,End Week →,draft,db903e37
+tx_BG13VH48VC,season.week.evening_limits,active,Evening card weekly limits,,,면담 {iv}/{iv_max} · 외출 {out}/{out_max},Meetings {iv}/{iv_max} · Outings {out}/{out_max},draft,118364ac
+tx_R4XWZFXHFD,season.week.slot_trust,active,Evening card pilot slot,,,신뢰 {trust} · 외출 {outings},Trust {trust} · Outings {outings},draft,ca47eadd
+tx_G9WWN59WGH,season.week.outing_week_done,active,"Evening card button, disabled",,,외출 (이번 주 끝),Outing (used up),draft,34877dad
+tx_QYSSXAFB3S,season.week.outing_need_trust,active,"Evening card button, disabled",,,외출 (신뢰 {n}↑),Outing (Trust {n}+),draft,5f7c5a3d
+tx_0TJBQGEP0N,season.week.interview_week_done,active,"Evening card button, disabled",,,면담 (이번 주 끝),Meeting (used up),draft,c8709aca
+tx_M4WBEB9G7X,season.week.evening_rested,active,Evening done card head,,,오늘 저녁 — 쉬었습니다,This evening — Rested,draft,1fe78133
+tx_H8MV6KQN83,season.week.evening_interview,active,Evening done card head,,,오늘 저녁 — {name} 면담,This evening — Meeting with {name},draft,05559485
+tx_57AQ53NMQX,season.week.evening_outing,active,Evening done card head,,,오늘 저녁 — {name} 외출,This evening — Outing with {name},draft,67300586
+tx_QQ30F9E2AN,season.week.rested_line,active,Evening done card line,,,내일을 위해 일찍 쉬었다,Turned in early for tomorrow,draft,ffada52f
+tx_YN104ZWYY7,season.week.no_change,active,Evening done card line,,,변화 없음,No change,draft,fcaa1334
+tx_335GAVH4SP,season.week.incident_head,active,Incident card head,,,사건 — {tag} · {name},Incident — {tag} · {name},draft,9d3f2c25
+tx_YVD35CHCCQ,season.week.incident_tap,active,"Incident card line, pending",,,눌러서 대응하기,Tap to respond,draft,1ea7acc9
+tx_PZ5E6THG9A,season.week.incident_calm,active,"Incident card line, resolved",,,큰 탈 없이 지나갔다,It passed without much trouble,draft,c3898b4b
+tx_F19CKTWEZY,season.week.sub_interview,active,Messenger overlay subtitle,,,{day} 저녁 · 면담,{day} evening · Meeting,draft,8993f305
+tx_8EXSPR79YJ,season.week.sub_outing,active,Messenger overlay subtitle,,,{day} 저녁 · 외출 {n}회째,{day} evening · Outing #{n},draft,61c6f4b9
+tx_5GDZXY0QSR,season.week.sub_incident,active,Messenger overlay subtitle,,,{day} · 사건 발생 · {name},{day} · Incident · {name},draft,8a8e3361

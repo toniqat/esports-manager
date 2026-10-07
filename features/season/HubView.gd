@@ -157,7 +157,7 @@ func _connect_signals() -> void:
 
 func _on_playoff_started(_phase: int) -> void:
 	refresh()
-	_flash_toast("플레이오프 진입! — 4강 매치 대기 중")
+	_flash_toast(Loc.t(L.SEASON_HUB_TOAST_PLAYOFF_STARTED))
 
 
 func _on_playoff_completed(_phase: int, champion_team_id: int) -> void:
@@ -166,25 +166,26 @@ func _on_playoff_completed(_phase: int, champion_team_id: int) -> void:
 		return
 	var league: LeagueManager = _hub.get_node_or_null("LeagueManager") as LeagueManager
 	if league == null:
-		_flash_toast("플레이오프 종료")
+		_flash_toast(Loc.t(L.SEASON_HUB_TOAST_PLAYOFF_OVER))
 		return
 	var pid: int = int(_gm.season_state["player_team_id"])
-	var msg: String = "우승: %s" % league.team_name(champion_team_id)
+	var msg: String = Loc.t(L.SEASON_HUB_TOAST_PLAYOFF_CHAMPION,
+			{"team": league.team_name(champion_team_id)})
 	if champion_team_id == pid:
-		msg = "우리 팀 우승!"
+		msg = Loc.t(L.SEASON_HUB_TOAST_PLAYOFF_WON)
 	_flash_toast(msg)
 
 
 func _on_intl_started(_phase: int) -> void:
 	refresh()
-	_flash_toast("국제대회 진입! — 8팀 토너먼트")
+	_flash_toast(Loc.t(L.SEASON_HUB_TOAST_INTL_STARTED))
 
 
 # intl_completed 는 우리 팀이 우승했을 때만 온다 — 탈락은 intl_failed_campaign
 # 으로 바로 GAME_OVER 다(남의 우승을 알리고 계속하는 길은 없다).
 func _on_intl_completed(_phase: int, _champion_team_id: int) -> void:
 	refresh()
-	_flash_toast("국제대회 우승! — 우리 팀이 챔피언입니다")
+	_flash_toast(Loc.t(L.SEASON_HUB_TOAST_INTL_WON))
 
 
 func _on_week_advanced(_d: Dictionary) -> void:
@@ -193,7 +194,7 @@ func _on_week_advanced(_d: Dictionary) -> void:
 
 func _on_phase_changed(new_phase: int) -> void:
 	refresh()
-	_flash_toast("페이즈 진입: %s" % GameEnums.phase_label(new_phase))
+	_flash_toast(Loc.t(L.SEASON_HUB_TOAST_PHASE_ENTERED, {"phase": GameEnums.phase_label(new_phase)}))
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────
@@ -209,8 +210,8 @@ func refresh() -> void:
 		if cal != null:
 			max_weeks = cal.phase_max_weeks(phase)
 
-	_phase_lbl.text = "현재 페이즈: %s" % GameEnums.phase_label(phase)
-	_week_lbl.text  = "%d / %d주차" % [pweek, max_weeks]
+	_phase_lbl.text = Loc.t(L.SEASON_COMMON_CURRENT_PHASE, {"phase": GameEnums.phase_label(phase)})
+	_week_lbl.text  = Loc.t(L.SEASON_HUB_WEEK_PROGRESS, {"week": pweek, "max": max_weeks})
 
 	_refresh_next_match()
 	_refresh_roster()
@@ -230,8 +231,8 @@ func _refresh_next_match() -> void:
 		if idx >= 0:
 			var m: Dictionary = (_gm.season_state["current_tournament"]["bracket"] as Array)[idx]
 			var opp: int = int(m["team_b"]) if int(m["team_a"]) == pid else int(m["team_a"])
-			_next_match_lbl.text = "이번 주 경기: %s — vs %s" % [
-				intl.slot_label(int(m["slot"])), intl.team_name(opp)]
+			_next_match_lbl.text = Loc.t(L.SEASON_HUB_MATCH_BRACKET, {
+				"slot": intl.slot_label(int(m["slot"])), "team": intl.team_name(opp)})
 			return
 	var tm: TournamentManager = _hub.get_node_or_null("TournamentManager") as TournamentManager
 	if tm != null and tm.is_active():
@@ -243,17 +244,17 @@ func _refresh_next_match() -> void:
 			var opp_name: String = "Team %d" % opp
 			if league != null:
 				opp_name = league.team_name(opp)
-			_next_match_lbl.text = "이번 주 경기: %s — vs %s" % [
-				tm.slot_label(int(m["slot"])), opp_name]
+			_next_match_lbl.text = Loc.t(L.SEASON_HUB_MATCH_BRACKET, {
+				"slot": tm.slot_label(int(m["slot"])), "team": opp_name})
 			return
 	var league2: LeagueManager = _hub.get_node_or_null("LeagueManager") as LeagueManager
 	if league2 != null:
 		var nxt = league2.player_match_this_week()
 		if nxt != null:
 			var opp: int = int(nxt["team_b"]) if int(nxt["team_a"]) == pid else int(nxt["team_a"])
-			_next_match_lbl.text = "이번 주 경기: vs %s" % league2.team_name(opp)
+			_next_match_lbl.text = Loc.t(L.SEASON_HUB_MATCH_LEAGUE, {"team": league2.team_name(opp)})
 			return
-	_next_match_lbl.text = "이번 주 경기 없음"
+	_next_match_lbl.text = Loc.t(L.SEASON_HUB_NO_MATCH)
 
 
 func _refresh_standings_btn() -> void:
@@ -265,11 +266,11 @@ func _refresh_standings_btn() -> void:
 		tm = _hub.get_node_or_null("TournamentManager") as TournamentManager
 		intl = _hub.get_node_or_null("InternationalTournament") as InternationalTournament
 	if intl != null and intl.is_active():
-		_standings_btn.text = "국제대회"
+		_standings_btn.text = Loc.t(L.TERM_PHASE_INTL)
 	elif tm != null and tm.is_active():
-		_standings_btn.text = "플레이오프"
+		_standings_btn.text = Loc.t(L.SEASON_HUB_BTN_PLAYOFF)
 	else:
-		_standings_btn.text = "리그 순위"
+		_standings_btn.text = Loc.t(L.SEASON_HUB_BTN_STANDINGS)
 
 
 func _refresh_roster() -> void:
@@ -329,7 +330,7 @@ func _clear_toast(expected: String) -> void:
 ## F6 단독 실행 미리보기 — 메모리 런 + 두 주 치른 리그(`resources/UiPreview.gd`). 로스터 ·
 ## 관리 카드는 `_ready` 의 `refresh()` 가 채운다. 관리 카드를 누르면 실제 시트가 뜬다(메모리만).
 ## "이번 주 시작" · "리그 순위" 는 호스트(`SeasonHub`)가 없어 출력만 한다.
-func _fill_preview() -> void:
+func _fill_preview() -> void:  # l10n-ignore
 	UiPreview.stage(self)
 	if UiPreview.ensure_run() == null:
 		return
@@ -344,12 +345,12 @@ func _fill_preview() -> void:
 func _fill_preview_host_lines(lm: LeagueManager) -> void:
 	var s: Dictionary = _gm.season_state
 	var phase: int = int(s["current_phase"])
-	_week_lbl.text = "%d / %d주차" % [int(s["phase_week"]),
-			int(CalendarSystem.PHASE_WEEKS.get(phase, 1))]
+	_week_lbl.text = Loc.t(L.SEASON_HUB_WEEK_PROGRESS, {"week": int(s["phase_week"]),
+			"max": int(CalendarSystem.PHASE_WEEKS.get(phase, 1))})
 	var nxt = lm.player_match_this_week()
 	if nxt == null:
-		_next_match_lbl.text = "이번 주 경기 없음"
+		_next_match_lbl.text = Loc.t(L.SEASON_HUB_NO_MATCH)
 		return
 	var pid: int = int(s["player_team_id"])
 	var opp: int = int(nxt["team_b"]) if int(nxt["team_a"]) == pid else int(nxt["team_a"])
-	_next_match_lbl.text = "이번 주 경기: vs %s" % lm.team_name(opp)
+	_next_match_lbl.text = Loc.t(L.SEASON_HUB_MATCH_LEAGUE, {"team": lm.team_name(opp)})

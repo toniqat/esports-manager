@@ -91,20 +91,21 @@ func refresh() -> void:
 		return
 
 	var phase: int = int(_gm.season_state["current_phase"])
-	%Phase.text = "%s · %d주차" % [
-		GameEnums.phase_label(phase), int(_gm.season_state["phase_week"])]
+	%Phase.text = Loc.t(L.SEASON_COMMON_PHASE_WEEK, {
+		"phase": GameEnums.phase_label(phase), "week": int(_gm.season_state["phase_week"])})
 
 	var pid: int = int(_gm.season_state["player_team_id"])
 	var nxt = _league.next_unplayed_player_match()
 	if nxt == null:
-		%NextMatch.text = "다음 경기 없음"
+		%NextMatch.text = Loc.t(L.SEASON_LEAGUE_NO_NEXT)
 	else:
 		var opp: int = int(nxt["team_b"]) if int(nxt["team_a"]) == pid else int(nxt["team_a"])
-		%NextMatch.text = "다음 경기: %d주차 %s — vs %s" % [
-			int(nxt["phase_week"]),
-			"토" if int(nxt.get("matchday", 0)) == 0 else "일",
-			_league.team_name(opp),
-		]
+		# matchday 0 = Saturday, 1 = Sunday (`OutgameTheme.day_letter` index 5 / 6).
+		%NextMatch.text = Loc.t(L.SEASON_LEAGUE_NEXT_MATCH, {
+			"week": int(nxt["phase_week"]),
+			"day": OutgameTheme.day_letter(5 if int(nxt.get("matchday", 0)) == 0 else 6),
+			"team": _league.team_name(opp),
+		})
 
 	var ranked: Array = _league.standings_ranked()
 	var po_count: int = int(_gm.PLAYOFF_TEAMS)
@@ -143,8 +144,9 @@ func open_team_detail(tid: int, rank: int) -> HubSheet:
 	var is_own: bool = tid == int(state["player_team_id"])
 	var table: Dictionary = state.get("league_standings", {})
 	var rec: Dictionary = table.get(tid, table.get(str(tid), {}))
-	var record: String = "%d위 · %d승 %d패%s" % [rank, int(rec.get("wins", 0)),
-			int(rec.get("losses", 0)), "  · 내 팀" if is_own else ""]
+	var record: String = Loc.t(
+			L.SEASON_LEAGUE_DETAIL_RECORD_MINE if is_own else L.SEASON_LEAGUE_DETAIL_RECORD,
+			{"rank": rank, "win": int(rec.get("wins", 0)), "loss": int(rec.get("losses", 0))})
 	return LeagueTeamDetail.open(self, "%s  (%s)" % [
 			_league.team_name(tid), _league.team_short_name(tid)], record,
 			OpponentIntel.build(state, OpponentIntel.team_roster(state, tid), is_own))

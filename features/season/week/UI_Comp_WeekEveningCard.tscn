@@ -20,9 +20,10 @@ offset_right = 328.0
 offset_bottom = 64.0
 theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 32
-text = "오늘 저녁"
+text = "tx_191AFE0BN2"
 
 [node name="Limits" type="Label" parent="."]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _add_evening_card()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -49,7 +50,7 @@ offset_bottom = 94.0
 grow_horizontal = 2
 theme_type_variation = &"FaintLabel"
 theme_override_font_sizes/font_size = 20
-text = "선수를 고르고 오늘 저녁 할 일을 정하세요 (하루 한 번)"
+text = "tx_KPSWBTWZA0"
 
 [node name="Slots" type="HBoxContainer" parent="."]
 editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _add_evening_card()"
@@ -93,6 +94,7 @@ mouse_filter = 2
 theme_override_constants/separation = 16
 
 [node name="Interview" type="Button" parent="Buttons"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _add_evening_card()"
 unique_name_in_owner = true
 layout_mode = 2
@@ -103,6 +105,7 @@ theme_override_font_sizes/font_size = 26
 text = "면담"
 
 [node name="Outing" type="Button" parent="Buttons"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _add_evening_card()"
 unique_name_in_owner = true
 layout_mode = 2
@@ -120,4 +123,4 @@ size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"TextButton"
 theme_override_font_sizes/font_size = 26
-text = "패스"
+text = "tx_B7PQ84TQD5"

@@ -19,4 +19,4 @@ script = ExtResource("1_press")
 editor_description = "[필수] 지우면 오류 — PressConferenceView.gd _messenger"
 unique_name_in_owner = true
 layout_mode = 1
-outcome_hint = "화면을 눌러 계속"
+outcome_hint = "tx_1CXXKQSFYQ"

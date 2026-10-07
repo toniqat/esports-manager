@@ -189,3 +189,9 @@ redraws from the record and never rerolls or re-applies. `MentalSystem.end_week`
 `on_week_day_confirmed()` sweeps up that day's AI matches **before moving on**
 (`_resolve_ai_for_matchday`) — even when the player has no match that day and just moves on, that
 day's league must still run, so the next standings shown match the date.
+
+## Localization
+Display text is l10n keys (`season` domain, `season.week.*` · `season.week_*` scene keys). Item scenes whose
+every label is code-filled set `auto_translate_mode = 2` on their root; `UI_View_WeekProgressView.tscn` and
+`UI_Comp_WeekEveningCard.tscn` set it per label (the evening card's fixed captions are keys, and it is
+instanced under the screen, so the screen root must not disable translation).

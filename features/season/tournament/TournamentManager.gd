@@ -286,12 +286,16 @@ func find_player_match_on_day_idx(matchday: int) -> int:
 	return -1
 
 
+## Slot names in bracket index order (SF1, SF2, F).
+const SLOT_LABELS: Array = [  # l10n-keys: season.slot.*
+	L.SEASON_SLOT_SF_1, L.SEASON_SLOT_SF_2, L.SEASON_SLOT_FINAL,
+]
+
+
 func slot_label(slot: int) -> String:
-	match slot:
-		0: return "4강 1경기"
-		1: return "4강 2경기"
-		2: return "결승"
-	return ""
+	if slot < 0 or slot >= SLOT_LABELS.size():
+		return ""
+	return Loc.t(SLOT_LABELS[slot])  # l10n-dynamic: season.slot.*
 
 
 # ── Signal handlers ─────────────────────────────────────────────────────────

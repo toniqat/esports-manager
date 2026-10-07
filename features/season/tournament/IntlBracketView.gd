@@ -71,7 +71,7 @@ func refresh() -> void:
 		return
 
 	var phase: int = int(_gm.season_state["current_phase"])
-	%Phase.text = "현재 페이즈: %s" % GameEnums.phase_label(phase)
+	%Phase.text = Loc.t(L.SEASON_COMMON_CURRENT_PHASE, {"phase": GameEnums.phase_label(phase)})
 
 	if not _intl.is_active():
 		%Empty.visible = true
@@ -84,20 +84,20 @@ func refresh() -> void:
 
 	var t: Dictionary = _gm.season_state["current_tournament"]
 	var stage: int = int(t["stage"])
-	%Stage.text = "단계: %s" % _stage_name(stage)
+	%Stage.text = Loc.t(L.SEASON_BRACKET_STAGE, {"stage": _stage_name(stage)})
 
 	var pid: int = int(_gm.season_state["player_team_id"])
 	var nxt = _intl.next_unplayed_player_match()
 	if nxt == null:
-		%NextMatch.text = "플레이어 경기 없음 / 종료됨"
+		%NextMatch.text = Loc.t(L.SEASON_BRACKET_NO_PLAYER_MATCH)
 	else:
 		var opp_id: int = int(nxt["team_b"]) if int(nxt["team_a"]) == pid else int(nxt["team_a"])
 		var opp_name: String = "TBD" if opp_id < 0 else _intl.team_name(opp_id)
-		%NextMatch.text = "다음 매치: %s — %d주차 vs %s" % [
-			_intl.slot_label(int(nxt["slot"])),
-			int(nxt["phase_week"]),
-			opp_name,
-		]
+		%NextMatch.text = Loc.t(L.SEASON_BRACKET_NEXT_MATCH, {
+			"slot": _intl.slot_label(int(nxt["slot"])),
+			"week": int(nxt["phase_week"]),
+			"team": opp_name,
+		})
 
 	var b: Array = _intl.bracket()
 	var boxes: Array = _match_boxes()
@@ -118,10 +118,10 @@ func _team_text(team_id: int) -> String:
 
 func _stage_name(stage: int) -> String:
 	match stage:
-		GameEnums.TournamentStage.INTL_QF: return "8강 진행 중"
-		GameEnums.TournamentStage.INTL_SF: return "4강 진행 중"
-		GameEnums.TournamentStage.INTL_F:  return "결승 진행 중"
-		GameEnums.TournamentStage.CHAMPION: return "우승 결정"
+		GameEnums.TournamentStage.INTL_QF: return Loc.t(L.SEASON_BRACKET_STAGE_QF)
+		GameEnums.TournamentStage.INTL_SF: return Loc.t(L.SEASON_BRACKET_STAGE_SF)
+		GameEnums.TournamentStage.INTL_F:  return Loc.t(L.SEASON_BRACKET_STAGE_F)
+		GameEnums.TournamentStage.CHAMPION: return Loc.t(L.SEASON_BRACKET_STAGE_CHAMPION)
 	return "—"
 
 
@@ -185,4 +185,4 @@ func _fill_preview() -> void:
 		var winner: int = pid if pid == a or pid == bb else _intl.simulate_ai_match(a, bb)
 		_intl.record_result(slot, winner)
 	s["phase_week"] = 2
-	UiPreview.trace(%OkButton.pressed, "확인")
+	UiPreview.trace(%OkButton.pressed, "확인")  # l10n-ignore

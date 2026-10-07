@@ -521,7 +521,7 @@ func _ready() -> void:
 	add_child(card_pile_viewer)
 	card_pile_viewer.bind(self)
 	# 파일럿 상세 패널 — 하단 아군 스트립을 누르면 열린다(작전 단계 한정).
-	pilot_detail = PilotDetailPanel.new()
+	pilot_detail = PilotDetailPanel.create()
 	pilot_detail.name = "PilotDetailPanel"
 	add_child(pilot_detail)
 	pilot_detail.bind(self)

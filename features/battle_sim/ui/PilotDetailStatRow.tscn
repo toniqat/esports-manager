@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Theme" uid="uid://d3sxdpvg3p880" path="res://resources/BattleTheme.tres" id="1_theme"]
+
+[node name="PilotDetailStatRow" type="HBoxContainer"]
+offset_right = 452.0
+offset_bottom = 56.0
+mouse_filter = 2
+theme = ExtResource("1_theme")
+theme_override_constants/separation = 10
+editor_description = "스탯 칸 한 줄 — PilotDetailStatCell 을 코드가 1 ~ 2개 넣는다(하나 = 전폭, 둘 = 반씩)."

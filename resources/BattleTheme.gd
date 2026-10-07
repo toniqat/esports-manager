@@ -274,8 +274,45 @@ static func _add_hud_variations(_th: Theme) -> void:
 
 
 ## battle_sim/ui/PilotDetailPanel — 파일럿 상세 (`PilotDetail*`).
-static func _add_pilot_detail_variations(_th: Theme) -> void:
-	pass
+static func _add_pilot_detail_variations(th: Theme) -> void:
+	# 스탯 판 — 탭 바로 아래. 위 모서리는 각지게(켜진 탭이 그 위에 앉아 한 몸으로 이어진다).
+	var stat := (th.get_stylebox(&"panel", &"BattlePanel") as StyleBoxFlat).duplicate() as StyleBoxFlat
+	stat.corner_radius_top_left = 0
+	stat.corner_radius_top_right = 0
+	_add_derived(th, "PilotDetailStatPlate", &"BattlePanel", stat)
+	# 그림 없는 전신 자리 — 옅은 판, 3px 테두리, 위 모서리만 둥글다(아래는 화면 밖에서 잘린다).
+	var slab := box(ART_SLAB_BG, 0, ART_SLAB_BORDER, 3)
+	slab.corner_radius_top_left = ART_SLAB_RADIUS
+	slab.corner_radius_top_right = ART_SLAB_RADIUS
+	_add_derived(th, "PilotDetailArtSlab", &"BattleSlab", slab)
+	# 지속 효과 썸네일(카드 아트) 아래 값 띠 — 썸네일 안쪽(인셋 3)이라 아래 모서리 = FX_RADIUS − 3.
+	var band := box(FX_VALUE_BAND, 0)
+	band.corner_radius_bottom_left = FX_RADIUS - 3
+	band.corner_radius_bottom_right = FX_RADIUS - 3
+	_add_derived(th, "PilotDetailFxBand", &"BattleDimPanel", band)
+	# 칸 설명 판 — 카드 설명판과 같은 모양(`CardDescBox.panel_style`: 불투명 `MENU_BG` · 테두리
+	# 없음 · 아래로 흐린 그림자), 안쪽 여백 20 / 16.
+	var menu := CardDescBox.panel_style(false)
+	menu.content_margin_left = 20.0
+	menu.content_margin_right = 20.0
+	menu.content_margin_top = 16.0
+	menu.content_margin_bottom = 16.0
+	_add_derived(th, "PilotDetailMenuPanel", &"BattlePopup", menu)
+	# 카드 부채꼴 입력 띠 — 아무것도 그리지 않는다(카드 rect 가 아니라 보이는 띠라 테를 두르면 띠가 보인다).
+	th.set_type_variation(&"PilotDetailCardBand", &"Button")
+	for state in BUTTON_STATES:
+		th.set_stylebox(state, &"PilotDetailCardBand", StyleBoxEmpty.new())
+	# 글자 — 기체명 · 쓰러짐 줄 · 그림 없는 자리의 이름.
+	_add_derived_label(th, "PilotDetailMechLabel", &"BattleKeyLabel", TEXT_MECH)
+	th.set_font_size(&"font_size", &"PilotDetailMechLabel", 24)
+	_add_derived_label(th, "PilotDetailWarnLabel", &"BattleNegativeLabel", TEXT_WARN)
+	th.set_font_size(&"font_size", &"PilotDetailWarnLabel", 24)
+	_add_derived_label(th, "PilotDetailPlaceholderLabel", &"BattleSubLabel", TEXT_PLACEHOLDER)
+	th.set_font_size(&"font_size", &"PilotDetailPlaceholderLabel", 34)
+	# 칸 설명 판 아래 설명 글(RichTextLabel — `{attack}` · `{engage}` 아이콘).
+	th.set_type_variation(&"PilotDetailNoteText", &"RichTextLabel")
+	th.set_font_size(&"normal_font_size", &"PilotDetailNoteText", FONT_CAPTION)
+	th.set_color(&"default_color", &"PilotDetailNoteText", TEXT_NOTE)
 
 
 ## 테마 변형의 스타일박스 **사본** — 색이 데이터인 곳에서 코드가 색만 넣을 때.

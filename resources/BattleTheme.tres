@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=44 format=3 uid="uid://d3sxdpvg3p880"]
+[gd_resource type="Theme" load_steps=54 format=3 uid="uid://d3sxdpvg3p880"]
 
 [sub_resource type="StyleBoxFlat" id="BattleChipButton_focus"]
 content_margin_left = 0.0
@@ -629,6 +629,68 @@ content_margin_right = 0.0
 content_margin_bottom = 0.0
 bg_color = Color(0.02, 0.03, 0.06, 0.95)
 
+[sub_resource type="StyleBoxFlat" id="PilotDetailArtSlab_panel"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.14, 0.15, 0.2, 0.3)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.42, 0.45, 0.56, 0.45)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+
+[sub_resource type="StyleBoxEmpty" id="PilotDetailCardBand_disabled"]
+
+[sub_resource type="StyleBoxEmpty" id="PilotDetailCardBand_focus"]
+
+[sub_resource type="StyleBoxEmpty" id="PilotDetailCardBand_hover"]
+
+[sub_resource type="StyleBoxEmpty" id="PilotDetailCardBand_hover_pressed"]
+
+[sub_resource type="StyleBoxEmpty" id="PilotDetailCardBand_normal"]
+
+[sub_resource type="StyleBoxEmpty" id="PilotDetailCardBand_pressed"]
+
+[sub_resource type="StyleBoxFlat" id="PilotDetailFxBand_panel"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0, 0, 0, 0.62)
+corner_radius_bottom_right = 13
+corner_radius_bottom_left = 13
+
+[sub_resource type="StyleBoxFlat" id="PilotDetailMenuPanel_panel"]
+content_margin_left = 20.0
+content_margin_top = 16.0
+content_margin_right = 20.0
+content_margin_bottom = 16.0
+bg_color = Color(0.08, 0.08, 0.12, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_size = 16
+shadow_offset = Vector2(0, 10)
+
+[sub_resource type="StyleBoxFlat" id="PilotDetailStatPlate_panel"]
+content_margin_left = 22.0
+content_margin_top = 26.0
+content_margin_right = 22.0
+content_margin_bottom = 26.0
+bg_color = Color(0.04, 0.05, 0.09, 0.86)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.3, 0.34, 0.46, 0.7)
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
 [resource]
 BattleActionButton/base_type = &"Button"
 BattleActionButton/font_sizes/font_size = 28
@@ -752,3 +814,30 @@ MvpSubLabel/base_type = &"BattleOutlinedLabel"
 MvpSubLabel/colors/font_color = Color(0.72, 0.78, 0.9, 1)
 MvpTitleLabel/base_type = &"BattleOutlinedLabel"
 MvpTitleLabel/colors/font_color = Color(1, 0.85, 0.35, 1)
+PilotDetailArtSlab/base_type = &"BattleSlab"
+PilotDetailArtSlab/styles/panel = SubResource("PilotDetailArtSlab_panel")
+PilotDetailCardBand/base_type = &"Button"
+PilotDetailCardBand/styles/disabled = SubResource("PilotDetailCardBand_disabled")
+PilotDetailCardBand/styles/focus = SubResource("PilotDetailCardBand_focus")
+PilotDetailCardBand/styles/hover = SubResource("PilotDetailCardBand_hover")
+PilotDetailCardBand/styles/hover_pressed = SubResource("PilotDetailCardBand_hover_pressed")
+PilotDetailCardBand/styles/normal = SubResource("PilotDetailCardBand_normal")
+PilotDetailCardBand/styles/pressed = SubResource("PilotDetailCardBand_pressed")
+PilotDetailFxBand/base_type = &"BattleDimPanel"
+PilotDetailFxBand/styles/panel = SubResource("PilotDetailFxBand_panel")
+PilotDetailMechLabel/base_type = &"BattleKeyLabel"
+PilotDetailMechLabel/colors/font_color = Color(0.68, 0.74, 0.86, 1)
+PilotDetailMechLabel/font_sizes/font_size = 24
+PilotDetailMenuPanel/base_type = &"BattlePopup"
+PilotDetailMenuPanel/styles/panel = SubResource("PilotDetailMenuPanel_panel")
+PilotDetailNoteText/base_type = &"RichTextLabel"
+PilotDetailNoteText/colors/default_color = Color(0.72, 0.75, 0.84, 1)
+PilotDetailNoteText/font_sizes/normal_font_size = 20
+PilotDetailPlaceholderLabel/base_type = &"BattleSubLabel"
+PilotDetailPlaceholderLabel/colors/font_color = Color(0.78, 0.8, 0.88, 1)
+PilotDetailPlaceholderLabel/font_sizes/font_size = 34
+PilotDetailStatPlate/base_type = &"BattlePanel"
+PilotDetailStatPlate/styles/panel = SubResource("PilotDetailStatPlate_panel")
+PilotDetailWarnLabel/base_type = &"BattleNegativeLabel"
+PilotDetailWarnLabel/colors/font_color = Color(1, 0.62, 0.62, 1)
+PilotDetailWarnLabel/font_sizes/font_size = 24

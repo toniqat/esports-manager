@@ -1037,6 +1037,13 @@ only `font_color`):
 | `MvpDimPanel` | BattleDimPanel | `MvpView` `Dim` (`DIM_DEEP`) | — |
 | `MvpTitleLabel` · `MvpSubLabel` | BattleOutlinedLabel | `MvpView` `Title` · `Metric` / `FallbackLabel` | — |
 | `MvpAllyLabel` · `MvpEnemyLabel` | BattleOutlinedLabel | `MvpView` `%Side` | switched by `open` (MVP's side) |
+| `PilotDetailStatPlate` | BattlePanel | `PilotDetailView` StatPanel — top corners square (the active tab sits on it) | — |
+| `PilotDetailArtSlab` | BattleSlab | `PilotDetailArt` `%Slab` — "no art yet" (`ART_SLAB_BG`, 3px `ART_SLAB_BORDER`, top corners `ART_SLAB_RADIUS`) | shown when the texture is missing |
+| `PilotDetailFxBand` | BattleDimPanel | `PilotDetailFxThumb` `%Band` — value band under card art (`FX_VALUE_BAND`, bottom corners `FX_RADIUS` − 3) | — |
+| `PilotDetailMenuPanel` | BattlePopup | `PilotDetailInfoMenu` — `CardDescBox.panel_style(false)` (same look as the card description box), padding 20 / 16 | — |
+| `PilotDetailCardBand` | Button | `PilotDetailCardBand` — `StyleBoxEmpty` in every state (input band over a fan card) | — |
+| `PilotDetailMechLabel` · `PilotDetailWarnLabel` · `PilotDetailPlaceholderLabel` | BattleKeyLabel · BattleNegativeLabel · BattleSubLabel | `%Mech` (`TEXT_MECH` 24) · `%DeadLabel` (`TEXT_WARN` 24) · `%FallbackLabel` (`TEXT_PLACEHOLDER` 34) — these also set `font_size` | — |
+| `PilotDetailNoteText` | RichTextLabel | `PilotDetailInfoMenu` `%Note` (`TEXT_NOTE`, `normal_font_size` `FONT_CAPTION`) | text + icons via `_fill_note` |
 
 ### Bottom action bar (`add_bottom_bar`)
 **The main action on an outgame screen is not a shape floating in the middle of the screen but the whole bottom

@@ -8,7 +8,8 @@ State `season_state.finance` (shape owned here). Tuning values live only in `dat
 | File | Role |
 |---|---|
 | `FinanceSystem.gd` | `class_name FinanceSystem` (static). Run init, week-end settlement, match bonus, allocation, facility upgrade, `income_mult` / `upkeep_mult` / `salary_cost` (traits × finance stat × specials), the three outside multipliers, special spending (rows, block reasons, buy, week tick), number formatting (`fmt` / `fmt_signed`). |
-| `FinancePanel.gd` | Hub manage card 「재무」 (`hub_summary`) + `HubSheet` detail (`open`), incl. the 특별 지출 section. The 지난 주 정산 sponsor / upkeep labels show `보정 ×m` from `income_mult` / `upkeep_mult` (the entry's own value if recorded, else the current one; hidden at ×1.00) — `_sponsor_label` / `_upkeep_label`. |
+| `FinancePanel.gd` + `FinancePanel.tscn` | Hub manage card 「재무」 (static `hub_summary`) + the `HubSheet` body (static `open` → `create()` → added to `sheet.body`), incl. the 특별 지출 section. Layout lives in the scene (see "Sheet scene" below). The 지난 주 정산 sponsor / upkeep labels show `보정 ×m` from `income_mult` / `upkeep_mult` (the entry's own value if recorded, else the current one; hidden at ×1.00) — `_sponsor_label` / `_upkeep_label`. |
+| `FinanceAmountRow.tscn` · `FinanceAllocRow.tscn` · `FinanceSpecialRow.tscn` · `FinanceHistoryRow.tscn` | Item scenes of the sheet (no script): a 지난 주 정산 line · one 흑자 배분 axis · one 특별 지출 row · one 최근 기록 line. |
 
 ## Entry points (called by base-owned code)
 | Caller | Call |
@@ -150,11 +151,35 @@ with no staff salaries; `upkeep_delay` with no upkeep) · balance < cost.
 - **Hub card**: title `재무 · 시설 LvN`, value = balance, sub = last week's net (`· 삭감` after a hard cut,
   `첫 정산 전` before the first one), owner badge = `StaffSystem.owner_name(state, "finance")`. Alert dot when
   balance < one week of fixed cost (`is_low_balance`), a training penalty is running, or last week had a hard cut.
-- **Sheet** (`HubSheet`, rebuilt in place after every change): balance + fund, owner line, this week's
+- **Sheet** (`HubSheet` body = one `FinancePanel` instance, refilled in place after every change): balance + fund, owner line, this week's
   projection (`projection`), warnings; 지난 주 정산 (income / expense lines, net, where the surplus went,
   cut lines, special spend / expiries); 흑자 배분 (bars, steppers when manual, active effects); 시설 (current /
   next level effects, cost, upgrade button); 특별 지출 (running entries, then one row per CSV row: name,
   effect line `special_effect_text` · weeks, desc, and a two-step button — `구매 −N` / `계약 무료` →
   「한 번 더 눌러 확정」 → buy; disabled with the block reason); 최근 기록 (latest `RECENT_ROWS` weeks).
-  Only one special row is armed at a time (`_render(…, special_armed)`).
+  Only one special row is armed at a time (`_special_armed`; the facility button's `_upgrade_armed`).
+- **Sheet scene** (`FinancePanel.tscn`, root `VBoxContainer` top-wide 24 short of the body width — scroll-bar
+  room; theme `OutgameTheme.tres`). The sheet's scroll height follows the root's height (`resized` →
+  `set_body_height`), so the scene's `Tail` spacer is the bottom gap.
+  ```
+  FinancePanel (VBox)
+  ├ %Empty            no run (hidden)
+  └ %Main (VBox)
+    ├ Header (116)    BalanceCaption · %Balance (colour = low balance) | FundCaption · %Fund
+    ├ %OwnerLine · %Projection · %LowBalance · %Penalty
+    ├ LastWeekSection (Title · Divider · Gap) · %LastWeekEmpty
+    ├ %LastWeek       %Sponsor %Bonus %Salaries %Upkeep (FinanceAmountRow) · Divider · NetRow (%Net)
+    │                 · %AllocLine · %Cuts (template line) · %SpecialSpend · %SpecialsExpired
+    ├ AllocSection · %AllocIntro · %AllocDelegated · %Axes (FinanceAllocRow ×3) · %Effects
+    ├ FacilitySection (%FacilityTitle) · %FacNow · %FacNext · %FacCost
+    │                 · %Upgrade (Primary) / %UpgradeConfirm (Dark) / %UpgradeBlocked (Ghost, disabled)
+    ├ SpecialsSection · %SpecIntro · %Running (template line) · %RunningGap · %Specials (FinanceSpecialRow)
+    ├ HistorySection · %HistEmpty · %History (FinanceHistoryRow)
+    └ Tail
+  ```
+  Code owns: texts, which optional lines / buttons show, data colours (balance / net / history signs,
+  affordable or not, axis fill colours, fixed `NEGATIVE` / `POSITIVE` / `LINK` lines — no variation yet),
+  the share-bar fill width (`anchor_right`). List rows are reused across refills (`_ensure_rows`), so a
+  tapped button is never freed while emitting; the scene's sample rows are dropped in `_ready`.
+  Template-line lists (`%Cuts`, `%Running`) duplicate their first `Label`.
 - The sponsor × text in 지난 주 정산 is owned by §14 T3 (it reads `income_mult`).

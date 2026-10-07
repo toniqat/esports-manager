@@ -11,7 +11,8 @@ numbers come back as floats, so every read goes through `int()`):
 | File | Role |
 |---|---|
 | `MechMastery.gd` | `class_name MechMastery` (static). Init, read, tiers, bonus, gains, research, week close. Reads the mech table (`mechs`) from game.db itself. |
-| `MasteryPanel.gd` | Hub manage card 「메크 연구」 + its `HubSheet` (research picker). |
+| `MasteryPanel.gd` + `MasteryPanel.tscn` | Hub manage card 「메크 연구」 + its `HubSheet` body (research picker). |
+| `MasteryPilotRow.tscn` · `MasteryMechChip.tscn` · `MasteryQuirkLine.tscn` | Item scenes of the sheet (no script): one pilot card · one own-role mech chip · one quirk line. |
 
 All tuning numbers are `MASTERY_*` keys in `data/csv/const.csv` — none are written here.
 
@@ -53,11 +54,29 @@ All tuning numbers are `MASTERY_*` keys in `data/csv/const.csv` — none are wri
   button (delegated) or a manual hint, then one card per pilot in `GameEnums.ROLE_DISPLAY_ORDER`:
   portrait, name, current research mech, top-3 mastery line, and a chip per own-role mech
   (`name / tier value`, tier-coloured bar). Tap a chip = set research, tap the selected chip = clear.
-  The body is rebuilt **deferred** after a tap (`_refill_deferred`) — the tapped button is inside it.
+  A tap refills the same body in place (`_fill`); rows and chips are reused (`_ensure`), so the tapped
+  chip is never freed while it is emitting.
 - Quirks (§14 T1, only while `QuirkSystem.is_enabled`): a legend line (research quirk chance + grade
   odds from `QuirkSystem.grade_odds`) above the cards, and under each card's mech chips a
   `기벽 n / slots` block — one line per quirk (grade pill · name in grade colour · effect line from
-  `QuirkSystem.effect_text`). The card grows by `_quirk_block_h`.
+  `QuirkSystem.effect_text`). The card grows with its `%Content` (height = content + the scene's pads).
+- **Sheet scene** (`MasteryPanel.tscn`, root `VBoxContainer` top-wide over the body; theme `OutgameTheme.tres`).
+  The sheet's scroll height follows the root's height (`resized`); `Tail` is the bottom gap.
+  ```
+  MasteryPanel (VBox)
+  ├ %Empty                      no run (hidden)
+  └ %Main (VBox)
+    ├ HeadRow  %Head (owner · knowledge) | %Gain
+    ├ %Legend · %Rules · %Auto (Ghost) · %AutoGap · %NoCoach · %QuirkOdds
+    ├ %Pilots (MasteryPilotRow, sep 16)
+    └ Tail
+  MasteryPilotRow (Panel · Card) → %Content (VBox, inset 18)
+    ├ Top (208)  %Portrait (round portrait added by code) · %Name · %Research · %TopMechs · %Chips (MasteryMechChip)
+    └ %Quirks    Divider · Head (%Count · %Max) · %QuirkEmpty · %Lines (MasteryQuirkLine) · Tail
+  ```
+  Code owns: texts, delegated / quirk switching, research colour, chip variation (`PrimaryButton` = research
+  mech, else `GhostButton`), tier bar / grade colours, the round portrait (`OutgameTheme.add_round_portrait`
+  into `%Portrait`), and the pilot card height.
 
 ## Where mastery shows outside this folder
 Ban/pick (`features/match_flow/ban_pick/README.md` "Mech mastery"): slot tags, grid tags, sheet line,

@@ -166,8 +166,10 @@ HubSheet (CanvasLayer 18)
 
 - **Scene owns** the frame layout and styles (card size / margins, title, divider, button).
 - **Code owns** the safe-area offsets, title text, close wiring, `DragScroll.attach(%Scroll)`.
-- **Callers own the body** — still code-built, absolute children under `sheet.body`, width
+- **Callers own the body** — children under `sheet.body`, width
   `sheet.body_w()` (= `%Card` width − `%Pad` side margins = 928), height via `set_body_height(h)`.
+  `FinancePanel` · `StaffPanel` · `MasteryPanel` add one scene instance (top-wide, `resized` →
+  `set_body_height`) — see their folder READMEs; `LeagueView`'s team detail is still code-built.
   `card()` returns `%Card` for controls outside the scroll (card-local coords).
 - `%Scroll` sits in a plain `ScrollSlot` Control and grows **right only** — when the body overflows,
   the scroll bar adds its width outside the 928 column instead of widening the VBox, so content x and

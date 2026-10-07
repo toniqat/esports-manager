@@ -1,0 +1,87 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+
+[node name="StaffStatRow" type="Panel"]
+editor_description = "One 능력치 row (StaffPanel): stat · effective value · 1..20 bar · who covers it · cover-rule candidates. The lead-bar card style and the bar / owner colours are data (delegated = POSITIVE, manager = ACCENT)."
+custom_minimum_size = Vector2(0, 116)
+offset_right = 912.0
+offset_bottom = 116.0
+mouse_filter = 2
+theme = ExtResource("1_theme")
+
+[node name="Stat" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+offset_left = 22
+offset_top = 12
+offset_right = 132
+offset_bottom = 46
+mouse_filter = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 26
+text = "훈련"
+
+[node name="Value" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+offset_left = 22
+offset_top = 48
+offset_right = 132
+offset_bottom = 100
+mouse_filter = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 44
+text = "17"
+
+[node name="Track" type="Panel" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+offset_left = 140
+offset_top = 24
+offset_right = -22
+offset_bottom = 34
+mouse_filter = 2
+theme_type_variation = &"ProgressTrack"
+
+[node name="Fill" type="Panel" parent="Track"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.85
+anchor_bottom = 1.0
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"ProgressFill"
+
+[node name="Owner" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+offset_left = 140
+offset_top = 42
+offset_right = -22
+offset_bottom = 72
+mouse_filter = 2
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 21
+text = "담당 훈련 코치 강민호"
+
+[node name="Compare" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+offset_left = 140
+offset_top = 76
+offset_right = -22
+offset_bottom = 102
+mouse_filter = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 18
+text = "감독 5 · 어시 15 · 훈련 코치 17"

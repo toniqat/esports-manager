@@ -109,6 +109,23 @@ const SHEET_PAD_V:  float = 27.0    # 위아래
 const SUNK_RADIUS:  int = 12     # 카드 안의 눌린 칸 (스탯 칸 · 빈 자리)
 const BAR_RADIUS:   int = 7      # 진행 바 트랙 · 채움 (ProgressTrack / ProgressFill)
 
+# ── 칩 (알약, 테마 변형 `AccentChip` · `SurfaceChip`) ────────────────────────
+## 알약 = 반지름이 높이의 절반. 높이를 모르므로 아주 큰 값을 주고 `StyleBoxFlat` 이
+## 그리는 순간 변 길이에 맞춰 줄이게 한다(마주 보는 두 모서리 합 ≤ 변 길이) —
+## 높이가 폭보다 작은 칩이면 결과는 정확히 높이/2.
+const CHIP_RADIUS: int = 999
+const CHIP_PAD_H:  float = 20.0   # 칩 좌우 안쪽 여백 (글자에 맞춰 크는 칩)
+const CHIP_PAD_V:  float = 4.0    # 위아래
+
+# ── 선택형 카드 · 타일 (일반 / 선택 쌍) ──────────────────────────────────────
+## 일반 = `SURFACE` + `BORDER` 테두리, 선택 = `ACCENT_DIM` + `ACCENT` 테두리(더 굵게).
+## 안쪽 여백은 0 으로 못 박는다 — 비워 두면 StyleBoxFlat 이 테두리 굵기만큼 여백을
+## 잡아 선택할 때마다 내용이 테두리 차이만큼 밀린다.
+const SELECT_BORDER:         int = 2   # 일반 테두리 (카드 · 타일 공통)
+const SELECT_BORDER_ON:      int = 4   # 선택 카드 테두리
+const SELECT_TILE_RADIUS:    int = 8   # 작은 타일 · 필터 탭 · 격자 칸
+const SELECT_TILE_BORDER_ON: int = 3   # 선택 타일 테두리
+
 ## `build_theme()` 이 만든 테마가 저장되는 곳. 손으로 고치지 않는다 —
 ## 이 파일을 고치고 `OutgameThemeBuilder` 를 다시 돌린다 (`resources/README.md`).
 const THEME_PATH: String = "res://resources/OutgameTheme.tres"
@@ -386,26 +403,84 @@ static func _bar_weight(specs: Array, i: int) -> float:
 ## 만든 것이라 여기서 고쳐도 다른 버튼에 번지지 않는다.
 ##
 ## **바뀌는 버튼은 이 함수를 다시 부른다** — `style_primary_button` 을 직접
-## 부르면 둥근 모서리가 되살아나 그 칸만 화면에서 도로 떠오른다(시간 경과
-## 화면의 "경기 시작"이 그렇게 바뀐다).
+## 부르면 둥근 모서리가 되살아나 그 칸만 화면에서 도로 떠오른다.
+##
+## **코드로 세우는 바(`add_bottom_bar`) 전용이다.** 씬(.tscn)에 놓은 바는 버튼에
+## `Bar*Button` 변형을 고르고 `fit_bottom_bar` 로 기기 인셋만 넣는다.
 static func style_bottom_button(b: Button, style: String = "primary",
 		font_size: int = 34) -> Button:
 	if b == null:
 		return b
-	match style:
-		"ghost": style_ghost_button(b, font_size)
-		"dark":  style_dark_button(b, font_size)
-		"text":  style_text_button(b, font_size)
-		"danger": style_danger_button(b, font_size)
-		_:       style_primary_button(b, font_size)
-	var below: float = maxf(0.0, ScreenMetrics.insets().w)
+	var kind: String = style if style in ["ghost", "dark", "text", "danger"] else "primary"
+	_style_button(b, font_size, kind)
+	var boxes: Dictionary = bar_button_styles(kind, bottom_inset())
 	for n in BUTTON_STATES:
-		var sb := b.get_theme_stylebox(n) as StyleBoxFlat
-		if sb == null:
-			continue
-		set_corner_radius(sb, 0)
-		sb.content_margin_bottom = 8.0 + below
+		b.add_theme_stylebox_override(n, boxes[n])
 	return b
+
+
+## 아래 인셋(홈 인디케이터 / 제스처 바), 뷰포트 단위 — 없으면 0.
+static func bottom_inset() -> float:
+	return maxf(0.0, ScreenMetrics.insets().w)
+
+
+## 하단 바 한 칸의 상태별 스타일박스 — `button_styles(kind)` 의 모서리를 각지게 펴고
+## 아래 여백에 `below`(색면만 내려가는 인셋 몫)를 얹는다. `below` 0 이 테마 변형
+## `Bar*Button` 의 값이고, `fit_bar_button` · `style_bottom_button` 이 기기 값으로 부른다.
+static func bar_button_styles(kind: String, below: float = 0.0) -> Dictionary:
+	var boxes: Dictionary = button_styles(kind)
+	for n in BUTTON_STATES:
+		var sb: StyleBoxFlat = boxes[n]
+		set_corner_radius(sb, 0)
+		sb.content_margin_bottom += below
+	return boxes
+
+
+## **씬에 놓은 하단 바의 기기 몫.** 모양(변형 `Bar*Button` · 칸 비율 · 글자 크기 ·
+## 구분선 `BarSeparator`)은 씬이 정하고, 여기서는 아래 인셋만 넣는다:
+##   - `safe` 를 주면 그 판의 아래끝을 안전선으로 올린다(`offset_bottom = -인셋`).
+##   - 바의 사각형: 위끝 = 안전선 - `BOTTOM_BAR_H`, 아래끝 = 뷰포트 바닥.
+##     바가 `safe` 안에 있으면 `offset_bottom = +인셋`, 밖(뷰포트 바닥에 붙은 판)이면
+##     `offset_top = -(BOTTOM_BAR_H + 인셋)`. 바는 아래 넓게 앵커(anchor_top = 1)여야 한다.
+##   - 바 안의 버튼(바가 곧 버튼이면 그 버튼)마다 `fit_bar_button`.
+## 다시 불러도 같은 결과다(값을 더하지 않고 정한다).
+static func fit_bottom_bar(bar: Control, safe: Control = null) -> void:
+	if bar == null:
+		return
+	var below: float = bottom_inset()
+	var in_safe: bool = false
+	if safe != null:
+		safe.offset_bottom = -below
+		in_safe = safe.is_ancestor_of(bar)
+	bar.offset_top = -BOTTOM_BAR_H - (0.0 if in_safe else below)
+	bar.offset_bottom = below if in_safe else 0.0
+	if bar is Button:
+		fit_bar_button(bar as Button)
+		return
+	for c in bar.get_children():
+		if c is Button:
+			fit_bar_button(c as Button)
+
+
+## 바 한 칸의 글자를 인셋만큼 위로 물린다(색면은 인셋 아래까지). 버튼의 변형은
+## `BAR_BUTTON_VARIATIONS` 중 하나여야 한다. **칸의 종류가 바뀌면**(시간 경과의
+## "경기 시작" = `BarDarkButton`) `theme_type_variation` 을 바꾼 뒤 이것을 다시 부른다.
+static func fit_bar_button(b: Button) -> void:
+	if b == null:
+		return
+	var v: String = String(b.theme_type_variation)
+	if not BAR_BUTTON_VARIATIONS.has(v):
+		push_warning("OutgameTheme.fit_bar_button: %s 의 변형 '%s' 는 Bar*Button 이 아니다"
+				% [b.name, v])
+		return
+	var below: float = bottom_inset()
+	if below <= 0.0:
+		for n in BUTTON_STATES:
+			b.remove_theme_stylebox_override(n)
+		return
+	var boxes: Dictionary = bar_button_styles(String(BAR_BUTTON_VARIATIONS[v]), below)
+	for n in BUTTON_STATES:
+		b.add_theme_stylebox_override(n, boxes[n])
 
 
 # ── 자주 쓰는 조각 ───────────────────────────────────────────────────────────
@@ -552,21 +627,56 @@ const BUTTON_VARIATIONS: Dictionary = {
 	"DangerButton": "danger",
 }
 
+## 하단 바 버튼 변형 이름 → `button_spec` 종류. 위 버튼과 같은 색 · 글자에 모서리 0
+## (`bar_button_styles`) — 바의 칸으로만 쓴다(`fit_bottom_bar`).
+const BAR_BUTTON_VARIATIONS: Dictionary = {
+	"BarPrimaryButton": "primary",
+	"BarGhostButton": "ghost",
+	"BarDarkButton": "dark",
+}
+
+
+## 선택형 카드 · 타일의 판 한 장(`SELECT_*` 상수). 안쪽 여백 0.
+static func selectable_box(on: bool, radius: int, border_on: int) -> StyleBoxFlat:
+	var sb := flat_style(ACCENT_DIM if on else SURFACE, radius,
+			ACCENT if on else BORDER, border_on if on else SELECT_BORDER)
+	sb.set_content_margin_all(0.0)
+	return sb
+
 
 static func build_theme() -> Theme:
 	var th := Theme.new()
 
 	for v in BUTTON_VARIATIONS:
 		var kind: String = BUTTON_VARIATIONS[v]
-		var spec: Dictionary = button_spec(kind)
-		th.set_type_variation(v, &"Button")
-		th.set_font_size(&"font_size", v, int(spec["font"]))
-		for c in BUTTON_FONT_COLORS:
-			th.set_color(c, v, spec["fg"])
-		th.set_color(&"font_disabled_color", v, TEXT_FAINT)
-		var boxes: Dictionary = button_styles(kind)
-		for n in BUTTON_STATES:
-			th.set_stylebox(n, v, boxes[n])
+		_add_button(th, v, int(button_spec(kind)["font"]), button_spec(kind)["fg"],
+				button_styles(kind))
+	for v in BAR_BUTTON_VARIATIONS:
+		var kind: String = BAR_BUTTON_VARIATIONS[v]
+		_add_button(th, v, int(button_spec(kind)["font"]), button_spec(kind)["fg"],
+				bar_button_styles(kind))
+	# 바 칸 사이의 2px 세로선 (ColorRect 대신 Panel 에 이 변형).
+	_add_panel(th, "BarSeparator", &"Panel", flat_style(BOTTOM_BAR_SEP, 0), 0.0)
+
+	# 선택형 — 판 전체가 누르는 자리. 상태(일반 / 선택)는 코드가 변형 이름을 바꿔 고른다.
+	_add_panel(th, "SelectableCard", &"PanelContainer",
+			selectable_box(false, CARD_RADIUS, SELECT_BORDER_ON), 0.0)
+	_add_panel(th, "SelectableCardOn", &"PanelContainer",
+			selectable_box(true, CARD_RADIUS, SELECT_BORDER_ON), 0.0)
+	_add_button(th, "SelectableCardButton", FONT_BTN_TEXT, TEXT,
+			_selectable_states(false, CARD_RADIUS, SELECT_BORDER_ON))
+	_add_button(th, "SelectableCardButtonOn", FONT_BTN_TEXT, TEXT,
+			_selectable_states(true, CARD_RADIUS, SELECT_BORDER_ON))
+	_add_button(th, "SelectableTile", FONT_BTN_TEXT, TEXT_SUB,
+			_selectable_states(false, SELECT_TILE_RADIUS, SELECT_TILE_BORDER_ON))
+	th.set_color(&"font_hover_color", &"SelectableTile", TEXT)
+	_add_button(th, "SelectableTileOn", FONT_BTN_TEXT, ACCENT_TEXT,
+			_selectable_states(true, SELECT_TILE_RADIUS, SELECT_TILE_BORDER_ON))
+
+	_add_panel(th, "AccentChip", &"PanelContainer", flat_style(ACCENT_DIM, CHIP_RADIUS),
+			CHIP_PAD_H, CHIP_PAD_V)
+	_add_panel(th, "SurfaceChip", &"PanelContainer", flat_style(SURFACE, CHIP_RADIUS),
+			CHIP_PAD_H, CHIP_PAD_V)
 
 	_add_panel(th, "Card", &"PanelContainer", card_style(CARD_RADIUS), CARD_PAD)
 	_add_panel(th, "PopupCard", &"PanelContainer", card_style(POPUP_RADIUS), POPUP_PAD)
@@ -585,6 +695,9 @@ static func build_theme() -> Theme:
 	_add_label(th, "FaintLabel", FONT_CAPTION, TEXT_FAINT)
 	_add_label(th, "AccentLabel", FONT_CAPTION, ACCENT_TEXT)
 	_add_label(th, "OnFillLabel", FONT_CAPTION, TEXT_ON_FILL)
+	_add_label(th, "NegativeLabel", FONT_CAPTION, NEGATIVE)
+	_add_label(th, "PositiveLabel", FONT_CAPTION, POSITIVE)
+	_add_label(th, "LinkLabel", FONT_CAPTION, LINK)
 
 	# 선 끝을 늘리지 않는다(grow 0) — `add_divider` 처럼 노드 폭과 정확히 같은 1px 선.
 	var line := StyleBoxLine.new()
@@ -616,6 +729,29 @@ static func save_theme() -> Error:
 	if err != OK:
 		push_error("OutgameTheme: %s 저장 실패 (%d)" % [THEME_PATH, err])
 	return err
+
+
+## 버튼 변형 한 벌 — 글자 크기, 글자색(`BUTTON_FONT_COLORS` 전부 `fg`, 비활성은
+## `TEXT_FAINT`), 상태별 스타일박스(`BUTTON_STATES` 키).
+static func _add_button(th: Theme, variation: String, font_size: int, fg: Color,
+		boxes: Dictionary) -> void:
+	th.set_type_variation(variation, &"Button")
+	th.set_font_size(&"font_size", variation, font_size)
+	for c in BUTTON_FONT_COLORS:
+		th.set_color(c, variation, fg)
+	th.set_color(&"font_disabled_color", variation, TEXT_FAINT)
+	for n in BUTTON_STATES:
+		th.set_stylebox(n, variation, boxes[n])
+
+
+## 선택형 버튼의 상태들 — 누르든 올리든 같은 판(상태는 일반 / 선택 변형이 말한다),
+## 포커스는 빈 판(`button_styles` 와 같다).
+static func _selectable_states(on: bool, radius: int, border_on: int) -> Dictionary:
+	var out: Dictionary = {}
+	for n in BUTTON_STATES:
+		out[n] = selectable_box(on, radius, border_on)
+	out["focus"] = button_box(Color(0, 0, 0, 0), null)
+	return out
 
 
 static func _add_panel(th: Theme, variation: String, base: StringName,

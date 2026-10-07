@@ -116,7 +116,7 @@ ConfirmPopup (CanvasLayer 20, visible=false)
 | 3 | `ShopPopup` | `meta/shop/` | 팝업 | ⬜ |
 | 4 | `CollectionDetailSheet` | `meta/collection/` | 시트 | ⬜ |
 | 5 | `DraftDetailPanel` | `meta/run_setup/` | 모달 | ⬜ |
-| 6 | `HubSheet` | `season/` | 시트 (허브 관리 카드 공용 틀) | ⬜ |
+| 6 | `HubSheet` | `season/` | 시트 (허브 관리 카드 공용 틀) | ✅ 틀만 전환 (본문은 #10), uid 미부여 |
 | 7 | `LobbyScreen` + `HomeTab` · `CollectionTab` · `ManagerTab` · `ShopTab` · `PassTab` | `meta/lobby/` 등 | 화면 / 탭 | ⬜ |
 | 8 | `RunSetupScreen` + `TeamDraftView` · `ManagerStepView` · `ChoiceListView` · `TeamStepView` · `PilotThumb` | `meta/run_setup/` | 화면 | ⬜ |
 | 9 | `RunResultScreen` | `meta/run_result/` | 화면 | ⬜ |
@@ -191,7 +191,7 @@ ConfirmPopup (CanvasLayer 20, visible=false)
 | 2 | T3 #3 `ShopPopup` | 에이전트 | ⏳ |
 | 2 | T3 #4 `CollectionDetailSheet` | 에이전트 | ⏳ |
 | 2 | T3 #5 `DraftDetailPanel` | 에이전트 | ⏳ |
-| 2 | T3 #6 `HubSheet` | 에이전트 | ⏳ |
+| 2 | T3 #6 `HubSheet` | 에이전트 | ✅ 머지 (재무 · 메크 연구 · 스태프 · 리그 픽셀 diff 0, 긴 제목은 의도적으로 말줄임) |
 | 끝 | 새 `.tscn` 전부 에디터에서 열고 저장 (uid 부여) | 사용자 | ⬜ |
 
 > 웨이브 2 는 T1 머지 직후 시작 (T4 와 무관하므로 T4 진행 중에 병렬 착수).

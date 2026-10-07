@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://orjk6bqst2x7"]
 
 [ext_resource type="Script" uid="uid://c58xf3ynusdh8" path="res://features/meta/lobby/ConfirmPopup.gd" id="1_confirm"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]

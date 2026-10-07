@@ -245,7 +245,7 @@ theme_override_constants/margin_bottom = 24
 
 [node name="Grid" type="GridContainer" parent="VBox/Scroll/Body/GridPad"]
 unique_name_in_owner = true
-editor_description = "CollectionCell (240×330, code-built Button) per named pilot, added by code in sort order; filtered-out cells are hidden, so the grid closes up without holes."
+editor_description = "One CollectionCell.tscn item (240×330) per named pilot, added by code in sort order; filtered-out cells are hidden, so the grid closes up without holes."
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_constants/h_separation = 16

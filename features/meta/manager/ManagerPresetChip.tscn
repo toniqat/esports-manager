@@ -1,0 +1,41 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+
+[node name="ManagerPresetChip" type="Button"]
+editor_description = "One preset chip of ManagerPresetChips (lobby 감독 tab · run setup 감독 step). Frame SelectableCardButton / SelectableCardButtonOn = selected (code). Name BodyLabel / SubLabel; status line FaintLabel (특성 n) · AccentLabel (● 사용 중) · NegativeLabel (재설정 필요) — picked by ManagerPresetChips.fill. Mouse = Pass (inside a DragScroll)."
+custom_minimum_size = Vector2(0, 104)
+offset_right = 196.0
+offset_bottom = 104.0
+size_flags_horizontal = 3
+focus_mode = 0
+mouse_filter = 1
+theme = ExtResource("1_theme")
+theme_type_variation = &"SelectableCardButton"
+
+[node name="Name" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 14.0
+offset_bottom = 50.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"SubLabel"
+text = "프리셋 1"
+horizontal_alignment = 1
+
+[node name="Status" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 56.0
+offset_bottom = 86.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"FaintLabel"
+theme_override_font_sizes/font_size = 20
+text = "특성 3"
+horizontal_alignment = 1

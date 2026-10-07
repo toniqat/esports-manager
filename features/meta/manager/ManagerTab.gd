@@ -5,7 +5,7 @@ extends Control
 # scope: plan §12 (work C), rules: `ManagerProgress` / `TraitSystem`.
 #
 #   ┌ header card — type · Lv · EXP bar · prestige count · [프레스티지] ┐
-#   │ preset chips (all presets; ● 사용 중 / 재설정 필요)                │
+#   │ ManagerPresetChips (all presets; ● 사용 중 / 재설정 필요)          │
 #   │ (prestige preset → reset card)                                  │
 #   │ stats card — removal / specialisation counters, six rows:        │
 #   │   label · 유형 n · 제거 −n · 전문화 +n · final · [제거] [−] n [+]   │
@@ -19,8 +19,9 @@ extends Control
 #   never saved. Switching preset / prestiging with unsaved edits asks first.
 # - Removals are profile-level and permanent: confirm → `remove_stat` → save at once.
 # - Prestige presets are read-only until `재설정` (`reset_preset`, saved at once).
-# - Layout lives in `ManagerTab.tscn` (+ one `ManagerStatRow.tscn` per stat); every change
-#   refills the same nodes (`_rebuild`), so the scroll position stays.
+# - Layout lives in `ManagerTab.tscn` (+ one `ManagerStatRow.tscn` per stat, and the shared
+#   `ManagerPresetChips` / `TraitPickerView` scenes); every change refills the same nodes
+#   (`_rebuild`), so the scroll position stays.
 
 const SCENE_PATH: String = "res://features/meta/manager/ManagerTab.tscn"
 const STAT_ROW_SCENE: PackedScene = preload("res://features/meta/manager/ManagerStatRow.tscn")
@@ -37,9 +38,8 @@ var _new_ids: Array = []
 var _rows: Dictionary = {}           # String stat key → ManagerStatRow instance
 
 @onready var _scroll: ScrollContainer = %Scroll
-@onready var _body: MarginContainer = %Body
 @onready var _traits_view: TraitPickerView = %Traits
-@onready var _preset_chips: Control = %PresetChips
+@onready var _preset_chips: ManagerPresetChips = %PresetChips
 
 
 ## Layout lives in `ManagerTab.tscn` — build with this, not `.new()`.
@@ -51,6 +51,7 @@ func _ready() -> void:
 	%Prestige.pressed.connect(_on_prestige_pressed)
 	%Reset.pressed.connect(_on_reset_pressed)
 	_traits_view.trait_pressed.connect(_on_trait_pressed)
+	_preset_chips.chip_pressed.connect(_on_chip_pressed)
 	for i in StaffSystem.STATS.size():
 		var key: String = String(StaffSystem.STATS[i])
 		var row: Control = STAT_ROW_SCENE.instantiate()
@@ -184,15 +185,11 @@ func _mark_dirty() -> void:
 ## Refills every block from the profile + draft. Nodes are reused, so the scroll
 ## position stays where it was.
 func _rebuild() -> void:
-	# Chips / traits lay out by absolute x, so they need the content width now — before
-	# the containers' first sort on the tab's first show.
-	var w: float = size.x - float(_body.get_theme_constant("margin_left")) \
-			- float(_body.get_theme_constant("margin_right"))
 	_fill_header()
-	_fill_presets(w)
+	_preset_chips.fill(_pm.profile, _edit_idx)
+	%ResetBox.visible = _is_prestige_kind()
 	_fill_stats()
-	_traits_view.custom_minimum_size.y = _traits_view.build(w, _draft.get("traits", []),
-			_owned(), _new_ids)
+	_traits_view.fill(_draft.get("traits", []), _owned(), _new_ids)
 	if _host != null and not _host.bar_buttons().is_empty():
 		_refresh_bar()
 
@@ -226,15 +223,6 @@ func _fill_header() -> void:
 	pb.disabled = perr != ""
 	%Info.text = "레벨업마다 제거 포인트 %d · 스탯 하나를 영구히 낮추면 전문화 포인트 1" \
 			% ConstTable.int_of("MANAGER_REMOVE_PER_LEVEL")
-
-
-func _fill_presets(w: float) -> void:
-	for c in _preset_chips.get_children():
-		_preset_chips.remove_child(c)
-		c.queue_free()
-	_preset_chips.custom_minimum_size.y = ManagerUi.add_preset_chips(_preset_chips, Vector2.ZERO,
-			w, _pm.profile, _edit_idx, _on_chip_pressed)
-	%ResetBox.visible = _is_prestige_kind()
 
 
 func _fill_stats() -> void:
@@ -441,5 +429,4 @@ func _fill_preview() -> void:
 	for raw in pending:
 		_new_ids.append(int(raw))
 	_load_draft(ManagerProgress.active_index(_pm.profile))
-	# 칩 · 특성은 내용 폭으로 줄을 세운다 — 첫 배치가 끝나 크기가 정해진 뒤에 채운다.
-	_rebuild.call_deferred()
+	_rebuild()

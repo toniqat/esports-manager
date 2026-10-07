@@ -64,7 +64,7 @@ navigation read. **To add a step**: add one row and one branch in
 
 ## Manager step (감독) — M8/M9, plan §12.0 / §12.2
 `ManagerStepView`: status line at `content_top()`, then one `DragScroll` body down to the bar:
-preset chips (`ManagerUi.add_preset_chips`) → stats card (`<type> 감독 · Lv n`, the preset's six stats via
+preset chips (`ManagerPresetChips`, from `../manager/`) → stats card (`<type> 감독 · Lv n`, the preset's six stats via
 `ManagerUi.add_stat_cells`, specialised part in amber, `manager_all` trait note) → `TraitPickerView`.
 - **The active preset is preselected** — the "nothing preselected" rule is for the choice lists; a
   preset is a loadout already built in the lobby `감독` tab.
@@ -241,7 +241,7 @@ RunSetup (scenes/RunSetup.tscn — root offset_top = safe top inset, code)
 
 ChoiceListView: %Hint (32,116) h 44 · %Scroll (24,168 → bottom -144, grows right only) → %List VBox sep 20, min w 1032
   ScenarioStepView.tscn / TeamStepView.tscn inherit it (+ one preview card under %List, cleared by code)
-ManagerStepView: %Status · %Scroll → %Body VBox: %Chips slot · stats Card (%CardTitle, %CardNote, %Cells slot) · %Traits slot
+ManagerStepView: %Status · %Scroll → %Body VBox: %Chips (ManagerPresetChips.tscn) · stats Card (%CardTitle, %CardNote, %Cells slot) · %Traits (TraitPickerView.tscn)
 TeamDraftView: Gauge Card (%GaugeTitle, %GaugeValue, track + %GaugeFill, %GaugeMsg) · %SlotRow HBox (DraftSlot ×5) ·
   %PickPane [%Filters HBox (6 SelectableTile buttons 26: 전체, then SLOT_ROLES order) · GridBack (`TeamDraftGridBack`) · %GridScroll → %Grid (5 cols, gap 8)]
 ```
@@ -256,7 +256,7 @@ filter buttons `SelectableTile` ↔ `SelectableTileOn`), step pill colours, role
 frames), the gauge / budget bar fill ratio (`anchor_right`) and its over-cap colour, "없음"
 (`BodyLabel` → `PositiveLabel`), the 감독 status line (`SubLabel` ↔ `NegativeLabel`) and stats-card note
 (`FaintLabel` ↔ `AccentLabel`), the gauge message colour, the slot row y (PICK / CONFIRM, tweened) and the pick-pane slide, and content built by shared
-modules into slots (`ManagerUi.add_preset_chips` / `add_stat_cells`, `TraitPickerView`).
+modules into slots (`ManagerUi.add_stat_cells`); the shared `ManagerPresetChips` / `TraitPickerView` scenes are refilled (`fill`).
 - Lists / grids are containers: hidden thumbnails are skipped by the `GridContainer` (filter = toggle
   `visible`); the bar's hidden `Next` / `Start` is skipped by the HBox.
 - Label line heights exceed some boxes (38px name = 54, 26px = 37, 22px = 31): gaps in `ScenarioCard` /

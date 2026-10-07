@@ -7,7 +7,7 @@ Lobby `컬렉션` tab — owned pilots, levels, breakthroughs, level-up. Contrac
 | File | Class | Role |
 |---|---|---|
 | `CollectionTab.tscn` + `.gd` | `class_name CollectionTab extends Control` | The tab: summary card, role filter row, scrolling 4-column grid of the **25 named pilots**, opens the detail sheet. `bar_specs()` = `[]` (no action bar). **Layout lives in the `.tscn`** (style = `OutgameTheme.tres` variations); built with `CollectionTab.create()` (not `.new()`) by `LobbyScreen._make_tab`. |
-| `CollectionCell.gd` | `class_name CollectionCell extends Button` | One grid cell (240×330): face + role badge (`PilotThumb` static helpers, read-only reuse) + rarity pill, name, `Lv N` + breakthrough pips. Unowned = dimmed face, `미보유` pill, "상점에서 영입". Static helpers `rarity_color` / `add_rarity_pill` / `add_pips` shared with the sheet. |
+| `CollectionCell.tscn` + `.gd` | `class_name CollectionCell extends Button` | Item scene: one grid cell (240×330): `%ArtMask`/`%Face` + `%RoleBadge` (`RoleBadge.tscn`) + `%Rarity` pill, `%Name`, `%Level` + `%Pips` (template `%Pip` duplicated to `RunRules.breakthrough_max()`). Unowned = dimmed face, `%Unowned` pill, `%Hint`. `create()`; `setup(p, max_level, breakthrough)` / `refresh(...)`. Static helpers `rarity_color` / `add_rarity_pill` / `set_rarity` / `rarity_pill_w` shared with the sheet. F6 preview: owned Lv 7, 돌파 3 |
 | `CollectionDetailSheet.tscn` + `.gd` | `class_name CollectionDetailSheet extends CanvasLayer` | Pilot detail modal (layer 20) + the 레벨업 action. **Layout lives in the `.tscn`** (style = `OutgameTheme.tres` variations). `create()` (not `.new()`), signal `leveled_up(pilot_id, new_level)`, static `fielded_copy(base, max_level, stage)`. |
 | `CollectionStatChip.tscn` | — (no script) | Item scene: one 능력치 cell (`%Key` / `%Value` / `%Delta`), 7 instanced into `%StatGrid` once in `_ready`. |
 | `CollectionBreakthroughRow.tscn` | — (no script) | Item scene: one 돌파 stage (`%Disc`/`%Num`, `%Kind`, `%Desc`, `%State`), instanced per row on every fill. |
@@ -42,7 +42,7 @@ CollectionTab (Control, theme = OutgameTheme.tres, preview 1080×1696)
 - **Code owns only data**: summary numbers, `%OwnedFill.anchor_right` = owned ratio, the filter on / off
   state (variation name `SelectableTile` ↔ `SelectableTileOn` — the same tile pair as the run-setup and
   ban/pick filters; child i of `%Filters` = 전체 then `ROLE_DISPLAY_ORDER[i-1]`),
-  one `CollectionCell` per pilot added to `%Grid` (cells stay code-built widgets), the error text.
+  one `CollectionCell.tscn` item per pilot added to `%Grid` (`CollectionCell.create()`), the error text.
 
 - **Pool**: `GameManager.load_match_data()["players"]` once in `setup`, `is_mob == true` dropped.
   These Lv1 copies are never mutated.
@@ -110,3 +110,15 @@ CollectionDetailSheet (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 
   sheet rebuilds in place (scroll kept) → `leveled_up` → the tab refreshes that cell and the
   summary, `host.refresh_currency()`, `host.show_toast(...)`. Disabled with the reason on the
   status line: not owned / max level (`RunRules.max_level()`) / not enough `levelup` currency.
+
+## `CollectionCell.tscn`
+Fixed 240×330 item (absolute offsets inside the Button). Code fills data only: face texture, role
+badge (`RoleBadge.set_role`), rarity pill (`set_rarity`: stars, rarity colour on an `AccentChip` copy,
+width = `rarity_pill_w`, right edge kept), owned state — frame variation `FRAME_OWNED` /
+`FRAME_UNOWNED`, `%Name` `BodyLabel` ↔ `SubLabel`, `%ArtMask` modulate `UNOWNED_MODULATE`, level row ↔
+hint — and the pips (`ProgressFill` = reached, `ProgressTrack` = not).
+**Closest-variation stand-ins** until the proposed exact ones exist: frame `SelectableCardButton` /
+`DraftSlotFrame` (proposed `CollectionCellFrame` / `CollectionCellFrameUnowned`: r16, border 2
+`BORDER_STRONG` / `BORDER`), face mask `PilotThumbArtMask` r14 (proposed `CollectionCellArtMask` r12),
+pips `ProgressTrack` / `ProgressFill` (proposed `CollectionCellPip(On)`: r4 + 1px border), 미보유 pill
+`LobbyToast` (same pixels; proposed `CollectionCellUnownedPill`).

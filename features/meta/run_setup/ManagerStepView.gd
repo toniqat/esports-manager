@@ -10,9 +10,9 @@ extends Control
 #
 # **The layout is `ManagerStepView.tscn`** (status line, scroll, chips / stats card / traits
 # slots, bottom bar). Construct with `ManagerStepView.create()`. Code fills the texts, picks
-# the status / note label variation (SubLabel ↔ NegativeLabel, FaintLabel ↔ AccentLabel) and
-# rebuilds the shared-module content (`ManagerUi` chips + stat cells, `TraitPickerView`)
-# into the slots.
+# the status / note label variation (SubLabel ↔ NegativeLabel, FaintLabel ↔ AccentLabel),
+# refills the shared scenes placed in it (`ManagerPresetChips` · `TraitPickerView`, from
+# `features/meta/manager/`) and rebuilds the code-built stat cells (`ManagerUi.add_stat_cells`).
 #
 # - The **active preset is preselected** (the M1 "nothing preselected" rule is for
 #   choice lists; a preset is a loadout you already built).
@@ -51,6 +51,8 @@ func _ready() -> void:
 	DragScroll.attach(%Scroll)
 	(%Back as Button).pressed.connect(func() -> void: back_requested.emit())
 	(%Next as Button).pressed.connect(_on_next_pressed)
+	(%Chips as ManagerPresetChips).chip_pressed.connect(_on_chip_pressed)
+	(%Traits as TraitPickerView).trait_pressed.connect(_on_trait_pressed)
 	select_preset(ManagerProgress.active_index(_pm.profile))
 	if UiPreview.is_standalone(self):
 		_fill_preview()
@@ -91,24 +93,18 @@ func toggle_trait(trait_id: int) -> String:
 
 
 # ── Fill ─────────────────────────────────────────────────────────────────────
-# The layout (status line, scroll, chips slot, stats card, traits slot, bar) is the scene.
-# The chips, the six stat cells and the trait block are built by shared modules
-# (`ManagerUi`, `TraitPickerView` — also used by the lobby 감독 tab) into their slots and
-# rebuilt on every change; each slot's height is what that builder returns.
+# The layout (status line, scroll, chips, stats card, traits, bar) is the scene. The chips
+# and the trait block are shared scenes (also in the lobby 감독 tab) refilled on every change;
+# the six stat cells are built by `ManagerUi.add_stat_cells` into `%Cells` (height it returns).
 func _rebuild(status_override: String = "") -> void:
 	var scroll: ScrollContainer = %Scroll
 	var keep: int = scroll.scroll_vertical
-	var chips: Control = %Chips
 	var cells: Control = %Cells
-	var traits: Control = %Traits
-	for slot: Control in [chips, cells, traits]:
-		for c in slot.get_children():
-			slot.remove_child(c)
-			c.queue_free()
+	for c in cells.get_children():
+		cells.remove_child(c)
+		c.queue_free()
 	var prof: Dictionary = _pm.profile
-	var w: float = chips.size.x if chips.size.x > 0.0 else ScreenMetrics.vp_w() - 48.0
-	chips.custom_minimum_size.y = ManagerUi.add_preset_chips(chips, Vector2.ZERO, w, prof,
-			preset_idx, _on_chip_pressed)
+	(%Chips as ManagerPresetChips).fill(prof, preset_idx)
 
 	# Stats card — type · level, the six stats this preset gives.
 	var mgr: Dictionary = prof.get("manager", {})
@@ -123,14 +119,11 @@ func _rebuild(status_override: String = "") -> void:
 	else:
 		note.text = "전문화는 로비 감독 탭에서"
 		note.theme_type_variation = &"FaintLabel"
-	var cells_w: float = cells.size.x if cells.size.x > 0.0 else w - 56.0
+	var cells_w: float = cells.size.x if cells.size.x > 0.0 else ScreenMetrics.vp_w() - 48.0 - 56.0
 	cells.custom_minimum_size.y = ManagerUi.add_stat_cells(cells, Vector2.ZERO, cells_w,
 			ManagerProgress.preset_stats(prof, _draft), ManagerProgress.base_stats(prof))
 
-	var tv := TraitPickerView.new()
-	traits.add_child(tv)
-	traits.custom_minimum_size.y = tv.build(w, selected_traits(), _pm.owned_trait_ids(), [])
-	tv.trait_pressed.connect(_on_trait_pressed)
+	(%Traits as TraitPickerView).fill(selected_traits(), _pm.owned_trait_ids(), [])
 	scroll.set_deferred("scroll_vertical", keep)
 	_refresh_status(status_override)
 

@@ -1,7 +1,9 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://features/meta/run_setup/ManagerStepView.gd" id="1_view"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" path="res://features/meta/manager/ManagerPresetChips.tscn" id="3_chips"]
+[ext_resource type="PackedScene" path="res://features/meta/manager/TraitPickerView.tscn" id="4_traits"]
 
 [node name="ManagerStepView" type="Control"]
 layout_mode = 3
@@ -72,12 +74,9 @@ mouse_filter = 2
 theme_override_constants/margin_left = 24
 theme_override_constants/margin_right = 24
 
-[node name="Chips" type="Control" parent="Safe/Scroll/Body/ChipsPad"]
+[node name="Chips" parent="Safe/Scroll/Body/ChipsPad" instance=ExtResource("3_chips")]
 unique_name_in_owner = true
-editor_description = "Preset chips — built by ManagerUi.add_preset_chips (shared with the lobby 감독 tab); code sets the height it returns."
-custom_minimum_size = Vector2(0, 92)
 layout_mode = 2
-mouse_filter = 2
 
 [node name="Gap1" type="Control" parent="Safe/Scroll/Body"]
 custom_minimum_size = Vector2(0, 24)
@@ -170,12 +169,9 @@ mouse_filter = 2
 theme_override_constants/margin_left = 24
 theme_override_constants/margin_right = 24
 
-[node name="Traits" type="Control" parent="Safe/Scroll/Body/TraitsPad"]
+[node name="Traits" parent="Safe/Scroll/Body/TraitsPad" instance=ExtResource("4_traits")]
 unique_name_in_owner = true
-editor_description = "TraitPickerView (features/meta/manager/, shared with the lobby tab) is added here by code; height = what its build() returns."
-custom_minimum_size = Vector2(0, 400)
 layout_mode = 2
-mouse_filter = 2
 
 [node name="BottomGap" type="Control" parent="Safe/Scroll/Body"]
 custom_minimum_size = Vector2(0, 32)

@@ -1,0 +1,163 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://features/meta/collection/CollectionCell.gd" id="1_cell"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" path="res://features/meta/run_setup/RoleBadge.tscn" id="3_badge"]
+
+[node name="CollectionCell" type="Button"]
+editor_description = "One cell of the 컬렉션 grid (CollectionTab %Grid), 240x330. Frame = variation by owned state (code, CollectionCell.FRAME_*). Owned: name + Lv + breakthrough pips. Unowned: dimmed face (ArtMask modulate), 미보유 pill, hint. Face, role badge, rarity stars / colour / width and the pip count are data → code. Mouse = Pass (the grid is a DragScroll)."
+custom_minimum_size = Vector2(240, 330)
+offset_right = 240.0
+offset_bottom = 330.0
+focus_mode = 0
+mouse_filter = 1
+theme = ExtResource("2_theme")
+theme_type_variation = &"SelectableCardButton"
+script = ExtResource("1_cell")
+
+[node name="ArtMask" type="Panel" parent="."]
+unique_name_in_owner = true
+editor_description = "Rounded face crop: the white mask clips the TextureRect child (clip_children). Inset 8."
+clip_children = 1
+layout_mode = 0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 232.0
+offset_bottom = 232.0
+mouse_filter = 2
+theme_type_variation = &"PilotThumbArtMask"
+
+[node name="Face" type="TextureRect" parent="ArtMask"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="RoleBadge" parent="." instance=ExtResource("3_badge")]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 14.0
+offset_top = 14.0
+offset_right = 58.0
+offset_bottom = 44.0
+
+[node name="Rarity" type="Panel" parent="."]
+unique_name_in_owner = true
+editor_description = "Rarity pill, hangs from the top-right (14px in). Fill = rarity colour and width = star count → code (set_rarity)."
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -84.6
+offset_top = 14.0
+offset_right = -14.0
+offset_bottom = 44.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_type_variation = &"AccentChip"
+
+[node name="RarityText" type="Label" parent="Rarity"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 18
+text = "★★★"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Unowned" type="Panel" parent="."]
+unique_name_in_owner = true
+editor_description = "미보유 pill over the face centre — shown only when the pilot is not owned."
+visible = false
+layout_mode = 0
+offset_left = 60.0
+offset_top = 100.0
+offset_right = 180.0
+offset_bottom = 140.0
+mouse_filter = 2
+theme_type_variation = &"LobbyToast"
+
+[node name="UnownedText" type="Label" parent="Unowned"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"OnFillLabel"
+text = "미보유"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Name" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "BodyLabel when owned, SubLabel when not (code)."
+layout_mode = 0
+offset_left = 12.0
+offset_top = 240.0
+offset_right = 228.0
+offset_bottom = 276.0
+mouse_filter = 2
+theme_type_variation = &"BodyLabel"
+text = "Corin"
+clip_text = true
+
+[node name="Level" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 12.0
+offset_top = 280.0
+offset_right = 102.0
+offset_bottom = 314.0
+mouse_filter = 2
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 24
+text = "Lv 7"
+vertical_alignment = 1
+
+[node name="Pips" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "Breakthrough pips, right-aligned. Code duplicates %Pip up to RunRules.breakthrough_max() and switches each one's variation (ProgressFill = reached / ProgressTrack)."
+layout_mode = 0
+offset_left = 102.0
+offset_top = 289.0
+offset_right = 228.0
+offset_bottom = 305.0
+mouse_filter = 2
+theme_override_constants/separation = 6
+alignment = 2
+
+[node name="Pip" type="Panel" parent="Pips"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(16, 16)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ProgressFill"
+
+[node name="Hint" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "Shown instead of the level row when the pilot is not owned."
+visible = false
+layout_mode = 0
+offset_left = 12.0
+offset_top = 280.0
+offset_right = 228.0
+offset_bottom = 314.0
+mouse_filter = 2
+theme_type_variation = &"FaintLabel"
+theme_override_font_sizes/font_size = 20
+text = "상점에서 영입"
+vertical_alignment = 1

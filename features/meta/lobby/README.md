@@ -22,8 +22,8 @@ theme (`OutgameTheme`), bottom action bar. Replaces the old 3-slot TitleScreen
 ├ action bar (only when the tab's bar_specs() is non-empty)          ┤
 └ tab bar (홈 · 컬렉션 · 감독 · 상점 · 패스), extends into the bottom inset ┘
 ```
-- `TABS` is the one table; `_make_tab(id)` builds `HomeTab` (`HomeTab.create()`) / `CollectionTab` /
-  `ManagerTab` / `ShopTab` / `PassTab` lazily on first open, adds it under `%Tabs`, then hides / shows.
+- `TABS` is the one table; `_make_tab(id)` builds each tab with its `create()` (`HomeTab` / `CollectionTab` /
+  `ManagerTab` / `ShopTab` / `PassTab` — all scene-based) lazily on first open, adds it under `%Tabs`, then hides / shows.
 - **Tab rect** (`_place_tab`): anchors full rect, `offset_top` = `%CurrencyStrip`'s height, `offset_bottom` =
   top of `%ActionBar` (tab has a bar) or `%TabBar` (no bar) — read from the scene's offsets, so resizing a
   bar in the editor moves the tab bodies with it. Set before `setup(host)`, so tabs can read `size` there.

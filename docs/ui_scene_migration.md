@@ -119,12 +119,12 @@ ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨�
 | 4 | `CollectionDetailSheet` | `meta/collection/` | 시트 | ✅ 전환 (+ `CollectionStatChip` · `CollectionBreakthroughRow` 아이템 씬) |
 | 5 | `DraftDetailPanel` | `meta/run_setup/` | 모달 | ✅ 전환 (+ `DraftStatChip` 아이템 씬) — 스타일은 새 variation 모양으로 확정 |
 | 6 | `HubSheet` | `season/` | 시트 (허브 관리 카드 공용 틀) | ✅ 틀만 전환 (본문은 #10) |
-| 7 | `LobbyScreen` + `HomeTab` · `CollectionTab` · `ManagerTab` · `ShopTab` · `PassTab` | `meta/lobby/` 등 | 화면 / 탭 | ⬜ |
-| 8 | `RunSetupScreen` + `TeamDraftView` · `ManagerStepView` · `ChoiceListView` · `TeamStepView` · `PilotThumb` | `meta/run_setup/` | 화면 | ⬜ |
-| 9 | `RunResultScreen` | `meta/run_result/` | 화면 | ⬜ |
-| 10 | `SeasonHub` / `HubView` · `LeagueView` · `BracketView` · `IntlBracketView` · `WeekProgressView` · `PressConferenceView` · `EndingView` · `GameOverView` · `FinancePanel` · `StaffPanel` · `MasteryPanel` | `season/**` | 화면 / 패널 | ⬜ |
-| 11 | `TrainingView` · `MessengerView` | `season/training/`, `press/` | `_draw` 혼합 — 틀만 씬 | ⬜ |
-| 12 | `BanPickController` UI · `MechDetailPanel` · `MatchPrep` UI · `MatchCheatMenu` | `match_flow/**` | 화면 | ⬜ |
+| 7 | `LobbyScreen` + `HomeTab` · `CollectionTab` · `ManagerTab` · `ShopTab` · `PassTab` | `meta/lobby/` 등 | 화면 / 탭 | ✅ 전환 (웨이브 3) |
+| 8 | `RunSetupScreen` + `TeamDraftView` · `ManagerStepView` · `ChoiceListView` · `TeamStepView` · `PilotThumb` | `meta/run_setup/` | 화면 | ✅ 전환 (웨이브 3) |
+| 9 | `RunResultScreen` | `meta/run_result/` | 화면 | ✅ 전환 (웨이브 3) |
+| 10 | `SeasonHub` / `HubView` · `LeagueView` · `BracketView` · `IntlBracketView` · `WeekProgressView` · `PressConferenceView` · `EndingView` · `GameOverView` · `FinancePanel` · `StaffPanel` · `MasteryPanel` | `season/**` | 화면 / 패널 | ✅ 전환 (웨이브 3) |
+| 11 | `TrainingView` · `MessengerView` | `season/training/`, `press/` | `_draw` 혼합 — 틀만 씬 | ✅ 전환 (웨이브 3) |
+| 12 | `BanPickController` UI · `MechDetailPanel` · `MatchPrep` UI · `MatchCheatMenu` | `match_flow/**` | 화면 | ✅ 전환 (웨이브 3) |
 | 13 | BattleSim `HudBuilder` · `PilotDetailPanel` · `PilotStrip` · `MvpView` · `SkillPopup` 등 | `battle_sim/ui/` | 인게임 HUD | ⏸ 보류 (다크 UI, `_draw` 다수) |
 
 ---
@@ -173,7 +173,8 @@ ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨�
       실행 중 트리의 `owner` 를 루트로 설정 → `PackedScene.pack()` → `ResourceSaver.save()`.
       결과는 절대 좌표 노드라 컨테이너로 재구성이 필요하므로 **참고용 초안**으로만 쓴다.
       작은 팝업은 손으로 옮기는 편이 낫다(시범에서 확인).
-- [ ] **T5** §4 #7 ~ #12 화면 전환. `docs/mobile_safe_area.md` 의 패턴 B/C 를 씬 기반 방식으로 갱신.
+- [x] **T5** §4 #7 ~ #12 화면 전환 (웨이브 3, §7). `docs/mobile_safe_area.md` 패턴 B/C 를 씬 기반으로 갱신 — 완료.
+      남은 일은 §7 "웨이브 3 종료 후".
 - [ ] **T6** `editor_description` TODO 마킹을 실제로 한 번 써 보고(사용자가 마킹 → LLM 구현) 절차 다듬기.
 
 ---
@@ -208,6 +209,62 @@ ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨�
 | 진행 바 track/fill | CollectionDetailSheet | ✅ `ProgressTrack` · `ProgressFill` (`BAR_RADIUS`). 코드 스타일 제거 |
 | `OnFillLabel` (돌파 원판 숫자) | CollectionDetailSheet | — 도달 여부에 따라 색이 바뀌는 데이터 색이라 코드 유지 |
 | (나중에) `SelectableCard` 일반/선택 쌍 | ManagerTypePopup | ⏸ 보류 — 선택형 옵션 카드가 늘어나면 |
+
+### 웨이브 3 — T5 (§4 #7 ~ #12) 화면 전환, 12개 에이전트 병렬 (2026-10-07 착수)
+공유 파일 규칙: `OutgameTheme.gd/.tres` · `ScreenMetrics` 등 `resources/` 공용 파일은 에이전트가 고치지 않는다
+(variation 은 제안만 → 오케스트레이터 일괄 반영). 호스트 파일(`LobbyScreen._make_tab`, `SeasonHub` 뷰 생성 블록,
+`MatchFlow.gd`, `BanPickController` 의 `MechDetailPanel.new()`)은 각자 자기 `.new()` → `.create()` 한 줄만 고친다.
+
+| 작업 | 범위 | 상태 |
+|---|---|---|
+| #7 a | `LobbyScreen` · `HomeTab` (+ `Lobby.tscn`) | ✅ 머지 (+ `LobbyCurrencyCell` · `LobbyTabButton`. 재화 줄 글자 <1px 이동 외 diff 0. 아래 인셋에서 액션 바가 탭 바를 23px 덮던 버그 수정) |
+| #7 b | `CollectionTab` · `ManagerTab` | ✅ 머지 (+ `ManagerStatRow`. rect 동일, 카드 · 바 모서리만 variation 값으로(20→18, 8→7). `CollectionCell` · 프리셋 칩 · `TraitPickerView` 는 RunSetup 과 공용이라 코드 유지) |
+| #7 c | `ShopTab` · `PassTab` | ✅ 머지 (+ `PassRow` · `ShopShardRow` · `ShopCraftRow` · `ShopExchangeRow` · `ShopRateChip`. rect 동일, 세그먼트 트랙 모서리 16→12 · 패스 바 9→7) |
+| #8 | `run_setup/` 전체 (`RunSetupScreen` · `TeamDraftView` · `ManagerStepView` · `ChoiceListView` · `TeamStepView` · `PilotThumb`) | ✅ 머지 (+ `StepChip` · `ScenarioCard` · `TeamCard` · `DraftSlot` · `PilotThumb` · `RoleBadge` 아이템 씬. 대부분 diff 0, 필터 줄 ±1px · 감독 스탯 카드 모서리 18) |
+| #9 | `RunResultScreen` | ✅ 머지 (`scenes/RunResult.tscn` 이 소유, `create()` 없음 + 행 아이템 씬 5개. rect 동일, AA ≤3/255. 홀수 폭 태블릿에서 카드 0.5px 왼쪽) |
+| #10 a | `SeasonHub` UI · `HubView` · `EndingView` · `GameOverView` | ✅ 머지 (+ `HubRosterRow` · `HubManageCard`. 엔딩 · 게임오버 diff 0, 허브는 관리 카드 모서리 18 · 칸 정수 픽셀. 하단 바는 `HubView.fit_bottom_bar`) |
+| #10 b | `LeagueView` · `BracketView` · `IntlBracketView` | ✅ 머지 (+ `LeagueRow` · `BracketMatchBox`/`IntlMatchBox` 아이템 씬. rect 동일, 인셋 켠 12장 diff 0 / 인셋 0 은 AA 1/255) |
+| #10 c | `FinancePanel` · `StaffPanel` · `MasteryPanel` (HubSheet 본문) | ✅ 머지 (+ 행 아이템 씬 10개. 23개 상태 rect · 본문 높이 동일. 바 끝 둥글게(`ProgressTrack`), 카드 모서리 18) |
+| #10 d / #11 | `WeekProgressView` · `PressConferenceView` · `MessengerView`(틀) | ✅ 머지 (+ 주간 카드 아이템 씬 8개. 메신저 · 기자회견 diff 0, 주간 화면은 레일 칩 · 칸 ~1px. 말풍선은 코드 유지) |
+| #11 | `TrainingView` (틀) | ✅ 머지 (+ `TrainingThumb` · `TrainingCourseCard` · `TrainingCoursePopover`. 보드 `_draw`·드래그 코드 유지, rect 동일, AA ≤50px) |
+| #12 a | `BanPickController` UI | ✅ 머지 (`BanPickView` + 아이템 씬 5개, 2593→1634줄. 밴 · 픽 · 배치 결과와 BattleSim 핸드오프 동일, 시트 ~1px · 배치 블록 ~0.5px, 판 모서리 18) |
+| #12 b | `MechDetailPanel` · MatchPrep UI · `MatchCheatMenu` | ✅ 머지 (+ `MechMasteryRow` · `MechQuirkRow` · `MechCardCell` · `MatchPrepView` · `MatchCheatItem`. 기벽 없는 경우 diff 0, 기벽 줄은 실제 줄바꿈으로 아래 ~3px. 다크 모달 variation 미정) |
+| 끝 | `mobile_safe_area.md` 패턴 B/C 씬 기반으로 갱신 | ✅ |
+| 끝 | 새 `.tscn` 전부 에디터에서 열고 저장 (uid 부여) | 사용자 ⬜ |
+| 끝 | 제안 variation 반영 (아래 표) | ⬜ 사용자 결정 대기 |
+
+### 웨이브 3 에서 제안된 theme variation (미반영 — 지금은 각 씬의 로컬 override / sub_resource)
+| 제안 | 쓰는 곳 | 비고 |
+|---|---|---|
+| `NegativeLabel` · `PositiveLabel` · `LinkLabel` | 리그 PO 표시, 게임오버 제목, 감독 탭 리셋, 재무/스태프, RunSetup 에러, 훈련 팝오버, 주간 메크 줄 | 여러 에이전트 공통 제안 (가장 많음) |
+| `BarPrimaryButton` · `BarGhostButton` (각진 하단 바 버튼) + 공용 하단 바 헬퍼 | 거의 모든 화면 | 지금 `style_bottom_button` · `HubView.fit_bottom_bar` · `RunSetupScreen.fit_insets` · `TrainingView._square_bar_button` 로 4갈래 — 하나로 합치기 |
+| `ScreenBackground` (BG 패널) | 화면 배경 ColorRect 전부 | 선택 |
+| `SectionCard` · `SectionCardAmber` (r24, 패딩 40/28) · `AccentDivider` | RunResult | |
+| `AccentChip` · `SurfaceChip` · 흰 pill (r = 높이/2) | RunResult, 홈 탭 "경기 진행 중", 시나리오 연봉 칩, 상점 확률 칩 | |
+| `SurfaceBar` · `ToastPanel` · `DividerStrong` · `AlertDot` · `BarSeparator` | 로비 재화 줄 · 탭 바 · 토스트, 허브 | |
+| `OutlinePanel` · `OutlinedSunkPanel` | 상점 행 타일 · 개발용 행 | 웨이브 2 에서 ✖ 했던 것과 같은 모양 — 상점에선 실제로 씀 |
+| `DangerCard` (연빨강 + 2px NEGATIVE) | 감독 탭 프레스티지 리셋 | |
+| `SelectableTile` / `SelectableCard` (일반/선택 쌍) | BanPick 필터 탭 · 그리드 칸, RunSetup 선택 카드 · 필터 · 썸네일, ManagerTypePopup | 웨이브 2 보류분 — 이제 쓰는 곳이 많다 |
+| `RailPanel` · `RailLabel` · `HighlightPanel` | 주간 요일 레일, 저녁 선택 파일럿 | |
+| `OnFillTextButton` | 상점 "확률 보기" | |
+| 훈련 전용: 썸네일 테두리 r8 · 코스 카드 r12 · 팝오버 카드 r10 · `SunkPanel` r8 | TrainingView | 화면 하나만 쓰면 로컬 유지도 무방 |
+| BanPick 전용: `AccentSheetCard` (3px 앰버) · 밴 칩 · 드래그 고스트 | BanPick | 〃 |
+| 다크 모달 (`DarkModalPanel` · `DarkChip` · `DarkModalButton`) | `MechDetailPanel` | **결정 필요**: 다크 유지 vs `DraftDetailPanel` 처럼 흰 테마로 |
+| 모서리 반경 되돌리기용 (r12~16 카드, 직각 진행 바, r16 세그먼트 트랙) | 카드 20→18, 바 8/9→7, 세그먼트 16→12 로 바뀐 곳들 | **결정 필요**: 바뀐 모양 유지면 불필요 |
+
+### 웨이브 3 종료 후 확인 (main, 12개 머지 전부 반영)
+- `Lobby` · `RunSetup` · `RunResult` · `Season` · `MatchFlow` 헤드리스 실행 — error/warn 없음.
+- 통합 렌더(오케스트레이터): 로비 5탭 전환, Season 9개 화면 라우팅(HUB → PRESS → TRAINING → WEEK → LEAGUE →
+  PLAYOFF → INTL → GAME_OVER → ENDING), MatchFlow PREP · BAN_PICK — 에러 없음, 화면 정상.
+- 남은 일:
+  1. **사용자** — 새 `.tscn` 81개 전부 에디터에서 열고 저장 (uid). 목록: `for f in $(git ls-files '*.tscn'); do head -1 "$f" | grep -q 'uid="uid://' || echo "$f"; done`
+  2. 위 variation 표 — 반영 범위 · 다크 모달 · 모서리 결정 후 일괄 반영.
+  3. 코드에 남은 공용 위젯: `CollectionCell` · `ManagerUi.add_preset_chips` · `TraitPickerView` (컬렉션 · 감독 탭 · RunSetup 공용),
+     `IntelView` (MatchPrep · 리그 팀 상세), `MessengerView` 말풍선, `BanPickOrderRow`. 아이템 씬으로 옮길지는 별도 작업.
+  4. `HubSheet.gd` 머리 주석 · `%Body` `editor_description` 이 "호출부가 절대 좌표 자식을 만든다" 로 남음 — 이제 리그 팀 상세만 해당.
+  5. `DraftDetailPanel` · `MechDetailPanel` 은 안전 영역 처리 없는 고정 높이 블록 (`mobile_safe_area.md` §7).
+  6. 병렬 에이전트 교훈: 스크래치패드와 `user://`(모든 worktree 공용) 를 같이 쓴다 — 에이전트마다 하위 폴더,
+     `Season.tscn` 실행은 `run_test.save` 를 자동 저장하므로 하네스는 메모리 데이터 + 백업/복원.
 
 > 웨이브 2 는 T1 머지 직후 시작 (T4 와 무관하므로 T4 진행 중에 병렬 착수).
 

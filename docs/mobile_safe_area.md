@@ -146,52 +146,84 @@ relations.** Two scalars preserve them all.
 `BattleSim.BS_HAND_CENTER.y` also rides the same `bottom_offset()` in `_ready` — so the
 hand ↔ strip gap is the same on every device.
 
-### Pattern B — outgame screens: shift the whole screen down and hang from the bottom
+### Pattern B — outgame screens (`.tscn`): background = viewport, content = safe area
 
-Season / MatchFlow / title screens draw with absolute coordinates in one full-screen Control.
-The first line of the build function shifts the whole screen down.
+Outgame screens are scenes (`docs/ui_scene_migration.md`). The scene owns the layout with anchors /
+containers at the 1080×1920 design size; **code only applies the device insets as offsets** — never
+as position math. The top and the bottom are handled separately, each in one of two ways.
 
-```gdscript
-func _build() -> void:
-	ScreenMetrics.indent_to_safe_top(self)      # or (_panel)
-	...
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	ScreenMetrics.extend_background(bg)          # only the background covers the notch area
+**B1 — `%SafeArea` child (preferred for new screens)** — `BanPickView`, `MatchPrepView` do both
+edges this way; `WeekProgressView` · `TrainingView` · `MessengerView` (`%SafeArea`) and `Lobby` ·
+`HubView` · `EndingView` · `GameOverView` (`%SafeBottom`) use it for the bottom edge only:
+
+```
+Screen (Control, full rect, theme OutgameTheme.tres)
+├ %Background   full rect — covers the notch and the home-indicator band too
+├ %SafeArea     full rect; code: offset_top = insets().y, offset_bottom = -insets().w
+│ └ … content anchored to %SafeArea's top / bottom
+└ (bottom bar)  anchored bottom-wide; code extends it into the bottom inset
 ```
 
-The shift is done with **`offset_top`**, not `position` — the anchors overwrite `position` of a
-full-screen-anchored Control on the next layout.
-
-**Inside a shifted screen, don't use `bottom_y()`.** It is in viewport coordinates, so the
-shift amount gets added twice. The local coordinate bottom is **`safe_h()`**.
-
 ```gdscript
-# bottom action bar — if the design screen left 80px to the bottom
-var y: float = ScreenMetrics.safe_h() - 80.0 - h
+func _fit_safe_area() -> void:
+	var ins: Vector4 = ScreenMetrics.insets()
+	%SafeArea.offset_top = ins.y
+	%SafeArea.offset_bottom = -ins.w
 ```
 
-Why background handling has two branches: if the background is a **child `ColorRect`**,
-just stretch it upward with `extend_background(bg)` (all season views); if the background is
-**the panel's own StyleBox**, the panel can't be stretched (stretching moves the inner
-coordinate system too), so `backfill_top(_panel, color)` lays a single band as the first child
-(the 4 MatchFlow screens).
+**B2 — indent the root (top edge)** — most season views, `Lobby`, `RunSetup`, `RunResult`:
+
+```gdscript
+func _ready() -> void:
+	ScreenMetrics.indent_to_safe_top(self)            # offset_top, not position
+	ScreenMetrics.extend_background(%Background)      # only the background goes back up into the notch
+```
+
+The shift is done with **`offset_top`**, not `position` — anchors overwrite `position` of a
+full-rect Control on the next layout.
+
+**Bottom action bar** (both shapes): the bar is anchored bottom-wide in the scene and **extends into
+the bottom inset** — the button grows by the inset and its text is lifted by the same amount
+(`content_margin_bottom += inset`), so the touch target ends at `bottom_y()` while the colour fills to
+the screen edge. Helpers: `OutgameTheme.style_bottom_button(btn, kind, font)` + `offset_top =
+-(BOTTOM_BAR_H + inset)` for a single button; `HubView.fit_bottom_bar(safe_bottom, bar)` /
+`RunSetupScreen.fit_insets(safe, bar)` for a split bar (square corners, inset margin).
 
 > The notch area is **a place not to use**, not **a place to leave empty**. If the background
 > retreats too, that band alone stays the engine's default background colour and the screen
 > looks cut off.
 
-### Pattern C — full-screen modal: dim = viewport, content = absolute coordinates
+**Editing gotcha** — keep `anchors_preset = -1` on a `ScrollContainer` (and on labels anchored to
+a corner) after editing anchors in the inspector. A preset re-applies its grow direction when the
+scene loads, so a scroll whose minimum width grows with its scroll bar shifts its content left by
+half the bar width.
 
-Engage stage (교전 무대) · pilot (파일럿) detail · card picker · pile browse · reward FX.
+**Inside an indented root, the local bottom is `safe_h()`**, not `bottom_y()` (viewport coordinates —
+the shift would be added twice). Only code that still computes y values needs this (e.g. pane-height
+fitting in `WeekProgressView` / `BanPickView`).
 
-```gdscript
-dim.size = ScreenMetrics.viewport_size()   # always the whole viewport
+### Pattern C — full-screen modal: dim = viewport, content = safe area
+
+Popups · sheets · detail panels (`ConfirmPopup`, `ManagerTypePopup`, `ShopPopup`, `HubSheet`,
+`CollectionDetailSheet`, `DraftDetailPanel`, `MechDetailPanel`, `MatchCheatMenu`).
+
+```
+Popup (CanvasLayer — scene saved visible, create() hides it)
+└ Root (full rect, theme)
+  ├ %Dim / DimRect   full rect → always the whole viewport (anchors, no size literal)
+  └ %SafeArea        full rect; code sets top / bottom offsets to the insets
+    └ Card …         centred / anchored inside the safe area
 ```
 
-**If the dim doesn't cover the whole viewport, an uncovered band remains at the screen edge.**
-The old `Vector2(1080, 1920)` literal was exactly that bug. Content may stay at absolute
-coordinates (see §7 "Remaining work"); only buttons attached to the bottom of the screen hang
-from `bottom_y()`.
+Full-rect anchors directly under a `CanvasLayer` resolve to the viewport, so **the dim covers the
+whole screen by construction** — the old `Vector2(1080, 1920)` literal bug can't happen.
+`CenterContainer`-centred cards overflow both ways if they grow taller than the safe area (no
+current data does).
+
+**Legacy (code-built) modals** — BattleSim's engage stage · pilot detail · card picker · pile browse ·
+reward FX — keep `dim.size = ScreenMetrics.viewport_size()` with absolute-coordinate content; only
+buttons attached to the bottom hang from `bottom_y()`. `DraftDetailPanel` and `MechDetailPanel`
+still have a fixed-height content block with no safe-area handling (§7).
 
 ---
 
@@ -204,7 +236,8 @@ from `bottom_y()`.
 - [ ] Is the full-screen dim `viewport_size()` (not a `1920` literal)?
 - [ ] When centring vertically, is it based on the viewport / safe area, not
       `1920 * 0.5`?
-- [ ] Inside pattern B screens, did you use `safe_h()` instead of `bottom_y()`?
+- [ ] Scene screens: are insets applied as **offsets** (`%SafeArea` / `indent_to_safe_top`), not
+      by moving nodes? Legacy code-built screens: `safe_h()` instead of `bottom_y()`?
 - [ ] Does no horizontal drag start at the screen edge (Android)?
 - [ ] **Are tap targets placed inside a `ScrollContainer` `MOUSE_FILTER_PASS`?**
       (§5). If STOP, scrolling on that screen dies completely on the phone.
@@ -325,8 +358,8 @@ Knowing what is **not fixed** matters more than what is.
    `ScreenMetrics.design_offset()` — that helper already exists.
 2. **Several horizontal `1080` literals remain.** On phones the viewport width is exactly 1080
    so they're harmless; **only on tablets** centring goes off.
-   Targets are the `(1080.0 - w) / 2.0` forms in season views and the fixed column coordinates
-   in `BanPickController` · `PilotDetailPanel`.
+   The scene-based outgame screens centre with anchors now; what's left is `PilotDetailPanel`
+   (BattleSim) and BanPick's slot / cell sizes, which stay at their 1080 values (centred) on tablets.
 3. **No relayout when the window size changes.** Positions are computed once when the screen is
    built. Portrait-locked + full-screen means no problem on real devices, but folding/unfolding
    a foldable or Android multi-window breaks it. If needed, hook a rebuild to

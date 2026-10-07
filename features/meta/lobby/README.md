@@ -4,6 +4,10 @@ Project entry point — `scenes/Lobby.tscn` (`run/main_scene`). White outgame
 theme (`OutgameTheme`), bottom action bar. Replaces the old 3-slot TitleScreen
 (save structure is now profile 1 + run 1 — `features/save_load/README.md`).
 
+표시 텍스트는 l10n key (`lobby` · `settings` 도메인 + 공유 `ui` · `term`). `TABS` / `CURRENCY_STRIP` `label`
+values are keys (`Loc.t` when drawn — other screens reading `CURRENCY_STRIP` must do the same). Scene nodes
+the scripts fill carry `auto_translate_mode = 2` (preview text stays); fixed captions hold key literals.
+
 ## Files
 | File | Class | Purpose |
 |---|---|---|

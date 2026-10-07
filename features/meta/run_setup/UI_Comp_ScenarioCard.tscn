@@ -38,6 +38,7 @@ mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="Name" type="Label" parent="Pad/VBox/Row"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ScenarioCard.gd fill()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 52)
@@ -61,6 +62,7 @@ mouse_filter = 2
 theme_type_variation = &"AccentChip"
 
 [node name="Cap" type="Label" parent="Pad/VBox/Row/ChipPad/Chip"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ScenarioCard.gd fill()"
 unique_name_in_owner = true
 layout_mode = 2
@@ -77,6 +79,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Desc" type="Label" parent="Pad/VBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ScenarioCard.gd fill()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 90)

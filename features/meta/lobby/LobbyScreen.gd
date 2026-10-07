@@ -30,21 +30,21 @@ extends Control
 # - 하단 바 규칙(`resources/README.md`)의 예외: 로비만 **탭 바가 맨 아래**이고 행동 바가
 #   그 바로 위에 선다. 행동 바 모양 · 무게 · 주 행동 오른쪽 규칙은 그대로다.
 
-const TABS: Array = [
-	{"id": "home",       "label": "홈"},
-	{"id": "collection", "label": "컬렉션"},
-	{"id": "manager",    "label": "감독"},
-	{"id": "shop",       "label": "상점"},
-	{"id": "pass",       "label": "패스"},
+const TABS: Array = [    # l10n-keys: lobby.tab.*
+	{"id": "home",       "label": L.LOBBY_TAB_HOME},
+	{"id": "collection", "label": L.LOBBY_TAB_COLLECTION},
+	{"id": "manager",    "label": L.TERM_PERSON_MANAGER},
+	{"id": "shop",       "label": L.LOBBY_TAB_SHOP},
+	{"id": "pass",       "label": L.LOBBY_TAB_PASS},
 ]
 
-## 재화 줄에 보이는 재화(순서대로). 나머지 재화는 상점 · 컬렉션 화면이 보인다.
-const CURRENCY_STRIP: Array = [
-	{"key": "outgame",            "label": "재화"},
-	{"key": "levelup",            "label": "레벨업"},
-	{"key": "gacha_ticket_pilot", "label": "선수권"},
-	{"key": "gacha_ticket_trait", "label": "특성권"},
-	{"key": "pilot_shard",        "label": "파편"},
+## 재화 줄에 보이는 재화(순서대로). 나머지 재화는 상점 · 컬렉션 화면이 보인다. `label` = l10n key.
+const CURRENCY_STRIP: Array = [    # l10n-keys: lobby.currency.*
+	{"key": "outgame",            "label": L.LOBBY_CURRENCY_OUTGAME},
+	{"key": "levelup",            "label": L.LOBBY_CURRENCY_LEVELUP},
+	{"key": "gacha_ticket_pilot", "label": L.LOBBY_CURRENCY_GACHA_TICKET_PILOT},
+	{"key": "gacha_ticket_trait", "label": L.LOBBY_CURRENCY_GACHA_TICKET_TRAIT},
+	{"key": "pilot_shard",        "label": L.LOBBY_CURRENCY_PILOT_SHARD},
 ]
 
 const CURRENCY_CELL_SCENE: String = "res://features/meta/lobby/UI_Comp_LobbyCurrencyCell.tscn"
@@ -138,7 +138,7 @@ func _sync_currency_cells() -> void:
 	for i in cells.size():
 		var spec: Dictionary = CURRENCY_STRIP[i]
 		var cell: Node = cells[i]
-		(cell.get_node("%Caption") as Label).text = String(spec["label"])
+		(cell.get_node("%Caption") as Label).text = Loc.t(String(spec["label"]))  # l10n-dynamic: lobby.currency.*
 		_currency_labels[String(spec["key"])] = cell.get_node("%Value")
 	refresh_currency()
 
@@ -148,7 +148,7 @@ func _sync_tab_buttons() -> void:
 	for i in buttons.size():
 		var id: String = String(TABS[i]["id"])
 		var b: Button = buttons[i]
-		b.text = String(TABS[i]["label"])
+		b.text = Loc.t(String(TABS[i]["label"]))  # l10n-dynamic: lobby.tab.*
 		b.pressed.connect(switch_tab.bind(id))
 		_tab_buttons[id] = b
 		var dot: Control = b.get_node("%Badge")
@@ -325,7 +325,7 @@ func _on_manager_type_chosen(type_id: int) -> void:
 	var err: String = _pm.set_manager_type(type_id)
 	if err != "":
 		# Profile write failed — say so; the choice still holds for this session.
-		show_toast("감독 유형 저장 실패: " + err, true)
+		show_toast(Loc.t(L.LOBBY_MANAGER_TYPE_SAVE_FAILED, {"error": err}), true)
 	var tab: Control = _tabs.get(current_tab, null)
 	if tab != null:
 		tab.call("on_shown")

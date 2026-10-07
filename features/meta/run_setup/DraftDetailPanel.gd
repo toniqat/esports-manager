@@ -50,11 +50,9 @@ extends CanvasLayer
 
 const SCENE_PATH: String = "res://features/meta/run_setup/UI_View_DraftDetailPanel.tscn"
 
-## 칩 목록 — 선수 스탯 여섯에 "종합" 한 칸을 더한다(3열 × 세 줄 중
-## 마지막 두 칸은 비운다). 글자는 짧은 쪽을 쓴다 — 칩 한 칸이 130px 남짓이라
-## "전장 명중" 은 들어가지만 줄바꿈 없이 꽉 차서 값과 붙어 보인다.
-const STAT_KEYS: Array = ["전장 명중", "전장 회피", "교전 명중",
-		"교전 회피", "공격 성장", "체력 성장"]
+# 칩 목록 — 선수 스탯 여섯(`PlayerData.STAT_KEYS` 순, 이름 = `PlayerData.stat_label`)에
+# "종합" 한 칸을 더한다(3열 × 세 줄 중 마지막 두 칸은 비운다). 칩 한 칸이 130px 남짓이라
+# "전장 명중" 은 들어가지만 줄바꿈 없이 꽉 차서 값과 붙어 보인다.
 
 # ─── 코드가 만드는 위젯의 인자 (스킬 타일 · 설명문 · 돌파 칩) ────────────────
 const SKILL_TILE_BG := OutgameTheme.RAIL
@@ -87,7 +85,7 @@ func _ready() -> void:
 	%Close.pressed.connect(close)
 	# 손가락 / 마우스로 끌어 굴린다(`DragScroll`).
 	DragScroll.attach(%Scroll)
-	for i in STAT_KEYS.size() + 1:      # 스탯 여섯 + 종합
+	for i in PlayerData.STAT_KEYS.size() + 1:      # 스탯 여섯 + 종합
 		var chip := DraftStatChip.create()
 		%Stats.add_child(chip)
 		_chips.append(chip)
@@ -154,16 +152,17 @@ func _fill_art() -> void:
 func _fill_header() -> void:
 	%Name.text = _pilot.name
 	(%PositionBadge_Position as PositionBadge).set_role(int(_pilot.role))
-	%Sub.text = "원소속 %s" % _team_short(_pilot.team_id)
+	%Sub.text = Loc.t(L.RUN_SETUP_DRAFT_ORIGIN_TEAM, {"team": _team_short(_pilot.team_id)})
 	# M10 — breakthrough stage. The copy handed in already carries it (stats, salary,
 	# swapped pilot card: `RunRules.apply_breakthrough` on the pool / run copies), so
 	# this chip only names *why* the numbers below differ from the base pilot.
 	_clear(%BtChips)
 	%BtRow.visible = _pilot.breakthrough > 0
 	if _pilot.breakthrough > 0:
-		_bt_chip("돌파 %d" % _pilot.breakthrough, OutgameTheme.ACCENT_DIM, OutgameTheme.ACCENT_TEXT)
+		_bt_chip(Loc.t(L.RUN_SETUP_DRAFT_BREAKTHROUGH, {"n": _pilot.breakthrough}),
+				OutgameTheme.ACCENT_DIM, OutgameTheme.ACCENT_TEXT)
 		if _pilot.train_bonus_pct != 0:
-			_bt_chip("훈련 EXP +%d%%" % _pilot.train_bonus_pct,
+			_bt_chip(Loc.t(L.RUN_SETUP_DRAFT_TRAIN_BONUS, {"pct": _pilot.train_bonus_pct}),
 					OutgameTheme.SURFACE_SUNK, OutgameTheme.TEXT)
 
 
@@ -177,8 +176,8 @@ func _bt_chip(text: String, bg: Color, fg: Color) -> void:
 
 func _fill_stats() -> void:
 	for i in _chips.size():
-		var is_total: bool = i == STAT_KEYS.size()
-		var key: String = "종합" if is_total else String(STAT_KEYS[i])
+		var is_total: bool = i == PlayerData.STAT_KEYS.size()
+		var key: String = Loc.t(L.RUN_SETUP_STAT_TOTAL) if is_total else PlayerData.stat_label(i)
 		var val: int = PilotThumb.total_stats(_pilot) if is_total \
 				else int(_pilot.get(String(PlayerData.STAT_KEYS[i])))
 		(_chips[i] as DraftStatChip).fill(key, str(val), is_total)

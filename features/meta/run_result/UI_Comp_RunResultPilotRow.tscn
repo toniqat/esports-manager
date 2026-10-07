@@ -24,6 +24,7 @@ offset_bottom = 90.0
 mouse_filter = 2
 
 [node name="Name" type="Label" parent="."]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — RunResultScreen.gd"
 unique_name_in_owner = true
 layout_mode = 0
@@ -59,6 +60,7 @@ grow_horizontal = 0
 mouse_filter = 2
 
 [node name="MvpText" type="Label" parent="Mvp"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill_achievement_card()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -87,6 +89,7 @@ grow_horizontal = 0
 mouse_filter = 2
 
 [node name="PomText" type="Label" parent="Pom"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill_achievement_card()"
 unique_name_in_owner = true
 layout_mode = 1

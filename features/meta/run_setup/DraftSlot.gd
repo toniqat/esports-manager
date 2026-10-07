@@ -57,8 +57,8 @@ func show_pilot(p: PlayerData, role_color: Color, lv: int, top: int, salary: int
 	minus.disabled = lv <= 1
 	plus.disabled = lv >= top
 	(%Level as Label).text = "Lv %d" % lv
-	(%Salary as Label).text = "샐러리 %d" % salary
-	(%Total as Label).text = "종합 %d" % p.stat_total()
+	(%Salary as Label).text = Loc.t(L.RUN_SETUP_SLOT_SALARY, {"n": salary})
+	(%Total as Label).text = Loc.t(L.RUN_SETUP_SLOT_TOTAL, {"n": p.stat_total()})
 
 
 ## 칸 모양(반지름 · 테두리 두께)은 테마 변형 `DraftSlotFrame` 이 정하고 — 일러스트 마스크는

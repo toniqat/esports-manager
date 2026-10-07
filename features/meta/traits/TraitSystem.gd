@@ -21,8 +21,6 @@ const POLARITY_NEG: String = "-"
 const LAYER_OUTGAME: String = "outgame"
 const LAYER_INGAME: String = "ingame"
 
-const RARITY_NAMES: Array = ["일반", "고급", "희귀", "영웅", "전설"]
-
 static var _rows: Array = []            # Array[Dictionary], id order
 static var _by_id: Dictionary = {}      # int id → row
 static var _loaded: bool = false
@@ -72,7 +70,7 @@ static func desc_of(trait_id: int) -> String:
 
 
 static func rarity_name(rarity: int) -> String:
-	return String(RARITY_NAMES[clampi(rarity, 0, RARITY_NAMES.size() - 1)])
+	return GameEnums.rarity_label(rarity)
 
 
 static func slot_count() -> int:
@@ -95,20 +93,20 @@ static func bonus_points(trait_ids: Array) -> int:
 ## "" when `trait_ids` can be equipped with `owned` (Array[int] of owned trait ids).
 static func validate_equip(trait_ids: Array, owned: Array) -> String:
 	if trait_ids.size() > slot_count():
-		return "특성은 %d개까지 장착할 수 있습니다" % slot_count()
+		return Loc.t(L.TRAIT_EQUIP_TOO_MANY, {"n": slot_count()})
 	var seen: Dictionary = {}
 	for raw in trait_ids:
 		var tid: int = int(raw)
 		if row(tid).is_empty():
-			return "알 수 없는 특성 id %d" % tid
+			return Loc.t(L.TRAIT_EQUIP_UNKNOWN, {"id": tid})
 		if seen.has(tid):
-			return "같은 특성을 두 번 장착할 수 없습니다"
+			return Loc.t(L.TRAIT_EQUIP_DUPLICATE)
 		seen[tid] = true
 		if not owned.has(tid):
-			return "보유하지 않은 특성입니다: %s" % name_of(tid)
+			return Loc.t(L.TRAIT_EQUIP_NOT_OWNED, {"name": name_of(tid)})
 	var bonus: int = bonus_points(trait_ids)
 	if bonus < 0:
-		return "보너스 점수가 부족합니다 (%d)" % bonus
+		return Loc.t(L.TRAIT_EQUIP_NOT_ENOUGH_BONUS, {"n": bonus})
 	return ""
 
 

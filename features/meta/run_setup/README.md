@@ -5,6 +5,10 @@ Everything between the lobby's `새 런` (New run) and the first season HUB —
 Contract: `docs/outgame_dev_plan.md` §10 (M1). Replaces the old in-season DRAFT screen
 (`features/season/draft/`, deleted — Season now always opens at HUB).
 
+표시 텍스트는 l10n key (`run_setup` 도메인 + 공유 `ui` · `term`). Scene nodes the scripts fill carry
+`auto_translate_mode = 2` (preview text stays for WYSIWYG); fixed captions hold key literals. Errors from
+`RunRoster.assign` / `ManagerStepView.toggle_trait` are returned already translated.
+
 ```
 Lobby 새 런 ─▶ 1 시나리오 ─▶ 2 팀 ─▶ 3 감독 ─▶ 4 편성 (PICK ↔ CONFIRM) ── 게임 시작 ──▶ start_run ──▶ Season.tscn (HUB)
      ◀── 뒤로 ──┘   ◀── 뒤로 ──┘  ◀── 뒤로 ──┘  ◀── 뒤로 (PICK) ──┘
@@ -25,7 +29,7 @@ level application) is documented in `features/season/README.md` "Entry point"
 | `UI_View_TeamStepView.tscn` + `.gd` | `class_name TeamStepView extends ChoiceListView` | Step 2 — `RunRules.team_packages()` (8, `{id, name_key, short_name_key, budget, facility_level, manual_areas, desc_key}` — text fields are l10n keys) → one `TeamCard` each. Hint: higher budget = easier. Display / snapshot only — effects are M3 / M6. Scene inherits `UI_View_ChoiceListView.tscn`. `create()`. |
 | `UI_Comp_TeamCard.tscn` + `.gd` | `class_name TeamCard extends Button` | Item scene: name · short name, budget (+ bar relative to the highest budget — `%Fill.anchor_right`), facility level, "직접 해야 하는 일" (`manual_areas` → `RunRules.area_label`, empty = "없음" in green), desc. Name / short / desc are `Loc.t` of the package's `name_key` · `short_name_key` · `desc_key`. `fill(item, max_budget)`. F6 preview uses team 3's real keys. |
 | `UI_View_ManagerStepView.tscn` + `.gd` | `class_name ManagerStepView extends Control` | Step 3 감독 (M8/M9) — preset chips, the preset's six stats, `TraitPickerView` (from `../manager/`) with in-place trait swaps; `preset_idx`, `selected_traits()`, `validation_error()`. Signals `back_requested` / `next_requested`. `create()`. |
-| `TeamDraft.gd` | `class_name TeamDraft extends Control` | Step 4 data layer: owned pool (`get_pool_grid()`), chosen levels (`levels`, `set_level`, `leveled()`), salary (`salary_of`, `lineup_salary`, `salary_cap` = `RunRules.salary_cap_with(scenario, trait_ids)`), `set_traits` / `cap_bonus()` (trait `salary_cap` Σ), `validate()` = `RunRules.validate_lineup(..., cap_bonus())`. Slot table `SLOT_ROLES` / `SLOT_NAMES` / `slot_of_role`, `skill_type_label`. Signals `back_requested`, `start_requested(pilot_ids)`. |
+| `TeamDraft.gd` | `class_name TeamDraft extends Control` | Step 4 data layer: owned pool (`get_pool_grid()`), chosen levels (`levels`, `set_level`, `leveled()`), salary (`salary_of`, `lineup_salary`, `salary_cap` = `RunRules.salary_cap_with(scenario, trait_ids)`), `set_traits` / `cap_bonus()` (trait `salary_cap` Σ), `validate()` = `RunRules.validate_lineup(..., cap_bonus())`. Slot table `SLOT_ROLES` / `slot_of_role` (position names: `GameEnums.role_position_label`), `skill_type_label` (localized). Signals `back_requested`, `start_requested(pilot_ids)`. |
 | `UI_View_TeamDraftView.tscn` + `.gd` | `class_name TeamDraftView extends Control` | Step 4 screen: salary gauge, 5 role-fixed `DraftSlot`s, role filter, scrolling thumbnail grid, PICK ↔ CONFIRM. Child of `TeamDraft` (`TeamDraftView.create()` in `ensure_view`). |
 | `UI_Comp_DraftSlot.tscn` + `.gd` | `class_name DraftSlot extends VBoxContainer` | Item scene: one pick slot — bust art button (`%Frame`: mask + `%Art`, "선택 없음", `PositionBadge`) + `− Lv N +` stepper + salary / overall lines. Signals `art_pressed`, `level_step(delta)`; `set_role`, `show_empty()`, `show_pilot(p, role_color, lv, top, salary)`. Frame shape = variation `DraftSlotFrame` (code colours a copy), mask = `DraftSlotArtMask`. |
 | `UI_Comp_PilotThumb.tscn` + `.gd` | `class_name PilotThumb extends Button` | Item scene: one grid cell — square face crop + top-left `PositionBadge` (`resources/`) + gold border / check when selected + bottom-right salary tag (`set_tag`). Frame = variation `SelectableCardButton` / `SelectableCardButtonOn` (radius 18); the face mask `ArtMask` (4px inset, variation `PilotThumbArtMask`) has radius 14 to follow it; check / tag = `PilotThumbCheck` / `PilotThumbTag`. `create()`, `setup(p, sel)`. Static helpers `add_rounded_art` / `add_role_badge` stay for code-built callers (`../collection/`). |
@@ -47,7 +51,7 @@ bottom of each script (`resources/UiPreview.gd`). Nothing is saved.
 - `DraftDetailPanel` — opens the top-rated non-mob pilot with a skill (game.db), Lv 3.
 
 ## Steps — one table
-`RunSetupScreen.STEPS` is the single list (`{id, label}`) the header and `뒤로` / `다음`
+`RunSetupScreen.STEPS` is the single list (`{id, label}`, `label` = l10n key) the header and `뒤로` / `다음`
 navigation read. **To add a step**: add one row and one branch in
 `_make_step_view(id)` that builds the view and wires its back / next signals to
 `_prev_step` / `_next_step`. Nothing else changes. Rows: `scenario` · `team` · `manager` · `lineup`.

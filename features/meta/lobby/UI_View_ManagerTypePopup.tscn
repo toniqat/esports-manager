@@ -78,6 +78,7 @@ layout_mode = 2
 theme_override_constants/separation = 0
 
 [node name="Title" type="Label" parent="Root/SafeArea/Center/Card/VBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ManagerTypePopup.gd open()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 52)
@@ -91,6 +92,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Sub" type="Label" parent="Root/SafeArea/Center/Card/VBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ManagerTypePopup.gd open()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 66)
@@ -100,6 +102,7 @@ text = "첫 런을 시작하기 전에 감독 유형을 고르세요. 스태프�
 autowrap_mode = 3
 
 [node name="Note" type="Label" parent="Root/SafeArea/Center/Card/VBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ManagerTypePopup.gd open()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 32)
@@ -157,9 +160,10 @@ layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"GhostButton"
-text = "취소"
+text = "tx_GS4FN31BK4"
 
 [node name="Confirm" type="Button" parent="Root/SafeArea/Center/Card/VBox/Buttons"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ManagerTypePopup.gd _ready() · ManagerTypePopup.gd open() · ManagerTypePopup.gd select()"
 unique_name_in_owner = true
 layout_mode = 2

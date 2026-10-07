@@ -9,6 +9,7 @@ editor_description = "Run setup step 2 — inherits UI_View_ChoiceListView.tscn 
 script = ExtResource("2_script")
 
 [node name="Hint" parent="Safe" index="0"]
+auto_translate_mode = 2
 text = "예산이 높을수록 쉽습니다 — 스태프가 많아 직접 해야 하는 일이 적습니다."
 
 [node name="TeamCard_PreviewCard" parent="Safe/Scroll/List" index="0" instance=ExtResource("3_card")]

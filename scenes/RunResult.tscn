@@ -40,6 +40,7 @@ mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="OutcomeTitle" type="Label" parent="Header"]
+auto_translate_mode = 2
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill_header()
 Colour is data: clear = ACCENT_TEXT, fail = NEGATIVE, abandon = TEXT_SUB (code)."
@@ -64,6 +65,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Subtitle" type="Label" parent="Header"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill_header()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 52)
@@ -85,7 +87,7 @@ theme_type_variation = &"AccentChip"
 layout_mode = 2
 theme_type_variation = &"AccentLabel"
 theme_override_font_sizes/font_size = 20
-text = "테스트 런 — 프로필 미반영"
+text = "tx_34H19JKNZ2"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -139,7 +141,7 @@ custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_type_variation = &"AccentLabel"
 theme_override_font_sizes/font_size = 24
-text = "진엔딩"
+text = "tx_N92BZJC4VE"
 
 [node name="Divider" type="HSeparator" parent="Scroll/Body/Cards/TrueEndCard/VBox"]
 layout_mode = 2
@@ -177,7 +179,7 @@ custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_type_variation = &"AccentLabel"
 theme_override_font_sizes/font_size = 24
-text = "새 특성 해금"
+text = "tx_9NBP27YSKH"
 
 [node name="Divider" type="HSeparator" parent="Scroll/Body/Cards/TraitCard/VBox"]
 layout_mode = 2
@@ -189,6 +191,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="TraitNote" type="Label" parent="Scroll/Body/Cards/TraitCard/VBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill_unlocked_traits_card()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 30)
@@ -226,7 +229,7 @@ custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 24
-text = "진척"
+text = "tx_QGD2NVYK77"
 
 [node name="Divider" type="HSeparator" parent="Scroll/Body/Cards/ProgressCard/VBox"]
 layout_mode = 2
@@ -261,7 +264,7 @@ custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 24
-text = "점수"
+text = "tx_5P10XTZ6PS"
 
 [node name="Divider" type="HSeparator" parent="Scroll/Body/Cards/ScoreCard/VBox"]
 layout_mode = 2
@@ -304,7 +307,7 @@ offset_right = 300.0
 offset_bottom = 56.0
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 28
-text = "합계"
+text = "tx_JBSDMB0A9F"
 
 [node name="ScoreTotal" type="Label" parent="Scroll/Body/Cards/ScoreCard/VBox/Total"]
 editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill_score_card()"
@@ -339,7 +342,7 @@ custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 24
-text = "보상"
+text = "tx_RNSR0V2ZD7"
 
 [node name="Divider" type="HSeparator" parent="Scroll/Body/Cards/RewardCard/VBox"]
 layout_mode = 2
@@ -364,7 +367,7 @@ Test runs only."
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_type_variation = &"FaintLabel"
-text = "테스트 런이라 프로필에 더하지 않았습니다"
+text = "tx_PFPGKNBXJT"
 
 [node name="GrowthCard" type="PanelContainer" parent="Scroll/Body/Cards"]
 unique_name_in_owner = true
@@ -386,7 +389,7 @@ custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 24
-text = "선수 성장"
+text = "tx_36E6M38JM0"
 
 [node name="Divider" type="HSeparator" parent="Scroll/Body/Cards/GrowthCard/VBox"]
 layout_mode = 2
@@ -422,7 +425,7 @@ custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 24
-text = "이번 런 업적"
+text = "tx_RRX6FCNZ2Q"
 
 [node name="Divider" type="HSeparator" parent="Scroll/Body/Cards/AchievementCard/VBox"]
 layout_mode = 2
@@ -457,7 +460,7 @@ offset_bottom = 70.0
 grow_horizontal = 2
 theme_type_variation = &"FaintLabel"
 theme_override_font_sizes/font_size = 24
-text = "기록된 선수가 없습니다"
+text = "tx_ZA35FTB9TG"
 
 [node name="Empty" type="Control" parent="."]
 unique_name_in_owner = true
@@ -481,7 +484,7 @@ offset_bottom = 208.0
 grow_horizontal = 2
 theme_type_variation = &"HeadingLabel"
 theme_override_font_sizes/font_size = 64
-text = "런 정산"
+text = "tx_6DT1P5Z0AS"
 horizontal_alignment = 1
 
 [node name="Card" type="Panel" parent="Empty"]
@@ -506,7 +509,7 @@ offset_bottom = 102.0
 grow_horizontal = 2
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 30
-text = "표시할 정산 결과가 없습니다"
+text = "tx_HG7GBCBDAD"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -518,10 +521,11 @@ offset_top = 112.0
 offset_bottom = 146.0
 grow_horizontal = 2
 theme_type_variation = &"FaintLabel"
-text = "런이 끝나면 이 화면에 점수와 보상이 나옵니다"
+text = "tx_84F8FGGM7Q"
 horizontal_alignment = 1
 
 [node name="BottomButton" type="Button" parent="."]
+auto_translate_mode = 2
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _apply_safe_area() · RunResultScreen.gd _fill_bottom_bar()
 Full-width bottom action bar (BarPrimaryButton). Code adds only the bottom inset (OutgameTheme.fit_bottom_bar: rect down over the inset, text lifted above it)."

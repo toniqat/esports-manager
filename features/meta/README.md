@@ -21,6 +21,9 @@ Two layers of state (plan §2.1):
 
 The lobby is a **tab host** (홈 · 컬렉션 · 감독 · 상점 · 패스) — tab contract in `lobby/README.md`.
 
+표시 텍스트는 l10n key — domains `lobby` · `settings` · `run_setup` · `run_result` · `trait` (+ shared `ui` · `term`),
+per submodule README.
+
 ## Flow (M2)
 ```
 Lobby ── 이어하기 ──▶ load_run ──▶ MatchFlow.tscn (match_resume) / Season.tscn (HUB)

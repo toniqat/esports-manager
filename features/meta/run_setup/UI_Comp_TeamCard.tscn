@@ -38,6 +38,7 @@ mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="Name" type="Label" parent="Pad/VBox/NameRow"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — TeamCard.gd fill()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 50)
@@ -54,6 +55,7 @@ mouse_filter = 2
 theme_override_constants/margin_top = 8
 
 [node name="ShortName" type="Label" parent="Pad/VBox/NameRow/ShortPad"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — TeamCard.gd fill()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(140, 36)
@@ -75,6 +77,7 @@ mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="Budget" type="Label" parent="Pad/VBox/BudgetRow"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — TeamCard.gd fill()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(220, 36)
@@ -120,6 +123,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Facility" type="Label" parent="Pad/VBox/BudgetRow"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — TeamCard.gd fill()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(200, 36)
@@ -138,7 +142,7 @@ mouse_filter = 2
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_type_variation = &"CaptionLabel"
-text = "직접 해야 하는 일"
+text = "tx_MY16P7N64F"
 clip_text = true
 
 [node name="Gap3" type="Control" parent="Pad/VBox"]
@@ -147,6 +151,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Manual" type="Label" parent="Pad/VBox"]
+auto_translate_mode = 2
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — TeamCard.gd fill()
 Empty list = '없음' → code switches the variation to PositiveLabel (font size stays 26 = FONT_BODY)."
@@ -163,6 +168,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Desc" type="Label" parent="Pad/VBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — TeamCard.gd fill()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 72)

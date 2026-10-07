@@ -66,7 +66,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_type_variation = &"FaintLabel"
 theme_override_font_sizes/font_size = 26
-text = "선택 없음"
+text = "tx_8XPMQAH2H0"
 horizontal_alignment = 1
 
 [node name="PositionBadge" parent="Frame" instance=ExtResource("3_badge")]
@@ -105,6 +105,7 @@ theme_override_font_sizes/font_size = 30
 text = "−"
 
 [node name="Level" type="Label" parent="Info/Stepper"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — DraftSlot.gd show_empty() · DraftSlot.gd show_pilot()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 52)
@@ -127,6 +128,7 @@ theme_override_font_sizes/font_size = 30
 text = "+"
 
 [node name="Salary" type="Label" parent="Info"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — DraftSlot.gd show_empty() · DraftSlot.gd show_pilot()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -140,6 +142,7 @@ text = "샐러리 51"
 horizontal_alignment = 1
 
 [node name="Total" type="Label" parent="Info"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — DraftSlot.gd show_empty() · DraftSlot.gd show_pilot()"
 unique_name_in_owner = true
 layout_mode = 1

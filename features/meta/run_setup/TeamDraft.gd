@@ -20,7 +20,6 @@ extends Control
 # 하나에서 온다 — 인게임 파일럿 스트립도, 밴픽 화면의 양 팀 블록도, 시즌 허브
 # 로스터도 같은 표를 읽는다.
 const SLOT_ROLES: Array = GameEnums.ROLE_DISPLAY_ORDER
-const SLOT_NAMES: Array = ["탑", "정글", "미드", "원딜", "서폿"]
 
 ## 역할 → 화면 슬롯 인덱스. `SLOT_ROLES` 의 역인덱스이며, 썸네일을 눌렀을 때
 ## 그 파일럿이 어느 칸에 앉는지를 정하는 유일한 답이다.
@@ -183,7 +182,7 @@ func validate(pilot_ids: Array) -> String:
 ## 화면에서 읽히지 않는다.
 static func skill_type_label(t: String) -> String:
 	match t:
-		"cooldown": return "쿨타임"
-		"charge":   return "충전식"
-		"passive":  return "패시브"
+		"cooldown": return Loc.t(L.RUN_SETUP_SKILL_TYPE_COOLDOWN)
+		"charge":   return Loc.t(L.RUN_SETUP_SKILL_TYPE_CHARGE)
+		"passive":  return Loc.t(L.RUN_SETUP_SKILL_TYPE_PASSIVE)
 	return t

@@ -29,6 +29,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="Status" type="Label" parent="Safe"]
+auto_translate_mode = 2
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — ManagerStepView.gd _refresh_status()
 Preset · bonus points line (SubLabel), or the validation error — code switches to NegativeLabel."
@@ -123,6 +124,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="CardTitle" type="Label" parent="Safe/Scroll/Body/CardPad/Card/Pad/VBox/Head"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ManagerStepView.gd _rebuild()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -136,6 +138,7 @@ theme_override_font_sizes/font_size = 30
 text = "운영형 감독 · Lv 1"
 
 [node name="CardNote" type="Label" parent="Safe/Scroll/Body/CardPad/Card/Pad/VBox/Head"]
+auto_translate_mode = 2
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — ManagerStepView.gd _rebuild()
 Trait 'manager_all' note — code switches FaintLabel ↔ AccentLabel (amber when a bonus applies)."
@@ -208,7 +211,7 @@ size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"BarGhostButton"
 theme_override_font_sizes/font_size = 30
-text = "뒤로"
+text = "tx_AT96DE2X15"
 
 [node name="Sep" type="Panel" parent="Bar/Back"]
 layout_mode = 1
@@ -231,4 +234,4 @@ size_flags_stretch_ratio = 2.0
 focus_mode = 0
 theme_type_variation = &"BarPrimaryButton"
 theme_override_font_sizes/font_size = 38
-text = "다음"
+text = "tx_GNK4E0021C"

@@ -29,10 +29,10 @@ const TRAIT_ROW_SCENE: PackedScene = preload("res://features/meta/run_result/UI_
 const GROWTH_ROW_SCENE: PackedScene = preload("res://features/meta/run_result/UI_Comp_RunResultGrowthRow.tscn")
 const PILOT_ROW_SCENE: PackedScene = preload("res://features/meta/run_result/UI_Comp_RunResultPilotRow.tscn")
 
-const OUTCOME_TITLES: Dictionary = {
-	"clear":   "런 클리어",
-	"fail":    "런 실패",
-	"abandon": "런 포기",
+const OUTCOME_TITLES: Dictionary = {    # l10n-keys: run_result.outcome.*
+	"clear":   L.RUN_RESULT_OUTCOME_CLEAR,
+	"fail":    L.RUN_RESULT_OUTCOME_FAIL,
+	"abandon": L.RUN_RESULT_OUTCOME_ABANDON,
 }
 
 @onready var _gm: Node = get_node("/root/GameManager")
@@ -83,7 +83,7 @@ func _fill_header() -> void:
 	elif outcome == RunResult.OUTCOME_FAIL:
 		color = OutgameTheme.NEGATIVE
 	var title: Label = %OutcomeTitle
-	title.text = String(OUTCOME_TITLES.get(outcome, "런 종료"))
+	title.text = Loc.t(String(OUTCOME_TITLES.get(outcome, L.RUN_RESULT_OUTCOME_ENDED)))  # l10n-dynamic: run_result.outcome.*
 	title.add_theme_color_override("font_color", color)
 
 	var parts: Array = []
@@ -119,14 +119,15 @@ func _fill_true_ending_card() -> void:
 	var names: Dictionary = {}
 	for p in (_result.get("pilots", []) as Array):
 		names[int((p as Dictionary).get("id", -1))] = String((p as Dictionary).get("name", ""))
-	var chip_text: String = "외출 %d회 · 약속을 지켰다" % ConstTable.int_of("TRUE_ENDING_OUTINGS")
+	var chip_text: String = Loc.t(L.RUN_RESULT_TRUE_END_CHIP,
+			{"n": ConstTable.int_of("TRUE_ENDING_OUTINGS")})
 	for raw in ids:
 		var pid: int = int(raw)
 		var nm: String = String(names.get(pid, "#%d" % pid))
 		var row: Control = TRUE_END_ROW_SCENE.instantiate()
 		_portrait(row.get_node("%Portrait"), pid, OutgameTheme.ACCENT)
 		(row.get_node("%Name") as Label).text = nm
-		(row.get_node("%Line") as Label).text = "우승 트로피를 들고, %s 선수가 미뤄 둔 말을 꺼냈다." % nm
+		(row.get_node("%Line") as Label).text = Loc.t(L.RUN_RESULT_TRUE_END_LINE, {"name": nm})
 		(row.get_node("%ChipText") as Label).text = chip_text
 		%TrueEndRows.add_child(row)
 
@@ -136,9 +137,8 @@ func _fill_true_ending_card() -> void:
 func _fill_unlocked_traits_card() -> void:
 	var ids: Array = _new_trait_ids()
 	%TraitCard.visible = not ids.is_empty()
-	%TraitNote.text = "테스트 런 — 프로필에 지급하지 않았습니다" \
-			if bool(_result.get("test_run", false)) \
-			else "다음 런부터 감독 탭에서 장착할 수 있습니다"
+	%TraitNote.text = Loc.t(L.RUN_RESULT_TRAIT_NOTE_TEST if bool(_result.get("test_run", false)) \
+			else L.RUN_RESULT_TRAIT_NOTE)
 	for raw in ids:
 		var tid: int = int(raw)
 		var r: Dictionary = TraitSystem.row(tid)
@@ -157,11 +157,13 @@ func _fill_unlocked_traits_card() -> void:
 
 func _fill_progress_card() -> void:
 	var rows: Array = [
-		["도달 페이즈", _phase_name(int(_result.get("phase_reached", 0)))],
-		["끝낸 페이즈", "%d / %d" % [int(_result.get("phases_cleared", 0)),
+		[Loc.t(L.RUN_RESULT_PROGRESS_PHASE_REACHED), _phase_name(int(_result.get("phase_reached", 0)))],
+		[Loc.t(L.RUN_RESULT_PROGRESS_PHASES_CLEARED), "%d / %d" % [int(_result.get("phases_cleared", 0)),
 				RunResult.CAMPAIGN_ORDER.size()]],
-		["전적", "%d승 %d패" % [int(_result.get("wins", 0)), int(_result.get("losses", 0))]],
-		["대회 우승", "%d회" % int(_result.get("titles", 0))],
+		[Loc.t(L.RUN_RESULT_PROGRESS_RECORD), Loc.t(L.TERM_RECORD_WIN_LOSS,
+				{"win": int(_result.get("wins", 0)), "loss": int(_result.get("losses", 0))})],
+		[Loc.t(L.RUN_RESULT_PROGRESS_TITLES), Loc.t(L.RUN_RESULT_PROGRESS_TITLES_VALUE,
+				{"n": int(_result.get("titles", 0))})],
 	]
 	for r in rows:
 		_add_row(%ProgressRows, String(r[0]), String(r[1]), OutgameTheme.TEXT)
@@ -170,11 +172,14 @@ func _fill_progress_card() -> void:
 func _fill_score_card() -> void:
 	var bd: Dictionary = _result.get("breakdown", {})
 	var rows: Array = [
-		["끝낸 페이즈 × %d" % int(_result.get("phases_cleared", 0)), int(bd.get("phase", 0))],
-		["승리 × %d" % int(_result.get("wins", 0)), int(bd.get("wins", 0))],
-		["대회 우승 × %d" % int(_result.get("titles", 0)), int(bd.get("titles", 0))],
-		["클리어 보너스", int(bd.get("clear", 0))],
-		["특성 보너스 × %d" % int(_result.get("bonus_points", 0)), int(bd.get("bonus", 0))],
+		[Loc.t(L.RUN_RESULT_SCORE_PHASES, {"n": int(_result.get("phases_cleared", 0))}),
+				int(bd.get("phase", 0))],
+		[Loc.t(L.RUN_RESULT_SCORE_WINS, {"n": int(_result.get("wins", 0))}), int(bd.get("wins", 0))],
+		[Loc.t(L.RUN_RESULT_SCORE_TITLES, {"n": int(_result.get("titles", 0))}),
+				int(bd.get("titles", 0))],
+		[Loc.t(L.RUN_RESULT_SCORE_CLEAR_BONUS), int(bd.get("clear", 0))],
+		[Loc.t(L.RUN_RESULT_SCORE_TRAIT_BONUS, {"n": int(_result.get("bonus_points", 0))}),
+				int(bd.get("bonus", 0))],
 	]
 	for r in rows:
 		var v: int = int(r[1])
@@ -190,19 +195,19 @@ func _fill_reward_card() -> void:
 	var delta: Dictionary = _profile_delta()
 	var cur: Dictionary = _result.get("currency", {})
 	var rows: Array = [
-		["아웃게임 재화", "+%d" % int(cur.get("outgame", 0)), OutgameTheme.POSITIVE],
-		["레벨업 재화", "+%d" % int(cur.get("levelup", 0)), OutgameTheme.POSITIVE],
+		[Loc.t(L.RUN_RESULT_REWARD_OUTGAME), "+%d" % int(cur.get("outgame", 0)), OutgameTheme.POSITIVE],
+		[Loc.t(L.TERM_CURRENCY_LEVELUP), "+%d" % int(cur.get("levelup", 0)), OutgameTheme.POSITIVE],
 	]
 	var pass_d: Dictionary = delta.get("pass", {})
 	var pass_txt: String = "+%d" % int(_result.get("pass_exp", 0))
 	var pass_up: bool = int(pass_d.get("to", 0)) > int(pass_d.get("from", 0))
 	if pass_up:
 		pass_txt += "  ·  Lv %d → %d" % [int(pass_d["from"]), int(pass_d["to"])]
-	rows.append(["주간 패스 EXP", pass_txt,
+	rows.append([Loc.t(L.RUN_RESULT_REWARD_PASS_EXP), pass_txt,
 			OutgameTheme.ACCENT_TEXT if pass_up else OutgameTheme.POSITIVE])
 	var overflow: int = int(pass_d.get("overflow_outgame", 0))
 	if overflow > 0:
-		rows.append(["패스 초과분 → 아웃게임 재화", "+%d" % overflow, OutgameTheme.POSITIVE])
+		rows.append([Loc.t(L.RUN_RESULT_REWARD_PASS_OVERFLOW), "+%d" % overflow, OutgameTheme.POSITIVE])
 	var mgr_d: Dictionary = delta.get("manager", {})
 	var mgr_from: int = int(mgr_d.get("from", 0))
 	var mgr_to: int = int(mgr_d.get("to", 0))
@@ -210,10 +215,10 @@ func _fill_reward_card() -> void:
 	var mgr_txt: String = "+%d" % int(_result.get("manager_exp", 0))
 	if mgr_up:
 		mgr_txt += "  ·  Lv %d → %d" % [mgr_from, mgr_to]
-	rows.append(["감독 EXP", mgr_txt, OutgameTheme.ACCENT_TEXT if mgr_up else OutgameTheme.POSITIVE])
+	rows.append([Loc.t(L.RUN_RESULT_REWARD_MANAGER_EXP), mgr_txt, OutgameTheme.ACCENT_TEXT if mgr_up else OutgameTheme.POSITIVE])
 	if mgr_up:
 		var pts: int = (mgr_to - mgr_from) * maxi(0, ConstTable.int_of("MANAGER_REMOVE_PER_LEVEL"))
-		rows.append(["새 제거 포인트 (감독 탭)", "+%d" % pts, OutgameTheme.ACCENT_TEXT])
+		rows.append([Loc.t(L.RUN_RESULT_REWARD_REMOVE_POINTS), "+%d" % pts, OutgameTheme.ACCENT_TEXT])
 	for r in rows:
 		_add_row(%RewardRows, String(r[0]), String(r[1]), r[2] as Color)
 	%RewardNote.visible = bool(_result.get("test_run", false))
@@ -232,13 +237,13 @@ func _fill_growth_card() -> void:
 		var row: Control = GROWTH_ROW_SCENE.instantiate()
 		_portrait(row.get_node("%Portrait"), pid)
 		(row.get_node("%Name") as Label).text = String(pd.get("name", ""))
-		(row.get_node("%Exp") as Label).text = "선수 EXP +%d" % int(pexp.get(str(pid), 0))
+		(row.get_node("%Exp") as Label).text = Loc.t(L.RUN_RESULT_GROWTH_EXP, {"n": int(pexp.get(str(pid), 0))})
 		var d: Dictionary = pdelta.get(str(pid), {})
 		var up: bool = int(d.get("to", 0)) > int(d.get("from", 0))
 		(row.get_node("%MaxLv") as Control).visible = up
 		if up:
 			(row.get_node("%MaxLvText") as Label).text = \
-					"최대 Lv %d → %d" % [int(d["from"]), int(d["to"])]
+					Loc.t(L.RUN_RESULT_GROWTH_MAX_LV, {"from": int(d["from"]), "to": int(d["to"])})
 		%GrowthRows.add_child(row)
 
 
@@ -264,7 +269,7 @@ func _fill_achievement_card() -> void:
 func _fill_bottom_bar() -> void:
 	var to_new_run: bool = String(_result.get("outcome", "")) == RunResult.OUTCOME_ABANDON
 	var btn: Button = %BottomButton
-	btn.text = "새 런" if to_new_run else "로비로"
+	btn.text = Loc.t(L.LOBBY_HOME_NEW_RUN if to_new_run else L.UI_BUTTON_TO_LOBBY)
 	btn.pressed.connect(_on_new_run_pressed if to_new_run else _on_lobby_pressed)
 
 

@@ -104,8 +104,8 @@ func _refresh() -> void:
 
 ## F6 단독 실행 미리보기 (`resources/UiPreview.gd`) — 잇는 단계(`ScenarioStepView` ·
 ## `TeamStepView`)는 실제 표(`RunRules`)로 이미 찼으니 둘째 카드를 고른 상태로 둔다.
-## 이 틀 씬만 띄우면 카드가 없으므로 손으로 적은 시나리오 카드 세 장을 꽂는다.
-func _fill_preview() -> void:
+## 이 틀 씬만 띄우면 카드가 없으므로 손으로 적은 시나리오 카드 세 장을 꽂는다(더미 글 — l10n 제외).
+func _fill_preview() -> void:  # l10n-ignore
 	UiPreview.stage(self)
 	UiPreview.trace(back_requested)
 	UiPreview.trace(next_requested)

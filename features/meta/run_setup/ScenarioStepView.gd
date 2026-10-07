@@ -17,7 +17,7 @@ func _items() -> Array:
 
 
 func _hint_text() -> String:
-	return "시나리오가 샐러리캡을 정합니다 — 다섯 선수의 샐러리 합이 캡을 넘으면 시작할 수 없습니다."
+	return Loc.t(L.RUN_SETUP_SCENARIO_HINT)
 
 
 func _make_card(item: Dictionary) -> Button:

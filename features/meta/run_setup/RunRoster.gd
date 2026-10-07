@@ -27,10 +27,10 @@ static func assign(pilots: Array, player_team_id: int, player_pilot_ids: Array,
 		run_seed: int, team_count: int) -> Dictionary:
 	var role_count: int = GameEnums.Role.size()
 	if pilots.size() != team_count * role_count:
-		return {"error": "선수 %d명 — 팀 %d × 역할 %d 와 맞지 않습니다"
-				% [pilots.size(), team_count, role_count]}
+		return {"error": Loc.t(L.RUN_SETUP_ROSTER_COUNT_MISMATCH,
+				{"pilots": pilots.size(), "teams": team_count, "roles": role_count})}
 	if player_team_id < 0 or player_team_id >= team_count:
-		return {"error": "알 수 없는 팀 id %d" % player_team_id}
+		return {"error": Loc.t(L.UI_RUN_UNKNOWN_TEAM, {"id": player_team_id})}
 
 	var mine: Dictionary = {}
 	for raw in player_pilot_ids:
@@ -51,24 +51,24 @@ static func assign(pilots: Array, player_team_id: int, player_pilot_ids: Array,
 	for raw in pilots:
 		var pd := raw as PlayerData
 		if not pool_by_role.has(pd.role):
-			return {"error": "알 수 없는 역할 %d (선수 %d)" % [pd.role, pd.id]}
+			return {"error": Loc.t(L.RUN_SETUP_ROSTER_UNKNOWN_ROLE, {"role": pd.role, "id": pd.id})}
 		if mine.has(pd.id):
 			mine_by_role[pd.role] = int(mine_by_role[pd.role]) + 1
 			teams[pd.id] = player_team_id
 		else:
 			(pool_by_role[pd.role] as Array).append(pd.id)
 	if teams.size() != mine.size():
-		return {"error": "내 선수 중 리그 명단에 없는 id 가 있습니다"}
+		return {"error": Loc.t(L.RUN_SETUP_ROSTER_NOT_IN_LEAGUE)}
 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = run_seed
 	for r in role_count:
 		if int(mine_by_role[r]) != 1:
-			return {"error": "역할 %d 에 내 선수가 %d명입니다 (1명이어야 함)" % [r, mine_by_role[r]]}
+			return {"error": Loc.t(L.RUN_SETUP_ROSTER_ROLE_COUNT, {"role": r, "n": int(mine_by_role[r])})}
 		var ids: Array = pool_by_role[r]
 		if ids.size() != ai_teams.size():
-			return {"error": "역할 %d 의 남은 선수 %d명 — AI 팀 %d개와 맞지 않습니다"
-					% [r, ids.size(), ai_teams.size()]}
+			return {"error": Loc.t(L.RUN_SETUP_ROSTER_POOL_MISMATCH,
+					{"role": r, "n": ids.size(), "teams": ai_teams.size()})}
 		ids.sort()
 		_shuffle(ids, rng)
 		for i in ids.size():

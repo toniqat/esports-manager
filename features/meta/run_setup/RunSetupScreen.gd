@@ -19,12 +19,12 @@ extends Control
 const LOBBY_SCENE: String = "res://scenes/Lobby.tscn"
 const SEASON_SCENE: String = "res://scenes/Season.tscn"
 
-## 단계 표. `id` 는 `_make_step_view` 의 분기 키, `label` 은 머리글 글자.
-const STEPS: Array = [
-	{"id": "scenario", "label": "시나리오"},
-	{"id": "team",     "label": "팀"},
-	{"id": "manager",  "label": "감독"},    # M8/M9 — preset + traits (ManagerStepView)
-	{"id": "lineup",   "label": "편성"},
+## 단계 표. `id` 는 `_make_step_view` 의 분기 키, `label` 은 머리글 글자의 l10n key.
+const STEPS: Array = [    # l10n-keys: run_setup.step.*
+	{"id": "scenario", "label": L.RUN_SETUP_STEP_SCENARIO},
+	{"id": "team",     "label": L.RUN_SETUP_STEP_TEAM},
+	{"id": "manager",  "label": L.TERM_PERSON_MANAGER},    # M8/M9 — preset + traits (ManagerStepView)
+	{"id": "lineup",   "label": L.RUN_SETUP_STEP_LINEUP},
 ]
 
 # ─── 머리글 (단계 표시) ──────────────────────────────────────────────────────
@@ -156,7 +156,7 @@ func _on_step_entered(id: String) -> void:
 			_draft.set_traits(manager_traits())
 			_draft.set_scenario(scenario_id)
 		if _load_error != "":
-			_show_error("선수 데이터를 읽지 못했습니다: " + _load_error)
+			_show_error(Loc.t(L.RUN_SETUP_LOAD_FAILED, {"error": _load_error}))
 
 
 func _on_scenario_next(view: ScenarioStepView) -> void:
@@ -239,7 +239,7 @@ func _build_header() -> void:
 	for i in STEPS.size():
 		var chip := StepChip.create()
 		row.add_child(chip)
-		chip.set_text("%d  %s" % [i + 1, String((STEPS[i] as Dictionary)["label"])])
+		chip.set_text("%d  %s" % [i + 1, Loc.t(String((STEPS[i] as Dictionary)["label"]))])  # l10n-dynamic: run_setup.step.*
 		_header_chips.append(chip)
 
 

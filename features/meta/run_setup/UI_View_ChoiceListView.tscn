@@ -28,6 +28,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="Hint" type="Label" parent="Safe"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ChoiceListView.gd _build() · ChoiceListView.gd _fill_preview()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -89,7 +90,7 @@ size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"BarGhostButton"
 theme_override_font_sizes/font_size = 30
-text = "뒤로"
+text = "tx_AT96DE2X15"
 
 [node name="Sep" type="Panel" parent="Bar/Back"]
 layout_mode = 1
@@ -113,4 +114,4 @@ focus_mode = 0
 theme_type_variation = &"BarPrimaryButton"
 theme_override_font_sizes/font_size = 38
 disabled = true
-text = "다음"
+text = "tx_GNK4E0021C"

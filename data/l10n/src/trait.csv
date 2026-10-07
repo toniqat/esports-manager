@@ -47,3 +47,8 @@ tx_53D7BPJQBK,trait.21.desc,active,traits.csv desc (id=21),,,시설 유지비 +{
 tx_FNN91QZ7T0,trait.22.desc,active,traits.csv desc (id=22),,,첫 자동 드로우 {p1}장,First auto-draw {p1} cards,draft,cfb093c9
 tx_6XQ3A0Q7JP,trait.23.desc,active,traits.csv desc (id=23),,,손패 상한 {p1},Max hand size {p1},draft,37e29957
 tx_6HNYQXB6DT,trait.24.desc,active,traits.csv desc (id=24),,,작전 단계마다 첫 카드 비용 +{p1},First card cost each tactics phase +{p1},draft,1aacaadf
+tx_BG2JBV86HB,trait.equip.too_many,active,특성 장착 검증 오류,,,특성은 {n}개까지 장착할 수 있습니다,You can equip up to {n} traits,draft,a8d38d26
+tx_F9NJXK31Y0,trait.equip.unknown,active,특성 장착 검증 오류,,,알 수 없는 특성 id {id},Unknown trait id {id},draft,da60e224
+tx_W81J1DFTY1,trait.equip.duplicate,active,특성 장착 검증 오류,,,같은 특성을 두 번 장착할 수 없습니다,You can't equip the same trait twice,draft,660c14a6
+tx_YEBKNRWZXC,trait.equip.not_owned,active,특성 장착 검증 오류. name = 특성 이름,,,보유하지 않은 특성입니다: {name},Trait not owned: {name},draft,cb21041a
+tx_KB62EJTC17,trait.equip.not_enough_bonus,active,특성 장착 검증 오류,,,보너스 점수가 부족합니다 ({n}),Not enough bonus points ({n}),draft,3eba8054

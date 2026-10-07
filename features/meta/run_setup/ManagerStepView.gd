@@ -80,7 +80,7 @@ func select_preset(idx: int) -> void:
 ## Toggle a trait on the chosen preset (also the tap path). "" on success.
 func toggle_trait(trait_id: int) -> String:
 	if String(_draft.get("kind", "")) == ManagerProgress.KIND_PRESTIGE:
-		return "프레스티지 프리셋 — 로비 감독 탭에서 재설정하세요"
+		return Loc.t(L.RUN_SETUP_MANAGER_PRESTIGE_LOCKED)
 	var err: String = ManagerProgress.toggle_trait(_draft, trait_id, _pm.owned_trait_ids())
 	if err != "":
 		return err
@@ -88,7 +88,7 @@ func toggle_trait(trait_id: int) -> String:
 		ManagerProgress.store_preset(_pm.profile, preset_idx, _draft)
 		var serr: String = _pm.save_profile()
 		if serr != "":
-			err = "프로필 저장 실패: " + serr
+			err = Loc.t(L.UI_ERROR_PROFILE_SAVE_FAILED, {"error": serr})
 	return err
 
 
@@ -109,15 +109,16 @@ func _rebuild(status_override: String = "") -> void:
 	# Stats card — type · level, the six stats this preset gives.
 	var mgr: Dictionary = prof.get("manager", {})
 	var trow: Dictionary = StaffSystem.manager_type_row(int(mgr.get("type", 0)))
-	(%CardTitle as Label).text = "%s 감독 · Lv %d" % [Loc.t(String(trow.get("name_key", ""))),  # l10n-dynamic: manager.type.*.name
-			ManagerProgress.level_of(prof)]
+	var type_name: String = Loc.t(String(trow.get("name_key", "")))  # l10n-dynamic: manager.type.*.name
+	(%CardTitle as Label).text = Loc.t(L.RUN_SETUP_MANAGER_CARD_TITLE,
+			{"type": type_name, "level": ManagerProgress.level_of(prof)})
 	var all_bonus: int = TraitSystem.sum_p1(selected_traits(), "manager_all")
 	var note: Label = %CardNote
 	if all_bonus != 0:
-		note.text = "특성 보정 전체 %s" % ManagerUi.signed(all_bonus)
+		note.text = Loc.t(L.RUN_SETUP_MANAGER_ALL_BONUS, {"value": ManagerUi.signed(all_bonus)})
 		note.theme_type_variation = &"AccentLabel"
 	else:
-		note.text = "전문화는 로비 감독 탭에서"
+		note.text = Loc.t(L.RUN_SETUP_MANAGER_SPEC_NOTE)
 		note.theme_type_variation = &"FaintLabel"
 	var cells_w: float = cells.size.x if cells.size.x > 0.0 else ScreenMetrics.vp_w() - 48.0 - 56.0
 	cells.custom_minimum_size.y = ManagerUi.add_stat_cells(cells, Vector2.ZERO, cells_w,
@@ -140,8 +141,8 @@ func _refresh_status(override: String = "") -> void:
 		status.theme_type_variation = &"NegativeLabel"
 	else:
 		var bonus: int = TraitSystem.bonus_points(selected_traits())
-		status.text = "%s · 보너스 점수 %s · 특성을 바꾸면 이 프리셋에 바로 저장됩니다" % [
-			ManagerUi.preset_name(preset_idx), ManagerUi.signed(bonus)]
+		status.text = Loc.t(L.RUN_SETUP_MANAGER_STATUS, {
+			"preset": ManagerUi.preset_name(preset_idx), "bonus": ManagerUi.signed(bonus)})
 		status.theme_type_variation = &"SubLabel"
 
 

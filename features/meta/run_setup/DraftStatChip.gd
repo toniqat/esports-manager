@@ -28,4 +28,4 @@ func fill(key: String, value: String, is_total: bool) -> void:
 ## F6 단독 실행 미리보기 — "종합" 칸(앰버 값) (`resources/UiPreview.gd`).
 func _fill_preview() -> void:
 	UiPreview.stage(self)
-	fill("종합", "514", true)
+	fill(Loc.t(L.RUN_SETUP_STAT_TOTAL), "514", true)

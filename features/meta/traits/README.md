@@ -3,6 +3,9 @@
 Manager traits — equipped per preset, frozen into the run at run start, scored as bonus points.
 Contract: `docs/outgame_dev_plan.md` §12 (effect keys §12.3, unlock grammar §12.4).
 
+표시 텍스트는 l10n key (`trait` 도메인 — data `trait.{id}.name/desc` + `trait.equip.*` for `validate_equip`).
+`rarity_name(r)` delegates to `GameEnums.rarity_label` (the `RARITY_NAMES` table is gone).
+
 ## Files
 | File | Class | Role |
 |---|---|---|

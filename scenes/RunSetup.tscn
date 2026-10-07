@@ -53,6 +53,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="ErrorLabel" type="Label" parent="."]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — RunSetupScreen.gd _on_step_entered() · RunSetupScreen.gd _ready() · RunSetupScreen.gd _show_error()"
 unique_name_in_owner = true
 visible = false

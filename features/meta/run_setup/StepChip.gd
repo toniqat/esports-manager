@@ -36,5 +36,5 @@ func paint(bg: Color, fg: Color, border: Variant) -> void:
 ## F6 단독 실행 미리보기 — "지금" 단계 알약(앰버 색면) (`resources/UiPreview.gd`).
 func _fill_preview() -> void:
 	UiPreview.stage(self)
-	set_text("2  팀")
+	set_text("2  %s" % Loc.t(L.RUN_SETUP_STEP_TEAM))
 	paint(OutgameTheme.ACCENT, OutgameTheme.TEXT_ON_FILL, null)

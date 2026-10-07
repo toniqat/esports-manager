@@ -27,7 +27,7 @@ func _items() -> Array:
 
 
 func _hint_text() -> String:
-	return "예산이 높을수록 쉽습니다 — 스태프가 많아 직접 해야 하는 일이 적습니다."
+	return Loc.t(L.RUN_SETUP_TEAM_HINT)
 
 
 func _make_card(item: Dictionary) -> Button:

@@ -1,6 +1,7 @@
 [gd_scene load_steps=0 format=3 uid="uid://cd04wxp01a7vh"]
 
 [node name="LobbyTabButton" type="Button"]
+auto_translate_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
 theme_override_colors/font_color = Color(0.541, 0.541, 0.569, 1)

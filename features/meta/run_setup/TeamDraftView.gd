@@ -375,11 +375,14 @@ func _refresh_rules() -> void:
 	var value: Label = %GaugeValue
 	var fill: ColorRect = %GaugeFill
 	var gauge_msg: Label = %GaugeMsg
-	title.text = "%s · 샐러리캡" % Loc.t(String(scen.get("name_key", "")))  # l10n-dynamic: scenario.*.name
+	var scen_name: String = Loc.t(String(scen.get("name_key", "")))  # l10n-dynamic: scenario.*.name
 	# M8 — trait `salary_cap` adjustment, when the manager preset carries one.
 	var trait_adj: int = _draft.cap_bonus()
 	if trait_adj != 0:
-		title.text += " (특성 %s)" % ManagerUi.signed(trait_adj)
+		title.text = Loc.t(L.RUN_SETUP_LINEUP_GAUGE_TITLE_TRAIT,
+				{"scenario": scen_name, "adj": ManagerUi.signed(trait_adj)})
+	else:
+		title.text = Loc.t(L.RUN_SETUP_LINEUP_GAUGE_TITLE, {"scenario": scen_name})
 	value.text = "%d / %d" % [total, cap]
 	value.add_theme_color_override("font_color",
 			OutgameTheme.NEGATIVE if over else OutgameTheme.TEXT)
@@ -391,19 +394,20 @@ func _refresh_rules() -> void:
 	var msg: String = err
 	var col: Color = OutgameTheme.TEXT_SUB
 	if _start_error != "":
-		msg = "시작 실패: " + _start_error
+		msg = Loc.t(L.RUN_SETUP_LINEUP_START_FAILED, {"error": _start_error})
 		col = OutgameTheme.NEGATIVE
 	elif over:
 		# 다섯을 다 고르기 전이라도 캡을 넘겼으면 그것부터 말한다 — 빈 칸을
 		# 채우면 더 넘칠 뿐이다.
-		msg = "샐러리캡 초과 (%d / %d) — 레벨을 내리거나 다른 선수를 고르세요" % [total, cap]
+		msg = Loc.t(L.RUN_SETUP_LINEUP_OVER_CAP, {"total": total, "cap": cap})
 		col = OutgameTheme.NEGATIVE
 	elif ids.size() < SLOT_COUNT:
-		msg = "포지션마다 1명씩 — %d / %d명" % [ids.size(), SLOT_COUNT]
+		msg = Loc.t(L.RUN_SETUP_LINEUP_PROGRESS, {"n": ids.size(), "max": SLOT_COUNT})
 	elif err != "":
 		col = OutgameTheme.NEGATIVE
 	else:
-		msg = "편성 완료 — 남은 샐러리 %d" % (cap - total) if cap > 0 else "편성 완료"
+		msg = Loc.t(L.RUN_SETUP_LINEUP_DONE_LEFT, {"n": cap - total}) if cap > 0 \
+				else Loc.t(L.RUN_SETUP_LINEUP_DONE)
 		col = OutgameTheme.POSITIVE
 	gauge_msg.text = msg
 	gauge_msg.add_theme_color_override("font_color", col)

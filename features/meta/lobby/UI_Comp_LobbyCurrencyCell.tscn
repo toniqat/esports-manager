@@ -14,6 +14,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Caption" type="Label" parent="."]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _sync_currency_cells()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 26)

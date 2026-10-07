@@ -37,10 +37,10 @@ func bar_specs() -> Array:
 	# 런이 있으면 1:2 — 이어하기가 주 행동이라 오른쪽 3분의 2. 없으면 새 런이 전폭.
 	if SaveSystem.has_run():
 		return [
-			{"text": "새 런",    "style": "ghost",   "font": 32, "weight": 1.0},
-			{"text": "이어하기", "style": "primary", "font": 32, "weight": 2.0},
+			{"text": Loc.t(L.LOBBY_HOME_NEW_RUN),  "style": "ghost",   "font": 32, "weight": 1.0},
+			{"text": Loc.t(L.LOBBY_HOME_CONTINUE), "style": "primary", "font": 32, "weight": 2.0},
 		]
-	return [{"text": "새 런", "style": "primary", "font": 32, "weight": 1.0}]
+	return [{"text": Loc.t(L.LOBBY_HOME_NEW_RUN), "style": "primary", "font": 32, "weight": 1.0}]
 
 
 func setup(host: LobbyScreen) -> void:
@@ -66,9 +66,9 @@ func on_bar_pressed(i: int) -> void:
 # ── Fill (레이아웃 · 스타일은 UI_View_HomeTab.tscn) ─────────────────────────────────────
 func _fill() -> void:
 	var mgr_lv: int = ManagerProgress.level_of(_pm.profile)
-	%Summary.text = "감독 Lv%d · 보유 선수 %d명 · 특성 %d개" % [
-			mgr_lv, (_pm.owned_pilot_ids() as Array).size(),
-			(_pm.owned_trait_ids() as Array).size()]
+	%Summary.text = Loc.t(L.LOBBY_HOME_SUMMARY, {"level": mgr_lv,
+			"pilots": (_pm.owned_pilot_ids() as Array).size(),
+			"traits": (_pm.owned_trait_ids() as Array).size()})
 	if _has_run and not _meta.is_empty():
 		_show_run(_meta)
 	else:
@@ -82,18 +82,18 @@ func _show_run(meta: Dictionary) -> void:
 	%RunCard.visible = true
 	%Phase.text = GameEnums.phase_label(int(meta.get("phase", 0)))
 	%LiveChip.visible = bool(meta.get("match_in_progress", false))
-	%Date.text = "%d년 %d월 %d일 (%s)" % [
-			int(meta.get("year", 1)), int(meta.get("month", 12)),
-			int(meta.get("day", 1)), _weekday_name(int(meta.get("weekday", 0)))]
+	%Date.text = Loc.t(L.LOBBY_HOME_DATE, {
+			"year": int(meta.get("year", 1)), "month": int(meta.get("month", 12)),
+			"day": int(meta.get("day", 1)), "weekday": _weekday_name(int(meta.get("weekday", 0)))})
 	%Team.text = String(_gm.team_name(int(meta.get("team_id", 0))))
-	%Trophies.text = "우승 트로피 %d개" % int(meta.get("trophies", 0))
+	%Trophies.text = Loc.t(L.LOBBY_HOME_TROPHIES, {"n": int(meta.get("trophies", 0))})
 	var rank: int = int(meta.get("rank", 0))
-	var record: String = "리그 미시작"
+	var record: String = Loc.t(L.LOBBY_HOME_LEAGUE_NOT_STARTED)
 	if rank > 0:
-		record = "현재 리그 %d위 (%d승 %d패)" % [
-			rank, int(meta.get("wins", 0)), int(meta.get("losses", 0))]
+		record = Loc.t(L.LOBBY_HOME_LEAGUE_RANK, {"rank": rank,
+				"win": int(meta.get("wins", 0)), "loss": int(meta.get("losses", 0))})
 	%Record.text = record
-	%SavedAt.text = "마지막 저장 " + String(meta.get("saved_at", ""))
+	%SavedAt.text = Loc.t(L.LOBBY_HOME_SAVED_AT, {"time": String(meta.get("saved_at", ""))})
 
 
 func _weekday_name(wd: int) -> String:
@@ -106,7 +106,7 @@ func _weekday_name(wd: int) -> String:
 func _on_continue_pressed() -> void:
 	var err: String = SaveSystem.load_run()
 	if err != "":
-		_host.show_toast("불러오기 실패: " + err, true)
+		_host.show_toast(Loc.t(L.LOBBY_HOME_LOAD_FAILED, {"error": err}), true)
 		return
 	# Mid-match save: jump straight back into MatchFlow (which reads
 	# season_state.match_resume on _ready and skips ahead to the saved phase).
@@ -121,9 +121,9 @@ func _on_new_run_pressed() -> void:
 		_start_new_run()
 		return
 	Haptics.play(Haptics.Kind.WARNING)
-	_host.open_confirm("진행 중인 런을 포기할까요?",
-			"지금까지의 진척으로 실패 정산하고 런을 끝냅니다.\n점수 · 재화 보상은 받지만 런은 되돌릴 수 없습니다.",
-			"취소", "포기하고 정산", true, _on_abandon_confirmed)
+	_host.open_confirm(Loc.t(L.LOBBY_HOME_ABANDON_TITLE), Loc.t(L.LOBBY_HOME_ABANDON_BODY),
+			Loc.t(L.UI_BUTTON_CANCEL), Loc.t(L.LOBBY_HOME_ABANDON_CONFIRM), true,
+			_on_abandon_confirmed)
 
 
 func _on_abandon_confirmed() -> void:
@@ -138,7 +138,7 @@ func _on_abandon_confirmed() -> void:
 	push_warning("Lobby: abandon could not load run (%s) — deleting without settlement" % lerr)
 	var err: String = SaveSystem.delete_run()
 	if err != "":
-		_host.show_toast("런 삭제 실패: " + err, true)
+		_host.show_toast(Loc.t(L.LOBBY_HOME_DELETE_FAILED, {"error": err}), true)
 		return
 	Haptics.play(Haptics.Kind.ERROR)
 	_start_new_run()

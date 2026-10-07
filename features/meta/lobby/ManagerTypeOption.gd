@@ -37,7 +37,7 @@ func fill(row: Dictionary, is_current: bool) -> void:
 	for i in mini(cells.size(), StaffSystem.STATS.size()):
 		var key: String = String(StaffSystem.STATS[i])
 		var cell: Node = cells[i]
-		(cell.get_node("VBox/Key") as Label).text = String(StaffSystem.STAT_LABELS.get(key, key))
+		(cell.get_node("VBox/Key") as Label).text = StaffSystem.stat_label(key)
 		(cell.get_node("VBox/Value") as Label).text = str(int(stats.get(key, StaffSystem.STAT_MIN)))
 
 

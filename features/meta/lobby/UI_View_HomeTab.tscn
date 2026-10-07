@@ -32,7 +32,7 @@ custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
 theme_type_variation = &"HeadingLabel"
 theme_override_font_sizes/font_size = 64
-text = "ESPORTS MANAGER"
+text = "tx_DBE01WV863"
 horizontal_alignment = 1
 
 [node name="Gap1" type="Control" parent="VBox"]
@@ -53,6 +53,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Summary" type="Label" parent="VBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — HomeTab.gd _fill()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 32)
@@ -72,7 +73,7 @@ layout_mode = 2
 size_flags_horizontal = 4
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 24
-text = "진행 중인 런"
+text = "tx_C43HAK9QB4"
 
 [node name="Gap4" type="Control" parent="VBox"]
 custom_minimum_size = Vector2(0, 15)
@@ -112,6 +113,7 @@ mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="Phase" type="Label" parent="VBox/RunCard/Margin/VBox/Header"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — HomeTab.gd _show_run()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 51)
@@ -138,7 +140,7 @@ theme_type_variation = &"AccentChip"
 layout_mode = 2
 theme_type_variation = &"AccentLabel"
 theme_override_font_sizes/font_size = 20
-text = "경기 진행 중"
+text = "tx_5WJB7HWPMA"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -148,6 +150,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Date" type="Label" parent="VBox/RunCard/Margin/VBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — HomeTab.gd _show_run()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 35)
@@ -172,6 +175,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Team" type="Label" parent="VBox/RunCard/Margin/VBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — HomeTab.gd _show_run()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 45)
@@ -186,6 +190,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Trophies" type="Label" parent="VBox/RunCard/Margin/VBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — HomeTab.gd _show_run()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 35)
@@ -200,6 +205,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Record" type="Label" parent="VBox/RunCard/Margin/VBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — HomeTab.gd _show_run()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 35)
@@ -214,6 +220,7 @@ size_flags_vertical = 3
 mouse_filter = 2
 
 [node name="SavedAt" type="Label" parent="VBox/RunCard/Margin/VBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — HomeTab.gd _show_run()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 30)
@@ -252,7 +259,7 @@ custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 30
-text = "진행 중인 런이 없습니다"
+text = "tx_8QB02J8X4E"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -265,7 +272,7 @@ mouse_filter = 2
 custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
 theme_type_variation = &"FaintLabel"
-text = "아래 '새 런' 으로 시즌을 시작하세요"
+text = "tx_WGC1W057NT"
 horizontal_alignment = 1
 
 [node name="SettingsButton" type="Button" parent="."]

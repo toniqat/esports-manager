@@ -76,12 +76,12 @@ func open(prestige_mode: bool = false, current_type: int = -1) -> void:
 	_types = StaffSystem.manager_types()
 	_selected = -1
 
-	%Title.text = "프레스티지 — 감독 유형 재선택" if prestige_mode else "감독 유형 선택"
-	%Sub.text = "새 감독 유형을 고르면 프레스티지가 끝납니다. 같은 유형을 다시 골라도 됩니다." \
-			if prestige_mode else \
-			"첫 런을 시작하기 전에 감독 유형을 고르세요. 스태프가 없는 영역은 감독 스탯으로 운영합니다."
-	%Note.text = "Lv1 · 스탯 제거가 초기화됩니다." if prestige_mode \
-			else "이후 변경은 프레스티지로만 가능합니다."
+	%Title.text = Loc.t(L.LOBBY_MANAGER_TYPE_TITLE_PRESTIGE if prestige_mode \
+			else L.LOBBY_MANAGER_TYPE_TITLE)
+	%Sub.text = Loc.t(L.LOBBY_MANAGER_TYPE_SUB_PRESTIGE if prestige_mode \
+			else L.LOBBY_MANAGER_TYPE_SUB)
+	%Note.text = Loc.t(L.LOBBY_MANAGER_TYPE_NOTE_PRESTIGE if prestige_mode \
+			else L.LOBBY_MANAGER_TYPE_NOTE)
 
 	_sync_options()
 	for i in _types.size():
@@ -93,7 +93,7 @@ func open(prestige_mode: bool = false, current_type: int = -1) -> void:
 	%Cancel.visible = prestige_mode
 	var btn: Button = %Confirm
 	btn.disabled = true
-	btn.text = "유형을 고르세요"
+	btn.text = Loc.t(L.LOBBY_MANAGER_TYPE_PICK_PROMPT)
 	_apply_dim_haptics(prestige_mode)
 	_fit_safe_area()
 	_fit_body()
@@ -120,8 +120,9 @@ func select(idx: int) -> void:
 		_option(i).set_selected(i == idx)
 	var btn: Button = %Confirm
 	btn.disabled = false
-	btn.text = ("%s 감독으로 프레스티지" if _prestige_mode else "%s 감독으로 시작") \
-			% Loc.t(String((_types[idx] as Dictionary).get("name_key", "")))  # l10n-dynamic: manager.type.*.name
+	var type_name: String = Loc.t(String((_types[idx] as Dictionary).get("name_key", "")))  # l10n-dynamic: manager.type.*.name
+	btn.text = Loc.t(L.LOBBY_MANAGER_TYPE_PRESTIGE_AS if _prestige_mode \
+			else L.LOBBY_MANAGER_TYPE_START_AS, {"type": type_name})
 
 
 ## Prestige mode only — closes without choosing.

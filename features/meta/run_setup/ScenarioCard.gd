@@ -20,7 +20,7 @@ func _ready() -> void:
 ## `item` = `RunRules.scenarios()` 한 줄.
 func fill(item: Dictionary) -> void:
 	(%Name as Label).text = Loc.t(String(item.get("name_key", "")))  # l10n-dynamic: scenario.*.name
-	(%Cap as Label).text = "샐러리캡 %d" % int(item.get("salary_cap", 0))
+	(%Cap as Label).text = Loc.t(L.RUN_SETUP_SCENARIO_CAP, {"n": int(item.get("salary_cap", 0))})
 	(%Desc as Label).text = Loc.t(String(item.get("desc_key", "")))  # l10n-dynamic: scenario.*.desc
 
 

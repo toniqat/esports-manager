@@ -1,0 +1,42 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_HJ8PH2PZFQ,run_setup.step.scenario,active,런 준비 단계 알약 — 앞에 번호,,,시나리오,Scenario,draft,4ca5847f
+tx_FB3QP9CS50,run_setup.step.team,active,런 준비 단계 알약,,,팀,Team,draft,90583011
+tx_D251BAN217,run_setup.step.lineup,active,런 준비 단계 알약,,,편성,Lineup,draft,d5e7024e
+tx_5RQNNDMCG6,run_setup.load_failed,active,런 준비 오류 줄,,,선수 데이터를 읽지 못했습니다: {error},Couldn't read player data: {error},draft,441b3f67
+tx_RCC5BQZPBZ,run_setup.scenario.cap,active,시나리오 카드 칩,,,샐러리캡 {n},Salary Cap {n},draft,978826eb
+tx_21QQ3H8S23,run_setup.scenario.hint,active,시나리오 단계 안내,,,시나리오가 샐러리캡을 정합니다 — 다섯 선수의 샐러리 합이 캡을 넘으면 시작할 수 없습니다.,The scenario sets the salary cap — you can't start if your five players' salaries exceed it.,draft,ec5fef57
+tx_ZSHG5Y0W8Y,run_setup.team.hint,active,팀 단계 안내,,,예산이 높을수록 쉽습니다 — 스태프가 많아 직접 해야 하는 일이 적습니다.,A bigger budget is easier — more staff means less to handle yourself.,draft,65dc2432
+tx_XVN27323X5,run_setup.team.budget,active,팀 카드,,,예산 {n},Budget {n},draft,8ac751d8
+tx_8V1SPJW32G,run_setup.team.facility,active,팀 카드,,,시설 Lv {n},Facility Lv {n},draft,9f9cf92c
+tx_MY16P7N64F,run_setup.team.manual_title,active,팀 카드 — 스태프가 없어 감독이 직접 하는 영역 목록의 제목,,,직접 해야 하는 일,Handled by you,draft,e8f9a655
+tx_24YRHG4GQQ,run_setup.stat_total,active,선수 능력치 칩 — 스탯 합계,,,종합,Total,draft,f7c86d76
+tx_R8QCG9989H,run_setup.draft.origin_team,active,선수 상세 패널. team = 팀 약칭,,,원소속 {team},Original team: {team},draft,bb18ee78
+tx_CZZWF7TJ6P,run_setup.draft.breakthrough,active,선수 상세 패널 칩 — 돌파 단계,,,돌파 {n},Breakthrough {n},draft,8ec74860
+tx_NW5AR6YPWN,run_setup.draft.train_bonus,active,선수 상세 패널 칩,,,훈련 EXP +{pct}%,Training EXP +{pct}%,draft,9eb24878
+tx_ZNZXB9SW7Z,run_setup.draft.stats_title,active,선수 상세 패널 섹션 제목,,,선수 능력치,Player Stats,draft,6b95d5b4
+tx_A42YCZ0NFD,run_setup.draft.skill_title,active,선수 상세 패널 섹션 제목,,,파일럿 스킬,Pilot Skill,draft,1fbcda27
+tx_1M14YHFYQV,run_setup.draft.no_skill,active,선수 상세 패널 — 모브 선수,,,고유 스킬 없음 (이름 없는 선수),No unique skill (unnamed player),draft,9a2d614b
+tx_R5P3SNJTFY,run_setup.skill_type.cooldown,active,파일럿 스킬 타입,,,쿨타임,Cooldown,draft,7da14b8b
+tx_341YBT1HWQ,run_setup.skill_type.charge,active,파일럿 스킬 타입,,,충전식,Charge,draft,d4229706
+tx_R41SZAKCGV,run_setup.skill_type.passive,active,파일럿 스킬 타입,,,패시브,Passive,draft,70524aef
+tx_8XPMQAH2H0,run_setup.slot.empty,active,편성 슬롯 — 빈 칸,,,선택 없음,Not picked,draft,6f5e091d
+tx_M4CGTEQHBN,run_setup.slot.salary,active,편성 슬롯,,,샐러리 {n},Salary {n},draft,65e3d4c9
+tx_86NEDS5QYC,run_setup.slot.total,active,편성 슬롯 — 스탯 합계,,,종합 {n},Total {n},draft,7cf12880
+tx_EYBMMZBQNA,run_setup.manager.prestige_locked,active,감독 단계 상태 줄 오류,,,프레스티지 프리셋 — 로비 감독 탭에서 재설정하세요,Prestige preset — reset it in the lobby Manager tab,draft,8644504f
+tx_S0XJ51Y6E7,run_setup.manager.card_title,active,감독 단계 스탯 카드 제목. type = 감독 유형 이름,,,{type} 감독 · Lv {level},{type} Manager · Lv {level},draft,62313263
+tx_B12S7EKBRM,run_setup.manager.all_bonus,active,감독 단계 스탯 카드 주석. value = +2,,,특성 보정 전체 {value},Trait bonus: all stats {value},draft,311a2d5b
+tx_N2RJ811ABT,run_setup.manager.spec_note,active,감독 단계 스탯 카드 주석,,,전문화는 로비 감독 탭에서,Specialise in the lobby Manager tab,draft,c73f1af1
+tx_Z2NY1CZZ5J,run_setup.manager.status,active,감독 단계 상태 줄. preset = 프리셋 이름,,,{preset} · 보너스 점수 {bonus} · 특성을 바꾸면 이 프리셋에 바로 저장됩니다,{preset} · Bonus points {bonus} · Trait changes save to this preset,draft,6ec84df6
+tx_TJYP45JCHW,run_setup.roster.count_mismatch,active,런 시작 실패 사유 — 데이터 오류,,,선수 {pilots}명 — 팀 {teams} × 역할 {roles} 와 맞지 않습니다,{pilots} players don't match {teams} teams × {roles} roles,draft,dca561dc
+tx_1DJR2GT179,run_setup.roster.unknown_role,active,런 시작 실패 사유 — 데이터 오류,,,알 수 없는 역할 {role} (선수 {id}),Unknown role {role} (player {id}),draft,82afbc75
+tx_YV2Y3QZY4S,run_setup.roster.not_in_league,active,런 시작 실패 사유 — 데이터 오류,,,내 선수 중 리그 명단에 없는 id 가 있습니다,Some of your players aren't on the league roster,draft,4ffbb83f
+tx_0PAP63X1Y1,run_setup.roster.role_count,active,런 시작 실패 사유 — 데이터 오류,,,역할 {role} 에 내 선수가 {n}명입니다 (1명이어야 함),Role {role} has {n} of your players (must be 1),draft,54f91d78
+tx_NC5BF9FXM3,run_setup.roster.pool_mismatch,active,런 시작 실패 사유 — 데이터 오류,,,역할 {role} 의 남은 선수 {n}명 — AI 팀 {teams}개와 맞지 않습니다,Role {role}: {n} remaining players don't match {teams} AI teams,draft,eea1d5c0
+tx_42EJTTYFX4,run_setup.lineup.gauge_title,active,편성 게이지 제목. scenario = 시나리오 이름,,,{scenario} · 샐러리캡,{scenario} · Salary Cap,draft,135fcaea
+tx_8HD5KTG0WT,run_setup.lineup.gauge_title_trait,active,편성 게이지 제목 — 특성이 캡을 바꿀 때. adj = +20,,,{scenario} · 샐러리캡 (특성 {adj}),{scenario} · Salary Cap (traits {adj}),draft,8f7cbdef
+tx_4HM99WN4PS,run_setup.lineup.start_failed,active,편성 게이지 메시지,,,시작 실패: {error},Start failed: {error},draft,863b3978
+tx_EN0H79ACA8,run_setup.lineup.over_cap,active,편성 게이지 메시지,,,샐러리캡 초과 ({total} / {cap}) — 레벨을 내리거나 다른 선수를 고르세요,Over the salary cap ({total} / {cap}) — lower levels or pick other players,draft,a7e7d52d
+tx_PYSFH9VR8V,run_setup.lineup.progress,active,편성 게이지 메시지,,,포지션마다 1명씩 — {n} / {max}명,One per position — {n} / {max},draft,8099b691
+tx_Z7WZT1J6Q7,run_setup.lineup.done_left,active,편성 게이지 메시지,,,편성 완료 — 남은 샐러리 {n},Lineup complete — {n} salary left,draft,82ffb934
+tx_RQV5HNW8TV,run_setup.lineup.done,active,편성 게이지 메시지 (캡 없음),,,편성 완료,Lineup complete,draft,b94c957c
+tx_N58C8KX6P1,run_setup.lineup.start,active,편성 하단 버튼,,,게임 시작,Start Game,draft,62d82d76

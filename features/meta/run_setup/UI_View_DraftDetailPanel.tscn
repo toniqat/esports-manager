@@ -141,6 +141,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Name" type="Label" parent="Root/SafeArea/Column/PanelBox/Pad/Scroll/Body/Header"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — DraftDetailPanel.gd _fill_header()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -162,6 +163,7 @@ offset_right = 50.0
 offset_bottom = 81.0
 
 [node name="Sub" type="Label" parent="Root/SafeArea/Column/PanelBox/Pad/Scroll/Body/Header"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — DraftDetailPanel.gd _fill_header()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -205,7 +207,7 @@ custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 24
-text = "선수 능력치"
+text = "tx_ZNZXB9SW7Z"
 clip_text = true
 
 [node name="Stats" type="GridContainer" parent="Root/SafeArea/Column/PanelBox/Pad/Scroll/Body"]
@@ -228,7 +230,7 @@ custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 24
-text = "파일럿 스킬"
+text = "tx_A42YCZ0NFD"
 clip_text = true
 
 [node name="SkillRow" type="Control" parent="Root/SafeArea/Column/PanelBox/Pad/Scroll/Body"]
@@ -250,6 +252,7 @@ offset_bottom = 68.0
 mouse_filter = 2
 
 [node name="SkillName" type="Label" parent="Root/SafeArea/Column/PanelBox/Pad/Scroll/Body/SkillRow"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — DraftDetailPanel.gd _fill_skill()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -265,6 +268,7 @@ text = "스킬 이름"
 clip_text = true
 
 [node name="SkillMeta" type="Label" parent="Root/SafeArea/Column/PanelBox/Pad/Scroll/Body/SkillRow"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — DraftDetailPanel.gd _fill_skill()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -294,7 +298,7 @@ custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 21
-text = "고유 스킬 없음 (이름 없는 선수)"
+text = "tx_1M14YHFYQV"
 
 [node name="Gap3" type="Control" parent="Root/SafeArea/Column/PanelBox/Pad/Scroll/Body"]
 custom_minimum_size = Vector2(0, 22)
@@ -306,7 +310,7 @@ custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 24
-text = "파일럿 카드"
+text = "tx_0ZQK3N7THW"
 clip_text = true
 
 [node name="Cards" type="VBoxContainer" parent="Root/SafeArea/Column/PanelBox/Pad/Scroll/Body"]
@@ -329,4 +333,4 @@ custom_minimum_size = Vector2(0, 84)
 layout_mode = 2
 focus_mode = 0
 theme_type_variation = &"GhostButton"
-text = "닫기"
+text = "tx_R1DMEF1S3E"

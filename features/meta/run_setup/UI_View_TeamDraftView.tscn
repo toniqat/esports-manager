@@ -65,6 +65,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="GaugeTitle" type="Label" parent="Safe/Gauge/Pad/VBox/Row"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — TeamDraftView.gd _refresh_rules()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -119,6 +120,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="GaugeMsg" type="Label" parent="Safe/Gauge/Pad/VBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — TeamDraftView.gd _refresh_rules()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 36)
@@ -191,7 +193,7 @@ size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"SelectableTile"
 theme_override_font_sizes/font_size = 26
-text = "전체"
+text = "tx_18TM214PEP"
 
 [node name="Top" type="Button" parent="Safe/PickPane/Filters"]
 layout_mode = 2
@@ -199,7 +201,7 @@ size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"SelectableTile"
 theme_override_font_sizes/font_size = 26
-text = "탑"
+text = "tx_WGVRW01FAK"
 
 [node name="Jungle" type="Button" parent="Safe/PickPane/Filters"]
 layout_mode = 2
@@ -207,7 +209,7 @@ size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"SelectableTile"
 theme_override_font_sizes/font_size = 26
-text = "정글"
+text = "tx_AEVV05C031"
 
 [node name="Mid" type="Button" parent="Safe/PickPane/Filters"]
 layout_mode = 2
@@ -215,7 +217,7 @@ size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"SelectableTile"
 theme_override_font_sizes/font_size = 26
-text = "미드"
+text = "tx_AJHRSFRY14"
 
 [node name="Adc" type="Button" parent="Safe/PickPane/Filters"]
 layout_mode = 2
@@ -223,7 +225,7 @@ size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"SelectableTile"
 theme_override_font_sizes/font_size = 26
-text = "원딜"
+text = "tx_6FWKS7JH3P"
 
 [node name="Support" type="Button" parent="Safe/PickPane/Filters"]
 layout_mode = 2
@@ -231,7 +233,7 @@ size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"SelectableTile"
 theme_override_font_sizes/font_size = 26
-text = "서폿"
+text = "tx_KAGZSJJGSE"
 
 [node name="GridBack" type="Panel" parent="Safe/PickPane"]
 editor_description = "Backplate 8px around the grid — keeps a short / filtered list from reading as 'the screen ended'."
@@ -296,7 +298,7 @@ size_flags_horizontal = 3
 focus_mode = 0
 theme_type_variation = &"BarGhostButton"
 theme_override_font_sizes/font_size = 30
-text = "뒤로"
+text = "tx_AT96DE2X15"
 
 [node name="Sep" type="Panel" parent="Bar/Back"]
 layout_mode = 1
@@ -320,7 +322,7 @@ focus_mode = 0
 theme_type_variation = &"BarPrimaryButton"
 theme_override_font_sizes/font_size = 38
 disabled = true
-text = "다음"
+text = "tx_GNK4E0021C"
 
 [node name="Start" type="Button" parent="Bar"]
 editor_description = "[필수] 지우면 오류 — TeamDraftView.gd _confirm_btn"
@@ -332,4 +334,4 @@ size_flags_stretch_ratio = 2.0
 focus_mode = 0
 theme_type_variation = &"BarPrimaryButton"
 theme_override_font_sizes/font_size = 38
-text = "게임 시작"
+text = "tx_N58C8KX6P1"

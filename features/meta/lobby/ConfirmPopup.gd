@@ -100,7 +100,5 @@ func _fill_preview() -> void:
 	UiPreview.stage(self)
 	UiPreview.trace(confirmed)
 	UiPreview.trace(cancelled)
-	open("런을 포기할까요?",
-			"진행 중인 런(정규시즌 3주차)의 기록이 모두 사라집니다.
-획득한 보상은 정산되지 않습니다.",
-			"취소", "포기", true)
+	open(Loc.t(L.LOBBY_HOME_ABANDON_TITLE), Loc.t(L.LOBBY_HOME_ABANDON_BODY),
+			Loc.t(L.UI_BUTTON_CANCEL), Loc.t(L.LOBBY_HOME_ABANDON_CONFIRM), true)

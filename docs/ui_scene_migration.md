@@ -113,7 +113,7 @@ ConfirmPopup (CanvasLayer 20, visible=false)
 |---|---|---|---|---|
 | 1 | `ConfirmPopup` | `meta/lobby/` | 팝업 | ✅ 커밋됨 (uid 미부여 — 웨이브 끝에 에디터에서 일괄) |
 | 2 | `ManagerTypePopup` | `meta/lobby/` | 팝업 (선택지 반복 → 아이템 씬) | ⬜ |
-| 3 | `ShopPopup` | `meta/shop/` | 팝업 | ⬜ |
+| 3 | `ShopPopup` | `meta/shop/` | 팝업 | ✅ 전환 (+ `ShopRevealItem` · `ShopRateRow` 아이템 씬), uid 미부여 |
 | 4 | `CollectionDetailSheet` | `meta/collection/` | 시트 | ⬜ |
 | 5 | `DraftDetailPanel` | `meta/run_setup/` | 모달 | ⬜ |
 | 6 | `HubSheet` | `season/` | 시트 (허브 관리 카드 공용 틀) | ✅ 틀만 전환 (본문은 #10), uid 미부여 |
@@ -188,10 +188,17 @@ ConfirmPopup (CanvasLayer 20, visible=false)
 | 1 | T2 규칙 문서화 (루트 `CLAUDE.md`) | 오케스트레이터 | ✅ |
 | 1 | T4 런타임 덤프 툴 | 에이전트 B | ✅ 머지 |
 | 2 | T3 #2 `ManagerTypePopup` | 에이전트 | ⏳ |
-| 2 | T3 #3 `ShopPopup` | 에이전트 | ⏳ |
+| 2 | T3 #3 `ShopPopup` | 에이전트 | ✅ 머지 (공개 3상태 · 재오픈 diff 0, 확률표 12px — Divider 끝 1px · AA) |
 | 2 | T3 #4 `CollectionDetailSheet` | 에이전트 | ⏳ |
 | 2 | T3 #5 `DraftDetailPanel` | 에이전트 | ⏳ |
 | 2 | T3 #6 `HubSheet` | 에이전트 | ✅ 머지 (재무 · 메크 연구 · 스태프 · 리그 픽셀 diff 0, 긴 제목은 의도적으로 말줄임) |
 | 끝 | 새 `.tscn` 전부 에디터에서 열고 저장 (uid 부여) | 사용자 | ⬜ |
+
+### 웨이브 2 에서 제안된 theme variation (웨이브 끝에 한 번에 반영 — 병렬 중엔 테마 수정 금지)
+| 제안 | 출처 | 현재 우회 |
+|---|---|---|
+| 패딩 40 짜리 팝업 카드 (또는 `POPUP_PAD` 축소) — 결과 카드 5장이 `PopupCard` 48 안에 안 들어감 | ShopPopup | `MarginContainer` −8 |
+| `OnFillLabel` — 색면 위 흰 글자 | ShopPopup | 코드에서 font_color |
+| `Divider` 선 끝 연장(grow) 0 — 정확히 1px 폭 | ShopPopup | 없음 (1px 차이 허용) |
 
 > 웨이브 2 는 T1 머지 직후 시작 (T4 와 무관하므로 T4 진행 중에 병렬 착수).

@@ -145,6 +145,33 @@ and exposes intent methods on the hub. Pattern mirrors `BattleSim`:
 | IntlBracketView          | `tournament/IntlBracketView.gd`              | Phase-8 INTL bracket UI (7 panels: 4 QF / 2 SF / F)              |
 | GameOverView             | `GameOverView.gd`                            | Game-over screen — playoff cut missed, playoff SF/F lost, or any INTL lost (reason line names the round) |
 | EndingView               | `EndingView.gd`                              | World-champion ending screen — REGULAR_INTL win                  |
+| *(overlay)* HubSheet     | `HubSheet.gd` + `HubSheet.tscn`              | Shared detail-sheet **frame** for the hub manage cards (`StaffPanel` · `MasteryPanel` · `FinancePanel`) and the standings team detail (`LeagueView.open_team_detail`). See "HubSheet" below. |
+
+### HubSheet (`HubSheet.tscn` + `HubSheet.gd`)
+CanvasLayer 18, opened with `HubSheet.open_on(host, title)` (instantiates the scene via `create()`,
+adds it under `host`, sets the title, fits the safe area). One-shot: `close()` (dim tap · `닫기`)
+emits `closed` and frees it; `HubView` connects `closed` → `refresh()`.
+
+```
+HubSheet (CanvasLayer 18)
+└ Root (full rect, theme = OutgameTheme.tres)
+  ├ %Dim        flat Button — tap outside the card closes
+  ├ DimRect     Panel · DimPanel
+  └ %SafeArea   full rect; code sets top / bottom offsets to the safe-area insets
+    └ %Card     Panel · PopupCard, centred 1008 wide, 60 below / 24 above the safe edges (STOP)
+      └ %Pad    MarginContainer 40 / 34 / 40 / 40
+        └ VBox (sep 0): %Title (TitleLabel, 40, ellipsis) · Gap 14 · Divider · Gap 15 ·
+                        ScrollSlot (expand) ─ %Scroll ─ %Body · Gap 20 · %Close (GhostButton, 112)
+```
+
+- **Scene owns** the frame layout and styles (card size / margins, title, divider, button).
+- **Code owns** the safe-area offsets, title text, close wiring, `DragScroll.attach(%Scroll)`.
+- **Callers own the body** — still code-built, absolute children under `sheet.body`, width
+  `sheet.body_w()` (= `%Card` width − `%Pad` side margins = 928), height via `set_body_height(h)`.
+  `card()` returns `%Card` for controls outside the scroll (card-local coords).
+- `%Scroll` sits in a plain `ScrollSlot` Control and grows **right only** — when the body overflows,
+  the scroll bar adds its width outside the 928 column instead of widening the VBox, so content x and
+  `body_w()` never move.
 
 ## Phase week budget (CalendarSystem.PHASE_WEEKS)
 | Phase           | League weeks | Playoff weeks | Total |

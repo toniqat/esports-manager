@@ -1,11 +1,19 @@
 class_name HubSheet
 extends CanvasLayer
 
-# The **shared detail sheet** opened by the hub manage cards (staff · mech research · finance).
-# Dims the whole screen and shows one white card inside the safe area (title · vertically
-# scrolling body · bottom `닫기`). Same pattern as `meta/lobby/ConfirmPopup.gd` — being a
-# CanvasLayer its coordinates are viewport-based (`docs/mobile_safe_area.md` pattern C)
-# and the card sits inside the safe area.
+# The **shared detail sheet** opened by the hub manage cards (staff · mech research · finance)
+# and the standings team detail. Dims the whole screen and shows one white card inside the
+# safe area (title · vertically scrolling body · bottom `닫기`). Same pattern as
+# `meta/lobby/ConfirmPopup.gd`.
+#
+# **The frame's layout lives in `HubSheet.tscn`** (card size / margins, title, divider,
+# scroll, close button — edit them in the editor). Styles come from the shared theme on
+# `Root` (`resources/OutgameTheme.tres`: `PopupCard` · `TitleLabel` · `Divider` ·
+# `GhostButton` · `DimPanel`). This script only binds `%` nodes, puts the title in, wires
+# close, and offsets `%SafeArea` by the device's safe-area insets.
+#
+# **The body content is still code-built by the callers** — absolute-positioned children
+# under `body`, card-local width `body_w()` (later work: `docs/ui_scene_migration.md` §4 #10).
 #
 # Usage (each panel's `open(host)`):
 #   var sheet := HubSheet.open_on(host, "스태프")
@@ -15,39 +23,46 @@ extends CanvasLayer
 #   sheet.closed.connect(...)               # on close
 #
 # `HubView` already connects `closed` to its `refresh()`, so panels that change state
-# inside the sheet don't need to call the hub themselves.
+# inside the sheet don't need to call the hub themselves. A sheet is one-shot: `close()`
+# frees it, the next `open_on` instantiates a fresh one.
 
 signal closed
 
-const OVERLAY_LAYER: int = 18
-const DIM_COLOR := Color(0.11, 0.11, 0.18, 0.58)
-const SIDE_MARGIN: float = 36.0
-const TOP_MARGIN: float = 60.0
-const PAD: float = 40.0
-const TITLE_H: float = 56.0
-const BTN_H: float = 112.0
+const SCENE_PATH: String = "res://features/season/HubSheet.tscn"
 
+## Scroll content root — callers add absolutely positioned children here.
 var body: Control = null
-var _root: Control = null
-var _card: Panel = null
-var _card_w: float = 0.0
 
 
-func _init() -> void:
-	layer = OVERLAY_LAYER
+## Instantiates the scene. `HubSheet.new()` is an empty CanvasLayer — don't use it.
+## Load (not preload) — preloading its own scene is a script ↔ scene cycle.
+static func create() -> HubSheet:
+	return (load(SCENE_PATH) as PackedScene).instantiate() as HubSheet
 
 
 ## Opens a sheet under `host` and returns it.
 static func open_on(host: Node, title: String) -> HubSheet:
-	var sheet := HubSheet.new()
+	var sheet := create()
 	host.add_child(sheet)
-	sheet._build(title)
+	sheet._open(title)
 	return sheet
 
 
-## Body width (inside the scroll).
+func _ready() -> void:
+	body = %Body
+	%Dim.pressed.connect(close)
+	%Close.pressed.connect(close)
+	# Drag / fling scrolling instead of the engine's touch drag (`DragScroll`).
+	DragScroll.attach(%Scroll)
+	# A press on the card must not fall through to the dim — `%Card` is STOP in the scene.
+
+
+## Body width (inside the scroll) = card width minus the `%Pad` side margins. Valid right
+## after `open_on` — the card is anchor-sized, not container-sized, so no layout pass is needed.
 func body_w() -> float:
-	return _card_w - PAD * 2.0
+	var pad: MarginContainer = %Pad
+	return (%Card as Control).size.x - float(pad.get_theme_constant(&"margin_left")) \
+			- float(pad.get_theme_constant(&"margin_right"))
 
 
 ## Tells the scroll how tall the body is.
@@ -59,65 +74,25 @@ func set_body_height(h: float) -> void:
 ## The card itself, for callers that need fixed controls outside the scroll
 ## (card-local coordinates). Callers create those controls.
 func card() -> Panel:
-	return _card
+	return %Card
 
 
 func close() -> void:
-	if _root != null and is_instance_valid(_root):
-		_root.queue_free()
-	_root = null
+	if is_queued_for_deletion():
+		return
+	visible = false
 	closed.emit()
 	queue_free()
 
 
-func _build(title: String) -> void:
-	var vp: Vector2 = ScreenMetrics.viewport_size()
-	_root = Control.new()
-	_root.position = Vector2.ZERO
-	_root.size = vp
-	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_root)
+func _open(title: String) -> void:
+	%Title.text = title
+	_fit_safe_area()
 
-	# The dim eats input so nothing leaks to the hub behind. Tapping empty space closes.
-	var dim := Button.new()
-	dim.flat = true
-	dim.focus_mode = Control.FOCUS_NONE
-	dim.position = Vector2.ZERO
-	dim.size = vp
-	dim.pressed.connect(close)
-	_root.add_child(dim)
-	var dim_rect := ColorRect.new()
-	dim_rect.color = DIM_COLOR
-	dim_rect.position = Vector2.ZERO
-	dim_rect.size = vp
-	dim_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.add_child(dim_rect)
 
-	var top: float = ScreenMetrics.top_y() + TOP_MARGIN
-	var bottom: float = ScreenMetrics.bottom_y() - 24.0
-	_card_w = minf(vp.x - SIDE_MARGIN * 2.0, 1008.0)
-	var card_h: float = bottom - top
-	_card = OutgameTheme.add_card(_root,
-			Vector2(ScreenMetrics.center_x() - _card_w * 0.5, top),
-			Vector2(_card_w, card_h), 24)
-	# A press on the card must not fall through to the dim and close the sheet.
-	_card.mouse_filter = Control.MOUSE_FILTER_STOP
-
-	UiHelpers.mk_label(_card, title, 40, OutgameTheme.TEXT,
-			Vector2(PAD, PAD - 6.0), Vector2(body_w(), TITLE_H))
-	OutgameTheme.add_divider(_card, Vector2(PAD, PAD + TITLE_H + 8.0), body_w())
-
-	var scroll_top: float = PAD + TITLE_H + 24.0
-	var scroll_h: float = card_h - scroll_top - BTN_H - PAD - 20.0
-	var vs: Dictionary = OutgameTheme.add_vscroll(_card, Vector2(PAD, scroll_top),
-			Vector2(body_w(), scroll_h))
-	body = vs["body"]
-
-	var close_btn := Button.new()
-	close_btn.text = "닫기"
-	close_btn.focus_mode = Control.FOCUS_NONE
-	OutgameTheme.style_ghost_button(close_btn, 30)
-	close_btn.position = Vector2(PAD, card_h - PAD - BTN_H)
-	close_btn.size = Vector2(body_w(), BTN_H)
-	close_btn.pressed.connect(close)
-	_card.add_child(close_btn)
+## `%SafeArea` is the full screen shrunk to the safe area; the card's own top / bottom
+## gaps inside it are scene offsets.
+func _fit_safe_area() -> void:
+	var safe: Control = %SafeArea
+	safe.offset_top = ScreenMetrics.top_y()
+	safe.offset_bottom = ScreenMetrics.bottom_y() - ScreenMetrics.viewport_size().y

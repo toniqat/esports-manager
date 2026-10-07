@@ -3,18 +3,25 @@ extends Control
 
 # 프로젝트 진입점 — 로비. **탭 화면의 주인(host)** 이다(M8~M10, 계획서 §12).
 #
-#   ┌ 재화 줄 (CURRENCY_H) ─────────────────────────┐
-#   │ 탭 본문 (지금 탭의 Control)                     │
-#   ├ 행동 바 (탭이 `bar_specs()` 를 주면) ──────────┤
-#   └ 탭 바 (홈 · 컬렉션 · 감독 · 상점 · 패스) ───────┘
+#   ┌ 재화 줄 (%CurrencyStrip) ─────────────────────┐
+#   │ 탭 본문 (지금 탭의 Control, %Tabs 아래)          │
+#   ├ 행동 바 (%ActionBar — 탭이 `bar_specs()` 를 주면) ┤
+#   └ 탭 바 (%TabBar — 홈 · 컬렉션 · 감독 · 상점 · 패스) ┘
+#
+# **레이아웃 · 스타일의 정본은 `scenes/Lobby.tscn`** (+ 아이템 씬 `LobbyCurrencyCell.tscn` ·
+# `LobbyTabButton.tscn`). 이 스크립트는 화면 틀을 만들지 않는다 — 표(`TABS` ·
+# `CURRENCY_STRIP`) 만큼 아이템 수를 맞추고, 글을 넣고, 시그널을 잇는다. 코드가 정하는 것:
+# 안전 영역 오프셋(`_fit_safe_area`), 탭 본문 칸(`_place_tab` — 행동 바 유무), 선택 탭
+# 글자색 · 배지, 행동 바 버튼(공용 `OutgameTheme.add_bottom_bar` 를 `%ActionBar` 칸에),
+# 에러 토스트 색.
 #
 # - 탭은 `TABS` 표 한 줄 + 그 탭의 스크립트(`extends Control`)다. 탭은 처음 열 때 한 번
-#   만들고 그 뒤로는 숨겼다 보인다. 탭이 구현하는 것(덕 타이핑):
+#   만들어 `%Tabs` 에 넣고 그 뒤로는 숨겼다 보인다. 탭이 구현하는 것(덕 타이핑):
 #     bar_specs() -> Array        행동 바 구간(`OutgameTheme.add_bottom_bar` 의 specs).
 #                                 빈 배열이면 바가 없고 본문이 탭 바까지 내려온다.
 #                                 **있다 / 없다는 탭마다 고정**이다(글자는 바뀌어도 된다).
-#     setup(host: LobbyScreen)    한 번. 탭은 자기 rect(위치 · 크기는 host 가 정했다)의
-#                                 로컬 좌표로 그린다.
+#     setup(host: LobbyScreen)    한 번. 탭은 자기 rect(위치 · 크기는 host 가 정했다 —
+#                                 앵커 full rect + 오프셋)의 로컬 좌표로 그린다.
 #     on_bar_pressed(i: int)      행동 바 i 번째 구간이 눌렸다.
 #     on_shown()                  탭이 보일 때마다(프로필이 바뀌었을 수 있다 → 다시 그린다).
 # - host 가 주는 것: `show_toast(msg, is_error)`, `refresh_currency()`, `rebuild_bar()`
@@ -31,9 +38,6 @@ const TABS: Array = [
 	{"id": "pass",       "label": "패스"},
 ]
 
-const CURRENCY_H: float = 96.0
-const TAB_BAR_H: float = 128.0
-
 ## 재화 줄에 보이는 재화(순서대로). 나머지 재화는 상점 · 컬렉션 화면이 보인다.
 const CURRENCY_STRIP: Array = [
 	{"key": "outgame",            "label": "재화"},
@@ -42,6 +46,9 @@ const CURRENCY_STRIP: Array = [
 	{"key": "gacha_ticket_trait", "label": "특성권"},
 	{"key": "pilot_shard",        "label": "파편"},
 ]
+
+const CURRENCY_CELL_SCENE: String = "res://features/meta/lobby/LobbyCurrencyCell.tscn"
+const TAB_BUTTON_SCENE: String = "res://features/meta/lobby/LobbyTabButton.tscn"
 
 @onready var _gm: Node = get_node("/root/GameManager")
 @onready var _pm: Node = get_node("/root/ProfileManager")
@@ -54,9 +61,9 @@ var _tab_badges: Dictionary = {}     # id → Control (dot)
 var _bar: Array = []                 # Array[Button] — current action bar
 var _bar_specs: Array = []
 var _currency_labels: Dictionary = {}
-var _toast: Panel
-var _toast_lbl: Label
 var _toast_tween: Tween
+var _toast_style: StyleBox           # %Toast's scene style (normal look)
+var _toast_error_style: StyleBox     # the same pill, recoloured NEGATIVE
 var _confirm: ConfirmPopup
 var _confirm_cb: Callable = Callable()
 var _manager_popup: ManagerTypePopup = null
@@ -64,7 +71,6 @@ var _built: bool = false
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
 	# 로비를 거쳐 들어간 시즌은 진짜 런 파일에 저장한다. 에디터에서 Season /
 	# MatchFlow 를 바로 실행하면 기본값(true)이 남아 숨은 테스트 런에 쓴다.
 	_gm.use_test_run = false
@@ -74,40 +80,17 @@ func _ready() -> void:
 	_build()
 
 
-# ── Layout (화면째 안전 영역으로 내린 좌표계) ──────────────────────────────────
-static func tab_bar_top() -> float:
-	return OutgameTheme.bottom_bar_top()
-
-
-static func action_bar_top() -> float:
-	return tab_bar_top() - OutgameTheme.BOTTOM_BAR_H
-
-
-## 탭 본문 rect — 바가 있는 탭이면 행동 바 위까지, 없으면 탭 바 위까지.
-static func content_rect(has_bar: bool) -> Rect2:
-	var bottom: float = action_bar_top() if has_bar else tab_bar_top()
-	return Rect2(0.0, CURRENCY_H, ScreenMetrics.vp_w(), bottom - CURRENCY_H)
-
-
 # ── Build ────────────────────────────────────────────────────────────────────
 func _build() -> void:
 	ScreenMetrics.indent_to_safe_top(self)
-	OutgameTheme.add_background(self)
-	_build_currency_strip()
-	_build_tab_bar()
-	# Toast = an opaque pill above the action bar (it floats over scrolling tab bodies,
-	# so bare text would be unreadable); fades out after TOAST_SEC.
-	_toast = Panel.new()
-	_toast.position = Vector2(40.0, action_bar_top() - 88.0)
-	_toast.size = Vector2(ScreenMetrics.vp_w() - 80.0, 68.0)
-	_toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_toast.z_index = 5
-	_toast.visible = false
-	add_child(_toast)
-	_toast_lbl = UiHelpers.mk_label(_toast, "", 26, OutgameTheme.TEXT_ON_FILL,
-			Vector2(16, 0), _toast.size - Vector2(32, 0), HORIZONTAL_ALIGNMENT_CENTER)
-	_toast_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_toast_lbl.clip_text = true
+	_fit_safe_area()
+	_sync_currency_cells()
+	_sync_tab_buttons()
+	_toast_style = (%Toast as Panel).get_theme_stylebox("panel")
+	_toast_error_style = _toast_style.duplicate()
+	if _toast_error_style is StyleBoxFlat:
+		(_toast_error_style as StyleBoxFlat).bg_color = OutgameTheme.NEGATIVE
+	_hide_toast()
 
 	_confirm = ConfirmPopup.create()
 	add_child(_confirm)
@@ -125,59 +108,63 @@ func _build() -> void:
 		_manager_popup.open()
 
 
-func _build_currency_strip() -> void:
-	var strip := Panel.new()
-	strip.add_theme_stylebox_override("panel", OutgameTheme.flat_style(OutgameTheme.SURFACE, 0))
-	strip.position = Vector2.ZERO
-	strip.size = Vector2(ScreenMetrics.vp_w(), CURRENCY_H)
-	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(strip)
-	ScreenMetrics.backfill_top(strip, OutgameTheme.SURFACE)
-	OutgameTheme.add_divider(strip, Vector2(0, CURRENCY_H - 1.0), ScreenMetrics.vp_w())
-	var n: int = CURRENCY_STRIP.size()
-	var cell_w: float = (ScreenMetrics.vp_w() - 32.0) / float(n)
-	for i in n:
+## 기기마다 다른 값만 오프셋으로 넣는다(패턴 B) — 배경 · 재화 줄 판은 노치 밑까지
+## 올리고, 아래쪽 바들은 제스처 띠 위로 올리되 탭 바 판만 화면 끝까지 내린다.
+func _fit_safe_area() -> void:
+	ScreenMetrics.extend_background(%Background)
+	ScreenMetrics.extend_background(%StripBack)
+	var below: float = maxf(0.0, ScreenMetrics.insets().w)
+	(%SafeBottom as Control).offset_bottom = -below
+	(%TabBarBack as Control).offset_bottom = below
+
+
+## `box` 의 자식(아이템 씬 인스턴스)을 `n` 개로 맞춘다 — 씬의 미리보기 인스턴스를
+## 다시 쓰고, 모자라면 인스턴스하고, 남으면 지운다.
+func _sync_items(box: Control, scene_path: String, n: int) -> Array:
+	var items: Array = box.get_children()
+	while items.size() > n:
+		var extra: Node = items.pop_back()
+		box.remove_child(extra)
+		extra.queue_free()
+	while items.size() < n:
+		var item: Node = (load(scene_path) as PackedScene).instantiate()
+		box.add_child(item)
+		items.append(item)
+	return items
+
+
+func _sync_currency_cells() -> void:
+	var cells: Array = _sync_items(%CurrencyCells, CURRENCY_CELL_SCENE, CURRENCY_STRIP.size())
+	for i in cells.size():
 		var spec: Dictionary = CURRENCY_STRIP[i]
-		var x: float = 16.0 + cell_w * i
-		UiHelpers.mk_label(strip, String(spec["label"]), 18, OutgameTheme.TEXT_SUB,
-				Vector2(x, 12), Vector2(cell_w, 26), HORIZONTAL_ALIGNMENT_CENTER)
-		_currency_labels[String(spec["key"])] = UiHelpers.mk_label(strip, "0", 30,
-				OutgameTheme.TEXT, Vector2(x, 40), Vector2(cell_w, 40),
-				HORIZONTAL_ALIGNMENT_CENTER)
+		var cell: Node = cells[i]
+		(cell.get_node("%Caption") as Label).text = String(spec["label"])
+		_currency_labels[String(spec["key"])] = cell.get_node("%Value")
 	refresh_currency()
 
 
-func _build_tab_bar() -> void:
-	var below: float = maxf(0.0, ScreenMetrics.insets().w)
-	var vp_w: float = ScreenMetrics.vp_w()
-	var back := Panel.new()
-	back.add_theme_stylebox_override("panel", OutgameTheme.flat_style(OutgameTheme.SURFACE, 0))
-	back.position = Vector2(0, tab_bar_top())
-	back.size = Vector2(vp_w, TAB_BAR_H + below)
-	back.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(back)
-	OutgameTheme.add_divider(back, Vector2.ZERO, vp_w, OutgameTheme.BORDER_STRONG)
-	var w: float = vp_w / float(TABS.size())
-	for i in TABS.size():
+func _sync_tab_buttons() -> void:
+	var buttons: Array = _sync_items(%TabButtons, TAB_BUTTON_SCENE, TABS.size())
+	for i in buttons.size():
 		var id: String = String(TABS[i]["id"])
-		var b := Button.new()
+		var b: Button = buttons[i]
 		b.text = String(TABS[i]["label"])
-		b.flat = true
-		b.focus_mode = Control.FOCUS_NONE
-		b.position = Vector2(w * i, tab_bar_top())
-		b.size = Vector2(w, TAB_BAR_H)
-		b.add_theme_font_size_override("font_size", 28)
 		b.pressed.connect(switch_tab.bind(id))
-		add_child(b)
 		_tab_buttons[id] = b
-		var dot := ColorRect.new()
-		dot.color = OutgameTheme.NEGATIVE
-		dot.size = Vector2(14, 14)
-		dot.position = Vector2(w * 0.5 + 44.0, 30.0)
-		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var dot: Control = b.get_node("%Badge")
 		dot.visible = false
-		b.add_child(dot)
 		_tab_badges[id] = dot
+
+
+## 탭 본문 칸 — 재화 줄 아래부터, 바가 있는 탭이면 행동 바 위까지, 없으면 탭 바 위까지.
+## 값은 씬 노드의 오프셋에서 읽는다(씬에서 바 높이를 고치면 본문이 따라온다).
+func _place_tab(tab: Control, has_bar: bool) -> void:
+	var slot: Control = %ActionBar if has_bar else %TabBar
+	tab.set_anchors_preset(Control.PRESET_FULL_RECT)
+	tab.offset_left = 0.0
+	tab.offset_right = 0.0
+	tab.offset_top = (%CurrencyStrip as Control).offset_bottom
+	tab.offset_bottom = (%SafeBottom as Control).offset_bottom + slot.offset_top
 
 
 # ── Tabs ─────────────────────────────────────────────────────────────────────
@@ -191,12 +178,9 @@ func switch_tab(id: String) -> void:
 	if tab == null:
 		tab = _make_tab(id)
 		_tabs[id] = tab
-		add_child(tab)
-		# 탭 바 · 재화 줄 · 토스트 · 팝업보다 아래에 깐다.
-		move_child(tab, 1)
-		var rect: Rect2 = content_rect(not (tab.call("bar_specs") as Array).is_empty())
-		tab.position = rect.position
-		tab.size = rect.size
+		# %Tabs 는 재화 줄 · 바 · 토스트보다 아래 층이다(씬 순서).
+		%Tabs.add_child(tab)
+		_place_tab(tab, not (tab.call("bar_specs") as Array).is_empty())
 		tab.call("setup", self)
 	tab.visible = true
 	for k in _tab_buttons.keys():
@@ -218,7 +202,7 @@ func _make_tab(id: String) -> Control:
 		"manager":    return ManagerTab.new()
 		"shop":       return ShopTab.new()
 		"pass":       return PassTab.new()
-	return HomeTab.new()
+	return HomeTab.create()
 
 
 ## The current tab's action bar, rebuilt from its `bar_specs()`.
@@ -232,7 +216,7 @@ func rebuild_bar() -> void:
 	_bar_specs = tab.call("bar_specs")
 	if _bar_specs.is_empty():
 		return
-	_bar = OutgameTheme.add_bottom_bar(self, _bar_specs)
+	_bar = OutgameTheme.add_bottom_bar(%ActionBar, _bar_specs)
 	_lift_bar()
 	for i in _bar.size():
 		(_bar[i] as Button).pressed.connect(_on_bar_pressed.bind(i))
@@ -248,20 +232,26 @@ func relayout_bar() -> void:
 	_lift_bar()
 
 
-# The shared bar sits on the very bottom; here it stands on top of the tab bar.
+# The shared bar sits on the very bottom; here it fills the %ActionBar slot on top of the
+# tab bar (the slot is already above the gesture zone, so no inset padding).
 func _lift_bar() -> void:
+	var slot: Control = %ActionBar
+	var h: float = slot.offset_bottom - slot.offset_top
 	for raw in _bar:
 		var b: Button = raw
-		b.position.y = action_bar_top()
-		b.size.y = OutgameTheme.BOTTOM_BAR_H
-		for n in ["normal", "hover", "pressed", "focus", "disabled"]:
+		# Margin first: while it still holds the inset padding, the button's minimum
+		# height exceeds the slot and `size.y = h` would be clamped (the bar then
+		# overhung the tab bar on devices with a bottom inset).
+		for n in OutgameTheme.BUTTON_STATES:
 			var sb := b.get_theme_stylebox(n) as StyleBoxFlat
 			if sb != null:
 				sb.content_margin_bottom = 8.0
+		b.position.y = 0.0
+		b.size.y = h
 		for c in b.get_children():
 			var sep := c as ColorRect
 			if sep != null:
-				sep.size.y = OutgameTheme.BOTTOM_BAR_H
+				sep.size.y = h
 
 
 func _on_bar_pressed(i: int) -> void:
@@ -290,18 +280,21 @@ func refresh_badges() -> void:
 const TOAST_SEC: float = 2.4
 
 
+## Toast = an opaque pill above the action bar (it floats over scrolling tab bodies, so bare
+## text would be unreadable); fades out after TOAST_SEC. Normal look = the scene's `%Toast`
+## style; an error swaps in the same pill recoloured `NEGATIVE`.
 func show_toast(msg: String, is_error: bool = false) -> void:
-	_toast.add_theme_stylebox_override("panel", OutgameTheme.flat_style(
-			OutgameTheme.NEGATIVE if is_error else OutgameTheme.RAIL, 34))
-	_toast_lbl.text = msg
-	_toast.modulate.a = 1.0
-	_toast.visible = msg != ""
+	var toast: Panel = %Toast
+	toast.add_theme_stylebox_override("panel", _toast_error_style if is_error else _toast_style)
+	%ToastText.text = msg
+	toast.modulate.a = 1.0
+	toast.visible = msg != ""
 	if _toast_tween != null:
 		_toast_tween.kill()
 	_toast_tween = create_tween()
 	_toast_tween.tween_interval(TOAST_SEC)
-	_toast_tween.tween_property(_toast, "modulate:a", 0.0, 0.3)
-	_toast_tween.tween_callback(func() -> void: _toast.visible = false)
+	_toast_tween.tween_property(toast, "modulate:a", 0.0, 0.3)
+	_toast_tween.tween_callback(func() -> void: toast.visible = false)
 	if is_error:
 		Haptics.play(Haptics.Kind.ERROR)
 
@@ -310,8 +303,8 @@ func _hide_toast() -> void:
 	if _toast_tween != null:
 		_toast_tween.kill()
 		_toast_tween = null
-	_toast.visible = false
-	_toast_lbl.text = ""
+	%Toast.visible = false
+	%ToastText.text = ""
 
 
 ## Modal confirm; `on_confirm` runs when confirmed.

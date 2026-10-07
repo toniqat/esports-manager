@@ -4,6 +4,9 @@ extends Control
 # 로비의 홈 탭 — 진행 중인 런 카드와 `새 런`(1) / `이어하기`(2) 행동 바.
 # 런이 없으면 빈 상태 카드와 전폭 `새 런`. 탭 계약은 `LobbyScreen.gd` 머리말.
 #
+# **레이아웃 · 스타일의 정본은 `HomeTab.tscn`** — 이 스크립트는 `%노드` 에 글을 넣고
+# 런 카드 / 빈 카드 중 하나를 보일 뿐이다. 생성은 `HomeTab.create()`.
+#
 # `새 런` 을 누를 때 런이 이미 있으면 **포기 확인 모달**을 띄운다 — 확인하면 그 런을
 # **포기로 정산**(`RunResult.settle_current_run("abandon")`, 실패 정산이지만 보상은
 # 준다)하고 정산 화면으로 간다. 그 화면의 `새 런` 이 런 준비로 잇는다.
@@ -11,20 +14,18 @@ extends Control
 const PHASE_NAMES: Dictionary = HubView.PHASE_NAMES
 const WEEKDAY_NAMES: Array = OutgameTheme.DAY_LETTERS
 const RUN_SETUP_SCENE: String = "res://scenes/RunSetup.tscn"
-
-const CARD_X: float = 80.0
-const CARD_W: float = 920.0
-const TITLE_Y: float = 64.0
-const CARD_TOP: float = 300.0
-const CARD_H: float = 400.0
-const EMPTY_CARD_H: float = 220.0
-const CARD_PAD: float = 44.0
+const SCENE_PATH: String = "res://features/meta/lobby/HomeTab.tscn"
 
 var _host: LobbyScreen
 var _gm: Node
 var _pm: Node
 var _has_run: bool = false
 var _meta: Dictionary = {}
+
+
+## 씬을 인스턴스한다. `HomeTab.new()` 는 빈 Control 이라 쓰지 않는다.
+static func create() -> HomeTab:
+	return (load(SCENE_PATH) as PackedScene).instantiate() as HomeTab
 
 
 func bar_specs() -> Array:
@@ -41,10 +42,9 @@ func setup(host: LobbyScreen) -> void:
 	_host = host
 	_gm = get_node("/root/GameManager")
 	_pm = get_node("/root/ProfileManager")
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_has_run = SaveSystem.has_run()
 	_meta = SaveSystem.read_run_meta() if _has_run else {}
-	_build()
+	_fill()
 
 
 func on_shown() -> void:
@@ -58,80 +58,37 @@ func on_bar_pressed(i: int) -> void:
 		_on_new_run_pressed()
 
 
-# ── Build ────────────────────────────────────────────────────────────────────
-func _build() -> void:
-	var w: float = size.x
-	UiHelpers.mk_label(self, "ESPORTS MANAGER", 64, OutgameTheme.TEXT,
-			Vector2(0, TITLE_Y), Vector2(w, 88), HORIZONTAL_ALIGNMENT_CENTER)
-	var rule := ColorRect.new()
-	rule.color = OutgameTheme.ACCENT
-	rule.position = Vector2(w * 0.5 - 40.0, TITLE_Y + 102.0)
-	rule.size = Vector2(80, 6)
-	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(rule)
+# ── Fill (레이아웃 · 스타일은 HomeTab.tscn) ─────────────────────────────────────
+func _fill() -> void:
 	var mgr_lv: int = ManagerProgress.level_of(_pm.profile)
-	UiHelpers.mk_label(self, "감독 Lv%d · 보유 선수 %d명 · 특성 %d개" % [
-				mgr_lv, (_pm.owned_pilot_ids() as Array).size(),
-				(_pm.owned_trait_ids() as Array).size()],
-			22, OutgameTheme.TEXT_SUB, Vector2(0, TITLE_Y + 124.0), Vector2(w, 32),
-			HORIZONTAL_ALIGNMENT_CENTER)
-
-	UiHelpers.mk_label(self, "진행 중인 런", 24, OutgameTheme.TEXT_SUB,
-			Vector2(_card_x(), CARD_TOP - 50.0), Vector2(CARD_W, 34))
+	%Summary.text = "감독 Lv%d · 보유 선수 %d명 · 특성 %d개" % [
+			mgr_lv, (_pm.owned_pilot_ids() as Array).size(),
+			(_pm.owned_trait_ids() as Array).size()]
 	if _has_run and not _meta.is_empty():
-		_build_run_card()
+		_show_run(_meta)
 	else:
-		_build_empty_card()
+		%RunCard.visible = false
+		%EmptyCard.visible = true
 
 
-func _card_x() -> float:
-	return maxf(CARD_X, size.x * 0.5 - CARD_W * 0.5)
-
-
-func _build_run_card() -> void:
-	var card: Panel = OutgameTheme.add_card(self, Vector2(_card_x(), CARD_TOP),
-			Vector2(CARD_W, CARD_H), 24)
-	var inner_w: float = CARD_W - CARD_PAD * 2.0
-	UiHelpers.mk_label(card, String(PHASE_NAMES.get(int(_meta.get("phase", 0)), "—")), 36,
-			OutgameTheme.TEXT, Vector2(CARD_PAD, CARD_PAD - 4.0), Vector2(inner_w, 50))
-	if bool(_meta.get("match_in_progress", false)):
-		var chip_w: float = 170.0
-		OutgameTheme.add_chip(card, "경기 진행 중",
-				Vector2(CARD_W - CARD_PAD - chip_w, CARD_PAD + 2.0),
-				Vector2(chip_w, 40), OutgameTheme.ACCENT_DIM, OutgameTheme.ACCENT_TEXT, 20)
-	UiHelpers.mk_label(card, "%d년 %d월 %d일 (%s)" % [
-				int(_meta.get("year", 1)), int(_meta.get("month", 12)),
-				int(_meta.get("day", 1)), _weekday_name(int(_meta.get("weekday", 0))),
-			], 24, OutgameTheme.TEXT_SUB,
-			Vector2(CARD_PAD, CARD_PAD + 54.0), Vector2(inner_w, 34))
-	OutgameTheme.add_divider(card, Vector2(CARD_PAD, CARD_PAD + 112.0), inner_w)
-	UiHelpers.mk_label(card, String(_meta.get("team_name", "—")), 32,
-			OutgameTheme.TEXT, Vector2(CARD_PAD, CARD_PAD + 136.0), Vector2(inner_w, 44))
-	UiHelpers.mk_label(card, "우승 트로피 %d개" % int(_meta.get("trophies", 0)),
-			24, OutgameTheme.ACCENT_TEXT, Vector2(CARD_PAD, CARD_PAD + 188.0), Vector2(inner_w, 34))
-	var rank: int = int(_meta.get("rank", 0))
+## 런 카드를 `meta`(`SaveSystem.read_run_meta()`)로 채우고 빈 카드를 숨긴다.
+func _show_run(meta: Dictionary) -> void:
+	%EmptyCard.visible = false
+	%RunCard.visible = true
+	%Phase.text = String(PHASE_NAMES.get(int(meta.get("phase", 0)), "—"))
+	%LiveChip.visible = bool(meta.get("match_in_progress", false))
+	%Date.text = "%d년 %d월 %d일 (%s)" % [
+			int(meta.get("year", 1)), int(meta.get("month", 12)),
+			int(meta.get("day", 1)), _weekday_name(int(meta.get("weekday", 0)))]
+	%Team.text = String(meta.get("team_name", "—"))
+	%Trophies.text = "우승 트로피 %d개" % int(meta.get("trophies", 0))
+	var rank: int = int(meta.get("rank", 0))
 	var record: String = "리그 미시작"
 	if rank > 0:
 		record = "현재 리그 %d위 (%d승 %d패)" % [
-			rank, int(_meta.get("wins", 0)), int(_meta.get("losses", 0))]
-	UiHelpers.mk_label(card, record, 24, OutgameTheme.TEXT,
-			Vector2(CARD_PAD, CARD_PAD + 230.0), Vector2(inner_w, 34))
-	UiHelpers.mk_label(card, "마지막 저장 " + String(_meta.get("saved_at", "")),
-			20, OutgameTheme.TEXT_FAINT,
-			Vector2(CARD_PAD, CARD_H - CARD_PAD - 28.0), Vector2(inner_w, 30),
-			HORIZONTAL_ALIGNMENT_RIGHT)
-
-
-func _build_empty_card() -> void:
-	var card: Panel = OutgameTheme.add_card(self, Vector2(_card_x(), CARD_TOP),
-			Vector2(CARD_W, EMPTY_CARD_H), 24)
-	var l1 := UiHelpers.mk_label(card, "진행 중인 런이 없습니다", 30,
-			OutgameTheme.TEXT_SUB, Vector2(0, 58), Vector2(CARD_W, 44),
-			HORIZONTAL_ALIGNMENT_CENTER)
-	l1.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	UiHelpers.mk_label(card, "아래 '새 런' 으로 시즌을 시작하세요", 22,
-			OutgameTheme.TEXT_FAINT, Vector2(0, 112), Vector2(CARD_W, 34),
-			HORIZONTAL_ALIGNMENT_CENTER)
+			rank, int(meta.get("wins", 0)), int(meta.get("losses", 0))]
+	%Record.text = record
+	%SavedAt.text = "마지막 저장 " + String(meta.get("saved_at", ""))
 
 
 func _weekday_name(wd: int) -> String:

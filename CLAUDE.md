@@ -27,7 +27,7 @@ Lobby ──new run──▶ RunSetup ──start_run──▶ Season (SeasonHub
 | State | **Profile** (meta, `user://profile.save`, `ProfileManager`) · **run** (`GameManager.season_state`, `user://run.save`) · **match** (`GameManager.match_ctx`, handoff MatchFlow → BattleSim, never saved) | `autoloads/`, `features/save_load/` |
 | Rules | Static `class_name` systems per feature (`*System.gd`, `RunRules`, …) — screens draw, systems decide | each feature folder |
 | Data | `data/csv/*.csv` → `data/game.db` (SQLite) → `GameDb` / `ConstTable`; tuning numbers only in `const.csv` | `data/`, `resources/` |
-| UI kit | Outgame = white theme via `OutgameTheme` + bottom action bar; screen coords via `ScreenMetrics`. BattleSim = dark, its own UI | `resources/`, `docs/mobile_safe_area.md` |
+| UI kit | Outgame = white theme via `OutgameTheme` + bottom action bar; screen coords via `ScreenMetrics`. BattleSim = dark theme via `BattleTheme` | `resources/`, `docs/mobile_safe_area.md` |
 
 Campaign = 6 phases (`PRESEASON` … `REGULAR_INTL`), one week at a time, days 월~금 training /
 토·일 matches; rules in `features/season/README.md` + `calendar/README.md`.
@@ -104,7 +104,7 @@ Read the README of every row your task touches. Indented rows are submodules —
 - **Naming (lint-driven)**: `_foo` = used only inside its script; anything read from another script,
   `@export` vars, signal payloads = no underscore. Exceptions: `_bs`, `_on_*` handlers. Locals must not
   shadow `Node` / `Control` properties (`visible`, `position`, `name`, `owner`). Fix the cause — no `@warning_ignore`.
-- **Outgame UI lives in `.tscn`** (migration in progress — `docs/ui_scene_migration.md` §3):
+- **UI lives in `.tscn`** — outgame and the BattleSim HUD (rules — `docs/ui_scene_migration.md` §3):
   layout / style are owned by the scene; the script only binds `%UniqueName` nodes, fills data,
   connects signals; scenes are built with `Xxx.create()`, not `.new()`. **No local StyleBoxes in scenes** —
   a one-scene look is a `<Scene><Role>` theme variation derived from a shared one

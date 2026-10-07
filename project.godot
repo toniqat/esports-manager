@@ -12,8 +12,8 @@ config_version=5
 
 config/name="EsportsManager"
 run/main_scene="res://scenes/Lobby.tscn"
-run/max_fps=60
 config/features=PackedStringArray("4.5", "Mobile")
+run/max_fps=60
 boot_splash/bg_color=Color(0, 0, 0, 1)
 boot_splash/show_image=false
 boot_splash/image="res://resources/images/splash_blank.png"
@@ -36,6 +36,10 @@ window/size/window_height_override=1248
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation=1
+
+[editor]
+
+script/search_in_file_extensions=PackedStringArray("gd", "gdshader", "tscn")
 
 [editor_plugins]
 

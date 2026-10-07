@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=4 format=3 uid="uid://bddy13yklhjud"]
 
 [ext_resource type="Script" uid="uid://ba8efkgqysnjo" path="res://features/season/tournament/BracketView.gd" id="1_view"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
@@ -109,7 +109,6 @@ theme_override_constants/separation = 60
 [node name="SF1" parent="Bracket/Semis" instance=ExtResource("3_box")]
 unique_name_in_owner = true
 layout_mode = 2
-slot_title = "4강 1경기"
 
 [node name="SF2" parent="Bracket/Semis" instance=ExtResource("3_box")]
 unique_name_in_owner = true

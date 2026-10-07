@@ -1,6 +1,6 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=4 format=3 uid="uid://dkc4ervyl282d"]
 
-[ext_resource type="Script" path="res://features/season/training/TrainingView.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://mgbtbbkxgbgw" path="res://features/season/training/TrainingView.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 [ext_resource type="PackedScene" path="res://features/season/training/TrainingThumb.tscn" id="3_thumb"]
 

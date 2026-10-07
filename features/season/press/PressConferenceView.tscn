@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=4 format=3 uid="uid://dqw2rto0781be"]
 
 [ext_resource type="Script" uid="uid://brrlus0ayimjq" path="res://features/season/press/PressConferenceView.gd" id="1_press"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]

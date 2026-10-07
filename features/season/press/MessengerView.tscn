@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://d00crjovljpt2"]
 
 [ext_resource type="Script" uid="uid://dmj78et2vm517" path="res://features/season/press/MessengerView.gd" id="1_msg"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
@@ -86,7 +86,6 @@ anchor_bottom = 1.0
 offset_top = 190.0
 offset_bottom = -64.0
 grow_vertical = 2
-mouse_filter = 1
 horizontal_scroll_mode = 0
 
 [node name="Body" type="Control" parent="SafeArea/Scroll"]

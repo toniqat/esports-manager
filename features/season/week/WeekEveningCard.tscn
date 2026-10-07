@@ -1,7 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://cdkpljfmyhwud"]
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
-[ext_resource type="PackedScene" path="res://features/season/week/WeekEveningSlot.tscn" id="2_slot"]
+[ext_resource type="PackedScene" uid="uid://owneowrfna6p" path="res://features/season/week/WeekEveningSlot.tscn" id="2_slot"]
 
 [node name="WeekEveningCard" type="Panel"]
 editor_description = "오늘 저녁 (Mon–Fri, before the action): pick a pilot, then 면담 / 외출 / 패스. Code fills %Slots with one WeekEveningSlot per own pilot (seat order) and sets the button texts / disabled state."
@@ -32,6 +32,7 @@ offset_left = -428.0
 offset_top = 30.0
 offset_right = -28.0
 offset_bottom = 62.0
+grow_horizontal = 0
 theme_type_variation = &"CaptionLabel"
 text = "면담 2/2 · 외출 1/1"
 horizontal_alignment = 2
@@ -68,26 +69,14 @@ layout_mode = 2
 [node name="Slot1" parent="Slots" instance=ExtResource("2_slot")]
 layout_mode = 2
 
-[node name="Highlight" parent="Slots/Slot1" index="0"]
-visible = false
-
 [node name="Slot2" parent="Slots" instance=ExtResource("2_slot")]
 layout_mode = 2
-
-[node name="Highlight" parent="Slots/Slot2" index="0"]
-visible = false
 
 [node name="Slot3" parent="Slots" instance=ExtResource("2_slot")]
 layout_mode = 2
 
-[node name="Highlight" parent="Slots/Slot3" index="0"]
-visible = false
-
 [node name="Slot4" parent="Slots" instance=ExtResource("2_slot")]
 layout_mode = 2
-
-[node name="Highlight" parent="Slots/Slot4" index="0"]
-visible = false
 
 [node name="Buttons" type="HBoxContainer" parent="."]
 layout_mode = 1

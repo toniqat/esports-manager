@@ -1,6 +1,6 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://xjuvukcwmfky"]
 
-[ext_resource type="Script" uid="uid://dqbx5nh15gjgt" path="res://features/season/tournament/BracketMatchBox.gd" id="1_box"]
+[ext_resource type="Script" path="res://features/season/tournament/BracketMatchBox.gd" id="1_box"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="BracketMatchBox" type="Panel"]
@@ -12,7 +12,6 @@ theme = ExtResource("2_theme")
 theme_type_variation = &"Card"
 script = ExtResource("1_box")
 slot_title = "4강 1경기"
-corner_radius = 8
 
 [node name="Slot" type="Label" parent="."]
 unique_name_in_owner = true
@@ -68,6 +67,7 @@ offset_top = -80.0
 offset_right = -20.0
 offset_bottom = -40.0
 grow_horizontal = 2
+grow_vertical = 0
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 28
 text = "Section 6  (S6)"

@@ -1,9 +1,9 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=5 format=3 uid="uid://crdeyhbfs5lna"]
 
 [ext_resource type="Script" uid="uid://dntw2lvkn2vh4" path="res://features/season/HubView.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
-[ext_resource type="PackedScene" path="res://features/season/HubRosterRow.tscn" id="3_row"]
-[ext_resource type="PackedScene" path="res://features/season/HubManageCard.tscn" id="4_card"]
+[ext_resource type="PackedScene" uid="uid://dgsdeg4lhyxen" path="res://features/season/HubRosterRow.tscn" id="3_row"]
+[ext_resource type="PackedScene" uid="uid://cwqyeebr00eym" path="res://features/season/HubManageCard.tscn" id="4_card"]
 
 [node name="HubView" type="Control"]
 layout_mode = 3
@@ -156,7 +156,7 @@ anchor_bottom = 1.0
 offset_top = -168.0
 offset_bottom = -136.0
 grow_horizontal = 2
-mouse_filter = 2
+grow_vertical = 0
 theme_type_variation = &"AccentLabel"
 text = "토스트 미리보기"
 horizontal_alignment = 1

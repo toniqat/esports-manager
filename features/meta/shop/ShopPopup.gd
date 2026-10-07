@@ -98,7 +98,6 @@ func open_rates(pool: String) -> void:
 				OutgameTheme.flat_style(rarity_color(rar), int(chip.size.y * 0.5)))
 		var chip_text: Label = row.get_node("%ChipText")
 		chip_text.text = TraitSystem.rarity_name(rar)
-		chip_text.add_theme_color_override("font_color", OutgameTheme.TEXT_ON_FILL)
 		(row.get_node("%Pct") as Label).text = "%.1f%%" % float(r["pct"])
 		(row.get_node("%Count") as Label).text = "%d" % n_items
 		(row.get_node("%Each") as Label).text = "—" if n_items == 0 				else "%.2f%%" % (float(r["pct"]) / float(n_items))

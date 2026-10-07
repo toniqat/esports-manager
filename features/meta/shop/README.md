@@ -26,9 +26,8 @@ ShopPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨김)
   ├ %Dim        flat Button — tap outside the card = close
   ├ DimRect     Panel `DimPanel`
   └ %SafeArea   CenterContainer — top / bottom offsets = safe area (code)
-    └ Card      PanelContainer `PopupCard`, min width 980 (STOP)
-      └ Pad     MarginContainer −8 → padding 40 (PopupCard's 48 is too wide for 5 result cards)
-        └ VBox  ─ %Title `TitleLabel` · Gap · %Grid · %Rates · Gap · %Ok `PrimaryButton`
+    └ Card      PanelContainer `PopupCardWide` (padding 40 — 5 result cards don't fit `PopupCard`'s 48), min width 980 (STOP)
+      └ VBox    ─ %Title `TitleLabel` · Gap · %Grid · %Rates · Gap · %Ok `PrimaryButton`
                   %Grid  GridContainer (14 / 14), ShopRevealItem × n, columns = min(n, 5)
                   %Rates VBox ─ Head (4 `CaptionLabel` columns) · %RateRows (ShopRateRow × rarity)
                                 · Gap · %Note `CaptionLabel` (wrap) · Tail
@@ -37,7 +36,8 @@ ShopPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨김)
   (theme variations), item tile layout.
 - **Code owns**: texts, grid column count, instancing items, the safe-area offsets, and every
   **data-driven colour** — reveal card border + band (rarity), trait mark (`POSITIVE` / `NEGATIVE`),
-  result tag chip (NEW / 돌파 / 파편 / 재료), rates chip (rarity), white on-fill text on those fills.
+  result tag chip (NEW / 돌파 / 파편 / 재료), rates chip (rarity). White text on those fills is the
+  `OnFillLabel` variation in the item scenes (the tag text colour stays code — it depends on the tag).
 
 ## Gacha rules (`Gacha`)
 - Pools `pilot` / `trait`. Rarity is rolled by the pool's `gacha_rates.csv` weights

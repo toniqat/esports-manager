@@ -102,9 +102,12 @@ const CARD_RADIUS:  int = 18
 const CARD_PAD:     float = 32.0
 const POPUP_RADIUS: int = 24     # 가운데 뜨는 모달 카드 (ConfirmPopup · ManagerTypePopup)
 const POPUP_PAD:    float = 48.0
+const POPUP_PAD_WIDE: float = 40.0  # 내용이 넓은 팝업 (ShopPopup — 결과 카드 5칸)
 const SHEET_RADIUS: int = 28     # 화면 대부분을 덮는 시트 (CollectionDetailSheet)
-const SHEET_PAD:    float = 36.0
+const SHEET_PAD:    float = 36.0    # 좌우
+const SHEET_PAD_V:  float = 27.0    # 위아래
 const SUNK_RADIUS:  int = 12     # 카드 안의 눌린 칸 (스탯 칸 · 빈 자리)
+const BAR_RADIUS:   int = 7      # 진행 바 트랙 · 채움 (ProgressTrack / ProgressFill)
 
 ## `build_theme()` 이 만든 테마가 저장되는 곳. 손으로 고치지 않는다 —
 ## 이 파일을 고치고 `OutgameThemeBuilder` 를 다시 돌린다 (`resources/README.md`).
@@ -567,9 +570,12 @@ static func build_theme() -> Theme:
 
 	_add_panel(th, "Card", &"PanelContainer", card_style(CARD_RADIUS), CARD_PAD)
 	_add_panel(th, "PopupCard", &"PanelContainer", card_style(POPUP_RADIUS), POPUP_PAD)
-	_add_panel(th, "SheetCard", &"PanelContainer", card_style(SHEET_RADIUS), SHEET_PAD)
+	_add_panel(th, "PopupCardWide", &"PanelContainer", card_style(POPUP_RADIUS), POPUP_PAD_WIDE)
+	_add_panel(th, "SheetCard", &"PanelContainer", card_style(SHEET_RADIUS), SHEET_PAD, SHEET_PAD_V)
 	_add_panel(th, "SunkPanel", &"PanelContainer", flat_style(SURFACE_SUNK, SUNK_RADIUS), 0.0)
 	_add_panel(th, "DimPanel", &"Panel", flat_style(DIM, 0), 0.0)
+	_add_panel(th, "ProgressTrack", &"Panel", flat_style(SURFACE_SUNK, BAR_RADIUS), 0.0)
+	_add_panel(th, "ProgressFill", &"Panel", flat_style(ACCENT, BAR_RADIUS), 0.0)
 
 	_add_label(th, "HeadingLabel", FONT_HEADING, TEXT)
 	_add_label(th, "TitleLabel", FONT_TITLE, TEXT)
@@ -578,10 +584,14 @@ static func build_theme() -> Theme:
 	_add_label(th, "CaptionLabel", FONT_CAPTION, TEXT_SUB)
 	_add_label(th, "FaintLabel", FONT_CAPTION, TEXT_FAINT)
 	_add_label(th, "AccentLabel", FONT_CAPTION, ACCENT_TEXT)
+	_add_label(th, "OnFillLabel", FONT_CAPTION, TEXT_ON_FILL)
 
+	# 선 끝을 늘리지 않는다(grow 0) — `add_divider` 처럼 노드 폭과 정확히 같은 1px 선.
 	var line := StyleBoxLine.new()
 	line.color = BORDER
 	line.thickness = 1
+	line.grow_begin = 0.0
+	line.grow_end = 0.0
 	th.set_type_variation(&"Divider", &"HSeparator")
 	th.set_stylebox(&"separator", &"Divider", line)
 	th.set_constant(&"separation", &"Divider", 1)
@@ -609,8 +619,11 @@ static func save_theme() -> Error:
 
 
 static func _add_panel(th: Theme, variation: String, base: StringName,
-		sb: StyleBoxFlat, pad: float) -> void:
+		sb: StyleBoxFlat, pad: float, pad_v: float = -1.0) -> void:
 	sb.set_content_margin_all(pad)
+	if pad_v >= 0.0:
+		sb.content_margin_top = pad_v
+		sb.content_margin_bottom = pad_v
 	th.set_type_variation(variation, base)
 	th.set_stylebox(&"panel", variation, sb)
 

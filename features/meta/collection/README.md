@@ -42,13 +42,13 @@ CollectionDetailSheet (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 
 └ Root (full rect, theme = OutgameTheme.tres)
   ├ %Dim (flat Button, tap = close) · DimRect (DimPanel)
   └ %SafeArea (full rect; code sets top / bottom to the safe lines)
-    └ Sheet (Panel · SheetCard, offsets 24 / 48 / -24 / -16 = gaps to the safe lines)
-      └ Margin (36 / 27 / 36 / 27) ─ VBox
+    └ Sheet (PanelContainer · SheetCard = padding 36 / 27, offsets 24 / 48 / -24 / -16 = gaps to the safe lines)
+      └ VBox
         ├ ScrollSlot ─ %Scroll (offset_right 8: bar sits in the right padding; v-mode Reserve)
         │   ├ DragScroll (node)
         │   └ %Body (VBox, separation 32 = gap between sections)
         │     ├ Hero (HBox 28): %Bust (230×464, %BustPlate) │ Info VBox:
-        │     │   TitleBlock (%Name, %RoleLine) · %Chips · gap · %ExpBlock (%ExpValue, %ExpTrack/%ExpFill)
+        │     │   TitleBlock (%Name, %RoleLine) · %Chips · gap · %ExpBlock (%ExpValue, %ExpTrack `ProgressTrack` / %ExpFill `ProgressFill`)
         │     │   | %UnownedBlock · gap · SalaryRow (%SalaryTitle, %Salary) · %BonusRow (%Bonus)
         │     ├ StatsSection: header (%StatsTitle + Divider) · %StatGrid (4 cols, 12) · %StatNote
         │     ├ BtSection: header · %BtRows (VBox 10) · %BtAfter (%BtAfterLabel) | %BtEmpty

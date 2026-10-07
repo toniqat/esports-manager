@@ -856,7 +856,7 @@ The design principle is coloured cards on white paper. Three rules:
 | Group | Exports |
 |---|---|
 | Colour | `BG` `SURFACE` `SURFACE_SUNK` `RAIL` `RAIL_TEXT` / `TEXT` `TEXT_SUB` `TEXT_FAINT` `TEXT_ON_FILL` / `ACCENT` `ACCENT_DIM` `ACCENT_TEXT` `LINK` / `POSITIVE` `NEGATIVE` `NEUTRAL` / `BORDER` `BORDER_STRONG` `SHADOW` / `DIM` (modal dim) / `CARD_TINTS` `ROLE_COLORS` `ROLE_NAMES` `DAY_LETTERS` `DAY_NAMES` |
-| Sizes (theme defaults) | `FONT_HEADING` `FONT_TITLE` `FONT_BODY` `FONT_CAPTION` · `FONT_BTN_PRIMARY` `FONT_BTN_GHOST` `FONT_BTN_TEXT` `FONT_BTN_DARK` · `CARD_RADIUS` `CARD_PAD` `POPUP_RADIUS` `POPUP_PAD` `SHEET_RADIUS` `SHEET_PAD` `SUNK_RADIUS` |
+| Sizes (theme defaults) | `FONT_HEADING` `FONT_TITLE` `FONT_BODY` `FONT_CAPTION` · `FONT_BTN_PRIMARY` `FONT_BTN_GHOST` `FONT_BTN_TEXT` `FONT_BTN_DARK` · `CARD_RADIUS` `CARD_PAD` `POPUP_RADIUS` `POPUP_PAD` `POPUP_PAD_WIDE` `SHEET_RADIUS` `SHEET_PAD` `SHEET_PAD_V` `SUNK_RADIUS` `BAR_RADIUS` |
 | StyleBox | `card_style` `flat_style` `lead_bar_style` `set_corner_radius` |
 | Button | `style_primary_button` (amber, one per screen) `style_ghost_button` `style_text_button` `style_dark_button` (dark colour field — "leave this screen") `style_danger_button` (`NEGATIVE` field — destructive confirm). All read **`button_spec(kind)`** (colours + default font) and **`button_styles(kind)`** (one `button_box` per `BUTTON_STATES`, incl. `hover_pressed` = pressed so the engine default never shows while held) — the same table the theme is built from |
 | Theme | `build_theme()` → `Theme`, `save_theme()` → writes `THEME_PATH` (`OutgameTheme.tres`), `BUTTON_VARIATIONS` — see **OutgameTheme.tres** below |
@@ -895,9 +895,11 @@ shows only real value changes.
 | `DangerButton` | Button | Destructive confirm, `NEGATIVE` field (`style_danger_button`) |
 | `Card` | PanelContainer | White card with shadow, padding `CARD_PAD` (`card_style`) |
 | `PopupCard` | PanelContainer | Centred modal card, `POPUP_RADIUS` / `POPUP_PAD` |
-| `SheetCard` | PanelContainer | Large sheet over most of the screen, `SHEET_RADIUS` / `SHEET_PAD` |
+| `PopupCardWide` | PanelContainer | Same card, smaller padding `POPUP_PAD_WIDE` for wide content (ShopPopup's 5 result cards) |
+| `SheetCard` | PanelContainer | Large sheet over most of the screen, `SHEET_RADIUS`, padding `SHEET_PAD` (sides) / `SHEET_PAD_V` (top · bottom) |
 | `SunkPanel` | PanelContainer | Sunk cell inside a card (`SURFACE_SUNK`, `SUNK_RADIUS`, no padding) |
 | `DimPanel` | Panel | Full-rect modal dim (`DIM`); set `mouse_filter` = Ignore, a flat Button underneath takes the tap |
+| `ProgressTrack` · `ProgressFill` | Panel | Progress bar track (`SURFACE_SUNK`) and fill (`ACCENT`), `BAR_RADIUS`; the fill's width is data (`anchor_right` = ratio, code) |
 | `HeadingLabel` | Label | Big screen heading (`FONT_HEADING`, `TEXT`) |
 | `TitleLabel` | Label | Popup / card title (`FONT_TITLE`, `TEXT`) |
 | `BodyLabel` | Label | Body text (`FONT_BODY`, `TEXT`) |
@@ -905,7 +907,8 @@ shows only real value changes.
 | `CaptionLabel` | Label | Small labels, captions (`FONT_CAPTION`, `TEXT_SUB`) |
 | `FaintLabel` | Label | Disabled / placeholder text (`FONT_CAPTION`, `TEXT_FAINT`) |
 | `AccentLabel` | Label | Amber text on white (`FONT_CAPTION`, `ACCENT_TEXT`) |
-| `Divider` | HSeparator | 1px `BORDER` line (`add_divider`) |
+| `OnFillLabel` | Label | White text on a colour fill (`FONT_CAPTION`, `TEXT_ON_FILL`) — the fill colour itself is data |
+| `Divider` | HSeparator | 1px `BORDER` line (`add_divider`), no end grow — exactly the node's width |
 
 Not variations (data- or device-dependent, stay in code): tinted cards (`card_style(r, tint)`), lead-bar
 cards (`lead_bar_style(bar)`), chips (`add_chip` — radius from height), role / rarity colours, and the

@@ -26,7 +26,6 @@ func show_result(e: Dictionary) -> void:
 	band_sb.corner_radius_top_right = 12
 	%Band.add_theme_stylebox_override("panel", band_sb)
 	%Rarity.text = TraitSystem.rarity_name(rar)
-	%Rarity.add_theme_color_override("font_color", OutgameTheme.TEXT_ON_FILL)
 
 	var id: int = int(e.get("id", -1))
 	var is_pilot: bool = String(e.get("pool", "")) == Gacha.POOL_PILOT
@@ -41,7 +40,6 @@ func show_result(e: Dictionary) -> void:
 		%Mark.add_theme_stylebox_override("panel", OutgameTheme.flat_style(
 				OutgameTheme.POSITIVE if pos_trait else OutgameTheme.NEGATIVE, 56))
 		%MarkText.text = "+" if pos_trait else "−"
-		%MarkText.add_theme_color_override("font_color", OutgameTheme.TEXT_ON_FILL)
 	_show_tag(e)
 
 

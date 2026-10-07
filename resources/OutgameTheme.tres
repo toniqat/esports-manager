@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=37 format=3 uid="uid://co7tw5omdwmyd"]
+[gd_resource type="Theme" load_steps=40 format=3 uid="uid://co7tw5omdwmyd"]
 
 [sub_resource type="StyleBoxFlat" id="Card_panel"]
 content_margin_left = 32.0
@@ -170,6 +170,8 @@ bg_color = Color(0.11, 0.11, 0.18, 0.58)
 
 [sub_resource type="StyleBoxLine" id="Divider_separator"]
 color = Color(0.886, 0.89, 0.906, 1)
+grow_begin = 0.0
+grow_end = 0.0
 
 [sub_resource type="StyleBoxFlat" id="GhostButton_disabled"]
 content_margin_left = 18.0
@@ -281,6 +283,25 @@ shadow_color = Color(0.11, 0.11, 0.18, 0.1)
 shadow_size = 6
 shadow_offset = Vector2(0, 3)
 
+[sub_resource type="StyleBoxFlat" id="PopupCardWide_panel"]
+content_margin_left = 40.0
+content_margin_top = 40.0
+content_margin_right = 40.0
+content_margin_bottom = 40.0
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+shadow_color = Color(0.11, 0.11, 0.18, 0.1)
+shadow_size = 6
+shadow_offset = Vector2(0, 3)
+
 [sub_resource type="StyleBoxFlat" id="PrimaryButton_disabled"]
 content_margin_left = 18.0
 content_margin_top = 8.0
@@ -352,11 +373,33 @@ corner_radius_top_right = 16
 corner_radius_bottom_right = 16
 corner_radius_bottom_left = 16
 
+[sub_resource type="StyleBoxFlat" id="ProgressFill_panel"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.961, 0.651, 0.137, 1)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+
+[sub_resource type="StyleBoxFlat" id="ProgressTrack_panel"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.929, 0.933, 0.945, 1)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+
 [sub_resource type="StyleBoxFlat" id="SheetCard_panel"]
 content_margin_left = 36.0
-content_margin_top = 36.0
+content_margin_top = 27.0
 content_margin_right = 36.0
-content_margin_bottom = 36.0
+content_margin_bottom = 27.0
 bg_color = Color(1, 1, 1, 1)
 border_width_left = 1
 border_width_top = 1
@@ -518,8 +561,13 @@ GhostButton/styles/pressed = SubResource("GhostButton_pressed")
 HeadingLabel/base_type = &"Label"
 HeadingLabel/colors/font_color = Color(0.11, 0.11, 0.122, 1)
 HeadingLabel/font_sizes/font_size = 52
+OnFillLabel/base_type = &"Label"
+OnFillLabel/colors/font_color = Color(1, 1, 1, 1)
+OnFillLabel/font_sizes/font_size = 22
 PopupCard/base_type = &"PanelContainer"
 PopupCard/styles/panel = SubResource("PopupCard_panel")
+PopupCardWide/base_type = &"PanelContainer"
+PopupCardWide/styles/panel = SubResource("PopupCardWide_panel")
 PrimaryButton/base_type = &"Button"
 PrimaryButton/colors/font_color = Color(1, 1, 1, 1)
 PrimaryButton/colors/font_disabled_color = Color(0.722, 0.722, 0.749, 1)
@@ -534,6 +582,10 @@ PrimaryButton/styles/hover = SubResource("PrimaryButton_hover")
 PrimaryButton/styles/hover_pressed = SubResource("PrimaryButton_hover_pressed")
 PrimaryButton/styles/normal = SubResource("PrimaryButton_normal")
 PrimaryButton/styles/pressed = SubResource("PrimaryButton_pressed")
+ProgressFill/base_type = &"Panel"
+ProgressFill/styles/panel = SubResource("ProgressFill_panel")
+ProgressTrack/base_type = &"Panel"
+ProgressTrack/styles/panel = SubResource("ProgressTrack_panel")
 SheetCard/base_type = &"PanelContainer"
 SheetCard/styles/panel = SubResource("SheetCard_panel")
 SubLabel/base_type = &"Label"

@@ -48,7 +48,7 @@ The two detail popups opened by the assignment step are sibling files of the con
 
 | File | Purpose |
 |---|---|
-| `ban_pick/MechDetailPanel.gd` · `.tscn` | `class_name MechDetailPanel extends CanvasLayer` — mech detail (left full-body art / right 3 stat chips → passive → mech card grid / bottom close). Scene-owned layout, `MechDetailPanel.create()` once then `open(m, mastery_rows, quirk_info)` — `ban_pick/README.md` "MechDetailPanel" |
+| `ban_pick/MechDetailPanel.gd` · `.tscn` | `class_name MechDetailPanel extends CanvasLayer` — mech detail (left full-body art / right 3 stat chips → passive → mech card grid / bottom close), white modal like `DraftDetailPanel`. Scene-owned layout, `MechDetailPanel.create()` once then `open(m, mastery_rows, quirk_info)` — `ban_pick/README.md` "MechDetailPanel" |
 | `meta/run_setup/DraftDetailPanel.gd` | Pilot detail — **reuses the very same popup as the draft screen** (`DraftDetailPanel.create()` once, then `open(p: PlayerData)` is all it takes to open) |
 
 Unlike the other two, `BanPickController.enter()` **also receives the rosters and team names** —
@@ -342,7 +342,8 @@ Both controller screens are **scene-based** — no full-screen `Panel` pushed be
   insets (`BanPickView.fit_safe_area`). The team blocks are anchored to its top / bottom and the pick
   pane height comes from the band left between them (`fit_pane`) — so on any screen the grid cells
   stay square and only the number of visible rows changes.
-- **Modals** — `MechDetailPanel` (dim = viewport) and `MatchCheatMenu` (code adds the left / top insets).
+- **Modals** — `MechDetailPanel` (dim = viewport, panel + close in `%SafeArea` whose offsets are the
+  device insets) and `MatchCheatMenu` (code adds the left / top insets).
 
 Details: **`docs/mobile_safe_area.md`**
 

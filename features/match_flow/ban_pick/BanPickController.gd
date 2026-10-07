@@ -150,7 +150,6 @@ const SLOT_EMPTY_COLOR := OutgameTheme.SURFACE_SUNK
 const BLUE_COLOR  := Color(0.20, 0.45, 0.92)
 const RED_COLOR   := Color(0.88, 0.27, 0.27)
 const BAN_TINT    := Color(0.42, 0.42, 0.46, 1.0)
-const TEXT_DIM    := OutgameTheme.TEXT_SUB
 const ACCENT      := OutgameTheme.ACCENT
 
 # ── 상대의 만지작거리기 ── 상대는 곧장 고르지 않는다. 그 상황에 실제로 고를
@@ -220,8 +219,6 @@ var _sheet_desc_idx: int = -1
 var _cells: Dictionary = {}        # mech_id(int) → BanPickMechCell
 var _side_ui: Dictionary = {}      # side(int) → BanPickTeamBlock
 var _filter_role: int = -1
-## 역할군 탭의 꺼진 모양 — 씬의 탭 스타일박스. 켜진 모양은 이것에서 색만 바꿔 만든다.
-var _tab_base: StyleBoxFlat = null
 var _thumbs: Dictionary = {}       # mech_id(int) → Texture2D (lazy)
 
 # 하단 시트
@@ -526,8 +523,6 @@ func _filter_tabs() -> Array:
 func _setup_filter_tabs() -> void:
 	var tabs: Array = _filter_tabs()
 	var btns: Array = _view.tab_buttons
-	if not btns.is_empty():
-		_tab_base = (btns[0] as Button).get_theme_stylebox("normal") as StyleBoxFlat
 	for i in range(btns.size()):
 		var btn := btns[i] as Button
 		if i >= tabs.size():
@@ -547,6 +542,8 @@ func _on_filter_pressed(role: int) -> void:
 	_refresh_filter_tabs()
 
 
+## 켜진 탭 = `SelectableTileOn`(앰버 바탕 · 앰버 테두리 · 앰버 글자), 꺼진 탭 = 씬의
+## `SelectableTile`. 모양은 공용 테마 몫이고 여기서는 변형 이름만 바꾼다.
 func _refresh_filter_tabs() -> void:
 	if _view == null:
 		return
@@ -555,22 +552,7 @@ func _refresh_filter_tabs() -> void:
 		if not btn.visible:
 			continue
 		var on: bool = int(btn.get_meta("role", -99)) == _filter_role
-		btn.add_theme_color_override("font_color", OutgameTheme.ACCENT_TEXT if on else TEXT_DIM)
-		btn.add_theme_color_override("font_hover_color", OutgameTheme.ACCENT_TEXT if on else OutgameTheme.TEXT)
-		btn.add_theme_color_override("font_pressed_color", OutgameTheme.ACCENT_TEXT)
-		var sty: StyleBox = _tab_style(on)
-		for st in ["normal", "hover", "pressed", "focus"]:
-			btn.add_theme_stylebox_override(st, sty)
-
-
-## 켜진 탭 = 씬의 탭 모양에서 앰버 바탕 · 앰버 테두리로 바꾼 것.
-func _tab_style(on: bool) -> StyleBox:
-	if not on or _tab_base == null:
-		return _tab_base
-	var sb := _tab_base.duplicate() as StyleBoxFlat
-	sb.bg_color = OutgameTheme.ACCENT_DIM
-	sb.border_color = ACCENT
-	return sb
+		btn.theme_type_variation = &"SelectableTileOn" if on else &"SelectableTile"
 
 
 # ── 메크 격자 ────────────────────────────────────────────────────────────────
@@ -1342,14 +1324,13 @@ func _enter_assign_layout() -> void:
 	_set_block_tappable(_player_side, true)
 
 
-## "게임 시작"은 **하단 구간을 통째로 차지하는 바**다(씬의 `%StartButton`, 모서리 ·
-## 아래 인셋은 `OutgameTheme.style_bottom_button`) — 아웃게임 화면의 주된 행동이 서는
+## "게임 시작"은 **하단 구간을 통째로 차지하는 바**다(씬의 `%StartButton` = `BarPrimaryButton`,
+## 아래 인셋은 `BanPickView.fit_safe_area` 의 `OutgameTheme.fit_bottom_bar`) — 아웃게임 화면의 주된 행동이 서는
 ## 자리. 배정 진입 연출(`_play_assign_intro`)이 끝날 때까지 잠겨 있다. 제목("메크
 ## 배정")은 없다 — 화면에 남은 것이 양 팀 초상화와 그 밑의 기체뿐이면 무엇을 하는
 ## 단계인지는 그림이 말한다.
 func _build_assign_prompt() -> void:
 	_start_btn = _view.start_button
-	OutgameTheme.style_bottom_button(_start_btn, "primary", OutgameTheme.FONT_BTN_PRIMARY)
 	_start_btn.visible = true
 	_start_btn.disabled = true
 
@@ -1605,7 +1586,6 @@ func _finish() -> void:
 	_cells.clear()
 	_side_ui.clear()
 	_thumbs.clear()
-	_tab_base = null
 	phase_finished.emit({
 		"banned": _banned.duplicate(),
 		"player_picks": player_picks,

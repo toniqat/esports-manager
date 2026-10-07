@@ -1,19 +1,7 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://features/match_flow/ban_pick/BanPickMechCell.gd" id="1_cell"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_cell"]
-bg_color = Color(1, 1, 1, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.886, 0.89, 0.906, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
 
 [node name="BanPickMechCell" type="Button"]
 editor_description = "Size = grid column width (pane content 998 / 5 cols, 10 gap) x (square + 28 name line). The grid shows 4.5 rows of this height (BanPickView.fit_pane)."
@@ -23,11 +11,7 @@ offset_right = 191.6
 offset_bottom = 219.6
 mouse_filter = 1
 theme = ExtResource("2_theme")
-theme_override_styles/normal = SubResource("StyleBoxFlat_cell")
-theme_override_styles/hover = SubResource("StyleBoxFlat_cell")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_cell")
-theme_override_styles/focus = SubResource("StyleBoxFlat_cell")
-theme_override_styles/disabled = SubResource("StyleBoxFlat_cell")
+theme_type_variation = &"SelectableTile"
 script = ExtResource("1_cell")
 
 [node name="Art" type="TextureRect" parent="."]

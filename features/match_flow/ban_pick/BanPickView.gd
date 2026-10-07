@@ -122,13 +122,12 @@ func _ready() -> void:
 
 
 ## Device insets → offsets (`docs/mobile_safe_area.md` pattern B as a scene: the background
-## covers the whole viewport, everything else lives in `%SafeArea`). The bottom bar reaches
-## down through the bottom inset; its text stays above it (`OutgameTheme.style_bottom_button`).
+## covers the whole viewport, everything else lives in `%SafeArea`). The bottom side is
+## `OutgameTheme.fit_bottom_bar`: `%SafeArea` ends at the safe line and the bottom bar
+## (`BarPrimaryButton`) reaches down through the bottom inset with its text kept above it.
 func fit_safe_area() -> void:
-	var ins: Vector4 = ScreenMetrics.insets()
 	safe_area.offset_top = ScreenMetrics.top_y()
-	safe_area.offset_bottom = -maxf(0.0, ins.w)
-	start_button.offset_bottom = maxf(0.0, ins.w)
+	OutgameTheme.fit_bottom_bar(start_button, safe_area)
 
 
 ## Grid height for this device: 4.5 rows of `cell_h` (+ the grid's row gap), clamped to what

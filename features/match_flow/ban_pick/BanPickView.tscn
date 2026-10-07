@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://features/match_flow/ban_pick/BanPickView.gd" id="1_view"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
@@ -9,18 +9,6 @@
 [ext_resource type="Script" path="res://features/match_flow/ban_pick/BanPickOrderRow.gd" id="7_order"]
 [ext_resource type="Texture2D" path="res://resources/images/ui/banpick/turn_arrow.svg" id="8_arrow"]
 [ext_resource type="Script" path="res://features/match_flow/ban_pick/BanPickGrid.gd" id="9_grid"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab"]
-bg_color = Color(1, 1, 1, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.886, 0.89, 0.906, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sheet"]
 bg_color = Color(1, 1, 1, 1)
@@ -425,7 +413,7 @@ expand_mode = 1
 
 [node name="Tabs" type="HBoxContainer" parent="SafeArea/Band/Pane/Content"]
 unique_name_in_owner = true
-editor_description = "Role-class filter tabs. Texts / roles come from code (GameEnums.ROLE_DISPLAY_ORDER); the selected look is derived from this tab box in code."
+editor_description = "Role-class filter tabs (SelectableTile; the selected tab is switched to SelectableTileOn in code). Texts / roles come from code (GameEnums.ROLE_DISPLAY_ORDER)."
 custom_minimum_size = Vector2(0, 58)
 layout_mode = 2
 mouse_filter = 2
@@ -434,72 +422,48 @@ theme_override_constants/separation = 6
 [node name="Tab0" type="Button" parent="SafeArea/Band/Pane/Content/Tabs"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.541, 0.541, 0.569, 1)
+theme_type_variation = &"SelectableTile"
 theme_override_font_sizes/font_size = 20
-theme_override_styles/normal = SubResource("StyleBoxFlat_tab")
-theme_override_styles/hover = SubResource("StyleBoxFlat_tab")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_tab")
-theme_override_styles/focus = SubResource("StyleBoxFlat_tab")
 text = "전체"
 clip_text = true
 
 [node name="Tab1" type="Button" parent="SafeArea/Band/Pane/Content/Tabs"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.541, 0.541, 0.569, 1)
+theme_type_variation = &"SelectableTile"
 theme_override_font_sizes/font_size = 20
-theme_override_styles/normal = SubResource("StyleBoxFlat_tab")
-theme_override_styles/hover = SubResource("StyleBoxFlat_tab")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_tab")
-theme_override_styles/focus = SubResource("StyleBoxFlat_tab")
 text = "TANK"
 clip_text = true
 
 [node name="Tab2" type="Button" parent="SafeArea/Band/Pane/Content/Tabs"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.541, 0.541, 0.569, 1)
+theme_type_variation = &"SelectableTile"
 theme_override_font_sizes/font_size = 20
-theme_override_styles/normal = SubResource("StyleBoxFlat_tab")
-theme_override_styles/hover = SubResource("StyleBoxFlat_tab")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_tab")
-theme_override_styles/focus = SubResource("StyleBoxFlat_tab")
 text = "ASSASSIN"
 clip_text = true
 
 [node name="Tab3" type="Button" parent="SafeArea/Band/Pane/Content/Tabs"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.541, 0.541, 0.569, 1)
+theme_type_variation = &"SelectableTile"
 theme_override_font_sizes/font_size = 20
-theme_override_styles/normal = SubResource("StyleBoxFlat_tab")
-theme_override_styles/hover = SubResource("StyleBoxFlat_tab")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_tab")
-theme_override_styles/focus = SubResource("StyleBoxFlat_tab")
 text = "FIGHTER"
 clip_text = true
 
 [node name="Tab4" type="Button" parent="SafeArea/Band/Pane/Content/Tabs"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.541, 0.541, 0.569, 1)
+theme_type_variation = &"SelectableTile"
 theme_override_font_sizes/font_size = 20
-theme_override_styles/normal = SubResource("StyleBoxFlat_tab")
-theme_override_styles/hover = SubResource("StyleBoxFlat_tab")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_tab")
-theme_override_styles/focus = SubResource("StyleBoxFlat_tab")
 text = "SNIPER"
 clip_text = true
 
 [node name="Tab5" type="Button" parent="SafeArea/Band/Pane/Content/Tabs"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.541, 0.541, 0.569, 1)
+theme_type_variation = &"SelectableTile"
 theme_override_font_sizes/font_size = 20
-theme_override_styles/normal = SubResource("StyleBoxFlat_tab")
-theme_override_styles/hover = SubResource("StyleBoxFlat_tab")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_tab")
-theme_override_styles/focus = SubResource("StyleBoxFlat_tab")
 text = "SUPPORT"
 clip_text = true
 
@@ -771,7 +735,7 @@ text = "밴 확정"
 [node name="StartButton" type="Button" parent="SafeArea"]
 unique_name_in_owner = true
 visible = false
-editor_description = "Assign-step bottom bar. Square corners + the bottom inset (bar reaches the screen bottom, text stays above the inset) come from OutgameTheme.style_bottom_button in code."
+editor_description = "Assign-step bottom bar (BarPrimaryButton = square corners). The bottom inset (bar reaches the screen bottom, text stays above the inset) comes from OutgameTheme.fit_bottom_bar in BanPickView.fit_safe_area."
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
@@ -781,7 +745,7 @@ offset_top = -128.0
 grow_horizontal = 2
 grow_vertical = 0
 focus_mode = 0
-theme_type_variation = &"PrimaryButton"
+theme_type_variation = &"BarPrimaryButton"
 text = "게임 시작"
 
 [node name="DragGhost" type="Panel" parent="SafeArea"]

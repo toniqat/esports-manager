@@ -8,12 +8,12 @@
 | `BanPickTeamBlock.gd` | Script on `%EnemyBlock` / `%PlayerBlock` (inline in the view scene): finds ban chips / mech slots / portraits / hint by name; `set_assign_layout(portrait_h)` |
 | `BanPickOrderRow.gd` | Script on `%OrderRow`: builds the 14 cells (count = sequence), tween / pulse / triangle bob (`refresh`, `stop`, `_process`); static `same_run` / `seq_run` |
 | `BanPickGrid.gd` | `@tool` Container on `%Grid`: float-exact grid (`columns`, `h_gap`, `v_gap`) — `GridContainer` lays out in whole pixels and the 191.6px cells drifted 0.6px per row |
-| `BanPickMechCell.tscn` / `.gd` | Grid cell (Button, `MOUSE_FILTER_PASS`), `create()` per mech; `setup`, `set_highlight` (derived from the scene's cell box) |
+| `BanPickMechCell.tscn` / `.gd` | Grid cell (Button `SelectableTile`, `MOUSE_FILTER_PASS`), `create()` per mech; `setup`, `set_highlight` (amber / side-colour border of variable width, derived in code from the variation's box) |
 | `BanPickMechSlot.tscn` / `.gd` | Team mech slot (frame + art + name band + mastery / quirk tags, tap `Hit`); `setup(side_col, seat)` builds the per-instance frame style |
 | `BanPickPortrait.tscn` / `.gd` | Pilot portrait (back plate, face, side rim, `기벽 n` badge, tap `Hit`) |
 | `BanPickBanChip.tscn` / `.gd` | Ban chip (dimmed art + ✕) |
 | `BanPickSheetCard.tscn` / `.gd` | One card of the sheet's card row (card slot + tap button + count badge), `create()` per card |
-| `MechDetailPanel.gd` | Assign-step mech detail popup |
+| `MechDetailPanel.gd` / `.tscn` | Assign-step mech detail popup — white modal, same family as `DraftDetailPanel` (section "MechDetailPanel" below) |
 
 ## Scene (`BanPickView.tscn`) — what the scene owns vs. what code owns
 ```
@@ -27,25 +27,29 @@ BanPickView (Control full rect, theme = OutgameTheme.tres)
 │ ├ %Band               between the blocks (offsets 309 / −311); hidden in the assign step
 │ │ └ %Pane             full width, height + vertical centring from fit_pane
 │ │   ├ PaneCard        Panel `Card`, 25px side margins
-│ │   ├ Content         VBox (33 / 8 inset): %OrderRow(64: PipIcon, TurnArrow) · %Tabs(58: Tab0-5) · 10 · %Scroll/%Grid
+│ │   ├ Content         VBox (33 / 8 inset): %OrderRow(64: PipIcon, TurnArrow) · %Tabs(58: Tab0-5 `SelectableTile`, font 20) · 10 · %Scroll/%Grid
 │ │   ├ %SheetDim       dims the pane only
 │ │   └ %Sheet          bottom sheet (bottom = grid bottom, height from fit_pane): SheetArt(+Placeholder) ·
 │ │                     SheetName · SheetStats · SheetNoPassive / SheetPassiveHead · SheetPassiveDesc ·
 │ │                     SheetCardsHeader · %SheetCardRow · SheetNoCards · SheetMastery(SheetRider · SheetIntel) ·
 │ │                     SheetButtons(SheetClose · SheetConfirm)
-│ ├ %StartButton        assign-step bottom bar (128 tall; inset + square corners from style_bottom_button)
+│ ├ %StartButton        assign-step bottom bar (`BarPrimaryButton`, 128 tall; inset from OutgameTheme.fit_bottom_bar)
 │ └ %DragGhost          (+ DragGhostArt) the slot under the finger
 └ Banner                viewport-centred: %BannerBar · %BannerLabel (above everything, mouse-ignore)
 ```
 - **Scene**: every position / size / gap / font size, label variations (`BodyLabel`, `CaptionLabel`,
   `OnFillLabel`, `TitleLabel`, `SubLabel`, `AccentLabel`, `FaintLabel`), `PrimaryButton` / `GhostButton`,
-  `Card` for the pane, local StyleBoxes where no variation fits (plain cell, tab, sheet with amber
-  border, ban chip, drag ghost; slot frame / portrait rim boxes are editor previews only).
-- **Code**: device values (insets, grid height — `fit_*`), data colours (side colour of labels /
-  rims / frames, role badge, mastery / quirk / analysis tag fills, slab tints), state looks (selected
-  tab, cell highlight, drop-target border), texts, tweens (banner, order row, gather, enemy re-seat),
-  instanced items whose count is data (mech cells, sheet cards, order-row cells), the bottom bar's
-  square corners + inset (`OutgameTheme.style_bottom_button`).
+  `BarPrimaryButton` (start bar), `SelectableTile` (filter tabs, plain grid cell), `Card` for the pane,
+  local StyleBoxes only where no variation fits — BanPick-only looks: the sheet with amber border
+  (`StyleBoxFlat_sheet`), ban chip, drag ghost (`StyleBoxFlat_ghost`); slot frame / portrait rim boxes
+  are editor previews only. The `SideLabel`s keep their team-side colour from code (not a semantic
+  `NegativeLabel` / `LinkLabel`).
+- **Code**: device values (insets, grid height — `fit_*`; the start bar's inset via
+  `OutgameTheme.fit_bottom_bar(start_button, safe_area)` in `BanPickView.fit_safe_area`), data colours
+  (side colour of labels / rims / frames, role badge, mastery / quirk / analysis tag fills, slab tints),
+  state looks (selected tab = switch `theme_type_variation` to `SelectableTileOn`; cell highlight and
+  drop-target border = derived boxes, colour / width are data), texts, tweens (banner, order row,
+  gather, enemy re-seat), instanced items whose count is data (mech cells, sheet cards, order-row cells).
 - A node deleted from a scene stays deleted: tags, badges, hint and the role badge are bound with
   `get_node_or_null` and skipped when missing.
 - `gui/common/snap_controls_to_pixels` rounds each Control's *local* position, so nested nodes can
@@ -338,27 +342,34 @@ reused). Scene root saved visible, `create()` hides it.
 ```
 MechDetailPanel (CanvasLayer 20)
 └ %Root (full rect, OutgameTheme.tres)
-  ├ %Dim (flat Button, tap = close) · DimRect (ColorRect, black 0.88)
-  ├ %ArtPlaceholder (grey slab + %ArtName, shown when no art) · %Art (TextureRect, keep-aspect box)
-  ├ Backdrop (Panel, local dark StyleBox)
-  ├ %Scroll → Body (VBox)
-  │   Header (%Name · %Sub) · StatsTitle · Stats (3 chips anchored at thirds: %HpValue %AtkValue %PresenceValue)
-  │   %MasteryBlock (title + %MasteryRows ← MechMasteryRow.tscn)
-  │   %QuirkBlock (%QuirkTitle · %QuirkEmpty · %QuirkRows ← MechQuirkRow.tscn)
-  │   PassiveTitle · %NoPassive | %PassiveBox (%PassiveName · %PassiveKw · %PassiveDesc)
-  │   CardsTitle · %NoCards | %CardsBox (note · %CardGrid 3 cols ← MechCardCell.tscn)
-  └ %Close (local dark StyleBox)
+  ├ %Dim (flat Button, tap = close) · DimRect (Panel `DimPanel`)
+  ├ %ArtPlaceholder (grey slab + %ArtName `SubLabel`, shown when no art) · %Art (TextureRect, keep-aspect box, screen coords)
+  └ %SafeArea (full rect; offset_top = top inset, offset_bottom = −bottom inset — `_fit_safe_area`)
+    ├ Backdrop (Panel `Card`; x 596..1056, top 150, bottom anchored to the safe bottom −180)
+    ├ %Scroll (22px inside the backdrop) → Body (VBox)
+    │   Header (%Name `HeadingLabel` 40 · %Sub `CaptionLabel`, role colour from code)
+    │   StatsTitle `SubLabel` 24 · Stats (3 `SunkPanel` chips at thirds: Key `CaptionLabel` 19 · %HpValue %AtkValue %PresenceValue `BodyLabel` 34)
+    │   %MasteryBlock (title + %MasteryRows ← MechMasteryRow.tscn)
+    │   %QuirkBlock (%QuirkTitle · %QuirkEmpty · %QuirkRows ← MechQuirkRow.tscn)
+    │   PassiveTitle · %NoPassive | %PassiveBox (%PassiveName `AccentLabel` 30 · %PassiveKw `CaptionLabel` 19 · %PassiveDesc `BodyLabel` 21)
+    │   CardsTitle · %NoCards | %CardsBox (note `CaptionLabel` 18 · %CardGrid 3 cols ← MechCardCell.tscn)
+    └ %Close (`GhostButton`, 84 tall, bottom anchored to the safe bottom −80)
 ```
 
 | File | Role |
 |---|---|
-| `MechDetailPanel.gd/.tscn` | The popup. Code-owned colours: role colour (`%Sub`) only |
-| `MechMasteryRow.gd/.tscn` | One mastery row (name 46% · tier 32% · bonus 22%); tier colour / ▶ brightness from data |
-| `MechQuirkRow.gd/.tscn` | One quirk: grade-coloured name + autowrapped effect (indent 14); dimmed when inactive |
-| `MechCardCell.gd/.tscn` | One card cell: `Card.tscn` instance at 0.8, transparent `%Hit` (PASS — keeps drag scroll), count badge. `tapped(card)` → panel shows `CardDescBox` above the card |
+| `MechDetailPanel.gd/.tscn` | The popup. Code-owned colour: role colour (`%Sub`, `OutgameTheme.ROLE_COLORS`) only; code-owned position: the `%SafeArea` insets |
+| `MechMasteryRow.gd/.tscn` | One mastery row (name 46% · tier 32% · bonus 22%, `BodyLabel` 21); tier colour (`MechMastery.tier_color`, white palette) and ▶ row `TEXT` vs others `TEXT_SUB` from data |
+| `MechQuirkRow.gd/.tscn` | One quirk: grade-coloured name (`QuirkSystem.grade_color`) + autowrapped effect (`CaptionLabel` 18, indent 14); inactive = name faded halfway to white, effect `TEXT_FAINT` |
+| `MechCardCell.gd/.tscn` | One card cell: `Card.tscn` instance at 0.8, transparent `%Hit` (PASS — keeps drag scroll), count badge (`CaptionLabel` 17; `×n` `TEXT_SUB`, `생성 전용` `LINK`). `tapped(card)` → panel shows the white `CardDescBox` (`light`) above the card |
 
-**Dark modal — no theme variation fits** (the shared variations are white-paper). The backdrop,
-chips and close button use local StyleBoxes in the scene, and label colours are local overrides.
+**White modal, same family as `DraftDetailPanel`** (`features/meta/run_setup/`) — the assign step
+alternates pilot and mech taps, so both popups use the same pieces: `DimPanel` dim, `Card` backdrop at
+the same x / top, `SunkPanel` stat chips, `HeadingLabel` name, `SubLabel` 24 section titles,
+`AccentLabel` 30 skill / passive name, `GhostButton` close. No local StyleBoxes or colour overrides in
+the scene. Differences kept on purpose: this backdrop has a fixed height (top 150, bottom anchored to the
+safe area) where the pilot panel fits its content, and this panel follows the device safe area
+(`%SafeArea`) — on a notched screen it starts `top inset` lower than the pilot panel.
 Quirk effect lines are plain autowrapped labels now (the old code estimated line counts with the
 fallback font and could overrun the panel edge).
 

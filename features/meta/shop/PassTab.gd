@@ -8,19 +8,29 @@ extends Control
 #   │ scroll: one row per pass level (reward · 수령 / 수령 완료 / 잠김)            │
 #   ├ action bar: 모두 수령 (claim every reached level)                            ┤
 #
+# **Layout lives in `PassTab.tscn`** (+ `PassRow.tscn` per level). Code owns texts, the exp
+# ratio (`%Fill` anchor), instancing rows and the per-state row colours (claimable amber /
+# reached white / locked sunk, Lv chip, reward / status text colour).
+#
 # Every activation runs `PassSystem.ensure_week` (and saves when the week turned).
 # A claim saves once and refreshes the host currency strip.
 
-const SIDE: float = 40.0
-const HEAD_H: float = 330.0
-const ROW_H: float = 104.0
-const ROW_GAP: float = 10.0
+const SCENE_PATH: String = "res://features/meta/shop/PassTab.tscn"
+const ROW_SCENE: String = "res://features/meta/shop/PassRow.tscn"
 
 var _host: LobbyScreen
 var _pm: Node
-var _view: Control = null
-var _scroll: ScrollContainer = null
 var _scroll_v: int = -1      # -1 = jump to the first claimable / current level
+
+
+## Instances the scene. `PassTab.new()` is an empty Control — don't use it.
+static func create() -> PassTab:
+	return (load(SCENE_PATH) as PackedScene).instantiate() as PassTab
+
+
+func _ready() -> void:
+	# Drag / fling scrolling instead of the engine's touch drag (`DragScroll`).
+	DragScroll.attach(%Scroll)
 
 
 func bar_specs() -> Array:
@@ -30,7 +40,6 @@ func bar_specs() -> Array:
 func setup(host: LobbyScreen) -> void:
 	_host = host
 	_pm = get_node("/root/ProfileManager")
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
 func on_shown() -> void:
@@ -70,8 +79,7 @@ func _after_claim(msg: String) -> void:
 	var err: String = String(_pm.save_profile())
 	_host.refresh_currency()
 	_host.refresh_badges()
-	if _scroll != null and is_instance_valid(_scroll):
-		_scroll_v = _scroll.scroll_vertical
+	_scroll_v = (%Scroll as ScrollContainer).scroll_vertical
 	_rebuild()
 	if err != "":
 		_host.show_toast("저장 실패: " + err, true)
@@ -79,62 +87,31 @@ func _after_claim(msg: String) -> void:
 		_host.show_toast(msg)
 
 
-# ── Build ────────────────────────────────────────────────────────────────────
+# ── Fill ─────────────────────────────────────────────────────────────────────
 func _rebuild() -> void:
-	if _view != null and is_instance_valid(_view):
-		_view.queue_free()
-	_view = Control.new()
-	_view.position = Vector2.ZERO
-	_view.size = size
-	_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_view)
-	_build_head()
-	_build_rows()
+	_fill_head()
+	_fill_rows()
 	var bar: Array = _host.bar_buttons()
 	if not bar.is_empty():
 		(bar[0] as Button).disabled = PassSystem.claimable_levels(_pm.profile).is_empty()
 
 
-func _build_head() -> void:
-	var w: float = size.x - SIDE * 2.0
-	var card: Panel = OutgameTheme.add_card(_view, Vector2(SIDE, 20), Vector2(w, HEAD_H), 24)
+func _fill_head() -> void:
 	var p: Dictionary = _pm.profile
-	var lv: int = PassSystem.level_of(p)
 	var max_lv: int = PassSystem.max_level()
-	UiHelpers.mk_label(card, "주간패스", 40, OutgameTheme.TEXT, Vector2(36, 26), Vector2(300, 54))
 	var week: String = String((p.get("pass", {}) as Dictionary).get("week_id", ""))
-	UiHelpers.mk_label(card, "%s · 초기화까지 %s" % [week, _reset_text()], 22,
-			OutgameTheme.TEXT_SUB, Vector2(w - 536, 40), Vector2(500, 32), HORIZONTAL_ALIGNMENT_RIGHT)
-
-	UiHelpers.mk_label(card, "Lv %d" % lv, 56, OutgameTheme.ACCENT_TEXT,
-			Vector2(36, 92), Vector2(260, 72))
-	UiHelpers.mk_label(card, "/ %d" % max_lv, 28, OutgameTheme.TEXT_SUB,
-			Vector2(36 + 150, 116), Vector2(120, 40))
+	%Week.text = "%s · 초기화까지 %s" % [week, _reset_text()]
+	%Level.text = "Lv %d" % PassSystem.level_of(p)
+	%MaxLevel.text = "/ %d" % max_lv
 	var prog: Dictionary = PassSystem.level_progress(p)
-	var exp_txt: String = "최고 레벨" if int(prog["need"]) == 0 \
-			else "EXP %d / %d" % [int(prog["into"]), int(prog["need"])]
-	UiHelpers.mk_label(card, exp_txt, 26, OutgameTheme.TEXT, Vector2(w - 436, 116),
-			Vector2(400, 40), HORIZONTAL_ALIGNMENT_RIGHT)
-	# Exp bar — two flat panels (a ProgressBar ignores a thin height).
-	var bar_w: float = w - 72.0
-	var track := Panel.new()
-	track.add_theme_stylebox_override("panel", OutgameTheme.flat_style(OutgameTheme.SURFACE_SUNK, 9))
-	track.position = Vector2(36, 176)
-	track.size = Vector2(bar_w, 18)
-	track.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	card.add_child(track)
+	%Exp.text = "최고 레벨" if int(prog["need"]) == 0 			else "EXP %d / %d" % [int(prog["into"]), int(prog["need"])]
 	var frac: float = 1.0 if int(prog["need"]) == 0 else float(prog["into"]) / float(prog["need"])
-	if frac > 0.0:
-		var fill := Panel.new()
-		fill.add_theme_stylebox_override("panel", OutgameTheme.flat_style(OutgameTheme.ACCENT, 9))
-		fill.position = Vector2.ZERO
-		fill.size = Vector2(maxf(18.0, bar_w * frac), 18)
-		fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		track.add_child(fill)
-	var info := UiHelpers.mk_label(card, UiHelpers.keep_words(
-			"런을 마치면 런 점수만큼 패스 EXP 를 얻습니다. Lv %d 를 넘긴 EXP 는 아웃게임 재화로 바뀝니다. 보상은 직접 수령해야 하며, 매주 월요일 0시(기기 시각)에 초기화됩니다." % max_lv),
-			22, OutgameTheme.TEXT_SUB, Vector2(36, 214), Vector2(bar_w, 100))
-	ShopPopup.wrap_label(info, Vector2(bar_w, 100))
+	var fill: Control = %Fill
+	fill.visible = frac > 0.0
+	fill.anchor_right = clampf(frac, 0.0, 1.0)
+	fill.offset_right = 0.0
+	%Info.text = UiHelpers.keep_words(
+			"런을 마치면 런 점수만큼 패스 EXP 를 얻습니다. Lv %d 를 넘긴 EXP 는 아웃게임 재화로 바뀝니다. 보상은 직접 수령해야 하며, 매주 월요일 0시(기기 시각)에 초기화됩니다." % max_lv)
 
 
 func _reset_text() -> String:
@@ -146,59 +123,52 @@ func _reset_text() -> String:
 	return "%d시간 %d분" % [h, (s % 3600) / 60]
 
 
-func _build_rows() -> void:
-	var top: float = 20.0 + HEAD_H + 20.0
-	var w: float = size.x - SIDE * 2.0
-	var max_lv: int = PassSystem.max_level()
-	var sv: Dictionary = OutgameTheme.add_vscroll(_view, Vector2(0, top), Vector2(size.x, size.y - top))
-	_scroll = sv["scroll"]
-	var body: Control = sv["body"]
-	body.custom_minimum_size.y = max_lv * (ROW_H + ROW_GAP) + 16.0
+func _fill_rows() -> void:
+	var rows: Node = %Rows
+	for c in rows.get_children():
+		rows.remove_child(c)
+		c.queue_free()
+	var row_scene := load(ROW_SCENE) as PackedScene
 	var p: Dictionary = _pm.profile
 	var lv_now: int = PassSystem.level_of(p)
 	var first_focus: int = -1
-	for lv in range(1, max_lv + 1):
+	var row_step: float = 0.0
+	for lv in range(1, PassSystem.max_level() + 1):
 		var rw: Dictionary = PassSystem.reward_at(lv)
 		var reached: bool = lv <= lv_now
 		var claimed: bool = PassSystem.is_claimed(p, lv)
 		var can: bool = reached and not claimed and not rw.is_empty()
 		if first_focus < 0 and (can or lv == lv_now):
 			first_focus = lv
-		var row := Panel.new()
-		var bg: Color = OutgameTheme.ACCENT_DIM if can else \
-				(OutgameTheme.SURFACE if reached else OutgameTheme.SURFACE_SUNK)
+		var row: Panel = row_scene.instantiate()
+		rows.add_child(row)
+		row_step = row.custom_minimum_size.y + float((rows as VBoxContainer).get_theme_constant("separation"))
+		var bg: Color = OutgameTheme.ACCENT_DIM if can else 				(OutgameTheme.SURFACE if reached else OutgameTheme.SURFACE_SUNK)
 		row.add_theme_stylebox_override("panel", OutgameTheme.flat_style(bg, 16,
 				OutgameTheme.ACCENT if can else OutgameTheme.BORDER))
-		row.position = Vector2(SIDE, 8.0 + (lv - 1) * (ROW_H + ROW_GAP))
-		row.size = Vector2(w, ROW_H)
-		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		body.add_child(row)
-		OutgameTheme.add_chip(row, "Lv %d" % lv, Vector2(24, (ROW_H - 48.0) * 0.5), Vector2(112, 48),
-				OutgameTheme.ACCENT if reached else OutgameTheme.BORDER_STRONG,
-				OutgameTheme.TEXT_ON_FILL, 24)
-		var reward_txt: String = "—" if rw.is_empty() else "%s × %d" % [
+		var chip: Panel = row.get_node("%Chip")
+		chip.add_theme_stylebox_override("panel", OutgameTheme.flat_style(
+				OutgameTheme.ACCENT if reached else OutgameTheme.BORDER_STRONG, int(chip.size.y * 0.5)))
+		(row.get_node("%ChipText") as Label).text = "Lv %d" % lv
+		var reward: Label = row.get_node("%Reward")
+		reward.text = "—" if rw.is_empty() else "%s × %d" % [
 				ShopPopup.currency_label(String(rw["currency"])), int(rw["amount"])]
-		UiHelpers.mk_label(row, reward_txt, 30, OutgameTheme.TEXT if reached else OutgameTheme.TEXT_SUB,
-				Vector2(164, (ROW_H - 42.0) * 0.5), Vector2(w - 164 - 230, 42))
+		if not reached:
+			reward.add_theme_color_override("font_color", OutgameTheme.TEXT_SUB)
+		var b: Button = row.get_node("%Claim")
+		b.visible = can
 		if can:
-			var b := Button.new()
-			b.text = "수령"
-			b.focus_mode = Control.FOCUS_NONE
-			OutgameTheme.style_primary_button(b, 26)
-			b.position = Vector2(w - 200, 16)
-			b.size = Vector2(180, ROW_H - 32)
-			b.mouse_filter = Control.MOUSE_FILTER_PASS
 			b.pressed.connect(claim_level.bind(lv))
-			row.add_child(b)
 		else:
-			UiHelpers.mk_label(row, "수령 완료" if claimed else ("잠김" if not reached else ""), 24,
-					OutgameTheme.TEXT_FAINT if not claimed else OutgameTheme.POSITIVE,
-					Vector2(w - 220, (ROW_H - 36.0) * 0.5), Vector2(196, 36), HORIZONTAL_ALIGNMENT_CENTER)
+			row.get_node("%StatusBox").visible = true
+			var st: Label = row.get_node("%Status")
+			st.text = "수령 완료" if claimed else ("잠김" if not reached else "")
+			st.add_theme_color_override("font_color",
+					OutgameTheme.TEXT_FAINT if not claimed else OutgameTheme.POSITIVE)
 	var target: int = _scroll_v
 	if target < 0:
-		target = int(maxf(0.0, (first_focus - 2) * (ROW_H + ROW_GAP)))
-	if target > 0:
-		_restore_scroll.call_deferred(_scroll, target)
+		target = int(maxf(0.0, (first_focus - 2) * row_step))
+	_restore_scroll.call_deferred(%Scroll, target)
 
 
 func _restore_scroll(sc: ScrollContainer, v: int) -> void:

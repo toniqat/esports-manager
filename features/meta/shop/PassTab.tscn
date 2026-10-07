@@ -1,0 +1,199 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" uid="uid://bjw0qv1g6igx0" path="res://features/meta/shop/PassTab.gd" id="1_tab"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="PassTab" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1080.0
+offset_bottom = 1376.0
+mouse_filter = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_tab")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Gap1" type="Control" parent="VBox"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="HeadPad" type="MarginContainer" parent="VBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_right = 40
+
+[node name="Head" type="Panel" parent="VBox/HeadPad"]
+custom_minimum_size = Vector2(0, 330)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"PopupCard"
+
+[node name="Pad" type="MarginContainer" parent="VBox/HeadPad/Head"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 36
+theme_override_constants/margin_top = 26
+theme_override_constants/margin_right = 36
+theme_override_constants/margin_bottom = 16
+
+[node name="VBox" type="VBoxContainer" parent="VBox/HeadPad/Head/Pad"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="TopRow" type="HBoxContainer" parent="VBox/HeadPad/Head/Pad/VBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="VBox/HeadPad/Head/Pad/VBox/TopRow"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 40
+text = "주간패스"
+
+[node name="WeekBox" type="VBoxContainer" parent="VBox/HeadPad/Head/Pad/VBox/TopRow"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Gap" type="Control" parent="VBox/HeadPad/Head/Pad/VBox/TopRow/WeekBox"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Week" type="Label" parent="VBox/HeadPad/Head/Pad/VBox/TopRow/WeekBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(500, 32)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+text = "2026-W41 · 초기화까지 4일 12시간"
+horizontal_alignment = 2
+
+[node name="Gap1" type="Control" parent="VBox/HeadPad/Head/Pad/VBox"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="LevelRow" type="Control" parent="VBox/HeadPad/Head/Pad/VBox"]
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Level" type="Label" parent="VBox/HeadPad/Head/Pad/VBox/LevelRow"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_right = 260.0
+offset_bottom = 72.0
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 56
+text = "Lv 7"
+
+[node name="MaxLevel" type="Label" parent="VBox/HeadPad/Head/Pad/VBox/LevelRow"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 150.0
+offset_top = 24.0
+offset_right = 270.0
+offset_bottom = 64.0
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 28
+text = "/ 25"
+
+[node name="Exp" type="Label" parent="VBox/HeadPad/Head/Pad/VBox/LevelRow"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -400.0
+offset_top = 24.0
+offset_bottom = 64.0
+grow_horizontal = 0
+theme_type_variation = &"BodyLabel"
+text = "EXP 50 / 100"
+horizontal_alignment = 2
+
+[node name="Gap2" type="Control" parent="VBox/HeadPad/Head/Pad/VBox"]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Track" type="Panel" parent="VBox/HeadPad/Head/Pad/VBox"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ProgressTrack"
+
+[node name="Fill" type="Panel" parent="VBox/HeadPad/Head/Pad/VBox/Track"]
+unique_name_in_owner = true
+editor_description = "anchor_right = exp ratio (code); min width 18 keeps a sliver visible."
+custom_minimum_size = Vector2(18, 0)
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.5
+anchor_bottom = 1.0
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"ProgressFill"
+
+[node name="Gap3" type="Control" parent="VBox/HeadPad/Head/Pad/VBox"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Info" type="Label" parent="VBox/HeadPad/Head/Pad/VBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+size_flags_vertical = 0
+theme_type_variation = &"CaptionLabel"
+text = "런을 마치면 런 점수만큼 패스 EXP 를 얻습니다. Lv 25 를 넘긴 EXP 는 아웃게임 재화로 바뀝니다. 보상은 직접 수령해야 하며, 매주 월요일 0시(기기 시각)에 초기화됩니다."
+autowrap_mode = 3
+
+[node name="Gap2" type="Control" parent="VBox"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Scroll" type="ScrollContainer" parent="VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 3
+
+[node name="ScrollPad" type="MarginContainer" parent="VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 18
+
+[node name="Rows" type="VBoxContainer" parent="VBox/Scroll/ScrollPad"]
+unique_name_in_owner = true
+editor_description = "One PassRow per pass level (code instances them)."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10

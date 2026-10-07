@@ -1,0 +1,96 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_row"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[node name="ShopShardRow" type="Panel"]
+editor_description = "파편 상점 row (ShopTab). Outlined white panel = local style (no theme variation yet). Code fills the texts, the round portrait (drawn widget added into FaceSlot), the rarity chip colour and the button state."
+custom_minimum_size = Vector2(0, 132)
+offset_right = 1000.0
+offset_bottom = 132.0
+mouse_filter = 2
+theme = ExtResource("1_theme")
+theme_override_styles/panel = SubResource("StyleBoxFlat_row")
+
+[node name="FaceSlot" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "Round portrait (OutgameTheme.add_round_portrait, a _draw widget) is added here at runtime, diameter = this width."
+layout_mode = 0
+offset_left = 20.0
+offset_top = 16.0
+offset_right = 120.0
+offset_bottom = 116.0
+mouse_filter = 2
+
+[node name="Name" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 140.0
+offset_top = 18.0
+offset_right = 500.0
+offset_bottom = 60.0
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 30
+text = "Cissia"
+
+[node name="Chip" type="Panel" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 140.0
+offset_top = 70.0
+offset_right = 236.0
+offset_bottom = 106.0
+mouse_filter = 2
+
+[node name="ChipText" type="Label" parent="Chip"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 20
+text = "전설"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Status" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 250.0
+offset_top = 72.0
+offset_right = 550.0
+offset_bottom = 106.0
+theme_type_variation = &"CaptionLabel"
+text = "정글 · 미보유"
+
+[node name="Buy" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -210.0
+offset_top = 18.0
+offset_right = -20.0
+offset_bottom = 114.0
+grow_horizontal = 0
+mouse_filter = 1
+focus_mode = 0
+theme_type_variation = &"PrimaryButton"
+theme_override_font_sizes/font_size = 24
+text = "영입
+파편 120"

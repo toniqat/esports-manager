@@ -263,7 +263,8 @@ resume path restores the saved `player_side` as is, so it is unaffected by this 
 | `MatchFlow.gd` | State machine orchestrator |
 | `match_prep/MatchPrepController.gd` | Pre-match scouting sheet (analysis reveal) |
 | `match_prep/OpponentIntel.gd` · `IntelView.gd` | Reveal rule builder + its drawer, shared with the league team detail — `match_prep/README.md` |
-| `ban_pick/BanPickController.gd` | Ban/Pick + mech assignment — both teams' portraits + mech grid + bottom detail sheet + drag assignment |
+| `ban_pick/BanPickController.gd` | Ban/Pick + mech assignment rules / state — fills and drives the screen scene |
+| `ban_pick/BanPickView.tscn` (+ item scenes) | The ban/pick screen layout — both teams' portraits + mech grid + bottom detail sheet + drag ghost (`ban_pick/README.md` "Scene") |
 | `ban_pick/MechDetailPanel.gd` | Mech detail popup for the assignment step |
 | `MatchCheatMenu.gd` | Editor-only cheat menu (top left) — see "Cheat menu" below |
 
@@ -326,7 +327,7 @@ replays the battle from scratch with the same locked-in picks.
 
 ## Screen fit (safe area)
 
-Both controllers (PREP / BAN_PICK) stand one full-screen `Panel` under `_mf.canvas` and draw on it in
+The PREP controller stands one full-screen `Panel` under `_mf.canvas` and draw on it in
 absolute coordinates. Right after creating `_panel`, two lines follow.
 
 ```gdscript
@@ -342,10 +343,12 @@ season views' `extend_background()`, it uses `backfill_top()`, which lays one st
 
 Inside the pushed-down panel, bottom buttons are based on `ScreenMetrics.safe_h()` —
 `MatchPrepController` uses the outgame bottom bar (`OutgameTheme.add_bottom_bar`, top =
-`bottom_bar_top()` = `safe_h() - BOTTOM_BAR_H`) and ends its scroll above it. `BanPickController` derives **the whole block**, not
-a button, back from `safe_h()` (`_lay["bot_block_y"]` / `_lay["assign_block_y"]`), and the pick pane
-height comes from the strip left after the top and bottom blocks — so on any screen the grid cells
-stay square and only the number of visible rows changes.
+`bottom_bar_top()` = `safe_h() - BOTTOM_BAR_H`) and ends its scroll above it. **The ban/pick screen
+is already scene-based** (`ban_pick/BanPickView.tscn`): no panel push — its `Background` covers the
+whole viewport and everything else sits in `%SafeArea`, a full-rect Control whose top / bottom offsets
+are the device insets (`BanPickView.fit_safe_area`). The team blocks are anchored to its top / bottom
+and the pick pane height comes from the band left between them (`fit_pane`) — so on any screen the
+grid cells stay square and only the number of visible rows changes.
 
 Details: **`docs/mobile_safe_area.md`**
 

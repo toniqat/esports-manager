@@ -1,0 +1,182 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://features/match_flow/ban_pick/BanPickMechCell.gd" id="1_cell"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_cell"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="BanPickMechCell" type="Button"]
+editor_description = "Size = grid column width (pane content 998 / 5 cols, 10 gap) x (square + 28 name line). The grid shows 4.5 rows of this height (BanPickView.fit_pane)."
+clip_contents = true
+custom_minimum_size = Vector2(191.6, 219.6)
+offset_right = 191.6
+offset_bottom = 219.6
+mouse_filter = 1
+theme = ExtResource("2_theme")
+theme_override_styles/normal = SubResource("StyleBoxFlat_cell")
+theme_override_styles/hover = SubResource("StyleBoxFlat_cell")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_cell")
+theme_override_styles/focus = SubResource("StyleBoxFlat_cell")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_cell")
+script = ExtResource("1_cell")
+
+[node name="Art" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = -32.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="RoleBadge" type="Panel" parent="."]
+unique_name_in_owner = true
+editor_description = "Fill = role colour (data), set in code."
+layout_mode = 0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 52.0
+offset_bottom = 38.0
+mouse_filter = 2
+
+[node name="RoleLabel" type="Label" parent="RoleBadge"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 19
+text = "Tk"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NameLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = -31.0
+offset_right = -4.0
+offset_bottom = -5.0
+grow_horizontal = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 20
+text = "Juggernaut"
+horizontal_alignment = 1
+clip_text = true
+
+[node name="Intel" type="Panel" parent="."]
+unique_name_in_owner = true
+visible = false
+editor_description = "Top-right analysis tag: '예상 픽' (red) / '추천 밴' (amber). Fill set in code."
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -92.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = 36.0
+grow_horizontal = 0
+mouse_filter = 2
+
+[node name="IntelLabel" type="Label" parent="Intel"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 17
+text = "예상 픽"
+horizontal_alignment = 1
+vertical_alignment = 1
+clip_text = true
+
+[node name="Mine" type="Panel" parent="."]
+unique_name_in_owner = true
+visible = false
+editor_description = "Bottom-left tag: my natural rider's mastery tier (능숙 or better). Fill = tier colour, set in code."
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = -64.0
+offset_right = 92.0
+offset_bottom = -36.0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="MineLabel" type="Label" parent="Mine"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 17
+text = "능숙"
+horizontal_alignment = 1
+vertical_alignment = 1
+clip_text = true
+
+[node name="Veil" type="ColorRect" parent="."]
+unique_name_in_owner = true
+visible = false
+editor_description = "Taken-mech slab (BAN / BLUE / RED tint), colour set in code."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)
+
+[node name="Tag" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_top = -22.0
+offset_bottom = 22.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.95)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 28
+text = "BAN"
+horizontal_alignment = 1
+vertical_alignment = 1

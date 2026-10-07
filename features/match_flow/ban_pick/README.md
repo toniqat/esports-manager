@@ -1,7 +1,59 @@
 # Match Flow — Ban/Pick
 
+## Files
+| File | Role |
+|---|---|
+| `BanPickController.gd` | `extends Node`, child of MatchFlow. **Rules + state**: sequence, legality, AI, seat table, assignment, result. Fills / refreshes the screen scene, data colours (side · role · tier), drag handling, sheet content |
+| `BanPickView.tscn` / `.gd` | `class_name BanPickView` — **the screen** (one per `enter`, `BanPickView.create()` under `MatchFlow.canvas`). Binds nodes for the controller, `fit_safe_area()`, `fit_pane(cell_h)`, turn banner (`play_banner` / `clear_banner`) |
+| `BanPickTeamBlock.gd` | Script on `%EnemyBlock` / `%PlayerBlock` (inline in the view scene): finds ban chips / mech slots / portraits / hint by name; `set_assign_layout(portrait_h)` |
+| `BanPickOrderRow.gd` | Script on `%OrderRow`: builds the 14 cells (count = sequence), tween / pulse / triangle bob (`refresh`, `stop`, `_process`); static `same_run` / `seq_run` |
+| `BanPickGrid.gd` | `@tool` Container on `%Grid`: float-exact grid (`columns`, `h_gap`, `v_gap`) — `GridContainer` lays out in whole pixels and the 191.6px cells drifted 0.6px per row |
+| `BanPickMechCell.tscn` / `.gd` | Grid cell (Button, `MOUSE_FILTER_PASS`), `create()` per mech; `setup`, `set_highlight` (derived from the scene's cell box) |
+| `BanPickMechSlot.tscn` / `.gd` | Team mech slot (frame + art + name band + mastery / quirk tags, tap `Hit`); `setup(side_col, seat)` builds the per-instance frame style |
+| `BanPickPortrait.tscn` / `.gd` | Pilot portrait (back plate, face, side rim, `기벽 n` badge, tap `Hit`) |
+| `BanPickBanChip.tscn` / `.gd` | Ban chip (dimmed art + ✕) |
+| `BanPickSheetCard.tscn` / `.gd` | One card of the sheet's card row (card slot + tap button + count badge), `create()` per card |
+| `MechDetailPanel.gd` | Assign-step mech detail popup |
+
+## Scene (`BanPickView.tscn`) — what the scene owns vs. what code owns
+```
+BanPickView (Control full rect, theme = OutgameTheme.tres)
+├ Background            BG ColorRect over the whole viewport (notch / home-indicator bands too)
+├ %SafeArea             full rect, top / bottom offsets = device insets (fit_safe_area)
+│ ├ %EnemyBlock         VBox anchored top (25 / 8): BanRow(44: SideLabel · BanLabel · Chip0-1) · Gap 5 ·
+│ │                     MechRow(160: Slot0-4, sep 14, centred) · Gap 2 · PortraitRow(80: Pilot0-4)
+│ ├ %PlayerBlock        mirrored, anchored bottom (−10), grows upward: PortraitRow · Gap 2 · MechRow ·
+│ │                     AssignGap 2 + Hint 24 (assign only) · Gap 5 · BanRow
+│ ├ %Band               between the blocks (offsets 309 / −311); hidden in the assign step
+│ │ └ %Pane             full width, height + vertical centring from fit_pane
+│ │   ├ PaneCard        Panel `Card`, 25px side margins
+│ │   ├ Content         VBox (33 / 8 inset): %OrderRow(64: PipIcon, TurnArrow) · %Tabs(58: Tab0-5) · 10 · %Scroll/%Grid
+│ │   ├ %SheetDim       dims the pane only
+│ │   └ %Sheet          bottom sheet (bottom = grid bottom, height from fit_pane): SheetArt(+Placeholder) ·
+│ │                     SheetName · SheetStats · SheetNoPassive / SheetPassiveHead · SheetPassiveDesc ·
+│ │                     SheetCardsHeader · %SheetCardRow · SheetNoCards · SheetMastery(SheetRider · SheetIntel) ·
+│ │                     SheetButtons(SheetClose · SheetConfirm)
+│ ├ %StartButton        assign-step bottom bar (128 tall; inset + square corners from style_bottom_button)
+│ └ %DragGhost          (+ DragGhostArt) the slot under the finger
+└ Banner                viewport-centred: %BannerBar · %BannerLabel (above everything, mouse-ignore)
+```
+- **Scene**: every position / size / gap / font size, label variations (`BodyLabel`, `CaptionLabel`,
+  `OnFillLabel`, `TitleLabel`, `SubLabel`, `AccentLabel`, `FaintLabel`), `PrimaryButton` / `GhostButton`,
+  `Card` for the pane, local StyleBoxes where no variation fits (plain cell, tab, sheet with amber
+  border, ban chip, drag ghost; slot frame / portrait rim boxes are editor previews only).
+- **Code**: device values (insets, grid height — `fit_*`), data colours (side colour of labels /
+  rims / frames, role badge, mastery / quirk / analysis tag fills, slab tints), state looks (selected
+  tab, cell highlight, drop-target border), texts, tweens (banner, order row, gather, enemy re-seat),
+  instanced items whose count is data (mech cells, sheet cards, order-row cells), the bottom bar's
+  square corners + inset (`OutgameTheme.style_bottom_button`).
+- A node deleted from a scene stays deleted: tags, badges, hint and the role badge are bound with
+  `get_node_or_null` and skipped when missing.
+- `gui/common/snap_controls_to_pixels` rounds each Control's *local* position, so nested nodes can
+  land ≤1px from where the old flat absolute layout put them (the sheet, the gathered assign blocks).
+- Drag positions come from the event (`gui_input` position → canvas), not from
+  `get_local_mouse_position()` — identical for real input, and scriptable with `push_input`.
+
 ## BanPickController.gd
-`extends Node` — child of MatchFlow.
 
 Implements the LoL-international ban/pick (밴픽) draft against an AI opponent that
 "fidgets" (만지작거린다) — see the Opponent AI section below.
@@ -49,7 +101,7 @@ One vertical sheet is divided into three blocks: **top / middle / bottom**.
 │     ▼  (bobs downward on my turn)          │
 │ [전체][TANK][FIGHTER][ASSASSIN][SUP][SNP] │
 │ ▤ ▤ ▤ ▤ ▤    ← 5 columns                  │
-│ ▤ ▤ ▤ ▤ ▤      vertical scroll showing 3.5 rows │
+│ ▤ ▤ ▤ ▤ ▤      vertical scroll showing 4.5 rows │
 │ ▤ ▤ ▤ ▤ ▤                                │
 │ ▤ ▤ ▤ ▤ ▤    (the fourth row is half cut) │
 ├──────────────────────────────────────────┤ ← ally team block (mirrored)
@@ -71,7 +123,7 @@ dark board made this one screen look in-game, reading as "has the match already 
 
 ### Order row (14 cells) — top of the pick pane, right above the role-class filter
 It used to be at the **very top** of the screen — to see whose turn it was, the eye had to travel to
-the screen edge and back. Now it is right above where you choose (`PIPS_ROW_H` strip).
+the screen edge and back. Now it is right above where you choose (`%OrderRow`, 64px strip).
 - A cell's colour is that move's side colour, and **the darker, the more current** (past moves about
   half · remaining moves nearly background).
 - **The current cell thickens** (`PIP_H` 12 → `PIP_ACTIVE_H` 26, `PIP_GROW_SEC` tween) and holds
@@ -80,27 +132,27 @@ the screen edge and back. Now it is right above where you choose (`PIPS_ROW_H` s
 - A **triangle** (`turn_arrow.svg`) attaches to the current cell — on my turn it sits **below** the
   cell pointing down (toward our team block) and bobs downward; on the opponent's turn it sits
   **above** pointing up (toward the opponent block) and bobs upward, by `TURN_ARROW_BOB_PX` with
-  period `TURN_ARROW_BOB_SEC` (`_process`; a (1 − cos)/2 curve, so it slows at both ends and doesn't
+  period `TURN_ARROW_BOB_SEC` (`BanPickOrderRow._process`; a (1 − cos)/2 curve, so it slows at both ends and doesn't
   jump when the cell changes). Icon · triangle aren't per cell; a single set moves to the current
-  cell (`_refresh_pips`).
-- **Consecutive moves of the same action by the same team join into one capsule** (`_same_run` /
-  `_seq_run` — in the current order table, the four double-picks). The capsule has no gaps inside and
+  cell (`BanPickOrderRow.refresh`).
+- **Consecutive moves of the same action by the same team join into one capsule** (`BanPickOrderRow.same_run` /
+  `seq_run` — in the current order table, the four double-picks). The capsule has no gaps inside and
   only its outer corners are rounded, and at each joint a `PIP_DIVIDER_W` (2px) background-colour
   **divider** stands so you can read how many moves it spans (dividers are attached after the cells —
   sibling order is draw order). If the current move is inside a capsule, **the whole capsule**
   thickens (thickening one cell alone makes a step). Within it, only the current cell has the dark
   colour + ✕/✓ icon + **pulse** (alpha 1 ↔ 1 − `PIP_PULSE_DEPTH` 0.38 with period `PIP_PULSE_SEC`
   0.9 s, `_process`), and the capsule's next move is one step darker than the remaining moves
-  (`_seq_color` state 3).
+  (`seq_color` state 3).
 - In the assignment step it is removed along with the pick pane.
 
 ### Turn banner
 Each time a move passes, a **side-coloured band** sweeps across the screen centre — `내 차례 밴`
 (My ban) / `상대 차례 밴` (Opponent's ban) / `내 차례 픽` (My pick) / `상대 차례 픽` (Opponent's
 pick). Same shape as the in-game "당신의 차례" (Your turn) banner (spreads from the centre to both
-sides → holds → fades, `BANNER_*`) and **does not block input**. It stands not on the board
-(`_panel`) but on a sibling in the same canvas (`_banner_root`), so sheets attached later don't
-cover it. If the next move arrives first, the previous banner is removed (`_banner_gen`).
+sides → holds → fades, `BanPickView.BANNER_*`) and **does not block input**. It is the view's last child
+(`Banner`, outside `%SafeArea`), so it draws over the sheet and the drag ghost. If the next move
+arrives first, the previous banner is removed (`BanPickView._banner_gen`).
 **It appears only when the turn passes or ban ↔ pick switches** — for a move where the same team
 continues the same action (the capsule's second cell) the band doesn't reappear. What it would say
 is the same as the move just before, and the order row's capsule already conveys the continuation.
@@ -120,7 +172,7 @@ from that ratio (`EYE_ASPECT` 2.4): stretching to an arbitrary height squashes f
 ### Pick slots = seat table (ally slots move even during ban/pick)
 A mech slot's content is `_seat_mechs[side]` (seat → mech_id, -1 = empty seat), and a new pick sits
 in **the first empty seat from the left**. **Ally slots can be dragged to another player's seat even
-during ban/pick** (`_build_team_block` attaches `_bind_slot_drag` to the ally block — swap if
+during ban/pick** (`_setup_team_block` attaches `_bind_slot_drag` to the ally block — swap if
 occupied, move if empty). So an ally slot is "the machine of the player above it" from the start,
 and the assignment step inherits that arrangement. A tap opens that machine's bottom sheet (commit
 is locked). Opponent slots stay in pick order during ban/pick and are re-seated by position in the
@@ -133,10 +185,11 @@ teams' pick slots face each other across the grid, so who took what so far reads
 above and below the grid.
 
 ### Mech grid
-`GRID_COLS` 5 columns, `GRID_VISIBLE_ROWS` **3.5 rows**. Being non-integer is the point — the fourth
-row showing half cut is the only signal that "there's more below". Cell **width** comes from the
-column count, **height** is derived by dividing the remaining vertical space by 3.5 (`_layout()`) —
-so "3.5 rows" holds even on devices with different safe areas (안전 영역).
+5 columns (`%Grid.columns`), `BanPickView.GRID_VISIBLE_ROWS` **4.5 rows**. Being non-integer is the
+point — the fifth row showing half cut is the only signal that "there's more below". The cell size is the cell
+scene's (`BanPickMechCell.tscn`: column width × (square + name line)); the **grid height** is 4.5 rows
+of it, clamped to the band between the team blocks (`BanPickView.fit_pane`) — so cells stay square on
+every safe area (안전 영역) and only the number of visible rows changes.
 
 What goes in one cell: role-class tag · machine art · machine name · `HP / ATK / 존재감` (presence) ·
 **passive name**. The passive is written right in the cell because picking a machine fixes one
@@ -147,10 +200,9 @@ A banned / picked machine has its whole cell covered by a slab with `BAN` / `BLU
 in the centre (the colour changes too). It can still be tapped **to view**; only committing is
 blocked.
 
-**Thumbnails are baked** — the original mech art is 1024² uncompressed, so holding all 21 as is costs
-88MB of VRAM. `_bake_thumbs()` shrinks them once to `THUMB_PX` (256), bakes them into
-`ImageTexture`, and releases the original reference. Only the sheet uses the original full-body art,
-and that's always just one machine.
+**Thumbnails are pre-baked files** — the original mech art is 1024² uncompressed, so holding all 21
+as is costs 88MB of VRAM. `MechImages.portrait_for` returns 256² portraits (`_mech_thumb` caches
+them). Only the sheet uses the original full-body art, and that's always just one machine.
 
 ### Role-class filter
 Six tabs `[전체][TANK][FIGHTER][ASSASSIN][SUPPORT][SNIPER]` (전체 = All) **filter the grid**. Filtered
@@ -183,7 +235,7 @@ immediately, let a single mistake change the whole match in an irreversible choi
   only comes into the world when a passive or another card creates it, so it's labelled `생성 전용`
   (Generated only) — without writing that down, "why doesn't this card ever reach my hand" would be
   answered nowhere on screen.
-- The left art cell has **only its width constant** (`SHEET_ART_W`); its height takes all the space
+- The left art cell has **only its width fixed** (scene `SheetArt`, 280); its height takes all the space
   left in the sheet and centres vertically within it — attaching the art to the top would leave a
   hole of 300px+ with nothing under it (square art can't grow except by widening).
 
@@ -224,9 +276,10 @@ perspective. Bans live in two sets: `_banned` (both teams combined) for legality
 infer whose ban each was, and that calculation was wrong.
 
 ### Screen fit (safe area)
-The whole board is pushed down with `ScreenMetrics.indent_to_safe_top()` and the top strip is filled
-with `backfill_top()`. Every vertical coordinate is computed from `ScreenMetrics.safe_h()`
-(`_layout()`), so there are no constants to fix one by one per device. Verification is done by
+Scene-based pattern B: `Background` covers the whole viewport, everything else lives in `%SafeArea`
+whose top / bottom offsets are the device insets (`BanPickView.fit_safe_area`). The blocks anchor to
+its edges, the pane fills the band between them (`fit_pane`) and the start bar reaches down through
+the bottom inset — no per-device constants. Verification is done by
 running in a window and faking insets with `ESM_SAFE_AREA` — it can't be done headless
 (`docs/mobile_safe_area.md`).
 
@@ -249,7 +302,7 @@ numbers live in `features/season/mastery/README.md` / `MASTERY_*` in const.csv.
 |---|---|
 | Mech slots (`_refresh_slot_mastery`) | Top-left tag `<tier> <bonus>` (e.g. `능숙 +2`) filled with the tier colour — the pilot on that seat with that machine. **My slots always** (also during ban/pick, so dragging a slot shows the change at once); **enemy slots** only when analysis reveals mastery (`StaffSystem.analysis_tier >= 2`) and after the assign intro re-seats them by pilot (`_enemy_seated`). |
 | Grid cells (`_refresh_cell_marks`) | Bottom-left: my natural rider's tier when 능숙 or better. Top-right: `예상 픽` (red) = an enemy pilot's top-mastery machine (`_enemy_likely`, analysis tier ≥ 2), or `추천 밴` (amber) = analyst's recommended ban. Taken cells show no tags. |
-| Bottom sheet (`_build_sheet_mastery`) | Under the art, left of the buttons: my natural rider's `name tier value (스탯 bonus)`, and the analysis line (`상대 예상 픽 — pilot` / `분석가 추천 밴 — pilot 의 주력`). |
+| Bottom sheet (`_fill_sheet_mastery`) | Under the art, left of the buttons: my natural rider's `name tier value (스탯 bonus)`, and the analysis line (`상대 예상 픽 — pilot` / `분석가 추천 밴 — pilot 의 주력`). |
 | `MechDetailPanel` | A `숙련도` block — that team's five pilots with this machine (tier · value · bonus), the tapped seat's pilot marked ▶ (`_mastery_rows`; enemy only with analysis tier ≥ 2). |
 
 **Recommended bans** (`_analyst_bans`) appear when the analysis area is delegated
@@ -264,9 +317,9 @@ pilots only** — opponents have no quirks. Rules: `features/season/quirk/README
 
 | Where | What |
 |---|---|
-| My portraits (`_build_portrait_quirk_badge`) | Bottom-right pill `기벽 n`, filled with the pilot's highest quirk grade colour. |
+| My portraits (`_refresh_portrait_quirk`) | Bottom-right pill `기벽 n`, filled with the pilot's highest quirk grade colour. |
 | My mech slots (`_refresh_slot_quirk`) | Second tag under the mastery tag: `기벽 +N` = `QuirkSystem.bonus_total` of the seat's pilot with that mech (conditional quirks follow the mech, so dragging a slot updates it). Hidden at 0. |
-| Bottom sheet (`_build_sheet_mastery`) | The rider line gets `· 기벽 +N` next to the mastery stat bonus. |
+| Bottom sheet (`_fill_sheet_mastery`) | The rider line gets `· 기벽 +N` next to the mastery stat bonus. |
 | `MechDetailPanel` | A `기벽 — pilot n/slots (스탯 +N)` block for the tapped seat's pilot (`_quirk_rows`): name · grade, effect line; quirks whose condition fails with this mech are dimmed `(조건 미충족)`. |
 
 The pilot detail popup (`DraftDetailPanel`, owned by `features/meta/run_setup/`) does not list
@@ -276,10 +329,10 @@ quirks yet.
 
 ## Grid scrolling — why mech cells are `MOUSE_FILTER_PASS`
 
-The `Button` in `_build_mech_cell` has its filter **lowered to PASS** (default is STOP).
+The cell `Button` (`BanPickMechCell.tscn`) has its filter **lowered to PASS** (default is STOP).
 With STOP the mech grid doesn't scroll at all on phones — drag scrolling starts only when the mouse
 press emulated from touch reaches the `ScrollContainer`, and STOP cuts that off; since the cells
-cover the grid with no gaps, there's no spot that escapes. `_grid_content` being `IGNORE` is part of
+cover the grid with no gaps, there's no spot that escapes. `%Grid` being `IGNORE` is part of
 the same chain (if the body were STOP, even pressing the empty space between cells would cut it
 there). On desktop the wheel pierces STOP, so this defect isn't visible. Rules and how to verify:
 **`docs/mobile_safe_area.md` §5**.

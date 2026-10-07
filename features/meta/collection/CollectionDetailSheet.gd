@@ -268,7 +268,7 @@ func _fill_breakthrough(stage: int, owned: bool) -> void:
 
 ## Table desc; a `card_swap` row also names the new card ("… → 카드명").
 func _bt_desc(r: Dictionary) -> String:
-	var d: String = String(r.get("desc", ""))
+	var d: String = Loc.t(String(r.get("desc_key", "")))  # l10n-dynamic: breakthrough.*.desc
 	if String(r["kind"]) != "card_swap":
 		return d
 	var parts: PackedStringArray = String(r["value"]).split(":")
@@ -277,7 +277,7 @@ func _bt_desc(r: Dictionary) -> String:
 	var def: Dictionary = _gm.card_def(int(parts[1]))
 	if def.is_empty():
 		return d
-	return "%s → %s" % [d, String(def.get("name", "?"))]
+	return "%s → %s" % [d, Loc.t(String(def.get("name_key", "")))]  # l10n-dynamic: card.pilot.*.name
 
 
 func _fill_cards() -> void:
@@ -368,10 +368,7 @@ func _clear(parent: Node) -> void:
 
 
 func _team_short(team_id: int) -> String:
-	var teams: Array = RunRules.team_packages()
-	if team_id < 0 or team_id >= teams.size():
-		return "T%d" % team_id
-	return String((teams[team_id] as Dictionary)["short_name"])
+	return RunRules.team_short_name(team_id)
 
 
 ## F6 단독 실행 미리보기 — 실제 프로필에서 가장 많이 키운 보유 선수(없으면 풀의 첫 선수)로

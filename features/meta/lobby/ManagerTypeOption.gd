@@ -29,8 +29,8 @@ func _ready() -> void:
 
 ## `row` = one `StaffSystem.manager_types()` entry; `is_current` shows the "현재" chip.
 func fill(row: Dictionary, is_current: bool) -> void:
-	%Name.text = String(row.get("name", ""))
-	%Desc.text = String(row.get("desc", ""))
+	%Name.text = Loc.t(String(row.get("name_key", "")))  # l10n-dynamic: manager.type.*.name
+	%Desc.text = Loc.t(String(row.get("desc_key", "")))  # l10n-dynamic: manager.type.*.desc
 	%Chip.visible = is_current
 	var stats: Dictionary = row.get("stats", {})
 	var cells: Array = %Stats.get_children()
@@ -60,8 +60,7 @@ func _fill_preview() -> void:
 	var vals: Array = [5, 6, 5, 7, 6, 7]
 	for i in StaffSystem.STATS.size():
 		stats[String(StaffSystem.STATS[i])] = int(vals[i % vals.size()])
-	fill({"name": "운영형", "stats": stats,
-			"desc": "조직 운영에 밝은 감독 — 관리 · 멘탈 쪽으로 조금 기운 고른 분배"}, true)
+	fill({"name_key": "tx_J99WKD5PN8", "desc_key": "tx_T2Z72WAY5Q", "stats": stats}, true)
 	set_selected(true)
 	_preview_fit.call_deferred()
 

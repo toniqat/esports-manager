@@ -13,10 +13,10 @@ extends Control
 #
 # Flow: `open(...)` → lines one per tap → choices → `choice_picked(idx)` →
 # the owner applies effects and calls `show_outcome(reply_lines, notes, verdict)`
-# (or `show_result(outcome)` with a `MentalEvents.apply_choice` result)
+# (or `show_result(view)` with `MentalEvents.outcome_view(state, apply_choice result)`)
 # → reply bubbles + note chips, hint "화면을 눌러 닫기" → tap → `closed`.
 #
-# Line grammar (same as mental_events.csv): plain = left speaker, `>text` =
+# Line grammar (same as mental_texts.csv line marker): plain = left speaker, `>text` =
 # manager bubble on the right, `*text` = centred narration.
 #
 # **The frame lives in `UI_View_MessengerView.tscn`** (background, sub / title, divider, the
@@ -118,7 +118,7 @@ func show_outcome(reply_lines: Array, notes: Array, verdict: int = 0) -> void:
 	_scroll_to_bottom()
 
 
-## Shortcut for a `MentalEvents.apply_choice` result `{checked, ok, say, notes}`.
+## Shortcut for a `MentalEvents.outcome_view` result `{checked, ok, say, notes}` (display text).
 func show_result(outcome: Dictionary) -> void:
 	var verdict: int = 0
 	if bool(outcome.get("checked", false)):

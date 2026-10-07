@@ -43,7 +43,7 @@ func _fill_preview() -> void:
 		return
 	var node := (load("res://scenes/Card.tscn") as PackedScene).instantiate() as Card
 	hold_card(node)
-	node.setup(CardData.from_def(def), false, true)
+	node.setup(CardData.from_mech_def(def), false, true)
 	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	node.pivot_offset = Vector2.ZERO
 	node.scale = Vector2(0.9, 0.9)

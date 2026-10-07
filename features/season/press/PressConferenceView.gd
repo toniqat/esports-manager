@@ -76,7 +76,8 @@ func _restart() -> void:
 
 
 func _on_answer_picked(idx: int) -> void:
-	_messenger.show_result(MentalSystem.resolve_press(_gm.season_state, idx))
+	var s: Dictionary = _gm.season_state
+	_messenger.show_result(MentalEvents.outcome_view(s, MentalSystem.resolve_press(s, idx)))
 
 
 func _finish() -> void:

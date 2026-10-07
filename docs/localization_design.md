@@ -3,7 +3,7 @@
 > 이 문서는 LLM(코딩 에이전트)이 이 프로젝트의 현지화 시스템을 **구현·유지보수·사용**할 때 따라야 하는 사양이다.
 > 1차 독자는 LLM이지만 프로젝트 오너가 읽어도 이해되도록 쓴다.
 > **MUST / MUST NOT / SHOULD** 는 RFC 2119 의미로 해석한다.
-> 상태: **설계 확정, 미구현.** 구현이 시작되면 각 폴더 README가 상세를 갖고, 이 문서는 사양으로 남는다.
+> 상태: **1차 구현 완료 (2026-10-07)** — 도구 §15 1~6단계 + 데이터 CSV 이행(D1). 상세는 `addons/l10n_tool/README.md` · `data/l10n/README.md` · 각 폴더 README, 이 문서는 사양으로 남는다. 남은 일은 §0.6.
 
 ---
 
@@ -32,7 +32,7 @@
 | D3 | 이름 조회 | `card_by_name` · `card_costs_by_name` 같은 **표시 이름 조회는 id/key 기반으로 전면 교체** |
 | D4 | 참조 해석 | `build` 가 `generated/refs.json`(문자열 key → 참조 key 목록, 등장 순서)을 만든다. 런타임은 텍스트 매칭 없이 key → (테이블, id) 로 찾는다. 커밋 대상 |
 | D5 | data/csv 임포트 | `data/csv/.gdignore`. 기존 `*.translation` · `*.csv.import` 삭제 |
-| D6 | mental_events | 정규화 — 대사 전용 테이블 `mental_texts.csv`(id, event_id, slot, choice, branch, order, text_key). `lines` · `choices` 컬럼과 effects 의 `say:` 제거 |
+| D6 | mental_events | 정규화 — 대사 전용 테이블 `mental_texts.csv`(id, event_id, slot, choice, branch, seq, text_key — `order` 는 SQL 예약어라 `seq`). `lines` · `choices` 컬럼과 effects 의 `say:` 제거 |
 | D7 | 세이브 | `season_state` 의 이름 사본 제거(id · key 만). 구 `run.save` 는 **폐기**(세이브 버전 올림). `profile.save` 는 유지 |
 | D8 | 고유명사 | 모두 key 화, 언어별 표기(en 은 로마자 / 영문명) |
 | D9 | en 번역 | 이행한 데이터 텍스트 전부 LLM 이 `draft` 로 채운다. approve 는 오너 |
@@ -44,6 +44,13 @@
 | D15 | 중복 텍스트 | 데이터 행마다 별도 key. 중복 · E036 후보는 보고서로 |
 | D16 | 고아 검사 제외 | 로그 함수(`print` · `printerr` · `push_warning` · `push_error` · `assert`) 인자, 주석, `scan.ignore_paths`(디버그 · 치트 · 덤프). 나머지는 전부 검사 |
 | D17 | 카드 도메인 | 파일럿 · 메크 카드를 **하나의 `card` 도메인**으로: `card.pilot.{id}.name` · `card.mech.{id}.name` |
+
+## 0.6 다음 회차 (1차 구현 후 남은 일)
+
+- **씬 · 코드 리터럴 이행** (§14 2~6, §15 7단계) — 1차 구현 시점 고아 텍스트: 코드 약 1,500 · 씬 약 570 (`build dev` → `report.md` W052 · W053). 이행이 끝나면 `strict.orphans = error`.
+- **en 번역 검수 · approve** — 데이터 텍스트 979행이 전부 `draft`. 오너가 검수 후 `approve`.
+- **CI release 연동** — §15 아래 TODO (D13).
+- **알려진 남은 항목:** `pilot_skills` · `mech_passives` 의 `keyword` 태그 컬럼(로밍 · 성장 등 한글 표시값)은 data_columns 밖 · 아이콘 낱말 매칭(`KeywordIcon.WORDS`, "전략 점수" · "비용" · "N턴")이 한글만 알아 en 에서 낱말 아이콘이 빠짐 · 멘탈 사건이 남기는 `staff_mods.source = "mental:<id>"` 가 스태프 시트에 원문 그대로 · `CATEGORY_LABELS` · `TARGET_LABELS` · `STAT_LABELS` 등 코드 라벨 표.
 
 ---
 

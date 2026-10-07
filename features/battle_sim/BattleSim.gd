@@ -332,7 +332,7 @@ var ambush_search_ai: Array = []
 # 심어 두고, `mark_pilot_dead` 가 상대 팀 파일럿의 사망을 볼 때 한 번 지급하고
 # 소모한다. 그 작전 단계가 끝나면 미사용분은 사라진다.
 var kill_bounty_p:  int = 0
-## 예약 효과의 출처 카드 이름 — `"<strategy|draw|bounty|ambush>_<p|ai>"` → 카드 이름.
+## 예약 효과의 출처 카드 — `"<strategy|draw|bounty|ambush>_<p|ai>"` → 카드 식별자(`CardData.card_uid`).
 ## 예약 칩(`ui/ReservationChips.gd`)의 썸네일 전용이고 계산에는 쓰이지 않는다.
 var reserve_src: Dictionary = {}
 var kill_bounty_ai: int = 0

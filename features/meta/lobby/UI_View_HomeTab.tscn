@@ -267,3 +267,21 @@ layout_mode = 2
 theme_type_variation = &"FaintLabel"
 text = "아래 '새 런' 으로 시즌을 시작하세요"
 horizontal_alignment = 1
+
+[node name="SettingsButton" type="Button" parent="."]
+editor_description = "[필수] 지우면 오류 — HomeTab.gd _ready()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 60)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -182.0
+offset_top = 12.0
+offset_right = -32.0
+offset_bottom = 72.0
+grow_horizontal = 0
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 24
+text = "tx_EVS2K4Z4YF"

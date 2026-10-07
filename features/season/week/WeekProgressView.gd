@@ -417,7 +417,7 @@ func _add_pilot_card(row_raw: Variant) -> void:
 
 	OutgameTheme.add_round_portrait(card.get_node("%Portrait"),
 			PilotImages.circle_for(int(row["pilot_id"])), Vector2.ZERO, PORTRAIT_D)
-	(card.get_node("%Name") as Label).text = String(row["name"])
+	(card.get_node("%Name") as Label).text = String(_gm.pilot_name(int(row["pilot_id"])))
 	(card.get_node("%PositionBadge_Role") as PositionBadge).set_role(role)
 
 	# Mech mastery of the day (§14 T4, row key `mastery` = raw tile EXP).
@@ -537,11 +537,11 @@ static func _quirk_lines(events_raw: Variant) -> Array:
 	return out
 
 
-## Quirk display name — `QuirkSystem.row(id).name`, "기벽 #id" when the table has no row.
+## Quirk display name — `QuirkSystem.name_of(id)`, "기벽 #id" when the table has no row.
 static func _quirk_name(id: int) -> String:
 	if id < 0:
 		return "기벽"
-	var name_v: String = String(QuirkSystem.row(id).get("name", ""))
+	var name_v: String = QuirkSystem.name_of(id)
 	return name_v if name_v != "" else "기벽 #%d" % id
 
 
@@ -683,7 +683,7 @@ func _add_evening_done_card(e: Dictionary) -> void:
 	elif action == MentalSystem.ACTION_OUTING:
 		head = "오늘 저녁 — %s 외출" % MentalEvents.pilot_name(s, pid)
 	head_lbl.text = head
-	var notes: Array = (e.get("outcome", {}) as Dictionary).get("notes", [])
+	var notes: Array = MentalEvents.note_texts(s, (e.get("outcome", {}) as Dictionary).get("notes", []))
 	line_lbl.text = " · ".join(PackedStringArray(notes)) if not notes.is_empty() \
 			else ("내일을 위해 일찍 쉬었다" if action == MentalSystem.ACTION_PASS else "변화 없음")
 
@@ -704,7 +704,7 @@ func _add_incident_card() -> void:
 	(card.get_node("%Head") as Label).text = "사건 — %s · %s" % [String(view["tag"]),
 			MentalEvents.pilot_name(s, pid)]
 	var pending: bool = int(inc.get("choice", -1)) < 0
-	var notes: Array = (inc.get("outcome", {}) as Dictionary).get("notes", [])
+	var notes: Array = MentalEvents.note_texts(s, (inc.get("outcome", {}) as Dictionary).get("notes", []))
 	var line: Label = card.get_node("%Line")
 	line.text = "눌러서 대응하기" if pending else (
 			" · ".join(PackedStringArray(notes)) if not notes.is_empty() else "큰 탈 없이 지나갔다")
@@ -790,7 +790,7 @@ func _on_overlay_choice(idx: int) -> void:
 	else:
 		out = MentalSystem.finish_evening(s, _day, idx)
 	if _overlay != null:
-		_overlay.show_result(out)
+		_overlay.show_result(MentalEvents.outcome_view(s, out))
 
 
 func _on_overlay_closed() -> void:

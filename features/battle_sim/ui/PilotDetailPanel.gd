@@ -981,12 +981,14 @@ func _append_card_fx(out: Array) -> void:
 		if is_zero_approx(amount):
 			continue
 		var kind: String = String(e["kind"])
+		# 장부의 출처는 카드 식별자(`CardData.card_uid`) — 이름은 표시할 때 푼다(l10n).
 		var src: String = String(e["src"])
+		var src_name: String = CardData.name_of_uid(src)
 		out.append({
 			"key": "fx:src:%s|%s" % [kind, src],
 			"src": src,
-			"short": _fx_short(src),
-			"title": src,
+			"short": _fx_short(src_name),
+			"title": src_name,
 			"value": _fx_value(kind, amount),
 			"color": FX_KIND_COLOR.get(kind, Color(0.86, 0.86, 0.90)) as Color,
 		})
@@ -1369,14 +1371,14 @@ func _build_skill_panel() -> void:
 
 	# 설명문 — 카드 설명과 같은 길(`StrategyIcon`): 키워드 아이콘, `[카드]` 앞의
 	# 비용 아이콘, 줄바꿈, `{eul}` 조사. 높이는 같은 규칙으로 잰다.
-	var gm: Node = _bs.gm
-	var costs: Dictionary = gm.card_costs_by_name() if gm != null else {}
+	var refs: Array = CardData.ref_entries(sk.skill_description_key(_pilot))
 	var desc_text: String = sk.skill_description(_pilot)
-	var desc_h: float = StrategyIcon.rich_height(desc_text, SKILL_DESC_W, SKILL_DESC_FONT, costs)
+	var desc_h: float = StrategyIcon.rich_height(desc_text, SKILL_DESC_W, SKILL_DESC_FONT,
+			refs, true)
 	var desc := StrategyIcon.make_rich_label(desc_text, SKILL_DESC_FONT,
 			BattleTheme.TEXT_DESC, BattleTheme.SKILL_KW_ICON, BattleTheme.SKILL_KNOCK,
 			KeywordIcon.TARGET_ANY_COLOR, KeywordIcon.TARGET,
-			KeywordIcon.SPECIAL_COLOR_DARK, costs)
+			KeywordIcon.SPECIAL_COLOR_DARK, refs, true)
 	desc.position = Vector2.ZERO
 	desc.size = Vector2(SKILL_DESC_W, desc_h)
 	desc_slot.custom_minimum_size = Vector2(0.0, desc_h)

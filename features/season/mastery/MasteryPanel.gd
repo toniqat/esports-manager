@@ -207,7 +207,7 @@ func _fill_quirks(row: Control, pd: PlayerData) -> void:
 		pill.add_theme_stylebox_override(&"panel", OutgameTheme.flat_style(col, int(pill.size.y * 0.5)))
 		(pill.get_child(0) as Label).text = QuirkSystem.grade_name(g)
 		var nm: Label = line.get_node("%Name")
-		nm.text = String(r["name"])
+		nm.text = QuirkSystem.name_of(ids[i])
 		nm.add_theme_color_override("font_color", col)
 		line.get_node("%Effect").text = QuirkSystem.effect_text(ids[i])
 

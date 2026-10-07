@@ -61,7 +61,7 @@ rounds** — one round on Saturday (`matchday = 0`), one round on Sunday (`match
 | `player_match_on_day(md)` | SeasonHub (is there a match on that weekday?) |
 | `player_match_this_week()` | `player_match_on_day(-1)` — HubView header |
 | `matches_this_week()` | LeagueView "this week's matches" |
-| `team_name(id)` / `team_short_name(id)` | LeagueView, draft, future UIs |
+| `team_name(id)` / `team_short_name(id)` | LeagueView, draft, future UIs — delegate to `GameManager.team_name` / `team_short_name` (team_meta holds l10n keys only, D7; `InternationalTournament` does the same) |
 
 ## Match-schedule entry shape
 Each entry in `season_state["match_schedule"]` is a Dictionary:

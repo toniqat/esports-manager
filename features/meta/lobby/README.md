@@ -13,7 +13,9 @@ theme (`OutgameTheme`), bottom action bar. Replaces the old 3-slot TitleScreen
 | `UI_View_HomeTab.tscn` + `.gd` | `class_name HomeTab extends Control` | 홈 tab — run card, continue / new run / abandon (the old lobby body). **Layout lives in the `.tscn`** |
 | `UI_View_ConfirmPopup.tscn` + `.gd` | `class_name ConfirmPopup extends CanvasLayer` | Reusable modal confirm (dim + white card + cancel / confirm). **Layout lives in the `.tscn`**, style in `OutgameTheme.tres` variations — first scene-authored outgame UI |
 | `UI_View_ManagerTypePopup.tscn` + `.gd` | `class_name ManagerTypePopup extends CanvasLayer` | First-lobby manager type pick (운영형 / 실전형), not dismissible (M3); prestige re-pick mode, dismissible (M9). **Layout lives in the `.tscn`** |
-| `UI_Comp_ManagerTypeOption.tscn` + `.gd` | `class_name ManagerTypeOption extends PanelContainer` | One option card of `ManagerTypePopup` (name, `현재` chip, desc, six stat cells) — item scene instantiated per type |
+| `UI_View_SettingsPopup.tscn` + `SettingsPopup.gd` | `class_name SettingsPopup extends CanvasLayer` | Settings modal (l10n D10) — language list, one button per `L.LOCALES`. Opened from the 홈 tab's `%SettingsButton`. **Layout lives in the `.tscn`** |
+| `UI_Comp_SettingsLanguageButton.tscn` | — (no script, `Button`) | One language row of `SettingsPopup` (`SelectableCardButton` / `…On`, 112 high) — item scene, one per locale |
+| `UI_Comp_ManagerTypeOption.tscn` + `.gd` | `class_name ManagerTypeOption extends PanelContainer` | One option card of `ManagerTypePopup` (name, `현재` chip, desc, six stat cells) — item scene instantiated per type. Name / desc = `Loc.t` of the row's `name_key` / `desc_key` (`manager.type.*`); F6 preview uses type 0's keys |
 
 ## F6 preview (standalone run)
 Every scripted scene here except `LobbyScreen` (the `scenes/Lobby.tscn` root) shows dummy data when run on its own (editor "Run Current Scene") — `_ready` →
@@ -25,6 +27,8 @@ to only print (`UiPreview.mute`).
 - `ConfirmPopup` — the danger variant (런 포기). `ManagerTypePopup` — prestige mode, real
   `manager_types.csv`, "현재" chip on the last type, first option selected.
 - `ManagerTypeOption` — hand-written 운영형 card, selected + "현재".
+- `SettingsPopup` — opened with the real `L.LOCALES`; picking / closing only prints (no save, no reload).
+  `HomeTab`'s settings button works in its preview too; a pick there only prints.
 
 ## Tab host (M8~M10) — `docs/outgame_dev_plan.md` §12.6
 ```
@@ -107,6 +111,32 @@ Lobby (Control, full rect, theme = OutgameTheme.tres, LobbyScreen.gd)
   `RunResult.SCENE_PATH`, whose `새 런` goes on to `RunSetup.tscn` (`../run_result/README.md`).
   Load fails (corrupt run) → warning, `delete_run()` and straight to a new run without settlement.
 - A summary line under the title: manager level · owned pilots · owned traits.
+- **`%SettingsButton`** (`GhostButton`, 150×60, font 24, key `settings.open_button`) — anchored top-right of the
+  tab, 32 px from the right edge, y 12..72 (inside the top gap, beside the centred title). The tab already starts
+  below the currency strip, which the host indents under the notch, so no extra safe-area code. Pressed →
+  `_open_settings` (creates one `SettingsPopup` lazily as a child) → `locale_chosen(code)` →
+  `_on_locale_chosen`: `ProfileManager.set_locale(code)` (saves) → `get_tree().reload_current_scene()` —
+  the only way texts refresh after a language switch (§10.4: no `NOTIFICATION_TRANSLATION_CHANGED` handling).
+  Save error → red toast `settings.save_failed`.
+
+## SettingsPopup (l10n M5 — `docs/localization_design.md` D10 · §10.4)
+`SettingsPopup.create()` → `open()` / `close()` / `is_open()`; signals `locale_chosen(code)` (a locale other
+than the current one was tapped — the popup hides itself, the opener saves + reloads) and `closed`
+(dim / `닫기` / re-tapping the current language).
+- **The `.tscn` is the source of truth for layout and style.** Tree: CanvasLayer 20 → `Root` (full rect,
+  **`theme = OutgameTheme.tres`**) → `%Dim` (flat Button, closes) · `DimRect` (`DimPanel`) · `%SafeArea`
+  (CenterContainer) → `Card` (`PopupCard`, 920 wide) → `VBox` → `Title` (`TitleLabel`) · Gap · `LanguageHeader`
+  (`CaptionLabel` 24) · Gap · `%Languages` (VBox sep 16; two preview `SettingsLanguageButton_Lang0/1`
+  instances) · Gap · `Note` (`FaintLabel`, autowrap) · Gap · `%Close` (`GhostButton`, 112 high).
+- Static texts are **key literals in the scene** (`tx_…` — Control auto-translate, inherited/on); keys live in
+  `data/l10n/src/settings.csv` (`settings.*`).
+- Code-owned: the language buttons (`_sync_languages` reuses the scene's previews / instantiates
+  `UI_Comp_SettingsLanguageButton.tscn` / frees to match `L.LOCALES`); each button's text =
+  `Loc.t(LOCALE_NAMES[code])` — **language names are endonyms** (`settings.locale.ko` = "한국어",
+  `settings.locale.en` = "English" in every locale; adding a locale = one `settings.locale.<code>` key +
+  one `LOCALE_NAMES` row); the current locale (`TranslationServer.get_locale()`) gets `SelectableCardButtonOn`,
+  others `SelectableCardButton`; `%SafeArea` offsets = `ScreenMetrics.top_y()` / `bottom_y()` on every `open()`
+  (pattern C of `docs/mobile_safe_area.md`, same frame as `ConfirmPopup`).
 
 ## ConfirmPopup
 `ConfirmPopup.create()` (instantiates `UI_View_ConfirmPopup.tscn` — `ConfirmPopup.new()` is an empty layer),

@@ -7,7 +7,7 @@ free weekly pass. Contract: `docs/outgame_dev_plan.md` §12 (row E). Tab contrac
 ## Files
 | File | Class | Role |
 |---|---|---|
-| `Gacha.gd` | `class_name Gacha extends RefCounted` (static) | Gacha rules + the one pull action: rates (`gacha_rates.csv`), named-pilot / trait buckets, rarity roll, cost, `pull(pm, pool, count, rng, save)` |
+| `Gacha.gd` | `class_name Gacha extends RefCounted` (static) | Gacha rules + the one pull action: rates (`gacha_rates.csv`), named-pilot / trait buckets (`named_pilots` rows carry `name_key`; `pilot_name(id)` = `Loc.t`), rarity roll, cost, `pull(pm, pool, count, rng, save)` |
 | `ShopCatalog.gd` | `class_name ShopCatalog extends RefCounted` (static) | Fixed-price actions: shard purchase, trait craft, outgame → levelup exchange, premium → tickets, dev premium grant. Do not save |
 | `PassSystem.gd` | `class_name PassSystem extends RefCounted` (static) | Weekly pass rules over the profile dict: ISO-week reset (device clock, local time), exp → level, overflow → outgame currency, `pass_rewards.csv`, `claim` / `claim_all` |
 | `ShopTab.gd` · `UI_View_ShopTab.tscn` | `class_name ShopTab extends Control` | 상점 tab — segmented control (선수 영입 · 특성 연구 · 파편 상점 · 특성 제작 · 교환소), no action bar — see **ShopTab · PassTab scenes** below |

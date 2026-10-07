@@ -1,0 +1,123 @@
+[gd_scene load_steps=4 format=3 uid="uid://cqa868uoo1bad"]
+
+[ext_resource type="Script" uid="uid://xl8pxa3ooe5d" path="res://features/meta/lobby/SettingsPopup.gd" id="1_settings"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" uid="uid://dxsu4k02ix882" path="res://features/meta/lobby/UI_Comp_SettingsLanguageButton.tscn" id="3_lang"]
+
+[node name="SettingsPopup" type="CanvasLayer"]
+layer = 20
+script = ExtResource("1_settings")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+
+[node name="Dim" type="Button" parent="Root"]
+editor_description = "[필수] 지우면 오류 — SettingsPopup.gd _ready()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+flat = true
+
+[node name="DimRect" type="Panel" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"DimPanel"
+
+[node name="SafeArea" type="CenterContainer" parent="Root"]
+editor_description = "[필수] 지우면 오류 — SettingsPopup.gd _fit_safe_area()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Card" type="PanelContainer" parent="Root/SafeArea"]
+custom_minimum_size = Vector2(920, 0)
+layout_mode = 2
+theme_type_variation = &"PopupCard"
+
+[node name="VBox" type="VBoxContainer" parent="Root/SafeArea/Card"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="Root/SafeArea/Card/VBox"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+text = "tx_4S0H7A92KR"
+
+[node name="Gap1" type="Control" parent="Root/SafeArea/Card/VBox"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="LanguageHeader" type="Label" parent="Root/SafeArea/Card/VBox"]
+custom_minimum_size = Vector2(0, 35)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 24
+text = "tx_EB8R7HBW32"
+
+[node name="Gap2" type="Control" parent="Root/SafeArea/Card/VBox"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Languages" type="VBoxContainer" parent="Root/SafeArea/Card/VBox"]
+editor_description = "[필수] 지우면 오류 — SettingsPopup.gd _sync_languages()"
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="SettingsLanguageButton_Lang0" parent="Root/SafeArea/Card/VBox/Languages" instance=ExtResource("3_lang")]
+layout_mode = 2
+theme_type_variation = &"SelectableCardButtonOn"
+
+[node name="SettingsLanguageButton_Lang1" parent="Root/SafeArea/Card/VBox/Languages" instance=ExtResource("3_lang")]
+layout_mode = 2
+text = "tx_ZZA706T9ET"
+
+[node name="Gap3" type="Control" parent="Root/SafeArea/Card/VBox"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Note" type="Label" parent="Root/SafeArea/Card/VBox"]
+layout_mode = 2
+theme_type_variation = &"FaintLabel"
+text = "tx_WH60K8T29E"
+autowrap_mode = 3
+
+[node name="Gap4" type="Control" parent="Root/SafeArea/Card/VBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Close" type="Button" parent="Root/SafeArea/Card/VBox"]
+editor_description = "[필수] 지우면 오류 — SettingsPopup.gd _ready()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 112)
+layout_mode = 2
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+text = "tx_TAQGY61B4S"

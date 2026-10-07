@@ -37,10 +37,10 @@ func show_result(e: Dictionary) -> void:
 	%Face.visible = is_pilot
 	%Mark.visible = not is_pilot
 	if is_pilot:
-		%Name.text = String(Gacha.pilot_row(id).get("name", "?"))
+		%Name.text = Gacha.pilot_name(id)
 		%Face.texture = PilotImages.face_for(id)
 	else:
-		%Name.text = String(TraitSystem.row(id).get("name", "?"))
+		%Name.text = TraitSystem.name_of(id)
 		var pos_trait: bool = TraitSystem.is_positive(id)
 		%Mark.add_theme_stylebox_override("panel", OutgameTheme.flat_style(
 				OutgameTheme.POSITIVE if pos_trait else OutgameTheme.NEGATIVE, 56))

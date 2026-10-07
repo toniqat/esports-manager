@@ -240,7 +240,7 @@ func _fill_shard() -> void:
 		var slot: Control = row.get_node("%FaceSlot")
 		OutgameTheme.add_round_portrait(slot, PilotImages.face_for(pid), Vector2.ZERO,
 				slot.size.x, rar_col)
-		(row.get_node("%Name") as Label).text = String(r["name"])
+		(row.get_node("%Name") as Label).text = Gacha.pilot_name(pid)
 		_paint_chip(row.get_node("%Chip"), rar_col)
 		(row.get_node("%ChipText") as Label).text = TraitSystem.rarity_name(int(r["rarity"]))
 		(row.get_node("%PositionBadge_Position") as PositionBadge).set_role(int(r["role"]))
@@ -281,7 +281,7 @@ func _fill_craft() -> void:
 		var pos_trait: bool = String(r["polarity"]) == TraitSystem.POLARITY_POS
 		_paint_chip(row.get_node("%Mark"), OutgameTheme.POSITIVE if pos_trait else OutgameTheme.NEGATIVE)
 		(row.get_node("%MarkText") as Label).text = "+" if pos_trait else "−"
-		(row.get_node("%Name") as Label).text = String(r["name"])
+		(row.get_node("%Name") as Label).text = TraitSystem.name_of(tid)
 		_paint_chip(row.get_node("%Chip"), TraitUi.rarity_color(int(r["rarity"])))
 		(row.get_node("%ChipText") as Label).text = TraitSystem.rarity_name(int(r["rarity"]))
 		(row.get_node("%Desc") as Label).text = TraitSystem.desc_of(tid)

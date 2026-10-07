@@ -12,7 +12,7 @@ HubView "이번 주 시작 →"  →  PRESS  →  (pick an answer)  →  TRAININ
 |---|---|
 | `PressConferenceView.gd` | `class_name PressConferenceView extends Control` — the screen: draws this week's `MentalSystem.press_session` in a `MessengerView`, applies the answer with `MentalSystem.resolve_press`, then `SeasonHub.on_press_finished()` |
 | `UI_View_PressConferenceView.tscn` | The screen scene: root (theme `OutgameTheme.tres`, PASS) + one `UI_View_MessengerView.tscn` instance `%MessengerView_Messenger` whose `outcome_hint` is set in the scene (`화면을 눌러 계속`). Created by `SeasonHub` with `PressConferenceView.create()` |
-| `MessengerView.gd` | `class_name MessengerView extends Control` — **shared messenger dialogue** (press conference here; interview / outing / incident overlays on the week screen). Create with `MessengerView.create()` (`.new()` is an empty Control). API: `open(sub, title, portrait, lines, choices)` → signal `choice_picked(idx)` → `show_result(outcome)` / `show_outcome(reply_lines, notes, verdict)` → signal `closed`. `reveal_all()` shows every remaining line + the choices at once (previews / harnesses). `@export outcome_hint` = bottom hint after the outcome. Line grammar: plain = left speaker, `>text` = manager (right), `*text` = narration (see `features/season/mental/README.md`). |
+| `MessengerView.gd` | `class_name MessengerView extends Control` — **shared messenger dialogue** (press conference here; interview / outing / incident overlays on the week screen). Create with `MessengerView.create()` (`.new()` is an empty Control). API: `open(sub, title, portrait, lines, choices)` → signal `choice_picked(idx)` → `show_result(MentalEvents.outcome_view(state, outcome))` (display text — the stored outcome holds keys / note dicts only) / `show_outcome(reply_lines, notes, verdict)` → signal `closed`. `reveal_all()` shows every remaining line + the choices at once (previews / harnesses). `@export outcome_hint` = bottom hint after the outcome. Line grammar: plain = left speaker, `>text` = manager (right), `*text` = narration (see `features/season/mental/README.md`). |
 | `UI_View_MessengerView.tscn` | The **frame** (below): header, scroll, `%Log` column, `%Answers` block, hint |
 | `UI_Comp_MessengerNpcBubble.tscn` / `.gd` | Item — one line of the other side (left): portrait slot (`%Portrait` + `%Glyph`), tail (`%Wedge`), white bubble (`%Bubble` → `Pad` → `%Text`). `create()` + `setup(text, portrait, with_portrait)` — follow-up lines hide portrait + tail but keep their columns |
 | `UI_Comp_MessengerPlayerBubble.tscn` / `.gd` | Item — one manager line (right): amber `%Bubble` + tail. `create()` + `setup(text)` |
@@ -97,7 +97,7 @@ something prepared." / "That question is a bit rude."; hint "Tap the screen to c
 
 ## Data (M7)
 
-Questions are `mental_events.csv` rows of kind `press` (grammar: `features/season/mental/README.md`).
+Questions are `mental_events.csv` rows of kind `press`, their texts `mental_texts.csv` l10n keys (grammar: `features/season/mental/README.md`).
 The `@` line is the outlet shown in the header (`… · <outlet> 기자`). One question per week,
 drawn by `MentalSystem.press_session` (seeded per run + week, kept in `season_state.mental.press`) —
 reopening the screen in the same week shows the same question and a second answer is not applied.

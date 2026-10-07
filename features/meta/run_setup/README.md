@@ -20,10 +20,10 @@ level application) is documented in `features/season/README.md` "Entry point"
 | `RunSetupScreen.gd` (+ `scenes/RunSetup.tscn`) | `class_name RunSetupScreen extends Control` (scene root) | Orchestrator: step table `STEPS`, step header (`StepChip` per row), step views (into `%Steps`), builds `run_setup`, calls `GameManager.start_run`, launch fade. `content_top()` = where step bodies start (116). |
 | `UI_Comp_StepChip.tscn` + `.gd` | `class_name StepChip extends Panel` | Item scene: one header pill. `create()`, `set_text`, `paint(bg, fg, border)` (state colours on a copy of the pill variation `StepChipPanel`). |
 | `UI_View_ChoiceListView.tscn` + `.gd` | `class_name ChoiceListView extends Control` | Shared "pick one card" step: hint line → scrolling card list → bar `뒤로`(1) / `다음`(2). Subclasses fill `_items` / `_make_card(item) -> Button` / `_hint_text`. Signals `back_requested` / `next_requested`, value `selected_id`. **Nothing is pre-selected** — `다음` stays disabled until the player taps a card, so the rules (cap, team package) are read rather than skipped by tapping `다음` repeatedly. |
-| `UI_View_ScenarioStepView.tscn` + `.gd` | `class_name ScenarioStepView extends ChoiceListView` | Step 1 — `RunRules.scenarios()` → one `ScenarioCard` each. Scene **inherits** `UI_View_ChoiceListView.tscn` (root script swapped). `create()`. |
-| `UI_Comp_ScenarioCard.tscn` + `.gd` | `class_name ScenarioCard extends Button` | Item scene: name, salary-cap chip (`AccentChip` PanelContainer, 260×44), desc. Root variation `SelectableCardButton` (`...On` when chosen — `ChoiceListView._refresh`). `create()`, `fill(item)`. |
-| `UI_View_TeamStepView.tscn` + `.gd` | `class_name TeamStepView extends ChoiceListView` | Step 2 — `RunRules.team_packages()` (8) → one `TeamCard` each. Hint: higher budget = easier. Display / snapshot only — effects are M3 / M6. Scene inherits `UI_View_ChoiceListView.tscn`. `create()`. |
-| `UI_Comp_TeamCard.tscn` + `.gd` | `class_name TeamCard extends Button` | Item scene: name · short name, budget (+ bar relative to the highest budget — `%Fill.anchor_right`), facility level, "직접 해야 하는 일" (`manual_areas` → `RunRules.area_label`, empty = "없음" in green), desc. `fill(item, max_budget)`. |
+| `UI_View_ScenarioStepView.tscn` + `.gd` | `class_name ScenarioStepView extends ChoiceListView` | Step 1 — `RunRules.scenarios()` (`{id, name_key, salary_cap, desc_key}` — text fields are l10n keys) → one `ScenarioCard` each. Scene **inherits** `UI_View_ChoiceListView.tscn` (root script swapped). `create()`. |
+| `UI_Comp_ScenarioCard.tscn` + `.gd` | `class_name ScenarioCard extends Button` | Item scene: name, salary-cap chip (`AccentChip` PanelContainer, 260×44), desc. Root variation `SelectableCardButton` (`...On` when chosen — `ChoiceListView._refresh`). `create()`, `fill(item)` — name / desc are `Loc.t` of the scenario's `name_key` / `desc_key` (`scenario.{id}.*`); F6 preview uses scenario 1's real keys. |
+| `UI_View_TeamStepView.tscn` + `.gd` | `class_name TeamStepView extends ChoiceListView` | Step 2 — `RunRules.team_packages()` (8, `{id, name_key, short_name_key, budget, facility_level, manual_areas, desc_key}` — text fields are l10n keys) → one `TeamCard` each. Hint: higher budget = easier. Display / snapshot only — effects are M3 / M6. Scene inherits `UI_View_ChoiceListView.tscn`. `create()`. |
+| `UI_Comp_TeamCard.tscn` + `.gd` | `class_name TeamCard extends Button` | Item scene: name · short name, budget (+ bar relative to the highest budget — `%Fill.anchor_right`), facility level, "직접 해야 하는 일" (`manual_areas` → `RunRules.area_label`, empty = "없음" in green), desc. Name / short / desc are `Loc.t` of the package's `name_key` · `short_name_key` · `desc_key`. `fill(item, max_budget)`. F6 preview uses team 3's real keys. |
 | `UI_View_ManagerStepView.tscn` + `.gd` | `class_name ManagerStepView extends Control` | Step 3 감독 (M8/M9) — preset chips, the preset's six stats, `TraitPickerView` (from `../manager/`) with in-place trait swaps; `preset_idx`, `selected_traits()`, `validation_error()`. Signals `back_requested` / `next_requested`. `create()`. |
 | `TeamDraft.gd` | `class_name TeamDraft extends Control` | Step 4 data layer: owned pool (`get_pool_grid()`), chosen levels (`levels`, `set_level`, `leveled()`), salary (`salary_of`, `lineup_salary`, `salary_cap` = `RunRules.salary_cap_with(scenario, trait_ids)`), `set_traits` / `cap_bonus()` (trait `salary_cap` Σ), `validate()` = `RunRules.validate_lineup(..., cap_bonus())`. Slot table `SLOT_ROLES` / `SLOT_NAMES` / `slot_of_role`, `skill_type_label`. Signals `back_requested`, `start_requested(pilot_ids)`. |
 | `UI_View_TeamDraftView.tscn` + `.gd` | `class_name TeamDraftView extends Control` | Step 4 screen: salary gauge, 5 role-fixed `DraftSlot`s, role filter, scrolling thumbnail grid, PICK ↔ CONFIRM. Child of `TeamDraft` (`TeamDraftView.create()` in `ensure_view`). |
@@ -144,8 +144,8 @@ copy) and from the **assignment step of ban/pick** (both teams' portraits). It n
 header (name · position badge + original team, + breakthrough chips) → 6 stat chips + total → pilot skill (icon tile +
 rich description) → the pilot's
 **3 fixed pilot cards** (`GameManager.pilot_card_ids_for(pd)`, `CardDescBox.build(..., light = true)`).
-The original-team short name comes from `season_state.team_meta`, or — during run setup, before
-the season exists — from `RunRules.team_packages()`. The backing height follows the content
+The original-team short name is `GameManager.team_short_name(team_id)` — `season_state.team_meta`
+keys, or — during run setup, before the season exists — the `RunRules.team_packages()` keys. The backing height follows the content
 (stops where `%Column` — inside the device safe area — has no more room, then scrolls); the close
 button follows that bottom edge and needs an
 opaque style (it overlaps the bottom bar under the dim) — `GhostButton` is opaque white.
@@ -213,8 +213,9 @@ plain Label — skill descriptions carry `\n` breaks, `{eul}` particle tags, key
 `[card name]` tokens. Colours follow the light `CardDescBox`: icon `ACCENT_TEXT`, knock = panel bg
 (`SURFACE`), target `KeywordIcon.TARGET_ANY_COLOR` / `TARGET`, special
 `KeywordIcon.SPECIAL_COLOR_LIGHT`; card costs (the cost ribbon before `[card name]`) come from
-`GameManager.card_costs_by_name()`. Height is `StrategyIcon.rich_height(...)` with the same
-costs — never measured by hand.
+the description key's references (`CardData.ref_entries(description_key)`, `card_costs = true`).
+Height is `StrategyIcon.rich_height(...)` with the same refs — never measured by hand.
+Skill name / description are l10n keys (`name_key` · `description_key`) — `Loc.t`.
 
 ### Upper-body illustration — `PilotImages.bust_for`
 An `AtlasTexture` crop of the upper part of `tall/N_tall.png` (`PilotImages.BUST_REGION`), whose

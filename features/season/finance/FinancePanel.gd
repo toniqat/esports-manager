@@ -163,10 +163,10 @@ func _fill_last_week() -> void:
 	var spend: int = int(last.get("special_spend", 0))
 	%SpecialSpend.visible = spend > 0
 	%SpecialSpend.text = "특별 지출 −%s (구매 즉시 잔고에서 차감 · %s)" % [FinanceSystem.fmt(spend),
-			", ".join(PackedStringArray(last.get("special_buys", [])))]
+			", ".join(FinanceSystem.special_names(last.get("special_buys", [])))]
 	var ended: Array = last.get("specials_expired", [])
 	%SpecialsExpired.visible = not ended.is_empty()
-	%SpecialsExpired.text = "특별 지출 만료 · " + ", ".join(PackedStringArray(ended))
+	%SpecialsExpired.text = "특별 지출 만료 · " + ", ".join(FinanceSystem.special_names(ended))
 
 
 func _fill_allocation() -> void:
@@ -245,7 +245,7 @@ func _fill_specials() -> void:
 	var running: Array = []
 	for raw in FinanceSystem.active_specials(state):
 		var e: Dictionary = raw
-		running.append("진행 중 · %s — %s · %d주 남음" % [String(e.get("name", "")),
+		running.append("진행 중 · %s — %s · %d주 남음" % [FinanceSystem.special_name(String(e.get("id", ""))),
 				FinanceSystem.special_effect_text(e), int(e.get("weeks_left", 0))])
 	_fill_lines(%Running, running)
 	%RunningGap.visible = not running.is_empty()
@@ -260,7 +260,7 @@ func _fill_specials() -> void:
 		var cost: int = int(spec["cost"])
 		var why: String = FinanceSystem.special_block_reason(state, sid)
 		var name_l: Label = row.get_node("%Name")
-		name_l.text = String(spec["name"])
+		name_l.text = FinanceSystem.special_name(sid)
 		name_l.add_theme_color_override("font_color", OutgameTheme.TEXT if why == "" else OutgameTheme.TEXT_SUB)
 		var eff_l: Label = row.get_node("%Effect")
 		eff_l.text = "%s · %d주" % [FinanceSystem.special_effect_text(spec), int(spec["weeks"])]
@@ -274,7 +274,7 @@ func _fill_specials() -> void:
 		var blocked: Button = row.get_node("%Blocked")
 		blocked.visible = why != ""
 		blocked.text = why
-		row.get_node("%Desc").text = String(spec["desc"])
+		row.get_node("%Desc").text = FinanceSystem.special_desc(sid)
 
 
 func _wire_special_row(row: Control) -> void:

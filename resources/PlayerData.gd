@@ -2,7 +2,13 @@ class_name PlayerData
 extends Resource
 
 @export var id: int = 0
-@export var name: String = ""
+## 이름 l10n key(`players.name_key` / `intl_players.name_key`). 세이브에도 이 key 만
+## 들어간다(설계서 D7) — 표시는 아래 `name`.
+@export var name_key: String = ""
+## 표시 이름 — 현재 로케일로 그때그때 푼다. 읽기 전용.
+var name: String:
+	get:
+		return Loc.t(name_key)  # l10n-dynamic: name.player.* name.intl_player.*
 @export var role: int = 0          # GameEnums.Role
 @export var team_id: int = 0       # 0 = player, 1 = enemy
 
@@ -102,13 +108,13 @@ static var STAT_MIN: int = ConstTable.int_of("PLAYER_STAT_MIN")
 var assigned_mech: MechData = null
 
 
-func _init(p_id: int = 0, p_name: String = "", p_role: int = 0, p_team_id: int = 0,
+func _init(p_id: int = 0, p_name_key: String = "", p_role: int = 0, p_team_id: int = 0,
 		p_field_hit: int = 50, p_field_eva: int = 50,
 		p_engage_hit: int = 50, p_engage_eva: int = 50,
 		p_atk_growth: int = 50, p_hp_growth: int = 50,
 		p_skill_id: int = -1, p_is_mob: bool = false) -> void:
 	id = p_id
-	name = p_name
+	name_key = p_name_key
 	role = p_role
 	team_id = p_team_id
 	field_hit   = p_field_hit

@@ -51,13 +51,14 @@ const OWNER_ASSISTANT: String = "assistant"
 const OWNER_STAFF: String = "staff"
 
 static var _types: Array = []          # manager_types rows
-static var _staff: Dictionary = {}     # int id → staff row {id, name, job, stats{}, salary}
+static var _staff: Dictionary = {}     # int id → staff row {id, name_key, job, stats{}, salary}
 static var _team_staff: Dictionary = {}  # int team_id → Array[int] staff ids
 static var _loaded: bool = false
 
 
 # ── Tables ───────────────────────────────────────────────────────────────────
-## `[{id, name, gender, stats{stat: int}, desc}]`, by id.
+## `[{id, name_key, gender, stats{stat: int}, desc_key}]`, by id (text = l10n keys,
+## `manager.type.*.name` / `.desc` — show with `Loc.t`).
 static func manager_types() -> Array:
 	_ensure_loaded()
 	return _types
@@ -70,7 +71,8 @@ static func manager_type_row(type_id: int) -> Dictionary:
 	return {}
 
 
-## `{id, name, job, stats{stat: int}, salary}`. Empty Dictionary when missing.
+## `{id, name_key, job, stats{stat: int}, salary}` (`name_key` = l10n key — `staff_name`).
+## Empty Dictionary when missing.
 static func staff_row(staff_id: int) -> Dictionary:
 	_ensure_loaded()
 	return _staff.get(staff_id, {})
@@ -86,7 +88,7 @@ static func team_staff_ids(team_id: int) -> Array:
 ## when given (M9 — the preset's stats incl. trait bonuses, `GameManager.start_run`),
 ## else the type's initial values; staff = the team's initial staff as-is
 ## (nobody leaves during a run).
-## → `{manager_type, manager_stats{stat: int}, staff: [{id, name, job, stats{}, salary}]}`
+## → `{manager_type, manager_stats{stat: int}, staff: [{id, name_key, job, stats{}, salary}]}`
 static func snapshot_for_run(team_id: int, manager_type: int, manager_stats: Dictionary = {}) -> Dictionary:
 	var row: Dictionary = manager_type_row(manager_type)
 	if row.is_empty() and not manager_types().is_empty():
@@ -165,7 +167,15 @@ static func owner_name(state: Dictionary, stat: String) -> String:
 	var b: Dictionary = _best(state, stat)
 	if String(b["owner"]) == OWNER_MANAGER:
 		return "감독"
-	return String((b["who"] as Dictionary).get("name", "—"))
+	return staff_name(b["who"] as Dictionary)
+
+
+## 스태프 한 명(`staff_row` · 런 스냅샷 `staff[]`)의 표시 이름. 행에는 l10n key 만 있다(D7).
+static func staff_name(e: Dictionary) -> String:
+	var key: String = String(e.get("name_key", ""))
+	if key.is_empty():
+		return "—"
+	return Loc.t(key)  # l10n-dynamic: name.staff.*
 
 
 ## Is the area delegated — whether screens show their auto button.
@@ -256,14 +266,14 @@ static func _ensure_loaded() -> void:
 	db.query("SELECT * FROM manager_types ORDER BY id")
 	for row in db.query_result:
 		_types.append({
-			"id": int(row["id"]), "name": String(row["name"]),
+			"id": int(row["id"]), "name_key": String(row["name_key"]),
 			"gender": String(row["gender"]), "stats": _stats_of(row),
-			"desc": String(row["desc"]),
+			"desc_key": String(row["desc_key"]),
 		})
 	db.query("SELECT * FROM staff ORDER BY id")
 	for row in db.query_result:
 		_staff[int(row["id"])] = {
-			"id": int(row["id"]), "name": String(row["name"]),
+			"id": int(row["id"]), "name_key": String(row["name_key"]),
 			"job": String(row["job"]), "stats": _stats_of(row),
 			"salary": int(row["salary"]),
 		}

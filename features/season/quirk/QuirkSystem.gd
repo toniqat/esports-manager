@@ -154,11 +154,22 @@ static func apply_to(state: Dictionary, pd: PlayerData) -> void:
 		pd.set(String(k), maxi(PlayerData.STAT_MIN, int(pd.get(String(k))) + int(b[k])))
 
 
-## Table row `{id, name, grade, stats, cond, cond_stats, weight, desc}` ({} if unknown).
-## `stats` / `cond_stats` come back parsed as `{stat_key: int}`.
+## Table row `{id, name_key, grade, stats, cond, cond_stats, weight, desc_key}` ({} if unknown).
+## `stats` / `cond_stats` come back parsed as `{stat_key: int}`. Text = l10n keys —
+## display through `name_of` / `desc_of`.
 static func row(id: int) -> Dictionary:
 	_ensure_loaded()
 	return _rows.get(id, {})
+
+
+## Display name (current locale). "" for an unknown id.
+static func name_of(id: int) -> String:
+	return Loc.t(String(row(id).get("name_key", "")))  # l10n-dynamic: quirk.*.name
+
+
+## Flavour description (current locale). "" for an unknown id.
+static func desc_of(id: int) -> String:
+	return Loc.t(String(row(id).get("desc_key", "")))  # l10n-dynamic: quirk.*.desc
 
 
 # ── Conditions ───────────────────────────────────────────────────────────────
@@ -383,15 +394,15 @@ static func _ensure_loaded() -> void:
 	if not db.open_db():
 		push_warning("QuirkSystem: cannot open game.db")
 		return
-	db.query("SELECT id, name, grade, stats, cond, cond_stats, weight, desc FROM quirks ORDER BY id")
+	db.query("SELECT id, name_key, grade, stats, cond, cond_stats, weight, desc_key FROM quirks ORDER BY id")
 	for r in db.query_result:
 		var id: int = int(r["id"])
 		var g: int = clampi(int(r["grade"]), 0, GRADE_COUNT - 1)
 		_rows[id] = {
-			"id": id, "name": String(r["name"]), "grade": g,
+			"id": id, "name_key": String(r["name_key"]), "grade": g,
 			"stats": parse_stats(String(r["stats"])), "cond": String(r["cond"]),
 			"cond_stats": parse_stats(String(r["cond_stats"])),
-			"weight": int(r["weight"]), "desc": String(r["desc"]),
+			"weight": int(r["weight"]), "desc_key": String(r["desc_key"]),
 		}
 		(_ids_by_grade[g] as Array).append(id)
 	db.close_db()

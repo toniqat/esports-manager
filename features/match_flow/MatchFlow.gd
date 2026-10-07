@@ -442,20 +442,9 @@ static func _copy_pilot(p: PlayerData) -> PlayerData:
 
 
 func _team_name(team_id: int) -> String:
-	# Pull from season_state.team_meta / intl_team_meta when running in season
-	# mode. Standalone fallback returns "Team N" so the PREP screen still
-	# renders when MatchFlow is launched directly from the editor.
-	if gm.season_state.get("active", false):
-		if team_id >= 100:
-			var imeta: Array = gm.season_state.get("intl_team_meta", [])
-			for t in imeta:
-				if int(t.get("id", -1)) == team_id:
-					return String(t["name"])
-		else:
-			var meta: Array = gm.season_state.get("team_meta", [])
-			if team_id >= 0 and team_id < meta.size():
-				return String(meta[team_id]["name"])
-	return "Team %d" % team_id
+	# season_state.team_meta / intl_team_meta (l10n keys, D7) — or the teams.csv
+	# package table when MatchFlow is launched directly from the editor.
+	return String(gm.team_name(team_id))
 
 
 func _show_error(msg: String) -> void:

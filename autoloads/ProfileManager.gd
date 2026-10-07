@@ -34,6 +34,14 @@ var profile: Dictionary = {}
 var _rarity_cache: Dictionary = {}   # int pilot_id → players.rarity
 
 
+## 로케일은 **`_init` 에서** 정한다 — 엔진은 오토로드를 전부 인스턴스(`_init`)한 뒤에
+## 트리에 붙이므로(`_ready`), 여기서 정하면 순서상 앞선 `GameManager._ready` 를 포함해
+## 어떤 오토로드 · 씬이 글을 만들기 전이다. 프로필 전체 로드(`_ready`)는 ConstTable ·
+## game.db 를 쓰므로 이 시점엔 `locale` 칸만 엿본다(설계서 D11 · §10.4).
+func _init() -> void:
+	Loc.set_locale(Loc.pick_initial_locale(_peek_saved_locale()))
+
+
 func _ready() -> void:
 	var err: String = load_profile()
 	if err != "":
@@ -350,6 +358,8 @@ func manager_type_chosen() -> bool:
 func default_profile() -> Dictionary:
 	return {
 		"version": PROFILE_VERSION,
+		# 고른 언어의 로케일 코드(`L.LOCALES` 중 하나). "" = 고른 적 없음 → 기기 언어(D11).
+		"locale": "",
 		# pilot_id(String) → {owned, max_level, breakthrough, dupes}
 		"collection": {},
 		"manager": {
@@ -391,6 +401,34 @@ func _default_presets() -> Array:
 	for i in maxi(1, ConstTable.int_of("PRESET_BASE_COUNT")):
 		out.append(ManagerProgress.new_preset())
 	return out
+
+
+# ── 언어 (l10n M5) ──────────────────────────────────────────────────────────
+## 저장된 로케일 코드. "" = 고른 적 없음.
+func saved_locale() -> String:
+	return String(profile.get("locale", ""))
+
+
+## 언어를 바꾸고 **바로 저장한다**(설정 팝업의 한 번 조작). 성공이면 "".
+## 화면 텍스트 갱신은 부르는 쪽이 현재 씬을 다시 로드해서 한다(§10.4).
+func set_locale(code: String) -> String:
+	if not L.LOCALES.has(code):
+		return "unsupported locale '%s'" % code
+	Loc.set_locale(code)
+	profile["locale"] = code
+	return save_profile()
+
+
+# profile.save 의 `locale` 칸만 읽는다(없음 · 깨짐 → ""). `_init` 전용 — 깨진 파일
+# 처리(.bak)는 `_ready` 의 `load_profile` 몫이다.
+func _peek_saved_locale() -> String:
+	if not FileAccess.file_exists(PROFILE_PATH):
+		return ""
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(PROFILE_PATH))
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return ""
+	var v: Variant = (parsed as Dictionary).get("locale", "")
+	return String(v) if typeof(v) == TYPE_STRING else ""
 
 
 # 디스크에서 프로필을 읽어 `profile` 에 싣는다. 성공이면 "" — 파일이 없거나

@@ -188,7 +188,7 @@ func display_lines() -> Array:
 		var tid: int = int(t["id"])
 		var r: Dictionary = TraitSystem.row(tid) if tid >= 0 else {}
 		if not r.is_empty():
-			out.append("%s · %s" % [String(r.get("name", "")), TraitSystem.desc_of(tid)])
+			out.append("%s · %s" % [TraitSystem.name_of(tid), TraitSystem.desc_of(tid)])
 			continue
 		var key: String = String(t["key"])
 		var label: String = String(KEY_LABELS.get(key, key))

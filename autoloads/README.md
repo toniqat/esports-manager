@@ -24,9 +24,11 @@ draft detail popup call it.
   (three slots per position, a category list per slot). The seed is `7919 + id` for a player;
   in a standalone run it is team · role.
 - `card_def(id)` — one row of `card_pool_bs`. `parse_card_ids("12|36|41")` — CSV cell parser.
-- `card_costs_by_name()` — card name → base cost (`card_pool_bs` + `mech_card_defs`; on a name
-  clash the pilot card wins). Built once on first call and cached. Feeds the cost ribbon drawn
-  before `[card name]` in skill descriptions (`StrategyIcon.fill_rich(..., card_costs)`).
+- **Card / skill / passive text is l10n keys — `Loc.t`.** `card_pool_bs` · `mech_card_defs` ·
+  `pilot_skills` · `mech_passives` rows carry `name_key` · `description_key` (no `name` /
+  `description`); display sites call `Loc.t(def["name_key"])`. The old name-based
+  `card_costs_by_name()` is gone (D3) — `[card]` references in descriptions resolve by key
+  (`CardData.ref_entries`, `resources/README.md`).
 - `pilot_card_slots: Dictionary` — read from the `pilot_card_slots` table in `_ready`.
 
 #### game.db path — `db_path()`
@@ -85,7 +87,18 @@ var match_ctx: Dictionary = {
 API:
 - `reset_match_ctx()` — clears all keys back to defaults (active = false)
 - `load_match_data()` → `{"players": Array[PlayerData], "mechs": Array[MechData]}`
-  or `{"error": String}`. Reads the `players` and `mechs` SQLite tables.
+  or `{"error": String}`. Reads the `players` and `mechs` SQLite tables — names as
+  l10n keys (`name_key`; `PlayerData.name` / `MechData.name` are `Loc.t` getters).
+
+#### Names (l10n, D7) — `team_name(id)`, `team_short_name(id)`, `pilot_name(id)`
+`season_state.team_meta` / `intl_team_meta` hold `{id, name_key, short_name_key}` only (no
+display text — saves keep keys). `team_name` / `team_short_name` resolve league (0..7) and INTL
+(100..) teams with `Loc.t`; outside a run (empty meta) they fall back to `RunRules.team_packages()`;
+an unknown id / empty key (DB-less fallback meta) shows the id. `LeagueManager` /
+`InternationalTournament` / `MatchFlow` team-name helpers delegate here. `pilot_name(id)` finds a
+pilot in `all_pilots` / `intl_pilots` (for saved records that keep only `pilot_id`, e.g.
+`week_day_log`). The DB-less fallbacks (`_load_team_meta`, `_synth_intl_pool`) use empty keys —
+no synthesized display names.
 
 When `match_ctx.active == false`, BattleSim falls back to `ROLE_STATS` defaults
 (loaded from `pilots.csv`).
@@ -139,6 +152,18 @@ access via `get_node("/root/ProfileManager").profile`. Run state is **not** here
   (`PassSystem`). **These mutators do not save** — the screen calls `save_profile()` once per action.
   `apply_run_result` also pays every `result.currency` key, manager exp (→ level-ups), `pilot_exp`,
   `pass_exp`, grants `unlocked_traits` (+ `traits.unlocked_pending`) and writes `result.profile_delta`.
+- **Locale (l10n M5, `docs/localization_design.md` D10 · D11 · §10.4)** — `profile.locale`: the chosen
+  locale code (one of `L.LOCALES`), `""` = never chosen (old profiles load as `""`).
+  - **Boot**: `_init()` (not `_ready`) peeks only the `locale` field of `profile.save` (`_peek_saved_locale`,
+    missing / corrupt → `""`) and calls `Loc.set_locale(Loc.pick_initial_locale(saved))` — saved value if
+    supported → device locale (`OS.get_locale()`, then the language part) → `L.FALLBACK_LOCALE`. The engine
+    instantiates every autoload (`_init`) before adding any to the tree (`_ready`), so this runs before
+    `GameManager._ready` (listed earlier in `project.godot`) and before any scene builds text. The full
+    profile load stays in `_ready` (it needs `ConstTable` / game.db). `""` is kept until the player picks,
+    so a later device-language change still applies.
+  - `saved_locale() -> String`; `set_locale(code) -> String` — rejects codes outside `L.LOCALES`, applies
+    `Loc.set_locale`, writes `profile.locale` and **saves immediately** (one settings action). The caller
+    reloads the current scene (`HomeTab._on_locale_chosen`, `features/meta/lobby/README.md`).
 
 ### Haptics.gd
 **iOS / Android haptic feedback** — the GDScript wrapper of a `godot-haptics` fork that is

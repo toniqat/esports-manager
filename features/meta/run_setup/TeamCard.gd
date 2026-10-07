@@ -20,8 +20,8 @@ func _ready() -> void:
 
 ## `item` = `RunRules.team_packages()` 한 줄, `max_budget` = 표의 최고 예산(막대 기준).
 func fill(item: Dictionary, max_budget: int) -> void:
-	(%Name as Label).text = String(item.get("name", "?"))
-	(%ShortName as Label).text = String(item.get("short_name", ""))
+	(%Name as Label).text = Loc.t(String(item.get("name_key", "")))  # l10n-dynamic: name.team.*.name
+	(%ShortName as Label).text = Loc.t(String(item.get("short_name_key", "")))  # l10n-dynamic: name.team.*.short
 	var budget: int = int(item.get("budget", 0))
 	(%Budget as Label).text = "예산 %d" % budget
 	(%Facility as Label).text = "시설 Lv %d" % int(item.get("facility_level", 0))
@@ -38,7 +38,7 @@ func fill(item: Dictionary, max_budget: int) -> void:
 	else:
 		manual.text = " · ".join(PackedStringArray(labels))
 		manual.theme_type_variation = &"BodyLabel"
-	(%Desc as Label).text = String(item.get("desc", ""))
+	(%Desc as Label).text = Loc.t(String(item.get("desc_key", "")))  # l10n-dynamic: team.*.desc
 
 
 ## F6 단독 실행 미리보기 — 고른 카드 한 장, 손으로 적은 값 (`resources/UiPreview.gd`).
@@ -46,7 +46,8 @@ func fill(item: Dictionary, max_budget: int) -> void:
 func _fill_preview() -> void:
 	UiPreview.stage(self)
 	UiPreview.trace(pressed)
-	fill({"id": 3, "name": "블루 팔콘스", "short_name": "BFC", "budget": 70,
+	# 이름 · 설명은 teams.csv id 3 행의 실제 key(`name.team.3.*` · `team.3.desc`).
+	fill({"id": 3, "name_key": "tx_JPFZTZPR02", "short_name_key": "tx_P7M9CVHBZ4", "budget": 70,
 		"facility_level": 2, "manual_areas": ["training", "analysis"],
-		"desc": "중위권 구단 — 스태프가 절반뿐이라 훈련 배치를 직접 챙겨야 합니다."}, 100)
+		"desc_key": "tx_94KMS9GQH0"}, 100)
 	theme_type_variation = &"SelectableCardButtonOn"

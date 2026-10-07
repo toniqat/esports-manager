@@ -210,7 +210,7 @@ static func settle_week(state: Dictionary) -> Dictionary:
 	if int(entry["special_spend"]) > 0:
 		out["toast"] += " · 특별 지출 %s" % fmt(int(entry["special_spend"]))
 	if not expired.is_empty():
-		out["toast"] += " · 만료: " + ", ".join(PackedStringArray(expired))
+		out["toast"] += " · 만료: " + ", ".join(special_names(expired))
 	return out
 
 
@@ -485,15 +485,50 @@ static func upgrade_facility(state: Dictionary) -> String:
 # ── Special spending (§14 T6) ────────────────────────────────────────────────
 # `finance_specials.csv` rows bought from the sheet. Paid from the balance at
 # once; active ones live in `finance.specials` as
-# `{id, name, kind, p1, p2, weeks_left, cost, bought_week}` (params snapshotted
+# `{id, kind, p1, p2, weeks_left, cost, bought_week}` (params snapshotted; no text —
+# show the name with `special_name(id)`
 # so a later CSV edit cannot change a running effect) and lose one week per
 # `settle_week`. coach_hire adds a `StaffSystem.add_mod` for the same weeks
 # (decayed by `StaffSystem.decay_mods`); every other kind feeds `special_pct`.
 
-## Every special row, CSV order: `{id, name, kind, cost, p1, p2, weeks, cond, desc}`.
+## Every special row, CSV order: `{id, name_key, kind, cost, p1, p2, weeks, cond, desc_key}`
+## (text = l10n keys `finance.special.*.name` / `.desc`).
 static func special_rows() -> Array:
 	_ensure_loaded()
 	return _specials
+
+
+## Display name of a special id (current locale). Unknown id → the id itself.
+static func special_name(special_id: String) -> String:
+	var r: Dictionary = special_row(special_id)
+	if r.is_empty():
+		return special_id
+	return Loc.t(String(r["name_key"]))  # l10n-dynamic: finance.special.*.name
+
+
+## Display description of a special id (current locale). "" for an unknown id.
+static func special_desc(special_id: String) -> String:
+	return Loc.t(String(special_row(special_id).get("desc_key", "")))  # l10n-dynamic: finance.special.*.desc
+
+
+## Ids → display names (history `special_buys` / `specials_expired` hold ids).
+static func special_names(special_ids: Array) -> PackedStringArray:
+	var out: PackedStringArray = []
+	for raw in special_ids:
+		out.append(special_name(String(raw)))
+	return out
+
+
+## `staff_mods.source` written by a coach_hire special — an id, not text (D7).
+const MOD_SOURCE_PREFIX: String = "finance:"
+
+
+## Display text for a `staff_mods.source`: a special's name for `finance:<id>`,
+## any other source unchanged.
+static func mod_source_text(source: String) -> String:
+	if source.begins_with(MOD_SOURCE_PREFIX):
+		return special_name(source.substr(MOD_SOURCE_PREFIX.length()))
+	return source
 
 
 static func special_row(special_id: String) -> Dictionary:
@@ -616,18 +651,18 @@ static func buy_special(state: Dictionary, special_id: String) -> String:
 	f["balance"] = balance(state) - cost
 	var specials: Array = f.get("specials", [])
 	specials.append({
-		"id": special_id, "name": String(row["name"]), "kind": String(row["kind"]),
+		"id": special_id, "kind": String(row["kind"]),
 		"p1": String(row["p1"]), "p2": String(row["p2"]),
 		"weeks_left": weeks, "cost": cost, "bought_week": int(f.get("week_no", 0)) + 1,
 	})
 	f["specials"] = specials
 	f["week_special_spend"] = int(f.get("week_special_spend", 0)) + cost
 	var buys: Array = f.get("week_special_buys", [])
-	buys.append(String(row["name"]))
+	buys.append(special_id)
 	f["week_special_buys"] = buys
 	if String(row["kind"]) == "coach_hire":
 		StaffSystem.add_mod(state, String(row["p1"]), String(row["p2"]).to_int(), weeks,
-				"특별 지출 · " + String(row["name"]))
+				MOD_SOURCE_PREFIX + special_id)
 	return ""
 
 
@@ -664,7 +699,7 @@ static func _active_ids(state: Dictionary) -> Array:
 	return out
 
 
-# Week end: every running special loses a week; returns the names that ended.
+# Week end: every running special loses a week; returns the ids that ended.
 static func _tick_specials(state: Dictionary) -> Array:
 	var f: Dictionary = _fin(state)
 	var kept: Array = []
@@ -675,7 +710,7 @@ static func _tick_specials(state: Dictionary) -> Array:
 		if int(e["weeks_left"]) > 0:
 			kept.append(e)
 		else:
-			expired.append(String(e.get("name", e.get("id", ""))))
+			expired.append(String(e.get("id", "")))
 	f["specials"] = kept
 	return expired
 
@@ -765,9 +800,9 @@ static func _ensure_loaded() -> void:
 	db.query("SELECT * FROM finance_specials")
 	for row2 in db.query_result:
 		_specials.append({
-			"id": String(row2["id"]), "name": String(row2["name"]), "kind": String(row2["kind"]),
+			"id": String(row2["id"]), "name_key": String(row2["name_key"]), "kind": String(row2["kind"]),
 			"cost": int(row2["cost"]), "p1": String(row2["p1"]), "p2": String(row2["p2"]),
-			"weeks": int(row2["weeks"]), "cond": String(row2["cond"]), "desc": String(row2["desc"]),
+			"weeks": int(row2["weeks"]), "cond": String(row2["cond"]), "desc_key": String(row2["desc_key"]),
 		})
 	_specials.sort_custom(func(x, y): return String(x["id"]) < String(y["id"]))
 	db.close_db()

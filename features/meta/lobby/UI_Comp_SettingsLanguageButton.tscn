@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://dxsu4k02ix882"]
+
+[node name="SettingsLanguageButton" type="Button"]
+custom_minimum_size = Vector2(0, 112)
+size_flags_horizontal = 3
+focus_mode = 0
+theme_type_variation = &"SelectableCardButton"
+text = "tx_6Y7HJCQ969"

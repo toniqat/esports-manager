@@ -130,6 +130,6 @@ static func set_rarity(pill: Panel, text_lbl: Label, rarity: int, font_size: int
 func _fill_preview() -> void:
 	UiPreview.stage(self)
 	UiPreview.trace(cell_tapped)
-	var p := PlayerData.new(2, "Corin", GameEnums.Role.ASSASSIN, 5, 80, 85, 82, 80, 81, 82, 19)
+	var p := PlayerData.new(2, "tx_1TSM3CVTC7", GameEnums.Role.ASSASSIN, 5, 80, 85, 82, 80, 81, 82, 19)
 	p.rarity = 3
 	setup(p, 7, 3)

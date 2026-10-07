@@ -4,7 +4,7 @@ Two save files (outgame meta plan M0, `docs/outgame_dev_plan.md` §2.1):
 
 | File | Owner | Lifetime | Content |
 |---|---|---|---|
-| `user://profile.save` | `ProfileManager` autoload (`autoloads/README.md`) | permanent | account progress — collection, manager, traits, currency, run history (schema: plan §4) |
+| `user://profile.save` | `ProfileManager` autoload (`autoloads/README.md`) | permanent | account progress — collection, manager, traits, currency, run history (schema: plan §4); `locale` — chosen language code, `""` = follow the device (l10n D11, read at boot in `ProfileManager._init`) |
 | `user://run.save` | `SaveSystem` (this folder) | run start → run end | the in-progress run: `meta` + full `GameManager.season_state` |
 
 There is **one run at a time**. The old 3-slot files (`user://saves/slot{0,1,2}.save`)
@@ -50,24 +50,43 @@ The lobby reads `SaveSystem.has_run()` / `read_run_meta()` and routes to
 | Function | Returns | Notes |
 |---|---|---|
 | `run_path()` | `String` | `TEST_RUN_PATH` when `GameManager.use_test_run`, else `RUN_PATH` |
-| `has_run()` | `bool` | file at `run_path()` exists |
-| `read_run_meta()` | `Dictionary` | the `meta` block, `{}` when missing / corrupt |
+| `has_run()` | `bool` | file at `run_path()` exists, parses **and has `version == SAVE_VERSION`** |
+| `read_run_meta()` | `Dictionary` | the `meta` block, `{}` when missing / corrupt / another version |
 | `save_run()` | `String` | `""` on success; error when `season_state.active` is false |
-| `load_run()` | `String` | overwrites `GameManager.season_state` |
+| `load_run()` | `String` | overwrites `GameManager.season_state`; error for a missing / corrupt / other-version file |
 | `delete_run()` | `String` | `""` also when there is no file |
 
-## Run file schema (v1)
+## Run file schema (v2)
+
+**Versioning (l10n D7).** `SAVE_VERSION` = **2**. v2 removed every display-string copy from
+the run file — the save holds **ids and l10n keys only** and screens resolve text at draw
+time (`Loc.t`, `docs/localization_design.md` §10.1). A file with any other `version` (v1 had
+team / pilot names baked in) is **discarded, not migrated**: `_read_payload` returns `{}`, so
+`has_run()` is false (the lobby shows no continue card — a new run is required) and
+`load_run()` returns an error. The stale file stays on disk until the next run overwrites it.
+`profile.save` is **not** affected (no version bump) — it never stored names (pilot ids,
+trait ids, currency, `locale`).
+
+What v2 changed vs v1:
+| Where | v1 | v2 |
+|---|---|---|
+| `all_pilots[]` / `intl_pilots[]` | `name` (text) | `name_key` (`name.player.*` / `name.intl_player.*`) — `PlayerData.name` is a read-only getter |
+| `team_meta[]` / `intl_team_meta[]` | `{id, name, short_name}` | `{id, name_key, short_name_key}` — show via `GameManager.team_name` / `team_short_name` |
+| `run_setup.staff[]` | `name` | `name_key` (`name.staff.*`) — `StaffSystem.staff_name(e)` |
+| `week_day_log[day][]` | `name` | dropped — `GameManager.pilot_name(pilot_id)` |
+| `meta` | `team_name`, `scenario_name` | `team_id` (scenario stays the id `scenario`) |
+
 ```json
 {
-  "version": 1,
+  "version": 2,
   "meta": {
     "phase": 0, "year": 1, "month": 12, "day": 1, "weekday": 0,
-    "team_name": "Team 0",
+    "team_id": 0,
     "trophies": 0,
     "rank": 3, "wins": 5, "losses": 2,
     "saved_at": "2026-05-05 23:14",
     "match_in_progress": false,
-    "scenario": 1, "scenario_name": "…"
+    "scenario": 1
   },
   "season_state": { ...full GameManager.season_state, JSON-encoded... }
 }
@@ -79,14 +98,17 @@ season_state (and without instantiating LeagueManager).
 `match_in_progress` is true when the run was saved between BAN_PICK start
 and BattleSim launch — the lobby shows a "경기 진행 중" (Match in progress) chip and
 routes "이어하기" (Continue) to MatchFlow.tscn instead of Season.tscn.
-`scenario` / `scenario_name` come from `season_state.run_setup` (-1 / "" for a run
-without one, e.g. an old save) — the lobby may show them; it doesn't have to.
+`team_id` is the player team (the lobby shows `GameManager.team_name(team_id)` — before a run
+is loaded that falls back to the `teams.csv` package table). `scenario` comes from
+`season_state.run_setup` (-1 for a run without one); a screen showing it resolves the name
+from `RunRules.scenario(id).name_key`.
 
 ## Serialization notes
 `season_state` is a Dictionary of mostly-primitive values plus a few
 Resource-typed entries:
 - `all_pilots` / `intl_pilots` are `Array[PlayerData]`. Persisted as plain
-  Dicts via `_pilots_to_array` / `_array_to_pilots` — **`pilot_cards` (ids of the 3
+  Dicts via `_pilots_to_array` / `_array_to_pilots` — the name is saved as **`name_key`** only
+  (v2). **`pilot_cards` (ids of the 3
   fixed pilot (파일럿) cards) is saved too.** Old saves without that key restore it as an empty
   array, and `GameManager.pilot_card_ids_for` fills it from the same player's DB row. `assigned_mech` is
   runtime-only (set in match flow) and is rebuilt on resume from
@@ -118,7 +140,8 @@ Resource-typed entries:
   - `week_day` — the weekday (요일) currently being viewed, 0..6. **-1 means the week hasn't
     opened yet**, and that value decides whether the standings' "확인" (OK) returns to the
     week or to the hub.
-  - `week_day_log` — `day(int) → Array[줄]` (`줄` = line), per-weekday training result log.
+  - `week_day_log` — `day(int) → Array[줄]` (`줄` = line), per-weekday training result log
+    (`pilot_id` only — no name copy since v2).
     **Int keys**, so it goes through `_int_keyed_dict_in` — otherwise `log[3]` forever
     returns an empty array and the same weekday's training is applied twice.
   - `training_exp_carry` — `seat(int) → {stat: 남은 EXP}` (remaining EXP) remainder ledger.

@@ -374,28 +374,13 @@ func team_avg_stat(team_id: int) -> float:
 
 
 # Team metadata accessors (handle both league + INTL teams).
+# 메타에는 l10n key 만 있다(D7) — `GameManager.team_name` 이 리그 · 국제전 팀을 함께 푼다.
 func team_name(team_id: int) -> String:
-	if team_id >= 100:
-		var meta: Array = _gm.season_state.get("intl_team_meta", [])
-		for t in meta:
-			if int(t["id"]) == team_id:
-				return String(t["name"])
-		return "INTL %d" % team_id
-	if _league != null:
-		return _league.team_name(team_id)
-	return "Team %d" % team_id
+	return String(_gm.team_name(team_id))
 
 
 func team_short_name(team_id: int) -> String:
-	if team_id >= 100:
-		var meta: Array = _gm.season_state.get("intl_team_meta", [])
-		for t in meta:
-			if int(t["id"]) == team_id:
-				return String(t["short_name"])
-		return "I%d" % team_id
-	if _league != null:
-		return _league.team_short_name(team_id)
-	return "T%d" % team_id
+	return String(_gm.team_short_name(team_id))
 
 
 # ── Signal handlers ─────────────────────────────────────────────────────────

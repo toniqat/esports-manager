@@ -2,11 +2,13 @@
 
 Contract: `docs/outgame_dev_plan.md` §11. State `season_state.trust` / `outings` / `mental` / `pilot_mods`.
 Tuning lives in `data/csv/const.csv` (`TRUST_*`, `MENTAL_*`, `TRUE_ENDING_*`) — no values here.
+Event texts are l10n keys (`mental_texts.csv` → domain `mental`, D6); effect-chip wording in
+`MentalEvents.note_text` is still code text (code-literal migration is a later round).
 
 | File | Role |
 |---|---|
 | `MentalSystem.gd` | `class_name MentalSystem` (static). State + flow: run init, week reset, weekly limits, evening action (interview / outing / pass), incident roll + resolve, press session + resolve, outing training-EXP penalty, true-ending pilots. Every entry point takes the `season_state` dictionary (no autoloads → headless-testable). |
-| `MentalEvents.gd` | `class_name MentalEvents` (static). `mental_events` table (game.db) → parsed rows; the `lines` / `effects` / `cond` grammar; row selection (cond, manager type, weights); `apply_choice` (mental check + clauses). |
+| `MentalEvents.gd` | `class_name MentalEvents` (static). `mental_events` + `mental_texts` tables (game.db) → parsed rows (texts as l10n keys); the `effects` / `cond` grammar; row selection (cond, manager type, weights); `apply_choice` (mental check + clauses + replies, keys / ids only); `outcome_view` · `note_texts` · `text` turn stored keys into display text (`Loc.t`, `{name}`). |
 | `PilotMods.gd` | `class_name PilotMods` (static, base). Temporary per-pilot stat mods `[{pilot_id, stat, delta, weeks_left, source}]`; `weeks_left = -1` lasts until the next own match. `apply_to` is only ever called on a **roster copy** (MatchFlow). |
 
 The dialogue UI is `features/season/press/MessengerView.gd` (shared with the press conference);
@@ -56,11 +58,17 @@ the evening card + incident card live on the week screen (`features/season/week/
   "press": {week, event, pilot_id, choice, outcome{}},
 }
 ```
-`outcome` = `{checked, ok, chance, say: [String], notes: [String]}` (notes are the player-facing effect chips).
+`outcome` = `{checked, ok, chance, pilot_id, say: [text_key], notes: [note dict]}` — **no display text is saved**
+(D7): note dicts are `{type: trust|trust_all|pmod|pmod_all|smod|outing, pid?, stat?, delta?, weeks?, count?}`.
+`MentalEvents.outcome_view(state, outcome)` → `{checked, ok, chance, say: [String], notes: [String]}` for
+`MessengerView.show_result`; `MentalEvents.note_texts(state, notes)` for the week-screen summary chips.
 `end_week` resets `week` / counters / `days` and shifts `fatigue`; `_week()` also resets when the key changes.
 
-## `mental_events.csv` grammar
-Columns: `id, kind, manager_type, stage, cond, lines, choices, effects, weight`.
+## `mental_events.csv` + `mental_texts.csv` grammar
+`mental_events` columns: `id, kind, manager_type, stage, cond, effects, weight` — no text.
+`mental_texts` columns: `id, event_id, slot, choice, branch, seq, text_key` (D6) — one row per text,
+`text_key` = l10n key (domain `mental`, alias `mental.<event>.<id>`; edit the Korean in
+`data/l10n/src/mental.csv`, not here). Ids: `<event>_L<seq>` · `<event>_C<choice>` · `<event>_C<choice>_S<seq>`.
 
 - `kind` — `interview` / `outing` / `incident` / `press`.
 - `manager_type` — -1 any, 0 운영형 (m), 1 실전형 (f). Rows for the other type never appear;
@@ -68,10 +76,15 @@ Columns: `id, kind, manager_type, stage, cond, lines, choices, effects, weight`.
   a typed row for the stage beats the generic one.
 - `stage` — outing number 1..N (`outings + 1`; past the last written stage the highest repeats), else 0.
 - `weight` — draw weight (int ≥ 0).
-- `lines` — `|`-joined. Plain = the other side (left bubble with portrait), `>text` = manager
-  (right bubble), `*text` = centred narration, `@text` = tag (press outlet / incident name, used in
-  headers, not drawn as a bubble). `{name}` → target pilot name (also in `choices` and `say:`).
-- `choices` — `|`-joined manager answers (2–3).
+- text slot `line` (by `seq`) — the text's first char is its marker: plain = the other side (left
+  bubble with portrait), `>text` = manager (right bubble), `*text` = centred narration, `@text` = tag
+  (press outlet / incident name, used in headers, not drawn as a bubble — `MentalSystem.session_view`
+  reads it after translation, so **translations keep the marker**). `{name}` → target pilot name in
+  every slot (`Loc.t(key, {"name": …})`, josa tags like `{name}{eun}` resolve after it).
+- text slot `choice` — manager answer `choice` (0-based; 2–3 per event).
+- text slot `say` — reply line (left bubble) after answer `choice`, in `seq` order; `branch` `ok` / `ng` =
+  only on a passed / failed check (like the clause gates), empty = always. A gated reply makes the
+  entry roll a check just like a gated clause.
 - `effects` — `|`-joined, **one entry per choice**; clauses inside an entry joined with `;`.
 
 ### Clause vocabulary
@@ -82,7 +95,6 @@ Columns: `id, kind, manager_type, stage, cond, lines, choices, effects, weight`.
 | `pmod:<stat\|all>:<delta>:<weeks>` | target pilot temporary stat mod (`PilotMods.add`); `weeks = -1` = until next own match |
 | `pmod_all:<stat\|all>:<delta>:<weeks>` | same for all my pilots |
 | `smod:<stat>:<delta>:<weeks>` | temporary manager-stat mod (`StaffSystem.add_mod`, `stat` ∈ `StaffSystem.STATS`, weeks > 0) |
-| `say:<text>` | reply line (left bubble) after the answer |
 | `chk:<±N>` | adjusts this entry's check chance by N percentage points |
 | `ok>…` / `ng>…` | prefix: clause applies only on a passed / failed mental check. An entry with any gated clause rolls one check: chance = `MENTAL_CHECK_BASE + (judge − MENTAL_CHECK_PIVOT) × MENTAL_CHECK_PER_POINT + chk`, clamped `[MENTAL_CHECK_MIN, MENTAL_CHECK_MAX]`. |
 
@@ -107,4 +119,4 @@ Columns: `id, kind, manager_type, stage, cond, lines, choices, effects, weight`.
 `true_ending_pilots` · `my_pilot_ids` · `interviews_per_week` / `interviews_left` / `outings_left` /
 `outing_unlocked` / `can_interview` / `can_outing` · `evening` / `evening_done` / `begin_evening(state, day, action, pid)` /
 `finish_evening(state, day, choice)` · `ensure_incident` / `incident_pending` / `incident_session` /
-`resolve_incident` · `press_session` / `resolve_press` · `session_view(state, session)` → `{kind, event, pilot_id, tag, lines, choices}`.
+`resolve_incident` · `press_session` / `resolve_press` · `session_view(state, session)` → `{kind, event, pilot_id, tag, lines, choices}` (translated text).

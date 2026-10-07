@@ -1,12 +1,14 @@
 # match_prep/ — PREP screen + opponent intel (M5 analysis)
 
+**텍스트는 l10n key — `Loc.t`** — `OpponentIntel._card_names_for` shows pilot cards via `Loc.t(def["name_key"])`.
+
 MatchFlow's first step (`LOAD → PREP → BAN_PICK`). Contract: `docs/outgame_dev_plan.md` §3 M5 · §11.
 
 | File | Role |
 |---|---|
 | `MatchPrepController.gd` | PREP step. `enter(player_roster, enemy_roster, player_name, enemy_name)` creates `MatchPrepView` under `_mf.canvas`, fills it; its `start_pressed` → frees the view → `phase_finished` (pre-ban-pick autosave in `MatchFlow`) |
 | `MatchPrepView.gd` · `.tscn` | `class_name MatchPrepView` — the PREP screen. **Layout is owned by the scene** (tree below). White outgame paper, title centred (the editor-only cheat button sits top-left), a vertical scroll with **opponent on top** (same side as ban/pick) and own team below, bottom bar `경기 시작`. `create()` · `fill(state, player_roster, enemy_roster, player_name, enemy_name)` · signal `start_pressed` |
-| `OpponentIntel.gd` | `class_name OpponentIntel` (static). **The single reveal rule** — `build(state, roster, is_own)` returns rows + analyst notes as data; `tier_for`, `threshold_of`, `team_roster(state, team_id)` (league `all_pilots` / INTL `intl_pilots`), `mech_name` |
+| `OpponentIntel.gd` | `class_name OpponentIntel` (static). **The single reveal rule** — `build(state, roster, is_own)` returns rows + analyst notes as data; `tier_for`, `threshold_of`, `team_roster(state, team_id)` (league `all_pilots` / INTL `intl_pilots`), `mech_name` (caches `mechs.name_key`, resolves with `Loc.t`) |
 | `UI_Comp_IntelView.tscn` / `.gd` | `class_name IntelView` — one team's `build()` result as a **container scene** (VBox: parent width, content height): tier header · analyst note / "no analyst" line · five `IntelPilotRow`. `create()` · `show_intel(intel)`. Shared with the league team detail (`features/season/league/LeagueTeamDetail`, a `HubSheet` body) |
 | `UI_Comp_IntelPilotRow.tscn` / `.gd` | `class_name IntelPilotRow` — one pilot row (item scene, `fill(row)`): portrait slot · role / name / total · six stat cells · mech line · card line |
 

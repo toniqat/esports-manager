@@ -109,7 +109,7 @@ func _rebuild(status_override: String = "") -> void:
 	# Stats card — type · level, the six stats this preset gives.
 	var mgr: Dictionary = prof.get("manager", {})
 	var trow: Dictionary = StaffSystem.manager_type_row(int(mgr.get("type", 0)))
-	(%CardTitle as Label).text = "%s 감독 · Lv %d" % [String(trow.get("name", "감독")),
+	(%CardTitle as Label).text = "%s 감독 · Lv %d" % [Loc.t(String(trow.get("name_key", ""))),  # l10n-dynamic: manager.type.*.name
 			ManagerProgress.level_of(prof)]
 	var all_bonus: int = TraitSystem.sum_p1(selected_traits(), "manager_all")
 	var note: Label = %CardNote

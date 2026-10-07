@@ -1,5 +1,7 @@
 # Collection (M10)
 
+**텍스트는 l10n key — `Loc.t`** — the card_swap breakthrough row names the new card with `Loc.t(card_def.name_key)`.
+
 Lobby `컬렉션` tab — owned pilots, levels, breakthroughs, level-up. Contract:
 `docs/outgame_dev_plan.md` §12 (work D); tab contract: `features/meta/lobby/LobbyScreen.gd` header.
 
@@ -102,7 +104,7 @@ CollectionDetailSheet (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 
   back, so the bar can sit at 0); salary at the shown level; `훈련 EXP 보너스` when
   `train_bonus_pct ≠ 0`.
 - 능력치: six stats + 종합 (4 columns), each with the delta vs the Lv1 / stage-0 base (green).
-- 돌파 table: `RunRules.breakthrough_rows` — 5 rows, reached = amber row + `달성`, next = `다음`;
+- 돌파 table: `RunRules.breakthrough_rows` (desc = `Loc.t(desc_key)`, `breakthrough.{id}.desc`) — 5 rows, reached = amber row + `달성`, next = `다음`;
   `card_swap` rows append `→ <card name>` (`GameManager.card_def`).
 - 파일럿 카드: `GameManager.pilot_card_ids_for(fielded)` as light `CardDescBox`es; the title says
   `돌파로 교체됨` only when a swap actually changed the list.

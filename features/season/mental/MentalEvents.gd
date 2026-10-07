@@ -1,18 +1,22 @@
 class_name MentalEvents
 extends RefCounted
 
-# ── mental_events.csv — table, grammar, effect application (M7) ──────────────
-# One row = one interview / outing stage / incident / press conference.
-# Grammar (full reference in `features/season/mental/README.md`):
-#   lines   — `|`-joined. Plain = the other side speaks (left bubble),
-#             `>text` = the manager (right bubble), `*text` = narration,
-#             `@text` = tag (press outlet / incident name), not shown as a bubble.
-#   choices — `|`-joined manager answers.
+# ── mental_events.csv + mental_texts.csv — table, grammar, effects (M7, D6) ──
+# One `mental_events` row = one interview / outing stage / incident / press conference.
+# Its texts are `mental_texts` rows (l10n keys) by `event_id`:
+#   slot `line`   — in `seq` order. Text marker: plain = the other side speaks (left
+#                   bubble), `>text` = the manager (right bubble), `*text` = narration,
+#                   `@text` = tag (press outlet / incident name), not shown as a bubble.
+#   slot `choice` — manager answer `choice` (0-based).
+#   slot `say`    — reply line after answer `choice`; `branch` ok / ng = only on a
+#                   passed / failed mental check, "" = always; `seq` order.
+# Grammar of `effects` / `cond` (full reference in `features/season/mental/README.md`):
 #   effects — `|`-joined, ONE entry per choice; clauses inside an entry joined
 #             with `;`. Clause prefix `ok>` / `ng>` = only on a passed / failed
-#             mental check (an entry with any gated clause rolls a check).
+#             mental check (an entry with any gated clause **or a gated say** rolls a check).
 #   cond    — `;`-joined tokens that must all hold for the row to be drawn.
-# `{name}` in lines / choices / `say:` is replaced with the target pilot's name.
+# `{name}` in any text is filled with the target pilot's name at display time
+# (`Loc.t(key, {"name": …})`). Outcomes keep **keys / ids only** (they are saved).
 #
 # Pure static helpers over a `season_state` dictionary — no autoloads.
 
@@ -48,22 +52,38 @@ static func row(event_id: String) -> Dictionary:
 	return _by_id.get(event_id, {})
 
 
-## Parse one raw DB / CSV row into
-## `{id, kind, manager_type, stage, weight, cond[], tag, lines[], choices[], effects[[clause]]}`.
-static func parse_row(raw: Dictionary) -> Dictionary:
+## Parse one raw `mental_events` row + its raw `mental_texts` rows into
+## `{id, kind, manager_type, stage, weight, cond[], lines[key], choices[key],
+##   says[[{branch, key}]] (one list per choice), effects[[clause]]}`.
+## Line keys still carry their `>` / `*` / `@` marker in the text — `session_view` reads it.
+static func parse_row(raw: Dictionary, texts: Array = []) -> Dictionary:
+	var line_rows: Array = []
+	var choice_rows: Array = []
+	var say_rows: Array = []
+	for t_raw in texts:
+		var t: Dictionary = t_raw
+		match String(t.get("slot", "")):
+			"line": line_rows.append(t)
+			"choice": choice_rows.append(t)
+			"say": say_rows.append(t)
+	line_rows.sort_custom(func(a, b): return int(a["seq"]) < int(b["seq"]))
+	choice_rows.sort_custom(func(a, b): return int(a["choice"]) < int(b["choice"]))
+	say_rows.sort_custom(func(a, b): return int(a["seq"]) < int(b["seq"]))
 	var lines: Array = []
-	var tag: String = ""
-	for part in String(raw.get("lines", "")).split("|", false):
-		var t: String = (part as String).strip_edges()
-		if t.begins_with("@"):
-			tag = t.substr(1).strip_edges()
-		elif t != "":
-			lines.append(t)
+	for t in line_rows:
+		lines.append(String((t as Dictionary)["text_key"]))
 	var choices: Array = []
-	for part in String(raw.get("choices", "")).split("|", false):
-		var t: String = (part as String).strip_edges()
-		if t != "":
-			choices.append(t)
+	for t in choice_rows:
+		choices.append(String((t as Dictionary)["text_key"]))
+	var says: Array = []
+	for i in choices.size():
+		says.append([])
+	for t_raw in say_rows:
+		var t: Dictionary = t_raw
+		var ci: int = int(t["choice"])
+		if ci >= 0 and ci < says.size():
+			(says[ci] as Array).append({"branch": String(t.get("branch", "")),
+					"key": String(t["text_key"])})
 	var effects: Array = []
 	for entry in String(raw.get("effects", "")).split("|", true):
 		effects.append(parse_effect(String(entry)))
@@ -74,9 +94,9 @@ static func parse_row(raw: Dictionary) -> Dictionary:
 		"stage": int(raw.get("stage", 0)),
 		"weight": maxi(0, int(raw.get("weight", 1))),
 		"cond": parse_cond(String(raw.get("cond", ""))),
-		"tag": tag,
 		"lines": lines,
 		"choices": choices,
+		"says": says,
 		"effects": effects,
 	}
 
@@ -108,8 +128,6 @@ static func parse_clause(text: String) -> Dictionary:
 		return bad
 	var kind: String = body.substr(0, colon).strip_edges()
 	var rest: String = body.substr(colon + 1)
-	if kind == "say":
-		return {"gate": gate, "type": "say", "text": rest.strip_edges()}
 	var args: PackedStringArray = rest.split(":")
 	match kind:
 		"trust", "trust_all", "chk":
@@ -169,6 +187,12 @@ static func lint() -> Array:
 		if (r["effects"] as Array).size() != (r["choices"] as Array).size():
 			errs.append("%s: %d choices but %d effects entries" % [
 				id, (r["choices"] as Array).size(), (r["effects"] as Array).size()])
+		if (r["lines"] as Array).is_empty():
+			errs.append("%s: no lines" % id)
+		for say_list in (r["says"] as Array):
+			for s in (say_list as Array):
+				if not (String((s as Dictionary)["branch"]) in ["", "ok", "ng"]):
+					errs.append("%s: bad say branch '%s'" % [id, (s as Dictionary)["branch"]])
 		for entry in (r["effects"] as Array):
 			for c in (entry as Array):
 				if String((c as Dictionary)["type"]) == "invalid":
@@ -300,11 +324,17 @@ static func check_chance(judge: int, adjust: int) -> int:
 
 ## Apply choice `idx` of row `r` to `state` for target `pilot_id`.
 ## `judge` = the mental value the check uses, `roll_seed` makes the check deterministic.
-## → `{checked, ok, chance, say: [String], notes: [String]}` (notes are player-facing).
+## → `{checked, ok, chance, pilot_id, say: [text_key], notes: [note dict]}` — saved as is,
+## so **keys / ids only**; `outcome_view` turns it into display text.
+## Note dicts: `{type: trust, pid, delta}` · `{type: trust_all, delta}` ·
+## `{type: pmod, pid, stat, delta, weeks}` · `{type: pmod_all, stat, delta, weeks}` ·
+## `{type: smod, stat, delta, weeks}` · `{type: outing, count}` (added by MentalSystem).
 static func apply_choice(state: Dictionary, r: Dictionary, idx: int, pilot_id: int,
 		judge: int, roll_seed: int) -> Dictionary:
 	var effects: Array = r["effects"]
 	var clauses: Array = effects[idx] if idx >= 0 and idx < effects.size() else []
+	var all_says: Array = r.get("says", [])
+	var says: Array = all_says[idx] if idx >= 0 and idx < all_says.size() else []
 	var checked: bool = false
 	var adjust: int = 0
 	for c in clauses:
@@ -312,6 +342,9 @@ static func apply_choice(state: Dictionary, r: Dictionary, idx: int, pilot_id: i
 			checked = true
 		if String((c as Dictionary)["type"]) == "chk":
 			adjust += int((c as Dictionary)["delta"])
+	for s in says:
+		if String((s as Dictionary)["branch"]) != "":
+			checked = true
 	var ok: bool = true
 	var chance: int = -1
 	if checked:
@@ -319,52 +352,100 @@ static func apply_choice(state: Dictionary, r: Dictionary, idx: int, pilot_id: i
 		var rng := RandomNumberGenerator.new()
 		rng.seed = roll_seed
 		ok = rng.randi_range(1, 100) <= chance
-	var out: Dictionary = {"checked": checked, "ok": ok, "chance": chance, "say": [], "notes": []}
+	var out: Dictionary = {"checked": checked, "ok": ok, "chance": chance, "pilot_id": pilot_id,
+			"say": [], "notes": []}
+	for s_raw in says:
+		var s: Dictionary = s_raw
+		if _gate_passes(String(s["branch"]), ok):
+			(out["say"] as Array).append(String(s["key"]))
 	for c_raw in clauses:
 		var c: Dictionary = c_raw
-		var gate: String = String(c["gate"])
-		if gate == "ok" and not ok:
-			continue
-		if gate == "ng" and ok:
-			continue
-		_apply_clause(state, r, c, pilot_id, out)
+		if _gate_passes(String(c["gate"]), ok):
+			_apply_clause(state, r, c, pilot_id, out)
 	return out
+
+
+static func _gate_passes(gate: String, ok: bool) -> bool:
+	return gate == "" or (gate == "ok") == ok
 
 
 static func _apply_clause(state: Dictionary, r: Dictionary, c: Dictionary,
 		pilot_id: int, out: Dictionary) -> void:
 	var source: String = "mental:%s" % String(r["id"])
+	var notes: Array = out["notes"]
 	match String(c["type"]):
-		"say":
-			(out["say"] as Array).append(fill(state, String(c["text"]), pilot_id))
 		"trust":
 			if pilot_id >= 0:
 				var d: int = MentalSystem.add_trust(state, pilot_id, int(c["delta"]))
-				(out["notes"] as Array).append("%s 신뢰도 %s" % [pilot_name(state, pilot_id), _signed(d)])
+				notes.append({"type": "trust", "pid": pilot_id, "delta": d})
 		"trust_all":
 			for pid in MentalSystem.my_pilot_ids(state):
 				MentalSystem.add_trust(state, int(pid), int(c["delta"]))
-			(out["notes"] as Array).append("팀 전체 신뢰도 %s" % _signed(int(c["delta"])))
+			notes.append({"type": "trust_all", "delta": int(c["delta"])})
 		"pmod":
 			if pilot_id >= 0:
 				PilotMods.add(state, pilot_id, String(c["stat"]), int(c["delta"]), int(c["weeks"]), source)
-				(out["notes"] as Array).append("%s %s %s (%s)" % [pilot_name(state, pilot_id),
-						stat_label(String(c["stat"])), _signed(int(c["delta"])), duration(int(c["weeks"]))])
+				notes.append({"type": "pmod", "pid": pilot_id, "stat": String(c["stat"]),
+						"delta": int(c["delta"]), "weeks": int(c["weeks"])})
 		"pmod_all":
 			for pid in MentalSystem.my_pilot_ids(state):
 				PilotMods.add(state, int(pid), String(c["stat"]), int(c["delta"]), int(c["weeks"]), source)
-			(out["notes"] as Array).append("팀 전체 %s %s (%s)" % [stat_label(String(c["stat"])),
-					_signed(int(c["delta"])), duration(int(c["weeks"]))])
+			notes.append({"type": "pmod_all", "stat": String(c["stat"]),
+					"delta": int(c["delta"]), "weeks": int(c["weeks"])})
 		"smod":
 			StaffSystem.add_mod(state, String(c["stat"]), int(c["delta"]), int(c["weeks"]), source)
-			(out["notes"] as Array).append("감독 %s %s (%s)" % [
-					String(StaffSystem.STAT_LABELS.get(String(c["stat"]), "")),
-					_signed(int(c["delta"])), duration(int(c["weeks"]))])
+			notes.append({"type": "smod", "stat": String(c["stat"]),
+					"delta": int(c["delta"]), "weeks": int(c["weeks"])})
+
+
+# ── Display (outcome / notes → text) ─────────────────────────────────────────
+## A stored `apply_choice` outcome → `{checked, ok, chance, say: [String], notes: [String]}`
+## for `MessengerView.show_result`. `{name}` = the outcome's target pilot.
+static func outcome_view(state: Dictionary, outcome: Dictionary) -> Dictionary:
+	var pid: int = int(outcome.get("pilot_id", -1))
+	var say: Array = []
+	for k in (outcome.get("say", []) as Array):
+		say.append(text(state, String(k), pid))
+	return {"checked": bool(outcome.get("checked", false)), "ok": bool(outcome.get("ok", false)),
+			"chance": int(outcome.get("chance", -1)), "say": say,
+			"notes": note_texts(state, outcome.get("notes", []))}
+
+
+## Note dicts (see `apply_choice`) → player-facing chips.
+static func note_texts(state: Dictionary, notes: Array) -> Array:
+	var out: Array = []
+	for n in notes:
+		if n is Dictionary:
+			out.append(note_text(state, n))
+	return out
+
+
+static func note_text(state: Dictionary, n: Dictionary) -> String:
+	var delta: int = int(n.get("delta", 0))
+	var weeks: int = int(n.get("weeks", 0))
+	var stat: String = String(n.get("stat", ""))
+	match String(n.get("type", "")):
+		"trust":
+			return "%s 신뢰도 %s" % [pilot_name(state, int(n.get("pid", -1))), _signed(delta)]
+		"trust_all":
+			return "팀 전체 신뢰도 %s" % _signed(delta)
+		"pmod":
+			return "%s %s %s (%s)" % [pilot_name(state, int(n.get("pid", -1))),
+					stat_label(stat), _signed(delta), duration(weeks)]
+		"pmod_all":
+			return "팀 전체 %s %s (%s)" % [stat_label(stat), _signed(delta), duration(weeks)]
+		"smod":
+			return "감독 %s %s (%s)" % [String(StaffSystem.STAT_LABELS.get(stat, "")),
+					_signed(delta), duration(weeks)]
+		"outing":
+			return "외출 %d회째 · 다음 훈련일 EXP 감소" % int(n.get("count", 0))
+	return ""
 
 
 # ── Text helpers ─────────────────────────────────────────────────────────────
-static func fill(state: Dictionary, text: String, pilot_id: int) -> String:
-	return text.replace("{name}", pilot_name(state, pilot_id))
+## One `mental_texts` key → display text with `{name}` = that pilot (marker kept).
+static func text(state: Dictionary, key: String, pilot_id: int) -> String:
+	return Loc.t(key, {"name": pilot_name(state, pilot_id)})  # l10n-dynamic: mental.*.*
 
 
 static func pilot_of(state: Dictionary, pilot_id: int) -> PlayerData:
@@ -428,9 +509,16 @@ static func _ensure_loaded() -> void:
 	if not db.open_db():
 		push_warning("MentalEvents: cannot open game.db")
 		return
+	var texts: Dictionary = {}   # event_id → [mental_texts row]
+	db.query("SELECT * FROM mental_texts")
+	for t in db.query_result:
+		var eid: String = String((t as Dictionary).get("event_id", ""))
+		if not texts.has(eid):
+			texts[eid] = []
+		(texts[eid] as Array).append(t)
 	db.query("SELECT * FROM mental_events")
 	for raw in db.query_result:
-		var r: Dictionary = parse_row(raw)
+		var r: Dictionary = parse_row(raw, texts.get(String((raw as Dictionary).get("id", "")), []))
 		_rows.append(r)
 		_by_id[String(r["id"])] = r
 	db.close_db()

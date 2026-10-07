@@ -80,5 +80,5 @@ func _fill_preview() -> void:
 	UiPreview.trace(level_step)
 	var role: int = GameEnums.Role.TANK
 	set_role(role)
-	var p := PlayerData.new(5, "Evelyn", role, 0, 85, 86, 82, 90, 86, 85, 20)
+	var p := PlayerData.new(5, "tx_A57ZKJ2RYN", role, 0, 85, 86, 82, 90, 86, 85, 20)
 	show_pilot(p, OutgameTheme.ROLE_COLORS[role], 3, 5, 57)

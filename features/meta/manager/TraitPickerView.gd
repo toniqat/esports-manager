@@ -131,7 +131,7 @@ func _fill_slots(equipped: Array, slots: int) -> void:
 			# Past the slot count: red frame.
 			frame.theme_type_variation = &"TraitPickerSlotOver"
 		(slot.get_node("%Strip") as ColorRect).color = _pol_color(pos_pol)
-		(slot.get_node("%Name") as Label).text = String(r.get("name", "?"))
+		(slot.get_node("%Name") as Label).text = TraitSystem.name_of(tid)
 		var cost: Label = slot.get_node("%Cost")
 		cost.text = _cost_text(r)
 		cost.theme_type_variation = _pol_label(pos_pol)
@@ -156,7 +156,7 @@ func _add_row(parent: Container, r: Dictionary, on: bool, is_owned: bool, is_new
 	(b.get_node("%Sign") as Label).text = "+" if pos_pol else "−"
 
 	var name_lbl: Label = b.get_node("%Name")
-	name_lbl.text = String(r["name"])
+	name_lbl.text = TraitSystem.name_of(tid)
 	name_lbl.theme_type_variation = &"BodyLabel" if is_owned else &"FaintLabel"
 	var rar := OutgameTheme.variation_box(&"AccentChip")
 	rar.bg_color = TraitUi.rarity_color(int(r["rarity"]))

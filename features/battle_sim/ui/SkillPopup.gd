@@ -138,7 +138,6 @@ func open(p: PilotData, anchor: Vector2, strip_top: float) -> void:
 	var sk: PilotSkillSystem = _bs.skill
 	var has_skill: bool = sk.has_skill(p)
 	var stype: String = sk.skill_type(p)
-	var gm: Node = _bs.gm
 	_pilot = p
 	_show({
 		"has_skill": has_skill,
@@ -147,7 +146,7 @@ func open(p: PilotData, anchor: Vector2, strip_top: float) -> void:
 		"type": stype,
 		"cooldown_turns": int(sk.def_for(p).get("p1", 0)),
 		"desc": sk.skill_description(p) if has_skill else "",
-		"costs": gm.card_costs_by_name() if gm != null else {},
+		"refs": CardData.ref_entries(sk.skill_description_key(p)) if has_skill else [],
 		"show_status": has_skill and not (stype == PilotSkillSystem.TYPE_COOLDOWN
 				and sk.cooldown_left(p) <= 0),
 		"show_use": has_skill and stype != PilotSkillSystem.TYPE_PASSIVE,
@@ -248,7 +247,7 @@ func _on_use_pressed() -> void:
 
 # ─── UI ──────────────────────────────────────────────────────────────────────
 ## 판 하나를 세운다. `d` = `open` 이 스킬 시스템에서 모은 값(미리보기는 손으로 적는다):
-## has_skill · key · name · type · cooldown_turns · desc · costs · show_status · show_use.
+## has_skill · key · name · type · cooldown_turns · desc · refs(`CardData.ref_entries`) · show_status · show_use.
 func _show(d: Dictionary, anchor: Vector2, strip_top: float) -> void:
 	_strip_top = strip_top
 	var vp_w: float = ScreenMetrics.vp_w()
@@ -286,16 +285,16 @@ func _show(d: Dictionary, anchor: Vector2, strip_top: float) -> void:
 	var slot: Control = _body.get_node("%DescSlot")
 	slot.visible = has_skill
 	if has_skill:
-		var costs: Dictionary = d["costs"]
+		var refs: Array = d["refs"]
 		var desc_text: String = String(d["desc"])
 		var desc_h: float = StrategyIcon.rich_height(desc_text, inner_w,
-				PilotDetailPanel.SKILL_DESC_FONT, costs)
+				PilotDetailPanel.SKILL_DESC_FONT, refs, true)
 		slot.custom_minimum_size = Vector2(0.0, desc_h)
 		var desc := StrategyIcon.make_rich_label(desc_text,
 				PilotDetailPanel.SKILL_DESC_FONT, BattleTheme.TEXT_DESC,
 				BattleTheme.SKILL_KW_ICON, BattleTheme.POPUP_BG,
 				KeywordIcon.TARGET_ANY_COLOR, KeywordIcon.TARGET,
-				KeywordIcon.SPECIAL_COLOR_DARK, costs, true)
+				KeywordIcon.SPECIAL_COLOR_DARK, refs, true, true)
 		desc.position = Vector2.ZERO
 		desc.size = Vector2(inner_w, desc_h)
 		# 카드 이름 누름을 받는다 — 그 밖의 글자를 눌러도 판이 닫히지 않는 건 같다.
@@ -389,11 +388,12 @@ func _nudge_hover(pos: Vector2) -> void:
 
 
 ## 누른 자리 위에 카드 + 오른쪽(자리가 없으면 왼쪽) 설명판.
-func _show_preview(card_name: String) -> void:
+## `name_key` — 누른 카드 이름의 l10n key(`StrategyIcon.fill_rich` 의 meta).
+func _show_preview(name_key: String) -> void:
 	_hide_preview()
 	if not is_active() or _bs == null or _bs.CARD_SCENE == null:
 		return
-	var cd: CardData = CardDescBox.card_by_name(card_name)
+	var cd: CardData = CardData.by_name_key(name_key)
 	if cd == null:
 		return
 	var vp := Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
@@ -460,6 +460,6 @@ func _fill_preview() -> void:
 		"has_skill": true, "key": "roam", "name": "배회",
 		"type": PilotSkillSystem.TYPE_COOLDOWN, "cooldown_turns": 15,
 		"desc": "활성화: 손에 있는 가장 낮은 비용의 [이동] 카드의 비용을 0으로 감소.",
-		"costs": {}, "show_status": true, "show_use": true,
+		"refs": [], "show_status": true, "show_use": true,
 	}, Vector2(vp.x * 0.5, vp.y - 280.0), vp.y - 276.0)
 	_status.text = "준비까지 12턴"

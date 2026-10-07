@@ -40,7 +40,7 @@ static func rates(pool: String) -> Array:
 	return out
 
 
-## Named pilots `[{id, name, role, rarity}]` (id order).
+## Named pilots `[{id, name_key, role, rarity}]` (id order; `pilot_name` for display).
 static func named_pilots() -> Array:
 	_ensure_loaded()
 	return _pilots
@@ -51,6 +51,12 @@ static func pilot_row(pilot_id: int) -> Dictionary:
 		if int((r as Dictionary)["id"]) == pilot_id:
 			return r
 	return {}
+
+
+## 네임드 선수 표시 이름 — 행에는 l10n key(`name_key`)만 있다. 없는 id 는 "?".
+static func pilot_name(pilot_id: int) -> String:
+	var key: String = String(pilot_row(pilot_id).get("name_key", ""))
+	return "?" if key.is_empty() else Loc.t(key)  # l10n-dynamic: name.player.*
 
 
 ## Item ids of a pool at exactly `rarity`.
@@ -201,8 +207,8 @@ static func _ensure_loaded() -> void:
 			if not _rates.has(pool):
 				_rates[pool] = []
 			(_rates[pool] as Array).append({"rarity": int(r["rarity"]), "weight": float(r["weight"])})
-	db.query("SELECT id, name, role, rarity FROM players WHERE is_mob = 0 ORDER BY id")
+	db.query("SELECT id, name_key, role, rarity FROM players WHERE is_mob = 0 ORDER BY id")
 	for r in db.query_result:
-		_pilots.append({"id": int(r["id"]), "name": String(r["name"]),
+		_pilots.append({"id": int(r["id"]), "name_key": String(r["name_key"]),
 				"role": int(r["role"]), "rarity": int(r["rarity"])})
 	db.close_db()

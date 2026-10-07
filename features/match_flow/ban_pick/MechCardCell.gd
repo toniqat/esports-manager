@@ -30,7 +30,7 @@ func _ready() -> void:
 ## `def` — 메크 카드 행(`GameManager.mech_cards_for`). 트리에 들어간 **뒤에** 부른다 —
 ## Card.gd 의 @onready 참조는 트리에 들어간 뒤에야 풀린다.
 func fill(def: Dictionary) -> void:
-	(%Card as Card).setup(CardData.from_def(def), false, true)
+	(%Card as Card).setup(CardData.from_mech_def(def), false, true)
 	# 장수 배지 — `count = 0` 인 카드는 덱에 처음부터 들어가지 않고 패시브나
 	# 다른 카드가 만들어 줄 때만 세상에 나온다. 그 사정을 적어 두지 않으면
 	# "왜 이 카드가 손에 안 들어오나"가 화면 어디에도 없다.

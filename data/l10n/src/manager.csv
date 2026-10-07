@@ -1,5 +1,5 @@
 key,alias,status,context,max_len,note,ko,en,en_status,en_hash
-tx_J99WKD5PN8,manager.type.0.name,active,manager_types.csv name (id=0),,,운영형,,,
-tx_KQSXCRDMQT,manager.type.1.name,active,manager_types.csv name (id=1),,,실전형,,,
-tx_T2Z72WAY5Q,manager.type.0.desc,active,manager_types.csv desc (id=0),,,조직 운영에 밝은 감독 — 관리 · 멘탈 쪽으로 조금 기운 고른 분배,,,
-tx_PVYTSHGS8N,manager.type.1.desc,active,manager_types.csv desc (id=1),,,현장 출신 감독 — 훈련 · 지식 쪽으로 조금 기운 고른 분배,,,
+tx_J99WKD5PN8,manager.type.0.name,active,manager_types.csv name (id=0),,,운영형,Organizer,draft,af46689d
+tx_KQSXCRDMQT,manager.type.1.name,active,manager_types.csv name (id=1),,,실전형,Field Veteran,draft,dc8933d9
+tx_T2Z72WAY5Q,manager.type.0.desc,active,manager_types.csv desc (id=0),,,조직 운영에 밝은 감독 — 관리 · 멘탈 쪽으로 조금 기운 고른 분배,A manager versed in running an organization — a balanced spread leaning slightly toward Management and Mental,draft,bbfbd019
+tx_PVYTSHGS8N,manager.type.1.desc,active,manager_types.csv desc (id=1),,,현장 출신 감독 — 훈련 · 지식 쪽으로 조금 기운 고른 분배,A manager who came up from the field — a balanced spread leaning slightly toward Training and Knowledge,draft,c54a9d0f

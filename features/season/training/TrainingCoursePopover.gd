@@ -86,6 +86,6 @@ static func _text_height(text: String, width: float, font_size: int) -> float:
 ## 등급의 이유 줄까지(`resources/UiPreview.gd`).
 func _fill_preview() -> void:
 	UiPreview.stage(self)
-	var t := TrainingTile.from_def({"id": "T14", "name": "멘토링", "grade": 3,
+	var t := TrainingTile.from_def({"id": "T14", "name_key": "tx_CHY4PWBWTD", "grade": 3,
 			"shape": "K/W/W", "exp": "all:38", "effect": "mult:mate_all:125"})
 	fill(t, "0/2", "전술 11 필요 (지금 전술 9)")

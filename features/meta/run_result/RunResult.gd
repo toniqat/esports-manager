@@ -78,8 +78,8 @@ static func settle_current_run(outcome: String) -> Dictionary:
 
 
 ## 정산 결과를 순수하게 계산한다(프로필 · 파일을 건드리지 않는다).
-## 모양은 §10.3 에 화면용 표시 키(`team_name` · `scenario_name` · `pilots` ·
-## `phases_cleared` · `breakdown` · `id`)를 더한 것.
+## 모양은 §10.3 에 화면용 표시 키(`team_name` · `pilots` ·
+## `phases_cleared` · `breakdown` · `id`)를 더한 것. 시나리오는 id(`scenario`)만 — 화면이 key 로 푼다.
 static func build_result(state: Dictionary, outcome: String, test_run: bool) -> Dictionary:
 	var run_setup: Dictionary = _dict(state.get("run_setup", {}))
 	var run_stats: Dictionary = _dict(state.get("run_stats", {}))
@@ -169,7 +169,6 @@ static func build_result(state: Dictionary, outcome: String, test_run: bool) -> 
 		"phases_cleared": phases_cleared,
 		"breakdown": breakdown,
 		"team_name": _team_name(state, team_id),
-		"scenario_name": String(RunRules.scenario(scenario_id).get("name", "")),
 		"pilots": _pilot_rows(state, mine),
 	}
 	# M7 — true endings: run cleared + outings with that pilot ≥ `TRUE_ENDING_OUTINGS`.
@@ -306,15 +305,16 @@ static func _match_outcome(m: Dictionary, pid: int) -> int:
 
 
 # ── 표시용 ───────────────────────────────────────────────────────────────────
+# 결과 딕셔너리는 세이브되지 않는 화면용이라 표시 글자를 그대로 담는다. team_meta 에는
+# l10n key 만 있다(D7).
 static func _team_name(state: Dictionary, team_id: int) -> String:
 	var metas: Array = state.get("team_meta", [])
 	for m in metas:
 		var md: Dictionary = _dict(m)
 		if int(md.get("id", -1)) == team_id:
-			return String(md.get("name", ""))
-	if team_id >= 0 and team_id < metas.size():
-		return String(_dict(metas[team_id]).get("name", ""))
-	return ""
+			var key: String = String(md.get("name_key", ""))
+			return "" if key.is_empty() else Loc.t(key)  # l10n-dynamic: name.team.*.name
+	return RunRules.team_name(team_id)
 
 
 # 내 선수 표시 행 `[{id, name, role}]`, 화면 자리 순(`GameEnums.role_seat`).

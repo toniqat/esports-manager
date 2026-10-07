@@ -43,5 +43,5 @@ func fill(row: Dictionary) -> void:
 func _fill_preview() -> void:
 	UiPreview.stage(self)
 	var r: Dictionary = QuirkSystem.row(7)
-	fill({"name": String(r.get("name", "사냥꾼")), "grade": int(r.get("grade", 1)),
+	fill({"name": QuirkSystem.name_of(7), "grade": int(r.get("grade", 1)),
 			"effect": QuirkSystem.effect_text(7, true), "active": true})

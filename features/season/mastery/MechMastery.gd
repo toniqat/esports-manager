@@ -31,7 +31,7 @@ const TIER_NAMES: Array = ["미숙", "보통", "능숙", "마스터"]
 const TIER_COUNT: int = 4
 
 static var _mechs: Array = []          # [{id, name, role}] in id order
-static var _mech_by_id: Dictionary = {}  # int id → {id, name, role}
+static var _mech_by_id: Dictionary = {}  # int id → {id, name_key, role}
 static var _loaded: bool = false
 
 
@@ -327,7 +327,7 @@ static func find_pilot(state: Dictionary, pilot_id: int) -> PlayerData:
 
 
 # ── Mech table ───────────────────────────────────────────────────────────────
-## `[{id, name, role}]` from game.db `mechs`, id order.
+## `[{id, name_key, role}]` from game.db `mechs`, id order (`mech_name` for display).
 static func all_mechs() -> Array:
 	_ensure_loaded()
 	return _mechs
@@ -343,7 +343,8 @@ static func mechs_of_role(role: int) -> Array:
 
 static func mech_name(mech_id: int) -> String:
 	_ensure_loaded()
-	return String((_mech_by_id.get(mech_id, {}) as Dictionary).get("name", "—"))
+	var key: String = String((_mech_by_id.get(mech_id, {}) as Dictionary).get("name_key", ""))
+	return "—" if key.is_empty() else Loc.t(key)  # l10n-dynamic: name.mech.*
 
 
 static func _ensure_loaded() -> void:
@@ -356,9 +357,9 @@ static func _ensure_loaded() -> void:
 	if not db.open_db():
 		push_warning("MechMastery: cannot open game.db")
 		return
-	db.query("SELECT id, name, role FROM mechs ORDER BY id")
+	db.query("SELECT id, name_key, role FROM mechs ORDER BY id")
 	for row in db.query_result:
-		var e: Dictionary = {"id": int(row["id"]), "name": String(row["name"]), "role": int(row["role"])}
+		var e: Dictionary = {"id": int(row["id"]), "name_key": String(row["name_key"]), "role": int(row["role"])}
 		_mechs.append(e)
 		_mech_by_id[int(row["id"])] = e
 	db.close_db()

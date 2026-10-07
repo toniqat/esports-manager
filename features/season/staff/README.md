@@ -4,7 +4,7 @@ Contract: `docs/outgame_dev_plan.md` §11. Single entry point for every manager-
 
 | File | Role |
 |---|---|
-| `StaffSystem.gd` | `class_name StaffSystem` (static). Tables `manager_types` / `staff` / `teams.staff_ids`; run snapshot (`snapshot_for_run` → `run_setup.manager_type/manager_stats/staff`); cover rule `effective(state, stat) = max(manager + staff_mods, assistant, dedicated staff)`; `owner` / `is_delegated` (auto buttons); `effective_for_incident`; `analysis_tier` (`ANALYSIS_TIER_1..3`); temporary mods `add_mod` / `decay_mods` (week end). |
+| `StaffSystem.gd` | `class_name StaffSystem` (static). Tables `manager_types` / `staff` / `teams.staff_ids`; run snapshot (`snapshot_for_run` → `run_setup.manager_type/manager_stats/staff`); cover rule `effective(state, stat) = max(manager + staff_mods, assistant, dedicated staff)`; `owner` / `owner_name` / `is_delegated` (auto buttons); `staff_name(e)` — staff rows (`staff_row`, `run_setup.staff[]`) hold the l10n key `name_key` (`name.staff.*`) only, never the text (D7); `effective_for_incident`; `analysis_tier` (`ANALYSIS_TIER_1..3`); temporary mods `add_mod` / `decay_mods` (week end). |
 | `StaffPanel.gd` + `UI_View_StaffPanel.tscn` | Hub manage card + `HubSheet` body — see "Hub card + sheet" below. |
 | `UI_Comp_StaffStatRow.tscn` · `UI_Comp_StaffTraitRow.tscn` · `UI_Comp_StaffMemberRow.tscn` | Item scenes of the sheet (no script): one 능력치 row · one 장착 특성 row · one 스태프 row. |
 
@@ -15,8 +15,9 @@ Rules
 - The **finance** stat has a real effect besides "who allocates": `effective(state, "finance")` scales sponsor
   income and upkeep continuously (`FinanceSystem.finance_stat_income_mult` / `finance_stat_upkeep_mult`,
   `FINANCE_STAT_*`) — see `features/season/finance/README.md`.
-- `staff_mods` sources include the finance sheet's `coach_hire` specials (`특별 지출 · <name>`), bought with
-  balance (`FinanceSystem.buy_special`).
+- `staff_mods` sources include the finance sheet's `coach_hire` specials (`source = "finance:<id>"`, shown as the
+  special's name via `FinanceSystem.mod_source_text`), bought with balance (`FinanceSystem.buy_special`).
+- `manager_types()` rows hold l10n keys `name_key` / `desc_key` (`manager.type.{id}.name/desc`); screens `Loc.t` them.
 
 ## Hub card + sheet (`StaffPanel.gd`)
 Contract §11.2 — static `hub_summary(state)` / `open(host)`; fills only, every value comes from `StaffSystem`.

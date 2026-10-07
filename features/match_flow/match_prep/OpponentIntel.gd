@@ -27,7 +27,7 @@ const FULL: int = TIER_CARDS
 
 const TIER_LABELS: Array = ["이름 · 역할", "스탯 대략", "스탯 · 주력 메크", "전부 공개"]
 
-static var _mech_names: Dictionary = {}   # int mech id → String
+static var _mech_names: Dictionary = {}   # int mech id → l10n name key (`mechs.name_key`)
 static var _mech_loaded: bool = false
 
 
@@ -206,7 +206,7 @@ static func _card_names_for(p: PlayerData) -> Array:
 	for raw in gm.pilot_card_ids_for(p):
 		var def: Dictionary = gm.card_def(int(raw))
 		if not def.is_empty():
-			out.append(String(def.get("name", "?")))
+			out.append(Loc.t(String(def.get("name_key", ""))))  # l10n-dynamic: card.pilot.*.name
 	return out
 
 
@@ -257,11 +257,13 @@ static func mech_name(mech_id: int) -> String:
 		db.path = GameDb.path()
 		db.verbosity_level = SQLite.QUIET
 		if db.open_db():
-			db.query("SELECT id, name FROM mechs")
+			db.query("SELECT id, name_key FROM mechs")
 			for row in db.query_result:
-				_mech_names[int(row["id"])] = String(row["name"])
+				_mech_names[int(row["id"])] = String(row["name_key"])
 			db.close_db()
-	return String(_mech_names.get(mech_id, "메크 %d" % mech_id))
+	if not _mech_names.has(mech_id):
+		return "메크 %d" % mech_id
+	return Loc.t(String(_mech_names[mech_id]))  # l10n-dynamic: name.mech.*
 
 
 static func _gm() -> Node:

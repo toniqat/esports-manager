@@ -21,6 +21,7 @@ var _gm: Node
 var _pm: Node
 var _has_run: bool = false
 var _meta: Dictionary = {}
+var _settings: SettingsPopup   # 설정 팝업 — 처음 열 때 만든다
 
 
 ## 씬을 인스턴스한다. `HomeTab.new()` 는 빈 Control 이라 쓰지 않는다.
@@ -29,6 +30,7 @@ static func create() -> HomeTab:
 
 
 func _ready() -> void:
+	%SettingsButton.pressed.connect(_open_settings)
 	if UiPreview.is_standalone(self):
 		_fill_preview()
 
@@ -85,7 +87,7 @@ func _show_run(meta: Dictionary) -> void:
 	%Date.text = "%d년 %d월 %d일 (%s)" % [
 			int(meta.get("year", 1)), int(meta.get("month", 12)),
 			int(meta.get("day", 1)), _weekday_name(int(meta.get("weekday", 0)))]
-	%Team.text = String(meta.get("team_name", "—"))
+	%Team.text = String(_gm.team_name(int(meta.get("team_id", 0))))
 	%Trophies.text = "우승 트로피 %d개" % int(meta.get("trophies", 0))
 	var rank: int = int(meta.get("rank", 0))
 	var record: String = "리그 미시작"
@@ -144,6 +146,28 @@ func _on_abandon_confirmed() -> void:
 	_start_new_run()
 
 
+# ── 설정 (언어, 현지화 D10 · §10.4) ──────────────────────────────────────────
+func _open_settings() -> void:
+	if _settings == null:
+		_settings = SettingsPopup.create()
+		add_child(_settings)
+		_settings.locale_chosen.connect(_on_locale_chosen)
+	_settings.open()
+
+
+## 언어를 저장하고 현재 씬(로비)을 다시 로드한다 — 코드가 채운 글까지 새 언어로 다시
+## 만들어지는 유일한 경로(`NOTIFICATION_TRANSLATION_CHANGED` 처리는 두지 않는다).
+func _on_locale_chosen(code: String) -> void:
+	if UiPreview.is_standalone(self):
+		print("[UiPreview] locale_chosen %s (저장 · 다시 로드 생략)" % code)
+		return
+	var err: String = get_node("/root/ProfileManager").set_locale(code)
+	if err != "":
+		_host.show_toast(Loc.t(L.SETTINGS_SAVE_FAILED, {"error": err}), true)
+		return
+	get_tree().reload_current_scene()
+
+
 func _start_new_run() -> void:
 	_gm.reset_season_state()
 	get_tree().change_scene_to_file(RUN_SETUP_SCENE)
@@ -176,7 +200,7 @@ func _fill_preview() -> void:
 	_meta = {
 		"phase": int(s.get("current_phase", 0)), "year": int(s.get("year", 1)),
 		"month": int(s.get("month", 12)), "day": int(s.get("day", 1)),
-		"weekday": int(s.get("weekday", 0)), "team_name": lm.team_name(pid),
+		"weekday": int(s.get("weekday", 0)), "team_id": pid,
 		"trophies": 1, "rank": rank, "wins": wins, "losses": losses,
 		"saved_at": "%04d-%02d-%02d %02d:%02d" % [dt["year"], dt["month"], dt["day"],
 				dt["hour"], dt["minute"]],

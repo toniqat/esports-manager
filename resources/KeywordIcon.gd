@@ -69,14 +69,15 @@ const SPECIAL_COLOR_LIGHT := Color(0.50, 0.28, 0.82)
 
 ## 설명문 낱말 → 아이콘. **긴 낱말이 먼저다** — "공격력" 이 "공격" 보다 앞에 있어야
 ## 공격력 앞에 활이 서지 않는다(같은 자리에서 시작하면 긴 쪽이 이긴다).
-## 특수 키워드 용어 → 아이콘. 표에 없는 `[이름]`(카드 이름)은 아이콘 없이 색만.
+## 특수 키워드 id(`CardData.SPECIAL_LABELS` 의 키) → 아이콘. `[이름]` 이 어느 특수 키워드인지는
+## 표시 글자가 아니라 참조 key 로 정한다(`CardData.ref_entries`). 카드 이름 참조는 아이콘 없이 색만.
 const SPECIAL_ICONS: Dictionary = {
-	"추적": TRACK,
-	"반응 장갑": REACTIVE_ARMOR,
-	"목표": MARK,
-	"현상금": BOUNTY,
-	"기절": STUN,
-	"취약": VULNERABLE,
+	"track": TRACK,
+	"reactive_armor": REACTIVE_ARMOR,
+	"target": MARK,
+	"bounty": BOUNTY,
+	"stun": STUN,
+	"vulnerable": VULNERABLE,
 }
 
 ## "필중 공격" 은 한 덩어리 — 필중 아이콘 하나만 서고 "공격" 에 활이 또 붙지 않는다.

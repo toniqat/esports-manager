@@ -1,5 +1,5 @@
 key,alias,status,context,max_len,note,ko,en,en_status,en_hash
-tx_WMF4H900Y6,scenario.0.name,active,scenarios.csv name (id=0),,,루키 리그,,,
-tx_WHEYGN2VQZ,scenario.1.name,active,scenarios.csv name (id=1),,,슈퍼 리그,,,
-tx_FHYTT6JZHE,scenario.0.desc,active,scenarios.csv desc (id=0),,,샐러리캡이 낮다 — 비싼 선수는 두세 명이 한계.,,,
-tx_4H2VGDNYW7,scenario.1.desc,active,scenarios.csv desc (id=1),,,샐러리캡이 높다 — 레벨을 올린 선수로 채울 수 있다.,,,
+tx_WMF4H900Y6,scenario.0.name,active,scenarios.csv name (id=0),,,루키 리그,Rookie League,draft,1deef427
+tx_WHEYGN2VQZ,scenario.1.name,active,scenarios.csv name (id=1),,,슈퍼 리그,Super League,draft,a2ae1620
+tx_FHYTT6JZHE,scenario.0.desc,active,scenarios.csv desc (id=0),,,샐러리캡이 낮다 — 비싼 선수는 두세 명이 한계.,Low salary cap — two or three expensive pilots at most.,draft,c2de6566
+tx_4H2VGDNYW7,scenario.1.desc,active,scenarios.csv desc (id=1),,,샐러리캡이 높다 — 레벨을 올린 선수로 채울 수 있다.,High salary cap — room for a roster of leveled-up pilots.,draft,e5f74cb0

@@ -121,7 +121,7 @@ func select(idx: int) -> void:
 	var btn: Button = %Confirm
 	btn.disabled = false
 	btn.text = ("%s 감독으로 프레스티지" if _prestige_mode else "%s 감독으로 시작") \
-			% String((_types[idx] as Dictionary).get("name", ""))
+			% Loc.t(String((_types[idx] as Dictionary).get("name_key", "")))  # l10n-dynamic: manager.type.*.name
 
 
 ## Prestige mode only — closes without choosing.

@@ -40,7 +40,8 @@ const SCHEMAS: Dictionary = {
 	"manager_types": {"req": ["id","name_key","gender","training","tactics","knowledge","mental","analysis","finance","desc_key"], "pk": "id"},
 	"staff":         {"req": ["id","name_key","job","training","tactics","knowledge","mental","analysis","finance","salary"], "pk": "id"},
 	"facilities":    {"req": ["level","upkeep","upgrade_cost","train_exp_pct","mastery_pct","incident_pct","income_pct"], "pk": "level"},
-	"mental_events": {"req": ["id","kind","manager_type","stage","cond","lines","choices","effects","weight"], "pk": "id"},
+	"mental_events": {"req": ["id","kind","manager_type","stage","cond","effects","weight"], "pk": "id"},
+	"mental_texts":  {"req": ["id","event_id","slot","choice","branch","seq","text_key"], "pk": "id"},
 	# M8~M10 (특성 · 감독 성장 · 수집 경제) — 계약: docs/outgame_dev_plan.md §12
 	"traits":        {"req": ["id","key","name_key","rarity","polarity","bonus_cost","layer","p1","p2","unlock","default_owned","craft_cost","desc_key"], "pk": "id"},
 	"manager_levels": {"req": ["level","exp_required"], "pk": "level"},
@@ -335,10 +336,19 @@ const TABLE_DEFS: Dictionary = {
 		"manager_type": {"data_type": "int",  "not_null": true},
 		"stage":        {"data_type": "int",  "not_null": true},
 		"cond":         {"data_type": "text", "not_null": true},
-		"lines":        {"data_type": "text", "not_null": true},
-		"choices":      {"data_type": "text", "not_null": true},
 		"effects":      {"data_type": "text", "not_null": true},
 		"weight":       {"data_type": "int",  "not_null": true},
+	},
+	# 멘탈 이벤트 대사 (D6) — slot line / choice / say, choice = 선택지 번호(line 은 빈 칸 → 0, 무시),
+	# branch "" / ok / ng (say 만), seq = 그 slot 안 순서. 텍스트는 l10n key.
+	"mental_texts": {
+		"id":       {"data_type": "text", "primary_key": true, "not_null": true},
+		"event_id": {"data_type": "text", "not_null": true},
+		"slot":     {"data_type": "text", "not_null": true},
+		"choice":   {"data_type": "int",  "not_null": true},
+		"branch":   {"data_type": "text", "not_null": true},
+		"seq":      {"data_type": "int",  "not_null": true},
+		"text_key": {"data_type": "text", "not_null": true},
 	},
 	# ── M8~M10 ─────────────────────────────────────────────────────────────
 	# 감독 특성 — `key` 는 런타임 분기(효과 표는 features/meta/traits/README.md),

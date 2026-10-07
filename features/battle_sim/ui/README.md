@@ -1,5 +1,7 @@
 # UI Module
 
+**텍스트는 l10n key — `Loc.t`** (cards / skills): `SkillPopup` · `PilotDetailPanel` pass `CardData.ref_entries(skill_description_key)` to `StrategyIcon` (no name→cost table); fx thumbnails read card uids (`CardData.card_uid` / `name_of_uid`), art via `CardImages.art_for(uid)`.
+
 | File | class_name | Role |
 |---|---|---|
 | `HudBuilder.gd` + `UI_View_BattleHud.tscn` | HudBuilder | Instances the battle HUD scene (`UI_View_BattleHud.tscn` — three CanvasLayers), binds its `%` nodes and updates it. **Scene-authored** since R4 phase 2 — see "Scenes and the dark theme" |
@@ -1209,7 +1211,7 @@ and on release sinks + fades out 0.1s. RichTextLabel only reports metas via hove
 (`meta_hover_started`) or on release (`meta_clicked`), and a touch has no motion
 before the press — so on press `_nudge_hover` pushes one `InputEventMouseMotion`
 at that point (deferred) to make the label resolve the meta under the finger.
-The card is looked up by name (`CardDescBox.card_by_name`).
+The meta data is the card's **name key**; the card is `CardData.by_name_key(meta)` (l10n D3 — no name lookup).
 
 Outside-tap handling: a transparent `MOUSE_FILTER_STOP` catcher covers the screen
 **only down to the ally strip's top**, so that tap is swallowed (the hand / field

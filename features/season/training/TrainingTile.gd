@@ -69,10 +69,11 @@ const COLOR_QUIRK: String = "Q"
 ## `quirk:<op>` clause ops, in the order a day applies them (a new slot first,
 ## so a gain on the same cell can fill it).
 const QUIRK_OPS: Array = ["slot", "reroll", "gain"]
-const QUIRK_OP_LABELS: Dictionary = {
-	"gain":   "기벽 획득 — 남은 기벽 칸에 무작위 장착 (지식이 높을수록 고등급)",
-	"reroll": "기벽 재굴림 — 장착한 기벽을 전부 새로 뽑음",
-	"slot":   "기벽 칸 +1",
+## op → l10n key of its description (`effect_summary`, template `training.effect.quirk`).
+const QUIRK_OP_LABELS: Dictionary = {  # l10n-keys: training.quirk_op.*
+	"gain":   L.TRAINING_QUIRK_OP_GAIN,
+	"reroll": L.TRAINING_QUIRK_OP_REROLL,
+	"slot":   L.TRAINING_QUIRK_OP_SLOT,
 }
 
 ## 화면에 쓰는 색. 검정 칸이 진짜 검정인 것은 "여긴 아무것도 안 준다"가
@@ -162,20 +163,26 @@ const SCOPES: Array = [
 ## 스코프를 사람 말로. 절 문법과 **같은 이유로** 방향(위/아래/왼쪽)이 아니라
 ## 의미로 적는다 — 판을 한 번 돌리면 방향 이름이 전부 거짓말이 된다.
 ## `effect_summary()` 가 이 표 하나만 읽으므로 절을 늘려도 문구가 갈라지지 않는다.
-const SCOPE_LABELS: Dictionary = {
-	"self":         "자기 칸",
-	"day_next":     "다음 날",
-	"day_prev":     "전날",
-	"day_all":      "그 선수의 한 주",
-	"day_prev_all": "앞선 날 전부",
-	"day_next_all": "남은 날 전부",
-	"mate_left":    "왼쪽 선수 같은 날",
-	"mate_right":   "오른쪽 선수 같은 날",
-	"mate_all":     "같은 날 다른 선수",
+## 값은 l10n key — 문장 틀(`training.effect.*`)의 `{scope}` 에 들어간다(설계서 §6.1).
+const SCOPE_LABELS: Dictionary = {  # l10n-keys: training.scope.*
+	"self":         L.TRAINING_SCOPE_SELF,
+	"day_next":     L.TRAINING_SCOPE_DAY_NEXT,
+	"day_prev":     L.TRAINING_SCOPE_DAY_PREV,
+	"day_all":      L.TRAINING_SCOPE_DAY_ALL,
+	"day_prev_all": L.TRAINING_SCOPE_DAY_PREV_ALL,
+	"day_next_all": L.TRAINING_SCOPE_DAY_NEXT_ALL,
+	"mate_left":    L.TRAINING_SCOPE_MATE_LEFT,
+	"mate_right":   L.TRAINING_SCOPE_MATE_RIGHT,
+	"mate_all":     L.TRAINING_SCOPE_MATE_ALL,
 }
 
 var id: String = ""
-var tile_name: String = ""
+## l10n key of the tile name (`training_tiles.name_key`, `training.tile.*.name`).
+var name_key: String = ""
+## Display name in the current locale — read-only, derived from `name_key`.
+var tile_name: String:
+	get:
+		return Loc.t(name_key)  # l10n-dynamic: training.tile.*.name
 var grade: int = 0
 
 ## 이 타일이 덮는 칸의 상대 좌표. `Vector2i(dx, dy)` — dx = 선수(열) 오프셋,
@@ -198,7 +205,7 @@ var quirk_ops: Array = []
 static func from_def(def: Dictionary) -> TrainingTile:
 	var t := TrainingTile.new()
 	t.id          = String(def.get("id", ""))
-	t.tile_name   = String(def.get("name", ""))
+	t.name_key    = String(def.get("name_key", ""))
 	t.grade       = int(def.get("grade", 0))
 	t._parse_shape(String(def.get("shape", "W")))
 	t._parse_exp(String(def.get("exp", "")))
@@ -389,19 +396,19 @@ func exp_summary() -> String:
 	var stat_part: String = _stat_exp_summary()
 	if has_quirk() and per_cell_exp.is_empty() and not has_mastery():
 		# Quirk cells give no EXP — say what the day is spent on instead.
-		return "경험치 없음 — 그날은 기벽 훈련"
+		return Loc.t(L.TRAINING_EXP_QUIRK_DAY)
 	if not has_mastery():
 		return stat_part
 	# Mastery cells name what they feed — the pilot's weekly research mech.
-	var mastery_part: String = "메크 숙련도 +%d (연구 메크)" % per_cell_mastery
+	var mastery_part: String = Loc.t(L.TRAINING_EXP_MASTERY, {"n": per_cell_mastery})
 	if per_cell_exp.is_empty():
 		return mastery_part
-	return stat_part + "\n" + mastery_part
+	return "\n".join(PackedStringArray([stat_part, mastery_part]))
 
 
 func _stat_exp_summary() -> String:
 	if per_cell_exp.is_empty():
-		return "경험치 없음"
+		return Loc.t(L.TRAINING_EXP_NONE)
 	if per_cell_exp.size() == PlayerData.STAT_KEYS.size():
 		var uniform: bool = true
 		var first: int = int(per_cell_exp[String(PlayerData.STAT_KEYS[0])])
@@ -410,14 +417,14 @@ func _stat_exp_summary() -> String:
 				uniform = false
 				break
 		if uniform:
-			return "전 스탯 +%d" % first
-	var parts: Array = []
+			return Loc.t(L.TRAINING_EXP_ALL, {"n": first})
+	var parts: PackedStringArray = []
 	for i in PlayerData.STAT_KEYS.size():
 		var key: String = String(PlayerData.STAT_KEYS[i])
 		if per_cell_exp.has(key):
-			parts.append("%s +%d" % [String(PlayerData.STAT_LABELS[i]),
-					int(per_cell_exp[key])])
-	return " · ".join(parts)
+			parts.append(Loc.t(L.TRAINING_EXP_STAT, {
+					"stat": String(PlayerData.STAT_LABELS[i]), "n": int(per_cell_exp[key])}))
+	return Loc.t(L.TRAINING_LIST_SEP).join(parts)
 
 
 ## 효과 절을 사람 말 한 줄씩으로. **문장을 절에서 만드는 것이 요점이다** —
@@ -425,25 +432,26 @@ func _stat_exp_summary() -> String:
 ## 있어서, 절의 숫자를 고치면 카드 설명만 조용히 거짓말이 됐다(그 컬럼은
 ## 그래서 삭제됐다). 절이 없는 타일은 빈 문자열이라 부르는 쪽이 줄을 건너뛴다.
 func effect_summary() -> String:
-	var parts: Array = []
+	var parts: PackedStringArray = []
 	for cl_raw in clauses:
 		var cl: Dictionary = cl_raw
-		var scope_label: String = String(
-				SCOPE_LABELS.get(String(cl["scope"]), String(cl["scope"])))
+		var scope_label: String = Loc.t(String(SCOPE_LABELS[String(cl["scope"])]))  # l10n-dynamic: training.scope.*
 		if String(cl["kind"]) == "mult":
 			# 100 이 무변화이므로 화면에는 **차이**를 적는다 — "<pct>%" 보다
 			# "+<pct − 100>%" 가 그 절이 무엇을 바꾸는지에 곧장 답한다.
-			parts.append("%s 훈련 효과 %+d%%" % [scope_label, int(cl["pct"]) - 100])
+			parts.append(Loc.t(L.TRAINING_EFFECT_MULT, {
+					"scope": scope_label, "pct": "%+d" % (int(cl["pct"]) - 100)}))
 			continue
 		var stat_key: String = String(cl["stat"])
-		var stat_label: String = "전 스탯"
+		var stat_label: String = Loc.t(L.TRAINING_STAT_ALL)
 		if stat_key != "all":
 			var i: int = PlayerData.STAT_KEYS.find(stat_key)
 			if i >= 0:
 				stat_label = String(PlayerData.STAT_LABELS[i])
-		parts.append("%s %s %+d" % [scope_label, stat_label, int(cl["amount"])])
+		parts.append(Loc.t(L.TRAINING_EFFECT_FLAT, {
+				"scope": scope_label, "stat": stat_label, "amount": "%+d" % int(cl["amount"])}))
 	# Quirk ops act on the pilot of each quirk (`Q`) cell.
 	for op in quirk_ops:
-		parts.append("훈련한 선수: " + String(QUIRK_OP_LABELS.get(op, op)))
-	return "
-".join(parts)
+		parts.append(Loc.t(L.TRAINING_EFFECT_QUIRK, {
+				"op": Loc.t(String(QUIRK_OP_LABELS[op]))}))  # l10n-dynamic: training.quirk_op.*
+	return "\n".join(parts)

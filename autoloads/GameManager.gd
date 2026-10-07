@@ -50,7 +50,7 @@ var season_state: Dictionary = {
 	"phase_week": 1,              # week index inside current phase
 	"player_team_id": 0,
 	"all_pilots": [],             # Array[PlayerData] — full 40-pilot pool, loaded from DB
-	"team_meta": [],              # Array[{id, name, short_name}] indexed by team_id
+	"team_meta": [],              # Array[{id, name_key, short_name_key}] indexed by team_id — l10n key 만(D7). 표시는 `team_name` / `team_short_name`
 	"team_rosters": {},           # team_id (int) -> Array[int] of pilot ids
 	"league_standings": {},       # team_id (int) -> {"wins": int, "losses": int}
 	"match_schedule": [],         # Array of {phase, year, month, day, weekday, round, team_a, team_b, played, winner}
@@ -63,7 +63,7 @@ var season_state: Dictionary = {
 	# 뜻**이다 — 허브 · 기자회견 · 훈련 계획 구간이 전부 -1 이고, 그 값이
 	# 순위표의 "확인"이 주로 돌아갈지 허브로 돌아갈지를 가른다.
 	"week_day": -1,
-	# 요일별 훈련 결과 기록. `day(int) → Array[{pilot_id, name, role, seat,
+	# 요일별 훈련 결과 기록. `day(int) → Array[{pilot_id, role, seat,
 	# before, after, ups, exp}]`. 적으는 자리는 `TrainingBoard.apply_day_training`
 	# 을 부르는 `WeekProgressView` 하나다 — 이미 있으면 다시 정산하지
 	# 않으므로 경기를 치르고 같은 요일로 돌아와도 훈련이 두 번 먹지 않는다.
@@ -94,7 +94,7 @@ var season_state: Dictionary = {
 	# teams (id 100..103) with 5 pilots each (id 100..119). Used to seed the INTL
 	# bracket (4 league qualifiers + 4 INTL teams = 8) and to draft enemy rosters
 	# in MatchFlow when the opponent is an INTL team.
-	"intl_team_meta": [],         # Array[{id, name, short_name}] (4 entries, sorted by id)
+	"intl_team_meta": [],         # Array[{id, name_key, short_name_key}] (4 entries, sorted by id)
 	"intl_pilots": [],            # Array[PlayerData] (20 entries)
 	# Mid-match resume snapshot. Non-null only between the pre-ban-pick save
 	# (MatchFlow entry) and the post-match save (return to Season). Lets the
@@ -487,7 +487,7 @@ func load_match_data() -> Dictionary:
 	var players: Array = []
 	for row in db.query_result:
 		players.append(PlayerData.new(
-			int(row["id"]), row["name"], int(row["role"]), int(row["team_id"]),
+			int(row["id"]), String(row["name_key"]), int(row["role"]), int(row["team_id"]),
 			int(row["field_hit"]), int(row["field_eva"]),
 			int(row["engage_hit"]), int(row["engage_eva"]),
 			int(row["atk_growth"]), int(row["hp_growth"]),
@@ -506,7 +506,7 @@ func load_match_data() -> Dictionary:
 	var mechs: Array = []
 	for row in db.query_result:
 		var md := MechData.new(
-			int(row["id"]), row["name"],
+			int(row["id"]), String(row["name_key"]),
 			int(row["hp"]), int(row["atk"]),
 			int(row.get("presence", 4)))
 		# 역할군은 기본값 -1 로 읽는다 — `role` 컬럼이 없는 옛 game.db 에서도
@@ -527,12 +527,13 @@ func load_match_data() -> Dictionary:
 
 
 # Loads the 8-team metadata list from game.db. Returns an Array indexed by
-# team_id (0..7) of {id, name, short_name} dicts. Falls back to a synthesized
-# placeholder list if the table is missing (e.g. before first Rebuild game.db).
+# team_id (0..7) of {id, name_key, short_name_key} dicts — l10n keys only (D7).
+# Falls back to a placeholder list with empty keys if the table is missing (e.g.
+# before first Rebuild game.db); `team_name` then shows the id instead.
 func _load_team_meta() -> Array:
 	var fallback: Array = []
 	for t in TEAM_COUNT:
-		fallback.append({"id": t, "name": "Team %d" % t, "short_name": "T%d" % t})
+		fallback.append({"id": t, "name_key": "", "short_name_key": ""})
 
 	var db := SQLite.new()
 	db.path = db_path()
@@ -555,16 +556,16 @@ func _load_team_meta() -> Array:
 		var tid: int = int(row["id"])
 		if tid >= 0 and tid < meta.size():
 			meta[tid] = {
-				"id":         tid,
-				"name":       String(row["name"]),
-				"short_name": String(row["short_name"]),
+				"id":             tid,
+				"name_key":       String(row["name_key"]),
+				"short_name_key": String(row["short_name_key"]),
 			}
 	db.close_db()
 	return meta
 
 
 # Loads the 4 INTL teams + 20 INTL pilots from game.db. Returns
-# {"teams": Array[{id,name,short_name}], "pilots": Array[PlayerData]}.
+# {"teams": Array[{id,name_key,short_name_key}], "pilots": Array[PlayerData]}.
 # On any failure (tables missing, empty, etc.) returns a synthesized fallback
 # pool so the campaign is still playable before the first Rebuild game.db.
 func _load_intl_pool() -> Dictionary:
@@ -591,9 +592,9 @@ func _load_intl_pool() -> Dictionary:
 	var teams: Array = []
 	for row in db.query_result:
 		teams.append({
-			"id":         int(row["id"]),
-			"name":       String(row["name"]),
-			"short_name": String(row["short_name"]),
+			"id":             int(row["id"]),
+			"name_key":       String(row["name_key"]),
+			"short_name_key": String(row["short_name_key"]),
 		})
 
 	db.query("SELECT * FROM intl_players ORDER BY team_id, role")
@@ -603,7 +604,7 @@ func _load_intl_pool() -> Dictionary:
 	var pilots: Array = []
 	for row in db.query_result:
 		pilots.append(PlayerData.new(
-			int(row["id"]), row["name"], int(row["role"]), int(row["team_id"]),
+			int(row["id"]), String(row["name_key"]), int(row["role"]), int(row["team_id"]),
 			int(row["field_hit"]), int(row["field_eva"]),
 			int(row["engage_hit"]), int(row["engage_eva"]),
 			int(row["atk_growth"]), int(row["hp_growth"])))
@@ -615,25 +616,65 @@ func _load_intl_pool() -> Dictionary:
 
 # Synthesized 4-team / 20-pilot INTL pool (avg stat ~80, mild tier spread).
 # Used only when the intl_* tables are missing — a real campaign reads from DB.
+# Names are empty keys: `team_name` / `PlayerData.name` then show nothing
+# localized (the id is the only identity — no display strings in state, D7).
 func _synth_intl_pool() -> Dictionary:
-	var role_names: Array = ["Top", "Jng", "Mid", "Sup", "Adc"]
-	var team_names: Array = [
-		{"id": 100, "name": "Intl Alpha",  "short_name": "IA"},
-		{"id": 101, "name": "Intl Bravo",  "short_name": "IB"},
-		{"id": 102, "name": "Intl Charlie","short_name": "IC"},
-		{"id": 103, "name": "Intl Delta",  "short_name": "ID"},
-	]
+	var team_names: Array = []
+	for ti in 4:
+		team_names.append({"id": 100 + ti, "name_key": "", "short_name_key": ""})
 	var tier_avg: Array = [86, 80, 78, 72]   # one tier per team, descending
 	var pilots: Array = []
 	var pid: int = 100
 	for ti in 4:
 		var avg: int = tier_avg[ti]
 		for r in 5:
-			pilots.append(PlayerData.new(pid, "%s %s" % [team_names[ti]["short_name"], role_names[r]],
-					r, team_names[ti]["id"],
+			pilots.append(PlayerData.new(pid, "", r, team_names[ti]["id"],
 					avg, avg, avg, avg, avg))
 			pid += 1
 	return {"teams": team_names, "pilots": pilots}
+
+
+## 팀 표시 이름 — 리그 8팀(0..7)과 국제전 4팀(100..) 모두. `team_meta` /
+## `intl_team_meta` 의 `name_key` 를 현재 로케일로 푼다. 메타에 없거나 key 가
+## 비었으면(DB 없이 만든 대체 메타) id 를 그대로 보인다.
+func team_name(team_id: int) -> String:
+	var key: String = String(_team_meta_entry(team_id).get("name_key", ""))
+	if key.is_empty():
+		return str(team_id)
+	return Loc.t(key)  # l10n-dynamic: name.team.*.name name.intl_team.*.name
+
+
+## 팀 약칭 — `team_name` 과 같은 규칙.
+func team_short_name(team_id: int) -> String:
+	var key: String = String(_team_meta_entry(team_id).get("short_name_key", ""))
+	if key.is_empty():
+		return str(team_id)
+	return Loc.t(key)  # l10n-dynamic: name.team.*.short name.intl_team.*.short
+
+
+## 런 선수 풀(`all_pilots` · `intl_pilots`)에서 선수 표시 이름. 세이브된 기록(훈련 로그
+## 등)은 `pilot_id` 만 들고 있다가 이것으로 푼다(D7). 없는 id 는 "#<id>".
+func pilot_name(pilot_id: int) -> String:
+	for list_key in ["all_pilots", "intl_pilots"]:
+		for raw in (season_state.get(list_key, []) as Array):
+			var pd := raw as PlayerData
+			if pd != null and pd.id == pilot_id:
+				return pd.name
+	return "#%d" % pilot_id
+
+
+func _team_meta_entry(team_id: int) -> Dictionary:
+	var lists: Array = [season_state.get("team_meta", []), season_state.get("intl_team_meta", [])]
+	for list in lists:
+		for raw in (list as Array):
+			if typeof(raw) == TYPE_DICTIONARY and int((raw as Dictionary).get("id", -1)) == team_id:
+				return raw
+	# 런이 열리기 전(런 준비 · 컬렉션 · 감독 탭)은 team_meta 가 비어 있다 — 같은
+	# key 를 든 팀 패키지 표(`teams.csv`)에서 찾는다.
+	for raw in RunRules.team_packages():
+		if int((raw as Dictionary).get("id", -1)) == team_id:
+			return raw
+	return {}
 
 
 # ── Save System ──────────────────────────────────────────────────────────────
@@ -648,7 +689,7 @@ var use_test_run: bool = true
 # Each entry mirrors a row from the cards table. CardPhaseManager pulls 6 random
 # entries per pilot at match start, wraps each in a CardData instance, and tags
 # it with the owning PilotData (시전자 rule).
-var card_pool_bs: Array = []  # Array of {id,name,cost,uses,cast_method,target,cast_range,area,keyword,effect,description,scope,pool,card_type,card_cat,excl_group,charge_max}
+var card_pool_bs: Array = []  # Array of {id,name_key,cost,uses,cast_method,target,cast_range,area,keyword,effect,description_key,scope,pool,card_type,card_cat,excl_group,charge_max} — *_key = l10n key
 
 
 func _ready() -> void:
@@ -670,7 +711,7 @@ func _load_card_pool_bs() -> void:
 	for row in db.query_result:
 		card_pool_bs.append({
 			"id":          int(row["id"]),
-			"name":        String(row["name"]),
+			"name_key":    String(row["name_key"]),
 			"cost":        int(row["cost"]),
 			"uses":        int(row["uses"]),
 			"cast_method": String(row["cast_method"]),
@@ -679,7 +720,7 @@ func _load_card_pool_bs() -> void:
 			"area":        int(row["area"]),
 			"keyword":     String(row["keyword"]),
 			"effect":      String(row["effect"]),
-			"description": String(row["description"]),
+			"description_key": String(row["description_key"]),
 			# scope / pool are read with defaults so a game.db built before these
 			# columns existed still loads — every card just reads as "any / in pool".
 			"scope":       String(row.get("scope", "any")),
@@ -862,7 +903,7 @@ func _slot_candidates(pos: String, cats: Array, taken: Array, claimed: Dictionar
 # `pilot_skills` 테이블 그대로. 키는 스킬 id 이고 값은 그 행의 Dictionary 다.
 # `players.skill_id` 가 이 표를 가리킨다 — 모브 파일럿은 -1 이라 아무것도
 # 가리키지 않는다.
-var pilot_skills: Dictionary = {}   # int id → {id,key,name,role,type,p1,p2,keyword,description}
+var pilot_skills: Dictionary = {}   # int id → {id,key,name_key,role,type,p1,p2,keyword,description_key} — *_key = l10n key
 
 
 func skill_def(skill_id: int) -> Dictionary:
@@ -888,13 +929,13 @@ func _load_pilot_skills() -> void:
 		pilot_skills[int(row["id"])] = {
 			"id":          int(row["id"]),
 			"key":         String(row["key"]),
-			"name":        String(row["name"]),
+			"name_key":    String(row["name_key"]),
 			"role":        int(row["role"]),
 			"type":        String(row["type"]),
 			"p1":          int(row["p1"]),
 			"p2":          int(row["p2"]),
 			"keyword":     String(row["keyword"]),
-			"description": String(row["description"]),
+			"description_key": String(row["description_key"]),
 		}
 	db.close_db()
 	print("GameManager: pilot skills loaded — %d skills" % pilot_skills.size())
@@ -907,7 +948,7 @@ func _load_pilot_skills() -> void:
 #
 # 문법 해석은 여기서 하지 않는다 — `TrainingTile.from_def()` 가 한 행을 타일
 # 하나로 조립한다. 이젠은 DB 행을 그대로 나르는 자리다(카드 풀과 같은 규칙).
-var training_tiles: Array = []   # Array of {id,name,grade,shape,exp,effect}
+var training_tiles: Array = []   # Array of {id,name_key,grade,shape,exp,effect} — name_key = l10n key
 
 
 ## 타일 id 로 한 행을 찾는다. 없으면 빈 Dictionary — 세이브에 남은 타일을
@@ -937,7 +978,7 @@ func _load_training_tiles() -> void:
 	for row in db.query_result:
 		training_tiles.append({
 			"id":          String(row["id"]),
-			"name":        String(row["name"]),
+			"name_key":    String(row["name_key"]),
 			"grade":       int(row["grade"]),
 			"shape":       String(row["shape"]),
 			"exp":         String(row["exp"]),
@@ -959,7 +1000,7 @@ func _load_training_tiles() -> void:
 #   • `mech_card_defs` — 카드 id → 행 하나 (효과가 카드를 **지목해** 만들 때.
 #     `gen_hand:13` 처럼 id 로 부르는 절이 열 개가 넘어서 매번 배열을 뒤지면
 #     같은 선형 탐색이 카드 한 장마다 다시 돈다)
-var mech_passives:  Dictionary = {}   # int mech_id → {id,mech_id,key,name,p1,p2,keyword,description}
+var mech_passives:  Dictionary = {}   # int mech_id → {id,mech_id,key,name_key,p1,p2,keyword,description_key} — *_key = l10n key
 var mech_cards:     Dictionary = {}   # int mech_id → Array of card def Dictionaries
 var mech_card_defs: Dictionary = {}   # int card id → card def Dictionary
 
@@ -979,27 +1020,6 @@ func mech_card_def(card_id: int) -> Dictionary:
 	return mech_card_defs.get(card_id, {})
 
 
-var _card_costs_by_name: Dictionary = {}
-
-
-## Card name → base cost over `card_pool_bs` and `mech_card_defs` (pilot cards win
-## a name clash). Built lazily once and cached — feeds the inline cost icon that
-## `StrategyIcon.fill_rich(..., card_costs)` puts before `[card name]`.
-func card_costs_by_name() -> Dictionary:
-	if not _card_costs_by_name.is_empty():
-		return _card_costs_by_name
-	for raw in card_pool_bs:
-		var def: Dictionary = raw as Dictionary
-		_card_costs_by_name[String(def.get("name", ""))] = int(def.get("cost", 0))
-	for raw in mech_card_defs.values():
-		var mdef: Dictionary = raw as Dictionary
-		var nm: String = String(mdef.get("name", ""))
-		if not _card_costs_by_name.has(nm):
-			_card_costs_by_name[nm] = int(mdef.get("cost", 0))
-	_card_costs_by_name.erase("")
-	return _card_costs_by_name
-
-
 func _load_mech_skills() -> void:
 	var db := SQLite.new()
 	db.path = db_path()
@@ -1017,11 +1037,11 @@ func _load_mech_skills() -> void:
 				"id":          int(row["id"]),
 				"mech_id":     int(row["mech_id"]),
 				"key":         String(row["key"]),
-				"name":        String(row["name"]),
+				"name_key":    String(row["name_key"]),
 				"p1":          int(row["p1"]),
 				"p2":          int(row["p2"]),
 				"keyword":     String(row["keyword"]),
-				"description": String(row["description"]),
+				"description_key": String(row["description_key"]),
 			}
 	db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='mech_cards'")
 	if not db.query_result.is_empty():
@@ -1030,7 +1050,7 @@ func _load_mech_skills() -> void:
 			var def: Dictionary = {
 				"id":          int(row["id"]),
 				"mech_id":     int(row["mech_id"]),
-				"name":        String(row["name"]),
+				"name_key":    String(row["name_key"]),
 				"count":       int(row["count"]),
 				"cost":        int(row["cost"]),
 				"cast_method": String(row["cast_method"]),
@@ -1041,7 +1061,7 @@ func _load_mech_skills() -> void:
 				"charge_max":  int(row.get("charge_max", 0)),
 				"effect":      String(row["effect"]),
 				"trigger":     String(row.get("trigger", "")),
-				"description": String(row["description"]),
+				"description_key": String(row["description_key"]),
 			}
 			mech_card_defs[int(row["id"])] = def
 			if not mech_cards.has(int(row["mech_id"])):

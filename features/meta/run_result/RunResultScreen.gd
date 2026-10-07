@@ -17,7 +17,7 @@ extends Control
 # 하단 바는 평소 `로비로`, 로비에서 런을 포기하고 왔으면(`outcome == "abandon"`)
 # `새 런`(→ 런 준비). 결과가 비어 있으면(씬을 바로 연 경우) 빈 상태 한 장.
 #
-# 결과 딕셔너리만으로 그린다 — 표시용 키(`team_name` · `scenario_name` · `pilots` ·
+# 결과 딕셔너리만으로 그린다 — 표시용 키(`team_name` · `pilots` ·
 # `breakdown` · `phases_cleared`)를 `RunResult.build_result` 가 미리 담아 둔다.
 
 const LOBBY_SCENE: String = "res://scenes/Lobby.tscn"
@@ -87,7 +87,9 @@ func _fill_header() -> void:
 	title.add_theme_color_override("font_color", color)
 
 	var parts: Array = []
-	var scen: String = String(_result.get("scenario_name", ""))
+	var scen: String = ""
+	if _result.has("scenario"):
+		scen = Loc.t(String(RunRules.scenario(int(_result["scenario"])).get("name_key", "")))  # l10n-dynamic: scenario.*.name
 	var team: String = String(_result.get("team_name", ""))
 	if scen != "":
 		parts.append(scen)
@@ -145,7 +147,7 @@ func _fill_unlocked_traits_card() -> void:
 		var sign_chip: Panel = row.get_node("%Sign")
 		_paint_chip(sign_chip, OutgameTheme.POSITIVE if pos else OutgameTheme.NEGATIVE)
 		(row.get_node("%SignText") as Label).text = "+" if pos else "−"
-		(row.get_node("%Name") as Label).text = String(r.get("name", "#%d" % tid))
+		(row.get_node("%Name") as Label).text = TraitSystem.name_of(tid)
 		(row.get_node("%Desc") as Label).text = TraitSystem.desc_of(tid)
 		var rarity: int = int(r.get("rarity", 0))
 		_paint_chip(row.get_node("%Rarity"), TraitUi.rarity_color(rarity))

@@ -58,9 +58,6 @@ static var _formula_re: RegEx = null
 ## 전투 중에만 유효한 값 공급자 — `CardPhaseManager` 가 트리에 들어오면 걸고
 ## 나가면 풀린다(객체가 해제되면 `is_valid()` 도 false). `func(cd) -> Dictionary`.
 static var live_vars: Callable = Callable()
-static var _special_re: RegEx = null
-## 특수 키워드 중 카드 이름 → 그 카드(`CardData`, 없으면 null). 이름으로 한 번 찾는다.
-static var _ref_cache: Dictionary = {}
 
 
 ## 판 배경 — 테두리 없는 둥근 판. 아웃게임은 흰 판 + 그림자, 인게임은 어두운 판 +
@@ -146,12 +143,13 @@ static func build(data: CardData, width: float, light: bool = false,
 		desc_y += attr_h + 4.0
 	# 설명문은 "전략 점수" · "비용" 앞에 아이콘이 서므로 RichTextLabel 이다.
 	var desc_text: String = resolve_text(data, live)
-	var desc_h: float = _text_height(StrategyIcon.measure_text(desc_text),
+	var desc_refs: Array = CardData.ref_entries(data.description_key)
+	var desc_h: float = _text_height(StrategyIcon.measure_text(desc_text, desc_refs),
 			inner_w, DESC_FONT)
 	var tgt: Dictionary = target_info(data)
 	var desc := StrategyIcon.make_rich_label(desc_text, DESC_FONT, desc_col,
 			_kw_color(light), _knock_color(light), tgt["color"], tgt["key"],
-			_special_color(light))
+			_special_color(light), desc_refs)
 	desc.position = Vector2(PAD, desc_y)
 	desc.size = Vector2(inner_w, desc_h)
 	box.add_child(desc)
@@ -168,7 +166,7 @@ static func build(data: CardData, width: float, light: bool = false,
 		if n["card"] != null:
 			refs.append(n["card"])
 		elif n["special"]:
-			specials.append("[%s]: %s" % [n["title"], n["note"]])
+			specials.append(n)
 		else:
 			lines.append("%s: %s" % [n["title"], n["note"]])
 	if not lines.is_empty():
@@ -180,12 +178,15 @@ static func build(data: CardData, width: float, light: bool = false,
 		box.add_child(note_lbl)
 		bottom += GAP + note_h
 	# 효과 용어 풀이 — 용어 앞에 그 아이콘이 서도록 설명문과 같은 RichTextLabel.
-	for sp in specials:
-		var sp_h: float = _text_height(StrategyIcon.measure_text(sp), inner_w, NOTE_FONT)
+	for n_raw in specials:
+		var n: Dictionary = n_raw
+		var sp: String = "[%s]: %s" % [n["title"], n["note"]]
+		var sp_refs: Array = [n["ref"]]
+		var sp_h: float = _text_height(StrategyIcon.measure_text(sp, sp_refs), inner_w, NOTE_FONT)
 		var sp_lbl := StrategyIcon.make_rich_label(sp, NOTE_FONT,
 				OutgameTheme.TEXT_SUB if light else Color(0.70, 0.70, 0.74),
 				_kw_color(light), _knock_color(light), KeywordIcon.TARGET_ANY_COLOR,
-				KeywordIcon.TARGET, _special_color(light))
+				KeywordIcon.TARGET, _special_color(light), sp_refs)
 		sp_lbl.position = Vector2(PAD, bottom + GAP)
 		sp_lbl.size = Vector2(inner_w, sp_h)
 		box.add_child(sp_lbl)
@@ -216,22 +217,24 @@ static func build_keyword_panels(data: CardData, width: float,
 			out.append(build(n["card"] as CardData, width, light, "", null, false, 0.0, live))
 		else:
 			out.append(_build_note_panel(String(n["title"]), String(n["note"]), width,
-					light, bool(n["special"])))
+					light, n.get("ref", {}) as Dictionary))
 	return out
 
 
+## `special_ref` — 특수 키워드 풀이 판이면 그 참조(`CardData.ref_entries` 항목), 아니면 빈 값.
 static func _build_note_panel(title_text: String, note: String, width: float,
-		light: bool, special: bool = false) -> Panel:
+		light: bool, special_ref: Dictionary = {}) -> Panel:
 	var box := Panel.new()
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_theme_stylebox_override("panel", panel_style(light))
 	var inner_w: float = width - PAD * 2.0
 	var y: float = PAD
-	if special:
+	if not special_ref.is_empty():
 		# 특수 키워드 제목은 설명문과 같은 길로 — 아이콘 + 특수 키워드 색.
 		var rt := StrategyIcon.make_rich_label("[%s]" % title_text, KW_FONT,
 				_special_color(light), _kw_color(light), _knock_color(light),
-				KeywordIcon.TARGET_ANY_COLOR, KeywordIcon.TARGET, _special_color(light))
+				KeywordIcon.TARGET_ANY_COLOR, KeywordIcon.TARGET, _special_color(light),
+				[special_ref])
 		rt.position = Vector2(PAD, y)
 		rt.size = Vector2(inner_w, float(KW_FONT) * 1.4)
 		box.add_child(rt)
@@ -250,64 +253,45 @@ static func _build_note_panel(title_text: String, note: String, width: float,
 	return box
 
 
-## 풀이 판 목록 `[{title, note, special, card}, ...]` — 풀이가 있는 키워드가 먼저,
-## 그다음 설명문에 나온 순서대로 특수 키워드. 특수 키워드는 `CardData.SPECIAL_NOTES`
-## 의 용어면 풀이 한 줄, 아니면 카드 이름으로 보고 `card` 에 그 카드를 싣는다(찾지
-## 못한 이름은 빠진다). 카드 이름이 자기 자신이면 풀지 않는다(용어는 푼다 — [추적]).
+## 풀이 판 목록 `[{title, note, special, card, ref}, ...]` — 풀이가 있는 키워드가 먼저,
+## 그다음 설명문에 나온 순서대로 특수 키워드. `[x]` 는 **표시 글자가 아니라 설명 key 의
+## 참조 key**(`special_terms` = `CardData.ref_entries`)로 푼다: 특수 키워드면 풀이 한 줄
+## (`CardData.SPECIAL_NOTES`), 카드 이름이면 `card` 에 그 카드를 싣는다(찾지 못한 참조는
+## 빠진다). 카드 이름이 자기 자신(같은 이름 key)이면 풀지 않는다(용어는 푼다 — [추적]).
 static func _keyword_notes(data: CardData) -> Array:
 	var out: Array = []
 	for kw in data.keyword_list():
 		var note: String = data.keyword_note(String(kw))
 		if not note.is_empty():
 			out.append({"title": data.keyword_label(String(kw)), "note": note,
-					"special": false, "card": null})
-	for term in special_terms(data):
-		if CardData.SPECIAL_NOTES.has(term):
-			out.append({"title": term, "note": String(CardData.SPECIAL_NOTES[term]),
-					"special": true, "card": null})
-		else:
-			var ref: CardData = card_by_name(term) if term != data.card_name else null
-			if ref != null:
-				out.append({"title": term, "note": "", "special": true, "card": ref})
+					"special": false, "card": null, "ref": {}})
+	for raw in special_terms(data):
+		var ref: Dictionary = raw
+		var sp: String = String(ref["special"])
+		if CardData.SPECIAL_NOTES.has(sp):
+			out.append({"title": String(ref["text"]),
+					"note": Loc.t(String(CardData.SPECIAL_NOTES[sp])),  # l10n-dynamic: keyword.*.note
+					"special": true, "card": null, "ref": ref})
+		elif ref["card"] != null and String(ref["key"]) != data.name_key:
+			out.append({"title": String(ref["text"]), "note": "", "special": true,
+					"card": ref["card"], "ref": ref})
 	return out
 
 
-## 설명문의 특수 키워드(`[이름]` 의 이름) — 나온 순서대로, 겹침 없이.
+## 설명문의 `[x]` 참조(`CardData.ref_entries` 항목) — 나온 순서대로, 같은 key 는 한 번.
+## 설명 key 가 없는 카드(손으로 만든 카드)는 빈 배열.
 static func special_terms(data: CardData) -> Array:
 	var out: Array = []
 	if data == null:
 		return out
-	if _special_re == null:
-		_special_re = RegEx.create_from_string("\\[([^\\]]+)\\]")
-	for m in _special_re.search_all(resolve_text(data)):
-		var term: String = m.get_string(1).strip_edges()
-		if not term in out:
-			out.append(term)
+	var seen: Dictionary = {}
+	for raw in CardData.ref_entries(data.description_key):
+		var ref: Dictionary = raw
+		if seen.has(ref["key"]):
+			continue
+		seen[ref["key"]] = true
+		out.append(ref)
 	return out
-
-
-## 이름으로 카드 한 장 — 메크 카드 표를 먼저, 다음 파일럿 카드 표. 결과(없음 포함)는
-## 캐시한다. 오토로드가 없으면(에디터 도구 등) null.
-static func card_by_name(card_name: String) -> CardData:
-	if _ref_cache.has(card_name):
-		return _ref_cache[card_name] as CardData
-	var tree := Engine.get_main_loop() as SceneTree
-	var gm: Node = tree.root.get_node_or_null("GameManager") if tree != null else null
-	if gm == null:
-		return null
-	var found: Dictionary = {}
-	for d in (gm.mech_card_defs as Dictionary).values():
-		if String((d as Dictionary).get("name", "")) == card_name:
-			found = d
-			break
-	if found.is_empty():
-		for d in gm.card_pool_bs:
-			if String((d as Dictionary).get("name", "")) == card_name:
-				found = d
-				break
-	var cd: CardData = CardData.from_def(found) if not found.is_empty() else null
-	_ref_cache[card_name] = cd
-	return cd
 
 
 ## 판 안에 끼운 카드 설명판 — 바깥 판과 바탕이 같으면 경계가 안 보이므로 한 톤 띄운다.

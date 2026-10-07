@@ -49,7 +49,7 @@ Autoloads are fetched via `Engine.get_main_loop().root` (static class, no `@onre
   `mvp` = per-pilot sum over `run_stats.mvp_count` phases; `pom` = `run_stats.pom_by_phase`
   entries whose pilot is mine; `achievements` = `{pid: {mvp, pom}}` for all 5.
 - Extra display keys beyond §10.3: `id` (unique per settlement — the profile's idempotency key),
-  `phases_cleared`, `breakdown`, `team_name`, `scenario_name`, `pilots` (`[{id, name, role}]`
+  `phases_cleared`, `breakdown`, `team_name`, `pilots` (`[{id, name, role}]`
   in `GameEnums.role_seat` order) — the screen draws without `season_state`.
 - `true_endings` (M7) — **only on a clear**: `MentalSystem.true_ending_pilots(state)` (my pilots
   with outings ≥ `TRUE_ENDING_OUTINGS`). Absent on fail / abandon. `ProfileManager.apply_run_result`
@@ -90,7 +90,7 @@ RunResult (Control, full rect, theme = OutgameTheme.tres, script RunResultScreen
   card / chip visibility; safe area — `indent_to_safe_top(self)`, `%Scroll.offset_bottom` raised by
   the bottom inset, `OutgameTheme.fit_bottom_bar(%BottomButton)` (bar rect down over the inset, text
   lifted above it — the square shape is the `BarPrimaryButton` variation).
-- Header: 런 클리어 (amber) / 런 실패 (red) / 런 포기 (grey), scenario · team, and a
+- Header: 런 클리어 (amber) / 런 실패 (red) / 런 포기 (grey), scenario (`Loc.t` of `RunRules.scenario(result.scenario).name_key`) · team, and a
   "테스트 런 — 프로필 미반영" chip when `test_run`.
 - Scroll body (ends 16 above the bottom bar): when `true_endings` is
   non-empty a **진엔딩** card leads (amber-tinted; per pilot a large amber-ringed portrait, name,

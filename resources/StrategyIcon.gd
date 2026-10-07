@@ -263,13 +263,18 @@ static func _duration_end(text: String, i: int) -> int:
 ## `icon_color` 는 키워드 아이콘 색, `knock` 은 판 바탕색(필중의 원을 파낸다),
 ## `target_color` 는 대상 아이콘 색(카드가 겨누는 편), `target_key` 는 "대상" 앞에
 ## 설 아이콘(사람 `TARGET` / 타일 `TILE` — `CardDescBox.target_info`).
+##
+## `refs` 는 그 설명문 key 의 `[x]` 참조(`CardData.ref_entries`) — `[x]` 가 특수 키워드인지
+## 카드 이름인지는 표시 글자가 아니라 이 목록으로 정한다(`CardData.ref_for`). 특수 키워드면
+## 그 아이콘이 앞에 서고, `card_costs` 면 카드 이름 앞에 그 카드의 비용 리본이 선다.
+## `card_meta` 면 리본 + 이름이 meta 한 덩어리가 된다(data = 카드 이름 key).
 static func fill_rich(rtl: RichTextLabel, text: String, font_size: int,
 		icon_color: Color = Color(0.55, 0.85, 1.0),
 		knock: Color = Color(0.08, 0.08, 0.12),
 		target_color: Color = KeywordIcon.TARGET_ANY_COLOR,
 		target_key: String = KeywordIcon.TARGET,
 		special_color: Color = KeywordIcon.SPECIAL_COLOR_DARK,
-		card_costs: Dictionary = {}, card_meta: bool = false) -> void:
+		refs: Array = [], card_costs: bool = false, card_meta: bool = false) -> void:
 	rtl.clear()
 	var icon_px: int = int(round(float(font_size) * 1.1))
 	var rib_h: int = int(round(float(font_size) * 1.2))
@@ -278,6 +283,7 @@ static func fill_rich(rtl: RichTextLabel, text: String, font_size: int,
 	# add_text, and RichTextLabel may break between two items — glue it on with a
 	# word joiner, as `keep_words` does inside one string.
 	var after_special: bool = false
+	var ref_idx: int = 0
 	for tok in _tokens(text):
 		if tok is String:
 			var plain: String = tok as String
@@ -292,28 +298,33 @@ static func fill_rich(rtl: RichTextLabel, text: String, font_size: int,
 		if kind == SPECIAL:
 			# 대괄호는 찍지 않는다 — 색이 경계를 대신한다. 효과 용어면 그 아이콘이
 			# 앞에 선다(키워드 아이콘 색).
-			var sp_key: String = String(KeywordIcon.SPECIAL_ICONS.get(word, ""))
+			var ref: Dictionary = CardData.ref_for(word, refs, ref_idx)
+			ref_idx += 1
+			var sp_key: String = String(KeywordIcon.SPECIAL_ICONS.get(
+					String(ref.get("special", "")), ""))
+			var ref_card: CardData = ref.get("card") as CardData
+			var with_cost: bool = card_costs and sp_key.is_empty() and ref_card != null
 			if not sp_key.is_empty():
 				var sp_tex: Texture2D = KeywordIcon.texture(sp_key, icon_px * 2, icon_color, knock)
 				if sp_tex != null:
 					rtl.add_image(sp_tex, icon_px, icon_px, Color.WHITE, INLINE_ALIGNMENT_CENTER)
 					rtl.add_text(NBSP)
-			elif card_costs.has(word):
+			elif with_cost:
 				# A card name — its cost on a miniature card-face ribbon in front.
-				# `card_meta`: ribbon + name become one meta span (data = card name)
+				# `card_meta`: ribbon + name become one meta span (data = name key)
 				# so the caller can find which card a press landed on.
 				if card_meta:
-					rtl.push_meta(word, RichTextLabel.META_UNDERLINE_NEVER)
+					rtl.push_meta(String(ref["key"]), RichTextLabel.META_UNDERLINE_NEVER)
 				var cost_h: int = int(round(float(font_size) * 1.2))
 				var cost_w: int = int(round(float(cost_h) * 0.78))
-				rtl.add_image(CostRibbon.number_texture(str(int(card_costs[word])),
+				rtl.add_image(CostRibbon.number_texture(str(ref_card.cost),
 						cost_w * 2, cost_h * 2), cost_w, cost_h, Color.WHITE,
 						INLINE_ALIGNMENT_CENTER)
 				rtl.add_text(NBSP)
 			rtl.push_color(special_color)
 			rtl.add_text(UiHelpers.keep_words(word.replace(" ", NBSP)))
 			rtl.pop()
-			if card_meta and sp_key.is_empty() and card_costs.has(word):
+			if card_meta and with_cost:
 				rtl.pop()
 			continue
 		if kind == "cost":
@@ -340,7 +351,7 @@ static func make_rich_label(text: String, font_size: int, color: Color,
 		target_color: Color = KeywordIcon.TARGET_ANY_COLOR,
 		target_key: String = KeywordIcon.TARGET,
 		special_color: Color = KeywordIcon.SPECIAL_COLOR_DARK,
-		card_costs: Dictionary = {}, card_meta: bool = false) -> RichTextLabel:
+		refs: Array = [], card_costs: bool = false, card_meta: bool = false) -> RichTextLabel:
 	var rtl := RichTextLabel.new()
 	rtl.bbcode_enabled = false
 	rtl.scroll_active = false
@@ -353,7 +364,7 @@ static func make_rich_label(text: String, font_size: int, color: Color,
 	rtl.add_theme_color_override("default_color", color)
 	rtl.add_theme_constant_override("line_separation", 0)
 	fill_rich(rtl, text, font_size, icon_color, knock, target_color, target_key,
-			special_color, card_costs, card_meta)
+			special_color, refs, card_costs, card_meta)
 	return rtl
 
 
@@ -361,8 +372,9 @@ static func make_rich_label(text: String, font_size: int, color: Color,
 ## 아이콘은 두 개, 리본은 한 개). `get_multiline_string_size` 는 이미지를 모르므로,
 ## 아이콘이 들어간 줄이 접히는 자리를 맞추려면 그만큼의 폭을 미리 넣어 재야 한다.
 ## 줄바꿈 규칙(`keep_words` · 줄 안 끊김 공백)도 `fill_rich` 와 같아야 한다.
-static func measure_text(text: String, card_costs: Dictionary = {}) -> String:
+static func measure_text(text: String, refs: Array = [], card_costs: bool = false) -> String:
 	var t: String = ""
+	var ref_idx: int = 0
 	for tok in _tokens(text):
 		if tok is String:
 			t += tok as String
@@ -370,9 +382,11 @@ static func measure_text(text: String, card_costs: Dictionary = {}) -> String:
 		var kind: String = String((tok as Array)[0])
 		if kind == SPECIAL:
 			var term: String = String((tok as Array)[1])
-			if KeywordIcon.SPECIAL_ICONS.has(term):
+			var ref: Dictionary = CardData.ref_for(term, refs, ref_idx)
+			ref_idx += 1
+			if KeywordIcon.SPECIAL_ICONS.has(String(ref.get("special", ""))):
 				t += "\u0001" + NBSP
-			elif card_costs.has(term):
+			elif card_costs and ref.get("card") != null:
 				t += "\u0002" + NBSP
 			t += term.replace(" ", NBSP)
 			continue
@@ -382,11 +396,11 @@ static func measure_text(text: String, card_costs: Dictionary = {}) -> String:
 
 
 ## Height a `make_rich_label` label of width `width` needs for `text` — measures
-## `measure_text(text, card_costs)` the same way `CardDescBox._text_height` does.
+## `measure_text(text, refs, card_costs)` the same way `CardDescBox._text_height` does.
 static func rich_height(text: String, width: float, font_size: int,
-		card_costs: Dictionary = {}) -> float:
+		refs: Array = [], card_costs: bool = false) -> float:
 	var f: Font = ThemeDB.fallback_font
-	var t: String = measure_text(text, card_costs)
+	var t: String = measure_text(text, refs, card_costs)
 	if f == null or t.is_empty():
 		return float(font_size) * 1.4
 	var brk: int = (TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND

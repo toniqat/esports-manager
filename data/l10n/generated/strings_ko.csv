@@ -386,6 +386,7 @@ tx_HHR746K1D3,충전
 tx_FGE0Q8F8K1,손에 들어올 때마다 토큰 +1 (최대 {max})
 tx_VDYX47TMCF,재배치
 tx_HN02EYXPVV,사용 후 손 맨 왼쪽으로 돌아온다
+tx_6ABJNCRSQX,충전 {max}
 tx_J99WKD5PN8,운영형
 tx_KQSXCRDMQT,실전형
 tx_T2Z72WAY5Q,조직 운영에 밝은 감독 — 관리 · 멘탈 쪽으로 조금 기운 고른 분배
@@ -420,6 +421,239 @@ tx_D3R65NAFJ7,이번 작전 단계 동안 공격 명중 시마다 대상에게 �
 tx_5SM31D1TN4,자신 레인의 포탑이 파괴될 때마다 덱에 [미사일] 1장 생성
 tx_EZ2X9YFAAV,교전 중 공격이 모든 적을 대상으로 함 (이 메크의 공격력은 다른 원딜 메크의 절반)
 tx_8F16MH3WCH,전장 공격 명중 시 공격력 +1
+tx_6B0387STJ7,요즘 훈련이 조금 버거워요.
+tx_AM70RNN3NK,감독님은 어떻게 생각하세요?
+tx_1B2FTBE9GG,잘하고 있어. 조금만 더 버티자.
+tx_WJ5TREQ3BC,힘들면 강도를 조절해 줄게.
+tx_1X2B47DWQ3,프로라면 견뎌야지.
+tx_48N9MF6RV5,네… 감독님 말 믿고 버텨 볼게요.
+tx_WP06YDK06B,말은 쉽죠.
+tx_VV0A0EVHAY,정말요? 그럼 조금 숨 돌릴 수 있겠네요.
+tx_ED10T0HFR0,…맞는 말이에요. 더 해 볼게요.
+tx_K1V8QJF4Y5,알겠습니다. (표정이 굳는다)
+tx_1CPVWDA18R,감독님 혹시 시간 괜찮으세요?
+tx_JW3ZR4FH5H,지난 경기 제 플레이 어땠는지 궁금해서요.
+tx_5DEH79C5GB,침착했어. 그대로만 가자.
+tx_YAASP14DWH,몇 군데 아쉬웠어. 같이 영상 보자.
+tx_5BHYSFRM5N,결과로 말하면 되지.
+tx_ZMTV822S4Y,다행이다. 계속 그렇게 해 볼게요.
+tx_9BHCVW9YNG,같이 봐 주시는 거예요? 좋아요!
+tx_4K7PMF0CTS,네… 지적만 듣는 건 좀 힘드네요.
+tx_2JF1XQTRBV,…네.
+tx_V6GPYM35Q9,*{name} 선수가 숙소 거실에 혼자 앉아 창밖을 보고 있다.
+tx_S9N27KZ07P,요즘 좀 생각이 많아서요.
+tx_EJ7VCANJPA,무슨 일 있어? 천천히 말해 봐.
+tx_RP666CH6XT,컨디션 관리도 실력이야.
+tx_BP677QYFMD,내일 얘기하자. 오늘은 쉬어.
+tx_NYCC2N1YN7,들어 주셔서 감사해요. 한결 낫네요.
+tx_YSM850FB2Q,아니에요. 그냥 피곤한가 봐요.
+tx_35FX61X2B1,네. 알고 있어요.
+tx_ZE0YD1YJJ1,네 감독님. 푹 잘게요.
+tx_FYCJJ621RP,감독님한테만 하는 말인데요.
+tx_44WNKWCF0Q,저 이번 시즌에 꼭 우승하고 싶어요.
+tx_YXQ9JZ99CX,같이 하자. 나도 같은 마음이야.
+tx_ZW7ABD3PK6,욕심은 좋지만 하나씩 가자.
+tx_5RBZ3H1QK4,좋아요. 다음 경기 보여 드릴게요!
+tx_CZTG20MJRZ,하나씩… 네 그럴게요.
+tx_SZSZ9SK6PP,…부르셨어요?
+tx_CC0C262GQV,*{name} 선수가 시선을 피한다.
+tx_EQVJZVZWBA,요즘 어떻게 지내나 해서.
+tx_ARHE237C2Y,내가 뭐 서운하게 한 거 있어?
+tx_W4H0DGS42F,훈련 태도가 좀 아쉬워.
+tx_CRAKZ7QZZF,그냥 그래요.
+tx_JAGWYSADZH,…사실 좀 있었어요. 말해도 돼요?
+tx_CFGTJNDY96,없어요. 괜찮아요.
+tx_1C336S6DGY,…고칠게요.
+tx_GY5JEJMNF7,(대답이 없다)
+tx_RGWF3DMKV7,어제 경기는… 제 탓이에요.
+tx_23B1M1PJV3,제가 한타를 망쳤어요.
+tx_JR4PPVR44J,팀 경기야. 혼자 짊어지지 마.
+tx_KNMC8SJ4F6,그래서 다음엔 어떻게 할 건데?
+tx_M49CCEXF3J,감독님… 고마워요.
+tx_BFX6P7HZC6,그래도 제 잘못인걸요.
+tx_9P56A227PG,교전 각을 다시 볼게요. 다음엔 안 놓쳐요.
+tx_9K2WQJFBV6,지난 경기 이겼잖아요!
+tx_Z4YG0SF1X4,오늘 저녁은 좀 쉬어도 돼요?
+tx_WTGF97FE0Q,오늘은 쉬자. 잘했어.
+tx_S30MDGJ6Z5,이길 때 더 다져야지.
+tx_G7WD30HCYJ,역시 감독님!
+tx_6KKJGVY753,…맞아요. 복기부터 할게요.
+tx_30HEHYEC9J,이겨도 쉬지를 못하네…
+tx_SSAGPXXYD9,감독님은 항상 차분하시네요.
+tx_FN975WS5YD,저도 그렇게 되고 싶어요.
+tx_2NV4JX11MT,루틴을 지키면 돼. 같이 짜 볼까?
+tx_EJYBH0Y9CX,나도 속으론 떨려.
+tx_P67P37P2RB,루틴이요? 좋아요 해 볼게요.
+tx_XRK13YD0CN,감독님도요? 의외네요.
+tx_958PSH9C4Y,감독님 현역 때 얘기 해 주세요!
+tx_CCE94CWN8B,그때도 이렇게 연습했어요?
+tx_ZW8N3789R1,더 했지. 하루 열네 시간.
+tx_AWMY88ECD0,그땐 몰랐어. 너희는 나보다 낫다.
+tx_FHF5CMQCCH,와… 저도 질 수 없죠!
+tx_7NCJPD2KFD,그건 좀 무리 아닌가요…
+tx_E3WRWX701P,감독님이 그렇게 말해 주니까 힘나요.
+tx_T30BM4D7NT,*{name} 선수와 숙소 앞 분식집에 갔다.
+tx_1BPTG2NM2R,여기 떡볶이 진짜 맛있어요.
+tx_3EH8JA2G62,감독님이랑 밖에서 밥 먹는 거 처음이에요.
+tx_3A4EWPY145,자주 오자.
+tx_6YRE7VKYN5,맛있게 먹어. 오늘은 내가 산다.
+tx_MS9GKZDC9X,정말요? 약속이에요!
+tx_4ABM05400H,잘 먹겠습니다!
+tx_QEW41C5PV5,*{name} 선수와 오락실에 갔다.
+tx_F215SG8Y5W,감독님 현역 때 실력 보여 주세요!
+tx_DXQEAST8SV,*결과는 아슬아슬한 감독님 승.
+tx_Q9SR8VEEN1,아직 안 죽었지?
+tx_Y0GV1HHPP3,봐준 거야. 다음엔 진짜로 해.
+tx_MS3Y62CXMT,인정이요. 진짜 잘하시네요.
+tx_E0JMP0GP6W,다음엔 제가 이겨요!
+tx_JY2JHZH868,*{name} 선수와 한강을 걸었다.
+tx_Q5Q53B8P1T,바람 좋다…
+tx_SEFJHSWNT2,사실 프로 되기 전엔 여기 자주 왔어요.
+tx_0ZY64X9R03,그때 무슨 생각 했어?
+tx_CBJC9VMW6S,지금은 어때?
+tx_SF4YB14SGZ,언젠가 무대에 서고 싶다… 그거요.
+tx_83GHKYM5SD,지금은… 좋아요. 진짜로.
+tx_JKMD1GKD5W,*{name} 선수가 고른 작은 영화관.
+tx_9SEFVWVPSC,이 영화 꼭 같이 보고 싶었어요.
+tx_CZH49E2DAN,*영화가 끝나고 한참 말이 없다.
+tx_Y4CXB8RYV6,좋은 영화였다.
+tx_BH96SZD58F,너 울었지?
+tx_0BYKZP1PRM,그쵸? 감독님 취향일 줄 알았어요.
+tx_0X876SBFP8,"아, 아니거든요!"
+tx_51KW7319E7,*{name} 선수의 고향 근처 바닷가.
+tx_PA4SJ6BKAE,여기서 처음 게임 시작했어요. 저 PC방이요.
+tx_XFYXSZ3FTG,*간판은 낡았지만 불은 켜져 있다.
+tx_XHS612Q874,여기서부터 여기까지 왔구나.
+tx_5C7415QT47,들어가 볼까?
+tx_MZEKQ3RS1F,네. 감독님 덕분이에요.
+tx_7JAPTWKVHX,진짜요? 사장님 놀라시겠다!
+tx_77AXPMW95H,*늦은 밤 옥상. {name} 선수가 먼저 와 있었다.
+tx_D6YA3PDPNH,감독님. 저 이번 시즌 끝나면 꼭 하고 싶은 말이 있어요.
+tx_WRDN1XVZZ5,…지금 말하면 반칙이니까 우승하고 할게요.
+tx_EQJF45PDP6,그럼 꼭 우승해야겠네.
+tx_2D9WQGJ8YH,기다릴게.
+tx_6ZBVNZ8NR4,약속이에요.
+tx_KMG2EW0N0X,네. 꼭이요.
+tx_MBGM2ZWEDD,@부상
+tx_8ZVGT47WVM,*훈련 중 {name} 선수가 손목을 붙잡았다.
+tx_P8W2YF8PMR,괜찮아요… 조금 시큰한 정도예요.
+tx_8N7M33ZP7C,바로 병원 가자. 훈련은 쉬어.
+tx_VPB4H5J1BP,테이핑하고 오늘만 버티자.
+tx_Y8FD1VTS0Z,네… 빨리 나을게요.
+tx_4W79T0CX8T,생각보다 괜찮네요.
+tx_YYAGMCV506,악… 더 아파졌어요.
+tx_B2Q93RW7Z4,@슬럼프
+tx_D4SQ5DFND2,*{name} 선수의 연습 경기 성적이 며칠째 바닥이다.
+tx_EQP3GWM96R,…뭘 해도 안 돼요.
+tx_TG7THNN4QG,며칠 기본기만 하자.
+tx_Q1FV2X8RNS,하던 대로 해. 곧 돌아와.
+tx_JDRPB8YWAM,자리 경쟁 붙일 수도 있어.
+tx_1EJV84T1H9,기본기부터… 해 볼게요.
+tx_VEXRPYC2PK,그래도 안 되면요?
+tx_4SSD6DZS4Z,네 믿어 볼게요.
+tx_DTJAGMCKGN,…
+tx_CKGHVR0SS7,…지지 않을 거예요.
+tx_HGZQBAZ7CE,그렇게까지 말씀하셔야 해요?
+tx_Y60NQ9Z808,@갈등
+tx_21AEZSMMPT,*연습실에서 언성이 높아졌다. 한가운데 {name} 선수가 있다.
+tx_QPM52B1CQ1,제 콜을 아무도 안 들어요!
+tx_1FSCEG079P,다 같이 앉아서 얘기하자.
+tx_TV2MGKR3CG,{name} 말이 맞아. 콜은 따르자.
+tx_8Z2NK9BZ3A,둘 다 그만. 연습이나 해.
+tx_2ANDQGKPDE,…알겠어요. 얘기해 볼게요.
+tx_BD0ANHJMGB,얘기해도 똑같을 거예요.
+tx_5HEJ31QRAB,감사합니다.
+tx_F8C5EB6ACC,(문이 쾅 닫힌다)
+tx_KW7BT0XW1G,@향수병
+tx_4755JM4VQ0,*{name} 선수가 밤늦게 가족과 통화하며 울고 있었다.
+tx_S1HSSRZXMA,집에 한 번만 다녀오면 안 될까요?
+tx_58MDCSCB0J,하루 다녀와. 훈련은 걱정 마.
+tx_S0ME00XNSM,시즌 끝나고 꼭 보내 줄게.
+tx_CJK6DN3JKZ,고마워요 감독님!
+tx_638HVXV0ZQ,…네. 약속이에요.
+tx_C021KGFTKT,알겠어요.
+tx_6C7M733QT0,@악플
+tx_PNNT7KZ42X,*커뮤니티에 {name} 선수를 겨냥한 글이 쏟아졌다.
+tx_421P3JSMZD,신경 안 써요. …안 쓰려고요.
+tx_17B118FTKH,휴대폰은 당분간 내가 맡아 둘게.
+tx_P8E1Z1KYS4,팀 공식 입장 내자.
+tx_8GTPSGA6KK,실력으로 보여 주면 돼.
+tx_EESCKRWTYJ,오히려 편하네요.
+tx_2MWEH110YH,답답해요…
+tx_19F3DK53C0,감독님이 막아 주시는 거예요?
+tx_ZPCDJ7MW5Y,두고 보세요.
+tx_7PFW9DXPGN,그게 쉬우면 이러겠어요?
+tx_WWZK5T8X9T,@지각
+tx_GK5XQYZVTN,*{name} 선수가 오전 훈련에 한 시간 늦었다.
+tx_0HBCH20898,죄송해요! 알람을 못 들었어요.
+tx_MFDABPE69D,벌금이야. 규칙은 규칙.
+tx_2W6NHBBCTJ,다음부턴 조심해.
+tx_39X5R71A03,무슨 일 있었어?
+tx_8BP6R1YTZG,…네. 내겠습니다.
+tx_QQT6323FPF,감사합니다!
+tx_CV8JTSB1M8,사실 요즘 잠을 잘 못 자요.
+tx_QAABQBBNPM,그냥 늦잠이에요.
+tx_A1NG6K464D,@장비 고장
+tx_N6R1WMXWTC,*경기용 장비가 연습 도중 먹통이 됐다.
+tx_S9P310X56V,손에 익은 거라 바꾸기 싫은데…
+tx_37MR7MJF0D,새 장비로 바로 적응하자.
+tx_67TZA94HQ7,같은 모델 급히 구해 보자.
+tx_1SRJTR5B7D,생각보다 괜찮은데요?
+tx_FRHG14RTK7,손에 안 맞아요…
+tx_C38GZ3HXES,다행이다…!
+tx_TT907CKDT5,@리그 위클리
+tx_XFDVFZPHS6,이번 주도 시간 내주셔서 감사합니다 감독님.
+tx_9CJEG52Y0C,지난주 훈련 성과가 눈에 띄더군요. 이번 주 계획도 비슷하게 가시나요?
+tx_XM7JSR27W1,계획대로 갑니다. 흔들릴 이유가 없죠.
+tx_5C5XCDBQES,조금 바꿀 생각입니다. 아직 말씀드리긴 이르고요.
+tx_XJ9PE2ZZG4,그건 경기장에서 확인하시죠.
+tx_1XCTCK0BG9,@e스포츠 데일리
+tx_2NYB25EY7K,주말 경기 상대가 만만치 않다는 평이 많습니다.
+tx_P4R0XZ2718,솔직히 이길 자신 있으십니까?
+tx_NG79WN0VTX,저희 선수들을 믿습니다.
+tx_G064BA75JD,쉽지 않겠지만 준비한 게 있습니다.
+tx_ESGNJ1THF8,질문이 좀 무례하시네요.
+tx_HWJTJM0P5J,@게임 투데이
+tx_Q6HE23RFQK,팀 분위기는 어떻습니까?
+tx_JDXZ98RCXA,불화설도 돌던데요.
+tx_TXD7P8XPHT,가족 같은 분위기입니다.
+tx_BRYRHNDA5X,경쟁은 있지만 건강한 경쟁입니다.
+tx_34A2QNPWXP,근거 없는 소문엔 답하지 않겠습니다.
+tx_CGYN4JCTT2,@e스포츠 데일리
+tx_8FK3WR9VTJ,지난 경기 패배 원인을 어떻게 보십니까?
+tx_PYPNQ9R39M,제 준비가 부족했습니다.
+tx_RX6R6NM4D2,선수들 컨디션이 안 좋았습니다.
+tx_SGCC9FSCQ8,지나간 경기는 잊었습니다.
+tx_3MNR87MKPW,@리그 위클리
+tx_F7YY1EMPKY,지난 경기 MVP는 {name} 선수였습니다.
+tx_NJA6D2HRNY,칭찬 한마디 부탁드립니다.
+tx_HYT29E1S8S,{name}{eun} 우리 팀의 기둥입니다.
+tx_BM3185ZSQ1,한 경기 잘한 걸로는 부족합니다.
+tx_KKXMBSZ9TF,MVP는 팀 전체가 받은 겁니다.
+tx_KPMDCCZTEP,@게임 투데이
+tx_VZEFKAVWD5,{name} 선수 해외 이적설이 있습니다.
+tx_NTTQA5M8S6,사실입니까?
+tx_FY61V7ASJW,{name}{eun} 우리와 끝까지 갑니다.
+tx_56GD2322E9,선수 본인에게 물어보시죠.
+tx_485X75BY3Y,@e스포츠 데일리
+tx_37K36AAVHZ,{name} 선수가 지난 경기에서 부진했다는 평입니다.
+tx_NQN9ZJV1P7,교체도 고려하십니까?
+tx_XSCYG02BFM,전혀요. {name}{eul} 믿습니다.
+tx_6X445ZRXZA,컨디션을 보고 판단하겠습니다.
+tx_726TW3J3S4,부진은 사실이죠.
+tx_E0Q8Z6JCQT,@리그 위클리
+tx_9XF9RAG5PG,팬들 사이에서 {name} 선수 비판 여론이 있습니다.
+tx_MX5X6YNRCS,비판은 제가 받겠습니다.
+tx_BKXFM7SK5R,선수가 이겨내야 할 몫입니다.
+tx_DDB911TYP5,@게임 투데이
+tx_P165HV568A,감독님 특유의 운영이 화제입니다.
+tx_N27PWATY28,비결이 뭡니까?
+tx_DW6DN62HG5,철저한 준비 그뿐입니다.
+tx_WS4YNKZZHP,선수들이 잘 따라 준 덕분입니다.
+tx_Y286QSY9AY,@e스포츠 데일리
+tx_ZYQ2H6NSV5,현역 시절과 지금 중 언제가 더 떨립니까?
+tx_S475S364V1,지금이요. 선수들 경기라서요.
+tx_TRZ5H1B5JE,현역 때죠. 지금은 즐깁니다.
 tx_6RHXR0K8TD,Nekomata
 tx_KCKAPV8M44,Yuzuha
 tx_1TSM3CVTC7,Corin
@@ -637,6 +871,14 @@ tx_WMF4H900Y6,루키 리그
 tx_WHEYGN2VQZ,슈퍼 리그
 tx_FHYTT6JZHE,샐러리캡이 낮다 — 비싼 선수는 두세 명이 한계.
 tx_4H2VGDNYW7,샐러리캡이 높다 — 레벨을 올린 선수로 채울 수 있다.
+tx_EVS2K4Z4YF,설정
+tx_4S0H7A92KR,설정
+tx_EB8R7HBW32,언어
+tx_WH60K8T29E,언어를 바꾸면 화면을 다시 불러옵니다
+tx_TAQGY61B4S,닫기
+tx_6Y7HJCQ969,한국어
+tx_ZZA706T9ET,English
+tx_5JNY44V34S,설정 저장 실패: {error}
 tx_7NY5TT0SJT,최상위 예산 — 전략 카드 운영과 선수 면담만 직접
 tx_0G5Q0GF81D,상위 예산
 tx_B761YRXYA9,중상위 — 훈련 일정 편성 직접
@@ -666,6 +908,28 @@ tx_XXMTB9J4JQ,기벽 발굴
 tx_JWT9F5YXD6,기벽 재조정
 tx_6ZSE84YQEQ,동반 발굴
 tx_YN1A3HKZJP,잠재력 개방
+tx_P1CKYTK666,자기 칸
+tx_ZG7GGG6T7Z,다음 날
+tx_D2YYWAW6AG,전날
+tx_E5H0S3K61B,그 선수의 한 주
+tx_WWJP1XVDZ2,앞선 날 전부
+tx_ZDJ0NDN9G9,남은 날 전부
+tx_857EF7RCMM,왼쪽 선수 같은 날
+tx_BTPJVKAJ67,오른쪽 선수 같은 날
+tx_D88VQ1QDV7,같은 날 다른 선수
+tx_693VGK3CSZ,기벽 획득 — 남은 기벽 칸에 무작위 장착 (지식이 높을수록 고등급)
+tx_6AGR4JDDA3,기벽 재굴림 — 장착한 기벽을 전부 새로 뽑음
+tx_CP2SBG1V2R,기벽 칸 +1
+tx_7AYTNKWZ13,{scope} 훈련 효과 {pct}%
+tx_8M81KN05QP,{scope} {stat} {amount}
+tx_4FZGJ5J85K,훈련한 선수: {op}
+tx_0RR59YT76D,전 스탯
+tx_M8FGBCRE85,경험치 없음
+tx_HAH93PRWJJ,경험치 없음 — 그날은 기벽 훈련
+tx_8C0EV0B2WT,메크 숙련도 +{n} (연구 메크)
+tx_B7Y34DBG5A,전 스탯 +{n}
+tx_TC94WX8SJC,{stat} +{n}
+tx_8A7H4WFZ7K, · 
 tx_QQVPQ29K6X,훈련광
 tx_6HSK5W6C20,메크 연구가
 tx_SJVSQJ1HZ2,스폰서 친화

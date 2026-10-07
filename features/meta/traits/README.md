@@ -7,7 +7,7 @@ Contract: `docs/outgame_dev_plan.md` §12 (effect keys §12.3, unlock grammar §
 | File | Class | Role |
 |---|---|---|
 | `TraitUi.gd` | `class_name TraitUi extends RefCounted` (static) | Display helpers: `rarity_color(rarity)` (0 grey · 1 teal · 2 blue · 3 purple · 4 amber, all `OutgameTheme`) and `add_rarity_chip(parent, rarity, pos, sz, font)`. **Every screen that colours a trait by rarity uses it** — run result, hub staff sheet, `TraitPickerView`, shop (`ShopPopup.rarity_color` delegates) |
-| `TraitSystem.gd` | `class_name TraitSystem extends RefCounted` (static) | `traits.csv` cache, bonus points, `validate_equip`, run-time reads (`run_mod` / `run_pct_mult` / `ingame_traits`), `evaluate_unlocks` / `unlock_met` / `longest_win_streak` / `max_outings` |
+| `TraitSystem.gd` | `class_name TraitSystem extends RefCounted` (static) | `traits.csv` cache (rows hold l10n keys `name_key` / `desc_key` — `trait.{id}.name/desc`; display only through `name_of(id)` / `desc_of(id)`, which fills `{p1}` / `{p2}` via `Loc.t` params), bonus points, `validate_equip`, run-time reads (`run_mod` / `run_pct_mult` / `ingame_traits`), `evaluate_unlocks` / `unlock_met` / `longest_win_streak` / `max_outings` |
 
 ## Unlock conditions (`traits.unlock`, `evaluate_unlocks(state, result, profile)`)
 Judged once at settlement by `RunResult.build_result` (pure — granting is

@@ -484,12 +484,13 @@ func _build_pool_from_db() -> Array:
 			pool.append(_make_card_from_def(card_def))
 		if not pool.is_empty():
 			return pool
-	# Minimal one-card fallback so the demo still runs before Rebuild game.db.
+	# Minimal one-card fallback so the demo still runs before Rebuild game.db —
+	# cards.csv id 7 (찌르기) with its l10n keys.
 	return [_make_card_from_def({
-		"name": "찌르기", "cost": 1, "uses": 1,
+		"id": 7, "name_key": "tx_K9P1XXAKB0", "cost": 1, "uses": 1,
 		"cast_method": "target", "target": "enemy",
 		"cast_range": 1, "area": 0, "keyword": "",
-		"effect": "attack:1", "description": "공격: 1",
+		"effect": "attack:1", "description_key": "tx_ER4EDPVYGB",
 	})]
 
 
@@ -508,27 +509,9 @@ func _make_card_from_def(def: Dictionary) -> CardData:
 ## 정하므로 레인/정글 필터를 한 번 더 씌우면 정글러가 자기 기체 카드를 못 받는
 ## 자리가 생긴다 — 이동 카드를 들고 오는 메크가 여럿이다.
 func make_mech_card(def: Dictionary) -> CardData:
-	var cd := CardData.new(
-			String(def.get("name", "?")),
-			int(def.get("cost", 0)),
-			String(def.get("description", "")))
-	cd.uses         = 1
-	cd.cast_method  = String(def.get("cast_method", "instant"))
-	cd.target       = String(def.get("target", "hand"))
-	cd.cast_range   = int(def.get("cast_range", 0))
-	cd.area         = int(def.get("area", 0))
-	cd.keyword      = String(def.get("keyword", ""))
-	cd.effect       = String(def.get("effect", ""))
-	cd.trigger      = String(def.get("trigger", ""))
-	cd.charge_max   = int(def.get("charge_max", 0))
-	cd.scope        = CardData.SCOPE_ANY
-	cd.pool         = 0
-	cd.card_type    = CardData.TYPE_MECH
-	cd.card_cat     = CardData.CAT_NONE
-	cd.card_id      = -1
-	cd.mech_card_id = int(def.get("id", -1))
-	cd.mech_id      = int(def.get("mech_id", -1))
-	return cd
+	# 조립은 `CardData.from_mech_def` 한 곳 — 설명판의 참조 카드(`CardData.by_name_key`)도
+	# 같은 팩토리를 지난다.
+	return CardData.from_mech_def(def)
 
 
 ## 메크 카드 한 장을 **행 id 로** 만든다. 효과가 카드를 지목해 만들 때
@@ -622,6 +605,8 @@ func grant_cards_to_deck(card_id: int, is_player: bool, count: int) -> int:
 # Copies a CardData (so each draw is a unique instance) including the 시전자 tag.
 func make_card_copy(src: CardData) -> CardData:
 	var cd := CardData.new(src.card_name, src.cost, src.description)
+	cd.name_key        = src.name_key
+	cd.description_key = src.description_key
 	cd.card_id     = src.card_id
 	cd.uses        = src.uses
 	cd.cast_method = src.cast_method
@@ -5051,14 +5036,14 @@ func _effect_growth_perm(pct: int, ally_team: int, picked: PilotData,
 func _note_reserve(kind: String, is_player: bool) -> void:
 	if _current_card == null:
 		return
-	_bs.reserve_src["%s_%s" % [kind, "p" if is_player else "ai"]] = _current_card.card_name
+	_bs.reserve_src["%s_%s" % [kind, "p" if is_player else "ai"]] = _current_card.card_uid()
 
 
 ## 슬롯 효과(`PilotData.fx_src`)를 지금 도는 카드가 걸었다고 적는다 — 표시용.
 func _note_fx_src(target: PilotData, slot: String) -> void:
 	if target == null or _current_card == null:
 		return
-	target.fx_src[slot] = _current_card.card_name
+	target.fx_src[slot] = _current_card.card_uid()
 
 
 ## 지속 효과 장부에 한 줄. **출처는 지금 도는 카드**(`_current_card`)이므로
@@ -5069,7 +5054,7 @@ func _note_fx_src(target: PilotData, slot: String) -> void:
 func _log_persistent_fx(target: PilotData, kind: String, amount: float) -> void:
 	if target == null or _current_card == null:
 		return
-	target.log_persistent_fx(_current_card.card_name, kind, amount)
+	target.log_persistent_fx(_current_card.card_uid(), kind, amount)
 
 
 ## `turret_damage:N` — [전령 제압]. 찍은 칸의 포탑에 **명중 판정 없이** N 피해.

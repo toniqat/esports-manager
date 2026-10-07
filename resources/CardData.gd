@@ -54,31 +54,34 @@ const KW_CHARGE := "charge"
 ## `CardPhaseManager._dispose_used_card`.
 const KW_REPOSITION := "reposition"
 
-## 키워드 → 화면 이름. 설명판 · 상세 패널이 같은 표를 읽는다.
-const KEYWORD_LABELS: Dictionary = {
-	KW_EXHAUST: "소멸", KW_PRESERVE: "보존", KW_VOLATILE: "휘발성",
-	KW_CHARGE: "충전", KW_REPOSITION: "재배치",
+## 키워드 → 화면 이름 l10n key. 설명판 · 상세 패널이 같은 표를 읽는다(`keyword_label`).
+const KEYWORD_LABELS: Dictionary = {  # l10n-keys: keyword.*.name
+	KW_EXHAUST: L.KEYWORD_EXHAUST_NAME, KW_PRESERVE: L.KEYWORD_PRESERVE_NAME,
+	KW_VOLATILE: L.KEYWORD_VOLATILE_NAME, KW_CHARGE: L.KEYWORD_CHARGE_NAME,
+	KW_REPOSITION: L.KEYWORD_REPOSITION_NAME,
 }
-## 키워드 한 줄 풀이. 충전은 상한이 카드마다 달라 `keyword_note` 가 채운다.
-const KEYWORD_NOTES: Dictionary = {
-	KW_EXHAUST: "사용하면 이 게임에서 사라진다",
-	KW_PRESERVE: "버려지지 않는다",
-	KW_VOLATILE: "버려지면 더미로 가지 않고 사라진다",
-	KW_CHARGE: "손에 들어올 때마다 토큰 +1 (최대 %d)",
-	KW_REPOSITION: "사용 후 손 맨 왼쪽으로 돌아온다",
+## 키워드 한 줄 풀이 l10n key. 충전은 상한(`{max}`)이 카드마다 달라 `keyword_note` 가 채운다.
+const KEYWORD_NOTES: Dictionary = {  # l10n-keys: keyword.*.note
+	KW_EXHAUST: L.KEYWORD_EXHAUST_NOTE, KW_PRESERVE: L.KEYWORD_PRESERVE_NOTE,
+	KW_VOLATILE: L.KEYWORD_VOLATILE_NOTE, KW_CHARGE: L.KEYWORD_CHARGE_NOTE,
+	KW_REPOSITION: L.KEYWORD_REPOSITION_NOTE,
 }
 
-## **특수 키워드** — 설명문에서 `[이름]` 으로 감싼 효과 용어. 설명문에는 대괄호 없이
-## 특수 키워드 색으로 찍히고(`StrategyIcon.fill_rich`), 설명판이 용어마다 풀이 판을
-## 단다(`CardDescBox`). 이 표에 없는 `[이름]` 은 **카드 이름**으로 보고, 풀이 판 대신
-## 그 카드의 설명판(비용 · 이름 · 설명)을 세운다.
-const SPECIAL_NOTES: Dictionary = {
-	"추적": "대상이 교전에 참여하면 시전자도 함께 참여한다",
-	"반응 장갑": "공격당하면 그 피해를 90% 줄이고 1 사라진다. 전장을 떠나면 모두 사라진다",
-	"목표": "시전자에게 받는 피해 +15%. 새 목표를 정하면 이전 목표는 풀린다",
-	"현상금": "대상의 성장 점수 일부를 값으로 매긴 표식. 확신 카드의 피해가 이 값에 비례한다",
-	"기절": "교전에서 자기 차례 한 번을 건너뛴다",
-	"취약": "1마다 받는 피해 +1%",
+## **특수 키워드** — 설명문에서 `[이름]` 으로 감싼 효과 용어(l10n `keyword` 도메인).
+## 설명문에는 대괄호 없이 특수 키워드 색으로 찍히고(`StrategyIcon.fill_rich`), 설명판이
+## 용어마다 풀이 판을 단다(`CardDescBox`). `[이름]` 이 무엇을 가리키는지는 **표시 글자가
+## 아니라 참조 key** 로 정한다 — 설명 key 의 `Loc.refs()`(`ref_entries`). 참조가 `card`
+## 도메인이면 카드 이름이고, 풀이 판 대신 그 카드의 설명판(비용 · 이름 · 설명)을 세운다.
+## 값 = 특수 키워드 id(`KeywordIcon.SPECIAL_ICONS` 의 키).
+const SPECIAL_LABELS: Dictionary = {  # l10n-keys: keyword.*.name
+	"track": L.KEYWORD_TRACK_NAME, "reactive_armor": L.KEYWORD_REACTIVE_ARMOR_NAME,
+	"target": L.KEYWORD_TARGET_NAME, "bounty": L.KEYWORD_BOUNTY_NAME,
+	"stun": L.KEYWORD_STUN_NAME, "vulnerable": L.KEYWORD_VULNERABLE_NAME,
+}
+const SPECIAL_NOTES: Dictionary = {  # l10n-keys: keyword.*.note
+	"track": L.KEYWORD_TRACK_NOTE, "reactive_armor": L.KEYWORD_REACTIVE_ARMOR_NOTE,
+	"target": L.KEYWORD_TARGET_NOTE, "bounty": L.KEYWORD_BOUNTY_NOTE,
+	"stun": L.KEYWORD_STUN_NOTE, "vulnerable": L.KEYWORD_VULNERABLE_NOTE,
 }
 
 # 카드 종류 (cards.csv `card_type` 컬럼). **cards.csv 의 행은 전부 파일럿
@@ -108,7 +111,19 @@ const CATEGORY_LABELS: Dictionary = {
 ## cards.csv 행 id. 고정 파일럿 카드(`PlayerData.pilot_cards`)가 이 값으로 카드를
 ## 가리킨다. 메크 카드와 손으로 만든 카드는 -1.
 @export var card_id: int = -1
-@export var card_name: String = ""
+## 이름 · 설명 l10n key(`cards.csv` / `mech_cards.csv` 의 `name_key` · `description_key`).
+## 표시 글자는 저장하지 않고 `card_name` · `description` 이 읽을 때마다 번역한다.
+@export var name_key: String = ""
+@export var description_key: String = ""
+## 표 밖에서 손으로 만든 카드(key 없음)의 글자 — `_init` 인자. key 가 있으면 쓰지 않는다.
+var _name_text: String = ""
+var _desc_text: String = ""
+## 화면 이름. key 가 있으면 현재 로케일 번역, 없으면 손으로 준 글자.
+var card_name: String:
+	get:
+		return Loc.t(name_key) if not name_key.is_empty() else _name_text  # l10n-dynamic: card.*.*.name
+	set(value):
+		_name_text = value
 @export var cost: int = 1
 @export var uses: int = 1                 # cards.csv 컬럼. 소멸 판정에는 쓰이지 않는다 (keyword == "exhaust" 만 소멸)
 @export var cast_method: String = "instant"  # range / target / location / instant
@@ -117,7 +132,12 @@ const CATEGORY_LABELS: Dictionary = {
 @export var area: int = 0                 # AoE radius around target (0 = single)
 @export var keyword: String = ""          # `|` 로 구분된 키워드 목록 — has_keyword() 로만 읽는다
 @export var effect: String = ""           # semicolon list, e.g. "draw:N;discard:N"
-@export var description: String = ""
+## 설명문(번역 · `\n` · 조사 처리 끝난 글). key 가 없으면 손으로 준 글자.
+var description: String:
+	get:
+		return Loc.t(description_key) if not description_key.is_empty() else _desc_text  # l10n-dynamic: card.*.*.desc
+	set(value):
+		_desc_text = value
 # 시전자 제약(포지션 목록). 고정 파일럿 카드를 고를 때와 손패 시전자 판정이 읽는다.
 @export var scope: String = SCOPE_ANY
 # 1 = 파일럿 카드 후보, 0 = 제외(결투 · 오브젝트 보상 · 스킬 생성 카드).
@@ -182,20 +202,21 @@ func keyword_list() -> Array:
 	return out
 
 
-## 키워드 하나의 화면 이름. 충전은 상한을 붙인다("충전 N").
+## 키워드 하나의 화면 이름. 충전은 상한을 붙인다(`keyword.charge.label`). 표에 없는
+## 키워드는 id 그대로.
 func keyword_label(kw: String) -> String:
-	var label: String = String(KEYWORD_LABELS.get(kw, kw))
 	if kw == KW_CHARGE:
-		return "%s %d" % [label, maxi(1, charge_max)]
-	return label
+		return Loc.t(L.KEYWORD_CHARGE_LABEL, {"max": maxi(1, charge_max)})
+	if not KEYWORD_LABELS.has(kw):
+		return kw
+	return Loc.t(String(KEYWORD_LABELS[kw]))  # l10n-dynamic: keyword.*.name
 
 
 ## 키워드 하나의 한 줄 풀이. 표에 없는 키워드는 빈 문자열.
 func keyword_note(kw: String) -> String:
-	var note: String = String(KEYWORD_NOTES.get(kw, ""))
-	if kw == KW_CHARGE:
-		return note % maxi(1, charge_max)
-	return note
+	if not KEYWORD_NOTES.has(kw):
+		return ""
+	return Loc.t(String(KEYWORD_NOTES[kw]), {"max": maxi(1, charge_max)})  # l10n-dynamic: keyword.*.note
 
 
 ## 손패에서 강제로 버려지지 않는 카드인가 — `KW_PRESERVE` 주석 참조.
@@ -328,13 +349,12 @@ func category_label() -> String:
 ## 있어서 카드를 실물로 보여 주려면 BattleSim 이 서 있어야 했는데, 밴픽의 하단
 ## 시트와 메크 상세처럼 **전투가 없는 자리**에서도 "이 기체가 주는 카드"를 같은
 ## 노드로 그려야 한다 — 표가 둘이면 화면에 뜬 카드와 실제로 덱에 들어가는 카드가
-## 조용히 갈린다. `mech_cards.csv` 쪽은 컬럼이 달라 여전히 자기 팩토리를 쓴다
-## (`CardPhaseManager.make_mech_card`).
+## 조용히 갈린다. `mech_cards.csv` 쪽은 컬럼이 달라 자기 팩토리(`from_mech_def`)를 쓴다
+## — 밴픽 · 메크 상세도 메크 카드는 반드시 그쪽을 지난다(식별자 `card_uid` 가 갈린다).
 static func from_def(def: Dictionary) -> CardData:
-	var cd := CardData.new(
-			String(def.get("name", "?")),
-			int(def.get("cost", 0)),
-			String(def.get("description", "")))
+	var cd := CardData.new("", int(def.get("cost", 0)), "")
+	cd.name_key        = String(def.get("name_key", ""))
+	cd.description_key = String(def.get("description_key", ""))
 	cd.card_id     = int(def.get("id", -1))
 	cd.uses        = int(def.get("uses", 1))
 	cd.cast_method = String(def.get("cast_method", "instant"))
@@ -350,3 +370,139 @@ static func from_def(def: Dictionary) -> CardData:
 	cd.excl_group  = String(def.get("excl_group", ""))
 	cd.charge_max  = int(def.get("charge_max", 0))
 	return cd
+
+
+## `mech_cards.csv` 한 행(= `GameManager.mech_card_defs` 값) → CardData 한 장.
+## `cards.csv` 쪽 행과 컬럼이 다르므로 팩토리도 따로다 — 저쪽에는 없는 `mech_id` /
+## `count` / `trigger` 가 있고, 이쪽에는 없는 덱 슬롯 컬럼(card_type / card_cat /
+## excl_group / scope / pool)이 있다.
+##
+## **시전자 제약은 붙지 않는다**(`scope = any`). 메크 카드의 임자는 배정된 기체가
+## 정하므로 레인/정글 필터를 한 번 더 씌우면 정글러가 자기 기체 카드를 못 받는
+## 자리가 생긴다 — 이동 카드를 들고 오는 메크가 여럿이다.
+static func from_mech_def(def: Dictionary) -> CardData:
+	var cd := CardData.new("", int(def.get("cost", 0)), "")
+	cd.name_key        = String(def.get("name_key", ""))
+	cd.description_key = String(def.get("description_key", ""))
+	cd.uses         = 1
+	cd.cast_method  = String(def.get("cast_method", "instant"))
+	cd.target       = String(def.get("target", "hand"))
+	cd.cast_range   = int(def.get("cast_range", 0))
+	cd.area         = int(def.get("area", 0))
+	cd.keyword      = String(def.get("keyword", ""))
+	cd.effect       = String(def.get("effect", ""))
+	cd.trigger      = String(def.get("trigger", ""))
+	cd.charge_max   = int(def.get("charge_max", 0))
+	cd.scope        = SCOPE_ANY
+	cd.pool         = 0
+	cd.card_type    = TYPE_MECH
+	cd.card_cat     = CAT_NONE
+	cd.card_id      = -1
+	cd.mech_card_id = int(def.get("id", -1))
+	cd.mech_id      = int(def.get("mech_id", -1))
+	return cd
+
+
+# ─── 카드 식별 · 설명문 참조 (l10n, 설계서 D3 · D4) ─────────────────────────────
+# 카드는 **표시 이름으로 찾지 않는다** — 이름은 언어마다 다르다. 식별자는 출신 표 +
+# 행 id(`card_uid`), 설명문의 `[이름]` 은 설명 key 의 참조 key 목록(`Loc.refs`)으로 푼다.
+
+## 이름 key → CardData(없음 = null). 참조 카드 설명판 · 미리보기가 한 번 찾고 캐시한다.
+static var _by_name_key: Dictionary = {}
+
+
+## 이 카드의 안정된 식별자 — `pilot:<cards.id>` / `mech:<mech_cards.id>`. 표 밖에서 손으로
+## 만든 카드(강화 선택지 등)는 `effect:<효과>`. 아트 조회(`CardImages`)와 효과 출처
+## 기록(`PilotData.fx_src` · `persistent_fx`)이 쓴다.
+func card_uid() -> String:
+	if mech_card_id >= 0:
+		return "mech:%d" % mech_card_id
+	if card_id >= 0:
+		return "pilot:%d" % card_id
+	return "effect:%s" % effect
+
+
+static func _game_manager() -> Node:
+	var tree := Engine.get_main_loop() as SceneTree
+	return tree.root.get_node_or_null("GameManager") if tree != null else null
+
+
+## `card_uid()` → 그 카드의 현재 로케일 이름. 표에 없는 식별자는 빈 문자열.
+static func name_of_uid(uid: String) -> String:
+	var gm: Node = _game_manager()
+	var parts: PackedStringArray = uid.split(":", true, 1)
+	if gm == null or parts.size() != 2 or not parts[1].is_valid_int():
+		return ""
+	var def: Dictionary = {}
+	if parts[0] == "pilot":
+		def = gm.card_def(int(parts[1]))
+	elif parts[0] == "mech":
+		def = gm.mech_card_def(int(parts[1]))
+	if def.is_empty():
+		return ""
+	return Loc.t(String(def.get("name_key", "")))  # l10n-dynamic: card.*.*.name
+
+
+## 이름 key 로 카드 한 장 — 메크 카드 표를 먼저, 다음 파일럿 카드 표. 결과(없음 포함)는
+## 캐시한다. 오토로드가 없으면(에디터 도구 등) null.
+static func by_name_key(key: String) -> CardData:
+	if key.is_empty():
+		return null
+	if _by_name_key.has(key):
+		return _by_name_key[key] as CardData
+	var gm: Node = _game_manager()
+	if gm == null:
+		return null
+	var cd: CardData = null
+	for d in (gm.mech_card_defs as Dictionary).values():
+		if String((d as Dictionary).get("name_key", "")) == key:
+			cd = from_mech_def(d)
+			break
+	if cd == null:
+		for d in gm.card_pool_bs:
+			if String((d as Dictionary).get("name_key", "")) == key:
+				cd = from_def(d)
+				break
+	_by_name_key[key] = cd
+	return cd
+
+
+## 특수 키워드 이름 key → 특수 키워드 id(`SPECIAL_LABELS` 의 키). 아니면 빈 문자열.
+static func special_id_of(key: String) -> String:
+	for id in SPECIAL_LABELS:
+		if String(SPECIAL_LABELS[id]) == key:
+			return String(id)
+	return ""
+
+
+## 설명 key 의 `[x]` 참조 — 원문 등장 순서대로 `{key, text, special, card}`.
+##   `key`     참조 key (`card` · `keyword` 도메인의 이름 key)
+##   `text`    그 key 의 현재 로케일 글자 — 설명문 `[ ]` 안에 찍힌 글자와 같다(E034)
+##   `special` 특수 키워드 id(아니면 빈 문자열)
+##   `card`    카드 이름 참조면 그 카드(`by_name_key`), 아니면 null
+## 설명 key 가 비었거나 참조가 없으면 빈 배열.
+static func ref_entries(text_key: String) -> Array:
+	var out: Array = []
+	if text_key.is_empty():
+		return out
+	for rk in Loc.refs(text_key):
+		var sp: String = special_id_of(rk)
+		out.append({
+			"key": rk,
+			"text": Loc.t(rk),  # l10n-dynamic: card.*.*.name keyword.*.name
+			"special": sp,
+			"card": by_name_key(rk) if sp.is_empty() else null,
+		})
+	return out
+
+
+## 설명문의 `idx` 번째 `[term]` 이 가리키는 참조(`ref_entries` 의 한 항목). 같은 글자의
+## 참조를 먼저 찾고(번역문은 `[ ]` 순서가 원문과 다를 수 있다), 없으면 같은 순번의
+## 참조를 쓴다. 둘 다 없으면 빈 Dictionary.
+static func ref_for(term: String, refs: Array, idx: int) -> Dictionary:
+	for e in refs:
+		if String((e as Dictionary)["text"]) == term:
+			return e
+	if idx >= 0 and idx < refs.size():
+		return refs[idx]
+	return {}

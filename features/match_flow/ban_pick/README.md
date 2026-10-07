@@ -1,5 +1,7 @@
 # Match Flow — Ban/Pick
 
+**텍스트는 l10n key — `Loc.t`** (mech passive / cards): passive name · description = `Loc.t(pas["name_key"] / ["description_key"])`; mech card rows build via `CardData.from_mech_def` (`BanPickController`, `BanPickSheetCard`, `MechCardCell`, `MechDetailPanel`).
+
 ## Files
 | File | Role |
 |---|---|

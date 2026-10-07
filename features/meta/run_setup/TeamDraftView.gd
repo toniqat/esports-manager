@@ -375,7 +375,7 @@ func _refresh_rules() -> void:
 	var value: Label = %GaugeValue
 	var fill: ColorRect = %GaugeFill
 	var gauge_msg: Label = %GaugeMsg
-	title.text = "%s · 샐러리캡" % String(scen.get("name", "?"))
+	title.text = "%s · 샐러리캡" % Loc.t(String(scen.get("name_key", "")))  # l10n-dynamic: scenario.*.name
 	# M8 — trait `salary_cap` adjustment, when the manager preset carries one.
 	var trait_adj: int = _draft.cap_bonus()
 	if trait_adj != 0:

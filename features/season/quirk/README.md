@@ -6,7 +6,7 @@ pilot passives — flat stat bonuses only. `MatchFlow._finalize_rosters` adds th
 
 | File | Role |
 |---|---|
-| `QuirkSystem.gd` | `class_name QuirkSystem` (static). State, gain / reroll / slot, condition check, stat bonus, `apply_to`, shared text helpers (grade name / colour, effect line). Reads table `quirks` from game.db itself. |
+| `QuirkSystem.gd` | `class_name QuirkSystem` (static). State, gain / reroll / slot, condition check, stat bonus, `apply_to`, shared text helpers (grade name / colour, effect line). Reads table `quirks` from game.db itself — rows hold l10n keys `name_key` / `desc_key` (`quirk.{id}.name/desc`); display via `name_of(id)` / `desc_of(id)`. State keeps quirk ids only. |
 
 All tuning numbers are `QUIRK_*` keys in `data/csv/const.csv` — none are written here.
 

@@ -575,7 +575,7 @@ func apply_day_training(day: int) -> Array:
 		if mastery_exp > 0:
 			MechMastery.add_training_exp(_gm.season_state, int(p.id), mastery_exp)
 		rows.append({
-			"pilot_id": int(p.id), "name": p.name, "role": int(p.role),
+			"pilot_id": int(p.id), "role": int(p.role),
 			"seat": seat, "before": before, "after": snapshot(p),
 			"ups": ups, "exp": exp, "carry": pocket.duplicate(),
 			"mastery": mastery_exp,

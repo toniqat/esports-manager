@@ -200,13 +200,14 @@ func _fill_skill() -> void:
 	tile_slot.add_child(SkillImages.make_icon_tile(String(sk.get("key", "")),
 			tile_slot.size.x, SKILL_TILE_BG, SKILL_TILE_ICON, SKILL_TILE_SHADOW,
 			SKILL_TILE_SHADOW_PX))
-	%SkillName.text = String(sk.get("name", "?"))
+	%SkillName.text = Loc.t(String(sk.get("name_key", "")))  # l10n-dynamic: pilot_skill.*.name
 	var meta: String = TeamDraft.skill_type_label(String(sk.get("type", "")))
 	var kw: String = String(sk.get("keyword", ""))
 	if not kw.is_empty():
 		meta += " · " + kw
 	%SkillMeta.text = meta
-	_rich_paragraph(%SkillDesc, String(sk.get("description", "")))
+	var desc_key: String = String(sk.get("description_key", ""))
+	_rich_paragraph(%SkillDesc, Loc.t(desc_key), CardData.ref_entries(desc_key))  # l10n-dynamic: pilot_skill.*.desc
 
 
 ## 이 선수의 고정 파일럿 카드 3장 — 설명판을 위에서부터 쌓는다(`%Cards` 간격).
@@ -233,16 +234,14 @@ func _fill_pilot_cards() -> void:
 ## `StrategyIcon.make_rich_label` on light-theme colours (same as the light
 ## `CardDescBox`). **The height comes from `StrategyIcon.rich_height`** —
 ## measuring by hand lets a long description overlap the block below.
-func _rich_paragraph(holder: Control, text: String) -> void:
-	var costs: Dictionary = {}
-	var gm: Node = get_node_or_null("/root/GameManager")
-	if gm != null:
-		costs = gm.card_costs_by_name()
+## `refs` = the description key's `[x]` references (`CardData.ref_entries`) —
+## special keywords get their icon, card names their cost ribbon.
+func _rich_paragraph(holder: Control, text: String, refs: Array) -> void:
 	var w: float = _inner_w()
 	var lbl := StrategyIcon.make_rich_label(text, SKILL_DESC_FONT, SKILL_DESC_COLOR,
 			OutgameTheme.ACCENT_TEXT, PANEL_BG, KeywordIcon.TARGET_ANY_COLOR,
-			KeywordIcon.TARGET, KeywordIcon.SPECIAL_COLOR_LIGHT, costs)
-	var h: float = StrategyIcon.rich_height(text, w, SKILL_DESC_FONT, costs)
+			KeywordIcon.TARGET, KeywordIcon.SPECIAL_COLOR_LIGHT, refs, true)
+	var h: float = StrategyIcon.rich_height(text, w, SKILL_DESC_FONT, refs, true)
 	lbl.position = Vector2.ZERO
 	lbl.size = Vector2(w, h)
 	holder.add_child(lbl)
@@ -298,14 +297,9 @@ func _team_short(team_id: int) -> String:
 	var gm: Node = get_node_or_null("/root/GameManager")
 	if gm == null:
 		return "T%d" % team_id
-	var meta: Array = gm.season_state.get("team_meta", [])
-	# 런 준비(편성)에서는 시즌이 아직 열리지 않아 team_meta 가 비어 있다 —
-	# 그때는 팀 패키지 표(`teams.csv`)에서 같은 약칭을 찾는다.
-	if meta.is_empty():
-		meta = RunRules.team_packages()
-	if team_id < 0 or team_id >= meta.size():
-		return "T%d" % team_id
-	return String(meta[team_id]["short_name"])
+	# 런 준비(편성)에서는 team_meta 가 비어 있다 — `team_short_name` 이 팀 패키지
+	# 표(`teams.csv`)로 넘어간다.
+	return String(gm.team_short_name(team_id))
 
 
 ## F6 단독 실행 미리보기 — game.db 의 실제 선수 풀(`GameManager.load_match_data()`)에서

@@ -594,7 +594,7 @@ func _fit_name_font_size() -> int:
 func _apply_art() -> void:
 	if art_frame == null or art_rect == null:
 		return
-	art_rect.texture = CardImages.art_for(data.card_name)
+	art_rect.texture = CardImages.art_for(data.card_uid())
 	var mat := ShaderMaterial.new()
 	mat.shader = ART_MASK_SHADER
 	mat.set_shader_parameter("rect_size", art_rect.size)
@@ -641,7 +641,7 @@ func _apply_name_plate() -> void:
 	if name_plate == null:
 		return
 	var plate := StyleBoxFlat.new()
-	plate.bg_color = TYPE_COLORS.get(CardImages.type_for(data.card_name),
+	plate.bg_color = TYPE_COLORS.get(CardImages.type_for(data.card_uid()),
 			NAME_PLATE_NEUTRAL_COLOR)
 	plate.corner_radius_bottom_left  = int(CARD_RADIUS)
 	plate.corner_radius_bottom_right = int(CARD_RADIUS)

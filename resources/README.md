@@ -20,10 +20,17 @@ One row from the `cards` SQLite table, plus a few runtime fields:
 - `keyword: String` — `|` list (`exhaust` 소멸 / `preserve` 보존 (keep) / `volatile`
   휘발성 / `charge` 충전 (Charge) / `reposition` 재배치). Read it only through `has_keyword()`; the
   on-screen name and explanation come from `keyword_label()` / `keyword_note()` (`KEYWORD_LABELS` /
-  `KEYWORD_NOTES`). **Charge is the keyword; what Charge accumulates is tokens** (the `charge` field)
-- `SPECIAL_NOTES` — explanation table for special keywords (`[term]` in descriptions): 추적 (track) ·
-  반응 장갑 (reactive armor) · 목표 (mark) · 현상금 (bounty) · 기절 (stun) · 취약 (vulnerable). A `[name]` not in
-  the table is read as a card name (`features/battle_sim/card_phase/README.md` "설명문 표기")
+  `KEYWORD_NOTES` = l10n key tables `L.KEYWORD_*`; Charge uses `keyword.charge.label` / `.note` with `{max}`). **Charge is the keyword; what Charge accumulates is tokens** (the `charge` field)
+- `SPECIAL_LABELS` / `SPECIAL_NOTES` — special keyword id → name / note l10n key (`[term]` in descriptions):
+  track 추적 · reactive_armor 반응 장갑 · target 목표 (Mark) · bounty 현상금 · stun 기절 · vulnerable 취약.
+- **l10n (text is keys — `Loc.t`)**: `name_key` / `description_key` (@export) hold the keys;
+  `card_name` / `description` are computed properties (`Loc.t(key)`; a hand-built card without keys
+  shows the text given to `_init`). `from_def` (cards.csv) / `from_mech_def` (mech_cards.csv — always use
+  it for mech rows). **Identity is never the name** (D3): `card_uid()` = `pilot:<id>` / `mech:<id>`
+  (hand-built: `effect:<effect>`) — art (`CardImages`) and effect sources (`PilotData.fx_src` ·
+  `persistent_fx`) use it, `name_of_uid(uid)` shows it. `[x]` in a description:
+  `ref_entries(description_key)` → `[{key, text, special, card}]` from `Loc.refs` (D4), `ref_for(term, refs, i)`
+  picks the entry for the i-th `[term]` (same text first, else same position), `by_name_key(key)` → CardData.
 - `effect: String` — semicolon-chain dispatched by `CardPhaseManager`
   (e.g. `"draw:N;discard:N"`, `"attack:N|pierce"`)
 - `description: String` — printed verbatim on the **description plate under the art** on the card face (font size shrinks only when it overflows — `Card._fit_desc_font_size`); the same sentence also appears in the description box at the top of the screen
@@ -244,7 +251,10 @@ via `BattleSim.turret_hit_offset(td)`.
 `class_name PlayerData`, extends `Resource`.
 
 Out-game player persona consumed by MatchFlow / BattleSim:
-- `id, name, role (GameEnums.Role), team_id (0=player, 1=enemy)`
+- `id, name_key, role (GameEnums.Role), team_id (0=player, 1=enemy)` — **`name_key`** is the l10n key
+  (`players.name_key` / `intl_players.name_key`, aliases `name.player.{id}` / `name.intl_player.{id}`) and the
+  only name that is stored / saved (D7). **`name`** is a read-only getter = `Loc.t(name_key)` (current locale), so
+  display sites keep reading `pd.name`; never assign it. The constructor's 2nd argument is the key.
 - `pilot_cards: Array` — **3 fixed pilot cards** (`cards.id`, `players.pilot_cards`). Saved with the save file; if empty (old save), `GameManager.pilot_card_ids_for` fills it from the DB row with the same id → then a seeded draw, in that order.
 - **6 player (선수) stats** — `field_hit` battlefield hit / `field_eva` battlefield evasion /
   `engage_hit` engage hit / `engage_eva` engage evasion / `atk_growth` attack growth coefficient /
@@ -261,7 +271,8 @@ Loaded from the `players` table (CSV-seeded via `addons/csv_to_db`).
 `class_name MechData`, extends `Resource`.
 
 Mech with **no role/position** — any mech is assignable to any player slot:
-- `id, name`
+- `id, name_key` (l10n key `name.mech.{id}`, `mechs.name_key`; constructor 2nd argument) — **`name`** is a
+  read-only getter `Loc.t(name_key)`
 - Combat stats `hp, atk` — drive PilotData stats when piloted
 - `presence` (melee higher than ranged; values in mechs.csv) — **engage stage only**. Target aggro weight
   (higher = targeted more often)
@@ -471,13 +482,16 @@ pictures come from; it never calls `load()` blindly but asks
 
 | Function | File | Consumer |
 |---|---|---|
-| `art_for(card_name)` | `images/card/<이름>.png` (name) → item icon → background | `Card._apply_art` (card face art frame) |
-| `item_for(card_name)` | `images/ground/deadlock_items/<타입>_<아이템>.png` (type_item; `ITEM_ART` table) | 〃 (cards without dedicated art) |
-| `type_for(card_name)` | prefix of the `ITEM_ART` value → `TYPE_WEAPON` / `TYPE_SPIRIT` / `TYPE_VITALITY` (`""` = not in table) | `Card._apply_name_plate` (nameplate (이름판) type colour `Card.TYPE_COLORS`) |
-| `ground_for(card_name)` | `images/ground/N.png` (`GROUND_COUNT` 5 images) | 〃 (cards not even in the `ITEM_ART` table) |
+| `art_for(uid)` | `images/card/<uid>.png` (`:` → `_`, e.g. `pilot_12.png`) → item icon → background | `Card._apply_art` (card face art frame), `BattleRenderer` banner, `PilotDetailPanel` fx thumb, `ReservationChips` |
+| `item_for(uid)` | `images/ground/deadlock_items/<타입>_<아이템>.png` (type_item; `ITEM_ART` table) | 〃 (cards without dedicated art) |
+| `type_for(uid)` | prefix of the `ITEM_ART` value → `TYPE_WEAPON` / `TYPE_SPIRIT` / `TYPE_VITALITY` (`""` = not in table) | `Card._apply_name_plate` (nameplate (이름판) type colour `Card.TYPE_COLORS`) |
+| `ground_for(uid)` | `images/ground/N.png` (`GROUND_COUNT` 5 images) | 〃 (cards not even in the `ITEM_ART` table) |
+
+**Keyed by card identity, not name** (l10n D3): `uid` = `CardData.card_uid()` (`pilot:<cards.id>` /
+`mech:<mech_cards.id>`); each `ITEM_ART` line ends with a comment naming the card.
 
 **Every card right now (cards.csv 43 + mech_cards.csv 64 = 107) carries an item icon.**
-`ITEM_ART` is a card name → Deadlock item filename table, picking items with similar effects
+`ITEM_ART` is a card uid → Deadlock item filename table, picking items with similar effects
 (e.g. `필중` (Sure Hit) → Sharpshooter, `보호` (Protect) → Grit, `몸집 불리기` (Bulk Up) → Colossus, `캐시` (Cache) →
 Golden Goose Egg; effect source https://deadlock.wiki/Items). **Each item is used for only one card.**
 **Icon filenames carry a type prefix** — `wpn_` weapon · `spt_` spirit ·
@@ -489,7 +503,7 @@ Icons are 200×200 squares (opaque beige background), so in the 160×184 art slo
 `STRETCH_KEEP_ASPECT_COVERED` trims the left/right a little — the emblem is centred, so it is unharmed.
 When adding or renaming a card, add it to the table too; if missing, it falls back without error to the 5 backgrounds below.
 
-**The background is picked by card name** (`card_name.hash() % GROUND_COUNT`). Picking at random
+**The background is picked by card uid** (`uid.hash() % GROUND_COUNT`). Picking at random
 would give the same card a different picture each draw so no "this picture = this card" link
 forms; picking by sequence would let the order of entering the hand decide the picture, so the same card
 would differ per slot. A name hash gives the same answer regardless of run, so even before dedicated art
@@ -740,21 +754,25 @@ shape** — a regular octagon in two poses:
 | `make_badge(parent, center, r, fill, text, font_size, text_color, rim, rim_w)` | octagon Control with a centred number |
 | `texture(px)` | cached indicator ImageTexture for inline use (flat sides touch the square) |
 | `raster_convex(w, h, pts, fill, rim, rim_w)` | bakes any convex clockwise polygon into an AA texture with an inner rim (also used by `CostRibbon`) |
-| `make_rich_label(text, font_size, color, icon_color, knock, target_color, target_key, special_color, card_costs)` / `fill_rich(rtl, text, font_size, icon_color, knock, target_color, target_key, special_color, card_costs)` | description `RichTextLabel`: indicator before every "전략 점수", cost ribbon before every "비용", and a `KeywordIcon` before every keyword word (`KeywordIcon.WORDS` — 전장 명중 · 전장 회피 · 교전 명중 · 교전 회피 · 필중 공격 · 소지 중 · 공격력 · 사거리 · 체력 · 성장 · 필중 · 공격 · 교전 · 이동 · 대상 · 범위 · 뽑기 · 버리기 · 보존 · 찾기 · 생성 · 보호막 · 회복 · 처치 · 버린 더미) and before every duration ("3턴", "(…)턴" — `_duration_end`); **`[이름]` is a special keyword** — printed without brackets in `special_color`, preceded by its `KeywordIcon.SPECIAL_ICONS` icon (in `icon_color`) when it is an effect term; card names get colour only, coloured by `KeywordIcon.color_for` (`icon_color`; 뽑기/버리기 fixed green/red; 대상 = `target_color`); multi-word keywords keep their space as a no-break space; `knock` = panel background (필중 cuts its bow out of the disc with it). At one position the longest word wins (공격력 beats 공격). **Nothing inside `[...]`** gets an icon (card names like `[공격 명령]`). `add_text` / `add_image`, no BBCode — `[캐시]` stays literal. Icon and word are joined by a no-break space; text goes through `UiHelpers.keep_words` |
-| `measure_text(text, card_costs = {})` | stand-in string for `get_multiline_string_size` (square icons ≈ two glyphs, ribbon ≈ one, card-cost icon ≈ one; same tokenizer `_tokens` and break rules as `fill_rich`) |
-| `rich_height(text, width, font_size, card_costs = {})` | height a `make_rich_label` label of that width needs — `measure_text` through `ThemeDB.fallback_font.get_multiline_string_size` with the same `keep_words` / break flags / `ceil + 4` as `CardDescBox._text_height` |
+| `make_rich_label(text, font_size, color, icon_color, knock, target_color, target_key, special_color, refs, card_costs, card_meta)` / `fill_rich(rtl, …same…)` | description `RichTextLabel`: indicator before every "전략 점수", cost ribbon before every "비용", and a `KeywordIcon` before every keyword word (`KeywordIcon.WORDS` — 전장 명중 · 전장 회피 · 교전 명중 · 교전 회피 · 필중 공격 · 소지 중 · 공격력 · 사거리 · 체력 · 성장 · 필중 · 공격 · 교전 · 이동 · 대상 · 범위 · 뽑기 · 버리기 · 보존 · 찾기 · 생성 · 보호막 · 회복 · 처치 · 버린 더미) and before every duration ("3턴", "(…)턴" — `_duration_end`); **`[이름]` is a special keyword** — printed without brackets in `special_color`, preceded by its `KeywordIcon.SPECIAL_ICONS` icon (in `icon_color`) when it is an effect term; card names get colour only, coloured by `KeywordIcon.color_for` (`icon_color`; 뽑기/버리기 fixed green/red; 대상 = `target_color`); multi-word keywords keep their space as a no-break space; `knock` = panel background (필중 cuts its bow out of the disc with it). At one position the longest word wins (공격력 beats 공격). **Nothing inside `[...]`** gets an icon (card names like `[공격 명령]`). `add_text` / `add_image`, no BBCode — `[캐시]` stays literal. Icon and word are joined by a no-break space; text goes through `UiHelpers.keep_words` |
+| `measure_text(text, refs = [], card_costs = false)` | stand-in string for `get_multiline_string_size` (square icons ≈ two glyphs, ribbon ≈ one, card-cost icon ≈ one; same tokenizer `_tokens` and break rules as `fill_rich`) |
+| `rich_height(text, width, font_size, refs = [], card_costs = false)` | height a `make_rich_label` label of that width needs — `measure_text` through `ThemeDB.fallback_font.get_multiline_string_size` with the same `keep_words` / break flags / `ceil + 4` as `CardDescBox._text_height` |
 | `resolve_josa(text)` | CSV text → display text: literal two-char `\n` → newline, particle tags `{eul}` 을/를 · `{eun}` 은/는 · `{i}` 이/가 · `{wa}` 과/와 picked by the previous visible character (closing `]` skipped, so `[아드레날린]{eul}` → 을). Hangul with a final consonant → first form, anything else → second. `_tokens` calls it first, so `fill_rich` / `measure_text` / `rich_height` resolve tags automatically |
 
-**Card cost icon.** `fill_rich`, `make_rich_label` and `measure_text` take a trailing
-`card_costs: Dictionary` (card name → cost; `GameManager.card_costs_by_name()`). A
-`[name]` that is not a `KeywordIcon.SPECIAL_ICONS` term but is a key there gets a
+**References and card cost icon (l10n D3 · D4).** `fill_rich`, `make_rich_label`, `measure_text` and
+`rich_height` take `refs: Array` = the text key's `CardData.ref_entries(key)` — the i-th `[term]` is matched
+to a ref by `CardData.ref_for` (same text, else same position), so special-keyword icons
+(`KeywordIcon.SPECIAL_ICONS`, keyed by id) and card costs come from keys, never from the displayed
+word. With `card_costs = true`, a `[name]` whose ref is a card gets a
 miniature card-face cost ribbon in front (`CostRibbon.number_texture`, height ≈
 font × 1.2, width ≈ height × 0.78, baked at 2× and drawn at 1×), then a no-break
 space, then the coloured name. Pilot skill descriptions use this (`DraftDetailPanel`,
-`PilotDetailPanel`); card descriptions pass nothing and stay as before.
+`PilotDetailPanel`, `SkillPopup`); card descriptions (`CardDescBox`) pass refs without costs.
 A further trailing `card_meta: bool` (`fill_rich` / `make_rich_label`) wraps that
-ribbon + name in `push_meta(name, META_UNDERLINE_NEVER)` so the caller can tell which
-card a press hit (`ui/SkillPopup.gd` card preview).
+ribbon + name in `push_meta(name_key, META_UNDERLINE_NEVER)` so the caller can tell which
+card a press hit (`ui/SkillPopup.gd` card preview → `CardData.by_name_key`).
+**Known l10n gap:** the plain-word icons (`KeywordIcon.WORDS`, "전략 점수" / "비용", "N턴") match Korean
+words only — translated text keeps `[x]` colours, special icons and cost ribbons but loses the word icons.
 
 ### KeywordIcon.gd
 `class_name KeywordIcon`, extends `RefCounted`, static only. **Card keyword icons**
@@ -1170,7 +1188,7 @@ var card = CardData.new("Strike", cost, "A basic attack.")
 
 # Match-flow data
 var p := PlayerData.new(0, "Corin", GameEnums.Role.ASSASSIN, 0, <stats…>)   # stat values come from players.csv
-var m := MechData.new(12, "Overdrive", hp, atk, presence)   # values come from mechs.csv
+var m := MechData.new(12, name_key, hp, atk, presence)   # values come from mechs.csv (name_key = l10n key)
 p.assigned_mech = m
 ```
 

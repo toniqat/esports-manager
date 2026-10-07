@@ -223,7 +223,8 @@ func def_for(p: PilotData) -> Dictionary:
 
 
 func skill_name(p: PilotData) -> String:
-	return String(def_for(p).get("name", ""))
+	var key: String = String(def_for(p).get("name_key", ""))
+	return Loc.t(key) if not key.is_empty() else ""  # l10n-dynamic: pilot_skill.*.name
 
 
 func skill_type(p: PilotData) -> String:
@@ -231,7 +232,13 @@ func skill_type(p: PilotData) -> String:
 
 
 func skill_description(p: PilotData) -> String:
-	return String(def_for(p).get("description", ""))
+	var key: String = skill_description_key(p)
+	return Loc.t(key) if not key.is_empty() else ""  # l10n-dynamic: pilot_skill.*.desc
+
+
+## 설명문 l10n key — `[x]` 참조(`CardData.ref_entries`)를 푸는 데 쓴다.
+func skill_description_key(p: PilotData) -> String:
+	return String(def_for(p).get("description_key", ""))
 
 
 func skill_keyword(p: PilotData) -> String:
@@ -356,14 +363,14 @@ func _run_activation(p: PilotData) -> String:
 		KEY_HOLD_POSITION:   return _act_hold_position(p)
 		KEY_OPS_PREP:        return _act_ops_prep(p)
 		KEY_SCHEME:          return _act_scheme(p)
-		KEY_RECALL_ORDER:    return _grant_volatile(p, CARD_RECALL, "복귀")
+		KEY_RECALL_ORDER:    return _grant_volatile(p, CARD_RECALL)
 		KEY_DRAGON_BLESSING: return _act_dragon_blessing(p)
-		KEY_ELATION:         return _grant_volatile(p, CARD_ADRENALINE, "아드레날린")
+		KEY_ELATION:         return _grant_volatile(p, CARD_ADRENALINE)
 		KEY_FIERCE_BATTLE:   return _act_fierce_battle(p)
 		KEY_BATTLE_ORDER:    return _act_battle_order(p)
-		KEY_PLUNDERER:       return _grant_volatile(p, CARD_STEAL, "약탈")
+		KEY_PLUNDERER:       return _grant_volatile(p, CARD_STEAL)
 		KEY_SIEGE:           return _act_siege(p)
-		KEY_AGGRESSIVE_PUSH: return _grant_volatile(p, CARD_ADVANCE, "전진")
+		KEY_AGGRESSIVE_PUSH: return _grant_volatile(p, CARD_ADVANCE)
 		_:                   return ""
 
 
@@ -379,10 +386,10 @@ func _act_roam(p: PilotData) -> String:
 		if cheapest == null or cd.cost < cheapest.cost:
 			cheapest = cd
 	if cheapest == null:
-		return _grant_volatile(p, CARD_MOVE, "이동")
+		return _grant_volatile(p, CARD_MOVE)
 	if cheapest.cost <= 0:
 		# 이미 0코라 깎을 것이 없다 — 쿨타임만 먹고 끝나지 않도록 카드를 준다.
-		return _grant_volatile(p, CARD_MOVE, "이동")
+		return _grant_volatile(p, CARD_MOVE)
 	cheapest.cost = 0
 	_refresh_hand()
 	return "[%s] 비용 0" % cheapest.card_name
@@ -461,7 +468,7 @@ func _act_fierce_battle(p: PilotData) -> String:
 			found = cd
 			break
 	if found == null:
-		return _grant_volatile(p, CARD_ENGAGE_START, "교전 개시")
+		return _grant_volatile(p, CARD_ENGAGE_START)
 	_bs.player_deck.erase(found)
 	if _bs.card_phase != null:
 		_bs.card_phase.add_card_to_hand(found, true)
@@ -491,8 +498,9 @@ func _act_siege(p: PilotData) -> String:
 
 
 ## 스킬이 만들어 주는 손패 카드 한 장. `휘발성`을 덧붙여 안 쓰고 버려지면
-## 사라지게 한다 — 그러지 않으면 스킬이 매번 덱을 한 장씩 불린다.
-func _grant_volatile(p: PilotData, card_id: int, label: String) -> String:
+## 사라지게 한다 — 그러지 않으면 스킬이 매번 덱을 한 장씩 불린다. 기록 문구의 카드
+## 이름은 만든 카드 자신의 이름이다(표시 이름을 따로 넘기지 않는다 — l10n).
+func _grant_volatile(p: PilotData, card_id: int) -> String:
 	if _bs.card_phase == null:
 		return ""
 	var cd: CardData = _bs.card_phase.make_objective_card(card_id)
@@ -503,7 +511,7 @@ func _grant_volatile(p: PilotData, card_id: int, label: String) -> String:
 			[CardData.KW_EXHAUST, CardData.KW_VOLATILE])
 	_bs.card_phase.add_card_to_hand(cd, true)
 	_refresh_hand()
-	return "[%s] 생성 (소멸 · 휘발성)" % label
+	return "[%s] 생성 (소멸 · 휘발성)" % cd.card_name
 
 
 ## `raw` 에 없는 키워드만 골라 `|` 로 이어 붙인다.

@@ -2854,7 +2854,7 @@ func spawn_buff_banner(p: PilotData, cd: CardData) -> void:
 	for raw in _banners:
 		if (raw as Dictionary)["p"] == p:
 			stack += 1
-	var tex: Texture2D = CardImages.art_for(cd.card_name)
+	var tex: Texture2D = CardImages.art_for(cd.card_uid())
 	_bs.prime_texture(tex)
 	_banners.append({
 		"p": p,

@@ -208,7 +208,7 @@ static func finish_evening(state: Dictionary, day: int, choice: int) -> Dictiona
 		var fat: Dictionary = _mental(state).get("fatigue", {})
 		fat[str(pid)] = day + 1
 		_mental(state)["fatigue"] = fat
-		(out["notes"] as Array).append("외출 %d회째 · 다음 훈련일 EXP 감소" % outings(state, pid))
+		(out["notes"] as Array).append({"type": "outing", "count": outings(state, pid)})
 	e["choice"] = choice
 	e["outcome"] = out
 	return out
@@ -343,20 +343,26 @@ static func resolve_press(state: Dictionary, choice: int) -> Dictionary:
 
 
 # ── Sessions → what a messenger screen draws ─────────────────────────────────
-## `{kind, event, pilot_id, tag, lines[], choices[]}` with `{name}` filled.
+## `{kind, event, pilot_id, tag, lines[], choices[]}` — translated, `{name}` filled.
+## The `@text` line (press outlet / incident name) becomes `tag`, not a line.
 static func session_view(state: Dictionary, session: Dictionary) -> Dictionary:
 	var r: Dictionary = MentalEvents.row(String(session.get("event", "")))
 	if r.is_empty():
 		return {}
 	var pid: int = int(session.get("pilot_id", -1))
+	var tag: String = ""
 	var lines: Array = []
-	for l in (r["lines"] as Array):
-		lines.append(MentalEvents.fill(state, String(l), pid))
+	for k in (r["lines"] as Array):
+		var t: String = MentalEvents.text(state, String(k), pid).strip_edges()
+		if t.begins_with("@"):
+			tag = t.substr(1).strip_edges()
+		elif t != "":
+			lines.append(t)
 	var choices: Array = []
-	for c in (r["choices"] as Array):
-		choices.append(MentalEvents.fill(state, String(c), pid))
+	for k in (r["choices"] as Array):
+		choices.append(MentalEvents.text(state, String(k), pid))
 	return {"kind": String(r["kind"]), "event": String(r["id"]), "pilot_id": pid,
-			"tag": String(r["tag"]), "lines": lines, "choices": choices}
+			"tag": tag, "lines": lines, "choices": choices}
 
 
 # ── Internals ────────────────────────────────────────────────────────────────

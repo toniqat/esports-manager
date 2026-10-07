@@ -556,11 +556,11 @@ func _build_search_grid(source: Array, sort_names: bool = true) -> void:
 		search_grid_nodes.append(node)
 
 
-# 이름(오름차순) → 비용 순 정렬본. 원본 배열은 그대로 둔다.
+# 이름(오름차순) → 같은 카드(`card_uid`)면 비용 순 정렬본. 원본 배열은 그대로 둔다.
 func _sorted_for_display(src: Array) -> Array:
 	var out: Array = src.duplicate()
 	out.sort_custom(func(a: CardData, b: CardData) -> bool:
-		if a.card_name == b.card_name:
+		if a.card_uid() == b.card_uid():
 			return a.cost < b.cost
 		return a.card_name.naturalnocasecmp_to(b.card_name) < 0)
 	return out

@@ -1,5 +1,7 @@
 # Rendering Module
 
+**l10n:** card banners get art by `CardData.card_uid()` (`CardImages.art_for(uid)`), title = translated `card_name`.
+
 ## BattleRenderer.gd
 `extends Node2D` — child of BattleSim at position (0,0).
 

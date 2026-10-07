@@ -111,8 +111,7 @@ func _fill_preview() -> void:
 		return
 	var state: Dictionary = gm.season_state
 	var tid: int = int(state["player_team_id"])
-	var meta: Dictionary = (state["team_meta"] as Array)[tid]
-	_open("%s  (%s)" % [String(meta["name"]), String(meta["short_name"])])
+	_open("%s  (%s)" % [String(gm.team_name(tid)), String(gm.team_short_name(tid))])
 	var table: Dictionary = state.get("league_standings", {})
 	var rec: Dictionary = table.get(tid, table.get(str(tid), {}))
 	var detail := LeagueTeamDetail.create()

@@ -8,7 +8,11 @@ extends Resource
 # 값은 밴픽 화면의 분류와 데이터 검증에 쓰이고, ASSIGN 이 어느 슬롯에 어느
 # 메크를 앉힐지는 막지 않는다.
 @export var id: int = 0
-@export var name: String = ""
+## 이름 l10n key(`mechs.name_key`). 표시는 아래 `name`(읽기 전용, 현재 로케일).
+@export var name_key: String = ""
+var name: String:
+	get:
+		return Loc.t(name_key)  # l10n-dynamic: name.mech.*
 @export var role: int = -1
 
 # Combat stats — drive PilotData hp/atk when this mech is piloted.
@@ -23,10 +27,10 @@ extends Resource
 @export var presence: int = 4
 
 
-func _init(p_id: int = 0, p_name: String = "",
+func _init(p_id: int = 0, p_name_key: String = "",
 		p_hp: int = 100, p_atk: int = 10, p_presence: int = 4) -> void:
 	id = p_id
-	name = p_name
+	name_key = p_name_key
 	hp = p_hp
 	atk = p_atk
 	presence = p_presence

@@ -198,7 +198,7 @@ func _fill_header() -> void:
 	var prof: Dictionary = _pm.profile
 	var mgr: Dictionary = prof.get("manager", {})
 	var trow: Dictionary = StaffSystem.manager_type_row(int(mgr.get("type", 0)))
-	%TypeTitle.text = "%s 감독" % String(trow.get("name", "감독"))
+	%TypeTitle.text = "%s 감독" % Loc.t(String(trow.get("name_key", "")))  # l10n-dynamic: manager.type.*.name
 	var pcount: int = int(mgr.get("prestige", 0))
 	_paint_chip(%PrestigeChip, %PrestigeChipText, "프레스티지 %d회" % pcount,
 			OutgameTheme.ACCENT_DIM if pcount > 0 else OutgameTheme.SURFACE_SUNK,

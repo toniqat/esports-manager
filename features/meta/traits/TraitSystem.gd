@@ -29,8 +29,9 @@ static var _loaded: bool = false
 
 
 # ── Table ────────────────────────────────────────────────────────────────────
-## `[{id, key, name, rarity, polarity, bonus_cost, layer, p1, p2, unlock,
-##   default_owned: bool, craft_cost, desc}]`, id order.
+## `[{id, key, name_key, rarity, polarity, bonus_cost, layer, p1, p2, unlock,
+##   default_owned: bool, craft_cost, desc_key}]`, id order. Text = l10n keys —
+##   display through `name_of` / `desc_of`.
 static func rows() -> Array:
 	_ensure_loaded()
 	return _rows
@@ -53,12 +54,21 @@ static func is_positive(trait_id: int) -> bool:
 	return String(row(trait_id).get("polarity", POLARITY_POS)) == POLARITY_POS
 
 
+## Display name (current locale). "" for an unknown id.
+static func name_of(trait_id: int) -> String:
+	var r: Dictionary = row(trait_id)
+	if r.is_empty():
+		return ""
+	return Loc.t(String(r["name_key"]))  # l10n-dynamic: trait.*.name
+
+
 ## Description with `{p1}` / `{p2}` filled in (signed numbers keep their sign).
 static func desc_of(trait_id: int) -> String:
 	var r: Dictionary = row(trait_id)
-	return String(r.get("desc", "")) \
-			.replace("{p1}", str(int(r.get("p1", 0)))) \
-			.replace("{p2}", str(int(r.get("p2", 0))))
+	if r.is_empty():
+		return ""
+	var params: Dictionary = {"p1": str(int(r.get("p1", 0))), "p2": str(int(r.get("p2", 0)))}
+	return Loc.t(String(r["desc_key"]), params)  # l10n-dynamic: trait.*.desc
 
 
 static func rarity_name(rarity: int) -> String:
@@ -95,7 +105,7 @@ static func validate_equip(trait_ids: Array, owned: Array) -> String:
 			return "같은 특성을 두 번 장착할 수 없습니다"
 		seen[tid] = true
 		if not owned.has(tid):
-			return "보유하지 않은 특성입니다: %s" % String(row(tid)["name"])
+			return "보유하지 않은 특성입니다: %s" % name_of(tid)
 	var bonus: int = bonus_points(trait_ids)
 	if bonus < 0:
 		return "보너스 점수가 부족합니다 (%d)" % bonus
@@ -253,12 +263,12 @@ static func _ensure_loaded() -> void:
 	db.query("SELECT * FROM traits ORDER BY id")
 	for r in db.query_result:
 		var e: Dictionary = {
-			"id": int(r["id"]), "key": String(r["key"]), "name": String(r["name"]),
+			"id": int(r["id"]), "key": String(r["key"]), "name_key": String(r["name_key"]),
 			"rarity": int(r["rarity"]), "polarity": String(r["polarity"]),
 			"bonus_cost": int(r["bonus_cost"]), "layer": String(r["layer"]),
 			"p1": int(r["p1"]), "p2": int(r["p2"]), "unlock": String(r["unlock"]),
 			"default_owned": int(r["default_owned"]) == 1,
-			"craft_cost": int(r["craft_cost"]), "desc": String(r["desc"]),
+			"craft_cost": int(r["craft_cost"]), "desc_key": String(r["desc_key"]),
 		}
 		_rows.append(e)
 		_by_id[int(e["id"])] = e

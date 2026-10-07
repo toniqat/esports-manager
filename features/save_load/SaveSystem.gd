@@ -29,7 +29,10 @@ extends RefCounted
 
 const RUN_PATH: String = "user://run.save"
 const TEST_RUN_PATH: String = "user://run_test.save"
-const SAVE_VERSION: int = 1
+# 2 — l10n (설계서 D7): 표시 문자열 사본을 빼고 id · l10n key 만 저장한다(선수
+# `name_key`, `team_meta` `name_key` / `short_name_key`, 메타 `team_id`). 다른 버전의
+# 런 파일은 읽지 않는다 — `has_run` 이 false, `load_run` 이 오류(새 런 필요).
+const SAVE_VERSION: int = 2
 
 
 # The file every run read / write goes to — the hidden test run when
@@ -42,13 +45,13 @@ static func run_path() -> String:
 
 
 static func has_run() -> bool:
-	return FileAccess.file_exists(run_path())
+	return not _read_payload().is_empty()
 
 
-# Returns the run's meta block ({phase, year, month, day, weekday, team_name,
-# trophies, rank, wins, losses, saved_at, match_in_progress, scenario,
-# scenario_name}) or {} when there
-# is no run / the file is corrupted.
+# Returns the run's meta block ({phase, year, month, day, weekday, team_id,
+# trophies, rank, wins, losses, saved_at, match_in_progress, scenario}) or {}
+# when there is no run / the file is corrupted / another save version. Ids only —
+# the lobby resolves names (`GameManager.team_name`).
 static func read_run_meta() -> Dictionary:
 	var payload: Dictionary = _read_payload()
 	var meta: Variant = payload.get("meta", null)
@@ -87,7 +90,7 @@ static func load_run() -> String:
 		return "No run saved (%s)" % path
 	var payload: Dictionary = _read_payload()
 	if payload.is_empty():
-		return "Run file corrupted (not a JSON object)"
+		return "Run file corrupted or old save version (need %d) — start a new run" % SAVE_VERSION
 	var ss: Variant = payload.get("season_state", null)
 	if typeof(ss) != TYPE_DICTIONARY:
 		return "Run file corrupted (no season_state)"
@@ -120,6 +123,9 @@ static func _read_payload() -> Dictionary:
 	f.close()
 	var parsed: Variant = JSON.parse_string(raw)
 	if typeof(parsed) != TYPE_DICTIONARY:
+		return {}
+	# 다른 세이브 버전(예: 이름 사본을 든 v1)은 없는 런으로 본다 — 마이그레이션 없음.
+	if int((parsed as Dictionary).get("version", 0)) != SAVE_VERSION:
 		return {}
 	return parsed
 
@@ -325,7 +331,7 @@ static func _pilots_to_array(pilots: Array) -> Array:
 	var out: Array = []
 	for p in pilots:
 		out.append({
-			"id": p.id, "name": p.name, "role": p.role, "team_id": p.team_id,
+			"id": p.id, "name_key": p.name_key, "role": p.role, "team_id": p.team_id,
 			"field_hit": p.field_hit, "field_eva": p.field_eva,
 			"engage_hit": p.engage_hit, "engage_eva": p.engage_eva,
 			"atk_growth": p.atk_growth, "hp_growth": p.hp_growth,
@@ -350,7 +356,7 @@ static func _array_to_pilots(rows: Array) -> Array:
 	for r in rows:
 		var d: Dictionary = r
 		var pd := PlayerData.new(
-			int(d.get("id", 0)), String(d.get("name", "")),
+			int(d.get("id", 0)), String(d.get("name_key", "")),
 			int(d.get("role", 0)), int(d.get("team_id", 0)),
 			int(d.get("field_hit", 50)), int(d.get("field_eva", 50)),
 			int(d.get("engage_hit", 50)), int(d.get("engage_eva", 50)),
@@ -386,10 +392,6 @@ static func _int_keyed_dict_in(d: Dictionary) -> Dictionary:
 static func _build_meta(gm: Node) -> Dictionary:
 	var s: Dictionary = gm.season_state
 	var pid: int = int(s.get("player_team_id", 0))
-	var team_meta: Array = s.get("team_meta", [])
-	var team_name: String = "—"
-	if pid >= 0 and pid < team_meta.size():
-		team_name = String((team_meta[pid] as Dictionary).get("name", "—"))
 
 	var rank_data: Dictionary = _player_rank(s, pid)
 	var dt: Dictionary = Time.get_datetime_dict_from_system()
@@ -399,19 +401,17 @@ static func _build_meta(gm: Node) -> Dictionary:
 	# Mid-match flag: true when the run was saved between BAN_PICK start and
 	# BattleSim launch. The lobby shows an "경기 진행 중" indicator for it.
 	var match_in_progress: bool = (s.get("match_resume", null) != null)
-	# 런 시나리오(§10.2 run_setup). 옛 세이브 / 런 설정이 없으면 -1 · 빈 문자열.
+	# 런 시나리오 id(§10.2 run_setup). 런 설정이 없으면 -1. 이름은 저장하지 않는다(D7) —
+	# 화면이 `RunRules.scenario(id).name_key` 로 푼다.
 	var run_setup: Dictionary = s.get("run_setup", {})
 	var scenario_id: int = int(run_setup.get("scenario", -1))
-	var scenario_name: String = ""
-	if not run_setup.is_empty():
-		scenario_name = String(RunRules.scenario(scenario_id).get("name", ""))
 	return {
 		"phase":     int(s.get("current_phase", 0)),
 		"year":      int(s.get("year", 1)),
 		"month":     int(s.get("month", 12)),
 		"day":       int(s.get("day", 1)),
 		"weekday":   int(s.get("weekday", 0)),
-		"team_name": team_name,
+		"team_id":   pid,
 		"trophies":  _count_trophies(s, pid),
 		"rank":      int(rank_data.get("rank", 0)),
 		"wins":      int(rank_data.get("wins", 0)),
@@ -419,7 +419,6 @@ static func _build_meta(gm: Node) -> Dictionary:
 		"saved_at":  saved_at,
 		"match_in_progress": match_in_progress,
 		"scenario":  scenario_id if not run_setup.is_empty() else -1,
-		"scenario_name": scenario_name,
 	}
 
 

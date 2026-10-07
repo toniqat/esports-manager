@@ -57,7 +57,7 @@ static func hub_summary(state: Dictionary) -> Dictionary:
 		"title": "스태프",
 		"value": "위임 %d/%d" % [delegated, StaffSystem.STATS.size()],
 		"sub": "약점 %s %d" % [StaffSystem.STAT_LABELS.get(weakest, "—"), weakest_v],
-		"owner": String(asst.get("name", "감독")),
+		"owner": StaffSystem.staff_name(asst) if not asst.is_empty() else "감독",
 		"alert": alert,
 	}
 
@@ -124,7 +124,7 @@ static func _owner_text(state: Dictionary, s: String) -> String:
 		StaffSystem.OWNER_STAFF:
 			var st: Dictionary = StaffSystem.staff_for(state, s)
 			return "%s %s" % [StaffSystem.JOB_LABELS.get(String(st.get("job", "")), "스태프"),
-					String(st.get("name", "—"))]
+					StaffSystem.staff_name(st)]
 	return "감독 (직접)"
 
 
@@ -160,7 +160,7 @@ func _fill_mods(state: Dictionary) -> void:
 			StaffSystem.STAT_LABELS.get(String(m.get("stat", "")), "?"), delta,
 			int(m.get("weeks_left", 0))]
 		if src != "":
-			text += " · " + src
+			text += " · " + FinanceSystem.mod_source_text(src)
 		texts.append(text)
 		colors.append(OutgameTheme.POSITIVE if delta > 0 else OutgameTheme.NEGATIVE)
 	var lines: Array = _lines(%Mods, texts)
@@ -189,7 +189,7 @@ func _fill_traits(state: Dictionary) -> void:
 		var sign_color: Color = OutgameTheme.POSITIVE if pos else OutgameTheme.NEGATIVE
 		row.add_theme_stylebox_override(&"panel", OutgameTheme.lead_bar_style(sign_color, 12))
 		_chip(row.get_node("%Sign"), "+" if pos else "−", sign_color)
-		row.get_node("%Name").text = String(r.get("name", ""))
+		row.get_node("%Name").text = TraitSystem.name_of(tid)
 		row.get_node("%Desc").text = TraitSystem.desc_of(tid)
 		var rarity: int = int(r.get("rarity", 0))
 		_chip(row.get_node("%Rarity"), TraitSystem.rarity_name(rarity), TraitUi.rarity_color(rarity))
@@ -205,7 +205,7 @@ func _fill_staff(state: Dictionary) -> void:
 		var row: Control = rows[i]
 		var e: Dictionary = staff[i]
 		var job: String = String(e.get("job", ""))
-		row.get_node("%Name").text = String(e.get("name", "—"))
+		row.get_node("%Name").text = StaffSystem.staff_name(e)
 		row.get_node("%Job").text = "%s · %s" % [StaffSystem.JOB_LABELS.get(job, job), _best_stats_text(e)]
 		row.get_node("%Salary").text = "주급 %d" % int(e.get("salary", 0))
 

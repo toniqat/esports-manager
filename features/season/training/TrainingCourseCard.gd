@@ -95,7 +95,7 @@ func _draw_mini() -> void:
 ## F6 단독 실행 미리보기 — 손으로 적은 3등급 2×2 코스, 고른 상태(`resources/UiPreview.gd`).
 func _fill_preview() -> void:
 	UiPreview.stage(self)
-	var t := TrainingTile.from_def({"id": "T12", "name": "합숙 스크림", "grade": 3,
+	var t := TrainingTile.from_def({"id": "T12", "name_key": "tx_Z7JQDJ9DV2", "grade": 3,
 			"shape": "CC/DD", "exp": "engage_hit:52|engage_eva:52", "effect": ""})
 	fill(t, "1/2", false, false, "")
 	set_selected(true, false)

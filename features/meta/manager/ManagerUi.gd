@@ -85,8 +85,4 @@ static func unlock_text(cond: String) -> String:
 
 
 static func _team_name(team_id: int) -> String:
-	for raw in RunRules.team_packages():
-		var t: Dictionary = raw
-		if int(t.get("id", -1)) == team_id:
-			return String(t.get("name", "팀 %d" % team_id))
-	return "팀 %d" % team_id
+	return RunRules.team_name(team_id)

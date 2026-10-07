@@ -1,5 +1,7 @@
 # Card Phase Module
 
+**텍스트는 l10n key — `Loc.t`.** Card name / description come from `CardData.name_key` · `description_key` (`card.pilot|mech.{id}.name|desc`); `[x]` references resolve by key (`CardData.ref_entries`), card identity is `CardData.card_uid()` (art, effect sources, sort tie-break), mech rows build via `CardData.from_mech_def`. Term rules: `data/l10n/src/glossary.csv`.
+
 | File | class_name | Role |
 |---|---|---|
 | `Card.gd` | Card | Visual node for a single card (카드) |
@@ -41,19 +43,23 @@ words (`StrategyIcon._tokens`), so **write by the rules and the icons follow.**
 - **Discard pile**: never "묘지" (버린 더미에서 찾기 · 버린 더미에서 뽑기). Icon: a pile of cards lying down.
 - **생성** (create) only for making cards (손에 [락온] 생성) — shields · reactive armour are "부여" (grant).
 - **보호막** (shield icon) · **회복** (heart) · **처치** (skull; "처치 관여" uses the same icon).
-- **Hand**: never "손패" · "핸드" — always "손" (손의 모든 카드, 손에 생성).
+- **Terms** (손 · 소지 중 · 찾기 · 버린 더미 · 뽑기 · 턴 · 토큰 · 작전 단계 · 교전 … and their English): `data/l10n/src/glossary.csv` (validator W071 / W072).
 - **Special keywords** `[name]`: words wrapped in brackets in the text. On screen they print **without
   brackets in the special keyword colour** (purple, `KeywordIcon.SPECIAL_COLOR_*`) and their gloss is not
   written in the text — the description panel adds a note panel (the hand: in the keyword panel column
   after the keyword panels; other panels: at the bottom). Two kinds:
-  - **Effect terms** — the table in `CardData.SPECIAL_NOTES` (추적 · 반응 장갑 · 목표 · 현상금 · 기절 ·
-    취약). A one-line note panel. A dedicated icon (`KeywordIcon.SPECIAL_ICONS`) precedes the term in
-    the text · the panel title · the note line. For a new term, add its note to that table (and to
-    `SPECIAL_ICONS` if it has an icon) and wrap it as `[term]` in the text.
-  - **Card names** — any `[name]` not in the table. Instead of a note it raises **that card's
+  - **What a `[x]` is, is decided by key, not by text** (l10n D3 · D4): `CardDescBox.special_terms(data)` =
+    `CardData.ref_entries(data.description_key)` — the description key's reference keys from
+    `data/l10n/generated/refs.json` (`Loc.refs`), each `{key, text, special, card}`.
+  - **Effect terms** — a `keyword` domain ref (`keyword.<id>.name`, `CardData.SPECIAL_LABELS` /
+    `SPECIAL_NOTES`: track · reactive_armor · target · bounty · stun · vulnerable). A one-line note panel.
+    A dedicated icon (`KeywordIcon.SPECIAL_ICONS`, keyed by id) precedes the term in the text · the panel
+    title · the note line. For a new term, add `keyword.<id>.name` / `.note` keys (`new_key`), both tables
+    (and `SPECIAL_ICONS` if it has an icon) and wrap it as `[term]` in the text.
+  - **Card names** — a `card` domain ref. Instead of a note it raises **that card's
     description panel** (cost · name · keywords · text, `CardDescBox.build(ref, …, with_notes = false)` —
-    expanded one level only). Names are looked up in the mech card table, then the pilot card table
-    (`card_by_name`, cached — `ui/SkillPopup.gd`'s card preview uses it too). A card's own name is not expanded.
+    expanded one level only). The card comes from `CardData.by_name_key(key)` (mech table, then pilot
+    table, cached — `ui/SkillPopup.gd`'s card preview uses it too). A card's own name key is not expanded.
   - Particles attach directly to the bracket (`[목표]가`). No brackets inside formula phrases.
 - **소지 중** (while held): a card that works while in hand starts with **"소지 중: …"** (open-palm
   icon). If it also has a use effect, split the line with `\n사용: …`.

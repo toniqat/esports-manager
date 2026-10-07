@@ -14,13 +14,14 @@ extends RefCounted
 
 static var _scenarios: Array = []
 static var _levels: Dictionary = {}       # int level → {stat_bonus, salary_bonus, levelup_cost, exp_required}
-static var _breakthrough: Dictionary = {} # int pilot_id → Array[{stage, kind, value, desc}] by stage
+static var _breakthrough: Dictionary = {} # int pilot_id → Array[{stage, kind, value, desc_key}] by stage
 static var _teams: Array = []
 static var _loaded: bool = false
 
 
 # ── 표 ───────────────────────────────────────────────────────────────────────
-## `[{id, name, salary_cap, desc}]`, id 순.
+## `[{id, name_key, salary_cap, desc_key}]`, id 순. 텍스트는 l10n key
+## (`scenario.*.name` / `.desc`) — 화면이 `Loc.t` 로 보인다.
 static func scenarios() -> Array:
 	_ensure_loaded()
 	return _scenarios
@@ -44,11 +45,31 @@ static func salary_cap_with(scenario_id: int, trait_ids: Array) -> int:
 	return maxi(0, salary_cap(scenario_id) + TraitSystem.sum_p1(trait_ids, "salary_cap"))
 
 
-## 팀 선택 화면용 패키지. `[{id, name, short_name, budget, facility_level,
-## manual_areas: Array[String], desc}]`, id 순. M1 은 표시 · 스냅샷만 한다.
+## 팀 선택 화면용 패키지. `[{id, name_key, short_name_key, budget, facility_level,
+## manual_areas: Array[String], desc_key}]`, id 순 — 글자는 l10n key 다(`Loc.t` 로
+## 표시, `name.team.*.name` · `name.team.*.short` · `team.*.desc`). M1 은 표시 · 스냅샷만 한다.
 static func team_packages() -> Array:
 	_ensure_loaded()
 	return _teams
+
+
+## 리그 팀(`teams.csv`) 표시 이름 · 약칭 — 런 밖(정적 화면)용. 런 안에서는 국제전 팀까지
+## 아는 `GameManager.team_name` / `team_short_name` 을 쓴다. 없는 id 는 id 그대로.
+static func team_name(team_id: int) -> String:
+	var key: String = String(_team_package(team_id).get("name_key", ""))
+	return str(team_id) if key.is_empty() else Loc.t(key)  # l10n-dynamic: name.team.*.name
+
+
+static func team_short_name(team_id: int) -> String:
+	var key: String = String(_team_package(team_id).get("short_name_key", ""))
+	return str(team_id) if key.is_empty() else Loc.t(key)  # l10n-dynamic: name.team.*.short
+
+
+static func _team_package(team_id: int) -> Dictionary:
+	for raw in team_packages():
+		if int((raw as Dictionary).get("id", -1)) == team_id:
+			return raw
+	return {}
 
 
 ## `manual_areas` 의 영역 키 → 화면 표기.
@@ -130,7 +151,7 @@ static func breakthrough_max() -> int:
 	return maxi(0, ConstTable.int_of("BREAKTHROUGH_MAX"))
 
 
-## `[{stage, kind, value: String, desc}]` of one pilot, stage order (empty for mobs).
+## `[{stage, kind, value: String, desc_key}]` (`desc_key` = l10n key `breakthrough.*.desc`) of one pilot, stage order (empty for mobs).
 static func breakthrough_rows(pilot_id: int) -> Array:
 	_ensure_loaded()
 	return _breakthrough.get(pilot_id, [])
@@ -236,8 +257,8 @@ static func _ensure_loaded() -> void:
 		db.query("SELECT * FROM scenarios ORDER BY id")
 		for row in db.query_result:
 			_scenarios.append({
-				"id": int(row["id"]), "name": String(row["name"]),
-				"salary_cap": int(row["salary_cap"]), "desc": String(row["desc"]),
+				"id": int(row["id"]), "name_key": String(row["name_key"]),
+				"salary_cap": int(row["salary_cap"]), "desc_key": String(row["desc_key"]),
 			})
 	if _has_table(db, "pilot_levels"):
 		db.query("SELECT * FROM pilot_levels ORDER BY level")
@@ -257,7 +278,7 @@ static func _ensure_loaded() -> void:
 			var list: Array = _breakthrough.get(pid, [])
 			list.append({
 				"stage": int(row["stage"]), "kind": String(row["kind"]),
-				"value": String(row["value"]), "desc": String(row["desc"]),
+				"value": String(row["value"]), "desc_key": String(row["desc_key"]),
 			})
 			_breakthrough[pid] = list
 	db.query("SELECT * FROM teams ORDER BY id")
@@ -266,12 +287,12 @@ static func _ensure_loaded() -> void:
 		for part in String(row.get("manual_areas", "")).split("|", false):
 			areas.append((part as String).strip_edges())
 		_teams.append({
-			"id": int(row["id"]), "name": String(row["name"]),
-			"short_name": String(row["short_name"]),
+			"id": int(row["id"]), "name_key": String(row["name_key"]),
+			"short_name_key": String(row["short_name_key"]),
 			"budget": int(row.get("budget", 0)),
 			"facility_level": int(row.get("facility_level", 0)),
 			"manual_areas": areas,
-			"desc": String(row.get("desc", "")),
+			"desc_key": String(row.get("desc_key", "")),
 		})
 	db.close_db()
 

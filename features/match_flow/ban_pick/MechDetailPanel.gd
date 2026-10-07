@@ -175,11 +175,11 @@ func _fill_passive() -> void:
 	%PassiveBox.visible = not pas.is_empty()
 	if pas.is_empty():
 		return
-	%PassiveName.text = String(pas.get("name", "?"))
+	%PassiveName.text = Loc.t(String(pas.get("name_key", "")))  # l10n-dynamic: mech_passive.*.name
 	var kw: String = String(pas.get("keyword", ""))
 	%PassiveKw.text = kw
 	%PassiveKw.visible = not kw.is_empty()
-	%PassiveDesc.text = String(pas.get("description", ""))
+	%PassiveDesc.text = Loc.t(String(pas.get("description_key", "")))  # l10n-dynamic: mech_passive.*.desc
 
 
 ## 메크 카드 격자 — 인게임 파일럿 상세 패널(`battle_sim/ui/PilotDetailPanel`)의 카드
@@ -275,7 +275,7 @@ func _preview_quirks(s: Dictionary, pd: PlayerData, mech_id: int) -> Dictionary:
 		var r: Dictionary = QuirkSystem.row(int(id))
 		if r.is_empty():
 			continue
-		rows.append({"name": String(r["name"]), "grade": int(r["grade"]),
+		rows.append({"name": QuirkSystem.name_of(int(id)), "grade": int(r["grade"]),
 				"effect": QuirkSystem.effect_text(int(id), true),
 				"active": QuirkSystem.cond_holds(s, pd, mech_id, String(r["cond"]))})
 	return {"pilot": pd.name, "slots": QuirkSystem.slots_of(s, pd.id),

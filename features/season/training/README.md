@@ -64,6 +64,14 @@ verbatim, but those sentences were hand-transcriptions of the `effect` clauses, 
 number made only the description silently lie. Both lines of the popover are now built from tile
 data — `TrainingTile.exp_summary()` (EXP) and `effect_summary()` (effect).
 
+**l10n (design §6.1).** The tile name is a key: `training_tiles.name_key` (`training.tile.{id}.name`) →
+`TrainingTile.name_key`; `tile_name` is a read-only computed property (`Loc.t(name_key)`). Both summaries are
+built from **template keys**, never `+` concatenation: `training.exp.none` · `.quirk_day` · `.mastery {n}` ·
+`.all {n}` · `.stat {stat} {n}` (items joined by `training.list_sep`, EXP + mastery lines by a newline), and
+`training.effect.mult {scope} {pct}` · `.flat {scope} {stat} {amount}` · `.quirk {op}` (one line each) with
+`training.stat.all`, `SCOPE_LABELS` (`training.scope.*`) and `QUIRK_OP_LABELS` (`training.quirk_op.*`) as
+key-constant tables. Stat names still come from `PlayerData.STAT_LABELS`.
+
 ### Colour ↔ stat
 Same order as `PlayerData.STAT_KEYS`.
 
@@ -99,8 +107,8 @@ quirk:gain|reroll|slot        no scope — acts on the pilot of each Q cell (see
 | `mate_left` / `mate_right` | The neighbouring player's same weekday |
 | `mate_all` | All other players on that weekday |
 
-On-screen wording comes from the single table `TrainingTile.SCOPE_LABELS` (`day_next` →
-"다음 날" (Next day), `mate_all` → "같은 날 다른 선수" (Other players, same day)). For the same reason
+On-screen wording comes from the single table `TrainingTile.SCOPE_LABELS` — scope → l10n key
+(`training.scope.*`, e.g. `day_next` → "다음 날" (Next day), `mate_all` → "같은 날 다른 선수" (Other players, same day)). For the same reason
 as clause names, it is written by **meaning, not direction** — rotate the board once and "the cell
 above" becomes a lie.
 `mult` shows the **difference** on screen (`<pct>` → `+(<pct> − 100)%`): since 100 is no change, what directly
@@ -147,7 +155,7 @@ week-progress screen (`features/season/week/`) started asking "what happened tha
 weekday, settlement was split per day too.
 
 It returns the row list that screen reads — in seat order,
-`Array[{pilot_id, name, role, seat, before, after, ups, exp, carry, mastery, quirk}]`
+`Array[{pilot_id, role, seat, before, after, ups, exp, carry, mastery, quirk}]` (no name — saved in the run file; screens use `GameManager.pilot_name(pilot_id)`, l10n D7)
 (`mastery` = mech-mastery EXP handed to `MechMastery.add_training_exp` that day, M3;
 `quirk` = quirk ops run on that pilot that day, `[{kind, result, id?, from?, to?, slots?}]`, empty
 array when none — see "Quirk tiles").

@@ -1,5 +1,7 @@
 # features/battle_sim/skill — pilot skills
 
+**텍스트는 l10n key — `Loc.t`.** `skill_name` / `skill_description` translate the def's `name_key` · `description_key` (`pilot_skill.{id}.*`); `skill_description_key` feeds `CardData.ref_entries`. Granted volatile cards are logged with their own `card_name` (no hard-coded names).
+
 A **unique ability** attached to one player (선수). If cards (카드) are a shared resource handed out by
 mechs (메크) and pilots (파일럿), a skill is the one move only that player can make.
 
@@ -35,8 +37,8 @@ The table is `data/csv/pilot_skills.csv` (**25 rows**); the pairing is held by `
 - **Line breaks are the two characters `\n`** (backslash + n) — same as the card CSV. The old ` / `
   separators were all turned into lines.
 - **Card names are written `[카드명]` (`[card name]`)** — the brackets are not printed; the name is
-  painted in the special-keyword colour, and when `card_costs` (`GameManager.card_costs_by_name()`)
-  is passed, that card's cost ribbon (`CostRibbon.number_texture`) stands in front of it. So the
+  painted in the special-keyword colour, and when `refs` (`CardData.ref_entries(description_key)`)
+  + `card_costs = true` are passed, that card's cost ribbon (`CostRibbon.number_texture`) stands in front of it. So the
   word "card" is not written separately: `휘발성 [이동]{eul} 손에 생성`.
 - **Josa (particle) tags** `{eul}` 을/를 · `{eun}` 은/는 · `{i}` 이/가 · `{wa}` 과/와 — picked by
   whether the preceding syllable has a final consonant (a closing `]` is skipped).

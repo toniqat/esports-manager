@@ -168,7 +168,7 @@ There are three pieces of week-progress state (all in `season_state`, all saved)
 | Key | Meaning |
 |---|---|
 | `week_day` | The weekday currently shown, 0..6. **-1 means the week has not been opened yet** — the hub · press conference (기자회견) · training plan stretch is all -1, and that value decides whether the standings' "확인" returns to the week or to the hub (`SeasonHub.on_standings_confirmed`). |
-| `week_day_log` | `day(int) → Array[row]`. Integer keys, so on load it goes through `_int_keyed_dict_in` — otherwise `log[3]` returns an empty array forever and the same weekday's training is applied twice. |
+| `week_day_log` | `day(int) → Array[row]` (rows keep `pilot_id` only — the pilot card name is `GameManager.pilot_name(pilot_id)`). Integer keys, so on load it goes through `_int_keyed_dict_in` — otherwise `log[3]` returns an empty array forever and the same weekday's training is applied twice. |
 | `training_exp_carry` | The leftover-EXP bank. See the `TrainingBoard` entry. |
 
 All three are cleared by `TrainingBoard.reset_week_progress()`, which runs in two places:

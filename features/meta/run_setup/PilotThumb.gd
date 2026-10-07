@@ -150,5 +150,5 @@ func _on_pressed() -> void:
 func _fill_preview() -> void:
 	UiPreview.stage(self)
 	UiPreview.trace(thumb_tapped)
-	setup(PlayerData.new(2, "Corin", GameEnums.Role.ASSASSIN, 5, 80, 85, 82, 80, 81, 82, 19), true)
+	setup(PlayerData.new(2, "tx_1TSM3CVTC7", GameEnums.Role.ASSASSIN, 5, 80, 85, 82, 80, 81, 82, 19), true)
 	set_tag("49")

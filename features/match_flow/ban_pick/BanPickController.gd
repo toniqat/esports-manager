@@ -391,7 +391,7 @@ func _quirk_rows(side: int, mech_id: int, seat: int) -> Dictionary:
 		var r: Dictionary = QuirkSystem.row(int(id))
 		if r.is_empty():
 			continue
-		rows.append({"name": String(r["name"]), "grade": int(r["grade"]),
+		rows.append({"name": QuirkSystem.name_of(int(id)), "grade": int(r["grade"]),
 				"effect": QuirkSystem.effect_text(int(id), true),
 				"active": QuirkSystem.cond_holds(s, pd, mech_id, String(r["cond"]))})
 	return {"pilot": pd.name, "slots": QuirkSystem.slots_of(s, pd.id),
@@ -641,11 +641,11 @@ func _fill_sheet(m: MechData) -> void:
 	v.sheet_passive_desc.visible = not pas.is_empty()
 	if not pas.is_empty():
 		var kw: String = String(pas.get("keyword", ""))
-		var head: String = "◆ %s" % String(pas["name"])
+		var head: String = "◆ %s" % Loc.t(String(pas["name_key"]))  # l10n-dynamic: mech_passive.*.name
 		if kw != "":
 			head += "   [%s]" % kw
 		v.sheet_passive_head.text = head
-		v.sheet_passive_desc.text = String(pas.get("description", ""))
+		v.sheet_passive_desc.text = Loc.t(String(pas.get("description_key", "")))  # l10n-dynamic: mech_passive.*.desc
 
 	# ── 카드 셋 ── (오른쪽 칸에서 이어진다 — 왼쪽은 아트 한 장이 통째로 쓴다)
 	var defs: Array = _gm.mech_cards_for(m.id)
@@ -699,7 +699,7 @@ func _build_card_row(defs: Array) -> void:
 		# add_child 를 setup 보다 **먼저** — Card.gd 의 @onready 참조는 트리에
 		# 들어간 뒤에야 풀린다(CardPileViewer / PilotDetailPanel 과 같은 순서).
 		item.hold_card(node)
-		node.setup(CardData.from_def(def), false, true)
+		node.setup(CardData.from_mech_def(def), false, true)
 		node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		node.pivot_offset = Vector2.ZERO
 		node.scale = Vector2(SHEET_CARD_SCALE, SHEET_CARD_SCALE)

@@ -35,14 +35,14 @@ missing keys (pre-M6 save) is re-initialised lazily by `_fin`, keeping what was 
 | `week_bonus` · `week_wins` · `week_losses` | int | Match bonus accrued since the last settlement (reset by `settle_week`). |
 | `week_no` | int | Settlements done this run (history label "N주차"). |
 | `manual_profit_weeks` | int | Settled weeks with `net ≥ 0` while `StaffSystem.owner(state, "finance") == "manager"` — trait unlock `finance_manual_profit:N` (M8). Read via `manual_profit_weeks(state)`. |
-| `specials` | Array of `{id, name, kind, p1, p2, weeks_left, cost, bought_week}` | Running special spending (§14). Params are a snapshot of the CSV row at purchase (p1 / p2 stay strings). `weeks_left` loses one per `settle_week`; the entry is dropped at 0. |
-| `week_special_spend` · `week_special_buys` | int · Array[String] | Spent on specials since the last settlement and the names bought (history / toast), reset by `settle_week`. |
+| `specials` | Array of `{id, kind, p1, p2, weeks_left, cost, bought_week}` (no text — l10n D7; name via `special_name(id)`) | Running special spending (§14). Params are a snapshot of the CSV row at purchase (p1 / p2 stay strings). `weeks_left` loses one per `settle_week`; the entry is dropped at 0. |
+| `week_special_spend` · `week_special_buys` | int · Array[String] | Spent on specials since the last settlement and the **ids** bought (history / toast), reset by `settle_week`. |
 | `history` | Array of entries | Last `FINANCE_HISTORY_WEEKS` settlements, oldest first. |
 
 History entry (also what `settle_week` returns, plus `toast`):
 `{week_no, phase, phase_week, sponsor, income_pct, trait_income_pct, trait_upkeep_pct, finance_stat, income_mult, upkeep_mult,
 special_income_pct, special_upkeep_pct, special_salary_pct, specials: Array[id] (running during the week),
-special_spend, special_buys: Array[name], specials_expired: Array[name], bonus, wins, losses, income, salaries, upkeep,
+special_spend, special_buys: Array[id], specials_expired: Array[id], bonus, wins, losses, income, salaries, upkeep,
 expense, net, reserve, alloc{training, facility, welfare} (amounts), unpaid, balance, fund, level,
 delegated, cuts: Array[String]}`.
 
@@ -118,7 +118,10 @@ A "hard cut" (steps 3–4) lights the hub card alert and marks the history row �
 
 ## Special spending (특별 지출, §14 T6)
 The sink for surplus balance, and the low-budget tools M6 left for later. Rows live in
-`data/csv/finance_specials.csv` (`id, name, kind, cost, p1, p2, weeks, cond, desc`, Korean names / desc).
+`data/csv/finance_specials.csv` (`id, name_key, kind, cost, p1, p2, weeks, cond, desc_key` — l10n keys
+`finance.special.{id lower}.name/desc`). Display: `special_name(id)` / `special_desc(id)` / `special_names(ids)`.
+A `coach_hire` writes `staff_mods.source = "finance:<id>"` (`MOD_SOURCE_PREFIX`); `mod_source_text(source)`
+turns it into the special's name for the staff sheet.
 Bought from the sheet, **paid from the balance at once** (not part of the week's `net`), effect for
 `weeks` settlements.
 
@@ -144,7 +147,7 @@ settled week). An unknown clause blocks the row (`조건 오류`).
 with no staff salaries; `upkeep_delay` with no upkeep) · balance < cost.
 
 **Week end**: `settle_week` computes everything with the running specials, then `_tick_specials` lowers
-`weeks_left` and drops finished ones; their names go to `specials_expired` and the toast
+`weeks_left` and drops finished ones; their ids go to `specials_expired` and their names to the toast
 (`… · 특별 지출 N · 만료: <names>`).
 
 ## UI

@@ -225,12 +225,12 @@ func _hide_desc() -> void:
 # ─── Data ────────────────────────────────────────────────────────────────────
 # 이름 오름차순. 실제 배열 순서를 그대로 보여 주면 덱 위쪽(= 다음 드로우)이
 # 그대로 읽히므로 정렬본을 만들어 쓴다 — 원본 배열은 건드리지 않는다.
-# 같은 이름이면 비용 순으로 안정화해 카드 순서가 열 때마다 흔들리지 않게 한다.
+# 같은 카드(`card_uid`)면 비용 순으로 안정화해 카드 순서가 열 때마다 흔들리지 않게 한다.
 func _sorted_cards() -> Array:
 	var src: Array = _pile_array()
 	var out: Array = src.duplicate()
 	out.sort_custom(func(a: CardData, b: CardData) -> bool:
-		if a.card_name == b.card_name:
+		if a.card_uid() == b.card_uid():
 			return a.cost < b.cost
 		return a.card_name.naturalnocasecmp_to(b.card_name) < 0)
 	return out

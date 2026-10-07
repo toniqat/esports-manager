@@ -10,7 +10,7 @@ numbers come back as floats, so every read goes through `int()`):
 
 | File | Role |
 |---|---|
-| `MechMastery.gd` | `class_name MechMastery` (static). Init, read, tiers, bonus, gains, research, week close. Reads the mech table (`mechs`) from game.db itself. |
+| `MechMastery.gd` | `class_name MechMastery` (static). Init, read, tiers, bonus, gains, research, week close. Reads the mech table (`mechs`) from game.db itself — `all_mechs` rows are `{id, name_key, role}`; `mech_name(id)` = `Loc.t(name_key)`. |
 | `MasteryPanel.gd` + `UI_View_MasteryPanel.tscn` | Hub manage card 「메크 연구」 + its `HubSheet` body (research picker). |
 | `UI_Comp_MasteryPilotRow.tscn` · `UI_Comp_MasteryMechChip.tscn` · `UI_Comp_MasteryQuirkLine.tscn` | Item scenes of the sheet (no script): one pilot card · one own-role mech chip · one quirk line. |
 

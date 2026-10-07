@@ -296,18 +296,13 @@ func matches_this_week() -> Array:
 
 
 # ── Team metadata accessors ─────────────────────────────────────────────────
+# 팀 메타에는 l10n key 만 있다(D7) — 표시는 `GameManager.team_name` 이 푼다.
 func team_name(team_id: int) -> String:
-	var meta: Array = _gm.season_state.get("team_meta", [])
-	if team_id < 0 or team_id >= meta.size():
-		return "Team %d" % team_id
-	return String(meta[team_id]["name"])
+	return String(_gm.team_name(team_id))
 
 
 func team_short_name(team_id: int) -> String:
-	var meta: Array = _gm.season_state.get("team_meta", [])
-	if team_id < 0 or team_id >= meta.size():
-		return "T%d" % team_id
-	return String(meta[team_id]["short_name"])
+	return String(_gm.team_short_name(team_id))
 
 
 # ── Signal handlers ─────────────────────────────────────────────────────────

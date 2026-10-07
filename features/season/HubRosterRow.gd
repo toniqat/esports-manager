@@ -69,6 +69,6 @@ func _fill_preview() -> void:
 	UiPreview.stage(self)
 	var role: int = GameEnums.Role.ASSASSIN
 	set_role(role)
-	var p := PlayerData.new(2, "Corin", role, 0, 80, 85, 82, 80, 81, 82)
+	var p := PlayerData.new(2, "tx_1TSM3CVTC7", role, 0, 80, 85, 82, 80, 81, 82)
 	var t_max: int = ConstTable.int_of("TRUST_MAX")
 	show_pilot(p, int(float(t_max) * 0.6), t_max)

@@ -68,6 +68,15 @@ extends Node
 # 방금 고른 열 대가 화면에서 통째로 사라진 뒤 글자 목록으로 다시 나타나서
 # "내가 뭘 골랐더라"를 두 번 읽게 했다. 그 파일은 삭제됐다.
 
+#
+# ── 씬 (`BanPickView.tscn`) ──────────────────────────────────────────────────
+# **화면의 배치 · 스타일은 씬이 정본이다** — `BanPickView`(화면 한 장) 와 아이템 씬
+# `BanPickMechCell`(격자 칸) · `BanPickMechSlot`(메크 칸) · `BanPickPortrait`(파일럿
+# 초상화) · `BanPickBanChip`(밴 칩) · `BanPickSheetCard`(시트 카드 한 장), 순서 줄
+# 위젯 `BanPickOrderRow`. 이 스크립트는 **규칙(순서 · 합법성 · AI · 배정)과 상태**를
+# 들고, 씬 노드에 데이터를 채우고 상태가 바뀔 때 다시 칠한다. 진영색 · 역할색 ·
+# 숙련 단계색 같은 데이터 색만 코드가 입힌다.
+
 signal phase_finished(result: Dictionary)
 
 const CARD_SCENE := preload("res://scenes/Card.tscn")
@@ -113,82 +122,10 @@ const ROLE_COLORS: Array = [
 	Color(1.00, 0.35, 0.35),  # SNIPER
 ]
 
-# ── 레이아웃 ─────────────────────────────────────────────────────────────────
-# 세로 좌표는 전부 아래 상수들에서 **계산해서** 나온다(`_layout()`). 안전 영역이
-# 기기마다 다르므로 격자 칸 높이만은 칸 **폭**에서 나온다(정사각) — 그래야 어느
-# 화면에서나 칸이 찌그러지지 않고, 대신 픽창 자체가 남는 공간에 맞춰 줄어든다.
-const SIDE_MARGIN: float  = 25.0
-const TOP_PAD: float      = 8.0
-const BOT_PAD: float      = 10.0
-const BLOCK_GAP: float    = 10.0
-## 진행 순서 표시 줄(14칸)이 차지하는 띠의 높이. **화면 최상단이 아니라 픽창
-## 안, 역할군 필터 바로 위**에 앉는다 — 지금 누구 차례인지를 보려고 시선이
-## 화면 끝까지 올라갔다 내려오지 않게, 고르는 곳 바로 위에서 말한다.
-## 띠가 칸보다 훨씬 높은 것은 **지금 칸**의 위아래로 삼각형이 오르내릴 자리다.
-const PIPS_ROW_H: float   = 64.0
-const PIP_W: float        = 58.0
-const PIP_GAP: float      = 6.0
-## 지난 / 다음 칸의 두께와 **지금 칸**의 두께. 지금 칸만 두꺼워져 그 안에 밴(X) /
-## 픽(V) 아이콘이 들어간다.
-const PIP_H: float        = 12.0
-const PIP_ACTIVE_H: float = 26.0
-const PIP_ICON: float     = 20.0
-const PIP_GROW_SEC: float = 0.16
-## 같은 팀의 같은 행동(밴 / 픽)이 연달아 이어지는 수들은 **캡슐 하나**로 붙는다
-## (`_seq_run`). 칸 사이 틈이 사라지는 대신 이음매에 이 폭의 구분선이 서서
-## 몇 수짜리인지가 읽힌다.
-const PIP_DIVIDER_W: float = 2.0
-## 지금 칸의 맥박 — 알파가 1 ↔ `1 − PIP_PULSE_DEPTH` 를 오간다. 캡슐로 붙은
-## 수에서는 칸 두께가 함께 두꺼워져 있으므로 "그중 몇 번째인가"는 이 맥박과
-## 아이콘이 말한다.
-const PIP_PULSE_SEC: float   = 0.9
-const PIP_PULSE_DEPTH: float = 0.38
-## 지금 칸에 붙는 삼각형 — 내 차례면 칸 **아래**에서 아래(우리 팀 블록)를,
-## 상대 차례면 칸 **위**에서 위(상대 팀 블록)를 가리키며 그쪽으로 천천히
-## 오갔다 돌아온다.
-const TURN_ARROW_W: float   = 22.0
-const TURN_ARROW_H: float   = 13.0
-const TURN_ARROW_GAP: float = 3.0
-const TURN_ARROW_BOB_PX: float  = 5.0
-const TURN_ARROW_BOB_SEC: float = 1.3
-const ICON_BAN   := preload("res://resources/images/ui/banpick/ban_x.svg")
-const ICON_PICK  := preload("res://resources/images/ui/banpick/pick_v.svg")
-const ICON_ARROW := preload("res://resources/images/ui/banpick/turn_arrow.svg")
-const TABS_H: float       = 58.0
-const GRID_COLS: int      = 5
-const GRID_GAP: float     = 10.0
-## 격자에서 한 화면에 보이는 줄 수. 정수가 아닌 것이 요점이다 — 다섯째 줄이
-## 반쯤 잘려 보이는 것이 "아래로 더 있다"는 유일한 신호다.
-const GRID_VISIBLE_ROWS: float = 4.5
-## 세로 스크롤바가 먹는 폭. 칸 폭을 여기서 뺀 나머지로 잡아야 마지막 열이
-## 스크롤바 밑으로 들어가지 않는다.
-const SCROLLBAR_W: float  = 16.0
-## 픽창 배경판이 내용 바깥으로 더 먹는 여백.
-const GRID_PANEL_PAD: float = 8.0
-## 격자 칸 아래 이름 줄의 높이. 칸의 **정사각 부분은 초상화 몫**이고 이름은 그
-## 아래에 따로 붙는다 — 이름을 초상화 위에 얹으면 어두운 기체에서 글자가 통째로
-## 사라진다.
-const CELL_NAME_H: float  = 28.0
-
-# 팀 블록 내부 (위 블록 기준 순서 — 아래 블록은 이 순서를 뒤집는다)
-const BAN_ROW_H: float       = 44.0
-const BAN_CHIP: float        = 38.0
-## eye 크롭의 가로:세로 비 (`eye/N_eye.png` 480×200). 임의 높이로
-## 늘리면 얼굴이 찌그러진다.
-const EYE_ASPECT: float      = 2.4
-## 메크 칸 높이 = 파일럿 초상화 높이 × 이 값.
-const MECH_H_RATIO: float    = 2.0
-const BLOCK_INNER_GAP: float = 5.0
-
-# 하단 시트
-const SHEET_PAD: float        = 20.0
-## 왼쪽 아트 칸의 **폭**. 높이는 시트에서 남는 만큼을 통째로 쓰고 그 안에서
-## 세로 가운데 정렬한다 — 아트를 위에 붙이면 그 밑에 아무것도 없는 구멍이
-## 300px 넘게 남는다(정사각 아트라 폭을 늘리는 것 말고는 커지지 않는다).
-const SHEET_ART_W: float      = 280.0
+# 하단 시트 — 배치는 씬(`%Sheet`)이고, 카드 설명판만 코드가 띄운다.
 const SHEET_CARD_SCALE: float = 0.9
-const SHEET_CARD_GAP: float   = 10.0
-const SHEET_BTN_H: float      = 76.0
+## 설명판 윗끝의 하한(시트 안쪽 여백 = 씬의 `SheetName` 윗여백).
+const SHEET_PAD: float        = 20.0
 const SHEET_DESC_GAP: float   = 8.0
 
 ## 배정 단계에서 메크 칸을 끌기 시작하는 문턱(px). 이보다 덜 움직인 것은 탭이지
@@ -196,10 +133,6 @@ const SHEET_DESC_GAP: float   = 8.0
 ## 그 칸의 메크 상세를 연다.
 const DRAG_THRESHOLD_PX: float = 8.0
 
-## 배정 단계 메크 줄 오른쪽 아래의 조작 안내 한 줄.
-const ASSIGN_HINT_H: float = 24.0
-const ASSIGN_HINT_FONT: int = 17
-const ASSIGN_HINT_TEXT: String = "드래그 드롭으로 메크-파일럿 지정 변경"
 ## 배정 단계 진입 연출 — 두 팀 블록이 화면 가운데로 모이고(`GATHER_SEC`), 그
 ## 다음 상대 메크 칸들이 포지션에 맞는 선수 자리로 옮겨 앉는다(`ENEMY_SWAP_SEC`).
 ## 모인 두 블록 사이 간격이 `GATHER_GAP` 이다.
@@ -210,14 +143,8 @@ const ENEMY_SWAP_SEC: float = 0.48
 ## 옮겨 앉는 칸이 다른 칸을 가로지를 때 위로 살짝 떠오르는 높이.
 const ENEMY_SWAP_LIFT_PX: float = 22.0
 
-# ── 색 ── **아웃게임 흰 배경 계통**(`OutgameTheme`)이다. 밴픽은 경기 직전이지만
-# 아직 전장이 아니라 시즌 화면들(허브 · 시간 경과 · 순위)과 같은 바탕을 쓴다 —
-# 예전의 어두운 판은 이 화면 하나만 인게임처럼 보여 "경기가 이미 시작됐나"로
-# 읽혔다. 픽창은 흰 카드 한 장(그림자)이 회색 바탕 위에 떠서 "여기가 고르는
-# 곳"을 가른다.
-const GRID_BG_COLOR := OutgameTheme.SURFACE
-const PAGE_BG_COLOR := OutgameTheme.BG
-const PANEL_COLOR := OutgameTheme.SURFACE
+# ── 색 ── **아웃게임 흰 배경 계통**(`OutgameTheme`)이다. 바탕 · 카드 · 글자색은 씬의
+# 테마(`OutgameTheme.tres`)가 입히고, 여기 남은 것은 상태 · 데이터에 따라 바뀌는 색이다.
 const SLOT_EMPTY_COLOR := OutgameTheme.SURFACE_SUNK
 ## 진영색 — 흰 바탕에서 읽히도록 인게임 쪽보다 한 단계 짙다.
 const BLUE_COLOR  := Color(0.20, 0.45, 0.92)
@@ -225,16 +152,6 @@ const RED_COLOR   := Color(0.88, 0.27, 0.27)
 const BAN_TINT    := Color(0.42, 0.42, 0.46, 1.0)
 const TEXT_DIM    := OutgameTheme.TEXT_SUB
 const ACCENT      := OutgameTheme.ACCENT
-const SHEET_DIM_COLOR := Color(0.11, 0.11, 0.12, 0.38)
-
-# ── 차례 배너 ── 수가 넘어갈 때마다 화면 가운데를 가로지르는 띠(인게임의
-# "당신의 차례" 배너와 같은 모양). 지금이 **누구의 · 무엇** 차례인지를 한 번에
-# 말한다(`내 차례 밴` / `상대 차례 픽` …). 입력을 막지 않는다.
-const BANNER_H: float        = 104.0
-const BANNER_IN_SEC: float   = 0.22
-const BANNER_HOLD_SEC: float = 0.45
-const BANNER_OUT_SEC: float  = 0.25
-const BANNER_FONT: int       = 52
 
 # ── 상대의 만지작거리기 ── 상대는 곧장 고르지 않는다. 그 상황에 실제로 고를
 # 만한 후보(`_ai_rank`) 중 0~2대를 차례로 **집어 보았다가** 마지막 한 대를
@@ -291,43 +208,24 @@ var _seat_mechs: Dictionary = {}
 var _start_btn: Button = null
 
 # ── UI ───────────────────────────────────────────────────────────────────────
-var _panel: Panel
-var _seq_pips: Array = []          # Array[Panel]
-## 캡슐 안 이음매의 구분선 — `{line: ColorRect, idx: int}` (idx 와 idx+1 사이).
-var _seq_dividers: Array = []
-var _pulse_t: float = 0.0
-var _pips_root: Control = null
-## 지금 칸 안의 밴 / 픽 아이콘과 그 위아래의 삼각형. 칸마다 두지 않고 한 벌을
-## 지금 칸으로 옮겨 다닌다.
-var _pip_icon: TextureRect = null
-var _turn_arrow: TextureRect = null
-var _arrow_base_y: float = 0.0
-var _arrow_dir: float = 1.0        # +1 = 아래로 오간다(내 차례), -1 = 위로(상대 차례)
-var _arrow_t: float = 0.0
-var _pip_tween: Tween = null
-## 차례 배너 — `_mf.canvas` 위, 판보다 앞에 선다. 새 배너가 뜨면 이전 것을 걷는다.
-var _banner_root: Control = null
-var _banner_gen: int = 0
-var _banner_tween: Tween = null
+## 화면 한 장(`BanPickView.tscn`). null = 화면이 걷혔다 — AI 대기 / 연출 코루틴이
+## 깨어났을 때 이것으로 손을 뗄지 판단한다.
+var _view: BanPickView = null
 ## 상대가 지금 집어 보고 있는 기체(-1 = 없음). 격자 칸 테두리와 상대 팀의 다음
 ## 칸(픽 슬롯 / 밴 칩)에 흐린 미리보기로 나타난다.
 var _ai_hover_id: int = -1
 # 시트의 카드 설명판 — 시트 카드를 누르면 그 카드 줄 위에 뜬다.
 var _sheet_desc: Panel = null
 var _sheet_desc_idx: int = -1
-var _cells: Dictionary = {}        # mech_id(int) → {btn, art, veil, tag, mech}
-var _side_ui: Dictionary = {}      # side(int) → {holder, ban_chips, mech_slots}
+var _cells: Dictionary = {}        # mech_id(int) → BanPickMechCell
+var _side_ui: Dictionary = {}      # side(int) → BanPickTeamBlock
 var _filter_role: int = -1
-var _filter_btns: Array = []       # Array[Button]
-var _grid_bg: Panel
-var _scroll: ScrollContainer
-var _grid_content: Control
+## 역할군 탭의 꺼진 모양 — 씬의 탭 스타일박스. 켜진 모양은 이것에서 색만 바꿔 만든다.
+var _tab_base: StyleBoxFlat = null
 var _thumbs: Dictionary = {}       # mech_id(int) → Texture2D (lazy)
 
 # 하단 시트
-var _sheet_dim: ColorRect
-var _sheet: Panel
-var _sheet_confirm: Button
+var _sheet_open: bool = false
 var _selected_mech_id: int = -1
 
 # 배정 단계의 상세 팝업 — 파일럿은 드래프트 화면과 **같은 팝업**을 쓴다
@@ -336,15 +234,11 @@ var _selected_mech_id: int = -1
 var _pilot_detail: DraftDetailPanel = null
 var _mech_detail: MechDetailPanel = null
 
-# 배정 단계의 드래그 상태
+# 배정 단계의 드래그 상태 — 위치는 전부 **캔버스(전역) 좌표**다.
 var _drag_seat: int = -1
 var _drag_armed: bool = false      # 눌렀지만 아직 문턱을 못 넘었다
 var _drag_from: Vector2 = Vector2.ZERO
-var _drag_ghost: Control = null
-
-## `_layout()` 이 채우는 계산된 좌표표. 화면 하나를 세우는 동안 열 군데가 같은
-## 값을 물어보므로 한 번만 풀어 둔다.
-var _lay: Dictionary = {}
+var _dragging: bool = false        # 문턱을 넘어 `%DragGhost` 가 손에 들렸다
 
 
 func enter(all_mechs: Array, player_side: int,
@@ -503,99 +397,30 @@ func _quirk_rows(side: int, mech_id: int, seat: int) -> Dictionary:
 			"total": QuirkSystem.bonus_total(s, pd, mech_id), "rows": rows}
 
 
-# ── 레이아웃 계산 ────────────────────────────────────────────────────────────
-func _layout() -> void:
-	var w: float = ScreenMetrics.vp_w()
-	var h: float = ScreenMetrics.safe_h()
-	var strip_w: float = w - SIDE_MARGIN * 2.0
-	var cell_w: float = strip_w / float(SLOT_COUNT)
-	var portrait_w: float = cell_w - 14.0
-	var portrait_h: float = portrait_w / EYE_ASPECT
-	var mech_h: float = portrait_h * MECH_H_RATIO
-	var block_h: float = BAN_ROW_H + BLOCK_INNER_GAP + mech_h + 2.0 + portrait_h
-	# 배정 단계에서는 파일럿 초상화가 **상체 일러스트**로 커진다 — 드래프트
-	# 화면의 선택 칸과 같은 크롭이라 비율도 같은 곳(`PilotImages.BUST_ASPECT`)
-	# 에서 온다. 폭은 그대로이므로 높이만 그 비율이 정한다.
-	var assign_portrait_h: float = portrait_w / PilotImages.BUST_ASPECT
-	var assign_block_h: float = assign_portrait_h + 2.0 + mech_h + 2.0 \
-			+ ASSIGN_HINT_H + BLOCK_INNER_GAP + BAN_ROW_H
-
-	var top_block_y: float = TOP_PAD
-	var band_top: float = top_block_y + block_h + BLOCK_GAP
-	var bot_block_y: float = h - BOT_PAD - block_h
-	var band_h: float = maxf(200.0, (bot_block_y - BLOCK_GAP) - band_top)
-
-	# 격자 칸 — 폭은 열 수가 정하고 **높이는 그 폭이 정한다**(정사각 + 이름 줄).
-	var content_w: float = strip_w - GRID_PANEL_PAD * 2.0 - SCROLLBAR_W
-	var gcell_w: float = (content_w - GRID_GAP * float(GRID_COLS - 1)) / float(GRID_COLS)
-	var gcell_h: float = gcell_w + CELL_NAME_H
-	var grid_h_want: float = GRID_VISIBLE_ROWS * (gcell_h + GRID_GAP) - GRID_GAP
-	var grid_h_max: float = band_h - PIPS_ROW_H - TABS_H - BLOCK_GAP - GRID_PANEL_PAD * 2.0
-	var grid_h: float = clampf(grid_h_want, 240.0, maxf(240.0, grid_h_max))
-
-	# 픽창 한 덩이(패딩 + 순서 띠 + 탭 + 격자)를 가운데 띠에서 세로 가운데에
-	# 놓는다 — 4.5줄이 남는 공간보다 짧으면 위아래로 같은 만큼씩 여백이 생겨야
-	# 판이 어느 한쪽에 붙어 보이지 않는다.
-	var group_h: float = GRID_PANEL_PAD * 2.0 + PIPS_ROW_H + TABS_H + BLOCK_GAP + grid_h
-	var group_y: float = band_top + maxf(0.0, (band_h - group_h) * 0.5)
-	var pips_mid_y: float = group_y + GRID_PANEL_PAD + PIPS_ROW_H * 0.5
-	var tabs_y: float = group_y + GRID_PANEL_PAD + PIPS_ROW_H
-	var grid_y: float = tabs_y + TABS_H + BLOCK_GAP
-
-	var body_h: float = OutgameTheme.bottom_bar_top()
-	var gather_h: float = block_h + GATHER_GAP + assign_block_h
-	var gather_y: float = maxf(TOP_PAD, (body_h - gather_h) * 0.5)
-
-	_lay = {
-		"w": w, "h": h, "strip_w": strip_w,
-		"cell_w": cell_w, "portrait_w": portrait_w, "portrait_h": portrait_h,
-		"mech_h": mech_h, "block_h": block_h, "assign_block_h": assign_block_h,
-		"assign_portrait_h": assign_portrait_h,
-		"pips_mid_y": pips_mid_y,
-		"top_block_y": top_block_y,
-		"group_y": group_y, "group_h": group_h,
-		"tabs_y": tabs_y,
-		"grid_y": grid_y, "grid_h": grid_h, "grid_bottom": grid_y + grid_h,
-		"content_w": content_w, "gcell_w": gcell_w, "gcell_h": gcell_h,
-		"bot_block_y": bot_block_y,
-		"assign_block_y": h - BOT_PAD - assign_block_h,
-		# 배정 단계에서 두 블록이 모이는 자리 — 하단 바 위의 본문 세로 가운데.
-		"gather_enemy_y": gather_y,
-		"gather_player_y": gather_y + block_h + GATHER_GAP,
-		"sheet_h": clampf(grid_h - 40.0, 560.0, 700.0),
-	}
-
-
 # ── UI build ─────────────────────────────────────────────────────────────────
+## 화면 한 장을 세우고 데이터를 채운다. 배치는 전부 씬(`BanPickView.tscn`) 몫이고
+## 여기서 정하는 것은 기기에 따라 달라지는 값(안전 영역, 격자 높이)뿐이다.
 func _build_ui() -> void:
-	_layout()
-	_panel = Panel.new()
-	_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
-	var bg := StyleBoxFlat.new()
-	bg.bg_color = PAGE_BG_COLOR
-	_panel.add_theme_stylebox_override("panel", bg)
-	_mf.canvas.add_child(_panel)
-	# 화면 전체를 안전 영역 위끝까지 내린다 — 노치 / 다이나믹 아일랜드 밑에
-	# 순서 줄이 깔리지 않게. 한 줄만 따로 내리면 본문과 겹친다.
-	ScreenMetrics.indent_to_safe_top(_panel)
-	# 판을 내리면 위쪽 띠가 비므로 같은 색으로 메운다 — 노치 자리는 비워 둘
-	# 곳이 아니라 쓰지 않을 곳이다.
-	ScreenMetrics.backfill_top(_panel, PAGE_BG_COLOR)
+	_view = BanPickView.create()
+	_mf.canvas.add_child(_view)
+	# 화면 전체를 안전 영역 안에 앉힌다 — 노치 / 다이나믹 아일랜드 밑에 상대 블록이
+	# 깔리지 않게. 바탕(`Background`)은 노치 자리까지 덮는다.
+	_view.fit_safe_area()
 
-	_build_team_block(_other_side(_player_side), true)
-	_build_grid_bg()
-	_build_pips()
-	_build_filter_tabs()
+	var enemy_side: int = _other_side(_player_side)
+	_side_ui = {enemy_side: _view.enemy_block, _player_side: _view.player_block}
+	_setup_team_block(enemy_side)
+	_setup_team_block(_player_side)
+
+	_view.order_row.build(SEQUENCE,
+			{GameEnums.DraftSide.BLUE: BLUE_COLOR, GameEnums.DraftSide.RED: RED_COLOR})
+	_setup_filter_tabs()
 	_build_grid()
-	_build_team_block(_player_side, false)
 
-	# 배너는 판 **바깥**(같은 캔버스, 판보다 뒤에 붙인다)에 선다 — 판 안에 두면
-	# 나중에 붙는 시트가 그 위를 덮는다.
-	_banner_root = Control.new()
-	_banner_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_banner_root.position = Vector2.ZERO
-	_banner_root.size = ScreenMetrics.viewport_size()
-	_mf.canvas.add_child(_banner_root)
+	_view.sheet_dim.gui_input.connect(_on_dim_input)
+	_view.sheet_close.pressed.connect(_close_sheet)
+	_view.sheet_confirm.pressed.connect(_on_confirm_pressed)
+	_view.start_button.pressed.connect(_finish)
 
 
 ## 메크 정사각 초상화. `MechImages.portrait_for` 가 이미 256² 로 구워진 파일을
@@ -607,308 +432,58 @@ func _mech_thumb(mech_id: int) -> Texture2D:
 	return _thumbs[mech_id] as Texture2D
 
 
-# ── 순서 표시 줄 ─────────────────────────────────────────────────────────────
-## 열네 칸이 픽창 맨 위(역할군 필터 바로 위)에 한 줄로 선다. 칸 색은 그 수의
-## 진영색이고 지난 수는 옅게, 남은 수는 더 옅게, **지금 수는 진하고 두껍게**
-## 그 안에 밴(X) / 픽(V) 아이콘을 품는다. 지금 칸 위나 아래의 삼각형이 그 수를
-## 두는 쪽을 가리킨다(`_refresh_pips`).
-func _build_pips() -> void:
-	var mid_y: float = _lay["pips_mid_y"]
-	var w: float = _lay["w"]
-	# 캡슐 안의 이음매에는 틈이 없다 — 틈은 캡슐과 캡슐 사이에만 선다.
-	var n: int = SEQUENCE.size()
-	var total: float = float(n) * PIP_W
-	for i in range(n - 1):
-		if not _same_run(i, i + 1):
-			total += PIP_GAP
-	var x: float = (w - total) * 0.5
-	_pips_root = Control.new()
-	_pips_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_panel.add_child(_pips_root)
-	for i in range(n):
-		var joined_left: bool = i > 0 and _same_run(i - 1, i)
-		var joined_right: bool = i < n - 1 and _same_run(i, i + 1)
-		var sty := OutgameTheme.flat_style(Color.WHITE, 6)
-		# 캡슐의 바깥 모서리만 둥글다 — 안쪽까지 둥글면 붙은 두 칸 사이에 홈이
-		# 패여 다시 두 개로 갈라져 보인다.
-		if joined_left:
-			sty.corner_radius_top_left = 0
-			sty.corner_radius_bottom_left = 0
-		if joined_right:
-			sty.corner_radius_top_right = 0
-			sty.corner_radius_bottom_right = 0
-		var pip := Panel.new()
-		pip.add_theme_stylebox_override("panel", sty)
-		pip.position = Vector2(x, mid_y - PIP_H * 0.5)
-		pip.size = Vector2(PIP_W, PIP_H)
-		pip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_pips_root.add_child(pip)
-		_seq_pips.append(pip)
-		x += PIP_W + (0.0 if joined_right else PIP_GAP)
-	# 구분선은 칸들보다 **나중에** 붙인다 — 형제 순서가 곧 그리는 순서라 먼저
-	# 붙이면 칸이 선을 덮는다.
-	for i in range(n - 1):
-		if not _same_run(i, i + 1):
-			continue
-		var line := ColorRect.new()
-		line.color = OutgameTheme.SURFACE
-		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		line.position = Vector2((_seq_pips[i + 1] as Panel).position.x - PIP_DIVIDER_W * 0.5,
-				mid_y - PIP_H * 0.5)
-		line.size = Vector2(PIP_DIVIDER_W, PIP_H)
-		_pips_root.add_child(line)
-		_seq_dividers.append({"line": line, "idx": i})
-
-	_pip_icon = TextureRect.new()
-	_pip_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_pip_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_pip_icon.size = Vector2(PIP_ICON, PIP_ICON)
-	_pip_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_pip_icon.visible = false
-	_pips_root.add_child(_pip_icon)
-
-	_turn_arrow = TextureRect.new()
-	_turn_arrow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_turn_arrow.stretch_mode = TextureRect.STRETCH_SCALE
-	_turn_arrow.texture = ICON_ARROW
-	_turn_arrow.size = Vector2(TURN_ARROW_W, TURN_ARROW_H)
-	_turn_arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_turn_arrow.visible = false
-	_pips_root.add_child(_turn_arrow)
+func _side_color(side: int) -> Color:
+	return BLUE_COLOR if side == GameEnums.DraftSide.BLUE else RED_COLOR
 
 
-## 순서 줄을 `_action_idx` 에 맞춘다. 지금 칸은 두께가 트윈으로 자라고(다른 칸은
-## 즉시 얇아진다), 아이콘과 삼각형이 그 칸으로 옮겨 간다.
+## 순서 줄을 `_action_idx` 에 맞춘다(`BanPickOrderRow`).
 func _refresh_pips() -> void:
-	if _pips_root == null:
+	if _view == null:
 		return
-	var mid_y: float = _lay["pips_mid_y"]
-	if _pip_tween != null and _pip_tween.is_valid():
-		_pip_tween.kill()
-	# 지금 수가 속한 캡슐은 **통째로** 두꺼워진다 — 한 칸만 두꺼우면 붙어 있던
-	# 캡슐이 계단처럼 어긋난다. 그 안에서 지금 칸을 가르는 것은 색 · 맥박 · 아이콘.
-	var run: Vector2i = _seq_run(_action_idx) if _action_idx < _seq_pips.size() \
-			else Vector2i(-1, -2)
-	_pip_tween = create_tween().set_parallel()
-	# 빈 트윈은 시작하자마자 오류를 낸다 — 아이콘 페이드가 언제나 하나는 얹히지만
-	# 마지막 수 뒤에는 그것도 없으므로 그 경로에서는 곧장 걷는다(아래).
-	for i in range(_seq_pips.size()):
-		var pip := _seq_pips[i] as Panel
-		var sty := pip.get_theme_stylebox("panel") as StyleBoxFlat
-		var in_run: bool = i >= run.x and i <= run.y
-		var state: int = 1 if i < _action_idx else (2 if i == _action_idx else 0)
-		if state == 0 and in_run:
-			state = 3
-		sty.bg_color = _seq_color(i, state)
-		pip.modulate = Color.WHITE
-		if not in_run:
-			pip.size = Vector2(PIP_W, PIP_H)
-			pip.position.y = mid_y - PIP_H * 0.5
-		elif not is_equal_approx(pip.size.y, PIP_ACTIVE_H):
-			_pip_tween.tween_property(pip, "size", Vector2(PIP_W, PIP_ACTIVE_H), PIP_GROW_SEC) \
-					.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-			_pip_tween.tween_property(pip, "position:y", mid_y - PIP_ACTIVE_H * 0.5, PIP_GROW_SEC) \
-					.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	for raw in _seq_dividers:
-		var d := raw as Dictionary
-		var line := d["line"] as ColorRect
-		var idx: int = int(d["idx"])
-		var h: float = PIP_ACTIVE_H if idx >= run.x and idx < run.y else PIP_H
-		if h == PIP_ACTIVE_H and not is_equal_approx(line.size.y, h):
-			_pip_tween.tween_property(line, "size:y", h, PIP_GROW_SEC) \
-					.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-			_pip_tween.tween_property(line, "position:y", mid_y - h * 0.5, PIP_GROW_SEC) \
-					.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-		elif h == PIP_H:
-			line.size.y = h
-			line.position.y = mid_y - h * 0.5
-	if _action_idx >= _seq_pips.size():
-		_pip_tween.kill()
-		_pip_icon.visible = false
-		_turn_arrow.visible = false
-		return
-
-	var cur := _seq_pips[_action_idx] as Panel
-	var cx: float = cur.position.x + PIP_W * 0.5
-	_pulse_t = 0.0
-
-	_pip_icon.texture = ICON_BAN if _current_kind() == ACTION_BAN else ICON_PICK
-	_pip_icon.position = Vector2(cx - PIP_ICON * 0.5, mid_y - PIP_ICON * 0.5)
-	_pip_icon.visible = true
-	_pip_icon.modulate = Color(1, 1, 1, 0)
-	_pip_tween.tween_property(_pip_icon, "modulate", Color.WHITE, PIP_GROW_SEC)
-
-	# 내 차례 = 칸 아래에서 아래를(우리 팀 블록), 상대 차례 = 칸 위에서 위를.
-	var mine: bool = _is_player_turn()
-	_arrow_dir = 1.0 if mine else -1.0
-	_turn_arrow.flip_v = not mine
-	_turn_arrow.modulate = _seq_color(_action_idx, 2)
-	_arrow_base_y = (mid_y + PIP_ACTIVE_H * 0.5 + TURN_ARROW_GAP) if mine \
-			else (mid_y - PIP_ACTIVE_H * 0.5 - TURN_ARROW_GAP - TURN_ARROW_H)
-	_turn_arrow.position = Vector2(cx - TURN_ARROW_W * 0.5, _arrow_base_y)
-	_turn_arrow.visible = true
-	_arrow_t = 0.0
-
-
-## 삼각형이 가리키는 쪽으로 천천히 나갔다 돌아온다 — (1 − cos) / 2 라 양 끝에서
-## 느려지고, 출발점이 곧 기본 자리라 칸이 바뀐 순간 튀지 않는다.
-func _process(delta: float) -> void:
-	if _turn_arrow == null or not is_instance_valid(_turn_arrow) or not _turn_arrow.visible:
-		return
-	# 지금 칸의 맥박 — 캡슐로 붙은 수에서 "그중 몇 번째인가"를 말한다.
-	if _action_idx < _seq_pips.size():
-		_pulse_t = fmod(_pulse_t + delta, PIP_PULSE_SEC)
-		var p: float = (1.0 - cos(TAU * _pulse_t / PIP_PULSE_SEC)) * 0.5
-		(_seq_pips[_action_idx] as Panel).modulate = Color(1, 1, 1, 1.0 - PIP_PULSE_DEPTH * p)
-	_arrow_t = fmod(_arrow_t + delta, TURN_ARROW_BOB_SEC)
-	var k: float = (1.0 - cos(TAU * _arrow_t / TURN_ARROW_BOB_SEC)) * 0.5
-	_turn_arrow.position.y = _arrow_base_y + _arrow_dir * TURN_ARROW_BOB_PX * k
+	_view.order_row.refresh(_action_idx, _is_player_turn(), _current_kind() == ACTION_BAN)
 
 
 # ── 팀 블록 (밴 칩 / 메크 칸 / 파일럿 초상화) ────────────────────────────────
-## `is_top` 이면 위에서부터 밴 → 메크 → 파일럿, 아니면 그 반대. 거울 배치라
-## **안쪽(전장 쪽)에 언제나 파일럿 얼굴이 오고 바깥쪽에 메크가 온다**.
-func _build_team_block(side: int, is_top: bool) -> void:
-	var block_y: float = _lay["top_block_y"] if is_top else _lay["bot_block_y"]
-	var strip_w: float = _lay["strip_w"]
-	var cell_w: float = _lay["cell_w"]
-	var pw: float = _lay["portrait_w"]
-	var ph: float = _lay["portrait_h"]
-	var mh: float = _lay["mech_h"]
-	var side_col: Color = BLUE_COLOR if side == GameEnums.DraftSide.BLUE else RED_COLOR
+## 씬에 선 팀 블록 하나에 그 팀을 채운다 — 진영색 · 팀 이름 · 초상화 · 탭 배선.
+## 위 블록은 밴 → 메크 → 파일럿, 아래 블록은 그 거울(씬의 자식 순서)이라 **안쪽
+## (전장 쪽)에 언제나 파일럿 얼굴이 오고 바깥쪽에 메크가 온다**.
+func _setup_team_block(side: int) -> void:
+	var blk: BanPickTeamBlock = _side_ui[side]
+	var side_col: Color = _side_color(side)
+	blk.side_label.text = "%s  ·  %s" % [
+			("BLUE" if side == GameEnums.DraftSide.BLUE else "RED"),
+			String(_team_names.get(side, ""))]
+	blk.side_label.add_theme_color_override("font_color", side_col)
 
-	var holder := Control.new()
-	holder.position = Vector2(SIDE_MARGIN, block_y)
-	holder.size = Vector2(strip_w, _lay["block_h"])
-	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_panel.add_child(holder)
-
-	var ban_y: float
-	var mech_y: float
-	var por_y: float
-	if is_top:
-		ban_y  = 0.0
-		mech_y = BAN_ROW_H + BLOCK_INNER_GAP
-		por_y  = mech_y + mh + 2.0
-	else:
-		por_y  = 0.0
-		mech_y = ph + 2.0
-		ban_y  = mech_y + mh + BLOCK_INNER_GAP
-
-	var chips: Array = _build_ban_row(holder, side, side_col, ban_y, strip_w)
-
-	# ── 메크 칸 ── (파일럿과 짝이 아니라 **픽 순서**다 — 배정은 아래 단계에서)
-	var slots: Array = []
-	for i in range(SLOT_COUNT):
-		var cx: float = cell_w * (float(i) + 0.5)
-		var slot: Dictionary = _build_mech_slot(holder,
-				Vector2(cx - pw * 0.5, mech_y), Vector2(pw, mh), side_col, side, i)
+	# ── 메크 칸 ── 내용은 자리표(`_seat_mechs`)다 — 새 픽은 첫 빈 자리에 앉는다.
+	for i in range(blk.mech_slots.size()):
+		var slot: BanPickMechSlot = blk.mech_slots[i]
+		slot.setup(side_col, i)
+		slot.hit.pressed.connect(_on_mech_slot_tapped.bind(side, i))
 		# 아군 메크 칸은 **밴픽 중에도** 끌어 다른 선수 자리로 옮길 수 있다 —
 		# 누구에게 태울지를 다 고른 뒤에야 정하라고 하면, 고르는 동안 머릿속에만
 		# 있던 배치를 마지막에 다시 세워야 한다.
 		if side == _player_side:
 			_bind_slot_drag(slot)
-		slots.append(slot)
 
 	# ── 파일럿 초상화 ── (이름표도 역할 태그도 없다 — 자리가 곧 역할이다)
-	var hits: Array = []
-	for i in range(SLOT_COUNT):
-		var cx2: float = cell_w * (float(i) + 0.5)
-		hits.append(_build_pilot_portrait(holder, side, i,
-				Vector2(cx2 - pw * 0.5, por_y), Vector2(pw, ph), side_col))
-
-	_side_ui[side] = {"holder": holder, "ban_chips": chips, "mech_slots": slots,
-			"pilot_hits": hits}
-
-
-## 밴 줄 — 팀 이름 + 밴 칩 2개. 블록 바깥쪽 끝에 붙는다.
-func _build_ban_row(holder: Control, side: int, side_col: Color,
-		ban_y: float, strip_w: float) -> Array:
-	var side_label: String = "%s  ·  %s" % [
-			("BLUE" if side == GameEnums.DraftSide.BLUE else "RED"),
-			String(_team_names.get(side, ""))]
-	var side_lbl := UiHelpers.mk_label(holder, side_label, 22, side_col,
-			Vector2(0.0, ban_y + 8.0), Vector2(strip_w * 0.5, 28.0))
-	side_lbl.clip_text = true
-	var ban_lbl := UiHelpers.mk_label(holder, "BAN", 18, TEXT_DIM,
-			Vector2(strip_w - 2.0 * (BAN_CHIP + 8.0) - 62.0, ban_y + 12.0),
-			Vector2(48.0, 24.0), HORIZONTAL_ALIGNMENT_RIGHT)
-	ban_lbl.clip_text = true
-	var chips: Array = []
-	for i in range(2):
-		chips.append(_build_chip(holder,
-				Vector2(strip_w - float(2 - i) * (BAN_CHIP + 8.0) + 8.0, ban_y + 3.0),
-				BAN_CHIP))
-	return chips
-
-
-## 파일럿 초상화 한 칸. **칸 비율이 크롭을 정한다** — 가로로 납작하면 눈높이
-## 밴드(밴픽 단계), 세로로 길면 상체 일러스트(배정 단계)다. 눈높이 밴드를
-## 세로로 긴 칸에 넣으면 얼굴만 늘어나고, 상체 크롭을 납작한 칸에 넣으면
-## 이목구비가 통째로 잘려 나간다.
-##
-## 반환값은 그 칸을 덮는 **투명 탭 버튼**이다. 처음에는 숨어 있고 배정 단계에
-## 들어갈 때만 켜진다 — 밴픽 중에는 초상화가 "누구를 위해 고르는가"를 말하는
-## 그림일 뿐이라 누를 것이 없다.
-func _build_pilot_portrait(holder: Control, side: int, seat: int,
-		pos: Vector2, sz: Vector2, side_col: Color) -> Button:
-	# 초상화 뒤판 — 이미지가 없을 때(INTL 팀 / 단독 실행) 그대로 보이는 폴백.
-	var back := ColorRect.new()
-	back.position = pos
-	back.size = sz
-	back.color = SLOT_EMPTY_COLOR
-	back.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	holder.add_child(back)
-
-	var p: PlayerData = _pilot_at(side, seat)
-	if p != null:
-		# **`expand_mode` 를 `texture` 보다 먼저 준다.** 기본 `EXPAND_KEEP_SIZE`
-		# 에서는 텍스처 크기가 그대로 최소 크기가 되어, 그 뒤에 준 `size` 가
-		# 위로 잡아당겨진다 — 480×200 짜리 eye 크롭이 192×80 칸을 뚫고 나와
-		# 아래 줄을 통째로 덮었다(실측).
-		var face := TextureRect.new()
-		face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		var wide: bool = sz.x > sz.y
-		face.texture = PilotImages.eye_for(p.id) if wide else PilotImages.bust_for(p.id)
-		face.position = pos
-		face.size = sz
-		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		holder.add_child(face)
-
-	var rim := Panel.new()
-	rim.position = pos
-	rim.size = sz
-	rim.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var rim_sb := StyleBoxFlat.new()
-	rim_sb.bg_color = Color(0, 0, 0, 0)
-	rim_sb.border_color = side_col
-	rim_sb.border_width_top = 2
-	rim_sb.border_width_bottom = 2
-	rim_sb.border_width_left = 2
-	rim_sb.border_width_right = 2
-	rim.add_theme_stylebox_override("panel", rim_sb)
-	holder.add_child(rim)
-	_build_portrait_quirk_badge(holder, side, p, pos, sz)
-
-	var hit := Button.new()
-	hit.flat = true
-	hit.text = ""
-	hit.focus_mode = Control.FOCUS_NONE
-	hit.modulate = Color(1, 1, 1, 0)
-	hit.position = pos
-	hit.size = sz
-	hit.visible = false
-	hit.pressed.connect(_on_pilot_portrait_pressed.bind(side, seat))
-	holder.add_child(hit)
-	return hit
+	for i in range(blk.portraits.size()):
+		var por: BanPickPortrait = blk.portraits[i]
+		por.setup(side_col)
+		por.hit.pressed.connect(_on_pilot_portrait_pressed.bind(side, i))
+		var p: PlayerData = _pilot_at(side, i)
+		# 눈높이 밴드(밴픽) — 배정 단계에서 상체 크롭으로 바뀐다(`_enter_assign_layout`).
+		por.face.texture = PilotImages.eye_for(p.id) if p != null else null
+		_refresh_portrait_quirk(side, por, p)
 
 
 ## Quirk badge on my pilot's portrait (bottom-right): `기벽 n` filled with the
 ## colour of that pilot's highest quirk grade (§14, T1). Nothing when the pilot
 ## has no quirk, for the enemy, or outside a run.
-func _build_portrait_quirk_badge(holder: Control, side: int, p: PlayerData,
-		pos: Vector2, sz: Vector2) -> void:
+func _refresh_portrait_quirk(side: int, por: BanPickPortrait, p: PlayerData) -> void:
+	if por.quirk_badge == null:
+		return
+	por.quirk_badge.visible = false
 	if not _quirk_on or side != _player_side or p == null:
 		return
 	var ids: Array = QuirkSystem.quirks_of(_gm.season_state, p.id)
@@ -917,10 +492,12 @@ func _build_portrait_quirk_badge(holder: Control, side: int, p: PlayerData,
 	var top: int = 0
 	for id in ids:
 		top = maxi(top, int(QuirkSystem.row(int(id)).get("grade", 0)))
-	var bw: float = minf(sz.x - 8.0, 86.0)
-	OutgameTheme.add_chip(holder, "기벽 %d" % ids.size(),
-			pos + Vector2(sz.x - bw - 4.0, sz.y - 30.0), Vector2(bw, 26.0),
-			QuirkSystem.grade_color(top), OutgameTheme.TEXT_ON_FILL, 16)
+	por.quirk_badge.visible = true
+	# 알약 모양 — 반지름은 높이의 반(`OutgameTheme.add_chip` 과 같다).
+	por.quirk_badge.add_theme_stylebox_override("panel", OutgameTheme.flat_style(
+			QuirkSystem.grade_color(top), int(por.quirk_badge.size.y * 0.5)))
+	if por.quirk_label != null:
+		por.quirk_label.text = "기벽 %d" % ids.size()
 
 
 ## 자리(화면 순서) → 그 팀의 파일럿. 로스터는 역할 0..4 순으로 들어오므로
@@ -935,141 +512,6 @@ func _pilot_at(side: int, seat: int) -> PlayerData:
 	return roster[role] as PlayerData
 
 
-## 밴 칩 한 칸 — 작은 정사각 초상화 + 붉은 ✕. 비어 있으면 테두리만 남는다.
-func _build_chip(parent: Control, pos: Vector2, sz: float) -> Dictionary:
-	var frame := Panel.new()
-	frame.position = pos
-	frame.size = Vector2(sz, sz)
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = SLOT_EMPTY_COLOR
-	sb.border_color = OutgameTheme.BORDER
-	sb.border_width_top = 1
-	sb.border_width_bottom = 1
-	sb.border_width_left = 1
-	sb.border_width_right = 1
-	frame.add_theme_stylebox_override("panel", sb)
-	parent.add_child(frame)
-
-	var art := TextureRect.new()
-	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	art.position = Vector2(1.0, 1.0)
-	art.size = Vector2(sz - 2.0, sz - 2.0)
-	art.modulate = BAN_TINT
-	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_child(art)
-
-	var x_lbl := UiHelpers.mk_label(frame, "", 26, Color(1.0, 0.35, 0.35),
-			Vector2(0.0, 0.0), Vector2(sz, sz), HORIZONTAL_ALIGNMENT_CENTER)
-	x_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	x_lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
-	x_lbl.add_theme_constant_override("outline_size", 5)
-	return {"art": art, "x": x_lbl}
-
-
-## 메크 칸 한 칸 — 정사각 초상화가 칸을 채우고 아래에 이름 띠 한 줄.
-## 배정 단계에서는 이 칸이 **끌 수 있는 물건**이 된다(`_bind_slot_drag`).
-func _build_mech_slot(parent: Control, pos: Vector2, sz: Vector2,
-		side_col: Color, side: int, seat: int) -> Dictionary:
-	var frame := Panel.new()
-	frame.position = pos
-	frame.size = sz
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.clip_contents = true
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = SLOT_EMPTY_COLOR
-	sb.border_color = side_col.lerp(OutgameTheme.SURFACE, 0.55)
-	sb.border_width_top = 2
-	sb.border_width_bottom = 2
-	sb.border_width_left = 2
-	sb.border_width_right = 2
-	sb.corner_radius_top_left = 5
-	sb.corner_radius_top_right = 5
-	sb.corner_radius_bottom_left = 5
-	sb.corner_radius_bottom_right = 5
-	frame.add_theme_stylebox_override("panel", sb)
-	parent.add_child(frame)
-
-	var art := TextureRect.new()
-	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	art.position = Vector2(2.0, 2.0)
-	art.size = Vector2(sz.x - 4.0, sz.y - 4.0)
-	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_child(art)
-
-	var band_h: float = 26.0
-	var band := ColorRect.new()
-	band.position = Vector2(2.0, sz.y - 2.0 - band_h)
-	band.size = Vector2(sz.x - 4.0, band_h)
-	band.color = Color(0, 0, 0, 0.62)
-	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_child(band)
-
-	var nm := UiHelpers.mk_label(frame, "", 17, Color(0.92, 0.94, 1.0),
-			Vector2(4.0, sz.y - 2.0 - band_h + 2.0), Vector2(sz.x - 8.0, band_h - 2.0),
-			HORIZONTAL_ALIGNMENT_CENTER)
-	nm.clip_text = true
-
-	# Mastery tag (top-left) — "<tier> <bonus>" of the pilot sitting on this seat
-	# with this mech. Filled by `_refresh_side_block`; hidden without mastery.
-	var mtag := Panel.new()
-	mtag.position = Vector2(4.0, 4.0)
-	mtag.size = Vector2(minf(sz.x - 8.0, 104.0), 28.0)
-	mtag.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	mtag.visible = false
-	frame.add_child(mtag)
-	var mtag_lbl := UiHelpers.mk_label(mtag, "", 17, OutgameTheme.TEXT_ON_FILL,
-			Vector2.ZERO, mtag.size, HORIZONTAL_ALIGNMENT_CENTER)
-	mtag_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	mtag_lbl.clip_text = true
-
-	# Quirk tag (under the mastery tag) — "기벽 +N", my seats only (§14, T1).
-	var qtag := Panel.new()
-	qtag.position = Vector2(4.0, 36.0)
-	qtag.size = Vector2(minf(sz.x - 8.0, 104.0), 28.0)
-	qtag.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	qtag.visible = false
-	qtag.add_theme_stylebox_override("panel",
-			OutgameTheme.flat_style(QuirkSystem.grade_color(2), 8))
-	frame.add_child(qtag)
-	var qtag_lbl := UiHelpers.mk_label(qtag, "", 17, OutgameTheme.TEXT_ON_FILL,
-			Vector2.ZERO, qtag.size, HORIZONTAL_ALIGNMENT_CENTER)
-	qtag_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	qtag_lbl.clip_text = true
-
-	# 상대 팀 칸의 탭 버튼. 아군 칸은 드래그 배선(`_bind_slot_drag`)이 탭까지
-	# 함께 받으므로 이 버튼을 켜지 않는다 — 켜면 그 버튼이 press 를 가져가
-	# 드래그가 시작되지 않는다.
-	var hit := Button.new()
-	hit.flat = true
-	hit.text = ""
-	hit.focus_mode = Control.FOCUS_NONE
-	hit.modulate = Color(1, 1, 1, 0)
-	hit.position = pos
-	hit.size = sz
-	hit.visible = false
-	hit.pressed.connect(_on_mech_slot_tapped.bind(side, seat))
-	parent.add_child(hit)
-
-	return {"frame": frame, "art": art, "band": band, "name": nm, "hit": hit,
-			"style": sb, "side_col": side_col, "seat": seat, "pos": pos,
-			"mtag": mtag, "mtag_lbl": mtag_lbl, "qtag": qtag, "qtag_lbl": qtag_lbl}
-
-
-# ── 픽창 배경판 ──────────────────────────────────────────────────────────────
-## 필터 탭과 격자를 함께 덮는 짙은 판. 이 판 하나가 "여기가 고르는 곳"과
-## "여기는 양 팀 상황"을 가른다.
-func _build_grid_bg() -> void:
-	_grid_bg = Panel.new()
-	_grid_bg.position = Vector2(SIDE_MARGIN, _lay["group_y"])
-	_grid_bg.size = Vector2(_lay["strip_w"], _lay["group_h"])
-	_grid_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_grid_bg.add_theme_stylebox_override("panel", OutgameTheme.card_style(16))
-	_panel.add_child(_grid_bg)
-
-
 # ── 역할군 필터 탭 ───────────────────────────────────────────────────────────
 ## 탭 순서도 화면 순서(탑 · 정글 · 미드 · 원딜 · 서폿)다 — 격자가 그 순서로
 ## 늘어서 있는데 탭만 열거값 순서면 두 줄이 서로를 가리키지 않는다.
@@ -1081,26 +523,20 @@ func _filter_tabs() -> Array:
 	return out
 
 
-func _build_filter_tabs() -> void:
-	var y: float = _lay["tabs_y"]
-	var strip_w: float = _lay["strip_w"] - GRID_PANEL_PAD * 2.0
-	var x0: float = SIDE_MARGIN + GRID_PANEL_PAD
-	var gap: float = 6.0
+func _setup_filter_tabs() -> void:
 	var tabs: Array = _filter_tabs()
-	var n: int = tabs.size()
-	var bw: float = (strip_w - gap * float(n - 1)) / float(n)
-	for i in range(n):
+	var btns: Array = _view.tab_buttons
+	if not btns.is_empty():
+		_tab_base = (btns[0] as Button).get_theme_stylebox("normal") as StyleBoxFlat
+	for i in range(btns.size()):
+		var btn := btns[i] as Button
+		if i >= tabs.size():
+			btn.visible = false
+			continue
 		var role: int = int(tabs[i][0])
-		var btn := Button.new()
 		btn.text = String(tabs[i][1])
-		btn.add_theme_font_size_override("font_size", 20)
-		btn.clip_text = true
-		btn.position = Vector2(x0 + float(i) * (bw + gap), y)
-		btn.size = Vector2(bw, TABS_H)
 		btn.set_meta("role", role)
 		btn.pressed.connect(_on_filter_pressed.bind(role))
-		_panel.add_child(btn)
-		_filter_btns.append(btn)
 
 
 func _on_filter_pressed(role: int) -> void:
@@ -1112,352 +548,132 @@ func _on_filter_pressed(role: int) -> void:
 
 
 func _refresh_filter_tabs() -> void:
-	for btn_raw in _filter_btns:
+	if _view == null:
+		return
+	for btn_raw in _view.tab_buttons:
 		var btn := btn_raw as Button
+		if not btn.visible:
+			continue
 		var on: bool = int(btn.get_meta("role", -99)) == _filter_role
 		btn.add_theme_color_override("font_color", OutgameTheme.ACCENT_TEXT if on else TEXT_DIM)
 		btn.add_theme_color_override("font_hover_color", OutgameTheme.ACCENT_TEXT if on else OutgameTheme.TEXT)
 		btn.add_theme_color_override("font_pressed_color", OutgameTheme.ACCENT_TEXT)
+		var sty: StyleBox = _tab_style(on)
 		for st in ["normal", "hover", "pressed", "focus"]:
-			btn.add_theme_stylebox_override(st, _tab_style(on))
+			btn.add_theme_stylebox_override(st, sty)
 
 
-func _tab_style(on: bool) -> StyleBoxFlat:
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = OutgameTheme.ACCENT_DIM if on else PANEL_COLOR
-	sb.border_color = ACCENT if on else OutgameTheme.BORDER
-	sb.border_width_top = 2
-	sb.border_width_bottom = 2
-	sb.border_width_left = 2
-	sb.border_width_right = 2
-	sb.corner_radius_top_left = 6
-	sb.corner_radius_top_right = 6
-	sb.corner_radius_bottom_left = 6
-	sb.corner_radius_bottom_right = 6
+## 켜진 탭 = 씬의 탭 모양에서 앰버 바탕 · 앰버 테두리로 바꾼 것.
+func _tab_style(on: bool) -> StyleBox:
+	if not on or _tab_base == null:
+		return _tab_base
+	var sb := _tab_base.duplicate() as StyleBoxFlat
+	sb.bg_color = OutgameTheme.ACCENT_DIM
+	sb.border_color = ACCENT
 	return sb
 
 
 # ── 메크 격자 ────────────────────────────────────────────────────────────────
+## 칸 하나 = `BanPickMechCell.tscn` — **정사각 초상화 + 아래 이름 한 줄**이 전부다.
+## 숫자와 패시브 설명은 한 번 눌러 여는 시트가 통째로 들고 있다. 칸 높이가 정해지면
+## 격자가 보여 줄 4.5 줄이 정해지므로 픽창 높이도 여기서 맞춘다(`fit_pane`).
 func _build_grid() -> void:
-	_scroll = ScrollContainer.new()
-	_scroll.position = Vector2(SIDE_MARGIN + GRID_PANEL_PAD, _lay["grid_y"])
-	_scroll.size = Vector2(_lay["strip_w"] - GRID_PANEL_PAD * 2.0, _lay["grid_h"])
-	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	_scroll.clip_contents = true
-	_panel.add_child(_scroll)
-	# 손가락 / 마우스로 끌어 굴린다(`DragScroll`). 메크 칸을 누른 채 끌기 시작하면
-	# 그 눌림은 취소되므로 스크롤하려던 손이 메크를 고르지 않는다.
-	DragScroll.attach(_scroll)
-
-	# 칸을 절대 좌표로 놓으므로 컨테이너가 아니라 맨 Control 이다 — 필터가
-	# 바뀔 때 자리를 다시 흘려 놓는 곳이 `_apply_filter()` 한 군데뿐이어야 한다.
-	_grid_content = Control.new()
-	_grid_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_scroll.add_child(_grid_content)
-
+	var cell_h: float = 0.0
 	for m_raw in _grid_mechs:
 		var m := m_raw as MechData
-		_cells[m.id] = _build_mech_cell(m)
+		var cell := BanPickMechCell.create()
+		_view.grid.add_child(cell)
+		var has_role: bool = m.role >= 0 and m.role < ROLE_INITIALS.size()
+		cell.setup(m.name, _mech_thumb(m.id),
+				String(ROLE_INITIALS[m.role]) if has_role else "",
+				(ROLE_COLORS[m.role] as Color) if has_role else Color.WHITE)
+		cell.pressed.connect(_on_mech_pressed.bind(m.id))
+		_cells[m.id] = cell
+		cell_h = cell.custom_minimum_size.y
+	_view.fit_pane(cell_h)
 	_apply_filter()
 
 
-## 격자 칸 하나 — **정사각 초상화 + 아래 이름 한 줄**이 전부다. 예전에는 그
-## 밑에 `HP · ATK · 존재감` 과 패시브 이름이 두 줄 더 붙었는데, 스물한 대를
-## 훑는 화면에서 칸마다 다섯 줄을 읽게 하면 정작 **그림으로 알아보는** 일이
-## 안 된다. 숫자와 패시브 설명은 한 번 눌러 여는 시트가 통째로 들고 있다.
-func _build_mech_cell(m: MechData) -> Dictionary:
-	var cw: float = _lay["gcell_w"]
-	var ch: float = _lay["gcell_h"]
-
-	var btn := Button.new()
-	btn.size = Vector2(cw, ch)
-	btn.custom_minimum_size = Vector2(cw, ch)
-	btn.clip_contents = true
-	# 스크롤 안의 탭 대상은 **PASS** 여야 한다 — 모바일 드래그 스크롤은 터치에서
-	# 에뮬레이트된 마우스 press 가 ScrollContainer 까지 올라가야 시작되는데
-	# STOP 이 그걸 끊는다. 칸이 격자를 빈틈없이 덮으므로 STOP 이면 손가락을
-	# 어디에 대도 격자가 안 움직인다(실측). 탭은 PASS 로도 그대로 동작한다.
-	btn.mouse_filter = Control.MOUSE_FILTER_PASS
-	btn.pressed.connect(_on_mech_pressed.bind(m.id))
-	for st in ["normal", "hover", "pressed", "focus", "disabled"]:
-		btn.add_theme_stylebox_override(st, _cell_style(false))
-	_grid_content.add_child(btn)
-
-	# 초상화는 칸의 **정사각 부분을 통째로 채운다**(COVERED). 정사각 소스를
-	# 정사각 칸에 넣는 것이라 잘려 나가는 것도 늘어나는 것도 없다.
-	var pad: float = 4.0
-	var art_sz: float = cw - pad * 2.0
-	var art := TextureRect.new()
-	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	art.texture = _mech_thumb(m.id)
-	art.position = Vector2(pad, pad)
-	art.size = Vector2(art_sz, art_sz)
-	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	btn.add_child(art)
-
-	_build_role_badge(btn, m.role, Vector2(pad + 4.0, pad + 4.0))
-
-	var nm := UiHelpers.mk_label(btn, m.name, 20, OutgameTheme.TEXT,
-			Vector2(pad, pad + art_sz + 1.0), Vector2(cw - pad * 2.0, CELL_NAME_H - 2.0),
-			HORIZONTAL_ALIGNMENT_CENTER)
-	nm.clip_text = true
-	nm.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	# Mastery / analysis markers (filled by `_refresh_grid_cells`, hidden by
-	# default): top-right = enemy likely pick / analyst ban, bottom-left = my
-	# rider's tier when it is 능숙 or better.
-	var mark_w: float = minf(84.0, art_sz * 0.48)
-	var intel := _mk_cell_tag(btn, Vector2(pad + art_sz - 4.0 - mark_w, pad + 4.0),
-			Vector2(mark_w, 28.0))
-	var mine := _mk_cell_tag(btn, Vector2(pad + 4.0, pad + art_sz - 32.0),
-			Vector2(mark_w, 28.0))
-
-	# 상태 슬래브 (밴 / 픽) — 칸 전체를 덮고 그 위에 태그 한 줄.
-	var veil := ColorRect.new()
-	veil.position = Vector2.ZERO
-	veil.size = Vector2(cw, ch)
-	veil.color = Color(0, 0, 0, 0)
-	veil.visible = false
-	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	btn.add_child(veil)
-
-	var tag := UiHelpers.mk_label(btn, "", 28, Color(1, 1, 1),
-			Vector2(0.0, ch * 0.5 - 22.0), Vector2(cw, 44.0), HORIZONTAL_ALIGNMENT_CENTER)
-	tag.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	tag.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.95))
-	tag.add_theme_constant_override("outline_size", 6)
-	tag.visible = false
-	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	return {"btn": btn, "art": art, "veil": veil, "tag": tag, "mech": m,
-			"intel": intel, "mine": mine}
-
-
-## A small filled tag on a grid cell (`{panel, label}`), hidden until set.
-func _mk_cell_tag(parent: Control, pos: Vector2, sz: Vector2) -> Dictionary:
-	var p := Panel.new()
-	p.position = pos
-	p.size = sz
-	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	p.visible = false
-	parent.add_child(p)
-	var l := UiHelpers.mk_label(p, "", 17, OutgameTheme.TEXT_ON_FILL,
-			Vector2.ZERO, sz, HORIZONTAL_ALIGNMENT_CENTER)
-	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	l.clip_text = true
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return {"panel": p, "label": l}
-
-
-func _set_cell_tag(tag: Dictionary, text: String, bg: Color) -> void:
-	var p := tag["panel"] as Panel
-	p.visible = text != ""
+## A small filled tag on a grid cell, hidden when `text` is empty.
+func _set_cell_tag(panel: Panel, label: Label, text: String, bg: Color) -> void:
+	if panel == null:
+		return
+	panel.visible = text != ""
 	if text == "":
 		return
-	p.add_theme_stylebox_override("panel", OutgameTheme.flat_style(bg, 8))
-	(tag["label"] as Label).text = text
+	panel.add_theme_stylebox_override("panel", OutgameTheme.flat_style(bg, 8))
+	if label != null:
+		label.text = text
 
 
-## 역할군 배지 — 역할 색으로 채운 둥근 사각형 안에 하얀 두 글자. 글자가 아니라
-## **색**이 먼저 읽히는 표시이므로 이름을 통째로 적지 않는다.
-func _build_role_badge(parent: Control, role: int, pos: Vector2) -> void:
-	if role < 0 or role >= ROLE_INITIALS.size():
-		return
-	var w: float = 44.0
-	var h: float = 30.0
-	var badge := Panel.new()
-	badge.position = pos
-	badge.size = Vector2(w, h)
-	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = (ROLE_COLORS[role] as Color).darkened(0.15)
-	sb.border_color = Color(0, 0, 0, 0.55)
-	sb.border_width_top = 1
-	sb.border_width_bottom = 1
-	sb.border_width_left = 1
-	sb.border_width_right = 1
-	sb.corner_radius_top_left = 8
-	sb.corner_radius_top_right = 8
-	sb.corner_radius_bottom_left = 8
-	sb.corner_radius_bottom_right = 8
-	badge.add_theme_stylebox_override("panel", sb)
-	parent.add_child(badge)
-
-	var lbl := UiHelpers.mk_label(badge, String(ROLE_INITIALS[role]), 19, Color(1, 1, 1),
-			Vector2(0.0, 0.0), Vector2(w, h), HORIZONTAL_ALIGNMENT_CENTER)
-	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-
-func _cell_style(selected: bool) -> StyleBoxFlat:
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = PANEL_COLOR
-	sb.border_color = ACCENT if selected else OutgameTheme.BORDER
-	var bw: int = 4 if selected else 2
-	sb.border_width_top = bw
-	sb.border_width_bottom = bw
-	sb.border_width_left = bw
-	sb.border_width_right = bw
-	sb.corner_radius_top_left = 8
-	sb.corner_radius_top_right = 8
-	sb.corner_radius_bottom_left = 8
-	sb.corner_radius_bottom_right = 8
-	return sb
-
-
-## 필터를 적용해 격자를 다시 흘려 놓는다. 걸러진 칸은 숨기고 **자리도 비운다** —
-## 빈 칸을 남기면 그 역할군에 몇 대가 있는지가 안 읽힌다.
+## 필터를 적용한다. 걸러진 칸은 숨기고 **자리도 비운다** — 빈 칸을 남기면 그
+## 역할군에 몇 대가 있는지가 안 읽힌다. 자리를 다시 흘려 놓는 것은 격자
+## 컨테이너(`%Grid`)가 숨은 칸을 건너뛰며 한다.
 func _apply_filter() -> void:
-	var cw: float = _lay["gcell_w"]
-	var ch: float = _lay["gcell_h"]
-	var idx: int = 0
 	for m_raw in _grid_mechs:
 		var m := m_raw as MechData
-		var btn := (_cells[m.id] as Dictionary)["btn"] as Button
-		if _filter_role >= 0 and m.role != _filter_role:
-			btn.visible = false
-			continue
-		btn.visible = true
-		var col: int = idx % GRID_COLS
-		@warning_ignore("integer_division")
-		var row: int = idx / GRID_COLS
-		btn.position = Vector2(float(col) * (cw + GRID_GAP), float(row) * (ch + GRID_GAP))
-		idx += 1
-	var rows: int = int(ceil(float(idx) / float(GRID_COLS)))
-	_grid_content.custom_minimum_size = Vector2(_lay["content_w"],
-			maxf(0.0, float(rows) * (ch + GRID_GAP) - GRID_GAP))
-	_scroll.scroll_vertical = 0
+		var cell := _cells.get(m.id, null) as BanPickMechCell
+		if cell != null:
+			cell.visible = _filter_role < 0 or m.role == _filter_role
+	_view.scroll.scroll_vertical = 0
 
 
 # ── 하단 시트 (선택한 메크의 스탯 · 패시브 · 카드) ───────────────────────────
+## 딤은 **픽창만** 덮는다 — 위아래 팀 블록은 지금까지의 밴픽 상황이라 시트를
+## 보는 동안에도 보여야 한다(무엇이 이미 나갔는지 모르면 이 기체를 고를지
+## 판단할 수 없다). 시트와 딤은 씬에 서 있고 열 때마다 내용만 다시 채운다.
 func _open_sheet(mech_id: int) -> void:
 	_close_sheet()
 	var m := _find_mech(mech_id)
 	if m == null:
 		return
 	_selected_mech_id = mech_id
-
-	# 딤은 **픽창만** 덮는다 — 위아래 팀 블록은 지금까지의 밴픽 상황이라 시트를
-	# 보는 동안에도 보여야 한다(무엇이 이미 나갔는지 모르면 이 기체를 고를지
-	# 판단할 수 없다).
-	_sheet_dim = ColorRect.new()
-	_sheet_dim.position = Vector2(0.0, _lay["group_y"])
-	_sheet_dim.size = Vector2(_lay["w"], _lay["group_h"])
-	_sheet_dim.color = SHEET_DIM_COLOR
-	_sheet_dim.mouse_filter = Control.MOUSE_FILTER_STOP
-	_sheet_dim.gui_input.connect(_on_dim_input)
-	_panel.add_child(_sheet_dim)
-
-	var sh: float = _lay["sheet_h"]
-	var sw: float = _lay["strip_w"]
-	_sheet = Panel.new()
-	_sheet.position = Vector2(SIDE_MARGIN, _lay["grid_bottom"] - sh)
-	_sheet.size = Vector2(sw, sh)
-	_sheet.mouse_filter = Control.MOUSE_FILTER_STOP
-	var sb := OutgameTheme.card_style(18)
-	sb.border_color = ACCENT
-	sb.set_border_width_all(3)
-	_sheet.add_theme_stylebox_override("panel", sb)
-	_panel.add_child(_sheet)
-
-	_build_sheet_body(m, sw, sh)
+	_sheet_open = true
+	_view.sheet_dim.visible = true
+	_view.sheet.visible = true
+	_fill_sheet(m)
 
 
-func _build_sheet_body(m: MechData, sw: float, sh: float) -> void:
+func _fill_sheet(m: MechData) -> void:
+	var v: BanPickView = _view
 	# ── 왼쪽: 전신 아트 (원본 — 한 번에 한 대뿐이라 여기서만 1024² 를 쓴다) ──
-	var art_h: float = maxf(120.0, sh - SHEET_PAD * 2.0 - SHEET_BTN_H - 16.0)
 	var full := MechImages.full_for(m.id)
-	if full == null:
-		var ph := ColorRect.new()
-		ph.position = Vector2(SHEET_PAD, SHEET_PAD)
-		ph.size = Vector2(SHEET_ART_W, art_h)
-		ph.color = SLOT_EMPTY_COLOR
-		ph.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_sheet.add_child(ph)
-	else:
-		var art := TextureRect.new()
-		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		art.texture = full
-		art.position = Vector2(SHEET_PAD, SHEET_PAD)
-		art.size = Vector2(SHEET_ART_W, art_h)
-		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_sheet.add_child(art)
+	v.sheet_art.texture = full
+	v.sheet_art.visible = full != null
+	v.sheet_art_placeholder.visible = full == null
 
-	# ── 오른쪽: 이름 · 스탯 · 패시브 · 카드 ──
-	var rx: float = SHEET_PAD + SHEET_ART_W + 24.0
-	var rw: float = sw - rx - SHEET_PAD
-	var y: float = SHEET_PAD
-	var nm := UiHelpers.mk_label(_sheet, m.name, 38, OutgameTheme.TEXT,
-			Vector2(rx, y), Vector2(rw, 48.0))
-	nm.clip_text = true
-	y += 52.0
-
+	# ── 오른쪽: 이름 · 스탯 · 패시브 ──
+	v.sheet_name.text = m.name
 	var role_txt: String = String(ROLE_NAMES[m.role]) if m.role >= 0 and m.role < ROLE_NAMES.size() else "—"
-	var st := UiHelpers.mk_label(_sheet,
-			"%s   ·   HP %d   ·   ATK %d   ·   존재감 %d" % [role_txt, m.hp, m.atk, m.presence],
-			24, OutgameTheme.TEXT_SUB, Vector2(rx, y), Vector2(rw, 34.0))
-	st.clip_text = true
-	y += 42.0
-
+	v.sheet_stats.text = "%s   ·   HP %d   ·   ATK %d   ·   존재감 %d" % [role_txt, m.hp, m.atk, m.presence]
 	var pas: Dictionary = _gm.mech_passive_def(m.id)
-	if pas.is_empty():
-		UiHelpers.mk_label(_sheet, "패시브 없음", 24, OutgameTheme.TEXT_FAINT,
-				Vector2(rx, y), Vector2(rw, 32.0))
-	else:
+	v.sheet_no_passive.visible = pas.is_empty()
+	v.sheet_passive_head.visible = not pas.is_empty()
+	v.sheet_passive_desc.visible = not pas.is_empty()
+	if not pas.is_empty():
 		var kw: String = String(pas.get("keyword", ""))
 		var head: String = "◆ %s" % String(pas["name"])
 		if kw != "":
 			head += "   [%s]" % kw
-		var hl := UiHelpers.mk_label(_sheet, head, 26, OutgameTheme.ACCENT_TEXT,
-				Vector2(rx, y), Vector2(rw, 34.0))
-		hl.clip_text = true
-		y += 38.0
-		var desc := Label.new()
-		desc.text = String(pas.get("description", ""))
-		desc.add_theme_font_size_override("font_size", 20)
-		desc.add_theme_color_override("font_color", OutgameTheme.TEXT_SUB)
-		desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		desc.position = Vector2(rx, y)
-		desc.size = Vector2(rw, 128.0)
-		desc.clip_text = true
-		desc.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_sheet.add_child(desc)
+		v.sheet_passive_head.text = head
+		v.sheet_passive_desc.text = String(pas.get("description", ""))
 
 	# ── 카드 셋 ── (오른쪽 칸에서 이어진다 — 왼쪽은 아트 한 장이 통째로 쓴다)
-	var cy: float = SHEET_PAD + 250.0
 	var defs: Array = _gm.mech_cards_for(m.id)
-	UiHelpers.mk_label(_sheet, "메크 카드  %d종   ·   카드를 누르면 설명" % defs.size(), 22,
-			OutgameTheme.TEXT_SUB, Vector2(rx, cy), Vector2(rw, 28.0))
-	cy += 32.0
-	_build_card_row(defs, cy, rx, rw)
+	v.sheet_cards_header.text = "메크 카드  %d종   ·   카드를 누르면 설명" % defs.size()
+	_build_card_row(defs)
 
-	# ── 버튼 ──
-	var by: float = sh - SHEET_PAD - SHEET_BTN_H
-	var close_btn := Button.new()
-	close_btn.text = "닫기"
-	OutgameTheme.style_ghost_button(close_btn, 26)
-	close_btn.position = Vector2(sw - SHEET_PAD - 340.0 - 12.0 - 190.0, by)
-	close_btn.size = Vector2(190.0, SHEET_BTN_H)
-	close_btn.pressed.connect(_close_sheet)
-	_sheet.add_child(close_btn)
-
-	_sheet_confirm = Button.new()
-	OutgameTheme.style_primary_button(_sheet_confirm, 28)
-	_sheet_confirm.position = Vector2(sw - SHEET_PAD - 340.0, by)
-	_sheet_confirm.size = Vector2(340.0, SHEET_BTN_H)
-	_sheet_confirm.pressed.connect(_on_confirm_pressed)
-	_sheet.add_child(_sheet_confirm)
 	_refresh_sheet_confirm()
-	_build_sheet_mastery(m, Vector2(SHEET_PAD, by),
-			Vector2(close_btn.position.x - 12.0 - SHEET_PAD, SHEET_BTN_H))
+	_fill_sheet_mastery(m)
 
 
 ## Left of the sheet buttons (under the art): my natural rider's mastery with
 ## this mech, and what analysis knows about the enemy wanting it.
-func _build_sheet_mastery(m: MechData, pos: Vector2, sz: Vector2) -> void:
+func _fill_sheet_mastery(m: MechData) -> void:
+	var rider_lbl: Label = _view.sheet_rider
+	var intel_lbl: Label = _view.sheet_intel
+	rider_lbl.text = ""
+	intel_lbl.text = ""
 	if not _mastery_on:
 		return
 	var rider: PlayerData = _rider_for(_player_side, m)
@@ -1465,103 +681,100 @@ func _build_sheet_mastery(m: MechData, pos: Vector2, sz: Vector2) -> void:
 		var v: int = _mastery(rider, m.id)
 		var t: int = MechMastery.tier_of(v)
 		var qt: int = _quirk_total(_player_side, rider, m.id)
-		var l1 := UiHelpers.mk_label(_sheet, "%s  %s %d  (스탯 %s%s)" % [
+		rider_lbl.text = "%s  %s %d  (스탯 %s%s)" % [
 				rider.name, MechMastery.tier_name(t), v, MechMastery.bonus_text(t),
-				(" · 기벽 +%d" % qt) if qt > 0 else ""],
-				21, MechMastery.tier_color(t), pos, Vector2(sz.x, sz.y * 0.5))
-		l1.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		l1.clip_text = true
+				(" · 기벽 +%d" % qt) if qt > 0 else ""]
+		rider_lbl.add_theme_color_override("font_color", MechMastery.tier_color(t))
 	var intel: String = ""
 	if m.id in _analyst_bans():
 		intel = "분석가 추천 밴 — %s 의 주력" % String((_enemy_likely[m.id] as Dictionary)["pilot"])
 	elif _show_enemy_likely and _enemy_likely.has(m.id):
 		intel = "상대 예상 픽 — %s" % String((_enemy_likely[m.id] as Dictionary)["pilot"])
 	if intel != "":
-		var l2 := UiHelpers.mk_label(_sheet, intel, 19,
-				OutgameTheme.ACCENT_TEXT if m.id in _analyst_bans() else RED_COLOR,
-				pos + Vector2(0.0, sz.y * 0.5), Vector2(sz.x, sz.y * 0.5))
-		l2.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		l2.clip_text = true
+		intel_lbl.text = intel
+		intel_lbl.add_theme_color_override("font_color",
+				OutgameTheme.ACCENT_TEXT if m.id in _analyst_bans() else RED_COLOR)
 
 
 ## 메크 카드들을 손패와 **같은 노드**(`Card.tscn`)로 늘어놓는다 — 따로 그린
-## 그림이면 실제로 덱에 들어갈 카드와 같은 것인지 확인할 길이 없다.
-## `rx` / `rw` 는 오른쪽 칸의 왼쪽 끝과 폭이다 — 시트 전체 폭으로 가운데를
-## 잡으면 카드 줄이 왼쪽 아트 위로 밀려 들어간다.
-func _build_card_row(defs: Array, y: float, rx: float, rw: float) -> void:
-	if defs.is_empty():
-		UiHelpers.mk_label(_sheet, "이 기체에는 고유 카드가 없다", 20,
-				OutgameTheme.TEXT_FAINT, Vector2(rx, y), Vector2(rw, 30.0))
-		return
-	var cw: float = Card.CARD_W * SHEET_CARD_SCALE
-	var chh: float = Card.CARD_H * SHEET_CARD_SCALE
-	var row_w: float = float(defs.size()) * cw + float(defs.size() - 1) * SHEET_CARD_GAP
-	var x0: float = rx + maxf(0.0, (rw - row_w) * 0.5)
+## 그림이면 실제로 덱에 들어갈 카드와 같은 것인지 확인할 길이 없다. 카드 한 장 =
+## `BanPickSheetCard.tscn`(카드 자리 + 탭 버튼 + 장수 배지), 줄은 씬의 `%SheetCardRow`.
+func _build_card_row(defs: Array) -> void:
+	_clear_card_row()
+	_view.sheet_no_cards.visible = defs.is_empty()
 	for i in range(defs.size()):
 		var def: Dictionary = defs[i]
+		var item := BanPickSheetCard.create()
+		_view.sheet_card_row.add_child(item)
 		var node := CARD_SCENE.instantiate() as Card
 		# add_child 를 setup 보다 **먼저** — Card.gd 의 @onready 참조는 트리에
 		# 들어간 뒤에야 풀린다(CardPileViewer / PilotDetailPanel 과 같은 순서).
-		_sheet.add_child(node)
+		item.hold_card(node)
 		node.setup(CardData.from_def(def), false, true)
 		node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		node.pivot_offset = Vector2.ZERO
 		node.scale = Vector2(SHEET_CARD_SCALE, SHEET_CARD_SCALE)
-		node.position = Vector2(x0 + float(i) * (cw + SHEET_CARD_GAP), y)
+		node.position = Vector2.ZERO
 		# 카드 앞면에는 설명문이 없다 — 누르면 카드 줄 **위쪽**에 설명판이 뜬다
 		# (같은 카드를 다시 누르면 닫힌다).
-		var hit := Button.new()
-		hit.flat = true
-		hit.focus_mode = Control.FOCUS_NONE
-		hit.modulate = Color(1, 1, 1, 0)
-		hit.position = node.position
-		hit.size = Vector2(cw, chh)
-		hit.pressed.connect(_toggle_sheet_desc.bind(i, node, y, rx, rw))
-		_sheet.add_child(hit)
-
+		item.hit.pressed.connect(_toggle_sheet_desc.bind(i, node))
 		# 장수 배지 — `count = 0` 인 카드는 덱에 처음부터 들어가지 않고 패시브나
 		# 다른 카드가 만들어 줄 때만 세상에 나온다. 그 사정을 적어 두지 않으면
 		# "왜 이 카드가 손에 안 들어오나"가 화면 어디에도 없다.
 		var cnt: int = int(def.get("count", 0))
-		var badge := UiHelpers.mk_label(_sheet,
-				("×%d" % cnt) if cnt > 0 else "생성 전용",
-				18, OutgameTheme.TEXT if cnt > 0 else OutgameTheme.LINK,
-				Vector2(x0 + float(i) * (cw + SHEET_CARD_GAP), y + chh + 2.0),
-				Vector2(cw, 24.0), HORIZONTAL_ALIGNMENT_CENTER)
-		badge.clip_text = true
+		item.count.text = ("×%d" % cnt) if cnt > 0 else "생성 전용"
+		if cnt <= 0:
+			item.count.add_theme_color_override("font_color", OutgameTheme.LINK)
 
 
-## 시트 카드의 설명판. 폭은 오른쪽 칸 폭 그대로, 아랫변이 카드 줄 윗단에서
+func _clear_card_row() -> void:
+	if _view == null:
+		return
+	for c in _view.sheet_card_row.get_children():
+		_view.sheet_card_row.remove_child(c)
+		c.queue_free()
+
+
+## 시트 카드의 설명판. 폭은 카드 줄(오른쪽 칸) 폭 그대로, 아랫변이 카드 줄 윗단에서
 ## `SHEET_DESC_GAP` 위다 — 패시브 설명을 잠시 덮지만, 카드를 누른 손이 보려는
-## 것은 지금 그 카드다. 시트가 닫히면 시트의 자식이라 함께 사라진다.
-func _toggle_sheet_desc(idx: int, node: Card, row_y: float, rx: float, rw: float) -> void:
+## 것은 지금 그 카드다. 시트가 닫히면 함께 걷힌다(`_close_sheet`).
+func _toggle_sheet_desc(idx: int, node: Card) -> void:
 	var same: bool = idx == _sheet_desc_idx
+	_free_sheet_desc()
+	if same or not _sheet_open or node == null or not is_instance_valid(node):
+		return
+	var row: Control = _view.sheet_card_row
+	# 줄의 자리 · 폭은 씬의 오프셋에서 읽는다 — 시트 폭에서 양쪽 오프셋을 뺀 것.
+	var rx: float = row.offset_left
+	var rw: float = _view.sheet.size.x - row.offset_left + row.offset_right
+	_sheet_desc = CardDescBox.build(node.data, rw, true)
+	_view.sheet.add_child(_sheet_desc)
+	_sheet_desc.position = Vector2(rx,
+			maxf(SHEET_PAD, row.offset_top - SHEET_DESC_GAP - _sheet_desc.size.y))
+	_sheet_desc_idx = idx
+
+
+func _free_sheet_desc() -> void:
 	if _sheet_desc != null and is_instance_valid(_sheet_desc):
 		_sheet_desc.queue_free()
 	_sheet_desc = null
 	_sheet_desc_idx = -1
-	if same or _sheet == null or node == null or not is_instance_valid(node):
-		return
-	_sheet_desc = CardDescBox.build(node.data, rw, true)
-	_sheet.add_child(_sheet_desc)
-	_sheet_desc.position = Vector2(rx,
-			maxf(SHEET_PAD, row_y - SHEET_DESC_GAP - _sheet_desc.size.y))
-	_sheet_desc_idx = idx
 
 
 ## 확정 버튼이 곧 상태 표시다 — 예전의 "BLUE 픽 — 내 차례 (3 / 14)" 한 줄이
 ## 사라진 지금, 지금이 밴 차례인지 픽 차례인지를 글자로 말하는 자리는 여기뿐이다.
 func _refresh_sheet_confirm() -> void:
-	if _sheet_confirm == null:
+	if not _sheet_open or _view == null:
 		return
+	var btn: Button = _view.sheet_confirm
 	var ok: bool = _is_player_turn() and _is_legal(_selected_mech_id)
-	_sheet_confirm.disabled = not ok
+	btn.disabled = not ok
 	if ok:
-		_sheet_confirm.text = "밴 확정" if _current_kind() == ACTION_BAN else "픽 확정"
+		btn.text = "밴 확정" if _current_kind() == ACTION_BAN else "픽 확정"
 	elif not _is_player_turn():
-		_sheet_confirm.text = "상대 차례"
+		btn.text = "상대 차례"
 	else:
-		_sheet_confirm.text = "선택 불가"
+		btn.text = "선택 불가"
 
 
 func _on_dim_input(ev: InputEvent) -> void:
@@ -1572,15 +785,12 @@ func _on_dim_input(ev: InputEvent) -> void:
 
 func _close_sheet() -> void:
 	_selected_mech_id = -1
-	_sheet_confirm = null
-	_sheet_desc = null       # 시트의 자식이라 시트와 함께 해제된다
-	_sheet_desc_idx = -1
-	if _sheet != null:
-		_sheet.queue_free()
-		_sheet = null
-	if _sheet_dim != null:
-		_sheet_dim.queue_free()
-		_sheet_dim = null
+	_sheet_open = false
+	_free_sheet_desc()
+	if _view != null:
+		_clear_card_row()
+		_view.sheet.visible = false
+		_view.sheet_dim.visible = false
 	_refresh_cell_selection()
 
 
@@ -1609,10 +819,10 @@ func _refresh_grid_cells() -> void:
 	var red_picks: Array  = _picks_of(GameEnums.DraftSide.RED)
 	var rec_bans: Array = _analyst_bans()
 	for id in _cells.keys():
-		var cell: Dictionary = _cells[id]
-		var veil := cell["veil"] as ColorRect
-		var tag := cell["tag"] as Label
-		var art := cell["art"] as TextureRect
+		var cell: BanPickMechCell = _cells[id]
+		var veil: ColorRect = cell.veil
+		var tag: Label = cell.tag
+		var art: TextureRect = cell.art
 		var mid: int = int(id)
 		if mid in _banned:
 			veil.visible = true
@@ -1644,9 +854,7 @@ func _refresh_grid_cells() -> void:
 
 ## Mastery / analysis tags of one grid cell. Taken (banned / picked) cells show
 ## none — the slab already says everything.
-func _refresh_cell_marks(cell: Dictionary, mid: int, rec_bans: Array) -> void:
-	if not cell.has("intel"):
-		return
+func _refresh_cell_marks(cell: BanPickMechCell, mid: int, rec_bans: Array) -> void:
 	var available: bool = _is_legal(mid)
 	var intel_txt: String = ""
 	var intel_col: Color = OutgameTheme.ACCENT
@@ -1655,92 +863,83 @@ func _refresh_cell_marks(cell: Dictionary, mid: int, rec_bans: Array) -> void:
 	elif available and _show_enemy_likely and _enemy_likely.has(mid):
 		intel_txt = "예상 픽"
 		intel_col = RED_COLOR
-	_set_cell_tag(cell["intel"], intel_txt, intel_col)
+	_set_cell_tag(cell.intel, cell.intel_label, intel_txt, intel_col)
 	var mine_txt: String = ""
 	var t: int = 0
 	if available and _mastery_on:
-		t = MechMastery.tier_of(_mastery(_rider_for(_player_side, cell["mech"] as MechData), mid))
+		t = MechMastery.tier_of(_mastery(_rider_for(_player_side, _find_mech(mid)), mid))
 		if t >= 2:
 			mine_txt = MechMastery.tier_name(t)
-	_set_cell_tag(cell["mine"], mine_txt, MechMastery.tier_color(t))
+	_set_cell_tag(cell.mine, cell.mine_label, mine_txt, MechMastery.tier_color(t))
 
 
 ## 칸 테두리 — 내가 시트로 열어 본 칸은 앰버, **상대가 집어 보고 있는 칸**은
 ## 상대 진영색으로 두껍게. 둘이 같은 칸이면 상대 쪽이 이긴다(지금 움직이는 손은
 ## 그쪽이다).
 func _refresh_cell_selection() -> void:
-	var ai_col: Color = BLUE_COLOR if _other_side(_player_side) == GameEnums.DraftSide.BLUE \
-			else RED_COLOR
+	var ai_col: Color = _side_color(_other_side(_player_side))
 	for id in _cells.keys():
-		var btn := (_cells[id] as Dictionary)["btn"] as Button
-		var sty: StyleBoxFlat
+		var cell: BanPickMechCell = _cells[id]
 		if int(id) == _ai_hover_id:
-			sty = _cell_style(true)
-			sty.border_color = ai_col
-			sty.set_border_width_all(5)
+			cell.set_highlight(ai_col, 5)
+		elif int(id) == _selected_mech_id:
+			cell.set_highlight(ACCENT, 4)
 		else:
-			sty = _cell_style(int(id) == _selected_mech_id)
-		for st in ["normal", "hover", "pressed", "focus", "disabled"]:
-			btn.add_theme_stylebox_override(st, sty)
+			cell.set_highlight(ACCENT, 0)
 
 
 func _refresh_side_block(side: int) -> void:
-	var ui: Dictionary = _side_ui.get(side, {})
-	if ui.is_empty():
+	var blk := _side_ui.get(side, null) as BanPickTeamBlock
+	if blk == null:
 		return
 	var bans: Array = _side_bans.get(side, [])
-	var chips: Array = ui["ban_chips"]
+	var chips: Array = blk.ban_chips
 	for i in range(chips.size()):
-		var chip: Dictionary = chips[i]
-		var art := chip["art"] as TextureRect
-		var x_lbl := chip["x"] as Label
-		art.modulate = BAN_TINT
+		var chip: BanPickBanChip = chips[i]
+		chip.art.modulate = BAN_TINT
 		if i < bans.size():
-			art.texture = _mech_thumb(int(bans[i]))
-			x_lbl.text = "✕"
+			chip.art.texture = _mech_thumb(int(bans[i]))
+			chip.x_label.text = "✕"
 		else:
-			art.texture = null
-			x_lbl.text = ""
+			chip.art.texture = null
+			chip.x_label.text = ""
 	# 상대가 밴을 집어 보는 중이면 다음 칩에 흐린 미리보기.
 	var hover_slot: int = _ai_hover_slot(side, ACTION_BAN)
 	if hover_slot >= 0 and hover_slot < chips.size():
-		var hchip: Dictionary = chips[hover_slot]
-		(hchip["art"] as TextureRect).texture = _mech_thumb(_ai_hover_id)
-		(hchip["art"] as TextureRect).modulate = Color(1, 1, 1, 0.45)
+		var hchip: BanPickBanChip = chips[hover_slot]
+		hchip.art.texture = _mech_thumb(_ai_hover_id)
+		hchip.art.modulate = Color(1, 1, 1, 0.45)
 
 	# 칸의 내용은 언제나 자리표다 — 아군 칸은 밴픽 중에도 옮겨지므로 픽 순서를
 	# 그대로 읽으면 옮긴 자리가 다음 갱신에 되돌아간다.
 	var ids: Array = _seat_mechs.get(side, [])
-	var slots: Array = ui["mech_slots"]
+	var slots: Array = blk.mech_slots
 	for i in range(slots.size()):
-		var slot: Dictionary = slots[i]
-		var sty := slot["style"] as StyleBoxFlat
-		var side_col: Color = slot["side_col"]
-		var nm := slot["name"] as Label
-		var band := slot["band"] as ColorRect
-		var art := slot["art"] as TextureRect
-		art.modulate = Color.WHITE
+		var slot: BanPickMechSlot = slots[i]
+		var sty: StyleBoxFlat = slot.style
+		var side_col: Color = slot.side_col
+		slot.art.modulate = Color.WHITE
 		if i < ids.size() and int(ids[i]) >= 0:
 			var mid: int = int(ids[i])
 			var m := _find_mech(mid)
-			art.texture = _mech_thumb(mid)
-			nm.text = m.name if m != null else "?"
-			band.visible = true
+			slot.art.texture = _mech_thumb(mid)
+			slot.name_label.text = m.name if m != null else "?"
+			slot.band.visible = true
 			sty.bg_color = side_col.lerp(OutgameTheme.SURFACE, 0.75)
 			sty.border_color = side_col
 		elif i == _ai_hover_slot(side, ACTION_PICK):
 			# 상대가 집어 보는 기체 — 다음 칸에 흐리게, 테두리는 진영색.
 			var hm := _find_mech(_ai_hover_id)
-			art.texture = _mech_thumb(_ai_hover_id)
-			art.modulate = Color(1, 1, 1, 0.45)
-			nm.text = hm.name if hm != null else ""
-			band.visible = true
+			slot.art.texture = _mech_thumb(_ai_hover_id)
+			slot.art.modulate = Color(1, 1, 1, 0.45)
+			slot.name_label.text = hm.name if hm != null else ""
+			slot.band.visible = true
 			sty.bg_color = SLOT_EMPTY_COLOR
 			sty.border_color = side_col
 		else:
-			art.texture = null
-			nm.text = ""
-			band.visible = false
+			slot.art.texture = null
+			slot.name_label.text = ""
+			slot.band.visible = false
 			sty.bg_color = SLOT_EMPTY_COLOR
 			sty.border_color = side_col.lerp(OutgameTheme.SURFACE, 0.55)
 		_refresh_slot_mastery(side, slot, int(ids[i]) if i < ids.size() else -1)
@@ -1750,13 +949,13 @@ func _refresh_side_block(side: int) -> void:
 ## The seat's mastery tag: my seats always (the slot row is "the mech of the
 ## pilot above it" from the first pick), enemy seats only once analysis reveals
 ## mastery and the enemy mechs are re-seated by pilot in the assign step.
-func _refresh_slot_mastery(side: int, slot: Dictionary, mech_id: int) -> void:
-	var tag := slot.get("mtag", null) as Panel
+func _refresh_slot_mastery(side: int, slot: BanPickMechSlot, mech_id: int) -> void:
+	var tag: Panel = slot.mtag
 	if tag == null:
 		return
 	var wanted: bool = _mastery_on and mech_id >= 0 \
 			and (side == _player_side or (_show_enemy_likely and _enemy_seated))
-	var pd: PlayerData = _pilot_at(side, int(slot["seat"])) if wanted else null
+	var pd: PlayerData = _pilot_at(side, slot.seat) if wanted else null
 	if pd == null:
 		tag.visible = false
 		return
@@ -1764,22 +963,23 @@ func _refresh_slot_mastery(side: int, slot: Dictionary, mech_id: int) -> void:
 	tag.visible = true
 	tag.add_theme_stylebox_override("panel",
 			OutgameTheme.flat_style(MechMastery.tier_color(t), 8))
-	(slot["mtag_lbl"] as Label).text = "%s %s" % [MechMastery.tier_name(t), MechMastery.bonus_text(t)]
+	if slot.mtag_label != null:
+		slot.mtag_label.text = "%s %s" % [MechMastery.tier_name(t), MechMastery.bonus_text(t)]
 
 
 ## The seat's quirk tag `기벽 +N` — total quirk stat bonus of my pilot on that
 ## seat riding that mech (conditional quirks follow the mech, so dragging a slot
 ## updates it). Hidden for enemy seats, empty seats and a 0 total.
-func _refresh_slot_quirk(side: int, slot: Dictionary, mech_id: int) -> void:
-	var tag := slot.get("qtag", null) as Panel
+func _refresh_slot_quirk(side: int, slot: BanPickMechSlot, mech_id: int) -> void:
+	var tag: Panel = slot.qtag
 	if tag == null:
 		return
 	var total: int = 0
 	if mech_id >= 0:
-		total = _quirk_total(side, _pilot_at(side, int(slot["seat"])), mech_id)
+		total = _quirk_total(side, _pilot_at(side, slot.seat), mech_id)
 	tag.visible = total > 0
-	if total > 0:
-		(slot["qtag_lbl"] as Label).text = "기벽 +%d" % total
+	if total > 0 and slot.qtag_label != null:
+		slot.qtag_label.text = "기벽 +%d" % total
 
 
 ## 상대가 지금 집어 보는 기체가 `side` 블록의 몇 번째 칸(밴 칩 / 픽 슬롯)에
@@ -1791,37 +991,6 @@ func _ai_hover_slot(side: int, kind: int) -> int:
 		return -1
 	return (_side_bans.get(side, []) as Array).size() if kind == ACTION_BAN \
 			else _first_empty_seat(side)
-
-
-func _seq_color(idx: int, state: int) -> Color:
-	# state: 0=upcoming, 1=done, 2=current, 3=지금 캡슐 안의 다음 수
-	var side: int = SEQUENCE[idx][0]
-	var base: Color = BLUE_COLOR if side == GameEnums.DraftSide.BLUE else RED_COLOR
-	# 흰 바탕이라 **진할수록 지금**이다 — 지난 수는 반쯤, 남은 수는 거의 바탕색.
-	# 지금 캡슐의 다음 수는 그 사이 — 곧 이어질 수라 남은 수보다는 진하다.
-	if state == 1: return base.lerp(OutgameTheme.SURFACE, 0.45)
-	if state == 2: return base
-	if state == 3: return base.lerp(OutgameTheme.SURFACE, 0.60)
-	return base.lerp(OutgameTheme.SURFACE, 0.80)
-
-
-## 두 수가 같은 팀의 같은 행동인가 — 순서 줄의 캡슐과 차례 배너가 함께 읽는다.
-func _same_run(a: int, b: int) -> bool:
-	if a < 0 or b < 0 or a >= SEQUENCE.size() or b >= SEQUENCE.size():
-		return false
-	return int(SEQUENCE[a][0]) == int(SEQUENCE[b][0]) \
-			and int(SEQUENCE[a][1]) == int(SEQUENCE[b][1])
-
-
-## `idx` 가 속한 캡슐의 첫 수 · 끝 수(x..y). 홀로 선 수면 x == y == idx.
-func _seq_run(idx: int) -> Vector2i:
-	var a: int = idx
-	while _same_run(a - 1, a):
-		a -= 1
-	var b: int = idx
-	while _same_run(b, b + 1):
-		b += 1
-	return Vector2i(a, b)
 
 
 # ── Click handling ───────────────────────────────────────────────────────────
@@ -1896,8 +1065,8 @@ func _maybe_run_ai() -> void:
 	if _is_player_turn():
 		return
 	var my_idx: int = _action_idx
-	await get_tree().create_timer(BANNER_IN_SEC + BANNER_HOLD_SEC).timeout
-	if _action_idx != my_idx or _panel == null:
+	await get_tree().create_timer(BanPickView.BANNER_IN_SEC + BanPickView.BANNER_HOLD_SEC).timeout
+	if _action_idx != my_idx or _view == null:
 		return
 	var ranked: Array = _ai_rank(int(SEQUENCE[my_idx][0]), _current_kind())
 	if ranked.is_empty():
@@ -1912,7 +1081,7 @@ func _maybe_run_ai() -> void:
 	for m_raw in seq:
 		_set_ai_hover((m_raw as MechData).id)
 		await get_tree().create_timer(randf_range(AI_HOVER_MIN, AI_HOVER_MAX)).timeout
-		if _action_idx != my_idx or _panel == null:
+		if _action_idx != my_idx or _view == null:
 			return
 	_commit_action(final_pick.id)
 
@@ -1970,105 +1139,50 @@ func _set_ai_hover(mech_id: int) -> void:
 # ── 차례 배너 ────────────────────────────────────────────────────────────────
 ## 화면 가운데를 가로지르는 띠 — `내 차례 밴` / `상대 차례 픽` 처럼 **누구의 ·
 ## 무엇** 차례인지. 가운데에서 양옆으로 펼쳐졌다가 잠깐 머물고 옅어진다
-## (인게임 `HudBuilder.play_turn_announce` 와 같은 모양). 입력은 막지 않고,
-## 다음 수가 먼저 오면 이전 배너를 걷고 새로 뜬다(`_banner_gen`).
+## (인게임 `HudBuilder.play_turn_announce` 와 같은 모양, `BanPickView.play_banner`).
+## 입력은 막지 않고, 다음 수가 먼저 오면 이전 배너를 걷고 새로 뜬다.
 func _play_turn_banner() -> void:
-	if _banner_root == null or _action_idx >= SEQUENCE.size():
+	if _view == null or _action_idx >= SEQUENCE.size():
 		return
 	# 같은 팀이 같은 행동을 이어서 하는 수에는 띠를 다시 띄우지 않는다 — 말할
 	# 것(누구의 · 무엇)이 바로 앞 수와 같다. 그 이어짐은 순서 줄의 캡슐이 말한다.
-	if _same_run(_action_idx - 1, _action_idx):
+	if BanPickOrderRow.same_run(SEQUENCE, _action_idx - 1, _action_idx):
 		return
-	_clear_banner()
-	_banner_gen += 1
-	var gen: int = _banner_gen
 	var mine: bool = _is_player_turn()
 	var msg: String = "%s %s" % ["내 차례" if mine else "상대 차례",
 			"밴" if _current_kind() == ACTION_BAN else "픽"]
-	var side_col: Color = _seq_color(_action_idx, 2)
-	var vp: Vector2 = ScreenMetrics.viewport_size()
-	var y: float = vp.y * 0.5 - BANNER_H * 0.5
-
-	var bar := ColorRect.new()
-	bar.color = Color(side_col.r, side_col.g, side_col.b, 0.92)
-	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bar.position = Vector2(vp.x * 0.5, y)
-	bar.size = Vector2(0.0, BANNER_H)
-	_banner_root.add_child(bar)
-
-	var lbl := UiHelpers.mk_label(_banner_root, msg, BANNER_FONT, OutgameTheme.TEXT_ON_FILL,
-			Vector2(0.0, y), Vector2(vp.x, BANNER_H), HORIZONTAL_ALIGNMENT_CENTER)
-	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.35))
-	lbl.add_theme_constant_override("outline_size", 4)
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	lbl.modulate = Color(1, 1, 1, 0)
-
-	var tw := create_tween().set_parallel()
-	_banner_tween = tw
-	tw.tween_property(bar, "size:x", vp.x, BANNER_IN_SEC) \
-			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	tw.tween_property(bar, "position:x", 0.0, BANNER_IN_SEC) \
-			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	tw.tween_property(lbl, "modulate", Color.WHITE, BANNER_IN_SEC)
-	tw.chain().tween_interval(BANNER_HOLD_SEC)
-	tw.chain().tween_property(bar, "modulate", Color(1, 1, 1, 0), BANNER_OUT_SEC)
-	tw.parallel().tween_property(lbl, "modulate", Color(1, 1, 1, 0), BANNER_OUT_SEC)
-	tw.chain().tween_callback(func() -> void:
-		if gen == _banner_gen:
-			_clear_banner(false))
+	_view.play_banner(msg, _side_color(int(SEQUENCE[_action_idx][0])))
 
 
-func _clear_banner(kill_tween: bool = true) -> void:
-	if kill_tween and _banner_tween != null and _banner_tween.is_valid():
-		_banner_tween.kill()
-	_banner_tween = null
-	if _banner_root == null or not is_instance_valid(_banner_root):
-		return
-	for c in _banner_root.get_children():
-		c.queue_free()
+func _clear_banner() -> void:
+	if _view != null:
+		_view.clear_banner()
 
 
 # ── 배정 단계 ────────────────────────────────────────────────────────────────
-## 픽창을 걷어 내고 아군 블록을 **배정판**으로 다시 세운다. 화면이 바뀌지 않는
+## 픽창을 걷어 내고 아군 블록을 **배정판**으로 바꾼다. 화면이 바뀌지 않는
 ## 것이 요점이다 — 방금 고른 열 대가 그 자리에 그대로 있어야 "누가 뭘 탈지"를
 ## 그 그림 위에서 정할 수 있다.
 func _enter_assign_mode() -> void:
 	_assign_mode = true
 	_close_sheet()
-	# 끌던 칸이 있으면 놓게 한다 — 아군 블록을 새로 세우므로 손에 든 칸의
-	# 원래 자리가 사라진다.
+	# 끌던 칸이 있으면 놓게 한다 — 아군 블록이 배정판으로 바뀌므로 손에 든 칸의
+	# 원래 자리가 움직인다.
 	_cancel_drag()
 	var enemy_side: int = _other_side(_player_side)
 
-	# 픽창 해체
-	if _scroll != null:
-		_scroll.queue_free()
-		_scroll = null
-	_grid_content = null
-	if _grid_bg != null:
-		_grid_bg.queue_free()
-		_grid_bg = null
-	for btn_raw in _filter_btns:
-		(btn_raw as Button).queue_free()
-	_filter_btns.clear()
+	# 픽창 해체 — 순서 줄도 함께 걷는다(열네 수가 다 끝났으니 가리킬 차례가 없다).
+	_view.order_row.stop()
+	_view.band.visible = false
+	for cell in _cells.values():
+		(cell as Node).queue_free()
 	_cells.clear()
-	# 순서 줄도 픽창과 함께 걷는다 — 열네 수가 다 끝났으니 가리킬 차례가 없다.
-	if _pip_tween != null and _pip_tween.is_valid():
-		_pip_tween.kill()
-	if _pips_root != null:
-		_pips_root.queue_free()
-		_pips_root = null
-	_seq_pips.clear()
-	_seq_dividers.clear()
-	_pip_icon = null
-	_turn_arrow = null
 
-	# 상대 블록은 다시 세우지 않고 **탭만 열어 준다** — 밴픽 내내 서 있던
-	# 그림이 그대로 남아야 "저쪽이 무엇을 골랐나"를 두 번 읽지 않는다.
+	# 상대 블록은 그대로 두고 **탭만 열어 준다** — 밴픽 내내 서 있던 그림이 그대로
+	# 남아야 "저쪽이 무엇을 골랐나"를 두 번 읽지 않는다.
 	_set_block_tappable(enemy_side, true)
 
-	_rebuild_player_block_for_assign()
+	_enter_assign_layout()
 	_build_assign_prompt()
 	_refresh_ui()
 	_play_assign_intro(enemy_side)
@@ -2076,22 +1190,28 @@ func _enter_assign_mode() -> void:
 
 ## 배정 진입 연출. 두 팀 블록이 비워진 픽창 자리로 **가운데에 모이고**, 그 다음
 ## 상대 메크 칸이 포지션에 맞는 선수 자리로 옮겨 앉는다. 끝나야 "게임 시작"이
-## 풀린다.
+## 풀린다. 모이는 자리 = 하단 바 위 본문의 세로 가운데(블록 높이는 씬에서 읽는다).
 func _play_assign_intro(enemy_side: int) -> void:
-	var e_holder := (_side_ui.get(enemy_side, {}) as Dictionary).get("holder", null) as Control
-	var p_holder := (_side_ui.get(_player_side, {}) as Dictionary).get("holder", null) as Control
+	var e_holder := _side_ui.get(enemy_side, null) as Control
+	var p_holder := _side_ui.get(_player_side, null) as Control
 	var tw := create_tween().set_parallel()
-	if e_holder != null:
-		tw.tween_property(e_holder, "position:y", float(_lay["gather_enemy_y"]), GATHER_SEC) \
+	if e_holder != null and p_holder != null:
+		var top_pad: float = e_holder.position.y
+		var e_h: float = e_holder.get_combined_minimum_size().y
+		var p_h: float = p_holder.get_combined_minimum_size().y
+		var body_h: float = OutgameTheme.bottom_bar_top()
+		var gather_y: float = maxf(top_pad, (body_h - (e_h + GATHER_GAP + p_h)) * 0.5)
+		tw.tween_property(e_holder, "position:y", gather_y, GATHER_SEC) \
 				.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
-	if p_holder != null:
-		tw.tween_property(p_holder, "position:y", float(_lay["gather_player_y"]), GATHER_SEC) \
+		tw.tween_property(p_holder, "position:y", gather_y + e_h + GATHER_GAP, GATHER_SEC) \
 				.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
+	else:
+		tw.kill()
 	await get_tree().create_timer(GATHER_SEC + ENEMY_SWAP_DELAY).timeout
-	if _panel == null:
+	if _view == null:
 		return
 	await _play_enemy_reassign(enemy_side, _enemy_role_order(enemy_side))
-	if _panel == null:
+	if _view == null:
 		return
 	if _start_btn != null and is_instance_valid(_start_btn):
 		_start_btn.disabled = false
@@ -2135,11 +1255,12 @@ func _enemy_role_order(side: int) -> Array:
 	return out
 
 
-## 상대 메크 칸이 지금 자리에서 새 자리로 미끄러져 옮겨 앉는다. 칸 노드 자체를
-## 옮겼다가, 다 옮기면 제자리로 되돌리고 내용(자리표)을 바꿔 끼운다 — 끝 화면은
-## 같고, 칸 노드가 언제나 자기 자리에 있다는 전제(탭 버튼 · 갱신)가 유지된다.
+## 상대 메크 칸이 지금 자리에서 새 자리로 미끄러져 옮겨 앉는다. 칸의 판(`frame`)
+## 자체를 옮겼다가, 다 옮기면 제자리로 되돌리고 내용(자리표)을 바꿔 끼운다 — 끝
+## 화면은 같고, 판이 언제나 자기 칸에 있다는 전제(탭 버튼 · 갱신)가 유지된다.
 func _play_enemy_reassign(side: int, new_order: Array) -> void:
-	var slots: Array = (_side_ui.get(side, {}) as Dictionary).get("mech_slots", [])
+	var blk := _side_ui.get(side, null) as BanPickTeamBlock
+	var slots: Array = blk.mech_slots if blk != null else []
 	var old: Array = _seat_mechs.get(side, [])
 	var moved: bool = false
 	var tw := create_tween().set_parallel()
@@ -2151,18 +1272,18 @@ func _play_enemy_reassign(side: int, new_order: Array) -> void:
 		if j < 0 or j == i or j >= slots.size():
 			continue
 		moved = true
-		var frame := (slots[i] as Dictionary)["frame"] as Panel
-		var from: Vector2 = (slots[i] as Dictionary)["pos"]
-		var to: Vector2 = (slots[j] as Dictionary)["pos"]
+		var frame: Panel = (slots[i] as BanPickMechSlot).frame
+		# 판은 제 칸 안의 (0, 0) 에 앉아 있다 — 목표는 두 칸 사이의 거리다.
+		var dx: float = (slots[j] as Control).position.x - (slots[i] as Control).position.x
 		frame.z_index = 1
-		tw.tween_property(frame, "position:x", to.x, ENEMY_SWAP_SEC) \
+		tw.tween_property(frame, "position:x", dx, ENEMY_SWAP_SEC) \
 				.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
 		# 오른쪽으로 가는 칸은 위로, 왼쪽으로 가는 칸은 아래로 비켜 지나간다 —
 		# 가로지르는 두 칸이 서로를 통과하지 않고 엇갈려 지나가는 것으로 읽힌다.
 		var lift: float = ENEMY_SWAP_LIFT_PX if j > i else -ENEMY_SWAP_LIFT_PX
-		tw.tween_property(frame, "position:y", from.y - lift, ENEMY_SWAP_SEC * 0.5) \
+		tw.tween_property(frame, "position:y", -lift, ENEMY_SWAP_SEC * 0.5) \
 				.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
-		tw.tween_property(frame, "position:y", from.y, ENEMY_SWAP_SEC * 0.5) \
+		tw.tween_property(frame, "position:y", 0.0, ENEMY_SWAP_SEC * 0.5) \
 				.set_delay(ENEMY_SWAP_SEC * 0.5).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
 	if not moved:
 		tw.kill()
@@ -2170,14 +1291,13 @@ func _play_enemy_reassign(side: int, new_order: Array) -> void:
 		# 박자는 트윈의 `finished` 가 아니라 타이머로 기다린다 — 노드가 도중에
 		# free 되면 그 신호는 영영 오지 않는다.
 		await get_tree().create_timer(ENEMY_SWAP_SEC).timeout
-		if _panel == null:
+		if _view == null:
 			return
 		for slot_raw in slots:
-			var slot: Dictionary = slot_raw
-			var frame := slot["frame"] as Panel
-			if is_instance_valid(frame):
-				frame.position = slot["pos"]
-				frame.z_index = 0
+			var slot := slot_raw as BanPickMechSlot
+			if is_instance_valid(slot):
+				slot.frame.position = Vector2.ZERO
+				slot.frame.z_index = 0
 	_seat_mechs[side] = new_order
 	_enemy_seated = true
 	_refresh_side_block(side)
@@ -2187,94 +1307,51 @@ func _play_enemy_reassign(side: int, new_order: Array) -> void:
 ## 남는다 — 그쪽 탭은 드래그 배선(`_on_slot_input`)이 함께 받으므로 투명
 ## 버튼을 켜면 그 버튼이 press 를 가져가 드래그가 영영 시작되지 않는다.
 func _set_block_tappable(side: int, on: bool) -> void:
-	var ui: Dictionary = _side_ui.get(side, {})
-	if ui.is_empty():
+	var blk := _side_ui.get(side, null) as BanPickTeamBlock
+	if blk == null:
 		return
-	for raw in ui.get("pilot_hits", []):
-		var b := raw as Button
-		if b != null:
-			b.visible = on
+	for por in blk.portraits:
+		(por as BanPickPortrait).hit.visible = on
 	if side == _player_side:
 		return
-	for slot_raw in ui.get("mech_slots", []):
-		var hit := (slot_raw as Dictionary).get("hit", null) as Button
-		if hit != null:
-			hit.visible = on
+	for slot in blk.mech_slots:
+		(slot as BanPickMechSlot).hit.visible = on
 
 
-## 아군 블록을 다시 세운다 — **파일럿 상체 일러스트가 위, 메크 칸이 그 아래**,
-## 메크 줄 오른쪽 아래에 조작 안내 한 줄, 맨 밑에 밴 칩. 메크 칸은 끌 수 있는
-## 물건이 된다.
+## 아군 블록을 배정판으로 — **파일럿 상체 일러스트가 위, 메크 칸이 그 아래**,
+## 메크 줄 오른쪽 아래에 조작 안내 한 줄, 맨 밑에 밴 칩(씬의 `%PlayerBlock` 순서).
+## 초상화 줄은 드래프트 화면의 선택 칸과 **같은 크롭 · 같은 비율**
+## (`PilotImages.BUST_ASPECT`)로 길어지고, 블록은 아래끝을 지킨 채 위로 자란다.
 ##
 ## 예전에는 메크가 위였다 — 끄는 손가락이 그 밑의 "어느 파일럿 자리인가"를
 ## 가리지 않게 하려는 배치였는데, 그러면 세로로 훑을 때 목적어가 주어보다
 ## 먼저 와서 다섯 칸이 무엇을 정하는 화면인지가 뒤집혀 읽혔다. 초상화가
 ## 상체 일러스트로 커진 지금은 손가락이 덮을 수 있는 넓이보다 칸이 훨씬 커서
 ## 그 걱정 자체가 없다.
-func _rebuild_player_block_for_assign() -> void:
-	var old: Dictionary = _side_ui.get(_player_side, {})
-	if not old.is_empty() and old["holder"] != null:
-		(old["holder"] as Control).queue_free()
-
-	var strip_w: float = _lay["strip_w"]
-	var cell_w: float = _lay["cell_w"]
-	var pw: float = _lay["portrait_w"]
-	var ph: float = _lay["assign_portrait_h"]
-	var mh: float = _lay["mech_h"]
-	var side_col: Color = BLUE_COLOR if _player_side == GameEnums.DraftSide.BLUE else RED_COLOR
-
-	var holder := Control.new()
-	holder.position = Vector2(SIDE_MARGIN, _lay["assign_block_y"])
-	holder.size = Vector2(strip_w, _lay["assign_block_h"])
-	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_panel.add_child(holder)
-
-	var por_y: float = 0.0
-	var mech_y: float = ph + 2.0
-	var hint_y: float = mech_y + mh + 2.0
-	var ban_y: float = hint_y + ASSIGN_HINT_H + BLOCK_INNER_GAP
-
-	var chips: Array = _build_ban_row(holder, _player_side, side_col, ban_y, strip_w)
-
-	var hits: Array = []
-	for i in range(SLOT_COUNT):
-		var cx2: float = cell_w * (float(i) + 0.5)
-		hits.append(_build_pilot_portrait(holder, _player_side, i,
-				Vector2(cx2 - pw * 0.5, por_y), Vector2(pw, ph), side_col))
-
-	var slots: Array = []
-	for i in range(SLOT_COUNT):
-		var cx: float = cell_w * (float(i) + 0.5)
-		var slot: Dictionary = _build_mech_slot(holder,
-				Vector2(cx - pw * 0.5, mech_y), Vector2(pw, mh), side_col,
-				_player_side, i)
-		_bind_slot_drag(slot)
-		slots.append(slot)
-
-	# 조작 안내는 **메크 줄 오른쪽 아래에 작게** 붙는다 — 한 번 읽고 나면
-	# 다시 볼 일이 없는 문장이라 화면 가운데를 차지하면 안 된다.
-	var hint := UiHelpers.mk_label(holder, ASSIGN_HINT_TEXT, ASSIGN_HINT_FONT,
-			TEXT_DIM, Vector2(0.0, hint_y), Vector2(strip_w, ASSIGN_HINT_H),
-			HORIZONTAL_ALIGNMENT_RIGHT)
-	hint.clip_text = true
-
-	_side_ui[_player_side] = {"holder": holder, "ban_chips": chips,
-			"mech_slots": slots, "pilot_hits": hits}
+func _enter_assign_layout() -> void:
+	var blk := _side_ui.get(_player_side, null) as BanPickTeamBlock
+	if blk == null:
+		return
+	var pw: float = (blk.portraits[0] as Control).custom_minimum_size.x if not blk.portraits.is_empty() \
+			else 0.0
+	blk.set_assign_layout(pw / PilotImages.BUST_ASPECT)
+	for i in range(blk.portraits.size()):
+		var p: PlayerData = _pilot_at(_player_side, i)
+		(blk.portraits[i] as BanPickPortrait).face.texture = \
+				PilotImages.bust_for(p.id) if p != null else null
 	_set_block_tappable(_player_side, true)
 
 
-## "게임 시작"은 **하단 구간을 통째로 차지하는 바**다(`OutgameTheme.add_bottom_bar`)
-## — 아웃게임 화면의 주된 행동이 서는 자리. 배정 진입 연출(`_play_assign_intro`)
-## 이 끝날 때까지 잠겨 있다. 안내 문구는 아군 메크 줄 오른쪽 아래에 있고 제목
-## ("메크 배정")은 없다 — 화면에 남은 것이 양 팀 초상화와 그 밑의 기체뿐이면
-## 무엇을 하는 단계인지는 그림이 말한다.
+## "게임 시작"은 **하단 구간을 통째로 차지하는 바**다(씬의 `%StartButton`, 모서리 ·
+## 아래 인셋은 `OutgameTheme.style_bottom_button`) — 아웃게임 화면의 주된 행동이 서는
+## 자리. 배정 진입 연출(`_play_assign_intro`)이 끝날 때까지 잠겨 있다. 제목("메크
+## 배정")은 없다 — 화면에 남은 것이 양 팀 초상화와 그 밑의 기체뿐이면 무엇을 하는
+## 단계인지는 그림이 말한다.
 func _build_assign_prompt() -> void:
-	var bar: Array = OutgameTheme.add_bottom_bar(_panel, [
-		{"text": "게임 시작", "style": "primary"},
-	])
-	_start_btn = bar[0] as Button
+	_start_btn = _view.start_button
+	OutgameTheme.style_bottom_button(_start_btn, "primary", OutgameTheme.FONT_BTN_PRIMARY)
+	_start_btn.visible = true
 	_start_btn.disabled = true
-	_start_btn.pressed.connect(_finish)
 
 
 # ── 배정 단계의 상세 팝업 ────────────────────────────────────────────────────
@@ -2327,13 +1404,21 @@ func _close_detail_panels() -> void:
 		_mech_detail.close()
 
 
+# ── 메크 칸 드래그 ───────────────────────────────────────────────────────────
 ## 메크 칸 하나를 끌 수 있게 만든다. 누른 컨트롤이 마우스 포커스를 유지하므로
 ## 커서가 칸 밖으로 나가도 motion / release 가 계속 이 칸으로 들어온다 —
 ## 그래서 드래그 레이어를 따로 두지 않는다.
-func _bind_slot_drag(slot: Dictionary) -> void:
-	var frame := slot["frame"] as Panel
-	frame.mouse_filter = Control.MOUSE_FILTER_STOP
-	frame.gui_input.connect(_on_slot_input.bind(int(slot["seat"])))
+func _bind_slot_drag(slot: BanPickMechSlot) -> void:
+	slot.frame.mouse_filter = Control.MOUSE_FILTER_STOP
+	slot.frame.gui_input.connect(_on_slot_input.bind(slot.seat))
+
+
+## 이벤트 자리 → 캔버스(전역) 좌표. `gui_input` 의 위치는 그 칸의 로컬 좌표다.
+func _event_pos(ev: InputEventMouse, seat: int) -> Vector2:
+	var slot := _slot_at(seat)
+	if slot == null:
+		return ev.position
+	return slot.frame.get_global_transform() * ev.position
 
 
 func _on_slot_input(ev: InputEvent, seat: int) -> void:
@@ -2344,64 +1429,43 @@ func _on_slot_input(ev: InputEvent, seat: int) -> void:
 				return
 			_drag_armed = true
 			_drag_seat = seat
-			_drag_from = _panel.get_local_mouse_position()
+			_drag_from = _event_pos(mb, seat)
 		else:
-			_end_drag()
+			_end_drag(_event_pos(mb, seat))
 		return
 	var mm := ev as InputEventMouseMotion
 	if mm != null and _drag_armed:
-		var here: Vector2 = _panel.get_local_mouse_position()
-		if _drag_ghost == null:
+		var here: Vector2 = _event_pos(mm, seat)
+		if not _dragging:
 			# 문턱을 넘기 전까지는 탭이지 드래그가 아니다 — 손가락은 언제나
 			# 조금씩 떨리므로, 문턱이 없으면 누르기만 해도 칸이 떠오른다.
 			if here.distance_to(_drag_from) < DRAG_THRESHOLD_PX:
 				return
 			_begin_drag_ghost()
+			if not _dragging:
+				return
 			# 칸이 손에 들렸다. 아직 바꾼 것은 없다.
 			Haptics.play(Haptics.Kind.SELECT)
-		_drag_ghost.position = here - _drag_ghost.size * 0.5
+		var ghost: Panel = _view.drag_ghost
+		ghost.global_position = here - ghost.size * 0.5
 		_highlight_drop_target(here)
 
 
+## 손에 든 칸 = 씬의 `%DragGhost` (앰버 테두리 판 + 그 메크 초상화). 크기는 끌려
+## 나온 칸의 판 크기를 그대로 받는다.
 func _begin_drag_ghost() -> void:
 	var mid: int = _mech_at_seat(_drag_seat)
-	if mid < 0:
+	var slot := _slot_at(_drag_seat)
+	if mid < 0 or slot == null:
 		return
-	var pw: float = _lay["portrait_w"]
-	var mh: float = _lay["mech_h"]
-	var ghost := Panel.new()
-	ghost.size = Vector2(pw, mh)
-	ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = SLOT_EMPTY_COLOR
-	sb.border_color = ACCENT
-	sb.border_width_top = 3
-	sb.border_width_bottom = 3
-	sb.border_width_left = 3
-	sb.border_width_right = 3
-	sb.corner_radius_top_left = 5
-	sb.corner_radius_top_right = 5
-	sb.corner_radius_bottom_left = 5
-	sb.corner_radius_bottom_right = 5
-	ghost.add_theme_stylebox_override("panel", sb)
-	ghost.modulate = Color(1, 1, 1, 0.9)
-	_panel.add_child(ghost)
-
-	var art := TextureRect.new()
-	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	art.texture = _mech_thumb(mid)
-	art.position = Vector2(3.0, 3.0)
-	art.size = Vector2(pw - 6.0, mh - 6.0)
-	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ghost.add_child(art)
-
-	_drag_ghost = ghost
+	var ghost: Panel = _view.drag_ghost
+	ghost.size = slot.frame.size
+	_view.drag_ghost_art.texture = _mech_thumb(mid)
+	ghost.visible = true
+	_dragging = true
 	# 끌려 나온 칸은 그 자리에 **자국으로 남는다** — 비워 버리면 어디서 끌어
 	# 왔는지가 사라져, 엉뚱한 곳에 놓고도 무엇과 바뀌었는지를 못 읽는다.
-	var slot: Dictionary = _slot_at(_drag_seat)
-	if not slot.is_empty():
-		(slot["frame"] as Panel).modulate = Color(1, 1, 1, 0.35)
+	slot.frame.modulate = Color(1, 1, 1, 0.35)
 
 
 ## 지금 커서가 놓인 칸의 테두리를 밝힌다. 놓을 수 있는 자리가 어디인지는
@@ -2409,24 +1473,19 @@ func _begin_drag_ghost() -> void:
 func _highlight_drop_target(here: Vector2) -> void:
 	var target: int = _seat_under(here)
 	for slot_raw in _player_slots():
-		var slot: Dictionary = slot_raw
-		var seat: int = int(slot["seat"])
-		if seat == _drag_seat:
+		var slot: BanPickMechSlot = slot_raw
+		if slot.seat == _drag_seat:
 			continue
-		var sty := slot["style"] as StyleBoxFlat
-		var side_col: Color = slot["side_col"]
-		var filled: bool = _mech_at_seat(seat) >= 0
-		sty.border_color = ACCENT if seat == target else \
-				(side_col if filled else side_col.lerp(OutgameTheme.SURFACE, 0.55))
-		sty.border_width_top = 4 if seat == target else 2
-		sty.border_width_bottom = sty.border_width_top
-		sty.border_width_left = sty.border_width_top
-		sty.border_width_right = sty.border_width_top
+		var sty: StyleBoxFlat = slot.style
+		var filled: bool = _mech_at_seat(slot.seat) >= 0
+		sty.border_color = ACCENT if slot.seat == target else \
+				(slot.side_col if filled else slot.side_col.lerp(OutgameTheme.SURFACE, 0.55))
+		sty.set_border_width_all(4 if slot.seat == target else 2)
 
 
-func _end_drag() -> void:
+func _end_drag(here: Vector2) -> void:
 	var from_seat: int = _drag_seat
-	var dragging: bool = _drag_ghost != null
+	var dragging: bool = _dragging
 	# 문턱을 못 넘긴 것은 드래그가 아니라 **탭**이고, 탭은 그 칸의 메크 상세를
 	# 연다 — 아군 메크 칸에는 투명 탭 버튼을 얹을 수 없어서(드래그의 press 를
 	# 가로챈다) 그 몫이 여기로 온다.
@@ -2435,11 +1494,9 @@ func _end_drag() -> void:
 		_drag_seat = -1
 		_on_mech_slot_tapped(_player_side, from_seat)
 		return
-	if _drag_ghost != null:
-		var here: Vector2 = _panel.get_local_mouse_position()
+	if dragging:
 		var to_seat: int = _seat_under(here)
-		_drag_ghost.queue_free()
-		_drag_ghost = null
+		_hide_drag_ghost()
 		if to_seat >= 0 and to_seat != from_seat:
 			_swap_assign(from_seat, to_seat)
 			# 두 칸이 실제로 맞바뀌었다.
@@ -2447,21 +1504,25 @@ func _end_drag() -> void:
 	_drag_armed = false
 	_drag_seat = -1
 	if dragging:
-		var slot: Dictionary = _slot_at(from_seat)
-		if not slot.is_empty():
-			(slot["frame"] as Panel).modulate = Color(1, 1, 1, 1)
+		var slot := _slot_at(from_seat)
+		if slot != null:
+			slot.frame.modulate = Color(1, 1, 1, 1)
 	_refresh_side_block(_player_side)
 	_reset_slot_borders()
 
 
+func _hide_drag_ghost() -> void:
+	_dragging = false
+	if _view != null:
+		_view.drag_ghost.visible = false
+
+
 ## 끌던 칸을 그 자리에 내려놓는다(아무것도 바꾸지 않는다).
 func _cancel_drag() -> void:
-	if _drag_ghost != null and is_instance_valid(_drag_ghost):
-		_drag_ghost.queue_free()
-	_drag_ghost = null
-	var slot: Dictionary = _slot_at(_drag_seat)
-	if not slot.is_empty():
-		(slot["frame"] as Panel).modulate = Color(1, 1, 1, 1)
+	_hide_drag_ghost()
+	var slot := _slot_at(_drag_seat)
+	if slot != null:
+		slot.frame.modulate = Color(1, 1, 1, 1)
 	_drag_armed = false
 	_drag_seat = -1
 	_reset_slot_borders()
@@ -2469,12 +1530,7 @@ func _cancel_drag() -> void:
 
 func _reset_slot_borders() -> void:
 	for slot_raw in _player_slots():
-		var slot: Dictionary = slot_raw
-		var sty := slot["style"] as StyleBoxFlat
-		sty.border_width_top = 2
-		sty.border_width_bottom = 2
-		sty.border_width_left = 2
-		sty.border_width_right = 2
+		((slot_raw as BanPickMechSlot).style as StyleBoxFlat).set_border_width_all(2)
 
 
 func _swap_assign(a: int, b: int) -> void:
@@ -2486,33 +1542,26 @@ func _swap_assign(a: int, b: int) -> void:
 	seats[b] = tmp
 
 
-## `_panel` 좌표 하나가 어느 메크 칸 위인가. 칸은 아군 블록(holder) 안의 자식
-## 이므로 홀더 위치를 더해 절대 사각형으로 판정한다.
+## 캔버스(전역) 좌표 하나가 어느 아군 메크 칸 위인가.
 func _seat_under(here: Vector2) -> int:
-	var ui: Dictionary = _side_ui.get(_player_side, {})
-	if ui.is_empty():
-		return -1
-	var holder := ui["holder"] as Control
 	for slot_raw in _player_slots():
-		var slot: Dictionary = slot_raw
-		var frame := slot["frame"] as Panel
-		var rect := Rect2(holder.position + frame.position, frame.size)
-		if rect.has_point(here):
-			return int(slot["seat"])
+		var slot: BanPickMechSlot = slot_raw
+		if slot.frame.get_global_rect().has_point(here):
+			return slot.seat
 	return -1
 
 
 func _player_slots() -> Array:
-	var ui: Dictionary = _side_ui.get(_player_side, {})
-	return ui.get("mech_slots", []) if not ui.is_empty() else []
+	var blk := _side_ui.get(_player_side, null) as BanPickTeamBlock
+	return blk.mech_slots if blk != null else []
 
 
-func _slot_at(seat: int) -> Dictionary:
+func _slot_at(seat: int) -> BanPickMechSlot:
 	for slot_raw in _player_slots():
-		var slot: Dictionary = slot_raw
-		if int(slot["seat"]) == seat:
+		var slot: BanPickMechSlot = slot_raw
+		if slot.seat == seat:
 			return slot
-	return {}
+	return null
 
 
 func _mech_at_seat(seat: int) -> int:
@@ -2548,23 +1597,15 @@ func _finish() -> void:
 	var player_picks: Array = (_picks_of(_player_side) as Array).duplicate()
 	var enemy_picks: Array  = (_picks_of(_other_side(_player_side)) as Array).duplicate()
 	_close_sheet()
-	# 팝업은 CanvasLayer 라 `_panel` 을 지워도 따라 사라지지 않는다 — 열어 둔
+	# 팝업은 CanvasLayer 라 화면을 지워도 따라 사라지지 않는다 — 열어 둔
 	# 채 넘어가면 딤이 BattleSim 위에 그대로 남는다.
 	_close_detail_panels()
-	_panel.queue_free()
-	_panel = null
-	if _banner_root != null and is_instance_valid(_banner_root):
-		_banner_root.queue_free()
-	_banner_root = null
+	_view.queue_free()
+	_view = null
 	_cells.clear()
 	_side_ui.clear()
-	_seq_pips.clear()
-	_seq_dividers.clear()
-	_filter_btns.clear()
 	_thumbs.clear()
-	_scroll = null
-	_grid_content = null
-	_grid_bg = null
+	_tab_base = null
 	phase_finished.emit({
 		"banned": _banned.duplicate(),
 		"player_picks": player_picks,

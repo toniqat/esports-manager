@@ -263,7 +263,8 @@ resume path restores the saved `player_side` as is, so it is unaffected by this 
 | `MatchFlow.gd` | State machine orchestrator |
 | `match_prep/MatchPrepController.gd` · `MatchPrepView.gd/.tscn` | Pre-match scouting sheet (analysis reveal) — controller + scene-owned screen |
 | `match_prep/OpponentIntel.gd` · `IntelView.gd` | Reveal rule builder + its drawer, shared with the league team detail — `match_prep/README.md` |
-| `ban_pick/BanPickController.gd` | Ban/Pick + mech assignment — both teams' portraits + mech grid + bottom detail sheet + drag assignment |
+| `ban_pick/BanPickController.gd` | Ban/Pick + mech assignment rules / state — fills and drives the screen scene |
+| `ban_pick/BanPickView.tscn` (+ item scenes) | The ban/pick screen layout — both teams' portraits + mech grid + bottom detail sheet + drag ghost (`ban_pick/README.md` "Scene") |
 | `ban_pick/MechDetailPanel.gd/.tscn` (+ `MechMasteryRow` · `MechQuirkRow` · `MechCardCell` item scenes) | Mech detail popup for the assignment step |
 | `MatchCheatMenu.gd/.tscn` · `MatchCheatItem.tscn` | Editor-only cheat menu (top left) — see "Cheat menu" below |
 
@@ -331,29 +332,17 @@ replays the battle from scratch with the same locked-in picks.
 
 ## Screen fit (safe area)
 
-`BanPickController` stands one full-screen `Panel` under `_mf.canvas` and draws on it in
-absolute coordinates. Right after creating `_panel`, two lines follow.
+Both controller screens are **scene-based** — no full-screen `Panel` pushed below the notch any more:
 
-```gdscript
-_mf.canvas.add_child(_panel)
-ScreenMetrics.indent_to_safe_top(_panel)          # push the whole panel below the notch
-ScreenMetrics.backfill_top(_panel, <panel background colour>)   # fill the vacated top strip
-```
-
-The background is **the panel's own StyleBox**, so the panel can't be stretched upward (stretching
-moves the inner coordinate system too, putting the content back under the notch). So instead of the
-season views' `extend_background()`, it uses `backfill_top()`, which lays one strip as the panel's
-**first child**.
-
-**PREP is the exception** — `MatchPrepView.tscn` is scene-based: its `Paper` covers the whole viewport
-(no backfill needed) and only its `%Safe` child is offset by the insets in code; the bottom-anchored
-`%Start` bar extends into the bottom inset (`match_prep/README.md`).
-
-Inside the pushed-down panel, bottom buttons are based on `ScreenMetrics.safe_h()` —
-`BanPickController` derives **the whole block**, not
-a button, back from `safe_h()` (`_lay["bot_block_y"]` / `_lay["assign_block_y"]`), and the pick pane
-height comes from the strip left after the top and bottom blocks — so on any screen the grid cells
-stay square and only the number of visible rows changes.
+- **PREP** — `MatchPrepView.tscn`: its `Paper` covers the whole viewport and only its `%Safe` child is
+  offset by the insets in code; the bottom-anchored `%Start` bar extends into the bottom inset
+  (`match_prep/README.md`).
+- **BAN_PICK** — `ban_pick/BanPickView.tscn`: its `Background` covers the whole viewport and
+  everything else sits in `%SafeArea`, a full-rect Control whose top / bottom offsets are the device
+  insets (`BanPickView.fit_safe_area`). The team blocks are anchored to its top / bottom and the pick
+  pane height comes from the band left between them (`fit_pane`) — so on any screen the grid cells
+  stay square and only the number of visible rows changes.
+- **Modals** — `MechDetailPanel` (dim = viewport) and `MatchCheatMenu` (code adds the left / top insets).
 
 Details: **`docs/mobile_safe_area.md`**
 

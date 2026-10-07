@@ -79,6 +79,7 @@ Read the README of every row your task touches. Indented rows are submodules —
 | ↳ `gambit/` · `debug/` | Pre-battle setup, jungle start · `BattleLogger` | `gambit/README.md`, `debug/README.md` |
 | ↳ `buildings/` · `data/` | `@tool` Building / Waypoint nodes · `DataLoader`, `FieldLoader` | *(no README — see `features/battle_sim/README.md`)* |
 | `ios/plugins/` · `build/` | iOS native plugins · downloaded `.ipa` | `ios/plugins/README.md`, `build/README.md` |
+| `addons/ui_scene_tree/` | Editor dock "UI 트리": `scenes/*` · `UI_View` → `UI_Comp` tree (instanced + code-created), TODO · node counts per scene | `addons/ui_scene_tree/README.md` |
 | `addons/godot_mcp/` | MCP editor plugin — **do not modify** | — |
 
 ### Docs (`docs/`)

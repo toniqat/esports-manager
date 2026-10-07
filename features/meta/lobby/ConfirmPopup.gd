@@ -10,8 +10,10 @@ extends CanvasLayer
 #
 # **레이아웃의 정본은 `ConfirmPopup.tscn` 이다.** 이 스크립트는 노드를 만들지
 # 않고 `%이름` 노드에 글을 넣고 시그널만 잇는다 — 크기 · 색 · 간격은 에디터에서
-# 고친다. 코드가 정하는 것은 둘뿐: 안전 영역(`%SafeArea` 의 위아래 여백, 기기마다
-# 다르다)과 `danger` 일 때 확인 버튼의 빨간 색면.
+# 고친다. 색 · 스타일박스는 `Root` 에 붙은 공용 테마(`resources/OutgameTheme.tres`)의
+# 변형(`PopupCard` · `TitleLabel` · `SubLabel` · `GhostButton` · `PrimaryButton` · `DimPanel`)이
+# 정한다. 코드가 정하는 것은 둘뿐: 안전 영역(`%SafeArea` 의 위아래 여백, 기기마다
+# 다르다)과 `danger` 일 때 확인 버튼을 `DangerButton` 변형으로 바꾸는 것.
 #
 # 쓰는 법:
 #   var p := ConfirmPopup.create()
@@ -24,12 +26,6 @@ signal cancelled
 
 const SCENE_PATH: String = "res://features/meta/lobby/ConfirmPopup.tscn"
 
-## 확인 버튼에서 `danger` 일 때 빨갛게 갈아입히는 상태들.
-const _DANGER_STATES: Array = ["normal", "hover", "pressed"]
-
-## 씬에 저장된 확인 버튼 스타일(앰버). `danger` 를 풀 때 되돌린다.
-var _confirm_styles: Dictionary = {}
-
 
 ## 씬을 인스턴스한다. `ConfirmPopup.new()` 는 빈 CanvasLayer 라 쓰지 않는다.
 static func create() -> ConfirmPopup:
@@ -41,8 +37,6 @@ func _ready() -> void:
 	%Cancel.pressed.connect(close)
 	%Confirm.pressed.connect(_on_confirm)
 	# 카드 위 누름은 딤까지 내려가 팝업을 닫으면 안 된다 — Card 는 씬에서 STOP.
-	for n in _DANGER_STATES:
-		_confirm_styles[n] = %Confirm.get_theme_stylebox(n)
 
 
 ## 팝업을 연다. `danger` 면 확인 버튼이 앰버 대신 빨간 색면이 된다 —
@@ -77,15 +71,11 @@ func _fit_safe_area() -> void:
 	safe.offset_bottom = ScreenMetrics.bottom_y() - ScreenMetrics.viewport_size().y
 
 
-## 씬의 스타일박스는 인스턴스끼리 공유되므로 고쳐 쓰지 않고 복제본으로 덮는다.
+## 색은 테마 변형을 갈아 끼워 바꾼다 — 테마의 스타일박스는 모든 씬이 공유하므로
+## 고쳐 쓰지 않는다. 글자 크기 override 는 노드에 있어 변형과 함께 유지된다.
 func _apply_danger(danger: bool) -> void:
 	var btn: Button = %Confirm
-	for n in _DANGER_STATES:
-		var sb := _confirm_styles[n] as StyleBoxFlat
-		if danger and sb != null:
-			sb = sb.duplicate() as StyleBoxFlat
-			sb.bg_color = _danger_fill(n)
-		btn.add_theme_stylebox_override(n, sb)
+	btn.theme_type_variation = &"DangerButton" if danger else &"PrimaryButton"
 	# 파괴적 확인의 감촉(ERROR)은 부르는 쪽이 결과를 보고 낸다 — 자동 배선까지
 	# 울리면 한 누름에 두 번 떤다.
 	if danger:
@@ -93,15 +83,6 @@ func _apply_danger(danger: bool) -> void:
 	else:
 		HapticUi.kind(btn, HapticUi.up_kind)
 		HapticUi.down_kind_for(btn, HapticUi.down_kind)
-
-
-func _danger_fill(state: String) -> Color:
-	match state:
-		"hover":
-			return OutgameTheme.NEGATIVE.lightened(0.10)
-		"pressed":
-			return OutgameTheme.NEGATIVE.darkened(0.12)
-	return OutgameTheme.NEGATIVE
 
 
 func _on_confirm() -> void:

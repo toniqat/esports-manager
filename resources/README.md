@@ -855,9 +855,11 @@ The design principle is coloured cards on white paper. Three rules:
 
 | Group | Exports |
 |---|---|
-| Colour | `BG` `SURFACE` `SURFACE_SUNK` `RAIL` `RAIL_TEXT` / `TEXT` `TEXT_SUB` `TEXT_FAINT` `TEXT_ON_FILL` / `ACCENT` `ACCENT_DIM` `ACCENT_TEXT` `LINK` / `POSITIVE` `NEGATIVE` `NEUTRAL` / `BORDER` `BORDER_STRONG` `SHADOW` / `CARD_TINTS` `ROLE_COLORS` `ROLE_NAMES` `DAY_LETTERS` `DAY_NAMES` |
+| Colour | `BG` `SURFACE` `SURFACE_SUNK` `RAIL` `RAIL_TEXT` / `TEXT` `TEXT_SUB` `TEXT_FAINT` `TEXT_ON_FILL` / `ACCENT` `ACCENT_DIM` `ACCENT_TEXT` `LINK` / `POSITIVE` `NEGATIVE` `NEUTRAL` / `BORDER` `BORDER_STRONG` `SHADOW` / `DIM` (modal dim) / `CARD_TINTS` `ROLE_COLORS` `ROLE_NAMES` `DAY_LETTERS` `DAY_NAMES` |
+| Sizes (theme defaults) | `FONT_HEADING` `FONT_TITLE` `FONT_BODY` `FONT_CAPTION` · `FONT_BTN_PRIMARY` `FONT_BTN_GHOST` `FONT_BTN_TEXT` `FONT_BTN_DARK` · `CARD_RADIUS` `CARD_PAD` `POPUP_RADIUS` `POPUP_PAD` `SHEET_RADIUS` `SHEET_PAD` `SUNK_RADIUS` |
 | StyleBox | `card_style` `flat_style` `lead_bar_style` `set_corner_radius` |
-| Button | `style_primary_button` (amber, one per screen) `style_ghost_button` `style_text_button` `style_dark_button` (dark colour field — "leave this screen") |
+| Button | `style_primary_button` (amber, one per screen) `style_ghost_button` `style_text_button` `style_dark_button` (dark colour field — "leave this screen") `style_danger_button` (`NEGATIVE` field — destructive confirm). All read **`button_spec(kind)`** (colours + default font) and **`button_styles(kind)`** (one `button_box` per `BUTTON_STATES`, incl. `hover_pressed` = pressed so the engine default never shows while held) — the same table the theme is built from |
+| Theme | `build_theme()` → `Theme`, `save_theme()` → writes `THEME_PATH` (`OutgameTheme.tres`), `BUTTON_VARIATIONS` — see **OutgameTheme.tres** below |
 | Bottom bar | `BOTTOM_BAR_H` (128) `bottom_bar_top()` `add_bottom_bar(parent, specs)` `layout_bottom_bar(buttons, specs)` `style_bottom_button(b, style, font)` |
 | Pieces | `add_background` (internally calls `ScreenMetrics.extend_background`) `add_card` `add_divider` `add_round_portrait` `add_chip` `add_vscroll` |
 
@@ -867,6 +869,49 @@ functions also set the strength via `HapticUi.kind` (primary · dark = `MEDIUM` 
 regardless of kind** — `LIGHT` on press, `SOFT` on release. Whether it is a confirm or a tab
 switch is for the screen to say; a feel in the hand that wobbled per screen was itself
 noise. The full wiring is in the `HapticUi.gd` section of `autoloads/README.md`.
+
+### OutgameTheme.tres (shared Theme for scene-authored outgame UI)
+Generated `Theme` resource for UI moved into `.tscn` (`docs/ui_scene_migration.md`). Scenes do not embed
+StyleBox sub_resources or colour overrides — they attach this theme and pick a **`theme_type_variation`**.
+**Never hand-edit the `.tres`**: change `OutgameTheme.gd` (constants / `button_spec` / `build_theme`) and
+regenerate. Saving is deterministic (sub_resource ids = `<Variation>_<state>`, file uid kept), so the diff
+shows only real value changes.
+
+- **Attach**: set `theme = res://resources/OutgameTheme.tres` on the top **Control** of the scene (for a
+  `CanvasLayer` popup: its first Control child, e.g. `Root`). Theme propagates to all Control descendants;
+  a `CanvasLayer` breaks propagation, so never set it only on the layer. Then set each node's
+  *Theme Type Variation*. Per-node size changes stay as `theme_override_font_sizes/font_size` (or
+  `theme_override_constants/*`) — that is layout, not style.
+- **Regenerate**: editor — open `OutgameThemeBuilder.gd` (`@tool extends EditorScript`) in the script
+  editor → File → Run. Headless — `Godot --headless --path . -s res://resources/OutgameThemeBuilderCli.gd`
+  (`extends SceneTree`). Both call `OutgameTheme.save_theme()`.
+
+| Variation | Base | Purpose |
+|---|---|---|
+| `PrimaryButton` | Button | Main action, amber field + white text (`style_primary_button`) |
+| `GhostButton` | Button | Other actions, white + faint border (`style_ghost_button`) |
+| `TextButton` | Button | Back / minor, text only (`style_text_button`) |
+| `DarkButton` | Button | Dark field, "leave this screen" (`style_dark_button`) |
+| `DangerButton` | Button | Destructive confirm, `NEGATIVE` field (`style_danger_button`) |
+| `Card` | PanelContainer | White card with shadow, padding `CARD_PAD` (`card_style`) |
+| `PopupCard` | PanelContainer | Centred modal card, `POPUP_RADIUS` / `POPUP_PAD` |
+| `SheetCard` | PanelContainer | Large sheet over most of the screen, `SHEET_RADIUS` / `SHEET_PAD` |
+| `SunkPanel` | PanelContainer | Sunk cell inside a card (`SURFACE_SUNK`, `SUNK_RADIUS`, no padding) |
+| `DimPanel` | Panel | Full-rect modal dim (`DIM`); set `mouse_filter` = Ignore, a flat Button underneath takes the tap |
+| `HeadingLabel` | Label | Big screen heading (`FONT_HEADING`, `TEXT`) |
+| `TitleLabel` | Label | Popup / card title (`FONT_TITLE`, `TEXT`) |
+| `BodyLabel` | Label | Body text (`FONT_BODY`, `TEXT`) |
+| `SubLabel` | Label | Secondary body / description (`FONT_BODY`, `TEXT_SUB`) |
+| `CaptionLabel` | Label | Small labels, captions (`FONT_CAPTION`, `TEXT_SUB`) |
+| `FaintLabel` | Label | Disabled / placeholder text (`FONT_CAPTION`, `TEXT_FAINT`) |
+| `AccentLabel` | Label | Amber text on white (`FONT_CAPTION`, `ACCENT_TEXT`) |
+| `Divider` | HSeparator | 1px `BORDER` line (`add_divider`) |
+
+Not variations (data- or device-dependent, stay in code): tinted cards (`card_style(r, tint)`), lead-bar
+cards (`lead_bar_style(bar)`), chips (`add_chip` — radius from height), role / rarity colours, and the
+bottom action bar (`style_bottom_button` — square corners + a bottom margin from the device inset).
+A card whose padding no variation has: use the variation with a smaller (or no) padding and add a
+`MarginContainer` child for the rest.
 
 ### Bottom action bar (`add_bottom_bar`)
 **The main action on an outgame screen is not a shape floating in the middle of the screen but the whole bottom

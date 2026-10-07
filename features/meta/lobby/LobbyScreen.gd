@@ -200,8 +200,8 @@ func _make_tab(id: String) -> Control:
 	match id:
 		"collection": return CollectionTab.create()
 		"manager":    return ManagerTab.create()
-		"shop":       return ShopTab.new()
-		"pass":       return PassTab.new()
+		"shop":       return ShopTab.create()
+		"pass":       return PassTab.create()
 	return HomeTab.create()
 
 

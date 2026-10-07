@@ -1,0 +1,32 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pill"]
+bg_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
+
+[node name="ShopRateChip" type="Panel"]
+editor_description = "One rarity rate pill on the gacha banner (ShopTab). White pill = local style (no theme variation for it yet); the text colour is the rarity colour (code)."
+custom_minimum_size = Vector2(152, 44)
+offset_right = 152.0
+offset_bottom = 44.0
+mouse_filter = 2
+theme = ExtResource("1_theme")
+theme_override_styles/panel = SubResource("StyleBoxFlat_pill")
+
+[node name="Text" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"CaptionLabel"
+text = "희귀 28%"
+horizontal_alignment = 1
+vertical_alignment = 1

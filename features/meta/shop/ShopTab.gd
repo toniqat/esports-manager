@@ -5,38 +5,62 @@ extends Control
 # 기능 범위는 계획서 §12 (작업 E). 규칙은 `features/meta/shop/README.md`.
 #
 #   ┌ segmented control: 선수 영입 · 특성 연구 · 파편 상점 · 특성 제작 · 교환소 ┐
-#   │ the selected section (rebuilt from the profile after every purchase)      │
+#   │ the selected section (refilled from the profile after every purchase)     │
 #   └───────────────────────────────────────────────────────────────────────────┘
 #
+# **Layout lives in `ShopTab.tscn`** (+ the row / chip item scenes). Two faces under `Body`:
+# `%GachaView` (선수 영입 · 특성 연구) and `%ListView` (head + scroll rows for 파편 상점 ·
+# 특성 제작 · 교환소). Code owns texts, button states, instancing rows, and the data colours
+# (banner tint per pool, rarity chips, trait +/− mark).
+#
 # No action bar (every section has its own buttons). Logic lives in `Gacha` / `ShopCatalog`;
-# this file only draws and, after a successful purchase, saves once and refreshes the
+# this file only fills and, after a successful purchase, saves once and refreshes the
 # host (`refresh_currency` · `refresh_badges`). Popups (`ShopPopup`) are our own CanvasLayer.
 
-const SECTIONS: Array = [
-	{"id": "pilot",    "label": "선수 영입"},
-	{"id": "trait",    "label": "특성 연구"},
-	{"id": "shard",    "label": "파편 상점"},
-	{"id": "craft",    "label": "특성 제작"},
-	{"id": "exchange", "label": "교환소"},
-]
+const SCENE_PATH: String = "res://features/meta/shop/ShopTab.tscn"
+const RATE_CHIP_SCENE: String = "res://features/meta/shop/ShopRateChip.tscn"
+const SHARD_ROW_SCENE: String = "res://features/meta/shop/ShopShardRow.tscn"
+const CRAFT_ROW_SCENE: String = "res://features/meta/shop/ShopCraftRow.tscn"
+const EXCHANGE_ROW_SCENE: String = "res://features/meta/shop/ShopExchangeRow.tscn"
 
-const SIDE: float = 40.0
-const SEG_Y: float = 20.0
-const SEG_H: float = 80.0
-const BODY_Y: float = 124.0
-const ROW_H: float = 132.0
-const ROW_GAP: float = 12.0
+## Section id → its segment button (`%` name in the scene).
+const SECTIONS: Array = [
+	{"id": "pilot",    "node": "SegPilot"},
+	{"id": "trait",    "node": "SegTrait"},
+	{"id": "shard",    "node": "SegShard"},
+	{"id": "craft",    "node": "SegCraft"},
+	{"id": "exchange", "node": "SegExchange"},
+]
 
 var section: String = "pilot"
 
 var _host: LobbyScreen
 var _pm: Node
 var _seg_buttons: Dictionary = {}    # id → Button
-var _view: Control = null
-var _scroll: ScrollContainer = null
-var _scroll_owner: String = ""       # section the current `_scroll` belongs to
+var _scroll_owner: String = ""       # list section the scroll position belongs to ("" = gacha)
 var _scroll_keep: Dictionary = {}    # section id → scroll_vertical
 var _popup: ShopPopup
+
+
+## Instances the scene. `ShopTab.new()` is an empty Control — don't use it.
+static func create() -> ShopTab:
+	return (load(SCENE_PATH) as PackedScene).instantiate() as ShopTab
+
+
+func _ready() -> void:
+	for s in SECTIONS:
+		var b: Button = get_node_or_null("%" + String(s["node"]))
+		if b == null:
+			continue
+		_seg_buttons[String(s["id"])] = b
+		b.pressed.connect(select_section.bind(String(s["id"])))
+	%RatesButton.pressed.connect(func() -> void: _popup.open_rates(_pool()))
+	%PullOne.pressed.connect(func() -> void: _on_pull(_pool(), 1))
+	%PullMulti.pressed.connect(func() -> void: _on_pull(_pool(), Gacha.multi_count()))
+	%DevGrant.pressed.connect(_on_dev_premium)
+	%DevDesc.text = UiHelpers.keep_words(%DevDesc.text)
+	# Drag / fling scrolling instead of the engine's touch drag (`DragScroll`).
+	DragScroll.attach(%Scroll)
 
 
 func bar_specs() -> Array:
@@ -46,8 +70,6 @@ func bar_specs() -> Array:
 func setup(host: LobbyScreen) -> void:
 	_host = host
 	_pm = get_node("/root/ProfileManager")
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_build_segments()
 	_popup = ShopPopup.create()
 	add_child(_popup)
 
@@ -67,150 +89,105 @@ func select_section(id: String) -> void:
 
 
 # ── Segments ─────────────────────────────────────────────────────────────────
-func _build_segments() -> void:
-	var n: int = SECTIONS.size()
-	var w: float = (size.x - SIDE * 2.0) / float(n)
-	var back := Panel.new()
-	back.add_theme_stylebox_override("panel", OutgameTheme.flat_style(OutgameTheme.SURFACE_SUNK, 16))
-	back.position = Vector2(SIDE, SEG_Y)
-	back.size = Vector2(size.x - SIDE * 2.0, SEG_H)
-	back.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(back)
-	for i in n:
-		var id: String = String(SECTIONS[i]["id"])
-		var b := Button.new()
-		b.text = String(SECTIONS[i]["label"])
-		b.focus_mode = Control.FOCUS_NONE
-		b.position = Vector2(SIDE + w * i + 4.0, SEG_Y + 4.0)
-		b.size = Vector2(w - 8.0, SEG_H - 8.0)
-		b.pressed.connect(select_section.bind(id))
-		add_child(b)
-		_seg_buttons[id] = b
-
-
 func _paint_segments() -> void:
 	for k in _seg_buttons.keys():
 		var b: Button = _seg_buttons[k]
 		if String(k) == section:
-			OutgameTheme.style_ghost_button(b, 24)
+			b.theme_type_variation = &"GhostButton"
 			b.add_theme_color_override("font_color", OutgameTheme.ACCENT_TEXT)
 			b.add_theme_color_override("font_hover_color", OutgameTheme.ACCENT_TEXT)
 		else:
-			OutgameTheme.style_text_button(b, 24)
+			b.theme_type_variation = &"TextButton"
+			b.remove_theme_color_override("font_color")
+			b.remove_theme_color_override("font_hover_color")
 
 
 # ── Body ─────────────────────────────────────────────────────────────────────
 func _rebuild() -> void:
 	_paint_segments()
-	if _view != null and is_instance_valid(_view):
-		if _scroll != null and is_instance_valid(_scroll):
-			_scroll_keep[_scroll_owner] = _scroll.scroll_vertical
-		_view.queue_free()
-	_scroll = null
-	_view = Control.new()
-	_view.position = Vector2(0, BODY_Y)
-	_view.size = Vector2(size.x, size.y - BODY_Y)
-	_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_view)
+	if _scroll_owner != "":
+		_scroll_keep[_scroll_owner] = (%Scroll as ScrollContainer).scroll_vertical
+	_scroll_owner = ""
+	var is_gacha: bool = section == "pilot" or section == "trait"
+	%GachaView.visible = is_gacha
+	%ListView.visible = not is_gacha
+	_clear(%Rows)
+	%DevRow.visible = false
 	match section:
-		"pilot":    _build_gacha(Gacha.POOL_PILOT)
-		"trait":    _build_gacha(Gacha.POOL_TRAIT)
-		"shard":    _build_shard()
-		"craft":    _build_craft()
-		"exchange": _build_exchange()
+		"pilot":    _fill_gacha(Gacha.POOL_PILOT)
+		"trait":    _fill_gacha(Gacha.POOL_TRAIT)
+		"shard":    _fill_shard()
+		"craft":    _fill_craft()
+		"exchange": _fill_exchange()
 
 
-func _inner_w() -> float:
-	return size.x - SIDE * 2.0
+## Pool of the current gacha section.
+func _pool() -> String:
+	return Gacha.POOL_PILOT if section == "pilot" else Gacha.POOL_TRAIT
+
+
+## Items from the previous fill are removed **now** (not just queued) so the
+## container lays out only the new ones this frame.
+func _clear(box: Node) -> void:
+	for c in box.get_children():
+		box.remove_child(c)
+		c.queue_free()
 
 
 # ── Gacha sections ───────────────────────────────────────────────────────────
-func _build_gacha(pool: String) -> void:
+func _fill_gacha(pool: String) -> void:
 	var is_pilot: bool = pool == Gacha.POOL_PILOT
-	var w: float = _inner_w()
 	var tint: Color = OutgameTheme.CARD_TINTS[3] if is_pilot else OutgameTheme.CARD_TINTS[2]
-	var banner: Panel = OutgameTheme.add_card(_view, Vector2(SIDE, 8), Vector2(w, 290), 24, tint)
-	UiHelpers.mk_label(banner, "선수 영입" if is_pilot else "특성 연구", 52,
-			OutgameTheme.TEXT_ON_FILL, Vector2(40, 36), Vector2(w - 80, 70))
+	%Banner.add_theme_stylebox_override("panel", OutgameTheme.card_style(24, tint))
+	%BannerTitle.text = "선수 영입" if is_pilot else "특성 연구"
 	var sub: String = ("네임드 선수 %d인 중 한 명 · 중복은 돌파, 돌파를 다 채우면 선수 파편" %
 			Gacha.named_pilots().size()) if is_pilot \
 			else ("감독 특성 %d종 중 하나 · 이미 가진 특성은 특성 재료" % TraitSystem.rows().size())
-	var sl := UiHelpers.mk_label(banner, UiHelpers.keep_words(sub), 24, OutgameTheme.TEXT_ON_FILL,
-			Vector2(40, 112), Vector2(w - 80, 70))
-	ShopPopup.wrap_label(sl, Vector2(w - 80, 70))
+	%BannerSub.text = UiHelpers.keep_words(sub)
 	# Rate chips — one per rarity.
-	var rates: Array = Gacha.rates(pool)
-	var cx: float = 40.0
-	for raw in rates:
+	var chips: Node = %RateChips
+	_clear(chips)
+	var chip_scene := load(RATE_CHIP_SCENE) as PackedScene
+	for raw in Gacha.rates(pool):
 		var r: Dictionary = raw
-		var txt: String = "%s %s%%" % [TraitSystem.rarity_name(int(r["rarity"])), _pct(float(r["pct"]))]
-		OutgameTheme.add_chip(banner, txt, Vector2(cx, 214), Vector2(152, 44),
-				OutgameTheme.SURFACE, ShopPopup.rarity_color(int(r["rarity"])), 22)
-		cx += 164.0
-	var rates_btn := Button.new()
-	rates_btn.text = "확률 보기"
-	rates_btn.focus_mode = Control.FOCUS_NONE
-	OutgameTheme.style_text_button(rates_btn, 24)
-	rates_btn.add_theme_color_override("font_color", OutgameTheme.TEXT_ON_FILL)
-	rates_btn.add_theme_color_override("font_hover_color", OutgameTheme.TEXT_ON_FILL)
-	rates_btn.position = Vector2(w - 200, 36)
-	rates_btn.size = Vector2(170, 60)
-	rates_btn.pressed.connect(_popup.open_rates.bind(pool))
-	banner.add_child(rates_btn)
+		var chip: Control = chip_scene.instantiate()
+		chips.add_child(chip)
+		var t: Label = chip.get_node("%Text")
+		t.text = "%s %s%%" % [TraitSystem.rarity_name(int(r["rarity"])), _pct(float(r["pct"]))]
+		t.add_theme_color_override("font_color", ShopPopup.rarity_color(int(r["rarity"])))
 
 	# Holdings.
 	var tk: String = Gacha.ticket_key(pool)
-	var hold: Panel = OutgameTheme.add_card(_view, Vector2(SIDE, 322), Vector2(w, 120), 18)
-	var cw: float = w / 3.0
-	_hold_cell(hold, Vector2(0, 0), cw, ShopPopup.currency_label(tk),
-			"%d장" % int(_pm.currency_of(tk)))
-	_hold_cell(hold, Vector2(cw, 0), cw, ShopPopup.currency_label("outgame"),
-			"%d" % int(_pm.currency_of("outgame")))
+	%TicketLabel.text = ShopPopup.currency_label(tk)
+	%TicketValue.text = "%d장" % int(_pm.currency_of(tk))
+	%MoneyLabel.text = ShopPopup.currency_label("outgame")
+	%MoneyValue.text = "%d" % int(_pm.currency_of("outgame"))
 	if is_pilot:
 		var owned_named: int = 0
 		for r in Gacha.named_pilots():
 			if int(_pm.max_level_of(int((r as Dictionary)["id"]))) > 0:
 				owned_named += 1
-		_hold_cell(hold, Vector2(cw * 2.0, 0), cw, "보유 선수",
-				"%d / %d" % [owned_named, Gacha.named_pilots().size()])
+		%OwnedLabel.text = "보유 선수"
+		%OwnedValue.text = "%d / %d" % [owned_named, Gacha.named_pilots().size()]
 	else:
-		_hold_cell(hold, Vector2(cw * 2.0, 0), cw, "보유 특성",
-				"%d / %d" % [(_pm.owned_trait_ids() as Array).size(), TraitSystem.rows().size()])
+		%OwnedLabel.text = "보유 특성"
+		%OwnedValue.text = "%d / %d" % [(_pm.owned_trait_ids() as Array).size(), TraitSystem.rows().size()]
 
 	# Pull buttons — 1 (ghost) : multi (primary), primary on the right.
 	var multi: int = Gacha.multi_count()
-	var gap: float = 20.0
-	var bw: float = (w - gap) * 0.5
 	var verb: String = "영입" if is_pilot else "연구"
-	for k in 2:
-		var count: int = 1 if k == 0 else multi
-		var b := Button.new()
-		b.text = "%d회 %s\n%s" % [count, verb, _cost_text(pool, count)]
-		b.focus_mode = Control.FOCUS_NONE
-		if k == 0:
-			OutgameTheme.style_ghost_button(b, 30)
-		else:
-			OutgameTheme.style_primary_button(b, 30)
-		b.position = Vector2(SIDE + k * (bw + gap), 472)
-		b.size = Vector2(bw, 150)
-		b.disabled = Gacha.check(_pm, pool, count) != ""
-		b.pressed.connect(_on_pull.bind(pool, count))
-		_view.add_child(b)
+	var one: Button = %PullOne
+	one.text = "1회 %s\n%s" % [verb, _cost_text(pool, 1)]
+	one.disabled = Gacha.check(_pm, pool, 1) != ""
+	var many: Button = %PullMulti
+	many.text = "%d회 %s\n%s" % [multi, verb, _cost_text(pool, multi)]
+	many.disabled = Gacha.check(_pm, pool, multi) != ""
 
 	var disc: int = ConstTable.int_of("GACHA_MULTI_DISCOUNT_PCT")
 	var note_txt: String = "%s이 먼저 쓰이고, 모자란 만큼 재화로 치릅니다." % ShopPopup.currency_label(tk)
 	if disc > 0:
 		note_txt += " %d회 %s는 재화로 치르는 몫이 %d%% 할인됩니다." % [multi, verb, disc]
-	var note := UiHelpers.mk_label(_view, UiHelpers.keep_words(note_txt), 22, OutgameTheme.TEXT_SUB,
-			Vector2(SIDE, 642), Vector2(w, 70), HORIZONTAL_ALIGNMENT_CENTER)
-	ShopPopup.wrap_label(note, Vector2(w, 70))
-
-
-func _hold_cell(parent: Control, pos: Vector2, w: float, label: String, value: String) -> void:
-	UiHelpers.mk_label(parent, label, 22, OutgameTheme.TEXT_SUB,
-			pos + Vector2(0, 16), Vector2(w, 32), HORIZONTAL_ALIGNMENT_CENTER)
-	UiHelpers.mk_label(parent, value, 38, OutgameTheme.TEXT,
-			pos + Vector2(0, 52), Vector2(w, 50), HORIZONTAL_ALIGNMENT_CENTER)
+	%Note.text = UiHelpers.keep_words(note_txt)
 
 
 func _cost_text(pool: String, count: int) -> String:
@@ -240,8 +217,7 @@ func _on_pull(pool: String, count: int) -> void:
 
 
 # ── Shard shop ───────────────────────────────────────────────────────────────
-func _build_shard() -> void:
-	var w: float = _inner_w()
+func _fill_shard() -> void:
 	_section_head("보유 %s %d" % [ShopPopup.currency_label("pilot_shard"),
 			int(_pm.currency_of("pilot_shard"))],
 			"원하는 선수를 확정 구매합니다. 보유한 선수면 돌파 단계가 오릅니다.")
@@ -250,28 +226,27 @@ func _build_shard() -> void:
 		if int(a["rarity"]) != int(b["rarity"]):
 			return int(a["rarity"]) > int(b["rarity"])
 		return int(a["id"]) < int(b["id"]))
-	var body: Control = _make_scroll(pilots.size())
-	for i in pilots.size():
-		var r: Dictionary = pilots[i]
+	var row_scene := load(SHARD_ROW_SCENE) as PackedScene
+	for raw in pilots:
+		var r: Dictionary = raw
 		var pid: int = int(r["id"])
-		var row: Panel = _row_card(body, i)
-		OutgameTheme.add_round_portrait(row, PilotImages.face_for(pid), Vector2(20, 16),
-				ROW_H - 32.0, ShopPopup.rarity_color(int(r["rarity"])))
+		var rar_col: Color = ShopPopup.rarity_color(int(r["rarity"]))
+		var row: Control = _add_row(row_scene)
+		var slot: Control = row.get_node("%FaceSlot")
+		OutgameTheme.add_round_portrait(slot, PilotImages.face_for(pid), Vector2.ZERO,
+				slot.size.x, rar_col)
+		(row.get_node("%Name") as Label).text = String(r["name"])
+		_paint_chip(row.get_node("%Chip"), rar_col)
+		(row.get_node("%ChipText") as Label).text = TraitSystem.rarity_name(int(r["rarity"]))
 		var role_txt: String = String(GameEnums.POSITION_LABELS.get(
 				GameEnums.position_key(int(r["role"])), ""))
-		UiHelpers.mk_label(row, String(r["name"]), 30, OutgameTheme.TEXT,
-				Vector2(140, 18), Vector2(360, 42))
-		OutgameTheme.add_chip(row, TraitSystem.rarity_name(int(r["rarity"])), Vector2(140, 70),
-				Vector2(96, 36), ShopPopup.rarity_color(int(r["rarity"])), OutgameTheme.TEXT_ON_FILL, 20)
 		var owned: bool = int(_pm.max_level_of(pid)) > 0
-		var status: String = role_txt + " · " + ("돌파 %d/%d" % [int(_pm.breakthrough_of(pid)),
-				RunRules.breakthrough_max()] if owned else "미보유")
-		UiHelpers.mk_label(row, status, 22, OutgameTheme.TEXT_SUB,
-				Vector2(250, 72), Vector2(300, 34))
+		(row.get_node("%Status") as Label).text = role_txt + " · " + ("돌파 %d/%d" % [
+				int(_pm.breakthrough_of(pid)), RunRules.breakthrough_max()] if owned else "미보유")
 		var why: String = ShopCatalog.shard_block_reason(_pm, pid)
 		var price: int = ShopCatalog.shard_price(pid)
-		var b := _row_button(row, w, "%s\n파편 %d" % ["돌파" if owned else "영입", price]
-				if why == "" else why)
+		var b: Button = row.get_node("%Buy")
+		b.text = "%s\n파편 %d" % ["돌파" if owned else "영입", price] if why == "" else why
 		b.disabled = why != "" or int(_pm.currency_of("pilot_shard")) < price
 		b.pressed.connect(_on_buy_pilot.bind(pid))
 
@@ -290,37 +265,26 @@ func _on_buy_pilot(pid: int) -> void:
 
 
 # ── Trait craft ──────────────────────────────────────────────────────────────
-func _build_craft() -> void:
-	var w: float = _inner_w()
+func _fill_craft() -> void:
 	_section_head("보유 %s %d" % [ShopPopup.currency_label("trait_mat"),
 			int(_pm.currency_of("trait_mat"))],
 			"특성 재료로 아직 없는 특성을 만듭니다. 재료는 특성 중복 · 주간패스에서 얻습니다.")
-	var rows: Array = TraitSystem.rows()
-	var body: Control = _make_scroll(rows.size())
-	for i in rows.size():
-		var r: Dictionary = rows[i]
+	var row_scene := load(CRAFT_ROW_SCENE) as PackedScene
+	for raw in TraitSystem.rows():
+		var r: Dictionary = raw
 		var tid: int = int(r["id"])
-		var row: Panel = _row_card(body, i)
+		var row: Control = _add_row(row_scene)
 		var pos_trait: bool = String(r["polarity"]) == TraitSystem.POLARITY_POS
-		var mark := Panel.new()
-		mark.add_theme_stylebox_override("panel", OutgameTheme.flat_style(
-				OutgameTheme.POSITIVE if pos_trait else OutgameTheme.NEGATIVE, 32))
-		mark.position = Vector2(24, (ROW_H - 64.0) * 0.5)
-		mark.size = Vector2(64, 64)
-		mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		row.add_child(mark)
-		var ml := UiHelpers.mk_label(mark, "+" if pos_trait else "−", 40,
-				OutgameTheme.TEXT_ON_FILL, Vector2.ZERO, mark.size, HORIZONTAL_ALIGNMENT_CENTER)
-		ml.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		UiHelpers.mk_label(row, String(r["name"]), 30, OutgameTheme.TEXT,
-				Vector2(112, 14), Vector2(300, 42))
-		TraitUi.add_rarity_chip(row, int(r["rarity"]), Vector2(400, 20), Vector2(96, 34), 20)
-		var dl := UiHelpers.mk_label(row, TraitSystem.desc_of(tid), 22, OutgameTheme.TEXT_SUB,
-				Vector2(112, 66), Vector2(w - 112 - 230, 52))
-		dl.clip_text = true
+		_paint_chip(row.get_node("%Mark"), OutgameTheme.POSITIVE if pos_trait else OutgameTheme.NEGATIVE)
+		(row.get_node("%MarkText") as Label).text = "+" if pos_trait else "−"
+		(row.get_node("%Name") as Label).text = String(r["name"])
+		_paint_chip(row.get_node("%Chip"), TraitUi.rarity_color(int(r["rarity"])))
+		(row.get_node("%ChipText") as Label).text = TraitSystem.rarity_name(int(r["rarity"]))
+		(row.get_node("%Desc") as Label).text = TraitSystem.desc_of(tid)
 		var why: String = ShopCatalog.craft_block_reason(_pm, tid)
 		var cost: int = ShopCatalog.craft_cost(tid)
-		var b := _row_button(row, w, ("제작\n재료 %d" % cost) if why == "" else why)
+		var b: Button = row.get_node("%Buy")
+		b.text = ("제작\n재료 %d" % cost) if why == "" else why
 		b.disabled = why != "" or int(_pm.currency_of("trait_mat")) < cost
 		b.pressed.connect(_on_craft.bind(tid))
 
@@ -336,11 +300,9 @@ func _on_craft(tid: int) -> void:
 
 
 # ── Exchange ─────────────────────────────────────────────────────────────────
-func _build_exchange() -> void:
-	var w: float = _inner_w()
+func _fill_exchange() -> void:
 	_section_head("보유 %s %d" % [ShopPopup.currency_label("premium"), int(_pm.currency_of("premium"))],
 			"재화를 다른 재화로 바꿉니다.")
-	var body: Control = _make_scroll(4)
 	var specs: Array = [
 		{"title": "레벨업 재화 교환",
 		 "desc": "재화 %d → 레벨업 재화 %d" % [ShopCatalog.levelup_exchange_cost(),
@@ -362,29 +324,21 @@ func _build_exchange() -> void:
 		 "btn": "구매", "ok": int(_pm.currency_of("premium")) >= ShopCatalog.ticket_premium_price(Gacha.POOL_TRAIT),
 		 "cb": _on_buy_ticket.bind(Gacha.POOL_TRAIT)},
 	]
-	for i in specs.size():
-		var s: Dictionary = specs[i]
-		var row: Panel = _row_card(body, i)
-		UiHelpers.mk_label(row, String(s["title"]), 30, OutgameTheme.TEXT,
-				Vector2(32, 14), Vector2(w - 300, 42))
-		UiHelpers.mk_label(row, String(s["desc"]), 24, OutgameTheme.ACCENT_TEXT,
-				Vector2(32, 58), Vector2(w - 300, 32))
-		UiHelpers.mk_label(row, String(s["have"]), 20, OutgameTheme.TEXT_SUB,
-				Vector2(32, 92), Vector2(w - 300, 28))
-		var b := _row_button(row, w, String(s["btn"]))
+	var row_scene := load(EXCHANGE_ROW_SCENE) as PackedScene
+	for raw in specs:
+		var s: Dictionary = raw
+		var row: Control = _add_row(row_scene)
+		(row.get_node("%Title") as Label).text = String(s["title"])
+		(row.get_node("%Desc") as Label).text = String(s["desc"])
+		(row.get_node("%Have") as Label).text = String(s["have"])
+		var b: Button = row.get_node("%Buy")
+		b.text = String(s["btn"])
 		b.disabled = not bool(s["ok"])
 		b.pressed.connect(s["cb"])
 
 	# Dev-only premium grant — clearly labelled (premium is a local number, §12.0).
-	var dev: Panel = _row_card(body, 3, OutgameTheme.SURFACE_SUNK)
-	UiHelpers.mk_label(dev, "개발용", 30, OutgameTheme.NEGATIVE, Vector2(32, 14), Vector2(w - 300, 42))
-	var dl := UiHelpers.mk_label(dev, UiHelpers.keep_words(
-			"유료 재화는 지금 기기 안의 숫자일 뿐입니다 (결제 없음)."), 22, OutgameTheme.TEXT_SUB,
-			Vector2(32, 62), Vector2(w - 300, 56))
-	ShopPopup.wrap_label(dl, Vector2(w - 330, 56))
-	var db := _row_button(dev, w, "유료 재화 +%d (개발용)" % ShopCatalog.dev_premium_grant(), 300.0)
-	OutgameTheme.style_ghost_button(db, 22)
-	db.pressed.connect(_on_dev_premium)
+	%DevRow.visible = true
+	%DevGrant.text = "유료 재화 +%d (개발용)" % ShopCatalog.dev_premium_grant()
 
 
 func _on_exchange_levelup() -> void:
@@ -421,26 +375,13 @@ func _after_purchase() -> bool:
 	return true
 
 
+## Fills the list head and claims the scroll for this section (its kept position is
+## restored once the new rows are laid out).
 func _section_head(title: String, sub: String) -> void:
-	UiHelpers.mk_label(_view, title, 30, OutgameTheme.TEXT, Vector2(SIDE, 8), Vector2(_inner_w(), 42))
-	var l := UiHelpers.mk_label(_view, UiHelpers.keep_words(sub), 22, OutgameTheme.TEXT_SUB,
-			Vector2(SIDE, 52), Vector2(_inner_w(), 34))
-	l.clip_text = true
-
-
-## Scroll filling the view below the section head; returns its body (height set).
-func _make_scroll(rows: int) -> Control:
-	var top: float = 96.0
-	var sv: Dictionary = OutgameTheme.add_vscroll(_view, Vector2(0, top),
-			Vector2(size.x, _view.size.y - top))
-	_scroll = sv["scroll"]
-	var body: Control = sv["body"]
-	body.custom_minimum_size.y = rows * (ROW_H + ROW_GAP) + 24.0
+	%HeadTitle.text = title
+	%HeadSub.text = UiHelpers.keep_words(sub)
 	_scroll_owner = section
-	var keep: int = int(_scroll_keep.get(section, 0))
-	if keep > 0:
-		_restore_scroll.call_deferred(_scroll, keep)
-	return body
+	_restore_scroll.call_deferred(%Scroll, int(_scroll_keep.get(section, 0)))
 
 
 func _restore_scroll(sc: ScrollContainer, v: int) -> void:
@@ -448,25 +389,12 @@ func _restore_scroll(sc: ScrollContainer, v: int) -> void:
 		sc.scroll_vertical = v
 
 
-func _row_card(body: Control, i: int, tint: Variant = null) -> Panel:
-	var p := Panel.new()
-	p.add_theme_stylebox_override("panel", OutgameTheme.flat_style(OutgameTheme.SURFACE, 18,
-			OutgameTheme.BORDER) if tint == null else OutgameTheme.flat_style(tint, 18, OutgameTheme.BORDER))
-	p.position = Vector2(SIDE, 8.0 + i * (ROW_H + ROW_GAP))
-	p.size = Vector2(_inner_w(), ROW_H)
-	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	body.add_child(p)
-	return p
+func _add_row(row_scene: PackedScene) -> Control:
+	var row: Control = row_scene.instantiate()
+	%Rows.add_child(row)
+	return row
 
 
-## Right-hand action button of a row — PASS so the scroll still drags from it.
-func _row_button(row: Control, w: float, text: String, bw: float = 190.0) -> Button:
-	var b := Button.new()
-	b.text = text
-	b.focus_mode = Control.FOCUS_NONE
-	OutgameTheme.style_primary_button(b, 24)
-	b.position = Vector2(w - bw - 20.0, 18)
-	b.size = Vector2(bw, ROW_H - 36)
-	b.mouse_filter = Control.MOUSE_FILTER_PASS
-	row.add_child(b)
-	return b
+## Pill / disc fill whose colour is data (rarity, trait polarity) — radius = half the height.
+func _paint_chip(p: Panel, col: Color) -> void:
+	p.add_theme_stylebox_override("panel", OutgameTheme.flat_style(col, int(p.size.y * 0.5)))

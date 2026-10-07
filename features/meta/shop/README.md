@@ -10,8 +10,10 @@ free weekly pass. Contract: `docs/outgame_dev_plan.md` §12 (row E). Tab contrac
 | `Gacha.gd` | `class_name Gacha extends RefCounted` (static) | Gacha rules + the one pull action: rates (`gacha_rates.csv`), named-pilot / trait buckets, rarity roll, cost, `pull(pm, pool, count, rng, save)` |
 | `ShopCatalog.gd` | `class_name ShopCatalog extends RefCounted` (static) | Fixed-price actions: shard purchase, trait craft, outgame → levelup exchange, premium → tickets, dev premium grant. Do not save |
 | `PassSystem.gd` | `class_name PassSystem extends RefCounted` (static) | Weekly pass rules over the profile dict: ISO-week reset (device clock, local time), exp → level, overflow → outgame currency, `pass_rewards.csv`, `claim` / `claim_all` |
-| `ShopTab.gd` | `class_name ShopTab extends Control` | 상점 tab — segmented control (선수 영입 · 특성 연구 · 파편 상점 · 특성 제작 · 교환소), no action bar |
-| `PassTab.gd` | `class_name PassTab extends Control` | 패스 tab — header (week · reset countdown · level · exp bar) + 25 reward rows, action bar `모두 수령` |
+| `ShopTab.gd` · `ShopTab.tscn` | `class_name ShopTab extends Control` | 상점 tab — segmented control (선수 영입 · 특성 연구 · 파편 상점 · 특성 제작 · 교환소), no action bar — see **ShopTab · PassTab scenes** below |
+| `ShopRateChip.tscn` · `ShopShardRow.tscn` · `ShopCraftRow.tscn` · `ShopExchangeRow.tscn` | *(no script)* | ShopTab items: banner rate pill · 파편 상점 row · 특성 제작 row · 교환소 row, filled by `ShopTab` |
+| `PassTab.gd` · `PassTab.tscn` | `class_name PassTab extends Control` | 패스 tab — header (week · reset countdown · level · exp bar) + 25 reward rows, action bar `모두 수령` |
+| `PassRow.tscn` | *(no script)* | One pass level row (Lv chip · reward · `수령` button or status), filled by `PassTab` |
 | `ShopPopup.gd` · `ShopPopup.tscn` | `class_name ShopPopup extends CanvasLayer` | Modal for both tabs: gacha / purchase **reveal** cards and the **rates** table — see **ShopPopup scene** below. Also owns `rarity_color` (delegates to `TraitUi.rarity_color` — one rarity palette for both pools), `currency_label` (`CURRENCY_LABELS`), `wrap_label` |
 | `ShopRevealItem.gd` · `ShopRevealItem.tscn` | `class_name ShopRevealItem extends Panel` | One reveal card (168 × 300 tile) — `show_result(e)` fills it and paints the rarity / result colours |
 | `ShopRateRow.tscn` | *(no script)* | One rates-table row (divider · rarity chip · % · count · per-item %), filled by `ShopPopup.open_rates` |
@@ -38,6 +40,42 @@ ShopPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨김)
   **data-driven colour** — reveal card border + band (rarity), trait mark (`POSITIVE` / `NEGATIVE`),
   result tag chip (NEW / 돌파 / 파편 / 재료), rates chip (rarity). White text on those fills is the
   `OnFillLabel` variation in the item scenes (the tag text colour stays code — it depends on the tag).
+
+## ShopTab · PassTab scenes
+Created by `LobbyScreen._make_tab` with `ShopTab.create()` / `PassTab.create()` (`.new()` is an empty
+Control). The host sets the tab's position / size (`content_rect`), then `setup(host)`. Both roots
+carry `theme = OutgameTheme.tres`. Rows are re-instanced on every fill; the shells are reused.
+```
+ShopTab (Control)
+├ Segments   Panel `SunkPanel` ─ Pad (4) ─ Row (HBox, sep 8) ─ %SegPilot · %SegTrait · %SegShard · %SegCraft · %SegExchange
+└ Body       (top 124)
+  ├ %GachaView  Margin (40 / 8 top) ─ VBox
+  │   ├ %Banner  Panel (290, tinted card — style is code) ─ Pad ─ VBox
+  │   │          Head (%BannerTitle `OnFillLabel` 52 · %RatesButton `TextButton`, white text)
+  │   │          · %BannerSub (wrap) · %RateChips (HBox ← ShopRateChip × rarity)
+  │   ├ Holdings Panel `Card` (120) — 3 cells anchored at thirds: %TicketLabel/Value · %MoneyLabel/Value · %OwnedLabel/Value
+  │   ├ Pulls    HBox (150, sep 20) ─ %PullOne `GhostButton` · %PullMulti `PrimaryButton`
+  │   └ %Note    `CaptionLabel` (wrap, centred)
+  └ %ListView   VBox ─ Head (%HeadTitle · %HeadSub) · %Scroll ─ ScrollPad (40 / 8 / 40 / 28) ─ VBox (sep 12)
+                ├ %Rows   (VBox, sep 12 ← ShopShardRow / ShopCraftRow / ShopExchangeRow)
+                └ %DevRow (교환소 only — 개발용 premium grant, %DevGrant `GhostButton`)
+PassTab (Control) ─ VBox
+├ HeadPad (40) ─ Head Panel `PopupCard` (330) ─ Pad (36 / 26 / 36 / 16) ─ VBox
+│   TopRow (Title `TitleLabel` 40 · %Week) · LevelRow (%Level `AccentLabel` 56 · %MaxLevel · %Exp)
+│   · Track `ProgressTrack` ─ %Fill `ProgressFill` (anchor_right = exp ratio) · %Info (wrap)
+└ %Scroll ─ ScrollPad (40 / 8 / 40 / 18) ─ %Rows (VBox, sep 10 ← PassRow × PASS_MAX_LEVEL)
+```
+- **Scene owns**: every size / gap / margin, fonts, button kinds, fixed texts (segment labels,
+  dev-row note), the row tiles (children placed by offset inside the fixed-height tiles), the
+  white outlined row panel / white rate pill / sunk dev panel (local styles — no theme variation yet).
+- **Code owns**: texts from data, enabled / disabled states, instancing rows and chips, the selected
+  segment (variation `GhostButton` + `ACCENT_TEXT` vs `TextButton`), scroll positions (per shop section;
+  pass jumps to the first claimable level), and every **data colour** — banner tint per pool, rarity
+  chips / rate-pill text, trait +/− mark, the round pilot portrait (a `_draw` widget added into
+  `%FaceSlot`), pass row fill / border / Lv chip / reward & status text by claim state.
+- Scrolls use `vertical_scroll_mode = Never` (the bar was never visible; it also keeps the row width
+  — an `Auto` bar would narrow the content by its width) and `DragScroll` for touch drag.
+- **A node missing from these scenes was deleted on purpose** — don't re-create it in code.
 
 ## Gacha rules (`Gacha`)
 - Pools `pilot` / `trait`. Rarity is rolled by the pool's `gacha_rates.csv` weights

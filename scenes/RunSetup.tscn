@@ -1,12 +1,66 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://features/meta/run_setup/RunSetupScreen.gd" id="1_setup"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="RunSetup" type="Control"]
+editor_description = "Run setup screen (Pattern B): code indents the whole root to the safe top (offset_top) and stretches %Background up into the notch band. Step views are instantiated into %Steps by code (RunSetupScreen.STEPS)."
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_theme")
 script = ExtResource("1_setup")
+
+[node name="Background" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.96, 0.96, 0.968, 1)
+
+[node name="Header" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "Step pills — one StepChip per RunSetupScreen.STEPS row, instantiated by code. Bottom edge + 24 = RunSetupScreen.content_top() (116), where every step body starts."
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 24.0
+offset_top = 28.0
+offset_right = -24.0
+offset_bottom = 92.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="Steps" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="ErrorLabel" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 24.0
+offset_top = 116.0
+offset_right = -24.0
+offset_bottom = 236.0
+grow_horizontal = 2
+theme_type_variation = &"BodyLabel"
+theme_override_colors/font_color = Color(0.878, 0.271, 0.271, 1)
+text = "선수 데이터를 읽지 못했습니다: …"
+autowrap_mode = 3

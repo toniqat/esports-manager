@@ -3,7 +3,7 @@
 > 이 문서는 LLM(코딩 에이전트)이 이 프로젝트의 현지화 시스템을 **구현·유지보수·사용**할 때 따라야 하는 사양이다.
 > 1차 독자는 LLM이지만 프로젝트 오너가 읽어도 이해되도록 쓴다.
 > **MUST / MUST NOT / SHOULD** 는 RFC 2119 의미로 해석한다.
-> 상태: **1차 구현 완료 (2026-10-07)** — 도구 §15 1~6단계 + 데이터 CSV 이행(D1). 상세는 `addons/l10n_tool/README.md` · `data/l10n/README.md` · 각 폴더 README, 이 문서는 사양으로 남는다. 남은 일은 §0.6.
+> 상태: **2차 이행 완료 (2026-10-07)** — 도구 §15 1~7단계, 데이터 CSV · 씬 · 코드 리터럴 이행 끝, 고아 0 · `strict.orphans = error`. 상세는 `addons/l10n_tool/README.md` · `data/l10n/README.md` · 각 폴더 README, 이 문서는 사양으로 남는다. 남은 일은 §0.6.
 
 ---
 
@@ -45,12 +45,17 @@
 | D16 | 고아 검사 제외 | 로그 함수(`print` · `printerr` · `push_warning` · `push_error` · `assert`) 인자, 주석, `scan.ignore_paths`(디버그 · 치트 · 덤프). 나머지는 전부 검사 |
 | D17 | 카드 도메인 | 파일럿 · 메크 카드를 **하나의 `card` 도메인**으로: `card.pilot.{id}.name` · `card.mech.{id}.name` |
 
-## 0.6 다음 회차 (1차 구현 후 남은 일)
+## 0.6 남은 일 (2차 이행 후)
 
-- **씬 · 코드 리터럴 이행** (§14 2~6, §15 7단계) — 1차 구현 시점 고아 텍스트: 코드 약 1,500 · 씬 약 570 (`build dev` → `report.md` W052 · W053). 이행이 끝나면 `strict.orphans = error`.
-- **en 번역 검수 · approve** — 데이터 텍스트 979행이 전부 `draft`. 오너가 검수 후 `approve`.
+2차 이행(2026-10-07): 씬 · 코드 리터럴 → key 이행 완료(§14 2~6). active key 약 2,020개, 고아 0, `strict.orphans = error`
+(새 한글 리터럴 · 씬 텍스트는 이제 `build` 를 막는다). 새로 발급한 key 의 en 은 모두 LLM `draft`.
+
+- **en 번역 검수 · approve** — 전 key 가 `draft`. 오너가 검수 후 `approve`.
 - **CI release 연동** — §15 아래 TODO (D13).
-- **알려진 남은 항목:** 멘탈 사건이 남기는 `staff_mods.source = "mental:<id>"` 가 스태프 시트에 원문 그대로 · `TARGET_LABELS` 등 feature 폴더의 코드 라벨 표. (해결: `keyword` 태그 컬럼 → ascii id + `term.tag.*` · 아이콘 낱말 매칭 → `keyword.icon.*` 로케일별 · `CATEGORY_LABELS` · `STAT_LABELS` 등 공유 표 → §0.7)
+- **용어집 경고 정리** — W071(데이터 원문의 `손패` · `드로우` · en `round`) · W072(번역에 표준 표기 누락). W072 일부는 부분 문자열 오탐(`어시스턴트` 안의 `턴`) — §13 끝의 `match_<loc>` 정규식 컬럼 확장 후보.
+- **진단 로그 문자열** — `_bs.last_log` · `blog.log_event` / `log_block` 로 가는 전투 결과 문장(약 215줄)은 화면에 안 나와 `# l10n-ignore`. 다시 화면에 띄우면 key 가 필요하다. `blog.*` 를 `scan.log_funcs` 에 넣는 것도 후보.
+- **스캐너가 못 잡는 영문 표시 텍스트** — 한글이 없어 고아로 안 잡힌다: 밴픽 · 메크 상세의 `ROLE_NAMES`(TANK …)와 약칭, 전투 `"MISS"` 팝업, `BattleSim.LANE_NAMES`(Left · Center · Right), `BattleSim.pilot_label`, `hud.victory.play_again`(ko 도 "Play Again"). `PilotDetailPanel._fx_short` 는 카드 이름 앞 두 글자를 잘라 en 에서 어색하다.
+- **사용처 없는 공유 key** — `ui.button.prev` (W056).
 
 ## 0.7 공유 어휘 (이행 기반)
 

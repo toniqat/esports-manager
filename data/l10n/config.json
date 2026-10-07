@@ -3,7 +3,7 @@
   "locales": ["ko", "en"],
   "fallback_locale": "en",
   "key_prefix": "tx_",
-  "strict": { "orphans": "warn" },
+  "strict": { "orphans": "error" },
   "tokens": {
     "josa_tags": ["eul", "eun", "i", "wa"],
     "ref_domains": ["card", "keyword"],

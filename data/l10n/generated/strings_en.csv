@@ -1,4 +1,88 @@
 keys,en
+tx_ZXYEA8CBCF,Enemy
+tx_EB4H7Z27VT,Ally
+tx_17QG177S23,Ally or enemy
+tx_RCF4VQDV88,Enemy or turret
+tx_FH23GCJ7EG,Tile
+tx_9B4MN85VKK,Outermost turret
+tx_59Y5SSGNTR,Enemy turret
+tx_9W4J07SVG2,Allied jungle tile
+tx_SPEVBRHFR6,Enemy jungle tile
+tx_TW91ZYM52K,Jungle tile
+tx_15JDB1FGX2,Self
+tx_SBYKWG1EES,Global
+tx_X86PZPRSKR,{pile} — {n} cards
+tx_WBQREDCZ9E,Empty
+tx_1MA0RVZENK,Discard pile
+tx_R04J09DW7N,Cost -{n}
+tx_2E72YD71KC,Preserve {n}
+tx_VHMMNFFYWY,Hide
+tx_T9F7BYCK53,Show
+tx_K7ND1SRGXE,Cancel preserve
+tx_ZVPSKT5FFQ,Cancel search
+tx_2S6X77XV46,Drop here to preserve
+tx_30NPFP40NJ,Drop here to discard
+tx_GGSW07BJY4,Absorbed
+tx_HDVZNSTZHC,Engage
+tx_0967A3YSR1,Engage (AI)
+tx_3AHDMYE7KS,Duel
+tx_6GB005WWZR,Duel (AI)
+tx_5GXNMFJ98M,Victory
+tx_HW0K1DQR7J,Defeat
+tx_3X3GHP6YPG,Engage Result
+tx_X9YH4WJVF4,Turn {n}
+tx_677Y9RF7M6,Turn {n} / {total}
+tx_58VCZ43AB8,Engage over
+tx_PBRWC7X4KR,Turn {n} begins
+tx_3PYG9VZV4Q,{name}'s turn
+tx_ZSKHJTZV6B,Kills {n}
+tx_25TCMGCZEF,Starting positions — the engage begins as shown
+tx_RGYZZ6BFJ5,Starting positions
+tx_DEJKT3AEGZ,Engage over — both sides wiped out
+tx_AP1NR7N7JF,Engage over — enemy wiped out
+tx_N96FRD4BSV,Engage over — allies wiped out
+tx_0A0WCRAVBT,Engage over — {n} turns complete
+tx_ZGTQ8FD03J,Prey on the Weak x{n}
+tx_H9SA47D3DE,Stun
+tx_PB324TP8B1,Stunned!
+tx_043E3Z38C6,Overclock
+tx_SSD270N1SF,Indomitable!
+tx_FC0GG3J6N4,-{n}  Turret destroyed
+tx_V589CQ8M6Z,Turret T{tier} ({lane})
+tx_JKTA5KTT90,Drag the jungler onto the jungle tile to start from
+tx_FNC5VVMV4R,Start Battle
+tx_RGBVH85TFC,Upgrade · Alpha
+tx_16KSEBFD67,"Next time [Stage A] is used, create [Stage B] in hand instead of the deck"
+tx_FYHMPX0G5Z,Upgrade · Beta
+tx_S2C1ARN50Z,"Next time [Stage B] is used, token +{n}"
+tx_MF1RG2XJA7,Upgrade · Gamma
+tx_VGZFV8N8KH,"Next time [Stage C] is used, growth points +{pct}%"
+tx_RCPH2TXG6X,Herald
+tx_XQ2PPDTRRR,Dragon
+tx_3Y0ECJAAHT,{name} — taken unopposed by allies
+tx_EASJYYJ9SP,{name} — taken unopposed by the enemy
+tx_30PGAN3RWM,{name} has appeared — join the fight?
+tx_QWFB45AWP4,Join
+tx_3MA5JECS5S,Stay Out
+tx_04ERNCHTGZ,Reward: [Herald Subdued] — {n} damage to the outermost enemy turret
+tx_2YWT10DFT0,Reward: add [Dragon Reward] ×{n} to the deck
+tx_VZSZS9D73E,Kill -{n}
+tx_DX3WCA5MG9,Hit {pct}%
+tx_S5J84M5B8R,Hit {pct}% · Repeat
+tx_5RVGY55A59,Shield +{n}
+tx_W6X01DNJ5J,No skill
+tx_R0FZ3M3V8B,Ready
+tx_2HPF0T6A3A,Ready in {n} turns
+tx_EAZD697HN6,Tokens {cur} / {max} · uses {cost}
+tx_DG5378RKCJ,Passive · Tokens {cur} / {max}
+tx_R7WMPP0AXY,Passive · Always on
+tx_H9QM09GHQ8,Manager Traits
+tx_E684S0YNFT,Opening strategy points
+tx_0SNGNNX6ME,First auto draw
+tx_ME11AGHCAW,Hand limit
+tx_4K4WMMM811,First card cost
+tx_AHZVW1863N,Strategy point boost
+tx_2ZDNTZRMY2,Strategy point boost · {delta} every {turns} turns
 tx_BNZABB803S,Training EXP +10%
 tx_1MD83CR2E7,All six stats +2
 tx_GAAZ5HPRXK,Salary −3
@@ -338,6 +422,42 @@ tx_EPJQNJA7F7,Spend 100 of the caster's growth points; the target's ATK +2
 tx_RHE0637Z32,"Until it leaves the battlefield, the target takes +25% damage and gets a [Bounty] worth 10% of its growth points. Does not stack"
 tx_70N6FJ3FJ0,Attack — deals damage equal to 2% of the target's [Bounty]
 tx_1MFHFCFRJE,Pull the target to the caster's tile. Engage for 3 turns — everyone in range joins
+tx_XJ3733JBC4,Stats
+tx_YD2EQQHJ2J,Salary
+tx_DWRZXTZQ0S,Growth
+tx_H8X320PPVZ,Card
+tx_PG7FCBCBZW,Original team {team}
+tx_5FY78SBB83,Max Lv {level}
+tx_CTQQ4XFQEQ,Breakthrough {n} / {max}
+tx_9EZ04GCN4E,Dupes {n}
+tx_PN4P0CH5VW,Salary (at Lv {level})
+tx_TR71X7EVNB,Max level reached · Total {exp}
+tx_3VKTC1NERB,Stats · Lv {level}
+tx_2SNR4GA6TY,Stats · Lv {level} · Breakthrough {bt} applied
+tx_4W7V6DAZPB,Stats · Lv {level} (when recruited)
+tx_0MBQ7AV2G7,Total
+tx_KG9T7XN1BP,Duplicates after stage {n} become player shards
+tx_YV3JCRK2S2,Reached
+tx_6GEAQ9MXY6,Next
+tx_HSQ15CV8Y2,Pilot Cards · Swapped by Breakthrough
+tx_XACDTDAQPV,You can't level up a player you don't own
+tx_BJC1VNRZ53,Already at max level (Lv {level})
+tx_BVZ98DQNCY,Not enough level-up currency ({cost} needed · {have} owned)
+tx_KQ3ABKZKS0,{have} level-up currency owned · Max level +1 = +1 level you can pick in runs
+tx_92R8M8EJTT,Level Up  ·  {cost}
+tx_97RM66T6H0,Lv {level} — Save failed: {error}
+tx_8R6YZ1P81K,Max level Lv {level} reached
+tx_2AGPWN10YF,You don't own this player yet.\nRecruit them from the shop's player gacha or buy them with shards.
+tx_5MS4DQRXJH,Couldn't read player data: {error}
+tx_GMWHDWE858,{name} max level Lv {level}
+tx_0QNPGM6VF5,Recruit in the shop
+tx_6K04AA443J,Player EXP
+tx_JEPJHXHB1A,Training EXP Bonus (Breakthrough)
+tx_FN1RTFB39A,Green numbers = vs. Lv1 · before breakthrough
+tx_E8MWC8R25R,Breakthrough — one stage per duplicate recruit
+tx_MJR84KHMPT,No breakthrough table
+tx_WEMGESKYB6,Owned Players
+tx_YEC6P2JRFH,Player Shards
 tx_H1V09QCXSD,Short-Term Training Coach
 tx_E731FZHB4R,Tactics Consultant
 tx_8SZM4HBC56,Guest Mech Researcher
@@ -364,6 +484,187 @@ tx_XAR8PQMZNV,A performance-linked sponsor deal offered only to teams that won e
 tx_3N2P9M4E9W,"Local sponsor for low-budget teams — more income, but promo events eat into training time"
 tx_AXEKA79XKE,"Put off facility maintenance for two weeks when the balance runs dry — no upkeep, but incidents become more frequent"
 tx_MB49GSHBFN,Cut staff salaries for three weeks when the balance runs dry — morale drops and training efficiency falls
+tx_1HENHSWBBV,Cut
+tx_511JE6DQB1,Tap again to confirm
+tx_J4YTK7VVDS,No run in progress
+tx_Z3Y66BXDFR,Balance
+tx_FG04N4WSYY,Facility Fund
+tx_DM158Y7SJ6,Last Week's Settlement
+tx_M06VBCHAA0,No settlements yet — settled at Sunday's week end
+tx_MXXEN4NZT8,Net
+tx_SQF813637S,Surplus Allocation
+tx_JFNB4YBFQ3,Special Spending
+tx_WYA8YC4SQD,Recent History
+tx_25RMDAJ5X7,No records
+tx_0CX1TFBM9T,Training
+tx_21J7S51M54,Facility Fund
+tx_FVYGWSZW7J,Welfare
+tx_FWWJNTNYP8,Training · welfare support halted
+tx_BVZ04VJAS3,Facility fund {amount} diverted
+tx_XTVPW36TS4,Facility Lv{from} → Lv{to} downgrade (unpaid {amount})
+tx_C839D4YFV0,Training support cut for {weeks} wk (training EXP −{pct}%)
+tx_HQQ1QK18GW,Finance deficit {net} · {n} emergency cuts — check the Finance card
+tx_4RHZPMT3BW,Finance settled {net} · balance {balance}
+tx_VZWSGDJMJA,Special spending {amount}
+tx_BJG2P5WWYS,Expired: {names}
+tx_1PAC25VTPQ,Not enough funds
+tx_5MQ91AQVZZ,Unknown item
+tx_4YVAEG0ECQ,Running — {weeks} wk left
+tx_WPMNRYDWSD,Up to {n} running at once
+tx_D7GGSYDVRX,No effect — {name} already covers it higher
+tx_RTHA5YAC79,No effect — no staff salaries
+tx_P3Y8G1KRE6,No effect — no upkeep
+tx_9QH0GWP11D,Not enough balance — {amount} needed
+tx_X1R51424TJ,Condition error
+tx_748T0JD0MH,Requires facility Lv{n}+
+tx_CEHH3QBFTP,Teams with facility Lv{n} or lower only
+tx_XX8567DQ94,Teams with weekly sponsor {amount} or less only
+tx_YPG17RRBQG,Only with balance {amount} or less
+tx_55ZC8KRDA6,Requires {n}+ wins last week
+tx_GHSVC43HP2,Manager {stat} {delta}
+tx_30X2WR33SP,Training EXP {pct}%
+tx_CWJ6DE9DP8,Sponsor income {pct}%
+tx_YC0EYSGFNS,Facility upkeep {pct}%
+tx_BT8KJSTKS7,Incident chance {pct}%
+tx_2TSKW275F0,Staff salaries {pct}%
+tx_T1M9PEN089,Finance
+tx_EK67F07FWA,Finance · Facility Lv{level}
+tx_MPW438S5J7,Before first settlement
+tx_Q52XWB8S4X,Last week {net}
+tx_MKKQ4Z5M2Y,Last week {net} · cuts
+tx_JH732MWHD3,Finance · Facilities
+tx_QGCKXQ941D,In charge: Manager — you split the surplus yourself
+tx_7QKSR4PVYS,In charge: {name} — the surplus is split automatically
+tx_C696EEJ9Z1,"Projected net this week {net}  (income {income} · expenses {expense}, incl. bonus)"
+tx_6FBWWWX3V2,Balance is below one week of fixed costs ({amount}) — a deficit forces cuts
+tx_QBK71YGSAE,Training support cut — {weeks} wk left (training EXP −{pct}%)
+tx_GZYPKCSGMH,Results bonus ({win}W {loss}L)
+tx_P32YKYKYRT,Staff salaries
+tx_00XQNCZFRD,→ Reserve {reserve} · Training {training} · Facility fund {facility} · Welfare {welfare}
+tx_A2CBRDMBY4,Cut · {cut}
+tx_EBDF62NZNS,Special spending −{amount} (paid from balance on purchase · {names})
+tx_BA5XCYYSAC,Special spending expired · {names}
+tx_25PKBYA5Q3,{pct}% of a surplus stays in the balance; the rest is split three ways. Effects apply next week.
+tx_YMK6HF0KET,"{name} in charge — automatic even split (decent, not optimal)"
+tx_PDF6M4TMFX,Next week training EXP up to +{pct}% (maxed at {amount} spent per week)
+tx_J9HW9G18D4,Saved toward upgrades · emergency fund in a deficit
+tx_4DNE40K656,Max level — used only as an emergency fund in a deficit
+tx_2Y4X334GGR,Next week incident chance up to −{pct}% (maxed at {amount} spent per week)
+tx_5CEBKKHSAS,Active this week: training EXP +{training}% · incident chance −{welfare}%
+tx_2HH94J6ARY,Facility  Lv {level} / {max}
+tx_CPW59P2CKT,Now  {effects}
+tx_KWW448S0GH,Next  {effects}
+tx_SAXP078SDD,Training ×{train} · Mastery ×{mastery} · Incidents ×{incident} · Income ×{income} · Upkeep {upkeep}
+tx_YN9S7WB6S4,"Cost {cost} — facility fund first, then balance (available {available})"
+tx_JTTYE38FPY,Upgrade facility → Lv {level}
+tx_63XDT8NVFN,Tap again to confirm (−{cost})
+tx_XHH41J8S28,Not enough funds — {amount} needed
+tx_SBD8ZAF5DC,Paid from the balance at once · lasts a set number of weeks (up to {n} at once)
+tx_S2XBTE0K8X,Running · {name} — {effect} · {weeks} wk left
+tx_MVMJCRNWYR,{effect} · {weeks} wk
+tx_JQ9XJ51YJ0,Buy  {price}
+tx_N87J4KZFF1,Sign  Free
+tx_YKSPS14YC2,Balance {amount}
+tx_6DZQQSQ3VE,Sponsor income (facility ×{facility})
+tx_1ZGSEKD4JD,Sponsor income (facility ×{facility} · modifier ×{mult})
+tx_VGMAD0GE7N,Facility upkeep
+tx_5ATMNYAZ8A,Facility upkeep (modifier ×{mult})
+tx_S8GB2PQJET,End\nTurn
+tx_5R34V4TK24,Your Turn
+tx_Y3YPZRFYP0,Enemy Turn
+tx_TMPV0HMGH4,Next →
+tx_562ABYGNTQ,Play Again
+tx_DJ82GY9HFT,L
+tx_KQJ52RR8V2,M
+tx_N708DPBCXW,R
+tx_MSBN9RKNCE,J
+tx_FMGJ6K74YW,Care {care} · Taken {taken}
+tx_QR5G5BG3F0,Dealt {dmg} · Taken {taken}
+tx_7DPMA1JK2T,Dealt {dmg}
+tx_N5XY7QMCN0,Spawns in {n} turns
+tx_TQ6125AMEJ,Available now
+tx_6DZPWWFA96,Reward card not found
+tx_QPYR19J6FG,Goes straight to your hand
+tx_VF1A5H49TP,Shuffled into your deck when taken
+tx_0D83B3BXPJ,Next {n}
+tx_AXVQDH455A,Next draw {n}
+tx_K2TW9E6P0S,Kill +{n}
+tx_PZ3FF17CJS,Search {n}
+tx_T4AQ20H32S,Charge
+tx_4E9EYFHCMT,Passive
+tx_QTZR66E1TH,No skill
+tx_D6RF6A0BB1,No portrait
+tx_R7705DVY0V,No mech assigned
+tx_YW85GRB6H1,Revives in {n} turns
+tx_QYZSXYDBGH,Lane
+tx_48PKBPN65P,Laning Stats
+tx_YR9NHRBBHY,Eva
+tx_Q7B8HCWAYY,Battlefield Evasion (Card)
+tx_2955G7QSVP,Ambush
+tx_6TYZZH2V4Y,Held
+tx_0ZKD9B5X7N,Gain
+tx_5SS28F57B2,Growth Gain Rate
+tx_9E0V5EYSFR,ATK
+tx_E7NFE1MJTE,Temporary ATK
+tx_GGWGZGXCSJ,Shld
+tx_4T2NQHMG7V,HP
+tx_80RR2RVTFW,ATK%
+tx_85C0K13TJK,HP%
+tx_BZT1S9MYPH,Growth Gain
+tx_AFG7QR8X05,ATK %
+tx_BHPQBY192T,Max HP %
+tx_HQ0FSPBFNQ,{kind} (other permanent bonus)
+tx_JB2XA9GEHD,Base Max HP
+tx_KKM3DF9426,Growth
+tx_RBMEVC2P2S,Current HP
+tx_07SNADVFZF,Base ATK
+tx_75P2CDB8G1,Temporary Effect
+tx_205QKFD76D,Final
+tx_HKC6TKSA2K,Base
+tx_50MCWKXH27,Special Ability
+tx_9CFJV5MVD2,In-game Gain
+tx_HEAG7E5FVG,Vs. an equal opponent
+tx_2383X7Y4A3,Mech HP
+tx_MQ6WNXCW2R,Pilot Base Max HP
+tx_XBRHV1EABJ,Mech ATK
+tx_56C8HB8TXC,Pilot Base ATK
+tx_CYWJYN11E6,Mech Presence
+tx_YSYYDDQGVQ,Hit / Evasion
+tx_QYWSRHHVJD,Final Hit
+tx_J1FR6RX80G,Final Evasion
+tx_VEHXJB9DR1,Gain Rate
+tx_QD88DD25TB,Permanent Bonus
+tx_TE3CH6W9RC,Growth Points
+tx_RW7CT7ECA2,Status
+tx_BFZGKFQDSF,No movement until the next operation phase
+tx_4RDZ2WE931,Position
+tx_KD7JS3VSS3,Temporary Bonus
+tx_Y9PAH9SCZM,Final ATK
+tx_WMFSEXBJBJ,This Effect
+tx_T8FGVS8PZG,Total Permanent Bonus
+tx_MJDX8R0FTD,Total Permanent Multiplier
+tx_2BD908D740,Permanent
+tx_N3NW48PPT7,Until operation phase
+tx_YZASNH48VB,{n} turns
+tx_WANJ929H98,(until operation phase)
+tx_04XW5YCATP,({n} turns)
+tx_F27NAHX4TP,Sets the chance to hit when a card effect makes you {attack} attack an enemy.
+tx_M0J3JZ6JMR,Sets the chance to dodge when an enemy card effect makes an {attack} attack on you.
+tx_WVQ0E4DXRS,{engage} Sets the chance to hit when attacking an enemy during an engage.
+tx_2D5M3A87JK,{engage} Sets the chance to dodge enemy attacks during an engage.
+tx_1201TH9NT4,Higher presence makes you more likely to be targeted during an engage.
+tx_MP25TF18FJ,"Permanent bonus left by this card. It never expires or wears off, and stacks if the card is played again."
+tx_N34BKW73WF,"Built up by the mech passive, not a card. With no card to name it after, it is grouped in one slot."
+tx_B8MQ74WDJZ,Applies only to battlefield hit checks. The engage stage uses its own odds.
+tx_1Z076S4PF9,"Multiplies growth point gain, not growth. Safe Farming and Perfect Finish share this slot."
+tx_3PBASH0HTY,Temporary bonus from a card. Not cleared when growth is recalculated.
+tx_9GBQDV90TD,Absorbs damage before HP. Lost on returning to base.
+tx_XCY75J2M5N,"The mech's stats become the pilot's base values, and growth builds on them."
+tx_8WZGVJ6X01,MVP
+tx_RZN79649QG,MATCH MVP
+tx_TWDEFMDMTZ,In-game
+tx_TJEJTTZ9PP,Pilot
+tx_840PD89SBP,Mech
 tx_KXN7MDVXDA,Track
 tx_Q2YD01V4X9,"When the target joins an engage, the caster joins too"
 tx_HPPDS4VKWD,Reactive Armor
@@ -417,10 +718,214 @@ tx_XVGC6KXT1R,search
 tx_YX872B2X4H,create
 tx_5D3XF18V32,heal
 tx_PNFKKTFY12,kill|killed
+tx_DBE01WV863,ESPORTS MANAGER
+tx_C43HAK9QB4,Run in Progress
+tx_5WJB7HWPMA,Match in progress
+tx_8QB02J8X4E,No run in progress
+tx_WGC1W057NT,Tap 'New Run' below to start a season
+tx_VCBJXS80JH,New Run
+tx_X0EYJ8K5SH,Continue
+tx_B6XWT6321G,Manager Lv{level} · {pilots} players · {traits} traits
+tx_5065WMC273,"Year {year}, {month}/{day} ({weekday})"
+tx_5XHX4A8MQY,Trophies: {n}
+tx_2BHC8NJGZA,League not started
+tx_1W517T1FD5,League #{rank} ({win}W {loss}L)
+tx_8B4JM1Z2M6,Last saved {time}
+tx_ZWP3Q5KXEX,Load failed: {error}
+tx_86MJJTCRG4,Couldn't delete run: {error}
+tx_NZS1Y08KJK,Abandon the current run?
+tx_Y3AD9RSE4W,"The run ends and is settled as a failure with your progress so far.\nYou still get score and currency rewards, but this can't be undone."
+tx_58RJZ7FA5S,Abandon & Settle
+tx_QFKVYHXZQ7,Home
+tx_MRYQA72YTJ,Collection
+tx_FM5AH7PT3F,Shop
+tx_XCSB9YZRPT,Pass
+tx_3Z7X8EGGT2,Coins
+tx_M0TVW5C5V0,Level-up
+tx_H3S5FP9V1B,Player Ticket
+tx_QR44K4G430,Trait Ticket
+tx_A0BZZABE9N,Shards
+tx_D3T88QT9G4,Couldn't save manager type: {error}
+tx_Z7T7H6V81J,Choose Manager Type
+tx_MC13K8N0V7,Prestige — Choose Manager Type Again
+tx_M5J8SX6BBY,Choose a manager type before your first run. Areas without staff run on the manager's stats.
+tx_R46BWWGHGJ,Choosing a new manager type completes the prestige. You may pick the same type again.
+tx_PWF07A5A7H,"After this, it can only be changed through prestige."
+tx_JBCN4AT26F,Level and stat removals reset to Lv1.
+tx_DQC9ZE38ES,Choose a type
+tx_XPFT0WY8DB,Start as {type}
+tx_K1ZQ410BJ2,Prestige as {type}
 tx_J99WKD5PN8,Organizer
 tx_KQSXCRDMQT,Field Veteran
 tx_T2Z72WAY5Q,A manager versed in running an organization — a balanced spread leaning slightly toward Management and Mental
 tx_PVYTSHGS8N,A manager who came up from the field — a balanced spread leaning slightly toward Training and Knowledge
+tx_BGMWN33W4F,Preset {n}
+tx_4T5M5K3V6Y,Reset needed
+tx_CQAMS06S3H,● In use
+tx_VDT30HFYH5,Traits {n}
+tx_3Q1VPP8XMD,Spec +{n}
+tx_S620BP20NR,Obtained from trait gacha · crafting
+tx_S5NAQVRYNS,Clear a run (win the final international)
+tx_P955SQ3TF7,Reach the true ending
+tx_D8FE26XJFP,{n} wins in one run
+tx_8G1AQW23DP,{n} titles in one run
+tx_MEDD3BR55H,Clear {n} phases in one run
+tx_F8DYXECV40,{n}-win streak in one run
+tx_FGW64XDW0B,{n} outings with one player (one run)
+tx_NFTQEBMQN9,{n} MVPs by your players in one run
+tx_KH3QMFGTYE,{n} profitable weeks under manager control (one run)
+tx_CN4XCZ8HA8,Complete {n} runs
+tx_YFW3R69TW6,Finish at least one phase with {team}
+tx_TFTZTARDWX,Finish at least one phase with {n}+ bonus points
+tx_W3RT98C0SS,Unknown stat
+tx_TA4GEJM732,No removal points left
+tx_MWVEPEZET8,A stat at 1 can't be lowered
+tx_T1BFS0GSGZ,No specialization points to take back
+tx_W7C3ZRF4RR,No specialization points left
+tx_DA5HH0PHWQ,Stat cap {cap}
+tx_BKV964Z3VV,No preset
+tx_Q8H1F03VCP,Prestige preset — reset it with your current points to use it
+tx_58W8XQG7XP,Too many specialization points ({used} / {total})
+tx_HYK8X0Y1FR,Specialization points are negative
+tx_Y4C38QBE7Z,{stat} is over the stat cap {cap}
+tx_SM2J7D8VWD,Prestige unlocks at manager Lv{level}
+tx_1TPBDD4JDD,This trait is still locked
+tx_HQVBRC7GPZ,All {n} slots are full — unequip one first
+tx_6ZMPGY904G,Use This Preset
+tx_G60RQZ2M86,In Use
+tx_PBX5T726N6,Save & Use
+tx_VP2K42B9Z4,Save
+tx_WM0N1FR8F2,Saved
+tx_PW7CEB3PC4,Can't save — {error}
+tx_5N2ANQY6KC,Can't use — {error}
+tx_2AS2JFBWZ3,{preset} — will be used next run
+tx_E078H6ENKH,{preset} saved
+tx_E63PYF62MR,{type} Manager
+tx_JRKT78EBDX,Prestige ×{n}
+tx_N88PJGGH8P,Prestige
+tx_P6CE6V2BZ8,Prestige at Lv{level}
+tx_G63N72TB77,{n} removal point(s) per level-up · Permanently lowering a stat gives 1 specialization point
+tx_R5JTRZW8YZ,Removal Points {n}
+tx_3D2K7Z42ST,Spec Points {used} / {total}
+tx_W2GGDAXSS9,Final = Type − Removed + Spec · Cap {cap}
+tx_25JH8D9ZKC,Type {n}
+tx_REG3N92165,Removed −{n}
+tx_FSJJMA6X8A,Spec +{n}
+tx_N00VCXQP2R,You have unsaved changes
+tx_PC4VC518EH,Discard changes to {from} and switch to {to}?
+tx_KGQJMSCC5A,Discard & Switch
+tx_RK53KKTVV9,Reset the prestige preset before editing it
+tx_E7VHX9Q864,Bonus points below 0 — can't save like this
+tx_VXPQ8NAT9G,Lower {stat}?
+tx_BG6S0NCNW3,Spend 1 removal point to permanently lower base {stat} from {from} → {to} (all presets).\nYou gain 1 specialization point instead.\nThis can't be undone until you prestige.
+tx_7WYGFMVN1R,{stat} −1 — Spec Points +1
+tx_KXJ7B4DMZ8,{preset} reset — reassign your specialization points
+tx_7521E3DYNY,Prestige?
+tx_CZ8J9C4GP0,"You return to Lv1, stat removals are undone, and you choose the manager type again.\nExisting presets need a reset before use · New preset +1.\nRewards: {rewards}"
+tx_9T0XXJTV5D,"You return to Lv1, stat removals are undone, and you choose the manager type again.\nExisting presets need a reset before use · New preset +1.\nRewards: {rewards}\n(Unsaved preset changes will be discarded)"
+tx_BMK6ZN3V5X,Choose Type
+tx_P896WEQNY0,Prestige complete — {rewards}
+tx_XHV95P4ZR7,Equipped {n} / {max}
+tx_C89E7AZ489,Owned Traits {n} — tap to equip / unequip
+tx_N8R29A5R8G,Locked Traits {n}
+tx_Q7PEKJNA02,Negative traits give +{gain} · Positive traits cost −{cost}
+tx_5BMYK6AN8W,Below 0 it can't be saved or used
+tx_KDW47HR37K,Leftover points are added to the run score
+tx_KXA2JT6S41,Outgame
+tx_6F0W7MPDEQ,In-game
+tx_XGHFVCZ60Z,Unlock · {cond}
+tx_N8P75GD7BK,Bonus −{n}
+tx_Q120DT4YPQ,Bonus +{n}
+tx_AZE74DV2XZ,NEW
+tx_TK0RD2JPFF,Equipped
+tx_G048A7DZEH,Empty
+tx_CT0XBF6ME9,Traits
+tx_0TVPZHMHDQ,Bonus Points
+tx_JNX31TB32C,Presets — Spec Allocation + Traits
+tx_96VG8VVT6V,Prestige preset — reset it to use it
+tx_JXE6K3B8JS,Spec allocation is cleared; traits stay as they are
+tx_BG420X1TPQ,Manager Stats
+tx_GYJVQGJEM9,None — earned from quirk training tiles · mech research
+tx_WZDGTR97KE,No run in progress
+tx_43FCJDADR5,Leave it to the coach
+tx_S3TMQTME0B,No mech coach — pick each pilot's research mech yourself
+tx_9795WB8ABE,Novice
+tx_A871893SYV,Average
+tx_VBZCYYXC6P,Skilled
+tx_0S2RTBPFAV,Master
+tx_YN458RG799,Mech Research
+tx_ABCFSECHD1,Outside a run
+tx_DC141DPMTX,Weekly research +{n}
+tx_1R29MF9ZRE,Coach fills empty slots
+tx_H26DNEN9EX,{n} without a research mech
+tx_AYCQXCCH15,{n} / {total} assigned
+tx_5XP7EXN0MZ,In charge: {name}   ·   Knowledge {value}
+tx_NPNPJYNJ78,Gain multiplier ×{mult}
+tx_AVASF1MNRA,Tier bonus (all 6 stats)   {tiers}
+tx_9C36WN5CN9,Research mech +{research} each week end  ·  mech played in a match +{match}  (before multiplier)
+tx_0R1EGAX9DP,Quirks — {pct}% chance at week end with a research mech  ·  {odds}
+tx_9YHCDH1Y7N,Research: {mech}
+tx_KVG9N478Y5,Coach assigns at week end
+tx_1AFM6E35JF,No research mech
+tx_PW12RBBJ9E,Top mastery  {list}
+tx_1D7T0ZQE77,Quirks  {n} / {slots}
+tx_D1SA7C6KSP,Max {n} slots
+tx_VDJKS7MNHE,BAN
+tx_VX9Q85PM8S,Drag and drop to reassign mechs to pilots
+tx_6Z915A6SVE,BAN
+tx_M08KQVQN65,No passive
+tx_MJJHA43Q8J,This mech has no unique cards
+tx_XVKPY5NPC4,Start Game
+tx_B3TD0XDDBT,Mech Stats
+tx_3R8J1QNVYD,Mastery (tier bonus = all 6 stats)
+tx_1R98FHMXSQ,No quirks equipped
+tx_PY288FR27W,Mech Passive
+tx_DKVRHA76D6,This mech has no passive
+tx_FKR497Q4GS,This mech has no unique cards
+tx_KCV1PKAM59,"The pilot assigned to this mech adds the cards below to their deck, in the listed counts."
+tx_MFVJR117B3,Main Mechs
+tx_5A4VYR9MJQ,No analyst — only raw data is shown. The manager reads it alone.
+tx_VGK1FJEFJY,Match Prep
+tx_HQ94NZJ6WP,Start Match
+tx_5AJE6SAZ26,Opponent
+tx_GPNME2ADWA,Quirks {n}
+tx_2C7Y2JDD7V,{role}   ·   HP {hp}   ·   ATK {atk}   ·   Presence {presence}
+tx_S32JTGTHEG,Mech Cards  {n} types   ·   Tap a card for details
+tx_J3FQW65YX4,{name}  {tier} {value}  (stats {bonus})
+tx_GKJ2J8BS4G,{name}  {tier} {value}  (stats {bonus} · quirks +{quirk})
+tx_ZFKRFPCAS2,Analyst's ban pick — {pilot}'s main
+tx_ZKEE3G9T6P,Expected opponent pick — {pilot}
+tx_15SXME7CFS,Generated only
+tx_WCXP7CPSKQ,Confirm Ban
+tx_ZEXW72B4FP,Confirm Pick
+tx_76TDNRXT2H,Opponent's Turn
+tx_ZPK44AJ0YK,Unavailable
+tx_YY1PTH9QJN,Rec. Ban
+tx_HF3CR7Q56F,Exp. Pick
+tx_TZBXEJKN0V,Quirk +{n}
+tx_SSCFWKVHRS,Your Ban
+tx_EGTM3JJJMY,Your Pick
+tx_D141ZC4RBA,Opponent Ban
+tx_NAM5AY7ESD,Opponent Pick
+tx_JFNQCJHJWF,Quirks — {pilot}  {count} / {slots}  (stats +{total})
+tx_HJGDFGJ4TM,{effect}  (condition not met)
+tx_5YCR7YFGNT,Total {total}
+tx_7A1FMDGC3E,No info
+tx_4Y7CG5R478,Analysis Tier {tier} · {label}
+tx_4P15WEPRM6,My analysis {have} · {need} needed for next tier
+tx_CHAJA53SVW,Analysis · {who}
+tx_4GMKW7SCDD,Name · Role
+tx_Q605SZ346S,Approx. Stats
+tx_D20PGJE2CX,Stats · Main Mechs
+tx_AR1MKMRGM3,Fully Revealed
+tx_SCRCRND2B5,Not enough data to read the opponent's strength.
+tx_54201ZNSN2,Watch out: {role} {name} — highest {stat}.
+tx_Y52NPQTAB1,Suggested ban: {mech} — {pilot}'s main mech.
+tx_8F1HRN6A8N,Weak link: {role} {name} — worth targeting that lane.
+tx_1W81NVQ0EN,{mech} (main)
+tx_CYD6TW7EWM,Mech {id}
+tx_2D102EEXT5,Opponent · {team}
+tx_YRJDDXHF35,My Team · {team}
 tx_MR5VKS3AHG,Overload
 tx_C214C4GTV6,Deploy Reactive Armor
 tx_4AGJGY73MM,Pain and Pleasure
@@ -684,6 +1189,15 @@ tx_Y286QSY9AY,@Esports Daily
 tx_ZYQ2H6NSV5,Which is more nerve-racking: your playing days or now?
 tx_S475S364V1,Now. Because it's my players' match.
 tx_TRZ5H1B5JE,My playing days. Now I just enjoy it.
+tx_GAEQTM3H22,{name} trust {delta}
+tx_S020E3BRTM,Team trust {delta}
+tx_P1MZEZ4FJQ,Whole team {stat} {delta} ({duration})
+tx_JCW2JPKMY8,Manager {stat} {delta} ({duration})
+tx_8FVD7N2NZP,Outing #{n} · less EXP on the next training day
+tx_KAEPTP25DT,Pilot
+tx_WR6Q5QGMZ8,All stats
+tx_MD8BDCV48Q,Until next match
+tx_D3NT6QFHKK,Incident
 tx_6RHXR0K8TD,Nekomata
 tx_KCKAPV8M44,Yuzuha
 tx_1TSM3CVTC7,Corin
@@ -861,6 +1375,27 @@ tx_ARWJETFT72,"On an HP-type mech: presence +1, max HP +20%\nOn an attack-type m
 tx_A2VY834WBK,"When joining an engage, if there is an enemy ADC pilot, the first attack always targets that ADC pilot with ATK +20%"
 tx_BVQZZBG33F,Activate: create a Volatile [Advance] in hand
 tx_KR207W6TG7,Compared to the enemy pilot in the same lane — behind in growth: growth gain +10%\nbehind in kills: ATK +10%\nahead in deaths: max HP +10%
+tx_JJ1888Z56T,Tap to close
+tx_82VAW6FK9Y,Mental check passed
+tx_2QWW8CPTXR,Mental check failed
+tx_5V87JZGAVT,Choose your answer
+tx_VT90YHN4YW,No questions today.
+tx_M9QFMYB5Y8,{phase} · Week {week} · {outlet} reporter
+tx_BM3F8A8DQV,Esports
+tx_MC4YJKBSC1,Esports Daily
+tx_A2A40ZTSPV,Great. We'll look forward to the weekend match.
+tx_7TV9CHPBCD,Team trust +3
+tx_PMZES297S0,Manager mental +1 (2 wks)
+tx_RX2N12A2AY,Many say this weekend's opponent is a tough one.
+tx_C8YQ4ENXAX,"Honestly, are you confident you can win?"
+tx_0N9CGRDHQR,The press seats fall silent for a moment.
+tx_MJR4D42R8V,We've already finished analysing our opponent.
+tx_YJW2C8ACF4,Then where is this week's training focus?
+tx_4VV2GXH1SC,I trust my players.
+tx_CNG6CVP5YY,"It won't be easy, but we've prepared something."
+tx_RRC4PCP2TY,That's a rather rude question.
+tx_EE0N2F6MX7,"Honestly, are you confident you can win? Your head-to-head record last season was poor, and most analysts say their jungler is at peak form."
+tx_8GCQCKHZSB,"It won't be easy, but we've prepared something. We'll show you on match day — you can look forward to it."
 tx_CYGR6J73XX,Sharp Eye
 tx_1E4NWHCFMH,Light Feet
 tx_WACC2C0HFM,Brawler's Instinct
@@ -897,10 +1432,204 @@ tx_BJP0GG5N68,Never crumbles when riding a tank mech
 tx_423T378EFS,Goes for the weak spot when riding an assassin mech
 tx_HCTF0FH7HK,Never wastes a shot when riding a marksman mech
 tx_X44QXQ1EJK,Grows sharper in mechs handled at Skilled or above
+tx_PT2W70YDR1,riding a main mech
+tx_N5C2E6FQ2F,riding an own-role mech
+tx_VXEP932PHS,riding a {role} mech
+tx_9PKMC5PHJG,mastery {tier} or higher
+tx_63B5AMR6Y6,{stats} while {cond}
+tx_ET86TTP31D,Run Cleared
+tx_02GQ3R71G2,Run Failed
+tx_ZPVTEEG9GC,Run Abandoned
+tx_SR4J2S70Z7,Run Over
+tx_34H19JKNZ2,Test run — profile unchanged
+tx_N92BZJC4VE,True Ending
+tx_BGD6ATN8E2,{n} outings · Promise kept
+tx_942J829JEX,"Trophy in hand, {name} finally said what they'd been holding back."
+tx_9NBP27YSKH,New Traits Unlocked
+tx_A8KZA62SX8,Equip them from the Manager tab from your next run
+tx_SQB3T3V911,Test run — not added to your profile
+tx_QGD2NVYK77,Progress
+tx_W3EY6C4QFN,Phase Reached
+tx_EHJMQJG41X,Phases Cleared
+tx_PXZTGCX8MB,Record
+tx_3MAEFQKB2P,Titles
+tx_J14VFZ8J4S,{n}
+tx_5P10XTZ6PS,Score
+tx_JBSDMB0A9F,Total
+tx_90402NFY5K,Phases cleared × {n}
+tx_Z0C504J650,Wins × {n}
+tx_RF0FQRX947,Titles × {n}
+tx_9AHQ3H3J1J,Clear Bonus
+tx_5MP13PWYFM,Trait bonus × {n}
+tx_RNSR0V2ZD7,Rewards
+tx_PFPGKNBXJT,Test run — rewards not added to your profile
+tx_HF4PD2NVB3,Coins
+tx_Y1513M583R,Weekly Pass EXP
+tx_P70DJG0Y69,Pass overflow → Coins
+tx_4JW54W3MFD,Manager EXP
+tx_ERBNFWJ2H9,New removal points (Manager tab)
+tx_36E6M38JM0,Player Growth
+tx_6DXJDQC258,Player EXP +{n}
+tx_RQ4SQ39BQ7,Max Lv {from} → {to}
+tx_RRX6FCNZ2Q,Run Achievements
+tx_ZA35FTB9TG,No players recorded
+tx_6DT1P5Z0AS,Run Settlement
+tx_HG7GBCBDAD,No settlement to show
+tx_84F8FGGM7Q,Your score and rewards show up here when a run ends
+tx_HJ8PH2PZFQ,Scenario
+tx_FB3QP9CS50,Team
+tx_D251BAN217,Lineup
+tx_5RQNNDMCG6,Couldn't read player data: {error}
+tx_RCC5BQZPBZ,Salary Cap {n}
+tx_21QQ3H8S23,The scenario sets the salary cap — you can't start if your five players' salaries exceed it.
+tx_ZSHG5Y0W8Y,A bigger budget is easier — more staff means less to handle yourself.
+tx_XVN27323X5,Budget {n}
+tx_8V1SPJW32G,Facility Lv {n}
+tx_MY16P7N64F,Handled by you
+tx_24YRHG4GQQ,Total
+tx_R8QCG9989H,Original team: {team}
+tx_CZZWF7TJ6P,Breakthrough {n}
+tx_NW5AR6YPWN,Training EXP +{pct}%
+tx_ZNZXB9SW7Z,Player Stats
+tx_A42YCZ0NFD,Pilot Skill
+tx_1M14YHFYQV,No unique skill (unnamed player)
+tx_R5P3SNJTFY,Cooldown
+tx_341YBT1HWQ,Charge
+tx_R41SZAKCGV,Passive
+tx_8XPMQAH2H0,Not picked
+tx_M4CGTEQHBN,Salary {n}
+tx_86NEDS5QYC,Total {n}
+tx_EYBMMZBQNA,Prestige preset — reset it in the lobby Manager tab
+tx_S0XJ51Y6E7,{type} Manager · Lv {level}
+tx_B12S7EKBRM,Trait bonus: all stats {value}
+tx_N2RJ811ABT,Specialise in the lobby Manager tab
+tx_Z2NY1CZZ5J,{preset} · Bonus points {bonus} · Trait changes save to this preset
+tx_TJYP45JCHW,{pilots} players don't match {teams} teams × {roles} roles
+tx_1DJR2GT179,Unknown role {role} (player {id})
+tx_YV2Y3QZY4S,Some of your players aren't on the league roster
+tx_0PAP63X1Y1,Role {role} has {n} of your players (must be 1)
+tx_NC5BF9FXM3,Role {role}: {n} remaining players don't match {teams} AI teams
+tx_42EJTTYFX4,{scenario} · Salary Cap
+tx_8HD5KTG0WT,{scenario} · Salary Cap (traits {adj})
+tx_4HM99WN4PS,Start failed: {error}
+tx_EN0H79ACA8,Over the salary cap ({total} / {cap}) — lower levels or pick other players
+tx_PYSFH9VR8V,One per position — {n} / {max}
+tx_Z7WZT1J6Q7,Lineup complete — {n} salary left
+tx_RQV5HNW8TV,Lineup complete
+tx_N58C8KX6P1,Start Game
 tx_WMF4H900Y6,Rookie League
 tx_WHEYGN2VQZ,Super League
 tx_FHYTT6JZHE,Low salary cap — two or three expensive pilots at most.
 tx_4H2VGDNYW7,High salary cap — room for a roster of leveled-up pilots.
+tx_NSX2CBE8GV,WORLD CHAMPION
+tx_5WW618WEKX,Campaign complete — Regular Season International champions!
+tx_YD9QSBBE5R,── Campaign Record ──
+tx_6ZE7NQMPBZ,── Final Roster ──
+tx_43PE998B9Y,Settle
+tx_CZ5JRH7TF5,GAME OVER
+tx_CPYGV0VH59,Settle
+tx_EC5JJ7JJ79,Season Hub
+tx_TS2F4HMZ50,My Roster
+tx_J2MCV2WPXA,Start Week →
+tx_ST353SNDF5,League Standings
+tx_6C8H4243AF,Rank
+tx_JJXZKV6K5R,Team
+tx_ESS0Z9GK8W,W-L
+tx_H17EQXSJDT,Win %
+tx_X5HJZ9N50Q,PO
+tx_PBF3EV0MYG,Tap a team to see its roster and scouting report
+tx_ER5MBFDQR0,Playoff Bracket
+tx_GB3H6SNA3T,The playoffs haven't started yet.
+tx_99KJHVTRYT,International Bracket
+tx_SF22TMBSQP,The international tournament hasn't started yet.
+tx_191AFE0BN2,This Evening
+tx_KPSWBTWZA0,Pick a player and choose tonight's activity (once per day)
+tx_B7PQ84TQD5,Pass
+tx_G02WWMW0B6,Current phase: {phase}
+tx_QBXEZYQKN7,{phase} · Week {week}
+tx_G2CRZNPFG8,Playoffs! — Semifinal up next
+tx_1Q5D5H8MKG,Playoffs over
+tx_SN5F4S50QE,Champion: {team}
+tx_AKWBHWXQKP,We won the title!
+tx_9FQ300Q5NC,International tournament! — 8-team bracket
+tx_8MBQAK3YCS,International title! — We are the champions
+tx_64YSN9ZDR8,New phase: {phase}
+tx_KMTPJRSHS8,Week {week} / {max}
+tx_X85R7MCQ0K,This week: {slot} — vs {team}
+tx_X1ZR4PHHXN,This week: vs {team}
+tx_0JANWJ7HMM,No match this week
+tx_DAGRD2AVXH,Playoffs
+tx_1ABQDHR4ZF,Standings
+tx_QQV79NETS2,In charge: {name}
+tx_7T45Q9QVT8,Trust {n}
+tx_KZRN3TT8CK,Champion — {team}
+tx_7CKXJ6SNJY,Champion — {team} ★
+tx_BK6M8XCBA6,Eliminated in {slot} of the {phase}.
+tx_44WZH96TAR,Failed to win the {phase}.
+tx_75WBMWK3YQ,Eliminated in {slot} of the {phase} playoffs.
+tx_G91QZKMCGS,Failed to win the {phase} playoffs.
+tx_G2TKVCGN91,Failed to qualify for the {phase} playoffs.
+tx_0CPR1H6FJX,Final rank #{rank} — {win}W {loss}L
+tx_36VP9BEFGS,Campaign titles: {n} — Campaign over
+tx_GA7T767F1Z,No upcoming match
+tx_GE4R14G0HE,Next match: Week {week} {day} — vs {team}
+tx_TESCZQ8CKB,#{rank} · {win}W {loss}L
+tx_PK7CX8K2WS,#{rank} · {win}W {loss}L  · My team
+tx_NK31W4V7FT,{win}W {loss}L  · My team
+tx_DET3QJHZGK,Stage: {stage}
+tx_09XMB9SGJS,No player match / finished
+tx_KXMPKY0FJ4,Next match: {slot} — Week {week} vs {team}
+tx_TK9A1AK7XE,Quarterfinals in progress
+tx_QC6GN1KKC4,Semifinals in progress
+tx_EVYVY83XJ6,Final in progress
+tx_RTQWKSAYPK,Champion decided
+tx_ZMNJRTQ4RC,Quarterfinal 1
+tx_D05692FCNM,Quarterfinal 2
+tx_89SK9FAWQC,Quarterfinal 3
+tx_DNDDCSPQEE,Quarterfinal 4
+tx_QXB3XY4AYX,Semifinal 1
+tx_XXXNFX172K,Semifinal 2
+tx_TRMS5ZZQY6,Final
+tx_NCAC0FXRKV,Year {year} · Month {month}
+tx_1K2R63NYA9,No training records
+tx_Q5HXG4JY2G,Nothing scheduled
+tx_77T88FPPVZ,{day} — No matches scheduled
+tx_N3T6WKR43W,W
+tx_E1RYA0YP6M,L
+tx_ZM7B38RP90,Scheduled
+tx_34Y51VRWE3,{team} win
+tx_5MEB8RS07D,League
+tx_1C5DFDPJPM,Starting the match takes you to ban/pick
+tx_28YWCR88Y0,This match is over
+tx_PEFCADMPP3,Mastery +{n}
+tx_29AYJHE9CP,Mastery +{n} · {mech}
+tx_GJ061P5G7K,Quirk gained · {name}
+tx_BKSSGAQEKK,Quirk slots full — nothing gained
+tx_0HWTY9MN62,Quirks rerolled · {from} → {to}
+tx_4WNY7FEE6D,No quirks to reroll
+tx_YFPQYV0C4S,Quirk slot +1
+tx_0QN35YWVZQ,Quirk slot +1 ({n} slots)
+tx_ABWK6EAGAM,Quirk slots already at max
+tx_FZ9J5EYXJH,Quirk
+tx_55ZT5D24ZK,Quirk #{id}
+tx_0H7MR6XZ5Q,Start Match
+tx_QBJC7HSWEH,End Week →
+tx_BG13VH48VC,Meetings {iv}/{iv_max} · Outings {out}/{out_max}
+tx_R4XWZFXHFD,Trust {trust} · Outings {outings}
+tx_G9WWN59WGH,Outing (used up)
+tx_QYSSXAFB3S,Outing (Trust {n}+)
+tx_0TJBQGEP0N,Meeting (used up)
+tx_M4WBEB9G7X,This evening — Rested
+tx_H8MV6KQN83,This evening — Meeting with {name}
+tx_57AQ53NMQX,This evening — Outing with {name}
+tx_QQ30F9E2AN,Turned in early for tomorrow
+tx_YN104ZWYY7,No change
+tx_335GAVH4SP,Incident — {tag} · {name}
+tx_YVD35CHCCQ,Tap to respond
+tx_PZ5E6THG9A,It passed without much trouble
+tx_F19CKTWEZY,{day} evening · Meeting
+tx_8EXSPR79YJ,{day} evening · Outing #{n}
+tx_5GDZXY0QSR,{day} · Incident · {name}
 tx_EVS2K4Z4YF,Settings
 tx_4S0H7A92KR,Settings
 tx_EB8R7HBW32,Language
@@ -909,6 +1638,134 @@ tx_TAQGY61B4S,Close
 tx_6Y7HJCQ969,한국어
 tx_ZZA706T9ET,English
 tx_5JNY44V34S,Couldn't save settings: {error}
+tx_SFM8K5H3EW,Invalid number of draws
+tx_KCMDA6JCSG,Nothing to pull
+tx_Y938YWW8E9,No such level
+tx_RFC7830G3H,Level not reached yet
+tx_GP4MCK7RMY,Already claimed
+tx_VXNZHCEFAY,This level has no reward
+tx_51N87FRW51,This player isn't for sale
+tx_2ZE844KZN9,Breakthrough Maxed
+tx_8Z4YRYH43A,Not enough player shards ({n} needed)
+tx_F242JS261M,Can't Craft
+tx_TB3J7HQJGN,Owned
+tx_9ZR3EBJ3SJ,Not enough trait materials ({n} needed)
+tx_T7H4Y5BKRY,Not enough premium currency ({n} needed)
+tx_XTX35YZZ5C,Claim All
+tx_6ZYFMH4WG9,No rewards to claim
+tx_VD3QJHNXCW,Claimed {n} · {rewards}
+tx_H1GFQQ83Y3,Lv {level} reward · {currency} +{amount}
+tx_2XPR1E8GP5,{week} · Resets in {time}
+tx_ZQZY2WVPR2,"Finish a run to earn pass EXP equal to your run score. EXP past Lv {max} turns into outgame currency. Rewards must be claimed manually, and the pass resets every Monday at 00:00 (device time)."
+tx_5NS864BVSS,{d}d {h}h
+tx_GZ735QTDWP,{h}h {m}m
+tx_JXF877Y58D,Claimed
+tx_X43BN649C3,Coins
+tx_CT27Z5QXZ6,Player Ticket
+tx_K2JE76Z638,Trait Ticket
+tx_HY7DQNPK90,Trait Material
+tx_95RWKDGXRT,Cosmetic Currency
+tx_BZBSE52DHH,Premium Currency
+tx_V9830054XS,Player Shards
+tx_Z70PR5PYNY,"If a rarity with no items is rolled, the nearest rarity is used instead. Duplicate players give a breakthrough, then player shards once breakthroughs are maxed."
+tx_5DHTBBFC6B,"If a rarity with no items is rolled, the nearest rarity is used instead. Traits you already own become trait materials."
+tx_ZFYE3A1TJR,Player Recruit Rates
+tx_DZEWNGHZ0V,Trait Research Rates
+tx_G2YS4ZSTZT,NEW
+tx_VHPZZPEA36,Break {n}
+tx_AZP00WR13N,Shards +{n}
+tx_CTPT6ZEXH5,Mats +{n}
+tx_J2TT6QPKEW,Player Recruit
+tx_7NDPFWQK3B,Trait Research
+tx_PEPY8003ZH,Recruit Results
+tx_W65CM8AH9Y,Research Results
+tx_4TEB6HP1KS,"One of {n} named players · Duplicates give breakthroughs, then player shards once maxed"
+tx_59WEARXAX8,One of {n} manager traits · Traits you own become trait materials
+tx_VX3QB7MM4B,{n}
+tx_RN8BBG1945,Owned Players
+tx_8H54MJW9G9,Owned Traits
+tx_NKA1HERSF8,Recruit ×1\n{cost}
+tx_PMSGMBWBC3,Research ×1\n{cost}
+tx_QX8E358Q6Z,Recruit ×{n}\n{cost}
+tx_BTVG6HH172,Research ×{n}\n{cost}
+tx_XKMSGF34S8,{ticket}s are used first; the rest is paid in coins.
+tx_8VFYRT9Z7Z,{ticket}s are used first; the rest is paid in coins. Recruit ×{n} gets {pct}% off the coin part.
+tx_PWWSG8QS24,{ticket}s are used first; the rest is paid in coins. Research ×{n} gets {pct}% off the coin part.
+tx_73MWJV0ATK,{currency} owned: {n}
+tx_YB4E1VVJ83,"Buy the player you want. If you already own them, their breakthrough goes up."
+tx_GPSPYQ66XK,Breakthrough {n}/{max}
+tx_3HQMAP64E2,Breakthrough\n{n} Shards
+tx_QSJ3WK35GE,Recruit\n{n} Shards
+tx_VG3HEEDMGR,Purchased
+tx_0H7FHR6QYP,Craft traits you don't have yet with trait materials. Materials come from duplicate traits · the weekly pass.
+tx_RJVBAG6C5S,Craft\n{n} Mats
+tx_MZNWK9RXXF,Crafted
+tx_R1XHPF5T43,Trade one currency for another.
+tx_ZKH36Y2DHV,Level-up Currency Exchange
+tx_0JRJXF2REY,{cost} Coins → {gain} Level-up Currency
+tx_C9WWYJXBJX,Owned: Coins {coins} · Level-up Currency {levelup}
+tx_E51NFE2PBP,Buy Player Ticket
+tx_31B82ZYQSQ,{cost} Premium → 1 Player Ticket
+tx_QNHGVNK6CC,Owned: Premium {premium} · Player Tickets {tickets}
+tx_N2B0Y4ARHX,Buy Trait Ticket
+tx_AB22WAZYYC,{cost} Premium → 1 Trait Ticket
+tx_MCFZFZ092Q,Owned: Premium {premium} · Trait Tickets {tickets}
+tx_1EC5FAP3S1,Premium +{n} (dev)
+tx_ZEBPJPHXNM,Premium currency is only a number on this device (no payments).
+tx_FY1VMB56C5,Level-up Currency +{n}
+tx_S7SCK16K72,Premium Currency +{n}
+tx_45764DJF8W,Weekly Pass
+tx_RXTX0AN6X0,Rarity
+tx_R0CS831APJ,Rate
+tx_ERGBMXG6XM,Items
+tx_VSGTNVA2A5,Per Item
+tx_PWQQ7TRXFX,Recruit
+tx_MMHN8MG47X,Research
+tx_G5263CMAY1,Shard Shop
+tx_84MYVJ17GD,Craft
+tx_NW50K9HBCE,Exchange
+tx_33WRAHQJKW,View Rates
+tx_G4RY3DMSCT,Dev Only
+tx_6C29X8HMEF,Stats
+tx_E7KJ6CX53P,Effective = highest of manager (incl. modifiers) · assistant · dedicated staff
+tx_JZ767X3S8Y,Temporary Modifiers
+tx_7JFZR0GGGZ,No active modifiers
+tx_ZZYKV0Z49P,Equipped Traits
+tx_74QWFN3PWB,No traits equipped
+tx_ZZ96FNYRG1,Staff
+tx_CD2TKKXHA1,No staff hired — the manager handles every area
+tx_98DBCCX28N,Your Own Tasks
+tx_RYDV3SGR93,Training
+tx_9265Y1MCPW,Tactics
+tx_K3FRY03EQK,Knowledge
+tx_3P9850FA1G,Mental
+tx_Z1HJZ9M6K6,Analysis
+tx_SJJT6G3QTG,Management
+tx_NAVZGR46XF,Assistant Manager
+tx_MTHR7V5Z65,Training Coach
+tx_8P1HK13HA1,Tactics Coach
+tx_TZ9S2MMWFR,Mech Coach
+tx_V1DKE84TKG,Analyst
+tx_FHY5SA834Z,Budget Manager
+tx_BA7WKSR7T3,You arrange the training board yourself
+tx_HJ5140D8ZV,Tactics research — training grade unlocks use your own value
+tx_9S0ZQ6TATW,You assign mech research yourself
+tx_E5FXATCCK9,Pilot incidents are handled with your own value
+tx_XXHPJERZWS,You interpret opponent analysis yourself
+tx_PMHXE14RTX,You handle budget allocation · facilities yourself
+tx_R66AGDTB45,Delegated {n}/{total}
+tx_P4RN9YMP6Y,Weakest {stat} {value}
+tx_6FH9E36V7P,Covered by {owner}
+tx_D3S1XTR1W7,Manager (direct)
+tx_XMXNN0N5GX,Manager {value}
+tx_RDDPK9RCAW,Asst {value}
+tx_HKMY6VMYNW,{stat} {delta} · {weeks} wk left
+tx_QF5YDBZ2X4,{stat} {delta} · {weeks} wk left · {source}
+tx_TZARXTP3WC,Bonus points {points} · Equipped {n}/{max}
+tx_XS9W0R9CKV,Total weekly pay {amount}
+tx_SXR6V4JTZA,Weekly pay {amount}
+tx_ZVYS7H40JE,· {stat} — {task} (Manager {value})
+tx_A4NC7JYWQD,· Meetings · outings — always the manager personally (Mental {value})
 tx_7NY5TT0SJT,Top budget — you only run strategy cards and player talks yourself
 tx_0G5Q0GF81D,High budget
 tx_B761YRXYA9,Upper-mid budget — you set the training schedule yourself
@@ -1058,6 +1915,20 @@ tx_8C0EV0B2WT,Mech mastery +{n} (research mech)
 tx_B7Y34DBG5A,All stats +{n}
 tx_TC94WX8SJC,{stat} +{n}
 tx_8A7H4WFZ7K, · 
+tx_T4X3A068J1,Daily Training Plan
+tx_7R4RBG1N47,Training Courses
+tx_GJCV7B4T36,Clear Board
+tx_4ZC95B7Y0R,Coach's Pick
+tx_HN9EHFNSJ1,Confirm Training
+tx_BZ8CPNHN9V,{effect} · Up to grade {grade}
+tx_XM1SPM1990,Training effect ×{mult}
+tx_106TT6ZFPV,Training effect ×{mult} ({parts})
+tx_9HK1CX3AS3,Finance
+tx_DWEX5CKQ69,Traits
+tx_NCRNZK44YE,{stat}: Coach {name} {value}
+tx_8V6MVWWBTF,{stat}: Assistant {name} {value}
+tx_ME5MJKE2GD,Needs Tactics {n}
+tx_4X2JSX6BJA,{reason} (Tactics now {n})
 tx_QQVPQ29K6X,Training Fanatic
 tx_6HSK5W6C20,Mech Researcher
 tx_SJVSQJ1HZ2,Sponsor-Friendly
@@ -1106,6 +1977,11 @@ tx_53D7BPJQBK,Facility upkeep +{p1}%
 tx_FNN91QZ7T0,First auto-draw {p1} cards
 tx_6XQ3A0Q7JP,Max hand size {p1}
 tx_6HNYQXB6DT,First card cost each tactics phase +{p1}
+tx_BG2JBV86HB,You can equip up to {n} traits
+tx_F9NJXK31Y0,Unknown trait id {id}
+tx_W81J1DFTY1,You can't equip the same trait twice
+tx_YEBKNRWZXC,Trait not owned: {name}
+tx_KB62EJTC17,Not enough bonus points ({n})
 tx_YE7AM14AWS,OK
 tx_GS4FN31BK4,Cancel
 tx_R1DMEF1S3E,Close

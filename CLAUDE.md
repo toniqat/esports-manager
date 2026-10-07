@@ -122,6 +122,10 @@ Read the README of every row your task touches. Indented rows are submodules —
   popup / sheet / panel / HUD) or `UI_Comp_<Name>.tscn` (row / cell / chip / card placed inside others); the `.gd` keeps
   the bare name. A node instancing another scene is named `<SourceScene>_<Role>` (`BanPickPortrait_Pilot0`). Nodes whose
   `editor_description` starts with `[필수]` are bound without a null guard — removing / renaming them breaks the script.
+- **Display text = l10n key** — code `Loc.t(L.X)`, scenes hold `tx_…` literals, data rows `Loc.t(row.xxx_key)`;
+  `strict.orphans = error`, so a new Korean literal / scene text fails `build dev`. Shared words and helpers
+  (`ui.*` · `term.*`, `GameEnums.phase_label` …) — `docs/localization_design.md` §0.7. Scene text the script
+  overwrites → `auto_translate_mode = 2` on that node.
 - **Dev setup per PC**: `.mcp.json` pins `godot-mcp` to `addons/godot_mcp/plugin.cfg`'s version (bump both);
   copy `.vscode/settings.example.json` → `settings.json` and set the local Godot path.
 

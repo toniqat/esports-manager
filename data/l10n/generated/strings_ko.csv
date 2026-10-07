@@ -1,4 +1,88 @@
 keys,ko
+tx_ZXYEA8CBCF,적
+tx_EB4H7Z27VT,아군
+tx_17QG177S23,아군 또는 적
+tx_RCF4VQDV88,적 또는 포탑
+tx_FH23GCJ7EG,타일
+tx_9B4MN85VKK,최외곽 포탑
+tx_59Y5SSGNTR,적 포탑
+tx_9W4J07SVG2,아군 정글 타일
+tx_SPEVBRHFR6,적 정글 타일
+tx_TW91ZYM52K,정글 타일
+tx_15JDB1FGX2,자신
+tx_SBYKWG1EES,전장
+tx_X86PZPRSKR,{pile} — {n}장
+tx_WBQREDCZ9E,비어 있음
+tx_1MA0RVZENK,버린 카드
+tx_R04J09DW7N,비용 -{n}
+tx_2E72YD71KC,보존 {n}
+tx_VHMMNFFYWY,숨김
+tx_T9F7BYCK53,표시
+tx_K7ND1SRGXE,보존 취소
+tx_ZVPSKT5FFQ,찾기 취소
+tx_2S6X77XV46,여기에 놓아 보존
+tx_30NPFP40NJ,여기에 놓아 버리기
+tx_GGSW07BJY4,흡수
+tx_HDVZNSTZHC,교전
+tx_0967A3YSR1,교전 (AI)
+tx_3AHDMYE7KS,결투
+tx_6GB005WWZR,결투 (AI)
+tx_5GXNMFJ98M,승리
+tx_HW0K1DQR7J,패배
+tx_3X3GHP6YPG,교전 결과
+tx_X9YH4WJVF4,턴 {n}
+tx_677Y9RF7M6,턴 {n} / {total}
+tx_58VCZ43AB8,교전 종료
+tx_PBRWC7X4KR,턴 {n} 시작
+tx_3PYG9VZV4Q,{name}의 차례
+tx_ZSKHJTZV6B,처치 {n}
+tx_25TCMGCZEF,시작 위치 — 이대로 교전을 시작한다
+tx_RGYZZ6BFJ5,시작 위치
+tx_DEJKT3AEGZ,교전 종료 — 양측 전멸
+tx_AP1NR7N7JF,교전 종료 — 적군 전멸
+tx_N96FRD4BSV,교전 종료 — 아군 전멸
+tx_0A0WCRAVBT,교전 종료 — {n}턴 완료
+tx_ZGTQ8FD03J,약자 멸시 x{n}
+tx_H9SA47D3DE,기절
+tx_PB324TP8B1,기절!
+tx_043E3Z38C6,오버클럭
+tx_SSD270N1SF,불굴!
+tx_FC0GG3J6N4,-{n}  포탑 처치
+tx_V589CQ8M6Z,포탑 T{tier} ({lane})
+tx_JKTA5KTT90,정글러를 끌어다 시작할 정글 타일에 놓는다
+tx_FNC5VVMV4R,전투 시작
+tx_RGBVH85TFC,강화 · 알파
+tx_16KSEBFD67,다음 [단계 A] 사용 시 [단계 B] 를 덱이 아닌 손에 생성
+tx_FYHMPX0G5Z,강화 · 베타
+tx_S2C1ARN50Z,다음 [단계 B] 사용 시 토큰 +{n}
+tx_MF1RG2XJA7,강화 · 감마
+tx_VGZFV8N8KH,다음 [단계 C] 사용 시 성장 점수 +{pct}%
+tx_RCPH2TXG6X,전령
+tx_XQ2PPDTRRR,용
+tx_3Y0ECJAAHT,{name} — 아군 무혈 획득
+tx_EASJYYJ9SP,{name} — 적군 무혈 획득
+tx_30PGAN3RWM,{name} 등장 — 전투에 참여하시겠습니까?
+tx_QWFB45AWP4,참여
+tx_3MA5JECS5S,미참여
+tx_04ERNCHTGZ,보상: [전령 제압] — 최외곽 적 포탑에 피해 {n}
+tx_2YWT10DFT0,보상: [용 보상] ×{n} 를 덱에 추가
+tx_VZSZS9D73E,처치 -{n}
+tx_DX3WCA5MG9,명중 {pct}%
+tx_S5J84M5B8R,명중 {pct}% · 연속
+tx_5RVGY55A59,보호막 +{n}
+tx_W6X01DNJ5J,스킬 없음
+tx_R0FZ3M3V8B,사용 가능
+tx_2HPF0T6A3A,재사용까지 {n}턴
+tx_EAZD697HN6,토큰 {cur} / {max} · 사용에 토큰 {cost}
+tx_DG5378RKCJ,패시브 · 토큰 {cur} / {max}
+tx_R7WMPP0AXY,패시브 · 상시 적용
+tx_H9QM09GHQ8,감독 특성
+tx_E684S0YNFT,개시 전략 포인트
+tx_0SNGNNX6ME,첫 자동 뽑기
+tx_ME11AGHCAW,손 상한
+tx_4K4WMMM811,첫 카드 비용
+tx_AHZVW1863N,전략 포인트 가속
+tx_2ZDNTZRMY2,전략 포인트 가속 · {turns}턴마다 {delta}
 tx_BNZABB803S,훈련 EXP +10%
 tx_1MD83CR2E7,스탯 여섯 모두 +2
 tx_GAAZ5HPRXK,샐러리 −3
@@ -338,6 +422,42 @@ tx_EPJQNJA7F7,시전자의 성장 점수 100 소모 및 대상 공격력 +2
 tx_RHE0637Z32,"대상은 전장 이탈까지 받는 피해 +25%, 대상의 성장 점수 10%만큼 [현상금] 지정. 중첩되지 않음"
 tx_70N6FJ3FJ0,공격 — 대상의 [현상금] 2%만큼 피해
 tx_1MFHFCFRJE,대상을 시전자의 타일로 이동. 3턴 간 교전 — 범위 내 모두 참여
+tx_XJ3733JBC4,능력치
+tx_YD2EQQHJ2J,샐러리
+tx_DWRZXTZQ0S,성장
+tx_H8X320PPVZ,카드
+tx_PG7FCBCBZW,원소속 {team}
+tx_5FY78SBB83,최대 Lv {level}
+tx_CTQQ4XFQEQ,돌파 {n} / {max}
+tx_9EZ04GCN4E,중복 {n}
+tx_PN4P0CH5VW,샐러리 (Lv {level} 기준)
+tx_TR71X7EVNB,최대 레벨 도달 · 누적 {exp}
+tx_3VKTC1NERB,능력치 · Lv {level}
+tx_2SNR4GA6TY,능력치 · Lv {level} · 돌파 {bt} 반영
+tx_4W7V6DAZPB,능력치 · Lv {level} (영입 시)
+tx_0MBQ7AV2G7,종합
+tx_KG9T7XN1BP,{n}단계 이후의 중복은 선수 파편으로 바뀝니다
+tx_YV3JCRK2S2,달성
+tx_6GEAQ9MXY6,다음
+tx_HSQ15CV8Y2,파일럿 카드 · 돌파로 교체됨
+tx_XACDTDAQPV,미보유 선수는 레벨업할 수 없습니다
+tx_BJC1VNRZ53,최대 레벨입니다 (Lv {level})
+tx_BVZ98DQNCY,레벨업 재화가 부족합니다 ({cost} 필요 · 보유 {have})
+tx_KQ3ABKZKS0,레벨업 재화 {have} 보유 · 최대 레벨 +1 = 런에서 고를 수 있는 레벨 +1
+tx_92R8M8EJTT,레벨업  ·  {cost}
+tx_97RM66T6H0,Lv {level} — 저장 실패: {error}
+tx_8R6YZ1P81K,최대 레벨 Lv {level} 달성
+tx_2AGPWN10YF,아직 보유하지 않은 선수입니다.\n상점의 선수 가챠나 파편 확정 구매로 영입합니다.
+tx_5MS4DQRXJH,선수 데이터를 읽지 못했습니다: {error}
+tx_GMWHDWE858,{name} 최대 레벨 Lv {level}
+tx_0QNPGM6VF5,상점에서 영입
+tx_6K04AA443J,선수 EXP
+tx_JEPJHXHB1A,훈련 EXP 보너스 (돌파)
+tx_FN1RTFB39A,초록 숫자 = Lv1 · 돌파 전 대비
+tx_E8MWC8R25R,돌파 — 중복 영입마다 한 단계
+tx_MJR84KHMPT,돌파 표 없음
+tx_WEMGESKYB6,보유 선수
+tx_YEC6P2JRFH,선수 파편
 tx_H1V09QCXSD,단기 훈련 코치
 tx_E731FZHB4R,전술 컨설턴트
 tx_8SZM4HBC56,메크 연구원 초빙
@@ -364,6 +484,187 @@ tx_XAR8PQMZNV,지난 주 전승한 팀에게만 들어오는 성과 연동 스�
 tx_3N2P9M4E9W,저예산 팀용 지역 스폰서 — 수입이 늘지만 홍보 일정이 훈련 시간을 조금 잡아먹는다
 tx_AXEKA79XKE,잔고가 바닥일 때 시설 유지보수를 2주 미룬다 — 유지비가 없지만 사건이 잦아진다
 tx_MB49GSHBFN,잔고가 바닥일 때 스태프 연봉을 3주 깎는다 — 사기가 떨어져 훈련 효율이 준다
+tx_1HENHSWBBV,삭감
+tx_511JE6DQB1,한 번 더 눌러 확정
+tx_J4YTK7VVDS,진행 중인 런이 없습니다
+tx_Z3Y66BXDFR,잔고
+tx_FG04N4WSYY,시설 적립금
+tx_DM158Y7SJ6,지난 주 정산
+tx_M06VBCHAA0,아직 정산 기록이 없습니다 — 일요일 주 마감에 정산됩니다
+tx_MXXEN4NZT8,순수지
+tx_SQF813637S,흑자 배분
+tx_JFNB4YBFQ3,특별 지출
+tx_WYA8YC4SQD,최근 기록
+tx_25RMDAJ5X7,기록 없음
+tx_0CX1TFBM9T,훈련
+tx_21J7S51M54,시설 적립
+tx_FVYGWSZW7J,복지
+tx_FWWJNTNYP8,훈련 · 복지 지원 중단
+tx_BVZ04VJAS3,시설 적립금 {amount} 전용
+tx_XTVPW36TS4,시설 Lv{from} → Lv{to} 강등 (미납 {amount})
+tx_C839D4YFV0,훈련 지원 삭감 {weeks}주 (훈련 EXP −{pct}%)
+tx_HQQ1QK18GW,재무 적자 {net} · 긴급 삭감 {n}건 — 재무 카드 확인
+tx_4RHZPMT3BW,재무 정산 {net} · 잔고 {balance}
+tx_VZWSGDJMJA,특별 지출 {amount}
+tx_BJG2P5WWYS,만료: {names}
+tx_1PAC25VTPQ,자금 부족
+tx_5MQ91AQVZZ,알 수 없는 항목
+tx_4YVAEG0ECQ,진행 중 — {weeks}주 남음
+tx_WPMNRYDWSD,동시 진행 최대 {n}건
+tx_D7GGSYDVRX,담당 {name} 쪽이 더 높아 효과 없음
+tx_RTHA5YAC79,스태프 연봉이 없어 효과 없음
+tx_P3Y8G1KRE6,유지비가 없어 효과 없음
+tx_9QH0GWP11D,잔고 부족 — {amount} 필요
+tx_X1R51424TJ,조건 오류
+tx_748T0JD0MH,시설 Lv{n} 이상 필요
+tx_CEHH3QBFTP,시설 Lv{n} 이하 팀 전용
+tx_XX8567DQ94,주간 스폰서 {amount} 이하 팀 전용
+tx_YPG17RRBQG,잔고 {amount} 이하일 때만
+tx_55ZC8KRDA6,지난 주 {n}승 이상 필요
+tx_GHSVC43HP2,감독 {stat} {delta}
+tx_30X2WR33SP,훈련 EXP {pct}%
+tx_CWJ6DE9DP8,스폰서 수입 {pct}%
+tx_YC0EYSGFNS,시설 유지비 {pct}%
+tx_BT8KJSTKS7,사건 확률 {pct}%
+tx_2TSKW275F0,스태프 연봉 {pct}%
+tx_T1M9PEN089,재무
+tx_EK67F07FWA,재무 · 시설 Lv{level}
+tx_MPW438S5J7,첫 정산 전
+tx_Q52XWB8S4X,지난 주 {net}
+tx_MKKQ4Z5M2Y,지난 주 {net} · 삭감
+tx_JH732MWHD3,재무 · 시설
+tx_QGCKXQ941D,담당: 감독 — 흑자 배분을 직접 정합니다
+tx_7QKSR4PVYS,담당: {name} — 흑자를 자동으로 배분합니다
+tx_C696EEJ9Z1,"이번 주 예상 수지 {net}  (수입 {income} · 지출 {expense}, 보너스 포함)"
+tx_6FBWWWX3V2,잔고가 한 주 고정 지출({amount})보다 적습니다 — 적자가 나면 강제 삭감
+tx_QBK71YGSAE,훈련 지원 삭감 중 — {weeks}주 남음 (훈련 EXP −{pct}%)
+tx_GZYPKCSGMH,성적 보너스 ({win}승 {loss}패)
+tx_P32YKYKYRT,스태프 연봉
+tx_00XQNCZFRD,→ 잔고 적립 {reserve} · 훈련 {training} · 시설 적립 {facility} · 복지 {welfare}
+tx_A2CBRDMBY4,삭감 · {cut}
+tx_EBDF62NZNS,특별 지출 −{amount} (구매 즉시 잔고에서 차감 · {names})
+tx_BA5XCYYSAC,특별 지출 만료 · {names}
+tx_25PKBYA5Q3,"흑자의 {pct}%는 잔고에 남고, 나머지를 세 곳에 나눕니다. 효과는 다음 한 주."
+tx_YMK6HF0KET,{name} 담당 — 자동 균등 배분 (무난하지만 최적은 아닙니다)
+tx_PDF6M4TMFX,다음 주 훈련 EXP 최대 +{pct}% (주 {amount} 지출에서 최대)
+tx_J9HW9G18D4,업그레이드 자금으로 모읍니다 · 적자 때 비상금
+tx_4DNE40K656,최고 레벨 — 적자 때 비상금으로만 쓰입니다
+tx_2Y4X334GGR,다음 주 사건 확률 최대 −{pct}% (주 {amount} 지출에서 최대)
+tx_5CEBKKHSAS,이번 주 적용 중: 훈련 EXP +{training}% · 사건 확률 −{welfare}%
+tx_2HH94J6ARY,시설  Lv {level} / {max}
+tx_CPW59P2CKT,지금  {effects}
+tx_KWW448S0GH,다음  {effects}
+tx_SAXP078SDD,훈련 ×{train} · 숙련도 ×{mastery} · 사건 ×{incident} · 수입 ×{income} · 유지비 {upkeep}
+tx_YN9S7WB6S4,"비용 {cost} — 시설 적립금 먼저, 모자라면 잔고 (가용 {available})"
+tx_JTTYE38FPY,시설 업그레이드 → Lv {level}
+tx_63XDT8NVFN,한 번 더 눌러 확정 (−{cost})
+tx_XHH41J8S28,자금 부족 — {amount} 필요
+tx_SBD8ZAF5DC,잔고에서 바로 냅니다 · 효과는 정해진 주 수 동안 (동시 {n}건까지)
+tx_S2XBTE0K8X,진행 중 · {name} — {effect} · {weeks}주 남음
+tx_MVMJCRNWYR,{effect} · {weeks}주
+tx_JQ9XJ51YJ0,구매  {price}
+tx_N87J4KZFF1,계약  무료
+tx_YKSPS14YC2,잔고 {amount}
+tx_6DZQQSQ3VE,스폰서 수입 (시설 ×{facility})
+tx_1ZGSEKD4JD,스폰서 수입 (시설 ×{facility} · 보정 ×{mult})
+tx_VGMAD0GE7N,시설 유지비
+tx_5ATMNYAZ8A,시설 유지비 (보정 ×{mult})
+tx_S8GB2PQJET,턴\n넘기기
+tx_5R34V4TK24,당신의 차례
+tx_Y3YPZRFYP0,상대 차례
+tx_TMPV0HMGH4,다음 →
+tx_562ABYGNTQ,Play Again
+tx_DJ82GY9HFT,좌
+tx_KQJ52RR8V2,중
+tx_N708DPBCXW,우
+tx_MSBN9RKNCE,정
+tx_FMGJ6K74YW,돌봄 {care} · 받은 피해 {taken}
+tx_QR5G5BG3F0,준 피해 {dmg} · 받은 피해 {taken}
+tx_7DPMA1JK2T,준 피해 {dmg}
+tx_N5XY7QMCN0,{n}턴 뒤 등장
+tx_TQ6125AMEJ,지금 열려 있다
+tx_6DZPWWFA96,보상 카드를 찾지 못했다
+tx_QPYR19J6FG,획득 즉시 손으로 들어온다
+tx_VF1A5H49TP,획득 시 덱에 섞여 들어간다
+tx_0D83B3BXPJ,다음 {n}
+tx_AXVQDH455A,다음 뽑기 {n}
+tx_K2TW9E6P0S,처치 +{n}
+tx_PZ3FF17CJS,찾기 {n}
+tx_T4AQ20H32S,충전식
+tx_4E9EYFHCMT,패시브
+tx_QTZR66E1TH,스킬 없음
+tx_D6RF6A0BB1,초상화 없음
+tx_R7705DVY0V,메크 미배정
+tx_YW85GRB6H1,부활까지 {n}턴
+tx_QYZSXYDBGH,라인
+tx_48PKBPN65P,라인전 스탯
+tx_YR9NHRBBHY,회피
+tx_Q7B8HCWAYY,전장 회피 (카드)
+tx_2955G7QSVP,매복
+tx_6TYZZH2V4Y,고정
+tx_0ZKD9B5X7N,적립
+tx_5SS28F57B2,성장치 적립 배율
+tx_9E0V5EYSFR,공격
+tx_E7NFE1MJTE,일시 공격력
+tx_GGWGZGXCSJ,보호
+tx_4T2NQHMG7V,체력
+tx_80RR2RVTFW,공%
+tx_85C0K13TJK,체%
+tx_BZT1S9MYPH,성장 적립
+tx_AFG7QR8X05,공격력 %
+tx_BHPQBY192T,최대 체력 %
+tx_HQ0FSPBFNQ,{kind} (그 밖의 영구 가산)
+tx_JB2XA9GEHD,기본 최대 체력
+tx_KKM3DF9426,성장
+tx_RBMEVC2P2S,현재 체력
+tx_07SNADVFZF,기본 공격력
+tx_75P2CDB8G1,일시 효과
+tx_205QKFD76D,최종
+tx_HKC6TKSA2K,기본
+tx_50MCWKXH27,특수 능력
+tx_9CFJV5MVD2,인게임 증가
+tx_HEAG7E5FVG,대등한 상대에게
+tx_2383X7Y4A3,기체 체력
+tx_MQ6WNXCW2R,파일럿 기본 최대 체력
+tx_XBRHV1EABJ,기체 공격력
+tx_56C8HB8TXC,파일럿 기본 공격력
+tx_CYWJYN11E6,기체 존재감
+tx_YSYYDDQGVQ,명중 / 회피
+tx_QYWSRHHVJD,최종 명중
+tx_J1FR6RX80G,최종 회피
+tx_VEHXJB9DR1,적립 배율
+tx_QD88DD25TB,영구 가산
+tx_TE3CH6W9RC,성장치
+tx_RW7CT7ECA2,상태
+tx_BFZGKFQDSF,다음 작전 단계까지 이동 없음
+tx_4RDZ2WE931,위치
+tx_KD7JS3VSS3,일시 가산
+tx_Y9PAH9SCZM,최종 공격력
+tx_WMFSEXBJBJ,이 효과
+tx_T8FGVS8PZG,영구 가산 합계
+tx_MJDX8R0FTD,영구 배율 합계
+tx_2BD908D740,영구
+tx_N3NW48PPT7,작전 단계까지
+tx_YZASNH48VB,{n}턴
+tx_WANJ929H98,(작전 단계까지)
+tx_04XW5YCATP,({n}턴)
+tx_F27NAHX4TP,"카드 효과로 적에게 {attack} 공격할 시, 명중할 확률을 결정합니다."
+tx_M0J3JZ6JMR,"적의 카드 효과로 {attack} 공격을 받을 때, 빗맞힐 확률을 결정합니다."
+tx_WVQ0E4DXRS,"{engage} 교전 중, 적을 공격할 때 명중할 확률을 결정합니다."
+tx_2D5M3A87JK,"{engage} 교전 중, 적의 공격을 받을 때 빗맞힐 확률을 결정합니다."
+tx_1201TH9NT4,"존재감이 높을 시, 교전 중 공격 대상이 될 확률이 높아집니다."
+tx_MP25TF18FJ,이 카드가 남긴 영구 가산분. 만료도 해제도 없고 같은 카드를 다시 쓰면 누적된다.
+tx_N34BKW73WF,카드가 아니라 메크 패시브가 직접 쌓은 몫. 출처를 카드 이름으로 부를 수 없어 한 칸으로 묶었다.
+tx_B8MQ74WDJZ,전장 명중 판정에만 곱해진다. 교전 무대는 자기 확률 구간을 쓴다.
+tx_1Z076S4PF9,성장이 아니라 성장치 적립에 곱해진다. 안전한 파밍과 완벽한 마무리가 같은 칸을 쓴다.
+tx_3PBASH0HTY,카드가 얹은 임시 가산분. 성장 재계산에 지워지지 않는다.
+tx_9GBQDV90TD,피해를 체력보다 먼저 먹는다. 본진 복귀 시 사라진다.
+tx_XCY75J2M5N,"기체 스탯이 파일럿의 기본값이 되고, 거기서 성장이 붙는다."
+tx_8WZGVJ6X01,MVP
+tx_RZN79649QG,MATCH MVP
+tx_TWDEFMDMTZ,인게임
+tx_TJEJTTZ9PP,파일럿
+tx_840PD89SBP,메크
 tx_KXN7MDVXDA,추적
 tx_Q2YD01V4X9,대상이 교전에 참여하면 시전자도 함께 참여한다
 tx_HPPDS4VKWD,반응 장갑
@@ -417,10 +718,214 @@ tx_XVGC6KXT1R,찾기
 tx_YX872B2X4H,생성
 tx_5D3XF18V32,회복
 tx_PNFKKTFY12,처치
+tx_DBE01WV863,ESPORTS MANAGER
+tx_C43HAK9QB4,진행 중인 런
+tx_5WJB7HWPMA,경기 진행 중
+tx_8QB02J8X4E,진행 중인 런이 없습니다
+tx_WGC1W057NT,아래 '새 런' 으로 시즌을 시작하세요
+tx_VCBJXS80JH,새 런
+tx_X0EYJ8K5SH,이어하기
+tx_B6XWT6321G,감독 Lv{level} · 보유 선수 {pilots}명 · 특성 {traits}개
+tx_5065WMC273,{year}년 {month}월 {day}일 ({weekday})
+tx_5XHX4A8MQY,우승 트로피 {n}개
+tx_2BHC8NJGZA,리그 미시작
+tx_1W517T1FD5,현재 리그 {rank}위 ({win}승 {loss}패)
+tx_8B4JM1Z2M6,마지막 저장 {time}
+tx_ZWP3Q5KXEX,불러오기 실패: {error}
+tx_86MJJTCRG4,런 삭제 실패: {error}
+tx_NZS1Y08KJK,진행 중인 런을 포기할까요?
+tx_Y3AD9RSE4W,지금까지의 진척으로 실패 정산하고 런을 끝냅니다.\n점수 · 재화 보상은 받지만 런은 되돌릴 수 없습니다.
+tx_58RJZ7FA5S,포기하고 정산
+tx_QFKVYHXZQ7,홈
+tx_MRYQA72YTJ,컬렉션
+tx_FM5AH7PT3F,상점
+tx_XCSB9YZRPT,패스
+tx_3Z7X8EGGT2,재화
+tx_M0TVW5C5V0,레벨업
+tx_H3S5FP9V1B,선수권
+tx_QR44K4G430,특성권
+tx_A0BZZABE9N,파편
+tx_D3T88QT9G4,감독 유형 저장 실패: {error}
+tx_Z7T7H6V81J,감독 유형 선택
+tx_MC13K8N0V7,프레스티지 — 감독 유형 재선택
+tx_M5J8SX6BBY,첫 런을 시작하기 전에 감독 유형을 고르세요. 스태프가 없는 영역은 감독 스탯으로 운영합니다.
+tx_R46BWWGHGJ,새 감독 유형을 고르면 프레스티지가 끝납니다. 같은 유형을 다시 골라도 됩니다.
+tx_PWF07A5A7H,이후 변경은 프레스티지로만 가능합니다.
+tx_JBCN4AT26F,Lv1 · 스탯 제거가 초기화됩니다.
+tx_DQC9ZE38ES,유형을 고르세요
+tx_XPFT0WY8DB,{type} 감독으로 시작
+tx_K1ZQ410BJ2,{type} 감독으로 프레스티지
 tx_J99WKD5PN8,운영형
 tx_KQSXCRDMQT,실전형
 tx_T2Z72WAY5Q,조직 운영에 밝은 감독 — 관리 · 멘탈 쪽으로 조금 기운 고른 분배
 tx_PVYTSHGS8N,현장 출신 감독 — 훈련 · 지식 쪽으로 조금 기운 고른 분배
+tx_BGMWN33W4F,프리셋 {n}
+tx_4T5M5K3V6Y,재설정 필요
+tx_CQAMS06S3H,● 사용 중
+tx_VDT30HFYH5,특성 {n}
+tx_3Q1VPP8XMD,전문화 +{n}
+tx_S620BP20NR,특성 가챠 · 제작으로 획득
+tx_S5NAQVRYNS,런 클리어 (최종 국제전 우승)
+tx_P955SQ3TF7,진엔딩 달성
+tx_D8FE26XJFP,한 런에서 {n}승
+tx_8G1AQW23DP,한 런에서 우승 {n}회
+tx_MEDD3BR55H,한 런에서 페이즈 {n}개 통과
+tx_F8DYXECV40,한 런에서 {n}연승
+tx_FGW64XDW0B,한 선수와 외출 {n}회 (한 런)
+tx_NFTQEBMQN9,한 런에서 내 선수 MVP {n}회
+tx_KH3QMFGTYE,감독이 직접 관리해 흑자 {n}주 (한 런)
+tx_CN4XCZ8HA8,런 {n}회 완료
+tx_YFW3R69TW6,{team} 팀으로 한 페이즈 이상 마치기
+tx_TFTZTARDWX,보너스 점수 {n} 이상으로 한 페이즈 이상 마치기
+tx_W3RT98C0SS,알 수 없는 스탯
+tx_TA4GEJM732,제거 포인트가 없습니다
+tx_MWVEPEZET8,1 인 스탯은 낮출 수 없습니다
+tx_T1BFS0GSGZ,더 뺄 전문화 포인트가 없습니다
+tx_W7C3ZRF4RR,남은 전문화 포인트가 없습니다
+tx_DA5HH0PHWQ,스탯 상한 {cap}
+tx_BKV964Z3VV,프리셋이 없습니다
+tx_Q8H1F03VCP,프레스티지 프리셋 — 지금 포인트로 재설정해야 쓸 수 있습니다
+tx_58W8XQG7XP,전문화 포인트 초과 ({used} / {total})
+tx_HYK8X0Y1FR,전문화 포인트가 음수입니다
+tx_Y4C38QBE7Z,{stat} 스탯 상한 {cap} 초과
+tx_SM2J7D8VWD,감독 Lv{level} 부터 프레스티지할 수 있습니다
+tx_1TPBDD4JDD,아직 잠긴 특성입니다
+tx_HQVBRC7GPZ,장착 칸이 가득 찼습니다 ({n}칸) — 하나를 빼고 고르세요
+tx_6ZMPGY904G,이 프리셋 사용
+tx_G60RQZ2M86,사용 중
+tx_PBX5T726N6,저장 후 사용
+tx_VP2K42B9Z4,저장
+tx_WM0N1FR8F2,저장됨
+tx_PW7CEB3PC4,저장할 수 없습니다 — {error}
+tx_5N2ANQY6KC,사용할 수 없습니다 — {error}
+tx_2AS2JFBWZ3,{preset} — 다음 런에 사용합니다
+tx_E078H6ENKH,{preset} 저장됨
+tx_E63PYF62MR,{type} 감독
+tx_JRKT78EBDX,프레스티지 {n}회
+tx_N88PJGGH8P,프레스티지
+tx_P6CE6V2BZ8,Lv{level} 프레스티지
+tx_G63N72TB77,레벨업마다 제거 포인트 {n} · 스탯 하나를 영구히 낮추면 전문화 포인트 1
+tx_R5JTRZW8YZ,제거 포인트 {n}
+tx_3D2K7Z42ST,전문화 포인트 {used} / {total}
+tx_W2GGDAXSS9,최종 = 유형 − 제거 + 전문화 · 상한 {cap}
+tx_25JH8D9ZKC,유형 {n}
+tx_REG3N92165,제거 −{n}
+tx_FSJJMA6X8A,전문화 +{n}
+tx_N00VCXQP2R,저장하지 않은 변경이 있습니다
+tx_PC4VC518EH,{from} 의 변경을 버리고 {to} 로 넘어갈까요?
+tx_KGQJMSCC5A,버리고 이동
+tx_RK53KKTVV9,프레스티지 프리셋은 재설정한 뒤에 고칠 수 있습니다
+tx_E7VHX9Q864,보너스 점수가 0 미만 — 이대로는 저장할 수 없습니다
+tx_VXPQ8NAT9G,{stat} 스탯을 낮출까요?
+tx_BG6S0NCNW3,제거 포인트 1을 써서 {stat} 기본값을 {from} → {to} 로 영구히 낮춥니다(모든 프리셋).\n대신 전문화 포인트 1을 얻습니다.\n프레스티지 전까지 되돌릴 수 없습니다.
+tx_7WYGFMVN1R,{stat} −1 — 전문화 포인트 +1
+tx_KXJ7B4DMZ8,{preset} 재설정됨 — 전문화 포인트를 다시 나누세요
+tx_7521E3DYNY,프레스티지할까요?
+tx_CZ8J9C4GP0,"Lv1 로 돌아가고 스탯 제거가 풀리며, 감독 유형을 다시 고릅니다.\n기존 프리셋은 재설정 후 사용 · 새 프리셋 +1.\n보상: {rewards}"
+tx_9T0XXJTV5D,"Lv1 로 돌아가고 스탯 제거가 풀리며, 감독 유형을 다시 고릅니다.\n기존 프리셋은 재설정 후 사용 · 새 프리셋 +1.\n보상: {rewards}\n(저장하지 않은 프리셋 변경은 버려집니다)"
+tx_BMK6ZN3V5X,유형 고르기
+tx_P896WEQNY0,프레스티지 완료 — {rewards}
+tx_XHV95P4ZR7,장착 {n} / {max}
+tx_C89E7AZ489,보유 특성 {n} — 눌러서 장착 / 해제
+tx_N8R29A5R8G,잠긴 특성 {n}
+tx_Q7PEKJNA02,부정 특성 제공 +{gain} · 긍정 특성 소모 −{cost}
+tx_5BMYK6AN8W,0 미만이면 저장 · 사용할 수 없습니다
+tx_KDW47HR37K,남는 점수는 런 점수에 더해집니다
+tx_KXA2JT6S41,아웃게임
+tx_6F0W7MPDEQ,인게임
+tx_XGHFVCZ60Z,해금 조건 · {cond}
+tx_N8P75GD7BK,보너스 −{n}
+tx_Q120DT4YPQ,보너스 +{n}
+tx_AZE74DV2XZ,NEW
+tx_TK0RD2JPFF,장착 중
+tx_G048A7DZEH,빈 칸
+tx_CT0XBF6ME9,특성
+tx_0TVPZHMHDQ,보너스 점수
+tx_JNX31TB32C,프리셋 — 전문화 분배 + 특성
+tx_96VG8VVT6V,프레스티지 프리셋 — 재설정해야 쓸 수 있습니다
+tx_JXE6K3B8JS,"전문화 분배가 비워지고, 특성은 그대로 남습니다"
+tx_BG420X1TPQ,감독 스탯
+tx_GYJVQGJEM9,없음 — 기벽 훈련 타일 · 메크 연구로 얻는다
+tx_WZDGTR97KE,진행 중인 런이 없다
+tx_43FCJDADR5,코치에게 맡기기
+tx_S3TMQTME0B,메크 코치가 없다 — 선수마다 직접 연구 메크를 고른다
+tx_9795WB8ABE,미숙
+tx_A871893SYV,보통
+tx_VBZCYYXC6P,능숙
+tx_0S2RTBPFAV,마스터
+tx_YN458RG799,메크 연구
+tx_ABCFSECHD1,런 밖
+tx_DC141DPMTX,주간 연구 +{n}
+tx_1R29MF9ZRE,빈 자리는 코치가 채움
+tx_H26DNEN9EX,연구 메크 미지정 {n}명
+tx_AYCQXCCH15,{n} / {total} 지정
+tx_5XP7EXN0MZ,담당: {name}   ·   지식 {value}
+tx_NPNPJYNJ78,획득 배율 ×{mult}
+tx_AVASF1MNRA,등급 보정 (스탯 6종)   {tiers}
+tx_9C36WN5CN9,주 마감마다 연구 메크 +{research}  ·  경기에 탄 메크 +{match}  (배율 전)
+tx_0R1EGAX9DP,기벽 — 연구 메크가 있으면 주 마감 {pct}% 확률로 획득  ·  {odds}
+tx_9YHCDH1Y7N,연구: {mech}
+tx_KVG9N478Y5,주 마감에 코치가 지정
+tx_1AFM6E35JF,연구 미지정
+tx_PW12RBBJ9E,숙련 상위  {list}
+tx_1D7T0ZQE77,기벽  {n} / {slots}
+tx_D1SA7C6KSP,최대 {n}칸
+tx_VDJKS7MNHE,BAN
+tx_VX9Q85PM8S,드래그 드롭으로 메크-파일럿 지정 변경
+tx_6Z915A6SVE,BAN
+tx_M08KQVQN65,패시브 없음
+tx_MJJHA43Q8J,이 기체에는 고유 카드가 없다
+tx_XVKPY5NPC4,게임 시작
+tx_B3TD0XDDBT,기체 능력치
+tx_3R8J1QNVYD,숙련도 (등급 보정 = 스탯 6종)
+tx_1R98FHMXSQ,장착한 기벽 없음
+tx_PY288FR27W,메크 패시브
+tx_DKVRHA76D6,이 기체에는 패시브가 없다
+tx_FKR497Q4GS,이 기체에는 고유 카드가 없다
+tx_KCV1PKAM59,이 기체를 배정받은 파일럿은 아래 카드를 장수만큼 덱에 넣는다.
+tx_MFVJR117B3,주력 메크
+tx_5A4VYR9MJQ,분석 담당 없음 — 데이터만 보입니다. 해석은 감독이 직접.
+tx_VGK1FJEFJY,경기 준비
+tx_HQ94NZJ6WP,경기 시작
+tx_5AJE6SAZ26,상대
+tx_GPNME2ADWA,기벽 {n}
+tx_2C7Y2JDD7V,{role}   ·   HP {hp}   ·   ATK {atk}   ·   존재감 {presence}
+tx_S32JTGTHEG,메크 카드  {n}종   ·   카드를 누르면 설명
+tx_J3FQW65YX4,{name}  {tier} {value}  (스탯 {bonus})
+tx_GKJ2J8BS4G,{name}  {tier} {value}  (스탯 {bonus} · 기벽 +{quirk})
+tx_ZFKRFPCAS2,분석가 추천 밴 — {pilot} 의 주력
+tx_ZKEE3G9T6P,상대 예상 픽 — {pilot}
+tx_15SXME7CFS,생성 전용
+tx_WCXP7CPSKQ,밴 확정
+tx_ZEXW72B4FP,픽 확정
+tx_76TDNRXT2H,상대 차례
+tx_ZPK44AJ0YK,선택 불가
+tx_YY1PTH9QJN,추천 밴
+tx_HF3CR7Q56F,예상 픽
+tx_TZBXEJKN0V,기벽 +{n}
+tx_SSCFWKVHRS,내 차례 밴
+tx_EGTM3JJJMY,내 차례 픽
+tx_D141ZC4RBA,상대 차례 밴
+tx_NAM5AY7ESD,상대 차례 픽
+tx_JFNQCJHJWF,기벽 — {pilot}  {count} / {slots}  (스탯 +{total})
+tx_HJGDFGJ4TM,{effect}  (조건 미충족)
+tx_5YCR7YFGNT,합계 {total}
+tx_7A1FMDGC3E,정보 없음
+tx_4Y7CG5R478,분석 {tier}단계 · {label}
+tx_4P15WEPRM6,내 분석 {have} · 다음 단계 {need} 필요
+tx_CHAJA53SVW,분석 · {who}
+tx_4GMKW7SCDD,이름 · 역할
+tx_Q605SZ346S,스탯 대략
+tx_D20PGJE2CX,스탯 · 주력 메크
+tx_AR1MKMRGM3,전부 공개
+tx_SCRCRND2B5,자료가 부족해 상대 전력을 읽기 어렵습니다.
+tx_54201ZNSN2,경계 대상: {role} {name} — {stat} 수치가 가장 높습니다.
+tx_Y52NPQTAB1,추천 밴: {mech} — {pilot}의 주력 메크입니다.
+tx_8F1HRN6A8N,약한 고리: {role} {name} — 그 라인을 노려 볼 만합니다.
+tx_1W81NVQ0EN,{mech} 주력
+tx_CYD6TW7EWM,메크 {id}
+tx_2D102EEXT5,상대 팀 · {team}
+tx_YRJDDXHF35,내 팀 · {team}
 tx_MR5VKS3AHG,과적재
 tx_C214C4GTV6,반응 장갑 전개
 tx_4AGJGY73MM,고통과 쾌감
@@ -684,6 +1189,15 @@ tx_Y286QSY9AY,@e스포츠 데일리
 tx_ZYQ2H6NSV5,현역 시절과 지금 중 언제가 더 떨립니까?
 tx_S475S364V1,지금이요. 선수들 경기라서요.
 tx_TRZ5H1B5JE,현역 때죠. 지금은 즐깁니다.
+tx_GAEQTM3H22,{name} 신뢰도 {delta}
+tx_S020E3BRTM,팀 전체 신뢰도 {delta}
+tx_P1MZEZ4FJQ,팀 전체 {stat} {delta} ({duration})
+tx_JCW2JPKMY8,감독 {stat} {delta} ({duration})
+tx_8FVD7N2NZP,외출 {n}회째 · 다음 훈련일 EXP 감소
+tx_KAEPTP25DT,선수
+tx_WR6Q5QGMZ8,전 스탯
+tx_MD8BDCV48Q,다음 경기까지
+tx_D3NT6QFHKK,사건
 tx_6RHXR0K8TD,Nekomata
 tx_KCKAPV8M44,Yuzuha
 tx_1TSM3CVTC7,Corin
@@ -861,6 +1375,27 @@ tx_ARWJETFT72,"체력형 메크일 시 존재감 +1, 최대 체력 +20%\n공격�
 tx_A2VY834WBK,"교전 참여 시, 적 원딜 파일럿이 있을 경우 첫 공격은 반드시 적 원딜 파일럿을 공격 및 공격력 +20%"
 tx_BVQZZBG33F,활성화: 휘발성 [전진]{eul} 손에 생성
 tx_KR207W6TG7,상대 같은 레인 파일럿과 비교하여 — 성장치 열세: 성장 적립 +10%\n처치 열세: 공격력 +10%\n죽음 우세: 최대 체력 +10%
+tx_JJ1888Z56T,화면을 눌러 닫기
+tx_82VAW6FK9Y,멘탈 판정 성공
+tx_2QWW8CPTXR,멘탈 판정 실패
+tx_5V87JZGAVT,답변을 고르세요
+tx_VT90YHN4YW,오늘은 질문이 없습니다.
+tx_M9QFMYB5Y8,{phase} · {week}주차 · {outlet} 기자
+tx_BM3F8A8DQV,e스포츠
+tx_MC4YJKBSC1,e스포츠 데일리
+tx_A2A40ZTSPV,좋습니다. 주말 경기 기대하겠습니다.
+tx_7TV9CHPBCD,팀 신뢰 +3
+tx_PMZES297S0,감독 멘탈 +1 (2주)
+tx_RX2N12A2AY,주말 경기 상대가 만만치 않다는 평이 많습니다.
+tx_C8YQ4ENXAX,"솔직히, 이길 자신 있으십니까?"
+tx_0N9CGRDHQR,기자석이 잠시 조용해진다.
+tx_MJR4D42R8V,상대 분석은 이미 끝냈습니다.
+tx_YJW2C8ACF4,그렇다면 이번 주 훈련의 초점은 어디에 두셨나요?
+tx_4VV2GXH1SC,저희 선수들을 믿습니다.
+tx_CNG6CVP5YY,쉽지 않겠지만 준비한 게 있습니다.
+tx_RRC4PCP2TY,질문이 좀 무례하시네요.
+tx_EE0N2F6MX7,"솔직히, 이길 자신 있으십니까? 지난 시즌 맞대결 전적이 좋지 않았고, 상대 정글러의 폼이 절정이라는 분석이 지배적입니다."
+tx_8GCQCKHZSB,"쉽지 않겠지만 준비한 게 있습니다. 경기 날 보여 드리겠습니다, 기대하셔도 좋습니다."
 tx_CYGR6J73XX,날카로운 눈
 tx_1E4NWHCFMH,가벼운 발
 tx_WACC2C0HFM,근접 본능
@@ -897,10 +1432,204 @@ tx_BJP0GG5N68,탱커 메크에 타면 무너지지 않는다
 tx_423T378EFS,암살 메크에 타면 급소를 노린다
 tx_HCTF0FH7HK,원딜 메크에 타면 한 발도 허투루 쏘지 않는다
 tx_X44QXQ1EJK,능숙 이상으로 다루는 메크에서 한층 날카로워진다
+tx_PT2W70YDR1,주력 메크 탑승
+tx_N5C2E6FQ2F,자기 역할군 메크 탑승
+tx_VXEP932PHS,{role} 메크 탑승
+tx_9PKMC5PHJG,숙련도 {tier} 이상
+tx_63B5AMR6Y6,{cond} 시 {stats}
+tx_ET86TTP31D,런 클리어
+tx_02GQ3R71G2,런 실패
+tx_ZPVTEEG9GC,런 포기
+tx_SR4J2S70Z7,런 종료
+tx_34H19JKNZ2,테스트 런 — 프로필 미반영
+tx_N92BZJC4VE,진엔딩
+tx_BGD6ATN8E2,외출 {n}회 · 약속을 지켰다
+tx_942J829JEX,"우승 트로피를 들고, {name} 선수가 미뤄 둔 말을 꺼냈다."
+tx_9NBP27YSKH,새 특성 해금
+tx_A8KZA62SX8,다음 런부터 감독 탭에서 장착할 수 있습니다
+tx_SQB3T3V911,테스트 런 — 프로필에 지급하지 않았습니다
+tx_QGD2NVYK77,진척
+tx_W3EY6C4QFN,도달 페이즈
+tx_EHJMQJG41X,끝낸 페이즈
+tx_PXZTGCX8MB,전적
+tx_3MAEFQKB2P,대회 우승
+tx_J14VFZ8J4S,{n}회
+tx_5P10XTZ6PS,점수
+tx_JBSDMB0A9F,합계
+tx_90402NFY5K,끝낸 페이즈 × {n}
+tx_Z0C504J650,승리 × {n}
+tx_RF0FQRX947,대회 우승 × {n}
+tx_9AHQ3H3J1J,클리어 보너스
+tx_5MP13PWYFM,특성 보너스 × {n}
+tx_RNSR0V2ZD7,보상
+tx_PFPGKNBXJT,테스트 런이라 프로필에 더하지 않았습니다
+tx_HF4PD2NVB3,아웃게임 재화
+tx_Y1513M583R,주간 패스 EXP
+tx_P70DJG0Y69,패스 초과분 → 아웃게임 재화
+tx_4JW54W3MFD,감독 EXP
+tx_ERBNFWJ2H9,새 제거 포인트 (감독 탭)
+tx_36E6M38JM0,선수 성장
+tx_6DXJDQC258,선수 EXP +{n}
+tx_RQ4SQ39BQ7,최대 Lv {from} → {to}
+tx_RRX6FCNZ2Q,이번 런 업적
+tx_ZA35FTB9TG,기록된 선수가 없습니다
+tx_6DT1P5Z0AS,런 정산
+tx_HG7GBCBDAD,표시할 정산 결과가 없습니다
+tx_84F8FGGM7Q,런이 끝나면 이 화면에 점수와 보상이 나옵니다
+tx_HJ8PH2PZFQ,시나리오
+tx_FB3QP9CS50,팀
+tx_D251BAN217,편성
+tx_5RQNNDMCG6,선수 데이터를 읽지 못했습니다: {error}
+tx_RCC5BQZPBZ,샐러리캡 {n}
+tx_21QQ3H8S23,시나리오가 샐러리캡을 정합니다 — 다섯 선수의 샐러리 합이 캡을 넘으면 시작할 수 없습니다.
+tx_ZSHG5Y0W8Y,예산이 높을수록 쉽습니다 — 스태프가 많아 직접 해야 하는 일이 적습니다.
+tx_XVN27323X5,예산 {n}
+tx_8V1SPJW32G,시설 Lv {n}
+tx_MY16P7N64F,직접 해야 하는 일
+tx_24YRHG4GQQ,종합
+tx_R8QCG9989H,원소속 {team}
+tx_CZZWF7TJ6P,돌파 {n}
+tx_NW5AR6YPWN,훈련 EXP +{pct}%
+tx_ZNZXB9SW7Z,선수 능력치
+tx_A42YCZ0NFD,파일럿 스킬
+tx_1M14YHFYQV,고유 스킬 없음 (이름 없는 선수)
+tx_R5P3SNJTFY,쿨타임
+tx_341YBT1HWQ,충전식
+tx_R41SZAKCGV,패시브
+tx_8XPMQAH2H0,선택 없음
+tx_M4CGTEQHBN,샐러리 {n}
+tx_86NEDS5QYC,종합 {n}
+tx_EYBMMZBQNA,프레스티지 프리셋 — 로비 감독 탭에서 재설정하세요
+tx_S0XJ51Y6E7,{type} 감독 · Lv {level}
+tx_B12S7EKBRM,특성 보정 전체 {value}
+tx_N2RJ811ABT,전문화는 로비 감독 탭에서
+tx_Z2NY1CZZ5J,{preset} · 보너스 점수 {bonus} · 특성을 바꾸면 이 프리셋에 바로 저장됩니다
+tx_TJYP45JCHW,선수 {pilots}명 — 팀 {teams} × 역할 {roles} 와 맞지 않습니다
+tx_1DJR2GT179,알 수 없는 역할 {role} (선수 {id})
+tx_YV2Y3QZY4S,내 선수 중 리그 명단에 없는 id 가 있습니다
+tx_0PAP63X1Y1,역할 {role} 에 내 선수가 {n}명입니다 (1명이어야 함)
+tx_NC5BF9FXM3,역할 {role} 의 남은 선수 {n}명 — AI 팀 {teams}개와 맞지 않습니다
+tx_42EJTTYFX4,{scenario} · 샐러리캡
+tx_8HD5KTG0WT,{scenario} · 샐러리캡 (특성 {adj})
+tx_4HM99WN4PS,시작 실패: {error}
+tx_EN0H79ACA8,샐러리캡 초과 ({total} / {cap}) — 레벨을 내리거나 다른 선수를 고르세요
+tx_PYSFH9VR8V,포지션마다 1명씩 — {n} / {max}명
+tx_Z7WZT1J6Q7,편성 완료 — 남은 샐러리 {n}
+tx_RQV5HNW8TV,편성 완료
+tx_N58C8KX6P1,게임 시작
 tx_WMF4H900Y6,루키 리그
 tx_WHEYGN2VQZ,슈퍼 리그
 tx_FHYTT6JZHE,샐러리캡이 낮다 — 비싼 선수는 두세 명이 한계.
 tx_4H2VGDNYW7,샐러리캡이 높다 — 레벨을 올린 선수로 채울 수 있다.
+tx_NSX2CBE8GV,WORLD CHAMPION
+tx_5WW618WEKX,캠페인 완주 — 정규시즌 국제대회 우승!
+tx_YD9QSBBE5R,── 캠페인 기록 ──
+tx_6ZE7NQMPBZ,── 최종 로스터 ──
+tx_43PE998B9Y,정산
+tx_CZ5JRH7TF5,GAME OVER
+tx_CPYGV0VH59,정산
+tx_EC5JJ7JJ79,시즌 허브
+tx_TS2F4HMZ50,내 팀 로스터
+tx_J2MCV2WPXA,이번 주 시작 →
+tx_ST353SNDF5,리그 순위
+tx_6C8H4243AF,순위
+tx_JJXZKV6K5R,팀
+tx_ESS0Z9GK8W,승-패
+tx_H17EQXSJDT,승률
+tx_X5HJZ9N50Q,PO
+tx_PBF3EV0MYG,팀을 누르면 로스터와 분석 자료를 봅니다
+tx_ER5MBFDQR0,플레이오프 브래킷
+tx_GB3H6SNA3T,플레이오프 진행 전입니다.
+tx_99KJHVTRYT,국제대회 브래킷
+tx_SF22TMBSQP,국제대회 진행 전입니다.
+tx_191AFE0BN2,오늘 저녁
+tx_KPSWBTWZA0,선수를 고르고 오늘 저녁 할 일을 정하세요 (하루 한 번)
+tx_B7PQ84TQD5,패스
+tx_G02WWMW0B6,현재 페이즈: {phase}
+tx_QBXEZYQKN7,{phase} · {week}주차
+tx_G2CRZNPFG8,플레이오프 진입! — 4강 매치 대기 중
+tx_1Q5D5H8MKG,플레이오프 종료
+tx_SN5F4S50QE,우승: {team}
+tx_AKWBHWXQKP,우리 팀 우승!
+tx_9FQ300Q5NC,국제대회 진입! — 8팀 토너먼트
+tx_8MBQAK3YCS,국제대회 우승! — 우리 팀이 챔피언입니다
+tx_64YSN9ZDR8,페이즈 진입: {phase}
+tx_KMTPJRSHS8,{week} / {max}주차
+tx_X85R7MCQ0K,이번 주 경기: {slot} — vs {team}
+tx_X1ZR4PHHXN,이번 주 경기: vs {team}
+tx_0JANWJ7HMM,이번 주 경기 없음
+tx_DAGRD2AVXH,플레이오프
+tx_1ABQDHR4ZF,리그 순위
+tx_QQV79NETS2,담당: {name}
+tx_7T45Q9QVT8,신뢰 {n}
+tx_KZRN3TT8CK,우승 — {team}
+tx_7CKXJ6SNJY,우승 — {team} ★
+tx_BK6M8XCBA6,{phase} {slot}에서 탈락했습니다.
+tx_44WZH96TAR,{phase}에서 우승하지 못했습니다.
+tx_75WBMWK3YQ,{phase} 플레이오프 {slot}에서 탈락했습니다.
+tx_G91QZKMCGS,{phase} 플레이오프에서 우승하지 못했습니다.
+tx_G2TKVCGN91,{phase} 플레이오프 진출에 실패했습니다.
+tx_0CPR1H6FJX,최종 순위 {rank}위 — {win}승 {loss}패
+tx_36VP9BEFGS,캠페인 우승 {n}회 — 캠페인 종료
+tx_GA7T767F1Z,다음 경기 없음
+tx_GE4R14G0HE,다음 경기: {week}주차 {day} — vs {team}
+tx_TESCZQ8CKB,{rank}위 · {win}승 {loss}패
+tx_PK7CX8K2WS,{rank}위 · {win}승 {loss}패  · 내 팀
+tx_NK31W4V7FT,{win}승 {loss}패  · 내 팀
+tx_DET3QJHZGK,단계: {stage}
+tx_09XMB9SGJS,플레이어 경기 없음 / 종료됨
+tx_KXMPKY0FJ4,다음 매치: {slot} — {week}주차 vs {team}
+tx_TK9A1AK7XE,8강 진행 중
+tx_QC6GN1KKC4,4강 진행 중
+tx_EVYVY83XJ6,결승 진행 중
+tx_RTQWKSAYPK,우승 결정
+tx_ZMNJRTQ4RC,8강 1경기
+tx_D05692FCNM,8강 2경기
+tx_89SK9FAWQC,8강 3경기
+tx_DNDDCSPQEE,8강 4경기
+tx_QXB3XY4AYX,4강 1경기
+tx_XXXNFX172K,4강 2경기
+tx_TRMS5ZZQY6,결승
+tx_NCAC0FXRKV,{year}년 {month}월
+tx_1K2R63NYA9,훈련 기록이 없습니다
+tx_Q5HXG4JY2G,일정 없음
+tx_77T88FPPVZ,{day} — 예정된 경기 없음
+tx_N3T6WKR43W,승
+tx_E1RYA0YP6M,패
+tx_ZM7B38RP90,예정
+tx_34Y51VRWE3,{team} 승
+tx_5MEB8RS07D,리그
+tx_1C5DFDPJPM,경기를 시작하면 밴픽 화면으로 넘어갑니다
+tx_28YWCR88Y0,이 경기는 끝났습니다
+tx_PEFCADMPP3,숙련 +{n}
+tx_29AYJHE9CP,숙련 +{n} · {mech}
+tx_GJ061P5G7K,기벽 획득 · {name}
+tx_BKSSGAQEKK,기벽 칸이 가득 차 획득하지 못했습니다
+tx_0HWTY9MN62,기벽 재굴림 · {from} → {to}
+tx_4WNY7FEE6D,재굴림할 기벽이 없습니다
+tx_YFPQYV0C4S,기벽 칸 +1
+tx_0QN35YWVZQ,기벽 칸 +1 ({n}칸)
+tx_ABWK6EAGAM,기벽 칸이 이미 최대입니다
+tx_FZ9J5EYXJH,기벽
+tx_55ZT5D24ZK,기벽 #{id}
+tx_0H7MR6XZ5Q,경기 시작
+tx_QBJC7HSWEH,주 마감 →
+tx_BG13VH48VC,면담 {iv}/{iv_max} · 외출 {out}/{out_max}
+tx_R4XWZFXHFD,신뢰 {trust} · 외출 {outings}
+tx_G9WWN59WGH,외출 (이번 주 끝)
+tx_QYSSXAFB3S,외출 (신뢰 {n}↑)
+tx_0TJBQGEP0N,면담 (이번 주 끝)
+tx_M4WBEB9G7X,오늘 저녁 — 쉬었습니다
+tx_H8MV6KQN83,오늘 저녁 — {name} 면담
+tx_57AQ53NMQX,오늘 저녁 — {name} 외출
+tx_QQ30F9E2AN,내일을 위해 일찍 쉬었다
+tx_YN104ZWYY7,변화 없음
+tx_335GAVH4SP,사건 — {tag} · {name}
+tx_YVD35CHCCQ,눌러서 대응하기
+tx_PZ5E6THG9A,큰 탈 없이 지나갔다
+tx_F19CKTWEZY,{day} 저녁 · 면담
+tx_8EXSPR79YJ,{day} 저녁 · 외출 {n}회째
+tx_5GDZXY0QSR,{day} · 사건 발생 · {name}
 tx_EVS2K4Z4YF,설정
 tx_4S0H7A92KR,설정
 tx_EB8R7HBW32,언어
@@ -909,6 +1638,134 @@ tx_TAQGY61B4S,닫기
 tx_6Y7HJCQ969,한국어
 tx_ZZA706T9ET,English
 tx_5JNY44V34S,설정 저장 실패: {error}
+tx_SFM8K5H3EW,뽑기 횟수가 잘못됐습니다
+tx_KCMDA6JCSG,뽑을 대상이 없습니다
+tx_Y938YWW8E9,없는 단계입니다
+tx_RFC7830G3H,아직 도달하지 않은 단계입니다
+tx_GP4MCK7RMY,이미 수령했습니다
+tx_VXNZHCEFAY,보상이 없는 단계입니다
+tx_51N87FRW51,판매하지 않는 선수입니다
+tx_2ZE844KZN9,돌파 완료
+tx_8Z4YRYH43A,선수 파편이 부족합니다 ({n} 필요)
+tx_F242JS261M,제작 불가
+tx_TB3J7HQJGN,보유 중
+tx_9ZR3EBJ3SJ,특성 재료가 부족합니다 ({n} 필요)
+tx_T7H4Y5BKRY,유료 재화가 부족합니다 ({n} 필요)
+tx_XTX35YZZ5C,모두 수령
+tx_6ZYFMH4WG9,받을 보상이 없습니다
+tx_VD3QJHNXCW,{n}개 수령 · {rewards}
+tx_H1GFQQ83Y3,Lv {level} 보상 · {currency} +{amount}
+tx_2XPR1E8GP5,{week} · 초기화까지 {time}
+tx_ZQZY2WVPR2,"런을 마치면 런 점수만큼 패스 EXP 를 얻습니다. Lv {max} 를 넘긴 EXP 는 아웃게임 재화로 바뀝니다. 보상은 직접 수령해야 하며, 매주 월요일 0시(기기 시각)에 초기화됩니다."
+tx_5NS864BVSS,{d}일 {h}시간
+tx_GZ735QTDWP,{h}시간 {m}분
+tx_JXF877Y58D,수령 완료
+tx_X43BN649C3,재화
+tx_CT27Z5QXZ6,선수권
+tx_K2JE76Z638,특성권
+tx_HY7DQNPK90,특성 재료
+tx_95RWKDGXRT,치장 재화
+tx_BZBSE52DHH,유료 재화
+tx_V9830054XS,선수 파편
+tx_Z70PR5PYNY,"대상이 없는 등급이 뽑히면 가장 가까운 등급에서 뽑습니다. 중복 선수는 돌파, 돌파를 다 채운 뒤엔 선수 파편이 됩니다."
+tx_5DHTBBFC6B,대상이 없는 등급이 뽑히면 가장 가까운 등급에서 뽑습니다. 이미 가진 특성은 특성 재료가 됩니다.
+tx_ZFYE3A1TJR,선수 영입 확률
+tx_DZEWNGHZ0V,특성 연구 확률
+tx_G2YS4ZSTZT,NEW
+tx_VHPZZPEA36,돌파 {n}
+tx_AZP00WR13N,파편 +{n}
+tx_CTPT6ZEXH5,재료 +{n}
+tx_J2TT6QPKEW,선수 영입
+tx_7NDPFWQK3B,특성 연구
+tx_PEPY8003ZH,선수 영입 결과
+tx_W65CM8AH9Y,특성 연구 결과
+tx_4TEB6HP1KS,"네임드 선수 {n}인 중 한 명 · 중복은 돌파, 돌파를 다 채우면 선수 파편"
+tx_59WEARXAX8,감독 특성 {n}종 중 하나 · 이미 가진 특성은 특성 재료
+tx_VX3QB7MM4B,{n}장
+tx_RN8BBG1945,보유 선수
+tx_8H54MJW9G9,보유 특성
+tx_NKA1HERSF8,1회 영입\n{cost}
+tx_PMSGMBWBC3,1회 연구\n{cost}
+tx_QX8E358Q6Z,{n}회 영입\n{cost}
+tx_BTVG6HH172,{n}회 연구\n{cost}
+tx_XKMSGF34S8,"{ticket}{i} 먼저 쓰이고, 모자란 만큼 재화로 치릅니다."
+tx_8VFYRT9Z7Z,"{ticket}{i} 먼저 쓰이고, 모자란 만큼 재화로 치릅니다. {n}회 영입은 재화로 치르는 몫이 {pct}% 할인됩니다."
+tx_PWWSG8QS24,"{ticket}{i} 먼저 쓰이고, 모자란 만큼 재화로 치릅니다. {n}회 연구는 재화로 치르는 몫이 {pct}% 할인됩니다."
+tx_73MWJV0ATK,보유 {currency} {n}
+tx_YB4E1VVJ83,원하는 선수를 확정 구매합니다. 보유한 선수면 돌파 단계가 오릅니다.
+tx_GPSPYQ66XK,돌파 {n}/{max}
+tx_3HQMAP64E2,돌파\n파편 {n}
+tx_QSJ3WK35GE,영입\n파편 {n}
+tx_VG3HEEDMGR,구매 완료
+tx_0H7FHR6QYP,특성 재료로 아직 없는 특성을 만듭니다. 재료는 특성 중복 · 주간패스에서 얻습니다.
+tx_RJVBAG6C5S,제작\n재료 {n}
+tx_MZNWK9RXXF,제작 완료
+tx_R1XHPF5T43,재화를 다른 재화로 바꿉니다.
+tx_ZKH36Y2DHV,레벨업 재화 교환
+tx_0JRJXF2REY,재화 {cost} → 레벨업 재화 {gain}
+tx_C9WWYJXBJX,보유 재화 {coins} · 레벨업 재화 {levelup}
+tx_E51NFE2PBP,선수권 구매
+tx_31B82ZYQSQ,유료 재화 {cost} → 선수권 1장
+tx_QNHGVNK6CC,보유 유료 재화 {premium} · 선수권 {tickets}
+tx_N2B0Y4ARHX,특성권 구매
+tx_AB22WAZYYC,유료 재화 {cost} → 특성권 1장
+tx_MCFZFZ092Q,보유 유료 재화 {premium} · 특성권 {tickets}
+tx_1EC5FAP3S1,유료 재화 +{n} (개발용)
+tx_ZEBPJPHXNM,유료 재화는 지금 기기 안의 숫자일 뿐입니다 (결제 없음).
+tx_FY1VMB56C5,레벨업 재화 +{n}
+tx_S7SCK16K72,유료 재화 +{n}
+tx_45764DJF8W,주간패스
+tx_RXTX0AN6X0,등급
+tx_R0CS831APJ,확률
+tx_ERGBMXG6XM,대상 수
+tx_VSGTNVA2A5,개별 확률
+tx_PWQQ7TRXFX,선수 영입
+tx_MMHN8MG47X,특성 연구
+tx_G5263CMAY1,파편 상점
+tx_84MYVJ17GD,특성 제작
+tx_NW50K9HBCE,교환소
+tx_33WRAHQJKW,확률 보기
+tx_G4RY3DMSCT,개발용
+tx_6C29X8HMEF,능력치
+tx_E7KJ6CX53P,유효값 = 감독(보정 포함) · 어시스턴트 · 전담 스태프 중 최댓값
+tx_JZ767X3S8Y,일시 보정
+tx_7JFZR0GGGZ,걸린 보정 없음
+tx_ZZYKV0Z49P,장착 특성
+tx_74QWFN3PWB,장착한 특성 없음
+tx_ZZ96FNYRG1,스태프
+tx_CD2TKKXHA1,고용된 스태프 없음 — 모든 영역을 감독이 맡습니다
+tx_98DBCCX28N,직접 해야 하는 일
+tx_RYDV3SGR93,훈련
+tx_9265Y1MCPW,전술
+tx_K3FRY03EQK,지식
+tx_3P9850FA1G,멘탈
+tx_Z1HJZ9M6K6,분석
+tx_SJJT6G3QTG,관리
+tx_NAVZGR46XF,어시스턴트 매니저
+tx_MTHR7V5Z65,훈련 코치
+tx_8P1HK13HA1,전술 코치
+tx_TZ9S2MMWFR,메크 코치
+tx_V1DKE84TKG,분석가
+tx_FHY5SA834Z,예산 관리자
+tx_BA7WKSR7T3,훈련판 편성을 직접 짭니다
+tx_HJ5140D8ZV,전술 연구 — 훈련 등급 해금을 감독 값으로 엽니다
+tx_9S0ZQ6TATW,메크 연구 지정을 직접 합니다
+tx_E5FXATCCK9,선수 사건 대응을 감독 값으로 처리합니다
+tx_XXHPJERZWS,상대 분석 자료를 직접 해석합니다
+tx_PMHXE14RTX,예산 배분 · 시설 관리를 직접 합니다
+tx_R66AGDTB45,위임 {n}/{total}
+tx_P4RN9YMP6Y,약점 {stat} {value}
+tx_6FH9E36V7P,담당 {owner}
+tx_D3S1XTR1W7,감독 (직접)
+tx_XMXNN0N5GX,감독 {value}
+tx_RDDPK9RCAW,어시 {value}
+tx_HKMY6VMYNW,{stat} {delta} · 남은 {weeks}주
+tx_QF5YDBZ2X4,{stat} {delta} · 남은 {weeks}주 · {source}
+tx_TZARXTP3WC,보너스 점수 {points} · 장착 {n}/{max}
+tx_XS9W0R9CKV,주급 합계 {amount}
+tx_SXR6V4JTZA,주급 {amount}
+tx_ZVYS7H40JE,· {stat} — {task} (감독 {value})
+tx_A4NC7JYWQD,· 면담 · 외출 — 언제나 감독이 직접 (멘탈 {value})
 tx_7NY5TT0SJT,최상위 예산 — 전략 카드 운영과 선수 면담만 직접
 tx_0G5Q0GF81D,상위 예산
 tx_B761YRXYA9,중상위 — 훈련 일정 편성 직접
@@ -1058,6 +1915,20 @@ tx_8C0EV0B2WT,메크 숙련도 +{n} (연구 메크)
 tx_B7Y34DBG5A,전 스탯 +{n}
 tx_TC94WX8SJC,{stat} +{n}
 tx_8A7H4WFZ7K, · 
+tx_T4X3A068J1,일상 훈련 편성
+tx_7R4RBG1N47,훈련 코스
+tx_GJCV7B4T36,판 비우기
+tx_4ZC95B7Y0R,코치 추천
+tx_HN9EHFNSJ1,훈련 확정
+tx_BZ8CPNHN9V,{effect} · 사용 가능 {grade} 등급까지
+tx_XM1SPM1990,훈련 효과 ×{mult}
+tx_106TT6ZFPV,훈련 효과 ×{mult} ({parts})
+tx_9HK1CX3AS3,재무
+tx_DWEX5CKQ69,특성
+tx_NCRNZK44YE,{stat}: {name} 코치 {value}
+tx_8V6MVWWBTF,{stat}: {name} 어시스턴트 {value}
+tx_ME5MJKE2GD,전술 {n} 필요
+tx_4X2JSX6BJA,{reason} (지금 전술 {n})
 tx_QQVPQ29K6X,훈련광
 tx_6HSK5W6C20,메크 연구가
 tx_SJVSQJ1HZ2,스폰서 친화
@@ -1106,6 +1977,11 @@ tx_53D7BPJQBK,시설 유지비 +{p1}%
 tx_FNN91QZ7T0,첫 자동 드로우 {p1}장
 tx_6XQ3A0Q7JP,손패 상한 {p1}
 tx_6HNYQXB6DT,작전 단계마다 첫 카드 비용 +{p1}
+tx_BG2JBV86HB,특성은 {n}개까지 장착할 수 있습니다
+tx_F9NJXK31Y0,알 수 없는 특성 id {id}
+tx_W81J1DFTY1,같은 특성을 두 번 장착할 수 없습니다
+tx_YEBKNRWZXC,보유하지 않은 특성입니다: {name}
+tx_KB62EJTC17,보너스 점수가 부족합니다 ({n})
 tx_YE7AM14AWS,확인
 tx_GS4FN31BK4,취소
 tx_R1DMEF1S3E,닫기

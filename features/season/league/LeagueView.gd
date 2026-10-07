@@ -13,6 +13,11 @@ extends Control
 # Tapping a row opens that team's detail sheet (`HubSheet`): record + the five
 # pilots under the analysis reveal rule (`OpponentIntel` / `IntelView`, the same
 # builder MatchFlow PREP uses). The own team is always fully visible.
+#
+# **Layout lives in `LeagueView.tscn`** (+ one `LeagueRow.tscn` per rank in `%Rows`) —
+# build it with `LeagueView.create()`. The script fills text, wires the rows / button and
+# applies the device-dependent bits: safe-area top indent, background extension into the
+# notch, and the bottom bar's square corners + bottom inset.
 
 const PHASE_NAMES: Dictionary = {
 	GameEnums.SeasonPhase.PRESEASON:      "프리시즌",
@@ -23,33 +28,35 @@ const PHASE_NAMES: Dictionary = {
 	GameEnums.SeasonPhase.REGULAR_INTL:   "정규시즌 국제대회",
 }
 
-const ROW_W: float = 1000.0
-const ROW_H: float = 104.0
-const ROW_GAP: float = 10.0
+## Built from `LeagueView.tscn` — use `create()`, not `.new()`.
+const SCENE_PATH: String = "res://features/season/league/LeagueView.tscn"
+const ROW_SCENE_PATH: String = "res://features/season/league/LeagueRow.tscn"
+const ROW_COUNT: int = 8
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 @onready var _gm: Node = get_node("/root/GameManager")
 
 var _league: LeagueManager = null
-var _phase_lbl: Label
-var _next_match_lbl: Label
-var _row_widgets: Array = []   # 8 dicts of {panel, stylebox, rank, name, wl, pct, po}
 var _row_team_ids: Array = [-1, -1, -1, -1, -1, -1, -1, -1]   # team shown on each row
-var _ok_btn: Button
-var _built: bool = false
+
+
+static func create() -> LeagueView:
+	return (load(SCENE_PATH) as PackedScene).instantiate() as LeagueView
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-	mouse_filter = Control.MOUSE_FILTER_PASS
+	# 화면 전체를 안전 영역 위끝까지 내린다 — 노치 / 다이나믹 아일랜드 밑에
+	# 제목이 깔리지 않게. 바탕만 노치 자리까지 도로 늘린다(`docs/mobile_safe_area.md`).
+	ScreenMetrics.indent_to_safe_top(self)
+	ScreenMetrics.extend_background(%Background)
+	_ensure_rows()
+	_layout_ok_button()
+	%OkButton.pressed.connect(_on_ok_pressed)
 	ensure_view()
 
 
 # Idempotent — SeasonHub calls this each time it routes to LEAGUE.
 func ensure_view() -> void:
-	if not _built:
-		_build()
-		_built = true
 	_resolve_league()
 	refresh()
 
@@ -60,103 +67,32 @@ func _resolve_league() -> void:
 	_league = _hub.get_node_or_null("LeagueManager") as LeagueManager
 
 
-# ── Build ────────────────────────────────────────────────────────────────────
-func _build() -> void:
-	# 화면 전체를 안전 영역 위끝까지 내린다 — 노치 / 다이나믹 아일랜드 밑에
-	# 제목이 깔리지 않게. 제목만 따로 내리면 본문과 겹친다.
-	ScreenMetrics.indent_to_safe_top(self)
-	OutgameTheme.add_background(self)
-
-	var x0: float = (ScreenMetrics.vp_w() - ROW_W) / 2.0
-	_phase_lbl = UiHelpers.mk_label(self, "", 24, OutgameTheme.TEXT_SUB,
-			Vector2(x0, 32), Vector2(ROW_W, 30), HORIZONTAL_ALIGNMENT_LEFT)
-	UiHelpers.mk_label(self, "리그 순위", 52, OutgameTheme.TEXT,
-			Vector2(x0, 66), Vector2(ROW_W, 62), HORIZONTAL_ALIGNMENT_LEFT)
-	_next_match_lbl = UiHelpers.mk_label(self, "", 24, OutgameTheme.ACCENT_TEXT,
-			Vector2(x0, 136), Vector2(ROW_W, 30), HORIZONTAL_ALIGNMENT_LEFT)
-
-	_build_header()
-	_build_rows()
-	_build_button()
+## `%Rows` holds exactly `ROW_COUNT` `LeagueRow`s — the scene's preview row is reused,
+## the rest are instantiated from the item scene.
+func _ensure_rows() -> void:
+	var box: Node = %Rows
+	while box.get_child_count() > ROW_COUNT:
+		var extra: Node = box.get_child(box.get_child_count() - 1)
+		box.remove_child(extra)
+		extra.queue_free()
+	while box.get_child_count() < ROW_COUNT:
+		box.add_child((load(ROW_SCENE_PATH) as PackedScene).instantiate())
+	for r in ROW_COUNT:
+		(box.get_child(r) as LeagueRow).tapped.connect(_on_row_pressed.bind(r))
 
 
-func _build_header() -> void:
-	var header_y: float = 186.0
-	var x0: float = (ScreenMetrics.vp_w() - ROW_W) / 2.0
-	OutgameTheme.add_divider(self, Vector2(x0, header_y + 34.0), ROW_W)
-	UiHelpers.mk_label(self, "순위", 20, OutgameTheme.TEXT_SUB,
-			Vector2(x0 + 16, header_y), Vector2(100, 28), HORIZONTAL_ALIGNMENT_CENTER)
-	UiHelpers.mk_label(self, "팀", 20, OutgameTheme.TEXT_SUB,
-			Vector2(x0 + 126, header_y), Vector2(370, 28), HORIZONTAL_ALIGNMENT_LEFT)
-	UiHelpers.mk_label(self, "승-패", 20, OutgameTheme.TEXT_SUB,
-			Vector2(x0 + 480, header_y), Vector2(200, 28), HORIZONTAL_ALIGNMENT_CENTER)
-	UiHelpers.mk_label(self, "승률", 20, OutgameTheme.TEXT_SUB,
-			Vector2(x0 + 680, header_y), Vector2(160, 28), HORIZONTAL_ALIGNMENT_CENTER)
-	UiHelpers.mk_label(self, "PO", 20, OutgameTheme.TEXT_SUB,
-			Vector2(x0 + 840, header_y), Vector2(144, 28), HORIZONTAL_ALIGNMENT_CENTER)
-
-
-func _build_rows() -> void:
-	var grid_y: float = 236.0
-	var x0: float = (ScreenMetrics.vp_w() - ROW_W) / 2.0
-	for r in 8:
-		var y: float = grid_y + r * (ROW_H + ROW_GAP)
-		var panel := Panel.new()
-		panel.position = Vector2(x0, y)
-		panel.size     = Vector2(ROW_W, ROW_H)
-		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var sty: StyleBoxFlat = OutgameTheme.card_style(14)
-		panel.add_theme_stylebox_override("panel", sty)
-		add_child(panel)
-
-		var rank_lbl := UiHelpers.mk_label(panel, "", 30, OutgameTheme.TEXT_SUB,
-				Vector2(16, (ROW_H - 36) / 2.0), Vector2(100, 36),
-				HORIZONTAL_ALIGNMENT_CENTER)
-		var name_lbl := UiHelpers.mk_label(panel, "", 28, OutgameTheme.TEXT,
-				Vector2(126, (ROW_H - 34) / 2.0), Vector2(370, 34),
-				HORIZONTAL_ALIGNMENT_LEFT)
-		var wl_lbl := UiHelpers.mk_label(panel, "", 26, OutgameTheme.TEXT,
-				Vector2(480, (ROW_H - 32) / 2.0), Vector2(200, 32),
-				HORIZONTAL_ALIGNMENT_CENTER)
-		var pct_lbl := UiHelpers.mk_label(panel, "", 26, OutgameTheme.TEXT_SUB,
-				Vector2(680, (ROW_H - 32) / 2.0), Vector2(160, 32),
-				HORIZONTAL_ALIGNMENT_CENTER)
-		var po_lbl := UiHelpers.mk_label(panel, "", 24, OutgameTheme.POSITIVE,
-				Vector2(840, (ROW_H - 32) / 2.0), Vector2(144, 32),
-				HORIZONTAL_ALIGNMENT_CENTER)
-
-		# The whole row is a tap target → team detail sheet.
-		var hit := Button.new()
-		hit.flat = true
-		hit.focus_mode = Control.FOCUS_NONE
-		hit.position = Vector2.ZERO
-		hit.size = Vector2(ROW_W, ROW_H)
-		hit.pressed.connect(_on_row_pressed.bind(r))
-		panel.add_child(hit)
-
-		_row_widgets.append({
-			"panel": panel, "stylebox": sty,
-			"rank": rank_lbl, "name": name_lbl,
-			"wl": wl_lbl, "pct": pct_lbl, "po": po_lbl,
-		})
-	UiHelpers.mk_label(self, "팀을 누르면 로스터와 분석 자료를 봅니다", 20, OutgameTheme.TEXT_SUB,
-			Vector2(x0, grid_y + 8 * (ROW_H + ROW_GAP) + 8.0), Vector2(ROW_W, 28),
-			HORIZONTAL_ALIGNMENT_CENTER)
-
-
-## 확인 하나뿐이라 **하단 구간을 통째로 차지한다** — 좌우 끝에서 끝까지,
-## 아래는 안전선에 밀착. 규약은 `OutgameTheme.add_bottom_bar`.
-func _build_button() -> void:
-	var bar: Array = OutgameTheme.add_bottom_bar(self, [
-		{"text": "확인", "style": "primary", "font": 34},
-	])
-	_ok_btn = bar[0]
-	_ok_btn.pressed.connect(_on_ok_pressed)
+## 확인 하나뿐이라 **하단 구간을 통째로 차지한다** — 좌우 끝에서 끝까지, 아래는
+## 안전선에 밀착. 자리는 씬의 앵커가, 기기 몫(각진 모서리 · 아래 인셋)만 코드가
+## 넣는다 — 규약은 `OutgameTheme.style_bottom_button`.
+func _layout_ok_button() -> void:
+	var btn: Button = %OkButton
+	OutgameTheme.style_bottom_button(btn, "primary", OutgameTheme.FONT_BTN_PRIMARY)
+	btn.offset_top = -(OutgameTheme.BOTTOM_BAR_H + maxf(0.0, ScreenMetrics.insets().w))
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────
 func refresh() -> void:
-	if not _built:
+	if not is_inside_tree():
 		return
 	if _league == null:
 		_resolve_league()
@@ -164,16 +100,16 @@ func refresh() -> void:
 		return
 
 	var phase: int = int(_gm.season_state["current_phase"])
-	_phase_lbl.text = "%s · %d주차" % [
+	%Phase.text = "%s · %d주차" % [
 		PHASE_NAMES.get(phase, "—"), int(_gm.season_state["phase_week"])]
 
 	var pid: int = int(_gm.season_state["player_team_id"])
 	var nxt = _league.next_unplayed_player_match()
 	if nxt == null:
-		_next_match_lbl.text = "다음 경기 없음"
+		%NextMatch.text = "다음 경기 없음"
 	else:
 		var opp: int = int(nxt["team_b"]) if int(nxt["team_a"]) == pid else int(nxt["team_a"])
-		_next_match_lbl.text = "다음 경기: %d주차 %s — vs %s" % [
+		%NextMatch.text = "다음 경기: %d주차 %s — vs %s" % [
 			int(nxt["phase_week"]),
 			"토" if int(nxt.get("matchday", 0)) == 0 else "일",
 			_league.team_name(opp),
@@ -181,56 +117,18 @@ func refresh() -> void:
 
 	var ranked: Array = _league.standings_ranked()
 	var po_count: int = int(_gm.PLAYOFF_TEAMS)
-	for r in 8:
-		var w: Dictionary = _row_widgets[r]
-		var sty: StyleBoxFlat = w["stylebox"]
+	for r in ROW_COUNT:
+		var row_view: LeagueRow = %Rows.get_child(r) as LeagueRow
 		if r >= ranked.size():
-			w["rank"].text = ""
-			w["name"].text = ""
-			w["wl"].text   = ""
-			w["pct"].text  = ""
-			w["po"].text   = ""
 			_row_team_ids[r] = -1
-			sty.bg_color = OutgameTheme.SURFACE_SUNK
-			sty.border_color = OutgameTheme.BORDER
-			sty.set_border_width_all(1)
+			row_view.clear()
 			continue
-
 		var row: Dictionary = ranked[r]
 		var tid: int = int(row["team_id"])
 		_row_team_ids[r] = tid
-		var wins: int = int(row["wins"])
-		var losses: int = int(row["losses"])
-		var played: int = wins + losses
-		var pct_s: String = "—" if played == 0 else "%.3f" % (float(wins) / float(played))
-		var is_player: bool = (tid == pid)
-		var made_po: bool = r < po_count
-
-		w["rank"].text = "%d" % (r + 1)
-		w["name"].text = "%s  (%s)" % [_league.team_name(tid), _league.team_short_name(tid)]
-		w["wl"].text   = "%d승 %d패" % [wins, losses]
-		w["pct"].text  = pct_s
-		w["po"].text   = "PO" if made_po else ""
-
-		# 플레이어 줄은 앰버 틴트 + 앰버 테두리, 진출권은 왼쪽 초록 띠 하나.
-		# 색면으로 칠하면 그 줄의 숫자가 안 읽힌다 — 흰 종이에서 강조는 테두리다.
-		sty.bg_color = OutgameTheme.ACCENT_DIM if is_player else OutgameTheme.SURFACE
-		if is_player:
-			sty.set_border_width_all(2)
-			sty.border_color = OutgameTheme.ACCENT
-		elif made_po:
-			# `StyleBoxFlat` 의 테두리 색은 **한 가지뿐**이라 "옅은 외곽선 + 초록
-			# 왼쪽 띠"를 한 판으로 낼 수 없다. 띠 쪽을 택한다 — 흰 종이 위에서는
-			# 그림자가 이미 카드의 윤곽을 만들고 있어 외곽선이 없어도 판이 선다.
-			sty.set_border_width_all(0)
-			sty.border_width_left = 6
-			sty.border_color = OutgameTheme.POSITIVE
-		else:
-			sty.set_border_width_all(1)
-			sty.border_color = OutgameTheme.BORDER
-
-		w["rank"].add_theme_color_override("font_color",
-				OutgameTheme.TEXT if is_player else OutgameTheme.TEXT_SUB)
+		row_view.fill(r + 1,
+				"%s  (%s)" % [_league.team_name(tid), _league.team_short_name(tid)],
+				int(row["wins"]), int(row["losses"]), r < po_count, tid == pid)
 
 
 # ── Button handler ──────────────────────────────────────────────────────────

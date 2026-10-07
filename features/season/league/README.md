@@ -83,8 +83,9 @@ for save metadata and the lobby run card, never for match-day filtering.
 
 ## Files
 - `LeagueManager.gd` — orchestrator (this README's contract).
-- `LeagueView.gd` — standings screen. 8 ranked rows + next-match header
-  + **a single "확인" (OK) button**. Routed via `SeasonHub.Screen.LEAGUE`. Advancing the week
+- `LeagueView.gd` + `LeagueView.tscn` — standings screen. 8 ranked rows + next-match header
+  + **a single "확인" (OK) button**. Routed via `SeasonHub.Screen.LEAGUE`, built with
+  `LeagueView.create()` (never `.new()`). Advancing the week
   moved to the Sunday close on the week-progress screen, and where to return is decided by the
   week-progress state, not by a button (`SeasonHub.on_standings_confirmed`). Colours come from
   `OutgameTheme` — a card list on white paper.
@@ -93,3 +94,22 @@ for save metadata and the lobby run card, never for match-day filtering.
   `IntelView` pair MatchFlow PREP uses (`features/match_flow/match_prep/README.md`). The own team
   is always fully visible; other teams follow `StaffSystem.analysis_tier`, with an analyst note
   when analysis is delegated.
+- `LeagueRow.gd` + `LeagueRow.tscn` — one standings row (item scene). `fill(rank, team_text, wins,
+  losses, made_po, is_player)` / `clear()`; emits `tapped` from its full-row flat `%Hit` button.
+  The card style is built in code (`card_style(14)`) because it is data: own team = `ACCENT_DIM` +
+  `ACCENT` 2px border, playoff cut = green 6px left bar, empty slot = `SURFACE_SUNK`. The rank
+  colour (own team = `TEXT`) is data too.
+
+### LeagueView scene tree
+```
+LeagueView (Control, full rect, mouse PASS, theme OutgameTheme)
+├ %Background   ColorRect BG — code stretches it into the notch (`extend_background`)
+├ Content       Control, anchored top-centre, 1000 wide
+│ ├ %Phase (CaptionLabel 24) · Title (HeadingLabel) · %NextMatch (AccentLabel 24)
+│ ├ Header      column captions (순위 · 팀 · 승-패 · 승률 · PO, CaptionLabel 20) + Divider
+│ └ Body        VBox ─ %Rows (VBox, sep 10, LeagueRow ×8 — scene holds one preview row,
+│                       `_ensure_rows` reuses it and instantiates the rest) · HintGap · Hint
+└ %OkButton     PrimaryButton, anchored bottom-wide (code: `style_bottom_button` + bottom inset)
+```
+Scene owns: positions, column widths, font sizes / variations, the PO mark colour. Code owns: text,
+row card colours, rank colour, safe-area top indent, bottom-bar styling / inset.

@@ -5,42 +5,39 @@ extends Control
 # two semifinal panels stacked on the left and a final panel on the right.
 # Each match panel shows team_a / team_b, the winner indicator, and the
 # scheduled date. Player team is tinted gold, played matches dim losers.
+#
+# **Layout lives in `BracketView.tscn`** — build it with `BracketView.create()`. The three
+# boxes are `BracketMatchBox.tscn` instances placed in `%Bracket` (semis column + final,
+# vertically centred by the HBox) and bound as `%SF1` `%SF2` `%Final`; each paints its own
+# data colours (`BracketMatchBox.show_match`). The script fills text and applies the
+# device-dependent bits: safe-area top indent, background into the notch, bottom bar inset.
 
-const WEEKDAY_NAMES: Array = ["월", "화", "수", "목", "금", "토", "일"]
-const SLOT_LABELS: Array = ["4강 1경기", "4강 2경기", "결승"]
-
-const MATCH_W: float = 420.0
-const MATCH_H: float = 200.0
+## Built from `BracketView.tscn` — use `create()`, not `.new()`.
+const SCENE_PATH: String = "res://features/season/tournament/BracketView.tscn"
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 @onready var _gm: Node = get_node("/root/GameManager")
 
 var _league: LeagueManager = null
 var _tournament: TournamentManager = null
-var _phase_lbl: Label
-var _stage_lbl: Label
-var _next_match_lbl: Label
-var _empty_lbl: Label
-var _match_widgets: Array = []   # 3 dicts of {panel, stylebox, slot_lbl, date_lbl, team_a_lbl, team_b_lbl}
-var _back_btn: Button
-var _built: bool = false
+
+
+static func create() -> BracketView:
+	return (load(SCENE_PATH) as PackedScene).instantiate() as BracketView
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-	mouse_filter = Control.MOUSE_FILTER_PASS
-	if not _built:
-		_build()
-		_built = true
-	_resolve_refs()
-	refresh()
+	# 화면 전체를 안전 영역 위끝까지 내린다 — 노치 / 다이나믹 아일랜드 밑에
+	# 제목이 깔리지 않게. 바탕만 노치 자리까지 도로 늘린다(`docs/mobile_safe_area.md`).
+	ScreenMetrics.indent_to_safe_top(self)
+	ScreenMetrics.extend_background(%Background)
+	_layout_ok_button()
+	%OkButton.pressed.connect(_on_back_pressed)
+	ensure_view()
 
 
 # Idempotent — SeasonHub calls this each time it routes to PLAYOFF.
 func ensure_view() -> void:
-	if not _built:
-		_build()
-		_built = true
 	_resolve_refs()
 	refresh()
 
@@ -54,202 +51,71 @@ func _resolve_refs() -> void:
 		_tournament = _hub.get_node_or_null("TournamentManager") as TournamentManager
 
 
-# ── Build ────────────────────────────────────────────────────────────────────
-func _build() -> void:
-	# 화면 전체를 안전 영역 위끝까지 내린다 — 노치 / 다이나믹 아일랜드 밑에
-	# 제목이 깔리지 않게. 제목만 따로 내리면 본문과 겹친다.
-	ScreenMetrics.indent_to_safe_top(self)
-	OutgameTheme.add_background(self)
-
-	UiHelpers.mk_label(self, "플레이오프 브래킷", 36, OutgameTheme.TEXT,
-			Vector2(0, 18), Vector2(1080, 44), HORIZONTAL_ALIGNMENT_CENTER)
-
-	_phase_lbl = UiHelpers.mk_label(self, "", 22, OutgameTheme.TEXT_SUB,
-			Vector2(0, 70), Vector2(1080, 28), HORIZONTAL_ALIGNMENT_CENTER)
-	_stage_lbl = UiHelpers.mk_label(self, "", 22, OutgameTheme.TEXT_SUB,
-			Vector2(0, 102), Vector2(1080, 28), HORIZONTAL_ALIGNMENT_CENTER)
-	_next_match_lbl = UiHelpers.mk_label(self, "", 22, OutgameTheme.ACCENT_TEXT,
-			Vector2(0, 134), Vector2(1080, 28), HORIZONTAL_ALIGNMENT_CENTER)
-
-	_empty_lbl = UiHelpers.mk_label(self, "플레이오프 진행 전입니다.", 26, OutgameTheme.TEXT_FAINT,
-			Vector2(0, 720), Vector2(1080, 36), HORIZONTAL_ALIGNMENT_CENTER)
-	_empty_lbl.visible = false
-
-	_build_match_panels()
-	_build_back_button()
-
-
-func _build_match_panels() -> void:
-	# Layout: SF1 + SF2 stacked left, F right. Connector lines drawn implicitly
-	# via the gap between panels — the labels carry the semantic.
-	var left_x: float = 90.0
-	var right_x: float = 580.0
-	var sf_y_top: float = 250.0
-	var sf_gap: float = 60.0
-	var f_y: float = sf_y_top + (MATCH_H + sf_gap) / 2.0  # vertically centered between SFs
-
-	var positions: Array = [
-		Vector2(left_x,  sf_y_top),
-		Vector2(left_x,  sf_y_top + MATCH_H + sf_gap),
-		Vector2(right_x, f_y),
-	]
-
-	for i in 3:
-		_match_widgets.append(_build_match_panel(positions[i], i))
-
-
-func _build_match_panel(pos: Vector2, slot: int) -> Dictionary:
-	var panel := Panel.new()
-	panel.position = pos
-	panel.size     = Vector2(MATCH_W, MATCH_H)
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var sty := StyleBoxFlat.new()
-	sty.bg_color     = OutgameTheme.SURFACE
-	sty.border_color = OutgameTheme.BORDER
-	sty.border_width_left = 2; sty.border_width_right = 2
-	sty.border_width_top = 2;  sty.border_width_bottom = 2
-	sty.corner_radius_top_left     = 8
-	sty.corner_radius_top_right    = 8
-	sty.corner_radius_bottom_left  = 8
-	sty.corner_radius_bottom_right = 8
-	sty.shadow_color = OutgameTheme.SHADOW
-	sty.shadow_size = 6
-	sty.shadow_offset = Vector2(0, 3)
-	panel.add_theme_stylebox_override("panel", sty)
-	add_child(panel)
-
-	var slot_lbl := UiHelpers.mk_label(panel, SLOT_LABELS[slot], 22, OutgameTheme.ACCENT_TEXT,
-			Vector2(12, 8), Vector2(MATCH_W - 24, 28), HORIZONTAL_ALIGNMENT_LEFT)
-	var date_lbl := UiHelpers.mk_label(panel, "", 18, OutgameTheme.TEXT_SUB,
-			Vector2(12, 8), Vector2(MATCH_W - 24, 28), HORIZONTAL_ALIGNMENT_RIGHT)
-
-	var team_a_lbl := UiHelpers.mk_label(panel, "", 28, OutgameTheme.TEXT,
-			Vector2(20, 60), Vector2(MATCH_W - 40, 38), HORIZONTAL_ALIGNMENT_LEFT)
-	var team_b_lbl := UiHelpers.mk_label(panel, "", 28, OutgameTheme.TEXT,
-			Vector2(20, 120), Vector2(MATCH_W - 40, 38), HORIZONTAL_ALIGNMENT_LEFT)
-
-	return {
-		"panel":      panel,
-		"stylebox":   sty,
-		"slot_lbl":   slot_lbl,
-		"date_lbl":   date_lbl,
-		"team_a_lbl": team_a_lbl,
-		"team_b_lbl": team_b_lbl,
-	}
-
-
 ## 버튼은 하나뿐이다("확인") — 주를 넘기는 일은 시간 경과 화면의 일요일
 ## 마감이 가져갔고, 돌아갈 자리는 버튼이 아니라 주 진행 상태가 정한다
-## (`SeasonHub.on_standings_confirmed`).
-func _build_back_button() -> void:
-	# 하나뿐인 행동이라 **하단 구간을 통째로 차지한다** — 좌우 끝에서 끝까지,
-	# 아래는 안전선에 밀착(`OutgameTheme.add_bottom_bar`).
-	var bar: Array = OutgameTheme.add_bottom_bar(self, [
-		{"text": "확인", "style": "primary", "font": 34},
-	])
-	_back_btn = bar[0]
-	_back_btn.pressed.connect(_on_back_pressed)
+## (`SeasonHub.on_standings_confirmed`). 하나뿐인 행동이라 **하단 구간을 통째로
+## 차지한다** — 자리는 씬의 앵커가, 기기 몫(각진 모서리 · 아래 인셋)만 코드가
+## 넣는다(`OutgameTheme.style_bottom_button`).
+func _layout_ok_button() -> void:
+	var btn: Button = %OkButton
+	OutgameTheme.style_bottom_button(btn, "primary", OutgameTheme.FONT_BTN_PRIMARY)
+	btn.offset_top = -(OutgameTheme.BOTTOM_BAR_H + maxf(0.0, ScreenMetrics.insets().w))
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────
 func refresh() -> void:
-	if not _built:
+	if not is_inside_tree():
 		return
 	_resolve_refs()
 	if _tournament == null:
 		return
 
 	var phase: int = int(_gm.season_state["current_phase"])
-	_phase_lbl.text = "현재 페이즈: %s" % HubView.PHASE_NAMES.get(phase, "—")
+	%Phase.text = "현재 페이즈: %s" % HubView.PHASE_NAMES.get(phase, "—")
 
 	if not _tournament.is_active():
-		_empty_lbl.visible = true
-		_stage_lbl.text = ""
-		_next_match_lbl.text = ""
-		for w in _match_widgets:
-			w["panel"].visible = false
+		%Empty.visible = true
+		%Stage.text = ""
+		%NextMatch.text = ""
+		%Bracket.visible = false
 		return
-	_empty_lbl.visible = false
-	for w in _match_widgets:
-		w["panel"].visible = true
+	%Empty.visible = false
+	%Bracket.visible = true
 
 	var t: Dictionary = _gm.season_state["current_tournament"]
 	var stage: int = int(t["stage"])
-	_stage_lbl.text = "단계: %s" % _stage_name(stage)
+	%Stage.text = "단계: %s" % _stage_name(stage)
 
 	var pid: int = int(_gm.season_state["player_team_id"])
 	var nxt = _tournament.next_unplayed_player_match()
 	if nxt == null:
-		_next_match_lbl.text = "플레이어 경기 없음 / 종료됨"
+		%NextMatch.text = "플레이어 경기 없음 / 종료됨"
 	else:
 		var opp_id: int = int(nxt["team_b"]) if int(nxt["team_a"]) == pid else int(nxt["team_a"])
 		var opp_name: String = "TBD"
 		if opp_id >= 0 and _league != null:
 			opp_name = _league.team_name(opp_id)
-		_next_match_lbl.text = "다음 매치: %s — %d주차 vs %s" % [
+		%NextMatch.text = "다음 매치: %s — %d주차 vs %s" % [
 			_tournament.slot_label(int(nxt["slot"])),
 			int(nxt["phase_week"]),
 			opp_name,
 		]
 
 	var b: Array = _tournament.bracket()
-	for i in 3:
-		_refresh_match_panel(i, b[i] if i < b.size() else {}, pid)
+	var boxes: Array = _match_boxes()
+	for i in boxes.size():
+		(boxes[i] as BracketMatchBox).show_match(b[i] if i < b.size() else {}, pid, _team_text)
 
 
-func _refresh_match_panel(slot: int, m: Dictionary, pid: int) -> void:
-	var w: Dictionary = _match_widgets[slot]
-	if m.is_empty():
-		w["team_a_lbl"].text = ""
-		w["team_b_lbl"].text = ""
-		w["date_lbl"].text = ""
-		return
-	var ta: int = int(m["team_a"]); var tb: int = int(m["team_b"])
-	var winner: int = int(m["winner"])
-	var played: bool = bool(m["played"])
-
-	w["team_a_lbl"].text = _team_text(ta)
-	w["team_b_lbl"].text = _team_text(tb)
-	w["date_lbl"].text   = "%d주차" % int(m.get("phase_week", 0))
-
-	# Winner / loser color treatment.
-	w["team_a_lbl"].add_theme_color_override("font_color",
-			_team_color(ta, pid, played, winner))
-	w["team_b_lbl"].add_theme_color_override("font_color",
-			_team_color(tb, pid, played, winner))
-
-	# Panel border: gold when player participates, green when match decided.
-	var sty: StyleBoxFlat = w["stylebox"]
-	if ta == pid or tb == pid:
-		sty.border_color = OutgameTheme.ACCENT
-		sty.border_width_left = 3; sty.border_width_right = 3
-		sty.border_width_top = 3;  sty.border_width_bottom = 3
-	elif played:
-		sty.border_color = OutgameTheme.POSITIVE
-		sty.border_width_left = 2; sty.border_width_right = 2
-		sty.border_width_top = 2;  sty.border_width_bottom = 2
-	else:
-		sty.border_color = OutgameTheme.BORDER
-		sty.border_width_left = 2; sty.border_width_right = 2
-		sty.border_width_top = 2;  sty.border_width_bottom = 2
+## Slot order = bracket index order (SF1, SF2, F).
+func _match_boxes() -> Array:
+	return [%SF1, %SF2, %Final]
 
 
 func _team_text(team_id: int) -> String:
-	if team_id < 0:
-		return "— TBD —"
 	if _league == null:
 		return "Team %d" % team_id
 	return "%s  (%s)" % [_league.team_name(team_id), _league.team_short_name(team_id)]
-
-
-func _team_color(team_id: int, pid: int, played: bool, winner: int) -> Color:
-	if team_id < 0:
-		return OutgameTheme.TEXT_FAINT
-	if played:
-		if team_id == winner:
-			return OutgameTheme.ACCENT_TEXT if team_id == pid else OutgameTheme.POSITIVE
-		return OutgameTheme.TEXT_FAINT
-	return OutgameTheme.ACCENT_TEXT if team_id == pid else OutgameTheme.TEXT
 
 
 func _stage_name(stage: int) -> String:

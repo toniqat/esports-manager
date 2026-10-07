@@ -510,7 +510,7 @@ func _resolve_lane_at_turret(attackers_lane: Array, defenders_lane: Array, td: T
 		else: off_defenders.append(p)
 	if not same_attackers.is_empty():
 		_resolve_turret_combat(same_attackers, same_defenders, td,
-				damage_map, turret_dmg, retreat_set, engaged, log_lines)
+				damage_map, turret_dmg, advance_set, retreat_set, engaged, log_lines)
 	if not off_attackers.is_empty() and not off_defenders.is_empty():
 		_resolve_pilot_combat(off_attackers, off_defenders, damage_map,
 				advance_set, retreat_set, engaged, log_lines)
@@ -571,11 +571,18 @@ func _resolve_pilot_combat(t0: Array, t1: Array,
 ## 수비자가 아예 없으면 공격자는 그 자리에 남아 다음 턴에도 포탑을 갈아 낸다.
 ## 예전에는 수비자가 있기만 하면 명중 여부와 무관하게 공격자 전원이 물러났다.
 ##
+## **밀어낸 수비자는 따라 나간다** — 수비자가 공격자를 하나라도 맞혔으면 그 칸의
+## 수비자 전원이 `advance_set` 에 들어가, 평범한 교전 승리처럼 물러나는 공격자를
+## 쫓아 한 칸 전진한다. 수비자의 전진 방향(적 HQ 쪽)과 공격자의 후퇴 방향
+## (자기 HQ 쪽)이 같은 칸이다. 포탑 칸에 아직 버티는 공격자(안 맞은 사람)가
+## 남으면 이동 패스의 `_veto_advance_over_stuck_enemy` 가 전진을 거둔다 —
+## 포탑을 비워 두고 지나가지 않는다.
+##
 ## 예외 하나: **때릴 수 없는 포탑**(같은 레인 T1 이 살아 있는 T2)이면 갈아 낼
 ## 것이 없으므로 붙잡아 두지 않는다 — 무조건 물러난다. 걸어서는 닿을 수 없는
 ## 칸이지만 이동 카드가 떨어뜨릴 수 있고, 그때 영원히 얼어붙으면 안 된다.
 func _resolve_turret_combat(attackers: Array, defenders: Array, td: TurretData,
-		damage_map: Dictionary, turret_dmg: Dictionary,
+		damage_map: Dictionary, turret_dmg: Dictionary, advance_set: Dictionary,
 		retreat_set: Dictionary, engaged: Dictionary, log_lines: Array) -> void:
 	# Mark all attackers and defenders as engaged (no free movement this turn).
 	for raw in attackers: engaged[raw as PilotData] = true
@@ -584,11 +591,17 @@ func _resolve_turret_combat(attackers: Array, defenders: Array, td: TurretData,
 	var hit_by_defender: Dictionary = _apply_turret_siege(
 			attackers, defenders, td, damage_map, turret_dmg, log_lines)
 	var pushed: Array = attackers if not attackable else hit_by_defender.keys()
-	_bs.blog.log_event("SIEGE", "T%d[%s] team%d @%s ← %s  (수비 %s → 후퇴 %s)" % [  # l10n-ignore
+	# 추격은 **수비 팀 단위**다(평범한 교전의 스윕과 같다) — 한 명이라도 밀어냈으면
+	# 그 칸의 같은 레인 수비자 전원이 나간다. 맞힌 사람만 내보내면 결속 듀오
+	# (`_enforce_lane_bonds` — 전진은 함께만)가 한쪽만 맞혔을 때 둘 다 묶였다.
+	var pushers: Array = [] if hit_by_defender.is_empty() else defenders
+	_bs.blog.log_event("SIEGE", "T%d[%s] team%d @%s ← %s  (수비 %s → 후퇴 %s, 추격 %s)" % [  # l10n-ignore
 			td.tier, _bs.LANE_NAMES[td.lane], td.team, str(td.grid_pos),
-			_labels(attackers), _labels(defenders), _labels(pushed)])
+			_labels(attackers), _labels(defenders), _labels(pushed), _labels(pushers)])
 	for raw in pushed:
 		retreat_set[raw as PilotData] = true
+	for raw in pushers:
+		advance_set[raw as PilotData] = true
 
 
 ## 공성 1회 판정 — 한 포탑 칸에 올라선 같은 레인 공격자 묶음에 대해 돌린다.
@@ -601,7 +614,7 @@ func _resolve_turret_combat(attackers: Array, defenders: Array, td: TurretData,
 ##    일방적으로 두들길 수 있었다 — 이제 포탑을 갈아 내는 것과 별개로 눈앞의
 ##    수비자에게도 명중 판정만큼 피해가 들어간다.
 ## 돌려주는 것은 **수비자에게 맞은 공격자** 집합(`PilotData → true`)이다 —
-## 후퇴 처리는 호출자(`_resolve_turret_combat`)가 이것으로 한다.
+## 후퇴와 수비자의 추격 전진은 호출자(`_resolve_turret_combat`)가 이것으로 한다.
 func _apply_turret_siege(attackers: Array, defenders: Array, td: TurretData,
 		damage_map: Dictionary, turret_dmg: Dictionary, log_lines: Array) -> Dictionary:
 	var hit_by_defender: Dictionary = {}

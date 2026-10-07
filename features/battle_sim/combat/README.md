@@ -301,11 +301,17 @@ Per cell with at least one pilot:
       still in the cell with the defenders). Turret
       destruction frees the matching `Building` node via
       `building_registry.unregister(b); b.queue_free()` so the visual disappears.
-    - **Knockback needs a defender.** After the judgement the attackers go into
-      `retreat_set` **only if a same-lane defender stands on the cell**, and then
-      unconditionally — the defender's roll may miss and the attacker still
-      falls back to the tile it came from. With no defender there is nobody to
-      push the attacker out: it stays on the turret and grinds it every turn.
+    - **Knockback needs a defender's hit.** After the judgement an attacker goes
+      into `retreat_set` **only if a same-lane defender's roll hit it** — a
+      missed roll, an unpaired attacker or no defender at all means it stays on
+      the turret and grinds it every turn.
+    - **The defender follows the push.** If the defenders hit at least one
+      attacker, **every** same-lane defender on the cell goes into `advance_set`
+      (team-level, like a normal fight's sweep — per-hitter would leave a bonded
+      duo stuck by `_enforce_lane_bonds` when only one of them hit). Advance =
+      toward the enemy HQ = the cell the attacker retreats to, so the defender
+      chases it off the turret. If an un-hit attacker is still standing on the
+      turret, `_veto_advance_over_stuck_enemy` cancels the chase.
       The single exception is an **unattackable** turret (T2 behind a live T1):
       there is nothing to grind, so the attacker always retreats and can never
       be frozen on it by card displacement.

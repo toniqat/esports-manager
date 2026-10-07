@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[node name="LobbyTabButton" type="Button"]
+size_flags_horizontal = 3
+focus_mode = 0
+theme_override_colors/font_color = Color(0.541, 0.541, 0.569, 1)
+theme_override_font_sizes/font_size = 28
+text = "홈"
+flat = true
+
+[node name="Badge" type="ColorRect" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = 44.0
+offset_top = 30.0
+offset_right = 58.0
+offset_bottom = 44.0
+mouse_filter = 2
+color = Color(0.878, 0.271, 0.271, 1)

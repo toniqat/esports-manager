@@ -1,6 +1,19 @@
-[gd_scene load_steps=2 format=3 uid="uid://btc8wvyy52eo3"]
+[gd_scene load_steps=7 format=3 uid="uid://btc8wvyy52eo3"]
 
 [ext_resource type="Script" uid="uid://cxs8jh34thg08" path="res://features/meta/lobby/LobbyScreen.gd" id="1_lobby"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" path="res://features/meta/lobby/LobbyCurrencyCell.tscn" id="3_cell"]
+[ext_resource type="PackedScene" path="res://features/meta/lobby/LobbyTabButton.tscn" id="4_tab"]
+
+[sub_resource type="StyleBoxFlat" id="SurfaceBar"]
+bg_color = Color(1, 1, 1, 1)
+
+[sub_resource type="StyleBoxFlat" id="Toast"]
+bg_color = Color(0.11, 0.11, 0.122, 1)
+corner_radius_top_left = 34
+corner_radius_top_right = 34
+corner_radius_bottom_right = 34
+corner_radius_bottom_left = 34
 
 [node name="Lobby" type="Control"]
 layout_mode = 3
@@ -9,4 +22,204 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_theme")
 script = ExtResource("1_lobby")
+
+[node name="Background" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.96, 0.96, 0.968, 1)
+
+[node name="Tabs" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="CurrencyStrip" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 96.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="StripBack" type="Panel" parent="CurrencyStrip"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("SurfaceBar")
+
+[node name="CurrencyCells" type="HBoxContainer" parent="CurrencyStrip"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_right = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Cell0" parent="CurrencyStrip/CurrencyCells" instance=ExtResource("3_cell")]
+layout_mode = 2
+
+[node name="Cell1" parent="CurrencyStrip/CurrencyCells" instance=ExtResource("3_cell")]
+layout_mode = 2
+
+[node name="Cell2" parent="CurrencyStrip/CurrencyCells" instance=ExtResource("3_cell")]
+layout_mode = 2
+
+[node name="Cell3" parent="CurrencyStrip/CurrencyCells" instance=ExtResource("3_cell")]
+layout_mode = 2
+
+[node name="Cell4" parent="CurrencyStrip/CurrencyCells" instance=ExtResource("3_cell")]
+layout_mode = 2
+
+[node name="StripDivider" type="HSeparator" parent="CurrencyStrip"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -1.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_type_variation = &"Divider"
+
+[node name="SafeBottom" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="ActionBar" type="Control" parent="SafeBottom"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -256.0
+offset_bottom = -128.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="TabBar" type="Control" parent="SafeBottom"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -128.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="TabBarBack" type="Panel" parent="SafeBottom/TabBar"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("SurfaceBar")
+
+[node name="TopLine" type="ColorRect" parent="SafeBottom/TabBar"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 1.0
+grow_horizontal = 2
+mouse_filter = 2
+color = Color(0.78, 0.784, 0.808, 1)
+
+[node name="TabButtons" type="HBoxContainer" parent="SafeBottom/TabBar"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="Tab0" parent="SafeBottom/TabBar/TabButtons" instance=ExtResource("4_tab")]
+layout_mode = 2
+
+[node name="Tab1" parent="SafeBottom/TabBar/TabButtons" instance=ExtResource("4_tab")]
+layout_mode = 2
+text = "컬렉션"
+
+[node name="Tab2" parent="SafeBottom/TabBar/TabButtons" instance=ExtResource("4_tab")]
+layout_mode = 2
+text = "감독"
+
+[node name="Tab3" parent="SafeBottom/TabBar/TabButtons" instance=ExtResource("4_tab")]
+layout_mode = 2
+text = "상점"
+
+[node name="Tab4" parent="SafeBottom/TabBar/TabButtons" instance=ExtResource("4_tab")]
+layout_mode = 2
+text = "패스"
+
+[node name="Toast" type="Panel" parent="SafeBottom"]
+unique_name_in_owner = true
+z_index = 5
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = -344.0
+offset_right = -40.0
+offset_bottom = -276.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("Toast")
+
+[node name="ToastText" type="Label" parent="SafeBottom/Toast"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_right = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 26
+text = "토스트 미리보기 — show_toast() 가 글을 넣는다"
+horizontal_alignment = 1
+vertical_alignment = 1
+clip_text = true

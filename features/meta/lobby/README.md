@@ -7,32 +7,76 @@ theme (`OutgameTheme`), bottom action bar. Replaces the old 3-slot TitleScreen
 ## Files
 | File | Class | Purpose |
 |---|---|---|
-| `LobbyScreen.gd` | `class_name LobbyScreen extends Control` (scene root) | **Tab host** (M8~M10): currency strip, tab bar, per-tab action bar, toast, confirm popup, manager type popup |
-| `HomeTab.gd` | `class_name HomeTab extends Control` | 홈 tab — run card, continue / new run / abandon (the old lobby body) |
+| `LobbyScreen.gd` | `class_name LobbyScreen extends Control` (root of `scenes/Lobby.tscn`) | **Tab host** (M8~M10): currency strip, tab bar, per-tab action bar, toast, confirm popup, manager type popup. **Layout lives in `scenes/Lobby.tscn`** |
+| `LobbyCurrencyCell.tscn` | — (no script, `VBoxContainer`) | One cell of the currency strip (`%Caption` · `%Value`) — item scene, one per `CURRENCY_STRIP` row |
+| `LobbyTabButton.tscn` | — (no script, flat `Button`) | One tab of the tab bar + its red `%Badge` dot — item scene, one per `TABS` row |
+| `HomeTab.tscn` + `.gd` | `class_name HomeTab extends Control` | 홈 tab — run card, continue / new run / abandon (the old lobby body). **Layout lives in the `.tscn`** |
 | `ConfirmPopup.tscn` + `.gd` | `class_name ConfirmPopup extends CanvasLayer` | Reusable modal confirm (dim + white card + cancel / confirm). **Layout lives in the `.tscn`**, style in `OutgameTheme.tres` variations — first scene-authored outgame UI |
 | `ManagerTypePopup.tscn` + `.gd` | `class_name ManagerTypePopup extends CanvasLayer` | First-lobby manager type pick (운영형 / 실전형), not dismissible (M3); prestige re-pick mode, dismissible (M9). **Layout lives in the `.tscn`** |
 | `ManagerTypeOption.tscn` + `.gd` | `class_name ManagerTypeOption extends PanelContainer` | One option card of `ManagerTypePopup` (name, `현재` chip, desc, six stat cells) — item scene instantiated per type |
 
 ## Tab host (M8~M10) — `docs/outgame_dev_plan.md` §12.6
 ```
-┌ currency strip (CURRENCY_H) — outgame · levelup · tickets · shards ┐
+┌ currency strip (%CurrencyStrip) — outgame · levelup · tickets · shards ┐
 │ tab body (current tab's Control)                                   │
 ├ action bar (only when the tab's bar_specs() is non-empty)          ┤
 └ tab bar (홈 · 컬렉션 · 감독 · 상점 · 패스), extends into the bottom inset ┘
 ```
-- `TABS` is the one table; `_make_tab(id)` builds `HomeTab` / `CollectionTab` / `ManagerTab` /
-  `ShopTab` / `PassTab` lazily on first open, then hides / shows.
+- `TABS` is the one table; `_make_tab(id)` builds `HomeTab` (`HomeTab.create()`) / `CollectionTab` /
+  `ManagerTab` / `ShopTab` / `PassTab` lazily on first open, adds it under `%Tabs`, then hides / shows.
+- **Tab rect** (`_place_tab`): anchors full rect, `offset_top` = `%CurrencyStrip`'s height, `offset_bottom` =
+  top of `%ActionBar` (tab has a bar) or `%TabBar` (no bar) — read from the scene's offsets, so resizing a
+  bar in the editor moves the tab bodies with it. Set before `setup(host)`, so tabs can read `size` there.
 - Tab duck-typed contract: `bar_specs() -> Array` (fixed has-bar / no-bar per tab), `setup(host)`,
   `on_bar_pressed(i)`, `on_shown()` (every activation — redraw from the profile).
 - Host services: `show_toast(msg, is_error)`, `refresh_currency()`, `rebuild_bar()` / `relayout_bar()` /
   `bar_buttons()`, `switch_tab(id)`, `set_tab_badge(id, on)` / `refresh_badges()` (감독 = unseen
   unlocked traits), `open_confirm(title, body, cancel, confirm, danger, callback)`.
 - **Bottom-bar exception**: only the lobby puts the tab bar at the very bottom; the action bar
-  (`OutgameTheme.add_bottom_bar` specs, weights, primary on the right) is lifted on top of it
-  (`action_bar_top()`), its bottom inset padding removed.
-- Static layout helpers: `tab_bar_top()`, `action_bar_top()`, `content_rect(has_bar)`.
+  (`OutgameTheme.add_bottom_bar` specs, weights, primary on the right — shared code, built per tab) is
+  placed in the `%ActionBar` slot on top of it (`_lift_bar`: y 0 in the slot, slot height, bottom inset
+  padding removed **before** the height is set — otherwise the inset margin's minimum height clamps the
+  button taller and it overhangs the tab bar).
+- (The old static helpers `tab_bar_top()` / `action_bar_top()` / `content_rect()` and `CURRENCY_H` /
+  `TAB_BAR_H` are gone — the scene owns those sizes.)
+
+### Scene (`scenes/Lobby.tscn`) — layout / style source of truth
+```
+Lobby (Control, full rect, theme = OutgameTheme.tres, LobbyScreen.gd)
+├ %Background      ColorRect BG, full rect
+├ %Tabs            Control, full rect — tab bodies are added here (below everything else)
+├ %CurrencyStrip   Control, top-wide, 96 high
+│ ├ %StripBack     Panel (local SURFACE style)
+│ ├ %CurrencyCells HBox (16 px side margins, sep 0) → 5 preview LobbyCurrencyCell instances
+│ │                (Gap 12 · %Caption CaptionLabel 18 · Gap 2 · %Value BodyLabel 30)
+│ └ StripDivider   HSeparator `Divider`, bottom 1 px
+└ %SafeBottom      Control, full rect (bottom offset = device inset, code)
+  ├ %ActionBar     Control slot, bottom-anchored, 128 high, right above the tab bar
+  ├ %TabBar        Control, bottom-anchored, 128 high
+  │ ├ %TabBarBack  Panel (local SURFACE style) — extends down into the inset (code)
+  │ ├ TopLine      ColorRect BORDER_STRONG, 1 px
+  │ └ %TabButtons  HBox sep 0 → 5 preview LobbyTabButton instances (flat, font 28, %Badge 14×14 hidden)
+  └ %Toast         Panel (local RAIL pill, radius 34), z 5, 20 px above the action bar slot
+    └ %ToastText   OnFillLabel 26, centred, clipped
+```
+- **Code-owned**: `indent_to_safe_top(self)` + `_fit_safe_area` (`%Background` / `%StripBack` extended under the
+  notch, `%SafeBottom.offset_bottom = -inset`, `%TabBarBack.offset_bottom = +inset`); item counts / texts from
+  `TABS` · `CURRENCY_STRIP` (`_sync_items` reuses the scene's preview instances, instantiates or frees the
+  rest); selected-tab font colours; badge visibility; the action bar buttons; the error toast colour (the
+  scene's toast style duplicated and recoloured `NEGATIVE`).
+- Local styles (no theme variation fits yet): `SurfaceBar` (flat `SURFACE`, square — strip and tab bar),
+  `Toast` (flat `RAIL` pill, radius 34); `TopLine` / badge / background are `ColorRect` colours.
 
 ## HomeTab (was LobbyScreen body)
+- **Layout lives in `HomeTab.tscn`**; created with `HomeTab.create()` (`.new()` is an empty Control).
+  Tree: `HomeTab` (full rect, theme) → `VBox` (top-wide, sep 0): Gap 64 · `Title` (`HeadingLabel` 64) · Gap ·
+  `Rule` (80×6 `ACCENT` ColorRect) · Gap · `%Summary` (`CaptionLabel`) · Gap · `Section` "진행 중인 런" (920 wide) ·
+  Gap · `%RunCard` / `%EmptyCard` (920 wide `Panel` with the `PopupCard` variation — radius 24; Panel so the
+  variation's padding is ignored and a `MarginContainer` 44/40/44/42 sets it).
+  `%RunCard` → `Header` (`%Phase` `TitleLabel` + `%LiveChip` "경기 진행 중", local `ACCENT_DIM` pill) · `%Date` ·
+  `Divider` · `%Team` · `%Trophies` (`AccentLabel`) · `%Record` · spacer · `%SavedAt` (right). Gaps are spacer
+  Controls sized so every line sits on its old pixel row.
+- Code-owned: texts, which card is visible, `%LiveChip.visible` (`_fill` / `_show_run(meta)`).
 - The host's `_ready` sets **`GameManager.use_test_run = false`** first — runs entered through the
   lobby save to `user://run.save`; direct editor runs of Season / MatchFlow keep `true`
   and save to the hidden `user://run_test.save`.
@@ -118,6 +162,8 @@ profile**; changing it later is only via prestige (M9).
   First-lobby mode (`open()`) is unchanged.
 
 ## Safe area
-Pattern B of `docs/mobile_safe_area.md`: `ScreenMetrics.indent_to_safe_top(self)` +
-`OutgameTheme.add_background` (extends under the notch). Toast sits at
-`OutgameTheme.bottom_bar_top() - 64`, above the bar and the gesture zone.
+Pattern B of `docs/mobile_safe_area.md`, scene version: `ScreenMetrics.indent_to_safe_top(self)` moves the
+whole screen below the notch; `%Background` and `%StripBack` get `extend_background` (cover the notch band);
+everything at the bottom hangs from `%SafeBottom` (bottom offset = inset) so the action bar, tab bar and
+toast stay above the gesture zone, while `%TabBarBack` extends back down to the screen edge. The toast
+sits 20 px above the action bar slot.

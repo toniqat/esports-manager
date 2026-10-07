@@ -20,10 +20,12 @@ extends Control
 # manager bubble on the right, `*text` = centred narration.
 #
 # **The frame lives in `MessengerView.tscn`** (background, sub / title, divider, the
-# scroll and the bottom hint — edit them in the editor; styles are `OutgameTheme.tres`
-# variations). The chat log itself — bubbles, wedges, narration, note chips and answer
-# buttons — is still placed by code under `%Body`: each line's height is measured from
-# its text. Create with `MessengerView.create()` (`.new()` is an empty Control).
+# scroll with the `%Log` column and the `%Answers` block, the bottom hint — edit them in
+# the editor; styles are `OutgameTheme.tres` variations). **Every log line is an item scene**
+# in this folder, appended to `%Log`: `MessengerNpcBubble` · `MessengerPlayerBubble` ·
+# `MessengerNarration` · `MessengerNoteChip`; answers are `MessengerAnswerButton`s in
+# `%AnswerList`. Sizes come from the containers (wrapped text decides each line's height).
+# Create with `MessengerView.create()` (`.new()` is an empty Control).
 #
 # The view never indents itself — its parent screen already sits on the safe
 # top (`ScreenMetrics.indent_to_safe_top`); it fills the parent, extends its
@@ -37,23 +39,9 @@ extends Control
 signal choice_picked(idx: int)
 signal closed
 
-const MARGIN_X: float      = 40.0
-const PORTRAIT_D: float    = 96.0
-const BUBBLE_MAX_W: float  = 700.0
-const BUBBLE_PAD_X: float  = 26.0
-const BUBBLE_PAD_Y: float  = 20.0
-const BUBBLE_GAP: float    = 18.0
-const WEDGE_W: float       = 18.0
-const WEDGE_H: float       = 22.0
-const LINE_FONT: int       = 27
-const NARR_FONT: int       = 24
-const NOTE_FONT: int       = 22
-const NOTE_H: float        = 46.0
-const ANSWER_FONT: int     = 26
-const ANSWER_H: float      = 96.0
-const ANSWER_GAP: float    = 14.0
-
 const SCENE_PATH: String = "res://features/season/press/MessengerView.tscn"
+const NARRATION_SCENE: PackedScene = preload("res://features/season/press/MessengerNarration.tscn")
+const ANSWER_SCENE: PackedScene = preload("res://features/season/press/MessengerAnswerButton.tscn")
 
 enum Stage { LINES, CHOICES, OUTCOME, DONE }
 
@@ -71,11 +59,12 @@ var _last_side: String = ""          # "npc" / "me" / "narr" — portrait only w
 @onready var _sub_lbl: Label = %Sub
 @onready var _hint_lbl: Label = %Hint
 @onready var _body: Control = %Body
+@onready var _log: Control = %Log
+@onready var _answers: Control = %Answers
+@onready var _answer_list: Control = %AnswerList
 @onready var _scroll: ScrollContainer = %Scroll
 var _drag: DragScroll
-var _body_y: float = 0.0
 var _press_outside_scroll: bool = false
-var _answer_holder: Control
 var _picked_frame: int = -1         # process frame of the answer tap (its release is not a tap)
 
 
@@ -90,9 +79,11 @@ func _ready() -> void:
 	# Drag / fling scrolling instead of the engine's touch drag. `%Scroll` / `%Body`
 	# are PASS in the scene so releases bubble up to this view.
 	_drag = DragScroll.attach(_scroll)
-	# Device insets only — the layout itself is the scene's.
+	# Device sizes only — the layout itself is the scene's. The column is at least as wide as
+	# the screen, so an overflowing log's scroll bar goes past the right edge (see `%Scroll`).
 	ScreenMetrics.extend_background(%Background)
 	(%SafeArea as Control).offset_bottom = -maxf(0.0, ScreenMetrics.insets().w)
+	_body.custom_minimum_size.x = ScreenMetrics.vp_w()
 	if UiPreview.is_standalone(self):
 		_fill_preview()
 
@@ -108,10 +99,8 @@ func open(sub: String, title: String, portrait: Texture2D, lines: Array, choices
 	_shown = 0
 	_last_side = ""
 	_stage = Stage.LINES
-	for c in _body.get_children():
-		c.queue_free()
-	_body_y = 0.0
-	_answer_holder = null
+	_clear(_log)
+	_clear_answers()
 	_reveal_next_line()
 
 
@@ -165,160 +154,64 @@ func _add_line(text: String) -> void:
 	elif text.begins_with("*"):
 		_add_narration(text.substr(1).strip_edges())
 	else:
-		_add_npc_bubble(text, _last_side != "npc")
-
-
-func _add_npc_bubble(text: String, with_portrait: bool) -> void:
-	_last_side = "npc"
-	var bubble_x: float = MARGIN_X + PORTRAIT_D + 26.0
-	var body_w: float = minf(BUBBLE_MAX_W, ScreenMetrics.vp_w() - bubble_x - MARGIN_X)
-	var h: float = _text_block_height(text, body_w - BUBBLE_PAD_X * 2.0, LINE_FONT) \
-			+ BUBBLE_PAD_Y * 2.0
-	if with_portrait:
-		var holder: Control = OutgameTheme.add_round_portrait(_body, _portrait,
-				Vector2(MARGIN_X, _body_y), PORTRAIT_D, OutgameTheme.BORDER)
-		if _portrait == null:
-			var glyph := Control.new()
-			glyph.size = Vector2(PORTRAIT_D, PORTRAIT_D)
-			glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			glyph.draw.connect(_draw_reporter_glyph.bind(glyph))
-			holder.add_child(glyph)
-	_add_bubble_panel(Vector2(bubble_x, _body_y), Vector2(body_w, h), text,
-			OutgameTheme.SURFACE, OutgameTheme.TEXT, HORIZONTAL_ALIGNMENT_LEFT, true)
-	if with_portrait:
-		_add_wedge(Vector2(bubble_x - WEDGE_W + 1.0, _body_y + 26.0), true)
-	_advance(h + BUBBLE_GAP)
+		var b := MessengerNpcBubble.create()
+		b.setup(text, _portrait, _last_side != "npc")
+		_log.add_child(b)
+		_last_side = "npc"
 
 
 func _add_player_bubble(text: String) -> void:
 	_last_side = "me"
-	var body_w: float = BUBBLE_MAX_W - 60.0
-	var h: float = _text_block_height(text, body_w - BUBBLE_PAD_X * 2.0, LINE_FONT) \
-			+ BUBBLE_PAD_Y * 2.0
-	var x: float = ScreenMetrics.vp_w() - MARGIN_X - body_w
-	_add_bubble_panel(Vector2(x, _body_y), Vector2(body_w, h), text,
-			OutgameTheme.ACCENT, OutgameTheme.TEXT_ON_FILL, HORIZONTAL_ALIGNMENT_RIGHT, false)
-	_add_wedge(Vector2(x + body_w - 1.0, _body_y + 24.0), false)
-	_advance(h + BUBBLE_GAP)
+	var b := MessengerPlayerBubble.create()
+	b.setup(text)
+	_log.add_child(b)
 
 
 func _add_narration(text: String) -> void:
 	_last_side = "narr"
-	var w: float = ScreenMetrics.vp_w() - MARGIN_X * 4.0
-	var h: float = _text_block_height(text, w, NARR_FONT) + 12.0
-	var lbl := UiHelpers.mk_label(_body, text, NARR_FONT, OutgameTheme.TEXT_SUB,
-			Vector2(MARGIN_X * 2.0, _body_y + 6.0), Vector2(w, h), HORIZONTAL_ALIGNMENT_CENTER)
-	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_advance(h + BUBBLE_GAP)
+	var n: Control = NARRATION_SCENE.instantiate()
+	(n.get_node("%Text") as Label).text = text
+	_log.add_child(n)
 
 
 ## Effect / verdict chip, centred. `good` picks the tint.
 func _add_note(text: String, good: bool) -> void:
 	_last_side = "narr"
-	var font: Font = ThemeDB.fallback_font
-	var w: float = minf(ScreenMetrics.vp_w() - MARGIN_X * 2.0,
-			font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, NOTE_FONT).x + 56.0)
-	OutgameTheme.add_chip(_body, text, Vector2((ScreenMetrics.vp_w() - w) * 0.5, _body_y),
-			Vector2(w, NOTE_H), OutgameTheme.ACCENT_DIM if good else OutgameTheme.SURFACE_SUNK,
-			OutgameTheme.ACCENT_TEXT if good else OutgameTheme.TEXT_SUB, NOTE_FONT)
-	_advance(NOTE_H + 10.0)
+	var c := MessengerNoteChip.create()
+	c.setup(text, good)
+	_log.add_child(c)
 
 
-func _add_bubble_panel(pos: Vector2, sz: Vector2, text: String, bg: Color, fg: Color,
-		align: int, bordered: bool) -> void:
-	var panel := Panel.new()
-	panel.add_theme_stylebox_override("panel", OutgameTheme.flat_style(bg, 22,
-			OutgameTheme.BORDER if bordered else null))
-	panel.position = pos
-	panel.size = sz
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_body.add_child(panel)
-	var lbl := Label.new()
-	lbl.text = text
-	lbl.add_theme_font_size_override("font_size", LINE_FONT)
-	lbl.add_theme_color_override("font_color", fg)
-	lbl.position = Vector2(BUBBLE_PAD_X, BUBBLE_PAD_Y)
-	lbl.size = Vector2(sz.x - BUBBLE_PAD_X * 2.0, sz.y - BUBBLE_PAD_Y * 2.0)
-	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	lbl.horizontal_alignment = align as HorizontalAlignment
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(lbl)
-
-
-func _advance(dy: float) -> void:
-	_body_y += dy
-	_body.custom_minimum_size = Vector2(ScreenMetrics.vp_w(), _body_y)
-
-
-## Bubble tail — a dedicated childless Control (a Control's `_draw` paints under its children).
-func _add_wedge(pos: Vector2, point_left: bool) -> void:
-	var w := Control.new()
-	w.position = pos
-	w.size = Vector2(WEDGE_W, WEDGE_H)
-	w.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	w.draw.connect(_draw_wedge.bind(w, point_left))
-	_body.add_child(w)
-
-
-func _draw_wedge(node: Control, point_left: bool) -> void:
-	var col: Color = OutgameTheme.SURFACE if point_left else OutgameTheme.ACCENT
-	var pts: PackedVector2Array
-	if point_left:
-		pts = PackedVector2Array([
-			Vector2(WEDGE_W, 0.0), Vector2(0.0, WEDGE_H * 0.45), Vector2(WEDGE_W, WEDGE_H)])
-	else:
-		pts = PackedVector2Array([
-			Vector2(0.0, 0.0), Vector2(WEDGE_W, WEDGE_H * 0.45), Vector2(0.0, WEDGE_H)])
-	node.draw_colored_polygon(pts, col)
-
-
-## Reporter portrait placeholder — a microphone. Delete once reporter art exists.
-func _draw_reporter_glyph(node: Control) -> void:
-	var c: Vector2 = Vector2(PORTRAIT_D, PORTRAIT_D) * 0.5
-	var col: Color = OutgameTheme.TEXT_SUB
-	node.draw_circle(c, PORTRAIT_D * 0.5 - 2.0, OutgameTheme.SURFACE_SUNK)
-	node.draw_rect(Rect2(c.x - 11.0, c.y - 26.0, 22.0, 30.0), col)
-	node.draw_circle(Vector2(c.x, c.y - 26.0), 11.0, col)
-	node.draw_circle(Vector2(c.x, c.y + 4.0), 11.0, col)
-	node.draw_rect(Rect2(c.x - 3.0, c.y + 4.0, 6.0, 22.0), col)
-	node.draw_rect(Rect2(c.x - 16.0, c.y + 24.0, 32.0, 6.0), col)
+## Frees every child right away from the layout's point of view (out of the tree now,
+## freed at the end of the frame).
+static func _clear(parent: Node) -> void:
+	for c in parent.get_children():
+		parent.remove_child(c)
+		c.queue_free()
 
 
 # ── Choices ──────────────────────────────────────────────────────────────────
 func _show_choices() -> void:
-	if _answer_holder != null or _stage != Stage.LINES:
+	if _answers.visible or _stage != Stage.LINES:
 		return
 	_stage = Stage.CHOICES
 	if _choices.is_empty():
 		_stage = Stage.OUTCOME
 		_refresh_hint()
 		return
-	var w: float = BUBBLE_MAX_W - 60.0
-	var x: float = ScreenMetrics.vp_w() - MARGIN_X - w
-	_answer_holder = Control.new()
-	_answer_holder.position = Vector2(0, _body_y + 10.0)
-	_answer_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_body.add_child(_answer_holder)
-	var y: float = 0.0
 	for i in _choices.size():
-		var text: String = String(_choices[i])
-		var h: float = maxf(ANSWER_H, _text_block_height(text, w - 44.0, ANSWER_FONT) + 34.0)
-		var b := Button.new()
-		b.text = text
-		b.position = Vector2(x, y)
-		b.size = Vector2(w, h)
-		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		b.alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		b.focus_mode = Control.FOCUS_NONE
-		OutgameTheme.style_ghost_button(b, ANSWER_FONT)
+		var b: Button = ANSWER_SCENE.instantiate()
+		b.text = String(_choices[i])
 		b.pressed.connect(_on_choice_pressed.bind(i))
-		_answer_holder.add_child(b)
-		y += h + ANSWER_GAP
-	_answer_holder.size = Vector2(ScreenMetrics.vp_w(), y)
-	_advance(y + 10.0)
+		_answer_list.add_child(b)
+	_answers.visible = true
 	_refresh_hint()
 	_scroll_to_bottom()
+
+
+func _clear_answers() -> void:
+	_answers.visible = false
+	_clear(_answer_list)
 
 
 func _on_choice_pressed(idx: int) -> void:
@@ -329,10 +222,7 @@ func _on_choice_pressed(idx: int) -> void:
 	# PASS — so that same release bubbles on up to `_on_tap_input` and would
 	# close the outcome before it is read. Ignore taps from this frame.
 	_picked_frame = Engine.get_process_frames()
-	if _answer_holder != null:
-		_body_y -= _answer_holder.size.y + 10.0
-		_answer_holder.queue_free()
-		_answer_holder = null
+	_clear_answers()
 	_add_player_bubble(String(_choices[idx]))
 	_refresh_hint()
 	_scroll_to_bottom()
@@ -378,27 +268,15 @@ func _refresh_hint() -> void:
 			_hint_lbl.text = ""
 
 
-## Scroll to the bottom one frame later (new bubbles are not laid out yet).
+## Scroll to the bottom one frame later — new lines are laid out by the containers at the
+## end of this frame (wrapped heights included); the scroll bar clamps the value to its end.
 func _scroll_to_bottom() -> void:
 	if _scroll == null or not is_inside_tree():
 		return
 	await get_tree().process_frame
 	if is_instance_valid(_scroll):
-		_scroll.scroll_vertical = int(maxf(0.0, _body_y))
-
-
-## Height of autowrapped text, asked of the font directly (a just-created
-## Label has size 0 in its first frame).
-static func _text_block_height(text: String, w: float, font_size: int) -> float:
-	var font: Font = ThemeDB.fallback_font
-	var line_h: float = float(font_size) * 1.35
-	var total: float = 0.0
-	for para in text.split("\n"):
-		var wrapped: int = maxi(1, int(ceil(
-				font.get_string_size(para, HORIZONTAL_ALIGNMENT_LEFT, -1,
-						font_size).x / maxf(1.0, w))))
-		total += line_h * float(wrapped)
-	return maxf(line_h, total)
+		var bar: VScrollBar = _scroll.get_v_scroll_bar()
+		_scroll.scroll_vertical = int(ceil(bar.max_value))
 
 
 ## F6 단독 실행 미리보기 — 손으로 적은 기자회견 한 판: 기자 두 줄 · 해설 · 내 답 한 줄을

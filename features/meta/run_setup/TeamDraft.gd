@@ -79,7 +79,7 @@ func cap_bonus() -> int:
 func ensure_view() -> void:
 	if _view != null:
 		return
-	_view = TeamDraftView.new()
+	_view = TeamDraftView.create()
 	add_child(_view)
 
 

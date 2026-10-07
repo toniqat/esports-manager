@@ -8,6 +8,11 @@ extends Control
 #   scroll: preset chips → stats card (type · Lv · six stats) → TraitPickerView
 #   bar: 뒤로 (1) / 다음 (2)
 #
+# **The layout is `ManagerStepView.tscn`** (status line, scroll, chips / stats card / traits
+# slots, bottom bar). Construct with `ManagerStepView.create()`. Code fills the texts and
+# rebuilds the shared-module content (`ManagerUi` chips + stat cells, `TraitPickerView`)
+# into the slots.
+#
 # - The **active preset is preselected** (the M1 "nothing preselected" rule is for
 #   choice lists; a preset is a loadout you already built).
 # - Traits can be swapped in place: edits go to a draft copy of the chosen preset;
@@ -19,31 +24,30 @@ extends Control
 signal back_requested
 signal next_requested
 
-const PAD_X: float = 24.0
-const STATUS_H: float = 44.0
-const LIST_BAR_GAP: float = 16.0
-const CARD_PAD: float = 28.0
+const SCENE_PATH: String = "res://features/meta/run_setup/ManagerStepView.tscn"
 
 ## Chosen preset index (profile `presets`).
 var preset_idx: int = -1
 
 var _pm: Node
 var _draft: Dictionary = {}
-var _scroll: ScrollContainer
-var _body: Control
-var _status: Label
-var _next_btn: Button
 var _built: bool = false
 
 
+static func create() -> ManagerStepView:
+	return (load(SCENE_PATH) as PackedScene).instantiate() as ManagerStepView
+
+
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-	mouse_filter = Control.MOUSE_FILTER_PASS
 	if _built:
 		return
 	_built = true
 	_pm = get_node("/root/ProfileManager")
-	_build()
+	RunSetupScreen.fit_insets(%Safe, %Bar)
+	# Drag / fling scrolling instead of the engine's touch drag (`DragScroll`).
+	DragScroll.attach(%Scroll)
+	(%Back as Button).pressed.connect(func() -> void: back_requested.emit())
+	(%Next as Button).pressed.connect(_on_next_pressed)
 	select_preset(ManagerProgress.active_index(_pm.profile))
 
 
@@ -81,82 +85,66 @@ func toggle_trait(trait_id: int) -> String:
 	return err
 
 
-# ── Build ────────────────────────────────────────────────────────────────────
-func _build() -> void:
-	var top: float = RunSetupScreen.content_top()
-	_status = UiHelpers.mk_label(self, "", 24, OutgameTheme.TEXT_SUB,
-			Vector2(PAD_X + 8.0, top), Vector2(ScreenMetrics.vp_w() - PAD_X * 2.0 - 16.0, STATUS_H))
-	_status.clip_text = true
-	var list_y: float = top + STATUS_H + 8.0
-	var list_h: float = OutgameTheme.bottom_bar_top() - LIST_BAR_GAP - list_y
-	var sv: Dictionary = OutgameTheme.add_vscroll(self, Vector2(0, list_y),
-			Vector2(ScreenMetrics.vp_w(), list_h))
-	_scroll = sv["scroll"]
-	_body = sv["body"]
-	_body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	var bar: Array = OutgameTheme.add_bottom_bar(self, [
-		{"text": "뒤로", "style": "ghost",   "font": 30, "weight": 1.0},
-		{"text": "다음", "style": "primary", "font": 38, "weight": 2.0},
-	])
-	(bar[0] as Button).pressed.connect(func() -> void: back_requested.emit())
-	_next_btn = bar[1]
-	_next_btn.pressed.connect(_on_next_pressed)
-
-
+# ── Fill ─────────────────────────────────────────────────────────────────────
+# The layout (status line, scroll, chips slot, stats card, traits slot, bar) is the scene.
+# The chips, the six stat cells and the trait block are built by shared modules
+# (`ManagerUi`, `TraitPickerView` — also used by the lobby 감독 tab) into their slots and
+# rebuilt on every change; each slot's height is what that builder returns.
 func _rebuild(status_override: String = "") -> void:
-	var keep: int = _scroll.scroll_vertical
-	for c in _body.get_children():
-		_body.remove_child(c)
-		c.queue_free()
+	var scroll: ScrollContainer = %Scroll
+	var keep: int = scroll.scroll_vertical
+	var chips: Control = %Chips
+	var cells: Control = %Cells
+	var traits: Control = %Traits
+	for slot: Control in [chips, cells, traits]:
+		for c in slot.get_children():
+			slot.remove_child(c)
+			c.queue_free()
 	var prof: Dictionary = _pm.profile
-	var w: float = ScreenMetrics.vp_w() - PAD_X * 2.0
-	var y: float = 4.0
-	y += ManagerUi.add_preset_chips(_body, Vector2(PAD_X, y), w, prof, preset_idx,
-			_on_chip_pressed) + 24.0
+	var w: float = chips.size.x if chips.size.x > 0.0 else ScreenMetrics.vp_w() - 48.0
+	chips.custom_minimum_size.y = ManagerUi.add_preset_chips(chips, Vector2.ZERO, w, prof,
+			preset_idx, _on_chip_pressed)
 
 	# Stats card — type · level, the six stats this preset gives.
-	var card_h: float = 92.0 + ManagerUi.STAT_CELL_H + CARD_PAD
-	var card: Panel = OutgameTheme.add_card(_body, Vector2(PAD_X, y), Vector2(w, card_h), 20)
 	var mgr: Dictionary = prof.get("manager", {})
 	var trow: Dictionary = StaffSystem.manager_type_row(int(mgr.get("type", 0)))
-	UiHelpers.mk_label(card, "%s 감독 · Lv %d" % [String(trow.get("name", "감독")),
-			ManagerProgress.level_of(prof)], 30, OutgameTheme.TEXT,
-			Vector2(CARD_PAD, 22), Vector2(w - CARD_PAD * 2.0 - 260, 42))
+	(%CardTitle as Label).text = "%s 감독 · Lv %d" % [String(trow.get("name", "감독")),
+			ManagerProgress.level_of(prof)]
 	var all_bonus: int = TraitSystem.sum_p1(selected_traits(), "manager_all")
-	var note: String = "특성 보정 전체 %s" % ManagerUi.signed(all_bonus) if all_bonus != 0 \
-			else "전문화는 로비 감독 탭에서"
-	UiHelpers.mk_label(card, note, 20, OutgameTheme.ACCENT_TEXT if all_bonus != 0
-			else OutgameTheme.TEXT_FAINT, Vector2(w - CARD_PAD - 300, 30), Vector2(300, 30),
-			HORIZONTAL_ALIGNMENT_RIGHT)
-	ManagerUi.add_stat_cells(card, Vector2(CARD_PAD, 80), w - CARD_PAD * 2.0,
+	var note: Label = %CardNote
+	if all_bonus != 0:
+		note.text = "특성 보정 전체 %s" % ManagerUi.signed(all_bonus)
+		note.add_theme_color_override("font_color", OutgameTheme.ACCENT_TEXT)
+	else:
+		note.text = "전문화는 로비 감독 탭에서"
+		note.remove_theme_color_override("font_color")
+	var cells_w: float = cells.size.x if cells.size.x > 0.0 else w - 56.0
+	cells.custom_minimum_size.y = ManagerUi.add_stat_cells(cells, Vector2.ZERO, cells_w,
 			ManagerProgress.preset_stats(prof, _draft), ManagerProgress.base_stats(prof))
-	y += card_h + 28.0
 
 	var tv := TraitPickerView.new()
-	tv.position = Vector2(PAD_X, y)
-	_body.add_child(tv)
-	y += tv.build(w, selected_traits(), _pm.owned_trait_ids(), [])
+	traits.add_child(tv)
+	traits.custom_minimum_size.y = tv.build(w, selected_traits(), _pm.owned_trait_ids(), [])
 	tv.trait_pressed.connect(_on_trait_pressed)
-	_body.custom_minimum_size = Vector2(ScreenMetrics.vp_w(), y + 32.0)
-	_scroll.set_deferred("scroll_vertical", keep)
+	scroll.set_deferred("scroll_vertical", keep)
 	_refresh_status(status_override)
 
 
 func _refresh_status(override: String = "") -> void:
 	var err: String = validation_error()
-	_next_btn.disabled = err != ""
+	(%Next as Button).disabled = err != ""
+	var status: Label = %Status
 	if override != "":
-		_status.text = override
-		_status.add_theme_color_override("font_color", OutgameTheme.NEGATIVE)
+		status.text = override
+		status.add_theme_color_override("font_color", OutgameTheme.NEGATIVE)
 	elif err != "":
-		_status.text = err
-		_status.add_theme_color_override("font_color", OutgameTheme.NEGATIVE)
+		status.text = err
+		status.add_theme_color_override("font_color", OutgameTheme.NEGATIVE)
 	else:
 		var bonus: int = TraitSystem.bonus_points(selected_traits())
-		_status.text = "%s · 보너스 점수 %s · 특성을 바꾸면 이 프리셋에 바로 저장됩니다" % [
+		status.text = "%s · 보너스 점수 %s · 특성을 바꾸면 이 프리셋에 바로 저장됩니다" % [
 			ManagerUi.preset_name(preset_idx), ManagerUi.signed(bonus)]
-		_status.add_theme_color_override("font_color", OutgameTheme.TEXT_SUB)
+		status.remove_theme_color_override("font_color")
 
 
 # ── Input ────────────────────────────────────────────────────────────────────

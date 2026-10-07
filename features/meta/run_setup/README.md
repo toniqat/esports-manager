@@ -17,14 +17,19 @@ level application) is documented in `features/season/README.md` "Entry point"
 ## Files
 | File | Class | Role |
 |---|---|---|
-| `RunSetupScreen.gd` | `class_name RunSetupScreen extends Control` (scene root) | Orchestrator: step table `STEPS`, step header, step views, builds `run_setup`, calls `GameManager.start_run`, launch fade. `content_top()` = where step bodies start. |
-| `ChoiceListView.gd` | `class_name ChoiceListView extends Control` | Shared "pick one card" step: hint line → scrolling card list → bar `뒤로`(1) / `다음`(2). Subclasses fill `_items` / `_card_h` / `_fill_card` / `_hint_text`. Signals `back_requested` / `next_requested`, value `selected_id`. **Nothing is pre-selected** — `다음` stays disabled until the player taps a card, so the rules (cap, team package) are read rather than skipped by tapping `다음` repeatedly. |
-| `ScenarioStepView.gd` | `class_name ScenarioStepView extends ChoiceListView` | Step 1 — `RunRules.scenarios()`: name, salary-cap chip, desc. |
-| `TeamStepView.gd` | `class_name TeamStepView extends ChoiceListView` | Step 2 — `RunRules.team_packages()` (8): name · short name, budget (+ bar relative to the highest budget), facility level, "직접 해야 하는 일" (`manual_areas` → `RunRules.area_label`, empty = "없음"), desc. Hint: higher budget = easier. Display / snapshot only — effects are M3 / M6. |
-| `ManagerStepView.gd` | `class_name ManagerStepView extends Control` | Step 3 감독 (M8/M9) — preset chips, the preset's six stats, `TraitPickerView` (from `../manager/`) with in-place trait swaps; `preset_idx`, `selected_traits()`, `validation_error()`. Signals `back_requested` / `next_requested`. |
+| `RunSetupScreen.gd` (+ `scenes/RunSetup.tscn`) | `class_name RunSetupScreen extends Control` (scene root) | Orchestrator: step table `STEPS`, step header (`StepChip` per row), step views (into `%Steps`), builds `run_setup`, calls `GameManager.start_run`, launch fade. `content_top()` = where step bodies start (116). Static `fit_insets(safe, bar)` — shared by every step scene (see "Scenes"). |
+| `StepChip.tscn` + `.gd` | `class_name StepChip extends Panel` | Item scene: one header pill. `create()`, `set_text`, `paint(bg, fg, border)` (state colours). |
+| `ChoiceListView.tscn` + `.gd` | `class_name ChoiceListView extends Control` | Shared "pick one card" step: hint line → scrolling card list → bar `뒤로`(1) / `다음`(2). Subclasses fill `_items` / `_make_card(item) -> Button` / `_hint_text`. Signals `back_requested` / `next_requested`, value `selected_id`. **Nothing is pre-selected** — `다음` stays disabled until the player taps a card, so the rules (cap, team package) are read rather than skipped by tapping `다음` repeatedly. |
+| `ScenarioStepView.tscn` + `.gd` | `class_name ScenarioStepView extends ChoiceListView` | Step 1 — `RunRules.scenarios()` → one `ScenarioCard` each. Scene **inherits** `ChoiceListView.tscn` (root script swapped). `create()`. |
+| `ScenarioCard.tscn` + `.gd` | `class_name ScenarioCard extends Button` | Item scene: name, salary-cap chip, desc. `create()`, `fill(item)`. |
+| `TeamStepView.tscn` + `.gd` | `class_name TeamStepView extends ChoiceListView` | Step 2 — `RunRules.team_packages()` (8) → one `TeamCard` each. Hint: higher budget = easier. Display / snapshot only — effects are M3 / M6. Scene inherits `ChoiceListView.tscn`. `create()`. |
+| `TeamCard.tscn` + `.gd` | `class_name TeamCard extends Button` | Item scene: name · short name, budget (+ bar relative to the highest budget — `%Fill.anchor_right`), facility level, "직접 해야 하는 일" (`manual_areas` → `RunRules.area_label`, empty = "없음" in green), desc. `fill(item, max_budget)`. |
+| `ManagerStepView.tscn` + `.gd` | `class_name ManagerStepView extends Control` | Step 3 감독 (M8/M9) — preset chips, the preset's six stats, `TraitPickerView` (from `../manager/`) with in-place trait swaps; `preset_idx`, `selected_traits()`, `validation_error()`. Signals `back_requested` / `next_requested`. `create()`. |
 | `TeamDraft.gd` | `class_name TeamDraft extends Control` | Step 4 data layer: owned pool (`get_pool_grid()`), chosen levels (`levels`, `set_level`, `leveled()`), salary (`salary_of`, `lineup_salary`, `salary_cap` = `RunRules.salary_cap_with(scenario, trait_ids)`), `set_traits` / `cap_bonus()` (trait `salary_cap` Σ), `validate()` = `RunRules.validate_lineup(..., cap_bonus())`. Slot table `SLOT_ROLES` / `SLOT_NAMES` / `slot_of_role`, `skill_type_label`. Signals `back_requested`, `start_requested(pilot_ids)`. |
-| `TeamDraftView.gd` | `class_name TeamDraftView extends Control` | Step 4 screen: salary gauge, 5 role-fixed slots with level steppers, role filter, scrolling thumbnail grid, PICK ↔ CONFIRM. Child of `TeamDraft`. |
-| `PilotThumb.gd` | `class_name PilotThumb extends Button` | One grid cell: square face crop + top-left role badge + gold border / check when selected + bottom-right salary tag (`set_tag`). Static helpers `add_rounded_art` / `add_role_badge` shared with the slot illustrations. |
+| `TeamDraftView.tscn` + `.gd` | `class_name TeamDraftView extends Control` | Step 4 screen: salary gauge, 5 role-fixed `DraftSlot`s, role filter, scrolling thumbnail grid, PICK ↔ CONFIRM. Child of `TeamDraft` (`TeamDraftView.create()` in `ensure_view`). |
+| `DraftSlot.tscn` + `.gd` | `class_name DraftSlot extends VBoxContainer` | Item scene: one pick slot — bust art button (`%Frame`: mask + `%Art`, "선택 없음", `RoleBadge`) + `− Lv N +` stepper + salary / overall lines. Signals `art_pressed`, `level_step(delta)`; `set_role`, `show_empty()`, `show_pilot(p, role_color, lv, top, salary)`. |
+| `PilotThumb.tscn` + `.gd` | `class_name PilotThumb extends Button` | Item scene: one grid cell — square face crop + top-left `RoleBadge` + gold border / check when selected + bottom-right salary tag (`set_tag`). `create()`, `setup(p, sel)`. Static helpers `add_rounded_art` / `add_role_badge` stay for code-built callers (`../collection/`). |
+| `RoleBadge.tscn` + `.gd` | `class_name RoleBadge extends Panel` | Item scene: the role badge (`Tk` / `As` …, 44×30, `OnFillLabel` 19). `create()`, `set_role(role)` paints the role colour (data). Used by `PilotThumb`, `DraftSlot` and `PilotThumb.add_role_badge` (pixel-identical to the old code badge). |
 | `DraftDetailPanel.tscn` + `.gd` | `class_name DraftDetailPanel extends CanvasLayer` | Pilot detail popup — **also used by ban/pick** (`features/match_flow/ban_pick/`). Layout lives in the `.tscn`; construct with `DraftDetailPanel.create()` (not `.new()`), then `open(p: PlayerData)` / `close()` / `is_open()`. See "DraftDetailPanel — scene" below. |
 | `DraftStatChip.tscn` + `.gd` | `class_name DraftStatChip extends PanelContainer` | Item scene: one stat chip of the detail popup (name over value, `SunkPanel`). `create()`, `fill(key, value, is_total)` — total swaps the value to `AccentLabel`. |
 | `RunRoster.gd` | `class_name RunRoster` | AI roster distribution used by `GameManager.start_run` — owned by RunCore, see `features/season/README.md`. |
@@ -87,7 +92,7 @@ the cap is `RunRules.salary_cap_with`, re-read on every entry via `TeamDraft.set
 PICK bar: `뒤로`(1, → team step) / `다음`(2). `다음` → CONFIRM: the pick pane (filter row +
 grid + backplate) slides off the bottom and the 5-pick block drops to the vertical centre
 (one tween, `MODE_ANIM_SEC`, cubic in-out); CONFIRM bar: `뒤로`(1, → PICK) / `게임 시작`(2).
-The pick pane is attached before the bottom bar, so the exiting grid hides behind the bar.
+The pick pane (`%PickPane`) sits before `%Bar` in the scene, so the exiting grid hides behind the bar.
 While animating (`_busy`) all input is ignored.
 
 ### 게임 시작 → run start
@@ -200,24 +205,63 @@ An `AtlasTexture` crop of the upper part of `tall/N_tall.png` (`PilotImages.BUST
 face scale is unified across pilots. Region ratio = `PilotImages.BUST_ASPECT` matches the slot cell
 ratio (204 : 412) — change only one and faces get squashed.
 
+## Scenes — what the `.tscn` owns vs what code owns
+Moved from code-built to `.tscn` (`docs/ui_scene_migration.md` §4 #8). Every scene root carries
+`resources/OutgameTheme.tres`; nodes pick variations. Construct with `Xxx.create()` (never `.new()`).
+```
+RunSetup (scenes/RunSetup.tscn — root offset_top = safe top inset, code)
+├ %Background  ColorRect BG (code stretches it up into the notch: ScreenMetrics.extend_background)
+├ %Header      HBox (24, 28) h 64, sep 12 — StepChip × STEPS (code)
+├ %Steps       step views go here (code, one per STEPS row, built on first entry)
+└ %ErrorLabel  load error line (drawn above the steps)
+
+<step view> (ChoiceListView / ManagerStepView / TeamDraftView — same frame)
+├ %Safe   full rect; code: offset_bottom = -bottom inset            ┐ RunSetupScreen.fit_insets
+│ └ body, first block at y 116 (content_top)                        │
+└ %Bar    HBox, bottom 128 — Back (GhostButton 30, stretch 1, Sep line) │
+          / Next (PrimaryButton 38, stretch 2) [/ Start]               │
+          code: offset_top -= inset, OutgameTheme.style_bottom_button  ┘
+
+ChoiceListView: %Hint (32,116) h 44 · %Scroll (24,168 → bottom -144, grows right only) → %List VBox sep 20, min w 1032
+  ScenarioStepView.tscn / TeamStepView.tscn inherit it (+ one preview card under %List, cleared by code)
+ManagerStepView: %Status · %Scroll → %Body VBox: %Chips slot · stats Card (%CardTitle, %CardNote, %Cells slot) · %Traits slot
+TeamDraftView: Gauge Card (%GaugeTitle, %GaugeValue, track + %GaugeFill, %GaugeMsg) · %SlotRow HBox (DraftSlot ×5) ·
+  %PickPane [%Filters HBox (6 GhostButtons: 전체, then SLOT_ROLES order) · GridBack · %GridScroll → %Grid (5 cols, gap 8)]
+```
+**Scene owns** positions, sizes, gaps, fonts, variations and texts that never change (filter labels,
+bar labels, "직접 해야 하는 일").
+**Code owns** data and state: texts from tables, the per-device inset offsets (`fit_insets`), the
+bottom bar's square corners (`style_bottom_button` — not a theme variation), selected / not frames
+(choice cards, filter buttons, thumbnails, step pills), role colours (badges, slot frames), the
+gauge / budget bar fill ratio (`anchor_right`) and its over-cap colour, "없음" green, status / error
+red, the slot row y (PICK / CONFIRM, tweened) and the pick-pane slide, and content built by shared
+modules into slots (`ManagerUi.add_preset_chips` / `add_stat_cells`, `TraitPickerView`).
+- Lists / grids are containers: hidden thumbnails are skipped by the `GridContainer` (filter = toggle
+  `visible`); the bar's hidden `Next` / `Start` is skipped by the HBox.
+- Label line heights exceed some boxes (38px name = 54, 26px = 37, 22px = 31): gaps in `ScenarioCard` /
+  `TeamCard` are trimmed so text lands on the old pixels, and `DraftSlot`'s `Info` area is absolute because
+  the stepper buttons (min 58) and the two lines overlap exactly like the old layout.
+- Scrolls use `anchors_preset = -1` (grow right only): an anchors preset resets the grow direction to
+  both, and the scroll bar's extra width would then push the content 4px left.
+
 ## Layout (1080×1920 portrait, Pattern B)
-`RunSetupScreen` calls `ScreenMetrics.indent_to_safe_top(self)` + `OutgameTheme.add_background`
-once; step views must **not** indent again. All y values derive from `content_top()` (top) and
-`OutgameTheme.bottom_bar_top()` (bottom), never from the viewport height.
+`RunSetupScreen` calls `ScreenMetrics.indent_to_safe_top(self)` + `ScreenMetrics.extend_background(%Background)`
+once; step views must **not** indent again. Bottom-anchored blocks hang from `%Safe` (whose bottom code
+lifts by the inset) — never from the viewport height.
 
 | Block | Position |
 |---|---|
 | Step header | `HEADER_TOP` .. + `HEADER_H` |
 | Choice steps | hint line at `content_top()`, card list down to `bottom_bar_top() - 16` (scrolls) |
 | Lineup gauge card | `content_top()` .. + `GAUGE_H` |
-| Lineup 5-pick block (PICK) | hangs above the filter row: `filter_y() - 32 - SLOT_ROW_H` (never above the gauge) |
-| Filter row / grid | grid hangs from the bar (`grid_y()`, 3.5 rows), filter above it |
-| Lineup 5-pick block (CONFIRM) | vertical centre, clamped between gauge bottom and bar |
-| Bottom bar | `OutgameTheme.add_bottom_bar` — every step `뒤로`(1) / primary(2) |
+| Lineup 5-pick block (PICK) | hangs above the filter row: `%Filters` top − 32 − slot row height (never above the gauge) — `_pick_row_y()` |
+| Filter row / grid | grid hangs 12px above the bar (3.5 rows = 724), filter 16px above it — scene offsets from `%Safe` bottom |
+| Lineup 5-pick block (CONFIRM) | vertical centre, clamped between gauge bottom and bar — `_confirm_row_y()` |
+| Bottom bar | `%Bar` in each step scene — every step `뒤로`(1) / primary(2) |
 
-`SLOT_ROW_H` = illustration (412) + stepper + salary + total lines. At 9:16 with no insets the
-5-pick block sits at ≈ y 406, the gauge ends at ≈ 280 — no overlap; on shorter safe areas
-`pick_row_y()` clamps below the gauge.
+Slot row height 538 = illustration (412) + info (126: stepper + salary + total lines). At 9:16 with no
+insets the 5-pick block sits at y 406, the gauge ends at 280 — no overlap; on shorter safe areas
+`_pick_row_y()` clamps below the gauge. Both y values are read from the scene nodes' rects.
 
 ## Scrolling — `DragScroll`
 The grid and the choice lists scroll via `DragScroll` (`resources/DragScroll.gd`): mouse and touch

@@ -11,7 +11,7 @@
 | `ReservationChips.gd` | ReservationChips | **Reservation chips (예약 칩)** — card effects settled at a later step (next strategy points · next draw · kill bounty · ambush search) stacked above the ally donut as card art + value chips |
 | `ObjectiveTimer.gd` | ObjectiveTimer | Objective (오브젝트) spawn clock — icon + turns remaining on either side of the enemy strip (left Herald (전령) / right Dragon (용)). **Pressing it opens the reward popup** |
 | `ObjectiveRewardPopup.gd` | ObjectiveRewardPopup | Objective reward preview — pressing a clock shows the actual cards that objective grants |
-| `PilotDetailPanel.gd` | PilotDetailPanel | Pilot detail modal — left: 2 full-body arts (+ lasting effects at bottom-left) / right: header (growth points top-centre) + 3 tabs + a stat cell plate (full-width rows / rows of two half cells; every cell name is prefixed with a `CHIP_ICONS` icon, HP · attack values are followed by `(+N)` against the base value — + green / − red; presence only when a pilot skill raised it (`PilotSkillSystem.presence_delta`)). Pressing a cell opens a note plate on the left — the same look as the card description box (`CardDescBox.panel_style`: opaque · borderless · drop shadow below); the note is a `RichTextLabel`, so `{attack}` · `{engage}` become icons, and its height is measured from the rendered text (`_make_note`). Presses that miss within `INFO_ZONE_PAD` (40) around the info column don't close it (`_info_zone`) + **pilot skill plate** (three separate plates) / **held-card fan at the same spot and width as the hand** (6 cards; cards that don't match the tab are dimmed) — pressing a card shows the same description box as the hand. No close button — tapping outside closes it. Open 0.2s / close 0.1s slide + fade |
+| `PilotDetailPanel.gd` + `PilotDetailPanel.tscn` + `PilotDetailView.tscn` (+ 7 item scenes) | PilotDetailPanel | **Scene-authored** (`PilotDetailPanel.create()`; one `PilotDetailView` instanced per open). Pilot detail modal — left: 2 full-body arts (+ lasting effects at bottom-left) / right: header (growth points top-centre) + 3 tabs + a stat cell plate (full-width rows / rows of two half cells; every cell name is prefixed with a `CHIP_ICONS` icon, HP · attack values are followed by `(+N)` against the base value — + green / − red; presence only when a pilot skill raised it (`PilotSkillSystem.presence_delta`)). Pressing a cell opens a note plate on the left — the same look as the card description box (`CardDescBox.panel_style`: opaque · borderless · drop shadow below); the note is a `RichTextLabel`, so `{attack}` · `{engage}` become icons, and its height is measured from the rendered text (`_fill_note` + `get_content_height`). Presses that miss within `INFO_ZONE_PAD` (40) around the info column don't close it (`_info_zone`) + **pilot skill plate** (three separate plates) / **held-card fan at the same spot and width as the hand** (6 cards; cards that don't match the tab are dimmed) — pressing a card shows the same description box as the hand. No close button — tapping outside closes it. Open 0.2s / close 0.1s slide + fade |
 | `MarkerTouch.gd` | MarkerTouch | Pressing a battlefield (전장) portrait — while held it grows to `PRESS_SCALE` and moves to the top (it stays on top after release); **long-press (0.45 s) opens the detail panel** |
 | `KillFeed.gd` | KillFeed | Kill log — top-right, one line per kill (처치) / turret (포탑) demolition / objective capture. Kills during an engage (교전) are flushed together after the arena closes |
 | `MvpView.gd` + `MvpView.tscn` | MvpView | **Scene-authored** (`MvpView.create()`). **Match MVP view** — full-screen dark card shown at match end **before** the victory/defeat panel: MVP's full-body art + name · side · position · K/D/A · key-metric line, "계속" (Continue). Also hosts the shared display strings (`display_name` · `role_label` · `kda_text` · `metric_text`) the result panel's MVP line uses. See "Match end — MVP view → result panel" below |
@@ -20,21 +20,27 @@
 The battle UI is moving to `.tscn` like the outgame UI (same rules — `docs/ui_scene_migration.md` §3), on its
 own dark Theme **`resources/BattleTheme.tres`** (palette · variation list: `resources/README.md` → BattleTheme).
 Done: `MvpView`, `SkillPopup` (+ `SkillPopupCard` item scene), the HUD (`HudBuilder` → `BattleHud.tscn`, `PilotStrip`
-→ `PilotStrip.tscn` + `PilotStripCell.tscn`). Still code-built: `PilotDetailPanel` — its colour constants already alias
-`BattleTheme` (`const STAT_PANEL_BG := BattleTheme.PANEL_BG`, values unchanged). Scene ↔ code split for the converted ones:
+→ `PilotStrip.tscn` + `PilotStripCell.tscn`), `PilotDetailPanel` (+ `PilotDetailView` and item scenes). The whole battle
+UI listed in §4 #13 is scene-authored. Scene ↔ code split:
 
 | Scene owns | Code owns |
 |---|---|
 | `MvpView.tscn`: layer 60, `Root` (theme, taps) → `Dim` · `%SafeArea` → `Title`, `%ArtArea` (from 170 below the safe top to 530 above the safe bottom) → `%Glow` · `%ArtHolder` → `%Art` / `%Slab`(+`%FallbackLabel`), `Info` (`BattleGoldPanel`, 330 tall, 190 above the safe bottom, sides 60) → `%Name` · `%Side` · `%Kda` · `%Metric`, `%Continue` (40 above the safe bottom, 120 tall, sides 120) | safe-area offsets, side line variation (`MvpAllyLabel` / `MvpEnemyLabel`), art / slab size from the texture aspect and the area height (`_layout_art`, on `%ArtArea.resized` — `ART_MAX_H` 1000 / `ART_MAX_W` 900), glow colour (`BattleTheme.GLOW`), fade + rise (`%ArtHolder` offset 40 → 0) |
 | `BattleHud.tscn` (root `Node`, instanced by `HudBuilder.build_ui()` under BattleSim): **`EnemyTopLayer`** (layer 1) → `%AiHand` (full rect) · `%EnemyStripBackdrop` (`HudStripBackdrop`, 1050×256 centred, y −8..248) · `%EnemyPilotStrip` (1030×244 centred, y 2..246); **`Canvas`** (layer 1, = `_bs.canvas`) → `%TimeLabel` (`HudClockLabel`, (20, 4) 220×34) · `%ObjTimer0` (26, 110, 101×60) · `%ObjTimer1` (right-anchored, 26 from the right) · `%PlayerStripBackdrop` (bottom-anchored, 286..22 above the bottom) · `%PlayerPilotStrip` (bottom-anchored, 276..32 above the bottom) · `%KillFeed` · `%CardPileDeck` · `%CardPileDiscard` · `%DeckButton` · `%DiscardButton` (flat, alpha 0) · `%CostDonutEnemy` · `%CostDonutPlayer` · `%ReservationChipsP` · `%CardPlayPreview` (z 20) · `%TurnAnnounce` → `%TurnBar` (`HudTurnBar`, 110 tall, vertically centred) · `%TurnLabel` (`HudTurnLabel`); **`VictoryLayer`** (50) → `%VictoryBackdrop` (`HudVictoryDimPanel`) · `%VictoryPanel` (`BattleGoldModal`, 700×520 centred) → `%VictoryLabel` (48) · `%MvpRow` → `MvpTag` (`BattleTitleLabel`) · `%MvpPortrait` · `%MvpName` (34) · `%MvpKda` (`HudVictoryKdaLabel`), `%VictoryButton` (32). **Child order is draw order** — `Canvas`'s children keep the old build order exactly, other modules append hand cards / overlays after them and `move_child` relative to `%PlayerStripBackdrop`, and `EnemyTopLayer` must stay before `Canvas` (same layer 1 → sibling order) | safe-area shifts (`_shift_y`: top block + `top_offset()` — `%AiHand`, enemy strip + backdrop, time label, clocks; bottom block + bottom inset — ally strip + backdrop), positions derived from other modules' geometry (deck / discard piles + their hit buttons from `BS_HAND_CENTER` · gutter, donut centres from the AI peek / targeting band, `KillFeed.setup`, `ReservationChips.setup`), AI hand fan (`Card.tscn` instances under `%AiHand`), turn-bar colour (`variation_box("HudTurnBar")` copy ← `TURN_BAR[team]`) and sweep tween (x / width from the viewport), victory MVP line data, button text / target (season "다음 →" vs "Play Again"), `update_hud` state |
 | `PilotStrip.tscn`: 1030×244 root (theme) → `%Row` (757.6 wide, centred) → `Cell0..4` (`PilotStripCell.tscn`, 151.52 apart). `PilotStripCell.tscn` (151.52×244): `%Holder` (full rect, press scale) → `%Pill` (`PilotStripScoreTab`) · `%Bust` (ColorRect + `pilot_bust_mask` material, 127.12×158.9 at (12.2, 40.86)) · `%Dead` (`PilotStripDeadLabel`) · `%Score` (`PilotStripScoreLabel`, 30 tall under the disc) · `%Badge` (`SkillBadge`, Ø 50.848); `%Hit` (flat Button, whole cell, alpha 0) | team colours (`variation_box("PilotStripScoreTab")` copy ← `TEAM_DISC[team]`, shader `disc_color`), per-cell material duplicate, press pivot = disc centre read from `%Bust`, badge `setup` (ally) / removed (enemy), portrait · tint · numbers · skill state, `anchor_for` / `pilot_at` read the cell rects |
+| `PilotDetailPanel.tscn`: `PilotDetailLayer` (13) → `%Root` (theme). `PilotDetailView.tscn` (per open): full-rect root (STOP) → `%Dim` (`BattleDimPanel`, the "outside"), `%ArtHolder` → `%ArtMech` · `%ArtPilot` (`PilotDetailArt.tscn`: `%Texture` / `%Slab` (`PilotDetailArtSlab`) + `%FallbackLabel` at 42%), `%InfoColumn` → `%FxGrid` (Grid 6 cols, sep 12, x 26, grows **up**), `%Column` (VBox sep 16 at (578, 362), width 496) → Header (`BattlePanel`: GrowthBox 48 / NameBox 52 / MechBox 32 → `%Growth` · `%Name` · `%Mech`), StatGroup → TabsMargin (22) → Tabs (HBox sep 8, 62) → `%TabIngame` · `%TabPilot` · `%TabMech`, StatPanel (`PilotDetailStatPlate`) → `%Chips` (VBox sep 10) · `%DeadGap` 12 · `%DeadBox` 30 → `%DeadLabel`, `%SkillPanel` (`BattlePanel`) → `%SkillTop` (`%SkillIconSlot` 92² · gap 18 · NameBox 40 → `%SkillName`, gap 4, `%SkillDescSlot`, `%SkillStatusGap` 8, `%SkillStatusBox` 30 → `%SkillStatus`), `%SkillUseGap` 16, `%SkillUse` 68, `%NoSkillBox` 32; `%CardFan`, `%CardFanHits`; `%InfoMenu` (backdrop, last = top). Items: `PilotDetailStatRow` (HBox sep 10) + `PilotDetailStatCell` (`BattleChipButton`, `%Icon` · `%Name` · `%Value` · `%Bonus`), `PilotDetailFxThumb` (`BattleFxButton`, text mode `%Short` · `%Value` / art mode `%Art` (rounded mask) · `%Band` (`PilotDetailFxBand`) · `%BandValue`), `PilotDetailCardBand` (empty look), `PilotDetailInfoMenu` (`PilotDetailMenuPanel`, min width 372 → `%Title` (36) · gap 8 · `%Rows` · `%NoteGap` 6 · `%Note` · `%NoteTail` 4) + `PilotDetailInfoRow` (36, key 42% / value 58% by anchors) | art size from the texture aspect + pivot + front / back pose and swap tween, `%FxGrid` bottom (= fan top − `FX_ABOVE_FAN_GAP`), chip rows per tab (`_chip_defs`), cell / thumb highlight (switch to `BattleChipButtonOn` / `BattleFxButtonOn`), tab on / off (`BattleTabOn` / `BattleTab`), bonus colour (`BattlePositiveLabel` / `BattleNegativeLabel`) and value right edge (bonus width), effect abbreviation colour (data), skill icon tile · rich description (code widgets into the slots), note text (`_fill_note`) + its measured height, info plate position · height (`_place_menu`, re-placed next frame after a body rebuild), card fan + bands (positions from the hand geometry), card description boxes (`CardDescBox`), open / close motion |
 | `SkillPopup.tscn`: `Layer` (12) → `%Root` (theme) → `%Catcher` (top-wide). `SkillPopupCard.tscn`: full-rect root → `%Panel` (`BattlePopup`, min width 640) → VBox (sep 10): Head (72: `%IconSlot` · gap 16 · NameBox(top 16) → `%Name` · TypeSlot 110 → `%Type` / `%Cooldown`(`%Clock` · `%Turns`)), `%DescSlot`, `%StatusBox`(30) → `%Status`, `%UseGap`, `%Use` (68); `%Arrow` (Polygon2D, after the panel) | catcher height (= strip top), panel position (above the portrait, clamped by `SCREEN_MARGIN`) and height (`get_combined_minimum_size`), arrow polygon + colour (`BattleTheme.POPUP_BG`), icon tile (`SkillImages.make_icon_tile` → `%IconSlot`), rich description (`StrategyIcon.make_rich_label` → `%DescSlot`, height `rich_height`), name variation (`BattleSkillNameLabel` / "스킬 없음" `BattleKeyLabel`), card-name press preview (Card + `CardDescBox`, code) |
 
 Fixed heights that look odd are deliberate pixel parity with the old code: the name row is a 40px label at
 +16 in the 72px head, and the status row is a 30px box with the label anchored inside — the label's own minimum
-(42 / 31 px at those fonts) must not grow the row. F6 previews: `MvpView` (pilot 0's art, hand-made row),
-`SkillPopup` (hand-written cooldown skill via `_show`, no battle — use / status refresh / card preview need one),
-`PilotStrip` (five hand-made allies, one downed, a badge with "2"; battlefield-grey background). `BattleHud.tscn` has no
+(42 / 31 px at those fonts) must not grow the row. `PilotDetailView` does the same for every text row (header
+48 / 52 / 32, dead line 30, skill name 40 / status 30, "스킬 없음" 32, note title 36): a fixed-height box with the
+label anchored top-wide, so the label overflows downward exactly like the old clamped `size`. F6 previews:
+`MvpView` (pilot 0's art, hand-made row), `SkillPopup` (hand-written cooldown skill via `_show`, no battle — use /
+status refresh / card preview need one), `PilotDetailPanel` (spawns a standalone `BattleSim.tscn` beside it, gives
+pilot 0 the first skill and opens it — tabs · cells · cards all work; standalone battles have no rosters, so the
+pilot tab shows `—`). The `PilotDetail*` item scenes have no script — sample text is baked in.
+More F6 previews: `PilotStrip` (five hand-made allies, one downed, a badge with "2"; battlefield-grey background). `BattleHud.tscn` has no
 script — F6 shows the scene as authored (sample text, team-0 colours on both strips).
 
 The strip-cell numbers are the old `PilotStrip.setup` formula evaluated for the 1030×244 strip and baked into
@@ -642,7 +648,7 @@ browse·engage (12).
   cell to the right of the name row, and the in-game tab had a separate `성장 +N%` chip
   (attack growth) — that chip and its menu were **deleted** (the attack / HP growth
   coefficients are on the pilot tab). With one more row, `HDR_TOP` went 408 → **362**.
-- **The header is separate from the tabs** (`_build_header_block`, runs **only once** in
+- **The header is separate from the tabs** (`_fill_header`, runs **only once** in
   `_build`). Name · mech name · growth points belong to the same pilot whichever tab you
   view, so there's no reason to rebuild them on every tab change. This line used to be
   inside the body, and on the mech tab the title changed to the mech name, so **the pilot
@@ -696,24 +702,18 @@ The key prefix distinguishes the kind.
   the attack explanation open, pressing the hit cell spent the first click on closing, so
   you had to press **once more** — while skimming six stats the clicks doubled and the
   screen flickered between open↔closed. Switching between items is the info panel's default
-  behaviour. Pressing an empty spot closes it then. Coordinate testing is simple because
-  `_menu_root` · `_body_root` · `_root` are all full-screen `Control`s placed at (0,0), so
-  the buttons' `position` can be compared as-is.
-- **Plate height is set by content** — row count × `MENU_ROW_H` + the **actual** height of
-  the note text (`_text_height`). When measuring the note height **the line-break flags must
-  match the Label**: `get_multiline_string_size` defaults to
-  `BREAK_MANDATORY | BREAK_WORD_BOUND`, but the label is `AUTOWRAP_WORD_SMART` (which adds
-  `BREAK_GRAPHEME_BOUND`), so measuring with the default sometimes has the label use one more
-  line and the last line is clipped outside the plate (measured: measured as two lines, drew
-  three).
-- **Turn on wrapping before setting size.** The `Control.size` setter clamps the request up
-  to the minimum size once, and the minimum width of a `Label` with wrapping off is **the
-  full width of the text laid out on one line** — requesting 332px in that state inflates the
-  label to the text width, and turning wrapping on afterwards doesn't shrink the already
-  enlarged rect. On screen the first line stuck out of the plate and the lower lines looked
-  clipped (confirmed by measurement). `clip_text` is also turned on before size for the same
-  reason.
-- **The name cell is 42%** (`MENU_KEY_FRAC`), the rest is the value cell. Back at 52%,
+  behaviour. Pressing an empty spot closes it then. The backdrop (`%InfoMenu`) is a full-screen
+  `Control` at (0,0), so the press position is global — each button's **global rect** is tested
+  (cells and tabs sit inside containers now).
+- **Plate height is set by content** — the plate (`PilotDetailInfoMenu.tscn`) is a container:
+  title 36 + gap 8 + rows × 36 + (note: 6 + text + 4), padding from `PilotDetailMenuPanel`. The note
+  (`%Note`, wrapping `AUTOWRAP_WORD_SMART` set in the scene) gets its width first, then its **rendered**
+  height (`get_content_height`) becomes its minimum height — measuring with a font call instead
+  (`get_multiline_string_size`, default break flags) once had the label use one more line than
+  measured. The plate is placed in `_place_menu` (x = left of the column, y = the pressed item's
+  layout y − 16, clamped to the screen) and placed once more on the next frame, because after a
+  body rebuild the new cells are only sorted by their containers at the end of the frame.
+- **The name cell is 42%** (`PilotDetailInfoRow` anchors), the rest is the value cell. Back at 52%,
   values like "다음 작전 단계까지" (until the next operation phase) didn't fit in 159px and
   **were clipped from the left** — a right-aligned `Label` that overflows gives up alignment
   and draws from the rect's left. The value wording itself got shorter then too
@@ -771,8 +771,8 @@ The key prefix distinguishes the kind.
   above — both deleted (as were `FAN_SIZE_VS_HAND` / `FAN_EDGE_INSET` / `FAN_DROP_RESERVE` /
   `FAN_BOTTOM_PAD` / `FAN_TITLE_*`, and the old full-width ×1.60 fan with `FAN_LIFT_PX`). The
   hand showing through behind the dim at the same spot is intended.
-- **Card nodes are built only once, on open.** `CardFan` / `CardFanHits` hang off `_ui_root`
-  and live apart from the body (`_body_root`); tab switches · body rebuilds rebuild **only the
+- **Card nodes are built only once, on open.** `%CardFan` / `%CardFanHits` hang off `%InfoColumn`
+  and live apart from the body (chip rows · effect grid · skill plate); tab switches · body rebuilds rebuild **only the
   dims and input bands** via `_rebuild_fan_hits` (card keys are re-registered right after
   `_targets` is cleared). The spread-out motion (dx × `FAN_SPREAD_FROM` 0.55 → in place,
   `FAN_SPREAD_SEC` 0.24) also runs only on open.
@@ -810,13 +810,13 @@ The key prefix distinguishes the kind.
 #### Lasting effect thumbnails (in-game tab) — bottom-left of the illustration
 **When the source card is known, the cell is that card's illustration** — the art is cut to a
 rounded rect filling the cell (`shaders/rounded_rect_mask.gdshader`) and the value sits on a
-black band at the bottom (`_make_fx_art_thumb`). The source is answered by the per-card
+black band at the bottom (`_make_fx_thumb`, art mode of `PilotDetailFxThumb`). The source is answered by the per-card
 ledger's `src`, or for slot effects by `PilotData.fx_src` (`CardPhaseManager._note_fx_src`).
 Only cells with an unknown source (remainders · laning applied by a skill, etc.) stay as the
 two-character abbreviation cells described below.
 
 **Not in the info column but at the bottom-left of the screen**, right above the card fan
-(from `FX_LEFT_X` 26, six cells within `FX_ROW_W` 520). In a 68×68 cell, the top is a
+(`%FxGrid`: from x 26, six cells per row, 12 apart). In a 68×68 cell, the top is a
 two-character abbreviation (colour per effect) and the bottom is the current value. There
 are no icon assets, so **the text is the icon**, and the full name is carried by the title
 of the info panel opened by pressing it.
@@ -831,7 +831,7 @@ of the info panel opened by pressing it.
   title on top of 68px cells standing alone in a screen corner makes the title stand out more
   than the cells. With no effects applied it **draws nothing** — the old one-liner "걸려 있는
   효과 없음" (No active effects) was a sentence that only made sense with a title.
-- **Rows grow upward** (`_build_effect_thumbs` works back from `_fx_bottom_y()`). Letting
+- **Rows grow upward** (`%FxGrid` grows up; its bottom is pinned at `_fx_bottom_y()`). Letting
   them grow downward makes the second row land right on top of the card fan.
 
 Three kinds are mixed.
@@ -910,17 +910,18 @@ would quietly lie, so the leftover share isn't hidden.
   unchanged)** (on every `update_hud`, right after `close_if_phase_left`). It fixes only the
   cell value labels · growth points · the text of the open panel — rebuilding wholesale would
   instantiate the card nodes **on every update** and make the pressed cell's highlight
-  flicker each time. `_rebuild_body()` runs only when the tab changes. If the old block is only
-  given `queue_free`, it still draws this frame and the text overlaps, so **`remove_child`
-  first**. Neither the art nor its front/back pose is touched.
+  flicker each time. `_rebuild_body()` runs only when the tab changes (or the effect set /
+  status-line visibility changes): it refills the chip rows and the effect grid and shows / hides
+  the dead line and skill plate. Old rows only given `queue_free` would still draw this frame and
+  the text overlaps, so **`remove_child` first** (`_clear_children`). Neither the art nor its front/back pose is touched.
 - **`clip_text = true` is mandatory on value labels.** A right-aligned `Label` whose text is
   wider than its rect gives up alignment and draws from the rect's left, so it **overflows to
   the right and off the screen** (measured: "아웃게임 데이터 없음" (No outgame data) was cut off
   outside the screen).
-- **`MOUSE_FILTER_IGNORE` on `_body_root` excludes only that node** — child cell · effect ·
-  card buttons are still pressable. z-order is `_root`'s child order: 0 dim / 1 art / 2 body /
-  3–5 header (backing · name row · growth points) / 6–8 tabs / 9 close / (if open) the info
-  panel last = topmost.
+- **Every plate, box and label is `MOUSE_FILTER_IGNORE`** — only cells · tabs · effect thumbs ·
+  card bands · the Use button take input, so a press on a plate falls through to `%Dim` (and is then
+  kept open by `_info_zone`). z-order is the view's child order: dim / arts / info column (effect
+  grid · column · card fan · card bands) / `%InfoMenu` last = topmost.
 - Outgame stats are looked up with `BattleSim.player_data_for(pilot)` — it maps the index in
   the `pilots` array (0..4 = team 0, 5..9 = team 1) directly onto `match_ctx`'s two rosters, so
   **reordering `pilots` misaligns names and stats**. Standalone runs or INTL pilots → null →
@@ -930,9 +931,11 @@ would quietly lie, so the leftover share isn't hidden.
   are looking at would blur; putting it below the dim darkens the face you just pressed and
   breaks the link. The other team's strip is left alone — it's just covered by the dim, and
   removing it would make what disappeared more confusing.
-- **No anchor preset on `_root`.** A `Control` under a `CanvasLayer` has no parent rect to
-  resolve full-rect anchors against, so its size stays 0, and setting only the preset leaves a
-  warning that "size is overwritten after `_ready`". The size is set explicitly.
+- **The view is full-rect by anchors** — a full-rect `Control` under a `CanvasLayer` resolves to the
+  viewport (the old "size stays 0" comment was a code-build ordering problem, `docs/ui_scene_migration.md` §2),
+  so dim · art holder · info column cover tall screens without `ScreenMetrics.viewport_size()`. The info
+  column itself stays at the old absolute design coordinates (pattern C, `docs/mobile_safe_area.md` §7);
+  only the card fan and the effect grid follow the safe bottom (`BS_HAND_CENTER`).
 - **The open condition is `can_open()` alone** — operation phase **or auto-run (BATTLE)**, with
   no engage stage and the match not over. The strip buttons and battlefield portrait long-press
   (`MarkerTouch`) read the same answer. It used to be only your own operation phase.

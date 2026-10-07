@@ -54,10 +54,6 @@ const TARGET_LABELS := {
 ## 식이 읽는 이름: `charge` = 카드 위 토큰 수, `chain` = 시전 파일럿의 [영혼 포식]
 ## 토큰 수(`MechSkillSystem.chain_rounds`). 예: `성장 +{charge*8|사용 횟수×8}%`.
 ## 설명문의 `\n` 두 글자는 줄바꿈이다(CSV 한 칸에 줄을 나누지 않으려고).
-## 인게임(어두운) 판의 드롭 섀도 — 흐릿한 가장자리(`shadow_size`)를 아래로 민다.
-const DARK_SHADOW_COLOR := Color(0.0, 0.0, 0.0, 0.6)
-const DARK_SHADOW_SIZE: int = 16
-const DARK_SHADOW_DROP: float = 10.0
 static var _formula_re: RegEx = null
 ## 전투 중에만 유효한 값 공급자 — `CardPhaseManager` 가 트리에 들어오면 걸고
 ## 나가면 풀린다(객체가 해제되면 `is_valid()` 도 false). `func(cd) -> Dictionary`.
@@ -75,12 +71,7 @@ static func panel_style(light: bool) -> StyleBoxFlat:
 		style = OutgameTheme.card_style(14)
 		style.set_border_width_all(0)
 	else:
-		style = StyleBoxFlat.new()
-		style.bg_color = Color(0.08, 0.08, 0.12, 1.0)
-		OutgameTheme.set_corner_radius(style, 12)
-		style.shadow_color = DARK_SHADOW_COLOR
-		style.shadow_size = DARK_SHADOW_SIZE
-		style.shadow_offset = Vector2(0.0, DARK_SHADOW_DROP)
+		style = BattleTheme.desc_box()
 	return style
 
 

@@ -38,17 +38,32 @@ extends Node
 # 열려 있는 동안 **누른 쪽 스트립은 숨긴다**. 딤 위로 스트립만 남으면 "지금 뭘
 # 보고 있는지"가 흐려지고, 딤 아래로 넣으면 방금 누른 얼굴이 어두워져 연결이
 # 끊긴다 — 아예 치우는 편이 읽힌다.
+#
+# **레이아웃의 정본은 씬이다** — `PilotDetailPanel.tscn`(층 13 + 테마를 단 `%Root`)과 열 때마다
+# 인스턴스하는 `PilotDetailView.tscn`(딤 · 아트 두 장 · 정보 칼럼 · 카드 부채꼴 자리 · 설명 판
+# 뒤판). 반복되는 것은 아이템 씬이다 — 스탯 줄 / 칸(`PilotDetailStatRow` · `PilotDetailStatCell`),
+# 지속 효과 썸네일(`PilotDetailFxThumb`), 카드 입력 띠(`PilotDetailCardBand`), 설명 판과 그 줄
+# (`PilotDetailInfoMenu` · `PilotDetailInfoRow`), 전신 아트(`PilotDetailArt`). 색 · 판은 전투
+# 테마(`resources/BattleTheme.tres`)의 변형이 정한다(`BattlePanel` · `PilotDetailStatPlate` ·
+# `BattleTab(On)` · `BattleChipButton(On)` · `BattleFxButton(On)` · `BattleActionButton` …).
+# 코드가 정하는 것: 아트 크기 · 앞뒤 자세, 지속 효과 줄의 아래끝(카드 부채꼴 위), 칸 · 탭 강조
+# (변형 이름 전환), 효과 약칭 색(데이터 색), 설명 판 위치 · 높이, 코드 위젯(아이콘 타일 ·
+# 설명문 · 카드 노드 · 카드 설명판), 열기 / 닫기 연출. 생성: `PilotDetailPanel.create()`.
 
 ## 버리기(10) / 대상 지정(11) / 열람·교전(12) 위. 이 패널은 모달이라
 ## 열려 있는 동안 카드도 못 내고 턴도 못 넘기므로 다른 오버레이와 겹칠 일이
-## 없지만, 겹친다면 이쪽이 위여야 한다.
+## 없지만, 겹친다면 이쪽이 위여야 한다. 씬 `PilotDetailLayer` 의 `layer` 와 같은 값.
 const OVERLAY_LAYER: int = 13
 
-## 화면 크기는 고정 상수가 아니라 런타임 값이다 — 스트레치가 `expand` 라
-## 세로로 긴 기기에서는 높이가 1920 보다 커진다. 딤 · 루트가 뷰포트 전체를
-## 덮지 않으면 그 차이만큼 화면 끝에 안 덮인 띠가 남는다.
-## `docs/mobile_safe_area.md` 참고.
-const DIM_COLOR := BattleTheme.DIM
+const SCENE_PATH: String = "res://features/battle_sim/ui/PilotDetailPanel.tscn"
+## 열 때마다 하나씩 인스턴스하는 상세 한 장(닫히는 장이 빠져나가는 동안 다음 장이 들어온다).
+const VIEW_SCENE: PackedScene = preload("res://features/battle_sim/ui/PilotDetailView.tscn")
+const ROW_SCENE: PackedScene = preload("res://features/battle_sim/ui/PilotDetailStatRow.tscn")
+const CELL_SCENE: PackedScene = preload("res://features/battle_sim/ui/PilotDetailStatCell.tscn")
+const FX_SCENE: PackedScene = preload("res://features/battle_sim/ui/PilotDetailFxThumb.tscn")
+const BAND_SCENE: PackedScene = preload("res://features/battle_sim/ui/PilotDetailCardBand.tscn")
+const MENU_SCENE: PackedScene = preload("res://features/battle_sim/ui/PilotDetailInfoMenu.tscn")
+const MENU_ROW_SCENE: PackedScene = preload("res://features/battle_sim/ui/PilotDetailInfoRow.tscn")
 
 ## 탭 셋. 인게임 = 지금 이 전장에서의 상태, 파일럿 = 사람의 능력치 + 파일럿
 ## 카드, 메크 = 기체의 능력치 + 메크 카드. 예전의 "전환" 버튼(파일럿 ↔ 메크
@@ -91,81 +106,25 @@ const ART_SWAP_SEC: float = 0.22
 ## 아트가 없는 메크(= 아직 에셋이 하나도 없다)의 플레이스홀더 가로/세로 비.
 const ART_PLACEHOLDER_ASPECT: float = 0.70
 
-# ─── 우: 정보 칼럼 ───────────────────────────────────────────────────────────
+# ─── 우: 정보 칼럼 (씬 `%Column`) ────────────────────────────────────────────
 # **정보 블록은 아래쪽에 있다.** 아트가 커지면서 화면 위쪽 절반이 인물의
 # 머리·상체 자리가 됐고, 스탯이 예전 자리(y 170)에 남으면 얼굴을 덮는다.
-# ─── 머리글 (탭 위, 상세 패널과 분리) ───────────────────────────────────────
-# 성장치(맨 위 가운데) + 파일럿 이름 + 기체명. **탭 바로 위**에 자기 받침을 깔고
-# 앉아 있고, 탭이 바뀌어도 다시 세워지지 않는다(`_build_header_block` 은 `_build`
-# 에서 한 번만 돈다).
-const HDR_TOP: float = 362.0
-## 머리글 받침의 아래끝 — 탭 바 윗변(562)에서 `PANEL_GAP` 만큼 위. 머리글 · 스탯 ·
-## 스킬은 **각자 자기 판**이다(사이가 떠 있다).
-const HDR_BOTTOM: float = 546.0
-## 오른쪽 세 판(머리글 / 탭+스탯 / 파일럿 스킬) 사이 간격.
-const PANEL_GAP: float = 16.0
-const HDR_NAME_FONT: int = 40
-## 기체명 — 이름 **아래 줄**에 작게. 예전에는 이름 오른쪽에 이어 붙였는데,
-## 줄의 시작점이 곧 이름 폭이라 파일럿마다 기체명이 다른 x 에서 시작했다 —
-## 어디를 보면 기체명인지가 파일럿마다 흔들린 셈이다. 두 줄로 쌓으면 시작점이
-## 언제나 같다.
-const HDR_MECH_FONT: int = 24
-## 성장치 줄 / 이름 줄 / 기체명 줄의 높이. 셋의 합이 머리글 받침의 내용 높이다 —
-## `HDR_BOTTOM` 은 탭 바 위로 못 박혀 있으므로, 줄이 늘면 `HDR_TOP` 이
-## 위로 올라가야 한다(지금 362 = 546 − 여백 52 − 132).
-const HDR_GROWTH_H: float = 48.0
-const HDR_NAME_H: float = 52.0
-const HDR_MECH_H: float = 32.0
-const HDR_MECH_COLOR := BattleTheme.TEXT_MECH
-## 성장치 — 머리글 **맨 위 가운데**. 예전에는 이름 줄 오른쪽 170px 칸이었고,
-## 인게임 탭에는 `성장 +N%` 칩이 따로 있었다(삭제 — 성장치 하나로 읽는다).
-const HDR_GROWTH_FONT: int = 40
-
+# 칼럼은 머리글(362 .. 546) / 탭(562, 62) + 스탯 판(650 부터 칸) / 파일럿 스킬 판 —
+# 세 판 사이 16. 자리 · 크기는 씬이 정하고, 여기 값은 설명 판 위치 · 설명문 폭 계산용 사본.
+## 스탯 칸의 왼쪽 끝 · 폭(= 칼럼 판 안쪽).
 const STAT_X: float = 600.0
 const STAT_W: float = 452.0
-const STAT_TOP: float = 650.0
-## 스탯 블록 뒤에 까는 받침. 아트가 이 자리까지 올라오므로 글자만 얹으면
-## 일러스트 위에서 읽히지 않는다. 내용 높이에 맞춰 자란다.
-const STAT_PANEL_PAD := Vector2(22.0, 26.0)
-const STAT_PANEL_BG := BattleTheme.PANEL_BG
-const STAT_PANEL_BORDER := BattleTheme.PANEL_BORDER
-
-const HEADER_COLOR := BattleTheme.TEXT_HEADER
-const SECTION_COLOR := BattleTheme.TEXT_SECTION
-const KEY_COLOR := BattleTheme.TEXT_KEY
-const VALUE_COLOR := BattleTheme.TEXT_VALUE
-## 이름 오른쪽의 성장치. 스트립의 성장치 숫자와 같은 값이므로 같은 계열로 둔다.
-const GROWTH_COLOR := BattleTheme.TEXT_GROWTH
-
-# ─── 탭 바 ───────────────────────────────────────────────────────────────────
-# 받침 **바로 위에 붙는다**(아래끝 = 받침 위끝) — 떼어 놓으면 탭이 어느 판에
-# 달린 것인지가 안 보인다. 켜진 탭은 아래 테두리를 그리지 않아 받침과 한 몸이
-# 된다.
-const TAB_H: float = 62.0
-const TAB_GAP: float = 8.0
-const TAB_BG_ON  := BattleTheme.TAB_BG_ON
-const TAB_BG_OFF := BattleTheme.TAB_BG_OFF
-const TAB_BORDER_ON := BattleTheme.TAB_BORDER_ON
-const TAB_BORDER_OFF := BattleTheme.TAB_BORDER_OFF
+## 스킬 판 설명문 폭 — 판 안쪽 폭 − 아이콘 타일 92 − 간격 18 (씬 `SkillInfo`).
+const SKILL_DESC_W: float = STAT_W - 92.0 - 18.0
 
 # ─── 스탯 칸 ─────────────────────────────────────────────────────────────────
 # 스탯 판 위에 얹힌 **작은 판 하나 = 스탯 하나** — 왼쪽에 이름, 오른쪽 정렬로
 # **최종 값**. 줄 하나에 칸이 하나면 판 폭 전체(체력 · 공격력 · 존재감), 둘이면
 # 반씩(전장 명중 | 전장 회피 …). 탭마다 줄 구성은 `_chip_defs` 가 정한다.
 # 예전에는 3열 칩(위 이름 / 아래 큰 값)이었다.
-const CHIP_GAP: float = 10.0
-const CHIP_H: float = 56.0
-const CHIP_RADIUS: int = BattleTheme.CHIP_RADIUS
 const CHIP_PAD_X: float = 16.0
-const CHIP_BG := BattleTheme.CHIP_BG
-const CHIP_BG_HL := BattleTheme.CHIP_BG_HL
-const CHIP_BORDER := BattleTheme.CHIP_BORDER
-const CHIP_BORDER_HL := BattleTheme.CHIP_BORDER_HL
-const CHIP_NAME_FONT: int = 22
-const CHIP_VALUE_FONT: int = 28
-## 이름 앞 스탯 아이콘 — 이름 글자색으로 굽는다.
+## 이름 앞 스탯 아이콘 — 이름 글자색으로 굽는다(자리 · 크기는 씬 `%Icon`).
 const CHIP_ICON_PX: float = 26.0
-const CHIP_ICON_GAP: float = 6.0
 ## 칩 key → `KeywordIcon` 아이콘. 같은 스탯은 탭이 달라도 같은 아이콘이다.
 const CHIP_ICONS: Dictionary = {
 	"hp": KeywordIcon.HP, "m_hp": KeywordIcon.HP,
@@ -178,36 +137,30 @@ const CHIP_ICONS: Dictionary = {
 	"atk_growth": KeywordIcon.ATK_GROWTH, "hp_growth": KeywordIcon.HP_GROWTH,
 }
 ## 값 뒤의 괄호 보너스 `(+N)` — 체력 · 공격력은 기본값 대비 증감, 존재감은 특수
-## 능력의 가산분(+ 일 때만). 0 이면 괄호를 달지 않는다.
-const CHIP_BONUS_FONT: int = 22
+## 능력의 가산분(+ 일 때만). 0 이면 괄호를 달지 않는다. 글자 크기는 씬 `%Bonus`
+## (`BattlePositiveLabel` / `BattleNegativeLabel`)와 같은 값 — 폭을 잴 때 쓴다.
+const CHIP_BONUS_FONT: int = BattleTheme.FONT_BODY
 const CHIP_BONUS_GAP: float = 6.0
-const BONUS_UP_COLOR := BattleTheme.POSITIVE
-const BONUS_DOWN_COLOR := BattleTheme.NEGATIVE
 
 # ─── 칩 컨텍스트 메뉴 ────────────────────────────────────────────────────────
 # **정보 칼럼 왼쪽에** 펼친다 — 오른쪽은 화면 끝(1080)까지 28px 밖에 없고,
 # 칩 위에 겹쳐 띄우면 방금 누른 칩이 자기 설명에 가려진다. 왼쪽은 아트가 선
-# 자리이지만 메뉴는 불투명 판이라 읽는 데 문제가 없다.
+# 자리이지만 메뉴는 불투명 판이라 읽는 데 문제가 없다. 판(`PilotDetailInfoMenu`)의
+# 모양은 카드 설명판과 같다(`PilotDetailMenuPanel` = `CardDescBox.panel_style`).
+## 판 폭 · 안쪽 여백 — 씬(최소 폭)과 변형(여백)의 사본(위치 계산용).
 const MENU_W: float = 372.0
-const MENU_ROW_H: float = 36.0
 const MENU_PAD := Vector2(20.0, 16.0)
 const MENU_GAP_X: float = 16.0
-## 판 모양은 카드 설명판과 같다(`CardDescBox.panel_style` — 불투명 · 테두리 없음 ·
-## 아래로 흐릿한 드롭 섀도). 이 색은 설명 글 속 아이콘이 파내는 판 바탕색이다.
+## 설명 글 속 아이콘이 파내는 판 바탕색 = 판 색.
 const MENU_BG := BattleTheme.MENU_BG
 ## 설명 글의 `{attack}` · `{engage}` 자리에 서는 아이콘.
 const MENU_NOTE_ICON: Dictionary = {
 	"attack": KeywordIcon.ATTACK, "engage": KeywordIcon.ENGAGE,
 }
-## 판 아래의 설명 글. 판 높이는 그려진 글의 실제 높이에서 유도한다(`_make_note`).
-const MENU_NOTE_FONT: int = 20
-## 이름 칸이 차지하는 비율. 나머지가 값 칸이다. 0.52 이던 시절 "다음 작전
-## 단계까지" 같은 값이 159px 안에 안 들어가 **왼쪽부터 잘려 나갔다** — 오른쪽
-## 정렬 Label 은 넘치면 정렬을 포기하고 rect 왼쪽부터 그리므로, 잘리는 쪽이
-## 글의 머리다(clip_text 가 없으면 대신 화면 밖으로 넘친다).
-const MENU_KEY_FRAC: float = 0.42
+## 판 아래의 설명 글 크기(`PilotDetailNoteText`) — 아이콘 크기를 여기서 낸다.
+const MENU_NOTE_FONT: int = BattleTheme.FONT_CAPTION
 
-# ─── 지속 효과 썸네일 (일러스트 좌측 하단) ──────────────────────────────────
+# ─── 지속 효과 썸네일 (일러스트 좌측 하단, 씬 `%FxGrid`) ─────────────────────
 # **지금 이 파일럿에게 걸려 있는 것만** 뜬다 — 걸려 있지도 않은 효과의 빈 칸이
 # 늘어서 있으면 "무엇이 켜져 있는가"가 도리어 안 읽힌다.
 #
@@ -226,22 +179,8 @@ const MENU_KEY_FRAC: float = 0.42
 # 필요했지만, 화면 구석에 홀로 선 68px 칸 여섯의 머리에 밑줄 달린 절 제목을
 # 붙이면 그 제목이 칸보다 눈에 띈다. 걸린 효과가 없으면 **아무것도 안 그린다** —
 # 예전의 "걸려 있는 효과 없음" 한 줄은 제목이 있어야 뜻이 서는 문장이었다.
-const FX_SIZE: float = 68.0
-const FX_GAP: float = 12.0
-const FX_RADIUS: int = BattleTheme.FX_RADIUS
-const FX_BG := BattleTheme.CHIP_BG
-const FX_BG_HL := BattleTheme.CHIP_BG_HL
-const FX_SHORT_FONT: int = 21
-const FX_VALUE_FONT: int = 16
-## 카드 일러스트 썸네일 — 효과를 건 카드를 알 때는 두 글자 약칭 대신 그 카드의
-## 아트를 칸 가득 둥근 사각형으로 깎아 깔고, 값은 아래 띠에 얹는다.
-const FX_ART_SHADER: Shader = preload("res://resources/shaders/rounded_rect_mask.gdshader")
-const FX_ART_INSET: float = 3.0
-const FX_VALUE_BAND := BattleTheme.FX_VALUE_BAND
-## 썸네일 줄의 왼쪽 끝.
-const FX_LEFT_X: float = 26.0
-## 한 줄이 쓸 수 있는 폭 — 정보 칼럼(x 600)과 부딪히지 않는 선. 여섯 칸이 든다.
-const FX_ROW_W: float = 520.0
+#
+# 칸(68 × 68, 간격 12, 한 줄 여섯 — x 26 부터 정보 칼럼과 부딪히지 않는 폭)은 씬이 정한다.
 ## 썸네일 줄의 아래끝과 카드 부채꼴 윗변 사이 간격(호버로 커진 카드가 ≈17px
 ## 솟는 몫 포함). 줄은 여기서 **위로** 자란다 — 아래로 자라면 두 줄짜리 효과
 ## 목록이 카드 부채꼴 위로 내려앉는다.
@@ -271,27 +210,14 @@ const FAN_ZONE_PAD: float = 24.0
 ## 빗겨 눌러도 이 안이면 화면이 닫히지 않는다.
 const INFO_ZONE_PAD: float = 40.0
 
-# ─── 파일럿 스킬 판 (인게임 탭 · 스탯 판 아래, 자기 판) ───────────────────
+# ─── 파일럿 스킬 판 (인게임 탭 · 스탯 판 아래, 자기 판 — 씬 `%SkillPanel`) ───
 # 스킬은 카드와 다른 종류의 자원이라 **자기 판**을 갖는다 — 왼쪽에 아이콘 타일
 # (`SkillImages.make_icon_tile`, 흐린 그림자), 오른쪽에 이름 · 설명문, 아래에 큰
 # 사용 버튼. 제목 줄("파일럿 스킬")과 타입 · 키워드 꼬리표는 없다 — 판 자체가
 # 이름표이고, 타입은 버튼(있다 / 없다 / 딤드)이 말한다.
-const SKILL_NAME_FONT: int = 30
-const SKILL_DESC_FONT: int = 22
-const SKILL_STATUS_FONT: int = 22
-const SKILL_LINE_GAP: float = 8.0
-const SKILL_NAME_COLOR := BattleTheme.TEXT_SKILL
-const SKILL_DESC_COLOR := BattleTheme.TEXT_DESC
-const SKILL_WAIT_COLOR  := BattleTheme.TEXT_WAIT
-const SKILL_USE_H: float = 68.0
+## 설명문 글자 크기 — `SkillPopup` 도 같은 값을 읽는다.
+const SKILL_DESC_FONT: int = BattleTheme.FONT_BODY
 const SKILL_TILE_PX: float = 92.0
-const SKILL_TILE_GAP: float = 18.0
-const SKILL_TILE_BG := BattleTheme.SKILL_TILE_BG
-const SKILL_TILE_ICON := BattleTheme.SKILL_TILE_ICON
-const SKILL_TILE_SHADOW := BattleTheme.SKILL_TILE_SHADOW
-## 설명문 키워드 아이콘 색 / 필중 아이콘을 파내는 판 바탕색 — 카드 설명판(어두운 판)과 같다.
-const SKILL_KW_ICON := BattleTheme.SKILL_KW_ICON
-const SKILL_KNOCK := BattleTheme.SKILL_KNOCK
 
 # ─── 열기 / 닫기 연출 ────────────────────────────────────────────────────────
 # 열 때: 아트가 왼쪽에서 살짝 오른쪽으로 오며, 정보 판들이 아래에서 올라오며 페이드인.
@@ -302,11 +228,12 @@ const ART_SLIDE_PX: float = 48.0
 const UI_SLIDE_PX: float = 56.0
 
 var _bs: BattleSim = null
-var _layer: CanvasLayer = null
-var _root: Control = null
-## 딤 / 정보 판 묶음(머리글 · 탭 · 본문). 열기 · 닫기 연출이 이 둘과 아트 홀더를 움직인다.
-var _dim: ColorRect = null
+## 지금 열린 상세 한 장(`PilotDetailView.tscn` 인스턴스). null = 닫힘.
+var _view: Control = null
+## 딤 / 정보 묶음(머리글 · 탭 · 본문 · 카드). 열기 · 닫기 연출이 이 둘과 아트 홀더를 움직인다.
+var _dim: Control = null
 var _ui_root: Control = null
+var _column: Control = null
 var _pilot: PilotData = null
 var _tab: int = Tab.INGAME
 
@@ -318,28 +245,23 @@ var _swap_tween: Tween = null
 
 var _tab_buttons: Array = []          # Array[Button], Tab 순서
 
-# 머리글(이름 · 기체명 · 성장치)은 **탭과 무관**하므로 `_build` 에서 한 번만
-# 세우고 `refresh()` 가 숫자만 고친다.
+# 머리글(이름 · 기체명 · 성장치)은 **탭과 무관**하므로 열 때 한 번만 채우고
+# `refresh()` 가 숫자만 고친다.
 var _growth_label: Label = null
 ## 파일럿 스킬 블록의 상태 줄과 사용 버튼. `refresh()` 가 이 둘만 다시 쓴다 —
-## 트리를 다시 세우면 카드 노드가 매 갱신마다 인스턴스화된다. 패시브 스킬과
-## 스킬 없는 파일럿에서는 버튼이 null 이다.
+## 트리를 다시 세우면 카드 노드가 매 갱신마다 인스턴스화된다. 패시브 스킬 ·
+## 스킬 없는 파일럿 · 인게임이 아닌 탭에서는 버튼이 null 이다.
 var _skill_status: Label = null
 var _skill_use_btn: Button = null
 ## 판을 세울 때 상태 줄을 넣었는가. 준비 완료(쿨타임 0)면 "사용 가능" 줄을 빼므로
 ## 이 값이 지금 답과 달라지면 `refresh()` 가 본문을 다시 세운다.
 var _skill_status_shown: bool = false
 
-# 본문(칩 · 효과 · 카드)은 탭이 바뀔 때 통째로 다시 세운다 — 구성이 아예 다르다.
-# 값만 바뀌는 `refresh()` 는 이 트리를 건드리지 않고 라벨만 고친다.
-var _body_root: Control = null
-var _stat_panel: Panel = null
-
-## **정보 패널을 열 수 있는 모든 것**이 여기 한 표에 모인다 — 스탯 칩,
+## 정보 패널을 열 수 있는 모든 것이 여기 한 표에 모인다 — 스탯 칩,
 ## 지속 효과 썸네일, 카드. 셋이 같은 패널을 쓰므로(= 자연히 배타적) 강조
 ## 스타일도, 여는 경로도, 메뉴 뒤판의 클릭 라우팅도 한 벌이면 된다.
 ##
-##   key → {"button": Button, "style": TargetStyle, "value": Label?}
+##   key → {"button": Button, "style": TargetStyle, "value": Label?, …}
 ##
 ## 키 접두사가 종류를 가른다: 접두사 없음 = 스탯 칩, `fx:` = 지속 효과,
 ## `card:` = 카드. `_menu_rows` / `_menu_note` / `_target_title` 이 이 접두사로
@@ -353,6 +275,7 @@ var _fx_keys: Array = []
 # 열려 있는 정보 패널의 키. "" = 닫힘. `refresh()` 가 이 값을 보고 내용을 다시
 # 세우므로 패널에 적힌 숫자도 언제나 지금 값이다.
 var _menu_key: String = ""
+## 설명 판 뒤판(씬 `%InfoMenu`, 맨 위). 판은 그 자식으로 코드가 넣는다.
 var _menu_root: Control = null
 
 # 보유 카드 부채꼴 상태. `_build_card_fan` 이 열 때 한 번 채우고 `close()` 가
@@ -364,6 +287,7 @@ var _fan_keys: Array = []              # 같은 순서의 `card:` 키 ("" = 딤�
 var _fan_dx: PackedFloat32Array = PackedFloat32Array()   # 쉬는 자리의 중심 dx
 var _fan_cx: float = 0.0
 var _fan_spacing: float = 0.0
+var _fan_root: Control = null
 var _fan_hits: Control = null
 ## 지금 가리키는 카드(밴드 호버). -1 = 없음 — 그때는 정보 패널이 열린 카드가 초점.
 var _fan_hover: int = -1
@@ -373,11 +297,14 @@ var _fan_relayout_queued: bool = false
 var _hidden_team: int = -1
 
 
+## 씬을 인스턴스한다. `PilotDetailPanel.new()` 는 층이 없는 빈 노드라 쓰지 않는다.
+static func create() -> PilotDetailPanel:
+	return (load(SCENE_PATH) as PackedScene).instantiate() as PilotDetailPanel
+
+
 func _ready() -> void:
-	_layer = CanvasLayer.new()
-	_layer.layer = OVERLAY_LAYER
-	_layer.name = "PilotDetailLayer"
-	add_child(_layer)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 # CardSelectOverlay / CardPileViewer 와 같은 패턴 — BattleSim._ready 가
@@ -387,7 +314,7 @@ func bind(bs: BattleSim) -> void:
 
 
 func is_active() -> bool:
-	return _root != null
+	return _view != null
 
 
 func open(p: PilotData) -> void:
@@ -408,17 +335,19 @@ func open(p: PilotData) -> void:
 ## 화면만 `CLOSE_SEC` 동안 빠져나가다 지워지고, 그동안은 입력을 받지 않는다.
 func close() -> void:
 	_close_menu()
-	if _root != null:
-		_play_close(_root, _art_holder, _ui_root, _dim)
-		_root = null
+	if _view != null:
+		_play_close(_view, _art_holder, _ui_root, _dim)
+		_view = null
 	_dim = null
 	_ui_root = null
-	_body_root = null
-	_stat_panel = null
+	_column = null
+	_menu_root = null
 	_targets.clear()
 	_fx_keys.clear()
 	_reset_fan()
 	_growth_label = null
+	_skill_status = null
+	_skill_use_btn = null
 	_tab_buttons.clear()
 	_art_pilot = null
 	_art_mech = null
@@ -480,43 +409,44 @@ func refresh() -> void:
 
 
 # ─── UI ──────────────────────────────────────────────────────────────────────
+## 상세 한 장을 인스턴스하고 채운다. 크기 · 자리는 씬(전부 `%Root` 의 full rect —
+## CanvasLayer 아래 Control 의 full-rect 앵커는 뷰포트 크기로 풀린다)이 정한다.
 func _build() -> void:
-	_root = Control.new()
-	_root.name = "PilotDetail"
-	# 앵커 프리셋은 쓰지 않는다 — CanvasLayer 아래의 Control 은 full-rect 앵커를
-	# 해석해 줄 부모 rect 가 없어서 크기가 그대로 0 이고, 프리셋을 걸어 두면
-	# "_ready 뒤에 size 가 덮어써진다"는 경고만 남는다. 크기는 명시한다.
-	_root.position = Vector2.ZERO
-	_root.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
-	# 모달 — 뒤쪽(핸드 · 전장 · 도넛) 입력을 전부 삼킨다.
-	_root.mouse_filter = Control.MOUSE_FILTER_STOP
-	_layer.add_child(_root)
+	_view = VIEW_SCENE.instantiate() as Control
+	%Root.add_child(_view)
+	_dim = _view.get_node("%Dim")
+	_art_holder = _view.get_node("%ArtHolder")
+	_art_pilot = _view.get_node("%ArtPilot")
+	_art_mech = _view.get_node("%ArtMech")
+	_ui_root = _view.get_node("%InfoColumn")
+	_column = _view.get_node("%Column")
+	_fan_root = _view.get_node("%CardFan")
+	_fan_hits = _view.get_node("%CardFanHits")
+	_menu_root = _view.get_node("%InfoMenu")
+	_growth_label = _view.get_node("%Growth")
 
 	# 딤 = "바깥". 탭 · 칩 · 카드 · 사용 버튼이 아닌 곳을 누르면 여기로 떨어져
-	# 상세 화면이 닫힌다(`_on_dim_input`). 판(Panel)과 글자는 전부 IGNORE 라 판
-	# 위를 눌러도 닫힌다 — 닫기 버튼은 없다.
-	_dim = ColorRect.new()
-	_dim.color = DIM_COLOR
-	_dim.position = Vector2.ZERO
-	_dim.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
-	_dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	# 상세 화면이 닫힌다(`_on_dim_input`). 판과 글자는 전부 IGNORE 라 판
+	# 위를 눌러도 딤이 받는다 — 닫기 버튼은 없다.
 	_dim.gui_input.connect(_on_dim_input)
-	_root.add_child(_dim)
+	# 설명 판 뒤판 — 이 판이 STOP 이라 뒤쪽 버튼이 전부 가려지므로 **뒤판이 직접
+	# 라우팅한다**(`_on_menu_backdrop_input`).
+	_menu_root.gui_input.connect(_on_menu_backdrop_input)
+	_tab_buttons = [_view.get_node("%TabIngame"), _view.get_node("%TabPilot"),
+			_view.get_node("%TabMech")]
+	for i in _tab_buttons.size():
+		(_tab_buttons[i] as Button).pressed.connect(_on_tab_pressed.bind(i))
+	(_view.get_node("%SkillUse") as Button).pressed.connect(_on_skill_use_pressed)
+	# 지속 효과 줄 — 아래끝을 카드 부채꼴 윗변 위에 붙이고 위로 자란다(씬 grow = 위).
+	var fx_grid: Control = _view.get_node("%FxGrid")
+	fx_grid.offset_top = _fx_bottom_y()
+	fx_grid.offset_bottom = _fx_bottom_y()
 
 	_build_arts()
-
-	_ui_root = Control.new()
-	_ui_root.name = "InfoColumn"
-	_ui_root.position = Vector2.ZERO
-	_ui_root.size = _root.size
-	_ui_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.add_child(_ui_root)
-
-	_build_header_block()
-	_build_tabs()
+	_fill_header()
+	_refresh_tab_styles()
 	_rebuild_body()
-	# 본문 **뒤에** 붙여 카드가 판들 위에 그려지게 한다(`_rebuild_body` 는 본문을
-	# 맨 앞 자식으로 옮긴다). 펼침 연출은 열 때만.
+	# 펼침 연출은 열 때만.
 	_build_card_fan(_starter_cards("pilot") + _starter_cards("mech"),
 			_slot_tags("pilot") + _slot_tags("mech"))
 
@@ -534,19 +464,13 @@ func _on_dim_input(event: InputEvent) -> void:
 	close()
 
 
-## 정보 칼럼이 차지하는 구역(`INFO_ZONE_PAD` 여유 포함). 머리글 윗변에서 칼럼의
-## 마지막 판(스탯 판 또는 스킬 판) 아랫변까지 — 이 안의 빈 곳은 닫지 않는다.
+## 정보 칼럼이 차지하는 구역(`INFO_ZONE_PAD` 여유 포함) — 씬 `%Column` 의 rect
+## (머리글 윗변 ~ 마지막 판 아랫변, 정보 묶음 로컬 = 열기 연출 오프셋을 뺀 화면 좌표).
+## 이 안의 빈 곳은 닫지 않는다.
 func _info_zone() -> Rect2:
-	var bottom: float = STAT_TOP
-	if _body_root != null and is_instance_valid(_body_root):
-		for child in _body_root.get_children():
-			var panel := child as Panel
-			if panel != null and panel.position.x >= STAT_X - STAT_PANEL_PAD.x - 1.0:
-				bottom = maxf(bottom, panel.position.y + panel.size.y)
-	var zone := Rect2(STAT_X - STAT_PANEL_PAD.x, HDR_TOP,
-			STAT_W + STAT_PANEL_PAD.x * 2.0, bottom - HDR_TOP)
-	return zone.grow(INFO_ZONE_PAD)
-
+	if _column == null or not is_instance_valid(_column):
+		return Rect2()
+	return Rect2(_column.position, _column.size).grow(INFO_ZONE_PAD)
 
 ## 카드 부채꼴이 차지하는 구역(여유 포함). 이 안의 빈 곳은 닫지 않는다.
 func _card_zone() -> Rect2:
@@ -567,7 +491,7 @@ func _play_open() -> void:
 	_ui_root.position.y = UI_SLIDE_PX
 	_ui_root.modulate.a = 0.0
 	_dim.modulate.a = 0.0
-	var tw := _root.create_tween().set_parallel() 			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	var tw := _view.create_tween().set_parallel() 			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	tw.tween_property(_art_holder, "position:x", 0.0, OPEN_SEC)
 	tw.tween_property(_art_holder, "modulate:a", 1.0, OPEN_SEC)
 	tw.tween_property(_ui_root, "position:y", 0.0, OPEN_SEC)
@@ -600,80 +524,39 @@ static func _ignore_input_recursive(node: Node) -> void:
 
 
 # ─── 전신 아트 ───────────────────────────────────────────────────────────────
-# 두 장을 만들어 자기 홀더에 넣고, 앞뒤 자세는 `_apply_focus(false)` 가 잡는다.
+# 두 장(씬 `%ArtPilot` · `%ArtMech`)을 채우고, 앞뒤 자세는 `_apply_focus(false)` 가 잡는다.
 func _build_arts() -> void:
-	_art_holder = Control.new()
-	_art_holder.name = "ArtHolder"
-	_art_holder.position = Vector2.ZERO
-	_art_holder.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
-	_art_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.add_child(_art_holder)
-
 	var mech: MechData = _mech()
-	_art_pilot = _make_art(PilotImages.full_for(_pilot.pilot_id), "초상화 없음")
-	_art_mech  = _make_art(MechImages.full_for(mech.id) if mech != null else null,
+	_fill_art(_art_pilot, PilotImages.full_for(_pilot.pilot_id), "초상화 없음")
+	_fill_art(_art_mech, MechImages.full_for(mech.id) if mech != null else null,
 			mech.name if mech != null else "메크 미배정")
-	_art_holder.add_child(_art_mech)
-	_art_holder.add_child(_art_pilot)
 	_apply_focus(false)
 
 
-## 아트 한 장. `tex` 가 null 이면(메크 에셋이 아직 없다 / INTL 파일럿) 같은
-## 자리에 실루엣 플레이스홀더를 세운다 — 자리와 전환 동작은 그대로 확인된다.
+## 아트 한 장(`PilotDetailArt.tscn`). `tex` 가 null 이면(메크 에셋이 아직 없다 /
+## INTL 파일럿) 같은 자리에 실루엣 플레이스홀더(`%Slab` + `%FallbackLabel`)를 세운다 —
+## 자리와 전환 동작은 그대로 확인된다.
 ##
 ## 노드 크기는 **언제나 앞에 선 크기**(`ART_H`)로 고정하고, 뒤로 물러날 때는
 ## `scale` 로만 줄인다. `pivot_offset` 이 아래 가운데라 줄여도 바닥선이 그대로다.
-func _make_art(tex: Texture2D, fallback_text: String) -> Control:
+func _fill_art(holder: Control, tex: Texture2D, fallback_text: String) -> void:
 	var aspect: float = ART_PLACEHOLDER_ASPECT
 	if tex != null:
 		var ts: Vector2 = tex.get_size()
 		if ts.y > 0.0:
 			aspect = ts.x / ts.y
 	var w: float = ART_H * aspect
-
-	var holder := Control.new()
-	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	holder.size = Vector2(w, ART_H)
 	holder.pivot_offset = Vector2(w * 0.5, ART_H)
-
-	if tex != null:
-		var rect := TextureRect.new()
-		rect.position = Vector2.ZERO
-		rect.size = Vector2(w, ART_H)
-		rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		# 크기를 원본 비율로 이미 맞췄으므로 STRETCH_SCALE 이 정확히 채운다.
-		# KEEP_ASPECT 계열은 여기서 레터박스를 한 번 더 계산할 뿐이다.
-		rect.stretch_mode = TextureRect.STRETCH_SCALE
-		rect.texture = tex
-		rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		holder.add_child(rect)
-	else:
-		var slab := Panel.new()
-		slab.position = Vector2.ZERO
-		slab.size = Vector2(w, ART_H)
-		slab.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var sb := StyleBoxFlat.new()
-		# 옅게 — 이 판은 "아직 그림이 없다"는 자리 표시이지 그림이 아니다.
-		# 알파를 올리면 화면 절반을 차지하는 밝은 사각형이 되어 정작 앞에 선
-		# 파일럿보다 눈에 띈다.
-		sb.bg_color = Color(0.14, 0.15, 0.20, 0.30)
-		sb.border_color = Color(0.42, 0.45, 0.56, 0.45)
-		sb.border_width_top = 3
-		sb.border_width_bottom = 3
-		sb.border_width_left = 3
-		sb.border_width_right = 3
-		sb.corner_radius_top_left = 24
-		sb.corner_radius_top_right = 24
-		slab.add_theme_stylebox_override("panel", sb)
-		holder.add_child(slab)
-
-		var lbl := _make_label(fallback_text, 34, Color(0.78, 0.80, 0.88),
-				HORIZONTAL_ALIGNMENT_CENTER)
-		lbl.position = Vector2(0.0, ART_H * 0.42)
-		lbl.size = Vector2(w, 60.0)
-		holder.add_child(lbl)
-	return holder
-
+	# 크기를 원본 비율로 이미 맞췄으므로 STRETCH_SCALE 이 정확히 채운다.
+	var rect: TextureRect = holder.get_node("%Texture")
+	rect.texture = tex
+	rect.visible = tex != null
+	# 옅은 판 — "아직 그림이 없다"는 자리 표시이지 그림이 아니다(`PilotDetailArtSlab`).
+	holder.get_node("%Slab").visible = tex == null
+	var lbl: Label = holder.get_node("%FallbackLabel")
+	lbl.visible = tex == null
+	lbl.text = fallback_text
 
 ## 앞/뒤 자세를 적용한다. `animate` 면 두 노드가 자리를 맞바꾸는 과정이 보인다.
 ## 앞에 서는 쪽은 **탭**이 정한다 — 메크 탭이면 기체, 그 밖에는 사람.
@@ -715,44 +598,13 @@ func _pose_art(node: Control, is_front: bool, animate: bool) -> void:
 
 
 # ─── 탭 바 ───────────────────────────────────────────────────────────────────
-func _build_tabs() -> void:
-	_tab_buttons.clear()
-	var titles: Array = ["인게임", "파일럿", "메크"]
-	var w: float = (STAT_W - float(titles.size() - 1) * TAB_GAP) / float(titles.size())
-	var top: float = STAT_TOP - STAT_PANEL_PAD.y - TAB_H
-	for i in titles.size():
-		var btn := Button.new()
-		btn.text = String(titles[i])
-		btn.add_theme_font_size_override("font_size", 26)
-		btn.position = Vector2(STAT_X + float(i) * (w + TAB_GAP), top)
-		btn.size = Vector2(w, TAB_H)
-		btn.focus_mode = Control.FOCUS_NONE
-		btn.pressed.connect(_on_tab_pressed.bind(i))
-		_ui_root.add_child(btn)
-		_tab_buttons.append(btn)
-	_refresh_tab_styles()
-
-
+# 받침 **바로 위에 붙는다**(아래끝 = 받침 위끝) — 떼어 놓으면 탭이 어느 판에
+# 달린 것인지가 안 보인다. 켜진 탭(`BattleTabOn`)은 아래 테두리를 그리지 않아
+# 받침과 한 몸이 된다.
 func _refresh_tab_styles() -> void:
 	for i in _tab_buttons.size():
-		var btn := _tab_buttons[i] as Button
-		var on: bool = i == _tab
-		var sb := StyleBoxFlat.new()
-		sb.bg_color = TAB_BG_ON if on else TAB_BG_OFF
-		sb.border_color = TAB_BORDER_ON if on else TAB_BORDER_OFF
-		sb.border_width_top = 2
-		sb.border_width_left = 2
-		sb.border_width_right = 2
-		# 켜진 탭은 **아래 테두리를 그리지 않는다** — 받침과 한 몸으로 이어져야
-		# "이 판이 그 탭의 내용"으로 읽힌다.
-		sb.border_width_bottom = 0 if on else 2
-		sb.corner_radius_top_left = 14
-		sb.corner_radius_top_right = 14
-		for state in ["normal", "hover", "pressed", "focus"]:
-			btn.add_theme_stylebox_override(state, sb)
-		btn.add_theme_color_override("font_color",
-				Color.WHITE if on else KEY_COLOR)
-
+		(_tab_buttons[i] as Button).theme_type_variation = \
+				&"BattleTabOn" if i == _tab else &"BattleTab"
 
 func _on_tab_pressed(idx: int) -> void:
 	if idx == _tab:
@@ -764,50 +616,36 @@ func _on_tab_pressed(idx: int) -> void:
 	_rebuild_body()
 
 
-# ─── 본문 (이름 · 칩 · 카드) ─────────────────────────────────────────────────
-# 탭이 바뀔 때 통째로 다시 세운다. 받침 Panel 을 **먼저** 넣어 글자 뒤에 깔고,
-# 높이는 다 세운 뒤에 내용에 맞춰 준다.
+# ─── 본문 (칩 · 효과 · 스킬) ─────────────────────────────────────────────────
+# 탭이 바뀔 때 칸 줄과 효과 썸네일을 통째로 다시 세운다 — 구성이 아예 다르다.
+# 판(스탯 · 스킬)은 씬 노드라 그대로 두고 내용과 보임만 바꾼다. 판 높이는
+# 컨테이너가 내용에 맞춘다.
 func _rebuild_body() -> void:
-	if _body_root != null and is_instance_valid(_body_root):
-		# 트리에서 **먼저** 뗀다 — `queue_free` 만 걸면 이번 프레임까지는 그대로
-		# 그려져서 새 블록과 글자가 겹쳐 보인다.
-		_ui_root.remove_child(_body_root)
-		_body_root.queue_free()
 	_targets.clear()
 	_fan_hover = -1
 	_fx_keys = _fx_signature()
+	_clear_children(_view.get_node("%Chips"))
+	_clear_children(_view.get_node("%FxGrid"))
 
-	_body_root = Control.new()
-	_body_root.name = "BodyColumn"
-	_body_root.position = Vector2.ZERO
-	_body_root.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
-	# IGNORE 는 **이 노드만** 히트 테스트에서 뺀다 — 자식 칩 버튼은 그대로 눌린다.
-	_body_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ui_root.add_child(_body_root)
-	# 머리글 · 탭보다 아래(= 뒤)에 둔다.
-	_ui_root.move_child(_body_root, 0)
-
-	_stat_panel = Panel.new()
-	_stat_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = STAT_PANEL_BG
-	sb.border_color = STAT_PANEL_BORDER
-	sb.border_width_top = 1
-	sb.border_width_bottom = 1
-	sb.border_width_left = 1
-	sb.border_width_right = 1
-	# 위쪽 모서리는 각지게 — 켜진 탭이 그 위에 앉아 한 몸으로 이어진다.
-	sb.corner_radius_bottom_left = 14
-	sb.corner_radius_bottom_right = 14
-	_stat_panel.add_theme_stylebox_override("panel", sb)
-	_body_root.add_child(_stat_panel)
-
-	var bottom: float = _build_body_content()
-	_stat_panel.position = Vector2(STAT_X, STAT_TOP) - STAT_PANEL_PAD
-	_stat_panel.size = Vector2(STAT_W, bottom - STAT_TOP) + STAT_PANEL_PAD * 2.0
-	# 파일럿 스킬은 스탯 판 아래 **자기 판** — 인게임 탭에만 선다.
-	if _tab == Tab.INGAME:
-		_build_skill_panel(_stat_panel.position.y + _stat_panel.size.y + PANEL_GAP)
+	_build_chip_grid(_chip_defs())
+	var ingame: bool = _tab == Tab.INGAME
+	# 죽어 있을 때만 뜨는 한 줄. 스트립의 부활 카운트는 패널이 열려 있는 동안
+	# 숨겨져 있으므로 여기 말고는 남은 턴 수를 볼 자리가 없다.
+	var dead: bool = ingame and not _pilot.alive
+	_view.get_node("%DeadGap").visible = dead
+	_view.get_node("%DeadBox").visible = dead
+	if dead:
+		(_view.get_node("%DeadLabel") as Label).text = \
+				"부활까지 %d턴" % _bs.turns_until_return(_pilot)
+	# 파일럿 스킬은 스탯 판 아래 **자기 판** — 인게임 탭에만 선다. 지속 효과는 칼럼
+	# 밖(일러스트 좌측 하단)에 산다.
+	_view.get_node("%SkillPanel").visible = ingame
+	_skill_status = null
+	_skill_use_btn = null
+	_skill_status_shown = _skill_status_visible()
+	if ingame:
+		_build_skill_panel()
+		_build_effect_thumbs()
 	# 카드 밴드 · 딤은 탭을 따른다. `_targets` 를 방금 비웠으므로 카드 키도 다시 싣는다.
 	_rebuild_fan_hits()
 
@@ -822,90 +660,28 @@ func _rebuild_body() -> void:
 			_close_menu()
 
 
-## 본문을 세우고 마지막 요소의 아래 y 를 돌려준다. **머리글은 여기 없다** —
-## 이름 · 기체명 · 성장치는 탭과 무관하므로 `_build_header_block` 이 따로 세운다.
-func _build_body_content() -> float:
-	var y: float = _build_chip_grid(STAT_TOP, _chip_defs())
-
-	# 카드는 칼럼의 흐름에 없다 — 손패 자리에 자기 노드로 산다(`_build_card_fan`,
-	# 열 때 한 번). 그래서 반환값(= 받침 높이)에 얹히지 않는다.
-	if _tab != Tab.INGAME:
-		return y
-
-	# 죽어 있을 때만 뜨는 한 줄. 스트립의 부활 카운트는 패널이 열려 있는 동안
-	# 숨겨져 있으므로 여기 말고는 남은 턴 수를 볼 자리가 없다.
-	if not _pilot.alive:
-		y += 12.0
-		var dead := _make_label("부활까지 %d턴" % _bs.turns_until_return(_pilot),
-				24, Color(1.0, 0.62, 0.62), HORIZONTAL_ALIGNMENT_LEFT)
-		dead.position = Vector2(STAT_X, y)
-		dead.size = Vector2(STAT_W, 30.0)
-		_body_root.add_child(dead)
-		y += 30.0
-
-	# 지속 효과는 칼럼 밖(일러스트 좌측 하단)에 산다 — 칼럼의 흐름은 칸 → 스킬로
-	# 곧장 이어지고 받침 높이(반환값)에도 얹히지 않는다.
-	_build_effect_thumbs()
-	return y
+## 자식을 **트리에서 먼저 떼고** 지운다 — `queue_free` 만 걸면 이번 프레임까지는
+## 그대로 그려져서 새 줄과 글자가 겹쳐 보인다.
+static func _clear_children(node: Node) -> void:
+	for child in node.get_children():
+		node.remove_child(child)
+		child.queue_free()
 
 
 # ─── 머리글 (탭 위) ─────────────────────────────────────────────────────────
-## 파일럿 이름 + 기체명 + 성장치. **`_build` 에서 한 번만** 세우고 탭 전환은
-## 건드리지 않는다 — `refresh()` 는 성장치 숫자만 다시 쓴다.
+## 파일럿 이름 + 기체명 + 성장치. **열 때 한 번만** 채우고 탭 전환은 건드리지
+## 않는다 — `refresh()` 는 성장치 숫자만 다시 쓴다.
 ##
 ## 이름과 기체명은 **두 줄로 쌓는다**(예전에는 `HBoxContainer` 로 한 줄에 이어
-## 붙였다). 쌓으면 둘의 x 가 같아 글자 폭을 잴 일이 아예 없어지므로 컨테이너도
-## 필요 없다 — 각 줄은 `clip_text` 로 자기 칸 안에 머문다.
-func _build_header_block() -> void:
+## 붙였다). 쌓으면 둘의 x 가 같아 글자 폭을 잴 일이 아예 없어진다 — 각 줄은
+## `clip_text` 로 자기 칸 안에 머문다. 기체명은 늘 보인다 — 메크 탭에 들어가야만
+## 알 수 있는 값이 아니다.
+func _fill_header() -> void:
 	var pd: PlayerData = _bs.player_data_for(_pilot)
 	var mech: MechData = _mech()
-	var display_name: String = pd.name if pd != null else _bs.pilot_label(_pilot)
-
-	var bg := Panel.new()
-	bg.name = "HeaderBackdrop"
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bg.position = Vector2(STAT_X - STAT_PANEL_PAD.x, HDR_TOP)
-	bg.size = Vector2(STAT_W + STAT_PANEL_PAD.x * 2.0, HDR_BOTTOM - HDR_TOP)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = STAT_PANEL_BG
-	sb.border_color = STAT_PANEL_BORDER
-	sb.border_width_top = 1
-	sb.border_width_bottom = 1
-	sb.border_width_left = 1
-	sb.border_width_right = 1
-	sb.corner_radius_top_left = 14
-	sb.corner_radius_top_right = 14
-	sb.corner_radius_bottom_left = 14
-	sb.corner_radius_bottom_right = 14
-	bg.add_theme_stylebox_override("panel", sb)
-	_ui_root.add_child(bg)
-
-	var row_y: float = HDR_TOP + STAT_PANEL_PAD.y
-
-	# 성장치 — 맨 위 가운데.
-	_growth_label = _make_label(BattleSim.fmt_score(_pilot.score),
-			HDR_GROWTH_FONT, GROWTH_COLOR, HORIZONTAL_ALIGNMENT_CENTER)
-	_growth_label.position = Vector2(STAT_X, row_y)
-	_growth_label.size = Vector2(STAT_W, HDR_GROWTH_H)
-	_growth_label.clip_text = true
-	_ui_root.add_child(_growth_label)
-	row_y += HDR_GROWTH_H
-
-	var name_lbl := _make_label(display_name, HDR_NAME_FONT, HEADER_COLOR,
-			HORIZONTAL_ALIGNMENT_LEFT)
-	name_lbl.position = Vector2(STAT_X, row_y)
-	name_lbl.size = Vector2(STAT_W, HDR_NAME_H)
-	name_lbl.clip_text = true
-	_ui_root.add_child(name_lbl)
-
-	# 기체명은 늘 보인다 — 메크 탭에 들어가야만 알 수 있는 값이 아니다.
-	var mech_lbl := _make_label(mech.name if mech != null else "메크 미배정",
-			HDR_MECH_FONT, HDR_MECH_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
-	mech_lbl.position = Vector2(STAT_X, row_y + HDR_NAME_H)
-	mech_lbl.size = Vector2(STAT_W, HDR_MECH_H)
-	mech_lbl.clip_text = true
-	_ui_root.add_child(mech_lbl)
-
+	_growth_label.text = BattleSim.fmt_score(_pilot.score)
+	(_view.get_node("%Name") as Label).text = pd.name if pd != null else _bs.pilot_label(_pilot)
+	(_view.get_node("%Mech") as Label).text = mech.name if mech != null else "메크 미배정"
 
 # ─── 스탯 칩 ─────────────────────────────────────────────────────────────────
 ## 이 탭이 보여 줄 스탯 줄 목록. 줄 하나 = `[[key, 이름], …]`(칸 1개 = 전폭,
@@ -943,92 +719,61 @@ func _flat_chip_defs() -> Array:
 	return out
 
 
-func _build_chip_grid(start_y: float, lines: Array) -> float:
-	var y: float = start_y
+func _build_chip_grid(lines: Array) -> void:
+	var chips: Control = _view.get_node("%Chips")
 	for raw in lines:
 		var line: Array = raw as Array
-		var n: int = line.size()
-		var w: float = (STAT_W - float(n - 1) * CHIP_GAP) / float(n)
-		for i in n:
-			_make_chip(String(line[i][0]), String(line[i][1]),
-					Vector2(STAT_X + float(i) * (w + CHIP_GAP), y), w)
-		y += CHIP_H + CHIP_GAP
-	return y - CHIP_GAP
+		var row: Control = ROW_SCENE.instantiate() as Control
+		chips.add_child(row)
+		for cell in line:
+			_make_chip(String(cell[0]), String(cell[1]), row)
 
 
-## 스탯 칸 하나 — 스탯 판 위에 얹힌 작은 판. 왼쪽에 이름, 오른쪽 정렬로 값.
-## 누르면 메뉴가 열려야 하므로 Button 이고, 두 라벨은 IGNORE 라 클릭을 가로채지
-## 않는다.
-func _make_chip(key: String, chip_name: String, pos: Vector2, w: float) -> void:
-	var btn := Button.new()
-	btn.position = pos
-	btn.size = Vector2(w, CHIP_H)
-	btn.focus_mode = Control.FOCUS_NONE
+## 스탯 칸 하나(`PilotDetailStatCell.tscn`) — 스탯 판 위에 얹힌 작은 판. 왼쪽에 이름,
+## 오른쪽 정렬로 값. 누르면 메뉴가 열려야 하므로 Button 이고, 라벨들은 IGNORE 라
+## 클릭을 가로채지 않는다. 폭은 줄(HBox)이 나눈다.
+func _make_chip(key: String, chip_name: String, row: Control) -> void:
+	var btn := CELL_SCENE.instantiate() as Button
+	row.add_child(btn)
 	btn.pressed.connect(_on_target_pressed.bind(key))
-	_body_root.add_child(btn)
 
-	var inner_w: float = w - CHIP_PAD_X * 2.0
-	var name_x: float = CHIP_PAD_X
+	var icon: TextureRect = btn.get_node("%Icon")
+	var name_lbl: Label = btn.get_node("%Name")
 	var icon_key: String = String(CHIP_ICONS.get(key, ""))
-	if not icon_key.is_empty():
-		var icon := TextureRect.new()
-		icon.texture = KeywordIcon.texture(icon_key, int(CHIP_ICON_PX * 2.0), KEY_COLOR,
-				Color(CHIP_BG, 1.0))
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		icon.position = Vector2(name_x, (CHIP_H - CHIP_ICON_PX) * 0.5)
-		icon.size = Vector2(CHIP_ICON_PX, CHIP_ICON_PX)
-		btn.add_child(icon)
-		name_x += CHIP_ICON_PX + CHIP_ICON_GAP
-	var name_lbl := _make_label(chip_name, CHIP_NAME_FONT, KEY_COLOR,
-			HORIZONTAL_ALIGNMENT_LEFT)
-	name_lbl.position = Vector2(name_x, 0.0)
-	name_lbl.size = Vector2(inner_w - (name_x - CHIP_PAD_X), CHIP_H)
-	name_lbl.clip_text = true
-	btn.add_child(name_lbl)
+	if icon_key.is_empty():
+		icon.visible = false
+		name_lbl.offset_left = CHIP_PAD_X
+	else:
+		icon.texture = KeywordIcon.texture(icon_key, int(CHIP_ICON_PX * 2.0),
+				BattleTheme.TEXT_KEY, Color(BattleTheme.CHIP_BG, 1.0))
+	name_lbl.text = chip_name
 
-	# **clip_text 는 필수다** — 오른쪽 정렬 Label 은 글자가 rect 보다 넓으면
-	# 정렬을 포기하고 rect 왼쪽부터 그려 오른쪽으로 넘쳐 나간다.
-	var val_lbl := _make_label(_chip_value(key), CHIP_VALUE_FONT, VALUE_COLOR,
-			HORIZONTAL_ALIGNMENT_RIGHT)
-	val_lbl.position = Vector2(CHIP_PAD_X, 0.0)
-	val_lbl.size = Vector2(inner_w, CHIP_H)
-	val_lbl.clip_text = true
-	btn.add_child(val_lbl)
-
-	var bonus_lbl := _make_label("", CHIP_BONUS_FONT, VALUE_COLOR,
-			HORIZONTAL_ALIGNMENT_RIGHT)
-	bonus_lbl.position = Vector2(CHIP_PAD_X, 0.0)
-	bonus_lbl.size = Vector2(inner_w, CHIP_H)
-	btn.add_child(bonus_lbl)
-
-	var rec: Dictionary = {"button": btn, "style": TargetStyle.CHIP, "value": val_lbl,
-			"bonus": bonus_lbl, "key": key, "inner_w": inner_w}
+	var rec: Dictionary = {"button": btn, "style": TargetStyle.CHIP,
+			"value": btn.get_node("%Value"), "bonus": btn.get_node("%Bonus"), "key": key}
 	_targets[key] = rec
 	_layout_chip_value(rec)
 	_style_target(key, false)
 
 
 ## 칩 값 + 괄호 보너스를 쓰고 자리를 잡는다. 보너스는 맨 오른쪽, 값은 그 왼쪽에
-## 붙는다 — 색이 다른 두 덩이라 Label 둘로 나누고 보너스 폭만큼 값 칸을 줄인다.
+## 붙는다 — 색이 다른 두 덩이라 Label 둘로 나누고 보너스 폭만큼 값 칸의 오른쪽
+## 끝을 당긴다. **값 라벨의 clip_text 는 필수다** — 오른쪽 정렬 Label 은 글자가
+## rect 보다 넓으면 정렬을 포기하고 rect 왼쪽부터 그려 오른쪽으로 넘쳐 나간다.
 func _layout_chip_value(rec: Dictionary) -> void:
 	var key: String = String(rec["key"])
 	var val_lbl := rec["value"] as Label
 	var bonus_lbl := rec["bonus"] as Label
-	var inner_w: float = float(rec["inner_w"])
 	var bonus: int = _chip_bonus(key)
 	var bonus_text: String = "" if bonus == 0 else "(%+d)" % bonus
 	bonus_lbl.text = bonus_text
-	bonus_lbl.add_theme_color_override("font_color",
-			BONUS_UP_COLOR if bonus > 0 else BONUS_DOWN_COLOR)
+	bonus_lbl.theme_type_variation = \
+			&"BattlePositiveLabel" if bonus > 0 else &"BattleNegativeLabel"
 	var bonus_w: float = 0.0
 	if bonus_text != "":
 		bonus_w = bonus_lbl.get_theme_font("font").get_string_size(bonus_text,
 				HORIZONTAL_ALIGNMENT_LEFT, -1, CHIP_BONUS_FONT).x + CHIP_BONUS_GAP
 	val_lbl.text = _chip_value(key)
-	val_lbl.size = Vector2(inner_w - bonus_w, CHIP_H)
-
+	val_lbl.offset_right = -(CHIP_PAD_X + bonus_w)
 
 ## 값 뒤 괄호의 보너스. 체력 · 공격력은 기본값(메크) 대비 지금 값의 증감(성장 ·
 ## 스킬 · 메크 · 카드 영구분이 모두 들어간다), 존재감은 특수 능력이 **올렸을 때만**.
@@ -1048,9 +793,10 @@ func _presence_delta() -> int:
 	return sk.presence_delta(_pilot) if sk != null else 0
 
 
-## 정보 패널을 여는 것 셋(칩 · 효과 썸네일 · 카드)의 강조 스타일을 한 곳에서
-## 그린다. 모양은 종류마다 다르지만 **"지금 이걸 보고 있다"는 신호는 하나**여야
-## 하므로 색과 테두리 두께 규칙은 공유한다.
+## 정보 패널을 여는 것 셋(칩 · 효과 썸네일 · 카드)의 강조를 한 곳에서 바꾼다.
+## 모양은 종류마다 다르지만 **"지금 이걸 보고 있다"는 신호는 하나**여야 하므로
+## 색과 테두리 두께 규칙은 공유한다(`BattleChipButton(On)` · `BattleFxButton(On)` —
+## `BattleTheme.chip_box`).
 func _style_target(key: String, highlighted: bool) -> void:
 	if not _targets.has(key):
 		return
@@ -1058,37 +804,17 @@ func _style_target(key: String, highlighted: bool) -> void:
 	var btn := rec["button"] as Button
 	if not is_instance_valid(btn):
 		return
-	var style: int = int(rec["style"])
-	if style == TargetStyle.CARD:
-		# **버튼은 아무것도 그리지 않는다.** 부채꼴의 버튼은 카드 rect 가 아니라
-		# 그 카드가 보이는 **밴드**라, 테두리를 두르면 카드가 아닌 띠를 두른다.
-		var csb := StyleBoxFlat.new()
-		csb.bg_color = Color(0, 0, 0, 0)
-		for cstate in ["normal", "hover", "pressed", "focus"]:
-			btn.add_theme_stylebox_override(cstate, csb)
-		# 강조는 **손패의 호버와 같은 자세**다 — 정보 패널이 열린 카드가 부채꼴의
-		# 초점이 되어 커지고 앞으로 나오며 이웃이 비켜선다(`_relayout_fan`).
-		# 이전 / 새 키가 같은 프레임에 연달아 오므로 한 번으로 모은다.
-		_queue_fan_relayout()
-		return
-
-	var sb := StyleBoxFlat.new()
-	var is_fx: bool = style == TargetStyle.FX
-	sb.bg_color = (FX_BG_HL if highlighted else FX_BG) if is_fx 			else (CHIP_BG_HL if highlighted else CHIP_BG)
-	sb.border_color = CHIP_BORDER_HL if highlighted else CHIP_BORDER
-	var bw: int = 3 if highlighted else 1
-	sb.border_width_top = bw
-	sb.border_width_bottom = bw
-	sb.border_width_left = bw
-	sb.border_width_right = bw
-	var radius: int = FX_RADIUS if is_fx else CHIP_RADIUS
-	sb.corner_radius_top_left = radius
-	sb.corner_radius_top_right = radius
-	sb.corner_radius_bottom_left = radius
-	sb.corner_radius_bottom_right = radius
-	for state in ["normal", "hover", "pressed", "focus"]:
-		btn.add_theme_stylebox_override(state, sb)
-
+	match int(rec["style"]):
+		TargetStyle.CARD:
+			# **버튼은 아무것도 그리지 않는다**(`PilotDetailCardBand`). 강조는 **손패의
+			# 호버와 같은 자세**다 — 정보 패널이 열린 카드가 부채꼴의 초점이 되어 커지고
+			# 앞으로 나오며 이웃이 비켜선다(`_relayout_fan`). 이전 / 새 키가 같은 프레임에
+			# 연달아 오므로 한 번으로 모은다.
+			_queue_fan_relayout()
+		TargetStyle.FX:
+			btn.theme_type_variation = &"BattleFxButtonOn" if highlighted else &"BattleFxButton"
+		_:
+			btn.theme_type_variation = &"BattleChipButtonOn" if highlighted else &"BattleChipButton"
 
 ## 값 라벨을 들고 있는 대상(= 스탯 칩)만 다시 쓴다. 효과 썸네일과 카드는 값이
 ## 바뀌면 구성 자체가 바뀌므로 `refresh()` 의 서명 비교가 본문을 다시 세운다.
@@ -1314,111 +1040,51 @@ func _fx_entry(key: String) -> Dictionary:
 	return {}
 
 
-## 지속 효과 썸네일 — **일러스트 좌측 하단**, 카드 부채꼴 바로 위. 제목은 없고
-## 걸린 효과가 없으면 아무것도 안 그린다(위 상수 절의 주석 참고).
+## 지속 효과 썸네일 — **일러스트 좌측 하단**, 카드 부채꼴 바로 위(씬 `%FxGrid`, 한 줄
+## 여섯). 제목은 없고 걸린 효과가 없으면 아무것도 안 그린다(위 상수 절의 주석 참고).
 ##
-## **줄은 위로 자란다.** 아래끝을 카드 줄 제목에 붙여 놓고 거기서 역산하므로,
+## **줄은 위로 자란다.** 격자의 아래끝을 카드 부채꼴 위에 붙여 놓았으므로(`_build`),
 ## 효과가 여섯 개를 넘어 두 줄이 되어도 카드 부채꼴을 침범하지 않는다 — 아래로
 ## 자라게 두면 두 번째 줄이 그대로 카드 위에 내려앉는다.
 func _build_effect_thumbs() -> void:
-	var defs: Array = _effect_defs()
-	if defs.is_empty():
-		return
-	var per_row: int = maxi(1, int(floor((FX_ROW_W + FX_GAP) / (FX_SIZE + FX_GAP))))
-	var rows: int = int(ceil(float(defs.size()) / float(per_row)))
-	var top: float = _fx_bottom_y() - float(rows) * (FX_SIZE + FX_GAP) + FX_GAP
-	for i in defs.size():
-		var d: Dictionary = defs[i] as Dictionary
-		@warning_ignore("integer_division")
-		var row: int = i / per_row
-		var col: int = i % per_row
-		_make_fx_thumb(d, Vector2(
-				FX_LEFT_X + float(col) * (FX_SIZE + FX_GAP),
-				top + float(row) * (FX_SIZE + FX_GAP)))
-
+	for raw in _effect_defs():
+		_make_fx_thumb(raw as Dictionary)
 
 ## 썸네일 줄의 아래끝 y. 카드 부채꼴 윗변에서 역산한다.
 func _fx_bottom_y() -> float:
 	return _fan_top_y() - FX_ABOVE_FAN_GAP
 
 
-## 썸네일 한 칸 — 위에 두 글자 약칭(효과별 색), 아래에 작게 지금 값.
-## 아이콘 에셋이 없으므로 **글자가 곧 아이콘**이다. 두 글자로 줄인 것은 68px
+## 썸네일 한 칸(`PilotDetailFxThumb.tscn`) — 위에 두 글자 약칭(효과별 색), 아래에 작게
+## 지금 값. 아이콘 에셋이 없으므로 **글자가 곧 아이콘**이다. 두 글자로 줄인 것은 68px
 ## 칸에서 온전한 이름("공격적인 라인전")이 들어갈 자리가 없기 때문이고, 전체
 ## 이름은 눌러서 여는 패널의 제목이 들고 있다.
-func _make_fx_thumb(d: Dictionary, pos: Vector2) -> void:
+##
+## 출처 카드를 알면 그 카드 일러스트가 곧 아이콘이다 — 둥근 사각형으로 깎은 아트
+## (`%Art`, 버튼 테두리가 보이게 인셋 3) + 아래 값 띠(`%Band` · `%BandValue`).
+func _make_fx_thumb(d: Dictionary) -> void:
 	var key: String = String(d["key"])
-	var btn := Button.new()
-	btn.position = pos
-	btn.size = Vector2(FX_SIZE, FX_SIZE)
-	btn.focus_mode = Control.FOCUS_NONE
+	var btn := FX_SCENE.instantiate() as Button
+	_view.get_node("%FxGrid").add_child(btn)
 	btn.pressed.connect(_on_target_pressed.bind(key))
-	_body_root.add_child(btn)
 
-	# 출처 카드를 알면 그 카드 일러스트가 곧 아이콘이다.
 	var art: Texture2D = CardImages.art_for(String(d.get("src", "")))
-	if art != null:
-		_make_fx_art_thumb(btn, art, String(d["value"]))
-		_targets[key] = {"button": btn, "style": TargetStyle.FX}
-		_style_target(key, false)
-		return
-
-	var short_lbl := _make_label(String(d["short"]), FX_SHORT_FONT,
-			d["color"] as Color, HORIZONTAL_ALIGNMENT_CENTER)
-	short_lbl.position = Vector2(0.0, 8.0)
-	short_lbl.size = Vector2(FX_SIZE, 26.0)
-	short_lbl.clip_text = true
-	btn.add_child(short_lbl)
-
-	var val_lbl := _make_label(String(d["value"]), FX_VALUE_FONT, VALUE_COLOR,
-			HORIZONTAL_ALIGNMENT_CENTER)
-	val_lbl.position = Vector2(2.0, 34.0)
-	val_lbl.size = Vector2(FX_SIZE - 4.0, 26.0)
-	val_lbl.clip_text = true
-	btn.add_child(val_lbl)
+	var has_art: bool = art != null
+	for n in ["%Art", "%Band", "%BandValue"]:
+		btn.get_node(n).visible = has_art
+	for n in ["%Short", "%Value"]:
+		btn.get_node(n).visible = not has_art
+	if has_art:
+		(btn.get_node("%Art") as TextureRect).texture = art
+		(btn.get_node("%BandValue") as Label).text = String(d["value"])
+	else:
+		var short_lbl: Label = btn.get_node("%Short")
+		short_lbl.text = String(d["short"])
+		short_lbl.add_theme_color_override("font_color", d["color"] as Color)
+		(btn.get_node("%Value") as Label).text = String(d["value"])
 
 	_targets[key] = {"button": btn, "style": TargetStyle.FX}
 	_style_target(key, false)
-
-
-## 썸네일 안쪽 — 카드 아트(둥근 사각형) + 아래 값 띠. 버튼 테두리(강조 표시)가
-## 보이도록 `FX_ART_INSET` 만큼 안으로 들인다.
-func _make_fx_art_thumb(btn: Button, art: Texture2D, value: String) -> void:
-	var inner: float = FX_SIZE - FX_ART_INSET * 2.0
-	var tex := TextureRect.new()
-	tex.texture = art
-	tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	tex.position = Vector2(FX_ART_INSET, FX_ART_INSET)
-	tex.size = Vector2(inner, inner)
-	tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var mat := ShaderMaterial.new()
-	mat.shader = FX_ART_SHADER
-	mat.set_shader_parameter("rect_size", tex.size)
-	mat.set_shader_parameter("radius", float(FX_RADIUS) - FX_ART_INSET)
-	tex.material = mat
-	btn.add_child(tex)
-
-	var band := Panel.new()
-	band.position = Vector2(FX_ART_INSET, FX_SIZE - FX_ART_INSET - 24.0)
-	band.size = Vector2(inner, 24.0)
-	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = FX_VALUE_BAND
-	var r: int = int(float(FX_RADIUS) - FX_ART_INSET)
-	sb.corner_radius_bottom_left = r
-	sb.corner_radius_bottom_right = r
-	sb.anti_aliasing = true
-	band.add_theme_stylebox_override("panel", sb)
-	btn.add_child(band)
-
-	var val_lbl := _make_label(value, FX_VALUE_FONT, VALUE_COLOR,
-			HORIZONTAL_ALIGNMENT_CENTER)
-	val_lbl.position = band.position
-	val_lbl.size = band.size
-	val_lbl.clip_text = true
-	btn.add_child(val_lbl)
-
 
 # ─── 카드 ────────────────────────────────────────────────────────────────────
 ## 이 파일럿이 개시에 배분받은 카드(`slot` = "mech" / "pilot").
@@ -1442,7 +1108,7 @@ func _slot_tags(slot: String) -> Array:
 ## `_fan_arc_drop`)와 같은 규칙이다 — 카드 **중심**이 행 아래에 놓인 원 위를 타므로
 ## 기울기와 세로 처짐이 언제나 일치한다.
 ##
-## 카드는 `CardFan`, 입력 밴드는 그 **뒤에 붙는** `CardFanHits` 에 담아 밴드 쪽이
+## 카드는 씬 `%CardFan`, 입력 밴드는 그 **뒤 형제** `%CardFanHits` 에 담아 밴드 쪽이
 ## 언제나 위에서 픽을 받고, 카드끼리의 z-order 는 `CardFan` 안에서만 흔들린다.
 func _build_card_fan(cards: Array, slots: Array) -> void:
 	var n: int = cards.size()
@@ -1458,20 +1124,6 @@ func _build_card_fan(cards: Array, slots: Array) -> void:
 	# 손패 행의 가운데 — `BS_HAND_CENTER` 는 가운데 카드의 (배율 전) 왼쪽 위다.
 	_fan_cx = _bs.BS_HAND_CENTER.x + Card.CARD_W * 0.5
 
-	var fan_root := Control.new()
-	fan_root.name = "CardFan"
-	fan_root.position = Vector2.ZERO
-	fan_root.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
-	fan_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ui_root.add_child(fan_root)
-
-	_fan_hits = Control.new()
-	_fan_hits.name = "CardFanHits"
-	_fan_hits.position = Vector2.ZERO
-	_fan_hits.size = fan_root.size
-	_fan_hits.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ui_root.add_child(_fan_hits)
-
 	for i in n:
 		var dx: float = (float(i) - float(n - 1) * 0.5) * _fan_spacing
 		_fan_dx.append(dx)
@@ -1483,7 +1135,7 @@ func _build_card_fan(cards: Array, slots: Array) -> void:
 		node.scale = Vector2.ONE * s
 		# add_child BEFORE setup — Card.gd 의 @onready 참조가 트리 진입 후에야
 		# 풀린다 (CardPileViewer._build_grid 와 동일).
-		fan_root.add_child(node)
+		_fan_root.add_child(node)
 		# is_player_card=true — 손패와 같은 그림(시전자 리본 · 드롭 쉐도우 · 호버
 		# 확대/밝기)을 그대로 쓴다. 입력은 받지 않는다(밴드 버튼이 받는다).
 		node.setup(cards[i] as CardData, true, true)
@@ -1502,7 +1154,6 @@ func _build_card_fan(cards: Array, slots: Array) -> void:
 		_fan_keys.append("")
 	_rebuild_fan_hits()
 
-
 ## 이 탭에서 카드 i 가 살아 있는가 — 인게임은 전부, 파일럿 / 메크 탭은 그 슬롯만.
 func _fan_card_active(i: int) -> bool:
 	match _tab:
@@ -1516,19 +1167,19 @@ func _fan_card_active(i: int) -> bool:
 ## 지금 탭에 맞춰 카드 딤과 입력 밴드를 다시 세우고 카드 키를 `_targets` 에 싣는다.
 ## `_rebuild_body` 가 `_targets` 를 비운 직후마다 부른다.
 ##
-## **입력은 카드 rect 가 아니라 밴드가 받는다.** 겹친 카드 중 나중 카드가 앞에
-## 서므로 카드 i 가 실제로 보이는 폭은 자기 왼쪽 변부터 **다음 카드의 왼쪽
-## 변**까지다 — 그 폭이 그대로 버튼 하나가 된다(손패의 `_apply_hit_bands` 와 같은
+## **입력은 카드 rect 가 아니라 밴드(`PilotDetailCardBand`)가 받는다.** 겹친 카드 중
+## 나중 카드가 앞에 서므로 카드 i 가 실제로 보이는 폭은 자기 왼쪽 변부터 **다음 카드의
+## 왼쪽 변**까지다 — 그 폭이 그대로 버튼 하나가 된다(손패의 `_apply_hit_bands` 와 같은
 ## 계산). 밴드는 **쉬는 자리**에 고정이다 — 호버로 카드가 비켜설 때마다 밴드까지
 ## 움직이면 커서 밑의 밴드가 바뀌어 초점이 떨린다. 딤드 카드에는 밴드가 없다 —
 ## 그 자리를 누르면 `_card_zone` 이 받아 아무 일도 일어나지 않는다.
 func _rebuild_fan_hits() -> void:
 	if _fan_hits == null or not is_instance_valid(_fan_hits):
 		return
-	for child in _fan_hits.get_children():
-		_fan_hits.remove_child(child)
-		child.queue_free()
+	_clear_children(_fan_hits)
 	var n: int = _fan_nodes.size()
+	if n == 0:
+		return
 	var cw: float = CardPhaseManager.hand_card_w()
 	var top_y: float = _fan_top_y()
 	var band_h: float = CardPhaseManager.hand_card_h() + _fan_arc_drop(_fan_dx[0])
@@ -1549,10 +1200,9 @@ func _rebuild_fan_hits() -> void:
 		var right: float = cx + cw * 0.5
 		if i < n - 1:
 			right = _fan_cx + _fan_dx[i + 1] - cw * 0.5
-		var btn := Button.new()
+		var btn := BAND_SCENE.instantiate() as Button
 		btn.position = Vector2(left, top_y)
 		btn.size = Vector2(maxf(12.0, right - left), band_h)
-		btn.focus_mode = Control.FOCUS_NONE
 		btn.pressed.connect(_on_target_pressed.bind(key))
 		btn.mouse_entered.connect(_on_fan_band_hover.bind(i, true))
 		btn.mouse_exited.connect(_on_fan_band_hover.bind(i, false))
@@ -1562,22 +1212,21 @@ func _rebuild_fan_hits() -> void:
 		_style_target(key, false)
 	_queue_fan_relayout()
 
-
 ## 부채꼴 카드 배율 = 손패 배율.
 static func _fan_scale() -> float:
 	return CardPhaseManager.HAND_CARD_SCALE
 
 
-## 부채꼴 상태를 비운다.
+## 부채꼴 상태를 비운다(카드 노드는 떠나는 상세 한 장과 함께 지워진다).
 func _reset_fan() -> void:
 	_fan_nodes.clear()
 	_fan_cards.clear()
 	_fan_slots.clear()
 	_fan_keys.clear()
 	_fan_dx = PackedFloat32Array()
+	_fan_root = null
 	_fan_hits = null
 	_fan_hover = -1
-
 
 ## 카드 i 의 자리(왼쪽 위, 배율 전 좌표 — 손패 `slot_position` 과 같은 규약).
 ## `push` 는 초점 카드를 피해 비켜서는 가로 거리.
@@ -1687,111 +1336,62 @@ func _fan_push(i: int, focus: int, n: int) -> float:
 	return push if i > focus else -push
 
 
-## 파일럿 스킬 판 — 스탯 판 아래 `top` 에서 시작하는 **자기 판**.
+## 파일럿 스킬 판(씬 `%SkillPanel`) — 스탯 판 아래의 **자기 판**.
 ##   [아이콘 타일]  이름
 ##                  설명문(키워드 아이콘 · 카드 비용 아이콘 · 줄바꿈)
 ##                  상태 한 줄 (쿨타임이 남았을 때 / 충전 · 패시브 토큰)
 ##   [               사용               ]   ← 패시브에는 없다
 ## 스킬이 없는 파일럿(모브)도 판은 선다 — "스킬 없음" 한 줄. 칸을 통째로 빼면
 ## "이 선수는 스킬이 없다"가 화면에서 사라져 버그처럼 읽힌다.
-func _build_skill_panel(top: float) -> void:
+## 판 높이는 컨테이너가 내용(타일 92 와 글 줄 중 큰 쪽 + 버튼)에 맞춘다.
+func _build_skill_panel() -> void:
 	var sk: PilotSkillSystem = _bs.skill
-	var panel := Panel.new()
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = STAT_PANEL_BG
-	sb.border_color = STAT_PANEL_BORDER
-	sb.border_width_top = 1
-	sb.border_width_bottom = 1
-	sb.border_width_left = 1
-	sb.border_width_right = 1
-	sb.corner_radius_top_left = 14
-	sb.corner_radius_top_right = 14
-	sb.corner_radius_bottom_left = 14
-	sb.corner_radius_bottom_right = 14
-	panel.add_theme_stylebox_override("panel", sb)
-	_body_root.add_child(panel)
-
-	var y: float = top + STAT_PANEL_PAD.y
-	_skill_status = null
-	_skill_use_btn = null
-	_skill_status_shown = false
-	if sk == null or not sk.has_skill(_pilot):
-		var none := _make_label("스킬 없음", 24, KEY_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
-		none.position = Vector2(STAT_X, y)
-		none.size = Vector2(STAT_W, 32.0)
-		_body_root.add_child(none)
-		_fit_skill_panel(panel, top, y + 32.0)
+	var icon_slot: Control = _view.get_node("%SkillIconSlot")
+	var desc_slot: Control = _view.get_node("%SkillDescSlot")
+	_clear_children(icon_slot)
+	_clear_children(desc_slot)
+	var has_skill: bool = sk != null and sk.has_skill(_pilot)
+	_view.get_node("%SkillTop").visible = has_skill
+	_view.get_node("%NoSkillBox").visible = not has_skill
+	# 패시브에는 버튼이 없다 — 누를 수 없는 것에 비활성 버튼을 두면 "언젠가는
+	# 눌리는 것"으로 읽힌다.
+	var show_use: bool = has_skill and sk.skill_type(_pilot) != PilotSkillSystem.TYPE_PASSIVE
+	_view.get_node("%SkillUseGap").visible = show_use
+	_view.get_node("%SkillUse").visible = show_use
+	if not has_skill:
 		return
 
-	var tile: Control = SkillImages.make_icon_tile(
+	icon_slot.add_child(SkillImages.make_icon_tile(
 			String(sk.def_for(_pilot).get("key", "")), SKILL_TILE_PX,
-			SKILL_TILE_BG, SKILL_TILE_ICON, SKILL_TILE_SHADOW)
-	tile.position = Vector2(STAT_X, y)
-	_body_root.add_child(tile)
-
-	var col_x: float = STAT_X + SKILL_TILE_PX + SKILL_TILE_GAP
-	var col_w: float = STAT_X + STAT_W - col_x
-	var cy: float = y
-	var name_lbl := _make_label(sk.skill_name(_pilot), SKILL_NAME_FONT,
-			SKILL_NAME_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
-	name_lbl.position = Vector2(col_x, cy)
-	name_lbl.size = Vector2(col_w, 40.0)
-	name_lbl.clip_text = true
-	_body_root.add_child(name_lbl)
-	cy += 40.0 + SKILL_LINE_GAP * 0.5
+			BattleTheme.SKILL_TILE_BG, BattleTheme.SKILL_TILE_ICON,
+			BattleTheme.SKILL_TILE_SHADOW))
+	(_view.get_node("%SkillName") as Label).text = sk.skill_name(_pilot)
 
 	# 설명문 — 카드 설명과 같은 길(`StrategyIcon`): 키워드 아이콘, `[카드]` 앞의
 	# 비용 아이콘, 줄바꿈, `{eul}` 조사. 높이는 같은 규칙으로 잰다.
 	var gm: Node = _bs.gm
 	var costs: Dictionary = gm.card_costs_by_name() if gm != null else {}
 	var desc_text: String = sk.skill_description(_pilot)
-	var desc_h: float = StrategyIcon.rich_height(desc_text, col_w, SKILL_DESC_FONT, costs)
+	var desc_h: float = StrategyIcon.rich_height(desc_text, SKILL_DESC_W, SKILL_DESC_FONT, costs)
 	var desc := StrategyIcon.make_rich_label(desc_text, SKILL_DESC_FONT,
-			SKILL_DESC_COLOR, SKILL_KW_ICON, SKILL_KNOCK,
+			BattleTheme.TEXT_DESC, BattleTheme.SKILL_KW_ICON, BattleTheme.SKILL_KNOCK,
 			KeywordIcon.TARGET_ANY_COLOR, KeywordIcon.TARGET,
 			KeywordIcon.SPECIAL_COLOR_DARK, costs)
-	desc.position = Vector2(col_x, cy)
-	desc.size = Vector2(col_w, desc_h)
-	_body_root.add_child(desc)
-	cy += desc_h
+	desc.position = Vector2.ZERO
+	desc.size = Vector2(SKILL_DESC_W, desc_h)
+	desc_slot.custom_minimum_size = Vector2(0.0, desc_h)
+	desc_slot.add_child(desc)
 
 	# 상태 한 줄 — 남은 턴 / 토큰. **쿨타임이 끝나 "사용 가능"일 때는 뺀다** —
 	# 그 말은 아래 사용 버튼이 밝아져 이미 하고 있다.
 	_skill_status_shown = _skill_status_visible()
+	_view.get_node("%SkillStatusGap").visible = _skill_status_shown
+	_view.get_node("%SkillStatusBox").visible = _skill_status_shown
 	if _skill_status_shown:
-		cy += SKILL_LINE_GAP
-		_skill_status = _make_label(sk.status_text(_pilot), SKILL_STATUS_FONT,
-				SKILL_WAIT_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
-		_skill_status.position = Vector2(col_x, cy)
-		_skill_status.size = Vector2(col_w, 30.0)
-		_skill_status.clip_text = true
-		_body_root.add_child(_skill_status)
-		cy += 30.0
-
-	y = maxf(y + SKILL_TILE_PX, cy)
-	# 패시브에는 버튼이 없다 — 누를 수 없는 것에 비활성 버튼을 두면 "언젠가는
-	# 눌리는 것"으로 읽힌다.
-	if sk.skill_type(_pilot) != PilotSkillSystem.TYPE_PASSIVE:
-		y += SKILL_LINE_GAP * 2.0
-		_skill_use_btn = Button.new()
-		_skill_use_btn.text = "사용"
-		_skill_use_btn.focus_mode = Control.FOCUS_NONE
-		_skill_use_btn.add_theme_font_size_override("font_size", 28)
-		_skill_use_btn.position = Vector2(STAT_X, y)
-		_skill_use_btn.size = Vector2(STAT_W, SKILL_USE_H)
-		_skill_use_btn.pressed.connect(_on_skill_use_pressed)
-		_body_root.add_child(_skill_use_btn)
-		y += SKILL_USE_H
+		_skill_status = _view.get_node("%SkillStatus")
+	if show_use:
+		_skill_use_btn = _view.get_node("%SkillUse")
 	_refresh_skill_block()
-	_fit_skill_panel(panel, top, y)
-
-
-func _fit_skill_panel(panel: Panel, top: float, content_bottom: float) -> void:
-	panel.position = Vector2(STAT_X - STAT_PANEL_PAD.x, top)
-	panel.size = Vector2(STAT_W + STAT_PANEL_PAD.x * 2.0,
-			content_bottom + STAT_PANEL_PAD.y - top)
-
 
 ## 상태 줄을 보일 것인가 — 쿨타임형이 준비된 상태("사용 가능")만 아니다.
 func _skill_status_visible() -> bool:
@@ -1837,20 +1437,14 @@ func _on_target_pressed(key: String) -> void:
 	_open_info(key)
 
 
+
 func _open_info(key: String) -> void:
 	_close_menu()
 	_menu_key = key
 	_style_target(key, true)
-
-	_menu_root = Control.new()
-	_menu_root.name = "InfoMenu"
-	_menu_root.position = Vector2.ZERO
-	_menu_root.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
-	# 바깥을 누르면 닫힌다. 이 판이 STOP 이라 뒤쪽 버튼이 전부 가려지므로
+	# 바깥을 누르면 닫힌다. 뒤판(`%InfoMenu`)이 STOP 이라 뒤쪽 버튼이 전부 가려지므로
 	# **뒤판이 직접 라우팅한다**(`_on_menu_backdrop_input`) — 아래 주석 참조.
-	_menu_root.mouse_filter = Control.MOUSE_FILTER_STOP
-	_menu_root.gui_input.connect(_on_menu_backdrop_input)
-	_root.add_child(_menu_root)
+	_menu_root.visible = true
 	_build_menu_content(true)
 
 
@@ -1863,9 +1457,8 @@ func _open_info(key: String) -> void:
 ## 기본 동작이므로, 뒤판은 "닫기"가 아니라 "그 아래 있는 것을 대신 눌러 주기"를
 ## 해야 한다.
 ##
-## 좌표계가 전부 같아서 판정이 단순하다 — `_menu_root` · `_body_root` · `_root`
-## 가 모두 (0,0) 에 놓인 전체 화면 Control 이라 버튼의 `position` 을 그대로
-## 뒤판 로컬 좌표와 견주면 된다.
+## 뒤판은 화면 전체(0, 0)에 놓인 Control 이라 누른 자리가 곧 전역 좌표다 — 버튼마다
+## 전역 rect 와 견준다(컨테이너 안의 칸 · 탭도 같은 식).
 func _on_menu_backdrop_input(event: InputEvent) -> void:
 	var mb := event as InputEventMouseButton
 	if mb == null or not mb.pressed:
@@ -1876,7 +1469,7 @@ func _on_menu_backdrop_input(event: InputEvent) -> void:
 	for raw_key in _targets.keys():
 		var key := String(raw_key)
 		var btn := (_targets[key] as Dictionary)["button"] as Button
-		if is_instance_valid(btn) and Rect2(btn.position, btn.size).has_point(at):
+		if is_instance_valid(btn) and btn.get_global_rect().has_point(at):
 			_on_target_pressed(key)
 			return
 
@@ -1884,14 +1477,14 @@ func _on_menu_backdrop_input(event: InputEvent) -> void:
 	#    같은 탭을 누른 경우 그쪽이 일찍 돌아가므로 여기서 먼저 닫아 둔다).
 	for i in _tab_buttons.size():
 		var tb := _tab_buttons[i] as Button
-		if is_instance_valid(tb) and Rect2(tb.position, tb.size).has_point(at):
+		if is_instance_valid(tb) and tb.get_global_rect().has_point(at):
 			_close_menu()
 			_on_tab_pressed(i)
 			return
 
 	# 3) 스킬 사용 버튼 — 패널을 닫고 그대로 누른다(비활성이면 패널만 닫힌다).
 	if _skill_use_btn != null and is_instance_valid(_skill_use_btn) \
-			and Rect2(_skill_use_btn.position, _skill_use_btn.size).has_point(at):
+			and _skill_use_btn.get_global_rect().has_point(at):
 		_close_menu()
 		_on_skill_use_pressed()
 		return
@@ -1904,93 +1497,72 @@ func _close_menu() -> void:
 		_style_target(_menu_key, false)
 	_menu_key = ""
 	if _menu_root != null and is_instance_valid(_menu_root):
-		_menu_root.queue_free()
-	_menu_root = null
+		_clear_children(_menu_root)
+		_menu_root.visible = false
 
 
 ## 메뉴 판을 (다시) 세운다. `refresh()` 가 값이 바뀔 때마다 부르므로 메뉴에
 ## 적힌 숫자도 칩과 같은 순간의 값이다. 카드는 판이 아니라 손패의 설명판이다
 ## (`_build_card_desc`) — `animate` 는 그 등장 연출을 틀 것인가.
 func _build_menu_content(animate: bool = false) -> void:
-	if _menu_root == null or not is_instance_valid(_menu_root):
+	if _menu_root == null or not is_instance_valid(_menu_root) or not _menu_root.visible:
 		return
 	if not _targets.has(_menu_key):
 		return
-	for child in _menu_root.get_children():
-		_menu_root.remove_child(child)
-		child.queue_free()
+	_clear_children(_menu_root)
 	if _menu_key.begins_with("card:"):
 		_build_card_desc(animate)
 		return
 
-	var rows: Array = _menu_rows(_menu_key)
-	var note: String = _menu_note(_menu_key)
-	var inner_w: float = MENU_W - MENU_PAD.x * 2.0
-
-	var panel := Panel.new()
-	# 판 위 클릭은 메뉴를 닫지 않는다 — 뒤판까지 이벤트가 내려가지 않게 STOP.
-	panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	panel.add_theme_stylebox_override("panel", CardDescBox.panel_style(false))
+	# 판(`PilotDetailInfoMenu.tscn`) — 판 위 클릭은 메뉴를 닫지 않는다(씬에서 STOP).
+	var panel := MENU_SCENE.instantiate() as Control
 	_menu_root.add_child(panel)
+	(panel.get_node("%Title") as Label).text = _target_title(_menu_key)
+	var rows: Control = panel.get_node("%Rows")
+	for row in _menu_rows(_menu_key):
+		var line := MENU_ROW_SCENE.instantiate() as Control
+		rows.add_child(line)
+		(line.get_node("%Key") as Label).text = String(row[0])
+		(line.get_node("%Value") as Label).text = String(row[1])
 
-	var iy: float = MENU_PAD.y
-	var head := _make_label(_target_title(_menu_key), 28, HEADER_COLOR,
-			HORIZONTAL_ALIGNMENT_LEFT)
-	head.position = Vector2(MENU_PAD.x, iy)
-	head.size = Vector2(inner_w, 36.0)
-	panel.add_child(head)
-	iy += 44.0
-
-	for row in rows:
-		var k := _make_label(String(row[0]), 22, KEY_COLOR,
-				HORIZONTAL_ALIGNMENT_LEFT)
-		k.position = Vector2(MENU_PAD.x, iy)
-		k.size = Vector2(inner_w * MENU_KEY_FRAC, MENU_ROW_H)
-		k.clip_text = true
-		panel.add_child(k)
-		var v := _make_label(String(row[1]), 24, VALUE_COLOR,
-				HORIZONTAL_ALIGNMENT_RIGHT)
-		v.position = Vector2(MENU_PAD.x + inner_w * MENU_KEY_FRAC, iy)
-		v.size = Vector2(inner_w * (1.0 - MENU_KEY_FRAC), MENU_ROW_H)
-		# **clip_text 는 필수다.** 오른쪽 정렬 Label 은 글자가 rect 보다 넓으면
-		# 정렬을 포기하고 rect 왼쪽부터 그려서 오른쪽으로 넘쳐 나간다.
-		v.clip_text = true
-		panel.add_child(v)
-		iy += MENU_ROW_H
-
+	var note: String = _menu_note(_menu_key)
+	var note_lbl: RichTextLabel = panel.get_node("%Note")
+	for n in ["%NoteGap", "%Note", "%NoteTail"]:
+		panel.get_node(n).visible = note != ""
 	if note != "":
-		# **설명 높이는 그려진 글이 정한다** — 트리에 넣고 폭을 준 뒤 실제 내용
-		# 높이를 읽는다. 예전에는 fallback 폰트로 따로 재서 아이콘
-		# 이 끼거나 테마 폰트가 다르면 아랫줄이 판 밖으로 튀어나왔다.
-		var n := _make_note(note)
-		panel.add_child(n)
-		n.position = Vector2(MENU_PAD.x, iy + 6.0)
-		n.size = Vector2(inner_w, 0.0)
-		var note_h: float = n.get_content_height()
-		n.size = Vector2(inner_w, note_h)
-		iy += 6.0 + note_h + 4.0
+		# **설명 높이는 그려진 글이 정한다** — 폭을 준 뒤 실제 내용 높이를 읽어 칸
+		# 높이로 준다. 예전에는 fallback 폰트로 따로 재서 아이콘이 끼거나 테마
+		# 폰트가 다르면 아랫줄이 판 밖으로 튀어나왔다.
+		_fill_note(note_lbl, note)
+		note_lbl.size = Vector2(MENU_W - MENU_PAD.x * 2.0, 0.0)
+		note_lbl.custom_minimum_size = Vector2(0.0, note_lbl.get_content_height())
+	_place_menu(panel)
+	# 칸 · 탭이 막 다시 세워진 경우(값 갱신으로 본문 재구성) 컨테이너 정렬이 이번
+	# 프레임 끝에 끝나므로 다음 프레임에 한 번 더 맞춘다.
+	get_tree().process_frame.connect(_place_menu.bind(panel), CONNECT_ONE_SHOT)
 
+
+## 판 위치 · 높이 — 누른 것과 같은 높이에서 시작하되 화면 위아래로는 넘기지 않는다.
+## x 는 정보 칼럼 왼쪽(`MENU_GAP_X` 띄움). y 는 열기 연출 오프셋을 뺀 자리(정보 묶음 로컬).
+func _place_menu(panel: Control) -> void:
+	if not is_instance_valid(panel) or not _targets.has(_menu_key) or _ui_root == null:
+		return
 	var src_btn := (_targets[_menu_key] as Dictionary)["button"] as Button
-	var panel_h: float = iy + MENU_PAD.y
-	var x: float = STAT_X - MENU_GAP_X - MENU_W
-	# 누른 것과 같은 높이에서 시작하되 화면 위아래로는 넘기지 않는다.
-	var y: float = clampf(src_btn.position.y - MENU_PAD.y, 20.0,
+	if not is_instance_valid(src_btn):
+		return
+	var src_y: float = src_btn.global_position.y - _ui_root.global_position.y
+	var panel_h: float = panel.get_combined_minimum_size().y
+	var y: float = clampf(src_y - MENU_PAD.y, 20.0,
 			maxf(20.0, ScreenMetrics.bottom_y() - panel_h - 20.0))
-	panel.position = Vector2(x, y)
+	panel.position = Vector2(STAT_X - MENU_GAP_X - MENU_W, y)
 	panel.size = Vector2(MENU_W, panel_h)
 
 
-## 정보 패널 아래의 설명 글. `{attack}` · `{engage}` 자리에 키워드 아이콘
+## 정보 패널 아래의 설명 글(씬 `%Note`). `{attack}` · `{engage}` 자리에 키워드 아이콘
 ## (`MENU_NOTE_ICON`)을 끼우고, 아이콘과 다음 낱말은 떨어지지 않게 붙인다.
 ## 글은 `UiHelpers.keep_words` 를 지나 낱말 중간에서 줄이 바뀌지 않는다.
-func _make_note(text: String) -> RichTextLabel:
-	var rtl := RichTextLabel.new()
-	rtl.bbcode_enabled = false
-	rtl.scroll_active = false
-	rtl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	rtl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	rtl.add_theme_font_size_override("normal_font_size", MENU_NOTE_FONT)
-	rtl.add_theme_color_override("default_color", Color(0.72, 0.75, 0.84))
+func _fill_note(rtl: RichTextLabel, text: String) -> void:
+	rtl.clear()
 	var icon_px: int = roundi(float(MENU_NOTE_FONT) * 1.3)
 	var parts: PackedStringArray = text.split("{")
 	for i in parts.size():
@@ -2000,18 +1572,16 @@ func _make_note(text: String) -> RichTextLabel:
 			var tag: String = part.substr(0, close_at) if close_at >= 0 else ""
 			if MENU_NOTE_ICON.has(tag):
 				rtl.add_image(KeywordIcon.texture(String(MENU_NOTE_ICON[tag]), icon_px * 2,
-						SKILL_KW_ICON, MENU_BG), icon_px, icon_px,
+						BattleTheme.SKILL_KW_ICON, MENU_BG), icon_px, icon_px,
 						Color.WHITE, INLINE_ALIGNMENT_CENTER)
 				part = part.substr(close_at + 1)
 				# 아이콘 뒤 빈칸은 줄바꿈하지 않는 빈칸 — 아이콘만 줄 끝에 남지 않게.
 				if part.begins_with(" "):
-					part = "\u00a0" + part.substr(1)
+					part = " " + part.substr(1)
 			else:
 				part = "{" + part
 		if part != "":
 			rtl.add_text(UiHelpers.keep_words(part))
-	return rtl
-
 
 ## 카드를 누르면 **손패에서 가리켰을 때와 같은 설명판**이 선다 — 같은
 ## `CardDescBox.build`(폭 `CardPhaseManager.DESC_BOX_W`, 키워드 풀이는 옆 판들로
@@ -2321,13 +1891,26 @@ func _mech() -> MechData:
 	return pd.assigned_mech if pd != null else null
 
 
-static func _make_label(text: String, font_size: int, color: Color,
-		halign: int) -> Label:
-	var lbl := Label.new()
-	lbl.text = text
-	lbl.horizontal_alignment = halign
-	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	lbl.add_theme_font_size_override("font_size", font_size)
-	lbl.add_theme_color_override("font_color", color)
-	return lbl
+## F6 단독 실행 미리보기 — 패널은 전투(`_bs`)의 값을 읽으므로 `BattleSim.tscn` 을 단독
+## 실행으로 옆에 띄우고(로스터 · 스킬 없는 단독 전투) 첫 아군 파일럿으로 연다
+## (`resources/UiPreview.gd`). 스킬 판이 보이게 그 파일럿에게만 첫 스킬을 손으로 쥐여 준다.
+## 저장은 없다. 탭 · 칸 · 카드는 그대로 눌린다.
+func _fill_preview() -> void:
+	var bs := (load("res://scenes/BattleSim.tscn") as PackedScene).instantiate() as BattleSim
+	get_parent().add_child.call_deferred(bs)
+	await bs.ready
+	for _i in 10:
+		await get_tree().process_frame
+	if bs.pilots.is_empty():
+		push_warning("PilotDetailPanel 미리보기: 전투 파일럿이 없다")
+		return
+	bind(bs)
+	var p := bs.pilots[0] as PilotData
+	var gm: Node = bs.gm
+	if gm != null and bs.skill != null and not bs.skill.has_skill(p):
+		var ids: Array = gm.pilot_skills.keys()
+		if not ids.is_empty():
+			bs.skill.states[p] = {"def": gm.skill_def(int(ids[0])), "charge": 0,
+					"ready_turn": bs.turn_count + 3, "killed_roles": {}, "farm_until": -1,
+					"hold_until": -1}
+	open(p)

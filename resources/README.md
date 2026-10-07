@@ -1054,6 +1054,13 @@ only `font_color`):
 | `PilotStripScoreTab` | BattleDimPanel | `PilotStripCell` `%Pill` — `box(TEAM_DISC[0], SCORE_TAB_RADIUS)`, AA | `variation_box` copy, `bg_color` = `TEAM_DISC[team]` (`PilotStrip.setup`) |
 | `PilotStripScoreLabel` | BattleOutlinedLabel | `PilotStripCell` `%Score` — `TEXT_SCORE`, 20, outline black α 0.6, 3 | — |
 | `PilotStripDeadLabel` | BattleOutlinedLabel | `PilotStripCell` `%Dead` — `DEAD`, 53 (= disc diameter × 0.42) | — |
+| `PilotDetailStatPlate` | BattlePanel | `PilotDetailView` StatPanel — top corners square (the active tab sits on it) | — |
+| `PilotDetailArtSlab` | BattleSlab | `PilotDetailArt` `%Slab` — "no art yet" (`ART_SLAB_BG`, 3px `ART_SLAB_BORDER`, top corners `ART_SLAB_RADIUS`) | shown when the texture is missing |
+| `PilotDetailFxBand` | BattleDimPanel | `PilotDetailFxThumb` `%Band` — value band under card art (`FX_VALUE_BAND`, bottom corners `FX_RADIUS` − 3) | — |
+| `PilotDetailMenuPanel` | BattlePopup | `PilotDetailInfoMenu` — `BattleTheme.desc_box()` (the dark card description box; `CardDescBox.panel_style(false)` returns the same), padding 20 / 16 | — |
+| `PilotDetailCardBand` | Button | `PilotDetailCardBand` — `StyleBoxEmpty` in every state (input band over a fan card) | — |
+| `PilotDetailMechLabel` · `PilotDetailWarnLabel` · `PilotDetailPlaceholderLabel` | BattleKeyLabel · BattleNegativeLabel · BattleSubLabel | `%Mech` (`TEXT_MECH` 24) · `%DeadLabel` (`TEXT_WARN` 24) · `%FallbackLabel` (`TEXT_PLACEHOLDER` 34) — these also set `font_size` | — |
+| `PilotDetailNoteText` | RichTextLabel | `PilotDetailInfoMenu` `%Note` (`TEXT_NOTE`, `normal_font_size` `FONT_CAPTION`) | text + icons via `_fill_note` |
 
 The HUD rows (`_add_hud_variations`) also override font size / outline where the old code differed from the
 base. The victory panel uses the shared `BattleGoldModal` / `BattleTitleLabel` directly; its result line,

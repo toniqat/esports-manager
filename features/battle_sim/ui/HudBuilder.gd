@@ -3,6 +3,21 @@ extends Node
 
 @onready var _bs: BattleSim = get_parent() as BattleSim
 
+# **HUD 의 노드 트리 · 자리 · 모양의 정본은 `BattleHud.tscn` 이다** (+ 스트립
+# `PilotStrip.tscn` · 칸 `PilotStripCell.tscn`). `build_ui()` 가 그 씬을 인스턴스해
+# BattleSim 아래에 붙이고 `%이름` 노드를 묶는다. 이 스크립트가 정하는 것:
+#   • 안전 영역 — 위 덩어리는 `top_offset()`, 아래 덩어리는 아래 인셋만큼 민다.
+#   • 다른 모듈의 기하에서 나오는 자리 — 덱 / 버린 더미 뭉치(손패 행 · 거터),
+#     전략 포인트 도넛(상대 손패 peek 아래끝 / 대상 지정 버튼 띠), 상대 손패 부채꼴.
+#   • 데이터 색 — 차례 알림 띠(`TURN_BAR`)는 테마 변형 사본에 색만 넣는다.
+#   • 상태 · 연출 — 갱신(`update_hud`), 드래그 중 비키기, 차례 알림 트윈, 결과 화면.
+#
+# 씬 안 **자식 순서가 곧 그리는 순서**다(`Canvas` 직속 — 시계 · 오브젝트 시계 · 아군
+# 뒤판 · 아군 스트립 · 킬로그 · 뭉치 · 히트 버튼 · 도넛 · 예약 칩 · 미리보기 · 차례 알림).
+# 다른 모듈이 그 뒤로 손패 카드 · 오버레이를 덧붙이고 `move_child` 로 끼워 넣으므로
+# 순서를 바꾸면 손패가 스트립 뒤로 숨는 규칙(`player_strip_backdrop`) 등이 어긋난다.
+const SCENE_PATH: String = "res://features/battle_sim/ui/BattleHud.tscn"
+
 # ── 안전 영역 오프셋 ─────────────────────────────────────────────────────────
 # 아래의 모든 상수는 **1080×1920 디자인 화면**에 적힌 값 그대로이고, 실제 기기
 # 대응은 그 값들을 건드리지 않고 **덩어리째 미는 것**으로 한다. 상단 패널 ↔
@@ -31,7 +46,7 @@ static func bottom_offset() -> float:
 #
 # 헤더 줄(y 4..38) 아래가 **스트립 띠**(y 46..127)이고 거기에 5px 를 더한 값이
 # 이 높이다. 띠 안에서 적 스트립은 가운데 672px 만 쓰고, 남은 좌우 여백이
-# **오브젝트 시계 두 칸**이다(`OBJ_TIMER_*`).
+# **오브젝트 시계 두 칸**이다(`%ObjTimer0` · `%ObjTimer1`).
 #
 # **패널 높이는 내용이 정한다** — 헤더 + 스트립 띠 + 5px 여백, 그게 전부다.
 # 예전 168 은 스트립이 아군과 같은 크기(1030×122)이던 시절의 값인데, 스트립이
@@ -58,76 +73,42 @@ static func bottom_offset() -> float:
 # (실측 확인).
 const TOP_PANEL_Y      := 0.0
 const TOP_PANEL_H      := 248.0
-## 경과 시계 한 줄. **팀 합산 점수는 이 줄에서 삭제됐다** — `_build_top_panel`
-## 주석 참조.
-const HEADER_ROW_Y     := 4.0
-const HEADER_ROW_H     := 34.0
-const TIME_FONT        := 18
-## 적 스트립 — 패널 로컬 좌표. **아군 스트립(`PLAYER_STRIP_RECT`)과 같은 크기**
-## (1030×244)라 원 지름 · 흉상 · 성장치 배지가 위아래 똑같이 그려진다. 가로는
-## 가운데 정렬. 원은 칸 폭이 아니라 높이에서 지름이 정해지므로 실제 얼굴 다섯은
-## x ≈161..919 에만 서고, 그 바깥 좌우 여백에 오브젝트 시계가 앉는다.
-##
-## **아래끝(246)은 예전 806×200 시절과 같다** — 성장치 배지가 `TOP_PANEL_H` 바로
-## 위에 서는 자리를 지키고 높이 44px 만큼 위로 자랐다(y 46 → 2). 그 아래 사슬
-## (상대 핸드 peek · 적 도넛 · 킬로그)은 `TOP_PANEL_H` 에서 나오므로 그대로다.
-## (예전에는 시계 자리 때문에 아군의 66~80% 로 줄여 두었다.)
-const ENEMY_STRIP_RECT := Rect2(25.0, 2.0, 1030.0, 244.0)
-## **성장치 폰트는 아군과 같다**(`PLAYER_SCORE_FONT`) — 그 숫자는 내 것과
-## **나란히 견주라고** 있는 값이다.
-const ENEMY_SCORE_FONT := 20  # = PLAYER_SCORE_FONT
-
-## 적 스트립 뒤판이 초상화 띠 바깥으로 나가는 여백. **아군 뒤판과 같은 규칙**
-## (`PLAYER_BG_PAD`)이지만 아래쪽만은 `TOP_PANEL_H` 에 맞춰 잘린다 — 그 아래
-## 사슬(상대 핸드 peek 가림 · 적 도넛 · 킬로그)이 전부 그 값에서 나오기 때문.
-const ENEMY_BG_PAD     := 10.0
-
-## 오브젝트 시계 두 칸 — 스트립 양옆의 남은 여백.
-##
-## **세로는 적 초상 원의 중심에 맞춘다**(y 110, 높이 60 — 원 중심 y ≈ 140,
-## 적 스트립이 아군 크기로 커지며 156 → 140 으로 올라왔다).
-## 예전 eye 밴드 시절에는 초상화 띠와 정확히 같았다(y 46, 높이 60). 한때는
-## 스트립 띠 전체(122px)를 썼는데 — 아이콘이 클수록 곁눈으로 읽힌다는 이유였다 —
-## 그러면 시계가 초상화보다 위아래로 튀어나와 패널 안에서 가장 큰 물체가 되고,
-## 정작 얼굴 쪽으로 가야 할 시선을 먼저 잡아챈다. 초상화와 밑단·윗단을 맞추면
-## 셋(좌 시계 · 얼굴 다섯 · 우 시계)이 한 줄로 읽힌다.
-const OBJ_TIMER_W  := 101.0
-const OBJ_TIMER_Y  := 110.0
-const OBJ_TIMER_H  := 60.0
-## 좌우 여백은 대칭이므로 왼쪽 하나만 상수로 두고 오른쪽은 뷰포트 가로에서
-## 역산한다 — 예전의 `OBJ_TIMER_RIGHT_X = 953`(= 1080 − 101 − 26)은 가로가
-## 1080 보다 넓어질 수 있게 되면서 가운데 정렬을 깨뜨렸다.
-const OBJ_TIMER_LEFT_X  := 26.0
-
-# ── 하단 아군 스트립 (핸드 행 아래) ───────────────────────────────────────────
-# 핸드 행은 y 1500..1720, 그 아래가 통째로 비어 있었다(예전 하단 코스트 바 자리).
+# ── 씬이 갖는 자리 (`BattleHud.tscn`, 1080×1920 디자인 값) ────────────────────
+# 예전에 여기 있던 자리 상수(`ENEMY_STRIP_RECT` · `PLAYER_STRIP_RECT` · `OBJ_TIMER_*` ·
+# `*_BG_PAD` · 시계 줄 · 성장치 폰트)는 씬 노드의 오프셋 · 테마 변형으로 옮겨 갔다.
+# 값과 그 이유는 그대로다:
 #
-# **지금은 y 1644, 높이 244** — 원형 초상으로 바뀌며 높이가 2배(122 → 244)가
-# 됐고, 바닥(1888)은 그대로 두고 위로 자랐다. 그만큼 핸드 행
-# (`BattleSim.BS_HAND_CENTER.y`)도 1440 → **1370** 으로 70px 올렸다 — 최악
-# 카드 밑단 ≈ 1633 이 뒤판 위끝(1634) 바로 위에 선다(아래 옛 계산과 같은 규칙).
+# • `%TimeLabel` (20, 4) 220×34 — 경과 시계 한 줄. **팀 합산 점수는 이 줄에서
+#   삭제됐다**(아래 상단 chrome 주석).
+# • `%EnemyPilotStrip` 1030×244, 가로 가운데, y 2..246 — **아군 스트립과 같은 크기**라
+#   원 지름 · 흉상 · 성장치 배지가 위아래 똑같이 그려진다. 원은 칸 폭이 아니라 높이에서
+#   지름이 정해지므로 실제 얼굴 다섯은 x ≈161..919 에만 서고, 그 바깥 좌우 여백에
+#   오브젝트 시계가 앉는다. **아래끝(246)은 예전 806×200 시절과 같다** — 성장치 배지가
+#   `TOP_PANEL_H` 바로 위에 서는 자리를 지키고 위로 자랐다. 그 아래 사슬(상대 핸드
+#   peek · 적 도넛 · 킬로그)은 `TOP_PANEL_H` 에서 나오므로 그대로다. **성장치 폰트는
+#   아군과 같다**(`PilotStripScoreLabel`) — 그 숫자는 내 것과 **나란히 견주라고** 있다.
+# • `%EnemyStripBackdrop` — 적 스트립을 사방 10px 넓힌 판. **아군 뒤판과 같은 규칙**이지만
+#   아래쪽만은 `TOP_PANEL_H` 에 맞춰 잘린다 — 그 아래 사슬이 전부 그 값에서 나오기 때문.
+# • `%ObjTimer0` · `%ObjTimer1` 101×60, y 110, 좌우 26 — 스트립 양옆의 남은 여백.
+#   **세로는 적 초상 원의 중심에 맞춘다**(원 중심 y ≈ 140). 한때는 스트립 띠 전체를
+#   썼는데 — 아이콘이 클수록 곁눈으로 읽힌다는 이유였다 — 그러면 시계가 초상화보다
+#   위아래로 튀어나와 가장 큰 물체가 되고, 정작 얼굴 쪽으로 가야 할 시선을 먼저
+#   잡아챈다. 오른쪽은 오른쪽 끝에 앵커 — 예전의 `OBJ_TIMER_RIGHT_X = 953` 은 가로가
+#   1080 보다 넓어질 수 있게 되면서 가운데 정렬을 깨뜨렸다.
+# • `%PlayerPilotStrip` 1030×244, 화면 아래끝에서 276 위(1080×1920 에서 y 1644) —
+#   원형 초상으로 바뀌며 높이가 2배(122 → 244)가 됐고, 바닥(1888)은 그대로 두고 위로
+#   자랐다. 그만큼 핸드 행(`BattleSim.BS_HAND_CENTER.y`)도 1440 → **1370** 으로 70px
+#   올렸다 — 최악 카드 밑단 ≈ 1633 이 뒤판 위끝(1634) 바로 위에 선다. (옛 값 y 1766 은
+#   카드 밑단에서 계산해 나온 값이다 — 부채꼴 양 끝 카드가 가장 많이 처지고 호버 시
+#   `Card.HOVER_SCALE` 로 커지므로. 아이폰 홈 바를 위해 바닥 ~32px 도 남긴다.)
+# • `%PlayerStripBackdrop` — 아군 스트립을 사방 10px 넓힌 판(y 1634..1898).
 #
-# (옛 값) y 1766 은 카드 밑단에서 계산해 나온 값이다. 부채꼴의 **양 끝 카드는 가운데보다
-# 가장 많이 아래로 처지고**(손패 상한 `MAX_HAND_SIZE`(game_config) 기준), 호버/선택 시 `Card.HOVER_SCALE`(1.2)로
-# 커지므로 최악의 경우 카드 밑단이 y ≈ 1763 까지 내려온다. 1724 에 두었더니
-# 카드가 초상화 윗부분을 덮었다(실측 확인). 아이폰 홈 바를 위해 바닥 ~32px 도
-# 남긴다 — 위아래가 다 막힌 122px 안에 초상화 · 체력 바 · 성장치가 들어간다.
-const PLAYER_STRIP_RECT := Rect2(25.0, 1644.0, 1030.0, 244.0)
-const PLAYER_SCORE_FONT := 20
-## 아군 스트립 뒤판 — 스트립 영역을 `PLAYER_BG_PAD` 만큼 사방으로 넓힌 짙은
-## 패널 한 장. 적 스트립은 상단 패널 위에 앉아 있어 처음부터 받침이 있었지만,
-## 아군 스트립은 맨 화면 위에 떠 있어 얼굴·체력 바·성장치 세 줄이 배경 없이
-## 흩어져 보였다 — 특히 성장치 숫자는 받침이 없으면 어디까지가 한 파일럿의
-## 칸인지가 안 읽힌다. 색과 테두리는 상단 패널과 같게 두어 위아래 두 스트립이
-## 같은 판 위에 앉은 것으로 보이게 한다.
-const PLAYER_BG_PAD     := 10.0
-##
-## **STRIP_BACKDROP_NOTE — 두 스트립의 뒤판은 이제 투명하다**(배경 삭제).
-## 그래도 `Panel` 노드는 남긴다: 아군 뒤판은 `CardPhaseManager` 가 내 차례가
-## 아닐 때 손패를 그 뒤로 내려보내는 z-order 기준이자 내려갈 깊이를 재는 자이고
-## (`player_strip_backdrop[_top]`), 적 뒤판은 `set_strip_visible` 이 함께 숨기는
-## 짝이다. 판이 투명해진 만큼 물러난 손패와 상대 핸드 peek 의 윗부분은 더 이상
-## 가려지지 않고 초상화 **뒤로** 비친다(초상화는 여전히 그 위에 그려진다).
+# **STRIP_BACKDROP_NOTE — 두 스트립의 뒤판은 이제 투명하다**(`HudStripBackdrop`).
+# 그래도 `Panel` 노드는 남긴다: 아군 뒤판은 `CardPhaseManager` 가 내 차례가
+# 아닐 때 손패를 그 뒤로 내려보내는 z-order 기준이자 내려갈 깊이를 재는 자이고
+# (`player_strip_backdrop[_top]`), 적 뒤판은 `set_strip_visible` 이 함께 숨기는
+# 짝이다. 판이 투명해진 만큼 물러난 손패와 상대 핸드 peek 의 윗부분은 더 이상
+# 가려지지 않고 초상화 **뒤로** 비친다(초상화는 여전히 그 위에 그려진다).
 
 # ── AI hand peek (below score panel) ─────────────────────────────────────────
 # AI hand is shown as a fan of card-back nodes whose tops are tucked behind the
@@ -201,7 +182,7 @@ const ENEMY_TOP_RAISED_LAYER := -1
 const ENEMY_TOP_RAISE := STRIP_DRAG_DROP
 var _enemy_top_tween: Tween = null
 ## 적 스트립 뒤판. 같은 이유로 스트립과 함께 숨는다. 예전에는 화면 가로를 통째로
-## 덮는 상단 패널이 그 자리였다 — `_build_top_panel` 주석 참조.
+## 덮는 상단 패널이 그 자리였다 — `_bind_top_panel` 주석 참조.
 var _enemy_strip_bg: Panel = null
 ## 아군 도넛 위 예약 칩(`ReservationChips`).
 var _reserve_chips: ReservationChips = null
@@ -209,8 +190,8 @@ var _reserve_chips: ReservationChips = null
 var _obj_timers: Array = []           # Array[ObjectiveTimer]
 
 # ── Deck / Discard 카운터 히트 버튼 ───────────────────────────────────────────
-# 카운터 라벨 위에 얹힌 투명 버튼. 누르면 CardPileViewer 가 그 더미의 카드를
-# 목록으로 펼친다 (작전 단계 한정 — _update_pile_buttons 가 활성 상태를 관리).
+# 뭉치 위에 얹힌 투명 버튼(`%DeckButton` · `%DiscardButton`). 누르면 CardPileViewer 가
+# 그 더미의 카드를 목록으로 펼친다 (작전 단계 한정 — _update_pile_buttons 가 활성 상태를 관리).
 var _btn_deck_view:    Button = null
 var _btn_discard_view: Button = null
 
@@ -219,44 +200,57 @@ var _lbl_time: Label = null
 
 
 # ── AI hand peek refs ────────────────────────────────────────────────────────
-# `_ai_hand_root` is added to the canvas BEFORE `_build_top_panel`, so the
-# score panel z-orders above it and visually clips the cards' top portion.
+# `%AiHand` is the first child of `EnemyTopLayer`, so the strip backdrop and the
+# enemy strip z-order above it (the backdrop used to visually clip the cards' top).
 var _ai_hand_root:        Control = null
 var _ai_card_back_nodes:  Array   = []   # Array<Card> — face-down cards
 
 # ── Turn announcer refs ──────────────────────────────────────────────────────
 # Centre-screen "당신의 차례 / 상대 차례" banner shown when CARD_PHASE starts
-# (player) or before the AI's run_ai_plays loop (enemy). Built last so it
-# z-orders above every other HUD element including the AI hand.
+# (player) or before the AI's run_ai_plays loop (enemy). It is the canvas's last
+# scene child, so it z-orders above every other HUD element including the AI hand.
 var _turn_announce_root: Control = null
+var _turn_bar: Panel = null
+var _turn_label: Label = null
+## 진행 중인 알림 회차 — 앞 알림이 끝나기 전에 새 알림이 오면 앞 것의 남은 단계가
+## 같은 노드를 건드리지 않게 한다(예전에는 노드를 새로 만들어 앞 것을 지웠다).
+var _announce_gen: int = 0
+var _announce_tween: Tween = null
 
 
 func build_ui() -> void:
-	_bs.canvas = CanvasLayer.new()
-	_bs.add_child(_bs.canvas)
-	# 같은 층 번호의 CanvasLayer 끼리는 형제 순서가 그리는 순서다 — 캔버스 앞에
-	# 세워 캔버스보다 뒤에 그려지게 한다(`_enemy_top_layer` 주석).
-	_enemy_top_layer = CanvasLayer.new()
-	_enemy_top_layer.name = "EnemyTopLayer"
-	_enemy_top_layer.layer = ENEMY_TOP_LAYER
-	_bs.add_child(_enemy_top_layer)
-	_bs.move_child(_enemy_top_layer, _bs.canvas.get_index())
+	# 씬 하나에 층 셋(EnemyTopLayer · Canvas · VictoryLayer). 같은 층 번호(1)의
+	# CanvasLayer 끼리는 형제 순서가 그리는 순서라, 씬에서 EnemyTopLayer 가 Canvas
+	# **앞에** 서 있어 캔버스보다 뒤에 그려진다(`_enemy_top_layer` 주석).
+	var root: Node = (load(SCENE_PATH) as PackedScene).instantiate()
+	_bs.add_child(root)
+	_bs.canvas = root.get_node("%Canvas") as CanvasLayer
+	_enemy_top_layer = root.get_node("%EnemyTopLayer") as CanvasLayer
 
-	# AI hand peek must build BEFORE the score panel so the panel's opaque
-	# background covers the cards' top portion (sibling z-order = child index).
-	_build_ai_hand_peek()
-	_build_top_panel()
-	_build_player_strip()
-	_build_kill_feed()
-	_build_hand_indicators()
-	_build_cost_donuts()
-	_build_victory_panel()
+	_bind_ai_hand_peek(root)
+	_bind_top_panel(root)
+	_bind_player_strip(root)
+	_bind_kill_feed(root)
+	_bind_hand_indicators(root)
+	_bind_cost_donuts(root)
+	_bind_victory_panel(root)
 	# 손패 미리보기 — 자식 순서가 아니라 z_index 로 손패 위에 선다.
-	_bs.card_preview = CardPlayPreview.new()
-	_bs.canvas.add_child(_bs.card_preview)
+	_bs.card_preview = root.get_node("%CardPlayPreview") as CardPlayPreview
 	_bs.card_preview.setup(_bs)
-	# Turn announcer added last so its banner draws over everything.
-	_build_turn_announcer()
+	_bind_turn_announcer(root)
+
+
+## 위 덩어리(노치 아래로) / 아래 덩어리(홈 인디케이터 위로)를 세로로 민다 — 씬의
+## 디자인 오프셋은 그대로 두고 양쪽 오프셋을 같은 양만큼.
+static func _shift_y(c: Control, dy: float) -> void:
+	c.offset_top += dy
+	c.offset_bottom += dy
+
+
+## 아래 앵커 노드를 미는 양. 씬은 화면 아래끝에 붙어 있으므로(뷰포트가 길어지면
+## 이미 따라 내려간다) 남은 것은 아래 인셋뿐이다 — `bottom_offset()` 과 같은 결과.
+static func _bottom_inset_shift() -> float:
+	return ScreenMetrics.bottom_y() - ScreenMetrics.vp_h()
 
 
 # ── Deck / Discard 카드 뭉치 ─────────────────────────────────────────────────
@@ -267,18 +261,18 @@ func build_ui() -> void:
 # 그 띠는 손패 카드의 **확대 전** 크기다. 손패는 `CardPhaseManager.HAND_CARD_SCALE`
 # 만큼 크게 그려지지만 확대의 기준점이 카드 한가운데라 **띠의 중심은 그대로**이고,
 # 뭉치가 맞추는 것은 높이가 아니라 그 중심이다 — 그래서 손패 배율을 만져도 이
-# 자리는 손대지 않는다.
+# 자리는 손대지 않는다. 자리는 손패 행의 기하(`BattleSim`)에서 나오므로 씬이 아니라
+# 여기서 정한다(씬의 자리는 1080×1920 미리보기 값).
 #
 # 예전에는 이 자리에 `"Deck\n18"` 두 줄 Label 하나였다. 지금은 같은 rect 안에
 # **앞으로 누운 카드 뭉치**(`CardPileStack`)를 그린다 — 뒷면이 위를 향한 채
 # 겹쳐 쌓이고, 두께가 실제 장수에 비례하며, 장수는 맨 위 카드 뒷면에 찍힌다.
-# 자리와 크기(gutter · inset)는 그대로라 도넛 · 핸드 · 전장은 손대지 않았다.
 ## 목록을 열 수 없는 상태에서 뭉치에 씌우는 알파.
 const PILE_LABEL_DIM_ALPHA      := 0.45
 # 예전에는 뒷면 안쪽에 더미별 accent 무늬(덱 보라 / 버린 더미 적갈)를 덧그렸다.
 # 뭉치가 작아 그 액자가 무늬가 아니라 면에 얹힌 계조로 읽혀 삭제했다. 뭉치 아래
 # 제목 라벨("Deck" / "Discard")도 삭제됐다 — 두 더미는 손패 양옆 자리로 갈린다.
-func _build_hand_indicators() -> void:
+func _bind_hand_indicators(root: Node) -> void:
 	var hand_y: float = _bs.BS_HAND_CENTER.y
 	var hand_h: float = Card.CARD_H
 	var screen_w := get_viewport().get_visible_rect().size.x
@@ -291,45 +285,37 @@ func _build_hand_indicators() -> void:
 	# 씩 물러났는데, 뭉치는 폭이 곧 카드 크기라 4px 만 남기고 최대한 넓게 쓴다.
 	var inset: float  = 4.0
 	var w: float      = max(1.0, margin - inset * 2.0)
-	_bs.pile_deck = _make_pile_stack("Deck",
+	_bs.pile_deck = _place_pile_stack(root.get_node("%CardPileDeck") as CardPileStack,
 			Vector2(inset, hand_y), Vector2(w, hand_h))
-	_bs.pile_discard = _make_pile_stack("Discard",
+	_bs.pile_discard = _place_pile_stack(root.get_node("%CardPileDiscard") as CardPileStack,
 			Vector2(screen_w - margin + inset, hand_y), Vector2(w, hand_h))
 
 	# 두 뭉치는 눌러서 해당 더미의 카드 목록을 펼치는 버튼이기도 하다.
 	# `CardPileStack` 은 스스로 MOUSE_FILTER_IGNORE 라 클릭을 받지 못하므로,
-	# 뭉치 rect 를 그대로 덮는 투명 Button 을 얹어 입력만 가져간다.
-	_btn_deck_view = _make_pile_button(_bs.pile_deck,
-			CardPileViewer.Pile.DECK)
-	_btn_discard_view = _make_pile_button(_bs.pile_discard,
-			CardPileViewer.Pile.DISCARD)
+	# 뭉치 rect 를 그대로 덮는 투명 Button 이 입력만 가져간다.
+	_btn_deck_view = _place_pile_button(root.get_node("%DeckButton") as Button,
+			_bs.pile_deck, CardPileViewer.Pile.DECK)
+	_btn_discard_view = _place_pile_button(root.get_node("%DiscardButton") as Button,
+			_bs.pile_discard, CardPileViewer.Pile.DISCARD)
 	_update_pile_buttons()
 
 
 # `setup()` 은 size 에서 폰트 크기와 자리를 유도하므로 **size 를 넣은 뒤**에
-# 불러야 한다. 트리에 붙이는 것도 그 전이어야 _ready 의 mouse_filter 가 선다.
-func _make_pile_stack(which: String,
+# 불러야 한다.
+func _place_pile_stack(pile: CardPileStack,
 		at: Vector2, of_size: Vector2) -> CardPileStack:
-	var pile := CardPileStack.new()
-	pile.name = "CardPile" + which
 	pile.position = at
 	pile.size     = of_size
-	_bs.canvas.add_child(pile)
 	pile.setup()
 	return pile
 
 
-# 뭉치 위에 얹는 투명 히트 버튼. flat + alpha 0 이라 뭉치의 생김새는
+# 뭉치 위에 얹는 투명 히트 버튼(씬에서 flat + alpha 0) — 뭉치의 생김새는
 # 그대로 두고 클릭만 가로챈다.
-func _make_pile_button(anchor: Control, which: int) -> Button:
-	var b := Button.new()
-	b.flat = true
-	b.focus_mode = Control.FOCUS_NONE
-	b.modulate = Color(1, 1, 1, 0)
+func _place_pile_button(b: Button, anchor: Control, which: int) -> Button:
 	b.position = anchor.position
 	b.size = anchor.size
 	b.pressed.connect(func() -> void: _on_pile_button_pressed(which))
-	_bs.canvas.add_child(b)
 	return b
 
 
@@ -361,8 +347,8 @@ func _update_pile_buttons() -> void:
 # 스트립과 오브젝트 시계를 다 담고 있어서, 좌우 끝의 시계가 스트립과 같은 판
 # 위에 얹힌 것으로 읽혔다 — 시계는 스트립의 일부가 아니라 전장의 사건을
 # 세는 별개의 물건이다. 지금은 **아군 스트립과 같은 규칙**으로, 뒤판이
-# 초상화 다섯 칸만 감싸고(`_enemy_strip_bg`) 시계 둘과 경과 시계는 그 바깥에
-# 배경 없이 선다.
+# 초상화 다섯 칸만 감싸고(`%EnemyStripBackdrop`) 시계 둘과 경과 시계는 그 바깥에
+# 배경 없이 선다(`Canvas` 직속 — 뒤판을 옮겨도 따라오지 않는다).
 #
 # 뒤판은 **이제 투명하다**(스트립 배경 삭제 — `STRIP_BACKDROP_NOTE`). 예전에는
 # 상대 핸드 peek 의 윗부분을 가리는 가림막이었지만 지금은 peek 윗부분이 초상화
@@ -372,55 +358,22 @@ func _update_pile_buttons() -> void:
 # 이미 낱개로 보여 주고 있고, 합계는 어느 쪽이 이기고 있는지를 한 줄로 말해
 # 주는 대신 정작 누가 크고 있는지를 가렸다. `TOTAL_SCORE_FONT` 와
 # `_lbl_total_score` 는 그때 함께 사라졌다.
-func _build_top_panel() -> void:
-	var vp_w: float = ScreenMetrics.vp_w()
-	var strip_rect := Rect2(
-			Vector2((vp_w - ENEMY_STRIP_RECT.size.x) * 0.5,
-					ENEMY_STRIP_RECT.position.y + top_offset()),
-			ENEMY_STRIP_RECT.size)
+func _bind_top_panel(root: Node) -> void:
+	var top: float = top_offset()
+	_enemy_strip_bg = root.get_node("%EnemyStripBackdrop") as Panel
+	_shift_y(_enemy_strip_bg, top)
 
-	# 뒤판 — 초상화 띠를 사방으로 `ENEMY_BG_PAD` 넓힌 판. 아래끝만은
-	# `TOP_PANEL_H` 에 못박는다(그 아래 사슬이 전부 그 값에서 나온다).
-	var bg := Panel.new()
-	bg.name = "EnemyStripBackdrop"
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bg.position = strip_rect.position - Vector2(ENEMY_BG_PAD, ENEMY_BG_PAD)
-	bg.size = Vector2(
-			strip_rect.size.x + ENEMY_BG_PAD * 2.0,
-			TOP_PANEL_H - ENEMY_STRIP_RECT.position.y + ENEMY_BG_PAD)
-	# 판은 **보이지 않는다**(`StyleBoxEmpty`) — 스트립 배경은 삭제됐다.
-	# 노드는 자리와 z-order 기준으로만 남는다(`STRIP_BACKDROP_NOTE`).
-	bg.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
-	_enemy_top_layer.add_child(bg)
-	_enemy_strip_bg = bg
-
-	# 경과 시계 — 왼쪽 끝, 배경 없이. 캔버스 직속이라 뒤판을 옮겨도 따라오지
-	# 않는다(둘은 이제 서로 다른 물건이다).
-	# `UiHelpers.mk_label` 은 Control 부모를 받는다 — 캔버스는 CanvasLayer 라
-	# 여기서는 직접 세운다(예전에는 전폭 패널이 그 Control 이었다).
-	_lbl_time = Label.new()
-	_lbl_time.text = "00:00"
-	_lbl_time.add_theme_font_size_override("font_size", TIME_FONT)
-	_lbl_time.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
-	# 받침이 없으므로 외곽선으로 읽힘을 지킨다 — 전장 타일 위로 지나갈 일은
-	# 없지만 배경이 밝은 기기 테마에서 흐려질 수 있다.
-	_lbl_time.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
-	_lbl_time.add_theme_constant_override("outline_size", 4)
-	_lbl_time.position = Vector2(20.0, HEADER_ROW_Y + top_offset())
-	_lbl_time.size = Vector2(220.0, HEADER_ROW_H)
-	_lbl_time.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_bs.canvas.add_child(_lbl_time)
+	# 경과 시계 — 왼쪽 끝, 배경 없이 외곽선으로 읽힘을 지킨다(`HudClockLabel`).
+	_lbl_time = root.get_node("%TimeLabel") as Label
+	_shift_y(_lbl_time, top)
 
 	# 적 스트립도 **눌러서 상세 패널을 연다** — 아군과 같은 게이트(작전 단계),
 	# 같은 내용(인게임 · 파일럿 · 메크). 상대 로스터는 이미 `match_ctx.enemy_roster`
 	# 로 들어와 있어 `BattleSim.player_data_for` 가 그대로 찾아 준다.
-	#
-	# 뒤판 **뒤에** 붙이면 판이 얼굴을 덮는다(형제 z-order = 자식 인덱스).
-	_enemy_strip = PilotStrip.new()
-	_enemy_strip.name = "EnemyPilotStrip"
-	_enemy_top_layer.add_child(_enemy_strip)
-	_enemy_strip.setup(_bs, 1, strip_rect, true,
-			ENEMY_SCORE_FONT)
+	# 뒤판보다 **뒤에**(씬 자식 순서) 있어야 판이 얼굴을 덮지 않는다.
+	_enemy_strip = root.get_node("%EnemyPilotStrip") as PilotStrip
+	_shift_y(_enemy_strip, top)
+	_enemy_strip.setup(_bs, 1)
 	# 적은 탭 / 꾹 누르기 모두 상세 패널(스킬 말풍선은 아군만).
 	_enemy_strip.pilot_tapped.connect(_on_pilot_strip_pressed)
 	_enemy_strip.pilot_long_pressed.connect(_on_pilot_strip_pressed)
@@ -428,14 +381,10 @@ func _build_top_panel() -> void:
 	# 오브젝트 등장 시계 — 스트립 **바깥** 좌우. 전령이 왼쪽 · 용이 오른쪽인 것은
 	# 전장에서 두 오브젝트가 서는 칸의 좌우와 같다.
 	_obj_timers.clear()
-	var timer_right_x: float = vp_w - OBJ_TIMER_W - OBJ_TIMER_LEFT_X
-	for spec in [[ObjectiveSystem.Kind.HERALD, OBJ_TIMER_LEFT_X],
-			[ObjectiveSystem.Kind.DRAGON, timer_right_x]]:
-		var timer := ObjectiveTimer.new()
-		timer.name = "ObjTimer%d" % int(spec[0])
-		_bs.canvas.add_child(timer)
-		timer.position = Vector2(float(spec[1]), OBJ_TIMER_Y + top_offset())
-		timer.size = Vector2(OBJ_TIMER_W, OBJ_TIMER_H)
+	for spec in [[ObjectiveSystem.Kind.HERALD, "%ObjTimer0"],
+			[ObjectiveSystem.Kind.DRAGON, "%ObjTimer1"]]:
+		var timer := root.get_node(String(spec[1])) as ObjectiveTimer
+		_shift_y(timer, top)
 		timer.setup(_bs, int(spec[0]))
 		# 누르면 그 오브젝트의 보상 카드를 실물로 띄운다. 회피할 수 있는
 		# 사건이므로 무엇을 주는지는 결판 전에 볼 수 있어야 한다.
@@ -450,37 +399,15 @@ func _on_obj_timer_pressed(kind: int) -> void:
 
 # ── 하단 아군 스트립 ─────────────────────────────────────────────────────────
 # 핸드 행 아래. 누르면 파일럿 상세 패널이 열린다 — 다만 **자기 작전 단계에만**
-# 눌린다(`_update_pilot_strips` 가 버튼 활성 상태를 관리).
-## 아군 스트립의 실제 자리 — 디자인 좌표를 안전 영역만큼 민 것. 가로도 뷰포트
-## 기준으로 다시 가운데 잡는다(태블릿에서 1080 이 가운데가 아니다).
-static func player_strip_rect() -> Rect2:
-	var vp_w: float = ScreenMetrics.vp_w()
-	return Rect2(
-			Vector2((vp_w - PLAYER_STRIP_RECT.size.x) * 0.5,
-					PLAYER_STRIP_RECT.position.y + bottom_offset()),
-			PLAYER_STRIP_RECT.size)
-
-
-func _build_player_strip() -> void:
-	# 뒤판을 **먼저** 붙인다 — 형제 z-order 가 곧 자식 인덱스라, 나중에 붙으면
-	# 판이 초상화를 덮는다.
-	var bg := Panel.new()
-	bg.name = "PlayerStripBackdrop"
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var strip_rect := player_strip_rect()
-	bg.position = strip_rect.position - Vector2(PLAYER_BG_PAD, PLAYER_BG_PAD)
-	bg.size = strip_rect.size + Vector2(PLAYER_BG_PAD, PLAYER_BG_PAD) * 2.0
-	# 판은 **보이지 않는다**(`StyleBoxEmpty`) — 스트립 배경은 삭제됐다.
-	# 노드는 자리와 z-order 기준으로만 남는다(`STRIP_BACKDROP_NOTE`).
-	bg.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
-	_bs.canvas.add_child(bg)
-	_player_strip_bg = bg
-
-	_player_strip = PilotStrip.new()
-	_player_strip.name = "PlayerPilotStrip"
-	_bs.canvas.add_child(_player_strip)
-	_player_strip.setup(_bs, 0, strip_rect, true,
-			PLAYER_SCORE_FONT)
+# 눌린다(`_update_pilot_strips` 가 버튼 활성 상태를 관리). 씬에서 뒤판이 스트립
+# **앞에** 선다 — 형제 z-order 가 곧 자식 인덱스라, 뒤에 서면 판이 초상화를 덮는다.
+func _bind_player_strip(root: Node) -> void:
+	var dy: float = _bottom_inset_shift()
+	_player_strip_bg = root.get_node("%PlayerStripBackdrop") as Panel
+	_shift_y(_player_strip_bg, dy)
+	_player_strip = root.get_node("%PlayerPilotStrip") as PilotStrip
+	_shift_y(_player_strip, dy)
+	_player_strip.setup(_bs, 0)
 	# 아군 — 짧은 탭 = 스킬 말풍선(`SkillPopup`), 꾹 누르기 = 상세 패널.
 	_player_strip.pilot_tapped.connect(_on_player_strip_tapped)
 	_player_strip.pilot_long_pressed.connect(_on_pilot_strip_pressed)
@@ -502,12 +429,10 @@ func _on_player_strip_tapped(p: PilotData) -> void:
 
 
 # ── 킬로그 ───────────────────────────────────────────────────────────────────
-# 적 스트립 바로 아래, 화면 우측. **상단 패널보다 뒤에 붙는다** — 형제 z-order 가
-# 곧 자식 인덱스라, peek 카드 위에 그려져야 줄이 카드에 잘리지 않는다.
-func _build_kill_feed() -> void:
-	_bs.kill_feed = KillFeed.new()
-	_bs.kill_feed.name = "KillFeed"
-	_bs.canvas.add_child(_bs.kill_feed)
+# 적 스트립 바로 아래, 화면 우측. 자리는 `KillFeed.setup` 이 정한다. **씬에서
+# 시계 · 스트립보다 뒤에 선다** — 형제 z-order 가 곧 자식 인덱스다.
+func _bind_kill_feed(root: Node) -> void:
+	_bs.kill_feed = root.get_node("%KillFeed") as KillFeed
 	_bs.kill_feed.setup(_bs)
 
 
@@ -521,22 +446,20 @@ func _on_pilot_strip_pressed(p: PilotData) -> void:
 	_bs.pilot_detail.open(p)
 
 
-## 상세 패널이 열려 있는 동안 **그 파일럿이 속한 팀의 스트립**을 치운다 — 딤 위에
-## 남으면 지금 무엇을 보고 있는지가 흐려지고, 딤 아래로 넣으면 방금 누른 얼굴이
-## 어두워진다. 반대 팀 스트립은 그대로 둔다(딤에 가려질 뿐이고, 치우면 화면에서
-## 무엇이 사라졌는지가 더 헷갈린다).
 ## 아군 스트립 뒤판 노드. `CardPhaseManager` 가 두 가지로 읽는다 — 내 차례가
 ## 아닐 때 손패 카드를 **이 판보다 뒤로** 내려보낼 기준 노드이고(형제 z-order 가
-## 곧 자식 인덱스다), 카드가 얼마나 내려가야 절반쯤 가려지는지를 재는 자다.
+## 곧 자식 인덱스다 — 그래서 `_bs.canvas` 의 직속 자식이다), 카드가 얼마나
+## 내려가야 절반쯤 가려지는지를 재는 자다.
 func player_strip_backdrop() -> Panel:
 	return _player_strip_bg
 
 
 ## 그 뒤판의 위쪽 끝(y). 세이프 에어리어 오프셋이 이미 먹은 실제 좌표다.
+## (HUD 를 세우기 전에는 안전 바닥 — 손패는 그 전에 깔리지 않는다.)
 func player_strip_backdrop_top() -> float:
 	if _player_strip_bg != null and is_instance_valid(_player_strip_bg):
 		return _player_strip_bg.position.y
-	return player_strip_rect().position.y - PLAYER_BG_PAD
+	return ScreenMetrics.bottom_y()
 
 
 ## 개시 전(정글 시작 선택) 동안 **지금 쓸 수 없는 HUD 를 걷는다** — 손패 행
@@ -607,6 +530,10 @@ func set_enemy_top_raised(on: bool) -> void:
 			_enemy_top_layer.layer = ENEMY_TOP_LAYER)
 
 
+## 상세 패널이 열려 있는 동안 **그 파일럿이 속한 팀의 스트립**을 치운다 — 딤 위에
+## 남으면 지금 무엇을 보고 있는지가 흐려지고, 딤 아래로 넣으면 방금 누른 얼굴이
+## 어두워진다. 반대 팀 스트립은 그대로 둔다(딤에 가려질 뿐이고, 치우면 화면에서
+## 무엇이 사라졌는지가 더 헷갈린다).
 func set_strip_visible(team: int, on: bool) -> void:
 	var strip: PilotStrip = _player_strip if team == 0 else _enemy_strip
 	if strip != null:
@@ -622,18 +549,11 @@ func set_strip_visible(team: int, on: bool) -> void:
 
 # AI hand peek — row of face-down card backs whose tops hide behind the score
 # panel. update_ai_hand_visuals() syncs the visible count to `_bs.ai_hand`.
-func _build_ai_hand_peek() -> void:
-	_ai_hand_root = Control.new()
+func _bind_ai_hand_peek(root: Node) -> void:
+	_ai_hand_root = root.get_node("%AiHand") as Control
 	# 루트를 통째로 내리면 안쪽 부채꼴 좌표(`AI_HAND_TOP_Y` 기반)를 손대지 않고
 	# 노치 아래로 옮겨진다.
-	_ai_hand_root.position = Vector2(0.0, top_offset())
-	_ai_hand_root.size     = ScreenMetrics.viewport_size()
-	_ai_hand_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# Force opaque dark background on the score panel later by giving the
-	# panel an explicit StyleBoxFlat. The panel is created in `_build_top_panel`,
-	# but we apply the override here so the AI cards always stay visually
-	# clipped, even with a transparent default theme.
-	_enemy_top_layer.add_child(_ai_hand_root)
+	_shift_y(_ai_hand_root, top_offset())
 
 
 # Sync `_ai_card_back_nodes` count with `_bs.ai_hand.size()` and reflow.
@@ -741,19 +661,20 @@ func _layout_ai_hand() -> void:
 # A horizontal bar that sweeps in from the centre with the message
 # "당신의 차례" / "상대 차례", holds briefly, then fades out. Caller awaits
 # play_turn_announce(...) so input gating can re-enable on completion.
-const TURN_ANNOUNCE_BAR_H        := 110.0
+# The bar (`%TurnBar`, 110 tall, vertically centred) and the label (`%TurnLabel`)
+# live in the scene; the bar colour is data (`TURN_BAR[team]`) put into a copy of
+# the `HudTurnBar` theme box.
 const TURN_ANNOUNCE_IN_DUR       := 0.32
 const TURN_ANNOUNCE_HOLD_DUR     := 0.55
 const TURN_ANNOUNCE_OUT_DUR      := 0.32
 const TURN_ANNOUNCE_PLAYER_COLOR: Color = BattleTheme.TURN_BAR[0]
 const TURN_ANNOUNCE_ENEMY_COLOR: Color = BattleTheme.TURN_BAR[1]
 
-func _build_turn_announcer() -> void:
-	_turn_announce_root = Control.new()
-	_turn_announce_root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_turn_announce_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+func _bind_turn_announcer(root: Node) -> void:
+	_turn_announce_root = root.get_node("%TurnAnnounce") as Control
+	_turn_bar = root.get_node("%TurnBar") as Panel
+	_turn_label = root.get_node("%TurnLabel") as Label
 	_turn_announce_root.visible = false
-	_bs.canvas.add_child(_turn_announce_root)
 
 
 # Plays the centre-screen turn banner. `is_player == true` shows "당신의 차례"
@@ -762,83 +683,68 @@ func _build_turn_announcer() -> void:
 func play_turn_announce(is_player: bool) -> void:
 	if _turn_announce_root == null:
 		return
-	for child in _turn_announce_root.get_children():
-		child.queue_free()
-	var bar_color: Color = TURN_ANNOUNCE_PLAYER_COLOR if is_player else TURN_ANNOUNCE_ENEMY_COLOR
-	var msg: String      = "당신의 차례" if is_player else "상대 차례"
+	_announce_gen += 1
+	var gen: int = _announce_gen
+	if _announce_tween != null and _announce_tween.is_valid():
+		_announce_tween.kill()
+	var sb := BattleTheme.variation_box(&"HudTurnBar")
+	sb.bg_color = TURN_ANNOUNCE_PLAYER_COLOR if is_player else TURN_ANNOUNCE_ENEMY_COLOR
+	_turn_bar.add_theme_stylebox_override("panel", sb)
+	_turn_label.text = "당신의 차례" if is_player else "상대 차례"
+	# 띠는 화면 가운데의 폭 0 에서 좌우로 펼쳐진다 — 높이 · 세로 자리는 씬 값.
 	var vp := ScreenMetrics.viewport_size()
-	var center_y: float = vp.y * 0.5 - TURN_ANNOUNCE_BAR_H * 0.5
-
-	var bar := ColorRect.new()
-	bar.color = bar_color
-	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bar.position = Vector2(vp.x * 0.5, center_y)
-	bar.size     = Vector2(0.0, TURN_ANNOUNCE_BAR_H)
-	bar.pivot_offset = Vector2(0.0, TURN_ANNOUNCE_BAR_H * 0.5)
-	_turn_announce_root.add_child(bar)
-
-	var lbl := Label.new()
-	lbl.text = msg
-	lbl.add_theme_font_size_override("font_size", 56)
-	lbl.add_theme_color_override("font_color", Color.WHITE)
-	lbl.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.85))
-	lbl.add_theme_constant_override("outline_size", 6)
-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
-	lbl.position = Vector2(0.0, center_y)
-	lbl.size     = Vector2(vp.x, TURN_ANNOUNCE_BAR_H)
-	lbl.modulate = Color(1.0, 1.0, 1.0, 0.0)
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_turn_announce_root.add_child(lbl)
+	var bar_h: float = _turn_bar.size.y
+	_turn_bar.modulate = Color.WHITE
+	_turn_bar.position = Vector2(vp.x * 0.5, _turn_bar.position.y)
+	_turn_bar.size = Vector2(0.0, bar_h)
+	_turn_label.modulate = Color(1.0, 1.0, 1.0, 0.0)
 
 	_turn_announce_root.visible = true
 
 	var tw_in := _bs.create_tween().set_parallel()
-	tw_in.tween_property(bar, "size", Vector2(vp.x, TURN_ANNOUNCE_BAR_H),
+	_announce_tween = tw_in
+	tw_in.tween_property(_turn_bar, "size", Vector2(vp.x, bar_h),
 			TURN_ANNOUNCE_IN_DUR).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	tw_in.tween_property(bar, "position", Vector2(0.0, center_y),
+	tw_in.tween_property(_turn_bar, "position:x", 0.0,
 			TURN_ANNOUNCE_IN_DUR).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	tw_in.tween_property(lbl, "modulate", Color.WHITE,
+	tw_in.tween_property(_turn_label, "modulate", Color.WHITE,
 			TURN_ANNOUNCE_IN_DUR).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	await tw_in.finished
 
 	await _bs.get_tree().create_timer(TURN_ANNOUNCE_HOLD_DUR).timeout
 
-	if not is_instance_valid(bar) or not is_instance_valid(lbl):
-		_turn_announce_root.visible = false
+	# 그사이 새 알림이 시작됐으면 띠는 그쪽 것이다 — 손대지 않고 끝낸다.
+	if gen != _announce_gen:
 		return
 	var tw_out := _bs.create_tween().set_parallel()
-	tw_out.tween_property(bar, "modulate", Color(1.0, 1.0, 1.0, 0.0),
+	_announce_tween = tw_out
+	tw_out.tween_property(_turn_bar, "modulate", Color(1.0, 1.0, 1.0, 0.0),
 			TURN_ANNOUNCE_OUT_DUR).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
-	tw_out.tween_property(lbl, "modulate", Color(1.0, 1.0, 1.0, 0.0),
+	tw_out.tween_property(_turn_label, "modulate", Color(1.0, 1.0, 1.0, 0.0),
 			TURN_ANNOUNCE_OUT_DUR).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
 	await tw_out.finished
 
-	_turn_announce_root.visible = false
-	for child in _turn_announce_root.get_children():
-		child.queue_free()
+	if gen == _announce_gen:
+		_turn_announce_root.visible = false
 
 
-# 전략 포인트 도넛 두 개를 화면 **좌측** 거터에 배치한다. 대상 지정 확인/취소
-# 버튼이 우하단으로 옮겨 갔으므로 도넛 열은 반대편(좌측)을 차지한다.
+# 전략 포인트 도넛 두 개를 화면 **좌측** 거터에 놓는다. 대상 지정 확인/취소
+# 버튼이 우하단으로 옮겨 갔으므로 도넛 열은 반대편(좌측)을 차지한다. 중심은 다른
+# 모듈의 기하(상대 손패 peek · 대상 지정 버튼 띠 · 손패 행)에서 나오므로 여기서 정한다.
 #  - player: 핸드 좌측 상단 (Deck 카운터 바로 위). 탭하면 뒤집혀 턴 넘기기
 #    원형 버튼이 되고, 바깥을 탭하면 다시 도넛으로 돌아온다.
 #  - enemy: 화면 좌측 상단 (상대 핸드 peek 바로 아래). 표시 전용.
-func _build_cost_donuts() -> void:
+func _bind_cost_donuts(root: Node) -> void:
 	var cx: float = _bs.BS_HAND_AREA_MARGIN * 0.5
 
-	_bs.cost_donut_enemy = CostDonut.new()
-	_bs.cost_donut_enemy.name = "CostDonutEnemy"
-	_bs.canvas.add_child(_bs.cost_donut_enemy)
+	_bs.cost_donut_enemy = root.get_node("%CostDonutEnemy") as CostDonut
 	_bs.cost_donut_enemy.fill_color = DONUT_FILL_ENEMY
 	_bs.cost_donut_enemy.interactive = false
 	var ai_hand_bottom: float = AI_HAND_TOP_Y + Card.CARD_H * AI_HAND_SCALE
 	_bs.cost_donut_enemy.set_center(Vector2(cx, top_offset()
 			+ ai_hand_bottom + DONUT_AI_HAND_GAP + CostDonut.RADIUS))
 
-	_bs.cost_donut = CostDonut.new()
-	_bs.cost_donut.name = "CostDonutPlayer"
-	_bs.canvas.add_child(_bs.cost_donut)
+	_bs.cost_donut = root.get_node("%CostDonutPlayer") as CostDonut
 	_bs.cost_donut.fill_color = DONUT_FILL_PLAYER
 	_bs.cost_donut.interactive = true
 	var targeting_btn_band: float = CardTargetingOverlay.BTN_HAND_GAP \
@@ -850,28 +756,18 @@ func _build_cost_donuts() -> void:
 	# 예약 칩 — 아군 도넛 위로 쌓인다(`ReservationChips`). 적 쪽은 두지 않는다:
 	# 적 도넛 아래는 전장 왼쪽 위 타일과 겹치고, 상대의 예약은 킬로그 · 결과로
 	# 드러난다.
-	_reserve_chips = ReservationChips.new()
-	_bs.canvas.add_child(_reserve_chips)
+	_reserve_chips = root.get_node("%ReservationChipsP") as ReservationChips
 	_reserve_chips.setup(_bs, true, _bs.cost_donut.position
 			+ Vector2(CostDonut.RADIUS, CostDonut.RADIUS))
 
 
-## 결과 화면의 MVP 한 줄(원형 초상 + 이름 + K/D/A). `_build_victory_panel` 이
-## 자리를 비워 두고 `BattleSim.end_match` 가 `set_victory_mvp` 로 채운다.
+## 결과 화면 — `VictoryLayer`(층 50: HUD 캔버스와 전장 위, MVP 뷰
+## `MvpView.OVERLAY_LAYER` 아래)의 `%VictoryPanel`(불투명 `BattleGoldModal`, 700×520,
+## 화면 가운데)과 그 뒤 전체 화면 딤(`%VictoryBackdrop`). 예전에는 HUD 캔버스에 같이
+## 있어서 반투명 판 너머로 전장 타일 · 마커가 비쳤고, 판 밖의 HUD 띠 · 마커가 결과
+## 화면과 같은 밝기로 경쟁했다. MVP 한 줄(`%MvpRow`: 원형 초상 + 이름 + K/D/A)은
+## `BattleSim.end_match` 가 `set_victory_mvp` 로 채운다.
 var _victory_mvp_row: Control = null
-## 결과 화면 크기 — MVP 한 줄이 들어가도록 예전(400)보다 높다.
-const VICTORY_PANEL_SIZE := Vector2(700.0, 520.0)
-const VICTORY_MVP_Y := 170.0
-const VICTORY_MVP_H := 120.0
-const VICTORY_BTN_Y := 360.0
-const VICTORY_MVP_PORTRAIT := 96.0
-const VICTORY_MVP_LABEL_COLOR := BattleTheme.TEXT_TITLE
-## 결과 화면 전용 CanvasLayer — HUD(`_bs.canvas`)와 전장 위, MVP 뷰
-## (`MvpView.OVERLAY_LAYER`) 아래. 예전에는 HUD 캔버스에 같이 있어서 반투명 판 너머로
-## 전장 타일 · 마커가 비쳤고, 판 밖의 HUD 띠 · 마커가 결과 화면과 같은 밝기로 경쟁했다.
-const VICTORY_LAYER: int = 50
-## 결과 화면 뒤 전체 화면 딤 — 판 밖의 전장 · HUD 를 가라앉히고 입력도 막는다.
-const VICTORY_BACKDROP_COLOR := BattleTheme.DIM_LIGHT
 
 
 ## 결과 화면의 MVP 한 줄을 채운다. `p` 가 null 이면(이긴 팀이 비어 있는 기묘한
@@ -879,108 +775,42 @@ const VICTORY_BACKDROP_COLOR := BattleTheme.DIM_LIGHT
 func set_victory_mvp(p: PilotData, row: Dictionary) -> void:
 	if _victory_mvp_row == null:
 		return
-	for c in _victory_mvp_row.get_children():
-		c.queue_free()
 	_victory_mvp_row.visible = p != null
 	if p == null:
 		return
-	var tag := Label.new()
-	tag.text = "MVP"
-	tag.add_theme_font_size_override("font_size", 30)
-	tag.add_theme_color_override("font_color", VICTORY_MVP_LABEL_COLOR)
-	tag.position = Vector2(40.0, 0.0)
-	tag.size = Vector2(90.0, VICTORY_MVP_H)
-	tag.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_victory_mvp_row.add_child(tag)
-
 	var tex: Texture2D = PilotImages.circle_for(MvpView.portrait_id(p))
-	var portrait_y: float = (VICTORY_MVP_H - VICTORY_MVP_PORTRAIT) * 0.5
-	if tex != null:
-		var portrait_rect := TextureRect.new()
-		portrait_rect.texture = tex
-		portrait_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		portrait_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		portrait_rect.position = Vector2(140.0, portrait_y)
-		portrait_rect.size = Vector2(VICTORY_MVP_PORTRAIT, VICTORY_MVP_PORTRAIT)
-		_victory_mvp_row.add_child(portrait_rect)
-
-	var name_lbl := Label.new()
-	name_lbl.text = MvpView.display_name(_bs, p)
-	name_lbl.add_theme_font_size_override("font_size", 34)
-	name_lbl.position = Vector2(256.0, 14.0)
-	name_lbl.size = Vector2(420.0, 48.0)
-	name_lbl.clip_text = true
-	_victory_mvp_row.add_child(name_lbl)
-
-	var kda := Label.new()
-	kda.text = "%s · %s" % [MvpView.role_label(p), MvpView.kda_text(row)]
-	kda.add_theme_font_size_override("font_size", 26)
-	kda.add_theme_color_override("font_color", Color(0.80, 0.84, 0.92))
-	kda.position = Vector2(256.0, 62.0)
-	kda.size = Vector2(420.0, 40.0)
-	_victory_mvp_row.add_child(kda)
+	var portrait := _victory_mvp_row.get_node("%MvpPortrait") as TextureRect
+	portrait.texture = tex
+	portrait.visible = tex != null
+	(_victory_mvp_row.get_node("%MvpName") as Label).text = MvpView.display_name(_bs, p)
+	(_victory_mvp_row.get_node("%MvpKda") as Label).text = "%s · %s" % [
+			MvpView.role_label(p), MvpView.kda_text(row)]
 
 
-func _build_victory_panel() -> void:
-	_bs.panel_victory = Panel.new()
-	var vp := ScreenMetrics.viewport_size()
-	_bs.panel_victory.size     = VICTORY_PANEL_SIZE
-	# 어두운 **불투명** 판 — 반투명이면 전장 타일 · 마커가 비쳐 MVP 한 줄이 묻힌다.
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.05, 0.06, 0.10, 1.0)
-	sb.border_color = Color(1.0, 0.80, 0.30, 0.75)
-	sb.set_border_width_all(3)
-	sb.set_corner_radius_all(18)
-	_bs.panel_victory.add_theme_stylebox_override("panel", sb)
-	_bs.panel_victory.position = (vp - _bs.panel_victory.size) * 0.5
-	_bs.panel_victory.visible  = false
+func _bind_victory_panel(root: Node) -> void:
+	_bs.panel_victory = root.get_node("%VictoryPanel") as Panel
+	_bs.lbl_victory = root.get_node("%VictoryLabel") as Label
+	_bs.lbl_victory.text = ""
+	_victory_mvp_row = root.get_node("%MvpRow") as Control
+	_victory_mvp_row.visible = false
 
-	# 판은 HUD 캔버스가 아니라 자기 레이어에, 전체 화면 딤 위에 선다. 딤은 판의
-	# 표시 여부를 그대로 따른다 — `panel_victory.visible` 을 켜고 끄는 자리
+	# 딤은 판의 표시 여부를 그대로 따른다 — `panel_victory.visible` 을 켜고 끄는 자리
 	# (`BattleSim.end_match` / `_on_mvp_view_closed` / `_on_restart_pressed`)는 그대로다.
-	var layer := CanvasLayer.new()
-	layer.name = "VictoryLayer"
-	layer.layer = VICTORY_LAYER
-	_bs.add_child(layer)
-	var backdrop := ColorRect.new()
-	backdrop.name = "VictoryBackdrop"
-	backdrop.color = VICTORY_BACKDROP_COLOR
-	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
-	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
-	backdrop.visible = false
-	layer.add_child(backdrop)
-	layer.add_child(_bs.panel_victory)
+	var backdrop := root.get_node("%VictoryBackdrop") as Control
 	_bs.panel_victory.visibility_changed.connect(
 			func() -> void: backdrop.visible = _bs.panel_victory.visible)
-
-	_bs.lbl_victory = Label.new()
-	_bs.lbl_victory.add_theme_font_size_override("font_size", 48)
-	_bs.lbl_victory.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_bs.lbl_victory.position = Vector2(0.0, 80.0)
-	_bs.lbl_victory.size     = Vector2(700.0, 80.0)
-	_bs.panel_victory.add_child(_bs.lbl_victory)
-
-	_victory_mvp_row = Control.new()
-	_victory_mvp_row.name = "MvpRow"
-	_victory_mvp_row.position = Vector2(0.0, VICTORY_MVP_Y)
-	_victory_mvp_row.size = Vector2(VICTORY_PANEL_SIZE.x, VICTORY_MVP_H)
-	_victory_mvp_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_victory_mvp_row.visible = false
-	_bs.panel_victory.add_child(_victory_mvp_row)
+	_bs.panel_victory.visible = false
+	backdrop.visible = false
 
 	# Standalone runs replay the same battle; Season-driven runs return to the
 	# campaign hub so LeagueManager can record the result.
 	var season_mode: bool = _bs.gm.season_state.get("pending_match", null) != null
-	var rb := Button.new()
+	var rb := root.get_node("%VictoryButton") as Button
 	rb.text = "다음 →" if season_mode else "Play Again"
-	rb.position = Vector2(200.0, VICTORY_BTN_Y)
-	rb.size     = Vector2(300.0, 80.0)
-	rb.add_theme_font_size_override("font_size", 32)
 	if season_mode:
 		rb.pressed.connect(_bs._on_return_to_season_pressed)
 	else:
 		rb.pressed.connect(_bs._on_restart_pressed)
-	_bs.panel_victory.add_child(rb)
 
 
 func update_hud() -> void:

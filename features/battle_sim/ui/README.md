@@ -2,10 +2,10 @@
 
 | File | class_name | Role |
 |---|---|---|
-| `HudBuilder.gd` | HudBuilder | Builds and updates the whole battle HUD |
+| `HudBuilder.gd` + `BattleHud.tscn` | HudBuilder | Instances the battle HUD scene (`BattleHud.tscn` — three CanvasLayers), binds its `%` nodes and updates it. **Scene-authored** since R4 phase 2 — see "Scenes and the dark theme" |
 | `CostDonut.gd`  | CostDonut  | Strategy points (전략 포인트) gauge — a **strategy octagon** (`StrategyIcon`, pointy top/bottom; the inline / cost-ribbon indicator is the flat-top pose), 8 faces = 1 point each, filled clockwise from the upper-right face; 9–16 fill a second, lighter lap (`OVERFLOW_LIGHTEN`), past 16 only the number grows. The player's one doubles as the "턴 넘기기" (End turn) button (flip = counter-clockwise lap) |
 | `CardPileStack.gd` | CardPileStack | Deck (덱) / discard pile (버린 더미) — a stack of cards lying face-down, tilted away + card count |
-| `PilotStrip.gd` | PilotStrip | 5-pilot (파일럿) strip (스트립) — **circular portrait (team-colour disc + a bust whose head pokes out above the disc, no rim) + a growth points (성장치) tab hanging below the disc**. The backplate is transparent. Two copies, top (enemy (적)) / bottom (ally (아군)). Pressing a portrait scales it up (`BattleRenderer.PRESS_SCALE`, like field markers). **Ally: short tap = skill popup, long press = detail panel. Enemy: tap / long press = detail panel.** Ally cells carry a round **skill badge** (`SkillBadge`) at the disc's lower right. Only a downed pilot's bust is dimmed (the disc stays). While a card is dragged the ally strip dims and drops (`HudBuilder.set_player_strip_dropped`) |
+| `PilotStrip.gd` + `PilotStrip.tscn` + `PilotStripCell.tscn` | PilotStrip | 5-pilot (파일럿) strip (스트립) — **circular portrait (team-colour disc + a bust whose head pokes out above the disc, no rim) + a growth points (성장치) tab hanging below the disc**. The backplate is transparent. Two copies, top (enemy (적)) / bottom (ally (아군)). Pressing a portrait scales it up (`BattleRenderer.PRESS_SCALE`, like field markers). **Ally: short tap = skill popup, long press = detail panel. Enemy: tap / long press = detail panel.** Ally cells carry a round **skill badge** (`SkillBadge`) at the disc's lower right. Only a downed pilot's bust is dimmed (the disc stays). While a card is dragged the ally strip dims and drops (`HudBuilder.set_player_strip_dropped`). **Scene-authored**: `PilotStrip.tscn` (strip + `%Row` of five `PilotStripCell.tscn` instances) is instanced twice inside `BattleHud.tscn`; `setup(bs, team)` only paints the team colours |
 | `SkillBadge.gd` | SkillBadge | Round pilot-skill badge on an ally strip portrait — icon (dimmed icon-only when unusable), cooldown radial + turns left, segmented stack ring |
 | `SkillPopup.gd` + `SkillPopup.tscn` + `SkillPopupCard.tscn` | SkillPopup | Skill popup above a tapped ally portrait — no dim / no border, rises + fades in (0.2s) / out (0.1s), cooldown as clock + turns, hold a card name → card + desc preview, **사용** (Use) button inside. **Scene-authored** (`SkillPopup.create()`): the scene holds the layer + outside-tap catcher, one `SkillPopupCard` (plate + arrow) is instanced per open |
 | `ReservationChips.gd` | ReservationChips | **Reservation chips (예약 칩)** — card effects settled at a later step (next strategy points · next draw · kill bounty · ambush search) stacked above the ally donut as card art + value chips |
@@ -19,19 +19,34 @@
 ### Scenes and the dark theme (`docs/ui_scene_migration.md` §4 #13)
 The battle UI is moving to `.tscn` like the outgame UI (same rules — `docs/ui_scene_migration.md` §3), on its
 own dark Theme **`resources/BattleTheme.tres`** (palette · variation list: `resources/README.md` → BattleTheme).
-Done: `MvpView`, `SkillPopup` (+ `SkillPopupCard` item scene). Still code-built: `HudBuilder` + `PilotStrip`,
-`PilotDetailPanel` — their colour constants already alias `BattleTheme` (`const STAT_PANEL_BG := BattleTheme.PANEL_BG`,
-values unchanged). Scene ↔ code split for the two converted ones:
+Done: `MvpView`, `SkillPopup` (+ `SkillPopupCard` item scene), the HUD (`HudBuilder` → `BattleHud.tscn`, `PilotStrip`
+→ `PilotStrip.tscn` + `PilotStripCell.tscn`). Still code-built: `PilotDetailPanel` — its colour constants already alias
+`BattleTheme` (`const STAT_PANEL_BG := BattleTheme.PANEL_BG`, values unchanged). Scene ↔ code split for the converted ones:
 
 | Scene owns | Code owns |
 |---|---|
 | `MvpView.tscn`: layer 60, `Root` (theme, taps) → `Dim` · `%SafeArea` → `Title`, `%ArtArea` (from 170 below the safe top to 530 above the safe bottom) → `%Glow` · `%ArtHolder` → `%Art` / `%Slab`(+`%FallbackLabel`), `Info` (`BattleGoldPanel`, 330 tall, 190 above the safe bottom, sides 60) → `%Name` · `%Side` · `%Kda` · `%Metric`, `%Continue` (40 above the safe bottom, 120 tall, sides 120) | safe-area offsets, side line variation (`MvpAllyLabel` / `MvpEnemyLabel`), art / slab size from the texture aspect and the area height (`_layout_art`, on `%ArtArea.resized` — `ART_MAX_H` 1000 / `ART_MAX_W` 900), glow colour (`BattleTheme.GLOW`), fade + rise (`%ArtHolder` offset 40 → 0) |
+| `BattleHud.tscn` (root `Node`, instanced by `HudBuilder.build_ui()` under BattleSim): **`EnemyTopLayer`** (layer 1) → `%AiHand` (full rect) · `%EnemyStripBackdrop` (`HudStripBackdrop`, 1050×256 centred, y −8..248) · `%EnemyPilotStrip` (1030×244 centred, y 2..246); **`Canvas`** (layer 1, = `_bs.canvas`) → `%TimeLabel` (`HudClockLabel`, (20, 4) 220×34) · `%ObjTimer0` (26, 110, 101×60) · `%ObjTimer1` (right-anchored, 26 from the right) · `%PlayerStripBackdrop` (bottom-anchored, 286..22 above the bottom) · `%PlayerPilotStrip` (bottom-anchored, 276..32 above the bottom) · `%KillFeed` · `%CardPileDeck` · `%CardPileDiscard` · `%DeckButton` · `%DiscardButton` (flat, alpha 0) · `%CostDonutEnemy` · `%CostDonutPlayer` · `%ReservationChipsP` · `%CardPlayPreview` (z 20) · `%TurnAnnounce` → `%TurnBar` (`HudTurnBar`, 110 tall, vertically centred) · `%TurnLabel` (`HudTurnLabel`); **`VictoryLayer`** (50) → `%VictoryBackdrop` (`HudVictoryDimPanel`) · `%VictoryPanel` (`BattleGoldModal`, 700×520 centred) → `%VictoryLabel` (48) · `%MvpRow` → `MvpTag` (`BattleTitleLabel`) · `%MvpPortrait` · `%MvpName` (34) · `%MvpKda` (`HudVictoryKdaLabel`), `%VictoryButton` (32). **Child order is draw order** — `Canvas`'s children keep the old build order exactly, other modules append hand cards / overlays after them and `move_child` relative to `%PlayerStripBackdrop`, and `EnemyTopLayer` must stay before `Canvas` (same layer 1 → sibling order) | safe-area shifts (`_shift_y`: top block + `top_offset()` — `%AiHand`, enemy strip + backdrop, time label, clocks; bottom block + bottom inset — ally strip + backdrop), positions derived from other modules' geometry (deck / discard piles + their hit buttons from `BS_HAND_CENTER` · gutter, donut centres from the AI peek / targeting band, `KillFeed.setup`, `ReservationChips.setup`), AI hand fan (`Card.tscn` instances under `%AiHand`), turn-bar colour (`variation_box("HudTurnBar")` copy ← `TURN_BAR[team]`) and sweep tween (x / width from the viewport), victory MVP line data, button text / target (season "다음 →" vs "Play Again"), `update_hud` state |
+| `PilotStrip.tscn`: 1030×244 root (theme) → `%Row` (757.6 wide, centred) → `Cell0..4` (`PilotStripCell.tscn`, 151.52 apart). `PilotStripCell.tscn` (151.52×244): `%Holder` (full rect, press scale) → `%Pill` (`PilotStripScoreTab`) · `%Bust` (ColorRect + `pilot_bust_mask` material, 127.12×158.9 at (12.2, 40.86)) · `%Dead` (`PilotStripDeadLabel`) · `%Score` (`PilotStripScoreLabel`, 30 tall under the disc) · `%Badge` (`SkillBadge`, Ø 50.848); `%Hit` (flat Button, whole cell, alpha 0) | team colours (`variation_box("PilotStripScoreTab")` copy ← `TEAM_DISC[team]`, shader `disc_color`), per-cell material duplicate, press pivot = disc centre read from `%Bust`, badge `setup` (ally) / removed (enemy), portrait · tint · numbers · skill state, `anchor_for` / `pilot_at` read the cell rects |
 | `SkillPopup.tscn`: `Layer` (12) → `%Root` (theme) → `%Catcher` (top-wide). `SkillPopupCard.tscn`: full-rect root → `%Panel` (`BattlePopup`, min width 640) → VBox (sep 10): Head (72: `%IconSlot` · gap 16 · NameBox(top 16) → `%Name` · TypeSlot 110 → `%Type` / `%Cooldown`(`%Clock` · `%Turns`)), `%DescSlot`, `%StatusBox`(30) → `%Status`, `%UseGap`, `%Use` (68); `%Arrow` (Polygon2D, after the panel) | catcher height (= strip top), panel position (above the portrait, clamped by `SCREEN_MARGIN`) and height (`get_combined_minimum_size`), arrow polygon + colour (`BattleTheme.POPUP_BG`), icon tile (`SkillImages.make_icon_tile` → `%IconSlot`), rich description (`StrategyIcon.make_rich_label` → `%DescSlot`, height `rich_height`), name variation (`BattleSkillNameLabel` / "스킬 없음" `BattleKeyLabel`), card-name press preview (Card + `CardDescBox`, code) |
 
 Fixed heights that look odd are deliberate pixel parity with the old code: the name row is a 40px label at
 +16 in the 72px head, and the status row is a 30px box with the label anchored inside — the label's own minimum
 (42 / 31 px at those fonts) must not grow the row. F6 previews: `MvpView` (pilot 0's art, hand-made row),
-`SkillPopup` (hand-written cooldown skill via `_show`, no battle — use / status refresh / card preview need one).
+`SkillPopup` (hand-written cooldown skill via `_show`, no battle — use / status refresh / card preview need one),
+`PilotStrip` (five hand-made allies, one downed, a badge with "2"; battlefield-grey background). `BattleHud.tscn` has no
+script — F6 shows the scene as authored (sample text, team-0 colours on both strips).
+
+The strip-cell numbers are the old `PilotStrip.setup` formula evaluated for the 1030×244 strip and baked into
+`PilotStripCell.tscn`: disc Ø = min(206 − 12, (244 − 15 − 2) × 0.8) × 0.7 = 127.12, bust = Ø / 0.8, row width
+5 × (Ø + 24.4). The code no longer derives them — resize the cell in the editor and `anchor_for` / `pilot_at` /
+the press pivot follow the nodes. Verified (R4 phase 2): before / after screenshots of the real `BattleSim.tscn`
+(battlefield hidden, data pinned) are pixel-identical at 0 insets and at a 0,162,0,90 safe area — static HUD,
+pregame hide, strips hidden, drag drop / raise, both turn banners mid-sweep, victory panel with / without MVP,
+plus a live run (skill popup tap, long press → detail, enemy tap → detail, card drag, end turn, MVP → result) and
+a `match_ctx` run (jungle-start pregame hide, "다음 →"). The turn banner now reuses its two nodes; a banner that
+starts while the previous one is still running takes them over (generation counter) instead of the old
+free-and-recreate.
 
 ## HudBuilder.gd
 `extends Node` — child of BattleSim.
@@ -54,7 +69,8 @@ This is a **different function for a different reason** from `set_strip_visible(
 one clears what has no meaning yet.
 
 ### build_ui()
-Creates UI inside `_bs.canvas` (a CanvasLayer added to BattleSim):
+Instances `BattleHud.tscn` under BattleSim, binds `_bs.canvas` (= its `Canvas` layer) and the rest of the HUD refs, and
+places / configures what the scene can't know (below). The pieces, in draw order:
 
 - **AI hand peek** — overlapping **fan** of face-down `Card.tscn` instances
   scaled to `AI_HAND_SCALE` (0.45). Built BEFORE the top panel so the panel
@@ -101,7 +117,7 @@ Creates UI inside `_bs.canvas` (a CanvasLayer added to BattleSim):
   fly-out. Without that the AI's played card stood at the centre of the screen
   visibly tilted, flipped over, and vanished still crooked.
 - **Enemy strip backplate (뒤판)** (`_enemy_strip_bg`) — one plate that extends the enemy
-  pilot strip by `ENEMY_BG_PAD` (10) on every side. **It is now transparent**
+  pilot strip by 10px on every side (`BattleHud.tscn`). **It is now transparent**
   (`StyleBoxEmpty` — the strip background was removed, see `STRIP_BACKDROP_NOTE` in
   `HudBuilder`); the node survives only as the counterpart `set_strip_visible` toggles. It
   used to be opaque and hid the top of the opponent's (상대) hand peek; now the top of the
@@ -110,9 +126,9 @@ Creates UI inside `_bs.canvas` (a CanvasLayer added to BattleSim):
 - **Deck / Discard card piles** (in the gutters either side of the card row) —
   `_bs.pile_deck` (left) and `_bs.pile_discard` (right), two `CardPileStack`
   controls. CardPhaseManager pushes the count on every draw / play and tweens
-  it during a deck/discard reshuffle. Built by `_build_hand_indicators()`.
+  it during a deck/discard reshuffle. Placed by `_bind_hand_indicators()`.
   **Both piles are also buttons**: a transparent flat `Button`
-  (`_make_pile_button`) covers each one — `CardPileStack` sets itself to
+  (`%DeckButton` / `%DiscardButton`, placed by `_place_pile_button`) covers each one — `CardPileStack` sets itself to
   `MOUSE_FILTER_IGNORE` and takes no clicks of its own — and opens
   `CardPileViewer` on that pile. `_update_pile_buttons()` runs from
   `update_hud()` and gates both on `CardPhaseManager.can_browse_piles()`
@@ -130,14 +146,14 @@ Creates UI inside `_bs.canvas` (a CanvasLayer added to BattleSim):
   > where cards entering the hand came from or where discarded cards went.
   > `lbl_deck_count` / `lbl_discard_count` disappeared then.
 - **Strategy point donuts ×2** — `CostDonut` ring gauges in the **left-hand** gutter
-  (see below). Built by `_build_cost_donuts()`.
+  (see below). Placed by `_bind_cost_donuts()`.
 - **Ally pilot strip** (y 1644..1888) — below the hand row. This used to be empty
   (where the bottom cost bar and the rectangular phase-skip button were removed). The
-  bottom ~32px is left for the iPhone home bar / system gestures. `_build_player_strip()`.
+  bottom ~32px is left for the iPhone home bar / system gestures. `_bind_player_strip()`.
   **One backplate `Panel` lies behind it** (`PlayerStripBackdrop`, y 1634..1898) —
   see "Ally strip backplate" in the Pilot strip section below.
 - **Victory panel** — Win/lose label + Play Again button.
-- **Turn announcer** (built last, full-screen Control overlay) —
+- **Turn announcer** (`%TurnAnnounce`, the canvas's last scene child, full-screen Control overlay) —
   `play_turn_announce(is_player)` sweeps a 110-px-tall coloured bar in
   from the centre with the message "당신의 차례" (Your turn) (blue) or "상대 차례"
   (Opponent's turn) (red), holds, then fades out. Awaitable; `CardPhaseManager.start_card_phase`
@@ -316,11 +332,11 @@ Now it's split into two copies:
 
 | Strip | Position | Size | Input |
 |---|---|---|---|
-| Enemy (`_enemy_strip`) | direct child of `_enemy_top_layer` (see "Top enemy UI layer" below), `ENEMY_STRIP_RECT` (25, 2, 1030×244) — **same size as the ally one** | disc diameter ≈127 | press for detail panel |
-| Ally (`_player_strip`) | **below** the hand row, `PLAYER_STRIP_RECT` (25, 1644, 1030×244) | disc diameter ≈127 | press for detail panel |
+| Enemy (`_enemy_strip`) | direct child of `_enemy_top_layer` (see "Top enemy UI layer" below), `%EnemyPilotStrip` (25, 2, 1030×244) — **same size as the ally one** | disc diameter ≈127 | press for detail panel |
+| Ally (`_player_strip`) | **below** the hand row, `%PlayerPilotStrip` (25, 1644, 1030×244 — bottom-anchored) | disc diameter ≈127 | press for detail panel |
 
-**The portrait is 70% of the size derived from the cell** (`PilotStrip.PORTRAIT_SCALE`).
-`setup` first lays out the unscaled layout (disc diameter = min(cell width − `CELL_GAP`,
+**The portrait is 70% of the size derived from the cell** (formerly `PilotStrip.PORTRAIT_SCALE`; the result is now
+baked into `PilotStripCell.tscn` — see "Scenes and the dark theme"). The old `setup` first laid out the unscaled layout (disc diameter = min(cell width − `CELL_GAP`,
 height × 0.8)) to fix **the spacing between discs and the disc-centre height**, then shrinks
 only the diameter — the spacing stays, so the whole row narrows and gathers at the strip's
 horizontal centre (`_row_x`), and since the disc-centre height stays, alignment with the
@@ -394,8 +410,7 @@ follows the eye ratio (2.4:1) up from 76 → **81** too. The side margins shrank
 amount so the clock cells went 190 → **168**, and the strip x moved 231 → **204** to stay
 centred.
 
-**The growth point font is the same on both strips** (`ENEMY_SCORE_FONT` =
-`PLAYER_SCORE_FONT` = 20). The ally portraits are bigger, but that number exists **to be
+**The growth point font is the same on both strips** (`PilotStripScoreLabel` = 20 on both). The ally portraits are bigger, but that number exists **to be
 compared side by side with mine**, so different sizes would give the two numbers read on
 the same line different weight — faces may be small, numbers may not. The old 14 was a
 value derived from cell width back when the strip was shrunk to 60%.
@@ -405,7 +420,7 @@ on a dark plate at the portrait's bottom-left, but **the strip's seat order itse
 already is the role** (`GameEnums.ROLE_DISPLAY_ORDER` — 탑 · 정글 · 미드 · 원딜 · 서폿
 (top · jungle · mid · ADC · support), the same table as the outgame screens). It said the
 same thing twice and just covered the bottom of the face. To bring it back, restore the
-three `ROLE_TAG_*` constants and the two nodes `tag_bg` / `role_lbl` in `_build_cell`
+three `ROLE_TAG_*` constants and the two nodes `tag_bg` / `role_lbl` in `PilotStripCell.tscn`
 together.
 
 **Both sides are pressable.** Enemy pilots open through the same gate as allies
@@ -451,7 +466,7 @@ case the card's bottom edge came down to y ≈ 1763. At 1724 the cards covered t
 portraits (confirmed by measurement).
 
 **Ally strip backplate** — `PlayerStripBackdrop`, one `Panel` that extends the strip area by
-`PLAYER_BG_PAD` (10px) on every side (y 1634..1898). **It is now transparent** (background
+10px on every side (y 1634..1898, `BattleHud.tscn`). **It is now transparent** (background
 removed) — but the node stays: it's the z-order reference `CardPhaseManager` sends the hand
 **behind** when it isn't your turn, and the ruler for how far down it goes
 (`player_strip_backdrop[_top]`). With the plate transparent, the retreated hand isn't hidden
@@ -459,7 +474,7 @@ but shows behind the portraits. (What follows is the reasoning from when it was 
 enemy strip sat on the top panel so it had backing from the start, but the ally strip
 floated directly on the screen, so the three rows face · HP bar · growth points looked
 scattered with no background — growth point numbers in particular, without backing, don't
-show where one pilot's cell ends. **`_build_player_strip()` adds it before the strip**
+show where one pilot's cell ends. **It stands before the strip in `BattleHud.tscn`**
 (sibling z-order is child index, so if added later the plate covers the portraits) and
 **`set_strip_visible(0, on)` hides it together with the strip** — if the detail panel
 cleared only the strip, an empty plate would be left alone on top of the dim.
@@ -980,8 +995,8 @@ don't move — they don't overlap the battlefield.
 the enemy strip height) remain and serve as **the reference coordinate for the chain
 below**. The enemy strip is now full width (1030, same as the ally one) but its five discs
 only occupy the middle, and **the side margins are the two objective clock cells**
-(`OBJ_TIMER_LEFT_X` 26, the right one worked back from the viewport width, each 101×60,
-vertically centred on the disc centre `OBJ_TIMER_Y` 110).
+(`%ObjTimer0` at x 26, `%ObjTimer1` anchored 26 from the right edge, each 101×60,
+vertically centred on the disc centre — y 110).
 
 The enemy strip grew twice: 618 → 672 (portrait +10%) → **806** (another +20%, portrait
 145×60). Only at that size do faces tell who is who, and growth points can be compared side
@@ -1006,8 +1021,8 @@ between the enemy donut and the battlefield used to hold the card description bo
 description box now stands beside the pointed hand card.
 
 - **Time label** — left (x 20), `font_size` 18. **There's no backing**, so a black outline
-  (4px) keeps it readable. `UiHelpers.mk_label` takes a `Control` parent but the canvas is a
-  `CanvasLayer`, so here the `Label` is created directly — previously the full-width panel was
+  (4px) keeps it readable (`%TimeLabel`, `HudClockLabel`). (When it was code-built, `UiHelpers.mk_label` took a
+  `Control` parent but the canvas is a `CanvasLayer`, so the `Label` was created directly — previously the full-width panel was
   that `Control`. `MM:SS` (`get_elapsed_ingame_seconds`).
   **Hours aren't shown, so minutes can exceed 60.** During BATTLE seconds flow in real time
   (1 turn = 0.5 s = 60 in-game seconds, i.e. about 120× the wall clock); during CARD_PHASE /
@@ -1076,7 +1091,7 @@ victim cell always lands at the same x.
   when `TOP_PANEL_H` was 148; with the circular-portrait chain (+100) it is ≈ **434**.
   Raising `MAX_ROWS` / `ROW_STEP` covers more of the battlefield.
 
-### Match end — MVP view → result panel (`MvpView.gd` + `_build_victory_panel`)
+### Match end — MVP view → result panel (`MvpView.gd` + `BattleHud.tscn` `%VictoryPanel`)
 Flow (owner: `BattleSim.end_match(winner_side)`, called once from
 `SimulationCore.check_win_condition`):
 
@@ -1091,10 +1106,10 @@ Flow (owner: `BattleSim.end_match(winner_side)`, called once from
    care + damage taken, top = damage dealt + taken, others = damage dealt.
 3. "계속" (or a tap anywhere after `TAP_ARM_SEC`, so the tap that ended the match can't skip it)
    → `closed` → `BattleSim._on_mvp_view_closed` frees the view and shows `panel_victory`.
-4. The result panel (`panel_victory`) is taller now (`VICTORY_PANEL_SIZE`) and carries an
+4. The result panel (`panel_victory`) is taller now (700×520) and carries an
    **MVP line** (`HudBuilder.set_victory_mvp`): circle portrait + name + position · K/D/A.
-   It lives on **its own CanvasLayer** (`VICTORY_LAYER` — above the HUD canvas, below
-   `MvpView.OVERLAY_LAYER`) over a full-screen dim (`VICTORY_BACKDROP_COLOR`, blocks input) that
+   It lives on **its own CanvasLayer** (`VictoryLayer`, 50 — above the HUD canvas, below
+   `MvpView.OVERLAY_LAYER`) over a full-screen dim (`%VictoryBackdrop`, `HudVictoryDimPanel`, blocks input) that
    follows the panel's visibility, and the panel itself is opaque. It used to sit on the HUD
    canvas with a translucent fill, so battlefield tiles · markers showed through the panel and
    the HUD strips · markers around it stayed at full brightness.
@@ -1120,9 +1135,6 @@ stats; "Play Again" (`_on_restart_pressed`) frees any open view.
 Pulls `_bs.get_elapsed_ingame_seconds()` and formats as `%02d:%02d`. Called
 from `BattleSim._process` every frame so the clock visibly ticks even when no
 HUD-state event fires.
-
-### mk_label(parent, text, font_size, color, pos, sz, align)
-Convenience helper to create and add a styled Label.
 
 
 ---
@@ -1242,13 +1254,14 @@ thumbnail — a skill exists to be pressed, so its button must be visible right 
 
 ## Screen fit (safe area)
 
-`HudBuilder`'s coordinate constants are **the 1080×1920 design values as-is**, and device
-adaptation is done **by shifting whole blocks** without touching those values.
+`BattleHud.tscn`'s offsets and `HudBuilder`'s coordinate constants are **the 1080×1920 design values as-is**, and
+device adaptation is done **by shifting whole blocks** without touching those values (`HudBuilder._shift_y`).
 
 | Scalar | Value | What it shifts |
 |---|---|---|
-| `HudBuilder.top_offset()` | `ScreenMetrics.top_y()` | top panel · opponent hand peek root · enemy donut · `KillFeed` |
-| `HudBuilder.bottom_offset()` | `ScreenMetrics.bottom_y() − 1920` | ally strip (+backplate) · `BattleSim.BS_HAND_CENTER.y` (→ deck/discard · player donut · dim all follow) |
+| `HudBuilder.top_offset()` | `ScreenMetrics.top_y()` | top panel (`%EnemyStripBackdrop` · `%EnemyPilotStrip` · `%TimeLabel` · `%ObjTimer*`) · opponent hand peek root (`%AiHand`) · enemy donut · `KillFeed` |
+| `HudBuilder.bottom_offset()` | `ScreenMetrics.bottom_y() − 1920` | `BattleSim.BS_HAND_CENTER.y` (→ deck/discard · player donut · dim all follow) |
+| bottom inset (`bottom_y() − vp_h()`) | — | ally strip + backplate — they are anchored to the screen bottom in the scene (a taller viewport already moves them), so only the inset is left; the result equals `bottom_offset()` on the old top-anchored rect |
 
 The reason not to fix constants one by one is the "chain" from the head of this file — top
 panel ↔ peek ↔ donut ↔ kill log interlock pixel by pixel, so moving just one quietly breaks

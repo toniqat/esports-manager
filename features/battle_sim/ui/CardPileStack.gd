@@ -96,7 +96,7 @@ var _ghosts: Array = []
 
 
 func _ready() -> void:
-	# 입력은 위에 얹히는 투명 Button(HudBuilder._make_pile_button)이 가져간다.
+	# 입력은 위에 얹히는 투명 Button(`BattleHud.tscn` %DeckButton · %DiscardButton)이 가져간다.
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_process(false)
 

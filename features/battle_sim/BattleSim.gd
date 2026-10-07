@@ -41,7 +41,7 @@ const BS_HAND_CARD_GAP    := 12.0
 var BS_HAND_WIDTH: float  = 902.0
 # The hand row is widened past the margin-derived width by this factor so the
 # cards overlap each other less. It eats into the Deck / Discard gutters, so
-# HudBuilder._build_hand_indicators re-derives its gutter from the real hand
+# HudBuilder._bind_hand_indicators re-derives its gutter from the real hand
 # edge instead of BS_HAND_AREA_MARGIN.
 const BS_HAND_WIDTH_SCALE := 1.10
 # Minimum distance (px) the card *next to* the hovered card slides away from it.
@@ -359,7 +359,7 @@ var pile_deck:    CardPileStack = null
 var pile_discard: CardPileStack = null
 
 # 킬로그 — 화면 우측 상단(적 스트립 아래)에 처치 / 포탑 철거를 한 줄씩 쌓는다.
-# `HudBuilder._build_kill_feed` 가 만들고, 적립은 `mark_pilot_dead` 와
+# `HudBuilder._bind_kill_feed` 가 묶고(노드는 `ui/BattleHud.tscn`), 적립은 `mark_pilot_dead` 와
 # `score_turret_kill` 두 곳에서만 들어온다. 교전 중에 난 처치는 아레나가 닫힐
 # 때까지 피드 안에 밀려 있다가 한 줄씩 풀린다 — `ui/KillFeed.gd` 참고.
 var kill_feed: KillFeed = null
@@ -1391,7 +1391,7 @@ func score_turret_kill(attacker: PilotData, td: TurretData = null) -> void:
 ## 무관한 누적 기록이다.
 ##
 ## **지금은 아무도 읽지 않는다.** 상단 중앙의 `12.4k - 9.8k` 점수표가 삭제되면서
-## 유일한 소비자가 사라졌다(`HudBuilder._build_top_panel` 주석 참조). 합계 자체는
+## 유일한 소비자가 사라졌다(`HudBuilder._bind_top_panel` 주석 참조). 합계 자체는
 ## 언제든 다시 필요해질 값이라 함수는 남긴다.
 func team_score(team: int) -> float:
 	var total: float = 0.0

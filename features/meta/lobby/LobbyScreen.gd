@@ -119,7 +119,7 @@ func _build() -> void:
 	# First lobby of a profile: the manager type must be chosen before anything
 	# else (plan §11.0). The popup can't be dismissed without choosing.
 	if not _pm.manager_type_chosen():
-		_manager_popup = ManagerTypePopup.new()
+		_manager_popup = ManagerTypePopup.create()
 		add_child(_manager_popup)
 		_manager_popup.chosen.connect(_on_manager_type_chosen)
 		_manager_popup.open()

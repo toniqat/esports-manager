@@ -462,7 +462,7 @@ func _on_prestige_pressed() -> void:
 
 func _open_prestige_popup() -> void:
 	if _type_popup == null:
-		_type_popup = ManagerTypePopup.new()
+		_type_popup = ManagerTypePopup.create()
 		add_child(_type_popup)
 		_type_popup.chosen.connect(_on_prestige_type_chosen)
 	_type_popup.open(true, int((_pm.profile.get("manager", {}) as Dictionary).get("type", 0)))

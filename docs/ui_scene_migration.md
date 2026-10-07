@@ -231,7 +231,7 @@ ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨�
 | #12 b | `MechDetailPanel` · MatchPrep UI · `MatchCheatMenu` | ✅ 머지 (+ `MechMasteryRow` · `MechQuirkRow` · `MechCardCell` · `MatchPrepView` · `MatchCheatItem`. 기벽 없는 경우 diff 0, 기벽 줄은 실제 줄바꿈으로 아래 ~3px. 다크 모달 variation 미정) |
 | 끝 | `mobile_safe_area.md` 패턴 B/C 씬 기반으로 갱신 | ✅ |
 | 끝 | 새 `.tscn` 전부 에디터에서 열고 저장 (uid 부여) | 사용자 ⬜ |
-| 끝 | 제안 variation 반영 (아래 표) | ⬜ 사용자 결정 대기 |
+| 끝 | 제안 variation 반영 (아래 표) — 사용자 결정: 모서리는 지금 모양 유지, `MechDetailPanel` 은 흰 테마로 | 🔄 1단계 `resources/` 에이전트 → 2단계 meta · season · match_flow 병렬 |
 
 ### 웨이브 3 에서 제안된 theme variation (미반영 — 지금은 각 씬의 로컬 override / sub_resource)
 | 제안 | 쓰는 곳 | 비고 |

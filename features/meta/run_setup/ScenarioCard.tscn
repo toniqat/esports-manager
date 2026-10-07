@@ -1,23 +1,17 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://features/meta/run_setup/ScenarioCard.gd" id="1_card"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
-[sub_resource type="StyleBoxFlat" id="Chip_panel"]
-bg_color = Color(0.996, 0.929, 0.808, 1)
-corner_radius_top_left = 22
-corner_radius_top_right = 22
-corner_radius_bottom_right = 22
-corner_radius_bottom_left = 22
-
 [node name="ScenarioCard" type="Button"]
-editor_description = "One scenario card (step 1). The whole card is the tap target; selected / not frame = state → code (ChoiceListView._refresh). Height 220 = 26 + name 54 + 18 + desc 90 + 32."
+editor_description = "One scenario card (step 1). The whole card is the tap target; selected / not = variation SelectableCardButton / SelectableCardButtonOn, switched by code (ChoiceListView._refresh). Height 220 = 26 + name 54 + 18 + desc 90 + 32."
 custom_minimum_size = Vector2(0, 220)
 offset_right = 1032.0
 offset_bottom = 220.0
 focus_mode = 0
 mouse_filter = 1
 theme = ExtResource("2_theme")
+theme_type_variation = &"SelectableCardButton"
 script = ExtResource("1_card")
 
 [node name="Pad" type="MarginContainer" parent="."]
@@ -58,20 +52,15 @@ size_flags_vertical = 0
 mouse_filter = 2
 theme_override_constants/margin_top = 6
 
-[node name="Chip" type="Panel" parent="Pad/VBox/Row/ChipPad"]
+[node name="Chip" type="PanelContainer" parent="Pad/VBox/Row/ChipPad"]
 custom_minimum_size = Vector2(260, 44)
 layout_mode = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("Chip_panel")
+theme_type_variation = &"AccentChip"
 
 [node name="Cap" type="Label" parent="Pad/VBox/Row/ChipPad/Chip"]
 unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+layout_mode = 2
 theme_type_variation = &"AccentLabel"
 theme_override_font_sizes/font_size = 24
 text = "샐러리캡 250"

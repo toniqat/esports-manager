@@ -38,26 +38,6 @@ static func content_top() -> float:
 	return CONTENT_TOP
 
 
-## 단계 뷰 씬 공용 — 기기 인셋을 오프셋으로 넣는다. `safe` = 뷰의 안전 영역 판
-## (아래 인셋만큼 바닥을 올린다), `bar` = 하단 액션 바 HBox(색면은 인셋 아래까지,
-## 글자는 안전선 위 — `OutgameTheme.style_bottom_button`). 바 버튼의 종류 · 글자 크기 ·
-## 무게(stretch ratio) · 글자는 씬이 정하고, 여기서는 그 변형 이름으로 각진 바 스타일만 입힌다.
-static func fit_insets(safe: Control, bar: Control) -> void:
-	var below: float = maxf(0.0, ScreenMetrics.insets().w)
-	if safe != null:
-		safe.offset_bottom = -below
-	if bar == null:
-		return
-	bar.offset_top = -(OutgameTheme.BOTTOM_BAR_H + below)
-	for c in bar.get_children():
-		var b := c as Button
-		if b == null:
-			continue
-		var kind: String = String(OutgameTheme.BUTTON_VARIATIONS.get(
-				String(b.theme_type_variation), "primary"))
-		OutgameTheme.style_bottom_button(b, kind, b.get_theme_font_size(&"font_size"))
-
-
 @onready var _gm: Node = get_node("/root/GameManager")
 @onready var _pm: Node = get_node("/root/ProfileManager")
 

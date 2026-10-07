@@ -8,6 +8,7 @@ custom_minimum_size = Vector2(824, 268)
 offset_right = 824.0
 offset_bottom = 268.0
 theme = ExtResource("2_theme")
+theme_type_variation = &"SelectableCard"
 script = ExtResource("1_option")
 
 [node name="Margin" type="MarginContainer" parent="."]

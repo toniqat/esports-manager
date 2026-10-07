@@ -14,15 +14,14 @@ extends Control
 # 카드는 통째로 하나의 `Button` 이다 — 누르면 고른 것이 되고(앰버 테두리),
 # `다음` 은 하나를 골랐을 때만 풀린다. 카드는 `ScrollContainer` 안에 있으므로
 # 씬에서 `MOUSE_FILTER_PASS` 여야 `DragScroll` 이 끌기를 판정한다(`docs/mobile_safe_area.md` §5).
-# 고른 / 안 고른 카드의 테두리는 상태라 코드(`_refresh`)가 칠한다.
+# 고른 / 안 고른 판은 테마 변형 `SelectableCardButton` / `SelectableCardButtonOn` 이고,
+# 상태라 코드(`_refresh`)가 변형 이름만 바꾼다.
 #
 # 잇는 쪽은 `_items()`(카드 데이터 배열) · `_make_card(item)`(채운 카드 버튼) ·
 # `_hint_text()` 셋만 채운다. 고른 값은 `selected_id`(카드 데이터의 `id`).
 
 signal back_requested
 signal next_requested
-
-const CARD_RADIUS: int = 20
 
 ## 고른 카드의 `id`. -1 = 아직 없음.
 var selected_id: int = -1
@@ -53,7 +52,7 @@ func _hint_text() -> String:
 
 # ── Build ────────────────────────────────────────────────────────────────────
 func _build() -> void:
-	RunSetupScreen.fit_insets(%Safe, %Bar)
+	OutgameTheme.fit_bottom_bar(%Bar, %Safe)
 	(%Hint as Label).text = _hint_text()
 	var list: Control = %List
 	# 씬의 견본 카드(에디터 미리보기용)는 지운다 — 목록은 데이터가 정한다.
@@ -96,10 +95,6 @@ func _on_next_pressed() -> void:
 func _refresh() -> void:
 	for id in _cards.keys():
 		var on: bool = int(id) == selected_id
-		var sty := OutgameTheme.flat_style(
-				OutgameTheme.ACCENT_DIM if on else OutgameTheme.SURFACE, CARD_RADIUS,
-				OutgameTheme.ACCENT if on else OutgameTheme.BORDER, 4 if on else 2)
-		var card: Button = _cards[id]
-		for st in ["normal", "hover", "pressed", "focus", "disabled"]:
-			card.add_theme_stylebox_override(st, sty)
+		(_cards[id] as Button).theme_type_variation = \
+				&"SelectableCardButtonOn" if on else &"SelectableCardButton"
 	(%Next as Button).disabled = selected_id < 0

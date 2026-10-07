@@ -1,14 +1,7 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" uid="uid://cr0d2b6l2s2dg" path="res://features/meta/lobby/HomeTab.gd" id="1_home"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
-
-[sub_resource type="StyleBoxFlat" id="LiveChip"]
-bg_color = Color(0.996, 0.929, 0.808, 1)
-corner_radius_top_left = 20
-corner_radius_top_right = 20
-corner_radius_bottom_right = 20
-corner_radius_bottom_left = 20
 
 [node name="HomeTab" type="Control"]
 layout_mode = 3
@@ -130,20 +123,15 @@ layout_mode = 2
 mouse_filter = 2
 theme_override_constants/margin_top = 6
 
-[node name="Chip" type="Panel" parent="VBox/RunCard/Margin/VBox/Header/LiveChip"]
+[node name="Chip" type="PanelContainer" parent="VBox/RunCard/Margin/VBox/Header/LiveChip"]
 custom_minimum_size = Vector2(170, 40)
 layout_mode = 2
 size_flags_vertical = 0
 mouse_filter = 2
-theme_override_styles/panel = SubResource("LiveChip")
+theme_type_variation = &"AccentChip"
 
 [node name="ChipText" type="Label" parent="VBox/RunCard/Margin/VBox/Header/LiveChip/Chip"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+layout_mode = 2
 theme_type_variation = &"AccentLabel"
 theme_override_font_sizes/font_size = 20
 text = "경기 진행 중"

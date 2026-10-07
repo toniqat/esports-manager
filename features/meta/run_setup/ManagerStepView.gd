@@ -9,7 +9,8 @@ extends Control
 #   bar: 뒤로 (1) / 다음 (2)
 #
 # **The layout is `ManagerStepView.tscn`** (status line, scroll, chips / stats card / traits
-# slots, bottom bar). Construct with `ManagerStepView.create()`. Code fills the texts and
+# slots, bottom bar). Construct with `ManagerStepView.create()`. Code fills the texts, picks
+# the status / note label variation (SubLabel ↔ NegativeLabel, FaintLabel ↔ AccentLabel) and
 # rebuilds the shared-module content (`ManagerUi` chips + stat cells, `TraitPickerView`)
 # into the slots.
 #
@@ -43,7 +44,7 @@ func _ready() -> void:
 		return
 	_built = true
 	_pm = get_node("/root/ProfileManager")
-	RunSetupScreen.fit_insets(%Safe, %Bar)
+	OutgameTheme.fit_bottom_bar(%Bar, %Safe)
 	# Drag / fling scrolling instead of the engine's touch drag (`DragScroll`).
 	DragScroll.attach(%Scroll)
 	(%Back as Button).pressed.connect(func() -> void: back_requested.emit())
@@ -114,10 +115,10 @@ func _rebuild(status_override: String = "") -> void:
 	var note: Label = %CardNote
 	if all_bonus != 0:
 		note.text = "특성 보정 전체 %s" % ManagerUi.signed(all_bonus)
-		note.add_theme_color_override("font_color", OutgameTheme.ACCENT_TEXT)
+		note.theme_type_variation = &"AccentLabel"
 	else:
 		note.text = "전문화는 로비 감독 탭에서"
-		note.remove_theme_color_override("font_color")
+		note.theme_type_variation = &"FaintLabel"
 	var cells_w: float = cells.size.x if cells.size.x > 0.0 else w - 56.0
 	cells.custom_minimum_size.y = ManagerUi.add_stat_cells(cells, Vector2.ZERO, cells_w,
 			ManagerProgress.preset_stats(prof, _draft), ManagerProgress.base_stats(prof))
@@ -136,15 +137,15 @@ func _refresh_status(override: String = "") -> void:
 	var status: Label = %Status
 	if override != "":
 		status.text = override
-		status.add_theme_color_override("font_color", OutgameTheme.NEGATIVE)
+		status.theme_type_variation = &"NegativeLabel"
 	elif err != "":
 		status.text = err
-		status.add_theme_color_override("font_color", OutgameTheme.NEGATIVE)
+		status.theme_type_variation = &"NegativeLabel"
 	else:
 		var bonus: int = TraitSystem.bonus_points(selected_traits())
 		status.text = "%s · 보너스 점수 %s · 특성을 바꾸면 이 프리셋에 바로 저장됩니다" % [
 			ManagerUi.preset_name(preset_idx), ManagerUi.signed(bonus)]
-		status.remove_theme_color_override("font_color")
+		status.theme_type_variation = &"SubLabel"
 
 
 # ── Input ────────────────────────────────────────────────────────────────────

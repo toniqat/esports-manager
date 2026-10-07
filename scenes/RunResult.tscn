@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" uid="uid://bogtu0wxqfcc3" path="res://features/meta/run_result/RunResultScreen.gd" id="1_result"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
@@ -41,13 +41,6 @@ shadow_offset = Vector2(0, 3)
 color = Color(0.961, 0.651, 0.137, 1)
 grow_begin = 0.0
 grow_end = 0.0
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_testchip"]
-bg_color = Color(0.996, 0.929, 0.808, 1)
-corner_radius_top_left = 21
-corner_radius_top_right = 21
-corner_radius_bottom_right = 21
-corner_radius_bottom_left = 21
 
 [node name="RunResult" type="Control"]
 layout_mode = 3
@@ -113,21 +106,16 @@ theme_type_variation = &"BodyLabel"
 text = "신생팀의 도전 · Nova Esports"
 horizontal_alignment = 1
 
-[node name="TestChip" type="Panel" parent="Header"]
+[node name="TestChip" type="PanelContainer" parent="Header"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(380, 42)
 layout_mode = 2
 size_flags_horizontal = 4
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_testchip")
+theme_type_variation = &"AccentChip"
 
 [node name="Text" type="Label" parent="Header/TestChip"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+layout_mode = 2
 theme_type_variation = &"AccentLabel"
 theme_override_font_sizes/font_size = 20
 text = "테스트 런 — 프로필 미반영"
@@ -554,7 +542,7 @@ horizontal_alignment = 1
 
 [node name="BottomButton" type="Button" parent="."]
 unique_name_in_owner = true
-editor_description = "Full-width bottom action bar. Code restyles it (OutgameTheme.style_bottom_button: square corners, text lifted by the bottom inset) and stretches it down over the inset."
+editor_description = "Full-width bottom action bar (BarPrimaryButton). Code adds only the bottom inset (OutgameTheme.fit_bottom_bar: rect down over the inset, text lifted above it)."
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
@@ -564,6 +552,6 @@ offset_top = -128.0
 grow_horizontal = 2
 grow_vertical = 0
 focus_mode = 0
-theme_type_variation = &"PrimaryButton"
+theme_type_variation = &"BarPrimaryButton"
 theme_override_font_sizes/font_size = 32
 text = "로비로"

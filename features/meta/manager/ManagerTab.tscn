@@ -239,8 +239,7 @@ offset_top = 18.0
 offset_right = -272.0
 offset_bottom = 52.0
 grow_horizontal = 2
-theme_type_variation = &"BodyLabel"
-theme_override_colors/font_color = Color(0.878, 0.271, 0.271, 1)
+theme_type_variation = &"NegativeLabel"
 theme_override_font_sizes/font_size = 24
 text = "프레스티지 프리셋 — 재설정해야 쓸 수 있습니다"
 

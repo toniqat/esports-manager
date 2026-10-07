@@ -73,7 +73,7 @@ Lobby (Control, full rect, theme = OutgameTheme.tres, LobbyScreen.gd)
   `Rule` (80×6 `ACCENT` ColorRect) · Gap · `%Summary` (`CaptionLabel`) · Gap · `Section` "진행 중인 런" (920 wide) ·
   Gap · `%RunCard` / `%EmptyCard` (920 wide `Panel` with the `PopupCard` variation — radius 24; Panel so the
   variation's padding is ignored and a `MarginContainer` 44/40/44/42 sets it).
-  `%RunCard` → `Header` (`%Phase` `TitleLabel` + `%LiveChip` "경기 진행 중", local `ACCENT_DIM` pill) · `%Date` ·
+  `%RunCard` → `Header` (`%Phase` `TitleLabel` + `%LiveChip` "경기 진행 중" — margin box → `Chip` `AccentChip` PanelContainer 170×40, centred `AccentLabel` 20) · `%Date` ·
   `Divider` · `%Team` · `%Trophies` (`AccentLabel`) · `%Record` · spacer · `%SavedAt` (right). Gaps are spacer
   Controls sized so every line sits on its old pixel row.
 - Code-owned: texts, which card is visible, `%LiveChip.visible` (`_fill` / `_show_run(meta)`).
@@ -127,8 +127,8 @@ profile**; changing it later is only via prestige (M9).
   note says later changes need prestige.
 - Confirm emits `chosen(type_id)`; the lobby saves it with `ProfileManager.set_manager_type(id)`
   (`_on_manager_type_chosen`). A save error shows the red toast + ERROR haptic.
-- `select(idx)` is public (tap path + headless checks). Selected option = `ACCENT_DIM` fill with an
-  `ACCENT` border.
+- `select(idx)` is public (tap path + headless checks). Selected option = variation `SelectableCardOn`
+  (`ACCENT_DIM` fill, 4px `ACCENT` border), others `SelectableCard` (white, 2px `BORDER`), radius 18.
 - Creation: `ManagerTypePopup.create()` (instantiates `ManagerTypePopup.tscn` — `.new()` is an empty layer),
   then `open(prestige_mode, current_type)` / `close()` / `is_open()` / `cancel()`; signals `chosen(type_id)` /
   `cancelled`. Open / close toggles the layer's `visible`; nodes are reused (the 감독 tab keeps one instance).
@@ -138,15 +138,15 @@ profile**; changing it later is only via prestige (M9).
   `%Sub` (`CaptionLabel`, autowrap, min 66) · `%Note` (`AccentLabel`) · `Gap2` · `%Options` (VBox, sep 20;
   two preview `ManagerTypeOption` instances) · `Gap3` · `Buttons` (`%Cancel` `GhostButton` : `%Confirm`
   `PrimaryButton` + font size 30 override = stretch 1 : 2).
-- `ManagerTypeOption.tscn` (item scene, min 824 × 268): `Margin` (28 / 20 / 28) → `VBox` → `Header`
+- `ManagerTypeOption.tscn` (item scene, min 824 × 268, root variation `SelectableCard`): `Margin` (28 / 20 / 28) → `VBox` → `Header`
   (`%Name` `BodyLabel` 32 + `%Chip` 90 × 36, centred) · `Gap1` · `%Desc` (`CaptionLabel` 21, autowrap, min 60) ·
   `Gap2` · `StatsMargin` (4 / 4) → `%Stats` (HBox sep 8, min 104) → `Stat0..5` (`SunkPanel`, key
   `CaptionLabel` 20 + value `TitleLabel`). API: `fill(row, is_current)`, `set_selected(on)`, signal `tapped`
   (left release anywhere on the card — all children are mouse-ignore).
 - Code-owned: texts; the option instances (`_sync_options` reuses the scene's previews, instantiates or frees
-  to match `manager_types()`); the **selection fill / border and the chip pill** (data-driven
-  `OutgameTheme.flat_style` on the item, content margins zeroed so the border width doesn't shift content —
-  no theme variation carries a state colour); `%Cancel.visible` = prestige mode; `%Confirm` disabled / text;
+  to match `manager_types()`); the **selection** (`set_selected` switches the root variation
+  `SelectableCard` ↔ `SelectableCardOn` — both padding 0, the scene's `Margin` pads, so the border width never
+  shifts content); the `현재` chip pill (`SURFACE_SUNK`, no variation — `OutgameTheme.flat_style`); `%Cancel.visible` = prestige mode; `%Confirm` disabled / text;
   `%SafeArea` offsets = `ScreenMetrics.top_y()` / `bottom_y()` on every `open()`; `%Dim` haptics muted in
   first-lobby mode (the tap does nothing there) and restored in prestige mode.
 - Not dismissible in first-lobby mode: `%Dim` swallows taps (its `pressed` → `cancel()`, a no-op outside

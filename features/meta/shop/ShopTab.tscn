@@ -487,8 +487,7 @@ offset_top = 14.0
 offset_right = -268.0
 offset_bottom = 56.0
 grow_horizontal = 2
-theme_type_variation = &"BodyLabel"
-theme_override_colors/font_color = Color(0.878, 0.271, 0.271, 1)
+theme_type_variation = &"NegativeLabel"
 theme_override_font_sizes/font_size = 30
 text = "개발용"
 

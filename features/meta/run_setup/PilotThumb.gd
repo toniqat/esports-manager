@@ -6,7 +6,9 @@ extends Button
 #
 # **모양의 정본은 `PilotThumb.tscn`** (칸 크기 · 얼굴 마스크 · 배지 / 체크 / 꼬리표 자리 ·
 # 스타일). 이 스크립트는 데이터만 넣는다 — 얼굴 텍스처, 역할 배지 색(`RoleBadge`),
-# 꼬리표 글자와 그 폭, 그리고 선택 상태에 따른 칸 테두리(`_apply_style`).
+# 꼬리표 글자와 그 폭, 그리고 선택 상태에 따른 칸의 테마 변형(`_apply_style` —
+# `SelectableCardButton` / `SelectableCardButtonOn`, 모서리 `OutgameTheme.CARD_RADIUS`;
+# 얼굴 마스크 `ArtMask` 의 모서리는 그 반경 - 안쪽 여백 4 로 씬이 맞춘다).
 # 생성은 `PilotThumb.create()` — `.new()` 는 빈 버튼이라 쓰지 않는다.
 #
 # 샐러리 꼬리표(`set_tag`)는 편성이 샐러리캡을 갖게 되면서 붙었다 — 캡은
@@ -33,15 +35,6 @@ const SCENE_PATH: String = "res://features/meta/run_setup/PilotThumb.tscn"
 ## 칸 크기 — 씬의 `custom_minimum_size` 와 같다. 격자 높이 계산(`TeamDraftView.grid_h`)이 읽는다.
 const CELL_W: float = 200.0
 const CELL_H: float = 200.0
-
-const BORDER_W: int = 3
-const BORDER_W_SEL: int = 4
-const RADIUS: int = 14
-
-const BG_OFF := OutgameTheme.SURFACE
-const BG_ON  := OutgameTheme.ACCENT_DIM
-const BORDER_OFF := OutgameTheme.BORDER
-const BORDER_ON  := OutgameTheme.ACCENT
 
 ## 꼬리표 높이 — 폭은 글자 수로 정한다(`set_tag`).
 const TAG_H: float = 34.0
@@ -140,13 +133,9 @@ static func total_stats(p: PlayerData) -> int:
 	return p.stat_total()
 
 
-## 선택 상태 → 칸 테두리 · 바탕. 상태가 정하는 모양이라 코드에 남는다.
+## 선택 상태 → 칸의 테마 변형(테두리 · 바탕). 상태라 코드가 이름만 바꾼다.
 func _apply_style() -> void:
-	var bg := OutgameTheme.flat_style(BG_ON if _selected else BG_OFF, RADIUS,
-			BORDER_ON if _selected else BORDER_OFF,
-			BORDER_W_SEL if _selected else BORDER_W)
-	for st in ["normal", "hover", "pressed", "focus", "disabled"]:
-		add_theme_stylebox_override(st, bg)
+	theme_type_variation = &"SelectableCardButtonOn" if _selected else &"SelectableCardButton"
 
 
 func _on_pressed() -> void:

@@ -17,7 +17,7 @@ script = ExtResource("1_list")
 
 [node name="Safe" type="Control" parent="."]
 unique_name_in_owner = true
-editor_description = "Safe area of the step — code sets offset_bottom = -bottom inset (RunSetupScreen.fit_insets)."
+editor_description = "Safe area of the step — code sets offset_bottom = -bottom inset (OutgameTheme.fit_bottom_bar)."
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -66,7 +66,7 @@ theme_override_constants/separation = 20
 
 [node name="Bar" type="HBoxContainer" parent="."]
 unique_name_in_owner = true
-editor_description = "Bottom action bar 뒤로 (1) / 다음 (2). Code adds the bottom inset and squares the corners (RunSetupScreen.fit_insets)."
+editor_description = "Bottom action bar 뒤로 (1) / 다음 (2) — Bar* variations, BarSeparator. Code adds only the bottom inset (OutgameTheme.fit_bottom_bar)."
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
@@ -82,11 +82,11 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
-theme_type_variation = &"GhostButton"
+theme_type_variation = &"BarGhostButton"
 theme_override_font_sizes/font_size = 30
 text = "뒤로"
 
-[node name="Sep" type="ColorRect" parent="Bar/Back"]
+[node name="Sep" type="Panel" parent="Bar/Back"]
 layout_mode = 1
 anchors_preset = 11
 anchor_left = 1.0
@@ -96,7 +96,7 @@ offset_left = -2.0
 grow_horizontal = 0
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.11, 0.11, 0.122, 0.14)
+theme_type_variation = &"BarSeparator"
 
 [node name="Next" type="Button" parent="Bar"]
 unique_name_in_owner = true
@@ -104,7 +104,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 2.0
 focus_mode = 0
-theme_type_variation = &"PrimaryButton"
+theme_type_variation = &"BarPrimaryButton"
 theme_override_font_sizes/font_size = 38
 disabled = true
 text = "다음"

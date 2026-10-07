@@ -7,10 +7,10 @@
 [sub_resource type="StyleBoxFlat" id="ArtMask_panel"]
 anti_aliasing = true
 bg_color = Color(1, 1, 1, 1)
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
 
 [sub_resource type="StyleBoxFlat" id="Check_panel"]
 bg_color = Color(0.961, 0.651, 0.137, 1)
@@ -27,7 +27,7 @@ corner_radius_bottom_right = 17
 corner_radius_bottom_left = 17
 
 [node name="PilotThumb" type="Button"]
-editor_description = "One cell of the lineup grid (TeamDraftView %Grid). Square 200x200. Frame style (selected / not) is state → code (_apply_style). Face texture, role badge colour, salary tag text + width are data → code."
+editor_description = "One cell of the lineup grid (TeamDraftView %Grid). Square 200x200. Frame = variation SelectableCardButton / SelectableCardButtonOn (radius 18), switched by code (_apply_style); ArtMask radius 14 = 18 - its 4px inset. Face texture, role badge colour, salary tag text + width are data → code."
 clip_contents = true
 custom_minimum_size = Vector2(200, 200)
 offset_right = 200.0
@@ -35,6 +35,7 @@ offset_bottom = 200.0
 focus_mode = 0
 mouse_filter = 1
 theme = ExtResource("2_theme")
+theme_type_variation = &"SelectableCardButton"
 script = ExtResource("1_thumb")
 
 [node name="ArtMask" type="Panel" parent="."]

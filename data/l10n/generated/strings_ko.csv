@@ -387,6 +387,36 @@ tx_FGE0Q8F8K1,손에 들어올 때마다 토큰 +1 (최대 {max})
 tx_VDYX47TMCF,재배치
 tx_HN02EYXPVV,사용 후 손 맨 왼쪽으로 돌아온다
 tx_6ABJNCRSQX,충전 {max}
+tx_AXYDKH476P,전략 점수
+tx_A1TGA4X65Q,비용
+tx_XEB6RPJC05,턴
+tx_9HV110GY44,전장 명중
+tx_G7GPVBZNB7,전장 회피
+tx_02V7FBV672,교전 명중
+tx_1Q25CTDX3T,교전 회피
+tx_M62DQZ05XH,필중 공격
+tx_CJFMY2DR98,소지 중
+tx_6BQ7XJWR21,버린 더미
+tx_H5PAQEGQXV,보호막
+tx_HGRGYX99JV,최대 체력
+tx_CM6RMDBSX5,버린 후
+tx_GN5YCE4A7K,공격력
+tx_XJ2AJAVDJJ,사거리
+tx_VK36455RKQ,체력
+tx_2NZDVYC400,성장
+tx_M7HE3QE7V3,필중
+tx_M6K3475MK0,공격
+tx_M3VS0RE5YB,교전
+tx_MD0WJ2YX9M,이동
+tx_AKRYXE0W1T,대상
+tx_SVFGB50VBG,범위
+tx_SNRNKTSHYA,뽑기
+tx_T31EZZ8PDE,버리기
+tx_GVP8VGG5RB,보존
+tx_XVGC6KXT1R,찾기
+tx_YX872B2X4H,생성
+tx_5D3XF18V32,회복
+tx_PNFKKTFY12,처치
 tx_J99WKD5PN8,운영형
 tx_KQSXCRDMQT,실전형
 tx_T2Z72WAY5Q,조직 운영에 밝은 감독 — 관리 · 멘탈 쪽으로 조금 기운 고른 분배
@@ -887,6 +917,104 @@ tx_G20TF9A18T,중위 — 메크 숙련도 관리 직접
 tx_5J2FWDTHHS,중하위 — 상대 분석 해석 직접
 tx_2B5FE3RAFT,하위
 tx_KRQHGMFDHP,최하위 — 예산 배분 · 시설 · 연봉까지 직접
+tx_WGVRW01FAK,탑
+tx_AEVV05C031,정글
+tx_AJHRSFRY14,미드
+tx_6FWKS7JH3P,원딜
+tx_KAGZSJJGSE,서폿
+tx_EZBAMWAM4S,모든 포지션
+tx_WSNKE2621M,탱커
+tx_4D3831EB17,격투
+tx_M2AK1SVDPW,암살
+tx_056W6M8DFW,서폿
+tx_MZDH1STRBM,원딜
+tx_AWJ076K0Q7,월
+tx_0J2DR8DPC8,화
+tx_BVST3R7BK6,수
+tx_MVCR2S5R3Y,목
+tx_16NB4JJ5HY,금
+tx_6F2ZGR3FA4,토
+tx_M7PKB0X6R3,일
+tx_HEGYK4ZZY2,월요일
+tx_KTHPN0ZYJY,화요일
+tx_GS42FX0A7J,수요일
+tx_AMZGQ0W711,목요일
+tx_CTKDXZ6N8Y,금요일
+tx_A2V55CP2PG,토요일
+tx_2T8VNW898G,일요일
+tx_H0KFNYPAP5,프리시즌
+tx_7FMTNWDQEH,프리시즌 국제대회
+tx_R7989QWV9W,미드시즌
+tx_X2MAQTBFYH,미드시즌 국제대회
+tx_1476RV94TH,정규시즌
+tx_FDBQJHRWBQ,정규시즌 국제대회
+tx_XG1M9ND3NM,국제대회
+tx_ST46WS1MDQ,전장 명중
+tx_45H5GEFYKX,전장 회피
+tx_Z9BYFSRBZ5,교전 명중
+tx_E81Q2HB2QS,교전 회피
+tx_NZ8J811NK6,공격 성장
+tx_9SGTNE082E,체력 성장
+tx_1M94DFD405,전명
+tx_FYFAJ8GC5N,전회
+tx_FCMSTM5MAK,교명
+tx_SN9QJ1JZF0,교회
+tx_RNKSXJ1BRC,공성
+tx_VQ5EQRK722,체성
+tx_NP797WYRHS,전장 교전과 공격 카드의 명중 판정에 쓰인다. 상대 전장 회피와의 비가 확률을 정한다.
+tx_ZXHHD0P38E,전장에서 맞을 확률을 낮춘다. 상대 전장 명중과의 비가 확률을 정한다.
+tx_X87R5A0F2R,교전 무대에서만 읽는 명중. 전장 명중과 따로 산다.
+tx_09KVNQHFWR,교전 무대에서만 읽는 회피. 전장 회피와 따로 산다.
+tx_W8S8Z4NAEW,성장치가 공격력으로 바뀌는 기울기. 기준치에서 ×1.0 이고 상한이 없다.
+tx_C4S174WKKD,성장치가 최대 체력으로 바뀌는 기울기. 기준치에서 ×1.0 이고 상한이 없다.
+tx_2EY9076J9H,성장
+tx_P3CT377PM2,교전
+tx_38BCDRTBF7,매복
+tx_1A1V3BA2AF,공격
+tx_C2DPZG9YQF,방어
+tx_25DP1B49ED,유틸리티
+tx_9T5PRVVM4E,뽑기
+tx_4M1A6Z1EJA,정글
+tx_5A1V09D3HA,라인전
+tx_AXHT969FXE,일반
+tx_D41QQZRCGD,고급
+tx_2VJCYJ4V0W,희귀
+tx_HQ80SX4DB0,영웅
+tx_T1GJ91RP73,전설
+tx_0KSNX63V29,체력
+tx_CT45F83FMW,최대 체력
+tx_DM2CD6EQG8,공격력
+tx_M0NZA7QAV5,보호막
+tx_VP2WZCKCPR,존재감
+tx_25V6NCVTVV,훈련 편성
+tx_D6PVFND3FB,메크 숙련도
+tx_22VDY4GM0D,상대 분석
+tx_MH05JHB9TC,예산 · 시설
+tx_68VDV4VS14,교전
+tx_YH61BAWPXA,전략 점수
+tx_T4AGVJ1QTV,로밍
+tx_5DBHZ89CP0,성장
+tx_8TD0YTVTEE,오브젝트
+tx_Q2WE5344TP,전투
+tx_5PRQY2H55H,지원
+tx_K15PVR5AZG,처치 관여
+tx_46JEWXCS33,포탑 파괴
+tx_48MWZC5336,취약
+tx_16H8JD32NR,아군
+tx_4HQK9Q9T8J,적군
+tx_R68VA861B3,레벨업 재화
+tx_PZBVMHMKQ5,{n}주차
+tx_E5R6MY0APC,{n}주
+tx_08849WB92D,{win}승 {loss}패
+tx_PR6YFXCW5G,감독
+tx_MPYSG5BX0Y,스태프
+tx_0ZQK3N7THW,파일럿 카드
+tx_QH1DC5S3H2,메크 카드
+tx_SN7SJKAZQ2,덱
+tx_7ZE1GEB58D,훈련
+tx_BXYJXH1JEK,기자회견
+tx_F28RBDEGBX,면담
+tx_1AHEKW5X7X,외출
 tx_KEVDQS5CGB,기초 훈련
 tx_SN9RWDKSD9,기초 훈련 2
 tx_ETXQNX2FF3,사격 훈련
@@ -978,3 +1106,43 @@ tx_53D7BPJQBK,시설 유지비 +{p1}%
 tx_FNN91QZ7T0,첫 자동 드로우 {p1}장
 tx_6XQ3A0Q7JP,손패 상한 {p1}
 tx_6HNYQXB6DT,작전 단계마다 첫 카드 비용 +{p1}
+tx_YE7AM14AWS,확인
+tx_GS4FN31BK4,취소
+tx_R1DMEF1S3E,닫기
+tx_GNK4E0021C,다음
+tx_MJ7K2HGT5F,이전
+tx_AT96DE2X15,뒤로
+tx_SJYVDFB5JD,구매
+tx_6H9P8NYD5D,수령
+tx_H8Z5ZYFV5C,교환
+tx_3RH196ZEX4,계속
+tx_5SH8D92XHP,레벨업
+tx_RH1YF1BXER,제거
+tx_Z9ZF4N1PB5,재설정
+tx_G4ST94AS6V,사용
+tx_AXDS9AXT95,로비로
+tx_1CXXKQSFYQ,화면을 눌러 계속
+tx_RQE8VZW0ST,없음
+tx_18TM214PEP,전체
+tx_D6A8HQG31W,현재
+tx_FCH5Y9PKAK,잠김
+tx_MQ1VXWXR6C,미보유
+tx_BD4TNS9ZGD,기록 없음
+tx_KSPTT1YQVS,최고 레벨
+tx_BPV8CFT8GC,남은 시간
+tx_TX2ZDJFW9T,최고 레벨입니다
+tx_V9Y1AFMM59,저장 실패: {error}
+tx_RZZD6A6587,프로필 저장 실패: {error}
+tx_5QKX4WGHKZ,재화가 부족합니다 ({n} 필요)
+tx_R1GNPFSHS2,", "
+tx_G8B83EH68G,선수 5명을 골라야 합니다 ({n}명)
+tx_XCDR7YYQ5X,알 수 없는 선수 id {id}
+tx_SB3Y7FCB40,보유하지 않은 선수입니다: {name}
+tx_PFQCMGEGEZ,같은 포지션을 두 명 고를 수 없습니다
+tx_70MQWR6PN8,{name}의 레벨 {level}은(는) 고를 수 없습니다
+tx_JZ4R0P1ESK,샐러리캡 초과 ({total} / {cap})
+tx_6SXP0BZA8B,알 수 없는 팀 id {id}
+tx_HEE9SJ62Q8,알 수 없는 시나리오 id {id}
+tx_VP8YTRQNQD,감독 프리셋: {error}
+tx_GDG84BJV4A,더 올릴 수 없습니다
+tx_9AYQATFV5B,레벨업 재화가 부족합니다 ({n} 필요)

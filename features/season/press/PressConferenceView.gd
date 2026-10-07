@@ -22,15 +22,6 @@ extends Control
 # (`%MessengerView_Messenger`, its `outcome_hint` set in the scene). Create with
 # `PressConferenceView.create()` (`.new()` is an empty Control).
 
-const PHASE_NAMES: Dictionary = {
-	GameEnums.SeasonPhase.PRESEASON:      "프리시즌",
-	GameEnums.SeasonPhase.PRESEASON_INTL: "프리시즌 국제대회",
-	GameEnums.SeasonPhase.MIDSEASON:      "미드시즌",
-	GameEnums.SeasonPhase.MIDSEASON_INTL: "미드시즌 국제대회",
-	GameEnums.SeasonPhase.REGULAR:        "정규시즌",
-	GameEnums.SeasonPhase.REGULAR_INTL:   "정규시즌 국제대회",
-}
-
 const SCENE_PATH: String = "res://features/season/press/UI_View_PressConferenceView.tscn"
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
@@ -70,7 +61,7 @@ func _restart() -> void:
 		_messenger.open("", "기자회견", null, ["*오늘은 질문이 없습니다."], [])
 		return
 	var sub: String = "%s · %d주차 · %s 기자" % [
-		PHASE_NAMES.get(int(s["current_phase"]), "—"), int(s["phase_week"]),
+		GameEnums.phase_label(int(s["current_phase"])), int(s["phase_week"]),
 		String(view["tag"]) if String(view["tag"]) != "" else "e스포츠"]
 	_messenger.open(sub, "기자회견", null, view["lines"], view["choices"])
 

@@ -18,6 +18,8 @@
     "ignore_paths": [
       "res://features/battle_sim/debug/",
       "res://features/match_flow/MatchCheatMenu.gd",
+      "res://features/match_flow/UI_View_MatchCheatMenu.tscn",
+      "res://features/match_flow/UI_Comp_MatchCheatItem.tscn",
       "res://resources/UiSceneDump.gd",
       "res://resources/UiSceneDumpRunner.gd"
     ]

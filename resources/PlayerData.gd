@@ -44,20 +44,43 @@ var name: String:
 const STAT_KEYS: Array = [
 	"field_hit", "field_eva", "engage_hit", "engage_eva", "atk_growth", "hp_growth",
 ]
-const STAT_LABELS: Array = [
-	"전장 명중", "전장 회피", "교전 명중", "교전 회피", "공격 성장", "체력 성장",
+## 이름 · 약칭 · 한 줄 설명의 l10n key — `STAT_KEYS` 와 같은 순서. 화면은 표를 직접
+## 읽지 않고 `stat_label(i)` · `stat_short(i)` · `stat_note(i)` 로 번역된 글자를 받는다.
+const STAT_LABELS: Array = [  # l10n-keys: term.stat.*.name
+	L.TERM_STAT_FIELD_HIT_NAME, L.TERM_STAT_FIELD_EVA_NAME, L.TERM_STAT_ENGAGE_HIT_NAME,
+	L.TERM_STAT_ENGAGE_EVA_NAME, L.TERM_STAT_ATK_GROWTH_NAME, L.TERM_STAT_HP_GROWTH_NAME,
 ]
-const STAT_SHORT: Array = ["전명", "전회", "교명", "교회", "공성", "체성"]
+const STAT_SHORT: Array = [  # l10n-keys: term.stat.*.short
+	L.TERM_STAT_FIELD_HIT_SHORT, L.TERM_STAT_FIELD_EVA_SHORT, L.TERM_STAT_ENGAGE_HIT_SHORT,
+	L.TERM_STAT_ENGAGE_EVA_SHORT, L.TERM_STAT_ATK_GROWTH_SHORT, L.TERM_STAT_HP_GROWTH_SHORT,
+]
 ## 한 줄 설명. 숫자만으로는 "그래서 무엇을 가르는 값인가"가 안 나오는 자리
 ## (파일럿 상세 패널 · 훈련 결과 · 드래프트 팝업)가 함께 읽는다.
-const STAT_NOTES: Array = [
-	"전장 교전과 공격 카드의 명중 판정에 쓰인다. 상대 전장 회피와의 비가 확률을 정한다.",
-	"전장에서 맞을 확률을 낮춘다. 상대 전장 명중과의 비가 확률을 정한다.",
-	"교전 무대에서만 읽는 명중. 전장 명중과 따로 산다.",
-	"교전 무대에서만 읽는 회피. 전장 회피와 따로 산다.",
-	"성장치가 공격력으로 바뀌는 기울기. 기준치에서 ×1.0 이고 상한이 없다.",
-	"성장치가 최대 체력으로 바뀌는 기울기. 기준치에서 ×1.0 이고 상한이 없다.",
+const STAT_NOTES: Array = [  # l10n-keys: term.stat.*.note
+	L.TERM_STAT_FIELD_HIT_NOTE, L.TERM_STAT_FIELD_EVA_NOTE, L.TERM_STAT_ENGAGE_HIT_NOTE,
+	L.TERM_STAT_ENGAGE_EVA_NOTE, L.TERM_STAT_ATK_GROWTH_NOTE, L.TERM_STAT_HP_GROWTH_NOTE,
 ]
+
+
+## 스탯 `i`(`STAT_KEYS` 순)의 이름 — 현재 로케일. 범위 밖은 "".
+static func stat_label(i: int) -> String:
+	if i < 0 or i >= STAT_LABELS.size():
+		return ""
+	return Loc.t(String(STAT_LABELS[i]))  # l10n-dynamic: term.stat.*.name
+
+
+## 스탯 `i` 의 약칭(좁은 칸) — 현재 로케일. 범위 밖은 "".
+static func stat_short(i: int) -> String:
+	if i < 0 or i >= STAT_SHORT.size():
+		return ""
+	return Loc.t(String(STAT_SHORT[i]))  # l10n-dynamic: term.stat.*.short
+
+
+## 스탯 `i` 의 한 줄 설명 — 현재 로케일. 범위 밖은 "".
+static func stat_note(i: int) -> String:
+	if i < 0 or i >= STAT_NOTES.size():
+		return ""
+	return Loc.t(String(STAT_NOTES[i]))  # l10n-dynamic: term.stat.*.note
 
 ## 성장 계수 배율의 기준점 — 이 값에서 배율이 정확히 1.0 이 되고, 그 1.0 이
 ## 지금의 밸런스(`BattleSim.GROWTH_ATK_PER_SCORE` 그대로)다.

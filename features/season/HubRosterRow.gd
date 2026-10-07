@@ -29,7 +29,7 @@ func set_role(role: int) -> void:
 	var cols: Array = %Stats.get_children()
 	for s in cols.size():
 		(cols[s].get_node("Key") as Label).text = \
-				String(PlayerData.STAT_SHORT[s]) if s < PlayerData.STAT_SHORT.size() else ""
+				PlayerData.stat_short(s)
 
 
 ## Fills the row with `p` (null = empty seat). `trust` / `trust_max` are only read when `p` is set.

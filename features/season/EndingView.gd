@@ -85,7 +85,7 @@ func _refresh_recap() -> void:
 	var intl: InternationalTournament = _intl
 	for i in mini(PHASE_ORDER.size(), _phase_lines.size()):
 		var phase: int = int(PHASE_ORDER[i])
-		var phase_name: String = HubView.PHASE_NAMES.get(phase, "—")
+		var phase_name: String = GameEnums.phase_label(phase)
 		var entry: Dictionary = pr.get(phase, {})
 		var line: String = phase_name
 		if _is_intl_phase(phase):

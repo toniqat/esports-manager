@@ -71,7 +71,7 @@ func refresh() -> void:
 		return
 
 	var phase: int = int(_gm.season_state["current_phase"])
-	%Phase.text = "현재 페이즈: %s" % HubView.PHASE_NAMES.get(phase, "—")
+	%Phase.text = "현재 페이즈: %s" % GameEnums.phase_label(phase)
 
 	if not _tournament.is_active():
 		%Empty.visible = true

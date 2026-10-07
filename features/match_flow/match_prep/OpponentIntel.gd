@@ -140,8 +140,7 @@ static func interpret(_state: Dictionary, rows: Array, tier: int) -> Array:
 
 # ── Internals ─────────────────────────────────────────────────────────────────
 static func _row_for(state: Dictionary, p: PlayerData, tier: int) -> Dictionary:
-	var role_label: String = String(GameEnums.POSITION_LABELS.get(
-			GameEnums.position_key(p.role), "—"))
+	var role_label: String = GameEnums.role_position_label(p.role)
 	var row: Dictionary = {
 		"pilot_id": p.id, "name": p.name, "role": p.role, "role_label": role_label,
 		"show_stats": tier >= TIER_APPROX, "exact": tier >= TIER_MECHS,
@@ -155,7 +154,7 @@ static func _row_for(state: Dictionary, p: PlayerData, tier: int) -> Dictionary:
 	for i in PlayerData.STAT_KEYS.size():
 		var v: int = int(p.get(String(PlayerData.STAT_KEYS[i])))
 		total += v
-		var cell: Dictionary = {"label": String(PlayerData.STAT_SHORT[i]), "text": "?", "value": -1}
+		var cell: Dictionary = {"label": PlayerData.stat_short(i), "text": "?", "value": -1}
 		if tier >= TIER_MECHS:
 			cell["text"] = "%d" % v
 			cell["value"] = v
@@ -226,7 +225,7 @@ static func _top_stat_label(r: Dictionary) -> String:
 		if v > best_v:
 			best_v = v
 			best_i = i
-	return String(PlayerData.STAT_LABELS[best_i])
+	return PlayerData.stat_label(best_i)
 
 
 # Highest-mastery mech on their side; ties (and the no-mastery fallback) go to

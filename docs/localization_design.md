@@ -50,7 +50,68 @@
 - **씬 · 코드 리터럴 이행** (§14 2~6, §15 7단계) — 1차 구현 시점 고아 텍스트: 코드 약 1,500 · 씬 약 570 (`build dev` → `report.md` W052 · W053). 이행이 끝나면 `strict.orphans = error`.
 - **en 번역 검수 · approve** — 데이터 텍스트 979행이 전부 `draft`. 오너가 검수 후 `approve`.
 - **CI release 연동** — §15 아래 TODO (D13).
-- **알려진 남은 항목:** `pilot_skills` · `mech_passives` 의 `keyword` 태그 컬럼(로밍 · 성장 등 한글 표시값)은 data_columns 밖 · 아이콘 낱말 매칭(`KeywordIcon.WORDS`, "전략 점수" · "비용" · "N턴")이 한글만 알아 en 에서 낱말 아이콘이 빠짐 · 멘탈 사건이 남기는 `staff_mods.source = "mental:<id>"` 가 스태프 시트에 원문 그대로 · `CATEGORY_LABELS` · `TARGET_LABELS` · `STAT_LABELS` 등 코드 라벨 표.
+- **알려진 남은 항목:** 멘탈 사건이 남기는 `staff_mods.source = "mental:<id>"` 가 스태프 시트에 원문 그대로 · `TARGET_LABELS` 등 feature 폴더의 코드 라벨 표. (해결: `keyword` 태그 컬럼 → ascii id + `term.tag.*` · 아이콘 낱말 매칭 → `keyword.icon.*` 로케일별 · `CATEGORY_LABELS` · `STAT_LABELS` 등 공유 표 → §0.7)
+
+## 0.7 공유 어휘 (이행 기반)
+
+코드 · 씬 리터럴 이행(§14 2~3) 전에 **여러 화면이 같이 쓰는 말**을 먼저 key 로 만들고 헬퍼를 두었다. feature 폴더를
+이행할 때 같은 뜻의 key 를 새로 만들지 말고 아래를 쓴다. `ui.csv` · `term.csv` 에 행을 더하는 것은 기반 담당만 한다 —
+빠진 공유 낱말은 보고한다. 표(`*_LABELS` · `STAT_*` · `ROLE_NAMES` · `DAY_*`)의 값은 이제 **`L.` key** 이므로
+표 값을 화면에 그대로 찍지 말고 반드시 헬퍼를 부른다(그대로 찍으면 `tx_…` 가 보인다).
+
+### 헬퍼 (static, 현재 로케일 문자열을 돌려준다)
+
+| 헬퍼 | 반환 | key |
+|---|---|---|
+| `GameEnums.position_label(pos_key: String) -> String` | 포지션 이름 "탑" (모르는 키 "—") | `term.position.{top,jungle,mid,carry,support}` |
+| `GameEnums.role_position_label(role: int) -> String` | `position_label(position_key(role))` | 〃 |
+| `GameEnums.phase_label(phase: int) -> String` | 시즌 페이즈 이름 "프리시즌 국제대회" (모르는 값 "—") — 네 화면의 `PHASE_NAMES` 표 대신 | `term.phase.{preseason,preseason_intl,midseason,midseason_intl,regular,regular_intl}` |
+| `GameEnums.rarity_label(tier: int) -> String` | 등급 0..4 일반 · 고급 · 희귀 · 영웅 · 전설 (양끝으로 자름). 기벽 3단(일반 · 희귀 · 영웅)은 0 · 2 · 3 으로 옮겨 부른다 | `term.rarity.{common,uncommon,rare,epic,legendary}` |
+| `GameEnums.tag_label(tag_id: String)` · `GameEnums.tags_text(raw: String) -> String` | 스킬 · 패시브 성향 태그 — `keyword` 셀(`engage\|strategy`) → "교전, 전략 점수" | `term.tag.*` |
+| `PlayerData.stat_label(i: int)` · `stat_short(i)` · `stat_note(i)` | 스탯 여섯(`STAT_KEYS` 순) 이름 · 약칭 · 한 줄 설명 (범위 밖 "") | `term.stat.<stat_key>.{name,short,note}` |
+| `OutgameTheme.role_name(i: int)` | 메크 역할군 탱커 · 격투 · 암살 · 서폿 · 원딜 (`GameEnums.Role` 순) | `term.mech_role.{tank,fighter,assassin,support,sniper}` |
+| `OutgameTheme.day_letter(i: int)` · `day_name(i)` | 요일 월(0) … 일(6) — 약칭 "월" / 이름 "월요일" (범위 밖 "") | `term.day.short.*` · `term.day.long.*` (`mon` … `sun`) |
+| `CardData.category_label(cat: String)` (static) | 카드 분류 하나 "성장" (모르는 id 그대로). 카드 한 장의 목록은 인스턴스 `categories_text()` | `term.card_cat.*` |
+| `CardData.scope_label(scope)` | "모든 포지션" / "탑 · 미드" | `term.position.all` + 위 |
+| `RunRules.area_label(area)` | 감독 운영 영역 "훈련 편성" … | `term.area.{training,knowledge,analysis,finance}` |
+
+### `ui` 도메인 — 뜻이 어디서나 같은 UI 낱말
+
+| alias 묶음 | 내용 |
+|---|---|
+| `ui.button.*` | `confirm` 확인 · `cancel` 취소 · `close` 닫기 · `next` 다음 · `prev` 이전 · `back` 뒤로 · `buy` 구매 · `claim` 수령 · `exchange` 교환 · `continue` 계속 · `level_up` 레벨업 · `remove` 제거 · `reset` 재설정 · `use` 사용 · `to_lobby` 로비로 · `tap_to_continue` 화면을 눌러 계속 |
+| `ui.word.*` | `none` 없음 · `all` 전체 · `current` 현재 · `locked` 잠김 · `unowned` 미보유 · `no_record` 기록 없음 · `max_level` 최고 레벨 · `time_left` 남은 시간 |
+| `ui.message.max_level` | 최고 레벨입니다 |
+| `ui.error.*` | `save_failed` "저장 실패: {error}" · `profile_save_failed` "프로필 저장 실패: {error}" · `not_enough_currency` "재화가 부족합니다 ({n} 필요)" |
+| `ui.list_separator` | ", " — 목록 잇기 `Loc.t(L.UI_LIST_SEPARATOR).join(parts)`. `" · "` 같은 기호 구분자는 글자가 없어 key 가 아니다 |
+| `ui.lineup.*` · `ui.run.*` · `ui.level_up.*` | `RunRules.validate_lineup` · `GameManager.start_run` · `ProfileManager.level_up_pilot` 오류 문장 (돌려줄 때 이미 번역됨) |
+
+### `term` 도메인 — 게임 어휘 (뜻이 하나)
+
+위 헬퍼의 key 들 + `term.position.all` 모든 포지션 · `term.phase.intl` 국제대회(특정 페이즈가 아닐 때) ·
+`term.combat.{hp,max_hp,atk,shield,presence}` 체력 · 최대 체력 · 공격력 · 보호막 · 존재감 ·
+`term.side.{ally,enemy}` 아군 · 적군 · `term.currency.levelup` 레벨업 재화 · `term.week.nth` "{n}주차" ·
+`term.week.count` "{n}주" · `term.record.win_loss` "{win}승 {loss}패" · `term.person.{manager,staff}` 감독 · 스태프 ·
+`term.card.{pilot_card,mech_card,deck}` 파일럿 카드 · 메크 카드 · 덱 ·
+`term.activity.{training,press,interview,outing}` 훈련 · 기자회견 · 면담 · 외출.
+단독 낱말로 쓸 때만 이 key 를 쓴다 — 문장 안에 든 같은 낱말은 그 문장의 key 하나로 쓴다(§6.1).
+
+### `keyword.icon.*` — 설명문 아이콘 낱말 (표시하지 않는 매칭 표)
+
+`StrategyIcon` · `KeywordIcon` 이 설명문에서 아이콘을 앞에 세울 낱말을 **현재 로케일 번역값**으로 찾는다.
+번역값 = 그 언어 설명문의 표기, `|` = 다른 표기(en `kill|killed`), 대소문자 무시, 라틴 낱말은 낱말 경계(복수 `s` 포함).
+지속시간은 `keyword.icon.duration_suffix`(ko "턴", en "turns|turn", 숫자와 사이 공백 하나 허용).
+**en 설명문 표기를 바꾸면 이 표의 en 값도 같이 맞춘다.**
+
+### 그 밖에
+
+- 페이즈 이름: `HubView` · `LeagueView` · `PressConferenceView` · `WeekProgressView` 의 `PHASE_NAMES` 와 그것을 빌려 쓰는
+  `HomeTab` · `RunResultScreen` · `EndingView` · `GameOverView` · `BracketView` · `IntlBracketView` 는 각 feature 이행 때
+  `GameEnums.phase_label(phase)` 로 바꾼다(표를 없앤다).
+- 특성 · 기벽 등급(`TraitSystem.RARITY_NAMES`, `QuirkSystem.GRADE_NAMES`)은 `GameEnums.rarity_label` 로 바꾼다.
+- 포지션 배지 글자(`GameEnums.POSITION_ABBREVS`, TOP · JGL …)는 번역하지 않는다.
+- `build`/`write_strings` 뒤 헤드리스로 씬을 돌려 확인할 때는 먼저 `godot --headless --path . --import` 로 `strings_*.csv`
+  를 다시 임포트한다 — 안 하면 새 key 가 `tx_…` 그대로 보인다.
 
 ---
 

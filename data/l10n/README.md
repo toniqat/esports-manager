@@ -9,6 +9,11 @@
 | `src/glossary.csv` | 용어집 (§4.5) | 사람 · LLM |
 | `generated/` | `strings_<loc>.csv` · `L.gd` · `refs.json`(커밋) · `index.json` · `report.md` · `extract_report.md` · `extract_code*.json`(gitignore) | **직접 수정 금지** — `build dev` 로 다시 만든다 |
 
+## 공유 도메인
+
+`ui.csv`(어디서나 같은 UI 낱말 · 공용 오류 문장) · `term.csv`(게임 어휘 — 포지션 · 페이즈 · 스탯 · 요일 · 등급 …) ·
+`keyword.csv` 의 `keyword.icon.*`(설명문 아이콘 낱말 매칭 표)는 기반 담당이 소유한다. 목록과 헬퍼는 설계서 §0.7.
+
 ## 규칙 요약
 
 - key 는 지어내지 않는다 — `new_key` · `new_keys`(일괄) / `extract` 로만 발급.

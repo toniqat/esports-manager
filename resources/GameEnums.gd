@@ -52,9 +52,10 @@ const POS_SUPPORT := "support"
 const POSITION_KEYS: Array = [POS_TOP, POS_JUNGLE, POS_MID, POS_CARRY, POS_SUPPORT]
 ## `scope = lane` 이 뜻하는 네 포지션.
 const LANE_POSITIONS: Array = [POS_TOP, POS_MID, POS_CARRY, POS_SUPPORT]
-const POSITION_LABELS: Dictionary = {
-	POS_TOP: "탑", POS_JUNGLE: "정글", POS_MID: "미드",
-	POS_CARRY: "원딜", POS_SUPPORT: "서폿",
+## 포지션 키 → 이름 l10n key. 화면은 `position_label(key)` 로 읽는다.
+const POSITION_LABELS: Dictionary = {  # l10n-keys: term.position.*
+	POS_TOP: L.TERM_POSITION_TOP, POS_JUNGLE: L.TERM_POSITION_JUNGLE, POS_MID: L.TERM_POSITION_MID,
+	POS_CARRY: L.TERM_POSITION_CARRY, POS_SUPPORT: L.TERM_POSITION_SUPPORT,
 }
 ## 포지션 배지(`PositionBadge`)의 영문 약칭 — 파일럿 포지션을 보여 주는 모든 화면이 이 글자를 쓴다.
 const POSITION_ABBREVS: Dictionary = {
@@ -69,6 +70,18 @@ static func position_key(role: int) -> String:
 	return String(POSITION_KEYS[idx]) if idx >= 0 else ""
 
 
+## 포지션 키 → 현재 로케일 이름("탑" · "Top"). 모르는 키는 "—".
+static func position_label(pos_key: String) -> String:
+	if not POSITION_LABELS.has(pos_key):
+		return "—"
+	return Loc.t(String(POSITION_LABELS[pos_key]))  # l10n-dynamic: term.position.*
+
+
+## 역할 → 포지션 이름 (`position_label(position_key(role))`).
+static func role_position_label(role: int) -> String:
+	return position_label(position_key(role))
+
+
 enum SeasonPhase {
 	PRESEASON,        # Dec      — short league before first international
 	PRESEASON_INTL,   # Jan      — international tournament #1
@@ -77,6 +90,64 @@ enum SeasonPhase {
 	REGULAR,          # Jun–Sep  — main league
 	REGULAR_INTL,     # Oct–Nov  — final international (win = ending)
 }
+
+## 시즌 페이즈 → 이름 l10n key. 화면은 `phase_label(phase)` 로 읽는다 — 화면마다
+## 페이즈 이름 표를 따로 들지 않는다.
+const PHASE_LABELS: Dictionary = {  # l10n-keys: term.phase.*
+	SeasonPhase.PRESEASON:      L.TERM_PHASE_PRESEASON,
+	SeasonPhase.PRESEASON_INTL: L.TERM_PHASE_PRESEASON_INTL,
+	SeasonPhase.MIDSEASON:      L.TERM_PHASE_MIDSEASON,
+	SeasonPhase.MIDSEASON_INTL: L.TERM_PHASE_MIDSEASON_INTL,
+	SeasonPhase.REGULAR:        L.TERM_PHASE_REGULAR,
+	SeasonPhase.REGULAR_INTL:   L.TERM_PHASE_REGULAR_INTL,
+}
+
+
+## 시즌 페이즈 → 현재 로케일 이름("프리시즌 국제대회" …). 모르는 값은 "—".
+static func phase_label(phase: int) -> String:
+	if not PHASE_LABELS.has(phase):
+		return "—"
+	return Loc.t(String(PHASE_LABELS[phase]))  # l10n-dynamic: term.phase.*
+
+
+## 등급 이름 0..4 (일반 · 고급 · 희귀 · 영웅 · 전설) — 특성 · 기벽이 함께 쓴다.
+## 범위 밖은 양끝으로 자른다. 3단 등급(기벽 일반 · 희귀 · 영웅)은 부르는 쪽이 0 · 2 · 3 으로 옮긴다.
+const RARITY_LABELS: Array = [  # l10n-keys: term.rarity.*
+	L.TERM_RARITY_COMMON, L.TERM_RARITY_UNCOMMON, L.TERM_RARITY_RARE,
+	L.TERM_RARITY_EPIC, L.TERM_RARITY_LEGENDARY,
+]
+
+
+static func rarity_label(tier: int) -> String:
+	return Loc.t(String(RARITY_LABELS[clampi(tier, 0, RARITY_LABELS.size() - 1)]))  # l10n-dynamic: term.rarity.*
+
+
+# ─── 성향 태그 (`pilot_skills.keyword` · `mech_passives.keyword`) ─────────────
+# CSV 값은 `|` 로 이은 ascii id(`engage|strategy`). 표시만 한다 — 규칙이 읽지 않는다.
+const TAG_LABELS: Dictionary = {  # l10n-keys: term.tag.*
+	"engage": L.TERM_TAG_ENGAGE, "strategy": L.TERM_TAG_STRATEGY, "roam": L.TERM_TAG_ROAM,
+	"growth": L.TERM_TAG_GROWTH, "objective": L.TERM_TAG_OBJECTIVE, "combat": L.TERM_TAG_COMBAT,
+	"support": L.TERM_TAG_SUPPORT, "kill_assist": L.TERM_TAG_KILL_ASSIST,
+	"turret_kill": L.TERM_TAG_TURRET_KILL, "vulnerable": L.TERM_TAG_VULNERABLE,
+}
+
+
+## 태그 id 하나 → 이름. 모르는 id 는 그대로.
+static func tag_label(tag_id: String) -> String:
+	if not TAG_LABELS.has(tag_id):
+		return tag_id
+	return Loc.t(String(TAG_LABELS[tag_id]))  # l10n-dynamic: term.tag.*
+
+
+## `keyword` 셀(`engage|strategy`) → "교전, 전략 점수". 빈 셀은 "".
+static func tags_text(raw: String) -> String:
+	var names: PackedStringArray = []
+	for t in raw.split("|", false):
+		var tag_id: String = String(t).strip_edges()
+		if not tag_id.is_empty():
+			names.append(tag_label(tag_id))
+	return Loc.t(L.UI_LIST_SEPARATOR).join(names)
+
 
 # Result of a single league match-day or playoff series.
 enum MatchDayResult { PENDING, WIN, LOSS }

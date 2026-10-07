@@ -11,8 +11,6 @@ extends Control
 # **포기로 정산**(`RunResult.settle_current_run("abandon")`, 실패 정산이지만 보상은
 # 준다)하고 정산 화면으로 간다. 그 화면의 `새 런` 이 런 준비로 잇는다.
 
-const PHASE_NAMES: Dictionary = HubView.PHASE_NAMES
-const WEEKDAY_NAMES: Array = OutgameTheme.DAY_LETTERS
 const RUN_SETUP_SCENE: String = "res://scenes/RunSetup.tscn"
 const SCENE_PATH: String = "res://features/meta/lobby/UI_View_HomeTab.tscn"
 
@@ -82,7 +80,7 @@ func _fill() -> void:
 func _show_run(meta: Dictionary) -> void:
 	%EmptyCard.visible = false
 	%RunCard.visible = true
-	%Phase.text = String(PHASE_NAMES.get(int(meta.get("phase", 0)), "—"))
+	%Phase.text = GameEnums.phase_label(int(meta.get("phase", 0)))
 	%LiveChip.visible = bool(meta.get("match_in_progress", false))
 	%Date.text = "%d년 %d월 %d일 (%s)" % [
 			int(meta.get("year", 1)), int(meta.get("month", 12)),
@@ -99,8 +97,8 @@ func _show_run(meta: Dictionary) -> void:
 
 
 func _weekday_name(wd: int) -> String:
-	if wd >= 0 and wd < WEEKDAY_NAMES.size():
-		return String(WEEKDAY_NAMES[wd])
+	if wd >= 0 and wd < OutgameTheme.DAY_LETTERS.size():
+		return OutgameTheme.day_letter(wd)
 	return "?"
 
 

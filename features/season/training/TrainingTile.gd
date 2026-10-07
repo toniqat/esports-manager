@@ -423,7 +423,7 @@ func _stat_exp_summary() -> String:
 		var key: String = String(PlayerData.STAT_KEYS[i])
 		if per_cell_exp.has(key):
 			parts.append(Loc.t(L.TRAINING_EXP_STAT, {
-					"stat": String(PlayerData.STAT_LABELS[i]), "n": int(per_cell_exp[key])}))
+					"stat": PlayerData.stat_label(i), "n": int(per_cell_exp[key])}))
 	return Loc.t(L.TRAINING_LIST_SEP).join(parts)
 
 
@@ -447,7 +447,7 @@ func effect_summary() -> String:
 		if stat_key != "all":
 			var i: int = PlayerData.STAT_KEYS.find(stat_key)
 			if i >= 0:
-				stat_label = String(PlayerData.STAT_LABELS[i])
+				stat_label = PlayerData.stat_label(i)
 		parts.append(Loc.t(L.TRAINING_EFFECT_FLAT, {
 				"scope": scope_label, "stat": stat_label, "amount": "%+d" % int(cl["amount"])}))
 	# Quirk ops act on the pilot of each quirk (`Q`) cell.

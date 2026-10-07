@@ -75,10 +75,10 @@ static func _team_package(team_id: int) -> Dictionary:
 ## `manual_areas` 의 영역 키 → 화면 표기.
 static func area_label(area: String) -> String:
 	match area:
-		"training":  return "훈련 편성"
-		"knowledge": return "메크 숙련도"
-		"analysis":  return "상대 분석"
-		"finance":   return "예산 · 시설"
+		"training":  return Loc.t(L.TERM_AREA_TRAINING)
+		"knowledge": return Loc.t(L.TERM_AREA_KNOWLEDGE)
+		"analysis":  return Loc.t(L.TERM_AREA_ANALYSIS)
+		"finance":   return Loc.t(L.TERM_AREA_FINANCE)
 	return area
 
 
@@ -215,7 +215,7 @@ static func lineup_salary(pilots: Array, levels: Dictionary) -> int:
 static func validate_lineup(pilot_ids: Array, levels: Dictionary, scenario_id: int,
 		pool: Array, owned_max_levels: Dictionary, cap_bonus: int = 0) -> String:
 	if pilot_ids.size() != 5:
-		return "선수 5명을 골라야 합니다 (%d명)" % pilot_ids.size()
+		return Loc.t(L.UI_LINEUP_NEED_FIVE, {"n": pilot_ids.size()})
 	var by_id: Dictionary = {}
 	for raw in pool:
 		by_id[(raw as PlayerData).id] = raw
@@ -224,21 +224,21 @@ static func validate_lineup(pilot_ids: Array, levels: Dictionary, scenario_id: i
 	for pid in pilot_ids:
 		var id_i: int = int(pid)
 		if not by_id.has(id_i):
-			return "알 수 없는 선수 id %d" % id_i
+			return Loc.t(L.UI_LINEUP_UNKNOWN_PILOT, {"id": id_i})
 		if not owned_max_levels.has(str(id_i)):
-			return "보유하지 않은 선수입니다: %s" % (by_id[id_i] as PlayerData).name
+			return Loc.t(L.UI_LINEUP_NOT_OWNED, {"name": (by_id[id_i] as PlayerData).name})
 		var pd := by_id[id_i] as PlayerData
 		if seen_roles.has(pd.role):
-			return "같은 포지션을 두 명 고를 수 없습니다"
+			return Loc.t(L.UI_LINEUP_DUPLICATE_POSITION)
 		seen_roles[pd.role] = true
 		var lv: int = int(levels.get(str(id_i), 1))
 		if lv < 1 or lv > int(owned_max_levels[str(id_i)]):
-			return "%s 의 레벨 %d 은(는) 고를 수 없습니다" % [pd.name, lv]
+			return Loc.t(L.UI_LINEUP_LEVEL_NOT_ALLOWED, {"name": pd.name, "level": lv})
 		picked.append(pd)
 	var cap: int = maxi(0, salary_cap(scenario_id) + cap_bonus)
 	var total: int = lineup_salary(picked, levels)
 	if cap > 0 and total > cap:
-		return "샐러리캡 초과 (%d / %d)" % [total, cap]
+		return Loc.t(L.UI_LINEUP_OVER_CAP, {"total": total, "cap": cap})
 	return ""
 
 

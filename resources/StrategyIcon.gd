@@ -20,13 +20,18 @@ const COLOR := Color(0.25, 0.60, 1.00)
 const INDICATOR_FILL := Color(0.02, 0.02, 0.04, 1.0)
 ## 인디케이터 테두리 두께 — 꼭짓점 반지름에 대한 비율(아이콘 크기에 따라 같이 큰다).
 const INDICATOR_RIM_RATIO := 0.26
-const KEYWORD := "전략 점수"
-const COST_KEYWORD := "비용"
+## 아이콘 낱말 l10n key — 설명문의 "전략 점수" · "비용"(그 언어 표기)을 찾는다(`_match_words`).
+const KEYWORD := L.KEYWORD_ICON_STRATEGY  # l10n-keys: keyword.icon.strategy
+const COST_KEYWORD := L.KEYWORD_ICON_COST  # l10n-keys: keyword.icon.cost
 const NBSP := "\u00a0"
 ## `_tokens` 의 특수 키워드 조각 종류 — `[이름]` 의 안쪽 글자.
 const SPECIAL := "special"
 
 static var _tex_cache: Dictionary = {}
+## 현재 로케일로 펼친 매칭 낱말 · 턴 표기 캐시 (`_match_words`).
+static var _words: Array = []
+static var _suffixes: PackedStringArray = []
+static var _words_locale: String = ""
 
 
 ## 중심 `c`, 꼭짓점 반지름 `r` 의 팔각형 꼭짓점 8개 — 시계 방향. `flat` 이면
@@ -132,10 +137,10 @@ static func raster_convex(w: int, h: int, pts: PackedVector2Array, fill: Color,
 ## Korean particle tags → the form that fits the previous syllable.
 ## `{eul}` 을/를 · `{eun}` 은/는 · `{i}` 이/가 · `{wa}` 과/와.
 const JOSA := {
-	"eul": ["을", "를"],
-	"eun": ["은", "는"],
-	"i": ["이", "가"],
-	"wa": ["과", "와"],
+	"eul": ["을", "를"],  # l10n-ignore
+	"eun": ["은", "는"],  # l10n-ignore
+	"i": ["이", "가"],  # l10n-ignore
+	"wa": ["과", "와"],  # l10n-ignore
 }
 
 
@@ -186,11 +191,13 @@ static func _has_batchim(s: String) -> bool:
 ## 같은 자리에서 시작하는
 ## 낱말은 긴 쪽이 이긴다("공격력" > "공격"). **대괄호 안(`[공격 명령]` 같은 카드
 ## 이름)은 통째로 특수 키워드 한 조각이다** — 이름 한가운데 아이콘이 서지 않는다.
+##
+## 낱말은 현재 로케일 번역값으로 찾는다(`_match_words`) — 대소문자를 무시하고, 라틴 글자로
+## 시작하는 낱말은 낱말 경계에서만 잡는다("remove" 안의 "move" 는 아니다, 끝의 복수 `s` 는 함께).
 static func _tokens(text: String) -> Array:
 	text = resolve_josa(text)
-	var words: Array = [[KEYWORD, "strategy"], [COST_KEYWORD, "cost"]]
-	for w in KeywordIcon.WORDS:
-		words.append([String((w as Array)[0]), String((w as Array)[1])])
+	var words: Array = _match_words()
+	var lower: String = text.to_lower()
 	var out: Array = []
 	var plain: String = ""
 	var i: int = 0
@@ -206,7 +213,7 @@ static func _tokens(text: String) -> Array:
 				i = close + 1
 				continue
 		# 지속시간 — "3턴" · "(…)턴" 앞에 모래시계. 숫자의 첫 자리에서만 잡는다.
-		var dur_end: int = _duration_end(text, i)
+		var dur_end: int = _duration_end(text, lower, i)
 		if dur_end > i:
 			if not plain.is_empty():
 				out.append(plain)
@@ -214,13 +221,16 @@ static func _tokens(text: String) -> Array:
 			out.append([KeywordIcon.DURATION, text.substr(i, dur_end - i)])
 			i = dur_end
 			continue
-		var hit_word: String = ""
+		var hit_len: int = 0
 		var hit_kind: String = ""
 		for w in words:
 			var word: String = String((w as Array)[0])
-			if word.length() > hit_word.length() and text.substr(i, word.length()) == word:
-				hit_word = word
-				hit_kind = String((w as Array)[1])
+			if word.length() > hit_len and lower.substr(i, word.length()) == word:
+				var m_len: int = _bounded_len(lower, i, word.length())
+				if m_len > 0:
+					hit_len = m_len
+					hit_kind = String((w as Array)[1])
+		var hit_word: String = text.substr(i, hit_len)
 		if hit_word.is_empty():
 			plain += text[i]
 			i += 1
@@ -235,9 +245,47 @@ static func _tokens(text: String) -> Array:
 	return out
 
 
-## `i` 에서 시작하는 지속시간 표기("3턴" 또는 "(사용 횟수)턴")의 끝 — 아니면 `i`.
-## 숫자 한가운데(앞 글자도 숫자)에서는 잡지 않는다.
-static func _duration_end(text: String, i: int) -> int:
+## 현재 로케일의 아이콘 낱말 `[[소문자 낱말, 종류], …]` — 전략 점수 · 비용 + `KeywordIcon.words()`.
+## 턴 표기(`_suffixes`)도 함께 채운다. 로케일이 바뀌면 다시 펼친다.
+static func _match_words() -> Array:
+	var loc: String = TranslationServer.get_locale()
+	if loc != _words_locale or _words.is_empty():
+		_words = KeywordIcon.expand_words([[KEYWORD, "strategy"], [COST_KEYWORD, "cost"]])
+		_words.append_array(KeywordIcon.words())
+		_suffixes = []
+		# 지속시간 꼴 "3턴" · "(…)턴" 의 턴 표기 — 그 언어 표기(en `turns|turn`).
+		for alt in Loc.t(L.KEYWORD_ICON_DURATION_SUFFIX).split("|", false):
+			var suf: String = String(alt).strip_edges().to_lower()
+			if not suf.is_empty():
+				_suffixes.append(suf)
+		_words_locale = loc
+	return _words
+
+
+static func _is_latin(ch: String) -> bool:
+	var c: int = ch.unicode_at(0)
+	return (c >= 0x41 and c <= 0x5A) or (c >= 0x61 and c <= 0x7A)
+
+
+## 소문자 본문 `lower` 의 `i` 에서 길이 `n` 으로 맞은 낱말의 실제 길이 — 경계에 걸리면 0.
+## 라틴 글자 낱말만 경계를 본다: 앞 글자가 라틴이면 안 되고, 뒤 글자가 라틴이면 복수 `s`
+## 한 글자(그 뒤는 경계)만 붙여 준다. 한글 낱말은 경계 없이 그대로(조사가 바로 붙는다).
+static func _bounded_len(lower: String, i: int, n: int) -> int:
+	if not _is_latin(lower[i]):
+		return n
+	if i > 0 and _is_latin(lower[i - 1]):
+		return 0
+	var j: int = i + n
+	if j >= lower.length() or not _is_latin(lower[j]):
+		return n
+	if lower[j] == "s" and (j + 1 >= lower.length() or not _is_latin(lower[j + 1])):
+		return n + 1
+	return 0
+
+
+## `i` 에서 시작하는 지속시간 표기("3턴" · "(사용 횟수)턴" · en "3 turns")의 끝 — 아니면 `i`.
+## 숫자 한가운데(앞 글자도 숫자)에서는 잡지 않는다. 숫자와 턴 표기 사이 공백 하나는 허용.
+static func _duration_end(text: String, lower: String, i: int) -> int:
 	var n: int = text.length()
 	var j: int = i
 	if text[i] == "(":
@@ -250,8 +298,14 @@ static func _duration_end(text: String, i: int) -> int:
 			j += 1
 	else:
 		return i
-	if j < n and text[j] == "턴":
-		return j + 1
+	if j < n and text[j] == " ":
+		j += 1
+	_match_words()
+	for suf in _suffixes:
+		if lower.substr(j, suf.length()) == suf:
+			var m_len: int = _bounded_len(lower, j, suf.length())
+			if m_len > 0:
+				return j + m_len
 	return i
 
 

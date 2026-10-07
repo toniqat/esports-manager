@@ -2,6 +2,9 @@
 
 Godot singletons registered in `project.godot`. Available globally via `/root/<Name>`.
 
+Display text is l10n keys (`ui` domain) — the error strings `start_run` / `level_up_pilot` return are
+already translated (`Loc.t`) at the moment they are made; callers show them as-is, never compare them.
+
 ## Files
 
 ### GameManager.gd
@@ -108,6 +111,7 @@ When `match_ctx.active == false`, BattleSim falls back to `ROLE_STATS` defaults
 rosters via `RunRoster` → level my 5 → `team_rosters` → `season_state.run_setup`).
 `init_season(team_id := 0)` = `start_run(default_run_setup(team_id))` (editor
 direct-run default). Test runs (`use_test_run`) skip the profile ownership check.
+Errors come back as translated text (`ui.run.*`, `ui.lineup.*` from `RunRules.validate_lineup`).
 Full contract → `features/season/README.md` "Entry point".
 
 #### Run save target — `use_test_run`

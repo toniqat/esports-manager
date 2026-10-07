@@ -174,9 +174,9 @@ func level_up_cost(pilot_id: int) -> int:
 func level_up_pilot(pilot_id: int) -> String:
 	var cost: int = level_up_cost(pilot_id)
 	if cost < 0:
-		return "더 올릴 수 없습니다"
+		return Loc.t(L.UI_LEVEL_UP_CANNOT_RAISE)
 	if not spend_currency("levelup", cost):
-		return "레벨업 재화가 부족합니다 (%d 필요)" % cost
+		return Loc.t(L.UI_LEVEL_UP_NOT_ENOUGH, {"n": cost})
 	var e: Dictionary = profile["collection"][str(pilot_id)]
 	e["max_level"] = int(e.get("max_level", 1)) + 1
 	return ""

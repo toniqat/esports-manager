@@ -704,7 +704,7 @@ func _chip_defs() -> Array:
 				var line: Array = []
 				for j in range(i, mini(i + 2, PlayerData.STAT_KEYS.size())):
 					line.append([String(PlayerData.STAT_KEYS[j]),
-							String(PlayerData.STAT_LABELS[j])])
+							PlayerData.stat_label(j)])
 				defs.append(line)
 			return defs
 		_:
@@ -1858,7 +1858,7 @@ func _menu_note(key: String) -> String:
 	if STAT_NOTES.has(key):
 		return String(STAT_NOTES[key])
 	if key in PlayerData.STAT_KEYS:
-		return PlayerData.STAT_NOTES[PlayerData.STAT_KEYS.find(key)]
+		return PlayerData.stat_note(PlayerData.STAT_KEYS.find(key))
 	if key.begins_with("fx:src:"):
 		return "이 카드가 남긴 영구 가산분. 만료도 해제도 없고 같은 카드를 다시 쓰면 누적된다."
 	if key.begins_with("fx:rest:"):

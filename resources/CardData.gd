@@ -102,11 +102,19 @@ const CAT_UTILITY := "utility"    # 유틸리티
 const CAT_DRAW    := "draw"       # 뽑기
 const CAT_JUNGLE  := "jungle"     # 정글
 const CAT_LANE    := "lane"       # 라인전
-const CATEGORY_LABELS: Dictionary = {
-	CAT_GROWTH: "성장", CAT_ENGAGE: "교전", CAT_AMBUSH: "매복",
-	CAT_ATTACK: "공격", CAT_DEFENSE: "방어", CAT_UTILITY: "유틸리티",
-	CAT_DRAW: "뽑기", CAT_JUNGLE: "정글", CAT_LANE: "라인전",
+## 분류 → 이름 l10n key. 화면은 `category_label(cat)` 로 읽는다.
+const CATEGORY_LABELS: Dictionary = {  # l10n-keys: term.card_cat.*
+	CAT_GROWTH: L.TERM_CARD_CAT_GROWTH, CAT_ENGAGE: L.TERM_CARD_CAT_ENGAGE, CAT_AMBUSH: L.TERM_CARD_CAT_AMBUSH,
+	CAT_ATTACK: L.TERM_CARD_CAT_ATTACK, CAT_DEFENSE: L.TERM_CARD_CAT_DEFENSE, CAT_UTILITY: L.TERM_CARD_CAT_UTILITY,
+	CAT_DRAW: L.TERM_CARD_CAT_DRAW, CAT_JUNGLE: L.TERM_CARD_CAT_JUNGLE, CAT_LANE: L.TERM_CARD_CAT_LANE,
 }
+
+
+## 분류 id 하나 → 현재 로케일 이름("성장"). 모르는 id 는 그대로.
+static func category_label(cat: String) -> String:
+	if not CATEGORY_LABELS.has(cat):
+		return cat
+	return Loc.t(String(CATEGORY_LABELS[cat]))  # l10n-dynamic: term.card_cat.*
 
 ## cards.csv 행 id. 고정 파일럿 카드(`PlayerData.pilot_cards`)가 이 값으로 카드를
 ## 가리킨다. 메크 카드와 손으로 만든 카드는 -1.
@@ -309,11 +317,11 @@ func allowed_for_position(pos: String) -> bool:
 static func scope_label(scope_str: String) -> String:
 	var pos: Array = positions_of(scope_str)
 	if pos.size() >= GameEnums.POSITION_KEYS.size():
-		return "모든 포지션"
+		return Loc.t(L.TERM_POSITION_ALL)
 	var names: Array = []
 	for k in GameEnums.POSITION_KEYS:
 		if pos.has(k):
-			names.append(String(GameEnums.POSITION_LABELS[k]))
+			names.append(GameEnums.position_label(String(k)))
 	return " · ".join(names)
 
 
@@ -335,11 +343,11 @@ func fits_any_category(cats: Array) -> bool:
 	return false
 
 
-## 분류를 사람이 읽는 말로 — "성장 · 뽑기".
-func category_label() -> String:
+## 이 카드의 분류를 사람이 읽는 말로 — "성장 · 뽑기".
+func categories_text() -> String:
 	var names: Array = []
 	for c in categories():
-		names.append(String(CATEGORY_LABELS.get(c, c)))
+		names.append(category_label(String(c)))
 	return " · ".join(names) if not names.is_empty() else "—"
 
 

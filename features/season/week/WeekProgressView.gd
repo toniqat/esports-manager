@@ -58,16 +58,7 @@ const EVENING_SLOT_SCENE: PackedScene = preload("res://features/season/week/UI_C
 const EVENING_DONE_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekEveningDoneCard.tscn")
 const INCIDENT_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekIncidentCard.tscn")
 
-const PHASE_NAMES: Dictionary = {
-	GameEnums.SeasonPhase.PRESEASON:      "프리시즌",
-	GameEnums.SeasonPhase.PRESEASON_INTL: "프리시즌 국제대회",
-	GameEnums.SeasonPhase.MIDSEASON:      "미드시즌",
-	GameEnums.SeasonPhase.MIDSEASON_INTL: "미드시즌 국제대회",
-	GameEnums.SeasonPhase.REGULAR:        "정규시즌",
-	GameEnums.SeasonPhase.REGULAR_INTL:   "정규시즌 국제대회",
-}
 const STAT_KEYS: Array   = PlayerData.STAT_KEYS
-const STAT_SHORT: Array  = PlayerData.STAT_SHORT
 
 # ── 데이터에 따라 바뀌는 치수 (나머지 배치는 씬) ──
 const CARD_H: float      = 148.0     # training card without quirk lines
@@ -193,7 +184,7 @@ func _refresh_rail() -> void:
 	for d in _chip_panels.size():
 		var chip: Panel = _chip_panels[d]
 		var lbl: Label = _chip_labels[d]
-		lbl.text = String(OutgameTheme.DAY_LETTERS[d]) if d < OutgameTheme.DAY_LETTERS.size() else ""
+		lbl.text = OutgameTheme.day_letter(d)
 		# 오늘 = `WeekDayChipToday`(앰버 칩), 나머지 = `WeekDayChip`(투명) — 변형 이름만 바꾼다.
 		chip.theme_type_variation = &"WeekDayChipToday" if d == _day else &"WeekDayChip"
 		if d == _day:
@@ -209,8 +200,8 @@ func _refresh_header() -> void:
 	var s: Dictionary = _gm.season_state
 	var phase: int = int(s["current_phase"])
 	_phase_lbl.text = "%s · %d주차" % [
-		PHASE_NAMES.get(phase, "—"), int(s["phase_week"])]
-	_title_lbl.text = String(OutgameTheme.DAY_NAMES[_day])
+		GameEnums.phase_label(phase), int(s["phase_week"])]
+	_title_lbl.text = OutgameTheme.day_name(_day)
 	# 달력은 주의 월요일에 서 있으므로 요일만큼 더해 그날 날짜를 만든다.
 	var date: Dictionary = _date_of_day(_day)
 	_date_small_lbl.text = "%d년 %d월" % [int(date["year"]), int(date["month"])]
@@ -284,7 +275,7 @@ func _add_item(scene: PackedScene) -> Control:
 func _add_match_cards(matchday: int) -> void:
 	var entries: Array = _matches_on_day(matchday)
 	if entries.is_empty():
-		_add_note_card("%s — 예정된 경기 없음" % OutgameTheme.DAY_NAMES[_day])
+		_add_note_card("%s — 예정된 경기 없음" % OutgameTheme.day_name(_day))
 		return
 	for e_raw in entries:
 		var e: Dictionary = e_raw
@@ -439,7 +430,7 @@ func _add_pilot_card(row_raw: Variant) -> void:
 	for i in STAT_KEYS.size():
 		var key: String = String(STAT_KEYS[i])
 		var cell: Control = cells[i]
-		(cell.get_node("%Short") as Label).text = String(STAT_SHORT[i])
+		(cell.get_node("%Short") as Label).text = PlayerData.stat_short(i)
 		(cell.get_node("%Value") as Label).text = "%d" % int(after.get(key, 0))
 		var up: int = int(ups.get(key, 0))
 		var result: Label = cell.get_node("%Result")
@@ -754,9 +745,9 @@ func _open_evening_session(session: Dictionary) -> void:
 	if view.is_empty():
 		return
 	var pid: int = int(view["pilot_id"])
-	var sub: String = "%s 저녁 · 면담" % OutgameTheme.DAY_NAMES[_day]
+	var sub: String = "%s 저녁 · 면담" % OutgameTheme.day_name(_day)
 	if String(view["kind"]) == MentalEvents.KIND_OUTING:
-		sub = "%s 저녁 · 외출 %d회째" % [OutgameTheme.DAY_NAMES[_day],
+		sub = "%s 저녁 · 외출 %d회째" % [OutgameTheme.day_name(_day),
 				MentalSystem.outings(s, pid) + 1]
 	_open_overlay("evening", sub, MentalEvents.pilot_name(s, pid), pid, view)
 
@@ -769,7 +760,7 @@ func _open_incident() -> void:
 	if view.is_empty():
 		return
 	var pid: int = int(view["pilot_id"])
-	_open_overlay("incident", "%s · 사건 발생 · %s" % [OutgameTheme.DAY_NAMES[_day],
+	_open_overlay("incident", "%s · 사건 발생 · %s" % [OutgameTheme.day_name(_day),
 			MentalEvents.pilot_name(s, pid)], String(view["tag"]), pid, view)
 
 

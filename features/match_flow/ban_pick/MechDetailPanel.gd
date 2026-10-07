@@ -176,7 +176,7 @@ func _fill_passive() -> void:
 	if pas.is_empty():
 		return
 	%PassiveName.text = Loc.t(String(pas.get("name_key", "")))  # l10n-dynamic: mech_passive.*.name
-	var kw: String = String(pas.get("keyword", ""))
+	var kw: String = GameEnums.tags_text(String(pas.get("keyword", "")))
 	%PassiveKw.text = kw
 	%PassiveKw.visible = not kw.is_empty()
 	%PassiveDesc.text = Loc.t(String(pas.get("description_key", "")))  # l10n-dynamic: mech_passive.*.desc

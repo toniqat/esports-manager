@@ -202,7 +202,7 @@ func _fill_skill() -> void:
 			SKILL_TILE_SHADOW_PX))
 	%SkillName.text = Loc.t(String(sk.get("name_key", "")))  # l10n-dynamic: pilot_skill.*.name
 	var meta: String = TeamDraft.skill_type_label(String(sk.get("type", "")))
-	var kw: String = String(sk.get("keyword", ""))
+	var kw: String = GameEnums.tags_text(String(sk.get("keyword", "")))
 	if not kw.is_empty():
 		meta += " · " + kw
 	%SkillMeta.text = meta

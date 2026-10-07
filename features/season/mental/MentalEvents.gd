@@ -466,7 +466,7 @@ static func stat_label(stat: String) -> String:
 	if stat == "all":
 		return "전 스탯"
 	var i: int = PlayerData.STAT_KEYS.find(stat)
-	return String(PlayerData.STAT_LABELS[i]) if i >= 0 else stat
+	return PlayerData.stat_label(i) if i >= 0 else stat
 
 
 static func duration(weeks: int) -> String:

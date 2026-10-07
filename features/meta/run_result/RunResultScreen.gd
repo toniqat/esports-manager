@@ -317,7 +317,7 @@ func _new_trait_ids() -> Array:
 func _phase_name(idx: int) -> String:
 	if idx < 0 or idx >= RunResult.CAMPAIGN_ORDER.size():
 		return "—"
-	return String(HubView.PHASE_NAMES.get(RunResult.CAMPAIGN_ORDER[idx], "—"))
+	return GameEnums.phase_label(RunResult.CAMPAIGN_ORDER[idx])
 
 
 # ── Button handlers ──────────────────────────────────────────────────────────

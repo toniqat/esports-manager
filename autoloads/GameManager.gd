@@ -212,10 +212,10 @@ func start_run(run_setup: Dictionary) -> String:
 	var pool: Array = data["players"]
 	var team_id: int = int(run_setup.get("team_id", 0))
 	if team_id < 0 or team_id >= TEAM_COUNT:
-		return "알 수 없는 팀 id %d" % team_id
+		return Loc.t(L.UI_RUN_UNKNOWN_TEAM, {"id": team_id})
 	var scenario_id: int = int(run_setup.get("scenario", 0))
 	if RunRules.scenario(scenario_id).is_empty():
-		return "알 수 없는 시나리오 id %d" % scenario_id
+		return Loc.t(L.UI_RUN_UNKNOWN_SCENARIO, {"id": scenario_id})
 
 	var pilot_ids: Array = []
 	for raw in (run_setup.get("pilot_ids", []) as Array):
@@ -317,7 +317,7 @@ func _manager_setup_for_run(preset_idx: int) -> Dictionary:
 	var perr: String = ManagerProgress.validate_preset(prof, preset, pm.owned_trait_ids())
 	if perr != "":
 		if not use_test_run:
-			return {"error": "감독 프리셋: " + perr}
+			return {"error": Loc.t(L.UI_RUN_PRESET_ERROR, {"error": perr})}
 		return {"preset": idx, "traits": [], "manager_stats": ManagerProgress.base_stats(prof)}
 	var traits: Array = []
 	for raw in (preset.get("traits", []) as Array):

@@ -14,15 +14,6 @@ extends Control
 
 const SCENE_PATH: String = "res://features/season/UI_View_HubView.tscn"
 
-const PHASE_NAMES: Dictionary = {
-	GameEnums.SeasonPhase.PRESEASON:      "프리시즌",
-	GameEnums.SeasonPhase.PRESEASON_INTL: "프리시즌 국제대회",
-	GameEnums.SeasonPhase.MIDSEASON:      "미드시즌",
-	GameEnums.SeasonPhase.MIDSEASON_INTL: "미드시즌 국제대회",
-	GameEnums.SeasonPhase.REGULAR:        "정규시즌",
-	GameEnums.SeasonPhase.REGULAR_INTL:   "정규시즌 국제대회",
-}
-
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 @onready var _gm: Node = get_node("/root/GameManager")
 
@@ -202,7 +193,7 @@ func _on_week_advanced(_d: Dictionary) -> void:
 
 func _on_phase_changed(new_phase: int) -> void:
 	refresh()
-	_flash_toast("페이즈 진입: %s" % PHASE_NAMES.get(new_phase, "—"))
+	_flash_toast("페이즈 진입: %s" % GameEnums.phase_label(new_phase))
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────
@@ -218,7 +209,7 @@ func refresh() -> void:
 		if cal != null:
 			max_weeks = cal.phase_max_weeks(phase)
 
-	_phase_lbl.text = "현재 페이즈: %s" % PHASE_NAMES.get(phase, "—")
+	_phase_lbl.text = "현재 페이즈: %s" % GameEnums.phase_label(phase)
 	_week_lbl.text  = "%d / %d주차" % [pweek, max_weeks]
 
 	_refresh_next_match()

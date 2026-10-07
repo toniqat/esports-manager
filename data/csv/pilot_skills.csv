@@ -1,26 +1,26 @@
 id,key,name_key,role,type,p1,p2,keyword,description_key
-0,roam,tx_9ZFPBR8QPR,1,cooldown,15,0,로밍,tx_TCDPZKRX9M
-1,hold_position,tx_C4W31AM5G6,1,cooldown,25,0,성장,tx_01QXXQC4VE
-2,performance,tx_KDQGE48ZGV,1,passive,0,25,성장,tx_M9HDA7991Z
-3,opportunist,tx_AN0MJ4GPHD,1,passive,0,0,교전,tx_SBZ2RGCFC4
-4,accumulate,tx_X859HHE121,1,passive,0,100,성장,tx_HCG34G4447
-5,ops_prep,tx_3GM34YCZCB,3,cooldown,35,0,전략 점수,tx_QW0WRK5W71
-6,scheme,tx_JTPRQSEZV4,3,cooldown,10,0,지원,tx_QR155GH2K5
-7,recall_order,tx_QC4MS74FNX,3,cooldown,15,0,지원,tx_57FEQZSD9W
-8,veteran,tx_B2MHCM6EQX,3,passive,0,0,전투,tx_84VS0JAK7A
-9,dragon_blessing,tx_GDMDC99PSR,3,charge,1,1,지원,tx_MBAK27KBCX
-10,hunt_reward,tx_63MS41MFH9,4,passive,0,0,"처치 관여, 성장",tx_8CE3SCE28Y
-11,unstable_cannon,tx_HS2G4N0750,4,passive,0,0,전투,tx_4M0MCHFQTA
+0,roam,tx_9ZFPBR8QPR,1,cooldown,15,0,roam,tx_TCDPZKRX9M
+1,hold_position,tx_C4W31AM5G6,1,cooldown,25,0,growth,tx_01QXXQC4VE
+2,performance,tx_KDQGE48ZGV,1,passive,0,25,growth,tx_M9HDA7991Z
+3,opportunist,tx_AN0MJ4GPHD,1,passive,0,0,engage,tx_SBZ2RGCFC4
+4,accumulate,tx_X859HHE121,1,passive,0,100,growth,tx_HCG34G4447
+5,ops_prep,tx_3GM34YCZCB,3,cooldown,35,0,strategy,tx_QW0WRK5W71
+6,scheme,tx_JTPRQSEZV4,3,cooldown,10,0,support,tx_QR155GH2K5
+7,recall_order,tx_QC4MS74FNX,3,cooldown,15,0,support,tx_57FEQZSD9W
+8,veteran,tx_B2MHCM6EQX,3,passive,0,0,combat,tx_84VS0JAK7A
+9,dragon_blessing,tx_GDMDC99PSR,3,charge,1,1,support,tx_MBAK27KBCX
+10,hunt_reward,tx_63MS41MFH9,4,passive,0,0,kill_assist|growth,tx_8CE3SCE28Y
+11,unstable_cannon,tx_HS2G4N0750,4,passive,0,0,combat,tx_4M0MCHFQTA
 12,backbone,tx_C2RTB06AXC,4,passive,0,0,,tx_C9RZZHW1KH
-13,rookie,tx_190GGZB4X7,4,passive,0,15,성장,tx_AYBPPVM8XW
-14,surge,tx_7QG6M9A3EZ,4,passive,0,4,전투,tx_9GG6D1MMYT
-15,elation,tx_RGMCGVREFC,2,charge,1,3,오브젝트,tx_MGSQQPTAMH
-16,fierce_battle,tx_32D4QTBRNK,2,cooldown,25,0,교전,tx_N9H0VY8ZYD
-17,battle_order,tx_EJGKSFFT06,2,cooldown,25,0,"교전, 전략 점수",tx_F6ZPD3B8SJ
-18,plunderer,tx_EP8GXKMR0V,2,charge,1,2,"처치 관여, 성장",tx_X3DDB1ERMS
-19,loot_collector,tx_GF6P7JK1SQ,2,passive,0,5,"처치 관여, 성장",tx_1Y0CR9P495
-20,siege,tx_G17E13SA9T,0,charge,5,5,"포탑 파괴, 교전",tx_NVABXT94CT
+13,rookie,tx_190GGZB4X7,4,passive,0,15,growth,tx_AYBPPVM8XW
+14,surge,tx_7QG6M9A3EZ,4,passive,0,4,combat,tx_9GG6D1MMYT
+15,elation,tx_RGMCGVREFC,2,charge,1,3,objective,tx_MGSQQPTAMH
+16,fierce_battle,tx_32D4QTBRNK,2,cooldown,25,0,engage,tx_N9H0VY8ZYD
+17,battle_order,tx_EJGKSFFT06,2,cooldown,25,0,engage|strategy,tx_F6ZPD3B8SJ
+18,plunderer,tx_EP8GXKMR0V,2,charge,1,2,kill_assist|growth,tx_X3DDB1ERMS
+19,loot_collector,tx_GF6P7JK1SQ,2,passive,0,5,kill_assist|growth,tx_1Y0CR9P495
+20,siege,tx_G17E13SA9T,0,charge,5,5,turret_kill|engage,tx_NVABXT94CT
 21,versatile,tx_JX8C8KDANY,0,passive,0,0,,tx_ARWJETFT72
-22,adc_hunter,tx_W6M5TMHY7G,0,passive,0,0,전투,tx_A2VY834WBK
-23,aggressive_push,tx_574WAHRC6Y,0,cooldown,10,0,포탑 파괴,tx_BVQZZBG33F
-24,rivalry,tx_ZHKC92QRTJ,0,passive,0,0,성장,tx_KR207W6TG7
+22,adc_hunter,tx_W6M5TMHY7G,0,passive,0,0,combat,tx_A2VY834WBK
+23,aggressive_push,tx_574WAHRC6Y,0,cooldown,10,0,turret_kill,tx_BVQZZBG33F
+24,rivalry,tx_ZHKC92QRTJ,0,passive,0,0,growth,tx_KR207W6TG7

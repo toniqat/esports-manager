@@ -228,7 +228,7 @@ static func stats_text(stats: Dictionary, short: bool = false) -> String:
 	for i in PlayerData.STAT_KEYS.size():
 		var k: String = String(PlayerData.STAT_KEYS[i])
 		if stats.has(k) and int(stats[k]) != 0:
-			var label: String = String((PlayerData.STAT_SHORT if short else PlayerData.STAT_LABELS)[i])
+			var label: String = PlayerData.stat_short(i) if short else PlayerData.stat_label(i)
 			parts.append("%s %+d" % [label, int(stats[k])])
 	return " · ".join(parts)
 
@@ -248,7 +248,7 @@ static func cond_text(cond: String) -> String:
 			"own_role":
 				parts.append("자기 역할군 메크 탑승")
 			"mech_role":
-				parts.append("%s 메크 탑승" % String(OutgameTheme.ROLE_NAMES[clampi(arg, 0, 4)]))
+				parts.append("%s 메크 탑승" % OutgameTheme.role_name(arg))
 			"tier":
 				parts.append("숙련도 %s 이상" % MechMastery.tier_name(arg))
 			_:

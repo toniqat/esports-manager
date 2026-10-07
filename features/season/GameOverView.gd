@@ -69,7 +69,7 @@ func refresh() -> void:
 	_resolve_refs()
 	var s: Dictionary = _gm.season_state
 	var phase: int = int(s["current_phase"])
-	var phase_name: String = HubView.PHASE_NAMES.get(phase, "—")
+	var phase_name: String = GameEnums.phase_label(phase)
 
 	# 어느 대회에서 끝났는가는 페이즈가, 어떻게 끝났는가는 phase_results 와
 	# 아직 남아 있는 대진표(탈락 직후라 페이즈가 넘어가지 않았다)가 말해 준다.

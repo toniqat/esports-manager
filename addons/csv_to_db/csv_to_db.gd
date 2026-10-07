@@ -156,6 +156,7 @@ const TABLE_DEFS: Dictionary = {
 		"p1":          {"data_type": "int",  "not_null": true},
 		# 최대 충전 수(0 = 충전 없음).
 		"p2":          {"data_type": "int",  "not_null": true},
+		# 성향 태그 — `|` 로 이은 ascii id(`engage|strategy`), 표시는 `GameEnums.tags_text`.
 		"keyword":     {"data_type": "text", "not_null": true},
 		"description_key": {"data_type": "text", "not_null": true},
 	},
@@ -185,6 +186,7 @@ const TABLE_DEFS: Dictionary = {
 		# 패시브마다 뜻이 다른 두 숫자. 충전형이면 p1 = 시작 충전, p2 = 최대 충전.
 		"p1":          {"data_type": "int",  "not_null": true},
 		"p2":          {"data_type": "int",  "not_null": true},
+		# 성향 태그 — pilot_skills.keyword 와 같은 ascii id 목록.
 		"keyword":     {"data_type": "text", "not_null": true},
 		"description_key": {"data_type": "text", "not_null": true},
 	},

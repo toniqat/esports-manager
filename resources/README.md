@@ -2,6 +2,13 @@
 
 Shared data definitions used across features.
 
+**Display text is l10n keys** (`ui` · `term` · `keyword` domains). Shared vocabulary helpers live here —
+`GameEnums.position_label` / `role_position_label` / `phase_label` / `rarity_label` / `tags_text`,
+`PlayerData.stat_label` / `stat_short` / `stat_note`, `OutgameTheme.role_name` / `day_letter` / `day_name`,
+`CardData.category_label(cat)`; the label tables (`POSITION_LABELS`, `PHASE_LABELS`, `STAT_*`, `ROLE_NAMES`,
+`DAY_*`, `CATEGORY_LABELS`, …) hold `L.` keys, so **never print a table value directly** — call the helper.
+Full list: `docs/localization_design.md` §0.7.
+
 ## Files
 
 ### CardData.gd
@@ -38,13 +45,14 @@ One row from the `cards` SQLite table, plus a few runtime fields:
   mid · carry · support, otherwise a `|` list of `jungle` / `top` / `mid` / `carry` / `support`.
   `positions_of(scope)` expands it (if only unknown tokens, all positions),
   `allowed_for_position(pos)` checks it, and `scope_label(scope)` turns it into readable text
-  like "탑 · 미드 · 원딜" (Top · Mid · Carry).
+  like "탑 · 미드 · 원딜" (Top · Mid · Carry) — names via `GameEnums.position_label`, all five = `term.position.all`.
 - `pool: int` — `1` = pilot card candidate, `0` = excluded (duel · objective reward · skill-generated cards).
 - `card_type: String` — every row in cards.csv is `pilot`. `mech` is stamped by `make_mech_card`
   only on `mech_cards.csv` rows.
 - `card_cat: String` — **category `|` list** (`CAT_*`: growth / engage / ambush /
   attack / defense / utility / draw / jungle / lane; grant-only `-`). `categories()` /
-  `fits_any_category(cats)` / `category_label()`. Cells in the position slot table pick
+  `fits_any_category(cats)` / `categories_text()` ("성장 · 뽑기"); one id → `static category_label(cat)`
+  (`CATEGORY_LABELS` holds `term.card_cat.*` keys). Cells in the position slot table pick
   candidates by this value.
 - `charge_max: int` / `charge: int` — Charge cap / current token count. `shows_tokens()`
   answers whether to show the badge on the card face (Charge cards + 골드러시 (Gold Rush) with a `token:N` clause).
@@ -75,8 +83,14 @@ Shared enum definitions:
 - `DraftSide { BLUE, RED }` — ban/pick draft sides
 - **Position keys** `POS_TOP` / `POS_JUNGLE` / `POS_MID` / `POS_CARRY` / `POS_SUPPORT`
   (`"top"` …), `POSITION_KEYS` (lane order), `LANE_POSITIONS` (the four of `scope = lane`),
-  `POSITION_LABELS`, `POSITION_ABBREVS` (`TOP` · `JGL` · `MID` · `ADC` · `SUP` — the `PositionBadge` text), `position_key(role)` — the strings used by card `scope` and
+  `POSITION_LABELS` (l10n keys `term.position.*` — read via `position_label(pos_key)` / `role_position_label(role)`),
+  `POSITION_ABBREVS` (`TOP` · `JGL` · `MID` · `ADC` · `SUP` — the `PositionBadge` text, not localized), `position_key(role)` — the strings used by card `scope` and
   `pilot_card_slots.position` (they are values humans type directly into CSV, so they are not enum values)
+- **Label helpers (l10n)**: `PHASE_LABELS` + `phase_label(phase)` — the one season-phase name table
+  (`term.phase.*`; "—" for unknown; `L.TERM_PHASE_INTL` = generic "국제대회"), `RARITY_LABELS` +
+  `rarity_label(tier 0..4)` (일반 · 고급 · 희귀 · 영웅 · 전설, `term.rarity.*`), `TAG_LABELS` + `tag_label(id)` /
+  `tags_text(raw)` — the `pilot_skills` / `mech_passives` `keyword` column (`|`-joined ascii tag ids →
+  "교전, 전략 점수", joined with `ui.list_separator`)
 
 **Besides the enums there is one more table — `ROLE_DISPLAY_ORDER`.**
 ```gdscript
@@ -259,8 +273,9 @@ Out-game player persona consumed by MatchFlow / BattleSim:
 - **6 player (선수) stats** — `field_hit` battlefield hit / `field_eva` battlefield evasion /
   `engage_hit` engage hit / `engage_eva` engage evasion / `atk_growth` attack growth coefficient /
   `hp_growth` HP growth coefficient. **Floor `STAT_MIN` (const.csv `PLAYER_STAT_MIN`), no cap** (weekly training pushes them past 100).
-  The tables are the four `STAT_KEYS` / `STAT_LABELS` / `STAT_SHORT` / `STAT_NOTES`, and every screen
-  reads them. Power totals are `stat_total()` / `stat_avg()`; growth coefficient → multiplier conversion is
+  The tables are the four `STAT_KEYS` / `STAT_LABELS` / `STAT_SHORT` / `STAT_NOTES` (the last three hold
+  l10n keys `term.stat.*.name|short|note`), and every screen reads them — text through
+  `stat_label(i)` / `stat_short(i)` / `stat_note(i)` (current locale, "" out of range). Power totals are `stat_total()` / `stat_avg()`; growth coefficient → multiplier conversion is
   `static growth_mult(v)` = `v / GROWTH_STAT_BASE` (const.csv `PLAYER_GROWTH_STAT_BASE`). The old 5 stats (`laning` /
   `mechanics` / `gamesense` / `teamfight` / `mental`) were deleted
 - `assigned_mech: MechData` — written by the assignment step of the ban/pick screen (`ban_pick/BanPickController._finish`). Previously this was the job of `AssignController`, which was a separate screen
@@ -771,8 +786,14 @@ space, then the coloured name. Pilot skill descriptions use this (`DraftDetailPa
 A further trailing `card_meta: bool` (`fill_rich` / `make_rich_label`) wraps that
 ribbon + name in `push_meta(name_key, META_UNDERLINE_NEVER)` so the caller can tell which
 card a press hit (`ui/SkillPopup.gd` card preview → `CardData.by_name_key`).
-**Known l10n gap:** the plain-word icons (`KeywordIcon.WORDS`, "전략 점수" / "비용", "N턴") match Korean
-words only — translated text keeps `[x]` colours, special icons and cost ribbons but loses the word icons.
+**Word icons follow the locale.** The plain-word icons (`KEYWORD` / `COST_KEYWORD` = `keyword.icon.strategy` /
+`.cost`, `KeywordIcon.WORDS`, the duration suffix `keyword.icon.duration_suffix`) are l10n keys whose translation is
+the word **as that language's descriptions spell it** (`|` = alternative spellings, en `kill|killed`, `turns|turn`).
+`_match_words()` expands them per locale (cached, `KeywordIcon.expand_words`); matching is case-insensitive, and a
+word starting with a Latin letter only matches on word boundaries (a plural `s` is absorbed — "attacks", never
+"move" inside "remove"); Hangul words match anywhere (particles attach directly). Durations accept one space
+between the number and the suffix ("3 turns"). Changing an en description's wording → keep the matching
+`keyword.icon.*` en value in step. The `JOSA` table is logic (`# l10n-ignore`).
 
 ### KeywordIcon.gd
 `class_name KeywordIcon`, extends `RefCounted`, static only. **Card keyword icons**
@@ -786,7 +807,7 @@ background) rather than modulated, because 필중 needs two colours.
 | `RANGE` 사거리 | horizontal double arrow with a vertical bar at each end |
 | `TARGET` 대상 | head-and-shoulders bust; colour = side the card aims at (`target_color(target)`: enemy red · ally green · else grey) |
 | `AREA` 시전 범위 · 범위 | four isometric diamond tiles (up · down · left · right) |
-| `DURATION` 지속시간 | hourglass — inline before "N턴" only (no longer in the attribute row) |
+| `DURATION` 지속시간 | hourglass — inline before "N턴" / en "N turns" only (no longer in the attribute row) |
 | `ENGAGE` 교전 | two crossed swords |
 | `ATTACK` 공격 | bow aimed right: string at the centre, stave curving just right of it, arrow pointing right |
 | `PIERCE` 필중 · 필중 공격 | the same bow cut out of a filled disc |
@@ -828,6 +849,10 @@ target to red / green / grey. Users:
 `StrategyIcon.fill_rich` (inline, before words), `CardDescBox` (the attribute
 row under the keyword line) and `ui/PilotDetailPanel.gd` (stat chips `CHIP_ICONS`,
 and the `{attack}` / `{engage}` icons in stat notes).
+
+**`WORDS` is `[[l10n key, icon key], …]`** (`keyword.icon.*`) — `words()` returns the current locale's
+`[[lower-case word, icon key], …]` (cached per locale; `expand_words(table)` splits `|` alternatives). Matching
+rules live in `StrategyIcon` (above).
 
 ### CostRibbon.gd
 `class_name CostRibbon`, extends `RefCounted`, static only. **The cost shape** —
@@ -891,7 +916,7 @@ The design principle is coloured cards on white paper. Three rules:
 
 | Group | Exports |
 |---|---|
-| Colour | `BG` `SURFACE` `SURFACE_SUNK` `RAIL` `RAIL_TEXT` / `TEXT` `TEXT_SUB` `TEXT_FAINT` `TEXT_ON_FILL` / `ACCENT` `ACCENT_DIM` `ACCENT_TEXT` `LINK` / `POSITIVE` `NEGATIVE` `NEUTRAL` / `BORDER` `BORDER_STRONG` `SHADOW` / `DIM` (modal dim) / `CARD_TINTS` `ROLE_COLORS` `ROLE_NAMES` `DAY_LETTERS` `DAY_NAMES` |
+| Colour | `BG` `SURFACE` `SURFACE_SUNK` `RAIL` `RAIL_TEXT` / `TEXT` `TEXT_SUB` `TEXT_FAINT` `TEXT_ON_FILL` / `ACCENT` `ACCENT_DIM` `ACCENT_TEXT` `LINK` / `POSITIVE` `NEGATIVE` `NEUTRAL` / `BORDER` `BORDER_STRONG` `SHADOW` / `DIM` (modal dim) / `CARD_TINTS` `ROLE_COLORS` `ROLE_NAMES` `DAY_LETTERS` `DAY_NAMES` (these three hold l10n keys — text via `role_name(i)` · `day_letter(i)` · `day_name(i)`) |
 | Sizes (theme defaults) | `FONT_HEADING` `FONT_TITLE` `FONT_BODY` `FONT_CAPTION` · `FONT_BTN_PRIMARY` `FONT_BTN_GHOST` `FONT_BTN_TEXT` `FONT_BTN_DARK` · `CARD_RADIUS` `CARD_PAD` `POPUP_RADIUS` `POPUP_PAD` `POPUP_PAD_WIDE` `SHEET_RADIUS` `SHEET_PAD` `SHEET_PAD_V` `SUNK_RADIUS` `BAR_RADIUS` · `CHIP_RADIUS` (pill, clamped to height/2) `CHIP_PAD_H` `CHIP_PAD_V` · `SELECT_BORDER` `SELECT_BORDER_ON` `SELECT_TILE_RADIUS` `SELECT_TILE_BORDER_ON` |
 | StyleBox | `card_style` `flat_style` `lead_bar_style` `set_corner_radius` `selectable_box(on, radius, border_on)` |
 | Button | `style_primary_button` (amber, one per screen) `style_ghost_button` `style_text_button` `style_dark_button` (dark colour field — "leave this screen") `style_danger_button` (`NEGATIVE` field — destructive confirm). All read **`button_spec(kind)`** (colours + default font) and **`button_styles(kind)`** (one `button_box` per `BUTTON_STATES`, incl. `hover_pressed` = pressed so the engine default never shows while held) — the same table the theme is built from |

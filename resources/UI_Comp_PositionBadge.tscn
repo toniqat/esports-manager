@@ -18,6 +18,7 @@ script = ExtResource("1_badge")
 editor_description = "[필수] 지우면 오류 — EndingView.gd _refresh_roster() · PositionBadge.gd _apply_text_size() · PositionBadge.gd set_role() 외 2곳 (경로로도 참조 — 이름 · 부모 유지)"
 unique_name_in_owner = true
 layout_mode = 2
+auto_translate_mode = 2
 theme_type_variation = &"OnFillLabel"
 theme_override_font_sizes/font_size = 18
 text = "TOP"

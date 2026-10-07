@@ -82,35 +82,42 @@ const SPECIAL_ICONS: Dictionary = {
 
 ## "필중 공격" 은 한 덩어리 — 필중 아이콘 하나만 서고 "공격" 에 활이 또 붙지 않는다.
 ## 지속시간은 낱말이 아니라 "N턴" 꼴이라 `StrategyIcon._tokens` 가 따로 찾는다.
-const WORDS: Array = [
-	["전장 명중", FIELD_HIT],
-	["전장 회피", FIELD_EVA],
-	["교전 명중", ENGAGE_HIT],
-	["교전 회피", ENGAGE_EVA],
-	["필중 공격", PIERCE],
-	["소지 중", HOLD],
-	["버린 더미", DISCARD_PILE],
-	["보호막", SHIELD],
-	["최대 체력", HP],
-	["버린 후", DISCARD],
-	["공격력", ATK],
-	["사거리", RANGE],
-	["체력", HP],
-	["성장", GROWTH],
-	["필중", PIERCE],
-	["공격", ATTACK],
-	["교전", ENGAGE],
-	["이동", MOVE],
-	["대상", TARGET],
-	["범위", AREA],
-	["뽑기", DRAW],
-	["버리기", DISCARD],
-	["보존", PRESERVE],
-	["찾기", SEARCH],
-	["생성", CREATE],
-	["회복", HEAL],
-	["처치", KILL],
+##
+## 낱말은 **l10n key** 다(`keyword.icon.*`) — 그 언어 설명문이 쓰는 표기를 번역값으로 두고,
+## `|` 로 다른 표기를 나열한다(en `kill|killed`). 매칭은 `words()` 가 현재 로케일로 펼친
+## 목록으로 한다(소문자). 같은 자리에서 시작하면 긴 낱말이 이기므로 표 순서는 상관없다.
+const WORDS: Array = [  # l10n-keys: keyword.icon.*
+	[L.KEYWORD_ICON_FIELD_HIT, FIELD_HIT],      # 전장 명중
+	[L.KEYWORD_ICON_FIELD_EVA, FIELD_EVA],      # 전장 회피
+	[L.KEYWORD_ICON_ENGAGE_HIT, ENGAGE_HIT],    # 교전 명중
+	[L.KEYWORD_ICON_ENGAGE_EVA, ENGAGE_EVA],    # 교전 회피
+	[L.KEYWORD_ICON_PIERCE_ATTACK, PIERCE],     # 필중 공격
+	[L.KEYWORD_ICON_HOLD, HOLD],                # 소지 중
+	[L.KEYWORD_ICON_DISCARD_PILE, DISCARD_PILE],# 버린 더미
+	[L.KEYWORD_ICON_SHIELD, SHIELD],            # 보호막
+	[L.KEYWORD_ICON_MAX_HP, HP],                # 최대 체력
+	[L.KEYWORD_ICON_DISCARDED, DISCARD],        # 버린 후
+	[L.KEYWORD_ICON_ATK, ATK],                  # 공격력
+	[L.KEYWORD_ICON_RANGE, RANGE],              # 사거리
+	[L.KEYWORD_ICON_HP, HP],                    # 체력
+	[L.KEYWORD_ICON_GROWTH, GROWTH],            # 성장
+	[L.KEYWORD_ICON_PIERCE, PIERCE],            # 필중
+	[L.KEYWORD_ICON_ATTACK, ATTACK],            # 공격
+	[L.KEYWORD_ICON_ENGAGE, ENGAGE],            # 교전
+	[L.KEYWORD_ICON_MOVE, MOVE],                # 이동
+	[L.KEYWORD_ICON_TARGET, TARGET],            # 대상
+	[L.KEYWORD_ICON_AREA, AREA],                # 범위
+	[L.KEYWORD_ICON_DRAW, DRAW],                # 뽑기
+	[L.KEYWORD_ICON_DISCARD, DISCARD],          # 버리기
+	[L.KEYWORD_ICON_PRESERVE, PRESERVE],        # 보존
+	[L.KEYWORD_ICON_SEARCH, SEARCH],            # 찾기
+	[L.KEYWORD_ICON_CREATE, CREATE],            # 생성
+	[L.KEYWORD_ICON_HEAL, HEAL],                # 회복
+	[L.KEYWORD_ICON_KILL, KILL],                # 처치
 ]
+
+static var _words: Array = []
+static var _words_locale: String = ""
 
 const _HEAD := "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"64\" viewBox=\"0 0 64 64\">"
 const _STROKE := "fill=\"none\" stroke=\"{C}\" stroke-width=\"6\" stroke-linecap=\"round\" stroke-linejoin=\"round\""
@@ -207,6 +214,28 @@ const _BODIES := {
 }
 
 static var _tex_cache: Dictionary = {}
+
+
+## `[[l10n key, 종류], …]` 표 → 현재 로케일의 `[[소문자 낱말, 종류], …]`. 번역값의 `|` 는
+## 다른 표기 구분자다. 로케일이 바뀌면 부르는 쪽의 캐시가 다시 펼친다.
+static func expand_words(table: Array) -> Array:
+	var out: Array = []
+	for w in table:
+		var kind: String = String((w as Array)[1])
+		for alt in Loc.t(String((w as Array)[0])).split("|", false):  # l10n-dynamic: keyword.icon.*
+			var word: String = String(alt).strip_edges().to_lower()
+			if not word.is_empty():
+				out.append([word, kind])
+	return out
+
+
+## 설명문 아이콘 낱말 — 현재 로케일로 펼친 `WORDS`(로케일별 캐시).
+static func words() -> Array:
+	var loc: String = TranslationServer.get_locale()
+	if loc != _words_locale or _words.is_empty():
+		_words = expand_words(WORDS)
+		_words_locale = loc
+	return _words
 
 
 ## 아이콘 `key` 를 칠할 색 — 뽑기 · 버리기는 고정색, 대상은 `target_color`(카드가

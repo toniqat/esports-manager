@@ -1,0 +1,99 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_WGVRW01FAK,term.position.top,active,파일럿 포지션 (GameEnums.position_label),,,탑,Top,draft,86b73a9d
+tx_AEVV05C031,term.position.jungle,active,파일럿 포지션 (GameEnums.position_label),,,정글,Jungle,draft,4d3cf640
+tx_AJHRSFRY14,term.position.mid,active,파일럿 포지션 (GameEnums.position_label),,,미드,Mid,draft,21f0c2e4
+tx_6FWKS7JH3P,term.position.carry,active,파일럿 포지션 (GameEnums.position_label),,,원딜,ADC,draft,6dd45acf
+tx_KAGZSJJGSE,term.position.support,active,파일럿 포지션 (GameEnums.position_label),,,서폿,Support,draft,59fd40f3
+tx_EZBAMWAM4S,term.position.all,active,카드 시전자 제약 — 다섯 포지션 모두,,,모든 포지션,All positions,draft,287728d1
+tx_WSNKE2621M,term.mech_role.tank,active,"메크 역할군 (GameEnums.Role 순, OutgameTheme.role_name)",,,탱커,Tank,draft,9149b691
+tx_4D3831EB17,term.mech_role.fighter,active,"메크 역할군 (GameEnums.Role 순, OutgameTheme.role_name)",,,격투,Fighter,draft,dd5d6991
+tx_M2AK1SVDPW,term.mech_role.assassin,active,"메크 역할군 (GameEnums.Role 순, OutgameTheme.role_name)",,,암살,Assassin,draft,9c5fe542
+tx_056W6M8DFW,term.mech_role.support,active,"메크 역할군 (GameEnums.Role 순, OutgameTheme.role_name)",,,서폿,Support,draft,59fd40f3
+tx_MZDH1STRBM,term.mech_role.sniper,active,"메크 역할군 (GameEnums.Role 순, OutgameTheme.role_name)",,,원딜,Sniper,draft,6dd45acf
+tx_AWJ076K0Q7,term.day.short.mon,active,요일 약칭 — 좁은 칸 (OutgameTheme.day_letter),3,,월,Mon,draft,75448692
+tx_0J2DR8DPC8,term.day.short.tue,active,요일 약칭 — 좁은 칸 (OutgameTheme.day_letter),3,,화,Tue,draft,adb4a282
+tx_BVST3R7BK6,term.day.short.wed,active,요일 약칭 — 좁은 칸 (OutgameTheme.day_letter),3,,수,Wed,draft,c04eb2ef
+tx_MVCR2S5R3Y,term.day.short.thu,active,요일 약칭 — 좁은 칸 (OutgameTheme.day_letter),3,,목,Thu,draft,5664a634
+tx_16NB4JJ5HY,term.day.short.fri,active,요일 약칭 — 좁은 칸 (OutgameTheme.day_letter),3,,금,Fri,draft,cf5632c7
+tx_6F2ZGR3FA4,term.day.short.sat,active,요일 약칭 — 좁은 칸 (OutgameTheme.day_letter),3,,토,Sat,draft,b9e40662
+tx_M7PKB0X6R3,term.day.short.sun,active,요일 약칭 — 좁은 칸 (OutgameTheme.day_letter),3,,일,Sun,draft,06cf3e90
+tx_HEGYK4ZZY2,term.day.long.mon,active,요일 이름 (OutgameTheme.day_name),,,월요일,Monday,draft,d77265f0
+tx_KTHPN0ZYJY,term.day.long.tue,active,요일 이름 (OutgameTheme.day_name),,,화요일,Tuesday,draft,85674ecb
+tx_GS42FX0A7J,term.day.long.wed,active,요일 이름 (OutgameTheme.day_name),,,수요일,Wednesday,draft,66dadc9b
+tx_AMZGQ0W711,term.day.long.thu,active,요일 이름 (OutgameTheme.day_name),,,목요일,Thursday,draft,73259471
+tx_CTKDXZ6N8Y,term.day.long.fri,active,요일 이름 (OutgameTheme.day_name),,,금요일,Friday,draft,5054e8b8
+tx_A2V55CP2PG,term.day.long.sat,active,요일 이름 (OutgameTheme.day_name),,,토요일,Saturday,draft,618ad44e
+tx_2T8VNW898G,term.day.long.sun,active,요일 이름 (OutgameTheme.day_name),,,일요일,Sunday,draft,4a7e4be4
+tx_H0KFNYPAP5,term.phase.preseason,active,시즌 페이즈 이름 (GameEnums.phase_label),,,프리시즌,Preseason,draft,a549c3d3
+tx_7FMTNWDQEH,term.phase.preseason_intl,active,시즌 페이즈 이름 (GameEnums.phase_label),,,프리시즌 국제대회,Preseason International,draft,9d76cf3d
+tx_R7989QWV9W,term.phase.midseason,active,시즌 페이즈 이름 (GameEnums.phase_label),,,미드시즌,Midseason,draft,ee7a5946
+tx_X2MAQTBFYH,term.phase.midseason_intl,active,시즌 페이즈 이름 (GameEnums.phase_label),,,미드시즌 국제대회,Midseason International,draft,75ec3f4d
+tx_1476RV94TH,term.phase.regular,active,시즌 페이즈 이름 (GameEnums.phase_label),,,정규시즌,Regular Season,draft,b4070ed2
+tx_FDBQJHRWBQ,term.phase.regular_intl,active,시즌 페이즈 이름 (GameEnums.phase_label),,,정규시즌 국제대회,Regular Season International,draft,095877fd
+tx_XG1M9ND3NM,term.phase.intl,active,국제대회 일반 명칭 (특정 페이즈가 아닐 때),,,국제대회,International,draft,a742d65c
+tx_ST46WS1MDQ,term.stat.field_hit.name,active,파일럿 스탯 이름 (PlayerData.stat_label),,,전장 명중,Battlefield Hit,draft,65ea2fb9
+tx_45H5GEFYKX,term.stat.field_eva.name,active,파일럿 스탯 이름 (PlayerData.stat_label),,,전장 회피,Battlefield Evasion,draft,04767ed2
+tx_Z9BYFSRBZ5,term.stat.engage_hit.name,active,파일럿 스탯 이름 (PlayerData.stat_label),,,교전 명중,Engage Hit,draft,07a6c2b4
+tx_E81Q2HB2QS,term.stat.engage_eva.name,active,파일럿 스탯 이름 (PlayerData.stat_label),,,교전 회피,Engage Evasion,draft,4cca38cd
+tx_NZ8J811NK6,term.stat.atk_growth.name,active,파일럿 스탯 이름 (PlayerData.stat_label),,,공격 성장,ATK Growth,draft,d7c6c633
+tx_9SGTNE082E,term.stat.hp_growth.name,active,파일럿 스탯 이름 (PlayerData.stat_label),,,체력 성장,HP Growth,draft,3a298f8a
+tx_1M94DFD405,term.stat.field_hit.short,active,파일럿 스탯 약칭 — 좁은 칸 (PlayerData.stat_short),5,,전명,B.Hit,draft,c507731e
+tx_FYFAJ8GC5N,term.stat.field_eva.short,active,파일럿 스탯 약칭 — 좁은 칸 (PlayerData.stat_short),5,,전회,B.Eva,draft,2791ba74
+tx_FCMSTM5MAK,term.stat.engage_hit.short,active,파일럿 스탯 약칭 — 좁은 칸 (PlayerData.stat_short),5,,교명,E.Hit,draft,e11d8fd7
+tx_SN9QJ1JZF0,term.stat.engage_eva.short,active,파일럿 스탯 약칭 — 좁은 칸 (PlayerData.stat_short),5,,교회,E.Eva,draft,05de2536
+tx_RNKSXJ1BRC,term.stat.atk_growth.short,active,파일럿 스탯 약칭 — 좁은 칸 (PlayerData.stat_short),5,,공성,A.Gr,draft,678fce8d
+tx_VQ5EQRK722,term.stat.hp_growth.short,active,파일럿 스탯 약칭 — 좁은 칸 (PlayerData.stat_short),5,,체성,H.Gr,draft,b9092d47
+tx_NP797WYRHS,term.stat.field_hit.note,active,파일럿 스탯 한 줄 설명 (PlayerData.stat_note),,,전장 교전과 공격 카드의 명중 판정에 쓰인다. 상대 전장 회피와의 비가 확률을 정한다.,Used for hit checks of battlefield engages and attack cards. The ratio to the opponent's Battlefield Evasion sets the chance.,draft,4fc77414
+tx_ZXHHD0P38E,term.stat.field_eva.note,active,파일럿 스탯 한 줄 설명 (PlayerData.stat_note),,,전장에서 맞을 확률을 낮춘다. 상대 전장 명중과의 비가 확률을 정한다.,Lowers the chance of being hit on the battlefield. The ratio to the opponent's Battlefield Hit sets the chance.,draft,9c7d3667
+tx_X87R5A0F2R,term.stat.engage_hit.note,active,파일럿 스탯 한 줄 설명 (PlayerData.stat_note),,,교전 무대에서만 읽는 명중. 전장 명중과 따로 산다.,Hit used only on the engage stage. Separate from Battlefield Hit.,draft,232a5a5d
+tx_09KVNQHFWR,term.stat.engage_eva.note,active,파일럿 스탯 한 줄 설명 (PlayerData.stat_note),,,교전 무대에서만 읽는 회피. 전장 회피와 따로 산다.,Evasion used only on the engage stage. Separate from Battlefield Evasion.,draft,65fba7a9
+tx_W8S8Z4NAEW,term.stat.atk_growth.note,active,파일럿 스탯 한 줄 설명 (PlayerData.stat_note),,,성장치가 공격력으로 바뀌는 기울기. 기준치에서 ×1.0 이고 상한이 없다.,"How fast growth turns into ATK. ×1.0 at the baseline, with no cap.",draft,756803bd
+tx_C4S174WKKD,term.stat.hp_growth.note,active,파일럿 스탯 한 줄 설명 (PlayerData.stat_note),,,성장치가 최대 체력으로 바뀌는 기울기. 기준치에서 ×1.0 이고 상한이 없다.,"How fast growth turns into Max HP. ×1.0 at the baseline, with no cap.",draft,c9bcb2b3
+tx_2EY9076J9H,term.card_cat.growth,active,카드 분류 (CardData.category_name),,,성장,Growth,draft,705103b6
+tx_P3CT377PM2,term.card_cat.engage,active,카드 분류 (CardData.category_name),,,교전,Engage,draft,b6bf4b17
+tx_38BCDRTBF7,term.card_cat.ambush,active,카드 분류 (CardData.category_name),,,매복,Ambush,draft,19620bb4
+tx_1A1V3BA2AF,term.card_cat.attack,active,카드 분류 (CardData.category_name),,,공격,Attack,draft,2a9c189a
+tx_C2DPZG9YQF,term.card_cat.defense,active,카드 분류 (CardData.category_name),,,방어,Defense,draft,2a87c14e
+tx_25DP1B49ED,term.card_cat.utility,active,카드 분류 (CardData.category_name),,,유틸리티,Utility,draft,51ab685b
+tx_9T5PRVVM4E,term.card_cat.draw,active,카드 분류 (CardData.category_name),,,뽑기,Draw,draft,dac8a8de
+tx_4M1A6Z1EJA,term.card_cat.jungle,active,카드 분류 (CardData.category_name),,,정글,Jungle,draft,4d3cf640
+tx_5A1V09D3HA,term.card_cat.lane,active,카드 분류 (CardData.category_name),,,라인전,Laning,draft,ed67a6c4
+tx_AXHT969FXE,term.rarity.common,active,등급 이름 0..4 (GameEnums.rarity_label) — 특성 · 기벽 공용,,,일반,Common,draft,aef1a1e7
+tx_D41QQZRCGD,term.rarity.uncommon,active,등급 이름 0..4 (GameEnums.rarity_label) — 특성 · 기벽 공용,,,고급,Uncommon,draft,1c208809
+tx_2VJCYJ4V0W,term.rarity.rare,active,등급 이름 0..4 (GameEnums.rarity_label) — 특성 · 기벽 공용,,,희귀,Rare,draft,40209554
+tx_HQ80SX4DB0,term.rarity.epic,active,등급 이름 0..4 (GameEnums.rarity_label) — 특성 · 기벽 공용,,,영웅,Epic,draft,be8063e0
+tx_T1GJ91RP73,term.rarity.legendary,active,등급 이름 0..4 (GameEnums.rarity_label) — 특성 · 기벽 공용,,,전설,Legendary,draft,72041dd0
+tx_0KSNX63V29,term.combat.hp,active,전투 수치 이름,,,체력,HP,draft,a45ea58e
+tx_CT45F83FMW,term.combat.max_hp,active,전투 수치 이름,,,최대 체력,Max HP,draft,e36ea071
+tx_DM2CD6EQG8,term.combat.atk,active,전투 수치 이름,,,공격력,ATK,draft,50b8df8c
+tx_M0NZA7QAV5,term.combat.shield,active,전투 수치 이름,,,보호막,Shield,draft,7f3c552f
+tx_VP2WZCKCPR,term.combat.presence,active,전투 수치 이름,,,존재감,Presence,draft,7a2c5692
+tx_25V6NCVTVV,term.area.training,active,감독 · 스태프 운영 영역 (RunRules.area_label),,,훈련 편성,Training Plan,draft,7cc994c3
+tx_D6PVFND3FB,term.area.knowledge,active,감독 · 스태프 운영 영역 (RunRules.area_label),,,메크 숙련도,Mech Mastery,draft,8fb9611a
+tx_22VDY4GM0D,term.area.analysis,active,감독 · 스태프 운영 영역 (RunRules.area_label),,,상대 분석,Opponent Analysis,draft,ab5b3f50
+tx_MH05JHB9TC,term.area.finance,active,감독 · 스태프 운영 영역 (RunRules.area_label),,,예산 · 시설,Budget · Facilities,draft,eb70e96f
+tx_68VDV4VS14,term.tag.engage,active,"파일럿 스킬 · 메크 패시브 성향 태그 (keyword 컬럼, GameEnums.tags_text)",,,교전,Engage,draft,b6bf4b17
+tx_YH61BAWPXA,term.tag.strategy,active,"파일럿 스킬 · 메크 패시브 성향 태그 (keyword 컬럼, GameEnums.tags_text)",,,전략 점수,Strategy Points,draft,2e5ccf32
+tx_T4AGVJ1QTV,term.tag.roam,active,"파일럿 스킬 · 메크 패시브 성향 태그 (keyword 컬럼, GameEnums.tags_text)",,,로밍,Roaming,draft,0fc4e162
+tx_5DBHZ89CP0,term.tag.growth,active,"파일럿 스킬 · 메크 패시브 성향 태그 (keyword 컬럼, GameEnums.tags_text)",,,성장,Growth,draft,705103b6
+tx_8TD0YTVTEE,term.tag.objective,active,"파일럿 스킬 · 메크 패시브 성향 태그 (keyword 컬럼, GameEnums.tags_text)",,,오브젝트,Objective,draft,92e7b5ad
+tx_Q2WE5344TP,term.tag.combat,active,"파일럿 스킬 · 메크 패시브 성향 태그 (keyword 컬럼, GameEnums.tags_text)",,,전투,Combat,draft,20468521
+tx_5PRQY2H55H,term.tag.support,active,"파일럿 스킬 · 메크 패시브 성향 태그 (keyword 컬럼, GameEnums.tags_text)",,,지원,Support,draft,3397eb88
+tx_K15PVR5AZG,term.tag.kill_assist,active,"파일럿 스킬 · 메크 패시브 성향 태그 (keyword 컬럼, GameEnums.tags_text)",,,처치 관여,Kill Participation,draft,1aace8db
+tx_46JEWXCS33,term.tag.turret_kill,active,"파일럿 스킬 · 메크 패시브 성향 태그 (keyword 컬럼, GameEnums.tags_text)",,,포탑 파괴,Turret Destruction,draft,4c9b1920
+tx_48MWZC5336,term.tag.vulnerable,active,"파일럿 스킬 · 메크 패시브 성향 태그 (keyword 컬럼, GameEnums.tags_text)",,,취약,Vulnerable,draft,bae7a9a6
+tx_16H8JD32NR,term.side.ally,active,편 — 아군,,,아군,Ally,draft,3843e8e4
+tx_4HQK9Q9T8J,term.side.enemy,active,편 — 적군,,,적군,Enemy,draft,93a13114
+tx_R68VA861B3,term.currency.levelup,active,재화 이름 — 레벨업 재화,,,레벨업 재화,Level-up Currency,draft,baf5dc2e
+tx_PZBVMHMKQ5,term.week.nth,active,주차 — {n} = 페이즈 안 몇째 주,,,{n}주차,Week {n},draft,380db0e1
+tx_E5R6MY0APC,term.week.count,active,기간 — {n} = 주 수,,,{n}주,{n} wk,draft,27987d9a
+tx_08849WB92D,term.record.win_loss,active,전적 — 승 · 패,,,{win}승 {loss}패,{win}W {loss}L,draft,65627304
+tx_PR6YFXCW5G,term.person.manager,active,사람 — 감독(플레이어),,,감독,Manager,draft,daec431c
+tx_MPYSG5BX0Y,term.person.staff,active,사람 — 스태프,,,스태프,Staff,draft,c6e93014
+tx_0ZQK3N7THW,term.card.pilot_card,active,카드 종류 — 파일럿 카드,,,파일럿 카드,Pilot Card,draft,088e198a
+tx_QH1DC5S3H2,term.card.mech_card,active,카드 종류 — 메크 카드,,,메크 카드,Mech Card,draft,a2bebce6
+tx_SN7SJKAZQ2,term.card.deck,active,카드 더미 — 덱,,,덱,Deck,draft,e8fa7791
+tx_7ZE1GEB58D,term.activity.training,active,주간 활동 — 훈련,,,훈련,Training,draft,6c9264ab
+tx_BXYJXH1JEK,term.activity.press,active,주간 활동 — 기자회견,,,기자회견,Press Conference,draft,2b678a57
+tx_F28RBDEGBX,term.activity.interview,active,멘탈 활동 — 선수와 면담,,,면담,Meeting,draft,07083b5a
+tx_1AHEKW5X7X,term.activity.outing,active,멘탈 활동 — 팀 외출,,,외출,Outing,draft,9bd292b1

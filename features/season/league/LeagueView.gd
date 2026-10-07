@@ -19,15 +19,6 @@ extends Control
 # applies the device-dependent bits: safe-area top indent, background extension into the
 # notch, and the bottom bar's square corners + bottom inset.
 
-const PHASE_NAMES: Dictionary = {
-	GameEnums.SeasonPhase.PRESEASON:      "프리시즌",
-	GameEnums.SeasonPhase.PRESEASON_INTL: "프리시즌 국제대회",
-	GameEnums.SeasonPhase.MIDSEASON:      "미드시즌",
-	GameEnums.SeasonPhase.MIDSEASON_INTL: "미드시즌 국제대회",
-	GameEnums.SeasonPhase.REGULAR:        "정규시즌",
-	GameEnums.SeasonPhase.REGULAR_INTL:   "정규시즌 국제대회",
-}
-
 ## Built from `UI_View_LeagueView.tscn` — use `create()`, not `.new()`.
 const SCENE_PATH: String = "res://features/season/league/UI_View_LeagueView.tscn"
 const ROW_SCENE_PATH: String = "res://features/season/league/UI_Comp_LeagueRow.tscn"
@@ -101,7 +92,7 @@ func refresh() -> void:
 
 	var phase: int = int(_gm.season_state["current_phase"])
 	%Phase.text = "%s · %d주차" % [
-		PHASE_NAMES.get(phase, "—"), int(_gm.season_state["phase_week"])]
+		GameEnums.phase_label(phase), int(_gm.season_state["phase_week"])]
 
 	var pid: int = int(_gm.season_state["player_team_id"])
 	var nxt = _league.next_unplayed_player_match()

@@ -640,7 +640,7 @@ func _fill_sheet(m: MechData) -> void:
 	v.sheet_passive_head.visible = not pas.is_empty()
 	v.sheet_passive_desc.visible = not pas.is_empty()
 	if not pas.is_empty():
-		var kw: String = String(pas.get("keyword", ""))
+		var kw: String = GameEnums.tags_text(String(pas.get("keyword", "")))
 		var head: String = "◆ %s" % Loc.t(String(pas["name_key"]))  # l10n-dynamic: mech_passive.*.name
 		if kw != "":
 			head += "   [%s]" % kw

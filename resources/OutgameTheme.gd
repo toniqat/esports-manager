@@ -74,11 +74,41 @@ const ROLE_COLORS: Array = [
 	Color(0.867, 0.235, 0.294, 1.0),   # SNIPER   빨강
 ]
 ## 역할 이름도 같은 순서. 예전 화면들이 각자 들고 있던 `ROLE_NAMES` 자리.
-const ROLE_NAMES: Array = ["탱커", "격투", "암살", "서폿", "원딜"]
+## 값은 l10n key — 화면은 `role_name(i)` 로 읽는다.
+const ROLE_NAMES: Array = [  # l10n-keys: term.mech_role.*
+	L.TERM_MECH_ROLE_TANK, L.TERM_MECH_ROLE_FIGHTER, L.TERM_MECH_ROLE_ASSASSIN,
+	L.TERM_MECH_ROLE_SUPPORT, L.TERM_MECH_ROLE_SNIPER,
+]
 
 # ── 요일 ─────────────────────────────────────────────────────────────────────
-const DAY_LETTERS: Array = ["월", "화", "수", "목", "금", "토", "일"]
-const DAY_NAMES:   Array = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"]
+## 월(0) … 일(6). 값은 l10n key — 화면은 `day_letter(i)` · `day_name(i)` 로 읽는다.
+const DAY_LETTERS: Array = [  # l10n-keys: term.day.short.*
+	L.TERM_DAY_SHORT_MON, L.TERM_DAY_SHORT_TUE, L.TERM_DAY_SHORT_WED, L.TERM_DAY_SHORT_THU,
+	L.TERM_DAY_SHORT_FRI, L.TERM_DAY_SHORT_SAT, L.TERM_DAY_SHORT_SUN,
+]
+const DAY_NAMES: Array = [  # l10n-keys: term.day.long.*
+	L.TERM_DAY_LONG_MON, L.TERM_DAY_LONG_TUE, L.TERM_DAY_LONG_WED, L.TERM_DAY_LONG_THU,
+	L.TERM_DAY_LONG_FRI, L.TERM_DAY_LONG_SAT, L.TERM_DAY_LONG_SUN,
+]
+
+
+## 역할(`GameEnums.Role`) `i` 의 이름 — 현재 로케일. 범위 밖은 양끝으로 자른다.
+static func role_name(i: int) -> String:
+	return Loc.t(String(ROLE_NAMES[clampi(i, 0, ROLE_NAMES.size() - 1)]))  # l10n-dynamic: term.mech_role.*
+
+
+## 요일 `i`(월 0 … 일 6)의 약칭 — 좁은 칸. 범위 밖은 "".
+static func day_letter(i: int) -> String:
+	if i < 0 or i >= DAY_LETTERS.size():
+		return ""
+	return Loc.t(String(DAY_LETTERS[i]))  # l10n-dynamic: term.day.short.*
+
+
+## 요일 `i` 의 이름("월요일"). 범위 밖은 "".
+static func day_name(i: int) -> String:
+	if i < 0 or i >= DAY_NAMES.size():
+		return ""
+	return Loc.t(String(DAY_NAMES[i]))  # l10n-dynamic: term.day.long.*
 
 # ── 모달 딤 ──────────────────────────────────────────────────────────────────
 ## 팝업 · 시트 뒤를 덮는 반투명 막. 씬에서는 `DimPanel` 변형(`OutgameTheme.tres`).

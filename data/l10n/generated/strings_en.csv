@@ -387,6 +387,36 @@ tx_FGE0Q8F8K1,Token +1 each time it enters your hand (max {max})
 tx_VDYX47TMCF,Reposition
 tx_HN02EYXPVV,Returns to the far left of your hand after use
 tx_6ABJNCRSQX,Charge {max}
+tx_AXYDKH476P,strategy points
+tx_A1TGA4X65Q,cost
+tx_XEB6RPJC05,turns|turn
+tx_9HV110GY44,battlefield hit
+tx_G7GPVBZNB7,battlefield evasion
+tx_02V7FBV672,engage hit
+tx_1Q25CTDX3T,engage evasion
+tx_M62DQZ05XH,sure-hit attack
+tx_CJFMY2DR98,while held
+tx_6BQ7XJWR21,discard pile
+tx_H5PAQEGQXV,shield
+tx_HGRGYX99JV,max hp
+tx_CM6RMDBSX5,discarded
+tx_GN5YCE4A7K,atk
+tx_XJ2AJAVDJJ,attack range
+tx_VK36455RKQ,hp
+tx_2NZDVYC400,growth
+tx_M7HE3QE7V3,sure-hit
+tx_M6K3475MK0,attack
+tx_M3VS0RE5YB,engage
+tx_MD0WJ2YX9M,move
+tx_AKRYXE0W1T,target
+tx_SVFGB50VBG,range
+tx_SNRNKTSHYA,draw
+tx_T31EZZ8PDE,discard
+tx_GVP8VGG5RB,preserve
+tx_XVGC6KXT1R,search
+tx_YX872B2X4H,create
+tx_5D3XF18V32,heal
+tx_PNFKKTFY12,kill|killed
 tx_J99WKD5PN8,Organizer
 tx_KQSXCRDMQT,Field Veteran
 tx_T2Z72WAY5Q,A manager versed in running an organization — a balanced spread leaning slightly toward Management and Mental
@@ -887,6 +917,104 @@ tx_G20TF9A18T,Mid budget — you manage mech mastery yourself
 tx_5J2FWDTHHS,Lower-mid budget — you interpret opponent analysis yourself
 tx_2B5FE3RAFT,Low budget
 tx_KRQHGMFDHP,"Lowest budget — you handle budget allocation, facilities and salaries yourself"
+tx_WGVRW01FAK,Top
+tx_AEVV05C031,Jungle
+tx_AJHRSFRY14,Mid
+tx_6FWKS7JH3P,ADC
+tx_KAGZSJJGSE,Support
+tx_EZBAMWAM4S,All positions
+tx_WSNKE2621M,Tank
+tx_4D3831EB17,Fighter
+tx_M2AK1SVDPW,Assassin
+tx_056W6M8DFW,Support
+tx_MZDH1STRBM,Sniper
+tx_AWJ076K0Q7,Mon
+tx_0J2DR8DPC8,Tue
+tx_BVST3R7BK6,Wed
+tx_MVCR2S5R3Y,Thu
+tx_16NB4JJ5HY,Fri
+tx_6F2ZGR3FA4,Sat
+tx_M7PKB0X6R3,Sun
+tx_HEGYK4ZZY2,Monday
+tx_KTHPN0ZYJY,Tuesday
+tx_GS42FX0A7J,Wednesday
+tx_AMZGQ0W711,Thursday
+tx_CTKDXZ6N8Y,Friday
+tx_A2V55CP2PG,Saturday
+tx_2T8VNW898G,Sunday
+tx_H0KFNYPAP5,Preseason
+tx_7FMTNWDQEH,Preseason International
+tx_R7989QWV9W,Midseason
+tx_X2MAQTBFYH,Midseason International
+tx_1476RV94TH,Regular Season
+tx_FDBQJHRWBQ,Regular Season International
+tx_XG1M9ND3NM,International
+tx_ST46WS1MDQ,Battlefield Hit
+tx_45H5GEFYKX,Battlefield Evasion
+tx_Z9BYFSRBZ5,Engage Hit
+tx_E81Q2HB2QS,Engage Evasion
+tx_NZ8J811NK6,ATK Growth
+tx_9SGTNE082E,HP Growth
+tx_1M94DFD405,B.Hit
+tx_FYFAJ8GC5N,B.Eva
+tx_FCMSTM5MAK,E.Hit
+tx_SN9QJ1JZF0,E.Eva
+tx_RNKSXJ1BRC,A.Gr
+tx_VQ5EQRK722,H.Gr
+tx_NP797WYRHS,Used for hit checks of battlefield engages and attack cards. The ratio to the opponent's Battlefield Evasion sets the chance.
+tx_ZXHHD0P38E,Lowers the chance of being hit on the battlefield. The ratio to the opponent's Battlefield Hit sets the chance.
+tx_X87R5A0F2R,Hit used only on the engage stage. Separate from Battlefield Hit.
+tx_09KVNQHFWR,Evasion used only on the engage stage. Separate from Battlefield Evasion.
+tx_W8S8Z4NAEW,"How fast growth turns into ATK. ×1.0 at the baseline, with no cap."
+tx_C4S174WKKD,"How fast growth turns into Max HP. ×1.0 at the baseline, with no cap."
+tx_2EY9076J9H,Growth
+tx_P3CT377PM2,Engage
+tx_38BCDRTBF7,Ambush
+tx_1A1V3BA2AF,Attack
+tx_C2DPZG9YQF,Defense
+tx_25DP1B49ED,Utility
+tx_9T5PRVVM4E,Draw
+tx_4M1A6Z1EJA,Jungle
+tx_5A1V09D3HA,Laning
+tx_AXHT969FXE,Common
+tx_D41QQZRCGD,Uncommon
+tx_2VJCYJ4V0W,Rare
+tx_HQ80SX4DB0,Epic
+tx_T1GJ91RP73,Legendary
+tx_0KSNX63V29,HP
+tx_CT45F83FMW,Max HP
+tx_DM2CD6EQG8,ATK
+tx_M0NZA7QAV5,Shield
+tx_VP2WZCKCPR,Presence
+tx_25V6NCVTVV,Training Plan
+tx_D6PVFND3FB,Mech Mastery
+tx_22VDY4GM0D,Opponent Analysis
+tx_MH05JHB9TC,Budget · Facilities
+tx_68VDV4VS14,Engage
+tx_YH61BAWPXA,Strategy Points
+tx_T4AGVJ1QTV,Roaming
+tx_5DBHZ89CP0,Growth
+tx_8TD0YTVTEE,Objective
+tx_Q2WE5344TP,Combat
+tx_5PRQY2H55H,Support
+tx_K15PVR5AZG,Kill Participation
+tx_46JEWXCS33,Turret Destruction
+tx_48MWZC5336,Vulnerable
+tx_16H8JD32NR,Ally
+tx_4HQK9Q9T8J,Enemy
+tx_R68VA861B3,Level-up Currency
+tx_PZBVMHMKQ5,Week {n}
+tx_E5R6MY0APC,{n} wk
+tx_08849WB92D,{win}W {loss}L
+tx_PR6YFXCW5G,Manager
+tx_MPYSG5BX0Y,Staff
+tx_0ZQK3N7THW,Pilot Card
+tx_QH1DC5S3H2,Mech Card
+tx_SN7SJKAZQ2,Deck
+tx_7ZE1GEB58D,Training
+tx_BXYJXH1JEK,Press Conference
+tx_F28RBDEGBX,Meeting
+tx_1AHEKW5X7X,Outing
 tx_KEVDQS5CGB,Basic Training
 tx_SN9RWDKSD9,Basic Training 2
 tx_ETXQNX2FF3,Shooting Drill
@@ -978,3 +1106,43 @@ tx_53D7BPJQBK,Facility upkeep +{p1}%
 tx_FNN91QZ7T0,First auto-draw {p1} cards
 tx_6XQ3A0Q7JP,Max hand size {p1}
 tx_6HNYQXB6DT,First card cost each tactics phase +{p1}
+tx_YE7AM14AWS,OK
+tx_GS4FN31BK4,Cancel
+tx_R1DMEF1S3E,Close
+tx_GNK4E0021C,Next
+tx_MJ7K2HGT5F,Previous
+tx_AT96DE2X15,Back
+tx_SJYVDFB5JD,Buy
+tx_6H9P8NYD5D,Claim
+tx_H8Z5ZYFV5C,Exchange
+tx_3RH196ZEX4,Continue
+tx_5SH8D92XHP,Level Up
+tx_RH1YF1BXER,Remove
+tx_Z9ZF4N1PB5,Reset
+tx_G4ST94AS6V,Use
+tx_AXDS9AXT95,To Lobby
+tx_1CXXKQSFYQ,Tap to continue
+tx_RQE8VZW0ST,None
+tx_18TM214PEP,All
+tx_D6A8HQG31W,Current
+tx_FCH5Y9PKAK,Locked
+tx_MQ1VXWXR6C,Not owned
+tx_BD4TNS9ZGD,No record
+tx_KSPTT1YQVS,Max Level
+tx_BPV8CFT8GC,Time Left
+tx_TX2ZDJFW9T,Already at max level
+tx_V9Y1AFMM59,Save failed: {error}
+tx_RZZD6A6587,Profile save failed: {error}
+tx_5QKX4WGHKZ,Not enough currency ({n} needed)
+tx_R1GNPFSHS2,", "
+tx_G8B83EH68G,Pick 5 players ({n} picked)
+tx_XCDR7YYQ5X,Unknown player id {id}
+tx_SB3Y7FCB40,Player not owned: {name}
+tx_PFQCMGEGEZ,You can't pick two players for the same position
+tx_70MQWR6PN8,{name} can't be picked at level {level}
+tx_JZ4R0P1ESK,Over the salary cap ({total} / {cap})
+tx_6SXP0BZA8B,Unknown team id {id}
+tx_HEE9SJ62Q8,Unknown scenario id {id}
+tx_VP8YTRQNQD,Manager preset: {error}
+tx_GDG84BJV4A,Can't raise it any further
+tx_9AYQATFV5B,Not enough level-up currency ({n} needed)

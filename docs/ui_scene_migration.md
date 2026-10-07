@@ -231,7 +231,7 @@ ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨�
 | #12 b | `MechDetailPanel` · MatchPrep UI · `MatchCheatMenu` | ✅ 머지 (+ `MechMasteryRow` · `MechQuirkRow` · `MechCardCell` · `MatchPrepView` · `MatchCheatItem`. 기벽 없는 경우 diff 0, 기벽 줄은 실제 줄바꿈으로 아래 ~3px. 다크 모달 variation 미정) |
 | 끝 | `mobile_safe_area.md` 패턴 B/C 씬 기반으로 갱신 | ✅ |
 | 끝 | 새 `.tscn` 전부 에디터에서 열고 저장 (uid 부여) | 사용자 ⬜ |
-| 끝 | 제안 variation 반영 (아래 표) — 사용자 결정: 모서리는 지금 모양 유지, `MechDetailPanel` 은 흰 테마로 | 🔄 1단계 `resources/` 에이전트 → 2단계 meta · season · match_flow 병렬 |
+| 끝 | 제안 variation 반영 — 사용자 결정: 모서리는 지금 모양 유지, `MechDetailPanel` 은 흰 테마로 | ✅ 1단계 `resources/` (Negative/Positive/LinkLabel · Bar*Button · BarSeparator · Accent/SurfaceChip · Selectable* 쌍 · `OutgameTheme.fit_bottom_bar`) → 2단계 meta · season · match_flow 병렬 머지. 하단 바 헬퍼 4갈래 → 1개 (로비 코드 바만 `add_bottom_bar`) |
 
 ### 웨이브 3 에서 제안된 theme variation (미반영 — 지금은 각 씬의 로컬 override / sub_resource)
 | 제안 | 쓰는 곳 | 비고 |
@@ -258,11 +258,12 @@ ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨�
   PLAYOFF → INTL → GAME_OVER → ENDING), MatchFlow PREP · BAN_PICK — 에러 없음, 화면 정상.
 - 남은 일:
   1. **사용자** — 새 `.tscn` 81개 전부 에디터에서 열고 저장 (uid). 목록: `for f in $(git ls-files '*.tscn'); do head -1 "$f" | grep -q 'uid="uid://' || echo "$f"; done`
-  2. 위 variation 표 — 반영 범위 · 다크 모달 · 모서리 결정 후 일괄 반영.
+  2. ~~위 variation 표 반영~~ ✅. 단일 화면 전용 스타일(SectionCard · OutlinePanel · DangerCard · Rail* · 훈련/밴픽 전용)은 로컬 유지.
+     후속 후보: `CollectionTab` 필터(코드로 r12 타일) → `SelectableTile`, `DraftDetailPanel` 에 `MechDetailPanel` 처럼 `%SafeArea` 적용.
   3. 코드에 남은 공용 위젯: `CollectionCell` · `ManagerUi.add_preset_chips` · `TraitPickerView` (컬렉션 · 감독 탭 · RunSetup 공용),
      `IntelView` (MatchPrep · 리그 팀 상세), `MessengerView` 말풍선, `BanPickOrderRow`. 아이템 씬으로 옮길지는 별도 작업.
   4. `HubSheet.gd` 머리 주석 · `%Body` `editor_description` 이 "호출부가 절대 좌표 자식을 만든다" 로 남음 — 이제 리그 팀 상세만 해당.
-  5. `DraftDetailPanel` · `MechDetailPanel` 은 안전 영역 처리 없는 고정 높이 블록 (`mobile_safe_area.md` §7).
+  5. `DraftDetailPanel` 은 안전 영역 처리 없는 고정 높이 블록 (`MechDetailPanel` 은 흰 테마 전환 때 `%SafeArea` 적용 완료).
   6. 병렬 에이전트 교훈: 스크래치패드와 `user://`(모든 worktree 공용) 를 같이 쓴다 — 에이전트마다 하위 폴더,
      `Season.tscn` 실행은 `run_test.save` 를 자동 저장하므로 하네스는 메모리 데이터 + 백업/복원.
 

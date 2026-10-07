@@ -81,7 +81,7 @@ anchor_right = 1.0
 offset_top = 46
 offset_bottom = 102
 mouse_filter = 2
-theme_type_variation = &"BodyLabel"
+theme_type_variation = &"LinkLabel"
 theme_override_font_sizes/font_size = 44
 text = "0"
 horizontal_alignment = 2
@@ -106,7 +106,7 @@ text = "이번 주 예상 수지 +467  (수입 1,219 · 지출 752, 보너스 �
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
-theme_type_variation = &"BodyLabel"
+theme_type_variation = &"NegativeLabel"
 theme_override_font_sizes/font_size = 22
 text = "잔고가 한 주 고정 지출(752)보다 적습니다 — 적자가 나면 강제 삭감"
 
@@ -114,7 +114,7 @@ text = "잔고가 한 주 고정 지출(752)보다 적습니다 — 적자가 �
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
-theme_type_variation = &"BodyLabel"
+theme_type_variation = &"NegativeLabel"
 theme_override_font_sizes/font_size = 22
 text = "훈련 지원 삭감 중 — 2주 남음 (훈련 EXP −20%)"
 
@@ -233,10 +233,10 @@ mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="Line" type="Label" parent="Main/LastWeek/Cuts"]
-editor_description = "Template line — the script duplicates it per cut (colour NEGATIVE from code)."
+editor_description = "Template line — the script duplicates it per cut."
 custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
-theme_type_variation = &"BodyLabel"
+theme_type_variation = &"NegativeLabel"
 theme_override_font_sizes/font_size = 22
 text = "삭감 · 이번 주 배분 없음"
 
@@ -438,10 +438,10 @@ mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="Line" type="Label" parent="Main/Running"]
-editor_description = "Template line — the script duplicates it per running special (colour POSITIVE from code)."
+editor_description = "Template line — the script duplicates it per running special."
 custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
-theme_type_variation = &"BodyLabel"
+theme_type_variation = &"PositiveLabel"
 theme_override_font_sizes/font_size = 22
 text = "진행 중 · 단기 훈련 코치 — 감독 훈련 +4 · 2주 남음"
 

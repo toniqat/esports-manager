@@ -54,12 +54,10 @@ func _resolve_refs() -> void:
 ## 버튼은 하나뿐이다("확인") — 주를 넘기는 일은 시간 경과 화면의 일요일
 ## 마감이 가져갔고, 돌아갈 자리는 버튼이 아니라 주 진행 상태가 정한다
 ## (`SeasonHub.on_standings_confirmed`). 하나뿐인 행동이라 **하단 구간을 통째로
-## 차지한다** — 자리는 씬의 앵커가, 기기 몫(각진 모서리 · 아래 인셋)만 코드가
-## 넣는다(`OutgameTheme.style_bottom_button`).
+## 차지한다** — 자리와 각진 모양은 씬(앵커 · `BarPrimaryButton`)이, 기기 몫(아래
+## 인셋)만 코드가 넣는다(`OutgameTheme.fit_bottom_bar`).
 func _layout_ok_button() -> void:
-	var btn: Button = %OkButton
-	OutgameTheme.style_bottom_button(btn, "primary", OutgameTheme.FONT_BTN_PRIMARY)
-	btn.offset_top = -(OutgameTheme.BOTTOM_BAR_H + maxf(0.0, ScreenMetrics.insets().w))
+	OutgameTheme.fit_bottom_bar(%OkButton)
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────

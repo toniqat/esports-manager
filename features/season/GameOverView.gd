@@ -48,7 +48,7 @@ func _bind() -> void:
 	# 화면 전체를 안전 영역 위끝까지 내리고, 배경만 노치 자리까지 다시 덮는다.
 	ScreenMetrics.indent_to_safe_top(self)
 	ScreenMetrics.extend_background(%Background)
-	HubView.fit_bottom_bar(%SafeBottom, %BottomBar)
+	OutgameTheme.fit_bottom_bar(%BottomBar, %SafeBottom)
 	_reason_lbl = %Reason
 	_summary_lbl = %Summary
 	# 갈 길은 하나 — 정산 화면.

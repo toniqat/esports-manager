@@ -10,7 +10,7 @@ extends Control
 # `HubManageCard` row, toast, bottom bar). This script binds `%` nodes, fills data, wires
 # signals and applies the device safe-area offsets (pattern B, `docs/mobile_safe_area.md`):
 # the whole screen is lowered to the safe top, the background stretched back up, and the
-# bottom bar hung from the safe bottom (`fit_bottom_bar`). Create with `HubView.create()`.
+# bottom bar hung from the safe bottom (`OutgameTheme.fit_bottom_bar`). Create with `HubView.create()`.
 
 const SCENE_PATH: String = "res://features/season/HubView.tscn"
 
@@ -64,7 +64,7 @@ func _bind() -> void:
 	# 제목이 깔리지 않게. 배경만은 노치 자리까지 다시 덮는다.
 	ScreenMetrics.indent_to_safe_top(self)
 	ScreenMetrics.extend_background(%Background)
-	fit_bottom_bar(%SafeBottom, %BottomBar)
+	OutgameTheme.fit_bottom_bar(%BottomBar, %SafeBottom)
 
 	_phase_lbl = %Phase
 	_week_lbl = %Week
@@ -87,28 +87,6 @@ func _bind() -> void:
 	_start_btn = %Start
 	_standings_btn.pressed.connect(_on_standings_pressed)
 	_start_btn.pressed.connect(_on_start_pressed)
-
-
-## 하단 액션 바의 **기기 몫**만 코드가 넣는다(모양 · 비율은 씬) — `OutgameTheme.add_bottom_bar`
-## 규약 그대로: 바는 안전선 위 128 에 서고, 색면은 안전선 아래 뷰포트 바닥까지 내려가며,
-## 글자는 안전선 위에 남는다(`content_margin_bottom` += 인셋). 모서리는 각지게 편다.
-## `safe_bottom` = 화면 전체 rect, 그 바닥을 안전선으로 올린다. EndingView · GameOverView 도 쓴다.
-static func fit_bottom_bar(safe_bottom: Control, bar: Control) -> void:
-	var below: float = maxf(0.0, ScreenMetrics.insets().w)
-	safe_bottom.offset_bottom = -below
-	bar.offset_bottom = below
-	for c in bar.get_children():
-		var b := c as Button
-		if b == null:
-			continue
-		for n in OutgameTheme.BUTTON_STATES:
-			var src := b.get_theme_stylebox(n) as StyleBoxFlat
-			if src == null:
-				continue
-			var sb := src.duplicate() as StyleBoxFlat
-			OutgameTheme.set_corner_radius(sb, 0)
-			sb.content_margin_bottom += below
-			b.add_theme_stylebox_override(n, sb)
 
 
 # ── Trust (M7 data, shown since §14 T4) ──────────────────────────────────────

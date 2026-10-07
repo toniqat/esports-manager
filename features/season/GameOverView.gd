@@ -20,6 +20,11 @@ const SCENE_PATH: String = "res://features/season/GameOverView.tscn"
 var _reason_lbl: Label
 var _summary_lbl: Label
 var _built: bool = false
+# 탈락 라운드 · 순위를 읽는 매니저 — 실제 게임은 `_hub` 의 것을 매번 다시 읽는다
+# (`_resolve_refs`). 호스트가 없는 F6 미리보기만 직접 넣는다.
+var _league: LeagueManager = null
+var _tournament: TournamentManager = null
+var _intl: InternationalTournament = null
 
 
 ## Instantiates the scene. `GameOverView.new()` is an empty Control — don't use it.
@@ -29,6 +34,8 @@ static func create() -> GameOverView:
 
 func _ready() -> void:
 	_bind()
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 	refresh()
 
 
@@ -59,6 +66,7 @@ func _bind() -> void:
 func refresh() -> void:
 	if not _built:
 		return
+	_resolve_refs()
 	var s: Dictionary = _gm.season_state
 	var phase: int = int(s["current_phase"])
 	var phase_name: String = HubView.PHASE_NAMES.get(phase, "—")
@@ -80,11 +88,17 @@ func refresh() -> void:
 		_summary_lbl.text = _league_rank_text()
 
 
+func _resolve_refs() -> void:
+	if _hub == null:
+		return
+	_league = _hub.get_node_or_null("LeagueManager") as LeagueManager
+	_tournament = _hub.get_node_or_null("TournamentManager") as TournamentManager
+	_intl = _hub.get_node_or_null("InternationalTournament") as InternationalTournament
+
+
 ## 지금 대진표에서 플레이어 팀이 진 경기의 라운드 이름("4강 1경기" · "결승" …).
 ## 대진표가 없거나 진 경기가 없으면 "".
 func _lost_round_label() -> String:
-	if _hub == null:
-		return ""
 	var s: Dictionary = _gm.season_state
 	var t = s.get("current_tournament", null)
 	if t == null:
@@ -98,19 +112,15 @@ func _lost_round_label() -> String:
 		if int(m["team_a"]) != pid and int(m["team_b"]) != pid:
 			continue
 		if String(t.get("type", "")) == "INTL":
-			var intl: InternationalTournament = _hub.get_node_or_null("InternationalTournament") as InternationalTournament
-			return intl.slot_label(i) if intl != null else ""
-		var tm: TournamentManager = _hub.get_node_or_null("TournamentManager") as TournamentManager
-		return tm.slot_label(i) if tm != null else ""
+			return _intl.slot_label(i) if _intl != null else ""
+		return _tournament.slot_label(i) if _tournament != null else ""
 	return ""
 
 
 func _league_rank_text() -> String:
 	var s: Dictionary = _gm.season_state
 	var pid: int = int(s["player_team_id"])
-	var league: LeagueManager = null
-	if _hub != null:
-		league = _hub.get_node_or_null("LeagueManager") as LeagueManager
+	var league: LeagueManager = _league
 	if league == null:
 		return ""
 	var ranked: Array = league.standings_ranked()
@@ -140,3 +150,32 @@ func _title_summary_text() -> String:
 # 여기서는 결과 화면으로 넘어가기만 한다.
 func _on_settle_pressed() -> void:
 	get_tree().change_scene_to_file(RunResult.SCENE_PATH)
+
+
+## F6 단독 실행 미리보기 — 메모리 런의 프리시즌 리그를 다 치르고, 플레이오프 결승에서
+## 진 상태(`resources/UiPreview.gd`). 결과는 실제 길대로 `TournamentManager.record_result` 로
+## 적는다(메모리만). 정산(`RunResult.settle_current_run`)은 부르지 않는다 — 실제로도 SeasonHub 가
+## 이 화면 **전에** 하는 일이다. "정산" 버튼은 장면을 넘기지 않고 출력만 한다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	if UiPreview.ensure_run() == null:
+		return
+	var s: Dictionary = _gm.season_state
+	_league = UiPreview.ensure_league(self, CalendarSystem.LEAGUE_WEEKS[int(s["current_phase"])])
+	_tournament = TournamentManager.new()
+	_tournament.name = "PreviewPlayoff"
+	add_child(_tournament)
+	var b: Array = UiPreview.playoff_bracket(s, _league)
+	var pid: int = int(s["player_team_id"])
+	# 4강은 우리 팀이 이기고, 결승은 진다.
+	for slot in 2:
+		var m: Dictionary = b[slot]
+		var a: int = int(m["team_a"])
+		var bb: int = int(m["team_b"])
+		var winner: int = pid if pid == a or pid == bb else _league.simulate_ai_match(a, bb)
+		_tournament.record_result(slot, winner)
+	s["phase_week"] = int(s["phase_week"]) + 1
+	var fin: Dictionary = b[2]
+	_tournament.record_result(2, int(fin["team_b"]) if int(fin["team_a"]) == pid else int(fin["team_a"]))
+	%Settle.pressed.disconnect(_on_settle_pressed)
+	UiPreview.trace(%Settle.pressed, "정산")

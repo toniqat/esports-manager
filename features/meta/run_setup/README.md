@@ -34,6 +34,19 @@ level application) is documented in `features/season/README.md` "Entry point"
 | `DraftStatChip.tscn` + `.gd` | `class_name DraftStatChip extends PanelContainer` | Item scene: one stat chip of the detail popup (name over value, `SunkPanel`). `create()`, `fill(key, value, is_total)` — total swaps the value to `AccentLabel`. |
 | `RunRoster.gd` | `class_name RunRoster` | AI roster distribution used by `GameManager.start_run` — owned by RunCore, see `features/season/README.md`. |
 
+## F6 preview (standalone run)
+Every scene in this folder except `RunSetup.tscn` shows dummy data when run on its own
+(editor "Run Current Scene") — `_ready` → `UiPreview.is_standalone(self)` → `_fill_preview()` at the
+bottom of each script (`resources/UiPreview.gd`). Nothing is saved.
+- Item scenes (`StepChip`, `ScenarioCard`, `TeamCard`, `RoleBadge`, `DraftStatChip`, `DraftSlot`,
+  `PilotThumb`) — hand-written values (real pilot ids for the art), selected / filled state.
+- `ChoiceListView` (base alone: three hand-written scenario cards) · `ScenarioStepView` · `TeamStepView`
+  (real `RunRules` tables) — second card selected.
+- `ManagerStepView` — real profile, active preset; `_preview` stops trait taps from saving the profile.
+- `TeamDraftView` — no parent `TeamDraft`, so the branch runs **first** in `_ready` and injects one
+  (game.db pool + real owned collection, first scenario), then seats the strongest five within the cap.
+- `DraftDetailPanel` — opens the top-rated non-mob pilot with a skill (game.db), Lv 3.
+
 ## Steps — one table
 `RunSetupScreen.STEPS` is the single list (`{id, label}`) the header and `뒤로` / `다음`
 navigation read. **To add a step**: add one row and one branch in

@@ -210,6 +210,10 @@ var _start_btn: Button = null
 ## 화면 한 장(`BanPickView.tscn`). null = 화면이 걷혔다 — AI 대기 / 연출 코루틴이
 ## 깨어났을 때 이것으로 손을 뗄지 판단한다.
 var _view: BanPickView = null
+## 미리보기 전용(`BanPickView._fill_preview`, F6 단독 실행) — 채워 두면 `_build_ui` 가 새
+## 화면을 만들지 않고 이 화면을 채운다(MatchFlow 가 없으니 `_mf.canvas` 도 없다).
+## 실제 흐름에서는 늘 null.
+var preview_view: BanPickView = null
 ## 상대가 지금 집어 보고 있는 기체(-1 = 없음). 격자 칸 테두리와 상대 팀의 다음
 ## 칸(픽 슬롯 / 밴 칩)에 흐린 미리보기로 나타난다.
 var _ai_hover_id: int = -1
@@ -398,8 +402,11 @@ func _quirk_rows(side: int, mech_id: int, seat: int) -> Dictionary:
 ## 화면 한 장을 세우고 데이터를 채운다. 배치는 전부 씬(`BanPickView.tscn`) 몫이고
 ## 여기서 정하는 것은 기기에 따라 달라지는 값(안전 영역, 격자 높이)뿐이다.
 func _build_ui() -> void:
-	_view = BanPickView.create()
-	_mf.canvas.add_child(_view)
+	if preview_view != null:
+		_view = preview_view
+	else:
+		_view = BanPickView.create()
+		_mf.canvas.add_child(_view)
 	# 화면 전체를 안전 영역 안에 앉힌다 — 노치 / 다이나믹 아일랜드 밑에 상대 블록이
 	# 깔리지 않게. 바탕(`Background`)은 노치 자리까지 덮는다.
 	_view.fit_safe_area()

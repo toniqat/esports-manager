@@ -19,6 +19,8 @@
 - **하단 바** 헬퍼 4갈래 → `Bar*Button` 변형 + `OutgameTheme.fit_bottom_bar` 1개.
 - **안전 영역** — 씬 기반 패턴 B/C (`docs/mobile_safe_area.md`), `MechDetailPanel` · `DraftDetailPanel` `%SafeArea`.
 - **도구** — 런타임 덤프 · 스크린샷 러너 `UiSceneDump` (T4), 규칙 문서화 (T2, 루트 `CLAUDE.md`).
+- **단독 실행 미리보기** (T8) — 스크립트 있는 아웃게임 씬은 에디터에서 열고 F6 으로 실행하면 더미 데이터가
+  채워진다(`resources/UiPreview.gd`, §3 규칙 8). 스크립트 없는 아이템 씬은 씬에 박힌 샘플 문구로 확인.
 - **결정 끝난 것** — 모서리 반경은 변형 값(카드 18 · 바 7 · 세그먼트 12) 유지, `MechDetailPanel` 흰 테마,
   `DraftDetailPanel` 오른쪽 패널은 `Card` · `SunkPanel`, 컬렉션 필터는 `SelectableTile` 쌍.
 
@@ -137,6 +139,10 @@ ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨�
    (예: `RunResultSectionCard`), 기반 = 가장 가까운 공용 변형(`Card` · `SunkPanel` · `AccentChip` …).
    색이 데이터면 변형은 모양 + 미리보기 색, 코드는 `OutgameTheme.variation_box()` 사본에 색만 넣는다.
    목록 · 규칙: `resources/README.md` → Screen variations.
+8. **단독 실행(F6) 미리보기** — 스크립트가 있는 씬은 `_ready` 끝에
+   `if UiPreview.is_standalone(self): _fill_preview()` 를 두고, 맨 아래 `_fill_preview()` 가 스크립트의
+   보통 API 로 더미 데이터를 넣는다. 화면 · 패널은 실제 game.db 로 메모리 런(`UiPreview.ensure_run()`,
+   저장 없음), 아이템 씬은 손으로 적은 값. 새 씬을 만들면 같이 만든다. 규칙: `resources/README.md` → UiPreview.
 
 이 규칙들의 요약은 루트 `CLAUDE.md` Critical patterns 의 "Outgame UI lives in `.tscn`" 항목에 있다.
 
@@ -212,6 +218,7 @@ ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨�
       남은 일은 §0.
 - [ ] **T6** `editor_description` TODO 마킹을 실제로 한 번 써 보고(사용자가 마킹 → LLM 구현) 절차 다듬기.
       → §0 D2 (사용자 마킹 대기)
+- [x] **T8 단독 실행 미리보기** — 스크립트 있는 아웃게임 씬 전부에 `_fill_preview()` (§3 규칙 8).
 - [x] **T7 화면 전용 변형** — 씬 22개의 로컬 StyleBox 35개 → 접두사 변형 34개(§3 규칙 7, §7 웨이브 4).
 
 ---

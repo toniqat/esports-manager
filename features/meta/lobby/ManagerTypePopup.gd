@@ -55,6 +55,8 @@ func _ready() -> void:
 	%Dim.pressed.connect(cancel)          # no-op outside prestige mode — the dim just swallows
 	%Cancel.pressed.connect(cancel)
 	%Confirm.pressed.connect(_on_confirm)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 ## `prestige_mode` = M9 re-selection (dismissible); `current_type` gets a "현재" chip.
@@ -171,3 +173,16 @@ func _on_confirm() -> void:
 	var type_id: int = int((_types[_selected] as Dictionary).get("id", 0))
 	close()
 	chosen.emit(type_id)
+
+
+## F6 단독 실행 미리보기 — 프레스티지 재선택 모드, 현재 유형 칩 + 첫 카드 선택
+## (`resources/UiPreview.gd`). 실제 `manager_types.csv` 를 읽는다. 저장은 부르는 쪽(로비)
+## 일이라 `chosen` 은 출력만 된다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	UiPreview.trace(chosen)
+	UiPreview.trace(cancelled)
+	var types: Array = StaffSystem.manager_types()
+	var cur: int = int((types[types.size() - 1] as Dictionary).get("id", -1)) if not types.is_empty() else -1
+	open(true, cur)
+	select(0)

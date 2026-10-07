@@ -120,6 +120,8 @@ func _ready() -> void:
 	_action_btn.pressed.connect(_on_action_pressed)
 	# Drag / fling scrolling instead of the engine's touch drag.
 	DragScroll.attach(_list_scroll)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 	ensure_view()
 
 
@@ -799,3 +801,27 @@ func _on_overlay_closed() -> void:
 		_overlay = null
 	_overlay_kind = ""
 	refresh()
+
+
+## F6 단독 실행 미리보기 — 메모리 런의 **수요일**(`resources/UiPreview.gd`). 미리보기 전용
+## `TrainingBoard` 에 코치 추천 판을 깔고 월~수를 정산해 두고(호스트가 없으면 이 화면은
+## 정산하지 않는다), 그날 사건이 나면 첫 답으로 풀어 둔다 — 덮개 없이 사건 요약 · 오늘 저녁 ·
+## 파일럿 훈련 카드가 보이게. "확인"은 호스트(`SeasonHub`)가 없어 아무 일도 안 한다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	var gm: Node = UiPreview.ensure_run()
+	if gm == null:
+		return
+	var s: Dictionary = gm.season_state
+	var day: int = 2
+	s["week_day"] = day
+	var board := TrainingBoard.new()
+	board.name = "PreviewBoard"
+	add_child(board)
+	board.auto_arrange()
+	var day_log: Dictionary = _week_log()
+	for d in day + 1:
+		day_log[d] = board.apply_day_training(d)
+	MentalSystem.ensure_incident(s, day)
+	if MentalSystem.incident_pending(s, day):
+		MentalSystem.resolve_incident(s, day, 0)

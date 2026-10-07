@@ -96,6 +96,8 @@ func _ready() -> void:
 		var chip := DraftStatChip.create()
 		%Stats.add_child(chip)
 		_chips.append(chip)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 ## 팝업을 연다. 필요한 것은 파일럿 한 명뿐이다 — 스킬 행과 파일럿 카드는
@@ -315,3 +317,25 @@ func _team_short(team_id: int) -> String:
 	if team_id < 0 or team_id >= meta.size():
 		return "T%d" % team_id
 	return String(meta[team_id]["short_name"])
+
+
+## F6 단독 실행 미리보기 — game.db 의 실제 선수 풀(`GameManager.load_match_data()`)에서
+## 스킬이 있는 종합 1위를 Lv 3 사본으로 연다 (`resources/UiPreview.gd`). 닫으면 숨기만 한다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	var data: Dictionary = get_node("/root/GameManager").load_match_data()
+	if data.has("error"):
+		push_error("DraftDetailPanel 미리보기: " + String(data["error"]))
+		return
+	var best: PlayerData = null
+	for raw in (data["players"] as Array):
+		var p := raw as PlayerData
+		if p.is_mob or p.skill_id < 0:
+			continue
+		if best == null or p.stat_total() > best.stat_total():
+			best = p
+	if best == null:
+		return
+	var copy := best.duplicate() as PlayerData
+	RunRules.apply_level(copy, 3)
+	open(copy)

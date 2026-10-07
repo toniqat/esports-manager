@@ -16,6 +16,11 @@ static func create() -> HubRosterRow:
 	return (load(SCENE_PATH) as PackedScene).instantiate() as HubRosterRow
 
 
+func _ready() -> void:
+	if UiPreview.is_standalone(self):
+		_fill_preview()
+
+
 ## Role of this seat (`GameEnums.Role`) — row colour, role name and the stat captions.
 func set_role(role: int) -> void:
 	var col: Color = OutgameTheme.ROLE_COLORS[role]
@@ -57,3 +62,14 @@ func show_pilot(p: PlayerData, trust: int = 0, trust_max: int = 1) -> void:
 	fill.anchor_right = clampf(float(trust) / maxf(1.0, float(trust_max)), 0.0, 1.0)
 	fill.add_theme_stylebox_override("panel",
 			OutgameTheme.flat_style(col, int((%TrustGauge as Control).custom_minimum_size.y * 0.5)))
+
+
+## F6 단독 실행 미리보기 — 신뢰가 반을 넘은 미드 선수 한 줄 (`resources/UiPreview.gd`).
+## 얼굴이 나오게 실제 선수 id(Corin)를 쓴다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	var role: int = GameEnums.Role.ASSASSIN
+	set_role(role)
+	var p := PlayerData.new(2, "Corin", role, 0, 80, 85, 82, 80, 81, 82)
+	var t_max: int = ConstTable.int_of("TRUST_MAX")
+	show_pilot(p, int(float(t_max) * 0.6), t_max)

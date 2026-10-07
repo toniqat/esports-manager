@@ -46,6 +46,8 @@ static func create() -> HubView:
 func _ready() -> void:
 	_bind()
 	_connect_signals()
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 	refresh()
 
 
@@ -331,3 +333,32 @@ func _flash_toast(msg: String) -> void:
 func _clear_toast(expected: String) -> void:
 	if _toast_lbl != null and _toast_lbl.text == expected:
 		_toast_lbl.text = ""
+
+
+## F6 단독 실행 미리보기 — 메모리 런 + 두 주 치른 리그(`resources/UiPreview.gd`). 로스터 ·
+## 관리 카드는 `_ready` 의 `refresh()` 가 채운다. 관리 카드를 누르면 실제 시트가 뜬다(메모리만).
+## "이번 주 시작" · "리그 순위" 는 호스트(`SeasonHub`)가 없어 출력만 한다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	if UiPreview.ensure_run() == null:
+		return
+	var lm: LeagueManager = UiPreview.ensure_league(self)
+	UiPreview.trace(_start_btn.pressed, "이번 주 시작")
+	UiPreview.trace(_standings_btn.pressed, "리그 순위")
+	_fill_preview_host_lines.call_deferred(lm)
+
+
+## 주차 · 이번 주 경기 두 줄은 `refresh()` 가 호스트의 달력 · 리그에서 읽는다 — 단독 실행엔
+## 호스트가 없어 같은 글을 미리보기 리그로 채운다(`_ready` 의 `refresh()` 뒤에 돈다).
+func _fill_preview_host_lines(lm: LeagueManager) -> void:
+	var s: Dictionary = _gm.season_state
+	var phase: int = int(s["current_phase"])
+	_week_lbl.text = "%d / %d주차" % [int(s["phase_week"]),
+			int(CalendarSystem.PHASE_WEEKS.get(phase, 1))]
+	var nxt = lm.player_match_this_week()
+	if nxt == null:
+		_next_match_lbl.text = "이번 주 경기 없음"
+		return
+	var pid: int = int(s["player_team_id"])
+	var opp: int = int(nxt["team_b"]) if int(nxt["team_a"]) == pid else int(nxt["team_a"])
+	_next_match_lbl.text = "이번 주 경기: vs %s" % lm.team_name(opp)

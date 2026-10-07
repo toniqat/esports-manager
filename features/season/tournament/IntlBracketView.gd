@@ -35,6 +35,8 @@ func _ready() -> void:
 	ScreenMetrics.extend_background(%Background)
 	_layout_ok_button()
 	%OkButton.pressed.connect(_on_back_pressed)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 	ensure_view()
 
 
@@ -126,3 +128,61 @@ func _stage_name(stage: int) -> String:
 func _on_back_pressed() -> void:
 	if _hub != null and _hub.has_method("on_standings_confirmed"):
 		_hub.on_standings_confirmed()
+
+
+## F6 단독 실행 미리보기 — 메모리 런의 프리시즌 리그 상위 넷 + 해외 넷으로 프리시즌
+## 국제대회를 깔고, 8강 넷이 끝나 4강을 기다리는 대진표(`resources/UiPreview.gd`). 결과는
+## 실제 길대로 `record_result` 로 적는다(메모리만). 호스트가 없어 "확인" 은 아무 일도 안 한다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	if UiPreview.ensure_run() == null:
+		return
+	var s: Dictionary = _gm.season_state
+	var lm: LeagueManager = UiPreview.ensure_league(self,
+			CalendarSystem.LEAGUE_WEEKS[int(s["current_phase"])])
+	_intl = InternationalTournament.new()
+	_intl.name = "PreviewIntl"
+	add_child(_intl)
+	# 리그 팀 이름은 대회 매니저가 자기 리그로 읽는데, 보통은 호스트에서 찾는다.
+	_intl.bind_league(lm)
+	var pid: int = int(s["player_team_id"])
+	var top4: Array = []
+	for row in lm.standings_ranked().slice(0, 4):
+		top4.append(int(row["team_id"]))
+	if not top4.has(pid):
+		top4[3] = pid
+	var intl_ids: Array = []
+	for t in (s["intl_team_meta"] as Array).slice(0, 4):
+		intl_ids.append(int(t["id"]))
+	if intl_ids.size() < 4:
+		return
+	s["current_phase"] = GameEnums.SeasonPhase.PRESEASON_INTL
+	s["phase_week"] = 1
+	# `InternationalTournament._bootstrap_intl` 과 같은 짝: 리그 시드 ↔ 해외 시드 엇갈림.
+	var pairs: Array = [
+		[top4[0], intl_ids[3]], [top4[1], intl_ids[2]], [top4[2], intl_ids[1]], [top4[3], intl_ids[0]],
+		[-1, -1], [-1, -1], [-1, -1],
+	]
+	var b: Array = []
+	for slot in pairs.size():
+		var round_: int = 1 if slot < 4 else (2 if slot < 6 else 3)
+		b.append({
+			"slot": slot, "round": round_, "phase_week": round_,
+			"team_a": int(pairs[slot][0]), "team_b": int(pairs[slot][1]),
+			"year": int(s["year"]), "month": int(s["month"]), "day": int(s["day"]),
+			"weekday": 0, "matchday": 0, "played": false, "winner": -1,
+		})
+	s["current_tournament"] = {
+		"type": "INTL",
+		"phase_at_start": int(s["current_phase"]),
+		"stage": GameEnums.TournamentStage.INTL_QF,
+		"bracket": b,
+	}
+	for slot in 4:
+		var m: Dictionary = b[slot]
+		var a: int = int(m["team_a"])
+		var bb: int = int(m["team_b"])
+		var winner: int = pid if pid == a or pid == bb else _intl.simulate_ai_match(a, bb)
+		_intl.record_result(slot, winner)
+	s["phase_week"] = 2
+	UiPreview.trace(%OkButton.pressed, "확인")

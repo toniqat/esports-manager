@@ -22,6 +22,8 @@ func _ready() -> void:
 	_style = OutgameTheme.card_style(ROW_RADIUS)
 	add_theme_stylebox_override("panel", _style)
 	(%Hit as Button).pressed.connect(func() -> void: tapped.emit())
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 ## An empty slot (fewer ranked teams than rows).
@@ -64,3 +66,10 @@ func fill(rank: int, team_text: String, wins: int, losses: int,
 
 	(%Rank as Label).add_theme_color_override("font_color",
 			OutgameTheme.TEXT if is_player else OutgameTheme.TEXT_SUB)
+
+
+## F6 단독 실행 미리보기 — 진출권 · 내 팀 줄 (`resources/UiPreview.gd`).
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	UiPreview.trace(tapped)
+	fill(3, "T1  (T1)", 5, 2, true, true)

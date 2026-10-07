@@ -23,6 +23,8 @@ func _ready() -> void:
 	(%Chip as PanelContainer).add_theme_stylebox_override("panel", chip)
 	set_selected(false)
 	gui_input.connect(_on_gui_input)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 ## `row` = one `StaffSystem.manager_types()` entry; `is_current` shows the "현재" chip.
@@ -48,3 +50,24 @@ func _on_gui_input(event: InputEvent) -> void:
 	if mb == null or mb.pressed or mb.button_index != MOUSE_BUTTON_LEFT:
 		return
 	tapped.emit()
+
+
+## F6 단독 실행 미리보기 — 고른 상태의 "현재" 카드, 손으로 적은 스탯 (`resources/UiPreview.gd`).
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	UiPreview.trace(tapped)
+	var stats: Dictionary = {}
+	var vals: Array = [5, 6, 5, 7, 6, 7]
+	for i in StaffSystem.STATS.size():
+		stats[String(StaffSystem.STATS[i])] = int(vals[i % vals.size()])
+	fill({"name": "운영형", "stats": stats,
+			"desc": "조직 운영에 밝은 감독 — 관리 · 멘탈 쪽으로 조금 기운 고른 분배"}, true)
+	set_selected(true)
+	_preview_fit.call_deferred()
+
+
+## 미리보기 전용 — 첫 배치 전에 0 폭으로 잰 설명(자동 줄바꿈)이 루트를 키워 둔 높이를
+## 실제 최소 크기로 되돌리고 다시 가운데에 놓는다(컨테이너 안에서는 컨테이너가 맞춘다).
+func _preview_fit() -> void:
+	reset_size()
+	UiPreview.stage(self)

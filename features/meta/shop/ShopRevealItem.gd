@@ -16,6 +16,11 @@ static func create() -> ShopRevealItem:
 	return (load(SCENE_PATH) as PackedScene).instantiate() as ShopRevealItem
 
 
+func _ready() -> void:
+	if UiPreview.is_standalone(self):
+		_fill_preview()
+
+
 ## `e` = one entry of `Gacha.pull(...).results` — `{pool, id, rarity, result, stage, shards, amount}`.
 func show_result(e: Dictionary) -> void:
 	var rar: int = int(e.get("rarity", 0))
@@ -68,3 +73,16 @@ func _show_tag(e: Dictionary) -> void:
 	chip.add_theme_stylebox_override("panel", OutgameTheme.flat_style(tag_bg, int(chip.size.y * 0.5)))
 	%TagText.text = tag
 	%TagText.add_theme_color_override("font_color", tag_fg)
+
+
+## F6 단독 실행 미리보기 — 돌파 결과 한 장 (`resources/UiPreview.gd`). 선수 id 만 실제
+## 풀에서(가장 높은 등급) 고르고 나머지는 손으로 적는다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	var pick: Dictionary = {}
+	for raw in Gacha.named_pilots():
+		var r: Dictionary = raw
+		if pick.is_empty() or int(r["rarity"]) > int(pick["rarity"]):
+			pick = r
+	show_result({"pool": Gacha.POOL_PILOT, "id": int(pick.get("id", 0)),
+			"rarity": int(pick.get("rarity", 3)), "result": "breakthrough", "stage": 2})

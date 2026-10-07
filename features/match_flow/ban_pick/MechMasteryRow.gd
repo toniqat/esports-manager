@@ -16,6 +16,11 @@ static func create() -> MechMasteryRow:
 	return (load(SCENE_PATH) as PackedScene).instantiate() as MechMasteryRow
 
 
+func _ready() -> void:
+	if UiPreview.is_standalone(self):
+		_fill_preview()
+
+
 ## `row` — `{name, value, tier, bonus, current}` (BanPickController `_mastery_rows`).
 func fill(row: Dictionary) -> void:
 	var cur: bool = bool(row.get("current", false))
@@ -30,3 +35,10 @@ func fill(row: Dictionary) -> void:
 	var bonus: Label = %Bonus
 	bonus.text = String(row.get("bonus", ""))
 	bonus.add_theme_color_override("font_color", col)
+
+
+## F6 단독 실행 미리보기 — 누른 자리의 파일럿(▶ 진하게) 한 줄: `능숙` 등급 · 값 · 보정.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	fill({"name": "Seed", "value": 64, "tier": 2,
+			"bonus": MechMastery.bonus_text(2), "current": true})

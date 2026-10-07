@@ -23,6 +23,8 @@ static func create() -> MechCardCell:
 
 func _ready() -> void:
 	%Hit.pressed.connect(func() -> void: tapped.emit(%Card as Card))
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 ## `def` — 메크 카드 행(`GameManager.mech_cards_for`). 트리에 들어간 **뒤에** 부른다 —
@@ -36,3 +38,14 @@ func fill(def: Dictionary) -> void:
 	var badge: Label = %Badge
 	badge.text = ("×%d" % cnt) if cnt > 0 else "생성 전용"
 	badge.add_theme_color_override("font_color", BADGE_COLOR if cnt > 0 else BADGE_SPAWN_COLOR)
+
+
+## F6 단독 실행 미리보기 — Triumph 의 `생성 전용` 카드 `승전보`(장수 0 — 파란 배지).
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	UiPreview.trace(tapped)
+	var gm: Node = get_node_or_null("/root/GameManager")
+	var defs: Array = gm.mech_cards_for(6) if gm != null else []
+	if defs.is_empty():
+		return
+	fill(defs[0])

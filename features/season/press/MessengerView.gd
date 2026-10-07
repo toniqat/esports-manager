@@ -93,6 +93,8 @@ func _ready() -> void:
 	# Device insets only — the layout itself is the scene's.
 	ScreenMetrics.extend_background(%Background)
 	(%SafeArea as Control).offset_bottom = -maxf(0.0, ScreenMetrics.insets().w)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 # ── API ──────────────────────────────────────────────────────────────────────
@@ -137,6 +139,13 @@ func show_result(outcome: Dictionary) -> void:
 
 func is_open() -> bool:
 	return _stage != Stage.DONE
+
+
+## Shows every remaining line at once and then the choices (as if tapped through).
+## For previews / harnesses — the normal flow reveals one line per tap.
+func reveal_all() -> void:
+	while _stage == Stage.LINES:
+		_reveal_next_line()
 
 
 # ── Lines ────────────────────────────────────────────────────────────────────
@@ -390,3 +399,25 @@ static func _text_block_height(text: String, w: float, font_size: int) -> float:
 						font_size).x / maxf(1.0, w))))
 		total += line_h * float(wrapped)
 	return maxf(line_h, total)
+
+
+## F6 단독 실행 미리보기 — 손으로 적은 기자회견 한 판: 기자 두 줄 · 해설 · 내 답 한 줄을
+## 다 펼쳐 답변 셋이 보이는 상태(`resources/UiPreview.gd`). 답을 고르면 결과 칩까지 나온다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	UiPreview.trace(choice_picked)
+	UiPreview.trace(closed)
+	choice_picked.connect(func(_idx: int) -> void:
+		show_outcome(["좋습니다. 주말 경기 기대하겠습니다."], ["팀 신뢰 +3", "감독 멘탈 +1 (2주)"], 1))
+	open("프리시즌 · 3주차 · e스포츠 데일리 기자", "기자회견", null, [
+		"주말 경기 상대가 만만치 않다는 평이 많습니다.",
+		"솔직히, 이길 자신 있으십니까?",
+		"*기자석이 잠시 조용해진다.",
+		">상대 분석은 이미 끝냈습니다.",
+		"그렇다면 이번 주 훈련의 초점은 어디에 두셨나요?",
+	], [
+		"저희 선수들을 믿습니다.",
+		"쉽지 않겠지만 준비한 게 있습니다.",
+		"질문이 좀 무례하시네요.",
+	])
+	reveal_all()

@@ -26,6 +26,8 @@ func _ready() -> void:
 	quirk_badge = get_node_or_null("%QuirkBadge") as Panel
 	quirk_label = get_node_or_null("%QuirkLabel") as Label
 	hit = %Hit
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 ## Side colour of the rim — shape = theme variation `BanPickPortraitRim` (2px, transparent fill).
@@ -33,3 +35,19 @@ func setup(side_col: Color) -> void:
 	var sb := OutgameTheme.variation_box(&"BanPickPortraitRim")
 	sb.border_color = side_col
 	rim.add_theme_stylebox_override("panel", sb)
+
+
+## F6 단독 실행 미리보기 — 아군(BLUE) 파일럿 Seed(id 7) 의 눈높이 크롭 + `기벽 2`
+## 배지(영웅 등급 색). 채우는 법은 `BanPickController._setup_team_block` /
+## `_refresh_portrait_quirk` 와 같다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	UiPreview.trace(hit.pressed, "portrait tapped")
+	setup(Color(0.20, 0.45, 0.92))
+	face.texture = PilotImages.eye_for(7)
+	if quirk_badge != null:
+		quirk_badge.visible = true
+		quirk_badge.add_theme_stylebox_override("panel", OutgameTheme.flat_style(
+				QuirkSystem.grade_color(2), int(quirk_badge.size.y * 0.5)))
+		if quirk_label != null:
+			quirk_label.text = "기벽 2"

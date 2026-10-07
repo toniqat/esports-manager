@@ -99,6 +99,9 @@ for save metadata and the lobby run card, never for match-day filtering.
   The card style is built in code (`card_style(14)`) because it is data: own team = `ACCENT_DIM` +
   `ACCENT` 2px border, playoff cut = green 6px left bar, empty slot = `SURFACE_SUNK`. The rank
   colour (own team = `TEXT`) is data too.
+- **F6 preview** — run either scene alone and it fills dummy data (`resources/UiPreview.gd`):
+  `LeagueView` = in-memory run + preview-only `LeagueManager` with 2 weeks played; `LeagueRow` =
+  own team in the playoff cut.
 
 ### LeagueView scene tree
 ```

@@ -76,6 +76,8 @@ static func open(host: Node) -> void:
 
 func _ready() -> void:
 	resized.connect(_fit_sheet)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 func _bind(sheet: HubSheet, state: Dictionary) -> void:
@@ -276,3 +278,16 @@ static func _lines(list: Node, texts: Array) -> Array:
 		(list.get_child(i) as Label).text = String(texts[i])
 	(list as CanvasItem).visible = not texts.is_empty()
 	return list.get_children().slice(0, texts.size())
+
+
+## F6 단독 실행 미리보기 — 메모리 런의 감독 · 스태프 + 일시 보정 두 줄(기자회견 답변
+## 같은 것)로 채운 시트 본문(`resources/UiPreview.gd`).
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	var gm: Node = UiPreview.ensure_run()
+	if gm == null:
+		return
+	var state: Dictionary = gm.season_state
+	StaffSystem.add_mod(state, "mental", 2, 2, "기자회견")
+	StaffSystem.add_mod(state, "tactics", -1, 1, "사건")
+	_bind(null, state)

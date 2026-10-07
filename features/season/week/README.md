@@ -16,6 +16,10 @@ The screen where the week passes **one day at a time, Monday to Sunday**. `Scree
 | `WeekPilotCard.tscn` | Item: one pilot's training result (`%Portrait` · `%Name` · `%Role` · `%Mastery` · `%Stats` of `WeekStatCell` · `%QuirkDivider` · `%Quirks` with the `%QuirkLine` template) |
 | `WeekStatCell.tscn` | Item: one stat column (`%Short` / `%Value` / `%Result`) |
 
+**F6 preview** — run `WeekProgressView.tscn` alone and it fills dummy data (`resources/UiPreview.gd`):
+in-memory run on Wednesday, a preview-only `TrainingBoard` (coach arrangement) settles Mon–Wed, and a
+pending incident is resolved with its first answer so no overlay covers the cards.
+
 ## Scene (`WeekProgressView.tscn`)
 
 ```

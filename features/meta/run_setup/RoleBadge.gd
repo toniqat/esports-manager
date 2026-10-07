@@ -21,6 +21,11 @@ static func create() -> RoleBadge:
 	return (load(SCENE_PATH) as PackedScene).instantiate() as RoleBadge
 
 
+func _ready() -> void:
+	if UiPreview.is_standalone(self):
+		_fill_preview()
+
+
 ## 역할 색 · 약칭을 입힌다. 알 수 없는 역할이면 false (배지는 그대로 숨는다).
 func set_role(role: int) -> bool:
 	if role < 0 or role >= ROLE_INITIALS.size():
@@ -33,3 +38,9 @@ func set_role(role: int) -> bool:
 	add_theme_stylebox_override("panel", sb)
 	(%Text as Label).text = String(ROLE_INITIALS[role])
 	return true
+
+
+## F6 단독 실행 미리보기 — 암살자(`As`) 배지 (`resources/UiPreview.gd`).
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	set_role(GameEnums.Role.ASSASSIN)

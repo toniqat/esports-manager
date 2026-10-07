@@ -43,6 +43,12 @@ func _ready() -> void:
 		cal.phase_changed.connect(_on_phase_changed)
 
 
+## 리그를 직접 물린다 — 호스트(`SeasonHub`) 밖에서 쓸 때(F6 미리보기). 보통은 `_ready` 가
+## 형제 `LeagueManager` 를 찾는다.
+func bind_league(lm: LeagueManager) -> void:
+	_league = lm
+
+
 # ── Active state ────────────────────────────────────────────────────────────
 func is_active() -> bool:
 	var t = _gm.season_state.get("current_tournament", null)

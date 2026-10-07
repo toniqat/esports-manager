@@ -12,8 +12,13 @@ HubView "이번 주 시작 →"  →  PRESS  →  (pick an answer)  →  TRAININ
 |---|---|
 | `PressConferenceView.gd` | `class_name PressConferenceView extends Control` — the screen: draws this week's `MentalSystem.press_session` in a `MessengerView`, applies the answer with `MentalSystem.resolve_press`, then `SeasonHub.on_press_finished()` |
 | `PressConferenceView.tscn` | The screen scene: root (theme `OutgameTheme.tres`, PASS) + one `MessengerView.tscn` instance `%Messenger` whose `outcome_hint` is set in the scene (`화면을 눌러 계속`). Created by `SeasonHub` with `PressConferenceView.create()` |
-| `MessengerView.gd` | `class_name MessengerView extends Control` — **shared messenger dialogue** (press conference here; interview / outing / incident overlays on the week screen). Create with `MessengerView.create()` (`.new()` is an empty Control). API: `open(sub, title, portrait, lines, choices)` → signal `choice_picked(idx)` → `show_result(outcome)` / `show_outcome(reply_lines, notes, verdict)` → signal `closed`. `@export outcome_hint` = bottom hint after the outcome. Line grammar: plain = left speaker, `>text` = manager (right), `*text` = narration (see `features/season/mental/README.md`). |
+| `MessengerView.gd` | `class_name MessengerView extends Control` — **shared messenger dialogue** (press conference here; interview / outing / incident overlays on the week screen). Create with `MessengerView.create()` (`.new()` is an empty Control). API: `open(sub, title, portrait, lines, choices)` → signal `choice_picked(idx)` → `show_result(outcome)` / `show_outcome(reply_lines, notes, verdict)` → signal `closed`. `reveal_all()` shows every remaining line + the choices at once (previews / harnesses). `@export outcome_hint` = bottom hint after the outcome. Line grammar: plain = left speaker, `>text` = manager (right), `*text` = narration (see `features/season/mental/README.md`). |
 | `MessengerView.tscn` | The **frame** (below). The chat log itself stays code-built under `%Body` |
+
+**F6 preview** — both scenes fill dummy data when run alone (`resources/UiPreview.gd`), all lines revealed
+at once with `MessengerView.reveal_all()` (preview / harness API) so the answers show:
+`PressConferenceView` = this week's real question of an in-memory run; `MessengerView` = a hand-written
+conference (reporter · narration · manager lines, three answers; picking one shows sample result chips).
 
 ### `MessengerView.tscn` — what the scene owns / what code owns
 

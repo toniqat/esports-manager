@@ -290,6 +290,9 @@ from a season (`pending_match` exists)** — exported builds and standalone Matc
   `RunStats.top_role()`), clears `match_resume`, and fades to `Season.tscn` — SeasonHub settles it
   through the normal post-match path (RunStats, standings / bracket, post-match autosave).
 - One press locks the menu (the list is cleared) so a double tap can't fire during the fade.
+- **F6 standalone run** of `MatchCheatMenu.tscn` shows dummy data (the two PREP · BAN_PICK cheats,
+  list unfolded; pressing only prints) — `_fill_preview()` at the bottom of the script,
+  helper `resources/UiPreview.gd`.
 
 ---
 

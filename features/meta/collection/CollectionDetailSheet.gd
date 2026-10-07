@@ -79,6 +79,8 @@ func _ready() -> void:
 		_stat_chips.append(chip)
 	# CardDescBox measures its text at a fixed width — rebuild once the container knows it.
 	(%Cards as Control).resized.connect(_on_cards_resized)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 func open(p: PlayerData) -> void:
@@ -374,3 +376,27 @@ func _team_short(team_id: int) -> String:
 	if team_id < 0 or team_id >= teams.size():
 		return "T%d" % team_id
 	return String((teams[team_id] as Dictionary)["short_name"])
+
+
+## F6 단독 실행 미리보기 — 실제 프로필에서 가장 많이 키운 보유 선수(없으면 풀의 첫 선수)로
+## 연다 (`resources/UiPreview.gd`). 레벨업은 프로필을 저장하므로 누름을 출력만 하게 끊는다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	UiPreview.mute(%LevelUp, self, "레벨업")
+	UiPreview.trace(leveled_up)
+	var data: Dictionary = _gm.load_match_data()
+	if data.has("error"):
+		push_error("CollectionDetailSheet 미리보기: " + String(data["error"]))
+		return
+	var pick: PlayerData = null
+	var best: int = -1
+	for raw in data["players"]:
+		var pd := raw as PlayerData
+		if pd == null or pd.is_mob:
+			continue
+		var score: int = _pm.breakthrough_of(pd.id) * 100 + _pm.max_level_of(pd.id)
+		if score > best:
+			best = score
+			pick = pd
+	if pick != null:
+		open(pick)

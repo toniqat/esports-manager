@@ -147,6 +147,18 @@ and exposes intent methods on the hub. Pattern mirrors `BattleSim`:
 | EndingView               | `EndingView.gd` + `.tscn`                    | World-champion ending screen — REGULAR_INTL win                  |
 | *(overlay)* HubSheet     | `HubSheet.gd` + `HubSheet.tscn`              | Shared detail-sheet **frame** for the hub manage cards (`StaffPanel` · `MasteryPanel` · `FinancePanel`) and the standings team detail (`LeagueView.open_team_detail`). See "HubSheet" below. |
 
+**F6 preview** — each of these scenes run alone fills dummy data (`resources/UiPreview.gd`, branch in
+`_ready`, `_fill_preview()` at the bottom of the script). Screens use an in-memory run (nothing saved)
+plus preview-only manager children, since `_hub` is null standalone:
+`HubView` = 2 league weeks played (week / next-match lines filled from the preview league — they
+normally come from the host) · `HubSheet` = own-team detail · `EndingView` = all six titles won ·
+`GameOverView` = preseason playoff final lost · `BracketView` = SFs done, final pending ·
+`IntlBracketView` = preseason INTL, QFs done, SFs pending. Item scenes use hand-written values:
+`HubRosterRow` (Corin, trust past half) · `HubManageCard` (finance, alert dot) · `BracketMatchBox`
+/ `IntlMatchBox` (own team won). `정산` / `확인` / hub buttons only print (no settlement, no scene change).
+`EndingView` / `GameOverView` keep their managers in `_league` / `_intl` / `_tournament` (re-read from
+`_hub` every refresh; the preview sets them directly).
+
 ### HubSheet (`HubSheet.tscn` + `HubSheet.gd`)
 CanvasLayer 18, opened with `HubSheet.open_on(host, title)` (instantiates the scene via `create()`,
 adds it under `host`, sets the title, fits the safe area). One-shot: `close()` (dim tap · `닫기`)

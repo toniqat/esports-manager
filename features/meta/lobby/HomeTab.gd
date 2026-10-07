@@ -28,6 +28,11 @@ static func create() -> HomeTab:
 	return (load(SCENE_PATH) as PackedScene).instantiate() as HomeTab
 
 
+func _ready() -> void:
+	if UiPreview.is_standalone(self):
+		_fill_preview()
+
+
 func bar_specs() -> Array:
 	# 런이 있으면 1:2 — 이어하기가 주 행동이라 오른쪽 3분의 2. 없으면 새 런이 전폭.
 	if SaveSystem.has_run():
@@ -142,3 +147,39 @@ func _on_abandon_confirmed() -> void:
 func _start_new_run() -> void:
 	_gm.reset_season_state()
 	get_tree().change_scene_to_file(RUN_SETUP_SCENE)
+
+
+## F6 단독 실행 미리보기 — 메모리 런(몇 주 치른 리그)의 런 카드 (`resources/UiPreview.gd`).
+## 런 파일은 읽지도 쓰지도 않는다: 메타는 `SaveSystem` 의 런 메타와 같은 칸을 메모리 런에서
+## 채운다. 행동 바는 호스트(`LobbyScreen`) 몫이라 없다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	_pm = get_node("/root/ProfileManager")
+	_gm = UiPreview.ensure_run()
+	if _gm == null:
+		_fill()
+		return
+	var lm: LeagueManager = UiPreview.ensure_league(self, 3)
+	var s: Dictionary = _gm.season_state
+	var pid: int = int(s["player_team_id"])
+	var rank: int = 0
+	var wins: int = 0
+	var losses: int = 0
+	var ranked: Array = lm.standings_ranked()
+	for i in ranked.size():
+		if int(ranked[i]["team_id"]) == pid:
+			rank = i + 1
+			wins = int(ranked[i]["wins"])
+			losses = int(ranked[i]["losses"])
+	var dt: Dictionary = Time.get_datetime_dict_from_system()
+	_has_run = true
+	_meta = {
+		"phase": int(s.get("current_phase", 0)), "year": int(s.get("year", 1)),
+		"month": int(s.get("month", 12)), "day": int(s.get("day", 1)),
+		"weekday": int(s.get("weekday", 0)), "team_name": lm.team_name(pid),
+		"trophies": 1, "rank": rank, "wins": wins, "losses": losses,
+		"saved_at": "%04d-%02d-%02d %02d:%02d" % [dt["year"], dt["month"], dt["day"],
+				dt["hour"], dt["minute"]],
+		"match_in_progress": true,
+	}
+	_fill()

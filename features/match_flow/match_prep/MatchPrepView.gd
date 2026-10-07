@@ -30,6 +30,8 @@ func _ready() -> void:
 	OutgameTheme.fit_bottom_bar(start, safe)
 	start.pressed.connect(func() -> void: start_pressed.emit())
 	DragScroll.attach(%Scroll)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 ## 트리에 들어간 **뒤에** 부른다(행 폭이 화면 폭에서 나온다).
@@ -51,3 +53,23 @@ func _draw_intel(holder: Control, w: float, intel: Dictionary) -> void:
 	y += IntelView.add_analyst_note(holder, Vector2(0, y), w, intel)
 	y += IntelView.add_rows(holder, Vector2(0, y), w, intel)
 	holder.custom_minimum_size.y = y
+
+
+## F6 단독 실행 미리보기 — 메모리 런(`UiPreview.ensure_run`)의 다음 경기 상대(미리보기 전용
+## 리그 일정 `UiPreview.ensure_league`)와 내 팀 로스터로 채운다. 분석 단계는 런 그대로다.
+## `경기 시작` 은 출력만 한다(호스트가 없어 다음 단계로 넘어가지 않는다).
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	UiPreview.trace(start_pressed)
+	var gm: Node = UiPreview.ensure_run()
+	if gm == null:
+		return
+	var s: Dictionary = gm.season_state
+	var lm: LeagueManager = UiPreview.ensure_league(self, 0)
+	var pid: int = int(s["player_team_id"])
+	var eid: int = (pid + 1) % 8
+	var m: Variant = lm.next_unplayed_player_match()
+	if m != null:
+		eid = int(m["team_b"]) if int(m["team_a"]) == pid else int(m["team_a"])
+	fill(s, OpponentIntel.team_roster(s, pid), OpponentIntel.team_roster(s, eid),
+			lm.team_name(pid), lm.team_name(eid))

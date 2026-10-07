@@ -174,6 +174,8 @@ static func create() -> TrainingView:
 
 func _ready() -> void:
 	ensure_view()
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 # Idempotent — SeasonHub calls this each time it routes to TRAINING.
@@ -283,7 +285,7 @@ func refresh() -> void:
 ## Staff line under the title + effect line above the course list + whether the
 ## "코치 추천" slot is shown. Reads only `TrainingBoard` / `StaffSystem`.
 func _refresh_staff() -> void:
-	if _board == null or _hub == null:
+	if _board == null:
 		return
 	var state: Dictionary = _board.season_state()
 	if _staff_lbl != null:
@@ -959,3 +961,29 @@ func _on_auto_pressed() -> void:
 func _on_confirm_pressed() -> void:
 	if _hub != null and _hub.has_method("on_training_confirmed"):
 		_hub.on_training_confirmed()
+
+
+## F6 단독 실행 미리보기 — 메모리 런 + 미리보기 전용 `TrainingBoard` 에 코치 추천으로 판을
+## 채우고, 코스 카드 하나를 골라 정보 팝오버까지 띄운 상태(`resources/UiPreview.gd`).
+## "훈련 확정"은 호스트(`SeasonHub`)가 없어 아무 일도 안 한다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	if UiPreview.ensure_run() == null:
+		return
+	_board = TrainingBoard.new()
+	_board.name = "PreviewBoard"
+	add_child(_board)
+	_board.auto_arrange()
+	refresh()
+	_preview_pick_card.call_deferred()
+
+
+## 판을 다시 세운 다음 프레임에 세 번째 코스 카드를 고른다 — 카드 자리가 잡혀야
+## 팝오버가 그 위에 선다.
+func _preview_pick_card() -> void:
+	await get_tree().process_frame
+	var cards: Array = _inv_row.get_children().filter(
+			func(c: Node) -> bool: return c is TrainingCourseCard)
+	if cards.size() > 2:
+		var card: TrainingCourseCard = cards[2]
+		_select_card(card.tile, card)

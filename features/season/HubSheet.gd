@@ -57,6 +57,8 @@ func _ready() -> void:
 	# Drag / fling scrolling instead of the engine's touch drag (`DragScroll`).
 	DragScroll.attach(%Scroll)
 	# A press on the card must not fall through to the dim — `%Card` is STOP in the scene.
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 ## Body width (inside the scroll) = card width minus the `%Pad` side margins. Valid right
@@ -98,3 +100,29 @@ func _fit_safe_area() -> void:
 	var safe: Control = %SafeArea
 	safe.offset_top = ScreenMetrics.top_y()
 	safe.offset_bottom = ScreenMetrics.bottom_y() - ScreenMetrics.viewport_size().y
+
+
+## F6 단독 실행 미리보기 — 메모리 런의 내 팀 상세(순위표 팀 상세와 같은 본문)를 띄운다
+## (`resources/UiPreview.gd`). "닫기" · 바깥 누름은 시트를 지운다(빈 화면이 남는다).
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	UiPreview.trace(closed)
+	var gm: Node = UiPreview.ensure_run()
+	if gm == null:
+		return
+	var state: Dictionary = gm.season_state
+	var tid: int = int(state["player_team_id"])
+	var meta: Dictionary = (state["team_meta"] as Array)[tid]
+	_open("%s  (%s)" % [String(meta["name"]), String(meta["short_name"])])
+	var w: float = body_w() - 16.0   # 스크롤 막대 자리
+	var y: float = 0.0
+	var table: Dictionary = state.get("league_standings", {})
+	var rec: Dictionary = table.get(tid, table.get(str(tid), {}))
+	UiHelpers.mk_label(body, "%d승 %d패  · 내 팀" % [int(rec.get("wins", 0)),
+			int(rec.get("losses", 0))], 24, OutgameTheme.TEXT_SUB, Vector2(0, y), Vector2(w, 34))
+	y += 48.0
+	var intel: Dictionary = OpponentIntel.build(state, OpponentIntel.team_roster(state, tid), true)
+	y += IntelView.add_tier_header(body, Vector2(0, y), w, intel)
+	y += IntelView.add_analyst_note(body, Vector2(0, y), w, intel)
+	y += IntelView.add_rows(body, Vector2(0, y), w, intel)
+	set_body_height(y + 20.0)

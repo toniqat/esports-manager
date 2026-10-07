@@ -32,6 +32,8 @@ static func create() -> TrainingCourseCard:
 
 func _ready() -> void:
 	(%Mini as Control).draw.connect(_draw_mini)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 ## 카드를 채운다. `grade_locked` = 전술이 모자라 등급이 안 열림(잠금 칩),
@@ -88,3 +90,12 @@ func _draw_mini() -> void:
 		var c: Vector2i = tile.cells[i]
 		mini.draw_rect(Rect2(ox + float(c.x) * s + 1.0, oy + float(c.y) * s + 1.0,
 				s - 2.0, s - 2.0), TrainingTile.color_of(String(tile.cell_colors[i])), true)
+
+
+## F6 단독 실행 미리보기 — 손으로 적은 3등급 2×2 코스, 고른 상태(`resources/UiPreview.gd`).
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	var t := TrainingTile.from_def({"id": "T12", "name": "합숙 스크림", "grade": 3,
+			"shape": "CC/DD", "exp": "engage_hit:52|engage_eva:52", "effect": ""})
+	fill(t, "1/2", false, false, "")
+	set_selected(true, false)

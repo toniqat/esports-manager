@@ -19,6 +19,8 @@ static func create() -> HubManageCard:
 
 func _ready() -> void:
 	%Hit.pressed.connect(pressed.emit)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 ## `sm` = `<Panel>.hub_summary(state)`.
@@ -29,3 +31,18 @@ func show_summary(sm: Dictionary) -> void:
 	var who: String = String(sm.get("owner", ""))
 	%Owner.text = ("담당: " + who) if who != "" else ""
 	%Alert.visible = bool(sm.get("alert", false))
+
+
+## F6 단독 실행 미리보기 — 경고 점이 켜진 재무 카드 (`resources/UiPreview.gd`).
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	UiPreview.trace(pressed)
+	# 행 HBox 가 주는 폭이 없어 단독으로는 카드 폭을 직접 준다.
+	custom_minimum_size.x = 320.0
+	show_summary({
+		"title": "재무",
+		"value": "1,240 G",
+		"sub": "이번 주 수지 -85",
+		"owner": "한서윤",
+		"alert": true,
+	})

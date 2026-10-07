@@ -82,6 +82,8 @@ func _ready() -> void:
 	(%Upgrade as Button).pressed.connect(_on_upgrade)
 	(%UpgradeConfirm as Button).pressed.connect(_on_upgrade)
 	resized.connect(_fit_sheet)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 func _bind(sheet: HubSheet, state: Dictionary) -> void:
@@ -427,3 +429,16 @@ static func _fill_lines(list: Node, texts: Array) -> void:
 	for i in texts.size():
 		(list.get_child(i) as Label).text = String(texts[i])
 	(list as CanvasItem).visible = not texts.is_empty()
+
+
+## F6 단독 실행 미리보기 — 메모리 런으로 두 주를 정산해 지난 주 · 최근 기록이 찬
+## 시트 본문(`resources/UiPreview.gd`). 시트 없이 서므로 높이 맞추기는 건너뛴다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	var gm: Node = UiPreview.ensure_run()
+	if gm == null:
+		return
+	var state: Dictionary = gm.season_state
+	for _w in 2:
+		FinanceSystem.settle_week(state)
+	_bind(null, state)

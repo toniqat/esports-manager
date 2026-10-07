@@ -51,6 +51,8 @@ static func create() -> PilotThumb:
 func _ready() -> void:
 	pressed.connect(_on_pressed)
 	_apply_style()
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 func setup(p: PlayerData, sel: bool) -> void:
@@ -141,3 +143,12 @@ func _apply_style() -> void:
 func _on_pressed() -> void:
 	if pilot != null:
 		thumb_tapped.emit(pilot.id)
+
+
+## F6 단독 실행 미리보기 — 고른 칸(금 테두리 + 체크) + 샐러리 꼬리표, 손으로 적은 값
+## (`resources/UiPreview.gd`). id 는 얼굴 그림이 있는 실제 선수(2 = Corin).
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	UiPreview.trace(thumb_tapped)
+	setup(PlayerData.new(2, "Corin", GameEnums.Role.ASSASSIN, 5, 80, 85, 82, 80, 81, 82, 19), true)
+	set_tag("49")

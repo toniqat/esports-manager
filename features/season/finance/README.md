@@ -158,6 +158,8 @@ with no staff salaries; `upkeep_delay` with no upkeep) · balance < cost.
   effect line `special_effect_text` · weeks, desc, and a two-step button — `구매 −N` / `계약 무료` →
   「한 번 더 눌러 확정」 → buy; disabled with the block reason); 최근 기록 (latest `RECENT_ROWS` weeks).
   Only one special row is armed at a time (`_special_armed`; the facility button's `_upgrade_armed`).
+- **F6 preview** — run `FinancePanel.tscn` alone and it fills dummy data (`resources/UiPreview.gd`):
+  in-memory run with two `settle_week`s (last week + history rows), bound without a sheet.
 - **Sheet scene** (`FinancePanel.tscn`, root `VBoxContainer` top-wide 24 short of the body width — scroll-bar
   room; theme `OutgameTheme.tres`). The sheet's scroll height follows the root's height (`resized` →
   `set_body_height`), so the scene's `Tail` spacer is the bottom gap.

@@ -61,6 +61,8 @@ func _ready() -> void:
 		(row.get_node("%Minus") as Button).pressed.connect(_on_alloc_pressed.bind(key, -1))
 		(row.get_node("%Plus") as Button).pressed.connect(_on_alloc_pressed.bind(key, 1))
 		_rows[key] = row
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 # ── Tab contract ─────────────────────────────────────────────────────────────
@@ -420,3 +422,24 @@ func _reward_text(rewards: Dictionary = {}) -> String:
 		if int(r.get(k, 0)) > 0:
 			out.append("%s +%d" % [String((spec as Dictionary)["label"]), int(r[k])])
 	return " · ".join(PackedStringArray(out)) if not out.is_empty() else "없음"
+
+
+## F6 단독 실행 미리보기 — 실제 프로필의 사용 중 프리셋 (`resources/UiPreview.gd`).
+## `on_shown` 은 새 특성 표시를 지우며 프로필을 저장하므로 쓰지 않고, 같은 채움만 한다
+## (대기 중인 새 특성은 NEW 로 보이되 지우지 않는다). 저장하는 버튼(제거 · 재설정 ·
+## 프레스티지)은 누름을 출력만 한다. 행동 바 · 토스트는 호스트(`LobbyScreen`) 몫이라 없다.
+func _fill_preview() -> void:
+	# 호스트가 하듯 탭 루트를 화면 전체로 편다(씬의 1080 × n 은 에디터 미리보기 크기일 뿐).
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	UiPreview.stage(self)
+	setup(null)
+	UiPreview.mute(%Prestige, self, "프레스티지")
+	UiPreview.mute(%Reset, self, "재설정")
+	for key in _rows.keys():
+		UiPreview.mute((_rows[key] as Control).get_node("%Remove"), self, "제거 " + String(key))
+	var pending: Array = (_pm.profile.get("traits", {}) as Dictionary).get("unlocked_pending", [])
+	for raw in pending:
+		_new_ids.append(int(raw))
+	_load_draft(ManagerProgress.active_index(_pm.profile))
+	# 칩 · 특성은 내용 폭으로 줄을 세운다 — 첫 배치가 끝나 크기가 정해진 뒤에 채운다.
+	_rebuild.call_deferred()

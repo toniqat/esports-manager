@@ -49,6 +49,8 @@ func _ready() -> void:
 	veil = %Veil
 	tag = %Tag
 	_base_style = get_theme_stylebox("normal") as StyleBoxFlat
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 ## Name, portrait and role badge (`initial` = two letters, `role_col` = role colour; an
@@ -78,3 +80,25 @@ func set_highlight(col: Color, width: int) -> void:
 		sb = d
 	for st in STYLE_STATES:
 		add_theme_stylebox_override(st, sb)
+
+
+## F6 단독 실행 미리보기 — 시트로 열어 본(앰버 테두리) 정글 기체 한 칸: 역할 배지 ·
+## `예상 픽` 태그 · 내 라이더 `능숙` 태그. 색은 `BanPickController` 와 같은 값.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	UiPreview.trace(pressed, "cell pressed")
+	setup("Triumph", MechImages.portrait_for(6), "Fi", Color(1.00, 0.55, 0.20))
+	set_highlight(OutgameTheme.ACCENT, 4)
+	veil.visible = false
+	tag.visible = false
+	_preview_tag(intel, intel_label, "예상 픽", Color(0.88, 0.27, 0.27))
+	_preview_tag(mine, mine_label, MechMastery.tier_name(2), MechMastery.tier_color(2))
+
+
+func _preview_tag(panel: Panel, label: Label, text: String, bg: Color) -> void:
+	if panel == null:
+		return
+	panel.visible = true
+	panel.add_theme_stylebox_override("panel", OutgameTheme.flat_style(bg, 8))
+	if label != null:
+		label.text = text

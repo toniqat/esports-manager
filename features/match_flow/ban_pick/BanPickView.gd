@@ -119,6 +119,8 @@ func _ready() -> void:
 	_banner_label = %BannerLabel
 	# Finger / mouse drag scrolling instead of the engine's touch drag (`DragScroll`).
 	DragScroll.attach(scroll)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 ## Device insets → offsets (`docs/mobile_safe_area.md` pattern B as a scene: the background
@@ -188,3 +190,121 @@ func clear_banner(kill_tween: bool = true) -> void:
 	_banner_tween = null
 	_banner_bar.visible = false
 	_banner_label.visible = false
+
+
+# ── F6 단독 실행 미리보기 ─────────────────────────────────────────────────────
+const _PREVIEW_CONTROLLER_PATH: String = 		"res://features/match_flow/ban_pick/BanPickController.gd"
+## 미리보기가 멈추는 수 — 밴 4 · 양 팀 픽 3대씩 끝나고 내 픽 차례(14수 중 11번째).
+const _PREVIEW_STOP_AT: int = 10
+## 상대 AI 의 뜸 들이기를 빨리 감는 배속(미리보기 동안만).
+const _PREVIEW_TIME_SCALE: float = 4.0
+
+
+## F6 단독 실행 미리보기 — 메모리 런(`UiPreview.ensure_run`)의 실제 메크 · 내 팀 · 다음
+## 경기 상대(`UiPreview.ensure_league`) 로스터로 **미리보기 전용 `BanPickController`** 를
+## 이 화면에 붙여(`preview_view`) 진짜 밴픽을 돌린다. 내 차례는 격자 칸을 두 번 누르는
+## 보통 입력으로 두고(밴 = 남은 칸 끝, 픽 = 아직 없는 역할군), 상대는 원래 AI 가 둔다 —
+## 밴 4 · 픽 3:3 이 끝난 내 픽 차례에서 멈추고 칸 하나를 열어 시트를 띄운다. 그 뒤로는
+## 손으로 이어서 둘 수 있다(`게임 시작` 은 출력만 — 화면이 걷힌다).
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	var gm: Node = UiPreview.ensure_run()
+	if gm == null:
+		return
+	var data: Dictionary = gm.load_match_data()
+	if data.has("error"):
+		push_error("BanPickView preview: " + String(data["error"]))
+		return
+	var s: Dictionary = gm.season_state
+	var lm: LeagueManager = UiPreview.ensure_league(self, 0)
+	var pid: int = int(s["player_team_id"])
+	var eid: int = (pid + 1) % 8
+	var next_match: Variant = lm.next_unplayed_player_match()
+	if next_match != null:
+		eid = int(next_match["team_b"]) if int(next_match["team_a"]) == pid 				else int(next_match["team_a"])
+	var ctrl_script := load(_PREVIEW_CONTROLLER_PATH) as GDScript
+	var ctrl: Node = ctrl_script.new()
+	ctrl.name = "PreviewBanPick"
+	ctrl.preview_view = self
+	add_child(ctrl)
+	UiPreview.trace(ctrl.phase_finished, "ban_pick finished")
+	var blue: int = GameEnums.DraftSide.BLUE
+	ctrl.enter(data["mechs"], blue,
+			_preview_copies(OpponentIntel.team_roster(s, pid)),
+			_preview_copies(OpponentIntel.team_roster(s, eid)),
+			lm.team_name(pid), lm.team_name(eid))
+	_preview_autoplay(ctrl_script.get_script_constant_map()["SEQUENCE"],
+			_preview_grid_mechs(data["mechs"]), blue)
+
+
+## 경기용 사본 — 배정(`assigned_mech`)이 메모리 런의 원본 파일럿에 새겨지지 않게.
+func _preview_copies(roster: Array) -> Array:
+	var out: Array = []
+	for raw in roster:
+		out.append((raw as PlayerData).duplicate())
+	return out
+
+
+## 격자 칸 순서와 같은 메크 순서(`BanPickController._sorted_for_grid` 와 같은 정렬).
+func _preview_grid_mechs(mechs: Array) -> Array:
+	var out: Array = mechs.duplicate()
+	out.sort_custom(func(a, b):
+		var ra: int = GameEnums.role_seat((a as MechData).role)
+		var rb: int = GameEnums.role_seat((b as MechData).role)
+		if ra != rb:
+			return ra < rb
+		return (a as MechData).id < (b as MechData).id)
+	return out
+
+
+## 둔 수 = 덮개(BAN / BLUE / RED)가 씌워진 격자 칸 수.
+func _preview_taken() -> int:
+	var n: int = 0
+	for c in grid.get_children():
+		if (c as BanPickMechCell).veil.visible:
+			n += 1
+	return n
+
+
+func _preview_autoplay(seq: Array, grid_mechs: Array, my_side: int) -> void:
+	var my_roles: Array = []
+	Engine.time_scale = _PREVIEW_TIME_SCALE
+	while is_inside_tree():
+		var idx: int = _preview_taken()
+		if idx >= _PREVIEW_STOP_AT or idx >= seq.size():
+			break
+		if int(seq[idx][0]) == my_side:
+			var is_ban: bool = int(seq[idx][1]) == 0
+			var pick: int = _preview_choose(grid_mechs, my_roles, is_ban)
+			if pick < 0:
+				break
+			if not is_ban:
+				my_roles.append((grid_mechs[pick] as MechData).role)
+			var cell := grid.get_child(pick) as BanPickMechCell
+			cell.pressed.emit()
+			cell.pressed.emit()
+		await get_tree().create_timer(0.1).timeout
+	Engine.time_scale = 1.0
+	if not is_inside_tree():
+		return
+	# 멈춘 자리 — 아직 없는 역할군의 남은 칸 하나를 열어 시트(픽 확정)를 띄워 둔다.
+	var open_idx: int = _preview_choose(grid_mechs, my_roles, false)
+	if open_idx >= 0:
+		(grid.get_child(open_idx) as BanPickMechCell).pressed.emit()
+
+
+## 내 수로 누를 격자 칸 번호(-1 = 없음). 밴은 남은 칸의 끝에서, 픽은 앞에서부터 아직
+## 내 팀에 없는 역할군을 고른다.
+func _preview_choose(grid_mechs: Array, my_roles: Array, is_ban: bool) -> int:
+	var order: Array = range(grid_mechs.size())
+	if is_ban:
+		order.reverse()
+	var fallback: int = -1
+	for i in order:
+		if (grid.get_child(i) as BanPickMechCell).veil.visible:
+			continue
+		if is_ban or not (grid_mechs[i] as MechData).role in my_roles:
+			return i
+		if fallback < 0:
+			fallback = i
+	return fallback

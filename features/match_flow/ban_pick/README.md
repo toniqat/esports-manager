@@ -15,6 +15,18 @@
 | `BanPickSheetCard.tscn` / `.gd` | One card of the sheet's card row (card slot + tap button + count badge), `create()` per card |
 | `MechDetailPanel.gd` / `.tscn` | Assign-step mech detail popup — white modal, same family as `DraftDetailPanel` (section "MechDetailPanel" below) |
 
+**F6 standalone run (dummy data)** — every scene above with a script fills itself when run on its own
+(`_fill_preview()` at the bottom of each script, helper `resources/UiPreview.gd`; nothing is saved):
+- `BanPickView` — in-memory run (`UiPreview.ensure_run`) + next league opponent, a **preview-only
+  `BanPickController`** attached to the scene via its `preview_view` field (production: always null →
+  `_build_ui` creates the view under `MatchFlow.canvas` as before). Player turns are pressed as normal
+  cell taps, the real AI answers (time scale ×4 meanwhile); it stops at the player's 4th pick (4 bans,
+  3:3 picks) with a sheet open. Rosters are copies, so assignment never touches the run's pilots.
+- `MechDetailPanel` — in-memory run, Overdrive opened from the seat of the pilot with the best mastery.
+- Item scenes (`BanPickMechCell` · `MechSlot` · `Portrait` · `BanChip` · `SheetCard` · `MechCardCell` ·
+  `MechMasteryRow` · `MechQuirkRow`) — hand-set values with real mech / pilot / card / quirk ids,
+  filled the way `BanPickController` / `MechDetailPanel` fill them.
+
 ## Scene (`BanPickView.tscn`) — what the scene owns vs. what code owns
 ```
 BanPickView (Control full rect, theme = OutgameTheme.tres)

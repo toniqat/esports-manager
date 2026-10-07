@@ -61,6 +61,8 @@ func _ready() -> void:
 	%DevDesc.text = UiHelpers.keep_words(%DevDesc.text)
 	# Drag / fling scrolling instead of the engine's touch drag (`DragScroll`).
 	DragScroll.attach(%Scroll)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 func bar_specs() -> Array:
@@ -401,3 +403,54 @@ func _add_row(row_scene: PackedScene) -> Control:
 ## Pill / disc fill whose colour is data (rarity, trait polarity) — radius = half the height.
 func _paint_chip(p: Panel, col: Color) -> void:
 	p.add_theme_stylebox_override("panel", OutgameTheme.flat_style(col, int(p.size.y * 0.5)))
+
+
+## F6 단독 실행 미리보기 — 실제 프로필로 채운 선수 영입 칸 (`resources/UiPreview.gd`).
+## 뽑기 · 구매 · 교환은 프로필을 바꾸고 저장하므로 전부 끊는다: 1회 / 여러 회 버튼은
+## 프로필을 건드리지 않는 가짜 결과로 결과 팝업만 열고, 목록 칸의 구매 버튼과 개발용 지급은
+## 누름을 출력만 한다(칸을 바꿀 때마다 새로 생기는 줄도 붙은 뒤에 끊는다).
+func _fill_preview() -> void:
+	# 호스트가 하듯 탭 루트를 화면 전체로 편다(씬의 1080 × n 은 에디터 미리보기 크기일 뿐).
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	UiPreview.stage(self)
+	setup(null)
+	UiPreview.mute(%PullOne, self, "1회 뽑기")
+	UiPreview.mute(%PullMulti, self, "여러 회 뽑기")
+	UiPreview.mute(%DevGrant, self, "개발용 지급")
+	%PullOne.pressed.connect(func() -> void: _preview_reveal(1))
+	%PullMulti.pressed.connect(func() -> void: _preview_reveal(Gacha.multi_count()))
+	%Rows.child_entered_tree.connect(func(row: Node) -> void:
+		_preview_mute_row.call_deferred(row))
+	on_shown()
+
+
+## 미리보기 전용 — 지금 칸의 풀에서 프로필 없이 굴린 가짜 결과로 결과 팝업을 연다.
+func _preview_reveal(count: int) -> void:
+	var pool: String = _pool()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 11
+	var kinds: Array = ["new", "breakthrough", "shard", "new", "material"]
+	var results: Array = []
+	for i in count:
+		var id: int = Gacha.roll_item(pool, rng)
+		if id < 0:
+			continue
+		var row: Dictionary = Gacha.pilot_row(id) if pool == Gacha.POOL_PILOT else TraitSystem.row(id)
+		var kind: String = String(kinds[i % kinds.size()])
+		if pool == Gacha.POOL_TRAIT and kind != "new":
+			kind = "material"
+		elif pool == Gacha.POOL_PILOT and kind == "material":
+			kind = "shard"
+		results.append({"pool": pool, "id": id, "rarity": int(row.get("rarity", 0)),
+				"result": kind, "stage": 1 + i % 3, "shards": 5, "amount": 2})
+	_popup.open_reveal("%s 결과 (미리보기)" % ("선수 영입" if pool == Gacha.POOL_PILOT else "특성 연구"),
+			results)
+
+
+## 미리보기 전용 — 방금 붙은 목록 줄의 구매 버튼을 끊는다(배선은 줄을 붙인 뒤에 이어진다).
+func _preview_mute_row(row: Node) -> void:
+	if not is_instance_valid(row):
+		return
+	var b := row.get_node_or_null("%Buy") as BaseButton
+	if b != null:
+		UiPreview.mute(b, self, "구매")

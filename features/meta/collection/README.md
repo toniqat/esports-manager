@@ -16,6 +16,14 @@ Rules live elsewhere: `ProfileManager` (`max_level_of`, `breakthrough_of`, `pilo
 `level_up_cost`, `level_up_pilot`, `currency_of`), `RunRules` (`exp_required`, `apply_level`,
 `breakthrough_rows`, `apply_breakthrough`, `salary_of`). This folder adds no rules and no const keys.
 
+## F6 preview (standalone run)
+`CollectionTab` and `CollectionDetailSheet` each shows dummy data when run on its own (editor "Run Current Scene") — `_ready` →
+`UiPreview.is_standalone(self)` → `_fill_preview()` at the bottom of each script
+(`resources/UiPreview.gd`). Nothing is saved: buttons that would save the profile are re-wired
+to only print (`UiPreview.mute`).
+- `CollectionTab` — real profile, full 25-pilot grid; the sheet's 레벨업 only prints.
+- `CollectionDetailSheet` — opens the most-developed owned pilot of the real profile.
+
 ## Tab layout
 Scene (`CollectionTab.tscn`, scene-authored — `docs/ui_scene_migration.md`). The host sets the root's
 position / size to its content rect; everything below follows by anchors / containers.

@@ -38,6 +38,8 @@ static func create() -> ShopPopup:
 func _ready() -> void:
 	%Dim.pressed.connect(close)
 	%Ok.pressed.connect(close)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 ## Rarity 0..4 → colour — the shared trait table (`TraitUi.rarity_color`), used for
@@ -133,3 +135,24 @@ func _fit_safe_area() -> void:
 	var safe: Control = %SafeArea
 	safe.offset_top = ScreenMetrics.top_y()
 	safe.offset_bottom = ScreenMetrics.bottom_y() - ScreenMetrics.viewport_size().y
+
+
+## F6 단독 실행 미리보기 — 10회 영입 결과판(NEW · 돌파 · 파편 · 재료가 섞인)
+## (`resources/UiPreview.gd`). 선수 · 특성 id 만 실제 표에서 고르고 결과는 손으로 적는다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	UiPreview.trace(closed)
+	var kinds: Array = ["new", "breakthrough", "shard", "new", "shard"]
+	var results: Array = []
+	var pilots: Array = Gacha.named_pilots()
+	for i in mini(10, pilots.size()):
+		var r: Dictionary = pilots[(i * 3) % pilots.size()]
+		results.append({"pool": Gacha.POOL_PILOT, "id": int(r["id"]),
+				"rarity": int(r["rarity"]), "result": String(kinds[i % kinds.size()]),
+				"stage": 1 + i % 3, "shards": 5})
+	var traits: Array = TraitSystem.rows()
+	if not traits.is_empty() and not results.is_empty():
+		var t: Dictionary = traits[0]
+		results[results.size() - 1] = {"pool": Gacha.POOL_TRAIT, "id": int(t["id"]),
+				"rarity": int(t["rarity"]), "result": "material", "amount": 2}
+	open_reveal("선수 영입 결과", results)

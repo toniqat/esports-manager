@@ -66,6 +66,8 @@ func _ready() -> void:
 	_fit_safe_area()
 	# 손가락 / 마우스로 끌어 굴린다(`DragScroll`).
 	DragScroll.attach(%Scroll)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 ## `mastery_rows` — `[{name, value, tier, bonus, current}]` (BanPickController
@@ -220,3 +222,61 @@ func _clear(holder: Node) -> void:
 	for c in holder.get_children():
 		holder.remove_child(c)
 		c.queue_free()
+
+
+## F6 단독 실행 미리보기 — 메모리 런(`UiPreview.ensure_run`)의 내 팀에서 실제 메크
+## (Overdrive, id 12 — 패시브 · 카드 있음)를 가장 잘 타는 파일럿 자리에서 누른 상태로
+## 연다. 숙련도 줄 · 기벽 블록은 `BanPickController._mastery_rows` / `_quirk_rows` 와
+## 같은 모양으로 런 상태에서 만든다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	var gm: Node = UiPreview.ensure_run()
+	if gm == null:
+		return
+	var data: Dictionary = gm.load_match_data()
+	if data.has("error"):
+		push_error("MechDetailPanel preview: " + String(data["error"]))
+		return
+	var mech: MechData = null
+	for raw in data["mechs"]:
+		if (raw as MechData).id == 12:
+			mech = raw
+	var s: Dictionary = gm.season_state
+	var roster: Array = OpponentIntel.team_roster(s, int(s["player_team_id"]))
+	# 누른 자리 = 이 기체를 가장 잘 타는 내 파일럿(▶ 줄이 등급 색으로 돋보이게).
+	var pilots: Array = []
+	var seat: int = 0
+	var best: int = -1
+	for st in GameEnums.ROLE_DISPLAY_ORDER.size():
+		var role: int = int(GameEnums.ROLE_DISPLAY_ORDER[st])
+		var pd: PlayerData = roster[role] if role < roster.size() else null
+		pilots.append(pd)
+		if pd != null and MechMastery.value(s, pd.id, 12) > best:
+			best = MechMastery.value(s, pd.id, 12)
+			seat = st
+	var rows: Array = []
+	for st in pilots.size():
+		var pd := pilots[st] as PlayerData
+		if pd == null:
+			continue
+		var v: int = MechMastery.value(s, pd.id, 12)
+		var t: int = MechMastery.tier_of(v)
+		rows.append({"name": pd.name, "value": v, "tier": t,
+				"bonus": MechMastery.bonus_text(t), "current": st == seat})
+	var quirk_info: Dictionary = {}
+	if pilots[seat] != null:
+		quirk_info = _preview_quirks(s, pilots[seat], 12)
+	open(mech, rows, quirk_info)
+
+
+func _preview_quirks(s: Dictionary, pd: PlayerData, mech_id: int) -> Dictionary:
+	var rows: Array = []
+	for id in QuirkSystem.quirks_of(s, pd.id):
+		var r: Dictionary = QuirkSystem.row(int(id))
+		if r.is_empty():
+			continue
+		rows.append({"name": String(r["name"]), "grade": int(r["grade"]),
+				"effect": QuirkSystem.effect_text(int(id), true),
+				"active": QuirkSystem.cond_holds(s, pd, mech_id, String(r["cond"]))})
+	return {"pilot": pd.name, "slots": QuirkSystem.slots_of(s, pd.id),
+			"total": QuirkSystem.bonus_total(s, pd, mech_id), "rows": rows}

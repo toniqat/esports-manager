@@ -11,6 +11,14 @@ Manager growth and presets between runs. Contract: `docs/outgame_dev_plan.md` §
 | `TraitPickerView.gd` | `class_name TraitPickerView extends Control` | Trait block shared with the run setup `감독` step: bonus gauge, equipped slots, owned / locked trait rows. Draws + emits `trait_pressed(id)` only |
 | `ManagerUi.gd` | `class_name ManagerUi extends RefCounted` (static) | Shared pieces: `add_preset_chips`, read-only `add_stat_cells`, `preset_name`, `signed`, `bonus_color`, `unlock_text` (§12.4 grammar → Korean) |
 
+## F6 preview (standalone run)
+`ManagerTab` shows dummy data when run on its own (editor "Run Current Scene") — `_ready` →
+`UiPreview.is_standalone(self)` → `_fill_preview()` at the bottom of each script
+(`resources/UiPreview.gd`). Nothing is saved: buttons that would save the profile are re-wired
+to only print (`UiPreview.mute`).
+- Real profile, active preset. Skips `on_shown` (it clears the NEW list and saves); 제거 · 재설정 ·
+  프레스티지 only print. No action bar / toasts (host-owned).
+
 ## Stat model
 `base = type − removed` (≥ 1, removals permanent until prestige), `preset = base + alloc` (≤ `MANAGER_STAT_CAP`).
 Each level-up = `MANAGER_REMOVE_PER_LEVEL` removal points; one removal = one specialisation point;

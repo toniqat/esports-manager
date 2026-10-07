@@ -50,6 +50,11 @@ static func create() -> CollectionTab:
 	return (load(SCENE_PATH) as PackedScene).instantiate() as CollectionTab
 
 
+func _ready() -> void:
+	if UiPreview.is_standalone(self):
+		_fill_preview()
+
+
 func bar_specs() -> Array:
 	return []
 
@@ -200,3 +205,15 @@ func _on_leveled_up(pilot_id: int, new_level: int) -> void:
 	_host.refresh_currency()
 	var p: PlayerData = _by_id.get(pilot_id, null)
 	_host.show_toast("%s 최대 레벨 Lv %d" % [p.name if p != null else "?", new_level])
+
+
+## F6 단독 실행 미리보기 — 실제 프로필로 채운 25인 격자 (`resources/UiPreview.gd`).
+## 호스트(`LobbyScreen`)는 없다. 칸을 누르면 상세 시트가 뜨지만, 레벨업은 프로필을
+## 저장하므로 시트의 레벨업 누름을 출력만 하게 끊는다.
+func _fill_preview() -> void:
+	# 호스트가 하듯 탭 루트를 화면 전체로 편다(씬의 1080 × n 은 에디터 미리보기 크기일 뿐).
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	UiPreview.stage(self)
+	setup(null)
+	UiPreview.mute(_sheet.get_node("%LevelUp"), _sheet, "레벨업")
+	on_shown()

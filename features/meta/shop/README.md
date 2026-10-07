@@ -18,6 +18,16 @@ free weekly pass. Contract: `docs/outgame_dev_plan.md` §12 (row E). Tab contrac
 | `ShopRevealItem.gd` · `ShopRevealItem.tscn` | `class_name ShopRevealItem extends Panel` | One reveal card (168 × 300 tile) — `show_result(e)` fills it and paints the rarity / result colours |
 | `ShopRateRow.tscn` | *(no script)* | One rates-table row (divider · rarity chip · % · count · per-item %), filled by `ShopPopup.open_rates` |
 
+## F6 preview (standalone run)
+Every scripted scene here (`ShopTab`, `PassTab`, `ShopPopup`, `ShopRevealItem`) shows dummy data when run on its own (editor "Run Current Scene") — `_ready` →
+`UiPreview.is_standalone(self)` → `_fill_preview()` at the bottom of each script
+(`resources/UiPreview.gd`). Nothing is saved: buttons that would save the profile are re-wired
+to only print (`UiPreview.mute`).
+- `ShopTab` — real profile, 선수 영입 section; pulls open the reveal popup with fake results (no
+  profile change), every list-row `%Buy` and the dev grant only print.
+- `PassTab` — real profile's week (week roll-over in memory only); `수령` only prints.
+- `ShopPopup` — a 10-pull reveal (NEW · 돌파 · 파편 · 재료). `ShopRevealItem` — one 돌파 2 card.
+
 ## ShopPopup scene
 Layout is authored in the `.tscn` files (`docs/ui_scene_migration.md`); scripts only bind `%` nodes.
 Create with `ShopPopup.create()` (`ShopPopup.new()` is an empty layer). Open / close toggles `visible`;

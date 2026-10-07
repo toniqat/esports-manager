@@ -33,6 +33,8 @@ func _ready() -> void:
 	ScreenMetrics.extend_background(%Background)
 	_layout_ok_button()
 	%OkButton.pressed.connect(_on_back_pressed)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 	ensure_view()
 
 
@@ -128,3 +130,27 @@ func _stage_name(stage: int) -> String:
 func _on_back_pressed() -> void:
 	if _hub != null and _hub.has_method("on_standings_confirmed"):
 		_hub.on_standings_confirmed()
+
+
+## F6 단독 실행 미리보기 — 메모리 런의 프리시즌 리그를 다 치르고, 4강 둘이 끝나 결승을
+## 기다리는 대진표(`resources/UiPreview.gd`). 결과는 실제 길대로 `record_result` 로 적는다
+## (메모리만). 호스트(`SeasonHub`)가 없어 "확인" 은 아무 일도 안 한다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	if UiPreview.ensure_run() == null:
+		return
+	var s: Dictionary = _gm.season_state
+	_league = UiPreview.ensure_league(self, CalendarSystem.LEAGUE_WEEKS[int(s["current_phase"])])
+	_tournament = TournamentManager.new()
+	_tournament.name = "PreviewPlayoff"
+	add_child(_tournament)
+	var b: Array = UiPreview.playoff_bracket(s, _league)
+	var pid: int = int(s["player_team_id"])
+	for slot in 2:
+		var m: Dictionary = b[slot]
+		var a: int = int(m["team_a"])
+		var bb: int = int(m["team_b"])
+		var winner: int = pid if pid == a or pid == bb else _league.simulate_ai_match(a, bb)
+		_tournament.record_result(slot, winner)
+	s["phase_week"] = int(s["phase_week"]) + 1
+	UiPreview.trace(%OkButton.pressed, "확인")

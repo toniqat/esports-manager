@@ -31,6 +31,8 @@ static func create() -> PassTab:
 func _ready() -> void:
 	# Drag / fling scrolling instead of the engine's touch drag (`DragScroll`).
 	DragScroll.attach(%Scroll)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 func bar_specs() -> Array:
@@ -174,3 +176,20 @@ func _fill_rows() -> void:
 func _restore_scroll(sc: ScrollContainer, v: int) -> void:
 	if is_instance_valid(sc):
 		sc.scroll_vertical = v
+
+
+## F6 단독 실행 미리보기 — 실제 프로필의 이번 주 패스 (`resources/UiPreview.gd`).
+## `on_shown` · `_rebuild` 는 주가 바뀌면 저장하고 호스트의 행동 바를 읽으므로 쓰지 않고
+## 머리 · 줄만 채운다(주 넘김은 메모리에만). 수령 버튼은 저장하므로 누름을 출력만 한다.
+func _fill_preview() -> void:
+	# 호스트가 하듯 탭 루트를 화면 전체로 편다(씬의 1080 × n 은 에디터 미리보기 크기일 뿐).
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	UiPreview.stage(self)
+	setup(null)
+	PassSystem.ensure_week(_pm.profile)
+	_fill_head()
+	_fill_rows()
+	for row in %Rows.get_children():
+		var b: Button = row.get_node("%Claim")
+		if b.visible:
+			UiPreview.mute(b, self, "수령")

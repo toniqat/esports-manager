@@ -112,6 +112,8 @@ Read the README of every row your task touches. Indented rows are submodules —
   was deleted on purpose — never re-create it in code** (drop its binding too). Empty nodes with
   `editor_description = "TODO: …"` mark work to implement at that spot / size
   (`grep -rn 'editor_description = "TODO' --include=*.tscn`). `_draw` widgets stay code, placed as nodes.
+  Every scripted UI scene fills **dummy data when run alone (F6)** — `_ready` ends with
+  `if UiPreview.is_standalone(self): _fill_preview()`; keep it working, add it to new scenes (`resources/README.md` → UiPreview).
 - **Dev setup per PC**: `.mcp.json` pins `godot-mcp` to `addons/godot_mcp/plugin.cfg`'s version (bump both);
   copy `.vscode/settings.example.json` → `settings.json` and set the local Godot path.
 

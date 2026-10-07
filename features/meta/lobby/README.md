@@ -15,6 +15,17 @@ theme (`OutgameTheme`), bottom action bar. Replaces the old 3-slot TitleScreen
 | `ManagerTypePopup.tscn` + `.gd` | `class_name ManagerTypePopup extends CanvasLayer` | First-lobby manager type pick (운영형 / 실전형), not dismissible (M3); prestige re-pick mode, dismissible (M9). **Layout lives in the `.tscn`** |
 | `ManagerTypeOption.tscn` + `.gd` | `class_name ManagerTypeOption extends PanelContainer` | One option card of `ManagerTypePopup` (name, `현재` chip, desc, six stat cells) — item scene instantiated per type |
 
+## F6 preview (standalone run)
+Every scripted scene here except `LobbyScreen` (the `scenes/Lobby.tscn` root) shows dummy data when run on its own (editor "Run Current Scene") — `_ready` →
+`UiPreview.is_standalone(self)` → `_fill_preview()` at the bottom of each script
+(`resources/UiPreview.gd`). Nothing is saved: buttons that would save the profile are re-wired
+to only print (`UiPreview.mute`).
+- `HomeTab` — in-memory run (`ensure_run` + 3 league weeks), run card with rank / record / 경기 진행 중
+  chip; the run file is neither read nor written. No action bar (host-owned).
+- `ConfirmPopup` — the danger variant (런 포기). `ManagerTypePopup` — prestige mode, real
+  `manager_types.csv`, "현재" chip on the last type, first option selected.
+- `ManagerTypeOption` — hand-written 운영형 card, selected + "현재".
+
 ## Tab host (M8~M10) — `docs/outgame_dev_plan.md` §12.6
 ```
 ┌ currency strip (%CurrencyStrip) — outgame · levelup · tickets · shards ┐

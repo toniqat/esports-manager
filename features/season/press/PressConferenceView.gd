@@ -49,6 +49,8 @@ static func create() -> PressConferenceView:
 func _ready() -> void:
 	_messenger.choice_picked.connect(_on_answer_picked)
 	_messenger.closed.connect(_finish)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 	ensure_view()
 
 
@@ -80,3 +82,14 @@ func _on_answer_picked(idx: int) -> void:
 func _finish() -> void:
 	if _hub != null and _hub.has_method("on_press_finished"):
 		_hub.on_press_finished()
+
+
+## F6 단독 실행 미리보기 — 메모리 런의 이번 주 질문을 질문 줄까지 다 펼쳐 답변이 보이는
+## 상태(`resources/UiPreview.gd`). 질문은 이어지는 `ensure_view` 가 열므로 펼치기는 지연 호출.
+## 답을 고르면 메모리 런에만 적용되고, 마지막 탭은 호스트가 없어 아무 일도 안 한다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	if UiPreview.ensure_run() == null:
+		return
+	UiPreview.trace(_messenger.closed, "press closed")
+	_messenger.reveal_all.call_deferred()

@@ -72,6 +72,8 @@ func _ready() -> void:
 		c.queue_free()
 	(%Auto as Button).pressed.connect(_on_auto)
 	resized.connect(_fit_sheet)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 func _bind(sheet: HubSheet, state: Dictionary) -> void:
@@ -245,3 +247,17 @@ static func _ensure(list: Node, scene: PackedScene, n: int, wire: Callable = Cal
 			c.set_meta(&"wired", true)
 			wire.call(c)
 	return list.get_children()
+
+
+## F6 단독 실행 미리보기 — 메모리 런에서 연구 메크를 자동으로 고르고 몇 주 마감을
+## 돌려 숙련도가 쌓인 시트 본문(`resources/UiPreview.gd`).
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	var gm: Node = UiPreview.ensure_run()
+	if gm == null:
+		return
+	var state: Dictionary = gm.season_state
+	MechMastery.auto_assign_all(state)
+	for _w in 4:
+		MechMastery.settle_week(state)
+	_bind(null, state)

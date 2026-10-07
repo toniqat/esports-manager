@@ -54,6 +54,8 @@ All tuning numbers are `MASTERY_*` keys in `data/csv/const.csv` — none are wri
   button (delegated) or a manual hint, then one card per pilot in `GameEnums.ROLE_DISPLAY_ORDER`:
   portrait, name, current research mech, top-3 mastery line, and a chip per own-role mech
   (`name / tier value`, tier-coloured bar). Tap a chip = set research, tap the selected chip = clear.
+- **F6 preview** — run `MasteryPanel.tscn` alone and it fills dummy data (`resources/UiPreview.gd`):
+  in-memory run, `auto_assign_all` + four `settle_week`s, bound without a sheet.
   A tap refills the same body in place (`_fill`); rows and chips are reused (`_ensure`), so the tapped
   chip is never freed while it is emitting.
 - Quirks (§14 T1, only while `QuirkSystem.is_enabled`): a legend line (research quirk chance + grade

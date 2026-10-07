@@ -12,3 +12,14 @@ var x_label: Label = null
 func _ready() -> void:
 	art = %Art
 	x_label = %XLabel
+	if UiPreview.is_standalone(self):
+		_fill_preview()
+
+
+## F6 단독 실행 미리보기 — 밴된 칩 한 개(Wrecker, 흐린 그림 + ✕). 채우는 법은
+## `BanPickController._refresh_side_block` 과 같다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	art.modulate = Color(0.42, 0.42, 0.46, 1.0)
+	art.texture = MechImages.portrait_for(7)
+	x_label.text = "✕"

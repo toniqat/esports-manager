@@ -9,6 +9,10 @@ MatchFlow's first step (`LOAD → PREP → BAN_PICK`). Contract: `docs/outgame_d
 | `OpponentIntel.gd` | `class_name OpponentIntel` (static). **The single reveal rule** — `build(state, roster, is_own)` returns rows + analyst notes as data; `tier_for`, `threshold_of`, `team_roster(state, team_id)` (league `all_pilots` / INTL `intl_pilots`), `mech_name` |
 | `IntelView.gd` | `class_name IntelView` (static). Draws a `build()` result: `add_tier_header`, `add_analyst_note`, `add_rows` / `add_pilot_row`. Shared with the league team detail (`features/season/league/LeagueView.gd`) |
 
+**F6 standalone run** of `MatchPrepView.tscn` shows dummy data: in-memory run (`UiPreview.ensure_run`)
+vs its next league opponent (`UiPreview.ensure_league`), the run's real analysis tier; `경기 시작` only
+prints — `_fill_preview()` at the bottom of the script, helper `resources/UiPreview.gd`.
+
 ## PREP screen scene (`MatchPrepView.tscn`)
 ```
 MatchPrepView (Control full rect, OutgameTheme.tres)

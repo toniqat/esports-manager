@@ -33,6 +33,8 @@ func _ready() -> void:
 	menu.offset_top += ScreenMetrics.top_y()
 	%Toggle.pressed.connect(func() -> void: %List.visible = not %List.visible)
 	_rebuild()
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 ## 지금 단계의 치트 목록으로 갈아 끼운다. 펼쳐 둔 목록은 접힌다.
@@ -58,3 +60,16 @@ func _rebuild() -> void:
 			set_actions([])
 			cb.call())
 		list.add_child(b)
+
+
+## F6 단독 실행 미리보기 — PREP · BAN_PICK 단계의 치트 두 줄을 넣고 목록을 펼쳐 둔다.
+## 누르면 출력만 한다(장면 전환 없음).
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	set_actions([
+		{"label": "즉시 승리 (MVP 아군 탑)",
+			"call": func() -> void: print("[UiPreview] cheat 즉시 승리")},
+		{"label": "즉시 패배 (MVP 상대 탑)",
+			"call": func() -> void: print("[UiPreview] cheat 즉시 패배")},
+	])
+	(%Toggle as Button).pressed.emit()

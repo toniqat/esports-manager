@@ -33,6 +33,8 @@ var preset_idx: int = -1
 var _pm: Node
 var _draft: Dictionary = {}
 var _built: bool = false
+## F6 미리보기 — 특성을 바꿔도 프로필을 저장하지 않는다(메모리 사본만 바뀐다).
+var _preview: bool = false
 
 
 static func create() -> ManagerStepView:
@@ -50,6 +52,8 @@ func _ready() -> void:
 	(%Back as Button).pressed.connect(func() -> void: back_requested.emit())
 	(%Next as Button).pressed.connect(_on_next_pressed)
 	select_preset(ManagerProgress.active_index(_pm.profile))
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 ## Trait ids of the chosen preset (draft) — the lineup step's cap reads these.
@@ -78,7 +82,7 @@ func toggle_trait(trait_id: int) -> String:
 	var err: String = ManagerProgress.toggle_trait(_draft, trait_id, _pm.owned_trait_ids())
 	if err != "":
 		return err
-	if validation_error() == "":
+	if validation_error() == "" and not _preview:
 		ManagerProgress.store_preset(_pm.profile, preset_idx, _draft)
 		var serr: String = _pm.save_profile()
 		if serr != "":
@@ -169,3 +173,12 @@ func _on_next_pressed() -> void:
 	if validation_error() != "":
 		return
 	next_requested.emit()
+
+
+## F6 단독 실행 미리보기 — 실제 프로필(`ProfileManager`)의 활성 프리셋이 이미 골라져
+## 있다 (`resources/UiPreview.gd`). 특성 탭은 화면 사본만 바꾸고 저장하지 않는다.
+func _fill_preview() -> void:
+	_preview = true
+	UiPreview.stage(self)
+	UiPreview.trace(back_requested)
+	UiPreview.trace(next_requested)

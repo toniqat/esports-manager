@@ -30,6 +30,8 @@ func _ready() -> void:
 	_style.shadow_offset = Vector2(0, 3)
 	add_theme_stylebox_override("panel", _style)
 	%Slot.text = slot_title
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 ## `m` = one bracket entry (`{team_a, team_b, winner, played, phase_week}`), empty = keep
@@ -73,3 +75,15 @@ static func team_color(team_id: int, pid: int, played: bool, winner: int) -> Col
 			return OutgameTheme.ACCENT_TEXT if team_id == pid else OutgameTheme.POSITIVE
 		return OutgameTheme.TEXT_FAINT
 	return OutgameTheme.ACCENT_TEXT if team_id == pid else OutgameTheme.TEXT
+
+
+## F6 단독 실행 미리보기 — 내 팀이 이긴 4강 경기 (`resources/UiPreview.gd`).
+## 두 아이템 씬(`BracketMatchBox.tscn` · `IntlMatchBox.tscn`) 모두 이 스크립트라 같은 값이 뜬다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	if slot_title == "":
+		slot_title = "4강 1경기"
+		%Slot.text = slot_title
+	var names: Dictionary = {0: "레드 팰컨즈  (RF)", 3: "아이언 웨일즈  (IW)"}
+	show_match({"team_a": 0, "team_b": 3, "winner": 0, "played": true, "phase_week": 5},
+			0, func(team_id: int) -> String: return String(names.get(team_id, "Team %d" % team_id)))

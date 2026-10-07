@@ -52,6 +52,8 @@ func _ready() -> void:
 	_ensure_rows()
 	_layout_ok_button()
 	%OkButton.pressed.connect(_on_ok_pressed)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 	ensure_view()
 
 
@@ -166,3 +168,12 @@ func open_team_detail(tid: int, rank: int) -> HubSheet:
 	y += IntelView.add_rows(body, Vector2(0, y), w, intel)
 	sheet.set_body_height(y + 20.0)
 	return sheet
+
+
+## F6 단독 실행 미리보기 — 메모리 런 + 몇 주 치른 리그(`resources/UiPreview.gd`).
+## 호스트(`SeasonHub`)가 없어 "확인" · 팀 상세는 아무 일도 안 한다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	if UiPreview.ensure_run() == null:
+		return
+	_league = UiPreview.ensure_league(self)

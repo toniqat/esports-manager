@@ -12,9 +12,20 @@ static func create() -> DraftStatChip:
 	return (load(SCENE_PATH) as PackedScene).instantiate() as DraftStatChip
 
 
+func _ready() -> void:
+	if UiPreview.is_standalone(self):
+		_fill_preview()
+
+
 ## `is_total` = 마지막 "종합" 칸 — 값만 앰버 글자로 강조한다.
 func fill(key: String, value: String, is_total: bool) -> void:
 	%Key.text = key
 	var v: Label = %Value
 	v.text = value
 	v.theme_type_variation = &"AccentLabel" if is_total else &"BodyLabel"
+
+
+## F6 단독 실행 미리보기 — "종합" 칸(앰버 값) (`resources/UiPreview.gd`).
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	fill("종합", "514", true)

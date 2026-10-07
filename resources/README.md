@@ -1142,6 +1142,35 @@ The draft detail popup used it too, but that screen's candidate-card section was
 
 ---
 
+### UiPreview.gd (dev — standalone-run (F6) dummy data for outgame UI scenes)
+
+Opening an outgame UI `.tscn` and running it alone ("Run Current Scene") fills it with dummy data,
+so each screen / popup / item can be checked on its own. Each scene script ends its `_ready` with
+```gdscript
+	if UiPreview.is_standalone(self):
+		_fill_preview()
+```
+and keeps a private `_fill_preview()` at the bottom that fills data **through the script's normal
+API**. Screens / panels / popups use real data (in-memory run from game.db, profile reads); small
+item scenes use hand-written values. Script-less item scenes already show the sample text baked into
+the scene. `scenes/*.tscn` roots (Lobby, RunSetup, Season, …) are real entry points — no preview.
+
+| Function | Does |
+|---|---|
+| `is_standalone(node)` | `node` is the root of the scene launched with F6 (`current_scene`). Always false in release builds and whenever the scene is a child of a real screen |
+| `ensure_run()` → GameManager | In-memory run via `GameManager.init_season()` (test run, **never saved**); null on failure |
+| `ensure_league(host, weeks = 2)` → `LeagueManager` | Preview-only `LeagueManager` child of `host`, current phase scheduled, `weeks` weeks played with random results |
+| `playoff_bracket(s, lm)` → bracket | Writes a 4-team PLAYOFF `current_tournament` (top 4 of `lm`, own team forced into 4th) shaped like `TournamentManager._bootstrap_playoff`; the caller records results |
+| `stage(node)` | Outgame `BG` clear colour; a full-width top-anchored root gets side padding; any other non-full-rect Control root is centred (a zero-width container root gets screen width − padding) |
+| `mute(btn, owner_obj, label)` | Disconnects the `pressed` handlers `owner_obj` wired (saves, navigation) and traces instead; `HapticUi` wiring stays |
+| `trace(signal, label)` | Prints `[UiPreview] …` when the signal fires — buttons whose host (SeasonHub, LobbyScreen) is absent |
+
+Rules: the preview never writes the run file or the profile and never changes scene; production code paths
+stay unchanged (dependencies the host normally provides are injected in `_fill_preview`).
+Render check without the editor: `UiSceneDumpRunner --scene res://<scene>.tscn --shot <png>` (below).
+
+---
+
 ### UiSceneDump.gd + UiSceneDumpRunner.gd (dev tool — running UI → `.tscn` draft)
 
 `docs/ui_scene_migration.md` §6 T4. **Saves a running, code-built UI subtree as a `.tscn` draft**

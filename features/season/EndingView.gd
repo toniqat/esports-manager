@@ -29,6 +29,10 @@ const ROLE_NAMES: Array = ["TANK", "FIGHTER", "ASSASSIN", "SUPPORT", "SNIPER"]
 var _phase_lines: Array = []   # 6 Labels (scene `%Recap`, PHASE_ORDER order)
 var _roster_lines: Array = []  # 5 Labels (scene `%Roster`, seat order)
 var _built: bool = false
+# 팀 이름을 읽는 매니저 — 실제 게임은 `_hub` 의 것을 매번 다시 읽는다(`_resolve_refs`).
+# 호스트가 없는 F6 미리보기만 직접 넣는다.
+var _league: LeagueManager = null
+var _intl: InternationalTournament = null
 
 
 ## Instantiates the scene. `EndingView.new()` is an empty Control — don't use it.
@@ -38,6 +42,8 @@ static func create() -> EndingView:
 
 func _ready() -> void:
 	_bind()
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 	refresh()
 
 
@@ -75,11 +81,9 @@ func _refresh_recap() -> void:
 	var s: Dictionary = _gm.season_state
 	var pid: int = int(s["player_team_id"])
 	var pr: Dictionary = s.get("phase_results", {})
-	var league: LeagueManager = null
-	var intl: InternationalTournament = null
-	if _hub != null:
-		league = _hub.get_node_or_null("LeagueManager") as LeagueManager
-		intl = _hub.get_node_or_null("InternationalTournament") as InternationalTournament
+	_resolve_refs()
+	var league: LeagueManager = _league
+	var intl: InternationalTournament = _intl
 	for i in mini(PHASE_ORDER.size(), _phase_lines.size()):
 		var phase: int = int(PHASE_ORDER[i])
 		var phase_name: String = HubView.PHASE_NAMES.get(phase, "—")
@@ -97,6 +101,13 @@ func _refresh_recap() -> void:
 		if _phase_won_by_player(phase, entry, pid):
 			color = OutgameTheme.ACCENT_TEXT
 		_phase_lines[i].add_theme_color_override("font_color", color)
+
+
+func _resolve_refs() -> void:
+	if _hub == null:
+		return
+	_league = _hub.get_node_or_null("LeagueManager") as LeagueManager
+	_intl = _hub.get_node_or_null("InternationalTournament") as InternationalTournament
 
 
 func _is_intl_phase(phase: int) -> bool:
@@ -151,3 +162,28 @@ func _refresh_roster() -> void:
 # 여기서는 결과 화면으로 넘어가기만 한다.
 func _on_settle_pressed() -> void:
 	get_tree().change_scene_to_file(RunResult.SCENE_PATH)
+
+
+## F6 단독 실행 미리보기 — 메모리 런으로 여섯 대회를 전부 우리 팀이 우승한 기록을 깐다
+## (`resources/UiPreview.gd`). 정산(`RunResult.settle_current_run`)은 부르지 않는다 — 실제로도
+## SeasonHub 가 이 화면 **전에** 하는 일이다. "정산" 버튼은 장면을 넘기지 않고 출력만 한다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	if UiPreview.ensure_run() == null:
+		return
+	_league = UiPreview.ensure_league(self, 0)
+	_intl = InternationalTournament.new()
+	_intl.name = "PreviewIntl"
+	add_child(_intl)
+	var s: Dictionary = _gm.season_state
+	var pid: int = int(s["player_team_id"])
+	var pr: Dictionary = {}
+	for phase in PHASE_ORDER:
+		if _is_intl_phase(int(phase)):
+			pr[int(phase)] = {"intl_played": true, "intl_champion": pid}
+		else:
+			pr[int(phase)] = {"made_playoffs": true, "champion": pid}
+	s["phase_results"] = pr
+	s["current_phase"] = GameEnums.SeasonPhase.REGULAR_INTL
+	%Settle.pressed.disconnect(_on_settle_pressed)
+	UiPreview.trace(%Settle.pressed, "정산")

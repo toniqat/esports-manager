@@ -21,6 +21,8 @@ Rules
 ## Hub card + sheet (`StaffPanel.gd`)
 Contract §11.2 — static `hub_summary(state)` / `open(host)`; fills only, every value comes from `StaffSystem`.
 `open` = `HubSheet.open_on` + `StaffPanel.create()` added to `sheet.body` (read-only, filled once).
+**F6 preview** — run `StaffPanel.tscn` alone and it fills dummy data (`resources/UiPreview.gd`): in-memory
+run + two temporary `add_mod`s, bound without a sheet.
 
 | Where | Shows |
 |---|---|

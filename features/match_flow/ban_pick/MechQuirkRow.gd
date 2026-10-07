@@ -19,6 +19,11 @@ static func create() -> MechQuirkRow:
 	return (load(SCENE_PATH) as PackedScene).instantiate() as MechQuirkRow
 
 
+func _ready() -> void:
+	if UiPreview.is_standalone(self):
+		_fill_preview()
+
+
 ## `row` — `{name, grade, effect, active}` (BanPickController `_quirk_rows`).
 func fill(row: Dictionary) -> void:
 	var on: bool = bool(row.get("active", true))
@@ -31,3 +36,12 @@ func fill(row: Dictionary) -> void:
 	eff.text = String(row.get("effect", "")) + ("" if on else "  (조건 미충족)")
 	eff.add_theme_color_override("font_color",
 			EFFECT_COLOR if on else EFFECT_OFF_COLOR)
+
+
+## F6 단독 실행 미리보기 — 실제 기벽 표의 희귀 기벽 `사냥꾼`(id 7) 한 줄, 조건 충족.
+## 줄 모양은 `BanPickController._quirk_rows` 와 같다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	var r: Dictionary = QuirkSystem.row(7)
+	fill({"name": String(r.get("name", "사냥꾼")), "grade": int(r.get("grade", 1)),
+			"effect": QuirkSystem.effect_text(7, true), "active": true})

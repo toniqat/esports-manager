@@ -24,6 +24,11 @@ too** — the only place that needs weekday names is the **week-progress screen 
 | `TrainingCourseCard.gd` · `.tscn` | `class_name TrainingCourseCard` — one course card of the inventory row (grade band · cap · shape well · name · lock chip). `fill(tile, cap, grade_locked, locked, lock_reason)`, `set_selected(selected, locked)`; the shape miniature is drawn into `%Mini` (`_draw_mini`). |
 | `TrainingCoursePopover.gd` · `.tscn` | `class_name TrainingCoursePopover` — the info popover over a selected card. `fill(tile, cap, lock)` sets the text and **derives the height from the text** (`_text_height`); `TrainingView._place_popover` positions it. |
 
+**F6 preview** — each scene with a script fills dummy data when run alone (`resources/UiPreview.gd`):
+`TrainingView` = in-memory run + preview-only `TrainingBoard` child, coach auto-arrange, third course card
+selected with its popover; `TrainingCourseCard` / `TrainingCoursePopover` = hand-written grade-3 tiles
+(card selected; popover with a lock line).
+
 ## Board axes
 ```
         탑    정글   미드   원딜   서폿      ← column = one player's week

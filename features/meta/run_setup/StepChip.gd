@@ -13,6 +13,11 @@ static func create() -> StepChip:
 	return (load(SCENE_PATH) as PackedScene).instantiate() as StepChip
 
 
+func _ready() -> void:
+	if UiPreview.is_standalone(self):
+		_fill_preview()
+
+
 func set_text(text: String) -> void:
 	(%Text as Label).text = text
 
@@ -26,3 +31,10 @@ func paint(bg: Color, fg: Color, border: Variant) -> void:
 		sb.border_color = border
 	add_theme_stylebox_override("panel", sb)
 	(%Text as Label).add_theme_color_override("font_color", fg)
+
+
+## F6 단독 실행 미리보기 — "지금" 단계 알약(앰버 색면) (`resources/UiPreview.gd`).
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	set_text("2  팀")
+	paint(OutgameTheme.ACCENT, OutgameTheme.TEXT_ON_FILL, null)

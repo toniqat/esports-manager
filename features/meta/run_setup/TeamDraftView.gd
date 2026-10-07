@@ -91,6 +91,9 @@ var _detail: DraftDetailPanel
 
 
 func _ready() -> void:
+	# 단독 실행이면 부모 `TeamDraft` 가 없다 — 아래 바인드 전에 미리보기 데이터 층을 꽂는다.
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 	mouse_filter = Control.MOUSE_FILTER_PASS
 	OutgameTheme.fit_bottom_bar(%Bar, _safe)
 	_bind_slots()
@@ -425,3 +428,61 @@ func _apply_filter_styles() -> void:
 		var on: bool = role == _filter_role
 		(_filter_btns[i] as Button).theme_type_variation = \
 				&"SelectableTileOn" if on else &"SelectableTile"
+
+
+## F6 단독 실행 미리보기 (`resources/UiPreview.gd`) — 부모 `TeamDraft` 대신 데이터 층을
+## 하나 만들어 꽂는다: 풀 = game.db CSV 사본(`GameManager.load_match_data()`), 보유 =
+## 실제 프로필(`ProfileManager`, `RunSetupScreen` 과 같은 길), 시나리오 = 표 첫 줄.
+## `_ready` 가 끝난 뒤 캡 안에 드는 가장 센 다섯을 앉힌다(`_preview_seat` — "편성 완료" 상태).
+## 뒤로 / 게임 시작은 받는 호스트(`RunSetupScreen`)가 없어 출력만 한다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	var data: Dictionary = get_node("/root/GameManager").load_match_data()
+	if data.has("error"):
+		push_error("TeamDraftView 미리보기: " + String(data["error"]))
+		return
+	var pm: Node = get_node("/root/ProfileManager")
+	var pool: Array = data["players"]
+	RunRules.apply_breakthroughs(pool, pm.owned_breakthroughs())
+	var scens: Array = RunRules.scenarios()
+	var d := TeamDraft.new()
+	d.name = "PreviewDraft"
+	d.visible = false
+	d.setup(pool, pm.owned_max_levels(),
+			int((scens[0] as Dictionary).get("id", 0)) if not scens.is_empty() else 0)
+	add_child(d)
+	_draft = d
+	UiPreview.trace(d.back_requested)
+	UiPreview.trace(d.start_requested)
+	_preview_seat.call_deferred()
+
+
+## 미리보기 — 슬롯 순서대로, 남은 역할을 가장 싼 선수로 채워도 캡 안에 드는 한에서
+## 종합이 가장 높은 선수를 고른다(격자 순서 = 역할 안 종합 내림차순).
+func _preview_seat() -> void:
+	var by_role: Dictionary = {}
+	for raw in _draft.get_pool_grid():
+		var e: Dictionary = raw
+		var r: int = int(e["role"])
+		if not by_role.has(r):
+			by_role[r] = []
+		(by_role[r] as Array).append((e["pilot"] as PlayerData).id)
+	var cheapest: Array = []
+	for role_raw in TeamDraft.SLOT_ROLES:
+		var lo: int = 0
+		for pid in by_role.get(int(role_raw), []):
+			var sal: int = _draft.salary_of(int(pid))
+			lo = sal if lo == 0 else mini(lo, sal)
+		cheapest.append(lo)
+	var cap: int = _draft.salary_cap()
+	var spent: int = 0
+	for i in TeamDraft.SLOT_ROLES.size():
+		var rest: int = 0
+		for j in range(i + 1, cheapest.size()):
+			rest += int(cheapest[j])
+		for pid in by_role.get(int(TeamDraft.SLOT_ROLES[i]), []):
+			var sal: int = _draft.salary_of(int(pid))
+			if cap <= 0 or spent + sal + rest <= cap:
+				spent += sal
+				_on_thumb_tapped(int(pid))
+				break

@@ -12,8 +12,22 @@ static func create() -> ScenarioCard:
 	return (load(SCENE_PATH) as PackedScene).instantiate() as ScenarioCard
 
 
+func _ready() -> void:
+	if UiPreview.is_standalone(self):
+		_fill_preview()
+
+
 ## `item` = `RunRules.scenarios()` 한 줄.
 func fill(item: Dictionary) -> void:
 	(%Name as Label).text = String(item.get("name", "?"))
 	(%Cap as Label).text = "샐러리캡 %d" % int(item.get("salary_cap", 0))
 	(%Desc as Label).text = String(item.get("desc", ""))
+
+
+## F6 단독 실행 미리보기 — 고른 카드 한 장, 손으로 적은 값 (`resources/UiPreview.gd`).
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	UiPreview.trace(pressed)
+	fill({"id": 1, "name": "도전자의 시즌", "salary_cap": 240,
+		"desc": "샐러리캡이 빠듯합니다 — 스타 한 명을 앉히면 나머지 넷은 신인으로 채워야 합니다."})
+	theme_type_variation = &"SelectableCardButtonOn"

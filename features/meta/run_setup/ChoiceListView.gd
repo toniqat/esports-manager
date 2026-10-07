@@ -34,6 +34,8 @@ func _ready() -> void:
 	if not _built:
 		_build()
 		_built = true
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 # ── 잇는 쪽이 채우는 것 ──────────────────────────────────────────────────────
@@ -98,3 +100,29 @@ func _refresh() -> void:
 		(_cards[id] as Button).theme_type_variation = \
 				&"SelectableCardButtonOn" if on else &"SelectableCardButton"
 	(%Next as Button).disabled = selected_id < 0
+
+
+## F6 단독 실행 미리보기 (`resources/UiPreview.gd`) — 잇는 단계(`ScenarioStepView` ·
+## `TeamStepView`)는 실제 표(`RunRules`)로 이미 찼으니 둘째 카드를 고른 상태로 둔다.
+## 이 틀 씬만 띄우면 카드가 없으므로 손으로 적은 시나리오 카드 세 장을 꽂는다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	UiPreview.trace(back_requested)
+	UiPreview.trace(next_requested)
+	if _cards.is_empty():
+		(%Hint as Label).text = "카드 한 장을 고르세요 — 고르기 전에는 다음이 잠깁니다."
+		var samples: Array = [
+			{"id": 0, "name": "표준 시즌", "salary_cap": 260, "desc": "보통 난이도 — 스타 둘까지는 넉넉합니다."},
+			{"id": 1, "name": "도전자의 시즌", "salary_cap": 240, "desc": "캡이 빠듯합니다 — 신인을 섞어야 합니다."},
+			{"id": 2, "name": "언더독", "salary_cap": 220, "desc": "가장 어렵습니다 — 레벨을 낮춰 캡을 맞추세요."},
+		]
+		for raw in samples:
+			var item: Dictionary = raw
+			var card := ScenarioCard.create()
+			card.fill(item)
+			(%List as Control).add_child(card)
+			card.pressed.connect(_on_card_pressed.bind(int(item["id"])))
+			_cards[int(item["id"])] = card
+	var ids: Array = _cards.keys()
+	if not ids.is_empty():
+		select(int(ids[mini(1, ids.size() - 1)]))

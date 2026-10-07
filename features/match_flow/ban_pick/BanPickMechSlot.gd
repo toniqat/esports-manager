@@ -42,6 +42,8 @@ func _ready() -> void:
 	qtag = get_node_or_null("%QTag") as Panel
 	qtag_label = get_node_or_null("%QTagLabel") as Label
 	hit = %Hit
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 ## Side colour + seat. The empty-seat look (sunk fill, faded side border) — refreshes recolour it.
@@ -54,3 +56,27 @@ func setup(col: Color, seat_idx: int) -> void:
 	if qtag != null:
 		qtag.add_theme_stylebox_override("panel",
 				OutgameTheme.flat_style(QuirkSystem.grade_color(2), 8))
+
+
+## F6 단독 실행 미리보기 — 아군(BLUE) 미드 자리에 앉은 Overdrive: 진영색 테두리 ·
+## 이름 띠 · 숙련 `능숙 +n` · `기벽 +3` 태그. 채우는 법은 `BanPickController.
+## _refresh_side_block` / `_refresh_slot_mastery` / `_refresh_slot_quirk` 와 같다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	UiPreview.trace(hit.pressed, "slot tapped")
+	setup(Color(0.20, 0.45, 0.92), 2)
+	art.texture = MechImages.portrait_for(12)
+	name_label.text = "Overdrive"
+	band.visible = true
+	style.bg_color = side_col.lerp(OutgameTheme.SURFACE, 0.75)
+	style.border_color = side_col
+	if mtag != null:
+		mtag.visible = true
+		mtag.add_theme_stylebox_override("panel",
+				OutgameTheme.flat_style(MechMastery.tier_color(2), 8))
+		if mtag_label != null:
+			mtag_label.text = "%s %s" % [MechMastery.tier_name(2), MechMastery.bonus_text(2)]
+	if qtag != null:
+		qtag.visible = true
+		if qtag_label != null:
+			qtag_label.text = "기벽 +3"

@@ -19,6 +19,8 @@ func _ready() -> void:
 	(%Frame as Button).pressed.connect(func() -> void: art_pressed.emit())
 	(%Minus as Button).pressed.connect(func() -> void: level_step.emit(-1))
 	(%Plus as Button).pressed.connect(func() -> void: level_step.emit(1))
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 ## 칸의 역할 — 배지는 **빈 칸에도 선다**(어느 역할의 자리인지를 말한다).
@@ -68,3 +70,15 @@ func _set_frame_style(bg: Color, border: Color) -> void:
 	var frame: Button = %Frame
 	for st in ["normal", "hover", "pressed", "focus", "disabled"]:
 		frame.add_theme_stylebox_override(st, sty)
+
+
+## F6 단독 실행 미리보기 — 탑 칸에 Lv 3 / 최대 5 로 앉은 선수, 손으로 적은 값
+## (`resources/UiPreview.gd`). id 는 일러스트가 있는 실제 선수(5 = Evelyn).
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	UiPreview.trace(art_pressed)
+	UiPreview.trace(level_step)
+	var role: int = GameEnums.Role.TANK
+	set_role(role)
+	var p := PlayerData.new(5, "Evelyn", role, 0, 85, 86, 82, 90, 86, 85, 20)
+	show_pilot(p, OutgameTheme.ROLE_COLORS[role], 3, 5, 57)

@@ -40,6 +40,8 @@ func _ready() -> void:
 	%Cancel.pressed.connect(close)
 	%Confirm.pressed.connect(_on_confirm)
 	# 카드 위 누름은 딤까지 내려가 팝업을 닫으면 안 된다 — Card 는 씬에서 STOP.
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 ## 팝업을 연다. `danger` 면 확인 버튼이 앰버 대신 빨간 색면이 된다 —
@@ -91,3 +93,14 @@ func _apply_danger(danger: bool) -> void:
 func _on_confirm() -> void:
 	visible = false
 	confirmed.emit()
+
+
+## F6 단독 실행 미리보기 — 런 포기 확인(위험 버튼)으로 연다 (`resources/UiPreview.gd`).
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	UiPreview.trace(confirmed)
+	UiPreview.trace(cancelled)
+	open("런을 포기할까요?",
+			"진행 중인 런(정규시즌 3주차)의 기록이 모두 사라집니다.
+획득한 보상은 정산되지 않습니다.",
+			"취소", "포기", true)

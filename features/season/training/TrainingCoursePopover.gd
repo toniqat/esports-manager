@@ -27,6 +27,11 @@ static func create() -> TrainingCoursePopover:
 	return (load(SCENE_PATH) as PackedScene).instantiate() as TrainingCoursePopover
 
 
+func _ready() -> void:
+	if UiPreview.is_standalone(self):
+		_fill_preview()
+
+
 ## 채우고 높이를 세운다. `lock` 이 비어 있지 않으면 놓임/상한 대신 잠금 이유 줄이 붙는다.
 func fill(t: TrainingTile, cap_text: String, lock: String) -> void:
 	var sty := OutgameTheme.variation_box(&"TrainingCoursePopoverFrame")
@@ -75,3 +80,12 @@ static func _text_height(text: String, width: float, font_size: int) -> float:
 			text, HORIZONTAL_ALIGNMENT_LEFT, width, font_size).y
 	var lines: int = maxi(1, int(round(total / one)))
 	return total + float(lines - 1) * LINE_SPACING
+
+
+## F6 단독 실행 미리보기 — 손으로 적은 3등급 코스(EXP + 증폭 효과), 전술이 모자라 잠긴
+## 등급의 이유 줄까지(`resources/UiPreview.gd`).
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	var t := TrainingTile.from_def({"id": "T14", "name": "멘토링", "grade": 3,
+			"shape": "K/W/W", "exp": "all:38", "effect": "mult:mate_all:125"})
+	fill(t, "0/2", "전술 11 필요 (지금 전술 9)")

@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=5 format=3 uid="uid://dfoimbma7vven"]
 
 [ext_resource type="Script" path="res://features/season/press/MessengerNpcBubble.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
@@ -30,6 +30,7 @@ mouse_filter = 2
 unique_name_in_owner = true
 editor_description = "Round portrait slot — code adds the drawn portrait here (OutgameTheme.add_round_portrait, diameter = this width, BORDER ring)."
 layout_mode = 1
+anchors_preset = 0
 offset_right = 96.0
 offset_bottom = 96.0
 mouse_filter = 2
@@ -38,6 +39,7 @@ mouse_filter = 2
 unique_name_in_owner = true
 editor_description = "Reporter microphone (_draw) over the portrait when there is no portrait texture."
 layout_mode = 1
+anchors_preset = 0
 offset_right = 96.0
 offset_bottom = 96.0
 mouse_filter = 2

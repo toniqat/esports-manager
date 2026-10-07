@@ -1,8 +1,8 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=4 format=3 uid="uid://bych2ql2nammb"]
 
 [ext_resource type="Script" path="res://features/season/league/LeagueTeamDetail.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
-[ext_resource type="PackedScene" path="res://features/match_flow/match_prep/IntelView.tscn" id="3_intel"]
+[ext_resource type="PackedScene" uid="uid://yx1lfk671dpc" path="res://features/match_flow/match_prep/IntelView.tscn" id="3_intel"]
 
 [node name="LeagueTeamDetail" type="VBoxContainer"]
 editor_description = "Standings team detail — HubSheet body (LeagueView.open_team_detail). Top-wide over the body; 16 short of the right edge (room for the sheet's scroll bar). The sheet's scroll height follows this node's height."

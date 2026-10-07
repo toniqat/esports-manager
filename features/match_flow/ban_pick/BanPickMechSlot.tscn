@@ -1,6 +1,6 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://d3rx5ev7vxtbt"]
 
-[ext_resource type="Script" path="res://features/match_flow/ban_pick/BanPickMechSlot.gd" id="1_slot"]
+[ext_resource type="Script" uid="uid://f886mt14kabv" path="res://features/match_flow/ban_pick/BanPickMechSlot.gd" id="1_slot"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="BanPickMechSlot" type="Control"]
@@ -79,8 +79,8 @@ clip_text = true
 
 [node name="MTag" type="Panel" parent="Frame"]
 unique_name_in_owner = true
-visible = false
 editor_description = "Mastery tag '<tier> <bonus>' (season run). Fill = tier colour, set in code."
+visible = false
 layout_mode = 0
 offset_left = 4.0
 offset_top = 4.0
@@ -105,8 +105,8 @@ clip_text = true
 
 [node name="QTag" type="Panel" parent="Frame"]
 unique_name_in_owner = true
-visible = false
 editor_description = "Quirk tag '기벽 +N' (my seats, season run). Fill set in code (QuirkSystem.grade_color)."
+visible = false
 layout_mode = 0
 offset_left = 4.0
 offset_top = 36.0

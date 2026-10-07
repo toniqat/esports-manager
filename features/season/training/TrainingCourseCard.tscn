@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://hufggc2gsct7"]
 
-[ext_resource type="Script" path="res://features/season/training/TrainingCourseCard.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dwh2805vb780f" path="res://features/season/training/TrainingCourseCard.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="TrainingCourseCard" type="Panel"]

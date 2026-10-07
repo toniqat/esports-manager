@@ -1,7 +1,7 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=4 format=3 uid="uid://bb114wu2fk1hn"]
 
-[ext_resource type="Script" path="res://features/battle_sim/ui/PilotStrip.gd" id="1_strip"]
-[ext_resource type="Theme" uid="uid://d3sxdpvg3p880" path="res://resources/BattleTheme.tres" id="2_theme"]
+[ext_resource type="Script" uid="uid://dclvlgyt0pj2b" path="res://features/battle_sim/ui/PilotStrip.gd" id="1_strip"]
+[ext_resource type="Theme" uid="uid://dmrfge5o5tftu" path="res://resources/BattleTheme.tres" id="2_theme"]
 [ext_resource type="PackedScene" path="res://features/battle_sim/ui/PilotStripCell.tscn" id="3_cell"]
 
 [node name="PilotStrip" type="Control"]
@@ -15,6 +15,7 @@ script = ExtResource("1_strip")
 
 [node name="Row" type="Control" parent="."]
 unique_name_in_owner = true
+editor_description = "다섯 칸(PilotStripCell) 줄 — 스트립 가로 가운데. 칸 순서 = GameEnums.ROLE_DISPLAY_ORDER(탑 · 정글 · 미드 · 원딜 · 서폿), 코드는 자식 순서대로 채운다."
 layout_mode = 1
 anchors_preset = 13
 anchor_left = 0.5
@@ -25,11 +26,9 @@ offset_right = 378.8
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-editor_description = "다섯 칸(PilotStripCell) 줄 — 스트립 가로 가운데. 칸 순서 = GameEnums.ROLE_DISPLAY_ORDER(탑 · 정글 · 미드 · 원딜 · 서폿), 코드는 자식 순서대로 채운다."
 
 [node name="Cell0" parent="Row" instance=ExtResource("3_cell")]
 layout_mode = 1
-offset_right = 151.52
 
 [node name="Cell1" parent="Row" instance=ExtResource("3_cell")]
 layout_mode = 1

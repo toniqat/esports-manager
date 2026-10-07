@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=4 format=3 uid="uid://b6fhgjj5xfytl"]
 
 [ext_resource type="Script" uid="uid://dfublh1oc4ox5" path="res://features/meta/collection/CollectionTab.gd" id="1_tab"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]

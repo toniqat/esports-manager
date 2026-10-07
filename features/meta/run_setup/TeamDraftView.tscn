@@ -1,8 +1,8 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=4 format=3 uid="uid://d3v8rnbj0i1ll"]
 
-[ext_resource type="Script" path="res://features/meta/run_setup/TeamDraftView.gd" id="1_view"]
+[ext_resource type="Script" uid="uid://h2bdsrqj6ye2" path="res://features/meta/run_setup/TeamDraftView.gd" id="1_view"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
-[ext_resource type="PackedScene" path="res://features/meta/run_setup/DraftSlot.tscn" id="3_slot"]
+[ext_resource type="PackedScene" uid="uid://18peqm35cgkn" path="res://features/meta/run_setup/DraftSlot.tscn" id="3_slot"]
 
 [node name="TeamDraftView" type="Control"]
 layout_mode = 3
@@ -69,7 +69,6 @@ anchors_preset = -1
 anchor_right = 0.6
 offset_top = 4.0
 offset_bottom = 40.0
-mouse_filter = 2
 theme_type_variation = &"SubLabel"
 text = "루키 리그 · 샐러리캡"
 clip_text = true
@@ -82,7 +81,6 @@ anchor_left = 0.4
 anchor_right = 1.0
 offset_bottom = 44.0
 grow_horizontal = 0
-mouse_filter = 2
 theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 34
 text = "238 / 250"
@@ -119,7 +117,6 @@ mouse_filter = 2
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
-mouse_filter = 2
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 24
 text = "포지션마다 1명씩 — 0 / 5명"
@@ -262,7 +259,6 @@ horizontal_scroll_mode = 0
 unique_name_in_owner = true
 editor_description = "PilotThumb items are instantiated here by code (owned pilots, slot order then overall desc). Hidden cells are skipped by the container, so a filter just toggles visible."
 layout_mode = 2
-mouse_filter = 1
 theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 8
 columns = 5

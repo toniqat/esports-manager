@@ -1,10 +1,10 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=6 format=3 uid="uid://d04eubjiwmef2"]
 
 [ext_resource type="Script" uid="uid://ctd53cbgwiprp" path="res://features/meta/manager/ManagerTab.gd" id="1_tab"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 [ext_resource type="Script" uid="uid://c26kbfiu51p1a" path="res://resources/DragScroll.gd" id="3_drag"]
 [ext_resource type="PackedScene" path="res://features/meta/manager/TraitPickerView.tscn" id="4_traits"]
-[ext_resource type="PackedScene" path="res://features/meta/manager/ManagerPresetChips.tscn" id="5_chips"]
+[ext_resource type="PackedScene" uid="uid://gmvu0lc4cfef" path="res://features/meta/manager/ManagerPresetChips.tscn" id="5_chips"]
 
 [node name="ManagerTab" type="Control"]
 editor_description = "Lobby 감독 tab. LobbyScreen sets this root's position / size to its content rect (below the currency strip, above the action bar) — the 1080×1568 here is only the editor preview size."
@@ -164,8 +164,8 @@ offset_left = -230.0
 offset_top = 76.0
 offset_bottom = 148.0
 grow_horizontal = 0
-mouse_filter = 1
 focus_mode = 0
+mouse_filter = 1
 theme_type_variation = &"PrimaryButton"
 theme_override_font_sizes/font_size = 26
 text = "프레스티지"
@@ -252,8 +252,8 @@ offset_top = 24.0
 offset_right = -28.0
 offset_bottom = 96.0
 grow_horizontal = 0
-mouse_filter = 1
 focus_mode = 0
+mouse_filter = 1
 theme_type_variation = &"PrimaryButton"
 theme_override_font_sizes/font_size = 26
 text = "재설정"

@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://bgmh0rlwbhyb6"]
 
 [ext_resource type="Script" uid="uid://cr0d2b6l2s2dg" path="res://features/meta/lobby/HomeTab.gd" id="1_home"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]

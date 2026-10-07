@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://dujte635y5iyp"]
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
@@ -21,7 +21,6 @@ anchor_right = 1.0
 offset_top = 14.0
 offset_bottom = 50.0
 grow_horizontal = 2
-mouse_filter = 2
 theme_type_variation = &"SubLabel"
 text = "프리셋 1"
 horizontal_alignment = 1
@@ -34,7 +33,6 @@ anchor_right = 1.0
 offset_top = 56.0
 offset_bottom = 86.0
 grow_horizontal = 2
-mouse_filter = 2
 theme_type_variation = &"FaintLabel"
 theme_override_font_sizes/font_size = 20
 text = "특성 3"

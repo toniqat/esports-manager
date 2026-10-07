@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://j1d60u8juaj"]
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
@@ -12,7 +12,8 @@ focus_mode = 0
 theme = ExtResource("1_theme")
 theme_type_variation = &"GhostButton"
 theme_override_font_sizes/font_size = 20
-text = "Bastion\n능숙 65"
+text = "Bastion
+능숙 65"
 clip_text = true
 
 [node name="TierBar" type="ColorRect" parent="."]
@@ -22,9 +23,9 @@ anchors_preset = -1
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 10
-offset_top = -8
-offset_right = -10
-offset_bottom = -4
+offset_left = 10.0
+offset_top = -8.0
+offset_right = -10.0
+offset_bottom = -4.0
 mouse_filter = 2
 color = Color(0.13, 0.68, 0.38, 1)

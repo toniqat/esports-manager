@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://c2cbs28y0habu"]
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
@@ -15,7 +15,7 @@ theme = ExtResource("1_theme")
 [node name="Portrait" type="Control" parent="."]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(60, 60)
-layout_mode = 0
+anchors_preset = 0
 offset_top = 14.0
 offset_right = 60.0
 offset_bottom = 74.0

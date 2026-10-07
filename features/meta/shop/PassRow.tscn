@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://dyht4iuyksroh"]
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
@@ -57,7 +57,6 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 4
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 30
 text = "치장 재화 × 10"
@@ -67,8 +66,8 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(180, 72)
 layout_mode = 2
 size_flags_vertical = 4
-mouse_filter = 1
 focus_mode = 0
+mouse_filter = 1
 theme_type_variation = &"PrimaryButton"
 theme_override_font_sizes/font_size = 26
 text = "수령"
@@ -84,7 +83,6 @@ theme_override_constants/margin_right = 4
 unique_name_in_owner = true
 custom_minimum_size = Vector2(196, 36)
 layout_mode = 2
-size_flags_vertical = 4
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 24
 text = "잠김"

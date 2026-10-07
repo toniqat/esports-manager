@@ -1,8 +1,8 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=4 format=3 uid="uid://yx1lfk671dpc"]
 
-[ext_resource type="Script" path="res://features/match_flow/match_prep/IntelView.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://bssrv8rri8yx7" path="res://features/match_flow/match_prep/IntelView.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
-[ext_resource type="PackedScene" path="res://features/match_flow/match_prep/IntelPilotRow.tscn" id="3_row"]
+[ext_resource type="PackedScene" uid="uid://dhrhg3nkxunca" path="res://features/match_flow/match_prep/IntelPilotRow.tscn" id="3_row"]
 
 [node name="IntelView" type="VBoxContainer"]
 editor_description = "One team's OpponentIntel.build() result: tier header (opponents only) · analyst note (delegated) or the 'no analyst' line · five IntelPilotRow. Width = the parent's; height = content. The pilot-row sample is replaced at runtime."

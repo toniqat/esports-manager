@@ -1,28 +1,30 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=5 format=3 uid="uid://cecjtmwp5x4sq"]
 
-[ext_resource type="Shader" path="res://resources/shaders/pilot_bust_mask.gdshader" id="1_bust"]
-[ext_resource type="Script" path="res://features/battle_sim/ui/SkillBadge.gd" id="2_badge"]
-[ext_resource type="Theme" uid="uid://d3sxdpvg3p880" path="res://resources/BattleTheme.tres" id="3_theme"]
+[ext_resource type="Shader" uid="uid://jk18dj5dqygl" path="res://resources/shaders/pilot_bust_mask.gdshader" id="1_bust"]
+[ext_resource type="Script" uid="uid://bks538f6x4foe" path="res://features/battle_sim/ui/SkillBadge.gd" id="2_badge"]
+[ext_resource type="Theme" uid="uid://dmrfge5o5tftu" path="res://resources/BattleTheme.tres" id="3_theme"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_bust"]
 shader = ExtResource("1_bust")
 shader_parameter/has_portrait = false
 shader_parameter/disc_color = Color(0.17, 0.32, 0.58, 1)
+shader_parameter/rim_color = Color(0.32, 0.62, 0.95, 1)
 shader_parameter/rim_width = 0.0
 shader_parameter/rect_size = Vector2(127.12, 158.9)
 shader_parameter/tint = Color(1, 1, 1, 1)
 
 [node name="PilotStripCell" type="Control"]
+editor_description = "파일럿 스트립 한 칸(151.52 × 244). 치수는 예전 PilotStrip.setup 공식 그대로 — 스트립 1030 × 244 를 5칸으로 나눈 원 지름(min(칸 폭 − 12, (높이 − 탭 절반 − 2) × 0.8)) 의 70%. 스트립(PilotStrip.tscn)이 다섯 칸을 가운데에 나란히 놓는다."
 layout_mode = 3
 anchors_preset = 0
 offset_right = 151.52
 offset_bottom = 244.0
 mouse_filter = 2
 theme = ExtResource("3_theme")
-editor_description = "파일럿 스트립 한 칸(151.52 × 244). 치수는 예전 PilotStrip.setup 공식 그대로 — 스트립 1030 × 244 를 5칸으로 나눈 원 지름(min(칸 폭 − 12, (높이 − 탭 절반 − 2) × 0.8)) 의 70%. 스트립(PilotStrip.tscn)이 다섯 칸을 가운데에 나란히 놓는다."
 
 [node name="Holder" type="Control" parent="."]
 unique_name_in_owner = true
+editor_description = "누르면 원 중심(코드가 %Bust 에서 계산해 pivot 으로 넣는다)을 축으로 통째로 커진다."
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -31,10 +33,10 @@ grow_horizontal = 2
 grow_vertical = 2
 pivot_offset = Vector2(75.76, 136.2)
 mouse_filter = 2
-editor_description = "누르면 원 중심(코드가 %Bust 에서 계산해 pivot 으로 넣는다)을 축으로 통째로 커진다."
 
 [node name="Pill" type="Panel" parent="Holder"]
 unique_name_in_owner = true
+editor_description = "성장치 탭 — 위끝은 원 중심에 숨고 원 아래로 30px 만 드러난다. 색(팀색)은 코드가 변형 사본에 넣는다."
 layout_mode = 1
 offset_left = 38.8952
 offset_top = 136.2
@@ -42,10 +44,10 @@ offset_right = 112.6248
 offset_bottom = 229.76
 mouse_filter = 2
 theme_type_variation = &"PilotStripScoreTab"
-editor_description = "성장치 탭 — 위끝은 원 중심에 숨고 원 아래로 30px 만 드러난다. 색(팀색)은 코드가 변형 사본에 넣는다."
 
 [node name="Bust" type="ColorRect" parent="Holder"]
 unique_name_in_owner = true
+editor_description = "팀색 원 + 흉상(셰이더 pilot_bust_mask). 폭 = 원 지름, 높이 = 지름 / 0.8 — 다른 비율이면 얼굴이 찌그러진다. 재질은 칸마다 코드가 복제한다."
 material = SubResource("ShaderMaterial_bust")
 layout_mode = 1
 offset_left = 12.2
@@ -53,7 +55,6 @@ offset_top = 40.86
 offset_right = 139.32
 offset_bottom = 199.76
 mouse_filter = 2
-editor_description = "팀색 원 + 흉상(셰이더 pilot_bust_mask). 폭 = 원 지름, 높이 = 지름 / 0.8 — 다른 비율이면 얼굴이 찌그러진다. 재질은 칸마다 코드가 복제한다."
 
 [node name="Dead" type="Label" parent="Holder"]
 unique_name_in_owner = true
@@ -82,18 +83,20 @@ vertical_alignment = 1
 
 [node name="Badge" type="Control" parent="Holder"]
 unique_name_in_owner = true
+editor_description = "스킬 배지(_draw) — 아군 칸에만 남는다(적 스트립은 코드가 지운다). 지름 = 원 지름 × 0.40."
 visible = false
 layout_mode = 1
+anchors_preset = 0
 offset_left = 101.184
 offset_top = 150.1832
 offset_right = 152.032
 offset_bottom = 201.0312
 mouse_filter = 2
 script = ExtResource("2_badge")
-editor_description = "스킬 배지(_draw) — 아군 칸에만 남는다(적 스트립은 코드가 지운다). 지름 = 원 지름 × 0.40."
 
 [node name="Hit" type="Button" parent="."]
 unique_name_in_owner = true
+editor_description = "칸 전체를 덮는 투명 히트 버튼 — 입력은 여기서만 받는다(나머지는 전부 IGNORE)."
 modulate = Color(1, 1, 1, 0)
 layout_mode = 1
 anchors_preset = 15
@@ -103,4 +106,3 @@ grow_horizontal = 2
 grow_vertical = 2
 focus_mode = 0
 flat = true
-editor_description = "칸 전체를 덮는 투명 히트 버튼 — 입력은 여기서만 받는다(나머지는 전부 IGNORE)."

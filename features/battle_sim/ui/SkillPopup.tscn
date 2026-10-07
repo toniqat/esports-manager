@@ -1,7 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://waqnuagbvkcs"]
 
 [ext_resource type="Script" uid="uid://cy3wy7pac4nfr" path="res://features/battle_sim/ui/SkillPopup.gd" id="1_popup"]
-[ext_resource type="Theme" uid="uid://d3sxdpvg3p880" path="res://resources/BattleTheme.tres" id="2_theme"]
+[ext_resource type="Theme" uid="uid://dmrfge5o5tftu" path="res://resources/BattleTheme.tres" id="2_theme"]
 
 [node name="SkillPopup" type="Node"]
 script = ExtResource("1_popup")
@@ -11,6 +11,7 @@ layer = 12
 
 [node name="Root" type="Control" parent="Layer"]
 unique_name_in_owner = true
+editor_description = "말풍선 카드(SkillPopupCard.tscn)는 열 때마다 여기에 하나씩 인스턴스된다 — 닫히는 카드가 내려가며 사라지는 동안 다음 카드가 올라올 수 있게."
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -19,14 +20,13 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 theme = ExtResource("2_theme")
-editor_description = "말풍선 카드(SkillPopupCard.tscn)는 열 때마다 여기에 하나씩 인스턴스된다 — 닫히는 카드가 내려가며 사라지는 동안 다음 카드가 올라올 수 있게."
 
 [node name="Catcher" type="Control" parent="Layer/Root"]
 unique_name_in_owner = true
+editor_description = "판 밖 누름 막(투명) — 아군 스트립 위끝까지만. 높이는 코드가 스트립 위치로 맞춘다."
 visible = false
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_bottom = 1644.0
 grow_horizontal = 2
-editor_description = "판 밖 누름 막(투명) — 아군 스트립 위끝까지만. 높이는 코드가 스트립 위치로 맞춘다."

@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=4 format=3 uid="uid://btu5xdr7ds1fr"]
 
 [ext_resource type="Script" uid="uid://bogtu0wxqfcc3" path="res://features/meta/run_result/RunResultScreen.gd" id="1_result"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]

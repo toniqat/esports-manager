@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://d2sn7y4q4hb1r"]
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
@@ -19,7 +19,6 @@ layout_mode = 1
 anchors_preset = -1
 anchor_right = 0.7
 anchor_bottom = 1.0
-mouse_filter = 2
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 24
 text = "스폰서 수입 (시설 ×1.15)"
@@ -31,7 +30,6 @@ anchors_preset = -1
 anchor_left = 0.5
 anchor_right = 1.0
 anchor_bottom = 1.0
-mouse_filter = 2
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 26
 text = "+1,219"

@@ -1,8 +1,9 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://u5y7i1wixsoj"]
 
-[ext_resource type="Theme" uid="uid://d3sxdpvg3p880" path="res://resources/BattleTheme.tres" id="1_theme"]
+[ext_resource type="Theme" uid="uid://dmrfge5o5tftu" path="res://resources/BattleTheme.tres" id="1_theme"]
 
 [node name="PilotDetailArt" type="Control"]
+editor_description = "전신 아트 한 장 — 크기(높이 ART_H, 폭 = 원본 비율)와 아래 가운데 피벗, 앞 / 뒤 자세는 코드가 잡는다. 텍스처가 없으면 Slab + FallbackLabel."
 layout_mode = 3
 anchors_preset = 0
 offset_right = 980.0
@@ -10,7 +11,6 @@ offset_bottom = 1400.0
 pivot_offset = Vector2(490, 1400)
 mouse_filter = 2
 theme = ExtResource("1_theme")
-editor_description = "전신 아트 한 장 — 크기(높이 ART_H, 폭 = 원본 비율)와 아래 가운데 피벗, 앞 / 뒤 자세는 코드가 잡는다. 텍스처가 없으면 Slab + FallbackLabel."
 
 [node name="Texture" type="TextureRect" parent="."]
 unique_name_in_owner = true
@@ -25,6 +25,7 @@ expand_mode = 1
 
 [node name="Slab" type="PanelContainer" parent="."]
 unique_name_in_owner = true
+editor_description = "그림 없는 자리 표시 판 — 옅게(앞에 선 파일럿보다 눈에 띄면 안 된다)."
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -34,7 +35,6 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 theme_type_variation = &"PilotDetailArtSlab"
-editor_description = "그림 없는 자리 표시 판 — 옅게(앞에 선 파일럿보다 눈에 띄면 안 된다)."
 
 [node name="FallbackLabel" type="Label" parent="."]
 unique_name_in_owner = true

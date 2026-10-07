@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://bdg1xmr7s7ke3"]
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
@@ -48,7 +48,6 @@ offset_top = 16.0
 offset_right = -8.0
 offset_bottom = 50.0
 grow_horizontal = 2
-mouse_filter = 2
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 24
 text = "훈련광"
@@ -65,7 +64,6 @@ offset_top = 58.0
 offset_right = -8.0
 offset_bottom = 88.0
 grow_horizontal = 2
-mouse_filter = 2
 theme_type_variation = &"PositiveLabel"
 theme_override_font_sizes/font_size = 20
 text = "보너스 −2"
@@ -90,7 +88,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
 theme_type_variation = &"FaintLabel"
 text = "빈 칸"
 horizontal_alignment = 1

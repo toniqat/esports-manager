@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=4 format=3 uid="uid://b5tf1nyft8r23"]
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 [ext_resource type="Script" uid="uid://cdqc5dsdrcfkf" path="res://features/season/mastery/MasteryPanel.gd" id="2_script"]
@@ -16,9 +16,9 @@ script = ExtResource("2_script")
 
 [node name="Empty" type="Label" parent="."]
 unique_name_in_owner = true
+visible = false
 custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
-visible = false
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 28
 text = "진행 중인 런이 없다"
@@ -39,8 +39,7 @@ unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 0.62
-offset_bottom = 36
-mouse_filter = 2
+offset_bottom = 36.0
 theme_type_variation = &"AccentLabel"
 theme_override_font_sizes/font_size = 26
 text = "담당: 윤재혁   ·   지식 16"
@@ -52,8 +51,7 @@ layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.62
 anchor_right = 1.0
-offset_bottom = 36
-mouse_filter = 2
+offset_bottom = 36.0
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 24
 text = "획득 배율 ×1.56"

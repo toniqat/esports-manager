@@ -1,6 +1,6 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://832yafh7xlw7"]
 
-[ext_resource type="Script" path="res://features/match_flow/ban_pick/MechCardCell.gd" id="1_cell"]
+[ext_resource type="Script" uid="uid://csynyntr11531" path="res://features/match_flow/ban_pick/MechCardCell.gd" id="1_cell"]
 [ext_resource type="PackedScene" uid="uid://bxhvekawvf1gg" path="res://scenes/Card.tscn" id="2_card"]
 
 [node name="MechCardCell" type="Control"]

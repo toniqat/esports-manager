@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://dtinl3r1tfgun"]
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
@@ -20,7 +20,6 @@ theme_override_constants/separation = 0
 unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 44)
 layout_mode = 2
-size_flags_vertical = 4
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 28
 text = "훈련"
@@ -78,7 +77,6 @@ text = "+"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 44)
 layout_mode = 2
-size_flags_vertical = 4
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 28
 text = "50%"

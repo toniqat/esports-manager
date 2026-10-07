@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://q7qr28o002xq"]
 
-[ext_resource type="Theme" uid="uid://d3sxdpvg3p880" path="res://resources/BattleTheme.tres" id="1_theme"]
+[ext_resource type="Theme" uid="uid://dmrfge5o5tftu" path="res://resources/BattleTheme.tres" id="1_theme"]
 
 [node name="SkillPopupCard" type="Control"]
 layout_mode = 3
@@ -14,15 +14,14 @@ theme = ExtResource("1_theme")
 
 [node name="Panel" type="PanelContainer" parent="."]
 unique_name_in_owner = true
+editor_description = "말풍선 판 — 폭 640 고정, 높이는 내용. 위치(초상 위, 화면 안으로 clamp)는 SkillPopup 이 연다."
 custom_minimum_size = Vector2(640, 0)
 layout_mode = 0
 offset_left = 220.0
 offset_top = 1300.0
 offset_right = 860.0
 offset_bottom = 1580.0
-mouse_filter = 0
 theme_type_variation = &"BattlePopup"
-editor_description = "말풍선 판 — 폭 640 고정, 높이는 내용. 위치(초상 위, 화면 안으로 clamp)는 SkillPopup 이 연다."
 
 [node name="VBox" type="VBoxContainer" parent="Panel"]
 layout_mode = 2
@@ -37,10 +36,10 @@ theme_override_constants/separation = 0
 
 [node name="IconSlot" type="Control" parent="Panel/VBox/Head"]
 unique_name_in_owner = true
+editor_description = "스킬 아이콘 타일 자리 — SkillImages.make_icon_tile 이 코드로 채운다."
 custom_minimum_size = Vector2(72, 72)
 layout_mode = 2
 mouse_filter = 2
-editor_description = "스킬 아이콘 타일 자리 — SkillImages.make_icon_tile 이 코드로 채운다."
 
 [node name="IconGap" type="Control" parent="Panel/VBox/Head"]
 custom_minimum_size = Vector2(16, 0)
@@ -48,11 +47,11 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="NameBox" type="MarginContainer" parent="Panel/VBox/Head"]
+editor_description = "이름 줄 높이 40 을 머리 줄(72) 가운데에 — 위 여백 16."
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 theme_override_constants/margin_top = 16
-editor_description = "이름 줄 높이 40 을 머리 줄(72) 가운데에 — 위 여백 16."
 
 [node name="Name" type="Label" parent="Panel/VBox/Head/NameBox"]
 unique_name_in_owner = true
@@ -116,17 +115,17 @@ vertical_alignment = 1
 
 [node name="DescSlot" type="Control" parent="Panel/VBox"]
 unique_name_in_owner = true
+editor_description = "설명문 자리 — StrategyIcon.make_rich_label(키워드 아이콘 · 카드 이름 meta)을 코드가 넣고 높이(rich_height)를 맞춘다."
 custom_minimum_size = Vector2(0, 90)
 layout_mode = 2
 mouse_filter = 2
-editor_description = "설명문 자리 — StrategyIcon.make_rich_label(키워드 아이콘 · 카드 이름 meta)을 코드가 넣고 높이(rich_height)를 맞춘다."
 
 [node name="StatusBox" type="Control" parent="Panel/VBox"]
 unique_name_in_owner = true
+editor_description = "상태 한 줄 칸 — 높이 30 고정(글자가 1px 더 커도 칸은 늘지 않는다)."
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 mouse_filter = 2
-editor_description = "상태 한 줄 칸 — 높이 30 고정(글자가 1px 더 커도 칸은 늘지 않는다)."
 
 [node name="Status" type="Label" parent="Panel/VBox/StatusBox"]
 unique_name_in_owner = true

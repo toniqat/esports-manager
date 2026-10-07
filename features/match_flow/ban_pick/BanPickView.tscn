@@ -1,13 +1,13 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=9 format=3 uid="uid://c7n804cn5hg56"]
 
-[ext_resource type="Script" path="res://features/match_flow/ban_pick/BanPickView.gd" id="1_view"]
+[ext_resource type="Script" uid="uid://deb7xby64kis0" path="res://features/match_flow/ban_pick/BanPickView.gd" id="1_view"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
-[ext_resource type="Script" path="res://features/match_flow/ban_pick/BanPickTeamBlock.gd" id="3_block"]
-[ext_resource type="PackedScene" path="res://features/match_flow/ban_pick/BanPickBanChip.tscn" id="4_chip"]
-[ext_resource type="PackedScene" path="res://features/match_flow/ban_pick/BanPickMechSlot.tscn" id="5_slot"]
-[ext_resource type="PackedScene" path="res://features/match_flow/ban_pick/BanPickPortrait.tscn" id="6_por"]
-[ext_resource type="PackedScene" path="res://features/match_flow/ban_pick/BanPickOrderRow.tscn" id="7_order"]
-[ext_resource type="Script" path="res://features/match_flow/ban_pick/BanPickGrid.gd" id="9_grid"]
+[ext_resource type="Script" uid="uid://da4ex5l02qjy2" path="res://features/match_flow/ban_pick/BanPickTeamBlock.gd" id="3_block"]
+[ext_resource type="PackedScene" uid="uid://db1vwq6tfnsit" path="res://features/match_flow/ban_pick/BanPickBanChip.tscn" id="4_chip"]
+[ext_resource type="PackedScene" uid="uid://d3rx5ev7vxtbt" path="res://features/match_flow/ban_pick/BanPickMechSlot.tscn" id="5_slot"]
+[ext_resource type="PackedScene" uid="uid://xbvkv0lycxp" path="res://features/match_flow/ban_pick/BanPickPortrait.tscn" id="6_por"]
+[ext_resource type="PackedScene" uid="uid://bmyh6rf48ebw4" path="res://features/match_flow/ban_pick/BanPickOrderRow.tscn" id="7_order"]
+[ext_resource type="Script" uid="uid://ytqiyweewhxx" path="res://features/match_flow/ban_pick/BanPickGrid.gd" id="9_grid"]
 
 [node name="BanPickView" type="Control"]
 layout_mode = 3
@@ -434,9 +434,6 @@ editor_description = "BanPickGrid (float-exact grid container): mech cells (BanP
 layout_mode = 2
 mouse_filter = 2
 script = ExtResource("9_grid")
-columns = 5
-h_gap = 10.0
-v_gap = 10.0
 
 [node name="SheetDim" type="ColorRect" parent="SafeArea/Band/Pane"]
 unique_name_in_owner = true
@@ -451,8 +448,8 @@ color = Color(0.11, 0.11, 0.12, 0.38)
 
 [node name="Sheet" type="Panel" parent="SafeArea/Band/Pane"]
 unique_name_in_owner = true
-visible = false
 editor_description = "Bottom sheet of the tapped mech; bottom = grid bottom, height from BanPickView.fit_pane (grid height - 40, clamped 560..700)."
+visible = false
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
@@ -684,8 +681,8 @@ text = "밴 확정"
 
 [node name="StartButton" type="Button" parent="SafeArea"]
 unique_name_in_owner = true
-visible = false
 editor_description = "Assign-step bottom bar (BarPrimaryButton = square corners). The bottom inset (bar reaches the screen bottom, text stays above the inset) comes from OutgameTheme.fit_bottom_bar in BanPickView.fit_safe_area."
+visible = false
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0

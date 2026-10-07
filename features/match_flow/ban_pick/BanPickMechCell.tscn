@@ -1,6 +1,6 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://dp5go4f8wdej5"]
 
-[ext_resource type="Script" path="res://features/match_flow/ban_pick/BanPickMechCell.gd" id="1_cell"]
+[ext_resource type="Script" uid="uid://3j8jlp3fotog" path="res://features/match_flow/ban_pick/BanPickMechCell.gd" id="1_cell"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="BanPickMechCell" type="Button"]
@@ -74,8 +74,8 @@ clip_text = true
 
 [node name="Intel" type="Panel" parent="."]
 unique_name_in_owner = true
-visible = false
 editor_description = "Top-right analysis tag: '예상 픽' (red) / '추천 밴' (amber). Fill set in code."
+visible = false
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -104,8 +104,8 @@ clip_text = true
 
 [node name="Mine" type="Panel" parent="."]
 unique_name_in_owner = true
-visible = false
 editor_description = "Bottom-left tag: my natural rider's mastery tier (능숙 or better). Fill = tier colour, set in code."
+visible = false
 layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0
@@ -134,8 +134,8 @@ clip_text = true
 
 [node name="Veil" type="ColorRect" parent="."]
 unique_name_in_owner = true
-visible = false
 editor_description = "Taken-mech slab (BAN / BLUE / RED tint), colour set in code."
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0

@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://17ymofopboc3"]
 
-[ext_resource type="Script" path="res://features/season/training/TrainingCoursePopover.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://csks3beirjn2b" path="res://features/season/training/TrainingCoursePopover.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="TrainingCoursePopover" type="Panel"]

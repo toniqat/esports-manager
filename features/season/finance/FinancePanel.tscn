@@ -1,11 +1,11 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=7 format=3 uid="uid://c0vvx6pk5cfmp"]
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 [ext_resource type="Script" uid="uid://dwv4h7dsqg4j5" path="res://features/season/finance/FinancePanel.gd" id="2_script"]
-[ext_resource type="PackedScene" path="res://features/season/finance/FinanceAmountRow.tscn" id="3_amount"]
-[ext_resource type="PackedScene" path="res://features/season/finance/FinanceAllocRow.tscn" id="4_alloc"]
+[ext_resource type="PackedScene" uid="uid://d2sn7y4q4hb1r" path="res://features/season/finance/FinanceAmountRow.tscn" id="3_amount"]
+[ext_resource type="PackedScene" uid="uid://dtinl3r1tfgun" path="res://features/season/finance/FinanceAllocRow.tscn" id="4_alloc"]
 [ext_resource type="PackedScene" path="res://features/season/finance/FinanceSpecialRow.tscn" id="5_special"]
-[ext_resource type="PackedScene" path="res://features/season/finance/FinanceHistoryRow.tscn" id="6_hist"]
+[ext_resource type="PackedScene" uid="uid://j1iwbvxcgxbm" path="res://features/season/finance/FinanceHistoryRow.tscn" id="6_hist"]
 
 [node name="FinancePanel" type="VBoxContainer"]
 editor_description = "재무 · 시설 sheet body (FinancePanel.open → HubSheet body). Top-wide, 24 short of the body width (scroll-bar room); the sheet's scroll height follows this node's height. List samples (Axes / Specials / History rows, template lines) are replaced at runtime."
@@ -20,9 +20,9 @@ script = ExtResource("2_script")
 
 [node name="Empty" type="Label" parent="."]
 unique_name_in_owner = true
+visible = false
 custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
-visible = false
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 28
 text = "진행 중인 런이 없습니다"
@@ -42,8 +42,7 @@ mouse_filter = 2
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 0.5
-offset_bottom = 30
-mouse_filter = 2
+offset_bottom = 30.0
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 24
 text = "잔고"
@@ -53,9 +52,8 @@ unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 0.5
-offset_top = 32
-offset_bottom = 104
-mouse_filter = 2
+offset_top = 32.0
+offset_bottom = 104.0
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 60
 text = "920"
@@ -65,8 +63,7 @@ layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.5
 anchor_right = 1.0
-offset_bottom = 30
-mouse_filter = 2
+offset_bottom = 30.0
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 24
 text = "시설 적립금"
@@ -78,9 +75,8 @@ layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.5
 anchor_right = 1.0
-offset_top = 46
-offset_bottom = 102
-mouse_filter = 2
+offset_top = 46.0
+offset_bottom = 102.0
 theme_type_variation = &"LinkLabel"
 theme_override_font_sizes/font_size = 44
 text = "0"
@@ -200,7 +196,6 @@ layout_mode = 1
 anchors_preset = -1
 anchor_right = 0.6
 anchor_bottom = 1.0
-mouse_filter = 2
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 28
 text = "순수지"
@@ -212,7 +207,6 @@ anchors_preset = -1
 anchor_left = 0.4
 anchor_right = 1.0
 anchor_bottom = 1.0
-mouse_filter = 2
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 30
 text = "+467"

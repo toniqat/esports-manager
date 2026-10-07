@@ -1,9 +1,9 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=5 format=3 uid="uid://bysqo5kyt0dbm"]
 
-[ext_resource type="Script" path="res://features/meta/run_setup/ManagerStepView.gd" id="1_view"]
+[ext_resource type="Script" uid="uid://cqj5ibsaia0wy" path="res://features/meta/run_setup/ManagerStepView.gd" id="1_view"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
-[ext_resource type="PackedScene" path="res://features/meta/manager/ManagerPresetChips.tscn" id="3_chips"]
-[ext_resource type="PackedScene" path="res://features/meta/manager/TraitPickerView.tscn" id="4_traits"]
+[ext_resource type="PackedScene" uid="uid://gmvu0lc4cfef" path="res://features/meta/manager/ManagerPresetChips.tscn" id="3_chips"]
+[ext_resource type="PackedScene" uid="uid://gwexgkt7p5c4" path="res://features/meta/manager/TraitPickerView.tscn" id="4_traits"]
 
 [node name="ManagerStepView" type="Control"]
 layout_mode = 3

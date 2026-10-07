@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://cwqyeebr00eym"]
 
-[ext_resource type="Script" path="res://features/season/HubManageCard.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://bsrfrpgukag32" path="res://features/season/HubManageCard.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="HubManageCard" type="Panel"]

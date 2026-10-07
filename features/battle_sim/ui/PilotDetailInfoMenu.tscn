@@ -1,14 +1,14 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://dssloojttpuvm"]
 
-[ext_resource type="Theme" uid="uid://d3sxdpvg3p880" path="res://resources/BattleTheme.tres" id="1_theme"]
+[ext_resource type="Theme" uid="uid://dmrfge5o5tftu" path="res://resources/BattleTheme.tres" id="1_theme"]
 
 [node name="PilotDetailInfoMenu" type="PanelContainer"]
+editor_description = "칸 · 지속 효과 설명 판 — 정보 칼럼 왼쪽, 누른 것과 같은 높이(코드가 위치 · 높이를 잡는다). 판 위 누름은 STOP 이라 뒤판까지 내려가지 않는다."
 custom_minimum_size = Vector2(372, 0)
 offset_right = 372.0
 offset_bottom = 180.0
 theme = ExtResource("1_theme")
 theme_type_variation = &"PilotDetailMenuPanel"
-editor_description = "칸 · 지속 효과 설명 판 — 정보 칼럼 왼쪽, 누른 것과 같은 높이(코드가 위치 · 높이를 잡는다). 판 위 누름은 STOP 이라 뒤판까지 내려가지 않는다."
 
 [node name="VBox" type="VBoxContainer" parent="."]
 layout_mode = 2
@@ -39,10 +39,10 @@ mouse_filter = 2
 
 [node name="Rows" type="VBoxContainer" parent="VBox"]
 unique_name_in_owner = true
+editor_description = "내역 줄(PilotDetailInfoRow)을 코드가 채운다 — 기본값 · 증가분 · 최종."
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 0
-editor_description = "내역 줄(PilotDetailInfoRow)을 코드가 채운다 — 기본값 · 증가분 · 최종."
 
 [node name="NoteGap" type="Control" parent="VBox"]
 unique_name_in_owner = true
@@ -52,14 +52,13 @@ mouse_filter = 2
 
 [node name="Note" type="RichTextLabel" parent="VBox"]
 unique_name_in_owner = true
+editor_description = "설명 글 — {attack} · {engage} 자리에 아이콘. 높이는 코드가 그려진 글에서 잰다."
 custom_minimum_size = Vector2(0, 54)
 layout_mode = 2
 mouse_filter = 2
 theme_type_variation = &"PilotDetailNoteText"
 text = "카드 효과로 적에게 공격할 시, 명중할 확률을 결정합니다."
 scroll_active = false
-autowrap_mode = 3
-editor_description = "설명 글 — {attack} · {engage} 자리에 아이콘. 높이는 코드가 그려진 글에서 잰다."
 
 [node name="NoteTail" type="Control" parent="VBox"]
 unique_name_in_owner = true

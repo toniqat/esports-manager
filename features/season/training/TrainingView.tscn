@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://mgbtbbkxgbgw" path="res://features/season/training/TrainingView.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
-[ext_resource type="PackedScene" path="res://features/season/training/TrainingThumb.tscn" id="3_thumb"]
+[ext_resource type="PackedScene" uid="uid://crg2etciyhyy" path="res://features/season/training/TrainingThumb.tscn" id="3_thumb"]
 
 [node name="TrainingView" type="Control"]
 layout_mode = 3

@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://bce6g2ejcx1u1"]
 
 [ext_resource type="Script" uid="uid://oprjdu25ndur" path="res://features/meta/shop/ShopTab.gd" id="1_tab"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
@@ -374,8 +374,8 @@ autowrap_mode = 3
 
 [node name="ListView" type="VBoxContainer" parent="Body"]
 unique_name_in_owner = true
-visible = false
 editor_description = "파편 상점 / 특성 제작 / 교환소: section head + scrolling rows (ShopShardRow / ShopCraftRow / ShopExchangeRow, instanced by code)."
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -447,8 +447,8 @@ theme_override_constants/separation = 12
 
 [node name="DevRow" type="Panel" parent="Body/ListView/Scroll/ScrollPad/VBox"]
 unique_name_in_owner = true
-visible = false
 editor_description = "교환소 only — dev premium grant (premium is a local number, no payment). Sunk outlined panel = local style."
+visible = false
 custom_minimum_size = Vector2(0, 132)
 layout_mode = 2
 mouse_filter = 2
@@ -492,8 +492,8 @@ offset_top = 18.0
 offset_right = -20.0
 offset_bottom = 114.0
 grow_horizontal = 0
-mouse_filter = 1
 focus_mode = 0
+mouse_filter = 1
 theme_type_variation = &"GhostButton"
 theme_override_font_sizes/font_size = 22
 text = "유료 재화 +100 (개발용)"

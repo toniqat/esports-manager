@@ -1,6 +1,6 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://ctknolifgtrrc"]
 
-[ext_resource type="Script" path="res://features/meta/run_setup/ChoiceListView.gd" id="1_list"]
+[ext_resource type="Script" uid="uid://cvdurtvrtmqsc" path="res://features/meta/run_setup/ChoiceListView.gd" id="1_list"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="ChoiceListView" type="Control"]
@@ -61,7 +61,6 @@ editor_description = "Cards are instantiated here by code (one item scene per ro
 custom_minimum_size = Vector2(1032, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-mouse_filter = 1
 theme_override_constants/separation = 20
 
 [node name="Bar" type="HBoxContainer" parent="."]

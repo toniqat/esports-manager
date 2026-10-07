@@ -1,8 +1,9 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://b0mg5yh2cpoaw"]
 
-[ext_resource type="Theme" uid="uid://d3sxdpvg3p880" path="res://resources/BattleTheme.tres" id="1_theme"]
+[ext_resource type="Theme" uid="uid://dmrfge5o5tftu" path="res://resources/BattleTheme.tres" id="1_theme"]
 
 [node name="PilotDetailInfoRow" type="Control"]
+editor_description = "칸 설명 판의 내역 한 줄 — 이름 42% : 값 58% (앵커로 나눈다). 값은 오른쪽 정렬이라 clip_text 가 필수(넘치면 왼쪽부터 그린다)."
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 3
 anchors_preset = 0
@@ -10,7 +11,6 @@ offset_right = 332.0
 offset_bottom = 36.0
 mouse_filter = 2
 theme = ExtResource("1_theme")
-editor_description = "칸 설명 판의 내역 한 줄 — 이름 42% : 값 58% (앵커로 나눈다). 값은 오른쪽 정렬이라 clip_text 가 필수(넘치면 왼쪽부터 그린다)."
 
 [node name="Key" type="Label" parent="."]
 unique_name_in_owner = true

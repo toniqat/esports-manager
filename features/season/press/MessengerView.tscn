@@ -94,7 +94,6 @@ editor_description = "The chat column: %Log then %Answers, stacked (no separatio
 custom_minimum_size = Vector2(1080, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-mouse_filter = 1
 theme_override_constants/separation = 0
 
 [node name="Log" type="VBoxContainer" parent="SafeArea/Scroll/Body"]
@@ -106,8 +105,8 @@ theme_override_constants/separation = 0
 
 [node name="Answers" type="MarginContainer" parent="SafeArea/Scroll/Body"]
 unique_name_in_owner = true
-visible = false
 editor_description = "Answer choices under the log, shown while the player picks (code toggles). margin_top = gap above, margin_right = screen edge, margin_bottom = gap below the last answer."
+visible = false
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/margin_top = 10

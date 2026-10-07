@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://gwexgkt7p5c4"]
 
 [ext_resource type="Script" uid="uid://1owh2etg2tlb" path="res://features/meta/manager/TraitPickerView.gd" id="1_view"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
@@ -19,10 +19,10 @@ mouse_filter = 2
 
 [node name="Title" type="Label" parent="Head"]
 layout_mode = 1
-anchors_preset = 10
+anchors_preset = -1
 anchor_right = 0.5
 offset_bottom = 44.0
-mouse_filter = 2
+grow_horizontal = 2
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 30
 text = "특성"
@@ -31,13 +31,12 @@ text = "특성"
 unique_name_in_owner = true
 editor_description = "CaptionLabel, NegativeLabel when more traits than slots (code)."
 layout_mode = 1
-anchors_preset = 1
+anchors_preset = -1
 anchor_left = 0.5
 anchor_right = 1.0
 offset_top = 6.0
 offset_bottom = 40.0
 grow_horizontal = 0
-mouse_filter = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 24
 text = "장착 3 / 4"
@@ -62,7 +61,6 @@ offset_left = 24.0
 offset_top = 12.0
 offset_right = 284.0
 offset_bottom = 44.0
-mouse_filter = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 24
 text = "보너스 점수"
@@ -75,7 +73,6 @@ offset_left = 24.0
 offset_top = 38.0
 offset_right = 224.0
 offset_bottom = 96.0
-mouse_filter = 2
 theme_type_variation = &"PositiveLabel"
 theme_override_font_sizes/font_size = 40
 text = "+2"
@@ -90,7 +87,6 @@ offset_top = 14.0
 offset_right = -24.0
 offset_bottom = 46.0
 grow_horizontal = 2
-mouse_filter = 2
 theme_type_variation = &"CaptionLabel"
 text = "부정 특성 제공 +4 · 긍정 특성 소모 −2"
 horizontal_alignment = 2
@@ -106,7 +102,6 @@ offset_top = 50.0
 offset_right = -24.0
 offset_bottom = 82.0
 grow_horizontal = 2
-mouse_filter = 2
 theme_type_variation = &"FaintLabel"
 text = "남는 점수는 런 점수에 더해집니다"
 horizontal_alignment = 2
@@ -143,7 +138,6 @@ offset_left = 4.0
 offset_right = 4.0
 offset_bottom = 36.0
 grow_horizontal = 2
-mouse_filter = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 24
 text = "보유 특성 6 — 눌러서 장착 / 해제"
@@ -181,7 +175,6 @@ offset_left = 4.0
 offset_right = 4.0
 offset_bottom = 36.0
 grow_horizontal = 2
-mouse_filter = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 24
 text = "잠긴 특성 18"

@@ -1,6 +1,6 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://wvnbldqq1n86"]
 
-[ext_resource type="Script" path="res://features/meta/run_setup/TeamCard.gd" id="1_card"]
+[ext_resource type="Script" uid="uid://csfj1w8f4j0xp" path="res://features/meta/run_setup/TeamCard.gd" id="1_card"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="TeamCard" type="Button"]
@@ -20,6 +20,7 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 theme_override_constants/margin_left = 32
 theme_override_constants/margin_top = 26

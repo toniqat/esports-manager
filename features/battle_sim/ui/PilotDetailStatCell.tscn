@@ -1,8 +1,9 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://c26spcd3t2nxv"]
 
-[ext_resource type="Theme" uid="uid://d3sxdpvg3p880" path="res://resources/BattleTheme.tres" id="1_theme"]
+[ext_resource type="Theme" uid="uid://dmrfge5o5tftu" path="res://resources/BattleTheme.tres" id="1_theme"]
 
 [node name="PilotDetailStatCell" type="Button"]
+editor_description = "스탯 칸 하나 — 누르면 왼쪽에 설명 판이 열린다. 강조(설명이 열린 칸)는 코드가 변형을 BattleChipButtonOn 으로 바꾼다. 폭은 줄(PilotDetailStatRow)이 나눈다: 칸 하나 = 전폭, 둘 = 반씩."
 custom_minimum_size = Vector2(0, 56)
 offset_right = 452.0
 offset_bottom = 56.0
@@ -10,10 +11,10 @@ size_flags_horizontal = 3
 focus_mode = 0
 theme = ExtResource("1_theme")
 theme_type_variation = &"BattleChipButton"
-editor_description = "스탯 칸 하나 — 누르면 왼쪽에 설명 판이 열린다. 강조(설명이 열린 칸)는 코드가 변형을 BattleChipButtonOn 으로 바꾼다. 폭은 줄(PilotDetailStatRow)이 나눈다: 칸 하나 = 전폭, 둘 = 반씩."
 
 [node name="Icon" type="TextureRect" parent="."]
 unique_name_in_owner = true
+editor_description = "스탯 아이콘(KeywordIcon, 이름 글자색으로 굽는다) — 코드가 채운다."
 layout_mode = 1
 anchors_preset = 4
 anchor_top = 0.5
@@ -26,7 +27,6 @@ grow_vertical = 2
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
-editor_description = "스탯 아이콘(KeywordIcon, 이름 글자색으로 굽는다) — 코드가 채운다."
 
 [node name="Name" type="Label" parent="."]
 unique_name_in_owner = true
@@ -45,6 +45,7 @@ clip_text = true
 
 [node name="Value" type="Label" parent="."]
 unique_name_in_owner = true
+editor_description = "최종 값 — 오른쪽 끝은 괄호 보너스 폭만큼 코드가 당긴다(offset_right)."
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -58,10 +59,10 @@ text = "202 / 202"
 horizontal_alignment = 2
 vertical_alignment = 1
 clip_text = true
-editor_description = "최종 값 — 오른쪽 끝은 괄호 보너스 폭만큼 코드가 당긴다(offset_right)."
 
 [node name="Bonus" type="Label" parent="."]
 unique_name_in_owner = true
+editor_description = "기본값 대비 괄호 보너스 — + 는 BattlePositiveLabel, − 는 BattleNegativeLabel(코드가 바꾼다). 0 이면 빈 글."
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -74,4 +75,3 @@ theme_type_variation = &"BattlePositiveLabel"
 text = "(+2)"
 horizontal_alignment = 2
 vertical_alignment = 1
-editor_description = "기본값 대비 괄호 보너스 — + 는 BattlePositiveLabel, − 는 BattleNegativeLabel(코드가 바꾼다). 0 이면 빈 글."

@@ -1,11 +1,11 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://dumi7gtt2nkg6"]
 
-[ext_resource type="Theme" uid="uid://d3sxdpvg3p880" path="res://resources/BattleTheme.tres" id="1_theme"]
+[ext_resource type="Theme" uid="uid://dmrfge5o5tftu" path="res://resources/BattleTheme.tres" id="1_theme"]
 
 [node name="PilotDetailCardBand" type="Button"]
+editor_description = "보유 카드 부채꼴의 입력 띠(투명) — 카드 i 가 보이는 폭(자기 왼쪽 변 ~ 다음 카드 왼쪽 변) 하나. 위치 · 크기는 코드가 쉬는 자리에서 잰다."
 offset_right = 166.0
 offset_bottom = 215.0
 focus_mode = 0
 theme = ExtResource("1_theme")
 theme_type_variation = &"PilotDetailCardBand"
-editor_description = "보유 카드 부채꼴의 입력 띠(투명) — 카드 i 가 보이는 폭(자기 왼쪽 변 ~ 다음 카드 왼쪽 변) 하나. 위치 · 크기는 코드가 쉬는 자리에서 잰다."

@@ -11,7 +11,32 @@ HubView "이번 주 시작 →"  →  PRESS  →  (pick an answer)  →  TRAININ
 | File | Role |
 |---|---|
 | `PressConferenceView.gd` | `class_name PressConferenceView extends Control` — the screen: draws this week's `MentalSystem.press_session` in a `MessengerView`, applies the answer with `MentalSystem.resolve_press`, then `SeasonHub.on_press_finished()` |
-| `MessengerView.gd` | `class_name MessengerView extends Control` — **shared messenger dialogue** (press conference here; interview / outing / incident overlays on the week screen). API: `open(sub, title, portrait, lines, choices)` → signal `choice_picked(idx)` → `show_result(outcome)` / `show_outcome(reply_lines, notes, verdict)` → signal `closed`. `outcome_hint` = bottom hint after the outcome. Line grammar: plain = left speaker, `>text` = manager (right), `*text` = narration (see `features/season/mental/README.md`). |
+| `PressConferenceView.tscn` | The screen scene: root (theme `OutgameTheme.tres`, PASS) + one `MessengerView.tscn` instance `%Messenger` whose `outcome_hint` is set in the scene (`화면을 눌러 계속`). Created by `SeasonHub` with `PressConferenceView.create()` |
+| `MessengerView.gd` | `class_name MessengerView extends Control` — **shared messenger dialogue** (press conference here; interview / outing / incident overlays on the week screen). Create with `MessengerView.create()` (`.new()` is an empty Control). API: `open(sub, title, portrait, lines, choices)` → signal `choice_picked(idx)` → `show_result(outcome)` / `show_outcome(reply_lines, notes, verdict)` → signal `closed`. `@export outcome_hint` = bottom hint after the outcome. Line grammar: plain = left speaker, `>text` = manager (right), `*text` = narration (see `features/season/mental/README.md`). |
+| `MessengerView.tscn` | The **frame** (below). The chat log itself stays code-built under `%Body` |
+
+### `MessengerView.tscn` — what the scene owns / what code owns
+
+```
+MessengerView (Control, full rect, STOP, theme OutgameTheme.tres)
+├ %Background   ColorRect BG, full rect — code: ScreenMetrics.extend_background (notch band)
+└ %SafeArea     full rect — code: offset_bottom = −bottom inset (bottom edge = safe_h())
+  ├ %Sub        CaptionLabel 24, clip            y 36
+  ├ %Title      HeadingLabel                      y 72
+  ├ Divider     HSeparator "Divider"              y 160
+  ├ %Scroll     ScrollContainer PASS, y 190 → bottom −64, anchors_preset −1 (grows right only)
+  │ └ %Body     Control PASS, min width 1080 — bubbles / wedges / narration / note chips /
+  │             answer buttons are placed here by code (heights measured from the text)
+  └ %Hint       FaintLabel, centred, bottom −50 … −22 (grows down to its 31 px min height)
+```
+
+* **Scene**: frame positions, fonts (variations), the sample texts. **Code**: device insets,
+  the whole chat log (`_add_*`, `_show_choices`), the tap state machine, `DragScroll.attach(%Scroll)`.
+* Bubble colours (`SURFACE` + border / `ACCENT`), the wedge, the reporter glyph and note-chip tints
+  are data-dependent drawing → `OutgameTheme.flat_style` / `add_chip` / `_draw` in code.
+* `%Scroll` and `%Hint` use `anchors_preset = -1` on purpose: a preset re-applies its grow
+  directions on load, so the overflowing log would shift left by half the scroll bar and the
+  hint (min height 31 > 28) would grow upward. Keep them custom when editing.
 
 ## Screen
 
@@ -78,10 +103,10 @@ Reporter portrait: still the microphone drawn by `MessengerView._draw_reporter_g
   `gui_input`.** Taken as a tap it would close the outcome in the same instant (measured with
   injected clicks: the overlay was freed by the answer tap). `_picked_frame` ignores taps from the
   frame the answer was picked in.
-* **The view is created from code, so `_ready` uses `set_anchors_and_offsets_preset(FULL_RECT)`.**
-  Godot 4's `set_anchors_preset` alone keeps the current rect — a `.new()` Control stays 0×0, its
-  background never paints and its STOP hit area is empty (measured: the week overlay showed the
-  week screen through it).
+* **The view is a scene whose root is saved full-rect** (anchors 0..1, offsets 0). It used to be
+  built with `.new()`, where `set_anchors_preset` alone kept the 0×0 rect — the background never
+  painted and the STOP hit area was empty (measured: the week overlay showed the week screen
+  through it). `MessengerView.create()` gives the full rect from the scene; never `.new()` it.
 * The root is `MOUSE_FILTER_STOP`, so a copy laid over another screen (the week screen's
   interview / incident overlay) blocks everything underneath, including that screen's bottom bar.
 * The height of wrapped text is not measured by standing up a `Label`; **the font is asked
@@ -89,5 +114,6 @@ Reporter portrait: still the microphone drawn by `MessengerView._draw_reporter_g
 * `PressConferenceView.ensure_view()` re-opens the messenger every time (`_restart`) with this
   week's session. `_built` guards only the skeleton.
 * The messenger never indents itself — the owning screen calls `ScreenMetrics.indent_to_safe_top`;
-  the messenger paints `OutgameTheme.add_background` (which extends into the notch). The bottom
-  hint sits at `safe_h() - 50`. All colours come from `OutgameTheme`.
+  the messenger's `%Background` is extended into the notch band (`ScreenMetrics.extend_background`)
+  and `%SafeArea` ends on the safe bottom, so the bottom hint sits at `safe_h() - 50`. All colours
+  come from `OutgameTheme` (scene variations, or code for the data-dependent bubble colours).

@@ -17,6 +17,10 @@ extends Control
 #
 # Layout follows the other season screens: the whole screen is indented with
 # `indent_to_safe_top`; the messenger paints the background.
+#
+# The screen is `PressConferenceView.tscn` — one `MessengerView` instance
+# (`%Messenger`, its `outcome_hint` set in the scene). Create with
+# `PressConferenceView.create()` (`.new()` is an empty Control).
 
 const PHASE_NAMES: Dictionary = {
 	GameEnums.SeasonPhase.PRESEASON:      "프리시즌",
@@ -27,16 +31,24 @@ const PHASE_NAMES: Dictionary = {
 	GameEnums.SeasonPhase.REGULAR_INTL:   "정규시즌 국제대회",
 }
 
+const SCENE_PATH: String = "res://features/season/press/PressConferenceView.tscn"
+
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 @onready var _gm: Node = get_node("/root/GameManager")
+@onready var _messenger: MessengerView = %Messenger
 
 var _built: bool = false
-var _messenger: MessengerView
+
+
+## Instantiates the scene. Load (not preload) — preloading its own scene is a
+## script ↔ scene cycle.
+static func create() -> PressConferenceView:
+	return (load(SCENE_PATH) as PackedScene).instantiate() as PressConferenceView
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-	mouse_filter = Control.MOUSE_FILTER_PASS
+	_messenger.choice_picked.connect(_on_answer_picked)
+	_messenger.closed.connect(_finish)
 	ensure_view()
 
 
@@ -44,11 +56,6 @@ func _ready() -> void:
 func ensure_view() -> void:
 	if not _built:
 		ScreenMetrics.indent_to_safe_top(self)
-		_messenger = MessengerView.new()
-		_messenger.outcome_hint = "화면을 눌러 계속"
-		add_child(_messenger)
-		_messenger.choice_picked.connect(_on_answer_picked)
-		_messenger.closed.connect(_finish)
 		_built = true
 	_restart()
 

@@ -1,0 +1,112 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" uid="uid://dmj78et2vm517" path="res://features/season/press/MessengerView.gd" id="1_msg"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="MessengerView" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_msg")
+
+[node name="Background" type="ColorRect" parent="."]
+unique_name_in_owner = true
+editor_description = "Screen paper (OutgameTheme.BG). Code extends its top into the notch band (ScreenMetrics.extend_background)."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.96, 0.96, 0.968, 1)
+
+[node name="SafeArea" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "Full rect; code lifts its bottom by the device's bottom inset (the owning screen already sits on the safe top)."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Sub" type="Label" parent="SafeArea"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 40.0
+offset_top = 36.0
+offset_right = -40.0
+offset_bottom = 66.0
+grow_horizontal = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 24
+text = "프리시즌 · 3주차 · e스포츠 데일리 기자"
+clip_text = true
+
+[node name="Title" type="Label" parent="SafeArea"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 40.0
+offset_top = 72.0
+offset_right = -40.0
+offset_bottom = 134.0
+grow_horizontal = 2
+theme_type_variation = &"HeadingLabel"
+text = "기자회견"
+
+[node name="Divider" type="HSeparator" parent="SafeArea"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 40.0
+offset_top = 160.0
+offset_right = -40.0
+offset_bottom = 161.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"Divider"
+
+[node name="Scroll" type="ScrollContainer" parent="SafeArea"]
+unique_name_in_owner = true
+editor_description = "Chat log. PASS (not STOP): releases inside must bubble up to the view's gui_input (taps advance the dialogue). Bubbles / notes / answers are added to Body by code. Grows to the RIGHT only: when the log overflows, the scroll bar adds its width past the screen edge (as the code-built view did) instead of shifting the log left."
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 190.0
+offset_bottom = -64.0
+grow_vertical = 2
+mouse_filter = 1
+horizontal_scroll_mode = 0
+
+[node name="Body" type="Control" parent="SafeArea/Scroll"]
+unique_name_in_owner = true
+editor_description = "Code places the bubbles here with absolute coordinates (MessengerView._add_* — measured text heights) and grows custom_minimum_size.y."
+custom_minimum_size = Vector2(1080, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 1
+
+[node name="Hint" type="Label" parent="SafeArea"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -50.0
+offset_bottom = -22.0
+grow_horizontal = 2
+theme_type_variation = &"FaintLabel"
+text = "화면을 눌러 계속"
+horizontal_alignment = 1

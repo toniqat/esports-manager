@@ -303,7 +303,7 @@ func _ensure_training_view() -> void:
 func _ensure_press_view() -> void:
 	if _press_view != null:
 		return
-	_press_view = PressConferenceView.new()
+	_press_view = PressConferenceView.create()
 	_press_view.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_press_view)
 
@@ -311,7 +311,7 @@ func _ensure_press_view() -> void:
 func _ensure_week_view() -> void:
 	if _week_view != null:
 		return
-	_week_view = WeekProgressView.new()
+	_week_view = WeekProgressView.create()
 	_week_view.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_week_view)
 

@@ -1,0 +1,129 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+[ext_resource type="PackedScene" path="res://features/season/week/WeekEveningSlot.tscn" id="2_slot"]
+
+[node name="WeekEveningCard" type="Panel"]
+editor_description = "오늘 저녁 (Mon–Fri, before the action): pick a pilot, then 면담 / 외출 / 패스. Code fills %Slots with one WeekEveningSlot per own pilot (seat order) and sets the button texts / disabled state."
+custom_minimum_size = Vector2(1000, 410)
+offset_right = 1000.0
+offset_bottom = 410.0
+mouse_filter = 2
+theme = ExtResource("1_theme")
+theme_type_variation = &"Card"
+
+[node name="Head" type="Label" parent="."]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 22.0
+offset_right = 328.0
+offset_bottom = 64.0
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 32
+text = "오늘 저녁"
+
+[node name="Limits" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -428.0
+offset_top = 30.0
+offset_right = -28.0
+offset_bottom = 62.0
+theme_type_variation = &"CaptionLabel"
+text = "면담 2/2 · 외출 1/1"
+horizontal_alignment = 2
+
+[node name="Hint" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 28.0
+offset_top = 66.0
+offset_right = -28.0
+offset_bottom = 94.0
+grow_horizontal = 2
+theme_type_variation = &"FaintLabel"
+theme_override_font_sizes/font_size = 20
+text = "선수를 고르고 오늘 저녁 할 일을 정하세요 (하루 한 번)"
+
+[node name="Slots" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 20.0
+offset_top = 104.0
+offset_right = -20.0
+offset_bottom = 274.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Slot0" parent="Slots" instance=ExtResource("2_slot")]
+layout_mode = 2
+
+[node name="Slot1" parent="Slots" instance=ExtResource("2_slot")]
+layout_mode = 2
+
+[node name="Highlight" parent="Slots/Slot1" index="0"]
+visible = false
+
+[node name="Slot2" parent="Slots" instance=ExtResource("2_slot")]
+layout_mode = 2
+
+[node name="Highlight" parent="Slots/Slot2" index="0"]
+visible = false
+
+[node name="Slot3" parent="Slots" instance=ExtResource("2_slot")]
+layout_mode = 2
+
+[node name="Highlight" parent="Slots/Slot3" index="0"]
+visible = false
+
+[node name="Slot4" parent="Slots" instance=ExtResource("2_slot")]
+layout_mode = 2
+
+[node name="Highlight" parent="Slots/Slot4" index="0"]
+visible = false
+
+[node name="Buttons" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 28.0
+offset_top = 298.0
+offset_right = -28.0
+offset_bottom = 382.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="Interview" type="Button" parent="Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_type_variation = &"PrimaryButton"
+theme_override_font_sizes/font_size = 26
+text = "면담"
+
+[node name="Outing" type="Button" parent="Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 26
+text = "외출"
+
+[node name="Pass" type="Button" parent="Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_type_variation = &"TextButton"
+theme_override_font_sizes/font_size = 26
+text = "패스"

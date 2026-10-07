@@ -36,8 +36,27 @@ extends Control
 # MatchFlow 로 넘어간다. 경기를 마치고 순위표에서 확인을 누르면 같은 요일로
 # 돌아오는데, 그때는 그 경기가 `played` 라 버튼이 다시 "확인"이 된다.
 #
+# ── 씬 ──────────────────────────────────────────────────────────────────────
+# **배치 · 스타일은 `WeekProgressView.tscn` 이 갖는다** (레일 · 머리글 · 구분선 ·
+# 스크롤 · 하단 버튼). 목록의 카드는 아이템 씬(`WeekMatchCard` · `WeekNoteCard` ·
+# `WeekIncidentCard` · `WeekEveningCard`(+ `WeekEveningSlot`) · `WeekEveningDoneCard` ·
+# `WeekPilotCard`(+ `WeekStatCell`))을 `%List`(VBox, 간격 = 카드 사이)에 붙인다.
+# 이 스크립트는 `%` 노드에 데이터를 넣고, 데이터에 따라 바뀌는 색(역할 띠 · 오늘 칩 ·
+# 내 경기 카드 · 상승/하락)과 기기 인셋만 코드로 넣는다. 생성은 `create()`.
+#
 # 배치 규약은 다른 시즌 화면과 같다: 화면째 `indent_to_safe_top` 으로 내리고
-# 배경만 `extend_background` 로 노치 자리까지 늘린다. 색은 전부 `OutgameTheme`.
+# 배경만 `extend_background` 로 노치 자리까지 늘린다. `%SafeArea` 의 아래는 아래
+# 인셋만큼 올리고(= `safe_h()`), 하단 버튼은 그 인셋 밑까지 색면을 늘린다.
+
+const SCENE_PATH: String = "res://features/season/week/WeekProgressView.tscn"
+const MATCH_CARD_SCENE: PackedScene = preload("res://features/season/week/WeekMatchCard.tscn")
+const NOTE_CARD_SCENE: PackedScene = preload("res://features/season/week/WeekNoteCard.tscn")
+const PILOT_CARD_SCENE: PackedScene = preload("res://features/season/week/WeekPilotCard.tscn")
+const STAT_CELL_SCENE: PackedScene = preload("res://features/season/week/WeekStatCell.tscn")
+const EVENING_CARD_SCENE: PackedScene = preload("res://features/season/week/WeekEveningCard.tscn")
+const EVENING_SLOT_SCENE: PackedScene = preload("res://features/season/week/WeekEveningSlot.tscn")
+const EVENING_DONE_SCENE: PackedScene = preload("res://features/season/week/WeekEveningDoneCard.tscn")
+const INCIDENT_CARD_SCENE: PackedScene = preload("res://features/season/week/WeekIncidentCard.tscn")
 
 const PHASE_NAMES: Dictionary = {
 	GameEnums.SeasonPhase.PRESEASON:      "프리시즌",
@@ -50,51 +69,34 @@ const PHASE_NAMES: Dictionary = {
 const STAT_KEYS: Array   = PlayerData.STAT_KEYS
 const STAT_SHORT: Array  = PlayerData.STAT_SHORT
 
-# ── 배치 ─────────────────────────────────────────────────────────────────────
-## 상단 가로 레일 — 왼쪽 끝에 `N주`, 그 오른쪽에 요일 칩 일곱이 고르게 선다.
-const RAIL_X: float      = 24.0
-const RAIL_TOP: float    = 26.0
-const RAIL_H: float      = 96.0
-const RAIL_WEEK_W: float = 104.0     # `N주` 라벨 칸
-const RAIL_PAD: float    = 14.0
-const CHIP_D: float      = 72.0
-
-const CONTENT_X: float   = 40.0
-const HEAD_TOP: float    = RAIL_TOP + RAIL_H + 26.0
-const TITLE_Y: float     = HEAD_TOP + 92.0
-const LIST_TOP: float    = HEAD_TOP + 224.0
-
-const CARD_H: float      = 148.0
-const CARD_GAP: float    = 14.0
-const MATCH_CARD_H: float = 168.0
+# ── 데이터에 따라 바뀌는 치수 (나머지 배치는 씬) ──
+const CARD_H: float      = 148.0     # training card without quirk lines
+const MATCH_CARD_H: float = 168.0    # the player's match card (others: OTHER_MATCH_H)
+const OTHER_MATCH_H: float = 96.0
 const PORTRAIT_D: float  = 88.0
 const QUIRK_LINE_H: float = 34.0     # one quirk event line under a training card
-
-# ── 오늘 저녁 (evening) card — M7 ──
-const EVE_SLOT_TOP: float = 104.0
-const EVE_SLOT_H: float   = 170.0
 const EVE_PORTRAIT_D: float = 84.0
-const EVE_BTN_H: float    = 84.0
-const EVE_CARD_H: float   = EVE_SLOT_TOP + EVE_SLOT_H + 24.0 + EVE_BTN_H + 28.0
-const EVE_DONE_H: float   = 150.0
-const INCIDENT_H: float   = 150.0
+const TODAY_CHIP_RADIUS: int = 20
+const DONE_TEXT_X_NO_PORTRAIT: float = 28.0   # evening summary without a pilot (pass)
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 @onready var _gm: Node = get_node("/root/GameManager")
 
+@onready var _week_lbl: Label = %WeekLabel
+@onready var _phase_lbl: Label = %Phase
+@onready var _title_lbl: Label = %Title
+@onready var _date_small_lbl: Label = %DateSmall
+@onready var _date_big_lbl: Label = %DateBig
+@onready var _list_scroll: ScrollContainer = %Scroll
+@onready var _list_body: VBoxContainer = %List
+@onready var _list_end: Control = %ListEnd
+@onready var _action_btn: Button = %Action
+
 var _built: bool = false
 var _day: int = 0
 
-var _chip_panels: Array = []       # 7 Panel
-var _chip_labels: Array = []       # 7 Label
-var _week_lbl: Label
-var _phase_lbl: Label
-var _title_lbl: Label
-var _date_small_lbl: Label
-var _date_big_lbl: Label
-var _list_body: Control
-var _list_scroll: ScrollContainer
-var _action_btn: Button
+var _chip_panels: Array = []       # 7 Panel (scene: %Days/Day*/Chip)
+var _chip_labels: Array = []       # 7 Label (… /Chip/Letter)
 
 # M7 — evening / incident dialogs.
 var _sel_pid: int = -1                # pilot picked on the evening card
@@ -103,114 +105,41 @@ var _overlay: MessengerView = null    # dialog on top of the screen, null when c
 var _overlay_kind: String = ""        # "evening" / "incident"
 
 
+## Instantiates the scene. `WeekProgressView.new()` is an empty Control — don't use it.
+## Load (not preload) — preloading its own scene is a script ↔ scene cycle.
+static func create() -> WeekProgressView:
+	return (load(SCENE_PATH) as PackedScene).instantiate() as WeekProgressView
+
+
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-	mouse_filter = Control.MOUSE_FILTER_PASS
+	for slot in (%Days as Control).get_children():
+		var chip: Panel = slot.get_node_or_null("Chip") as Panel
+		var lbl: Label = slot.get_node_or_null("Chip/Letter") as Label
+		if chip != null and lbl != null:
+			_chip_panels.append(chip)
+			_chip_labels.append(lbl)
+	_action_btn.pressed.connect(_on_action_pressed)
+	# Drag / fling scrolling instead of the engine's touch drag.
+	DragScroll.attach(_list_scroll)
 	ensure_view()
 
 
 func ensure_view() -> void:
 	if not _built:
-		_build()
+		_fit_safe_area()
 		_built = true
 	refresh()
 
 
-# ── Build ────────────────────────────────────────────────────────────────────
-func _build() -> void:
+## Device insets only — every position is the scene's. The screen drops to the safe top,
+## the paper extends back up into the notch band, `%SafeArea` ends on the safe bottom
+## (`ScreenMetrics.safe_h()`), and the bottom bar's colour field runs on under the inset.
+func _fit_safe_area() -> void:
 	ScreenMetrics.indent_to_safe_top(self)
-	OutgameTheme.add_background(self)
-	_build_rail()
-	_build_header()
-	_build_list()
-	_build_action_button()
-
-
-## 상단 가로 요일 레일. 어두운 알약 한 장 위에 `N주` 와 요일 칩 일곱.
-func _build_rail() -> void:
-	var w: float = _rail_w()
-	var rail := Panel.new()
-	rail.add_theme_stylebox_override("panel",
-			OutgameTheme.flat_style(OutgameTheme.RAIL, int(RAIL_H * 0.5)))
-	rail.position = Vector2(RAIL_X, RAIL_TOP)
-	rail.size = Vector2(w, RAIL_H)
-	rail.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(rail)
-
-	_week_lbl = UiHelpers.mk_label(rail, "", 24, OutgameTheme.RAIL_TEXT,
-			Vector2(12, 0), Vector2(RAIL_WEEK_W - 12.0, RAIL_H),
-			HORIZONTAL_ALIGNMENT_CENTER)
-	_week_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-
-	# 칩 일곱을 레일 안에서 고르게 편다. 왼쪽에 주차 라벨이 앉으므로 그 오른쪽부터.
-	var left: float = RAIL_WEEK_W
-	var span: float = w - left - RAIL_PAD
-	var step: float = span / 7.0
-	for d in 7:
-		var cx: float = left + step * (float(d) + 0.5) - CHIP_D * 0.5
-		var chip := Panel.new()
-		chip.position = Vector2(cx, (RAIL_H - CHIP_D) * 0.5)
-		chip.size = Vector2(CHIP_D, CHIP_D)
-		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		rail.add_child(chip)
-		var lbl := UiHelpers.mk_label(chip, OutgameTheme.DAY_LETTERS[d], 30,
-				OutgameTheme.RAIL_TEXT, Vector2.ZERO, Vector2(CHIP_D, CHIP_D),
-				HORIZONTAL_ALIGNMENT_CENTER)
-		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		_chip_panels.append(chip)
-		_chip_labels.append(lbl)
-
-
-func _build_header() -> void:
-	var right_w: float = 320.0
-	var right_x: float = ScreenMetrics.vp_w() - 40.0 - right_w
-
-	_phase_lbl = UiHelpers.mk_label(self, "", 24, OutgameTheme.TEXT_SUB,
-			Vector2(CONTENT_X, HEAD_TOP + 4.0), Vector2(520, 30),
-			HORIZONTAL_ALIGNMENT_LEFT)
-	_date_small_lbl = UiHelpers.mk_label(self, "", 24, OutgameTheme.TEXT_SUB,
-			Vector2(right_x, HEAD_TOP), Vector2(right_w, 30),
-			HORIZONTAL_ALIGNMENT_RIGHT)
-	_date_big_lbl = UiHelpers.mk_label(self, "", 58, OutgameTheme.TEXT,
-			Vector2(right_x, HEAD_TOP + 28.0), Vector2(right_w, 70),
-			HORIZONTAL_ALIGNMENT_RIGHT)
-	_date_small_lbl.clip_text = true
-	_date_big_lbl.clip_text = true
-
-	_title_lbl = UiHelpers.mk_label(self, "", 54, OutgameTheme.TEXT,
-			Vector2(CONTENT_X, TITLE_Y), Vector2(600, 66),
-			HORIZONTAL_ALIGNMENT_LEFT)
-
-	OutgameTheme.add_divider(self, Vector2(CONTENT_X, LIST_TOP - 26.0),
-			ScreenMetrics.vp_w() - CONTENT_X - 40.0)
-
-
-func _build_list() -> void:
-	var w: float = ScreenMetrics.vp_w() - CONTENT_X - 40.0
-	var h: float = _list_bottom() - LIST_TOP
-	var pack: Dictionary = OutgameTheme.add_vscroll(self,
-			Vector2(CONTENT_X, LIST_TOP), Vector2(w, h))
-	_list_scroll = pack["scroll"]
-	_list_body = pack["body"]
-
-
-## 이 화면의 행동은 하나뿐이라 **하단 구간을 통째로 차지한다** — 화면 끝에서
-## 끝까지 깔리고 아래는 안전선에 밀착한다
-## (`OutgameTheme.add_bottom_bar`).
-func _build_action_button() -> void:
-	var bar: Array = OutgameTheme.add_bottom_bar(self, [
-		{"text": "확인", "style": "primary", "font": 34},
-	])
-	_action_btn = bar[0]
-	_action_btn.pressed.connect(_on_action_pressed)
-
-
-func _rail_w() -> float:
-	return ScreenMetrics.vp_w() - RAIL_X * 2.0
-
-
-func _list_bottom() -> float:
-	return OutgameTheme.bottom_bar_top() - 24.0
+	ScreenMetrics.extend_background(%Background)
+	var below: float = maxf(0.0, ScreenMetrics.insets().w)
+	(%SafeArea as Control).offset_bottom = -below
+	_action_btn.offset_bottom = below
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────
@@ -262,16 +191,17 @@ func _week_log() -> Dictionary:
 
 func _refresh_rail() -> void:
 	_week_lbl.text = "%d주" % int(_gm.season_state.get("phase_week", 1))
-	for d in 7:
+	for d in _chip_panels.size():
 		var chip: Panel = _chip_panels[d]
 		var lbl: Label = _chip_labels[d]
+		lbl.text = String(OutgameTheme.DAY_LETTERS[d]) if d < OutgameTheme.DAY_LETTERS.size() else ""
 		if d == _day:
 			chip.add_theme_stylebox_override("panel",
-					OutgameTheme.flat_style(OutgameTheme.ACCENT, 20))
+					OutgameTheme.flat_style(OutgameTheme.ACCENT, TODAY_CHIP_RADIUS))
 			lbl.add_theme_color_override("font_color", OutgameTheme.RAIL)
 		else:
 			chip.add_theme_stylebox_override("panel",
-					OutgameTheme.flat_style(Color(0, 0, 0, 0), 20))
+					OutgameTheme.flat_style(Color(0, 0, 0, 0), TODAY_CHIP_RADIUS))
 			# 지나온 날은 흰 글자로 남는다 — 남은 날과 구분되어야 "며칠 남았나"가
 			# 레일만 보고 읽힌다.
 			lbl.add_theme_color_override("font_color",
@@ -309,67 +239,85 @@ func _date_of_day(day: int) -> Dictionary:
 # ── 카드 목록 ────────────────────────────────────────────────────────────────
 func _rebuild_list() -> void:
 	for c in _list_body.get_children():
+		if c == _list_end:
+			continue
+		_list_body.remove_child(c)
 		c.queue_free()
-	var w: float = ScreenMetrics.vp_w() - CONTENT_X - 40.0
-	var y: float = 0.0
+	# The cards keep the scroll's anchored width (as the code-built list did) — the VBox
+	# would otherwise shrink by the bar's width. Measured from the anchors, not from
+	# `size`: an overflowing scroll grows by its bar, and reading that back would widen
+	# the list on every refresh.
+	_list_body.custom_minimum_size.x = _list_scroll.get_parent_area_size().x \
+			+ _list_scroll.offset_right - _list_scroll.offset_left
 
 	var md: int = CalendarSystem.matchday_of(_day)
 	if md >= 0:
-		y = _add_match_cards(w, y, md)
+		_add_match_cards(md)
 
 	if CalendarSystem.is_training_day(_day):
 		# M7 — the day's incident (if any) and the evening action sit above
 		# the training results: they are what the player still has to decide.
-		y = _add_incident_card(w, y)
-		y = _add_evening_card(w, y)
+		_add_incident_card()
+		_add_evening_card()
 		var rows: Array = _week_log().get(_day, [])
 		if rows.is_empty():
-			y = _add_note_card(w, y, "훈련 기록이 없습니다")
+			_add_note_card("훈련 기록이 없습니다")
 		else:
 			for i in rows.size():
-				y += _add_pilot_card(w, y, rows[i]) + CARD_GAP
+				_add_pilot_card(rows[i])
 	elif md >= 0:
 		pass   # 주말 — 경기 카드가 이미 그 자리를 답했다
 	else:
-		y = _add_note_card(w, y, "일정 없음")
+		_add_note_card("일정 없음")
 
-	_list_body.custom_minimum_size = Vector2(w, maxf(0.0, y))
+	# The end marker stays last: the separation before it is the gap under the last card.
+	_list_body.move_child(_list_end, -1)
 	if _list_scroll != null:
 		_list_scroll.scroll_vertical = 0
 
 
+## Adds an item scene to the list and returns it (the end marker is moved last afterwards).
+func _add_item(scene: PackedScene) -> Control:
+	var item: Control = scene.instantiate() as Control
+	_list_body.add_child(item)
+	return item
+
+
 ## 이번 주 그 경기일의 경기들. 플레이어 경기가 맨 위, 나머지는 그 아래로.
-func _add_match_cards(w: float, y: float, matchday: int) -> float:
+func _add_match_cards(matchday: int) -> void:
 	var entries: Array = _matches_on_day(matchday)
 	if entries.is_empty():
-		return _add_note_card(w, y, "%s — 예정된 경기 없음"
-				% OutgameTheme.DAY_NAMES[_day])
+		_add_note_card("%s — 예정된 경기 없음" % OutgameTheme.DAY_NAMES[_day])
+		return
 	for e_raw in entries:
 		var e: Dictionary = e_raw
 		var is_player: bool = bool(e["player"])
-		var h: float = MATCH_CARD_H if is_player else 96.0
-		var tint: Variant = OutgameTheme.RAIL if is_player else null
-		var card := OutgameTheme.add_card(_list_body, Vector2(0, y),
-				Vector2(w, h), 18, tint)
-		var fg: Color = OutgameTheme.TEXT_ON_FILL if is_player else OutgameTheme.TEXT
-		var fg_sub: Color = OutgameTheme.RAIL_TEXT if is_player else OutgameTheme.TEXT_SUB
-
-		UiHelpers.mk_label(card, String(e["tag"]), 22, fg_sub,
-				Vector2(28, 20), Vector2(w - 56, 26), HORIZONTAL_ALIGNMENT_LEFT)
-		UiHelpers.mk_label(card, String(e["title"]), 34, fg,
-				Vector2(28, 50), Vector2(w - 300, 42), HORIZONTAL_ALIGNMENT_LEFT)
+		var card: Panel = _add_item(MATCH_CARD_SCENE) as Panel
+		card.custom_minimum_size.y = MATCH_CARD_H if is_player else OTHER_MATCH_H
+		var tag: Label = card.get_node("%Tag")
+		var title: Label = card.get_node("%Title")
+		var status: Label = card.get_node("%Status")
+		var hint: Label = card.get_node("%Hint")
+		tag.text = String(e["tag"])
+		title.text = String(e["title"])
+		status.text = String(e["status"])
+		hint.text = String(e["hint"])
+		hint.visible = is_player
+		var fg_sub: Color = OutgameTheme.TEXT_SUB
+		if is_player:
+			# 내 경기는 어두운 색면 — "이 화면을 떠나는" 버튼과 같은 색.
+			card.add_theme_stylebox_override("panel",
+					OutgameTheme.card_style(OutgameTheme.CARD_RADIUS, OutgameTheme.RAIL))
+			fg_sub = OutgameTheme.RAIL_TEXT
+			tag.add_theme_color_override("font_color", fg_sub)
+			hint.add_theme_color_override("font_color", fg_sub)
+			title.add_theme_color_override("font_color", OutgameTheme.TEXT_ON_FILL)
 		var status_col: Color = fg_sub
 		if String(e["status"]) == "승":
 			status_col = OutgameTheme.POSITIVE
 		elif String(e["status"]) == "패":
 			status_col = OutgameTheme.NEGATIVE
-		UiHelpers.mk_label(card, String(e["status"]), 30, status_col,
-				Vector2(w - 240, 50), Vector2(212, 42), HORIZONTAL_ALIGNMENT_RIGHT)
-		if is_player:
-			UiHelpers.mk_label(card, String(e["hint"]), 22, fg_sub,
-					Vector2(28, 110), Vector2(w - 56, 28), HORIZONTAL_ALIGNMENT_LEFT)
-		y += h + CARD_GAP
-	return y
+		status.add_theme_color_override("font_color", status_col)
 
 
 ## 그 경기일에 잡힌 경기 목록을 화면이 읽을 모양으로. 리그는 스케줄에서,
@@ -456,39 +404,32 @@ static func _team_name(namer: Node, team_id: int) -> String:
 	return "Team %d" % team_id
 
 
-## 선수 한 명의 그날 훈련 결과 카드.
-## One training card; returns its height (CARD_H + one line per quirk event).
-func _add_pilot_card(w: float, y: float, row_raw: Variant) -> float:
+## 선수 한 명의 그날 훈련 결과 카드 (`WeekPilotCard.tscn`).
+## Height = CARD_H + one line per quirk event (+ 8 under the divider).
+func _add_pilot_card(row_raw: Variant) -> void:
 	var row: Dictionary = row_raw
 	var role: int = int(row["role"])
 	var quirk_lines: Array = _quirk_lines(row.get("quirk", []))
 	var card_h: float = CARD_H
 	if not quirk_lines.is_empty():
 		card_h += QUIRK_LINE_H * float(quirk_lines.size()) + 8.0
-	var card := Panel.new()
+	var card: Panel = _add_item(PILOT_CARD_SCENE) as Panel
+	card.custom_minimum_size.y = card_h
 	card.add_theme_stylebox_override("panel",
 			OutgameTheme.lead_bar_style(OutgameTheme.ROLE_COLORS[role]))
-	card.position = Vector2(0, y)
-	card.size = Vector2(w, card_h)
-	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_list_body.add_child(card)
 
-	OutgameTheme.add_round_portrait(card,
-			PilotImages.circle_for(int(row["pilot_id"])),
-			Vector2(26, (CARD_H - PORTRAIT_D) * 0.5), PORTRAIT_D)
-
-	UiHelpers.mk_label(card, String(row["name"]), 30, OutgameTheme.TEXT,
-			Vector2(132, 32), Vector2(240, 38), HORIZONTAL_ALIGNMENT_LEFT)
-	UiHelpers.mk_label(card, String(OutgameTheme.ROLE_NAMES[role]), 22,
-			OutgameTheme.ROLE_COLORS[role],
-			Vector2(132, 74), Vector2(240, 28), HORIZONTAL_ALIGNMENT_LEFT)
+	OutgameTheme.add_round_portrait(card.get_node("%Portrait"),
+			PilotImages.circle_for(int(row["pilot_id"])), Vector2.ZERO, PORTRAIT_D)
+	(card.get_node("%Name") as Label).text = String(row["name"])
+	var role_lbl: Label = card.get_node("%Role")
+	role_lbl.text = String(OutgameTheme.ROLE_NAMES[role])
+	role_lbl.add_theme_color_override("font_color", OutgameTheme.ROLE_COLORS[role])
 
 	# Mech mastery of the day (§14 T4, row key `mastery` = raw tile EXP).
 	var mastery_txt: String = _mastery_text(int(row["pilot_id"]), int(row.get("mastery", 0)))
-	if mastery_txt != "":
-		var ml := UiHelpers.mk_label(card, mastery_txt, 18, OutgameTheme.LINK,
-				Vector2(132, 106), Vector2(250, 26), HORIZONTAL_ALIGNMENT_LEFT)
-		ml.clip_text = true
+	var ml: Label = card.get_node("%Mastery")
+	ml.text = mastery_txt
+	ml.visible = mastery_txt != ""
 
 	# 스탯 여섯 칸 — 이름 / 지금 값 / 이번 날의 결과.
 	#
@@ -496,44 +437,51 @@ func _add_pilot_card(w: float, y: float, row_raw: Variant) -> float:
 	# (다음 한 점까지 모인 EXP, 문턱은 const.csv)이다. 기초 코스만 깔린 판은 하루
 	# EXP 가 그 문턱에 못 미쳐 월~목이 전부 `—` 로 보이고 금요일에 한꺼번에 오르는데,
 	# 그러면 이 화면이 매일 답해야 하는 "오늘 뭐가 늘었나"에 나흘 동안 답이 없다.
-	var x0: float = 392.0
-	var col_w: float = (w - x0 - 24.0) / float(STAT_KEYS.size())
 	var after: Dictionary = row["after"]
 	var ups: Dictionary = row["ups"]
 	var carry: Dictionary = row.get("carry", {})
+	var cells: Array = _ensure_children(card.get_node("%Stats"), STAT_CELL_SCENE, STAT_KEYS.size())
 	for i in STAT_KEYS.size():
 		var key: String = String(STAT_KEYS[i])
-		var cx: float = x0 + col_w * float(i)
-		UiHelpers.mk_label(card, String(STAT_SHORT[i]), 17, OutgameTheme.TEXT_SUB,
-				Vector2(cx, 34), Vector2(col_w, 22), HORIZONTAL_ALIGNMENT_CENTER)
-		UiHelpers.mk_label(card, "%d" % int(after.get(key, 0)), 28, OutgameTheme.TEXT,
-				Vector2(cx, 58), Vector2(col_w, 36), HORIZONTAL_ALIGNMENT_CENTER)
+		var cell: Control = cells[i]
+		(cell.get_node("%Short") as Label).text = String(STAT_SHORT[i])
+		(cell.get_node("%Value") as Label).text = "%d" % int(after.get(key, 0))
 		var up: int = int(ups.get(key, 0))
-		var txt: String = "%d/%d" % [int(carry.get(key, 0)), TrainingBoard.EXP_PER_POINT]
-		var col: Color = OutgameTheme.TEXT_FAINT
-		var size: int = 17
-		if up > 0:
-			txt = "+%d" % up
-			col = OutgameTheme.POSITIVE
-			size = 21
-		elif up < 0:
-			txt = "%d" % up
-			col = OutgameTheme.NEGATIVE
-			size = 21
-		UiHelpers.mk_label(card, txt, size, col,
-				Vector2(cx, 100), Vector2(col_w, 26), HORIZONTAL_ALIGNMENT_CENTER)
+		var result: Label = cell.get_node("%Result")
+		result.text = "%d/%d" % [int(carry.get(key, 0)), TrainingBoard.EXP_PER_POINT]
+		if up != 0:
+			result.text = "+%d" % up if up > 0 else "%d" % up
+			result.add_theme_color_override("font_color",
+					OutgameTheme.POSITIVE if up > 0 else OutgameTheme.NEGATIVE)
+			result.add_theme_font_size_override("font_size", 21)
 
 	# Quirk events of the day (§14 T1 row key `quirk`), one line each under the card body.
-	var qy: float = CARD_H - 6.0
-	if not quirk_lines.is_empty():
-		OutgameTheme.add_divider(card, Vector2(26, qy - 4.0), w - 52.0)
+	(card.get_node("%QuirkDivider") as Control).visible = not quirk_lines.is_empty()
+	var quirks: Control = card.get_node("%Quirks")
+	quirks.visible = not quirk_lines.is_empty()
+	var template: Label = card.get_node("%QuirkLine")
+	template.visible = false
 	for raw_line in quirk_lines:
 		var line: Array = raw_line
-		var ql := UiHelpers.mk_label(card, String(line[0]), 20, line[1] as Color,
-				Vector2(132, qy), Vector2(w - 132 - 24, QUIRK_LINE_H), HORIZONTAL_ALIGNMENT_LEFT)
-		ql.clip_text = true
-		qy += QUIRK_LINE_H
-	return card_h
+		var ql: Label = template.duplicate() as Label
+		ql.text = String(line[0])
+		ql.add_theme_color_override("font_color", line[1] as Color)
+		ql.visible = true
+		quirks.add_child(ql)
+
+
+## The first `count` children of `holder` (item scenes), instantiating `scene` for
+## missing ones and hiding the extras — the scene ships sample items for the editor.
+static func _ensure_children(holder: Node, scene: PackedScene, count: int) -> Array:
+	while holder.get_child_count() < count:
+		holder.add_child(scene.instantiate())
+	var out: Array = []
+	for i in holder.get_child_count():
+		var c: Control = holder.get_child(i) as Control
+		c.visible = i < count
+		if i < count:
+			out.append(c)
+	return out
 
 
 ## "숙련 +12 · <mech>" — what the day's mastery cells actually added to the pilot's
@@ -612,12 +560,9 @@ static func _quirk_names(ids_raw: Variant) -> String:
 	return "없음" if names.is_empty() else ", ".join(names)
 
 
-func _add_note_card(w: float, y: float, text: String) -> float:
-	var card := OutgameTheme.add_card(_list_body, Vector2(0, y), Vector2(w, 96))
-	var l := UiHelpers.mk_label(card, text, 26, OutgameTheme.TEXT_SUB,
-			Vector2(28, 0), Vector2(w - 56, 96), HORIZONTAL_ALIGNMENT_LEFT)
-	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return y + 96.0 + CARD_GAP
+func _add_note_card(text: String) -> void:
+	var card: Control = _add_item(NOTE_CARD_SCENE)
+	(card.get_node("%Text") as Label).text = text
 
 
 # ── 아래 버튼 ────────────────────────────────────────────────────────────────
@@ -662,68 +607,41 @@ func _evening_open() -> bool:
 			and int(e.get("choice", -1)) < 0
 
 
-func _add_evening_card(w: float, y: float) -> float:
+func _add_evening_card() -> void:
 	var s: Dictionary = _gm.season_state
 	var e: Dictionary = MentalSystem.evening(s, _day)
 	if MentalSystem.evening_done(s, _day):
-		return _add_evening_done_card(w, y, e)
+		_add_evening_done_card(e)
+		return
 
 	var mine: Array = _my_pilots_in_seat_order()
 	if _sel_day != _day or not mine.has(_sel_pid):
 		_sel_day = _day
 		_sel_pid = int(mine[0]) if not mine.is_empty() else -1
 
-	var card := OutgameTheme.add_card(_list_body, Vector2(0, y), Vector2(w, EVE_CARD_H), 18)
-	UiHelpers.mk_label(card, "오늘 저녁", 32, OutgameTheme.TEXT,
-			Vector2(28, 22), Vector2(300, 42))
-	var limits: String = "면담 %d/%d · 외출 %d/%d" % [
+	var card: Control = _add_item(EVENING_CARD_SCENE)
+	(card.get_node("%Limits") as Label).text = "면담 %d/%d · 외출 %d/%d" % [
 		MentalSystem.interviews_left(s), MentalSystem.interviews_per_week(s),
 		MentalSystem.outings_left(s), ConstTable.int_of("MENTAL_OUTINGS_PER_WEEK")]
-	UiHelpers.mk_label(card, limits, 22, OutgameTheme.TEXT_SUB,
-			Vector2(w - 428, 30), Vector2(400, 32), HORIZONTAL_ALIGNMENT_RIGHT)
-	UiHelpers.mk_label(card, "선수를 고르고 오늘 저녁 할 일을 정하세요 (하루 한 번)", 20,
-			OutgameTheme.TEXT_FAINT, Vector2(28, 66), Vector2(w - 56, 28))
 
 	# Pilot row — tap to select. Trust in amber once the outing is unlocked.
-	var slot_w: float = (w - 40.0) / float(maxi(1, mine.size()))
+	var slots: Array = _ensure_children(card.get_node("%Slots"), EVENING_SLOT_SCENE, mine.size())
 	for i in mine.size():
 		var pid: int = int(mine[i])
-		var sx: float = 20.0 + slot_w * float(i)
+		var slot: Control = slots[i]
 		var picked: bool = pid == _sel_pid
-		if picked:
-			var hl := Panel.new()
-			hl.add_theme_stylebox_override("panel",
-					OutgameTheme.flat_style(OutgameTheme.ACCENT_DIM, 16))
-			hl.position = Vector2(sx + 4.0, EVE_SLOT_TOP)
-			hl.size = Vector2(slot_w - 8.0, EVE_SLOT_H)
-			hl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			card.add_child(hl)
-		OutgameTheme.add_round_portrait(card, PilotImages.circle_for(pid),
-				Vector2(sx + (slot_w - EVE_PORTRAIT_D) * 0.5, EVE_SLOT_TOP + 12.0),
-				EVE_PORTRAIT_D, OutgameTheme.ACCENT if picked else OutgameTheme.BORDER)
-		var name_lbl := UiHelpers.mk_label(card, MentalEvents.pilot_name(s, pid), 22,
-				OutgameTheme.TEXT, Vector2(sx, EVE_SLOT_TOP + 102.0), Vector2(slot_w, 30),
-				HORIZONTAL_ALIGNMENT_CENTER)
-		name_lbl.clip_text = true
-		var unlocked: bool = MentalSystem.outing_unlocked(s, pid)
-		UiHelpers.mk_label(card, "신뢰 %d · 외출 %d" % [MentalSystem.trust(s, pid),
-				MentalSystem.outings(s, pid)], 18,
-				OutgameTheme.ACCENT_TEXT if unlocked else OutgameTheme.TEXT_SUB,
-				Vector2(sx, EVE_SLOT_TOP + 134.0), Vector2(slot_w, 26),
-				HORIZONTAL_ALIGNMENT_CENTER)
-		var hit := Button.new()
-		hit.flat = true
-		hit.focus_mode = Control.FOCUS_NONE
-		hit.position = Vector2(sx, EVE_SLOT_TOP)
-		hit.size = Vector2(slot_w, EVE_SLOT_H)
-		OutgameTheme.style_text_button(hit, 20)
-		hit.pressed.connect(_on_evening_pilot_picked.bind(pid))
-		card.add_child(hit)
+		(slot.get_node("%Highlight") as Control).visible = picked
+		OutgameTheme.add_round_portrait(slot.get_node("%Portrait"), PilotImages.circle_for(pid),
+				Vector2.ZERO, EVE_PORTRAIT_D,
+				OutgameTheme.ACCENT if picked else OutgameTheme.BORDER)
+		(slot.get_node("%Name") as Label).text = MentalEvents.pilot_name(s, pid)
+		var trust: Label = slot.get_node("%Trust")
+		trust.text = "신뢰 %d · 외출 %d" % [MentalSystem.trust(s, pid), MentalSystem.outings(s, pid)]
+		if MentalSystem.outing_unlocked(s, pid):
+			trust.add_theme_color_override("font_color", OutgameTheme.ACCENT_TEXT)
+		(slot.get_node("%Hit") as Button).pressed.connect(_on_evening_pilot_picked.bind(pid))
 
 	# Actions. Disabled buttons say why on their own label.
-	var by: float = EVE_SLOT_TOP + EVE_SLOT_H + 24.0
-	var gap: float = 16.0
-	var bw: float = (w - 56.0 - gap * 2.0) / 3.0
 	var can_iv: bool = MentalSystem.can_interview(s) and _sel_pid >= 0
 	var can_out: bool = MentalSystem.can_outing(s, _sel_pid) and _sel_pid >= 0
 	var out_text: String = "외출"
@@ -731,92 +649,71 @@ func _add_evening_card(w: float, y: float) -> float:
 		out_text = "외출 (이번 주 끝)"
 	elif not MentalSystem.outing_unlocked(s, _sel_pid):
 		out_text = "외출 (신뢰 %d↑)" % ConstTable.int_of("TRUST_OUTING_MIN")
-	var specs: Array = [
-		["면담" if MentalSystem.can_interview(s) else "면담 (이번 주 끝)", "primary",
-				can_iv, MentalSystem.ACTION_INTERVIEW],
-		[out_text, "ghost", can_out, MentalSystem.ACTION_OUTING],
-		["패스", "text", true, MentalSystem.ACTION_PASS],
-	]
-	for i in specs.size():
-		var spec: Array = specs[i]
-		var b := Button.new()
-		b.text = String(spec[0])
-		b.focus_mode = Control.FOCUS_NONE
-		b.position = Vector2(28.0 + (bw + gap) * float(i), by)
-		b.size = Vector2(bw, EVE_BTN_H)
-		match String(spec[1]):
-			"primary": OutgameTheme.style_primary_button(b, 26)
-			"ghost": OutgameTheme.style_ghost_button(b, 26)
-			_: OutgameTheme.style_text_button(b, 26)
-		b.disabled = not bool(spec[2])
-		b.pressed.connect(_on_evening_action.bind(String(spec[3])))
-		card.add_child(b)
-	return y + EVE_CARD_H + CARD_GAP
+	var interview: Button = card.get_node("%Interview")
+	interview.text = "면담" if MentalSystem.can_interview(s) else "면담 (이번 주 끝)"
+	interview.disabled = not can_iv
+	interview.pressed.connect(_on_evening_action.bind(MentalSystem.ACTION_INTERVIEW))
+	var outing: Button = card.get_node("%Outing")
+	outing.text = out_text
+	outing.disabled = not can_out
+	outing.pressed.connect(_on_evening_action.bind(MentalSystem.ACTION_OUTING))
+	(card.get_node("%Pass") as Button).pressed.connect(
+			_on_evening_action.bind(MentalSystem.ACTION_PASS))
 
 
-func _add_evening_done_card(w: float, y: float, e: Dictionary) -> float:
+func _add_evening_done_card(e: Dictionary) -> void:
 	var s: Dictionary = _gm.season_state
 	var action: String = String(e.get("action", MentalSystem.ACTION_PASS))
 	var pid: int = int(e.get("pilot_id", -1))
-	var card := OutgameTheme.add_card(_list_body, Vector2(0, y), Vector2(w, EVE_DONE_H), 18)
-	var tx: float = 28.0
+	var card: Control = _add_item(EVENING_DONE_SCENE)
+	var portrait: Control = card.get_node("%Portrait")
+	var head_lbl: Label = card.get_node("%Head")
+	var line_lbl: Label = card.get_node("%Line")
+	portrait.visible = pid >= 0
 	if pid >= 0:
-		OutgameTheme.add_round_portrait(card, PilotImages.circle_for(pid),
-				Vector2(24, (EVE_DONE_H - 84.0) * 0.5), 84.0)
-		tx = 132.0
+		OutgameTheme.add_round_portrait(portrait, PilotImages.circle_for(pid),
+				Vector2.ZERO, EVE_PORTRAIT_D)
+	else:
+		# No pilot (pass) — the text moves left onto the portrait's spot.
+		head_lbl.offset_left = DONE_TEXT_X_NO_PORTRAIT
+		line_lbl.offset_left = DONE_TEXT_X_NO_PORTRAIT
 	var head: String = "오늘 저녁 — 쉬었습니다"
 	if action == MentalSystem.ACTION_INTERVIEW:
 		head = "오늘 저녁 — %s 면담" % MentalEvents.pilot_name(s, pid)
 	elif action == MentalSystem.ACTION_OUTING:
 		head = "오늘 저녁 — %s 외출" % MentalEvents.pilot_name(s, pid)
-	UiHelpers.mk_label(card, head, 28, OutgameTheme.TEXT,
-			Vector2(tx, 30), Vector2(w - tx - 28.0, 40))
+	head_lbl.text = head
 	var notes: Array = (e.get("outcome", {}) as Dictionary).get("notes", [])
-	var line: String = " · ".join(PackedStringArray(notes)) if not notes.is_empty() \
+	line_lbl.text = " · ".join(PackedStringArray(notes)) if not notes.is_empty() \
 			else ("내일을 위해 일찍 쉬었다" if action == MentalSystem.ACTION_PASS else "변화 없음")
-	var l := UiHelpers.mk_label(card, line, 21, OutgameTheme.TEXT_SUB,
-			Vector2(tx, 76), Vector2(w - tx - 28.0, 60))
-	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	return y + EVE_DONE_H + CARD_GAP
 
 
 ## The day's incident: resolved → summary; pending → a tap target that reopens it.
-func _add_incident_card(w: float, y: float) -> float:
+func _add_incident_card() -> void:
 	var s: Dictionary = _gm.season_state
 	var view: Dictionary = MentalSystem.session_view(s, MentalSystem.incident_session(s, _day))
 	if view.is_empty():
-		return y
+		return
 	var inc: Dictionary = (((s.get("mental", {}) as Dictionary).get("days", {}) as Dictionary) \
 			.get(str(_day), {}) as Dictionary).get("incident", {})
 	var pid: int = int(view["pilot_id"])
-	var card := Panel.new()
+	var card: Panel = _add_item(INCIDENT_CARD_SCENE) as Panel
 	card.add_theme_stylebox_override("panel", OutgameTheme.lead_bar_style(OutgameTheme.NEGATIVE))
-	card.position = Vector2(0, y)
-	card.size = Vector2(w, INCIDENT_H)
-	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_list_body.add_child(card)
-	OutgameTheme.add_round_portrait(card, PilotImages.circle_for(pid),
-			Vector2(28, (INCIDENT_H - 84.0) * 0.5), 84.0)
-	UiHelpers.mk_label(card, "사건 — %s · %s" % [String(view["tag"]),
-			MentalEvents.pilot_name(s, pid)], 28, OutgameTheme.TEXT,
-			Vector2(136, 30), Vector2(w - 164, 40))
+	OutgameTheme.add_round_portrait(card.get_node("%Portrait"), PilotImages.circle_for(pid),
+			Vector2.ZERO, EVE_PORTRAIT_D)
+	(card.get_node("%Head") as Label).text = "사건 — %s · %s" % [String(view["tag"]),
+			MentalEvents.pilot_name(s, pid)]
 	var pending: bool = int(inc.get("choice", -1)) < 0
 	var notes: Array = (inc.get("outcome", {}) as Dictionary).get("notes", [])
-	var line: String = "눌러서 대응하기" if pending else (
+	var line: Label = card.get_node("%Line")
+	line.text = "눌러서 대응하기" if pending else (
 			" · ".join(PackedStringArray(notes)) if not notes.is_empty() else "큰 탈 없이 지나갔다")
-	var l := UiHelpers.mk_label(card, line, 21,
-			OutgameTheme.NEGATIVE if pending else OutgameTheme.TEXT_SUB,
-			Vector2(136, 76), Vector2(w - 164, 60))
-	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	if pending:
-		var hit := Button.new()
-		hit.flat = true
-		hit.focus_mode = Control.FOCUS_NONE
-		hit.size = card.size
-		OutgameTheme.style_text_button(hit, 20)
+		line.add_theme_color_override("font_color", OutgameTheme.NEGATIVE)
+	var hit: Button = card.get_node("%Hit")
+	hit.visible = pending
+	if pending:
 		hit.pressed.connect(_open_incident)
-		card.add_child(hit)
-	return y + INCIDENT_H + CARD_GAP
 
 
 func _my_pilots_in_seat_order() -> Array:
@@ -878,7 +775,7 @@ func _open_incident() -> void:
 
 func _open_overlay(kind: String, sub: String, title: String, pid: int, view: Dictionary) -> void:
 	_overlay_kind = kind
-	_overlay = MessengerView.new()
+	_overlay = MessengerView.create()
 	add_child(_overlay)
 	_overlay.choice_picked.connect(_on_overlay_choice)
 	_overlay.closed.connect(_on_overlay_closed)

@@ -1,0 +1,22 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+
+[node name="BanPickOrderPip" type="Panel"]
+editor_description = "One move of the order row (no script — BanPickOrderRow places / tweens it). Box = a copy of the SunkPanel box: fill = side colour by state, radius PIP_RADIUS, capsule-inner corners squared (code). Proposed variation BanPickOrderPip."
+offset_right = 58.0
+offset_bottom = 12.0
+mouse_filter = 2
+theme = ExtResource("1_theme")
+theme_type_variation = &"SunkPanel"
+
+[node name="Joint" type="ColorRect" parent="."]
+editor_description = "Capsule joint with the previous move — a 2px paper-colour line on this cell's left edge, full height (follows the tweened height). Shown only inside a capsule; colour = OutgameTheme.SURFACE (code)."
+visible = false
+layout_mode = 1
+anchors_preset = -1
+anchor_bottom = 1.0
+offset_left = -1.0
+offset_right = 1.0
+grow_vertical = 2
+mouse_filter = 2

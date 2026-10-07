@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://features/match_flow/ban_pick/BanPickView.gd" id="1_view"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
@@ -6,8 +6,7 @@
 [ext_resource type="PackedScene" path="res://features/match_flow/ban_pick/BanPickBanChip.tscn" id="4_chip"]
 [ext_resource type="PackedScene" path="res://features/match_flow/ban_pick/BanPickMechSlot.tscn" id="5_slot"]
 [ext_resource type="PackedScene" path="res://features/match_flow/ban_pick/BanPickPortrait.tscn" id="6_por"]
-[ext_resource type="Script" path="res://features/match_flow/ban_pick/BanPickOrderRow.gd" id="7_order"]
-[ext_resource type="Texture2D" path="res://resources/images/ui/banpick/turn_arrow.svg" id="8_arrow"]
+[ext_resource type="PackedScene" path="res://features/match_flow/ban_pick/BanPickOrderRow.tscn" id="7_order"]
 [ext_resource type="Script" path="res://features/match_flow/ban_pick/BanPickGrid.gd" id="9_grid"]
 
 [node name="BanPickView" type="Control"]
@@ -358,31 +357,9 @@ grow_vertical = 2
 mouse_filter = 2
 theme_override_constants/separation = 0
 
-[node name="OrderRow" type="Control" parent="SafeArea/Band/Pane/Content"]
+[node name="OrderRow" parent="SafeArea/Band/Pane/Content" instance=ExtResource("7_order")]
 unique_name_in_owner = true
-editor_description = "14-move order strip — cells are built by BanPickOrderRow.gd (count = the sequence); PipIcon / TurnArrow move to the current cell."
-custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
-mouse_filter = 2
-script = ExtResource("7_order")
-
-[node name="PipIcon" type="TextureRect" parent="SafeArea/Band/Pane/Content/OrderRow"]
-visible = false
-layout_mode = 0
-offset_right = 20.0
-offset_bottom = 20.0
-mouse_filter = 2
-expand_mode = 1
-stretch_mode = 5
-
-[node name="TurnArrow" type="TextureRect" parent="SafeArea/Band/Pane/Content/OrderRow"]
-visible = false
-layout_mode = 0
-offset_right = 22.0
-offset_bottom = 13.0
-mouse_filter = 2
-texture = ExtResource("8_arrow")
-expand_mode = 1
 
 [node name="Tabs" type="HBoxContainer" parent="SafeArea/Band/Pane/Content"]
 unique_name_in_owner = true

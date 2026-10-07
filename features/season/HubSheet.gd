@@ -12,11 +12,10 @@ extends CanvasLayer
 # `GhostButton` · `DimPanel`). This script only binds `%` nodes, puts the title in, wires
 # close, and offsets `%SafeArea` by the device's safe-area insets.
 #
-# **The body is filled by the caller.** The hub panels (`FinancePanel` · `StaffPanel` ·
-# `MasteryPanel`) are scenes: `open(host)` adds one panel instance under `body` and the panel
-# reports its own height (`set_body_height(size.y)` on `resized`). Only the standings team
-# detail (`LeagueView`) still builds absolute-positioned children in code, card-local width
-# `body_w()`.
+# **The body is filled by the caller.** Every body is a scene — the hub panels (`FinancePanel` ·
+# `StaffPanel` · `MasteryPanel`) and the standings team detail (`league/LeagueTeamDetail`):
+# the caller adds one instance under `body` (top-wide) and it reports its own height
+# (`set_body_height(size.y)` on `resized`).
 #
 # Usage (a panel scene's `open(host)`):
 #   var sheet := HubSheet.open_on(host, "스태프")
@@ -32,7 +31,7 @@ signal closed
 
 const SCENE_PATH: String = "res://features/season/HubSheet.tscn"
 
-## Scroll content root — callers add absolutely positioned children here.
+## Scroll content root — callers add one top-wide body scene here.
 var body: Control = null
 
 
@@ -102,8 +101,8 @@ func _fit_safe_area() -> void:
 	safe.offset_bottom = ScreenMetrics.bottom_y() - ScreenMetrics.viewport_size().y
 
 
-## F6 단독 실행 미리보기 — 메모리 런의 내 팀 상세(순위표 팀 상세와 같은 본문)를 띄운다
-## (`resources/UiPreview.gd`). "닫기" · 바깥 누름은 시트를 지운다(빈 화면이 남는다).
+## F6 단독 실행 미리보기 — 메모리 런의 내 팀 상세(순위표 팀 상세와 같은 본문
+## `LeagueTeamDetail`)를 띄운다 (`resources/UiPreview.gd`). "닫기" · 바깥 누름은 시트를 지운다(빈 화면이 남는다).
 func _fill_preview() -> void:
 	UiPreview.stage(self)
 	UiPreview.trace(closed)
@@ -114,15 +113,9 @@ func _fill_preview() -> void:
 	var tid: int = int(state["player_team_id"])
 	var meta: Dictionary = (state["team_meta"] as Array)[tid]
 	_open("%s  (%s)" % [String(meta["name"]), String(meta["short_name"])])
-	var w: float = body_w() - 16.0   # 스크롤 막대 자리
-	var y: float = 0.0
 	var table: Dictionary = state.get("league_standings", {})
 	var rec: Dictionary = table.get(tid, table.get(str(tid), {}))
-	UiHelpers.mk_label(body, "%d승 %d패  · 내 팀" % [int(rec.get("wins", 0)),
-			int(rec.get("losses", 0))], 24, OutgameTheme.TEXT_SUB, Vector2(0, y), Vector2(w, 34))
-	y += 48.0
-	var intel: Dictionary = OpponentIntel.build(state, OpponentIntel.team_roster(state, tid), true)
-	y += IntelView.add_tier_header(body, Vector2(0, y), w, intel)
-	y += IntelView.add_analyst_note(body, Vector2(0, y), w, intel)
-	y += IntelView.add_rows(body, Vector2(0, y), w, intel)
-	set_body_height(y + 20.0)
+	var detail := LeagueTeamDetail.create()
+	body.add_child(detail)
+	detail.bind(self, "%d승 %d패  · 내 팀" % [int(rec.get("wins", 0)), int(rec.get("losses", 0))],
+			OpponentIntel.build(state, OpponentIntel.team_roster(state, tid), true))

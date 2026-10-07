@@ -7,11 +7,14 @@ MatchFlow's first step (`LOAD → PREP → BAN_PICK`). Contract: `docs/outgame_d
 | `MatchPrepController.gd` | PREP step. `enter(player_roster, enemy_roster, player_name, enemy_name)` creates `MatchPrepView` under `_mf.canvas`, fills it; its `start_pressed` → frees the view → `phase_finished` (pre-ban-pick autosave in `MatchFlow`) |
 | `MatchPrepView.gd` · `.tscn` | `class_name MatchPrepView` — the PREP screen. **Layout is owned by the scene** (tree below). White outgame paper, title centred (the editor-only cheat button sits top-left), a vertical scroll with **opponent on top** (same side as ban/pick) and own team below, bottom bar `경기 시작`. `create()` · `fill(state, player_roster, enemy_roster, player_name, enemy_name)` · signal `start_pressed` |
 | `OpponentIntel.gd` | `class_name OpponentIntel` (static). **The single reveal rule** — `build(state, roster, is_own)` returns rows + analyst notes as data; `tier_for`, `threshold_of`, `team_roster(state, team_id)` (league `all_pilots` / INTL `intl_pilots`), `mech_name` |
-| `IntelView.gd` | `class_name IntelView` (static). Draws a `build()` result: `add_tier_header`, `add_analyst_note`, `add_rows` / `add_pilot_row`. Shared with the league team detail (`features/season/league/LeagueView.gd`) |
+| `IntelView.tscn` / `.gd` | `class_name IntelView` — one team's `build()` result as a **container scene** (VBox: parent width, content height): tier header · analyst note / "no analyst" line · five `IntelPilotRow`. `create()` · `show_intel(intel)`. Shared with the league team detail (`features/season/league/LeagueTeamDetail`, a `HubSheet` body) |
+| `IntelPilotRow.tscn` / `.gd` | `class_name IntelPilotRow` — one pilot row (item scene, `fill(row)`): portrait slot · role / name / total · six stat cells · mech line · card line |
 
 **F6 standalone run** of `MatchPrepView.tscn` shows dummy data: in-memory run (`UiPreview.ensure_run`)
 vs its next league opponent (`UiPreview.ensure_league`), the run's real analysis tier; `경기 시작` only
 prints — `_fill_preview()` at the bottom of the script, helper `resources/UiPreview.gd`.
+`IntelView.tscn` alone = another team of the in-memory run at the run's tier; `IntelPilotRow.tscn` alone =
+a hand-written tier-2 mid row.
 
 ## PREP screen scene (`MatchPrepView.tscn`)
 ```
@@ -20,16 +23,38 @@ MatchPrepView (Control full rect, OutgameTheme.tres)
 └ %Safe (full rect; code: offset_top = top inset, offset_bottom = −bottom inset)
   ├ Title "경기 준비" (HeadingLabel 48) · %Matchup (SubLabel)
   ├ %Scroll (40 side margin, top 136, bottom = bar + 12) → Body (VBox)
-  │   EnemyHead/%EnemyTitle · %EnemyIntel · Gap · OwnHead/%OwnTitle · %OwnIntel · BottomPad
+  │   EnemyHead/%EnemyTitle · EnemyIntelPad/%EnemyIntel · Gap · OwnHead/%OwnTitle ·
+  │   OwnIntelPad/%OwnIntel · BottomPad   (*Intel = IntelView.tscn instances; *Pad right 8)
   └ %Start (bottom-anchored, 128 high, BarPrimaryButton)
 ```
 - Code-owned: the top safe-area offset, the bottom inset via `OutgameTheme.fit_bottom_bar(%Start, %Safe)`
   (`%Safe` ends at the safe line; the bar reaches the screen bottom with its text kept above the inset —
-  the square corners are the `BarPrimaryButton` variation), and the two `*Intel` holders — `IntelView` (shared with the league team detail, absolute
-  coordinates) draws into them and their minimum height is the height it used. Row width =
-  scroll width − 16 (`SCROLLBAR_ROOM`).
+  the square corners are the `BarPrimaryButton` variation), and filling the two `IntelView` instances
+  (`show_intel`). Their height is their content (containers). Row width = body width − the `*Pad` right
+  margin 8; with the scroll bar (8) the rows end 16 short of the scroll's right edge, as before.
 - The scroll bar now sits at the scroll's own right edge (inside the 40px margin); the old code-built
   body was 1000 wide, which pushed the bar ~8px further right.
+
+## IntelView scene (`IntelView.tscn`)
+```
+IntelView (VBox, sep 0 — parent width, content height)
+├ %Header (opponents only): HeaderRow (40, sep 14) ─ %TierChip (AccentChip, fits its text) / %TierText (20)
+│                           · %Need (CaptionLabel 18) ; HeaderGap 12
+├ %NoAnalyst (manager owns analysis): Line (SubLabel 20, 30) · Gap 10
+├ %Note (delegated): Card (SunkPanel → proposed IntelAnalystNote) / Pad 20·12·20·10 / %Analyst (AccentLabel 20, 28)
+│                    · 6 · %Lines (sep 3, BodyLabel 22 wrapped, one per note) · Tail 3 ; Gap 10
+├ %Rows (sep 10) — IntelPilotRow ×5 (scene sample replaced at runtime)
+└ RowsTail 10
+IntelPilotRow (MarginContainer): %Back (Card preview → code lead_bar_style(role)) + Content VBox:
+  Top 100 (%Portrait 76 @18,14 · NameCol 108 → 40 % − 8: %Role/%Name/%Total · %Stats HBox 40 % → −14, six cells)
+  · %MechLine 34 · %CardLine 34 · BasePad 4 · %ExtraPad 8 (when a line shows)
+```
+- Code-owned (data / state): role colour (card bar, role text, portrait ring), stat value font size and
+  `BodyLabel` ↔ `FaintLabel`, tier chip fill below full (`SURFACE_SUNK` copy of the `AccentChip` box) and
+  `AccentLabel` ↔ `BodyLabel`, which blocks / lines are visible.
+- Look vs. the old code-drawn version: the tier chip now fits its text (was `36 + 16 × length` wide), and
+  the analyst note card is grey `SunkPanel` until the proposed `IntelAnalystNote` variation (amber
+  `ACCENT_DIM`, radius 14) exists. Stat cells are whole-pixel widths (≤ 1px text shift).
 
 ## Reveal tiers
 `StaffSystem.analysis_tier(state)` (thresholds `ANALYSIS_TIER_1..3`, const.csv):

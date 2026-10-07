@@ -4,7 +4,7 @@ extends GridContainer
 # Preset chips of the lobby `감독` tab (`ManagerTab`) and the run setup `감독` step
 # (`run_setup/ManagerStepView`): one `ManagerPresetChip.tscn` per profile preset.
 # Chip = name + status line: ● 사용 중 (active) / 재설정 필요 (prestige kind) / 특성 n.
-# The selected chip gets the amber frame (`SelectableCardButtonOn`).
+# The selected chip gets the amber frame (`ManagerPresetChipOn`).
 #
 # **The layout is `ManagerPresetChips.tscn`** (5-column grid, gap 12) + the chip item scene.
 # Hosts place an instance of the scene, call `fill()` on every change and connect
@@ -41,7 +41,7 @@ func fill(profile: Dictionary, selected: int) -> void:
 		var p: Dictionary = ps[i]
 		var chip: Button = get_child(i)
 		var on: bool = i == selected
-		chip.theme_type_variation = &"SelectableCardButtonOn" if on else &"SelectableCardButton"
+		chip.theme_type_variation = &"ManagerPresetChipOn" if on else &"ManagerPresetChip"
 		var name_lbl: Label = chip.get_node("%Name")
 		name_lbl.text = ManagerUi.preset_name(i)
 		name_lbl.theme_type_variation = &"BodyLabel" if on else &"SubLabel"

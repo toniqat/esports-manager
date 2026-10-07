@@ -37,16 +37,25 @@ ShopPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨김)
 └ Root (full rect, theme = OutgameTheme.tres)
   ├ %Dim        flat Button — tap outside the card = close
   ├ DimRect     Panel `DimPanel`
-  └ %SafeArea   CenterContainer — top / bottom offsets = safe area (code)
-    └ Card      PanelContainer `PopupCardWide` (padding 40 — 5 result cards don't fit `PopupCard`'s 48), min width 980 (STOP)
-      └ VBox    ─ %Title `TitleLabel` · Gap · %Grid · %Rates · Gap · %Ok `PrimaryButton`
+  └ %SafeArea   Control (full rect) — top / bottom offsets = safe area (code)
+    └ %Center   CenterContainer (full rect, offsets 40 / −40 = margin from the safe edges)
+      └ %Card   PanelContainer `PopupCardWide` (padding 40 — 5 result cards don't fit `PopupCard`'s 48), min width 980 (STOP)
+        └ VBox  ─ %Title `TitleLabel` · Gap · %Scroll · Gap · %Ok `PrimaryButton`
+                  %Scroll ScrollContainer (horizontal off, + DragScroll) → %Body VBox ─ %Grid · %Rates
                   %Grid  GridContainer (14 / 14), ShopRevealItem × n, columns = min(n, 5)
                   %Rates VBox ─ Head (4 `CaptionLabel` columns) · %RateRows (ShopRateRow × rarity)
                                 · Gap · %Note `CaptionLabel` (wrap) · Tail
 ```
+- **Tall content scrolls, the frame doesn't** (`_fit_body`): the card is centred in `%Center` while it fits;
+  `%Scroll`'s min height = the body's height, capped at `%Center`'s height (from its anchors / offsets) minus
+  everything else on the card. Past the cap only the reveal grid / rates table scrolls — title and `%Ok` stay
+  fixed, `%Ok` stays above the gesture zone. Re-fit on every open and whenever `%Card`'s minimum size changes
+  (wrapped labels settle after the first layout pass) — one deferred refit per frame. When the scroll bar shows,
+  the card widens by its width (the rates columns already fill the card). Normal data (1 / 5 / 10 pulls, both
+  rate tables) never reaches the cap — pixel-identical to the old `CenterContainer` frame.
 - **Scene owns**: sizes, gaps, column widths (270 · 225 · 207 · 198), fonts, card / button / dim styles
   (theme variations), item tile layout.
-- **Code owns**: texts, grid column count, instancing items, the safe-area offsets, and every
+- **Code owns**: texts, grid column count, instancing items, the safe-area offsets, `%Scroll`'s height, and every
   **data-driven colour** — reveal card border + band (rarity), trait mark (`POSITIVE` / `NEGATIVE`),
   result tag chip (NEW / 돌파 / 파편 / 재료), rates chip (rarity). White text on those fills is the
   `OnFillLabel` variation in the item scenes (the tag text colour stays code — it depends on the tag).

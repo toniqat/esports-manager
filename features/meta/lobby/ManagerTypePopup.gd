@@ -19,11 +19,14 @@ extends CanvasLayer
 # prestige, the current type carries a "현재" chip, and it *is* dismissible — a dim tap
 # or the ghost `취소` emits `cancelled` (nothing changes). Confirm emits `chosen`.
 #
-# **Layout lives in `ManagerTypePopup.tscn`** (same frame as `ConfirmPopup`: dim = whole
-# viewport, white `PopupCard` centred in `%SafeArea`). Style comes from the shared theme
-# (`resources/OutgameTheme.tres`) on `Root`. Code owns: texts, the option instances,
-# the selection colour (`ManagerTypeOption.set_selected`), `%Cancel` visibility, the
-# `%Dim` haptics, and the safe-area offsets of `%SafeArea`.
+# **Layout lives in `ManagerTypePopup.tscn`** (dim = whole viewport, white `PopupCard`
+# centred in `%Center` = `%SafeArea` minus the scene's top / bottom margin). The option list
+# sits in `%Scroll` (+ `DragScroll`): while the card fits `%Center` the scroll is exactly the
+# list's height; past that it is capped and the list scrolls — title, texts and buttons stay
+# put. Style comes from the shared theme (`resources/OutgameTheme.tres`) on `Root`. Code
+# owns: texts, the option instances, the selection colour (`ManagerTypeOption.set_selected`),
+# `%Cancel` visibility, the `%Dim` haptics, the safe-area offsets of `%SafeArea` and the
+# scroll's height (`_fit_body`).
 #
 # Use:
 #   var p := ManagerTypePopup.create()
@@ -41,6 +44,8 @@ var _types: Array = []
 var _selected: int = -1
 var _prestige_mode: bool = false
 var _current_type: int = -1
+var _drag: DragScroll
+var _fit_queued: bool = false
 
 
 ## Instantiates the scene. `ManagerTypePopup.new()` is an empty CanvasLayer — don't use it.
@@ -55,6 +60,11 @@ func _ready() -> void:
 	%Dim.pressed.connect(cancel)          # no-op outside prestige mode — the dim just swallows
 	%Cancel.pressed.connect(cancel)
 	%Confirm.pressed.connect(_on_confirm)
+	# 손가락 / 마우스로 끌어 굴린다(`DragScroll`) — 선택지가 안전 영역보다 길 때만 굴러간다.
+	_drag = DragScroll.attach(%Scroll)
+	# 줄바꿈 라벨은 첫 배치 뒤에야 높이가 정해진다 — 카드 최소 크기가 바뀔 때마다 다시 맞춘다.
+	(%Card as Control).minimum_size_changed.connect(_queue_fit)
+	(%SafeArea as Control).resized.connect(_queue_fit)
 	if UiPreview.is_standalone(self):
 		_fill_preview()
 
@@ -86,6 +96,8 @@ func open(prestige_mode: bool = false, current_type: int = -1) -> void:
 	btn.text = "유형을 고르세요"
 	_apply_dim_haptics(prestige_mode)
 	_fit_safe_area()
+	_fit_body()
+	(%Scroll as ScrollContainer).scroll_vertical = 0
 	visible = true
 
 
@@ -140,7 +152,14 @@ func _sync_options() -> void:
 
 func _wire_option(opt: ManagerTypeOption, idx: int) -> void:
 	if opt.tapped.get_connections().is_empty():   # wired once; the index never changes
-		opt.tapped.connect(select.bind(idx))
+		opt.tapped.connect(_on_option_tapped.bind(idx))
+
+
+## A release that ended a drag of `%Scroll` is a scroll, not a pick (`DragScroll.moved`).
+func _on_option_tapped(idx: int) -> void:
+	if _drag != null and _drag.moved:
+		return
+	select(idx)
 
 
 func _option(idx: int) -> ManagerTypeOption:
@@ -154,6 +173,30 @@ func _fit_safe_area() -> void:
 	var safe: Control = %SafeArea
 	safe.offset_top = ScreenMetrics.top_y()
 	safe.offset_bottom = ScreenMetrics.bottom_y() - ScreenMetrics.viewport_size().y
+
+
+## **The card stays centred while it fits, then is capped** — `%Center` (the safe area minus
+## the scene's margins) is the most height it may take. Everything but `%Scroll` (title, texts,
+## gaps, buttons) keeps its height; `%Scroll` gets the list's full height, or only what is
+## left when that is too much — then the list scrolls.
+func _fit_body() -> void:
+	_fit_queued = false
+	var scroll: ScrollContainer = %Scroll
+	var center: Control = %Center
+	# Room from anchors / offsets — `center.size` may still be inflated by the previous content
+	# (a container never shrinks below its minimum size).
+	var room: float = (%SafeArea as Control).size.y - center.offset_top + center.offset_bottom
+	var chrome: float = (%Card as Control).get_combined_minimum_size().y 			- scroll.get_combined_minimum_size().y
+	var want: float = (%Body as Control).get_combined_minimum_size().y + scroll.get_minimum_size().y
+	scroll.custom_minimum_size.y = minf(want, maxf(0.0, room - chrome))
+
+
+## One refit per frame, after the containers have laid the new content out.
+func _queue_fit() -> void:
+	if _fit_queued or not visible:
+		return
+	_fit_queued = true
+	_fit_body.call_deferred()
 
 
 ## First-lobby mode: a dim tap does nothing, so it must not buzz. Prestige mode: it

@@ -80,11 +80,41 @@ const ROLE_NAMES: Array = ["탱커", "격투", "암살", "서폿", "원딜"]
 const DAY_LETTERS: Array = ["월", "화", "수", "목", "금", "토", "일"]
 const DAY_NAMES:   Array = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"]
 
+# ── 모달 딤 ──────────────────────────────────────────────────────────────────
+## 팝업 · 시트 뒤를 덮는 반투명 막. 씬에서는 `DimPanel` 변형(`OutgameTheme.tres`).
+const DIM: Color = Color(0.110, 0.110, 0.180, 0.58)
+
+# ── 글자 크기 (테마 변형의 기본값) ───────────────────────────────────────────
+## 씬은 `OutgameTheme.tres` 의 라벨 · 버튼 변형으로 이 크기를 받고, 다른 크기가
+## 필요한 노드만 `theme_override_font_sizes/font_size` 로 덮는다.
+const FONT_HEADING: int = 52   # 화면 큰 제목 (선수 이름 · 결과 제목)
+const FONT_TITLE:   int = 36   # 팝업 · 카드 제목
+const FONT_BODY:    int = 26   # 본문
+const FONT_CAPTION: int = 22   # 라벨 · 캡션 · 보조 설명
+const FONT_BTN_PRIMARY: int = 34
+const FONT_BTN_GHOST:   int = 30
+const FONT_BTN_TEXT:    int = 26
+const FONT_BTN_DARK:    int = 34
+
+# ── 카드 치수 (테마 변형) ────────────────────────────────────────────────────
+## `card_style` 의 반지름과 `PanelContainer` 패딩(스타일박스 content_margin).
+const CARD_RADIUS:  int = 18
+const CARD_PAD:     float = 32.0
+const POPUP_RADIUS: int = 24     # 가운데 뜨는 모달 카드 (ConfirmPopup · ManagerTypePopup)
+const POPUP_PAD:    float = 48.0
+const SHEET_RADIUS: int = 28     # 화면 대부분을 덮는 시트 (CollectionDetailSheet)
+const SHEET_PAD:    float = 36.0
+const SUNK_RADIUS:  int = 12     # 카드 안의 눌린 칸 (스탯 칸 · 빈 자리)
+
+## `build_theme()` 이 만든 테마가 저장되는 곳. 손으로 고치지 않는다 —
+## 이 파일을 고치고 `OutgameThemeBuilder` 를 다시 돌린다 (`resources/README.md`).
+const THEME_PATH: String = "res://resources/OutgameTheme.tres"
+
 
 # ── StyleBox 공장 ────────────────────────────────────────────────────────────
 
 ## 카드 한 장. `tint` 를 주면 그 색으로 꽉 찬 색면 카드가, 안 주면 흰 카드가 된다.
-static func card_style(radius: int = 18, tint: Variant = null,
+static func card_style(radius: int = CARD_RADIUS, tint: Variant = null,
 		with_shadow: bool = true) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
 	if tint is Color:
@@ -143,48 +173,91 @@ static func set_corner_radius(sb: StyleBoxFlat, r: int) -> void:
 ## · dark = MEDIUM / ghost = LIGHT / text = SELECT), 그 표는 폐기됐다 — 지금은
 ## 모든 버튼이 종류와 무관하게 같은 두 박자(누름 LIGHT → 뗌 SOFT)를 낸다.
 ## 무게는 화면이 말하고, 손에 오는 것은 눌렸다는 사실 하나다. `autoloads/HapticUi.gd`.
-static func style_primary_button(b: Button, font_size: int = 34) -> Button:
-	return _style_button(b, font_size, ACCENT, TEXT_ON_FILL,
-			ACCENT.lightened(0.10), ACCENT.darkened(0.12), null)
+static func style_primary_button(b: Button, font_size: int = FONT_BTN_PRIMARY) -> Button:
+	return _style_button(b, font_size, "primary")
 
 
 ## 그 밖의 행동 — 흰 바탕 + 옅은 테두리.
-static func style_ghost_button(b: Button, font_size: int = 30) -> Button:
-	return _style_button(b, font_size, SURFACE, TEXT,
-			SURFACE_SUNK, BORDER_STRONG, BORDER)
+static func style_ghost_button(b: Button, font_size: int = FONT_BTN_GHOST) -> Button:
+	return _style_button(b, font_size, "ghost")
 
 
 ## 되돌아가는 행동 — 바탕 없이 글자만.
-static func style_text_button(b: Button, font_size: int = 26) -> Button:
-	return _style_button(b, font_size, Color(1, 1, 1, 0), TEXT_SUB,
-			Color(0, 0, 0, 0.04), Color(0, 0, 0, 0.08), null)
+static func style_text_button(b: Button, font_size: int = FONT_BTN_TEXT) -> Button:
+	return _style_button(b, font_size, "text")
 
 
 ## 어두운 색면 — 경기 시작처럼 "지금 이 화면을 떠난다"는 행동.
-static func style_dark_button(b: Button, font_size: int = 34) -> Button:
-	return _style_button(b, font_size, RAIL, TEXT_ON_FILL,
-			RAIL.lightened(0.12), RAIL.lightened(0.22), null)
+static func style_dark_button(b: Button, font_size: int = FONT_BTN_DARK) -> Button:
+	return _style_button(b, font_size, "dark")
 
 
-static func _style_button(b: Button, font_size: int, bg: Color, fg: Color,
-		hover: Color, pressed: Color, border: Variant) -> Button:
+## 지우는 · 포기하는 주 행동 — primary 와 같은 모양에 `NEGATIVE` 색면.
+## "다음으로 가는" 행동과 같은 앰버면 안 된다(ConfirmPopup 의 `danger`).
+static func style_danger_button(b: Button, font_size: int = FONT_BTN_PRIMARY) -> Button:
+	return _style_button(b, font_size, "danger")
+
+
+## 버튼이 갈아입는 상태들. `hover_pressed` 를 비우면 누른 채 손가락 / 커서가
+## 올라가 있는 동안 엔진 기본 테마의 스타일박스가 비친다 — `pressed` 와 같게 채운다.
+const BUTTON_STATES: Array = ["normal", "hover", "pressed", "hover_pressed", "focus", "disabled"]
+## 글자색 이름들 — `font_disabled_color` 만 `TEXT_FAINT`, 나머지는 그 종류의 `fg`.
+const BUTTON_FONT_COLORS: Array = ["font_color", "font_hover_color", "font_pressed_color",
+		"font_hover_pressed_color", "font_focus_color"]
+
+
+## 버튼 종류(`"primary"` / `"ghost"` / `"text"` / `"dark"` / `"danger"`)의 색과 기본 글자 크기.
+## **코드 버튼(`style_*_button`)과 테마 변형(`build_theme` 의 `PrimaryButton` …)이 같은
+## 표를 읽는다** — 버튼 색을 바꾸려면 여기만 고친다.
+static func button_spec(kind: String) -> Dictionary:
+	match kind:
+		"ghost":
+			return {"bg": SURFACE, "fg": TEXT, "hover": SURFACE_SUNK,
+					"pressed": BORDER_STRONG, "border": BORDER, "font": FONT_BTN_GHOST}
+		"text":
+			return {"bg": Color(1, 1, 1, 0), "fg": TEXT_SUB, "hover": Color(0, 0, 0, 0.04),
+					"pressed": Color(0, 0, 0, 0.08), "border": null, "font": FONT_BTN_TEXT}
+		"dark":
+			return {"bg": RAIL, "fg": TEXT_ON_FILL, "hover": RAIL.lightened(0.12),
+					"pressed": RAIL.lightened(0.22), "border": null, "font": FONT_BTN_DARK}
+		"danger":
+			return {"bg": NEGATIVE, "fg": TEXT_ON_FILL, "hover": NEGATIVE.lightened(0.10),
+					"pressed": NEGATIVE.darkened(0.12), "border": null, "font": FONT_BTN_PRIMARY}
+	return {"bg": ACCENT, "fg": TEXT_ON_FILL, "hover": ACCENT.lightened(0.10),
+			"pressed": ACCENT.darkened(0.12), "border": null, "font": FONT_BTN_PRIMARY}
+
+
+## 한 종류의 상태별 스타일박스 (`BUTTON_STATES` 전부, 매번 새로 만든다).
+static func button_styles(kind: String) -> Dictionary:
+	var spec: Dictionary = button_spec(kind)
+	var border: Variant = spec["border"]
+	var pressed: StyleBoxFlat = button_box(spec["pressed"], border)
+	return {
+		"normal": button_box(spec["bg"], border),
+		"hover": button_box(spec["hover"], border),
+		"pressed": pressed,
+		"hover_pressed": pressed.duplicate(),
+		"focus": button_box(Color(0, 0, 0, 0), null),
+		"disabled": button_box(SURFACE_SUNK, BORDER),
+	}
+
+
+static func _style_button(b: Button, font_size: int, kind: String) -> Button:
 	if b == null:
 		return b
+	var fg: Color = button_spec(kind)["fg"]
 	b.add_theme_font_size_override("font_size", font_size)
-	b.add_theme_color_override("font_color", fg)
-	b.add_theme_color_override("font_hover_color", fg)
-	b.add_theme_color_override("font_pressed_color", fg)
-	b.add_theme_color_override("font_focus_color", fg)
+	for c in BUTTON_FONT_COLORS:
+		b.add_theme_color_override(c, fg)
 	b.add_theme_color_override("font_disabled_color", TEXT_FAINT)
-	b.add_theme_stylebox_override("normal",   _btn_box(bg, border))
-	b.add_theme_stylebox_override("hover",    _btn_box(hover, border))
-	b.add_theme_stylebox_override("pressed",  _btn_box(pressed, border))
-	b.add_theme_stylebox_override("focus",    _btn_box(Color(0, 0, 0, 0), null))
-	b.add_theme_stylebox_override("disabled", _btn_box(SURFACE_SUNK, BORDER))
+	var boxes: Dictionary = button_styles(kind)
+	for n in BUTTON_STATES:
+		b.add_theme_stylebox_override(n, boxes[n])
 	return b
 
 
-static func _btn_box(bg: Color, border: Variant) -> StyleBoxFlat:
+## 버튼 스타일박스 한 장 — 반지름 · 패딩은 모든 종류가 같다.
+static func button_box(bg: Color, border: Variant) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = bg
 	if border is Color:
@@ -306,7 +379,7 @@ static func _bar_weight(specs: Array, i: int) -> float:
 
 
 ## 바 한 칸의 옷을 입힌다 — 색을 고르고, 모서리를 각지게 펴고, 안전선 아래로
-## 내려간 몫만큼 글자를 위로 물린다. 스타일박스는 `_btn_box` 가 호출마다 새로
+## 내려간 몫만큼 글자를 위로 물린다. 스타일박스는 `button_box` 가 호출마다 새로
 ## 만든 것이라 여기서 고쳐도 다른 버튼에 번지지 않는다.
 ##
 ## **바뀌는 버튼은 이 함수를 다시 부른다** — `style_primary_button` 을 직접
@@ -320,9 +393,10 @@ static func style_bottom_button(b: Button, style: String = "primary",
 		"ghost": style_ghost_button(b, font_size)
 		"dark":  style_dark_button(b, font_size)
 		"text":  style_text_button(b, font_size)
+		"danger": style_danger_button(b, font_size)
 		_:       style_primary_button(b, font_size)
 	var below: float = maxf(0.0, ScreenMetrics.insets().w)
-	for n in ["normal", "hover", "pressed", "focus", "disabled"]:
+	for n in BUTTON_STATES:
 		var sb := b.get_theme_stylebox(n) as StyleBoxFlat
 		if sb == null:
 			continue
@@ -456,3 +530,92 @@ static func add_vscroll(parent: Control, pos: Vector2, sz: Vector2) -> Dictionar
 	# 손가락 / 마우스로 끌어 굴린다 — 엔진의 터치 드래그 대신(`DragScroll`).
 	var drag := DragScroll.attach(sc)
 	return {"scroll": sc, "body": body, "drag": drag}
+
+
+# ── 공용 Theme 리소스 (`OutgameTheme.tres`) ──────────────────────────────────
+#
+# 씬(.tscn)으로 옮긴 아웃게임 UI 는 스타일을 코드로 입히지 않고 **테마 변형**
+# (`theme_type_variation`)을 고른다. 그 변형들의 정본이 이 함수다 — 위의 색 상수와
+# 스타일박스 공장을 그대로 불러 만들므로 코드 버튼과 씬 버튼이 같은 픽셀이 된다.
+# `OutgameThemeBuilder.gd`(에디터 File → Run) / `OutgameThemeBuildCli.gd`(헤드리스)가
+# 이 결과를 `THEME_PATH` 에 저장한다. **`.tres` 를 손으로 고치지 않는다.**
+
+## 버튼 변형 이름 → `button_spec` 종류.
+const BUTTON_VARIATIONS: Dictionary = {
+	"PrimaryButton": "primary",
+	"GhostButton": "ghost",
+	"TextButton": "text",
+	"DarkButton": "dark",
+	"DangerButton": "danger",
+}
+
+
+static func build_theme() -> Theme:
+	var th := Theme.new()
+
+	for v in BUTTON_VARIATIONS:
+		var kind: String = BUTTON_VARIATIONS[v]
+		var spec: Dictionary = button_spec(kind)
+		th.set_type_variation(v, &"Button")
+		th.set_font_size(&"font_size", v, int(spec["font"]))
+		for c in BUTTON_FONT_COLORS:
+			th.set_color(c, v, spec["fg"])
+		th.set_color(&"font_disabled_color", v, TEXT_FAINT)
+		var boxes: Dictionary = button_styles(kind)
+		for n in BUTTON_STATES:
+			th.set_stylebox(n, v, boxes[n])
+
+	_add_panel(th, "Card", &"PanelContainer", card_style(CARD_RADIUS), CARD_PAD)
+	_add_panel(th, "PopupCard", &"PanelContainer", card_style(POPUP_RADIUS), POPUP_PAD)
+	_add_panel(th, "SheetCard", &"PanelContainer", card_style(SHEET_RADIUS), SHEET_PAD)
+	_add_panel(th, "SunkPanel", &"PanelContainer", flat_style(SURFACE_SUNK, SUNK_RADIUS), 0.0)
+	_add_panel(th, "DimPanel", &"Panel", flat_style(DIM, 0), 0.0)
+
+	_add_label(th, "HeadingLabel", FONT_HEADING, TEXT)
+	_add_label(th, "TitleLabel", FONT_TITLE, TEXT)
+	_add_label(th, "BodyLabel", FONT_BODY, TEXT)
+	_add_label(th, "SubLabel", FONT_BODY, TEXT_SUB)
+	_add_label(th, "CaptionLabel", FONT_CAPTION, TEXT_SUB)
+	_add_label(th, "FaintLabel", FONT_CAPTION, TEXT_FAINT)
+	_add_label(th, "AccentLabel", FONT_CAPTION, ACCENT_TEXT)
+
+	var line := StyleBoxLine.new()
+	line.color = BORDER
+	line.thickness = 1
+	th.set_type_variation(&"Divider", &"HSeparator")
+	th.set_stylebox(&"separator", &"Divider", line)
+	th.set_constant(&"separation", &"Divider", 1)
+	return th
+
+
+## `build_theme()` 결과를 `THEME_PATH` 에 저장한다. 빌더 두 입구가 부른다.
+## 다시 돌려도 diff 가 실제 바뀐 값만 보이도록 sub_resource id 는 `변형_상태` 로
+## 고정하고, 파일 uid 는 이미 있던 것을 이어 쓴다(씬의 `ext_resource` 가 uid 로 찾는다).
+static func save_theme() -> Error:
+	var th: Theme = build_theme()
+	for t in th.get_stylebox_type_list():
+		for n in th.get_stylebox_list(t):
+			th.get_stylebox(n, t).resource_scene_unique_id = "%s_%s" % [t, n]
+	var uid: int = ResourceLoader.get_resource_uid(THEME_PATH) \
+			if ResourceLoader.exists(THEME_PATH) else ResourceUID.INVALID_ID
+	if uid == ResourceUID.INVALID_ID:
+		uid = ResourceUID.create_id()
+	var err: Error = ResourceSaver.save(th, THEME_PATH)
+	if err == OK:
+		err = ResourceSaver.set_uid(THEME_PATH, uid)
+	if err != OK:
+		push_error("OutgameTheme: %s 저장 실패 (%d)" % [THEME_PATH, err])
+	return err
+
+
+static func _add_panel(th: Theme, variation: String, base: StringName,
+		sb: StyleBoxFlat, pad: float) -> void:
+	sb.set_content_margin_all(pad)
+	th.set_type_variation(variation, base)
+	th.set_stylebox(&"panel", variation, sb)
+
+
+static func _add_label(th: Theme, variation: String, font_size: int, color: Color) -> void:
+	th.set_type_variation(variation, &"Label")
+	th.set_font_size(&"font_size", variation, font_size)
+	th.set_color(&"font_color", variation, color)

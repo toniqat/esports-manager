@@ -1,124 +1,7 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" uid="uid://c58xf3ynusdh8" path="res://features/meta/lobby/ConfirmPopup.gd" id="1_confirm"]
-
-[sub_resource type="StyleBoxFlat" id="card"]
-content_margin_left = 48.0
-content_margin_top = 48.0
-content_margin_right = 48.0
-content_margin_bottom = 48.0
-bg_color = Color(1, 1, 1, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.886, 0.89, 0.906, 1)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
-shadow_color = Color(0.11, 0.11, 0.18, 0.1)
-shadow_size = 6
-shadow_offset = Vector2(0, 3)
-
-[sub_resource type="StyleBoxFlat" id="ghost_normal"]
-content_margin_left = 18.0
-content_margin_top = 8.0
-content_margin_right = 18.0
-content_margin_bottom = 8.0
-bg_color = Color(1, 1, 1, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.886, 0.89, 0.906, 1)
-corner_radius_top_left = 16
-corner_radius_top_right = 16
-corner_radius_bottom_right = 16
-corner_radius_bottom_left = 16
-
-[sub_resource type="StyleBoxFlat" id="ghost_hover"]
-content_margin_left = 18.0
-content_margin_top = 8.0
-content_margin_right = 18.0
-content_margin_bottom = 8.0
-bg_color = Color(0.929, 0.933, 0.945, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.886, 0.89, 0.906, 1)
-corner_radius_top_left = 16
-corner_radius_top_right = 16
-corner_radius_bottom_right = 16
-corner_radius_bottom_left = 16
-
-[sub_resource type="StyleBoxFlat" id="ghost_pressed"]
-content_margin_left = 18.0
-content_margin_top = 8.0
-content_margin_right = 18.0
-content_margin_bottom = 8.0
-bg_color = Color(0.78, 0.784, 0.808, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.886, 0.89, 0.906, 1)
-corner_radius_top_left = 16
-corner_radius_top_right = 16
-corner_radius_bottom_right = 16
-corner_radius_bottom_left = 16
-
-[sub_resource type="StyleBoxFlat" id="btn_disabled"]
-content_margin_left = 18.0
-content_margin_top = 8.0
-content_margin_right = 18.0
-content_margin_bottom = 8.0
-bg_color = Color(0.929, 0.933, 0.945, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.886, 0.89, 0.906, 1)
-corner_radius_top_left = 16
-corner_radius_top_right = 16
-corner_radius_bottom_right = 16
-corner_radius_bottom_left = 16
-
-[sub_resource type="StyleBoxEmpty" id="btn_focus"]
-
-[sub_resource type="StyleBoxFlat" id="primary_normal"]
-content_margin_left = 18.0
-content_margin_top = 8.0
-content_margin_right = 18.0
-content_margin_bottom = 8.0
-bg_color = Color(0.961, 0.651, 0.137, 1)
-corner_radius_top_left = 16
-corner_radius_top_right = 16
-corner_radius_bottom_right = 16
-corner_radius_bottom_left = 16
-
-[sub_resource type="StyleBoxFlat" id="primary_hover"]
-content_margin_left = 18.0
-content_margin_top = 8.0
-content_margin_right = 18.0
-content_margin_bottom = 8.0
-bg_color = Color(0.9649, 0.6859, 0.2233, 1)
-corner_radius_top_left = 16
-corner_radius_top_right = 16
-corner_radius_bottom_right = 16
-corner_radius_bottom_left = 16
-
-[sub_resource type="StyleBoxFlat" id="primary_pressed"]
-content_margin_left = 18.0
-content_margin_top = 8.0
-content_margin_right = 18.0
-content_margin_bottom = 8.0
-bg_color = Color(0.8457, 0.5729, 0.1206, 1)
-corner_radius_top_left = 16
-corner_radius_top_right = 16
-corner_radius_bottom_right = 16
-corner_radius_bottom_left = 16
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="ConfirmPopup" type="CanvasLayer"]
 layer = 20
@@ -133,6 +16,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+theme = ExtResource("2_theme")
 
 [node name="Dim" type="Button" parent="Root"]
 unique_name_in_owner = true
@@ -145,7 +29,7 @@ grow_vertical = 2
 focus_mode = 0
 flat = true
 
-[node name="DimRect" type="ColorRect" parent="Root"]
+[node name="DimRect" type="Panel" parent="Root"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -153,7 +37,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.11, 0.11, 0.18, 0.58)
+theme_type_variation = &"DimPanel"
 
 [node name="SafeArea" type="CenterContainer" parent="Root"]
 unique_name_in_owner = true
@@ -168,7 +52,7 @@ mouse_filter = 2
 [node name="Card" type="PanelContainer" parent="Root/SafeArea"]
 custom_minimum_size = Vector2(920, 0)
 layout_mode = 2
-theme_override_styles/panel = SubResource("card")
+theme_type_variation = &"PopupCard"
 
 [node name="VBox" type="VBoxContainer" parent="Root/SafeArea/Card"]
 layout_mode = 2
@@ -178,8 +62,7 @@ theme_override_constants/separation = 0
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.11, 0.11, 0.122, 1)
-theme_override_font_sizes/font_size = 36
+theme_type_variation = &"TitleLabel"
 text = "진행 중인 런을 포기할까요?"
 
 [node name="Gap1" type="Control" parent="Root/SafeArea/Card/VBox"]
@@ -191,8 +74,7 @@ mouse_filter = 2
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.541, 0.541, 0.569, 1)
-theme_override_font_sizes/font_size = 26
+theme_type_variation = &"SubLabel"
 text = "본문 미리보기 — 실제 문구는 open() 이 넣는다. 네 줄 남짓이 기본 높이고, 더 길면 카드가 아래로 늘어난다."
 autowrap_mode = 3
 
@@ -211,17 +93,7 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
-theme_override_colors/font_disabled_color = Color(0.722, 0.722, 0.749, 1)
-theme_override_colors/font_focus_color = Color(0.11, 0.11, 0.122, 1)
-theme_override_colors/font_pressed_color = Color(0.11, 0.11, 0.122, 1)
-theme_override_colors/font_hover_color = Color(0.11, 0.11, 0.122, 1)
-theme_override_colors/font_color = Color(0.11, 0.11, 0.122, 1)
-theme_override_font_sizes/font_size = 30
-theme_override_styles/focus = SubResource("btn_focus")
-theme_override_styles/disabled = SubResource("btn_disabled")
-theme_override_styles/hover = SubResource("ghost_hover")
-theme_override_styles/pressed = SubResource("ghost_pressed")
-theme_override_styles/normal = SubResource("ghost_normal")
+theme_type_variation = &"GhostButton"
 text = "취소"
 
 [node name="Confirm" type="Button" parent="Root/SafeArea/Card/VBox/Buttons"]
@@ -230,15 +102,6 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 2.0
 focus_mode = 0
-theme_override_colors/font_disabled_color = Color(0.722, 0.722, 0.749, 1)
-theme_override_colors/font_focus_color = Color(1, 1, 1, 1)
-theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_type_variation = &"PrimaryButton"
 theme_override_font_sizes/font_size = 30
-theme_override_styles/focus = SubResource("btn_focus")
-theme_override_styles/disabled = SubResource("btn_disabled")
-theme_override_styles/hover = SubResource("primary_hover")
-theme_override_styles/pressed = SubResource("primary_pressed")
-theme_override_styles/normal = SubResource("primary_normal")
 text = "확인"

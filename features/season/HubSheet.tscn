@@ -1,0 +1,143 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" uid="uid://3twflr3ify0v" path="res://features/season/HubSheet.gd" id="1_sheet"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="HubSheet" type="CanvasLayer"]
+layer = 18
+script = ExtResource("1_sheet")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+
+[node name="Dim" type="Button" parent="Root"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+flat = true
+
+[node name="DimRect" type="Panel" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"DimPanel"
+
+[node name="SafeArea" type="Control" parent="Root"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Card" type="Panel" parent="Root/SafeArea"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -504.0
+offset_top = 60.0
+offset_right = 504.0
+offset_bottom = -24.0
+grow_horizontal = 2
+theme_type_variation = &"PopupCard"
+
+[node name="Pad" type="MarginContainer" parent="Root/SafeArea/Card"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 34
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 40
+
+[node name="VBox" type="VBoxContainer" parent="Root/SafeArea/Card/Pad"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="Root/SafeArea/Card/Pad/VBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 40
+text = "재무 · 시설"
+text_overrun_behavior = 3
+
+[node name="Gap1" type="Control" parent="Root/SafeArea/Card/Pad/VBox"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Divider" type="HSeparator" parent="Root/SafeArea/Card/Pad/VBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"Divider"
+
+[node name="Gap2" type="Control" parent="Root/SafeArea/Card/Pad/VBox"]
+custom_minimum_size = Vector2(0, 15)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ScrollSlot" type="Control" parent="Root/SafeArea/Card/Pad/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="Scroll" type="ScrollContainer" parent="Root/SafeArea/Card/Pad/VBox/ScrollSlot"]
+unique_name_in_owner = true
+editor_description = "Full-rect in ScrollSlot but grows to the RIGHT only: when the body overflows, the scroll bar adds its width outside the 928 body column (same as the old code-built sheet), so body_w() and the content x stay put."
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 1
+grow_vertical = 2
+horizontal_scroll_mode = 0
+
+[node name="Body" type="Control" parent="Root/SafeArea/Card/Pad/VBox/ScrollSlot/Scroll"]
+unique_name_in_owner = true
+editor_description = "Callers (FinancePanel · MasteryPanel · StaffPanel · LeagueView) fill this with absolute-positioned children at runtime; width = body_w()."
+custom_minimum_size = Vector2(928, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="Gap3" type="Control" parent="Root/SafeArea/Card/Pad/VBox"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Close" type="Button" parent="Root/SafeArea/Card/Pad/VBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 112)
+layout_mode = 2
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+text = "닫기"

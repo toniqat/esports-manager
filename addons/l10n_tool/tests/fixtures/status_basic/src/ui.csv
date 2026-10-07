@@ -1,0 +1,7 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_D5MN0P1Q2R,ui.confirm,active,확인 버튼,4,,확인,OK,approved,468266d6
+tx_E6ST3V4W5X,ui.greet,active,,,,{name}{i} 왔다,{name} arrived,,
+tx_K2LM3N4P5Q,ui.manual,active,,,,수동,Manual,approved,
+tx_F7YZ6A7B8C,ui.todo,active,,,,미번역,,,
+tx_M4NP5Q6R7S,ui.drafted,active,,,,초안,Draft,draft,
+tx_N5PQ6R7S8T,ui.data.3.name,active,,,,데이터 이름,,,

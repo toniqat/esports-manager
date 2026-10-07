@@ -7,6 +7,8 @@ extends RefCounted
 
 const Config = preload("res://addons/l10n_tool/core/config.gd")
 const DEFAULT_PATH := "res://data/l10n/config.json"
+## 생성물 L.gd 가 alias 와 무관하게 직접 쓰는 상수 이름 (builder · scanner E051 · validator E013).
+const RESERVED_L_CONSTS := ["SOURCE_LOCALE", "FALLBACK_LOCALE", "LOCALES"]
 
 var path: String = DEFAULT_PATH
 var base_dir: String = "res://data/l10n"

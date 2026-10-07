@@ -1,0 +1,5 @@
+﻿key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_M1NAME0001,card.mech.1.name,active,,,,천둥 폭풍,,,
+tx_M2NAME0001,card.mech.2.name,active,,,,캐시,,,
+tx_P2NAME0001,card.pilot.2.name,active,,,,로켓 펀치,,,
+tx_P2DESC0001,card.pilot.2.desc,active,,,,옛 설명,,,

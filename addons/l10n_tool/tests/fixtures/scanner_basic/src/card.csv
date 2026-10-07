@@ -1,0 +1,4 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_7KQ2M9XA4P,card.pilot.6.name,active,,,,로켓 펀치,Rocket Punch,draft,
+tx_B3PZ8RW1MC,card.pilot.6.desc,active,,,,공격한다,Attack,draft,
+tx_C4RT8NW2HJ,card.pilot.7.name,active,,,,캐시,Cache,draft,

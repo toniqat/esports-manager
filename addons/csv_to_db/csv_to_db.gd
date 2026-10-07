@@ -461,6 +461,23 @@ func rebuild(verbose: bool = true) -> String:
 	db.close_db()
 	if verbose:
 		print("=== game.db rebuilt successfully at %s ===" % DB_PATH)
+
+	# ── Step 3: l10n build dev — 데이터 CSV 의 key 컬럼과 l10n 원본을 함께 검증 ──
+	# (docs/localization_design.md §7.1). DB 는 이미 썼다 — 실패해도 지우지 않고 오류만 돌려준다.
+	var l10n_err: String = _build_l10n(verbose)
+	if l10n_err != "":
+		return "game.db rebuilt, but " + l10n_err
+	return ""
+
+
+func _build_l10n(verbose: bool) -> String:
+	var l10n = load("res://addons/l10n_tool/core/l10n.gd").open()
+	l10n.echo = verbose
+	if not l10n.ok():
+		return "l10n build dev failed — " + "\n".join(l10n.output)
+	var errors: int = l10n.cmd_build("dev")
+	if errors > 0:
+		return "l10n build dev failed — %d error(s), see res://data/l10n/generated/report.md" % errors
 	return ""
 
 

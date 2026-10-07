@@ -1,0 +1,6 @@
+﻿id,name,cost,description,scope
+1,교전 개시,6,"3턴 간 교전, 범위 내 ""모두"" 참여",top|mid
+2,로켓 펀치,1,공격. [캐시]{eul} 찾는다 +{p1},top
+3,캐시,0,공격,mid
+4,,0,,mid
+5,빈 설명,2,공격,top

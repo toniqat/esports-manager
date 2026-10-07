@@ -706,6 +706,23 @@ Three conventions.
 draft detail · ban/pick mech grid · mech detail · training course list — each call it themselves.
 It is not yet attached to the in-game (BattleSim) pile browse · search grids.
 
+### Loc.gd
+`class_name Loc`, extends `RefCounted`, static only. **Runtime localization helper** —
+every code-side display string goes through `Loc.t(L.X)` (or `Loc.t(row.xxx_key)` + `# l10n-dynamic`).
+Spec: `docs/localization_design.md` §10.2 · §10.3 · D4 · D11. `L` is the generated key-constant class
+(`data/l10n/generated/L.gd`, written by l10n `build` — never edit it).
+
+| API | Use |
+|---|---|
+| `t(key, params = {})` | `TranslationServer.translate(key)` → `{name}` placeholders from `params` (`String.format`; names not in `params` and josa tags stay) → literal `\n` → newline + josa via `StrategyIcon.resolve_josa`. Josa runs **after** substitution so it sees the filled name's final consonant. A key missing in both current and fallback locale comes back as the key itself |
+| `has(key)` | translation exists in the current or fallback locale |
+| `refs(key)` | `[x]` reference keys of a description key, in order of appearance — read once from `data/l10n/generated/refs.json` (D4) |
+| `set_locale(code)` | `TranslationServer.set_locale` (the caller reloads the scene — §10.4) |
+| `pick_initial_locale(saved)` | D11: `saved` if in `L.LOCALES` → device locale (`OS.get_locale()`, then `OS.get_locale_language()`) if supported → `L.FALLBACK_LOCALE` |
+
+Godot 4.5's CSV translation importer already turns a literal `\n` in `strings_<loc>.csv` into a
+newline; `t` still converts it so text that bypassed the importer behaves the same.
+
 ### StrategyIcon.gd
 `class_name StrategyIcon`, extends `RefCounted`, static only. **The strategy-point
 shape** — a regular octagon in two poses:

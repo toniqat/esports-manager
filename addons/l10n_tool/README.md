@@ -7,7 +7,8 @@
 | 경로 | 방법 |
 |---|---|
 | 에디터 | **Project → Tools → L10n** (build dev · build release · validate · scan · sync), 조회 도크(오른쪽 위) |
-| 헤드리스 | `godot --headless --path . --script res://addons/l10n_tool/cli.gd -- <명령>` — 인자 없이 실행하면 사용법 |
+| 헤드리스 | `godot --headless --path . --script res://addons/l10n_tool/cli.gd -- <명령>` — 인자 없이 실행하면 사용법. `validate --fix-preview-leak` 은 E057 누수를 key 로 되돌린다 |
+| Rebuild game.db | csv_to_db 가 DB 를 쓴 뒤 `build dev` 를 부른다 — 실패해도 DB 는 남고 오류만 돌려준다 |
 | 테스트 | `godot --headless --path . --script res://addons/l10n_tool/tests/run_tests.gd [-- <파일 이름 필터>]` |
 
 Windows 에서는 콘솔 실행 파일(`Godot_v4.5-stable_win64_console.exe`)을 써야 출력이 보인다.
@@ -25,17 +26,33 @@ Windows 에서는 콘솔 실행 파일(`Godot_v4.5-stable_win64_console.exe`)을
 | `core/keygen.gd` · `hasher.gd` · `tokens.gd` | key 발급 · 원문 해시 · 토큰 문법(§5) |
 | `core/refs.gd` | 설명문 `[이름]` → 참조 key (ref_domains 의 alias `*.name` 엔트리). E034 · E036. 결과 = refs.json 본문 |
 | `core/issues.gd` | 검증 결과 모음 `{code, level, msg, file, line, key}` |
-| `core/validator.gd` | 원본 규칙(§13, E05x 제외) + `report.md` |
-| `core/scanner.gd` | 사용처 스캔(§9) + E05x · W05x + `index.json` |
-| `core/builder.gd` | `strings_<loc>.csv` · `L.gd` · `refs.json` · 프로젝트 설정 등록 |
-| `core/status_ops.gd` | sync · approve · add_locale · rename_alias |
-| `core/extractor.gd` | `extract data` — 데이터 CSV 텍스트 컬럼 → key |
-| `dock/` | 조회 도크 + 씬 미리보기 (D12) |
+| `core/validator.gd` | 원본 규칙(§13, E05x 제외) + `report.md` — 아래 상세 |
+| `core/scanner.gd` | 사용처 스캔(§9) + E05x · W05x + `index.json` · `fix_preview_leak` — 아래 상세 |
+| `core/builder.gd` | `strings_<loc>.csv` · `L.gd` · `refs.json` · 프로젝트 설정 등록 — 아래 상세 |
+| `core/status_ops.gd` | sync · approve · add_locale · rename_alias — 아래 상세 |
+| `core/extractor.gd` | `extract data` — 데이터 CSV 텍스트 컬럼 → key — 아래 상세 |
+| `dock/` | 조회 도크 + 씬 미리보기 (D12) — 아래 상세 |
 | `tests/` | `run_tests.gd` · `test_kit.gd` · `test_*.gd`, fixture 는 `tests/fixtures/<이름>/`(.gdignore, git `-text`) |
 
 ## 모듈 계약
 
 - 모듈(`validator` · `scanner` · `builder` · `status_ops` · `extractor`)은 **static 함수만** 갖고, 첫 인자로 파사드(`core/l10n.gd` 인스턴스, 순환 preload 를 피하려고 타입 없이 `l`)를 받는다. 모듈끼리 서로 부르지 않는다 — 필요한 것은 파사드가 넘겨준다(`l.index`, `l.resolve_refs()`).
 - 원본 수정은 반드시 `catalog`(→ `csv_io`)를 거친다. 파일을 통째로 다시 쓰지 않는다.
+- `L.gd` 예약 상수 `SOURCE_LOCALE` · `FALLBACK_LOCALE` · `LOCALES` 는 `Config.RESERVED_L_CONSTS` 하나가 정의한다(builder · scanner E051 · validator E013).
 - `class_name` 을 쓰지 않는다(애드온 전역 이름 충돌 방지) — `preload` 상수로 참조. 예외는 생성물 `L` 과 런타임 `Loc`(`resources/Loc.gd`).
 - `cmd_build` 순서: sync → 스캔 + 검증 → Error 0 이면 생성물 → index.json · report.md.
+
+## 모듈 상세
+
+**`core/validator.gd`** — 원본 규칙 검증(§13, 사용처 규칙 E05x · W05x 는 scanner 몫)과 `generated/report.md`. 형식 규칙(E003 status · W003 · E010 ~ E013 · E031)은 deprecated 포함 모든 행, 번역 품질 규칙(W031 · W032 · E033 · E035 · W034 · W035 · W071 · W072)은 active 행만 본다. E034 · E036 은 `l.resolve_refs()`, E004 는 `StrategyIcon.JOSA` 키와 비교(파일이 없으면 건너뜀). `data_columns` 는 E041 · E042 를 보고, CSV 나 컬럼이 아직 없으면 (csv, column)마다 **W041(이행 전)** 경고 하나. E061 은 `release` 에서만 — `l.index.keys` 가 비면 active 전부, 있으면 usages 가 있는 key 만. 용어 매칭은 부분 문자열(대소문자 무시). report.md = 진행표(`progress(l)`, 진행률 = approved · 비-stale / active) → Error → Warn(코드별) → 범례.
+
+**`core/scanner.gd`** — 사용처 스캔(§9) → `index.json`, E051 · W052/E052 · W053/E053 · W054 · E055 · W056 · E057. 파일마다 정규식 한 번으로 문자열 · 주석 토큰을 뽑고 `tx_…`(literal, 모든 대상 파일) · `L.X`(const, 문자열 · 주석 밖) · `# l10n-dynamic:` / `# l10n-keys:` 패턴(dynamic, `*` = 세그먼트 하나) · `data_columns` 셀(data, CSV 행 줄)을 사용처로 기록한다. 고아 검사(D16)는 주석, `scan.log_funcs` 호출 인자(여러 줄 괄호 추적), `# l10n-ignore` 줄 · func 줄에 붙으면 함수 전체, `scan.ignore_paths`, NodePath · StringName(`^"` `$"` `&"` `%"`), 단독 `"""…"""` 를 뺀다. 씬 값이 원문이 아닌 번역문과 같으면 `preview_leak`(E057, orphans 에 후보 `keys`) — `fix_preview_leak(l)` 이 후보가 하나인 것만 그 값 바이트만 key 로 되돌린다. `scan.roots` · `exclude_dirs` · `ignore_paths` 의 상대 경로는 config 폴더 기준, `.gdignore` 폴더는 루트 아래에서만 건너뛴다.
+
+**`core/builder.gd`** — 생성물 작성. `build(l, mode)` 는 `config.locales` 마다 `strings_<loc>.csv`(헤더 `keys,<loc>`, 도메인 파일 이름 순 → 행 순, LF · BOM 없음, 리터럴 `\n` 유지 — Godot 4.5 CSV 임포터가 개행으로 바꾼다)를 §7.3 포함 조건대로 쓴다 — dev: 원문 전부(deprecated 포함), 번역은 텍스트가 있으면 그대로(stale 포함) 없으면 원문 / release: active 만, 번역은 approved · 비-stale 만(나머지는 행 생략 → Godot 폴백). `L.gd` 는 alias 정렬, 데이터 alias(`is_data_alias`) 제외, deprecated 는 `## @deprecated`, 예약 상수를 함께 쓰며 모드와 무관하게 같다. `refs.json` 은 `l.resolve_refs()` 를 key 정렬 · 탭 들여쓰기로(export `include_filter` 에 포함). 내용이 같은 파일은 다시 쓰지 않는다. 실제 프로젝트 config(`Config.DEFAULT_PATH`)일 때만 `internationalization/locale/translations` 에 `strings_<loc>.<loc>.translation`(Godot 4.5 임포터 이름)을 등록하고 `locale/fallback` 을 맞춘다. `write_l_gd(l)` 은 L.gd 만 다시 쓴다(rename_alias 용).
+
+**`core/status_ops.gd`** — 원본을 고치는 명령. `sync`: 텍스트가 있고 `<loc>_hash` 가 빈 번역에 현재 원문 해시를 쓰고 빈 status 는 draft 로(approved + 빈 해시 = 수동 승인은 건드리지 않아 E031 로 남는다). `approve`: key/alias 를 모두 확인한 뒤(없거나 번역이 비면 아무것도 바꾸지 않고 오류) approved + 현재 해시. `add_locale`: Excel 잠금 · 읽기 오류를 먼저 보고 모든 도메인 파일 끝에 `<loc>` · `_status` · `_hash` 컬럼을 붙인 뒤 config.json 저장(glossary.csv 컬럼은 손으로). `rename_alias`: 데이터 alias 불가, 형식 · 중복 · L 상수 충돌 · 예약 이름 검사 → alias 셀 저장 → `Builder.write_l_gd`(모듈 간 호출의 유일한 예외) → 스캔 루트의 `.gd` 에서 `L.<OLD>` 를 단어 단위로 `L.<NEW>` 로 치환(`.tscn` · `.tres` 는 대상 아님).
+
+**`core/extractor.gd`** — `extract data [csv…]` (§14 1순위 · §6 · D15). `config.data_columns` 항목마다 원문 컬럼(`source_column`, 없으면 `column` 에서 `_key` 를 뗀 이름: `desc_key` → `desc`)의 셀로 key 를 발급한다. alias 는 `expand_alias` 규칙, 이미 있는 alias 면 그 key 를 다시 쓴다(원문이 다르면 보고만). 발급한 key 를 도메인 파일에 추가(`save_all` 먼저)한 뒤 데이터 CSV 의 셀을 key 로, 헤더를 `column` 이름으로 바꾼다 — 헤더와 바뀐 셀만 다시 쓴다. 대상 컬럼이 이미 있으면 검사만. Excel 잠금 · alias 위반 · id 중복이면 아무것도 바꾸지 않고 실패. 두 번 돌려도 같다. 번역은 비워 두고, 중복 텍스트와 E036 후보는 `generated/extract_report.md`. 이행 후 csv_to_db `SCHEMAS` · `TABLE_DEFS` 와 로더의 컬럼 이름도 함께 바꾼다.
+`godot --headless --path . --script res://addons/l10n_tool/cli.gd -- extract data cards.csv mech_cards.csv`
+
+**`dock/`** — 조회 도크 (§11.1) + 씬 미리보기 (D12). `l10n_dock.tscn` 이 레이아웃 전부(`%UniqueName` 바인딩), `l10n_dock.gd` 는 그리기 · 명령 호출만, 검색 · 필터(domain · 로케일별 상태 · stale · 미사용 · 용어집 위반 W071/W072) · 상세 · 용어집 매칭 · 씬 미리보기 행은 순수 RefCounted `dock_model.gd`(헤드리스 테스트 `tests/test_dock_model.gd`). 데이터 = catalog(`L10n.open()`) + `generated/index.json`(없거나 usages 가 비면 "scan 을 실행하세요"). 탭: 키 · 용어집 · 고아 텍스트 · 씬 미리보기(TabContainer 제목이 노드 이름이라 탭 페이지 노드 이름이 한글). 사용처 더블클릭 = `.gd` 줄 열기 · `.tscn` 씬 열기 · `.tres` 리소스 열기 · 그 밖(데이터 CSV)은 `경로:줄` 복사. 버튼 new_key · sync · validate · build dev · scan, approve 는 오너 전용 확인 대화상자. 씬 미리보기는 편집 중인 씬에서 `scene_text_props` 값이 key 인 노드를 선택 로케일 번역문으로 보여 주고 행 클릭 = 노드 선택 — **노드 속성은 절대 쓰지 않는다**. `setup(plugin)` 전에는 아무것도 하지 않고, 도크가 숨겨지면 카탈로그를 놓았다가 보일 때 다시 읽는다.

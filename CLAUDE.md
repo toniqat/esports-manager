@@ -43,6 +43,7 @@ Read the README of every row your task touches. Indented rows are submodules —
 | `autoloads/` | `GameManager` (run / match state, `start_run`), `ProfileManager`, `Haptics` · `HapticUi`, game.db copy | `autoloads/README.md` |
 | `resources/` | Shared data classes, `GameEnums`, `OutgameTheme` · `BattleTheme` (dark battle UI), `PositionBadge` (pilot position on every screen), `ScreenMetrics`, `DragScroll`, `UiHelpers`, `ConstTable`, `GameDb`, image lookups, shaders | `resources/README.md` |
 | `data/` | CSV tables, SQLite API, **Rebuild game.db**, const table rules | `data/README.md` |
+| ↳ `l10n/` | Localization source CSVs (`src/`), `config.json`, generated `strings_*.csv` · `L.gd` · `refs.json` — text is l10n keys, shown via `Loc.t()` | `data/l10n/README.md` |
 | `features/save_load/` | Profile / run save, autosave points, mid-match resume, test run file | `features/save_load/README.md` |
 | `features/meta/` | Outgame outside a run | `features/meta/README.md` |
 | ↳ `lobby/` | Entry scene = tab host, confirm popup, manager type popup | `features/meta/lobby/README.md` |
@@ -79,6 +80,7 @@ Read the README of every row your task touches. Indented rows are submodules —
 | ↳ `gambit/` · `debug/` | Pre-battle setup, jungle start · `BattleLogger` | `gambit/README.md`, `debug/README.md` |
 | ↳ `buildings/` · `data/` | `@tool` Building / Waypoint nodes · `DataLoader`, `FieldLoader` | *(no README — see `features/battle_sim/README.md`)* |
 | `ios/plugins/` · `build/` | iOS native plugins · downloaded `.ipa` | `ios/plugins/README.md`, `build/README.md` |
+| `addons/l10n_tool/` | L10n tool: Project → Tools → L10n (build · validate · scan), lookup dock, headless CLI · tests | `addons/l10n_tool/README.md` |
 | `addons/ui_scene_tree/` | Editor dock "UI 트리": `scenes/*` · `UI_View` → `UI_Comp` tree (instanced + code-created), TODO · node counts per scene | `addons/ui_scene_tree/README.md` |
 | `addons/godot_mcp/` | MCP editor plugin — **do not modify** | — |
 
@@ -89,6 +91,7 @@ Read the README of every row your task touches. Indented rows are submodules —
 | `mobile_safe_area.md` | Placing / moving any UI |
 | `ios_testbuild.md` | iOS CI build, `.ipa` download |
 | `run_balance.md` | Score / currency / EXP formula derivation (run sim) |
+| `localization_design.md` | Any display text (new strings = keys first), l10n tool / data columns — **§0.5 decisions override body** |
 | `ui_scene_migration.md` | Moving code-built UI to `.tscn` (WYSIWYG editing, `editor_description` TODO marks) — status, procedure, task list |
 
 ---

@@ -30,7 +30,7 @@ const USAGE := """L10n 명령 (godot --headless --path . --script res://addons/l
   approve <locale> <key|alias>...        (오너 지시 시에만)
   rename_alias <old> <new>
   scan
-  validate [dev|release]
+  validate [dev|release] [--fix-preview-leak]
   build [dev|release]
   extract data [csv 파일명...]
 옵션: --config=<res://…/config.json> (기본 res://data/l10n/config.json)"""
@@ -222,7 +222,14 @@ static func run_cli(raw_args: PackedStringArray) -> int:
 			l.cmd_scan()
 			return 0
 		"validate":
-			return 0 if l.cmd_validate(rest[0] if rest.size() > 0 else MODE_DEV).error_count() == 0 else 1
+			var vargs := PackedStringArray()
+			for a in rest:
+				if a == "--fix-preview-leak":
+					l.reload()
+					l.info("fix-preview-leak: %d개 씬 값을 key 로 되돌림" % Scanner.fix_preview_leak(l))
+				else:
+					vargs.append(a)
+			return 0 if l.cmd_validate(vargs[0] if vargs.size() > 0 else MODE_DEV).error_count() == 0 else 1
 		"build":
 			return 0 if l.cmd_build(rest[0] if rest.size() > 0 else MODE_DEV) == 0 else 1
 		"extract":

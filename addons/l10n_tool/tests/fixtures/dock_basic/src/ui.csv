@@ -1,0 +1,5 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_D5MN0P1Q2R,ui.confirm,active,확인 버튼,4,,확인,OK,approved,468266d6
+tx_E6ST3V4W5X,ui.hand_full,active,손 가득,,,손이 가득 찼다,Your hand is full,draft,00000000
+tx_F7YZ6A7B8C,ui.old,deprecated,,,,옛 문구,,,
+tx_G8HJ9K0M1N,ui.draw_one,active,,,,카드 1장 뽑기,,,

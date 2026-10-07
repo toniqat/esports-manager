@@ -1,0 +1,3 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_H1J2K3M4N5,training.scope.all,active,,,,전체,,,
+tx_J2K3M4N5P6,training.scope.role,active,,,,역할,,,

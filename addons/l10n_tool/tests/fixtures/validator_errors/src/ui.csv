@@ -1,0 +1,15 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_D5MN0P1Q2R,ui.confirm,active,,4,,확인,OK,approved,
+tx_E6ST3V4W5X,ui.greet,active,,,,{name}{i} 왔다,{name}{i} arrived,draft,f9f6d3e3
+tx_F7YZ6A7B8C,ui.stale,active,,,,새 문구,Old text,approved,deadbeef
+tx_H1J2K3M4N5,ui.empty_status,active,,,,빈 번역,,draft,
+tx_H1J2K3M4N6,ui.bold,active,,,,[b]굵게[/b],[b]Bold,draft,b802fd76
+tx_H1J2K3M4N7,ui.too_long,active,,3,,확인합니다,Confirm,draft,d599a723
+tx_H1J2K3M4N9,ui.a_b,active,,,,상수 하나,,,
+tx_J1K2M3N4P5,ui.a.b,active,,,,상수 둘,,,
+tx_J1K2M3N4P6,ui.hand,active,,,,손패를 정리한다,Organize the hand,draft,e2022971
+tx_J1K2M3N4P7,ui.draw,active,,,,카드 뽑기,Pull a card,draft,e412854f
+tx_J1K2M3N4P8,ui.ref,active,,,,[없는카드] 사용,Use [Nothing],draft,98ebd0eb
+tx_K1M2N3P4Q5,ui.mvp,active,,,,이번 MVP,This match's best,draft,084575b3
+tx_K1M2N3P4Q6,ui.track_hint,active,,,,추적 대상,Chase target,draft,3924a81d
+tx_H1J2K3M4N8,ui.jamo,active,,,,가 자모,,,

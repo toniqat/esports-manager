@@ -1,0 +1,3 @@
+id,name,kind,cost,desc
+S01,단기 훈련 코치,coach_hire,250,외부 코치와 2주 계약 — 훈련 스탯 상승
+S02,전술 컨설턴트,coach_hire,300,공격

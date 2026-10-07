@@ -49,6 +49,9 @@ is a thin **EditorPlugin** that only registers the menu item
 columns + duplicate PKs, then writes `res://data/game.db` with
 `create_table` + `insert_row`. Adding a new table = add a CSV under `data/csv/`
 and add an entry to both `SCHEMAS` and `TABLE_DEFS` **in `csv_to_db.gd`**.
+After writing the DB, `rebuild()` runs **l10n `build dev`** (`addons/l10n_tool/core/l10n.gd` →
+`cmd_build("dev")`) so the data CSV key columns and `data/l10n/src/` are validated together; an
+l10n failure is returned as the error string (see `data/l10n/generated/report.md`) but never deletes the DB.
 
 The logic sits outside the EditorPlugin because `EditorPlugin` cannot be
 instantiated headlessly, so the DB can also be rebuilt from the CLI:

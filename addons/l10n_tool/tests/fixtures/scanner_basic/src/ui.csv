@@ -1,0 +1,9 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_D5MN0P1Q2R,ui.confirm,active,,,,확인,OK,approved,468266d6
+tx_E6ST3V4W5X,ui.greet,active,,,,안녕,Hi,,
+tx_F7YZ6A7B8C,ui.old,deprecated,,,,옛 문구,,,
+tx_G8HJ9K0M1N,ui.unused,active,,,,손 확인,,,
+tx_K3M4N5P6Q7,ui.title,active,,,,시작,Start Game,draft,
+tx_M4N5P6Q7R8,ui.brand,active,,,,Mech,Mech,draft,
+tx_N5P6Q7R8S9,ui.close,active,,,,닫기,Close,draft,
+tx_P6Q7R8S9T0,ui.close2,active,,,,닫음,Close,draft,

@@ -1,0 +1,11 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_7KQ2M9XA4P,card.pilot.6.name,active,,12,,로켓 펀치,Rocket Punch,approved,2794e837
+tx_B3PZ8RW1MC,card.pilot.6.desc,active,,,,"공격 +{p1}, [캐시] 찾기","Attack +{p2}, search [Cache]",draft,c7c63c49
+tx_C4RT8NW2HJ,card.pilot.7.name,active,,,,캐시,Cache,draft,33ff59f3
+tx_C4RT8NW2HJ,card.pilot.8.name,active,,,,중복,Dup,draft,5f4a55d1
+tx_bad,card.pilot.9.name,active,,,,잘못된 키,,,
+tx_G1H2J3K4M5,Card.Bad,active,,,,형식,,,
+tx_G1H2J3K4M6,ui.wrong_domain,active,,,,도메인,,,
+tx_G1H2J3K4M7,card.pilot.6.name,active,,,,별칭 중복,,,
+tx_G1H2J3K4M8,card.pilot.10.name,unknown,,,,상태,,,
+tx_G1H2J3K4M9,card.pilot.11.name,active,,,,가나,Gana,checked,3ca97889

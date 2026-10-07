@@ -1,0 +1,6 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_D5MN0P1Q2R,ui.confirm,active,,,,확인,OK,approved,468266d6
+tx_E6ST3V4W5X,ui.greet,active,,,,"{name}{i} 왔다, 반갑다",{name} arrived,draft,
+tx_F7YZ6A7B8C,ui.old,deprecated,,,,옛 문구,Old,approved,
+tx_G8AB9C0D1E,ui.stale,active,,,,바뀐 원문,Changed,approved,deadbeef
+tx_H9CD0E1F2G,ui.empty,active,,,,빈 번역\n둘째 줄,,,

@@ -1,0 +1,5 @@
+term_id,key,ko,en,forbidden_ko,forbidden_en,dnt,note
+hand,,손,hand,손패|핸드,,,카드를 들고 있는 곳
+draw,,뽑기,draw,드로우,,,덱에서 카드를 가져오기
+confirm,tx_D5MN0P1Q2R,,,,,,확인 용어
+mech,,메크,,,,1,번역 금지

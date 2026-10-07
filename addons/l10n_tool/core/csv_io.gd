@@ -106,6 +106,9 @@ func set_cell(row: int, col_name: String, value: String) -> bool:
 		r.append("")
 	r[c] = value
 	rows[row] = r
+	# 값이 바뀐 셀은 원래 따옴표 스타일을 따르지 않는다 — 필요할 때만 감싼다
+	# (설명문 → key 로 바뀐 셀이 `"tx_…"` 로 남지 않도록).
+	(_quoted[row] as Dictionary).erase(c)
 	_dirty[row] = true
 	return true
 

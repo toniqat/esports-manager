@@ -1,0 +1,24 @@
+[gd_scene format=3]
+
+[node name="Root" type="Control"]
+
+[node name="Title" type="Label" parent="."]
+text = "tx_K3M4N5P6Q7"
+
+[node name="Leak" type="Label" parent="."]
+text = "Start Game"
+
+[node name="Same" type="Label" parent="."]
+text = "Mech"
+tooltip_text = "툴팁 한글"
+
+[node name="Num" type="Label" parent="."]
+text = "123"
+
+[node name="Amb" type="Button" parent="."]
+text = "Close"
+placeholder_text = "여러
+줄"
+
+[node name="Path" type="Label" parent="."]
+editor_description = "설명"

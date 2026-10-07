@@ -56,6 +56,10 @@ port_override=6550
 
 common/default_scroll_deadzone=24
 
+[internationalization]
+
+locale/translations=PackedStringArray("res://data/l10n/generated/strings_ko.ko.translation", "res://data/l10n/generated/strings_en.en.translation")
+
 [rendering]
 
 renderer/rendering_method="mobile"

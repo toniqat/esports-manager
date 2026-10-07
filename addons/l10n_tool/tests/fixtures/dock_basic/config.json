@@ -1,0 +1,17 @@
+{
+  "source_locale": "ko",
+  "locales": ["ko", "en"],
+  "fallback_locale": "en",
+  "key_prefix": "tx_",
+  "strict": { "orphans": "warn" },
+  "tokens": { "josa_tags": ["eul", "eun", "i", "wa"], "ref_domains": ["card"], "bbcode_tags": ["b"] },
+  "scan": {
+    "roots": ["proj"],
+    "include_ext": [".gd", ".tscn", ".tres"],
+    "exclude_dirs": [],
+    "scene_text_props": ["text", "placeholder_text", "tooltip_text", "title"],
+    "log_funcs": ["print"],
+    "ignore_paths": []
+  },
+  "data_columns": []
+}

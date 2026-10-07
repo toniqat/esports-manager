@@ -1,0 +1,23 @@
+{
+  "source_locale": "ko",
+  "locales": ["ko", "en"],
+  "fallback_locale": "en",
+  "key_prefix": "tx_",
+  "data_csv_dir": "csv",
+  "strict": { "orphans": "warn" },
+  "tokens": {
+    "josa_tags": ["eul", "eun", "i", "wa"],
+    "ref_domains": ["card", "keyword"],
+    "bbcode_tags": ["b", "i", "u", "s", "color", "font_size", "url", "img", "center"]
+  },
+  "scan": { "roots": [], "include_ext": [".gd"], "exclude_dirs": [], "scene_text_props": ["text"], "log_funcs": ["print"], "ignore_paths": [] },
+  "data_columns": [
+    { "csv": "cards.csv", "id": "id", "column": "name_key", "domain": "card", "alias": "card.pilot.{id}.name" },
+    { "csv": "cards.csv", "id": "id", "column": "description_key", "domain": "card", "alias": "card.pilot.{id}.desc" },
+    { "csv": "mech_cards.csv", "id": "id", "column": "name_key", "domain": "card", "alias": "card.mech.{id}.name" },
+    { "csv": "mech_cards.csv", "id": "id", "column": "description_key", "domain": "card", "alias": "card.mech.{id}.desc" },
+    { "csv": "finance_specials.csv", "id": "id", "column": "name_key", "domain": "finance", "alias": "finance.special.{id}.name" },
+    { "csv": "finance_specials.csv", "id": "id", "column": "desc_key", "domain": "finance", "alias": "finance.special.{id}.desc" },
+    { "csv": "missing.csv", "id": "id", "column": "name_key", "domain": "name", "alias": "name.missing.{id}" }
+  ]
+}

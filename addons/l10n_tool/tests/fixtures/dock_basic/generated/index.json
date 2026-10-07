@@ -1,0 +1,10 @@
+{
+  "generated_at": "2026-10-07T12:00:00Z",
+  "keys": {
+    "tx_D5MN0P1Q2R": { "alias": "ui.confirm", "usages": [ { "file": "res://scenes/Lobby.tscn", "line": 12, "kind": "literal" } ] },
+    "tx_7KQ2M9XA4P": { "alias": "card.pilot.6.name", "usages": [ { "file": "res://data/csv/cards.csv", "line": 2, "kind": "data" }, { "file": "res://features/x/CardView.gd", "line": 42, "kind": "dynamic" } ] },
+    "tx_G8HJ9K0M1N": { "alias": "ui.draw_one", "glossary": ["draw"], "usages": [] }
+  },
+  "orphans": [ { "file": "res://features/meta/lobby/Lobby.gd", "line": 31, "kind": "orphan_code", "text": "새 시즌" } ],
+  "dynamic_bare": []
+}

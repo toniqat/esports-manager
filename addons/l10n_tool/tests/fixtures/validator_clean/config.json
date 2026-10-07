@@ -1,0 +1,25 @@
+{
+  "source_locale": "ko",
+  "locales": ["ko", "en"],
+  "fallback_locale": "en",
+  "key_prefix": "tx_",
+  "data_csv_dir": "csv",
+  "strict": { "orphans": "warn" },
+  "tokens": {
+    "josa_tags": ["eul", "eun", "i", "wa"],
+    "ref_domains": ["card", "keyword"],
+    "bbcode_tags": ["b", "i", "u", "s", "color", "font_size", "url", "img", "center"]
+  },
+  "scan": {
+    "roots": ["proj"],
+    "include_ext": [".gd", ".tscn", ".tres"],
+    "exclude_dirs": [],
+    "scene_text_props": ["text", "placeholder_text", "tooltip_text", "title"],
+    "log_funcs": ["print", "printerr", "push_warning", "push_error", "assert"],
+    "ignore_paths": []
+  },
+  "data_columns": [
+    { "csv": "cards.csv", "id": "id", "column": "name_key", "domain": "card", "alias": "card.pilot.{id}.name" },
+    { "csv": "cards.csv", "id": "id", "column": "description_key", "domain": "card", "alias": "card.pilot.{id}.desc" }
+  ]
+}

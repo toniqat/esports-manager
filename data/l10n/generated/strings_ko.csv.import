@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://bj5lhmtc6hdeh"
+
+[deps]
+
+files=["res://data/l10n/generated/strings_ko.ko.translation"]
+
+source_file="res://data/l10n/generated/strings_ko.csv"
+dest_files=["res://data/l10n/generated/strings_ko.ko.translation"]
+
+[params]
+
+compress=true
+delimiter=0

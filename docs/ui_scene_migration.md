@@ -159,7 +159,7 @@ ConfirmPopup (CanvasLayer 20, visible=false)
 ## 6. 작업 목록 (다음 세션)
 
 - [x] **T0** `ConfirmPopup` 전환분 커밋. (uid 부여는 새 씬들과 함께 마지막에 에디터에서 일괄 — §7)
-- [ ] **T1 공용 Theme 리소스** — `resources/OutgameTheme.tres`(Theme) 를 만들고
+- [x] **T1 공용 Theme 리소스** (완료 — variation 목록 · 재생성 명령은 `resources/README.md`) — `resources/OutgameTheme.tres`(Theme) 를 만들고
       `theme_type_variation` 으로 `PrimaryButton` · `GhostButton` · `TextButton` · `DarkButton` ·
       `Card` · `TitleLabel` · `BodyLabel` 등을 정의. 값은 `OutgameTheme.gd` 상수와 일치시키고,
       가능하면 `.gd` 상수 → `.tres` 를 생성하는 에디터 툴로 단일 출처 유지. `ConfirmPopup.tscn` 의
@@ -184,12 +184,14 @@ ConfirmPopup (CanvasLayer 20, visible=false)
 | 웨이브 | 작업 | 담당 | 상태 |
 |---|---|---|---|
 | 0 | T0 ConfirmPopup 커밋 | 오케스트레이터 | ✅ |
-| 1 | T1 공용 Theme 리소스 (+ ConfirmPopup 임베드 스타일 → variation) | 에이전트 A | ⏳ |
+| 1 | T1 공용 Theme 리소스 (+ ConfirmPopup 임베드 스타일 → variation) | 에이전트 A | ✅ 머지 (전후 픽셀 diff 0) |
 | 1 | T2 규칙 문서화 (루트 `CLAUDE.md`) | 오케스트레이터 | ✅ |
 | 1 | T4 런타임 덤프 툴 | 에이전트 B | ⏳ |
-| 2 | T3 #2 `ManagerTypePopup` | 에이전트 | ⬜ (웨이브 1 머지 후) |
-| 2 | T3 #3 `ShopPopup` | 에이전트 | ⬜ |
-| 2 | T3 #4 `CollectionDetailSheet` | 에이전트 | ⬜ |
-| 2 | T3 #5 `DraftDetailPanel` | 에이전트 | ⬜ |
-| 2 | T3 #6 `HubSheet` | 에이전트 | ⬜ |
+| 2 | T3 #2 `ManagerTypePopup` | 에이전트 | ⏳ |
+| 2 | T3 #3 `ShopPopup` | 에이전트 | ⏳ |
+| 2 | T3 #4 `CollectionDetailSheet` | 에이전트 | ⏳ |
+| 2 | T3 #5 `DraftDetailPanel` | 에이전트 | ⏳ |
+| 2 | T3 #6 `HubSheet` | 에이전트 | ⏳ |
 | 끝 | 새 `.tscn` 전부 에디터에서 열고 저장 (uid 부여) | 사용자 | ⬜ |
+
+> 웨이브 2 는 T1 머지 직후 시작 (T4 와 무관하므로 T4 진행 중에 병렬 착수).

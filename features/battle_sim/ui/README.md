@@ -145,7 +145,8 @@ Connections:
 Stacked **above** the ally donut (screen-left x 8, width 150 — wider than the donut column).
 One chip = rounded-rect card art (the card that placed the reservation,
 `BattleSim.reserve_src`) + value. The values (`next_phase_strategy_p` · `next_phase_draw_p` ·
-`kill_bounty_p` · `ambush_search_p`) are compared by a per-frame signature and redrawn only
+`kill_bounty_p` · `ambush_search_p`) are compared by a per-frame signature (the `_entries()` array, compared by value — no `str()`
+per frame) and redrawn only
 when they change, so a chip disappears on its own once it settles to 0. There is none on
 the enemy side (below the enemy donut it would overlap the battlefield's top-left tiles).
 The card art is drawn only via `_draw`, so it is uploaded to the GPU first with

@@ -711,12 +711,23 @@ EngageArena (Control, fullscreen, MOUSE_FILTER_STOP)
 ├─ dim        ColorRect fullscreen (black α 0.86)   ← presses down everything outside the stage
 ├─ title (240) / round counter (292) / round pips (350) / turn·banner (372)
 ├─ _clip      Control BAND_RECT, clip_contents = true   ← clipped here
-│   └─ _world DrawProxy(Node2D)  position/scale = camera
+│   └─ _world Node2D  position/scale = camera (draws nothing itself)
+│        ├─ _ground DrawProxy  backdrop · floor grid — drawn once when the stage opens
+│        ├─ _actors DrawProxy  turrets · projectiles · units — redrawn every frame
 │        └─ damage popup Labels (stage coordinate system)
 ├─ _hud       DrawProxy(Node2D) screen coordinates — band border · round pips
 ├─ _roster    DrawProxy(Node2D) screen coordinates — bottom square thumbnails (+ HP bars on the result screen)
 └─ two ally/enemy header Labels
 ```
+**Only the layer that changed is redrawn** (phone heat — previously all three proxies were
+redrawn unconditionally every frame). The camera is `_world`'s transform, so the floor follows
+it without a redraw; `_actors` is the only per-frame layer. `_hud` is redrawn only when
+`round_index` changes (`_redraw_hud_if_changed`), `_roster` only when a per-unit signature of
+**acting · dead** changes (`_redraw_roster_if_changed` — during the engage the strip draws
+nothing else). `_refresh_header` re-applies the round-counter colour override only when the
+colour changes (`_set_round_color`) — an override re-sent every frame fires a theme-change
+notification on the Label each time. Ellipse vertices come from a cached 24-point unit circle
+(`_unit_circle`) instead of recomputing cos/sin per ellipse per frame.
 **No name is written under portraits.** Previously the role name (`T0` / `F1`) was always
 printed, but in a 90px cell that label only restated what the portrait already said
 (`_name_labels` / `_refresh_names` were deleted then). That line (`STRIP_SUB_Y`) is **used on the
@@ -875,7 +886,8 @@ Below the band all participants stand in **one row** — **allies left / enemies
 - **`faces/` textures must be primed by `PilotImages.prime_into`.**
   They are drawn with `draw_texture_rect`, so if missed all ten portrait cells come out as white
   squares (confirmed by measurement). `prime_into` bakes all three: circle / faces / tall.
-- Portraits (plus HP bars on the result screen) are redrawn every frame by the `_roster` proxy. The only Label nodes are
+- Portraits (plus HP bars on the result screen) are drawn by the `_roster` proxy, redrawn only when
+  someone's acting / dead state changes (and once when the result screen opens). The only Label nodes are
   names · team names · VS, so only `_refresh_names()` runs.
 
 This strip is **arena-only**. It is different from the always-on pilot strips at the top/bottom of

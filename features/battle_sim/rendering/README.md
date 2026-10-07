@@ -641,7 +641,11 @@ Every frame `_draw()` builds a `PilotData → Vector2` marker position table via
 `_build_pilot_render_layout()` and shares it with the dim overlay. That function has three steps —
 **solve the seats** (`_solve_slots`, pure) → **sync the glide** (`_sync_glide`) → **output this frame's
 coordinates** (`_compose_positions`, applying the emphasis factor and screen clamp). Time doesn't flow
-here, so the answer doesn't waver even if called several times per frame. The **public** wrapper that
+here, so the answer doesn't waver even if called several times per frame. **`_solve_slots` is
+memoised**: it keeps the last answer with its input key (`_slot_input_key` — renderable pilots in
+spawn order with render cell · team · lane, plus `cell_center(0,0)` for the grid transform) and
+re-solves only when that key changes, so the sort · greedy · tail repair are skipped on every frame
+where nobody moved (phone heat). The returned table is shared — callers must only read it. The **public** wrapper that
 returns the same thing is `pilot_marker_positions()`, and `CardTargetingOverlay._hit_test_pilot` uses
 it — when several stand on one cell each is drawn in a different slot, so a position computed from
 `grid_pos` alone (tile centre / `pilot_marker_pos_solo`) can't tell who was pressed (the leftmost pilot

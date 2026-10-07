@@ -27,7 +27,7 @@ const DONUT_CLEAR_ENEMY: float = 10.0
 
 var _bs: BattleSim = null
 var _is_player: bool = true
-var _sig: String = ""
+var _sig: Array = []
 ## 구성이 바뀐 뒤 몇 프레임 더 다시 그린다 — 처음 쓰는 카드 아트는
 ## `prime_texture` 로 올린 다음 프레임부터 제대로 그려진다.
 var _settle: int = 0
@@ -49,7 +49,8 @@ func setup(bs: BattleSim, is_player: bool, donut_center: Vector2) -> void:
 
 
 func _process(_delta: float) -> void:
-	var sig: String = str(_entries())
+	# 배열끼리 값으로 비교한다 — `str()` 로 매 프레임 문자열을 굽지 않는다.
+	var sig: Array = _entries()
 	if sig != _sig:
 		_sig = sig
 		_settle = 3

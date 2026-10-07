@@ -70,6 +70,9 @@ const MARKER_RADIUS_SETTLE_SEC: float = 0.15
 
 ## PilotData → 글라이드 상태. 스키마는 `_settled_glide` 참조.
 var _glide: Dictionary = {}
+## `_solve_slots` 의 마지막 답과 그 답을 낸 입력(`_slot_input_key`).
+var _slot_key: Array = []
+var _slot_solution: Dictionary = {}
 
 
 # ─── 마커 위 플로팅 숫자 ─────────────────────────────────────────────────────
@@ -1009,7 +1012,37 @@ func _build_pilot_render_layout() -> Dictionary:
 #
 # 겹침 판정이 **다른 칸의 마커까지** 본다는 것은 그대로다 — 위아래로 붙은 두 칸이
 # 서로를 향한 슬롯을 고르는 일(= 초상화가 겹치는 유일한 구조적 원인)이 없다.
+#
+# **답은 입력이 바뀔 때만 다시 푼다.** 이 함수는 `_process` 에서 매 프레임, 그리고
+# `_draw` · 히트 테스트 · 팝업 좌표에서 또 불리는데, 순수 함수라 입력
+# (`_slot_input_key`)이 같으면 답도 같다. 전부 멈춰 있는 대부분의 프레임에서
+# 정렬 · 그리디 · 꼬리 보정을 통째로 건너뛴다. 돌려준 표는 공유되므로 호출자는
+# 고치지 않는다(지금 읽기만 한다).
 func _solve_slots() -> Dictionary:
+	var key := _slot_input_key()
+	if key == _slot_key:
+		return _slot_solution
+	_slot_key = key
+	_slot_solution = _solve_slots_fresh()
+	return _slot_solution
+
+
+## `_solve_slots` 가 읽는 입력 전부 — 슬롯을 받는 파일럿(스폰 순서) · 그 렌더 칸 ·
+## 팀 · 레인, 그리고 칸 → 화면 좌표 변환(원점 칸 하나의 좌표로 대신한다).
+func _slot_input_key() -> Array:
+	var key: Array = [_bs.cell_center(Vector2i.ZERO)]
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		if not _is_renderable(p) or _hidden_during_jungle_pick(p):
+			continue
+		key.append(p)
+		key.append(_render_cell(p))
+		key.append(p.team)
+		key.append(p.lane)
+	return key
+
+
+func _solve_slots_fresh() -> Dictionary:
 	var out: Dictionary = {}
 	var by_cell := _group_pilots_by_render_cell()
 	var cells: Array = by_cell.keys()

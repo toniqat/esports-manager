@@ -19,12 +19,19 @@ extends Control
 # 가운데 VS, **얼굴 위주 정사각 썸네일** 아래에 체력 바.
 #
 # 텍스트는 전부 Label 노드로 만든다(draw_string 은 한글 폴백 폰트를 태우기
-# 어렵다). 그래픽은 세 개의 DrawProxy 노드가 나눠 그린다:
+# 어렵다). 그래픽은 네 개의 DrawProxy 노드가 나눠 그린다:
 #
 #   _clip (clip_contents=true, BAND_RECT)   ← 무대 밖은 여기서 잘린다
-#     └ _world (position/scale = 카메라)     ← draw_world()  : 무대 좌표계
+#     └ _world (Node2D, position/scale = 카메라)
+#         ├ _ground                         ← draw_ground() : 배경 · 바닥 격자 (한 번만)
+#         └ _actors                         ← draw_world()  : 포탑 · 투사체 · 유닛 (매 프레임)
 #   _hud    (풀스크린)                        ← draw_hud()    : 화면 좌표계
 #   _roster (풀스크린)                        ← draw_roster() : 하단 썸네일 스트립
+#
+# **다시 그리는 것은 바뀐 층뿐이다.** 카메라는 `_world` 의 변환이라 바닥을 다시
+# 그리지 않고도 따라가고, 바닥은 무대가 열릴 때 한 번 그린다. `_hud` 는 턴이
+# 넘어갈 때, `_roster` 는 누가 행동 중인가 · 누가 쓰러졌나가 바뀔 때만 그린다 —
+# 예전에는 세 층을 조건 없이 매 프레임 다시 그려 폰이 쉬질 못했다.
 #
 # 자기 자신(_draw)에 그리지 않는 이유: Control 은 자기 그림을 먼저 그리고 그
 # 위에 자식을 그린다. 풀스크린 딜 ColorRect 가 자식이므로 자기 _draw 로 그린
@@ -205,9 +212,18 @@ var _is_duel: bool = false
 
 ## 무대 노드 — _ready 에서 만든다.
 var _clip: Control = null
-var _world: DrawProxy = null
+## 카메라 노드 — 변환만 들고 스스로는 그리지 않는다.
+var _world: Node2D = null
+var _ground: DrawProxy = null
+var _actors: DrawProxy = null
 var _hud: DrawProxy = null
 var _roster: DrawProxy = null
+## 마지막으로 그린 `_hud` 의 턴 / `_roster` 의 상태 서명 — 같으면 다시 그리지 않는다.
+var _hud_round: int = -1
+var _roster_sig: PackedInt32Array = PackedInt32Array()
+## 헤더 라벨에 마지막으로 넣은 색 — 같은 색을 매 프레임 다시 덮어쓰면 테마
+## 변경 통지가 돌아 라벨이 매번 다시 잡힌다.
+var _round_lbl_color: Color = Color(0, 0, 0, 0)
 
 ## 카메라 상태 (벨트 좌표계 기준).
 var _cam_center: Vector2 = Vector2.ZERO
@@ -277,11 +293,19 @@ func _ready() -> void:
 	add_child(_clip)
 
 	# 3) 월드 — position/scale 이 곧 카메라 변환. 데미지 팝업도 여기 자식으로
-	#    붙어서 카메라를 따라 움직이고 무대 밖에서 함께 잘린다.
-	_world = DrawProxy.new()
+	#    붙어서 카메라를 따라 움직이고 무대 밖에서 함께 잘린다(두 층보다 뒤에
+	#    붙으므로 위에 그려진다).
+	_world = Node2D.new()
 	_world.name = "BeltWorld"
-	_world.draw_fn = Callable(self, "draw_world")
 	_clip.add_child(_world)
+	_ground = DrawProxy.new()
+	_ground.name = "Ground"
+	_ground.draw_fn = Callable(self, "draw_ground")
+	_world.add_child(_ground)
+	_actors = DrawProxy.new()
+	_actors.name = "Actors"
+	_actors.draw_fn = Callable(self, "draw_world")
+	_world.add_child(_actors)
 
 	# 4) 화면 좌표계 그래픽 — 무대 테두리 · 남은 시간 바.
 	_hud = DrawProxy.new()
@@ -326,12 +350,13 @@ func setup(bs: BattleSim, sim: TurnEngageSim, title_text: String,
 	# 첫 프레임은 보간 없이 딜 맞춰 잡는다 — 무대 중앙에서 스르르 밀려오는
 	# 연출은 교전 시작 순간을 놓치게 만든다.
 	_update_camera(0.0, true)
+	_ground.queue_redraw()
+	_actors.queue_redraw()
+	_redraw_hud_if_changed()
+	_redraw_roster_if_changed()
 	if preview:
 		# 정지 화면이다 — 단 한 번만 그린다.
 		_refresh_header()
-		_world.queue_redraw()
-		_hud.queue_redraw()
-		_roster.queue_redraw()
 		set_process(false)
 		return
 	set_process(true)
@@ -412,8 +437,33 @@ func _process(delta: float) -> void:
 	_update_camera(delta, false)
 	_drain_popups()
 	_advance_hp_chips(delta)
-	_world.queue_redraw()
+	# 유닛 · 투사체는 시뮬레이터가 매 스텝 옮기므로 이 층만은 매 프레임이다.
+	_actors.queue_redraw()
+	_redraw_hud_if_changed()
+	_redraw_roster_if_changed()
+
+
+## `_hud` 가 그리는 것 중 움직이는 것은 라운드 칸뿐이다 — 턴이 바뀔 때만 그린다.
+func _redraw_hud_if_changed() -> void:
+	if _sim.round_index == _hud_round:
+		return
+	_hud_round = _sim.round_index
 	_hud.queue_redraw()
+
+
+## 스트립 칸이 바뀌는 것은 **누가 행동 중인가 · 누가 쓰러졌나** 둘뿐이다
+## (교전 중에는 체력 바를 그리지 않는다). 유닛마다 그 두 값을 한 칸에 담은
+## 서명이 달라졌을 때만 그린다.
+func _redraw_roster_if_changed() -> void:
+	var sig := PackedInt32Array()
+	sig.resize(_sim.units.size())
+	for i in _sim.units.size():
+		var u := _sim.units[i] as TurnEngageSim.EUnit
+		var dead: bool = (u.state == TurnEngageSim.State.DEAD)
+		sig[i] = (2 if dead else 0) + (1 if (not dead and u.is_acting()) else 0)
+	if sig == _roster_sig:
+		return
+	_roster_sig = sig
 	_roster.queue_redraw()
 
 
@@ -511,10 +561,10 @@ func _refresh_header() -> void:
 	if _round_lbl != null:
 		if _is_duel:
 			_round_lbl.text = "턴 %d" % _sim.round_index
-			_round_lbl.add_theme_color_override("font_color", TIME_COLOR)
+			_set_round_color(TIME_COLOR)
 		else:
 			_round_lbl.text = "턴 %d / %d" % [_sim.round_index, _sim.total_rounds]
-			_round_lbl.add_theme_color_override("font_color",
+			_set_round_color(
 					TIME_LOW if _sim.round_index >= _sim.total_rounds else TIME_COLOR)
 	if _phase_lbl == null or _preview:
 		return
@@ -527,6 +577,15 @@ func _refresh_header() -> void:
 	else:
 		var who: String = _sim.actor_label()
 		_phase_lbl.text = "" if who == "" else "%s 의 차례" % who
+
+
+## 바뀔 때만 덮어쓴다 — `Label.text` 는 같은 값이면 스스로 넘기지만 테마
+## 오버라이드는 매번 통지를 돌린다.
+func _set_round_color(col: Color) -> void:
+	if col == _round_lbl_color:
+		return
+	_round_lbl_color = col
+	_round_lbl.add_theme_color_override("font_color", col)
 
 
 # 매니저가 종료 판정 직후(대시보드가 뜨기 END_HOLD_SEC 전에) 부른다.
@@ -600,12 +659,17 @@ func _spawn_popup(at: Vector2, text: String, color: Color) -> void:
 	tw.chain().tween_callback(Callable(lbl, "queue_free"))
 
 
-# ─── 무대 렌더링 (벨트 좌표계 · _world 에 그린다) ────────────────────────────
+# ─── 무대 렌더링 (벨트 좌표계 · _world 밑의 두 층에 그린다) ──────────────────
+## 움직이지 않는 바닥 — 무대가 열릴 때 한 번만 그린다(카메라는 부모 변환).
+func draw_ground(c: CanvasItem) -> void:
+	_draw_backdrop(c)
+	_draw_floor(c)
+
+
+## 매 프레임 바뀌는 것들 — 포탑(포신 방향 · 섬광) · 투사체 · 유닛.
 func draw_world(c: CanvasItem) -> void:
 	if _sim == null:
 		return
-	_draw_backdrop(c)
-	_draw_floor(c)
 	_draw_turrets(c)
 	_draw_projectiles(c)
 	_draw_units(c)
@@ -842,11 +906,24 @@ static func _draw_ellipse_outline(c: CanvasItem, at: Vector2, radii: Vector2,
 
 
 static func _ellipse_points(at: Vector2, radii: Vector2) -> PackedVector2Array:
+	var unit := _unit_circle()
 	var pts := PackedVector2Array()
-	for i in range(24):
-		var a: float = TAU * float(i) / 24.0
-		pts.append(at + Vector2(cos(a) * radii.x, sin(a) * radii.y))
+	pts.resize(unit.size())
+	for i in unit.size():
+		pts[i] = at + unit[i] * radii
 	return pts
+
+
+## 타원 꼭짓점의 단위원 표(24각). 유닛 하나가 타원을 프레임마다 서너 개씩
+## 그리므로 cos · sin 을 매번 다시 구하지 않는다.
+static var _unit_circle_pts: PackedVector2Array = PackedVector2Array()
+
+
+static func _unit_circle() -> PackedVector2Array:
+	if _unit_circle_pts.is_empty():
+		for i in range(24):
+			_unit_circle_pts.append(Vector2.from_angle(TAU * float(i) / 24.0))
+	return _unit_circle_pts
 
 
 # ─── 화면 좌표계 렌더링 (_hud 에 그린다) ─────────────────────────────────────

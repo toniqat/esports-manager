@@ -3,8 +3,8 @@ extends Button
 
 # 런 준비 2단계(`TeamStepView`)의 카드 한 장 — 팀명 · 약칭 · 예산(막대) · 시설 레벨 ·
 # "직접 해야 하는 일" · 설명. **모양의 정본은 `TeamCard.tscn`.** 이 스크립트는 글자,
-# 예산 막대 길이(최고 예산 대비 — 데이터), "없음" 의 초록색(데이터)만 넣는다.
-# 고른 / 안 고른 테두리는 `ChoiceListView._refresh` 가 칠한다.
+# 예산 막대 길이(최고 예산 대비 — 데이터), "없음" 이면 초록 변형 `PositiveLabel` 만 넣는다.
+# 고른 / 안 고른 판(변형 `SelectableCardButton` / `...On`)은 `ChoiceListView._refresh` 가 고른다.
 
 const SCENE_PATH: String = "res://features/meta/run_setup/TeamCard.tscn"
 
@@ -29,8 +29,8 @@ func fill(item: Dictionary, max_budget: int) -> void:
 	var manual: Label = %Manual
 	if labels.is_empty():
 		manual.text = "없음"
-		manual.add_theme_color_override("font_color", OutgameTheme.POSITIVE)
+		manual.theme_type_variation = &"PositiveLabel"
 	else:
 		manual.text = " · ".join(PackedStringArray(labels))
-		manual.remove_theme_color_override("font_color")
+		manual.theme_type_variation = &"BodyLabel"
 	(%Desc as Label).text = String(item.get("desc", ""))

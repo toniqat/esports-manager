@@ -64,7 +64,7 @@ device insets. A node missing from the scene was deleted on purpose — do not r
 ```
 RunResult (Control, full rect, theme = OutgameTheme.tres, script RunResultScreen.gd)
 ├ %Background      ColorRect BG — code: ScreenMetrics.extend_background (up under the notch)
-├ %Header          VBox, top 120: %OutcomeTitle · Rule (amber 80×6) · Gap · %Subtitle · %TestChip
+├ %Header          VBox, top 120: %OutcomeTitle · Rule (amber 80×6) · Gap · %Subtitle · %TestChip (AccentChip 380×42)
 ├ %Scroll          ScrollContainer top 360 → 144 above the bottom (bar space reserved, offset_right 8 = bar off screen)
 │ ├ DragScroll
 │ └ Body (MarginContainer, bottom 28) └ Cards (VBox, separation 28) — each card 920 wide, centred
@@ -76,16 +76,19 @@ RunResult (Control, full rect, theme = OutgameTheme.tres, script RunResultScreen
 │   ├ %GrowthCard      %GrowthRows ← RunResultGrowthRow
 │   └ AchievementCard  %AchievementRows ← RunResultPilotRow · %AchievementEmpty
 ├ %Empty           (hidden) "런 정산" title + empty-state card
-└ %BottomButton    full-width bottom bar button (PrimaryButton, font 32)
+└ %BottomButton    full-width bottom bar button (BarPrimaryButton, font 32)
 ```
 - Cards use local StyleBoxFlat sub_resources (white / amber, radius 24, padding 40 · top 28) — no
   theme variation has that shape yet. Card heights come from the containers.
+- Fixed-colour chips are `PanelContainer`s on the shared pill variations with a centred label:
+  `%TestChip` and the growth row's `MaxLv` = `AccentChip`, the true-end row's `Chip` = `SurfaceChip`
+  (each keeps its size). Chips whose fill is data (MVP / POM, trait sign / rarity) stay code-painted.
 - **Code owns**: texts; data colours (outcome title, row values, MVP / POM chips lit or not, trait
   sign / rarity chip fills via `OutgameTheme.flat_style`); round portraits drawn into the rows'
   `%Portrait` slots (`OutgameTheme.add_round_portrait`, diameter = slot `custom_minimum_size.x`);
-  card / chip visibility; safe area — `indent_to_safe_top(self)`, `%Scroll.offset_bottom` and
-  `%BottomButton.offset_top` lowered by the bottom inset, `OutgameTheme.style_bottom_button`
-  (square corners, text lifted above the inset).
+  card / chip visibility; safe area — `indent_to_safe_top(self)`, `%Scroll.offset_bottom` raised by
+  the bottom inset, `OutgameTheme.fit_bottom_bar(%BottomButton)` (bar rect down over the inset, text
+  lifted above it — the square shape is the `BarPrimaryButton` variation).
 - Header: 런 클리어 (amber) / 런 실패 (red) / 런 포기 (grey), scenario · team, and a
   "테스트 런 — 프로필 미반영" chip when `test_run`.
 - Scroll body (ends 16 above the bottom bar): when `true_endings` is

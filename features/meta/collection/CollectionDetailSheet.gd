@@ -73,7 +73,6 @@ func _ready() -> void:
 	# Sheet is STOP in the scene: taps on its empty parts must not reach the dim.
 	var bust: Control = %Bust
 	_art = PilotThumb.add_rounded_art(bust, Vector2.ZERO, bust.custom_minimum_size, 20)
-	(%Bonus as Label).add_theme_color_override("font_color", OutgameTheme.POSITIVE)
 	for i in PlayerData.STAT_KEYS.size() + 1:       # six stats + 종합
 		var chip: Panel = STAT_CHIP_SCENE.instantiate()
 		%StatGrid.add_child(chip)

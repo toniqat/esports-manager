@@ -55,11 +55,6 @@ const PICK_EXIT_PAD: float = 40.0
 # `PilotImages.BUST_ASPECT`(0.496)와 같다. 둘 중 하나만 바꾸면 얼굴이 찌그러진다.
 const SLOT_COUNT: int = 5
 
-const FILTER_BG_ON  := OutgameTheme.ACCENT_DIM
-const FILTER_BG_OFF := OutgameTheme.SURFACE
-const FILTER_BORDER_ON  := OutgameTheme.ACCENT
-const FILTER_BORDER_OFF := OutgameTheme.BORDER
-
 # ─── 연출 ────────────────────────────────────────────────────────────────────
 const MODE_ANIM_SEC: float = 0.38
 
@@ -97,7 +92,7 @@ var _detail: DraftDetailPanel
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_PASS
-	RunSetupScreen.fit_insets(_safe, %Bar)
+	OutgameTheme.fit_bottom_bar(%Bar, _safe)
 	_bind_slots()
 	_bind_filters()
 	_fill_grid()
@@ -428,9 +423,5 @@ func _apply_filter_styles() -> void:
 	for i in _filter_btns.size():
 		var role: int = -1 if i == 0 else int(TeamDraft.SLOT_ROLES[i - 1])
 		var on: bool = role == _filter_role
-		var sty := OutgameTheme.flat_style(
-				FILTER_BG_ON if on else FILTER_BG_OFF, 8,
-				FILTER_BORDER_ON if on else FILTER_BORDER_OFF, 3 if on else 2)
-		var btn: Button = _filter_btns[i]
-		for st in ["normal", "hover", "pressed", "focus"]:
-			btn.add_theme_stylebox_override(st, sty)
+		(_filter_btns[i] as Button).theme_type_variation = \
+				&"SelectableTileOn" if on else &"SelectableTile"

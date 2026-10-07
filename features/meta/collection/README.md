@@ -28,7 +28,7 @@ CollectionTab (Control, theme = OutgameTheme.tres, preview 1080×1696)
   │   │     right (anchored): LevelupTitle · %Levelup (AccentLabel 40) │ ShardTitle · %Shards (BodyLabel 40)
   │   └ %Filters (HBox 8, h 64) ─ 전체 · 탑 · 정글 · 미드 · 원딜 · 서폿 (GhostButton 26, stretch)
   └ %Scroll (v-mode Never: no bar, DragScroll drags) ─ DragScroll · Body (VBox)
-      ├ %LoadError (hidden; Margin 24 / 20) ─ %LoadErrorText
+      ├ %LoadError (hidden; Margin 24 / 20) ─ %LoadErrorText (`NegativeLabel` 24)
       └ GridPad (bottom 24) ─ %Grid (GridContainer 4 cols, 16 / 16, shrink-centre)
 ```
 - **Code owns only data**: summary numbers, `%OwnedFill.anchor_right` = owned ratio, the filter on / off
@@ -62,7 +62,7 @@ CollectionDetailSheet (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 
         │   └ %Body (VBox, separation 32 = gap between sections)
         │     ├ Hero (HBox 28): %Bust (230×464, %BustPlate) │ Info VBox:
         │     │   TitleBlock (%Name, %RoleLine) · %Chips · gap · %ExpBlock (%ExpValue, %ExpTrack `ProgressTrack` / %ExpFill `ProgressFill`)
-        │     │   | %UnownedBlock · gap · SalaryRow (%SalaryTitle, %Salary) · %BonusRow (%Bonus)
+        │     │   | %UnownedBlock · gap · SalaryRow (%SalaryTitle, %Salary) · %BonusRow (%Bonus `PositiveLabel` 30)
         │     ├ StatsSection: header (%StatsTitle + Divider) · %StatGrid (4 cols, 12) · %StatNote
         │     ├ BtSection: header · %BtRows (VBox 10) · %BtAfter (%BtAfterLabel) | %BtEmpty
         │     └ CardsSection: header (%CardsTitle) · %Cards (VBox 12) · BottomPad 16

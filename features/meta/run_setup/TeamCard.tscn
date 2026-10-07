@@ -4,13 +4,14 @@
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="TeamCard" type="Button"]
-editor_description = "One team-package card (step 2). The whole card is the tap target; selected / not frame = state → code (ChoiceListView._refresh). Height 300 = 26 + 50 + 10 + 37 + 11 + 31 + 1 + 37 + 9 + desc 72 + 16 (37 / 31 = the 26px / 22px label line heights)."
+editor_description = "One team-package card (step 2). The whole card is the tap target; selected / not = variation SelectableCardButton / SelectableCardButtonOn, switched by code (ChoiceListView._refresh). Height 300 = 26 + 50 + 10 + 37 + 11 + 31 + 1 + 37 + 9 + desc 72 + 16 (37 / 31 = the 26px / 22px label line heights)."
 custom_minimum_size = Vector2(0, 300)
 offset_right = 1032.0
 offset_bottom = 300.0
 focus_mode = 0
 mouse_filter = 1
 theme = ExtResource("2_theme")
+theme_type_variation = &"SelectableCardButton"
 script = ExtResource("1_card")
 
 [node name="Pad" type="MarginContainer" parent="."]
@@ -141,10 +142,11 @@ mouse_filter = 2
 
 [node name="Manual" type="Label" parent="Pad/VBox"]
 unique_name_in_owner = true
-editor_description = "Empty list = '없음' in POSITIVE (data colour, code)."
+editor_description = "Empty list = '없음' → code switches the variation to PositiveLabel (font size stays 26 = FONT_BODY)."
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 26
 text = "훈련 편성 · 메크 숙련도"
 clip_text = true
 

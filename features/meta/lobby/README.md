@@ -146,10 +146,20 @@ profile**; changing it later is only via prestige (M9).
   `cancelled`. Open / close toggles the layer's `visible`; nodes are reused (the 감독 tab keeps one instance).
 - **The `.tscn` is the source of truth for layout and style.** Tree: CanvasLayer 20 → `Root` (full rect,
   **`theme = OutgameTheme.tres`**) → `%Dim` (flat Button) · `DimRect` (`DimPanel`) · `%SafeArea`
-  (CenterContainer) → `Card` (`PopupCard`, 920 wide, STOP) → `VBox` → `%Title` (`TitleLabel`) · `Gap1` ·
-  `%Sub` (`CaptionLabel`, autowrap, min 66) · `%Note` (`AccentLabel`) · `Gap2` · `%Options` (VBox, sep 20;
-  two preview `ManagerTypeOption` instances) · `Gap3` · `Buttons` (`%Cancel` `GhostButton` : `%Confirm`
+  (plain Control, full rect) → `%Center` (CenterContainer, full rect, offsets 40 / −40 = the margin the card
+  keeps from the safe edges) → `%Card` (`PopupCard`, 920 wide, STOP) → `VBox` → `%Title` (`TitleLabel`) · `Gap1` ·
+  `%Sub` (`CaptionLabel`, autowrap, min 66) · `%Note` (`AccentLabel`) · `Gap2` · `%Scroll` (ScrollContainer,
+  horizontal off, + `DragScroll`) → `%Body` (VBox) → `%Options` (VBox, sep 20; two preview
+  `ManagerTypeOption` instances) · `Gap3` · `Buttons` (`%Cancel` `GhostButton` : `%Confirm`
   `PrimaryButton` + font size 30 override = stretch 1 : 2).
+- **Tall content scrolls, the frame doesn't** (`_fit_body`): the card is centred in `%Center` while it fits;
+  `%Scroll`'s min height = the option list's height, capped at `%Center`'s height (from its anchors / offsets)
+  minus everything else on the card. Past the cap only the option list scrolls — title, texts and buttons stay
+  fixed, the confirm button stays above the gesture zone. Re-fit on every `open()` and whenever `%Card`'s minimum
+  size changes (wrapped labels settle after the first layout pass) — one deferred refit per frame. When the
+  scroll bar shows, the card widens by its width (the options' min width already fills the card). A release that
+  ended a scroll drag is not a pick (`_on_option_tapped` checks `DragScroll.moved`). Normal data never reaches
+  the cap — pixel-identical to the old `CenterContainer` frame.
 - `ManagerTypeOption.tscn` (item scene, min 824 × 268, root variation `SelectableCard`): `Margin` (28 / 20 / 28) → `VBox` → `Header`
   (`%Name` `BodyLabel` 32 + `%Chip` 90 × 36, centred) · `Gap1` · `%Desc` (`CaptionLabel` 21, autowrap, min 60) ·
   `Gap2` · `StatsMargin` (4 / 4) → `%Stats` (HBox sep 8, min 104) → `Stat0..5` (`SunkPanel`, key
@@ -159,7 +169,8 @@ profile**; changing it later is only via prestige (M9).
   to match `manager_types()`); the **selection** (`set_selected` switches the root variation
   `SelectableCard` ↔ `SelectableCardOn` — both padding 0, the scene's `Margin` pads, so the border width never
   shifts content); the `현재` chip pill (`SURFACE_SUNK`, no variation — `OutgameTheme.flat_style`); `%Cancel.visible` = prestige mode; `%Confirm` disabled / text;
-  `%SafeArea` offsets = `ScreenMetrics.top_y()` / `bottom_y()` on every `open()`; `%Dim` haptics muted in
+  `%SafeArea` offsets = `ScreenMetrics.top_y()` / `bottom_y()` on every `open()`; `%Scroll` min height
+  (`_fit_body`); `%Dim` haptics muted in
   first-lobby mode (the tap does nothing there) and restored in prestige mode.
 - Not dismissible in first-lobby mode: `%Dim` swallows taps (its `pressed` → `cancel()`, a no-op outside
   prestige mode), `%Cancel` is hidden.

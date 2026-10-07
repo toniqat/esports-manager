@@ -6,11 +6,14 @@ extends CanvasLayer
 #   open_rates(pool)      the pool's rate table (one `ShopRateRow` per rarity: %, item count, per-item %)
 #
 # **Layout lives in `ShopPopup.tscn`** (+ the two item scenes). Pattern C of
-# `docs/mobile_safe_area.md` (same as `ConfirmPopup`): `%Dim` is a flat full-rect Button
-# (tap = close), the `PopupCard` sits in `%SafeArea` (CenterContainer) and is STOP so taps on
-# it don't close it. Code owns only: texts, the grid's column count, instancing the items,
-# rarity colours (data-driven), and the safe-area offsets. Open / close = `visible` toggle —
-# the nodes are reused.
+# `docs/mobile_safe_area.md`: `%Dim` is a flat full-rect Button (tap = close), the `PopupCard`
+# is centred in `%Center` (CenterContainer = `%SafeArea` minus the scene's top / bottom margin)
+# and is STOP so taps on it don't close it. The variable body (reveal grid / rates table) sits
+# in `%Scroll` (+ `DragScroll`): while the card fits `%Center` the scroll is exactly the body's
+# height (no scrolling); past that it is capped and the body scrolls — title and `%Ok` stay put.
+# Code owns only: texts, the grid's column count, instancing the items, rarity colours
+# (data-driven), the safe-area offsets and the scroll's height (`_fit_body`).
+# Open / close = `visible` toggle — the nodes are reused.
 # Also owns the shop's small display tables (rarity colours, currency labels).
 
 signal closed
@@ -27,6 +30,8 @@ const CURRENCY_LABELS: Dictionary = {
 	"premium": "유료 재화", "pilot_shard": "선수 파편",
 }
 
+var _fit_queued: bool = false
+
 ## Instances the scene. `ShopPopup.new()` is an empty CanvasLayer — don't use it.
 static func create() -> ShopPopup:
 	# 씬 루트는 visible 로 저장한다(에디터에서 보이도록) — 닫힌 상태로 시작하는 건 여기서.
@@ -38,6 +43,11 @@ static func create() -> ShopPopup:
 func _ready() -> void:
 	%Dim.pressed.connect(close)
 	%Ok.pressed.connect(close)
+	# 손가락 / 마우스로 끌어 굴린다(`DragScroll`) — 본문이 안전 영역보다 길 때만 굴러간다.
+	DragScroll.attach(%Scroll)
+	# 줄바꿈 라벨은 첫 배치 뒤에야 높이가 정해진다 — 카드 최소 크기가 바뀔 때마다 다시 맞춘다.
+	(%Card as Control).minimum_size_changed.connect(_queue_fit)
+	(%SafeArea as Control).resized.connect(_queue_fit)
 	if UiPreview.is_standalone(self):
 		_fill_preview()
 
@@ -118,6 +128,8 @@ func _show(title: String, reveal: bool) -> void:
 	%Grid.visible = reveal
 	%Rates.visible = not reveal
 	_fit_safe_area()
+	_fit_body()
+	(%Scroll as ScrollContainer).scroll_vertical = 0
 	visible = true
 
 
@@ -135,6 +147,30 @@ func _fit_safe_area() -> void:
 	var safe: Control = %SafeArea
 	safe.offset_top = ScreenMetrics.top_y()
 	safe.offset_bottom = ScreenMetrics.bottom_y() - ScreenMetrics.viewport_size().y
+
+
+## **The card stays centred while it fits, then is capped** — `%Center` (the safe area minus
+## the scene's margins) is the most height it may take. Everything but `%Scroll` (title, gaps,
+## `%Ok`) keeps its height; `%Scroll` gets the body's full height, or only what is left when
+## that is too much — then the body scrolls.
+func _fit_body() -> void:
+	_fit_queued = false
+	var scroll: ScrollContainer = %Scroll
+	var center: Control = %Center
+	# Room from anchors / offsets — `center.size` may still be inflated by the previous content
+	# (a container never shrinks below its minimum size).
+	var room: float = (%SafeArea as Control).size.y - center.offset_top + center.offset_bottom
+	var chrome: float = (%Card as Control).get_combined_minimum_size().y 			- scroll.get_combined_minimum_size().y
+	var want: float = (%Body as Control).get_combined_minimum_size().y + scroll.get_minimum_size().y
+	scroll.custom_minimum_size.y = minf(want, maxf(0.0, room - chrome))
+
+
+## One refit per frame, after the containers have laid the new content out.
+func _queue_fit() -> void:
+	if _fit_queued or not visible:
+		return
+	_fit_queued = true
+	_fit_body.call_deferred()
 
 
 ## F6 단독 실행 미리보기 — 10회 영입 결과판(NEW · 돌파 · 파편 · 재료가 섞인)

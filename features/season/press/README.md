@@ -13,32 +13,52 @@ HubView "이번 주 시작 →"  →  PRESS  →  (pick an answer)  →  TRAININ
 | `PressConferenceView.gd` | `class_name PressConferenceView extends Control` — the screen: draws this week's `MentalSystem.press_session` in a `MessengerView`, applies the answer with `MentalSystem.resolve_press`, then `SeasonHub.on_press_finished()` |
 | `PressConferenceView.tscn` | The screen scene: root (theme `OutgameTheme.tres`, PASS) + one `MessengerView.tscn` instance `%Messenger` whose `outcome_hint` is set in the scene (`화면을 눌러 계속`). Created by `SeasonHub` with `PressConferenceView.create()` |
 | `MessengerView.gd` | `class_name MessengerView extends Control` — **shared messenger dialogue** (press conference here; interview / outing / incident overlays on the week screen). Create with `MessengerView.create()` (`.new()` is an empty Control). API: `open(sub, title, portrait, lines, choices)` → signal `choice_picked(idx)` → `show_result(outcome)` / `show_outcome(reply_lines, notes, verdict)` → signal `closed`. `reveal_all()` shows every remaining line + the choices at once (previews / harnesses). `@export outcome_hint` = bottom hint after the outcome. Line grammar: plain = left speaker, `>text` = manager (right), `*text` = narration (see `features/season/mental/README.md`). |
-| `MessengerView.tscn` | The **frame** (below). The chat log itself stays code-built under `%Body` |
+| `MessengerView.tscn` | The **frame** (below): header, scroll, `%Log` column, `%Answers` block, hint |
+| `MessengerNpcBubble.tscn` / `.gd` | Item — one line of the other side (left): portrait slot (`%Portrait` + `%Glyph`), tail (`%Wedge`), white bubble (`%Bubble` → `Pad` → `%Text`). `create()` + `setup(text, portrait, with_portrait)` — follow-up lines hide portrait + tail but keep their columns |
+| `MessengerPlayerBubble.tscn` / `.gd` | Item — one manager line (right): amber `%Bubble` + tail. `create()` + `setup(text)` |
+| `MessengerNarration.tscn` | Item (no script) — centred `*narration` line; code sets `%Text` |
+| `MessengerNoteChip.tscn` / `.gd` | Item — centred effect / verdict pill. `create()` + `setup(text, good)`; scene = good look (`AccentChip` + `AccentLabel`), bad = `variation_box("AccentChip")` copy with `SURFACE_SUNK` + `CaptionLabel` |
+| `MessengerAnswerButton.tscn` | Item (no script) — one answer choice (`GhostButton` 26, 640 wide, ≥ 96 tall, right-aligned, autowrap); code sets text + `pressed` |
+| `MessengerWedge.gd` | `@tool` `_draw` widget — bubble tail. `@export point_left`, `@export_node_path bubble` (tail colour = that bubble's `panel` stylebox fill); the base overlaps the bubble by `OVERLAP` 1 px |
+| `MessengerReporterGlyph.gd` | `@tool` `_draw` widget — reporter microphone placeholder over the portrait slot (no portrait texture) |
 
 **F6 preview** — both scenes fill dummy data when run alone (`resources/UiPreview.gd`), all lines revealed
 at once with `MessengerView.reveal_all()` (preview / harness API) so the answers show:
 `PressConferenceView` = this week's real question of an in-memory run; `MessengerView` = a hand-written
 conference (reporter · narration · manager lines, three answers; picking one shows sample result chips).
+The item scenes preview alone too: `MessengerNpcBubble` (mic portrait + 3-line bubble), `MessengerPlayerBubble`
+(2-line answer), `MessengerNoteChip` (failed-check chip); the script-less items show their baked sample text.
 
 ### `MessengerView.tscn` — what the scene owns / what code owns
 
 ```
 MessengerView (Control, full rect, STOP, theme OutgameTheme.tres)
-├ %Background   ColorRect BG, full rect — code: ScreenMetrics.extend_background (notch band)
+├ %Background   Panel "ScreenBackground", full rect — code: ScreenMetrics.extend_background (notch band)
 └ %SafeArea     full rect — code: offset_bottom = −bottom inset (bottom edge = safe_h())
   ├ %Sub        CaptionLabel 24, clip            y 36
   ├ %Title      HeadingLabel                      y 72
   ├ Divider     HSeparator "Divider"              y 160
   ├ %Scroll     ScrollContainer PASS, y 190 → bottom −64, anchors_preset −1 (grows right only)
-  │ └ %Body     Control PASS, min width 1080 — bubbles / wedges / narration / note chips /
-  │             answer buttons are placed here by code (heights measured from the text)
+  │ └ %Body     VBox PASS, separation 0, min width 1080 (code: = viewport width)
+  │   ├ %Log    VBox separation 0 — code appends item scenes (one per line, each owns its gap below)
+  │   └ %Answers  MarginContainer (top 10 · right 40 · bottom 14), hidden unless choosing
+  │     └ %AnswerList  VBox separation 14 — code adds MessengerAnswerButtons
   └ %Hint       FaintLabel, centred, bottom −50 … −22 (grows down to its 31 px min height)
 ```
 
-* **Scene**: frame positions, fonts (variations), the sample texts. **Code**: device insets,
-  the whole chat log (`_add_*`, `_show_choices`), the tap state machine, `DragScroll.attach(%Scroll)`.
-* Bubble colours (`SURFACE` + border / `ACCENT`), the wedge, the reporter glyph and note-chip tints
-  are data-dependent drawing → `OutgameTheme.flat_style` / `add_chip` / `_draw` in code.
+* **Scene** (frame + item scenes): positions, margins, bubble widths (NPC 700 · manager 640 · answers 640),
+  paddings (26 / 20), gaps (bubble 18, note 10, answers 14), fonts (variations), sample texts.
+  **Heights come from the containers** (wrapped text), no pixel maths.
+  **Code**: device insets, which item to append per line, the tap state machine, `DragScroll.attach(%Scroll)`,
+  the round portrait (`OutgameTheme.add_round_portrait` into `%Portrait`), the failed-note tint.
+* Item layout (1080 wide): NPC = margin left 40 · portrait column 96 · gap 8 · tail column 18
+  (margin top 26) · bubble 700 → bubble x 162, tail drawn from x 145. Manager = row aligned right,
+  margin right 22 · tail column 18 (margin top 24) → bubble 400 … 1040, tail from 1039.
+  Tail columns are `z_index` 1 so the tail covers the bubble border where they join.
+* **Bubble looks are stand-ins** until the messenger variations exist in `OutgameTheme`:
+  NPC bubble `SelectableCard` (r18, 2 px border; was r22, 1 px), manager bubble `ProgressFill`
+  (r7; was r22). Both have no padding — the `Pad` MarginContainer holds it, so swapping in
+  the dedicated variations is a name change only.
 * `%Scroll` and `%Hint` use `anchors_preset = -1` on purpose: a preset re-applies its grow
   directions on load, so the overflowing log would shift left by half the scroll bar and the
   hint (min height 31 > 28) would grow upward. Keep them custom when editing.
@@ -84,14 +104,14 @@ reopening the screen in the same week shows the same question and a second answe
 Generic questions move whole-team trust (`trust_all`) or add a temporary manager-stat mod (`smod`);
 `mention=mvp|worst` questions name a pilot from the last own match and move that pilot's trust.
 
-Reporter portrait: still the microphone drawn by `MessengerView._draw_reporter_glyph` (passed as
+Reporter portrait: still the microphone drawn by `MessengerReporterGlyph` (`%Glyph` in `MessengerNpcBubble`) (passed as
 `portrait = null`). When reporter art exists, pass the texture to `open()`.
 
 ## Implementation notes (all in `MessengerView`)
 
-* **The bubble tail is drawn by a dedicated `Control` with no children** (`_add_wedge`).
-  A Control's `_draw` runs **before** its children, so putting it inside the bubble `Panel` would
-  put it under the text.
+* **The bubble tail is a dedicated childless `_draw` widget** (`MessengerWedge`) in its own column
+  next to the bubble, not inside it — a Control's `_draw` runs **before** its children (inside the
+  bubble it would be under the text), and a container would lay it out over the text.
 * **Taps are received by the screen itself (`gui_input`), but on *release*, not on press.**
   The `DragScroll` that `OutgameTheme.add_vscroll` attaches swallows **presses** inside the scroll
   with `accept_event()` (so it doesn't double up with the engine's touch drag). Back when it reacted
@@ -114,11 +134,13 @@ Reporter portrait: still the microphone drawn by `MessengerView._draw_reporter_g
   through it). `MessengerView.create()` gives the full rect from the scene; never `.new()` it.
 * The root is `MOUSE_FILTER_STOP`, so a copy laid over another screen (the week screen's
   interview / incident overlay) blocks everything underneath, including that screen's bottom bar.
-* The height of wrapped text is not measured by standing up a `Label`; **the font is asked
-  directly** (`_text_block_height`) — a label just created for measuring has size 0 in that frame.
+* Line heights come from the containers (autowrapped `Label` in fixed-width bubbles). Scroll to the
+  bottom waits one frame (the new item is laid out at the end of the frame) and sets the scroll to
+  the bar's `max_value` (clamped to the end). A standalone item root (F6) first grows to the height
+  of its text at width 0 and does not shrink — the bubble previews `reset_size()` a frame later.
 * `PressConferenceView.ensure_view()` re-opens the messenger every time (`_restart`) with this
   week's session. `_built` guards only the skeleton.
 * The messenger never indents itself — the owning screen calls `ScreenMetrics.indent_to_safe_top`;
   the messenger's `%Background` is extended into the notch band (`ScreenMetrics.extend_background`)
   and `%SafeArea` ends on the safe bottom, so the bottom hint sits at `safe_h() - 50`. All colours
-  come from `OutgameTheme` (scene variations, or code for the data-dependent bubble colours).
+  come from `OutgameTheme` variations (code only for the failed-note tint copy).

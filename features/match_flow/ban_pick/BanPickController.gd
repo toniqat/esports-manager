@@ -2312,7 +2312,7 @@ func _open_mech_detail(mech_id: int, side: int, seat: int) -> void:
 	if m == null:
 		return
 	if _mech_detail == null:
-		_mech_detail = MechDetailPanel.new()
+		_mech_detail = MechDetailPanel.create()
 		add_child(_mech_detail)
 	_close_detail_panels()
 	_mech_detail.open(m, _mastery_rows(side, mech_id, seat), _quirk_rows(side, mech_id, seat))

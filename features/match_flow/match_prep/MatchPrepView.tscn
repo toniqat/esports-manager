@@ -1,0 +1,152 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://features/match_flow/match_prep/MatchPrepView.gd" id="1_view"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="MatchPrepView" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_view")
+
+[node name="Paper" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.96, 0.96, 0.968, 1)
+
+[node name="Safe" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="Safe"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 40.0
+offset_top = 24.0
+offset_right = -40.0
+offset_bottom = 84.0
+grow_horizontal = 2
+theme_type_variation = &"HeadingLabel"
+theme_override_font_sizes/font_size = 48
+text = "경기 준비"
+horizontal_alignment = 1
+
+[node name="Matchup" type="Label" parent="Safe"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 40.0
+offset_top = 86.0
+offset_right = -40.0
+offset_bottom = 120.0
+grow_horizontal = 2
+theme_type_variation = &"SubLabel"
+text = "내 팀  vs  상대 팀"
+horizontal_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="Safe"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = 136.0
+offset_right = -40.0
+offset_bottom = -140.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 0
+
+[node name="Body" type="VBoxContainer" parent="Safe/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="EnemyHead" type="Control" parent="Safe/Scroll/Body"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="EnemyTitle" type="Label" parent="Safe/Scroll/Body/EnemyHead"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 38.0
+grow_horizontal = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 28
+text = "상대 팀 · 팀 이름"
+
+[node name="EnemyIntel" type="Control" parent="Safe/Scroll/Body"]
+unique_name_in_owner = true
+editor_description = "상대 팀 정찰 내용 — IntelView(리그 팀 상세와 공용)가 분석 단계 칩 · 분석 메모 · 선수 행 다섯 줄을 그리고 높이를 최소 높이로 준다."
+custom_minimum_size = Vector2(0, 560)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Gap2" type="Control" parent="Safe/Scroll/Body"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="OwnHead" type="Control" parent="Safe/Scroll/Body"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="OwnTitle" type="Label" parent="Safe/Scroll/Body/OwnHead"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 38.0
+grow_horizontal = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 28
+text = "내 팀 · 팀 이름"
+
+[node name="OwnIntel" type="Control" parent="Safe/Scroll/Body"]
+unique_name_in_owner = true
+editor_description = "내 팀 — IntelView 가 선수 행 다섯 줄을 언제나 전부 공개(3단계)로 그린다."
+custom_minimum_size = Vector2(0, 700)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="BottomPad" type="Control" parent="Safe/Scroll/Body"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Start" type="Button" parent="Safe"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -128.0
+grow_horizontal = 2
+grow_vertical = 0
+focus_mode = 0
+theme_type_variation = &"PrimaryButton"
+text = "경기 시작"

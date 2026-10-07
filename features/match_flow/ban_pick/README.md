@@ -274,6 +274,43 @@ quirks yet.
 
 ---
 
+## MechDetailPanel (`.tscn`)
+
+The assignment step's mech detail popup. **Layout is owned by `MechDetailPanel.tscn`**
+(`docs/ui_scene_migration.md` §3); the script only binds `%` nodes, fills them and adds the
+per-mech repeated rows. Created once with `MechDetailPanel.create()` (never `.new()` — that is an
+empty layer); `open(m, mastery_rows, quirk_info)` refills and shows it, `close()` hides it (nodes are
+reused). Scene root saved visible, `create()` hides it.
+
+```
+MechDetailPanel (CanvasLayer 20)
+└ %Root (full rect, OutgameTheme.tres)
+  ├ %Dim (flat Button, tap = close) · DimRect (ColorRect, black 0.88)
+  ├ %ArtPlaceholder (grey slab + %ArtName, shown when no art) · %Art (TextureRect, keep-aspect box)
+  ├ Backdrop (Panel, local dark StyleBox)
+  ├ %Scroll → Body (VBox)
+  │   Header (%Name · %Sub) · StatsTitle · Stats (3 chips anchored at thirds: %HpValue %AtkValue %PresenceValue)
+  │   %MasteryBlock (title + %MasteryRows ← MechMasteryRow.tscn)
+  │   %QuirkBlock (%QuirkTitle · %QuirkEmpty · %QuirkRows ← MechQuirkRow.tscn)
+  │   PassiveTitle · %NoPassive | %PassiveBox (%PassiveName · %PassiveKw · %PassiveDesc)
+  │   CardsTitle · %NoCards | %CardsBox (note · %CardGrid 3 cols ← MechCardCell.tscn)
+  └ %Close (local dark StyleBox)
+```
+
+| File | Role |
+|---|---|
+| `MechDetailPanel.gd/.tscn` | The popup. Code-owned colours: role colour (`%Sub`) only |
+| `MechMasteryRow.gd/.tscn` | One mastery row (name 46% · tier 32% · bonus 22%); tier colour / ▶ brightness from data |
+| `MechQuirkRow.gd/.tscn` | One quirk: grade-coloured name + autowrapped effect (indent 14); dimmed when inactive |
+| `MechCardCell.gd/.tscn` | One card cell: `Card.tscn` instance at 0.8, transparent `%Hit` (PASS — keeps drag scroll), count badge. `tapped(card)` → panel shows `CardDescBox` above the card |
+
+**Dark modal — no theme variation fits** (the shared variations are white-paper). The backdrop,
+chips and close button use local StyleBoxes in the scene, and label colours are local overrides.
+Quirk effect lines are plain autowrapped labels now (the old code estimated line counts with the
+fallback font and could overrun the panel edge).
+
+---
+
 ## Grid scrolling — why mech cells are `MOUSE_FILTER_PASS`
 
 The `Button` in `_build_mech_cell` has its filter **lowered to PASS** (default is STOP).

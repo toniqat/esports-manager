@@ -1,0 +1,37 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://features/match_flow/ban_pick/MechQuirkRow.gd" id="1_row"]
+
+[node name="MechQuirkRow" type="VBoxContainer"]
+offset_right = 416.0
+offset_bottom = 70.0
+mouse_filter = 2
+theme_override_constants/separation = 0
+script = ExtResource("1_row")
+
+[node name="QuirkName" type="Label" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.7, 1, 1)
+theme_override_font_sizes/font_size = 21
+text = "기벽 이름  · 영웅"
+clip_text = true
+
+[node name="EffectPad" type="MarginContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 14
+
+[node name="Effect" type="Label" parent="EffectPad"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.74, 0.8, 1)
+theme_override_font_sizes/font_size = 18
+text = "효과 문장 — 길면 줄바꿈된다"
+autowrap_mode = 3
+
+[node name="Gap" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+mouse_filter = 2

@@ -4,9 +4,28 @@ MatchFlow's first step (`LOAD → PREP → BAN_PICK`). Contract: `docs/outgame_d
 
 | File | Role |
 |---|---|
-| `MatchPrepController.gd` | PREP screen. White outgame paper (`OutgameTheme`), title centred (the editor-only cheat button sits top-left), a vertical scroll with **opponent on top** (same side as ban/pick) and own team below, bottom bar `경기 시작` → `phase_finished` (pre-ban-pick autosave in `MatchFlow`). `enter(player_roster, enemy_roster, player_name, enemy_name)` is unchanged |
+| `MatchPrepController.gd` | PREP step. `enter(player_roster, enemy_roster, player_name, enemy_name)` creates `MatchPrepView` under `_mf.canvas`, fills it; its `start_pressed` → frees the view → `phase_finished` (pre-ban-pick autosave in `MatchFlow`) |
+| `MatchPrepView.gd` · `.tscn` | `class_name MatchPrepView` — the PREP screen. **Layout is owned by the scene** (tree below). White outgame paper, title centred (the editor-only cheat button sits top-left), a vertical scroll with **opponent on top** (same side as ban/pick) and own team below, bottom bar `경기 시작`. `create()` · `fill(state, player_roster, enemy_roster, player_name, enemy_name)` · signal `start_pressed` |
 | `OpponentIntel.gd` | `class_name OpponentIntel` (static). **The single reveal rule** — `build(state, roster, is_own)` returns rows + analyst notes as data; `tier_for`, `threshold_of`, `team_roster(state, team_id)` (league `all_pilots` / INTL `intl_pilots`), `mech_name` |
 | `IntelView.gd` | `class_name IntelView` (static). Draws a `build()` result: `add_tier_header`, `add_analyst_note`, `add_rows` / `add_pilot_row`. Shared with the league team detail (`features/season/league/LeagueView.gd`) |
+
+## PREP screen scene (`MatchPrepView.tscn`)
+```
+MatchPrepView (Control full rect, OutgameTheme.tres)
+├ Paper (ColorRect BG, full viewport — also covers the notch strip)
+└ %Safe (full rect; code: offset_top = top inset, offset_bottom = −bottom inset)
+  ├ Title "경기 준비" (HeadingLabel 48) · %Matchup (SubLabel)
+  ├ %Scroll (40 side margin, top 136, bottom = bar + 12) → Body (VBox)
+  │   EnemyHead/%EnemyTitle · %EnemyIntel · Gap · OwnHead/%OwnTitle · %OwnIntel · BottomPad
+  └ %Start (bottom-anchored, 128 high, PrimaryButton)
+```
+- Code-owned: the safe-area offsets, the bottom-bar look (`OutgameTheme.style_bottom_button` — square
+  corners, bottom margin = device inset; `%Start.offset_bottom` = inset so the bar reaches the screen
+  bottom), and the two `*Intel` holders — `IntelView` (shared with the league team detail, absolute
+  coordinates) draws into them and their minimum height is the height it used. Row width =
+  scroll width − 16 (`SCROLLBAR_ROOM`).
+- The scroll bar now sits at the scroll's own right edge (inside the 40px margin); the old code-built
+  body was 1000 wide, which pushed the bar ~8px further right.
 
 ## Reveal tiers
 `StaffSystem.analysis_tier(state)` (thresholds `ANALYSIS_TIER_1..3`, const.csv):

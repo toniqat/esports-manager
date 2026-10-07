@@ -1,0 +1,41 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://features/match_flow/ban_pick/MechCardCell.gd" id="1_cell"]
+[ext_resource type="PackedScene" uid="uid://bxhvekawvf1gg" path="res://scenes/Card.tscn" id="2_card"]
+
+[node name="MechCardCell" type="Control"]
+custom_minimum_size = Vector2(128, 200)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 128.0
+offset_bottom = 200.0
+mouse_filter = 2
+script = ExtResource("1_cell")
+
+[node name="Card" parent="." instance=ExtResource("2_card")]
+unique_name_in_owner = true
+layout_mode = 0
+scale = Vector2(0.8, 0.8)
+mouse_filter = 2
+
+[node name="Hit" type="Button" parent="."]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0)
+layout_mode = 0
+offset_right = 128.0
+offset_bottom = 176.0
+focus_mode = 0
+mouse_filter = 1
+flat = true
+
+[node name="Badge" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_top = 178.0
+offset_right = 128.0
+offset_bottom = 202.0
+theme_override_colors/font_color = Color(0.92, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 17
+text = "×1"
+horizontal_alignment = 1
+clip_text = true

@@ -19,9 +19,15 @@ extends Control
 # Line grammar (same as mental_events.csv): plain = left speaker, `>text` =
 # manager bubble on the right, `*text` = centred narration.
 #
+# **The frame lives in `MessengerView.tscn`** (background, sub / title, divider, the
+# scroll and the bottom hint — edit them in the editor; styles are `OutgameTheme.tres`
+# variations). The chat log itself — bubbles, wedges, narration, note chips and answer
+# buttons — is still placed by code under `%Body`: each line's height is measured from
+# its text. Create with `MessengerView.create()` (`.new()` is an empty Control).
+#
 # The view never indents itself — its parent screen already sits on the safe
-# top (`ScreenMetrics.indent_to_safe_top`); it fills the parent and paints its
-# own background (`OutgameTheme.add_background`).
+# top (`ScreenMetrics.indent_to_safe_top`); it fills the parent, extends its
+# `%Background` into the notch band and lifts `%SafeArea`'s bottom by the bottom inset.
 #
 # Taps are received by this view on **release** (see press/README.md
 # "Implementation notes"): `DragScroll` swallows presses inside the scroll, and
@@ -46,12 +52,13 @@ const NOTE_H: float        = 46.0
 const ANSWER_FONT: int     = 26
 const ANSWER_H: float      = 96.0
 const ANSWER_GAP: float    = 14.0
-const BODY_TOP: float      = 190.0
+
+const SCENE_PATH: String = "res://features/season/press/MessengerView.tscn"
 
 enum Stage { LINES, CHOICES, OUTCOME, DONE }
 
 ## Bottom hint once the outcome is shown (the press screen moves on instead of closing).
-var outcome_hint: String = "화면을 눌러 닫기"
+@export var outcome_hint: String = "화면을 눌러 닫기"
 
 var _portrait: Texture2D = null      # null → reporter microphone glyph
 var _lines: Array = []
@@ -59,13 +66,12 @@ var _choices: Array = []
 var _shown: int = 0
 var _stage: int = Stage.DONE
 var _last_side: String = ""          # "npc" / "me" / "narr" — portrait only when the speaker changes
-var _built: bool = false
 
-var _title_lbl: Label
-var _sub_lbl: Label
-var _hint_lbl: Label
-var _body: Control
-var _scroll: ScrollContainer
+@onready var _title_lbl: Label = %Title
+@onready var _sub_lbl: Label = %Sub
+@onready var _hint_lbl: Label = %Hint
+@onready var _body: Control = %Body
+@onready var _scroll: ScrollContainer = %Scroll
 var _drag: DragScroll
 var _body_y: float = 0.0
 var _press_outside_scroll: bool = false
@@ -73,50 +79,25 @@ var _answer_holder: Control
 var _picked_frame: int = -1         # process frame of the answer tap (its release is not a tap)
 
 
+## Instantiates the scene. Load (not preload) — preloading its own scene is a
+## script ↔ scene cycle.
+static func create() -> MessengerView:
+	return (load(SCENE_PATH) as PackedScene).instantiate() as MessengerView
+
+
 func _ready() -> void:
-	# `set_anchors_preset` alone keeps the current (zero) rect when created from
-	# code — the offsets must be reset too or the view (and its STOP hit area and
-	# background) stays 0×0.
-	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	mouse_filter = Control.MOUSE_FILTER_STOP
 	gui_input.connect(_on_tap_input)
-	_ensure_built()
-
-
-func _ensure_built() -> void:
-	if _built:
-		return
-	_built = true
-	OutgameTheme.add_background(self)
-	_sub_lbl = UiHelpers.mk_label(self, "", 24, OutgameTheme.TEXT_SUB,
-			Vector2(MARGIN_X, 36), Vector2(ScreenMetrics.vp_w() - MARGIN_X * 2.0, 30),
-			HORIZONTAL_ALIGNMENT_LEFT)
-	_sub_lbl.clip_text = true
-	_title_lbl = UiHelpers.mk_label(self, "", 52, OutgameTheme.TEXT,
-			Vector2(MARGIN_X, 72), Vector2(ScreenMetrics.vp_w() - MARGIN_X * 2.0, 62),
-			HORIZONTAL_ALIGNMENT_LEFT)
-	OutgameTheme.add_divider(self, Vector2(MARGIN_X, 160.0),
-			ScreenMetrics.vp_w() - MARGIN_X * 2.0)
-
-	var bottom: float = ScreenMetrics.safe_h()
-	var pack: Dictionary = OutgameTheme.add_vscroll(self, Vector2(0, BODY_TOP),
-			Vector2(ScreenMetrics.vp_w(), bottom - BODY_TOP - 64.0))
-	_scroll = pack["scroll"]
-	_body = pack["body"]
-	_drag = pack["drag"]
-	# Releases must bubble up to this view — PASS keeps the parent chain intact.
-	_scroll.mouse_filter = Control.MOUSE_FILTER_PASS
-	_body.mouse_filter = Control.MOUSE_FILTER_PASS
-
-	_hint_lbl = UiHelpers.mk_label(self, "", 22, OutgameTheme.TEXT_FAINT,
-			Vector2(0, bottom - 50.0), Vector2(ScreenMetrics.vp_w(), 28),
-			HORIZONTAL_ALIGNMENT_CENTER)
+	# Drag / fling scrolling instead of the engine's touch drag. `%Scroll` / `%Body`
+	# are PASS in the scene so releases bubble up to this view.
+	_drag = DragScroll.attach(_scroll)
+	# Device insets only — the layout itself is the scene's.
+	ScreenMetrics.extend_background(%Background)
+	(%SafeArea as Control).offset_bottom = -maxf(0.0, ScreenMetrics.insets().w)
 
 
 # ── API ──────────────────────────────────────────────────────────────────────
 ## Start a fresh dialogue. `portrait` = the left speaker (null → reporter glyph).
 func open(sub: String, title: String, portrait: Texture2D, lines: Array, choices: Array) -> void:
-	_ensure_built()
 	_sub_lbl.text = sub
 	_title_lbl.text = title
 	_portrait = portrait

@@ -5,7 +5,51 @@ The screen where the week passes **one day at a time, Monday to Sunday**. `Scree
 
 | File | Role |
 |---|---|
-| `WeekProgressView.gd` | `class_name WeekProgressView extends Control` — the whole screen |
+| `WeekProgressView.gd` | `class_name WeekProgressView extends Control` — the whole screen's logic. Binds `%` nodes, fills data, adds the list's item scenes. Create with `WeekProgressView.create()` (`.new()` is an empty Control) |
+| `WeekProgressView.tscn` | The screen layout (tree below) |
+| `WeekMatchCard.tscn` | Item: one match of the match day (`%Tag` · `%Title` · `%Status` · `%Hint`) |
+| `WeekNoteCard.tscn` | Item: one-line placeholder card (`%Text`) |
+| `WeekIncidentCard.tscn` | Item: the day's incident (`%Portrait` slot · `%Head` · `%Line` · `%Hit`) |
+| `WeekEveningCard.tscn` | Item: 오늘 저녁 before the action (`%Limits` · `%Slots` of `WeekEveningSlot` · `%Interview` / `%Outing` / `%Pass`) |
+| `WeekEveningSlot.tscn` | Item: one pilot of the evening card (`%Highlight` · `%Portrait` · `%Name` · `%Trust` · `%Hit`) |
+| `WeekEveningDoneCard.tscn` | Item: 오늘 저녁 summary after the action (`%Portrait` · `%Head` · `%Line`) |
+| `WeekPilotCard.tscn` | Item: one pilot's training result (`%Portrait` · `%Name` · `%Role` · `%Mastery` · `%Stats` of `WeekStatCell` · `%QuirkDivider` · `%Quirks` with the `%QuirkLine` template) |
+| `WeekStatCell.tscn` | Item: one stat column (`%Short` / `%Value` / `%Result`) |
+
+## Scene (`WeekProgressView.tscn`)
+
+```
+WeekProgressView (Control, full rect, PASS, theme OutgameTheme.tres)
+├ %Background   ColorRect BG — code: ScreenMetrics.extend_background (notch band)
+└ %SafeArea     full rect — code: offset_bottom = −bottom inset (bottom edge = safe_h())
+  ├ Rail        Panel, dark pill (local StyleBox RAIL r48), x 24 … −24, y 26 … 122
+  │ └ Row (HBox) ─ WeekSlot(margin 12) ─ %WeekLabel (92 wide)
+  │              ─ %Days (HBox, expand) ─ Day0…Day6 (CenterContainer, equal share)
+  │              │                         └ Chip (Panel 72×72) └ Letter (30)
+  │              ─ RightPad (14)
+  ├ %Phase (CaptionLabel 24) · %Title (HeadingLabel 54)        ← left header
+  ├ %DateSmall (CaptionLabel 24) · %DateBig (HeadingLabel 58)  ← right header, anchored right
+  ├ Divider     y 346
+  ├ %Scroll     x 40 … −40, y 372 … −152 (= bar top − 24), anchors_preset −1 (grows right only)
+  │ └ %List     VBox, separation 14 (card gap) — item scenes + %ListEnd (kept last = gap under the last card)
+  └ %Action     Button, bottom bar slot: y −128 … 0 — code: style_bottom_button + offset_bottom = bottom inset
+```
+
+* **Scene owns**: every position / size, fonts (variations + size overrides), the rail pill, the
+  evening highlight fill, button kinds of the evening card, sample texts.
+* **Code owns** (data / device dependent): the today chip fill and the day-letter colours,
+  the lead bars (role colour, incident = `NEGATIVE`) and the player's dark match card
+  (`card_style(…, RAIL)`), status / role / trust / result colours, card heights (match 168 / 96,
+  training 148 + quirk lines), the round portraits (drawn into the `%Portrait` slots with
+  `OutgameTheme.add_round_portrait`), the bottom-bar restyle and the safe-area insets.
+* Item counts: `%Stats` / `%Slots` ship sample cells (6 / 5) for the editor; code adds or hides
+  cells to match the data (`_ensure_children`). Quirk lines are duplicates of the hidden
+  `%QuirkLine` template.
+* `%List` is pinned to the scroll's **anchored** width (cards run under the scroll bar, as the
+  code-built list did). Read from the anchors, not `size` — an overflowing scroll grows by its bar.
+* Card roots are `Panel`s using the `Card` variation (the variation is defined for
+  PanelContainer; a Panel just takes its `panel` box and ignores the padding) — children are
+  placed with anchors like the old code's card-local coordinates.
 
 ## Screen
 
@@ -37,7 +81,7 @@ abbreviations such as 전명 / 전회 / 교명, `확인` = OK.)
   date is built by adding the weekday offset to that week's Monday
   (`season_state.year/month/day`) (`_date_of_day`; it can cross a month, so it goes through
   `CalendarSystem.DAYS_IN_MONTH`).
-* **Body** — the card list, vertical scroll (`OutgameTheme.add_vscroll` → drag-scrolled by `DragScroll`).
+* **Body** — the card list, vertical scroll (`%Scroll`, drag-scrolled by `DragScroll.attach` in `_ready`).
 * **Bottom button** — normally `확인` (OK) (amber); on Sunday `주 마감 →` (End of week); if the
   player still has a match that day, **`경기 시작`** (Start match) (dark fill — meaning "you are
   leaving this screen").
@@ -68,7 +112,7 @@ Two optional extras (§14 T4):
   the mech is the research mech, or the coach's fallback pick when none is set (`_mastery_text`).
 * **Quirk events** — the row's `quirk: [{kind, result, id?, from?, to?}]` (T1, missing = none) adds
   one line per event under a divider and the card grows by `QUIRK_LINE_H` each (`_add_pilot_card`
-  returns its height): `기벽 획득 · <name>` / `기벽 재굴림 · a, b → c, d` (amber), `기벽 칸 +1 (n칸)`
+  sets the item's minimum height): `기벽 획득 · <name>` / `기벽 재굴림 · a, b → c, d` (amber), `기벽 칸 +1 (n칸)`
   (green); no-op results (`full` / `none` / `max`) are faint lines. Names come from
   `QuirkSystem.row(id).name`, falling back to `기벽 #id` (`_quirk_lines` / `_quirk_name`).
 

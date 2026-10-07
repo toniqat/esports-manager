@@ -1,0 +1,116 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(0.11, 0.11, 0.18, 0.1)
+shadow_size = 6
+shadow_offset = Vector2(0, 3)
+
+[node name="RunResultTraitRow" type="Control"]
+editor_description = "One newly unlocked trait of the 새 특성 해금 card (RunResultScreen). Sign / rarity chip fills are data — the screen paints them."
+custom_minimum_size = Vector2(840, 104)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 840.0
+offset_bottom = 104.0
+mouse_filter = 2
+theme = ExtResource("1_theme")
+
+[node name="Card" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 6.0
+offset_bottom = 98.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="Sign" type="Panel" parent="Card"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 20.0
+offset_top = 24.0
+offset_right = 64.0
+offset_bottom = 68.0
+mouse_filter = 2
+
+[node name="SignText" type="Label" parent="Card/Sign"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 26
+text = "+"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Name" type="Label" parent="Card"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 84.0
+offset_top = 8.0
+offset_right = -176.0
+offset_bottom = 46.0
+grow_horizontal = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 28
+text = "정보통"
+
+[node name="Desc" type="Label" parent="Card"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 84.0
+offset_top = 48.0
+offset_right = -176.0
+offset_bottom = 78.0
+grow_horizontal = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 20
+text = "분석 공개 단계 +1"
+
+[node name="Rarity" type="Panel" parent="Card"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -156.0
+offset_top = 26.0
+offset_right = -24.0
+offset_bottom = 66.0
+grow_horizontal = 0
+mouse_filter = 2
+
+[node name="RarityText" type="Label" parent="Card/Rarity"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 20
+text = "영웅"
+horizontal_alignment = 1
+vertical_alignment = 1

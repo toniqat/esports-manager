@@ -18,7 +18,7 @@ level application) is documented in `features/season/README.md` "Entry point"
 | File | Class | Role |
 |---|---|---|
 | `RunSetupScreen.gd` (+ `scenes/RunSetup.tscn`) | `class_name RunSetupScreen extends Control` (scene root) | Orchestrator: step table `STEPS`, step header (`StepChip` per row), step views (into `%Steps`), builds `run_setup`, calls `GameManager.start_run`, launch fade. `content_top()` = where step bodies start (116). |
-| `StepChip.tscn` + `.gd` | `class_name StepChip extends Panel` | Item scene: one header pill. `create()`, `set_text`, `paint(bg, fg, border)` (state colours). |
+| `StepChip.tscn` + `.gd` | `class_name StepChip extends Panel` | Item scene: one header pill. `create()`, `set_text`, `paint(bg, fg, border)` (state colours on a copy of the pill variation `StepChipPanel`). |
 | `ChoiceListView.tscn` + `.gd` | `class_name ChoiceListView extends Control` | Shared "pick one card" step: hint line → scrolling card list → bar `뒤로`(1) / `다음`(2). Subclasses fill `_items` / `_make_card(item) -> Button` / `_hint_text`. Signals `back_requested` / `next_requested`, value `selected_id`. **Nothing is pre-selected** — `다음` stays disabled until the player taps a card, so the rules (cap, team package) are read rather than skipped by tapping `다음` repeatedly. |
 | `ScenarioStepView.tscn` + `.gd` | `class_name ScenarioStepView extends ChoiceListView` | Step 1 — `RunRules.scenarios()` → one `ScenarioCard` each. Scene **inherits** `ChoiceListView.tscn` (root script swapped). `create()`. |
 | `ScenarioCard.tscn` + `.gd` | `class_name ScenarioCard extends Button` | Item scene: name, salary-cap chip (`AccentChip` PanelContainer, 260×44), desc. Root variation `SelectableCardButton` (`...On` when chosen — `ChoiceListView._refresh`). `create()`, `fill(item)`. |
@@ -27,9 +27,9 @@ level application) is documented in `features/season/README.md` "Entry point"
 | `ManagerStepView.tscn` + `.gd` | `class_name ManagerStepView extends Control` | Step 3 감독 (M8/M9) — preset chips, the preset's six stats, `TraitPickerView` (from `../manager/`) with in-place trait swaps; `preset_idx`, `selected_traits()`, `validation_error()`. Signals `back_requested` / `next_requested`. `create()`. |
 | `TeamDraft.gd` | `class_name TeamDraft extends Control` | Step 4 data layer: owned pool (`get_pool_grid()`), chosen levels (`levels`, `set_level`, `leveled()`), salary (`salary_of`, `lineup_salary`, `salary_cap` = `RunRules.salary_cap_with(scenario, trait_ids)`), `set_traits` / `cap_bonus()` (trait `salary_cap` Σ), `validate()` = `RunRules.validate_lineup(..., cap_bonus())`. Slot table `SLOT_ROLES` / `SLOT_NAMES` / `slot_of_role`, `skill_type_label`. Signals `back_requested`, `start_requested(pilot_ids)`. |
 | `TeamDraftView.tscn` + `.gd` | `class_name TeamDraftView extends Control` | Step 4 screen: salary gauge, 5 role-fixed `DraftSlot`s, role filter, scrolling thumbnail grid, PICK ↔ CONFIRM. Child of `TeamDraft` (`TeamDraftView.create()` in `ensure_view`). |
-| `DraftSlot.tscn` + `.gd` | `class_name DraftSlot extends VBoxContainer` | Item scene: one pick slot — bust art button (`%Frame`: mask + `%Art`, "선택 없음", `RoleBadge`) + `− Lv N +` stepper + salary / overall lines. Signals `art_pressed`, `level_step(delta)`; `set_role`, `show_empty()`, `show_pilot(p, role_color, lv, top, salary)`. |
-| `PilotThumb.tscn` + `.gd` | `class_name PilotThumb extends Button` | Item scene: one grid cell — square face crop + top-left `RoleBadge` + gold border / check when selected + bottom-right salary tag (`set_tag`). Frame = variation `SelectableCardButton` / `SelectableCardButtonOn` (radius 18); the face mask `ArtMask` (4px inset) has radius 14 to follow it. `create()`, `setup(p, sel)`. Static helpers `add_rounded_art` / `add_role_badge` stay for code-built callers (`../collection/`). |
-| `RoleBadge.tscn` + `.gd` | `class_name RoleBadge extends Panel` | Item scene: the role badge (`Tk` / `As` …, 44×30, `OnFillLabel` 19). `create()`, `set_role(role)` paints the role colour (data). Used by `PilotThumb`, `DraftSlot` and `PilotThumb.add_role_badge` (pixel-identical to the old code badge). |
+| `DraftSlot.tscn` + `.gd` | `class_name DraftSlot extends VBoxContainer` | Item scene: one pick slot — bust art button (`%Frame`: mask + `%Art`, "선택 없음", `RoleBadge`) + `− Lv N +` stepper + salary / overall lines. Signals `art_pressed`, `level_step(delta)`; `set_role`, `show_empty()`, `show_pilot(p, role_color, lv, top, salary)`. Frame shape = variation `DraftSlotFrame` (code colours a copy), mask = `DraftSlotArtMask`. |
+| `PilotThumb.tscn` + `.gd` | `class_name PilotThumb extends Button` | Item scene: one grid cell — square face crop + top-left `RoleBadge` + gold border / check when selected + bottom-right salary tag (`set_tag`). Frame = variation `SelectableCardButton` / `SelectableCardButtonOn` (radius 18); the face mask `ArtMask` (4px inset, variation `PilotThumbArtMask`) has radius 14 to follow it; check / tag = `PilotThumbCheck` / `PilotThumbTag`. `create()`, `setup(p, sel)`. Static helpers `add_rounded_art` / `add_role_badge` stay for code-built callers (`../collection/`). |
+| `RoleBadge.tscn` + `.gd` | `class_name RoleBadge extends Panel` | Item scene: the role badge (`Tk` / `As` …, 44×30, `OnFillLabel` 19). `create()`, `set_role(role)` paints the role colour (data) on a copy of the variation `RoleBadgePanel`. Used by `PilotThumb`, `DraftSlot` and `PilotThumb.add_role_badge` (pixel-identical to the old code badge). |
 | `DraftDetailPanel.tscn` + `.gd` | `class_name DraftDetailPanel extends CanvasLayer` | Pilot detail popup — **also used by ban/pick** (`features/match_flow/ban_pick/`). Layout lives in the `.tscn`; construct with `DraftDetailPanel.create()` (not `.new()`), then `open(p: PlayerData)` / `close()` / `is_open()`. See "DraftDetailPanel — scene" below. |
 | `DraftStatChip.tscn` + `.gd` | `class_name DraftStatChip extends PanelContainer` | Item scene: one stat chip of the detail popup (name over value, `SunkPanel`). `create()`, `fill(key, value, is_total)` — total swaps the value to `AccentLabel`. |
 | `RunRoster.gd` | `class_name RunRoster` | AI roster distribution used by `GameManager.start_run` — owned by RunCore, see `features/season/README.md`. |
@@ -134,7 +134,8 @@ rich description) → the pilot's
 **3 fixed pilot cards** (`GameManager.pilot_card_ids_for(pd)`, `CardDescBox.build(..., light = true)`).
 The original-team short name comes from `season_state.team_meta`, or — during run setup, before
 the season exists — from `RunRules.team_packages()`. The backing height follows the content
-(stops at `PANEL_MAX_H`, then scrolls); the close button follows that bottom edge and needs an
+(stops where `%Column` — inside the device safe area — has no more room, then scrolls); the close
+button follows that bottom edge and needs an
 opaque style (it overlaps the bottom bar under the dim) — `GhostButton` is opaque white.
 
 ### DraftDetailPanel — scene (`DraftDetailPanel.tscn`)
@@ -148,21 +149,24 @@ DraftDetailPanel (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 �
   ├ DimRect         Panel `DimPanel`
   ├ %ArtPlaceholder ColorRect (no art)          ┐ box: centre x 300, height 1400,
   ├ %Art            TextureRect keep-aspect     ┘ bottom 2010 (legs cut off-screen)
-  └ %Column         VBox at (596,150) w 460, sep 16
-    ├ %PanelBox     Control, height set by code
-    │ ├ Backdrop    Panel `Card`
-    │ └ %Pad        MarginContainer 22 → %Scroll → %Body (VBox, sep 0)
-    │     Header(%Name `HeadingLabel` 40, %Sub `CaptionLabel`) · %BtRow(%BtChips) · Gap ·
-    │     "선수 능력치" · %Stats (Grid 3 col, DraftStatChip ×7) · Gap · "파일럿 스킬" ·
-    │     %SkillRow(%SkillTile slot, %SkillName `AccentLabel` 30, %SkillMeta) · %SkillDesc ·
-    │     %NoSkill · Gap · "파일럿 카드" · %Cards (VBox sep 12) · BottomPad
-    └ %Close        Button `GhostButton`, h 84
+  └ %SafeArea       Control full rect — top / bottom offsets = device insets (`_fit_safe_area`, every `open`)
+    └ %Column       VBox x 596 w 460, top 150, bottom anchored 80 above the safe bottom (grows down), sep 16
+      ├ %PanelBox   Control, height set by code
+      │ ├ Backdrop  Panel `Card`
+      │ └ %Pad      MarginContainer 22 → %Scroll → %Body (VBox, sep 0)
+      │     Header(%Name `HeadingLabel` 40, %Sub `CaptionLabel`) · %BtRow(%BtChips) · Gap ·
+      │     "선수 능력치" · %Stats (Grid 3 col, DraftStatChip ×7) · Gap · "파일럿 스킬" ·
+      │     %SkillRow(%SkillTile slot, %SkillName `AccentLabel` 30, %SkillMeta) · %SkillDesc ·
+      │     %NoSkill · Gap · "파일럿 카드" · %Cards (VBox sep 12) · BottomPad
+      └ %Close      Button `GhostButton`, h 84
 ```
 **Scene owns** positions, sizes, gaps, fonts, variations (layout edits go in the editor).
 **Code owns** only the data-driven parts: the texts, the role colour of `%Sub`, the art texture
 and its width (`%Art` box narrowed to the art aspect around the scene's centre, so the art
 samples on the same pixels as before), `%PanelBox` height (`%Body` minimum + `%Pad` margins,
-capped at `PANEL_MAX_H`), and the widgets built by other modules into slots: breakthrough pills
+capped at the `%Column` height − separation − `%Close` height, computed from the anchors because
+`%Column.size` can stay inflated by the previous content's minimum), the `%SafeArea` insets (dim and art
+stay full-screen — same as `MechDetailPanel`), and the widgets built by other modules into slots: breakthrough pills
 (`OutgameTheme.add_chip` — per-chip colours), skill icon tile (`SkillImages.make_icon_tile`, size
 = the `%SkillTile` slot), skill description (`StrategyIcon.make_rich_label`, width = `%Column`
 width − `%Pad` margins) and pilot cards (`CardDescBox.build`). These are removed and rebuilt on
@@ -226,10 +230,12 @@ ChoiceListView: %Hint (32,116) h 44 · %Scroll (24,168 → bottom -144, grows ri
   ScenarioStepView.tscn / TeamStepView.tscn inherit it (+ one preview card under %List, cleared by code)
 ManagerStepView: %Status · %Scroll → %Body VBox: %Chips slot · stats Card (%CardTitle, %CardNote, %Cells slot) · %Traits slot
 TeamDraftView: Gauge Card (%GaugeTitle, %GaugeValue, track + %GaugeFill, %GaugeMsg) · %SlotRow HBox (DraftSlot ×5) ·
-  %PickPane [%Filters HBox (6 SelectableTile buttons 26: 전체, then SLOT_ROLES order) · GridBack · %GridScroll → %Grid (5 cols, gap 8)]
+  %PickPane [%Filters HBox (6 SelectableTile buttons 26: 전체, then SLOT_ROLES order) · GridBack (`TeamDraftGridBack`) · %GridScroll → %Grid (5 cols, gap 8)]
 ```
 **Scene owns** positions, sizes, gaps, fonts, variations and texts that never change (filter labels,
-bar labels, "직접 해야 하는 일").
+bar labels, "직접 해야 하는 일"). No local StyleBoxes — this folder's own looks are the screen variations
+`DraftSlot*` · `PilotThumb*` · `RoleBadgePanel` · `StepChipPanel` · `TeamDraftGridBack`
+(`resources/README.md` → Screen variations).
 **Code owns** data and state: texts from tables, the per-device bottom inset
 (`OutgameTheme.fit_bottom_bar` — the bar's square shape is the `Bar*` variations), selected / not
 **variation names** (choice cards + thumbnails `SelectableCardButton` ↔ `SelectableCardButtonOn`,

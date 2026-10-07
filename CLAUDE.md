@@ -106,7 +106,9 @@ Read the README of every row your task touches. Indented rows are submodules —
   shadow `Node` / `Control` properties (`visible`, `position`, `name`, `owner`). Fix the cause — no `@warning_ignore`.
 - **Outgame UI lives in `.tscn`** (migration in progress — `docs/ui_scene_migration.md` §3):
   layout / style are owned by the scene; the script only binds `%UniqueName` nodes, fills data,
-  connects signals; scenes are built with `Xxx.create()`, not `.new()`. **A node missing from a scene
+  connects signals; scenes are built with `Xxx.create()`, not `.new()`. **No local StyleBoxes in scenes** —
+  a one-scene look is a `<Scene><Role>` theme variation derived from a shared one
+  (`OutgameTheme._add_screen_variations`, `resources/README.md`). **A node missing from a scene
   was deleted on purpose — never re-create it in code** (drop its binding too). Empty nodes with
   `editor_description = "TODO: …"` mark work to implement at that spot / size
   (`grep -rn 'editor_description = "TODO' --include=*.tscn`). `_draw` widgets stay code, placed as nodes.

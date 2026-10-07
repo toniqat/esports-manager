@@ -1,21 +1,9 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" uid="uid://ctd53cbgwiprp" path="res://features/meta/manager/ManagerTab.gd" id="1_tab"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 [ext_resource type="Script" uid="uid://c26kbfiu51p1a" path="res://resources/DragScroll.gd" id="3_drag"]
 [ext_resource type="Script" uid="uid://1owh2etg2tlb" path="res://features/meta/manager/TraitPickerView.gd" id="4_traits"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_reset"]
-bg_color = Color(0.98536, 0.91252, 0.91252, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.878, 0.271, 0.271, 1)
-corner_radius_top_left = 16
-corner_radius_top_right = 16
-corner_radius_bottom_right = 16
-corner_radius_bottom_left = 16
 
 [node name="ManagerTab" type="Control"]
 editor_description = "Lobby 감독 tab. LobbyScreen sets this root's position / size to its content rect (below the currency strip, above the action bar) — the 1080×1568 here is only the editor preview size."
@@ -228,7 +216,7 @@ theme_override_constants/margin_bottom = 0
 custom_minimum_size = Vector2(0, 120)
 layout_mode = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_reset")
+theme_type_variation = &"ManagerDangerCard"
 
 [node name="ResetTitle" type="Label" parent="Scroll/Body/Sections/Presets/ResetBox/ResetCard"]
 layout_mode = 1

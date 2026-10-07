@@ -1,21 +1,7 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://bjgec1x5rvbxg"]
 
 [ext_resource type="Script" uid="uid://c6hubb6vxd0m2" path="res://features/season/week/WeekProgressView.gd" id="1_week"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rail"]
-bg_color = Color(0.11, 0.11, 0.122, 1)
-corner_radius_top_left = 48
-corner_radius_top_right = 48
-corner_radius_bottom_right = 48
-corner_radius_bottom_left = 48
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_today"]
-bg_color = Color(0.961, 0.651, 0.137, 1)
-corner_radius_top_left = 20
-corner_radius_top_right = 20
-corner_radius_bottom_right = 20
-corner_radius_bottom_left = 20
 
 [node name="WeekProgressView" type="Control"]
 layout_mode = 3
@@ -61,7 +47,7 @@ offset_right = -24.0
 offset_bottom = 122.0
 grow_horizontal = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_rail")
+theme_type_variation = &"WeekRail"
 
 [node name="Row" type="HBoxContainer" parent="SafeArea/Rail"]
 layout_mode = 1
@@ -107,6 +93,7 @@ mouse_filter = 2
 custom_minimum_size = Vector2(72, 72)
 layout_mode = 2
 mouse_filter = 2
+theme_type_variation = &"WeekDayChip"
 
 [node name="Letter" type="Label" parent="SafeArea/Rail/Row/Days/Day0/Chip"]
 layout_mode = 1
@@ -130,6 +117,7 @@ mouse_filter = 2
 custom_minimum_size = Vector2(72, 72)
 layout_mode = 2
 mouse_filter = 2
+theme_type_variation = &"WeekDayChip"
 
 [node name="Letter" type="Label" parent="SafeArea/Rail/Row/Days/Day1/Chip"]
 layout_mode = 1
@@ -153,7 +141,7 @@ mouse_filter = 2
 custom_minimum_size = Vector2(72, 72)
 layout_mode = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_today")
+theme_type_variation = &"WeekDayChipToday"
 
 [node name="Letter" type="Label" parent="SafeArea/Rail/Row/Days/Day2/Chip"]
 layout_mode = 1
@@ -177,6 +165,7 @@ mouse_filter = 2
 custom_minimum_size = Vector2(72, 72)
 layout_mode = 2
 mouse_filter = 2
+theme_type_variation = &"WeekDayChip"
 
 [node name="Letter" type="Label" parent="SafeArea/Rail/Row/Days/Day3/Chip"]
 layout_mode = 1
@@ -200,6 +189,7 @@ mouse_filter = 2
 custom_minimum_size = Vector2(72, 72)
 layout_mode = 2
 mouse_filter = 2
+theme_type_variation = &"WeekDayChip"
 
 [node name="Letter" type="Label" parent="SafeArea/Rail/Row/Days/Day4/Chip"]
 layout_mode = 1
@@ -223,6 +213,7 @@ mouse_filter = 2
 custom_minimum_size = Vector2(72, 72)
 layout_mode = 2
 mouse_filter = 2
+theme_type_variation = &"WeekDayChip"
 
 [node name="Letter" type="Label" parent="SafeArea/Rail/Row/Days/Day5/Chip"]
 layout_mode = 1
@@ -246,6 +237,7 @@ mouse_filter = 2
 custom_minimum_size = Vector2(72, 72)
 layout_mode = 2
 mouse_filter = 2
+theme_type_variation = &"WeekDayChip"
 
 [node name="Letter" type="Label" parent="SafeArea/Rail/Row/Days/Day6/Chip"]
 layout_mode = 1
@@ -286,6 +278,7 @@ offset_left = -360.0
 offset_top = 148.0
 offset_right = -40.0
 offset_bottom = 178.0
+grow_horizontal = 0
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 24
 text = "1년 12월"
@@ -302,6 +295,7 @@ offset_left = -360.0
 offset_top = 176.0
 offset_right = -40.0
 offset_bottom = 246.0
+grow_horizontal = 0
 theme_type_variation = &"HeadingLabel"
 theme_override_font_sizes/font_size = 58
 text = "5"

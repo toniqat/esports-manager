@@ -14,10 +14,6 @@ extends VBoxContainer
 signal art_pressed
 signal level_step(delta: int)
 
-## 칸 테두리 — 일러스트 마스크는 씬에서 이 두께만큼 안쪽에 있다.
-const BORDER: int = 3
-const RADIUS: int = 14
-
 
 func _ready() -> void:
 	(%Frame as Button).pressed.connect(func() -> void: art_pressed.emit())
@@ -63,8 +59,12 @@ func show_pilot(p: PlayerData, role_color: Color, lv: int, top: int, salary: int
 	(%Total as Label).text = "종합 %d" % p.stat_total()
 
 
+## 칸 모양(반지름 · 테두리 두께)은 테마 변형 `DraftSlotFrame` 이 정하고 — 일러스트 마스크는
+## 씬에서 그 두께만큼 안쪽에 있다 — 여기서는 사본에 바탕 · 테두리 색만 넣는다.
 func _set_frame_style(bg: Color, border: Color) -> void:
-	var sty := OutgameTheme.flat_style(bg, RADIUS, border, BORDER)
+	var sty := OutgameTheme.variation_box(&"DraftSlotFrame", &"normal")
+	sty.bg_color = bg
+	sty.border_color = border
 	var frame: Button = %Frame
 	for st in ["normal", "hover", "pressed", "focus", "disabled"]:
 		frame.add_theme_stylebox_override(st, sty)

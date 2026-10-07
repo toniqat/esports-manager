@@ -67,7 +67,9 @@ PassTab (Control) ─ VBox
 ```
 - **Scene owns**: every size / gap / margin, fonts, button kinds, fixed texts (segment labels,
   dev-row note), the row tiles (children placed by offset inside the fixed-height tiles), the
-  white outlined row panel / sunk dev panel (local styles — no theme variation yet); the rate pill
+  white outlined row panel / sunk dev panel (screen variations `ShopRowPanel` — shared by the three
+  `Shop*Row` scenes — and `ShopDevRowPanel`), the gacha banner `ShopBannerCard` (code puts the pool colour
+  on a `variation_box` copy); the rate pill
   `ShopRateChip` is a `SurfaceChip` PanelContainer (152×44, centred label).
 - **Code owns**: texts from data, enabled / disabled states, instancing rows and chips, the selected
   segment (variation `GhostButton` + `ACCENT_TEXT` vs `TextButton`), scroll positions (per shop section;

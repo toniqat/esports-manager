@@ -1,46 +1,8 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" uid="uid://bogtu0wxqfcc3" path="res://features/meta/run_result/RunResultScreen.gd" id="1_result"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 [ext_resource type="Script" uid="uid://c26kbfiu51p1a" path="res://resources/DragScroll.gd" id="3_drag"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
-content_margin_left = 40.0
-content_margin_top = 28.0
-content_margin_right = 40.0
-content_margin_bottom = 40.0
-bg_color = Color(1, 1, 1, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.886, 0.89, 0.906, 1)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
-shadow_color = Color(0.11, 0.11, 0.18, 0.1)
-shadow_size = 6
-shadow_offset = Vector2(0, 3)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_amber"]
-content_margin_left = 40.0
-content_margin_top = 28.0
-content_margin_right = 40.0
-content_margin_bottom = 40.0
-bg_color = Color(0.996, 0.929, 0.808, 1)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
-shadow_color = Color(0.11, 0.11, 0.18, 0.1)
-shadow_size = 6
-shadow_offset = Vector2(0, 3)
-
-[sub_resource type="StyleBoxLine" id="StyleBoxLine_amber"]
-color = Color(0.961, 0.651, 0.137, 1)
-grow_begin = 0.0
-grow_end = 0.0
 
 [node name="RunResult" type="Control"]
 layout_mode = 3
@@ -158,7 +120,7 @@ custom_minimum_size = Vector2(920, 0)
 layout_mode = 2
 size_flags_horizontal = 4
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_amber")
+theme_type_variation = &"RunResultSectionCardAmber"
 
 [node name="VBox" type="VBoxContainer" parent="Scroll/Body/Cards/TrueEndCard"]
 layout_mode = 2
@@ -174,8 +136,7 @@ text = "진엔딩"
 
 [node name="Divider" type="HSeparator" parent="Scroll/Body/Cards/TrueEndCard/VBox"]
 layout_mode = 2
-theme_type_variation = &"Divider"
-theme_override_styles/separator = SubResource("StyleBoxLine_amber")
+theme_type_variation = &"RunResultAccentDivider"
 
 [node name="Gap" type="Control" parent="Scroll/Body/Cards/TrueEndCard/VBox"]
 custom_minimum_size = Vector2(0, 11)
@@ -195,7 +156,7 @@ custom_minimum_size = Vector2(920, 0)
 layout_mode = 2
 size_flags_horizontal = 4
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_amber")
+theme_type_variation = &"RunResultSectionCardAmber"
 
 [node name="VBox" type="VBoxContainer" parent="Scroll/Body/Cards/TraitCard"]
 layout_mode = 2
@@ -211,8 +172,7 @@ text = "새 특성 해금"
 
 [node name="Divider" type="HSeparator" parent="Scroll/Body/Cards/TraitCard/VBox"]
 layout_mode = 2
-theme_type_variation = &"Divider"
-theme_override_styles/separator = SubResource("StyleBoxLine_amber")
+theme_type_variation = &"RunResultAccentDivider"
 
 [node name="Gap" type="Control" parent="Scroll/Body/Cards/TraitCard/VBox"]
 custom_minimum_size = Vector2(0, 11)
@@ -243,7 +203,7 @@ custom_minimum_size = Vector2(920, 0)
 layout_mode = 2
 size_flags_horizontal = 4
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+theme_type_variation = &"RunResultSectionCard"
 
 [node name="VBox" type="VBoxContainer" parent="Scroll/Body/Cards/ProgressCard"]
 layout_mode = 2
@@ -277,7 +237,7 @@ custom_minimum_size = Vector2(920, 0)
 layout_mode = 2
 size_flags_horizontal = 4
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+theme_type_variation = &"RunResultSectionCard"
 
 [node name="VBox" type="VBoxContainer" parent="Scroll/Body/Cards/ScoreCard"]
 layout_mode = 2
@@ -353,7 +313,7 @@ custom_minimum_size = Vector2(920, 0)
 layout_mode = 2
 size_flags_horizontal = 4
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+theme_type_variation = &"RunResultSectionCard"
 
 [node name="VBox" type="VBoxContainer" parent="Scroll/Body/Cards/RewardCard"]
 layout_mode = 2
@@ -397,7 +357,7 @@ custom_minimum_size = Vector2(920, 0)
 layout_mode = 2
 size_flags_horizontal = 4
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+theme_type_variation = &"RunResultSectionCard"
 
 [node name="VBox" type="VBoxContainer" parent="Scroll/Body/Cards/GrowthCard"]
 layout_mode = 2
@@ -432,7 +392,7 @@ custom_minimum_size = Vector2(920, 0)
 layout_mode = 2
 size_flags_horizontal = 4
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+theme_type_variation = &"RunResultSectionCard"
 
 [node name="VBox" type="VBoxContainer" parent="Scroll/Body/Cards/AchievementCard"]
 layout_mode = 2
@@ -514,7 +474,7 @@ offset_right = 460.0
 offset_bottom = 640.0
 grow_horizontal = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+theme_type_variation = &"RunResultSectionCard"
 
 [node name="Text" type="Label" parent="Empty/Card"]
 layout_mode = 1

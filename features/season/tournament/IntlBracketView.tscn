@@ -1,8 +1,8 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=4 format=3 uid="uid://bemmrliyy6nn1"]
 
 [ext_resource type="Script" uid="uid://crdbnaxpunrt0" path="res://features/season/tournament/IntlBracketView.gd" id="1_view"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
-[ext_resource type="PackedScene" path="res://features/season/tournament/IntlMatchBox.tscn" id="3_box"]
+[ext_resource type="PackedScene" uid="uid://c2m47j4qcd7m2" path="res://features/season/tournament/IntlMatchBox.tscn" id="3_box"]
 
 [node name="IntlBracketView" type="Control"]
 layout_mode = 3
@@ -110,7 +110,6 @@ theme_override_constants/separation = 50
 [node name="QF1" parent="Bracket/Quarters" instance=ExtResource("3_box")]
 unique_name_in_owner = true
 layout_mode = 2
-slot_title = "8강 1경기"
 
 [node name="QF2" parent="Bracket/Quarters" instance=ExtResource("3_box")]
 unique_name_in_owner = true
@@ -145,8 +144,8 @@ mouse_filter = 2
 
 [node name="SF1" parent="Bracket/Semis" instance=ExtResource("3_box")]
 unique_name_in_owner = true
-layout_mode = 2
 custom_minimum_size = Vector2(280, 150)
+layout_mode = 2
 slot_title = "4강 1경기"
 
 [node name="MidGap" type="Control" parent="Bracket/Semis"]
@@ -156,8 +155,8 @@ mouse_filter = 2
 
 [node name="SF2" parent="Bracket/Semis" instance=ExtResource("3_box")]
 unique_name_in_owner = true
-layout_mode = 2
 custom_minimum_size = Vector2(280, 150)
+layout_mode = 2
 slot_title = "4강 2경기"
 
 [node name="GapSF" type="Control" parent="Bracket"]
@@ -178,8 +177,8 @@ mouse_filter = 2
 
 [node name="Final" parent="Bracket/FinalColumn" instance=ExtResource("3_box")]
 unique_name_in_owner = true
-layout_mode = 2
 custom_minimum_size = Vector2(320, 170)
+layout_mode = 2
 slot_title = "결승"
 
 [node name="OkButton" type="Button" parent="."]

@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://cbt3g7cx82ok1"]
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
@@ -14,10 +14,10 @@ theme = ExtResource("1_theme")
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
-offset_left = 22
-offset_top = 22
-offset_right = 62
-offset_bottom = 62
+offset_left = 22.0
+offset_top = 22.0
+offset_right = 62.0
+offset_bottom = 62.0
 mouse_filter = 2
 
 [node name="Text" type="Label" parent="Sign"]
@@ -38,11 +38,10 @@ unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
-offset_left = 78
-offset_top = 8
-offset_right = -182
-offset_bottom = 40
-mouse_filter = 2
+offset_left = 78.0
+offset_top = 8.0
+offset_right = -182.0
+offset_bottom = 40.0
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 24
 text = "강철 멘탈"
@@ -52,11 +51,10 @@ unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
-offset_left = 78
-offset_top = 44
-offset_right = -182
-offset_bottom = 70
-mouse_filter = 2
+offset_left = 78.0
+offset_top = 44.0
+offset_right = -182.0
+offset_bottom = 70.0
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 18
 text = "선수 멘탈 사건 확률 −10%"
@@ -67,10 +65,10 @@ layout_mode = 1
 anchors_preset = -1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -150
-offset_top = 22
-offset_right = -22
-offset_bottom = 60
+offset_left = -150.0
+offset_top = 22.0
+offset_right = -22.0
+offset_bottom = 60.0
 mouse_filter = 2
 
 [node name="Text" type="Label" parent="Rarity"]

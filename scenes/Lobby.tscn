@@ -1,19 +1,9 @@
-[gd_scene load_steps=7 format=3 uid="uid://btc8wvyy52eo3"]
+[gd_scene load_steps=5 format=3 uid="uid://btc8wvyy52eo3"]
 
 [ext_resource type="Script" uid="uid://cxs8jh34thg08" path="res://features/meta/lobby/LobbyScreen.gd" id="1_lobby"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 [ext_resource type="PackedScene" path="res://features/meta/lobby/LobbyCurrencyCell.tscn" id="3_cell"]
 [ext_resource type="PackedScene" path="res://features/meta/lobby/LobbyTabButton.tscn" id="4_tab"]
-
-[sub_resource type="StyleBoxFlat" id="SurfaceBar"]
-bg_color = Color(1, 1, 1, 1)
-
-[sub_resource type="StyleBoxFlat" id="Toast"]
-bg_color = Color(0.11, 0.11, 0.122, 1)
-corner_radius_top_left = 34
-corner_radius_top_right = 34
-corner_radius_bottom_right = 34
-corner_radius_bottom_left = 34
 
 [node name="Lobby" type="Control"]
 layout_mode = 3
@@ -64,7 +54,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("SurfaceBar")
+theme_type_variation = &"LobbySurfaceBar"
 
 [node name="CurrencyCells" type="HBoxContainer" parent="CurrencyStrip"]
 unique_name_in_owner = true
@@ -150,7 +140,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("SurfaceBar")
+theme_type_variation = &"LobbySurfaceBar"
 
 [node name="TopLine" type="ColorRect" parent="SafeBottom/TabBar"]
 layout_mode = 1
@@ -205,7 +195,7 @@ offset_bottom = -276.0
 grow_horizontal = 2
 grow_vertical = 0
 mouse_filter = 2
-theme_override_styles/panel = SubResource("Toast")
+theme_type_variation = &"LobbyToast"
 
 [node name="ToastText" type="Label" parent="SafeBottom/Toast"]
 unique_name_in_owner = true

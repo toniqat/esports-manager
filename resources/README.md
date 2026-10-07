@@ -859,7 +859,7 @@ The design principle is coloured cards on white paper. Three rules:
 | Sizes (theme defaults) | `FONT_HEADING` `FONT_TITLE` `FONT_BODY` `FONT_CAPTION` · `FONT_BTN_PRIMARY` `FONT_BTN_GHOST` `FONT_BTN_TEXT` `FONT_BTN_DARK` · `CARD_RADIUS` `CARD_PAD` `POPUP_RADIUS` `POPUP_PAD` `POPUP_PAD_WIDE` `SHEET_RADIUS` `SHEET_PAD` `SHEET_PAD_V` `SUNK_RADIUS` `BAR_RADIUS` · `CHIP_RADIUS` (pill, clamped to height/2) `CHIP_PAD_H` `CHIP_PAD_V` · `SELECT_BORDER` `SELECT_BORDER_ON` `SELECT_TILE_RADIUS` `SELECT_TILE_BORDER_ON` |
 | StyleBox | `card_style` `flat_style` `lead_bar_style` `set_corner_radius` `selectable_box(on, radius, border_on)` |
 | Button | `style_primary_button` (amber, one per screen) `style_ghost_button` `style_text_button` `style_dark_button` (dark colour field — "leave this screen") `style_danger_button` (`NEGATIVE` field — destructive confirm). All read **`button_spec(kind)`** (colours + default font) and **`button_styles(kind)`** (one `button_box` per `BUTTON_STATES`, incl. `hover_pressed` = pressed so the engine default never shows while held) — the same table the theme is built from |
-| Theme | `build_theme()` → `Theme`, `save_theme()` → writes `THEME_PATH` (`OutgameTheme.tres`), `BUTTON_VARIATIONS` `BAR_BUTTON_VARIATIONS` — see **OutgameTheme.tres** below |
+| Theme | `build_theme()` → `Theme`, `save_theme()` → writes `THEME_PATH` (`OutgameTheme.tres`), `BUTTON_VARIATIONS` `BAR_BUTTON_VARIATIONS`, `variation_box(name, item)` (duplicate of a variation's stylebox for data colours) — see **OutgameTheme.tres** below |
 | Bottom bar | `BOTTOM_BAR_H` `BOTTOM_BAR_SEP` `bottom_bar_top()` `bottom_inset()` · scene bars: `fit_bottom_bar(bar, safe)` `fit_bar_button(b)` `bar_button_styles(kind, below)` · code-built bars: `add_bottom_bar(parent, specs)` `layout_bottom_bar(buttons, specs)` `style_bottom_button(b, style, font)` — see **Bottom action bar** below |
 | Pieces | `add_background` (internally calls `ScreenMetrics.extend_background`) `add_card` `add_divider` `add_round_portrait` `add_chip` `add_vscroll` |
 
@@ -923,6 +923,51 @@ colours, and the bottom action bar's **device inset** (`fit_bottom_bar` — the 
 variations).
 A card whose padding no variation has: use the variation with a smaller (or no) padding and add a
 `MarginContainer` child for the rest.
+
+#### Screen variations (one scene's own look — `_add_screen_variations`)
+**Scenes embed no StyleBox sub_resources at all**, even for a look only one scene uses. Such a look is a
+theme variation too, built in `OutgameTheme._add_screen_variations()`:
+- **Name = `<scene><role>`** — the prefix is the scene (`.tscn`) that uses it, so the name says where it
+  belongs (`RunResultSectionCard` → `RunResult.tscn`, `ShopRowPanel` → the three `Shop*Row.tscn`).
+- **Base = the nearest shared variation** (`Card`, `SunkPanel`, `AccentChip` / `SurfaceChip`, `PopupCard`,
+  `Divider`, `SelectableCardButton`) — the theme records which shared look it derives from. Godot chains
+  variations: the screen variation replaces the stylebox, every other item (fonts, colours, constants)
+  comes from the base.
+- **Data colours** (side / role / grade / pool colour): the variation holds the shape + a preview
+  colour; code takes `OutgameTheme.variation_box(&"Name", item = &"panel")` — a duplicate read straight
+  from the `.tres`, so it is right even before the node enters the tree — and sets only the colour.
+- **State looks** switch the variation name (`WeekDayChip` ↔ `WeekDayChipToday`), like the `Selectable*` pairs.
+- Adding one: write it in `_add_screen_variations` (palette constants, no colour literals), regenerate,
+  pick it in the scene. Never put a `theme_override_styles/*` sub_resource in a scene.
+
+| Variation | Base | Scene · node | Code colour |
+|---|---|---|---|
+| `BanPickBanChipPanel` | SunkPanel | `BanPickBanChip` root | — |
+| `BanPickMechSlotFrame` | SunkPanel | `BanPickMechSlot` `Frame` | side colour border (`setup`) |
+| `BanPickPortraitRim` | SunkPanel | `BanPickPortrait` `Rim` | side colour border (`setup`) |
+| `BanPickSheetCard` · `BanPickDragGhost` | Card · SunkPanel | `BanPickView` `Sheet` · `DragGhost` | — |
+| `ManagerDangerCard` | Card | `ManagerTab` `ResetCard` | — |
+| `RunResultSectionCard` · `RunResultSectionCardAmber` | Card | `RunResult` cards (padding 40, top 28) | — |
+| `RunResultAccentDivider` | Divider | `RunResult` amber card dividers | — |
+| `RunResultTraitCard` | Card | `RunResultTraitRow` `Card` | — |
+| `DraftSlotFrame` | SelectableCardButton | `DraftSlot` `Frame` (all button states) | fill / role border (`_set_frame_style`) |
+| `DraftSlotArtMask` · `PilotThumbArtMask` | SunkPanel | `ArtMask` (white AA mask for `clip_children`) | — |
+| `PilotThumbCheck` · `PilotThumbTag` | AccentChip · SurfaceChip | `PilotThumb` `Check` · `Tag` | — |
+| `RoleBadgePanel` | AccentChip | `RoleBadge` root | role fill (`set_role`) |
+| `StepChipPanel` | AccentChip | `StepChip` root (pill) | state fill / border (`paint`) |
+| `TeamDraftGridBack` | Card | `TeamDraftView` `GridBack` | — |
+| `ShopRowPanel` | Card | `ShopCraftRow` · `ShopExchangeRow` · `ShopShardRow` roots | — |
+| `ShopBannerCard` · `ShopDevRowPanel` | Card · SunkPanel | `ShopTab` `Banner` · `DevRow` | banner fill = pool (`_fill_gacha`) |
+| `TrainingCourseCardFrame` · `TrainingCourseGradeBand` | Card · SunkPanel | `TrainingCourseCard` root · `Band` | grade colour (`fill` / `set_selected`) |
+| `TrainingCourseShapeWell` · `TrainingCourseLockChip` | SunkPanel · SurfaceChip | `TrainingCourseCard` `Well` · `LockChip` | — |
+| `TrainingCoursePopoverFrame` | PopupCard | `TrainingCoursePopover` root | grade border (`fill`) |
+| `TrainingThumbFrame` · `TrainingThumbExpChip` | Card · AccentChip | `TrainingThumb` root · `ExpChip` | role border, ± fill (`TrainingView`) |
+| `WeekEveningHighlight` · `WeekRail` | SunkPanel | `WeekEveningSlot` `Highlight` · `WeekProgressView` `Rail` | — |
+| `WeekDayChip` · `WeekDayChipToday` | AccentChip | `WeekProgressView` day `Chip`s (`WEEK_DAY_CHIP_RADIUS`) | variation switched by `_refresh_rail` |
+| `LobbySurfaceBar` · `LobbyToast` | Card · SurfaceChip | `Lobby` `StripBack` / `TabBarBack` · `Toast` | error toast = `NEGATIVE` copy |
+
+Label colour overrides that are data (side / grade / day state colours) stay `theme_override_colors` set by code;
+the scene value is a preview.
 
 ### Bottom action bar (`add_bottom_bar`)
 **The main action on an outgame screen is not a shape floating in the middle of the screen but the whole bottom

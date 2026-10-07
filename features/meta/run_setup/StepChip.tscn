@@ -1,14 +1,7 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://features/meta/run_setup/StepChip.gd" id="1_chip"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
-
-[sub_resource type="StyleBoxFlat" id="Preview_panel"]
-bg_color = Color(0.961, 0.651, 0.137, 1)
-corner_radius_top_left = 32
-corner_radius_top_right = 32
-corner_radius_bottom_right = 32
-corner_radius_bottom_left = 32
 
 [node name="StepChip" type="Panel"]
 editor_description = "One step pill of the run-setup header. Fill / border / text colour = step state → code (StepChip.paint). The stylebox here is an editor preview of the current step."
@@ -18,7 +11,7 @@ offset_bottom = 64.0
 size_flags_horizontal = 3
 mouse_filter = 2
 theme = ExtResource("2_theme")
-theme_override_styles/panel = SubResource("Preview_panel")
+theme_type_variation = &"StepChipPanel"
 script = ExtResource("1_chip")
 
 [node name="Text" type="Label" parent="."]

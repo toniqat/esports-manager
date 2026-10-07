@@ -64,8 +64,9 @@ Lobby (Control, full rect, theme = OutgameTheme.tres, LobbyScreen.gd)
   `TABS` · `CURRENCY_STRIP` (`_sync_items` reuses the scene's preview instances, instantiates or frees the
   rest); selected-tab font colours; badge visibility; the action bar buttons; the error toast colour (the
   scene's toast style duplicated and recoloured `NEGATIVE`).
-- Local styles (no theme variation fits yet): `SurfaceBar` (flat `SURFACE`, square — strip and tab bar),
-  `Toast` (flat `RAIL` pill, radius 34); `TopLine` / badge / background are `ColorRect` colours.
+- Lobby-only looks are screen variations (`resources/README.md` → Screen variations): `LobbySurfaceBar`
+  (flat `SURFACE`, square — strip and tab bar), `LobbyToast` (flat `RAIL` pill, radius 34); `TopLine` /
+  badge / background are `ColorRect` colours.
 
 ## HomeTab (was LobbyScreen body)
 - **Layout lives in `HomeTab.tscn`**; created with `HomeTab.create()` (`.new()` is an empty Control).

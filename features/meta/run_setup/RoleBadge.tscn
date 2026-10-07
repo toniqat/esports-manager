@@ -1,19 +1,7 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://features/meta/run_setup/RoleBadge.gd" id="1_badge"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
-
-[sub_resource type="StyleBoxFlat" id="Preview_panel"]
-bg_color = Color(0.2, 0.42, 0.82, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0, 0, 0, 0.18)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
 
 [node name="RoleBadge" type="Panel"]
 editor_description = "Role colour + initials are data (set_role). The stylebox here is only an editor preview sample."
@@ -21,7 +9,7 @@ offset_right = 44.0
 offset_bottom = 30.0
 mouse_filter = 2
 theme = ExtResource("2_theme")
-theme_override_styles/panel = SubResource("Preview_panel")
+theme_type_variation = &"RoleBadgePanel"
 script = ExtResource("1_badge")
 
 [node name="Text" type="Label" parent="."]

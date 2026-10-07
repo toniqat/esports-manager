@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://features/match_flow/ban_pick/BanPickView.gd" id="1_view"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
@@ -9,33 +9,6 @@
 [ext_resource type="Script" path="res://features/match_flow/ban_pick/BanPickOrderRow.gd" id="7_order"]
 [ext_resource type="Texture2D" path="res://resources/images/ui/banpick/turn_arrow.svg" id="8_arrow"]
 [ext_resource type="Script" path="res://features/match_flow/ban_pick/BanPickGrid.gd" id="9_grid"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sheet"]
-bg_color = Color(1, 1, 1, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.961, 0.651, 0.137, 1)
-corner_radius_top_left = 18
-corner_radius_top_right = 18
-corner_radius_bottom_right = 18
-corner_radius_bottom_left = 18
-shadow_color = Color(0.11, 0.11, 0.18, 0.1)
-shadow_size = 6
-shadow_offset = Vector2(0, 3)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ghost"]
-bg_color = Color(0.929, 0.933, 0.945, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.961, 0.651, 0.137, 1)
-corner_radius_top_left = 5
-corner_radius_top_right = 5
-corner_radius_bottom_right = 5
-corner_radius_bottom_left = 5
 
 [node name="BanPickView" type="Control"]
 layout_mode = 3
@@ -514,7 +487,7 @@ offset_right = -25.0
 offset_bottom = -8.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_override_styles/panel = SubResource("StyleBoxFlat_sheet")
+theme_type_variation = &"BanPickSheetCard"
 
 [node name="SheetArtPlaceholder" type="ColorRect" parent="SafeArea/Band/Pane/Sheet"]
 unique_name_in_owner = true
@@ -756,7 +729,7 @@ layout_mode = 0
 offset_right = 192.0
 offset_bottom = 160.0
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_ghost")
+theme_type_variation = &"BanPickDragGhost"
 
 [node name="DragGhostArt" type="TextureRect" parent="SafeArea/DragGhost"]
 unique_name_in_owner = true

@@ -78,8 +78,9 @@ RunResult (Control, full rect, theme = OutgameTheme.tres, script RunResultScreen
 ├ %Empty           (hidden) "런 정산" title + empty-state card
 └ %BottomButton    full-width bottom bar button (BarPrimaryButton, font 32)
 ```
-- Cards use local StyleBoxFlat sub_resources (white / amber, radius 24, padding 40 · top 28) — no
-  theme variation has that shape yet. Card heights come from the containers.
+- Cards use the screen variations `RunResultSectionCard` / `RunResultSectionCardAmber` (white / amber,
+  radius 24, padding 40 · top 28, derived from `Card`), amber dividers `RunResultAccentDivider`, trait rows
+  `RunResultTraitCard` — no local StyleBoxes. Card heights come from the containers.
 - Fixed-colour chips are `PanelContainer`s on the shared pill variations with a centred label:
   `%TestChip` and the growth row's `MaxLv` = `AccentChip`, the true-end row's `Chip` = `SurfaceChip`
   (each keeps its size). Chips whose fill is data (MVP / POM, trait sign / rarity) stay code-painted.

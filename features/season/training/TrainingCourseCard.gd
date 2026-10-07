@@ -17,12 +17,12 @@ const SCENE_PATH: String = "res://features/season/training/TrainingCourseCard.ts
 
 ## 미니어처 칸 한 변의 상한. 모양이 커지면 상자에 맞게 줄어든다.
 const MINI_MAX: float = 26.0
-## 고른 카드의 테두리 두께(평소는 씬의 `CardFrame` 두께).
+## 고른 카드의 테두리 두께(평소는 테마 변형 `TrainingCourseCardFrame` 두께).
 const SELECTED_BORDER: int = 4
 
 var tile: TrainingTile = null
 
-var _frame: StyleBoxFlat = null    # 씬의 CardFrame — 고르기/잠김마다 복사해 색만 바꾼다
+var _frame: StyleBoxFlat = null    # `TrainingCourseCardFrame` 사본 — 고르기/잠김마다 복사해 색만 바꾼다
 
 
 ## 씬을 인스턴스한다. `TrainingCourseCard.new()` 는 빈 Panel 이라 쓰지 않는다.
@@ -40,12 +40,12 @@ func fill(t: TrainingTile, cap_text: String, grade_locked: bool, locked: bool,
 		lock_reason: String) -> void:
 	tile = t
 	if _frame == null:
-		_frame = get_theme_stylebox(&"panel") as StyleBoxFlat
+		_frame = OutgameTheme.variation_box(&"TrainingCourseCardFrame")
 	var g: Color = t.grade_color()
 	set_selected(false, locked)
 
 	var band: Panel = %Band
-	var bsty := (band.get_theme_stylebox(&"panel") as StyleBoxFlat).duplicate() as StyleBoxFlat
+	var bsty := OutgameTheme.variation_box(&"TrainingCourseGradeBand")
 	bsty.bg_color = Color(g.r, g.g, g.b, 0.22)
 	band.add_theme_stylebox_override(&"panel", bsty)
 	(%Grade as Label).text = t.grade_name()

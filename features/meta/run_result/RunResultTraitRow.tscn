@@ -1,21 +1,6 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=2 format=3]
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
-bg_color = Color(1, 1, 1, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.886, 0.89, 0.906, 1)
-corner_radius_top_left = 16
-corner_radius_top_right = 16
-corner_radius_bottom_right = 16
-corner_radius_bottom_left = 16
-shadow_color = Color(0.11, 0.11, 0.18, 0.1)
-shadow_size = 6
-shadow_offset = Vector2(0, 3)
 
 [node name="RunResultTraitRow" type="Control"]
 editor_description = "One newly unlocked trait of the 새 특성 해금 card (RunResultScreen). Sign / rarity chip fills are data — the screen paints them."
@@ -35,7 +20,7 @@ offset_top = 6.0
 offset_bottom = 98.0
 grow_horizontal = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+theme_type_variation = &"RunResultTraitCard"
 
 [node name="Sign" type="Panel" parent="Card"]
 unique_name_in_owner = true

@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=87 format=3 uid="uid://co7tw5omdwmyd"]
+[gd_resource type="Theme" load_steps=121 format=3 uid="uid://co7tw5omdwmyd"]
 
 [sub_resource type="StyleBoxFlat" id="AccentChip_panel"]
 content_margin_left = 20.0
@@ -10,6 +10,61 @@ corner_radius_top_left = 999
 corner_radius_top_right = 999
 corner_radius_bottom_right = 999
 corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="BanPickBanChipPanel_panel"]
+bg_color = Color(0.929, 0.933, 0.945, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+
+[sub_resource type="StyleBoxFlat" id="BanPickDragGhost_panel"]
+bg_color = Color(0.929, 0.933, 0.945, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.961, 0.651, 0.137, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="BanPickMechSlotFrame_panel"]
+bg_color = Color(0.929, 0.933, 0.945, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.63100004, 0.73, 0.9631, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="BanPickPortraitRim_panel"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.18, 0.4, 0.918, 1)
+
+[sub_resource type="StyleBoxFlat" id="BanPickSheetCard_panel"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.961, 0.651, 0.137, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(0.11, 0.11, 0.18, 0.1)
+shadow_size = 6
+shadow_offset = Vector2(0, 3)
 
 [sub_resource type="StyleBoxFlat" id="BarDarkButton_disabled"]
 content_margin_left = 18.0
@@ -352,6 +407,25 @@ color = Color(0.886, 0.89, 0.906, 1)
 grow_begin = 0.0
 grow_end = 0.0
 
+[sub_resource type="StyleBoxFlat" id="DraftSlotArtMask_panel"]
+bg_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 11
+corner_radius_top_right = 11
+corner_radius_bottom_right = 11
+corner_radius_bottom_left = 11
+
+[sub_resource type="StyleBoxFlat" id="DraftSlotFrame_disabled"]
+bg_color = Color(0.929, 0.933, 0.945, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
 [sub_resource type="StyleBoxFlat" id="GhostButton_disabled"]
 content_margin_left = 18.0
 content_margin_top = 8.0
@@ -442,6 +516,49 @@ corner_radius_top_left = 16
 corner_radius_top_right = 16
 corner_radius_bottom_right = 16
 corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="LobbySurfaceBar_panel"]
+bg_color = Color(1, 1, 1, 1)
+
+[sub_resource type="StyleBoxFlat" id="LobbyToast_panel"]
+bg_color = Color(0.11, 0.11, 0.122, 1)
+corner_radius_top_left = 34
+corner_radius_top_right = 34
+corner_radius_bottom_right = 34
+corner_radius_bottom_left = 34
+
+[sub_resource type="StyleBoxFlat" id="ManagerDangerCard_panel"]
+bg_color = Color(0.98536, 0.91252, 0.91252, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.878, 0.271, 0.271, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="PilotThumbArtMask_panel"]
+bg_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="PilotThumbCheck_panel"]
+bg_color = Color(0.961, 0.651, 0.137, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+
+[sub_resource type="StyleBoxFlat" id="PilotThumbTag_panel"]
+bg_color = Color(0.11, 0.11, 0.122, 1)
+corner_radius_top_left = 17
+corner_radius_top_right = 17
+corner_radius_bottom_right = 17
+corner_radius_bottom_left = 17
 
 [sub_resource type="StyleBoxFlat" id="PopupCard_panel"]
 content_margin_left = 48.0
@@ -573,6 +690,71 @@ corner_radius_top_left = 7
 corner_radius_top_right = 7
 corner_radius_bottom_right = 7
 corner_radius_bottom_left = 7
+
+[sub_resource type="StyleBoxFlat" id="RoleBadgePanel_panel"]
+bg_color = Color(0.15300001, 0.38335, 0.7633, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0, 0, 0, 0.18)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxLine" id="RunResultAccentDivider_separator"]
+color = Color(0.961, 0.651, 0.137, 1)
+grow_begin = 0.0
+grow_end = 0.0
+
+[sub_resource type="StyleBoxFlat" id="RunResultSectionCard_panel"]
+content_margin_left = 40.0
+content_margin_top = 28.0
+content_margin_right = 40.0
+content_margin_bottom = 40.0
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+shadow_color = Color(0.11, 0.11, 0.18, 0.1)
+shadow_size = 6
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="StyleBoxFlat" id="RunResultSectionCardAmber_panel"]
+content_margin_left = 40.0
+content_margin_top = 28.0
+content_margin_right = 40.0
+content_margin_bottom = 40.0
+bg_color = Color(0.996, 0.929, 0.808, 1)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+shadow_color = Color(0.11, 0.11, 0.18, 0.1)
+shadow_size = 6
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="StyleBoxFlat" id="RunResultTraitCard_panel"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(0.11, 0.11, 0.18, 0.1)
+shadow_size = 6
+shadow_offset = Vector2(0, 3)
 
 [sub_resource type="StyleBoxFlat" id="SelectableCard_panel"]
 content_margin_left = 0.0
@@ -989,6 +1171,47 @@ shadow_color = Color(0.11, 0.11, 0.18, 0.1)
 shadow_size = 6
 shadow_offset = Vector2(0, 3)
 
+[sub_resource type="StyleBoxFlat" id="ShopBannerCard_panel"]
+bg_color = Color(0.259, 0.522, 0.957, 1)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+shadow_color = Color(0.11, 0.11, 0.18, 0.1)
+shadow_size = 6
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="StyleBoxFlat" id="ShopDevRowPanel_panel"]
+bg_color = Color(0.929, 0.933, 0.945, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[sub_resource type="StyleBoxFlat" id="ShopRowPanel_panel"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[sub_resource type="StyleBoxFlat" id="StepChipPanel_panel"]
+bg_color = Color(0.961, 0.651, 0.137, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+
 [sub_resource type="StyleBoxFlat" id="SunkPanel_panel"]
 content_margin_left = 0.0
 content_margin_top = 0.0
@@ -1010,6 +1233,18 @@ corner_radius_top_left = 999
 corner_radius_top_right = 999
 corner_radius_bottom_right = 999
 corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="TeamDraftGridBack_panel"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
 
 [sub_resource type="StyleBoxFlat" id="TextButton_disabled"]
 content_margin_left = 18.0
@@ -1082,12 +1317,114 @@ corner_radius_top_right = 16
 corner_radius_bottom_right = 16
 corner_radius_bottom_left = 16
 
+[sub_resource type="StyleBoxFlat" id="TrainingCourseCardFrame_panel"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.29, 0.76, 0.78, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="TrainingCourseGradeBand_panel"]
+bg_color = Color(0.29, 0.76, 0.78, 0.22)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+
+[sub_resource type="StyleBoxFlat" id="TrainingCourseLockChip_panel"]
+bg_color = Color(0.11, 0.11, 0.122, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[sub_resource type="StyleBoxFlat" id="TrainingCoursePopoverFrame_panel"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.29, 0.76, 0.78, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+shadow_color = Color(0.11, 0.11, 0.18, 0.28)
+shadow_size = 10
+
+[sub_resource type="StyleBoxFlat" id="TrainingCourseShapeWell_panel"]
+bg_color = Color(0.929, 0.933, 0.945, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="TrainingThumbExpChip_panel"]
+bg_color = Color(0.13, 0.68, 0.38, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="TrainingThumbFrame_panel"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.18, 0.451, 0.898, 0.85)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="WeekDayChip_panel"]
+bg_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+
+[sub_resource type="StyleBoxFlat" id="WeekDayChipToday_panel"]
+bg_color = Color(0.961, 0.651, 0.137, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+
+[sub_resource type="StyleBoxFlat" id="WeekEveningHighlight_panel"]
+bg_color = Color(0.996, 0.929, 0.808, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="WeekRail_panel"]
+bg_color = Color(0.11, 0.11, 0.122, 1)
+corner_radius_top_left = 48
+corner_radius_top_right = 48
+corner_radius_bottom_right = 48
+corner_radius_bottom_left = 48
+
 [resource]
 AccentChip/base_type = &"PanelContainer"
 AccentChip/styles/panel = SubResource("AccentChip_panel")
 AccentLabel/base_type = &"Label"
 AccentLabel/colors/font_color = Color(0.769, 0.521, 0.11, 1)
 AccentLabel/font_sizes/font_size = 22
+BanPickBanChipPanel/base_type = &"SunkPanel"
+BanPickBanChipPanel/styles/panel = SubResource("BanPickBanChipPanel_panel")
+BanPickDragGhost/base_type = &"SunkPanel"
+BanPickDragGhost/styles/panel = SubResource("BanPickDragGhost_panel")
+BanPickMechSlotFrame/base_type = &"SunkPanel"
+BanPickMechSlotFrame/styles/panel = SubResource("BanPickMechSlotFrame_panel")
+BanPickPortraitRim/base_type = &"SunkPanel"
+BanPickPortraitRim/styles/panel = SubResource("BanPickPortraitRim_panel")
+BanPickSheetCard/base_type = &"Card"
+BanPickSheetCard/styles/panel = SubResource("BanPickSheetCard_panel")
 BarDarkButton/base_type = &"Button"
 BarDarkButton/colors/font_color = Color(1, 1, 1, 1)
 BarDarkButton/colors/font_disabled_color = Color(0.722, 0.722, 0.749, 1)
@@ -1173,6 +1510,15 @@ DimPanel/styles/panel = SubResource("DimPanel_panel")
 Divider/base_type = &"HSeparator"
 Divider/constants/separation = 1
 Divider/styles/separator = SubResource("Divider_separator")
+DraftSlotArtMask/base_type = &"SunkPanel"
+DraftSlotArtMask/styles/panel = SubResource("DraftSlotArtMask_panel")
+DraftSlotFrame/base_type = &"SelectableCardButton"
+DraftSlotFrame/styles/disabled = SubResource("DraftSlotFrame_disabled")
+DraftSlotFrame/styles/focus = SubResource("DraftSlotFrame_disabled")
+DraftSlotFrame/styles/hover = SubResource("DraftSlotFrame_disabled")
+DraftSlotFrame/styles/hover_pressed = SubResource("DraftSlotFrame_disabled")
+DraftSlotFrame/styles/normal = SubResource("DraftSlotFrame_disabled")
+DraftSlotFrame/styles/pressed = SubResource("DraftSlotFrame_disabled")
 FaintLabel/base_type = &"Label"
 FaintLabel/colors/font_color = Color(0.722, 0.722, 0.749, 1)
 FaintLabel/font_sizes/font_size = 22
@@ -1196,12 +1542,24 @@ HeadingLabel/font_sizes/font_size = 52
 LinkLabel/base_type = &"Label"
 LinkLabel/colors/font_color = Color(0.18, 0.4, 0.918, 1)
 LinkLabel/font_sizes/font_size = 22
+LobbySurfaceBar/base_type = &"Card"
+LobbySurfaceBar/styles/panel = SubResource("LobbySurfaceBar_panel")
+LobbyToast/base_type = &"SurfaceChip"
+LobbyToast/styles/panel = SubResource("LobbyToast_panel")
+ManagerDangerCard/base_type = &"Card"
+ManagerDangerCard/styles/panel = SubResource("ManagerDangerCard_panel")
 NegativeLabel/base_type = &"Label"
 NegativeLabel/colors/font_color = Color(0.878, 0.271, 0.271, 1)
 NegativeLabel/font_sizes/font_size = 22
 OnFillLabel/base_type = &"Label"
 OnFillLabel/colors/font_color = Color(1, 1, 1, 1)
 OnFillLabel/font_sizes/font_size = 22
+PilotThumbArtMask/base_type = &"SunkPanel"
+PilotThumbArtMask/styles/panel = SubResource("PilotThumbArtMask_panel")
+PilotThumbCheck/base_type = &"AccentChip"
+PilotThumbCheck/styles/panel = SubResource("PilotThumbCheck_panel")
+PilotThumbTag/base_type = &"SurfaceChip"
+PilotThumbTag/styles/panel = SubResource("PilotThumbTag_panel")
 PopupCard/base_type = &"PanelContainer"
 PopupCard/styles/panel = SubResource("PopupCard_panel")
 PopupCardWide/base_type = &"PanelContainer"
@@ -1227,6 +1585,16 @@ ProgressFill/base_type = &"Panel"
 ProgressFill/styles/panel = SubResource("ProgressFill_panel")
 ProgressTrack/base_type = &"Panel"
 ProgressTrack/styles/panel = SubResource("ProgressTrack_panel")
+RoleBadgePanel/base_type = &"AccentChip"
+RoleBadgePanel/styles/panel = SubResource("RoleBadgePanel_panel")
+RunResultAccentDivider/base_type = &"Divider"
+RunResultAccentDivider/styles/separator = SubResource("RunResultAccentDivider_separator")
+RunResultSectionCard/base_type = &"Card"
+RunResultSectionCard/styles/panel = SubResource("RunResultSectionCard_panel")
+RunResultSectionCardAmber/base_type = &"Card"
+RunResultSectionCardAmber/styles/panel = SubResource("RunResultSectionCardAmber_panel")
+RunResultTraitCard/base_type = &"Card"
+RunResultTraitCard/styles/panel = SubResource("RunResultTraitCard_panel")
 SelectableCard/base_type = &"PanelContainer"
 SelectableCard/styles/panel = SubResource("SelectableCard_panel")
 SelectableCardButton/base_type = &"Button"
@@ -1289,6 +1657,14 @@ SelectableTileOn/styles/normal = SubResource("SelectableTileOn_normal")
 SelectableTileOn/styles/pressed = SubResource("SelectableTileOn_pressed")
 SheetCard/base_type = &"PanelContainer"
 SheetCard/styles/panel = SubResource("SheetCard_panel")
+ShopBannerCard/base_type = &"Card"
+ShopBannerCard/styles/panel = SubResource("ShopBannerCard_panel")
+ShopDevRowPanel/base_type = &"SunkPanel"
+ShopDevRowPanel/styles/panel = SubResource("ShopDevRowPanel_panel")
+ShopRowPanel/base_type = &"Card"
+ShopRowPanel/styles/panel = SubResource("ShopRowPanel_panel")
+StepChipPanel/base_type = &"AccentChip"
+StepChipPanel/styles/panel = SubResource("StepChipPanel_panel")
 SubLabel/base_type = &"Label"
 SubLabel/colors/font_color = Color(0.541, 0.541, 0.569, 1)
 SubLabel/font_sizes/font_size = 26
@@ -1296,6 +1672,8 @@ SunkPanel/base_type = &"PanelContainer"
 SunkPanel/styles/panel = SubResource("SunkPanel_panel")
 SurfaceChip/base_type = &"PanelContainer"
 SurfaceChip/styles/panel = SubResource("SurfaceChip_panel")
+TeamDraftGridBack/base_type = &"Card"
+TeamDraftGridBack/styles/panel = SubResource("TeamDraftGridBack_panel")
 TextButton/base_type = &"Button"
 TextButton/colors/font_color = Color(0.541, 0.541, 0.569, 1)
 TextButton/colors/font_disabled_color = Color(0.722, 0.722, 0.749, 1)
@@ -1313,3 +1691,25 @@ TextButton/styles/pressed = SubResource("TextButton_pressed")
 TitleLabel/base_type = &"Label"
 TitleLabel/colors/font_color = Color(0.11, 0.11, 0.122, 1)
 TitleLabel/font_sizes/font_size = 36
+TrainingCourseCardFrame/base_type = &"Card"
+TrainingCourseCardFrame/styles/panel = SubResource("TrainingCourseCardFrame_panel")
+TrainingCourseGradeBand/base_type = &"SunkPanel"
+TrainingCourseGradeBand/styles/panel = SubResource("TrainingCourseGradeBand_panel")
+TrainingCourseLockChip/base_type = &"SurfaceChip"
+TrainingCourseLockChip/styles/panel = SubResource("TrainingCourseLockChip_panel")
+TrainingCoursePopoverFrame/base_type = &"PopupCard"
+TrainingCoursePopoverFrame/styles/panel = SubResource("TrainingCoursePopoverFrame_panel")
+TrainingCourseShapeWell/base_type = &"SunkPanel"
+TrainingCourseShapeWell/styles/panel = SubResource("TrainingCourseShapeWell_panel")
+TrainingThumbExpChip/base_type = &"AccentChip"
+TrainingThumbExpChip/styles/panel = SubResource("TrainingThumbExpChip_panel")
+TrainingThumbFrame/base_type = &"Card"
+TrainingThumbFrame/styles/panel = SubResource("TrainingThumbFrame_panel")
+WeekDayChip/base_type = &"AccentChip"
+WeekDayChip/styles/panel = SubResource("WeekDayChip_panel")
+WeekDayChipToday/base_type = &"AccentChip"
+WeekDayChipToday/styles/panel = SubResource("WeekDayChipToday_panel")
+WeekEveningHighlight/base_type = &"SunkPanel"
+WeekEveningHighlight/styles/panel = SubResource("WeekEveningHighlight_panel")
+WeekRail/base_type = &"SunkPanel"
+WeekRail/styles/panel = SubResource("WeekRail_panel")

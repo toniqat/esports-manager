@@ -1,29 +1,7 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" uid="uid://oprjdu25ndur" path="res://features/meta/shop/ShopTab.gd" id="1_tab"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_banner"]
-bg_color = Color(0.259, 0.522, 0.957, 1)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
-shadow_color = Color(0.11, 0.11, 0.18, 0.1)
-shadow_size = 6
-shadow_offset = Vector2(0, 3)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dev"]
-bg_color = Color(0.929, 0.933, 0.945, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.886, 0.89, 0.906, 1)
-corner_radius_top_left = 18
-corner_radius_top_right = 18
-corner_radius_bottom_right = 18
-corner_radius_bottom_left = 18
 
 [node name="ShopTab" type="Control"]
 layout_mode = 3
@@ -146,7 +124,7 @@ editor_description = "Tinted card — the tint is per pool (CARD_TINTS[3] pilot 
 custom_minimum_size = Vector2(0, 290)
 layout_mode = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_banner")
+theme_type_variation = &"ShopBannerCard"
 
 [node name="Pad" type="MarginContainer" parent="Body/GachaView/VBox/Banner"]
 layout_mode = 1
@@ -476,7 +454,7 @@ editor_description = "교환소 only — dev premium grant (premium is a local n
 custom_minimum_size = Vector2(0, 132)
 layout_mode = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_dev")
+theme_type_variation = &"ShopDevRowPanel"
 
 [node name="DevTitle" type="Label" parent="Body/ListView/Scroll/ScrollPad/VBox/DevRow"]
 layout_mode = 1

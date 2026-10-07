@@ -155,7 +155,7 @@ horizontal_alignment = 2
 
 [node name="Filters" type="HBoxContainer" parent="VBox/Top/TopVBox"]
 unique_name_in_owner = true
-editor_description = "Role filter. Child i = 전체 (i 0) then GameEnums.ROLE_DISPLAY_ORDER[i - 1] — keep the order. The on / off frame is state, painted by code."
+editor_description = "Role filter. Child i = 전체 (i 0) then GameEnums.ROLE_DISPLAY_ORDER[i - 1] — keep the order. On / off = SelectableTileOn / SelectableTile, switched by code (CollectionTab._apply_filter_styles)."
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 mouse_filter = 2
@@ -165,48 +165,42 @@ theme_override_constants/separation = 8
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
-theme_type_variation = &"GhostButton"
-theme_override_font_sizes/font_size = 26
+theme_type_variation = &"SelectableTile"
 text = "전체"
 
 [node name="Top" type="Button" parent="VBox/Top/TopVBox/Filters"]
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
-theme_type_variation = &"GhostButton"
-theme_override_font_sizes/font_size = 26
+theme_type_variation = &"SelectableTile"
 text = "탑"
 
 [node name="Jungle" type="Button" parent="VBox/Top/TopVBox/Filters"]
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
-theme_type_variation = &"GhostButton"
-theme_override_font_sizes/font_size = 26
+theme_type_variation = &"SelectableTile"
 text = "정글"
 
 [node name="Mid" type="Button" parent="VBox/Top/TopVBox/Filters"]
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
-theme_type_variation = &"GhostButton"
-theme_override_font_sizes/font_size = 26
+theme_type_variation = &"SelectableTile"
 text = "미드"
 
 [node name="Adc" type="Button" parent="VBox/Top/TopVBox/Filters"]
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
-theme_type_variation = &"GhostButton"
-theme_override_font_sizes/font_size = 26
+theme_type_variation = &"SelectableTile"
 text = "원딜"
 
 [node name="Support" type="Button" parent="VBox/Top/TopVBox/Filters"]
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
-theme_type_variation = &"GhostButton"
-theme_override_font_sizes/font_size = 26
+theme_type_variation = &"SelectableTile"
 text = "서폿"
 
 [node name="Scroll" type="ScrollContainer" parent="VBox"]

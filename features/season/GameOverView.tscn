@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://cgjjlifm1rxf5"]
 
 [ext_resource type="Script" uid="uid://dqiio3ougkq0" path="res://features/season/GameOverView.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]

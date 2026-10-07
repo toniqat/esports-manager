@@ -1,7 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://bkd7mlj7nwksw"]
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
-[ext_resource type="PackedScene" path="res://features/season/week/WeekStatCell.tscn" id="2_cell"]
+[ext_resource type="PackedScene" uid="uid://b35sbgo83liyd" path="res://features/season/week/WeekStatCell.tscn" id="2_cell"]
 
 [node name="WeekPilotCard" type="Panel"]
 editor_description = "One pilot's training result of the day. Code sets the role-colour lead bar (lead_bar_style), the height (148 + one quirk line each + 8) and fills %Stats with one WeekStatCell per stat."
@@ -15,7 +15,7 @@ theme_type_variation = &"Card"
 [node name="Portrait" type="Control" parent="."]
 unique_name_in_owner = true
 editor_description = "Slot for the round portrait — code adds the drawn OutgameTheme.add_round_portrait widget here."
-layout_mode = 0
+anchors_preset = 0
 offset_left = 26.0
 offset_top = 30.0
 offset_right = 114.0

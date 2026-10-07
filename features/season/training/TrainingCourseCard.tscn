@@ -1,38 +1,7 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://hufggc2gsct7"]
 
 [ext_resource type="Script" path="res://features/season/training/TrainingCourseCard.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
-
-[sub_resource type="StyleBoxFlat" id="CardFrame"]
-bg_color = Color(1, 1, 1, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.29, 0.76, 0.78, 1)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
-
-[sub_resource type="StyleBoxFlat" id="GradeBand"]
-bg_color = Color(0.29, 0.76, 0.78, 0.22)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-
-[sub_resource type="StyleBoxFlat" id="ShapeWell"]
-bg_color = Color(0.929, 0.933, 0.945, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-
-[sub_resource type="StyleBoxFlat" id="LockChipFill"]
-bg_color = Color(0.11, 0.11, 0.122, 1)
-corner_radius_top_left = 18
-corner_radius_top_right = 18
-corner_radius_bottom_right = 18
-corner_radius_bottom_left = 18
 
 [node name="TrainingCourseCard" type="Panel"]
 editor_description = "One course card of the training inventory row (TrainingView %CourseRow). Grade colour (frame border, band fill, grade letter) and the selected look are data: code duplicates CardFrame / GradeBand. PASS so the press reaches the scroll (DragScroll decides scroll vs pick-up)."
@@ -41,7 +10,7 @@ offset_right = 168.0
 offset_bottom = 236.0
 mouse_filter = 1
 theme = ExtResource("2_theme")
-theme_override_styles/panel = SubResource("CardFrame")
+theme_type_variation = &"TrainingCourseCardFrame"
 script = ExtResource("1_script")
 
 [node name="Body" type="Control" parent="."]
@@ -63,7 +32,7 @@ anchor_right = 1.0
 offset_bottom = 36.0
 grow_horizontal = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("GradeBand")
+theme_type_variation = &"TrainingCourseGradeBand"
 
 [node name="Grade" type="Label" parent="Body/Band"]
 unique_name_in_owner = true
@@ -103,7 +72,7 @@ offset_right = -10.0
 offset_bottom = 170.0
 grow_horizontal = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("ShapeWell")
+theme_type_variation = &"TrainingCourseShapeWell"
 
 [node name="Mini" type="Control" parent="Body/Well"]
 unique_name_in_owner = true
@@ -126,6 +95,8 @@ offset_left = 8.0
 offset_top = 176.0
 offset_right = -8.0
 offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 19
 text = "사격 훈련"
@@ -135,15 +106,15 @@ autowrap_mode = 3
 
 [node name="LockChip" type="Panel" parent="."]
 unique_name_in_owner = true
-visible = false
 editor_description = "Grade not unlocked by tactics: the reason, over the shape well. Shown by code."
+visible = false
 layout_mode = 0
 offset_left = 16.0
 offset_top = 90.0
 offset_right = 152.0
 offset_bottom = 126.0
 mouse_filter = 2
-theme_override_styles/panel = SubResource("LockChipFill")
+theme_type_variation = &"TrainingCourseLockChip"
 
 [node name="LockText" type="Label" parent="LockChip"]
 unique_name_in_owner = true

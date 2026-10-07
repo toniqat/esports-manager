@@ -30,7 +30,7 @@ ManagerTab (Control, theme = OutgameTheme.tres, preview 1080×1568 — host sets
     │   %TypeTitle (TitleLabel) · %PrestigeChip/%PrestigeChipText (right) · %Level (AccentLabel 34) ·
     │   ExpTrack (ProgressTrack, 150 .. −250) ─ %ExpFill · %ExpText · %Prestige (right, 230×72) · %Info (FaintLabel 20)
     ├ Presets (VBox 0): PresetsTitle (min h 52) · %PresetChips (slot) · %ResetBox (top 16, hidden)
-    │   └ ResetCard (Panel, local red StyleBox, h 120): title (`NegativeLabel` 24) · body · %Reset (PrimaryButton 26)
+    │   └ ResetCard (Panel `ManagerDangerCard`, h 120): title (`NegativeLabel` 24) · body · %Reset (PrimaryButton 26)
     ├ Stats (MarginContainer) ─ Bg (Card) + Pad (28 / 0 / 28 / 16) ─ VBox 0:
     │   Head (h 108): StatsTitle · %RemoveChip · %SpecChip (right) · %Formula │ %StatRows (6 × ManagerStatRow.tscn, h 92)
     └ %Traits (TraitPickerView node)

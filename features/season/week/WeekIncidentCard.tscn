@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://dfn67gssernyv"]
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
@@ -14,7 +14,7 @@ theme_type_variation = &"Card"
 [node name="Portrait" type="Control" parent="."]
 unique_name_in_owner = true
 editor_description = "Slot for the round portrait — code adds the drawn OutgameTheme.add_round_portrait widget here."
-layout_mode = 0
+anchors_preset = 0
 offset_left = 28.0
 offset_top = 33.0
 offset_right = 112.0

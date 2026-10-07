@@ -17,7 +17,7 @@ HubView "이번 주 시작 →"  →  PRESS  →  (pick an answer)  →  TRAININ
 | `MessengerNpcBubble.tscn` / `.gd` | Item — one line of the other side (left): portrait slot (`%Portrait` + `%Glyph`), tail (`%Wedge`), white bubble (`%Bubble` → `Pad` → `%Text`). `create()` + `setup(text, portrait, with_portrait)` — follow-up lines hide portrait + tail but keep their columns |
 | `MessengerPlayerBubble.tscn` / `.gd` | Item — one manager line (right): amber `%Bubble` + tail. `create()` + `setup(text)` |
 | `MessengerNarration.tscn` | Item (no script) — centred `*narration` line; code sets `%Text` |
-| `MessengerNoteChip.tscn` / `.gd` | Item — centred effect / verdict pill. `create()` + `setup(text, good)`; scene = good look (`AccentChip` + `AccentLabel`), bad = `variation_box("AccentChip")` copy with `SURFACE_SUNK` + `CaptionLabel` |
+| `MessengerNoteChip.tscn` / `.gd` | Item — centred effect / verdict pill. `create()` + `setup(text, good)`; scene = good look (`AccentChip` + `AccentLabel`), bad = `MessengerNoteChipMuted` + `CaptionLabel` |
 | `MessengerAnswerButton.tscn` | Item (no script) — one answer choice (`GhostButton` 26, 640 wide, ≥ 96 tall, right-aligned, autowrap); code sets text + `pressed` |
 | `MessengerWedge.gd` | `@tool` `_draw` widget — bubble tail. `@export point_left`, `@export_node_path bubble` (tail colour = that bubble's `panel` stylebox fill); the base overlaps the bubble by `OVERLAP` 1 px |
 | `MessengerReporterGlyph.gd` | `@tool` `_draw` widget — reporter microphone placeholder over the portrait slot (no portrait texture) |
@@ -55,10 +55,10 @@ MessengerView (Control, full rect, STOP, theme OutgameTheme.tres)
   (margin top 26) · bubble 700 → bubble x 162, tail drawn from x 145. Manager = row aligned right,
   margin right 22 · tail column 18 (margin top 24) → bubble 400 … 1040, tail from 1039.
   Tail columns are `z_index` 1 so the tail covers the bubble border where they join.
-* **Bubble looks are stand-ins** until the messenger variations exist in `OutgameTheme`:
-  NPC bubble `SelectableCard` (r18, 2 px border; was r22, 1 px), manager bubble `ProgressFill`
-  (r7; was r22). Both have no padding — the `Pad` MarginContainer holds it, so swapping in
-  the dedicated variations is a name change only.
+* **Looks = screen variations** (`OutgameTheme._add_screen_variations`): NPC bubble
+  `MessengerBubbleNpc` (r22, 1 px `BORDER`), manager bubble `MessengerBubbleMine` (r22 `ACCENT`),
+  answers `MessengerAnswerButton` (`GhostButton` + padding 22/17), failed note
+  `MessengerNoteChipMuted`. Bubbles have no padding — the `Pad` MarginContainer holds it.
 * `%Scroll` and `%Hint` use `anchors_preset = -1` on purpose: a preset re-applies its grow
   directions on load, so the overflowing log would shift left by half the scroll bar and the
   hint (min height 31 > 28) would grow upward. Keep them custom when editing.

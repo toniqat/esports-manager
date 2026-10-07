@@ -815,6 +815,24 @@ static func _add_screen_variations(th: Theme) -> void:
 	_add_derived(th, "WeekDayChip", &"AccentChip", flat_style(Color(0, 0, 0, 0), WEEK_DAY_CHIP_RADIUS))
 	_add_derived(th, "WeekDayChipToday", &"AccentChip", flat_style(ACCENT, WEEK_DAY_CHIP_RADIUS))
 
+	# season/press — 기자회견 메신저 (말풍선 안쪽 여백은 씬의 `Pad` MarginContainer)
+	var npc := flat_style(SURFACE, 22, BORDER)
+	npc.set_content_margin_all(0.0)
+	_add_derived(th, "MessengerBubbleNpc", &"Card", npc)
+	var mine := flat_style(ACCENT, 22)
+	mine.set_content_margin_all(0.0)
+	_add_derived(th, "MessengerBubbleMine", &"Card", mine)
+	_add_derived(th, "MessengerNoteChipMuted", &"AccentChip", flat_style(SURFACE_SUNK, CHIP_RADIUS))
+	th.set_type_variation(&"MessengerAnswerButton", &"GhostButton")
+	var ghost: Dictionary = button_styles("ghost")
+	for n in BUTTON_STATES:
+		var b: StyleBox = (ghost[n] as StyleBox).duplicate()
+		b.content_margin_left = 22.0
+		b.content_margin_right = 22.0
+		b.content_margin_top = 17.0
+		b.content_margin_bottom = 17.0
+		th.set_stylebox(n, &"MessengerAnswerButton", b)
+
 	# meta/lobby — 로비
 	_add_derived(th, "LobbySurfaceBar", &"Card", flat_style(SURFACE, 0))
 	_add_derived(th, "LobbyToast", &"SurfaceChip", flat_style(RAIL, 34))

@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=122 format=3 uid="uid://co7tw5omdwmyd"]
+[gd_resource type="Theme" load_steps=131 format=3 uid="uid://co7tw5omdwmyd"]
 
 [sub_resource type="StyleBoxFlat" id="AccentChip_panel"]
 content_margin_left = 20.0
@@ -538,6 +538,131 @@ corner_radius_top_left = 16
 corner_radius_top_right = 16
 corner_radius_bottom_right = 16
 corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="MessengerAnswerButton_disabled"]
+content_margin_left = 22.0
+content_margin_top = 17.0
+content_margin_right = 22.0
+content_margin_bottom = 17.0
+bg_color = Color(0.929, 0.933, 0.945, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="MessengerAnswerButton_focus"]
+content_margin_left = 22.0
+content_margin_top = 17.0
+content_margin_right = 22.0
+content_margin_bottom = 17.0
+bg_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="MessengerAnswerButton_hover"]
+content_margin_left = 22.0
+content_margin_top = 17.0
+content_margin_right = 22.0
+content_margin_bottom = 17.0
+bg_color = Color(0.929, 0.933, 0.945, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="MessengerAnswerButton_hover_pressed"]
+content_margin_left = 22.0
+content_margin_top = 17.0
+content_margin_right = 22.0
+content_margin_bottom = 17.0
+bg_color = Color(0.78, 0.784, 0.808, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="MessengerAnswerButton_normal"]
+content_margin_left = 22.0
+content_margin_top = 17.0
+content_margin_right = 22.0
+content_margin_bottom = 17.0
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="MessengerAnswerButton_pressed"]
+content_margin_left = 22.0
+content_margin_top = 17.0
+content_margin_right = 22.0
+content_margin_bottom = 17.0
+bg_color = Color(0.78, 0.784, 0.808, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="MessengerBubbleMine_panel"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.961, 0.651, 0.137, 1)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
+
+[sub_resource type="StyleBoxFlat" id="MessengerBubbleNpc_panel"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
+
+[sub_resource type="StyleBoxFlat" id="MessengerNoteChipMuted_panel"]
+bg_color = Color(0.929, 0.933, 0.945, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
 
 [sub_resource type="StyleBoxFlat" id="PilotThumbArtMask_panel"]
 bg_color = Color(1, 1, 1, 1)
@@ -1555,6 +1680,19 @@ LobbyToast/base_type = &"SurfaceChip"
 LobbyToast/styles/panel = SubResource("LobbyToast_panel")
 ManagerDangerCard/base_type = &"Card"
 ManagerDangerCard/styles/panel = SubResource("ManagerDangerCard_panel")
+MessengerAnswerButton/base_type = &"GhostButton"
+MessengerAnswerButton/styles/disabled = SubResource("MessengerAnswerButton_disabled")
+MessengerAnswerButton/styles/focus = SubResource("MessengerAnswerButton_focus")
+MessengerAnswerButton/styles/hover = SubResource("MessengerAnswerButton_hover")
+MessengerAnswerButton/styles/hover_pressed = SubResource("MessengerAnswerButton_hover_pressed")
+MessengerAnswerButton/styles/normal = SubResource("MessengerAnswerButton_normal")
+MessengerAnswerButton/styles/pressed = SubResource("MessengerAnswerButton_pressed")
+MessengerBubbleMine/base_type = &"Card"
+MessengerBubbleMine/styles/panel = SubResource("MessengerBubbleMine_panel")
+MessengerBubbleNpc/base_type = &"Card"
+MessengerBubbleNpc/styles/panel = SubResource("MessengerBubbleNpc_panel")
+MessengerNoteChipMuted/base_type = &"AccentChip"
+MessengerNoteChipMuted/styles/panel = SubResource("MessengerNoteChipMuted_panel")
 NegativeLabel/base_type = &"Label"
 NegativeLabel/colors/font_color = Color(0.878, 0.271, 0.271, 1)
 NegativeLabel/font_sizes/font_size = 22

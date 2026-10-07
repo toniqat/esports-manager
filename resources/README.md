@@ -968,6 +968,7 @@ theme variation too, built in `OutgameTheme._add_screen_variations()`:
 | `WeekEveningHighlight` · `WeekRail` | SunkPanel | `WeekEveningSlot` `Highlight` · `WeekProgressView` `Rail` | — |
 | `WeekDayChip` · `WeekDayChipToday` | AccentChip | `WeekProgressView` day `Chip`s (`WEEK_DAY_CHIP_RADIUS`) | variation switched by `_refresh_rail` |
 | `LobbySurfaceBar` · `LobbyToast` | Card · SurfaceChip | `Lobby` `StripBack` / `TabBarBack` · `Toast` | error toast = `NEGATIVE` copy |
+| `MessengerBubbleNpc` · `MessengerBubbleMine` · `MessengerAnswerButton` · `MessengerNoteChipMuted` | Card · Card · GhostButton · AccentChip | `MessengerNpcBubble` / `MessengerPlayerBubble` `%Bubble` (r22, padding 0 — the scene's `Pad` pads) · `MessengerAnswerButton` (ghost + padding 22/17) · failed `MessengerNoteChip` | — |
 
 Label colour overrides that are data (side / grade / day state colours) stay `theme_override_colors` set by code;
 the scene value is a preview.

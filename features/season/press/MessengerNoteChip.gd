@@ -6,8 +6,8 @@ extends MarginContainer
 #
 # **Layout lives in `MessengerNoteChip.tscn`** — pill height, padding, gap below; the chip is as
 # wide as its text. The scene shows the good look (`AccentChip` + `AccentLabel`); a bad note
-# (failed check) is a sunk pill with grey text: the fill goes into an `OutgameTheme.variation_box`
-# copy (`SURFACE_SUNK`) and the label switches to `CaptionLabel`.
+# (failed check) is a sunk pill with grey text: `%Chip` switches to the
+# `MessengerNoteChipMuted` variation and the label to `CaptionLabel`.
 # Create with `MessengerNoteChip.create()`.
 
 const SCENE_PATH: String = "res://features/season/press/MessengerNoteChip.tscn"
@@ -27,9 +27,7 @@ func setup(text: String, good: bool) -> void:
 	%Text.text = text
 	if good:
 		return
-	var sb: StyleBoxFlat = OutgameTheme.variation_box(&"AccentChip")
-	sb.bg_color = OutgameTheme.SURFACE_SUNK
-	%Chip.add_theme_stylebox_override("panel", sb)
+	%Chip.theme_type_variation = &"MessengerNoteChipMuted"
 	%Text.theme_type_variation = &"CaptionLabel"
 
 

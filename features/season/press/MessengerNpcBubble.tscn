@@ -71,7 +71,7 @@ custom_minimum_size = Vector2(700, 0)
 layout_mode = 2
 size_flags_horizontal = 0
 mouse_filter = 2
-theme_type_variation = &"SelectableCard"
+theme_type_variation = &"MessengerBubbleNpc"
 
 [node name="Pad" type="MarginContainer" parent="Row/Bubble"]
 layout_mode = 2

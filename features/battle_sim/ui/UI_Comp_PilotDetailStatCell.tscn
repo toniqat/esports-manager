@@ -3,6 +3,7 @@
 [ext_resource type="Theme" uid="uid://dmrfge5o5tftu" path="res://resources/BattleTheme.tres" id="1_theme"]
 
 [node name="PilotDetailStatCell" type="Button"]
+auto_translate_mode = 2
 editor_description = "스탯 칸 하나 — 누르면 왼쪽에 설명 판이 열린다. 강조(설명이 열린 칸)는 코드가 변형을 BattleChipButtonOn 으로 바꾼다. 폭은 줄(PilotDetailStatRow)이 나눈다: 칸 하나 = 전폭, 둘 = 반씩."
 custom_minimum_size = Vector2(0, 56)
 offset_right = 452.0

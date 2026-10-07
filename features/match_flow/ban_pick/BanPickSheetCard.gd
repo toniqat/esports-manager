@@ -49,7 +49,7 @@ func _fill_preview() -> void:
 	node.scale = Vector2(0.9, 0.9)
 	node.position = Vector2.ZERO
 	var cnt: int = int(def.get("count", 0))
-	count.text = ("×%d" % cnt) if cnt > 0 else "생성 전용"
+	count.text = ("×%d" % cnt) if cnt > 0 else Loc.t(L.MATCH_BAN_PICK_GENERATED_ONLY)
 
 
 ## 그 메크의 카드 표에서 `count == want_count` 인 첫 카드(없으면 첫 카드).

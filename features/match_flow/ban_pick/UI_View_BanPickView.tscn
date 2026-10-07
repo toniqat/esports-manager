@@ -64,6 +64,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="SideLabel" type="Label" parent="SafeArea/EnemyBlock/BanRow"]
+auto_translate_mode = 2
 editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — BanPickTeamBlock.gd side_label"
 layout_mode = 1
 anchors_preset = -1
@@ -88,7 +89,7 @@ offset_bottom = 36.0
 grow_horizontal = 0
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 18
-text = "BAN"
+text = "tx_VDJKS7MNHE"
 horizontal_alignment = 2
 clip_text = true
 
@@ -252,7 +253,7 @@ custom_minimum_size = Vector2(0, 24)
 layout_mode = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 17
-text = "드래그 드롭으로 메크-파일럿 지정 변경"
+text = "tx_VX9Q85PM8S"
 horizontal_alignment = 2
 clip_text = true
 
@@ -268,6 +269,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="SideLabel" type="Label" parent="SafeArea/PlayerBlock/BanRow"]
+auto_translate_mode = 2
 editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — BanPickTeamBlock.gd side_label"
 layout_mode = 1
 anchors_preset = -1
@@ -292,7 +294,7 @@ offset_bottom = 36.0
 grow_horizontal = 0
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 18
-text = "BAN"
+text = "tx_6Z915A6SVE"
 horizontal_alignment = 2
 clip_text = true
 
@@ -377,6 +379,7 @@ unique_name_in_owner = true
 layout_mode = 2
 
 [node name="Tabs" type="HBoxContainer" parent="SafeArea/Band/Pane/Content"]
+auto_translate_mode = 2
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — BanPickView.gd _ready()
 Role-class filter tabs (SelectableTile; the selected tab is switched to SelectableTileOn in code). Texts / roles come from code (GameEnums.ROLE_DISPLAY_ORDER)."
@@ -514,6 +517,7 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="SheetName" type="Label" parent="SafeArea/Band/Pane/Sheet"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — BanPickView.gd sheet_name"
 unique_name_in_owner = true
 layout_mode = 1
@@ -530,6 +534,7 @@ text = "Ironhide"
 clip_text = true
 
 [node name="SheetStats" type="Label" parent="SafeArea/Band/Pane/Sheet"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — BanPickView.gd sheet_stats"
 unique_name_in_owner = true
 layout_mode = 1
@@ -559,9 +564,10 @@ offset_bottom = 146.0
 grow_horizontal = 2
 theme_type_variation = &"FaintLabel"
 theme_override_font_sizes/font_size = 24
-text = "패시브 없음"
+text = "tx_M08KQVQN65"
 
 [node name="SheetPassiveHead" type="Label" parent="SafeArea/Band/Pane/Sheet"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — BanPickView.gd sheet_passive_head"
 unique_name_in_owner = true
 layout_mode = 1
@@ -578,6 +584,7 @@ text = "◆ 고통과 쾌감   [성장, 포탑 파괴]"
 clip_text = true
 
 [node name="SheetPassiveDesc" type="Label" parent="SafeArea/Band/Pane/Sheet"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — BanPickView.gd sheet_passive_desc"
 unique_name_in_owner = true
 layout_mode = 1
@@ -595,6 +602,7 @@ autowrap_mode = 3
 clip_text = true
 
 [node name="SheetCardsHeader" type="Label" parent="SafeArea/Band/Pane/Sheet"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — BanPickView.gd sheet_cards_header"
 unique_name_in_owner = true
 layout_mode = 1
@@ -639,9 +647,10 @@ offset_bottom = 332.0
 grow_horizontal = 2
 theme_type_variation = &"FaintLabel"
 theme_override_font_sizes/font_size = 20
-text = "이 기체에는 고유 카드가 없다"
+text = "tx_MJJHA43Q8J"
 
 [node name="SheetMastery" type="VBoxContainer" parent="SafeArea/Band/Pane/Sheet"]
+auto_translate_mode = 2
 editor_description = "Season run only: my natural rider's mastery (+ quirk) and the analysis line. Texts / colours from code; empty = blank line."
 layout_mode = 1
 anchors_preset = 2
@@ -702,9 +711,10 @@ custom_minimum_size = Vector2(190, 0)
 layout_mode = 2
 theme_type_variation = &"GhostButton"
 theme_override_font_sizes/font_size = 26
-text = "닫기"
+text = "tx_R1DMEF1S3E"
 
 [node name="SheetConfirm" type="Button" parent="SafeArea/Band/Pane/Sheet/SheetButtons"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — BanPickView.gd sheet_confirm"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(340, 0)
@@ -728,7 +738,7 @@ grow_horizontal = 2
 grow_vertical = 0
 focus_mode = 0
 theme_type_variation = &"BarPrimaryButton"
-text = "게임 시작"
+text = "tx_XVKPY5NPC4"
 
 [node name="DragGhost" type="Panel" parent="SafeArea"]
 editor_description = "[필수] 지우면 오류 — BanPickView.gd drag_ghost"
@@ -786,6 +796,7 @@ mouse_filter = 2
 color = Color(0.2, 0.45, 0.92, 0.92)
 
 [node name="BannerLabel" type="Label" parent="Banner"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — BanPickView.gd _banner_label"
 unique_name_in_owner = true
 visible = false

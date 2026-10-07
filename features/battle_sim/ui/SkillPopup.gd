@@ -65,9 +65,9 @@ const ICON_PX: float = 72.0
 const CLOCK_PX: float = 28.0
 
 ## 쿨타임은 글자 대신 시계 아이콘 + 턴 수(`%Cooldown`).
-const TYPE_LABEL := {
-	PilotSkillSystem.TYPE_CHARGE:   "충전식",
-	PilotSkillSystem.TYPE_PASSIVE:  "패시브",
+const TYPE_LABEL := {  # l10n-keys: hud.skill.type.*
+	PilotSkillSystem.TYPE_CHARGE:   L.HUD_SKILL_TYPE_CHARGE,
+	PilotSkillSystem.TYPE_PASSIVE:  L.HUD_SKILL_TYPE_PASSIVE,
 }
 
 ## 열기 / 닫기 — 위로 올라오며 페이드 인, 내려가며 페이드 아웃.
@@ -142,7 +142,7 @@ func open(p: PilotData, anchor: Vector2, strip_top: float) -> void:
 	_show({
 		"has_skill": has_skill,
 		"key": String(sk.def_for(p).get("key", "")) if has_skill else "",
-		"name": sk.skill_name(p) if has_skill else "스킬 없음",
+		"name": sk.skill_name(p) if has_skill else Loc.t(L.HUD_SKILL_NONE),
 		"type": stype,
 		"cooldown_turns": int(sk.def_for(p).get("p1", 0)),
 		"desc": sk.skill_description(p) if has_skill else "",
@@ -273,7 +273,7 @@ func _show(d: Dictionary, anchor: Vector2, strip_top: float) -> void:
 	var cooldown: bool = has_skill and stype == PilotSkillSystem.TYPE_COOLDOWN
 	var type_lbl: Label = _body.get_node("%Type")
 	type_lbl.visible = has_skill and not cooldown
-	type_lbl.text = String(TYPE_LABEL.get(stype, ""))
+	type_lbl.text = Loc.t(String(TYPE_LABEL[stype])) if TYPE_LABEL.has(stype) else ""  # l10n-dynamic: hud.skill.type.*
 	_body.get_node("%Cooldown").visible = cooldown
 	if cooldown:
 		_body.get_node("%Turns").text = str(int(d["cooldown_turns"]))
@@ -453,7 +453,7 @@ func _hide_preview() -> void:
 ## F6 단독 실행 미리보기 — 전투(`_bs`)가 없으니 쿨타임 스킬 한 장을 손으로 적어
 ## 판만 연다(`resources/UiPreview.gd`). 사용 · 상태 갱신 · 카드 이름 미리보기는 전투가
 ## 있어야 움직인다.
-func _fill_preview() -> void:
+func _fill_preview() -> void:  # l10n-ignore
 	RenderingServer.set_default_clear_color(BattleTheme.MODAL_BG)
 	var vp := ScreenMetrics.viewport_size()
 	_show({

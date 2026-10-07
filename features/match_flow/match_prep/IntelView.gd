@@ -58,7 +58,7 @@ func show_intel(intel: Dictionary) -> void:
 func _fill_header(intel: Dictionary) -> void:
 	var tier: int = int(intel["tier"])
 	var full: bool = tier >= OpponentIntel.FULL
-	%TierText.text = "분석 %d단계 · %s" % [tier, intel["tier_label"]]
+	%TierText.text = Loc.t(L.MATCH_INTEL_TIER_HEADER, {"tier": tier, "label": intel["tier_label"]})
 	%TierText.theme_type_variation = &"AccentLabel" if full else &"BodyLabel"
 	var chip: PanelContainer = %TierChip
 	if full:
@@ -68,12 +68,12 @@ func _fill_header(intel: Dictionary) -> void:
 		sb.bg_color = OutgameTheme.SURFACE_SUNK
 		chip.add_theme_stylebox_override(&"panel", sb)
 	%Need.visible = not full
-	%Need.text = "내 분석 %d · 다음 단계 %d 필요" % [int(intel.get("analysis", 0)),
-			int(intel.get("next_need", 0))]
+	%Need.text = Loc.t(L.MATCH_INTEL_NEED, {"have": int(intel.get("analysis", 0)),
+			"need": int(intel.get("next_need", 0))})
 
 
 func _fill_note(intel: Dictionary) -> void:
-	%Analyst.text = "분석 · %s" % intel["analyst"]
+	%Analyst.text = Loc.t(L.MATCH_INTEL_ANALYST, {"who": intel["analyst"]})
 	var lines: Node = %Lines
 	_clear(lines)
 	for raw in (intel.get("notes", []) as Array):

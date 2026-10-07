@@ -1,5 +1,7 @@
 # Feature: Match Flow
 
+표시 텍스트는 l10n key (`match` 도메인 — `data/l10n/src/match.csv`; shared words via `ui.*` / `term.*`). Scene text the scripts overwrite is marked `auto_translate_mode = 2`; the cheat menu labels stay literal (`# l10n-ignore`, `scan.ignore_paths`).
+
 ## Purpose
 Pre-battle pipeline that runs **before** `BattleSim.tscn`:
 

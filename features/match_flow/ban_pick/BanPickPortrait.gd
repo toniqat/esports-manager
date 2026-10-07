@@ -50,4 +50,4 @@ func _fill_preview() -> void:
 		quirk_badge.add_theme_stylebox_override("panel", OutgameTheme.flat_style(
 				QuirkSystem.grade_color(2), int(quirk_badge.size.y * 0.5)))
 		if quirk_label != null:
-			quirk_label.text = "기벽 2"
+			quirk_label.text = Loc.t(L.MATCH_BAN_PICK_QUIRK_COUNT, {"n": 2})

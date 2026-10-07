@@ -79,4 +79,4 @@ func _fill_preview() -> void:
 	if qtag != null:
 		qtag.visible = true
 		if qtag_label != null:
-			qtag_label.text = "기벽 +3"
+			qtag_label.text = Loc.t(L.MATCH_BAN_PICK_QUIRK_BONUS, {"n": 3})

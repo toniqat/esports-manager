@@ -527,9 +527,9 @@ static func _ignore_input_recursive(node: Node) -> void:
 # 두 장(씬 `%PilotDetailArt_ArtPilot` · `%PilotDetailArt_ArtMech`)을 채우고, 앞뒤 자세는 `_apply_focus(false)` 가 잡는다.
 func _build_arts() -> void:
 	var mech: MechData = _mech()
-	_fill_art(_art_pilot, PilotImages.full_for(_pilot.pilot_id), "초상화 없음")
+	_fill_art(_art_pilot, PilotImages.full_for(_pilot.pilot_id), Loc.t(L.HUD_PILOT_DETAIL_NO_PORTRAIT))
 	_fill_art(_art_mech, MechImages.full_for(mech.id) if mech != null else null,
-			mech.name if mech != null else "메크 미배정")
+			mech.name if mech != null else Loc.t(L.HUD_PILOT_DETAIL_NO_MECH))
 	_apply_focus(false)
 
 
@@ -636,7 +636,7 @@ func _rebuild_body() -> void:
 	_view.get_node("%DeadBox").visible = dead
 	if dead:
 		(_view.get_node("%DeadLabel") as Label).text = \
-				"부활까지 %d턴" % _bs.turns_until_return(_pilot)
+				Loc.t(L.HUD_PILOT_DETAIL_REVIVE_IN, {"n": _bs.turns_until_return(_pilot)})
 	# 파일럿 스킬은 스탯 판 아래 **자기 판** — 인게임 탭에만 선다. 지속 효과는 칼럼
 	# 밖(일러스트 좌측 하단)에 산다.
 	_view.get_node("%SkillPanel").visible = ingame
@@ -681,7 +681,8 @@ func _fill_header() -> void:
 	var mech: MechData = _mech()
 	_growth_label.text = BattleSim.fmt_score(_pilot.score)
 	(_view.get_node("%Name") as Label).text = pd.name if pd != null else _bs.pilot_label(_pilot)
-	(_view.get_node("%Mech") as Label).text = mech.name if mech != null else "메크 미배정"
+	(_view.get_node("%Mech") as Label).text = mech.name if mech != null \
+			else Loc.t(L.HUD_PILOT_DETAIL_NO_MECH)
 
 # ─── 스탯 칩 ─────────────────────────────────────────────────────────────────
 ## 이 탭이 보여 줄 스탯 줄 목록. 줄 하나 = `[[key, 이름], …]`(칸 1개 = 전폭,
@@ -693,9 +694,10 @@ func _fill_header() -> void:
 func _chip_defs() -> Array:
 	match _tab:
 		Tab.INGAME:
-			return [[["hp", "체력"]], [["atk", "공격력"]], [["presence", "존재감"]],
-					[["hit", "전장 명중"], ["eva", "전장 회피"]],
-					[["e_hit", "교전 명중"], ["e_eva", "교전 회피"]]]
+			return [[["hp", Loc.t(L.TERM_COMBAT_HP)]], [["atk", Loc.t(L.TERM_COMBAT_ATK)]],
+					[["presence", Loc.t(L.TERM_COMBAT_PRESENCE)]],
+					[["hit", PlayerData.stat_label(0)], ["eva", PlayerData.stat_label(1)]],
+					[["e_hit", PlayerData.stat_label(2)], ["e_eva", PlayerData.stat_label(3)]]]
 		Tab.PILOT:
 			# 선수 스탯 여섯을 두 칸씩 세 줄로(전장 명중·회피 / 교전 명중·회피 /
 			# 공격·체력 성장). 표는 `PlayerData` 가 소유하므로 그 순서대로 짝짓는다.
@@ -708,7 +710,8 @@ func _chip_defs() -> Array:
 				defs.append(line)
 			return defs
 		_:
-			return [[["m_hp", "체력"]], [["m_atk", "공격력"]], [["m_presence", "존재감"]]]
+			return [[["m_hp", Loc.t(L.TERM_COMBAT_HP)]], [["m_atk", Loc.t(L.TERM_COMBAT_ATK)]],
+					[["m_presence", Loc.t(L.TERM_COMBAT_PRESENCE)]]]
 
 
 ## 줄을 펼친 `[key, 이름]` 목록 — 제목 찾기용.
@@ -896,8 +899,8 @@ func _effect_defs() -> Array:
 		out.append({
 			"key": "fx:lane",
 			"src": String(_pilot.fx_src.get("lane", "")),
-			"short": "라인",
-			"title": "라인전 스탯",
+			"short": Loc.t(L.HUD_PILOT_DETAIL_FX_LANE_SHORT),
+			"title": Loc.t(L.HUD_PILOT_DETAIL_FX_LANE_TITLE),
 			"value": "%+d%%" % roundi(_pilot.lane_stat_mod * 100.0),
 			"color": Color(1.00, 0.62, 0.48) if up else Color(0.55, 0.82, 1.00),
 		})
@@ -905,8 +908,8 @@ func _effect_defs() -> Array:
 		out.append({
 			"key": "fx:eva",
 			"src": String(_pilot.fx_src.get("eva", "")),
-			"short": "회피",
-			"title": "전장 회피 (카드)",
+			"short": Loc.t(L.HUD_PILOT_DETAIL_FX_EVA_SHORT),
+			"title": Loc.t(L.HUD_PILOT_DETAIL_FX_EVA_TITLE),
 			"value": "%+d%%" % roundi(_pilot.eva_card_mod * 100.0),
 			"color": Color(0.55, 0.82, 1.00),
 		})
@@ -914,25 +917,25 @@ func _effect_defs() -> Array:
 		out.append({
 			"key": "fx:ambush",
 			"src": String(_pilot.fx_src.get("ambush", "")),
-			"short": "매복",
-			"title": "매복",
-			"value": "고정",
+			"short": Loc.t(L.HUD_PILOT_DETAIL_FX_AMBUSH_NAME),
+			"title": Loc.t(L.HUD_PILOT_DETAIL_FX_AMBUSH_NAME),
+			"value": Loc.t(L.HUD_PILOT_DETAIL_FX_AMBUSH_VALUE),
 			"color": Color(0.62, 0.90, 0.55),
 		})
 	if not is_equal_approx(_pilot.growth_rate_mult, 1.0):
 		out.append({
 			"key": "fx:rate",
 			"src": String(_pilot.fx_src.get("rate", "")),
-			"short": "적립",
-			"title": "성장치 적립 배율",
+			"short": Loc.t(L.HUD_PILOT_DETAIL_FX_RATE_SHORT),
+			"title": Loc.t(L.HUD_PILOT_DETAIL_FX_RATE_TITLE),
 			"value": "%+d%%" % roundi((_pilot.growth_rate_mult - 1.0) * 100.0),
 			"color": Color(0.72, 1.00, 0.80),
 		})
 	if _pilot.atk_buff != 0:
 		out.append({
 			"key": "fx:atk",
-			"short": "공격",
-			"title": "일시 공격력",
+			"short": Loc.t(L.HUD_PILOT_DETAIL_FX_ATK_SHORT),
+			"title": Loc.t(L.HUD_PILOT_DETAIL_FX_ATK_TITLE),
 			"value": "%+d" % _pilot.atk_buff,
 			"color": Color(1.00, 0.82, 0.42),
 		})
@@ -940,8 +943,8 @@ func _effect_defs() -> Array:
 		out.append({
 			"key": "fx:shield",
 			"src": String(_pilot.fx_src.get("shield", "")),
-			"short": "보호",
-			"title": "보호막",
+			"short": Loc.t(L.HUD_PILOT_DETAIL_FX_SHIELD_SHORT),
+			"title": Loc.t(L.TERM_COMBAT_SHIELD),
 			"value": str(_pilot.shield),
 			"color": Color(0.92, 0.92, 0.42),
 		})
@@ -959,12 +962,13 @@ const FX_KIND_COLOR := {
 	PilotData.FX_ATK_PCT:     Color(1.00, 0.72, 0.36),
 	PilotData.FX_HP_PCT:      Color(0.55, 0.95, 0.62),
 }
-const FX_KIND_NAME := {
-	PilotData.FX_GROWTH_RATE: "성장 적립",
-	PilotData.FX_MAX_HP:      "최대 체력",
-	PilotData.FX_ATK:         "공격력",
-	PilotData.FX_ATK_PCT:     "공격력 %",
-	PilotData.FX_HP_PCT:      "최대 체력 %",
+## 값은 l10n key — `Loc.t` 로 푼다.
+const FX_KIND_NAME := {  # l10n-keys: hud.pilot_detail.fx.kind.*
+	PilotData.FX_GROWTH_RATE: L.HUD_PILOT_DETAIL_FX_KIND_GROWTH_RATE,
+	PilotData.FX_MAX_HP:      L.TERM_COMBAT_MAX_HP,
+	PilotData.FX_ATK:         L.TERM_COMBAT_ATK,
+	PilotData.FX_ATK_PCT:     L.HUD_PILOT_DETAIL_FX_KIND_ATK_PCT,
+	PilotData.FX_HP_PCT:      L.HUD_PILOT_DETAIL_FX_KIND_HP_PCT,
 }
 ## 단위가 %인 종류(나머지는 스탯 값 그대로).
 const FX_PCT_KINDS: Array = [
@@ -998,11 +1002,11 @@ func _append_card_fx(out: Array) -> void:
 ## 출처를 카드 이름으로 부를 수 없다 — 종류 이름으로 한 칸을 세운다.
 func _append_residual_fx(out: Array) -> void:
 	var specs: Array = [
-		[PilotData.FX_GROWTH_RATE, "적립", _pilot.growth_rate_bonus],
-		[PilotData.FX_MAX_HP, "체력", float(_pilot.bonus_max_hp)],
-		[PilotData.FX_ATK, "공격", float(_pilot.bonus_atk_flat)],
-		[PilotData.FX_ATK_PCT, "공%", _pilot.bonus_atk_mult],
-		[PilotData.FX_HP_PCT, "체%", _pilot.bonus_max_hp_mult],
+		[PilotData.FX_GROWTH_RATE, L.HUD_PILOT_DETAIL_FX_RATE_SHORT, _pilot.growth_rate_bonus],
+		[PilotData.FX_MAX_HP, L.HUD_PILOT_DETAIL_FX_HP_SHORT, float(_pilot.bonus_max_hp)],
+		[PilotData.FX_ATK, L.HUD_PILOT_DETAIL_FX_ATK_SHORT, float(_pilot.bonus_atk_flat)],
+		[PilotData.FX_ATK_PCT, L.HUD_PILOT_DETAIL_FX_ATK_PCT_SHORT, _pilot.bonus_atk_mult],
+		[PilotData.FX_HP_PCT, L.HUD_PILOT_DETAIL_FX_HP_PCT_SHORT, _pilot.bonus_max_hp_mult],
 	]
 	for raw in specs:
 		var spec: Array = raw as Array
@@ -1012,8 +1016,9 @@ func _append_residual_fx(out: Array) -> void:
 			continue
 		out.append({
 			"key": "fx:rest:%s" % kind,
-			"short": String(spec[1]),
-			"title": "%s (그 밖의 영구 가산)" % String(FX_KIND_NAME.get(kind, kind)),
+			"short": Loc.t(String(spec[1])),  # l10n-dynamic: hud.pilot_detail.fx.*.short
+			"title": Loc.t(L.HUD_PILOT_DETAIL_FX_REST_TITLE,
+					{"kind": Loc.t(String(FX_KIND_NAME.get(kind, kind)))}),  # l10n-dynamic: hud.pilot_detail.fx.kind.*
 			"value": _fx_value(kind, rest),
 			"color": FX_KIND_COLOR.get(kind, Color(0.86, 0.86, 0.90)) as Color,
 		})
@@ -1691,65 +1696,65 @@ func _menu_rows(key: String) -> Array:
 	match key:
 		"hp":
 			var rows: Array = [
-				["기본 최대 체력", str(_pilot.base_max_hp)],
-				["성장", "+%d%%  (+%d)" % [roundi(_pilot.growth_hp * 100.0),
+				[Loc.t(L.HUD_PILOT_DETAIL_ROW_BASE_MAX_HP), str(_pilot.base_max_hp)],
+				[Loc.t(L.HUD_PILOT_DETAIL_ROW_GROWTH), "+%d%%  (+%d)" % [roundi(_pilot.growth_hp * 100.0),
 						_pilot.max_hp - _pilot.base_max_hp]],
-				["최대 체력", str(_pilot.max_hp)],
-				["현재 체력", str(_pilot.hp)]]
+				[Loc.t(L.TERM_COMBAT_MAX_HP), str(_pilot.max_hp)],
+				[Loc.t(L.HUD_PILOT_DETAIL_ROW_CURRENT_HP), str(_pilot.hp)]]
 			if _pilot.shield > 0:
-				rows.append(["보호막", "+%d" % _pilot.shield])
+				rows.append([Loc.t(L.TERM_COMBAT_SHIELD), "+%d" % _pilot.shield])
 			return rows
 		"atk":
 			var rows_atk: Array = [
-				["기본 공격력", str(_pilot.base_atk)],
-				["성장", "+%d%%  (+%d)" % [roundi(_pilot.growth * 100.0),
+				[Loc.t(L.HUD_PILOT_DETAIL_ROW_BASE_ATK), str(_pilot.base_atk)],
+				[Loc.t(L.HUD_PILOT_DETAIL_ROW_GROWTH), "+%d%%  (+%d)" % [roundi(_pilot.growth * 100.0),
 						roundi(float(_pilot.base_atk) * _pilot.growth)]]]
 			if _pilot.atk_buff != 0:
-				rows_atk.append(["일시 효과", "%+d" % _pilot.atk_buff])
-			rows_atk.append(["최종", str(_pilot.atk)])
+				rows_atk.append([Loc.t(L.HUD_PILOT_DETAIL_ROW_TEMP_EFFECT), "%+d" % _pilot.atk_buff])
+			rows_atk.append([Loc.t(L.HUD_PILOT_DETAIL_ROW_FINAL), str(_pilot.atk)])
 			return rows_atk
 		"hit", "eva":
 			var base: int = _pilot.hit if key == "hit" else _pilot.evasion
-			var rows_h: Array = [["기본", str(base)]]
+			var rows_h: Array = [[Loc.t(L.HUD_PILOT_DETAIL_ROW_BASE), str(base)]]
 			if not is_zero_approx(_pilot.lane_stat_mod):
-				rows_h.append(["라인전 스탯", "%+d%%%s" % [
+				rows_h.append([Loc.t(L.HUD_PILOT_DETAIL_FX_LANE_TITLE), "%+d%%%s" % [
 					roundi(_pilot.lane_stat_mod * 100.0),
 					_remain_txt(_pilot.lane_stat_expire_turn, false)]])
-			rows_h.append(["최종", str(_bs.sim_core.lane_adjusted(base, _pilot))])
+			rows_h.append([Loc.t(L.HUD_PILOT_DETAIL_ROW_FINAL), str(_bs.sim_core.lane_adjusted(base, _pilot))])
 			return rows_h
 		"presence":
-			var rows_p: Array = [["기본", str(_pilot.presence)]]
+			var rows_p: Array = [[Loc.t(L.HUD_PILOT_DETAIL_ROW_BASE), str(_pilot.presence)]]
 			if _presence_delta() > 0:
-				rows_p.append(["특수 능력", "%+d" % _presence_delta()])
+				rows_p.append([Loc.t(L.HUD_PILOT_DETAIL_ROW_SPECIAL), "%+d" % _presence_delta()])
 			return rows_p
 		_:
 			pass
 	if key in PlayerData.STAT_KEYS:
 		if pd == null:
-			return [["기본", "—"]]
+			return [[Loc.t(L.HUD_PILOT_DETAIL_ROW_BASE), "—"]]
 		# 선수 스탯은 **경기 중에 변하지 않는다** — 주간 훈련으로만 오른다.
 		# 그래서 기본값과 최종값이 언제나 같고 증가분 줄이 따로 없다.
-		return [["기본", str(int(pd.get(key)))], ["인게임 증가", "없음"]]
+		return [[Loc.t(L.HUD_PILOT_DETAIL_ROW_BASE), str(int(pd.get(key)))], [Loc.t(L.HUD_PILOT_DETAIL_ROW_INGAME_GAIN), Loc.t(L.UI_WORD_NONE)]]
 	match key:
 		"e_hit":
-			return [["기본", str(_pilot.engage_hit)],
-					["대등한 상대에게", "%d%%" % roundi(
+			return [[Loc.t(L.HUD_PILOT_DETAIL_ROW_BASE), str(_pilot.engage_hit)],
+					[Loc.t(L.HUD_PILOT_DETAIL_ROW_VS_EQUAL), "%d%%" % roundi(
 							PilotData.hit_chance(_pilot.engage_hit, _pilot.engage_hit) * 100.0)]]
 		"e_eva":
-			return [["기본", str(_pilot.engage_eva)],
-					["대등한 상대에게", "%d%%" % roundi(
+			return [[Loc.t(L.HUD_PILOT_DETAIL_ROW_BASE), str(_pilot.engage_eva)],
+					[Loc.t(L.HUD_PILOT_DETAIL_ROW_VS_EQUAL), "%d%%" % roundi(
 							PilotData.hit_chance(_pilot.engage_eva, _pilot.engage_eva) * 100.0)]]
 		"m_hp":
-			return [["기체 체력", str(mech.hp) if mech != null else "—"],
-					["파일럿 기본 최대 체력", str(_pilot.base_max_hp)],
-					["현재", "%d / %d" % [_pilot.hp, _pilot.max_hp]]]
+			return [[Loc.t(L.HUD_PILOT_DETAIL_ROW_MECH_HP), str(mech.hp) if mech != null else "—"],
+					[Loc.t(L.HUD_PILOT_DETAIL_ROW_PILOT_BASE_MAX_HP), str(_pilot.base_max_hp)],
+					[Loc.t(L.UI_WORD_CURRENT), "%d / %d" % [_pilot.hp, _pilot.max_hp]]]
 		"m_atk":
-			return [["기체 공격력", str(mech.atk) if mech != null else "—"],
-					["파일럿 기본 공격력", str(_pilot.base_atk)],
-					["현재", str(_pilot.atk)]]
+			return [[Loc.t(L.HUD_PILOT_DETAIL_ROW_MECH_ATK), str(mech.atk) if mech != null else "—"],
+					[Loc.t(L.HUD_PILOT_DETAIL_ROW_PILOT_BASE_ATK), str(_pilot.base_atk)],
+					[Loc.t(L.UI_WORD_CURRENT), str(_pilot.atk)]]
 		"m_presence":
-			return [["기체 존재감", str(mech.presence) if mech != null else "—"],
-					["현재", str(_pilot.presence)]]
+			return [[Loc.t(L.HUD_PILOT_DETAIL_ROW_MECH_PRESENCE), str(mech.presence) if mech != null else "—"],
+					[Loc.t(L.UI_WORD_CURRENT), str(_pilot.presence)]]
 	return []
 
 
@@ -1762,34 +1767,34 @@ func _fx_rows(key: String) -> Array:
 	match key:
 		"fx:lane":
 			return [
-				["명중 / 회피", "%+d%%" % roundi(_pilot.lane_stat_mod * 100.0)],
-				["남은 시간", _remain_label(_pilot.lane_stat_expire_turn, false)],
-				["최종 명중", str(_bs.sim_core.lane_adjusted(_pilot.hit, _pilot))],
-				["최종 회피", str(_bs.sim_core.lane_adjusted(_pilot.evasion, _pilot))]]
+				[Loc.t(L.HUD_PILOT_DETAIL_ROW_HIT_EVA), "%+d%%" % roundi(_pilot.lane_stat_mod * 100.0)],
+				[Loc.t(L.UI_WORD_TIME_LEFT), _remain_label(_pilot.lane_stat_expire_turn, false)],
+				[Loc.t(L.HUD_PILOT_DETAIL_ROW_FINAL_HIT), str(_bs.sim_core.lane_adjusted(_pilot.hit, _pilot))],
+				[Loc.t(L.HUD_PILOT_DETAIL_ROW_FINAL_EVA), str(_bs.sim_core.lane_adjusted(_pilot.evasion, _pilot))]]
 		"fx:rate":
 			return [
-				["적립 배율", "%+d%%" % roundi((_pilot.growth_rate_mult - 1.0) * 100.0)],
-				["남은 시간", _remain_label(_pilot.growth_rate_expire_turn,
+				[Loc.t(L.HUD_PILOT_DETAIL_ROW_GAIN_RATE), "%+d%%" % roundi((_pilot.growth_rate_mult - 1.0) * 100.0)],
+				[Loc.t(L.UI_WORD_TIME_LEFT), _remain_label(_pilot.growth_rate_expire_turn,
 						_pilot.growth_until_phase)],
-				["영구 가산", "%+d%%" % roundi(_pilot.growth_rate_bonus * 100.0)],
-				["성장치", BattleSim.fmt_score(_pilot.score)]]
+				[Loc.t(L.HUD_PILOT_DETAIL_ROW_PERM_BONUS), "%+d%%" % roundi(_pilot.growth_rate_bonus * 100.0)],
+				[Loc.t(L.HUD_PILOT_DETAIL_ROW_GROWTH_POINTS), BattleSim.fmt_score(_pilot.score)]]
 		"fx:eva":
 			return [
-				["전장 회피", "%+d%%" % roundi(_pilot.eva_card_mod * 100.0)],
-				["남은 시간", _remain_label(_pilot.eva_card_expire_turn, false)]]
+				[PlayerData.stat_label(1), "%+d%%" % roundi(_pilot.eva_card_mod * 100.0)],
+				[Loc.t(L.UI_WORD_TIME_LEFT), _remain_label(_pilot.eva_card_expire_turn, false)]]
 		"fx:ambush":
 			return [
-				["상태", "다음 작전 단계까지 이동 없음"],
-				["위치", "(%d, %d)" % [_pilot.grid_pos.x, _pilot.grid_pos.y]]]
+				[Loc.t(L.HUD_PILOT_DETAIL_ROW_STATE), Loc.t(L.HUD_PILOT_DETAIL_ROW_AMBUSH_STATE)],
+				[Loc.t(L.HUD_PILOT_DETAIL_ROW_POSITION), "(%d, %d)" % [_pilot.grid_pos.x, _pilot.grid_pos.y]]]
 		"fx:atk":
 			return [
-				["일시 가산", "%+d" % _pilot.atk_buff],
-				["기본 공격력", str(_pilot.base_atk)],
-				["최종 공격력", str(_pilot.atk)]]
+				[Loc.t(L.HUD_PILOT_DETAIL_ROW_TEMP_BONUS), "%+d" % _pilot.atk_buff],
+				[Loc.t(L.HUD_PILOT_DETAIL_ROW_BASE_ATK), str(_pilot.base_atk)],
+				[Loc.t(L.HUD_PILOT_DETAIL_ROW_FINAL_ATK), str(_pilot.atk)]]
 		"fx:shield":
 			return [
-				["보호막", str(_pilot.shield)],
-				["현재 체력", "%d / %d" % [_pilot.hp, _pilot.max_hp]]]
+				[Loc.t(L.TERM_COMBAT_SHIELD), str(_pilot.shield)],
+				[Loc.t(L.HUD_PILOT_DETAIL_ROW_CURRENT_HP), "%d / %d" % [_pilot.hp, _pilot.max_hp]]]
 	return []
 
 
@@ -1804,25 +1809,25 @@ func _fx_card_rows(key: String) -> Array:
 	# 종류이고, 카드 쪽에만 `|` 뒤에 이름이 붙어 있다.
 	var kind: String = key.get_slice(":", 2).get_slice("|", 0)
 	var rows: Array = [
-		["이 효과", String(d["value"])],
-		["남은 시간", "영구"]]
+		[Loc.t(L.HUD_PILOT_DETAIL_ROW_THIS_EFFECT), String(d["value"])],
+		[Loc.t(L.UI_WORD_TIME_LEFT), Loc.t(L.HUD_PILOT_DETAIL_REMAIN_PERMANENT)]]
 	match kind:
 		PilotData.FX_GROWTH_RATE:
-			rows.append(["영구 가산 합계",
+			rows.append([Loc.t(L.HUD_PILOT_DETAIL_ROW_PERM_BONUS_TOTAL),
 					"%+d%%" % roundi(_pilot.growth_rate_bonus * 100.0)])
-			rows.append(["성장치", BattleSim.fmt_score(_pilot.score)])
+			rows.append([Loc.t(L.HUD_PILOT_DETAIL_ROW_GROWTH_POINTS), BattleSim.fmt_score(_pilot.score)])
 		PilotData.FX_MAX_HP:
-			rows.append(["영구 가산 합계", "%+d" % _pilot.bonus_max_hp])
-			rows.append(["최대 체력", str(_pilot.max_hp)])
+			rows.append([Loc.t(L.HUD_PILOT_DETAIL_ROW_PERM_BONUS_TOTAL), "%+d" % _pilot.bonus_max_hp])
+			rows.append([Loc.t(L.TERM_COMBAT_MAX_HP), str(_pilot.max_hp)])
 		PilotData.FX_ATK:
-			rows.append(["영구 가산 합계", "%+d" % _pilot.bonus_atk_flat])
-			rows.append(["최종 공격력", str(_pilot.atk)])
+			rows.append([Loc.t(L.HUD_PILOT_DETAIL_ROW_PERM_BONUS_TOTAL), "%+d" % _pilot.bonus_atk_flat])
+			rows.append([Loc.t(L.HUD_PILOT_DETAIL_ROW_FINAL_ATK), str(_pilot.atk)])
 		PilotData.FX_ATK_PCT:
-			rows.append(["영구 배율 합계", "%+d%%" % roundi(_pilot.bonus_atk_mult * 100.0)])
-			rows.append(["최종 공격력", str(_pilot.atk)])
+			rows.append([Loc.t(L.HUD_PILOT_DETAIL_ROW_PERM_MULT_TOTAL), "%+d%%" % roundi(_pilot.bonus_atk_mult * 100.0)])
+			rows.append([Loc.t(L.HUD_PILOT_DETAIL_ROW_FINAL_ATK), str(_pilot.atk)])
 		PilotData.FX_HP_PCT:
-			rows.append(["영구 배율 합계", "%+d%%" % roundi(_pilot.bonus_max_hp_mult * 100.0)])
-			rows.append(["최대 체력", str(_pilot.max_hp)])
+			rows.append([Loc.t(L.HUD_PILOT_DETAIL_ROW_PERM_MULT_TOTAL), "%+d%%" % roundi(_pilot.bonus_max_hp_mult * 100.0)])
+			rows.append([Loc.t(L.TERM_COMBAT_MAX_HP), str(_pilot.max_hp)])
 	return rows
 
 
@@ -1830,25 +1835,26 @@ func _fx_card_rows(key: String) -> Array:
 ## 꼬리표(빈 문자열이 정상)라 행의 값 칸에 그대로 쓰면 빈칸이 남는다.
 func _remain_label(expire_turn: int, until_phase: bool) -> String:
 	if until_phase:
-		return "작전 단계까지"
+		return Loc.t(L.HUD_PILOT_DETAIL_REMAIN_UNTIL_PHASE)
 	if expire_turn < 0:
-		return "영구"
-	return "%d턴" % maxi(0, expire_turn - _bs.turn_count)
+		return Loc.t(L.HUD_PILOT_DETAIL_REMAIN_PERMANENT)
+	return Loc.t(L.HUD_PILOT_DETAIL_REMAIN_TURNS, {"n": maxi(0, expire_turn - _bs.turn_count)})
 
 
 ## 명중 · 회피 · 존재감 설명 — 인게임 칩과 파일럿 탭 칩이 같은 글을 쓴다.
 ## `{attack}` · `{engage}` 자리에는 키워드 아이콘이 선다(`_fill_note`).
-const STAT_NOTES: Dictionary = {
-	"hit": "카드 효과로 적에게 {attack} 공격할 시, 명중할 확률을 결정합니다.",
-	"field_hit": "카드 효과로 적에게 {attack} 공격할 시, 명중할 확률을 결정합니다.",
-	"eva": "적의 카드 효과로 {attack} 공격을 받을 때, 빗맞힐 확률을 결정합니다.",
-	"field_eva": "적의 카드 효과로 {attack} 공격을 받을 때, 빗맞힐 확률을 결정합니다.",
-	"e_hit": "{engage} 교전 중, 적을 공격할 때 명중할 확률을 결정합니다.",
-	"engage_hit": "{engage} 교전 중, 적을 공격할 때 명중할 확률을 결정합니다.",
-	"e_eva": "{engage} 교전 중, 적의 공격을 받을 때 빗맞힐 확률을 결정합니다.",
-	"engage_eva": "{engage} 교전 중, 적의 공격을 받을 때 빗맞힐 확률을 결정합니다.",
-	"presence": "존재감이 높을 시, 교전 중 공격 대상이 될 확률이 높아집니다.",
-	"m_presence": "존재감이 높을 시, 교전 중 공격 대상이 될 확률이 높아집니다.",
+## 값은 l10n key — `{attack}` · `{engage}` 는 번역문에도 그대로 남아 `_fill_note` 가 아이콘으로 바꾼다.
+const STAT_NOTES: Dictionary = {  # l10n-keys: hud.pilot_detail.note.*
+	"hit": L.HUD_PILOT_DETAIL_NOTE_FIELD_HIT,
+	"field_hit": L.HUD_PILOT_DETAIL_NOTE_FIELD_HIT,
+	"eva": L.HUD_PILOT_DETAIL_NOTE_FIELD_EVA,
+	"field_eva": L.HUD_PILOT_DETAIL_NOTE_FIELD_EVA,
+	"e_hit": L.HUD_PILOT_DETAIL_NOTE_ENGAGE_HIT,
+	"engage_hit": L.HUD_PILOT_DETAIL_NOTE_ENGAGE_HIT,
+	"e_eva": L.HUD_PILOT_DETAIL_NOTE_ENGAGE_EVA,
+	"engage_eva": L.HUD_PILOT_DETAIL_NOTE_ENGAGE_EVA,
+	"presence": L.HUD_PILOT_DETAIL_NOTE_PRESENCE,
+	"m_presence": L.HUD_PILOT_DETAIL_NOTE_PRESENCE,
 }
 
 
@@ -1856,24 +1862,24 @@ const STAT_NOTES: Dictionary = {
 ## 것에만 붙인다. 카드는 이 판을 쓰지 않는다 — 손패의 설명판(`_build_card_desc`).
 func _menu_note(key: String) -> String:
 	if STAT_NOTES.has(key):
-		return String(STAT_NOTES[key])
+		return Loc.t(String(STAT_NOTES[key]))  # l10n-dynamic: hud.pilot_detail.note.*
 	if key in PlayerData.STAT_KEYS:
 		return PlayerData.stat_note(PlayerData.STAT_KEYS.find(key))
 	if key.begins_with("fx:src:"):
-		return "이 카드가 남긴 영구 가산분. 만료도 해제도 없고 같은 카드를 다시 쓰면 누적된다."
+		return Loc.t(L.HUD_PILOT_DETAIL_NOTE_FX_CARD)
 	if key.begins_with("fx:rest:"):
-		return "카드가 아니라 메크 패시브가 직접 쌓은 몫. 출처를 카드 이름으로 부를 수 없어 한 칸으로 묶었다."
+		return Loc.t(L.HUD_PILOT_DETAIL_NOTE_FX_REST)
 	match key:
 		"fx:lane":
-			return "전장 명중 판정에만 곱해진다. 교전 무대는 자기 확률 구간을 쓴다."
+			return Loc.t(L.HUD_PILOT_DETAIL_NOTE_FX_LANE)
 		"fx:rate":
-			return "성장이 아니라 성장치 적립에 곱해진다. 안전한 파밍과 완벽한 마무리가 같은 칸을 쓴다."
+			return Loc.t(L.HUD_PILOT_DETAIL_NOTE_FX_RATE)
 		"fx:atk":
-			return "카드가 얹은 임시 가산분. 성장 재계산에 지워지지 않는다."
+			return Loc.t(L.HUD_PILOT_DETAIL_NOTE_FX_ATK)
 		"fx:shield":
-			return "피해를 체력보다 먼저 먹는다. 본진 복귀 시 사라진다."
+			return Loc.t(L.HUD_PILOT_DETAIL_NOTE_FX_SHIELD)
 		"m_hp", "m_atk":
-			return "기체 스탯이 파일럿의 기본값이 되고, 거기서 성장이 붙는다."
+			return Loc.t(L.HUD_PILOT_DETAIL_NOTE_MECH_STAT)
 	return ""
 
 
@@ -1882,10 +1888,10 @@ func _menu_note(key: String) -> String:
 ## 아니면 빈 문자열이라 값 뒤에 아무것도 붙지 않는다.
 func _remain_txt(expire_turn: int, until_phase: bool) -> String:
 	if until_phase:
-		return "  (작전 단계까지)"
+		return "  " + Loc.t(L.HUD_PILOT_DETAIL_REMAIN_UNTIL_PHASE_PAREN)
 	if expire_turn < 0:
 		return ""
-	return "  (%d턴)" % maxi(0, expire_turn - _bs.turn_count)
+	return "  " + Loc.t(L.HUD_PILOT_DETAIL_REMAIN_TURNS_PAREN, {"n": maxi(0, expire_turn - _bs.turn_count)})
 
 
 func _mech() -> MechData:

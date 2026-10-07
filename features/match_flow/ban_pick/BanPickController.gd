@@ -255,8 +255,8 @@ func enter(all_mechs: Array, player_side: int,
 	_side_picks = {player_side: [], enemy_side: []}
 	_rosters    = {player_side: player_roster, enemy_side: enemy_roster}
 	_team_names = {
-		player_side: (player_team_name if player_team_name != "" else "아군"),
-		enemy_side:  (enemy_team_name  if enemy_team_name  != "" else "상대"),
+		player_side: (player_team_name if player_team_name != "" else Loc.t(L.TERM_SIDE_ALLY)),
+		enemy_side:  (enemy_team_name  if enemy_team_name  != "" else Loc.t(L.MATCH_BAN_PICK_FALLBACK_ENEMY)),
 	}
 	_selected_mech_id = -1
 	_filter_role = -1
@@ -501,7 +501,7 @@ func _refresh_portrait_quirk(side: int, por: BanPickPortrait, p: PlayerData) -> 
 	por.quirk_badge.add_theme_stylebox_override("panel", OutgameTheme.flat_style(
 			QuirkSystem.grade_color(top), int(por.quirk_badge.size.y * 0.5)))
 	if por.quirk_label != null:
-		por.quirk_label.text = "기벽 %d" % ids.size()
+		por.quirk_label.text = Loc.t(L.MATCH_BAN_PICK_QUIRK_COUNT, {"n": ids.size()})
 
 
 ## 자리(화면 순서) → 그 팀의 파일럿. 로스터는 역할 0..4 순으로 들어오므로
@@ -520,7 +520,7 @@ func _pilot_at(side: int, seat: int) -> PlayerData:
 ## 탭 순서도 화면 순서(탑 · 정글 · 미드 · 원딜 · 서폿)다 — 격자가 그 순서로
 ## 늘어서 있는데 탭만 열거값 순서면 두 줄이 서로를 가리키지 않는다.
 func _filter_tabs() -> Array:
-	var out: Array = [[-1, "전체"]]
+	var out: Array = [[-1, Loc.t(L.UI_WORD_ALL)]]
 	for role_raw in GameEnums.ROLE_DISPLAY_ORDER:
 		var role: int = int(role_raw)
 		out.append([role, String(ROLE_NAMES[role])])
@@ -634,7 +634,8 @@ func _fill_sheet(m: MechData) -> void:
 	# ── 오른쪽: 이름 · 스탯 · 패시브 ──
 	v.sheet_name.text = m.name
 	var role_txt: String = String(ROLE_NAMES[m.role]) if m.role >= 0 and m.role < ROLE_NAMES.size() else "—"
-	v.sheet_stats.text = "%s   ·   HP %d   ·   ATK %d   ·   존재감 %d" % [role_txt, m.hp, m.atk, m.presence]
+	v.sheet_stats.text = Loc.t(L.MATCH_BAN_PICK_SHEET_STATS,
+			{"role": role_txt, "hp": m.hp, "atk": m.atk, "presence": m.presence})
 	var pas: Dictionary = _gm.mech_passive_def(m.id)
 	v.sheet_no_passive.visible = pas.is_empty()
 	v.sheet_passive_head.visible = not pas.is_empty()
@@ -649,7 +650,7 @@ func _fill_sheet(m: MechData) -> void:
 
 	# ── 카드 셋 ── (오른쪽 칸에서 이어진다 — 왼쪽은 아트 한 장이 통째로 쓴다)
 	var defs: Array = _gm.mech_cards_for(m.id)
-	v.sheet_cards_header.text = "메크 카드  %d종   ·   카드를 누르면 설명" % defs.size()
+	v.sheet_cards_header.text = Loc.t(L.MATCH_BAN_PICK_SHEET_CARDS_HEADER, {"n": defs.size()})
 	_build_card_row(defs)
 
 	_refresh_sheet_confirm()
@@ -670,15 +671,18 @@ func _fill_sheet_mastery(m: MechData) -> void:
 		var v: int = _mastery(rider, m.id)
 		var t: int = MechMastery.tier_of(v)
 		var qt: int = _quirk_total(_player_side, rider, m.id)
-		rider_lbl.text = "%s  %s %d  (스탯 %s%s)" % [
-				rider.name, MechMastery.tier_name(t), v, MechMastery.bonus_text(t),
-				(" · 기벽 +%d" % qt) if qt > 0 else ""]
+		var rider_args: Dictionary = {"name": rider.name, "tier": MechMastery.tier_name(t),
+				"value": v, "bonus": MechMastery.bonus_text(t), "quirk": qt}
+		rider_lbl.text = Loc.t(L.MATCH_BAN_PICK_RIDER_QUIRK if qt > 0 else L.MATCH_BAN_PICK_RIDER,
+				rider_args)
 		rider_lbl.add_theme_color_override("font_color", MechMastery.tier_color(t))
 	var intel: String = ""
 	if m.id in _analyst_bans():
-		intel = "분석가 추천 밴 — %s 의 주력" % String((_enemy_likely[m.id] as Dictionary)["pilot"])
+		intel = Loc.t(L.MATCH_BAN_PICK_INTEL_ANALYST_BAN,
+				{"pilot": String((_enemy_likely[m.id] as Dictionary)["pilot"])})
 	elif _show_enemy_likely and _enemy_likely.has(m.id):
-		intel = "상대 예상 픽 — %s" % String((_enemy_likely[m.id] as Dictionary)["pilot"])
+		intel = Loc.t(L.MATCH_BAN_PICK_INTEL_ENEMY_PICK,
+				{"pilot": String((_enemy_likely[m.id] as Dictionary)["pilot"])})
 	if intel != "":
 		intel_lbl.text = intel
 		intel_lbl.add_theme_color_override("font_color",
@@ -711,7 +715,7 @@ func _build_card_row(defs: Array) -> void:
 		# 다른 카드가 만들어 줄 때만 세상에 나온다. 그 사정을 적어 두지 않으면
 		# "왜 이 카드가 손에 안 들어오나"가 화면 어디에도 없다.
 		var cnt: int = int(def.get("count", 0))
-		item.count.text = ("×%d" % cnt) if cnt > 0 else "생성 전용"
+		item.count.text = ("×%d" % cnt) if cnt > 0 else Loc.t(L.MATCH_BAN_PICK_GENERATED_ONLY)
 		if cnt <= 0:
 			item.count.add_theme_color_override("font_color", OutgameTheme.LINK)
 
@@ -759,11 +763,12 @@ func _refresh_sheet_confirm() -> void:
 	var ok: bool = _is_player_turn() and _is_legal(_selected_mech_id)
 	btn.disabled = not ok
 	if ok:
-		btn.text = "밴 확정" if _current_kind() == ACTION_BAN else "픽 확정"
+		btn.text = Loc.t(L.MATCH_BAN_PICK_CONFIRM_BAN if _current_kind() == ACTION_BAN
+				else L.MATCH_BAN_PICK_CONFIRM_PICK)
 	elif not _is_player_turn():
-		btn.text = "상대 차례"
+		btn.text = Loc.t(L.MATCH_BAN_PICK_OPPONENT_TURN)
 	else:
-		btn.text = "선택 불가"
+		btn.text = Loc.t(L.MATCH_BAN_PICK_UNAVAILABLE)
 
 
 func _on_dim_input(ev: InputEvent) -> void:
@@ -848,9 +853,9 @@ func _refresh_cell_marks(cell: BanPickMechCell, mid: int, rec_bans: Array) -> vo
 	var intel_txt: String = ""
 	var intel_col: Color = OutgameTheme.ACCENT
 	if available and mid in rec_bans:
-		intel_txt = "추천 밴"
+		intel_txt = Loc.t(L.MATCH_BAN_PICK_TAG_REC_BAN)
 	elif available and _show_enemy_likely and _enemy_likely.has(mid):
-		intel_txt = "예상 픽"
+		intel_txt = Loc.t(L.MATCH_BAN_PICK_TAG_EXPECTED_PICK)
 		intel_col = RED_COLOR
 	_set_cell_tag(cell.intel, cell.intel_label, intel_txt, intel_col)
 	var mine_txt: String = ""
@@ -968,7 +973,7 @@ func _refresh_slot_quirk(side: int, slot: BanPickMechSlot, mech_id: int) -> void
 		total = _quirk_total(side, _pilot_at(side, slot.seat), mech_id)
 	tag.visible = total > 0
 	if total > 0 and slot.qtag_label != null:
-		slot.qtag_label.text = "기벽 +%d" % total
+		slot.qtag_label.text = Loc.t(L.MATCH_BAN_PICK_QUIRK_BONUS, {"n": total})
 
 
 ## 상대가 지금 집어 보는 기체가 `side` 블록의 몇 번째 칸(밴 칩 / 픽 슬롯)에
@@ -1138,8 +1143,13 @@ func _play_turn_banner() -> void:
 	if BanPickOrderRow.same_run(SEQUENCE, _action_idx - 1, _action_idx):
 		return
 	var mine: bool = _is_player_turn()
-	var msg: String = "%s %s" % ["내 차례" if mine else "상대 차례",
-			"밴" if _current_kind() == ACTION_BAN else "픽"]
+	var ban: bool = _current_kind() == ACTION_BAN
+	var msg_key: String
+	if mine:
+		msg_key = L.MATCH_BAN_PICK_BANNER_MY_BAN if ban else L.MATCH_BAN_PICK_BANNER_MY_PICK
+	else:
+		msg_key = L.MATCH_BAN_PICK_BANNER_OPPONENT_BAN if ban else L.MATCH_BAN_PICK_BANNER_OPPONENT_PICK
+	var msg: String = Loc.t(msg_key)  # l10n-dynamic: match.ban_pick.banner.*
 	_view.play_banner(msg, _side_color(int(SEQUENCE[_action_idx][0])))
 
 

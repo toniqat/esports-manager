@@ -1,6 +1,6 @@
 # UI Module
 
-**텍스트는 l10n key — `Loc.t`** (cards / skills): `SkillPopup` · `PilotDetailPanel` pass `CardData.ref_entries(skill_description_key)` to `StrategyIcon` (no name→cost table); fx thumbnails read card uids (`CardData.card_uid` / `name_of_uid`), art via `CardImages.art_for(uid)`.
+**표시 텍스트는 l10n key (`hud` 도메인 — `data/l10n/src/hud.csv`; stat / combat words via `PlayerData.stat_label` and `term.combat.*`).** Label tables (`KillFeed.LANE_SHORT`, `SkillPopup.TYPE_LABEL`, `PilotDetailPanel.STAT_NOTES` · `FX_KIND_NAME`, `CostDonut.BUTTON_TEXT`) hold `L.` keys and are resolved with `Loc.t` where drawn; scene nodes the code fills are `auto_translate_mode = 2`. **텍스트는 l10n key — `Loc.t`** (cards / skills): `SkillPopup` · `PilotDetailPanel` pass `CardData.ref_entries(skill_description_key)` to `StrategyIcon` (no name→cost table); fx thumbnails read card uids (`CardData.card_uid` / `name_of_uid`), art via `CardImages.art_for(uid)`.
 
 | File | class_name | Role |
 |---|---|---|

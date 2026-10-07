@@ -89,7 +89,10 @@ const TURRET_ICON   := Color(1.0, 0.72, 0.30)
 const TURRET_LABEL  := Color(0.88, 0.88, 0.92)
 ## 포탑 줄의 레인 표기. `LANE_NAMES` 는 "Left/Center/Right" 라 좁은 칸에 넣기엔
 ## 길다 — 한 글자로 줄인다.
-const LANE_SHORT: Array = ["좌", "중", "우", "정"]
+const LANE_SHORT: Array = [  # l10n-keys: hud.kill_feed.lane.*
+	L.HUD_KILL_FEED_LANE_LEFT, L.HUD_KILL_FEED_LANE_MID, L.HUD_KILL_FEED_LANE_RIGHT,
+	L.HUD_KILL_FEED_LANE_JUNGLE,
+]
 
 var _bs: BattleSim = null
 var _rows: Array = []      # Array[Row] — index 0 이 가장 새 줄(맨 위)
@@ -306,7 +309,7 @@ class Row extends Control:
 			_add_rim(slot.position, slot.size, turret.team)
 			var lane_tag: String = "?"
 			if turret.lane >= 0 and turret.lane < KillFeed.LANE_SHORT.size():
-				lane_tag = String(KillFeed.LANE_SHORT[turret.lane])
+				lane_tag = Loc.t(String(KillFeed.LANE_SHORT[turret.lane]))  # l10n-dynamic: hud.kill_feed.lane.*
 			var lbl := Label.new()
 			lbl.add_theme_font_size_override("font_size", 17)
 			lbl.add_theme_color_override("font_color", KillFeed.TURRET_LABEL)

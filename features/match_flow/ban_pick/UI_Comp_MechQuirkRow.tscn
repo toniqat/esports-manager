@@ -4,6 +4,7 @@
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="MechQuirkRow" type="VBoxContainer"]
+auto_translate_mode = 2
 offset_right = 416.0
 offset_bottom = 70.0
 mouse_filter = 2

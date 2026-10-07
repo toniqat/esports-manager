@@ -156,9 +156,9 @@ func _fill_quirks(info: Dictionary) -> void:
 	if info.is_empty():
 		return
 	var rows: Array = info.get("rows", [])
-	%QuirkTitle.text = "기벽 — %s  %d / %d  (스탯 +%d)" % [
-			String(info.get("pilot", "")), rows.size(),
-			int(info.get("slots", 0)), int(info.get("total", 0))]
+	%QuirkTitle.text = Loc.t(L.MATCH_MECH_DETAIL_QUIRK_TITLE, {
+			"pilot": String(info.get("pilot", "")), "count": rows.size(),
+			"slots": int(info.get("slots", 0)), "total": int(info.get("total", 0))})
 	%QuirkEmpty.visible = rows.is_empty()
 	for raw in rows:
 		var row := MechQuirkRow.create()

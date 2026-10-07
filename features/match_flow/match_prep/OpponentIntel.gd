@@ -25,7 +25,9 @@ const TIER_MECHS: int = 2
 const TIER_CARDS: int = 3
 const FULL: int = TIER_CARDS
 
-const TIER_LABELS: Array = ["이름 · 역할", "스탯 대략", "스탯 · 주력 메크", "전부 공개"]
+const TIER_LABELS: Array = [  # l10n-keys: match.intel.tier.*
+	L.MATCH_INTEL_TIER_NAME_ONLY, L.MATCH_INTEL_TIER_APPROX, L.MATCH_INTEL_TIER_MECHS, L.MATCH_INTEL_TIER_FULL,
+]
 
 static var _mech_names: Dictionary = {}   # int mech id → l10n name key (`mechs.name_key`)
 static var _mech_loaded: bool = false
@@ -84,7 +86,7 @@ static func build(state: Dictionary, roster: Array, is_own: bool) -> Dictionary:
 	var delegated: bool = not is_own and bool(state.get("active", false)) \
 			and StaffSystem.is_delegated(state, "analysis")
 	var out: Dictionary = {
-		"tier": tier, "tier_label": String(TIER_LABELS[tier]), "own": is_own,
+		"tier": tier, "tier_label": Loc.t(String(TIER_LABELS[tier])), "own": is_own,  # l10n-dynamic: match.intel.tier.*
 		"rows": rows, "delegated": delegated, "analyst": "", "notes": [],
 		"analysis": StaffSystem.effective(state, "analysis") if bool(state.get("active", false)) else 0,
 		"next_need": threshold_of(tier + 1) if tier < FULL else 0,
@@ -100,10 +102,10 @@ static func analyst_label(state: Dictionary) -> String:
 	var who: String = StaffSystem.owner_name(state, "analysis")
 	match StaffSystem.owner(state, "analysis"):
 		StaffSystem.OWNER_STAFF:
-			return "%s (%s)" % [who, StaffSystem.JOB_LABELS["analyst"]]
+			return "%s (%s)" % [who, StaffSystem.job_label("analyst")]
 		StaffSystem.OWNER_ASSISTANT:
-			return "%s (%s)" % [who, StaffSystem.JOB_LABELS["assistant"]]
-	return "감독"
+			return "%s (%s)" % [who, StaffSystem.job_label("assistant")]
+	return Loc.t(L.TERM_PERSON_MANAGER)
 
 
 ## Analyst lines — at most two. Strongest lane (by visible stat total) and a
@@ -111,7 +113,7 @@ static func analyst_label(state: Dictionary) -> String:
 ## they cannot see instead of guessing.
 static func interpret(_state: Dictionary, rows: Array, tier: int) -> Array:
 	if tier <= TIER_NAME_ONLY or rows.is_empty():
-		return ["자료가 부족해 상대 전력을 읽기 어렵습니다."]
+		return [Loc.t(L.MATCH_INTEL_NOTE_NO_DATA)]
 	var lines: Array = []
 	var best: Dictionary = {}
 	var best_total: int = -1
@@ -127,14 +129,13 @@ static func interpret(_state: Dictionary, rows: Array, tier: int) -> Array:
 			weak_total = t
 			weak = r
 	if not best.is_empty():
-		lines.append("경계 대상: %s %s — %s 수치가 가장 높습니다." % [
-			best["role_label"], best["name"], _top_stat_label(best)])
+		lines.append(Loc.t(L.MATCH_INTEL_NOTE_THREAT, {
+			"role": best["role_label"], "name": best["name"], "stat": _top_stat_label(best)}))
 	var ban: Dictionary = _suggested_ban(rows) if tier >= TIER_MECHS else {}
 	if not ban.is_empty():
-		lines.append("추천 밴: %s — %s의 주력 메크입니다." % [ban["mech"], ban["pilot"]])
+		lines.append(Loc.t(L.MATCH_INTEL_NOTE_BAN, {"mech": ban["mech"], "pilot": ban["pilot"]}))
 	elif not weak.is_empty() and weak != best:
-		lines.append("약한 고리: %s %s — 그 라인을 노려 볼 만합니다." % [
-			weak["role_label"], weak["name"]])
+		lines.append(Loc.t(L.MATCH_INTEL_NOTE_WEAK, {"role": weak["role_label"], "name": weak["name"]}))
 	return lines
 
 
@@ -193,7 +194,7 @@ static func _mechs_for(state: Dictionary, p: PlayerData) -> Array:
 				break
 			var mid: int = int(raw)
 			out.append({"mech_id": mid, "value": -1, "name": mech_name(mid),
-					"text": "%s 주력" % mech_name(mid)})
+					"text": Loc.t(L.MATCH_INTEL_MECH_MAIN, {"mech": mech_name(mid)})})
 	return out
 
 
@@ -261,7 +262,7 @@ static func mech_name(mech_id: int) -> String:
 				_mech_names[int(row["id"])] = String(row["name_key"])
 			db.close_db()
 	if not _mech_names.has(mech_id):
-		return "메크 %d" % mech_id
+		return Loc.t(L.MATCH_INTEL_MECH_FALLBACK, {"id": mech_id})
 	return Loc.t(String(_mech_names[mech_id]))  # l10n-dynamic: name.mech.*
 
 

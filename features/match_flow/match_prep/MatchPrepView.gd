@@ -35,8 +35,8 @@ func _ready() -> void:
 func fill(state: Dictionary, player_roster: Array, enemy_roster: Array,
 		player_team_name: String, enemy_team_name: String) -> void:
 	%Matchup.text = "%s  vs  %s" % [player_team_name, enemy_team_name]
-	%EnemyTitle.text = "상대 팀 · %s" % enemy_team_name
-	%OwnTitle.text = "내 팀 · %s" % player_team_name
+	%EnemyTitle.text = Loc.t(L.MATCH_PREP_ENEMY_TITLE, {"team": enemy_team_name})
+	%OwnTitle.text = Loc.t(L.MATCH_PREP_OWN_TITLE, {"team": player_team_name})
 	(%IntelView_EnemyIntel as IntelView).show_intel(OpponentIntel.build(state, enemy_roster, false))
 	(%IntelView_OwnIntel as IntelView).show_intel(OpponentIntel.build(state, player_roster, true))
 

@@ -36,7 +36,7 @@ func fill(def: Dictionary) -> void:
 	# "왜 이 카드가 손에 안 들어오나"가 화면 어디에도 없다.
 	var cnt: int = int(def.get("count", 0))
 	var badge: Label = %Badge
-	badge.text = ("×%d" % cnt) if cnt > 0 else "생성 전용"
+	badge.text = ("×%d" % cnt) if cnt > 0 else Loc.t(L.MATCH_BAN_PICK_GENERATED_ONLY)
 	badge.add_theme_color_override("font_color", BADGE_COLOR if cnt > 0 else BADGE_SPAWN_COLOR)
 
 

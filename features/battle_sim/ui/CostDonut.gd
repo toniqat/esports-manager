@@ -50,7 +50,7 @@ const DISABLED_COLOR := Color(0.34, 0.34, 0.40)
 
 const VALUE_FONT_SIZE  := 44
 const BUTTON_FONT_SIZE := 20
-const BUTTON_TEXT      := "턴\n넘기기"
+const BUTTON_TEXT      := L.HUD_COST_DONUT_END_TURN
 
 ## Ring colour while showing 전략 포인트. Set per side by HudBuilder.
 var fill_color: Color = Color(0.25, 0.60, 1.00)
@@ -209,7 +209,7 @@ func _refresh_label() -> void:
 	if _label == null:
 		return
 	if _sweep < 0.0:
-		_label.text = BUTTON_TEXT
+		_label.text = Loc.t(BUTTON_TEXT)  # l10n-dynamic: hud.cost_donut.end_turn
 		_label.add_theme_font_size_override("font_size", BUTTON_FONT_SIZE)
 		_label.add_theme_color_override("font_color",
 				Color.WHITE if _end_enabled else DISABLED_COLOR.lightened(0.35))

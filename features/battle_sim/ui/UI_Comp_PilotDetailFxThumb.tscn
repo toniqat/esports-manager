@@ -9,6 +9,7 @@ shader_parameter/rect_size = Vector2(62, 62)
 shader_parameter/radius = 13.0
 
 [node name="PilotDetailFxThumb" type="Button"]
+auto_translate_mode = 2
 editor_description = "지속 효과 썸네일 한 칸 — 출처 카드를 알면 카드 아트(Art + Band + BandValue), 모르면 두 글자 약칭(Short, 효과별 색은 코드) + 값(Value). 강조는 코드가 BattleFxButtonOn 으로."
 custom_minimum_size = Vector2(68, 68)
 offset_right = 68.0

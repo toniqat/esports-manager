@@ -35,6 +35,7 @@ mouse_filter = 2
 theme_type_variation = &"AccentChip"
 
 [node name="TierText" type="Label" parent="Header/HeaderRow/TierChip"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — IntelView.gd _fill_header()"
 unique_name_in_owner = true
 layout_mode = 2
@@ -45,6 +46,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="Need" type="Label" parent="Header/HeaderRow"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — IntelView.gd _fill_header()"
 unique_name_in_owner = true
 layout_mode = 2
@@ -73,7 +75,7 @@ custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 20
-text = "분석 담당 없음 — 데이터만 보입니다. 해석은 감독이 직접."
+text = "tx_5A4VYR9MJQ"
 clip_text = true
 
 [node name="Gap" type="Control" parent="NoAnalyst"]
@@ -108,6 +110,7 @@ mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="Analyst" type="Label" parent="Note/Card/Pad/VBox"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — IntelView.gd _fill_note()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 28)
@@ -123,6 +126,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Lines" type="VBoxContainer" parent="Note/Card/Pad/VBox"]
+auto_translate_mode = 2
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — IntelView.gd _fill_note() · IntelView.gd _ready()
 One Label per analyst line (code duplicates Line0): BodyLabel 22, word-wrapped, one line = 31 (font height) + 3 apart = the old 30 + 4 pitch."

@@ -91,7 +91,7 @@ func _fill_preview() -> void:
 	set_highlight(OutgameTheme.ACCENT, 4)
 	veil.visible = false
 	tag.visible = false
-	_preview_tag(intel, intel_label, "예상 픽", Color(0.88, 0.27, 0.27))
+	_preview_tag(intel, intel_label, Loc.t(L.MATCH_BAN_PICK_TAG_EXPECTED_PICK), Color(0.88, 0.27, 0.27))
 	_preview_tag(mine, mine_label, MechMastery.tier_name(2), MechMastery.tier_color(2))
 
 

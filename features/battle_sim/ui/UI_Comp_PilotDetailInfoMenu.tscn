@@ -3,6 +3,7 @@
 [ext_resource type="Theme" uid="uid://dmrfge5o5tftu" path="res://resources/BattleTheme.tres" id="1_theme"]
 
 [node name="PilotDetailInfoMenu" type="PanelContainer"]
+auto_translate_mode = 2
 editor_description = "칸 · 지속 효과 설명 판 — 정보 칼럼 왼쪽, 누른 것과 같은 높이(코드가 위치 · 높이를 잡는다). 판 위 누름은 STOP 이라 뒤판까지 내려가지 않는다."
 custom_minimum_size = Vector2(372, 0)
 offset_right = 372.0

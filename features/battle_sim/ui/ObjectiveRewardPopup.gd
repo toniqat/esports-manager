@@ -151,7 +151,8 @@ func _build() -> void:
 	y += 54.0
 
 	var left: int = _bs.objective.turns_until_cell(_cell())
-	var when_txt: String = "%d턴 뒤 등장" % left if left > 0 else "지금 열려 있다"
+	var when_txt: String = Loc.t(L.HUD_OBJECTIVE_REWARD_SPAWN_IN, {"n": left}) if left > 0 \
+			else Loc.t(L.HUD_OBJECTIVE_REWARD_OPEN_NOW)
 	_add_label(panel, when_txt, SUB_FONT, SUB_COLOR,
 			Vector2(PANEL_PAD, y), Vector2(iw, 34.0), HORIZONTAL_ALIGNMENT_CENTER)
 	y += 34.0 + 12.0
@@ -168,7 +169,7 @@ func _build() -> void:
 	y += 34.0 + 20.0
 
 	var btn := Button.new()
-	btn.text = "닫기"
+	btn.text = Loc.t(L.UI_BUTTON_CLOSE)
 	btn.add_theme_font_size_override("font_size", 26)
 	btn.position = Vector2(PANEL_PAD + (iw - BTN_W) * 0.5, y)
 	btn.size = Vector2(BTN_W, BTN_H)
@@ -183,7 +184,7 @@ func _build() -> void:
 func _build_card(panel: Panel, cd: CardData, at: Vector2, iw: float,
 		card_h: float, copies: int, accent: Color) -> void:
 	if cd == null:
-		_add_label(panel, "보상 카드를 찾지 못했다", NOTE_FONT, NOTE_COLOR,
+		_add_label(panel, Loc.t(L.HUD_OBJECTIVE_REWARD_NO_CARD), NOTE_FONT, NOTE_COLOR,
 				at, Vector2(iw, card_h), HORIZONTAL_ALIGNMENT_CENTER)
 		return
 	var node := _bs.CARD_SCENE.instantiate() as Card
@@ -205,8 +206,8 @@ func _build_card(panel: Panel, cd: CardData, at: Vector2, iw: float,
 ## 차이라 카드 그림만으로는 안 나온다.
 func _where_text(is_herald: bool) -> String:
 	if is_herald:
-		return "획득 즉시 손으로 들어온다"
-	return "획득 시 덱에 섞여 들어간다"
+		return Loc.t(L.HUD_OBJECTIVE_REWARD_TO_HAND)
+	return Loc.t(L.HUD_OBJECTIVE_REWARD_TO_DECK)
 
 
 func _cell() -> Vector2i:

@@ -377,8 +377,8 @@ func _refresh_cheats() -> void:
 		return
 	var actions: Array = []
 	if phase == GameEnums.MatchPhase.PREP or phase == GameEnums.MatchPhase.BAN_PICK:
-		actions.append({"label": "즉시 승리 (MVP 아군 탑)", "call": _cheat_finish.bind(0)})
-		actions.append({"label": "즉시 패배 (MVP 상대 탑)", "call": _cheat_finish.bind(1)})
+		actions.append({"label": "즉시 승리 (MVP 아군 탑)", "call": _cheat_finish.bind(0)})  # l10n-ignore
+		actions.append({"label": "즉시 패배 (MVP 상대 탑)", "call": _cheat_finish.bind(1)})  # l10n-ignore
 	_cheat_menu.set_actions(actions)
 
 

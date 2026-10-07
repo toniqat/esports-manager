@@ -4,6 +4,7 @@
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="MechMasteryRow" type="Control"]
+auto_translate_mode = 2
 custom_minimum_size = Vector2(0, 32)
 layout_mode = 3
 anchors_preset = 0

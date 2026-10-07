@@ -73,8 +73,7 @@ func open(bs: BattleSim, p: PilotData, row: Dictionary) -> void:
 	%Art.texture = _art_tex
 	%Art.visible = _art_tex != null
 	%Slab.visible = _art_tex == null
-	%FallbackLabel.text = String(bs.ROLE_FULL_NAMES[p.role]) \
-			if bs != null and p.role < bs.ROLE_FULL_NAMES.size() else ""
+	%FallbackLabel.text = OutgameTheme.role_name(p.role)
 	_layout_art()
 
 	# 등장 — 전신이 살짝 떠오르며 밝아진다.
@@ -146,8 +145,7 @@ static func display_name(bs: BattleSim, p: PilotData) -> String:
 	var pd: PlayerData = bs.player_data_for(p) if bs != null else null
 	if pd != null and not pd.name.is_empty():
 		return pd.name
-	var role_name: String = String(bs.ROLE_FULL_NAMES[p.role]) \
-			if bs != null and p.role < bs.ROLE_FULL_NAMES.size() else "?"
+	var role_name: String = OutgameTheme.role_name(p.role)
 	return "%s %d" % [role_name, p.team]
 
 
@@ -161,10 +159,10 @@ static func metric_text(row: Dictionary) -> String:
 	var dmg: String = _fmt(int(row.get("dmg", 0)))
 	var taken: String = _fmt(int(row.get("taken", 0)))
 	if role == RunStats.support_role():
-		return "돌봄 %s · 받은 피해 %s" % [_fmt(int(row.get("care", 0))), taken]
+		return Loc.t(L.HUD_MVP_METRIC_SUPPORT, {"care": _fmt(int(row.get("care", 0))), "taken": taken})
 	if role == RunStats.top_role():
-		return "준 피해 %s · 받은 피해 %s" % [dmg, taken]
-	return "준 피해 %s" % dmg
+		return Loc.t(L.HUD_MVP_METRIC_TOP, {"dmg": dmg, "taken": taken})
+	return Loc.t(L.HUD_MVP_METRIC_DAMAGE, {"dmg": dmg})
 
 
 static func _fmt(v: int) -> String:
@@ -175,7 +173,7 @@ static func _fmt(v: int) -> String:
 
 ## F6 단독 실행 미리보기 — 손으로 만든 파일럿 한 명(그림 있는 0번)으로 연다
 ## (`resources/UiPreview.gd`). 전투가 없어 이름은 여기서 넣는다.
-func _fill_preview() -> void:
+func _fill_preview() -> void:  # l10n-ignore
 	UiPreview.trace(closed)
 	var p := PilotData.new(2, 0, Vector2i.ZERO, {"hp": 100, "atk": 10})
 	p.pilot_id = 0

@@ -1,6 +1,6 @@
 # match_prep/ — PREP screen + opponent intel (M5 analysis)
 
-**텍스트는 l10n key — `Loc.t`** — `OpponentIntel._card_names_for` shows pilot cards via `Loc.t(def["name_key"])`.
+**표시 텍스트는 l10n key (`match` 도메인, `match.intel.*` · `match.prep.*` · scene keys `match.intel_*` / `match.match_prep_view.*`).** `OpponentIntel.build()` returns already-translated strings (tier label, analyst notes) — built when drawn, never saved. **텍스트는 l10n key — `Loc.t`** — `OpponentIntel._card_names_for` shows pilot cards via `Loc.t(def["name_key"])`.
 
 MatchFlow's first step (`LOAD → PREP → BAN_PICK`). Contract: `docs/outgame_dev_plan.md` §3 M5 · §11.
 

@@ -60,6 +60,7 @@ offset_bottom = 33.0
 text_size = 16
 
 [node name="Name" type="Label" parent="Content/Top/NameCol"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — IntelPilotRow.gd fill()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -72,6 +73,7 @@ text = "Evelyn"
 clip_text = true
 
 [node name="Total" type="Label" parent="Content/Top/NameCol"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — IntelPilotRow.gd fill()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -84,6 +86,7 @@ theme_override_font_sizes/font_size = 18
 text = "합계 514"
 
 [node name="Stats" type="HBoxContainer" parent="Content/Top"]
+auto_translate_mode = 2
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — IntelPilotRow.gd fill()
 Six stat cells (PlayerData stats, equal widths). Key: CaptionLabel 16. Value: BodyLabel (shown) / FaintLabel (hidden), font size by tier set in code (exact 28 · range 19 · ? 26)."
@@ -297,9 +300,10 @@ offset_right = 148.0
 offset_bottom = 30.0
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 18
-text = "주력 메크"
+text = "tx_MFVJR117B3"
 
 [node name="MechText" type="Label" parent="Content/MechLine"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — IntelPilotRow.gd fill()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -328,9 +332,10 @@ offset_right = 148.0
 offset_bottom = 30.0
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 18
-text = "파일럿 카드"
+text = "tx_0ZQK3N7THW"
 
 [node name="CardText" type="Label" parent="Content/CardLine"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — IntelPilotRow.gd fill()"
 unique_name_in_owner = true
 layout_mode = 1

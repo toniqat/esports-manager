@@ -272,6 +272,7 @@ mouse_filter = 2
 theme_type_variation = &"HudTurnBar"
 
 [node name="TurnLabel" type="Label" parent="Canvas/TurnAnnounce"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — HudBuilder.gd _turn_label"
 unique_name_in_owner = true
 layout_mode = 1
@@ -322,6 +323,7 @@ theme = ExtResource("1_theme")
 theme_type_variation = &"BattleGoldModal"
 
 [node name="VictoryLabel" type="Label" parent="VictoryLayer/VictoryPanel"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — HudBuilder.gd _bind_victory_panel()"
 unique_name_in_owner = true
 layout_mode = 0
@@ -348,7 +350,7 @@ offset_left = 40.0
 offset_right = 130.0
 offset_bottom = 120.0
 theme_type_variation = &"BattleTitleLabel"
-text = "MVP"
+text = "tx_8WZGVJ6X01"
 vertical_alignment = 1
 
 [node name="MvpPortrait" type="TextureRect" parent="VictoryLayer/VictoryPanel/MvpRow"]
@@ -363,6 +365,7 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="MvpName" type="Label" parent="VictoryLayer/VictoryPanel/MvpRow"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — HudBuilder.gd set_victory_mvp()"
 unique_name_in_owner = true
 layout_mode = 0
@@ -396,6 +399,7 @@ theme_type_variation = &"HudVictoryKdaLabel"
 text = "3 / 1 / 5"
 
 [node name="VictoryButton" type="Button" parent="VictoryLayer/VictoryPanel"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — HudBuilder.gd _bind_victory_panel()"
 unique_name_in_owner = true
 layout_mode = 0

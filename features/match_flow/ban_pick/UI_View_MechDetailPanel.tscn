@@ -54,6 +54,7 @@ mouse_filter = 2
 color = Color(0.3, 0.33, 0.42, 0.14)
 
 [node name="ArtName" type="Label" parent="Root/ArtPlaceholder"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_art()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -131,6 +132,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Name" type="Label" parent="Root/SafeArea/Scroll/Body/Header"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_header()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -144,6 +146,7 @@ text = "메크 이름"
 clip_text = true
 
 [node name="Sub" type="Label" parent="Root/SafeArea/Scroll/Body/Header"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_header()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -166,7 +169,7 @@ custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 24
-text = "기체 능력치"
+text = "tx_B3TD0XDDBT"
 clip_text = true
 
 [node name="Stats" type="Control" parent="Root/SafeArea/Scroll/Body"]
@@ -195,7 +198,7 @@ offset_bottom = 34.0
 grow_horizontal = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 19
-text = "체력"
+text = "tx_0KSNX63V29"
 horizontal_alignment = 1
 
 [node name="HpValue" type="Label" parent="Root/SafeArea/Scroll/Body/Stats/HpChip"]
@@ -235,7 +238,7 @@ offset_bottom = 34.0
 grow_horizontal = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 19
-text = "공격력"
+text = "tx_DM2CD6EQG8"
 horizontal_alignment = 1
 
 [node name="AtkValue" type="Label" parent="Root/SafeArea/Scroll/Body/Stats/AtkChip"]
@@ -274,7 +277,7 @@ offset_bottom = 34.0
 grow_horizontal = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 19
-text = "존재감"
+text = "tx_VP2WZCKCPR"
 horizontal_alignment = 1
 
 [node name="PresenceValue" type="Label" parent="Root/SafeArea/Scroll/Body/Stats/PresenceChip"]
@@ -309,7 +312,7 @@ custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 24
-text = "숙련도 (등급 보정 = 스탯 6종)"
+text = "tx_3R8J1QNVYD"
 clip_text = true
 
 [node name="MasteryRows" type="VBoxContainer" parent="Root/SafeArea/Scroll/Body/MasteryBlock"]
@@ -333,6 +336,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="QuirkTitle" type="Label" parent="Root/SafeArea/Scroll/Body/QuirkBlock"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_quirks()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 36)
@@ -350,7 +354,7 @@ custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 21
-text = "장착한 기벽 없음"
+text = "tx_1R98FHMXSQ"
 
 [node name="QuirkRows" type="VBoxContainer" parent="Root/SafeArea/Scroll/Body/QuirkBlock"]
 unique_name_in_owner = true
@@ -370,7 +374,7 @@ custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 24
-text = "메크 패시브"
+text = "tx_PY288FR27W"
 clip_text = true
 
 [node name="NoPassive" type="Label" parent="Root/SafeArea/Scroll/Body"]
@@ -381,9 +385,10 @@ custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 21
-text = "이 기체에는 패시브가 없다"
+text = "tx_DKVRHA76D6"
 
 [node name="PassiveBox" type="VBoxContainer" parent="Root/SafeArea/Scroll/Body"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_passive()"
 unique_name_in_owner = true
 layout_mode = 2
@@ -428,7 +433,7 @@ custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 24
-text = "메크 카드"
+text = "tx_QH1DC5S3H2"
 clip_text = true
 
 [node name="NoCards" type="Label" parent="Root/SafeArea/Scroll/Body"]
@@ -439,7 +444,7 @@ custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 18
-text = "이 기체에는 고유 카드가 없다"
+text = "tx_FKR497Q4GS"
 
 [node name="CardsBox" type="VBoxContainer" parent="Root/SafeArea/Scroll/Body"]
 editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_cards()"
@@ -452,7 +457,7 @@ theme_override_constants/separation = 0
 layout_mode = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 18
-text = "이 기체를 배정받은 파일럿은 아래 카드를 장수만큼 덱에 넣는다."
+text = "tx_KCV1PKAM59"
 autowrap_mode = 3
 
 [node name="Gap" type="Control" parent="Root/SafeArea/Scroll/Body/CardsBox"]
@@ -491,4 +496,4 @@ offset_bottom = -80.0
 grow_vertical = 0
 focus_mode = 0
 theme_type_variation = &"GhostButton"
-text = "닫기"
+text = "tx_R1DMEF1S3E"

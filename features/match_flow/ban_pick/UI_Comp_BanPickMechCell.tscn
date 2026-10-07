@@ -4,6 +4,7 @@
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="BanPickMechCell" type="Button"]
+auto_translate_mode = 2
 editor_description = "Size = grid column width (pane content 998 / 5 cols, 10 gap) x (square + 28 name line). The grid shows 4.5 rows of this height (BanPickView.fit_pane)."
 clip_contents = true
 custom_minimum_size = Vector2(191.6, 219.6)

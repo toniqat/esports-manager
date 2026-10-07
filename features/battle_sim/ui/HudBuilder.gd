@@ -690,7 +690,7 @@ func play_turn_announce(is_player: bool) -> void:
 	var sb := BattleTheme.variation_box(&"HudTurnBar")
 	sb.bg_color = TURN_ANNOUNCE_PLAYER_COLOR if is_player else TURN_ANNOUNCE_ENEMY_COLOR
 	_turn_bar.add_theme_stylebox_override("panel", sb)
-	_turn_label.text = "당신의 차례" if is_player else "상대 차례"
+	_turn_label.text = Loc.t(L.HUD_TURN_PLAYER if is_player else L.HUD_TURN_ENEMY)
 	# 띠는 화면 가운데의 폭 0 에서 좌우로 펼쳐진다 — 높이 · 세로 자리는 씬 값.
 	var vp := ScreenMetrics.viewport_size()
 	var bar_h: float = _turn_bar.size.y
@@ -806,7 +806,7 @@ func _bind_victory_panel(root: Node) -> void:
 	# campaign hub so LeagueManager can record the result.
 	var season_mode: bool = _bs.gm.season_state.get("pending_match", null) != null
 	var rb := root.get_node("%VictoryButton") as Button
-	rb.text = "다음 →" if season_mode else "Play Again"
+	rb.text = Loc.t(L.HUD_VICTORY_NEXT if season_mode else L.HUD_VICTORY_PLAY_AGAIN)
 	if season_mode:
 		rb.pressed.connect(_bs._on_return_to_season_pressed)
 	else:

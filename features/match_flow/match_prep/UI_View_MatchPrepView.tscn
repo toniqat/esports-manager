@@ -46,10 +46,11 @@ offset_bottom = 84.0
 grow_horizontal = 2
 theme_type_variation = &"HeadingLabel"
 theme_override_font_sizes/font_size = 48
-text = "경기 준비"
+text = "tx_VGK1FJEFJY"
 horizontal_alignment = 1
 
 [node name="Matchup" type="Label" parent="Safe"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — MatchPrepView.gd fill()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -91,6 +92,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="EnemyTitle" type="Label" parent="Safe/Scroll/Body/EnemyHead"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — MatchPrepView.gd fill()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -125,6 +127,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="OwnTitle" type="Label" parent="Safe/Scroll/Body/OwnHead"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — MatchPrepView.gd fill()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -166,4 +169,4 @@ grow_horizontal = 2
 grow_vertical = 0
 focus_mode = 0
 theme_type_variation = &"BarPrimaryButton"
-text = "경기 시작"
+text = "tx_HQ94NZJ6WP"

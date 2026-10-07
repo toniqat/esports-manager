@@ -1,0 +1,57 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_VDJKS7MNHE,match.ban_pick_view.ban_label,active,UI_View_BanPickView.tscn SafeArea/EnemyBlock/BanRow/BanLabel text,,,BAN,BAN,draft,606f9cc9
+tx_VX9Q85PM8S,match.ban_pick_view.hint,active,UI_View_BanPickView.tscn SafeArea/PlayerBlock/Hint text,,,드래그 드롭으로 메크-파일럿 지정 변경,Drag and drop to reassign mechs to pilots,draft,a7d370fb
+tx_6Z915A6SVE,match.ban_pick_view.ban_row_ban_label,active,UI_View_BanPickView.tscn SafeArea/PlayerBlock/BanRow/BanLabel text,,,BAN,BAN,draft,606f9cc9
+tx_M08KQVQN65,match.ban_pick_view.sheet_no_passive,active,UI_View_BanPickView.tscn SafeArea/Band/Pane/Sheet/SheetNoPassive text,,,패시브 없음,No passive,draft,82b11fd7
+tx_MJJHA43Q8J,match.ban_pick_view.sheet_no_cards,active,UI_View_BanPickView.tscn SafeArea/Band/Pane/Sheet/SheetNoCards text,,,이 기체에는 고유 카드가 없다,This mech has no unique cards,draft,855a5f4d
+tx_XVKPY5NPC4,match.ban_pick_view.start_button,active,UI_View_BanPickView.tscn SafeArea/StartButton text,,,게임 시작,Start Game,draft,62d82d76
+tx_B3TD0XDDBT,match.mech_detail_panel.stats_title,active,UI_View_MechDetailPanel.tscn Root/SafeArea/Scroll/Body/StatsTitle text,,,기체 능력치,Mech Stats,draft,fe70f0f7
+tx_3R8J1QNVYD,match.mech_detail_panel.mastery_title,active,UI_View_MechDetailPanel.tscn Root/SafeArea/Scroll/Body/MasteryBlock/MasteryTitle text,,,숙련도 (등급 보정 = 스탯 6종),Mastery (tier bonus = all 6 stats),draft,54148a08
+tx_1R98FHMXSQ,match.mech_detail_panel.quirk_empty,active,UI_View_MechDetailPanel.tscn Root/SafeArea/Scroll/Body/QuirkBlock/QuirkEmpty text,,,장착한 기벽 없음,No quirks equipped,draft,47075c35
+tx_PY288FR27W,match.mech_detail_panel.passive_title,active,UI_View_MechDetailPanel.tscn Root/SafeArea/Scroll/Body/PassiveTitle text,,,메크 패시브,Mech Passive,draft,b1acc4c7
+tx_DKVRHA76D6,match.mech_detail_panel.no_passive,active,UI_View_MechDetailPanel.tscn Root/SafeArea/Scroll/Body/NoPassive text,,,이 기체에는 패시브가 없다,This mech has no passive,draft,1e56f78c
+tx_FKR497Q4GS,match.mech_detail_panel.no_cards,active,UI_View_MechDetailPanel.tscn Root/SafeArea/Scroll/Body/NoCards text,,,이 기체에는 고유 카드가 없다,This mech has no unique cards,draft,855a5f4d
+tx_KCV1PKAM59,match.mech_detail_panel.cards_note,active,UI_View_MechDetailPanel.tscn Root/SafeArea/Scroll/Body/CardsBox/CardsNote text,,,이 기체를 배정받은 파일럿은 아래 카드를 장수만큼 덱에 넣는다.,"The pilot assigned to this mech adds the cards below to their deck, in the listed counts.",draft,a78afb38
+tx_MFVJR117B3,match.intel_pilot_row.head,active,UI_Comp_IntelPilotRow.tscn Content/MechLine/Head text,,,주력 메크,Main Mechs,draft,dffe5cd0
+tx_5A4VYR9MJQ,match.intel_view.line,active,UI_Comp_IntelView.tscn NoAnalyst/Line text,,,분석 담당 없음 — 데이터만 보입니다. 해석은 감독이 직접.,No analyst — only raw data is shown. The manager reads it alone.,draft,c65c6074
+tx_VGK1FJEFJY,match.match_prep_view.title,active,UI_View_MatchPrepView.tscn Safe/Title text,,,경기 준비,Match Prep,draft,7f43f241
+tx_HQ94NZJ6WP,match.match_prep_view.start,active,UI_View_MatchPrepView.tscn Safe/Start text,,,경기 시작,Start Match,draft,dfb0f596
+tx_5AJE6SAZ26,match.ban_pick.fallback_enemy,active,BanPickController team name fallback,,,상대,Opponent,draft,0e33b0bd
+tx_GPNME2ADWA,match.ban_pick.quirk_count,active,portrait badge: number of quirks,,,기벽 {n},Quirks {n},draft,de2d66e1
+tx_2C7Y2JDD7V,match.ban_pick.sheet_stats,active,mech sheet stat line,,,{role}   ·   HP {hp}   ·   ATK {atk}   ·   존재감 {presence},{role}   ·   HP {hp}   ·   ATK {atk}   ·   Presence {presence},draft,398cb421
+tx_S32JTGTHEG,match.ban_pick.sheet_cards_header,active,mech sheet card row header,,,메크 카드  {n}종   ·   카드를 누르면 설명,Mech Cards  {n} types   ·   Tap a card for details,draft,d2013899
+tx_J3FQW65YX4,match.ban_pick.rider,active,sheet: my rider mastery,,,{name}  {tier} {value}  (스탯 {bonus}),{name}  {tier} {value}  (stats {bonus}),draft,e1766395
+tx_GKJ2J8BS4G,match.ban_pick.rider_quirk,active,sheet: my rider mastery + quirk bonus,,,{name}  {tier} {value}  (스탯 {bonus} · 기벽 +{quirk}),{name}  {tier} {value}  (stats {bonus} · quirks +{quirk}),draft,22067e08
+tx_ZFKRFPCAS2,match.ban_pick.intel_analyst_ban,active,sheet intel line,,,분석가 추천 밴 — {pilot} 의 주력,Analyst's ban pick — {pilot}'s main,draft,e70ae8e8
+tx_ZKEE3G9T6P,match.ban_pick.intel_enemy_pick,active,sheet intel line,,,상대 예상 픽 — {pilot},Expected opponent pick — {pilot},draft,6ae8d9ec
+tx_15SXME7CFS,match.ban_pick.generated_only,active,card count badge for count 0 cards,,,생성 전용,Generated only,draft,55fd0e1c
+tx_WCXP7CPSKQ,match.ban_pick.confirm_ban,active,sheet confirm button,,,밴 확정,Confirm Ban,draft,e5d5b988
+tx_ZEXW72B4FP,match.ban_pick.confirm_pick,active,sheet confirm button,,,픽 확정,Confirm Pick,draft,a2d261ee
+tx_76TDNRXT2H,match.ban_pick.opponent_turn,active,sheet confirm button (disabled),,,상대 차례,Opponent's Turn,draft,8ed595bd
+tx_ZPK44AJ0YK,match.ban_pick.unavailable,active,sheet confirm button (disabled),,,선택 불가,Unavailable,draft,3f138387
+tx_YY1PTH9QJN,match.ban_pick.tag_rec_ban,active,grid cell tag,,,추천 밴,Rec. Ban,draft,e32140df
+tx_HF3CR7Q56F,match.ban_pick.tag_expected_pick,active,grid cell tag,,,예상 픽,Exp. Pick,draft,288e3098
+tx_TZBXEJKN0V,match.ban_pick.quirk_bonus,active,mech slot quirk tag,,,기벽 +{n},Quirk +{n},draft,844cc5b5
+tx_SSCFWKVHRS,match.ban_pick.banner.my_ban,active,turn banner,,,내 차례 밴,Your Ban,draft,d54e6c51
+tx_EGTM3JJJMY,match.ban_pick.banner.my_pick,active,turn banner,,,내 차례 픽,Your Pick,draft,5a68a052
+tx_D141ZC4RBA,match.ban_pick.banner.opponent_ban,active,turn banner,,,상대 차례 밴,Opponent Ban,draft,c97be453
+tx_NAM5AY7ESD,match.ban_pick.banner.opponent_pick,active,turn banner,,,상대 차례 픽,Opponent Pick,draft,a0a3d3b8
+tx_JFNQCJHJWF,match.mech_detail.quirk_title,active,MechDetailPanel quirk block head,,,기벽 — {pilot}  {count} / {slots}  (스탯 +{total}),Quirks — {pilot}  {count} / {slots}  (stats +{total}),draft,8c78f198
+tx_HJGDFGJ4TM,match.mech_detail.quirk_inactive,active,quirk effect whose condition does not hold,,,{effect}  (조건 미충족),{effect}  (condition not met),draft,bd605daa
+tx_5YCR7YFGNT,match.intel.total,active,intel pilot row stat total,,,합계 {total},Total {total},draft,8c7948c2
+tx_7A1FMDGC3E,match.intel.no_info,active,intel mech / card line empty,,,정보 없음,No info,draft,534fb589
+tx_4Y7CG5R478,match.intel.tier_header,active,intel header chip,,,분석 {tier}단계 · {label},Analysis Tier {tier} · {label},draft,23351215
+tx_4P15WEPRM6,match.intel.need,active,intel header,,,내 분석 {have} · 다음 단계 {need} 필요,My analysis {have} · {need} needed for next tier,draft,630fc017
+tx_CHAJA53SVW,match.intel.analyst,active,analyst note head,,,분석 · {who},Analysis · {who},draft,e423b8f1
+tx_4GMKW7SCDD,match.intel.tier.name_only,active,reveal tier 0,,,이름 · 역할,Name · Role,draft,cbc70d56
+tx_Q605SZ346S,match.intel.tier.approx,active,reveal tier 1,,,스탯 대략,Approx. Stats,draft,e498537d
+tx_D20PGJE2CX,match.intel.tier.mechs,active,reveal tier 2,,,스탯 · 주력 메크,Stats · Main Mechs,draft,199aaa56
+tx_AR1MKMRGM3,match.intel.tier.full,active,reveal tier 3,,,전부 공개,Fully Revealed,draft,22915eed
+tx_SCRCRND2B5,match.intel.note.no_data,active,analyst note,,,자료가 부족해 상대 전력을 읽기 어렵습니다.,Not enough data to read the opponent's strength.,draft,e2c59761
+tx_54201ZNSN2,match.intel.note.threat,active,analyst note,,,경계 대상: {role} {name} — {stat} 수치가 가장 높습니다.,Watch out: {role} {name} — highest {stat}.,draft,35092303
+tx_Y52NPQTAB1,match.intel.note.ban,active,analyst note,,,추천 밴: {mech} — {pilot}의 주력 메크입니다.,Suggested ban: {mech} — {pilot}'s main mech.,draft,eb50ede8
+tx_8F1HRN6A8N,match.intel.note.weak,active,analyst note,,,약한 고리: {role} {name} — 그 라인을 노려 볼 만합니다.,Weak link: {role} {name} — worth targeting that lane.,draft,cec3ba91
+tx_1W81NVQ0EN,match.intel.mech_main,active,pilot main mech without mastery grade,,,{mech} 주력,{mech} (main),draft,ae4e7364
+tx_CYD6TW7EWM,match.intel.mech_fallback,active,unknown mech id,,,메크 {id},Mech {id},draft,cebcdd50
+tx_2D102EEXT5,match.prep.enemy_title,active,prep screen section title,,,상대 팀 · {team},Opponent · {team},draft,a0309062
+tx_YRJDDXHF35,match.prep.own_title,active,prep screen section title,,,내 팀 · {team},My Team · {team},draft,e43e2214

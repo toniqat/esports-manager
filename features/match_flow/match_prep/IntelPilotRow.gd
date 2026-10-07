@@ -42,7 +42,7 @@ func fill(row: Dictionary) -> void:
 	var exact: bool = bool(row["exact"])
 	(%PositionBadge_Role as PositionBadge).set_role(int(row["role"]))
 	%Name.text = String(row["name"])
-	%Total.text = "합계 %s" % row["total_text"]
+	%Total.text = Loc.t(L.MATCH_INTEL_TOTAL, {"total": row["total_text"]})
 	%Total.theme_type_variation = &"CaptionLabel" if shown else &"FaintLabel"
 
 	var stats: Array = row["stats"]
@@ -69,22 +69,22 @@ func fill(row: Dictionary) -> void:
 		var parts: Array = []
 		for raw in (row["mechs"] as Array):
 			parts.append(String((raw as Dictionary)["text"]))
-		%MechText.text = " · ".join(parts) if not parts.is_empty() else "정보 없음"
+		%MechText.text = " · ".join(parts) if not parts.is_empty() else Loc.t(L.MATCH_INTEL_NO_INFO)
 	if show_cards:
 		var names: Array = row["cards"]
-		%CardText.text = " · ".join(names) if not names.is_empty() else "정보 없음"
+		%CardText.text = " · ".join(names) if not names.is_empty() else Loc.t(L.MATCH_INTEL_NO_INFO)
 
 
 ## F6 단독 실행 미리보기 — 2단계(정확한 스탯 + 주력 메크, 카드 없음) 미드 한 줄. 손으로 적은 값.
-func _fill_preview() -> void:
+func _fill_preview() -> void:  # l10n-ignore
 	UiPreview.stage(self)
-	var keys: Array = ["전명", "전회", "교명", "교회", "공성", "체성"]
 	var vals: Array = [90, 90, 92, 88, 90, 86]
 	var stats: Array = []
-	for i in keys.size():
-		stats.append({"label": keys[i], "text": str(vals[i]), "value": vals[i]})
+	for i in vals.size():
+		stats.append({"label": PlayerData.stat_short(i), "text": str(vals[i]), "value": vals[i]})
 	fill({
-		"pilot_id": 2, "name": "Shunguang", "role": GameEnums.Role.ASSASSIN, "role_label": "정글",
+		"pilot_id": 2, "name": "Shunguang", "role": GameEnums.Role.ASSASSIN,
+		"role_label": GameEnums.role_position_label(GameEnums.Role.ASSASSIN),
 		"show_stats": true, "exact": true, "stats": stats, "total_text": "536",
 		"show_mechs": true, "mechs": [{"mech_id": 0, "name": "Headsman", "text": "Headsman 능숙"},
 				{"mech_id": 0, "name": "Reaper", "text": "Reaper 능숙"}],

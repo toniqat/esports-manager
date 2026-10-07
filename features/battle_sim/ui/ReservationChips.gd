@@ -70,16 +70,16 @@ func _entries() -> Array:
 	var bounty: int = _bs.kill_bounty_p if _is_player else _bs.kill_bounty_ai
 	var ambush: Array = _bs.ambush_search_p if _is_player else _bs.ambush_search_ai
 	if strat != 0:
-		out.append(["strategy_" + side, "다음 %+d" % strat])
+		out.append(["strategy_" + side, Loc.t(L.HUD_RESERVATION_STRATEGY, {"n": "%+d" % strat})])
 	if draw_n > 0:
-		out.append(["draw_" + side, "다음 뽑기 %d" % draw_n])
+		out.append(["draw_" + side, Loc.t(L.HUD_RESERVATION_DRAW, {"n": draw_n})])
 	if bounty > 0:
-		out.append(["bounty_" + side, "처치 +%d" % bounty])
+		out.append(["bounty_" + side, Loc.t(L.HUD_RESERVATION_BOUNTY, {"n": bounty})])
 	if not ambush.is_empty():
 		var n: int = 0
 		for raw in ambush:
 			n += int((raw as Dictionary).get("n", 0))
-		out.append(["ambush_" + side, "찾기 %d" % n])
+		out.append(["ambush_" + side, Loc.t(L.HUD_RESERVATION_SEARCH, {"n": n})])
 	return out
 
 

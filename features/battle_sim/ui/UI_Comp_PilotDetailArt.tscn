@@ -3,6 +3,7 @@
 [ext_resource type="Theme" uid="uid://dmrfge5o5tftu" path="res://resources/BattleTheme.tres" id="1_theme"]
 
 [node name="PilotDetailArt" type="Control"]
+auto_translate_mode = 2
 editor_description = "전신 아트 한 장 — 크기(높이 ART_H, 폭 = 원본 비율)와 아래 가운데 피벗, 앞 / 뒤 자세는 코드가 잡는다. 텍스처가 없으면 Slab + FallbackLabel."
 layout_mode = 3
 anchors_preset = 0

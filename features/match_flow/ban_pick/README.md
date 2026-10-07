@@ -1,6 +1,6 @@
 # Match Flow — Ban/Pick
 
-**텍스트는 l10n key — `Loc.t`** (mech passive / cards): passive name · description = `Loc.t(pas["name_key"] / ["description_key"])`; mech card rows build via `CardData.from_mech_def` (`BanPickController`, `BanPickSheetCard`, `MechCardCell`, `MechDetailPanel`).
+**표시 텍스트는 l10n key (`match` 도메인, `match.ban_pick.*` · `match.mech_detail.*` · scene keys `match.ban_pick_view.*` · `match.mech_detail_panel.*`).** Item scenes whose text is all code-filled (`BanPickMechCell` · `MechSlot` · `Portrait` · `MechMasteryRow` · `MechQuirkRow`) carry `auto_translate_mode = 2` on the root. Role tab / sheet role names (`ROLE_NAMES` TANK …) stay untranslated English labels. **텍스트는 l10n key — `Loc.t`** (mech passive / cards): passive name · description = `Loc.t(pas["name_key"] / ["description_key"])`; mech card rows build via `CardData.from_mech_def` (`BanPickController`, `BanPickSheetCard`, `MechCardCell`, `MechDetailPanel`).
 
 ## Files
 | File | Role |

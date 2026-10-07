@@ -33,7 +33,8 @@ func fill(row: Dictionary) -> void:
 	nm.text = "%s  · %s" % [String(row.get("name", "")), QuirkSystem.grade_name(grade)]
 	nm.add_theme_color_override("font_color", col if on else col.lerp(OutgameTheme.SURFACE, OFF_FADE))
 	var eff: Label = %Effect
-	eff.text = String(row.get("effect", "")) + ("" if on else "  (조건 미충족)")
+	var effect: String = String(row.get("effect", ""))
+	eff.text = effect if on else Loc.t(L.MATCH_MECH_DETAIL_QUIRK_INACTIVE, {"effect": effect})
 	eff.add_theme_color_override("font_color",
 			EFFECT_COLOR if on else EFFECT_OFF_COLOR)
 

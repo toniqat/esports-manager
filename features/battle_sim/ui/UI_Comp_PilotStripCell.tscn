@@ -14,6 +14,7 @@ shader_parameter/rect_size = Vector2(127.12, 158.9)
 shader_parameter/tint = Color(1, 1, 1, 1)
 
 [node name="PilotStripCell" type="Control"]
+auto_translate_mode = 2
 editor_description = "파일럿 스트립 한 칸(151.52 × 244). 치수는 예전 PilotStrip.setup 공식 그대로 — 스트립 1030 × 244 를 5칸으로 나눈 원 지름(min(칸 폭 − 12, (높이 − 탭 절반 − 2) × 0.8)) 의 70%. 스트립(UI_Comp_PilotStrip.tscn)이 다섯 칸을 가운데에 나란히 놓는다."
 layout_mode = 3
 anchors_preset = 0

@@ -5,6 +5,14 @@ extends Control
 # screen surfaces the current phase, the phase-week counter, and the player
 # roster, with two action buttons: "이번 주 시작" (route to TRAINING) and a
 # context-sensitive standings button (INTL → playoff → league).
+#
+# **Layout lives in `HubView.tscn`** (header labels, five `HubRosterRow` instances, the
+# `HubManageCard` row, toast, bottom bar). This script binds `%` nodes, fills data, wires
+# signals and applies the device safe-area offsets (pattern B, `docs/mobile_safe_area.md`):
+# the whole screen is lowered to the safe top, the background stretched back up, and the
+# bottom bar hung from the safe bottom (`fit_bottom_bar`). Create with `HubView.create()`.
+
+const SCENE_PATH: String = "res://features/season/HubView.tscn"
 
 const PHASE_NAMES: Dictionary = {
 	GameEnums.SeasonPhase.PRESEASON:      "프리시즌",
@@ -14,12 +22,6 @@ const PHASE_NAMES: Dictionary = {
 	GameEnums.SeasonPhase.REGULAR:        "정규시즌",
 	GameEnums.SeasonPhase.REGULAR_INTL:   "정규시즌 국제대회",
 }
-## 역할 이름 · 색은 팔레트가 소유한다 — 화면마다 자기 배열을 들면 같은 역할이
-## 화면마다 다른 색으로 그려진다.
-const ROLE_NAMES: Array  = OutgameTheme.ROLE_NAMES
-const ROLE_COLORS: Array = OutgameTheme.ROLE_COLORS
-const STAT_KEYS: Array   = PlayerData.STAT_KEYS
-const STAT_LABELS: Array = PlayerData.STAT_SHORT
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 @onready var _gm: Node = get_node("/root/GameManager")
@@ -28,152 +30,88 @@ var _phase_lbl: Label
 var _week_lbl: Label
 var _next_match_lbl: Label
 var _toast_lbl: Label
-var _roster_widgets: Array = []   # 5 dicts of {name, total, stats, face, trust_chip, trust_fill}
-# 관리 카드 줄(스태프 · 메크 연구 · 재무) — 3 dicts of {panel_cls, title, value, sub, owner, alert}
-var _manage_widgets: Array = []
+var _roster_rows: Array = []    # HubRosterRow, seat order
+var _manage_cards: Array = []   # HubManageCard, `_manage_panels()` order
 var _start_btn: Button
 var _standings_btn: Button
 var _built: bool = false
 
 
+## Instantiates the scene. `HubView.new()` is an empty Control — don't use it.
+## Load (not preload) — preloading its own scene is a script ↔ scene cycle.
+static func create() -> HubView:
+	return (load(SCENE_PATH) as PackedScene).instantiate() as HubView
+
+
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-	mouse_filter = Control.MOUSE_FILTER_PASS
-	if not _built:
-		_build()
-		_built = true
+	_bind()
 	_connect_signals()
 	refresh()
 
 
 func ensure_view() -> void:
-	if not _built:
-		_build()
-		_built = true
+	_bind()
 	_connect_signals()
 	refresh()
 
 
-# ── Build ────────────────────────────────────────────────────────────────────
-func _build() -> void:
+# ── Bind ─────────────────────────────────────────────────────────────────────
+func _bind() -> void:
+	if _built:
+		return
+	_built = true
 	# 화면 전체를 안전 영역 위끝까지 내린다 — 노치 / 다이나믹 아일랜드 밑에
-	# 제목이 깔리지 않게. 제목만 따로 내리면 본문과 겹친다.
+	# 제목이 깔리지 않게. 배경만은 노치 자리까지 다시 덮는다.
 	ScreenMetrics.indent_to_safe_top(self)
-	OutgameTheme.add_background(self)
+	ScreenMetrics.extend_background(%Background)
+	fit_bottom_bar(%SafeBottom, %BottomBar)
 
-	UiHelpers.mk_label(self, "시즌 허브", 52, OutgameTheme.TEXT,
-			Vector2(40, 60), Vector2(700, 62), HORIZONTAL_ALIGNMENT_LEFT)
-
-	_phase_lbl = UiHelpers.mk_label(self, "", 24, OutgameTheme.TEXT_SUB,
-			Vector2(40, 28), Vector2(700, 30), HORIZONTAL_ALIGNMENT_LEFT)
-	_week_lbl = UiHelpers.mk_label(self, "", 26, OutgameTheme.TEXT_SUB,
-			Vector2(ScreenMetrics.vp_w() - 400.0, 62), Vector2(360, 32), HORIZONTAL_ALIGNMENT_RIGHT)
-	_next_match_lbl = UiHelpers.mk_label(self, "", 24, OutgameTheme.ACCENT_TEXT,
-			Vector2(40, 134), Vector2(1000, 30), HORIZONTAL_ALIGNMENT_LEFT)
-
-	_build_roster_block()
-	_build_manage_row()
-	_build_buttons()
-
-	# 토스트는 하단 바 **바로 위**에 뜬다 — 바 높이를 상수로 다시 적으면
-	# 바를 손볼 때마다 이 줄이 조용히 바 밑으로 들어간다.
-	_toast_lbl = UiHelpers.mk_label(self, "", 22, OutgameTheme.ACCENT_TEXT,
-			Vector2(0, OutgameTheme.bottom_bar_top() - 40.0),
-			Vector2(ScreenMetrics.vp_w(), 28), HORIZONTAL_ALIGNMENT_CENTER)
-
-
-func _build_roster_block() -> void:
-	var x0: float = 30.0
-	var y0: float = 240.0
-	# 190 — 아래에 관리 카드 줄(`_build_manage_row`)이 들어갈 자리를 내준다.
-	var row_h: float = 190.0
-	var row_gap: float = 12.0
-	var width: float = 1020.0
-
-	UiHelpers.mk_label(self, "내 팀 로스터", 24, OutgameTheme.TEXT_SUB,
-			Vector2(x0, y0 - 36), Vector2(360, 30), HORIZONTAL_ALIGNMENT_LEFT)
+	_phase_lbl = %Phase
+	_week_lbl = %Week
+	_next_match_lbl = %NextMatch
+	_toast_lbl = %Toast
+	_toast_lbl.text = ""
 
 	# 줄 순서는 **역할 열거값 순서가 아니라 화면 순서**다(탑 · 정글 · 미드 ·
-	# 원딜 · 서폿) — `GameEnums.ROLE_DISPLAY_ORDER`. 위젯 배열은 그리는 순서,
-	# 즉 자리 순서로 쌓이므로 `_refresh_roster` 가 같은 표로 되읽는다.
-	for seat in 5:
-		var r: int = int(GameEnums.ROLE_DISPLAY_ORDER[seat])
-		var y: float = y0 + seat * (row_h + row_gap)
-		var role_col: Color = ROLE_COLORS[r]
-		var panel := Panel.new()
-		var sty := StyleBoxFlat.new()
-		sty.bg_color = OutgameTheme.SURFACE
-		sty.border_color = role_col
-		sty.border_width_left = 6
-		OutgameTheme.set_corner_radius(sty, 16)
-		sty.shadow_color = OutgameTheme.SHADOW
-		sty.shadow_size = 5
-		sty.shadow_offset = Vector2(0, 2)
-		panel.add_theme_stylebox_override("panel", sty)
-		panel.position = Vector2(x0, y)
-		panel.size     = Vector2(width, row_h)
-		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(panel)
+	# 원딜 · 서폿) — `GameEnums.ROLE_DISPLAY_ORDER`. 씬의 줄도 자리 순서로 서 있어
+	# `_refresh_roster` 가 같은 표로 되읽는다.
+	_roster_rows = %Roster.get_children()
+	for seat in _roster_rows.size():
+		(_roster_rows[seat] as HubRosterRow).set_role(int(GameEnums.ROLE_DISPLAY_ORDER[seat]))
 
-		var face_rect := TextureRect.new()
-		face_rect.position    = Vector2(16, 14)
-		face_rect.size        = Vector2(160, 160)
-		face_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		face_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		face_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		panel.add_child(face_rect)
+	_manage_cards = %Manage.get_children()
+	for i in _manage_cards.size():
+		(_manage_cards[i] as HubManageCard).pressed.connect(_on_manage_pressed.bind(i))
 
-		UiHelpers.mk_label(panel, ROLE_NAMES[r], 20, role_col,
-				Vector2(190, 14), Vector2(160, 26), HORIZONTAL_ALIGNMENT_LEFT)
-		var name_lbl := UiHelpers.mk_label(panel, "—", 28, OutgameTheme.TEXT,
-				Vector2(190, 44), Vector2(560, 36), HORIZONTAL_ALIGNMENT_LEFT)
-		var total_lbl := UiHelpers.mk_label(panel, "", 22, OutgameTheme.TEXT_SUB,
-				Vector2(190, 90), Vector2(280, 28), HORIZONTAL_ALIGNMENT_LEFT)
+	_standings_btn = %Standings
+	_start_btn = %Start
+	_standings_btn.pressed.connect(_on_standings_pressed)
+	_start_btn.pressed.connect(_on_start_pressed)
 
-		# Stat strip
-		var stat_x0: float = 480.0
-		var stat_w: float = (width - stat_x0 - 20) / float(STAT_KEYS.size())
-		var stat_lbls: Array = []
-		for s in STAT_KEYS.size():
-			var sx: float = stat_x0 + s * stat_w
-			UiHelpers.mk_label(panel, STAT_LABELS[s], 18, OutgameTheme.TEXT_SUB,
-					Vector2(sx, 60), Vector2(stat_w, 22), HORIZONTAL_ALIGNMENT_CENTER)
-			var v_lbl := UiHelpers.mk_label(panel, "", 32, OutgameTheme.TEXT,
-					Vector2(sx, 88), Vector2(stat_w, 40), HORIZONTAL_ALIGNMENT_CENTER)
-			stat_lbls.append(v_lbl)
 
-		# Trust (M7, §14 T4): chip "신뢰 42" + a thin gauge under the total line.
-		var trust_chip: Panel = OutgameTheme.add_chip(panel, "", Vector2(190, TRUST_Y),
-				Vector2(TRUST_CHIP_W, TRUST_CHIP_H), OutgameTheme.SURFACE_SUNK,
-				OutgameTheme.TEXT_ON_FILL, 20)
-		var gauge := Panel.new()
-		gauge.add_theme_stylebox_override("panel",
-				OutgameTheme.flat_style(OutgameTheme.SURFACE_SUNK, int(TRUST_GAUGE_H * 0.5)))
-		gauge.position = Vector2(190 + TRUST_CHIP_W + 12.0, TRUST_Y + (TRUST_CHIP_H - TRUST_GAUGE_H) * 0.5)
-		gauge.size = Vector2(TRUST_GAUGE_W, TRUST_GAUGE_H)
-		gauge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		panel.add_child(gauge)
-		var fill := Panel.new()
-		fill.position = Vector2.ZERO
-		fill.size = Vector2(0, TRUST_GAUGE_H)
-		fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		gauge.add_child(fill)
-
-		_roster_widgets.append({
-			"name": name_lbl, "total": total_lbl, "stats": stat_lbls, "face": face_rect,
-			"trust_chip": trust_chip, "trust_fill": fill,
-		})
+## 하단 액션 바의 **기기 몫**만 코드가 넣는다(모양 · 비율은 씬) — `OutgameTheme.add_bottom_bar`
+## 규약 그대로: 바는 안전선 위 128 에 서고, 색면은 안전선 아래 뷰포트 바닥까지 내려가며,
+## 글자는 안전선 위에 남는다(`content_margin_bottom` += 인셋). 모서리는 각지게 편다.
+## `safe_bottom` = 화면 전체 rect, 그 바닥을 안전선으로 올린다. EndingView · GameOverView 도 쓴다.
+static func fit_bottom_bar(safe_bottom: Control, bar: Control) -> void:
+	var below: float = maxf(0.0, ScreenMetrics.insets().w)
+	safe_bottom.offset_bottom = -below
+	bar.offset_bottom = below
+	for c in bar.get_children():
+		var b := c as Button
+		if b == null:
+			continue
+		for n in OutgameTheme.BUTTON_STATES:
+			var src := b.get_theme_stylebox(n) as StyleBoxFlat
+			if src == null:
+				continue
+			var sb := src.duplicate() as StyleBoxFlat
+			OutgameTheme.set_corner_radius(sb, 0)
+			sb.content_margin_bottom += below
+			b.add_theme_stylebox_override(n, sb)
 
 
 # ── Trust (M7 data, shown since §14 T4) ──────────────────────────────────────
-## Row-local placement of the trust chip + gauge (left column, under "TOTAL").
-const TRUST_Y: float = 132.0
-const TRUST_CHIP_W: float = 120.0
-const TRUST_CHIP_H: float = 36.0
-const TRUST_GAUGE_W: float = 140.0
-const TRUST_GAUGE_H: float = 10.0
-
-
 ## Trust band colour. Thresholds come from the mental consts — no new numbers:
 ## below `TRUST_OUTING_MIN` grey (no outing yet), from there green (outing unlocked),
 ## past halfway between that and `TRUST_MAX` amber (close bond).
@@ -187,84 +125,23 @@ static func trust_color(value: int) -> Color:
 	return OutgameTheme.TEXT_SUB
 
 
-func _refresh_trust(w: Dictionary, p: PlayerData) -> void:
-	var chip: Panel = w["trust_chip"]
-	var fill: Panel = w["trust_fill"]
-	chip.visible = p != null
-	(fill.get_parent() as Control).visible = p != null
-	if p == null:
-		return
-	var value: int = MentalSystem.trust(_gm.season_state, p.id)
-	var col: Color = trust_color(value)
-	(chip.get_child(0) as Label).text = "신뢰 %d" % value
-	chip.add_theme_stylebox_override("panel", OutgameTheme.flat_style(col, int(TRUST_CHIP_H * 0.5)))
-	var t_max: float = maxf(1.0, float(ConstTable.int_of("TRUST_MAX")))
-	fill.size = Vector2(TRUST_GAUGE_W * clampf(float(value) / t_max, 0.0, 1.0), TRUST_GAUGE_H)
-	fill.add_theme_stylebox_override("panel", OutgameTheme.flat_style(col, int(TRUST_GAUGE_H * 0.5)))
-
-
 # ── 관리 카드 줄 (M3~M6) ─────────────────────────────────────────────────────
 ## 로스터 아래 가로 한 줄에 작은 카드 셋 — 스태프 · 메크 연구 · 재무.
 ## 카드 내용은 각 기능의 패널이 소유한다(`<Panel>.hub_summary(state)` →
 ## `{title, value, sub, owner, alert}`), 누르면 `<Panel>.open(self)` 가
 ## `HubSheet` 를 띄운다. 시트가 닫히면 허브 전체를 다시 그린다 — 시트 안에서
 ## 바꾼 값(연구 메크 · 배분 · 업그레이드)이 허브 숫자에 바로 비치게.
+## 씬의 `%Manage` 카드 순서가 이 배열 순서다.
 # 클래스 참조는 상수식이 아니라 `const` 로 못 둔다 — 함수로 돌려준다.
 static func _manage_panels() -> Array:
 	return [StaffPanel, MasteryPanel, FinancePanel]
-const MANAGE_Y: float = 1250.0
-const MANAGE_H: float = 176.0
-const MANAGE_GAP: float = 16.0
-
-
-func _build_manage_row() -> void:
-	var x0: float = 30.0
-	var width: float = 1020.0
-	var n: int = _manage_panels().size()
-	var card_w: float = (width - MANAGE_GAP * float(n - 1)) / float(n)
-	for i in n:
-		var pos := Vector2(x0 + i * (card_w + MANAGE_GAP), MANAGE_Y)
-		var card: Panel = OutgameTheme.add_card(self, pos, Vector2(card_w, MANAGE_H), 16)
-		var title := UiHelpers.mk_label(card, "", 22, OutgameTheme.TEXT_SUB,
-				Vector2(20, 14), Vector2(card_w - 40, 28))
-		var value := UiHelpers.mk_label(card, "", 34, OutgameTheme.TEXT,
-				Vector2(20, 48), Vector2(card_w - 40, 44))
-		var sub := UiHelpers.mk_label(card, "", 20, OutgameTheme.TEXT_SUB,
-				Vector2(20, 96), Vector2(card_w - 40, 26))
-		var owner := UiHelpers.mk_label(card, "", 18, OutgameTheme.ACCENT_TEXT,
-				Vector2(20, 132), Vector2(card_w - 40, 26))
-		# 처리할 일이 있으면(연구 미지정 · 잔고 위험) 오른쪽 위 점.
-		var alert := ColorRect.new()
-		alert.color = OutgameTheme.NEGATIVE
-		alert.position = Vector2(card_w - 30, 16)
-		alert.size = Vector2(14, 14)
-		alert.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		alert.visible = false
-		card.add_child(alert)
-		# 카드 전체가 버튼이다 — 납작한 Button 을 맨 위에 덮는다.
-		var hit := Button.new()
-		hit.flat = true
-		hit.focus_mode = Control.FOCUS_NONE
-		hit.position = Vector2.ZERO
-		hit.size = Vector2(card_w, MANAGE_H)
-		hit.pressed.connect(_on_manage_pressed.bind(i))
-		card.add_child(hit)
-		_manage_widgets.append({
-			"title": title, "value": value, "sub": sub, "owner": owner, "alert": alert,
-		})
 
 
 func _refresh_manage_row() -> void:
 	var s: Dictionary = _gm.season_state
-	for i in _manage_widgets.size():
-		var w: Dictionary = _manage_widgets[i]
-		var sm: Dictionary = _manage_panels()[i].hub_summary(s)
-		(w["title"] as Label).text = String(sm.get("title", ""))
-		(w["value"] as Label).text = String(sm.get("value", ""))
-		(w["sub"] as Label).text = String(sm.get("sub", ""))
-		var who: String = String(sm.get("owner", ""))
-		(w["owner"] as Label).text = ("담당: " + who) if who != "" else ""
-		(w["alert"] as ColorRect).visible = bool(sm.get("alert", false))
+	var panels: Array = _manage_panels()
+	for i in mini(_manage_cards.size(), panels.size()):
+		(_manage_cards[i] as HubManageCard).show_summary(panels[i].hub_summary(s))
 
 
 func _on_manage_pressed(i: int) -> void:
@@ -281,21 +158,6 @@ func _on_manage_pressed(i: int) -> void:
 ## 허브 하단 토스트 — 다른 화면(주 마감 수지 등)이 허브로 돌아오며 띄운다.
 func show_toast(msg: String) -> void:
 	_flash_toast(msg)
-
-
-## **하단 구간을 둘이 2:1 로 나눠 갖는다** — 주 행동인 "이번 주 시작"이 오른쪽
-## 3분의 2, 곁길인 순위 보기가 왼쪽 3분의 1이다. 무엇이 주 행동인지가 색뿐
-## 아니라 폭으로도 읽혀야 하고, 오른쪽 끝은 엄지가 닿는 자리다.
-## 규약은 `OutgameTheme.add_bottom_bar`.
-func _build_buttons() -> void:
-	var bar: Array = OutgameTheme.add_bottom_bar(self, [
-		{"text": "리그 순위",      "style": "ghost",   "font": 32, "weight": 1.0},
-		{"text": "이번 주 시작 →", "style": "primary", "font": 34, "weight": 2.0},
-	])
-	_standings_btn = bar[0]
-	_start_btn     = bar[1]
-	_standings_btn.pressed.connect(_on_standings_pressed)
-	_start_btn.pressed.connect(_on_start_pressed)
 
 
 # ── Signals ──────────────────────────────────────────────────────────────────
@@ -447,26 +309,15 @@ func _refresh_roster() -> void:
 		var p := raw as PlayerData
 		if p.team_id == pid:
 			by_role[int(p.role)] = p
-	for seat in 5:
+	var t_max: int = ConstTable.int_of("TRUST_MAX")
+	for seat in _roster_rows.size():
 		var r: int = int(GameEnums.ROLE_DISPLAY_ORDER[seat])
-		var w: Dictionary = _roster_widgets[seat]
+		var row: HubRosterRow = _roster_rows[seat]
 		if not by_role.has(r):
-			w["name"].text = "—"
-			w["total"].text = ""
-			(w["face"] as TextureRect).texture = null
-			for s in STAT_KEYS.size():
-				w["stats"][s].text = ""
-			_refresh_trust(w, null)
+			row.show_pilot(null)
 			continue
 		var p: PlayerData = by_role[r]
-		w["name"].text = p.name
-		(w["face"] as TextureRect).texture = PilotImages.face_for(p.id)
-		var total: int = p.stat_total()
-		w["total"].text = "TOTAL %d" % total
-		for s in STAT_KEYS.size():
-			var key: String = STAT_KEYS[s]
-			w["stats"][s].text = "%d" % int(p.get(key))
-		_refresh_trust(w, p)
+		row.show_pilot(p, MentalSystem.trust(_gm.season_state, p.id), t_max)
 
 
 # ── Button handlers ──────────────────────────────────────────────────────────

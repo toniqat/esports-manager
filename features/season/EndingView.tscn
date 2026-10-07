@@ -1,0 +1,214 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" uid="uid://bkqjaoo3ixaq6" path="res://features/season/EndingView.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="EndingView" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme = ExtResource("2_theme")
+script = ExtResource("1_script")
+
+[node name="Background" type="ColorRect" parent="."]
+unique_name_in_owner = true
+editor_description = "Code stretches it up over the notch band (ScreenMetrics.extend_background)."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.96, 0.96, 0.968, 1)
+
+[node name="Title" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 140.0
+offset_bottom = 236.0
+grow_horizontal = 2
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 72
+text = "WORLD CHAMPION"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 244.0
+offset_bottom = 280.0
+grow_horizontal = 2
+theme_type_variation = &"BodyLabel"
+text = "캠페인 완주 — 정규시즌 국제대회 우승!"
+horizontal_alignment = 1
+
+[node name="RecapCaption" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 340.0
+offset_bottom = 372.0
+grow_horizontal = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 24
+text = "── 캠페인 기록 ──"
+horizontal_alignment = 1
+
+[node name="Recap" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "One line per campaign phase (EndingView.PHASE_ORDER), in order. Code colours a line amber when the player won it."
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -400.0
+offset_top = 390.0
+offset_right = 400.0
+offset_bottom = 630.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Line0" type="Label" parent="Recap"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "프리시즌  —  우승 — Team 0 ★"
+
+[node name="Line1" type="Label" parent="Recap"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "프리시즌 국제대회  —  우승 — Team 100"
+
+[node name="Line2" type="Label" parent="Recap"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "미드시즌  —  기록 없음"
+
+[node name="Line3" type="Label" parent="Recap"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "미드시즌 국제대회  —  기록 없음"
+
+[node name="Line4" type="Label" parent="Recap"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "정규시즌  —  기록 없음"
+
+[node name="Line5" type="Label" parent="Recap"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "정규시즌 국제대회  —  기록 없음"
+
+[node name="RosterCaption" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 670.0
+offset_bottom = 702.0
+grow_horizontal = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 24
+text = "── 최종 로스터 ──"
+horizontal_alignment = 1
+
+[node name="Roster" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "One line per seat in GameEnums.ROLE_DISPLAY_ORDER."
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -400.0
+offset_top = 720.0
+offset_right = 400.0
+offset_bottom = 920.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Line0" type="Label" parent="Roster"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "TANK       Evelyn          TOTAL 514"
+
+[node name="Line1" type="Label" parent="Roster"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "TANK       Evelyn          TOTAL 514"
+
+[node name="Line2" type="Label" parent="Roster"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "TANK       Evelyn          TOTAL 514"
+
+[node name="Line3" type="Label" parent="Roster"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "TANK       Evelyn          TOTAL 514"
+
+[node name="Line4" type="Label" parent="Roster"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "TANK       Evelyn          TOTAL 514"
+
+[node name="SafeBottom" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "Full rect; code lifts its bottom edge by the device bottom inset (HubView.fit_bottom_bar). The bar and toast hang from it."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="BottomBar" type="HBoxContainer" parent="SafeBottom"]
+unique_name_in_owner = true
+editor_description = "Bottom action bar (OutgameTheme add_bottom_bar convention): edge to edge, 128 tall above the safe line, split by stretch ratio (secondary 1 : primary 2, primary on the right). Code extends it below the safe line and squares the button corners (HubView.fit_bottom_bar)."
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -128.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 0
+
+[node name="Settle" type="Button" parent="SafeBottom/BottomBar"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_type_variation = &"PrimaryButton"
+theme_override_font_sizes/font_size = 32
+text = "정산"

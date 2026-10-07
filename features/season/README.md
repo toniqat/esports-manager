@@ -132,7 +132,7 @@ and exposes intent methods on the hub. Pattern mirrors `BattleSim`:
 | Node                     | Script                                       | Purpose                                                          |
 |---|---|---|
 | CalendarSystem           | `calendar/CalendarSystem.gd`                 | `advance_week()` — rolls 7 days, bumps `phase_week`, transitions phase. Emits `week_advanced`, `phase_changed`. |
-| HubView                  | `HubView.gd`                                 | Simplified hub — phase/week counter + roster + "이번 주 시작" (Start this week) + 순위 (standings) buttons. Each roster row also shows the pilot's **trust** (`MentalSystem.trust`): chip `신뢰 N` + thin gauge (N / `TRUST_MAX`) under `TOTAL`, coloured by band (`HubView.trust_color`: grey < `TRUST_OUTING_MIN`, green from there, amber past halfway to `TRUST_MAX`). |
+| HubView                  | `HubView.gd` + `.tscn`                       | Simplified hub — phase/week counter + roster + "이번 주 시작" (Start this week) + 순위 (standings) buttons. Each roster row also shows the pilot's **trust** (`MentalSystem.trust`): chip `신뢰 N` + thin gauge (N / `TRUST_MAX`) under `TOTAL`, coloured by band (`HubView.trust_color`: grey < `TRUST_OUTING_MIN`, green from there, amber past halfway to `TRUST_MAX`). Scene-built — see "HubView · EndingView · GameOverView" below. |
 | PressConferenceView      | `press/PressConferenceView.gd`               | **Press conference** — the messenger screen right before the week starts. Currently a skeleton whose lines · choices are placeholder data. `press/README.md` |
 | TrainingBoard            | `training/TrainingBoard.gd`                  | **Daily training (일상 훈련) tile board (타일판)** — 5 columns (players) × 5 rows (one per day; weekdays are not written on screen). Placement checks + settlement (`cell_exp` / `compute_day_gains`) + **weekday application** (`apply_day_training(day)`) + leftover-EXP bank. `training/README.md` |
 | TrainingView             | `training/TrainingView.gd`                   | Schedule editor; "훈련 확정" calls `SeasonHub.on_training_confirmed` — it does not settle the board but **opens the week** (puts the weekday cursor on Monday). |
@@ -143,8 +143,8 @@ and exposes intent methods on the hub. Pattern mirrors `BattleSim`:
 | LeagueView               | `league/LeagueView.gd`                       | Standings screen — "다음 주 →" advances week, "돌아가기" (Go back) returns to HUB. |
 | BracketView              | `tournament/BracketView.gd`                  | Phase-7 playoff bracket UI (3 panels: SF1/SF2/F)                 |
 | IntlBracketView          | `tournament/IntlBracketView.gd`              | Phase-8 INTL bracket UI (7 panels: 4 QF / 2 SF / F)              |
-| GameOverView             | `GameOverView.gd`                            | Game-over screen — playoff cut missed, playoff SF/F lost, or any INTL lost (reason line names the round) |
-| EndingView               | `EndingView.gd`                              | World-champion ending screen — REGULAR_INTL win                  |
+| GameOverView             | `GameOverView.gd` + `.tscn`                  | Game-over screen — playoff cut missed, playoff SF/F lost, or any INTL lost (reason line names the round) |
+| EndingView               | `EndingView.gd` + `.tscn`                    | World-champion ending screen — REGULAR_INTL win                  |
 | *(overlay)* HubSheet     | `HubSheet.gd` + `HubSheet.tscn`              | Shared detail-sheet **frame** for the hub manage cards (`StaffPanel` · `MasteryPanel` · `FinancePanel`) and the standings team detail (`LeagueView.open_team_detail`). See "HubSheet" below. |
 
 ### HubSheet (`HubSheet.tscn` + `HubSheet.gd`)
@@ -172,6 +172,47 @@ HubSheet (CanvasLayer 18)
 - `%Scroll` sits in a plain `ScrollSlot` Control and grows **right only** — when the body overflows,
   the scroll bar adds its width outside the 928 column instead of widening the VBox, so content x and
   `body_w()` never move.
+
+### HubView · EndingView · GameOverView (`.tscn` scenes)
+Created with `Xxx.create()` (`load(SCENE_PATH).instantiate()`; `.new()` is an empty Control).
+Root = full-rect `Control`, theme `OutgameTheme.tres`, mouse PASS. Safe area (pattern B,
+`docs/mobile_safe_area.md`) is **code offsets only**: `ScreenMetrics.indent_to_safe_top(self)`,
+`ScreenMetrics.extend_background(%Background)`, `HubView.fit_bottom_bar(%SafeBottom, %BottomBar)`.
+
+```
+HubView (Control · HubView.gd)
+├ %Background   ColorRect BG (code stretches it up over the notch)
+├ %Phase (Caption 24) · Title "시즌 허브" (Heading) · %Week (Sub, right-anchored) · %NextMatch (Accent 24)
+├ RosterCaption "내 팀 로스터" (Caption 24)           ← header labels: absolute offsets
+├ Body VBox (x 30..−30, y 240, sep 12)
+│ ├ %Roster VBox (sep 12) ─ Row0..Row4  HubRosterRow instances, seat order (ROLE_DISPLAY_ORDER)
+│ └ %Manage HBox (sep 16, 176) ─ Card0..Card2  HubManageCard instances, `_manage_panels()` order
+└ %SafeBottom   full rect; code lifts its bottom by the bottom inset
+  ├ %Toast      Accent label, 40 above the bar
+  └ %BottomBar  HBox, 128 tall, sep 0 ─ %Standings (Ghost 32, ratio 1, + Sep line) · %Start (Primary, ratio 2)
+
+HubRosterRow (Panel 190 · HubRosterRow.gd)          HubManageCard (Panel · Card · HubManageCard.gd)
+├ %Face TextureRect 160² (16,14)                     ├ VBox (20,14): %Title · %Value (34) · %Sub (20) · %Owner (Accent 18)
+├ Info VBox (190,14): %Role · %Name · %Total ·       ├ %Alert  red dot top-right
+│   Trust HBox ─ %TrustChip(%TrustText) · %TrustGauge(%TrustFill)   └ %Hit flat Button over the card → `pressed`
+└ %Stats HBox (right-anchored, 520) ─ Stat0..5 VBox (Key 18 · Value 32), PlayerData.STAT_KEYS order
+
+EndingView: %Background · Title "WORLD CHAMPION" (Accent 72) · Subtitle · RecapCaption ·
+  %Recap VBox (800 centred, y 390) ─ 6 lines × 40 · RosterCaption · %Roster VBox (y 720) ─ 5 lines × 40 ·
+  %SafeBottom/%BottomBar ─ %Settle (Primary 32)
+GameOverView: %Background · Title "GAME OVER" (Heading 80, local NEGATIVE colour) · %Reason (Body 28) ·
+  %Summary (Caption) · %SafeBottom/%BottomBar ─ %Settle (Primary 32)
+```
+
+- **Scene owns** layout, texts' sizes / variations, bar ratio, the five rows / three cards / line slots.
+- **Code owns** data, data colours (row lead bar + role name = role colour via `lead_bar_style`; trust chip /
+  fill = `trust_color`, fill width = `anchor_right`; recap line amber when won), safe-area offsets.
+- **Bottom bar in a scene**: `fit_bottom_bar` sets `%SafeBottom.offset_bottom = −inset` and
+  `%BottomBar.offset_bottom = +inset` (colour fill reaches the viewport bottom), and per button duplicates the
+  theme stylebox with square corners and `content_margin_bottom += inset` (text stays above the safe line) —
+  same result as `OutgameTheme.add_bottom_bar`. The separator is a 2px `Sep` ColorRect inside every button
+  but the last.
+- Manage cards use the `Card` variation (radius 18; the old code card was 16).
 
 ## Phase week budget (CalendarSystem.PHASE_WEEKS)
 | Phase           | League weeks | Playoff weeks | Total |
@@ -335,7 +376,8 @@ screen the title actually slid under the slot cards).
 When hanging the bottom action bar inside a pushed-down screen, use **`safe_h()`**, not
 `ScreenMetrics.bottom_y()` (the latter is in viewport coordinates, so the push-down gets added twice).
 `LeagueView` / `BracketView` / `IntlBracketView` / `TrainingView` use
-`safe_h() - 80 - h`, `TrainingResultView` uses `- 70`, `HubView` uses `- 110`,
+`safe_h() - 80 - h`, `TrainingResultView` uses `- 70`; `HubView` · `EndingView` · `GameOverView` are
+scene-built and hang the bar from `%SafeBottom` (above),
 (the lineup screen moved to `features/meta/run_setup/README.md`).
 
 Details: **`docs/mobile_safe_area.md`**

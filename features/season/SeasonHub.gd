@@ -287,7 +287,7 @@ func _show_ending() -> void:
 func _ensure_hub_view() -> void:
 	if _hub_view != null:
 		return
-	_hub_view = HubView.new()
+	_hub_view = HubView.create()
 	_hub_view.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_hub_view)
 
@@ -343,7 +343,7 @@ func _ensure_intl_bracket_view() -> void:
 func _ensure_game_over_view() -> void:
 	if _game_over_view != null:
 		return
-	_game_over_view = GameOverView.new()
+	_game_over_view = GameOverView.create()
 	_game_over_view.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_game_over_view)
 
@@ -351,7 +351,7 @@ func _ensure_game_over_view() -> void:
 func _ensure_ending_view() -> void:
 	if _ending_view != null:
 		return
-	_ending_view = EndingView.new()
+	_ending_view = EndingView.create()
 	_ending_view.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_ending_view)
 

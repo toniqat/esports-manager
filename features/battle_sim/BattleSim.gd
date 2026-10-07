@@ -526,7 +526,7 @@ func _ready() -> void:
 	add_child(pilot_detail)
 	pilot_detail.bind(self)
 	# 파일럿 스킬 말풍선 — 아군 스트립 초상을 짧게 탭하면 열린다.
-	skill_popup = SkillPopup.new()
+	skill_popup = SkillPopup.create()
 	skill_popup.name = "SkillPopup"
 	add_child(skill_popup)
 	skill_popup.bind(self)
@@ -1819,7 +1819,7 @@ func end_match(winner_side: int) -> void:
 	if mvp == null:
 		panel_victory.visible = true
 		return
-	mvp_view = MvpView.new()
+	mvp_view = MvpView.create()
 	mvp_view.name = "MvpView"
 	add_child(mvp_view)
 	mvp_view.closed.connect(_on_mvp_view_closed)

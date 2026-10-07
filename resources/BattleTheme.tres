@@ -1,0 +1,754 @@
+[gd_resource type="Theme" load_steps=44 format=3 uid="uid://d3sxdpvg3p880"]
+
+[sub_resource type="StyleBoxFlat" id="BattleChipButton_focus"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.1, 0.12, 0.18, 0.94)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.32, 0.36, 0.48, 0.8)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="BattleChipButton_hover"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.1, 0.12, 0.18, 0.94)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.32, 0.36, 0.48, 0.8)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="BattleChipButton_hover_pressed"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.1, 0.12, 0.18, 0.94)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.32, 0.36, 0.48, 0.8)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="BattleChipButton_normal"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.1, 0.12, 0.18, 0.94)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.32, 0.36, 0.48, 0.8)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="BattleChipButton_pressed"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.1, 0.12, 0.18, 0.94)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.32, 0.36, 0.48, 0.8)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="BattleChipButtonOn_focus"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.17, 0.22, 0.34, 0.98)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.72, 0.86, 1, 0.95)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="BattleChipButtonOn_hover"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.17, 0.22, 0.34, 0.98)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.72, 0.86, 1, 0.95)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="BattleChipButtonOn_hover_pressed"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.17, 0.22, 0.34, 0.98)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.72, 0.86, 1, 0.95)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="BattleChipButtonOn_normal"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.17, 0.22, 0.34, 0.98)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.72, 0.86, 1, 0.95)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="BattleChipButtonOn_pressed"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.17, 0.22, 0.34, 0.98)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.72, 0.86, 1, 0.95)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="BattleDimPanel_panel"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0, 0, 0, 0.88)
+
+[sub_resource type="StyleBoxFlat" id="BattleFxButton_focus"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.1, 0.12, 0.18, 0.94)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.32, 0.36, 0.48, 0.8)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="BattleFxButton_hover"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.1, 0.12, 0.18, 0.94)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.32, 0.36, 0.48, 0.8)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="BattleFxButton_hover_pressed"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.1, 0.12, 0.18, 0.94)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.32, 0.36, 0.48, 0.8)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="BattleFxButton_normal"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.1, 0.12, 0.18, 0.94)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.32, 0.36, 0.48, 0.8)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="BattleFxButton_pressed"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.1, 0.12, 0.18, 0.94)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.32, 0.36, 0.48, 0.8)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="BattleFxButtonOn_focus"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.17, 0.22, 0.34, 0.98)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.72, 0.86, 1, 0.95)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="BattleFxButtonOn_hover"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.17, 0.22, 0.34, 0.98)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.72, 0.86, 1, 0.95)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="BattleFxButtonOn_hover_pressed"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.17, 0.22, 0.34, 0.98)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.72, 0.86, 1, 0.95)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="BattleFxButtonOn_normal"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.17, 0.22, 0.34, 0.98)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.72, 0.86, 1, 0.95)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="BattleFxButtonOn_pressed"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.17, 0.22, 0.34, 0.98)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.72, 0.86, 1, 0.95)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="BattleGoldButton_disabled"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.16, 0.21, 0.34, 0.98)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.8, 0.3, 0.75)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[sub_resource type="StyleBoxEmpty" id="BattleGoldButton_focus"]
+
+[sub_resource type="StyleBoxFlat" id="BattleGoldButton_hover"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.16, 0.21, 0.34, 0.98)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.8, 0.3, 0.75)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[sub_resource type="StyleBoxFlat" id="BattleGoldButton_hover_pressed"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.286, 0.3285, 0.439, 0.98)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.8, 0.3, 0.75)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[sub_resource type="StyleBoxFlat" id="BattleGoldButton_normal"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.16, 0.21, 0.34, 0.98)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.8, 0.3, 0.75)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[sub_resource type="StyleBoxFlat" id="BattleGoldButton_pressed"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.286, 0.3285, 0.439, 0.98)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.8, 0.3, 0.75)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[sub_resource type="StyleBoxFlat" id="BattleGoldModal_panel"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.05, 0.06, 0.1, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.8, 0.3, 0.75)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[sub_resource type="StyleBoxFlat" id="BattleGoldPanel_panel"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.06, 0.07, 0.12, 0.92)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.8, 0.3, 0.75)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[sub_resource type="StyleBoxFlat" id="BattlePanel_panel"]
+content_margin_left = 22.0
+content_margin_top = 26.0
+content_margin_right = 22.0
+content_margin_bottom = 26.0
+bg_color = Color(0.04, 0.05, 0.09, 0.86)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.3, 0.34, 0.46, 0.7)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="BattlePopup_panel"]
+content_margin_left = 26.0
+content_margin_top = 24.0
+content_margin_right = 26.0
+content_margin_bottom = 24.0
+bg_color = Color(0.05, 0.06, 0.11, 0.97)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(0, 0, 0, 0.45)
+shadow_size = 6
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="StyleBoxFlat" id="BattleSlab_panel"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.14, 0.15, 0.2, 0.6)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.3, 0.34, 0.46, 0.7)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[sub_resource type="StyleBoxFlat" id="BattleTab_focus"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.06, 0.07, 0.11, 0.8)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.26, 0.29, 0.38, 0.65)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+
+[sub_resource type="StyleBoxFlat" id="BattleTab_hover"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.06, 0.07, 0.11, 0.8)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.26, 0.29, 0.38, 0.65)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+
+[sub_resource type="StyleBoxFlat" id="BattleTab_hover_pressed"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.06, 0.07, 0.11, 0.8)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.26, 0.29, 0.38, 0.65)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+
+[sub_resource type="StyleBoxFlat" id="BattleTab_normal"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.06, 0.07, 0.11, 0.8)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.26, 0.29, 0.38, 0.65)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+
+[sub_resource type="StyleBoxFlat" id="BattleTab_pressed"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.06, 0.07, 0.11, 0.8)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.26, 0.29, 0.38, 0.65)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+
+[sub_resource type="StyleBoxFlat" id="BattleTabOn_focus"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.16, 0.21, 0.34, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_color = Color(0.62, 0.8, 1, 0.95)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+
+[sub_resource type="StyleBoxFlat" id="BattleTabOn_hover"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.16, 0.21, 0.34, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_color = Color(0.62, 0.8, 1, 0.95)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+
+[sub_resource type="StyleBoxFlat" id="BattleTabOn_hover_pressed"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.16, 0.21, 0.34, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_color = Color(0.62, 0.8, 1, 0.95)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+
+[sub_resource type="StyleBoxFlat" id="BattleTabOn_normal"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.16, 0.21, 0.34, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_color = Color(0.62, 0.8, 1, 0.95)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+
+[sub_resource type="StyleBoxFlat" id="BattleTabOn_pressed"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.16, 0.21, 0.34, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_color = Color(0.62, 0.8, 1, 0.95)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+
+[sub_resource type="StyleBoxFlat" id="MvpDimPanel_panel"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.02, 0.03, 0.06, 0.95)
+
+[resource]
+BattleActionButton/base_type = &"Button"
+BattleActionButton/font_sizes/font_size = 28
+BattleAllyLabel/base_type = &"Label"
+BattleAllyLabel/colors/font_color = Color(0.55, 0.8, 1, 1)
+BattleAllyLabel/font_sizes/font_size = 22
+BattleBodyLabel/base_type = &"Label"
+BattleBodyLabel/colors/font_color = Color(0.88, 0.9, 0.95, 1)
+BattleBodyLabel/font_sizes/font_size = 22
+BattleCaptionLabel/base_type = &"Label"
+BattleCaptionLabel/colors/font_color = Color(0.7, 0.74, 0.84, 1)
+BattleCaptionLabel/font_sizes/font_size = 20
+BattleChipButton/base_type = &"Button"
+BattleChipButton/styles/focus = SubResource("BattleChipButton_focus")
+BattleChipButton/styles/hover = SubResource("BattleChipButton_hover")
+BattleChipButton/styles/hover_pressed = SubResource("BattleChipButton_hover_pressed")
+BattleChipButton/styles/normal = SubResource("BattleChipButton_normal")
+BattleChipButton/styles/pressed = SubResource("BattleChipButton_pressed")
+BattleChipButtonOn/base_type = &"Button"
+BattleChipButtonOn/styles/focus = SubResource("BattleChipButtonOn_focus")
+BattleChipButtonOn/styles/hover = SubResource("BattleChipButtonOn_hover")
+BattleChipButtonOn/styles/hover_pressed = SubResource("BattleChipButtonOn_hover_pressed")
+BattleChipButtonOn/styles/normal = SubResource("BattleChipButtonOn_normal")
+BattleChipButtonOn/styles/pressed = SubResource("BattleChipButtonOn_pressed")
+BattleDimPanel/base_type = &"Panel"
+BattleDimPanel/styles/panel = SubResource("BattleDimPanel_panel")
+BattleEnemyLabel/base_type = &"Label"
+BattleEnemyLabel/colors/font_color = Color(1, 0.55, 0.55, 1)
+BattleEnemyLabel/font_sizes/font_size = 22
+BattleFxButton/base_type = &"Button"
+BattleFxButton/styles/focus = SubResource("BattleFxButton_focus")
+BattleFxButton/styles/hover = SubResource("BattleFxButton_hover")
+BattleFxButton/styles/hover_pressed = SubResource("BattleFxButton_hover_pressed")
+BattleFxButton/styles/normal = SubResource("BattleFxButton_normal")
+BattleFxButton/styles/pressed = SubResource("BattleFxButton_pressed")
+BattleFxButtonOn/base_type = &"Button"
+BattleFxButtonOn/styles/focus = SubResource("BattleFxButtonOn_focus")
+BattleFxButtonOn/styles/hover = SubResource("BattleFxButtonOn_hover")
+BattleFxButtonOn/styles/hover_pressed = SubResource("BattleFxButtonOn_hover_pressed")
+BattleFxButtonOn/styles/normal = SubResource("BattleFxButtonOn_normal")
+BattleFxButtonOn/styles/pressed = SubResource("BattleFxButtonOn_pressed")
+BattleGoldButton/base_type = &"Button"
+BattleGoldButton/font_sizes/font_size = 40
+BattleGoldButton/styles/disabled = SubResource("BattleGoldButton_disabled")
+BattleGoldButton/styles/focus = SubResource("BattleGoldButton_focus")
+BattleGoldButton/styles/hover = SubResource("BattleGoldButton_hover")
+BattleGoldButton/styles/hover_pressed = SubResource("BattleGoldButton_hover_pressed")
+BattleGoldButton/styles/normal = SubResource("BattleGoldButton_normal")
+BattleGoldButton/styles/pressed = SubResource("BattleGoldButton_pressed")
+BattleGoldModal/base_type = &"PanelContainer"
+BattleGoldModal/styles/panel = SubResource("BattleGoldModal_panel")
+BattleGoldPanel/base_type = &"PanelContainer"
+BattleGoldPanel/styles/panel = SubResource("BattleGoldPanel_panel")
+BattleGrowthLabel/base_type = &"Label"
+BattleGrowthLabel/colors/font_color = Color(0.72, 1, 0.8, 1)
+BattleGrowthLabel/font_sizes/font_size = 40
+BattleHeaderLabel/base_type = &"Label"
+BattleHeaderLabel/colors/font_color = Color(1, 0.92, 0.55, 1)
+BattleHeaderLabel/font_sizes/font_size = 40
+BattleKeyLabel/base_type = &"Label"
+BattleKeyLabel/colors/font_color = Color(0.72, 0.74, 0.8, 1)
+BattleKeyLabel/font_sizes/font_size = 22
+BattleNegativeLabel/base_type = &"Label"
+BattleNegativeLabel/colors/font_color = Color(0.98, 0.42, 0.42, 1)
+BattleNegativeLabel/font_sizes/font_size = 22
+BattleOutlinedLabel/base_type = &"Label"
+BattleOutlinedLabel/colors/font_color = Color(0.97, 0.97, 1, 1)
+BattleOutlinedLabel/colors/font_outline_color = Color(0, 0, 0, 0.9)
+BattleOutlinedLabel/constants/outline_size = 6
+BattleOutlinedLabel/font_sizes/font_size = 40
+BattlePanel/base_type = &"PanelContainer"
+BattlePanel/styles/panel = SubResource("BattlePanel_panel")
+BattlePopup/base_type = &"PanelContainer"
+BattlePopup/styles/panel = SubResource("BattlePopup_panel")
+BattlePositiveLabel/base_type = &"Label"
+BattlePositiveLabel/colors/font_color = Color(0.45, 0.9, 0.55, 1)
+BattlePositiveLabel/font_sizes/font_size = 22
+BattleSectionLabel/base_type = &"Label"
+BattleSectionLabel/colors/font_color = Color(0.58, 0.78, 1, 1)
+BattleSectionLabel/font_sizes/font_size = 22
+BattleSkillNameLabel/base_type = &"Label"
+BattleSkillNameLabel/colors/font_color = Color(1, 0.88, 0.52, 1)
+BattleSkillNameLabel/font_sizes/font_size = 30
+BattleSlab/base_type = &"PanelContainer"
+BattleSlab/styles/panel = SubResource("BattleSlab_panel")
+BattleStatusLabel/base_type = &"Label"
+BattleStatusLabel/colors/font_color = Color(0.8, 0.82, 0.9, 1)
+BattleStatusLabel/font_sizes/font_size = 22
+BattleSubLabel/base_type = &"Label"
+BattleSubLabel/colors/font_color = Color(0.72, 0.78, 0.9, 1)
+BattleSubLabel/font_sizes/font_size = 22
+BattleTab/base_type = &"Button"
+BattleTab/colors/font_color = Color(0.72, 0.74, 0.8, 1)
+BattleTab/font_sizes/font_size = 26
+BattleTab/styles/focus = SubResource("BattleTab_focus")
+BattleTab/styles/hover = SubResource("BattleTab_hover")
+BattleTab/styles/hover_pressed = SubResource("BattleTab_hover_pressed")
+BattleTab/styles/normal = SubResource("BattleTab_normal")
+BattleTab/styles/pressed = SubResource("BattleTab_pressed")
+BattleTabOn/base_type = &"Button"
+BattleTabOn/colors/font_color = Color(1, 1, 1, 1)
+BattleTabOn/font_sizes/font_size = 26
+BattleTabOn/styles/focus = SubResource("BattleTabOn_focus")
+BattleTabOn/styles/hover = SubResource("BattleTabOn_hover")
+BattleTabOn/styles/hover_pressed = SubResource("BattleTabOn_hover_pressed")
+BattleTabOn/styles/normal = SubResource("BattleTabOn_normal")
+BattleTabOn/styles/pressed = SubResource("BattleTabOn_pressed")
+BattleTitleLabel/base_type = &"Label"
+BattleTitleLabel/colors/font_color = Color(1, 0.85, 0.35, 1)
+BattleTitleLabel/font_sizes/font_size = 30
+BattleValueLabel/base_type = &"Label"
+BattleValueLabel/colors/font_color = Color(0.96, 0.96, 0.98, 1)
+BattleValueLabel/font_sizes/font_size = 28
+MvpAllyLabel/base_type = &"BattleOutlinedLabel"
+MvpAllyLabel/colors/font_color = Color(0.55, 0.8, 1, 1)
+MvpDimPanel/base_type = &"BattleDimPanel"
+MvpDimPanel/styles/panel = SubResource("MvpDimPanel_panel")
+MvpEnemyLabel/base_type = &"BattleOutlinedLabel"
+MvpEnemyLabel/colors/font_color = Color(1, 0.55, 0.55, 1)
+MvpSubLabel/base_type = &"BattleOutlinedLabel"
+MvpSubLabel/colors/font_color = Color(0.72, 0.78, 0.9, 1)
+MvpTitleLabel/base_type = &"BattleOutlinedLabel"
+MvpTitleLabel/colors/font_color = Color(1, 0.85, 0.35, 1)

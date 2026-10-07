@@ -7,14 +7,31 @@
 | `CardPileStack.gd` | CardPileStack | Deck (덱) / discard pile (버린 더미) — a stack of cards lying face-down, tilted away + card count |
 | `PilotStrip.gd` | PilotStrip | 5-pilot (파일럿) strip (스트립) — **circular portrait (team-colour disc + a bust whose head pokes out above the disc, no rim) + a growth points (성장치) tab hanging below the disc**. The backplate is transparent. Two copies, top (enemy (적)) / bottom (ally (아군)). Pressing a portrait scales it up (`BattleRenderer.PRESS_SCALE`, like field markers). **Ally: short tap = skill popup, long press = detail panel. Enemy: tap / long press = detail panel.** Ally cells carry a round **skill badge** (`SkillBadge`) at the disc's lower right. Only a downed pilot's bust is dimmed (the disc stays). While a card is dragged the ally strip dims and drops (`HudBuilder.set_player_strip_dropped`) |
 | `SkillBadge.gd` | SkillBadge | Round pilot-skill badge on an ally strip portrait — icon (dimmed icon-only when unusable), cooldown radial + turns left, segmented stack ring |
-| `SkillPopup.gd` | SkillPopup | Skill popup above a tapped ally portrait — no dim / no border, rises + fades in (0.2s) / out (0.1s), cooldown as clock + turns, hold a card name → card + desc preview, **사용** (Use) button inside |
+| `SkillPopup.gd` + `SkillPopup.tscn` + `SkillPopupCard.tscn` | SkillPopup | Skill popup above a tapped ally portrait — no dim / no border, rises + fades in (0.2s) / out (0.1s), cooldown as clock + turns, hold a card name → card + desc preview, **사용** (Use) button inside. **Scene-authored** (`SkillPopup.create()`): the scene holds the layer + outside-tap catcher, one `SkillPopupCard` (plate + arrow) is instanced per open |
 | `ReservationChips.gd` | ReservationChips | **Reservation chips (예약 칩)** — card effects settled at a later step (next strategy points · next draw · kill bounty · ambush search) stacked above the ally donut as card art + value chips |
 | `ObjectiveTimer.gd` | ObjectiveTimer | Objective (오브젝트) spawn clock — icon + turns remaining on either side of the enemy strip (left Herald (전령) / right Dragon (용)). **Pressing it opens the reward popup** |
 | `ObjectiveRewardPopup.gd` | ObjectiveRewardPopup | Objective reward preview — pressing a clock shows the actual cards that objective grants |
 | `PilotDetailPanel.gd` | PilotDetailPanel | Pilot detail modal — left: 2 full-body arts (+ lasting effects at bottom-left) / right: header (growth points top-centre) + 3 tabs + a stat cell plate (full-width rows / rows of two half cells; every cell name is prefixed with a `CHIP_ICONS` icon, HP · attack values are followed by `(+N)` against the base value — + green / − red; presence only when a pilot skill raised it (`PilotSkillSystem.presence_delta`)). Pressing a cell opens a note plate on the left — the same look as the card description box (`CardDescBox.panel_style`: opaque · borderless · drop shadow below); the note is a `RichTextLabel`, so `{attack}` · `{engage}` become icons, and its height is measured from the rendered text (`_make_note`). Presses that miss within `INFO_ZONE_PAD` (40) around the info column don't close it (`_info_zone`) + **pilot skill plate** (three separate plates) / **held-card fan at the same spot and width as the hand** (6 cards; cards that don't match the tab are dimmed) — pressing a card shows the same description box as the hand. No close button — tapping outside closes it. Open 0.2s / close 0.1s slide + fade |
 | `MarkerTouch.gd` | MarkerTouch | Pressing a battlefield (전장) portrait — while held it grows to `PRESS_SCALE` and moves to the top (it stays on top after release); **long-press (0.45 s) opens the detail panel** |
 | `KillFeed.gd` | KillFeed | Kill log — top-right, one line per kill (처치) / turret (포탑) demolition / objective capture. Kills during an engage (교전) are flushed together after the arena closes |
-| `MvpView.gd` | MvpView | **Match MVP view** — full-screen dark card shown at match end **before** the victory/defeat panel: MVP's full-body art + name · side · position · K/D/A · key-metric line, "계속" (Continue). Also hosts the shared display strings (`display_name` · `role_label` · `kda_text` · `metric_text`) the result panel's MVP line uses. See "Match end — MVP view → result panel" below |
+| `MvpView.gd` + `MvpView.tscn` | MvpView | **Scene-authored** (`MvpView.create()`). **Match MVP view** — full-screen dark card shown at match end **before** the victory/defeat panel: MVP's full-body art + name · side · position · K/D/A · key-metric line, "계속" (Continue). Also hosts the shared display strings (`display_name` · `role_label` · `kda_text` · `metric_text`) the result panel's MVP line uses. See "Match end — MVP view → result panel" below |
+
+### Scenes and the dark theme (`docs/ui_scene_migration.md` §4 #13)
+The battle UI is moving to `.tscn` like the outgame UI (same rules — `docs/ui_scene_migration.md` §3), on its
+own dark Theme **`resources/BattleTheme.tres`** (palette · variation list: `resources/README.md` → BattleTheme).
+Done: `MvpView`, `SkillPopup` (+ `SkillPopupCard` item scene). Still code-built: `HudBuilder` + `PilotStrip`,
+`PilotDetailPanel` — their colour constants already alias `BattleTheme` (`const STAT_PANEL_BG := BattleTheme.PANEL_BG`,
+values unchanged). Scene ↔ code split for the two converted ones:
+
+| Scene owns | Code owns |
+|---|---|
+| `MvpView.tscn`: layer 60, `Root` (theme, taps) → `Dim` · `%SafeArea` → `Title`, `%ArtArea` (from 170 below the safe top to 530 above the safe bottom) → `%Glow` · `%ArtHolder` → `%Art` / `%Slab`(+`%FallbackLabel`), `Info` (`BattleGoldPanel`, 330 tall, 190 above the safe bottom, sides 60) → `%Name` · `%Side` · `%Kda` · `%Metric`, `%Continue` (40 above the safe bottom, 120 tall, sides 120) | safe-area offsets, side line variation (`MvpAllyLabel` / `MvpEnemyLabel`), art / slab size from the texture aspect and the area height (`_layout_art`, on `%ArtArea.resized` — `ART_MAX_H` 1000 / `ART_MAX_W` 900), glow colour (`BattleTheme.GLOW`), fade + rise (`%ArtHolder` offset 40 → 0) |
+| `SkillPopup.tscn`: `Layer` (12) → `%Root` (theme) → `%Catcher` (top-wide). `SkillPopupCard.tscn`: full-rect root → `%Panel` (`BattlePopup`, min width 640) → VBox (sep 10): Head (72: `%IconSlot` · gap 16 · NameBox(top 16) → `%Name` · TypeSlot 110 → `%Type` / `%Cooldown`(`%Clock` · `%Turns`)), `%DescSlot`, `%StatusBox`(30) → `%Status`, `%UseGap`, `%Use` (68); `%Arrow` (Polygon2D, after the panel) | catcher height (= strip top), panel position (above the portrait, clamped by `SCREEN_MARGIN`) and height (`get_combined_minimum_size`), arrow polygon + colour (`BattleTheme.POPUP_BG`), icon tile (`SkillImages.make_icon_tile` → `%IconSlot`), rich description (`StrategyIcon.make_rich_label` → `%DescSlot`, height `rich_height`), name variation (`BattleSkillNameLabel` / "스킬 없음" `BattleKeyLabel`), card-name press preview (Card + `CardDescBox`, code) |
+
+Fixed heights that look odd are deliberate pixel parity with the old code: the name row is a 40px label at
++16 in the 72px head, and the status row is a 30px box with the label anchored inside — the label's own minimum
+(42 / 31 px at those fonts) must not grow the row. F6 previews: `MvpView` (pilot 0's art, hand-made row),
+`SkillPopup` (hand-written cooldown skill via `_show`, no battle — use / status refresh / card preview need one).
 
 ## HudBuilder.gd
 `extends Node` — child of BattleSim.
@@ -1154,7 +1171,7 @@ with `SCREEN_MARGIN`; a panel-coloured triangle below it points at the portrait
 (added after the panel so the panel shadow does not cover it).
 **Open**: panel + arrow (`_body`) rise `RISE_PX` and fade in over `OPEN_SEC` 0.2s.
 **Close**: state clears at once, `_body` sinks and fades out over `CLOSE_SEC` 0.1s,
-then the root is freed (inputs ignored meanwhile). Content:
+then that `SkillPopupCard` instance is freed (inputs ignored meanwhile; a new card for another pilot can rise at the same time). Content:
 icon tile · name · type at the right — **cooldown = clock icon
 (`KeywordIcon.COOLDOWN`) + reuse turns (`p1`)**, else 충전식 (charge-type) / 패시브 (passive) text · rich description (same
 `StrategyIcon` path and `PilotDetailPanel.SKILL_*` styling as the detail panel) ·

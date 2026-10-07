@@ -839,7 +839,7 @@ through here** — season hub · press conference (기자회견) · training boa
 draft. If each screen held its own `Color(...)` literals, the same card would be drawn in a different grey
 per screen, and touching up the palette once would mean combing through a dozen-odd files.
 **In-game (BattleSim) does not use this table** — the battlefield is a dark screen, and there
-a white card becomes a glaring slab.
+a white card becomes a glaring slab. It has its own table, **`BattleTheme`** (below).
 
 The design principle is coloured cards on white paper. Three rules:
 
@@ -971,6 +971,70 @@ theme variation too, built in `OutgameTheme._add_screen_variations()`:
 
 Label colour overrides that are data (side / grade / day state colours) stay `theme_override_colors` set by code;
 the scene value is a preview.
+
+### BattleTheme.gd + BattleTheme.tres (dark in-game palette / Theme for BattleSim UI)
+`class_name BattleTheme`, extends `RefCounted`. The **in-game (BattleSim) counterpart of `OutgameTheme`** —
+every colour / font size / radius of the battle UI (`HudBuilder`, `PilotStrip`, `PilotDetailPanel`,
+`SkillPopup`, `MvpView`) lives here. Principles (opposite of the white outgame paper, because the battlefield
+is a dark screen): plates are **translucent navy** (`PANEL_BG`, `POPUP_BG`) so the field shows through —
+only screens that end the battle are opaque (`MODAL_BG`); borders are a faint blue-grey (`PANEL_BORDER`);
+emphasis is **gold** (`GOLD`, `GOLD_BORDER`, `TEXT_TITLE`); sides are blue / red (`ALLY` · `ENEMY` text,
+`TEAM_*` fills, index = team).
+
+**Values were moved, not redesigned** — every constant is a literal that one of those five files already
+used, so renders are unchanged (near-equal pairs such as `TEXT_VALUE` / `TEXT_BRIGHT` were deliberately
+not merged — that is a design call). `PilotDetailPanel` · `HudBuilder` · `PilotStrip` keep their own
+constant names as aliases (`const STAT_PANEL_BG := BattleTheme.PANEL_BG` …) until they are moved to scenes.
+
+| Group | Exports |
+|---|---|
+| Plates | `PANEL_BG` `PANEL_BORDER` (detail plates) · `POPUP_BG` (skill popup + its arrow) · `MODAL_BG` (result panel, opaque) · `GOLD_PANEL_BG` (MVP info) · `MENU_BG` · `CHIP_BG` `CHIP_BG_HL` `CHIP_BORDER` `CHIP_BORDER_HL` (stat cells / FX thumbs) · `TAB_BG_ON/OFF` `TAB_BORDER_ON/OFF` · `BUTTON_BG` · `SLAB_BG` · `ART_SLAB_BG` `ART_SLAB_BORDER` `ART_BACK_TINT` · `FX_VALUE_BAND` |
+| Accent · dim | `GOLD` `GOLD_BORDER` `GLOW` · `DIM` (detail) `DIM_DEEP` (MVP) `DIM_LIGHT` (result) · `SHADOW` · `OUTLINE` `OUTLINE_SOFT` |
+| Skill tile | `SKILL_TILE_BG` `SKILL_TILE_ICON` `SKILL_TILE_SHADOW` `SKILL_KW_ICON` `SKILL_KNOCK` |
+| Text (bright → dim) | `TEXT_BRIGHT` `TEXT_VALUE` `TEXT_DESC` `TEXT_CLOCK` `TEXT_KDA` `TEXT_WAIT` `TEXT_PLACEHOLDER` `TEXT_NOTE` `TEXT_SUB` `TEXT_KEY` `TEXT_TYPE` `TEXT_MECH` · coloured `TEXT_TITLE` `TEXT_HEADER` `TEXT_SKILL` `TEXT_SCORE` `TEXT_SECTION` `TEXT_GROWTH` `TEXT_WARN` · `ALLY` `ENEMY` `POSITIVE` `NEGATIVE` `DEAD` |
+| Sides (index = team) | `TEAM_DISC` `TEAM_RIM` `TEAM_DONUT` `TURN_BAR` · `STRIP_DRAG_DIM` `DEAD_TINT` |
+| Sizes | `FONT_LARGE` 40 · `FONT_TITLE` 30 · `FONT_VALUE` 28 · `FONT_TAB` 26 · `FONT_BODY` 22 · `FONT_CAPTION` 20 · `FONT_SMALL` 18 · `RADIUS` `PANEL_RADIUS` `FX_RADIUS` `CHIP_RADIUS` `SLAB_RADIUS` `ART_SLAB_RADIUS` `SCORE_TAB_RADIUS` · `*_BORDER_W` · `PANEL_PAD` `POPUP_PAD` · `SHADOW_SIZE` `SHADOW_OFFSET` `OUTLINE_SIZE` `BUTTON_PRESS_LIGHTEN` |
+| StyleBox | `box(bg, radius, border, border_w)` (padding 0) · `panel_box()` · `chip_box(highlighted, fx)` · `tab_box(on)` · `popup_box()` — the same factories the theme is built from, for code that still styles nodes |
+| Theme | `build_theme()` · `save_theme()` → `THEME_PATH` (`BattleTheme.tres`) · `variation_box(name, item)` |
+
+**`BattleTheme.tres`** follows the `OutgameTheme.tres` rules exactly: never hand-edit; regenerate with
+`BattleThemeBuilder.gd` (editor, File → Run) or
+`Godot --headless --path . -s res://resources/BattleThemeBuilderCli.gd` (a brand-new `class_name` needs one
+`--import` first so the CLI can see it); attach it on the scene's first **Control** (under a `CanvasLayer`,
+e.g. `Root`) and pick a *Theme Type Variation*; no local StyleBoxes / colour overrides in scenes; a node's own
+font size stays `theme_override_font_sizes/font_size`. No variation sets button font colours unless listed —
+battle buttons use the engine default text colours.
+
+| Variation | Base | Purpose |
+|---|---|---|
+| `BattlePanel` | PanelContainer | Info plate — `panel_box()` (`PANEL_BG`, 1px `PANEL_BORDER`, `PANEL_RADIUS`), padding `PANEL_PAD` (detail header / stat plate / skill plate) |
+| `BattlePopup` | PanelContainer | Skill popup plate — `popup_box()` (`POPUP_BG`, `RADIUS`, AA, `SHADOW` down only), padding `POPUP_PAD` |
+| `BattleGoldPanel` | PanelContainer | Gold-rimmed plate (`GOLD_PANEL_BG`, 3px `GOLD_BORDER`, `RADIUS`), padding 0 — MVP info |
+| `BattleGoldModal` | PanelContainer | Same rim, opaque `MODAL_BG`, padding 0 — the victory / defeat panel (`_build_victory_panel`) |
+| `BattleSlab` | PanelContainer | "No art yet" slab (`SLAB_BG`, 2px `PANEL_BORDER`, `SLAB_RADIUS`) |
+| `BattleDimPanel` | Panel | Full-rect dim `DIM` (detail panel); set mouse Ignore |
+| `BattleGoldButton` | Button | `BUTTON_BG` + 3px gold rim, `RADIUS`, pressed lightened `BUTTON_PRESS_LIGHTEN`, focus empty, `FONT_LARGE` — MVP "계속" |
+| `BattleActionButton` | Button | **Engine default button look**, only `FONT_VALUE` — skill "사용" (popup and detail panel) |
+| `BattleChipButton` · `BattleChipButtonOn` | Button | Stat cell normal / highlighted — `chip_box(false/true)` in every press state (detail panel cells) |
+| `BattleFxButton` · `BattleFxButtonOn` | Button | Same pair with `FX_RADIUS` (lasting-effect thumbnails) |
+| `BattleTab` · `BattleTabOn` | Button | Detail panel tab off / on — `tab_box(on)`, `FONT_TAB`, `font_color` `TEXT_KEY` / white |
+| `BattleHeaderLabel` | Label | `TEXT_HEADER`, `FONT_LARGE` (detail name, note title) |
+| `BattleTitleLabel` | Label | Gold `TEXT_TITLE`, `FONT_TITLE` (result panel "MVP") |
+| `BattleSkillNameLabel` | Label | `TEXT_SKILL`, `FONT_TITLE` |
+| `BattleValueLabel` · `BattleBodyLabel` · `BattleStatusLabel` · `BattleKeyLabel` | Label | `TEXT_VALUE` `FONT_VALUE` · `TEXT_DESC` · `TEXT_WAIT` · `TEXT_KEY` (the last three `FONT_BODY`) |
+| `BattleSectionLabel` · `BattleSubLabel` · `BattleCaptionLabel` | Label | `TEXT_SECTION` · `TEXT_SUB` (`FONT_BODY`) · `TEXT_TYPE` `FONT_CAPTION` (skill type, cooldown turns) |
+| `BattleGrowthLabel` | Label | `TEXT_GROWTH`, `FONT_LARGE` |
+| `BattlePositiveLabel` · `BattleNegativeLabel` · `BattleAllyLabel` · `BattleEnemyLabel` | Label | `POSITIVE` · `NEGATIVE` · `ALLY` · `ENEMY`, `FONT_BODY` — binary state colours switch the variation name |
+| `BattleOutlinedLabel` | Label | `TEXT_BRIGHT` + `OUTLINE` outline `OUTLINE_SIZE`, `FONT_LARGE` — text floating on a dim / art with no plate |
+
+Screen variations (`_add_screen_variations`, same `<Scene><Role>` rule as outgame; label variations override
+only `font_color`):
+
+| Variation | Base | Scene · node | Code |
+|---|---|---|---|
+| `MvpDimPanel` | BattleDimPanel | `MvpView` `Dim` (`DIM_DEEP`) | — |
+| `MvpTitleLabel` · `MvpSubLabel` | BattleOutlinedLabel | `MvpView` `Title` · `Metric` / `FallbackLabel` | — |
+| `MvpAllyLabel` · `MvpEnemyLabel` | BattleOutlinedLabel | `MvpView` `%Side` | switched by `open` (MVP's side) |
 
 ### Bottom action bar (`add_bottom_bar`)
 **The main action on an outgame screen is not a shape floating in the middle of the screen but the whole bottom

@@ -48,7 +48,7 @@ const OVERLAY_LAYER: int = 13
 ## 세로로 긴 기기에서는 높이가 1920 보다 커진다. 딤 · 루트가 뷰포트 전체를
 ## 덮지 않으면 그 차이만큼 화면 끝에 안 덮인 띠가 남는다.
 ## `docs/mobile_safe_area.md` 참고.
-const DIM_COLOR := Color(0.0, 0.0, 0.0, 0.88)
+const DIM_COLOR := BattleTheme.DIM
 
 ## 탭 셋. 인게임 = 지금 이 전장에서의 상태, 파일럿 = 사람의 능력치 + 파일럿
 ## 카드, 메크 = 기체의 능력치 + 메크 카드. 예전의 "전환" 버튼(파일럿 ↔ 메크
@@ -85,7 +85,7 @@ const ART_BACK_SHIFT_PX: float = 400.0
 const ART_BACK_SCALE: float = 0.90
 ## 뒤에 선 아트에 씌우는 검은 반투명. `modulate` 라 RGB 는 어둡게, A 는 살짝
 ## 비치게 — 둘 다 필요하다(어둡기만 하면 실루엣이 아니라 검은 판이 된다).
-const ART_BACK_TINT := Color(0.14, 0.14, 0.18, 0.88)
+const ART_BACK_TINT := BattleTheme.ART_BACK_TINT
 ## 앞뒤가 자리를 맞바꾸는 데 걸리는 시간(s).
 const ART_SWAP_SEC: float = 0.22
 ## 아트가 없는 메크(= 아직 에셋이 하나도 없다)의 플레이스홀더 가로/세로 비.
@@ -116,7 +116,7 @@ const HDR_MECH_FONT: int = 24
 const HDR_GROWTH_H: float = 48.0
 const HDR_NAME_H: float = 52.0
 const HDR_MECH_H: float = 32.0
-const HDR_MECH_COLOR := Color(0.68, 0.74, 0.86)
+const HDR_MECH_COLOR := BattleTheme.TEXT_MECH
 ## 성장치 — 머리글 **맨 위 가운데**. 예전에는 이름 줄 오른쪽 170px 칸이었고,
 ## 인게임 탭에는 `성장 +N%` 칩이 따로 있었다(삭제 — 성장치 하나로 읽는다).
 const HDR_GROWTH_FONT: int = 40
@@ -127,15 +127,15 @@ const STAT_TOP: float = 650.0
 ## 스탯 블록 뒤에 까는 받침. 아트가 이 자리까지 올라오므로 글자만 얹으면
 ## 일러스트 위에서 읽히지 않는다. 내용 높이에 맞춰 자란다.
 const STAT_PANEL_PAD := Vector2(22.0, 26.0)
-const STAT_PANEL_BG := Color(0.04, 0.05, 0.09, 0.86)
-const STAT_PANEL_BORDER := Color(0.30, 0.34, 0.46, 0.70)
+const STAT_PANEL_BG := BattleTheme.PANEL_BG
+const STAT_PANEL_BORDER := BattleTheme.PANEL_BORDER
 
-const HEADER_COLOR := Color(1.0, 0.92, 0.55)
-const SECTION_COLOR := Color(0.58, 0.78, 1.0)
-const KEY_COLOR := Color(0.72, 0.74, 0.80)
-const VALUE_COLOR := Color(0.96, 0.96, 0.98)
+const HEADER_COLOR := BattleTheme.TEXT_HEADER
+const SECTION_COLOR := BattleTheme.TEXT_SECTION
+const KEY_COLOR := BattleTheme.TEXT_KEY
+const VALUE_COLOR := BattleTheme.TEXT_VALUE
 ## 이름 오른쪽의 성장치. 스트립의 성장치 숫자와 같은 값이므로 같은 계열로 둔다.
-const GROWTH_COLOR := Color(0.72, 1.0, 0.80)
+const GROWTH_COLOR := BattleTheme.TEXT_GROWTH
 
 # ─── 탭 바 ───────────────────────────────────────────────────────────────────
 # 받침 **바로 위에 붙는다**(아래끝 = 받침 위끝) — 떼어 놓으면 탭이 어느 판에
@@ -143,10 +143,10 @@ const GROWTH_COLOR := Color(0.72, 1.0, 0.80)
 # 된다.
 const TAB_H: float = 62.0
 const TAB_GAP: float = 8.0
-const TAB_BG_ON  := Color(0.16, 0.21, 0.34, 0.96)
-const TAB_BG_OFF := Color(0.06, 0.07, 0.11, 0.80)
-const TAB_BORDER_ON := Color(0.62, 0.80, 1.0, 0.95)
-const TAB_BORDER_OFF := Color(0.26, 0.29, 0.38, 0.65)
+const TAB_BG_ON  := BattleTheme.TAB_BG_ON
+const TAB_BG_OFF := BattleTheme.TAB_BG_OFF
+const TAB_BORDER_ON := BattleTheme.TAB_BORDER_ON
+const TAB_BORDER_OFF := BattleTheme.TAB_BORDER_OFF
 
 # ─── 스탯 칸 ─────────────────────────────────────────────────────────────────
 # 스탯 판 위에 얹힌 **작은 판 하나 = 스탯 하나** — 왼쪽에 이름, 오른쪽 정렬로
@@ -155,12 +155,12 @@ const TAB_BORDER_OFF := Color(0.26, 0.29, 0.38, 0.65)
 # 예전에는 3열 칩(위 이름 / 아래 큰 값)이었다.
 const CHIP_GAP: float = 10.0
 const CHIP_H: float = 56.0
-const CHIP_RADIUS: int = 12
+const CHIP_RADIUS: int = BattleTheme.CHIP_RADIUS
 const CHIP_PAD_X: float = 16.0
-const CHIP_BG := Color(0.10, 0.12, 0.18, 0.94)
-const CHIP_BG_HL := Color(0.17, 0.22, 0.34, 0.98)
-const CHIP_BORDER := Color(0.32, 0.36, 0.48, 0.80)
-const CHIP_BORDER_HL := Color(0.72, 0.86, 1.0, 0.95)
+const CHIP_BG := BattleTheme.CHIP_BG
+const CHIP_BG_HL := BattleTheme.CHIP_BG_HL
+const CHIP_BORDER := BattleTheme.CHIP_BORDER
+const CHIP_BORDER_HL := BattleTheme.CHIP_BORDER_HL
 const CHIP_NAME_FONT: int = 22
 const CHIP_VALUE_FONT: int = 28
 ## 이름 앞 스탯 아이콘 — 이름 글자색으로 굽는다.
@@ -181,8 +181,8 @@ const CHIP_ICONS: Dictionary = {
 ## 능력의 가산분(+ 일 때만). 0 이면 괄호를 달지 않는다.
 const CHIP_BONUS_FONT: int = 22
 const CHIP_BONUS_GAP: float = 6.0
-const BONUS_UP_COLOR := Color(0.45, 0.90, 0.55)
-const BONUS_DOWN_COLOR := Color(0.98, 0.42, 0.42)
+const BONUS_UP_COLOR := BattleTheme.POSITIVE
+const BONUS_DOWN_COLOR := BattleTheme.NEGATIVE
 
 # ─── 칩 컨텍스트 메뉴 ────────────────────────────────────────────────────────
 # **정보 칼럼 왼쪽에** 펼친다 — 오른쪽은 화면 끝(1080)까지 28px 밖에 없고,
@@ -194,7 +194,7 @@ const MENU_PAD := Vector2(20.0, 16.0)
 const MENU_GAP_X: float = 16.0
 ## 판 모양은 카드 설명판과 같다(`CardDescBox.panel_style` — 불투명 · 테두리 없음 ·
 ## 아래로 흐릿한 드롭 섀도). 이 색은 설명 글 속 아이콘이 파내는 판 바탕색이다.
-const MENU_BG := Color(0.08, 0.08, 0.12, 1.0)
+const MENU_BG := BattleTheme.MENU_BG
 ## 설명 글의 `{attack}` · `{engage}` 자리에 서는 아이콘.
 const MENU_NOTE_ICON: Dictionary = {
 	"attack": KeywordIcon.ATTACK, "engage": KeywordIcon.ENGAGE,
@@ -228,16 +228,16 @@ const MENU_KEY_FRAC: float = 0.42
 # 예전의 "걸려 있는 효과 없음" 한 줄은 제목이 있어야 뜻이 서는 문장이었다.
 const FX_SIZE: float = 68.0
 const FX_GAP: float = 12.0
-const FX_RADIUS: int = 16
-const FX_BG := Color(0.10, 0.12, 0.18, 0.94)
-const FX_BG_HL := Color(0.17, 0.22, 0.34, 0.98)
+const FX_RADIUS: int = BattleTheme.FX_RADIUS
+const FX_BG := BattleTheme.CHIP_BG
+const FX_BG_HL := BattleTheme.CHIP_BG_HL
 const FX_SHORT_FONT: int = 21
 const FX_VALUE_FONT: int = 16
 ## 카드 일러스트 썸네일 — 효과를 건 카드를 알 때는 두 글자 약칭 대신 그 카드의
 ## 아트를 칸 가득 둥근 사각형으로 깎아 깔고, 값은 아래 띠에 얹는다.
 const FX_ART_SHADER: Shader = preload("res://resources/shaders/rounded_rect_mask.gdshader")
 const FX_ART_INSET: float = 3.0
-const FX_VALUE_BAND := Color(0.0, 0.0, 0.0, 0.62)
+const FX_VALUE_BAND := BattleTheme.FX_VALUE_BAND
 ## 썸네일 줄의 왼쪽 끝.
 const FX_LEFT_X: float = 26.0
 ## 한 줄이 쓸 수 있는 폭 — 정보 칼럼(x 600)과 부딪히지 않는 선. 여섯 칸이 든다.
@@ -280,18 +280,18 @@ const SKILL_NAME_FONT: int = 30
 const SKILL_DESC_FONT: int = 22
 const SKILL_STATUS_FONT: int = 22
 const SKILL_LINE_GAP: float = 8.0
-const SKILL_NAME_COLOR := Color(1.0, 0.88, 0.52)
-const SKILL_DESC_COLOR := Color(0.88, 0.90, 0.95)
-const SKILL_WAIT_COLOR  := Color(0.80, 0.82, 0.90)
+const SKILL_NAME_COLOR := BattleTheme.TEXT_SKILL
+const SKILL_DESC_COLOR := BattleTheme.TEXT_DESC
+const SKILL_WAIT_COLOR  := BattleTheme.TEXT_WAIT
 const SKILL_USE_H: float = 68.0
 const SKILL_TILE_PX: float = 92.0
 const SKILL_TILE_GAP: float = 18.0
-const SKILL_TILE_BG := Color(0.22, 0.26, 0.38)
-const SKILL_TILE_ICON := Color(1.0, 0.94, 0.78)
-const SKILL_TILE_SHADOW := Color(0.0, 0.0, 0.0, 0.70)
+const SKILL_TILE_BG := BattleTheme.SKILL_TILE_BG
+const SKILL_TILE_ICON := BattleTheme.SKILL_TILE_ICON
+const SKILL_TILE_SHADOW := BattleTheme.SKILL_TILE_SHADOW
 ## 설명문 키워드 아이콘 색 / 필중 아이콘을 파내는 판 바탕색 — 카드 설명판(어두운 판)과 같다.
-const SKILL_KW_ICON := Color(0.55, 0.85, 1.0)
-const SKILL_KNOCK := Color(0.04, 0.05, 0.09)
+const SKILL_KW_ICON := BattleTheme.SKILL_KW_ICON
+const SKILL_KNOCK := BattleTheme.SKILL_KNOCK
 
 # ─── 열기 / 닫기 연출 ────────────────────────────────────────────────────────
 # 열 때: 아트가 왼쪽에서 살짝 오른쪽으로 오며, 정보 판들이 아래에서 올라오며 페이드인.

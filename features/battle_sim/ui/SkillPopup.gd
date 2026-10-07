@@ -17,7 +17,7 @@ extends Node
 # 열림 · 카드를 끌기 시작 · 열 수 없는 단계로 넘어감(`close_if_phase_left`).
 # 다른 아군 초상을 탭하면 그 파일럿으로 바뀐다(`HudBuilder._on_player_strip_tapped`).
 #
-# **판 밖 누름을 삼키는 막(`_catcher`)은 아군 스트립 위끝까지만** 덮는다 — 스트립
+# **판 밖 누름을 삼키는 막(`%Catcher`)은 아군 스트립 위끝까지만** 덮는다 — 스트립
 # 칸은 그대로 눌려야 재탭(닫기) · 다른 초상(교체) · 꾹 누르기(상세)가 산다.
 # 스트립 높이 안에서 칸이 아닌 곳을 누르면 `_input` 이 닫기만 한다(삼키지 않음).
 #
@@ -34,39 +34,37 @@ extends Node
 # 전장을 붙잡지 않는다 — 순수 정보 + 버튼이라 BATTLE 자동 틱은 그대로 흐른다.
 # 사용 버튼의 활성은 상세 패널과 같은 `PilotSkillSystem.can_activate` 다.
 
+# **레이아웃의 정본은 씬이다** — `SkillPopup.tscn`(층 · 바깥 누름 막)과 열 때마다
+# 인스턴스하는 `SkillPopupCard.tscn`(판 + 화살표). 색 · 판은 전투 테마
+# (`resources/BattleTheme.tres`)의 변형(`BattlePopup` · `BattleSkillNameLabel` /
+# `BattleKeyLabel` · `BattleCaptionLabel` · `BattleStatusLabel` · `BattleActionButton`)이
+# 정한다. 코드가 정하는 것: 판 위치(초상 위, 화면 안 clamp)와 높이(내용), 화살표 모양,
+# 막 높이(스트립 위끝), 아이콘 타일 · 설명문(코드 위젯 — `%IconSlot` · `%DescSlot` 에 넣는다),
+# 열기 / 닫기 연출. 생성: `SkillPopup.create()`.
+
 ## 보상 미리보기 · 더미 열람과 같은 층. 상세 패널(13) 아래 — 상세가 열리면
-## 이 말풍선은 먼저 닫힌다.
+## 이 말풍선은 먼저 닫힌다. 씬 `Layer` 의 `layer` 와 같은 값.
 const OVERLAY_LAYER: int = 12
 
+const SCENE_PATH: String = "res://features/battle_sim/ui/SkillPopup.tscn"
+## 열 때마다 하나씩 인스턴스하는 판 + 화살표(닫히는 판이 사라지는 동안 다음 판이 올라온다).
+const CARD_SCENE: PackedScene = preload("res://features/battle_sim/ui/SkillPopupCard.tscn")
+
+## 판 폭 · 안쪽 여백은 씬(`%Panel` 최소 폭)과 테마(`BattlePopup`, `BattleTheme.POPUP_PAD`)가
+## 정한다 — 여기 값은 화면 안 clamp · 설명문 폭 계산에 쓰는 사본.
 const PANEL_W: float = 640.0
-const PANEL_PAD := Vector2(26.0, 24.0)
 ## 화면 좌우 가장자리와의 최소 여백.
 const SCREEN_MARGIN: float = 20.0
-const PANEL_BG := Color(0.05, 0.06, 0.11, 0.97)
-const PANEL_RADIUS: int = 18
-## 테두리 없음. 그림자는 아래로만 짧게.
-const SHADOW_COLOR := Color(0, 0, 0, 0.45)
-const SHADOW_SIZE: int = 6
-const SHADOW_OFFSET := Vector2(0.0, 6.0)
 ## 화살표 — 판 아래끝에서 초상 머리까지. 밑변 폭 / 높이, 머리와의 틈.
 const ARROW_W: float = 40.0
 const ARROW_H: float = 22.0
 const ARROW_GAP: float = 6.0
 
 const ICON_PX: float = 72.0
-const ICON_GAP: float = 16.0
-const NAME_H: float = 40.0
-const TYPE_FONT: int = 20
-const TYPE_COLOR := Color(0.70, 0.74, 0.84)
-const TYPE_W: float = 110.0
-## 쿨타임 시계 아이콘 한 변 · 수치 폰트.
+## 쿨타임 시계 아이콘 한 변.
 const CLOCK_PX: float = 28.0
-const CLOCK_FONT: int = 26
-const LINE_GAP: float = 10.0
-const STATUS_H: float = 30.0
-const USE_FONT: int = 28
 
-## 쿨타임은 글자 대신 시계 아이콘 + 턴 수(`_build_cooldown_tag`).
+## 쿨타임은 글자 대신 시계 아이콘 + 턴 수(`%Cooldown`).
 const TYPE_LABEL := {
 	PilotSkillSystem.TYPE_CHARGE:   "충전식",
 	PilotSkillSystem.TYPE_PASSIVE:  "패시브",
@@ -86,9 +84,7 @@ const PREVIEW_LIFT: float = 28.0
 const PREVIEW_RISE_PX: float = 18.0
 
 var _bs: BattleSim = null
-var _layer: CanvasLayer = null
-var _root: Control = null
-## 판 + 화살표 — 열기 / 닫기 연출이 움직이는 덩어리(막은 움직이지 않는다).
+## 지금 열린 판 + 화살표(`SkillPopupCard.tscn` 인스턴스) — 열기 / 닫기 연출이 움직이는 덩어리.
 var _body: Control = null
 var _pilot: PilotData = null
 ## 설명문 라벨과 그 위의 카드 이름 누름 상태.
@@ -103,11 +99,15 @@ var _use_btn: Button = null
 var _strip_top: float = 0.0
 
 
+## 씬을 인스턴스한다. `SkillPopup.new()` 는 빈 노드라 쓰지 않는다.
+static func create() -> SkillPopup:
+	return (load(SCENE_PATH) as PackedScene).instantiate() as SkillPopup
+
+
 func _ready() -> void:
-	_layer = CanvasLayer.new()
-	_layer.layer = OVERLAY_LAYER
-	_layer.name = "SkillPopupLayer"
-	add_child(_layer)
+	%Catcher.gui_input.connect(_on_catcher_input)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 func bind(bs: BattleSim) -> void:
@@ -115,7 +115,7 @@ func bind(bs: BattleSim) -> void:
 
 
 func is_active() -> bool:
-	return _root != null
+	return _body != null
 
 
 func pilot() -> PilotData:
@@ -135,9 +135,23 @@ func open(p: PilotData, anchor: Vector2, strip_top: float) -> void:
 	close()
 	if _bs == null or _bs.skill == null or p == null:
 		return
+	var sk: PilotSkillSystem = _bs.skill
+	var has_skill: bool = sk.has_skill(p)
+	var stype: String = sk.skill_type(p)
+	var gm: Node = _bs.gm
 	_pilot = p
-	_strip_top = strip_top
-	_build(anchor)
+	_show({
+		"has_skill": has_skill,
+		"key": String(sk.def_for(p).get("key", "")) if has_skill else "",
+		"name": sk.skill_name(p) if has_skill else "스킬 없음",
+		"type": stype,
+		"cooldown_turns": int(sk.def_for(p).get("p1", 0)),
+		"desc": sk.skill_description(p) if has_skill else "",
+		"costs": gm.card_costs_by_name() if gm != null else {},
+		"show_status": has_skill and not (stype == PilotSkillSystem.TYPE_COOLDOWN
+				and sk.cooldown_left(p) <= 0),
+		"show_use": has_skill and stype != PilotSkillSystem.TYPE_PASSIVE,
+	}, anchor, strip_top)
 	refresh()
 
 
@@ -145,16 +159,15 @@ func open(p: PilotData, anchor: Vector2, strip_top: float) -> void:
 ## 동안 내려가며 사라지고, 그동안은 입력을 받지 않는다.
 func close() -> void:
 	_hide_preview()
-	if _root != null and is_instance_valid(_root):
-		var root := _root
-		_set_ignore_recursive(root)
-		var tw := root.create_tween().set_parallel(true)
-		if _body != null and is_instance_valid(_body):
-			tw.tween_property(_body, "position:y", RISE_PX, CLOSE_SEC) \
-					.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
-			tw.tween_property(_body, "modulate:a", 0.0, CLOSE_SEC)
-		tw.chain().tween_callback(root.queue_free)
-	_root = null
+	%Catcher.visible = false
+	if _body != null and is_instance_valid(_body):
+		var body := _body
+		_set_ignore_recursive(body)
+		var tw := body.create_tween().set_parallel(true)
+		tw.tween_property(body, "position:y", RISE_PX, CLOSE_SEC) \
+				.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+		tw.tween_property(body, "modulate:a", 0.0, CLOSE_SEC)
+		tw.chain().tween_callback(body.queue_free)
 	_body = null
 	_pilot = null
 	_status = null
@@ -182,7 +195,7 @@ func close_if_phase_left() -> void:
 
 ## 상태 줄과 사용 버튼 활성만 다시 쓴다. `HudBuilder.update_hud` 가 부른다.
 func refresh() -> void:
-	if not is_active():
+	if not is_active() or _bs == null or _pilot == null:
 		return
 	var sk: PilotSkillSystem = _bs.skill
 	if _status != null and is_instance_valid(_status):
@@ -208,10 +221,10 @@ func _input(event: InputEvent) -> void:
 		pos = st.position
 	else:
 		return
-	# 스트립 위쪽은 막(`_catcher`)이 받는다. 스트립 높이에서 칸이 아닌 곳만 여기서.
+	# 스트립 위쪽은 막(`%Catcher`)이 받는다. 스트립 높이에서 칸이 아닌 곳만 여기서.
 	if pos.y < _strip_top:
 		return
-	var strip: PilotStrip = _bs.hud.player_strip() if _bs.hud != null else null
+	var strip: PilotStrip = _bs.hud.player_strip() if _bs != null and _bs.hud != null else null
 	if strip != null and strip.pilot_at(pos) != null:
 		return
 	close()
@@ -223,6 +236,8 @@ func _on_catcher_input(event: InputEvent) -> void:
 
 
 func _on_use_pressed() -> void:
+	if _bs == null:
+		return
 	var sk: PilotSkillSystem = _bs.skill
 	if sk == null or _pilot == null or not sk.can_activate(_pilot):
 		return
@@ -232,156 +247,99 @@ func _on_use_pressed() -> void:
 
 
 # ─── UI ──────────────────────────────────────────────────────────────────────
-func _build(anchor: Vector2) -> void:
-	var sk: PilotSkillSystem = _bs.skill
+## 판 하나를 세운다. `d` = `open` 이 스킬 시스템에서 모은 값(미리보기는 손으로 적는다):
+## has_skill · key · name · type · cooldown_turns · desc · costs · show_status · show_use.
+func _show(d: Dictionary, anchor: Vector2, strip_top: float) -> void:
+	_strip_top = strip_top
 	var vp_w: float = ScreenMetrics.vp_w()
-
-	_root = Control.new()
-	_root.name = "SkillPopup"
-	# CanvasLayer 아래 Control 은 full-rect 앵커를 풀 부모 rect 가 없다 — 크기 명시.
-	_root.position = Vector2.ZERO
-	_root.size = Vector2(vp_w, ScreenMetrics.vp_h())
-	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_layer.add_child(_root)
+	var has_skill: bool = bool(d["has_skill"])
+	var stype: String = String(d["type"])
 
 	# 바깥 누름 막 — 투명, 아군 스트립 위끝까지.
-	var catcher := Control.new()
-	catcher.name = "OutsideCatcher"
-	catcher.position = Vector2.ZERO
-	catcher.size = Vector2(vp_w, maxf(0.0, _strip_top))
-	catcher.mouse_filter = Control.MOUSE_FILTER_STOP
-	catcher.gui_input.connect(_on_catcher_input)
-	_root.add_child(catcher)
+	var catcher: Control = %Catcher
+	catcher.offset_bottom = maxf(0.0, _strip_top)
+	catcher.visible = true
 
-	var inner_w: float = PANEL_W - PANEL_PAD.x * 2.0
-	var has_skill: bool = sk.has_skill(_pilot)
-	var stype: String = sk.skill_type(_pilot)
+	_body = CARD_SCENE.instantiate() as Control
+	%Root.add_child(_body)
 
-	# 내용 높이를 먼저 잰다 — 판은 아래끝이 화살표에 붙고 위로 자란다.
-	var gm: Node = _bs.gm
-	var costs: Dictionary = gm.card_costs_by_name() if gm != null else {}
-	var desc_text: String = sk.skill_description(_pilot) if has_skill else ""
-	var desc_h: float = 0.0
+	# 머리 줄 — 아이콘 · 이름 · 오른쪽에 종류(쿨타임은 시계 + 턴 수).
+	var tile: Control = SkillImages.make_icon_tile(String(d["key"]), ICON_PX,
+			BattleTheme.SKILL_TILE_BG, BattleTheme.SKILL_TILE_ICON,
+			BattleTheme.SKILL_TILE_SHADOW, 8.0)
+	_body.get_node("%IconSlot").add_child(tile)
+	var name_lbl: Label = _body.get_node("%Name")
+	name_lbl.text = String(d["name"])
+	name_lbl.theme_type_variation = &"BattleSkillNameLabel" if has_skill else &"BattleKeyLabel"
+	var cooldown: bool = has_skill and stype == PilotSkillSystem.TYPE_COOLDOWN
+	var type_lbl: Label = _body.get_node("%Type")
+	type_lbl.visible = has_skill and not cooldown
+	type_lbl.text = String(TYPE_LABEL.get(stype, ""))
+	_body.get_node("%Cooldown").visible = cooldown
+	if cooldown:
+		_body.get_node("%Turns").text = str(int(d["cooldown_turns"]))
+		_body.get_node("%Clock").texture = KeywordIcon.texture(KeywordIcon.COOLDOWN,
+				int(CLOCK_PX * 2.0), BattleTheme.TEXT_TYPE, BattleTheme.POPUP_BG)
+
+	# 설명문 — 상세 패널과 같은 길(`StrategyIcon`). 높이는 같은 규칙으로 잰다.
+	var inner_w: float = PANEL_W - BattleTheme.POPUP_PAD.x * 2.0
+	var slot: Control = _body.get_node("%DescSlot")
+	slot.visible = has_skill
 	if has_skill:
-		desc_h = StrategyIcon.rich_height(desc_text, inner_w,
+		var costs: Dictionary = d["costs"]
+		var desc_text: String = String(d["desc"])
+		var desc_h: float = StrategyIcon.rich_height(desc_text, inner_w,
 				PilotDetailPanel.SKILL_DESC_FONT, costs)
-	var show_status: bool = has_skill and not (stype == PilotSkillSystem.TYPE_COOLDOWN
-			and sk.cooldown_left(_pilot) <= 0)
-	var show_use: bool = has_skill and stype != PilotSkillSystem.TYPE_PASSIVE
-	var content_h: float = ICON_PX
-	if has_skill:
-		content_h += LINE_GAP + desc_h
-	if show_status:
-		content_h += LINE_GAP + STATUS_H
-	if show_use:
-		content_h += LINE_GAP * 2.0 + PilotDetailPanel.SKILL_USE_H
-	var panel_h: float = content_h + PANEL_PAD.y * 2.0
-
-	# 판 + 화살표는 `_body` 아래 — 열기 연출이 이 덩어리만 움직인다.
-	_body = Control.new()
-	_body.name = "Body"
-	_body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.add_child(_body)
-
-	var tip := Vector2(anchor.x, anchor.y - ARROW_GAP)
-	var panel_bottom: float = tip.y - ARROW_H
-	var px: float = clampf(anchor.x - PANEL_W * 0.5, SCREEN_MARGIN,
-			vp_w - PANEL_W - SCREEN_MARGIN)
-	var origin := Vector2(px, panel_bottom - panel_h)
-
-	# 화살표 — 판과 같은 바탕색 삼각형. 밑변을 판 안쪽으로 2px 묻어 이음매를 없앤다.
-	var arrow := Polygon2D.new()
-	var half: float = ARROW_W * 0.5
-	var base_y: float = panel_bottom - 2.0
-	var ax: float = clampf(tip.x, px + PANEL_RADIUS + half, px + PANEL_W - PANEL_RADIUS - half)
-	arrow.polygon = PackedVector2Array([Vector2(ax - half, base_y),
-			Vector2(ax + half, base_y), Vector2(tip.x, tip.y)])
-	arrow.color = PANEL_BG
-
-	var panel := Panel.new()
-	panel.position = origin
-	panel.size = Vector2(PANEL_W, panel_h)
-	# 판 위 누름은 막까지 내려가지 않게 STOP — 판을 눌러도 닫히지 않는다.
-	panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = PANEL_BG
-	sb.set_corner_radius_all(PANEL_RADIUS)
-	sb.anti_aliasing = true
-	sb.shadow_color = SHADOW_COLOR
-	sb.shadow_size = SHADOW_SIZE
-	sb.shadow_offset = SHADOW_OFFSET
-	panel.add_theme_stylebox_override("panel", sb)
-	_body.add_child(panel)
-	# 화살표는 판 **뒤에** 붙여야 판 그림자가 화살표를 덮지 않는다 — 그래서 판 다음.
-	_body.add_child(arrow)
-
-	var x0: float = PANEL_PAD.x
-	var y: float = PANEL_PAD.y
-	var key: String = String(sk.def_for(_pilot).get("key", "")) if has_skill else ""
-	var tile: Control = SkillImages.make_icon_tile(key, ICON_PX,
-			PilotDetailPanel.SKILL_TILE_BG, PilotDetailPanel.SKILL_TILE_ICON,
-			PilotDetailPanel.SKILL_TILE_SHADOW, 8.0)
-	tile.position = Vector2(x0, y)
-	panel.add_child(tile)
-
-	var col_x: float = x0 + ICON_PX + ICON_GAP
-	var name_lbl := _label(sk.skill_name(_pilot) if has_skill else "스킬 없음",
-			PilotDetailPanel.SKILL_NAME_FONT,
-			PilotDetailPanel.SKILL_NAME_COLOR if has_skill else PilotDetailPanel.KEY_COLOR,
-			HORIZONTAL_ALIGNMENT_LEFT)
-	name_lbl.position = Vector2(col_x, y + (ICON_PX - NAME_H) * 0.5)
-	name_lbl.size = Vector2(PANEL_W - PANEL_PAD.x - col_x - TYPE_W, NAME_H)
-	name_lbl.clip_text = true
-	panel.add_child(name_lbl)
-	if has_skill and stype == PilotSkillSystem.TYPE_COOLDOWN:
-		_build_cooldown_tag(panel, int(sk.def_for(_pilot).get("p1", 0)),
-				Vector2(PANEL_W - PANEL_PAD.x - TYPE_W, name_lbl.position.y))
-	elif has_skill:
-		var type_lbl := _label(String(TYPE_LABEL.get(stype, "")), TYPE_FONT,
-				TYPE_COLOR, HORIZONTAL_ALIGNMENT_RIGHT)
-		type_lbl.position = Vector2(PANEL_W - PANEL_PAD.x - TYPE_W, name_lbl.position.y)
-		type_lbl.size = Vector2(TYPE_W, NAME_H)
-		panel.add_child(type_lbl)
-	y += ICON_PX
-
-	if has_skill:
-		y += LINE_GAP
+		slot.custom_minimum_size = Vector2(0.0, desc_h)
 		var desc := StrategyIcon.make_rich_label(desc_text,
-				PilotDetailPanel.SKILL_DESC_FONT, PilotDetailPanel.SKILL_DESC_COLOR,
-				PilotDetailPanel.SKILL_KW_ICON, PANEL_BG,
+				PilotDetailPanel.SKILL_DESC_FONT, BattleTheme.TEXT_DESC,
+				BattleTheme.SKILL_KW_ICON, BattleTheme.POPUP_BG,
 				KeywordIcon.TARGET_ANY_COLOR, KeywordIcon.TARGET,
 				KeywordIcon.SPECIAL_COLOR_DARK, costs, true)
-		desc.position = Vector2(x0, y)
+		desc.position = Vector2.ZERO
 		desc.size = Vector2(inner_w, desc_h)
 		# 카드 이름 누름을 받는다 — 그 밖의 글자를 눌러도 판이 닫히지 않는 건 같다.
 		desc.mouse_filter = Control.MOUSE_FILTER_STOP
 		desc.meta_hover_started.connect(_on_meta_hover_started)
 		desc.meta_hover_ended.connect(_on_meta_hover_ended)
 		desc.gui_input.connect(_on_desc_input)
-		panel.add_child(desc)
+		slot.add_child(desc)
 		_desc = desc
-		y += desc_h
 
-	if show_status:
-		y += LINE_GAP
-		_status = _label("", PilotDetailPanel.SKILL_STATUS_FONT,
-				PilotDetailPanel.SKILL_WAIT_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
-		_status.position = Vector2(x0, y)
-		_status.size = Vector2(inner_w, STATUS_H)
-		_status.clip_text = true
-		panel.add_child(_status)
-		y += STATUS_H
-
+	var show_status: bool = bool(d["show_status"])
+	_body.get_node("%StatusBox").visible = show_status
+	_status = _body.get_node("%Status") if show_status else null
+	if _status != null:
+		_status.text = ""
+	var show_use: bool = bool(d["show_use"])
+	_body.get_node("%UseGap").visible = show_use
+	_use_btn = _body.get_node("%Use")
+	_use_btn.visible = show_use
 	if show_use:
-		y += LINE_GAP * 2.0
-		_use_btn = Button.new()
-		_use_btn.text = "사용"
-		_use_btn.focus_mode = Control.FOCUS_NONE
-		_use_btn.add_theme_font_size_override("font_size", USE_FONT)
-		_use_btn.position = Vector2(x0, y)
-		_use_btn.size = Vector2(inner_w, PilotDetailPanel.SKILL_USE_H)
 		_use_btn.pressed.connect(_on_use_pressed)
-		panel.add_child(_use_btn)
+	else:
+		_use_btn = null
+
+	# 판은 아래끝이 화살표에 붙고 위로 자란다 — 높이 = 내용(컨테이너 최소 크기).
+	var panel: Control = _body.get_node("%Panel")
+	var panel_h: float = panel.get_combined_minimum_size().y
+	var tip := Vector2(anchor.x, anchor.y - ARROW_GAP)
+	var panel_bottom: float = tip.y - ARROW_H
+	var px: float = clampf(anchor.x - PANEL_W * 0.5, SCREEN_MARGIN,
+			vp_w - PANEL_W - SCREEN_MARGIN)
+	panel.position = Vector2(px, panel_bottom - panel_h)
+	panel.size = Vector2(PANEL_W, panel_h)
+
+	# 화살표 — 판과 같은 바탕색 삼각형. 밑변을 판 안쪽으로 2px 묻어 이음매를 없앤다.
+	# 판 **뒤에** 그려져야(씬에서 판 다음 형제) 판 그림자가 화살표를 덮지 않는다.
+	var arrow: Polygon2D = _body.get_node("%Arrow")
+	var half: float = ARROW_W * 0.5
+	var base_y: float = panel_bottom - 2.0
+	var radius: float = float(BattleTheme.RADIUS)
+	var ax: float = clampf(tip.x, px + radius + half, px + PANEL_W - radius - half)
+	arrow.polygon = PackedVector2Array([Vector2(ax - half, base_y),
+			Vector2(ax + half, base_y), Vector2(tip.x, tip.y)])
+	arrow.color = BattleTheme.POPUP_BG
 
 	# 열기 — 아래에서 올라오며 페이드 인.
 	_body.position = Vector2(0.0, RISE_PX)
@@ -390,26 +348,6 @@ func _build(anchor: Vector2) -> void:
 	tw.tween_property(_body, "position:y", 0.0, OPEN_SEC) \
 			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	tw.tween_property(_body, "modulate:a", 1.0, OPEN_SEC)
-
-
-## 쿨타임 자리 — 시계 아이콘 + 재사용 턴 수(`p1`), 오른쪽 정렬.
-func _build_cooldown_tag(panel: Control, turns: int, at: Vector2) -> void:
-	var num := _label(str(turns), CLOCK_FONT, TYPE_COLOR, HORIZONTAL_ALIGNMENT_RIGHT)
-	var num_w: float = ThemeDB.fallback_font.get_string_size(str(turns),
-			HORIZONTAL_ALIGNMENT_LEFT, -1, CLOCK_FONT).x + 2.0
-	num.position = Vector2(at.x + TYPE_W - num_w, at.y)
-	num.size = Vector2(num_w, NAME_H)
-	panel.add_child(num)
-	var clock := TextureRect.new()
-	clock.texture = KeywordIcon.texture(KeywordIcon.COOLDOWN, int(CLOCK_PX * 2.0),
-			TYPE_COLOR, PANEL_BG)
-	clock.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	clock.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	clock.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	clock.position = Vector2(num.position.x - 6.0 - CLOCK_PX,
-			at.y + (NAME_H - CLOCK_PX) * 0.5)
-	clock.size = Vector2(CLOCK_PX, CLOCK_PX)
-	panel.add_child(clock)
 
 
 # ─── 카드 이름 누름 미리보기 ─────────────────────────────────────────────────
@@ -453,7 +391,7 @@ func _nudge_hover(pos: Vector2) -> void:
 ## 누른 자리 위에 카드 + 오른쪽(자리가 없으면 왼쪽) 설명판.
 func _show_preview(card_name: String) -> void:
 	_hide_preview()
-	if _root == null or _bs == null or _bs.CARD_SCENE == null:
+	if not is_active() or _bs == null or _bs.CARD_SCENE == null:
 		return
 	var cd: CardData = CardDescBox.card_by_name(card_name)
 	if cd == null:
@@ -464,7 +402,7 @@ func _show_preview(card_name: String) -> void:
 	_preview = Control.new()
 	_preview.name = "CardPreview"
 	_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.add_child(_preview)
+	%Root.add_child(_preview)
 
 	var node := _bs.CARD_SCENE.instantiate() as Card
 	# add_child BEFORE setup — Card.gd 의 @onready 가 트리 진입 후에야 풀린다.
@@ -512,13 +450,16 @@ func _hide_preview() -> void:
 	tw.chain().tween_callback(pv.queue_free)
 
 
-func _label(text: String, font_size: int, color: Color,
-		align: HorizontalAlignment) -> Label:
-	var l := Label.new()
-	l.text = text
-	l.add_theme_font_size_override("font_size", font_size)
-	l.add_theme_color_override("font_color", color)
-	l.horizontal_alignment = align
-	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return l
+## F6 단독 실행 미리보기 — 전투(`_bs`)가 없으니 쿨타임 스킬 한 장을 손으로 적어
+## 판만 연다(`resources/UiPreview.gd`). 사용 · 상태 갱신 · 카드 이름 미리보기는 전투가
+## 있어야 움직인다.
+func _fill_preview() -> void:
+	RenderingServer.set_default_clear_color(BattleTheme.MODAL_BG)
+	var vp := ScreenMetrics.viewport_size()
+	_show({
+		"has_skill": true, "key": "roam", "name": "배회",
+		"type": PilotSkillSystem.TYPE_COOLDOWN, "cooldown_turns": 15,
+		"desc": "활성화: 손에 있는 가장 낮은 비용의 [이동] 카드의 비용을 0으로 감소.",
+		"costs": {}, "show_status": true, "show_use": true,
+	}, Vector2(vp.x * 0.5, vp.y - 280.0), vp.y - 276.0)
+	_status.text = "준비까지 12턴"

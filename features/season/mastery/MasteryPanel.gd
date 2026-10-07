@@ -1,5 +1,5 @@
 class_name MasteryPanel
-extends RefCounted
+extends VBoxContainer
 
 # Hub manage card 「메크 연구」 + its `HubSheet` (contract: plan §11.2 —
 # `hub_summary` / `open`). The card summarises how many of my pilots have a
@@ -10,17 +10,22 @@ extends RefCounted
 # fills all five with the coach's plain rule (`MechMastery.auto_assign_all`).
 # Each pilot card also lists that pilot's quirks (`QuirkSystem`, §14) with
 # `n / slots`; research can turn up quirks at week close.
+#
+# **The sheet body's layout lives in `MasteryPanel.tscn`** (+ item scenes
+# `MasteryPilotRow` · `MasteryMechChip` · `MasteryQuirkLine`). `open` puts one instance
+# into the sheet's `body`; this script fills `%` nodes, instances the rows and applies
+# data: research colour, chip variation (research mech = `PrimaryButton`), tier / grade
+# colours, the round portrait (`_draw` widget, added into `%Portrait`). A tap refills the
+# same instance in place; rows and chips are reused, so a chip is never freed while it
+# is emitting `pressed`. The sheet's scroll height follows this node's height.
 
-const ROW_H: float = 232.0
-const ROW_GAP: float = 16.0
-const PORTRAIT: float = 76.0
-const CHIP_H: float = 92.0
-const CHIP_GAP: float = 10.0
-const ROW_PAD: float = 18.0
-const AUTO_BTN_H: float = 84.0
-## Quirk block under the mech chips (§14, T1): head line + one line per quirk.
-const QUIRK_HEAD_H: float = 36.0
-const QUIRK_LINE_H: float = 58.0
+const SCENE_PATH: String = "res://features/season/mastery/MasteryPanel.tscn"
+const PILOT_ROW_SCENE: PackedScene = preload("res://features/season/mastery/MasteryPilotRow.tscn")
+const CHIP_SCENE: PackedScene = preload("res://features/season/mastery/MasteryMechChip.tscn")
+const QUIRK_LINE_SCENE: PackedScene = preload("res://features/season/mastery/MasteryQuirkLine.tscn")
+
+var _sheet: HubSheet = null
+var _state: Dictionary = {}
 
 
 ## Card summary — `{title, value, sub, owner, alert}`.
@@ -46,201 +51,197 @@ static func hub_summary(state: Dictionary) -> Dictionary:
 	}
 
 
+## Instantiates the scene. `MasteryPanel.new()` is an empty box — don't use it.
+static func create() -> MasteryPanel:
+	return (load(SCENE_PATH) as PackedScene).instantiate() as MasteryPanel
+
+
 static func open(host: Node) -> void:
 	var sheet := HubSheet.open_on(host, "메크 연구")
 	var gm: Node = host.get_node_or_null("/root/GameManager")
 	if gm == null:
 		return
-	_fill(sheet, gm.season_state)
+	var panel := create()
+	sheet.body.add_child(panel)
+	panel._bind(sheet, gm.season_state)
 
 
-# Rebuild after a tap — deferred, because the tapped button is part of the body
-# being torn down and must not be freed while it is still emitting `pressed`.
-static func _refill_deferred(sheet: HubSheet, state: Dictionary) -> void:
-	(func() -> void:
-		if is_instance_valid(sheet) and sheet.body != null:
-			_fill(sheet, state)).call_deferred()
-
-
-# Builds (or rebuilds after a change) the whole sheet body.
-static func _fill(sheet: HubSheet, state: Dictionary) -> void:
-	var body: Control = sheet.body
-	for c in body.get_children():
-		body.remove_child(c)
+func _ready() -> void:
+	for c in (%Pilots as Node).get_children():   # scene sample = preview only
+		%Pilots.remove_child(c)
 		c.queue_free()
-	var w: float = sheet.body_w()
-	if not MechMastery.is_enabled(state):
-		UiHelpers.mk_label(body, "진행 중인 런이 없다", 28, OutgameTheme.TEXT_SUB,
-				Vector2(0, 0), Vector2(w, 40))
-		sheet.set_body_height(60)
-		return
+	(%Auto as Button).pressed.connect(_on_auto)
+	resized.connect(_fit_sheet)
 
-	var y: float = 0.0
+
+func _bind(sheet: HubSheet, state: Dictionary) -> void:
+	_sheet = sheet
+	_state = state
+	_fill()
+	_fit_sheet()
+
+
+## The sheet scrolls exactly this node's height (the scene's `Tail` is the bottom gap).
+func _fit_sheet() -> void:
+	if _sheet != null:
+		_sheet.set_body_height(size.y)
+
+
+# Fills (or refills after a tap) the whole sheet body.
+func _fill() -> void:
+	var state: Dictionary = _state
+	var enabled: bool = MechMastery.is_enabled(state)
+	%Empty.visible = not enabled
+	%Main.visible = enabled
+	if not enabled:
+		return
 	var delegated: bool = StaffSystem.is_delegated(state, "knowledge")
-	var head := UiHelpers.mk_label(body, "담당: %s   ·   지식 %d" % [
-			StaffSystem.owner_name(state, "knowledge"),
-			StaffSystem.effective(state, "knowledge")],
-			26, OutgameTheme.ACCENT_TEXT, Vector2(0, y), Vector2(w * 0.62, 36))
-	head.clip_text = true
-	var any_pid: int = (MechMastery.my_pilots(state)[0] as PlayerData).id \
-			if not MechMastery.my_pilots(state).is_empty() else -1
-	UiHelpers.mk_label(body, "획득 배율 ×%.2f" % MechMastery.gain_mult(state, any_pid),
-			24, OutgameTheme.TEXT, Vector2(w * 0.62, y), Vector2(w * 0.38, 36),
-			HORIZONTAL_ALIGNMENT_RIGHT)
-	y += 42.0
+	%Head.text = "담당: %s   ·   지식 %d" % [StaffSystem.owner_name(state, "knowledge"),
+			StaffSystem.effective(state, "knowledge")]
+	var pilots: Array = MechMastery.my_pilots(state)
+	var any_pid: int = (pilots[0] as PlayerData).id if not pilots.is_empty() else -1
+	%Gain.text = "획득 배율 ×%.2f" % MechMastery.gain_mult(state, any_pid)
 	var legend: Array = []
 	for t in MechMastery.TIER_COUNT:
 		legend.append("%s %s" % [MechMastery.tier_name(t), MechMastery.bonus_text(t)])
-	UiHelpers.mk_label(body, "등급 보정 (스탯 6종)   " + "  ·  ".join(legend),
-			21, OutgameTheme.TEXT_SUB, Vector2(0, y), Vector2(w, 30)).clip_text = true
-	y += 32.0
-	UiHelpers.mk_label(body, "주 마감마다 연구 메크 +%d  ·  경기에 탄 메크 +%d  (배율 전)" % [
-			ConstTable.int_of("MASTERY_GAIN_RESEARCH"), ConstTable.int_of("MASTERY_GAIN_MATCH")],
-			21, OutgameTheme.TEXT_SUB, Vector2(0, y), Vector2(w, 30)).clip_text = true
-	y += 42.0
+	%Legend.text = "등급 보정 (스탯 6종)   " + "  ·  ".join(legend)
+	%Rules.text = "주 마감마다 연구 메크 +%d  ·  경기에 탄 메크 +%d  (배율 전)" % [
+			ConstTable.int_of("MASTERY_GAIN_RESEARCH"), ConstTable.int_of("MASTERY_GAIN_MATCH")]
+	%Auto.visible = delegated
+	%AutoGap.visible = delegated
+	%NoCoach.visible = not delegated
 
-	if delegated:
-		var auto := Button.new()
-		auto.text = "코치에게 맡기기"
-		auto.focus_mode = Control.FOCUS_NONE
-		OutgameTheme.style_ghost_button(auto, 28)
-		auto.position = Vector2(0, y)
-		auto.size = Vector2(w, AUTO_BTN_H)
-		auto.pressed.connect(func() -> void:
-			MechMastery.auto_assign_all(state)
-			_refill_deferred(sheet, state))
-		body.add_child(auto)
-		y += AUTO_BTN_H + ROW_GAP
-	else:
-		UiHelpers.mk_label(body, "메크 코치가 없다 — 선수마다 직접 연구 메크를 고른다", 21,
-				OutgameTheme.TEXT_SUB, Vector2(0, y), Vector2(w, 30)).clip_text = true
-		y += 40.0
-
-	if QuirkSystem.is_enabled(state):
+	var quirks_on: bool = QuirkSystem.is_enabled(state)
+	%QuirkOdds.visible = quirks_on
+	if quirks_on:
 		var odds: Array = QuirkSystem.grade_odds(state)
 		var parts: Array = []
 		for g in QuirkSystem.GRADE_COUNT:
 			parts.append("%s %d%%" % [QuirkSystem.grade_name(g), roundi(float(odds[g]))])
-		UiHelpers.mk_label(body, "기벽 — 연구 메크가 있으면 주 마감 %d%% 확률로 획득  ·  %s" % [
-				ConstTable.int_of("QUIRK_RESEARCH_CHANCE"), "  ".join(parts)],
-				21, OutgameTheme.TEXT_SUB, Vector2(0, y), Vector2(w, 30)).clip_text = true
-		y += 40.0
+		%QuirkOdds.text = "기벽 — 연구 메크가 있으면 주 마감 %d%% 확률로 획득  ·  %s" % [
+				ConstTable.int_of("QUIRK_RESEARCH_CHANCE"), "  ".join(parts)]
 
-	for raw in MechMastery.my_pilots(state):
-		var row_h: float = ROW_H + _quirk_block_h(state, (raw as PlayerData).id)
-		_build_pilot_row(sheet, state, raw as PlayerData, y, w, row_h)
-		y += row_h + ROW_GAP
-	sheet.set_body_height(y)
+	var rows: Array = _ensure(%Pilots, PILOT_ROW_SCENE, pilots.size())
+	for i in rows.size():
+		_fill_pilot_row(rows[i], pilots[i] as PlayerData, delegated, quirks_on)
 
 
-# ── Quirks (§14, T1) — under the mech chips of each pilot card ───────────────
-## Extra card height for the quirk block (0 outside a run).
-static func _quirk_block_h(state: Dictionary, pilot_id: int) -> float:
-	if not QuirkSystem.is_enabled(state):
-		return 0.0
-	var n: int = QuirkSystem.quirks_of(state, pilot_id).size()
-	return QUIRK_HEAD_H + float(maxi(1, n)) * QUIRK_LINE_H + 6.0
-
-
-## "기벽 n/slots" head, then one line per quirk: grade pill · name · effect.
-static func _build_quirk_block(card: Panel, state: Dictionary, pd: PlayerData,
-		y: float, w: float) -> void:
-	var ids: Array = QuirkSystem.quirks_of(state, pd.id)
-	var slots: int = QuirkSystem.slots_of(state, pd.id)
-	var inner_w: float = w - ROW_PAD * 2.0
-	OutgameTheme.add_divider(card, Vector2(ROW_PAD, y), inner_w)
-	UiHelpers.mk_label(card, "기벽  %d / %d" % [ids.size(), slots], 22, OutgameTheme.TEXT,
-			Vector2(ROW_PAD, y + 4.0), Vector2(inner_w * 0.5, 30))
-	UiHelpers.mk_label(card, "최대 %d칸" % QuirkSystem.max_slots(), 19, OutgameTheme.TEXT_FAINT,
-			Vector2(ROW_PAD + inner_w * 0.5, y + 6.0), Vector2(inner_w * 0.5, 28),
-			HORIZONTAL_ALIGNMENT_RIGHT)
-	var ly: float = y + QUIRK_HEAD_H
-	if ids.is_empty():
-		UiHelpers.mk_label(card, "없음 — 기벽 훈련 타일 · 메크 연구로 얻는다", 20,
-				OutgameTheme.TEXT_SUB, Vector2(ROW_PAD, ly + 8.0), Vector2(inner_w, 30)).clip_text = true
-		return
-	for id in ids:
-		var r: Dictionary = QuirkSystem.row(int(id))
-		if r.is_empty():
-			continue
-		var g: int = int(r["grade"])
-		OutgameTheme.add_chip(card, QuirkSystem.grade_name(g), Vector2(ROW_PAD, ly + 4.0),
-				Vector2(64.0, 26.0), QuirkSystem.grade_color(g), OutgameTheme.TEXT_ON_FILL, 17)
-		var nm := UiHelpers.mk_label(card, String(r["name"]), 22, QuirkSystem.grade_color(g),
-				Vector2(ROW_PAD + 74.0, ly + 1.0), Vector2(inner_w - 74.0, 30))
-		nm.clip_text = true
-		var eff := UiHelpers.mk_label(card, QuirkSystem.effect_text(int(id)), 18,
-				OutgameTheme.TEXT_SUB, Vector2(ROW_PAD + 74.0, ly + 29.0),
-				Vector2(inner_w - 74.0, 26))
-		eff.clip_text = true
-		ly += QUIRK_LINE_H
-
-
-static func _build_pilot_row(sheet: HubSheet, state: Dictionary, pd: PlayerData,
-		y: float, w: float, row_h: float = ROW_H) -> void:
-	var card: Panel = OutgameTheme.add_card(sheet.body, Vector2(0, y), Vector2(w, row_h), 16)
-	if row_h > ROW_H:
-		_build_quirk_block(card, state, pd, ROW_H - 6.0, w)
-	var inner_w: float = w - ROW_PAD * 2.0
-	OutgameTheme.add_round_portrait(card, PilotImages.circle_for(pd.id),
-			Vector2(ROW_PAD, ROW_PAD), PORTRAIT,
-			OutgameTheme.ROLE_COLORS[clampi(pd.role, 0, 4)])
-	var tx: float = ROW_PAD + PORTRAIT + 16.0
-	var name_lbl := UiHelpers.mk_label(card, pd.name, 30, OutgameTheme.TEXT,
-			Vector2(tx, ROW_PAD - 4.0), Vector2(inner_w * 0.5, 40))
-	name_lbl.clip_text = true
+func _fill_pilot_row(row: Panel, pd: PlayerData, delegated: bool, quirks_on: bool) -> void:
+	var state: Dictionary = _state
+	var portrait: Control = row.get_node("%Portrait")
+	if row.get_meta(&"pilot_id", -1) != pd.id:
+		row.set_meta(&"pilot_id", pd.id)
+		for c in portrait.get_children():
+			c.queue_free()
+		OutgameTheme.add_round_portrait(portrait, PilotImages.circle_for(pd.id), Vector2.ZERO,
+				portrait.size.x, OutgameTheme.ROLE_COLORS[clampi(pd.role, 0, 4)])
+	row.get_node("%Name").text = pd.name
 	var research: int = MechMastery.research_mech(state, pd.id)
-	var delegated: bool = StaffSystem.is_delegated(state, "knowledge")
-	var res_txt: String = "연구: " + MechMastery.mech_name(research)
+	var res_l: Label = row.get_node("%Research")
+	res_l.text = "연구: " + MechMastery.mech_name(research)
 	var res_col: Color = OutgameTheme.ACCENT_TEXT
 	if research < 0:
 		# Delegated: the coach fills it at week close — not an error.
-		res_txt = "주 마감에 코치가 지정" if delegated else "연구 미지정"
+		res_l.text = "주 마감에 코치가 지정" if delegated else "연구 미지정"
 		res_col = OutgameTheme.TEXT_SUB if delegated else OutgameTheme.NEGATIVE
-	UiHelpers.mk_label(card, res_txt, 24, res_col,
-			Vector2(w * 0.5, ROW_PAD), Vector2(w * 0.5 - ROW_PAD, 34),
-			HORIZONTAL_ALIGNMENT_RIGHT).clip_text = true
-
+	res_l.add_theme_color_override("font_color", res_col)
 	var tops: Array = []
 	for e in MechMastery.top_mechs(state, pd.id, 3):
 		var v: int = int(e["value"])
 		tops.append("%s %s %d" % [MechMastery.mech_name(int(e["mech_id"])),
 				MechMastery.tier_name(MechMastery.tier_of(v)), v])
-	var top_lbl := UiHelpers.mk_label(card, "%s  ·  숙련 상위  %s" % [
-			String(OutgameTheme.ROLE_NAMES[clampi(pd.role, 0, 4)]), "  ·  ".join(tops)],
-			20, OutgameTheme.TEXT_SUB, Vector2(tx, ROW_PAD + 40.0),
-			Vector2(w - tx - ROW_PAD, 30))
-	top_lbl.clip_text = true
+	row.get_node("%TopMechs").text = "%s  ·  숙련 상위  %s" % [
+			String(OutgameTheme.ROLE_NAMES[clampi(pd.role, 0, 4)]), "  ·  ".join(tops)]
 
 	# Own-role mech chips — tap to set the research mech (tap the selected one to clear).
 	var mechs: Array = MechMastery.mechs_of_role(pd.role)
-	var n: int = maxi(1, mechs.size())
-	var cw: float = (inner_w - CHIP_GAP * float(n - 1)) / float(n)
-	var cy: float = ROW_PAD + PORTRAIT + 24.0
-	for i in mechs.size():
+	var chips: Array = _ensure(row.get_node("%Chips"), CHIP_SCENE, mechs.size(), _wire_chip)
+	for i in chips.size():
+		var chip: Button = chips[i]
 		var mid: int = int((mechs[i] as Dictionary)["id"])
 		var v: int = MechMastery.value(state, pd.id, mid)
 		var t: int = MechMastery.tier_of(v)
-		var chip := Button.new()
+		chip.set_meta(&"pilot_id", pd.id)
+		chip.set_meta(&"mech_id", mid)
 		chip.text = "%s\n%s %d" % [MechMastery.mech_name(mid), MechMastery.tier_name(t), v]
-		chip.focus_mode = Control.FOCUS_NONE
-		chip.clip_text = true
-		if mid == research:
-			OutgameTheme.style_primary_button(chip, 20)
-		else:
-			OutgameTheme.style_ghost_button(chip, 20)
-		chip.position = Vector2(ROW_PAD + float(i) * (cw + CHIP_GAP), cy)
-		chip.size = Vector2(cw, CHIP_H)
-		var pid: int = pd.id
-		chip.pressed.connect(func() -> void:
-			MechMastery.set_research(state, pid,
-					-1 if MechMastery.research_mech(state, pid) == mid else mid)
-			_refill_deferred(sheet, state))
-		card.add_child(chip)
-		# Tier colour bar along the chip's bottom edge.
-		var bar := ColorRect.new()
-		bar.color = MechMastery.tier_color(t)
-		bar.position = Vector2(10.0, CHIP_H - 8.0)
-		bar.size = Vector2(cw - 20.0, 4.0)
-		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		chip.add_child(bar)
+		chip.theme_type_variation = &"PrimaryButton" if mid == research else &"GhostButton"
+		(chip.get_node("%TierBar") as ColorRect).color = MechMastery.tier_color(t)
+
+	(row.get_node("%Quirks") as Control).visible = quirks_on
+	if quirks_on:
+		_fill_quirks(row, pd)
+	# Card height = content + its top / bottom pads (the scene's `%Content` offsets).
+	var content: Control = row.get_node("%Content")
+	var pad_bottom: float = _card_pad_bottom(row, content)
+	row.custom_minimum_size.y = content.offset_top + content.get_combined_minimum_size().y + pad_bottom
+
+
+## Bottom pad of a pilot card = the scene's card height minus `%Content`'s bottom edge, read
+## once from the unfilled instance (saved in meta so later refills reuse it).
+static func _card_pad_bottom(row: Control, content: Control) -> float:
+	if not row.has_meta(&"pad_bottom"):
+		row.set_meta(&"pad_bottom", row.custom_minimum_size.y - content.offset_bottom)
+	return float(row.get_meta(&"pad_bottom"))
+
+
+## "기벽 n/slots" head, then one line per quirk: grade pill · name · effect.
+func _fill_quirks(row: Control, pd: PlayerData) -> void:
+	var state: Dictionary = _state
+	var ids: Array = []
+	for id in QuirkSystem.quirks_of(state, pd.id):
+		if not QuirkSystem.row(int(id)).is_empty():
+			ids.append(int(id))
+	row.get_node("%Count").text = "기벽  %d / %d" % [QuirkSystem.quirks_of(state, pd.id).size(),
+			QuirkSystem.slots_of(state, pd.id)]
+	row.get_node("%Max").text = "최대 %d칸" % QuirkSystem.max_slots()
+	(row.get_node("%QuirkEmpty") as Control).visible = QuirkSystem.quirks_of(state, pd.id).is_empty()
+	var lines: Array = _ensure(row.get_node("%Lines"), QUIRK_LINE_SCENE, ids.size())
+	for i in lines.size():
+		var line: Control = lines[i]
+		var r: Dictionary = QuirkSystem.row(ids[i])
+		var g: int = int(r["grade"])
+		var col: Color = QuirkSystem.grade_color(g)
+		var pill: Panel = line.get_node("%Grade")
+		pill.add_theme_stylebox_override(&"panel", OutgameTheme.flat_style(col, int(pill.size.y * 0.5)))
+		(pill.get_child(0) as Label).text = QuirkSystem.grade_name(g)
+		var nm: Label = line.get_node("%Name")
+		nm.text = String(r["name"])
+		nm.add_theme_color_override("font_color", col)
+		line.get_node("%Effect").text = QuirkSystem.effect_text(ids[i])
+
+
+func _wire_chip(chip: Button) -> void:
+	chip.pressed.connect(_on_chip.bind(chip))
+
+
+# ── Handlers ─────────────────────────────────────────────────────────────────
+func _on_chip(chip: Button) -> void:
+	var pid: int = int(chip.get_meta(&"pilot_id", -1))
+	var mid: int = int(chip.get_meta(&"mech_id", -1))
+	MechMastery.set_research(_state, pid, -1 if MechMastery.research_mech(_state, pid) == mid else mid)
+	_fill()
+
+
+func _on_auto() -> void:
+	MechMastery.auto_assign_all(_state)
+	_fill()
+
+
+## Keeps exactly `n` children in `list` (instancing missing ones, wiring them once with
+## `wire`) and returns them. The scene's sample children count as reusable rows.
+static func _ensure(list: Node, scene: PackedScene, n: int, wire: Callable = Callable()) -> Array:
+	while list.get_child_count() > n:
+		var last: Node = list.get_child(list.get_child_count() - 1)
+		list.remove_child(last)
+		last.queue_free()
+	for c in list.get_children():
+		if wire.is_valid() and not c.has_meta(&"wired"):
+			c.set_meta(&"wired", true)
+			wire.call(c)
+	while list.get_child_count() < n:
+		var c: Node = scene.instantiate()
+		list.add_child(c)
+		if wire.is_valid():
+			c.set_meta(&"wired", true)
+			wire.call(c)
+	return list.get_children()

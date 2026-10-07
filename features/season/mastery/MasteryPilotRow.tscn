@@ -1,0 +1,177 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+[ext_resource type="PackedScene" path="res://features/season/mastery/MasteryMechChip.tscn" id="3_chip"]
+[ext_resource type="PackedScene" path="res://features/season/mastery/MasteryQuirkLine.tscn" id="4_quirk"]
+
+[node name="MasteryPilotRow" type="Panel"]
+editor_description = "One pilot card of the 메크 연구 sheet (MasteryPanel): portrait · name · research mech · top mastery · own-role mech chips, then the quirk block. The card height follows %Content (+ CARD_PAD_V in MasteryPanel); research colour, chip variation, tier / grade colours are data."
+custom_minimum_size = Vector2(0, 274)
+offset_right = 928.0
+offset_bottom = 274.0
+mouse_filter = 2
+theme = ExtResource("1_theme")
+theme_type_variation = &"Card"
+
+[node name="Content" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 18.0
+offset_top = 18.0
+offset_right = -18.0
+offset_bottom = 268.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Top" type="Control" parent="Content"]
+custom_minimum_size = Vector2(0, 208)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Portrait" type="Control" parent="Content/Top"]
+unique_name_in_owner = true
+editor_description = "Round portrait (OutgameTheme.add_round_portrait, a _draw widget) is added here at runtime."
+layout_mode = 1
+anchors_preset = -1
+offset_right = 76
+offset_bottom = 76
+mouse_filter = 2
+
+[node name="Name" type="Label" parent="Content/Top"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.5
+offset_left = 92
+offset_top = -4
+offset_right = 92
+offset_bottom = 36
+mouse_filter = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 30
+text = "Evelyn"
+clip_text = true
+
+[node name="Research" type="Label" parent="Content/Top"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 1.0
+offset_bottom = 34
+mouse_filter = 2
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 24
+text = "주 마감에 코치가 지정"
+horizontal_alignment = 2
+clip_text = true
+
+[node name="TopMechs" type="Label" parent="Content/Top"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+offset_left = 92
+offset_top = 40
+offset_bottom = 70
+mouse_filter = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 20
+text = "탱커  ·  숙련 상위  Bastion 능숙 65  ·  Ironhide 능숙 65"
+clip_text = true
+
+[node name="Chips" type="HBoxContainer" parent="Content/Top"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+offset_top = 100
+offset_bottom = 192
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="MasteryMechChip" parent="Content/Top/Chips" instance=ExtResource("3_chip")]
+layout_mode = 2
+
+[node name="MasteryMechChip2" parent="Content/Top/Chips" instance=ExtResource("3_chip")]
+layout_mode = 2
+
+[node name="MasteryMechChip3" parent="Content/Top/Chips" instance=ExtResource("3_chip")]
+layout_mode = 2
+
+[node name="Quirks" type="VBoxContainer" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Divider" type="HSeparator" parent="Content/Quirks"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"Divider"
+
+[node name="Head" type="Control" parent="Content/Quirks"]
+custom_minimum_size = Vector2(0, 35)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Count" type="Label" parent="Content/Quirks/Head"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.5
+offset_top = 3
+offset_bottom = 33
+mouse_filter = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "기벽  2 / 2"
+
+[node name="Max" type="Label" parent="Content/Quirks/Head"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 1.0
+offset_top = 5
+offset_bottom = 33
+mouse_filter = 2
+theme_type_variation = &"FaintLabel"
+theme_override_font_sizes/font_size = 19
+text = "최대 5칸"
+horizontal_alignment = 2
+
+[node name="QuirkEmpty" type="Control" parent="Content/Quirks"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Text" type="Label" parent="Content/Quirks/QuirkEmpty"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+offset_top = 8
+offset_bottom = 38
+mouse_filter = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 20
+text = "없음 — 기벽 훈련 타일 · 메크 연구로 얻는다"
+clip_text = true
+
+[node name="Lines" type="VBoxContainer" parent="Content/Quirks"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="MasteryQuirkLine" parent="Content/Quirks/Lines" instance=ExtResource("4_quirk")]
+layout_mode = 2
+
+[node name="Tail" type="Control" parent="Content/Quirks"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+mouse_filter = 2

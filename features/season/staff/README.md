@@ -5,7 +5,8 @@ Contract: `docs/outgame_dev_plan.md` §11. Single entry point for every manager-
 | File | Role |
 |---|---|
 | `StaffSystem.gd` | `class_name StaffSystem` (static). Tables `manager_types` / `staff` / `teams.staff_ids`; run snapshot (`snapshot_for_run` → `run_setup.manager_type/manager_stats/staff`); cover rule `effective(state, stat) = max(manager + staff_mods, assistant, dedicated staff)`; `owner` / `is_delegated` (auto buttons); `effective_for_incident`; `analysis_tier` (`ANALYSIS_TIER_1..3`); temporary mods `add_mod` / `decay_mods` (week end). |
-| `StaffPanel.gd` | Hub manage card + `HubSheet` detail — see "Hub card + sheet" below. |
+| `StaffPanel.gd` + `StaffPanel.tscn` | Hub manage card + `HubSheet` body — see "Hub card + sheet" below. |
+| `StaffStatRow.tscn` · `StaffTraitRow.tscn` · `StaffMemberRow.tscn` | Item scenes of the sheet (no script): one 능력치 row · one 장착 특성 row · one 스태프 row. |
 
 Rules
 - Stats are 1..20 (`STAT_MIN` / `STAT_MAX`), six keys `StaffSystem.STATS`.
@@ -18,15 +19,32 @@ Rules
   balance (`FinanceSystem.buy_special`).
 
 ## Hub card + sheet (`StaffPanel.gd`)
-Contract §11.2 — `hub_summary(state)` / `open(host)`; draws only, every value comes from `StaffSystem`.
+Contract §11.2 — static `hub_summary(state)` / `open(host)`; fills only, every value comes from `StaffSystem`.
+`open` = `HubSheet.open_on` + `StaffPanel.create()` added to `sheet.body` (read-only, filled once).
 
 | Where | Shows |
 |---|---|
 | Card | `위임 n/6` (stats whose `owner` is not the manager), `약점 <stat> <value>` (lowest effective), owner badge = assistant name or `감독`, alert dot while any negative `staff_mods` entry is active |
 | Sheet · 능력치 | Six rows: effective value + 1..20 bar, who covers it (`감독 (직접)` / job label + name), and every cover-rule candidate (`감독 v (±mod) · 어시 v · <job> v`). Green lead bar = delegated, amber = manager |
 | Sheet · 일시 보정 | Active `staff_mods` (stat, delta, weeks left, source) |
-| Sheet · 장착 특성 | Run's equipped manager traits (`TraitSystem.run_traits`, M8): +/− chip and lead bar (green / red), name, `desc_of`, rarity chip (`TraitUi.add_rarity_chip`); header = `run_setup.bonus_points` and `n/TRAIT_SLOTS`. Empty → `장착한 특성 없음` |
+| Sheet · 장착 특성 | Run's equipped manager traits (`TraitSystem.run_traits`, M8): +/− chip and lead bar (green / red), name, `desc_of`, rarity chip (`TraitUi.rarity_color` fill); header = `run_setup.bonus_points` and `n/TRAIT_SLOTS`. Empty → `장착한 특성 없음` |
 | Sheet · 스태프 | Run staff list — name, job label, field value (assistant: top two stats), weekly salary; header shows `weekly_salary_total` |
 | Sheet · 직접 해야 하는 일 | One line per non-delegated stat (`DIRECT_TASKS`), plus interviews / outings, which always read the manager's own mental |
+
+**Sheet scene** (`StaffPanel.tscn`, root `VBoxContainer` top-wide 16 short of the body width — scroll-bar room;
+theme `OutgameTheme.tres`). The sheet's scroll height follows the root's height (`resized`); `Tail` is the bottom gap.
+```
+StaffPanel (VBox)
+├ StatsSection (Title · Sub) · %StatRows (StaffStatRow ×6, sep 10) · StatTail
+├ ModsSection · %ModsEmpty · %Mods (template line) · %ModsTail
+├ TraitsSection (Title · %TraitsSub) · %TraitsEmpty · %Traits (StaffTraitRow, sep 8) · %TraitsTail
+├ StaffSection (Title · %StaffSub) · %StaffEmpty · %Members (StaffMemberRow — Card, sep 8) · %MembersTail
+├ DirectSection · %Direct (template line, autowrap, sep 6)
+└ Tail
+```
+Code owns: texts, empty / list switching, and data styles — the lead-bar card of stat / trait rows
+(`OutgameTheme.lead_bar_style`), bar fill colour + width (`ProgressTrack` / `ProgressFill`, `anchor_right` = value / 20),
+owner / mod colours, +/− and rarity chip fills (`flat_style`, radius = half height). The scene's sample rows are
+replaced at fill time.
 
 The analysis reveal tiers (`analysis_tier`) are drawn by `features/match_flow/match_prep/` (`OpponentIntel` / `IntelView`) — see that README.

@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" uid="uid://ctd53cbgwiprp" path="res://features/meta/manager/ManagerTab.gd" id="1_tab"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 [ext_resource type="Script" uid="uid://c26kbfiu51p1a" path="res://resources/DragScroll.gd" id="3_drag"]
-[ext_resource type="Script" uid="uid://1owh2etg2tlb" path="res://features/meta/manager/TraitPickerView.gd" id="4_traits"]
+[ext_resource type="PackedScene" path="res://features/meta/manager/TraitPickerView.tscn" id="4_traits"]
+[ext_resource type="PackedScene" path="res://features/meta/manager/ManagerPresetChips.tscn" id="5_chips"]
 
 [node name="ManagerTab" type="Control"]
 editor_description = "Lobby 감독 tab. LobbyScreen sets this root's position / size to its content rect (below the currency strip, above the action bar) — the 1080×1568 here is only the editor preview size."
@@ -32,7 +33,6 @@ script = ExtResource("3_drag")
 
 [node name="Body" type="MarginContainer" parent="Scroll"]
 unique_name_in_owner = true
-editor_description = "Left / right margins = the content width code hands to the preset chips and TraitPickerView (both lay out by absolute x)."
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
@@ -195,12 +195,9 @@ theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 30
 text = "프리셋 — 전문화 분배 + 특성"
 
-[node name="PresetChips" type="Control" parent="Scroll/Body/Sections/Presets"]
+[node name="PresetChips" parent="Scroll/Body/Sections/Presets" instance=ExtResource("5_chips")]
 unique_name_in_owner = true
-editor_description = "ManagerUi.add_preset_chips (shared with the run setup 감독 step) fills this; code sets the height to the chip block."
-custom_minimum_size = Vector2(0, 104)
 layout_mode = 2
-mouse_filter = 2
 
 [node name="ResetBox" type="MarginContainer" parent="Scroll/Body/Sections/Presets"]
 unique_name_in_owner = true
@@ -373,10 +370,6 @@ layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 0
 
-[node name="Traits" type="Control" parent="Scroll/Body/Sections"]
+[node name="Traits" parent="Scroll/Body/Sections" instance=ExtResource("4_traits")]
 unique_name_in_owner = true
-editor_description = "TraitPickerView (shared with the run setup 감독 step, code-built): build() fills it and code sets its height."
-custom_minimum_size = Vector2(0, 600)
 layout_mode = 2
-mouse_filter = 2
-script = ExtResource("4_traits")

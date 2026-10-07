@@ -1,5 +1,5 @@
 class_name TraitPickerView
-extends Control
+extends VBoxContainer
 
 # Trait block shared by the lobby `감독` tab and the run setup `감독` step:
 #
@@ -9,43 +9,50 @@ extends Control
 #   보유 특성 n — rows (tap = equip / unequip)
 #   잠긴 특성 n — greyed rows + unlock condition (`ManagerUi.unlock_text`)
 #
+# **The layout is `TraitPickerView.tscn`** (+ item scenes `TraitPickerSlot.tscn` ·
+# `TraitPickerRow.tscn`). Hosts place an instance, call `fill()` on every change and connect
+# `trait_pressed` once; the block sizes itself (VBox). Code fills texts, picks label / frame
+# variations by state and paints the data colours (polarity badge / strip, rarity chip,
+# over-slot border) on `variation_box` copies.
+#
 # It only draws and reports taps (`trait_pressed(id)`); the owner applies the rule
-# (`ManagerProgress.toggle_trait`) and calls `build()` again. Lives inside the
-# owner's `DragScroll` body, so every tap target is a `MOUSE_FILTER_PASS` Button.
+# (`ManagerProgress.toggle_trait`) and calls `fill()` again. Lives inside the owner's
+# `DragScroll` body, so every tap target is a `MOUSE_FILTER_PASS` Button (scenes).
 # Positive traits consume bonus points, negative ones provide them (plan §12.0).
 
 signal trait_pressed(trait_id: int)
 
-const TITLE_H: float = 44.0
-const GAUGE_H: float = 104.0
-const SLOT_H: float = 112.0
-const SLOT_GAP: float = 12.0
-const SECTION_H: float = 44.0
+const SCENE_PATH: String = "res://features/meta/manager/TraitPickerView.tscn"
+const ROW_SCENE: PackedScene = preload("res://features/meta/manager/TraitPickerRow.tscn")
+const SLOT_SCENE: PackedScene = preload("res://features/meta/manager/TraitPickerSlot.tscn")
+
 const ROW_H: float = 112.0
 const ROW_LOCKED_H: float = 140.0
-const ROW_GAP: float = 10.0
-const ROW_PAD: float = 24.0
-const BADGE: float = 52.0
+
+## Row frame per state. Closest shared looks until the proposed `TraitPickerRow` /
+## `TraitPickerRowOn` / `TraitPickerRowLocked` exist (README).
+const ROW_ON: StringName = &"SelectableCardButtonOn"
+const ROW_OWNED: StringName = &"SelectableCardButton"
+const ROW_LOCKED: StringName = &"DraftSlotFrame"
 
 
-## Rebuilds the whole block for `width`. `equipped` / `owned` / `new_ids` are
-## Array[int]. Returns (and sets) the block height.
-func build(width: float, equipped: Array, owned: Array, new_ids: Array) -> float:
-	for c in get_children():
-		remove_child(c)
-		c.queue_free()
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var y: float = 0.0
+static func create() -> TraitPickerView:
+	return (load(SCENE_PATH) as PackedScene).instantiate() as TraitPickerView
 
+
+func _ready() -> void:
+	if UiPreview.is_standalone(self):
+		_fill_preview()
+
+
+## Refills the whole block. `equipped` / `owned` / `new_ids` are Array[int].
+func fill(equipped: Array, owned: Array, new_ids: Array) -> void:
 	var slots: int = TraitSystem.slot_count()
-	UiHelpers.mk_label(self, "특성", 30, OutgameTheme.TEXT, Vector2(0, y), Vector2(width * 0.5, TITLE_H))
-	UiHelpers.mk_label(self, "장착 %d / %d" % [equipped.size(), slots], 24,
-			OutgameTheme.NEGATIVE if equipped.size() > slots else OutgameTheme.TEXT_SUB,
-			Vector2(width * 0.5, y + 6.0), Vector2(width * 0.5, 34), HORIZONTAL_ALIGNMENT_RIGHT)
-	y += TITLE_H + 8.0
-
-	y += _build_gauge(Vector2(0, y), width, equipped) + 16.0
-	y += _build_slots(Vector2(0, y), width, equipped, slots) + 24.0
+	var count: Label = %Count
+	count.text = "장착 %d / %d" % [equipped.size(), slots]
+	count.theme_type_variation = &"NegativeLabel" if equipped.size() > slots else &"CaptionLabel"
+	_fill_gauge(equipped)
+	_fill_slots(equipped, slots)
 
 	var owned_rows: Array = []
 	var locked_rows: Array = []
@@ -64,27 +71,20 @@ func build(width: float, equipped: Array, owned: Array, new_ids: Array) -> float
 			return pa
 		return int(a["id"]) < int(b["id"]))
 
-	UiHelpers.mk_label(self, "보유 특성 %d — 눌러서 장착 / 해제" % owned_rows.size(), 24,
-			OutgameTheme.TEXT_SUB, Vector2(4, y), Vector2(width, SECTION_H - 8.0))
-	y += SECTION_H
+	(%OwnedTitle as Label).text = "보유 특성 %d — 눌러서 장착 / 해제" % owned_rows.size()
+	_clear(%OwnedRows)
 	for r in owned_rows:
 		var tid: int = int((r as Dictionary)["id"])
-		y += _build_row(Vector2(0, y), width, r, equipped.has(tid), true, new_ids.has(tid)) + ROW_GAP
-	if not locked_rows.is_empty():
-		y += 14.0
-		UiHelpers.mk_label(self, "잠긴 특성 %d" % locked_rows.size(), 24,
-				OutgameTheme.TEXT_SUB, Vector2(4, y), Vector2(width, SECTION_H - 8.0))
-		y += SECTION_H
-		for r in locked_rows:
-			y += _build_row(Vector2(0, y), width, r, false, false, false) + ROW_GAP
-	y -= ROW_GAP
-	size = Vector2(width, y)
-	custom_minimum_size = size
-	return y
+		_add_row(%OwnedRows, r, equipped.has(tid), true, new_ids.has(tid))
+	(%Locked as Control).visible = not locked_rows.is_empty()
+	(%LockedTitle as Label).text = "잠긴 특성 %d" % locked_rows.size()
+	_clear(%LockedRows)
+	for r in locked_rows:
+		_add_row(%LockedRows, r, false, false, false)
 
 
 # ── Pieces ───────────────────────────────────────────────────────────────────
-func _build_gauge(pos: Vector2, width: float, equipped: Array) -> float:
+func _fill_gauge(equipped: Array) -> void:
 	var provided: int = 0
 	var consumed: int = 0
 	for raw in equipped:
@@ -97,149 +97,96 @@ func _build_gauge(pos: Vector2, width: float, equipped: Array) -> float:
 			provided += int(r["bonus_cost"])
 	var bonus: int = TraitSystem.bonus_points(equipped)
 	var bad: bool = bonus < 0
-	var card := Panel.new()
-	card.add_theme_stylebox_override("panel", OutgameTheme.flat_style(
-			OutgameTheme.NEGATIVE.lightened(0.88) if bad else OutgameTheme.SURFACE, 16,
-			OutgameTheme.NEGATIVE if bad else OutgameTheme.BORDER, 3 if bad else 1))
-	card.position = pos
-	card.size = Vector2(width, GAUGE_H)
-	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(card)
-	UiHelpers.mk_label(card, "보너스 점수", 24, OutgameTheme.TEXT_SUB,
-			Vector2(ROW_PAD, 12), Vector2(260, 32))
-	UiHelpers.mk_label(card, ManagerUi.signed(bonus), 40, ManagerUi.bonus_color(bonus),
-			Vector2(ROW_PAD, 38), Vector2(200, 58))
-	var note: String = "부정 특성 제공 +%d · 긍정 특성 소모 −%d" % [provided, consumed]
-	UiHelpers.mk_label(card, note, 22, OutgameTheme.TEXT_SUB,
-			Vector2(260, 14), Vector2(width - 260 - ROW_PAD, 32), HORIZONTAL_ALIGNMENT_RIGHT)
-	var rule: String = "0 미만이면 저장 · 사용할 수 없습니다" if bad \
-			else "남는 점수는 런 점수에 더해집니다"
-	UiHelpers.mk_label(card, rule, 22, OutgameTheme.NEGATIVE if bad else OutgameTheme.TEXT_FAINT,
-			Vector2(260, 50), Vector2(width - 260 - ROW_PAD, 32), HORIZONTAL_ALIGNMENT_RIGHT)
-	return GAUGE_H
+	(%Gauge as Control).theme_type_variation = &"ManagerDangerCard" if bad else &"SelectableCard"
+	var bl: Label = %Bonus
+	bl.text = ManagerUi.signed(bonus)
+	if bonus < 0:
+		bl.theme_type_variation = &"NegativeLabel"
+	elif bonus > 0:
+		bl.theme_type_variation = &"PositiveLabel"
+	else:
+		bl.theme_type_variation = &"CaptionLabel"
+	(%Note as Label).text = "부정 특성 제공 +%d · 긍정 특성 소모 −%d" % [provided, consumed]
+	var rule: Label = %Rule
+	rule.text = "0 미만이면 저장 · 사용할 수 없습니다" if bad else "남는 점수는 런 점수에 더해집니다"
+	rule.theme_type_variation = &"NegativeLabel" if bad else &"FaintLabel"
 
 
-func _build_slots(pos: Vector2, width: float, equipped: Array, slots: int) -> float:
-	var n: int = maxi(slots, equipped.size())
-	var w: float = (width - SLOT_GAP * float(n - 1)) / float(n)
-	for i in n:
-		var p := pos + Vector2(float(i) * (w + SLOT_GAP), 0)
-		if i >= equipped.size():
-			var empty := Panel.new()
-			empty.add_theme_stylebox_override("panel",
-					OutgameTheme.flat_style(OutgameTheme.SURFACE_SUNK, 14, OutgameTheme.BORDER, 1))
-			empty.position = p
-			empty.size = Vector2(w, SLOT_H)
-			empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			add_child(empty)
-			var l := UiHelpers.mk_label(empty, "빈 칸", 22, OutgameTheme.TEXT_FAINT,
-					Vector2.ZERO, Vector2(w, SLOT_H), HORIZONTAL_ALIGNMENT_CENTER)
-			l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+func _fill_slots(equipped: Array, slots: int) -> void:
+	var box: HBoxContainer = %Slots
+	_clear(box)
+	for i in maxi(slots, equipped.size()):
+		var slot: Control = SLOT_SCENE.instantiate()
+		box.add_child(slot)
+		var frame: Button = slot.get_node("%Frame")
+		var is_empty: bool = i >= equipped.size()
+		frame.visible = not is_empty
+		(slot.get_node("%Empty") as Control).visible = is_empty
+		if is_empty:
 			continue
 		var tid: int = int(equipped[i])
 		var r: Dictionary = TraitSystem.row(tid)
 		var pos_pol: bool = String(r.get("polarity", "+")) == TraitSystem.POLARITY_POS
-		var b := _tap_button(p, Vector2(w, SLOT_H), OutgameTheme.flat_style(
-				OutgameTheme.SURFACE, 14, OutgameTheme.BORDER_STRONG if i < slots
-				else OutgameTheme.NEGATIVE, 2))
-		b.pressed.connect(func() -> void: trait_pressed.emit(tid))
-		var strip := ColorRect.new()
-		strip.color = _pol_color(pos_pol)
-		strip.position = Vector2(2, 14)
-		strip.size = Vector2(6, SLOT_H - 28.0)
-		strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		b.add_child(strip)
-		var name_lbl := UiHelpers.mk_label(b, String(r.get("name", "?")), 24, OutgameTheme.TEXT,
-				Vector2(16, 16), Vector2(w - 24, 34), HORIZONTAL_ALIGNMENT_CENTER)
-		name_lbl.clip_text = true
-		name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var cost := UiHelpers.mk_label(b, _cost_text(r), 20, _pol_color(pos_pol),
-				Vector2(16, 58), Vector2(w - 24, 30), HORIZONTAL_ALIGNMENT_CENTER)
-		cost.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return SLOT_H
+		frame.pressed.connect(func() -> void: trait_pressed.emit(tid))
+		if i >= slots:
+			# Past the slot count: same frame, red border (state colour on a copy).
+			var sb := OutgameTheme.variation_box(&"SelectableCardButton", &"normal")
+			sb.border_color = OutgameTheme.NEGATIVE
+			for st in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
+				frame.add_theme_stylebox_override(st, sb)
+		(slot.get_node("%Strip") as ColorRect).color = _pol_color(pos_pol)
+		(slot.get_node("%Name") as Label).text = String(r.get("name", "?"))
+		var cost: Label = slot.get_node("%Cost")
+		cost.text = _cost_text(r)
+		cost.theme_type_variation = _pol_label(pos_pol)
 
 
-func _build_row(pos: Vector2, width: float, r: Dictionary, on: bool, is_owned: bool,
-		is_new: bool) -> float:
+func _add_row(parent: Container, r: Dictionary, on: bool, is_owned: bool, is_new: bool) -> void:
 	var tid: int = int(r["id"])
-	var h: float = ROW_H if is_owned else ROW_LOCKED_H
 	var pos_pol: bool = String(r["polarity"]) == TraitSystem.POLARITY_POS
-	var sty: StyleBoxFlat
+	var b: Button = ROW_SCENE.instantiate()
+	parent.add_child(b)
+	b.custom_minimum_size.y = ROW_H if is_owned else ROW_LOCKED_H
 	if on:
-		sty = OutgameTheme.flat_style(OutgameTheme.ACCENT_DIM, 16, OutgameTheme.ACCENT, 3)
-	elif is_owned:
-		sty = OutgameTheme.flat_style(OutgameTheme.SURFACE, 16, OutgameTheme.BORDER, 1)
+		b.theme_type_variation = ROW_ON
 	else:
-		sty = OutgameTheme.flat_style(OutgameTheme.BG, 16, OutgameTheme.BORDER, 1)
-	var b := _tap_button(pos, Vector2(width, h), sty)
+		b.theme_type_variation = ROW_OWNED if is_owned else ROW_LOCKED
 	b.pressed.connect(func() -> void: trait_pressed.emit(tid))
 
-	var fg: Color = OutgameTheme.TEXT if is_owned else OutgameTheme.TEXT_FAINT
-	var sub: Color = OutgameTheme.TEXT_SUB if is_owned else OutgameTheme.TEXT_FAINT
-	# Polarity badge.
-	var badge := Panel.new()
-	badge.add_theme_stylebox_override("panel", OutgameTheme.flat_style(
-			_pol_color(pos_pol) if is_owned else OutgameTheme.BORDER_STRONG, int(BADGE * 0.5)))
-	badge.position = Vector2(ROW_PAD, 24)
-	badge.size = Vector2(BADGE, BADGE)
-	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	b.add_child(badge)
-	var sign_lbl := UiHelpers.mk_label(badge, "+" if pos_pol else "−", 34, OutgameTheme.TEXT_ON_FILL,
-			Vector2(0, -2), Vector2(BADGE, BADGE), HORIZONTAL_ALIGNMENT_CENTER)
-	sign_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	# Badge fill = polarity colour (grey when locked) — data, on an `AccentChip` copy (pill).
+	var badge := OutgameTheme.variation_box(&"AccentChip")
+	badge.bg_color = _pol_color(pos_pol) if is_owned else OutgameTheme.BORDER_STRONG
+	(b.get_node("%Badge") as Panel).add_theme_stylebox_override("panel", badge)
+	(b.get_node("%Sign") as Label).text = "+" if pos_pol else "−"
 
-	var x: float = ROW_PAD + BADGE + 20.0
-	var right_w: float = 210.0
-	var text_w: float = width - x - right_w - ROW_PAD
-	var name_lbl := UiHelpers.mk_label(b, String(r["name"]), 28, fg, Vector2(x, 14), Vector2(240, 40))
-	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# Measured with the font directly — a Label outside the tree may not resolve its theme.
-	var name_w: float = minf(240.0, ThemeDB.fallback_font.get_string_size(
-			String(r["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 28).x)
-	var cx: float = x + name_w + 14.0
-	_chip(b, TraitSystem.rarity_name(int(r["rarity"])), Vector2(cx, 20), 78,
-			TraitUi.rarity_color(int(r["rarity"])), OutgameTheme.TEXT_ON_FILL)
-	cx += 90.0
-	_chip(b, "아웃게임" if String(r["layer"]) == TraitSystem.LAYER_OUTGAME else "인게임",
-			Vector2(cx, 20), 96, OutgameTheme.SURFACE_SUNK, OutgameTheme.TEXT_SUB)
-	cx += 108.0
-	if is_new:
-		_chip(b, "NEW", Vector2(cx, 20), 70, OutgameTheme.NEGATIVE, OutgameTheme.TEXT_ON_FILL)
-	var desc := UiHelpers.mk_label(b, TraitSystem.desc_of(tid), 22, sub,
-			Vector2(x, 60), Vector2(text_w, 32))
-	desc.clip_text = true
-	desc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var name_lbl: Label = b.get_node("%Name")
+	name_lbl.text = String(r["name"])
+	name_lbl.theme_type_variation = &"BodyLabel" if is_owned else &"FaintLabel"
+	var rar := OutgameTheme.variation_box(&"AccentChip")
+	rar.bg_color = TraitUi.rarity_color(int(r["rarity"]))
+	(b.get_node("%Rarity") as Panel).add_theme_stylebox_override("panel", rar)
+	(b.get_node("%RarityText") as Label).text = TraitSystem.rarity_name(int(r["rarity"]))
+	var outgame: bool = String(r["layer"]) == TraitSystem.LAYER_OUTGAME
+	(b.get_node("%LayerText") as Label).text = "아웃게임" if outgame else "인게임"
+	(b.get_node("%New") as Control).visible = is_new
+
+	var desc: Label = b.get_node("%Desc")
+	desc.text = TraitSystem.desc_of(tid)
+	desc.theme_type_variation = &"CaptionLabel" if is_owned else &"FaintLabel"
+	var un: Label = b.get_node("%Unlock")
+	un.visible = not is_owned
 	if not is_owned:
-		var un := UiHelpers.mk_label(b, "해금 조건 · " +ManagerUi.unlock_text(String(r["unlock"])), 22,
-				OutgameTheme.ACCENT_TEXT, Vector2(x, 96), Vector2(width - x - ROW_PAD, 32))
-		un.clip_text = true
-		un.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	var cost := UiHelpers.mk_label(b, _cost_text(r), 22, _pol_color(pos_pol) if is_owned else sub,
-			Vector2(width - right_w - ROW_PAD, 18), Vector2(right_w, 32), HORIZONTAL_ALIGNMENT_RIGHT)
-	cost.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if on:
-		_chip(b, "장착 중", Vector2(width - ROW_PAD - 110.0, 58), 110,
-				OutgameTheme.ACCENT, OutgameTheme.TEXT_ON_FILL)
-	return h
+		un.text = "해금 조건 · " + ManagerUi.unlock_text(String(r["unlock"]))
+	var cost: Label = b.get_node("%Cost")
+	cost.text = _cost_text(r)
+	cost.theme_type_variation = _pol_label(pos_pol) if is_owned else &"FaintLabel"
+	(b.get_node("%Equipped") as Control).visible = on
 
 
-func _tap_button(pos: Vector2, sz: Vector2, sty: StyleBoxFlat) -> Button:
-	var b := Button.new()
-	b.text = ""
-	b.focus_mode = Control.FOCUS_NONE
-	b.mouse_filter = Control.MOUSE_FILTER_PASS
-	b.position = pos
-	b.size = sz
-	for st in ["normal", "hover", "pressed", "focus", "disabled"]:
-		b.add_theme_stylebox_override(st, sty)
-	add_child(b)
-	return b
-
-
-func _chip(parent: Control, text: String, pos: Vector2, w: float, bg: Color, fg: Color) -> void:
-	var p: Panel = OutgameTheme.add_chip(parent, text, pos, Vector2(w, 32), bg, fg, 18)
-	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+func _clear(box: Node) -> void:
+	for c in box.get_children():
+		box.remove_child(c)
+		c.queue_free()
 
 
 static func _cost_text(r: Dictionary) -> String:
@@ -251,3 +198,22 @@ static func _cost_text(r: Dictionary) -> String:
 
 static func _pol_color(positive: bool) -> Color:
 	return OutgameTheme.POSITIVE if positive else OutgameTheme.NEGATIVE
+
+
+static func _pol_label(positive: bool) -> StringName:
+	return &"PositiveLabel" if positive else &"NegativeLabel"
+
+
+## F6 단독 실행 미리보기 — 손으로 적은 장착 · 보유 목록 (`resources/UiPreview.gd`):
+## 긍정 2 · 부정 1 장착, NEW 하나. 누르면 장착 / 해제만 바꿔 다시 채운다(저장 없음).
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	var equipped: Array = [1, 3, 15]
+	var owned: Array = [1, 2, 3, 6, 11, 15, 16, 23]
+	fill(equipped, owned, [2])
+	trait_pressed.connect(func(tid: int) -> void:
+		if equipped.has(tid):
+			equipped.erase(tid)
+		elif owned.has(tid):
+			equipped.append(tid)
+		fill(equipped, owned, [2]))

@@ -2,64 +2,17 @@ class_name ManagerUi
 extends RefCounted
 
 # Shared building blocks of the lobby `감독` tab (`ManagerTab`) and the run setup
-# `감독` step (`run_setup/ManagerStepView`): preset chips, the read-only six-stat
+# `감독` step (`run_setup/ManagerStepView`): preset names, the read-only six-stat
 # row and the Korean text of a trait unlock condition (plan §12.4 grammar).
+# The preset chips are the `ManagerPresetChips.tscn` scene; the trait block is
+# `TraitPickerView.tscn`.
 # Pure UI helpers — rules stay in `ManagerProgress` / `TraitSystem`.
 
-const CHIP_COLS: int = 5
-const CHIP_H: float = 104.0
-const CHIP_GAP: float = 12.0
 const STAT_CELL_H: float = 120.0
 
 
 static func preset_name(idx: int) -> String:
 	return "프리셋 %d" % (idx + 1)
-
-
-# ── Preset chips ─────────────────────────────────────────────────────────────
-## One chip per preset (CHIP_COLS per row). `on_pressed(idx)` fires on tap.
-## Chip = name + status line: 사용 중 (active) / 재설정 필요 (prestige kind) /
-## 특성 n. `selected` gets the amber frame. Returns the block height.
-static func add_preset_chips(parent: Control, pos: Vector2, width: float,
-		profile: Dictionary, selected: int, on_pressed: Callable) -> float:
-	var ps: Array = ManagerProgress.presets(profile)
-	var active: int = ManagerProgress.active_index(profile)
-	var chip_w: float = (width - CHIP_GAP * float(CHIP_COLS - 1)) / float(CHIP_COLS)
-	var rows: int = int(ceil(float(ps.size()) / float(CHIP_COLS)))
-	for i in ps.size():
-		var p: Dictionary = ps[i]
-		var col: int = i % CHIP_COLS
-		var row: int = floori(float(i) / float(CHIP_COLS))
-		var b := Button.new()
-		b.text = ""
-		b.focus_mode = Control.FOCUS_NONE
-		b.mouse_filter = Control.MOUSE_FILTER_PASS
-		b.position = pos + Vector2(float(col) * (chip_w + CHIP_GAP), float(row) * (CHIP_H + CHIP_GAP))
-		b.size = Vector2(chip_w, CHIP_H)
-		var on: bool = i == selected
-		var sty := OutgameTheme.flat_style(
-				OutgameTheme.ACCENT_DIM if on else OutgameTheme.SURFACE, 16,
-				OutgameTheme.ACCENT if on else OutgameTheme.BORDER, 4 if on else 2)
-		for st in ["normal", "hover", "pressed", "focus", "disabled"]:
-			b.add_theme_stylebox_override(st, sty)
-		b.pressed.connect(on_pressed.bind(i))
-		parent.add_child(b)
-		var name_lbl := UiHelpers.mk_label(b, preset_name(i), 26,
-				OutgameTheme.TEXT if on else OutgameTheme.TEXT_SUB,
-				Vector2(0, 14), Vector2(chip_w, 36), HORIZONTAL_ALIGNMENT_CENTER)
-		name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var status: String = "특성 %d" % (p.get("traits", []) as Array).size()
-		var col_s: Color = OutgameTheme.TEXT_FAINT
-		if String(p.get("kind", ManagerProgress.KIND_NORMAL)) == ManagerProgress.KIND_PRESTIGE:
-			status = "재설정 필요"
-			col_s = OutgameTheme.NEGATIVE
-		elif i == active:
-			status = "● 사용 중"
-			col_s = OutgameTheme.ACCENT_TEXT
-		var st_lbl := UiHelpers.mk_label(b, status, 20, col_s,
-				Vector2(0, 56), Vector2(chip_w, 30), HORIZONTAL_ALIGNMENT_CENTER)
-		st_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return float(rows) * CHIP_H + float(maxi(0, rows - 1)) * CHIP_GAP
 
 
 # ── Read-only stats ──────────────────────────────────────────────────────────

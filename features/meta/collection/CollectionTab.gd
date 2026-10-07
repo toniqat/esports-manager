@@ -15,7 +15,7 @@ extends Control
 # so it lives in the detail sheet next to the numbers it changes.
 #
 # Layout lives in `CollectionTab.tscn` (`create()`); this script binds `%` nodes, fills data
-# and adds one code-built `CollectionCell` per pilot to `%Grid`.
+# and adds one `CollectionCell.tscn` item per pilot to `%Grid`.
 #
 # The pilot pool is read once (`GameManager.load_match_data`, Lv1 CSV copies, mobs
 # dropped). Those copies are never mutated — the sheet builds its own leveled copy.
@@ -126,7 +126,7 @@ func _bind() -> void:
 	_apply_filter_styles()
 	for p_raw in _pool:
 		var p := p_raw as PlayerData
-		var cell := CollectionCell.new()
+		var cell := CollectionCell.create()
 		_grid.add_child(cell)
 		cell.setup(p, _pm.max_level_of(p.id), _pm.breakthrough_of(p.id))
 		cell.cell_tapped.connect(_on_cell_tapped)

@@ -26,13 +26,14 @@ CollectionTab (Control, theme = OutgameTheme.tres, preview 1080×1696)
   │   ├ Summary (MarginContainer, min h 128) ─ Bg (Panel · Card) + Pad (Margin 28 / 28) ─ Content
   │   │     left:  OwnedTitle · %OwnedCount (BodyLabel 40) · OwnedTrack (ProgressTrack 300×10) ─ %OwnedFill
   │   │     right (anchored): LevelupTitle · %Levelup (AccentLabel 40) │ ShardTitle · %Shards (BodyLabel 40)
-  │   └ %Filters (HBox 8, h 64) ─ 전체 · 탑 · 정글 · 미드 · 원딜 · 서폿 (GhostButton 26, stretch)
+  │   └ %Filters (HBox 8, h 64) ─ 전체 · 탑 · 정글 · 미드 · 원딜 · 서폿 (`SelectableTile`, stretch)
   └ %Scroll (v-mode Never: no bar, DragScroll drags) ─ DragScroll · Body (VBox)
       ├ %LoadError (hidden; Margin 24 / 20) ─ %LoadErrorText (`NegativeLabel` 24)
       └ GridPad (bottom 24) ─ %Grid (GridContainer 4 cols, 16 / 16, shrink-centre)
 ```
 - **Code owns only data**: summary numbers, `%OwnedFill.anchor_right` = owned ratio, the filter on / off
-  frame (`flat_style` — selection state; child i of `%Filters` = 전체 then `ROLE_DISPLAY_ORDER[i-1]`),
+  state (variation name `SelectableTile` ↔ `SelectableTileOn` — the same tile pair as the run-setup and
+  ban/pick filters; child i of `%Filters` = 전체 then `ROLE_DISPLAY_ORDER[i-1]`),
   one `CollectionCell` per pilot added to `%Grid` (cells stay code-built widgets), the error text.
 
 - **Pool**: `GameManager.load_match_data()["players"]` once in `setup`, `is_mob == true` dropped.

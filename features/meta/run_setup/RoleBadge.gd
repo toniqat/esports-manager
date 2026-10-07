@@ -7,7 +7,8 @@ extends Panel
 # "색으로 알아본다"는 전제가 무너진다.
 #
 # **모양의 정본은 `RoleBadge.tscn`** (크기 · 글자 크기 · `OnFillLabel`). 색과 글자는 역할이
-# 정하는 데이터라 `set_role` 이 넣는다 — 씬의 스타일박스는 에디터 미리보기용 견본이다.
+# 정하는 데이터라 `set_role` 이 넣는다 — 모양(반지름 · 가장자리)은 테마 변형 `RoleBadgePanel`,
+# 그 색은 에디터 미리보기용 견본이다.
 
 const SCENE_PATH: String = "res://features/meta/run_setup/RoleBadge.tscn"
 
@@ -26,12 +27,9 @@ func set_role(role: int) -> bool:
 		visible = false
 		return false
 	visible = true
-	var sb := StyleBoxFlat.new()
+	var sb := OutgameTheme.variation_box(&"RoleBadgePanel")
 	# 역할 색은 팔레트가 소유한다 (`OutgameTheme.ROLE_COLORS`).
 	sb.bg_color = (OutgameTheme.ROLE_COLORS[role] as Color).darkened(0.15)
-	sb.border_color = Color(0, 0, 0, 0.18)
-	sb.set_border_width_all(1)
-	OutgameTheme.set_corner_radius(sb, 8)
 	add_theme_stylebox_override("panel", sb)
 	(%Text as Label).text = String(ROLE_INITIALS[role])
 	return true

@@ -1,28 +1,8 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://features/meta/run_setup/DraftSlot.gd" id="1_slot"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 [ext_resource type="PackedScene" path="res://features/meta/run_setup/RoleBadge.tscn" id="3_badge"]
-
-[sub_resource type="StyleBoxFlat" id="ArtMask_panel"]
-anti_aliasing = true
-bg_color = Color(1, 1, 1, 1)
-corner_radius_top_left = 11
-corner_radius_top_right = 11
-corner_radius_bottom_right = 11
-corner_radius_bottom_left = 11
-
-[sub_resource type="StyleBoxFlat" id="Frame_preview"]
-bg_color = Color(0.929, 0.933, 0.945, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.886, 0.89, 0.906, 1)
-corner_radius_top_left = 14
-corner_radius_top_right = 14
-corner_radius_bottom_right = 14
-corner_radius_bottom_left = 14
 
 [node name="DraftSlot" type="VBoxContainer"]
 editor_description = "One of the 5 role-fixed pick slots (TeamDraftView %SlotRow). Height 538 = art 412 + info 126 (stepper 12 + 52, 6, salary 28, overall 28)."
@@ -40,8 +20,7 @@ editor_description = "The illustration itself is the detail-popup button. Must N
 custom_minimum_size = Vector2(0, 412)
 layout_mode = 2
 focus_mode = 0
-theme_override_styles/normal = SubResource("Frame_preview")
-theme_override_styles/disabled = SubResource("Frame_preview")
+theme_type_variation = &"DraftSlotFrame"
 disabled = true
 
 [node name="ArtMask" type="Panel" parent="Frame"]
@@ -57,7 +36,7 @@ offset_bottom = -3.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("ArtMask_panel")
+theme_type_variation = &"DraftSlotArtMask"
 
 [node name="Art" type="TextureRect" parent="Frame/ArtMask"]
 unique_name_in_owner = true

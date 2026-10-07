@@ -207,19 +207,17 @@ TrainingView (Control, full rect, PASS, theme = OutgameTheme.tres)  — script: 
   ├ %AutoButton    BarGhostButton 28, ratio 1 ─ Sep  (hidden unless training is delegated)
   └ %ConfirmButton BarPrimaryButton 34, ratio 2
 ```
-**Scene owns**: every position / size / font size, variations, the thumb frame / chip / card / band /
-well / popover StyleBoxes (local sub_resources — no matching variation, see below), the bar separators.
+**Scene owns**: every position / size / font size, variations — including the training-only screen
+variations `TrainingThumbFrame` · `TrainingThumbExpChip` · `TrainingCourseCardFrame` · `TrainingCourseGradeBand` ·
+`TrainingCourseShapeWell` · `TrainingCourseLockChip` · `TrainingCoursePopoverFrame` — and the bar separators.
 **Code owns**: data colours (role border on each thumb, grade colour on card frame · band · grade letter ·
 popover border · cap, POSITIVE / NEGATIVE on the EXP chip, the selected-card look), the safe-area insets
 (`indent_to_safe_top` on the view, `extend_background`, and `OutgameTheme.fit_bottom_bar(%Bar, %SafeArea)` —
 `%SafeArea.offset_bottom`, `%Bar.offset_top`, each bar button's `content_margin_bottom += inset`), the drawn
 board (`_draw_grid`), the shape miniature (`TrainingCourseCard._draw_mini`), the drag preview
 (`_make_drag_preview`, built per drag), and the popover height (derived from text).
-Shared sub_resources are never mutated in place — code duplicates them before changing a colour.
-
-Local StyleBoxes that a theme variation could replace later (not in `OutgameTheme` yet): thumb frame
-(SURFACE, 2px border, r8), chip fills (r = height / 2), card frame (SURFACE, 2px, r12), grade band (top r12),
-shape well (`SURFACE_SUNK` r8 — `SunkPanel` is r12), popover (SURFACE, 2px, r10, shadow 10).
+Theme styleboxes are never mutated in place — code colours a copy (`OutgameTheme.variation_box`).
+No local StyleBoxes (`resources/README.md` → Screen variations).
 
 ### Five portraits (column headers)
 The **same horizontal portrait (초상화)** as the in-game pilot strip (`PilotImages.eye_for`, 480×200

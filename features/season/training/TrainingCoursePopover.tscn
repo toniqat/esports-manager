@@ -1,28 +1,14 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://17ymofopboc3"]
 
 [ext_resource type="Script" path="res://features/season/training/TrainingCoursePopover.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
-
-[sub_resource type="StyleBoxFlat" id="PopoverFrame"]
-bg_color = Color(1, 1, 1, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.29, 0.76, 0.78, 1)
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
-shadow_color = Color(0.11, 0.11, 0.18, 0.28)
-shadow_size = 10
 
 [node name="TrainingCoursePopover" type="Panel"]
 editor_description = "Info popover over a selected course card (TrainingView). Width and x / font of every line are the scene's; the height and the y of Exp / Effect / Lock are derived from the text in code (placement needs the height in the same frame). Border = grade colour (data, code). STOP — it swallows the tap that closes it."
 offset_right = 380.0
 offset_bottom = 159.0
 theme = ExtResource("2_theme")
-theme_override_styles/panel = SubResource("PopoverFrame")
+theme_type_variation = &"TrainingCoursePopoverFrame"
 script = ExtResource("1_script")
 
 [node name="Title" type="Label" parent="."]

@@ -138,7 +138,10 @@ func _clear(box: Node) -> void:
 func _fill_gacha(pool: String) -> void:
 	var is_pilot: bool = pool == Gacha.POOL_PILOT
 	var tint: Color = OutgameTheme.CARD_TINTS[3] if is_pilot else OutgameTheme.CARD_TINTS[2]
-	%Banner.add_theme_stylebox_override("panel", OutgameTheme.card_style(24, tint))
+	# 배너 모양 = 테마 변형 `ShopBannerCard`, 색면만 풀이 정한다.
+	var banner := OutgameTheme.variation_box(&"ShopBannerCard")
+	banner.bg_color = tint
+	%Banner.add_theme_stylebox_override("panel", banner)
 	%BannerTitle.text = "선수 영입" if is_pilot else "특성 연구"
 	var sub: String = ("네임드 선수 %d인 중 한 명 · 중복은 돌파, 돌파를 다 채우면 선수 파편" %
 			Gacha.named_pilots().size()) if is_pilot \

@@ -10,7 +10,7 @@ extends Panel
 # 높이, 판 전체 높이를 글자에서 역산한다(`_text_height`). 컨테이너 자동 크기에 맡기면
 # 자리를 잡는 프레임(`TrainingView._place_popover`)과 그리는 프레임이 어긋난다 —
 # 줄바꿈 Label 의 최소 높이는 레이아웃이 한 번 돈 뒤에야 맞는다.
-# 테두리 색은 등급 색(데이터)이라 씬의 `PopoverFrame` 을 복사해 바꾼다.
+# 테두리 색은 등급 색(데이터)이라 테마 변형 `TrainingCoursePopoverFrame` 사본에 넣는다.
 
 const SCENE_PATH: String = "res://features/season/training/TrainingCoursePopover.tscn"
 
@@ -29,7 +29,7 @@ static func create() -> TrainingCoursePopover:
 
 ## 채우고 높이를 세운다. `lock` 이 비어 있지 않으면 놓임/상한 대신 잠금 이유 줄이 붙는다.
 func fill(t: TrainingTile, cap_text: String, lock: String) -> void:
-	var sty := (get_theme_stylebox(&"panel") as StyleBoxFlat).duplicate() as StyleBoxFlat
+	var sty := OutgameTheme.variation_box(&"TrainingCoursePopoverFrame")
 	sty.border_color = t.grade_color()
 	add_theme_stylebox_override(&"panel", sty)
 

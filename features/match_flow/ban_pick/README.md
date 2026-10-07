@@ -40,9 +40,10 @@ BanPickView (Control full rect, theme = OutgameTheme.tres)
 - **Scene**: every position / size / gap / font size, label variations (`BodyLabel`, `CaptionLabel`,
   `OnFillLabel`, `TitleLabel`, `SubLabel`, `AccentLabel`, `FaintLabel`), `PrimaryButton` / `GhostButton`,
   `BarPrimaryButton` (start bar), `SelectableTile` (filter tabs, plain grid cell), `Card` for the pane,
-  local StyleBoxes only where no variation fits — BanPick-only looks: the sheet with amber border
-  (`StyleBoxFlat_sheet`), ban chip, drag ghost (`StyleBoxFlat_ghost`); slot frame / portrait rim boxes
-  are editor previews only. The `SideLabel`s keep their team-side colour from code (not a semantic
+  BanPick-only looks as screen variations (`resources/README.md` → Screen variations): the sheet with
+  amber border (`BanPickSheetCard`), ban chip (`BanPickBanChipPanel`), drag ghost (`BanPickDragGhost`),
+  slot frame (`BanPickMechSlotFrame`) and portrait rim (`BanPickPortraitRim`) — the last two get the side
+  colour on a `variation_box` copy in `setup`. No local StyleBoxes. The `SideLabel`s keep their team-side colour from code (not a semantic
   `NegativeLabel` / `LinkLabel`).
 - **Code**: device values (insets, grid height — `fit_*`; the start bar's inset via
   `OutgameTheme.fit_bottom_bar(start_button, safe_area)` in `BanPickView.fit_safe_area`), data colours

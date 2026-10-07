@@ -126,6 +126,11 @@ const SELECT_BORDER_ON:      int = 4   # 선택 카드 테두리
 const SELECT_TILE_RADIUS:    int = 8   # 작은 타일 · 필터 탭 · 격자 칸
 const SELECT_TILE_BORDER_ON: int = 3   # 선택 타일 테두리
 
+## 역할 배지 가장자리 (색면 위 옅은 검은 테두리, `RoleBadgePanel`).
+const ROLE_BADGE_EDGE: Color = Color(0, 0, 0, 0.18)
+## 주간 레일 요일 칩 반지름 (`WeekDayChip` · `WeekDayChipToday`).
+const WEEK_DAY_CHIP_RADIUS: int = 20
+
 ## `build_theme()` 이 만든 테마가 저장되는 곳. 손으로 고치지 않는다 —
 ## 이 파일을 고치고 `OutgameThemeBuilder` 를 다시 돌린다 (`resources/README.md`).
 const THEME_PATH: String = "res://resources/OutgameTheme.tres"
@@ -708,7 +713,123 @@ static func build_theme() -> Theme:
 	th.set_type_variation(&"Divider", &"HSeparator")
 	th.set_stylebox(&"separator", &"Divider", line)
 	th.set_constant(&"separation", &"Divider", 1)
+
+	_add_screen_variations(th)
 	return th
+
+
+# ── 화면 전용 변형 ───────────────────────────────────────────────────────────
+# 한 화면(씬)에서만 쓰는 모양도 씬의 로컬 스타일박스로 두지 않고 여기서 변형으로 만든다.
+# 이름 규칙: **`<쓰는 씬><역할>`** (접두사 = 그 모양을 쓰는 씬 이름) — 이름만 보고 어느 씬의
+# 것인지 안다. 기반(base)은 가장 가까운 **공용 변형**이라 "어느 공용 모양에서 파생됐나"가
+# 테마에 남는다(Godot 변형은 사슬로 이어진다 — 스타일박스는 통째로 덮고, 글자색 · 크기 등
+# 나머지 항목은 기반에서 물려받는다).
+# 색이 데이터인 것(역할 · 진영 · 등급 색)은 변형이 **모양 + 미리보기 색**을 갖고, 코드는
+# `variation_box()` 사본에 색만 넣는다.
+static func _add_screen_variations(th: Theme) -> void:
+	# match_flow/ban_pick — 밴픽
+	_add_derived(th, "BanPickBanChipPanel", &"SunkPanel", flat_style(SURFACE_SUNK, 0, BORDER, 1))
+	# 메크 칸 테두리 = 진영 색(데이터, `BanPickMechSlot.setup`) — 여기 색은 미리보기.
+	_add_derived(th, "BanPickMechSlotFrame", &"SunkPanel",
+			flat_style(SURFACE_SUNK, 5, LINK.lerp(SURFACE, 0.55), 2))
+	# 초상화 테두리 = 진영 색(데이터, `BanPickPortrait.setup`).
+	_add_derived(th, "BanPickPortraitRim", &"SunkPanel", flat_style(Color(0, 0, 0, 0), 0, LINK, 2))
+	var sheet := card_style(CARD_RADIUS)
+	sheet.border_color = ACCENT
+	sheet.set_border_width_all(3)
+	_add_derived(th, "BanPickSheetCard", &"Card", sheet)
+	_add_derived(th, "BanPickDragGhost", &"SunkPanel", flat_style(SURFACE_SUNK, 5, ACCENT, 3))
+
+	# meta/manager — 감독 탭 프레스티지 리셋
+	_add_derived(th, "ManagerDangerCard", &"Card",
+			flat_style(SURFACE.lerp(NEGATIVE, 0.12), 16, NEGATIVE, 2))
+
+	# meta/run_result — 런 정산
+	for v in ["RunResultSectionCard", "RunResultSectionCardAmber"]:
+		var sec := card_style(24, ACCENT_DIM if v.ends_with("Amber") else null)
+		sec.set_content_margin_all(40.0)
+		sec.content_margin_top = 28.0
+		_add_derived(th, v, &"Card", sec)
+	_add_derived(th, "RunResultTraitCard", &"Card", card_style(16))
+	var amber_line := StyleBoxLine.new()
+	amber_line.color = ACCENT
+	amber_line.thickness = 1
+	amber_line.grow_begin = 0.0
+	amber_line.grow_end = 0.0
+	_add_derived(th, "RunResultAccentDivider", &"Divider", amber_line, &"separator")
+
+	# meta/run_setup — 런 준비
+	# 편성 칸 테두리: 빈 칸 = 이 모양, 찬 칸 = 역할 색(데이터, `DraftSlot._set_frame_style`).
+	var slot := flat_style(SURFACE_SUNK, 14, BORDER, 3)
+	th.set_type_variation(&"DraftSlotFrame", &"SelectableCardButton")
+	for n in BUTTON_STATES:
+		th.set_stylebox(n, &"DraftSlotFrame", slot)
+	_add_derived(th, "DraftSlotArtMask", &"SunkPanel", _mask_box(11))
+	_add_derived(th, "PilotThumbArtMask", &"SunkPanel", _mask_box(14))
+	_add_derived(th, "PilotThumbCheck", &"AccentChip", flat_style(ACCENT, 20))
+	_add_derived(th, "PilotThumbTag", &"SurfaceChip", flat_style(RAIL, 17))
+	# 역할 배지 = 역할 색(데이터, `RoleBadge.set_role`) — 여기 색은 탱커 미리보기.
+	_add_derived(th, "RoleBadgePanel", &"AccentChip",
+			flat_style((ROLE_COLORS[0] as Color).darkened(0.15), 8, ROLE_BADGE_EDGE, 1))
+	# 단계 알약 = 상태 색(`StepChip.paint`) — 여기 색은 "지금 단계" 미리보기.
+	_add_derived(th, "StepChipPanel", &"AccentChip", flat_style(ACCENT, CHIP_RADIUS))
+	_add_derived(th, "TeamDraftGridBack", &"Card", flat_style(SURFACE, 12, BORDER, 2))
+
+	# meta/shop — 상점
+	_add_derived(th, "ShopRowPanel", &"Card", flat_style(SURFACE, CARD_RADIUS, BORDER, 1))
+	# 배너 색면 = 뽑기 풀(데이터, `ShopTab._fill_gacha`) — 여기 색은 선수 영입.
+	_add_derived(th, "ShopBannerCard", &"Card", card_style(24, CARD_TINTS[3]))
+	_add_derived(th, "ShopDevRowPanel", &"SunkPanel",
+			flat_style(SURFACE_SUNK, CARD_RADIUS, BORDER, 1))
+
+	# season/training — 훈련 (테두리 · 띠 색 = 등급 / 역할 색, 코드가 사본에 넣는다)
+	_add_derived(th, "TrainingCourseCardFrame", &"Card", flat_style(SURFACE, 12, CARD_TINTS[0], 2))
+	var band := flat_style(Color(CARD_TINTS[0], 0.22), 0)
+	band.corner_radius_top_left = 12
+	band.corner_radius_top_right = 12
+	_add_derived(th, "TrainingCourseGradeBand", &"SunkPanel", band)
+	_add_derived(th, "TrainingCourseShapeWell", &"SunkPanel", flat_style(SURFACE_SUNK, 8))
+	_add_derived(th, "TrainingCourseLockChip", &"SurfaceChip", flat_style(RAIL, 18))
+	var pop := flat_style(SURFACE, 10, CARD_TINTS[0], 2)
+	pop.shadow_color = Color(SHADOW, 0.28)
+	pop.shadow_size = 10
+	_add_derived(th, "TrainingCoursePopoverFrame", &"PopupCard", pop)
+	_add_derived(th, "TrainingThumbFrame", &"Card",
+			flat_style(SURFACE, 8, Color(ROLE_COLORS[0], 0.85), 2))
+	_add_derived(th, "TrainingThumbExpChip", &"AccentChip", flat_style(POSITIVE, 14))
+
+	# season/week — 시간 경과
+	_add_derived(th, "WeekEveningHighlight", &"SunkPanel", flat_style(ACCENT_DIM, 16))
+	_add_derived(th, "WeekRail", &"SunkPanel", flat_style(RAIL, 48))
+	_add_derived(th, "WeekDayChip", &"AccentChip", flat_style(Color(0, 0, 0, 0), WEEK_DAY_CHIP_RADIUS))
+	_add_derived(th, "WeekDayChipToday", &"AccentChip", flat_style(ACCENT, WEEK_DAY_CHIP_RADIUS))
+
+	# meta/lobby — 로비
+	_add_derived(th, "LobbySurfaceBar", &"Card", flat_style(SURFACE, 0))
+	_add_derived(th, "LobbyToast", &"SurfaceChip", flat_style(RAIL, 34))
+
+
+## 둥근 그림 마스크(`clip_children` 부모가 그리는 흰 판).
+static func _mask_box(radius: int) -> StyleBoxFlat:
+	var sb := flat_style(Color.WHITE, radius)
+	sb.anti_aliasing = true
+	return sb
+
+
+## 화면 전용 변형 한 개 — 공용 변형 `base` 에서 파생, 스타일박스 하나(`item`)만 덮는다.
+## 안쪽 여백은 건드리지 않는다(상자가 정한 값 그대로).
+static func _add_derived(th: Theme, variation: String, base: StringName, sb: StyleBox,
+		item: StringName = &"panel") -> void:
+	th.set_type_variation(variation, base)
+	th.set_stylebox(item, variation, sb)
+
+
+## 테마 변형의 스타일박스 **사본** — 색이 데이터인 화면 전용 변형(`BanPickMechSlotFrame` …)에
+## 코드가 색만 넣을 때 쓴다. 테마 파일에서 바로 읽으므로 노드가 트리에 들어가기 전에도 맞다
+## (`get_theme_stylebox` 는 트리 밖에서 기본 테마로 떨어진다).
+static func variation_box(variation: StringName, item: StringName = &"panel") -> StyleBoxFlat:
+	var th: Theme = load(THEME_PATH)
+	return th.get_stylebox(item, variation).duplicate() as StyleBoxFlat
 
 
 ## `build_theme()` 결과를 `THEME_PATH` 에 저장한다. 빌더 두 입구가 부른다.

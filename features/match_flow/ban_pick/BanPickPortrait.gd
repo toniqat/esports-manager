@@ -28,10 +28,8 @@ func _ready() -> void:
 	hit = %Hit
 
 
-## Side colour of the rim (2px, transparent fill).
+## Side colour of the rim — shape = theme variation `BanPickPortraitRim` (2px, transparent fill).
 func setup(side_col: Color) -> void:
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0, 0, 0, 0)
+	var sb := OutgameTheme.variation_box(&"BanPickPortraitRim")
 	sb.border_color = side_col
-	sb.set_border_width_all(2)
 	rim.add_theme_stylebox_override("panel", sb)

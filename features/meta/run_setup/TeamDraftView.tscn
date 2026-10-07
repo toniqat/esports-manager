@@ -1,20 +1,8 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://features/meta/run_setup/TeamDraftView.gd" id="1_view"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 [ext_resource type="PackedScene" path="res://features/meta/run_setup/DraftSlot.tscn" id="3_slot"]
-
-[sub_resource type="StyleBoxFlat" id="GridBack_panel"]
-bg_color = Color(1, 1, 1, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.886, 0.89, 0.906, 1)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
 
 [node name="TeamDraftView" type="Control"]
 layout_mode = 3
@@ -253,7 +241,7 @@ offset_bottom = -132.0
 grow_horizontal = 2
 grow_vertical = 0
 mouse_filter = 2
-theme_override_styles/panel = SubResource("GridBack_panel")
+theme_type_variation = &"TeamDraftGridBack"
 
 [node name="GridScroll" type="ScrollContainer" parent="Safe/PickPane"]
 unique_name_in_owner = true

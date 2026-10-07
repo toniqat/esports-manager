@@ -5,14 +5,12 @@ extends Control
 # frame, a name band at the bottom, and the mastery / quirk tags in the top-left corner.
 #
 # **Layout lives in `BanPickMechSlot.tscn`.** The controller fills it (`BanPickController.
-# _refresh_side_block`). The frame's fill / border is the **side colour** (data), so this
-# script builds that StyleBox per instance (`setup`) — the scene's box is only an editor preview.
+# _refresh_side_block`). The frame's shape is the theme variation `BanPickMechSlotFrame`; its
+# border is the **side colour** (data), so `setup` takes a per-instance copy
+# (`OutgameTheme.variation_box`) and puts the colour in.
 #
 # `frame` and `hit` are siblings on purpose: during the assign intro the enemy's frames slide to
 # another seat (`_play_enemy_reassign`) while the tap button stays on its own seat.
-
-const BORDER_W: int = 2
-const RADIUS: int = 5
 
 var frame: Panel = null
 var art: TextureRect = null
@@ -50,11 +48,8 @@ func _ready() -> void:
 func setup(col: Color, seat_idx: int) -> void:
 	side_col = col
 	seat = seat_idx
-	style = StyleBoxFlat.new()
-	style.bg_color = OutgameTheme.SURFACE_SUNK
+	style = OutgameTheme.variation_box(&"BanPickMechSlotFrame")
 	style.border_color = col.lerp(OutgameTheme.SURFACE, 0.55)
-	style.set_border_width_all(BORDER_W)
-	OutgameTheme.set_corner_radius(style, RADIUS)
 	frame.add_theme_stylebox_override("panel", style)
 	if qtag != null:
 		qtag.add_theme_stylebox_override("panel",

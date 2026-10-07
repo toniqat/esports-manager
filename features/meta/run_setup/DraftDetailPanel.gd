@@ -36,6 +36,7 @@ extends CanvasLayer
 # 색 · 스타일박스는 `Root` 에 붙은 공용 테마(`resources/OutgameTheme.tres`)의 변형
 # (`DimPanel` · `Card` · `SunkPanel` · `GhostButton` · `*Label`)이 정한다. 코드가 정하는
 # 색은 역할 색(머리글 둘째 줄) 하나다 — 데이터가 정하는 색이다.
+# 코드가 정하는 자리는 기기 인셋(`%SafeArea` 의 위아래 여백)뿐이다.
 #
 # **우측 본문은 여전히 스크롤된다.** 카드 격자가 빠져 지금은 대개 한 화면에
 # 들어가지만, 스킬 설명문은 길이가 제각각이라 넘칠 때가 남는다 — 넘치면 잘리는
@@ -46,10 +47,6 @@ extends CanvasLayer
 #   var d := DraftDetailPanel.create()
 #   add_child(d)
 #   d.open(player_data)
-
-## 받침(`%PanelBox`)이 자랄 수 있는 최대 높이 — 위끝은 씬이 150 에 못박고, 이 높이를
-## 넘는 내용은 `%Scroll` 이 굴린다(아래끝 1740). 그 아래에 닫기 버튼(16 간격 + 84)이 붙는다.
-const PANEL_MAX_H: float = 1590.0
 
 const SCENE_PATH: String = "res://features/meta/run_setup/DraftDetailPanel.tscn"
 
@@ -108,6 +105,7 @@ func open(p: PlayerData) -> void:
 	_pilot = p
 	if p == null:
 		return
+	_fit_safe_area()
 	_fill_art()
 	_fill_header()
 	_fill_stats()
@@ -260,22 +258,33 @@ func _rich_paragraph(holder: Control, text: String) -> void:
 	holder.custom_minimum_size = Vector2(0, h)
 
 
+## 기기 인셋 → `%SafeArea` 여백. 받침 위끝은 안전 영역 위에서 씬 값만큼 내려오고,
+## `%Column` 아래끝은 안전 영역 아래끝에 붙는다(씬의 앵커) — 노치 밑으로도, 아래 제스처
+## 띠 위로도 들어가지 않는다. 딤과 아트는 화면 전체 기준 그대로다(`MechDetailPanel` 과 같다).
+func _fit_safe_area() -> void:
+	var safe: Control = %SafeArea
+	safe.offset_top = ScreenMetrics.top_y()
+	safe.offset_bottom = -OutgameTheme.bottom_inset()
+
+
 ## **받침 높이는 내용이 정한다** — 위쪽은 씬이 못박고 아래끝만 내용에 맞춰
-## 올라온다(넘치면 `PANEL_MAX_H` 에서 멈추고 그때부터 스크롤이 일한다). 스탯 칩과
-## 스킬 한 문단뿐인 선수에서 고정 높이로 두면 받침 아래 절반이 텅 빈 흰 판으로 남는다.
-## 닫기 버튼은 `%Column` 에서 받침 바로 아래에 붙어 따라다닌다 — 고정 y 에 두면
-## 내용이 짧은 파일럿에서 버튼만 허공에 뜬다.
+## 올라온다. 스탯 칩과 스킬 한 문단뿐인 선수에서 고정 높이로 두면 받침 아래 절반이
+## 텅 빈 흰 판으로 남는다. 최대 높이는 `%Column` 칸(안전 영역 안)에서 간격과 닫기 버튼을
+## 뺀 값이고, 넘치면 그때부터 `%Scroll` 이 굴린다.
+## 닫기 버튼은 `%Column` 에서 받침 바로 아래에 붙어 따라다닌다(VBox 위 정렬) — 고정 y 에
+## 두면 내용이 짧은 파일럿에서 버튼만 허공에 뜬다.
 func _fit_panel() -> void:
 	var pad: MarginContainer = %Pad
 	var content_h: float = (%Body as Control).get_combined_minimum_size().y \
 			+ float(pad.get_theme_constant("margin_top")) \
 			+ float(pad.get_theme_constant("margin_bottom"))
-	var box: Control = %PanelBox
-	var h: float = minf(content_h, PANEL_MAX_H)
-	box.custom_minimum_size.y = h
-	# 높이만 내용으로 줄인다(폭은 씬 그대로) — VBox 는 스스로 줄지 않는다.
-	var col: Control = %Column
-	col.size = Vector2(col.size.x, 0.0)
+	# 칸 높이는 앵커 · 오프셋으로 계산한다 — `col.size` 는 이전 내용의 최소 크기만큼
+	# 부풀어 있을 수 있다(VBox 는 최소 크기보다 작아지지 않는다).
+	var col: VBoxContainer = %Column
+	var col_h: float = (%SafeArea as Control).size.y - col.offset_top + col.offset_bottom
+	var max_h: float = col_h - float(col.get_theme_constant("separation")) \
+			- (%Close as Control).custom_minimum_size.y
+	(%PanelBox as Control).custom_minimum_size.y = minf(content_h, maxf(0.0, max_h))
 
 
 ## 다시 열 때 이전 파일럿의 코드 조각을 걷어 낸다. `queue_free` 는 프레임 끝에야

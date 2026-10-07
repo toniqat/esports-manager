@@ -225,13 +225,13 @@ func _bind_thumbs() -> void:
 		var thumb: Panel = row.get_child(seat) as Panel
 		var r: int = int(GameEnums.ROLE_DISPLAY_ORDER[seat])
 		var role_col: Color = ROLE_COLORS[r]
-		var sty := (thumb.get_theme_stylebox(&"panel") as StyleBoxFlat).duplicate() as StyleBoxFlat
+		var sty := OutgameTheme.variation_box(&"TrainingThumbFrame")
 		sty.border_color = Color(role_col.r, role_col.g, role_col.b, 0.85)
 		thumb.add_theme_stylebox_override(&"panel", sty)
 		_thumb_faces.append(thumb.get_node("%Face"))
 		var chip: Panel = thumb.get_node("%ExpChip")
 		if _exp_chip_base == null:
-			_exp_chip_base = chip.get_theme_stylebox(&"panel") as StyleBoxFlat
+			_exp_chip_base = OutgameTheme.variation_box(&"TrainingThumbExpChip")
 		chip.visible = false
 		_thumb_exp_chips.append(chip)
 		_thumb_exp_texts.append(thumb.get_node("%ExpText"))

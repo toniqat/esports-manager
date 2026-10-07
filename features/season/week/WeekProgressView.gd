@@ -76,7 +76,6 @@ const OTHER_MATCH_H: float = 96.0
 const PORTRAIT_D: float  = 88.0
 const QUIRK_LINE_H: float = 34.0     # one quirk event line under a training card
 const EVE_PORTRAIT_D: float = 84.0
-const TODAY_CHIP_RADIUS: int = 20
 const DONE_TEXT_X_NO_PORTRAIT: float = 28.0   # evening summary without a pilot (pass)
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
@@ -193,13 +192,11 @@ func _refresh_rail() -> void:
 		var chip: Panel = _chip_panels[d]
 		var lbl: Label = _chip_labels[d]
 		lbl.text = String(OutgameTheme.DAY_LETTERS[d]) if d < OutgameTheme.DAY_LETTERS.size() else ""
+		# 오늘 = `WeekDayChipToday`(앰버 칩), 나머지 = `WeekDayChip`(투명) — 변형 이름만 바꾼다.
+		chip.theme_type_variation = &"WeekDayChipToday" if d == _day else &"WeekDayChip"
 		if d == _day:
-			chip.add_theme_stylebox_override("panel",
-					OutgameTheme.flat_style(OutgameTheme.ACCENT, TODAY_CHIP_RADIUS))
 			lbl.add_theme_color_override("font_color", OutgameTheme.RAIL)
 		else:
-			chip.add_theme_stylebox_override("panel",
-					OutgameTheme.flat_style(Color(0, 0, 0, 0), TODAY_CHIP_RADIUS))
 			# 지나온 날은 흰 글자로 남는다 — 남은 날과 구분되어야 "며칠 남았나"가
 			# 레일만 보고 읽힌다.
 			lbl.add_theme_color_override("font_color",

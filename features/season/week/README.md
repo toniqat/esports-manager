@@ -22,10 +22,10 @@ The screen where the week passes **one day at a time, Monday to Sunday**. `Scree
 WeekProgressView (Control, full rect, PASS, theme OutgameTheme.tres)
 ├ %Background   ColorRect BG — code: ScreenMetrics.extend_background (notch band)
 └ %SafeArea     full rect — code: offset_bottom = −bottom inset (bottom edge = safe_h())
-  ├ Rail        Panel, dark pill (local StyleBox RAIL r48), x 24 … −24, y 26 … 122
+  ├ Rail        Panel `WeekRail` (dark pill, RAIL r48), x 24 … −24, y 26 … 122
   │ └ Row (HBox) ─ WeekSlot(margin 12) ─ %WeekLabel (92 wide)
   │              ─ %Days (HBox, expand) ─ Day0…Day6 (CenterContainer, equal share)
-  │              │                         └ Chip (Panel 72×72) └ Letter (30)
+  │              │                         └ Chip (Panel 72×72, `WeekDayChip` / `WeekDayChipToday`) └ Letter (30)
   │              ─ RightPad (14)
   ├ %Phase (CaptionLabel 24) · %Title (HeadingLabel 54)        ← left header
   ├ %DateSmall (CaptionLabel 24) · %DateBig (HeadingLabel 58)  ← right header, anchored right
@@ -37,8 +37,9 @@ WeekProgressView (Control, full rect, PASS, theme OutgameTheme.tres)
 ```
 
 * **Scene owns**: every position / size, fonts (variations + size overrides), the rail pill, the
-  evening highlight fill, button kinds of the evening card, sample texts.
-* **Code owns** (data / device dependent): the today chip fill and the day-letter colours,
+  evening highlight fill (`WeekEveningHighlight`) — screen variations, no local StyleBoxes, button kinds of the evening card, sample texts.
+* **Code owns** (data / device dependent): which chip is today (variation switch
+  `WeekDayChip` ↔ `WeekDayChipToday`) and the day-letter colours,
   the lead bars (role colour, incident = `NEGATIVE`) and the player's dark match card
   (`card_style(…, RAIL)`), status / role / trust / result colours, card heights (match 168 / 96,
   training 148 + quirk lines), the round portraits (drawn into the `%Portrait` slots with

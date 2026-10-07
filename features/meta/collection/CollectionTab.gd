@@ -134,20 +134,14 @@ func _bind() -> void:
 	_sheet.leveled_up.connect(_on_leveled_up)
 
 
+## 켜진 탭 = `SelectableTileOn`, 꺼진 탭 = `SelectableTile` (공용 테마의 선택형 타일 쌍 —
+## 런 준비 · 밴픽 필터와 같은 모양). 상태는 변형 이름만 바꿔 고른다.
 func _apply_filter_styles() -> void:
 	for i in _filter_btns.size():
 		var role: int = -1 if i == 0 else int(GameEnums.ROLE_DISPLAY_ORDER[i - 1])
 		var on: bool = role == _filter_role
-		var btn: Button = _filter_btns[i]
-		var sb := OutgameTheme.flat_style(
-				OutgameTheme.ACCENT_DIM if on else OutgameTheme.SURFACE, 12,
-				OutgameTheme.ACCENT if on else OutgameTheme.BORDER, 2)
-		for n in ["normal", "hover", "pressed", "focus"]:
-			btn.add_theme_stylebox_override(n, sb)
-		var fg: Color = OutgameTheme.ACCENT_TEXT if on else OutgameTheme.TEXT_SUB
-		btn.add_theme_color_override("font_color", fg)
-		btn.add_theme_color_override("font_hover_color", fg)
-		btn.add_theme_color_override("font_pressed_color", fg)
+		(_filter_btns[i] as Button).theme_type_variation = \
+				&"SelectableTileOn" if on else &"SelectableTile"
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────

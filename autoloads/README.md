@@ -278,6 +278,19 @@ Do NOT add `class_name` to autoload scripts in Godot 4.5 — causes parse errors
 
 ## Detail moved from root CLAUDE.md
 
+### L10nKeyMode.gd
+**Dev-only l10n key mode** (debug builds; release frees it at start). **Ctrl+Alt+K**, or the run
+argument `--l10n-keys` (Debug → Customize Run Instances → Main Run Args), swaps the current locale's
+`Translation` for one mapping every key to its **alias**, so each text on screen reads like
+`battle.pile_viewer.title` — search it in the L10n sheet (editor main screen `L10n` tab). Both text paths
+(`Loc.t` and scene auto-translate) go through `TranslationServer`, so nothing else is touched; toggling
+off puts the original translations back. Scene texts redraw at once (`set_locale` to the same locale);
+texts code already set refresh only when that UI is rebuilt — turn it on before opening a screen. A
+yellow "L10N KEYS" badge (CanvasLayer 128) shows while on. Aliases come from
+`data/l10n/generated/index.json` (local, gitignored — l10n scan / build writes it); without it the raw
+`tx_` keys show. API: `set_enabled(on)`, `is_enabled()`. Listed in l10n `config.json`
+`scan.ignore_paths` (its badge text is a dev label).
+
 ### Haptics (feel) — shared by outgame and in-game
 **There is one table that decides what reaches the hand.** Wiring has two layers, and neither
 writes intensities by hand per screen.

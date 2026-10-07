@@ -17,6 +17,7 @@
     "log_funcs": ["print", "printerr", "print_rich", "prints", "printt", "print_debug", "push_warning", "push_error", "assert"],
     "ignore_paths": [
       "res://features/battle_sim/debug/",
+      "res://autoloads/L10nKeyMode.gd",
       "res://features/match_flow/MatchCheatMenu.gd",
       "res://features/match_flow/UI_View_MatchCheatMenu.tscn",
       "res://features/match_flow/UI_Comp_MatchCheatItem.tscn",

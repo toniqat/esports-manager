@@ -26,6 +26,7 @@ GameManager="res://autoloads/GameManager.gd"
 ProfileManager="*res://autoloads/ProfileManager.gd"
 Haptics="*res://autoloads/Haptics.gd"
 HapticUi="*res://autoloads/HapticUi.gd"
+L10nKeyMode="*res://autoloads/L10nKeyMode.gd"
 
 [display]
 

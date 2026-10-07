@@ -40,7 +40,7 @@ Read the README of every row your task touches. Indented rows are submodules —
 
 | Folder | Covers | README |
 |---|---|---|
-| `autoloads/` | `GameManager` (run / match state, `start_run`), `ProfileManager`, `Haptics` · `HapticUi`, game.db copy | `autoloads/README.md` |
+| `autoloads/` | `GameManager` (run / match state, `start_run`), `ProfileManager`, `Haptics` · `HapticUi`, `L10nKeyMode` (dev: Ctrl+Alt+K shows l10n aliases in game), game.db copy | `autoloads/README.md` |
 | `resources/` | Shared data classes, `GameEnums`, `OutgameTheme` · `BattleTheme` (dark battle UI), `PositionBadge` (pilot position on every screen), `ScreenMetrics`, `DragScroll`, `UiHelpers`, `ConstTable`, `GameDb`, image lookups, shaders | `resources/README.md` |
 | `data/` | CSV tables, SQLite API, **Rebuild game.db**, const table rules | `data/README.md` |
 | ↳ `l10n/` | Localization source CSVs (`src/`), `config.json`, generated `strings_*.csv` · `L.gd` · `refs.json` — text is l10n keys, shown via `Loc.t()` | `data/l10n/README.md` |
@@ -80,7 +80,7 @@ Read the README of every row your task touches. Indented rows are submodules —
 | ↳ `gambit/` · `debug/` | Pre-battle setup, jungle start · `BattleLogger` | `gambit/README.md`, `debug/README.md` |
 | ↳ `buildings/` · `data/` | `@tool` Building / Waypoint nodes · `DataLoader`, `FieldLoader` | *(no README — see `features/battle_sim/README.md`)* |
 | `ios/plugins/` · `build/` | iOS native plugins · downloaded `.ipa` | `ios/plugins/README.md`, `build/README.md` |
-| `addons/l10n_tool/` | L10n tool: Project → Tools → L10n (build · validate · scan), lookup dock, headless CLI · tests | `addons/l10n_tool/README.md` |
+| `addons/l10n_tool/` | L10n tool: Project → Tools → L10n (build · validate · scan), **L10n editor = main screen `L10n` tab** (key sheet · glossary · orphan texts · scene preview · log), headless CLI · tests | `addons/l10n_tool/README.md` |
 | `addons/ui_scene_tree/` | Editor dock "UI 트리": `scenes/*` · `UI_View` → `UI_Comp` tree (instanced + code-created), TODO · node counts per scene | `addons/ui_scene_tree/README.md` |
 | `addons/godot_mcp/` | MCP editor plugin — **do not modify** | — |
 

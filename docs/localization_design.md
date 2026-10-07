@@ -38,7 +38,7 @@
 | D9 | en 번역 | 이행한 데이터 텍스트 전부 LLM 이 `draft` 로 채운다. approve 는 오너 |
 | D10 | 언어 UI | 로비 홈 상단 설정 버튼 → `UI_View_SettingsPopup` |
 | D11 | 최초 로케일 | profile 에 값이 없으면 **기기 언어**(`OS.get_locale_language()`), 미지원이면 `fallback_locale` |
-| D12 | 씬 미리보기 | 서드파티 Translation Preview **미도입**. 조회 도크에 자체 씬 미리보기(씬을 수정하지 않음) |
+| D12 | 씬 미리보기 | 서드파티 Translation Preview **미도입**. L10n 편집기(메인 화면 탭)에 자체 씬 미리보기(씬을 수정하지 않음) |
 | D13 | CI | 이번엔 미연동 — CI 는 커밋된 dev 생성물로 export. **TODO**: 번역 완료 후 CI 에 `build release` 연동 (§15 표 아래) |
 | D14 | 병렬 개발 | 같은 작업 트리 + 에이전트별 파일 소유 분리, 단계별 커밋 |
 | D15 | 중복 텍스트 | 데이터 행마다 별도 key. 중복 · E036 후보는 보고서로 |
@@ -133,7 +133,7 @@ ban/pick role tags → `match.ban_pick.role.*` (English caps in every locale, ow
 |---|---|
 | **용어집을 별도로 지정** | `glossary.csv` + 금지 표기 · 번역어 검증 (§4.5, §13) |
 | **key · 값이 파편화되지 않음** | 도메인 파일 하나에 key · 메타 · **모든 언어**를 한 행으로 (§4.2). 원문 사본 컬럼 없음 |
-| **사용처 조회(레퍼런스 뷰어)** | 스캐너가 만드는 `index.json` + 에디터 조회 도크, 줄 단위 이동 (§9, §11) |
+| **사용처 조회(레퍼런스 뷰어)** | 스캐너가 만드는 `index.json` + L10n 편집기(메인 화면 탭), 줄 단위 이동 (§9, §11) |
 | **엔진을 켜지 않고 수정** | 원본은 CSV — Excel / VS Code 로 편집. 반영은 다음 `build`(에디터 메뉴 또는 헤드리스) |
 | key 이름을 바꾸면 번역 연결이 끊김 | 불변 GUID key + 바꿀 수 있는 alias (§3) |
 | 원문을 고친 뒤 낡은 번역이 출시됨 | 원문 해시 기반 stale 감지 (§8) |
@@ -160,10 +160,10 @@ res://
 ├─ addons/
 │  ├─ csv_to_db/                    # 기존. Rebuild game.db — 끝에 l10n build dev 를 호출 (§7.1)
 │  ├─ l10n_tool/                    # 신규. 에디터 플러그인
-│  │  ├─ plugin.cfg · plugin.gd     # 메뉴 · 도크 등록만 (얇게)
+│  │  ├─ plugin.cfg · plugin.gd     # 메뉴 · 메인 화면 탭 등록만 (얇게)
 │  │  ├─ core/                      # RefCounted — csv_io, keygen, hasher, tokens, builder,
 │  │  │                             #   validator, scanner, extractor (헤드리스 실행 가능)
-│  │  ├─ dock/                      # 조회 도크 (§11.1)
+│  │  ├─ sheet/                     # L10n 편집기 — 메인 화면 탭 (§11.1)
 │  │  ├─ tests/                     # 샘플 CSV + 기대 결과
 │  │  └─ README.md
 │  (translation_preview 미도입 — D12, §11.2)
@@ -327,7 +327,7 @@ tx_Q9M2HX7ZK1,lobby.start_button,active,로비 시작 버튼,8,,새 시즌,,,
 | `forbidden_<loc>` |  | 쓰면 안 되는 표기, `\|` 구분 (예: ko `손패\|핸드`) |
 | `dnt` |  | `1` = 번역 금지 — 모든 언어에서 원문 표기 그대로 |
 | `note` |  | 정의 · 사용 예 |
-| `match_<loc>` |  | Regex (case-insensitive) that finds the term in `<loc>` text, replacing the substring rule for W072 and the index/dock term list — excludes word-internal hits (`(?<![가-힣])턴` skips 어시스턴트). Bad pattern = E074 |
+| `match_<loc>` |  | Regex (case-insensitive) that finds the term in `<loc>` text, replacing the substring rule for W072 and the index/editor term list — excludes word-internal hits (`(?<![가-힣])턴` skips 어시스턴트). Bad pattern = E074 |
 
 예시 — 현재 `data/README.md` cards 행에 흩어져 있는 표기 규칙을 그대로 옮긴다:
 
@@ -370,8 +370,8 @@ engage,tx_7ZKD3M1QWE,,,,,,교전 — 표시 문자열의 key 를 따른다
 - 매핑은 `config.data_columns` 가 정의한다: 어느 CSV 의 어느 컬럼이 어느 도메인 · alias 규칙에 대응하는지.
 - csv_to_db 는 key 컬럼을 그대로 game.db 에 넣는다. 화면 코드는 `Loc.t(row.name_key)` 로 표시한다(§10.1 동적 key 주석 필요).
 - 검증기는 `data_columns` 의 모든 셀이 존재하는 key 인지, alias 가 규칙(`card.{id}.name`)과 맞는지 본다(E041, E042).
-- 스캐너는 `data_columns` 셀을 `kind=data` 사용처로 기록한다 — 조회 도크에서 "card.csv 25행" 으로 보인다.
-- 데이터 CSV 를 Excel 로 볼 때 이름이 key 로만 보이는 불편은 조회 도크(§11.1)와 alias 규칙으로 해결한다. 데이터 CSV 에 텍스트 사본 컬럼을 두지 않는다(파편화 금지).
+- 스캐너는 `data_columns` 셀을 `kind=data` 사용처로 기록한다 — L10n 편집기 사용처에서 "card.csv" 로 보인다.
+- 데이터 CSV 를 Excel 로 볼 때 이름이 key 로만 보이는 불편은 L10n 편집기(§11.1)와 alias 규칙으로 해결한다. 데이터 CSV 에 텍스트 사본 컬럼을 두지 않는다(파편화 금지).
 - **런타임 키로 쓰이는 이름 문자열은 없어야 한다.** 이름으로 행을 찾는 코드가 있으면 이행 전에 id 조회로 바꾼다.
 
 ### 6.1 코드가 조립하는 문장
@@ -388,7 +388,7 @@ engage,tx_7ZKD3M1QWE,,,,,,교전 — 표시 문자열의 key 를 따른다
 
 ### 7.1 명령
 
-`Project → Tools → L10n` 메뉴와 조회 도크 버튼으로 제공하고, 같은 로직을 헤드리스(`godot --headless --script`)로도 부를 수 있게 한다 — csv_to_db 와 같은 구조(로직은 `core/` 의 RefCounted, `plugin.gd` 는 메뉴 등록만).
+`Project → Tools → L10n` 메뉴와 L10n 편집기 버튼으로 제공하고, 같은 로직을 헤드리스(`godot --headless --script`)로도 부를 수 있게 한다 — csv_to_db 와 같은 구조(로직은 `core/` 의 RefCounted, `plugin.gd` 는 메뉴 등록만).
 
 | 명령 | 동작 |
 |---|---|
@@ -563,9 +563,12 @@ alias 패턴의 `*` 는 세그먼트 하나에 맞는다.
 
 ## 11. 에디터 도구
 
-### 11.1 조회 도크 (`addons/l10n_tool/dock/`)
+### 11.1 L10n 편집기 (`addons/l10n_tool/sheet/`)
 
-데이터는 `index.json` 과 원본 CSV. **읽기 위주** — 텍스트 편집은 1차 범위 밖(편집은 CSV 로).
+> 2026-10-08: 오른쪽 조회 도크를 없애고 메인 화면 `L10n` 탭 하나로 합쳤다 — 탭: 키(§11.3 표) · 용어집 · 고아 텍스트 · 씬 미리보기 · 로그.
+> 아래 1~ 항목은 그 탭들이 그대로 지킨다.
+
+데이터는 `index.json` 과 원본 CSV. **읽기 위주** — 텍스트 편집은 §11.3 표 편집기(또는 CSV).
 
 1. **검색:** key · alias · 원문 · 모든 번역문 · 용어집 term 의 부분 문자열.
 2. **필터:** domain, 로케일별 status, stale, 미사용, 고아 텍스트, 용어집 위반.
@@ -578,10 +581,21 @@ alias 패턴의 `*` 는 세그먼트 하나에 맞는다.
 
 씬에 key(`tx_…`)가 들어가면 에디터 화면이 key 로 도배된다. 서드파티 Translation Preview 는 노드 `text` 를 번역문으로 바꿨다가 되돌리는 방식이라 번역문이 씬에 저장되는 누수 위험이 있어 **도입하지 않는다.**
 
-- 조회 도크의 **씬 미리보기 탭**: 현재 편집 중인 씬의 노드를 훑어 `scene_text_props` 값이 key 인 노드를 `노드 경로 · key · alias · 선택 로케일 번역문` 표로 보여 준다. 행을 누르면 그 노드를 선택한다.
+- L10n 편집기의 **씬 미리보기 탭**: 현재 편집 중인 씬의 노드를 훑어 `scene_text_props` 값이 key 인 노드를 `노드 경로 · key · alias · 선택 로케일 번역문` 표로 보여 준다. 행을 누르면 그 노드를 선택한다.
 - 노드의 속성은 **절대 쓰지 않는다** — 씬 파일이 바뀌지 않으므로 누수가 생기지 않는다.
 - 검증기의 `preview_leak`(E057)은 그대로 둔다 — 씬 텍스트가 번역문과 같으면(손으로 붙여 넣은 경우) 잡는다. `validate --fix-preview-leak` 은 번역문 → key 가 하나로 정해지는 경우 key 로 되돌린다.
 - `UiPreview` 의 F6 단독 실행은 런타임이므로 번역된 텍스트가 그대로 보인다.
+
+### 11.3 표 편집기 (`addons/l10n_tool/sheet/`)
+
+에디터 메인 화면 `L10n` 탭(UI 는 에디터 언어 ko / en). 한 행 = key, 열 = alias · 원문 · 언어별 번역(상태 = 셀 앞 색 점:
+미착수 빨강 · draft 노랑 · approved 초록 · stale 주황). "모든 언어" 는 번역 열만, 언어를 고르면("언어: en") 그 열 +
+context · max_len · note — 스프레드시트처럼 셀을 바로 고친다. 쓰기는 파사드 `cmd_edit` 하나(디스크 재읽기 → 전부 검사 → 저장, §12 와 같은 Excel 잠금 규칙).
+번역 수정은 draft(§0.5 — approve 는 키 탭 `승인…` 메뉴, 오너만), 원문 수정은 번역을 stale 로 만든다. 저장만 하고 `build dev` 는 따로.
+alias 변경(`rename_alias`) · status(active/deprecated)는 편집 대상이 아니다.
+사용처(`index.json`)는 아래 목록 · 행 우클릭 메뉴로 이동한다 — 코드 줄 · 씬은 Godot 안, 데이터 · 원본 CSV 는 외부 편집기의 그 줄.
+사용처마다 그 파일이 나오는 게임 화면(`screen_map.gd`)과 사용 줄 미리보기를 보여 준다. 게임 화면에서 거꾸로 찾을 땐
+개발 빌드의 key 표시 모드(`autoloads/L10nKeyMode.gd`, Ctrl+Alt+K / `--l10n-keys`) — 모든 텍스트가 alias 로 보인다.
 
 ---
 
@@ -684,7 +698,7 @@ alias 패턴의 `*` 는 세그먼트 하나에 맞는다.
 | 3 | `build dev/release`, `L.gd`, `strings_*.csv`, 프로젝트 설정 등록, `Loc.gd`, Rebuild game.db 연동 | 게임에서 로케일 전환 시 텍스트가 바뀜, release 에서 미승인 번역이 폴백으로 표시됨 |
 | 4 | `sync` · `approve`, stale 계산, 진행표 | 원문 수정 시 해당 번역이 stale 로 표시됨 |
 | 5 | `scan` · `index.json` · 사용처 검증 (E05x · W05x · E057) | 샘플 프로젝트의 사용처가 줄 번호까지 정확함 |
-| 6 | 조회 도크 + 자체 씬 미리보기 (D12) | 검색 · 필터 · 사용처 이동 · 용어집 탭 동작, 씬 미리보기가 씬 파일을 바꾸지 않음, 씬 텍스트 누수가 E057 로 잡힘 |
+| 6 | 조회 도크 + 자체 씬 미리보기 (D12) — 2026-10 L10n 편집기로 통합 | 검색 · 필터 · 사용처 이동 · 용어집 탭 동작, 씬 미리보기가 씬 파일을 바꾸지 않음, 씬 텍스트 누수가 E057 로 잡힘 |
 | 7 | `extract` (§14) 와 이행 | 고아 0, `strict.orphans = error` |
 
 각 단계는 `addons/l10n_tool/tests/` 에 샘플 CSV 와 기대 결과를 두고 헤드리스로 실행되는 테스트를 함께 쓴다.

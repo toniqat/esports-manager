@@ -30,9 +30,16 @@
 | D1 | uid 없는 `.tscn` **55개** 에디터에서 열고 저장 | 사용자 | `match_flow/**` 13 · `meta/**` 29 · `season/` finance · league · mastery 11 · `scenes/RunSetup` · `RunResult`. 목록: `for f in $(git ls-files '*.tscn'); do head -1 "$f" \| grep -q 'uid="uid://' \|\| echo "$f"; done` |
 | D2 | **T6** — `editor_description` TODO 마킹 써 보기 | 사용자 → LLM | 사용자가 빈 노드 + `TODO: …` 마킹(§3 규칙 5) → LLM 이 `grep -rn 'editor_description = "TODO' --include=*.tscn` 로 찾아 구현 → TODO 문구 삭제 → 써 본 결과로 규칙 5 다듬기. 현재 마킹 0개 |
 
-### ❓ 남은 항목 (결정 필요 · 보류)
-| # | 항목 | 상태 |
+### ❓ 남은 항목 → 결정 (2026-10-07) · 진행 = 웨이브 5 (§7)
+| # | 항목 | 결정 · 상태 |
 |---|---|---|
+| R1 | 데이터가 아닌 **글자색 override** 2개 — 주간 `%WeekLabel`, 상점 "확률 보기" | ✅ 공용 변형 `RailLabel` · `OnFillTextButton` (diff 0). 요일 글자 회색은 코드가 상태별로 칠하는 미리보기 색이라 유지 |
+| R2 | **코드에 남은 공용 위젯** — `CollectionCell` · `ManagerUi.add_preset_chips` · `TraitPickerView`, `IntelView`, `MessengerView` 말풍선, `BanPickOrderRow` | 🔄 아이템 씬으로 전환 (웨이브 5 R2a · R2b · R2c) |
+| R3 | `ScreenBackground` 변형 | ✅ 화면 씬 15개 바탕 `ColorRect` → `Panel`(`ScreenBackground`), `add_background()` 도 같은 Panel (diff 0) |
+| R4 | §4 #13 BattleSim HUD | 🔄 착수 — 1단계 다크 테마 `BattleTheme` + `MvpView` · `SkillPopup`, 2단계 `HudBuilder` · `PilotStrip` · `PilotDetailPanel` |
+| R5 | 알려진 동작 차이 — ① `CenterContainer` 팝업(ShopPopup · ManagerTypePopup) 넘침, ② RunResult 카드 홀수 폭 0.5px | 🔄 ① 최대 높이 + 본문 스크롤로 수정 중 · ② 고치지 않음 (육안 차이 없음, 닫음) |
+
+---|---|---|
 | R1 | 데이터가 아닌 **글자색 override** 2개 — 주간 `%WeekLabel` (`RAIL_TEXT`, 제안 `WeekRailLabel`), 상점 "확률 보기" (`OnFillTextButton`) | 결정 필요 — 화면 변형으로 옮길지. 다른 색 override 는 코드가 덮는 상태 · 데이터 색 미리보기 |
 | R2 | **코드에 남은 공용 위젯** — `CollectionCell` · `ManagerUi.add_preset_chips` · `TraitPickerView` (컬렉션 · 감독 탭 · RunSetup), `IntelView` (MatchPrep · 리그 팀 상세 — `HubSheet` 본문에 절대 좌표 자식을 만드는 유일한 곳), `MessengerView` 말풍선, `BanPickOrderRow` | 결정 필요 — 아이템 씬으로 옮길지 |
 | R3 | `ScreenBackground` 변형 (화면 배경 `ColorRect` → 패널 변형) | 선택 — 하지 않아도 무방 |

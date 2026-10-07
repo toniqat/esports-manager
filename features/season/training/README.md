@@ -19,7 +19,10 @@ too** — the only place that needs weekday names is the **week-progress screen 
 |---|---|
 | `TrainingTile.gd` | `class_name TrainingTile` — one CSV row = one tile. **Grammar parsing lives only here** (shape · colour · EXP · mastery · effect clauses · quirk ops). Also owns the colour table · grade table and the **staff-stat lookups** (grade unlock from tactics, per-grade placement limit and EXP multiplier from training — see "Manager / staff stats" below). |
 | `TrainingBoard.gd` | `class_name TrainingBoard` — headless board. Staff stats (`training_stat` / `tactics_stat` / `limit_of` / `is_unlocked` / `can_take_more`), placement checks (`can_place` / `place` / `remove_at`), settlement (`cell_exp` / `exp_mult_table` / `compute_gains` / `compute_day_gains`), mastery (`cell_mastery` / `compute_mastery`), quirk ops (`day_quirk_ops`), **weekday application** (`apply_day_training`), preview (`projected_stats`), auto-arrange (`auto_arrange`), week-progress reset (`reset_week_progress`). The `TrainingBoard` node in Season.tscn. |
-| `TrainingView.gd` | Planning screen — staff line + 5 portraits + 5×5 board + horizontally scrolling course cards + bottom bar ("판 비우기" · "코치 추천" · "훈련 확정"). Drag & drop. Layout · reading conventions are in "Screen layout" below. |
+| `TrainingView.gd` · `TrainingView.tscn` | Planning screen — staff line + 5 portraits + 5×5 board + horizontally scrolling course cards + bottom bar ("판 비우기" · "코치 추천" · "훈련 확정"). Drag & drop. **The frame is the scene** (see "Scene tree" below); the script binds `%` nodes, fills data, applies the safe-area insets, and owns the drawn board + drag & drop. Created with `TrainingView.create()` (`SeasonHub._ensure_training_view`). Layout · reading conventions are in "Screen layout" below. |
+| `TrainingThumb.tscn` | One portrait column header (frame · face · per-pilot `EXP ×r` chip). No script — `TrainingView._bind_thumbs` sets the role border colour; five instances sit in `TrainingView.tscn`. |
+| `TrainingCourseCard.gd` · `.tscn` | `class_name TrainingCourseCard` — one course card of the inventory row (grade band · cap · shape well · name · lock chip). `fill(tile, cap, grade_locked, locked, lock_reason)`, `set_selected(selected, locked)`; the shape miniature is drawn into `%Mini` (`_draw_mini`). |
+| `TrainingCoursePopover.gd` · `.tscn` | `class_name TrainingCoursePopover` — the info popover over a selected card. `fill(tile, cap, lock)` sets the text and **derives the height from the text** (`_text_height`); `TrainingView._place_popover` positions it. |
 
 ## Board axes
 ```
@@ -159,7 +162,7 @@ Four vertical blocks — **five portraits → 5×5 board → one row of course c
 screen depends on and their effective value — `훈련: 강민호 코치 17 · 전술: 감독 6`
 (`TrainingView._owner_text`: `StaffSystem.owner_name` + `코치` / `어시스턴트` suffix + `effective`).
 The right end of the "훈련 코스" label row says what that means for the courses —
-`훈련 효과 ×N · 사용 가능 X 등급까지` (`_refresh_staff`). `_block_y()` starts below the staff line.
+`훈련 효과 ×N · 사용 가능 X 등급까지` (`_refresh_staff`). The board area (`BoardArea`) starts below the staff line.
 `×N` is the **team-wide** EXP multiplier — training stat × `FinanceSystem.training_exp_mult` × trait
 `train_exp_pct` (`_shared_parts`, the same calls `TrainingBoard.exp_mult_table` multiplies). When
 finance or traits move it, the breakdown follows in parentheses (`(스태프 ×a · 재무 ×b · 특성 ×c)`,
@@ -167,19 +170,56 @@ parts at ×1.00 left out). Per-pilot parts (breakthrough `train_bonus_pct`) show
 `EXP ×r` chip on that pilot's portrait — `r` = the pilot's best day in `exp_mult_table` ÷ the
 team-wide value, so it reads straight from what settlement multiplies (`_refresh_exp_chips`).
 
-**There is one horizontal baseline, `_grid_x()`.** The board sits at the screen centre (100..980 on
-1080), and the portraits and drop preview all derive from that value. Previously the board's left
+**There is one horizontal baseline — the board is centred.** The board sits at the screen centre (100..980 on
+1080) as part of the centre-anchored `Block` (portrait row + board), so the portraits can't drift off
+their columns; the drop preview is drawn in board-local coordinates. Previously the board's left
 edge was a constant (`GRID_X` 80) with a weekday text column **inside** it, pushing the board's right
 edge off screen (1102 > 1080) — when the weekday column was removed entirely, that trap went with it
 (`DAY_GUTTER` / `_day_x` deleted).
 
-**There is also one vertical baseline, stacked bottom to top.** `_inv_y()` hangs the course list just
-above the bottom action bar (`OutgameTheme.bottom_bar_top()`), and `_block_y()` **splits the remaining
-space evenly above and below the board**. The list is one row of cards (236px), so there's plenty of
+**There is also one vertical baseline, stacked bottom to top.** `Inventory` is anchored to the bottom of
+`%SafeArea`, hanging the course list 24px above the bottom action bar, and `BoardArea` (the room between the
+staff line and the course label row) centre-anchors `Block`, which **splits the remaining space evenly above
+and below the board**. The list is one row of cards (236px), so there's plenty of
 room above it; attaching everything to the top leaves the bottom of the screen pointlessly empty, and
 attaching it to the bottom opens a gap between the title and the board. The portrait row is the
-board's header, so `_thumb_y()` uses `_block_y()` directly and the board sits `THUMB_GAP` below it —
+board's header, so both live in `Block` — portraits at its top, the board 15px below them —
 if the two moved independently, column headers would drift away from their columns.
+
+### Scene tree (`TrainingView.tscn`, §4 #11 of `docs/ui_scene_migration.md`)
+```
+TrainingView (Control, full rect, PASS, theme = OutgameTheme.tres)  — script: TrainingView.gd
+├ %Background      ColorRect BG — code stretches it up into the notch band (extend_background)
+├ %SafeArea        Control full rect — code: offset_bottom = −bottom inset
+│ ├ Title          TitleLabel 34, centred, y 8..52
+│ ├ %StaffLine     SubLabel 22, centred, x 40..−40, y 54..84
+│ ├ BoardArea      Control, y 96 .. −436 (= course label row − 16)
+│ │ └ Block        centre-anchored 880 × 965.83
+│ │   ├ %Thumbs    HBox (sep 6, inset 3) ─ Thumb0..4 = TrainingThumb.tscn
+│ │   └ %Grid      880 × 880 at the bottom of Block — drawn in code, STOP, drop target
+│ └ Inventory      bottom-anchored, x 40..−40, y −420 .. −152
+│   ├ CourseLabel  SubLabel 22 "훈련 코스"
+│   ├ %EffectLine  AccentLabel 20, right-aligned, 860 wide (overlaps the label row on purpose)
+│   └ %CourseScroll  ScrollContainer (h: never-show bar, v: disabled), y 32..
+│     └ %CourseRow   HBox sep 14 — code fills TrainingCourseCard × N + a 24px tail pad
+└ %Bar             HBox sep 0, bottom-anchored, height 128 (+ bottom inset, code)
+  ├ %ClearButton   GhostButton 28, ratio 1 ─ Sep (2px ColorRect at its right edge)
+  ├ %AutoButton    GhostButton 28, ratio 1 ─ Sep  (hidden unless training is delegated)
+  └ %ConfirmButton PrimaryButton 34, ratio 2
+```
+**Scene owns**: every position / size / font size, variations, the thumb frame / chip / card / band /
+well / popover StyleBoxes (local sub_resources — no matching variation, see below), the bar separators.
+**Code owns**: data colours (role border on each thumb, grade colour on card frame · band · grade letter ·
+popover border · cap, POSITIVE / NEGATIVE on the EXP chip, the selected-card look), the safe-area insets
+(`indent_to_safe_top` on the view, `extend_background`, `%SafeArea.offset_bottom`, `%Bar.offset_top` and
+each bar button's square corners + `content_margin_bottom = 8 + inset` — `_fit_bottom_inset`), the drawn
+board (`_draw_grid`), the shape miniature (`TrainingCourseCard._draw_mini`), the drag preview
+(`_make_drag_preview`, built per drag), and the popover height (derived from text).
+Shared sub_resources are never mutated in place — code duplicates them before changing a colour.
+
+Local StyleBoxes that a theme variation could replace later (not in `OutgameTheme` yet): thumb frame
+(SURFACE, 2px border, r8), chip fills (r = height / 2), card frame (SURFACE, 2px, r12), grade band (top r12),
+shape well (`SURFACE_SUNK` r8 — `SunkPanel` is r12), popover (SURFACE, 2px, r10, shadow 10).
 
 ### Five portraits (column headers)
 The **same horizontal portrait (초상화)** as the in-game pilot strip (`PilotImages.eye_for`, 480×200
@@ -251,7 +291,7 @@ From the top, one card is a **grade band** (22% grade-colour fill + grade letter
 (placed/limit)) → **shape miniature in a sunken box** (cells up to 26px) → **name** (up to two
 lines). No description or EXP summary — when skimming to choose, you compare names and shapes.
 
-**Tapping a card shows an info popover above it** (`_select_card` → `_build_popover` →
+**Tapping a card shows an info popover above it** (`_select_card` → `TrainingCoursePopover.fill` →
 `_place_popover`) — four items: grade · name · placed/limit · **EXP summary** · **effect summary**.
 No description line (see the CSV section above). EXP uses full stat names, not abbreviations
 (`전장 회피 +N` (Battlefield evasion +N), not `전회 +N`) — it's 348px wide and the only question
@@ -260,9 +300,10 @@ here is "what does this course raise", so there's no reason to make readers deco
 pulled back in if it would go off screen, and hides along with its card when that card is scrolled
 out. A release after scrolling is not a tap (`DragScroll.moved`). The popover is a separate board
 living **outside** the scroll (inside, it would be clipped to the scroll width), so `_place_popover`
-follows when the scroll moves. Height is derived from the text (`TrainingView._text_height`) — on a
-screen built with absolute coordinates, mixing in container auto-sizing makes the layout frame and
-the draw frame disagree. **That height must not use `Font.get_multiline_string_size` as is**: it only
+follows when the scroll moves. Height is derived from the text (`TrainingCoursePopover._text_height`) —
+the popover must be placed in the same frame it opens, and container auto-sizing (an autowrapped
+`Label`'s minimum height) is only right after a layout pass, so the layout frame and the draw frame
+would disagree. **That height must not use `Font.get_multiline_string_size` as is**: it only
 adds the font's line height and doesn't count the `line_spacing` (default theme 3) that `Label` puts
 between lines, so two-line text measured at 49px comes back as 46. Those 3px poking past the
 popover's bottom edge onto the board were the cause of **the description overflowing the panel** —
@@ -355,8 +396,8 @@ cell on that cell's day — so a tile costs those training days. Parsing lives i
 ## Auto-arrange — "코치 추천" (M3, reworked §14 T6)
 When training is **delegated** (`StaffSystem.is_delegated(state, "training")` — a coach or the
 assistant covers it), the bottom bar shows a third slot `코치 추천` between `판 비우기` and
-`훈련 확정`; when the manager owns training the slot is hidden and the bar is re-laid out
-(`OutgameTheme.layout_bottom_bar`). Pressing it calls `TrainingBoard.auto_arrange()`, and the
+`훈련 확정`; when the manager owns training the slot is hidden and `%Bar` (an HBox with stretch
+ratios) re-splits the remaining two by ratio. Pressing it calls `TrainingBoard.auto_arrange()`, and the
 player can edit the result as usual.
 
 It is **per-pilot weak-stat reinforcement + grade balance** — still a **plain rule, not an
@@ -478,8 +519,11 @@ middle slot is hidden and the two below share the bar as described (see "Auto-ar
 "판 비우기" (Clear board) (1) and "훈련 확정" (Confirm training) (2) **split the bottom section 2:1** —
 edge to edge left to right, bottom flush to the safe line, square corners. Conventions and pitfalls
 are in the "Bottom action bar" section of `resources/README.md`; this screen knows one special thing —
-**the course list's height is derived back from this bar's top edge** (`_inv_y`), so adjusting the bar
-makes both the list and the board follow automatically. The confirm button used to float at screen
+**the course list hangs from this bar's top edge** (`Inventory` is anchored to the bottom of `%SafeArea`, whose
+bottom is the bar's top), so adjusting the bar makes both the list and the board follow automatically.
+The bar is an HBox in the scene (ratios 1 : 1 : 2), not `OutgameTheme.add_bottom_bar`; the bar-only
+styling `style_bottom_button` does (square corners, text lifted above the inset) is
+`TrainingView._square_bar_button` on top of the scene's `GhostButton` / `PrimaryButton` variation. The confirm button used to float at screen
 centre at 460×104, with "판 비우기" small to its left.
 
 ### `TrainingType` enum removed (moved from root CLAUDE.md)

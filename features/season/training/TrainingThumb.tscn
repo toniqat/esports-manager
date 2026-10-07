@@ -1,0 +1,80 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+
+[sub_resource type="StyleBoxFlat" id="ThumbFrame"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.18, 0.451, 0.898, 0.85)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="ExpChipFill"]
+bg_color = Color(0.13, 0.68, 0.38, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[node name="TrainingThumb" type="Panel"]
+editor_description = "One column header of the training board (TrainingView %Thumbs). Border colour = the seat's role colour (code duplicates ThumbFrame and sets border_color). Not tappable."
+clip_contents = true
+custom_minimum_size = Vector2(170, 70.83334)
+offset_right = 170.0
+offset_bottom = 70.83334
+mouse_filter = 2
+theme = ExtResource("1_theme")
+theme_override_styles/panel = SubResource("ThumbFrame")
+
+[node name="Face" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = -2.0
+offset_bottom = -2.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="ExpChip" type="Panel" parent="."]
+unique_name_in_owner = true
+editor_description = "Per-pilot EXP multiplier chip — shown only when this pilot's multiplier differs from the team-wide one. Fill colour (POSITIVE / NEGATIVE) is data: code duplicates ExpChipFill."
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -104.0
+offset_top = -32.0
+offset_right = -6.0
+offset_bottom = -4.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("ExpChipFill")
+
+[node name="ExpText" type="Label" parent="ExpChip"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 17
+text = "EXP ×1.10"
+horizontal_alignment = 1
+vertical_alignment = 1

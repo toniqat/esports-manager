@@ -1,10 +1,20 @@
 class_name TrainingView
 extends Control
 
-# 일상 훈련 편성 화면. 위에서 아래로 네 덩이고, **가로 기준선은 하나뿐이다** —
-# `_grid_x()` 가 판을 화면 한가운데에 놓고 썸네일과 드롭 미리보기가 전부 그 한
-# 값에서 나온다. 세로 기준선도 하나다 — `_inv_y()` 가 코스 목록을 하단 액션
-# 바 위에 매달고, `_block_y()` 가 남는 자리를 판 위아래에 고르게 나눈다.
+# 일상 훈련 편성 화면. 위에서 아래로 네 덩이고, **판이 화면 한가운데에 온다** —
+# 초상화 줄과 판이 한 덩어리(`Block`)로 가운데 정렬되므로 열 머리글과 열이 어긋날
+# 수 없다. 세로로는 코스 목록이 하단 액션 바 위에 매달리고(`Inventory`), 남는
+# 자리를 판 위아래에 고르게 나눈다(`BoardArea` = CenterContainer).
+#
+# **레이아웃의 정본은 `TrainingView.tscn` 이다** — 제목, 스태프 줄, 초상화 다섯
+# (`TrainingThumb.tscn` 인스턴스), 판 자리(`%Grid`), "훈련 코스" 줄, 코스 스크롤, 하단
+# 액션 바(`%Bar`). 반복 항목은 아이템 씬이다: 코스 카드 `TrainingCourseCard.tscn`,
+# 정보 팝오버 `TrainingCoursePopover.tscn`. 스타일은 루트의 공용 테마
+# (`resources/OutgameTheme.tres`) 변형이 정한다. **이 스크립트가 하는 일**: `%` 노드
+# 바인딩, 데이터 채우기(초상화 · 역할 테두리 색 · EXP 칩 · 스태프 / 효과 줄 · 코스 카드),
+# 기기별 안전 영역(화면째 위 인셋만큼 내리고 `%SafeArea` 아래끝 · `%Bar` 높이에 아래
+# 인셋), 그리고 **판 그리기 · 드래그 앤 드롭 · 히트** — 판(`%Grid`)은 노드 스물다섯이
+# 아니라 `_draw_grid` 한 장이다. 씬에서 지운 노드는 되살리지 않는다.
 #
 #   1. **파일럿 초상화 다섯** — 가로로 한 줄. 자리 순서는 전장 스트립과 같은
 #      `GameEnums.ROLE_DISPLAY_ORDER`(탑 · 정글 · 미드 · 원딜 · 서폿)이고,
@@ -27,8 +37,8 @@ extends Control
 #      아예 안 굴렀다). 지금은 **처음 움직임의 방향이 가른다** — 가로면 스크롤,
 #      세로면 그 카드의 타일을 집는다(`DragScroll` 의 `cross_drag_started`).
 #   4. **하단 액션 바** — 화면 끝에서 끝까지, 아래는 안전선에 밀착.
-#      "판 비우기"(1) 와 "훈련 확정"(2) 이 그 구간을 2:1 로 나눠 갖는다
-#      (`OutgameTheme.add_bottom_bar`).
+#      "판 비우기"(1) 와 "훈련 확정"(2) 이 그 구간을 1:2 로 나눠 갖는다
+#      (`%Bar` 의 stretch ratio — 코치에게 맡긴 동안만 "코치 추천"(1) 이 가운데에 선다).
 #
 # **"주간"이라는 말은 화면에서 뺐다.** 판은 여전히 다섯 줄이고 정산도 하루씩
 # 먹지만, 여기서 짜는 것은 한 주의 시간표가 아니라 선수 다섯의 일상이다 —
@@ -69,12 +79,11 @@ const ROWS: int = TrainingBoard.ROWS
 ## 화면마다 다른 색으로 그려진다.
 const ROLE_COLORS: Array = OutgameTheme.ROLE_COLORS
 
-# ── 레이아웃 (1080 폭 디자인 기준) ───────────────────────────────────────────
-const MARGIN: float      = 40.0
+# ── 판의 기하 (그리기 · 히트가 같은 값을 읽는다) ─────────────────────────────
 ## 판의 칸은 **정사각형**이다. 색 면이 곧 "한 선수의 하루"라 가로로 납작하면
 ## 여러 칸 타일의 모양(2×2 · 1×3 · 5×1)이 판 위에서 왜곡돼 읽힌다.
+## 씬의 `%Grid` 크기(880×880)와 초상화 폭(`TrainingThumb` 170 + 간격 6)이 이 값에 맞춰져 있다.
 const CELL: float        = 176.0
-const GRID_W: float      = CELL * float(COLS)   # 880
 const GRID_H: float      = CELL * float(ROWS)   # 880
 ## 칸 사이 여백. 타일 몸통은 **자기 타일과 맞닿은 변에서만** 이 여백을 버려
 ## 이어 붙는다(`_draw_tile_body`).
@@ -89,44 +98,13 @@ const TILE_EDGE: float   = 3.0
 const AFFECT_FILL: Color = Color(1.00, 0.86, 0.25, 0.16)
 const AFFECT_LINE: Color = Color(1.00, 0.86, 0.25, 0.92)
 
-const TITLE_Y: float     = 8.0
-const TITLE_H: float     = 44.0
-const THUMB_W: float     = CELL - 6.0
-## 인게임 스트립과 같은 eye 밴드(480×200)라 높이는 그 비율에서 나온다 —
-## 임의 높이로 늘리면 얼굴이 찌그러진다.
-const THUMB_H: float     = THUMB_W / 2.4
-const THUMB_GAP: float   = 15.0                 # 초상화 ↔ 판
-const INV_LABEL_GAP: float = 32.0               # "훈련 코스" 글자 ↔ 목록
-
-## 코스 카드 — **세로로 선 카드 한 장**이고 목록은 그 한 줄의 가로 스크롤이다.
-## 폭은 화면에 5장 반이 걸리게 잡았다 — 반 장이 잘려 보이는 것이 곧 "옆으로
-## 더 있다"이고, 딱 떨어지면 목록이 거기서 끝난 것처럼 보인다.
-const INV_CARD_W: float    = 168.0
-const INV_CARD_H: float    = 236.0
-const INV_GAP: float       = 14.0
-const INV_CARD_RADIUS: int = 12
-## 카드 맨 위 등급 띠(등급 색 면 + 등급 글자 + 놓임/상한).
-const INV_BAND_H: float    = 36.0
-## 마지막 카드 뒤에 두는 여백 — 끝까지 굴렸을 때 마지막 카드가 화면 끝에
+## 마지막 코스 카드 뒤에 두는 여백 — 끝까지 굴렸을 때 마지막 카드가 화면 끝에
 ## 딱 붙으면 "여기가 끝"과 "더 있는데 안 보인다"가 같은 그림이 된다.
 const INV_TAIL_PAD: float  = 24.0
 
-## 카드 안 모양 미니어처의 자리 · 크기(`_mini_geom` / `_add_shape_mini`).
-## 등급 띠 아래의 오목한 상자 안에 가운데 정렬로 앉는다.
-const MINI_PAD: float = 10.0
-const MINI_Y: float   = INV_BAND_H + 10.0
-const MINI_H: float   = 124.0
-const MINI_MAX: float = 26.0
-## 이름 — 미니어처 상자 아래, 두 줄까지.
-const INV_NAME_Y: float = MINI_Y + MINI_H + 6.0
-
-## 정보 팝오버. 고른 카드 **옆**에 뜨고 자리가 없으면 반대쪽으로 넘어간다.
-const POP_W: float   = 380.0
-const POP_PAD: float = 16.0
+## 정보 팝오버와 고른 카드 사이 간격, 화면 가장자리에서 물려 잡는 여백.
 const POP_GAP: float = 10.0
-## `Label` 이 줄 사이에 넣는 간격(기본 테마의 `line_spacing`). `_text_height`
-## 가 이것을 되돌려 주지 않으면 여러 줄 글이 팝오버 아래로 넘친다.
-const POP_LINE_SPACING: float = 3.0
+const POP_EDGE: float = 12.0
 
 ## ── 판의 바탕과 타일 ────────────────────────────────────────────────────────
 ## **빈 칸은 그리지 않는다.** 선수 한 명당 세로 줄 하나가 그 열이 어디까지인지를
@@ -147,6 +125,8 @@ const SEAM_LEN: float = 32.0
 const SEAM_W: float   = 2.0
 const SEAM_ALPHA: float = 0.45
 
+const SCENE_PATH: String = "res://features/season/training/TrainingView.tscn"
+
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 
 var _board: TrainingBoard = null
@@ -161,12 +141,14 @@ var _inv_press_tile: TrainingTile = null
 var _thumb_faces: Array = []             # 5 TextureRect
 ## Per-pilot EXP chip on each thumbnail (`_refresh_exp_chips`) — shown only when
 ## that pilot's multiplier differs from the team-wide one (breakthrough bonus).
-var _thumb_exp_chips: Array = []         # 5 Panel (label = child 0)
+var _thumb_exp_chips: Array = []         # 5 Panel (`%ExpChip` of each TrainingThumb)
+var _thumb_exp_texts: Array = []         # 5 Label (`%ExpText`)
+var _exp_chip_base: StyleBoxFlat = null  # 씬의 칩 옷 — 색만 바꿔 복사한다
 
 # 인벤토리에서 고른 코스와 그 정보 팝오버.
 var _sel_tile: TrainingTile = null
-var _sel_card: Control = null
-var _popover: Control = null
+var _sel_card: TrainingCourseCard = null
+var _popover: TrainingCoursePopover = null
 
 # 드래그 상태. `_drag_tile` 이 null 이 아니면 지금 무언가를 끌고 있다.
 var _drag_tile: TrainingTile = null
@@ -179,25 +161,25 @@ var _built: bool = false
 # Staff (M3): who runs training / tactics, the EXP multiplier line, and the
 # "코치 추천" (auto-arrange) slot of the bottom bar — hidden when the manager
 # owns training (`StaffSystem.is_delegated`).
-const STAFF_Y: float = TITLE_Y + TITLE_H + 2.0
-const STAFF_H: float = 30.0
 var _staff_lbl: Label = null
 var _effect_lbl: Label = null
-const EFFECT_W: float = 1080.0 - MARGIN * 2.0 - 140.0
-var _bar_buttons: Array = []
-var _bar_specs: Array = []
+var _bar_buttons: Array = []             # [판 비우기, 코치 추천, 훈련 확정]
+
+
+## 씬을 인스턴스한다. `TrainingView.new()` 는 빈 Control 이라 쓰지 않는다.
+## 자기 씬을 preload 하면 스크립트 ↔ 씬 순환 참조가 되므로 load 한다.
+static func create() -> TrainingView:
+	return (load(SCENE_PATH) as PackedScene).instantiate() as TrainingView
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-	mouse_filter = Control.MOUSE_FILTER_PASS
 	ensure_view()
 
 
 # Idempotent — SeasonHub calls this each time it routes to TRAINING.
 func ensure_view() -> void:
 	if not _built:
-		_build()
+		_bind()
 		_built = true
 	_resolve_board()
 	refresh()
@@ -211,103 +193,73 @@ func _resolve_board() -> void:
 	_board = _hub.get_node_or_null("TrainingBoard") as TrainingBoard
 
 
-## **판이 화면 한가운데에 온다.** 썸네일도 요일 글자도 이 한 값에서 나오므로
-## 셋이 어긋날 수 없다. 가운데를 잡는 것은 요일 칸까지 합친 덩어리가 아니라
-## **판 자체**다 — 요일 글자는 판 옆에 붙은 이름표이지 내용이 아니라서,
-## 덩어리째 가운데에 두면 정작 눈이 따라가는 다섯 열이 요일 칸 폭의 절반만큼
-## 오른쪽으로 밀린다.
-static func _grid_x() -> float:
-	return (1080.0 - GRID_W) * 0.5
-
-
-## 코스 목록의 높이 — 카드 한 장 높이. 가로 스크롤바는 숨긴다(잘린 카드가 이미
-## "옆으로 더 있다"를 말한다).
-static func _inv_h() -> float:
-	return INV_CARD_H
-
-
-## 코스 목록의 y. 하단 액션 바 바로 위에 매단다.
-static func _inv_y() -> float:
-	return OutgameTheme.bottom_bar_top() - 24.0 - _inv_h()
-
-
-## **초상화 줄 + 판** 덩어리의 y. 목록 위로 남는 자리를 판 위와
-## 아래에 고르게 나눈다 — 통째로 위에 붙여 두면 화면 아래쪽 300px 이 이유
-## 없이 비고, 아래에 붙이면 제목과 판 사이가 벌어진다.
-static func _block_y() -> float:
-	var block_h: float = THUMB_H + THUMB_GAP + GRID_H
-	var top: float = STAFF_Y + STAFF_H + 12.0
-	var bottom: float = _inv_y() - INV_LABEL_GAP - 16.0
-	return top + maxf(0.0, bottom - top - block_h) * 0.5
-
-
-static func _thumb_y() -> float:
-	return _block_y()
-
-
-static func _grid_y() -> float:
-	return _block_y() + THUMB_H + THUMB_GAP
-
-
-# ── Build ────────────────────────────────────────────────────────────────────
-func _build() -> void:
+# ── Bind ─────────────────────────────────────────────────────────────────────
+func _bind() -> void:
 	# 화면 전체를 안전 영역 위끝까지 내린다 — 노치 / 다이나믹 아일랜드 밑에
-	# 제목이 깔리지 않게. 제목만 따로 내리면 본문과 겹친다.
+	# 제목이 깔리지 않게. 제목만 따로 내리면 본문과 겹친다. 바탕만 도로 늘린다.
 	ScreenMetrics.indent_to_safe_top(self)
-	OutgameTheme.add_background(self)
+	ScreenMetrics.extend_background(%Background)
+	_fit_bottom_inset()
 
-	UiHelpers.mk_label(self, "일상 훈련 편성", 34, OutgameTheme.TEXT,
-			Vector2(0, TITLE_Y), Vector2(ScreenMetrics.vp_w(), TITLE_H),
-			HORIZONTAL_ALIGNMENT_CENTER)
-	_staff_lbl = UiHelpers.mk_label(self, "", 22, OutgameTheme.TEXT_SUB,
-			Vector2(MARGIN, STAFF_Y), Vector2(1080.0 - MARGIN * 2.0, STAFF_H),
-			HORIZONTAL_ALIGNMENT_CENTER)
+	_staff_lbl = %StaffLine
+	_effect_lbl = %EffectLine
+	_bind_thumbs()
+	_bind_grid()
+	_bind_inventory()
 
-	_build_thumbs()
-	_build_grid()
-	_build_inventory()
-	_build_confirm_button()
+	_bar_buttons = [%ClearButton, %AutoButton, %ConfirmButton]
+	(%ClearButton as Button).pressed.connect(_on_clear_pressed)
+	(%AutoButton as Button).pressed.connect(_on_auto_pressed)
+	(%ConfirmButton as Button).pressed.connect(_on_confirm_pressed)
+
+
+## **아래 인셋(홈 인디케이터 / 제스처 바)만 코드가 넣는다.** 본문(`%SafeArea`)의
+## 아래끝은 그만큼 올라가고, 하단 액션 바(`%Bar`)는 색면이 화면 끝까지 내려가되
+## 글자는 안전선 위에 남는다(버튼 아래 content margin 에 같은 몫) — 규칙은
+## `resources/README.md` "Bottom action bar". 코스 목록과 판이 `%SafeArea` 의 아래끝에서
+## 역산되므로 바를 손보면 목록과 판이 저절로 따라 올라간다.
+func _fit_bottom_inset() -> void:
+	var below: float = maxf(0.0, ScreenMetrics.insets().w)
+	(%SafeArea as Control).offset_bottom = -below
+	var bar: Control = %Bar
+	bar.offset_top = -(OutgameTheme.BOTTOM_BAR_H + below)
+	for b in [%ClearButton, %AutoButton, %ConfirmButton]:
+		_square_bar_button(b as Button, below)
+
+
+## 바 한 칸 — 변형(`GhostButton` / `PrimaryButton`)의 옷을 복사해 모서리를 각지게
+## 펴고 안전선 아래로 내려간 몫만큼 글자를 위로 물린다(`OutgameTheme.style_bottom_button`
+## 과 같은 손질, 색은 씬의 변형이 정한다).
+static func _square_bar_button(b: Button, below: float) -> void:
+	for n in OutgameTheme.BUTTON_STATES:
+		var src := b.get_theme_stylebox(n) as StyleBoxFlat
+		if src == null:
+			continue
+		var sb := src.duplicate() as StyleBoxFlat
+		OutgameTheme.set_corner_radius(sb, 0)
+		sb.content_margin_bottom = 8.0 + below
+		b.add_theme_stylebox_override(n, sb)
 
 
 ## 열 머리글 다섯. **누를 수 없고 글자도 없다** — 얼굴이 누구인지를, 테두리
 ## 색이 역할을 말한다. 인게임 파일럿 스트립과 같은 가로 초상화라 전장에서
-## 보던 얼굴과 여기 얼굴이 같은 컷이다.
-func _build_thumbs() -> void:
+## 보던 얼굴과 여기 얼굴이 같은 컷이다. 테두리 색만 코드가 넣는다(역할 = 데이터).
+func _bind_thumbs() -> void:
+	var row: Control = %Thumbs
 	for seat in COLS:
+		var thumb: Panel = row.get_child(seat) as Panel
 		var r: int = int(GameEnums.ROLE_DISPLAY_ORDER[seat])
 		var role_col: Color = ROLE_COLORS[r]
-		var panel := Panel.new()
-		panel.position = Vector2(_grid_x() + float(seat) * CELL + 3.0, _thumb_y())
-		panel.size     = Vector2(THUMB_W, THUMB_H)
-		panel.add_theme_stylebox_override("panel", _thumb_style(role_col))
-		panel.clip_contents = true
-		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(panel)
-
-		var face := TextureRect.new()
-		face.position     = Vector2(2, 2)
-		face.size         = Vector2(THUMB_W - 4.0, THUMB_H - 4.0)
-		face.expand_mode  = TextureRect.EXPAND_IGNORE_SIZE
-		face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		panel.add_child(face)
-		_thumb_faces.append(face)
-
-		var chip: Panel = OutgameTheme.add_chip(panel, "", Vector2(THUMB_W - 104.0, THUMB_H - 32.0),
-				Vector2(98, 28), OutgameTheme.POSITIVE, OutgameTheme.TEXT_ON_FILL, 17)
+		var sty := (thumb.get_theme_stylebox(&"panel") as StyleBoxFlat).duplicate() as StyleBoxFlat
+		sty.border_color = Color(role_col.r, role_col.g, role_col.b, 0.85)
+		thumb.add_theme_stylebox_override(&"panel", sty)
+		_thumb_faces.append(thumb.get_node("%Face"))
+		var chip: Panel = thumb.get_node("%ExpChip")
+		if _exp_chip_base == null:
+			_exp_chip_base = chip.get_theme_stylebox(&"panel") as StyleBoxFlat
 		chip.visible = false
 		_thumb_exp_chips.append(chip)
-
-
-static func _thumb_style(role_col: Color) -> StyleBoxFlat:
-	var sty := StyleBoxFlat.new()
-	sty.bg_color = OutgameTheme.SURFACE
-	sty.border_color = Color(role_col.r, role_col.g, role_col.b, 0.85)
-	sty.border_width_left = 2; sty.border_width_right = 2
-	sty.border_width_top  = 2; sty.border_width_bottom = 2
-	sty.corner_radius_top_left = 8;    sty.corner_radius_top_right = 8
-	sty.corner_radius_bottom_left = 8; sty.corner_radius_bottom_right = 8
-	return sty
+		_thumb_exp_texts.append(thumb.get_node("%ExpText"))
 
 
 ## **판 옆의 요일 글자는 없다.** 다섯 줄이 무슨 요일인가는 이 화면이 답해야
@@ -318,43 +270,19 @@ static func _thumb_style(role_col: Color) -> StyleBoxFlat:
 ## `TrainingBoard.DAY_NAMES` 는 이 화면이 유일한 소비자였으므로 함께 삭제됐다 —
 ## 요일 이름이 필요한 자리는 시간 경과 화면 하나이고, 그쪽은 예전부터
 ## `OutgameTheme.DAY_NAMES` 를 읽는다.
-func _build_grid() -> void:
-	_grid = Control.new()
-	_grid.position = Vector2(_grid_x(), _grid_y())
-	_grid.size     = Vector2(GRID_W, GRID_H)
-	_grid.mouse_filter = Control.MOUSE_FILTER_STOP
+func _bind_grid() -> void:
+	_grid = %Grid
 	_grid.draw.connect(_draw_grid)
 	_grid.gui_input.connect(_on_grid_input)
 	# 판 자신이 드롭 대상이자 드래그 출발점이다. `set_drag_forwarding` 을 쓰면
 	# 세 콜백을 한 노드에 몰아넣을 수 있어 `_grid` 를 서브클래스로 만들 필요가
 	# 없다 — 이 화면에서 판은 그리기 한 장이지 노드 스물다섯 개가 아니다.
 	_grid.set_drag_forwarding(_grid_get_drag_data, _grid_can_drop, _grid_drop)
-	add_child(_grid)
 
 
-func _build_inventory() -> void:
-	var top: float = _inv_y()
-	var h: float = _inv_h()
-
-	UiHelpers.mk_label(self, "훈련 코스", 22, OutgameTheme.TEXT_SUB,
-			Vector2(MARGIN, top - INV_LABEL_GAP), Vector2(400, 28))
-	# Right side of the same row: what the staff stats do to the courses.
-	# Wide enough for the multiplier breakdown (`_effect_text`); "훈련 코스" keeps ~140px.
-	_effect_lbl = UiHelpers.mk_label(self, "", 20, OutgameTheme.ACCENT_TEXT,
-			Vector2(1080.0 - MARGIN - EFFECT_W, top - INV_LABEL_GAP), Vector2(EFFECT_W, 28),
-			HORIZONTAL_ALIGNMENT_RIGHT)
-
-	_inv_scroll = ScrollContainer.new()
-	_inv_scroll.position = Vector2(MARGIN, top)
-	_inv_scroll.size     = Vector2(1080.0 - MARGIN * 2.0, h)
-	_inv_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
-	_inv_scroll.vertical_scroll_mode   = ScrollContainer.SCROLL_MODE_DISABLED
-	add_child(_inv_scroll)
-
-	_inv_row = HBoxContainer.new()
-	_inv_row.add_theme_constant_override("separation", int(INV_GAP))
-	_inv_row.mouse_filter = Control.MOUSE_FILTER_PASS
-	_inv_scroll.add_child(_inv_row)
+func _bind_inventory() -> void:
+	_inv_scroll = %CourseScroll
+	_inv_row = %CourseRow
 
 	# **가로로 끌면 스크롤, 세로로 끌면 타일 집기.** 방향은 처음 문턱을 넘는
 	# 순간 한 번만 정한다 — 그 뒤로는 손가락이 비스듬히 흘러도 뜻이 안 바뀐다.
@@ -364,26 +292,6 @@ func _build_inventory() -> void:
 	# 팝오버는 스크롤 **밖**에 사는 별개의 판이라(안에 두면 스크롤 폭에 잘린다)
 	# 스크롤이 움직이면 따라가야 한다.
 	_inv_scroll.get_h_scroll_bar().value_changed.connect(_on_inv_scrolled)
-
-
-## **하단 구간을 둘이 2:1 로 나눠 갖는다** — 주 행동인 "훈련 확정"이 오른쪽
-## 3분의 2, 되돌리는 "판 비우기"가 왼쪽 3분의 1이다(`OutgameTheme.add_bottom_bar`).
-## 코스 목록의 높이가 이 바의 윗변에서 역산되므로(`_inv_y`) 바를 손보면 목록이
-## 저절로 따라 올라간다.
-##
-## M3: a third slot "코치 추천" sits between them (ghost, weight 1) and is shown
-## only while training is delegated to staff — when hidden, the bar is laid out
-## again so the other two keep the 1:2 split (`OutgameTheme.layout_bottom_bar`).
-func _build_confirm_button() -> void:
-	_bar_specs = [
-		{"text": "판 비우기", "style": "ghost",   "font": 28, "weight": 1.0},
-		{"text": "코치 추천", "style": "ghost",   "font": 28, "weight": 1.0},
-		{"text": "훈련 확정", "style": "primary", "font": 34, "weight": 2.0},
-	]
-	_bar_buttons = OutgameTheme.add_bottom_bar(self, _bar_specs)
-	(_bar_buttons[0] as Button).pressed.connect(_on_clear_pressed)
-	(_bar_buttons[1] as Button).pressed.connect(_on_auto_pressed)
-	(_bar_buttons[2] as Button).pressed.connect(_on_confirm_pressed)
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────
@@ -414,9 +322,8 @@ func _refresh_staff() -> void:
 	if _bar_buttons.size() == 3:
 		var auto_btn: Button = _bar_buttons[1]
 		var show_auto: bool = StaffSystem.is_delegated(state, "training")
-		if auto_btn.visible != show_auto:
-			auto_btn.visible = show_auto
-			OutgameTheme.layout_bottom_bar(_bar_buttons, _bar_specs)
+		# 숨긴 칸은 `%Bar`(HBox)가 빼고 남은 칸끼리 비율대로 다시 나눈다.
+		auto_btn.visible = show_auto
 
 
 ## Team-wide EXP multiplier parts — the same calls `TrainingBoard.exp_mult_table`
@@ -475,9 +382,10 @@ func _refresh_exp_chips(state: Dictionary) -> void:
 			ratio = best / shared
 		chip.visible = absf(ratio - 1.0) >= 0.005
 		if chip.visible:
-			(chip.get_child(0) as Label).text = "EXP ×%.2f" % ratio
-			chip.add_theme_stylebox_override("panel", OutgameTheme.flat_style(
-					OutgameTheme.POSITIVE if ratio > 1.0 else OutgameTheme.NEGATIVE, 14))
+			(_thumb_exp_texts[seat] as Label).text = "EXP ×%.2f" % ratio
+			var sty := _exp_chip_base.duplicate() as StyleBoxFlat
+			sty.bg_color = OutgameTheme.POSITIVE if ratio > 1.0 else OutgameTheme.NEGATIVE
+			chip.add_theme_stylebox_override(&"panel", sty)
 
 
 ## "훈련: 강민호 코치 17" / "전술: 감독 6" — who covers this stat and its value.
@@ -928,91 +836,20 @@ func _rebuild_inventory() -> void:
 		child.queue_free()
 
 	for t_raw in _board.all_tiles():
-		_inv_row.add_child(_make_inventory_card(t_raw as TrainingTile))
+		var t: TrainingTile = t_raw
+		var card := TrainingCourseCard.create()
+		_inv_row.add_child(card)
+		var grade_locked: bool = not _board.is_unlocked(t)
+		var cap: String = "" if grade_locked \
+				else _cap_text(_board.placed_count_of_grade(t.grade), _board.limit_of(t))
+		card.fill(t, cap, grade_locked, _card_locked(t), _lock_reason(t))
+		# 탭 = 고르기(정보 팝오버), 세로 드래그 = 집기. **잠긴 카드도 고를 수 있다** —
+		# 못 놓는 것과 무엇인지 못 보는 것은 다른 일이다.
+		card.gui_input.connect(_on_card_input.bind(t, card))
 	var pad := Control.new()
 	pad.custom_minimum_size = Vector2(INV_TAIL_PAD, 0)
 	pad.mouse_filter = Control.MOUSE_FILTER_PASS
 	_inv_row.add_child(pad)
-
-
-## 코스 카드 한 장 — **세로로 선 카드**. 위에서부터 등급 띠(등급 글자 ·
-## 놓임/상한) → 오목한 상자 안의 모양 미니어처 → 이름. 설명문과 EXP 요약은
-## 정보 팝오버가 들고 있다: 훑어 고를 때 견주는 것은 이름과 모양이다.
-func _make_inventory_card(t: TrainingTile) -> Control:
-	var w: float = INV_CARD_W
-	var placed: int = _board.placed_count_of_grade(t.grade)
-	var limit: int = _board.limit_of(t)
-	var grade_locked: bool = not _board.is_unlocked(t)
-	var locked: bool = _card_locked(t)
-
-	var card := Panel.new()
-	card.custom_minimum_size = Vector2(w, INV_CARD_H)
-	card.add_theme_stylebox_override("panel", _card_style(t, locked, false))
-	# **PASS** — 눌림이 스크롤까지 올라가야 `DragScroll` 이 방향을 판정한다.
-	card.mouse_filter = Control.MOUSE_FILTER_PASS
-	# 탭 = 고르기(정보 팝오버), 세로 드래그 = 집기. **잠긴 카드도 고를 수 있다** —
-	# 못 놓는 것과 무엇인지 못 보는 것은 다른 일이다.
-	card.gui_input.connect(_on_card_input.bind(t, card))
-
-	# Everything but the lock-reason chip lives in `body`, so a locked card fades
-	# its contents while the reason stays fully readable on top.
-	var body := Control.new()
-	body.position = Vector2.ZERO
-	body.size = Vector2(w, INV_CARD_H)
-	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	body.modulate = Color(1, 1, 1, 0.42) if locked else Color(1, 1, 1, 1)
-	card.add_child(body)
-
-	# 등급 띠 — 카드 윗변의 둥근 모서리를 그대로 이어받는다.
-	var g: Color = t.grade_color()
-	var band := Panel.new()
-	band.position = Vector2.ZERO
-	band.size = Vector2(w, INV_BAND_H)
-	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var bsty := StyleBoxFlat.new()
-	bsty.bg_color = Color(g.r, g.g, g.b, 0.22)
-	bsty.corner_radius_top_left  = INV_CARD_RADIUS
-	bsty.corner_radius_top_right = INV_CARD_RADIUS
-	band.add_theme_stylebox_override("panel", bsty)
-	body.add_child(band)
-	var grade_lbl := UiHelpers.mk_label(band, t.grade_name(), 22, g,
-			Vector2(MINI_PAD + 2.0, 0), Vector2(40, INV_BAND_H))
-	grade_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	grade_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var cap: String = "" if grade_locked else _cap_text(placed, limit)
-	var cap_lbl := UiHelpers.mk_label(band, cap, 17, OutgameTheme.TEXT_SUB,
-			Vector2(w - 84.0, 0), Vector2(72, INV_BAND_H),
-			HORIZONTAL_ALIGNMENT_RIGHT)
-	cap_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	cap_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	# 모양 미니어처를 담는 오목한 상자 — 판에서 몇 칸을 먹는지가 카드의 그림이다.
-	var well := Panel.new()
-	well.position = Vector2(MINI_PAD, MINI_Y)
-	well.size = Vector2(w - MINI_PAD * 2.0, MINI_H)
-	well.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	well.add_theme_stylebox_override("panel",
-			OutgameTheme.flat_style(OutgameTheme.SURFACE_SUNK, 8))
-	body.add_child(well)
-	_add_shape_mini(body, t, w)
-
-	var name_lbl := UiHelpers.mk_label(body, t.tile_name, 19, OutgameTheme.TEXT,
-			Vector2(8, INV_NAME_Y),
-			Vector2(w - 16.0, INV_CARD_H - INV_NAME_Y - 8.0),
-			HORIZONTAL_ALIGNMENT_CENTER)
-	name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	# Grade not unlocked by tactics: say why, on the shape well.
-	if grade_locked:
-		var chip_h: float = 36.0
-		OutgameTheme.add_chip(card, _lock_reason(t),
-				Vector2(MINI_PAD + 6.0, MINI_Y + (MINI_H - chip_h) * 0.5),
-				Vector2(w - (MINI_PAD + 6.0) * 2.0, chip_h),
-				OutgameTheme.TEXT, OutgameTheme.TEXT_ON_FILL, 18)
-
-	return card
 
 
 ## Locked = grade not unlocked by tactics, or its placement limit is reached.
@@ -1032,50 +869,6 @@ static func _cap_text(placed: int, limit: int) -> String:
 	return "∞" if limit < 0 else "%d/%d" % [placed, limit]
 
 
-static func _card_style(t: TrainingTile, locked: bool, selected: bool) -> StyleBoxFlat:
-	var g: Color = t.grade_color()
-	var sty := StyleBoxFlat.new()
-	sty.bg_color = OutgameTheme.ACCENT_DIM if selected else OutgameTheme.SURFACE
-	sty.border_color = Color(g.r, g.g, g.b, 0.35 if locked else 1.0)
-	var bw: int = 4 if selected else 2
-	sty.border_width_left = bw; sty.border_width_right = bw
-	sty.border_width_top  = bw; sty.border_width_bottom = bw
-	sty.corner_radius_top_left = INV_CARD_RADIUS
-	sty.corner_radius_top_right = INV_CARD_RADIUS
-	sty.corner_radius_bottom_left = INV_CARD_RADIUS
-	sty.corner_radius_bottom_right = INV_CARD_RADIUS
-	return sty
-
-
-## 카드 안 모양 미니어처의 기하 — 칸 크기와 그 상자 안에서의 원점.
-static func _mini_geom(t: TrainingTile, card_w: float) -> Dictionary:
-	var ext: Vector2i = t.extent()
-	var box_w: float = card_w - MINI_PAD * 2.0
-	var s: float = minf(MINI_MAX, minf(box_w / float(ext.x), MINI_H / float(ext.y)))
-	return {
-		"s": s,
-		"ox": MINI_PAD + (box_w - s * float(ext.x)) * 0.5,
-		"oy": MINI_Y + (MINI_H - s * float(ext.y)) * 0.5,
-	}
-
-
-## 칸 하나를 최대 18px 로 잡되 모양이 커지면 줄여 언제나 같은 상자 안에 들어오게
-## 한다 — 6칸 타일과 1칸 타일이 같은 크기로 그려지면 "몇 칸짜리인가"가 카드에서
-## 안 읽힌다.
-func _add_shape_mini(card: Control, t: TrainingTile, card_w: float) -> void:
-	var g: Dictionary = _mini_geom(t, card_w)
-	var s: float = float(g["s"])
-	for i in t.cells.size():
-		var c: Vector2i = t.cells[i]
-		var box := ColorRect.new()
-		box.color = TrainingTile.color_of(String(t.cell_colors[i]))
-		box.position = Vector2(float(g["ox"]) + float(c.x) * s + 1.0,
-				float(g["oy"]) + float(c.y) * s + 1.0)
-		box.size     = Vector2(s - 2.0, s - 2.0)
-		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		card.add_child(box)
-
-
 ## 인벤토리 카드에서 끌어내기 — `DragScroll` 이 **세로** 드래그로 판정했을 때만
 ## 온다. 내장 드래그 경로가 아니므로 `force_drag` 로 직접 연다. 카드 어디를
 ## 잡았는지는 보지 않는다 — 끌려 나온 타일은 언제나 커서를 한가운데에 둔다.
@@ -1092,7 +885,7 @@ func _on_inv_cross_drag(_press_pos: Vector2) -> void:
 
 # ── 정보 팝오버 ──────────────────────────────────────────────────────────────
 ## 카드 탭. 같은 카드를 다시 누르면 닫히고, 다른 카드를 누르면 그쪽으로 갈아탄다.
-func _on_card_input(event: InputEvent, t: TrainingTile, card: Control) -> void:
+func _on_card_input(event: InputEvent, t: TrainingTile, card: TrainingCourseCard) -> void:
 	if not (event is InputEventMouseButton):
 		return
 	var mb := event as InputEventMouseButton
@@ -1110,114 +903,35 @@ func _on_card_input(event: InputEvent, t: TrainingTile, card: Control) -> void:
 	_select_card(t, card)
 
 
-func _select_card(t: TrainingTile, card: Control) -> void:
+## 팝오버(`TrainingCoursePopover`)는 등급 · 이름 · 놓임/상한 · **EXP** · **효과** 를
+## 든다 — 설명문 줄은 없다(`README.md` "Course inventory + info popover").
+func _select_card(t: TrainingTile, card: TrainingCourseCard) -> void:
 	_close_popover()
 	_sel_tile = t
 	_sel_card = card
-	var placed: int = _board.placed_count_of_grade(t.grade)
-	var limit: int = _board.limit_of(t)
-	card.add_theme_stylebox_override("panel", _card_style(t, _card_locked(t), true))
-	_popover = _build_popover(t, placed, limit)
+	card.set_selected(true, _card_locked(t))
+	# Locked grade (tactics): one extra line saying what it needs vs. now.
+	var lock: String = ""
+	if _board != null and not _board.is_unlocked(t):
+		lock = "%s (지금 전술 %d)" % [_lock_reason(t), _board.tactics_stat()]
+	_popover = TrainingCoursePopover.create()
+	# 팝오버 자신이 클릭을 삼키고(씬에서 STOP) **그 클릭으로 닫힌다**. 삼키지 않으면
+	# 밑에 깔린 카드가 대신 눌려 방금 연 것이 그 자리에서 닫히거나 옆 코스로
+	# 갈아타 버린다 — 팝오버는 카드 두어 장을 덮으므로 반드시 일어나는 일이다.
+	_popover.gui_input.connect(_on_popover_input)
 	add_child(_popover)
+	_popover.fill(t, _cap_text(_board.placed_count_of_grade(t.grade), _board.limit_of(t)), lock)
 	_place_popover()
 
 
 func _close_popover() -> void:
 	if _sel_tile != null and _sel_card != null and is_instance_valid(_sel_card):
-		_sel_card.add_theme_stylebox_override("panel",
-				_card_style(_sel_tile, _card_locked(_sel_tile), false))
+		_sel_card.set_selected(false, _card_locked(_sel_tile))
 	if _popover != null and is_instance_valid(_popover):
 		_popover.queue_free()
 	_popover = null
 	_sel_tile = null
 	_sel_card = null
-
-
-## 줄바꿈된 글자가 실제로 차지하는 높이. **`Font.get_multiline_string_size` 를
-## 그대로 믿으면 안 된다** — 그 함수는 글꼴 줄 높이만 더할 뿐 `Label` 이 줄
-## 사이에 넣는 `line_spacing`(기본 3)을 세지 않아서, 두 줄짜리 글은 실측 49px
-## 인데 46 이 돌아온다. 그 3px 이 팝오버 아래끝을 넘어 판 위로 삐져나오던 것이
-## **설명이 패널을 넘어가던** 원인이다. 줄 수를 세어 그 몫을 되돌려 준다
-## (실측: 1줄 23 · 2줄 49 · 3줄 75 로 `Label.get_minimum_size().y` 와 정확히 일치).
-static func _text_height(text: String, width: float, font_size: int) -> float:
-	if text.is_empty():
-		return 0.0
-	var font: Font = ThemeDB.fallback_font
-	var one: float = maxf(1.0,
-			font.get_string_size("가", HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).y)
-	var total: float = font.get_multiline_string_size(
-			text, HORIZONTAL_ALIGNMENT_LEFT, width, font_size).y
-	var lines: int = maxi(1, int(round(total / one)))
-	return total + float(lines - 1) * POP_LINE_SPACING
-
-
-## 팝오버는 **높이를 글자에서 역산해** 세운다 — 절대 좌표로 짓는 이 화면에서
-## 컨테이너 자동 크기를 섞으면 자리를 잡는 프레임과 그리는 프레임이 어긋난다.
-##
-## **설명문 줄은 없다.** 예전에는 `training_tiles.csv` 의 `description` 을 그대로
-## 찍었는데, 그 문장은 절을 사람이 손으로 옮겨 적은 것이라 절의 숫자를 고치면
-## 설명만 조용히 거짓말이 됐다. 지금 이 팝오버가 답하는 것은 등급 · 이름 ·
-## 놓임/상한 · **EXP** · **효과** 다섯이고, 뒤의 둘은 둘 다 타일 데이터에서
-## 만들어진다(`exp_summary` / `effect_summary`).
-func _build_popover(t: TrainingTile, placed: int, limit: int) -> Control:
-	var text_w: float = POP_W - POP_PAD * 2.0
-	var exp_h: float = _text_height(t.exp_summary(), text_w, 17)
-	var eff: String = t.effect_summary()
-	var eff_h: float = _text_height(eff, text_w, 16)
-	# Locked grade (tactics): one extra line saying what it needs vs. now.
-	var lock: String = ""
-	if _board != null and not _board.is_unlocked(t):
-		lock = "%s (지금 전술 %d)" % [_lock_reason(t), _board.tactics_stat()]
-	var lock_h: float = _text_height(lock, text_w, 16)
-
-	var pop := Panel.new()
-	var body_h: float = exp_h + (0.0 if eff.is_empty() else 10.0 + eff_h) \
-			+ (0.0 if lock.is_empty() else 10.0 + lock_h)
-	pop.size = Vector2(POP_W, POP_PAD * 2.0 + 30.0 + 10.0 + body_h)
-	var sty := StyleBoxFlat.new()
-	sty.bg_color = OutgameTheme.SURFACE
-	sty.border_color = t.grade_color()
-	sty.border_width_left = 2; sty.border_width_right = 2
-	sty.border_width_top  = 2; sty.border_width_bottom = 2
-	sty.corner_radius_top_left = 10;    sty.corner_radius_top_right = 10
-	sty.corner_radius_bottom_left = 10; sty.corner_radius_bottom_right = 10
-	sty.shadow_color = Color(0.11, 0.11, 0.18, 0.28)
-	sty.shadow_size = 10
-	pop.add_theme_stylebox_override("panel", sty)
-	# 팝오버 자신이 클릭을 삼키고 **그 클릭으로 닫힌다**. 삼키지 않으면 밑에
-	# 깔린 카드가 대신 눌려 방금 연 것이 그 자리에서 닫히거나 옆 코스로
-	# 갈아타 버린다 — 팝오버는 카드 두어 장을 덮으므로 반드시 일어나는 일이다.
-	pop.mouse_filter = Control.MOUSE_FILTER_STOP
-	pop.gui_input.connect(_on_popover_input)
-
-	var y: float = POP_PAD
-	UiHelpers.mk_label(pop, "[%s] %s" % [t.grade_name(), t.tile_name], 24,
-			OutgameTheme.TEXT, Vector2(POP_PAD, y), Vector2(text_w - 84.0, 30))
-	var cap: String = "" if not lock.is_empty() else _cap_text(placed, limit)
-	UiHelpers.mk_label(pop, cap, 18, t.grade_color(),
-			Vector2(POP_W - POP_PAD - 80.0, y + 5.0), Vector2(80, 24),
-			HORIZONTAL_ALIGNMENT_RIGHT)
-	y += 30.0 + 10.0
-
-	var exp_lbl := UiHelpers.mk_label(pop, t.exp_summary(), 17,
-			OutgameTheme.TEXT_SUB, Vector2(POP_PAD, y), Vector2(text_w, exp_h))
-	exp_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	y += exp_h + 10.0
-
-	if not eff.is_empty():
-		var eff_lbl := UiHelpers.mk_label(pop, eff, 16,
-				OutgameTheme.ACCENT_TEXT, Vector2(POP_PAD, y), Vector2(text_w, eff_h))
-		eff_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		y += eff_h + 10.0
-
-	if not lock.is_empty():
-		var lock_lbl := UiHelpers.mk_label(pop, lock, 16,
-				OutgameTheme.NEGATIVE, Vector2(POP_PAD, y), Vector2(text_w, lock_h))
-		lock_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-
-	for child in pop.get_children():
-		(child as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return pop
 
 
 ## 고른 카드 **위**에 띄운다 — 카드가 화면 아래 한 줄로 늘어서 있어 옆자리는
@@ -1226,15 +940,17 @@ func _build_popover(t: TrainingTile, placed: int, limit: int) -> Control:
 func _place_popover() -> void:
 	if _popover == null or _sel_card == null or not is_instance_valid(_sel_card):
 		return
-	var at: Vector2 = _sel_card.get_global_rect().position - get_global_rect().position
-	var x: float = at.x + (_sel_card.size.x - POP_W) * 0.5
-	x = clampf(x, 12.0, 1080.0 - POP_W - 12.0)
-	var y: float = maxf(12.0, at.y - _popover.size.y - POP_GAP)
+	var origin: Vector2 = get_global_rect().position
+	var at: Vector2 = _sel_card.get_global_rect().position - origin
+	var pop_w: float = _popover.size.x
+	var x: float = at.x + (_sel_card.size.x - pop_w) * 0.5
+	x = clampf(x, POP_EDGE, size.x - pop_w - POP_EDGE)
+	var y: float = maxf(POP_EDGE, at.y - _popover.size.y - POP_GAP)
 	_popover.position = Vector2(x, y)
 	# 가리키던 카드가 스크롤 밖으로 밀려나면 함께 숨는다 — 가리킬 것이 없는
 	# 팝오버는 그 자리에 남아 화면을 덮기만 한다.
-	_popover.visible = Rect2(_inv_scroll.position, _inv_scroll.size) \
-			.intersects(Rect2(at, _sel_card.size))
+	var view := Rect2(_inv_scroll.get_global_rect().position - origin, _inv_scroll.size)
+	_popover.visible = view.intersects(Rect2(at, _sel_card.size))
 
 
 func _on_popover_input(event: InputEvent) -> void:

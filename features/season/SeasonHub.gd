@@ -295,7 +295,7 @@ func _ensure_hub_view() -> void:
 func _ensure_training_view() -> void:
 	if _training_view != null:
 		return
-	_training_view = TrainingView.new()
+	_training_view = TrainingView.create()
 	_training_view.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_training_view)
 

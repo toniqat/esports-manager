@@ -1,0 +1,216 @@
+[gd_scene load_steps=5 format=3 uid="uid://crdeyhbfs5lna"]
+
+[ext_resource type="Script" uid="uid://dntw2lvkn2vh4" path="res://features/season/HubView.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" uid="uid://dgsdeg4lhyxen" path="res://features/season/UI_Comp_HubRosterRow.tscn" id="3_row"]
+[ext_resource type="PackedScene" uid="uid://cwqyeebr00eym" path="res://features/season/UI_Comp_HubManageCard.tscn" id="4_card"]
+
+[node name="HubView" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme = ExtResource("2_theme")
+script = ExtResource("1_script")
+
+[node name="Background" type="Panel" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — HubView.gd _bind()
+Code stretches it up over the notch band (ScreenMetrics.extend_background)."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"ScreenBackground"
+
+[node name="Phase" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — HubView.gd _phase_lbl"
+unique_name_in_owner = true
+layout_mode = 1
+offset_left = 40.0
+offset_top = 28.0
+offset_right = 740.0
+offset_bottom = 58.0
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 24
+text = "현재 페이즈: 프리시즌"
+
+[node name="Title" type="Label" parent="."]
+layout_mode = 1
+offset_left = 40.0
+offset_top = 60.0
+offset_right = 740.0
+offset_bottom = 122.0
+theme_type_variation = &"HeadingLabel"
+text = "시즌 허브"
+
+[node name="Week" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — HubView.gd _week_lbl"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -400.0
+offset_top = 62.0
+offset_right = -40.0
+offset_bottom = 94.0
+grow_horizontal = 0
+theme_type_variation = &"SubLabel"
+text = "1 / 6주차"
+horizontal_alignment = 2
+
+[node name="NextMatch" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — HubView.gd _next_match_lbl"
+unique_name_in_owner = true
+layout_mode = 1
+offset_left = 40.0
+offset_top = 134.0
+offset_right = 1040.0
+offset_bottom = 164.0
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 24
+text = "이번 주 경기: vs Spook Shack"
+
+[node name="RosterCaption" type="Label" parent="."]
+layout_mode = 1
+offset_left = 30.0
+offset_top = 204.0
+offset_right = 390.0
+offset_bottom = 234.0
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 24
+text = "내 팀 로스터"
+
+[node name="Body" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 30.0
+offset_top = 240.0
+offset_right = -30.0
+offset_bottom = 1426.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="Roster" type="VBoxContainer" parent="Body"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — HubView.gd _roster_rows
+Five HubRosterRow instances in seat order (GameEnums.ROLE_DISPLAY_ORDER: 탑 · 정글 · 미드 · 원딜 · 서폿)."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="HubRosterRow_Row0" parent="Body/Roster" instance=ExtResource("3_row")]
+layout_mode = 2
+
+[node name="HubRosterRow_Row1" parent="Body/Roster" instance=ExtResource("3_row")]
+layout_mode = 2
+
+[node name="HubRosterRow_Row2" parent="Body/Roster" instance=ExtResource("3_row")]
+layout_mode = 2
+
+[node name="HubRosterRow_Row3" parent="Body/Roster" instance=ExtResource("3_row")]
+layout_mode = 2
+
+[node name="HubRosterRow_Row4" parent="Body/Roster" instance=ExtResource("3_row")]
+layout_mode = 2
+
+[node name="Manage" type="HBoxContainer" parent="Body"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — HubView.gd _manage_cards
+HubManageCard per HubView._manage_panels() entry, in order (StaffPanel · MasteryPanel · FinancePanel)."
+custom_minimum_size = Vector2(0, 176)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="HubManageCard_Card0" parent="Body/Manage" instance=ExtResource("4_card")]
+layout_mode = 2
+
+[node name="HubManageCard_Card1" parent="Body/Manage" instance=ExtResource("4_card")]
+layout_mode = 2
+
+[node name="HubManageCard_Card2" parent="Body/Manage" instance=ExtResource("4_card")]
+layout_mode = 2
+
+[node name="SafeBottom" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — HubView.gd _bind()
+Full rect; code lifts its bottom edge by the device bottom inset (OutgameTheme.fit_bottom_bar). The bar and toast hang from it."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Toast" type="Label" parent="SafeBottom"]
+editor_description = "[필수] 지우면 오류 — HubView.gd _toast_lbl"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -168.0
+offset_bottom = -136.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_type_variation = &"AccentLabel"
+text = "토스트 미리보기"
+horizontal_alignment = 1
+
+[node name="BottomBar" type="HBoxContainer" parent="SafeBottom"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — HubView.gd _bind()
+Bottom action bar: edge to edge, 128 tall above the safe line, split by stretch ratio (secondary 1 : primary 2, primary on the right). Bar* variations give the square corners; code only extends it below the safe line by the device inset (OutgameTheme.fit_bottom_bar)."
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -128.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 0
+
+[node name="Standings" type="Button" parent="SafeBottom/BottomBar"]
+editor_description = "[필수] 지우면 오류 — HubView.gd _standings_btn"
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_type_variation = &"BarGhostButton"
+theme_override_font_sizes/font_size = 32
+text = "리그 순위"
+
+[node name="Sep" type="Panel" parent="SafeBottom/BottomBar/Standings"]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -2.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"BarSeparator"
+
+[node name="Start" type="Button" parent="SafeBottom/BottomBar"]
+editor_description = "[필수] 지우면 오류 — HubView.gd _start_btn"
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
+focus_mode = 0
+theme_type_variation = &"BarPrimaryButton"
+text = "이번 주 시작 →"

@@ -11,12 +11,14 @@ offset_bottom = 220.0
 script = ExtResource("1_yiag5")
 
 [node name="CardBack" type="Panel" parent="."]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — Card.gd back_cost_label · Card.gd card_back"
 layout_mode = 0
 offset_right = 160.0
 offset_bottom = 220.0
 mouse_filter = 2
 
 [node name="BackCostLabel" type="Label" parent="CardBack"]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — Card.gd back_cost_label"
 layout_mode = 0
 offset_right = 160.0
 offset_bottom = 220.0
@@ -25,6 +27,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="CardFront" type="Panel" parent="."]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — Card.gd art_frame · Card.gd art_rect · Card.gd card_front 외 4곳"
 visible = false
 layout_mode = 0
 offset_right = 160.0
@@ -32,12 +35,14 @@ offset_bottom = 220.0
 mouse_filter = 2
 
 [node name="ArtFrame" type="Panel" parent="CardFront"]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — Card.gd art_frame · Card.gd art_rect"
 layout_mode = 0
 offset_right = 160.0
 offset_bottom = 184.0
 mouse_filter = 2
 
 [node name="Art" type="TextureRect" parent="CardFront/ArtFrame"]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — Card.gd art_rect"
 layout_mode = 0
 offset_right = 160.0
 offset_bottom = 184.0
@@ -46,6 +51,7 @@ stretch_mode = 6
 mouse_filter = 2
 
 [node name="NamePlate" type="Panel" parent="CardFront"]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — Card.gd name_plate"
 layout_mode = 0
 offset_top = 184.0
 offset_right = 160.0
@@ -53,6 +59,7 @@ offset_bottom = 220.0
 mouse_filter = 2
 
 [node name="NameLabel" type="Label" parent="CardFront"]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — Card.gd name_label"
 layout_mode = 0
 offset_left = 6.0
 offset_top = 184.0
@@ -65,6 +72,7 @@ vertical_alignment = 1
 clip_text = true
 
 [node name="CostBadge" type="Panel" parent="CardFront"]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — Card.gd cost_badge · Card.gd cost_label"
 layout_mode = 0
 offset_left = 10.0
 offset_right = 48.0
@@ -72,6 +80,7 @@ offset_bottom = 70.0
 mouse_filter = 2
 
 [node name="CostLabel" type="Label" parent="CardFront/CostBadge"]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — Card.gd cost_label"
 layout_mode = 0
 offset_top = 2.0
 offset_right = 38.0

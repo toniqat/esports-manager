@@ -5,7 +5,7 @@ extends Button
 # rarity stars top-right), name, then `Lv N` + breakthrough pips (0..BREAKTHROUGH_MAX).
 # Unowned pilots are dimmed with a "미보유" pill over the face and no level row.
 #
-# **The layout is `CollectionCell.tscn`** (cell size, face mask, badge / pill / pip spots,
+# **The layout is `UI_Comp_CollectionCell.tscn`** (cell size, face mask, badge / pill / pip spots,
 # label variations). Build with `CollectionCell.create()` — `.new()` is an empty button.
 # Code fills data only: face texture, position badge (`PositionBadge.set_role`), rarity pill
 # (stars, colour, width), owned state (frame / name variation, dim face, which row shows)
@@ -16,7 +16,7 @@ extends Button
 
 signal cell_tapped(pilot_id: int)
 
-const SCENE_PATH: String = "res://features/meta/collection/CollectionCell.tscn"
+const SCENE_PATH: String = "res://features/meta/collection/UI_Comp_CollectionCell.tscn"
 
 ## Cell size — the scene's `custom_minimum_size`.
 const CELL_W: float = 240.0

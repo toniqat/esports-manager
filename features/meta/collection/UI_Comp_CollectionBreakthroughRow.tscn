@@ -1,0 +1,89 @@
+[gd_scene load_steps=2 format=3 uid="uid://3qe7uspj8odh"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+
+[node name="CollectionBreakthroughRow" type="Panel"]
+editor_description = "One stage of the 돌파 table (CollectionDetailSheet). Row / disc styles and the reached · next colours are data — the sheet applies them."
+custom_minimum_size = Vector2(0, 76)
+offset_right = 960.0
+offset_bottom = 76.0
+size_flags_horizontal = 3
+mouse_filter = 2
+theme = ExtResource("1_theme")
+
+[node name="Disc" type="Panel" parent="."]
+editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_breakthrough()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 16.0
+offset_top = -24.0
+offset_right = 64.0
+offset_bottom = 24.0
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Num" type="Label" parent="Disc"]
+editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_breakthrough()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 24
+text = "1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Kind" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_breakthrough()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_left = 80.0
+offset_right = 160.0
+grow_vertical = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 20
+text = "능력치"
+vertical_alignment = 1
+
+[node name="Desc" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_breakthrough()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 164.0
+offset_right = -136.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 24
+text = "스탯 여섯 모두 +2"
+vertical_alignment = 1
+clip_text = true
+
+[node name="State" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_breakthrough()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -136.0
+offset_right = -16.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_type_variation = &"AccentLabel"
+text = "달성"
+horizontal_alignment = 2
+vertical_alignment = 1

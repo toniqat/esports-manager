@@ -2,10 +2,10 @@ class_name ScenarioCard
 extends Button
 
 # 런 준비 1단계(`ScenarioStepView`)의 카드 한 장 — 이름 · 샐러리캡 칩 · 설명.
-# **모양의 정본은 `ScenarioCard.tscn`.** 이 스크립트는 글자만 넣는다. 고른 / 안 고른
+# **모양의 정본은 `UI_Comp_ScenarioCard.tscn`.** 이 스크립트는 글자만 넣는다. 고른 / 안 고른
 # 판(변형 `SelectableCardButton` / `...On`)은 `ChoiceListView._refresh` 가 고른다.
 
-const SCENE_PATH: String = "res://features/meta/run_setup/ScenarioCard.tscn"
+const SCENE_PATH: String = "res://features/meta/run_setup/UI_Comp_ScenarioCard.tscn"
 
 
 static func create() -> ScenarioCard:

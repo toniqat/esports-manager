@@ -12,8 +12,8 @@ extends CanvasLayer
 #   ├ status line (why 레벨업 is disabled / what just happened) ─────────────────┤
 #   └ [닫기] [레벨업 · cost] ──────────────────────────────────────────────────────┘
 #
-# **The layout lives in `CollectionDetailSheet.tscn`** (plus the item scenes
-# `CollectionStatChip.tscn` · `CollectionBreakthroughRow.tscn`). This script makes no
+# **The layout lives in `UI_View_CollectionDetailSheet.tscn`** (plus the item scenes
+# `UI_Comp_CollectionStatChip.tscn` · `UI_Comp_CollectionBreakthroughRow.tscn`). This script makes no
 # static nodes: it fills `%` nodes with text, shows / hides the optional blocks and
 # wires signals. What stays in code is data: role / rarity / reached tints, the chip
 # pills (sized to their text), the EXP fill width, the bust art + role badge, the
@@ -34,9 +34,9 @@ extends CanvasLayer
 
 signal leveled_up(pilot_id: int, new_level: int)
 
-const SCENE_PATH: String = "res://features/meta/collection/CollectionDetailSheet.tscn"
-const STAT_CHIP_SCENE: PackedScene = preload("res://features/meta/collection/CollectionStatChip.tscn")
-const BT_ROW_SCENE: PackedScene = preload("res://features/meta/collection/CollectionBreakthroughRow.tscn")
+const SCENE_PATH: String = "res://features/meta/collection/UI_View_CollectionDetailSheet.tscn"
+const STAT_CHIP_SCENE: PackedScene = preload("res://features/meta/collection/UI_Comp_CollectionStatChip.tscn")
+const BT_ROW_SCENE: PackedScene = preload("res://features/meta/collection/UI_Comp_CollectionBreakthroughRow.tscn")
 
 const STAT_NAMES: Array = ["전장 명중", "전장 회피", "교전 명중", "교전 회피", "공격 성장", "체력 성장"]
 const BT_KIND_LABELS: Dictionary = {

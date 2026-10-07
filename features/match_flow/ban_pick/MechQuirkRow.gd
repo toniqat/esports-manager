@@ -2,12 +2,12 @@ class_name MechQuirkRow
 extends VBoxContainer
 
 # 메크 상세(`MechDetailPanel`)의 기벽 한 줄 — 등급 색 이름 · 등급, 그 아래 효과 문장.
-# **모양의 정본은 `MechQuirkRow.tscn`** (글자 크기 · 들여쓰기 · 줄 간격). 효과 문장은
+# **모양의 정본은 `UI_Comp_MechQuirkRow.tscn`** (글자 크기 · 들여쓰기 · 줄 간격). 효과 문장은
 # 줄바꿈 Label 이라 길면 줄이 늘어난다. 조건이 이 기체에서 맞지 않는 기벽은 흐리게
 # 그리고 `(조건 미충족)` 을 붙인다 — 색은 등급(데이터)이 정하므로 코드가 넣는다. 흰 모달 위라
 # 등급 색(`QuirkSystem.GRADE_COLORS`, 흰 바탕용)을 그대로 쓰고, 흐린 줄은 바탕 쪽으로 옅게 한다.
 
-const SCENE_PATH: String = "res://features/match_flow/ban_pick/MechQuirkRow.tscn"
+const SCENE_PATH: String = "res://features/match_flow/ban_pick/UI_Comp_MechQuirkRow.tscn"
 
 const EFFECT_COLOR := OutgameTheme.TEXT_SUB
 const EFFECT_OFF_COLOR := OutgameTheme.TEXT_FAINT

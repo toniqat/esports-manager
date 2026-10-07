@@ -1,0 +1,215 @@
+[gd_scene load_steps=2 format=3 uid="uid://bo7g0x31hitga"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+
+[node name="TraitPickerRow" type="Button"]
+editor_description = "One trait row of TraitPickerView (owned: 112 tall, locked: 140 with the unlock line). Frame TraitPickerRow / TraitPickerRowOn (equipped) / TraitPickerRowLocked (code). Badge fill = polarity colour (grey when locked), rarity chip fill = rarity colour → code (variation_box copies). Label variations by state are picked by TraitPickerView._add_row. Mouse = Pass (inside a DragScroll)."
+custom_minimum_size = Vector2(0, 112)
+offset_right = 1032.0
+offset_bottom = 112.0
+focus_mode = 0
+mouse_filter = 1
+theme = ExtResource("1_theme")
+theme_type_variation = &"TraitPickerRow"
+
+[node name="Badge" type="Panel" parent="."]
+editor_description = "[필수] 지우면 오류 — TraitPickerView.gd _add_row()"
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 76.0
+offset_bottom = 76.0
+mouse_filter = 2
+theme_type_variation = &"AccentChip"
+
+[node name="Sign" type="Label" parent="Badge"]
+editor_description = "[필수] 지우면 오류 — TraitPickerView.gd _add_row()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -2.0
+offset_bottom = -2.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 34
+text = "+"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Head" type="HBoxContainer" parent="."]
+editor_description = "Name, then the chips 14px after the name's own width."
+layout_mode = 0
+offset_left = 96.0
+offset_top = 14.0
+offset_right = 736.0
+offset_bottom = 54.0
+mouse_filter = 2
+theme_override_constants/separation = 14
+
+[node name="Name" type="Label" parent="Head"]
+editor_description = "[필수] 지우면 오류 — TraitPickerView.gd"
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 0
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 28
+text = "훈련광"
+
+[node name="ChipsPad" type="MarginContainer" parent="Head"]
+layout_mode = 2
+size_flags_vertical = 0
+mouse_filter = 2
+theme_override_constants/margin_top = 6
+
+[node name="Chips" type="HBoxContainer" parent="Head/ChipsPad"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="Rarity" type="Panel" parent="Head/ChipsPad/Chips"]
+editor_description = "[필수] 지우면 오류 — TraitPickerView.gd _add_row()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(78, 32)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"AccentChip"
+
+[node name="RarityText" type="Label" parent="Head/ChipsPad/Chips/Rarity"]
+editor_description = "[필수] 지우면 오류 — TraitPickerView.gd _add_row()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 18
+text = "일반"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Layer" type="Panel" parent="Head/ChipsPad/Chips"]
+custom_minimum_size = Vector2(96, 32)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"TraitPickerLayerChip"
+
+[node name="LayerText" type="Label" parent="Head/ChipsPad/Chips/Layer"]
+editor_description = "[필수] 지우면 오류 — TraitPickerView.gd _add_row()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 18
+text = "아웃게임"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="New" type="Panel" parent="Head/ChipsPad/Chips"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TraitPickerView.gd _add_row()
+NEW — a trait unlocked since the lobby opened (ManagerTab only)."
+custom_minimum_size = Vector2(70, 32)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"TraitPickerNewChip"
+
+[node name="NewText" type="Label" parent="Head/ChipsPad/Chips/New"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 18
+text = "NEW"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Desc" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — TraitPickerView.gd _add_row()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 96.0
+offset_top = 60.0
+offset_right = -234.0
+offset_bottom = 92.0
+grow_horizontal = 2
+theme_type_variation = &"CaptionLabel"
+text = "훈련 EXP +15%"
+clip_text = true
+
+[node name="Unlock" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TraitPickerView.gd _add_row()
+Locked rows only: 해금 조건 · … (ManagerUi.unlock_text)."
+visible = false
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 96.0
+offset_top = 96.0
+offset_right = -24.0
+offset_bottom = 128.0
+grow_horizontal = 2
+theme_type_variation = &"AccentLabel"
+text = "해금 조건 · 한 런에서 15승"
+clip_text = true
+
+[node name="Cost" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — TraitPickerView.gd"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -234.0
+offset_top = 18.0
+offset_right = -24.0
+offset_bottom = 50.0
+grow_horizontal = 0
+theme_type_variation = &"PositiveLabel"
+text = "보너스 −2"
+horizontal_alignment = 2
+
+[node name="Equipped" type="Panel" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TraitPickerView.gd _add_row()
+장착 중 — equipped rows only."
+visible = false
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -134.0
+offset_top = 58.0
+offset_right = -24.0
+offset_bottom = 90.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_type_variation = &"TraitPickerEquippedChip"
+
+[node name="EquippedText" type="Label" parent="Equipped"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 18
+text = "장착 중"
+horizontal_alignment = 1
+vertical_alignment = 1

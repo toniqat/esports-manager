@@ -4,7 +4,7 @@ extends PanelContainer
 # One selectable card of `ManagerTypePopup`: name (+ "현재" chip) and description on top,
 # the six manager stats (`StaffSystem.STATS` order) as a row of sunk cells below.
 #
-# **Layout lives in `ManagerTypeOption.tscn`** — the popup instantiates one per type into
+# **Layout lives in `UI_Comp_ManagerTypeOption.tscn`** — the popup instantiates one per type into
 # its `%Options` box. This script only fills text, toggles the chip and picks the
 # selection look: the card switches between the theme variations `SelectableCard` /
 # `SelectableCardOn` (both padding 0 — the scene's `Margin` pads, so the content never

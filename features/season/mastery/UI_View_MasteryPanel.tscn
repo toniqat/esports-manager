@@ -1,0 +1,134 @@
+[gd_scene load_steps=4 format=3 uid="uid://b5tf1nyft8r23"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+[ext_resource type="Script" uid="uid://cdqc5dsdrcfkf" path="res://features/season/mastery/MasteryPanel.gd" id="2_script"]
+[ext_resource type="PackedScene" path="res://features/season/mastery/UI_Comp_MasteryPilotRow.tscn" id="3_pilot"]
+
+[node name="MasteryPanel" type="VBoxContainer"]
+editor_description = "메크 연구 sheet body (MasteryPanel.open → HubSheet body). Top-wide over the full body width; the sheet's scroll height follows this node's height. The pilot-row sample is replaced at runtime."
+anchors_preset = 10
+anchor_right = 1.0
+grow_horizontal = 2
+mouse_filter = 2
+theme = ExtResource("1_theme")
+theme_override_constants/separation = 0
+script = ExtResource("2_script")
+
+[node name="Empty" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill()"
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 28
+text = "진행 중인 런이 없다"
+
+[node name="Main" type="VBoxContainer" parent="."]
+editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill()"
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="HeadRow" type="Control" parent="Main"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Head" type="Label" parent="Main/HeadRow"]
+editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.62
+offset_bottom = 36.0
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 26
+text = "담당: 윤재혁   ·   지식 16"
+clip_text = true
+
+[node name="Gain" type="Label" parent="Main/HeadRow"]
+editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.62
+anchor_right = 1.0
+offset_bottom = 36.0
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 24
+text = "획득 배율 ×1.56"
+horizontal_alignment = 2
+
+[node name="Legend" type="Label" parent="Main"]
+editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 21
+text = "등급 보정 (스탯 6종)   미숙 -3  ·  보통 ±0  ·  능숙 +2  ·  마스터 +4"
+clip_text = true
+
+[node name="Rules" type="Label" parent="Main"]
+editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 21
+text = "주 마감마다 연구 메크 +6  ·  경기에 탄 메크 +4  (배율 전)"
+clip_text = true
+
+[node name="Auto" type="Button" parent="Main"]
+editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill() · MasteryPanel.gd _ready()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 84)
+layout_mode = 2
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 28
+text = "코치에게 맡기기"
+
+[node name="AutoGap" type="Control" parent="Main"]
+editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="NoCoach" type="Label" parent="Main"]
+editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 21
+text = "메크 코치가 없다 — 선수마다 직접 연구 메크를 고른다"
+clip_text = true
+
+[node name="QuirkOdds" type="Label" parent="Main"]
+editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 21
+text = "기벽 — 연구 메크가 있으면 주 마감 15% 확률로 획득  ·  일반 54%  희귀 34%  영웅 13%"
+clip_text = true
+
+[node name="Pilots" type="VBoxContainer" parent="Main"]
+editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill() · MasteryPanel.gd _ready()"
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="MasteryPilotRow" parent="Main/Pilots" instance=ExtResource("3_pilot")]
+layout_mode = 2
+
+[node name="Tail" type="Control" parent="Main"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+mouse_filter = 2

@@ -1,0 +1,145 @@
+[gd_scene load_steps=3 format=3 uid="uid://d00crjovljpt2"]
+
+[ext_resource type="Script" uid="uid://dmj78et2vm517" path="res://features/season/press/MessengerView.gd" id="1_msg"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="MessengerView" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_msg")
+
+[node name="Background" type="Panel" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MessengerView.gd _ready()
+Screen paper (OutgameTheme.BG). Code extends its top into the notch band (ScreenMetrics.extend_background)."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"ScreenBackground"
+
+[node name="SafeArea" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MessengerView.gd _ready()
+Full rect; code lifts its bottom by the device's bottom inset (the owning screen already sits on the safe top)."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Sub" type="Label" parent="SafeArea"]
+editor_description = "[필수] 지우면 오류 — MessengerView.gd _sub_lbl"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 40.0
+offset_top = 36.0
+offset_right = -40.0
+offset_bottom = 66.0
+grow_horizontal = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 24
+text = "프리시즌 · 3주차 · e스포츠 데일리 기자"
+clip_text = true
+
+[node name="Title" type="Label" parent="SafeArea"]
+editor_description = "[필수] 지우면 오류 — MessengerView.gd _title_lbl"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 40.0
+offset_top = 72.0
+offset_right = -40.0
+offset_bottom = 134.0
+grow_horizontal = 2
+theme_type_variation = &"HeadingLabel"
+text = "기자회견"
+
+[node name="Divider" type="HSeparator" parent="SafeArea"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 40.0
+offset_top = 160.0
+offset_right = -40.0
+offset_bottom = 161.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"Divider"
+
+[node name="Scroll" type="ScrollContainer" parent="SafeArea"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MessengerView.gd _scroll
+Chat log. PASS (not STOP): releases inside must bubble up to the view's gui_input (taps advance the dialogue). Log items (item scenes) are added to %Log by code; answers to %AnswerList. Grows to the RIGHT only: when the log overflows, the scroll bar adds its width past the screen edge (as the code-built view did) instead of shifting the log left."
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 190.0
+offset_bottom = -64.0
+grow_vertical = 2
+horizontal_scroll_mode = 0
+
+[node name="Body" type="VBoxContainer" parent="SafeArea/Scroll"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MessengerView.gd _body
+The chat column: %Log then %Answers, stacked (no separation — every item scene owns its gap below). Min width = screen width (code sets it to the viewport width); PASS so taps bubble up to the view."
+custom_minimum_size = Vector2(1080, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
+[node name="Log" type="VBoxContainer" parent="SafeArea/Scroll/Body"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MessengerView.gd _log
+Chat log — code appends one item scene per line: MessengerNpcBubble · MessengerPlayerBubble · MessengerNarration · MessengerNoteChip (all in this folder). Empty in the scene; run it alone (F6) to see a filled log."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Answers" type="MarginContainer" parent="SafeArea/Scroll/Body"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MessengerView.gd _answers
+Answer choices under the log, shown while the player picks (code toggles). margin_top = gap above, margin_right = screen edge, margin_bottom = gap below the last answer."
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 14
+
+[node name="AnswerList" type="VBoxContainer" parent="SafeArea/Scroll/Body/Answers"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MessengerView.gd _answer_list
+Code adds one MessengerAnswerButton per choice."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 14
+
+[node name="Hint" type="Label" parent="SafeArea"]
+editor_description = "[필수] 지우면 오류 — MessengerView.gd _hint_lbl"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -50.0
+offset_bottom = -22.0
+grow_horizontal = 2
+theme_type_variation = &"FaintLabel"
+text = "화면을 눌러 계속"
+horizontal_alignment = 1

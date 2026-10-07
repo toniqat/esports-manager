@@ -5,7 +5,7 @@ extends Control
 # when there is no image — INTL teams / standalone run), the face crop, a side-coloured rim,
 # the `기벽 n` badge (my pilots, season run) and a transparent tap button (assign step only).
 #
-# **Layout lives in `BanPickPortrait.tscn`.** The crop is data: an eye band during ban/pick,
+# **Layout lives in `UI_Comp_BanPickPortrait.tscn`.** The crop is data: an eye band during ban/pick,
 # the bust once the assign step makes the portrait row tall (`BanPickController`). The rim
 # colour is the side colour and the badge fill the quirk grade colour, so both StyleBoxes are
 # built here / by the controller.

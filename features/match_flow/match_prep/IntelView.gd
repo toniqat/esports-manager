@@ -6,14 +6,14 @@ extends VBoxContainer
 # team detail sheet (`features/season/league/LeagueTeamDetail`, a `HubSheet` body), so both
 # read the same reveal rule the same way.
 #
-# **Layout lives in `IntelView.tscn`** (+ one `IntelPilotRow.tscn` per pilot): a VBox as wide as
+# **Layout lives in `UI_Comp_IntelView.tscn`** (+ one `UI_Comp_IntelPilotRow.tscn` per pilot): a VBox as wide as
 # its parent and as tall as its content — tier header (opponents only) · analyst note
 # (delegated) or the "no analyst" line · five rows. This script only fills `%` nodes, shows /
 # hides the blocks, instances the rows, and paints the tier chip (full = `AccentChip`, below
 # full = a `SURFACE_SUNK` copy of that box — a state colour, `OutgameTheme.variation_box`).
 
-const SCENE_PATH: String = "res://features/match_flow/match_prep/IntelView.tscn"
-const ROW_SCENE: PackedScene = preload("res://features/match_flow/match_prep/IntelPilotRow.tscn")
+const SCENE_PATH: String = "res://features/match_flow/match_prep/UI_Comp_IntelView.tscn"
+const ROW_SCENE: PackedScene = preload("res://features/match_flow/match_prep/UI_Comp_IntelPilotRow.tscn")
 
 var _note_line: Label = null   # scene sample analyst line, duplicated per line
 

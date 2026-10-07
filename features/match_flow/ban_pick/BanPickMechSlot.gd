@@ -4,7 +4,7 @@ extends Control
 # One **mech slot** of a team block (`BanPickTeamBlock`) — the square mech portrait filling the
 # frame, a name band at the bottom, and the mastery / quirk tags in the top-left corner.
 #
-# **Layout lives in `BanPickMechSlot.tscn`.** The controller fills it (`BanPickController.
+# **Layout lives in `UI_Comp_BanPickMechSlot.tscn`.** The controller fills it (`BanPickController.
 # _refresh_side_block`). The frame's shape is the theme variation `BanPickMechSlotFrame`; its
 # border is the **side colour** (data), so `setup` takes a per-instance copy
 # (`OutgameTheme.variation_box`) and puts the colour in.

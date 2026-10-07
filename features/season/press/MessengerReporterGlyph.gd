@@ -3,7 +3,7 @@ class_name MessengerReporterGlyph
 extends Control
 
 # Reporter portrait placeholder — a microphone on a sunk disc (`_draw` widget), laid over the
-# round portrait slot of `MessengerNpcBubble.tscn` when the speaker has no portrait texture.
+# round portrait slot of `UI_Comp_MessengerNpcBubble.tscn` when the speaker has no portrait texture.
 # Scales with the node's width (the scene places it at the portrait's 96 px).
 # Delete once reporter art exists. `@tool` — the editor shows it.
 

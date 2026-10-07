@@ -1,0 +1,23 @@
+[gd_scene load_steps=3 format=3 uid="uid://ctrvajigvdd3q"]
+
+[ext_resource type="Script" uid="uid://cghjea23bf0wn" path="res://features/battle_sim/ui/PilotDetailPanel.gd" id="1_panel"]
+[ext_resource type="Theme" uid="uid://dmrfge5o5tftu" path="res://resources/BattleTheme.tres" id="2_theme"]
+
+[node name="PilotDetailPanel" type="Node"]
+script = ExtResource("1_panel")
+
+[node name="PilotDetailLayer" type="CanvasLayer" parent="."]
+layer = 13
+
+[node name="Root" type="Control" parent="PilotDetailLayer"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — PilotDetailPanel.gd _build()
+상세 한 장(UI_View_PilotDetailView.tscn)은 열 때마다 여기에 하나씩 인스턴스된다 — 닫히는 장이 빠져나가는 동안 다음 장이 들어올 수 있게."
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")

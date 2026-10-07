@@ -1,0 +1,131 @@
+[gd_scene load_steps=2 format=3 uid="uid://40iahlsxbsos"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+
+[node name="ManagerStatRow" type="Control"]
+editor_description = "One row of the 감독 스탯 card (ManagerTab): label · breakdown · final value · [제거] · [−] alloc [+]. Texts, the final / alloc label colours (variation swap) and the disabled states are data — ManagerTab fills them."
+custom_minimum_size = Vector2(0, 92)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 976.0
+offset_bottom = 92.0
+mouse_filter = 2
+theme = ExtResource("1_theme")
+
+[node name="Divider" type="HSeparator" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ManagerTab.gd _ready()
+Hidden on the first row."
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 1.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"Divider"
+
+[node name="Key" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — ManagerTab.gd _ready()"
+unique_name_in_owner = true
+layout_mode = 0
+offset_top = 24.0
+offset_right = 90.0
+offset_bottom = 64.0
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 28
+text = "훈련"
+
+[node name="Parts" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_stats()"
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 96.0
+offset_top = 30.0
+offset_right = 396.0
+offset_bottom = 60.0
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 20
+text = "유형 5 · 제거 −2 · 전문화 +2"
+
+[node name="Final" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_stats()
+AccentLabel when specialised, BodyLabel otherwise (code)."
+layout_mode = 0
+offset_left = 400.0
+offset_top = 16.0
+offset_right = 470.0
+offset_bottom = 72.0
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 40
+text = "5"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Remove" type="Button" parent="."]
+editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_preview() · ManagerTab.gd _fill_stats() · ManagerTab.gd _ready()"
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 490.0
+offset_top = 12.0
+offset_right = 608.0
+offset_bottom = 80.0
+focus_mode = 0
+mouse_filter = 1
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 24
+text = "제거"
+
+[node name="Minus" type="Button" parent="."]
+editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_stats() · ManagerTab.gd _ready()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -224.0
+offset_top = 12.0
+offset_right = -144.0
+offset_bottom = 80.0
+grow_horizontal = 0
+focus_mode = 0
+mouse_filter = 1
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 36
+text = "−"
+
+[node name="Alloc" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_stats()
+AccentLabel when > 0, FaintLabel at 0 (code)."
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -144.0
+offset_top = 12.0
+offset_right = -80.0
+offset_bottom = 80.0
+grow_horizontal = 0
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 26
+text = "+2"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Plus" type="Button" parent="."]
+editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_stats() · ManagerTab.gd _ready()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -80.0
+offset_top = 12.0
+offset_bottom = 80.0
+grow_horizontal = 0
+focus_mode = 0
+mouse_filter = 1
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 36
+text = "+"

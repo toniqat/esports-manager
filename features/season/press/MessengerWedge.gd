@@ -2,8 +2,8 @@
 class_name MessengerWedge
 extends Control
 
-# Speech-bubble tail (`_draw` widget) — placed as a node in `MessengerNpcBubble.tscn` /
-# `MessengerPlayerBubble.tscn`, next to the bubble it belongs to.
+# Speech-bubble tail (`_draw` widget) — placed as a node in `UI_Comp_MessengerNpcBubble.tscn` /
+# `UI_Comp_MessengerPlayerBubble.tscn`, next to the bubble it belongs to.
 #
 # The triangle fills this node's rect and points away from the bubble (`point_left` = the bubble
 # is on the right, the tail points left at the speaker). Its base is pushed `OVERLAP` px into

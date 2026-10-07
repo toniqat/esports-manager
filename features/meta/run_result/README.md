@@ -8,11 +8,11 @@ Run-end settlement and its screen. Contract: `docs/outgame_dev_plan.md` §10.3
 |---|---|---|
 | `RunResult.gd` | `class_name RunResult extends RefCounted` (static) | Settles the current run: score, rewards, achievements → profile, deletes the run file |
 | `RunResultScreen.gd` | `extends Control` (root of `scenes/RunResult.tscn`) | Fills the scene from `GameManager.last_run_result` |
-| `RunResultRow.tscn` | item scene (no script) | One label · value line (진척 · 점수 · 보상 cards) |
-| `RunResultTrueEndRow.tscn` | item scene | One pilot of the 진엔딩 card |
-| `RunResultTraitRow.tscn` | item scene | One trait of the 새 특성 해금 card |
-| `RunResultGrowthRow.tscn` | item scene | One pilot of the 선수 성장 card |
-| `RunResultPilotRow.tscn` | item scene | One pilot of the 이번 런 업적 card (`%Role` = `PositionBadge`) |
+| `UI_Comp_RunResultRow.tscn` | item scene (no script) | One label · value line (진척 · 점수 · 보상 cards) |
+| `UI_Comp_RunResultTrueEndRow.tscn` | item scene | One pilot of the 진엔딩 card |
+| `UI_Comp_RunResultTraitRow.tscn` | item scene | One trait of the 새 특성 해금 card |
+| `UI_Comp_RunResultGrowthRow.tscn` | item scene | One pilot of the 선수 성장 card |
+| `UI_Comp_RunResultPilotRow.tscn` | item scene | One pilot of the 이번 런 업적 card (`%PositionBadge_Role` = `PositionBadge`) |
 | `sim/RunSim.gd` + `sim/RunSim.tscn` | `extends Node` (dev tool, headless) | Run simulator for balancing the score / currency / EXP constants — see "Run simulator" below |
 
 ## RunResult.settle_current_run(outcome) -> Dictionary

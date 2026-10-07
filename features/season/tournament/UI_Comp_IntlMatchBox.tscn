@@ -1,0 +1,79 @@
+[gd_scene load_steps=3 format=3 uid="uid://c2m47j4qcd7m2"]
+
+[ext_resource type="Script" uid="uid://dqbx5nh15gjgt" path="res://features/season/tournament/BracketMatchBox.gd" id="1_box"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="IntlMatchBox" type="Panel"]
+custom_minimum_size = Vector2(280, 130)
+offset_right = 280.0
+offset_bottom = 130.0
+mouse_filter = 2
+theme = ExtResource("2_theme")
+theme_type_variation = &"Card"
+script = ExtResource("1_box")
+slot_title = "8강 1경기"
+corner_radius = 6
+
+[node name="Slot" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — BracketMatchBox.gd _fill_preview() · BracketMatchBox.gd _ready()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 8.0
+offset_top = 4.0
+offset_right = -8.0
+offset_bottom = 26.0
+grow_horizontal = 2
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 18
+text = "8강 1경기"
+
+[node name="Date" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — BracketMatchBox.gd show_match()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 8.0
+offset_top = 4.0
+offset_right = -8.0
+offset_bottom = 26.0
+grow_horizontal = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 16
+text = "1주차"
+horizontal_alignment = 2
+
+[node name="TeamA" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — BracketMatchBox.gd show_match()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 12.0
+offset_top = 36.0
+offset_right = -12.0
+offset_bottom = 68.0
+grow_horizontal = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "Cunning Hares  (CNH)"
+
+[node name="TeamB" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — BracketMatchBox.gd show_match()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = -50.0
+offset_right = -12.0
+offset_bottom = -18.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "Section 6  (S6)"

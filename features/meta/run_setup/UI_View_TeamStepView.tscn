@@ -1,0 +1,15 @@
+[gd_scene load_steps=4 format=3 uid="uid://bcdlkajp1c6mx"]
+
+[ext_resource type="PackedScene" uid="uid://ctknolifgtrrc" path="res://features/meta/run_setup/UI_View_ChoiceListView.tscn" id="1_base"]
+[ext_resource type="Script" uid="uid://dlmb0f11rsrfn" path="res://features/meta/run_setup/TeamStepView.gd" id="2_script"]
+[ext_resource type="PackedScene" uid="uid://wvnbldqq1n86" path="res://features/meta/run_setup/UI_Comp_TeamCard.tscn" id="3_card"]
+
+[node name="TeamStepView" instance=ExtResource("1_base")]
+editor_description = "Run setup step 2 — inherits UI_View_ChoiceListView.tscn (shared layout lives there). The card under %List is an editor preview only; code clears it and instantiates one TeamCard per teams.csv package."
+script = ExtResource("2_script")
+
+[node name="Hint" parent="Safe" index="0"]
+text = "예산이 높을수록 쉽습니다 — 스태프가 많아 직접 해야 하는 일이 적습니다."
+
+[node name="TeamCard_PreviewCard" parent="Safe/Scroll/List" index="0" instance=ExtResource("3_card")]
+layout_mode = 2

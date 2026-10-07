@@ -9,14 +9,14 @@ extends Control
 # Mirrors features/season/tournament/BracketView.gd (Phase 7 4-team layout)
 # but is a separate screen because the panel grid + slot count differ.
 #
-# **Layout lives in `IntlBracketView.tscn`** — build it with `IntlBracketView.create()`.
-# The seven boxes are `IntlMatchBox.tscn` instances (script `BracketMatchBox`) in
+# **Layout lives in `UI_View_IntlBracketView.tscn`** — build it with `IntlBracketView.create()`.
+# The seven boxes are `UI_Comp_IntlMatchBox.tscn` instances (script `BracketMatchBox`) in
 # `%Bracket`: a QF column, an SF column and an F column with spacer Controls fixing the
-# vertical offsets, bound as `%QF1`..`%QF4` `%SF1` `%SF2` `%Final`. Box sizes (QF 280×130,
+# vertical offsets, bound as `%IntlMatchBox_QF1`..`%IntlMatchBox_QF4` `%IntlMatchBox_SF1` `%IntlMatchBox_SF2` `%IntlMatchBox_Final`. Box sizes (QF 280×130,
 # SF 280×150, F 320×170) are the instances' minimum sizes in the scene.
 
-## Built from `IntlBracketView.tscn` — use `create()`, not `.new()`.
-const SCENE_PATH: String = "res://features/season/tournament/IntlBracketView.tscn"
+## Built from `UI_View_IntlBracketView.tscn` — use `create()`, not `.new()`.
+const SCENE_PATH: String = "res://features/season/tournament/UI_View_IntlBracketView.tscn"
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 @onready var _gm: Node = get_node("/root/GameManager")
@@ -107,7 +107,7 @@ func refresh() -> void:
 
 ## Slot order = bracket index order (QF1..QF4, SF1, SF2, F).
 func _match_boxes() -> Array:
-	return [%QF1, %QF2, %QF3, %QF4, %SF1, %SF2, %Final]
+	return [%IntlMatchBox_QF1, %IntlMatchBox_QF2, %IntlMatchBox_QF3, %IntlMatchBox_QF4, %IntlMatchBox_SF1, %IntlMatchBox_SF2, %IntlMatchBox_Final]
 
 
 func _team_text(team_id: int) -> String:

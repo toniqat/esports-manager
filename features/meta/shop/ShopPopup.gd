@@ -5,7 +5,7 @@ extends CanvasLayer
 #   open_reveal(results)  gacha result cards (one `ShopRevealItem` per pull) with NEW / 돌파 n / 파편 +n / 재료 +n
 #   open_rates(pool)      the pool's rate table (one `ShopRateRow` per rarity: %, item count, per-item %)
 #
-# **Layout lives in `ShopPopup.tscn`** (+ the two item scenes). Pattern C of
+# **Layout lives in `UI_View_ShopPopup.tscn`** (+ the two item scenes). Pattern C of
 # `docs/mobile_safe_area.md`: `%Dim` is a flat full-rect Button (tap = close), the `PopupCard`
 # is centred in `%Center` (CenterContainer = `%SafeArea` minus the scene's top / bottom margin)
 # and is STOP so taps on it don't close it. The variable body (reveal grid / rates table) sits
@@ -18,8 +18,8 @@ extends CanvasLayer
 
 signal closed
 
-const SCENE_PATH: String = "res://features/meta/shop/ShopPopup.tscn"
-const RATE_ROW_SCENE: String = "res://features/meta/shop/ShopRateRow.tscn"
+const SCENE_PATH: String = "res://features/meta/shop/UI_View_ShopPopup.tscn"
+const RATE_ROW_SCENE: String = "res://features/meta/shop/UI_Comp_ShopRateRow.tscn"
 const ITEM_COLS: int = 5
 
 ## Display names of the eight profile currencies.

@@ -1,0 +1,51 @@
+[gd_scene load_steps=3 format=3 uid="uid://cvudlnjrdkt0n"]
+
+[ext_resource type="Script" uid="uid://d1okcqfnb72qi" path="res://features/match_flow/ban_pick/MechMasteryRow.gd" id="1_row"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="MechMasteryRow" type="Control"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 416.0
+offset_bottom = 32.0
+mouse_filter = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_row")
+
+[node name="PilotName" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — MechMasteryRow.gd fill()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.46
+anchor_bottom = 1.0
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 21
+text = "▶ 파일럿"
+clip_text = true
+
+[node name="Tier" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — MechMasteryRow.gd fill()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.46
+anchor_right = 0.78
+anchor_bottom = 1.0
+theme_type_variation = &"PositiveLabel"
+theme_override_font_sizes/font_size = 21
+text = "능숙 120"
+
+[node name="Bonus" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — MechMasteryRow.gd fill()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.78
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 21
+text = "+3"
+horizontal_alignment = 2

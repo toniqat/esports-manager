@@ -7,13 +7,13 @@ extends CanvasLayer
 # 끼운다(빈 목록이면 메뉴째 숨는다). 내보낸 빌드에서는 `MatchFlow` 가 아예
 # 만들지 않는다(`OS.has_feature("editor")`).
 #
-# **모양의 정본은 `MatchCheatMenu.tscn`** (레이어 50 = 상세 팝업(20)보다 위, 장면 전환
+# **모양의 정본은 `UI_View_MatchCheatMenu.tscn`** (레이어 50 = 상세 팝업(20)보다 위, 장면 전환
 # 덮개(SceneFade 100)보다 아래 · 버튼 크기 · 간격 · `DarkButton` / `GhostButton` 변형).
-# 치트 버튼 한 줄은 `MatchCheatItem.tscn`. 코드가 하는 일은 안전 영역 인셋만큼
+# 치트 버튼 한 줄은 `UI_Comp_MatchCheatItem.tscn`. 코드가 하는 일은 안전 영역 인셋만큼
 # `%Menu` 를 미는 것과 목록 채우기뿐이다.
 
-const SCENE_PATH: String = "res://features/match_flow/MatchCheatMenu.tscn"
-const ITEM_SCENE_PATH: String = "res://features/match_flow/MatchCheatItem.tscn"
+const SCENE_PATH: String = "res://features/match_flow/UI_View_MatchCheatMenu.tscn"
+const ITEM_SCENE_PATH: String = "res://features/match_flow/UI_Comp_MatchCheatItem.tscn"
 
 var _actions: Array = []   # Array[{label: String, call: Callable}]
 

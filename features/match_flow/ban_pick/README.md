@@ -4,16 +4,16 @@
 | File | Role |
 |---|---|
 | `BanPickController.gd` | `extends Node`, child of MatchFlow. **Rules + state**: sequence, legality, AI, seat table, assignment, result. Fills / refreshes the screen scene, data colours (side · role · tier), drag handling, sheet content |
-| `BanPickView.tscn` / `.gd` | `class_name BanPickView` — **the screen** (one per `enter`, `BanPickView.create()` under `MatchFlow.canvas`). Binds nodes for the controller, `fit_safe_area()`, `fit_pane(cell_h)`, turn banner (`play_banner` / `clear_banner`) |
+| `UI_View_BanPickView.tscn` / `.gd` | `class_name BanPickView` — **the screen** (one per `enter`, `BanPickView.create()` under `MatchFlow.canvas`). Binds nodes for the controller, `fit_safe_area()`, `fit_pane(cell_h)`, turn banner (`play_banner` / `clear_banner`) |
 | `BanPickTeamBlock.gd` | Script on `%EnemyBlock` / `%PlayerBlock` (inline in the view scene): finds ban chips / mech slots / portraits / hint by name; `set_assign_layout(portrait_h)` |
-| `BanPickOrderRow.tscn` / `.gd` | The order strip, instanced as `%OrderRow` in `BanPickView.tscn` (`create()` for other hosts). Scene: 64 tall, `%Pips` holder (full rect) · `%PipIcon` · `%TurnArrow`. Script: one `BanPickOrderPip` per move into `%Pips` (count = sequence), tween / pulse / triangle bob (`build`, `refresh`, `stop`, `_process`); static `same_run` / `seq_run` |
-| `BanPickOrderPip.tscn` | One order cell (no script): `Panel` (`BanPickOrderPip` variation, r6; code puts a copy of that box with squared capsule-inner corners and the side colour) + `Joint` (2px `SURFACE` `ColorRect` on its left edge, full height, shown inside a capsule) |
+| `UI_Comp_BanPickOrderRow.tscn` / `.gd` | The order strip, instanced as `%BanPickOrderRow_OrderRow` in `UI_View_BanPickView.tscn` (`create()` for other hosts). Scene: 64 tall, `%Pips` holder (full rect) · `%PipIcon` · `%TurnArrow`. Script: one `BanPickOrderPip` per move into `%Pips` (count = sequence), tween / pulse / triangle bob (`build`, `refresh`, `stop`, `_process`); static `same_run` / `seq_run` |
+| `UI_Comp_BanPickOrderPip.tscn` | One order cell (no script): `Panel` (`BanPickOrderPip` variation, r6; code puts a copy of that box with squared capsule-inner corners and the side colour) + `Joint` (2px `SURFACE` `ColorRect` on its left edge, full height, shown inside a capsule) |
 | `BanPickGrid.gd` | `@tool` Container on `%Grid`: float-exact grid (`columns`, `h_gap`, `v_gap`) — `GridContainer` lays out in whole pixels and the 191.6px cells drifted 0.6px per row |
-| `BanPickMechCell.tscn` / `.gd` | Grid cell (Button `SelectableTile`, `MOUSE_FILTER_PASS`), `create()` per mech; `setup`, `set_highlight` (amber / side-colour border of variable width, derived in code from the variation's box) |
-| `BanPickMechSlot.tscn` / `.gd` | Team mech slot (frame + art + name band + mastery / quirk tags, tap `Hit`); `setup(side_col, seat)` builds the per-instance frame style |
-| `BanPickPortrait.tscn` / `.gd` | Pilot portrait (back plate, face, side rim, `기벽 n` badge, tap `Hit`) |
-| `BanPickBanChip.tscn` / `.gd` | Ban chip (dimmed art + ✕) |
-| `BanPickSheetCard.tscn` / `.gd` | One card of the sheet's card row (card slot + tap button + count badge), `create()` per card |
+| `UI_Comp_BanPickMechCell.tscn` / `.gd` | Grid cell (Button `SelectableTile`, `MOUSE_FILTER_PASS`), `create()` per mech; `setup`, `set_highlight` (amber / side-colour border of variable width, derived in code from the variation's box) |
+| `UI_Comp_BanPickMechSlot.tscn` / `.gd` | Team mech slot (frame + art + name band + mastery / quirk tags, tap `Hit`); `setup(side_col, seat)` builds the per-instance frame style |
+| `UI_Comp_BanPickPortrait.tscn` / `.gd` | Pilot portrait (back plate, face, side rim, `기벽 n` badge, tap `Hit`) |
+| `UI_Comp_BanPickBanChip.tscn` / `.gd` | Ban chip (dimmed art + ✕) |
+| `UI_Comp_BanPickSheetCard.tscn` / `.gd` | One card of the sheet's card row (card slot + tap button + count badge), `create()` per card |
 | `MechDetailPanel.gd` / `.tscn` | Assign-step mech detail popup — white modal, same family as `DraftDetailPanel` (section "MechDetailPanel" below) |
 
 **F6 standalone run (dummy data)** — every scene above with a script fills itself when run on its own
@@ -29,19 +29,19 @@
   `MechMasteryRow` · `MechQuirkRow`) — hand-set values with real mech / pilot / card / quirk ids,
   filled the way `BanPickController` / `MechDetailPanel` fill them.
 
-## Scene (`BanPickView.tscn`) — what the scene owns vs. what code owns
+## Scene (`UI_View_BanPickView.tscn`) — what the scene owns vs. what code owns
 ```
 BanPickView (Control full rect, theme = OutgameTheme.tres)
 ├ Background            BG ColorRect over the whole viewport (notch / home-indicator bands too)
 ├ %SafeArea             full rect, top / bottom offsets = device insets (fit_safe_area)
-│ ├ %EnemyBlock         VBox anchored top (25 / 8): BanRow(44: SideLabel · BanLabel · Chip0-1) · Gap 5 ·
-│ │                     MechRow(160: Slot0-4, sep 14, centred) · Gap 2 · PortraitRow(80: Pilot0-4)
+│ ├ %EnemyBlock         VBox anchored top (25 / 8): BanRow(44: SideLabel · BanLabel · BanPickBanChip_Chip0-1) · Gap 5 ·
+│ │                     MechRow(160: BanPickMechSlot_Slot0-4, sep 14, centred) · Gap 2 · PortraitRow(80: BanPickPortrait_Pilot0-4)
 │ ├ %PlayerBlock        mirrored, anchored bottom (−10), grows upward: PortraitRow · Gap 2 · MechRow ·
 │ │                     AssignGap 2 + Hint 24 (assign only) · Gap 5 · BanRow
 │ ├ %Band               between the blocks (offsets 309 / −311); hidden in the assign step
 │ │ └ %Pane             full width, height + vertical centring from fit_pane
 │ │   ├ PaneCard        Panel `Card`, 25px side margins
-│ │   ├ Content         VBox (33 / 8 inset): %OrderRow(BanPickOrderRow.tscn instance, 64) · %Tabs(58: Tab0-5 `SelectableTile`, font 20) · 10 · %Scroll/%Grid
+│ │   ├ Content         VBox (33 / 8 inset): %BanPickOrderRow_OrderRow(UI_Comp_BanPickOrderRow.tscn instance, 64) · %Tabs(58: Tab0-5 `SelectableTile`, font 20) · 10 · %Scroll/%Grid
 │ │   ├ %SheetDim       dims the pane only
 │ │   └ %Sheet          bottom sheet (bottom = grid bottom, height from fit_pane): SheetArt(+Placeholder) ·
 │ │                     SheetName · SheetStats · SheetNoPassive / SheetPassiveHead · SheetPassiveDesc ·
@@ -142,7 +142,7 @@ dark board made this one screen look in-game, reading as "has the match already 
 
 ### Order row (14 cells) — top of the pick pane, right above the role-class filter
 It used to be at the **very top** of the screen — to see whose turn it was, the eye had to travel to
-the screen edge and back. Now it is right above where you choose (`%OrderRow`, 64px strip).
+the screen edge and back. Now it is right above where you choose (`%BanPickOrderRow_OrderRow`, 64px strip).
 - A cell's colour is that move's side colour, and **the darker, the more current** (past moves about
   half · remaining moves nearly background).
 - **The current cell thickens** (`PIP_H` 12 → `PIP_ACTIVE_H` 26, `PIP_GROW_SEC` tween) and holds
@@ -207,7 +207,7 @@ above and below the grid.
 ### Mech grid
 5 columns (`%Grid.columns`), `BanPickView.GRID_VISIBLE_ROWS` **4.5 rows**. Being non-integer is the
 point — the fifth row showing half cut is the only signal that "there's more below". The cell size is the cell
-scene's (`BanPickMechCell.tscn`: column width × (square + name line)); the **grid height** is 4.5 rows
+scene's (`UI_Comp_BanPickMechCell.tscn`: column width × (square + name line)); the **grid height** is 4.5 rows
 of it, clamped to the band between the team blocks (`BanPickView.fit_pane`) — so cells stay square on
 every safe area (안전 영역) and only the number of visible rows changes.
 
@@ -349,7 +349,7 @@ quirks yet.
 
 ## MechDetailPanel (`.tscn`)
 
-The assignment step's mech detail popup. **Layout is owned by `MechDetailPanel.tscn`**
+The assignment step's mech detail popup. **Layout is owned by `UI_View_MechDetailPanel.tscn`**
 (`docs/ui_scene_migration.md` §3); the script only binds `%` nodes, fills them and adds the
 per-mech repeated rows. Created once with `MechDetailPanel.create()` (never `.new()` — that is an
 empty layer); `open(m, mastery_rows, quirk_info)` refills and shows it, `close()` hides it (nodes are
@@ -365,10 +365,10 @@ MechDetailPanel (CanvasLayer 20)
     ├ %Scroll (22px inside the backdrop) → Body (VBox)
     │   Header (%Name `HeadingLabel` 40 · %Sub `CaptionLabel`, role colour from code)
     │   StatsTitle `SubLabel` 24 · Stats (3 `SunkPanel` chips at thirds: Key `CaptionLabel` 19 · %HpValue %AtkValue %PresenceValue `BodyLabel` 34)
-    │   %MasteryBlock (title + %MasteryRows ← MechMasteryRow.tscn)
-    │   %QuirkBlock (%QuirkTitle · %QuirkEmpty · %QuirkRows ← MechQuirkRow.tscn)
+    │   %MasteryBlock (title + %MasteryRows ← UI_Comp_MechMasteryRow.tscn)
+    │   %QuirkBlock (%QuirkTitle · %QuirkEmpty · %QuirkRows ← UI_Comp_MechQuirkRow.tscn)
     │   PassiveTitle · %NoPassive | %PassiveBox (%PassiveName `AccentLabel` 30 · %PassiveKw `CaptionLabel` 19 · %PassiveDesc `BodyLabel` 21)
-    │   CardsTitle · %NoCards | %CardsBox (note `CaptionLabel` 18 · %CardGrid 3 cols ← MechCardCell.tscn)
+    │   CardsTitle · %NoCards | %CardsBox (note `CaptionLabel` 18 · %CardGrid 3 cols ← UI_Comp_MechCardCell.tscn)
     └ %Close (`GhostButton`, 84 tall, bottom anchored to the safe bottom −80)
 ```
 
@@ -393,7 +393,7 @@ fallback font and could overrun the panel edge).
 
 ## Grid scrolling — why mech cells are `MOUSE_FILTER_PASS`
 
-The cell `Button` (`BanPickMechCell.tscn`) has its filter **lowered to PASS** (default is STOP).
+The cell `Button` (`UI_Comp_BanPickMechCell.tscn`) has its filter **lowered to PASS** (default is STOP).
 With STOP the mech grid doesn't scroll at all on phones — drag scrolling starts only when the mouse
 press emulated from touch reaches the `ScrollContainer`, and STOP cuts that off; since the cells
 cover the grid with no gaps, there's no spot that escapes. `%Grid` being `IGNORE` is part of

@@ -8,7 +8,7 @@ extends Control
 #   │ the selected section (refilled from the profile after every purchase)     │
 #   └───────────────────────────────────────────────────────────────────────────┘
 #
-# **Layout lives in `ShopTab.tscn`** (+ the row / chip item scenes). Two faces under `Body`:
+# **Layout lives in `UI_View_ShopTab.tscn`** (+ the row / chip item scenes). Two faces under `Body`:
 # `%GachaView` (선수 영입 · 특성 연구) and `%ListView` (head + scroll rows for 파편 상점 ·
 # 특성 제작 · 교환소). Code owns texts, button states, instancing rows, and the data colours
 # (banner tint per pool, rarity chips, trait +/− mark).
@@ -17,11 +17,11 @@ extends Control
 # this file only fills and, after a successful purchase, saves once and refreshes the
 # host (`refresh_currency` · `refresh_badges`). Popups (`ShopPopup`) are our own CanvasLayer.
 
-const SCENE_PATH: String = "res://features/meta/shop/ShopTab.tscn"
-const RATE_CHIP_SCENE: String = "res://features/meta/shop/ShopRateChip.tscn"
-const SHARD_ROW_SCENE: String = "res://features/meta/shop/ShopShardRow.tscn"
-const CRAFT_ROW_SCENE: String = "res://features/meta/shop/ShopCraftRow.tscn"
-const EXCHANGE_ROW_SCENE: String = "res://features/meta/shop/ShopExchangeRow.tscn"
+const SCENE_PATH: String = "res://features/meta/shop/UI_View_ShopTab.tscn"
+const RATE_CHIP_SCENE: String = "res://features/meta/shop/UI_Comp_ShopRateChip.tscn"
+const SHARD_ROW_SCENE: String = "res://features/meta/shop/UI_Comp_ShopShardRow.tscn"
+const CRAFT_ROW_SCENE: String = "res://features/meta/shop/UI_Comp_ShopCraftRow.tscn"
+const EXCHANGE_ROW_SCENE: String = "res://features/meta/shop/UI_Comp_ShopExchangeRow.tscn"
 
 ## Section id → its segment button (`%` name in the scene).
 const SECTIONS: Array = [
@@ -243,7 +243,7 @@ func _fill_shard() -> void:
 		(row.get_node("%Name") as Label).text = String(r["name"])
 		_paint_chip(row.get_node("%Chip"), rar_col)
 		(row.get_node("%ChipText") as Label).text = TraitSystem.rarity_name(int(r["rarity"]))
-		(row.get_node("%Position") as PositionBadge).set_role(int(r["role"]))
+		(row.get_node("%PositionBadge_Position") as PositionBadge).set_role(int(r["role"]))
 		var owned: bool = int(_pm.max_level_of(pid)) > 0
 		(row.get_node("%Status") as Label).text = "돌파 %d/%d" % [
 				int(_pm.breakthrough_of(pid)), RunRules.breakthrough_max()] if owned else "미보유"

@@ -8,12 +8,12 @@ theme (`OutgameTheme`), bottom action bar. Replaces the old 3-slot TitleScreen
 | File | Class | Purpose |
 |---|---|---|
 | `LobbyScreen.gd` | `class_name LobbyScreen extends Control` (root of `scenes/Lobby.tscn`) | **Tab host** (M8~M10): currency strip, tab bar, per-tab action bar, toast, confirm popup, manager type popup. **Layout lives in `scenes/Lobby.tscn`** |
-| `LobbyCurrencyCell.tscn` | — (no script, `VBoxContainer`) | One cell of the currency strip (`%Caption` · `%Value`) — item scene, one per `CURRENCY_STRIP` row |
-| `LobbyTabButton.tscn` | — (no script, flat `Button`) | One tab of the tab bar + its red `%Badge` dot — item scene, one per `TABS` row |
-| `HomeTab.tscn` + `.gd` | `class_name HomeTab extends Control` | 홈 tab — run card, continue / new run / abandon (the old lobby body). **Layout lives in the `.tscn`** |
-| `ConfirmPopup.tscn` + `.gd` | `class_name ConfirmPopup extends CanvasLayer` | Reusable modal confirm (dim + white card + cancel / confirm). **Layout lives in the `.tscn`**, style in `OutgameTheme.tres` variations — first scene-authored outgame UI |
-| `ManagerTypePopup.tscn` + `.gd` | `class_name ManagerTypePopup extends CanvasLayer` | First-lobby manager type pick (운영형 / 실전형), not dismissible (M3); prestige re-pick mode, dismissible (M9). **Layout lives in the `.tscn`** |
-| `ManagerTypeOption.tscn` + `.gd` | `class_name ManagerTypeOption extends PanelContainer` | One option card of `ManagerTypePopup` (name, `현재` chip, desc, six stat cells) — item scene instantiated per type |
+| `UI_Comp_LobbyCurrencyCell.tscn` | — (no script, `VBoxContainer`) | One cell of the currency strip (`%Caption` · `%Value`) — item scene, one per `CURRENCY_STRIP` row |
+| `UI_Comp_LobbyTabButton.tscn` | — (no script, flat `Button`) | One tab of the tab bar + its red `%Badge` dot — item scene, one per `TABS` row |
+| `UI_View_HomeTab.tscn` + `.gd` | `class_name HomeTab extends Control` | 홈 tab — run card, continue / new run / abandon (the old lobby body). **Layout lives in the `.tscn`** |
+| `UI_View_ConfirmPopup.tscn` + `.gd` | `class_name ConfirmPopup extends CanvasLayer` | Reusable modal confirm (dim + white card + cancel / confirm). **Layout lives in the `.tscn`**, style in `OutgameTheme.tres` variations — first scene-authored outgame UI |
+| `UI_View_ManagerTypePopup.tscn` + `.gd` | `class_name ManagerTypePopup extends CanvasLayer` | First-lobby manager type pick (운영형 / 실전형), not dismissible (M3); prestige re-pick mode, dismissible (M9). **Layout lives in the `.tscn`** |
+| `UI_Comp_ManagerTypeOption.tscn` + `.gd` | `class_name ManagerTypeOption extends PanelContainer` | One option card of `ManagerTypePopup` (name, `현재` chip, desc, six stat cells) — item scene instantiated per type |
 
 ## F6 preview (standalone run)
 Every scripted scene here except `LobbyScreen` (the `scenes/Lobby.tscn` root) shows dummy data when run on its own (editor "Run Current Scene") — `_ready` →
@@ -80,7 +80,7 @@ Lobby (Control, full rect, theme = OutgameTheme.tres, LobbyScreen.gd)
   badge / background are `ColorRect` colours.
 
 ## HomeTab (was LobbyScreen body)
-- **Layout lives in `HomeTab.tscn`**; created with `HomeTab.create()` (`.new()` is an empty Control).
+- **Layout lives in `UI_View_HomeTab.tscn`**; created with `HomeTab.create()` (`.new()` is an empty Control).
   Tree: `HomeTab` (full rect, theme) → `VBox` (top-wide, sep 0): Gap 64 · `Title` (`HeadingLabel` 64) · Gap ·
   `Rule` (80×6 `ACCENT` ColorRect) · Gap · `%Summary` (`CaptionLabel`) · Gap · `Section` "진행 중인 런" (920 wide) ·
   Gap · `%RunCard` / `%EmptyCard` (920 wide `Panel` with the `PopupCard` variation — radius 24; Panel so the
@@ -109,7 +109,7 @@ Lobby (Control, full rect, theme = OutgameTheme.tres, LobbyScreen.gd)
 - A summary line under the title: manager level · owned pilots · owned traits.
 
 ## ConfirmPopup
-`ConfirmPopup.create()` (instantiates `ConfirmPopup.tscn` — `ConfirmPopup.new()` is an empty layer),
+`ConfirmPopup.create()` (instantiates `UI_View_ConfirmPopup.tscn` — `ConfirmPopup.new()` is an empty layer),
 `open(title, body, cancel_text, confirm_text, danger)`, `close()`, `is_open()`;
 signals `confirmed` / `cancelled`. Opening / closing toggles the layer's `visible`; nodes are reused.
 - **The `.tscn` is the source of truth for layout and style** (sizes, colours, gaps, fonts). The script
@@ -141,7 +141,7 @@ profile**; changing it later is only via prestige (M9).
   (`_on_manager_type_chosen`). A save error shows the red toast + ERROR haptic.
 - `select(idx)` is public (tap path + headless checks). Selected option = variation `SelectableCardOn`
   (`ACCENT_DIM` fill, 4px `ACCENT` border), others `SelectableCard` (white, 2px `BORDER`), radius 18.
-- Creation: `ManagerTypePopup.create()` (instantiates `ManagerTypePopup.tscn` — `.new()` is an empty layer),
+- Creation: `ManagerTypePopup.create()` (instantiates `UI_View_ManagerTypePopup.tscn` — `.new()` is an empty layer),
   then `open(prestige_mode, current_type)` / `close()` / `is_open()` / `cancel()`; signals `chosen(type_id)` /
   `cancelled`. Open / close toggles the layer's `visible`; nodes are reused (the 감독 tab keeps one instance).
 - **The `.tscn` is the source of truth for layout and style.** Tree: CanvasLayer 20 → `Root` (full rect,
@@ -160,7 +160,7 @@ profile**; changing it later is only via prestige (M9).
   scroll bar shows, the card widens by its width (the options' min width already fills the card). A release that
   ended a scroll drag is not a pick (`_on_option_tapped` checks `DragScroll.moved`). Normal data never reaches
   the cap — pixel-identical to the old `CenterContainer` frame.
-- `ManagerTypeOption.tscn` (item scene, min 824 × 268, root variation `SelectableCard`): `Margin` (28 / 20 / 28) → `VBox` → `Header`
+- `UI_Comp_ManagerTypeOption.tscn` (item scene, min 824 × 268, root variation `SelectableCard`): `Margin` (28 / 20 / 28) → `VBox` → `Header`
   (`%Name` `BodyLabel` 32 + `%Chip` 90 × 36, centred) · `Gap1` · `%Desc` (`CaptionLabel` 21, autowrap, min 60) ·
   `Gap2` · `StatsMargin` (4 / 4) → `%Stats` (HBox sep 8, min 104) → `Stat0..5` (`SunkPanel`, key
   `CaptionLabel` 20 + value `TitleLabel`). API: `fill(row, is_current)`, `set_selected(on)`, signal `tapped`

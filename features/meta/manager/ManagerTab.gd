@@ -19,12 +19,12 @@ extends Control
 #   never saved. Switching preset / prestiging with unsaved edits asks first.
 # - Removals are profile-level and permanent: confirm → `remove_stat` → save at once.
 # - Prestige presets are read-only until `재설정` (`reset_preset`, saved at once).
-# - Layout lives in `ManagerTab.tscn` (+ one `ManagerStatRow.tscn` per stat, and the shared
+# - Layout lives in `UI_View_ManagerTab.tscn` (+ one `UI_Comp_ManagerStatRow.tscn` per stat, and the shared
 #   `ManagerPresetChips` / `TraitPickerView` scenes); every change refills the same nodes
 #   (`_rebuild`), so the scroll position stays.
 
-const SCENE_PATH: String = "res://features/meta/manager/ManagerTab.tscn"
-const STAT_ROW_SCENE: PackedScene = preload("res://features/meta/manager/ManagerStatRow.tscn")
+const SCENE_PATH: String = "res://features/meta/manager/UI_View_ManagerTab.tscn"
+const STAT_ROW_SCENE: PackedScene = preload("res://features/meta/manager/UI_Comp_ManagerStatRow.tscn")
 
 var _host: LobbyScreen
 var _pm: Node
@@ -38,11 +38,11 @@ var _new_ids: Array = []
 var _rows: Dictionary = {}           # String stat key → ManagerStatRow instance
 
 @onready var _scroll: ScrollContainer = %Scroll
-@onready var _traits_view: TraitPickerView = %Traits
-@onready var _preset_chips: ManagerPresetChips = %PresetChips
+@onready var _traits_view: TraitPickerView = %TraitPickerView_Traits
+@onready var _preset_chips: ManagerPresetChips = %ManagerPresetChips_PresetChips
 
 
-## Layout lives in `ManagerTab.tscn` — build with this, not `.new()`.
+## Layout lives in `UI_View_ManagerTab.tscn` — build with this, not `.new()`.
 static func create() -> ManagerTab:
 	return (load(SCENE_PATH) as PackedScene).instantiate() as ManagerTab
 

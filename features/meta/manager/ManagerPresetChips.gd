@@ -2,18 +2,18 @@ class_name ManagerPresetChips
 extends GridContainer
 
 # Preset chips of the lobby `감독` tab (`ManagerTab`) and the run setup `감독` step
-# (`run_setup/ManagerStepView`): one `ManagerPresetChip.tscn` per profile preset.
+# (`run_setup/ManagerStepView`): one `UI_Comp_ManagerPresetChip.tscn` per profile preset.
 # Chip = name + status line: ● 사용 중 (active) / 재설정 필요 (prestige kind) / 특성 n.
 # The selected chip gets the amber frame (`ManagerPresetChipOn`).
 #
-# **The layout is `ManagerPresetChips.tscn`** (5-column grid, gap 12) + the chip item scene.
+# **The layout is `UI_Comp_ManagerPresetChips.tscn`** (5-column grid, gap 12) + the chip item scene.
 # Hosts place an instance of the scene, call `fill()` on every change and connect
 # `chip_pressed` once. The grid sizes itself — no width / height bookkeeping in the host.
 
 signal chip_pressed(idx: int)
 
-const SCENE_PATH: String = "res://features/meta/manager/ManagerPresetChips.tscn"
-const CHIP_SCENE: PackedScene = preload("res://features/meta/manager/ManagerPresetChip.tscn")
+const SCENE_PATH: String = "res://features/meta/manager/UI_Comp_ManagerPresetChips.tscn"
+const CHIP_SCENE: PackedScene = preload("res://features/meta/manager/UI_Comp_ManagerPresetChip.tscn")
 
 
 static func create() -> ManagerPresetChips:

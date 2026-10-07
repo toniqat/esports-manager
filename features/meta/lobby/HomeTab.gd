@@ -4,7 +4,7 @@ extends Control
 # 로비의 홈 탭 — 진행 중인 런 카드와 `새 런`(1) / `이어하기`(2) 행동 바.
 # 런이 없으면 빈 상태 카드와 전폭 `새 런`. 탭 계약은 `LobbyScreen.gd` 머리말.
 #
-# **레이아웃 · 스타일의 정본은 `HomeTab.tscn`** — 이 스크립트는 `%노드` 에 글을 넣고
+# **레이아웃 · 스타일의 정본은 `UI_View_HomeTab.tscn`** — 이 스크립트는 `%노드` 에 글을 넣고
 # 런 카드 / 빈 카드 중 하나를 보일 뿐이다. 생성은 `HomeTab.create()`.
 #
 # `새 런` 을 누를 때 런이 이미 있으면 **포기 확인 모달**을 띄운다 — 확인하면 그 런을
@@ -14,7 +14,7 @@ extends Control
 const PHASE_NAMES: Dictionary = HubView.PHASE_NAMES
 const WEEKDAY_NAMES: Array = OutgameTheme.DAY_LETTERS
 const RUN_SETUP_SCENE: String = "res://scenes/RunSetup.tscn"
-const SCENE_PATH: String = "res://features/meta/lobby/HomeTab.tscn"
+const SCENE_PATH: String = "res://features/meta/lobby/UI_View_HomeTab.tscn"
 
 var _host: LobbyScreen
 var _gm: Node
@@ -63,7 +63,7 @@ func on_bar_pressed(i: int) -> void:
 		_on_new_run_pressed()
 
 
-# ── Fill (레이아웃 · 스타일은 HomeTab.tscn) ─────────────────────────────────────
+# ── Fill (레이아웃 · 스타일은 UI_View_HomeTab.tscn) ─────────────────────────────────────
 func _fill() -> void:
 	var mgr_lv: int = ManagerProgress.level_of(_pm.profile)
 	%Summary.text = "감독 Lv%d · 보유 선수 %d명 · 특성 %d개" % [

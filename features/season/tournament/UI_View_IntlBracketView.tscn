@@ -1,0 +1,210 @@
+[gd_scene load_steps=4 format=3 uid="uid://bemmrliyy6nn1"]
+
+[ext_resource type="Script" uid="uid://crdbnaxpunrt0" path="res://features/season/tournament/IntlBracketView.gd" id="1_view"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" uid="uid://c2m47j4qcd7m2" path="res://features/season/tournament/UI_Comp_IntlMatchBox.tscn" id="3_box"]
+
+[node name="IntlBracketView" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme = ExtResource("2_theme")
+script = ExtResource("1_view")
+
+[node name="Background" type="Panel" parent="."]
+editor_description = "[필수] 지우면 오류 — IntlBracketView.gd _ready()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"ScreenBackground"
+
+[node name="Title" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 18.0
+offset_bottom = 62.0
+grow_horizontal = 2
+theme_type_variation = &"TitleLabel"
+text = "국제대회 브래킷"
+horizontal_alignment = 1
+
+[node name="Phase" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — IntlBracketView.gd refresh()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 70.0
+offset_bottom = 98.0
+grow_horizontal = 2
+theme_type_variation = &"CaptionLabel"
+text = "현재 페이즈: 프리시즌"
+horizontal_alignment = 1
+
+[node name="Stage" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — IntlBracketView.gd refresh()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 102.0
+offset_bottom = 130.0
+grow_horizontal = 2
+theme_type_variation = &"CaptionLabel"
+text = "단계: 4강 진행 중"
+horizontal_alignment = 1
+
+[node name="NextMatch" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — IntlBracketView.gd refresh()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 134.0
+offset_bottom = 162.0
+grow_horizontal = 2
+theme_type_variation = &"AccentLabel"
+text = "다음 매치: 8강 1경기 — 1주차 vs Gentle House"
+horizontal_alignment = 1
+
+[node name="Empty" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — IntlBracketView.gd refresh()"
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 720.0
+offset_bottom = 756.0
+grow_horizontal = 2
+theme_type_variation = &"FaintLabel"
+theme_override_font_sizes/font_size = 26
+text = "국제대회 진행 전입니다."
+horizontal_alignment = 1
+
+[node name="Bracket" type="HBoxContainer" parent="."]
+editor_description = "[필수] 지우면 오류 — IntlBracketView.gd refresh()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -490.0
+offset_top = 240.0
+offset_right = 510.0
+offset_bottom = 910.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Quarters" type="VBoxContainer" parent="Bracket"]
+layout_mode = 2
+size_flags_vertical = 0
+mouse_filter = 2
+theme_override_constants/separation = 50
+
+[node name="IntlMatchBox_QF1" parent="Bracket/Quarters" instance=ExtResource("3_box")]
+editor_description = "[필수] 지우면 오류 — IntlBracketView.gd _match_boxes()"
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="IntlMatchBox_QF2" parent="Bracket/Quarters" instance=ExtResource("3_box")]
+editor_description = "[필수] 지우면 오류 — IntlBracketView.gd _match_boxes()"
+unique_name_in_owner = true
+layout_mode = 2
+slot_title = "8강 2경기"
+
+[node name="IntlMatchBox_QF3" parent="Bracket/Quarters" instance=ExtResource("3_box")]
+editor_description = "[필수] 지우면 오류 — IntlBracketView.gd _match_boxes()"
+unique_name_in_owner = true
+layout_mode = 2
+slot_title = "8강 3경기"
+
+[node name="IntlMatchBox_QF4" parent="Bracket/Quarters" instance=ExtResource("3_box")]
+editor_description = "[필수] 지우면 오류 — IntlBracketView.gd _match_boxes()"
+unique_name_in_owner = true
+layout_mode = 2
+slot_title = "8강 4경기"
+
+[node name="GapQS" type="Control" parent="Bracket"]
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Semis" type="VBoxContainer" parent="Bracket"]
+layout_mode = 2
+size_flags_vertical = 0
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="TopGap" type="Control" parent="Bracket/Semis"]
+custom_minimum_size = Vector2(0, 145)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="IntlMatchBox_SF1" parent="Bracket/Semis" instance=ExtResource("3_box")]
+editor_description = "[필수] 지우면 오류 — IntlBracketView.gd _match_boxes()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(280, 150)
+layout_mode = 2
+slot_title = "4강 1경기"
+
+[node name="MidGap" type="Control" parent="Bracket/Semis"]
+custom_minimum_size = Vector2(0, 180)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="IntlMatchBox_SF2" parent="Bracket/Semis" instance=ExtResource("3_box")]
+editor_description = "[필수] 지우면 오류 — IntlBracketView.gd _match_boxes()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(280, 150)
+layout_mode = 2
+slot_title = "4강 2경기"
+
+[node name="GapSF" type="Control" parent="Bracket"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="FinalColumn" type="VBoxContainer" parent="Bracket"]
+layout_mode = 2
+size_flags_vertical = 0
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="TopGap" type="Control" parent="Bracket/FinalColumn"]
+custom_minimum_size = Vector2(0, 300)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="IntlMatchBox_Final" parent="Bracket/FinalColumn" instance=ExtResource("3_box")]
+editor_description = "[필수] 지우면 오류 — IntlBracketView.gd _match_boxes()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(320, 170)
+layout_mode = 2
+slot_title = "결승"
+
+[node name="OkButton" type="Button" parent="."]
+editor_description = "[필수] 지우면 오류 — IntlBracketView.gd _fill_preview() · IntlBracketView.gd _layout_ok_button() · IntlBracketView.gd _ready()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -128.0
+grow_horizontal = 2
+grow_vertical = 0
+focus_mode = 0
+theme_type_variation = &"BarPrimaryButton"
+text = "확인"

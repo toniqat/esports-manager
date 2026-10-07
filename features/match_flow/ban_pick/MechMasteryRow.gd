@@ -2,11 +2,11 @@ class_name MechMasteryRow
 extends Control
 
 # 메크 상세(`MechDetailPanel`)의 숙련도 한 줄 — 파일럿 이름 · 등급 + 값 · 보정.
-# **모양의 정본은 `MechMasteryRow.tscn`** (세 칸의 폭 비율 · 글자 크기). 이 스크립트는
+# **모양의 정본은 `UI_Comp_MechMasteryRow.tscn`** (세 칸의 폭 비율 · 글자 크기). 이 스크립트는
 # 글자와 데이터 색(누른 자리의 파일럿은 ▶ + 진하게, 등급 색)만 넣는다. 흰 모달 위의 줄이다 —
 # 글자 모양은 씬의 `BodyLabel`, 색은 흰 바탕 팔레트(`OutgameTheme`)에서 온다.
 
-const SCENE_PATH: String = "res://features/match_flow/ban_pick/MechMasteryRow.tscn"
+const SCENE_PATH: String = "res://features/match_flow/ban_pick/UI_Comp_MechMasteryRow.tscn"
 
 const NAME_COLOR := OutgameTheme.TEXT_SUB
 const CURRENT_COLOR := OutgameTheme.TEXT

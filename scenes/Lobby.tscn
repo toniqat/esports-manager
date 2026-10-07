@@ -2,8 +2,8 @@
 
 [ext_resource type="Script" uid="uid://cxs8jh34thg08" path="res://features/meta/lobby/LobbyScreen.gd" id="1_lobby"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
-[ext_resource type="PackedScene" path="res://features/meta/lobby/LobbyCurrencyCell.tscn" id="3_cell"]
-[ext_resource type="PackedScene" path="res://features/meta/lobby/LobbyTabButton.tscn" id="4_tab"]
+[ext_resource type="PackedScene" path="res://features/meta/lobby/UI_Comp_LobbyCurrencyCell.tscn" id="3_cell"]
+[ext_resource type="PackedScene" path="res://features/meta/lobby/UI_Comp_LobbyTabButton.tscn" id="4_tab"]
 
 [node name="Lobby" type="Control"]
 layout_mode = 3
@@ -16,6 +16,7 @@ theme = ExtResource("2_theme")
 script = ExtResource("1_lobby")
 
 [node name="Background" type="Panel" parent="."]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _fit_safe_area()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -27,6 +28,7 @@ mouse_filter = 2
 theme_type_variation = &"ScreenBackground"
 
 [node name="Tabs" type="Control" parent="."]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd switch_tab()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -37,6 +39,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="CurrencyStrip" type="Control" parent="."]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _place_tab()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 10
@@ -46,6 +49,7 @@ grow_horizontal = 2
 mouse_filter = 2
 
 [node name="StripBack" type="Panel" parent="CurrencyStrip"]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _fit_safe_area()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -57,6 +61,7 @@ mouse_filter = 2
 theme_type_variation = &"LobbySurfaceBar"
 
 [node name="CurrencyCells" type="HBoxContainer" parent="CurrencyStrip"]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _sync_currency_cells()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -69,19 +74,19 @@ grow_vertical = 2
 mouse_filter = 2
 theme_override_constants/separation = 0
 
-[node name="Cell0" parent="CurrencyStrip/CurrencyCells" instance=ExtResource("3_cell")]
+[node name="LobbyCurrencyCell_Cell0" parent="CurrencyStrip/CurrencyCells" instance=ExtResource("3_cell")]
 layout_mode = 2
 
-[node name="Cell1" parent="CurrencyStrip/CurrencyCells" instance=ExtResource("3_cell")]
+[node name="LobbyCurrencyCell_Cell1" parent="CurrencyStrip/CurrencyCells" instance=ExtResource("3_cell")]
 layout_mode = 2
 
-[node name="Cell2" parent="CurrencyStrip/CurrencyCells" instance=ExtResource("3_cell")]
+[node name="LobbyCurrencyCell_Cell2" parent="CurrencyStrip/CurrencyCells" instance=ExtResource("3_cell")]
 layout_mode = 2
 
-[node name="Cell3" parent="CurrencyStrip/CurrencyCells" instance=ExtResource("3_cell")]
+[node name="LobbyCurrencyCell_Cell3" parent="CurrencyStrip/CurrencyCells" instance=ExtResource("3_cell")]
 layout_mode = 2
 
-[node name="Cell4" parent="CurrencyStrip/CurrencyCells" instance=ExtResource("3_cell")]
+[node name="LobbyCurrencyCell_Cell4" parent="CurrencyStrip/CurrencyCells" instance=ExtResource("3_cell")]
 layout_mode = 2
 
 [node name="StripDivider" type="HSeparator" parent="CurrencyStrip"]
@@ -97,6 +102,7 @@ mouse_filter = 2
 theme_type_variation = &"Divider"
 
 [node name="SafeBottom" type="Control" parent="."]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _fit_safe_area() · LobbyScreen.gd _place_tab()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -107,6 +113,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="ActionBar" type="Control" parent="SafeBottom"]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _bar · LobbyScreen.gd _lift_bar() · LobbyScreen.gd _place_tab()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 12
@@ -120,6 +127,7 @@ grow_vertical = 0
 mouse_filter = 2
 
 [node name="TabBar" type="Control" parent="SafeBottom"]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _place_tab()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 12
@@ -132,6 +140,7 @@ grow_vertical = 0
 mouse_filter = 2
 
 [node name="TabBarBack" type="Panel" parent="SafeBottom/TabBar"]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _fit_safe_area()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -152,6 +161,7 @@ mouse_filter = 2
 color = Color(0.78, 0.784, 0.808, 1)
 
 [node name="TabButtons" type="HBoxContainer" parent="SafeBottom/TabBar"]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _sync_tab_buttons()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -161,26 +171,27 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 0
 
-[node name="Tab0" parent="SafeBottom/TabBar/TabButtons" instance=ExtResource("4_tab")]
+[node name="LobbyTabButton_Tab0" parent="SafeBottom/TabBar/TabButtons" instance=ExtResource("4_tab")]
 layout_mode = 2
 
-[node name="Tab1" parent="SafeBottom/TabBar/TabButtons" instance=ExtResource("4_tab")]
+[node name="LobbyTabButton_Tab1" parent="SafeBottom/TabBar/TabButtons" instance=ExtResource("4_tab")]
 layout_mode = 2
 text = "컬렉션"
 
-[node name="Tab2" parent="SafeBottom/TabBar/TabButtons" instance=ExtResource("4_tab")]
+[node name="LobbyTabButton_Tab2" parent="SafeBottom/TabBar/TabButtons" instance=ExtResource("4_tab")]
 layout_mode = 2
 text = "감독"
 
-[node name="Tab3" parent="SafeBottom/TabBar/TabButtons" instance=ExtResource("4_tab")]
+[node name="LobbyTabButton_Tab3" parent="SafeBottom/TabBar/TabButtons" instance=ExtResource("4_tab")]
 layout_mode = 2
 text = "상점"
 
-[node name="Tab4" parent="SafeBottom/TabBar/TabButtons" instance=ExtResource("4_tab")]
+[node name="LobbyTabButton_Tab4" parent="SafeBottom/TabBar/TabButtons" instance=ExtResource("4_tab")]
 layout_mode = 2
 text = "패스"
 
 [node name="Toast" type="Panel" parent="SafeBottom"]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _hide_toast() · LobbyScreen.gd _toast_style · LobbyScreen.gd show_toast()"
 unique_name_in_owner = true
 z_index = 5
 layout_mode = 1
@@ -198,6 +209,7 @@ mouse_filter = 2
 theme_type_variation = &"LobbyToast"
 
 [node name="ToastText" type="Label" parent="SafeBottom/Toast"]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _hide_toast() · LobbyScreen.gd show_toast()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15

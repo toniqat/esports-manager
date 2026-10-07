@@ -6,13 +6,13 @@ Manager growth and presets between runs. Contract: `docs/outgame_dev_plan.md` §
 | File | Class | Role |
 |---|---|---|
 | `ManagerProgress.gd` | `class_name ManagerProgress extends RefCounted` (static) | Pure rules over the profile dict: levels (`manager_levels.csv`), removal / specialisation points, preset stats + validation, prestige. UI helpers: `level_progress`, `toggle_trait`, `preset_copy` / `store_preset` |
-| `ManagerTab.tscn` + `.gd` | `class_name ManagerTab extends Control` | Lobby `감독` tab (header · presets · stats · traits, action bar). **Layout lives in the `.tscn`** (style = `OutgameTheme.tres` variations); built with `ManagerTab.create()` (not `.new()`) by `LobbyScreen._make_tab` |
-| `ManagerStatRow.tscn` | — (no script) | Item scene: one 감독 스탯 row (`%Divider`, `%Key`, `%Parts`, `%Final`, `%Remove`, `%Minus` / `%Alloc` / `%Plus`), one per `StaffSystem.STATS`, instanced once in `ManagerTab._ready` |
-| `TraitPickerView.tscn` + `.gd` | `class_name TraitPickerView extends VBoxContainer` | Trait block shared with the run setup `감독` step: bonus gauge, equipped slots, owned / locked trait rows. `fill(equipped, owned, new_ids)`; emits `trait_pressed(id)` only (the host applies the rule). Placed as a scene instance (`%Traits`) in both hosts; `create()` for code |
-| `TraitPickerSlot.tscn` | — (no script) | Item scene: one equip slot (`%Frame` button: `%Strip` · `%Name` · `%Cost`; `%Empty` "빈 칸"), equal widths in `%Slots` |
-| `TraitPickerRow.tscn` | — (no script) | Item scene: one trait row (Button): `%Badge`/`%Sign`, Head HBox `%Name` + chips (`%Rarity`/`%RarityText`, `%LayerText`, `%New`), `%Desc`, `%Unlock` (locked), `%Cost`, `%Equipped` |
-| `ManagerPresetChips.tscn` + `.gd` | `class_name ManagerPresetChips extends GridContainer` | Preset chip grid shared with the run setup `감독` step (5 columns, gap 12, equal widths): `fill(profile, selected)`, signal `chip_pressed(idx)`. Placed as a scene instance in both hosts |
-| `ManagerPresetChip.tscn` | — (no script) | Item scene: one preset chip (Button, h 104): `%Name`, `%Status` |
+| `UI_View_ManagerTab.tscn` + `.gd` | `class_name ManagerTab extends Control` | Lobby `감독` tab (header · presets · stats · traits, action bar). **Layout lives in the `.tscn`** (style = `OutgameTheme.tres` variations); built with `ManagerTab.create()` (not `.new()`) by `LobbyScreen._make_tab` |
+| `UI_Comp_ManagerStatRow.tscn` | — (no script) | Item scene: one 감독 스탯 row (`%Divider`, `%Key`, `%Parts`, `%Final`, `%Remove`, `%Minus` / `%Alloc` / `%Plus`), one per `StaffSystem.STATS`, instanced once in `ManagerTab._ready` |
+| `UI_Comp_TraitPickerView.tscn` + `.gd` | `class_name TraitPickerView extends VBoxContainer` | Trait block shared with the run setup `감독` step: bonus gauge, equipped slots, owned / locked trait rows. `fill(equipped, owned, new_ids)`; emits `trait_pressed(id)` only (the host applies the rule). Placed as a scene instance (`%Traits`) in both hosts; `create()` for code |
+| `UI_Comp_TraitPickerSlot.tscn` | — (no script) | Item scene: one equip slot (`%Frame` button: `%Strip` · `%Name` · `%Cost`; `%Empty` "빈 칸"), equal widths in `%Slots` |
+| `UI_Comp_TraitPickerRow.tscn` | — (no script) | Item scene: one trait row (Button): `%Badge`/`%Sign`, Head HBox `%Name` + chips (`%Rarity`/`%RarityText`, `%LayerText`, `%New`), `%Desc`, `%Unlock` (locked), `%Cost`, `%Equipped` |
+| `UI_Comp_ManagerPresetChips.tscn` + `.gd` | `class_name ManagerPresetChips extends GridContainer` | Preset chip grid shared with the run setup `감독` step (5 columns, gap 12, equal widths): `fill(profile, selected)`, signal `chip_pressed(idx)`. Placed as a scene instance in both hosts |
+| `UI_Comp_ManagerPresetChip.tscn` | — (no script) | Item scene: one preset chip (Button, h 104): `%Name`, `%Status` |
 | `ManagerUi.gd` | `class_name ManagerUi extends RefCounted` (static) | Shared pieces: read-only `add_stat_cells` (still code-built), `preset_name`, `signed`, `bonus_color`, `unlock_text` (§12.4 grammar → Korean) |
 
 ## F6 preview (standalone run)
@@ -44,18 +44,18 @@ ManagerTab (Control, theme = OutgameTheme.tres, preview 1080×1568 — host sets
     ├ Header (MarginContainer, min h 236) ─ Bg (Panel · Card) + Pad (Margin 28 / 28) ─ Content (anchored):
     │   %TypeTitle (TitleLabel) · %PrestigeChip/%PrestigeChipText (right) · %Level (AccentLabel 34) ·
     │   ExpTrack (ProgressTrack, 150 .. −250) ─ %ExpFill · %ExpText · %Prestige (right, 230×72) · %Info (FaintLabel 20)
-    ├ Presets (VBox 0): PresetsTitle (min h 52) · %PresetChips (ManagerPresetChips.tscn) · %ResetBox (top 16, hidden)
+    ├ Presets (VBox 0): PresetsTitle (min h 52) · %ManagerPresetChips_PresetChips (UI_Comp_ManagerPresetChips.tscn) · %ResetBox (top 16, hidden)
     │   └ ResetCard (Panel `ManagerDangerCard`, h 120): title (`NegativeLabel` 24) · body · %Reset (PrimaryButton 26)
     ├ Stats (MarginContainer) ─ Bg (Card) + Pad (28 / 0 / 28 / 16) ─ VBox 0:
-    │   Head (h 108): StatsTitle · %RemoveChip · %SpecChip (right) · %Formula │ %StatRows (6 × ManagerStatRow.tscn, h 92)
-    └ %Traits (TraitPickerView.tscn instance)
+    │   Head (h 108): StatsTitle · %RemoveChip · %SpecChip (right) · %Formula │ %StatRows (6 × UI_Comp_ManagerStatRow.tscn, h 92)
+    └ %TraitPickerView_Traits (UI_Comp_TraitPickerView.tscn instance)
 ```
 - **Code owns only data**: texts; chip pills (`_paint_chip`: `flat_style(bg, h / 2)` + text colour — data
   colours); `%ExpFill.anchor_right` = EXP ratio (min width = its height while > 0, hidden at 0); the
   `%Prestige` button's look (`PrimaryButton` 26 when `can_prestige` passes, else disabled `GhostButton` 24);
   `%Final` / `%Alloc` variation swaps (`AccentLabel` ↔ `BodyLabel` / `FaintLabel`); disabled states;
-  `%ResetBox` visibility. The shared scenes size themselves: `%PresetChips.fill(profile, idx)` and
-  `%Traits.fill(...)` on every `_rebuild`; their signals are connected once in `_ready`.
+  `%ResetBox` visibility. The shared scenes size themselves: `%ManagerPresetChips_PresetChips.fill(profile, idx)` and
+  `%TraitPickerView_Traits.fill(...)` on every `_rebuild`; their signals are connected once in `_ready`.
 
 Top to bottom:
 1. **Header card** — `<type> 감독`, `Lv n`, EXP bar inside the level (`level_progress`; "최고 레벨" at
@@ -89,19 +89,19 @@ Top to bottom:
   the lobby lives), clears the pending list, saves and calls `host.refresh_badges()`.
 
 ## Shared scenes — `ManagerPresetChips` · `TraitPickerView`
-Both used by the lobby `감독` tab and the run setup `감독` step (`run_setup/ManagerStepView.tscn`
-instances them as `%Chips` · `%Traits`). Layout / style are the scenes; code fills texts, switches
+Both used by the lobby `감독` tab and the run setup `감독` step (`run_setup/UI_View_ManagerStepView.tscn`
+instances them as `%ManagerPresetChips_Chips` · `%TraitPickerView_Traits`). Layout / style are the scenes; code fills texts, switches
 variations by state and paints data colours. Every tap target is a `MOUSE_FILTER_PASS` Button (the hosts
 scroll with `DragScroll`).
 ```
-ManagerPresetChips (GridContainer, 5 cols, h/v sep 12) ─ n × ManagerPresetChip.tscn (Button, min h 104, h-expand)
+ManagerPresetChips (GridContainer, 5 cols, h/v sep 12) ─ n × UI_Comp_ManagerPresetChip.tscn (Button, min h 104, h-expand)
   └ %Name (y 14..50, centred) · %Status (y 56..86, font 20)
 
 TraitPickerView (VBox, sep 0)
 ├ Head (h 44): Title "특성" (BodyLabel 30, left half) · %Count (right half, 24)
 ├ Gap 8 · %Gauge (Panel, h 104): Key · %Bonus (40) · %Note · %Rule (right-aligned, x 260 .. −24)
-├ Gap 16 · %Slots (HBox, sep 12, h 112) ─ max(slot_count, equipped) × TraitPickerSlot.tscn
-├ Gap 24 · OwnedHead (h 44) ─ %OwnedTitle · %OwnedRows (VBox, sep 10) ─ TraitPickerRow.tscn (h 112)
+├ Gap 16 · %Slots (HBox, sep 12, h 112) ─ max(slot_count, equipped) × UI_Comp_TraitPickerSlot.tscn
+├ Gap 24 · OwnedHead (h 44) ─ %OwnedTitle · %OwnedRows (VBox, sep 10) ─ UI_Comp_TraitPickerRow.tscn (h 112)
 └ %Locked (VBox, hidden when none): Gap 24 · LockedHead ─ %LockedTitle · %LockedRows (sep 10) ─ rows h 140
 ```
 | Piece | Variation in the scene / code | Code colour (data) |

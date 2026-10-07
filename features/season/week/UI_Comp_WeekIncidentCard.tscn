@@ -1,0 +1,67 @@
+[gd_scene load_steps=2 format=3 uid="uid://dfn67gssernyv"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+
+[node name="WeekIncidentCard" type="Panel"]
+editor_description = "The day's incident. Code gives it the NEGATIVE lead bar (lead_bar_style); pending → %Line says 눌러서 대응하기 in red and %Hit reopens the dialog, resolved → effect notes and %Hit hidden."
+custom_minimum_size = Vector2(1000, 150)
+offset_right = 1000.0
+offset_bottom = 150.0
+mouse_filter = 2
+theme = ExtResource("1_theme")
+theme_type_variation = &"Card"
+
+[node name="Portrait" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — WeekProgressView.gd
+Slot for the round portrait — code adds the drawn OutgameTheme.add_round_portrait widget here."
+anchors_preset = 0
+offset_left = 28.0
+offset_top = 33.0
+offset_right = 112.0
+offset_bottom = 117.0
+mouse_filter = 2
+
+[node name="Head" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — WeekProgressView.gd"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 136.0
+offset_top = 30.0
+offset_right = -28.0
+offset_bottom = 70.0
+grow_horizontal = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 28
+text = "사건 — 지각 · Ellen"
+
+[node name="Line" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — WeekProgressView.gd"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 136.0
+offset_top = 76.0
+offset_right = -28.0
+offset_bottom = 136.0
+grow_horizontal = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 21
+text = "눌러서 대응하기"
+autowrap_mode = 3
+
+[node name="Hit" type="Button" parent="."]
+editor_description = "[필수] 지우면 오류 — WeekProgressView.gd"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+theme_type_variation = &"TextButton"
+flat = true

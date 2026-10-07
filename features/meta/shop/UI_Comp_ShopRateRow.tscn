@@ -1,0 +1,85 @@
+[gd_scene load_steps=2 format=3 uid="uid://bjcmrfr2aadvp"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+
+[node name="ShopRateRow" type="VBoxContainer"]
+custom_minimum_size = Vector2(900, 64)
+offset_right = 900.0
+offset_bottom = 64.0
+mouse_filter = 2
+theme = ExtResource("1_theme")
+theme_override_constants/separation = 0
+
+[node name="Divider" type="HSeparator" parent="."]
+layout_mode = 2
+theme_type_variation = &"Divider"
+
+[node name="Gap1" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 9)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Cells" type="HBoxContainer" parent="."]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="ChipCell" type="Control" parent="Cells"]
+custom_minimum_size = Vector2(270, 0)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Chip" type="Panel" parent="Cells/ChipCell"]
+editor_description = "[필수] 지우면 오류 — ShopPopup.gd open_rates()"
+unique_name_in_owner = true
+layout_mode = 0
+offset_right = 120.0
+offset_bottom = 40.0
+mouse_filter = 2
+
+[node name="ChipText" type="Label" parent="Cells/ChipCell/Chip"]
+editor_description = "[필수] 지우면 오류 — ShopPopup.gd open_rates()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"OnFillLabel"
+text = "영웅"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Pct" type="Label" parent="Cells"]
+editor_description = "[필수] 지우면 오류 — ShopPopup.gd open_rates()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(225, 0)
+layout_mode = 2
+size_flags_vertical = 1
+theme_type_variation = &"BodyLabel"
+text = "13.0%"
+
+[node name="Count" type="Label" parent="Cells"]
+editor_description = "[필수] 지우면 오류 — ShopPopup.gd open_rates()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(207, 0)
+layout_mode = 2
+size_flags_vertical = 1
+theme_type_variation = &"BodyLabel"
+text = "5"
+
+[node name="Each" type="Label" parent="Cells"]
+editor_description = "[필수] 지우면 오류 — ShopPopup.gd open_rates()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(198, 0)
+layout_mode = 2
+size_flags_vertical = 1
+theme_type_variation = &"BodyLabel"
+text = "2.60%"
+
+[node name="Gap2" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+mouse_filter = 2

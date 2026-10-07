@@ -23,11 +23,11 @@ extends Control
 const LOBBY_SCENE: String = "res://scenes/Lobby.tscn"
 const RUN_SETUP_SCENE: String = "res://scenes/RunSetup.tscn"
 
-const ROW_SCENE: PackedScene = preload("res://features/meta/run_result/RunResultRow.tscn")
-const TRUE_END_ROW_SCENE: PackedScene = preload("res://features/meta/run_result/RunResultTrueEndRow.tscn")
-const TRAIT_ROW_SCENE: PackedScene = preload("res://features/meta/run_result/RunResultTraitRow.tscn")
-const GROWTH_ROW_SCENE: PackedScene = preload("res://features/meta/run_result/RunResultGrowthRow.tscn")
-const PILOT_ROW_SCENE: PackedScene = preload("res://features/meta/run_result/RunResultPilotRow.tscn")
+const ROW_SCENE: PackedScene = preload("res://features/meta/run_result/UI_Comp_RunResultRow.tscn")
+const TRUE_END_ROW_SCENE: PackedScene = preload("res://features/meta/run_result/UI_Comp_RunResultTrueEndRow.tscn")
+const TRAIT_ROW_SCENE: PackedScene = preload("res://features/meta/run_result/UI_Comp_RunResultTraitRow.tscn")
+const GROWTH_ROW_SCENE: PackedScene = preload("res://features/meta/run_result/UI_Comp_RunResultGrowthRow.tscn")
+const PILOT_ROW_SCENE: PackedScene = preload("res://features/meta/run_result/UI_Comp_RunResultPilotRow.tscn")
 
 const OUTCOME_TITLES: Dictionary = {
 	"clear":   "런 클리어",
@@ -251,7 +251,7 @@ func _fill_achievement_card() -> void:
 		var row: Control = PILOT_ROW_SCENE.instantiate()
 		_portrait(row.get_node("%Portrait"), pid)
 		(row.get_node("%Name") as Label).text = String(pd.get("name", ""))
-		(row.get_node("%Role") as PositionBadge).set_role(int(pd.get("role", -1)))
+		(row.get_node("%PositionBadge_Role") as PositionBadge).set_role(int(pd.get("role", -1)))
 		var mvp_n: int = int(a.get("mvp", 0))
 		var pom_n: int = int(a.get("pom", 0))
 		_count_chip(row.get_node("%Mvp"), row.get_node("%MvpText"), "MVP %d" % mvp_n, mvp_n > 0)

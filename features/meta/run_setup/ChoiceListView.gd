@@ -6,10 +6,10 @@ extends Control
 #   단계 머리글 아래(`RunSetupScreen.content_top()`)부터: 안내 한 줄 → 카드 목록
 #   (세로 스크롤) → 하단 바 `뒤로`(1) / `다음`(2)
 #
-# **모양의 정본은 `ChoiceListView.tscn`** (안내 줄 · 스크롤 목록 · 카드 간격 · 하단 바).
-# 잇는 단계는 그 씬을 상속한 씬(`ScenarioStepView.tscn` · `TeamStepView.tscn` — 루트
-# 스크립트만 바꾼다)이고, 카드 한 장은 단계마다의 아이템 씬(`ScenarioCard.tscn` ·
-# `TeamCard.tscn`)이다. 생성은 각 단계의 `create()`.
+# **모양의 정본은 `UI_View_ChoiceListView.tscn`** (안내 줄 · 스크롤 목록 · 카드 간격 · 하단 바).
+# 잇는 단계는 그 씬을 상속한 씬(`UI_View_ScenarioStepView.tscn` · `UI_View_TeamStepView.tscn` — 루트
+# 스크립트만 바꾼다)이고, 카드 한 장은 단계마다의 아이템 씬(`UI_Comp_ScenarioCard.tscn` ·
+# `UI_Comp_TeamCard.tscn`)이다. 생성은 각 단계의 `create()`.
 #
 # 카드는 통째로 하나의 `Button` 이다 — 누르면 고른 것이 되고(앰버 테두리),
 # `다음` 은 하나를 골랐을 때만 풀린다. 카드는 `ScrollContainer` 안에 있으므로

@@ -4,13 +4,13 @@ extends MarginContainer
 # One centred effect / verdict chip under the outcome in `MessengerView` (`팀 신뢰 +3`,
 # `멘탈 판정 실패`).
 #
-# **Layout lives in `MessengerNoteChip.tscn`** — pill height, padding, gap below; the chip is as
+# **Layout lives in `UI_Comp_MessengerNoteChip.tscn`** — pill height, padding, gap below; the chip is as
 # wide as its text. The scene shows the good look (`AccentChip` + `AccentLabel`); a bad note
 # (failed check) is a sunk pill with grey text: `%Chip` switches to the
 # `MessengerNoteChipMuted` variation and the label to `CaptionLabel`.
 # Create with `MessengerNoteChip.create()`.
 
-const SCENE_PATH: String = "res://features/season/press/MessengerNoteChip.tscn"
+const SCENE_PATH: String = "res://features/season/press/UI_Comp_MessengerNoteChip.tscn"
 
 
 static func create() -> MessengerNoteChip:

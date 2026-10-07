@@ -4,8 +4,8 @@ extends RefCounted
 # Shared building blocks of the lobby `감독` tab (`ManagerTab`) and the run setup
 # `감독` step (`run_setup/ManagerStepView`): preset names, the read-only six-stat
 # row and the Korean text of a trait unlock condition (plan §12.4 grammar).
-# The preset chips are the `ManagerPresetChips.tscn` scene; the trait block is
-# `TraitPickerView.tscn`.
+# The preset chips are the `UI_Comp_ManagerPresetChips.tscn` scene; the trait block is
+# `UI_Comp_TraitPickerView.tscn`.
 # Pure UI helpers — rules stay in `ManagerProgress` / `TraitSystem`.
 
 const STAT_CELL_H: float = 120.0

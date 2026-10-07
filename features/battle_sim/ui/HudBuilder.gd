@@ -3,8 +3,8 @@ extends Node
 
 @onready var _bs: BattleSim = get_parent() as BattleSim
 
-# **HUD 의 노드 트리 · 자리 · 모양의 정본은 `BattleHud.tscn` 이다** (+ 스트립
-# `PilotStrip.tscn` · 칸 `PilotStripCell.tscn`). `build_ui()` 가 그 씬을 인스턴스해
+# **HUD 의 노드 트리 · 자리 · 모양의 정본은 `UI_View_BattleHud.tscn` 이다** (+ 스트립
+# `UI_Comp_PilotStrip.tscn` · 칸 `UI_Comp_PilotStripCell.tscn`). `build_ui()` 가 그 씬을 인스턴스해
 # BattleSim 아래에 붙이고 `%이름` 노드를 묶는다. 이 스크립트가 정하는 것:
 #   • 안전 영역 — 위 덩어리는 `top_offset()`, 아래 덩어리는 아래 인셋만큼 민다.
 #   • 다른 모듈의 기하에서 나오는 자리 — 덱 / 버린 더미 뭉치(손패 행 · 거터),
@@ -16,7 +16,7 @@ extends Node
 # 뒤판 · 아군 스트립 · 킬로그 · 뭉치 · 히트 버튼 · 도넛 · 예약 칩 · 미리보기 · 차례 알림).
 # 다른 모듈이 그 뒤로 손패 카드 · 오버레이를 덧붙이고 `move_child` 로 끼워 넣으므로
 # 순서를 바꾸면 손패가 스트립 뒤로 숨는 규칙(`player_strip_backdrop`) 등이 어긋난다.
-const SCENE_PATH: String = "res://features/battle_sim/ui/BattleHud.tscn"
+const SCENE_PATH: String = "res://features/battle_sim/ui/UI_View_BattleHud.tscn"
 
 # ── 안전 영역 오프셋 ─────────────────────────────────────────────────────────
 # 아래의 모든 상수는 **1080×1920 디자인 화면**에 적힌 값 그대로이고, 실제 기기
@@ -73,7 +73,7 @@ static func bottom_offset() -> float:
 # (실측 확인).
 const TOP_PANEL_Y      := 0.0
 const TOP_PANEL_H      := 248.0
-# ── 씬이 갖는 자리 (`BattleHud.tscn`, 1080×1920 디자인 값) ────────────────────
+# ── 씬이 갖는 자리 (`UI_View_BattleHud.tscn`, 1080×1920 디자인 값) ────────────────────
 # 예전에 여기 있던 자리 상수(`ENEMY_STRIP_RECT` · `PLAYER_STRIP_RECT` · `OBJ_TIMER_*` ·
 # `*_BG_PAD` · 시계 줄 · 성장치 폰트)는 씬 노드의 오프셋 · 테마 변형으로 옮겨 갔다.
 # 값과 그 이유는 그대로다:
@@ -783,7 +783,7 @@ func set_victory_mvp(p: PilotData, row: Dictionary) -> void:
 	portrait.texture = tex
 	portrait.visible = tex != null
 	(_victory_mvp_row.get_node("%MvpName") as Label).text = MvpView.display_name(_bs, p)
-	(_victory_mvp_row.get_node("%MvpPosition") as PositionBadge).set_role(p.role)
+	(_victory_mvp_row.get_node("%PositionBadge_MvpPosition") as PositionBadge).set_role(p.role)
 	(_victory_mvp_row.get_node("%MvpKda") as Label).text = MvpView.kda_text(row)
 
 

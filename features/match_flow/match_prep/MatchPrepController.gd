@@ -7,7 +7,7 @@ extends Node
 # always fully visible. When analysis is delegated an analyst note sits above
 # the opponent rows. Pressing "경기 시작" emits phase_finished.
 #
-# The screen itself is `MatchPrepView.tscn` (white outgame paper, scroll, bottom
+# The screen itself is `UI_View_MatchPrepView.tscn` (white outgame paper, scroll, bottom
 # bar) — this controller only creates it under `_mf.canvas`, fills it and frees
 # it when the player moves on.
 

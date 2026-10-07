@@ -11,14 +11,14 @@ HubView "이번 주 시작 →"  →  PRESS  →  (pick an answer)  →  TRAININ
 | File | Role |
 |---|---|
 | `PressConferenceView.gd` | `class_name PressConferenceView extends Control` — the screen: draws this week's `MentalSystem.press_session` in a `MessengerView`, applies the answer with `MentalSystem.resolve_press`, then `SeasonHub.on_press_finished()` |
-| `PressConferenceView.tscn` | The screen scene: root (theme `OutgameTheme.tres`, PASS) + one `MessengerView.tscn` instance `%Messenger` whose `outcome_hint` is set in the scene (`화면을 눌러 계속`). Created by `SeasonHub` with `PressConferenceView.create()` |
+| `UI_View_PressConferenceView.tscn` | The screen scene: root (theme `OutgameTheme.tres`, PASS) + one `UI_View_MessengerView.tscn` instance `%MessengerView_Messenger` whose `outcome_hint` is set in the scene (`화면을 눌러 계속`). Created by `SeasonHub` with `PressConferenceView.create()` |
 | `MessengerView.gd` | `class_name MessengerView extends Control` — **shared messenger dialogue** (press conference here; interview / outing / incident overlays on the week screen). Create with `MessengerView.create()` (`.new()` is an empty Control). API: `open(sub, title, portrait, lines, choices)` → signal `choice_picked(idx)` → `show_result(outcome)` / `show_outcome(reply_lines, notes, verdict)` → signal `closed`. `reveal_all()` shows every remaining line + the choices at once (previews / harnesses). `@export outcome_hint` = bottom hint after the outcome. Line grammar: plain = left speaker, `>text` = manager (right), `*text` = narration (see `features/season/mental/README.md`). |
-| `MessengerView.tscn` | The **frame** (below): header, scroll, `%Log` column, `%Answers` block, hint |
-| `MessengerNpcBubble.tscn` / `.gd` | Item — one line of the other side (left): portrait slot (`%Portrait` + `%Glyph`), tail (`%Wedge`), white bubble (`%Bubble` → `Pad` → `%Text`). `create()` + `setup(text, portrait, with_portrait)` — follow-up lines hide portrait + tail but keep their columns |
-| `MessengerPlayerBubble.tscn` / `.gd` | Item — one manager line (right): amber `%Bubble` + tail. `create()` + `setup(text)` |
-| `MessengerNarration.tscn` | Item (no script) — centred `*narration` line; code sets `%Text` |
-| `MessengerNoteChip.tscn` / `.gd` | Item — centred effect / verdict pill. `create()` + `setup(text, good)`; scene = good look (`AccentChip` + `AccentLabel`), bad = `MessengerNoteChipMuted` + `CaptionLabel` |
-| `MessengerAnswerButton.tscn` | Item (no script) — one answer choice (`GhostButton` 26, 640 wide, ≥ 96 tall, right-aligned, autowrap); code sets text + `pressed` |
+| `UI_View_MessengerView.tscn` | The **frame** (below): header, scroll, `%Log` column, `%Answers` block, hint |
+| `UI_Comp_MessengerNpcBubble.tscn` / `.gd` | Item — one line of the other side (left): portrait slot (`%Portrait` + `%Glyph`), tail (`%Wedge`), white bubble (`%Bubble` → `Pad` → `%Text`). `create()` + `setup(text, portrait, with_portrait)` — follow-up lines hide portrait + tail but keep their columns |
+| `UI_Comp_MessengerPlayerBubble.tscn` / `.gd` | Item — one manager line (right): amber `%Bubble` + tail. `create()` + `setup(text)` |
+| `UI_Comp_MessengerNarration.tscn` | Item (no script) — centred `*narration` line; code sets `%Text` |
+| `UI_Comp_MessengerNoteChip.tscn` / `.gd` | Item — centred effect / verdict pill. `create()` + `setup(text, good)`; scene = good look (`AccentChip` + `AccentLabel`), bad = `MessengerNoteChipMuted` + `CaptionLabel` |
+| `UI_Comp_MessengerAnswerButton.tscn` | Item (no script) — one answer choice (`GhostButton` 26, 640 wide, ≥ 96 tall, right-aligned, autowrap); code sets text + `pressed` |
 | `MessengerWedge.gd` | `@tool` `_draw` widget — bubble tail. `@export point_left`, `@export_node_path bubble` (tail colour = that bubble's `panel` stylebox fill); the base overlaps the bubble by `OVERLAP` 1 px |
 | `MessengerReporterGlyph.gd` | `@tool` `_draw` widget — reporter microphone placeholder over the portrait slot (no portrait texture) |
 
@@ -29,7 +29,7 @@ conference (reporter · narration · manager lines, three answers; picking one s
 The item scenes preview alone too: `MessengerNpcBubble` (mic portrait + 3-line bubble), `MessengerPlayerBubble`
 (2-line answer), `MessengerNoteChip` (failed-check chip); the script-less items show their baked sample text.
 
-### `MessengerView.tscn` — what the scene owns / what code owns
+### `UI_View_MessengerView.tscn` — what the scene owns / what code owns
 
 ```
 MessengerView (Control, full rect, STOP, theme OutgameTheme.tres)

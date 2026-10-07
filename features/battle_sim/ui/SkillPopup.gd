@@ -34,8 +34,8 @@ extends Node
 # 전장을 붙잡지 않는다 — 순수 정보 + 버튼이라 BATTLE 자동 틱은 그대로 흐른다.
 # 사용 버튼의 활성은 상세 패널과 같은 `PilotSkillSystem.can_activate` 다.
 
-# **레이아웃의 정본은 씬이다** — `SkillPopup.tscn`(층 · 바깥 누름 막)과 열 때마다
-# 인스턴스하는 `SkillPopupCard.tscn`(판 + 화살표). 색 · 판은 전투 테마
+# **레이아웃의 정본은 씬이다** — `UI_View_SkillPopup.tscn`(층 · 바깥 누름 막)과 열 때마다
+# 인스턴스하는 `UI_Comp_SkillPopupCard.tscn`(판 + 화살표). 색 · 판은 전투 테마
 # (`resources/BattleTheme.tres`)의 변형(`BattlePopup` · `BattleSkillNameLabel` /
 # `BattleKeyLabel` · `BattleCaptionLabel` · `BattleStatusLabel` · `BattleActionButton`)이
 # 정한다. 코드가 정하는 것: 판 위치(초상 위, 화면 안 clamp)와 높이(내용), 화살표 모양,
@@ -46,9 +46,9 @@ extends Node
 ## 이 말풍선은 먼저 닫힌다. 씬 `Layer` 의 `layer` 와 같은 값.
 const OVERLAY_LAYER: int = 12
 
-const SCENE_PATH: String = "res://features/battle_sim/ui/SkillPopup.tscn"
+const SCENE_PATH: String = "res://features/battle_sim/ui/UI_View_SkillPopup.tscn"
 ## 열 때마다 하나씩 인스턴스하는 판 + 화살표(닫히는 판이 사라지는 동안 다음 판이 올라온다).
-const CARD_SCENE: PackedScene = preload("res://features/battle_sim/ui/SkillPopupCard.tscn")
+const CARD_SCENE: PackedScene = preload("res://features/battle_sim/ui/UI_Comp_SkillPopupCard.tscn")
 
 ## 판 폭 · 안쪽 여백은 씬(`%Panel` 최소 폭)과 테마(`BattlePopup`, `BattleTheme.POPUP_PAD`)가
 ## 정한다 — 여기 값은 화면 안 clamp · 설명문 폭 계산에 쓰는 사본.
@@ -84,7 +84,7 @@ const PREVIEW_LIFT: float = 28.0
 const PREVIEW_RISE_PX: float = 18.0
 
 var _bs: BattleSim = null
-## 지금 열린 판 + 화살표(`SkillPopupCard.tscn` 인스턴스) — 열기 / 닫기 연출이 움직이는 덩어리.
+## 지금 열린 판 + 화살표(`UI_Comp_SkillPopupCard.tscn` 인스턴스) — 열기 / 닫기 연출이 움직이는 덩어리.
 var _body: Control = null
 var _pilot: PilotData = null
 ## 설명문 라벨과 그 위의 카드 이름 누름 상태.

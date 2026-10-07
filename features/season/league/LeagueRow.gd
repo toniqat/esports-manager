@@ -3,7 +3,7 @@ extends Panel
 
 # One standings row of `LeagueView` — rank · team · W-L · win rate · PO mark.
 #
-# **Layout lives in `LeagueRow.tscn`** (column offsets, font sizes, the full-row `%Hit`
+# **Layout lives in `UI_Comp_LeagueRow.tscn`** (column offsets, font sizes, the full-row `%Hit`
 # button). `LeagueView` keeps one instance per ranked team inside its `%Rows` box. This
 # script fills text and paints the card: the fill / border are data (own team = amber tint +
 # amber border, playoff cut = green left bar, empty slot = sunk), so the card's

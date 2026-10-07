@@ -4,7 +4,7 @@ extends VBoxContainer
 # Hub manage card 「재무」 + its `HubSheet` detail (contract: plan §11.2).
 # `HubView`'s manage row draws `hub_summary`, a press calls `open(host)`.
 #
-# **The sheet body's layout lives in `FinancePanel.tscn`** (+ item scenes
+# **The sheet body's layout lives in `UI_View_FinancePanel.tscn`** (+ item scenes
 # `FinanceAmountRow` · `FinanceAllocRow` · `FinanceSpecialRow` · `FinanceHistoryRow`).
 # `open` puts one instance into the sheet's `body`; this script only fills `%` nodes,
 # shows / hides the optional lines, instances the list rows and wires the buttons. What
@@ -23,10 +23,10 @@ extends VBoxContainer
 # button (like the facility upgrade). Only one row can be armed at a time —
 # `_special_armed` is that row's id.
 
-const SCENE_PATH: String = "res://features/season/finance/FinancePanel.tscn"
-const ALLOC_ROW_SCENE: PackedScene = preload("res://features/season/finance/FinanceAllocRow.tscn")
-const SPECIAL_ROW_SCENE: PackedScene = preload("res://features/season/finance/FinanceSpecialRow.tscn")
-const HISTORY_ROW_SCENE: PackedScene = preload("res://features/season/finance/FinanceHistoryRow.tscn")
+const SCENE_PATH: String = "res://features/season/finance/UI_View_FinancePanel.tscn"
+const ALLOC_ROW_SCENE: PackedScene = preload("res://features/season/finance/UI_Comp_FinanceAllocRow.tscn")
+const SPECIAL_ROW_SCENE: PackedScene = preload("res://features/season/finance/UI_Comp_FinanceSpecialRow.tscn")
+const HISTORY_ROW_SCENE: PackedScene = preload("res://features/season/finance/UI_Comp_FinanceHistoryRow.tscn")
 
 const AXIS_COLORS: Dictionary = {
 	"training": OutgameTheme.ACCENT,
@@ -143,11 +143,11 @@ func _fill_last_week() -> void:
 	%LastWeek.visible = not last.is_empty()
 	if last.is_empty():
 		return
-	_amount_row(%Sponsor, _sponsor_label(last, state), int(last.get("sponsor", 0)))
-	_amount_row(%Bonus, "성적 보너스 (%d승 %d패)" % [int(last.get("wins", 0)), int(last.get("losses", 0))],
+	_amount_row(%FinanceAmountRow_Sponsor, _sponsor_label(last, state), int(last.get("sponsor", 0)))
+	_amount_row(%FinanceAmountRow_Bonus, "성적 보너스 (%d승 %d패)" % [int(last.get("wins", 0)), int(last.get("losses", 0))],
 			int(last.get("bonus", 0)))
-	_amount_row(%Salaries, "스태프 연봉", -int(last.get("salaries", 0)))
-	_amount_row(%Upkeep, _upkeep_label(last, state), -int(last.get("upkeep", 0)))
+	_amount_row(%FinanceAmountRow_Salaries, "스태프 연봉", -int(last.get("salaries", 0)))
+	_amount_row(%FinanceAmountRow_Upkeep, _upkeep_label(last, state), -int(last.get("upkeep", 0)))
 	var net: int = int(last.get("net", 0))
 	%Net.text = FinanceSystem.fmt_signed(net)
 	(%Net as Label).add_theme_color_override("font_color", _signed_color(net))

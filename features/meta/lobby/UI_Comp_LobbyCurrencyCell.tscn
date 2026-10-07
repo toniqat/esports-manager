@@ -1,0 +1,39 @@
+[gd_scene load_steps=2 format=3 uid="uid://bynbiao7ajy77"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+
+[node name="LobbyCurrencyCell" type="VBoxContainer"]
+size_flags_horizontal = 3
+mouse_filter = 2
+theme = ExtResource("1_theme")
+theme_override_constants/separation = 0
+
+[node name="Gap0" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Caption" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _sync_currency_cells()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 26)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 18
+text = "재화"
+horizontal_alignment = 1
+
+[node name="Gap1" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Value" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _sync_currency_cells() · RunResultScreen.gd"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 30
+text = "0"
+horizontal_alignment = 1

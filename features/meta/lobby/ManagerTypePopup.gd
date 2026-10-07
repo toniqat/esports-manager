@@ -12,14 +12,14 @@ extends CanvasLayer
 #
 # Options come from `StaffSystem.manager_types()` (`manager_types.csv`): name,
 # description and the six stats (1..20) in `StaffSystem.STATS` order — one
-# `ManagerTypeOption.tscn` instance per type inside `%Options`.
+# `UI_Comp_ManagerTypeOption.tscn` instance per type inside `%Options`.
 #
 # **Prestige mode** (M9, `open(true, current_type)`): opened by the lobby `감독` tab
 # after the prestige confirm. Same option cards, but the title / body talk about
 # prestige, the current type carries a "현재" chip, and it *is* dismissible — a dim tap
 # or the ghost `취소` emits `cancelled` (nothing changes). Confirm emits `chosen`.
 #
-# **Layout lives in `ManagerTypePopup.tscn`** (dim = whole viewport, white `PopupCard`
+# **Layout lives in `UI_View_ManagerTypePopup.tscn`** (dim = whole viewport, white `PopupCard`
 # centred in `%Center` = `%SafeArea` minus the scene's top / bottom margin). The option list
 # sits in `%Scroll` (+ `DragScroll`): while the card fits `%Center` the scroll is exactly the
 # list's height; past that it is capped and the list scrolls — title, texts and buttons stay
@@ -37,8 +37,8 @@ extends CanvasLayer
 signal chosen(type_id: int)
 signal cancelled
 
-const SCENE_PATH: String = "res://features/meta/lobby/ManagerTypePopup.tscn"
-const OPTION_SCENE_PATH: String = "res://features/meta/lobby/ManagerTypeOption.tscn"
+const SCENE_PATH: String = "res://features/meta/lobby/UI_View_ManagerTypePopup.tscn"
+const OPTION_SCENE_PATH: String = "res://features/meta/lobby/UI_Comp_ManagerTypeOption.tscn"
 
 var _types: Array = []
 var _selected: int = -1

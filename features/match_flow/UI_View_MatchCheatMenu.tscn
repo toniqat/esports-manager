@@ -1,0 +1,57 @@
+[gd_scene load_steps=4 format=3 uid="uid://6i2obe3g6mhk"]
+
+[ext_resource type="Script" uid="uid://bbblensp634dv" path="res://features/match_flow/MatchCheatMenu.gd" id="1_menu"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" uid="uid://dixa6usvp5a6k" path="res://features/match_flow/UI_Comp_MatchCheatItem.tscn" id="3_item"]
+
+[node name="MatchCheatMenu" type="CanvasLayer"]
+layer = 50
+script = ExtResource("1_menu")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+
+[node name="Menu" type="VBoxContainer" parent="Root"]
+editor_description = "[필수] 지우면 오류 — MatchCheatMenu.gd _ready()"
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 316.0
+offset_bottom = 290.0
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="Toggle" type="Button" parent="Root/Menu"]
+editor_description = "[필수] 지우면 오류 — MatchCheatMenu.gd _fill_preview() · MatchCheatMenu.gd _ready()"
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.85)
+custom_minimum_size = Vector2(150, 64)
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"DarkButton"
+theme_override_font_sizes/font_size = 24
+text = "CHEAT"
+
+[node name="List" type="VBoxContainer" parent="Root/Menu"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MatchCheatMenu.gd _ready() · MatchCheatMenu.gd _rebuild()
+치트 버튼(UI_Comp_MatchCheatItem.tscn) — MatchFlow._refresh_cheats 가 단계마다 set_actions 로 채운다. 아래 두 줄은 미리보기 샘플(실행 시 지워진다)."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="MatchCheatItem_Sample1" parent="Root/Menu/List" instance=ExtResource("3_item")]
+layout_mode = 2
+text = "즉시 승리 (MVP 아군 탑)"
+
+[node name="MatchCheatItem_Sample2" parent="Root/Menu/List" instance=ExtResource("3_item")]
+layout_mode = 2
+text = "즉시 패배 (MVP 상대 탑)"

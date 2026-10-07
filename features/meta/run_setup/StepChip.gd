@@ -2,11 +2,11 @@ class_name StepChip
 extends Panel
 
 # 런 준비 머리글(`RunSetupScreen` `%Header`)의 단계 알약 한 칸 — `1  시나리오`.
-# **모양의 정본은 `StepChip.tscn`** (높이 · 글자 크기 · 가운데 정렬). 칸 수와 글자는
+# **모양의 정본은 `UI_Comp_StepChip.tscn`** (높이 · 글자 크기 · 가운데 정렬). 칸 수와 글자는
 # `RunSetupScreen.STEPS` 표가, 색(지난 / 지금 / 남은 단계)은 상태가 정하므로 코드가 넣는다.
 # 알약 모양은 테마 변형 `StepChipPanel` (반지름 = 높이/2).
 
-const SCENE_PATH: String = "res://features/meta/run_setup/StepChip.tscn"
+const SCENE_PATH: String = "res://features/meta/run_setup/UI_Comp_StepChip.tscn"
 
 
 static func create() -> StepChip:

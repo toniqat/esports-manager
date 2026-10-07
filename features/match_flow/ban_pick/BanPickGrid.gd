@@ -2,7 +2,7 @@
 class_name BanPickGrid
 extends Container
 
-# The mech grid's container (`%Grid` in `BanPickView.tscn`): `columns` cells per row, each at its
+# The mech grid's container (`%Grid` in `UI_View_BanPickView.tscn`): `columns` cells per row, each at its
 # own minimum size, `h_gap` / `v_gap` apart, left-to-right then top-to-bottom. Hidden cells are
 # skipped, so the role filter only toggles `visible` and the grid reflows.
 #

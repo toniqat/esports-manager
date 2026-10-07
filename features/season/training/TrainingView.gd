@@ -6,10 +6,10 @@ extends Control
 # 수 없다. 세로로는 코스 목록이 하단 액션 바 위에 매달리고(`Inventory`), 남는
 # 자리를 판 위아래에 고르게 나눈다(`BoardArea` = CenterContainer).
 #
-# **레이아웃의 정본은 `TrainingView.tscn` 이다** — 제목, 스태프 줄, 초상화 다섯
-# (`TrainingThumb.tscn` 인스턴스), 판 자리(`%Grid`), "훈련 코스" 줄, 코스 스크롤, 하단
-# 액션 바(`%Bar`). 반복 항목은 아이템 씬이다: 코스 카드 `TrainingCourseCard.tscn`,
-# 정보 팝오버 `TrainingCoursePopover.tscn`. 스타일은 루트의 공용 테마
+# **레이아웃의 정본은 `UI_View_TrainingView.tscn` 이다** — 제목, 스태프 줄, 초상화 다섯
+# (`UI_Comp_TrainingThumb.tscn` 인스턴스), 판 자리(`%Grid`), "훈련 코스" 줄, 코스 스크롤, 하단
+# 액션 바(`%Bar`). 반복 항목은 아이템 씬이다: 코스 카드 `UI_Comp_TrainingCourseCard.tscn`,
+# 정보 팝오버 `UI_View_TrainingCoursePopover.tscn`. 스타일은 루트의 공용 테마
 # (`resources/OutgameTheme.tres`) 변형이 정한다. **이 스크립트가 하는 일**: `%` 노드
 # 바인딩, 데이터 채우기(초상화 · 역할 테두리 색 · EXP 칩 · 스태프 / 효과 줄 · 코스 카드),
 # 기기별 안전 영역(화면째 위 인셋만큼 내리고 `%SafeArea` 아래끝 · `%Bar` 높이에 아래
@@ -125,7 +125,7 @@ const SEAM_LEN: float = 32.0
 const SEAM_W: float   = 2.0
 const SEAM_ALPHA: float = 0.45
 
-const SCENE_PATH: String = "res://features/season/training/TrainingView.tscn"
+const SCENE_PATH: String = "res://features/season/training/UI_View_TrainingView.tscn"
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 

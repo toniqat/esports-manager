@@ -3,13 +3,13 @@ extends MarginContainer
 
 # One line of the other side (left) in `MessengerView`'s log: round portrait · tail · white bubble.
 #
-# **Layout lives in `MessengerNpcBubble.tscn`** — margins (left edge, gap below), the portrait
+# **Layout lives in `UI_Comp_MessengerNpcBubble.tscn`** — margins (left edge, gap below), the portrait
 # slot width, the tail's offset and the bubble width / padding. The bubble's height follows the
 # wrapped text (container layout); the portrait (96) may hang below a short bubble, as before.
 # This script only fills the text and decides whether this line shows the portrait + tail
 # (the first line after another speaker). Create with `MessengerNpcBubble.create()`.
 
-const SCENE_PATH: String = "res://features/season/press/MessengerNpcBubble.tscn"
+const SCENE_PATH: String = "res://features/season/press/UI_Comp_MessengerNpcBubble.tscn"
 
 
 static func create() -> MessengerNpcBubble:

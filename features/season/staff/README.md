@@ -5,8 +5,8 @@ Contract: `docs/outgame_dev_plan.md` §11. Single entry point for every manager-
 | File | Role |
 |---|---|
 | `StaffSystem.gd` | `class_name StaffSystem` (static). Tables `manager_types` / `staff` / `teams.staff_ids`; run snapshot (`snapshot_for_run` → `run_setup.manager_type/manager_stats/staff`); cover rule `effective(state, stat) = max(manager + staff_mods, assistant, dedicated staff)`; `owner` / `is_delegated` (auto buttons); `effective_for_incident`; `analysis_tier` (`ANALYSIS_TIER_1..3`); temporary mods `add_mod` / `decay_mods` (week end). |
-| `StaffPanel.gd` + `StaffPanel.tscn` | Hub manage card + `HubSheet` body — see "Hub card + sheet" below. |
-| `StaffStatRow.tscn` · `StaffTraitRow.tscn` · `StaffMemberRow.tscn` | Item scenes of the sheet (no script): one 능력치 row · one 장착 특성 row · one 스태프 row. |
+| `StaffPanel.gd` + `UI_View_StaffPanel.tscn` | Hub manage card + `HubSheet` body — see "Hub card + sheet" below. |
+| `UI_Comp_StaffStatRow.tscn` · `UI_Comp_StaffTraitRow.tscn` · `UI_Comp_StaffMemberRow.tscn` | Item scenes of the sheet (no script): one 능력치 row · one 장착 특성 row · one 스태프 row. |
 
 Rules
 - Stats are 1..20 (`STAT_MIN` / `STAT_MAX`), six keys `StaffSystem.STATS`.
@@ -21,7 +21,7 @@ Rules
 ## Hub card + sheet (`StaffPanel.gd`)
 Contract §11.2 — static `hub_summary(state)` / `open(host)`; fills only, every value comes from `StaffSystem`.
 `open` = `HubSheet.open_on` + `StaffPanel.create()` added to `sheet.body` (read-only, filled once).
-**F6 preview** — run `StaffPanel.tscn` alone and it fills dummy data (`resources/UiPreview.gd`): in-memory
+**F6 preview** — run `UI_View_StaffPanel.tscn` alone and it fills dummy data (`resources/UiPreview.gd`): in-memory
 run + two temporary `add_mod`s, bound without a sheet.
 
 | Where | Shows |
@@ -33,7 +33,7 @@ run + two temporary `add_mod`s, bound without a sheet.
 | Sheet · 스태프 | Run staff list — name, job label, field value (assistant: top two stats), weekly salary; header shows `weekly_salary_total` |
 | Sheet · 직접 해야 하는 일 | One line per non-delegated stat (`DIRECT_TASKS`), plus interviews / outings, which always read the manager's own mental |
 
-**Sheet scene** (`StaffPanel.tscn`, root `VBoxContainer` top-wide 16 short of the body width — scroll-bar room;
+**Sheet scene** (`UI_View_StaffPanel.tscn`, root `VBoxContainer` top-wide 16 short of the body width — scroll-bar room;
 theme `OutgameTheme.tres`). The sheet's scroll height follows the root's height (`resized`); `Tail` is the bottom gap.
 ```
 StaffPanel (VBox)

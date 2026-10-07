@@ -4,11 +4,11 @@ extends VBoxContainer
 # Body of the standings **team detail sheet** (`HubSheet`): the record line + the team's five
 # pilots under the analysis reveal rule (`IntelView` — the same scene MatchFlow PREP uses).
 #
-# **Layout lives in `LeagueTeamDetail.tscn`.** Like the hub panels (`FinancePanel` …) it is one
+# **Layout lives in `UI_View_LeagueTeamDetail.tscn`.** Like the hub panels (`FinancePanel` …) it is one
 # instance under `sheet.body`, top-wide, and the sheet scrolls exactly this node's height
 # (`set_body_height(size.y)` on `resized`). Opened by `LeagueView.open_team_detail`.
 
-const SCENE_PATH: String = "res://features/season/league/LeagueTeamDetail.tscn"
+const SCENE_PATH: String = "res://features/season/league/UI_View_LeagueTeamDetail.tscn"
 
 var _sheet: HubSheet = null
 
@@ -40,7 +40,7 @@ func bind(sheet: HubSheet, record: String, intel: Dictionary) -> void:
 
 func show_detail(record: String, intel: Dictionary) -> void:
 	%Record.text = record
-	(%Intel as IntelView).show_intel(intel)
+	(%IntelView_Intel as IntelView).show_intel(intel)
 
 
 func _fit_sheet() -> void:

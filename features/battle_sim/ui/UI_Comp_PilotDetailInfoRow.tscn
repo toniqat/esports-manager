@@ -1,0 +1,43 @@
+[gd_scene load_steps=2 format=3 uid="uid://b0mg5yh2cpoaw"]
+
+[ext_resource type="Theme" uid="uid://dmrfge5o5tftu" path="res://resources/BattleTheme.tres" id="1_theme"]
+
+[node name="PilotDetailInfoRow" type="Control"]
+editor_description = "칸 설명 판의 내역 한 줄 — 이름 42% : 값 58% (앵커로 나눈다). 값은 오른쪽 정렬이라 clip_text 가 필수(넘치면 왼쪽부터 그린다)."
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 332.0
+offset_bottom = 36.0
+mouse_filter = 2
+theme = ExtResource("1_theme")
+
+[node name="Key" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — PilotDetailPanel.gd _build_menu_content()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.42
+anchor_bottom = 1.0
+grow_vertical = 2
+theme_type_variation = &"BattleKeyLabel"
+text = "기본"
+vertical_alignment = 1
+clip_text = true
+
+[node name="Value" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — PilotDetailPanel.gd"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.42
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_type_variation = &"BattleValueLabel"
+theme_override_font_sizes/font_size = 24
+text = "50"
+horizontal_alignment = 2
+vertical_alignment = 1
+clip_text = true

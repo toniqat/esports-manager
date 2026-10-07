@@ -4,13 +4,13 @@ extends MarginContainer
 # One pilot of an `IntelView` (an `OpponentIntel.build()` row): portrait · role · name · total,
 # six stat cells, then the mech line (tier >= 2) and the card line (tier 3).
 #
-# **Layout lives in `IntelPilotRow.tscn`.** The root is a MarginContainer so `%Back` (the card)
+# **Layout lives in `UI_Comp_IntelPilotRow.tscn`.** The root is a MarginContainer so `%Back` (the card)
 # and `Content` overlap and the row is exactly as tall as `Content`. This script only fills `%`
 # nodes and applies the data-driven looks, none of which are theme variations: the card's left
 # bar + role name take the role colour (`OutgameTheme.lead_bar_style`), the stat value font
 # size follows the reveal tier, hidden values / total switch to `FaintLabel`.
 
-const SCENE_PATH: String = "res://features/match_flow/match_prep/IntelPilotRow.tscn"
+const SCENE_PATH: String = "res://features/match_flow/match_prep/UI_Comp_IntelPilotRow.tscn"
 const PORTRAIT: float = 76.0
 ## Stat value font size — exact numbers · ranges (`60~69`) · `?`.
 const FONT_EXACT: int = 28
@@ -40,7 +40,7 @@ func fill(row: Dictionary) -> void:
 
 	var shown: bool = bool(row["show_stats"])
 	var exact: bool = bool(row["exact"])
-	(%Role as PositionBadge).set_role(int(row["role"]))
+	(%PositionBadge_Role as PositionBadge).set_role(int(row["role"]))
 	%Name.text = String(row["name"])
 	%Total.text = "합계 %s" % row["total_text"]
 	%Total.theme_type_variation = &"CaptionLabel" if shown else &"FaintLabel"

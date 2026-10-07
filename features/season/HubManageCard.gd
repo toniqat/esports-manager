@@ -3,14 +3,14 @@ extends Panel
 
 # One small card of `HubView`'s manage row (staff · mech research · finance).
 #
-# **Layout lives in `HubManageCard.tscn`** (176 tall, width from the row's HBox; `Card` variation,
+# **Layout lives in `UI_Comp_HubManageCard.tscn`** (176 tall, width from the row's HBox; `Card` variation,
 # title / value / sub / owner labels, red alert dot top-right, a flat `%Hit` button over the whole
 # card). The content belongs to each feature's panel — `<Panel>.hub_summary(state)` →
 # `{title, value, sub, owner, alert}` — and this script only puts it in.
 
 signal pressed
 
-const SCENE_PATH: String = "res://features/season/HubManageCard.tscn"
+const SCENE_PATH: String = "res://features/season/UI_Comp_HubManageCard.tscn"
 
 
 static func create() -> HubManageCard:

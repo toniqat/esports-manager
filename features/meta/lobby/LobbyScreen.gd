@@ -8,8 +8,8 @@ extends Control
 #   ├ 행동 바 (%ActionBar — 탭이 `bar_specs()` 를 주면) ┤
 #   └ 탭 바 (%TabBar — 홈 · 컬렉션 · 감독 · 상점 · 패스) ┘
 #
-# **레이아웃 · 스타일의 정본은 `scenes/Lobby.tscn`** (+ 아이템 씬 `LobbyCurrencyCell.tscn` ·
-# `LobbyTabButton.tscn`). 이 스크립트는 화면 틀을 만들지 않는다 — 표(`TABS` ·
+# **레이아웃 · 스타일의 정본은 `scenes/Lobby.tscn`** (+ 아이템 씬 `UI_Comp_LobbyCurrencyCell.tscn` ·
+# `UI_Comp_LobbyTabButton.tscn`). 이 스크립트는 화면 틀을 만들지 않는다 — 표(`TABS` ·
 # `CURRENCY_STRIP`) 만큼 아이템 수를 맞추고, 글을 넣고, 시그널을 잇는다. 코드가 정하는 것:
 # 안전 영역 오프셋(`_fit_safe_area`), 탭 본문 칸(`_place_tab` — 행동 바 유무), 선택 탭
 # 글자색 · 배지, 행동 바 버튼(공용 `OutgameTheme.add_bottom_bar` 를 `%ActionBar` 칸에),
@@ -47,8 +47,8 @@ const CURRENCY_STRIP: Array = [
 	{"key": "pilot_shard",        "label": "파편"},
 ]
 
-const CURRENCY_CELL_SCENE: String = "res://features/meta/lobby/LobbyCurrencyCell.tscn"
-const TAB_BUTTON_SCENE: String = "res://features/meta/lobby/LobbyTabButton.tscn"
+const CURRENCY_CELL_SCENE: String = "res://features/meta/lobby/UI_Comp_LobbyCurrencyCell.tscn"
+const TAB_BUTTON_SCENE: String = "res://features/meta/lobby/UI_Comp_LobbyTabButton.tscn"
 
 @onready var _gm: Node = get_node("/root/GameManager")
 @onready var _pm: Node = get_node("/root/ProfileManager")

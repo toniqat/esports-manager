@@ -37,7 +37,7 @@ extends Control
 # 돌아오는데, 그때는 그 경기가 `played` 라 버튼이 다시 "확인"이 된다.
 #
 # ── 씬 ──────────────────────────────────────────────────────────────────────
-# **배치 · 스타일은 `WeekProgressView.tscn` 이 갖는다** (레일 · 머리글 · 구분선 ·
+# **배치 · 스타일은 `UI_View_WeekProgressView.tscn` 이 갖는다** (레일 · 머리글 · 구분선 ·
 # 스크롤 · 하단 버튼). 목록의 카드는 아이템 씬(`WeekMatchCard` · `WeekNoteCard` ·
 # `WeekIncidentCard` · `WeekEveningCard`(+ `WeekEveningSlot`) · `WeekEveningDoneCard` ·
 # `WeekPilotCard`(+ `WeekStatCell`))을 `%List`(VBox, 간격 = 카드 사이)에 붙인다.
@@ -48,15 +48,15 @@ extends Control
 # 배경만 `extend_background` 로 노치 자리까지 늘린다. `%SafeArea` 의 아래는 아래
 # 인셋만큼 올리고(= `safe_h()`), 하단 버튼은 그 인셋 밑까지 색면을 늘린다.
 
-const SCENE_PATH: String = "res://features/season/week/WeekProgressView.tscn"
-const MATCH_CARD_SCENE: PackedScene = preload("res://features/season/week/WeekMatchCard.tscn")
-const NOTE_CARD_SCENE: PackedScene = preload("res://features/season/week/WeekNoteCard.tscn")
-const PILOT_CARD_SCENE: PackedScene = preload("res://features/season/week/WeekPilotCard.tscn")
-const STAT_CELL_SCENE: PackedScene = preload("res://features/season/week/WeekStatCell.tscn")
-const EVENING_CARD_SCENE: PackedScene = preload("res://features/season/week/WeekEveningCard.tscn")
-const EVENING_SLOT_SCENE: PackedScene = preload("res://features/season/week/WeekEveningSlot.tscn")
-const EVENING_DONE_SCENE: PackedScene = preload("res://features/season/week/WeekEveningDoneCard.tscn")
-const INCIDENT_CARD_SCENE: PackedScene = preload("res://features/season/week/WeekIncidentCard.tscn")
+const SCENE_PATH: String = "res://features/season/week/UI_View_WeekProgressView.tscn"
+const MATCH_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekMatchCard.tscn")
+const NOTE_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekNoteCard.tscn")
+const PILOT_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekPilotCard.tscn")
+const STAT_CELL_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekStatCell.tscn")
+const EVENING_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekEveningCard.tscn")
+const EVENING_SLOT_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekEveningSlot.tscn")
+const EVENING_DONE_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekEveningDoneCard.tscn")
+const INCIDENT_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekIncidentCard.tscn")
 
 const PHASE_NAMES: Dictionary = {
 	GameEnums.SeasonPhase.PRESEASON:      "프리시즌",
@@ -401,7 +401,7 @@ static func _team_name(namer: Node, team_id: int) -> String:
 	return "Team %d" % team_id
 
 
-## 선수 한 명의 그날 훈련 결과 카드 (`WeekPilotCard.tscn`).
+## 선수 한 명의 그날 훈련 결과 카드 (`UI_Comp_WeekPilotCard.tscn`).
 ## Height = CARD_H + one line per quirk event (+ 8 under the divider).
 func _add_pilot_card(row_raw: Variant) -> void:
 	var row: Dictionary = row_raw
@@ -418,7 +418,7 @@ func _add_pilot_card(row_raw: Variant) -> void:
 	OutgameTheme.add_round_portrait(card.get_node("%Portrait"),
 			PilotImages.circle_for(int(row["pilot_id"])), Vector2.ZERO, PORTRAIT_D)
 	(card.get_node("%Name") as Label).text = String(row["name"])
-	(card.get_node("%Role") as PositionBadge).set_role(role)
+	(card.get_node("%PositionBadge_Role") as PositionBadge).set_role(role)
 
 	# Mech mastery of the day (§14 T4, row key `mastery` = raw tile EXP).
 	var mastery_txt: String = _mastery_text(int(row["pilot_id"]), int(row.get("mastery", 0)))

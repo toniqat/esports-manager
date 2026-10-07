@@ -23,6 +23,8 @@
   ShopPopup · ManagerTypePopup 은 안전 영역보다 길면 카드 높이 제한 + 본문 스크롤.
 - **uid** (D1) — `.tscn` 136개 전부 uid 있음 · 중복 없음 (2026-10-07 확인). 새 씬을 CLI 로 쓰면 다시 확인:
   `for f in $(git ls-files '*.tscn'); do head -1 "$f" | grep -q 'uid="uid://' || echo "$f"; done`
+- **씬 이름 · 필수 노드 표시** (2026-10-07) — UI 씬 124개를 `UI_View_*` (40) / `UI_Comp_*` (84) 로, 인스턴스 노드
+  110개를 `<원본 씬>_<역할>` 로 바꾸고, null 검사 없이 바인딩되는 노드 987개에 `[필수]` 설명을 달았다 (§3 규칙 9 ~ 11).
 - **도구** — 런타임 덤프 · 스크린샷 러너 `UiSceneDump` (T4), 규칙 문서화 (T2, 루트 `CLAUDE.md`).
 - **단독 실행 미리보기** (T8) — 스크립트 있는 씬은 에디터에서 열고 F6 으로 실행하면 더미 데이터가
   채워진다(`resources/UiPreview.gd`, §3 규칙 8). 스크립트 없는 아이템 씬은 씬에 박힌 샘플 문구로 확인.
@@ -86,7 +88,7 @@
 
 ## 2. 시범 전환 완료 — `ConfirmPopup`
 
-변경 파일: `features/meta/lobby/ConfirmPopup.tscn`(신규) · `ConfirmPopup.gd`(195 → ~110줄) ·
+변경 파일: `features/meta/lobby/UI_View_ConfirmPopup.tscn`(신규) · `ConfirmPopup.gd`(195 → ~110줄) ·
 `LobbyScreen.gd`(한 줄) · `features/meta/lobby/README.md`.
 
 ```
@@ -150,6 +152,19 @@ ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨�
    `if UiPreview.is_standalone(self): _fill_preview()` 를 두고, 맨 아래 `_fill_preview()` 가 스크립트의
    보통 API 로 더미 데이터를 넣는다. 화면 · 패널은 실제 game.db 로 메모리 런(`UiPreview.ensure_run()`,
    저장 없음), 아이템 씬은 손으로 적은 값. 새 씬을 만들면 같이 만든다. 규칙: `resources/README.md` → UiPreview.
+9. **UI 씬 파일 이름 = `UI_View_<이름>.tscn` / `UI_Comp_<이름>.tscn`** (`features/**` + `resources/PositionBadge`).
+   `View` = 호스트가 열어 화면 영역을 차지하는 것(화면 · 탭 · 팝업 · 시트 · 패널 · HUD),
+   `Comp` = 다른 씬 안에 놓이거나 반복되는 것(행 · 칸 · 칩 · 카드 · 슬롯 · 블록). 스크립트(`.gd`) · `class_name` 은
+   접두사 없이 그대로다(`BanPickView.gd` ↔ `UI_View_BanPickView.tscn`). 제외: `scenes/` 의 화면 루트 ·
+   전장(`BattleField` · `Building` · `Waypoint`) · `Card` · `RunSim`.
+10. **다른 씬을 인스턴스한 노드 이름 = `<원본 씬 이름>_<역할>`** (접두사 없는 원본 이름 — 예: `BanPickPortrait_Pilot0`,
+    `PositionBadge_Role`). 이름에 원본 씬 이름이 이미 들어 있으면 그대로 둔다(`EnemyPilotStrip`, `FinanceAllocRow`).
+    코드의 `%이름` · `get_node("…")` 도 같은 이름을 쓴다.
+11. **지우면 로직이 깨지는 노드 = `editor_description` 첫 줄 `[필수] …`** — 스크립트가 null 검사 없이 잡는 노드
+    (`%Name`, `$Path`, `get_node("…")`). 문구에 잡는 스크립트와 변수 / 함수가 적혀 있다.
+    `[필수] 경로로 참조 …` 는 경로로 찾는 노드라 이름 · 부모도 바꾸면 안 된다. `get_node_or_null` 로 잡는
+    선택 노드에는 표시가 없다(지우면 그 기능만 빠진다). 규칙 4 로 노드를 지울 때는 이 줄이 붙은 노드인지 먼저 보고,
+    지운다면 바인딩 코드를 같이 정리한다. 바인딩을 더하거나 없애면 이 줄도 같이 고친다.
 
 이 규칙들의 요약은 루트 `CLAUDE.md` Critical patterns 의 "Outgame UI lives in `.tscn`" 항목에 있다.
 
@@ -173,7 +188,7 @@ ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨�
 | 10 | `SeasonHub` / `HubView` · `LeagueView` · `BracketView` · `IntlBracketView` · `WeekProgressView` · `PressConferenceView` · `EndingView` · `GameOverView` · `FinancePanel` · `StaffPanel` · `MasteryPanel` | `season/**` | 화면 / 패널 | ✅ 전환 (웨이브 3) |
 | 11 | `TrainingView` · `MessengerView` | `season/training/`, `press/` | `_draw` 혼합 — 틀만 씬 | ✅ 전환 (웨이브 3) |
 | 12 | `BanPickController` UI · `MechDetailPanel` · `MatchPrep` UI · `MatchCheatMenu` | `match_flow/**` | 화면 | ✅ 전환 (웨이브 3) |
-| 13 | BattleSim `HudBuilder` · `PilotDetailPanel` · `PilotStrip` · `MvpView` · `SkillPopup` | `battle_sim/ui/` | 인게임 HUD | ✅ 전환 (웨이브 5 — `BattleTheme` 다크 테마, `BattleHud.tscn` 등) |
+| 13 | BattleSim `HudBuilder` · `PilotDetailPanel` · `PilotStrip` · `MvpView` · `SkillPopup` | `battle_sim/ui/` | 인게임 HUD | ✅ 전환 (웨이브 5 — `BattleTheme` 다크 테마, `UI_View_BattleHud.tscn` 등) |
 
 ---
 
@@ -213,7 +228,7 @@ ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨�
 - [x] **T1 공용 Theme 리소스** (완료 — variation 목록 · 재생성 명령은 `resources/README.md`) — `resources/OutgameTheme.tres`(Theme) 를 만들고
       `theme_type_variation` 으로 `PrimaryButton` · `GhostButton` · `TextButton` · `DarkButton` ·
       `Card` · `TitleLabel` · `BodyLabel` 등을 정의. 값은 `OutgameTheme.gd` 상수와 일치시키고,
-      가능하면 `.gd` 상수 → `.tres` 를 생성하는 에디터 툴로 단일 출처 유지. `ConfirmPopup.tscn` 의
+      가능하면 `.gd` 상수 → `.tres` 를 생성하는 에디터 툴로 단일 출처 유지. `UI_View_ConfirmPopup.tscn` 의
       임베드 스타일박스를 variation 으로 교체. (이후 화면은 "버튼 놓고 variation 고르기"로 끝남)
 - [x] **T2 규칙 문서화** — 루트 `CLAUDE.md` Critical patterns 에 §3 규칙 1·4·5 요약 + 이 문서 포인터.
 - [x] **T3** §4 #2 ~ #6 팝업 · 시트 전환 (웨이브 2, §7).
@@ -332,11 +347,11 @@ ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨�
 | T8 커밋 | 다른 세션이 해 둔 단독 실행 미리보기(`UiPreview`)를 먼저 커밋 — worktree 에이전트가 보도록 | — |
 | R1 · R3 (오케스트레이터) | `RailLabel` · `OnFillTextButton` · `ScreenBackground` 공용 변형, 씬 15개 바탕 교체 | Lobby · Season · 주간 · 상점 diff 0 |
 | R5 ① | ShopPopup · ManagerTypePopup: `%Center` 안 카드, 본문 `%Scroll`(+`DragScroll`) 높이 = 남는 높이로 제한 | 평소 12상태 diff 0, 넘침 시 카드 안전 영역 안 · 버튼 보임. 스크롤 바가 생기면 카드 4~8px 넓어짐 |
-| R2a | `CollectionCell.tscn`, `ManagerPresetChips` + `ManagerPresetChip`, `TraitPickerView` + `TraitPickerSlot` · `TraitPickerRow` (+ 변형 19개) | 컬렉션 탭 diff 0, 감독 탭 · RunSetup 감독 단계는 칸 폭 정수 픽셀화만 |
+| R2a | `UI_Comp_CollectionCell.tscn`, `ManagerPresetChips` + `ManagerPresetChip`, `TraitPickerView` + `TraitPickerSlot` · `TraitPickerRow` (+ 변형 19개) | 컬렉션 탭 diff 0, 감독 탭 · RunSetup 감독 단계는 칸 폭 정수 픽셀화만 |
 | R2b | `IntelView`(VBox 씬) + `IntelPilotRow`, `LeagueTeamDetail`(HubSheet 본문), `BanPickOrderRow` + `BanPickOrderPip` (+ 변형 2개) | 순서 줄 diff 0, 분석 단계 칩이 글자 폭으로 좁아짐(의도) |
 | R2c | 메신저 `MessengerNpcBubble` · `MessengerPlayerBubble` · `MessengerNoteChip` · `MessengerNarration` · `MessengerAnswerButton`, 꼬리 · 마이크 `_draw` 노드 (+ 변형 4개) | 말풍선 높이가 실제 글자 높이로(1~3px), 긴 글이 말풍선 밖으로 넘치던 버그 수정 |
 | R4 1단계 | `BattleTheme` (상수 · 공용 변형 · 빌더), `MvpView` · `SkillPopup` + `SkillPopupCard` | 실전투 8상태 diff 0 |
-| R4 2단계 b | `BattleHud.tscn` (EnemyTopLayer · Canvas · VictoryLayer), `PilotStrip` + `PilotStripCell` | 실전투 17장 diff 0 (인셋 포함). 턴 배너 겹침 버그 수정 |
+| R4 2단계 b | `UI_View_BattleHud.tscn` (EnemyTopLayer · Canvas · VictoryLayer), `PilotStrip` + `PilotStripCell` | 실전투 17장 diff 0 (인셋 포함). 턴 배너 겹침 버그 수정 |
 | R4 2단계 c | `PilotDetailPanel` + `PilotDetailView` + 아이템 씬 7개 | 20상태 — 탭 라벨 ≤0.67px · 모서리 1px 외 diff 0 |
 
 - 병렬 R4 두 에이전트가 같은 파일을 안 건드리도록 `BattleTheme` 에 `_add_hud_variations` · `_add_pilot_detail_variations`

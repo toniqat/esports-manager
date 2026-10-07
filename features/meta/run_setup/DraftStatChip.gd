@@ -2,10 +2,10 @@ class_name DraftStatChip
 extends PanelContainer
 
 # 파일럿 상세(`DraftDetailPanel`)의 스탯 칩 한 칸 — 위에 스탯 이름, 아래에 값.
-# **모양의 정본은 `DraftStatChip.tscn`** (`SunkPanel` 변형 · 글자 크기 · 위치).
+# **모양의 정본은 `UI_Comp_DraftStatChip.tscn`** (`SunkPanel` 변형 · 글자 크기 · 위치).
 # 이 스크립트는 글자를 넣고, "종합" 칸이면 값 글자를 `AccentLabel` 변형으로 바꿀 뿐이다.
 
-const SCENE_PATH: String = "res://features/meta/run_setup/DraftStatChip.tscn"
+const SCENE_PATH: String = "res://features/meta/run_setup/UI_Comp_DraftStatChip.tscn"
 
 
 static func create() -> DraftStatChip:

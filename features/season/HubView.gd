@@ -6,13 +6,13 @@ extends Control
 # roster, with two action buttons: "이번 주 시작" (route to TRAINING) and a
 # context-sensitive standings button (INTL → playoff → league).
 #
-# **Layout lives in `HubView.tscn`** (header labels, five `HubRosterRow` instances, the
+# **Layout lives in `UI_View_HubView.tscn`** (header labels, five `HubRosterRow` instances, the
 # `HubManageCard` row, toast, bottom bar). This script binds `%` nodes, fills data, wires
 # signals and applies the device safe-area offsets (pattern B, `docs/mobile_safe_area.md`):
 # the whole screen is lowered to the safe top, the background stretched back up, and the
 # bottom bar hung from the safe bottom (`OutgameTheme.fit_bottom_bar`). Create with `HubView.create()`.
 
-const SCENE_PATH: String = "res://features/season/HubView.tscn"
+const SCENE_PATH: String = "res://features/season/UI_View_HubView.tscn"
 
 const PHASE_NAMES: Dictionary = {
 	GameEnums.SeasonPhase.PRESEASON:      "프리시즌",

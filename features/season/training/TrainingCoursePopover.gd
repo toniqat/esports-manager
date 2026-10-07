@@ -5,14 +5,14 @@ extends Panel
 # **효과** (+ 전술이 모자라 잠긴 등급이면 그 이유 한 줄). 뒤의 둘은 타일 데이터에서
 # 만들어진다(`exp_summary` / `effect_summary`) — 설명문 줄은 없다(`README.md`).
 #
-# **레이아웃의 정본은 `TrainingCoursePopover.tscn` 이다** (폭, 줄마다의 x · 폭 · 글꼴,
+# **레이아웃의 정본은 `UI_View_TrainingCoursePopover.tscn` 이다** (폭, 줄마다의 x · 폭 · 글꼴,
 # 테두리 · 그림자). 코드가 정하는 것은 **높이**뿐이다: `Exp` · `Effect` · `Lock` 의 y 와
 # 높이, 판 전체 높이를 글자에서 역산한다(`_text_height`). 컨테이너 자동 크기에 맡기면
 # 자리를 잡는 프레임(`TrainingView._place_popover`)과 그리는 프레임이 어긋난다 —
 # 줄바꿈 Label 의 최소 높이는 레이아웃이 한 번 돈 뒤에야 맞는다.
 # 테두리 색은 등급 색(데이터)이라 테마 변형 `TrainingCoursePopoverFrame` 사본에 넣는다.
 
-const SCENE_PATH: String = "res://features/season/training/TrainingCoursePopover.tscn"
+const SCENE_PATH: String = "res://features/season/training/UI_View_TrainingCoursePopover.tscn"
 
 ## 글 덩어리 사이 간격과 판 아래 여백.
 const LINE_GAP: float = 10.0

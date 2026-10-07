@@ -11,7 +11,7 @@ extends VBoxContainer
 # Each pilot card also lists that pilot's quirks (`QuirkSystem`, §14) with
 # `n / slots`; research can turn up quirks at week close.
 #
-# **The sheet body's layout lives in `MasteryPanel.tscn`** (+ item scenes
+# **The sheet body's layout lives in `UI_View_MasteryPanel.tscn`** (+ item scenes
 # `MasteryPilotRow` · `MasteryMechChip` · `MasteryQuirkLine`). `open` puts one instance
 # into the sheet's `body`; this script fills `%` nodes, instances the rows and applies
 # data: research colour, chip variation (research mech = `PrimaryButton`), tier / grade
@@ -19,10 +19,10 @@ extends VBoxContainer
 # same instance in place; rows and chips are reused, so a chip is never freed while it
 # is emitting `pressed`. The sheet's scroll height follows this node's height.
 
-const SCENE_PATH: String = "res://features/season/mastery/MasteryPanel.tscn"
-const PILOT_ROW_SCENE: PackedScene = preload("res://features/season/mastery/MasteryPilotRow.tscn")
-const CHIP_SCENE: PackedScene = preload("res://features/season/mastery/MasteryMechChip.tscn")
-const QUIRK_LINE_SCENE: PackedScene = preload("res://features/season/mastery/MasteryQuirkLine.tscn")
+const SCENE_PATH: String = "res://features/season/mastery/UI_View_MasteryPanel.tscn"
+const PILOT_ROW_SCENE: PackedScene = preload("res://features/season/mastery/UI_Comp_MasteryPilotRow.tscn")
+const CHIP_SCENE: PackedScene = preload("res://features/season/mastery/UI_Comp_MasteryMechChip.tscn")
+const QUIRK_LINE_SCENE: PackedScene = preload("res://features/season/mastery/UI_Comp_MasteryQuirkLine.tscn")
 
 var _sheet: HubSheet = null
 var _state: Dictionary = {}
@@ -152,7 +152,7 @@ func _fill_pilot_row(row: Panel, pd: PlayerData, delegated: bool, quirks_on: boo
 		var v: int = int(e["value"])
 		tops.append("%s %s %d" % [MechMastery.mech_name(int(e["mech_id"])),
 				MechMastery.tier_name(MechMastery.tier_of(v)), v])
-	(row.get_node("%Position") as PositionBadge).set_role(int(pd.role))
+	(row.get_node("%PositionBadge_Position") as PositionBadge).set_role(int(pd.role))
 	row.get_node("%TopMechs").text = "숙련 상위  %s" % "  ·  ".join(tops)
 
 	# Own-role mech chips — tap to set the research mech (tap the selected one to clear).

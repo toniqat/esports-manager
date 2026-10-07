@@ -359,7 +359,7 @@ var pile_deck:    CardPileStack = null
 var pile_discard: CardPileStack = null
 
 # 킬로그 — 화면 우측 상단(적 스트립 아래)에 처치 / 포탑 철거를 한 줄씩 쌓는다.
-# `HudBuilder._bind_kill_feed` 가 묶고(노드는 `ui/BattleHud.tscn`), 적립은 `mark_pilot_dead` 와
+# `HudBuilder._bind_kill_feed` 가 묶고(노드는 `ui/UI_View_BattleHud.tscn`), 적립은 `mark_pilot_dead` 와
 # `score_turret_kill` 두 곳에서만 들어온다. 교전 중에 난 처치는 아레나가 닫힐
 # 때까지 피드 안에 밀려 있다가 한 줄씩 풀린다 — `ui/KillFeed.gd` 참고.
 var kill_feed: KillFeed = null

@@ -8,7 +8,7 @@ extends Control
 #   scroll: preset chips → stats card (type · Lv · six stats) → TraitPickerView
 #   bar: 뒤로 (1) / 다음 (2)
 #
-# **The layout is `ManagerStepView.tscn`** (status line, scroll, chips / stats card / traits
+# **The layout is `UI_View_ManagerStepView.tscn`** (status line, scroll, chips / stats card / traits
 # slots, bottom bar). Construct with `ManagerStepView.create()`. Code fills the texts, picks
 # the status / note label variation (SubLabel ↔ NegativeLabel, FaintLabel ↔ AccentLabel),
 # refills the shared scenes placed in it (`ManagerPresetChips` · `TraitPickerView`, from
@@ -25,7 +25,7 @@ extends Control
 signal back_requested
 signal next_requested
 
-const SCENE_PATH: String = "res://features/meta/run_setup/ManagerStepView.tscn"
+const SCENE_PATH: String = "res://features/meta/run_setup/UI_View_ManagerStepView.tscn"
 
 ## Chosen preset index (profile `presets`).
 var preset_idx: int = -1
@@ -51,8 +51,8 @@ func _ready() -> void:
 	DragScroll.attach(%Scroll)
 	(%Back as Button).pressed.connect(func() -> void: back_requested.emit())
 	(%Next as Button).pressed.connect(_on_next_pressed)
-	(%Chips as ManagerPresetChips).chip_pressed.connect(_on_chip_pressed)
-	(%Traits as TraitPickerView).trait_pressed.connect(_on_trait_pressed)
+	(%ManagerPresetChips_Chips as ManagerPresetChips).chip_pressed.connect(_on_chip_pressed)
+	(%TraitPickerView_Traits as TraitPickerView).trait_pressed.connect(_on_trait_pressed)
 	select_preset(ManagerProgress.active_index(_pm.profile))
 	if UiPreview.is_standalone(self):
 		_fill_preview()
@@ -104,7 +104,7 @@ func _rebuild(status_override: String = "") -> void:
 		cells.remove_child(c)
 		c.queue_free()
 	var prof: Dictionary = _pm.profile
-	(%Chips as ManagerPresetChips).fill(prof, preset_idx)
+	(%ManagerPresetChips_Chips as ManagerPresetChips).fill(prof, preset_idx)
 
 	# Stats card — type · level, the six stats this preset gives.
 	var mgr: Dictionary = prof.get("manager", {})
@@ -123,7 +123,7 @@ func _rebuild(status_override: String = "") -> void:
 	cells.custom_minimum_size.y = ManagerUi.add_stat_cells(cells, Vector2.ZERO, cells_w,
 			ManagerProgress.preset_stats(prof, _draft), ManagerProgress.base_stats(prof))
 
-	(%Traits as TraitPickerView).fill(selected_traits(), _pm.owned_trait_ids(), [])
+	(%TraitPickerView_Traits as TraitPickerView).fill(selected_traits(), _pm.owned_trait_ids(), [])
 	scroll.set_deferred("scroll_vertical", keep)
 	_refresh_status(status_override)
 

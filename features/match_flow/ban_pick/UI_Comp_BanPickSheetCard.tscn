@@ -1,0 +1,44 @@
+[gd_scene load_steps=3 format=3 uid="uid://d0vxwonhoe2di"]
+
+[ext_resource type="Script" uid="uid://fl55ywn2qgjx" path="res://features/match_flow/ban_pick/BanPickSheetCard.gd" id="1_card"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="BanPickSheetCard" type="VBoxContainer"]
+offset_right = 144.0
+offset_bottom = 224.0
+mouse_filter = 2
+theme = ExtResource("2_theme")
+theme_override_constants/separation = 2
+script = ExtResource("1_card")
+
+[node name="Slot" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — BanPickSheetCard.gd slot
+Card.tscn (160x220) is added here at runtime, scaled by BanPickController.SHEET_CARD_SCALE (0.9) = this slot's size."
+custom_minimum_size = Vector2(144, 198)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Hit" type="Button" parent="Slot"]
+editor_description = "[필수] 지우면 오류 — BanPickSheetCard.gd hit"
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+flat = true
+
+[node name="Count" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — BanPickSheetCard.gd count"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 18
+text = "×2"
+horizontal_alignment = 1
+clip_text = true

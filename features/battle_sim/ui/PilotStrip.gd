@@ -5,7 +5,7 @@ extends Control
 # 늘어진 둥근 탭에 성장치 숫자를 찍는다(Deadlock 중계 HUD 의 초상 줄).
 # 스트립 뒤판(배경)과 초상 원의 테두리는 없다.
 #
-# **레이아웃의 정본은 `PilotStrip.tscn`(스트립 + `%Row`) 과 `PilotStripCell.tscn`(한 칸)
+# **레이아웃의 정본은 `UI_Comp_PilotStrip.tscn`(스트립 + `%Row`) 과 `UI_Comp_PilotStripCell.tscn`(한 칸)
 # 이다.** 이 스크립트는 칸 노드를 묶고, 팀색 · 그림 · 숫자를 넣고, 누르기를 판정한다.
 # 칸 치수(원 지름 · 흉상 칸 · 탭 · 배지 자리)는 씬에 박혀 있고, 코드는 거기서 읽는다
 # (`anchor_for` · `pilot_at` · 누름 축).
@@ -15,7 +15,7 @@ extends Control
 # 그 위는 원 **폭**으로만 잘라 머리가 원 위로 튀어나온다. 흉상 칸의 위쪽
 # 1/5 이 그 돌출부 몫이다(`PilotImages.STRIP_ASPECT` = 0.8).
 #
-# 화면에 두 벌이 있다(`BattleHud.tscn` 에 인스턴스):
+# 화면에 두 벌이 있다(`UI_View_BattleHud.tscn` 에 인스턴스):
 #   • 적 팀 — 화면 **최상단**. (`EnemyTopLayer/%EnemyPilotStrip`)
 #   • 아군  — **핸드 행보다 아래**. (`Canvas/%PlayerPilotStrip`)
 # 누르는 동안 그 초상이 `BattleRenderer.PRESS_SCALE` 로 커진다(전장 초상과 같은
@@ -73,7 +73,7 @@ func _ready() -> void:
 
 
 ## 이 스트립이 어느 팀인가 — 팀색(원 · 성장치 탭)을 칠하고, 적이면 스킬 배지를
-## 지운다(스킬은 아군만 쓴다). 자리 · 크기는 씬(`BattleHud.tscn`)이 정한다.
+## 지운다(스킬은 아군만 쓴다). 자리 · 크기는 씬(`UI_View_BattleHud.tscn`)이 정한다.
 func setup(bs: BattleSim, team: int) -> void:
 	_bs = bs
 	_team = team

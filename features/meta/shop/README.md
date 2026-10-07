@@ -10,13 +10,13 @@ free weekly pass. Contract: `docs/outgame_dev_plan.md` §12 (row E). Tab contrac
 | `Gacha.gd` | `class_name Gacha extends RefCounted` (static) | Gacha rules + the one pull action: rates (`gacha_rates.csv`), named-pilot / trait buckets, rarity roll, cost, `pull(pm, pool, count, rng, save)` |
 | `ShopCatalog.gd` | `class_name ShopCatalog extends RefCounted` (static) | Fixed-price actions: shard purchase, trait craft, outgame → levelup exchange, premium → tickets, dev premium grant. Do not save |
 | `PassSystem.gd` | `class_name PassSystem extends RefCounted` (static) | Weekly pass rules over the profile dict: ISO-week reset (device clock, local time), exp → level, overflow → outgame currency, `pass_rewards.csv`, `claim` / `claim_all` |
-| `ShopTab.gd` · `ShopTab.tscn` | `class_name ShopTab extends Control` | 상점 tab — segmented control (선수 영입 · 특성 연구 · 파편 상점 · 특성 제작 · 교환소), no action bar — see **ShopTab · PassTab scenes** below |
-| `ShopRateChip.tscn` · `ShopShardRow.tscn` · `ShopCraftRow.tscn` · `ShopExchangeRow.tscn` | *(no script)* | ShopTab items: banner rate pill · 파편 상점 row (`%Position` = `PositionBadge`) · 특성 제작 row · 교환소 row, filled by `ShopTab` |
-| `PassTab.gd` · `PassTab.tscn` | `class_name PassTab extends Control` | 패스 tab — header (week · reset countdown · level · exp bar) + 25 reward rows, action bar `모두 수령` |
-| `PassRow.tscn` | *(no script)* | One pass level row (Lv chip · reward · `수령` button or status), filled by `PassTab` |
-| `ShopPopup.gd` · `ShopPopup.tscn` | `class_name ShopPopup extends CanvasLayer` | Modal for both tabs: gacha / purchase **reveal** cards and the **rates** table — see **ShopPopup scene** below. Also owns `rarity_color` (delegates to `TraitUi.rarity_color` — one rarity palette for both pools), `currency_label` (`CURRENCY_LABELS`), `wrap_label` |
-| `ShopRevealItem.gd` · `ShopRevealItem.tscn` | `class_name ShopRevealItem extends Panel` | One reveal card (168 × 300 tile) — `show_result(e)` fills it and paints the rarity / result colours |
-| `ShopRateRow.tscn` | *(no script)* | One rates-table row (divider · rarity chip · % · count · per-item %), filled by `ShopPopup.open_rates` |
+| `ShopTab.gd` · `UI_View_ShopTab.tscn` | `class_name ShopTab extends Control` | 상점 tab — segmented control (선수 영입 · 특성 연구 · 파편 상점 · 특성 제작 · 교환소), no action bar — see **ShopTab · PassTab scenes** below |
+| `UI_Comp_ShopRateChip.tscn` · `UI_Comp_ShopShardRow.tscn` · `UI_Comp_ShopCraftRow.tscn` · `UI_Comp_ShopExchangeRow.tscn` | *(no script)* | ShopTab items: banner rate pill · 파편 상점 row (`%PositionBadge_Position` = `PositionBadge`) · 특성 제작 row · 교환소 row, filled by `ShopTab` |
+| `PassTab.gd` · `UI_View_PassTab.tscn` | `class_name PassTab extends Control` | 패스 tab — header (week · reset countdown · level · exp bar) + 25 reward rows, action bar `모두 수령` |
+| `UI_Comp_PassRow.tscn` | *(no script)* | One pass level row (Lv chip · reward · `수령` button or status), filled by `PassTab` |
+| `ShopPopup.gd` · `UI_View_ShopPopup.tscn` | `class_name ShopPopup extends CanvasLayer` | Modal for both tabs: gacha / purchase **reveal** cards and the **rates** table — see **ShopPopup scene** below. Also owns `rarity_color` (delegates to `TraitUi.rarity_color` — one rarity palette for both pools), `currency_label` (`CURRENCY_LABELS`), `wrap_label` |
+| `ShopRevealItem.gd` · `UI_Comp_ShopRevealItem.tscn` | `class_name ShopRevealItem extends Panel` | One reveal card (168 × 300 tile) — `show_result(e)` fills it and paints the rarity / result colours |
+| `UI_Comp_ShopRateRow.tscn` | *(no script)* | One rates-table row (divider · rarity chip · % · count · per-item %), filled by `ShopPopup.open_rates` |
 
 ## F6 preview (standalone run)
 Every scripted scene here (`ShopTab`, `PassTab`, `ShopPopup`, `ShopRevealItem`) shows dummy data when run on its own (editor "Run Current Scene") — `_ready` →

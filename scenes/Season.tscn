@@ -49,13 +49,16 @@ vertical_alignment = 1
 script = ExtResource("2_cal")
 
 [node name="TrainingBoard" type="Node" parent="."]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — RunSim.gd _one_run()"
 script = ExtResource("4_train")
 
 [node name="LeagueManager" type="Node" parent="."]
 script = ExtResource("5_league")
 
 [node name="TournamentManager" type="Node" parent="."]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — RunSim.gd _play_player_match()"
 script = ExtResource("6_tour")
 
 [node name="InternationalTournament" type="Node" parent="."]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — RunSim.gd _play_player_match()"
 script = ExtResource("7_intl")

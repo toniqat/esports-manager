@@ -1021,7 +1021,7 @@ battle buttons use the engine default text colours.
 | `BattlePanel` | PanelContainer | Info plate — `panel_box()` (`PANEL_BG`, 1px `PANEL_BORDER`, `PANEL_RADIUS`), padding `PANEL_PAD` (detail header / stat plate / skill plate) |
 | `BattlePopup` | PanelContainer | Skill popup plate — `popup_box()` (`POPUP_BG`, `RADIUS`, AA, `SHADOW` down only), padding `POPUP_PAD` |
 | `BattleGoldPanel` | PanelContainer | Gold-rimmed plate (`GOLD_PANEL_BG`, 3px `GOLD_BORDER`, `RADIUS`), padding 0 — MVP info |
-| `BattleGoldModal` | PanelContainer | Same rim, opaque `MODAL_BG`, padding 0 — the victory / defeat panel (`BattleHud.tscn` `%VictoryPanel` — a `Panel`, the variation's `panel` box applies) |
+| `BattleGoldModal` | PanelContainer | Same rim, opaque `MODAL_BG`, padding 0 — the victory / defeat panel (`UI_View_BattleHud.tscn` `%VictoryPanel` — a `Panel`, the variation's `panel` box applies) |
 | `BattleSlab` | PanelContainer | "No art yet" slab (`SLAB_BG`, 2px `PANEL_BORDER`, `SLAB_RADIUS`) |
 | `BattleDimPanel` | Panel | Full-rect dim `DIM` (detail panel); set mouse Ignore |
 | `BattleGoldButton` | Button | `BUTTON_BG` + 3px gold rim, `RADIUS`, pressed lightened `BUTTON_PRESS_LIGHTEN`, focus empty, `FONT_LARGE` — MVP "계속" |
@@ -1239,7 +1239,7 @@ The draft detail popup used it too, but that screen's candidate-card section was
 
 ---
 
-### PositionBadge.gd + PositionBadge.tscn (pilot position badge — every screen)
+### PositionBadge.gd + UI_Comp_PositionBadge.tscn (pilot position badge — every screen)
 `class_name PositionBadge extends PanelContainer`. **The one way a pilot's position is shown** — a colour pill with
 `TOP` / `JGL` / `MID` / `ADC` / `SUP` (`GameEnums.POSITION_ABBREVS`) in the role colour (`OutgameTheme.ROLE_COLORS`,
 darkened like the old role badge). Replaces the per-screen texts ("탱커" / "미드" / "TANK" / `Tk`) and the old
@@ -1248,7 +1248,7 @@ darkened like the old role badge). Replaces the per-screen texts ("탱커" / "�
 - **Used by**: `PilotThumb` · `DraftSlot` · `CollectionCell` (top-left of the art), `CollectionDetailSheet`
   (`PilotThumb.add_position_badge`), `DraftDetailPanel` header, `HubRosterRow`, `WeekPilotCard`,
   `MasteryPilotRow`, `RunResultPilotRow`, `IntelPilotRow`, `ShopShardRow`, `EndingView` roster, BattleSim
-  `MvpView` and the victory panel's MVP row (`BattleHud.tscn` `%MvpPosition`).
+  `MvpView` and the victory panel's MVP row (`UI_View_BattleHud.tscn` `%PositionBadge_MvpPosition`).
 - **Look**: the root attaches `OutgameTheme.tres` itself, so the badge looks the same inside dark battle scenes;
   variation `PositionBadgePanel`. Width = the widest of the five abbreviations at the current size, so text placed
   after a badge starts at the same x on every row.
@@ -1301,7 +1301,7 @@ still rebuilds it with containers (§5 step 2) and then deletes the draft. Game 
 <godot> --path . --script res://resources/UiSceneDumpRunner.gd -- --scene res://scenes/MatchFlow.tscn \
         --press "경기 시작" --node CanvasLayer --out res://_dump/BanPick.tscn
 # look at a draft (or the live screen) — no --node = screenshot only
-<godot> --path . --script res://resources/UiSceneDumpRunner.gd -- --scene res://_dump/HubView.tscn --shot <scratchpad>/draft.png
+<godot> --path . --script res://resources/UiSceneDumpRunner.gd -- --scene res://_dump/UI_View_HubView.tscn --shot <scratchpad>/draft.png
 ```
 | Arg | Meaning |
 |---|---|

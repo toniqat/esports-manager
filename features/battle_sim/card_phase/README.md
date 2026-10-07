@@ -2021,7 +2021,7 @@ either of them covers both).
 
 - **Entry point**: the two hand-row piles (뭉치). `HudBuilder._bind_hand_indicators`
   lays a transparent flat `Button` over each `CardPileStack`
-  (`%DeckButton` · `%DiscardButton` in `ui/BattleHud.tscn`, placed by `_place_pile_button`) — the pile sets itself to `MOUSE_FILTER_IGNORE` and
+  (`%DeckButton` · `%DiscardButton` in `ui/UI_View_BattleHud.tscn`, placed by `_place_pile_button`) — the pile sets itself to `MOUSE_FILTER_IGNORE` and
   can't take a click itself — and the press calls
   `CardPileViewer.open(Pile.DECK | Pile.DISCARD)`.
 - **When it opens**: `CardPhaseManager.can_browse_piles()` — operation phase (작전 단계) only, and

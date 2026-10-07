@@ -39,8 +39,8 @@ extends Node
 # 보고 있는지"가 흐려지고, 딤 아래로 넣으면 방금 누른 얼굴이 어두워져 연결이
 # 끊긴다 — 아예 치우는 편이 읽힌다.
 #
-# **레이아웃의 정본은 씬이다** — `PilotDetailPanel.tscn`(층 13 + 테마를 단 `%Root`)과 열 때마다
-# 인스턴스하는 `PilotDetailView.tscn`(딤 · 아트 두 장 · 정보 칼럼 · 카드 부채꼴 자리 · 설명 판
+# **레이아웃의 정본은 씬이다** — `UI_View_PilotDetailPanel.tscn`(층 13 + 테마를 단 `%Root`)과 열 때마다
+# 인스턴스하는 `UI_View_PilotDetailView.tscn`(딤 · 아트 두 장 · 정보 칼럼 · 카드 부채꼴 자리 · 설명 판
 # 뒤판). 반복되는 것은 아이템 씬이다 — 스탯 줄 / 칸(`PilotDetailStatRow` · `PilotDetailStatCell`),
 # 지속 효과 썸네일(`PilotDetailFxThumb`), 카드 입력 띠(`PilotDetailCardBand`), 설명 판과 그 줄
 # (`PilotDetailInfoMenu` · `PilotDetailInfoRow`), 전신 아트(`PilotDetailArt`). 색 · 판은 전투
@@ -55,15 +55,15 @@ extends Node
 ## 없지만, 겹친다면 이쪽이 위여야 한다. 씬 `PilotDetailLayer` 의 `layer` 와 같은 값.
 const OVERLAY_LAYER: int = 13
 
-const SCENE_PATH: String = "res://features/battle_sim/ui/PilotDetailPanel.tscn"
+const SCENE_PATH: String = "res://features/battle_sim/ui/UI_View_PilotDetailPanel.tscn"
 ## 열 때마다 하나씩 인스턴스하는 상세 한 장(닫히는 장이 빠져나가는 동안 다음 장이 들어온다).
-const VIEW_SCENE: PackedScene = preload("res://features/battle_sim/ui/PilotDetailView.tscn")
-const ROW_SCENE: PackedScene = preload("res://features/battle_sim/ui/PilotDetailStatRow.tscn")
-const CELL_SCENE: PackedScene = preload("res://features/battle_sim/ui/PilotDetailStatCell.tscn")
-const FX_SCENE: PackedScene = preload("res://features/battle_sim/ui/PilotDetailFxThumb.tscn")
-const BAND_SCENE: PackedScene = preload("res://features/battle_sim/ui/PilotDetailCardBand.tscn")
-const MENU_SCENE: PackedScene = preload("res://features/battle_sim/ui/PilotDetailInfoMenu.tscn")
-const MENU_ROW_SCENE: PackedScene = preload("res://features/battle_sim/ui/PilotDetailInfoRow.tscn")
+const VIEW_SCENE: PackedScene = preload("res://features/battle_sim/ui/UI_View_PilotDetailView.tscn")
+const ROW_SCENE: PackedScene = preload("res://features/battle_sim/ui/UI_Comp_PilotDetailStatRow.tscn")
+const CELL_SCENE: PackedScene = preload("res://features/battle_sim/ui/UI_Comp_PilotDetailStatCell.tscn")
+const FX_SCENE: PackedScene = preload("res://features/battle_sim/ui/UI_Comp_PilotDetailFxThumb.tscn")
+const BAND_SCENE: PackedScene = preload("res://features/battle_sim/ui/UI_Comp_PilotDetailCardBand.tscn")
+const MENU_SCENE: PackedScene = preload("res://features/battle_sim/ui/UI_Comp_PilotDetailInfoMenu.tscn")
+const MENU_ROW_SCENE: PackedScene = preload("res://features/battle_sim/ui/UI_Comp_PilotDetailInfoRow.tscn")
 
 ## 탭 셋. 인게임 = 지금 이 전장에서의 상태, 파일럿 = 사람의 능력치 + 파일럿
 ## 카드, 메크 = 기체의 능력치 + 메크 카드. 예전의 "전환" 버튼(파일럿 ↔ 메크
@@ -228,7 +228,7 @@ const ART_SLIDE_PX: float = 48.0
 const UI_SLIDE_PX: float = 56.0
 
 var _bs: BattleSim = null
-## 지금 열린 상세 한 장(`PilotDetailView.tscn` 인스턴스). null = 닫힘.
+## 지금 열린 상세 한 장(`UI_View_PilotDetailView.tscn` 인스턴스). null = 닫힘.
 var _view: Control = null
 ## 딤 / 정보 묶음(머리글 · 탭 · 본문 · 카드). 열기 · 닫기 연출이 이 둘과 아트 홀더를 움직인다.
 var _dim: Control = null
@@ -416,8 +416,8 @@ func _build() -> void:
 	%Root.add_child(_view)
 	_dim = _view.get_node("%Dim")
 	_art_holder = _view.get_node("%ArtHolder")
-	_art_pilot = _view.get_node("%ArtPilot")
-	_art_mech = _view.get_node("%ArtMech")
+	_art_pilot = _view.get_node("%PilotDetailArt_ArtPilot")
+	_art_mech = _view.get_node("%PilotDetailArt_ArtMech")
 	_ui_root = _view.get_node("%InfoColumn")
 	_column = _view.get_node("%Column")
 	_fan_root = _view.get_node("%CardFan")
@@ -524,7 +524,7 @@ static func _ignore_input_recursive(node: Node) -> void:
 
 
 # ─── 전신 아트 ───────────────────────────────────────────────────────────────
-# 두 장(씬 `%ArtPilot` · `%ArtMech`)을 채우고, 앞뒤 자세는 `_apply_focus(false)` 가 잡는다.
+# 두 장(씬 `%PilotDetailArt_ArtPilot` · `%PilotDetailArt_ArtMech`)을 채우고, 앞뒤 자세는 `_apply_focus(false)` 가 잡는다.
 func _build_arts() -> void:
 	var mech: MechData = _mech()
 	_fill_art(_art_pilot, PilotImages.full_for(_pilot.pilot_id), "초상화 없음")
@@ -533,7 +533,7 @@ func _build_arts() -> void:
 	_apply_focus(false)
 
 
-## 아트 한 장(`PilotDetailArt.tscn`). `tex` 가 null 이면(메크 에셋이 아직 없다 /
+## 아트 한 장(`UI_Comp_PilotDetailArt.tscn`). `tex` 가 null 이면(메크 에셋이 아직 없다 /
 ## INTL 파일럿) 같은 자리에 실루엣 플레이스홀더(`%Slab` + `%FallbackLabel`)를 세운다 —
 ## 자리와 전환 동작은 그대로 확인된다.
 ##
@@ -729,7 +729,7 @@ func _build_chip_grid(lines: Array) -> void:
 			_make_chip(String(cell[0]), String(cell[1]), row)
 
 
-## 스탯 칸 하나(`PilotDetailStatCell.tscn`) — 스탯 판 위에 얹힌 작은 판. 왼쪽에 이름,
+## 스탯 칸 하나(`UI_Comp_PilotDetailStatCell.tscn`) — 스탯 판 위에 얹힌 작은 판. 왼쪽에 이름,
 ## 오른쪽 정렬로 값. 누르면 메뉴가 열려야 하므로 Button 이고, 라벨들은 IGNORE 라
 ## 클릭을 가로채지 않는다. 폭은 줄(HBox)이 나눈다.
 func _make_chip(key: String, chip_name: String, row: Control) -> void:
@@ -1055,7 +1055,7 @@ func _fx_bottom_y() -> float:
 	return _fan_top_y() - FX_ABOVE_FAN_GAP
 
 
-## 썸네일 한 칸(`PilotDetailFxThumb.tscn`) — 위에 두 글자 약칭(효과별 색), 아래에 작게
+## 썸네일 한 칸(`UI_Comp_PilotDetailFxThumb.tscn`) — 위에 두 글자 약칭(효과별 색), 아래에 작게
 ## 지금 값. 아이콘 에셋이 없으므로 **글자가 곧 아이콘**이다. 두 글자로 줄인 것은 68px
 ## 칸에서 온전한 이름("공격적인 라인전")이 들어갈 자리가 없기 때문이고, 전체
 ## 이름은 눌러서 여는 패널의 제목이 들고 있다.
@@ -1514,7 +1514,7 @@ func _build_menu_content(animate: bool = false) -> void:
 		_build_card_desc(animate)
 		return
 
-	# 판(`PilotDetailInfoMenu.tscn`) — 판 위 클릭은 메뉴를 닫지 않는다(씬에서 STOP).
+	# 판(`UI_Comp_PilotDetailInfoMenu.tscn`) — 판 위 클릭은 메뉴를 닫지 않는다(씬에서 STOP).
 	var panel := MENU_SCENE.instantiate() as Control
 	_menu_root.add_child(panel)
 	(panel.get_node("%Title") as Label).text = _target_title(_menu_key)

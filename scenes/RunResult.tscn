@@ -16,7 +16,8 @@ script = ExtResource("1_result")
 
 [node name="Background" type="Panel" parent="."]
 unique_name_in_owner = true
-editor_description = "Code extends it up under the notch (ScreenMetrics.extend_background) — the screen itself is indented to the safe top."
+editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _apply_safe_area()
+Code extends it up under the notch (ScreenMetrics.extend_background) — the screen itself is indented to the safe top."
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -27,6 +28,7 @@ mouse_filter = 2
 theme_type_variation = &"ScreenBackground"
 
 [node name="Header" type="VBoxContainer" parent="."]
+editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 10
@@ -39,7 +41,8 @@ theme_override_constants/separation = 0
 
 [node name="OutcomeTitle" type="Label" parent="Header"]
 unique_name_in_owner = true
-editor_description = "Colour is data: clear = ACCENT_TEXT, fail = NEGATIVE, abandon = TEXT_SUB (code)."
+editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill_header()
+Colour is data: clear = ACCENT_TEXT, fail = NEGATIVE, abandon = TEXT_SUB (code)."
 custom_minimum_size = Vector2(0, 98)
 layout_mode = 2
 theme_type_variation = &"HeadingLabel"
@@ -61,6 +64,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Subtitle" type="Label" parent="Header"]
+editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill_header()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
@@ -69,6 +73,7 @@ text = "신생팀의 도전 · Nova Esports"
 horizontal_alignment = 1
 
 [node name="TestChip" type="PanelContainer" parent="Header"]
+editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill_header()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(380, 42)
 layout_mode = 2
@@ -86,7 +91,8 @@ vertical_alignment = 1
 
 [node name="Scroll" type="ScrollContainer" parent="."]
 unique_name_in_owner = true
-editor_description = "Ends 16 above the bottom bar; code also lifts offset_bottom by the device's bottom inset. offset_right = scroll bar width with the bar space always reserved: the bar sits just off screen, so the body is always the full screen width (cards stay centred) — like the old code-built body."
+editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _apply_safe_area() · RunResultScreen.gd _fill()
+Ends 16 above the bottom bar; code also lifts offset_bottom by the device's bottom inset. offset_right = scroll bar width with the bar space always reserved: the bar sits just off screen, so the body is always the full screen width (cards stay centred) — like the old code-built body."
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -115,7 +121,8 @@ theme_override_constants/separation = 28
 
 [node name="TrueEndCard" type="PanelContainer" parent="Scroll/Body/Cards"]
 unique_name_in_owner = true
-editor_description = "M7 진엔딩 — shown only when result.true_endings is non-empty. Rows: RunResultTrueEndRow.tscn."
+editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill_true_ending_card()
+M7 진엔딩 — shown only when result.true_endings is non-empty. Rows: UI_Comp_RunResultTrueEndRow.tscn."
 custom_minimum_size = Vector2(920, 0)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -144,6 +151,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="TrueEndRows" type="VBoxContainer" parent="Scroll/Body/Cards/TrueEndCard/VBox"]
+editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill_true_ending_card()"
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
@@ -151,7 +159,8 @@ theme_override_constants/separation = 0
 
 [node name="TraitCard" type="PanelContainer" parent="Scroll/Body/Cards"]
 unique_name_in_owner = true
-editor_description = "M8 새 특성 해금 — shown only when traits were unlocked. Rows: RunResultTraitRow.tscn."
+editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill_unlocked_traits_card()
+M8 새 특성 해금 — shown only when traits were unlocked. Rows: UI_Comp_RunResultTraitRow.tscn."
 custom_minimum_size = Vector2(920, 0)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -180,6 +189,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="TraitNote" type="Label" parent="Scroll/Body/Cards/TraitCard/VBox"]
+editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill_unlocked_traits_card()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
@@ -193,6 +203,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="TraitRows" type="VBoxContainer" parent="Scroll/Body/Cards/TraitCard/VBox"]
+editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill_unlocked_traits_card()"
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
@@ -227,6 +238,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="ProgressRows" type="VBoxContainer" parent="Scroll/Body/Cards/ProgressCard/VBox"]
+editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill_progress_card()"
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
@@ -261,6 +273,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="ScoreRows" type="VBoxContainer" parent="Scroll/Body/Cards/ScoreCard/VBox"]
+editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill_score_card()"
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
@@ -294,6 +307,7 @@ theme_override_font_sizes/font_size = 28
 text = "합계"
 
 [node name="ScoreTotal" type="Label" parent="Scroll/Body/Cards/ScoreCard/VBox/Total"]
+editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill_score_card()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 1
@@ -337,6 +351,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="RewardRows" type="VBoxContainer" parent="Scroll/Body/Cards/RewardCard/VBox"]
+editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill_reward_card()"
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
@@ -344,7 +359,8 @@ theme_override_constants/separation = 0
 
 [node name="RewardNote" type="Label" parent="Scroll/Body/Cards/RewardCard/VBox"]
 unique_name_in_owner = true
-editor_description = "Test runs only."
+editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill_reward_card()
+Test runs only."
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_type_variation = &"FaintLabel"
@@ -352,7 +368,8 @@ text = "테스트 런이라 프로필에 더하지 않았습니다"
 
 [node name="GrowthCard" type="PanelContainer" parent="Scroll/Body/Cards"]
 unique_name_in_owner = true
-editor_description = "M10 선수 성장 — hidden when the result has no pilots. Rows: RunResultGrowthRow.tscn."
+editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill_growth_card()
+M10 선수 성장 — hidden when the result has no pilots. Rows: UI_Comp_RunResultGrowthRow.tscn."
 custom_minimum_size = Vector2(920, 0)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -381,13 +398,14 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="GrowthRows" type="VBoxContainer" parent="Scroll/Body/Cards/GrowthCard/VBox"]
+editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill_growth_card()"
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="AchievementCard" type="PanelContainer" parent="Scroll/Body/Cards"]
-editor_description = "Rows: RunResultPilotRow.tscn."
+editor_description = "Rows: UI_Comp_RunResultPilotRow.tscn."
 custom_minimum_size = Vector2(920, 0)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -416,6 +434,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="AchievementRows" type="VBoxContainer" parent="Scroll/Body/Cards/AchievementCard/VBox"]
+editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill_achievement_card()"
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
@@ -423,7 +442,8 @@ theme_override_constants/separation = 0
 
 [node name="AchievementEmpty" type="Control" parent="Scroll/Body/Cards/AchievementCard/VBox"]
 unique_name_in_owner = true
-editor_description = "Shown instead of the rows when the result has no pilots."
+editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill_achievement_card()
+Shown instead of the rows when the result has no pilots."
 custom_minimum_size = Vector2(0, 104)
 layout_mode = 2
 mouse_filter = 2
@@ -441,7 +461,8 @@ text = "기록된 선수가 없습니다"
 
 [node name="Empty" type="Control" parent="."]
 unique_name_in_owner = true
-editor_description = "Shown instead of Header + Scroll when GameManager.last_run_result is empty (scene opened directly)."
+editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _fill()
+Shown instead of Header + Scroll when GameManager.last_run_result is empty (scene opened directly)."
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -502,7 +523,8 @@ horizontal_alignment = 1
 
 [node name="BottomButton" type="Button" parent="."]
 unique_name_in_owner = true
-editor_description = "Full-width bottom action bar (BarPrimaryButton). Code adds only the bottom inset (OutgameTheme.fit_bottom_bar: rect down over the inset, text lifted above it)."
+editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _apply_safe_area() · RunResultScreen.gd _fill_bottom_bar()
+Full-width bottom action bar (BarPrimaryButton). Code adds only the bottom inset (OutgameTheme.fit_bottom_bar: rect down over the inset, text lifted above it)."
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0

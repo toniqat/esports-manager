@@ -4,12 +4,12 @@ extends Panel
 # One gacha / purchase result card inside `ShopPopup`'s reveal grid
 # (rarity band · pilot face or trait +/− mark · name · NEW / 돌파 n / 파편 +n / 재료 +n tag).
 #
-# **Layout lives in `ShopRevealItem.tscn`** (fixed 168 × 300 tile, children placed by position).
+# **Layout lives in `UI_Comp_ShopRevealItem.tscn`** (fixed 168 × 300 tile, children placed by position).
 # This script only fills `%` nodes and paints the data-driven colours: the card border and
 # band take the rarity colour (`ShopPopup.rarity_color`), the trait mark is POSITIVE / NEGATIVE,
 # the tag chip colour follows the result kind — none of those are theme variations.
 
-const SCENE_PATH: String = "res://features/meta/shop/ShopRevealItem.tscn"
+const SCENE_PATH: String = "res://features/meta/shop/UI_Comp_ShopRevealItem.tscn"
 
 
 static func create() -> ShopRevealItem:

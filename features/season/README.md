@@ -140,12 +140,12 @@ and exposes intent methods on the hub. Pattern mirrors `BattleSim`:
 | LeagueManager            | `league/LeagueManager.gd`                    | Round-robin schedule keyed by `phase_week` (1 round per week), standings, `resolve_current_week()` for AI matches. |
 | TournamentManager        | `tournament/TournamentManager.gd`            | 4-team SE playoff bracket distributed across 2 weeks (SF week + F week). |
 | InternationalTournament  | `tournament/InternationalTournament.gd`      | 8-team SE INTL bracket distributed across 3 weeks (QF / SF / F). |
-| LeagueView               | `league/LeagueView.gd` + `.tscn`             | Standings screen — 8 `LeagueRow.tscn` rows + a single full-width "확인" (OK). Built with `LeagueView.create()`; `league/README.md`. |
-| BracketView              | `tournament/BracketView.gd` + `.tscn`        | Phase-7 playoff bracket UI (3 `BracketMatchBox.tscn` boxes: SF1/SF2/F). Built with `BracketView.create()`; see "Bracket screens" below. |
-| IntlBracketView          | `tournament/IntlBracketView.gd` + `.tscn`    | Phase-8 INTL bracket UI (7 `IntlMatchBox.tscn` boxes: 4 QF / 2 SF / F). Built with `IntlBracketView.create()`; see "Bracket screens" below. |
+| LeagueView               | `league/LeagueView.gd` + `.tscn`             | Standings screen — 8 `UI_Comp_LeagueRow.tscn` rows + a single full-width "확인" (OK). Built with `LeagueView.create()`; `league/README.md`. |
+| BracketView              | `tournament/BracketView.gd` + `.tscn`        | Phase-7 playoff bracket UI (3 `UI_Comp_BracketMatchBox.tscn` boxes: SF1/SF2/F). Built with `BracketView.create()`; see "Bracket screens" below. |
+| IntlBracketView          | `tournament/IntlBracketView.gd` + `.tscn`    | Phase-8 INTL bracket UI (7 `UI_Comp_IntlMatchBox.tscn` boxes: 4 QF / 2 SF / F). Built with `IntlBracketView.create()`; see "Bracket screens" below. |
 | GameOverView             | `GameOverView.gd` + `.tscn`                  | Game-over screen — playoff cut missed, playoff SF/F lost, or any INTL lost (reason line names the round) |
 | EndingView               | `EndingView.gd` + `.tscn`                    | World-champion ending screen — REGULAR_INTL win                  |
-| *(overlay)* HubSheet     | `HubSheet.gd` + `HubSheet.tscn`              | Shared detail-sheet **frame** for the hub manage cards (`StaffPanel` · `MasteryPanel` · `FinancePanel`) and the standings team detail (`LeagueView.open_team_detail`). See "HubSheet" below. |
+| *(overlay)* HubSheet     | `HubSheet.gd` + `UI_View_HubSheet.tscn`              | Shared detail-sheet **frame** for the hub manage cards (`StaffPanel` · `MasteryPanel` · `FinancePanel`) and the standings team detail (`LeagueView.open_team_detail`). See "HubSheet" below. |
 
 **F6 preview** — each of these scenes run alone fills dummy data (`resources/UiPreview.gd`, branch in
 `_ready`, `_fill_preview()` at the bottom of the script). Screens use an in-memory run (nothing saved)
@@ -159,7 +159,7 @@ normally come from the host) · `HubSheet` = own-team detail (a `LeagueTeamDetai
 `EndingView` / `GameOverView` keep their managers in `_league` / `_intl` / `_tournament` (re-read from
 `_hub` every refresh; the preview sets them directly).
 
-### HubSheet (`HubSheet.tscn` + `HubSheet.gd`)
+### HubSheet (`UI_View_HubSheet.tscn` + `HubSheet.gd`)
 CanvasLayer 18, opened with `HubSheet.open_on(host, title)` (instantiates the scene via `create()`,
 adds it under `host`, sets the title, fits the safe area). One-shot: `close()` (dim tap · `닫기`)
 emits `closed` and frees it; `HubView` connects `closed` → `refresh()`.
@@ -200,15 +200,15 @@ HubView (Control · HubView.gd)
 ├ %Phase (Caption 24) · Title "시즌 허브" (Heading) · %Week (Sub, right-anchored) · %NextMatch (Accent 24)
 ├ RosterCaption "내 팀 로스터" (Caption 24)           ← header labels: absolute offsets
 ├ Body VBox (x 30..−30, y 240, sep 12)
-│ ├ %Roster VBox (sep 12) ─ Row0..Row4  HubRosterRow instances, seat order (ROLE_DISPLAY_ORDER)
-│ └ %Manage HBox (sep 16, 176) ─ Card0..Card2  HubManageCard instances, `_manage_panels()` order
+│ ├ %Roster VBox (sep 12) ─ HubRosterRow_Row0..4  HubRosterRow instances, seat order (ROLE_DISPLAY_ORDER)
+│ └ %Manage HBox (sep 16, 176) ─ HubManageCard_Card0..2  HubManageCard instances, `_manage_panels()` order
 └ %SafeBottom   full rect; code lifts its bottom by the bottom inset
   ├ %Toast      Accent label, 40 above the bar
   └ %BottomBar  HBox, 128 tall, sep 0 ─ %Standings (BarGhost 32, ratio 1, + Sep BarSeparator) · %Start (BarPrimary, ratio 2)
 
 HubRosterRow (Panel 190 · HubRosterRow.gd)          HubManageCard (Panel · Card · HubManageCard.gd)
 ├ %Face TextureRect 160² (16,14)                     ├ VBox (20,14): %Title · %Value (34) · %Sub (20) · %Owner (Accent 18)
-├ Info VBox (190,14): %Role (PositionBadge) · %Name · %Total ·       ├ %Alert  red dot top-right
+├ Info VBox (190,14): %PositionBadge_Role (PositionBadge) · %Name · %Total ·       ├ %Alert  red dot top-right
 │   Trust HBox ─ %TrustChip(%TrustText) · %TrustGauge(%TrustFill)   └ %Hit flat Button over the card → `pressed`
 └ %Stats HBox (right-anchored, 520) ─ Stat0..5 VBox (Key 18 · Value 32), PlayerData.STAT_KEYS order
 
@@ -220,7 +220,7 @@ GameOverView: %Background · Title "GAME OVER" (NegativeLabel 80) · %Reason (Bo
 ```
 
 - **Scene owns** layout, texts' sizes / variations, bar ratio, the five rows / three cards / line slots.
-- **Code owns** data, data colours (row lead bar = role colour via `lead_bar_style`, `%Role` = `PositionBadge`; trust chip /
+- **Code owns** data, data colours (row lead bar = role colour via `lead_bar_style`, `%PositionBadge_Role` = `PositionBadge`; trust chip /
   fill = `trust_color`, fill width = `anchor_right`; recap line amber when won), safe-area offsets.
 - **Bottom bar in a scene**: the buttons are `Bar*` variations (square corners) and the separator is a
   `BarSeparator` Panel inside every button but the last. `OutgameTheme.fit_bottom_bar(%BottomBar, %SafeBottom)`
@@ -362,15 +362,15 @@ Layout lives in the scenes; `create()` instantiates them (never `.new()`).
 ```
 BracketView (Control, full rect, OutgameTheme)          IntlBracketView — same header / Empty / OkButton
 ├ %Background  ColorRect BG (code extends into notch)    └ %Bracket HBox (anchored top-centre, y 240)
-├ Title · %Phase · %Stage · %NextMatch  (top-wide, centred)   ├ Quarters VBox (sep 50) ─ %QF1..%QF4 (280×130)
+├ Title · %Phase · %Stage · %NextMatch  (top-wide, centred)   ├ Quarters VBox (sep 50) ─ %IntlMatchBox_QF1..QF4 (280×130)
 ├ %Empty   FaintLabel, hidden (shown when no bracket)         ├ GapQS 70
-├ %Bracket HBox (anchored top-centre, y 250, sep 70)          ├ Semis VBox ─ TopGap 145 · %SF1 · MidGap 180 · %SF2 (280×150)
-│ ├ Semis VBox (sep 60) ─ %SF1 · %SF2   (420×200)             ├ GapSF 50
-│ └ %Final  (size_flags_vertical = centre)                    └ FinalColumn VBox ─ TopGap 300 · %Final (320×170)
+├ %Bracket HBox (anchored top-centre, y 250, sep 70)          ├ Semis VBox ─ TopGap 145 · %IntlMatchBox_SF1 · MidGap 180 · %IntlMatchBox_SF2 (280×150)
+│ ├ Semis VBox (sep 60) ─ %BracketMatchBox_SF1 · %BracketMatchBox_SF2   (420×200)             ├ GapSF 50
+│ └ %BracketMatchBox_Final  (size_flags_vertical = centre)                    └ FinalColumn VBox ─ TopGap 300 · %IntlMatchBox_Final (320×170)
 └ %OkButton  BarPrimaryButton, anchored bottom-wide
 ```
-- Match boxes: `BracketMatchBox.gd` on two item scenes — `BracketMatchBox.tscn` (playoff: 22/18/28 px
-  fonts, radius 8) and `IntlMatchBox.tscn` (INTL: 18/16/22 px, radius 6). Each instance sets
+- Match boxes: `BracketMatchBox.gd` on two item scenes — `UI_Comp_BracketMatchBox.tscn` (playoff: 22/18/28 px
+  fonts, radius 8) and `UI_Comp_IntlMatchBox.tscn` (INTL: 18/16/22 px, radius 6). Each instance sets
   `slot_title` ("4강 1경기" …) in the screen scene; the box size is the instance's minimum size.
   `show_match(m, pid, team_text)` fills team / week text and paints the data colours (team colour by
   player / winner / loser, border amber 3px for the player's match, green 2px decided, `BORDER` 2px

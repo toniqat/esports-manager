@@ -1,0 +1,494 @@
+[gd_scene load_steps=3 format=3 uid="uid://tbsacikihr8x"]
+
+[ext_resource type="Script" uid="uid://0edkth8xf1kr" path="res://features/match_flow/ban_pick/MechDetailPanel.gd" id="1_detail"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="MechDetailPanel" type="CanvasLayer"]
+layer = 20
+script = ExtResource("1_detail")
+
+[node name="Root" type="Control" parent="."]
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _toggle_card_desc()"
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+
+[node name="Dim" type="Button" parent="Root"]
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _ready()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+flat = true
+
+[node name="DimRect" type="Panel" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"DimPanel"
+
+[node name="ArtPlaceholder" type="ColorRect" parent="Root"]
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_art()"
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_left = 20.0
+offset_top = 480.0
+offset_right = 576.0
+offset_bottom = 1120.0
+mouse_filter = 2
+color = Color(0.3, 0.33, 0.42, 0.14)
+
+[node name="ArtName" type="Label" parent="Root/ArtPlaceholder"]
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_art()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 14
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_top = -24.0
+offset_bottom = 24.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 32
+text = "메크 이름"
+horizontal_alignment = 1
+clip_text = true
+
+[node name="Art" type="TextureRect" parent="Root"]
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_art()"
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 20.0
+offset_top = 480.0
+offset_right = 576.0
+offset_bottom = 1120.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="SafeArea" type="Control" parent="Root"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fit_safe_area()
+Full rect shrunk to the device safe area (offset_top = top inset, offset_bottom = -bottom inset — MechDetailPanel._fit_safe_area). The panel and the close button below are placed in these coordinates: top fixed, bottom anchored to the safe bottom."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Backdrop" type="Panel" parent="Root/SafeArea"]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_left = 596.0
+offset_top = 150.0
+offset_right = 1056.0
+offset_bottom = -180.0
+grow_vertical = 2
+theme_type_variation = &"Card"
+
+[node name="Scroll" type="ScrollContainer" parent="Root/SafeArea"]
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _ready() · MechDetailPanel.gd open()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_left = 618.0
+offset_top = 172.0
+offset_right = 1034.0
+offset_bottom = -202.0
+grow_vertical = 2
+horizontal_scroll_mode = 0
+
+[node name="Body" type="VBoxContainer" parent="Root/SafeArea/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Header" type="Control" parent="Root/SafeArea/Scroll/Body"]
+custom_minimum_size = Vector2(0, 84)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Name" type="Label" parent="Root/SafeArea/Scroll/Body/Header"]
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_header()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 52.0
+grow_horizontal = 2
+theme_type_variation = &"HeadingLabel"
+theme_override_font_sizes/font_size = 40
+text = "메크 이름"
+clip_text = true
+
+[node name="Sub" type="Label" parent="Root/SafeArea/Scroll/Body/Header"]
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_header()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 54.0
+offset_bottom = 82.0
+grow_horizontal = 2
+theme_type_variation = &"CaptionLabel"
+text = "TANK"
+clip_text = true
+
+[node name="Gap1" type="Control" parent="Root/SafeArea/Scroll/Body"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="StatsTitle" type="Label" parent="Root/SafeArea/Scroll/Body"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 24
+text = "기체 능력치"
+clip_text = true
+
+[node name="Stats" type="Control" parent="Root/SafeArea/Scroll/Body"]
+editor_description = "스탯 칩 세 칸 — 폭을 3 등분하고 칸 사이 12px (앵커 비율 + 오프셋, 소수점 위치 그대로)."
+custom_minimum_size = Vector2(0, 92)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="HpChip" type="Panel" parent="Root/SafeArea/Scroll/Body/Stats"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.333333
+anchor_bottom = 1.0
+offset_right = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"SunkPanel"
+
+[node name="Key" type="Label" parent="Root/SafeArea/Scroll/Body/Stats/HpChip"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 10.0
+offset_bottom = 34.0
+grow_horizontal = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 19
+text = "체력"
+horizontal_alignment = 1
+
+[node name="HpValue" type="Label" parent="Root/SafeArea/Scroll/Body/Stats/HpChip"]
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_stats()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 36.0
+offset_bottom = 80.0
+grow_horizontal = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 34
+text = "200"
+horizontal_alignment = 1
+clip_text = true
+
+[node name="AtkChip" type="Panel" parent="Root/SafeArea/Scroll/Body/Stats"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.333333
+anchor_right = 0.666667
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_right = -4.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"SunkPanel"
+
+[node name="Key" type="Label" parent="Root/SafeArea/Scroll/Body/Stats/AtkChip"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 10.0
+offset_bottom = 34.0
+grow_horizontal = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 19
+text = "공격력"
+horizontal_alignment = 1
+
+[node name="AtkValue" type="Label" parent="Root/SafeArea/Scroll/Body/Stats/AtkChip"]
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_stats()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 36.0
+offset_bottom = 80.0
+grow_horizontal = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 34
+text = "8"
+horizontal_alignment = 1
+clip_text = true
+
+[node name="PresenceChip" type="Panel" parent="Root/SafeArea/Scroll/Body/Stats"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.666667
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"SunkPanel"
+
+[node name="Key" type="Label" parent="Root/SafeArea/Scroll/Body/Stats/PresenceChip"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 10.0
+offset_bottom = 34.0
+grow_horizontal = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 19
+text = "존재감"
+horizontal_alignment = 1
+
+[node name="PresenceValue" type="Label" parent="Root/SafeArea/Scroll/Body/Stats/PresenceChip"]
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_stats()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 36.0
+offset_bottom = 80.0
+grow_horizontal = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 34
+text = "4"
+horizontal_alignment = 1
+clip_text = true
+
+[node name="MasteryBlock" type="VBoxContainer" parent="Root/SafeArea/Scroll/Body"]
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_mastery()"
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Gap" type="Control" parent="Root/SafeArea/Scroll/Body/MasteryBlock"]
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="MasteryTitle" type="Label" parent="Root/SafeArea/Scroll/Body/MasteryBlock"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 24
+text = "숙련도 (등급 보정 = 스탯 6종)"
+clip_text = true
+
+[node name="MasteryRows" type="VBoxContainer" parent="Root/SafeArea/Scroll/Body/MasteryBlock"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_mastery()
+숙련도 줄(UI_Comp_MechMasteryRow.tscn) — 그 팀 파일럿 다섯 명, 코드가 열 때마다 채운다. 시즌 밖 / 분석 부족 상대면 블록째 숨는다."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="QuirkBlock" type="VBoxContainer" parent="Root/SafeArea/Scroll/Body"]
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_quirks()"
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Gap" type="Control" parent="Root/SafeArea/Scroll/Body/QuirkBlock"]
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="QuirkTitle" type="Label" parent="Root/SafeArea/Scroll/Body/QuirkBlock"]
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_quirks()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 24
+text = "기벽 — 파일럿  2 / 3  (스탯 +4)"
+clip_text = true
+
+[node name="QuirkEmpty" type="Label" parent="Root/SafeArea/Scroll/Body/QuirkBlock"]
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_quirks()"
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 21
+text = "장착한 기벽 없음"
+
+[node name="QuirkRows" type="VBoxContainer" parent="Root/SafeArea/Scroll/Body/QuirkBlock"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_quirks()
+기벽 줄(UI_Comp_MechQuirkRow.tscn) — 누른 자리 파일럿(아군만)의 기벽, 코드가 채운다."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Gap2" type="Control" parent="Root/SafeArea/Scroll/Body"]
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="PassiveTitle" type="Label" parent="Root/SafeArea/Scroll/Body"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 24
+text = "메크 패시브"
+clip_text = true
+
+[node name="NoPassive" type="Label" parent="Root/SafeArea/Scroll/Body"]
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_passive()"
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 21
+text = "이 기체에는 패시브가 없다"
+
+[node name="PassiveBox" type="VBoxContainer" parent="Root/SafeArea/Scroll/Body"]
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_passive()"
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="PassiveName" type="Label" parent="Root/SafeArea/Scroll/Body/PassiveBox"]
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_passive()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 30
+text = "패시브 이름"
+clip_text = true
+
+[node name="PassiveKw" type="Label" parent="Root/SafeArea/Scroll/Body/PassiveBox"]
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_passive()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 19
+text = "키워드"
+
+[node name="PassiveDesc" type="Label" parent="Root/SafeArea/Scroll/Body/PassiveBox"]
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_passive()"
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 21
+text = "패시브 설명 — 길면 줄바꿈되고, 높이는 글이 정한다."
+autowrap_mode = 3
+
+[node name="Gap3" type="Control" parent="Root/SafeArea/Scroll/Body"]
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="CardsTitle" type="Label" parent="Root/SafeArea/Scroll/Body"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 24
+text = "메크 카드"
+clip_text = true
+
+[node name="NoCards" type="Label" parent="Root/SafeArea/Scroll/Body"]
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_cards()"
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 18
+text = "이 기체에는 고유 카드가 없다"
+
+[node name="CardsBox" type="VBoxContainer" parent="Root/SafeArea/Scroll/Body"]
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_cards()"
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="CardsNote" type="Label" parent="Root/SafeArea/Scroll/Body/CardsBox"]
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 18
+text = "이 기체를 배정받은 파일럿은 아래 카드를 장수만큼 덱에 넣는다."
+autowrap_mode = 3
+
+[node name="Gap" type="Control" parent="Root/SafeArea/Scroll/Body/CardsBox"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="CardGrid" type="GridContainer" parent="Root/SafeArea/Scroll/Body/CardsBox"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_cards()
+메크 카드 칸(UI_Comp_MechCardCell.tscn) — 코드가 GameManager.mech_cards_for 로 채운다. 3열, 행 폭(3 × 128 + 2 × 12)으로 가운데."
+custom_minimum_size = Vector2(408, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
+columns = 3
+
+[node name="BottomPad" type="Control" parent="Root/SafeArea/Scroll/Body"]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Close" type="Button" parent="Root/SafeArea"]
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _ready()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 596.0
+offset_top = -164.0
+offset_right = 1056.0
+offset_bottom = -80.0
+grow_vertical = 0
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+text = "닫기"

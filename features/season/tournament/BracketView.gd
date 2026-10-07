@@ -6,14 +6,14 @@ extends Control
 # Each match panel shows team_a / team_b, the winner indicator, and the
 # scheduled date. Player team is tinted gold, played matches dim losers.
 #
-# **Layout lives in `BracketView.tscn`** — build it with `BracketView.create()`. The three
-# boxes are `BracketMatchBox.tscn` instances placed in `%Bracket` (semis column + final,
-# vertically centred by the HBox) and bound as `%SF1` `%SF2` `%Final`; each paints its own
+# **Layout lives in `UI_View_BracketView.tscn`** — build it with `BracketView.create()`. The three
+# boxes are `UI_Comp_BracketMatchBox.tscn` instances placed in `%Bracket` (semis column + final,
+# vertically centred by the HBox) and bound as `%BracketMatchBox_SF1` `%BracketMatchBox_SF2` `%BracketMatchBox_Final`; each paints its own
 # data colours (`BracketMatchBox.show_match`). The script fills text and applies the
 # device-dependent bits: safe-area top indent, background into the notch, bottom bar inset.
 
-## Built from `BracketView.tscn` — use `create()`, not `.new()`.
-const SCENE_PATH: String = "res://features/season/tournament/BracketView.tscn"
+## Built from `UI_View_BracketView.tscn` — use `create()`, not `.new()`.
+const SCENE_PATH: String = "res://features/season/tournament/UI_View_BracketView.tscn"
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 @onready var _gm: Node = get_node("/root/GameManager")
@@ -109,7 +109,7 @@ func refresh() -> void:
 
 ## Slot order = bracket index order (SF1, SF2, F).
 func _match_boxes() -> Array:
-	return [%SF1, %SF2, %Final]
+	return [%BracketMatchBox_SF1, %BracketMatchBox_SF2, %BracketMatchBox_Final]
 
 
 func _team_text(team_id: int) -> String:

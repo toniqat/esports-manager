@@ -12,16 +12,16 @@ extends VBoxContainer
 #        traits + bonus points (M8), staff list with job
 #        and weekly salary, and the areas the manager handles personally.
 #
-# **The sheet body's layout lives in `StaffPanel.tscn`** (+ item scenes `StaffStatRow` ·
+# **The sheet body's layout lives in `UI_View_StaffPanel.tscn`** (+ item scenes `StaffStatRow` ·
 # `StaffTraitRow` · `StaffMemberRow`). `open` puts one instance into the sheet's `body`;
 # this script fills `%` nodes, instances the list rows and applies data colours
 # (lead-bar cards, bar fills, owner / mod / chip colours). The sheet's scroll height
 # follows this node's height (`resized`). The sheet is read-only — filled once.
 
-const SCENE_PATH: String = "res://features/season/staff/StaffPanel.tscn"
-const STAT_ROW_SCENE: PackedScene = preload("res://features/season/staff/StaffStatRow.tscn")
-const TRAIT_ROW_SCENE: PackedScene = preload("res://features/season/staff/StaffTraitRow.tscn")
-const MEMBER_ROW_SCENE: PackedScene = preload("res://features/season/staff/StaffMemberRow.tscn")
+const SCENE_PATH: String = "res://features/season/staff/UI_View_StaffPanel.tscn"
+const STAT_ROW_SCENE: PackedScene = preload("res://features/season/staff/UI_Comp_StaffStatRow.tscn")
+const TRAIT_ROW_SCENE: PackedScene = preload("res://features/season/staff/UI_Comp_StaffTraitRow.tscn")
+const MEMBER_ROW_SCENE: PackedScene = preload("res://features/season/staff/UI_Comp_StaffMemberRow.tscn")
 
 ## What the manager does by hand when a stat is not delegated.
 const DIRECT_TASKS: Dictionary = {

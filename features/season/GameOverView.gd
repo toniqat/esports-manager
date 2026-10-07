@@ -8,11 +8,11 @@ extends Control
 # SeasonHub settles the run (RunResult, outcome "fail") before this screen
 # shows, so run.save is already gone. Only action: `정산` → RunResult.tscn.
 #
-# **Layout lives in `GameOverView.tscn`** (title, reason / summary lines, bottom bar). This
+# **Layout lives in `UI_View_GameOverView.tscn`** (title, reason / summary lines, bottom bar). This
 # script binds `%` nodes, fills the texts and applies the safe-area offsets (pattern B).
 # Create with `GameOverView.create()`.
 
-const SCENE_PATH: String = "res://features/season/GameOverView.tscn"
+const SCENE_PATH: String = "res://features/season/UI_View_GameOverView.tscn"
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 @onready var _gm: Node = get_node("/root/GameManager")

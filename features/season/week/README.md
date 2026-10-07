@@ -6,21 +6,21 @@ The screen where the week passes **one day at a time, Monday to Sunday**. `Scree
 | File | Role |
 |---|---|
 | `WeekProgressView.gd` | `class_name WeekProgressView extends Control` — the whole screen's logic. Binds `%` nodes, fills data, adds the list's item scenes. Create with `WeekProgressView.create()` (`.new()` is an empty Control) |
-| `WeekProgressView.tscn` | The screen layout (tree below) |
-| `WeekMatchCard.tscn` | Item: one match of the match day (`%Tag` · `%Title` · `%Status` · `%Hint`) |
-| `WeekNoteCard.tscn` | Item: one-line placeholder card (`%Text`) |
-| `WeekIncidentCard.tscn` | Item: the day's incident (`%Portrait` slot · `%Head` · `%Line` · `%Hit`) |
-| `WeekEveningCard.tscn` | Item: 오늘 저녁 before the action (`%Limits` · `%Slots` of `WeekEveningSlot` · `%Interview` / `%Outing` / `%Pass`) |
-| `WeekEveningSlot.tscn` | Item: one pilot of the evening card (`%Highlight` · `%Portrait` · `%Name` · `%Trust` · `%Hit`) |
-| `WeekEveningDoneCard.tscn` | Item: 오늘 저녁 summary after the action (`%Portrait` · `%Head` · `%Line`) |
-| `WeekPilotCard.tscn` | Item: one pilot's training result (`%Portrait` · `%Name` · `%Role` (`PositionBadge`) · `%Mastery` · `%Stats` of `WeekStatCell` · `%QuirkDivider` · `%Quirks` with the `%QuirkLine` template) |
-| `WeekStatCell.tscn` | Item: one stat column (`%Short` / `%Value` / `%Result`) |
+| `UI_View_WeekProgressView.tscn` | The screen layout (tree below) |
+| `UI_Comp_WeekMatchCard.tscn` | Item: one match of the match day (`%Tag` · `%Title` · `%Status` · `%Hint`) |
+| `UI_Comp_WeekNoteCard.tscn` | Item: one-line placeholder card (`%Text`) |
+| `UI_Comp_WeekIncidentCard.tscn` | Item: the day's incident (`%Portrait` slot · `%Head` · `%Line` · `%Hit`) |
+| `UI_Comp_WeekEveningCard.tscn` | Item: 오늘 저녁 before the action (`%Limits` · `%Slots` of `WeekEveningSlot` · `%Interview` / `%Outing` / `%Pass`) |
+| `UI_Comp_WeekEveningSlot.tscn` | Item: one pilot of the evening card (`%Highlight` · `%Portrait` · `%Name` · `%Trust` · `%Hit`) |
+| `UI_Comp_WeekEveningDoneCard.tscn` | Item: 오늘 저녁 summary after the action (`%Portrait` · `%Head` · `%Line`) |
+| `UI_Comp_WeekPilotCard.tscn` | Item: one pilot's training result (`%Portrait` · `%Name` · `%PositionBadge_Role` (`PositionBadge`) · `%Mastery` · `%Stats` of `WeekStatCell` · `%QuirkDivider` · `%Quirks` with the `%QuirkLine` template) |
+| `UI_Comp_WeekStatCell.tscn` | Item: one stat column (`%Short` / `%Value` / `%Result`) |
 
-**F6 preview** — run `WeekProgressView.tscn` alone and it fills dummy data (`resources/UiPreview.gd`):
+**F6 preview** — run `UI_View_WeekProgressView.tscn` alone and it fills dummy data (`resources/UiPreview.gd`):
 in-memory run on Wednesday, a preview-only `TrainingBoard` (coach arrangement) settles Mon–Wed, and a
 pending incident is resolved with its first answer so no overlay covers the cards.
 
-## Scene (`WeekProgressView.tscn`)
+## Scene (`UI_View_WeekProgressView.tscn`)
 
 ```
 WeekProgressView (Control, full rect, PASS, theme OutgameTheme.tres)

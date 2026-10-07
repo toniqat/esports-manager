@@ -8,15 +8,15 @@ extends Control
 #   │ scroll: one row per pass level (reward · 수령 / 수령 완료 / 잠김)            │
 #   ├ action bar: 모두 수령 (claim every reached level)                            ┤
 #
-# **Layout lives in `PassTab.tscn`** (+ `PassRow.tscn` per level). Code owns texts, the exp
+# **Layout lives in `UI_View_PassTab.tscn`** (+ `UI_Comp_PassRow.tscn` per level). Code owns texts, the exp
 # ratio (`%Fill` anchor), instancing rows and the per-state row colours (claimable amber /
 # reached white / locked sunk, Lv chip, reward / status text colour).
 #
 # Every activation runs `PassSystem.ensure_week` (and saves when the week turned).
 # A claim saves once and refreshes the host currency strip.
 
-const SCENE_PATH: String = "res://features/meta/shop/PassTab.tscn"
-const ROW_SCENE: String = "res://features/meta/shop/PassRow.tscn"
+const SCENE_PATH: String = "res://features/meta/shop/UI_View_PassTab.tscn"
+const ROW_SCENE: String = "res://features/meta/shop/UI_Comp_PassRow.tscn"
 
 var _host: LobbyScreen
 var _pm: Node

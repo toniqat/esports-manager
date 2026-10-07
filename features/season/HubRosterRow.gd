@@ -3,13 +3,13 @@ extends Panel
 
 # One roster row of `HubView` (face · position badge · name · TOTAL · trust chip + gauge · stat strip).
 #
-# **Layout lives in `HubRosterRow.tscn`** (fixed 190 tall, width from the hub's body column).
+# **Layout lives in `UI_Comp_HubRosterRow.tscn`** (fixed 190 tall, width from the hub's body column).
 # This script only fills `%` nodes and paints the data-driven colours, none of which are theme
-# variations: the left bar takes the role colour (`OutgameTheme.lead_bar_style`; the `%Role` badge is a `PositionBadge`),
+# variations: the left bar takes the role colour (`OutgameTheme.lead_bar_style`; the `%PositionBadge_Role` badge is a `PositionBadge`),
 # the trust chip / gauge fill take the trust band colour (`HubView.trust_color`).
-# `HubView.tscn` places five instances; the hub binds them in seat order.
+# `UI_View_HubView.tscn` places five instances; the hub binds them in seat order.
 
-const SCENE_PATH: String = "res://features/season/HubRosterRow.tscn"
+const SCENE_PATH: String = "res://features/season/UI_Comp_HubRosterRow.tscn"
 
 
 static func create() -> HubRosterRow:
@@ -25,7 +25,7 @@ func _ready() -> void:
 func set_role(role: int) -> void:
 	var col: Color = OutgameTheme.ROLE_COLORS[role]
 	add_theme_stylebox_override("panel", OutgameTheme.lead_bar_style(col, 16))
-	(%Role as PositionBadge).set_role(role)
+	(%PositionBadge_Role as PositionBadge).set_role(role)
 	var cols: Array = %Stats.get_children()
 	for s in cols.size():
 		(cols[s].get_node("Key") as Label).text = \

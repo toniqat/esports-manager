@@ -28,9 +28,9 @@ extends CanvasLayer
 # 상속으로 잇는 길은 저쪽의 `_bs` 의존을 통째로 선택적으로 만드는 일이 된다.
 # 공유하는 것은 **모양**(좌 아트 / 우 칩 · 섹션)이지 구현이 아니다.
 #
-# **레이아웃의 정본은 `DraftDetailPanel.tscn` 이다.** 이 스크립트는 정적 노드를 만들지
+# **레이아웃의 정본은 `UI_View_DraftDetailPanel.tscn` 이다.** 이 스크립트는 정적 노드를 만들지
 # 않는다 — `%이름` 노드에 글을 넣고, 데이터마다 달라지는 조각만 코드로 붙인다:
-# 스탯 칩(`DraftStatChip.tscn` 일곱 칸, 처음 한 번), 돌파 알약 칩(`OutgameTheme.add_chip` —
+# 스탯 칩(`UI_Comp_DraftStatChip.tscn` 일곱 칸, 처음 한 번), 돌파 알약 칩(`OutgameTheme.add_chip` —
 # 칩마다 색이 다르다), 스킬 아이콘 타일(`SkillImages.make_icon_tile`), 스킬 설명
 # RichTextLabel(`StrategyIcon.make_rich_label`), 파일럿 카드 설명판(`CardDescBox.build`).
 # 색 · 스타일박스는 `Root` 에 붙은 공용 테마(`resources/OutgameTheme.tres`)의 변형
@@ -48,7 +48,7 @@ extends CanvasLayer
 #   add_child(d)
 #   d.open(player_data)
 
-const SCENE_PATH: String = "res://features/meta/run_setup/DraftDetailPanel.tscn"
+const SCENE_PATH: String = "res://features/meta/run_setup/UI_View_DraftDetailPanel.tscn"
 
 ## 칩 목록 — 선수 스탯 여섯에 "종합" 한 칸을 더한다(3열 × 세 줄 중
 ## 마지막 두 칸은 비운다). 글자는 짧은 쪽을 쓴다 — 칩 한 칸이 130px 남짓이라
@@ -153,7 +153,7 @@ func _fill_art() -> void:
 
 func _fill_header() -> void:
 	%Name.text = _pilot.name
-	(%Position as PositionBadge).set_role(int(_pilot.role))
+	(%PositionBadge_Position as PositionBadge).set_role(int(_pilot.role))
 	%Sub.text = "원소속 %s" % _team_short(_pilot.team_id)
 	# M10 — breakthrough stage. The copy handed in already carries it (stats, salary,
 	# swapped pilot card: `RunRules.apply_breakthrough` on the pool / run copies), so

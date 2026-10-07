@@ -1,0 +1,32 @@
+[gd_scene load_steps=2 format=3 uid="uid://j1d60u8juaj"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+
+[node name="MasteryMechChip" type="Button"]
+editor_description = "One own-role mech chip (MasteryPilotRow): name + tier · value; tap = set / clear the research mech. Variation is state (PrimaryButton = research mech, else GhostButton); the tier bar colour is data."
+custom_minimum_size = Vector2(0, 92)
+offset_right = 290.0
+offset_bottom = 92.0
+size_flags_horizontal = 3
+focus_mode = 0
+theme = ExtResource("1_theme")
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 20
+text = "Bastion
+능숙 65"
+clip_text = true
+
+[node name="TierBar" type="ColorRect" parent="."]
+editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill_pilot_row()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -8.0
+offset_right = -10.0
+offset_bottom = -4.0
+mouse_filter = 2
+color = Color(0.13, 0.68, 0.38, 1)

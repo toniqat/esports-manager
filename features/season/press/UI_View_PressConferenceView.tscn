@@ -1,0 +1,22 @@
+[gd_scene load_steps=4 format=3 uid="uid://dqw2rto0781be"]
+
+[ext_resource type="Script" uid="uid://brrlus0ayimjq" path="res://features/season/press/PressConferenceView.gd" id="1_press"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" uid="uid://d00crjovljpt2" path="res://features/season/press/UI_View_MessengerView.tscn" id="3_msg"]
+
+[node name="PressConferenceView" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme = ExtResource("2_theme")
+script = ExtResource("1_press")
+
+[node name="MessengerView_Messenger" parent="." instance=ExtResource("3_msg")]
+editor_description = "[필수] 지우면 오류 — PressConferenceView.gd _messenger"
+unique_name_in_owner = true
+layout_mode = 1
+outcome_hint = "화면을 눌러 계속"

@@ -6,12 +6,12 @@ extends PanelContainer
 # 전부 이 배지 한 장을 쓴다. 화면마다 글자("탱커" · "미드" · "Tk")로 따로 적으면 같은 선수가
 # 화면마다 다른 이름으로 불린다.
 #
-# **모양의 정본은 `PositionBadge.tscn`** — 루트에 `OutgameTheme.tres` 를 직접 붙여서 다크 전투
+# **모양의 정본은 `UI_Comp_PositionBadge.tscn`** — 루트에 `OutgameTheme.tres` 를 직접 붙여서 다크 전투
 # 화면 안에서도 같은 모양으로 선다. 크기는 글자에 맞춰 자란다(알약 변형 `PositionBadgePanel`의
 # 여백). 색(역할 색 `OutgameTheme.ROLE_COLORS`)과 글자(`GameEnums.POSITION_ABBREVS`)는 역할이
 # 정하는 데이터라 `set_role` 이 넣는다. 글자 크기는 놓는 자리가 `text_size` 로 정한다.
 
-const SCENE_PATH: String = "res://resources/PositionBadge.tscn"
+const SCENE_PATH: String = "res://resources/UI_Comp_PositionBadge.tscn"
 
 ## 글자 크기(px) — 놓는 자리의 씬이 정한다.
 @export var text_size: int = 18:

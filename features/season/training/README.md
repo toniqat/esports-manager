@@ -19,8 +19,8 @@ too** — the only place that needs weekday names is the **week-progress screen 
 |---|---|
 | `TrainingTile.gd` | `class_name TrainingTile` — one CSV row = one tile. **Grammar parsing lives only here** (shape · colour · EXP · mastery · effect clauses · quirk ops). Also owns the colour table · grade table and the **staff-stat lookups** (grade unlock from tactics, per-grade placement limit and EXP multiplier from training — see "Manager / staff stats" below). |
 | `TrainingBoard.gd` | `class_name TrainingBoard` — headless board. Staff stats (`training_stat` / `tactics_stat` / `limit_of` / `is_unlocked` / `can_take_more`), placement checks (`can_place` / `place` / `remove_at`), settlement (`cell_exp` / `exp_mult_table` / `compute_gains` / `compute_day_gains`), mastery (`cell_mastery` / `compute_mastery`), quirk ops (`day_quirk_ops`), **weekday application** (`apply_day_training`), preview (`projected_stats`), auto-arrange (`auto_arrange`), week-progress reset (`reset_week_progress`). The `TrainingBoard` node in Season.tscn. |
-| `TrainingView.gd` · `TrainingView.tscn` | Planning screen — staff line + 5 portraits + 5×5 board + horizontally scrolling course cards + bottom bar ("판 비우기" · "코치 추천" · "훈련 확정"). Drag & drop. **The frame is the scene** (see "Scene tree" below); the script binds `%` nodes, fills data, applies the safe-area insets, and owns the drawn board + drag & drop. Created with `TrainingView.create()` (`SeasonHub._ensure_training_view`). Layout · reading conventions are in "Screen layout" below. |
-| `TrainingThumb.tscn` | One portrait column header (frame · face · per-pilot `EXP ×r` chip). No script — `TrainingView._bind_thumbs` sets the role border colour; five instances sit in `TrainingView.tscn`. |
+| `TrainingView.gd` · `UI_View_TrainingView.tscn` | Planning screen — staff line + 5 portraits + 5×5 board + horizontally scrolling course cards + bottom bar ("판 비우기" · "코치 추천" · "훈련 확정"). Drag & drop. **The frame is the scene** (see "Scene tree" below); the script binds `%` nodes, fills data, applies the safe-area insets, and owns the drawn board + drag & drop. Created with `TrainingView.create()` (`SeasonHub._ensure_training_view`). Layout · reading conventions are in "Screen layout" below. |
+| `UI_Comp_TrainingThumb.tscn` | One portrait column header (frame · face · per-pilot `EXP ×r` chip). No script — `TrainingView._bind_thumbs` sets the role border colour; five instances sit in `UI_View_TrainingView.tscn`. |
 | `TrainingCourseCard.gd` · `.tscn` | `class_name TrainingCourseCard` — one course card of the inventory row (grade band · cap · shape well · name · lock chip). `fill(tile, cap, grade_locked, locked, lock_reason)`, `set_selected(selected, locked)`; the shape miniature is drawn into `%Mini` (`_draw_mini`). |
 | `TrainingCoursePopover.gd` · `.tscn` | `class_name TrainingCoursePopover` — the info popover over a selected card. `fill(tile, cap, lock)` sets the text and **derives the height from the text** (`_text_height`); `TrainingView._place_popover` positions it. |
 
@@ -191,7 +191,7 @@ attaching it to the bottom opens a gap between the title and the board. The port
 board's header, so both live in `Block` — portraits at its top, the board 15px below them —
 if the two moved independently, column headers would drift away from their columns.
 
-### Scene tree (`TrainingView.tscn`, §4 #11 of `docs/ui_scene_migration.md`)
+### Scene tree (`UI_View_TrainingView.tscn`, §4 #11 of `docs/ui_scene_migration.md`)
 ```
 TrainingView (Control, full rect, PASS, theme = OutgameTheme.tres)  — script: TrainingView.gd
 ├ %Background      ColorRect BG — code stretches it up into the notch band (extend_background)
@@ -200,7 +200,7 @@ TrainingView (Control, full rect, PASS, theme = OutgameTheme.tres)  — script: 
 │ ├ %StaffLine     SubLabel 22, centred, x 40..−40, y 54..84
 │ ├ BoardArea      Control, y 96 .. −436 (= course label row − 16)
 │ │ └ Block        centre-anchored 880 × 965.83
-│ │   ├ %Thumbs    HBox (sep 6, inset 3) ─ Thumb0..4 = TrainingThumb.tscn
+│ │   ├ %Thumbs    HBox (sep 6, inset 3) ─ TrainingThumb_Thumb0..4 = UI_Comp_TrainingThumb.tscn
 │ │   └ %Grid      880 × 880 at the bottom of Block — drawn in code, STOP, drop target
 │ └ Inventory      bottom-anchored, x 40..−40, y −420 .. −152
 │   ├ CourseLabel  SubLabel 22 "훈련 코스"

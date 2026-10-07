@@ -13,9 +13,12 @@ offset_bottom = 1920.0
 color = Color(0.05, 0.05, 0.12, 1)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — MatchFlow.gd canvas"
 
 [node name="MatchPrepController" type="Node" parent="."]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — MatchFlow.gd _prep"
 script = ExtResource("5_prep")
 
 [node name="BanPickController" type="Node" parent="."]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — MatchFlow.gd _ban_pick"
 script = ExtResource("2_banpick")

@@ -4,9 +4,9 @@ extends VBoxContainer
 # One card of the bottom sheet's card row: the real hand card (`Card.tscn`, added by the
 # controller into `slot` at `SHEET_CARD_SCALE`), a transparent tap button over it (opens the
 # description box) and the count badge underneath (`×n` / `생성 전용`).
-# Layout in `BanPickSheetCard.tscn`; `BanPickController._build_card_row` fills it.
+# Layout in `UI_Comp_BanPickSheetCard.tscn`; `BanPickController._build_card_row` fills it.
 
-const SCENE_PATH: String = "res://features/match_flow/ban_pick/BanPickSheetCard.tscn"
+const SCENE_PATH: String = "res://features/match_flow/ban_pick/UI_Comp_BanPickSheetCard.tscn"
 
 var slot: Control = null
 var hit: Button = null

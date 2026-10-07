@@ -2,7 +2,7 @@ class_name BanPickTeamBlock
 extends VBoxContainer
 
 # A **team block** of the ban/pick screen — ban row (team name · `BAN` · 2 chips), 5 mech
-# slots, 5 pilot portraits. Both blocks are authored inline in `BanPickView.tscn`
+# slots, 5 pilot portraits. Both blocks are authored inline in `UI_View_BanPickView.tscn`
 # (`%EnemyBlock` top, `%PlayerBlock` bottom); the bottom one is the top one **in mirrored
 # child order**, so this script finds its rows by name, not by index.
 #

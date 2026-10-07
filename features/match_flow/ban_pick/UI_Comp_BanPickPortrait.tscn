@@ -1,0 +1,99 @@
+[gd_scene load_steps=3 format=3 uid="uid://xbvkv0lycxp"]
+
+[ext_resource type="Script" uid="uid://c0ygt0ptuq1n6" path="res://features/match_flow/ban_pick/BanPickPortrait.gd" id="1_por"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="BanPickPortrait" type="Control"]
+custom_minimum_size = Vector2(192, 80)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 192.0
+offset_bottom = 80.0
+mouse_filter = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_por")
+
+[node name="Back" type="ColorRect" parent="."]
+editor_description = "[필수] 지우면 오류 — BanPickPortrait.gd back"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.929, 0.933, 0.945, 1)
+
+[node name="Face" type="TextureRect" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — BanPickPortrait.gd face
+Eye crop during ban/pick (PilotImages.eye_for), bust crop in the assign step (bust_for). expand_mode must stay IGNORE_SIZE or the texture size becomes the minimum size."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Rim" type="Panel" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — BanPickPortrait.gd rim
+Border = side colour, built per instance by BanPickPortrait.setup (this box is a preview)."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"BanPickPortraitRim"
+
+[node name="QuirkBadge" type="Panel" parent="."]
+unique_name_in_owner = true
+editor_description = "'기벽 n' pill (my pilots, season run). Fill = top quirk grade colour, set in code."
+visible = false
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -90.0
+offset_top = -30.0
+offset_right = -4.0
+offset_bottom = -4.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="QuirkLabel" type="Label" parent="QuirkBadge"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 16
+text = "기벽 2"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Hit" type="Button" parent="."]
+editor_description = "[필수] 지우면 오류 — BanPickPortrait.gd hit"
+unique_name_in_owner = true
+visible = false
+modulate = Color(1, 1, 1, 0)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+flat = true

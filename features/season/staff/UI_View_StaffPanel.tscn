@@ -1,0 +1,242 @@
+[gd_scene load_steps=6 format=3 uid="uid://bben8bpbx73jw"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+[ext_resource type="Script" uid="uid://cgstjts37ut1o" path="res://features/season/staff/StaffPanel.gd" id="2_script"]
+[ext_resource type="PackedScene" uid="uid://c8qj7dhxs3507" path="res://features/season/staff/UI_Comp_StaffStatRow.tscn" id="3_stat"]
+[ext_resource type="PackedScene" uid="uid://cbt3g7cx82ok1" path="res://features/season/staff/UI_Comp_StaffTraitRow.tscn" id="4_trait"]
+[ext_resource type="PackedScene" uid="uid://0qhrif2uwf12" path="res://features/season/staff/UI_Comp_StaffMemberRow.tscn" id="5_member"]
+
+[node name="StaffPanel" type="VBoxContainer"]
+editor_description = "스태프 sheet body (StaffPanel.open → HubSheet body). Top-wide, 16 short of the body width (scroll-bar room); the sheet's scroll height follows this node's height. List samples are replaced at runtime."
+anchors_preset = 10
+anchor_right = 1.0
+offset_right = -16.0
+grow_horizontal = 2
+mouse_filter = 2
+theme = ExtResource("1_theme")
+theme_override_constants/separation = 0
+script = ExtResource("2_script")
+
+[node name="StatsSection" type="VBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="StatsSection"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 28
+text = "능력치"
+
+[node name="Sub" type="Label" parent="StatsSection"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 18
+text = "유효값 = 감독(보정 포함) · 어시스턴트 · 전담 스태프 중 최댓값"
+
+[node name="StatRows" type="VBoxContainer" parent="."]
+editor_description = "[필수] 지우면 오류 — StaffPanel.gd _fill_stats()"
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="StaffStatRow" parent="StatRows" instance=ExtResource("3_stat")]
+layout_mode = 2
+
+[node name="StatTail" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="GapModsSection" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ModsSection" type="VBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="ModsSection"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 28
+text = "일시 보정"
+
+[node name="ModsEmpty" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — StaffPanel.gd _fill_mods()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"FaintLabel"
+theme_override_font_sizes/font_size = 22
+text = "걸린 보정 없음"
+
+[node name="Mods" type="VBoxContainer" parent="."]
+editor_description = "[필수] 지우면 오류 — StaffPanel.gd _fill_mods()"
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Line" type="Label" parent="Mods"]
+editor_description = "Template line — the script duplicates it per mod; colour = sign (data)."
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "전술 -2 · 남은 2주 · 테스트 사건"
+
+[node name="ModsTail" type="Control" parent="."]
+editor_description = "[필수] 지우면 오류 — StaffPanel.gd _fill_mods()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 4)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="GapTraitsSection" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="TraitsSection" type="VBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="TraitsSection"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 28
+text = "장착 특성"
+
+[node name="TraitsSub" type="Label" parent="TraitsSection"]
+editor_description = "[필수] 지우면 오류 — StaffPanel.gd _fill_traits()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 18
+text = "보너스 점수 0 · 장착 0/4"
+
+[node name="TraitsEmpty" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — StaffPanel.gd _fill_traits()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"FaintLabel"
+theme_override_font_sizes/font_size = 22
+text = "장착한 특성 없음"
+
+[node name="Traits" type="VBoxContainer" parent="."]
+editor_description = "[필수] 지우면 오류 — StaffPanel.gd _fill_traits()"
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="StaffTraitRow" parent="Traits" instance=ExtResource("4_trait")]
+layout_mode = 2
+
+[node name="TraitsTail" type="Control" parent="."]
+editor_description = "[필수] 지우면 오류 — StaffPanel.gd _fill_traits()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="GapStaffSection" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="StaffSection" type="VBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="StaffSection"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 28
+text = "스태프"
+
+[node name="StaffSub" type="Label" parent="StaffSection"]
+editor_description = "[필수] 지우면 오류 — StaffPanel.gd _fill_staff()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 18
+text = "주급 합계 470"
+
+[node name="StaffEmpty" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — StaffPanel.gd _fill_staff()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"FaintLabel"
+theme_override_font_sizes/font_size = 22
+text = "고용된 스태프 없음 — 모든 영역을 감독이 맡습니다"
+
+[node name="Members" type="VBoxContainer" parent="."]
+editor_description = "[필수] 지우면 오류 — StaffPanel.gd _fill_staff()"
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="StaffMemberRow" parent="Members" instance=ExtResource("5_member")]
+layout_mode = 2
+
+[node name="MembersTail" type="Control" parent="."]
+editor_description = "[필수] 지우면 오류 — StaffPanel.gd _fill_staff()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="GapDirectSection" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="DirectSection" type="VBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="DirectSection"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 28
+text = "직접 해야 하는 일"
+
+[node name="Direct" type="VBoxContainer" parent="."]
+editor_description = "[필수] 지우면 오류 — StaffPanel.gd _fill_direct()"
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="Line" type="Label" parent="Direct"]
+editor_description = "Template line — the script duplicates it per task (autowrapped, words kept whole)."
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "· 면담 · 외출 — 언제나 감독이 직접 (멘탈 10)"
+autowrap_mode = 3
+
+[node name="Tail" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 26)
+layout_mode = 2
+mouse_filter = 2

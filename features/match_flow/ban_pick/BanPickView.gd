@@ -6,7 +6,7 @@ extends Control
 # the controller, fits the screen to the device (safe area insets, the grid height), and plays
 # the turn banner. What to show (picks, bans, tags, sheet text, colours) is the controller's.
 #
-# **Layout lives in `BanPickView.tscn`** — edit it in the editor:
+# **Layout lives in `UI_View_BanPickView.tscn`** — edit it in the editor:
 #
 #   BanPickView (full rect, OutgameTheme.tres)
 #   ├ Background                 BG over the whole viewport (incl. notch / home-indicator bands)
@@ -15,14 +15,14 @@ extends Control
 #   │ ├ %PlayerBlock             mirrored, anchored bottom, grows upward in the assign step
 #   │ ├ %Band                    the space between the blocks (scene offsets)
 #   │ │ └ %Pane                  pick pane, height = grid fit (`fit_pane`), centred in the band
-#   │ │   ├ PaneCard · Content (%OrderRow · %Tabs · %Scroll/%Grid)
+#   │ │   ├ PaneCard · Content (%BanPickOrderRow_OrderRow · %Tabs · %Scroll/%Grid)
 #   │ │   ├ %SheetDim            dims the pane only (team blocks stay readable)
 #   │ │   └ %Sheet               bottom sheet, bottom-aligned to the grid
 #   │ ├ %StartButton            assign-step bottom bar ("게임 시작")
 #   │ └ %DragGhost              the mech slot under the finger while dragging
 #   └ %Banner                    turn banner (viewport-centred, above everything)
 
-const SCENE_PATH: String = "res://features/match_flow/ban_pick/BanPickView.tscn"
+const SCENE_PATH: String = "res://features/match_flow/ban_pick/UI_View_BanPickView.tscn"
 
 ## Rows of the grid visible at once. Not an integer on purpose — the half-cut fifth row is
 ## the only "there's more below" signal.
@@ -90,7 +90,7 @@ func _ready() -> void:
 	player_block = %PlayerBlock
 	band = %Band
 	pane = %Pane
-	order_row = %OrderRow
+	order_row = %BanPickOrderRow_OrderRow
 	for c in (%Tabs as Control).get_children():
 		if c is Button:
 			tab_buttons.append(c)

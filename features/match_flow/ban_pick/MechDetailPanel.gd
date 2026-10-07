@@ -19,10 +19,10 @@ extends CanvasLayer
 # 파일럿과 메크를 한 화면에 겹쳐 세우고 인게임 탭(체력 · 공격력 · 지속 효과)을
 # 앞세우지만, 밴픽은 아직 경기가 시작되지 않아 인게임 상태라는 것이 없다.
 #
-# **레이아웃의 정본은 `MechDetailPanel.tscn` 이다.** 이 스크립트는 정적 노드를 만들지
+# **레이아웃의 정본은 `UI_View_MechDetailPanel.tscn` 이다.** 이 스크립트는 정적 노드를 만들지
 # 않는다 — `%이름` 노드에 글을 넣고, 데이터마다 개수가 달라지는 줄만 아이템 씬으로
-# 붙인다: 숙련도 줄(`MechMasteryRow.tscn`), 기벽 줄(`MechQuirkRow.tscn`), 메크 카드 칸
-# (`MechCardCell.tscn`), 그리고 카드를 누르면 뜨는 설명판(`CardDescBox.build`).
+# 붙인다: 숙련도 줄(`UI_Comp_MechMasteryRow.tscn`), 기벽 줄(`UI_Comp_MechQuirkRow.tscn`), 메크 카드 칸
+# (`UI_Comp_MechCardCell.tscn`), 그리고 카드를 누르면 뜨는 설명판(`CardDescBox.build`).
 # 색 · 스타일박스는 `Root` 에 붙은 공용 테마(`resources/OutgameTheme.tres`)의 변형이 정한다 —
 # `DraftDetailPanel` 과 **같은 흰 모달**이다(`DimPanel` · `Card` · `SunkPanel` 스탯 칩 ·
 # `GhostButton` 닫기 · `HeadingLabel` / `SubLabel` / `CaptionLabel` / `BodyLabel` / `AccentLabel`).
@@ -35,7 +35,7 @@ extends CanvasLayer
 #   add_child(d)
 #   d.open(mech_data, mastery_rows, quirk_info)
 
-const SCENE_PATH: String = "res://features/match_flow/ban_pick/MechDetailPanel.tscn"
+const SCENE_PATH: String = "res://features/match_flow/ban_pick/UI_View_MechDetailPanel.tscn"
 
 const ROLE_NAMES: Array = ["TANK", "FIGHTER", "ASSASSIN", "SUPPORT", "SNIPER"]
 ## 역할 색은 팔레트가 소유한다(흰 바탕용) — `DraftDetailPanel` 과 같은 표.
@@ -183,7 +183,7 @@ func _fill_passive() -> void:
 
 
 ## 메크 카드 격자 — 인게임 파일럿 상세 패널(`battle_sim/ui/PilotDetailPanel`)의 카드
-## 격자와 **같은 축소율 · 같은 열 수**다(축소율은 `MechCardCell.tscn`, 열 수는 `%CardGrid`).
+## 격자와 **같은 축소율 · 같은 열 수**다(축소율은 `UI_Comp_MechCardCell.tscn`, 열 수는 `%CardGrid`).
 func _fill_cards() -> void:
 	_clear(%CardGrid)
 	var gm: Node = get_node_or_null("/root/GameManager")

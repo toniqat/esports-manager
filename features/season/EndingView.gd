@@ -7,11 +7,11 @@ extends Control
 # roster. SeasonHub settles the run (RunResult, outcome "clear") before this
 # screen shows, so run.save is already gone. Only action: `정산` → RunResult.tscn.
 #
-# **Layout lives in `EndingView.tscn`** (banner, recap / roster line lists, bottom bar). This
+# **Layout lives in `UI_View_EndingView.tscn`** (banner, recap / roster line lists, bottom bar). This
 # script binds `%` nodes, fills the lines (recap line colour = won by the player, data), and
 # applies the safe-area offsets (pattern B). Create with `EndingView.create()`.
 
-const SCENE_PATH: String = "res://features/season/EndingView.tscn"
+const SCENE_PATH: String = "res://features/season/UI_View_EndingView.tscn"
 
 const PHASE_ORDER: Array = [
 	GameEnums.SeasonPhase.PRESEASON,
@@ -148,7 +148,7 @@ func _refresh_roster() -> void:
 	for seat in mini(5, _roster_lines.size()):
 		var r: int = int(GameEnums.ROLE_DISPLAY_ORDER[seat])
 		var line: Node = _roster_lines[seat]
-		(line.get_node("Badge") as PositionBadge).set_role(r)
+		(line.get_node("PositionBadge_Badge") as PositionBadge).set_role(r)
 		if by_role.has(r):
 			var p: PlayerData = by_role[r]
 			var total: int = p.stat_total()

@@ -13,7 +13,7 @@ extends Control
 #   하: 보유 선수 썸네일 격자 (세로 스크롤, 3.5줄이 보인다, 칸마다 샐러리 꼬리표)
 #   맨 아래: 하단 바 `뒤로` / `다음`
 #
-# **모양의 정본은 `TeamDraftView.tscn`** (게이지 · 다섯 칸 `DraftSlot` · 필터 · 격자 뒤판 ·
+# **모양의 정본은 `UI_View_TeamDraftView.tscn`** (게이지 · 다섯 칸 `DraftSlot` · 필터 · 격자 뒤판 ·
 # 격자 · 하단 바의 자리 · 크기 · 변형). 이 스크립트는 `%` 노드에 데이터를 넣고 시그널을
 # 잇고, 선택 5인 블록의 y(PICK / CONFIRM)와 픽창의 빠짐만 계산한다. 생성은
 # `TeamDraftView.create()` (`TeamDraft.ensure_view`).
@@ -33,12 +33,12 @@ extends Control
 # **다섯 칸은 역할 고정**이다(`TeamDraft.SLOT_ROLES`) — `validate_lineup` 이
 # "포지션당 1명"을 강제하므로 자유 순서로 두면 화면에서만 가능한 조합이 생긴다.
 
-const SCENE_PATH: String = "res://features/meta/run_setup/TeamDraftView.tscn"
+const SCENE_PATH: String = "res://features/meta/run_setup/UI_View_TeamDraftView.tscn"
 
 const ROLE_COLORS: Array = OutgameTheme.ROLE_COLORS
 
 # ─── 세로 배치 — 코드가 정하는 것은 선택 5인 블록의 y 둘뿐 ─────────────────────
-# 게이지 · 필터 · 격자 · 뒤판 · 하단 바의 자리와 크기는 씬(`TeamDraftView.tscn`)이 정한다.
+# 게이지 · 필터 · 격자 · 뒤판 · 하단 바의 자리와 크기는 씬(`UI_View_TeamDraftView.tscn`)이 정한다.
 # 블록의 y 는 PICK / CONFIRM 사이를 오가며 트윈되므로 그 두 값만 여기서 낸다 —
 # 씬 노드의 실제 자리(`%Gauge` 아랫변, `%Filters` 윗변, 바 윗변)에서 읽어 오므로
 # 에디터에서 블록을 옮겨도 따라간다.
@@ -51,7 +51,7 @@ const SLOT_BAR_GAP: float = 20.0
 ## CONFIRM 에서 픽창이 빠지는 거리 — 필터 줄 윗변이 화면 아래끝을 이만큼 넘는다.
 const PICK_EXIT_PAD: float = 40.0
 
-# 칸 크기의 정본은 `DraftSlot.tscn` — 일러스트 비율(204 : 412 = 0.495)은
+# 칸 크기의 정본은 `UI_Comp_DraftSlot.tscn` — 일러스트 비율(204 : 412 = 0.495)은
 # `PilotImages.BUST_ASPECT`(0.496)와 같다. 둘 중 하나만 바꾸면 얼굴이 찌그러진다.
 const SLOT_COUNT: int = 5
 

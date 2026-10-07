@@ -6,7 +6,7 @@ extends CanvasLayer
 # safe area (title · vertically scrolling body · bottom `닫기`). Same pattern as
 # `meta/lobby/ConfirmPopup.gd`.
 #
-# **The frame's layout lives in `HubSheet.tscn`** (card size / margins, title, divider,
+# **The frame's layout lives in `UI_View_HubSheet.tscn`** (card size / margins, title, divider,
 # scroll, close button — edit them in the editor). Styles come from the shared theme on
 # `Root` (`resources/OutgameTheme.tres`: `PopupCard` · `TitleLabel` · `Divider` ·
 # `GhostButton` · `DimPanel`). This script only binds `%` nodes, puts the title in, wires
@@ -29,7 +29,7 @@ extends CanvasLayer
 
 signal closed
 
-const SCENE_PATH: String = "res://features/season/HubSheet.tscn"
+const SCENE_PATH: String = "res://features/season/UI_View_HubSheet.tscn"
 
 ## Scroll content root — callers add one top-wide body scene here.
 var body: Control = null

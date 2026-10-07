@@ -1,0 +1,148 @@
+[gd_scene load_steps=3 format=3 uid="uid://d3rx5ev7vxtbt"]
+
+[ext_resource type="Script" uid="uid://f886mt14kabv" path="res://features/match_flow/ban_pick/BanPickMechSlot.gd" id="1_slot"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="BanPickMechSlot" type="Control"]
+custom_minimum_size = Vector2(192, 160)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 192.0
+offset_bottom = 160.0
+mouse_filter = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_slot")
+
+[node name="Frame" type="Panel" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — BanPickMechSlot.gd frame
+Fill / border = side colour, built per instance by BanPickMechSlot.setup (this box is a preview). Ally frames become drag handles (BanPickController._bind_slot_drag)."
+clip_contents = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"BanPickMechSlotFrame"
+
+[node name="Art" type="TextureRect" parent="Frame"]
+editor_description = "[필수] 지우면 오류 — BanPickMechSlot.gd art"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = -2.0
+offset_bottom = -2.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Band" type="ColorRect" parent="Frame"]
+editor_description = "[필수] 지우면 오류 — BanPickMechSlot.gd band"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 2.0
+offset_top = -28.0
+offset_right = -2.0
+offset_bottom = -2.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+color = Color(0, 0, 0, 0.62)
+
+[node name="NameLabel" type="Label" parent="Frame"]
+editor_description = "[필수] 지우면 오류 — BanPickMechSlot.gd name_label"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = -26.0
+offset_right = -4.0
+offset_bottom = -2.0
+grow_horizontal = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_colors/font_color = Color(0.92, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 17
+text = "Juggernaut"
+horizontal_alignment = 1
+clip_text = true
+
+[node name="MTag" type="Panel" parent="Frame"]
+unique_name_in_owner = true
+editor_description = "Mastery tag '<tier> <bonus>' (season run). Fill = tier colour, set in code."
+visible = false
+layout_mode = 0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 108.0
+offset_bottom = 32.0
+mouse_filter = 2
+
+[node name="MTagLabel" type="Label" parent="Frame/MTag"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 17
+text = "능숙 +2"
+horizontal_alignment = 1
+vertical_alignment = 1
+clip_text = true
+
+[node name="QTag" type="Panel" parent="Frame"]
+unique_name_in_owner = true
+editor_description = "Quirk tag '기벽 +N' (my seats, season run). Fill set in code (QuirkSystem.grade_color)."
+visible = false
+layout_mode = 0
+offset_left = 4.0
+offset_top = 36.0
+offset_right = 108.0
+offset_bottom = 64.0
+mouse_filter = 2
+
+[node name="QTagLabel" type="Label" parent="Frame/QTag"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 17
+text = "기벽 +3"
+horizontal_alignment = 1
+vertical_alignment = 1
+clip_text = true
+
+[node name="Hit" type="Button" parent="."]
+editor_description = "[필수] 지우면 오류 — BanPickMechSlot.gd hit: Transparent tap button over the slot (enemy slots in the assign step)."
+unique_name_in_owner = true
+visible = false
+modulate = Color(1, 1, 1, 0)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+flat = true

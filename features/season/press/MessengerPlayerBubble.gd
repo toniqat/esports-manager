@@ -3,11 +3,11 @@ extends MarginContainer
 
 # One manager line (right) in `MessengerView`'s log: amber bubble + tail pointing right.
 #
-# **Layout lives in `MessengerPlayerBubble.tscn`** — right margin, gap below, bubble width /
+# **Layout lives in `UI_Comp_MessengerPlayerBubble.tscn`** — right margin, gap below, bubble width /
 # padding, the tail's offset. Height follows the wrapped text. This script only fills the text.
 # Create with `MessengerPlayerBubble.create()`.
 
-const SCENE_PATH: String = "res://features/season/press/MessengerPlayerBubble.tscn"
+const SCENE_PATH: String = "res://features/season/press/UI_Comp_MessengerPlayerBubble.tscn"
 
 
 static func create() -> MessengerPlayerBubble:

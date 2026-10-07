@@ -15,6 +15,7 @@ theme = ExtResource("2_theme")
 script = ExtResource("1_setup")
 
 [node name="Background" type="Panel" parent="."]
+editor_description = "[필수] 지우면 오류 — RunSetupScreen.gd _ready()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -27,7 +28,8 @@ theme_type_variation = &"ScreenBackground"
 
 [node name="Header" type="HBoxContainer" parent="."]
 unique_name_in_owner = true
-editor_description = "Step pills — one StepChip per RunSetupScreen.STEPS row, instantiated by code. Bottom edge + 24 = RunSetupScreen.content_top() (116), where every step body starts."
+editor_description = "[필수] 지우면 오류 — RunSetupScreen.gd _build_header()
+Step pills — one StepChip per RunSetupScreen.STEPS row, instantiated by code. Bottom edge + 24 = RunSetupScreen.content_top() (116), where every step body starts."
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -40,6 +42,7 @@ mouse_filter = 2
 theme_override_constants/separation = 12
 
 [node name="Steps" type="Control" parent="."]
+editor_description = "[필수] 지우면 오류 — RunSetupScreen.gd _make_step_view()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -50,6 +53,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="ErrorLabel" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — RunSetupScreen.gd _on_step_entered() · RunSetupScreen.gd _ready() · RunSetupScreen.gd _show_error()"
 unique_name_in_owner = true
 visible = false
 layout_mode = 1

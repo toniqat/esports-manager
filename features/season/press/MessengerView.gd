@@ -19,7 +19,7 @@ extends Control
 # Line grammar (same as mental_events.csv): plain = left speaker, `>text` =
 # manager bubble on the right, `*text` = centred narration.
 #
-# **The frame lives in `MessengerView.tscn`** (background, sub / title, divider, the
+# **The frame lives in `UI_View_MessengerView.tscn`** (background, sub / title, divider, the
 # scroll with the `%Log` column and the `%Answers` block, the bottom hint — edit them in
 # the editor; styles are `OutgameTheme.tres` variations). **Every log line is an item scene**
 # in this folder, appended to `%Log`: `MessengerNpcBubble` · `MessengerPlayerBubble` ·
@@ -39,9 +39,9 @@ extends Control
 signal choice_picked(idx: int)
 signal closed
 
-const SCENE_PATH: String = "res://features/season/press/MessengerView.tscn"
-const NARRATION_SCENE: PackedScene = preload("res://features/season/press/MessengerNarration.tscn")
-const ANSWER_SCENE: PackedScene = preload("res://features/season/press/MessengerAnswerButton.tscn")
+const SCENE_PATH: String = "res://features/season/press/UI_View_MessengerView.tscn"
+const NARRATION_SCENE: PackedScene = preload("res://features/season/press/UI_Comp_MessengerNarration.tscn")
+const ANSWER_SCENE: PackedScene = preload("res://features/season/press/UI_Comp_MessengerAnswerButton.tscn")
 
 enum Stage { LINES, CHOICES, OUTCOME, DONE }
 

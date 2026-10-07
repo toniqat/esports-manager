@@ -9,8 +9,8 @@ extends VBoxContainer
 #   보유 특성 n — rows (tap = equip / unequip)
 #   잠긴 특성 n — greyed rows + unlock condition (`ManagerUi.unlock_text`)
 #
-# **The layout is `TraitPickerView.tscn`** (+ item scenes `TraitPickerSlot.tscn` ·
-# `TraitPickerRow.tscn`). Hosts place an instance, call `fill()` on every change and connect
+# **The layout is `UI_Comp_TraitPickerView.tscn`** (+ item scenes `UI_Comp_TraitPickerSlot.tscn` ·
+# `UI_Comp_TraitPickerRow.tscn`). Hosts place an instance, call `fill()` on every change and connect
 # `trait_pressed` once; the block sizes itself (VBox). Code fills texts, picks label / frame
 # variations by state (`TraitPicker*` screen variations) and paints the data colours
 # (polarity badge / strip, rarity chip) — the badge / chip on `variation_box` copies.
@@ -22,9 +22,9 @@ extends VBoxContainer
 
 signal trait_pressed(trait_id: int)
 
-const SCENE_PATH: String = "res://features/meta/manager/TraitPickerView.tscn"
-const ROW_SCENE: PackedScene = preload("res://features/meta/manager/TraitPickerRow.tscn")
-const SLOT_SCENE: PackedScene = preload("res://features/meta/manager/TraitPickerSlot.tscn")
+const SCENE_PATH: String = "res://features/meta/manager/UI_Comp_TraitPickerView.tscn"
+const ROW_SCENE: PackedScene = preload("res://features/meta/manager/UI_Comp_TraitPickerRow.tscn")
+const SLOT_SCENE: PackedScene = preload("res://features/meta/manager/UI_Comp_TraitPickerSlot.tscn")
 
 const ROW_H: float = 112.0
 const ROW_LOCKED_H: float = 140.0

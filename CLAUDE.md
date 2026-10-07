@@ -114,6 +114,10 @@ Read the README of every row your task touches. Indented rows are submodules —
   (`grep -rn 'editor_description = "TODO' --include=*.tscn`). `_draw` widgets stay code, placed as nodes.
   Every scripted UI scene fills **dummy data when run alone (F6)** — `_ready` ends with
   `if UiPreview.is_standalone(self): _fill_preview()`; keep it working, add it to new scenes (`resources/README.md` → UiPreview).
+  **Scene naming** (`docs/ui_scene_migration.md` §3 rules 9 ~ 11): UI scene files are `UI_View_<Name>.tscn` (screen / tab /
+  popup / sheet / panel / HUD) or `UI_Comp_<Name>.tscn` (row / cell / chip / card placed inside others); the `.gd` keeps
+  the bare name. A node instancing another scene is named `<SourceScene>_<Role>` (`BanPickPortrait_Pilot0`). Nodes whose
+  `editor_description` starts with `[필수]` are bound without a null guard — removing / renaming them breaks the script.
 - **Dev setup per PC**: `.mcp.json` pins `godot-mcp` to `addons/godot_mcp/plugin.cfg`'s version (bump both);
   copy `.vscode/settings.example.json` → `settings.json` and set the local Godot path.
 

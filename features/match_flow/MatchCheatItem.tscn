@@ -1,9 +1,0 @@
-[gd_scene format=3 uid="uid://dixa6usvp5a6k"]
-
-[node name="MatchCheatItem" type="Button"]
-custom_minimum_size = Vector2(300, 72)
-offset_right = 300.0
-offset_bottom = 72.0
-theme_type_variation = &"GhostButton"
-theme_override_font_sizes/font_size = 26
-text = "치트"

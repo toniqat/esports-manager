@@ -264,9 +264,9 @@ resume path restores the saved `player_side` as is, so it is unaffected by this 
 | `match_prep/MatchPrepController.gd` · `MatchPrepView.gd/.tscn` | Pre-match scouting sheet (analysis reveal) — controller + scene-owned screen |
 | `match_prep/OpponentIntel.gd` · `IntelView.gd` | Reveal rule builder + its drawer, shared with the league team detail — `match_prep/README.md` |
 | `ban_pick/BanPickController.gd` | Ban/Pick + mech assignment rules / state — fills and drives the screen scene |
-| `ban_pick/BanPickView.tscn` (+ item scenes) | The ban/pick screen layout — both teams' portraits + mech grid + bottom detail sheet + drag ghost (`ban_pick/README.md` "Scene") |
+| `ban_pick/UI_View_BanPickView.tscn` (+ item scenes) | The ban/pick screen layout — both teams' portraits + mech grid + bottom detail sheet + drag ghost (`ban_pick/README.md` "Scene") |
 | `ban_pick/MechDetailPanel.gd/.tscn` (+ `MechMasteryRow` · `MechQuirkRow` · `MechCardCell` item scenes) | Mech detail popup for the assignment step |
-| `MatchCheatMenu.gd/.tscn` · `MatchCheatItem.tscn` | Editor-only cheat menu (top left) — see "Cheat menu" below |
+| `MatchCheatMenu.gd/.tscn` · `UI_Comp_MatchCheatItem.tscn` | Editor-only cheat menu (top left) — see "Cheat menu" below |
 
 ---
 
@@ -275,9 +275,9 @@ For run testing. `MatchFlow._setup_cheats()` creates a `MatchCheatMenu` (`Canvas
 above the detail popups, below `SceneFade`) **only when `OS.has_feature("editor")` and the match came
 from a season (`pending_match` exists)** — exported builds and standalone MatchFlow never see it.
 
-- Created with `MatchCheatMenu.create()`. **Layout is owned by `MatchCheatMenu.tscn`**: `Root` (theme) →
+- Created with `MatchCheatMenu.create()`. **Layout is owned by `UI_View_MatchCheatMenu.tscn`**: `Root` (theme) →
   `%Menu` (VBox, 16px from the safe corner — code adds the left / top insets) → `%Toggle`
-  (`DarkButton`, 150×64, 24pt, α 0.85) + `%List` (VBox, gap 10) of `MatchCheatItem.tscn`
+  (`DarkButton`, 150×64, 24pt, α 0.85) + `%List` (VBox, gap 10) of `UI_Comp_MatchCheatItem.tscn`
   (`GhostButton`, 300×72, 26pt). The two items saved in `%List` are editor previews; `set_actions`
   clears them.
 - A `CHEAT` button sits at the top left of the safe area; tapping it unfolds the cheat buttons below.
@@ -290,7 +290,7 @@ from a season (`pending_match` exists)** — exported builds and standalone Matc
   `RunStats.top_role()`), clears `match_resume`, and fades to `Season.tscn` — SeasonHub settles it
   through the normal post-match path (RunStats, standings / bracket, post-match autosave).
 - One press locks the menu (the list is cleared) so a double tap can't fire during the fade.
-- **F6 standalone run** of `MatchCheatMenu.tscn` shows dummy data (the two PREP · BAN_PICK cheats,
+- **F6 standalone run** of `UI_View_MatchCheatMenu.tscn` shows dummy data (the two PREP · BAN_PICK cheats,
   list unfolded; pressing only prints) — `_fill_preview()` at the bottom of the script,
   helper `resources/UiPreview.gd`.
 
@@ -337,10 +337,10 @@ replays the battle from scratch with the same locked-in picks.
 
 Both controller screens are **scene-based** — no full-screen `Panel` pushed below the notch any more:
 
-- **PREP** — `MatchPrepView.tscn`: its `Paper` covers the whole viewport and only its `%Safe` child is
+- **PREP** — `UI_View_MatchPrepView.tscn`: its `Paper` covers the whole viewport and only its `%Safe` child is
   offset by the insets in code; the bottom-anchored `%Start` bar extends into the bottom inset
   (`match_prep/README.md`).
-- **BAN_PICK** — `ban_pick/BanPickView.tscn`: its `Background` covers the whole viewport and
+- **BAN_PICK** — `ban_pick/UI_View_BanPickView.tscn`: its `Background` covers the whole viewport and
   everything else sits in `%SafeArea`, a full-rect Control whose top / bottom offsets are the device
   insets (`BanPickView.fit_safe_area`). The team blocks are anchored to its top / bottom and the pick
   pane height comes from the band left between them (`fit_pane`) — so on any screen the grid cells

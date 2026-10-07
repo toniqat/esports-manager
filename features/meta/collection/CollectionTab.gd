@@ -14,13 +14,13 @@ extends Control
 # No action bar (`bar_specs()` = []): the only action (레벨업) belongs to one pilot,
 # so it lives in the detail sheet next to the numbers it changes.
 #
-# Layout lives in `CollectionTab.tscn` (`create()`); this script binds `%` nodes, fills data
-# and adds one `CollectionCell.tscn` item per pilot to `%Grid`.
+# Layout lives in `UI_View_CollectionTab.tscn` (`create()`); this script binds `%` nodes, fills data
+# and adds one `UI_Comp_CollectionCell.tscn` item per pilot to `%Grid`.
 #
 # The pilot pool is read once (`GameManager.load_match_data`, Lv1 CSV copies, mobs
 # dropped). Those copies are never mutated — the sheet builds its own leveled copy.
 
-const SCENE_PATH: String = "res://features/meta/collection/CollectionTab.tscn"
+const SCENE_PATH: String = "res://features/meta/collection/UI_View_CollectionTab.tscn"
 
 var _host: LobbyScreen
 var _gm: Node
@@ -45,7 +45,7 @@ var _sheet: CollectionDetailSheet
 @onready var _shard_lbl: Label = %Shards
 
 
-## Layout lives in `CollectionTab.tscn` — build with this, not `.new()`.
+## Layout lives in `UI_View_CollectionTab.tscn` — build with this, not `.new()`.
 static func create() -> CollectionTab:
 	return (load(SCENE_PATH) as PackedScene).instantiate() as CollectionTab
 

@@ -1,0 +1,139 @@
+[gd_scene load_steps=3 format=3 uid="uid://hufggc2gsct7"]
+
+[ext_resource type="Script" uid="uid://dwh2805vb780f" path="res://features/season/training/TrainingCourseCard.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="TrainingCourseCard" type="Panel"]
+editor_description = "One course card of the training inventory row (TrainingView %CourseRow). Grade colour (frame border, band fill, grade letter) and the selected look are data: code duplicates CardFrame / GradeBand. PASS so the press reaches the scroll (DragScroll decides scroll vs pick-up)."
+custom_minimum_size = Vector2(168, 236)
+offset_right = 168.0
+offset_bottom = 236.0
+mouse_filter = 1
+theme = ExtResource("2_theme")
+theme_type_variation = &"TrainingCourseCardFrame"
+script = ExtResource("1_script")
+
+[node name="Body" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingCourseCard.gd fill()
+Everything but the lock chip — a locked card fades this (modulate) while the reason stays readable on top."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Band" type="Panel" parent="Body"]
+editor_description = "[필수] 지우면 오류 — TrainingCourseCard.gd fill()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 36.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"TrainingCourseGradeBand"
+
+[node name="Grade" type="Label" parent="Body/Band"]
+editor_description = "[필수] 지우면 오류 — TrainingCourseCard.gd fill()"
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 12.0
+offset_right = 52.0
+offset_bottom = 36.0
+theme_type_variation = &"BodyLabel"
+theme_override_colors/font_color = Color(0.29, 0.76, 0.78, 1)
+theme_override_font_sizes/font_size = 22
+text = "C"
+vertical_alignment = 1
+
+[node name="Cap" type="Label" parent="Body/Band"]
+editor_description = "[필수] 지우면 오류 — TrainingCourseCard.gd fill()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -84.0
+offset_right = -12.0
+offset_bottom = 36.0
+grow_horizontal = 0
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 17
+text = "3/8"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Well" type="Panel" parent="Body"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 10.0
+offset_top = 46.0
+offset_right = -10.0
+offset_bottom = 170.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"TrainingCourseShapeWell"
+
+[node name="Mini" type="Control" parent="Body/Well"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingCourseCard.gd _draw_mini() · TrainingCourseCard.gd _ready() · TrainingCourseCard.gd fill()
+Shape miniature — drawn in code (TrainingCourseCard._draw_mini), centred in this rect."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Name" type="Label" parent="Body"]
+editor_description = "[필수] 지우면 오류 — TrainingCourseCard.gd fill()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 176.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 19
+text = "사격 훈련"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="LockChip" type="Panel" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingCourseCard.gd fill()
+Grade not unlocked by tactics: the reason, over the shape well. Shown by code."
+visible = false
+layout_mode = 0
+offset_left = 16.0
+offset_top = 90.0
+offset_right = 152.0
+offset_bottom = 126.0
+mouse_filter = 2
+theme_type_variation = &"TrainingCourseLockChip"
+
+[node name="LockText" type="Label" parent="LockChip"]
+editor_description = "[필수] 지우면 오류 — TrainingCourseCard.gd fill()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 18
+text = "전술 11 필요"
+horizontal_alignment = 1
+vertical_alignment = 1

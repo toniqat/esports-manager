@@ -14,7 +14,7 @@ extends Control
 # pilots under the analysis reveal rule (`OpponentIntel` / `IntelView`, the same
 # scene MatchFlow PREP uses) — body scene `LeagueTeamDetail`. The own team is always fully visible.
 #
-# **Layout lives in `LeagueView.tscn`** (+ one `LeagueRow.tscn` per rank in `%Rows`) —
+# **Layout lives in `UI_View_LeagueView.tscn`** (+ one `UI_Comp_LeagueRow.tscn` per rank in `%Rows`) —
 # build it with `LeagueView.create()`. The script fills text, wires the rows / button and
 # applies the device-dependent bits: safe-area top indent, background extension into the
 # notch, and the bottom bar's square corners + bottom inset.
@@ -28,9 +28,9 @@ const PHASE_NAMES: Dictionary = {
 	GameEnums.SeasonPhase.REGULAR_INTL:   "정규시즌 국제대회",
 }
 
-## Built from `LeagueView.tscn` — use `create()`, not `.new()`.
-const SCENE_PATH: String = "res://features/season/league/LeagueView.tscn"
-const ROW_SCENE_PATH: String = "res://features/season/league/LeagueRow.tscn"
+## Built from `UI_View_LeagueView.tscn` — use `create()`, not `.new()`.
+const SCENE_PATH: String = "res://features/season/league/UI_View_LeagueView.tscn"
+const ROW_SCENE_PATH: String = "res://features/season/league/UI_Comp_LeagueRow.tscn"
 const ROW_COUNT: int = 8
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub

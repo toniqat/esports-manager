@@ -3,14 +3,14 @@ extends Control
 
 # 메크 상세(`MechDetailPanel`)의 카드 격자 한 칸 — 축소한 카드(`scenes/Card.tscn`
 # 인스턴스) · 투명 누름 버튼 · 장수 배지.
-# **모양의 정본은 `MechCardCell.tscn`** (축소율 0.8 · 칸 크기 · 배지 위치).
+# **모양의 정본은 `UI_Comp_MechCardCell.tscn`** (축소율 0.8 · 칸 크기 · 배지 위치).
 #
 # 누름 버튼은 **PASS** 다 — 정보 패널은 스크롤 안이라 STOP 이면 터치 드래그
 # 스크롤이 끊긴다. 누르면 `tapped(card)` 로 알리고, 설명판은 패널이 띄운다.
 
 signal tapped(card: Card)
 
-const SCENE_PATH: String = "res://features/match_flow/ban_pick/MechCardCell.tscn"
+const SCENE_PATH: String = "res://features/match_flow/ban_pick/UI_Comp_MechCardCell.tscn"
 
 ## 장수 배지 — 흰 모달 위. 덱에 들어가는 카드는 보조 글자색, "생성 전용"은 파랑(정보).
 const BADGE_COLOR := OutgameTheme.TEXT_SUB

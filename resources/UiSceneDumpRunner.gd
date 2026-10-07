@@ -5,7 +5,7 @@ extends SceneTree
 ##
 ##   <godot> --path . --script res://resources/UiSceneDumpRunner.gd -- \
 ##       --scene res://scenes/Season.tscn --node HubView [--frames 30] \
-##       [--out res://_dump/HubView.tscn] [--shot C:/tmp/live.png] [--press "경기 시작|…"] \
+##       [--out res://_dump/UI_View_HubView.tscn] [--shot C:/tmp/live.png] [--press "경기 시작|…"] \
 ##       [--keep-root-script] [--no-scripts]
 ##
 ## --press : 보이는 Button 을 글자로 찾아 `pressed` 를 쏜다(`|` 로 여러 개, 하나마다 다시 N 프레임

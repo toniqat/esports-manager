@@ -83,7 +83,7 @@ for save metadata and the lobby run card, never for match-day filtering.
 
 ## Files
 - `LeagueManager.gd` — orchestrator (this README's contract).
-- `LeagueView.gd` + `LeagueView.tscn` — standings screen. 8 ranked rows + next-match header
+- `LeagueView.gd` + `UI_View_LeagueView.tscn` — standings screen. 8 ranked rows + next-match header
   + **a single "확인" (OK) button**. Routed via `SeasonHub.Screen.LEAGUE`, built with
   `LeagueView.create()` (never `.new()`). Advancing the week
   moved to the Sunday close on the week-progress screen, and where to return is decided by the
@@ -94,13 +94,13 @@ for save metadata and the lobby run card, never for match-day filtering.
   `OpponentIntel` / `IntelView` pair MatchFlow PREP uses (`features/match_flow/match_prep/README.md`). The own team
   is always fully visible; other teams follow `StaffSystem.analysis_tier`, with an analyst note
   when analysis is delegated.
-- `LeagueTeamDetail.gd` + `LeagueTeamDetail.tscn` — the team detail **sheet body** (like the hub
+- `LeagueTeamDetail.gd` + `UI_View_LeagueTeamDetail.tscn` — the team detail **sheet body** (like the hub
   panels): VBox top-wide in `sheet.body`, 16 short of the right edge (scroll-bar room) —
-  `%Record` (SubLabel 24) · RecordGap · `%Intel` (`IntelView.tscn` instance) · Tail 20. On `resized`
+  `%Record` (SubLabel 24) · RecordGap · `%IntelView_Intel` (`UI_Comp_IntelView.tscn` instance) · Tail 20. On `resized`
   it calls `sheet.set_body_height(size.y)`. `LeagueTeamDetail.open(host, title, record, intel)` →
   `HubSheet`; `bind(sheet, record, intel)` / `show_detail(record, intel)`. Nothing is placed at
   absolute coordinates in the sheet body any more.
-- `LeagueRow.gd` + `LeagueRow.tscn` — one standings row (item scene). `fill(rank, team_text, wins,
+- `LeagueRow.gd` + `UI_Comp_LeagueRow.tscn` — one standings row (item scene). `fill(rank, team_text, wins,
   losses, made_po, is_player)` / `clear()`; emits `tapped` from its full-row flat `%Hit` button.
   The card style is built in code (`card_style(14)`) because it is data: own team = `ACCENT_DIM` +
   `ACCENT` 2px border, playoff cut = green 6px left bar, empty slot = `SURFACE_SUNK`. The rank

@@ -1,0 +1,112 @@
+[gd_scene load_steps=3 format=3 uid="uid://orjk6bqst2x7"]
+
+[ext_resource type="Script" uid="uid://c58xf3ynusdh8" path="res://features/meta/lobby/ConfirmPopup.gd" id="1_confirm"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="ConfirmPopup" type="CanvasLayer"]
+layer = 20
+script = ExtResource("1_confirm")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+
+[node name="Dim" type="Button" parent="Root"]
+editor_description = "[필수] 지우면 오류 — ConfirmPopup.gd _ready()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+flat = true
+
+[node name="DimRect" type="Panel" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"DimPanel"
+
+[node name="SafeArea" type="CenterContainer" parent="Root"]
+editor_description = "[필수] 지우면 오류 — ConfirmPopup.gd _fit_safe_area()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Card" type="PanelContainer" parent="Root/SafeArea"]
+custom_minimum_size = Vector2(920, 0)
+layout_mode = 2
+theme_type_variation = &"PopupCard"
+
+[node name="VBox" type="VBoxContainer" parent="Root/SafeArea/Card"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="Root/SafeArea/Card/VBox"]
+editor_description = "[필수] 지우면 오류 — ConfirmPopup.gd open()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+text = "진행 중인 런을 포기할까요?"
+
+[node name="Gap1" type="Control" parent="Root/SafeArea/Card/VBox"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Body" type="Label" parent="Root/SafeArea/Card/VBox"]
+editor_description = "[필수] 지우면 오류 — ConfirmPopup.gd open()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+text = "본문 미리보기 — 실제 문구는 open() 이 넣는다. 네 줄 남짓이 기본 높이고, 더 길면 카드가 아래로 늘어난다."
+autowrap_mode = 3
+
+[node name="Gap2" type="Control" parent="Root/SafeArea/Card/VBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Buttons" type="HBoxContainer" parent="Root/SafeArea/Card/VBox"]
+custom_minimum_size = Vector2(0, 112)
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Cancel" type="Button" parent="Root/SafeArea/Card/VBox/Buttons"]
+editor_description = "[필수] 지우면 오류 — ConfirmPopup.gd _ready() · ConfirmPopup.gd open()"
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+text = "취소"
+
+[node name="Confirm" type="Button" parent="Root/SafeArea/Card/VBox/Buttons"]
+editor_description = "[필수] 지우면 오류 — ConfirmPopup.gd _apply_danger() · ConfirmPopup.gd _ready() · ConfirmPopup.gd open()"
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
+focus_mode = 0
+theme_type_variation = &"PrimaryButton"
+theme_override_font_sizes/font_size = 30
+text = "확인"

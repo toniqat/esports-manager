@@ -2,8 +2,8 @@ class_name BracketMatchBox
 extends Panel
 
 # One match box of a bracket screen — slot title + week on top, team A / team B below.
-# Shared by `BracketView` (`BracketMatchBox.tscn`, 4-team playoff) and `IntlBracketView`
-# (`IntlMatchBox.tscn`, smaller fonts / tighter insets for the 8-team INTL bracket).
+# Shared by `BracketView` (`UI_Comp_BracketMatchBox.tscn`, 4-team playoff) and `IntlBracketView`
+# (`UI_Comp_IntlMatchBox.tscn`, smaller fonts / tighter insets for the 8-team INTL bracket).
 #
 # **Layout lives in the scene** (label insets, font sizes; the box size is set by the
 # instance in the bracket screen's scene). This script fills text and paints the data
@@ -78,7 +78,7 @@ static func team_color(team_id: int, pid: int, played: bool, winner: int) -> Col
 
 
 ## F6 단독 실행 미리보기 — 내 팀이 이긴 4강 경기 (`resources/UiPreview.gd`).
-## 두 아이템 씬(`BracketMatchBox.tscn` · `IntlMatchBox.tscn`) 모두 이 스크립트라 같은 값이 뜬다.
+## 두 아이템 씬(`UI_Comp_BracketMatchBox.tscn` · `UI_Comp_IntlMatchBox.tscn`) 모두 이 스크립트라 같은 값이 뜬다.
 func _fill_preview() -> void:
 	UiPreview.stage(self)
 	if slot_title == "":

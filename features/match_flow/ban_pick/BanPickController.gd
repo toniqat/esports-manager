@@ -69,7 +69,7 @@ extends Node
 # "내가 뭘 골랐더라"를 두 번 읽게 했다. 그 파일은 삭제됐다.
 
 #
-# ── 씬 (`BanPickView.tscn`) ──────────────────────────────────────────────────
+# ── 씬 (`UI_View_BanPickView.tscn`) ──────────────────────────────────────────────────
 # **화면의 배치 · 스타일은 씬이 정본이다** — `BanPickView`(화면 한 장) 와 아이템 씬
 # `BanPickMechCell`(격자 칸) · `BanPickMechSlot`(메크 칸) · `BanPickPortrait`(파일럿
 # 초상화) · `BanPickBanChip`(밴 칩) · `BanPickSheetCard`(시트 카드 한 장), 순서 줄
@@ -207,7 +207,7 @@ var _seat_mechs: Dictionary = {}
 var _start_btn: Button = null
 
 # ── UI ───────────────────────────────────────────────────────────────────────
-## 화면 한 장(`BanPickView.tscn`). null = 화면이 걷혔다 — AI 대기 / 연출 코루틴이
+## 화면 한 장(`UI_View_BanPickView.tscn`). null = 화면이 걷혔다 — AI 대기 / 연출 코루틴이
 ## 깨어났을 때 이것으로 손을 뗄지 판단한다.
 var _view: BanPickView = null
 ## 미리보기 전용(`BanPickView._fill_preview`, F6 단독 실행) — 채워 두면 `_build_ui` 가 새
@@ -399,7 +399,7 @@ func _quirk_rows(side: int, mech_id: int, seat: int) -> Dictionary:
 
 
 # ── UI build ─────────────────────────────────────────────────────────────────
-## 화면 한 장을 세우고 데이터를 채운다. 배치는 전부 씬(`BanPickView.tscn`) 몫이고
+## 화면 한 장을 세우고 데이터를 채운다. 배치는 전부 씬(`UI_View_BanPickView.tscn`) 몫이고
 ## 여기서 정하는 것은 기기에 따라 달라지는 값(안전 영역, 격자 높이)뿐이다.
 func _build_ui() -> void:
 	if preview_view != null:
@@ -563,7 +563,7 @@ func _refresh_filter_tabs() -> void:
 
 
 # ── 메크 격자 ────────────────────────────────────────────────────────────────
-## 칸 하나 = `BanPickMechCell.tscn` — **정사각 초상화 + 아래 이름 한 줄**이 전부다.
+## 칸 하나 = `UI_Comp_BanPickMechCell.tscn` — **정사각 초상화 + 아래 이름 한 줄**이 전부다.
 ## 숫자와 패시브 설명은 한 번 눌러 여는 시트가 통째로 들고 있다. 칸 높이가 정해지면
 ## 격자가 보여 줄 4.5 줄이 정해지므로 픽창 높이도 여기서 맞춘다(`fit_pane`).
 func _build_grid() -> void:
@@ -687,7 +687,7 @@ func _fill_sheet_mastery(m: MechData) -> void:
 
 ## 메크 카드들을 손패와 **같은 노드**(`Card.tscn`)로 늘어놓는다 — 따로 그린
 ## 그림이면 실제로 덱에 들어갈 카드와 같은 것인지 확인할 길이 없다. 카드 한 장 =
-## `BanPickSheetCard.tscn`(카드 자리 + 탭 버튼 + 장수 배지), 줄은 씬의 `%SheetCardRow`.
+## `UI_Comp_BanPickSheetCard.tscn`(카드 자리 + 탭 버튼 + 장수 배지), 줄은 씬의 `%SheetCardRow`.
 func _build_card_row(defs: Array) -> void:
 	_clear_card_row()
 	_view.sheet_no_cards.visible = defs.is_empty()

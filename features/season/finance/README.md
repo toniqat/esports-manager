@@ -8,8 +8,8 @@ State `season_state.finance` (shape owned here). Tuning values live only in `dat
 | File | Role |
 |---|---|
 | `FinanceSystem.gd` | `class_name FinanceSystem` (static). Run init, week-end settlement, match bonus, allocation, facility upgrade, `income_mult` / `upkeep_mult` / `salary_cost` (traits × finance stat × specials), the three outside multipliers, special spending (rows, block reasons, buy, week tick), number formatting (`fmt` / `fmt_signed`). |
-| `FinancePanel.gd` + `FinancePanel.tscn` | Hub manage card 「재무」 (static `hub_summary`) + the `HubSheet` body (static `open` → `create()` → added to `sheet.body`), incl. the 특별 지출 section. Layout lives in the scene (see "Sheet scene" below). The 지난 주 정산 sponsor / upkeep labels show `보정 ×m` from `income_mult` / `upkeep_mult` (the entry's own value if recorded, else the current one; hidden at ×1.00) — `_sponsor_label` / `_upkeep_label`. |
-| `FinanceAmountRow.tscn` · `FinanceAllocRow.tscn` · `FinanceSpecialRow.tscn` · `FinanceHistoryRow.tscn` | Item scenes of the sheet (no script): a 지난 주 정산 line · one 흑자 배분 axis · one 특별 지출 row · one 최근 기록 line. |
+| `FinancePanel.gd` + `UI_View_FinancePanel.tscn` | Hub manage card 「재무」 (static `hub_summary`) + the `HubSheet` body (static `open` → `create()` → added to `sheet.body`), incl. the 특별 지출 section. Layout lives in the scene (see "Sheet scene" below). The 지난 주 정산 sponsor / upkeep labels show `보정 ×m` from `income_mult` / `upkeep_mult` (the entry's own value if recorded, else the current one; hidden at ×1.00) — `_sponsor_label` / `_upkeep_label`. |
+| `UI_Comp_FinanceAmountRow.tscn` · `UI_Comp_FinanceAllocRow.tscn` · `UI_Comp_FinanceSpecialRow.tscn` · `UI_Comp_FinanceHistoryRow.tscn` | Item scenes of the sheet (no script): a 지난 주 정산 line · one 흑자 배분 axis · one 특별 지출 row · one 최근 기록 line. |
 
 ## Entry points (called by base-owned code)
 | Caller | Call |
@@ -158,9 +158,9 @@ with no staff salaries; `upkeep_delay` with no upkeep) · balance < cost.
   effect line `special_effect_text` · weeks, desc, and a two-step button — `구매 −N` / `계약 무료` →
   「한 번 더 눌러 확정」 → buy; disabled with the block reason); 최근 기록 (latest `RECENT_ROWS` weeks).
   Only one special row is armed at a time (`_special_armed`; the facility button's `_upgrade_armed`).
-- **F6 preview** — run `FinancePanel.tscn` alone and it fills dummy data (`resources/UiPreview.gd`):
+- **F6 preview** — run `UI_View_FinancePanel.tscn` alone and it fills dummy data (`resources/UiPreview.gd`):
   in-memory run with two `settle_week`s (last week + history rows), bound without a sheet.
-- **Sheet scene** (`FinancePanel.tscn`, root `VBoxContainer` top-wide 24 short of the body width — scroll-bar
+- **Sheet scene** (`UI_View_FinancePanel.tscn`, root `VBoxContainer` top-wide 24 short of the body width — scroll-bar
   room; theme `OutgameTheme.tres`). The sheet's scroll height follows the root's height (`resized` →
   `set_body_height`), so the scene's `Tail` spacer is the bottom gap.
   ```
@@ -170,7 +170,7 @@ with no staff salaries; `upkeep_delay` with no upkeep) · balance < cost.
     ├ Header (116)    BalanceCaption · %Balance (colour = low balance) | FundCaption · %Fund
     ├ %OwnerLine · %Projection · %LowBalance · %Penalty
     ├ LastWeekSection (Title · Divider · Gap) · %LastWeekEmpty
-    ├ %LastWeek       %Sponsor %Bonus %Salaries %Upkeep (FinanceAmountRow) · Divider · NetRow (%Net)
+    ├ %LastWeek       %FinanceAmountRow_Sponsor %FinanceAmountRow_Bonus %FinanceAmountRow_Salaries %FinanceAmountRow_Upkeep · Divider · NetRow (%Net)
     │                 · %AllocLine · %Cuts (template line) · %SpecialSpend · %SpecialsExpired
     ├ AllocSection · %AllocIntro · %AllocDelegated · %Axes (FinanceAllocRow ×3) · %Effects
     ├ FacilitySection (%FacilityTitle) · %FacNow · %FacNext · %FacCost

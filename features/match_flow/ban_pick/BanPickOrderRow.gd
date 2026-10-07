@@ -3,9 +3,9 @@ extends Control
 
 # The **order row** — the 14 moves of the draft as one strip at the top of the pick pane, right
 # above the role-class filter (`ban_pick/README.md` "Order row"). **Layout lives in
-# `BanPickOrderRow.tscn`** (the strip, `%Pips` holder, the ✕/✓ icon `%PipIcon`, the turn triangle
-# `%TurnArrow`), instanced as `%OrderRow` in `BanPickView.tscn`. Each move is one
-# `BanPickOrderPip.tscn` instance in `%Pips` (count = the sequence); the cells' placement, tween,
+# `UI_Comp_BanPickOrderRow.tscn`** (the strip, `%Pips` holder, the ✕/✓ icon `%PipIcon`, the turn triangle
+# `%TurnArrow`), instanced as `%BanPickOrderRow_OrderRow` in `UI_View_BanPickView.tscn`. Each move is one
+# `UI_Comp_BanPickOrderPip.tscn` instance in `%Pips` (count = the sequence); the cells' placement, tween,
 # pulse and side colours stay code — an animated widget.
 #
 # - Cell colour = that move's side colour; darker = more current (`seq_color`).
@@ -32,8 +32,8 @@ const TURN_ARROW_BOB_PX: float  = 5.0
 const TURN_ARROW_BOB_SEC: float = 1.3
 const ICON_BAN   := preload("res://resources/images/ui/banpick/ban_x.svg")
 const ICON_PICK  := preload("res://resources/images/ui/banpick/pick_v.svg")
-const SCENE_PATH: String = "res://features/match_flow/ban_pick/BanPickOrderRow.tscn"
-const PIP_SCENE: PackedScene = preload("res://features/match_flow/ban_pick/BanPickOrderPip.tscn")
+const SCENE_PATH: String = "res://features/match_flow/ban_pick/UI_Comp_BanPickOrderRow.tscn"
+const PIP_SCENE: PackedScene = preload("res://features/match_flow/ban_pick/UI_Comp_BanPickOrderPip.tscn")
 const PIP_VARIATION: StringName = &"BanPickOrderPip"
 
 var _seq: Array = []            # [[side, kind], …] — BanPickController.SEQUENCE
@@ -67,7 +67,7 @@ static func seq_run(seq: Array, idx: int) -> Vector2i:
 	return Vector2i(a, b)
 
 
-## Instantiates the scene (`BanPickView.tscn` already holds one as `%OrderRow`).
+## Instantiates the scene (`UI_View_BanPickView.tscn` already holds one as `%BanPickOrderRow_OrderRow`).
 static func create() -> BanPickOrderRow:
 	return (load(SCENE_PATH) as PackedScene).instantiate() as BanPickOrderRow
 

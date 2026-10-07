@@ -1,0 +1,77 @@
+[gd_scene load_steps=3 format=3 uid="uid://17ymofopboc3"]
+
+[ext_resource type="Script" uid="uid://csks3beirjn2b" path="res://features/season/training/TrainingCoursePopover.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="TrainingCoursePopover" type="Panel"]
+editor_description = "Info popover over a selected course card (TrainingView). Width and x / font of every line are the scene's; the height and the y of Exp / Effect / Lock are derived from the text in code (placement needs the height in the same frame). Border = grade colour (data, code). STOP — it swallows the tap that closes it."
+offset_right = 380.0
+offset_bottom = 159.0
+theme = ExtResource("2_theme")
+theme_type_variation = &"TrainingCoursePopoverFrame"
+script = ExtResource("1_script")
+
+[node name="Title" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — TrainingCoursePopover.gd fill()"
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 280.0
+offset_bottom = 46.0
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 24
+text = "[C] 사격 훈련"
+
+[node name="Cap" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — TrainingCoursePopover.gd fill()"
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 284.0
+offset_top = 21.0
+offset_right = 364.0
+offset_bottom = 45.0
+theme_type_variation = &"BodyLabel"
+theme_override_colors/font_color = Color(0.29, 0.76, 0.78, 1)
+theme_override_font_sizes/font_size = 18
+text = "3/8"
+horizontal_alignment = 2
+
+[node name="Exp" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — TrainingCoursePopover.gd fill()"
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 16.0
+offset_top = 56.0
+offset_right = 364.0
+offset_bottom = 79.0
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 17
+text = "사격 +3"
+autowrap_mode = 3
+
+[node name="Effect" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — TrainingCoursePopover.gd fill()"
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 16.0
+offset_top = 89.0
+offset_right = 364.0
+offset_bottom = 111.0
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 16
+text = "같은 열 다음 날 ×1.2"
+autowrap_mode = 3
+
+[node name="Lock" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — TrainingCoursePopover.gd fill()"
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 16.0
+offset_top = 121.0
+offset_right = 364.0
+offset_bottom = 143.0
+theme_type_variation = &"NegativeLabel"
+theme_override_font_sizes/font_size = 16
+text = "전술 11 필요 (지금 전술 6)"
+autowrap_mode = 3

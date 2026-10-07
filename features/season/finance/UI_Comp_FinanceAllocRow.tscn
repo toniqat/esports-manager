@@ -1,0 +1,107 @@
+[gd_scene load_steps=2 format=3 uid="uid://dtinl3r1tfgun"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+
+[node name="FinanceAllocRow" type="VBoxContainer"]
+editor_description = "One 흑자 배분 axis (FinancePanel): name · −/+ stepper · share bar · % · hint. The stepper and its gaps hide while finance is delegated; the fill width and colour are data."
+offset_right = 904.0
+offset_bottom = 106.0
+mouse_filter = 2
+theme = ExtResource("1_theme")
+theme_override_constants/separation = 0
+
+[node name="Row" type="HBoxContainer" parent="."]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Axis" type="Label" parent="Row"]
+editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_allocation()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 44)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 28
+text = "훈련"
+
+[node name="Minus" type="Button" parent="Row"]
+editor_description = "[필수] 지우면 오류 — FinancePanel.gd _wire_alloc_row()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(84, 64)
+layout_mode = 2
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 34
+text = "−"
+
+[node name="GapL" type="Control" parent="Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(12, 0)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Track" type="Panel" parent="Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+mouse_filter = 2
+theme_type_variation = &"ProgressTrack"
+
+[node name="Fill" type="Panel" parent="Row/Track"]
+editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_allocation()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.5
+anchor_bottom = 1.0
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"ProgressFill"
+
+[node name="GapR" type="Control" parent="Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(12, 0)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Plus" type="Button" parent="Row"]
+editor_description = "[필수] 지우면 오류 — FinancePanel.gd _wire_alloc_row()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(84, 64)
+layout_mode = 2
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 34
+text = "+"
+
+[node name="Pct" type="Label" parent="Row"]
+editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_allocation()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(90, 44)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 28
+text = "50%"
+horizontal_alignment = 2
+
+[node name="Gap" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 4)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="HintPad" type="MarginContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 150
+
+[node name="Hint" type="Label" parent="HintPad"]
+editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_allocation()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 20
+text = "다음 주 훈련 EXP 최대 +10% (주 200 지출에서 최대)"

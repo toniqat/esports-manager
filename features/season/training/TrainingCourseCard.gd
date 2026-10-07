@@ -5,7 +5,7 @@ extends Panel
 # 카드이고 위에서부터 등급 띠(등급 글자 · 놓임/상한) → 오목한 상자 안의 모양
 # 미니어처 → 이름. 설명문과 EXP 요약은 정보 팝오버(`TrainingCoursePopover`)가 든다.
 #
-# **레이아웃의 정본은 `TrainingCourseCard.tscn` 이다** (카드 크기, 띠 높이, 상자 자리,
+# **레이아웃의 정본은 `UI_Comp_TrainingCourseCard.tscn` 이다** (카드 크기, 띠 높이, 상자 자리,
 # 이름 칸, 잠금 칩 — 에디터에서 고친다). 이 스크립트가 정하는 것은 데이터뿐:
 # 등급 색(테두리 · 띠 · 등급 글자), 고른 카드의 옷, 잠긴 카드의 흐림, 모양 미니어처
 # (`%Mini` 의 `draw` — 상자 크기에서 칸 크기를 역산한다).
@@ -13,7 +13,7 @@ extends Panel
 # 입력은 이 카드가 받지 않는다 — `TrainingView` 가 `gui_input` 을 잇는다(탭 = 고르기,
 # 세로 드래그 = 집기). 카드는 씬에서 **PASS** 라 눌림이 스크롤까지 올라간다.
 
-const SCENE_PATH: String = "res://features/season/training/TrainingCourseCard.tscn"
+const SCENE_PATH: String = "res://features/season/training/UI_Comp_TrainingCourseCard.tscn"
 
 ## 미니어처 칸 한 변의 상한. 모양이 커지면 상자에 맞게 줄어든다.
 const MINI_MAX: float = 26.0

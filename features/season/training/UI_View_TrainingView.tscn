@@ -1,0 +1,273 @@
+[gd_scene load_steps=4 format=3 uid="uid://dkc4ervyl282d"]
+
+[ext_resource type="Script" uid="uid://mgbtbbkxgbgw" path="res://features/season/training/TrainingView.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" uid="uid://crg2etciyhyy" path="res://features/season/training/UI_Comp_TrainingThumb.tscn" id="3_thumb"]
+
+[node name="TrainingView" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme = ExtResource("2_theme")
+script = ExtResource("1_script")
+
+[node name="Background" type="Panel" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingView.gd _bind()
+Full screen incl. the notch band — code stretches it back up (ScreenMetrics.extend_background) after the whole view is pushed below the safe top."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"ScreenBackground"
+
+[node name="SafeArea" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingView.gd _bind()
+Everything above the bottom action bar. Code lifts its bottom edge by the device's bottom inset (offset_bottom); the view itself is pushed below the safe top (offset_top). Inside, y = 0 is the safe top and the bottom edge is the safe bottom."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="SafeArea"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 8.0
+offset_bottom = 52.0
+grow_horizontal = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 34
+text = "일상 훈련 편성"
+horizontal_alignment = 1
+
+[node name="StaffLine" type="Label" parent="SafeArea"]
+editor_description = "[필수] 지우면 오류 — TrainingView.gd _staff_lbl"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 40.0
+offset_top = 54.0
+offset_right = -40.0
+offset_bottom = 84.0
+grow_horizontal = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 22
+text = "훈련: 강민호 코치 17 · 전술: 감독 6"
+horizontal_alignment = 1
+
+[node name="BoardArea" type="Control" parent="SafeArea"]
+editor_description = "Room between the staff line and the course list. The portrait row + board block is anchored to its centre, so the slack is split evenly above and below the board."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 96.0
+offset_bottom = -436.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Block" type="Control" parent="SafeArea/BoardArea"]
+editor_description = "Portrait row (top) + board (15 px below it). Centre-anchored: 880 wide = 5 × CELL, height = portrait 70.83 + 15 + 880."
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -440.0
+offset_top = -482.91666
+offset_right = 440.0
+offset_bottom = 482.91666
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Thumbs" type="HBoxContainer" parent="SafeArea/BoardArea/Block"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingView.gd _bind_thumbs()
+Five column headers in seat order (GameEnums.ROLE_DISPLAY_ORDER) — child i = board column i, so each sits centred over its 176 px column (170 wide + 6 gap, 3 px inset). Not tappable."
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 3.0
+offset_right = -3.0
+offset_bottom = 70.83334
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="TrainingThumb_Thumb0" parent="SafeArea/BoardArea/Block/Thumbs" instance=ExtResource("3_thumb")]
+editor_description = "[필수] 5개 · 순서 고정 — TrainingView.gd _bind_thumbs() 가 자리 번호(get_child(seat))로 읽는다"
+layout_mode = 2
+
+[node name="TrainingThumb_Thumb1" parent="SafeArea/BoardArea/Block/Thumbs" instance=ExtResource("3_thumb")]
+editor_description = "[필수] 5개 · 순서 고정 — TrainingView.gd _bind_thumbs() 가 자리 번호(get_child(seat))로 읽는다"
+layout_mode = 2
+
+[node name="TrainingThumb_Thumb2" parent="SafeArea/BoardArea/Block/Thumbs" instance=ExtResource("3_thumb")]
+editor_description = "[필수] 5개 · 순서 고정 — TrainingView.gd _bind_thumbs() 가 자리 번호(get_child(seat))로 읽는다"
+layout_mode = 2
+
+[node name="TrainingThumb_Thumb3" parent="SafeArea/BoardArea/Block/Thumbs" instance=ExtResource("3_thumb")]
+editor_description = "[필수] 5개 · 순서 고정 — TrainingView.gd _bind_thumbs() 가 자리 번호(get_child(seat))로 읽는다"
+layout_mode = 2
+
+[node name="TrainingThumb_Thumb4" parent="SafeArea/BoardArea/Block/Thumbs" instance=ExtResource("3_thumb")]
+editor_description = "[필수] 5개 · 순서 고정 — TrainingView.gd _bind_thumbs() 가 자리 번호(get_child(seat))로 읽는다"
+layout_mode = 2
+
+[node name="Grid" type="Control" parent="SafeArea/BoardArea/Block"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingView.gd _grid
+The 5×5 training board — drawn in code (TrainingView._draw_grid), and it is the drop target / board drag source / tap-to-remove hit area (STOP). Cell = 176 (TrainingView.CELL); keep the size = 5 × CELL."
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -880.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="Inventory" type="Control" parent="SafeArea"]
+editor_description = "Course list hung above the bottom action bar (24 px gap): label row + one-row horizontal scroll of course cards."
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = -420.0
+offset_right = -40.0
+offset_bottom = -152.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="CourseLabel" type="Label" parent="SafeArea/Inventory"]
+layout_mode = 0
+offset_right = 400.0
+offset_bottom = 28.0
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 22
+text = "훈련 코스"
+
+[node name="EffectLine" type="Label" parent="SafeArea/Inventory"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingView.gd _effect_lbl
+What the staff stats do to the courses (multiplier breakdown + top usable grade). Overlaps the label row on purpose — right-aligned, wide enough for the breakdown."
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -860.0
+offset_bottom = 28.0
+grow_horizontal = 0
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 20
+text = "훈련 효과 ×1.37 (스태프 ×1.14 · 재무 ×1.20) · 사용 가능 S 등급까지"
+horizontal_alignment = 2
+
+[node name="CourseScroll" type="ScrollContainer" parent="SafeArea/Inventory"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingView.gd _inv_scroll
+Horizontal only, bar hidden (the half-cut card says \"more to the side\"). DragScroll attached in code: horizontal drag = scroll, vertical drag = pick up the pressed card's tile."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 32.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 3
+vertical_scroll_mode = 0
+
+[node name="CourseRow" type="HBoxContainer" parent="SafeArea/Inventory/CourseScroll"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingView.gd _inv_row
+Filled in code with TrainingCourseCard instances + a tail pad."
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Bar" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingView.gd _bind()
+Bottom action bar: edge to edge, square corners, slots split by stretch ratio (1 : 1 : 2, primary at the right). Bar* variations give the square corners; code adds the device's bottom inset to its height and to each button's bottom content margin (OutgameTheme.fit_bottom_bar — the colour runs under the home indicator, the text stays above it). 코치 추천 is hidden unless training is delegated — the others re-split by ratio."
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -128.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="ClearButton" type="Button" parent="Bar"]
+editor_description = "[필수] 지우면 오류 — TrainingView.gd _bar_buttons · TrainingView.gd _bind()"
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_type_variation = &"BarGhostButton"
+theme_override_font_sizes/font_size = 28
+text = "판 비우기"
+
+[node name="Sep" type="Panel" parent="Bar/ClearButton"]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -2.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"BarSeparator"
+
+[node name="AutoButton" type="Button" parent="Bar"]
+editor_description = "[필수] 지우면 오류 — TrainingView.gd _bar_buttons · TrainingView.gd _bind()"
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_type_variation = &"BarGhostButton"
+theme_override_font_sizes/font_size = 28
+text = "코치 추천"
+
+[node name="Sep" type="Panel" parent="Bar/AutoButton"]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -2.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"BarSeparator"
+
+[node name="ConfirmButton" type="Button" parent="Bar"]
+editor_description = "[필수] 지우면 오류 — TrainingView.gd _bar_buttons · TrainingView.gd _bind()"
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
+focus_mode = 0
+theme_type_variation = &"BarPrimaryButton"
+text = "훈련 확정"

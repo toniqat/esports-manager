@@ -18,36 +18,48 @@
 script = ExtResource("1_er2wg")
 
 [node name="DataLoader" type="Node" parent="."]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — BattleSim.gd _data_loader"
 script = ExtResource("10_dataloader")
 
 [node name="FieldLoader" type="Node" parent="."]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — BattleSim.gd _field_loader"
 script = ExtResource("12_fieldloader")
 
 [node name="SimulationCore" type="Node" parent="."]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — BattleSim.gd sim_core"
 script = ExtResource("2_simcore")
 
 [node name="RecallSystem" type="Node" parent="."]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — BattleSim.gd recall_sys"
 script = ExtResource("4_recall")
 
 [node name="HexGrid" type="Node" parent="."]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — BattleSim.gd hex_grid"
 script = ExtResource("11_hexgrid")
 
 [node name="Pathfinding" type="Node" parent="."]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — BattleSim.gd pathfinder"
 script = ExtResource("5_pathfind")
 
 [node name="BattleField" parent="." instance=ExtResource("13_battlefield")]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — BattleSim.gd _ready()"
 
 [node name="BattleRenderer" type="Node2D" parent="."]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — BattleSim.gd renderer"
 script = ExtResource("6_render")
 
 [node name="CardPhaseManager" type="Node" parent="."]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — BattleSim.gd card_phase"
 script = ExtResource("7_card")
 
 [node name="GambitPhaseManager" type="Node" parent="."]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — BattleSim.gd _gambit"
 script = ExtResource("8_gambit")
 
 [node name="HudBuilder" type="Node" parent="."]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — BattleSim.gd hud"
 script = ExtResource("9_hud")
 
 [node name="BuildingRegistry" type="Node" parent="."]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — BattleSim.gd building_registry"
 script = ExtResource("14_buildingreg")

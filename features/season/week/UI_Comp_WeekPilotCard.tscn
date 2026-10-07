@@ -1,0 +1,133 @@
+[gd_scene load_steps=4 format=3 uid="uid://bkd7mlj7nwksw"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+[ext_resource type="PackedScene" uid="uid://b35sbgo83liyd" path="res://features/season/week/UI_Comp_WeekStatCell.tscn" id="2_cell"]
+[ext_resource type="PackedScene" path="res://resources/UI_Comp_PositionBadge.tscn" id="pos_badge"]
+
+[node name="WeekPilotCard" type="Panel"]
+editor_description = "One pilot's training result of the day. Code sets the role-colour lead bar (lead_bar_style), the height (148 + one quirk line each + 8) and fills %Stats with one WeekStatCell per stat."
+custom_minimum_size = Vector2(1000, 190)
+offset_right = 1000.0
+offset_bottom = 190.0
+mouse_filter = 2
+theme = ExtResource("1_theme")
+theme_type_variation = &"Card"
+
+[node name="Portrait" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — WeekProgressView.gd
+Slot for the round portrait — code adds the drawn OutgameTheme.add_round_portrait widget here."
+anchors_preset = 0
+offset_left = 26.0
+offset_top = 30.0
+offset_right = 114.0
+offset_bottom = 118.0
+mouse_filter = 2
+
+[node name="Name" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — WeekProgressView.gd"
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 132.0
+offset_top = 32.0
+offset_right = 372.0
+offset_bottom = 70.0
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 30
+text = "Evelyn"
+
+[node name="PositionBadge_Role" parent="." instance=ExtResource("pos_badge")]
+editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _add_pilot_card()"
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 132.0
+offset_top = 74.0
+offset_right = 182.0
+offset_bottom = 101.0
+
+[node name="Mastery" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _add_pilot_card()
+숙련 +N · <mech> — hidden by code when the day added no mastery."
+layout_mode = 0
+offset_left = 132.0
+offset_top = 106.0
+offset_right = 382.0
+offset_bottom = 132.0
+theme_type_variation = &"LinkLabel"
+theme_override_font_sizes/font_size = 18
+text = "숙련 +12 · 메크"
+clip_text = true
+
+[node name="Stats" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _add_pilot_card()
+One WeekStatCell per PlayerData.STAT_KEYS entry (code adds / hides cells to match)."
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 392.0
+offset_top = 34.0
+offset_right = -24.0
+offset_bottom = 126.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="WeekStatCell_Cell0" parent="Stats" instance=ExtResource("2_cell")]
+layout_mode = 2
+
+[node name="WeekStatCell_Cell1" parent="Stats" instance=ExtResource("2_cell")]
+layout_mode = 2
+
+[node name="WeekStatCell_Cell2" parent="Stats" instance=ExtResource("2_cell")]
+layout_mode = 2
+
+[node name="WeekStatCell_Cell3" parent="Stats" instance=ExtResource("2_cell")]
+layout_mode = 2
+
+[node name="WeekStatCell_Cell4" parent="Stats" instance=ExtResource("2_cell")]
+layout_mode = 2
+
+[node name="WeekStatCell_Cell5" parent="Stats" instance=ExtResource("2_cell")]
+layout_mode = 2
+
+[node name="QuirkDivider" type="HSeparator" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _add_pilot_card()
+Shown by code only when the day has quirk events."
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 26.0
+offset_top = 138.0
+offset_right = -26.0
+offset_bottom = 139.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"Divider"
+
+[node name="Quirks" type="VBoxContainer" parent="."]
+editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _add_pilot_card()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 132.0
+offset_top = 142.0
+offset_right = -24.0
+offset_bottom = 176.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="QuirkLine" type="Label" parent="Quirks"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _add_pilot_card()
+Template line — code hides it and adds one duplicate per quirk event (text and colour are data)."
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 20
+text = "기벽 획득 · 승부사"
+clip_text = true

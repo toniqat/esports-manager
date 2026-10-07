@@ -18,8 +18,8 @@ extends Control
 # Layout follows the other season screens: the whole screen is indented with
 # `indent_to_safe_top`; the messenger paints the background.
 #
-# The screen is `PressConferenceView.tscn` — one `MessengerView` instance
-# (`%Messenger`, its `outcome_hint` set in the scene). Create with
+# The screen is `UI_View_PressConferenceView.tscn` — one `MessengerView` instance
+# (`%MessengerView_Messenger`, its `outcome_hint` set in the scene). Create with
 # `PressConferenceView.create()` (`.new()` is an empty Control).
 
 const PHASE_NAMES: Dictionary = {
@@ -31,11 +31,11 @@ const PHASE_NAMES: Dictionary = {
 	GameEnums.SeasonPhase.REGULAR_INTL:   "정규시즌 국제대회",
 }
 
-const SCENE_PATH: String = "res://features/season/press/PressConferenceView.tscn"
+const SCENE_PATH: String = "res://features/season/press/UI_View_PressConferenceView.tscn"
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 @onready var _gm: Node = get_node("/root/GameManager")
-@onready var _messenger: MessengerView = %Messenger
+@onready var _messenger: MessengerView = %MessengerView_Messenger
 
 var _built: bool = false
 

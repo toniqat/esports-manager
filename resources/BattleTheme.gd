@@ -282,7 +282,7 @@ static func _add_screen_variations(th: Theme) -> void:
 
 
 ## battle_sim/ui/HudBuilder · PilotStrip — 전투 HUD (`Hud*` · `PilotStrip*`).
-## 씬: `BattleHud.tscn` · `PilotStrip.tscn` · `PilotStripCell.tscn`. 색이 데이터인 판(성장치 탭 =
+## 씬: `UI_View_BattleHud.tscn` · `UI_Comp_PilotStrip.tscn` · `UI_Comp_PilotStripCell.tscn`. 색이 데이터인 판(성장치 탭 =
 ## 팀색, 차례 알림 띠 = `TURN_BAR`)은 변형이 모양 + 미리보기 색이고 코드가 `variation_box()`
 ## 사본에 색만 넣는다.
 static func _add_hud_variations(th: Theme) -> void:

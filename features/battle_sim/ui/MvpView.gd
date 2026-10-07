@@ -7,10 +7,10 @@ extends CanvasLayer
 # 이름 · 포지션 배지(`PositionBadge`) · K/D/A · 핵심 지표 한 줄을 그 아래에 놓는다.
 # "계속"(또는 잠깐 뒤 화면 아무 곳 탭) → `closed` → 기존 결과 화면.
 #
-# **레이아웃의 정본은 `MvpView.tscn` 이다.** 이 스크립트는 `%이름` 노드에 글 · 그림을
+# **레이아웃의 정본은 `UI_View_MvpView.tscn` 이다.** 이 스크립트는 `%이름` 노드에 글 · 그림을
 # 넣고 시그널만 잇는다. 색 · 판은 `Root` 에 붙은 전투 테마(`resources/BattleTheme.tres`)의
 # 변형(`MvpDimPanel` · `MvpTitleLabel` · `BattleGoldPanel` · `BattleOutlinedLabel` ·
-# `MvpSubLabel` · `BattleSlab` · `BattleGoldButton`)이 정한다. `%Position` 배지는 자기 모양을 들고 온다.
+# `MvpSubLabel` · `BattleSlab` · `BattleGoldButton`)이 정한다. `%PositionBadge_Position` 배지는 자기 모양을 들고 온다.
 # 코드가 정하는 것: 안전 영역(`%SafeArea` 위아래 오프셋 — 아래 버튼이 제스처 띠 위에
 # 선다, docs/mobile_safe_area.md), 포지션 배지 색 · 글자(`PositionBadge.set_role`), 전신 크기(그림 비율 ·
 # `%ArtArea` 높이 — `_layout_art`), 후광 색(`BattleTheme.GLOW`), 등장 연출.
@@ -23,7 +23,7 @@ extends CanvasLayer
 
 signal closed
 
-const SCENE_PATH: String = "res://features/battle_sim/ui/MvpView.tscn"
+const SCENE_PATH: String = "res://features/battle_sim/ui/UI_View_MvpView.tscn"
 
 ## 다른 오버레이(교전 · 상세 패널 …) 위. 씬의 `layer` 와 같은 값(결과 화면이 읽는다).
 const OVERLAY_LAYER := 60
@@ -65,7 +65,7 @@ func _ready() -> void:
 func open(bs: BattleSim, p: PilotData, row: Dictionary) -> void:
 	_fit_safe_area()
 	%Name.text = display_name(bs, p)
-	(%Position as PositionBadge).set_role(p.role)
+	(%PositionBadge_Position as PositionBadge).set_role(p.role)
 	%Kda.text = kda_text(row)
 	%Metric.text = metric_text(row)
 

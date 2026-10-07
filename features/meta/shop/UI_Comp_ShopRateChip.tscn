@@ -1,0 +1,21 @@
+[gd_scene load_steps=2 format=3 uid="uid://b57hrvcweo8i4"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+
+[node name="ShopRateChip" type="PanelContainer"]
+editor_description = "One rarity rate pill on the gacha banner (ShopTab). White pill = SurfaceChip variation; the text colour is the rarity colour (code)."
+custom_minimum_size = Vector2(152, 44)
+offset_right = 152.0
+offset_bottom = 44.0
+mouse_filter = 2
+theme = ExtResource("1_theme")
+theme_type_variation = &"SurfaceChip"
+
+[node name="Text" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — ShopTab.gd"
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+text = "희귀 28%"
+horizontal_alignment = 1
+vertical_alignment = 1

@@ -4,7 +4,7 @@ extends Button
 # 런 준비 편성(`TeamDraftView`) 하단 격자의 캐릭터 썸네일 한 칸 — **얼굴 하나와
 # 역할군 배지, 그리고 오른쪽 아래 샐러리 꼬리표가 전부다.**
 #
-# **모양의 정본은 `PilotThumb.tscn`** (칸 크기 · 얼굴 마스크 · 배지 / 체크 / 꼬리표 자리 ·
+# **모양의 정본은 `UI_Comp_PilotThumb.tscn`** (칸 크기 · 얼굴 마스크 · 배지 / 체크 / 꼬리표 자리 ·
 # 스타일). 이 스크립트는 데이터만 넣는다 — 얼굴 텍스처, 포지션 배지(`PositionBadge`),
 # 꼬리표 글자와 그 폭, 그리고 선택 상태에 따른 칸의 테마 변형(`_apply_style` —
 # `SelectableCardButton` / `SelectableCardButtonOn`, 모서리 `OutgameTheme.CARD_RADIUS`;
@@ -30,7 +30,7 @@ extends Button
 
 signal thumb_tapped(pilot_id: int)
 
-const SCENE_PATH: String = "res://features/meta/run_setup/PilotThumb.tscn"
+const SCENE_PATH: String = "res://features/meta/run_setup/UI_Comp_PilotThumb.tscn"
 
 ## 칸 크기 — 씬의 `custom_minimum_size` 와 같다. 격자 높이 계산(`TeamDraftView.grid_h`)이 읽는다.
 const CELL_W: float = 200.0
@@ -89,7 +89,7 @@ func _refresh() -> void:
 
 
 ## **둥근 사각형으로 깎은 그림 한 장** — 컬렉션(`CollectionCell` · `CollectionDetailSheet`)이
-## 코드로 세우는 자리를 위해 남긴 도우미. 이 폴더의 씬(`PilotThumb.tscn` · `DraftSlot.tscn`)은
+## 코드로 세우는 자리를 위해 남긴 도우미. 이 폴더의 씬(`UI_Comp_PilotThumb.tscn` · `UI_Comp_DraftSlot.tscn`)은
 ## 같은 구조(`ArtMask` Panel + `clip_children` → TextureRect)를 노드로 들고 있다.
 ## 마스크는 둥근 `StyleBoxFlat` 을 그리는 `Panel` 이고 그림은 그 자식이다 —
 ## `clip_children` 이 자식을 부모가 그린 알파로 잘라 내므로 모서리가 칸 테두리와 같은
@@ -119,7 +119,7 @@ static func add_rounded_art(parent: Control, pos: Vector2, sz: Vector2,
 	return art
 
 
-## **포지션 배지**를 `parent` 의 `pos` 에 세운다 — `PositionBadge.tscn` 한 장. 컬렉션처럼
+## **포지션 배지**를 `parent` 의 `pos` 에 세운다 — `UI_Comp_PositionBadge.tscn` 한 장. 컬렉션처럼
 ## 코드로 배치하는 자리용. 알 수 없는 역할이면 아무것도 안 세우고 null.
 static func add_position_badge(parent: Control, role: int, pos: Vector2) -> PositionBadge:
 	var badge := PositionBadge.create()

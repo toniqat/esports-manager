@@ -4,7 +4,7 @@ extends Button
 # One **mech grid cell** of the pick pane: square portrait + name line, the role badge
 # (top-left), mastery / analysis tags, and the BAN / BLUE / RED slab over a taken mech.
 #
-# **Layout lives in `BanPickMechCell.tscn`** (cell size = the grid's column width, art fills
+# **Layout lives in `UI_Comp_BanPickMechCell.tscn`** (cell size = the grid's column width, art fills
 # the square part). `BanPickController` instantiates one per mech (`create()`) into the grid
 # and fills / refreshes it. Data colours stay in code: the role badge fill (role colour), the
 # tag fills, the slab tint, and the highlight border (`set_highlight`) — the scene's StyleBox
@@ -13,7 +13,7 @@ extends Button
 # The button is `MOUSE_FILTER_PASS` in the scene on purpose — STOP kills drag scrolling of
 # the grid on phones (`docs/mobile_safe_area.md` §5).
 
-const SCENE_PATH: String = "res://features/match_flow/ban_pick/BanPickMechCell.tscn"
+const SCENE_PATH: String = "res://features/match_flow/ban_pick/UI_Comp_BanPickMechCell.tscn"
 const STYLE_STATES: Array = ["normal", "hover", "pressed", "focus", "disabled"]
 
 var art: TextureRect = null

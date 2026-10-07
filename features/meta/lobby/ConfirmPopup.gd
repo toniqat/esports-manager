@@ -8,7 +8,7 @@ extends CanvasLayer
 # 행동은 "무엇이 사라지는가"를 글로 읽힌 뒤에 고르게 해야 한다. 같은 버튼을
 # 두 번 누르는 방식은 그 설명을 담을 자리가 없다.
 #
-# **레이아웃의 정본은 `ConfirmPopup.tscn` 이다.** 이 스크립트는 노드를 만들지
+# **레이아웃의 정본은 `UI_View_ConfirmPopup.tscn` 이다.** 이 스크립트는 노드를 만들지
 # 않고 `%이름` 노드에 글을 넣고 시그널만 잇는다 — 크기 · 색 · 간격은 에디터에서
 # 고친다. 색 · 스타일박스는 `Root` 에 붙은 공용 테마(`resources/OutgameTheme.tres`)의
 # 변형(`PopupCard` · `TitleLabel` · `SubLabel` · `GhostButton` · `PrimaryButton` · `DimPanel`)이
@@ -24,7 +24,7 @@ extends CanvasLayer
 signal confirmed
 signal cancelled
 
-const SCENE_PATH: String = "res://features/meta/lobby/ConfirmPopup.tscn"
+const SCENE_PATH: String = "res://features/meta/lobby/UI_View_ConfirmPopup.tscn"
 
 
 ## 씬을 인스턴스한다. `ConfirmPopup.new()` 는 빈 CanvasLayer 라 쓰지 않는다.

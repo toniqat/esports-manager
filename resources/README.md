@@ -856,11 +856,11 @@ The design principle is coloured cards on white paper. Three rules:
 | Group | Exports |
 |---|---|
 | Colour | `BG` `SURFACE` `SURFACE_SUNK` `RAIL` `RAIL_TEXT` / `TEXT` `TEXT_SUB` `TEXT_FAINT` `TEXT_ON_FILL` / `ACCENT` `ACCENT_DIM` `ACCENT_TEXT` `LINK` / `POSITIVE` `NEGATIVE` `NEUTRAL` / `BORDER` `BORDER_STRONG` `SHADOW` / `DIM` (modal dim) / `CARD_TINTS` `ROLE_COLORS` `ROLE_NAMES` `DAY_LETTERS` `DAY_NAMES` |
-| Sizes (theme defaults) | `FONT_HEADING` `FONT_TITLE` `FONT_BODY` `FONT_CAPTION` · `FONT_BTN_PRIMARY` `FONT_BTN_GHOST` `FONT_BTN_TEXT` `FONT_BTN_DARK` · `CARD_RADIUS` `CARD_PAD` `POPUP_RADIUS` `POPUP_PAD` `POPUP_PAD_WIDE` `SHEET_RADIUS` `SHEET_PAD` `SHEET_PAD_V` `SUNK_RADIUS` `BAR_RADIUS` |
-| StyleBox | `card_style` `flat_style` `lead_bar_style` `set_corner_radius` |
+| Sizes (theme defaults) | `FONT_HEADING` `FONT_TITLE` `FONT_BODY` `FONT_CAPTION` · `FONT_BTN_PRIMARY` `FONT_BTN_GHOST` `FONT_BTN_TEXT` `FONT_BTN_DARK` · `CARD_RADIUS` `CARD_PAD` `POPUP_RADIUS` `POPUP_PAD` `POPUP_PAD_WIDE` `SHEET_RADIUS` `SHEET_PAD` `SHEET_PAD_V` `SUNK_RADIUS` `BAR_RADIUS` · `CHIP_RADIUS` (pill, clamped to height/2) `CHIP_PAD_H` `CHIP_PAD_V` · `SELECT_BORDER` `SELECT_BORDER_ON` `SELECT_TILE_RADIUS` `SELECT_TILE_BORDER_ON` |
+| StyleBox | `card_style` `flat_style` `lead_bar_style` `set_corner_radius` `selectable_box(on, radius, border_on)` |
 | Button | `style_primary_button` (amber, one per screen) `style_ghost_button` `style_text_button` `style_dark_button` (dark colour field — "leave this screen") `style_danger_button` (`NEGATIVE` field — destructive confirm). All read **`button_spec(kind)`** (colours + default font) and **`button_styles(kind)`** (one `button_box` per `BUTTON_STATES`, incl. `hover_pressed` = pressed so the engine default never shows while held) — the same table the theme is built from |
-| Theme | `build_theme()` → `Theme`, `save_theme()` → writes `THEME_PATH` (`OutgameTheme.tres`), `BUTTON_VARIATIONS` — see **OutgameTheme.tres** below |
-| Bottom bar | `BOTTOM_BAR_H` (128) `bottom_bar_top()` `add_bottom_bar(parent, specs)` `layout_bottom_bar(buttons, specs)` `style_bottom_button(b, style, font)` |
+| Theme | `build_theme()` → `Theme`, `save_theme()` → writes `THEME_PATH` (`OutgameTheme.tres`), `BUTTON_VARIATIONS` `BAR_BUTTON_VARIATIONS` — see **OutgameTheme.tres** below |
+| Bottom bar | `BOTTOM_BAR_H` `BOTTOM_BAR_SEP` `bottom_bar_top()` `bottom_inset()` · scene bars: `fit_bottom_bar(bar, safe)` `fit_bar_button(b)` `bar_button_styles(kind, below)` · code-built bars: `add_bottom_bar(parent, specs)` `layout_bottom_bar(buttons, specs)` `style_bottom_button(b, style, font)` — see **Bottom action bar** below |
 | Pieces | `add_background` (internally calls `ScreenMetrics.extend_background`) `add_card` `add_divider` `add_round_portrait` `add_chip` `add_vscroll` |
 
 **Button styles decide colour only — feel is not decided here.** At one point these four
@@ -908,11 +908,19 @@ shows only real value changes.
 | `FaintLabel` | Label | Disabled / placeholder text (`FONT_CAPTION`, `TEXT_FAINT`) |
 | `AccentLabel` | Label | Amber text on white (`FONT_CAPTION`, `ACCENT_TEXT`) |
 | `OnFillLabel` | Label | White text on a colour fill (`FONT_CAPTION`, `TEXT_ON_FILL`) — the fill colour itself is data |
+| `NegativeLabel` · `PositiveLabel` · `LinkLabel` | Label | Semantic text colour `NEGATIVE` (loss, error, warning) · `POSITIVE` (gain, qualified) · `LINK` (blue info, e.g. mastery gain), all `FONT_CAPTION` like `AccentLabel`; a body-size use adds `theme_override_font_sizes/font_size` = `FONT_BODY` |
+| `BarPrimaryButton` · `BarGhostButton` · `BarDarkButton` | Button | One slot of a **bottom action bar** — same colours / fonts as `PrimaryButton` · `GhostButton` · `DarkButton` with **square corners** (`bar_button_styles(kind)`, `BAR_BUTTON_VARIATIONS`). Only inside a bar; the device inset is added by `fit_bottom_bar` |
+| `BarSeparator` | Panel | The vertical line between bar slots (`BOTTOM_BAR_SEP`, no radius) — a `Panel` child of every slot but the last, anchored right-wide, `offset_left = -2`, mouse Ignore. Replaces the `Sep` `ColorRect` and its colour literal |
+| `SelectableCard` · `SelectableCardOn` | PanelContainer | Selectable option card, normal / selected: `SURFACE` + `SELECT_BORDER` `BORDER` / `ACCENT_DIM` + `SELECT_BORDER_ON` `ACCENT`, `CARD_RADIUS`, **padding 0 in both states** (a `MarginContainer` child pads, so content never shifts with the border). Code switches the variation name |
+| `SelectableCardButton` · `SelectableCardButtonOn` | Button | The same card look on a `Button` root (whole card = tap target). Every press state draws the same box; focus empty; font `FONT_BTN_TEXT` `TEXT` |
+| `SelectableTile` · `SelectableTileOn` | Button | Small selectable tab / filter / grid cell: `SELECT_TILE_RADIUS`, border `SELECT_BORDER` / `SELECT_TILE_BORDER_ON`, same fills as the card pair, padding 0. Text `TEXT_SUB` (hover `TEXT`) / `ACCENT_TEXT`, `FONT_BTN_TEXT` |
+| `AccentChip` · `SurfaceChip` | PanelContainer | Pill chip, `ACCENT_DIM` / `SURFACE` fill, no border, `CHIP_RADIUS` (StyleBoxFlat clamps it to exactly height/2 — pixel-identical to an explicit h/2 radius), padding `CHIP_PAD_H` / `CHIP_PAD_V`. A fixed-size chip keeps its `custom_minimum_size` with a centred Label child (`AccentLabel` …) |
 | `Divider` | HSeparator | 1px `BORDER` line (`add_divider`), no end grow — exactly the node's width |
 
 Not variations (data- or device-dependent, stay in code): tinted cards (`card_style(r, tint)`), lead-bar
-cards (`lead_bar_style(bar)`), chips (`add_chip` — radius from height), role / rarity colours, and the
-bottom action bar (`style_bottom_button` — square corners + a bottom margin from the device inset).
+cards (`lead_bar_style(bar)`), chips whose fill is data (`add_chip`, rarity / tier colours), role / rarity
+colours, and the bottom action bar's **device inset** (`fit_bottom_bar` — the bar's shape is the `Bar*`
+variations).
 A card whose padding no variation has: use the variation with a smaller (or no) padding and add a
 `MarginContainer` child for the rest.
 
@@ -938,9 +946,51 @@ Four conventions.
   are inside the safe area.
 - **Screens whose slots collapse call `layout_bottom_bar` again.** Only visible slots share the weight,
   so in the draft's PICK state "다음" (Next) uses the full screen width.
-- **Buttons that change outfits use `style_bottom_button`.** Calling `style_dark_button`
-  directly brings back rounded corners and that slot alone pops back up off the screen
-  (the time-passing screen's "경기 시작" (Start match) switches this way).
+- **Buttons that change outfits stay bar buttons.** Calling `style_dark_button` directly brings back
+  rounded corners and that slot alone pops back up off the screen (the time-passing screen's
+  "경기 시작" (Start match) switches this way). Scene bars switch the variation
+  (`BarPrimaryButton` → `BarDarkButton`) and call `fit_bar_button(b)`; code-built bars call
+  `style_bottom_button` again.
+
+#### Scene-built bars (`.tscn`) — `fit_bottom_bar(bar, safe = null)`
+The scene owns the shape: a bottom-wide anchored node (`anchor_top = anchor_bottom = 1`,
+`offset_top = -BOTTOM_BAR_H`, `offset_bottom = 0`) that is either **one `Button`** (single full-width
+slot) or an **`HBoxContainer`** (`separation` 0) of `Button`s split by `size_flags_stretch_ratio`
+(secondary 1 : primary 2, primary right). Each button picks `BarPrimaryButton` / `BarGhostButton` /
+`BarDarkButton` (+ `theme_override_font_sizes/font_size` when not the default); every slot but the
+last gets a `BarSeparator` Panel child. The script adds only the device inset, from `_ready`
+(the scene must be in the tree):
+
+```gdscript
+OutgameTheme.fit_bottom_bar(%Bar, %SafeArea)   # safe is optional: the panel whose bottom = safe line
+```
+- `safe` (optional): its `offset_bottom` becomes `-bottom_inset()`.
+- The bar's rect becomes *top = safe line - `BOTTOM_BAR_H`, bottom = viewport bottom*: bar inside `safe`
+  (`safe.is_ancestor_of(bar)`) → `offset_top = -BOTTOM_BAR_H`, `offset_bottom = +inset`; otherwise (bar
+  anchored to a parent whose bottom is the viewport bottom) → `offset_top = -(BOTTOM_BAR_H + inset)`,
+  `offset_bottom = 0`. So the bar's parent bottom must be the safe line (inside `safe`) or the viewport
+  bottom (outside).
+- Every `Button` (the bar itself, or its children — hidden ones too) gets `fit_bar_button`: with an inset
+  each state is overridden with `bar_button_styles(kind, inset)` (text lifted above the inset, colour runs
+  under it); with no inset the overrides are removed (the variation is already exact). The variation must
+  be one of `BAR_BUTTON_VARIATIONS` (otherwise a warning and no change).
+- Idempotent — values are set, never added. Call again after switching a slot's variation; toggling a
+  slot's `visible` needs nothing (the HBox re-splits the visible slots by ratio).
+
+```gdscript
+# 1 slot — a Button anchored bottom-wide on the screen root (not inside the safe panel):
+OutgameTheme.fit_bottom_bar(%OkButton)
+# 2 slots — HBox %Bar (Back: BarGhostButton + BarSeparator child, Next: BarPrimaryButton, ratio 2) in %SafeArea:
+OutgameTheme.fit_bottom_bar(%Bar, %SafeArea)
+# a slot that changes kind at runtime:
+btn.theme_type_variation = &"BarDarkButton"
+OutgameTheme.fit_bar_button(btn)
+```
+
+#### Code-built bars — `add_bottom_bar` / `layout_bottom_bar` / `style_bottom_button`
+Kept for the lobby's action bar, whose slots come from each tab's `bar_specs()`.
+`style_bottom_button(b, style, font)` = the `style_<kind>_button` colours + `bar_button_styles(kind, inset)`
+(the same boxes as the `Bar*` variations). Scene-built bars do not call it — they use the variations.
 
 **`add_round_portrait` is not built with `clip_contents`.** That clips by the Control's
 rectangle, not the StyleBox corner radius, so putting a `TextureRect` inside a `Panel`

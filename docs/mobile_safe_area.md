@@ -222,8 +222,9 @@ current data does).
 
 **Legacy (code-built) modals** — BattleSim's engage stage · pilot detail · card picker · pile browse ·
 reward FX — keep `dim.size = ScreenMetrics.viewport_size()` with absolute-coordinate content; only
-buttons attached to the bottom hang from `bottom_y()`. `DraftDetailPanel` still has a
-fixed-height content block with no safe-area handling (§7); `MechDetailPanel` now uses a `%SafeArea`.
+buttons attached to the bottom hang from `bottom_y()`. `DraftDetailPanel` and `MechDetailPanel` (outgame
+detail modals) use a `%SafeArea` (full rect, top / bottom offsets = insets): the panel's top is fixed inside it,
+its bottom / close button hang from the safe bottom, dim and art stay full-screen.
 
 ---
 

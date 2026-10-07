@@ -27,7 +27,9 @@ extends RefCounted
 # Standalone runs (no active season / empty table) behave as "no mastery":
 # `is_enabled` is false, `stat_bonus` is 0 and the UI hides mastery.
 
-const TIER_NAMES: Array = ["미숙", "보통", "능숙", "마스터"]
+const TIER_NAMES: Array = [  # l10n-keys: mastery.tier.*
+	L.MASTERY_TIER_NOVICE, L.MASTERY_TIER_AVERAGE, L.MASTERY_TIER_SKILLED, L.MASTERY_TIER_MASTER,
+]
 const TIER_COUNT: int = 4
 
 static var _mechs: Array = []          # [{id, name, role}] in id order
@@ -93,7 +95,7 @@ static func tier_of(v: int) -> int:
 
 
 static func tier_name(t: int) -> String:
-	return String(TIER_NAMES[clampi(t, 0, TIER_COUNT - 1)])
+	return Loc.t(String(TIER_NAMES[clampi(t, 0, TIER_COUNT - 1)]))  # l10n-dynamic: mastery.tier.*
 
 
 ## Flat per-stat bonus of a tier (negative for 미숙).

@@ -2,8 +2,10 @@
 
 Contract: `docs/outgame_dev_plan.md` §11. State `season_state.trust` / `outings` / `mental` / `pilot_mods`.
 Tuning lives in `data/csv/const.csv` (`TRUST_*`, `MENTAL_*`, `TRUE_ENDING_*`) — no values here.
-Event texts are l10n keys (`mental_texts.csv` → domain `mental`, D6); effect-chip wording in
-`MentalEvents.note_text` is still code text (code-literal migration is a later round).
+Event texts are l10n keys (`mental_texts.csv` → domain `mental`, D6). Display text is l10n keys (`mental` domain): code
+keys use **4-segment** aliases `mental.ui.*` — a 3-segment `mental.x.y` matches the data rule `mental.{event_id}.{id}`
+and gets no `L` constant. Mod clauses write `source = "mental:<event id>"` (`MOD_SOURCE_PREFIX`, an id — D7);
+`MentalEvents.mod_source_text` shows the event kind (`term.activity.*` / `mental.ui.mod_source.incident`).
 
 | File | Role |
 |---|---|

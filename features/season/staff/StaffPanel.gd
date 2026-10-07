@@ -24,13 +24,13 @@ const TRAIT_ROW_SCENE: PackedScene = preload("res://features/season/staff/UI_Com
 const MEMBER_ROW_SCENE: PackedScene = preload("res://features/season/staff/UI_Comp_StaffMemberRow.tscn")
 
 ## What the manager does by hand when a stat is not delegated.
-const DIRECT_TASKS: Dictionary = {
-	"training": "훈련판 편성을 직접 짭니다",
-	"tactics": "전술 연구 — 훈련 등급 해금을 감독 값으로 엽니다",
-	"knowledge": "메크 연구 지정을 직접 합니다",
-	"mental": "선수 사건 대응을 감독 값으로 처리합니다",
-	"analysis": "상대 분석 자료를 직접 해석합니다",
-	"finance": "예산 배분 · 시설 관리를 직접 합니다",
+const DIRECT_TASKS: Dictionary = {  # l10n-keys: staff.direct.*
+	"training": L.STAFF_DIRECT_TRAINING,
+	"tactics": L.STAFF_DIRECT_TACTICS,
+	"knowledge": L.STAFF_DIRECT_KNOWLEDGE,
+	"mental": L.STAFF_DIRECT_MENTAL,
+	"analysis": L.STAFF_DIRECT_ANALYSIS,
+	"finance": L.STAFF_DIRECT_FINANCE,
 }
 
 var _sheet: HubSheet = null
@@ -54,10 +54,10 @@ static func hub_summary(state: Dictionary) -> Dictionary:
 		if int((raw as Dictionary).get("delta", 0)) < 0:
 			alert = true
 	return {
-		"title": "스태프",
-		"value": "위임 %d/%d" % [delegated, StaffSystem.STATS.size()],
-		"sub": "약점 %s %d" % [StaffSystem.STAT_LABELS.get(weakest, "—"), weakest_v],
-		"owner": StaffSystem.staff_name(asst) if not asst.is_empty() else "감독",
+		"title": Loc.t(L.TERM_PERSON_STAFF),
+		"value": Loc.t(L.STAFF_HUB_DELEGATED, {"n": delegated, "total": StaffSystem.STATS.size()}),
+		"sub": Loc.t(L.STAFF_HUB_WEAKEST, {"stat": StaffSystem.stat_label(weakest), "value": weakest_v}),
+		"owner": StaffSystem.staff_name(asst) if not asst.is_empty() else Loc.t(L.TERM_PERSON_MANAGER),
 		"alert": alert,
 	}
 
@@ -68,7 +68,7 @@ static func create() -> StaffPanel:
 
 
 static func open(host: Node) -> void:
-	var sheet := HubSheet.open_on(host, "스태프")
+	var sheet := HubSheet.open_on(host, Loc.t(L.TERM_PERSON_STAFF))
 	var panel := create()
 	sheet.body.add_child(panel)
 	panel._bind(sheet, host.get_node("/root/GameManager").season_state)
@@ -106,42 +106,42 @@ func _fill_stats(state: Dictionary) -> void:
 		var col: Color = OutgameTheme.POSITIVE if delegated else OutgameTheme.ACCENT
 		row.add_theme_stylebox_override(&"panel", OutgameTheme.lead_bar_style(col, 14))
 		var eff: int = StaffSystem.effective(state, s)
-		row.get_node("%Stat").text = String(StaffSystem.STAT_LABELS[s])
+		row.get_node("%Stat").text = StaffSystem.stat_label(s)
 		row.get_node("%Value").text = "%d" % eff
 		_set_fill(row.get_node("%Fill"), float(eff) / float(StaffSystem.STAT_MAX), col)
 		var owner_l: Label = row.get_node("%Owner")
-		owner_l.text = "담당 " + _owner_text(state, s)
+		owner_l.text = Loc.t(L.STAFF_PANEL_OWNER, {"owner": _owner_text(state, s)})
 		owner_l.add_theme_color_override("font_color",
 				OutgameTheme.POSITIVE if delegated else OutgameTheme.ACCENT_TEXT)
 		row.get_node("%Compare").text = _compare_text(state, s)
 
 
-## "감독" / "어시스턴트 매니저 한서준" / "훈련 코치 강민호".
+## "감독 (직접)" / "어시스턴트 매니저 한서준" / "훈련 코치 강민호".
 static func _owner_text(state: Dictionary, s: String) -> String:
 	match StaffSystem.owner(state, s):
 		StaffSystem.OWNER_ASSISTANT:
-			return "%s %s" % [StaffSystem.JOB_LABELS["assistant"], StaffSystem.owner_name(state, s)]
+			return "%s %s" % [StaffSystem.job_label(StaffSystem.JOB_ASSISTANT), StaffSystem.owner_name(state, s)]
 		StaffSystem.OWNER_STAFF:
 			var st: Dictionary = StaffSystem.staff_for(state, s)
-			return "%s %s" % [StaffSystem.JOB_LABELS.get(String(st.get("job", "")), "스태프"),
-					StaffSystem.staff_name(st)]
-	return "감독 (직접)"
+			return "%s %s" % [StaffSystem.job_label(String(st.get("job", ""))), StaffSystem.staff_name(st)]
+	return Loc.t(L.STAFF_PANEL_OWNER_MANAGER_DIRECT)
 
 
 ## "감독 6 (+2) · 어시 14 · 분석가 16" — every candidate of the cover rule.
 static func _compare_text(state: Dictionary, s: String) -> String:
 	var parts: Array = []
 	var mod: int = StaffSystem.mod_total(state, s)
-	var mgr: String = "감독 %d" % StaffSystem.manager_value(state, s)
+	var mgr: String = Loc.t(L.STAFF_PANEL_COMPARE_MANAGER, {"value": StaffSystem.manager_value(state, s)})
 	if mod != 0:
 		mgr += " (%+d)" % mod
 	parts.append(mgr)
 	var asst: Dictionary = StaffSystem.assistant(state)
 	if not asst.is_empty():
-		parts.append("어시 %d" % int((asst.get("stats", {}) as Dictionary).get(s, 0)))
+		parts.append(Loc.t(L.STAFF_PANEL_COMPARE_ASSISTANT,
+				{"value": int((asst.get("stats", {}) as Dictionary).get(s, 0))}))
 	var st: Dictionary = StaffSystem.staff_for(state, s)
 	if not st.is_empty():
-		parts.append("%s %d" % [StaffSystem.JOB_LABELS.get(String(st.get("job", "")), "스태프"),
+		parts.append("%s %d" % [StaffSystem.job_label(String(st.get("job", ""))),
 				int((st.get("stats", {}) as Dictionary).get(s, 0))])
 	return " · ".join(parts)
 
@@ -156,12 +156,13 @@ func _fill_mods(state: Dictionary) -> void:
 		var m: Dictionary = raw
 		var delta: int = int(m.get("delta", 0))
 		var src: String = String(m.get("source", ""))
-		var text: String = "%s %+d · 남은 %d주" % [
-			StaffSystem.STAT_LABELS.get(String(m.get("stat", "")), "?"), delta,
-			int(m.get("weeks_left", 0))]
+		var params: Dictionary = {"stat": StaffSystem.stat_label(String(m.get("stat", ""))),
+				"delta": "%+d" % delta, "weeks": int(m.get("weeks_left", 0))}
 		if src != "":
-			text += " · " + FinanceSystem.mod_source_text(src)
-		texts.append(text)
+			params["source"] = StaffSystem.mod_source_text(src)
+			texts.append(Loc.t(L.STAFF_PANEL_MOD_LINE_SOURCE, params))
+		else:
+			texts.append(Loc.t(L.STAFF_PANEL_MOD_LINE, params))
 		colors.append(OutgameTheme.POSITIVE if delta > 0 else OutgameTheme.NEGATIVE)
 	var lines: Array = _lines(%Mods, texts)
 	for i in lines.size():
@@ -171,9 +172,9 @@ func _fill_mods(state: Dictionary) -> void:
 ## Equipped manager traits of the run (M8, `run_setup.traits`) — name, rarity,
 ## +/- polarity and the filled-in description. Lead bar green = "+", red = "-".
 func _fill_traits(state: Dictionary) -> void:
-	%TraitsSub.text = "보너스 점수 %d · 장착 %d/%d" % [
-			int((state.get("run_setup", {}) as Dictionary).get("bonus_points", 0)),
-			TraitSystem.run_traits(state).size(), TraitSystem.slot_count()]
+	%TraitsSub.text = Loc.t(L.STAFF_PANEL_TRAITS_SUB, {
+			"points": int((state.get("run_setup", {}) as Dictionary).get("bonus_points", 0)),
+			"n": TraitSystem.run_traits(state).size(), "max": TraitSystem.slot_count()})
 	var ids: Array = []
 	for raw in TraitSystem.run_traits(state):
 		if not TraitSystem.row(int(raw)).is_empty():
@@ -196,7 +197,7 @@ func _fill_traits(state: Dictionary) -> void:
 
 
 func _fill_staff(state: Dictionary) -> void:
-	%StaffSub.text = "주급 합계 %d" % StaffSystem.weekly_salary_total(state)
+	%StaffSub.text = Loc.t(L.STAFF_PANEL_STAFF_SUB, {"amount": StaffSystem.weekly_salary_total(state)})
 	var staff: Array = (state.get("run_setup", {}) as Dictionary).get("staff", [])
 	%StaffEmpty.visible = staff.is_empty()
 	%MembersTail.visible = not staff.is_empty()
@@ -206,8 +207,8 @@ func _fill_staff(state: Dictionary) -> void:
 		var e: Dictionary = staff[i]
 		var job: String = String(e.get("job", ""))
 		row.get_node("%Name").text = StaffSystem.staff_name(e)
-		row.get_node("%Job").text = "%s · %s" % [StaffSystem.JOB_LABELS.get(job, job), _best_stats_text(e)]
-		row.get_node("%Salary").text = "주급 %d" % int(e.get("salary", 0))
+		row.get_node("%Job").text = "%s · %s" % [StaffSystem.job_label(job), _best_stats_text(e)]
+		row.get_node("%Salary").text = Loc.t(L.STAFF_PANEL_SALARY, {"amount": int(e.get("salary", 0))})
 
 
 ## A dedicated staff shows their field; the assistant shows the top two stats.
@@ -215,22 +216,24 @@ static func _best_stats_text(e: Dictionary) -> String:
 	var stats: Dictionary = e.get("stats", {})
 	var field: String = String(StaffSystem.JOB_STAT.get(String(e.get("job", "")), ""))
 	if field != "":
-		return "%s %d" % [StaffSystem.STAT_LABELS[field], int(stats.get(field, 0))]
+		return "%s %d" % [StaffSystem.stat_label(field), int(stats.get(field, 0))]
 	var keys: Array = StaffSystem.STATS.duplicate()
 	keys.sort_custom(func(a, b): return int(stats.get(a, 0)) > int(stats.get(b, 0)))
-	return "%s %d · %s %d" % [StaffSystem.STAT_LABELS[keys[0]], int(stats.get(keys[0], 0)),
-			StaffSystem.STAT_LABELS[keys[1]], int(stats.get(keys[1], 0))]
+	return "%s %d · %s %d" % [StaffSystem.stat_label(String(keys[0])), int(stats.get(keys[0], 0)),
+			StaffSystem.stat_label(String(keys[1])), int(stats.get(keys[1], 0))]
 
 
 func _fill_direct(state: Dictionary) -> void:
 	var lines: Array = []
 	for s in StaffSystem.STATS:
 		if not StaffSystem.is_delegated(state, s):
-			lines.append(UiHelpers.keep_words("· %s — %s (감독 %d)" % [StaffSystem.STAT_LABELS[s],
-					DIRECT_TASKS[s], StaffSystem.manager_value(state, s)]))
+			lines.append(UiHelpers.keep_words(Loc.t(L.STAFF_PANEL_DIRECT_LINE, {
+					"stat": StaffSystem.stat_label(s),
+					"task": Loc.t(String(DIRECT_TASKS[s])),  # l10n-dynamic: staff.direct.*
+					"value": StaffSystem.manager_value(state, s)})))
 	# Interviews and outings always read the manager's own mental, delegated or not.
-	lines.append(UiHelpers.keep_words("· 면담 · 외출 — 언제나 감독이 직접 (멘탈 %d)" % \
-			StaffSystem.manager_value(state, "mental")))
+	lines.append(UiHelpers.keep_words(Loc.t(L.STAFF_PANEL_DIRECT_MENTAL,
+			{"value": StaffSystem.manager_value(state, "mental")})))
 	_lines(%Direct, lines)
 
 
@@ -280,14 +283,22 @@ static func _lines(list: Node, texts: Array) -> Array:
 	return list.get_children().slice(0, texts.size())
 
 
-## F6 단독 실행 미리보기 — 메모리 런의 감독 · 스태프 + 일시 보정 두 줄(기자회견 답변
-## 같은 것)로 채운 시트 본문(`resources/UiPreview.gd`).
+## F6 단독 실행 미리보기 — 메모리 런의 감독 · 스태프 + 일시 보정 두 줄(기자회견 답변 ·
+## 선수 사건이 남기는 것과 같은 `mental:<id>` 출처)로 채운 시트 본문(`resources/UiPreview.gd`).
 func _fill_preview() -> void:
 	UiPreview.stage(self)
 	var gm: Node = UiPreview.ensure_run()
 	if gm == null:
 		return
 	var state: Dictionary = gm.season_state
-	StaffSystem.add_mod(state, "mental", 2, 2, "기자회견")
-	StaffSystem.add_mod(state, "tactics", -1, 1, "사건")
+	StaffSystem.add_mod(state, "mental", 2, 2, _preview_source(MentalEvents.KIND_PRESS))
+	StaffSystem.add_mod(state, "tactics", -1, 1, _preview_source(MentalEvents.KIND_INCIDENT))
 	_bind(null, state)
+
+
+# First event id of `kind` as a `staff_mods.source` (preview only).
+static func _preview_source(kind: String) -> String:
+	var rows: Array = MentalEvents.rows_of(kind)
+	if rows.is_empty():
+		return ""
+	return MentalEvents.MOD_SOURCE_PREFIX + String((rows[0] as Dictionary)["id"])

@@ -26,7 +26,7 @@ custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 28
-text = "진행 중인 런이 없습니다"
+text = "tx_J4YTK7VVDS"
 
 [node name="Main" type="VBoxContainer" parent="."]
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill()"
@@ -47,7 +47,7 @@ anchor_right = 0.5
 offset_bottom = 30.0
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 24
-text = "잔고"
+text = "tx_Z3Y66BXDFR"
 
 [node name="Balance" type="Label" parent="Main/Header"]
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_header() · FinancePanel.gd _fill_history()"
@@ -69,7 +69,7 @@ anchor_right = 1.0
 offset_bottom = 30.0
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 24
-text = "시설 적립금"
+text = "tx_FG04N4WSYY"
 horizontal_alignment = 2
 
 [node name="Fund" type="Label" parent="Main/Header"]
@@ -87,6 +87,7 @@ text = "0"
 horizontal_alignment = 2
 
 [node name="OwnerLine" type="Label" parent="Main"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_header()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 40)
@@ -96,6 +97,7 @@ theme_override_font_sizes/font_size = 24
 text = "담당: 김나래 — 흑자를 자동으로 배분합니다"
 
 [node name="Projection" type="Label" parent="Main"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_header()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 36)
@@ -105,6 +107,7 @@ theme_override_font_sizes/font_size = 22
 text = "이번 주 예상 수지 +467  (수입 1,219 · 지출 752, 보너스 포함)"
 
 [node name="LowBalance" type="Label" parent="Main"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_header()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 34)
@@ -114,6 +117,7 @@ theme_override_font_sizes/font_size = 22
 text = "잔고가 한 주 고정 지출(752)보다 적습니다 — 적자가 나면 강제 삭감"
 
 [node name="Penalty" type="Label" parent="Main"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_header()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 34)
@@ -137,7 +141,7 @@ custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 30
-text = "지난 주 정산"
+text = "tx_DM158Y7SJ6"
 
 [node name="Divider" type="HSeparator" parent="Main/LastWeekSection"]
 layout_mode = 2
@@ -156,7 +160,7 @@ custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 22
-text = "아직 정산 기록이 없습니다 — 일요일 주 마감에 정산됩니다"
+text = "tx_M06VBCHAA0"
 
 [node name="LastWeek" type="VBoxContainer" parent="Main"]
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_last_week()"
@@ -212,7 +216,7 @@ anchor_right = 0.6
 anchor_bottom = 1.0
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 28
-text = "순수지"
+text = "tx_MXXEN4NZT8"
 
 [node name="Net" type="Label" parent="Main/LastWeek/NetRow"]
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_history() · FinancePanel.gd _fill_last_week()"
@@ -228,6 +232,7 @@ text = "+467"
 horizontal_alignment = 2
 
 [node name="AllocLine" type="Label" parent="Main/LastWeek"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_last_week()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 34)
@@ -244,6 +249,7 @@ mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="Line" type="Label" parent="Main/LastWeek/Cuts"]
+auto_translate_mode = 2
 editor_description = "Template line — the script duplicates it per cut."
 custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
@@ -252,6 +258,7 @@ theme_override_font_sizes/font_size = 22
 text = "삭감 · 이번 주 배분 없음"
 
 [node name="SpecialSpend" type="Label" parent="Main/LastWeek"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_last_week()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 34)
@@ -261,6 +268,7 @@ theme_override_font_sizes/font_size = 22
 text = "특별 지출 −300 (구매 즉시 잔고에서 차감 · 단기 훈련 코치)"
 
 [node name="SpecialsExpired" type="Label" parent="Main/LastWeek"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_last_week()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 34)
@@ -284,7 +292,7 @@ custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 30
-text = "흑자 배분"
+text = "tx_SQF813637S"
 
 [node name="Divider" type="HSeparator" parent="Main/AllocSection"]
 layout_mode = 2
@@ -297,6 +305,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="AllocIntro" type="Label" parent="Main"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_allocation()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 36)
@@ -306,6 +315,7 @@ theme_override_font_sizes/font_size = 22
 text = "흑자의 30%는 잔고에 남고, 나머지를 세 곳에 나눕니다. 효과는 다음 한 주."
 
 [node name="AllocDelegated" type="Label" parent="Main"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_allocation()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 38)
@@ -325,6 +335,7 @@ theme_override_constants/separation = 0
 layout_mode = 2
 
 [node name="Effects" type="Label" parent="Main"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_allocation()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 36)
@@ -344,6 +355,7 @@ mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="FacilityTitle" type="Label" parent="Main/FacilitySection"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_facility()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 46)
@@ -363,6 +375,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="FacNow" type="Label" parent="Main"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_facility()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 36)
@@ -372,6 +385,7 @@ theme_override_font_sizes/font_size = 22
 text = "지금  훈련 ×1.20 · 숙련도 ×1.20 · 사건 ×0.60 · 수입 ×1.15 · 유지비 320"
 
 [node name="FacNext" type="Label" parent="Main"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_facility()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 36)
@@ -381,6 +395,7 @@ theme_override_font_sizes/font_size = 22
 text = "다음  훈련 ×1.10 · …"
 
 [node name="FacCost" type="Label" parent="Main"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_facility()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 40)
@@ -390,6 +405,7 @@ theme_override_font_sizes/font_size = 22
 text = "비용 1,000 — 시설 적립금 먼저, 모자라면 잔고 (가용 920)"
 
 [node name="Upgrade" type="Button" parent="Main"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_facility() · FinancePanel.gd _ready()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 96)
@@ -400,6 +416,7 @@ theme_override_font_sizes/font_size = 30
 text = "시설 업그레이드 → Lv 3"
 
 [node name="UpgradeConfirm" type="Button" parent="Main"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_facility() · FinancePanel.gd _ready()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 96)
@@ -410,6 +427,7 @@ theme_override_font_sizes/font_size = 30
 text = "한 번 더 눌러 확정 (−1,000)"
 
 [node name="UpgradeBlocked" type="Button" parent="Main"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_facility()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 96)
@@ -435,7 +453,7 @@ custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 30
-text = "특별 지출"
+text = "tx_JFNB4YBFQ3"
 
 [node name="Divider" type="HSeparator" parent="Main/SpecialsSection"]
 layout_mode = 2
@@ -448,6 +466,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="SpecIntro" type="Label" parent="Main"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_specials()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 38)
@@ -464,6 +483,7 @@ mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="Line" type="Label" parent="Main/Running"]
+auto_translate_mode = 2
 editor_description = "Template line — the script duplicates it per running special."
 custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
@@ -503,7 +523,7 @@ custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 30
-text = "최근 기록"
+text = "tx_WYA8YC4SQD"
 
 [node name="Divider" type="HSeparator" parent="Main/HistorySection"]
 layout_mode = 2
@@ -522,7 +542,7 @@ custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 22
-text = "기록 없음"
+text = "tx_25RMDAJ5X7"
 
 [node name="History" type="VBoxContainer" parent="Main"]
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_history() · FinancePanel.gd _ready()"

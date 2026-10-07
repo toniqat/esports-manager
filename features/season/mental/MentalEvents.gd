@@ -25,6 +25,16 @@ const KIND_OUTING: String = "outing"
 const KIND_INCIDENT: String = "incident"
 const KIND_PRESS: String = "press"
 
+## `staff_mods` / `pilot_mods` `source` written by an event clause: `mental:<event id>` —
+## an id, not text (D7). `mod_source_text` turns it into the event kind's label.
+const MOD_SOURCE_PREFIX: String = "mental:"
+const KIND_LABELS: Dictionary = {
+	KIND_INTERVIEW: L.TERM_ACTIVITY_INTERVIEW,
+	KIND_OUTING: L.TERM_ACTIVITY_OUTING,
+	KIND_INCIDENT: L.MENTAL_UI_MOD_SOURCE_INCIDENT,
+	KIND_PRESS: L.TERM_ACTIVITY_PRESS,
+}
+
 ## Cond keys (clause types are listed in `parse_clause` and the README).
 const COND_KEYS: Array = ["trust", "outings", "role", "last", "mention", "week"]
 
@@ -371,7 +381,7 @@ static func _gate_passes(gate: String, ok: bool) -> bool:
 
 static func _apply_clause(state: Dictionary, r: Dictionary, c: Dictionary,
 		pilot_id: int, out: Dictionary) -> void:
-	var source: String = "mental:%s" % String(r["id"])
+	var source: String = MOD_SOURCE_PREFIX + String(r["id"])
 	var notes: Array = out["notes"]
 	match String(c["type"]):
 		"trust":
@@ -426,20 +436,31 @@ static func note_text(state: Dictionary, n: Dictionary) -> String:
 	var stat: String = String(n.get("stat", ""))
 	match String(n.get("type", "")):
 		"trust":
-			return "%s 신뢰도 %s" % [pilot_name(state, int(n.get("pid", -1))), _signed(delta)]
+			return Loc.t(L.MENTAL_UI_NOTE_TRUST,
+					{"name": pilot_name(state, int(n.get("pid", -1))), "delta": _signed(delta)})
 		"trust_all":
-			return "팀 전체 신뢰도 %s" % _signed(delta)
+			return Loc.t(L.MENTAL_UI_NOTE_TRUST_ALL, {"delta": _signed(delta)})
 		"pmod":
 			return "%s %s %s (%s)" % [pilot_name(state, int(n.get("pid", -1))),
 					stat_label(stat), _signed(delta), duration(weeks)]
 		"pmod_all":
-			return "팀 전체 %s %s (%s)" % [stat_label(stat), _signed(delta), duration(weeks)]
+			return Loc.t(L.MENTAL_UI_NOTE_PMOD_ALL,
+					{"stat": stat_label(stat), "delta": _signed(delta), "duration": duration(weeks)})
 		"smod":
-			return "감독 %s %s (%s)" % [String(StaffSystem.STAT_LABELS.get(stat, "")),
-					_signed(delta), duration(weeks)]
+			return Loc.t(L.MENTAL_UI_NOTE_SMOD,
+					{"stat": StaffSystem.stat_label(stat), "delta": _signed(delta), "duration": duration(weeks)})
 		"outing":
-			return "외출 %d회째 · 다음 훈련일 EXP 감소" % int(n.get("count", 0))
+			return Loc.t(L.MENTAL_UI_NOTE_OUTING, {"n": int(n.get("count", 0))})
 	return ""
+
+
+## Display text of a `mental:<event id>` mod source — the event kind's label
+## (interview / outing / press / incident). Unknown event → the raw source.
+static func mod_source_text(source: String) -> String:
+	var kind: String = String(row(source.trim_prefix(MOD_SOURCE_PREFIX)).get("kind", ""))
+	if not KIND_LABELS.has(kind):
+		return source
+	return Loc.t(String(KIND_LABELS[kind]))  # l10n-dynamic: term.activity.*
 
 
 # ── Text helpers ─────────────────────────────────────────────────────────────
@@ -459,18 +480,18 @@ static func pilot_of(state: Dictionary, pilot_id: int) -> PlayerData:
 
 static func pilot_name(state: Dictionary, pilot_id: int) -> String:
 	var pd: PlayerData = pilot_of(state, pilot_id)
-	return pd.name if pd != null else "선수"
+	return pd.name if pd != null else Loc.t(L.MENTAL_UI_NOTE_PILOT)
 
 
 static func stat_label(stat: String) -> String:
 	if stat == "all":
-		return "전 스탯"
+		return Loc.t(L.MENTAL_UI_NOTE_ALL_STATS)
 	var i: int = PlayerData.STAT_KEYS.find(stat)
 	return PlayerData.stat_label(i) if i >= 0 else stat
 
 
 static func duration(weeks: int) -> String:
-	return "다음 경기까지" if weeks < 0 else "%d주" % weeks
+	return Loc.t(L.MENTAL_UI_NOTE_UNTIL_MATCH) if weeks < 0 else Loc.t(L.TERM_WEEK_COUNT, {"n": weeks})
 
 
 static func _signed(v: int) -> String:

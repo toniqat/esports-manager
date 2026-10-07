@@ -9,6 +9,8 @@ pilot passives — flat stat bonuses only. `MatchFlow._finalize_rosters` adds th
 | `QuirkSystem.gd` | `class_name QuirkSystem` (static). State, gain / reroll / slot, condition check, stat bonus, `apply_to`, shared text helpers (grade name / colour, effect line). Reads table `quirks` from game.db itself — rows hold l10n keys `name_key` / `desc_key` (`quirk.{id}.name/desc`); display via `name_of(id)` / `desc_of(id)`. State keeps quirk ids only. |
 
 All tuning numbers are `QUIRK_*` keys in `data/csv/const.csv` — none are written here.
+Display text is l10n keys (`quirk` domain: `quirk.cond.*`, `quirk.effect.cond`). Grade names come from
+`GameEnums.rarity_label` via `GRADE_TIERS` (일반 · 희귀 · 영웅 = tiers 0 · 2 · 3).
 
 ## State
 `season_state.quirks = {"<pilot_id>": {"slots": int, "ids": [quirk_id]}}` — **my five pilots only**
@@ -43,13 +45,13 @@ the save round-trips it through JSON, so every read goes through `int()` (`quirk
 | Column | Meaning |
 |---|---|
 | `id` | int PK |
-| `name` | Korean display name |
+| `name_key` | l10n key `quirk.{id}.name` |
 | `grade` | 0 일반 / 1 희귀 / 2 영웅 (6 each) |
 | `stats` | Unconditional bonus, `stat:n` joined by `\|` — keys from `PlayerData.STAT_KEYS` (unknown keys dropped) |
 | `cond` | Condition for `cond_stats` (grammar below), empty = none |
 | `cond_stats` | Extra bonus while `cond` holds, same grammar as `stats` |
 | `weight` | Draw weight inside its grade (0 = never drawn) |
-| `desc` | Flavour line (Korean). The effect text on screen is generated from the columns (`effect_text`), never from `desc` |
+| `desc_key` | l10n key `quirk.{id}.desc` — flavour line. The effect text on screen is generated from the columns (`effect_text`), never from `desc` |
 
 Values are placeholders sized against mastery (`MASTERY_BONUS_*` adds to all six stats): 일반 ≈ one
 stat +3, 희귀 ≈ two stats totalling +6, 영웅 ≈ +3 always and +8 more under its condition.

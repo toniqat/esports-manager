@@ -45,15 +45,14 @@ var _special_armed: String = ""
 static func hub_summary(state: Dictionary) -> Dictionary:
 	var f: Dictionary = state.get("finance", {})
 	if f.is_empty():
-		return {"title": "재무", "value": "—", "sub": "", "owner": "", "alert": false}
+		return {"title": Loc.t(L.FINANCE_HUB_TITLE), "value": "—", "sub": "", "owner": "", "alert": false}
 	var last: Dictionary = FinanceSystem.last_week(state)
-	var sub: String = "첫 정산 전"
+	var sub: String = Loc.t(L.FINANCE_HUB_BEFORE_FIRST)
 	if not last.is_empty():
-		sub = "지난 주 %s" % FinanceSystem.fmt_signed(int(last.get("net", 0)))
-		if _hard_cut(last):
-			sub += " · 삭감"
+		var net_s: String = FinanceSystem.fmt_signed(int(last.get("net", 0)))
+		sub = Loc.t(L.FINANCE_HUB_LAST_WEEK_CUT if _hard_cut(last) else L.FINANCE_HUB_LAST_WEEK, {"net": net_s})
 	return {
-		"title": "재무 · 시설 Lv%d" % FinanceSystem.facility_level(state),
+		"title": Loc.t(L.FINANCE_HUB_TITLE_LEVEL, {"level": FinanceSystem.facility_level(state)}),
 		"value": FinanceSystem.fmt(FinanceSystem.balance(state)),
 		"sub": sub,
 		"owner": StaffSystem.owner_name(state, "finance"),
@@ -68,7 +67,7 @@ static func create() -> FinancePanel:
 
 
 static func open(host: Node) -> void:
-	var sheet := HubSheet.open_on(host, "재무 · 시설")
+	var sheet := HubSheet.open_on(host, Loc.t(L.FINANCE_SHEET_TITLE))
 	var gm: Node = host.get_node_or_null("/root/GameManager")
 	var panel := create()
 	sheet.body.add_child(panel)
@@ -120,20 +119,20 @@ func _fill_header() -> void:
 	(%Balance as Label).add_theme_color_override("font_color",
 			OutgameTheme.NEGATIVE if FinanceSystem.is_low_balance(state) else OutgameTheme.TEXT)
 	%Fund.text = FinanceSystem.fmt(FinanceSystem.facility_fund(state))
-	%OwnerLine.text = "담당: 감독 — 흑자 배분을 직접 정합니다"
+	%OwnerLine.text = Loc.t(L.FINANCE_PANEL_OWNER_MANAGER)
 	if StaffSystem.is_delegated(state, "finance"):
-		%OwnerLine.text = "담당: %s — 흑자를 자동으로 배분합니다" % StaffSystem.owner_name(state, "finance")
+		%OwnerLine.text = Loc.t(L.FINANCE_PANEL_OWNER_STAFF, {"name": StaffSystem.owner_name(state, "finance")})
 	var proj: Dictionary = FinanceSystem.projection(state)
-	%Projection.text = "이번 주 예상 수지 %s  (수입 %s · 지출 %s, 보너스 포함)" % [
-			FinanceSystem.fmt_signed(int(proj["net"])), FinanceSystem.fmt(int(proj["income"])),
-			FinanceSystem.fmt(int(proj["expense"]))]
+	%Projection.text = Loc.t(L.FINANCE_PANEL_PROJECTION, {
+			"net": FinanceSystem.fmt_signed(int(proj["net"])), "income": FinanceSystem.fmt(int(proj["income"])),
+			"expense": FinanceSystem.fmt(int(proj["expense"]))})
 	%LowBalance.visible = FinanceSystem.is_low_balance(state)
-	%LowBalance.text = "잔고가 한 주 고정 지출(%s)보다 적습니다 — 적자가 나면 강제 삭감" % \
-			FinanceSystem.fmt(FinanceSystem.weekly_fixed_cost(state))
+	%LowBalance.text = Loc.t(L.FINANCE_PANEL_LOW_BALANCE,
+			{"amount": FinanceSystem.fmt(FinanceSystem.weekly_fixed_cost(state))})
 	var pw: int = FinanceSystem.penalty_weeks(state)
 	%Penalty.visible = pw > 0
-	%Penalty.text = "훈련 지원 삭감 중 — %d주 남음 (훈련 EXP −%d%%)" % [
-			pw, ConstTable.int_of("FINANCE_UNPAID_TRAIN_PENALTY_PCT")]
+	%Penalty.text = Loc.t(L.FINANCE_PANEL_PENALTY,
+			{"weeks": pw, "pct": ConstTable.int_of("FINANCE_UNPAID_TRAIN_PENALTY_PCT")})
 
 
 func _fill_last_week() -> void:
@@ -144,51 +143,54 @@ func _fill_last_week() -> void:
 	if last.is_empty():
 		return
 	_amount_row(%FinanceAmountRow_Sponsor, _sponsor_label(last, state), int(last.get("sponsor", 0)))
-	_amount_row(%FinanceAmountRow_Bonus, "성적 보너스 (%d승 %d패)" % [int(last.get("wins", 0)), int(last.get("losses", 0))],
-			int(last.get("bonus", 0)))
-	_amount_row(%FinanceAmountRow_Salaries, "스태프 연봉", -int(last.get("salaries", 0)))
+	_amount_row(%FinanceAmountRow_Bonus, Loc.t(L.FINANCE_PANEL_BONUS,
+			{"win": int(last.get("wins", 0)), "loss": int(last.get("losses", 0))}), int(last.get("bonus", 0)))
+	_amount_row(%FinanceAmountRow_Salaries, Loc.t(L.FINANCE_PANEL_SALARIES), -int(last.get("salaries", 0)))
 	_amount_row(%FinanceAmountRow_Upkeep, _upkeep_label(last, state), -int(last.get("upkeep", 0)))
 	var net: int = int(last.get("net", 0))
 	%Net.text = FinanceSystem.fmt_signed(net)
 	(%Net as Label).add_theme_color_override("font_color", _signed_color(net))
 	%AllocLine.visible = net >= 0
 	var a: Dictionary = last.get("alloc", {})
-	%AllocLine.text = "→ 잔고 적립 %s · 훈련 %s · 시설 적립 %s · 복지 %s" % [
-			FinanceSystem.fmt(int(last.get("reserve", 0))), FinanceSystem.fmt(int(a.get("training", 0))),
-			FinanceSystem.fmt(int(a.get("facility", 0))), FinanceSystem.fmt(int(a.get("welfare", 0)))]
+	%AllocLine.text = Loc.t(L.FINANCE_PANEL_ALLOC_LINE, {
+			"reserve": FinanceSystem.fmt(int(last.get("reserve", 0))),
+			"training": FinanceSystem.fmt(int(a.get("training", 0))),
+			"facility": FinanceSystem.fmt(int(a.get("facility", 0))),
+			"welfare": FinanceSystem.fmt(int(a.get("welfare", 0)))})
 	var cuts: Array = []
 	for cut in (last.get("cuts", []) as Array):
-		cuts.append("삭감 · " + String(cut))
+		cuts.append(Loc.t(L.FINANCE_PANEL_CUT_LINE, {"cut": FinanceSystem.cut_text(cut)}))
 	_fill_lines(%Cuts, cuts)
+	var sep: String = Loc.t(L.UI_LIST_SEPARATOR)
 	var spend: int = int(last.get("special_spend", 0))
 	%SpecialSpend.visible = spend > 0
-	%SpecialSpend.text = "특별 지출 −%s (구매 즉시 잔고에서 차감 · %s)" % [FinanceSystem.fmt(spend),
-			", ".join(FinanceSystem.special_names(last.get("special_buys", [])))]
+	%SpecialSpend.text = Loc.t(L.FINANCE_PANEL_SPECIAL_SPEND, {"amount": FinanceSystem.fmt(spend),
+			"names": sep.join(FinanceSystem.special_names(last.get("special_buys", [])))})
 	var ended: Array = last.get("specials_expired", [])
 	%SpecialsExpired.visible = not ended.is_empty()
-	%SpecialsExpired.text = "특별 지출 만료 · " + ", ".join(FinanceSystem.special_names(ended))
+	%SpecialsExpired.text = Loc.t(L.FINANCE_PANEL_SPECIALS_EXPIRED,
+			{"names": sep.join(FinanceSystem.special_names(ended))})
 
 
 func _fill_allocation() -> void:
 	var state: Dictionary = _state
 	var delegated: bool = StaffSystem.is_delegated(state, "finance")
-	%AllocIntro.text = "흑자의 %d%%는 잔고에 남고, 나머지를 세 곳에 나눕니다. 효과는 다음 한 주." % \
-			ConstTable.int_of("FINANCE_RESERVE_PCT")
+	%AllocIntro.text = Loc.t(L.FINANCE_PANEL_ALLOC_INTRO, {"pct": ConstTable.int_of("FINANCE_RESERVE_PCT")})
 	%AllocDelegated.visible = delegated
-	%AllocDelegated.text = "%s 담당 — 자동 균등 배분 (무난하지만 최적은 아닙니다)" % \
-			StaffSystem.owner_name(state, "finance")
+	%AllocDelegated.text = Loc.t(L.FINANCE_PANEL_ALLOC_DELEGATED,
+			{"name": StaffSystem.owner_name(state, "finance")})
 
 	var shares: Dictionary = FinanceSystem.allocation_shares(state)
 	var hints: Dictionary = {
-		"training": "다음 주 훈련 EXP 최대 +%d%% (주 %s 지출에서 최대)" % [
-				ConstTable.int_of("FINANCE_TRAINING_MAX_PCT"),
-				FinanceSystem.fmt(ConstTable.int_of("FINANCE_TRAINING_FULL_SPEND"))],
-		"facility": "업그레이드 자금으로 모읍니다 · 적자 때 비상금" \
+		"training": Loc.t(L.FINANCE_PANEL_HINT_TRAINING, {
+				"pct": ConstTable.int_of("FINANCE_TRAINING_MAX_PCT"),
+				"amount": FinanceSystem.fmt(ConstTable.int_of("FINANCE_TRAINING_FULL_SPEND"))}),
+		"facility": Loc.t(L.FINANCE_PANEL_HINT_FACILITY) \
 				if FinanceSystem.facility_level(state) < FinanceSystem.max_level() \
-				else "최고 레벨 — 적자 때 비상금으로만 쓰입니다",
-		"welfare": "다음 주 사건 확률 최대 −%d%% (주 %s 지출에서 최대)" % [
-				ConstTable.int_of("FINANCE_WELFARE_MAX_PCT"),
-				FinanceSystem.fmt(ConstTable.int_of("FINANCE_WELFARE_FULL_SPEND"))],
+				else Loc.t(L.FINANCE_PANEL_HINT_FACILITY_MAX),
+		"welfare": Loc.t(L.FINANCE_PANEL_HINT_WELFARE, {
+				"pct": ConstTable.int_of("FINANCE_WELFARE_MAX_PCT"),
+				"amount": FinanceSystem.fmt(ConstTable.int_of("FINANCE_WELFARE_FULL_SPEND"))}),
 	}
 	var rows: Array = _ensure_rows(%Axes, ALLOC_ROW_SCENE, FinanceSystem.AXES.size(), _wire_alloc_row)
 	for i in rows.size():
@@ -196,7 +198,7 @@ func _fill_allocation() -> void:
 		var axis: String = String(FinanceSystem.AXES[i])
 		row.set_meta(&"axis", axis)
 		var pct: int = int(shares[axis])
-		row.get_node("%Axis").text = String(FinanceSystem.AXIS_LABELS[axis])
+		row.get_node("%Axis").text = FinanceSystem.axis_label(axis)
 		row.get_node("%Pct").text = "%d%%" % pct
 		row.get_node("%Hint").text = String(hints[axis])
 		for n in ["%Minus", "%GapL", "%GapR", "%Plus"]:
@@ -204,8 +206,8 @@ func _fill_allocation() -> void:
 		_set_fill(row.get_node("%Fill"), float(pct) / 100.0, AXIS_COLORS[axis])
 
 	var eff: Dictionary = FinanceSystem.effects(state)
-	%Effects.text = "이번 주 적용 중: 훈련 EXP +%.1f%% · 사건 확률 −%.1f%%" % [
-			float(eff["training_pct"]), float(eff["welfare_pct"])]
+	%Effects.text = Loc.t(L.FINANCE_PANEL_EFFECTS, {"training": "%.1f" % float(eff["training_pct"]),
+			"welfare": "%.1f" % float(eff["welfare_pct"])})
 
 
 func _wire_alloc_row(row: Control) -> void:
@@ -217,36 +219,37 @@ func _fill_facility() -> void:
 	var state: Dictionary = _state
 	var lvl: int = FinanceSystem.facility_level(state)
 	var top: int = FinanceSystem.max_level()
-	%FacilityTitle.text = "시설  Lv %d / %d" % [lvl, top]
-	%FacNow.text = "지금  " + _facility_effects(FinanceSystem.facility_row(lvl))
+	%FacilityTitle.text = Loc.t(L.FINANCE_PANEL_FACILITY_TITLE, {"level": lvl, "max": top})
+	%FacNow.text = Loc.t(L.FINANCE_PANEL_FAC_NOW, {"effects": _facility_effects(FinanceSystem.facility_row(lvl))})
 	%FacNext.visible = lvl < top
 	%FacCost.visible = lvl < top
 	if lvl < top:
-		%FacNext.text = "다음  " + _facility_effects(FinanceSystem.facility_row(lvl + 1))
-		%FacCost.text = "비용 %s — 시설 적립금 먼저, 모자라면 잔고 (가용 %s)" % [
-				FinanceSystem.fmt(FinanceSystem.upgrade_cost(state)),
-				FinanceSystem.fmt(FinanceSystem.upgrade_funds(state))]
+		%FacNext.text = Loc.t(L.FINANCE_PANEL_FAC_NEXT,
+				{"effects": _facility_effects(FinanceSystem.facility_row(lvl + 1))})
+		%FacCost.text = Loc.t(L.FINANCE_PANEL_FAC_COST, {
+				"cost": FinanceSystem.fmt(FinanceSystem.upgrade_cost(state)),
+				"available": FinanceSystem.fmt(FinanceSystem.upgrade_funds(state))})
 	var why: String = FinanceSystem.upgrade_block_reason(state)
 	var cost: String = FinanceSystem.fmt(FinanceSystem.upgrade_cost(state))
 	%Upgrade.visible = why == "" and not _upgrade_armed
-	%Upgrade.text = "시설 업그레이드 → Lv %d" % (lvl + 1)
+	%Upgrade.text = Loc.t(L.FINANCE_PANEL_UPGRADE, {"level": lvl + 1})
 	%UpgradeConfirm.visible = why == "" and _upgrade_armed
-	%UpgradeConfirm.text = "한 번 더 눌러 확정 (−%s)" % cost
+	%UpgradeConfirm.text = Loc.t(L.FINANCE_PANEL_UPGRADE_CONFIRM, {"cost": cost})
 	%UpgradeBlocked.visible = why != ""
-	%UpgradeBlocked.text = "최고 레벨입니다" if lvl >= top else "자금 부족 — %s 필요" % cost
+	%UpgradeBlocked.text = Loc.t(L.UI_MESSAGE_MAX_LEVEL) if lvl >= top \
+			else Loc.t(L.FINANCE_PANEL_UPGRADE_SHORT, {"amount": cost})
 
 
 # 특별 지출 — running specials, then every row with its two-step buy button
 # (disabled with the reason from `FinanceSystem.special_block_reason`).
 func _fill_specials() -> void:
 	var state: Dictionary = _state
-	%SpecIntro.text = "잔고에서 바로 냅니다 · 효과는 정해진 주 수 동안 (동시 %d건까지)" % \
-			maxi(1, ConstTable.int_of("FSPEC_MAX_ACTIVE"))
+	%SpecIntro.text = Loc.t(L.FINANCE_PANEL_SPEC_INTRO, {"n": maxi(1, ConstTable.int_of("FSPEC_MAX_ACTIVE"))})
 	var running: Array = []
 	for raw in FinanceSystem.active_specials(state):
 		var e: Dictionary = raw
-		running.append("진행 중 · %s — %s · %d주 남음" % [FinanceSystem.special_name(String(e.get("id", ""))),
-				FinanceSystem.special_effect_text(e), int(e.get("weeks_left", 0))])
+		running.append(Loc.t(L.FINANCE_PANEL_RUNNING, {"name": FinanceSystem.special_name(String(e.get("id", ""))),
+				"effect": FinanceSystem.special_effect_text(e), "weeks": int(e.get("weeks_left", 0))}))
 	_fill_lines(%Running, running)
 	%RunningGap.visible = not running.is_empty()
 
@@ -263,13 +266,14 @@ func _fill_specials() -> void:
 		name_l.text = FinanceSystem.special_name(sid)
 		name_l.add_theme_color_override("font_color", OutgameTheme.TEXT if why == "" else OutgameTheme.TEXT_SUB)
 		var eff_l: Label = row.get_node("%Effect")
-		eff_l.text = "%s · %d주" % [FinanceSystem.special_effect_text(spec), int(spec["weeks"])]
+		eff_l.text = Loc.t(L.FINANCE_PANEL_SPEC_EFFECT,
+				{"effect": FinanceSystem.special_effect_text(spec), "weeks": int(spec["weeks"])})
 		eff_l.add_theme_color_override("font_color",
 				OutgameTheme.ACCENT_TEXT if why == "" else OutgameTheme.TEXT_FAINT)
-		var price: String = "무료" if cost <= 0 else "−" + FinanceSystem.fmt(cost)
 		var buy: Button = row.get_node("%Buy")
 		buy.visible = why == "" and _special_armed != sid
-		buy.text = "%s  %s" % ["계약" if cost <= 0 else "구매", price]
+		buy.text = Loc.t(L.FINANCE_PANEL_CONTRACT_FREE) if cost <= 0 \
+				else Loc.t(L.FINANCE_PANEL_BUY, {"price": "−" + FinanceSystem.fmt(cost)})
 		(row.get_node("%Confirm") as Button).visible = why == "" and _special_armed == sid
 		var blocked: Button = row.get_node("%Blocked")
 		blocked.visible = why != ""
@@ -295,11 +299,12 @@ func _fill_history() -> void:
 		var row: Control = rows[i]
 		var e: Dictionary = shown[i]
 		var net: int = int(e.get("net", 0))
-		row.get_node("%Week").text = "%d주차" % int(e.get("week_no", 0))
+		row.get_node("%Week").text = Loc.t(L.TERM_WEEK_NTH, {"n": int(e.get("week_no", 0))})
 		var net_l: Label = row.get_node("%Net")
 		net_l.text = FinanceSystem.fmt_signed(net)
 		net_l.add_theme_color_override("font_color", _signed_color(net))
-		row.get_node("%Balance").text = "잔고 %s" % FinanceSystem.fmt(int(e.get("balance", 0)))
+		row.get_node("%Balance").text = Loc.t(L.FINANCE_PANEL_HIST_BALANCE,
+				{"amount": FinanceSystem.fmt(int(e.get("balance", 0)))})
 		var cut: Label = row.get_node("%Cut")
 		cut.visible = _hard_cut(e)
 
@@ -342,30 +347,32 @@ static func _hard_cut(entry: Dictionary) -> bool:
 	return (entry.get("cuts", []) as Array).size() > 1 or int(entry.get("unpaid", 0)) > 0
 
 
-## "스폰서 수입 (시설 ×1.10 · 보정 ×1.05)" — the facility percent of that week plus every
-## other sponsor multiplier (`FinanceSystem.income_mult`: traits, finance stat, specials).
+## "Sponsor income (facility ×1.10 · modifier ×1.05)" — the facility percent of that week plus
+## every other sponsor multiplier (`FinanceSystem.income_mult`: traits, finance stat, specials).
 ## The ledger entry's own `income_mult` wins when it records one; else the current value.
 static func _sponsor_label(last: Dictionary, state: Dictionary) -> String:
-	var txt: String = "스폰서 수입 (시설 ×%.2f" % (float(last.get("income_pct", 100)) / 100.0)
+	var fac: String = "%.2f" % (float(last.get("income_pct", 100)) / 100.0)
 	var m: float = float(last.get("income_mult", FinanceSystem.income_mult(state)))
 	if absf(m - 1.0) >= 0.005:
-		txt += " · 보정 ×%.2f" % m
-	return txt + ")"
+		return Loc.t(L.FINANCE_PANEL_SPONSOR_MULT, {"facility": fac, "mult": "%.2f" % m})
+	return Loc.t(L.FINANCE_PANEL_SPONSOR, {"facility": fac})
 
 
-## "시설 유지비 (보정 ×0.90)" — `FinanceSystem.upkeep_mult` when it moves the upkeep.
+## "Facility upkeep (modifier ×0.90)" — `FinanceSystem.upkeep_mult` when it moves the upkeep.
 static func _upkeep_label(last: Dictionary, state: Dictionary) -> String:
 	var m: float = float(last.get("upkeep_mult", FinanceSystem.upkeep_mult(state)))
 	if absf(m - 1.0) >= 0.005:
-		return "시설 유지비 (보정 ×%.2f)" % m
-	return "시설 유지비"
+		return Loc.t(L.FINANCE_PANEL_UPKEEP_MULT, {"mult": "%.2f" % m})
+	return Loc.t(L.FINANCE_PANEL_UPKEEP)
 
 
 static func _facility_effects(row: Dictionary) -> String:
-	return "훈련 ×%.2f · 숙련도 ×%.2f · 사건 ×%.2f · 수입 ×%.2f · 유지비 %s" % [
-			float(row.get("train_exp_pct", 100)) / 100.0, float(row.get("mastery_pct", 100)) / 100.0,
-			float(row.get("incident_pct", 100)) / 100.0, float(row.get("income_pct", 100)) / 100.0,
-			FinanceSystem.fmt(int(row.get("upkeep", 0)))]
+	return Loc.t(L.FINANCE_PANEL_FAC_EFFECTS, {
+			"train": "%.2f" % (float(row.get("train_exp_pct", 100)) / 100.0),
+			"mastery": "%.2f" % (float(row.get("mastery_pct", 100)) / 100.0),
+			"incident": "%.2f" % (float(row.get("incident_pct", 100)) / 100.0),
+			"income": "%.2f" % (float(row.get("income_pct", 100)) / 100.0),
+			"upkeep": FinanceSystem.fmt(int(row.get("upkeep", 0)))})
 
 
 static func _amount_row(row: Node, label_text: String, amount: int) -> void:

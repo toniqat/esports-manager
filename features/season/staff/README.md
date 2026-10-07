@@ -1,6 +1,8 @@
 # staff/ — manager · staff stats (M3)
 
 Contract: `docs/outgame_dev_plan.md` §11. Single entry point for every manager-stat read in a run.
+Display text is l10n keys (`staff` domain; shared `term.person.*` · `term.week.*`). `STAT_LABELS` / `JOB_LABELS` /
+`StaffPanel.DIRECT_TASKS` values are **keys** — show them with `StaffSystem.stat_label(stat)` / `job_label(job)`, never raw.
 
 | File | Role |
 |---|---|
@@ -15,8 +17,9 @@ Rules
 - The **finance** stat has a real effect besides "who allocates": `effective(state, "finance")` scales sponsor
   income and upkeep continuously (`FinanceSystem.finance_stat_income_mult` / `finance_stat_upkeep_mult`,
   `FINANCE_STAT_*`) — see `features/season/finance/README.md`.
-- `staff_mods` sources include the finance sheet's `coach_hire` specials (`source = "finance:<id>"`, shown as the
-  special's name via `FinanceSystem.mod_source_text`), bought with balance (`FinanceSystem.buy_special`).
+- `staff_mods.source` is an id, never text (D7): `finance:<special id>` (the finance sheet's `coach_hire` specials,
+  bought with balance — `FinanceSystem.buy_special`) or `mental:<event id>` (interview / outing / press / incident
+  clauses). `StaffSystem.mod_source_text(source)` turns it into the special's name / the event kind's label.
 - `manager_types()` rows hold l10n keys `name_key` / `desc_key` (`manager.type.{id}.name/desc`); screens `Loc.t` them.
 
 ## Hub card + sheet (`StaffPanel.gd`)

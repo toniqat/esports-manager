@@ -27,14 +27,14 @@ custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 28
-text = "능력치"
+text = "tx_6C29X8HMEF"
 
 [node name="Sub" type="Label" parent="StatsSection"]
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 18
-text = "유효값 = 감독(보정 포함) · 어시스턴트 · 전담 스태프 중 최댓값"
+text = "tx_E7KJ6CX53P"
 
 [node name="StatRows" type="VBoxContainer" parent="."]
 editor_description = "[필수] 지우면 오류 — StaffPanel.gd _fill_stats()"
@@ -66,7 +66,7 @@ custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 28
-text = "일시 보정"
+text = "tx_JZ767X3S8Y"
 
 [node name="ModsEmpty" type="Label" parent="."]
 editor_description = "[필수] 지우면 오류 — StaffPanel.gd _fill_mods()"
@@ -75,7 +75,7 @@ custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 theme_type_variation = &"FaintLabel"
 theme_override_font_sizes/font_size = 22
-text = "걸린 보정 없음"
+text = "tx_7JFZR0GGGZ"
 
 [node name="Mods" type="VBoxContainer" parent="."]
 editor_description = "[필수] 지우면 오류 — StaffPanel.gd _fill_mods()"
@@ -85,6 +85,7 @@ mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="Line" type="Label" parent="Mods"]
+auto_translate_mode = 2
 editor_description = "Template line — the script duplicates it per mod; colour = sign (data)."
 custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
@@ -114,9 +115,10 @@ custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 28
-text = "장착 특성"
+text = "tx_ZZYKV0Z49P"
 
 [node name="TraitsSub" type="Label" parent="TraitsSection"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — StaffPanel.gd _fill_traits()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 36)
@@ -132,7 +134,7 @@ custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 theme_type_variation = &"FaintLabel"
 theme_override_font_sizes/font_size = 22
-text = "장착한 특성 없음"
+text = "tx_74QWFN3PWB"
 
 [node name="Traits" type="VBoxContainer" parent="."]
 editor_description = "[필수] 지우면 오류 — StaffPanel.gd _fill_traits()"
@@ -166,9 +168,10 @@ custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 28
-text = "스태프"
+text = "tx_ZZ96FNYRG1"
 
 [node name="StaffSub" type="Label" parent="StaffSection"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — StaffPanel.gd _fill_staff()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 36)
@@ -184,7 +187,7 @@ custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 theme_type_variation = &"FaintLabel"
 theme_override_font_sizes/font_size = 22
-text = "고용된 스태프 없음 — 모든 영역을 감독이 맡습니다"
+text = "tx_CD2TKKXHA1"
 
 [node name="Members" type="VBoxContainer" parent="."]
 editor_description = "[필수] 지우면 오류 — StaffPanel.gd _fill_staff()"
@@ -218,7 +221,7 @@ custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 28
-text = "직접 해야 하는 일"
+text = "tx_98DBCCX28N"
 
 [node name="Direct" type="VBoxContainer" parent="."]
 editor_description = "[필수] 지우면 오류 — StaffPanel.gd _fill_direct()"
@@ -228,6 +231,7 @@ mouse_filter = 2
 theme_override_constants/separation = 6
 
 [node name="Line" type="Label" parent="Direct"]
+auto_translate_mode = 2
 editor_description = "Template line — the script duplicates it per task (autowrapped, words kept whole)."
 custom_minimum_size = Vector2(0, 32)
 layout_mode = 2

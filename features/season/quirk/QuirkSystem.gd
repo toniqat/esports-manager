@@ -19,7 +19,8 @@ extends RefCounted
 # reload replays the same roll.
 
 const GRADE_COUNT: int = 3
-const GRADE_NAMES: Array = ["일반", "희귀", "영웅"]
+## Grade → shared rarity tier (`GameEnums.rarity_label`): 일반 · 희귀 · 영웅 = tiers 0 · 2 · 3.
+const GRADE_TIERS: Array = [0, 2, 3]
 ## Grade colours on the white outgame theme (grey / blue / purple).
 const GRADE_COLORS: Array = [
 	Color(0.47, 0.49, 0.53),
@@ -215,7 +216,7 @@ static func _mech_role(mech_id: int) -> int:
 
 # ── Text (shared by every screen that lists quirks) ──────────────────────────
 static func grade_name(grade: int) -> String:
-	return String(GRADE_NAMES[clampi(grade, 0, GRADE_COUNT - 1)])
+	return GameEnums.rarity_label(int(GRADE_TIERS[clampi(grade, 0, GRADE_COUNT - 1)]))
 
 
 static func grade_color(grade: int) -> Color:
@@ -244,13 +245,13 @@ static func cond_text(cond: String) -> String:
 		var arg: int = int(String(bits[1])) if bits.size() > 1 else 0
 		match kind:
 			"main":
-				parts.append("주력 메크 탑승")
+				parts.append(Loc.t(L.QUIRK_COND_MAIN))
 			"own_role":
-				parts.append("자기 역할군 메크 탑승")
+				parts.append(Loc.t(L.QUIRK_COND_OWN_ROLE))
 			"mech_role":
-				parts.append("%s 메크 탑승" % OutgameTheme.role_name(arg))
+				parts.append(Loc.t(L.QUIRK_COND_MECH_ROLE, {"role": OutgameTheme.role_name(arg)}))
 			"tier":
-				parts.append("숙련도 %s 이상" % MechMastery.tier_name(arg))
+				parts.append(Loc.t(L.QUIRK_COND_TIER, {"tier": MechMastery.tier_name(arg)}))
 			_:
 				parts.append(kind)
 	return " · ".join(parts)
@@ -265,7 +266,8 @@ static func effect_text(id: int, short: bool = false) -> String:
 	var c: String = String(r["cond"])
 	if c.strip_edges() == "":
 		return base
-	var extra: String = "%s 시 %s" % [cond_text(c), stats_text(r["cond_stats"], short)]
+	var extra: String = Loc.t(L.QUIRK_EFFECT_COND,
+			{"cond": cond_text(c), "stats": stats_text(r["cond_stats"], short)})
 	return extra if base == "" else "%s / %s" % [base, extra]
 
 

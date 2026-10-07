@@ -4,6 +4,7 @@ Contract: `docs/outgame_dev_plan.md` §11 (M6) and §14 (T6 — finance stat, sp
 State `season_state.finance` (shape owned here). Tuning values live only in `data/csv/const.csv`
 (`FINANCE_*` · `FINANCE_STAT_*` · `FSPEC_*`), `data/csv/facilities.csv` and
 `data/csv/finance_specials.csv` — this README names keys, never numbers.
+Display text is l10n keys (`finance` domain; shared `ui.*` / `term.*`) — saved state holds ids / numbers only (D7).
 
 | File | Role |
 |---|---|
@@ -44,7 +45,10 @@ History entry (also what `settle_week` returns, plus `toast`):
 special_income_pct, special_upkeep_pct, special_salary_pct, specials: Array[id] (running during the week),
 special_spend, special_buys: Array[id], specials_expired: Array[id], bonus, wins, losses, income, salaries, upkeep,
 expense, net, reserve, alloc{training, facility, welfare} (amounts), unpaid, balance, fund, level,
-delegated, cuts: Array[String]}`.
+delegated, cuts: Array[cut record]}`.
+A cut record is `{type, …}` with `type` = `CUT_STOP` · `CUT_FUND {amount}` · `CUT_DOWNGRADE {from, to, amount}` ·
+`CUT_PENALTY {weeks, pct}` — never text; `FinanceSystem.cut_text(cut)` draws the line (`finance.cut.*`).
+The returned `toast` is translated at settle time and never saved (`SeasonHub.hub_toasts`).
 
 ## Week-end settlement (`settle_week`)
 1. `income = sponsor_income(state, level) + week_bonus` (bonus may be negative), where
@@ -127,7 +131,7 @@ Bought from the sheet, **paid from the balance at once** (not part of the week's
 
 | `kind` | `p1` | `p2` | Effect |
 |---|---|---|---|
-| `coach_hire` | stat key (`StaffSystem.STATS`) | delta | `StaffSystem.add_mod(state, p1, p2, weeks, "특별 지출 · <name>")` — lifts the **manager's** value; decayed by `StaffSystem.decay_mods` on the same cadence |
+| `coach_hire` | stat key (`StaffSystem.STATS`) | delta | `StaffSystem.add_mod(state, p1, p2, weeks, "finance:<id>")` — lifts the **manager's** value; decayed by `StaffSystem.decay_mods` on the same cadence |
 | `camp` | train EXP % | — | `special_pct(train)` |
 | `sponsor_deal` | income % | train EXP % (downside, may be 0) | `special_pct(income)`, `special_pct(train)` |
 | `upkeep_delay` | upkeep % | incident % (downside) | `special_pct(upkeep)`, `special_pct(incident)` |

@@ -17,6 +17,7 @@ mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="Axis" type="Label" parent="Row"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_allocation()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 44)
@@ -98,6 +99,7 @@ mouse_filter = 2
 theme_override_constants/margin_left = 150
 
 [node name="Hint" type="Label" parent="HintPad"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_allocation()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 38)

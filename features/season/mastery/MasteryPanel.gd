@@ -31,7 +31,8 @@ var _state: Dictionary = {}
 ## Card summary — `{title, value, sub, owner, alert}`.
 static func hub_summary(state: Dictionary) -> Dictionary:
 	if not MechMastery.is_enabled(state):
-		return {"title": "메크 연구", "value": "—", "sub": "런 밖", "owner": "", "alert": false}
+		return {"title": Loc.t(L.MASTERY_HUB_TITLE), "value": "—", "sub": Loc.t(L.MASTERY_HUB_NO_RUN),
+				"owner": "", "alert": false}
 	var pilots: Array = MechMastery.my_pilots(state)
 	var missing: int = MechMastery.missing_research_count(state)
 	var delegated: bool = StaffSystem.is_delegated(state, "knowledge")
@@ -39,12 +40,12 @@ static func hub_summary(state: Dictionary) -> Dictionary:
 	if not pilots.is_empty():
 		per_week = MechMastery.gain_preview(state, (pilots[0] as PlayerData).id,
 				ConstTable.int_of("MASTERY_GAIN_RESEARCH"))
-	var sub: String = "주간 연구 +%d" % per_week
+	var sub: String = Loc.t(L.MASTERY_HUB_WEEKLY_GAIN, {"n": per_week})
 	if missing > 0:
-		sub = "빈 자리는 코치가 채움" if delegated else "연구 메크 미지정 %d명" % missing
+		sub = Loc.t(L.MASTERY_HUB_COACH_FILLS) if delegated else Loc.t(L.MASTERY_HUB_MISSING, {"n": missing})
 	return {
-		"title": "메크 연구",
-		"value": "%d / %d 지정" % [pilots.size() - missing, pilots.size()],
+		"title": Loc.t(L.MASTERY_HUB_TITLE),
+		"value": Loc.t(L.MASTERY_HUB_ASSIGNED, {"n": pilots.size() - missing, "total": pilots.size()}),
 		"sub": sub,
 		"owner": StaffSystem.owner_name(state, "knowledge"),
 		"alert": missing > 0 and not delegated,
@@ -57,7 +58,7 @@ static func create() -> MasteryPanel:
 
 
 static func open(host: Node) -> void:
-	var sheet := HubSheet.open_on(host, "메크 연구")
+	var sheet := HubSheet.open_on(host, Loc.t(L.MASTERY_HUB_TITLE))
 	var gm: Node = host.get_node_or_null("/root/GameManager")
 	if gm == null:
 		return
@@ -98,17 +99,17 @@ func _fill() -> void:
 	if not enabled:
 		return
 	var delegated: bool = StaffSystem.is_delegated(state, "knowledge")
-	%Head.text = "담당: %s   ·   지식 %d" % [StaffSystem.owner_name(state, "knowledge"),
-			StaffSystem.effective(state, "knowledge")]
+	%Head.text = Loc.t(L.MASTERY_PANEL_HEAD, {"name": StaffSystem.owner_name(state, "knowledge"),
+			"value": StaffSystem.effective(state, "knowledge")})
 	var pilots: Array = MechMastery.my_pilots(state)
 	var any_pid: int = (pilots[0] as PlayerData).id if not pilots.is_empty() else -1
-	%Gain.text = "획득 배율 ×%.2f" % MechMastery.gain_mult(state, any_pid)
+	%Gain.text = Loc.t(L.MASTERY_PANEL_GAIN, {"mult": "%.2f" % MechMastery.gain_mult(state, any_pid)})
 	var legend: Array = []
 	for t in MechMastery.TIER_COUNT:
 		legend.append("%s %s" % [MechMastery.tier_name(t), MechMastery.bonus_text(t)])
-	%Legend.text = "등급 보정 (스탯 6종)   " + "  ·  ".join(legend)
-	%Rules.text = "주 마감마다 연구 메크 +%d  ·  경기에 탄 메크 +%d  (배율 전)" % [
-			ConstTable.int_of("MASTERY_GAIN_RESEARCH"), ConstTable.int_of("MASTERY_GAIN_MATCH")]
+	%Legend.text = Loc.t(L.MASTERY_PANEL_LEGEND, {"tiers": "  ·  ".join(legend)})
+	%Rules.text = Loc.t(L.MASTERY_PANEL_RULES, {"research": ConstTable.int_of("MASTERY_GAIN_RESEARCH"),
+			"match": ConstTable.int_of("MASTERY_GAIN_MATCH")})
 	%Auto.visible = delegated
 	%AutoGap.visible = delegated
 	%NoCoach.visible = not delegated
@@ -120,8 +121,8 @@ func _fill() -> void:
 		var parts: Array = []
 		for g in QuirkSystem.GRADE_COUNT:
 			parts.append("%s %d%%" % [QuirkSystem.grade_name(g), roundi(float(odds[g]))])
-		%QuirkOdds.text = "기벽 — 연구 메크가 있으면 주 마감 %d%% 확률로 획득  ·  %s" % [
-				ConstTable.int_of("QUIRK_RESEARCH_CHANCE"), "  ".join(parts)]
+		%QuirkOdds.text = Loc.t(L.MASTERY_PANEL_QUIRK_ODDS, {
+				"pct": ConstTable.int_of("QUIRK_RESEARCH_CHANCE"), "odds": "  ".join(parts)})
 
 	var rows: Array = _ensure(%Pilots, PILOT_ROW_SCENE, pilots.size())
 	for i in rows.size():
@@ -140,11 +141,11 @@ func _fill_pilot_row(row: Panel, pd: PlayerData, delegated: bool, quirks_on: boo
 	row.get_node("%Name").text = pd.name
 	var research: int = MechMastery.research_mech(state, pd.id)
 	var res_l: Label = row.get_node("%Research")
-	res_l.text = "연구: " + MechMastery.mech_name(research)
+	res_l.text = Loc.t(L.MASTERY_PANEL_RESEARCH, {"mech": MechMastery.mech_name(research)})
 	var res_col: Color = OutgameTheme.ACCENT_TEXT
 	if research < 0:
 		# Delegated: the coach fills it at week close — not an error.
-		res_l.text = "주 마감에 코치가 지정" if delegated else "연구 미지정"
+		res_l.text = Loc.t(L.MASTERY_PANEL_RESEARCH_COACH) if delegated else Loc.t(L.MASTERY_PANEL_RESEARCH_NONE)
 		res_col = OutgameTheme.TEXT_SUB if delegated else OutgameTheme.NEGATIVE
 	res_l.add_theme_color_override("font_color", res_col)
 	var tops: Array = []
@@ -153,7 +154,7 @@ func _fill_pilot_row(row: Panel, pd: PlayerData, delegated: bool, quirks_on: boo
 		tops.append("%s %s %d" % [MechMastery.mech_name(int(e["mech_id"])),
 				MechMastery.tier_name(MechMastery.tier_of(v)), v])
 	(row.get_node("%PositionBadge_Position") as PositionBadge).set_role(int(pd.role))
-	row.get_node("%TopMechs").text = "숙련 상위  %s" % "  ·  ".join(tops)
+	row.get_node("%TopMechs").text = Loc.t(L.MASTERY_PANEL_TOP_MECHS, {"list": "  ·  ".join(tops)})
 
 	# Own-role mech chips — tap to set the research mech (tap the selected one to clear).
 	var mechs: Array = MechMastery.mechs_of_role(pd.role)
@@ -193,9 +194,9 @@ func _fill_quirks(row: Control, pd: PlayerData) -> void:
 	for id in QuirkSystem.quirks_of(state, pd.id):
 		if not QuirkSystem.row(int(id)).is_empty():
 			ids.append(int(id))
-	row.get_node("%Count").text = "기벽  %d / %d" % [QuirkSystem.quirks_of(state, pd.id).size(),
-			QuirkSystem.slots_of(state, pd.id)]
-	row.get_node("%Max").text = "최대 %d칸" % QuirkSystem.max_slots()
+	row.get_node("%Count").text = Loc.t(L.MASTERY_PANEL_QUIRK_COUNT, {
+			"n": QuirkSystem.quirks_of(state, pd.id).size(), "slots": QuirkSystem.slots_of(state, pd.id)})
+	row.get_node("%Max").text = Loc.t(L.MASTERY_PANEL_QUIRK_MAX, {"n": QuirkSystem.max_slots()})
 	(row.get_node("%QuirkEmpty") as Control).visible = QuirkSystem.quirks_of(state, pd.id).is_empty()
 	var lines: Array = _ensure(row.get_node("%Lines"), QUIRK_LINE_SCENE, ids.size())
 	for i in lines.size():

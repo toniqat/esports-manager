@@ -1,5 +1,7 @@
 # mastery/ — mech mastery (M4)
 
+Display text is l10n keys (`mastery` domain); `TIER_NAMES` holds keys — `tier_name(t)` translates.
+
 Contract: `docs/outgame_dev_plan.md` §11. Run-scoped state, string keys only (JSON round-trips them;
 numbers come back as floats, so every read goes through `int()`):
 

@@ -25,9 +25,15 @@ extends RefCounted
 # `float()`-wrapped.
 
 const AXES: Array = ["training", "facility", "welfare"]
-const AXIS_LABELS: Dictionary = {
-	"training": "훈련", "facility": "시설 적립", "welfare": "복지",
+const AXIS_LABELS: Dictionary = {  # l10n-keys: finance.axis.*
+	"training": L.FINANCE_AXIS_TRAINING, "facility": L.FINANCE_AXIS_FACILITY, "welfare": L.FINANCE_AXIS_WELFARE,
 }
+## Settlement cut records (`history[].cuts`) — `{type, …params}`, never text (D7);
+## `cut_text(cut)` turns one into a line. Every deficit week starts with CUT_STOP.
+const CUT_STOP: String = "stop"            # {type}
+const CUT_FUND: String = "fund"            # {type, amount} — facility fund raided
+const CUT_DOWNGRADE: String = "downgrade"  # {type, from, to, amount} — amount = unpaid
+const CUT_PENALTY: String = "penalty"      # {type, weeks, pct}
 ## Manual allocation the run starts with (percent, sums to 100, step-aligned).
 const DEFAULT_ALLOC: Dictionary = {"training": 40, "facility": 30, "welfare": 30}
 
@@ -73,7 +79,7 @@ static func init_run(state: Dictionary, team_id: int) -> void:
 
 
 ## Week end (`SeasonHub._end_week`, before the calendar advances). Returns the
-## week summary `{income, expense, net, balance, cuts: Array[String], toast, …}`
+## week summary `{income, expense, net, balance, cuts: Array[cut record], toast, …}`
 ## (the full history entry plus `toast`).
 static func settle_week(state: Dictionary) -> Dictionary:
 	var f: Dictionary = _fin(state)
@@ -121,7 +127,7 @@ static func settle_week(state: Dictionary) -> Dictionary:
 		# Bankruptcy rule — see README. 1) allocation stops (no surplus to split),
 		# 2) balance pays, 3) facility fund pays, 4) one forced cut writes the rest off.
 		var need: int = -net
-		cuts.append("훈련 · 복지 지원 중단")
+		cuts.append({"type": CUT_STOP})
 		var from_balance: int = mini(balance_now, need)
 		balance_now -= from_balance
 		need -= from_balance
@@ -129,16 +135,16 @@ static func settle_week(state: Dictionary) -> Dictionary:
 			var from_fund: int = mini(fund, need)
 			fund -= from_fund
 			need -= from_fund
-			cuts.append("시설 적립금 %s 전용" % fmt(from_fund))
+			cuts.append({"type": CUT_FUND, "amount": from_fund})
 		if need > 0:
 			unpaid = need
 			if lvl > 1:
-				cuts.append("시설 Lv%d → Lv%d 강등 (미납 %s)" % [lvl, lvl - 1, fmt(need)])
+				cuts.append({"type": CUT_DOWNGRADE, "from": lvl, "to": lvl - 1, "amount": need})
 				lvl -= 1
 			else:
 				penalty = maxi(penalty, ConstTable.int_of("FINANCE_UNPAID_PENALTY_WEEKS"))
-				cuts.append("훈련 지원 삭감 %d주 (훈련 EXP −%d%%)" % [
-						penalty, ConstTable.int_of("FINANCE_UNPAID_TRAIN_PENALTY_PCT")])
+				cuts.append({"type": CUT_PENALTY, "weeks": penalty,
+						"pct": ConstTable.int_of("FINANCE_UNPAID_TRAIN_PENALTY_PCT")})
 
 	var week_no: int = int(f.get("week_no", 0)) + 1
 	var entry: Dictionary = {
@@ -202,15 +208,19 @@ static func settle_week(state: Dictionary) -> Dictionary:
 		hist.pop_front()
 	f["history"] = hist
 
+	# The toast is shown once on the next HUB and never saved — translated here.
 	var out: Dictionary = entry.duplicate(true)
+	var toast: PackedStringArray = []
 	if cuts.size() > 1 or unpaid > 0:
-		out["toast"] = "재무 적자 %s · 긴급 삭감 %d건 — 재무 카드 확인" % [fmt_signed(net), cuts.size()]
+		toast.append(Loc.t(L.FINANCE_TOAST_DEFICIT, {"net": fmt_signed(net), "n": cuts.size()}))
 	else:
-		out["toast"] = "재무 정산 %s · 잔고 %s" % [fmt_signed(net), fmt(balance_now)]
+		toast.append(Loc.t(L.FINANCE_TOAST_SETTLED, {"net": fmt_signed(net), "balance": fmt(balance_now)}))
 	if int(entry["special_spend"]) > 0:
-		out["toast"] += " · 특별 지출 %s" % fmt(int(entry["special_spend"]))
+		toast.append(Loc.t(L.FINANCE_TOAST_SPECIAL_SPEND, {"amount": fmt(int(entry["special_spend"]))}))
 	if not expired.is_empty():
-		out["toast"] += " · 만료: " + ", ".join(special_names(expired))
+		toast.append(Loc.t(L.FINANCE_TOAST_EXPIRED,
+				{"names": Loc.t(L.UI_LIST_SEPARATOR).join(special_names(expired))}))
+	out["toast"] = " · ".join(toast)
 	return out
 
 
@@ -457,12 +467,12 @@ static func upgrade_funds(state: Dictionary) -> int:
 	return facility_fund(state) + balance(state)
 
 
-## "" when the upgrade is possible, otherwise the Korean reason.
+## "" when the upgrade is possible, otherwise the reason (current locale).
 static func upgrade_block_reason(state: Dictionary) -> String:
 	if facility_level(state) >= max_level():
-		return "최고 레벨"
+		return Loc.t(L.UI_WORD_MAX_LEVEL)
 	if upgrade_funds(state) < upgrade_cost(state):
-		return "자금 부족"
+		return Loc.t(L.FINANCE_BLOCK_NO_FUNDS)
 	return ""
 
 
@@ -565,65 +575,66 @@ static func special_pct(state: Dictionary, axis: String) -> int:
 	return total
 
 
-## "" when `special_id` can be bought now, otherwise the Korean reason
+## "" when `special_id` can be bought now, otherwise the reason, current locale
 ## (running, too many running, condition unmet, no effect, short of money).
 static func special_block_reason(state: Dictionary, special_id: String) -> String:
 	var row: Dictionary = special_row(special_id)
 	if row.is_empty() or not SPECIAL_KINDS.has(String(row["kind"])):
-		return "알 수 없는 항목"
+		return Loc.t(L.FINANCE_BLOCK_UNKNOWN)
 	var left: int = special_weeks_left(state, special_id)
 	if left > 0:
-		return "진행 중 — %d주 남음" % left
+		return Loc.t(L.FINANCE_BLOCK_RUNNING, {"weeks": left})
 	var cap: int = maxi(1, ConstTable.int_of("FSPEC_MAX_ACTIVE"))
 	if active_specials(state).size() >= cap:
-		return "동시 진행 최대 %d건" % cap
+		return Loc.t(L.FINANCE_BLOCK_MAX_ACTIVE, {"n": cap})
 	var why: String = special_cond_reason(state, String(row["cond"]))
 	if why != "":
 		return why
 	match String(row["kind"]):
 		"coach_hire":
 			if coach_hire_gain(state, row) <= 0:
-				return "담당 %s 쪽이 더 높아 효과 없음" % StaffSystem.owner_name(state, String(row["p1"]))
+				return Loc.t(L.FINANCE_BLOCK_COACH_NO_GAIN,
+						{"name": StaffSystem.owner_name(state, String(row["p1"]))})
 		"salary_cut":
 			if StaffSystem.weekly_salary_total(state) <= 0:
-				return "스태프 연봉이 없어 효과 없음"
+				return Loc.t(L.FINANCE_BLOCK_NO_SALARY)
 		"upkeep_delay":
 			if int(facility_row(facility_level(state)).get("upkeep", 0)) <= 0:
-				return "유지비가 없어 효과 없음"
+				return Loc.t(L.FINANCE_BLOCK_NO_UPKEEP)
 	if balance(state) < int(row["cost"]):
-		return "잔고 부족 — %s 필요" % fmt(int(row["cost"]))
+		return Loc.t(L.FINANCE_BLOCK_SHORT_BALANCE, {"amount": fmt(int(row["cost"]))})
 	return ""
 
 
 ## Condition grammar (`finance_specials.cond`, clauses joined by `&`, all must hold):
 ## `facility_min:N` · `facility_max:N` · `sponsor_max:N` (team sponsor base) ·
 ## `balance_max:N` · `last_wins_min:N` (wins in the last settled week).
-## "" when met (or empty), otherwise the Korean reason.
+## "" when met (or empty), otherwise the reason (current locale).
 static func special_cond_reason(state: Dictionary, cond: String) -> String:
 	for part in cond.split("&", false):
 		var kv: PackedStringArray = String(part).strip_edges().split(":", false)
 		if kv.size() != 2:
-			return "조건 오류"
+			return Loc.t(L.FINANCE_COND_ERROR)
 		var key: String = String(kv[0]).strip_edges()
 		var n: int = String(kv[1]).strip_edges().to_int()
 		match key:
 			"facility_min":
 				if facility_level(state) < n:
-					return "시설 Lv%d 이상 필요" % n
+					return Loc.t(L.FINANCE_COND_FACILITY_MIN, {"n": n})
 			"facility_max":
 				if facility_level(state) > n:
-					return "시설 Lv%d 이하 팀 전용" % n
+					return Loc.t(L.FINANCE_COND_FACILITY_MAX, {"n": n})
 			"sponsor_max":
 				if int((state.get("finance", {}) as Dictionary).get("sponsor_base", 0)) > n:
-					return "주간 스폰서 %s 이하 팀 전용" % fmt(n)
+					return Loc.t(L.FINANCE_COND_SPONSOR_MAX, {"amount": fmt(n)})
 			"balance_max":
 				if balance(state) > n:
-					return "잔고 %s 이하일 때만" % fmt(n)
+					return Loc.t(L.FINANCE_COND_BALANCE_MAX, {"amount": fmt(n)})
 			"last_wins_min":
 				if int(last_week(state).get("wins", 0)) < n:
-					return "지난 주 %d승 이상 필요" % n
+					return Loc.t(L.FINANCE_COND_LAST_WINS_MIN, {"n": n})
 			_:
-				return "조건 오류"
+				return Loc.t(L.FINANCE_COND_ERROR)
 	return ""
 
 
@@ -666,29 +677,56 @@ static func buy_special(state: Dictionary, special_id: String) -> String:
 	return ""
 
 
-## One-line Korean effect of a special row (or a running entry — same keys).
+## One-line effect of a special row (or a running entry — same keys), current locale.
 static func special_effect_text(row: Dictionary) -> String:
 	var p1: int = String(row.get("p1", "0")).to_int()
 	var p2: int = String(row.get("p2", "0")).to_int()
 	var parts: Array = []
 	match String(row.get("kind", "")):
 		"coach_hire":
-			parts.append("감독 %s %+d" % [String(StaffSystem.STAT_LABELS.get(String(row.get("p1", "")), "?")), p2])
+			parts.append(Loc.t(L.FINANCE_EFFECT_MANAGER_STAT,
+					{"stat": StaffSystem.stat_label(String(row.get("p1", ""))), "delta": "%+d" % p2}))
 		"camp":
-			parts.append("훈련 EXP %+d%%" % p1)
+			parts.append(Loc.t(L.FINANCE_EFFECT_TRAIN_EXP, {"pct": "%+d" % p1}))
 		"sponsor_deal":
-			parts.append("스폰서 수입 %+d%%" % p1)
+			parts.append(Loc.t(L.FINANCE_EFFECT_SPONSOR, {"pct": "%+d" % p1}))
 			if p2 != 0:
-				parts.append("훈련 EXP %+d%%" % p2)
+				parts.append(Loc.t(L.FINANCE_EFFECT_TRAIN_EXP, {"pct": "%+d" % p2}))
 		"upkeep_delay":
-			parts.append("시설 유지비 %+d%%" % p1)
+			parts.append(Loc.t(L.FINANCE_EFFECT_UPKEEP, {"pct": "%+d" % p1}))
 			if p2 != 0:
-				parts.append("사건 확률 %+d%%" % p2)
+				parts.append(Loc.t(L.FINANCE_EFFECT_INCIDENT, {"pct": "%+d" % p2}))
 		"salary_cut":
-			parts.append("스태프 연봉 %+d%%" % p1)
+			parts.append(Loc.t(L.FINANCE_EFFECT_SALARY, {"pct": "%+d" % p1}))
 			if p2 != 0:
-				parts.append("훈련 EXP %+d%%" % p2)
+				parts.append(Loc.t(L.FINANCE_EFFECT_TRAIN_EXP, {"pct": "%+d" % p2}))
 	return " · ".join(PackedStringArray(parts))
+
+
+## Display line of one settlement cut record (`history[].cuts`, `CUT_*`), current locale.
+static func cut_text(cut: Variant) -> String:
+	if not cut is Dictionary:
+		return ""
+	var c: Dictionary = cut
+	match String(c.get("type", "")):
+		CUT_STOP:
+			return Loc.t(L.FINANCE_CUT_STOP)
+		CUT_FUND:
+			return Loc.t(L.FINANCE_CUT_FUND, {"amount": fmt(int(c.get("amount", 0)))})
+		CUT_DOWNGRADE:
+			return Loc.t(L.FINANCE_CUT_DOWNGRADE, {"from": int(c.get("from", 0)), "to": int(c.get("to", 0)),
+					"amount": fmt(int(c.get("amount", 0)))})
+		CUT_PENALTY:
+			return Loc.t(L.FINANCE_CUT_PENALTY,
+					{"weeks": int(c.get("weeks", 0)), "pct": int(c.get("pct", 0))})
+	return ""
+
+
+## Display name of an allocation axis (`AXES`), current locale.
+static func axis_label(axis: String) -> String:
+	if not AXIS_LABELS.has(axis):
+		return axis
+	return Loc.t(String(AXIS_LABELS[axis]))  # l10n-dynamic: finance.axis.*
 
 
 # Running special ids (history entry).

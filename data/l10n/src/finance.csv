@@ -25,3 +25,88 @@ tx_XAR8PQMZNV,finance.special.s10.desc,active,finance_specials.csv desc (id=S10)
 tx_3N2P9M4E9W,finance.special.s11.desc,active,finance_specials.csv desc (id=S11),,,저예산 팀용 지역 스폰서 — 수입이 늘지만 홍보 일정이 훈련 시간을 조금 잡아먹는다,"Local sponsor for low-budget teams — more income, but promo events eat into training time",draft,2130f61d
 tx_AXEKA79XKE,finance.special.s12.desc,active,finance_specials.csv desc (id=S12),,,잔고가 바닥일 때 시설 유지보수를 2주 미룬다 — 유지비가 없지만 사건이 잦아진다,"Put off facility maintenance for two weeks when the balance runs dry — no upkeep, but incidents become more frequent",draft,addcd833
 tx_MB49GSHBFN,finance.special.s13.desc,active,finance_specials.csv desc (id=S13),,,잔고가 바닥일 때 스태프 연봉을 3주 깎는다 — 사기가 떨어져 훈련 효율이 준다,Cut staff salaries for three weeks when the balance runs dry — morale drops and training efficiency falls,draft,7f03cd32
+tx_1HENHSWBBV,finance.finance_history_row.cut,active,UI_Comp_FinanceHistoryRow.tscn Cut text,,,삭감,Cut,draft,ba7b3845
+tx_511JE6DQB1,finance.finance_special_row.confirm,active,UI_Comp_FinanceSpecialRow.tscn Top/Buttons/Confirm text,,,한 번 더 눌러 확정,Tap again to confirm,draft,0e29f4cc
+tx_J4YTK7VVDS,finance.finance_panel.empty,active,UI_View_FinancePanel.tscn Empty text,,,진행 중인 런이 없습니다,No run in progress,draft,9f5e6310
+tx_Z3Y66BXDFR,finance.finance_panel.balance_caption,active,UI_View_FinancePanel.tscn Main/Header/BalanceCaption text,,,잔고,Balance,draft,9336a8f5
+tx_FG04N4WSYY,finance.finance_panel.fund_caption,active,UI_View_FinancePanel.tscn Main/Header/FundCaption text,,,시설 적립금,Facility Fund,draft,a2b7b19b
+tx_DM158Y7SJ6,finance.finance_panel.title,active,UI_View_FinancePanel.tscn Main/LastWeekSection/Title text,,,지난 주 정산,Last Week's Settlement,draft,0504b45b
+tx_M06VBCHAA0,finance.finance_panel.last_week_empty,active,UI_View_FinancePanel.tscn Main/LastWeekEmpty text,,,아직 정산 기록이 없습니다 — 일요일 주 마감에 정산됩니다,No settlements yet — settled at Sunday's week end,draft,507131f0
+tx_MXXEN4NZT8,finance.finance_panel.caption,active,UI_View_FinancePanel.tscn Main/LastWeek/NetRow/Caption text,,,순수지,Net,draft,315d52cb
+tx_SQF813637S,finance.finance_panel.alloc_section_title,active,UI_View_FinancePanel.tscn Main/AllocSection/Title text,,,흑자 배분,Surplus Allocation,draft,41184a66
+tx_JFNB4YBFQ3,finance.finance_panel.specials_section_title,active,UI_View_FinancePanel.tscn Main/SpecialsSection/Title text,,,특별 지출,Special Spending,draft,11cf57ab
+tx_WYA8YC4SQD,finance.finance_panel.history_section_title,active,UI_View_FinancePanel.tscn Main/HistorySection/Title text,,,최근 기록,Recent History,draft,4687011b
+tx_25RMDAJ5X7,finance.finance_panel.hist_empty,active,UI_View_FinancePanel.tscn Main/HistEmpty text,,,기록 없음,No records,draft,2de28099
+tx_0CX1TFBM9T,finance.axis.training,active,흑자 배분 축 이름 (FinanceSystem.AXIS_LABELS),,,훈련,Training,draft,6c9264ab
+tx_21J7S51M54,finance.axis.facility,active,흑자 배분 축 이름 (FinanceSystem.AXIS_LABELS),,,시설 적립,Facility Fund,draft,f03b69e0
+tx_FVYGWSZW7J,finance.axis.welfare,active,흑자 배분 축 이름 (FinanceSystem.AXIS_LABELS),,,복지,Welfare,draft,dd99d0b8
+tx_FWWJNTNYP8,finance.cut.stop,active,적자 정산 삭감 줄 — 배분 중단,,,훈련 · 복지 지원 중단,Training · welfare support halted,draft,cb72aa5d
+tx_BVZ04VJAS3,finance.cut.fund,active,적자 정산 삭감 줄 — {amount} = 적립금에서 쓴 돈,,,시설 적립금 {amount} 전용,Facility fund {amount} diverted,draft,51ca1b0d
+tx_XTVPW36TS4,finance.cut.downgrade,active,적자 정산 삭감 줄 — 시설 강등,,,시설 Lv{from} → Lv{to} 강등 (미납 {amount}),Facility Lv{from} → Lv{to} downgrade (unpaid {amount}),draft,7aa7b2c4
+tx_C839D4YFV0,finance.cut.penalty,active,적자 정산 삭감 줄 — 훈련 벌칙,,,훈련 지원 삭감 {weeks}주 (훈련 EXP −{pct}%),Training support cut for {weeks} wk (training EXP −{pct}%),draft,fe8821ce
+tx_HQQ1QK18GW,finance.toast.deficit,active,주 마감 토스트 — 강제 삭감이 난 주,,,재무 적자 {net} · 긴급 삭감 {n}건 — 재무 카드 확인,Finance deficit {net} · {n} emergency cuts — check the Finance card,draft,1da67a47
+tx_4RHZPMT3BW,finance.toast.settled,active,주 마감 토스트 — 정산 결과,,,재무 정산 {net} · 잔고 {balance},Finance settled {net} · balance {balance},draft,486bd725
+tx_VZWSGDJMJA,finance.toast.special_spend,active,주 마감 토스트 꼬리 조각 (· 로 이음),,,특별 지출 {amount},Special spending {amount},draft,63589acd
+tx_BJG2P5WWYS,finance.toast.expired,active,주 마감 토스트 꼬리 조각 — 끝난 특별 지출 이름들,,,만료: {names},Expired: {names},draft,c0b79a98
+tx_1PAC25VTPQ,finance.block.no_funds,active,시설 업그레이드 불가 사유,,,자금 부족,Not enough funds,draft,91da4fc7
+tx_5MQ91AQVZZ,finance.block.unknown,active,특별 지출 구매 불가 사유,,,알 수 없는 항목,Unknown item,draft,9f7fc41b
+tx_4YVAEG0ECQ,finance.block.running,active,특별 지출 구매 불가 사유 (버튼),,,진행 중 — {weeks}주 남음,Running — {weeks} wk left,draft,799bdcd5
+tx_WPMNRYDWSD,finance.block.max_active,active,특별 지출 구매 불가 사유 (버튼),,,동시 진행 최대 {n}건,Up to {n} running at once,draft,b850bfa7
+tx_D7GGSYDVRX,finance.block.coach_no_gain,active,특별 지출 구매 불가 사유 — {name} = 그 능력치 담당자,,,담당 {name} 쪽이 더 높아 효과 없음,No effect — {name} already covers it higher,draft,57b6d6b1
+tx_RTHA5YAC79,finance.block.no_salary,active,특별 지출 구매 불가 사유,,,스태프 연봉이 없어 효과 없음,No effect — no staff salaries,draft,a6640491
+tx_P3Y8G1KRE6,finance.block.no_upkeep,active,특별 지출 구매 불가 사유,,,유지비가 없어 효과 없음,No effect — no upkeep,draft,4d866394
+tx_9QH0GWP11D,finance.block.short_balance,active,특별 지출 구매 불가 사유,,,잔고 부족 — {amount} 필요,Not enough balance — {amount} needed,draft,ac93b6af
+tx_X1R51424TJ,finance.cond.error,active,특별 지출 조건 불충족 사유 — 잘못된 조건,,,조건 오류,Condition error,draft,a7d506bc
+tx_748T0JD0MH,finance.cond.facility_min,active,특별 지출 조건 불충족 사유,,,시설 Lv{n} 이상 필요,Requires facility Lv{n}+,draft,d265db0f
+tx_CEHH3QBFTP,finance.cond.facility_max,active,특별 지출 조건 불충족 사유,,,시설 Lv{n} 이하 팀 전용,Teams with facility Lv{n} or lower only,draft,f094806f
+tx_XX8567DQ94,finance.cond.sponsor_max,active,특별 지출 조건 불충족 사유,,,주간 스폰서 {amount} 이하 팀 전용,Teams with weekly sponsor {amount} or less only,draft,54c5dd9a
+tx_YPG17RRBQG,finance.cond.balance_max,active,특별 지출 조건 불충족 사유,,,잔고 {amount} 이하일 때만,Only with balance {amount} or less,draft,d170a1fe
+tx_55ZC8KRDA6,finance.cond.last_wins_min,active,특별 지출 조건 불충족 사유,,,지난 주 {n}승 이상 필요,Requires {n}+ wins last week,draft,38c2c763
+tx_GHSVC43HP2,finance.effect.manager_stat,active,"특별 지출 효과 조각 — {stat} = 스태프 능력치 이름, {delta} = +4",,,감독 {stat} {delta},Manager {stat} {delta},draft,1f89ed46
+tx_30X2WR33SP,finance.effect.train_exp,active,특별 지출 효과 조각 — {pct} = +10 / -5,,,훈련 EXP {pct}%,Training EXP {pct}%,draft,331acecf
+tx_CWJ6DE9DP8,finance.effect.sponsor,active,특별 지출 효과 조각,,,스폰서 수입 {pct}%,Sponsor income {pct}%,draft,fec45e31
+tx_YC0EYSGFNS,finance.effect.upkeep,active,특별 지출 효과 조각,,,시설 유지비 {pct}%,Facility upkeep {pct}%,draft,7a1610f4
+tx_BT8KJSTKS7,finance.effect.incident,active,특별 지출 효과 조각,,,사건 확률 {pct}%,Incident chance {pct}%,draft,5820848a
+tx_2TSKW275F0,finance.effect.salary,active,특별 지출 효과 조각,,,스태프 연봉 {pct}%,Staff salaries {pct}%,draft,311f3a88
+tx_T1M9PEN089,finance.hub.title,active,허브 관리 카드 제목 (런 없음),,,재무,Finance,draft,b0382dc9
+tx_EK67F07FWA,finance.hub.title_level,active,허브 관리 카드 제목,,,재무 · 시설 Lv{level},Finance · Facility Lv{level},draft,e8e4ea6d
+tx_MPW438S5J7,finance.hub.before_first,active,허브 재무 카드 보조 줄,,,첫 정산 전,Before first settlement,draft,1afcc4d9
+tx_Q52XWB8S4X,finance.hub.last_week,active,허브 재무 카드 보조 줄 — {net} = +360,,,지난 주 {net},Last week {net},draft,40f528a7
+tx_MKKQ4Z5M2Y,finance.hub.last_week_cut,active,허브 재무 카드 보조 줄 — 강제 삭감이 난 주,,,지난 주 {net} · 삭감,Last week {net} · cuts,draft,e76694e0
+tx_JH732MWHD3,finance.sheet.title,active,재무 시트 제목,,,재무 · 시설,Finance · Facilities,draft,42df9973
+tx_QGCKXQ941D,finance.panel.owner_manager,active,재무 시트 담당 줄,,,담당: 감독 — 흑자 배분을 직접 정합니다,In charge: Manager — you split the surplus yourself,draft,874e579a
+tx_7QKSR4PVYS,finance.panel.owner_staff,active,재무 시트 담당 줄 — {name} = 스태프,,,담당: {name} — 흑자를 자동으로 배분합니다,In charge: {name} — the surplus is split automatically,draft,ca6bb6c7
+tx_C696EEJ9Z1,finance.panel.projection,active,재무 시트 예상 수지 줄,,,"이번 주 예상 수지 {net}  (수입 {income} · 지출 {expense}, 보너스 포함)","Projected net this week {net}  (income {income} · expenses {expense}, incl. bonus)",draft,0a1c646f
+tx_6FBWWWX3V2,finance.panel.low_balance,active,재무 시트 경고 줄,,,잔고가 한 주 고정 지출({amount})보다 적습니다 — 적자가 나면 강제 삭감,Balance is below one week of fixed costs ({amount}) — a deficit forces cuts,draft,c8d108dd
+tx_QBK71YGSAE,finance.panel.penalty,active,재무 시트 경고 줄,,,훈련 지원 삭감 중 — {weeks}주 남음 (훈련 EXP −{pct}%),Training support cut — {weeks} wk left (training EXP −{pct}%),draft,af12dfdd
+tx_GZYPKCSGMH,finance.panel.bonus,active,지난 주 정산 줄 이름,,,성적 보너스 ({win}승 {loss}패),Results bonus ({win}W {loss}L),draft,de2aa330
+tx_P32YKYKYRT,finance.panel.salaries,active,지난 주 정산 줄 이름,,,스태프 연봉,Staff salaries,draft,98182f75
+tx_00XQNCZFRD,finance.panel.alloc_line,active,지난 주 정산 — 흑자가 간 곳,,,→ 잔고 적립 {reserve} · 훈련 {training} · 시설 적립 {facility} · 복지 {welfare},→ Reserve {reserve} · Training {training} · Facility fund {facility} · Welfare {welfare},draft,c6ec7023
+tx_A2CBRDMBY4,finance.panel.cut_line,active,지난 주 정산 삭감 줄 — {cut} = finance.cut.* 문장,,,삭감 · {cut},Cut · {cut},draft,b746bf62
+tx_EBDF62NZNS,finance.panel.special_spend,active,지난 주 정산 — 특별 지출,,,특별 지출 −{amount} (구매 즉시 잔고에서 차감 · {names}),Special spending −{amount} (paid from balance on purchase · {names}),draft,194c53f1
+tx_BA5XCYYSAC,finance.panel.specials_expired,active,지난 주 정산 — 만료된 특별 지출,,,특별 지출 만료 · {names},Special spending expired · {names},draft,bcee2bca
+tx_25PKBYA5Q3,finance.panel.alloc_intro,active,흑자 배분 설명,,,"흑자의 {pct}%는 잔고에 남고, 나머지를 세 곳에 나눕니다. 효과는 다음 한 주.",{pct}% of a surplus stays in the balance; the rest is split three ways. Effects apply next week.,draft,0008bc5f
+tx_YMK6HF0KET,finance.panel.alloc_delegated,active,흑자 배분 — 위임 상태,,,{name} 담당 — 자동 균등 배분 (무난하지만 최적은 아닙니다),"{name} in charge — automatic even split (decent, not optimal)",draft,e5a7addb
+tx_PDF6M4TMFX,finance.panel.hint_training,active,흑자 배분 축 설명 — 훈련,,,다음 주 훈련 EXP 최대 +{pct}% (주 {amount} 지출에서 최대),Next week training EXP up to +{pct}% (maxed at {amount} spent per week),draft,7fd50c6a
+tx_J9HW9G18D4,finance.panel.hint_facility,active,흑자 배분 축 설명 — 시설 적립,,,업그레이드 자금으로 모읍니다 · 적자 때 비상금,Saved toward upgrades · emergency fund in a deficit,draft,415d5444
+tx_4DNE40K656,finance.panel.hint_facility_max,active,흑자 배분 축 설명 — 시설 최고 레벨,,,최고 레벨 — 적자 때 비상금으로만 쓰입니다,Max level — used only as an emergency fund in a deficit,draft,3d166bb8
+tx_2Y4X334GGR,finance.panel.hint_welfare,active,흑자 배분 축 설명 — 복지,,,다음 주 사건 확률 최대 −{pct}% (주 {amount} 지출에서 최대),Next week incident chance up to −{pct}% (maxed at {amount} spent per week),draft,a478ee3a
+tx_5CEBKKHSAS,finance.panel.effects,active,흑자 배분 — 이번 주 효과,,,이번 주 적용 중: 훈련 EXP +{training}% · 사건 확률 −{welfare}%,Active this week: training EXP +{training}% · incident chance −{welfare}%,draft,14038e2a
+tx_2HH94J6ARY,finance.panel.facility_title,active,시설 섹션 제목,,,시설  Lv {level} / {max},Facility  Lv {level} / {max},draft,03df6790
+tx_CPW59P2CKT,finance.panel.fac_now,active,시설 현재 레벨 효과 줄,,,지금  {effects},Now  {effects},draft,3c9c7d9a
+tx_KWW448S0GH,finance.panel.fac_next,active,시설 다음 레벨 효과 줄,,,다음  {effects},Next  {effects},draft,faf25b35
+tx_SAXP078SDD,finance.panel.fac_effects,active,시설 레벨 효과 목록,,,훈련 ×{train} · 숙련도 ×{mastery} · 사건 ×{incident} · 수입 ×{income} · 유지비 {upkeep},Training ×{train} · Mastery ×{mastery} · Incidents ×{incident} · Income ×{income} · Upkeep {upkeep},draft,498f87db
+tx_YN9S7WB6S4,finance.panel.fac_cost,active,시설 업그레이드 비용 줄,,,"비용 {cost} — 시설 적립금 먼저, 모자라면 잔고 (가용 {available})","Cost {cost} — facility fund first, then balance (available {available})",draft,bf1cf780
+tx_JTTYE38FPY,finance.panel.upgrade,active,시설 업그레이드 버튼,,,시설 업그레이드 → Lv {level},Upgrade facility → Lv {level},draft,83c34c73
+tx_63XDT8NVFN,finance.panel.upgrade_confirm,active,시설 업그레이드 확인 버튼,,,한 번 더 눌러 확정 (−{cost}),Tap again to confirm (−{cost}),draft,4f54191d
+tx_XHH41J8S28,finance.panel.upgrade_short,active,시설 업그레이드 막힘 버튼,,,자금 부족 — {amount} 필요,Not enough funds — {amount} needed,draft,1fe3dcd6
+tx_SBD8ZAF5DC,finance.panel.spec_intro,active,특별 지출 설명,,,잔고에서 바로 냅니다 · 효과는 정해진 주 수 동안 (동시 {n}건까지),Paid from the balance at once · lasts a set number of weeks (up to {n} at once),draft,ac99742d
+tx_S2XBTE0K8X,finance.panel.running,active,특별 지출 진행 중 줄,,,진행 중 · {name} — {effect} · {weeks}주 남음,Running · {name} — {effect} · {weeks} wk left,draft,d120beda
+tx_MVMJCRNWYR,finance.panel.spec_effect,active,특별 지출 행 효과 줄,,,{effect} · {weeks}주,{effect} · {weeks} wk,draft,7f353b54
+tx_JQ9XJ51YJ0,finance.panel.buy,active,특별 지출 구매 버튼 — {price} = −300,,,구매  {price},Buy  {price},draft,10d7178d
+tx_N87J4KZFF1,finance.panel.contract_free,active,특별 지출 버튼 — 비용 0,,,계약  무료,Sign  Free,draft,cca9cf45
+tx_YKSPS14YC2,finance.panel.hist_balance,active,최근 기록 행 잔고,,,잔고 {amount},Balance {amount},draft,0f56bcca
+tx_6DZQQSQ3VE,finance.panel.sponsor,active,지난 주 정산 줄 이름,,,스폰서 수입 (시설 ×{facility}),Sponsor income (facility ×{facility}),draft,d1bcf50b
+tx_1ZGSEKD4JD,finance.panel.sponsor_mult,active,지난 주 정산 줄 이름 — 보정 있음,,,스폰서 수입 (시설 ×{facility} · 보정 ×{mult}),Sponsor income (facility ×{facility} · modifier ×{mult}),draft,201d0587
+tx_VGMAD0GE7N,finance.panel.upkeep,active,지난 주 정산 줄 이름,,,시설 유지비,Facility upkeep,draft,6ab81299
+tx_5ATMNYAZ8A,finance.panel.upkeep_mult,active,지난 주 정산 줄 이름 — 보정 있음,,,시설 유지비 (보정 ×{mult}),Facility upkeep (modifier ×{mult}),draft,2a51c359

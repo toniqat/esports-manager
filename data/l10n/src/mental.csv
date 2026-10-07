@@ -232,3 +232,12 @@ tx_Y286QSY9AY,mental.p10.p10_l0,active,mental_texts.csv text (id=P10_L0),,,@e스
 tx_ZYQ2H6NSV5,mental.p10.p10_l1,active,mental_texts.csv text (id=P10_L1),,,현역 시절과 지금 중 언제가 더 떨립니까?,Which is more nerve-racking: your playing days or now?,draft,d4af55ba
 tx_S475S364V1,mental.p10.p10_c0,active,mental_texts.csv text (id=P10_C0),,,지금이요. 선수들 경기라서요.,Now. Because it's my players' match.,draft,f397c712
 tx_TRZ5H1B5JE,mental.p10.p10_c1,active,mental_texts.csv text (id=P10_C1),,,현역 때죠. 지금은 즐깁니다.,My playing days. Now I just enjoy it.,draft,f3d9f77a
+tx_GAEQTM3H22,mental.ui.note.trust,active,멘탈 결과 칩 (MentalEvents.note_text) — alias 4단: mental.{event}.{id} 데이터 규칙과 겹치지 않게,,,{name} 신뢰도 {delta},{name} trust {delta},draft,8e8ce599
+tx_S020E3BRTM,mental.ui.note.trust_all,active,멘탈 결과 칩,,,팀 전체 신뢰도 {delta},Team trust {delta},draft,75587124
+tx_P1MZEZ4FJQ,mental.ui.note.pmod_all,active,멘탈 결과 칩,,,팀 전체 {stat} {delta} ({duration}),Whole team {stat} {delta} ({duration}),draft,08ba94b7
+tx_JCW2JPKMY8,mental.ui.note.smod,active,멘탈 결과 칩 — 감독 일시 능력치,,,감독 {stat} {delta} ({duration}),Manager {stat} {delta} ({duration}),draft,583e369c
+tx_8FVD7N2NZP,mental.ui.note.outing,active,멘탈 결과 칩,,,외출 {n}회째 · 다음 훈련일 EXP 감소,Outing #{n} · less EXP on the next training day,draft,63d8b28f
+tx_KAEPTP25DT,mental.ui.note.pilot,active,파일럿을 못 찾을 때 이름 자리,,,선수,Pilot,draft,c37450d6
+tx_WR6Q5QGMZ8,mental.ui.note.all_stats,active,일시 스탯 대상이 전부일 때,,,전 스탯,All stats,draft,9fa10fd0
+tx_MD8BDCV48Q,mental.ui.note.until_match,active,일시 보정 기간 — 다음 경기까지,,,다음 경기까지,Until next match,draft,f93b6d08
+tx_D3NT6QFHKK,mental.ui.mod_source.incident,active,스태프 시트 일시 보정 출처 — 선수 사건,,,사건,Incident,draft,cc42d930

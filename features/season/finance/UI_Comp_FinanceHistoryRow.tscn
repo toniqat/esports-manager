@@ -14,6 +14,7 @@ mouse_filter = 2
 theme = ExtResource("1_theme")
 
 [node name="Week" type="Label" parent="."]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_history()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -38,6 +39,7 @@ text = "+467"
 horizontal_alignment = 2
 
 [node name="Balance" type="Label" parent="."]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd"
 unique_name_in_owner = true
 layout_mode = 1
@@ -60,5 +62,5 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 theme_type_variation = &"NegativeLabel"
 theme_override_font_sizes/font_size = 22
-text = "삭감"
+text = "tx_1HENHSWBBV"
 horizontal_alignment = 2

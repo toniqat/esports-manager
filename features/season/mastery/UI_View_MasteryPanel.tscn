@@ -22,7 +22,7 @@ custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 28
-text = "진행 중인 런이 없다"
+text = "tx_WZDGTR97KE"
 
 [node name="Main" type="VBoxContainer" parent="."]
 editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill()"
@@ -37,6 +37,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="Head" type="Label" parent="Main/HeadRow"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -49,6 +50,7 @@ text = "담당: 윤재혁   ·   지식 16"
 clip_text = true
 
 [node name="Gain" type="Label" parent="Main/HeadRow"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -62,6 +64,7 @@ text = "획득 배율 ×1.56"
 horizontal_alignment = 2
 
 [node name="Legend" type="Label" parent="Main"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 32)
@@ -72,6 +75,7 @@ text = "등급 보정 (스탯 6종)   미숙 -3  ·  보통 ±0  ·  능숙 +2  
 clip_text = true
 
 [node name="Rules" type="Label" parent="Main"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 42)
@@ -89,7 +93,7 @@ layout_mode = 2
 focus_mode = 0
 theme_type_variation = &"GhostButton"
 theme_override_font_sizes/font_size = 28
-text = "코치에게 맡기기"
+text = "tx_43FCJDADR5"
 
 [node name="AutoGap" type="Control" parent="Main"]
 editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill()"
@@ -105,10 +109,11 @@ custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 21
-text = "메크 코치가 없다 — 선수마다 직접 연구 메크를 고른다"
+text = "tx_S3TMQTME0B"
 clip_text = true
 
 [node name="QuirkOdds" type="Label" parent="Main"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 40)

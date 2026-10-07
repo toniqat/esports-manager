@@ -21,9 +21,10 @@ extends RefCounted
 # `run_setup` at run start: `run_setup.manager_type` / `.manager_stats` / `.staff`.
 
 const STATS: Array = ["training", "tactics", "knowledge", "mental", "analysis", "finance"]
-const STAT_LABELS: Dictionary = {
-	"training": "훈련", "tactics": "전술", "knowledge": "지식",
-	"mental": "멘탈", "analysis": "분석", "finance": "관리",
+## Stat → l10n key. Values are keys — show them with `stat_label(stat)`, never raw.
+const STAT_LABELS: Dictionary = {  # l10n-keys: staff.stat.*
+	"training": L.STAFF_STAT_TRAINING, "tactics": L.STAFF_STAT_TACTICS, "knowledge": L.STAFF_STAT_KNOWLEDGE,
+	"mental": L.STAFF_STAT_MENTAL, "analysis": L.STAFF_STAT_ANALYSIS, "finance": L.STAFF_STAT_FINANCE,
 }
 const STAT_MIN: int = 1
 const STAT_MAX: int = 20
@@ -37,13 +38,14 @@ const JOB_STAT: Dictionary = {
 	"finance": "finance",
 }
 const JOB_ASSISTANT: String = "assistant"
-const JOB_LABELS: Dictionary = {
-	"assistant": "어시스턴트 매니저",
-	"coach_training": "훈련 코치",
-	"coach_tactics": "전술 코치",
-	"coach_knowledge": "메크 코치",
-	"analyst": "분석가",
-	"finance": "예산 관리자",
+## Job → l10n key. Values are keys — show them with `job_label(job)`, never raw.
+const JOB_LABELS: Dictionary = {  # l10n-keys: staff.job.*
+	"assistant": L.STAFF_JOB_ASSISTANT,
+	"coach_training": L.STAFF_JOB_COACH_TRAINING,
+	"coach_tactics": L.STAFF_JOB_COACH_TACTICS,
+	"coach_knowledge": L.STAFF_JOB_COACH_KNOWLEDGE,
+	"analyst": L.STAFF_JOB_ANALYST,
+	"finance": L.STAFF_JOB_FINANCE,
 }
 
 const OWNER_MANAGER: String = "manager"
@@ -162,12 +164,37 @@ static func owner(state: Dictionary, stat: String) -> String:
 	return String(_best(state, stat)["owner"])
 
 
-## Display name of whoever covers it ("감독" for the manager).
+## Display name of whoever covers it (`term.person.manager` for the manager).
 static func owner_name(state: Dictionary, stat: String) -> String:
 	var b: Dictionary = _best(state, stat)
 	if String(b["owner"]) == OWNER_MANAGER:
-		return "감독"
+		return Loc.t(L.TERM_PERSON_MANAGER)
 	return staff_name(b["who"] as Dictionary)
+
+
+## Display name of a stat key (`STATS`), current locale. Unknown key → "?".
+static func stat_label(stat: String) -> String:
+	if not STAT_LABELS.has(stat):
+		return "?"
+	return Loc.t(String(STAT_LABELS[stat]))  # l10n-dynamic: staff.stat.*
+
+
+## Display name of a staff job (`JOB_LABELS` keys), current locale. Unknown job → `term.person.staff`.
+static func job_label(job: String) -> String:
+	if not JOB_LABELS.has(job):
+		return Loc.t(L.TERM_PERSON_STAFF)
+	return Loc.t(String(JOB_LABELS[job]))  # l10n-dynamic: staff.job.*
+
+
+## Display text of a `staff_mods.source` id (D7 — the saved value is an id, never text):
+## `finance:<special id>` → that special's name, `mental:<event id>` → the event's kind
+## (interview / outing / press / incident). Empty → "", anything else → unchanged.
+static func mod_source_text(source: String) -> String:
+	if source.begins_with(FinanceSystem.MOD_SOURCE_PREFIX):
+		return FinanceSystem.mod_source_text(source)
+	if source.begins_with(MentalEvents.MOD_SOURCE_PREFIX):
+		return MentalEvents.mod_source_text(source)
+	return source
 
 
 ## 스태프 한 명(`staff_row` · 런 스냅샷 `staff[]`)의 표시 이름. 행에는 l10n key 만 있다(D7).

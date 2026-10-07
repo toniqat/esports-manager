@@ -1,0 +1,41 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_6C29X8HMEF,staff.staff_panel.title,active,UI_View_StaffPanel.tscn StatsSection/Title text,,,능력치,Stats,draft,9e9117d0
+tx_E7KJ6CX53P,staff.staff_panel.sub,active,UI_View_StaffPanel.tscn StatsSection/Sub text,,,유효값 = 감독(보정 포함) · 어시스턴트 · 전담 스태프 중 최댓값,Effective = highest of manager (incl. modifiers) · assistant · dedicated staff,draft,b4109415
+tx_JZ767X3S8Y,staff.staff_panel.mods_section_title,active,UI_View_StaffPanel.tscn ModsSection/Title text,,,일시 보정,Temporary Modifiers,draft,b56105a2
+tx_7JFZR0GGGZ,staff.staff_panel.mods_empty,active,UI_View_StaffPanel.tscn ModsEmpty text,,,걸린 보정 없음,No active modifiers,draft,69178c1a
+tx_ZZYKV0Z49P,staff.staff_panel.traits_section_title,active,UI_View_StaffPanel.tscn TraitsSection/Title text,,,장착 특성,Equipped Traits,draft,28d6943e
+tx_74QWFN3PWB,staff.staff_panel.traits_empty,active,UI_View_StaffPanel.tscn TraitsEmpty text,,,장착한 특성 없음,No traits equipped,draft,6e6e088b
+tx_ZZ96FNYRG1,staff.staff_panel.staff_section_title,active,UI_View_StaffPanel.tscn StaffSection/Title text,,,스태프,Staff,draft,c6e93014
+tx_CD2TKKXHA1,staff.staff_panel.staff_empty,active,UI_View_StaffPanel.tscn StaffEmpty text,,,고용된 스태프 없음 — 모든 영역을 감독이 맡습니다,No staff hired — the manager handles every area,draft,ad56d2fe
+tx_98DBCCX28N,staff.staff_panel.direct_section_title,active,UI_View_StaffPanel.tscn DirectSection/Title text,,,직접 해야 하는 일,Your Own Tasks,draft,e8f9a655
+tx_RYDV3SGR93,staff.stat.training,active,감독 · 스태프 능력치 이름 (StaffSystem.STAT_LABELS),,,훈련,Training,draft,6c9264ab
+tx_9265Y1MCPW,staff.stat.tactics,active,감독 · 스태프 능력치 이름 (StaffSystem.STAT_LABELS),,,전술,Tactics,draft,de5da8ac
+tx_K3FRY03EQK,staff.stat.knowledge,active,감독 · 스태프 능력치 이름 (StaffSystem.STAT_LABELS),,,지식,Knowledge,draft,64f6bb4e
+tx_3P9850FA1G,staff.stat.mental,active,감독 · 스태프 능력치 이름 (StaffSystem.STAT_LABELS),,,멘탈,Mental,draft,48b4c861
+tx_Z1HJZ9M6K6,staff.stat.analysis,active,감독 · 스태프 능력치 이름 (StaffSystem.STAT_LABELS),,,분석,Analysis,draft,d5ce088d
+tx_SJJT6G3QTG,staff.stat.finance,active,감독 · 스태프 능력치 이름 (StaffSystem.STAT_LABELS),,,관리,Management,draft,c29fba5a
+tx_NAVZGR46XF,staff.job.assistant,active,스태프 직무 이름 (StaffSystem.JOB_LABELS),,,어시스턴트 매니저,Assistant Manager,draft,48211f7a
+tx_MTHR7V5Z65,staff.job.coach_training,active,스태프 직무 이름 (StaffSystem.JOB_LABELS),,,훈련 코치,Training Coach,draft,84d2bbf3
+tx_8P1HK13HA1,staff.job.coach_tactics,active,스태프 직무 이름 (StaffSystem.JOB_LABELS),,,전술 코치,Tactics Coach,draft,195b5a72
+tx_TZ9S2MMWFR,staff.job.coach_knowledge,active,스태프 직무 이름 (StaffSystem.JOB_LABELS),,,메크 코치,Mech Coach,draft,97e6cd48
+tx_V1DKE84TKG,staff.job.analyst,active,스태프 직무 이름 (StaffSystem.JOB_LABELS),,,분석가,Analyst,draft,eb750e3d
+tx_FHY5SA834Z,staff.job.finance,active,스태프 직무 이름 (StaffSystem.JOB_LABELS),,,예산 관리자,Budget Manager,draft,91761566
+tx_BA7WKSR7T3,staff.direct.training,active,스태프 시트 직접 해야 하는 일 — 위임 안 된 능력치 (StaffPanel.DIRECT_TASKS),,,훈련판 편성을 직접 짭니다,You arrange the training board yourself,draft,983f16c5
+tx_HJ5140D8ZV,staff.direct.tactics,active,스태프 시트 직접 해야 하는 일 — 위임 안 된 능력치 (StaffPanel.DIRECT_TASKS),,,전술 연구 — 훈련 등급 해금을 감독 값으로 엽니다,Tactics research — training grade unlocks use your own value,draft,d8189b3c
+tx_9S0ZQ6TATW,staff.direct.knowledge,active,스태프 시트 직접 해야 하는 일 — 위임 안 된 능력치 (StaffPanel.DIRECT_TASKS),,,메크 연구 지정을 직접 합니다,You assign mech research yourself,draft,0031f90a
+tx_E5FXATCCK9,staff.direct.mental,active,스태프 시트 직접 해야 하는 일 — 위임 안 된 능력치 (StaffPanel.DIRECT_TASKS),,,선수 사건 대응을 감독 값으로 처리합니다,Pilot incidents are handled with your own value,draft,3440904d
+tx_XXHPJERZWS,staff.direct.analysis,active,스태프 시트 직접 해야 하는 일 — 위임 안 된 능력치 (StaffPanel.DIRECT_TASKS),,,상대 분석 자료를 직접 해석합니다,You interpret opponent analysis yourself,draft,046d5890
+tx_PMHXE14RTX,staff.direct.finance,active,스태프 시트 직접 해야 하는 일 — 위임 안 된 능력치 (StaffPanel.DIRECT_TASKS),,,예산 배분 · 시설 관리를 직접 합니다,You handle budget allocation · facilities yourself,draft,39315c60
+tx_R66AGDTB45,staff.hub.delegated,active,허브 스태프 카드 값,,,위임 {n}/{total},Delegated {n}/{total},draft,58af55ae
+tx_P4RN9YMP6Y,staff.hub.weakest,active,허브 스태프 카드 보조 줄,,,약점 {stat} {value},Weakest {stat} {value},draft,521031cb
+tx_6FH9E36V7P,staff.panel.owner,active,능력치 행 — 누가 맡는지,,,담당 {owner},Covered by {owner},draft,4153b947
+tx_D3S1XTR1W7,staff.panel.owner_manager_direct,active,능력치 행 — 감독이 직접 맡음,,,감독 (직접),Manager (direct),draft,953b4cb4
+tx_XMXNN0N5GX,staff.panel.compare_manager,active,능력치 행 비교 조각 (· 로 이음),,,감독 {value},Manager {value},draft,31bdf6ee
+tx_RDDPK9RCAW,staff.panel.compare_assistant,active,능력치 행 비교 조각 — 어시스턴트 매니저 약칭,,,어시 {value},Asst {value},draft,9199d634
+tx_HKMY6VMYNW,staff.panel.mod_line,active,일시 보정 줄,,,{stat} {delta} · 남은 {weeks}주,{stat} {delta} · {weeks} wk left,draft,03631637
+tx_QF5YDBZ2X4,staff.panel.mod_line_source,active,일시 보정 줄 — {source} = 보정 출처 이름,,,{stat} {delta} · 남은 {weeks}주 · {source},{stat} {delta} · {weeks} wk left · {source},draft,cf40bc88
+tx_TZARXTP3WC,staff.panel.traits_sub,active,장착 특성 섹션 보조 줄,,,보너스 점수 {points} · 장착 {n}/{max},Bonus points {points} · Equipped {n}/{max},draft,acbd4ec7
+tx_XS9W0R9CKV,staff.panel.staff_sub,active,스태프 섹션 보조 줄,,,주급 합계 {amount},Total weekly pay {amount},draft,50b56d1a
+tx_SXR6V4JTZA,staff.panel.salary,active,스태프 행 주급,,,주급 {amount},Weekly pay {amount},draft,9a370297
+tx_ZVYS7H40JE,staff.panel.direct_line,active,직접 해야 하는 일 줄 — {task} = staff.direct.*,,,· {stat} — {task} (감독 {value}),· {stat} — {task} (Manager {value}),draft,506af6a3
+tx_A4NC7JYWQD,staff.panel.direct_mental,active,직접 해야 하는 일 마지막 줄,,,· 면담 · 외출 — 언제나 감독이 직접 (멘탈 {value}),· Meetings · outings — always the manager personally (Mental {value}),draft,f6027201

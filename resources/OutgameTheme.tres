@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=121 format=3 uid="uid://co7tw5omdwmyd"]
+[gd_resource type="Theme" load_steps=122 format=3 uid="uid://co7tw5omdwmyd"]
 
 [sub_resource type="StyleBoxFlat" id="AccentChip_panel"]
 content_margin_left = 20.0
@@ -755,6 +755,13 @@ corner_radius_bottom_left = 16
 shadow_color = Color(0.11, 0.11, 0.18, 0.1)
 shadow_size = 6
 shadow_offset = Vector2(0, 3)
+
+[sub_resource type="StyleBoxFlat" id="ScreenBackground_panel"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.96, 0.96, 0.968, 1)
 
 [sub_resource type="StyleBoxFlat" id="SelectableCard_panel"]
 content_margin_left = 0.0
@@ -1554,6 +1561,12 @@ NegativeLabel/font_sizes/font_size = 22
 OnFillLabel/base_type = &"Label"
 OnFillLabel/colors/font_color = Color(1, 1, 1, 1)
 OnFillLabel/font_sizes/font_size = 22
+OnFillTextButton/base_type = &"TextButton"
+OnFillTextButton/colors/font_color = Color(1, 1, 1, 1)
+OnFillTextButton/colors/font_focus_color = Color(1, 1, 1, 1)
+OnFillTextButton/colors/font_hover_color = Color(1, 1, 1, 1)
+OnFillTextButton/colors/font_hover_pressed_color = Color(1, 1, 1, 1)
+OnFillTextButton/colors/font_pressed_color = Color(1, 1, 1, 1)
 PilotThumbArtMask/base_type = &"SunkPanel"
 PilotThumbArtMask/styles/panel = SubResource("PilotThumbArtMask_panel")
 PilotThumbCheck/base_type = &"AccentChip"
@@ -1585,6 +1598,9 @@ ProgressFill/base_type = &"Panel"
 ProgressFill/styles/panel = SubResource("ProgressFill_panel")
 ProgressTrack/base_type = &"Panel"
 ProgressTrack/styles/panel = SubResource("ProgressTrack_panel")
+RailLabel/base_type = &"Label"
+RailLabel/colors/font_color = Color(0.62, 0.62, 0.65, 1)
+RailLabel/font_sizes/font_size = 22
 RoleBadgePanel/base_type = &"AccentChip"
 RoleBadgePanel/styles/panel = SubResource("RoleBadgePanel_panel")
 RunResultAccentDivider/base_type = &"Divider"
@@ -1595,6 +1611,8 @@ RunResultSectionCardAmber/base_type = &"Card"
 RunResultSectionCardAmber/styles/panel = SubResource("RunResultSectionCardAmber_panel")
 RunResultTraitCard/base_type = &"Card"
 RunResultTraitCard/styles/panel = SubResource("RunResultTraitCard_panel")
+ScreenBackground/base_type = &"Panel"
+ScreenBackground/styles/panel = SubResource("ScreenBackground_panel")
 SelectableCard/base_type = &"PanelContainer"
 SelectableCard/styles/panel = SubResource("SelectableCard_panel")
 SelectableCardButton/base_type = &"Button"

@@ -15,7 +15,7 @@ mouse_filter = 1
 theme = ExtResource("2_theme")
 script = ExtResource("1_script")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="Panel" parent="."]
 unique_name_in_owner = true
 editor_description = "Full screen incl. the notch band — code stretches it back up (ScreenMetrics.extend_background) after the whole view is pushed below the safe top."
 layout_mode = 1
@@ -25,7 +25,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.96, 0.96, 0.968, 1)
+theme_type_variation = &"ScreenBackground"
 
 [node name="SafeArea" type="Control" parent="."]
 unique_name_in_owner = true

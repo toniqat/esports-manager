@@ -165,9 +165,7 @@ custom_minimum_size = Vector2(170, 60)
 layout_mode = 2
 size_flags_vertical = 0
 focus_mode = 0
-theme_type_variation = &"TextButton"
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_type_variation = &"OnFillTextButton"
 theme_override_font_sizes/font_size = 24
 text = "확률 보기"
 

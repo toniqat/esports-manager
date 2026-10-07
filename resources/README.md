@@ -861,7 +861,7 @@ The design principle is coloured cards on white paper. Three rules:
 | Button | `style_primary_button` (amber, one per screen) `style_ghost_button` `style_text_button` `style_dark_button` (dark colour field — "leave this screen") `style_danger_button` (`NEGATIVE` field — destructive confirm). All read **`button_spec(kind)`** (colours + default font) and **`button_styles(kind)`** (one `button_box` per `BUTTON_STATES`, incl. `hover_pressed` = pressed so the engine default never shows while held) — the same table the theme is built from |
 | Theme | `build_theme()` → `Theme`, `save_theme()` → writes `THEME_PATH` (`OutgameTheme.tres`), `BUTTON_VARIATIONS` `BAR_BUTTON_VARIATIONS`, `variation_box(name, item)` (duplicate of a variation's stylebox for data colours) — see **OutgameTheme.tres** below |
 | Bottom bar | `BOTTOM_BAR_H` `BOTTOM_BAR_SEP` `bottom_bar_top()` `bottom_inset()` · scene bars: `fit_bottom_bar(bar, safe)` `fit_bar_button(b)` `bar_button_styles(kind, below)` · code-built bars: `add_bottom_bar(parent, specs)` `layout_bottom_bar(buttons, specs)` `style_bottom_button(b, style, font)` — see **Bottom action bar** below |
-| Pieces | `add_background` (internally calls `ScreenMetrics.extend_background`) `add_card` `add_divider` `add_round_portrait` `add_chip` `add_vscroll` |
+| Pieces | `add_background` (`ScreenBackground` Panel; internally calls `ScreenMetrics.extend_background`) `add_card` `add_divider` `add_round_portrait` `add_chip` `add_vscroll` |
 
 **Button styles decide colour only — feel is not decided here.** At one point these four
 functions also set the strength via `HapticUi.kind` (primary · dark = `MEDIUM` / ghost =
@@ -898,6 +898,7 @@ shows only real value changes.
 | `PopupCardWide` | PanelContainer | Same card, smaller padding `POPUP_PAD_WIDE` for wide content (ShopPopup's 5 result cards) |
 | `SheetCard` | PanelContainer | Large sheet over most of the screen, `SHEET_RADIUS`, padding `SHEET_PAD` (sides) / `SHEET_PAD_V` (top · bottom) |
 | `SunkPanel` | PanelContainer | Sunk cell inside a card (`SURFACE_SUNK`, `SUNK_RADIUS`, no padding) |
+| `ScreenBackground` | Panel | Full-screen paper (`BG`, no radius) — every screen scene's bottom `Background` node (mouse Ignore; code stretches it into the notch band with `ScreenMetrics.extend_background`). `add_background()` builds the same Panel in code. The single source of the background colour |
 | `DimPanel` | Panel | Full-rect modal dim (`DIM`); set `mouse_filter` = Ignore, a flat Button underneath takes the tap |
 | `ProgressTrack` · `ProgressFill` | Panel | Progress bar track (`SURFACE_SUNK`) and fill (`ACCENT`), `BAR_RADIUS`; the fill's width is data (`anchor_right` = ratio, code) |
 | `HeadingLabel` | Label | Big screen heading (`FONT_HEADING`, `TEXT`) |
@@ -909,6 +910,8 @@ shows only real value changes.
 | `AccentLabel` | Label | Amber text on white (`FONT_CAPTION`, `ACCENT_TEXT`) |
 | `OnFillLabel` | Label | White text on a colour fill (`FONT_CAPTION`, `TEXT_ON_FILL`) — the fill colour itself is data |
 | `NegativeLabel` · `PositiveLabel` · `LinkLabel` | Label | Semantic text colour `NEGATIVE` (loss, error, warning) · `POSITIVE` (gain, qualified) · `LINK` (blue info, e.g. mastery gain), all `FONT_CAPTION` like `AccentLabel`; a body-size use adds `theme_override_font_sizes/font_size` = `FONT_BODY` |
+| `RailLabel` | Label | Grey text on the dark rail (`FONT_CAPTION`, `RAIL_TEXT`) — 주간 화면 `%WeekLabel` |
+| `OnFillTextButton` | Button | `TextButton` with every font colour `TEXT_ON_FILL` — a text button on a colour fill (상점 배너 "확률 보기") |
 | `BarPrimaryButton` · `BarGhostButton` · `BarDarkButton` | Button | One slot of a **bottom action bar** — same colours / fonts as `PrimaryButton` · `GhostButton` · `DarkButton` with **square corners** (`bar_button_styles(kind)`, `BAR_BUTTON_VARIATIONS`). Only inside a bar; the device inset is added by `fit_bottom_bar` |
 | `BarSeparator` | Panel | The vertical line between bar slots (`BOTTOM_BAR_SEP`, no radius) — a `Panel` child of every slot but the last, anchored right-wide, `offset_left = -2`, mouse Ignore. Replaces the `Sep` `ColorRect` and its colour literal |
 | `SelectableCard` · `SelectableCardOn` | PanelContainer | Selectable option card, normal / selected: `SURFACE` + `SELECT_BORDER` `BORDER` / `ACCENT_DIM` + `SELECT_BORDER_ON` `ACCENT`, `CARD_RADIUS`, **padding 0 in both states** (a `MarginContainer` child pads, so content never shifts with the border). Code switches the variation name |

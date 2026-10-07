@@ -493,9 +493,11 @@ static func fit_bar_button(b: Button) -> void:
 ## 화면 바탕 한 장. `_build()` 첫 줄에서 부른다 —
 ## `ScreenMetrics.extend_background` 까지 여기서 해 주므로 노치 자리에
 ## 엔진 기본 회색이 남는 사고를 화면마다 다시 막을 필요가 없다.
-static func add_background(parent: Control, color: Color = BG) -> ColorRect:
-	var bg := ColorRect.new()
-	bg.color = color
+## 씬의 바탕과 같은 `ScreenBackground` 변형 `Panel` 이다(테마를 직접 물려 트리 밖에서도 맞다).
+static func add_background(parent: Control) -> Panel:
+	var bg := Panel.new()
+	bg.theme = load(THEME_PATH)
+	bg.theme_type_variation = &"ScreenBackground"
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	ScreenMetrics.extend_background(bg)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -703,6 +705,15 @@ static func build_theme() -> Theme:
 	_add_label(th, "NegativeLabel", FONT_CAPTION, NEGATIVE)
 	_add_label(th, "PositiveLabel", FONT_CAPTION, POSITIVE)
 	_add_label(th, "LinkLabel", FONT_CAPTION, LINK)
+	_add_label(th, "RailLabel", FONT_CAPTION, RAIL_TEXT)   # 어두운 레일(`RAIL`) 위 회색 글자
+
+	# 색면(배너 · 칩) 위 텍스트 버튼 — `TextButton` 모양에 글자만 흰색.
+	th.set_type_variation(&"OnFillTextButton", &"TextButton")
+	for c in BUTTON_FONT_COLORS:
+		th.set_color(c, &"OnFillTextButton", TEXT_ON_FILL)
+
+	# 화면 바탕 한 장(전체 화면 `Panel`) — 배경색의 정본.
+	_add_panel(th, "ScreenBackground", &"Panel", flat_style(BG, 0), 0.0)
 
 	# 선 끝을 늘리지 않는다(grow 0) — `add_divider` 처럼 노드 폭과 정확히 같은 1px 선.
 	var line := StyleBoxLine.new()

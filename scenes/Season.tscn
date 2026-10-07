@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://b8sf4ksesnhub"]
+[gd_scene load_steps=8 format=3 uid="uid://b8sf4ksesnhub"]
 
 [ext_resource type="Script" path="res://features/season/SeasonHub.gd" id="1_hub"]
 [ext_resource type="Script" path="res://features/season/calendar/CalendarSystem.gd" id="2_cal"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://features/season/league/LeagueManager.gd" id="5_league"]
 [ext_resource type="Script" path="res://features/season/tournament/TournamentManager.gd" id="6_tour"]
 [ext_resource type="Script" path="res://features/season/tournament/InternationalTournament.gd" id="7_intl"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="8_theme"]
 
 [node name="SeasonHub" type="Control"]
 layout_mode = 3
@@ -16,14 +17,15 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_hub")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="Panel" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.96, 0.96, 0.968, 1)
+theme = ExtResource("8_theme")
+theme_type_variation = &"ScreenBackground"
 
 [node name="Placeholder" type="Label" parent="."]
 layout_mode = 1

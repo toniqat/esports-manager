@@ -14,7 +14,7 @@ mouse_filter = 1
 theme = ExtResource("2_theme")
 script = ExtResource("1_script")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="Panel" parent="."]
 unique_name_in_owner = true
 editor_description = "Code stretches it up over the notch band (ScreenMetrics.extend_background)."
 layout_mode = 1
@@ -24,7 +24,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.96, 0.96, 0.968, 1)
+theme_type_variation = &"ScreenBackground"
 
 [node name="Title" type="Label" parent="."]
 layout_mode = 1

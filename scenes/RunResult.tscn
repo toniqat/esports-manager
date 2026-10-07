@@ -14,7 +14,7 @@ grow_vertical = 2
 theme = ExtResource("2_theme")
 script = ExtResource("1_result")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="Panel" parent="."]
 unique_name_in_owner = true
 editor_description = "Code extends it up under the notch (ScreenMetrics.extend_background) — the screen itself is indented to the safe top."
 layout_mode = 1
@@ -24,7 +24,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.96, 0.96, 0.968, 1)
+theme_type_variation = &"ScreenBackground"
 
 [node name="Header" type="VBoxContainer" parent="."]
 unique_name_in_owner = true

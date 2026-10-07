@@ -136,8 +136,9 @@ static func is_valid_alias(alias: String, domain: String) -> bool:
 
 
 ## `new_key` (§7.1): key 발급 → `<domain>.csv` 끝에 active 행 추가 → 저장.
-## 돌려주는 값 {key, error}. 같은 alias 가 있으면 오류.
-func add_entry(domain: String, alias: String, source: String, context: String = "", max_len: String = "", note: String = "") -> Dictionary:
+## 돌려주는 값 {key, error}. 같은 alias 가 있으면 오류. do_save = false 면 저장을 미루고
+## (일괄 추출) 나중에 `save_all()`.
+func add_entry(domain: String, alias: String, source: String, context: String = "", max_len: String = "", note: String = "", do_save: bool = true) -> Dictionary:
 	if not is_valid_alias(alias, domain):
 		return {"key": "", "error": "alias 형식 위반 또는 첫 세그먼트 ≠ domain: %s (domain=%s)" % [alias, domain]}
 	if by_alias.has(alias):
@@ -155,9 +156,10 @@ func add_entry(domain: String, alias: String, source: String, context: String = 
 	var vals: Dictionary = {"key": key, "alias": alias, "status": STATUS_ACTIVE,
 		"context": context, "max_len": max_len, "note": note, config.source_locale: source}
 	var r: int = t.append_row(vals)
-	var err: String = t.save()
-	if err != "":
-		return {"key": "", "error": err}
+	if do_save:
+		var err: String = t.save()
+		if err != "":
+			return {"key": "", "error": err}
 	_index_row(domain, t, r)
 	return {"key": key, "error": ""}
 

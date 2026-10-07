@@ -152,3 +152,13 @@ func test_refs_resolve(t: TestKit) -> void:
 func test_expand_alias(t: TestKit) -> void:
 	t.eq(Config.expand_alias("finance.special.{id}.name", {"id": "S01"}), "finance.special.s01.name")
 	t.eq(Config.expand_alias("mental.{event_id}.{id}", {"event_id": "I-01", "id": "3"}), "mental.i_01.3")
+
+
+func test_const_name_and_data_alias(t: TestKit) -> void:
+	var dir: String = t.copy_fixture("basic")
+	var cfg: Config = Config.load_from(dir.path_join("config.json"))
+	t.eq(Config.const_name("lobby.start_button"), "LOBBY_START_BUTTON")
+	t.ok(cfg.is_data_alias("card.pilot.6.name"), "데이터 alias")
+	t.ok(cfg.is_data_alias("card.pilot.s01.desc"), "데이터 alias (문자 id)")
+	t.ok(not cfg.is_data_alias("card.pilot.6.flavor"), "규칙 밖")
+	t.ok(not cfg.is_data_alias("keyword.track.name"), "코드 alias")

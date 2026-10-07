@@ -107,6 +107,44 @@ static func expand_alias(template: String, row: Dictionary) -> String:
 	return out
 
 
+## alias → `L` 상수 이름 (§7.2): 대문자, `.` → `_`. `lobby.start_button` → `LOBBY_START_BUTTON`.
+static func const_name(alias: String) -> String:
+	return alias.to_upper().replace(".", "_")
+
+
+## 데이터 테이블 alias 인가 — data_columns 의 alias 규칙 중 하나에 맞으면 true.
+## 이런 alias 는 코드가 상수로 부르지 않으므로 `L` 상수를 만들지 않는다(§7.2).
+func is_data_alias(alias: String) -> bool:
+	if _data_alias_res.is_empty():
+		var ph := RegEx.create_from_string("\\{[a-z_][a-z0-9_]*\\}")
+		for dc in data_columns:
+			var tpl: String = String((dc as Dictionary).get("alias", ""))
+			var parts: PackedStringArray = PackedStringArray()
+			var last: int = 0
+			for m in ph.search_all(tpl):
+				parts.append(_re_escape(tpl.substr(last, m.get_start() - last)))
+				parts.append("[a-z0-9_]+")
+				last = m.get_end()
+			parts.append(_re_escape(tpl.substr(last)))
+			_data_alias_res.append(RegEx.create_from_string("^" + "".join(parts) + "$"))
+	for re in _data_alias_res:
+		if (re as RegEx).search(alias) != null:
+			return true
+	return false
+
+
+var _data_alias_res: Array = []
+
+
+static func _re_escape(s: String) -> String:
+	var out: String = ""
+	for ch in s:
+		if "\\^$.|?*+()[]{}".contains(ch):
+			out += "\\"
+		out += ch
+	return out
+
+
 ## config.json 을 다시 쓴다(add_locale 등). 들여쓰기 2칸.
 func save() -> String:
 	raw["source_locale"] = source_locale

@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=44 format=3 uid="uid://d3sxdpvg3p880"]
+[gd_resource type="Theme" load_steps=48 format=3 uid="uid://d3sxdpvg3p880"]
 
 [sub_resource type="StyleBoxFlat" id="BattleChipButton_focus"]
 content_margin_left = 0.0
@@ -622,12 +622,40 @@ border_color = Color(0.62, 0.8, 1, 0.95)
 corner_radius_top_left = 14
 corner_radius_top_right = 14
 
+[sub_resource type="StyleBoxEmpty" id="HudStripBackdrop_panel"]
+
+[sub_resource type="StyleBoxFlat" id="HudTurnBar_panel"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.18, 0.45, 0.95, 0.92)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="HudVictoryDimPanel_panel"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0, 0, 0, 0.65)
+
 [sub_resource type="StyleBoxFlat" id="MvpDimPanel_panel"]
 content_margin_left = 0.0
 content_margin_top = 0.0
 content_margin_right = 0.0
 content_margin_bottom = 0.0
 bg_color = Color(0.02, 0.03, 0.06, 0.95)
+
+[sub_resource type="StyleBoxFlat" id="PilotStripScoreTab_panel"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.17, 0.32, 0.58, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
 
 [resource]
 BattleActionButton/base_type = &"Button"
@@ -742,6 +770,24 @@ BattleTitleLabel/font_sizes/font_size = 30
 BattleValueLabel/base_type = &"Label"
 BattleValueLabel/colors/font_color = Color(0.96, 0.96, 0.98, 1)
 BattleValueLabel/font_sizes/font_size = 28
+HudClockLabel/base_type = &"BattleOutlinedLabel"
+HudClockLabel/colors/font_color = Color(0.85, 0.85, 0.85, 1)
+HudClockLabel/colors/font_outline_color = Color(0, 0, 0, 0.85)
+HudClockLabel/constants/outline_size = 4
+HudClockLabel/font_sizes/font_size = 18
+HudStripBackdrop/base_type = &"BattleDimPanel"
+HudStripBackdrop/styles/panel = SubResource("HudStripBackdrop_panel")
+HudTurnBar/base_type = &"BattleDimPanel"
+HudTurnBar/styles/panel = SubResource("HudTurnBar_panel")
+HudTurnLabel/base_type = &"BattleOutlinedLabel"
+HudTurnLabel/colors/font_color = Color(1, 1, 1, 1)
+HudTurnLabel/colors/font_outline_color = Color(0, 0, 0, 0.85)
+HudTurnLabel/font_sizes/font_size = 56
+HudVictoryDimPanel/base_type = &"BattleDimPanel"
+HudVictoryDimPanel/styles/panel = SubResource("HudVictoryDimPanel_panel")
+HudVictoryKdaLabel/base_type = &"BattleSubLabel"
+HudVictoryKdaLabel/colors/font_color = Color(0.8, 0.84, 0.92, 1)
+HudVictoryKdaLabel/font_sizes/font_size = 26
 MvpAllyLabel/base_type = &"BattleOutlinedLabel"
 MvpAllyLabel/colors/font_color = Color(0.55, 0.8, 1, 1)
 MvpDimPanel/base_type = &"BattleDimPanel"
@@ -752,3 +798,13 @@ MvpSubLabel/base_type = &"BattleOutlinedLabel"
 MvpSubLabel/colors/font_color = Color(0.72, 0.78, 0.9, 1)
 MvpTitleLabel/base_type = &"BattleOutlinedLabel"
 MvpTitleLabel/colors/font_color = Color(1, 0.85, 0.35, 1)
+PilotStripDeadLabel/base_type = &"BattleOutlinedLabel"
+PilotStripDeadLabel/colors/font_color = Color(1, 0.55, 0.5, 1)
+PilotStripDeadLabel/font_sizes/font_size = 53
+PilotStripScoreLabel/base_type = &"BattleOutlinedLabel"
+PilotStripScoreLabel/colors/font_color = Color(1, 0.94, 0.62, 1)
+PilotStripScoreLabel/colors/font_outline_color = Color(0, 0, 0, 0.6)
+PilotStripScoreLabel/constants/outline_size = 3
+PilotStripScoreLabel/font_sizes/font_size = 20
+PilotStripScoreTab/base_type = &"BattleDimPanel"
+PilotStripScoreTab/styles/panel = SubResource("PilotStripScoreTab_panel")

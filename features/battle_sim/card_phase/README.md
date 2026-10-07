@@ -666,7 +666,7 @@ must be bigger than the hand — still true).
   Deck / Discard piles (뭉치) and shrinks the inner `BS_HAND_WIDTH`, which is
   then widened by `BS_HAND_WIDTH_SCALE` (1.10) → **902px** on a 1080-wide
   screen (row spans x=89..991). That eats into the pile gutters, so
-  `HudBuilder._build_hand_indicators` derives its gutter from the real hand
+  `HudBuilder._bind_hand_indicators` derives its gutter from the real hand
   edge instead of `BS_HAND_AREA_MARGIN` and scales the title font down to fit
   (130→89px gutter, font 22→20; the pile itself is 81px wide after a 4px inset).
 - **Floating shadow** (`Card._build_shadow` / `_refresh_float_state`): every
@@ -2019,9 +2019,9 @@ Deleted names: `BattleSim.anim_pilot_lunge` / `anim_pilot_lunge_return` /
 discard/search overlay's 10 and the targeting overlay's 11, so a list opened over
 either of them covers both).
 
-- **Entry point**: the two hand-row piles (뭉치). `HudBuilder._build_hand_indicators`
+- **Entry point**: the two hand-row piles (뭉치). `HudBuilder._bind_hand_indicators`
   lays a transparent flat `Button` over each `CardPileStack`
-  (`_make_pile_button`) — the pile sets itself to `MOUSE_FILTER_IGNORE` and
+  (`%DeckButton` · `%DiscardButton` in `ui/BattleHud.tscn`, placed by `_place_pile_button`) — the pile sets itself to `MOUSE_FILTER_IGNORE` and
   can't take a click itself — and the press calls
   `CardPileViewer.open(Pile.DECK | Pile.DISCARD)`.
 - **When it opens**: `CardPhaseManager.can_browse_piles()` — operation phase (작전 단계) only, and

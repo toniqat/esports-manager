@@ -269,8 +269,40 @@ static func _add_screen_variations(th: Theme) -> void:
 
 
 ## battle_sim/ui/HudBuilder · PilotStrip — 전투 HUD (`Hud*` · `PilotStrip*`).
-static func _add_hud_variations(_th: Theme) -> void:
-	pass
+## 씬: `BattleHud.tscn` · `PilotStrip.tscn` · `PilotStripCell.tscn`. 색이 데이터인 판(성장치 탭 =
+## 팀색, 차례 알림 띠 = `TURN_BAR`)은 변형이 모양 + 미리보기 색이고 코드가 `variation_box()`
+## 사본에 색만 넣는다.
+static func _add_hud_variations(th: Theme) -> void:
+	# 경과 시계 — 받침 없이 뜬 작은 글자, 옅은 외곽선.
+	_add_derived_label(th, "HudClockLabel", &"BattleOutlinedLabel", TEXT_CLOCK)
+	th.set_font_size(&"font_size", &"HudClockLabel", FONT_SMALL)
+	th.set_color(&"font_outline_color", &"HudClockLabel", OUTLINE_SOFT)
+	th.set_constant(&"outline_size", &"HudClockLabel", 4)
+	# 스트립 뒤판 — 보이지 않는 판(자리 · z-order 기준만, `HudBuilder` STRIP_BACKDROP_NOTE).
+	_add_derived(th, "HudStripBackdrop", &"BattleDimPanel", StyleBoxEmpty.new())
+	# 차례 알림 — 띠(색 = `TURN_BAR[팀]`, 코드가 사본에 넣는다) + 흰 큰 글자.
+	var bar := box(TURN_BAR[0], 0)
+	bar.anti_aliasing = false
+	_add_derived(th, "HudTurnBar", &"BattleDimPanel", bar)
+	_add_derived_label(th, "HudTurnLabel", &"BattleOutlinedLabel", Color.WHITE)
+	th.set_font_size(&"font_size", &"HudTurnLabel", 56)
+	th.set_color(&"font_outline_color", &"HudTurnLabel", OUTLINE_SOFT)
+	# 결과 화면 — 뒤 딤 · MVP 줄 K/D/A. (판은 공용 `BattleGoldModal`, "MVP" 는 `BattleTitleLabel`.)
+	_add_derived(th, "HudVictoryDimPanel", &"BattleDimPanel", box(DIM_LIGHT, 0))
+	_add_derived_label(th, "HudVictoryKdaLabel", &"BattleSubLabel", TEXT_KDA)
+	th.set_font_size(&"font_size", &"HudVictoryKdaLabel", 26)
+
+	# 파일럿 스트립 칸 — 원 아래 성장치 탭(색 = `TEAM_DISC[팀]`, 코드가 사본에 넣는다).
+	var tab := box(TEAM_DISC[0], SCORE_TAB_RADIUS)
+	tab.anti_aliasing = true
+	_add_derived(th, "PilotStripScoreTab", &"BattleDimPanel", tab)
+	_add_derived_label(th, "PilotStripScoreLabel", &"BattleOutlinedLabel", TEXT_SCORE)
+	th.set_font_size(&"font_size", &"PilotStripScoreLabel", 20)
+	th.set_color(&"font_outline_color", &"PilotStripScoreLabel", Color(0.0, 0.0, 0.0, 0.6))
+	th.set_constant(&"outline_size", &"PilotStripScoreLabel", 3)
+	# 부활까지 남은 턴 — 원 한가운데 큰 숫자(크기 = 원 지름 × 0.42).
+	_add_derived_label(th, "PilotStripDeadLabel", &"BattleOutlinedLabel", DEAD)
+	th.set_font_size(&"font_size", &"PilotStripDeadLabel", 53)
 
 
 ## battle_sim/ui/PilotDetailPanel — 파일럿 상세 (`PilotDetail*`).

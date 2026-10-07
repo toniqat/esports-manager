@@ -1020,7 +1020,7 @@ battle buttons use the engine default text colours.
 | `BattlePanel` | PanelContainer | Info plate — `panel_box()` (`PANEL_BG`, 1px `PANEL_BORDER`, `PANEL_RADIUS`), padding `PANEL_PAD` (detail header / stat plate / skill plate) |
 | `BattlePopup` | PanelContainer | Skill popup plate — `popup_box()` (`POPUP_BG`, `RADIUS`, AA, `SHADOW` down only), padding `POPUP_PAD` |
 | `BattleGoldPanel` | PanelContainer | Gold-rimmed plate (`GOLD_PANEL_BG`, 3px `GOLD_BORDER`, `RADIUS`), padding 0 — MVP info |
-| `BattleGoldModal` | PanelContainer | Same rim, opaque `MODAL_BG`, padding 0 — the victory / defeat panel (`_build_victory_panel`) |
+| `BattleGoldModal` | PanelContainer | Same rim, opaque `MODAL_BG`, padding 0 — the victory / defeat panel (`BattleHud.tscn` `%VictoryPanel` — a `Panel`, the variation's `panel` box applies) |
 | `BattleSlab` | PanelContainer | "No art yet" slab (`SLAB_BG`, 2px `PANEL_BORDER`, `SLAB_RADIUS`) |
 | `BattleDimPanel` | Panel | Full-rect dim `DIM` (detail panel); set mouse Ignore |
 | `BattleGoldButton` | Button | `BUTTON_BG` + 3px gold rim, `RADIUS`, pressed lightened `BUTTON_PRESS_LIGHTEN`, focus empty, `FONT_LARGE` — MVP "계속" |
@@ -1045,6 +1045,19 @@ only `font_color`):
 | `MvpDimPanel` | BattleDimPanel | `MvpView` `Dim` (`DIM_DEEP`) | — |
 | `MvpTitleLabel` · `MvpSubLabel` | BattleOutlinedLabel | `MvpView` `Title` · `Metric` / `FallbackLabel` | — |
 | `MvpAllyLabel` · `MvpEnemyLabel` | BattleOutlinedLabel | `MvpView` `%Side` | switched by `open` (MVP's side) |
+| `HudClockLabel` | BattleOutlinedLabel | `BattleHud` `%TimeLabel` — `TEXT_CLOCK`, `FONT_SMALL`, outline `OUTLINE_SOFT` 4 | — |
+| `HudStripBackdrop` | BattleDimPanel | `BattleHud` `%EnemyStripBackdrop` · `%PlayerStripBackdrop` — `StyleBoxEmpty` (the strip backplates are invisible; the nodes stay as z-order / hide anchors) | — |
+| `HudTurnBar` | BattleDimPanel | `BattleHud` `%TurnBar` — `box(TURN_BAR[0], 0)`, AA off | `variation_box` copy, `bg_color` = `TURN_BAR[team]` |
+| `HudTurnLabel` | BattleOutlinedLabel | `BattleHud` `%TurnLabel` — white, 56, outline `OUTLINE_SOFT` | — |
+| `HudVictoryDimPanel` | BattleDimPanel | `BattleHud` `%VictoryBackdrop` (`DIM_LIGHT`) | — |
+| `HudVictoryKdaLabel` | BattleSubLabel | `BattleHud` `%MvpKda` — `TEXT_KDA`, 26 | — |
+| `PilotStripScoreTab` | BattleDimPanel | `PilotStripCell` `%Pill` — `box(TEAM_DISC[0], SCORE_TAB_RADIUS)`, AA | `variation_box` copy, `bg_color` = `TEAM_DISC[team]` (`PilotStrip.setup`) |
+| `PilotStripScoreLabel` | BattleOutlinedLabel | `PilotStripCell` `%Score` — `TEXT_SCORE`, 20, outline black α 0.6, 3 | — |
+| `PilotStripDeadLabel` | BattleOutlinedLabel | `PilotStripCell` `%Dead` — `DEAD`, 53 (= disc diameter × 0.42) | — |
+
+The HUD rows (`_add_hud_variations`) also override font size / outline where the old code differed from the
+base. The victory panel uses the shared `BattleGoldModal` / `BattleTitleLabel` directly; its result line,
+MVP name and button keep the engine default colours with only `theme_override_font_sizes` (48 · 34 · 32).
 
 ### Bottom action bar (`add_bottom_bar`)
 **The main action on an outgame screen is not a shape floating in the middle of the screen but the whole bottom

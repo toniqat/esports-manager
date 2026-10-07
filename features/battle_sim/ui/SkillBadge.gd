@@ -2,7 +2,7 @@ class_name SkillBadge
 extends Control
 
 # 파일럿 스킬 원형 배지 — 아군 스트립 초상 원의 **오른쪽 아래**에 걸친다
-# (`PilotStrip._build_cell`). 한 장이 스킬 상태를 전부 말한다:
+# (`PilotStripCell.tscn` 의 `%Badge`). 한 장이 스킬 상태를 전부 말한다:
 #
 #   • 아이콘 — `SkillImages.icon_for`(흰 글리프). 쓸 수 없으면 **아이콘만** 딤드,
 #     원 바탕은 그대로다.

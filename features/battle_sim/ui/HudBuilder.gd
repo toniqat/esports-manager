@@ -167,8 +167,8 @@ const AI_HAND_FAN_MAX_SPREAD_DEG := 28.0
 #   player — above the Deck counter, top-left of the hand row; doubles as
 #            the 턴 넘기기 button once tapped (see CostDonut).
 #   enemy  — top-left of the screen, just under the AI hand peek.
-const DONUT_FILL_PLAYER := Color(0.25, 0.60, 1.00)
-const DONUT_FILL_ENEMY  := Color(0.95, 0.35, 0.25)
+const DONUT_FILL_PLAYER: Color = BattleTheme.TEAM_DONUT[0]
+const DONUT_FILL_ENEMY: Color = BattleTheme.TEAM_DONUT[1]
 ## Vertical gap between the player donut and the targeting overlay's
 ## 취소 / 확인 button row, which itself hovers just above the hand row. Keeping
 ## the donut clear of that band means the two never overlap mid-targeting.
@@ -183,7 +183,7 @@ var _player_strip: PilotStrip = null   # team 0, 핸드 행 아래
 var _player_strip_bg: Panel = null
 ## 드래그 중 아군 스트립 하강(`set_player_strip_dropped`).
 const STRIP_DRAG_DROP := 120.0
-const STRIP_DRAG_DIM := Color(0.42, 0.42, 0.48, 1.0)
+const STRIP_DRAG_DIM := BattleTheme.STRIP_DRAG_DIM
 const STRIP_DRAG_TIME := 0.18
 var _player_strip_rest_y: float = NAN
 var _strip_drop_tween: Tween = null
@@ -745,8 +745,8 @@ const TURN_ANNOUNCE_BAR_H        := 110.0
 const TURN_ANNOUNCE_IN_DUR       := 0.32
 const TURN_ANNOUNCE_HOLD_DUR     := 0.55
 const TURN_ANNOUNCE_OUT_DUR      := 0.32
-const TURN_ANNOUNCE_PLAYER_COLOR := Color(0.18, 0.45, 0.95, 0.92)
-const TURN_ANNOUNCE_ENEMY_COLOR  := Color(0.95, 0.30, 0.25, 0.92)
+const TURN_ANNOUNCE_PLAYER_COLOR: Color = BattleTheme.TURN_BAR[0]
+const TURN_ANNOUNCE_ENEMY_COLOR: Color = BattleTheme.TURN_BAR[1]
 
 func _build_turn_announcer() -> void:
 	_turn_announce_root = Control.new()
@@ -865,13 +865,13 @@ const VICTORY_MVP_Y := 170.0
 const VICTORY_MVP_H := 120.0
 const VICTORY_BTN_Y := 360.0
 const VICTORY_MVP_PORTRAIT := 96.0
-const VICTORY_MVP_LABEL_COLOR := Color(1.0, 0.85, 0.35)
+const VICTORY_MVP_LABEL_COLOR := BattleTheme.TEXT_TITLE
 ## 결과 화면 전용 CanvasLayer — HUD(`_bs.canvas`)와 전장 위, MVP 뷰
 ## (`MvpView.OVERLAY_LAYER`) 아래. 예전에는 HUD 캔버스에 같이 있어서 반투명 판 너머로
 ## 전장 타일 · 마커가 비쳤고, 판 밖의 HUD 띠 · 마커가 결과 화면과 같은 밝기로 경쟁했다.
 const VICTORY_LAYER: int = 50
 ## 결과 화면 뒤 전체 화면 딤 — 판 밖의 전장 · HUD 를 가라앉히고 입력도 막는다.
-const VICTORY_BACKDROP_COLOR := Color(0.0, 0.0, 0.0, 0.65)
+const VICTORY_BACKDROP_COLOR := BattleTheme.DIM_LIGHT
 
 
 ## 결과 화면의 MVP 한 줄을 채운다. `p` 가 null 이면(이긴 팀이 비어 있는 기묘한

@@ -41,7 +41,7 @@ Read the README of every row your task touches. Indented rows are submodules —
 | Folder | Covers | README |
 |---|---|---|
 | `autoloads/` | `GameManager` (run / match state, `start_run`), `ProfileManager`, `Haptics` · `HapticUi`, game.db copy | `autoloads/README.md` |
-| `resources/` | Shared data classes, `GameEnums`, `OutgameTheme`, `ScreenMetrics`, `DragScroll`, `UiHelpers`, `ConstTable`, `GameDb`, image lookups, shaders | `resources/README.md` |
+| `resources/` | Shared data classes, `GameEnums`, `OutgameTheme` · `BattleTheme` (dark battle UI), `ScreenMetrics`, `DragScroll`, `UiHelpers`, `ConstTable`, `GameDb`, image lookups, shaders | `resources/README.md` |
 | `data/` | CSV tables, SQLite API, **Rebuild game.db**, const table rules | `data/README.md` |
 | `features/save_load/` | Profile / run save, autosave points, mid-match resume, test run file | `features/save_load/README.md` |
 | `features/meta/` | Outgame outside a run | `features/meta/README.md` |

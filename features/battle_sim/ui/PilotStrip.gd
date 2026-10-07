@@ -37,10 +37,10 @@ const BUST_SHADER: Shader = preload("res://resources/shaders/pilot_bust_mask.gds
 
 ## 원 바탕색 — 팀색. [아군, 적]. 성장치 탭도 같은 색이라 원에서 이어져 내려온
 ## 한 덩어리로 읽힌다.
-const DISC_COLOR := [Color(0.17, 0.32, 0.58), Color(0.58, 0.21, 0.18)]
+const DISC_COLOR := BattleTheme.TEAM_DISC
 ## 스킬 배지의 (스택이 없을 때) 테두리색. (초상 원 자체의 테두리는 삭제됐다 —
 ## 셰이더에 `rim_width = 0` 을 넘긴다.)
-const TEAM_RIM := [Color(0.32, 0.62, 0.95), Color(0.95, 0.40, 0.32)]
+const TEAM_RIM := BattleTheme.TEAM_RIM
 ## 원과 칸 가장자리 사이 최소 여백(좌우 합). **축소 전** 레이아웃을 정할 때만
 ## 쓴다 — 그때 생긴 원 사이 간격이 축소 뒤에도 그대로 유지된다.
 const CELL_GAP: float = 12.0
@@ -49,11 +49,11 @@ const CELL_GAP: float = 12.0
 ## 세로는 축소 전 원 중심을 지킨다(적 스트립 양옆 오브젝트 시계가 거기 맞춰져 있다).
 const PORTRAIT_SCALE: float = 0.7
 
-const SCORE_COLOR      := Color(1.0, 0.94, 0.62)
+const SCORE_COLOR      := BattleTheme.TEXT_SCORE
 ## 성장치 탭 폭 = 원 지름 × 이 값. 탭 위끝은 원 중심에 숨고 아래로
 ## `_pill_h()` 만큼 원 밖으로 늘어진다(Deadlock 초상 줄의 금색 탭 모양).
 const SCORE_PILL_W_RATIO: float = 0.58
-const SCORE_TAB_RADIUS: int = 8
+const SCORE_TAB_RADIUS: int = BattleTheme.SCORE_TAB_RADIUS
 # ─── 파일럿 스킬 표시 ────────────────────────────────────────────────────────
 # 아군 칸마다 초상 원 **오른쪽 아래**에 원형 스킬 배지(`SkillBadge`) — 아이콘 ·
 # 쿨타임 부채꼴 · 스택 테두리. 예전 오른쪽 위 숫자 배지는 삭제됐다.
@@ -62,7 +62,7 @@ const SKILL_BADGE_RATIO: float = 0.40
 ## 배지 중심 = 원 중심 + 이 값 × 반지름. 아래로 늘어진 성장치 탭과 겹치지 않는 자리.
 const SKILL_BADGE_OFFSET := Vector2(0.80, 0.62)
 ## 쓰러진 파일럿의 **흉상**에 씌우는 틴트(원은 제외).
-const DEAD_TINT        := Color(0.42, 0.42, 0.46, 1.0)
+const DEAD_TINT        := BattleTheme.DEAD_TINT
 ## **역할 태그는 삭제됐다.** 스트립의 자리 순서 자체가 이미 역할이다
 ## (`GameEnums.ROLE_DISPLAY_ORDER` — 탑 · 정글 · 미드 · 원딜 · 서폿).
 

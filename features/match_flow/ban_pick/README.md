@@ -6,7 +6,8 @@
 | `BanPickController.gd` | `extends Node`, child of MatchFlow. **Rules + state**: sequence, legality, AI, seat table, assignment, result. Fills / refreshes the screen scene, data colours (side · role · tier), drag handling, sheet content |
 | `BanPickView.tscn` / `.gd` | `class_name BanPickView` — **the screen** (one per `enter`, `BanPickView.create()` under `MatchFlow.canvas`). Binds nodes for the controller, `fit_safe_area()`, `fit_pane(cell_h)`, turn banner (`play_banner` / `clear_banner`) |
 | `BanPickTeamBlock.gd` | Script on `%EnemyBlock` / `%PlayerBlock` (inline in the view scene): finds ban chips / mech slots / portraits / hint by name; `set_assign_layout(portrait_h)` |
-| `BanPickOrderRow.gd` | Script on `%OrderRow`: builds the 14 cells (count = sequence), tween / pulse / triangle bob (`refresh`, `stop`, `_process`); static `same_run` / `seq_run` |
+| `BanPickOrderRow.tscn` / `.gd` | The order strip, instanced as `%OrderRow` in `BanPickView.tscn` (`create()` for other hosts). Scene: 64 tall, `%Pips` holder (full rect) · `%PipIcon` · `%TurnArrow`. Script: one `BanPickOrderPip` per move into `%Pips` (count = sequence), tween / pulse / triangle bob (`build`, `refresh`, `stop`, `_process`); static `same_run` / `seq_run` |
+| `BanPickOrderPip.tscn` | One order cell (no script): `Panel` (`SunkPanel` preview; code puts a copy of that box with radius `PIP_RADIUS`, squared capsule-inner corners and the side colour) + `Joint` (2px `SURFACE` `ColorRect` on its left edge, full height, shown inside a capsule) |
 | `BanPickGrid.gd` | `@tool` Container on `%Grid`: float-exact grid (`columns`, `h_gap`, `v_gap`) — `GridContainer` lays out in whole pixels and the 191.6px cells drifted 0.6px per row |
 | `BanPickMechCell.tscn` / `.gd` | Grid cell (Button `SelectableTile`, `MOUSE_FILTER_PASS`), `create()` per mech; `setup`, `set_highlight` (amber / side-colour border of variable width, derived in code from the variation's box) |
 | `BanPickMechSlot.tscn` / `.gd` | Team mech slot (frame + art + name band + mastery / quirk tags, tap `Hit`); `setup(side_col, seat)` builds the per-instance frame style |
@@ -23,6 +24,7 @@
   cell taps, the real AI answers (time scale ×4 meanwhile); it stops at the player's 4th pick (4 bans,
   3:3 picks) with a sheet open. Rosters are copies, so assignment never touches the run's pilots.
 - `MechDetailPanel` — in-memory run, Overdrive opened from the seat of the pilot with the best mastery.
+- `BanPickOrderRow` — the real sequence (`BanPickController.SEQUENCE`, side colours), move 4 (opponent pick inside a two-cell capsule) current.
 - Item scenes (`BanPickMechCell` · `MechSlot` · `Portrait` · `BanChip` · `SheetCard` · `MechCardCell` ·
   `MechMasteryRow` · `MechQuirkRow`) — hand-set values with real mech / pilot / card / quirk ids,
   filled the way `BanPickController` / `MechDetailPanel` fill them.
@@ -39,7 +41,7 @@ BanPickView (Control full rect, theme = OutgameTheme.tres)
 │ ├ %Band               between the blocks (offsets 309 / −311); hidden in the assign step
 │ │ └ %Pane             full width, height + vertical centring from fit_pane
 │ │   ├ PaneCard        Panel `Card`, 25px side margins
-│ │   ├ Content         VBox (33 / 8 inset): %OrderRow(64: PipIcon, TurnArrow) · %Tabs(58: Tab0-5 `SelectableTile`, font 20) · 10 · %Scroll/%Grid
+│ │   ├ Content         VBox (33 / 8 inset): %OrderRow(BanPickOrderRow.tscn instance, 64) · %Tabs(58: Tab0-5 `SelectableTile`, font 20) · 10 · %Scroll/%Grid
 │ │   ├ %SheetDim       dims the pane only
 │ │   └ %Sheet          bottom sheet (bottom = grid bottom, height from fit_pane): SheetArt(+Placeholder) ·
 │ │                     SheetName · SheetStats · SheetNoPassive / SheetPassiveHead · SheetPassiveDesc ·
@@ -154,9 +156,10 @@ the screen edge and back. Now it is right above where you choose (`%OrderRow`, 6
   cell (`BanPickOrderRow.refresh`).
 - **Consecutive moves of the same action by the same team join into one capsule** (`BanPickOrderRow.same_run` /
   `seq_run` — in the current order table, the four double-picks). The capsule has no gaps inside and
-  only its outer corners are rounded, and at each joint a `PIP_DIVIDER_W` (2px) background-colour
-  **divider** stands so you can read how many moves it spans (dividers are attached after the cells —
-  sibling order is draw order). If the current move is inside a capsule, **the whole capsule**
+  only its outer corners are rounded, and at each joint a 2px background-colour **joint line** stands
+  so you can read how many moves it spans — the `Joint` child of the later cell, anchored full height
+  so it follows the cell's tween (drawn after that cell, before the next one). The current cell pulses
+  with `self_modulate`, so its own joint line does not pulse with it. If the current move is inside a capsule, **the whole capsule**
   thickens (thickening one cell alone makes a step). Within it, only the current cell has the dark
   colour + ✕/✓ icon + **pulse** (alpha 1 ↔ 1 − `PIP_PULSE_DEPTH` 0.38 with period `PIP_PULSE_SEC`
   0.9 s, `_process`), and the capsule's next move is one step darker than the remaining moves

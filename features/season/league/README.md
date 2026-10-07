@@ -89,11 +89,17 @@ for save metadata and the lobby run card, never for match-day filtering.
   moved to the Sunday close on the week-progress screen, and where to return is decided by the
   week-progress state, not by a button (`SeasonHub.on_standings_confirmed`). Colours come from
   `OutgameTheme` — a card list on white paper.
-  **Tapping a row opens the team detail** (`open_team_detail(team_id, rank)` → `HubSheet`): rank ·
-  record, then the five pilots under the analysis reveal rule — the same `OpponentIntel` /
-  `IntelView` pair MatchFlow PREP uses (`features/match_flow/match_prep/README.md`). The own team
+  **Tapping a row opens the team detail** (`open_team_detail(team_id, rank)` → `LeagueTeamDetail.open`
+  → `HubSheet`): rank · record, then the five pilots under the analysis reveal rule — the same
+  `OpponentIntel` / `IntelView` pair MatchFlow PREP uses (`features/match_flow/match_prep/README.md`). The own team
   is always fully visible; other teams follow `StaffSystem.analysis_tier`, with an analyst note
   when analysis is delegated.
+- `LeagueTeamDetail.gd` + `LeagueTeamDetail.tscn` — the team detail **sheet body** (like the hub
+  panels): VBox top-wide in `sheet.body`, 16 short of the right edge (scroll-bar room) —
+  `%Record` (SubLabel 24) · RecordGap · `%Intel` (`IntelView.tscn` instance) · Tail 20. On `resized`
+  it calls `sheet.set_body_height(size.y)`. `LeagueTeamDetail.open(host, title, record, intel)` →
+  `HubSheet`; `bind(sheet, record, intel)` / `show_detail(record, intel)`. Nothing is placed at
+  absolute coordinates in the sheet body any more.
 - `LeagueRow.gd` + `LeagueRow.tscn` — one standings row (item scene). `fill(rank, team_text, wins,
   losses, made_po, is_player)` / `clear()`; emits `tapped` from its full-row flat `%Hit` button.
   The card style is built in code (`card_style(14)`) because it is data: own team = `ACCENT_DIM` +
@@ -101,7 +107,7 @@ for save metadata and the lobby run card, never for match-day filtering.
   colour (own team = `TEXT`) is data too.
 - **F6 preview** — run either scene alone and it fills dummy data (`resources/UiPreview.gd`):
   `LeagueView` = in-memory run + preview-only `LeagueManager` with 2 weeks played; `LeagueRow` =
-  own team in the playoff cut.
+  own team in the playoff cut; `LeagueTeamDetail` = another team of the in-memory run (body only, no sheet).
 
 ### LeagueView scene tree
 ```

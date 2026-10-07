@@ -151,7 +151,7 @@ and exposes intent methods on the hub. Pattern mirrors `BattleSim`:
 `_ready`, `_fill_preview()` at the bottom of the script). Screens use an in-memory run (nothing saved)
 plus preview-only manager children, since `_hub` is null standalone:
 `HubView` = 2 league weeks played (week / next-match lines filled from the preview league — they
-normally come from the host) · `HubSheet` = own-team detail · `EndingView` = all six titles won ·
+normally come from the host) · `HubSheet` = own-team detail (a `LeagueTeamDetail` body) · `EndingView` = all six titles won ·
 `GameOverView` = preseason playoff final lost · `BracketView` = SFs done, final pending ·
 `IntlBracketView` = preseason INTL, QFs done, SFs pending. Item scenes use hand-written values:
 `HubRosterRow` (Corin, trust past half) · `HubManageCard` (finance, alert dot) · `BracketMatchBox`
@@ -180,8 +180,9 @@ HubSheet (CanvasLayer 18)
 - **Code owns** the safe-area offsets, title text, close wiring, `DragScroll.attach(%Scroll)`.
 - **Callers own the body** — children under `sheet.body`, width
   `sheet.body_w()` (= `%Card` width − `%Pad` side margins = 928), height via `set_body_height(h)`.
-  `FinancePanel` · `StaffPanel` · `MasteryPanel` add one scene instance (top-wide, `resized` →
-  `set_body_height`) — see their folder READMEs; `LeagueView`'s team detail is still code-built.
+  Every body is one scene instance (top-wide, `resized` → `set_body_height`): `FinancePanel` ·
+  `StaffPanel` · `MasteryPanel` · the standings team detail `league/LeagueTeamDetail` — see their
+  folder READMEs. No caller places absolute-positioned children in the body any more.
   `card()` returns `%Card` for controls outside the scroll (card-local coords).
 - `%Scroll` sits in a plain `ScrollSlot` Control and grows **right only** — when the body overflows,
   the scroll bar adds its width outside the 928 column instead of widening the VBox, so content x and

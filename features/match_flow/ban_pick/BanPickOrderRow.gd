@@ -2,13 +2,16 @@ class_name BanPickOrderRow
 extends Control
 
 # The **order row** — the 14 moves of the draft as one strip at the top of the pick pane, right
-# above the role-class filter (`ban_pick/README.md` "Order row"). An animated widget, so the
-# cells are built here (their count is the sequence) and only the strip itself, the ✕/✓ icon
-# (`PipIcon`) and the turn triangle (`TurnArrow`) are placed in `BanPickView.tscn`.
+# above the role-class filter (`ban_pick/README.md` "Order row"). **Layout lives in
+# `BanPickOrderRow.tscn`** (the strip, `%Pips` holder, the ✕/✓ icon `%PipIcon`, the turn triangle
+# `%TurnArrow`), instanced as `%OrderRow` in `BanPickView.tscn`. Each move is one
+# `BanPickOrderPip.tscn` instance in `%Pips` (count = the sequence); the cells' placement, tween,
+# pulse and side colours stay code — an animated widget.
 #
 # - Cell colour = that move's side colour; darker = more current (`seq_color`).
 # - Consecutive same-side same-action moves join into one capsule (`same_run` / `seq_run`):
-#   no gap inside, only outer corners rounded, a background-coloured divider at each joint.
+#   no gap inside, only outer corners rounded, a background-coloured joint (the pip's `Joint`
+#   child, full height so it follows the tween) at each joint.
 # - The current move's capsule thickens (tween); the current cell pulses and holds the icon;
 #   the triangle sits below (my turn, bobbing down) or above (opponent's, bobbing up).
 #
@@ -22,8 +25,9 @@ const PIP_H: float        = 12.0
 const PIP_ACTIVE_H: float = 26.0
 const PIP_ICON: float     = 20.0
 const PIP_GROW_SEC: float = 0.16
+## Cell corner radius — set on the copied `SunkPanel` box until the proposed `BanPickOrderPip`
+## variation exists (`README.md`).
 const PIP_RADIUS: int     = 6
-const PIP_DIVIDER_W: float = 2.0
 const PIP_PULSE_SEC: float   = 0.9
 const PIP_PULSE_DEPTH: float = 0.38
 const TURN_ARROW_GAP: float = 3.0
@@ -31,12 +35,13 @@ const TURN_ARROW_BOB_PX: float  = 5.0
 const TURN_ARROW_BOB_SEC: float = 1.3
 const ICON_BAN   := preload("res://resources/images/ui/banpick/ban_x.svg")
 const ICON_PICK  := preload("res://resources/images/ui/banpick/pick_v.svg")
+const SCENE_PATH: String = "res://features/match_flow/ban_pick/BanPickOrderRow.tscn"
+const PIP_SCENE: PackedScene = preload("res://features/match_flow/ban_pick/BanPickOrderPip.tscn")
+const PIP_VARIATION: StringName = &"SunkPanel"
 
 var _seq: Array = []            # [[side, kind], …] — BanPickController.SEQUENCE
 var _side_colors: Dictionary = {}
-var _pips: Array = []           # Array[Panel]
-## Capsule joints — `{line: ColorRect, idx: int}` (between idx and idx+1).
-var _dividers: Array = []
+var _pips: Array = []           # Array[Panel] (BanPickOrderPip instances in %Pips)
 var _action_idx: int = 0
 var _pulse_t: float = 0.0
 var _arrow_base_y: float = 0.0
@@ -65,50 +70,51 @@ static func seq_run(seq: Array, idx: int) -> Vector2i:
 	return Vector2i(a, b)
 
 
+## Instantiates the scene (`BanPickView.tscn` already holds one as `%OrderRow`).
+static func create() -> BanPickOrderRow:
+	return (load(SCENE_PATH) as PackedScene).instantiate() as BanPickOrderRow
+
+
 func _ready() -> void:
-	_icon = get_node_or_null("PipIcon") as TextureRect
-	_arrow = get_node_or_null("TurnArrow") as TextureRect
+	_icon = %PipIcon
+	_arrow = %TurnArrow
 	resized.connect(_layout_x)
+	if UiPreview.is_standalone(self):
+		_fill_preview()
 
 
 ## Builds the cells for `seq` (`side_colors`: side → Color).
 func build(seq: Array, side_colors: Dictionary) -> void:
 	_seq = seq
 	_side_colors = side_colors
+	var holder: Node = %Pips
+	for c in holder.get_children():
+		holder.remove_child(c)
+		c.queue_free()
+	_pips.clear()
 	var mid_y: float = _mid_y()
 	var n: int = seq.size()
 	for i in range(n):
-		var sty := OutgameTheme.flat_style(Color.WHITE, PIP_RADIUS)
+		var sty := OutgameTheme.variation_box(PIP_VARIATION)
+		OutgameTheme.set_corner_radius(sty, PIP_RADIUS)
 		# Only the capsule's outer corners are round — rounded inner corners would notch
 		# the joint and split it back into two.
-		if i > 0 and same_run(seq, i - 1, i):
+		var joined_left: bool = i > 0 and same_run(seq, i - 1, i)
+		if joined_left:
 			sty.corner_radius_top_left = 0
 			sty.corner_radius_bottom_left = 0
 		if i < n - 1 and same_run(seq, i, i + 1):
 			sty.corner_radius_top_right = 0
 			sty.corner_radius_bottom_right = 0
-		var pip := Panel.new()
-		pip.add_theme_stylebox_override("panel", sty)
+		var pip := PIP_SCENE.instantiate() as Panel
+		pip.add_theme_stylebox_override(&"panel", sty)
 		pip.position = Vector2(0.0, mid_y - PIP_H * 0.5)
 		pip.size = Vector2(PIP_W, PIP_H)
-		pip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(pip)
+		var joint := pip.get_node("Joint") as ColorRect
+		joint.color = OutgameTheme.SURFACE
+		joint.visible = joined_left
+		holder.add_child(pip)
 		_pips.append(pip)
-	# Dividers after the cells — sibling order is draw order.
-	for i in range(n - 1):
-		if not same_run(seq, i, i + 1):
-			continue
-		var line := ColorRect.new()
-		line.color = OutgameTheme.SURFACE
-		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		line.position = Vector2(0.0, mid_y - PIP_H * 0.5)
-		line.size = Vector2(PIP_DIVIDER_W, PIP_H)
-		add_child(line)
-		_dividers.append({"line": line, "idx": i})
-	# The icon and the triangle (scene nodes) draw over the cells.
-	for c in [_icon, _arrow]:
-		if c != null:
-			move_child(c, -1)
 	_layout_x()
 
 
@@ -130,7 +136,7 @@ func refresh(action_idx: int, mine: bool, is_ban: bool) -> void:
 		if state == 0 and in_run:
 			state = 3
 		sty.bg_color = seq_color(i, state)
-		pip.modulate = Color.WHITE
+		pip.self_modulate = Color.WHITE
 		if not in_run:
 			pip.size = Vector2(PIP_W, PIP_H)
 			pip.position.y = mid_y - PIP_H * 0.5
@@ -139,19 +145,6 @@ func refresh(action_idx: int, mine: bool, is_ban: bool) -> void:
 					.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 			_tween.tween_property(pip, "position:y", mid_y - PIP_ACTIVE_H * 0.5, PIP_GROW_SEC) \
 					.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	for raw in _dividers:
-		var d := raw as Dictionary
-		var line := d["line"] as ColorRect
-		var idx: int = int(d["idx"])
-		var h: float = PIP_ACTIVE_H if idx >= run.x and idx < run.y else PIP_H
-		if h == PIP_ACTIVE_H and not is_equal_approx(line.size.y, h):
-			_tween.tween_property(line, "size:y", h, PIP_GROW_SEC) \
-					.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-			_tween.tween_property(line, "position:y", mid_y - h * 0.5, PIP_GROW_SEC) \
-					.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-		elif h == PIP_H:
-			line.size.y = h
-			line.position.y = mid_y - h * 0.5
 	if action_idx >= _pips.size() or _icon == null or _arrow == null:
 		# An empty tween errors when it starts — after the last move nothing is tweened.
 		_tween.kill()
@@ -219,10 +212,6 @@ func _layout_x() -> void:
 	for i in range(n):
 		(_pips[i] as Panel).position.x = x
 		x += PIP_W + (0.0 if same_run(_seq, i, i + 1) else PIP_GAP)
-	for raw in _dividers:
-		var d := raw as Dictionary
-		(d["line"] as ColorRect).position.x = \
-				(_pips[int(d["idx"]) + 1] as Panel).position.x - PIP_DIVIDER_W * 0.5
 	if _action_idx < n:
 		var cx: float = (_pips[_action_idx] as Panel).position.x + PIP_W * 0.5
 		if _icon != null:
@@ -239,7 +228,19 @@ func _process(delta: float) -> void:
 	if _action_idx < _pips.size():
 		_pulse_t = fmod(_pulse_t + delta, PIP_PULSE_SEC)
 		var p: float = (1.0 - cos(TAU * _pulse_t / PIP_PULSE_SEC)) * 0.5
-		(_pips[_action_idx] as Panel).modulate = Color(1, 1, 1, 1.0 - PIP_PULSE_DEPTH * p)
+		# self_modulate: the cell's own `Joint` line must not pulse with it.
+		(_pips[_action_idx] as Panel).self_modulate = Color(1, 1, 1, 1.0 - PIP_PULSE_DEPTH * p)
 	_arrow_t = fmod(_arrow_t + delta, TURN_ARROW_BOB_SEC)
 	var k: float = (1.0 - cos(TAU * _arrow_t / TURN_ARROW_BOB_SEC)) * 0.5
 	_arrow.position.y = _arrow_base_y + _arrow_dir * TURN_ARROW_BOB_PX * k
+
+
+## F6 단독 실행 미리보기 — 실제 밴픽 순서(`BanPickController.SEQUENCE`, 진영 색)로 칸을 세우고
+## 네 번째 수(상대 픽, 두 칸 캡슐)를 지금 차례로 보여 준다.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	var consts: Dictionary = (load("res://features/match_flow/ban_pick/BanPickController.gd") \
+			as GDScript).get_script_constant_map()
+	build(consts["SEQUENCE"], {GameEnums.DraftSide.BLUE: consts["BLUE_COLOR"],
+			GameEnums.DraftSide.RED: consts["RED_COLOR"]})
+	refresh(3, false, false)

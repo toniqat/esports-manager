@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://features/match_flow/match_prep/MatchPrepView.gd" id="1_view"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" path="res://features/match_flow/match_prep/IntelView.tscn" id="3_intel"]
 
 [node name="MatchPrepView" type="Control"]
 layout_mode = 3
@@ -97,12 +98,16 @@ theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 28
 text = "상대 팀 · 팀 이름"
 
-[node name="EnemyIntel" type="Control" parent="Safe/Scroll/Body"]
-unique_name_in_owner = true
-editor_description = "상대 팀 정찰 내용 — IntelView(리그 팀 상세와 공용)가 분석 단계 칩 · 분석 메모 · 선수 행 다섯 줄을 그리고 높이를 최소 높이로 준다."
-custom_minimum_size = Vector2(0, 560)
+[node name="EnemyIntelPad" type="MarginContainer" parent="Safe/Scroll/Body"]
+editor_description = "오른쪽 8 = 스크롤 막대(8)와 합쳐 행 끝이 스크롤 오른쪽 끝에서 16 떨어진다(예전 SCROLLBAR_ROOM)."
 layout_mode = 2
 mouse_filter = 2
+theme_override_constants/margin_right = 8
+
+[node name="EnemyIntel" parent="Safe/Scroll/Body/EnemyIntelPad" instance=ExtResource("3_intel")]
+unique_name_in_owner = true
+editor_description = "상대 팀 정찰 내용 — IntelView 씬(리그 팀 상세와 공용): 분석 단계 칩 · 분석 메모 · 선수 행 다섯 줄. 높이 = 내용."
+layout_mode = 2
 
 [node name="Gap2" type="Control" parent="Safe/Scroll/Body"]
 custom_minimum_size = Vector2(0, 18)
@@ -125,12 +130,16 @@ theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 28
 text = "내 팀 · 팀 이름"
 
-[node name="OwnIntel" type="Control" parent="Safe/Scroll/Body"]
-unique_name_in_owner = true
-editor_description = "내 팀 — IntelView 가 선수 행 다섯 줄을 언제나 전부 공개(3단계)로 그린다."
-custom_minimum_size = Vector2(0, 700)
+[node name="OwnIntelPad" type="MarginContainer" parent="Safe/Scroll/Body"]
+editor_description = "오른쪽 8 = 스크롤 막대(8)와 합쳐 행 끝이 스크롤 오른쪽 끝에서 16 떨어진다(예전 SCROLLBAR_ROOM)."
 layout_mode = 2
 mouse_filter = 2
+theme_override_constants/margin_right = 8
+
+[node name="OwnIntel" parent="Safe/Scroll/Body/OwnIntelPad" instance=ExtResource("3_intel")]
+unique_name_in_owner = true
+editor_description = "내 팀 — IntelView 씬. 선수 행 다섯 줄을 언제나 전부 공개(3단계)로 보인다(단계 칩 · 메모 없음)."
+layout_mode = 2
 
 [node name="BottomPad" type="Control" parent="Safe/Scroll/Body"]
 custom_minimum_size = Vector2(0, 16)

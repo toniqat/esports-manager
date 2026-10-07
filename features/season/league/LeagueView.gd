@@ -12,7 +12,7 @@ extends Control
 #
 # Tapping a row opens that team's detail sheet (`HubSheet`): record + the five
 # pilots under the analysis reveal rule (`OpponentIntel` / `IntelView`, the same
-# builder MatchFlow PREP uses). The own team is always fully visible.
+# scene MatchFlow PREP uses) — body scene `LeagueTeamDetail`. The own team is always fully visible.
 #
 # **Layout lives in `LeagueView.tscn`** (+ one `LeagueRow.tscn` per rank in `%Rows`) —
 # build it with `LeagueView.create()`. The script fills text, wires the rows / button and
@@ -150,24 +150,13 @@ func _on_row_pressed(r: int) -> void:
 func open_team_detail(tid: int, rank: int) -> HubSheet:
 	var state: Dictionary = _gm.season_state
 	var is_own: bool = tid == int(state["player_team_id"])
-	var sheet := HubSheet.open_on(self, "%s  (%s)" % [
-			_league.team_name(tid), _league.team_short_name(tid)])
-	var body: Control = sheet.body
-	var w: float = sheet.body_w() - 16.0   # leave room for the scroll bar
 	var table: Dictionary = state.get("league_standings", {})
 	var rec: Dictionary = table.get(tid, table.get(str(tid), {}))
-	var y: float = 0.0
-	UiHelpers.mk_label(body, "%d위 · %d승 %d패%s" % [rank, int(rec.get("wins", 0)),
-			int(rec.get("losses", 0)), "  · 내 팀" if is_own else ""],
-			24, OutgameTheme.TEXT_SUB, Vector2(0, y), Vector2(w, 34))
-	y += 48.0
-	var intel: Dictionary = OpponentIntel.build(state,
-			OpponentIntel.team_roster(state, tid), is_own)
-	y += IntelView.add_tier_header(body, Vector2(0, y), w, intel)
-	y += IntelView.add_analyst_note(body, Vector2(0, y), w, intel)
-	y += IntelView.add_rows(body, Vector2(0, y), w, intel)
-	sheet.set_body_height(y + 20.0)
-	return sheet
+	var record: String = "%d위 · %d승 %d패%s" % [rank, int(rec.get("wins", 0)),
+			int(rec.get("losses", 0)), "  · 내 팀" if is_own else ""]
+	return LeagueTeamDetail.open(self, "%s  (%s)" % [
+			_league.team_name(tid), _league.team_short_name(tid)], record,
+			OpponentIntel.build(state, OpponentIntel.team_roster(state, tid), is_own))
 
 
 ## F6 단독 실행 미리보기 — 메모리 런 + 몇 주 치른 리그(`resources/UiPreview.gd`).

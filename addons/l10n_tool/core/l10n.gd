@@ -1,7 +1,7 @@
 @tool
 extends RefCounted
 
-## L10n 명령 파사드 — 설계서 §7.1. 에디터 메뉴(`plugin.gd`) · 조회 도크 · 헤드리스
+## L10n 명령 파사드 — 설계서 §7.1. 에디터 메뉴(`plugin.gd`) · L10n 편집기(sheet/) · 헤드리스
 ## (`cli.gd`) · 테스트가 모두 이 객체를 통해 같은 코드를 부른다.
 ##
 ## 상태: `config` · `catalog`(원본) · `issues`(이번 명령의 검증 결과) · `index`(스캔
@@ -91,6 +91,60 @@ func cmd_new_key(domain: String, alias: String, text: String, context: String = 
 	else:
 		info("new_key %s = %s (%s)" % [alias, res["key"], domain])
 	return res
+
+
+## Columns the sheet editor may write besides the locale texts.
+const EDIT_META_COLS := ["context", "max_len", "note"]
+
+
+## `edit` — the sheet editor's cell writes. edits = [{key, column, value}]; column = the source
+## locale (row text; translations go stale by hash), a target locale (→ draft + current source
+## hash, cleared text clears status · hash) or EDIT_META_COLS (max_len = "" or a positive int).
+## Re-reads the sources first so a write never overwrites other edits on disk, checks every edit
+## and Excel lock up front — any failure writes nothing. Returns an error string.
+func cmd_edit(edits: Array) -> String:
+	reload()
+	var targets: PackedStringArray = config.target_locales()
+	var checked: Array = []
+	for ed in edits:
+		var key: String = String((ed as Dictionary).get("key", ""))
+		var column: String = String(ed.get("column", ""))
+		var value: String = String(ed.get("value", ""))
+		var e: Dictionary = catalog.entry(key)
+		if e.is_empty():
+			return "없는 key: %s" % key
+		if column != config.source_locale and not targets.has(column) and not EDIT_META_COLS.has(column):
+			return "편집할 수 없는 컬럼: %s" % column
+		if column == "max_len" and value != "" and not (value.is_valid_int() and value.to_int() > 0):
+			return "max_len 은 비우거나 양의 정수: %s (%s)" % [value, key]
+		var lock: String = Catalog.excel_lock_for(String(e["file"]))
+		if lock != "":
+			return "Excel 잠금 파일이 있다 — 파일을 닫고 다시: %s" % lock
+		checked.append([key, column, value])
+	var n: int = 0
+	for c in checked:
+		var key: String = c[0]
+		var column: String = c[1]
+		var value: String = c[2]
+		var err: String = ""
+		if targets.has(column):
+			if value == catalog.text(key, column):
+				continue
+			err = catalog.set_translation(key, column, value)
+		else:
+			if value == String(catalog.entry(key).get("source" if column == config.source_locale else column, "")):
+				continue
+			err = catalog.set_field(key, column, value)
+		if err != "":
+			catalog.reload()
+			return err
+		n += 1
+	var serr: String = catalog.save_all()
+	if serr != "":
+		catalog.reload()
+		return serr
+	info("edit: %d칸 저장" % n)
+	return ""
 
 
 func cmd_add_locale(locale: String) -> String:

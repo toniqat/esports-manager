@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://battle/Battle.gd" id="1"]
+[ext_resource type="PackedScene" path="res://battle/UI_View_Hud.tscn" id="2"]
+
+[node name="Battle" type="Node"]
+script = ExtResource("1")
+
+[node name="UI_View_Hud" parent="." instance=ExtResource("2")]

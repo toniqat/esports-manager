@@ -1,8 +1,8 @@
 @tool
 extends RefCounted
 
-## 조회 도크의 UI 없는 로직 — 설계서 §11.1 · §11.2(D12). 검색 · 필터 · 상세 · 용어집 ·
-## 씬 미리보기 행. 화면(`l10n_dock.gd`)은 이 결과를 그리기만 한다 — 헤드리스 테스트 대상.
+## UI-less logic of the L10n editor (main screen tab) — design doc §11. Search · filters ·
+## detail · glossary · scene-preview rows; `l10n_sheet.gd` only draws them — headless-tested.
 ##
 ## 입력: config · catalog(원본) · index(index.json 본문, 없으면 {}) · 마지막 validate 의
 ## issues 항목. 행 하나 = catalog 엔트리 + 로케일별 상태 · stale + 용어 + 사용처.
@@ -87,8 +87,9 @@ func domains() -> PackedStringArray:
 # ── 검색 · 필터 ─────────────────────────────────────────────────────────
 
 ## query = 부분 문자열(대소문자 무시) — key · alias · 원문 · 모든 번역 · 용어 term_id.
-## filters: {domain, locale, status(ST_*), stale, unused, glossary} — 빈 값 · false 는 조건 없음.
+## filters: {domain, locale, locales, status(ST_*), stale, unused, glossary} — 빈 값 · false 는 조건 없음.
 ## locale 을 주면 status · stale 은 그 로케일만, 아니면 status 는 아무 로케일, stale 은 어느 로케일이든.
+## locales (PackedStringArray, sheet editor) = the same over several locales; wins over locale when non-empty.
 func search(query: String, filters: Dictionary = {}) -> Array:
 	var q: String = query.strip_edges().to_lower()
 	var dom: String = String(filters.get("domain", ""))
@@ -99,6 +100,9 @@ func search(query: String, filters: Dictionary = {}) -> Array:
 	var gloss_only: bool = bool(filters.get("glossary", false))
 	var gloss_keys: Dictionary = glossary_violation_keys() if gloss_only else {}
 	var locs: PackedStringArray = PackedStringArray([loc]) if loc != "" else target_locales()
+	var multi: PackedStringArray = PackedStringArray(filters.get("locales", PackedStringArray()))
+	if not multi.is_empty():
+		locs = multi
 	var out: Array = []
 	for r in rows:
 		if dom != "" and r["domain"] != dom:

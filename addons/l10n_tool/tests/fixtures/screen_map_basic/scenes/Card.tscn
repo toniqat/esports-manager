@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://cards/CardFace.gd" id="1"]
+[ext_resource type="Script" path="res://lib/Scroll.gd" id="2"]
+
+[node name="Card" type="Control"]
+script = ExtResource("1")

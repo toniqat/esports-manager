@@ -5,7 +5,7 @@
 | 경로 | 내용 | 편집 |
 |---|---|---|
 | `config.json` | 로케일 · key 접두사 · 토큰 · 스캔 · `data_columns`(데이터 CSV 컬럼 ↔ 도메인 · alias 규칙) | 사람 · LLM |
-| `src/<domain>.csv` | 도메인별 문자열 — 한 행 = key · alias · status · context · max_len · note · ko · `<loc>` · `<loc>_status` · `<loc>_hash` | **편집 대상.** Excel 은 "CSV UTF-8" 로 저장. 새 행은 끝에, 정렬 · 재포맷 금지 |
+| `src/<domain>.csv` | 도메인별 문자열 — 한 행 = key · alias · status · context · max_len · note · ko · `<loc>` · `<loc>_status` · `<loc>_hash` | **편집 대상.** 에디터 메인 화면 **`L10n` 탭(표 편집기)** 이 가장 쉽다. Excel 은 "CSV UTF-8" 로 저장. 새 행은 끝에, 정렬 · 재포맷 금지 |
 | `src/glossary.csv` | 용어집 (§4.5) — optional `match_<loc>` column = regex that finds the term in that locale (excludes word-internal hits, e.g. `(?<![가-힣])턴`) | 사람 · LLM |
 | `generated/` | `strings_<loc>.csv` · `L.gd` · `refs.json`(커밋) · `index.json` · `report.md` · `extract_report.md` · `extract_code*.json`(gitignore) | **직접 수정 금지** — `build dev` 로 다시 만든다 |
 

@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://battle/Popup.gd" id="1"]
+[ext_resource type="Script" path="res://lib/Scroll.gd" id="2"]
+
+[node name="Popup" type="Control"]
+script = ExtResource("1")
+
+[node name="Scroll" type="Node" parent="."]
+script = ExtResource("2")

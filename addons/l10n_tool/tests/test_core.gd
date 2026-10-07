@@ -129,6 +129,43 @@ func test_catalog_load_and_new_key(t: TestKit) -> void:
 	t.eq(e["tr"]["en"]["hash"], Hasher.hash_text("새 시즌"))
 
 
+func test_cmd_edit(t: TestKit) -> void:
+	var dir: String = t.copy_fixture("basic")
+	var l: L10n = L10n.open(dir.path_join("config.json"))
+	l.echo = false
+	var name_key: String = "tx_7KQ2M9XA4P"
+	# translation edit → draft + current source hash, other rows untouched
+	t.eq(l.cmd_edit([{"key": name_key, "column": "en", "value": "Rocket Fist"}]), "")
+	var e: Dictionary = l.catalog.entry(name_key)
+	t.eq(e["tr"]["en"]["text"], "Rocket Fist")
+	t.eq(e["tr"]["en"]["status"], "draft", "approved → draft")
+	t.eq(e["tr"]["en"]["hash"], Hasher.hash_text("로켓 펀치"))
+	t.eq(l.catalog.text("tx_C4RT8NW2HJ", "en"), "Cache", "다른 행 그대로")
+	# source edit → translation goes stale; meta columns
+	t.eq(l.cmd_edit([{"key": name_key, "column": "ko", "value": "로켓 주먹"},
+		{"key": name_key, "column": "note", "value": "a,b"}, {"key": name_key, "column": "max_len", "value": "12"}]), "")
+	t.ok(l.catalog.is_stale(name_key, "en"), "원문 수정 → stale")
+	var tab: CsvIo = CsvIo.load_file(dir.path_join("src/card.csv"))
+	t.eq(tab.get_cell(0, "ko"), "로켓 주먹", "디스크에 저장")
+	t.eq(tab.get_cell(0, "note"), "a,b")
+	t.eq(tab.get_cell(0, "max_len"), "12")
+	# cleared translation clears status · hash
+	t.eq(l.cmd_edit([{"key": "tx_C4RT8NW2HJ", "column": "en", "value": ""}]), "")
+	t.eq(l.catalog.entry("tx_C4RT8NW2HJ")["tr"]["en"], {"text": "", "status": "", "hash": ""})
+	# any bad edit → nothing written
+	var before: PackedByteArray = TestKit.read_bytes(dir.path_join("src/card.csv"))
+	t.ok(l.cmd_edit([{"key": name_key, "column": "en", "value": "X"}, {"key": name_key, "column": "alias", "value": "card.x"}]) != "", "alias 편집 거부")
+	t.ok(l.cmd_edit([{"key": name_key, "column": "max_len", "value": "abc"}]) != "", "max_len 정수 아님 거부")
+	t.ok(l.cmd_edit([{"key": "tx_NOPE000000", "column": "en", "value": "X"}]) != "", "없는 key 거부")
+	t.eq(TestKit.read_bytes(dir.path_join("src/card.csv")), before, "거부 → 파일 그대로")
+	# edits made on disk after open are kept (reload before write)
+	var ext: CsvIo = CsvIo.load_file(dir.path_join("src/card.csv"))
+	ext.set_cell(2, "context", "외부 수정")
+	ext.save()
+	t.eq(l.cmd_edit([{"key": name_key, "column": "en", "value": "Rocket"}]), "")
+	t.eq(CsvIo.load_file(dir.path_join("src/card.csv")).get_cell(2, "context"), "외부 수정", "외부 수정 보존")
+
+
 func test_refs_resolve(t: TestKit) -> void:
 	var dir: String = t.copy_fixture("basic")
 	var l: L10n = L10n.open(dir.path_join("config.json"))

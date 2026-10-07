@@ -1,18 +1,19 @@
 @tool
 extends EditorPlugin
 
-# Project → Tools → L10n 메뉴와 조회 도크를 등록하는 껍데기. 로직은 전부 core/ 의
-# RefCounted(`core/l10n.gd` 파사드)에 있다 — csv_to_db 와 같은 이유(EditorPlugin 은
-# 헤드리스에서 만들 수 없다).
+# Shell that registers the Project → Tools → L10n menu and the "L10n" main screen tab (the
+# sheet editor — sheet/). All logic lives in core/ RefCounted classes (`core/l10n.gd` facade):
+# an EditorPlugin cannot be created headless.
 
 const L10n = preload("res://addons/l10n_tool/core/l10n.gd")
-const DOCK_SCENE := "res://addons/l10n_tool/dock/l10n_dock.tscn"
+const SHEET_SCENE := "res://addons/l10n_tool/sheet/l10n_sheet.tscn"
 const MENU_NAME := "L10n"
 
 enum { ID_BUILD_DEV, ID_BUILD_RELEASE, ID_VALIDATE, ID_SCAN, ID_SYNC }
 
 var _menu: PopupMenu
-var _dock: Control
+# Main screen "L10n" tab — sheet editor.
+var _sheet: Control
 
 
 func _enter_tree() -> void:
@@ -25,19 +26,36 @@ func _enter_tree() -> void:
 	_menu.add_item("sync", ID_SYNC)
 	_menu.id_pressed.connect(_on_menu)
 	add_tool_submenu_item(MENU_NAME, _menu)
-	if ResourceLoader.exists(DOCK_SCENE):
-		_dock = (load(DOCK_SCENE) as PackedScene).instantiate()
-		if _dock.has_method("setup"):
-			_dock.call("setup", self)
-		add_control_to_dock(DOCK_SLOT_RIGHT_UL, _dock)
+	if ResourceLoader.exists(SHEET_SCENE):
+		_sheet = (load(SHEET_SCENE) as PackedScene).instantiate()
+		_sheet.call("setup", self)
+		_sheet.hide()
+		EditorInterface.get_editor_main_screen().add_child(_sheet)
+		scene_changed.connect(Callable(_sheet, "on_scene_changed"))
 
 
 func _exit_tree() -> void:
 	remove_tool_menu_item(MENU_NAME)
-	if _dock != null:
-		remove_control_from_docks(_dock)
-		_dock.queue_free()
-		_dock = null
+	if _sheet != null:
+		_sheet.queue_free()
+		_sheet = null
+
+
+func _has_main_screen() -> bool:
+	return true
+
+
+func _make_visible(shown: bool) -> void:
+	if _sheet != null:
+		_sheet.visible = shown
+
+
+func _get_plugin_name() -> String:
+	return MENU_NAME
+
+
+func _get_plugin_icon() -> Texture2D:
+	return EditorInterface.get_editor_theme().get_icon(&"Translation", &"EditorIcons")
 
 
 func _on_menu(id: int) -> void:

@@ -6,6 +6,12 @@ extends Control
 # phase result (league playoff + INTL champion), and the final 5-pilot
 # roster. SeasonHub settles the run (RunResult, outcome "clear") before this
 # screen shows, so run.save is already gone. Only action: `정산` → RunResult.tscn.
+#
+# **Layout lives in `EndingView.tscn`** (banner, recap / roster line lists, bottom bar). This
+# script binds `%` nodes, fills the lines (recap line colour = won by the player, data), and
+# applies the safe-area offsets (pattern B). Create with `EndingView.create()`.
+
+const SCENE_PATH: String = "res://features/season/EndingView.tscn"
 
 const PHASE_ORDER: Array = [
 	GameEnums.SeasonPhase.PRESEASON,
@@ -20,71 +26,41 @@ const ROLE_NAMES: Array = ["TANK", "FIGHTER", "ASSASSIN", "SUPPORT", "SNIPER"]
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 @onready var _gm: Node = get_node("/root/GameManager")
 
-var _phase_lines: Array = []   # 6 Labels
-var _roster_lines: Array = []  # 5 Labels
+var _phase_lines: Array = []   # 6 Labels (scene `%Recap`, PHASE_ORDER order)
+var _roster_lines: Array = []  # 5 Labels (scene `%Roster`, seat order)
 var _built: bool = false
 
 
+## Instantiates the scene. `EndingView.new()` is an empty Control — don't use it.
+static func create() -> EndingView:
+	return (load(SCENE_PATH) as PackedScene).instantiate() as EndingView
+
+
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-	mouse_filter = Control.MOUSE_FILTER_PASS
-	if not _built:
-		_build()
-		_built = true
+	_bind()
 	refresh()
 
 
 func ensure_view() -> void:
-	if not _built:
-		_build()
-		_built = true
+	_bind()
 	refresh()
 	# 우승. 캠페인 전체가 여기로 오려고 굴러왔다.
 	Haptics.play(Haptics.Kind.SUCCESS)
 
 
-# ── Build ────────────────────────────────────────────────────────────────────
-func _build() -> void:
-	# 화면 전체를 안전 영역 위끝까지 내린다 — 노치 / 다이나믹 아일랜드 밑에
-	# 제목이 깔리지 않게. 제목만 따로 내리면 본문과 겹친다.
+# ── Bind ─────────────────────────────────────────────────────────────────────
+func _bind() -> void:
+	if _built:
+		return
+	_built = true
+	# 화면 전체를 안전 영역 위끝까지 내리고, 배경만 노치 자리까지 다시 덮는다.
 	ScreenMetrics.indent_to_safe_top(self)
-	var bg := ColorRect.new()
-	bg.color = OutgameTheme.BG
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	# 배경만은 안전 영역 밖(노치 자리)까지 덮는다 — 안 그러면 그 띠가
-	# 엔진 기본 배경색으로 남는다.
-	ScreenMetrics.extend_background(bg)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bg)
-
-	UiHelpers.mk_label(self, "WORLD CHAMPION", 72, OutgameTheme.ACCENT_TEXT,
-			Vector2(0, 140), Vector2(1080, 96), HORIZONTAL_ALIGNMENT_CENTER)
-	UiHelpers.mk_label(self, "캠페인 완주 — 정규시즌 국제대회 우승!", 26, OutgameTheme.TEXT,
-			Vector2(0, 244), Vector2(1080, 36), HORIZONTAL_ALIGNMENT_CENTER)
-
-	# Section: campaign recap (6 events).
-	UiHelpers.mk_label(self, "── 캠페인 기록 ──", 24, OutgameTheme.TEXT_SUB,
-			Vector2(0, 340), Vector2(1080, 32), HORIZONTAL_ALIGNMENT_CENTER)
-	for i in PHASE_ORDER.size():
-		var lbl := UiHelpers.mk_label(self, "", 22, OutgameTheme.TEXT_SUB,
-				Vector2(140, 390 + i * 40), Vector2(800, 32),
-				HORIZONTAL_ALIGNMENT_LEFT)
-		_phase_lines.append(lbl)
-
-	# Section: final roster.
-	UiHelpers.mk_label(self, "── 최종 로스터 ──", 24, OutgameTheme.TEXT_SUB,
-			Vector2(0, 670), Vector2(1080, 32), HORIZONTAL_ALIGNMENT_CENTER)
-	for i in 5:
-		var lbl := UiHelpers.mk_label(self, "", 22, OutgameTheme.TEXT,
-				Vector2(140, 720 + i * 40), Vector2(800, 32),
-				HORIZONTAL_ALIGNMENT_LEFT)
-		_roster_lines.append(lbl)
-
-	# 갈 길은 하나 — 정산 화면. 하단 구간 전폭(`OutgameTheme.add_bottom_bar`).
-	var bar: Array = OutgameTheme.add_bottom_bar(self, [
-		{"text": "정산", "style": "primary", "font": 32},
-	])
-	(bar[0] as Button).pressed.connect(_on_settle_pressed)
+	ScreenMetrics.extend_background(%Background)
+	HubView.fit_bottom_bar(%SafeBottom, %BottomBar)
+	_phase_lines = %Recap.get_children()
+	_roster_lines = %Roster.get_children()
+	# 갈 길은 하나 — 정산 화면.
+	%Settle.pressed.connect(_on_settle_pressed)
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────
@@ -104,7 +80,7 @@ func _refresh_recap() -> void:
 	if _hub != null:
 		league = _hub.get_node_or_null("LeagueManager") as LeagueManager
 		intl = _hub.get_node_or_null("InternationalTournament") as InternationalTournament
-	for i in PHASE_ORDER.size():
+	for i in mini(PHASE_ORDER.size(), _phase_lines.size()):
 		var phase: int = int(PHASE_ORDER[i])
 		var phase_name: String = HubView.PHASE_NAMES.get(phase, "—")
 		var entry: Dictionary = pr.get(phase, {})
@@ -159,7 +135,7 @@ func _refresh_roster() -> void:
 			by_role[int(p.role)] = p
 	# 줄 순서는 화면 순서(탑 · 정글 · 미드 · 원딜 · 서폿) — `_roster_lines` 도
 	# 그 순서로 세워져 있다.
-	for seat in 5:
+	for seat in mini(5, _roster_lines.size()):
 		var r: int = int(GameEnums.ROLE_DISPLAY_ORDER[seat])
 		if by_role.has(r):
 			var p: PlayerData = by_role[r]

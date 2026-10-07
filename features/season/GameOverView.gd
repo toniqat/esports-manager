@@ -7,6 +7,12 @@ extends Control
 #   - any INTL lost, in any round              (intl_failed_campaign)
 # SeasonHub settles the run (RunResult, outcome "fail") before this screen
 # shows, so run.save is already gone. Only action: `정산` → RunResult.tscn.
+#
+# **Layout lives in `GameOverView.tscn`** (title, reason / summary lines, bottom bar). This
+# script binds `%` nodes, fills the texts and applies the safe-area offsets (pattern B).
+# Create with `GameOverView.create()`.
+
+const SCENE_PATH: String = "res://features/season/GameOverView.tscn"
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 @onready var _gm: Node = get_node("/root/GameManager")
@@ -16,52 +22,37 @@ var _summary_lbl: Label
 var _built: bool = false
 
 
+## Instantiates the scene. `GameOverView.new()` is an empty Control — don't use it.
+static func create() -> GameOverView:
+	return (load(SCENE_PATH) as PackedScene).instantiate() as GameOverView
+
+
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-	mouse_filter = Control.MOUSE_FILTER_PASS
-	if not _built:
-		_build()
-		_built = true
+	_bind()
 	refresh()
 
 
 # Idempotent — SeasonHub calls this each time it routes to GAME_OVER.
 func ensure_view() -> void:
-	if not _built:
-		_build()
-		_built = true
+	_bind()
 	refresh()
 	# 캠페인이 끝났다 — 이 화면이 열리는 것 자체가 결과다.
 	Haptics.play(Haptics.Kind.ERROR)
 
 
-# ── Build ────────────────────────────────────────────────────────────────────
-func _build() -> void:
-	# 화면 전체를 안전 영역 위끝까지 내린다 — 노치 / 다이나믹 아일랜드 밑에
-	# 제목이 깔리지 않게. 제목만 따로 내리면 본문과 겹친다.
+# ── Bind ─────────────────────────────────────────────────────────────────────
+func _bind() -> void:
+	if _built:
+		return
+	_built = true
+	# 화면 전체를 안전 영역 위끝까지 내리고, 배경만 노치 자리까지 다시 덮는다.
 	ScreenMetrics.indent_to_safe_top(self)
-	var bg := ColorRect.new()
-	bg.color = OutgameTheme.BG
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	# 배경만은 안전 영역 밖(노치 자리)까지 덮는다 — 안 그러면 그 띠가
-	# 엔진 기본 배경색으로 남는다.
-	ScreenMetrics.extend_background(bg)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bg)
-
-	UiHelpers.mk_label(self, "GAME OVER", 80, OutgameTheme.NEGATIVE,
-			Vector2(0, 600), Vector2(1080, 100), HORIZONTAL_ALIGNMENT_CENTER)
-
-	_reason_lbl = UiHelpers.mk_label(self, "", 28, OutgameTheme.TEXT,
-			Vector2(0, 740), Vector2(1080, 40), HORIZONTAL_ALIGNMENT_CENTER)
-	_summary_lbl = UiHelpers.mk_label(self, "", 22, OutgameTheme.TEXT_SUB,
-			Vector2(0, 800), Vector2(1080, 30), HORIZONTAL_ALIGNMENT_CENTER)
-
-	# 갈 길은 하나 — 정산 화면. 하단 구간 전폭(`OutgameTheme.add_bottom_bar`).
-	var bar: Array = OutgameTheme.add_bottom_bar(self, [
-		{"text": "정산", "style": "primary", "font": 32},
-	])
-	(bar[0] as Button).pressed.connect(_on_settle_pressed)
+	ScreenMetrics.extend_background(%Background)
+	HubView.fit_bottom_bar(%SafeBottom, %BottomBar)
+	_reason_lbl = %Reason
+	_summary_lbl = %Summary
+	# 갈 길은 하나 — 정산 화면.
+	%Settle.pressed.connect(_on_settle_pressed)
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────

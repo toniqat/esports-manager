@@ -10,7 +10,8 @@ theme (`OutgameTheme`), bottom action bar. Replaces the old 3-slot TitleScreen
 | `LobbyScreen.gd` | `class_name LobbyScreen extends Control` (scene root) | **Tab host** (M8~M10): currency strip, tab bar, per-tab action bar, toast, confirm popup, manager type popup |
 | `HomeTab.gd` | `class_name HomeTab extends Control` | 홈 tab — run card, continue / new run / abandon (the old lobby body) |
 | `ConfirmPopup.tscn` + `.gd` | `class_name ConfirmPopup extends CanvasLayer` | Reusable modal confirm (dim + white card + cancel / confirm). **Layout lives in the `.tscn`**, style in `OutgameTheme.tres` variations — first scene-authored outgame UI |
-| `ManagerTypePopup.gd` | `class_name ManagerTypePopup extends CanvasLayer` | First-lobby manager type pick (운영형 / 실전형), not dismissible (M3); prestige re-pick mode, dismissible (M9) |
+| `ManagerTypePopup.tscn` + `.gd` | `class_name ManagerTypePopup extends CanvasLayer` | First-lobby manager type pick (운영형 / 실전형), not dismissible (M3); prestige re-pick mode, dismissible (M9). **Layout lives in the `.tscn`** |
+| `ManagerTypeOption.tscn` + `.gd` | `class_name ManagerTypeOption extends PanelContainer` | One option card of `ManagerTypePopup` (name, `현재` chip, desc, six stat cells) — item scene instantiated per type |
 
 ## Tab host (M8~M10) — `docs/outgame_dev_plan.md` §12.6
 ```
@@ -77,17 +78,39 @@ profile**; changing it later is only via prestige (M9).
   normal lobby, after the bottom bar and `ConfirmPopup` are built).
 - Options = `StaffSystem.manager_types()` (`manager_types.csv`): name, `desc`, and the six stats
   (`StaffSystem.STATS` order, labels `STAT_LABELS`, 1..20) as one row of six cells.
-- **Cannot be dismissed without choosing**: the dim is a STOP `Control` that swallows taps (no
-  close), there is no cancel button, and the full-width primary confirm starts disabled
+- **Cannot be dismissed without choosing**: the dim swallows taps (no close), there is no cancel button, and the full-width primary confirm starts disabled
   ("유형을 고르세요") until an option is tapped (then "<이름> 감독으로 시작"). A one-line accent
   note says later changes need prestige.
 - Confirm emits `chosen(type_id)`; the lobby saves it with `ProfileManager.set_manager_type(id)`
   (`_on_manager_type_chosen`). A save error shows the red toast + ERROR haptic.
 - `select(idx)` is public (tap path + headless checks). Selected option = `ACCENT_DIM` fill with an
   `ACCENT` border.
-- Layout: CanvasLayer 20, pattern C (dim = viewport, card centred between `ScreenMetrics.top_y()`
-  and `bottom_y()`), card 920 wide like `ConfirmPopup`. The run uses the type through
-  `GameManager.start_run` → `StaffSystem.snapshot_for_run`.
+- Creation: `ManagerTypePopup.create()` (instantiates `ManagerTypePopup.tscn` — `.new()` is an empty layer),
+  then `open(prestige_mode, current_type)` / `close()` / `is_open()` / `cancel()`; signals `chosen(type_id)` /
+  `cancelled`. Open / close toggles the layer's `visible`; nodes are reused (the 감독 tab keeps one instance).
+- **The `.tscn` is the source of truth for layout and style.** Tree: CanvasLayer 20 → `Root` (full rect,
+  **`theme = OutgameTheme.tres`**) → `%Dim` (flat Button) · `DimRect` (`DimPanel`) · `%SafeArea`
+  (CenterContainer) → `Card` (`PopupCard`, 920 wide, STOP) → `VBox` → `%Title` (`TitleLabel`) · `Gap1` ·
+  `%Sub` (`CaptionLabel`, autowrap, min 66) · `%Note` (`AccentLabel`) · `Gap2` · `%Options` (VBox, sep 20;
+  two preview `ManagerTypeOption` instances) · `Gap3` · `Buttons` (`%Cancel` `GhostButton` : `%Confirm`
+  `PrimaryButton` + font size 30 override = stretch 1 : 2).
+- `ManagerTypeOption.tscn` (item scene, min 824 × 268): `Margin` (28 / 20 / 28) → `VBox` → `Header`
+  (`%Name` `BodyLabel` 32 + `%Chip` 90 × 36, centred) · `Gap1` · `%Desc` (`CaptionLabel` 21, autowrap, min 60) ·
+  `Gap2` · `StatsMargin` (4 / 4) → `%Stats` (HBox sep 8, min 104) → `Stat0..5` (`SunkPanel`, key
+  `CaptionLabel` 20 + value `TitleLabel`). API: `fill(row, is_current)`, `set_selected(on)`, signal `tapped`
+  (left release anywhere on the card — all children are mouse-ignore).
+- Code-owned: texts; the option instances (`_sync_options` reuses the scene's previews, instantiates or frees
+  to match `manager_types()`); the **selection fill / border and the chip pill** (data-driven
+  `OutgameTheme.flat_style` on the item, content margins zeroed so the border width doesn't shift content —
+  no theme variation carries a state colour); `%Cancel.visible` = prestige mode; `%Confirm` disabled / text;
+  `%SafeArea` offsets = `ScreenMetrics.top_y()` / `bottom_y()` on every `open()`; `%Dim` haptics muted in
+  first-lobby mode (the tap does nothing there) and restored in prestige mode.
+- Not dismissible in first-lobby mode: `%Dim` swallows taps (its `pressed` → `cancel()`, a no-op outside
+  prestige mode), `%Cancel` is hidden.
+- The card is centred in the safe area; with many more types than today's two it would overflow both ends
+  (the old code pinned it to the top) — wrap `%Options` in a scroll if the table ever grows.
+- Pattern C of `docs/mobile_safe_area.md` (dim = viewport, card centred in the safe area), same frame as
+  `ConfirmPopup`. The run uses the type through `GameManager.start_run` → `StaffSystem.snapshot_for_run`.
 - **Prestige mode (M9)** — `open(true, current_type)`, opened by the `감독` tab
   (`../manager/README.md`) after its prestige confirm. Title "프레스티지 — 감독 유형 재선택", the current
   type carries a `현재` chip, confirm reads "<이름> 감독으로 프레스티지". It **is dismissible**: a tap on

@@ -1,6 +1,6 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://cuvnx8d6v5ou0"]
 
-[ext_resource type="Script" path="res://resources/PositionBadge.gd" id="1_badge"]
+[ext_resource type="Script" uid="uid://bv86vml7paptx" path="res://resources/PositionBadge.gd" id="1_badge"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="PositionBadge" type="PanelContainer"]

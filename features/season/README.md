@@ -140,9 +140,9 @@ and exposes intent methods on the hub. Pattern mirrors `BattleSim`:
 | LeagueManager            | `league/LeagueManager.gd`                    | Round-robin schedule keyed by `phase_week` (1 round per week), standings, `resolve_current_week()` for AI matches. |
 | TournamentManager        | `tournament/TournamentManager.gd`            | 4-team SE playoff bracket distributed across 2 weeks (SF week + F week). |
 | InternationalTournament  | `tournament/InternationalTournament.gd`      | 8-team SE INTL bracket distributed across 3 weeks (QF / SF / F). |
-| LeagueView               | `league/LeagueView.gd`                       | Standings screen — "다음 주 →" advances week, "돌아가기" (Go back) returns to HUB. |
-| BracketView              | `tournament/BracketView.gd`                  | Phase-7 playoff bracket UI (3 panels: SF1/SF2/F)                 |
-| IntlBracketView          | `tournament/IntlBracketView.gd`              | Phase-8 INTL bracket UI (7 panels: 4 QF / 2 SF / F)              |
+| LeagueView               | `league/LeagueView.gd` + `.tscn`             | Standings screen — 8 `LeagueRow.tscn` rows + a single full-width "확인" (OK). Built with `LeagueView.create()`; `league/README.md`. |
+| BracketView              | `tournament/BracketView.gd` + `.tscn`        | Phase-7 playoff bracket UI (3 `BracketMatchBox.tscn` boxes: SF1/SF2/F). Built with `BracketView.create()`; see "Bracket screens" below. |
+| IntlBracketView          | `tournament/IntlBracketView.gd` + `.tscn`    | Phase-8 INTL bracket UI (7 `IntlMatchBox.tscn` boxes: 4 QF / 2 SF / F). Built with `IntlBracketView.create()`; see "Bracket screens" below. |
 | GameOverView             | `GameOverView.gd`                            | Game-over screen — playoff cut missed, playoff SF/F lost, or any INTL lost (reason line names the round) |
 | EndingView               | `EndingView.gd`                              | World-champion ending screen — REGULAR_INTL win                  |
 | *(overlay)* HubSheet     | `HubSheet.gd` + `HubSheet.tscn`              | Shared detail-sheet **frame** for the hub manage cards (`StaffPanel` · `MasteryPanel` · `FinancePanel`) and the standings team detail (`LeagueView.open_team_detail`). See "HubSheet" below. |
@@ -301,6 +301,26 @@ Lazy view builders cache the instance after first creation.
 - `Screen.GAME_OVER` → `GameOverView`.
 - `Screen.ENDING` → `EndingView`.
 
+### Bracket screens (`tournament/BracketView` · `IntlBracketView`)
+Layout lives in the scenes; `create()` instantiates them (never `.new()`).
+```
+BracketView (Control, full rect, OutgameTheme)          IntlBracketView — same header / Empty / OkButton
+├ %Background  ColorRect BG (code extends into notch)    └ %Bracket HBox (anchored top-centre, y 240)
+├ Title · %Phase · %Stage · %NextMatch  (top-wide, centred)   ├ Quarters VBox (sep 50) ─ %QF1..%QF4 (280×130)
+├ %Empty   FaintLabel, hidden (shown when no bracket)         ├ GapQS 70
+├ %Bracket HBox (anchored top-centre, y 250, sep 70)          ├ Semis VBox ─ TopGap 145 · %SF1 · MidGap 180 · %SF2 (280×150)
+│ ├ Semis VBox (sep 60) ─ %SF1 · %SF2   (420×200)             ├ GapSF 50
+│ └ %Final  (size_flags_vertical = centre)                    └ FinalColumn VBox ─ TopGap 300 · %Final (320×170)
+└ %OkButton  PrimaryButton, anchored bottom-wide
+```
+- Match boxes: `BracketMatchBox.gd` on two item scenes — `BracketMatchBox.tscn` (playoff: 22/18/28 px
+  fonts, radius 8) and `IntlMatchBox.tscn` (INTL: 18/16/22 px, radius 6). Each instance sets
+  `slot_title` ("4강 1경기" …) in the screen scene; the box size is the instance's minimum size.
+  `show_match(m, pid, team_text)` fills team / week text and paints the data colours (team colour by
+  player / winner / loser, border amber 3px for the player's match, green 2px decided, `BORDER` 2px
+  otherwise — the `StyleBoxFlat` is built in code because the border is data).
+- Script owns: text, `%Empty` / `%Bracket` visibility, safe-area offsets, bottom-bar styling.
+
 ## Calendar contract
 - `CalendarSystem.advance_week()` is the single tick, and **only
   `SeasonHub._end_week()` calls it** — the Sunday close. Rolls 7 days
@@ -334,9 +354,15 @@ screen the title actually slid under the slot cards).
 
 When hanging the bottom action bar inside a pushed-down screen, use **`safe_h()`**, not
 `ScreenMetrics.bottom_y()` (the latter is in viewport coordinates, so the push-down gets added twice).
-`LeagueView` / `BracketView` / `IntlBracketView` / `TrainingView` use
+`TrainingView` uses
 `safe_h() - 80 - h`, `TrainingResultView` uses `- 70`, `HubView` uses `- 110`,
 (the lineup screen moved to `features/meta/run_setup/README.md`).
+
+**Scene-based views** (`LeagueView` · `BracketView` · `IntlBracketView`): layout is anchors in the
+`.tscn`, so the script only applies offsets — `indent_to_safe_top(self)` + `extend_background(%Background)`
+in `_ready`, and the bottom-bar button (`%OkButton`, anchored bottom-wide in the scene) gets
+`OutgameTheme.style_bottom_button` + `offset_top = -(BOTTOM_BAR_H + bottom inset)` — the same rect
+`add_bottom_bar` would give.
 
 Details: **`docs/mobile_safe_area.md`**
 

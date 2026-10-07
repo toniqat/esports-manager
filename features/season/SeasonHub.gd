@@ -319,7 +319,7 @@ func _ensure_week_view() -> void:
 func _ensure_league_view() -> void:
 	if _league_view != null:
 		return
-	_league_view = LeagueView.new()
+	_league_view = LeagueView.create()
 	_league_view.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_league_view)
 
@@ -327,7 +327,7 @@ func _ensure_league_view() -> void:
 func _ensure_bracket_view() -> void:
 	if _bracket_view != null:
 		return
-	_bracket_view = BracketView.new()
+	_bracket_view = BracketView.create()
 	_bracket_view.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_bracket_view)
 
@@ -335,7 +335,7 @@ func _ensure_bracket_view() -> void:
 func _ensure_intl_bracket_view() -> void:
 	if _intl_bracket_view != null:
 		return
-	_intl_bracket_view = IntlBracketView.new()
+	_intl_bracket_view = IntlBracketView.create()
 	_intl_bracket_view.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_intl_bracket_view)
 

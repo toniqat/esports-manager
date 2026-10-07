@@ -49,7 +49,7 @@ The two detail popups opened by the assignment step are sibling files of the con
 | File | Purpose |
 |---|---|
 | `ban_pick/MechDetailPanel.gd` | `class_name MechDetailPanel extends CanvasLayer` — mech detail (left full-body art / right 3 stat chips → passive → mech card grid / bottom close) |
-| `meta/run_setup/DraftDetailPanel.gd` | Pilot detail — **reuses the very same popup as the draft screen** (`open(p: PlayerData)` is all it takes to open) |
+| `meta/run_setup/DraftDetailPanel.gd` | Pilot detail — **reuses the very same popup as the draft screen** (`DraftDetailPanel.create()` once, then `open(p: PlayerData)` is all it takes to open) |
 
 Unlike the other two, `BanPickController.enter()` **also receives the rosters and team names** —
 because the ban/pick screen stands both teams' pilot portraits (초상화) at top/bottom, and once the

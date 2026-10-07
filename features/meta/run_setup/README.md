@@ -25,7 +25,8 @@ level application) is documented in `features/season/README.md` "Entry point"
 | `TeamDraft.gd` | `class_name TeamDraft extends Control` | Step 4 data layer: owned pool (`get_pool_grid()`), chosen levels (`levels`, `set_level`, `leveled()`), salary (`salary_of`, `lineup_salary`, `salary_cap` = `RunRules.salary_cap_with(scenario, trait_ids)`), `set_traits` / `cap_bonus()` (trait `salary_cap` Σ), `validate()` = `RunRules.validate_lineup(..., cap_bonus())`. Slot table `SLOT_ROLES` / `SLOT_NAMES` / `slot_of_role`, `skill_type_label`. Signals `back_requested`, `start_requested(pilot_ids)`. |
 | `TeamDraftView.gd` | `class_name TeamDraftView extends Control` | Step 4 screen: salary gauge, 5 role-fixed slots with level steppers, role filter, scrolling thumbnail grid, PICK ↔ CONFIRM. Child of `TeamDraft`. |
 | `PilotThumb.gd` | `class_name PilotThumb extends Button` | One grid cell: square face crop + top-left role badge + gold border / check when selected + bottom-right salary tag (`set_tag`). Static helpers `add_rounded_art` / `add_role_badge` shared with the slot illustrations. |
-| `DraftDetailPanel.gd` | `class_name DraftDetailPanel extends CanvasLayer` | Pilot detail popup — **also used by ban/pick** (`features/match_flow/ban_pick/`). `open(p: PlayerData)` only. |
+| `DraftDetailPanel.tscn` + `.gd` | `class_name DraftDetailPanel extends CanvasLayer` | Pilot detail popup — **also used by ban/pick** (`features/match_flow/ban_pick/`). Layout lives in the `.tscn`; construct with `DraftDetailPanel.create()` (not `.new()`), then `open(p: PlayerData)` / `close()` / `is_open()`. See "DraftDetailPanel — scene" below. |
+| `DraftStatChip.tscn` + `.gd` | `class_name DraftStatChip extends PanelContainer` | Item scene: one stat chip of the detail popup (name over value, `SunkPanel`). `create()`, `fill(key, value, is_total)` — total swaps the value to `AccentLabel`. |
 | `RunRoster.gd` | `class_name RunRoster` | AI roster distribution used by `GameManager.start_run` — owned by RunCore, see `features/season/README.md`. |
 
 ## Steps — one table
@@ -128,8 +129,43 @@ rich description) → the pilot's
 **3 fixed pilot cards** (`GameManager.pilot_card_ids_for(pd)`, `CardDescBox.build(..., light = true)`).
 The original-team short name comes from `season_state.team_meta`, or — during run setup, before
 the season exists — from `RunRules.team_packages()`. The backing height follows the content
-(stops at `PANEL_BOTTOM`, then scrolls); the close button follows that bottom edge and needs an
-opaque style (it overlaps the bottom bar under the dim).
+(stops at `PANEL_MAX_H`, then scrolls); the close button follows that bottom edge and needs an
+opaque style (it overlaps the bottom bar under the dim) — `GhostButton` is opaque white.
+
+### DraftDetailPanel — scene (`DraftDetailPanel.tscn`)
+Moved from code-built to `.tscn` (`docs/ui_scene_migration.md`). `Root` carries
+`resources/OutgameTheme.tres`; nodes pick theme variations. One instance per screen, reused:
+`open` fills it and sets the layer `visible`, `close` hides it.
+```
+DraftDetailPanel (CanvasLayer 20, visible=false)
+└ Root (full rect, theme)
+  ├ %Dim            flat Button — tap outside closes
+  ├ DimRect         Panel `DimPanel`
+  ├ %ArtPlaceholder ColorRect (no art)          ┐ box: centre x 300, height 1400,
+  ├ %Art            TextureRect keep-aspect     ┘ bottom 2010 (legs cut off-screen)
+  └ %Column         VBox at (596,150) w 460, sep 16
+    ├ %PanelBox     Control, height set by code
+    │ ├ Backdrop    Panel `Card`
+    │ └ %Pad        MarginContainer 22 → %Scroll → %Body (VBox, sep 0)
+    │     Header(%Name `HeadingLabel` 40, %Sub `CaptionLabel`) · %BtRow(%BtChips) · Gap ·
+    │     "선수 능력치" · %Stats (Grid 3 col, DraftStatChip ×7) · Gap · "파일럿 스킬" ·
+    │     %SkillRow(%SkillTile slot, %SkillName `AccentLabel` 30, %SkillMeta) · %SkillDesc ·
+    │     %NoSkill · Gap · "파일럿 카드" · %Cards (VBox sep 12) · BottomPad
+    └ %Close        Button `GhostButton`, h 84
+```
+**Scene owns** positions, sizes, gaps, fonts, variations (layout edits go in the editor).
+**Code owns** only the data-driven parts: the texts, the role colour of `%Sub`, the art texture
+and its width (`%Art` box narrowed to the art aspect around the scene's centre, so the art
+samples on the same pixels as before), `%PanelBox` height (`%Body` minimum + `%Pad` margins,
+capped at `PANEL_MAX_H`), and the widgets built by other modules into slots: breakthrough pills
+(`OutgameTheme.add_chip` — per-chip colours), skill icon tile (`SkillImages.make_icon_tile`, size
+= the `%SkillTile` slot), skill description (`StrategyIcon.make_rich_label`, width = `%Column`
+width − `%Pad` margins) and pilot cards (`CardDescBox.build`). These are removed and rebuilt on
+every `open`; the 7 stat chips are instantiated once in `_ready`.
+- Card boxes get a **height-only** `custom_minimum_size` — a width minimum makes the
+  ScrollContainer's minimum "content + scrollbar", which pushes `%Pad` 4px out of the panel
+  the moment the bar appears and never shrinks back.
+- Mobs (no skill) hide `%SkillRow` / `%SkillDesc` and show `%NoSkill`.
 
 Candidate-card pools per role (`pilot_card_slots_for_role` …) were deleted long ago and are not
 revived — the single source of cards is `GameManager.pilot_card_ids_for`.
@@ -144,11 +180,11 @@ chip row under the header names it: `돌파 n` (amber) and, if `train_bonus_pct 
 (`features/meta/collection/`).
 
 ### Skill block — icon tile + rich description
-`DraftDetailPanel._build_skill_block`: a 64px skill icon tile
+`DraftDetailPanel._fill_skill`: a 64px skill icon tile
 (`SkillImages.make_icon_tile(sk.key, 64, OutgameTheme.RAIL, OutgameTheme.ACCENT, shadow)` —
 rounded square with a soft drop shadow) sits at the left of the name row; the name is vertically
 centred on the tile to its right, and the meta line (type · keyword) sits under the name in the
-same column. The tile is inset `SKILL_TILE_X` from the scroll body's left edge so the
+same column. The tile slot `%SkillTile` is inset 14px from the scroll body's left edge so the
 `ScrollContainer` clip doesn't shave its shadow.
 
 The description is a **RichTextLabel** (`_rich_paragraph` → `StrategyIcon.make_rich_label`), not a

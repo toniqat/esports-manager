@@ -28,79 +28,30 @@ extends CanvasLayer
 # 상속으로 잇는 길은 저쪽의 `_bs` 의존을 통째로 선택적으로 만드는 일이 된다.
 # 공유하는 것은 **모양**(좌 아트 / 우 칩 · 섹션)이지 구현이 아니다.
 #
+# **레이아웃의 정본은 `DraftDetailPanel.tscn` 이다.** 이 스크립트는 정적 노드를 만들지
+# 않는다 — `%이름` 노드에 글을 넣고, 데이터마다 달라지는 조각만 코드로 붙인다:
+# 스탯 칩(`DraftStatChip.tscn` 일곱 칸, 처음 한 번), 돌파 알약 칩(`OutgameTheme.add_chip` —
+# 칩마다 색이 다르다), 스킬 아이콘 타일(`SkillImages.make_icon_tile`), 스킬 설명
+# RichTextLabel(`StrategyIcon.make_rich_label`), 파일럿 카드 설명판(`CardDescBox.build`).
+# 색 · 스타일박스는 `Root` 에 붙은 공용 테마(`resources/OutgameTheme.tres`)의 변형
+# (`DimPanel` · `Card` · `SunkPanel` · `GhostButton` · `*Label`)이 정한다. 코드가 정하는
+# 색은 역할 색(머리글 둘째 줄) 하나다 — 데이터가 정하는 색이다.
+#
 # **우측 본문은 여전히 스크롤된다.** 카드 격자가 빠져 지금은 대개 한 화면에
 # 들어가지만, 스킬 설명문은 길이가 제각각이라 넘칠 때가 남는다 — 넘치면 잘리는
 # 대신 굴러가야 한다. 닫기 버튼은 스크롤 **밖** 고정이다 — 목록 끝까지 내려가야
 # 닫을 수 있는 모달은 모달이 아니다.
+#
+# 쓰는 법:
+#   var d := DraftDetailPanel.create()
+#   add_child(d)
+#   d.open(player_data)
 
-const OVERLAY_LAYER: int = 20
+## 받침(`%PanelBox`)이 자랄 수 있는 최대 높이 — 위끝은 씬이 150 에 못박고, 이 높이를
+## 넘는 내용은 `%Scroll` 이 굴린다(아래끝 1740). 그 아래에 닫기 버튼(16 간격 + 84)이 붙는다.
+const PANEL_MAX_H: float = 1590.0
 
-## 화면 크기는 고정 상수가 아니라 런타임 값이다 — 스트레치가 `expand` 라
-## 세로로 긴 기기에서는 높이가 1920 보다 커진다. 딤 · 루트가 뷰포트 전체를
-## 덮지 않으면 그 차이만큼 화면 끝에 안 덮인 띠가 남는다.
-## `docs/mobile_safe_area.md` 참고.
-const DIM_COLOR := Color(0.11, 0.11, 0.18, 0.58)
-
-# ─── 좌: 전신 아트 ───────────────────────────────────────────────────────────
-# 인게임 상세 패널과 같은 값 — 세로 1400 에 아래끝을 화면 밖(2010)에 두어
-# 다리 아랫부분이 잘려 나간다. 전신 아트는 전부 세로 1024 에 인물이 꽉 차 있고
-# 가로만 572~756 이라 **높이로 정규화**해야 파일럿마다 키가 같아진다.
-const ART_H: float = 1400.0
-const ART_BOTTOM: float = 2010.0
-const ART_CENTER_X: float = 300.0
-const ART_PLACEHOLDER_ASPECT: float = 0.70
-
-# ─── 우: 정보 패널 ───────────────────────────────────────────────────────────
-const PANEL_X: float = 596.0
-const PANEL_W: float = 460.0
-const PANEL_TOP: float = 150.0
-const PANEL_BOTTOM: float = 1740.0
-const PANEL_PAD: float = 22.0
-const PANEL_BG := OutgameTheme.SURFACE
-const PANEL_BORDER := OutgameTheme.BORDER
-
-const HDR_NAME_FONT: int = 40
-const HDR_SUB_FONT: int = 22
-const SECTION_H: float = 36.0
-const SECTION_FONT: int = 24
-const SECTION_COLOR := OutgameTheme.TEXT_SUB
-
-# ─── 스탯 칩 ─────────────────────────────────────────────────────────────────
-const CHIP_COLS: int = 3
-const CHIP_GAP: float = 12.0
-const CHIP_H: float = 92.0
-const CHIP_RADIUS: int = 16
-const CHIP_BG := OutgameTheme.SURFACE_SUNK
-const CHIP_BORDER := OutgameTheme.BORDER
-const CHIP_NAME_FONT: int = 19
-const CHIP_VALUE_FONT: int = 34
-const CHIP_NAME_COLOR := OutgameTheme.TEXT_SUB
-const CHIP_VALUE_COLOR := OutgameTheme.TEXT
-const CHIP_TOTAL_COLOR := OutgameTheme.ACCENT_TEXT
-
-# ─── 스킬 ────────────────────────────────────────────────────────────────────
-const SKILL_NAME_FONT: int = 30
-const SKILL_META_FONT: int = 19
-const SKILL_DESC_FONT: int = 21
-const SKILL_NAME_COLOR := OutgameTheme.ACCENT_TEXT
-const SKILL_META_COLOR := OutgameTheme.TEXT_SUB
-const SKILL_DESC_COLOR := OutgameTheme.TEXT
-## Skill icon tile (`SkillImages.make_icon_tile`) left of the skill name.
-const SKILL_TILE_PX: float = 64.0
-const SKILL_TILE_BG := OutgameTheme.RAIL
-const SKILL_TILE_ICON := OutgameTheme.ACCENT
-const SKILL_TILE_SHADOW := Color(0.11, 0.11, 0.18, 0.28)
-const SKILL_TILE_SHADOW_PX: float = 14.0
-## Inset from the scroll body's left / the row top so the shadow isn't clipped.
-const SKILL_TILE_X: float = 14.0
-const SKILL_TILE_Y: float = 4.0
-const SKILL_TILE_GAP: float = 16.0
-
-const CLOSE_H: float = 84.0
-## Breakthrough chip row under the header (only when `breakthrough > 0`).
-const BT_CHIP_H: float = 36.0
-## 파일럿 카드 설명판 사이 간격.
-const CARD_GAP: float = 12.0
+const SCENE_PATH: String = "res://features/meta/run_setup/DraftDetailPanel.tscn"
 
 const ROLE_NAMES: Array = ["TANK", "FIGHTER", "ASSASSIN", "SUPPORT", "SNIPER"]
 ## 역할 색은 팔레트가 소유한다 — 화면마다 자기 배열을 들면 같은 역할이
@@ -108,292 +59,181 @@ const ROLE_NAMES: Array = ["TANK", "FIGHTER", "ASSASSIN", "SUPPORT", "SNIPER"]
 const ROLE_COLORS: Array = OutgameTheme.ROLE_COLORS
 
 ## 칩 목록 — 선수 스탯 여섯에 "종합" 한 칸을 더한다(3열 × 세 줄 중
-## 마지막 한 칸은 비운다). 글자는 짧은 쪽을 쓴다 — 칩 한 칸이 141px 라
+## 마지막 두 칸은 비운다). 글자는 짧은 쪽을 쓴다 — 칩 한 칸이 130px 남짓이라
 ## "전장 명중" 은 들어가지만 줄바꿈 없이 꽉 차서 값과 붙어 보인다.
 const STAT_KEYS: Array = ["전장 명중", "전장 회피", "교전 명중",
 		"교전 회피", "공격 성장", "체력 성장"]
 
+# ─── 코드가 만드는 위젯의 인자 (스킬 타일 · 설명문 · 돌파 칩) ────────────────
+const SKILL_TILE_BG := OutgameTheme.RAIL
+const SKILL_TILE_ICON := OutgameTheme.ACCENT
+const SKILL_TILE_SHADOW := Color(0.11, 0.11, 0.18, 0.28)
+const SKILL_TILE_SHADOW_PX: float = 14.0
+const SKILL_DESC_FONT: int = 21
+const SKILL_DESC_COLOR := OutgameTheme.TEXT
+## 설명 RichTextLabel 의 "knock" 색 = 받침 색.
+const PANEL_BG := OutgameTheme.SURFACE
+const BT_CHIP_H: float = 36.0
+const BT_CHIP_FONT: int = 20
+
 var _pilot: PlayerData = null
-var _root: Control = null
-## 받침의 실제 아래끝(내용이 정한다). 닫기 버튼이 이 값을 따라간다.
-var _panel_bottom: float = PANEL_BOTTOM
+var _chips: Array = []
 
 
-func _init() -> void:
-	layer = OVERLAY_LAYER
+## 씬을 인스턴스한다. `DraftDetailPanel.new()` 는 빈 CanvasLayer 라 쓰지 않는다.
+static func create() -> DraftDetailPanel:
+	return (load(SCENE_PATH) as PackedScene).instantiate() as DraftDetailPanel
+
+
+func _ready() -> void:
+	# 딤은 클릭을 먹어 뒤의 화면으로 새지 않게 하고, 빈 곳을 누르면 닫힌다.
+	# 받침(`Backdrop`, STOP) 위 누름은 딤까지 내려가지 않는다.
+	%Dim.pressed.connect(close)
+	%Close.pressed.connect(close)
+	# 손가락 / 마우스로 끌어 굴린다(`DragScroll`).
+	DragScroll.attach(%Scroll)
+	for i in STAT_KEYS.size() + 1:      # 스탯 여섯 + 종합
+		var chip := DraftStatChip.create()
+		%Stats.add_child(chip)
+		_chips.append(chip)
 
 
 ## 팝업을 연다. 필요한 것은 파일럿 한 명뿐이다 — 스킬 행과 파일럿 카드는
-## 오토로드 `GameManager` 에서 직접 읽는다.
+## 오토로드 `GameManager` 에서 직접 읽는다. 노드는 재사용한다(매번 다시 만들지 않음).
 func open(p: PlayerData) -> void:
 	close()
 	_pilot = p
 	if p == null:
 		return
-	_build()
+	_fill_art()
+	_fill_header()
+	_fill_stats()
+	_fill_skill()
+	_fill_pilot_cards()
+	_fit_panel()
+	(%Scroll as ScrollContainer).scroll_vertical = 0
+	visible = true
 
 
 func close() -> void:
-	if _root != null and is_instance_valid(_root):
-		_root.queue_free()
-	_root = null
+	visible = false
 
 
 func is_open() -> bool:
-	return _root != null and is_instance_valid(_root)
+	return visible
 
 
-# ── Build ────────────────────────────────────────────────────────────────────
-func _build() -> void:
-	_root = Control.new()
-	# CanvasLayer 아래의 Control 은 앵커 프리셋이 뷰포트로 풀리지 않는다 —
-	# 크기를 직접 준다.
-	_root.position = Vector2.ZERO
-	_root.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
-	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_root)
-
-	# 딤은 클릭을 먹어 뒤의 격자로 새지 않게 하고, 빈 곳을 누르면 닫힌다.
-	var dim := Button.new()
-	dim.flat = true
-	dim.focus_mode = Control.FOCUS_NONE
-	dim.position = Vector2.ZERO
-	dim.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
-	dim.pressed.connect(close)
-	_root.add_child(dim)
-
-	var dim_rect := ColorRect.new()
-	dim_rect.color = DIM_COLOR
-	dim_rect.position = Vector2.ZERO
-	dim_rect.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
-	dim_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.add_child(dim_rect)
-
-	_build_art()
-	_build_panel()
-	_build_close()
+## 스크롤 안쪽 폭 — 받침 폭에서 `%Pad` 여백을 뺀 값. 설명문 높이 계산과 카드
+## 설명판 폭이 이 값을 쓴다(씬에서 폭 · 여백을 고치면 따라온다).
+func _inner_w() -> float:
+	var pad: MarginContainer = %Pad
+	return (%Column as Control).size.x - float(pad.get_theme_constant("margin_left")) \
+			- float(pad.get_theme_constant("margin_right"))
 
 
-func _build_art() -> void:
+# ── Fill ─────────────────────────────────────────────────────────────────────
+## 높이 정규화 — `%Art` 는 세로 1400 · 가로 넉넉한 칸에 `KEEP_ASPECT_CENTERED` 라
+## 아트마다 인물 키가 같고 가로 가운데(x 300)에 선다. 다리 아랫부분은 화면 밖(2010)으로
+## 잘려 나간다. 폭으로 맞추면 아트마다 인물 키가 제각각이 된다. 아트가 없으면 회색 판.
+func _fill_art() -> void:
 	var tex: Texture2D = PilotImages.full_for(_pilot.id)
+	var art: TextureRect = %Art
+	art.texture = tex
+	art.visible = tex != null
+	%ArtPlaceholder.visible = tex == null
 	if tex == null:
-		var slab := ColorRect.new()
-		slab.color = Color(0.30, 0.33, 0.42, 0.14)
-		var slab_w: float = ART_H * ART_PLACEHOLDER_ASPECT
-		slab.size = Vector2(slab_w, ART_H)
-		slab.position = Vector2(ART_CENTER_X - slab_w * 0.5, ART_BOTTOM - ART_H)
-		slab.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_root.add_child(slab)
 		return
-	# 높이 정규화 — 폭으로 맞추면 아트마다 인물 키가 제각각이 된다.
-	var aspect: float = float(tex.get_width()) / maxf(1.0, float(tex.get_height()))
-	var art_w: float = ART_H * aspect
-	var rect := TextureRect.new()
-	rect.texture = tex
-	rect.expand_mode  = TextureRect.EXPAND_IGNORE_SIZE
-	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	rect.size = Vector2(art_w, ART_H)
-	rect.position = Vector2(ART_CENTER_X - art_w * 0.5, ART_BOTTOM - ART_H)
-	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.add_child(rect)
+	# 칸 폭을 아트 비율에 맞춰 좁힌다 — 가운데 · 높이는 씬 값 그대로. 넉넉한 칸에
+	# 가운데 정렬로만 두어도 같은 자리지만 소수점 위치가 칸 안쪽으로 옮겨 가
+	# 다시 샘플링되면서 윤곽이 반 픽셀 번진다.
+	var cx: float = (art.offset_left + art.offset_right) * 0.5
+	var w: float = (art.offset_bottom - art.offset_top) \
+			* float(tex.get_width()) / maxf(1.0, float(tex.get_height()))
+	art.offset_left = cx - w * 0.5
+	art.offset_right = cx + w * 0.5
 
 
-func _build_panel() -> void:
-	var panel_h: float = PANEL_BOTTOM - PANEL_TOP
-	var backdrop := Panel.new()
-	backdrop.position = Vector2(PANEL_X, PANEL_TOP)
-	backdrop.size = Vector2(PANEL_W, panel_h)
-	var sty := StyleBoxFlat.new()
-	sty.bg_color = PANEL_BG
-	sty.border_color = PANEL_BORDER
-	sty.border_width_left = 2
-	sty.border_width_right = 2
-	sty.border_width_top = 2
-	sty.border_width_bottom = 2
-	sty.corner_radius_top_left     = 14
-	sty.corner_radius_top_right    = 14
-	sty.corner_radius_bottom_left  = 14
-	sty.corner_radius_bottom_right = 14
-	backdrop.add_theme_stylebox_override("panel", sty)
-	_root.add_child(backdrop)
-
-	var inner_w: float = PANEL_W - PANEL_PAD * 2.0
-	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(PANEL_X + PANEL_PAD, PANEL_TOP + PANEL_PAD)
-	scroll.size = Vector2(inner_w, panel_h - PANEL_PAD * 2.0)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_root.add_child(scroll)
-	# 손가락 / 마우스로 끌어 굴린다(`DragScroll`).
-	DragScroll.attach(scroll)
-
-	# 스크롤 안쪽은 컨테이너가 아니라 좌표로 쌓는다 — 칩 격자와 카드 격자가
-	# 둘 다 2차원이라 VBox 로는 행마다 컨테이너를 하나씩 더 세워야 한다.
-	# ScrollContainer 는 자식의 `custom_minimum_size` 로 스크롤 범위를 잡으므로
-	# 마지막에 그 값만 실제 높이로 채워 주면 된다.
-	var body := Control.new()
-	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	scroll.add_child(body)
-
-	var y: float = 0.0
-	y = _build_header(body, inner_w, y)
-	y = _build_stat_chips(body, inner_w, y + 18.0)
-	y = _build_skill_block(body, inner_w, y + 22.0)
-	y = _build_pilot_cards(body, inner_w, y + 22.0)
-
-	body.custom_minimum_size = Vector2(inner_w, y + 12.0)
-	body.size = Vector2(inner_w, y + 12.0)
-
-	# **받침 높이는 내용이 정한다** — 위쪽은 `PANEL_TOP` 에 못박고 아래끝만
-	# 내용에 맞춰 올라온다(넘치면 `PANEL_BOTTOM` 에서 멈추고 그때부터 스크롤이
-	# 일한다). 카드 격자가 있던 시절에는 언제나 꽉 찼으므로 고정 높이로 두어도
-	# 됐지만, 지금은 스탯 칩과 스킬 한 문단뿐이라 고정으로 두면 받침 아래
-	# 절반이 텅 빈 흰 판으로 남는다.
-	var content_h: float = y + 12.0 + PANEL_PAD * 2.0
-	var panel_h2: float = minf(content_h, panel_h)
-	backdrop.size = Vector2(PANEL_W, panel_h2)
-	scroll.size = Vector2(inner_w, panel_h2 - PANEL_PAD * 2.0)
-	_panel_bottom = PANEL_TOP + panel_h2
-
-
-func _build_header(body: Control, w: float, y: float) -> float:
-	var name_lbl := UiHelpers.mk_label(body, _pilot.name, HDR_NAME_FONT,
-			OutgameTheme.TEXT, Vector2(0, y), Vector2(w, 52))
-	name_lbl.clip_text = true
-	y += 54.0
-
+func _fill_header() -> void:
+	%Name.text = _pilot.name
 	var r: int = int(_pilot.role)
 	var role_name: String = String(ROLE_NAMES[r]) if r >= 0 and r < ROLE_NAMES.size() else "?"
 	var role_col: Color = ROLE_COLORS[r] if r >= 0 and r < ROLE_COLORS.size() else OutgameTheme.TEXT
 	var slot: int = TeamDraft.slot_of_role(r)
 	var slot_name: String = String(TeamDraft.SLOT_NAMES[slot]) if slot >= 0 else "?"
-	var sub := UiHelpers.mk_label(body,
-			"%s · %s · 원소속 %s" % [slot_name, role_name, _team_short(_pilot.team_id)],
-			HDR_SUB_FONT, role_col, Vector2(0, y), Vector2(w, 28))
-	sub.clip_text = true
-	y += 30.0
+	var sub: Label = %Sub
+	sub.text = "%s · %s · 원소속 %s" % [slot_name, role_name, _team_short(_pilot.team_id)]
+	sub.add_theme_color_override("font_color", role_col)
 	# M10 — breakthrough stage. The copy handed in already carries it (stats, salary,
 	# swapped pilot card: `RunRules.apply_breakthrough` on the pool / run copies), so
 	# this chip only names *why* the numbers below differ from the base pilot.
+	_clear(%BtChips)
+	%BtRow.visible = _pilot.breakthrough > 0
 	if _pilot.breakthrough > 0:
-		y += 8.0
-		var x: float = _hdr_chip(body, "돌파 %d" % _pilot.breakthrough, 0.0, y,
-				OutgameTheme.ACCENT_DIM, OutgameTheme.ACCENT_TEXT)
+		_bt_chip("돌파 %d" % _pilot.breakthrough, OutgameTheme.ACCENT_DIM, OutgameTheme.ACCENT_TEXT)
 		if _pilot.train_bonus_pct != 0:
-			_hdr_chip(body, "훈련 EXP +%d%%" % _pilot.train_bonus_pct, x, y,
+			_bt_chip("훈련 EXP +%d%%" % _pilot.train_bonus_pct,
 					OutgameTheme.SURFACE_SUNK, OutgameTheme.TEXT)
-		y += BT_CHIP_H
-	return y
 
 
-## Header pill sized to its text; returns the x after it.
-func _hdr_chip(body: Control, text: String, x: float, y: float, bg: Color, fg: Color) -> float:
+## Header pill sized to its text (`%BtChips` lines them up).
+func _bt_chip(text: String, bg: Color, fg: Color) -> void:
 	var cw: float = 28.0 + 13.0 * float(text.length())
-	OutgameTheme.add_chip(body, text, Vector2(x, y), Vector2(cw, BT_CHIP_H), bg, fg, 20)
-	return x + cw + 8.0
+	var chip: Panel = OutgameTheme.add_chip(%BtChips, text, Vector2.ZERO,
+			Vector2(cw, BT_CHIP_H), bg, fg, BT_CHIP_FONT)
+	chip.custom_minimum_size = chip.size
 
 
-func _build_stat_chips(body: Control, w: float, y: float) -> float:
-	y = _section(body, w, y, "선수 능력치")
-	var chip_w: float = (w - CHIP_GAP * float(CHIP_COLS - 1)) / float(CHIP_COLS)
-	var n: int = STAT_KEYS.size() + 1      # 스탯 여섯 + 종합
-	for i in n:
-		var col: int = i % CHIP_COLS
-		var row: int = floori(float(i) / float(CHIP_COLS))
-		var at := Vector2(float(col) * (chip_w + CHIP_GAP),
-				y + float(row) * (CHIP_H + CHIP_GAP))
+func _fill_stats() -> void:
+	for i in _chips.size():
 		var is_total: bool = i == STAT_KEYS.size()
 		var key: String = "종합" if is_total else String(STAT_KEYS[i])
-		var val: int = PilotThumb.total_stats(_pilot) if is_total 				else int(_pilot.get(String(PlayerData.STAT_KEYS[i])))
-		_mk_chip(body, at, Vector2(chip_w, CHIP_H), key, str(val),
-				CHIP_TOTAL_COLOR if is_total else CHIP_VALUE_COLOR)
-	var rows: int = ceili(float(n) / float(CHIP_COLS))
-	return y + CHIP_H * float(rows) + CHIP_GAP * float(rows - 1)
+		var val: int = PilotThumb.total_stats(_pilot) if is_total \
+				else int(_pilot.get(String(PlayerData.STAT_KEYS[i])))
+		(_chips[i] as DraftStatChip).fill(key, str(val), is_total)
 
 
-func _mk_chip(body: Control, at: Vector2, sz: Vector2, key: String,
-		val: String, val_color: Color) -> void:
-	var chip := Panel.new()
-	chip.position = at
-	chip.size = sz
-	chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var sty := StyleBoxFlat.new()
-	sty.bg_color = CHIP_BG
-	sty.border_color = CHIP_BORDER
-	sty.border_width_left = 2
-	sty.border_width_right = 2
-	sty.border_width_top = 2
-	sty.border_width_bottom = 2
-	sty.corner_radius_top_left     = CHIP_RADIUS
-	sty.corner_radius_top_right    = CHIP_RADIUS
-	sty.corner_radius_bottom_left  = CHIP_RADIUS
-	sty.corner_radius_bottom_right = CHIP_RADIUS
-	chip.add_theme_stylebox_override("panel", sty)
-	body.add_child(chip)
-
-	UiHelpers.mk_label(chip, key, CHIP_NAME_FONT, CHIP_NAME_COLOR,
-			Vector2(0, 10), Vector2(sz.x, 24), HORIZONTAL_ALIGNMENT_CENTER)
-	var v := UiHelpers.mk_label(chip, val, CHIP_VALUE_FONT, val_color,
-			Vector2(0, 36), Vector2(sz.x, 44), HORIZONTAL_ALIGNMENT_CENTER)
-	v.clip_text = true
-
-
-func _build_skill_block(body: Control, w: float, y: float) -> float:
-	y = _section(body, w, y, "파일럿 스킬")
+func _fill_skill() -> void:
+	_clear(%SkillTile)
+	_clear(%SkillDesc)
 	var sk: Dictionary = _skill_def()
+	# 모브는 여기서 자기 정체를 말한다 — 스탯 하향보다 이쪽이 크다.
+	%NoSkill.visible = sk.is_empty()
+	%SkillRow.visible = not sk.is_empty()
+	%SkillDesc.visible = not sk.is_empty()
 	if sk.is_empty():
-		# 모브는 여기서 자기 정체를 말한다 — 스탯 하향보다 이쪽이 크다.
-		UiHelpers.mk_label(body, "고유 스킬 없음 (이름 없는 선수)",
-				SKILL_DESC_FONT, SKILL_META_COLOR, Vector2(0, y), Vector2(w, 30))
-		return y + 32.0
+		return
 
-	# Icon tile on the left; name + meta line stacked to its right, the pair
-	# centred on the tile. The tile is nudged in by
-	# `SKILL_TILE_X` so the scroll clip doesn't shave its shadow.
-	var tile: Control = SkillImages.make_icon_tile(String(sk.get("key", "")),
-			SKILL_TILE_PX, SKILL_TILE_BG, SKILL_TILE_ICON, SKILL_TILE_SHADOW,
-			SKILL_TILE_SHADOW_PX)
-	tile.position = Vector2(SKILL_TILE_X, y + SKILL_TILE_Y)
-	body.add_child(tile)
-	var text_x: float = SKILL_TILE_X + SKILL_TILE_PX + SKILL_TILE_GAP
-	var text_w: float = w - text_x
-	var name_y: float = y + SKILL_TILE_Y + (SKILL_TILE_PX - 40.0 - 26.0) * 0.5
-	var name_lbl := UiHelpers.mk_label(body, String(sk.get("name", "?")),
-			SKILL_NAME_FONT, SKILL_NAME_COLOR, Vector2(text_x, name_y),
-			Vector2(text_w, 40))
-	name_lbl.clip_text = true
-
+	# 타일 크기 = 씬의 `%SkillTile` 칸 크기.
+	var tile_slot: Control = %SkillTile
+	tile_slot.add_child(SkillImages.make_icon_tile(String(sk.get("key", "")),
+			tile_slot.size.x, SKILL_TILE_BG, SKILL_TILE_ICON, SKILL_TILE_SHADOW,
+			SKILL_TILE_SHADOW_PX))
+	%SkillName.text = String(sk.get("name", "?"))
 	var meta: String = TeamDraft.skill_type_label(String(sk.get("type", "")))
 	var kw: String = String(sk.get("keyword", ""))
 	if not kw.is_empty():
 		meta += " · " + kw
-	var meta_lbl := UiHelpers.mk_label(body, meta, SKILL_META_FONT,
-			SKILL_META_COLOR, Vector2(text_x, name_y + 40.0), Vector2(text_w, 26))
-	meta_lbl.clip_text = true
-	y += SKILL_TILE_Y + SKILL_TILE_PX + 12.0
-
-	return y + _rich_paragraph(body, w, y, String(sk.get("description", "")),
-			SKILL_DESC_FONT, SKILL_DESC_COLOR)
+	%SkillMeta.text = meta
+	_rich_paragraph(%SkillDesc, String(sk.get("description", "")))
 
 
-## 이 선수의 고정 파일럿 카드 3장 — 설명판을 위에서부터 쌓는다.
-func _build_pilot_cards(body: Control, w: float, y: float) -> float:
-	y = _section(body, w, y, "파일럿 카드")
+## 이 선수의 고정 파일럿 카드 3장 — 설명판을 위에서부터 쌓는다(`%Cards` 간격).
+func _fill_pilot_cards() -> void:
+	_clear(%Cards)
 	var gm: Node = get_node_or_null("/root/GameManager")
 	if gm == null:
-		return y
-	var placed: int = 0
+		return
+	var w: float = _inner_w()
 	for raw in gm.pilot_card_ids_for(_pilot):
 		var def: Dictionary = gm.card_def(int(raw))
 		if def.is_empty():
 			continue
-		if placed > 0:
-			y += CARD_GAP
 		var box := CardDescBox.build(CardData.from_def(def), w, true)
-		box.position = Vector2(0, y)
-		body.add_child(box)
-		y += box.size.y
-		placed += 1
-	return y
+		# 높이만 최소로 준다. 폭까지 주면 `%Scroll` 의 최소 폭이 "본문 + 스크롤 막대"가
+		# 되어, 막대가 켜지는 순간 `%Pad` 가 받침 밖으로 4px 씩 벌어지고 막대가 꺼져도
+		# 돌아오지 않는다(ScrollContainer 가 최소 크기 변화를 다시 알리지 않는다).
+		box.custom_minimum_size = Vector2(0.0, box.size.y)
+		%Cards.add_child(box)
 
 
 ## Rich description paragraph — skill descriptions carry `\n` breaks,
@@ -401,59 +241,46 @@ func _build_pilot_cards(body: Control, w: float, y: float) -> float:
 ## `StrategyIcon.make_rich_label` on light-theme colours (same as the light
 ## `CardDescBox`). **The height comes from `StrategyIcon.rich_height`** —
 ## measuring by hand lets a long description overlap the block below.
-## Returns that height.
-func _rich_paragraph(body: Control, w: float, y: float, text: String,
-		font_size: int, color: Color) -> float:
+func _rich_paragraph(holder: Control, text: String) -> void:
 	var costs: Dictionary = {}
 	var gm: Node = get_node_or_null("/root/GameManager")
 	if gm != null:
 		costs = gm.card_costs_by_name()
-	var lbl := StrategyIcon.make_rich_label(text, font_size, color,
+	var w: float = _inner_w()
+	var lbl := StrategyIcon.make_rich_label(text, SKILL_DESC_FONT, SKILL_DESC_COLOR,
 			OutgameTheme.ACCENT_TEXT, PANEL_BG, KeywordIcon.TARGET_ANY_COLOR,
 			KeywordIcon.TARGET, KeywordIcon.SPECIAL_COLOR_LIGHT, costs)
-	var h: float = StrategyIcon.rich_height(text, w, font_size, costs)
-	lbl.position = Vector2(0, y)
+	var h: float = StrategyIcon.rich_height(text, w, SKILL_DESC_FONT, costs)
+	lbl.position = Vector2.ZERO
 	lbl.size = Vector2(w, h)
-	body.add_child(lbl)
-	return h
+	holder.add_child(lbl)
+	holder.custom_minimum_size = Vector2(0, h)
 
 
-func _section(body: Control, w: float, y: float, title: String) -> float:
-	var lbl := UiHelpers.mk_label(body, title, SECTION_FONT, SECTION_COLOR,
-			Vector2(0, y), Vector2(w, SECTION_H))
-	lbl.clip_text = true
-	return y + SECTION_H
+## **받침 높이는 내용이 정한다** — 위쪽은 씬이 못박고 아래끝만 내용에 맞춰
+## 올라온다(넘치면 `PANEL_MAX_H` 에서 멈추고 그때부터 스크롤이 일한다). 스탯 칩과
+## 스킬 한 문단뿐인 선수에서 고정 높이로 두면 받침 아래 절반이 텅 빈 흰 판으로 남는다.
+## 닫기 버튼은 `%Column` 에서 받침 바로 아래에 붙어 따라다닌다 — 고정 y 에 두면
+## 내용이 짧은 파일럿에서 버튼만 허공에 뜬다.
+func _fit_panel() -> void:
+	var pad: MarginContainer = %Pad
+	var content_h: float = (%Body as Control).get_combined_minimum_size().y \
+			+ float(pad.get_theme_constant("margin_top")) \
+			+ float(pad.get_theme_constant("margin_bottom"))
+	var box: Control = %PanelBox
+	var h: float = minf(content_h, PANEL_MAX_H)
+	box.custom_minimum_size.y = h
+	# 높이만 내용으로 줄인다(폭은 씬 그대로) — VBox 는 스스로 줄지 않는다.
+	var col: Control = %Column
+	col.size = Vector2(col.size.x, 0.0)
 
 
-func _build_close() -> void:
-	var btn := Button.new()
-	btn.text = "닫기"
-	OutgameTheme.style_ghost_button(btn, 30)
-	btn.focus_mode = Control.FOCUS_NONE
-	# 받침 아래끝에 붙어 다닌다 — 인게임 상세 패널(`_reposition_close`)과 같은
-	# 규칙이다. 고정 y 에 두면 내용이 짧은 파일럿에서 버튼만 허공에 뜬다.
-	btn.position = Vector2(PANEL_X, _panel_bottom + 16.0)
-	btn.size = Vector2(PANEL_W, CLOSE_H)
-	# **불투명 스타일이 필수다.** 이 자리는 드래프트 화면의 "드래프트 확정"
-	# 버튼과 겹치는데, 기본 Button 테마는 반투명이라 딤 아래의 그 글자가
-	# 비쳐 "닫기"와 "드래프트 확정"이 한 칸에 겹쳐 읽혔다.
-	var sty := StyleBoxFlat.new()
-	sty.bg_color = OutgameTheme.SURFACE
-	sty.border_color = OutgameTheme.BORDER_STRONG
-	sty.border_width_left = 2
-	sty.border_width_right = 2
-	sty.border_width_top = 2
-	sty.border_width_bottom = 2
-	sty.corner_radius_top_left     = 10
-	sty.corner_radius_top_right    = 10
-	sty.corner_radius_bottom_left  = 10
-	sty.corner_radius_bottom_right = 10
-	btn.add_theme_stylebox_override("normal",  sty)
-	btn.add_theme_stylebox_override("hover",   sty)
-	btn.add_theme_stylebox_override("pressed", sty)
-	btn.add_theme_stylebox_override("focus",   sty)
-	btn.pressed.connect(close)
-	_root.add_child(btn)
+## 다시 열 때 이전 파일럿의 코드 조각을 걷어 낸다. `queue_free` 는 프레임 끝에야
+## 지우므로 먼저 떼어 낸다 — 남아 있으면 이번 높이 계산에 섞인다.
+func _clear(holder: Node) -> void:
+	for c in holder.get_children():
+		holder.remove_child(c)
+		c.queue_free()
 
 
 ## 이 선수의 고유 스킬 행. 모브(스킬 없음)는 빈 Dictionary 를 돌려준다.

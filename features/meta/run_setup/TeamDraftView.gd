@@ -201,7 +201,7 @@ func _build_ui() -> void:
 	_build_grid()
 	_build_bottom_bar()
 
-	_detail = DraftDetailPanel.new()
+	_detail = DraftDetailPanel.create()
 	add_child(_detail)
 
 

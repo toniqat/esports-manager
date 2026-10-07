@@ -33,6 +33,7 @@ const USAGE := """L10n 명령 (godot --headless --path . --script res://addons/l
   validate [dev|release] [--fix-preview-leak]
   build [dev|release]
   extract data [csv 파일명...]
+  set_tr <locale> <json 경로>            (번역 초안 일괄: {"key 또는 alias": "번역", …} → draft)
 옵션: --config=<res://…/config.json> (기본 res://data/l10n/config.json)"""
 
 var config: Config
@@ -170,6 +171,31 @@ func cmd_extract(args: PackedStringArray) -> String:
 	return err
 
 
+## 번역 초안 일괄 쓰기 — json 은 {key 또는 alias: 번역문}. 모두 draft + 현재 원문 해시
+## (LLM 번역은 draft 까지, §0.5). 없는 key 가 하나라도 있으면 아무것도 쓰지 않는다.
+func cmd_set_translations(locale: String, json_path: String) -> String:
+	reload()
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(json_path))
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return "JSON 객체가 아님: %s" % json_path
+	var pairs: Array = []
+	for k in (parsed as Dictionary).keys():
+		var key: String = resolve_key(String(k))
+		if key == "":
+			return "없는 key/alias: %s" % k
+		pairs.append([key, String(parsed[k])])
+	for pr in pairs:
+		var err: String = catalog.set_translation(pr[0], locale, pr[1])
+		if err != "":
+			catalog.reload()
+			return err
+	var serr: String = catalog.save_all()
+	if serr != "":
+		return serr
+	info("set_tr %s: %d개 draft" % [locale, pairs.size()])
+	return ""
+
+
 ## refs.json 본문 — 설명 key → [참조 key…] (D4). builder 가 쓴다.
 func resolve_refs(into: Issues = null) -> Dictionary:
 	return Refs.resolve(catalog, into)
@@ -235,6 +261,14 @@ static func run_cli(raw_args: PackedStringArray) -> int:
 			return 0 if l.cmd_build(rest[0] if rest.size() > 0 else MODE_DEV) == 0 else 1
 		"extract":
 			return 0 if l.cmd_extract(rest) == "" else 1
+		"set_tr":
+			if rest.size() != 2:
+				print(USAGE)
+				return 2
+			var serr: String = l.cmd_set_translations(rest[0], rest[1])
+			if serr != "":
+				l.info("set_tr 실패: " + serr)
+			return 0 if serr == "" else 1
 	print(USAGE)
 	return 2
 

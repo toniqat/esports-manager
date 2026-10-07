@@ -7,7 +7,8 @@
 | 경로 | 방법 |
 |---|---|
 | 에디터 | **Project → Tools → L10n** (build dev · build release · validate · scan · sync), 조회 도크(오른쪽 위) |
-| 헤드리스 | `godot --headless --path . --script res://addons/l10n_tool/cli.gd -- <명령>` — 인자 없이 실행하면 사용법. `validate --fix-preview-leak` 은 E057 누수를 key 로 되돌린다 |
+| 헤드리스 | `godot --headless --path . --script res://addons/l10n_tool/cli.gd -- <명령>` — 인자 없이 실행하면 사용법. `validate --fix-preview-leak` 은 E057 누수를 key 로 되돌린다. `set_tr <locale> <json>` 은 번역 초안 일괄(draft) |
+| Rebuild game.db (헤드리스) | `godot --headless --path . --script res://addons/l10n_tool/rebuild_db.gd` |
 | Rebuild game.db | csv_to_db 가 DB 를 쓴 뒤 `build dev` 를 부른다 — 실패해도 DB 는 남고 오류만 돌려준다 |
 | 테스트 | `godot --headless --path . --script res://addons/l10n_tool/tests/run_tests.gd [-- <파일 이름 필터>]` |
 

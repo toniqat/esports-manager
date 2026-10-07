@@ -12,8 +12,8 @@ extends VBoxContainer
 # **The layout is `TraitPickerView.tscn`** (+ item scenes `TraitPickerSlot.tscn` ·
 # `TraitPickerRow.tscn`). Hosts place an instance, call `fill()` on every change and connect
 # `trait_pressed` once; the block sizes itself (VBox). Code fills texts, picks label / frame
-# variations by state and paints the data colours (polarity badge / strip, rarity chip,
-# over-slot border) on `variation_box` copies.
+# variations by state (`TraitPicker*` screen variations) and paints the data colours
+# (polarity badge / strip, rarity chip) — the badge / chip on `variation_box` copies.
 #
 # It only draws and reports taps (`trait_pressed(id)`); the owner applies the rule
 # (`ManagerProgress.toggle_trait`) and calls `fill()` again. Lives inside the owner's
@@ -29,11 +29,10 @@ const SLOT_SCENE: PackedScene = preload("res://features/meta/manager/TraitPicker
 const ROW_H: float = 112.0
 const ROW_LOCKED_H: float = 140.0
 
-## Row frame per state. Closest shared looks until the proposed `TraitPickerRow` /
-## `TraitPickerRowOn` / `TraitPickerRowLocked` exist (README).
-const ROW_ON: StringName = &"SelectableCardButtonOn"
-const ROW_OWNED: StringName = &"SelectableCardButton"
-const ROW_LOCKED: StringName = &"DraftSlotFrame"
+## Row frame per state (screen variations, `OutgameTheme._add_screen_variations`).
+const ROW_ON: StringName = &"TraitPickerRowOn"
+const ROW_OWNED: StringName = &"TraitPickerRow"
+const ROW_LOCKED: StringName = &"TraitPickerRowLocked"
 
 
 static func create() -> TraitPickerView:
@@ -97,7 +96,7 @@ func _fill_gauge(equipped: Array) -> void:
 			provided += int(r["bonus_cost"])
 	var bonus: int = TraitSystem.bonus_points(equipped)
 	var bad: bool = bonus < 0
-	(%Gauge as Control).theme_type_variation = &"ManagerDangerCard" if bad else &"SelectableCard"
+	(%Gauge as Control).theme_type_variation = &"TraitPickerGaugeBad" if bad else &"TraitPickerGauge"
 	var bl: Label = %Bonus
 	bl.text = ManagerUi.signed(bonus)
 	if bonus < 0:
@@ -129,11 +128,8 @@ func _fill_slots(equipped: Array, slots: int) -> void:
 		var pos_pol: bool = String(r.get("polarity", "+")) == TraitSystem.POLARITY_POS
 		frame.pressed.connect(func() -> void: trait_pressed.emit(tid))
 		if i >= slots:
-			# Past the slot count: same frame, red border (state colour on a copy).
-			var sb := OutgameTheme.variation_box(&"SelectableCardButton", &"normal")
-			sb.border_color = OutgameTheme.NEGATIVE
-			for st in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
-				frame.add_theme_stylebox_override(st, sb)
+			# Past the slot count: red frame.
+			frame.theme_type_variation = &"TraitPickerSlotOver"
 		(slot.get_node("%Strip") as ColorRect).color = _pol_color(pos_pol)
 		(slot.get_node("%Name") as Label).text = String(r.get("name", "?"))
 		var cost: Label = slot.get_node("%Cost")

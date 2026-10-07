@@ -950,6 +950,14 @@ theme variation too, built in `OutgameTheme._add_screen_variations()`:
 | `BanPickPortraitRim` | SunkPanel | `BanPickPortrait` `Rim` | side colour border (`setup`) |
 | `BanPickSheetCard` · `BanPickDragGhost` | Card · SunkPanel | `BanPickView` `Sheet` · `DragGhost` | — |
 | `ManagerDangerCard` | Card | `ManagerTab` `ResetCard` | — |
+| `CollectionCellFrame` · `CollectionCellFrameUnowned` | SelectableCardButton | `CollectionCell` root (r16, border 2 `BORDER_STRONG` / sunk + `BORDER`), switched by owned state | — |
+| `CollectionCellArtMask` · `CollectionCellUnownedPill` | SunkPanel · SurfaceChip | `CollectionCell` `ArtMask` (r12) · `Unowned` (`RAIL` pill) | — |
+| `CollectionCellPip` · `CollectionCellPipOn` | ProgressTrack · ProgressFill | `CollectionCell` `%Pips` children (r4, 1px border), switched by breakthrough | — |
+| `ManagerPresetChip` · `ManagerPresetChipOn` | SelectableCardButton(On) | `ManagerPresetChip` root (r16, border 2 / amber 4), switched by `ManagerPresetChips.fill` | — |
+| `TraitPickerGauge` · `TraitPickerGaugeBad` | SelectableCard · ManagerDangerCard | `TraitPickerView` `%Gauge` (r16, border 1 / red 3), switched by bonus < 0 | — |
+| `TraitPickerSlot` · `TraitPickerSlotOver` · `TraitPickerSlotEmpty` | SelectableCardButton · SunkPanel | `TraitPickerSlot` `%Frame` (r14, `BORDER_STRONG` / `NEGATIVE` past the slot count) · `%Empty` | — |
+| `TraitPickerRow` · `TraitPickerRowOn` · `TraitPickerRowLocked` | SelectableCardButton(On) | `TraitPickerRow` root (r16; border 1 / amber 3 / `BG` fill), `TraitPickerView.ROW_*` | — |
+| `TraitPickerLayerChip` · `TraitPickerNewChip` · `TraitPickerEquippedChip` | SurfaceChip · AccentChip | `TraitPickerRow` `Layer` · `%New` · `%Equipped` (pills: sunk / `NEGATIVE` / `ACCENT`) | — |
 | `RunResultSectionCard` · `RunResultSectionCardAmber` | Card | `RunResult` cards (padding 40, top 28) | — |
 | `RunResultAccentDivider` | Divider | `RunResult` amber card dividers | — |
 | `RunResultTraitCard` | Card | `RunResultTraitRow` `Card` | — |

@@ -50,11 +50,11 @@ mouse_filter = 2
 
 [node name="Gauge" type="Panel" parent="."]
 unique_name_in_owner = true
-editor_description = "Bonus gauge. Variation SelectableCard, ManagerDangerCard while bonus < 0 (code)."
+editor_description = "Bonus gauge. Variation TraitPickerGauge, TraitPickerGaugeBad while bonus < 0 (code)."
 custom_minimum_size = Vector2(0, 104)
 layout_mode = 2
 mouse_filter = 2
-theme_type_variation = &"SelectableCard"
+theme_type_variation = &"TraitPickerGauge"
 
 [node name="Key" type="Label" parent="Gauge"]
 layout_mode = 0

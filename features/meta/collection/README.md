@@ -116,9 +116,8 @@ Fixed 240×330 item (absolute offsets inside the Button). Code fills data only: 
 badge (`RoleBadge.set_role`), rarity pill (`set_rarity`: stars, rarity colour on an `AccentChip` copy,
 width = `rarity_pill_w`, right edge kept), owned state — frame variation `FRAME_OWNED` /
 `FRAME_UNOWNED`, `%Name` `BodyLabel` ↔ `SubLabel`, `%ArtMask` modulate `UNOWNED_MODULATE`, level row ↔
-hint — and the pips (`ProgressFill` = reached, `ProgressTrack` = not).
-**Closest-variation stand-ins** until the proposed exact ones exist: frame `SelectableCardButton` /
-`DraftSlotFrame` (proposed `CollectionCellFrame` / `CollectionCellFrameUnowned`: r16, border 2
-`BORDER_STRONG` / `BORDER`), face mask `PilotThumbArtMask` r14 (proposed `CollectionCellArtMask` r12),
-pips `ProgressTrack` / `ProgressFill` (proposed `CollectionCellPip(On)`: r4 + 1px border), 미보유 pill
-`LobbyToast` (same pixels; proposed `CollectionCellUnownedPill`).
+hint — and the pips (`CollectionCellPipOn` = reached, `CollectionCellPip` = not).
+Screen variations (`resources/README.md` → Screen variations): frame `CollectionCellFrame` /
+`CollectionCellFrameUnowned`, face mask `CollectionCellArtMask` (r12 = frame r16 − 8 inset / 2),
+pips `CollectionCellPip(On)`, 미보유 pill `CollectionCellUnownedPill`. Renders pixel-identical to the
+old code-built cell.

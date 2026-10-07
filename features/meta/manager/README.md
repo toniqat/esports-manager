@@ -106,18 +106,14 @@ TraitPickerView (VBox, sep 0)
 ```
 | Piece | Variation in the scene / code | Code colour (data) |
 |---|---|---|
-| Preset chip frame | `SelectableCardButton` ↔ `SelectableCardButtonOn` (selected) | — |
+| Preset chip frame | `ManagerPresetChip` ↔ `ManagerPresetChipOn` (selected) | — |
 | Chip name / status | `SubLabel` ↔ `BodyLabel`; `FaintLabel` / `AccentLabel` (● 사용 중) / `NegativeLabel` (재설정 필요) | — |
-| Gauge | `SelectableCard` ↔ `ManagerDangerCard` (bonus < 0); `%Bonus` Positive / Negative / Caption | — |
-| Slot frame · empty | `SelectableCardButton` · `SunkPanel` | over-slot border `NEGATIVE` (variation copy); `%Strip` polarity |
-| Row frame | `TraitPickerView.ROW_ON` / `ROW_OWNED` / `ROW_LOCKED` = `SelectableCardButtonOn` / `SelectableCardButton` / `DraftSlotFrame` | — |
+| Gauge | `TraitPickerGauge` ↔ `TraitPickerGaugeBad` (bonus < 0); `%Bonus` Positive / Negative / Caption | — |
+| Slot frame · empty | `TraitPickerSlot` ↔ `TraitPickerSlotOver` (past `slot_count`) · `TraitPickerSlotEmpty` | `%Strip` polarity |
+| Row frame | `TraitPickerView.ROW_ON` / `ROW_OWNED` / `ROW_LOCKED` = `TraitPickerRowOn` / `TraitPickerRow` / `TraitPickerRowLocked` | — |
 | Row badge · rarity chip | `AccentChip` shape (pill) | polarity colour (grey locked) · `TraitUi.rarity_color` |
-| Layer chip · NEW · 장착 중 | `SunkPanel` · `ManagerDangerCard` + `NegativeLabel` · `PilotThumbCheck` | — |
+| Layer chip · NEW · 장착 중 | `TraitPickerLayerChip` · `TraitPickerNewChip` · `TraitPickerEquippedChip` (`OnFillLabel` / `CaptionLabel` 18) | — |
 
-**Closest-variation stand-ins** (no exact theme variation yet — proposed: `ManagerPresetChip(On)`,
-`TraitPickerGauge(Bad)`, `TraitPickerSlot` / `TraitPickerSlotOver` / `TraitPickerSlotEmpty`,
-`TraitPickerRow` / `On` / `Locked`, `TraitPickerLayerChip`, `TraitPickerNewChip`,
-`TraitPickerEquippedChip` — the old code look; once added, switch the names in the scenes and the
-`ROW_*` constants / `fill` and drop the over-slot copy). Until then: corners 18 instead of 14 / 16,
-border widths 2 / 4 instead of 1 / 3, locked rows sunk instead of `BG`, layer chip r12, NEW chip
-pale red with red text instead of a red pill.
+All of these are screen variations in `OutgameTheme._add_screen_variations` (`resources/README.md`)
+and reproduce the old code-built look; the only render difference is that chip / slot cells now
+snap to whole pixels (old widths like 196.8).

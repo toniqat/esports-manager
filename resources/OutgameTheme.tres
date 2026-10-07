@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=133 format=3 uid="uid://co7tw5omdwmyd"]
+[gd_resource type="Theme" load_steps=152 format=3 uid="uid://co7tw5omdwmyd"]
 
 [sub_resource type="StyleBoxFlat" id="AccentChip_panel"]
 content_margin_left = 20.0
@@ -259,6 +259,68 @@ corner_radius_bottom_left = 18
 shadow_color = Color(0.11, 0.11, 0.18, 0.1)
 shadow_size = 6
 shadow_offset = Vector2(0, 3)
+
+[sub_resource type="StyleBoxFlat" id="CollectionCellArtMask_panel"]
+bg_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="CollectionCellFrame_disabled"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78, 0.784, 0.808, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="CollectionCellFrameUnowned_disabled"]
+bg_color = Color(0.929, 0.933, 0.945, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="CollectionCellPip_panel"]
+bg_color = Color(0.929, 0.933, 0.945, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.78, 0.784, 0.808, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="CollectionCellPipOn_panel"]
+bg_color = Color(0.961, 0.651, 0.137, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.769, 0.521, 0.11, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="CollectionCellUnownedPill_panel"]
+bg_color = Color(0.11, 0.11, 0.122, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
 
 [sub_resource type="StyleBoxFlat" id="DangerButton_disabled"]
 content_margin_left = 18.0
@@ -548,6 +610,30 @@ border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.878, 0.271, 0.271, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="ManagerPresetChip_disabled"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="ManagerPresetChipOn_disabled"]
+bg_color = Color(0.996, 0.929, 0.808, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.961, 0.651, 0.137, 1)
 corner_radius_top_left = 16
 corner_radius_top_right = 16
 corner_radius_bottom_right = 16
@@ -1527,6 +1613,123 @@ corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
+[sub_resource type="StyleBoxFlat" id="TraitPickerEquippedChip_panel"]
+bg_color = Color(0.961, 0.651, 0.137, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="TraitPickerGauge_panel"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="TraitPickerGaugeBad_panel"]
+bg_color = Color(0.98536, 0.91252, 0.91252, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.878, 0.271, 0.271, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="TraitPickerLayerChip_panel"]
+bg_color = Color(0.929, 0.933, 0.945, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="TraitPickerNewChip_panel"]
+bg_color = Color(0.878, 0.271, 0.271, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="TraitPickerRow_disabled"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="TraitPickerRowLocked_disabled"]
+bg_color = Color(0.96, 0.96, 0.968, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="TraitPickerRowOn_disabled"]
+bg_color = Color(0.996, 0.929, 0.808, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.961, 0.651, 0.137, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="TraitPickerSlot_disabled"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78, 0.784, 0.808, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="TraitPickerSlotEmpty_panel"]
+bg_color = Color(0.929, 0.933, 0.945, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="TraitPickerSlotOver_disabled"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.878, 0.271, 0.271, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
 [sub_resource type="StyleBoxFlat" id="WeekDayChip_panel"]
 bg_color = Color(0, 0, 0, 0)
 corner_radius_top_left = 20
@@ -1625,6 +1828,28 @@ CaptionLabel/colors/font_color = Color(0.541, 0.541, 0.569, 1)
 CaptionLabel/font_sizes/font_size = 22
 Card/base_type = &"PanelContainer"
 Card/styles/panel = SubResource("Card_panel")
+CollectionCellArtMask/base_type = &"SunkPanel"
+CollectionCellArtMask/styles/panel = SubResource("CollectionCellArtMask_panel")
+CollectionCellFrame/base_type = &"SelectableCardButton"
+CollectionCellFrame/styles/disabled = SubResource("CollectionCellFrame_disabled")
+CollectionCellFrame/styles/focus = SubResource("CollectionCellFrame_disabled")
+CollectionCellFrame/styles/hover = SubResource("CollectionCellFrame_disabled")
+CollectionCellFrame/styles/hover_pressed = SubResource("CollectionCellFrame_disabled")
+CollectionCellFrame/styles/normal = SubResource("CollectionCellFrame_disabled")
+CollectionCellFrame/styles/pressed = SubResource("CollectionCellFrame_disabled")
+CollectionCellFrameUnowned/base_type = &"SelectableCardButton"
+CollectionCellFrameUnowned/styles/disabled = SubResource("CollectionCellFrameUnowned_disabled")
+CollectionCellFrameUnowned/styles/focus = SubResource("CollectionCellFrameUnowned_disabled")
+CollectionCellFrameUnowned/styles/hover = SubResource("CollectionCellFrameUnowned_disabled")
+CollectionCellFrameUnowned/styles/hover_pressed = SubResource("CollectionCellFrameUnowned_disabled")
+CollectionCellFrameUnowned/styles/normal = SubResource("CollectionCellFrameUnowned_disabled")
+CollectionCellFrameUnowned/styles/pressed = SubResource("CollectionCellFrameUnowned_disabled")
+CollectionCellPip/base_type = &"ProgressTrack"
+CollectionCellPip/styles/panel = SubResource("CollectionCellPip_panel")
+CollectionCellPipOn/base_type = &"ProgressFill"
+CollectionCellPipOn/styles/panel = SubResource("CollectionCellPipOn_panel")
+CollectionCellUnownedPill/base_type = &"SurfaceChip"
+CollectionCellUnownedPill/styles/panel = SubResource("CollectionCellUnownedPill_panel")
 DangerButton/base_type = &"Button"
 DangerButton/colors/font_color = Color(1, 1, 1, 1)
 DangerButton/colors/font_disabled_color = Color(0.722, 0.722, 0.749, 1)
@@ -1698,6 +1923,20 @@ LobbyToast/base_type = &"SurfaceChip"
 LobbyToast/styles/panel = SubResource("LobbyToast_panel")
 ManagerDangerCard/base_type = &"Card"
 ManagerDangerCard/styles/panel = SubResource("ManagerDangerCard_panel")
+ManagerPresetChip/base_type = &"SelectableCardButton"
+ManagerPresetChip/styles/disabled = SubResource("ManagerPresetChip_disabled")
+ManagerPresetChip/styles/focus = SubResource("ManagerPresetChip_disabled")
+ManagerPresetChip/styles/hover = SubResource("ManagerPresetChip_disabled")
+ManagerPresetChip/styles/hover_pressed = SubResource("ManagerPresetChip_disabled")
+ManagerPresetChip/styles/normal = SubResource("ManagerPresetChip_disabled")
+ManagerPresetChip/styles/pressed = SubResource("ManagerPresetChip_disabled")
+ManagerPresetChipOn/base_type = &"SelectableCardButtonOn"
+ManagerPresetChipOn/styles/disabled = SubResource("ManagerPresetChipOn_disabled")
+ManagerPresetChipOn/styles/focus = SubResource("ManagerPresetChipOn_disabled")
+ManagerPresetChipOn/styles/hover = SubResource("ManagerPresetChipOn_disabled")
+ManagerPresetChipOn/styles/hover_pressed = SubResource("ManagerPresetChipOn_disabled")
+ManagerPresetChipOn/styles/normal = SubResource("ManagerPresetChipOn_disabled")
+ManagerPresetChipOn/styles/pressed = SubResource("ManagerPresetChipOn_disabled")
 MessengerAnswerButton/base_type = &"GhostButton"
 MessengerAnswerButton/styles/disabled = SubResource("MessengerAnswerButton_disabled")
 MessengerAnswerButton/styles/focus = SubResource("MessengerAnswerButton_focus")
@@ -1879,6 +2118,53 @@ TrainingThumbExpChip/base_type = &"AccentChip"
 TrainingThumbExpChip/styles/panel = SubResource("TrainingThumbExpChip_panel")
 TrainingThumbFrame/base_type = &"Card"
 TrainingThumbFrame/styles/panel = SubResource("TrainingThumbFrame_panel")
+TraitPickerEquippedChip/base_type = &"AccentChip"
+TraitPickerEquippedChip/styles/panel = SubResource("TraitPickerEquippedChip_panel")
+TraitPickerGauge/base_type = &"SelectableCard"
+TraitPickerGauge/styles/panel = SubResource("TraitPickerGauge_panel")
+TraitPickerGaugeBad/base_type = &"ManagerDangerCard"
+TraitPickerGaugeBad/styles/panel = SubResource("TraitPickerGaugeBad_panel")
+TraitPickerLayerChip/base_type = &"SurfaceChip"
+TraitPickerLayerChip/styles/panel = SubResource("TraitPickerLayerChip_panel")
+TraitPickerNewChip/base_type = &"AccentChip"
+TraitPickerNewChip/styles/panel = SubResource("TraitPickerNewChip_panel")
+TraitPickerRow/base_type = &"SelectableCardButton"
+TraitPickerRow/styles/disabled = SubResource("TraitPickerRow_disabled")
+TraitPickerRow/styles/focus = SubResource("TraitPickerRow_disabled")
+TraitPickerRow/styles/hover = SubResource("TraitPickerRow_disabled")
+TraitPickerRow/styles/hover_pressed = SubResource("TraitPickerRow_disabled")
+TraitPickerRow/styles/normal = SubResource("TraitPickerRow_disabled")
+TraitPickerRow/styles/pressed = SubResource("TraitPickerRow_disabled")
+TraitPickerRowLocked/base_type = &"SelectableCardButton"
+TraitPickerRowLocked/styles/disabled = SubResource("TraitPickerRowLocked_disabled")
+TraitPickerRowLocked/styles/focus = SubResource("TraitPickerRowLocked_disabled")
+TraitPickerRowLocked/styles/hover = SubResource("TraitPickerRowLocked_disabled")
+TraitPickerRowLocked/styles/hover_pressed = SubResource("TraitPickerRowLocked_disabled")
+TraitPickerRowLocked/styles/normal = SubResource("TraitPickerRowLocked_disabled")
+TraitPickerRowLocked/styles/pressed = SubResource("TraitPickerRowLocked_disabled")
+TraitPickerRowOn/base_type = &"SelectableCardButtonOn"
+TraitPickerRowOn/styles/disabled = SubResource("TraitPickerRowOn_disabled")
+TraitPickerRowOn/styles/focus = SubResource("TraitPickerRowOn_disabled")
+TraitPickerRowOn/styles/hover = SubResource("TraitPickerRowOn_disabled")
+TraitPickerRowOn/styles/hover_pressed = SubResource("TraitPickerRowOn_disabled")
+TraitPickerRowOn/styles/normal = SubResource("TraitPickerRowOn_disabled")
+TraitPickerRowOn/styles/pressed = SubResource("TraitPickerRowOn_disabled")
+TraitPickerSlot/base_type = &"SelectableCardButton"
+TraitPickerSlot/styles/disabled = SubResource("TraitPickerSlot_disabled")
+TraitPickerSlot/styles/focus = SubResource("TraitPickerSlot_disabled")
+TraitPickerSlot/styles/hover = SubResource("TraitPickerSlot_disabled")
+TraitPickerSlot/styles/hover_pressed = SubResource("TraitPickerSlot_disabled")
+TraitPickerSlot/styles/normal = SubResource("TraitPickerSlot_disabled")
+TraitPickerSlot/styles/pressed = SubResource("TraitPickerSlot_disabled")
+TraitPickerSlotEmpty/base_type = &"SunkPanel"
+TraitPickerSlotEmpty/styles/panel = SubResource("TraitPickerSlotEmpty_panel")
+TraitPickerSlotOver/base_type = &"SelectableCardButton"
+TraitPickerSlotOver/styles/disabled = SubResource("TraitPickerSlotOver_disabled")
+TraitPickerSlotOver/styles/focus = SubResource("TraitPickerSlotOver_disabled")
+TraitPickerSlotOver/styles/hover = SubResource("TraitPickerSlotOver_disabled")
+TraitPickerSlotOver/styles/hover_pressed = SubResource("TraitPickerSlotOver_disabled")
+TraitPickerSlotOver/styles/normal = SubResource("TraitPickerSlotOver_disabled")
+TraitPickerSlotOver/styles/pressed = SubResource("TraitPickerSlotOver_disabled")
 WeekDayChip/base_type = &"AccentChip"
 WeekDayChip/styles/panel = SubResource("WeekDayChip_panel")
 WeekDayChipToday/base_type = &"AccentChip"

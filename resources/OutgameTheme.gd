@@ -757,6 +757,37 @@ static func _add_screen_variations(th: Theme) -> void:
 	# match_flow/match_prep — 분석가 메모 (MatchPrep · 리그 팀 상세)
 	_add_derived(th, "IntelAnalystNote", &"SunkPanel", flat_style(ACCENT_DIM, 14))
 
+	# meta/collection · meta/manager — 컬렉션 칸 · 프리셋 칩 · 특성 블록 (R2a)
+	# 버튼 판은 상태마다 같은 판 — 상태(보유 · 선택 · 장착 · 잠김 · 칸 초과)는 코드가 이름만 바꾼다.
+	var r2a_buttons := {
+		"CollectionCellFrame": [&"SelectableCardButton", flat_style(SURFACE, 16, BORDER_STRONG, 2)],
+		"CollectionCellFrameUnowned": [&"SelectableCardButton",
+				flat_style(SURFACE_SUNK, 16, BORDER, 2)],
+		"ManagerPresetChip": [&"SelectableCardButton", flat_style(SURFACE, 16, BORDER, 2)],
+		"ManagerPresetChipOn": [&"SelectableCardButtonOn", flat_style(ACCENT_DIM, 16, ACCENT, 4)],
+		"TraitPickerSlot": [&"SelectableCardButton", flat_style(SURFACE, 14, BORDER_STRONG, 2)],
+		"TraitPickerSlotOver": [&"SelectableCardButton", flat_style(SURFACE, 14, NEGATIVE, 2)],
+		"TraitPickerRow": [&"SelectableCardButton", flat_style(SURFACE, 16, BORDER, 1)],
+		"TraitPickerRowOn": [&"SelectableCardButtonOn", flat_style(ACCENT_DIM, 16, ACCENT, 3)],
+		"TraitPickerRowLocked": [&"SelectableCardButton", flat_style(BG, 16, BORDER, 1)],
+	}
+	for v in r2a_buttons:
+		th.set_type_variation(v, r2a_buttons[v][0])
+		for n in BUTTON_STATES:
+			th.set_stylebox(n, v, r2a_buttons[v][1])
+	_add_derived(th, "CollectionCellArtMask", &"SunkPanel", _mask_box(12))
+	_add_derived(th, "CollectionCellPip", &"ProgressTrack",
+			flat_style(SURFACE_SUNK, 4, BORDER_STRONG, 1))
+	_add_derived(th, "CollectionCellPipOn", &"ProgressFill", flat_style(ACCENT, 4, ACCENT_TEXT, 1))
+	_add_derived(th, "CollectionCellUnownedPill", &"SurfaceChip", flat_style(RAIL, CHIP_RADIUS))
+	_add_derived(th, "TraitPickerGauge", &"SelectableCard", flat_style(SURFACE, 16, BORDER, 1))
+	_add_derived(th, "TraitPickerGaugeBad", &"ManagerDangerCard",
+			flat_style(SURFACE.lerp(NEGATIVE, 0.12), 16, NEGATIVE, 3))
+	_add_derived(th, "TraitPickerSlotEmpty", &"SunkPanel", flat_style(SURFACE_SUNK, 14, BORDER, 1))
+	_add_derived(th, "TraitPickerLayerChip", &"SurfaceChip", flat_style(SURFACE_SUNK, CHIP_RADIUS))
+	_add_derived(th, "TraitPickerNewChip", &"AccentChip", flat_style(NEGATIVE, CHIP_RADIUS))
+	_add_derived(th, "TraitPickerEquippedChip", &"AccentChip", flat_style(ACCENT, CHIP_RADIUS))
+
 	# meta/manager — 감독 탭 프레스티지 리셋
 	_add_derived(th, "ManagerDangerCard", &"Card",
 			flat_style(SURFACE.lerp(NEGATIVE, 0.12), 16, NEGATIVE, 2))

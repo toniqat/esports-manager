@@ -9,7 +9,7 @@ extends Button
 # label variations). Build with `CollectionCell.create()` — `.new()` is an empty button.
 # Code fills data only: face texture, role badge (`RoleBadge.set_role`), rarity pill
 # (stars, colour, width), owned state (frame / name variation, dim face, which row shows)
-# and the pips (count = `RunRules.breakthrough_max()`, reached = `ProgressFill`).
+# and the pips (count = `RunRules.breakthrough_max()`, reached = `CollectionCellPipOn`).
 #
 # **MOUSE_FILTER_PASS** (scene) — the cell sits inside a `DragScroll` ScrollContainer; STOP
 # would swallow the press the scroll needs to start a drag.
@@ -22,10 +22,9 @@ const SCENE_PATH: String = "res://features/meta/collection/CollectionCell.tscn"
 const CELL_W: float = 240.0
 const CELL_H: float = 330.0
 
-## Frame variation per owned state. Closest shared looks until the proposed
-## `CollectionCellFrame` / `CollectionCellFrameUnowned` exist (README).
-const FRAME_OWNED: StringName = &"SelectableCardButton"
-const FRAME_UNOWNED: StringName = &"DraftSlotFrame"
+## Frame variation per owned state (screen variations, `OutgameTheme._add_screen_variations`).
+const FRAME_OWNED: StringName = &"CollectionCellFrame"
+const FRAME_UNOWNED: StringName = &"CollectionCellFrameUnowned"
 
 ## Owned-but-dim tint for unowned faces (grey wash, still recognisable).
 const UNOWNED_MODULATE := Color(0.62, 0.62, 0.66, 0.55)
@@ -80,7 +79,7 @@ func _fill_pips(filled: int, total: int) -> void:
 	for i in box.get_child_count():
 		var c: Control = box.get_child(i)
 		c.visible = i < total
-		c.theme_type_variation = &"ProgressFill" if i < filled else &"ProgressTrack"
+		c.theme_type_variation = &"CollectionCellPipOn" if i < filled else &"CollectionCellPip"
 
 
 func _on_pressed() -> void:

@@ -3,7 +3,7 @@
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
 [node name="ManagerPresetChip" type="Button"]
-editor_description = "One preset chip of ManagerPresetChips (lobby 감독 tab · run setup 감독 step). Frame SelectableCardButton / SelectableCardButtonOn = selected (code). Name BodyLabel / SubLabel; status line FaintLabel (특성 n) · AccentLabel (● 사용 중) · NegativeLabel (재설정 필요) — picked by ManagerPresetChips.fill. Mouse = Pass (inside a DragScroll)."
+editor_description = "One preset chip of ManagerPresetChips (lobby 감독 tab · run setup 감독 step). Frame ManagerPresetChip / ManagerPresetChipOn = selected (code). Name BodyLabel / SubLabel; status line FaintLabel (특성 n) · AccentLabel (● 사용 중) · NegativeLabel (재설정 필요) — picked by ManagerPresetChips.fill. Mouse = Pass (inside a DragScroll)."
 custom_minimum_size = Vector2(0, 104)
 offset_right = 196.0
 offset_bottom = 104.0
@@ -11,7 +11,7 @@ size_flags_horizontal = 3
 focus_mode = 0
 mouse_filter = 1
 theme = ExtResource("1_theme")
-theme_type_variation = &"SelectableCardButton"
+theme_type_variation = &"ManagerPresetChip"
 
 [node name="Name" type="Label" parent="."]
 unique_name_in_owner = true

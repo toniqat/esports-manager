@@ -3,7 +3,7 @@
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
 [node name="TraitPickerSlot" type="Control"]
-editor_description = "One equip slot of TraitPickerView (equal widths in %Slots). Equipped → %Frame (tap = unequip): strip / cost colour = polarity, frame border red when the slot is past TraitSystem.slot_count() → code. Empty → %Empty."
+editor_description = "One equip slot of TraitPickerView (equal widths in %Slots). Equipped → %Frame (tap = unequip): strip / cost colour = polarity, past TraitSystem.slot_count() the frame switches to TraitPickerSlotOver (code). Empty → %Empty."
 custom_minimum_size = Vector2(0, 112)
 layout_mode = 3
 anchors_preset = 0
@@ -23,7 +23,7 @@ grow_horizontal = 2
 grow_vertical = 2
 focus_mode = 0
 mouse_filter = 1
-theme_type_variation = &"SelectableCardButton"
+theme_type_variation = &"TraitPickerSlot"
 
 [node name="Strip" type="ColorRect" parent="Frame"]
 unique_name_in_owner = true
@@ -81,7 +81,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_type_variation = &"SunkPanel"
+theme_type_variation = &"TraitPickerSlotEmpty"
 
 [node name="EmptyText" type="Label" parent="Empty"]
 layout_mode = 1

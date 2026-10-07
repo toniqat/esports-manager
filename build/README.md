@@ -15,8 +15,10 @@ only folder you touch by hand, so there is one rule.
 Don't stop at sharing the artifact link. **Right after confirming green, do four things.**
 
 1. **Delete stale outputs** — old `.ipa` / `.pck` files in this folder.
-2. **Download the new `.ipa`** — append **the short SHA of the built commit** to the file name:
-   `EsportsManager-debug-unsigned-<sha>.ipa`.
+2. **Download both new `.ipa`s** (every run bakes `debug` and `release`) — append **the short
+   SHA of the built commit** to each file name:
+   `EsportsManager-debug-unsigned-<sha>.ipa`, `EsportsManager-release-unsigned-<sha>.ipa`.
+   Install **release** to judge performance (heat, frame rate); debug is for logs / debugger.
 3. **Do a one-line check of what's inside** (below).
 4. Report including that result.
 
@@ -24,9 +26,11 @@ Don't stop at sharing the artifact link. **Right after confirming green, do four
 $gh  = "C:\Program Files\GitHub CLI\gh.exe"   # not on PATH — call by full path
 $tmp = "$env:TEMP\ipa-dl"
 & $gh run download <run-id> -R toniqat/esports-manager -D $tmp
-$src = Get-ChildItem -Recurse $tmp -Filter *.ipa | Select-Object -First 1
 $sha = git rev-parse --short HEAD
-Move-Item $src.FullName "build\EsportsManager-debug-unsigned-$sha.ipa" -Force
+# EsportsManager-<debug|release>-unsigned.ipa → same name + -<sha>
+Get-ChildItem -Recurse $tmp -Filter *.ipa | ForEach-Object {
+    Move-Item $_.FullName ("build\" + $_.BaseName + "-$sha.ipa") -Force
+}
 Remove-Item -Recurse -Force $tmp
 ```
 
@@ -88,8 +92,8 @@ Procedure · constraints · Sideloadly install steps: **`docs/ios_testbuild.md`*
 
 ## iOS test build (without a Mac)
 
-`.github/workflows/ios-testbuild.yml` runs, on GitHub's **macOS runner**,
-`Godot --export-debug "iOS"` → `xcodebuild` → `Payload/*.app` → zip and uploads an
+`.github/workflows/ios-testbuild.yml` runs, on GitHub's **macOS runner**, one job per build type
+(`debug` and `release` in parallel), `Godot --export-debug|--export-release "iOS"` → `xcodebuild` → `Payload/*.app` → zip and uploads an
 **unsigned `.ipa`** as an artifact. Download it and push it to the iPhone with **Sideloadly**
 on the Windows PC — Sideloadly signs locally with a free Apple ID, so **CI has no certificates
 or secrets** (`CODE_SIGNING_ALLOWED=NO`). The repo is public, so the macOS runner is free.
@@ -99,8 +103,8 @@ Procedure · constraints · failure table: **`docs/ios_testbuild.md`**.
 
 **Don't stop at sharing the artifact link.** `build/` is the only folder you touch when
 installing to the phone with Sideloadly, so right after confirming CI green do four things —
-(1) **delete the stale `.ipa` / `.pck`** in that folder, (2) download the new `.ipa` as
-**`EsportsManager-debug-unsigned-<commit short SHA>.ipa`**,
+(1) **delete the stale `.ipa` / `.pck`** in that folder, (2) download the new `.ipa`s as
+**`EsportsManager-<debug|release>-unsigned-<commit short SHA>.ipa`**,
 (3) check the contents (`data/game.db` inside the pck,
 `register_haptics_types` + `OBJC_CLASS_$_UIImpactFeedbackGenerator` inside the executable),
 (4) report including that result.

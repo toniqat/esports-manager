@@ -6,8 +6,8 @@ Windows PC with **Sideloadly**. Not a single Mac is needed.
 ```
   Windows PC            GitHub Actions (macos-15)              iPhone
   ──────────            ─────────────────────────              ──────
-  git push        ──▶   Godot --export-debug "iOS"
-                        (generate Xcode project)
+  git push        ──▶   Godot --export-debug / --export-release "iOS"
+                        (two parallel jobs, one per build type — generate Xcode project)
                           ↓
                         xcodebuild  CODE_SIGNING_ALLOWED=NO
                           ↓
@@ -42,24 +42,32 @@ run `xcodebuild` with our own flags.
 
 1. GitHub repo → **Actions** tab
 2. On the left, select **iOS 테스트 빌드 (unsigned IPA)** (iOS test build)
-3. On the right, **Run workflow** → leave `build_type` at `debug` and run
+3. On the right, **Run workflow** → leave `build_type` at `both` (or pick `debug` / `release`
+   for just one) and run
 4. Done after 10–15 minutes (the first run takes longer, downloading the Godot editor + iOS templates)
 5. At the bottom of the run page, under **Artifacts**, download
-   `EsportsManager-ios-debug-unsigned-ipa`
+   `EsportsManager-ios-release-unsigned-ipa` and/or `EsportsManager-ios-debug-unsigned-ipa`
+
+**Which one to install.** Every run bakes **both** (a matrix job per type, `fail-fast: false`
+so one failing doesn't cancel the other). **`release`** is the one to judge performance on —
+heat, frame rate, battery. **`debug`** keeps the debug template + Xcode Debug configuration
+(console logs, remote debugger) and is noticeably slower in both GDScript and the engine, so
+never draw performance conclusions from it.
 
 ### Option B — automatic
 
-Runs automatically on push to the `main` branch (except commits that change only `.md` / `docs/`).
+Runs automatically on push to the `main` branch (except commits that change only `.md` / `docs/`),
+baking both `debug` and `release`.
 
 ### Unpacking the download — it goes in `build/`
 
 GitHub delivers artifacts **wrapped in one more zip layer**. Unzipping yields
-`EsportsManager-debug-unsigned.ipa` — what goes into Sideloadly is **that `.ipa`**, not the
-downloaded zip.
+`EsportsManager-<debug|release>-unsigned.ipa` — what goes into Sideloadly is **that `.ipa`**,
+not the downloaded zip.
 
 **Put that `.ipa` in the repo's `build/` folder** (gitignored, so it is not committed).
 Append **the short SHA of the built commit** to the file name
-(`EsportsManager-debug-unsigned-<sha>.ipa`) and **delete stale outputs** — if several builds
+(`EsportsManager-<debug|release>-unsigned-<sha>.ipa`) and **delete stale outputs** — if several builds
 mix in that folder you can't tell which one was just built (an `.ipa` from the previous
 commit, with none of the features in it, really did nearly get installed). The
 `gh run download` command and the "what's inside this `.ipa`" check snippet:

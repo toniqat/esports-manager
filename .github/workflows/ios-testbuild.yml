@@ -12,10 +12,10 @@ on:
   workflow_dispatch:
     inputs:
       build_type:
-        description: "익스포트 템플릿"
+        description: "익스포트 템플릿 (both = debug · release 두 벌을 나란히)"
         type: choice
-        options: [debug, release]
-        default: debug
+        options: [both, debug, release]
+        default: both
   # feat/** 이 같이 들어 있는 것은 main 이 한참 뒤처져 있기 때문이다 — 지금
   # 개발 중인 브랜치를 빌드해야 폰에서 보는 것이 실제 작업물이 된다.
   # 참고: 왼쪽 Actions 목록의 "Run workflow" 수동 버튼은 이 파일이 **기본
@@ -46,9 +46,18 @@ env:
 
 jobs:
   ipa:
-    name: Godot 익스포트 → xcodebuild → unsigned .ipa
+    name: Godot 익스포트 → xcodebuild → unsigned .ipa (${{ matrix.build_type }})
     runs-on: macos-15
     timeout-minutes: 60
+    # debug 와 release 를 **두 벌 다** 굽는다. debug 는 콘솔 로그 · 원격 디버거가
+    # 붙는 개발용이고, 발열 · 프레임 같은 체감 성능은 release 로만 판단한다 —
+    # 디버그 템플릿 + Xcode Debug 구성은 GDScript 와 엔진 둘 다 눈에 띄게 느리다.
+    # push 에는 입력이 없으므로 `both` 로 떨어진다. 한쪽이 깨져도 다른 쪽은
+    # 끝까지 굽는다(fail-fast 끔).
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: ${{ fromJSON(inputs.build_type == 'debug' && '["debug"]' || inputs.build_type == 'release' && '["release"]' || '["debug","release"]') }}
 
     steps:
       - name: 소스 체크아웃
@@ -58,7 +67,7 @@ jobs:
         id: cfg
         run: |
           set -euo pipefail
-          BT="${{ inputs.build_type || 'debug' }}"
+          BT="${{ matrix.build_type }}"
           if [ "$BT" = "release" ]; then
             echo "godot_flag=--export-release" >> "$GITHUB_OUTPUT"
             echo "xcode_config=Release"        >> "$GITHUB_OUTPUT"

@@ -1,65 +1,65 @@
-id,mech_id,name,count,cost,cast_method,target,cast_range,area,keyword,charge_max,effect,trigger,description
-1,24,천둥 폭풍,1,4,instant,hand,0,0,,0,attack:1|all,,전장 내 모든 적 공격
-2,24,천공의 일격,1,2,target,foe,2,0,,0,attack:1,,공격
-3,24,꿰뚫는 번개,3,4,location,turret_outer,99,0,exhaust,0,attack:1|line,turret_kill_deck,아군 HQ 부터 대상 포탑 타일까지 모든 적과 포탑 공격. 적 포탑 파괴 시마다 덱에 1장 생성
-4,25,캐시,1,-1,instant,hand,0,0,,0,hand_passive:cash,,소지 중: 아무 카드나 사용할 때마다 시전자가 보유한 성장 점수의 4%만큼 성장 점수 획득
-5,25,스캐빈저,1,2,instant,hand,0,0,,0,search_discard:1,,버린 더미에서 찾기 1장
-6,25,로켓 펀치,1,4,target,foe,3,0,,0,attack:1;on_hit;strategy:2;search_card:4,,"공격. 명중 시 전략 점수 +2, [캐시] 찾기"
-7,26,미사일,1,4,target,foe,2,0,charge,3,attack:1|area:0|charge,,토큰을 모두 소모해 대상 타일의 모든 적 공격 {charge|충전 횟수}회
-8,26,미사일 준비,1,1,instant,hand,0,0,,0,search_card:7|count:2,,[미사일] 찾기 2장
-9,26,정밀 폭격,1,4,target,enemy,99,1,,0,attack:1|area:1;gen_hand:7|per_hit|temp,,대상 범위 내 모든 적과 포탑 공격. 명중한 만큼 손에 소멸·휘발성 [미사일] 생성
-10,27,전장 강타,1,4,instant,hand,0,0,charge,5,attack:1|random|charge,,토큰을 모두 소모해 전장 내 무작위 적 공격 {charge+1|충전 횟수+1}회
-11,27,계시,1,-1,instant,hand,0,0,,0,hand_passive:revelation,,소지 중: 적이 카드로 피해를 입을 때마다 그 적을 공격 (이 카드로 인한 피해 제외)
-12,27,결속,1,2,target,ally,99,0,exhaust,0,link_engage,,시전자가 교전에 참여할 때 대상도 함께 참여
-13,28,락온,0,0,instant,hand,0,0,volatile|exhaust,0,attack:1|damaged,,이번 작전 단계 동안 이 메크가 피해를 입힌 적 모두 공격
-14,28,테러,1,2,instant,hand,0,0,,0,attack:1|self_range:2;on_hit;gen_hand:13,,범위 내 모든 적 공격. 1회 이상 명중 시 손에 [락온] 생성
-15,28,파괴,1,5,target,enemy,99,1,,0,attack:1|area:1;on_hit;gen_hand:13,,대상 범위 내 모든 적 공격. 1회 이상 명중 시 손에 [락온] 생성
-16,6,승전보,0,0,instant,hand,0,0,exhaust,0,draw:3;strategy:2,,"뽑기 3장, 전략 점수 +2"
-17,6,돌격,1,6,target,enemy,3,0,,0,engage:3|at_target|move_in,,대상의 타일로 이동. 3턴 간 교전
-18,6,질주,2,0,location,location,2,0,,0,move|own_jungle,,이동
-19,7,철거,0,0,location,turret_any,99,0,volatile|exhaust,0,attack:1|turret_only,,공격
-20,7,우세한 전장,1,6,range,caster,3,0,,0,engage:4|self_range:3;gen_hand:19|per_kill,,4턴 간 교전 — 범위 내 모두 참여. 교전에서 생존할 시 처치한 적 수만큼 손에 [철거] 생성
-21,7,격렬한 돌진,2,2,instant,hand,0,0,,0,push:2|bonus_clear:1,,밀기 2. 도중에 적이 없을 경우 추가 밀기 1
-22,8,처형,0,4,target,foe,2,0,preserve|exhaust,0,execute:25|charge:5,,토큰 5 미만일 때 이 카드 제거. 토큰을 모두 소모해 최대 체력 25% 이하인 대상 처치
-23,8,일격,1,2,target,foe,1,0,,0,attack:1;on_hit;draw:1;charge:1,,"공격. 명중 시 뽑기 1장, 토큰 +1"
-24,8,휩쓸기,1,4,location,location,2,0,,0,move|own_jungle;attack:1|self_range:1;charge:1|per_hit,,이동. 이후 범위 내 모든 적 또는 포탑 공격 — 명중한 수만큼 토큰 +1
-25,9,유령의 올가미,1,3,target,enemy,2,0,,0,attack:2,,공격 2회
-26,9,전쟁의 사슬,1,3,target,enemy,1,0,,0,engage:0|at_target|charge_rounds,,"대상과 {max(1, chain)|영혼 포식 명중 수}턴 간 교전"
-27,9,영혼 포식,1,2,instant,hand,0,0,,0,attack:1|self_range:1;charge:1|per_hit;heal_pct:10|per_hit|self,,범위 내 모든 적 공격. 명중한 횟수마다 토큰 +1 및 시전자 체력 10% 회복. 토큰 수만큼 [전쟁의 사슬] 의 교전 턴이 증가
-28,0,몸집 불리기,1,2,instant,hand,0,0,,0,max_hp:20|self,,최대 체력 +20
-29,0,추적,1,3,target,enemy,99,0,,0,attack:1;on_hit;track:15,,공격. 명중 시 15턴 간 [추적]
-30,0,강습,1,8,target,enemy,99,0,,0,engage:3|at_target|drop_in,,대상의 타일로 이동. 3턴 간 교전
-31,1,최첨단 보호,1,3,target,ally,1,0,,0,heal_pct:30;reactive_armor:1,,대상 최대 체력의 30% 회복 및 [반응 장갑] 1 부여
-32,1,초고출력,1,4,instant,hand,0,0,,0,attack:1|self_range:1|pierce;reactive_armor:1|per_hit|self,,범위 내 모든 적 및 포탑 필중 공격. 명중한 수만큼 자신에게 [반응 장갑] 1 부여
-33,1,개시,1,8,range,caster,2,0,,0,engage:5|self_range:2,,5턴 간 교전 — 범위 내 모두 참여
-34,2,주먹다짐,2,3,target,enemy,1,0,exhaust,0,mutual_attack:2,,대상과 자신이 2회씩 서로 공격. 대상의 공격은 필중
-35,2,고통과 쾌감,0,4,instant,hand,0,0,,0,taunt_all;strategy:4,,전장 내 모든 적이 시전자를 필중 공격. 전략 점수 +4
-36,2,제압 전투,1,8,range,caster,2,0,,0,engage:4|self_range:2,,4턴 간 교전 — 범위 내 모두 참여
-37,12,리부트,3,0,instant,hand,0,0,exhaust,0,charge:50;search_card:38,,토큰 +50. [단계 A] 찾기
-38,12,단계 A,1,2,target,enemy,99,0,exhaust,0,gen_deck:39;mark_target:15,,덱에 [단계 B] 생성. 대상에게 [목표] 부여
-39,12,단계 B,0,5,instant,hand,0,0,exhaust,0,engage:3|at_marked;phase_b,,"[목표]가 부여된 적 주변 1칸 이내 3턴 간 교전. 교전에서 적이 처치되면 덱에 [단계 C] 생성, 아니면 [단계 A] 생성"
-40,12,단계 C,0,0,instant,hand,0,0,exhaust,0,gen_deck:38;phase_c,,덱에 [단계 A] 생성. 강화 하나 선택 — 알파: 다음 [단계 A] 사용 시 덱이 아닌 손에 [단계 B] 생성 / 베타: 다음 [단계 B] 사용 시 토큰 +100 / 감마: 다음 [단계 C] 사용 시 성장 점수 +10%
-41,13,약자 멸시,1,-1,instant,hand,0,0,charge,3,hand_passive:contempt,,소지 중: 교전 시작 시 토큰을 모두 소모해 체력이 가장 적은 적을 공격력 50%로 공격 {charge|충전 횟수}회
-42,13,전격전,1,6,location,location,2,0,,0,search_card:41;move;engage:3|self_range:1,,[약자 멸시] 찾기. 이동. 이후 3턴 간 교전 — 범위 내 모두 참여
-43,13,즉발 베기,1,2,location,location,2,0,,0,move;attack:1|self_range:1,,이동. 이후 범위 내 모든 적 공격
-44,14,명상,3,0,instant,hand,0,0,exhaust,0,discard_left;draw_discarded,,손에서 이 카드보다 왼쪽의 모든 카드 버리기. 버린 수만큼 뽑기
-45,14,질풍,1,2,target,enemy,99,0,,0,discard_right:2;draw:2;attack:1;move_to_target,,"손의 가장 오른쪽 카드 2장 버리기, 뽑기 2장. 대상 공격 — 대상 위치로 이동하며 이번 작전 단계가 끝나면 이전 위치로 복귀"
-46,14,신속,1,2,instant,hand,0,0,,0,discard_right:2;attack:1|damaged,,손의 가장 오른쪽 카드 2장 버리기. 이번 작전 단계에서 피해를 입힌 적들을 다시 공격
-47,15,최면,1,2,target,enemy,99,0,,0,move_target:1,,대상 1칸 이동
-48,15,매혹적인 침공,1,6,instant,hand,0,0,,0,pull_to_caster|self_range:2;engage:4|self_range:1,,범위 내 모든 적을 시전자 타일로 이동. 4턴 간 교전 — 시전자 주변 1칸 모두 참여
-49,15,매혹,1,4,target,pilot,99,0,,0,growth_link:5,,5턴 동안 대상이 얻는 성장 점수와 동일한 성장 점수 획득
-50,18,공격 명령,1,2,target,ally,99,0,exhaust,0,heal_pct:30;attack:1|around_target:1,death_hand,아군 또는 적이 처치될 때마다 이 카드를 손에 생성. 대상 체력 30% 회복 및 대상 범위 내 모든 적 공격
-51,18,투자,1,2,instant,hand,0,0,,0,discard:1;gen_deck:50,,버리기 1장. 덱에 [공격 명령] 생성
-52,18,간보기,1,6,target,enemy,2,0,,0,attack:1;on_hit;engage:3|at_target;on_miss;strategy:4,,"공격. 명중 시 대상 범위 내 3턴 간 교전, 빗나갈 시 전략 점수 +4"
-53,19,지원 보호,2,2,target,ally,99,0,,0,shield_atk:200,,대상에게 시전자 공격력의 200% 보호막 부여
-54,19,수호,1,2,instant,hand,0,0,,0,shield_atk:200|all_allies,,전장 내 모든 아군에게 시전자 공격력의 200% 보호막 부여
-55,20,강타,1,1,target,ally,99,0,,0,stun_next,,대상이 다음 교전에서 적에게 피해를 주면 그 적을 [기절]. 한 교전 내에 같은 적에게 두 번 이상 적용되지 않음
-56,20,탈진,1,2,target,enemy,1,0,,0,attack:1;on_hit;no_engage_phase,,공격. 명중 시 대상은 이번 작전 단계 동안 교전 참여 불가
-57,20,변덕,1,0,instant,hand,0,0,,0,draw_discard:3|cost_reduce:1,,버린 더미에서 뽑기 3장. 이번 작전 단계 동안 해당 카드들 비용 -1
-58,21,밸런스,1,-1,instant,hand,0,0,,0,hand_passive:balance,,소지 중: 이 메크의 다른 카드가 성장 점수를 소모하지 않음
-59,21,파란 약,1,3,target,ally,99,0,,0,score_cost:100;growth_eff:20,,시전자의 성장 점수 100 소모 및 대상이 전장 이탈까지 성장 효율 +20%
-60,21,붉은 가루,1,2,target,ally,99,0,,0,score_cost:100;max_hp:20,,시전자의 성장 점수 100 소모 및 대상 최대 체력 +20
-61,21,녹색 병,1,2,target,ally,99,0,,0,score_cost:100;atk_add:2,,시전자의 성장 점수 100 소모 및 대상 공격력 +2
-62,22,죽음의 손가락,1,4,target,enemy,99,0,,0,dmg_taken:25;bounty:10,,"대상은 전장 이탈까지 받는 피해 +25%, 대상의 성장 점수 10%만큼 [현상금] 지정. 중첩되지 않음"
-63,22,확신,1,3,target,enemy,1,0,,0,attack_bounty:2,,공격 — 대상의 [현상금] 2%만큼 피해
-64,22,사형 선고,1,8,target,enemy,2,0,,0,pull_to_caster;engage:3|self_range:1,,대상을 시전자의 타일로 이동. 3턴 간 교전 — 범위 내 모두 참여
+id,mech_id,name_key,count,cost,cast_method,target,cast_range,area,keyword,charge_max,effect,trigger,description_key
+1,24,tx_PVJBQ802WT,1,4,instant,hand,0,0,,0,attack:1|all,,tx_JNPQN78JF0
+2,24,tx_8HP8T7ZWJH,1,2,target,foe,2,0,,0,attack:1,,tx_2EM7FR668Z
+3,24,tx_KQRS8C28PV,3,4,location,turret_outer,99,0,exhaust,0,attack:1|line,turret_kill_deck,tx_8J7JZK60VJ
+4,25,tx_DPCYQYKM8T,1,-1,instant,hand,0,0,,0,hand_passive:cash,,tx_688W5MT4FK
+5,25,tx_6X0N6HY2V2,1,2,instant,hand,0,0,,0,search_discard:1,,tx_G8M4271EMY
+6,25,tx_VT0YVFSN1B,1,4,target,foe,3,0,,0,attack:1;on_hit;strategy:2;search_card:4,,tx_V7VRGW4E2A
+7,26,tx_GMD6681QQ4,1,4,target,foe,2,0,charge,3,attack:1|area:0|charge,,tx_EBV4NATSF5
+8,26,tx_Q85FY4H0Y8,1,1,instant,hand,0,0,,0,search_card:7|count:2,,tx_SMQK1K7KVW
+9,26,tx_RKWEKBZBK8,1,4,target,enemy,99,1,,0,attack:1|area:1;gen_hand:7|per_hit|temp,,tx_2HPG2AS40R
+10,27,tx_XATHQH86HE,1,4,instant,hand,0,0,charge,5,attack:1|random|charge,,tx_6X4HNDCZ2C
+11,27,tx_4X8T8S6HGE,1,-1,instant,hand,0,0,,0,hand_passive:revelation,,tx_YWSFNSENS1
+12,27,tx_DSQ6CGA6S8,1,2,target,ally,99,0,exhaust,0,link_engage,,tx_Z2YW81TPE6
+13,28,tx_THF0ZYMN9Q,0,0,instant,hand,0,0,volatile|exhaust,0,attack:1|damaged,,tx_C4VPQGSWCK
+14,28,tx_TE0PSTKJJM,1,2,instant,hand,0,0,,0,attack:1|self_range:2;on_hit;gen_hand:13,,tx_448B4T57NE
+15,28,tx_2EEB6BCGKR,1,5,target,enemy,99,1,,0,attack:1|area:1;on_hit;gen_hand:13,,tx_EPR6SV4YCM
+16,6,tx_8NQX0Y68PC,0,0,instant,hand,0,0,exhaust,0,draw:3;strategy:2,,tx_FH052PHKSD
+17,6,tx_EYQZNE1NW1,1,6,target,enemy,3,0,,0,engage:3|at_target|move_in,,tx_NVNVNRV9CV
+18,6,tx_SYV9E33WRX,2,0,location,location,2,0,,0,move|own_jungle,,tx_DA9WK7H4XT
+19,7,tx_2AMBFQ5DN2,0,0,location,turret_any,99,0,volatile|exhaust,0,attack:1|turret_only,,tx_NNZJRNHF9P
+20,7,tx_4VKA1Y7X0Q,1,6,range,caster,3,0,,0,engage:4|self_range:3;gen_hand:19|per_kill,,tx_CGVRKSDCVG
+21,7,tx_M0YVRG1RY0,2,2,instant,hand,0,0,,0,push:2|bonus_clear:1,,tx_GNVN8SF4TQ
+22,8,tx_6W8DBNDV81,0,4,target,foe,2,0,preserve|exhaust,0,execute:25|charge:5,,tx_YQZZ1NX7CW
+23,8,tx_MXK061W02J,1,2,target,foe,1,0,,0,attack:1;on_hit;draw:1;charge:1,,tx_A7SQ01XZXJ
+24,8,tx_J6V9YT8GXW,1,4,location,location,2,0,,0,move|own_jungle;attack:1|self_range:1;charge:1|per_hit,,tx_49DTSHJHEX
+25,9,tx_BMYF028YP6,1,3,target,enemy,2,0,,0,attack:2,,tx_2V3BT9STT6
+26,9,tx_5VW7ZEACKY,1,3,target,enemy,1,0,,0,engage:0|at_target|charge_rounds,,tx_DKVGQXAXNA
+27,9,tx_T8YHK4E2EB,1,2,instant,hand,0,0,,0,attack:1|self_range:1;charge:1|per_hit;heal_pct:10|per_hit|self,,tx_WTZJ53SNH7
+28,0,tx_N4Q0ZN5CKN,1,2,instant,hand,0,0,,0,max_hp:20|self,,tx_YPM1FF88MR
+29,0,tx_PE59R89094,1,3,target,enemy,99,0,,0,attack:1;on_hit;track:15,,tx_D33QNEYP5R
+30,0,tx_JK7E7DN4BE,1,8,target,enemy,99,0,,0,engage:3|at_target|drop_in,,tx_4DX9VJS0JB
+31,1,tx_FP78KQF9QK,1,3,target,ally,1,0,,0,heal_pct:30;reactive_armor:1,,tx_QTKR6R244D
+32,1,tx_B9N6G19DSX,1,4,instant,hand,0,0,,0,attack:1|self_range:1|pierce;reactive_armor:1|per_hit|self,,tx_B49ZJVCFRB
+33,1,tx_V9DQHRBMYN,1,8,range,caster,2,0,,0,engage:5|self_range:2,,tx_0RC6TG6RCS
+34,2,tx_MT4DPTB5BA,2,3,target,enemy,1,0,exhaust,0,mutual_attack:2,,tx_9H6E53W0EW
+35,2,tx_4A6WP192BM,0,4,instant,hand,0,0,,0,taunt_all;strategy:4,,tx_AX7SP29R5Z
+36,2,tx_E1TWPB7RZ8,1,8,range,caster,2,0,,0,engage:4|self_range:2,,tx_4RPBKVD2TC
+37,12,tx_EB81ECXPRB,3,0,instant,hand,0,0,exhaust,0,charge:50;search_card:38,,tx_YT04HJAVXS
+38,12,tx_ZEH286E1N2,1,2,target,enemy,99,0,exhaust,0,gen_deck:39;mark_target:15,,tx_K2W48C2P3K
+39,12,tx_87G2EA5213,0,5,instant,hand,0,0,exhaust,0,engage:3|at_marked;phase_b,,tx_JCFDKSCVXT
+40,12,tx_M1BAEN8BYC,0,0,instant,hand,0,0,exhaust,0,gen_deck:38;phase_c,,tx_5198GDXGZX
+41,13,tx_17WNW2JVNR,1,-1,instant,hand,0,0,charge,3,hand_passive:contempt,,tx_R3NMXP56CN
+42,13,tx_J5SCAYXA66,1,6,location,location,2,0,,0,search_card:41;move;engage:3|self_range:1,,tx_BCN9HQ1Y7D
+43,13,tx_F2HAFV98VN,1,2,location,location,2,0,,0,move;attack:1|self_range:1,,tx_8FMSQ09F35
+44,14,tx_4H3F9C9KFN,3,0,instant,hand,0,0,exhaust,0,discard_left;draw_discarded,,tx_FRGPH6CYX7
+45,14,tx_J9NRQG1N25,1,2,target,enemy,99,0,,0,discard_right:2;draw:2;attack:1;move_to_target,,tx_HBEZ5EBKC0
+46,14,tx_ZV6V2XKA44,1,2,instant,hand,0,0,,0,discard_right:2;attack:1|damaged,,tx_FVZW5PXN3H
+47,15,tx_FAFVJM0TBH,1,2,target,enemy,99,0,,0,move_target:1,,tx_HP6SF4N2PN
+48,15,tx_84JWQKBGDZ,1,6,instant,hand,0,0,,0,pull_to_caster|self_range:2;engage:4|self_range:1,,tx_PKYA2BZD4J
+49,15,tx_9BBJK7Y68S,1,4,target,pilot,99,0,,0,growth_link:5,,tx_52YX26E4KK
+50,18,tx_7BKZ7W8YS1,1,2,target,ally,99,0,exhaust,0,heal_pct:30;attack:1|around_target:1,death_hand,tx_77KHMP4PZV
+51,18,tx_Y7TG0Z5CFY,1,2,instant,hand,0,0,,0,discard:1;gen_deck:50,,tx_ZS7CFWQ0VS
+52,18,tx_RKCAYN4VKF,1,6,target,enemy,2,0,,0,attack:1;on_hit;engage:3|at_target;on_miss;strategy:4,,tx_FYQ04QVGFD
+53,19,tx_TFAGZYXVFR,2,2,target,ally,99,0,,0,shield_atk:200,,tx_71ZZ55QRCS
+54,19,tx_J4H3QBV4P8,1,2,instant,hand,0,0,,0,shield_atk:200|all_allies,,tx_GC8TZWVVQ1
+55,20,tx_BFZN83RPEC,1,1,target,ally,99,0,,0,stun_next,,tx_JCJTQREPN3
+56,20,tx_QCH88K6QVX,1,2,target,enemy,1,0,,0,attack:1;on_hit;no_engage_phase,,tx_3EM1YTK1F0
+57,20,tx_YKWHPG7YP8,1,0,instant,hand,0,0,,0,draw_discard:3|cost_reduce:1,,tx_HNMHMDJQAW
+58,21,tx_1JSMR4TT01,1,-1,instant,hand,0,0,,0,hand_passive:balance,,tx_P31PSDYTQK
+59,21,tx_R9RC49NARQ,1,3,target,ally,99,0,,0,score_cost:100;growth_eff:20,,tx_XW6K7VHSXD
+60,21,tx_Z7NQX4ERZG,1,2,target,ally,99,0,,0,score_cost:100;max_hp:20,,tx_3X4DE25KTY
+61,21,tx_C9883APGKW,1,2,target,ally,99,0,,0,score_cost:100;atk_add:2,,tx_EPJQNJA7F7
+62,22,tx_3SCCR3H088,1,4,target,enemy,99,0,,0,dmg_taken:25;bounty:10,,tx_RHE0637Z32
+63,22,tx_Y7VQ3CF1M8,1,3,target,enemy,1,0,,0,attack_bounty:2,,tx_70N6FJ3FJ0
+64,22,tx_VADKXBYWKY,1,8,target,enemy,2,0,,0,pull_to_caster;engage:3|self_range:1,,tx_1MFHFCFRJE

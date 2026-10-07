@@ -146,6 +146,7 @@ func cmd_build(mode: String = MODE_DEV) -> int:
 		var err: String = Builder.build(self, mode)
 		if err != "":
 			issues.error("E000", "생성 실패: " + err)
+			info("생성 실패: " + err)
 			errors += 1
 	else:
 		info("Error %d개 — 생성물을 쓰지 않는다 (report.md 확인)" % errors)

@@ -1,14 +1,14 @@
-id,name,kind,cost,p1,p2,weeks,cond,desc
-S01,단기 훈련 코치,coach_hire,250,training,4,2,,외부 훈련 코치와 2주 단기 계약 — 감독의 훈련 스탯이 오른다
-S02,전술 컨설턴트,coach_hire,300,tactics,4,2,,전술 컨설턴트를 2주 초빙 — 감독의 전술 스탯이 오른다
-S03,메크 연구원 초빙,coach_hire,250,knowledge,4,2,,메크 연구원을 2주 초빙 — 감독의 지식 스탯이 오른다
-S04,외부 분석관,coach_hire,250,analysis,4,2,,외부 분석관과 2주 계약 — 감독의 분석 스탯이 오른다
-S05,심리 상담사,coach_hire,200,mental,4,2,,스포츠 심리 상담사를 2주 초빙 — 감독의 멘탈 스탯이 오른다
-S06,재무 자문,coach_hire,200,finance,4,3,,재무 자문과 3주 계약 — 감독의 관리 스탯이 올라 수입 · 유지비가 나아진다
-S07,집중 캠프,camp,400,15,0,1,,한 주 동안 숙소를 빌려 훈련에만 집중한다
-S08,해외 전지훈련,camp,1200,30,0,2,facility_min:4,2주 해외 전지훈련 — 시설이 갖춰진 팀만 꾸릴 수 있다
-S09,광고 캠페인,sponsor_deal,800,20,0,4,facility_min:3,대형 광고 캠페인 — 큰돈이 들지만 4주 동안 스폰서 수입이 오른다
-S10,성과 연동 스폰서,sponsor_deal,150,25,0,3,last_wins_min:2,지난 주 전승한 팀에게만 들어오는 성과 연동 스폰서 계약
-S11,지역 스폰서 계약,sponsor_deal,0,15,-5,4,sponsor_max:600,저예산 팀용 지역 스폰서 — 수입이 늘지만 홍보 일정이 훈련 시간을 조금 잡아먹는다
-S12,유지보수 연기,upkeep_delay,0,-100,20,2,balance_max:300,잔고가 바닥일 때 시설 유지보수를 2주 미룬다 — 유지비가 없지만 사건이 잦아진다
-S13,연봉 재협상,salary_cut,0,-25,-5,3,balance_max:300,잔고가 바닥일 때 스태프 연봉을 3주 깎는다 — 사기가 떨어져 훈련 효율이 준다
+id,name_key,kind,cost,p1,p2,weeks,cond,desc_key
+S01,tx_H1V09QCXSD,coach_hire,250,training,4,2,,tx_D5VD2D1QSZ
+S02,tx_E731FZHB4R,coach_hire,300,tactics,4,2,,tx_781QQNNW5K
+S03,tx_8SZM4HBC56,coach_hire,250,knowledge,4,2,,tx_C5S13WVDT1
+S04,tx_QGNH785ZPE,coach_hire,250,analysis,4,2,,tx_F73ZGB2PTV
+S05,tx_2T1ZS1PMZ7,coach_hire,200,mental,4,2,,tx_2CC1KKTKKB
+S06,tx_41NF1BRQ61,coach_hire,200,finance,4,3,,tx_DA86MFNRT5
+S07,tx_R3NQ6GVQE3,camp,400,15,0,1,,tx_RTR0ZTKS94
+S08,tx_28JMZ3Y0KP,camp,1200,30,0,2,facility_min:4,tx_KHZNSXNXC1
+S09,tx_9W9XHD39VW,sponsor_deal,800,20,0,4,facility_min:3,tx_86FED5D6GK
+S10,tx_4X4R7Q6VE3,sponsor_deal,150,25,0,3,last_wins_min:2,tx_XAR8PQMZNV
+S11,tx_CR5B3MEQ0F,sponsor_deal,0,15,-5,4,sponsor_max:600,tx_3N2P9M4E9W
+S12,tx_CNAP5S2H1J,upkeep_delay,0,-100,20,2,balance_max:300,tx_AXEKA79XKE
+S13,tx_56NJTYE5NP,salary_cut,0,-25,-5,3,balance_max:300,tx_MB49GSHBFN

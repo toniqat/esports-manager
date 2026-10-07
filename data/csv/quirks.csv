@@ -1,19 +1,19 @@
-id,name,grade,stats,cond,cond_stats,weight,desc
-1,날카로운 눈,0,field_hit:3,,,10,전장에서 표적을 놓치지 않는다
-2,가벼운 발,0,field_eva:3,,,10,전장 사선을 먼저 읽고 비켜 선다
-3,근접 본능,0,engage_hit:3,,,10,교전에 들어가면 손이 먼저 나간다
-4,침착한 손,0,engage_eva:3,,,10,난전에서도 조종간이 흔들리지 않는다
-5,공격 성향,0,atk_growth:3,,,10,성장할수록 화력이 더 가파르게 붙는다
-6,강철 체력,0,hp_growth:3,,,10,성장할수록 기체를 더 오래 버틴다
-7,사냥꾼,1,field_hit:4|field_eva:2,,,10,전장에서 쫓고 피하는 감각이 함께 산다
-8,난전의 달인,1,engage_hit:4|engage_eva:2,,,10,교전 무대가 오히려 편하다
-9,불굴,1,hp_growth:4|engage_eva:2,,,10,쓰러질 듯하면서 끝까지 버틴다
-10,폭발력,1,atk_growth:4|engage_hit:2,,,10,한 번 불붙으면 화력이 몰아친다
-11,그림자 걸음,1,field_eva:4|engage_eva:2,,,10,어디서든 맞히기 어려운 몸놀림
-12,균형 감각,1,field_hit:3|engage_eva:3,,,10,공수 어느 쪽으로도 기울지 않는다
-13,주력 일체화,2,atk_growth:3,main,field_hit:4|engage_hit:4,8,주력 메크에 타면 기체와 한 몸이 된다
-14,포지션 장인,2,hp_growth:3,own_role,field_eva:4|engage_eva:4,8,제 역할군 메크에서 실력이 온전히 나온다
-15,철벽 수호자,2,engage_eva:3,mech_role:0,hp_growth:5|engage_eva:3,6,탱커 메크에 타면 무너지지 않는다
-16,암살 본능,2,field_eva:3,mech_role:2,engage_hit:5|atk_growth:3,6,암살 메크에 타면 급소를 노린다
-17,명사수,2,field_hit:3,mech_role:4,field_hit:4|atk_growth:4,6,원딜 메크에 타면 한 발도 허투루 쏘지 않는다
-18,기체와의 교감,2,engage_hit:3,tier:2,field_hit:3|field_eva:3,6,능숙 이상으로 다루는 메크에서 한층 날카로워진다
+id,name_key,grade,stats,cond,cond_stats,weight,desc_key
+1,tx_CYGR6J73XX,0,field_hit:3,,,10,tx_0WJHVJBXGJ
+2,tx_1E4NWHCFMH,0,field_eva:3,,,10,tx_ABZZPKPCYQ
+3,tx_WACC2C0HFM,0,engage_hit:3,,,10,tx_2MJGGBBG8W
+4,tx_0AYXJYXGR5,0,engage_eva:3,,,10,tx_TPN738KR73
+5,tx_VSNP1K2HN2,0,atk_growth:3,,,10,tx_F7BMZSBRHB
+6,tx_S44JV6K81D,0,hp_growth:3,,,10,tx_E7ARY2RD8Y
+7,tx_43NMPETEJN,1,field_hit:4|field_eva:2,,,10,tx_KGE8JZ4FD1
+8,tx_7H3MC8ST31,1,engage_hit:4|engage_eva:2,,,10,tx_VRXTZ6J5VN
+9,tx_B44F1ZRV5V,1,hp_growth:4|engage_eva:2,,,10,tx_G78PW2KHPR
+10,tx_3Q7114R6SF,1,atk_growth:4|engage_hit:2,,,10,tx_7FRCXP4PHE
+11,tx_ZNCXG862TG,1,field_eva:4|engage_eva:2,,,10,tx_XBD561TVAG
+12,tx_8GMS4ZMMM0,1,field_hit:3|engage_eva:3,,,10,tx_H9SG1KJ7VG
+13,tx_74FT3NG96S,2,atk_growth:3,main,field_hit:4|engage_hit:4,8,tx_NG3XEEHSFB
+14,tx_SKX3980NZ4,2,hp_growth:3,own_role,field_eva:4|engage_eva:4,8,tx_5234BFCRX4
+15,tx_9EBPK4CZKY,2,engage_eva:3,mech_role:0,hp_growth:5|engage_eva:3,6,tx_BJP0GG5N68
+16,tx_QWZBQFGYDS,2,field_eva:3,mech_role:2,engage_hit:5|atk_growth:3,6,tx_423T378EFS
+17,tx_41ZA0ATDFP,2,field_hit:3,mech_role:4,field_hit:4|atk_growth:4,6,tx_HCTF0FH7HK
+18,tx_KEMWNM8WAB,2,engage_hit:3,tier:2,field_hit:3|field_eva:3,6,tx_X44QXQ1EJK

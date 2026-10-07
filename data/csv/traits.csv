@@ -1,25 +1,25 @@
-id,key,name,rarity,polarity,bonus_cost,layer,p1,p2,unlock,default_owned,craft_cost,desc
-1,train_exp_pct,훈련광,0,+,2,outgame,15,0,,1,10,훈련 EXP +{p1}%
-2,mastery_pct,메크 연구가,1,+,3,outgame,20,0,wins:15,0,20,메크 숙련도 획득 +{p1}%
-3,income_pct,스폰서 친화,0,+,2,outgame,10,0,,1,10,주간 스폰서 수입 +{p1}%
-4,trust_gain,따뜻한 리더,1,+,3,outgame,1,0,outings:3,0,20,신뢰도가 오를 때 +{p1} 더
-5,incident_pct,위기관리,2,+,4,outgame,-30,0,phase:2,0,35,사건 발생 확률 {p1}%
-6,analysis_tier,정보통,3,+,5,outgame,1,0,titles:2,0,55,분석 공개 단계 +{p1}
-7,salary_cap,협상가,3,+,5,outgame,20,0,finance_manual_profit:5,0,55,샐러리캡 +{p1}
-8,manager_all,만능 감독,4,+,6,outgame,1,0,clear,0,80,감독 스탯 여섯 모두 +{p1}
-9,upkeep_pct,시설 투자가,1,+,3,outgame,-25,0,phase:1,0,20,시설 유지비 {p1}%
-10,open_cost,선제 운영,2,+,4,ingame,1,0,win_streak:5,0,35,경기 개시 전략 포인트 +{p1}
-11,first_draw,준비된 손,0,+,2,ingame,1,0,,1,10,첫 자동 드로우 +{p1}장
-12,hand_size,넓은 손,2,+,4,ingame,2,0,mvp:10,0,35,손패 상한 +{p1}
-13,first_card_cost,정밀 지휘,3,+,5,ingame,-1,0,titles:4,0,55,작전 단계마다 첫 카드 비용 {p1}
-14,cost_tick,작전 가속,4,+,6,ingame,1,6,true_ending,0,80,{p2}턴마다 전략 포인트 +{p1}
-15,income_pct,짠돌이 구단,0,-,2,outgame,-15,0,,1,10,주간 스폰서 수입 {p1}%
-16,train_exp_pct,고집쟁이,0,-,2,outgame,-10,0,,1,10,훈련 EXP {p1}%
-17,trust_gain,무뚝뚝,1,-,3,outgame,-1,0,runs:2,0,20,신뢰도가 오를 때 {p1} 덜
-18,incident_pct,사고뭉치,1,-,3,outgame,30,0,runs:3,0,20,사건 발생 확률 +{p1}%
-19,salary_cap,연봉 압박,2,-,4,outgame,-20,0,phase:3,0,35,샐러리캡 {p1}
-20,analysis_tier,정보 부족,2,-,4,outgame,-1,0,runs:5,0,35,분석 공개 단계 {p1}
-21,upkeep_pct,시설 노후,1,-,3,outgame,25,0,team:7,0,20,시설 유지비 +{p1}%
-22,first_draw,늦은 준비,2,-,4,ingame,-1,0,bonus:4,0,35,첫 자동 드로우 {p1}장
-23,hand_size,작은 손,0,-,2,ingame,-2,0,,1,10,손패 상한 {p1}
-24,first_card_cost,둔한 지휘,3,-,5,ingame,1,0,bonus:6,0,55,작전 단계마다 첫 카드 비용 +{p1}
+id,key,name_key,rarity,polarity,bonus_cost,layer,p1,p2,unlock,default_owned,craft_cost,desc_key
+1,train_exp_pct,tx_QQVPQ29K6X,0,+,2,outgame,15,0,,1,10,tx_EV1KKPRV9X
+2,mastery_pct,tx_6HSK5W6C20,1,+,3,outgame,20,0,wins:15,0,20,tx_ZFJKYAYZP6
+3,income_pct,tx_SJVSQJ1HZ2,0,+,2,outgame,10,0,,1,10,tx_EDVTV9B889
+4,trust_gain,tx_JMPJ6K47G9,1,+,3,outgame,1,0,outings:3,0,20,tx_A735T32EGT
+5,incident_pct,tx_N2W6RZDRT6,2,+,4,outgame,-30,0,phase:2,0,35,tx_NJ8WFC7JTK
+6,analysis_tier,tx_785Z4KHTFM,3,+,5,outgame,1,0,titles:2,0,55,tx_QWR2NXFX5M
+7,salary_cap,tx_8S9EB13XAC,3,+,5,outgame,20,0,finance_manual_profit:5,0,55,tx_E9N9BW8Q0V
+8,manager_all,tx_DC53B4M5PW,4,+,6,outgame,1,0,clear,0,80,tx_6RMF7057WW
+9,upkeep_pct,tx_MFYESJ59SW,1,+,3,outgame,-25,0,phase:1,0,20,tx_ECBMZ4X60B
+10,open_cost,tx_VNR03SJKHJ,2,+,4,ingame,1,0,win_streak:5,0,35,tx_V233CFRMZM
+11,first_draw,tx_4XZY5KHRZ5,0,+,2,ingame,1,0,,1,10,tx_PQ6389S0B6
+12,hand_size,tx_G3BN9YGY08,2,+,4,ingame,2,0,mvp:10,0,35,tx_3KQPNVDQG5
+13,first_card_cost,tx_ETRN537DKC,3,+,5,ingame,-1,0,titles:4,0,55,tx_M929F4HK8X
+14,cost_tick,tx_GJ0X2PC4R9,4,+,6,ingame,1,6,true_ending,0,80,tx_YFNHSQ5GJ5
+15,income_pct,tx_M54T29SWNW,0,-,2,outgame,-15,0,,1,10,tx_9XWKFPH3A6
+16,train_exp_pct,tx_7BGXQ78XMZ,0,-,2,outgame,-10,0,,1,10,tx_T6TSR16X7E
+17,trust_gain,tx_7NJPMJ0CCZ,1,-,3,outgame,-1,0,runs:2,0,20,tx_35AVVM2TZS
+18,incident_pct,tx_AMWGWQJ60F,1,-,3,outgame,30,0,runs:3,0,20,tx_GTHGAFSFYH
+19,salary_cap,tx_T16C9GBB7K,2,-,4,outgame,-20,0,phase:3,0,35,tx_TR33VGFNSG
+20,analysis_tier,tx_YESM7J9032,2,-,4,outgame,-1,0,runs:5,0,35,tx_YBHFJVCTQZ
+21,upkeep_pct,tx_Q41QQ7JC1Q,1,-,3,outgame,25,0,team:7,0,20,tx_53D7BPJQBK
+22,first_draw,tx_3QS5VYW7HW,2,-,4,ingame,-1,0,bonus:4,0,35,tx_FNN91QZ7T0
+23,hand_size,tx_5MBP9BZBQG,0,-,2,ingame,-2,0,,1,10,tx_6XQ3A0Q7JP
+24,first_card_cost,tx_45WMDVS2HM,3,-,5,ingame,1,0,bonus:6,0,55,tx_6HNYQXB6DT

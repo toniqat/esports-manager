@@ -20,36 +20,36 @@ const DB_PATH = "res://data/game.db"
 # Required columns and primary key per table
 const SCHEMAS: Dictionary = {
 	"pilots":      {"req": ["id","name","abbrev","hp","atk","heal"],           "pk": "id"},
-	"cards":       {"req": ["id","name","cost","uses","cast_method","target","cast_range","area","keyword","effect","description","scope","pool","card_type","card_cat","excl_group","charge_max"], "pk": "id"},
+	"cards":       {"req": ["id","name_key","cost","uses","cast_method","target","cast_range","area","keyword","effect","description_key","scope","pool","card_type","card_cat","excl_group","charge_max"], "pk": "id"},
 	"game_config": {"req": ["key","value"],                                     "pk": "key"},
 	"const":       {"req": ["key","value","module","note"],                     "pk": "key"},
 	"lane_config": {"req": ["lane_id","name","max_pilots","mid_col","mid_row"], "pk": "lane_id"},
-	"players":     {"req": ["id","team_id","name","role","field_hit","field_eva","engage_hit","engage_eva","atk_growth","hp_growth","skill_id","is_mob","pilot_cards","salary","rarity","starter","main_mechs"], "pk": "id"},
-	"pilot_skills": {"req": ["id","key","name","role","type","p1","p2","keyword","description"], "pk": "id"},
-	"mechs":       {"req": ["id","name","role","hp","atk","presence"],          "pk": "id"},
-	"mech_passives": {"req": ["id","mech_id","key","name","p1","p2","keyword","description"], "pk": "id"},
-	"mech_cards":    {"req": ["id","mech_id","name","count","cost","cast_method","target","cast_range","area","keyword","charge_max","effect","trigger","description"], "pk": "id"},
-	"teams":       {"req": ["id","name","short_name","budget","facility_level","staff_ids","manual_areas","desc"], "pk": "id"},
-	"intl_teams":   {"req": ["id","name","short_name"],                         "pk": "id"},
-	"intl_players": {"req": ["id","team_id","name","role","field_hit","field_eva","engage_hit","engage_eva","atk_growth","hp_growth","pilot_cards","main_mechs"], "pk": "id"},
+	"players":     {"req": ["id","team_id","name_key","role","field_hit","field_eva","engage_hit","engage_eva","atk_growth","hp_growth","skill_id","is_mob","pilot_cards","salary","rarity","starter","main_mechs"], "pk": "id"},
+	"pilot_skills": {"req": ["id","key","name_key","role","type","p1","p2","keyword","description_key"], "pk": "id"},
+	"mechs":       {"req": ["id","name_key","role","hp","atk","presence"],          "pk": "id"},
+	"mech_passives": {"req": ["id","mech_id","key","name_key","p1","p2","keyword","description_key"], "pk": "id"},
+	"mech_cards":    {"req": ["id","mech_id","name_key","count","cost","cast_method","target","cast_range","area","keyword","charge_max","effect","trigger","description_key"], "pk": "id"},
+	"teams":       {"req": ["id","name_key","short_name_key","budget","facility_level","staff_ids","manual_areas","desc_key"], "pk": "id"},
+	"intl_teams":   {"req": ["id","name_key","short_name_key"],                         "pk": "id"},
+	"intl_players": {"req": ["id","team_id","name_key","role","field_hit","field_eva","engage_hit","engage_eva","atk_growth","hp_growth","pilot_cards","main_mechs"], "pk": "id"},
 	"pilot_card_slots": {"req": ["position","slot1","slot2","slot3"], "pk": "position"},
-	"training_tiles": {"req": ["id","name","grade","shape","exp","effect"], "pk": "id"},
-	"scenarios":   {"req": ["id","name","salary_cap","desc"], "pk": "id"},
+	"training_tiles": {"req": ["id","name_key","grade","shape","exp","effect"], "pk": "id"},
+	"scenarios":   {"req": ["id","name_key","salary_cap","desc_key"], "pk": "id"},
 	"pilot_levels": {"req": ["level","stat_bonus","salary_bonus","levelup_cost","exp_required"], "pk": "level"},
 	# M3~M7 (감독 · 스태프 · 재무 · 멘탈) — 계약: docs/outgame_dev_plan.md §11
-	"manager_types": {"req": ["id","name","gender","training","tactics","knowledge","mental","analysis","finance","desc"], "pk": "id"},
-	"staff":         {"req": ["id","name","job","training","tactics","knowledge","mental","analysis","finance","salary"], "pk": "id"},
+	"manager_types": {"req": ["id","name_key","gender","training","tactics","knowledge","mental","analysis","finance","desc_key"], "pk": "id"},
+	"staff":         {"req": ["id","name_key","job","training","tactics","knowledge","mental","analysis","finance","salary"], "pk": "id"},
 	"facilities":    {"req": ["level","upkeep","upgrade_cost","train_exp_pct","mastery_pct","incident_pct","income_pct"], "pk": "level"},
 	"mental_events": {"req": ["id","kind","manager_type","stage","cond","lines","choices","effects","weight"], "pk": "id"},
 	# M8~M10 (특성 · 감독 성장 · 수집 경제) — 계약: docs/outgame_dev_plan.md §12
-	"traits":        {"req": ["id","key","name","rarity","polarity","bonus_cost","layer","p1","p2","unlock","default_owned","craft_cost","desc"], "pk": "id"},
+	"traits":        {"req": ["id","key","name_key","rarity","polarity","bonus_cost","layer","p1","p2","unlock","default_owned","craft_cost","desc_key"], "pk": "id"},
 	"manager_levels": {"req": ["level","exp_required"], "pk": "level"},
-	"pilot_breakthrough": {"req": ["id","pilot_id","stage","kind","value","desc"], "pk": "id"},
+	"pilot_breakthrough": {"req": ["id","pilot_id","stage","kind","value","desc_key"], "pk": "id"},
 	"gacha_rates":   {"req": ["id","pool","rarity","weight"], "pk": "id"},
 	"pass_rewards":  {"req": ["level","currency","amount"], "pk": "level"},
 	# §14 (기벽 · 재무 특별 지출) — 계약: docs/outgame_dev_plan.md §14
-	"quirks":        {"req": ["id","name","grade","stats","cond","cond_stats","weight","desc"], "pk": "id"},
-	"finance_specials": {"req": ["id","name","kind","cost","p1","p2","weeks","cond","desc"], "pk": "id"},
+	"quirks":        {"req": ["id","name_key","grade","stats","cond","cond_stats","weight","desc_key"], "pk": "id"},
+	"finance_specials": {"req": ["id","name_key","kind","cost","p1","p2","weeks","cond","desc_key"], "pk": "id"},
 }
 
 # SQLite column definitions per table
@@ -64,7 +64,7 @@ const TABLE_DEFS: Dictionary = {
 	},
 	"cards": {
 		"id":          {"data_type": "int",  "primary_key": true, "not_null": true},
-		"name":        {"data_type": "text", "not_null": true},
+		"name_key":        {"data_type": "text", "not_null": true},
 		"cost":        {"data_type": "int",  "not_null": true},
 		"uses":        {"data_type": "int",  "not_null": true},
 		"cast_method": {"data_type": "text", "not_null": true},
@@ -73,7 +73,7 @@ const TABLE_DEFS: Dictionary = {
 		"area":        {"data_type": "int",  "not_null": true},
 		"keyword":     {"data_type": "text", "not_null": true},
 		"effect":      {"data_type": "text", "not_null": true},
-		"description": {"data_type": "text", "not_null": true},
+		"description_key": {"data_type": "text", "not_null": true},
 		# 시전자 제약(포지션). `any` 단독 = 모든 포지션, `lane` 단독 = 탑/미드/원딜/서폿,
 		# 그 밖에는 jungle / top / mid / carry / support 를 `|` 로 이은 목록.
 		"scope":       {"data_type": "text", "not_null": true},
@@ -113,7 +113,7 @@ const TABLE_DEFS: Dictionary = {
 	"players": {
 		"id":        {"data_type": "int",  "primary_key": true, "not_null": true},
 		"team_id":   {"data_type": "int",  "not_null": true},
-		"name":      {"data_type": "text", "not_null": true},
+		"name_key":      {"data_type": "text", "not_null": true},
 		"role":      {"data_type": "int",  "not_null": true},
 		"field_hit":  {"data_type": "int",  "not_null": true},
 		"field_eva":  {"data_type": "int",  "not_null": true},
@@ -145,7 +145,7 @@ const TABLE_DEFS: Dictionary = {
 		# 런타임 분기 키(snake_case). 스킬 하나하나가 고유 효과라 효과 문법을
 		# 만드는 대신 이 키로 갈라 쓴다 — PilotSkillSystem 이 소비한다.
 		"key":         {"data_type": "text", "not_null": true},
-		"name":        {"data_type": "text", "not_null": true},
+		"name_key":        {"data_type": "text", "not_null": true},
 		# GameEnums.Role. 스킬은 라인(역할)에 묶여 있으므로 같은 역할의
 		# 파일럿에게만 붙는다.
 		"role":        {"data_type": "int",  "not_null": true},
@@ -156,11 +156,11 @@ const TABLE_DEFS: Dictionary = {
 		# 최대 충전 수(0 = 충전 없음).
 		"p2":          {"data_type": "int",  "not_null": true},
 		"keyword":     {"data_type": "text", "not_null": true},
-		"description": {"data_type": "text", "not_null": true},
+		"description_key": {"data_type": "text", "not_null": true},
 	},
 	"mechs": {
 		"id":       {"data_type": "int",  "primary_key": true, "not_null": true},
-		"name":     {"data_type": "text", "not_null": true},
+		"name_key":     {"data_type": "text", "not_null": true},
 		# GameEnums.Role. **메크에 역할이 생겼다** — 예전에는 "메크는 역할이
 		# 없다"가 설계였지만, 메크마다 고유 패시브와 고유 카드 셋이 붙으면서
 		# 그 카드들이 역할군을 전제하게 됐다(탱커의 반응 장갑 / 원딜의 사거리
@@ -180,12 +180,12 @@ const TABLE_DEFS: Dictionary = {
 		"id":          {"data_type": "int",  "primary_key": true, "not_null": true},
 		"mech_id":     {"data_type": "int",  "not_null": true},
 		"key":         {"data_type": "text", "not_null": true},
-		"name":        {"data_type": "text", "not_null": true},
+		"name_key":        {"data_type": "text", "not_null": true},
 		# 패시브마다 뜻이 다른 두 숫자. 충전형이면 p1 = 시작 충전, p2 = 최대 충전.
 		"p1":          {"data_type": "int",  "not_null": true},
 		"p2":          {"data_type": "int",  "not_null": true},
 		"keyword":     {"data_type": "text", "not_null": true},
-		"description": {"data_type": "text", "not_null": true},
+		"description_key": {"data_type": "text", "not_null": true},
 	},
 	# ── 메크 카드 ────────────────────────────────────────────────────────────
 	# 파일럿이 받는 **메크 카드 3장**이 사라지고, 그 자리를 배정된 메크의 고유
@@ -196,7 +196,7 @@ const TABLE_DEFS: Dictionary = {
 	"mech_cards": {
 		"id":          {"data_type": "int",  "primary_key": true, "not_null": true},
 		"mech_id":     {"data_type": "int",  "not_null": true},
-		"name":        {"data_type": "text", "not_null": true},
+		"name_key":        {"data_type": "text", "not_null": true},
 		# 채용 시 덱에 들어가는 장수. 0 = 별도 효과로만 생성된다.
 		"count":       {"data_type": "int",  "not_null": true},
 		# **-1 = 사용할 수 없는 카드.** 핸드에 들고 있는 것만으로 효과를 낸다
@@ -217,12 +217,12 @@ const TABLE_DEFS: Dictionary = {
 		# 카드**가 존재를 얻는 조건이라 여기에 산다 — turret_kill_deck(꿰뚫는
 		# 번개) / death_hand(공격 명령).
 		"trigger":     {"data_type": "text", "not_null": true},
-		"description": {"data_type": "text", "not_null": true},
+		"description_key": {"data_type": "text", "not_null": true},
 	},
 	"teams": {
 		"id":         {"data_type": "int",  "primary_key": true, "not_null": true},
-		"name":       {"data_type": "text", "not_null": true},
-		"short_name": {"data_type": "text", "not_null": true},
+		"name_key":       {"data_type": "text", "not_null": true},
+		"short_name_key": {"data_type": "text", "not_null": true},
 		# 팀 패키지(런 준비 팀 선택 화면) — M1 은 표시 · 스냅샷만, 효과는 M3/M6.
 		"budget":         {"data_type": "int",  "not_null": true},
 		"facility_level": {"data_type": "int",  "not_null": true},
@@ -230,17 +230,17 @@ const TABLE_DEFS: Dictionary = {
 		"manual_areas":   {"data_type": "text", "not_null": true},
 		# 팀의 초기 스태프 — `staff.id` 를 `|` 로(M3). 빈 칸 = 스태프 없음.
 		"staff_ids":      {"data_type": "text", "not_null": true},
-		"desc":           {"data_type": "text", "not_null": true},
+		"desc_key":           {"data_type": "text", "not_null": true},
 	},
 	"intl_teams": {
 		"id":         {"data_type": "int",  "primary_key": true, "not_null": true},
-		"name":       {"data_type": "text", "not_null": true},
-		"short_name": {"data_type": "text", "not_null": true},
+		"name_key":       {"data_type": "text", "not_null": true},
+		"short_name_key": {"data_type": "text", "not_null": true},
 	},
 	"intl_players": {
 		"id":        {"data_type": "int",  "primary_key": true, "not_null": true},
 		"team_id":   {"data_type": "int",  "not_null": true},
-		"name":      {"data_type": "text", "not_null": true},
+		"name_key":      {"data_type": "text", "not_null": true},
 		"role":      {"data_type": "int",  "not_null": true},
 		"field_hit":  {"data_type": "int",  "not_null": true},
 		"field_eva":  {"data_type": "int",  "not_null": true},
@@ -267,7 +267,7 @@ const TABLE_DEFS: Dictionary = {
 	# 문법과 색 표는 `features/season/training/TrainingTile.gd` 가 소유한다.
 	"training_tiles": {
 		"id":          {"data_type": "text", "primary_key": true, "not_null": true},
-		"name":        {"data_type": "text", "not_null": true},
+		"name_key":        {"data_type": "text", "not_null": true},
 		"grade":       {"data_type": "int",  "not_null": true},
 		"shape":       {"data_type": "text", "not_null": true},
 		"exp":         {"data_type": "text", "not_null": true},
@@ -275,9 +275,9 @@ const TABLE_DEFS: Dictionary = {
 	},
 	"scenarios": {
 		"id":         {"data_type": "int",  "primary_key": true, "not_null": true},
-		"name":       {"data_type": "text", "not_null": true},
+		"name_key":       {"data_type": "text", "not_null": true},
 		"salary_cap": {"data_type": "int",  "not_null": true},
-		"desc":       {"data_type": "text", "not_null": true},
+		"desc_key":       {"data_type": "text", "not_null": true},
 	},
 	# 선수 레벨 1..10 — 모든 선수 공통. 값은 Lv1 대비 **누적** 가산.
 	"pilot_levels": {
@@ -293,7 +293,7 @@ const TABLE_DEFS: Dictionary = {
 	# 감독 타입(운영형 / 실전형) — 초기 감독 스탯 6종(1~20).
 	"manager_types": {
 		"id":        {"data_type": "int",  "primary_key": true, "not_null": true},
-		"name":      {"data_type": "text", "not_null": true},
+		"name_key":      {"data_type": "text", "not_null": true},
 		"gender":    {"data_type": "text", "not_null": true},
 		"training":  {"data_type": "int",  "not_null": true},
 		"tactics":   {"data_type": "int",  "not_null": true},
@@ -301,13 +301,13 @@ const TABLE_DEFS: Dictionary = {
 		"mental":    {"data_type": "int",  "not_null": true},
 		"analysis":  {"data_type": "int",  "not_null": true},
 		"finance":   {"data_type": "int",  "not_null": true},
-		"desc":      {"data_type": "text", "not_null": true},
+		"desc_key":      {"data_type": "text", "not_null": true},
 	},
 	# 스태프 — `job` 은 coach_training / coach_tactics / coach_knowledge /
 	# analyst / finance / assistant. 스탯 6종(1~20), `salary` 는 주급.
 	"staff": {
 		"id":        {"data_type": "int",  "primary_key": true, "not_null": true},
-		"name":      {"data_type": "text", "not_null": true},
+		"name_key":      {"data_type": "text", "not_null": true},
 		"job":       {"data_type": "text", "not_null": true},
 		"training":  {"data_type": "int",  "not_null": true},
 		"tactics":   {"data_type": "int",  "not_null": true},
@@ -348,7 +348,7 @@ const TABLE_DEFS: Dictionary = {
 	"traits": {
 		"id":            {"data_type": "int",  "primary_key": true, "not_null": true},
 		"key":           {"data_type": "text", "not_null": true},
-		"name":          {"data_type": "text", "not_null": true},
+		"name_key":          {"data_type": "text", "not_null": true},
 		"rarity":        {"data_type": "int",  "not_null": true},
 		"polarity":      {"data_type": "text", "not_null": true},
 		"bonus_cost":    {"data_type": "int",  "not_null": true},
@@ -358,7 +358,7 @@ const TABLE_DEFS: Dictionary = {
 		"unlock":        {"data_type": "text", "not_null": true},
 		"default_owned": {"data_type": "int",  "not_null": true},
 		"craft_cost":    {"data_type": "int",  "not_null": true},
-		"desc":          {"data_type": "text", "not_null": true},
+		"desc_key":          {"data_type": "text", "not_null": true},
 	},
 	# 감독 레벨 1..25 — 그 레벨에 닿는 **누적** 감독 EXP.
 	"manager_levels": {
@@ -374,7 +374,7 @@ const TABLE_DEFS: Dictionary = {
 		"stage":    {"data_type": "int",  "not_null": true},
 		"kind":     {"data_type": "text", "not_null": true},
 		"value":    {"data_type": "text", "not_null": true},
-		"desc":     {"data_type": "text", "not_null": true},
+		"desc_key":     {"data_type": "text", "not_null": true},
 	},
 	# 가챠 등급 가중치 — `pool` pilot / trait.
 	"gacha_rates": {
@@ -395,26 +395,26 @@ const TABLE_DEFS: Dictionary = {
 	# `cond_stats` 조건 충족 시 추가 가산, `weight` 같은 등급 안 뽑기 가중치.
 	"quirks": {
 		"id":         {"data_type": "int",  "primary_key": true, "not_null": true},
-		"name":       {"data_type": "text", "not_null": true},
+		"name_key":       {"data_type": "text", "not_null": true},
 		"grade":      {"data_type": "int",  "not_null": true},
 		"stats":      {"data_type": "text", "not_null": true},
 		"cond":       {"data_type": "text", "not_null": true},
 		"cond_stats": {"data_type": "text", "not_null": true},
 		"weight":     {"data_type": "int",  "not_null": true},
-		"desc":       {"data_type": "text", "not_null": true},
+		"desc_key":       {"data_type": "text", "not_null": true},
 	},
 	# 재무 특별 지출(잉여 잔고 사용처) — `kind` 별 p1 · p2 뜻은 features/season/finance/README.md,
 	# `weeks` 지속 주(0 = 즉시), `cond` 구매 조건식(빈 칸 = 없음).
 	"finance_specials": {
 		"id":    {"data_type": "text", "primary_key": true, "not_null": true},
-		"name":  {"data_type": "text", "not_null": true},
+		"name_key":  {"data_type": "text", "not_null": true},
 		"kind":  {"data_type": "text", "not_null": true},
 		"cost":  {"data_type": "int",  "not_null": true},
 		"p1":    {"data_type": "text", "not_null": true},
 		"p2":    {"data_type": "text", "not_null": true},
 		"weeks": {"data_type": "int",  "not_null": true},
 		"cond":  {"data_type": "text", "not_null": true},
-		"desc":  {"data_type": "text", "not_null": true},
+		"desc_key":  {"data_type": "text", "not_null": true},
 	},
 }
 

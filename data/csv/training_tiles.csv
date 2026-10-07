@@ -1,22 +1,22 @@
-id,name,grade,shape,exp,effect
-T01,기초 훈련,0,W,all:8,
-T02,기초 훈련 2,1,W/W,all:16,
-T03,사격 훈련,1,H,field_hit:44,
-T04,회피 기동,1,E,field_eva:44,
-T05,근접 교전,1,C,engage_hit:44,
-T06,반응 훈련,1,D,engage_eva:44,
-T07,화력 증강,1,A,atk_growth:44,
-T08,내구 단련,1,P,hp_growth:44,
-T09,합동 훈련,2,WW,all:22,mult:mate_all:115
-T10,집중 특강,2,K,,mult:day_next:180
-T11,전술 회의,2,W/W/W,all:20,mult:day_all:110
-T12,합숙 스크림,3,CC/DD,engage_hit:52|engage_eva:52,
-T13,한계 돌파,3,H/H/H,field_hit:96,mult:day_prev_all:50
-T14,멘토링,3,K/W/W,all:38,mult:mate_all:125
-T15,전지 훈련,4,WWWWW,all:34,mult:day_next:120
-T16,메크 연구,1,M,mastery:4,
-T17,메크 집중 연구,2,M/M,mastery:5,
-T18,기벽 발굴,1,Q,,quirk:gain
-T19,기벽 재조정,2,Q,,quirk:reroll
-T20,동반 발굴,2,QQ,,quirk:gain
-T21,잠재력 개방,3,Q/K,,quirk:slot
+id,name_key,grade,shape,exp,effect
+T01,tx_KEVDQS5CGB,0,W,all:8,
+T02,tx_SN9RWDKSD9,1,W/W,all:16,
+T03,tx_ETXQNX2FF3,1,H,field_hit:44,
+T04,tx_DYKR3KZW2R,1,E,field_eva:44,
+T05,tx_E8AJQ6WVHS,1,C,engage_hit:44,
+T06,tx_Z2QHPPQ7QN,1,D,engage_eva:44,
+T07,tx_6PFR1BYJ2Q,1,A,atk_growth:44,
+T08,tx_RZMEH6PFCE,1,P,hp_growth:44,
+T09,tx_V37TNBJQV9,2,WW,all:22,mult:mate_all:115
+T10,tx_T4WV59VSPB,2,K,,mult:day_next:180
+T11,tx_X4QVQX3E4B,2,W/W/W,all:20,mult:day_all:110
+T12,tx_Z7JQDJ9DV2,3,CC/DD,engage_hit:52|engage_eva:52,
+T13,tx_G5ENXM984P,3,H/H/H,field_hit:96,mult:day_prev_all:50
+T14,tx_CHY4PWBWTD,3,K/W/W,all:38,mult:mate_all:125
+T15,tx_D40J2EG75V,4,WWWWW,all:34,mult:day_next:120
+T16,tx_PAVG1B8HGJ,1,M,mastery:4,
+T17,tx_BFGHJCY1F1,2,M/M,mastery:5,
+T18,tx_XXMTB9J4JQ,1,Q,,quirk:gain
+T19,tx_JWT9F5YXD6,2,Q,,quirk:reroll
+T20,tx_6ZSE84YQEQ,2,QQ,,quirk:gain
+T21,tx_YN1A3HKZJP,3,Q/K,,quirk:slot

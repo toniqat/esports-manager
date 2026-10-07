@@ -1,0 +1,5 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_WMF4H900Y6,scenario.0.name,active,scenarios.csv name (id=0),,,루키 리그,,,
+tx_WHEYGN2VQZ,scenario.1.name,active,scenarios.csv name (id=1),,,슈퍼 리그,,,
+tx_FHYTT6JZHE,scenario.0.desc,active,scenarios.csv desc (id=0),,,샐러리캡이 낮다 — 비싼 선수는 두세 명이 한계.,,,
+tx_4H2VGDNYW7,scenario.1.desc,active,scenarios.csv desc (id=1),,,샐러리캡이 높다 — 레벨을 올린 선수로 채울 수 있다.,,,

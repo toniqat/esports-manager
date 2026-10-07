@@ -1041,3 +1041,75 @@ no `MODULATE` built-in · `TEXTURE` can't be read in global functions) are writt
 it is the only place that assembles one `cards.csv` row into a card, so
 it must run without BattleSim (used by the ban/pick bottom sheet · mech detail.
 The draft detail popup used it too, but that screen's candidate-card section was deleted)
+
+---
+
+### UiSceneDump.gd + UiSceneDumpRunner.gd (dev tool — running UI → `.tscn` draft)
+
+`docs/ui_scene_migration.md` §6 T4. **Saves a running, code-built UI subtree as a `.tscn` draft**
+so a big screen (HubView, ban/pick) does not have to be transcribed by hand. The draft is
+**reference only**: every node keeps its absolute `offset_*` from the live run, so the porting session
+still rebuilds it with containers (§5 step 2) and then deletes the draft. Game code never calls it.
+
+**Run it** (window mode for `--shot`; `--headless` is fine for a dump alone):
+```
+<godot> --path . --script res://resources/UiSceneDumpRunner.gd -- --scene res://scenes/Lobby.tscn --node .
+<godot> --path . --script res://resources/UiSceneDumpRunner.gd -- --scene res://scenes/Season.tscn --node HubView
+<godot> --path . --script res://resources/UiSceneDumpRunner.gd -- --scene res://scenes/MatchFlow.tscn \
+        --press "경기 시작" --node CanvasLayer --out res://_dump/BanPick.tscn
+# look at a draft (or the live screen) — no --node = screenshot only
+<godot> --path . --script res://resources/UiSceneDumpRunner.gd -- --scene res://_dump/HubView.tscn --shot <scratchpad>/draft.png
+```
+| Arg | Meaning |
+|---|---|
+| `--scene` | scene to load (required) |
+| `--node` | `.` = scene root · a path containing `/` = relative to it · otherwise the first node (breadth-first) whose name, script `class_name` or engine class matches (`HubView` finds the auto-named `@Control@2`). Omitted → no dump |
+| `--frames N` | frames to wait after loading and after each `--press` (default 30) |
+| `--press "A\|B"` | emit `pressed` on visible Buttons found by their text, one by one — reaches a screen a tap away |
+| `--out` | default `res://_dump/<name>.tscn` (auto names → script class_name) |
+| `--shot path.png` | root viewport screenshot (702×1248 window) taken before dumping |
+| `--keep-root-script` / `--no-scripts` | the `keep_root_script` / `keep_scripts` options below |
+
+**Why a `--script` runner** (`extends SceneTree`): it reaches any screen without touching game code,
+`project.godot` or an autoload — the scene is loaded with `change_scene_to_file` and the autoloads are
+still added. `Season.tscn` / `MatchFlow.tscn` run standalone exactly like an editor F6 run:
+`GameManager.use_test_run` defaults to `true`, so `init_season()` builds a fresh test run and autosaves
+only into `user://run_test.save` (`features/save_load/README.md`). Verified reachable: Lobby (with the
+first-run manager-type popup open), Season → HUB, MatchFlow PREP, MatchFlow BAN_PICK
+(`--press "경기 시작"`). Other hub screens (training, week …) need more taps — chain `--press`.
+
+**What `UiSceneDump.dump(root, out_path = "", opts = {}) -> Error` does** (report in
+`UiSceneDump.last_report`; `report_text()` formats it — the runner prints it):
+- **The live tree is not touched.** Each node is rebuilt as a fresh node of the same engine class with
+  its `PROPERTY_USAGE_STORAGE` properties copied, `owner` = draft root → `PackedScene.pack()` →
+  `ResourceSaver.save()`. `Node.duplicate()` is not used: it copies signal connections and doubles
+  children that a script's `_init` builds.
+- **Scripts**: descendants keep their script reference (§3 rule 3 — `_draw` widgets are placed as
+  nodes); children a script's `_init` already built are discarded so the copied live children are not
+  doubled. The **root's** script is not attached (`keep_root_script` false) — it is usually the builder
+  of this very tree; its path goes into the root's `editor_description`.
+- **Sub-scene instances** (`scene_file_path` set, e.g. `ConfirmPopup`) stay instances: only overrides
+  are saved (editor build → `GEN_EDIT_STATE_INSTANCE`), the scene's own internals are not owned; only
+  children added to it at runtime are copied.
+- **Code-made resources** (`StyleBoxFlat`, code-built textures / fonts) embed as `sub_resource`s,
+  counted per class in the report; file resources stay `ext_resource`.
+- **Connections: none are saved.** Nothing is connected on the copies, so `pack()` has nothing to
+  persist (runtime lambdas are never `CONNECT_PERSIST` anyway — verified: no `[connection]` in the
+  drafts); the dropped count is reported. **A `draw` signal callback is the drawing itself** (e.g.
+  `OutgameTheme`'s round portrait) → that node renders **empty** in the draft and its
+  `editor_description` says so.
+- `metadata/*` is dropped (`keep_meta`) — runtime markers like HapticUi's `haptic_bound` would make the
+  ported scene skip its binding. Unsaveable values (Callable / RID / non-Resource objects) are dropped.
+- Auto names `@Label@123` → `Label_<text>` (script class_name first if any; `rename_auto`). Scripted
+  nodes and the root get `editor_description = "dump: …"` — the prefix keeps them apart from the §3
+  rule 5 `TODO:` marks.
+
+**Limitations**: absolute positions only (rebuild with containers); one captured state (current texts,
+visibility, one tab — open other tabs / popups first via `--press`); non-exported script state is lost,
+so a kept `_draw` widget draws its default state, and a kept builder-like script rebuilds its children
+if the draft is *run* (the editor does not run non-`@tool` scripts, so editing is unaffected); runtime
+children under a scene-owned node of an instance are lost; no uid (open + save in the editor if a draft
+is ever kept). Measured: Lobby, HubView and BanPick drafts render **pixel-identical** to the live
+screen; MatchFlow PREP differs only in its 10 round portraits (`draw` callbacks).
+
+**`_dump/` is gitignored — never commit drafts.**

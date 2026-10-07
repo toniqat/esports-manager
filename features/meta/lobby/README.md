@@ -9,7 +9,7 @@ theme (`OutgameTheme`), bottom action bar. Replaces the old 3-slot TitleScreen
 |---|---|---|
 | `LobbyScreen.gd` | `class_name LobbyScreen extends Control` (scene root) | **Tab host** (M8~M10): currency strip, tab bar, per-tab action bar, toast, confirm popup, manager type popup |
 | `HomeTab.gd` | `class_name HomeTab extends Control` | 홈 tab — run card, continue / new run / abandon (the old lobby body) |
-| `ConfirmPopup.gd` | `class_name ConfirmPopup extends CanvasLayer` | Reusable modal confirm (dim + white card + cancel / confirm) |
+| `ConfirmPopup.tscn` + `.gd` | `class_name ConfirmPopup extends CanvasLayer` | Reusable modal confirm (dim + white card + cancel / confirm). **Layout lives in the `.tscn`** — first scene-authored outgame UI |
 | `ManagerTypePopup.gd` | `class_name ManagerTypePopup extends CanvasLayer` | First-lobby manager type pick (운영형 / 실전형), not dismissible (M3); prestige re-pick mode, dismissible (M9) |
 
 ## Tab host (M8~M10) — `docs/outgame_dev_plan.md` §12.6
@@ -52,14 +52,22 @@ theme (`OutgameTheme`), bottom action bar. Replaces the old 3-slot TitleScreen
 - A summary line under the title: manager level · owned pilots · owned traits.
 
 ## ConfirmPopup
+`ConfirmPopup.create()` (instantiates `ConfirmPopup.tscn` — `ConfirmPopup.new()` is an empty layer),
 `open(title, body, cancel_text, confirm_text, danger)`, `close()`, `is_open()`;
-signals `confirmed` / `cancelled`.
-- CanvasLayer 20; full-viewport flat Button as the dim (`DIM_COLOR`, style from
-  `meta/run_setup/DraftDetailPanel.gd`) — blocks input behind and cancels on tap.
-- White card 920 wide, centred between `ScreenMetrics.top_y()` and `bottom_y()` so the
-  buttons stay above the gesture zone; card is `MOUSE_FILTER_STOP` so taps on it don't close it.
-- Buttons ghost cancel / primary confirm at 1:2; `danger=true` paints confirm `NEGATIVE` red.
-- Body area is a fixed 150px (~4 lines) — a wrapped Label measures 0 before it enters the tree.
+signals `confirmed` / `cancelled`. Opening / closing toggles the layer's `visible`; nodes are reused.
+- **The `.tscn` is the source of truth for layout and style** (sizes, colours, gaps, fonts). The script
+  only binds `%Title` · `%Body` · `%Cancel` · `%Confirm` · `%Dim` and never builds nodes — edit the look
+  in the editor, not in code.
+- Tree: CanvasLayer 20 → `Root` (full rect) → `%Dim` (flat Button, cancels on tap) · `DimRect`
+  (`DIM_COLOR`) · `%SafeArea` (CenterContainer) → `Card` (PanelContainer, 920 wide, padding 48,
+  STOP so taps don't close) → `VBox` → `%Title` · `Gap1` · `%Body` (autowrap, min 150 high — grows
+  with longer text) · `Gap2` · `Buttons` (`%Cancel` ghost : `%Confirm` primary = stretch 1 : 2).
+- Code-owned: `%SafeArea` offsets = `ScreenMetrics.top_y()` / `bottom_y()` on every `open()` (card stays
+  above the gesture zone); `danger=true` overrides confirm normal / hover / pressed with
+  `NEGATIVE` copies (scene styleboxes are shared between instances — never mutate them) and mutes
+  its auto haptics (the caller plays ERROR).
+- Styleboxes are copies of `OutgameTheme` ghost / primary / card values embedded in the scene;
+  if the palette changes, update them here too.
 
 ## ManagerTypePopup (M3)
 Plan `docs/outgame_dev_plan.md` §11.0: the manager type is chosen **once, on the first lobby of a

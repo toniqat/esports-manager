@@ -109,7 +109,7 @@ func _build() -> void:
 	_toast_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_toast_lbl.clip_text = true
 
-	_confirm = ConfirmPopup.new()
+	_confirm = ConfirmPopup.create()
 	add_child(_confirm)
 	_confirm.confirmed.connect(_on_confirmed)
 

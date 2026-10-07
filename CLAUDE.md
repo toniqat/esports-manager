@@ -88,6 +88,7 @@ Read the README of every row your task touches. Indented rows are submodules —
 | `mobile_safe_area.md` | Placing / moving any UI |
 | `ios_testbuild.md` | iOS CI build, `.ipa` download |
 | `run_balance.md` | Score / currency / EXP formula derivation (run sim) |
+| `ui_scene_migration.md` | Moving code-built UI to `.tscn` (WYSIWYG editing, `editor_description` TODO marks) — status, procedure, task list |
 
 ---
 

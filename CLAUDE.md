@@ -104,6 +104,12 @@ Read the README of every row your task touches. Indented rows are submodules —
 - **Naming (lint-driven)**: `_foo` = used only inside its script; anything read from another script,
   `@export` vars, signal payloads = no underscore. Exceptions: `_bs`, `_on_*` handlers. Locals must not
   shadow `Node` / `Control` properties (`visible`, `position`, `name`, `owner`). Fix the cause — no `@warning_ignore`.
+- **Outgame UI lives in `.tscn`** (migration in progress — `docs/ui_scene_migration.md` §3):
+  layout / style are owned by the scene; the script only binds `%UniqueName` nodes, fills data,
+  connects signals; scenes are built with `Xxx.create()`, not `.new()`. **A node missing from a scene
+  was deleted on purpose — never re-create it in code** (drop its binding too). Empty nodes with
+  `editor_description = "TODO: …"` mark work to implement at that spot / size
+  (`grep -rn 'editor_description = "TODO' --include=*.tscn`). `_draw` widgets stay code, placed as nodes.
 - **Dev setup per PC**: `.mcp.json` pins `godot-mcp` to `addons/godot_mcp/plugin.cfg`'s version (bump both);
   copy `.vscode/settings.example.json` → `settings.json` and set the local Godot path.
 

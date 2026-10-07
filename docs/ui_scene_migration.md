@@ -101,7 +101,7 @@ ConfirmPopup (CanvasLayer 20, visible=false)
    그 노드의 위치 · 크기를 그대로 쓴다. 구현이 끝나면 TODO 문구를 지운다.
 6. 기기별로 달라지는 값(세이프 에어리어 인셋)만 코드가 넣는다 — 오프셋으로, 위치 계산이 아니라.
 
-이 규칙들은 아직 **루트 `CLAUDE.md` 의 Critical patterns 에 반영되지 않았다** (§6 T2).
+이 규칙들의 요약은 루트 `CLAUDE.md` Critical patterns 의 "Outgame UI lives in `.tscn`" 항목에 있다.
 
 ---
 
@@ -164,7 +164,7 @@ ConfirmPopup (CanvasLayer 20, visible=false)
       `Card` · `TitleLabel` · `BodyLabel` 등을 정의. 값은 `OutgameTheme.gd` 상수와 일치시키고,
       가능하면 `.gd` 상수 → `.tres` 를 생성하는 에디터 툴로 단일 출처 유지. `ConfirmPopup.tscn` 의
       임베드 스타일박스를 variation 으로 교체. (이후 화면은 "버튼 놓고 variation 고르기"로 끝남)
-- [ ] **T2 규칙 문서화** — 루트 `CLAUDE.md` Critical patterns 에 §3 규칙 1·4·5 요약 + 이 문서 포인터.
+- [x] **T2 규칙 문서화** — 루트 `CLAUDE.md` Critical patterns 에 §3 규칙 1·4·5 요약 + 이 문서 포인터.
 - [ ] **T3** §4 #2 ~ #6 팝업 · 시트 전환.
 - [ ] **T4 (선택) 런타임 덤프 툴** — 큰 화면(HubView, BanPick)용 초안 생성기:
       실행 중 트리의 `owner` 를 루트로 설정 → `PackedScene.pack()` → `ResourceSaver.save()`.
@@ -185,7 +185,7 @@ ConfirmPopup (CanvasLayer 20, visible=false)
 |---|---|---|---|
 | 0 | T0 ConfirmPopup 커밋 | 오케스트레이터 | ✅ |
 | 1 | T1 공용 Theme 리소스 (+ ConfirmPopup 임베드 스타일 → variation) | 에이전트 A | ⏳ |
-| 1 | T2 규칙 문서화 (루트 `CLAUDE.md`) | 오케스트레이터 | ⏳ |
+| 1 | T2 규칙 문서화 (루트 `CLAUDE.md`) | 오케스트레이터 | ✅ |
 | 1 | T4 런타임 덤프 툴 | 에이전트 B | ⏳ |
 | 2 | T3 #2 `ManagerTypePopup` | 에이전트 | ⬜ (웨이브 1 머지 후) |
 | 2 | T3 #3 `ShopPopup` | 에이전트 | ⬜ |

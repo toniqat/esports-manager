@@ -366,7 +366,7 @@ func _setup_cheats() -> void:
 		return
 	if not gm.season_state.get("active", false) or gm.season_state.get("pending_match", null) == null:
 		return
-	_cheat_menu = MatchCheatMenu.new()
+	_cheat_menu = MatchCheatMenu.create()
 	_cheat_menu.name = "MatchCheatMenu"
 	add_child(_cheat_menu)
 	_refresh_cheats()

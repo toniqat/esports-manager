@@ -48,7 +48,7 @@ The two detail popups opened by the assignment step are sibling files of the con
 
 | File | Purpose |
 |---|---|
-| `ban_pick/MechDetailPanel.gd` | `class_name MechDetailPanel extends CanvasLayer` — mech detail (left full-body art / right 3 stat chips → passive → mech card grid / bottom close) |
+| `ban_pick/MechDetailPanel.gd` · `.tscn` | `class_name MechDetailPanel extends CanvasLayer` — mech detail (left full-body art / right 3 stat chips → passive → mech card grid / bottom close). Scene-owned layout, `MechDetailPanel.create()` once then `open(m, mastery_rows, quirk_info)` — `ban_pick/README.md` "MechDetailPanel" |
 | `meta/run_setup/DraftDetailPanel.gd` | Pilot detail — **reuses the very same popup as the draft screen** (`DraftDetailPanel.create()` once, then `open(p: PlayerData)` is all it takes to open) |
 
 Unlike the other two, `BanPickController.enter()` **also receives the rosters and team names** —
@@ -261,11 +261,11 @@ resume path restores the saved `player_side` as is, so it is unaffected by this 
 | File | Purpose |
 |---|---|
 | `MatchFlow.gd` | State machine orchestrator |
-| `match_prep/MatchPrepController.gd` | Pre-match scouting sheet (analysis reveal) |
+| `match_prep/MatchPrepController.gd` · `MatchPrepView.gd/.tscn` | Pre-match scouting sheet (analysis reveal) — controller + scene-owned screen |
 | `match_prep/OpponentIntel.gd` · `IntelView.gd` | Reveal rule builder + its drawer, shared with the league team detail — `match_prep/README.md` |
 | `ban_pick/BanPickController.gd` | Ban/Pick + mech assignment — both teams' portraits + mech grid + bottom detail sheet + drag assignment |
-| `ban_pick/MechDetailPanel.gd` | Mech detail popup for the assignment step |
-| `MatchCheatMenu.gd` | Editor-only cheat menu (top left) — see "Cheat menu" below |
+| `ban_pick/MechDetailPanel.gd/.tscn` (+ `MechMasteryRow` · `MechQuirkRow` · `MechCardCell` item scenes) | Mech detail popup for the assignment step |
+| `MatchCheatMenu.gd/.tscn` · `MatchCheatItem.tscn` | Editor-only cheat menu (top left) — see "Cheat menu" below |
 
 ---
 
@@ -274,6 +274,11 @@ For run testing. `MatchFlow._setup_cheats()` creates a `MatchCheatMenu` (`Canvas
 above the detail popups, below `SceneFade`) **only when `OS.has_feature("editor")` and the match came
 from a season (`pending_match` exists)** — exported builds and standalone MatchFlow never see it.
 
+- Created with `MatchCheatMenu.create()`. **Layout is owned by `MatchCheatMenu.tscn`**: `Root` (theme) →
+  `%Menu` (VBox, 16px from the safe corner — code adds the left / top insets) → `%Toggle`
+  (`DarkButton`, 150×64, 24pt, α 0.85) + `%List` (VBox, gap 10) of `MatchCheatItem.tscn`
+  (`GhostButton`, 300×72, 26pt). The two items saved in `%List` are editor previews; `set_actions`
+  clears them.
 - A `CHEAT` button sits at the top left of the safe area; tapping it unfolds the cheat buttons below.
 - The menu doesn't know what to offer — `MatchFlow._refresh_cheats()` swaps the list on every
   `_enter_phase` (`set_actions([{label, call}])`; an empty list hides the menu). Add cheats for
@@ -326,7 +331,7 @@ replays the battle from scratch with the same locked-in picks.
 
 ## Screen fit (safe area)
 
-Both controllers (PREP / BAN_PICK) stand one full-screen `Panel` under `_mf.canvas` and draw on it in
+`BanPickController` stands one full-screen `Panel` under `_mf.canvas` and draws on it in
 absolute coordinates. Right after creating `_panel`, two lines follow.
 
 ```gdscript
@@ -340,9 +345,12 @@ moves the inner coordinate system too, putting the content back under the notch)
 season views' `extend_background()`, it uses `backfill_top()`, which lays one strip as the panel's
 **first child**.
 
+**PREP is the exception** — `MatchPrepView.tscn` is scene-based: its `Paper` covers the whole viewport
+(no backfill needed) and only its `%Safe` child is offset by the insets in code; the bottom-anchored
+`%Start` bar extends into the bottom inset (`match_prep/README.md`).
+
 Inside the pushed-down panel, bottom buttons are based on `ScreenMetrics.safe_h()` —
-`MatchPrepController` uses the outgame bottom bar (`OutgameTheme.add_bottom_bar`, top =
-`bottom_bar_top()` = `safe_h() - BOTTOM_BAR_H`) and ends its scroll above it. `BanPickController` derives **the whole block**, not
+`BanPickController` derives **the whole block**, not
 a button, back from `safe_h()` (`_lay["bot_block_y"]` / `_lay["assign_block_y"]`), and the pick pane
 height comes from the strip left after the top and bottom blocks — so on any screen the grid cells
 stay square and only the number of visible rows changes.

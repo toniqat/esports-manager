@@ -81,14 +81,14 @@ Reads all state from `_bs` (the BattleSim parent).
    (`_draw_jungle_start_path`, gold up to the start cell + sky blue for the 6 turns after arrival, a number pill on each cell where a turn ends — only the number of the cell the marker sits on is drawn after the marker by `_draw_jungle_start_marker_badge` as a badge at the bottom right of the face) is laid
    under the marker. During that window the allied (아군) jungler is drawn **at the position the overlay decides**
    (`JungleStartOverlay.marker_pos` — under the finger / chosen cell / HQ slot) **with no
-   tail** (`_draw_pilot_cell`). In the same
+   tail** (`_draw_pilot_tail` returns early). In the same
    window **only the jungler's battlefield portrait remains**
    (`_hidden_during_jungle_pick` — the other nine are still crowded at their HQs, and faces bunched
    into two clumps would only hide jungle ownership · camps · the dim). Seat assignment
    (`_solve_slots`) reads the same list, so hidden people don't take a slot.
 1. `_draw_hq_hp_bars()` — green HP bar under each HQ once any T2 in their team is destroyed
 2. `_draw_turret_hp_bars()` — yellow HP bar above each living turret (T2 hidden while own-lane T1 alive). While being hit it shakes along by `BattleSim.turret_hit_offset(td)` — the turret sprite (`Building` node) isn't drawn by the renderer but shaken directly by BattleSim, so if only the bar stayed put the two would drift apart.
-3. Per-cell pilot rendering via `_draw_pilot_cell()` — pilots render OUTSIDE the tile, on a hex ring of 6 slots around it, with a team-coloured triangle behind them whose apex points to the tile centre (speech-bubble tail). **Seats are not solved here** — `_build_pilot_render_layout()` at the top of `_draw()` assigns the whole battlefield at once, and the dim overlay · hit testing · FX coordinates all read the same table
+3. Pilot rendering via `_draw_pilot_groups()` — pilots render OUTSIDE the tile, on a hex ring of 6 slots around it, with a team-coloured triangle behind them whose apex points to the tile centre (speech-bubble tail). **Three battlefield-wide passes: shadows → tails (`_draw_pilot_tail`) → portraits (`_draw_pilot_marker`)** — every tail is under every portrait, whoever it belongs to and wherever it sits. (Drawing tail + portrait per cell let a later cell's tail cover an earlier cell's face.) The lifted portraits (`_top_pilot`, `_pick_top`) lay their tail in the same tail pass, with a tail-only shadow (`ShadowPart.TAIL` = tail minus disc); only their disc shadow (`ShadowPart.DISC`) + portrait come up later. **Seats are not solved here** — `_build_pilot_render_layout()` at the top of `_draw()` assigns the whole battlefield at once, and the dim overlay · hit testing · FX coordinates all read the same table
 4. `_draw_pilot_popups()` — damage number / MISS · growth-point popup floating text, drawn **last** so nothing covers it
 
 The minion / lane-line / minion-progress visualizations were removed alongside
@@ -306,9 +306,10 @@ total lost on the battlefield marker drops as one chip. `clear_popups()` (restar
 ### Pressing a portrait — grows and goes on top (`press_marker` / `release_marker` / `marker_at`)
 Input is `ui/MarkerTouch.gd`. A pressed portrait grows to `PRESS_SCALE` (1.3) over `PRESS_TWEEN_SEC`
 (0.08s) and returns on release. **The top one (`_top_pilot`) stays on top until another portrait is
-pressed** — `_draw_pilot_cell` skips that pilot and `_draw_pilot_groups` redraws it, shadow included,
+pressed** — the portrait pass skips that pilot and `_draw_pilot_groups` redraws it, disc shadow included,
 at the end. So a face that was buried under a neighbouring cell's marker comes up on top, and its
-shadow falls over the neighbour so the stacking reads.
+shadow falls over the neighbour so the stacking reads. Its **tail stays in the shared tail pass** — under
+every other portrait, like everyone's.
 
 The scale affects **drawing only**: `_pilot_draw_scale` = targeting emphasis × press — read by the
 portrait · tail · shadow · `pilot_marker_radius` (hit radius). Layout (`_pilot_spread`) reads only
@@ -497,7 +498,7 @@ tinted the same colour as the tile. The circle art itself is **inscribed** in th
 anti-aliased edge. Its colour takes **the same** tint·alpha as the portrait (death dim / return-to-base
 fade), so the background never stays bright on its own.
 
-**Marker exterior — black disc · outline · pointed tail · shadow.** Behind the portrait's white circle, a **black disc** covering out to the marker's outermost edge (`marker_outer_radius` = portrait + `HP_RING_GAP` + `HP_RING_W` + `MARKER_OUTLINE_W`) is laid first — the tile doesn't show through the gap between portrait and ring, and the disc's outer band becomes the HP ring's thick black outline as-is. The tail (`_arrow_fill_polygon`) is a triangle with a **pointed tip** (width = `ARROW_WIDTH_SCALE` 90% of the old `clamp(radius × 0.9, 10, 18)`), and under it lies a black triangle inflated by the same thickness (`MARKER_OUTLINE_W`) **with sharp corners kept** (`_arrow_outline_polygon`) — the two share axis · length via `_arrow_axis`. An exact miter tip extends without bound as the angle narrows (long tails), so the outline tip sticks out only up to `ARROW_TIP_MITER_MAX` (10px) past the fill tip, and the black rim near the tip thins accordingly. The old round tip (`ARROW_TIP_ROUND` + `_offset_round`'s `JOIN_ROUND`) was deleted. The tail is drawn **before** the disc, so the outline around the circle isn't hidden or broken by the tail. HP 25-unit dividers are `HP_TICK_W` (half the outline). The shadow (`_draw_marker_shadow`) merges the disc + tail outline into one mass with `merge_polygons`, pushes it down by `MARKER_SHADOW_OFFSET`, and paints it translucent black; the shadows of everyone on a cell are laid before the markers. **The edge is soft** — the silhouette is shrunk and inflated with `offset_polygon` into `MARKER_SHADOW_LAYERS` (7) layers between `-MARKER_SHADOW_BLUR/2 … +MARKER_SHADOW_BLUR/2` (16px) and stacked with the same alpha. Inner areas pile up more layers and are darker, fading outward as a gradient, and one layer's alpha is derived as `1 − (1 − a)^(1/N)` so that the sum at the very centre (all layers) equals `MARKER_SHADOW_COLOR.a`. The targeting dim disc uses the same `marker_outer_radius`.
+**Marker exterior — black disc · outline · pointed tail · shadow.** Behind the portrait's white circle, a **black disc** covering out to the marker's outermost edge (`marker_outer_radius` = portrait + `HP_RING_GAP` + `HP_RING_W` + `MARKER_OUTLINE_W`) is laid first — the tile doesn't show through the gap between portrait and ring, and the disc's outer band becomes the HP ring's thick black outline as-is. The tail (`_arrow_fill_polygon`) is a triangle with a **pointed tip** (width = `ARROW_WIDTH_SCALE` 90% of the old `clamp(radius × 0.9, 10, 18)`), and under it lies a black triangle inflated by the same thickness (`MARKER_OUTLINE_W`) **with sharp corners kept** (`_arrow_outline_polygon`) — the two share axis · length via `_arrow_axis`. An exact miter tip extends without bound as the angle narrows (long tails), so the outline tip sticks out only up to `ARROW_TIP_MITER_MAX` (10px) past the fill tip, and the black rim near the tip thins accordingly. The old round tip (`ARROW_TIP_ROUND` + `_offset_round`'s `JOIN_ROUND`) was deleted. The tail is drawn **before** the disc (in fact before every disc — the global tail pass), so the outline around the circle isn't hidden or broken by the tail. HP 25-unit dividers are `HP_TICK_W` (half the outline). The shadow (`_draw_marker_shadow`) merges the disc + tail outline into one mass with `merge_polygons`, pushes it down by `MARKER_SHADOW_OFFSET`, and paints it translucent black; the shadows of everyone on the battlefield are laid before any tail or portrait. **The edge is soft** — the silhouette is shrunk and inflated with `offset_polygon` into `MARKER_SHADOW_LAYERS` (7) layers between `-MARKER_SHADOW_BLUR/2 … +MARKER_SHADOW_BLUR/2` (16px) and stacked with the same alpha. Inner areas pile up more layers and are darker, fading outward as a gradient, and one layer's alpha is derived as `1 − (1 − a)^(1/N)` so that the sum at the very centre (all layers) equals `MARKER_SHADOW_COLOR.a`. The targeting dim disc uses the same `marker_outer_radius`.
 
 **Cell iteration order is plain `Dictionary` order.** It used to defer cells with a lunge (body slam) in
 progress to the very end (`_lunging_cells_last`, **deleted**), because that FX actually moved the
@@ -629,9 +630,9 @@ other valid targets are dimmed too); for PREVIEW, non-participants.
 
 **The pointed-at target's portrait is on top.** At the start of the frame `_draw()` stores
 `CardTargetingOverlay.picked_pilot()` (PILOT's `pending_pick`; for LOCATION, the pilot picked via its
-portrait while it stands on that cell) in `_pick_top`; that portrait is skipped by the cell pass
-(`_draw_pilot_cell`) and the `_top_pilot` redraw, and `_draw_pending_pick_highlight` redraws it, shadow
-included, **after the pilot dim discs** (the cyan ring above it, the LOCATION cell outline below it).
+portrait while it stands on that cell) in `_pick_top`; that portrait is skipped by the portrait pass
+and the `_top_pilot` redraw, and `_draw_pending_pick_highlight` redraws it, disc shadow
+included (its tail stays in the shared tail pass), **after the pilot dim discs** (the cyan ring above it, the LOCATION cell outline below it).
 Neither a neighbouring cell's portrait nor its dim disc covers the target's face. **The caster
 (`card_caster`) is never dimmed in any mode** — the dim means "you can't drop here", which doesn't apply
 to the one firing the card. **But it isn't emphasised either**: the caster grows only when it is itself

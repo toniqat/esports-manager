@@ -928,16 +928,32 @@ func _draw_pilot_groups() -> void:
 	# 오버플로가 없다), 그 위에 숫자를 하나 더 얹으면 칸 한가운데를 차지해
 	# 캠프 아웃라인 · 점령 면 색과 자리를 다퉜다. `_draw_cell_badge` 는 그때
 	# 함께 사라졌다.
+	#
+	# **전장 전체를 세 겹으로 깐다 — 그림자 → 꼬리(화살표) → 초상.** 칸마다
+	# 꼬리 + 초상을 한 번에 그리면 나중에 그린 칸의 꼬리가 먼저 그린 칸의 얼굴을
+	# 덮었다. 꼬리는 어느 자리에 앉은 누구의 것이든 **모든 초상 밑**이다.
+	# 맨 위 초상(`_top_pilot`)과 대상 지정 중 가리킨 초상(`_pick_top`)도 꼬리는
+	# 여기서 함께 깔리고, 원판 그림자 + 초상만 나중에(맨 끝 / 딤 위) 올라온다.
+	var radius: float = PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE
+	var all: Array = []
 	for pos in by_cell.keys():
-		var pv := pos as Vector2i
-		_draw_pilot_cell(pv, by_cell[pv] as Array)
-	# **맨 위 초상**(마지막으로 누른 것)은 칸 순회에서 빠져 있다가 맨 끝에
-	# 그림자째 다시 그려진다 — 이웃 칸 마커에 가려져 있던 얼굴이 위로 올라온다.
+		all.append_array(by_cell[pos] as Array)
+	for raw in all:
+		var p := raw as PilotData
+		var lifted: bool = p == _top_pilot or p == _pick_top
+		_draw_marker_shadow(p, radius,
+				ShadowPart.TAIL if lifted else ShadowPart.FULL)
+	for raw in all:
+		_draw_pilot_tail(raw as PilotData, radius)
+	for raw in all:
+		if raw != _top_pilot and raw != _pick_top:
+			_draw_pilot_marker(raw as PilotData, radius)
+	# **맨 위 초상**(마지막으로 누른 것)은 맨 끝에 원판 그림자째 다시 그려진다 —
+	# 이웃 칸 마커에 가려져 있던 얼굴이 위로 올라온다(꼬리는 위에서 이미 깔렸다).
 	var top := _top_pilot
 	if top != null and top != _pick_top and _is_renderable(top) \
 			and not _hidden_during_jungle_pick(top):
-		var radius: float = PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE
-		_draw_marker_shadow(top, radius)
+		_draw_marker_shadow(top, radius, ShadowPart.DISC)
 		_draw_pilot_marker(top, radius)
 
 
@@ -1893,34 +1909,20 @@ func _clamp_group_on_screen(positions: Array, draw_r: float) -> Array:
 	return out
 
 
-# 한 칸의 파일럿 전원(양 팀)을 그린다. **자리는 여기서 풀지 않는다** —
-# `_draw()` 가 프레임 앞머리에 `_build_pilot_render_layout()` 으로 이미 배정해
-# 두었고, 딤 오버레이와 히트 테스트도 같은 표를 읽는다.
-func _draw_pilot_cell(_cell: Vector2i, pilots: Array) -> void:
-	var radius: float = PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE
-	# **그림자는 한 칸 전원을 먼저 깐다** — 마커마다 바로 밑에 깔면 나중에 그린
-	# 사람의 그림자가 먼저 그린 사람의 초상 위로 떨어진다.
-	# 맨 위 초상(`_top_pilot`)은 여기서 빠지고 `_draw_pilot_groups` 끝에서 그려진다.
-	# 대상 지정 중 가리킨 초상(`_pick_top`)은 딤 위에서 따로 그려진다.
-	for raw in pilots:
-		if raw != _top_pilot and raw != _pick_top:
-			_draw_marker_shadow(raw as PilotData, radius)
-	for raw in pilots:
-		if raw != _top_pilot and raw != _pick_top:
-			_draw_pilot_marker(raw as PilotData, radius)
-
-
-# 파일럿 한 명의 마커 — 꼬리 · 초상 · HP 링, 그리고 그 위의 HP 조각.
-func _draw_pilot_marker(pilot: PilotData, radius: float) -> void:
+# 마커 색 — 쓰러진 파일럿은 팀 색까지 함께 죽여 딤드로 읽히게 한다. 초상 자체의
+# 딤은 _draw_pilot_circle 이 같은 배율로 건다.
+func _marker_color(pilot: PilotData) -> Color:
 	var team_color: Color = TEAM_RING_COLORS[1 if pilot.team == 1 else 0]
+	if pilot.anim_death_phase != 0:
+		return team_color * _bs.ANIM_DEATH_TINT
+	return team_color
+
+
+# 파일럿 한 명의 말풍선 꼬리(화살표). 초상과 따로 그리는 이유는
+# `_draw_pilot_groups` — 전장의 모든 꼬리가 모든 초상보다 먼저 깔린다.
+func _draw_pilot_tail(pilot: PilotData, radius: float) -> void:
 	var anim_off := _pilot_anim_offset(pilot)
 	var pos := _pilot_marker_pos(pilot) + anim_off
-	var alpha := _pilot_anim_alpha(pilot)
-	# 쓰러진 파일럿은 팀 색까지 함께 죽여 딤드로 읽히게 한다. 초상 자체의
-	# 딤은 _draw_pilot_circle 이 같은 배율로 건다.
-	var marker_color: Color = team_color
-	if pilot.anim_death_phase != 0:
-		marker_color = team_color * _bs.ANIM_DEATH_TINT
 	# 화살표 배율은 **그 파일럿 자신의** 강조다(무리 전체가 아니라):
 	# 한 무리 안에 강조 대상과 아닌 사람이 섞이면 초상 크기가 서로
 	# 다르고, 화살표는 자기 초상 바깥에서 시작해야 한다.
@@ -1932,14 +1934,26 @@ func _draw_pilot_marker(pilot: PilotData, radius: float) -> void:
 	# 말풍선 꼬리도 없다.
 	var jp: JungleStartOverlay = _bs.jungle_pick
 	if jp != null and jp.is_active() and pilot == jp.jungler():
-		_draw_pilot_circle(pilot, jp.marker_pos(pos), radius, marker_color, alpha)
 		return
 	# **연출 오프셋(복귀 · 전사 상승, 피격 흔들림)은 끝점에도 똑같이 얹는다.**
 	# 초상만 떠오르고 끝점이 타일에 남으면 꼬리가 상승 거리만큼 늘어났다 —
 	# 화살표는 초상에 붙은 채 통째로 따라가고, 타일을 다시 겨누는 것은
 	# 턴 이동(글라이드)뿐이다.
 	_draw_arrow_to_tile(pos, _marker_center(pilot) + anim_off,
-			radius, marker_color, alpha, _pilot_draw_scale(pilot))
+			radius, _marker_color(pilot), _pilot_anim_alpha(pilot),
+			_pilot_draw_scale(pilot))
+
+
+# 파일럿 한 명의 마커 본체 — 초상 · HP 링, 그리고 그 위의 HP 조각.
+# 꼬리는 `_draw_pilot_tail` 이 먼저 깔아 둔다.
+func _draw_pilot_marker(pilot: PilotData, radius: float) -> void:
+	var pos := _pilot_marker_pos(pilot) + _pilot_anim_offset(pilot)
+	var alpha := _pilot_anim_alpha(pilot)
+	var marker_color := _marker_color(pilot)
+	var jp: JungleStartOverlay = _bs.jungle_pick
+	if jp != null and jp.is_active() and pilot == jp.jungler():
+		_draw_pilot_circle(pilot, jp.marker_pos(pos), radius, marker_color, alpha)
+		return
 	_draw_pilot_circle(pilot, pos, radius, marker_color, alpha)
 	_draw_hp_chips(pilot, pos, radius * _pilot_draw_scale(pilot), marker_color, alpha)
 
@@ -1962,13 +1976,19 @@ func _draw_hp_chips(pilot: PilotData, pos: Vector2, draw_radius: float,
 const MARKER_SHADOW_BLUR: float = 16.0
 const MARKER_SHADOW_LAYERS: int = 7
 
+## 그림자의 어느 부분을 까는가. 위로 올라오는 초상(맨 위 · 대상 지정)은 꼬리가
+## 다른 초상 밑에 깔리므로 그림자도 둘로 나눈다 — 꼬리 몫(TAIL, 원판과 겹치는
+## 밑동은 뺀다)은 꼬리 패스 앞에서, 원판 몫(DISC)은 초상과 함께 위에서.
+enum ShadowPart { FULL, TAIL, DISC }
+
 
 # 초상 + 화살표 실루엣을 합친 한 덩어리를 아래로 밀어 반투명 검정으로 깐다.
 # 둘을 따로 깔면 겹친 부분만 두 배로 진해지므로 `merge_polygons` 로 합친다.
 # 자리 · 연출 오프셋 · 꼬리 끝점은 `_draw_pilot_marker` 의 본 그리기와 같은 식이다.
 # 가장자리는 `MARKER_SHADOW_LAYERS` 겹으로 흐린다 — 한가운데가 겹 전부가 쌓인
 # 자리라 그 합이 `MARKER_SHADOW_COLOR.a` 가 되도록 겹 하나의 알파를 역산한다.
-func _draw_marker_shadow(pilot: PilotData, radius: float) -> void:
+func _draw_marker_shadow(pilot: PilotData, radius: float,
+		part: ShadowPart = ShadowPart.FULL) -> void:
 	var anim_off := _pilot_anim_offset(pilot)
 	var pos := _pilot_marker_pos(pilot) + anim_off
 	var alpha := _pilot_anim_alpha(pilot)
@@ -1981,8 +2001,12 @@ func _draw_marker_shadow(pilot: PilotData, radius: float) -> void:
 		arrow = _arrow_outline_polygon(pos, _marker_center(pilot) + anim_off, radius, em)
 	var disc := _circle_polygon(pos, marker_outer_radius(radius * em), 40)
 	var shapes: Array = [disc]
-	if not arrow.is_empty():
-		shapes = Geometry2D.merge_polygons(disc, arrow)
+	match part:
+		ShadowPart.TAIL:
+			shapes = [] if arrow.is_empty() else Geometry2D.clip_polygons(arrow, disc)
+		ShadowPart.FULL:
+			if not arrow.is_empty():
+				shapes = Geometry2D.merge_polygons(disc, arrow)
 	var disc_cw: bool = Geometry2D.is_polygon_clockwise(disc)
 	var core_a: float = MARKER_SHADOW_COLOR.a * alpha
 	var layer_a: float = 1.0 - pow(1.0 - core_a, 1.0 / float(MARKER_SHADOW_LAYERS))
@@ -2142,7 +2166,7 @@ func _draw_pending_pick_highlight() -> void:
 				Color(0.30, 0.95, 1.0, 0.95), 5.0, true)
 	if _pick_top != null and not _hidden_during_jungle_pick(_pick_top):
 		var base_r: float = PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE
-		_draw_marker_shadow(_pick_top, base_r)
+		_draw_marker_shadow(_pick_top, base_r, ShadowPart.DISC)
 		_draw_pilot_marker(_pick_top, base_r)
 	if to.mode == CardTargetingOverlay.Mode.PILOT:
 		var picked := to.pending_pick as PilotData

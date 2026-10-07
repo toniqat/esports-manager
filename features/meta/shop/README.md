@@ -12,7 +12,32 @@ free weekly pass. Contract: `docs/outgame_dev_plan.md` §12 (row E). Tab contrac
 | `PassSystem.gd` | `class_name PassSystem extends RefCounted` (static) | Weekly pass rules over the profile dict: ISO-week reset (device clock, local time), exp → level, overflow → outgame currency, `pass_rewards.csv`, `claim` / `claim_all` |
 | `ShopTab.gd` | `class_name ShopTab extends Control` | 상점 tab — segmented control (선수 영입 · 특성 연구 · 파편 상점 · 특성 제작 · 교환소), no action bar |
 | `PassTab.gd` | `class_name PassTab extends Control` | 패스 tab — header (week · reset countdown · level · exp bar) + 25 reward rows, action bar `모두 수령` |
-| `ShopPopup.gd` | `class_name ShopPopup extends CanvasLayer` | Modal for both tabs: gacha / purchase **reveal** cards and the **rates** table. Also owns `rarity_color` (delegates to `TraitUi.rarity_color` — one rarity palette for both pools), `currency_label` (`CURRENCY_LABELS`), `wrap_label` |
+| `ShopPopup.gd` · `ShopPopup.tscn` | `class_name ShopPopup extends CanvasLayer` | Modal for both tabs: gacha / purchase **reveal** cards and the **rates** table — see **ShopPopup scene** below. Also owns `rarity_color` (delegates to `TraitUi.rarity_color` — one rarity palette for both pools), `currency_label` (`CURRENCY_LABELS`), `wrap_label` |
+| `ShopRevealItem.gd` · `ShopRevealItem.tscn` | `class_name ShopRevealItem extends Panel` | One reveal card (168 × 300 tile) — `show_result(e)` fills it and paints the rarity / result colours |
+| `ShopRateRow.tscn` | *(no script)* | One rates-table row (divider · rarity chip · % · count · per-item %), filled by `ShopPopup.open_rates` |
+
+## ShopPopup scene
+Layout is authored in the `.tscn` files (`docs/ui_scene_migration.md`); scripts only bind `%` nodes.
+Create with `ShopPopup.create()` (`ShopPopup.new()` is an empty layer). Open / close toggles `visible`;
+the nodes are reused, items from the previous open are removed and re-instanced.
+```
+ShopPopup (CanvasLayer 20, visible=false)
+└ Root (full rect, theme = OutgameTheme.tres)
+  ├ %Dim        flat Button — tap outside the card = close
+  ├ DimRect     Panel `DimPanel`
+  └ %SafeArea   CenterContainer — top / bottom offsets = safe area (code)
+    └ Card      PanelContainer `PopupCard`, min width 980 (STOP)
+      └ Pad     MarginContainer −8 → padding 40 (PopupCard's 48 is too wide for 5 result cards)
+        └ VBox  ─ %Title `TitleLabel` · Gap · %Grid · %Rates · Gap · %Ok `PrimaryButton`
+                  %Grid  GridContainer (14 / 14), ShopRevealItem × n, columns = min(n, 5)
+                  %Rates VBox ─ Head (4 `CaptionLabel` columns) · %RateRows (ShopRateRow × rarity)
+                                · Gap · %Note `CaptionLabel` (wrap) · Tail
+```
+- **Scene owns**: sizes, gaps, column widths (270 · 225 · 207 · 198), fonts, card / button / dim styles
+  (theme variations), item tile layout.
+- **Code owns**: texts, grid column count, instancing items, the safe-area offsets, and every
+  **data-driven colour** — reveal card border + band (rarity), trait mark (`POSITIVE` / `NEGATIVE`),
+  result tag chip (NEW / 돌파 / 파편 / 재료), rates chip (rarity), white on-fill text on those fills.
 
 ## Gacha rules (`Gacha`)
 - Pools `pilot` / `trait`. Rarity is rolled by the pool's `gacha_rates.csv` weights

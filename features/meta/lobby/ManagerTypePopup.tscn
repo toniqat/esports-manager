@@ -39,8 +39,9 @@ grow_vertical = 2
 mouse_filter = 2
 theme_type_variation = &"DimPanel"
 
-[node name="SafeArea" type="CenterContainer" parent="Root"]
+[node name="SafeArea" type="Control" parent="Root"]
 unique_name_in_owner = true
+editor_description = "Full rect shrunk to the device safe area (offset_top = top inset, offset_bottom = -bottom inset — ManagerTypePopup._fit_safe_area)."
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -49,28 +50,42 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="Card" type="PanelContainer" parent="Root/SafeArea"]
+[node name="Center" type="CenterContainer" parent="Root/SafeArea"]
+unique_name_in_owner = true
+editor_description = "Safe area minus 40 top / bottom. Card is centred here; its max height = this box (ManagerTypePopup._fit_body caps %Scroll so the card never outgrows it)."
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 40.0
+offset_bottom = -40.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Card" type="PanelContainer" parent="Root/SafeArea/Center"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(920, 0)
 layout_mode = 2
 theme_type_variation = &"PopupCard"
 
-[node name="VBox" type="VBoxContainer" parent="Root/SafeArea/Card"]
+[node name="VBox" type="VBoxContainer" parent="Root/SafeArea/Center/Card"]
 layout_mode = 2
 theme_override_constants/separation = 0
 
-[node name="Title" type="Label" parent="Root/SafeArea/Card/VBox"]
+[node name="Title" type="Label" parent="Root/SafeArea/Center/Card/VBox"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 theme_type_variation = &"TitleLabel"
 text = "감독 유형 선택"
 
-[node name="Gap1" type="Control" parent="Root/SafeArea/Card/VBox"]
+[node name="Gap1" type="Control" parent="Root/SafeArea/Center/Card/VBox"]
 custom_minimum_size = Vector2(0, 12)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Sub" type="Label" parent="Root/SafeArea/Card/VBox"]
+[node name="Sub" type="Label" parent="Root/SafeArea/Center/Card/VBox"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 66)
 layout_mode = 2
@@ -78,41 +93,54 @@ theme_type_variation = &"CaptionLabel"
 text = "첫 런을 시작하기 전에 감독 유형을 고르세요. 스태프가 없는 영역은 감독 스탯으로 운영합니다."
 autowrap_mode = 3
 
-[node name="Note" type="Label" parent="Root/SafeArea/Card/VBox"]
+[node name="Note" type="Label" parent="Root/SafeArea/Center/Card/VBox"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 theme_type_variation = &"AccentLabel"
 text = "이후 변경은 프레스티지로만 가능합니다."
 
-[node name="Gap2" type="Control" parent="Root/SafeArea/Card/VBox"]
+[node name="Gap2" type="Control" parent="Root/SafeArea/Center/Card/VBox"]
 custom_minimum_size = Vector2(0, 24)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Options" type="VBoxContainer" parent="Root/SafeArea/Card/VBox"]
+[node name="Scroll" type="ScrollContainer" parent="Root/SafeArea/Center/Card/VBox"]
+unique_name_in_owner = true
+editor_description = "Scrolls only the option list. Height = list height while the card fits Center, else capped (ManagerTypePopup._fit_body). Title / texts / buttons stay fixed."
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Body" type="VBoxContainer" parent="Root/SafeArea/Center/Card/VBox/Scroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Options" type="VBoxContainer" parent="Root/SafeArea/Center/Card/VBox/Scroll/Body"]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 20
 
-[node name="Option0" parent="Root/SafeArea/Card/VBox/Options" instance=ExtResource("3_option")]
+[node name="Option0" parent="Root/SafeArea/Center/Card/VBox/Scroll/Body/Options" instance=ExtResource("3_option")]
 layout_mode = 2
 
-[node name="Option1" parent="Root/SafeArea/Card/VBox/Options" instance=ExtResource("3_option")]
+[node name="Option1" parent="Root/SafeArea/Center/Card/VBox/Scroll/Body/Options" instance=ExtResource("3_option")]
 layout_mode = 2
 
-[node name="Gap3" type="Control" parent="Root/SafeArea/Card/VBox"]
+[node name="Gap3" type="Control" parent="Root/SafeArea/Center/Card/VBox"]
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Buttons" type="HBoxContainer" parent="Root/SafeArea/Card/VBox"]
+[node name="Buttons" type="HBoxContainer" parent="Root/SafeArea/Center/Card/VBox"]
 custom_minimum_size = Vector2(0, 112)
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Cancel" type="Button" parent="Root/SafeArea/Card/VBox/Buttons"]
+[node name="Cancel" type="Button" parent="Root/SafeArea/Center/Card/VBox/Buttons"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -120,7 +148,7 @@ focus_mode = 0
 theme_type_variation = &"GhostButton"
 text = "취소"
 
-[node name="Confirm" type="Button" parent="Root/SafeArea/Card/VBox/Buttons"]
+[node name="Confirm" type="Button" parent="Root/SafeArea/Center/Card/VBox/Buttons"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3

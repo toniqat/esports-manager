@@ -214,8 +214,8 @@ func switch_tab(id: String) -> void:
 
 func _make_tab(id: String) -> Control:
 	match id:
-		"collection": return CollectionTab.new()
-		"manager":    return ManagerTab.new()
+		"collection": return CollectionTab.create()
+		"manager":    return ManagerTab.create()
 		"shop":       return ShopTab.new()
 		"pass":       return PassTab.new()
 	return HomeTab.new()

@@ -6,7 +6,8 @@ Manager growth and presets between runs. Contract: `docs/outgame_dev_plan.md` §
 | File | Class | Role |
 |---|---|---|
 | `ManagerProgress.gd` | `class_name ManagerProgress extends RefCounted` (static) | Pure rules over the profile dict: levels (`manager_levels.csv`), removal / specialisation points, preset stats + validation, prestige. UI helpers: `level_progress`, `toggle_trait`, `preset_copy` / `store_preset` |
-| `ManagerTab.gd` | `class_name ManagerTab extends Control` | Lobby `감독` tab (header · presets · stats · traits, action bar) |
+| `ManagerTab.tscn` + `.gd` | `class_name ManagerTab extends Control` | Lobby `감독` tab (header · presets · stats · traits, action bar). **Layout lives in the `.tscn`** (style = `OutgameTheme.tres` variations); built with `ManagerTab.create()` (not `.new()`) by `LobbyScreen._make_tab` |
+| `ManagerStatRow.tscn` | — (no script) | Item scene: one 감독 스탯 row (`%Divider`, `%Key`, `%Parts`, `%Final`, `%Remove`, `%Minus` / `%Alloc` / `%Plus`), one per `StaffSystem.STATS`, instanced once in `ManagerTab._ready` |
 | `TraitPickerView.gd` | `class_name TraitPickerView extends Control` | Trait block shared with the run setup `감독` step: bonus gauge, equipped slots, owned / locked trait rows. Draws + emits `trait_pressed(id)` only |
 | `ManagerUi.gd` | `class_name ManagerUi extends RefCounted` (static) | Shared pieces: `add_preset_chips`, read-only `add_stat_cells`, `preset_name`, `signed`, `bonus_color`, `unlock_text` (§12.4 grammar → Korean) |
 
@@ -18,8 +19,31 @@ re-chosen, presets → `kind = "prestige"` (unusable until `reset_preset`), +1 n
 `PRESET_MAX_COUNT`), `PRESTIGE_REWARD_*` currency. Mutators don't save — the screen calls `save_profile()`.
 
 ## Lobby `감독` tab (`ManagerTab`)
-One `OutgameTheme.add_vscroll` body, rebuilt after every change (scroll position kept); every tap
-target inside is a `MOUSE_FILTER_PASS` Button (`docs/mobile_safe_area.md` §5). Top to bottom:
+Scene-authored (`docs/ui_scene_migration.md`); every change refills the same nodes (`_rebuild`), so the
+scroll position stays. Every tap target inside is a `MOUSE_FILTER_PASS` Button
+(`docs/mobile_safe_area.md` §5).
+```
+ManagerTab (Control, theme = OutgameTheme.tres, preview 1080×1568 — host sets position / size)
+└ %Scroll (v-mode Never: no bar, DragScroll drags) ─ DragScroll · %Body (Margin 24 / 24 / 24 / 40)
+  └ Sections (VBox, separation 28)
+    ├ Header (MarginContainer, min h 236) ─ Bg (Panel · Card) + Pad (Margin 28 / 28) ─ Content (anchored):
+    │   %TypeTitle (TitleLabel) · %PrestigeChip/%PrestigeChipText (right) · %Level (AccentLabel 34) ·
+    │   ExpTrack (ProgressTrack, 150 .. −250) ─ %ExpFill · %ExpText · %Prestige (right, 230×72) · %Info (FaintLabel 20)
+    ├ Presets (VBox 0): PresetsTitle (min h 52) · %PresetChips (slot) · %ResetBox (top 16, hidden)
+    │   └ ResetCard (Panel, local red StyleBox, h 120): title · body · %Reset (PrimaryButton 26)
+    ├ Stats (MarginContainer) ─ Bg (Card) + Pad (28 / 0 / 28 / 16) ─ VBox 0:
+    │   Head (h 108): StatsTitle · %RemoveChip · %SpecChip (right) · %Formula │ %StatRows (6 × ManagerStatRow.tscn, h 92)
+    └ %Traits (TraitPickerView node)
+```
+- **Code owns only data**: texts; chip pills (`_paint_chip`: `flat_style(bg, h / 2)` + text colour — data
+  colours); `%ExpFill.anchor_right` = EXP ratio (min width = its height while > 0, hidden at 0); the
+  `%Prestige` button's look (`PrimaryButton` 26 when `can_prestige` passes, else disabled `GhostButton` 24);
+  `%Final` / `%Alloc` variation swaps (`AccentLabel` ↔ `BodyLabel` / `FaintLabel`); disabled states;
+  `%ResetBox` visibility. `ManagerUi.add_preset_chips` and `TraitPickerView.build` stay code-built
+  (shared with run setup) — they get the content width = tab width − `%Body` margins, and code sets
+  the slot / node minimum height to the height they return.
+
+Top to bottom:
 1. **Header card** — `<type> 감독`, `Lv n`, EXP bar inside the level (`level_progress`; "최고 레벨" at
    max), `프레스티지 n회` chip, `프레스티지` button (primary when `can_prestige` passes, otherwise a
    disabled ghost `Lv25 프레스티지`).

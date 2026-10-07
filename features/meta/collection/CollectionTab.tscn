@@ -1,0 +1,260 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" uid="uid://dfublh1oc4ox5" path="res://features/meta/collection/CollectionTab.gd" id="1_tab"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="Script" uid="uid://c26kbfiu51p1a" path="res://resources/DragScroll.gd" id="3_drag"]
+
+[node name="CollectionTab" type="Control"]
+editor_description = "Lobby 컬렉션 tab. LobbyScreen sets this root's position / size to its content rect (below the currency strip, above the tab bar) — the 1080×1696 here is only the editor preview size."
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1080.0
+offset_bottom = 1696.0
+mouse_filter = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_tab")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+[node name="Top" type="MarginContainer" parent="VBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 0
+
+[node name="TopVBox" type="VBoxContainer" parent="VBox/Top"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+[node name="Summary" type="MarginContainer" parent="VBox/Top/TopVBox"]
+custom_minimum_size = Vector2(0, 128)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Bg" type="Panel" parent="VBox/Top/TopVBox/Summary"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"Card"
+
+[node name="Pad" type="MarginContainer" parent="VBox/Top/TopVBox/Summary"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 0
+
+[node name="Content" type="Control" parent="VBox/Top/TopVBox/Summary/Pad"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="OwnedTitle" type="Label" parent="VBox/Top/TopVBox/Summary/Pad/Content"]
+layout_mode = 0
+offset_top = 16.0
+offset_right = 300.0
+offset_bottom = 46.0
+theme_type_variation = &"CaptionLabel"
+text = "보유 선수"
+
+[node name="OwnedCount" type="Label" parent="VBox/Top/TopVBox/Summary/Pad/Content"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_top = 44.0
+offset_right = 300.0
+offset_bottom = 94.0
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 40
+text = "12 / 25"
+
+[node name="OwnedTrack" type="Panel" parent="VBox/Top/TopVBox/Summary/Pad/Content"]
+layout_mode = 0
+offset_top = 100.0
+offset_right = 300.0
+offset_bottom = 110.0
+mouse_filter = 2
+theme_type_variation = &"ProgressTrack"
+
+[node name="OwnedFill" type="Panel" parent="VBox/Top/TopVBox/Summary/Pad/Content/OwnedTrack"]
+unique_name_in_owner = true
+editor_description = "anchor_right = owned / pool size (code)."
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.48
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_type_variation = &"ProgressFill"
+
+[node name="LevelupTitle" type="Label" parent="VBox/Top/TopVBox/Summary/Pad/Content"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -456.0
+offset_top = 16.0
+offset_right = -236.0
+offset_bottom = 46.0
+grow_horizontal = 0
+theme_type_variation = &"CaptionLabel"
+text = "레벨업 재화"
+horizontal_alignment = 2
+
+[node name="Levelup" type="Label" parent="VBox/Top/TopVBox/Summary/Pad/Content"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -456.0
+offset_top = 44.0
+offset_right = -236.0
+offset_bottom = 94.0
+grow_horizontal = 0
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 40
+text = "1234"
+horizontal_alignment = 2
+
+[node name="ShardTitle" type="Label" parent="VBox/Top/TopVBox/Summary/Pad/Content"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -220.0
+offset_top = 16.0
+offset_bottom = 46.0
+grow_horizontal = 0
+theme_type_variation = &"CaptionLabel"
+text = "선수 파편"
+horizontal_alignment = 2
+
+[node name="Shards" type="Label" parent="VBox/Top/TopVBox/Summary/Pad/Content"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -220.0
+offset_top = 44.0
+offset_bottom = 94.0
+grow_horizontal = 0
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 40
+text = "56"
+horizontal_alignment = 2
+
+[node name="Filters" type="HBoxContainer" parent="VBox/Top/TopVBox"]
+unique_name_in_owner = true
+editor_description = "Role filter. Child i = 전체 (i 0) then GameEnums.ROLE_DISPLAY_ORDER[i - 1] — keep the order. The on / off frame is state, painted by code."
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="All" type="Button" parent="VBox/Top/TopVBox/Filters"]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 26
+text = "전체"
+
+[node name="Top" type="Button" parent="VBox/Top/TopVBox/Filters"]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 26
+text = "탑"
+
+[node name="Jungle" type="Button" parent="VBox/Top/TopVBox/Filters"]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 26
+text = "정글"
+
+[node name="Mid" type="Button" parent="VBox/Top/TopVBox/Filters"]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 26
+text = "미드"
+
+[node name="Adc" type="Button" parent="VBox/Top/TopVBox/Filters"]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 26
+text = "원딜"
+
+[node name="Support" type="Button" parent="VBox/Top/TopVBox/Filters"]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 26
+text = "서폿"
+
+[node name="Scroll" type="ScrollContainer" parent="VBox"]
+unique_name_in_owner = true
+editor_description = "Vertical mode Never = no bar (the old code-built tab never showed one); DragScroll drags it."
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 3
+
+[node name="DragScroll" type="Node" parent="VBox/Scroll"]
+script = ExtResource("3_drag")
+
+[node name="Body" type="VBoxContainer" parent="VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
+[node name="LoadError" type="MarginContainer" parent="VBox/Scroll/Body"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 0
+
+[node name="LoadErrorText" type="Label" parent="VBox/Scroll/Body/LoadError"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_colors/font_color = Color(0.878, 0.271, 0.271, 1)
+theme_override_font_sizes/font_size = 24
+text = "선수 데이터를 읽지 못했습니다: <error>"
+
+[node name="GridPad" type="MarginContainer" parent="VBox/Scroll/Body"]
+layout_mode = 2
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 24
+
+[node name="Grid" type="GridContainer" parent="VBox/Scroll/Body/GridPad"]
+unique_name_in_owner = true
+editor_description = "CollectionCell (240×330, code-built Button) per named pilot, added by code in sort order; filtered-out cells are hidden, so the grid closes up without holes."
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 16
+columns = 4

@@ -30,3 +30,9 @@
 
 # UiSceneDump 초안 출력(resources/README.md) — 참고용 초안이라 커밋하지 않는다.
 /_dump/
+
+# 현지화 생성물 중 커밋하지 않는 것(docs/localization_design.md §7.4) — 조회 인덱스 · 검증 보고서,
+# 그리고 Godot 이 strings_*.csv 를 임포트해 만드는 .translation(열 때 · CI --import 때 다시 생긴다).
+/data/l10n/generated/index.json
+/data/l10n/generated/report.md
+/data/l10n/generated/*.translation

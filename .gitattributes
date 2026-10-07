@@ -1,2 +1,5 @@
 # Normalize EOL for all files that Git considers text files.
 * text=auto eol=lf
+
+# l10n 도구 테스트 fixture 는 BOM · CRLF 보존을 바이트 단위로 검사한다 — 정규화하지 않는다.
+addons/l10n_tool/tests/fixtures/** -text

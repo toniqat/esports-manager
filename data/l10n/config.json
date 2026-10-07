@@ -1,0 +1,56 @@
+{
+  "source_locale": "ko",
+  "locales": ["ko", "en"],
+  "fallback_locale": "en",
+  "key_prefix": "tx_",
+  "strict": { "orphans": "warn" },
+  "tokens": {
+    "josa_tags": ["eul", "eun", "i", "wa"],
+    "ref_domains": ["card", "keyword"],
+    "bbcode_tags": ["b", "i", "u", "s", "color", "font_size", "url", "img", "center"]
+  },
+  "scan": {
+    "roots": ["res://"],
+    "include_ext": [".gd", ".tscn", ".tres"],
+    "exclude_dirs": ["res://addons/", "res://data/l10n/", "res://.godot/", "res://build/", "res://ios/", "res://_dump/"],
+    "scene_text_props": ["text", "placeholder_text", "tooltip_text", "title"],
+    "log_funcs": ["print", "printerr", "print_rich", "prints", "printt", "print_debug", "push_warning", "push_error", "assert"],
+    "ignore_paths": [
+      "res://features/battle_sim/debug/",
+      "res://resources/UiSceneDump.gd",
+      "res://resources/UiSceneDumpRunner.gd"
+    ]
+  },
+  "data_columns": [
+    { "csv": "cards.csv", "id": "id", "column": "name_key", "domain": "card", "alias": "card.pilot.{id}.name" },
+    { "csv": "cards.csv", "id": "id", "column": "description_key", "domain": "card", "alias": "card.pilot.{id}.desc" },
+    { "csv": "mech_cards.csv", "id": "id", "column": "name_key", "domain": "card", "alias": "card.mech.{id}.name" },
+    { "csv": "mech_cards.csv", "id": "id", "column": "description_key", "domain": "card", "alias": "card.mech.{id}.desc" },
+    { "csv": "pilot_skills.csv", "id": "id", "column": "name_key", "domain": "pilot_skill", "alias": "pilot_skill.{id}.name" },
+    { "csv": "pilot_skills.csv", "id": "id", "column": "description_key", "domain": "pilot_skill", "alias": "pilot_skill.{id}.desc" },
+    { "csv": "mech_passives.csv", "id": "id", "column": "name_key", "domain": "mech_passive", "alias": "mech_passive.{id}.name" },
+    { "csv": "mech_passives.csv", "id": "id", "column": "description_key", "domain": "mech_passive", "alias": "mech_passive.{id}.desc" },
+    { "csv": "players.csv", "id": "id", "column": "name_key", "domain": "name", "alias": "name.player.{id}" },
+    { "csv": "intl_players.csv", "id": "id", "column": "name_key", "domain": "name", "alias": "name.intl_player.{id}" },
+    { "csv": "teams.csv", "id": "id", "column": "name_key", "domain": "name", "alias": "name.team.{id}.name" },
+    { "csv": "teams.csv", "id": "id", "column": "short_name_key", "domain": "name", "alias": "name.team.{id}.short" },
+    { "csv": "teams.csv", "id": "id", "column": "desc_key", "domain": "team", "alias": "team.{id}.desc" },
+    { "csv": "intl_teams.csv", "id": "id", "column": "name_key", "domain": "name", "alias": "name.intl_team.{id}.name" },
+    { "csv": "intl_teams.csv", "id": "id", "column": "short_name_key", "domain": "name", "alias": "name.intl_team.{id}.short" },
+    { "csv": "mechs.csv", "id": "id", "column": "name_key", "domain": "name", "alias": "name.mech.{id}" },
+    { "csv": "staff.csv", "id": "id", "column": "name_key", "domain": "name", "alias": "name.staff.{id}" },
+    { "csv": "manager_types.csv", "id": "id", "column": "name_key", "domain": "manager", "alias": "manager.type.{id}.name" },
+    { "csv": "manager_types.csv", "id": "id", "column": "desc_key", "domain": "manager", "alias": "manager.type.{id}.desc" },
+    { "csv": "traits.csv", "id": "id", "column": "name_key", "domain": "trait", "alias": "trait.{id}.name" },
+    { "csv": "traits.csv", "id": "id", "column": "desc_key", "domain": "trait", "alias": "trait.{id}.desc" },
+    { "csv": "quirks.csv", "id": "id", "column": "name_key", "domain": "quirk", "alias": "quirk.{id}.name" },
+    { "csv": "quirks.csv", "id": "id", "column": "desc_key", "domain": "quirk", "alias": "quirk.{id}.desc" },
+    { "csv": "finance_specials.csv", "id": "id", "column": "name_key", "domain": "finance", "alias": "finance.special.{id}.name" },
+    { "csv": "finance_specials.csv", "id": "id", "column": "desc_key", "domain": "finance", "alias": "finance.special.{id}.desc" },
+    { "csv": "scenarios.csv", "id": "id", "column": "name_key", "domain": "scenario", "alias": "scenario.{id}.name" },
+    { "csv": "scenarios.csv", "id": "id", "column": "desc_key", "domain": "scenario", "alias": "scenario.{id}.desc" },
+    { "csv": "training_tiles.csv", "id": "id", "column": "name_key", "domain": "training", "alias": "training.tile.{id}.name" },
+    { "csv": "pilot_breakthrough.csv", "id": "id", "column": "desc_key", "domain": "breakthrough", "alias": "breakthrough.{id}.desc" },
+    { "csv": "mental_texts.csv", "id": "id", "column": "text_key", "domain": "mental", "alias": "mental.{event_id}.{id}" }
+  ]
+}

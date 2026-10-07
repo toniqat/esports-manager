@@ -43,7 +43,7 @@ script/search_in_file_extensions=PackedStringArray("gd", "gdshader", "tscn")
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/csv_to_db/plugin.cfg", "res://addons/godot-sqlite/plugin.cfg", "res://addons/godot_mcp/plugin.cfg", "res://addons/ui_scene_tree/plugin.cfg")
+enabled=PackedStringArray("res://addons/csv_to_db/plugin.cfg", "res://addons/godot-sqlite/plugin.cfg", "res://addons/godot_mcp/plugin.cfg", "res://addons/l10n_tool/plugin.cfg", "res://addons/ui_scene_tree/plugin.cfg")
 
 [godot_mcp]
 

@@ -12,8 +12,9 @@ signal tapped(card: Card)
 
 const SCENE_PATH: String = "res://features/match_flow/ban_pick/MechCardCell.tscn"
 
-const BADGE_COLOR := Color(0.92, 0.94, 1.0)
-const BADGE_SPAWN_COLOR := Color(0.62, 0.70, 0.92)
+## 장수 배지 — 흰 모달 위. 덱에 들어가는 카드는 보조 글자색, "생성 전용"은 파랑(정보).
+const BADGE_COLOR := OutgameTheme.TEXT_SUB
+const BADGE_SPAWN_COLOR := OutgameTheme.LINK
 
 
 static func create() -> MechCardCell:

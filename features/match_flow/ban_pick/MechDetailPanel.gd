@@ -23,9 +23,12 @@ extends CanvasLayer
 # 않는다 — `%이름` 노드에 글을 넣고, 데이터마다 개수가 달라지는 줄만 아이템 씬으로
 # 붙인다: 숙련도 줄(`MechMasteryRow.tscn`), 기벽 줄(`MechQuirkRow.tscn`), 메크 카드 칸
 # (`MechCardCell.tscn`), 그리고 카드를 누르면 뜨는 설명판(`CardDescBox.build`).
-# 이 팝업은 **어두운 모달**이라 흰 종이용 공용 테마 변형이 맞지 않는다 — 받침 · 칩 ·
-# 닫기 버튼의 스타일박스와 글자 색은 씬의 로컬 값이다. 코드가 정하는 색은 데이터 색
-# (역할 색, 숙련 등급 색, 기벽 등급 색, 장수 배지 색)뿐이다.
+# 색 · 스타일박스는 `Root` 에 붙은 공용 테마(`resources/OutgameTheme.tres`)의 변형이 정한다 —
+# `DraftDetailPanel` 과 **같은 흰 모달**이다(`DimPanel` · `Card` · `SunkPanel` 스탯 칩 ·
+# `GhostButton` 닫기 · `HeadingLabel` / `SubLabel` / `CaptionLabel` / `BodyLabel` / `AccentLabel`).
+# 배정 단계에서 얼굴과 기체를 번갈아 누르므로 두 팝업이 한 벌로 읽혀야 한다.
+# 코드가 정하는 색은 데이터 색(역할 색, 숙련 등급 색, 기벽 등급 색, 장수 배지 색)뿐이다.
+# 코드가 정하는 자리는 기기 인셋(`%SafeArea` 의 위아래 여백)뿐이다.
 #
 # 쓰는 법:
 #   var d := MechDetailPanel.create()
@@ -35,15 +38,10 @@ extends CanvasLayer
 const SCENE_PATH: String = "res://features/match_flow/ban_pick/MechDetailPanel.tscn"
 
 const ROLE_NAMES: Array = ["TANK", "FIGHTER", "ASSASSIN", "SUPPORT", "SNIPER"]
-const ROLE_COLORS: Array = [
-	Color(0.30, 0.55, 1.00),
-	Color(1.00, 0.55, 0.20),
-	Color(0.75, 0.40, 1.00),
-	Color(0.30, 0.85, 0.45),
-	Color(1.00, 0.35, 0.35),
-]
+## 역할 색은 팔레트가 소유한다(흰 바탕용) — `DraftDetailPanel` 과 같은 표.
+const ROLE_COLORS: Array = OutgameTheme.ROLE_COLORS
 
-## 카드를 누르면 뜨는 설명판의 폭 — 받침(`Backdrop`) 폭과 같다.
+## 카드를 누르면 뜨는 설명판(흰 판, `light`)의 폭 — 받침(`Backdrop`) 폭과 같다.
 const DESC_W: float = 460.0
 
 var _mech: MechData = null
@@ -65,6 +63,7 @@ func _ready() -> void:
 	# 딤은 클릭을 먹어 뒤의 배정판으로 새지 않게 하고, 빈 곳을 누르면 닫힌다.
 	%Dim.pressed.connect(close)
 	%Close.pressed.connect(close)
+	_fit_safe_area()
 	# 손가락 / 마우스로 끌어 굴린다(`DragScroll`).
 	DragScroll.attach(%Scroll)
 
@@ -88,6 +87,15 @@ func open(m: MechData, mastery_rows: Array = [], quirk_info: Dictionary = {}) ->
 	_fill_cards()
 	(%Scroll as ScrollContainer).scroll_vertical = 0
 	visible = true
+
+
+## 기기 인셋 → `%SafeArea` 여백. 받침 위끝은 안전 영역 위에서 씬 값만큼, 받침 아래끝과
+## 닫기 버튼은 안전 영역 아래끝에 붙는다(씬의 앵커) — 노치 밑으로도, 아래 제스처
+## 띠 위로도 들어가지 않는다. 딤과 아트는 화면 전체 기준 그대로다.
+func _fit_safe_area() -> void:
+	var safe: Control = %SafeArea
+	safe.offset_top = ScreenMetrics.top_y()
+	safe.offset_bottom = -OutgameTheme.bottom_inset()
 
 
 func close() -> void:
@@ -118,7 +126,7 @@ func _fill_header() -> void:
 	var sub: Label = %Sub
 	sub.text = String(ROLE_NAMES[r]) if r >= 0 and r < ROLE_NAMES.size() else "?"
 	sub.add_theme_color_override("font_color",
-			ROLE_COLORS[r] if r >= 0 and r < ROLE_COLORS.size() else Color(1, 1, 1))
+			ROLE_COLORS[r] if r >= 0 and r < ROLE_COLORS.size() else OutgameTheme.TEXT)
 
 
 func _fill_stats() -> void:
@@ -193,7 +201,7 @@ func _toggle_card_desc(node: Card) -> void:
 	if same or node == null or not is_instance_valid(node) or node.data == null:
 		return
 	var root: Control = %Root
-	_desc_box = CardDescBox.build(node.data, DESC_W)
+	_desc_box = CardDescBox.build(node.data, DESC_W, true)
 	root.add_child(_desc_box)
 	CardDescBox.place_near(_desc_box, node.get_global_rect(), root.size, true)
 	_desc_node = node

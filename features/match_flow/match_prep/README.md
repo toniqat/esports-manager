@@ -17,11 +17,11 @@ MatchPrepView (Control full rect, OutgameTheme.tres)
   ├ Title "경기 준비" (HeadingLabel 48) · %Matchup (SubLabel)
   ├ %Scroll (40 side margin, top 136, bottom = bar + 12) → Body (VBox)
   │   EnemyHead/%EnemyTitle · %EnemyIntel · Gap · OwnHead/%OwnTitle · %OwnIntel · BottomPad
-  └ %Start (bottom-anchored, 128 high, PrimaryButton)
+  └ %Start (bottom-anchored, 128 high, BarPrimaryButton)
 ```
-- Code-owned: the safe-area offsets, the bottom-bar look (`OutgameTheme.style_bottom_button` — square
-  corners, bottom margin = device inset; `%Start.offset_bottom` = inset so the bar reaches the screen
-  bottom), and the two `*Intel` holders — `IntelView` (shared with the league team detail, absolute
+- Code-owned: the top safe-area offset, the bottom inset via `OutgameTheme.fit_bottom_bar(%Start, %Safe)`
+  (`%Safe` ends at the safe line; the bar reaches the screen bottom with its text kept above the inset —
+  the square corners are the `BarPrimaryButton` variation), and the two `*Intel` holders — `IntelView` (shared with the league team detail, absolute
   coordinates) draws into them and their minimum height is the height it used. Row width =
   scroll width − 16 (`SCROLLBAR_ROOM`).
 - The scroll bar now sits at the scroll's own right edge (inside the 40px margin); the old code-built

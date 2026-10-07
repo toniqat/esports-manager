@@ -2285,7 +2285,7 @@ func _on_pilot_portrait_pressed(side: int, seat: int) -> void:
 	if p == null:
 		return
 	if _pilot_detail == null:
-		_pilot_detail = DraftDetailPanel.new()
+		_pilot_detail = DraftDetailPanel.create()
 		add_child(_pilot_detail)
 	_close_detail_panels()
 	_pilot_detail.open(p)

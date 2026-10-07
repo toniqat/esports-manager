@@ -1,0 +1,43 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://features/meta/run_setup/DraftStatChip.gd" id="1_chip"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="DraftStatChip" type="PanelContainer"]
+custom_minimum_size = Vector2(0, 92)
+size_flags_horizontal = 3
+mouse_filter = 2
+theme = ExtResource("2_theme")
+theme_type_variation = &"SunkPanel"
+script = ExtResource("1_chip")
+
+[node name="Content" type="Control" parent="."]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Key" type="Label" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 10.0
+offset_bottom = 34.0
+grow_horizontal = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 19
+text = "전장 명중"
+horizontal_alignment = 1
+
+[node name="Value" type="Label" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 36.0
+offset_bottom = 80.0
+grow_horizontal = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 34
+text = "85"
+horizontal_alignment = 1
+clip_text = true

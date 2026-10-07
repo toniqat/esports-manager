@@ -115,7 +115,7 @@ ConfirmPopup (CanvasLayer 20, visible=false)
 | 2 | `ManagerTypePopup` | `meta/lobby/` | 팝업 (선택지 반복 → 아이템 씬) | ✅ 전환 (+ `ManagerTypeOption` 아이템 씬), uid 미부여 |
 | 3 | `ShopPopup` | `meta/shop/` | 팝업 | ✅ 전환 (+ `ShopRevealItem` · `ShopRateRow` 아이템 씬), uid 미부여 |
 | 4 | `CollectionDetailSheet` | `meta/collection/` | 시트 | ✅ 전환 (+ `CollectionStatChip` · `CollectionBreakthroughRow` 아이템 씬), uid 미부여 |
-| 5 | `DraftDetailPanel` | `meta/run_setup/` | 모달 | ⬜ |
+| 5 | `DraftDetailPanel` | `meta/run_setup/` | 모달 | ✅ 전환 (+ `DraftStatChip` 아이템 씬), uid 미부여 — **스타일 변경 확인 필요** |
 | 6 | `HubSheet` | `season/` | 시트 (허브 관리 카드 공용 틀) | ✅ 틀만 전환 (본문은 #10), uid 미부여 |
 | 7 | `LobbyScreen` + `HomeTab` · `CollectionTab` · `ManagerTab` · `ShopTab` · `PassTab` | `meta/lobby/` 등 | 화면 / 탭 | ⬜ |
 | 8 | `RunSetupScreen` + `TeamDraftView` · `ManagerStepView` · `ChoiceListView` · `TeamStepView` · `PilotThumb` | `meta/run_setup/` | 화면 | ⬜ |
@@ -165,7 +165,7 @@ ConfirmPopup (CanvasLayer 20, visible=false)
       가능하면 `.gd` 상수 → `.tres` 를 생성하는 에디터 툴로 단일 출처 유지. `ConfirmPopup.tscn` 의
       임베드 스타일박스를 variation 으로 교체. (이후 화면은 "버튼 놓고 variation 고르기"로 끝남)
 - [x] **T2 규칙 문서화** — 루트 `CLAUDE.md` Critical patterns 에 §3 규칙 1·4·5 요약 + 이 문서 포인터.
-- [ ] **T3** §4 #2 ~ #6 팝업 · 시트 전환.
+- [x] **T3** §4 #2 ~ #6 팝업 · 시트 전환 (웨이브 2, §7).
 - [x] **T4 런타임 덤프 툴** (완료 — `resources/UiSceneDump.gd` + `UiSceneDumpRunner.gd`, 사용법은 `resources/README.md`. Lobby · HubView · BanPick 초안이 실화면과 픽셀 동일. `--shot` 은 §5-4 렌더 검증 하네스로도 쓸 수 있다) — 큰 화면(HubView, BanPick)용 초안 생성기:
       실행 중 트리의 `owner` 를 루트로 설정 → `PackedScene.pack()` → `ResourceSaver.save()`.
       결과는 절대 좌표 노드라 컨테이너로 재구성이 필요하므로 **참고용 초안**으로만 쓴다.
@@ -190,7 +190,7 @@ ConfirmPopup (CanvasLayer 20, visible=false)
 | 2 | T3 #2 `ManagerTypePopup` | 에이전트 | ✅ 머지 (rect 동일, diff 0 / 부제 줄 AA 69px) |
 | 2 | T3 #3 `ShopPopup` | 에이전트 | ✅ 머지 (공개 3상태 · 재오픈 diff 0, 확률표 12px — Divider 끝 1px · AA) |
 | 2 | T3 #4 `CollectionDetailSheet` | 에이전트 | ✅ 머지 (rect 동일, 스크롤 밖 diff 0 / 안쪽은 정수 픽셀 배치로 ≤0.035px AA 차) |
-| 2 | T3 #5 `DraftDetailPanel` | 에이전트 | ⏳ |
+| 2 | T3 #5 `DraftDetailPanel` | 에이전트 | ✅ 머지 (rect 동일, 아트 · 본문 diff 0. 오른쪽 패널 배경 · 스탯 칩 · 닫기 버튼은 variation 으로 바뀌어 모양이 달라짐 — 사용자 확인) |
 | 2 | T3 #6 `HubSheet` | 에이전트 | ✅ 머지 (재무 · 메크 연구 · 스태프 · 리그 픽셀 diff 0, 긴 제목은 의도적으로 말줄임) |
 | 끝 | 새 `.tscn` 전부 에디터에서 열고 저장 (uid 부여) | 사용자 | ⬜ |
 
@@ -200,9 +200,22 @@ ConfirmPopup (CanvasLayer 20, visible=false)
 | 패딩 40 짜리 팝업 카드 (또는 `POPUP_PAD` 축소) — 결과 카드 5장이 `PopupCard` 48 안에 안 들어감 | ShopPopup | `MarginContainer` −8 |
 | `OnFillLabel` — 색면 위 흰 글자 | ShopPopup | 코드에서 font_color |
 | `Divider` 선 끝 연장(grow) 0 — 정확히 1px 폭 | ShopPopup | 없음 (1px 차이 허용) |
+| `OutlinePanel` (흰 · 2px `BORDER` · r14 · 그림자 없음) — 옛 DraftDetailPanel 배경을 되살릴 경우 | DraftDetailPanel | 지금은 `Card` |
+| `OutlinedSunkPanel` (`SURFACE_SUNK` · 2px · r16) — 옛 스탯 칩 | DraftDetailPanel | 지금은 `SunkPanel` |
 | `SheetCard` 패딩 36/27 변형 — `MarginContainer` 제거 | CollectionDetailSheet | `MarginContainer` 36/27/36/27 |
 | 진행 바 track/fill (r7, sunk/accent) | CollectionDetailSheet | 코드 스타일 |
 | `OnFillLabel` (재제안 — 돌파 원판 숫자) | CollectionDetailSheet | 코드에서 font_color |
 | (나중에) `SelectableCard` 일반/선택 쌍 — 선택형 옵션 카드가 늘어나면 | ManagerTypePopup | `ManagerTypeOption.gd` 의 `flat_style` |
 
 > 웨이브 2 는 T1 머지 직후 시작 (T4 와 무관하므로 T4 진행 중에 병렬 착수).
+
+### 웨이브 2 종료 후 확인 (main, 머지 전부 반영)
+- `Lobby` · `RunSetup` · `Season` · `MatchFlow` 헤드리스 실행 — error/warn 없음 (godot-mcp 포트 소음 제외).
+- 남은 일:
+  1. **사용자** — 새 `.tscn` 전부 에디터에서 열고 저장(uid): `ConfirmPopup` · `ManagerTypePopup` · `ManagerTypeOption` ·
+     `ShopPopup` · `ShopRevealItem` · `ShopRateRow` · `CollectionDetailSheet` · `CollectionStatChip` ·
+     `CollectionBreakthroughRow` · `DraftDetailPanel` · `DraftStatChip` · `HubSheet`.
+  2. **사용자 결정** — DraftDetailPanel 오른쪽 패널을 새 variation 모양으로 둘지, 옛 모양(`OutlinePanel` 등 추가)으로 되돌릴지.
+  3. 제안 variation 표를 한 번에 `OutgameTheme.gd` 에 반영 → `.tres` 재생성 → 해당 씬의 우회(MarginContainer · 코드 색) 제거.
+  4. 알려진 동작 차이: `CenterContainer` 로 가운데 정렬한 팝업(ShopPopup · ManagerTypePopup)은 안전 영역보다 길어지면 위아래로 넘침 (옛 코드는 위 고정). 현재 데이터로는 해당 없음.
+  5. DraftDetailPanel 은 원래부터 안전 영역 처리가 없음(닫기 버튼 y 최대 1840) — 제스처 영역 겹침 가능, 별도 작업.

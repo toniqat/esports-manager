@@ -48,7 +48,7 @@ func setup(host: LobbyScreen) -> void:
 	_pm = get_node("/root/ProfileManager")
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_segments()
-	_popup = ShopPopup.new()
+	_popup = ShopPopup.create()
 	add_child(_popup)
 
 

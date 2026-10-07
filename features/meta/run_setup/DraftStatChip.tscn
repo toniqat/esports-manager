@@ -1,6 +1,6 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://dqcwgpgbxytj6"]
 
-[ext_resource type="Script" path="res://features/meta/run_setup/DraftStatChip.gd" id="1_chip"]
+[ext_resource type="Script" uid="uid://5kp4lranmh7d" path="res://features/meta/run_setup/DraftStatChip.gd" id="1_chip"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="DraftStatChip" type="PanelContainer"]

@@ -1,11 +1,10 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://bivoaqs4ajikx"]
 
 [ext_resource type="Script" uid="uid://dd8kyq887lb7r" path="res://features/meta/run_setup/DraftDetailPanel.gd" id="1_detail"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="DraftDetailPanel" type="CanvasLayer"]
 layer = 20
-visible = false
 script = ExtResource("1_detail")
 
 [node name="Root" type="Control" parent="."]
@@ -203,7 +202,7 @@ mouse_filter = 2
 [node name="SkillTile" type="Control" parent="Root/Column/PanelBox/Pad/Scroll/Body/SkillRow"]
 unique_name_in_owner = true
 editor_description = "스킬 아이콘 타일 자리 — 코드가 SkillImages.make_icon_tile 을 여기에 붙인다. 왼쪽 14px 는 그림자가 스크롤 경계에 잘리지 않게 띄운 것."
-layout_mode = 0
+anchors_preset = 0
 offset_left = 14.0
 offset_top = 4.0
 offset_right = 78.0

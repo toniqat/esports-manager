@@ -21,7 +21,7 @@ Layout is authored in the `.tscn` files (`docs/ui_scene_migration.md`); scripts 
 Create with `ShopPopup.create()` (`ShopPopup.new()` is an empty layer). Open / close toggles `visible`;
 the nodes are reused, items from the previous open are removed and re-instanced.
 ```
-ShopPopup (CanvasLayer 20, visible=false)
+ShopPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨김)
 └ Root (full rect, theme = OutgameTheme.tres)
   ├ %Dim        flat Button — tap outside the card = close
   ├ DimRect     Panel `DimPanel`

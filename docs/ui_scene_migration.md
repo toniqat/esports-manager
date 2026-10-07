@@ -54,7 +54,7 @@
 `LobbyScreen.gd`(한 줄) · `features/meta/lobby/README.md`.
 
 ```
-ConfirmPopup (CanvasLayer 20, visible=false)
+ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨김)
 └ Root (full rect)
   ├ %Dim        flat Button, 빈 곳 누르면 취소
   ├ DimRect     반투명 딤
@@ -77,6 +77,8 @@ ConfirmPopup (CanvasLayer 20, visible=false)
   기존 코드 주석("앵커 프리셋이 뷰포트로 풀리지 않는다")은 코드로 만들 때의 순서 문제였다.
 - **씬의 sub_resource(StyleBox)는 같은 씬의 인스턴스끼리 공유된다.** 런타임에 색을 바꿀 땐
   `duplicate()` 한 것으로 override 하고 원본은 `_ready` 에서 보관해 되돌린다(`_apply_danger`).
+- **씬 루트(CanvasLayer)를 `visible = false` 로 저장하지 않는다** — 에디터 뷰포트에서 자식까지 안 보여
+  빈 씬처럼 보인다. 닫힌 상태로 시작하는 건 `create()` 에서 `p.visible = false`.
 - **`HapticUi.mute(btn)` 은 되돌리는 API 가 없다** — 재사용 노드라면
   `HapticUi.kind(btn, HapticUi.up_kind)` + `down_kind_for(btn, HapticUi.down_kind)` 로 복구.
 - 컨테이너 레이아웃이면 기존의 "줄바꿈 Label 은 트리 밖에서 높이가 0" 문제가 사라진다
@@ -111,12 +113,12 @@ ConfirmPopup (CanvasLayer 20, visible=false)
 
 | # | 대상 | 폴더 | 종류 | 상태 |
 |---|---|---|---|---|
-| 1 | `ConfirmPopup` | `meta/lobby/` | 팝업 | ✅ 커밋됨 (uid 미부여 — 웨이브 끝에 에디터에서 일괄) |
-| 2 | `ManagerTypePopup` | `meta/lobby/` | 팝업 (선택지 반복 → 아이템 씬) | ✅ 전환 (+ `ManagerTypeOption` 아이템 씬), uid 미부여 |
-| 3 | `ShopPopup` | `meta/shop/` | 팝업 | ✅ 전환 (+ `ShopRevealItem` · `ShopRateRow` 아이템 씬), uid 미부여 |
-| 4 | `CollectionDetailSheet` | `meta/collection/` | 시트 | ✅ 전환 (+ `CollectionStatChip` · `CollectionBreakthroughRow` 아이템 씬), uid 미부여 |
-| 5 | `DraftDetailPanel` | `meta/run_setup/` | 모달 | ✅ 전환 (+ `DraftStatChip` 아이템 씬), uid 미부여 — **스타일 변경 확인 필요** |
-| 6 | `HubSheet` | `season/` | 시트 (허브 관리 카드 공용 틀) | ✅ 틀만 전환 (본문은 #10), uid 미부여 |
+| 1 | `ConfirmPopup` | `meta/lobby/` | 팝업 | ✅ 커밋됨 |
+| 2 | `ManagerTypePopup` | `meta/lobby/` | 팝업 (선택지 반복 → 아이템 씬) | ✅ 전환 (+ `ManagerTypeOption` 아이템 씬) |
+| 3 | `ShopPopup` | `meta/shop/` | 팝업 | ✅ 전환 (+ `ShopRevealItem` · `ShopRateRow` 아이템 씬) |
+| 4 | `CollectionDetailSheet` | `meta/collection/` | 시트 | ✅ 전환 (+ `CollectionStatChip` · `CollectionBreakthroughRow` 아이템 씬) |
+| 5 | `DraftDetailPanel` | `meta/run_setup/` | 모달 | ✅ 전환 (+ `DraftStatChip` 아이템 씬) — **스타일 변경 확인 필요** |
+| 6 | `HubSheet` | `season/` | 시트 (허브 관리 카드 공용 틀) | ✅ 틀만 전환 (본문은 #10) |
 | 7 | `LobbyScreen` + `HomeTab` · `CollectionTab` · `ManagerTab` · `ShopTab` · `PassTab` | `meta/lobby/` 등 | 화면 / 탭 | ⬜ |
 | 8 | `RunSetupScreen` + `TeamDraftView` · `ManagerStepView` · `ChoiceListView` · `TeamStepView` · `PilotThumb` | `meta/run_setup/` | 화면 | ⬜ |
 | 9 | `RunResultScreen` | `meta/run_result/` | 화면 | ⬜ |
@@ -134,6 +136,7 @@ ConfirmPopup (CanvasLayer 20, visible=false)
 2. 절대 좌표를 **컨테이너**(VBox/HBox/Margin/Center/PanelContainer + 스페이서 Control)로 재구성한
    `.tscn` 을 스크립트 옆에 만든다. 바인딩할 노드엔 `unique_name_in_owner = true`.
    텍스트에는 미리보기용 샘플 문구를 넣어 에디터에서 모양이 보이게 한다.
+   루트는 visible 로 저장하고, 처음에 숨기는 건 `create()` 가 한다(§2).
 3. 스크립트에서 `_build` 계열을 지우고 `%노드` 바인딩으로 바꾼다. 생성은 `static func create()`.
    호출부(`Xxx.new()`)를 전부 `Xxx.create()` 로 바꾼다 (`grep -rn "Xxx.new()"`).
 4. **렌더 검증** — 임시 테스트 씬을 프로젝트 루트에 만들어 실행하고 스크린샷을 비교한 뒤 지운다:
@@ -158,7 +161,7 @@ ConfirmPopup (CanvasLayer 20, visible=false)
 
 ## 6. 작업 목록 (다음 세션)
 
-- [x] **T0** `ConfirmPopup` 전환분 커밋. (uid 부여는 새 씬들과 함께 마지막에 에디터에서 일괄 — §7)
+- [x] **T0** `ConfirmPopup` 전환분 커밋.
 - [x] **T1 공용 Theme 리소스** (완료 — variation 목록 · 재생성 명령은 `resources/README.md`) — `resources/OutgameTheme.tres`(Theme) 를 만들고
       `theme_type_variation` 으로 `PrimaryButton` · `GhostButton` · `TextButton` · `DarkButton` ·
       `Card` · `TitleLabel` · `BodyLabel` 등을 정의. 값은 `OutgameTheme.gd` 상수와 일치시키고,
@@ -192,7 +195,7 @@ ConfirmPopup (CanvasLayer 20, visible=false)
 | 2 | T3 #4 `CollectionDetailSheet` | 에이전트 | ✅ 머지 (rect 동일, 스크롤 밖 diff 0 / 안쪽은 정수 픽셀 배치로 ≤0.035px AA 차) |
 | 2 | T3 #5 `DraftDetailPanel` | 에이전트 | ✅ 머지 (rect 동일, 아트 · 본문 diff 0. 오른쪽 패널 배경 · 스탯 칩 · 닫기 버튼은 variation 으로 바뀌어 모양이 달라짐 — 사용자 확인) |
 | 2 | T3 #6 `HubSheet` | 에이전트 | ✅ 머지 (재무 · 메크 연구 · 스태프 · 리그 픽셀 diff 0, 긴 제목은 의도적으로 말줄임) |
-| 끝 | 새 `.tscn` 전부 에디터에서 열고 저장 (uid 부여) | 사용자 | ⬜ |
+| 끝 | 새 `.tscn` 전부 에디터에서 열고 저장 (uid 부여) | 사용자 | ✅ (12개 전부 uid 확인) |
 
 ### 웨이브 2 에서 제안된 theme variation (웨이브 끝에 한 번에 반영 — 병렬 중엔 테마 수정 금지)
 | 제안 | 출처 | 현재 우회 |
@@ -212,9 +215,7 @@ ConfirmPopup (CanvasLayer 20, visible=false)
 ### 웨이브 2 종료 후 확인 (main, 머지 전부 반영)
 - `Lobby` · `RunSetup` · `Season` · `MatchFlow` 헤드리스 실행 — error/warn 없음 (godot-mcp 포트 소음 제외).
 - 남은 일:
-  1. **사용자** — 새 `.tscn` 전부 에디터에서 열고 저장(uid): `ConfirmPopup` · `ManagerTypePopup` · `ManagerTypeOption` ·
-     `ShopPopup` · `ShopRevealItem` · `ShopRateRow` · `CollectionDetailSheet` · `CollectionStatChip` ·
-     `CollectionBreakthroughRow` · `DraftDetailPanel` · `DraftStatChip` · `HubSheet`.
+  1. ~~**사용자** — 새 `.tscn` 전부 에디터에서 열고 저장(uid)~~ ✅ 12개 전부 완료.
   2. **사용자 결정** — DraftDetailPanel 오른쪽 패널을 새 variation 모양으로 둘지, 옛 모양(`OutlinePanel` 등 추가)으로 되돌릴지.
   3. 제안 variation 표를 한 번에 `OutgameTheme.gd` 에 반영 → `.tres` 재생성 → 해당 씬의 우회(MarginContainer · 코드 색) 제거.
   4. 알려진 동작 차이: `CenterContainer` 로 가운데 정렬한 팝업(ShopPopup · ManagerTypePopup)은 안전 영역보다 길어지면 위아래로 넘침 (옛 코드는 위 고정). 현재 데이터로는 해당 없음.

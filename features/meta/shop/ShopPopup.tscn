@@ -1,11 +1,10 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://d0vmjp6qnsrxb"]
 
 [ext_resource type="Script" uid="uid://bvrb0oh1bh14p" path="res://features/meta/shop/ShopPopup.gd" id="1_popup"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="ShopPopup" type="CanvasLayer"]
 layer = 20
-visible = false
 script = ExtResource("1_popup")
 
 [node name="Root" type="Control" parent="."]
@@ -55,9 +54,9 @@ layout_mode = 2
 theme_type_variation = &"PopupCard"
 
 [node name="Pad" type="MarginContainer" parent="Root/SafeArea/Card"]
+editor_description = "PopupCard 패딩(48) 을 40 으로 줄인다 — 결과 카드 5칸(896px)이 카드 안(900px)에 들어가야 한다."
 layout_mode = 2
 mouse_filter = 2
-editor_description = "PopupCard 패딩(48) 을 40 으로 줄인다 — 결과 카드 5칸(896px)이 카드 안(900px)에 들어가야 한다."
 theme_override_constants/margin_left = -8
 theme_override_constants/margin_top = -8
 theme_override_constants/margin_right = -8
@@ -82,10 +81,10 @@ mouse_filter = 2
 
 [node name="Grid" type="GridContainer" parent="Root/SafeArea/Card/Pad/VBox"]
 unique_name_in_owner = true
+editor_description = "open_reveal() 이 ShopRevealItem.tscn 을 결과 수만큼 넣는다 (최대 5열)."
 layout_mode = 2
 size_flags_horizontal = 4
 mouse_filter = 2
-editor_description = "open_reveal() 이 ShopRevealItem.tscn 을 결과 수만큼 넣는다 (최대 5열)."
 theme_override_constants/h_separation = 14
 theme_override_constants/v_separation = 14
 columns = 5
@@ -133,9 +132,9 @@ text = "개별 확률"
 
 [node name="RateRows" type="VBoxContainer" parent="Root/SafeArea/Card/Pad/VBox/Rates"]
 unique_name_in_owner = true
+editor_description = "open_rates() 가 ShopRateRow.tscn 을 등급 수만큼 넣는다."
 layout_mode = 2
 mouse_filter = 2
-editor_description = "open_rates() 가 ShopRateRow.tscn 을 등급 수만큼 넣는다."
 theme_override_constants/separation = 0
 
 [node name="Gap" type="Control" parent="Root/SafeArea/Card/Pad/VBox/Rates"]

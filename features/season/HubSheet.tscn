@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://doefw5u50qh1m"]
 
 [ext_resource type="Script" uid="uid://3twflr3ify0v" path="res://features/season/HubSheet.gd" id="1_sheet"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
@@ -117,7 +117,6 @@ layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
 anchor_bottom = 1.0
-grow_horizontal = 1
 grow_vertical = 2
 horizontal_scroll_mode = 0
 

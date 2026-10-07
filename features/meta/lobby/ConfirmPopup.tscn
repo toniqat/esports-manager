@@ -5,7 +5,6 @@
 
 [node name="ConfirmPopup" type="CanvasLayer"]
 layer = 20
-visible = false
 script = ExtResource("1_confirm")
 
 [node name="Root" type="Control" parent="."]

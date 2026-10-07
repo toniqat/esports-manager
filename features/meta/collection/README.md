@@ -38,7 +38,7 @@ status line and the footer (`닫기` 1 : `레벨업 · cost` 2) are fixed.
 
 Scene (`CollectionDetailSheet.tscn`, scene-authored — `docs/ui_scene_migration.md`):
 ```
-CollectionDetailSheet (CanvasLayer 20, visible=false)
+CollectionDetailSheet (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨김)
 └ Root (full rect, theme = OutgameTheme.tres)
   ├ %Dim (flat Button, tap = close) · DimRect (DimPanel)
   └ %SafeArea (full rect; code sets top / bottom to the safe lines)

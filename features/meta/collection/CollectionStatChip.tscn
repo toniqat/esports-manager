@@ -1,15 +1,15 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://cp5crh7eb86pi"]
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
 [node name="CollectionStatChip" type="Panel"]
+editor_description = "One stat cell of the 능력치 grid (CollectionDetailSheet). The card style (sunk / amber tint for 종합) and the delta colour are data — the sheet applies them."
 custom_minimum_size = Vector2(0, 104)
 offset_right = 231.0
 offset_bottom = 104.0
 size_flags_horizontal = 3
 mouse_filter = 2
 theme = ExtResource("1_theme")
-editor_description = "One stat cell of the 능력치 grid (CollectionDetailSheet). The card style (sunk / amber tint for 종합) and the delta colour are data — the sheet applies them."
 
 [node name="Key" type="Label" parent="."]
 unique_name_in_owner = true

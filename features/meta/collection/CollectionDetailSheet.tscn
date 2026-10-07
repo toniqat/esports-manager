@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=4 format=3 uid="uid://cp7cki6g3falm"]
 
 [ext_resource type="Script" uid="uid://bp4g2cyjqtdwr" path="res://features/meta/collection/CollectionDetailSheet.gd" id="1_sheet"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
@@ -6,7 +6,6 @@
 
 [node name="CollectionDetailSheet" type="CanvasLayer"]
 layer = 20
-visible = false
 script = ExtResource("1_sheet")
 
 [node name="Root" type="Control" parent="."]
@@ -86,6 +85,7 @@ mouse_filter = 2
 
 [node name="Scroll" type="ScrollContainer" parent="Root/SafeArea/Sheet/Margin/VBox/ScrollSlot"]
 unique_name_in_owner = true
+editor_description = "offset_right = scroll bar width: the bar sits in the sheet's right padding so the body keeps the full inner width."
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -93,7 +93,6 @@ anchor_bottom = 1.0
 offset_right = 8.0
 grow_horizontal = 2
 grow_vertical = 2
-editor_description = "offset_right = scroll bar width: the bar sits in the sheet's right padding so the body keeps the full inner width."
 horizontal_scroll_mode = 0
 vertical_scroll_mode = 4
 
@@ -114,11 +113,11 @@ theme_override_constants/separation = 28
 
 [node name="Bust" type="Control" parent="Root/SafeArea/Sheet/Margin/VBox/ScrollSlot/Scroll/Body/Hero"]
 unique_name_in_owner = true
+editor_description = "Bust art (code adds the rounded art + role badge on top of BustPlate). Height = width / PilotImages.BUST_ASPECT."
 custom_minimum_size = Vector2(230, 464)
 layout_mode = 2
 size_flags_vertical = 0
 mouse_filter = 2
-editor_description = "Bust art (code adds the rounded art + role badge on top of BustPlate). Height = width / PilotImages.BUST_ASPECT."
 
 [node name="BustPlate" type="Panel" parent="Root/SafeArea/Sheet/Margin/VBox/ScrollSlot/Scroll/Body/Hero/Bust"]
 unique_name_in_owner = true
@@ -168,10 +167,10 @@ clip_text = true
 
 [node name="Chips" type="Control" parent="Root/SafeArea/Sheet/Margin/VBox/ScrollSlot/Scroll/Body/Hero/Info"]
 unique_name_in_owner = true
+editor_description = "Chip row: rarity · 최대 Lv · 돌파 · 중복 (or 미보유) — pills sized to their text, laid left to right by code."
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 mouse_filter = 2
-editor_description = "Chip row: rarity · 최대 Lv · 돌파 · 중복 (or 미보유) — pills sized to their text, laid left to right by code."
 
 [node name="ChipsGap" type="Control" parent="Root/SafeArea/Sheet/Margin/VBox/ScrollSlot/Scroll/Body/Hero/Info"]
 custom_minimum_size = Vector2(0, 32)
@@ -186,6 +185,7 @@ mouse_filter = 2
 
 [node name="ExpTitle" type="Label" parent="Root/SafeArea/Sheet/Margin/VBox/ScrollSlot/Scroll/Body/Hero/Info/ExpBlock"]
 layout_mode = 1
+anchors_preset = -1
 anchor_right = 0.5
 offset_bottom = 32.0
 theme_type_variation = &"CaptionLabel"
@@ -215,13 +215,14 @@ mouse_filter = 2
 
 [node name="ExpFill" type="Panel" parent="Root/SafeArea/Sheet/Margin/VBox/ScrollSlot/Scroll/Body/Hero/Info/ExpBlock/ExpTrack"]
 unique_name_in_owner = true
+editor_description = "anchor_right = EXP ratio (set by code); the minimum width keeps a sliver visible."
 custom_minimum_size = Vector2(14, 0)
 layout_mode = 1
+anchors_preset = -1
 anchor_right = 0.3
 anchor_bottom = 1.0
 grow_vertical = 2
 mouse_filter = 2
-editor_description = "anchor_right = EXP ratio (set by code); the minimum width keeps a sliver visible."
 
 [node name="UnownedBlock" type="Control" parent="Root/SafeArea/Sheet/Margin/VBox/ScrollSlot/Scroll/Body/Hero/Info"]
 unique_name_in_owner = true
@@ -255,6 +256,7 @@ mouse_filter = 2
 [node name="SalaryTitle" type="Label" parent="Root/SafeArea/Sheet/Margin/VBox/ScrollSlot/Scroll/Body/Hero/Info/SalaryRow"]
 unique_name_in_owner = true
 layout_mode = 1
+anchors_preset = -1
 anchor_right = 0.6
 offset_bottom = 32.0
 theme_type_variation = &"CaptionLabel"
@@ -281,6 +283,7 @@ mouse_filter = 2
 
 [node name="BonusTitle" type="Label" parent="Root/SafeArea/Sheet/Margin/VBox/ScrollSlot/Scroll/Body/Hero/Info/BonusRow"]
 layout_mode = 1
+anchors_preset = -1
 anchor_right = 0.6
 offset_bottom = 32.0
 theme_type_variation = &"CaptionLabel"
@@ -332,12 +335,12 @@ theme_type_variation = &"Divider"
 
 [node name="StatGrid" type="GridContainer" parent="Root/SafeArea/Sheet/Margin/VBox/ScrollSlot/Scroll/Body/StatsSection"]
 unique_name_in_owner = true
+editor_description = "Six stats + 종합 — CollectionStatChip.tscn instances, added by code."
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/h_separation = 12
 theme_override_constants/v_separation = 12
 columns = 4
-editor_description = "Six stats + 종합 — CollectionStatChip.tscn instances, added by code."
 
 [node name="StatNote" type="Control" parent="Root/SafeArea/Sheet/Margin/VBox/ScrollSlot/Scroll/Body/StatsSection"]
 unique_name_in_owner = true
@@ -390,10 +393,10 @@ theme_type_variation = &"Divider"
 
 [node name="BtRows" type="VBoxContainer" parent="Root/SafeArea/Sheet/Margin/VBox/ScrollSlot/Scroll/Body/BtSection"]
 unique_name_in_owner = true
+editor_description = "One CollectionBreakthroughRow.tscn per stage, added by code."
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 10
-editor_description = "One CollectionBreakthroughRow.tscn per stage, added by code."
 
 [node name="BtAfter" type="Control" parent="Root/SafeArea/Sheet/Margin/VBox/ScrollSlot/Scroll/Body/BtSection"]
 unique_name_in_owner = true
@@ -464,10 +467,10 @@ theme_type_variation = &"Divider"
 
 [node name="Cards" type="VBoxContainer" parent="Root/SafeArea/Sheet/Margin/VBox/ScrollSlot/Scroll/Body/CardsSection"]
 unique_name_in_owner = true
+editor_description = "Pilot cards as light CardDescBox panels (built by code at this container's width)."
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 12
-editor_description = "Pilot cards as light CardDescBox panels (built by code at this container's width)."
 
 [node name="BottomPad" type="Control" parent="Root/SafeArea/Sheet/Margin/VBox/ScrollSlot/Scroll/Body/CardsSection"]
 custom_minimum_size = Vector2(0, 16)

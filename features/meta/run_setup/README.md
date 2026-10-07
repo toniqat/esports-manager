@@ -137,7 +137,7 @@ Moved from code-built to `.tscn` (`docs/ui_scene_migration.md`). `Root` carries
 `resources/OutgameTheme.tres`; nodes pick theme variations. One instance per screen, reused:
 `open` fills it and sets the layer `visible`, `close` hides it.
 ```
-DraftDetailPanel (CanvasLayer 20, visible=false)
+DraftDetailPanel (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨김)
 └ Root (full rect, theme)
   ├ %Dim            flat Button — tap outside closes
   ├ DimRect         Panel `DimPanel`

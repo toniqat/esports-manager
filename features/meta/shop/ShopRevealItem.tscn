@@ -1,12 +1,10 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://jd5tiultsad3"]
 
 [ext_resource type="Script" uid="uid://1y41lap4g61v" path="res://features/meta/shop/ShopRevealItem.gd" id="1_item"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="ShopRevealItem" type="Panel"]
 custom_minimum_size = Vector2(168, 300)
-layout_mode = 3
-anchors_preset = 0
 offset_right = 168.0
 offset_bottom = 300.0
 mouse_filter = 2

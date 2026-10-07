@@ -58,7 +58,10 @@ var _cards_w: float = -1.0        # width the `%Cards` panels were built for
 
 ## 씬을 인스턴스한다. `CollectionDetailSheet.new()` 는 빈 CanvasLayer 라 쓰지 않는다.
 static func create() -> CollectionDetailSheet:
-	return (load(SCENE_PATH) as PackedScene).instantiate() as CollectionDetailSheet
+	# 씬 루트는 visible 로 저장한다(에디터에서 보이도록) — 닫힌 상태로 시작하는 건 여기서.
+	var p := (load(SCENE_PATH) as PackedScene).instantiate() as CollectionDetailSheet
+	p.visible = false
+	return p
 
 
 func _ready() -> void:

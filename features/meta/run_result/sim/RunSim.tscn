@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://efdn2b8cq08q"]
 
 [ext_resource type="Script" uid="uid://twpayc4eaudp" path="res://features/meta/run_result/sim/RunSim.gd" id="1_runsim"]
 

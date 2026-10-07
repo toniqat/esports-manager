@@ -1,12 +1,11 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=4 format=3 uid="uid://cc4kwa1ymyg8m"]
 
 [ext_resource type="Script" uid="uid://by47vkw3wfdvv" path="res://features/meta/lobby/ManagerTypePopup.gd" id="1_popup"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
-[ext_resource type="PackedScene" path="res://features/meta/lobby/ManagerTypeOption.tscn" id="3_option"]
+[ext_resource type="PackedScene" uid="uid://6esfln0ycppd" path="res://features/meta/lobby/ManagerTypeOption.tscn" id="3_option"]
 
 [node name="ManagerTypePopup" type="CanvasLayer"]
 layer = 20
-visible = false
 script = ExtResource("1_popup")
 
 [node name="Root" type="Control" parent="."]

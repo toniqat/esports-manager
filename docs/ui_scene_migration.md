@@ -166,7 +166,7 @@ ConfirmPopup (CanvasLayer 20, visible=false)
       임베드 스타일박스를 variation 으로 교체. (이후 화면은 "버튼 놓고 variation 고르기"로 끝남)
 - [x] **T2 규칙 문서화** — 루트 `CLAUDE.md` Critical patterns 에 §3 규칙 1·4·5 요약 + 이 문서 포인터.
 - [ ] **T3** §4 #2 ~ #6 팝업 · 시트 전환.
-- [ ] **T4 (선택) 런타임 덤프 툴** — 큰 화면(HubView, BanPick)용 초안 생성기:
+- [x] **T4 런타임 덤프 툴** (완료 — `resources/UiSceneDump.gd` + `UiSceneDumpRunner.gd`, 사용법은 `resources/README.md`. Lobby · HubView · BanPick 초안이 실화면과 픽셀 동일. `--shot` 은 §5-4 렌더 검증 하네스로도 쓸 수 있다) — 큰 화면(HubView, BanPick)용 초안 생성기:
       실행 중 트리의 `owner` 를 루트로 설정 → `PackedScene.pack()` → `ResourceSaver.save()`.
       결과는 절대 좌표 노드라 컨테이너로 재구성이 필요하므로 **참고용 초안**으로만 쓴다.
       작은 팝업은 손으로 옮기는 편이 낫다(시범에서 확인).
@@ -186,7 +186,7 @@ ConfirmPopup (CanvasLayer 20, visible=false)
 | 0 | T0 ConfirmPopup 커밋 | 오케스트레이터 | ✅ |
 | 1 | T1 공용 Theme 리소스 (+ ConfirmPopup 임베드 스타일 → variation) | 에이전트 A | ✅ 머지 (전후 픽셀 diff 0) |
 | 1 | T2 규칙 문서화 (루트 `CLAUDE.md`) | 오케스트레이터 | ✅ |
-| 1 | T4 런타임 덤프 툴 | 에이전트 B | ⏳ |
+| 1 | T4 런타임 덤프 툴 | 에이전트 B | ✅ 머지 |
 | 2 | T3 #2 `ManagerTypePopup` | 에이전트 | ⏳ |
 | 2 | T3 #3 `ShopPopup` | 에이전트 | ⏳ |
 | 2 | T3 #4 `CollectionDetailSheet` | 에이전트 | ⏳ |

@@ -178,8 +178,10 @@ with no staff salaries; `upkeep_delay` with no upkeep) · balance < cost.
     └ Tail
   ```
   Code owns: texts, which optional lines / buttons show, data colours (balance / net / history signs,
-  affordable or not, axis fill colours, fixed `NEGATIVE` / `POSITIVE` / `LINK` lines — no variation yet),
+  affordable or not, axis fill colours),
   the share-bar fill width (`anchor_right`). List rows are reused across refills (`_ensure_rows`), so a
   tapped button is never freed while emitting; the scene's sample rows are dropped in `_ready`.
-  Template-line lists (`%Cuts`, `%Running`) duplicate their first `Label`.
+  Template-line lists (`%Cuts`, `%Running`) duplicate their first `Label`. Fixed-colour lines are scene
+  variations: `%Fund` `LinkLabel` 44, `%LowBalance` · `%Penalty` · `%Cuts` line · history `%Cut` `NegativeLabel` 22,
+  `%Running` line `PositiveLabel` 22.
 - The sponsor × text in 지난 주 정산 is owned by §14 T3 (it reads `income_mult`).

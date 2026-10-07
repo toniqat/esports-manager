@@ -199,7 +199,10 @@ func _bind() -> void:
 	# 제목이 깔리지 않게. 제목만 따로 내리면 본문과 겹친다. 바탕만 도로 늘린다.
 	ScreenMetrics.indent_to_safe_top(self)
 	ScreenMetrics.extend_background(%Background)
-	_fit_bottom_inset()
+	# 아래 인셋만 코드 몫 — `%SafeArea` 아래끝이 안전선으로 오르고, 바(`Bar*` 변형)의 색면은
+	# 화면 끝까지, 글자는 안전선 위(`resources/README.md` "Bottom action bar"). 코스 목록과
+	# 판이 `%SafeArea` 아래끝에서 역산되므로 함께 따라 올라간다.
+	OutgameTheme.fit_bottom_bar(%Bar, %SafeArea)
 
 	_staff_lbl = %StaffLine
 	_effect_lbl = %EffectLine
@@ -211,34 +214,6 @@ func _bind() -> void:
 	(%ClearButton as Button).pressed.connect(_on_clear_pressed)
 	(%AutoButton as Button).pressed.connect(_on_auto_pressed)
 	(%ConfirmButton as Button).pressed.connect(_on_confirm_pressed)
-
-
-## **아래 인셋(홈 인디케이터 / 제스처 바)만 코드가 넣는다.** 본문(`%SafeArea`)의
-## 아래끝은 그만큼 올라가고, 하단 액션 바(`%Bar`)는 색면이 화면 끝까지 내려가되
-## 글자는 안전선 위에 남는다(버튼 아래 content margin 에 같은 몫) — 규칙은
-## `resources/README.md` "Bottom action bar". 코스 목록과 판이 `%SafeArea` 의 아래끝에서
-## 역산되므로 바를 손보면 목록과 판이 저절로 따라 올라간다.
-func _fit_bottom_inset() -> void:
-	var below: float = maxf(0.0, ScreenMetrics.insets().w)
-	(%SafeArea as Control).offset_bottom = -below
-	var bar: Control = %Bar
-	bar.offset_top = -(OutgameTheme.BOTTOM_BAR_H + below)
-	for b in [%ClearButton, %AutoButton, %ConfirmButton]:
-		_square_bar_button(b as Button, below)
-
-
-## 바 한 칸 — 변형(`GhostButton` / `PrimaryButton`)의 옷을 복사해 모서리를 각지게
-## 펴고 안전선 아래로 내려간 몫만큼 글자를 위로 물린다(`OutgameTheme.style_bottom_button`
-## 과 같은 손질, 색은 씬의 변형이 정한다).
-static func _square_bar_button(b: Button, below: float) -> void:
-	for n in OutgameTheme.BUTTON_STATES:
-		var src := b.get_theme_stylebox(n) as StyleBoxFlat
-		if src == null:
-			continue
-		var sb := src.duplicate() as StyleBoxFlat
-		OutgameTheme.set_corner_radius(sb, 0)
-		sb.content_margin_bottom = 8.0 + below
-		b.add_theme_stylebox_override(n, sb)
 
 
 ## 열 머리글 다섯. **누를 수 없고 글자도 없다** — 얼굴이 누구인지를, 테두리

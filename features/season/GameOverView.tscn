@@ -33,11 +33,10 @@ anchor_right = 1.0
 offset_top = 600.0
 offset_bottom = 700.0
 grow_horizontal = 2
-theme_type_variation = &"HeadingLabel"
+theme_type_variation = &"NegativeLabel"
 theme_override_font_sizes/font_size = 80
 text = "GAME OVER"
 horizontal_alignment = 1
-theme_override_colors/font_color = Color(0.878, 0.271, 0.271, 1)
 
 [node name="Reason" type="Label" parent="."]
 unique_name_in_owner = true
@@ -66,7 +65,7 @@ horizontal_alignment = 1
 
 [node name="SafeBottom" type="Control" parent="."]
 unique_name_in_owner = true
-editor_description = "Full rect; code lifts its bottom edge by the device bottom inset (HubView.fit_bottom_bar). The bar and toast hang from it."
+editor_description = "Full rect; code lifts its bottom edge by the device bottom inset (OutgameTheme.fit_bottom_bar). The bar and toast hang from it."
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -77,7 +76,7 @@ mouse_filter = 2
 
 [node name="BottomBar" type="HBoxContainer" parent="SafeBottom"]
 unique_name_in_owner = true
-editor_description = "Bottom action bar (OutgameTheme add_bottom_bar convention): edge to edge, 128 tall above the safe line, split by stretch ratio (secondary 1 : primary 2, primary on the right). Code extends it below the safe line and squares the button corners (HubView.fit_bottom_bar)."
+editor_description = "Bottom action bar: edge to edge, 128 tall above the safe line, split by stretch ratio (secondary 1 : primary 2, primary on the right). Bar* variations give the square corners; code only extends it below the safe line by the device inset (OutgameTheme.fit_bottom_bar)."
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
@@ -93,6 +92,6 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
-theme_type_variation = &"PrimaryButton"
+theme_type_variation = &"BarPrimaryButton"
 theme_override_font_sizes/font_size = 32
 text = "정산"

@@ -76,12 +76,6 @@ static func open(host: Node) -> void:
 
 
 func _ready() -> void:
-	# Fixed palette colours that no theme variation has (proposed: NegativeLabel · PositiveLabel · LinkLabel).
-	(%Fund as Label).add_theme_color_override("font_color", OutgameTheme.LINK)
-	for l in [%LowBalance, %Penalty]:
-		(l as Label).add_theme_color_override("font_color", OutgameTheme.NEGATIVE)
-	_tint_template(%Cuts, OutgameTheme.NEGATIVE)
-	_tint_template(%Running, OutgameTheme.POSITIVE)
 	_clear(%Axes)
 	_clear(%Specials)
 	_clear(%History)
@@ -306,7 +300,6 @@ func _fill_history() -> void:
 		row.get_node("%Balance").text = "잔고 %s" % FinanceSystem.fmt(int(e.get("balance", 0)))
 		var cut: Label = row.get_node("%Cut")
 		cut.visible = _hard_cut(e)
-		cut.add_theme_color_override("font_color", OutgameTheme.NEGATIVE)
 
 
 # ── Handlers ─────────────────────────────────────────────────────────────────
@@ -434,8 +427,3 @@ static func _fill_lines(list: Node, texts: Array) -> void:
 	for i in texts.size():
 		(list.get_child(i) as Label).text = String(texts[i])
 	(list as CanvasItem).visible = not texts.is_empty()
-
-
-static func _tint_template(list: Node, col: Color) -> void:
-	if list != null and list.get_child_count() > 0:
-		(list.get_child(0) as Label).add_theme_color_override("font_color", col)

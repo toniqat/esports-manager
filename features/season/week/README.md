@@ -32,7 +32,8 @@ WeekProgressView (Control, full rect, PASS, theme OutgameTheme.tres)
   ├ Divider     y 346
   ├ %Scroll     x 40 … −40, y 372 … −152 (= bar top − 24), anchors_preset −1 (grows right only)
   │ └ %List     VBox, separation 14 (card gap) — item scenes + %ListEnd (kept last = gap under the last card)
-  └ %Action     Button, bottom bar slot: y −128 … 0 — code: style_bottom_button + offset_bottom = bottom inset
+  └ %Action     Button BarPrimaryButton, bottom bar slot: y −128 … 0 — code: `OutgameTheme.fit_bottom_bar(%Action, %SafeArea)`;
+                per day the variation switches (`BarDarkButton` for 경기 시작) + `fit_bar_button`
 ```
 
 * **Scene owns**: every position / size, fonts (variations + size overrides), the rail pill, the
@@ -41,7 +42,9 @@ WeekProgressView (Control, full rect, PASS, theme OutgameTheme.tres)
   the lead bars (role colour, incident = `NEGATIVE`) and the player's dark match card
   (`card_style(…, RAIL)`), status / role / trust / result colours, card heights (match 168 / 96,
   training 148 + quirk lines), the round portraits (drawn into the `%Portrait` slots with
-  `OutgameTheme.add_round_portrait`), the bottom-bar restyle and the safe-area insets.
+  `OutgameTheme.add_round_portrait`), the bottom-bar variation switch and the safe-area insets. Fixed colours
+  are variations: `WeekPilotCard` `%Mastery` `LinkLabel` 18; a pending incident's `%Line` switches to
+  `NegativeLabel` (size 21 kept).
 * Item counts: `%Stats` / `%Slots` ship sample cells (6 / 5) for the editor; code adds or hides
   cells to match the data (`_ensure_children`). Quirk lines are duplicates of the hidden
   `%QuirkLine` template.

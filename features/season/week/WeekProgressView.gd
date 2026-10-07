@@ -137,9 +137,7 @@ func ensure_view() -> void:
 func _fit_safe_area() -> void:
 	ScreenMetrics.indent_to_safe_top(self)
 	ScreenMetrics.extend_background(%Background)
-	var below: float = maxf(0.0, ScreenMetrics.insets().w)
-	(%SafeArea as Control).offset_bottom = -below
-	_action_btn.offset_bottom = below
+	OutgameTheme.fit_bottom_bar(_action_btn, %SafeArea)
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────
@@ -571,12 +569,17 @@ func _refresh_action_button() -> void:
 		return
 	if _hub != null and _hub.has_player_match_on_day(_day):
 		_action_btn.text = "경기 시작"
-		# 하단 바의 칸이라 **각진 모서리를 유지해야 한다** — `style_dark_button`
-		# 을 직접 부르면 모서리가 도로 둥글어져 이 칸만 화면에서 떠오른다.
-		OutgameTheme.style_bottom_button(_action_btn, "dark", 34)
+		# 하단 바의 칸이라 **바 변형끼리만 갈아입는다** — `DarkButton` 이면 모서리가
+		# 도로 둥글어져 이 칸만 화면에서 떠오른다. 갈아입은 뒤 인셋 몫을 다시 얹는다.
+		_set_action_kind(&"BarDarkButton")
 		return
 	_action_btn.text = "주 마감 →" if _day >= CalendarSystem.DAYS_PER_WEEK - 1 else "확인"
-	OutgameTheme.style_bottom_button(_action_btn, "primary", 34)
+	_set_action_kind(&"BarPrimaryButton")
+
+
+func _set_action_kind(variation: StringName) -> void:
+	_action_btn.theme_type_variation = variation
+	OutgameTheme.fit_bar_button(_action_btn)
 
 
 func _on_action_pressed() -> void:
@@ -709,7 +712,7 @@ func _add_incident_card() -> void:
 	line.text = "눌러서 대응하기" if pending else (
 			" · ".join(PackedStringArray(notes)) if not notes.is_empty() else "큰 탈 없이 지나갔다")
 	if pending:
-		line.add_theme_color_override("font_color", OutgameTheme.NEGATIVE)
+		line.theme_type_variation = &"NegativeLabel"
 	var hit: Button = card.get_node("%Hit")
 	hit.visible = pending
 	if pending:

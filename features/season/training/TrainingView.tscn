@@ -192,7 +192,7 @@ theme_override_constants/separation = 14
 
 [node name="Bar" type="HBoxContainer" parent="."]
 unique_name_in_owner = true
-editor_description = "Bottom action bar: edge to edge, square corners, slots split by stretch ratio (1 : 1 : 2, primary at the right). Code adds the device's bottom inset to its height and to each button's bottom content margin (the colour runs under the home indicator, the text stays above it). 코치 추천 is hidden unless training is delegated — the others re-split by ratio."
+editor_description = "Bottom action bar: edge to edge, square corners, slots split by stretch ratio (1 : 1 : 2, primary at the right). Bar* variations give the square corners; code adds the device's bottom inset to its height and to each button's bottom content margin (OutgameTheme.fit_bottom_bar — the colour runs under the home indicator, the text stays above it). 코치 추천 is hidden unless training is delegated — the others re-split by ratio."
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
@@ -209,11 +209,11 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
-theme_type_variation = &"GhostButton"
+theme_type_variation = &"BarGhostButton"
 theme_override_font_sizes/font_size = 28
 text = "판 비우기"
 
-[node name="Sep" type="ColorRect" parent="Bar/ClearButton"]
+[node name="Sep" type="Panel" parent="Bar/ClearButton"]
 layout_mode = 1
 anchors_preset = 11
 anchor_left = 1.0
@@ -223,18 +223,18 @@ offset_left = -2.0
 grow_horizontal = 0
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.11, 0.11, 0.122, 0.14)
+theme_type_variation = &"BarSeparator"
 
 [node name="AutoButton" type="Button" parent="Bar"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
-theme_type_variation = &"GhostButton"
+theme_type_variation = &"BarGhostButton"
 theme_override_font_sizes/font_size = 28
 text = "코치 추천"
 
-[node name="Sep" type="ColorRect" parent="Bar/AutoButton"]
+[node name="Sep" type="Panel" parent="Bar/AutoButton"]
 layout_mode = 1
 anchors_preset = 11
 anchor_left = 1.0
@@ -244,7 +244,7 @@ offset_left = -2.0
 grow_horizontal = 0
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.11, 0.11, 0.122, 0.14)
+theme_type_variation = &"BarSeparator"
 
 [node name="ConfirmButton" type="Button" parent="Bar"]
 unique_name_in_owner = true
@@ -252,5 +252,5 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 2.0
 focus_mode = 0
-theme_type_variation = &"PrimaryButton"
+theme_type_variation = &"BarPrimaryButton"
 text = "훈련 확정"

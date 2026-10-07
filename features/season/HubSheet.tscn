@@ -122,7 +122,7 @@ horizontal_scroll_mode = 0
 
 [node name="Body" type="Control" parent="Root/SafeArea/Card/Pad/VBox/ScrollSlot/Scroll"]
 unique_name_in_owner = true
-editor_description = "Callers (FinancePanel · MasteryPanel · StaffPanel · LeagueView) fill this with absolute-positioned children at runtime; width = body_w()."
+editor_description = "Filled at runtime by the caller: the hub panels (FinancePanel · StaffPanel · MasteryPanel) add one panel scene instance that sets the body height; only LeagueView's team detail still adds absolute-positioned children (width = body_w())."
 custom_minimum_size = Vector2(928, 0)
 layout_mode = 2
 size_flags_horizontal = 3

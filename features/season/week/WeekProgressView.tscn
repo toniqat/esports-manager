@@ -361,7 +361,7 @@ mouse_filter = 2
 
 [node name="Action" type="Button" parent="SafeArea"]
 unique_name_in_owner = true
-editor_description = "Bottom action bar (one full-width slot). Code restyles it per day with OutgameTheme.style_bottom_button (primary 확인 / 주 마감 →, dark 경기 시작 — square corners, text lifted above the bottom inset) and extends its bottom over the inset."
+editor_description = "Bottom action bar (one full-width slot). Code switches its variation per day (BarPrimaryButton 확인 / 주 마감 →, BarDarkButton 경기 시작) and adds the bottom inset (OutgameTheme.fit_bottom_bar / fit_bar_button — colour runs under the inset, text stays above it)."
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
@@ -371,5 +371,5 @@ offset_top = -128.0
 grow_horizontal = 2
 grow_vertical = 0
 focus_mode = 0
-theme_type_variation = &"PrimaryButton"
+theme_type_variation = &"BarPrimaryButton"
 text = "확인"

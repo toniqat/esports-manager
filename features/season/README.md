@@ -32,7 +32,7 @@ primary action at the right end**.
 
 The four conventions (body height is derived back from `bottom_bar_top()` · the colour fill extends
 below the safe line but the text stays above it · when a cell collapses, call `layout_bottom_bar`
-again · use `style_bottom_button` to restyle a button) are in the "Bottom action bar" section of
+again · a slot that changes kind switches its `Bar*` variation and calls `fit_bar_button`) are in the "Bottom action bar" section of
 `resources/README.md`. **The press conference (기자회견) answer choices are not this bar** — they are
 choices standing inside the speech-bubble flow, so they are not pinned to the bottom.
 
@@ -179,7 +179,7 @@ HubSheet (CanvasLayer 18)
 Created with `Xxx.create()` (`load(SCENE_PATH).instantiate()`; `.new()` is an empty Control).
 Root = full-rect `Control`, theme `OutgameTheme.tres`, mouse PASS. Safe area (pattern B,
 `docs/mobile_safe_area.md`) is **code offsets only**: `ScreenMetrics.indent_to_safe_top(self)`,
-`ScreenMetrics.extend_background(%Background)`, `HubView.fit_bottom_bar(%SafeBottom, %BottomBar)`.
+`ScreenMetrics.extend_background(%Background)`, `OutgameTheme.fit_bottom_bar(%BottomBar, %SafeBottom)`.
 
 ```
 HubView (Control · HubView.gd)
@@ -191,7 +191,7 @@ HubView (Control · HubView.gd)
 │ └ %Manage HBox (sep 16, 176) ─ Card0..Card2  HubManageCard instances, `_manage_panels()` order
 └ %SafeBottom   full rect; code lifts its bottom by the bottom inset
   ├ %Toast      Accent label, 40 above the bar
-  └ %BottomBar  HBox, 128 tall, sep 0 ─ %Standings (Ghost 32, ratio 1, + Sep line) · %Start (Primary, ratio 2)
+  └ %BottomBar  HBox, 128 tall, sep 0 ─ %Standings (BarGhost 32, ratio 1, + Sep BarSeparator) · %Start (BarPrimary, ratio 2)
 
 HubRosterRow (Panel 190 · HubRosterRow.gd)          HubManageCard (Panel · Card · HubManageCard.gd)
 ├ %Face TextureRect 160² (16,14)                     ├ VBox (20,14): %Title · %Value (34) · %Sub (20) · %Owner (Accent 18)
@@ -201,19 +201,19 @@ HubRosterRow (Panel 190 · HubRosterRow.gd)          HubManageCard (Panel · Car
 
 EndingView: %Background · Title "WORLD CHAMPION" (Accent 72) · Subtitle · RecapCaption ·
   %Recap VBox (800 centred, y 390) ─ 6 lines × 40 · RosterCaption · %Roster VBox (y 720) ─ 5 lines × 40 ·
-  %SafeBottom/%BottomBar ─ %Settle (Primary 32)
-GameOverView: %Background · Title "GAME OVER" (Heading 80, local NEGATIVE colour) · %Reason (Body 28) ·
-  %Summary (Caption) · %SafeBottom/%BottomBar ─ %Settle (Primary 32)
+  %SafeBottom/%BottomBar ─ %Settle (BarPrimary 32)
+GameOverView: %Background · Title "GAME OVER" (NegativeLabel 80) · %Reason (Body 28) ·
+  %Summary (Caption) · %SafeBottom/%BottomBar ─ %Settle (BarPrimary 32)
 ```
 
 - **Scene owns** layout, texts' sizes / variations, bar ratio, the five rows / three cards / line slots.
 - **Code owns** data, data colours (row lead bar + role name = role colour via `lead_bar_style`; trust chip /
   fill = `trust_color`, fill width = `anchor_right`; recap line amber when won), safe-area offsets.
-- **Bottom bar in a scene**: `fit_bottom_bar` sets `%SafeBottom.offset_bottom = −inset` and
-  `%BottomBar.offset_bottom = +inset` (colour fill reaches the viewport bottom), and per button duplicates the
-  theme stylebox with square corners and `content_margin_bottom += inset` (text stays above the safe line) —
-  same result as `OutgameTheme.add_bottom_bar`. The separator is a 2px `Sep` ColorRect inside every button
-  but the last.
+- **Bottom bar in a scene**: the buttons are `Bar*` variations (square corners) and the separator is a
+  `BarSeparator` Panel inside every button but the last. `OutgameTheme.fit_bottom_bar(%BottomBar, %SafeBottom)`
+  adds only the device inset: `%SafeBottom.offset_bottom = −inset`, `%BottomBar.offset_bottom = +inset` (colour
+  fill reaches the viewport bottom) and each button's `content_margin_bottom += inset` (text stays above the
+  safe line) — `resources/README.md` "Bottom action bar".
 - Manage cards use the `Card` variation (radius 18; the old code card was 16).
 
 ## Phase week budget (CalendarSystem.PHASE_WEEKS)
@@ -354,7 +354,7 @@ BracketView (Control, full rect, OutgameTheme)          IntlBracketView — same
 ├ %Bracket HBox (anchored top-centre, y 250, sep 70)          ├ Semis VBox ─ TopGap 145 · %SF1 · MidGap 180 · %SF2 (280×150)
 │ ├ Semis VBox (sep 60) ─ %SF1 · %SF2   (420×200)             ├ GapSF 50
 │ └ %Final  (size_flags_vertical = centre)                    └ FinalColumn VBox ─ TopGap 300 · %Final (320×170)
-└ %OkButton  PrimaryButton, anchored bottom-wide
+└ %OkButton  BarPrimaryButton, anchored bottom-wide
 ```
 - Match boxes: `BracketMatchBox.gd` on two item scenes — `BracketMatchBox.tscn` (playoff: 22/18/28 px
   fonts, radius 8) and `IntlMatchBox.tscn` (INTL: 18/16/22 px, radius 6). Each instance sets
@@ -403,9 +403,9 @@ scene-built and hang the bar from `%SafeBottom` (above), `TrainingView` from `%S
 
 **Scene-based views** (`LeagueView` · `BracketView` · `IntlBracketView`): layout is anchors in the
 `.tscn`, so the script only applies offsets — `indent_to_safe_top(self)` + `extend_background(%Background)`
-in `_ready`, and the bottom-bar button (`%OkButton`, anchored bottom-wide in the scene) gets
-`OutgameTheme.style_bottom_button` + `offset_top = -(BOTTOM_BAR_H + bottom inset)` — the same rect
-`add_bottom_bar` would give.
+in `_ready`, and the bottom-bar button (`%OkButton`, `BarPrimaryButton`, anchored bottom-wide in the scene)
+gets `OutgameTheme.fit_bottom_bar(%OkButton)` (`offset_top = -(BOTTOM_BAR_H + bottom inset)`, text lifted
+above the inset) — the same rect `add_bottom_bar` would give.
 
 Details: **`docs/mobile_safe_area.md`**
 

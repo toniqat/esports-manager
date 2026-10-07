@@ -12,14 +12,16 @@ extends CanvasLayer
 # `GhostButton` · `DimPanel`). This script only binds `%` nodes, puts the title in, wires
 # close, and offsets `%SafeArea` by the device's safe-area insets.
 #
-# **The body content is still code-built by the callers** — absolute-positioned children
-# under `body`, card-local width `body_w()` (later work: `docs/ui_scene_migration.md` §4 #10).
+# **The body is filled by the caller.** The hub panels (`FinancePanel` · `StaffPanel` ·
+# `MasteryPanel`) are scenes: `open(host)` adds one panel instance under `body` and the panel
+# reports its own height (`set_body_height(size.y)` on `resized`). Only the standings team
+# detail (`LeagueView`) still builds absolute-positioned children in code, card-local width
+# `body_w()`.
 #
-# Usage (each panel's `open(host)`):
+# Usage (a panel scene's `open(host)`):
 #   var sheet := HubSheet.open_on(host, "스태프")
-#   var body: Control = sheet.body          # width = sheet.body_w(), place children absolutely
-#   ... add children to body ...
-#   sheet.set_body_height(y)                # scroll height
+#   var panel := create()                   # the panel's own scene
+#   sheet.body.add_child(panel)             # the panel calls sheet.set_body_height(size.y)
 #   sheet.closed.connect(...)               # on close
 #
 # `HubView` already connects `closed` to its `refresh()`, so panels that change state

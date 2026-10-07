@@ -82,12 +82,10 @@ func _ensure_rows() -> void:
 
 
 ## 확인 하나뿐이라 **하단 구간을 통째로 차지한다** — 좌우 끝에서 끝까지, 아래는
-## 안전선에 밀착. 자리는 씬의 앵커가, 기기 몫(각진 모서리 · 아래 인셋)만 코드가
-## 넣는다 — 규약은 `OutgameTheme.style_bottom_button`.
+## 안전선에 밀착. 자리와 각진 모양은 씬(앵커 · `BarPrimaryButton`)이, 기기 몫(아래
+## 인셋)만 코드가 넣는다 — `OutgameTheme.fit_bottom_bar`.
 func _layout_ok_button() -> void:
-	var btn: Button = %OkButton
-	OutgameTheme.style_bottom_button(btn, "primary", OutgameTheme.FONT_BTN_PRIMARY)
-	btn.offset_top = -(OutgameTheme.BOTTOM_BAR_H + maxf(0.0, ScreenMetrics.insets().w))
+	OutgameTheme.fit_bottom_bar(%OkButton)
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────

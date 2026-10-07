@@ -203,16 +203,16 @@ TrainingView (Control, full rect, PASS, theme = OutgameTheme.tres)  — script: 
 │   └ %CourseScroll  ScrollContainer (h: never-show bar, v: disabled), y 32..
 │     └ %CourseRow   HBox sep 14 — code fills TrainingCourseCard × N + a 24px tail pad
 └ %Bar             HBox sep 0, bottom-anchored, height 128 (+ bottom inset, code)
-  ├ %ClearButton   GhostButton 28, ratio 1 ─ Sep (2px ColorRect at its right edge)
-  ├ %AutoButton    GhostButton 28, ratio 1 ─ Sep  (hidden unless training is delegated)
-  └ %ConfirmButton PrimaryButton 34, ratio 2
+  ├ %ClearButton   BarGhostButton 28, ratio 1 ─ Sep (BarSeparator Panel, 2px at its right edge)
+  ├ %AutoButton    BarGhostButton 28, ratio 1 ─ Sep  (hidden unless training is delegated)
+  └ %ConfirmButton BarPrimaryButton 34, ratio 2
 ```
 **Scene owns**: every position / size / font size, variations, the thumb frame / chip / card / band /
 well / popover StyleBoxes (local sub_resources — no matching variation, see below), the bar separators.
 **Code owns**: data colours (role border on each thumb, grade colour on card frame · band · grade letter ·
 popover border · cap, POSITIVE / NEGATIVE on the EXP chip, the selected-card look), the safe-area insets
-(`indent_to_safe_top` on the view, `extend_background`, `%SafeArea.offset_bottom`, `%Bar.offset_top` and
-each bar button's square corners + `content_margin_bottom = 8 + inset` — `_fit_bottom_inset`), the drawn
+(`indent_to_safe_top` on the view, `extend_background`, and `OutgameTheme.fit_bottom_bar(%Bar, %SafeArea)` —
+`%SafeArea.offset_bottom`, `%Bar.offset_top`, each bar button's `content_margin_bottom += inset`), the drawn
 board (`_draw_grid`), the shape miniature (`TrainingCourseCard._draw_mini`), the drag preview
 (`_make_drag_preview`, built per drag), and the popover height (derived from text).
 Shared sub_resources are never mutated in place — code duplicates them before changing a colour.
@@ -339,7 +339,7 @@ and the lowest limit tier, and a good dedicated coach reaches A/S and the top ti
 
 **Locked-grade cards are still shown** — a dark chip on the shape well says what they need
 (`전술 N 필요`), the content fades, and the info popover adds one red line
-(`전술 N 필요 (지금 전술 M)`). Like limit-locked cards they can be selected but not picked up
+(`%Lock`, `NegativeLabel` 16: `전술 N 필요 (지금 전술 M)`). Like limit-locked cards they can be selected but not picked up
 (`TrainingView._card_locked` = `not TrainingBoard.can_take_more(t)`).
 
 ### Where the EXP multipliers meet
@@ -522,8 +522,8 @@ are in the "Bottom action bar" section of `resources/README.md`; this screen kno
 **the course list hangs from this bar's top edge** (`Inventory` is anchored to the bottom of `%SafeArea`, whose
 bottom is the bar's top), so adjusting the bar makes both the list and the board follow automatically.
 The bar is an HBox in the scene (ratios 1 : 1 : 2), not `OutgameTheme.add_bottom_bar`; the bar-only
-styling `style_bottom_button` does (square corners, text lifted above the inset) is
-`TrainingView._square_bar_button` on top of the scene's `GhostButton` / `PrimaryButton` variation. The confirm button used to float at screen
+look is the scene's `BarGhostButton` / `BarPrimaryButton` variations (square corners) and the inset is
+`OutgameTheme.fit_bottom_bar`. The confirm button used to float at screen
 centre at 460×104, with "판 비우기" small to its left.
 
 ### `TrainingType` enum removed (moved from root CLAUDE.md)

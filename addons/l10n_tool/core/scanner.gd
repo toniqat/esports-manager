@@ -42,6 +42,10 @@ const HANGUL_PATTERN := "[\\x{AC00}-\\x{D7A3}\\x{3131}-\\x{318E}]"
 const LETTER_PATTERN := "\\p{L}"
 # 괄호 짝 찾기 상한 — 닫히지 않은 호출이 파일 끝까지 먹지 않도록.
 const MAX_CALL_SPAN := 20000
+# Node.AutoTranslateMode (Godot 4.5: INHERIT 0 · ALWAYS 1 · DISABLED 2). 씬에는 기본값(INHERIT)이
+# 아닐 때만 노드 섹션에 `auto_translate_mode = <n>` 줄로 저장된다.
+const AUTO_TRANSLATE_INHERIT := 0
+const AUTO_TRANSLATE_DISABLED := 2
 
 
 ## 한 번의 스캔 동안 쓰는 상태 — 컴파일한 정규식 · 카탈로그 파생 표 · 결과.
@@ -157,7 +161,7 @@ static func fix_preview_leak(l) -> int:
 		if not by_file.has(o["file"]):
 			by_file[o["file"]] = []
 		(by_file[o["file"]] as Array).append(o)
-	var re_scene: RegEx = _scene_regex(l.config)
+	var re_scene: RegEx = scene_regex(l.config)
 	var fixed: int = 0
 	for f in by_file.keys():
 		var bytes: PackedByteArray = FileAccess.get_file_as_bytes(f)
@@ -171,7 +175,7 @@ static func fix_preview_leak(l) -> int:
 		for h in hits:
 			var ls: int = _line_start(nl, int(h["line"]))
 			var m: RegExMatch = re_scene.search(text, ls)
-			if m == null or m.get_start() != ls or m.get_string(2).c_unescape() != String(h["text"]):
+			if m == null or m.get_start() != ls or unescape(m.get_string(2)) != String(h["text"]):
 				continue
 			text = text.substr(0, m.get_start(2)) + String(h["keys"][0]) + text.substr(m.get_end(2))
 			n += 1
@@ -208,7 +212,7 @@ static func _make_ctx(l) -> ScanCtx:
 	ctx.re_func = RegEx.create_from_string(FUNC_LINE_PATTERN)
 	ctx.re_hangul = RegEx.create_from_string(HANGUL_PATTERN)
 	ctx.re_letter = RegEx.create_from_string(LETTER_PATTERN)
-	ctx.re_scene = _scene_regex(cfg)
+	ctx.re_scene = scene_regex(cfg)
 	var logs := PackedStringArray()
 	for fn in cfg.scan_list("log_funcs"):
 		logs.append(Config._re_escape(String(fn)))
@@ -242,7 +246,7 @@ static func _make_ctx(l) -> ScanCtx:
 
 
 # `<prop> = "<value>"` 줄 — 그룹 1 = 속성, 2 = 이스케이프된 값(여러 줄 가능).
-static func _scene_regex(cfg: Config) -> RegEx:
+static func scene_regex(cfg: Config) -> RegEx:
 	var props := PackedStringArray()
 	for p in cfg.scan_list("scene_text_props"):
 		props.append(Config._re_escape(String(p)))
@@ -543,24 +547,144 @@ static func _scan_scene(ctx: ScanCtx, f: String, text: String, nl: PackedInt32Ar
 	if ctx.re_scene == null:
 		return
 	var ignored: bool = ctx.is_ignored_path(f)
-	for m in ctx.re_scene.search_all(text):
-		var val: String = m.get_string(2).c_unescape()
+	for sv in parse_scene(ctx.re_scene, text, nl):
+		# auto_translate_mode = DISABLED(2, 부모에서 상속 포함) — 스크립트가 덮어쓰는 자리표시 텍스트.
+		if sv["disabled"]:
+			continue
+		var val: String = sv["value"]
 		if Keygen.is_valid(val, ctx.prefix) or ctx.re_letter.search(val) == null:
 			continue
-		var line: int = _line_of(nl, m.get_start())
+		var line: int = sv["line"]
 		var leak: Array = []
 		if ctx.trans_map.has(val) and not ctx.source_set.has(val):
 			leak = ctx.trans_map[val]
 		if not leak.is_empty():
 			ctx.orphans.append({"file": f, "line": line, "kind": KIND_PREVIEW_LEAK, "text": val, "keys": leak.duplicate()})
 			var hint: String = "fix-preview-leak 로 되돌릴 수 있음" if leak.size() == 1 else "후보 key %d개 — 수동으로" % leak.size()
-			ctx.l.issues.error("E057", "미리보기 누수 — %s 값이 번역문과 같음: \"%s\" (%s)" % [m.get_string(1), _clip(val), hint], f, line, String(leak[0]))
+			ctx.l.issues.error("E057", "미리보기 누수 — %s 값이 번역문과 같음: \"%s\" (%s)" % [sv["prop"], _clip(val), hint], f, line, String(leak[0]))
 			continue
 		if ignored:
 			continue
-		ctx.orphans.append({"file": f, "line": line, "kind": KIND_ORPHAN_SCENE, "text": val})
+		ctx.orphans.append({"file": f, "line": line, "kind": KIND_ORPHAN_SCENE, "text": val, "prop": sv["prop"], "node": sv["node_path"]})
 		var code: String = "E052" if ctx.strict else "W052"
-		ctx.l.issues.add(code, Issues.ERROR if ctx.strict else Issues.WARN, "씬 고아 텍스트 (%s): \"%s\"" % [m.get_string(1), _clip(val)], f, line)
+		ctx.l.issues.add(code, Issues.ERROR if ctx.strict else Issues.WARN, "씬 고아 텍스트 (%s): \"%s\"" % [sv["prop"], _clip(val)], f, line)
+
+
+## 씬 · 리소스 텍스트의 `scene_text_props` 값 목록 (extract scenes 와 공유).
+##   {start, end: 이스케이프된 값의 글자 범위(따옴표 제외), line, prop, value(언이스케이프),
+##    section: "node" · "sub_resource" · "resource", node_name, node_path("." = 루트,
+##    그 밖은 루트 기준 "A/B"), section_id(sub_resource id), disabled}
+## disabled = 그 노드의 auto_translate_mode 가 DISABLED(2) — INHERIT(0 · 생략)이면 같은 파일
+## 안의 부모 노드를 따라 올라가며 처음 만난 명시 값(ALWAYS 1 · DISABLED 2)을 쓴다. 파일에 없는
+## 조상(인스턴스한 씬 내부)은 건너뛰고, 끝까지 없으면 번역됨(루트 기본 = ALWAYS).
+## re_scene 은 `scene_regex(cfg)`.
+static func parse_scene(re_scene: RegEx, text: String, nl: PackedInt32Array = PackedInt32Array()) -> Array:
+	if nl.is_empty():
+		nl = _newlines(text)
+	var vals: Array = []
+	var vs := PackedInt32Array()
+	var ve := PackedInt32Array()
+	for m in re_scene.search_all(text):
+		vs.append(m.get_start())
+		ve.append(m.get_end())
+		vals.append(m)
+	# 섹션 헤더 — 여러 줄 값 안의 `[` 줄은 헤더가 아니다.
+	var sections: Array = []   # [pos, kind, name, path, id]
+	var re_head := RegEx.create_from_string("(?m)^\\[(node|sub_resource|resource|ext_resource|gd_scene|gd_resource|connection|editable)\\b([^\\n]*)\\]\\r?$")
+	var re_attr := RegEx.create_from_string("(\\w+)=\"((?:[^\"\\\\]|\\\\.)*)\"")
+	for h in re_head.search_all(text):
+		if _in_ranges(vs, ve, h.get_start()):
+			continue
+		var attrs: Dictionary = {}
+		for a in re_attr.search_all(h.get_string(2)):
+			attrs[a.get_string(1)] = a.get_string(2)
+		var kind: String = h.get_string(1)
+		var node_path: String = ""
+		if kind == "node":
+			var nm: String = String(attrs.get("name", ""))
+			if not attrs.has("parent"):
+				node_path = "."
+			else:
+				var par: String = String(attrs["parent"])
+				node_path = nm if par == "." else par + "/" + nm
+		sections.append([h.get_start(), kind, String(attrs.get("name", "")), node_path, String(attrs.get("id", "")), h.get_end()])
+	# 노드 경로 → auto_translate_mode (명시된 것만)
+	var re_atm := RegEx.create_from_string("(?m)^auto_translate_mode = (\\d+)")
+	var modes: Dictionary = {}
+	for i in sections.size():
+		var sec: Array = sections[i]
+		if sec[1] != "node":
+			continue
+		var end: int = int(sections[i + 1][0]) if i + 1 < sections.size() else text.length()
+		var am: RegExMatch = re_atm.search(text, int(sec[5]), end)
+		if am != null:
+			modes[sec[3]] = int(am.get_string(1))
+	var starts := PackedInt32Array()
+	for sec in sections:
+		starts.append(int(sec[0]))
+	var out: Array = []
+	for m in vals:
+		var si: int = starts.bsearch(m.get_start(), false) - 1
+		var sec: Array = sections[si] if si >= 0 else [0, "", "", "", "", 0]
+		var kind: String = sec[1]
+		out.append({
+			"start": m.get_start(2), "end": m.get_end(2), "line": _line_of(nl, m.get_start()),
+			"prop": m.get_string(1), "value": unescape(m.get_string(2)),
+			"section": kind, "node_name": sec[2], "node_path": sec[3], "section_id": sec[4],
+			"disabled": kind == "node" and _translate_disabled(modes, String(sec[3])),
+		})
+	return out
+
+
+# 노드 경로의 실효 auto_translate_mode 가 DISABLED 인가 (같은 파일 안 상속).
+static func _translate_disabled(modes: Dictionary, path: String) -> bool:
+	var p: String = path
+	while p != "":
+		var mode: int = int(modes.get(p, AUTO_TRANSLATE_INHERIT))
+		if mode != AUTO_TRANSLATE_INHERIT:
+			return mode == AUTO_TRANSLATE_DISABLED
+		if p == ".":
+			break
+		var cut: int = p.rfind("/")
+		p = "." if cut < 0 else p.substr(0, cut)
+	return false
+
+
+## .tscn 문자열 값 언이스케이프. Godot 4.5 는 `\\` · `\"` 만 이스케이프하고 줄바꿈은 그대로
+## 쓴다(String.c_escape_multiline). String.c_unescape 는 `\\n`(역슬래시 + n)을 줄바꿈으로 잘못 바꾸므로
+## 앞에서부터 한 글자씩 푼다.
+static func unescape(s: String) -> String:
+	if not s.contains("\\"):
+		return s
+	var out: String = ""
+	var i: int = 0
+	var n: int = s.length()
+	while i < n:
+		var c: String = s[i]
+		if c != "\\" or i + 1 >= n:
+			out += c
+			i += 1
+			continue
+		var d: String = s[i + 1]
+		i += 2
+		match d:
+			"n": out += "\n"
+			"t": out += "\t"
+			"r": out += "\r"
+			"b": out += char(8)
+			"f": out += char(12)
+			"a": out += char(7)
+			"v": out += char(11)
+			"u", "U":
+				var w: int = 4 if d == "u" else 6
+				var hx: String = s.substr(i, w)
+				if hx.length() == w and hx.is_valid_hex_number():
+					out += char(hx.hex_to_int())
+					i += w
+				else:
+					out += d
+			_: out += d
+	return out
 
 
 # ── 데이터 CSV ───────────────────────────────────────────────────────────

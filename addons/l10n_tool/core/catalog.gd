@@ -135,6 +135,20 @@ static func is_valid_alias(alias: String, domain: String) -> bool:
 	return re.search(alias) != null and alias.get_slice(".", 0) == domain
 
 
+## L 상수 이름 → alias (데이터 alias 제외, 예약 상수는 alias "") — 일괄 발급(new_keys ·
+## extract scenes)이 E013 충돌을 미리 막는 데 쓴다. 새로 정한 alias 는 호출자가 더한다.
+func const_map() -> Dictionary:
+	var m: Dictionary = {}
+	for c in Config.RESERVED_L_CONSTS:
+		m[c] = ""
+	for a in by_alias.keys():
+		if not config.is_data_alias(a):
+			var cn: String = Config.const_name(a)
+			if not m.has(cn):
+				m[cn] = a
+	return m
+
+
 ## `new_key` (§7.1): key 발급 → `<domain>.csv` 끝에 active 행 추가 → 저장.
 ## 돌려주는 값 {key, error}. 같은 alias 가 있으면 오류. do_save = false 면 저장을 미루고
 ## (일괄 추출) 나중에 `save_all()`.

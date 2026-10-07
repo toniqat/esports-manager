@@ -12,6 +12,10 @@ extends RefCounted
 ## 저장 순서: 도메인 파일(`save_all`) → 데이터 CSV — 중간에 멈춰도 데이터 CSV 에 원본에
 ## 없는 key 가 남지 않는다. 쓸 파일 중 하나라도 Excel 잠금이면 아무것도 바꾸지 않는다.
 ## 번역은 비워 둔다. 보고서(중복 텍스트 · E036 후보) = `generated/extract_report.md`.
+##
+## `extract scenes <domain> <경로…>` — 씬 · 리소스 고아 값 → key + 값 치환 (§14 2순위).
+## `extract code [경로…]` — 코드 고아 리터럴 작업 목록 JSON 만 (§14 3순위, key 발급은 `new_keys`).
+## 둘 다 고아 판정은 파사드 `l.scan_orphans()`(= scanner)를 그대로 쓴다.
 
 const Config = preload("res://addons/l10n_tool/core/config.gd")
 const Catalog = preload("res://addons/l10n_tool/core/catalog.gd")
@@ -100,6 +104,232 @@ static func extract_data(l, csv_names: PackedStringArray) -> String:
 	if rerr != "":
 		l.info("보고서 쓰기 실패: " + rerr)
 	return ""
+
+
+# ── extract scenes (§14 2순위) ──────────────────────────────────────────
+
+## paths(파일 · 폴더, 이미 res:// 로 푼 것) 아래 `.tscn` · `.tres` 에서 scanner 가 고아로
+## 보는 값(orphan_scene — auto_translate_mode DISABLED · ignore_paths · E057 누수 · key ·
+## 글자 없는 값은 제외)마다 key 를 발급하고 그 값 바이트만 key 로 바꾼다. 원문(ko)만 쓴다.
+## alias = `<domain>.<scene>.<node>[.<prop>]` (`scene_alias_parts` 참고), context =
+## `<파일 이름> <노드 경로> <prop>`. 이미 있는 alias 가 원문 · context 까지 같으면 그 key 를
+## 다시 쓴다(씬만 되돌려진 경우). dry 면 계획만 출력. 오류 문자열 또는 "".
+static func extract_scenes(l, domain: String, paths: PackedStringArray, dry: bool) -> String:
+	var cat: Catalog = l.catalog
+	if RegEx.create_from_string("^[a-z][a-z0-9_]*$").search(domain) == null:
+		return "domain 형식 위반: %s" % domain
+	if paths.is_empty():
+		return "경로가 없음"
+	var by_file: Dictionary = {}
+	for o in l.scan_orphans():
+		if o["kind"] != "orphan_scene" or not under_paths(String(o["file"]), paths):
+			continue
+		if not by_file.has(o["file"]):
+			by_file[o["file"]] = []
+		(by_file[o["file"]] as Array).append(o)
+	var files: Array = by_file.keys()
+	files.sort()
+	var consts: Dictionary = cat.const_map()
+	var planned: Dictionary = {}       # alias → true (이번에 새로 쓸 것)
+	var plan: Array = []               # {file, start, end, line, prop, text, alias, context, key, status}
+	var texts: Dictionary = {}         # file → [bom, text]
+	for f in files:
+		var bytes: PackedByteArray = FileAccess.get_file_as_bytes(f)
+		var bom: bool = bytes.size() >= 3 and bytes[0] == 0xEF and bytes[1] == 0xBB and bytes[2] == 0xBF
+		var text: String = bytes.slice(3 if bom else 0).get_string_from_utf8()
+		texts[f] = [bom, text]
+		var by_line: Dictionary = {}
+		for sv in l.parse_scene(text):
+			by_line[int(sv["line"])] = sv
+		var scene: String = scene_alias_parts(String(f).get_file())
+		for o in by_file[f]:
+			var sv: Dictionary = by_line.get(int(o["line"]), {})
+			if sv.is_empty() or String(sv["value"]) != String(o["text"]):
+				l.info("  건너뜀 (스캔과 파싱 불일치): %s:%d" % [f, int(o["line"])])
+				continue
+			var src: String = String(sv["value"]).replace("\r\n", "\n")
+			var prop: String = sv["prop"]
+			var where: String = "resource"
+			if sv["section"] == "node":
+				where = String(sv["node_name"]) if sv["node_path"] == "." else String(sv["node_path"])
+			elif sv["section"] == "sub_resource":
+				where = "sub_resource " + String(sv["section_id"])
+			var ctx: String = "%s %s %s" % [String(f).get_file(), where, prop]
+			var picked: Array = _pick_scene_alias(cat, domain, scene, sv, src, ctx, consts, planned)
+			if picked.is_empty():
+				return "%s:%d: alias 를 정할 수 없음" % [f, int(sv["line"])]
+			plan.append({"file": f, "start": sv["start"], "end": sv["end"], "line": sv["line"], "prop": prop,
+				"text": src, "alias": picked[0], "context": ctx, "key": picked[1], "status": picked[2]})
+	var n_new: int = 0
+	for p in plan:
+		if p["status"] == "new":
+			n_new += 1
+		l.info("  %s:%d %s \"%s\" → %s (%s)" % [String(p["file"]).get_file(), int(p["line"]), p["prop"],
+				_clip(String(p["text"])), p["alias"], "신규" if p["status"] == "new" else "재사용 " + String(p["key"])])
+	var summary: String = "extract scenes %s: 파일 %d개 · 값 %d개 (신규 %d · 재사용 %d)" % [domain, files.size(), plan.size(), n_new, plan.size() - n_new]
+	if dry:
+		l.info(summary + " — --dry, 아무것도 쓰지 않음")
+		return ""
+	if plan.is_empty():
+		l.info(summary)
+		return ""
+	if n_new > 0:
+		var lock: String = Catalog.excel_lock_for(l.config.domain_path(domain))
+		if lock != "":
+			return "Excel 잠금 파일이 있다 — 파일을 닫고 다시: %s" % lock
+	# 도메인 파일 먼저 — 중간에 멈춰도 씬에 원본에 없는 key 가 남지 않는다.
+	for p in plan:
+		if p["status"] != "new":
+			continue
+		var res: Dictionary = cat.add_entry(domain, String(p["alias"]), String(p["text"]), String(p["context"]), "", "", false)
+		if String(res["error"]) != "":
+			cat.reload()
+			return "%s: %s" % [p["alias"], res["error"]]
+		p["key"] = res["key"]
+	var serr: String = cat.save_all()
+	if serr != "":
+		cat.reload()
+		return "도메인 파일 저장 실패 — 씬은 그대로: " + serr
+	# 씬 — 뒤쪽 값부터 바꿔야 앞쪽 오프셋이 그대로다.
+	plan.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return String(a["file"]) < String(b["file"]) if a["file"] != b["file"] else int(a["start"]) > int(b["start"]))
+	var errs := PackedStringArray()
+	var cur: String = ""
+	for i in plan.size():
+		var p: Dictionary = plan[i]
+		var f: String = p["file"]
+		var tx: String = texts[f][1]
+		texts[f][1] = tx.substr(0, int(p["start"])) + String(p["key"]) + tx.substr(int(p["end"]))
+		if i + 1 < plan.size() and String(plan[i + 1]["file"]) == f:
+			continue
+		var fa := FileAccess.open(f, FileAccess.WRITE)
+		if fa == null:
+			errs.append("쓰기 실패: %s" % f)
+			continue
+		if texts[f][0]:
+			fa.store_buffer(PackedByteArray([0xEF, 0xBB, 0xBF]))
+		fa.store_buffer(String(texts[f][1]).to_utf8_buffer())
+		fa.close()
+	l.info(summary)
+	return "\n".join(errs)
+
+
+## 씬 파일 이름 → alias 세그먼트. `UI_View_` · `UI_Comp_` 접두사를 떼고 snake_case
+## (`UI_View_BattleHud.tscn` → `battle_hud`, `Lobby.tscn` → `lobby`).
+static func scene_alias_parts(file_name: String) -> String:
+	var base: String = file_name.get_basename()
+	for pre in ["UI_View_", "UI_Comp_"]:
+		if base.begins_with(pre):
+			base = base.substr(pre.length())
+			break
+	return alias_segment(base, "scene")
+
+
+## 이름 → alias 세그먼트 `[a-z0-9_]+` (snake_case, 그 밖 글자는 `_`, 연속 · 양끝 `_` 정리).
+static func alias_segment(s: String, fallback: String) -> String:
+	var low: String = s.to_snake_case().to_lower()
+	var out: String = ""
+	for ch in low:
+		out += ch if "abcdefghijklmnopqrstuvwxyz0123456789_".contains(ch) else "_"
+	while out.contains("__"):
+		out = out.replace("__", "_")
+	out = out.strip_edges().trim_prefix("_").trim_suffix("_")
+	return out if out != "" else fallback
+
+
+# 노드 값 하나의 alias → [alias, key, "new" | "reused"]. 후보 순서: 노드 이름 → 부모_노드 →
+# 노드_2, 노드_3 … 이미 있는 alias 는 원문 · context 가 같을 때만 재사용, 아니면 다음 후보.
+static func _pick_scene_alias(cat: Catalog, domain: String, scene: String, sv: Dictionary, src: String, ctx: String, consts: Dictionary, planned: Dictionary) -> Array:
+	var node: String
+	var parent: String = ""
+	match String(sv["section"]):
+		"node":
+			node = alias_segment(String(sv["node_name"]), "node")
+			var np: String = sv["node_path"]
+			var cut: int = np.rfind("/")
+			if cut > 0:
+				parent = alias_segment(np.substr(0, cut).get_file(), "")
+		"sub_resource":
+			node = "sub_" + alias_segment(String(sv["section_id"]), "res")
+		_:
+			node = "resource"
+	var suffix: String = "" if sv["prop"] == "text" else "." + alias_segment(String(sv["prop"]), "prop")
+	var cands: Array = [node]
+	if parent != "":
+		cands.append(parent + "_" + node)
+	for n in range(2, 1000):
+		cands.append("%s_%d" % [node, n])
+	for c in cands:
+		var alias: String = "%s.%s.%s%s" % [domain, scene, c, suffix]
+		if planned.has(alias):
+			continue
+		var old: String = cat.key_of_alias(alias)
+		if old != "":
+			var e: Dictionary = cat.entry(old)
+			if String(e["source"]) == src and String(e["context"]) == ctx and String(e["domain"]) == domain:
+				planned[alias] = true
+				return [alias, old, "reused"]
+			continue
+		var cn: String = Config.const_name(alias)
+		if consts.has(cn):
+			continue
+		consts[cn] = alias
+		planned[alias] = true
+		return [alias, "", "new"]
+	return []
+
+
+# ── extract code (작업 목록) ────────────────────────────────────────────
+
+## paths 아래(비면 전체) `.gd` 고아 리터럴(orphan_code — scanner 와 같은 판정) 목록을
+## out_path(JSON)에 쓴다. key 는 발급하지 않는다 — alias 는 이행하는 쪽이 정해 `new_keys`
+## 로 발급한다(§14 3순위). 본문 {generated_at, paths, total, files: [{file, count, items:
+## [{line, text}]}]}. 오류 문자열 또는 "".
+static func extract_code(l, paths: PackedStringArray, out_path: String) -> String:
+	var by_file: Dictionary = {}
+	var total: int = 0
+	for o in l.scan_orphans():
+		if o["kind"] != "orphan_code":
+			continue
+		if not paths.is_empty() and not under_paths(String(o["file"]), paths):
+			continue
+		if not by_file.has(o["file"]):
+			by_file[o["file"]] = []
+		(by_file[o["file"]] as Array).append({"line": int(o["line"]), "text": o["text"]})
+		total += 1
+	var names: Array = by_file.keys()
+	names.sort()
+	var files: Array = []
+	for f in names:
+		var items: Array = by_file[f]
+		items.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a["line"]) < int(b["line"]))
+		files.append({"file": f, "count": items.size(), "items": items})
+		l.info("  %s: %d" % [f, items.size()])
+	var body: Dictionary = {
+		"generated_at": Time.get_datetime_string_from_system(true) + "Z",
+		"paths": Array(paths), "total": total, "files": files,
+	}
+	DirAccess.make_dir_recursive_absolute(out_path.get_base_dir())
+	var fa := FileAccess.open(out_path, FileAccess.WRITE)
+	if fa == null:
+		return "쓰기 실패: %s (%s)" % [out_path, error_string(FileAccess.get_open_error())]
+	fa.store_string(JSON.stringify(body, "\t", false) + "\n")
+	fa.close()
+	l.info("extract code: 파일 %d개 · 고아 리터럴 %d개 → %s" % [files.size(), total, out_path])
+	return ""
+
+
+## file 이 paths(파일 또는 폴더) 중 하나와 같거나 그 아래인가.
+static func under_paths(file: String, paths: PackedStringArray) -> bool:
+	for p in paths:
+		if file == p or file.begins_with(p if p.ends_with("/") else p + "/"):
+			return true
+	return false
+
+
+static func _clip(s: String) -> String:
+	var one: String = s.replace("\r", "").replace("\n", "⏎")
+	return one if one.length() <= 50 else one.substr(0, 50) + "…"
 
 
 ## data_columns 항목 하나. 치명 오류(alias 위반 · 중복 · 발급 실패)만 돌려주고 나머지는 rep 에.

@@ -1,0 +1,55 @@
+[gd_scene format=3 uid="uid://bmigratehud01"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_ab1"]
+font_size = 20
+
+[node name="Hud" type="Control"]
+layout_mode = 3
+
+[node name="Title" type="Label" parent="."]
+layout_mode = 0
+text = "제목"
+label_settings = SubResource("LabelSettings_ab1")
+
+[node name="Box" type="VBoxContainer" parent="."]
+auto_translate_mode = 2
+layout_mode = 0
+
+[node name="Label" type="Label" parent="Box"]
+layout_mode = 2
+text = "자리표시"
+
+[node name="Inner" type="HBoxContainer" parent="Box"]
+auto_translate_mode = 1
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Box/Inner"]
+layout_mode = 2
+text = "다시 번역"
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 0
+
+[node name="Label" type="Label" parent="Panel"]
+layout_mode = 0
+text = "a \"인용\" back\\slash
+[node name=\"가짜\" parent=\".\"]
+[b]둘째 줄[/b] C:\\new"
+
+[node name="Edit" type="LineEdit" parent="Panel"]
+layout_mode = 0
+placeholder_text = "입력"
+tooltip_text = "도움말"
+
+[node name="Num" type="Label" parent="."]
+text = "123"
+
+[node name="Key" type="Label" parent="."]
+text = "tx_D5MN0P1Q2R"
+
+[node name="Leak" type="Label" parent="."]
+text = "OK"
+
+[node name="Fixed" type="Label" parent="."]
+auto_translate_mode = 2
+text = "직접"

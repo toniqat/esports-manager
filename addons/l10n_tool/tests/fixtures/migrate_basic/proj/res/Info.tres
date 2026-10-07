@@ -1,0 +1,7 @@
+[gd_resource type="Resource" format=3]
+
+[sub_resource type="Resource" id="Resource_x1"]
+title = "하위 제목"
+
+[resource]
+title = "리소스 제목"

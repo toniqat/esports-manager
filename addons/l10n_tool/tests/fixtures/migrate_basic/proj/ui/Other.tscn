@@ -1,0 +1,9 @@
+﻿[gd_scene format=3]
+
+[node name="Other" type="Control"]
+
+[node name="Label" type="Label" parent="."]
+text = "다른 씬"
+
+[node name="Win" type="Window" parent="."]
+title = "창 제목"

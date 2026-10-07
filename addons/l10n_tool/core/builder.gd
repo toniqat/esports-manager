@@ -58,7 +58,7 @@ static func build(l, mode: String) -> String:
 	return "\n".join(errs)
 
 
-## L.gd 만 다시 쓴다 (rename_alias). 오류 문자열 또는 "".
+## L.gd 만 다시 쓴다 (rename_alias · `write_l`). 오류 문자열 또는 "".
 static func write_l_gd(l) -> String:
 	var cfg: Config = l.config
 	if not DirAccess.dir_exists_absolute(cfg.gen_dir):
@@ -69,6 +69,26 @@ static func write_l_gd(l) -> String:
 	if res > 0:
 		_rescan_editor()
 	return ""
+
+
+## `strings_<loc>.csv` 만 다시 쓴다 (`write_strings` — 검증 관문 없이). 오류 문자열 또는 "".
+static func write_strings(l, mode: String) -> String:
+	if mode != MODE_DEV and mode != MODE_RELEASE:
+		return "알 수 없는 빌드 모드: %s" % mode
+	var cfg: Config = l.config
+	if not DirAccess.dir_exists_absolute(cfg.gen_dir):
+		DirAccess.make_dir_recursive_absolute(cfg.gen_dir)
+	var errs := PackedStringArray()
+	var written: int = 0
+	for loc in cfg.locales:
+		var res: int = _write_if_changed(cfg.gen_dir.path_join(strings_file(loc)), strings_csv(l, loc, mode))
+		if res < 0:
+			errs.append("쓰기 실패: " + strings_file(loc))
+		written += maxi(res, 0)
+	if written > 0:
+		_rescan_editor()
+	l.info("write_strings %s: %d개 갱신" % [mode, written])
+	return "\n".join(errs)
 
 
 static func strings_file(loc: String) -> String:

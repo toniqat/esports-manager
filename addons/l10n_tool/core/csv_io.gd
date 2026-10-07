@@ -53,7 +53,8 @@ static func create(file_path: String, header_cols: PackedStringArray) -> CsvIo:
 	var t: CsvIo = CsvIo.new()
 	t.path = file_path
 	t.headers = header_cols.duplicate()
-	t.eol = "\r\n" if OS.get_name() == "Windows" else "\n"
+	# 저장소 `.gitattributes` 가 eol=lf — 기존 원본과 같게 OS 와 무관하게 LF.
+	t.eol = "\n"
 	t.bom = false
 	t.trailing_eol = true
 	t._records = [{"raw": "", "row": -1, "kind": "header"}]

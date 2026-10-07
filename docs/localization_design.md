@@ -11,7 +11,7 @@
 
 1. 이 문서와 실제 코드가 다르면 **임의로 한쪽에 맞추지 말고** 차이를 보고하고 오너에게 확인받는다.
 2. `data/l10n/generated/` 아래 파일은 **직접 수정하지 않는다(MUST NOT).** 항상 `build` 를 다시 실행한다.
-3. key 를 **직접 지어내지 않는다(MUST NOT).** `new_key` / `extract` 명령(또는 같은 규칙의 생성 함수)으로만 발급한다.
+3. key 를 **직접 지어내지 않는다(MUST NOT).** `new_key` · `new_keys` / `extract` 명령(또는 같은 규칙의 생성 함수)으로만 발급한다.
 4. 문자열 CSV 를 고칠 때 **행 순서를 바꾸지 않고**, 새 행은 **파일 끝에 추가**한다. 정렬·재포맷·인코딩 변경 금지 (§12).
 5. 번역의 `approved` 전환은 **오너가 명시적으로 지시할 때만** `approve` 명령으로 한다. LLM 은 번역을 `draft` 까지만 쓴다.
 6. 코드에서 key 를 문자열 연결로 **동적으로 조립하지 않는다(MUST NOT)** (§10.1).
@@ -321,7 +321,9 @@ engage,tx_7ZKD3M1QWE,,,,,,교전 — 표시 문자열의 key 를 따른다
 | 명령 | 동작 |
 |---|---|
 | `new_key <domain> <alias> <text> [context]` | key 발급 → `<domain>.csv` 끝에 `status=active` 행 추가 |
-| `extract <대상>` | 고아 텍스트 일괄 key 발급 · 치환 (§14) |
+| `new_keys <json> [--out=<json>]` | 일괄 발급. 입력 = `[{"domain","alias","ko","context"?,"max_len"?,"note"?,"en"?}…]`(원문은 `source_locale` 이름, 번역 로케일은 선택 → draft + 해시). **전부 검사한 뒤**(alias 형식 · 첫 세그먼트 · `L` 상수 충돌 · 알 수 없는 필드 · 빈 원문 · Excel 잠금) 하나라도 틀리면 아무것도 바꾸지 않는다. 이미 있는 alias 는 원문이 같으면 그 key 재사용(`reused`), 다르면 오류. 도메인 파일이 없으면 표준 헤더로 만든다. 출력 = `alias → key`, `--out` = `[{alias, key, domain, status}]` |
+| `extract data [csv…]` · `extract scenes <domain> <경로…> [--dry]` · `extract code [경로…] [--out=<json>]` | 고아 텍스트 일괄 처리 (§14) |
+| `write_l` · `write_strings [dev\|release]` | 검증 관문 없이 `L.gd` / `strings_<loc>.csv` 하나만 다시 쓴다 — 병렬 이행 중 다른 작업의 Error 가 `build` 를 막을 때. 원본 읽기 오류(E001 · E002 · E003)가 있으면 거부 |
 | `sync` | 번역 텍스트가 있는데 `<loc>_hash` 가 비어 있으면 현재 원문 해시를 기록하고 `<loc>_status=draft` 로 둔다 |
 | `approve <locale> <keys…>` | `<loc>_status=approved`, `<loc>_hash=hash(현재 원문)`. **오너 지시 시에만** |
 | `add_locale <locale>` | 모든 도메인 파일에 `<loc>` · `<loc>_status` · `<loc>_hash` 컬럼을 끝에 추가, config 갱신 |
@@ -405,6 +407,9 @@ key 마다 **어느 파일 몇 번째 줄**에서 쓰이는지 역인덱스를 �
 | `preview_leak` | 씬 텍스트가 어떤 key 의 **번역문과 정확히 일치** | E057 — 미리보기 플러그인이 번역문을 씬에 저장한 흔적 (§11.2) |
 
 - `# l10n-ignore` 를 붙인 줄과 `scan.ignore_paths` 는 고아 검사에서 뺀다(디버그 UI, 치트 메뉴 등).
+- **씬 노드의 `auto_translate_mode = 2`(`AUTO_TRANSLATE_MODE_DISABLED`)는 "이 텍스트는 스크립트가 채운다"는 표시**다 — 그 노드의 값은 `orphan_scene`(W052/E052) · `preview_leak`(E057) 대상이 아니고 `extract scenes` 도 건너뛴다. 씬에 WYSIWYG 미리보기용 자리표시 텍스트를 남기되 런타임에 코드가 `Loc.t()` 로 덮어쓰는 노드에 쓴다. Godot 4.5 는 기본값(INHERIT 0)이 아닐 때만 노드 섹션에 `auto_translate_mode = <n>` 줄을 저장하고(ALWAYS 1 · DISABLED 2), INHERIT 는 부모 값을 따른다. 스캐너는 **같은 파일 안에서** 부모 경로를 따라 올라가 처음 만난 명시 값을 쓴다(자식이 1 로 되돌리면 다시 검사 대상). 파일에 없는 조상(인스턴스한 씬 내부 노드의 부모)은 건너뛰고, 끝까지 없으면 번역 대상으로 본다 — 인스턴스를 놓은 쪽에서 DISABLED 로 둔 것은 하위 씬 파일 검사에 전해지지 않는다(하위 씬 자체에 표시한다).
+- 씬 값은 Godot 의 `.tscn` 문자열 표기(`\\` · `\"` 만 이스케이프, 줄바꿈은 그대로)를 앞에서부터 풀어 비교한다(`String.c_unescape` 는 `\\n` 을 줄바꿈으로 잘못 푼다).
+- `orphan_scene` 항목은 index.json 에 `prop` · `node`(루트 기준 노드 경로)도 담는다.
 - `UiPreview` 의 `_fill_preview()` 더미 데이터는 고아 검사 대상이다 — 더미라도 표시 문구면 key 를 쓰고, 순수 더미 값(가짜 이름 · 숫자)은 함수 단위로 `# l10n-ignore` 한다.
 
 ### 9.3 동적 key 패턴
@@ -586,8 +591,8 @@ alias 패턴의 `*` 는 세그먼트 하나에 맞는다.
 | 순서 | 대상 | 방법 |
 |---|---|---|
 | 1 | 데이터 CSV (`data_columns`) | `extract data` — 각 셀의 텍스트로 key 발급 → 도메인 파일에 행 추가 → 데이터 CSV 셀을 key 로 치환 → 로더 · 화면 코드를 `Loc.t(row.xxx_key)` 로 수정. **컬럼 이름 변경(`name` → `name_key`)은 csv_to_db `SCHEMAS` 와 로더도 함께** |
-| 2 | 씬 (`.tscn`) | `extract scenes <경로>` — `scene_text_props` 값을 key 로 치환 (텍스트 파일의 해당 줄만 수정, 자동). alias = `<domain>.<scene_snake>.<node_snake>` |
-| 3 | 코드 (`.gd`) | `extract code <경로>` 는 **key 발급과 작업 목록만** 만든다 — 포맷 문자열 · 연결 · 조사 처리가 섞여 자동 치환이 위험하다. LLM 이 목록의 key 로 파일 단위로 `Loc.t(L.X, {...})` 로 바꾼다 (key 를 새로 짓지 않는다) |
+| 2 | 씬 (`.tscn` · `.tres`) | `extract scenes <domain> <경로…> [--dry]` — scanner 가 고아(`orphan_scene`)로 보는 `scene_text_props` 값마다 key 를 발급하고 **그 값 바이트만** key 로 바꾼다(BOM · 줄바꿈 · 나머지 그대로, 원문 ko 만, 두 번 돌려도 같다). alias = `<domain>.<scene>.<node>[.<prop>]` — scene = 파일 이름에서 `UI_View_` · `UI_Comp_` 를 뗀 snake_case(`UI_View_BattleHud.tscn` → `battle_hud`), node = 노드 이름 snake_case(`.tres` 는 `resource` · `sub_<id>`), `.<prop>` 는 prop 이 `text` 가 아닐 때만. 충돌하면 `<부모>_<노드>` → `<노드>_2`, `_3` … 순(파일 이름 순 → 파일 안 순서라 결정적). context = `<파일 이름> <노드 경로> <prop>`; 같은 alias 가 원문 · context 까지 같으면 그 key 를 재사용한다(씬만 되돌린 경우). 스크립트가 덮어쓰는 자리표시 노드는 먼저 `auto_translate_mode = 2` 로 표시해 둔다(§9.2) |
+| 3 | 코드 (`.gd`) | `extract code [경로…] [--out=<json>]` 은 **작업 목록만** 만든다(기본 `generated/extract_code.json`, gitignore) — 파일마다 scanner 의 `orphan_code` `{line, text}`. **본문과 다름(오케스트레이터 승인)**: 코드 문자열의 alias 는 자동으로 짓지 않고, 이행하는 LLM 이 문맥을 보고 정해 `new_keys` 로 한 번에 발급한 뒤 파일 단위로 `Loc.t(L.X, {...})` 로 바꾼다 — 포맷 문자열 · 연결 · 조사 처리가 섞여 자동 치환이 위험하다. 병렬 작업이면 `--out` 으로 작업자마다 파일을 나눈다 |
 | 4 | 문장 조립 코드 | §6.1 패턴으로 수동 이행 |
 | 5 | 세이브 | `season_state` 등에 표시 문자열이 저장되는 곳을 id · key 로 교체 |
 | 6 | 마감 | 고아 0 → `strict.orphans` 를 `error` 로. 용어 규칙이 적힌 README 들을 `glossary.csv` 참조로 교체 |

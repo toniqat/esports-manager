@@ -25,6 +25,9 @@ const MODE_RELEASE := "release"
 
 const USAGE := """L10n 명령 (godot --headless --path . --script res://addons/l10n_tool/cli.gd -- <명령>)
   new_key <domain> <alias> <text> [context]
+  new_keys <json 경로> [--out=<결과 json>]
+                                         (일괄 발급: [{"domain","alias","ko","context"?,"max_len"?,"note"?,"en"?}, …]
+                                          — 하나라도 틀리면 아무것도 안 바꿈, 같은 alias + 같은 원문은 재사용)
   add_locale <locale>
   sync
   approve <locale> <key|alias>...        (오너 지시 시에만)
@@ -32,7 +35,12 @@ const USAGE := """L10n 명령 (godot --headless --path . --script res://addons/l
   scan
   validate [dev|release] [--fix-preview-leak]
   build [dev|release]
+  write_l                                (L.gd 만 원본에서 다시 생성 — 검증 관문 없음)
+  write_strings [dev|release]            (strings_<loc>.csv 만 다시 생성 — 검증 관문 없음)
   extract data [csv 파일명...]
+  extract scenes <domain> <경로...> [--dry]
+                                         (씬 · 리소스 고아 값 → key 발급 + 값 치환, 경로 = 파일 또는 폴더)
+  extract code [경로...] [--out=<json>]   (코드 고아 리터럴 작업 목록, 기본 generated/extract_code.json)
   set_tr <locale> <json 경로>            (번역 초안 일괄: {"key 또는 alias": "번역", …} → draft)
 옵션: --config=<res://…/config.json> (기본 res://data/l10n/config.json)"""
 
@@ -161,14 +169,110 @@ func cmd_build(mode: String = MODE_DEV) -> int:
 	return errors
 
 
-## `extract data [csv…]` (§14 1순위). 돌려주는 값: 오류 문자열.
+## `new_keys` — key 일괄 발급 (StatusOps.new_keys). json = 항목 배열. out_path 가 있으면
+## 결과 [{alias, key, domain, status}] 를 JSON 으로 쓴다. 돌려주는 값: 오류 문자열.
+func cmd_new_keys(json_path: String, out_path: String = "") -> String:
+	reload()
+	if not FileAccess.file_exists(json_path):
+		return "파일 없음: %s" % json_path
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(json_path))
+	if typeof(parsed) != TYPE_ARRAY:
+		return "JSON 배열이 아님: %s" % json_path
+	var res: Dictionary = StatusOps.new_keys(self, parsed)
+	if String(res["error"]) != "":
+		return String(res["error"])
+	var n_new: int = 0
+	for r in res["results"]:
+		info("%s → %s (%s)" % [r["alias"], r["key"], "신규" if r["status"] == "new" else "재사용"])
+		if r["status"] == "new":
+			n_new += 1
+	if out_path != "":
+		DirAccess.make_dir_recursive_absolute(out_path.get_base_dir())
+		var f := FileAccess.open(out_path, FileAccess.WRITE)
+		if f == null:
+			return "결과 쓰기 실패: %s" % out_path
+		f.store_string(JSON.stringify(res["results"], "\t", false) + "\n")
+		f.close()
+	info("new_keys: %d개 (신규 %d · 재사용 %d)" % [(res["results"] as Array).size(), n_new, (res["results"] as Array).size() - n_new])
+	return ""
+
+
+## `write_l` / `write_strings` — 검증 관문 없이 생성물 하나만 다시 쓴다(다른 에이전트의 작업
+## 중 Error 가 build 를 막을 때). 원본 읽기 오류(E001 · E002 · E003)가 있으면 상수 · 행이
+## 빠진 파일이 되므로 거부한다. 돌려주는 값: 오류 문자열.
+func cmd_write_generated(what: String, mode: String = MODE_DEV) -> String:
+	reload()
+	if catalog.load_issues.error_count() > 0:
+		for it in catalog.load_issues.items:
+			info("  " + Issues.format_item(it))
+		return "원본 읽기 오류 %d개 — 고친 뒤 다시" % catalog.load_issues.error_count()
+	if what == "l":
+		var err: String = Builder.write_l_gd(self)
+		if err == "":
+			info("write_l: %s" % config.gen_dir.path_join(Builder.L_GD))
+		return err
+	return Builder.write_strings(self, mode)
+
+
+## `extract data [csv…]` (§14 1순위) · `extract scenes <domain> <경로…> [--dry]` (2순위) ·
+## `extract code [경로…] [--out=<json>]` (3순위 작업 목록). 돌려주는 값: 오류 문자열.
 func cmd_extract(args: PackedStringArray) -> String:
 	reload()
-	if args.is_empty() or args[0] != "data":
-		return "지원 대상: extract data [csv 파일명...]"
-	var err: String = Extractor.extract_data(self, args.slice(1))
-	info(("extract 실패: " + err) if err != "" else "extract data 완료")
+	var what: String = args[0] if not args.is_empty() else ""
+	var rest := PackedStringArray()
+	var dry: bool = false
+	var out_path: String = config.gen_dir.path_join("extract_code.json")
+	for a in args.slice(1):
+		if a == "--dry":
+			dry = true
+		elif a.begins_with("--out="):
+			out_path = resolve_path(a.substr(6))
+		else:
+			rest.append(a)
+	var err: String = ""
+	match what:
+		"data":
+			err = Extractor.extract_data(self, rest)
+		"scenes":
+			if rest.size() < 2:
+				return "사용법: extract scenes <domain> <경로...> [--dry]"
+			var paths := PackedStringArray()
+			for p in rest.slice(1):
+				paths.append(resolve_path(p))
+			err = Extractor.extract_scenes(self, rest[0], paths, dry)
+		"code":
+			var paths := PackedStringArray()
+			for p in rest:
+				paths.append(resolve_path(p))
+			err = Extractor.extract_code(self, paths, out_path)
+		_:
+			return "지원 대상: extract data [csv...] · extract scenes <domain> <경로...> · extract code [경로...]"
+	info(("extract 실패: " + err) if err != "" else "extract %s 완료" % what)
 	return err
+
+
+## 스캔 결과의 orphans(index.json 과 같은 판정)만 — issues · index · index.json 은 건드리지 않는다.
+func scan_orphans() -> Array:
+	var saved: Issues = issues
+	issues = Issues.new()
+	var idx: Dictionary = Scanner.scan(self)
+	issues = saved
+	return idx.get("orphans", [])
+
+
+## 씬 · 리소스 본문의 scene_text_props 값 목록 (Scanner.parse_scene).
+func parse_scene(text: String) -> Array:
+	return Scanner.parse_scene(Scanner.scene_regex(config), text)
+
+
+## 명령 인자 경로 → res:// 경로. 프로젝트 안 절대 경로는 res:// 로, 상대 경로는 res:// 기준.
+static func resolve_path(p: String) -> String:
+	var s: String = p.replace("\\", "/")
+	if s.contains("://"):
+		return s
+	if s.is_absolute_path():
+		return ProjectSettings.localize_path(s)
+	return "res://" + s.trim_prefix("./")
 
 
 ## 번역 초안 일괄 쓰기 — json 은 {key 또는 alias: 번역문}. 모두 draft + 현재 원문 해시
@@ -259,6 +363,26 @@ static func run_cli(raw_args: PackedStringArray) -> int:
 			return 0 if l.cmd_validate(vargs[0] if vargs.size() > 0 else MODE_DEV).error_count() == 0 else 1
 		"build":
 			return 0 if l.cmd_build(rest[0] if rest.size() > 0 else MODE_DEV) == 0 else 1
+		"new_keys":
+			var json_path: String = ""
+			var nk_out: String = ""
+			for a in rest:
+				if a.begins_with("--out="):
+					nk_out = resolve_path(a.substr(6))
+				else:
+					json_path = a
+			if json_path == "":
+				print(USAGE)
+				return 2
+			var nerr: String = l.cmd_new_keys(resolve_path(json_path), nk_out)
+			if nerr != "":
+				l.info("new_keys 실패 — 아무것도 바꾸지 않음:\n" + nerr)
+			return 0 if nerr == "" else 1
+		"write_l", "write_strings":
+			var werr: String = l.cmd_write_generated("l" if cmd == "write_l" else "strings", rest[0] if rest.size() > 0 else MODE_DEV)
+			if werr != "":
+				l.info("%s 실패: %s" % [cmd, werr])
+			return 0 if werr == "" else 1
 		"extract":
 			return 0 if l.cmd_extract(rest) == "" else 1
 		"set_tr":

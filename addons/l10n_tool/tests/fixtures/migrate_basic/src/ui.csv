@@ -1,0 +1,3 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_D5MN0P1Q2R,ui.confirm,active,,,,확인,OK,approved,468266d6
+tx_E6ST3V4W5X,ui.greet,active,인사,,,안녕,,,

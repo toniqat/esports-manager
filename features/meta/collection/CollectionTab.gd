@@ -124,7 +124,7 @@ func _build() -> void:
 		UiHelpers.mk_label(self, "선수 데이터를 읽지 못했습니다: " + _load_error, 24,
 				OutgameTheme.NEGATIVE, Vector2(PAD_X, _grid_y() + 20.0),
 				Vector2(size.x - PAD_X * 2.0, 34))
-	_sheet = CollectionDetailSheet.new()
+	_sheet = CollectionDetailSheet.create()
 	add_child(_sheet)
 	_sheet.leveled_up.connect(_on_leveled_up)
 

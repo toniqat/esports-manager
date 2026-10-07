@@ -6,7 +6,7 @@ Lobby `컬렉션` tab — owned pilots, levels, breakthroughs, level-up. Contrac
 ## Files
 | File | Class | Role |
 |---|---|---|
-| `CollectionTab.gd` | `class_name CollectionTab extends Control` | The tab: summary card, role filter row, scrolling 4-column grid of the **25 named pilots**, opens the detail sheet. `bar_specs()` = `[]` (no action bar). |
+| `CollectionTab.tscn` + `.gd` | `class_name CollectionTab extends Control` | The tab: summary card, role filter row, scrolling 4-column grid of the **25 named pilots**, opens the detail sheet. `bar_specs()` = `[]` (no action bar). **Layout lives in the `.tscn`** (style = `OutgameTheme.tres` variations); built with `CollectionTab.create()` (not `.new()`) by `LobbyScreen._make_tab`. |
 | `CollectionCell.gd` | `class_name CollectionCell extends Button` | One grid cell (240×330): face + role badge (`PilotThumb` static helpers, read-only reuse) + rarity pill, name, `Lv N` + breakthrough pips. Unowned = dimmed face, `미보유` pill, "상점에서 영입". Static helpers `rarity_color` / `add_rarity_pill` / `add_pips` shared with the sheet. |
 | `CollectionDetailSheet.tscn` + `.gd` | `class_name CollectionDetailSheet extends CanvasLayer` | Pilot detail modal (layer 20) + the 레벨업 action. **Layout lives in the `.tscn`** (style = `OutgameTheme.tres` variations). `create()` (not `.new()`), signal `leveled_up(pilot_id, new_level)`, static `fielded_copy(base, max_level, stage)`. |
 | `CollectionStatChip.tscn` | — (no script) | Item scene: one 능력치 cell (`%Key` / `%Value` / `%Delta`), 7 instanced into `%StatGrid` once in `_ready`. |
@@ -16,18 +16,31 @@ Rules live elsewhere: `ProfileManager` (`max_level_of`, `breakthrough_of`, `pilo
 `level_up_cost`, `level_up_pilot`, `currency_of`), `RunRules` (`exp_required`, `apply_level`,
 `breakthrough_rows`, `apply_breakthrough`, `salary_of`). This folder adds no rules and no const keys.
 
-## Tab layout (local coordinates of the host's content rect)
-| Block | Position |
-|---|---|
-| Summary card | y 20 .. 148 — `보유 선수 n / 25` + bar (left), `레벨업 재화` · `선수 파편` (right) |
-| Filter row | 20 below — `전체` + lane order (`GameEnums.ROLE_DISPLAY_ORDER`, same labels as the lineup step) |
-| Grid | 20 below the filter, down to the tab bottom; `OutgameTheme.add_vscroll` (DragScroll) |
+## Tab layout
+Scene (`CollectionTab.tscn`, scene-authored — `docs/ui_scene_migration.md`). The host sets the root's
+position / size to its content rect; everything below follows by anchors / containers.
+```
+CollectionTab (Control, theme = OutgameTheme.tres, preview 1080×1696)
+└ VBox (full rect, separation 20)
+  ├ Top (Margin 24 / 20 / 24 / 0) ─ TopVBox (separation 20)
+  │   ├ Summary (MarginContainer, min h 128) ─ Bg (Panel · Card) + Pad (Margin 28 / 28) ─ Content
+  │   │     left:  OwnedTitle · %OwnedCount (BodyLabel 40) · OwnedTrack (ProgressTrack 300×10) ─ %OwnedFill
+  │   │     right (anchored): LevelupTitle · %Levelup (AccentLabel 40) │ ShardTitle · %Shards (BodyLabel 40)
+  │   └ %Filters (HBox 8, h 64) ─ 전체 · 탑 · 정글 · 미드 · 원딜 · 서폿 (GhostButton 26, stretch)
+  └ %Scroll (v-mode Never: no bar, DragScroll drags) ─ DragScroll · Body (VBox)
+      ├ %LoadError (hidden; Margin 24 / 20) ─ %LoadErrorText
+      └ GridPad (bottom 24) ─ %Grid (GridContainer 4 cols, 16 / 16, shrink-centre)
+```
+- **Code owns only data**: summary numbers, `%OwnedFill.anchor_right` = owned ratio, the filter on / off
+  frame (`flat_style` — selection state; child i of `%Filters` = 전체 then `ROLE_DISPLAY_ORDER[i-1]`),
+  one `CollectionCell` per pilot added to `%Grid` (cells stay code-built widgets), the error text.
 
 - **Pool**: `GameManager.load_match_data()["players"]` once in `setup`, `is_mob == true` dropped.
   These Lv1 copies are never mutated.
 - **Order**: owned first → rarity desc → lane seat (`GameEnums.role_seat`) → id. Recomputed in
   `on_shown()` (the profile may have changed in the shop / pass tab), together with every cell.
-- Filtering reflows only the visible cells (no holes) and resets the scroll to the top.
+- Filtering hides the other cells (the grid skips hidden children — no holes); sort order = child
+  order (`move_child`). It resets the scroll to the top.
 - Cells and the grid body are `MOUSE_FILTER_PASS` so a drag that starts on a cell still scrolls
   (verified with emulated touch: drag scrolls, no sheet opens; a tap opens the sheet).
 

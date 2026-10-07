@@ -19,22 +19,14 @@ extends Control
 #   never saved. Switching preset / prestiging with unsaved edits asks first.
 # - Removals are profile-level and permanent: confirm → `remove_stat` → save at once.
 # - Prestige presets are read-only until `재설정` (`reset_preset`, saved at once).
-# - Body = one `OutgameTheme.add_vscroll`, rebuilt after every change (scroll kept).
+# - Layout lives in `ManagerTab.tscn` (+ one `ManagerStatRow.tscn` per stat); every change
+#   refills the same nodes (`_rebuild`), so the scroll position stays.
 
-const PAD_X: float = 24.0
-const CARD_PAD: float = 28.0
-const SECTION_GAP: float = 28.0
-const HEADER_H: float = 236.0
-const STAT_ROW_H: float = 92.0
-const STAT_HEAD_H: float = 108.0
-const STEP_W: float = 80.0
-const STEP_H: float = 68.0
+const SCENE_PATH: String = "res://features/meta/manager/ManagerTab.tscn"
+const STAT_ROW_SCENE: PackedScene = preload("res://features/meta/manager/ManagerStatRow.tscn")
 
 var _host: LobbyScreen
 var _pm: Node
-var _scroll: ScrollContainer
-var _body: Control
-var _traits_view: TraitPickerView
 var _type_popup: ManagerTypePopup = null
 
 var _edit_idx: int = -1
@@ -42,6 +34,33 @@ var _draft: Dictionary = {}
 var _dirty: bool = false
 ## Trait ids that were unseen when this tab was opened — "NEW" until the lobby closes.
 var _new_ids: Array = []
+var _rows: Dictionary = {}           # String stat key → ManagerStatRow instance
+
+@onready var _scroll: ScrollContainer = %Scroll
+@onready var _body: MarginContainer = %Body
+@onready var _traits_view: TraitPickerView = %Traits
+@onready var _preset_chips: Control = %PresetChips
+
+
+## Layout lives in `ManagerTab.tscn` — build with this, not `.new()`.
+static func create() -> ManagerTab:
+	return (load(SCENE_PATH) as PackedScene).instantiate() as ManagerTab
+
+
+func _ready() -> void:
+	%Prestige.pressed.connect(_on_prestige_pressed)
+	%Reset.pressed.connect(_on_reset_pressed)
+	_traits_view.trait_pressed.connect(_on_trait_pressed)
+	for i in StaffSystem.STATS.size():
+		var key: String = String(StaffSystem.STATS[i])
+		var row: Control = STAT_ROW_SCENE.instantiate()
+		%StatRows.add_child(row)
+		row.get_node("%Divider").visible = i > 0
+		row.get_node("%Key").text = String(StaffSystem.STAT_LABELS.get(key, key))
+		(row.get_node("%Remove") as Button).pressed.connect(_on_remove_pressed.bind(key))
+		(row.get_node("%Minus") as Button).pressed.connect(_on_alloc_pressed.bind(key, -1))
+		(row.get_node("%Plus") as Button).pressed.connect(_on_alloc_pressed.bind(key, 1))
+		_rows[key] = row
 
 
 # ── Tab contract ─────────────────────────────────────────────────────────────
@@ -55,11 +74,6 @@ func bar_specs() -> Array:
 func setup(host: LobbyScreen) -> void:
 	_host = host
 	_pm = get_node("/root/ProfileManager")
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var sv: Dictionary = OutgameTheme.add_vscroll(self, Vector2.ZERO, size)
-	_scroll = sv["scroll"]
-	_body = sv["body"]
-	_body.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
 func on_shown() -> void:
@@ -164,202 +178,108 @@ func _mark_dirty() -> void:
 	_rebuild()
 
 
-# ── Build ────────────────────────────────────────────────────────────────────
+# ── Fill ─────────────────────────────────────────────────────────────────────
+## Refills every block from the profile + draft. Nodes are reused, so the scroll
+## position stays where it was.
 func _rebuild() -> void:
-	var keep: int = _scroll.scroll_vertical
-	for c in _body.get_children():
-		_body.remove_child(c)
-		c.queue_free()
-	_traits_view = null
-	var w: float = size.x - PAD_X * 2.0
-	var y: float = 24.0
-	y += _build_header(Vector2(PAD_X, y), w) + SECTION_GAP
-	y += _build_presets(Vector2(PAD_X, y), w) + SECTION_GAP
-	y += _build_stats(Vector2(PAD_X, y), w) + SECTION_GAP
-
-	_traits_view = TraitPickerView.new()
-	_traits_view.position = Vector2(PAD_X, y)
-	_body.add_child(_traits_view)
-	y += _traits_view.build(w, _draft.get("traits", []), _owned(), _new_ids)
-	_traits_view.trait_pressed.connect(_on_trait_pressed)
-	y += 40.0
-	_body.custom_minimum_size = Vector2(size.x, y)
-	_scroll.set_deferred("scroll_vertical", keep)
+	# Chips / traits lay out by absolute x, so they need the content width now — before
+	# the containers' first sort on the tab's first show.
+	var w: float = size.x - float(_body.get_theme_constant("margin_left")) \
+			- float(_body.get_theme_constant("margin_right"))
+	_fill_header()
+	_fill_presets(w)
+	_fill_stats()
+	_traits_view.custom_minimum_size.y = _traits_view.build(w, _draft.get("traits", []),
+			_owned(), _new_ids)
 	if _host != null and not _host.bar_buttons().is_empty():
 		_refresh_bar()
 
 
-func _build_header(pos: Vector2, w: float) -> float:
+func _fill_header() -> void:
 	var prof: Dictionary = _pm.profile
-	var card: Panel = OutgameTheme.add_card(_body, pos, Vector2(w, HEADER_H), 20)
-	var inner: float = w - CARD_PAD * 2.0
 	var mgr: Dictionary = prof.get("manager", {})
 	var trow: Dictionary = StaffSystem.manager_type_row(int(mgr.get("type", 0)))
-	UiHelpers.mk_label(card, "%s 감독" % String(trow.get("name", "감독")), 36, OutgameTheme.TEXT,
-			Vector2(CARD_PAD, 22), Vector2(inner - 300, 48))
+	%TypeTitle.text = "%s 감독" % String(trow.get("name", "감독"))
 	var pcount: int = int(mgr.get("prestige", 0))
-	OutgameTheme.add_chip(card, "프레스티지 %d회" % pcount, Vector2(w - CARD_PAD - 200, 28),
-			Vector2(200, 40), OutgameTheme.ACCENT_DIM if pcount > 0 else OutgameTheme.SURFACE_SUNK,
-			OutgameTheme.ACCENT_TEXT if pcount > 0 else OutgameTheme.TEXT_SUB, 20)
+	_paint_chip(%PrestigeChip, %PrestigeChipText, "프레스티지 %d회" % pcount,
+			OutgameTheme.ACCENT_DIM if pcount > 0 else OutgameTheme.SURFACE_SUNK,
+			OutgameTheme.ACCENT_TEXT if pcount > 0 else OutgameTheme.TEXT_SUB)
 
 	var lp: Dictionary = ManagerProgress.level_progress(prof)
-	UiHelpers.mk_label(card, "Lv %d" % int(lp["level"]), 34, OutgameTheme.ACCENT_TEXT,
-			Vector2(CARD_PAD, 82), Vector2(160, 46))
-	var bar_x: float = CARD_PAD + 150.0
-	var bar_w: float = inner - 150.0 - 250.0
-	var track := Panel.new()
-	track.add_theme_stylebox_override("panel", OutgameTheme.flat_style(OutgameTheme.SURFACE_SUNK, 8))
-	track.position = Vector2(bar_x, 98)
-	track.size = Vector2(bar_w, 16)
-	track.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	card.add_child(track)
+	%Level.text = "Lv %d" % int(lp["level"])
 	var ratio: float = 1.0 if bool(lp["is_max"]) \
 			else float(int(lp["into"])) / float(maxi(1, int(lp["span"])))
-	var fill := Panel.new()
-	fill.add_theme_stylebox_override("panel", OutgameTheme.flat_style(OutgameTheme.ACCENT, 8))
-	fill.position = Vector2.ZERO
-	fill.size = Vector2(maxf(16.0, bar_w * ratio) if ratio > 0.0 else 0.0, 16)
-	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	track.add_child(fill)
-	var exp_text: String = "최고 레벨" if bool(lp["is_max"]) \
+	var fill: Panel = %ExpFill
+	fill.visible = ratio > 0.0
+	fill.anchor_right = ratio
+	fill.custom_minimum_size.x = fill.size.y if ratio > 0.0 else 0.0   # never thinner than round
+	%ExpText.text = "최고 레벨" if bool(lp["is_max"]) \
 			else "EXP %d / %d" % [int(lp["into"]), int(lp["span"])]
-	UiHelpers.mk_label(card, exp_text, 22, OutgameTheme.TEXT_SUB,
-			Vector2(bar_x, 120), Vector2(bar_w, 30))
 
 	var perr: String = ManagerProgress.can_prestige(prof)
-	var pb := Button.new()
-	pb.focus_mode = Control.FOCUS_NONE
-	pb.mouse_filter = Control.MOUSE_FILTER_PASS
+	var pb: Button = %Prestige
 	pb.text = "프레스티지" if perr == "" else "Lv%d 프레스티지" % ManagerProgress.prestige_level()
-	if perr == "":
-		OutgameTheme.style_primary_button(pb, 26)
-	else:
-		OutgameTheme.style_ghost_button(pb, 24)
+	pb.theme_type_variation = &"PrimaryButton" if perr == "" else &"GhostButton"
+	pb.add_theme_font_size_override("font_size", 26 if perr == "" else 24)
 	pb.disabled = perr != ""
-	pb.position = Vector2(w - CARD_PAD - 230, 76)
-	pb.size = Vector2(230, 72)
-	pb.pressed.connect(_on_prestige_pressed)
-	card.add_child(pb)
-
-	var info: String = "레벨업마다 제거 포인트 %d · 스탯 하나를 영구히 낮추면 전문화 포인트 1" \
+	%Info.text = "레벨업마다 제거 포인트 %d · 스탯 하나를 영구히 낮추면 전문화 포인트 1" \
 			% ConstTable.int_of("MANAGER_REMOVE_PER_LEVEL")
-	var il := UiHelpers.mk_label(card, info, 20, OutgameTheme.TEXT_FAINT,
-			Vector2(CARD_PAD, 172), Vector2(inner, 30))
-	il.clip_text = true
-	return HEADER_H
 
 
-func _build_presets(pos: Vector2, w: float) -> float:
-	var y: float = pos.y
-	UiHelpers.mk_label(_body, "프리셋 — 전문화 분배 + 특성", 30, OutgameTheme.TEXT,
-			Vector2(pos.x, y), Vector2(w, 44))
-	y += 52.0
-	y += ManagerUi.add_preset_chips(_body, Vector2(pos.x, y), w, _pm.profile, _edit_idx,
-			_on_chip_pressed)
-	if _is_prestige_kind():
-		y += 16.0
-		var card := Panel.new()
-		card.add_theme_stylebox_override("panel", OutgameTheme.flat_style(
-				OutgameTheme.NEGATIVE.lightened(0.88), 16, OutgameTheme.NEGATIVE, 2))
-		card.position = Vector2(pos.x, y)
-		card.size = Vector2(w, 120)
-		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_body.add_child(card)
-		UiHelpers.mk_label(card, "프레스티지 프리셋 — 재설정해야 쓸 수 있습니다", 24,
-				OutgameTheme.NEGATIVE, Vector2(CARD_PAD, 18), Vector2(w - 300, 34))
-		UiHelpers.mk_label(card, "전문화 분배가 비워지고, 특성은 그대로 남습니다", 20,
-				OutgameTheme.TEXT_SUB, Vector2(CARD_PAD, 62), Vector2(w - 300, 30))
-		var rb := Button.new()
-		rb.text = "재설정"
-		rb.focus_mode = Control.FOCUS_NONE
-		rb.mouse_filter = Control.MOUSE_FILTER_PASS
-		OutgameTheme.style_primary_button(rb, 26)
-		rb.position = Vector2(w - CARD_PAD - 200, 24)
-		rb.size = Vector2(200, 72)
-		rb.pressed.connect(_on_reset_pressed)
-		card.add_child(rb)
-		y += 120.0
-	return y - pos.y
+func _fill_presets(w: float) -> void:
+	for c in _preset_chips.get_children():
+		_preset_chips.remove_child(c)
+		c.queue_free()
+	_preset_chips.custom_minimum_size.y = ManagerUi.add_preset_chips(_preset_chips, Vector2.ZERO,
+			w, _pm.profile, _edit_idx, _on_chip_pressed)
+	%ResetBox.visible = _is_prestige_kind()
 
 
-func _build_stats(pos: Vector2, w: float) -> float:
+func _fill_stats() -> void:
 	var prof: Dictionary = _pm.profile
-	var n: int = StaffSystem.STATS.size()
-	var h: float = STAT_HEAD_H + float(n) * STAT_ROW_H + 16.0
-	var card: Panel = OutgameTheme.add_card(_body, pos, Vector2(w, h), 20)
-	var inner: float = w - CARD_PAD * 2.0
-	UiHelpers.mk_label(card, "감독 스탯", 30, OutgameTheme.TEXT,
-			Vector2(CARD_PAD, 20), Vector2(240, 42))
 	var left: int = ManagerProgress.removal_points_left(prof)
 	var spec_total: int = ManagerProgress.spec_points(prof)
 	var used: int = ManagerProgress.alloc_used(_draft)
-	OutgameTheme.add_chip(card, "제거 포인트 %d" % left, Vector2(w - CARD_PAD - 460, 24),
-			Vector2(210, 40), OutgameTheme.ACCENT_DIM if left > 0 else OutgameTheme.SURFACE_SUNK,
-			OutgameTheme.ACCENT_TEXT if left > 0 else OutgameTheme.TEXT_SUB, 20)
-	OutgameTheme.add_chip(card, "전문화 포인트 %d / %d" % [used, spec_total],
-			Vector2(w - CARD_PAD - 240, 24), Vector2(240, 40),
-			OutgameTheme.SURFACE_SUNK, OutgameTheme.NEGATIVE if used > spec_total
-			else OutgameTheme.TEXT_SUB, 20)
-	UiHelpers.mk_label(card, "최종 = 유형 − 제거 + 전문화 · 상한 %d" % ManagerProgress.stat_cap(),
-			20, OutgameTheme.TEXT_FAINT, Vector2(CARD_PAD, 68), Vector2(inner, 28))
+	_paint_chip(%RemoveChip, %RemoveChipText, "제거 포인트 %d" % left,
+			OutgameTheme.ACCENT_DIM if left > 0 else OutgameTheme.SURFACE_SUNK,
+			OutgameTheme.ACCENT_TEXT if left > 0 else OutgameTheme.TEXT_SUB)
+	_paint_chip(%SpecChip, %SpecChipText, "전문화 포인트 %d / %d" % [used, spec_total],
+			OutgameTheme.SURFACE_SUNK,
+			OutgameTheme.NEGATIVE if used > spec_total else OutgameTheme.TEXT_SUB)
+	%Formula.text = "최종 = 유형 − 제거 + 전문화 · 상한 %d" % ManagerProgress.stat_cap()
 
 	var tstats: Dictionary = ManagerProgress.type_stats(int((prof.get("manager", {}) as Dictionary).get("type", 0)))
 	var rm: Dictionary = ManagerProgress.removed(prof)
 	var final_stats: Dictionary = ManagerProgress.preset_stats(prof, _draft)
 	var alloc: Dictionary = _draft.get("alloc", {})
 	var editable: bool = not _is_prestige_kind()
-	for i in n:
-		var key: String = String(StaffSystem.STATS[i])
-		var y: float = STAT_HEAD_H + float(i) * STAT_ROW_H
-		if i > 0:
-			OutgameTheme.add_divider(card, Vector2(CARD_PAD, y), inner)
-		var cy: float = y + (STAT_ROW_H - STEP_H) * 0.5
-		UiHelpers.mk_label(card, String(StaffSystem.STAT_LABELS.get(key, key)), 28,
-				OutgameTheme.TEXT, Vector2(CARD_PAD, y + 24), Vector2(90, 40))
+	for key in _rows.keys():
+		var row: Control = _rows[key]
 		var a: int = int(alloc.get(key, 0))
 		var parts: String = "유형 %d" % int(tstats[key])
 		if int(rm[key]) > 0:
 			parts += " · 제거 −%d" % int(rm[key])
 		if a > 0:
 			parts += " · 전문화 +%d" % a
-		UiHelpers.mk_label(card, parts, 20, OutgameTheme.TEXT_SUB,
-				Vector2(CARD_PAD + 96, y + 30), Vector2(300, 30))
-		var fv: int = int(final_stats[key])
-		var fl := UiHelpers.mk_label(card, str(fv), 40,
-				OutgameTheme.ACCENT_TEXT if a > 0 else OutgameTheme.TEXT,
-				Vector2(CARD_PAD + 400, y + 16), Vector2(70, 56), HORIZONTAL_ALIGNMENT_CENTER)
-		fl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-
-		var rb := _small_button("제거", Vector2(CARD_PAD + 490, cy), Vector2(118, STEP_H), false)
-		rb.disabled = ManagerProgress.can_remove(prof, key) != ""
-		rb.pressed.connect(_on_remove_pressed.bind(key))
-		card.add_child(rb)
-
-		var sx: float = w - CARD_PAD - (STEP_W * 2.0 + 64.0)
-		var minus := _small_button("−", Vector2(sx, cy), Vector2(STEP_W, STEP_H), true)
-		minus.disabled = not editable or ManagerProgress.can_alloc(prof, _draft, key, -1) != ""
-		minus.pressed.connect(_on_alloc_pressed.bind(key, -1))
-		card.add_child(minus)
-		var al := UiHelpers.mk_label(card, "+%d" % a if a > 0 else "0", 26,
-				OutgameTheme.ACCENT_TEXT if a > 0 else OutgameTheme.TEXT_FAINT,
-				Vector2(sx + STEP_W, cy), Vector2(64, STEP_H), HORIZONTAL_ALIGNMENT_CENTER)
-		al.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		var plus := _small_button("+", Vector2(sx + STEP_W + 64.0, cy), Vector2(STEP_W, STEP_H), true)
-		plus.disabled = not editable or ManagerProgress.can_alloc(prof, _draft, key, 1) != ""
-		plus.pressed.connect(_on_alloc_pressed.bind(key, 1))
-		card.add_child(plus)
-	return h
+		row.get_node("%Parts").text = parts
+		var fl: Label = row.get_node("%Final")
+		fl.text = str(int(final_stats[key]))
+		fl.theme_type_variation = &"AccentLabel" if a > 0 else &"BodyLabel"
+		var al: Label = row.get_node("%Alloc")
+		al.text = "+%d" % a if a > 0 else "0"
+		al.theme_type_variation = &"AccentLabel" if a > 0 else &"FaintLabel"
+		(row.get_node("%Remove") as Button).disabled = ManagerProgress.can_remove(prof, key) != ""
+		(row.get_node("%Minus") as Button).disabled = not editable \
+				or ManagerProgress.can_alloc(prof, _draft, key, -1) != ""
+		(row.get_node("%Plus") as Button).disabled = not editable \
+				or ManagerProgress.can_alloc(prof, _draft, key, 1) != ""
 
 
-func _small_button(text: String, pos: Vector2, sz: Vector2, big_font: bool) -> Button:
-	var b := Button.new()
-	b.text = text
-	b.focus_mode = Control.FOCUS_NONE
-	b.mouse_filter = Control.MOUSE_FILTER_PASS
-	OutgameTheme.style_ghost_button(b, 36 if big_font else 24)
-	b.position = pos
-	b.size = sz
-	return b
+## A pill whose fill / text colours are data (`OutgameTheme.add_chip` look: radius = half height).
+func _paint_chip(chip: Panel, text_lbl: Label, text: String, bg: Color, fg: Color) -> void:
+	chip.add_theme_stylebox_override("panel", OutgameTheme.flat_style(bg, int(chip.size.y * 0.5)))
+	text_lbl.text = text
+	text_lbl.add_theme_color_override("font_color", fg)
 
 
 # ── Actions ──────────────────────────────────────────────────────────────────

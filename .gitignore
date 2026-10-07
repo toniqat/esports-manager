@@ -27,3 +27,6 @@
 /.claude/settings.local.json
 # 병렬 에이전트 작업용 git worktree — 커밋하지 않는다.
 /.claude/worktrees/
+
+# UiSceneDump 초안 출력(resources/README.md) — 참고용 초안이라 커밋하지 않는다.
+/_dump/

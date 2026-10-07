@@ -478,7 +478,7 @@ func _draw() -> void:
 	elif search_deck > 0:
 		_draw_pile_search(_bs.pile_deck, search_deck, font)
 	if deck_cut > 0:
-		_draw_pile_tag(_bs.pile_deck, "비용 -%d" % deck_cut, font)
+		_draw_pile_tag(_bs.pile_deck, Loc.t(L.BATTLE_PLAY_PREVIEW_COST_CUT, {"n": deck_cut}), font)
 	var discard_pick: int = int(_spec.get("discard_pick", 0))
 	var from_discard: int = int(_spec.get("draw_from_discard", 0))
 	var search_discard: int = int(_spec.get("search_discard", 0))
@@ -613,7 +613,7 @@ func _draw_preserve_hint(n: int, font: Font) -> void:
 	draw_rect(body.grow(3.0), OUTLINE_COLOR)
 	draw_rect(body, PRESERVE_COLOR)
 	draw_circle(Vector2(c0.x, c0.y + 9.0), 4.0, OUTLINE_COLOR)
-	var label: String = "보존 %d" % n
+	var label: String = Loc.t(L.BATTLE_PLAY_PREVIEW_PRESERVE, {"n": n})
 	var tsz: Vector2 = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1,
 			COUNT_FONT - 6)
 	var at := Vector2(c0.x + 28.0, c0.y + tsz.y * 0.35)

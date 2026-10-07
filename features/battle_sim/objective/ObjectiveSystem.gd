@@ -113,7 +113,7 @@ func turns_until_cell(cell: Vector2i) -> int:
 
 ## 화면에 찍는 이름.
 static func kind_name(kind: int) -> String:
-	return "전령" if kind == Kind.HERALD else "용"
+	return Loc.t(L.BATTLE_OBJECTIVE_HERALD) if kind == Kind.HERALD else Loc.t(L.BATTLE_OBJECTIVE_DRAGON)
 
 
 # ─── 턴 진입점 ───────────────────────────────────────────────────────────────
@@ -147,7 +147,7 @@ func _resolve_objective(st: Dictionary) -> void:
 	# 아니라 나타났는지가 조건이라 결판보다 앞에 선다.
 	if kind == Kind.DRAGON and _bs.skill != null:
 		_bs.skill.on_dragon_spawned()
-	_bs.blog.log_event("OBJ", "%s 등장 @%s — 아군 %d명 / 적군 %d명" % [
+	_bs.blog.log_event("OBJ", "%s 등장 @%s — 아군 %d명 / 적군 %d명" % [  # l10n-ignore
 			label, str(st["cell"]), t0.size(), t1.size()])
 
 	# 참가할 사람이 아예 없는 팀은 물어볼 것도 없다(전원 사망 / 전원 리스폰 중).
@@ -165,8 +165,8 @@ func _resolve_objective(st: Dictionary) -> void:
 		await _award_uncontested(st, kind, winner, t0, t1)
 	else:
 		_reschedule(st, _bs.OBJ_RETRY_TURNS)
-		_bs.last_log = "[%s] 양 팀 미참여 — %d턴 후 재시도" % [label, _bs.OBJ_RETRY_TURNS]
-		_bs.blog.log_event("OBJ", "%s 무산 (양 팀 미참여) — 다음 %d턴"
+		_bs.last_log = "[%s] 양 팀 미참여 — %d턴 후 재시도" % [label, _bs.OBJ_RETRY_TURNS]  # l10n-ignore
+		_bs.blog.log_event("OBJ", "%s 무산 (양 팀 미참여) — 다음 %d턴"  # l10n-ignore
 				% [label, int(st["next_turn"])])
 	_busy = false
 	_bs.renderer.queue_redraw()
@@ -191,8 +191,8 @@ func _run_objective_engage(st: Dictionary, kind: int,
 	var winner: int = engage_winner(t0, t1)
 	if winner < 0:
 		_reschedule(st, _bs.OBJ_RESPAWN_TURNS)
-		_bs.last_log = "[%s] 무승부 — 아무도 가져가지 못했다" % label
-		_bs.blog.log_event("OBJ", "%s 무승부 — 다음 %d턴" % [label, int(st["next_turn"])])
+		_bs.last_log = "[%s] 무승부 — 아무도 가져가지 못했다" % label  # l10n-ignore
+		_bs.blog.log_event("OBJ", "%s 무승부 — 다음 %d턴" % [label, int(st["next_turn"])])  # l10n-ignore
 		return
 	await _grant_reward(kind, winner)
 	_push_feed(kind, winner, t0 if winner == 0 else t1)
@@ -203,9 +203,9 @@ func _run_objective_engage(st: Dictionary, kind: int,
 	if _bs.mech_skill != null:
 		_bs.mech_skill.on_objective_win(winner)
 	_reschedule(st, _bs.OBJ_RESPAWN_TURNS)
-	var side: String = "아군" if winner == 0 else "적군"
-	_bs.last_log = "[%s] %s 획득 · %s" % [label, side, reward_text(kind)]
-	_bs.blog.log_event("OBJ", "%s → team%d (교전 승리) · %s · 다음 %d턴"
+	var side: String = "아군" if winner == 0 else "적군"  # l10n-ignore
+	_bs.last_log = "[%s] %s 획득 · %s" % [label, side, reward_text(kind)]  # l10n-ignore
+	_bs.blog.log_event("OBJ", "%s → team%d (교전 승리) · %s · 다음 %d턴"  # l10n-ignore
 			% [label, winner, reward_text(kind), int(st["next_turn"])])
 
 
@@ -220,9 +220,9 @@ func _award_uncontested(st: Dictionary, kind: int, winner: int,
 	if _bs.mech_skill != null:
 		_bs.mech_skill.on_objective_win(winner)
 	_reschedule(st, _bs.OBJ_RESPAWN_TURNS)
-	var side: String = "아군" if winner == 0 else "적군"
-	_bs.last_log = "[%s] %s 무혈 획득 · %s" % [label, side, reward_text(kind)]
-	_bs.blog.log_event("OBJ", "%s → team%d (무혈) · %s · 다음 %d턴"
+	var side: String = "아군" if winner == 0 else "적군"  # l10n-ignore
+	_bs.last_log = "[%s] %s 무혈 획득 · %s" % [label, side, reward_text(kind)]  # l10n-ignore
+	_bs.blog.log_event("OBJ", "%s → team%d (무혈) · %s · 다음 %d턴"  # l10n-ignore
 			% [label, winner, reward_text(kind), int(st["next_turn"])])
 	# 플레이어가 결정에 참여하지 않았다면(참가 가능한 파일럿이 아무도 없었다)
 	# 알림 창도 띄우지 않는다 — 고른 적 없는 결과에 확인을 누르게 할 이유가 없다.
@@ -233,8 +233,9 @@ func _award_uncontested(st: Dictionary, kind: int, winner: int,
 		_bs.engage_phase.prepare_sim(null, t0, t1, _bs.OBJ_ENGAGE_ROUNDS,
 				false, _bs.blue_team, st["cell"])
 		await _bs.engage_phase.prompt_engage(t0, t1, _bs.OBJ_ENGAGE_ROUNDS,
-				"%s — %s 무혈 획득" % [label, side], false,
-				"확인", "", reward_text(kind))
+				Loc.t(L.BATTLE_OBJECTIVE_UNOPPOSED_ALLY if winner == 0
+						else L.BATTLE_OBJECTIVE_UNOPPOSED_ENEMY, {"name": label}), false,
+				Loc.t(L.UI_BUTTON_CONFIRM), "", reward_text(kind))
 	await _grant_reward(kind, winner)
 
 
@@ -290,14 +291,15 @@ func participants_for(kind: int, team: int) -> Array:
 ## 결정이 아니라 확인 절차가 된다.
 func _ask_player(kind: int, cell: Vector2i, t0: Array, t1: Array) -> bool:
 	var label: String = kind_name(kind)
-	var title: String = "%s 등장 — 전투에 참여하시겠습니까?" % label
+	var title: String = Loc.t(L.BATTLE_OBJECTIVE_JOIN_PROMPT, {"name": label})
 	# 무대를 먼저 세운다 — 오브젝트 칸을 한가운데 두면 참가자들이 지금 서 있는
 	# 타일이 그대로 배치가 된다. 누가 어디서 달려오는지를 보고 참여를 정하는
 	# 것이 이 창의 질문이므로 명단만으로는 부족하다. 선공은 무대와 같은 블루다.
 	_bs.engage_phase.prepare_sim(null, t0, t1, _bs.OBJ_ENGAGE_ROUNDS, false,
 			_bs.blue_team, cell)
 	return await _bs.engage_phase.prompt_engage(t0, t1, _bs.OBJ_ENGAGE_ROUNDS,
-			title, true, "참여", "미참여", reward_text(kind))
+			title, true, Loc.t(L.BATTLE_OBJECTIVE_JOIN), Loc.t(L.BATTLE_OBJECTIVE_SKIP),
+			reward_text(kind))
 
 
 ## AI 의 참여 판단. **전력 차이(체력 · 공격력 · 성장치)는 보지 않고 머릿수만
@@ -314,13 +316,13 @@ func _ai_wants_to_join(mine: Array, theirs: Array) -> bool:
 	var n_mine: int = _headcount(mine)
 	var n_theirs: int = _headcount(theirs)
 	if n_mine >= n_theirs:
-		_bs.blog.log_event("OBJ", "AI 머릿수 %d vs %d → 참여" % [n_mine, n_theirs])
+		_bs.blog.log_event("OBJ", "AI 머릿수 %d vs %d → 참여" % [n_mine, n_theirs])  # l10n-ignore
 		return true
 	var chance: float = _misjudge_chance()
 	var misjudged: bool = randf() < chance
-	_bs.blog.log_event("OBJ", "AI 머릿수 %d vs %d (열세) · 오판 %.0f%% → %s"
+	_bs.blog.log_event("OBJ", "AI 머릿수 %d vs %d (열세) · 오판 %.0f%% → %s"  # l10n-ignore
 			% [n_mine, n_theirs, chance * 100.0,
-				"오판, 참여" if misjudged else "미참여"])
+				"오판, 참여" if misjudged else "미참여"])  # l10n-ignore
 	return misjudged
 
 
@@ -364,8 +366,9 @@ func _hp_ratio_sum(group: Array) -> float:
 ## 화면과 로그에 함께 쓰는 보상 한 줄.
 func reward_text(kind: int) -> String:
 	if kind == Kind.HERALD:
-		return "보상: [전령 제압] — 최외곽 적 포탑에 피해 %d" % _card_clause_int(HERALD_CARD_ID, "turret_damage")
-	return "보상: [용 보상] ×%d 를 덱에 추가" % _bs.OBJ_DRAGON_CARD_COUNT
+		return Loc.t(L.BATTLE_OBJECTIVE_REWARD_HERALD,
+				{"n": _card_clause_int(HERALD_CARD_ID, "turret_damage")})
+	return Loc.t(L.BATTLE_OBJECTIVE_REWARD_DRAGON, {"n": _bs.OBJ_DRAGON_CARD_COUNT})
 
 
 ## 카드 `effect` 에서 절 하나의 수치를 읽는다(`turret_damage:N` → N). 보상 안내가

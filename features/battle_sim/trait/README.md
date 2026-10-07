@@ -1,5 +1,7 @@
 # Trait — manager in-game traits (M8)
 
+표시 텍스트는 l10n key (`battle.trait_banner.*`, `battle.trait.*` — `TraitHooks.KEY_LABELS` values are keys).
+
 In-game half of the manager traits (`docs/outgame_dev_plan.md` §12.3). The outgame
 half (equip, unlocks, `run_mod`) lives in `features/meta/traits/`. **My team only** —
 the AI never has traits.

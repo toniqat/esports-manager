@@ -1,5 +1,7 @@
 # Module: Objective (Herald (전령) / Dragon (용)) — objectives on the left/right neutral cells
 
+표시 텍스트는 l10n key (`battle.objective.*`) — `kind_name` / `reward_text` return translated text (reward lines keep `[card]` references). `last_log` / `_bs.blog` lines are diagnostics (`# l10n-ignore`).
+
 ## Purpose
 An **engage event that opens at fixed turns** on the left/right neutral cells of the battlefield (전장).
 A jungle camp (정글 캠프) is income you "eat by stepping on it in passing"; an objective (오브젝트) is

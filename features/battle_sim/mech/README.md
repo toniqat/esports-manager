@@ -1,5 +1,7 @@
 # `features/battle_sim/mech/` — Mech (메크) skills
 
+표시 텍스트는 l10n key (`battle.mech.boon.*`) — `BOON_KEYS` holds keys, `boon_defs()` returns `{key, name, desc}` translated at call time.
+
 Owns the runtime state of the permanent abilities (passives) attached to the assigned **machine**
 and of the cards that machine brings into the deck (덱). It is a sibling module standing next to
 pilot skills (`../skill/`), and for the same reason it is set up **after spawning and deck
@@ -343,7 +345,7 @@ even ran, i.e. when the kill count was always 0). The engage's kill count is ans
 `EngagePhaseManager.last_engage_kills` — the stage has been cleared by then, so it reads not `_sim`
 but its copy (`_last_stats`).
 
-**The 3 boons** (`BOON_DEFS`) are used only for the next single occasion, and only one is reserved
+**The 3 boons** (`BOON_KEYS` → `boon_defs()`) are used only for the next single occasion, and only one is reserved
 per pilot.
 
 | Key | Card it applies to | What it does | Consumed at |

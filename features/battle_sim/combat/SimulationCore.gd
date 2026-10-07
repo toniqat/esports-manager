@@ -347,7 +347,7 @@ func harvest_camp_under(p: PilotData) -> bool:
 	# 안 보였다. 전선 체류(매 턴 · 열 명)는 여전히 조용한 쪽이다: 그건 배경이
 	# 되어 정작 큰 한 건을 묻는다.
 	_bs.award_score(p, _bs.SCORE_JUNGLE_CAMP)
-	_bs.blog.log_event("CAMP", "%-4s 캠프 획득 %s (+%.2fk → %.2fk, 재생성 %d턴)"
+	_bs.blog.log_event("CAMP", "%-4s 캠프 획득 %s (+%.2fk → %.2fk, 재생성 %d턴)"  # l10n-ignore
 			% [_bs.pilot_label(p), str(p.grid_pos), _bs.SCORE_JUNGLE_CAMP,
 				p.score, _bs.JUNGLE_CAMP_RESPAWN_TURNS])
 	return true
@@ -365,7 +365,7 @@ func steal_camp_point(cell: Vector2i, thief: PilotData) -> bool:
 	_bs.jungle_camps[cell] = _bs.turn_count + _bs.JUNGLE_CAMP_RESPAWN_TURNS
 	# 밟아서 먹는 것과 같은 값 · 같은 시계 · 같은 팝업.
 	_bs.award_score(thief, _bs.SCORE_JUNGLE_CAMP)
-	_bs.blog.log_event("CAMP", "%-4s 캠프 약탈 %s (+%.2fk → %.2fk, 재생성 %d턴)"
+	_bs.blog.log_event("CAMP", "%-4s 캠프 약탈 %s (+%.2fk → %.2fk, 재생성 %d턴)"  # l10n-ignore
 			% [_bs.pilot_label(thief), str(cell), _bs.SCORE_JUNGLE_CAMP,
 				thief.score, _bs.JUNGLE_CAMP_RESPAWN_TURNS])
 	return true
@@ -584,7 +584,7 @@ func _resolve_turret_combat(attackers: Array, defenders: Array, td: TurretData,
 	var hit_by_defender: Dictionary = _apply_turret_siege(
 			attackers, defenders, td, damage_map, turret_dmg, log_lines)
 	var pushed: Array = attackers if not attackable else hit_by_defender.keys()
-	_bs.blog.log_event("SIEGE", "T%d[%s] team%d @%s ← %s  (수비 %s → 후퇴 %s)" % [
+	_bs.blog.log_event("SIEGE", "T%d[%s] team%d @%s ← %s  (수비 %s → 후퇴 %s)" % [  # l10n-ignore
 			td.tier, _bs.LANE_NAMES[td.lane], td.team, str(td.grid_pos),
 			_labels(attackers), _labels(defenders), _labels(pushed)])
 	for raw in pushed:
@@ -900,7 +900,7 @@ func resolve_movement(advance_set: Dictionary, retreat_set: Dictionary,
 		# 소비되므로 다음 턴에는 평소처럼 자기 레인을 걸어 나간다.
 		if p.recall_hold:
 			p.recall_hold = false
-			_bs.blog.log_block(p, "본진 복귀 — 이번 턴 대기")
+			_bs.blog.log_block(p, "본진 복귀 — 이번 턴 대기")  # l10n-ignore
 			continue
 		# [매복] — 자기 팀의 다음 작전 단계까지 그 칸에 박혀 있다. 밀려나지도
 		# 않는다(밀기 결과로 움직이면 매복이 아니다).
@@ -1031,7 +1031,7 @@ func _veto_advance_over_stuck_enemy(wants: Array) -> void:
 			continue
 		wa["ok"] = false
 		ma["active"] = false
-		_bs.blog.log_block(a, "push-advance held — %s 가 %s 에서 밀려나지 못했다"
+		_bs.blog.log_block(a, "push-advance held — %s 가 %s 에서 밀려나지 못했다"  # l10n-ignore
 				% [_bs.pilot_label(blocker), str(a.grid_pos)])
 
 
@@ -1110,7 +1110,7 @@ func _apply_lane_bonds(advance_set: Dictionary, retreat_set: Dictionary) -> void
 				continue
 			advance_set.erase(o)
 			retreat_set[o] = true
-			_bs.blog.log_event("BOND", "%s 후퇴 → 결속 파트너 %s 도 후퇴 @%s" % [
+			_bs.blog.log_event("BOND", "%s 후퇴 → 결속 파트너 %s 도 후퇴 @%s" % [  # l10n-ignore
 					_bs.pilot_label(p), _bs.pilot_label(o), str(p.grid_pos)])
 
 
@@ -1145,7 +1145,7 @@ func _enforce_lane_bonds(wants: Array) -> void:
 			wo["ok"] = true
 			wo["dest"] = w["dest"]
 			mo["active"] = true
-			_bs.blog.log_event("BOND", "%s 후퇴 → 막혔던 결속 파트너 %s 도 %s 로" % [
+			_bs.blog.log_event("BOND", "%s 후퇴 → 막혔던 결속 파트너 %s 도 %s 로" % [  # l10n-ignore
 					_bs.pilot_label(p), _bs.pilot_label(raw_o as PilotData),
 					str(w["dest"])])
 
@@ -1168,7 +1168,7 @@ func _enforce_lane_bonds(wants: Array) -> void:
 		var w: Dictionary = by_pilot[hp]
 		w["ok"] = false
 		(w["m"] as Dictionary)["active"] = false
-		_bs.blog.log_block(hp, "push-advance held — 결속 파트너가 전진하지 못했다")
+		_bs.blog.log_block(hp, "push-advance held — 결속 파트너가 전진하지 못했다")  # l10n-ignore
 
 
 # Head-on exchange arbitration — see the block comment above `resolve_movement`.
@@ -1558,7 +1558,7 @@ func advance_pilot(caster: PilotData, steps: int, log_lines: Array) -> void:
 	_last_hitter.clear()
 	_last_turret_hitter.clear()
 	_bs.blog.stage("card-adv")
-	_bs.blog.log_event("CARD", "전진 — %s runs %d mini-ticks from %s"
+	_bs.blog.log_event("CARD", "전진 — %s runs %d mini-ticks from %s"  # l10n-ignore
 			% [_bs.pilot_label(caster), steps, str(caster.grid_pos)])
 	for _i in steps:
 		if not caster.alive:
@@ -1619,10 +1619,10 @@ func _advance_tick(caster: PilotData, log_lines: Array) -> void:
 			var f := raw_f as PilotData
 			advance_set.erase(f)
 			retreat_set[f] = true
-	var verdict := "전진 확정"
+	var verdict := "전진 확정"  # l10n-ignore
 	if on_enemy_turret:
-		verdict = "포탑 칸 → 제자리 (수비자에게 맞아 후퇴 %s)" % _labels(pushed_back)
-	_bs.blog.log_event("CARD", "전진 판정 — %s %s / 밀려남 %s" % [
+		verdict = "포탑 칸 → 제자리 (수비자에게 맞아 후퇴 %s)" % _labels(pushed_back)  # l10n-ignore
+	_bs.blog.log_event("CARD", "전진 판정 — %s %s / 밀려남 %s" % [  # l10n-ignore
 			_labels(squad), verdict, _labels(foes)])
 
 	_apply_card_damage(damage_map, turret_dmg, log_lines)
@@ -1653,9 +1653,9 @@ func _advance_tick(caster: PilotData, log_lines: Array) -> void:
 			_step_pilot(m2, _desired_push_retreat_cell(m2), MOVE_KIND_RETREAT)
 		elif not advance_set.has(m2):
 			# 무방비 적 포탑 칸 위 — 때리며 눌러앉는다.
-			_bs.blog.log_block(m2, "전진 — 적 포탑 칸을 점거 중이라 제자리")
+			_bs.blog.log_block(m2, "전진 — 적 포탑 칸을 점거 중이라 제자리")  # l10n-ignore
 		elif still_contested:
-			_bs.blog.log_block(m2, "전진 — 밀려나지 못한 적이 칸에 남아 제자리")
+			_bs.blog.log_block(m2, "전진 — 밀려나지 못한 적이 칸에 남아 제자리")  # l10n-ignore
 		else:
 			_step_pilot(m2, _desired_push_advance_cell(m2), MOVE_KIND_ADVANCE)
 

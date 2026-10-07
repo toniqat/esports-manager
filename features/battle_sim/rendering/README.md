@@ -1,6 +1,6 @@
 # Rendering Module
 
-**l10n:** card banners get art by `CardData.card_uid()` (`CardImages.art_for(uid)`), title = translated `card_name`.
+**l10n:** card banners get art by `CardData.card_uid()` (`CardImages.art_for(uid)`), title = translated `card_name`. 표시 텍스트는 l10n key (`battle.renderer.preview_*`).
 
 ## BattleRenderer.gd
 `extends Node2D` — child of BattleSim at position (0,0).

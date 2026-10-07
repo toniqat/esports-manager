@@ -64,15 +64,15 @@ func _ready() -> void:
 ## 교전과 같다 — 무대를 보고 두 갈래 중 하나를 고른다 — 이므로 화면을 새로
 ## 만들 이유가 없다. `subtitle` 은 버튼 위 한 줄(보상 안내)이다.
 func setup(bs: BattleSim, sim: TurnEngageSim, title: String,
-		allow_cancel: bool, confirm_text: String = "확인",
-		cancel_text: String = "취소", subtitle: String = "") -> void:
+		allow_cancel: bool, confirm_text: String = "",
+		cancel_text: String = "", subtitle: String = "") -> void:
 	# 딤도 제목도 라운드 칸도 아레나가 들고 있다 — 여기서 또 깔면 두 겹이 된다.
 	_arena = EngageArena.new()
 	_arena.name = "PreviewArena"
 	add_child(_arena)
 	_arena.setup(bs, sim, title, sim != null and sim.is_duel, true)
-	_arena.set_hint("시작 위치 — 이대로 교전을 시작한다" if allow_cancel
-			else "시작 위치")
+	_arena.set_hint(Loc.t(L.BATTLE_ENGAGE_HINT_START_CANCEL) if allow_cancel
+			else Loc.t(L.BATTLE_ENGAGE_HINT_START))
 
 	if not subtitle.is_empty():
 		_build_subtitle(subtitle)
@@ -89,8 +89,13 @@ func _build_subtitle(text: String) -> void:
 	add_child(lbl)
 
 
-func _build_buttons(allow_cancel: bool, confirm_text: String = "확인",
-		cancel_text: String = "취소") -> void:
+## 빈 문구는 기본값 — 확인 / 취소.
+func _build_buttons(allow_cancel: bool, confirm_text: String = "",
+		cancel_text: String = "") -> void:
+	if confirm_text.is_empty():
+		confirm_text = Loc.t(L.UI_BUTTON_CONFIRM)
+	if cancel_text.is_empty():
+		cancel_text = Loc.t(L.UI_BUTTON_CANCEL)
 	var confirm := _mk_button(confirm_text, Color(0.22, 0.52, 0.34))
 	if allow_cancel:
 		var cancel := _mk_button(cancel_text, Color(0.36, 0.20, 0.22))

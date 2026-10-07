@@ -464,7 +464,7 @@ func _contempt_opening() -> void:
 		var n: int = mech.take_contempt_charges(u.pilot)
 		if n <= 0:
 			continue
-		popups.append({"pos": u.pos, "text": "약자 멸시 x%d" % n,
+		popups.append({"pos": u.pos, "text": Loc.t(L.BATTLE_ENGAGE_POPUP_PREY, {"n": n}),
 				"color": Color(1.0, 0.72, 0.35)})
 		for _i in n:
 			var weak: EUnit = _weakest_enemy(u)
@@ -1003,7 +1003,7 @@ func _advance_order() -> void:
 		# 기절([강타]) — 이번 차례를 통째로 건너뛰고 남은 라운드가 하나 준다.
 		# 순서 배열에서 빼지는 않으므로 살아 있는 사람들의 상대 순서는 그대로다.
 		if _bs.mech_skill != null and _bs.mech_skill.consume_stun_turn(u.pilot):
-			popups.append({"pos": u.pos, "text": "기절",
+			popups.append({"pos": u.pos, "text": Loc.t(L.BATTLE_ENGAGE_POPUP_STUN),
 					"color": Color(0.70, 0.85, 1.0)})
 			continue
 		var t := _pick_target(u)
@@ -1333,7 +1333,7 @@ func _strike_one(u: EUnit, target: EUnit, allow_extra: bool = true,
 		# 강타([강타] 카드) — 때린 쪽이 장전돼 있으면 맞은 적이 다음 차례를
 		# 통째로 잃는다. 같은 적에게 두 번은 걸리지 않는다.
 		if mech.try_stun(a, d):
-			popups.append({"pos": target.pos, "text": "기절!",
+			popups.append({"pos": target.pos, "text": Loc.t(L.BATTLE_ENGAGE_POPUP_STUNNED),
 					"color": Color(0.70, 0.85, 1.0)})
 	if d.hp <= 0:
 		_kill(target, a)
@@ -1347,7 +1347,7 @@ func _strike_one(u: EUnit, target: EUnit, allow_extra: bool = true,
 	# 한 번 더 때리고 충전 절반이 날아간다(소모는 질의 함수가 한다).
 	if allow_extra and mech != null and target.is_active() \
 			and mech.overclock_extra_attack(a):
-		popups.append({"pos": u.pos, "text": "오버클럭",
+		popups.append({"pos": u.pos, "text": Loc.t(L.BATTLE_ENGAGE_POPUP_OVERCLOCK),
 				"color": Color(0.65, 0.95, 1.0)})
 		_strike_one(u, target, false)
 
@@ -1386,7 +1386,7 @@ func _apply_damage(d: PilotData, amount: int) -> int:
 		d.dmg_taken = maxi(0, d.dmg_taken - 1)   # 경기 기록도 같은 1 을 돌려놓는다
 		var u: EUnit = _unit_for(d)
 		if u != null:
-			popups.append({"pos": u.pos, "text": "불굴!",
+			popups.append({"pos": u.pos, "text": Loc.t(L.BATTLE_ENGAGE_POPUP_INDOMITABLE),
 					"color": Color(1.0, 0.92, 0.55)})
 	return absorbed + hp_dmg
 
@@ -1433,7 +1433,7 @@ func _begin_turret_turn(t: ETurret) -> void:
 	if victim.pilot.hp <= 0:
 		# 포탑 처치는 어느 파일럿에게도 성장치가 귀속되지 않는다.
 		_kill(victim, null)
-		popups.append({"pos": victim.pos, "text": "-%d  포탑 처치" % dealt,
+		popups.append({"pos": victim.pos, "text": Loc.t(L.BATTLE_ENGAGE_POPUP_TURRET_KILL, {"n": dealt}),
 				"color": Color(1.0, 0.6, 0.25)})
 	else:
 		popups.append({"pos": victim.pos, "text": "-%d" % dealt,
@@ -1500,7 +1500,8 @@ func actor_label() -> String:
 		return ""
 	if current_actor is ETurret:
 		var t := current_actor as ETurret
-		return "포탑 T%d [%s]" % [t.data.tier, _bs.LANE_NAMES[t.data.lane]]
+		return Loc.t(L.BATTLE_ENGAGE_TURRET_LABEL,
+				{"tier": t.data.tier, "lane": _bs.LANE_NAMES[t.data.lane]})
 	return _bs.pilot_label((current_actor as EUnit).pilot)
 
 

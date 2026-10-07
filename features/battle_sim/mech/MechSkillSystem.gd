@@ -109,13 +109,11 @@ const BOON_GAMMA := "gamma"   # 다음 [단계 C] 사용 시 성장 점수 `PHAS
 ## 강화 하나의 표시 이름과 설명문. 플레이어가 고르는 3택 모달과 AI 의 무작위
 ## 선택이 **같은 표**를 읽으므로 목록이 갈라질 수 없다.
 ## 설명문의 수치는 튜닝값에서 만들어 붙인다(const.csv 를 고치면 문구도 따라간다).
-static var BOON_DEFS: Array[Dictionary] = [
-	{"key": BOON_ALPHA, "name": "강화 · 알파",
-		"desc": "다음 [단계 A] 사용 시 [단계 B] 를 덱이 아닌 손에 생성"},
-	{"key": BOON_BETA, "name": "강화 · 베타",
-		"desc": "다음 [단계 B] 사용 시 토큰 +%d" % PHASE_BOON_BETA_CHARGE},
-	{"key": BOON_GAMMA, "name": "강화 · 감마",
-		"desc": "다음 [단계 C] 사용 시 성장 점수 +%d%%" % roundi(PHASE_BOON_GAMMA_RATE * 100.0)},
+## 값은 l10n key 다 — 표시 글자는 `boon_defs()` 가 부를 때마다 현재 로케일로 만든다.
+const BOON_KEYS: Array[Dictionary] = [
+	{"key": BOON_ALPHA, "name": L.BATTLE_MECH_BOON_ALPHA_NAME, "desc": L.BATTLE_MECH_BOON_ALPHA_DESC},
+	{"key": BOON_BETA, "name": L.BATTLE_MECH_BOON_BETA_NAME, "desc": L.BATTLE_MECH_BOON_BETA_DESC},
+	{"key": BOON_GAMMA, "name": L.BATTLE_MECH_BOON_GAMMA_NAME, "desc": L.BATTLE_MECH_BOON_GAMMA_DESC},
 ]
 
 # ─── 상태 ────────────────────────────────────────────────────────────────────
@@ -752,9 +750,18 @@ func phase_boon_of(p: PilotData) -> String:
 	return String(_phase_boon.get(p, ""))
 
 
-## 강화 3택의 표시용 정의. 모달과 AI 가 같은 표를 읽는다.
+## 강화 3택의 표시용 정의 `[{key, name, desc}]` (name · desc = 번역된 글자).
+## 모달과 AI 가 같은 표를 읽는다.
 static func boon_defs() -> Array:
-	return BOON_DEFS
+	var params := {"n": PHASE_BOON_BETA_CHARGE,
+			"pct": roundi(PHASE_BOON_GAMMA_RATE * 100.0)}
+	var out: Array = []
+	for raw in BOON_KEYS:
+		var d: Dictionary = raw
+		out.append({"key": d["key"],
+				"name": Loc.t(d["name"]),  # l10n-dynamic: battle.mech.boon.*.name
+				"desc": Loc.t(d["desc"], params)})  # l10n-dynamic: battle.mech.boon.*.desc
+	return out
 
 
 # ─── 카드 생성 헬퍼 ──────────────────────────────────────────────────────────

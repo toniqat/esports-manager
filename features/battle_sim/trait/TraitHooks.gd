@@ -32,12 +32,12 @@ const KEY_COST_TICK       := "cost_tick"        # +p1 strategy points every p2 t
 const HAND_SIZE_FLOOR := 1
 
 ## Short on-screen labels for traits that arrive without a table id (harness ctx).
-const KEY_LABELS := {
-	KEY_OPEN_COST: "개시 전략 포인트",
-	KEY_FIRST_DRAW: "첫 자동 드로우",
-	KEY_HAND_SIZE: "손패 상한",
-	KEY_FIRST_CARD_COST: "첫 카드 비용",
-	KEY_COST_TICK: "전략 포인트 가속",
+const KEY_LABELS := {  # l10n-keys: battle.trait.label.*
+	KEY_OPEN_COST: L.BATTLE_TRAIT_LABEL_OPEN_COST,
+	KEY_FIRST_DRAW: L.BATTLE_TRAIT_LABEL_FIRST_DRAW,
+	KEY_HAND_SIZE: L.BATTLE_TRAIT_LABEL_HAND_SIZE,
+	KEY_FIRST_CARD_COST: L.BATTLE_TRAIT_LABEL_FIRST_CARD_COST,
+	KEY_COST_TICK: L.BATTLE_TRAIT_LABEL_COST_TICK,
 }
 
 ## Parsed traits as given (`[{id, key, p1, p2}]`) — the banner lists these.
@@ -135,7 +135,7 @@ func consume_auto_draw_count() -> int:
 	_first_draw_done = true
 	var n: int = maxi(0, 1 + sum_of(KEY_FIRST_DRAW))
 	if n != 1 and _bs != null and _bs.blog != null:
-		_bs.blog.log_event("TRAIT", "첫 자동 드로우 %d장" % n)
+		_bs.blog.log_event("TRAIT", "첫 자동 드로우 %d장" % n)  # l10n-ignore
 	return n
 
 
@@ -191,9 +191,12 @@ func display_lines() -> Array:
 			out.append("%s · %s" % [TraitSystem.name_of(tid), TraitSystem.desc_of(tid)])
 			continue
 		var key: String = String(t["key"])
-		var label: String = String(KEY_LABELS.get(key, key))
 		if key == KEY_COST_TICK:
-			out.append("%s · %d턴마다 %+d" % [label, int(t["p2"]), int(t["p1"])])
-		else:
-			out.append("%s %+d" % [label, int(t["p1"])])
+			out.append(Loc.t(L.BATTLE_TRAIT_COST_TICK_LINE,
+					{"turns": int(t["p2"]), "delta": "%+d" % int(t["p1"])}))
+			continue
+		var label: String = key
+		if KEY_LABELS.has(key):
+			label = Loc.t(KEY_LABELS[key])  # l10n-dynamic: battle.trait.label.*
+		out.append("%s %+d" % [label, int(t["p1"])])
 	return out

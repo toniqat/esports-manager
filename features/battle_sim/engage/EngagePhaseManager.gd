@@ -144,7 +144,7 @@ func start_engage(caster: PilotData, rounds_total: int, exclude_lane: bool,
 		if p.alive:
 			(t0 if p.team == 0 else t1).append(p)
 	if t0.is_empty() or t1.is_empty():
-		_bs.last_log = "[교전] 대상 부족"
+		_bs.last_log = "[교전] 대상 부족"  # l10n-ignore
 		if on_done.is_valid():
 			on_done.call()
 		return
@@ -209,9 +209,10 @@ func engage_sides(caster: PilotData, exclude_lane: bool,
 ## 않고, 호출 측(`CardPhaseManager._effect_engage`)이 카드 제출 자체를 무른다.
 ## `allow_cancel` 이 false 면 확인만 놓는다: AI 가 낸 카드는 플레이어가 무를 수
 ## 있는 것이 아니므로 "누가 싸우는지 보고 넘긴다"만 남는다.
+## 모든 문구는 이미 번역된 표시 글자다. 버튼 문구가 비면 확인 / 취소(`EngageIntro`).
 func prompt_engage(t0: Array, t1: Array, rounds: int, title: String,
-		allow_cancel: bool, confirm_text: String = "확인",
-		cancel_text: String = "취소", subtitle: String = "") -> bool:
+		allow_cancel: bool, confirm_text: String = "",
+		cancel_text: String = "", subtitle: String = "") -> bool:
 	if _overlay_layer == null:
 		return true
 	# 무대를 아직 안 세웠으면 여기서 세운다 — 명단만 보여 주던 예전 화면으로
@@ -388,16 +389,16 @@ func _begin_end_hold() -> void:
 
 func _end_banner_text() -> String:
 	if _sim == null:
-		return "교전 종료"
+		return Loc.t(L.BATTLE_ENGAGE_OVER)
 	var t0_out: bool = _sim.active_count(0) == 0
 	var t1_out: bool = _sim.active_count(1) == 0
 	if t0_out and t1_out:
-		return "교전 종료 — 양측 전멸"
+		return Loc.t(L.BATTLE_ENGAGE_OVER_BOTH_WIPED)
 	if t1_out:
-		return "교전 종료 — 적군 전멸"
+		return Loc.t(L.BATTLE_ENGAGE_OVER_ENEMY_WIPED)
 	if t0_out:
-		return "교전 종료 — 아군 전멸"
-	return "교전 종료 — %d턴 완료" % _sim.total_rounds
+		return Loc.t(L.BATTLE_ENGAGE_OVER_ALLY_WIPED)
+	return Loc.t(L.BATTLE_ENGAGE_OVER_TURNS, {"n": _sim.total_rounds})
 
 
 # ─── Participant gathering ───────────────────────────────────────────────────
@@ -459,7 +460,7 @@ func _finish_engage() -> void:
 	if _bs.mech_skill != null:
 		_bs.mech_skill.on_engage_end(_team_pilots[0] + _team_pilots[1])
 	_bs.last_log = _result_log()
-	_bs.blog.log_event("ENGAGE", "전투 개시 종료 — t0=%s t1=%s"
+	_bs.blog.log_event("ENGAGE", "전투 개시 종료 — t0=%s t1=%s"  # l10n-ignore
 			% [_engage_side_str(0), _engage_side_str(1)])
 	var title: String = _result_title()
 	# 성적표가 뜨는 자리 하나에서만 승패를 감촉으로 말한다 — 라운드마다 울리면
@@ -526,7 +527,7 @@ func _result_log() -> String:
 	for p in _sim.stats:
 		var s: Dictionary = _sim.stats[p]
 		kills[(p as PilotData).team] += int(s["kills"])
-	return "[교전] %d턴 · 아군 처치 %d / 적군 처치 %d" % [
+	return "[교전] %d턴 · 아군 처치 %d / 적군 처치 %d" % [  # l10n-ignore
 		_sim.round_index, kills[0], kills[1]]
 
 
@@ -582,7 +583,7 @@ func _open_overlay() -> void:
 	_overlay_layer.add_child(_arena)
 	var title: String = _arena_title
 	if title.is_empty():
-		title = "결투" if _is_duel else "교전"
+		title = Loc.t(L.BATTLE_ENGAGE_TITLE_DUEL) if _is_duel else Loc.t(L.BATTLE_ENGAGE_TITLE_ENGAGE)
 	_arena.setup(_bs, _sim, title, _is_duel)
 
 

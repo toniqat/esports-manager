@@ -1,6 +1,6 @@
 # features/battle_sim/skill — pilot skills
 
-**텍스트는 l10n key — `Loc.t`.** `skill_name` / `skill_description` translate the def's `name_key` · `description_key` (`pilot_skill.{id}.*`); `skill_description_key` feeds `CardData.ref_entries`. Granted volatile cards are logged with their own `card_name` (no hard-coded names).
+**텍스트는 l10n key — `Loc.t`.** `skill_name` / `skill_description` translate the def's `name_key` · `description_key` (`pilot_skill.{id}.*`); `skill_description_key` feeds `CardData.ref_entries`. Granted volatile cards are logged with their own `card_name` (no hard-coded names). `status_text` → `battle.skill.status.*`; activation result strings are log-only (`# l10n-ignore`).
 
 A **unique ability** attached to one player (선수). If cards (카드) are a shared resource handed out by
 mechs (메크) and pilots (파일럿), a skill is the one move only that player can make.

@@ -2762,12 +2762,12 @@ func _draw_preview_attack(a: Dictionary, t: float) -> void:
 	var lethal: bool = hp_loss >= p.hp
 	var top: Vector2 = pos + Vector2(0.0, -marker_outer_radius(draw_r) - 6.0)
 	var chance: float = float(a["chance"])
-	var dmg_txt: String = ("처치 -%d" % dmg) if lethal else ("-%d" % dmg)
+	var dmg_txt: String = Loc.t(L.BATTLE_RENDERER_PREVIEW_KILL, {"n": dmg}) if lethal else ("-%d" % dmg)
 	_draw_preview_text(top, dmg_txt, PREVIEW_DMG_COLOR)
 	var fsz: int = int(round(PREVIEW_FONT_BASE * HexGrid.DISPLAY_SCALE))
-	var hit_txt: String = "명중 %d%%" % roundi(chance * 100.0)
-	if bool(a.get("repeat", false)):
-		hit_txt += " · 연속"
+	var hit_txt: String = Loc.t(L.BATTLE_RENDERER_PREVIEW_HIT_REPEAT
+			if bool(a.get("repeat", false)) else L.BATTLE_RENDERER_PREVIEW_HIT,
+			{"pct": roundi(chance * 100.0)})
 	_draw_preview_text(top + Vector2(0.0, -float(fsz) - 4.0), hit_txt,
 			Color(1.0, 0.95, 0.75))
 
@@ -2801,7 +2801,8 @@ func _draw_preview_restore(rd: Dictionary, t: float) -> void:
 		_draw_preview_text(top, "+%d" % heal, PREVIEW_HEAL_COLOR)
 		top.y -= float(fsz) + 4.0
 	if shield > 0:
-		_draw_preview_text(top, "보호막 +%d" % shield, PREVIEW_SHIELD_COLOR)
+		_draw_preview_text(top, Loc.t(L.BATTLE_RENDERER_PREVIEW_SHIELD, {"n": shield}),
+				PREVIEW_SHIELD_COLOR)
 
 
 ## 미리보기 깜빡임 — HP 링 위의 `[from, to]` 구간(링 한 바퀴 대비 비율).

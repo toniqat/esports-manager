@@ -40,14 +40,14 @@ const MIN_H := 110.0
 const ATTR_H := 30.0
 const ATTR_SEP := "   "
 ## `CardData.target` → 속성 줄의 대상 글자.
-const TARGET_LABELS := {
-	"enemy": "적",
-	"ally": "아군",
-	"pilot": "아군 또는 적",
-	"foe": "적 또는 포탑",
-	"location": "타일",
-	"turret_outer": "최외곽 포탑",
-	"turret_any": "적 포탑",
+const TARGET_LABELS := {  # l10n-keys: battle.card_desc.target.*
+	"enemy": L.BATTLE_CARD_DESC_TARGET_ENEMY,
+	"ally": L.BATTLE_CARD_DESC_TARGET_ALLY,
+	"pilot": L.BATTLE_CARD_DESC_TARGET_PILOT,
+	"foe": L.BATTLE_CARD_DESC_TARGET_FOE,
+	"location": L.BATTLE_CARD_DESC_TARGET_LOCATION,
+	"turret_outer": L.BATTLE_CARD_DESC_TARGET_TURRET_OUTER,
+	"turret_any": L.BATTLE_CARD_DESC_TARGET_TURRET_ANY,
 }
 
 ## 설명문 계산식 `{식|전투 밖 문구}` — 전투 중에는 식의 값, 밖에서는 "(문구)".
@@ -360,24 +360,24 @@ static func target_info(data: CardData) -> Dictionary:
 		return info
 	if data.target == "location":
 		if data.effect.begins_with("turret_damage"):
-			info["label"] = TARGET_LABELS["turret_outer"]
+			info["label"] = Loc.t(L.BATTLE_CARD_DESC_TARGET_TURRET_OUTER)
 			info["color"] = KeywordIcon.TARGET_ENEMY_COLOR
 			return info
 		info["key"] = KeywordIcon.TILE
-		info["label"] = "타일"
+		info["label"] = Loc.t(L.BATTLE_CARD_DESC_TARGET_LOCATION)
 		if data.effect.contains("own_jungle"):
-			info["label"] = "아군 정글 타일"
+			info["label"] = Loc.t(L.BATTLE_CARD_DESC_TARGET_OWN_JUNGLE)
 			info["color"] = KeywordIcon.TARGET_ALLY_COLOR
 		elif data.effect.contains("steal_camp"):
-			info["label"] = "적 정글 타일"
+			info["label"] = Loc.t(L.BATTLE_CARD_DESC_TARGET_ENEMY_JUNGLE)
 			info["color"] = KeywordIcon.TARGET_ENEMY_COLOR
 		elif data.effect.contains("ambush"):
-			info["label"] = "정글 타일"
+			info["label"] = Loc.t(L.BATTLE_CARD_DESC_TARGET_JUNGLE)
 		return info
 	if (data.cast_method == "range" and data.target == "caster") or _all_self(data):
-		info["label"] = "자신"
+		info["label"] = Loc.t(L.BATTLE_CARD_DESC_TARGET_SELF)
 	elif data.cast_method != "instant" and data.cast_method != "range":
-		info["label"] = String(TARGET_LABELS.get(data.target, ""))
+		info["label"] = Loc.t(TARGET_LABELS[data.target]) if TARGET_LABELS.has(data.target) else ""  # l10n-dynamic: battle.card_desc.target.*
 	return info
 
 
@@ -408,7 +408,7 @@ static func card_attributes(data: CardData) -> Array:
 	if not String(tgt["label"]).is_empty():
 		out.append([tgt["key"], tgt["label"]])
 	if data.cast_method == "target" or data.cast_method == "location":
-		var rng: String = "전장" if data.cast_range >= CardTargetingOverlay.UNLIMITED_RANGE \
+		var rng: String = Loc.t(L.BATTLE_CARD_DESC_RANGE_GLOBAL) if data.cast_range >= CardTargetingOverlay.UNLIMITED_RANGE \
 				else str(data.cast_range)
 		out.append([KeywordIcon.RANGE, rng])
 	var radius: int = data.area

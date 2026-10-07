@@ -1,5 +1,7 @@
 # Feature: Battle Sim
 
+**표시 텍스트는 l10n key (`battle` 도메인, `data/l10n/src/battle.csv`)** — `Loc.t(L.BATTLE_…)`; shared words via `ui.*` / `term.*`. Diagnostic strings (`_bs.blog` log lines, effect / activation result strings that only feed `BattleSim.last_log`, which renders nowhere) stay Korean and are marked `# l10n-ignore`.
+
 ## Purpose
 Tactical battle simulator on a hex grid. Five pilot roles per team
 (Tank, Fighter, Assassin, Support, Sniper) push down a 3-lane map flanked by

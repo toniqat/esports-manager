@@ -1,5 +1,7 @@
 # Module: Engage (전투 개시, battle opening) — top-down (quarter-view) engage (round-based turns)
 
+표시 텍스트는 l10n key (`battle` 도메인: `battle.engage.*`). `EngageArena.RESULT_*` hold **keys** (compared as ids, translated by `show_dashboard`); `prompt_engage` / `EngageIntro.setup` take already-translated title / subtitle / button text, empty button text = `ui.button.confirm` / `cancel`. Diagnostic strings (`_bs.blog` log lines, effect / activation result strings that only feed `BattleSim.last_log`, which renders nowhere) stay Korean and are marked `# l10n-ignore`.
+
 ## Purpose
 A **turn-based engage (교전)** triggered by the `engage:N` / `duel` card effects. Unlike the
 battlefield (전장, BattleSim), which runs cell by cell, an engage runs on its own **top-down
@@ -954,7 +956,7 @@ answer is "so did we win?".
 
 The verdict is made by `EngagePhaseManager._result_title()` (it is the side that knows whether it
 is an objective engage). The three strings (`EngageArena.RESULT_WIN` / `RESULT_LOSE` /
-`RESULT_NEUTRAL`) are **owned by the arena** — deciding what colour that text gets is this
+`RESULT_NEUTRAL`, l10n keys) are **owned by the arena** — deciding what colour that text gets is this
 screen's job.
 
 - **Objective engage** (Herald / Dragon): borrows `ObjectiveSystem.engage_winner()` as is

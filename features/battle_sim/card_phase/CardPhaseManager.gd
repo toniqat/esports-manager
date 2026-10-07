@@ -682,7 +682,7 @@ func do_battle_turn() -> void:
 			var tick_gain: int = _bs.trait_hooks.cost_tick_gain(_bs.turn_count)
 			if tick_gain != 0 and _bs.player_cost < _bs.PHASE_THRESHOLD:
 				_bs.player_cost = maxi(0, _bs.player_cost + tick_gain)
-				_bs.blog.log_event("TRAIT", "작전 가속 — 전략 포인트 %+d (%d)"
+				_bs.blog.log_event("TRAIT", "작전 가속 — 전략 포인트 %+d (%d)"  # l10n-ignore
 						% [tick_gain, _bs.player_cost])
 		_bs.draw_counter += 1
 		if _bs.draw_counter >= _bs.CARD_DRAW_INTERVAL:
@@ -827,7 +827,7 @@ func _prune_preserved(is_player: bool) -> void:
 func start_card_phase() -> void:
 	_bs.game_phase = GameEnums.BattlePhase.CARD_PHASE
 	_bs.blog.stage("card-phase")
-	_bs.blog.log_event("PHASE", "작전 단계 시작 — player %d / ai %d 점"
+	_bs.blog.log_event("PHASE", "작전 단계 시작 — player %d / ai %d 점"  # l10n-ignore
 			% [_bs.player_cost, _bs.ai_cost])
 	# 자기 차례가 열리면 패스 잠금은 그 역할을 다한 것이다 — 넘긴 뒤 다시
 	# 여기까지 온 것 자체가 잠금이 풀렸다는 뜻이지만, 상태를 여기서 한 번 더
@@ -905,18 +905,18 @@ func _apply_phase_entry_carryovers(is_player: bool) -> void:
 		var p := raw as PilotData
 		if p.team == team and p.ambush_hold:
 			p.ambush_hold = false
-			_bs.blog.log_event("CARD", "%s 매복 해제" % _bs.pilot_label(p))
+			_bs.blog.log_event("CARD", "%s 매복 해제" % _bs.pilot_label(p))  # l10n-ignore
 	# [준비 태세] — 다음 작전 단계 시작 시 뽑기. 이미 그 쪽 작전 단계 안이므로
 	# 이렇게 들어온 [신중한 예산] 은 이번 단계 동안 공짜가 된다.
 	if draw_n > 0:
 		var drew: String = _effect_draw(is_player, draw_n)
-		_bs.blog.log_event("CARD", "준비 태세 — %s" % drew)
+		_bs.blog.log_event("CARD", "준비 태세 — %s" % drew)  # l10n-ignore
 	# [매복] — 시전자의 교전 카드를 덱에서 탐색.
 	for raw in searches:
 		var e: Dictionary = raw as Dictionary
 		var msg: String = _search_engage_cards(e["caster"] as PilotData,
 				int(e["n"]), is_player)
-		_bs.blog.log_event("CARD", "매복 — %s" % msg)
+		_bs.blog.log_event("CARD", "매복 — %s" % msg)  # l10n-ignore
 
 
 # Hand-dim driver: cards stay bright only while it's actually the player's
@@ -1036,8 +1036,8 @@ func end_card_phase() -> void:
 	_bs.kill_bounty_p = 0
 	_clear_phase_free(true)
 	_notify_skill_phase_end(true)
-	_bs.blog.log_event("PHASE", "작전 단계 종료 → BATTLE (남은 %d점%s)"
-			% [_bs.player_cost, "" if burned == 0 else ", 초과 %d점 소멸" % burned])
+	_bs.blog.log_event("PHASE", "작전 단계 종료 → BATTLE (남은 %d점%s)"  # l10n-ignore
+			% [_bs.player_cost, "" if burned == 0 else ", 초과 %d점 소멸" % burned])  # l10n-ignore
 	_bs.renderer.queue_redraw()
 	_bs.hud.update_hud()
 	_apply_hand_dim_state()
@@ -1160,7 +1160,7 @@ func _run_ai_turn() -> void:
 	_apply_hand_dim_state()
 	_bs.blog.stage("ai-turn")
 	_apply_phase_entry_carryovers(false)
-	_bs.blog.log_event("PHASE", "상대 차례 시작 — ai %d 점" % _bs.ai_cost)
+	_bs.blog.log_event("PHASE", "상대 차례 시작 — ai %d 점" % _bs.ai_cost)  # l10n-ignore
 	_bs.hud.update_hud()
 	await _bs.hud.play_turn_announce(false)
 	await _bs.ai_card_player.run_ai_plays()
@@ -1181,8 +1181,8 @@ func _run_ai_turn() -> void:
 		_bs.ai_cost = _bs.PHASE_THRESHOLD
 	# 상대가 차례를 가졌으니 플레이어의 패스 잠금이 풀린다.
 	_player_pass_lock = false
-	_bs.blog.log_event("PHASE", "상대 차례 종료 → BATTLE (남은 %d점%s)"
-			% [_bs.ai_cost, "" if burned == 0 else ", 초과 %d점 소멸" % burned])
+	_bs.blog.log_event("PHASE", "상대 차례 종료 → BATTLE (남은 %d점%s)"  # l10n-ignore
+			% [_bs.ai_cost, "" if burned == 0 else ", 초과 %d점 소멸" % burned])  # l10n-ignore
 	_ai_play_in_progress = false
 	highlight_affordable_cards()
 	_bs.renderer.queue_redraw()
@@ -2395,8 +2395,8 @@ func _show_drop_zone(card: Card) -> void:
 	if _card_uses_drag_arrow(card) or not _in_hand_pick_mode():
 		return
 	_build_drop_zone()
-	_drop_zone_label.text = "여기에 놓아 보존" \
-			if _bs.card_select_overlay.is_preserve_mode() else "여기에 놓아 버리기"
+	_drop_zone_label.text = Loc.t(L.BATTLE_CARD_PHASE_DROP_PRESERVE) \
+			if _bs.card_select_overlay.is_preserve_mode() else Loc.t(L.BATTLE_CARD_PHASE_DROP_DISCARD)
 	# 버리기 픽 중에는 `CardSelectOverlay._battle_dim` 이 같은 캔버스의 자식
 	# 인덱스 0 을 차지하고 있다 — 구역을 0 에 두면 그 딤 **아래**로 들어가 통째로
 	# 눌려 보이지 않는다. 딤 바로 위(1)로 올린다.
@@ -2425,7 +2425,7 @@ func _build_drop_zone() -> void:
 
 	_drop_zone_label = Label.new()
 	_drop_zone_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_drop_zone_label.text = "여기에 놓아 버리기"
+	_drop_zone_label.text = Loc.t(L.BATTLE_CARD_PHASE_DROP_DISCARD)
 	_drop_zone_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_drop_zone_label.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
 	_drop_zone_label.add_theme_font_size_override("font_size", 34)
@@ -3608,7 +3608,7 @@ func _on_discard_overlay_complete(picks: Array) -> void:
 		return
 	for pick_raw in picks:
 		send_to_discard(pick_raw as CardData, _bs.player_discard)
-	(_pending_play["log_lines"] as Array).append("버리기 %d" % picks.size())
+	(_pending_play["log_lines"] as Array).append("버리기 %d" % picks.size())  # l10n-ignore
 	relayout_hand(_bs.player_card_nodes)
 	update_deck_discard_labels()
 	_bs.hud.update_hud()
@@ -3629,7 +3629,7 @@ func _on_graveyard_overlay_complete(picks: Array) -> void:
 		_bs.player_discard.erase(cd)
 		add_card_to_hand(cd, true)
 		taken += 1
-	(_pending_play["log_lines"] as Array).append("버린 더미에서 찾기 %d장" % taken)
+	(_pending_play["log_lines"] as Array).append("버린 더미에서 찾기 %d장" % taken)  # l10n-ignore
 	update_deck_discard_labels()
 	_process_pending_chain()
 
@@ -3645,7 +3645,7 @@ func _on_search_overlay_complete(picks: Array) -> void:
 		_bs.player_hand.append(cd)
 		spawn_card_node(cd)
 		taken += 1
-	(_pending_play["log_lines"] as Array).append("찾기 %d" % taken)
+	(_pending_play["log_lines"] as Array).append("찾기 %d" % taken)  # l10n-ignore
 	update_deck_discard_labels()
 	highlight_affordable_cards()
 	_bs.hud.update_hud()
@@ -3665,7 +3665,7 @@ func _on_preserve_overlay_complete(picks: Array) -> void:
 			continue
 		_bs.preserved_cards_p.append(cd)
 		marked += 1
-	(_pending_play["log_lines"] as Array).append("보존 %d" % marked)
+	(_pending_play["log_lines"] as Array).append("보존 %d" % marked)  # l10n-ignore
 	highlight_affordable_cards()
 	_bs.hud.update_hud()
 	_process_pending_chain()
@@ -3681,7 +3681,7 @@ func _on_overlay_cancel() -> void:
 	var snap: Dictionary = _pending_play["snapshot"]
 	_pending_play.clear()
 	_restore_from_snapshot(snap)
-	_bs.last_log = "[취소]"
+	_bs.last_log = "[취소]"  # l10n-ignore
 	_bs.hud.update_hud()
 	_bs.renderer.queue_redraw()
 
@@ -4185,7 +4185,7 @@ func _effect_draw(is_player: bool, n: int) -> String:
 		drew += 1
 	if not is_player and drew > 0:
 		_bs.hud.update_ai_hand_visuals()
-	return "뽑기 %d" % drew
+	return "뽑기 %d" % drew  # l10n-ignore
 
 
 func _effect_discard(is_player: bool, n: int) -> String:
@@ -4207,7 +4207,7 @@ func _effect_discard(is_player: bool, n: int) -> String:
 		relayout_hand(_bs.player_card_nodes)
 	else:
 		_bs.hud.update_ai_hand_visuals()
-	return "버리기 %d" % moved
+	return "버리기 %d" % moved  # l10n-ignore
 
 
 func _effect_strategy(is_player: bool, n: int) -> String:
@@ -4215,7 +4215,7 @@ func _effect_strategy(is_player: bool, n: int) -> String:
 		_bs.player_cost += n
 	else:
 		_bs.ai_cost += n
-	return "전략 점수 +%d" % n
+	return "전략 점수 +%d" % n  # l10n-ignore
 
 
 ## 공격 절. 예전에는 "적 하나를 한 번 때린다"였고 지금도 기본형은 그대로지만,
@@ -4240,7 +4240,7 @@ func _effect_attack(n: int, flags: Array, caster: PilotData, enemy_team: int,
 	_last_attack_kills = 0
 	var victims: Array = _resolve_attack_victims(flags, caster, enemy_team, picked)
 	if victims.is_empty():
-		return "공격 (대상 없음)"
+		return "공격 (대상 없음)"  # l10n-ignore
 	var pierce: bool = "pierce" in flags
 	var repeat: bool = "repeat" in flags
 	# `|charge` 는 대상을 늘리는 것이 아니라 **각 대상을 충전 수만큼 반복**한다.
@@ -4276,7 +4276,7 @@ func _effect_attack(n: int, flags: Array, caster: PilotData, enemy_team: int,
 			if dealt > 0:
 				_popup_on(victim_raw, "-%d" % dealt, BattleRenderer.POPUP_DAMAGE_COLOR)
 			else:
-				_popup_on(victim_raw, "흡수", BattleRenderer.POPUP_SHIELD_COLOR)
+				_popup_on(victim_raw, Loc.t(L.BATTLE_CARD_PHASE_ABSORBED), BattleRenderer.POPUP_SHIELD_COLOR)
 			if not _is_alive(victim_raw):
 				_last_attack_kills += 1
 			else:
@@ -4311,10 +4311,10 @@ func _effect_attack(n: int, flags: Array, caster: PilotData, enemy_team: int,
 	if animated:
 		_set_attack_anim_active(false)
 	_chain_hit = _last_attack_hits > 0
-	var tag: String = " (필중)" if pierce else ""
+	var tag: String = " (필중)" if pierce else ""  # l10n-ignore
 	if _last_attack_hits == 0:
-		return "공격%s 전부 빗나감 (%d회)" % [tag, missed]
-	return "공격%s %d대상 %d타 -%d HP" % [
+		return "공격%s 전부 빗나감 (%d회)" % [tag, missed]  # l10n-ignore
+	return "공격%s %d대상 %d타 -%d HP" % [  # l10n-ignore
 			tag, victims.size(), _last_attack_hits, total_dmg]
 
 
@@ -4649,15 +4649,15 @@ func _effect_advance(steps: int, caster: PilotData) -> String:
 	# 적용된다. SimulationCore.advance_pilot 가 이동/전투 한 틱을
 	# 캐스터 한 명에 대해서만 실행한다.
 	if caster == null or steps <= 0:
-		return "전진 (시전자 없음)"
+		return "전진 (시전자 없음)"  # l10n-ignore
 	if not caster.alive:
-		return "전진 (시전자 사망)"
+		return "전진 (시전자 사망)"  # l10n-ignore
 	var log_lines: Array = []
 	_bs.sim_core.advance_pilot(caster, steps, log_lines)
 	var tag: String = ""
 	if not log_lines.is_empty():
 		tag = " · " + ", ".join(log_lines)
-	return "전진 %d%s" % [steps, tag]
+	return "전진 %d%s" % [steps, tag]  # l10n-ignore
 
 
 ## 전투 개시 — **카드를 제출한 이 시점**에 참가자 명단(VS 화면)이 뜨고, 확인을
@@ -4678,7 +4678,7 @@ func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 	# 시전자 없는 카드(레거시 fallback)는 전투 자체가 의미가 없음. 이 경우는
 	# 효과 체인 줄에 안내만 남기고 통과.
 	if caster == null or rounds <= 0:
-		return "교전 (시전자 없음)"
+		return "교전 (시전자 없음)"  # l10n-ignore
 	var exclude_lane: bool = "exclude_lane" in flags
 	# 메크 카드가 무대의 **중심**과 **반경**을 바꾼다.
 	#   |at_target   지정한 적 주변에서 연다        (돌격 · 강습 · 간보기)
@@ -4708,7 +4708,7 @@ func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 	if "charge_rounds" in flags and _bs.mech_skill != null:
 		rounds = maxi(1, _bs.mech_skill.chain_rounds(caster))
 	if rounds <= 0:
-		return "교전 (0턴)"
+		return "교전 (0턴)"  # l10n-ignore
 	# [강습] — 시전자가 **지정한 대상의 칸으로 뛰어들어** 그 교전에 참가한다.
 	# 대상 주변 반경만 보면 멀리서 건 시전자는 명단에서 빠지고, 그러면 "시전자
 	# 팀 선공 + 시전자가 자기 팀 맨 앞"(`TurnEngageSim._build_order`)이라는 선제
@@ -4726,7 +4726,7 @@ func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 	# 한쪽이라도 비면 start_engage 가 어차피 no-op 이므로 명단을 띄우지 않는다.
 	if t0.is_empty() or t1.is_empty():
 		caster.grid_pos = leap_from
-		return "교전 (대상 부족)"
+		return "교전 (대상 부족)"  # l10n-ignore
 	var who: String = "" if is_player else " (AI)"
 	# 개시 확인 화면에 뜨는 라운드 수는 파일럿 스킬 보정까지 먹은 **실제** 수여야
 	# 한다. 여기서는 엿보기만 하고(consume = false) 소모는 `start_engage` 가 한다 —
@@ -4742,7 +4742,7 @@ func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 	caster.grid_pos = leap_from
 	# AI 가 낸 카드는 플레이어가 무를 수 있는 것이 아니므로 확인만 뜬다.
 	var ok: bool = await _bs.engage_phase.prompt_engage(t0, t1, shown_rounds,
-			"교전%s" % who, is_player)
+			Loc.t(L.BATTLE_ENGAGE_TITLE_ENGAGE if is_player else L.BATTLE_ENGAGE_TITLE_ENGAGE_AI), is_player)
 	if not ok:
 		_on_overlay_cancel()
 		return ""
@@ -4772,13 +4772,13 @@ func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 	_last_attack_kills = 0
 	if _bs.engage_phase.survived_last_engage(caster):
 		_last_attack_kills = _bs.engage_phase.last_engage_kills(caster)
-	var tag: String = " (레인 제외)" if exclude_lane else ""
+	var tag: String = " (레인 제외)" if exclude_lane else ""  # l10n-ignore
 	if drop_in:
-		tag += " · 강습"
+		tag += " · 강습"  # l10n-ignore
 	elif move_in:
-		tag += " · 돌격"
+		tag += " · 돌격"  # l10n-ignore
 	# engage:N 의 N 은 **라운드 수** 그대로다 — 초로 환산하던 예전 규칙은 삭제됐다.
-	return "교전 %d턴%s%s" % [shown_rounds, tag, who]
+	return "교전 %d턴%s%s" % [shown_rounds, tag, who]  # l10n-ignore
 
 
 # Engage 모달이 닫힌 직후 호출. 사망자가 생겼을 수 있고, 보호막/HP 가
@@ -4802,11 +4802,11 @@ func _effect_shield_pct(pct: int, ally_team: int,
 				if t == null or p.hp < t.hp:
 					t = p
 	if t == null:
-		return "보호막 (대상 없음)"
+		return "보호막 (대상 없음)"  # l10n-ignore
 	var amount: int = int(t.max_hp * pct / 100)
 	_bs.grant_shield(t, amount, caster)
 	_note_fx_src(t, "shield")
-	return "보호막 +%d %s" % [amount, _bs.pilot_label(t)]
+	return "보호막 +%d %s" % [amount, _bs.pilot_label(t)]  # l10n-ignore
 
 
 func _effect_recall_ally(ally_team: int,
@@ -4820,7 +4820,7 @@ func _effect_recall_ally(ally_team: int,
 				if t == null or p.hp < t.hp:
 					t = p
 	if t == null:
-		return "복귀 (대상 없음)"
+		return "복귀 (대상 없음)"  # l10n-ignore
 	var orig := t.grid_pos
 	t.grid_pos = _bs.PLAYER_HQ_POS if ally_team == 0 else _bs.ENEMY_HQ_POS
 	t.hp       = t.max_hp
@@ -4829,7 +4829,7 @@ func _effect_recall_ally(ally_team: int,
 	t.ambush_hold = false
 	_bs.blog.log_move(t, orig, t.grid_pos, "card-recall")
 	_bs.anim_pilot_recall(t, orig)
-	return "복귀 %s" % _bs.pilot_label(t)
+	return "복귀 %s" % _bs.pilot_label(t)  # l10n-ignore
 
 
 # 결투 — opens a turn-based engage arena restricted to caster + picked enemy.
@@ -4841,7 +4841,7 @@ func _effect_recall_ally(ally_team: int,
 func _effect_duel(caster: PilotData, picked: PilotData,
 		is_player: bool) -> String:
 	if caster == null or picked == null:
-		return "결투 (대상 없음)"
+		return "결투 (대상 없음)"  # l10n-ignore
 	var who: String = "" if is_player else " (AI)"
 	var t0: Array = [caster] if caster.team == 0 else [picked]
 	var t1: Array = [picked] if caster.team == 0 else [caster]
@@ -4850,13 +4850,13 @@ func _effect_duel(caster: PilotData, picked: PilotData,
 	_bs.engage_phase.prepare_sim(caster, t0, t1,
 			TurnEngageSim.DUEL_MAX_ROUNDS, true, -1, caster.grid_pos)
 	var ok: bool = await _bs.engage_phase.prompt_engage(t0, t1,
-			TurnEngageSim.DUEL_MAX_ROUNDS, "결투%s" % who, is_player)
+			TurnEngageSim.DUEL_MAX_ROUNDS, Loc.t(L.BATTLE_ENGAGE_TITLE_DUEL if is_player else L.BATTLE_ENGAGE_TITLE_DUEL_AI), is_player)
 	if not ok:
 		_on_overlay_cancel()
 		return ""
 	_bs.engage_phase.start_duel(caster, picked,
 			Callable(self, "_on_engage_finished"))
-	return "결투 %s → %s%s" % [_bs.pilot_label(caster),
+	return "결투 %s → %s%s" % [_bs.pilot_label(caster),  # l10n-ignore
 			_bs.pilot_label(picked), who]
 
 
@@ -4869,15 +4869,15 @@ func _effect_duel(caster: PilotData, picked: PilotData,
 # 자기 레인 위라면 아무리 깊어도 합법이다 — 스플릿 푸시는 살려 둔 설계다.
 func _effect_move(caster: PilotData, picked: Variant) -> String:
 	if not (picked is Vector2i) or caster == null:
-		return "이동 (대상 없음)"
+		return "이동 (대상 없음)"  # l10n-ignore
 	# 위치 고정(파일럿 스킬)이 걸린 파일럿은 자리에서 못 뜬다 — 그 스킬이 파는
 	# 것이 "안 움직이는 대신 더 번다"이므로 이동 카드로 빠져나갈 수 있으면
 	# 대가가 사라진다.
 	if _bs.skill != null and _bs.skill.blocks_move(caster):
-		return "이동 (위치 고정)"
+		return "이동 (위치 고정)"  # l10n-ignore
 	var cell := picked as Vector2i
 	if cell == caster.grid_pos:
-		return "이동 %s (제자리)" % _bs.pilot_label(caster)
+		return "이동 %s (제자리)" % _bs.pilot_label(caster)  # l10n-ignore
 	var orig := caster.grid_pos
 	caster.grid_pos = cell
 	_bs.blog.log_move(caster, orig, cell, "card-move")
@@ -4887,9 +4887,9 @@ func _effect_move(caster: PilotData, picked: Variant) -> String:
 	# 벌어져 "카드를 냈는데 아무 일도 안 일어난" 것으로 보이고, 그 사이에 적
 	# 정글러가 같은 칸을 밟으면 통째로 뺏긴다. 정산 자체는 턴 루프와 같은
 	# 함수라 값도 재생성 시계도 어긋날 수 없다.
-	var msg: String = "이동 %s → (%d,%d)" % [_bs.pilot_label(caster), cell.x, cell.y]
+	var msg: String = "이동 %s → (%d,%d)" % [_bs.pilot_label(caster), cell.x, cell.y]  # l10n-ignore
 	if _bs.sim_core.harvest_camp_under(caster):
-		msg += " · 캠프 +%.2fk" % _bs.SCORE_JUNGLE_CAMP
+		msg += " · 캠프 +%.2fk" % _bs.SCORE_JUNGLE_CAMP  # l10n-ignore
 	return msg
 
 
@@ -4901,11 +4901,11 @@ func _effect_move(caster: PilotData, picked: Variant) -> String:
 # 먹는 것과 같다 — 카드 한 장이 "발로 밟은 한 번"을 거리 무시로 사는 것이다.
 func _effect_steal_camp(picked: Variant, caster: PilotData) -> String:
 	if not (picked is Vector2i) or caster == null:
-		return "약탈 (대상 없음)"
+		return "약탈 (대상 없음)"  # l10n-ignore
 	var cell := picked as Vector2i
 	if not _bs.sim_core.steal_camp_point(cell, caster):
-		return "약탈 실패 (캠프 없음)"
-	return "약탈 (%d,%d) +%.2fk" % [cell.x, cell.y, _bs.SCORE_JUNGLE_CAMP]
+		return "약탈 실패 (캠프 없음)"  # l10n-ignore
+	return "약탈 (%d,%d) +%.2fk" % [cell.x, cell.y, _bs.SCORE_JUNGLE_CAMP]  # l10n-ignore
 
 
 # 사전 준비 — hand-wide cost reduction. Mutates every current hand card's
@@ -4922,7 +4922,7 @@ func _effect_cost_reduce_hand(n: int, is_player: bool) -> String:
 		# 깎으면 `max(0, ...)` 를 지나며 0 이 되어 공짜 카드로 둔갑한다.
 		if not c.is_playable(): continue
 		c.cost = max(0, c.cost - n)
-	return "손의 카드 비용 -%d" % n
+	return "손의 카드 비용 -%d" % n  # l10n-ignore
 
 
 # 전투 준비 — one-shot pending discount on the caster side's next engage
@@ -4934,7 +4934,7 @@ func _effect_cost_reduce_engage(n: int, is_player: bool) -> String:
 		_bs.engage_discount_p += n
 	else:
 		_bs.engage_discount_ai += n
-	return "다음 교전 카드 비용 -%d" % n
+	return "다음 교전 카드 비용 -%d" % n  # l10n-ignore
 
 
 # 집중 — phase-bound discount applied to every card drawn during the
@@ -4947,7 +4947,7 @@ func _effect_cost_reduce_draw_phase(n: int, is_player: bool) -> String:
 		_bs.phase_draw_discount_p += n
 	else:
 		_bs.phase_draw_discount_ai += n
-	return "이번 단계 뽑는 카드 비용 -%d" % n
+	return "이번 단계 뽑는 카드 비용 -%d" % n  # l10n-ignore
 
 
 # (지금 이 절을 다는 카드는 없다) — phase-bound additive cost
@@ -4960,7 +4960,7 @@ func _effect_cost_inc_phase(n: int, is_player: bool) -> String:
 		_bs.phase_cost_inc_p += n
 	else:
 		_bs.phase_cost_inc_ai += n
-	return "이번 단계 비용 +%d" % n
+	return "이번 단계 비용 +%d" % n  # l10n-ignore
 
 
 # ─── 성장 / 라인전 스탯 카드 ─────────────────────────────────────────────────
@@ -4973,12 +4973,12 @@ func _effect_cost_inc_phase(n: int, is_player: bool) -> String:
 ## 만료는 SimulationCore.tick_growth_and_expiries 가 매 턴 확인한다.
 func _effect_lane_stat(pct: int, flags: Array, caster: PilotData) -> String:
 	if caster == null:
-		return "라인전 스탯 (시전자 없음)"
+		return "라인전 스탯 (시전자 없음)"  # l10n-ignore
 	var turns: int = flag_int(flags, "turns", 0)
 	caster.lane_stat_mod = float(pct) / 100.0
 	_note_fx_src(caster, "lane")
 	caster.lane_stat_expire_turn = (_bs.turn_count + turns) if turns > 0 else -1
-	return "%s 라인전 스탯 %+d%% (%d턴)" % [_bs.pilot_label(caster), pct, turns]
+	return "%s 라인전 스탯 %+d%% (%d턴)" % [_bs.pilot_label(caster), pct, turns]  # l10n-ignore
 
 
 ## `growth:N|turns:T` — 시전자의 성장 **획득 배율**을 N% 올린다(성장률 자체가
@@ -4986,20 +4986,20 @@ func _effect_lane_stat(pct: int, flags: Array, caster: PilotData) -> String:
 ## (완벽한 마무리)과 같은 필드를 쓰므로 그쪽 표시는 함께 꺼 준다.
 func _effect_growth_rate(pct: int, flags: Array, caster: PilotData) -> String:
 	if caster == null:
-		return "성장 (시전자 없음)"
+		return "성장 (시전자 없음)"  # l10n-ignore
 	var turns: int = flag_int(flags, "turns", 0)
 	# `|charge` — 배율이 **태운 토큰 수만큼** 곱해진다([성장 가속]: 토큰당 N%).
 	if "charge" in flags:
 		var tokens: int = _charge_spent if _current_card != null \
 				and _current_card.is_charge_card() else 1
 		if tokens <= 0:
-			return "%s 성장 (토큰 없음)" % _bs.pilot_label(caster)
+			return "%s 성장 (토큰 없음)" % _bs.pilot_label(caster)  # l10n-ignore
 		pct *= tokens
 	caster.growth_rate_mult        = 1.0 + float(pct) / 100.0
 	_note_fx_src(caster, "rate")
 	caster.growth_rate_expire_turn = (_bs.turn_count + turns) if turns > 0 else -1
 	caster.growth_until_phase      = false
-	return "%s 성장 %+d%% (%d턴)" % [_bs.pilot_label(caster), pct, turns]
+	return "%s 성장 %+d%% (%d턴)" % [_bs.pilot_label(caster), pct, turns]  # l10n-ignore
 
 
 ## `growth_perm:N` — [용 보상]. **지정한 아군 파일럿 한 명**의 성장 적립 배율에
@@ -5020,15 +5020,15 @@ func _effect_growth_perm(pct: int, ally_team: int, picked: PilotData,
 		caster: PilotData = null) -> String:
 	var target: PilotData = picked if picked != null else caster
 	if target == null or not target.alive or target.team != ally_team:
-		return "성장 효율 (대상 없음)"
+		return "성장 효율 (대상 없음)"  # l10n-ignore
 	target.growth_rate_bonus += float(pct) / 100.0
 	# 계산은 위의 합계 슬롯이 하고 **표시만** 장부를 읽는다 — [용 보상]과
 	# [핫핸드]가 같은 슬롯을 쓰지만 상세 패널에서는 각자 한 칸이어야 한다.
 	_log_persistent_fx(target, PilotData.FX_GROWTH_RATE, float(pct) / 100.0)
-	_bs.blog.log_event("GROWTH", "%-4s 성장 효율 %+d%% (영구, 누적 %+d%%)" % [
+	_bs.blog.log_event("GROWTH", "%-4s 성장 효율 %+d%% (영구, 누적 %+d%%)" % [  # l10n-ignore
 			_bs.pilot_label(target), pct,
 			roundi(target.growth_rate_bonus * 100.0)])
-	return "%s 성장 효율 %+d%% (영구)" % [_bs.pilot_label(target), pct]
+	return "%s 성장 효율 %+d%% (영구)" % [_bs.pilot_label(target), pct]  # l10n-ignore
 
 
 ## 예약 효과(다음 단계 정산)를 지금 도는 카드가 걸었다고 적는다 — 전략 점수
@@ -5082,12 +5082,12 @@ func _log_persistent_fx(target: PilotData, kind: String, amount: float) -> void:
 func _effect_turret_damage(n: int, ally_team: int, caster: PilotData,
 		picked: Variant) -> String:
 	if n <= 0 or not (picked is Vector2i):
-		return "포탑 피해 (대상 없음)"
+		return "포탑 피해 (대상 없음)"  # l10n-ignore
 	var td: TurretData = _bs.sim_core.turret_at_cell(picked as Vector2i)
 	if td == null or td.team == ally_team:
-		return "포탑 피해 (대상 없음)"
+		return "포탑 피해 (대상 없음)"  # l10n-ignore
 	if not _bs.sim_core.outermost_enemy_turrets(ally_team).has(td):
-		return "포탑 피해 (최외곽 포탑 아님)"
+		return "포탑 피해 (최외곽 포탑 아님)"  # l10n-ignore
 	var unopposed: bool = _front_line_unopposed(td.lane, 1 - ally_team)
 	var dmg: int = n * 2 if unopposed else n
 	var before: int = td.hp
@@ -5097,8 +5097,8 @@ func _effect_turret_damage(n: int, ally_team: int, caster: PilotData,
 	var removed: int = maxi(0, before - td.hp)
 	var shared: String = _award_turret_damage_to_lane(td.lane, ally_team, removed)
 	_bs.renderer.queue_redraw()
-	var tag: String = " (무저항 ×2)" if unopposed else ""
-	return "T%d %s 포탑 −%d%s%s" % [td.tier, _bs.LANE_NAMES[td.lane], dmg,
+	var tag: String = " (무저항 ×2)" if unopposed else ""  # l10n-ignore
+	return "T%d %s 포탑 −%d%s%s" % [td.tier, _bs.LANE_NAMES[td.lane], dmg,  # l10n-ignore
 			tag, shared]
 
 
@@ -5140,7 +5140,7 @@ func _award_turret_damage_to_lane(lane: int, ally_team: int,
 	var each: float = total / float(laners.size())
 	for raw in laners:
 		_bs.award_score(raw as PilotData, each)
-	return " · %s %d인 +%.2fk" % [_bs.LANE_NAMES[lane], laners.size(), each]
+	return " · %s %d인 +%.2fk" % [_bs.LANE_NAMES[lane], laners.size(), each]  # l10n-ignore
 
 
 ## `growth_until_phase:N` — 완벽한 마무리. 시전자 **팀 전원**의 성장 획득 배율을
@@ -5156,7 +5156,7 @@ func _effect_growth_until_phase(pct: int, ally_team: int) -> String:
 		p.growth_rate_expire_turn = -1
 		p.growth_until_phase      = true
 		count += 1
-	return "아군 %d명 성장 %+d%% (다음 작전 단계까지)" % [count, pct]
+	return "아군 %d명 성장 %+d%% (다음 작전 단계까지)" % [count, pct]  # l10n-ignore
 
 
 # ─── 손패 조작 카드 ──────────────────────────────────────────────────────────
@@ -5223,7 +5223,7 @@ func _discard_whole_hand(is_player: bool) -> int:
 func _effect_discard_hand(is_player: bool) -> String:
 	var moved: int = _discard_whole_hand(is_player)
 	_refresh_hand_after_bulk_change(is_player)
-	return "손 %d장 버리기" % moved
+	return "손 %d장 버리기" % moved  # l10n-ignore
 
 
 ## 재고 — 손패를 전부 버리고 **버린 장수만큼** 새로 뽑는다. 손패 크기는 그대로고
@@ -5239,7 +5239,7 @@ func _effect_discard_hand_draw(is_player: bool) -> String:
 			spawn_card_node(c)
 		drew += 1
 	_refresh_hand_after_bulk_change(is_player)
-	return "손 %d장 버리기, %d장 뽑기" % [moved, drew]
+	return "손 %d장 버리기, %d장 뽑기" % [moved, drew]  # l10n-ignore
 
 
 ## 과감한 정리 — 손패 **오른쪽**(가장 최근에 들어온 쪽) N장을 버린다.
@@ -5262,7 +5262,7 @@ func _effect_discard_right(is_player: bool, n: int) -> String:
 			_despawn_player_card_node(cd)
 		moved += 1
 	_refresh_hand_after_bulk_change(is_player)
-	return "오른쪽 %d장 버리기" % moved
+	return "오른쪽 %d장 버리기" % moved  # l10n-ignore
 
 
 ## 솔로 퍼포먼스 — 시전자 **본인 것이 아닌** 손패 카드를 전부 버리고, 버린 장당
@@ -5271,7 +5271,7 @@ func _effect_discard_right(is_player: bool, n: int) -> String:
 func _effect_discard_other_pilots(flags: Array, is_player: bool,
 		caster: PilotData) -> String:
 	if caster == null:
-		return "솔로 퍼포먼스 (시전자 없음)"
+		return "솔로 퍼포먼스 (시전자 없음)"  # l10n-ignore
 	var per: int = flag_int(flags, "strategy_each", 0)
 	var hand:    Array = _bs.player_hand    if is_player else _bs.ai_hand
 	var discard: Array = _bs.player_discard if is_player else _bs.ai_discard
@@ -5297,7 +5297,7 @@ func _effect_discard_other_pilots(flags: Array, is_player: bool,
 		else:
 			_bs.ai_cost += gained
 	_refresh_hand_after_bulk_change(is_player)
-	return "다른 파일럿 카드 %d장 버리기 · 전략 점수 +%d" % [moved, gained]
+	return "다른 파일럿 카드 %d장 버리기 · 전략 점수 +%d" % [moved, gained]  # l10n-ignore
 
 
 ## 계획 중시의 **AI / 폴백 경로** — 손패에서 무작위 N장을 보존 목록에 올린다.
@@ -5319,7 +5319,7 @@ func _effect_preserve_random(is_player: bool, n: int) -> String:
 		marked += 1
 	if is_player:
 		highlight_affordable_cards()
-	return "보존 %d장" % marked
+	return "보존 %d장" % marked  # l10n-ignore
 
 
 ## Repaints the hand after a clause moved several cards at once.
@@ -5340,7 +5340,7 @@ func _effect_strategy_next_phase(n: int, is_player: bool) -> String:
 	else:
 		_bs.next_phase_strategy_ai += n
 	_note_reserve("strategy", is_player)
-	return "다음 작전 단계 전략 점수 %+d" % n
+	return "다음 작전 단계 전략 점수 %+d" % n  # l10n-ignore
 
 
 ## 계획 살인 — **선불 예약형**. 카드를 낸 시점에 현상금을 심어 두고,
@@ -5352,7 +5352,7 @@ func _effect_strategy_on_kill(n: int, is_player: bool) -> String:
 	else:
 		_bs.kill_bounty_ai = maxi(_bs.kill_bounty_ai, n)
 	_note_reserve("bounty", is_player)
-	return "이번 단계 처치 시 전략 점수 +%d (예약)" % n
+	return "이번 단계 처치 시 전략 점수 +%d (예약)" % n  # l10n-ignore
 
 
 ## 완벽한 마무리의 마지막 절 — 자기 작전 단계를 강제 종료한다. 실제 종료는
@@ -5362,7 +5362,7 @@ func _effect_strategy_on_kill(n: int, is_player: bool) -> String:
 ## `consume_end_phase_request()` 로 이 요청을 받아 간다.
 func _effect_end_phase() -> String:
 	_end_phase_requested = true
-	return "작전 단계 종료"
+	return "작전 단계 종료"  # l10n-ignore
 
 
 ## Pulls an int off a `flag:value` modifier attached to **this** clause.
@@ -5392,7 +5392,7 @@ func _effect_exhaust_choice(is_player: bool, n: int) -> String:
 		relayout_hand(_bs.player_card_nodes)
 	else:
 		_bs.hud.update_ai_hand_visuals()
-	return "소멸 %d" % removed
+	return "소멸 %d" % removed  # l10n-ignore
 
 
 func _despawn_player_card_node(cd: CardData) -> void:
@@ -5464,7 +5464,7 @@ func _effect_heal_pct(pct: int, flags: Array, caster: PilotData,
 		ally_team: int, picked: PilotData) -> String:
 	var t: PilotData = _ally_subject(flags, caster, ally_team, picked)
 	if t == null:
-		return "회복 (대상 없음)"
+		return "회복 (대상 없음)"  # l10n-ignore
 	var times: int = _repeat_count(flags)
 	if times <= 0:
 		return ""
@@ -5473,7 +5473,7 @@ func _effect_heal_pct(pct: int, flags: Array, caster: PilotData,
 		var amount: int = int(t.max_hp * pct / 100)
 		# 오버힐을 버린 실제 회복량 — 다른 아군을 살린 몫은 시전자의 돌봄이 된다.
 		healed += _bs.apply_heal(t, amount, caster)
-	return "회복 +%d %s" % [healed, _bs.pilot_label(t)]
+	return "회복 +%d %s" % [healed, _bs.pilot_label(t)]  # l10n-ignore
 
 
 ## 최대 체력 영구 증가. `bonus_max_hp` 로 들어가야 성장 재계산에 지워지지 않는다
@@ -5482,24 +5482,24 @@ func _effect_max_hp(amount: int, flags: Array, caster: PilotData,
 		ally_team: int, picked: PilotData) -> String:
 	var t: PilotData = _ally_subject(flags, caster, ally_team, picked)
 	if t == null:
-		return "최대 체력 (대상 없음)"
+		return "최대 체력 (대상 없음)"  # l10n-ignore
 	var hp_add: int = amount * maxi(1, _repeat_count(flags))
 	t.bonus_max_hp += hp_add
 	_log_persistent_fx(t, PilotData.FX_MAX_HP, float(hp_add))
 	_bs.refresh_growth_stats(t)
-	return "최대 체력 +%d %s" % [amount, _bs.pilot_label(t)]
+	return "최대 체력 +%d %s" % [amount, _bs.pilot_label(t)]  # l10n-ignore
 
 
 func _effect_atk_add(amount: int, flags: Array, caster: PilotData,
 		ally_team: int, picked: PilotData) -> String:
 	var t: PilotData = _ally_subject(flags, caster, ally_team, picked)
 	if t == null:
-		return "공격력 (대상 없음)"
+		return "공격력 (대상 없음)"  # l10n-ignore
 	var atk_add: int = amount * maxi(1, _repeat_count(flags))
 	t.bonus_atk_flat += atk_add
 	_log_persistent_fx(t, PilotData.FX_ATK, float(atk_add))
 	_bs.refresh_growth_stats(t)
-	return "공격력 +%d %s" % [amount, _bs.pilot_label(t)]
+	return "공격력 +%d %s" % [amount, _bs.pilot_label(t)]  # l10n-ignore
 
 
 ## 시전자 **공격력의 N%** 만큼 보호막. 보호(`shield_pct`)가 대상의 최대 체력을
@@ -5511,7 +5511,7 @@ func _effect_atk_add(amount: int, flags: Array, caster: PilotData,
 func _effect_shield_atk(pct: int, flags: Array, caster: PilotData,
 		ally_team: int, picked: PilotData) -> String:
 	if caster == null:
-		return "보호막 (시전자 없음)"
+		return "보호막 (시전자 없음)"  # l10n-ignore
 	var amount: int = int(caster.atk * pct / 100)
 	var targets: Array = []
 	if "all_allies" in flags:
@@ -5524,26 +5524,26 @@ func _effect_shield_atk(pct: int, flags: Array, caster: PilotData,
 		if t != null:
 			targets.append(t)
 	if targets.is_empty():
-		return "보호막 (대상 없음)"
+		return "보호막 (대상 없음)"  # l10n-ignore
 	for raw in targets:
 		var p := raw as PilotData
 		_bs.grant_shield(p, amount, caster)
 		_note_fx_src(p, "shield")
 		if _bs.mech_skill != null:
 			_bs.mech_skill.shield_source[p] = caster
-	return "보호막 +%d ×%d" % [amount, targets.size()]
+	return "보호막 +%d ×%d" % [amount, targets.size()]  # l10n-ignore
 
 
 func _effect_reactive_armor(n: int, flags: Array, caster: PilotData,
 		ally_team: int, picked: PilotData) -> String:
 	var t: PilotData = _ally_subject(flags, caster, ally_team, picked)
 	if t == null:
-		return "반응 장갑 (대상 없음)"
+		return "반응 장갑 (대상 없음)"  # l10n-ignore
 	var add: int = n * maxi(0, _repeat_count(flags))
 	if add <= 0:
 		return ""
 	t.reactive_armor += add
-	return "반응 장갑 +%d %s" % [add, _bs.pilot_label(t)]
+	return "반응 장갑 +%d %s" % [add, _bs.pilot_label(t)]  # l10n-ignore
 
 
 ## 메크 패시브 충전. `|per_hit` 이면 직전 공격의 명중 수만큼.
@@ -5554,7 +5554,7 @@ func _effect_charge(n: int, flags: Array, caster: PilotData) -> String:
 	if add <= 0:
 		return ""
 	var gained: int = _bs.mech_skill.add_charge(caster, add)
-	return "토큰 +%d (%d/%d)" % [gained,
+	return "토큰 +%d (%d/%d)" % [gained,  # l10n-ignore
 			_bs.mech_skill.charge_of(caster),
 			_bs.mech_skill.max_charge_of(caster)]
 
@@ -5568,10 +5568,10 @@ func _effect_score_cost(n: int, caster: PilotData) -> String:
 	if caster == null:
 		return ""
 	if _bs.mech_skill != null and _bs.mech_skill.score_cost_waived(_current_card):
-		return "성장 점수 면제 (밸런스)"
+		return "성장 점수 면제 (밸런스)"  # l10n-ignore
 	var cost: float = float(n) * MechSkillSystem.SCORE_COST_UNIT
 	_bs.add_score(caster, -cost)
-	return "성장 점수 −%.2fk" % cost
+	return "성장 점수 −%.2fk" % cost  # l10n-ignore
 
 
 ## 성장 **효율**(적립 배율)을 전장 이탈까지 올린다. 누적되는 몫이라
@@ -5581,10 +5581,10 @@ func _effect_growth_eff(pct: int, ally_team: int, caster: PilotData,
 		picked: PilotData) -> String:
 	var t: PilotData = _ally_subject([], caster, ally_team, picked)
 	if t == null:
-		return "성장 효율 (대상 없음)"
+		return "성장 효율 (대상 없음)"  # l10n-ignore
 	t.growth_rate_bonus += float(pct) / 100.0
 	_log_persistent_fx(t, PilotData.FX_GROWTH_RATE, float(pct) / 100.0)
-	return "성장 효율 %+d%% %s" % [pct, _bs.pilot_label(t)]
+	return "성장 효율 %+d%% %s" % [pct, _bs.pilot_label(t)]  # l10n-ignore
 
 
 ## 메크 카드를 **만든다**. `to_hand` 면 손패로, 아니면 덱에 섞어서.
@@ -5625,7 +5625,7 @@ func _effect_gen_card(card_id: int, flags: Array, caster: PilotData,
 		var deck2: Array = _bs.player_deck if is_player else _bs.ai_deck
 		deck2.shuffle()
 	update_deck_discard_labels()
-	return "[%s] %s %d장 생성" % [label, "손" if to_hand else "덱", made]
+	return "[%s] %s %d장 생성" % [label, "손" if to_hand else "덱", made]  # l10n-ignore
 
 
 ## 키워드 목록에 없는 것만 덧붙인다. `|` 로 구분된 목록이라 문자열을 이어 붙이는
@@ -5666,8 +5666,8 @@ func _effect_search_card(card_id: int, flags: Array, caster: PilotData,
 		taken += 1
 	update_deck_discard_labels()
 	if taken == 0:
-		return "찾기 (덱에 없음)"
-	return "[%s] %d장 찾기" % [label, taken]
+		return "찾기 (덱에 없음)"  # l10n-ignore
+	return "[%s] %d장 찾기" % [label, taken]  # l10n-ignore
 
 
 ## 묘지 탐색의 **AI / 폴백 경로**. 플레이어는 `_process_pending_chain` 이
@@ -5682,7 +5682,7 @@ func _effect_search_discard(n: int, is_player: bool) -> String:
 		add_card_to_hand(cd, is_player)
 		taken += 1
 	update_deck_discard_labels()
-	return "버린 더미에서 찾기 %d장" % taken
+	return "버린 더미에서 찾기 %d장" % taken  # l10n-ignore
 
 
 ## 묘지 **드로우** — 고르지 않고 위에서부터 N장. 탐색과 다른 것은 선택의 유무다.
@@ -5701,8 +5701,8 @@ func _effect_draw_discard(n: int, flags: Array, is_player: bool) -> String:
 		taken += 1
 	update_deck_discard_labels()
 	if cut > 0:
-		return "버린 더미에서 뽑기 %d장 (비용 −%d)" % [taken, cut]
-	return "버린 더미에서 뽑기 %d장" % taken
+		return "버린 더미에서 뽑기 %d장 (비용 −%d)" % [taken, cut]  # l10n-ignore
+	return "버린 더미에서 뽑기 %d장" % taken  # l10n-ignore
 
 
 ## 밀기 — 전진과 같은 미니틱을 N번 돌린다. `|bonus_clear:N` 은 "도중에 적을 한
@@ -5710,7 +5710,7 @@ func _effect_draw_discard(n: int, flags: Array, is_player: bool) -> String:
 ## 있는지로 갈음한다.
 func _effect_push(steps: int, flags: Array, caster: PilotData) -> String:
 	if caster == null or not caster.alive or steps <= 0:
-		return "밀기 (시전자 없음)"
+		return "밀기 (시전자 없음)"  # l10n-ignore
 	var log_lines: Array = []
 	_bs.sim_core.advance_pilot(caster, steps, log_lines)
 	var bonus: int = flag_int(flags, "bonus_clear", 0)
@@ -5722,8 +5722,8 @@ func _effect_push(steps: int, flags: Array, caster: PilotData) -> String:
 			break
 	if bonus > 0 and clear:
 		_bs.sim_core.advance_pilot(caster, bonus, log_lines)
-		return "밀기 %d (+%d 추가)" % [steps, bonus]
-	return "밀기 %d" % steps
+		return "밀기 %d (+%d 추가)" % [steps, bonus]  # l10n-ignore
+	return "밀기 %d" % steps  # l10n-ignore
 
 
 ## 최면 — **적을** 자기 HQ 쪽으로 N칸 민다. 시전자가 아니라 대상이 움직이는
@@ -5731,10 +5731,10 @@ func _effect_push(steps: int, flags: Array, caster: PilotData) -> String:
 func _effect_move_target(steps: int, caster: PilotData,
 		picked: PilotData) -> String:
 	if picked == null or not picked.alive or caster == null:
-		return "이동 (대상 없음)"
+		return "이동 (대상 없음)"  # l10n-ignore
 	var log_lines: Array = []
 	_bs.sim_core.advance_pilot(picked, steps, log_lines)
-	return "%s 이동 %d" % [_bs.pilot_label(picked), steps]
+	return "%s 이동 %d" % [_bs.pilot_label(picked), steps]  # l10n-ignore
 
 
 ## 질풍 — 시전자가 **대상의 칸으로** 뛰어든다. 시트의 "작전 단계가 끝나면 이전
@@ -5742,9 +5742,9 @@ func _effect_move_target(steps: int, caster: PilotData,
 ## 지금은 뛰어들기만 하고 그 자리에 남는다.
 func _effect_move_to_target(caster: PilotData, picked: PilotData) -> String:
 	if caster == null or picked == null or not caster.alive:
-		return "이동 (대상 없음)"
+		return "이동 (대상 없음)"  # l10n-ignore
 	if _bs.skill != null and _bs.skill.blocks_move(caster):
-		return "이동 (위치 고정)"
+		return "이동 (위치 고정)"  # l10n-ignore
 	var orig := caster.grid_pos
 	if orig == picked.grid_pos:
 		return ""
@@ -5758,7 +5758,7 @@ func _effect_move_to_target(caster: PilotData, picked: PilotData) -> String:
 	caster.grid_pos = picked.grid_pos
 	_bs.blog.log_move(caster, orig, caster.grid_pos, "card-dive")
 	_bs.anim_pilot_move(caster, orig)
-	return "돌입 → %s" % _bs.pilot_label(picked)
+	return "돌입 → %s" % _bs.pilot_label(picked)  # l10n-ignore
 
 
 ## 매혹적인 침공 / 사형 선고 — 적을 **시전자 칸으로** 끌어온다.
@@ -5766,7 +5766,7 @@ func _effect_move_to_target(caster: PilotData, picked: PilotData) -> String:
 func _effect_pull_to_caster(flags: Array, caster: PilotData,
 		enemy_team: int) -> String:
 	if caster == null or not caster.alive:
-		return "끌어오기 (시전자 없음)"
+		return "끌어오기 (시전자 없음)"  # l10n-ignore
 	var radius: int = flag_int(flags, "self_range", -1)
 	var moved: int = 0
 	for raw in _bs.pilots:
@@ -5785,7 +5785,7 @@ func _effect_pull_to_caster(flags: Array, caster: PilotData,
 		_bs.blog.log_move(p, orig, p.grid_pos, "card-pull")
 		_bs.anim_pilot_move(p, orig)
 		moved += 1
-	return "끌어오기 %d명" % moved
+	return "끌어오기 %d명" % moved  # l10n-ignore
 
 
 func _is_pending_target(p: PilotData) -> bool:
@@ -5798,7 +5798,7 @@ func _is_pending_target(p: PilotData) -> bool:
 func _effect_mark_target(pct: int, caster: PilotData,
 		picked: PilotData) -> String:
 	if picked == null or caster == null:
-		return "목표 (대상 없음)"
+		return "목표 (대상 없음)"  # l10n-ignore
 	for raw in _bs.pilots:
 		var p := raw as PilotData
 		if p.marked_by == caster:
@@ -5806,42 +5806,42 @@ func _effect_mark_target(pct: int, caster: PilotData,
 			p.marked_bonus = 0.0
 	picked.marked_by = caster
 	picked.marked_bonus = float(pct) / 100.0
-	return "목표 %s (+%d%%)" % [_bs.pilot_label(picked), pct]
+	return "목표 %s (+%d%%)" % [_bs.pilot_label(picked), pct]  # l10n-ignore
 
 
 ## 추적 — 이 적이 전투에 들어가면 시전자도 함께 끌려 들어간다. 만료 턴을 함께
 ## 적어 두고 `MechSkillSystem.tick_expiries` 가 걷는다.
 func _effect_track(turns: int, caster: PilotData, picked: PilotData) -> String:
 	if picked == null or caster == null:
-		return "추적 (대상 없음)"
+		return "추적 (대상 없음)"  # l10n-ignore
 	picked.tracked_by.append({
 		"pilot": caster,
 		"expire_turn": _bs.turn_count + turns,
 	})
-	return "추적 %s (%d턴)" % [_bs.pilot_label(picked), turns]
+	return "추적 %s (%d턴)" % [_bs.pilot_label(picked), turns]  # l10n-ignore
 
 
 ## 결속 — 시전자가 싸울 때 이 아군도 무대에 선다. 방향이 한쪽뿐인 것이 요점이다
 ## (지정한 아군이 싸울 때 시전자가 끌려가지는 않는다).
 func _effect_link_engage(caster: PilotData, picked: PilotData) -> String:
 	if caster == null or picked == null:
-		return "결속 (대상 없음)"
+		return "결속 (대상 없음)"  # l10n-ignore
 	caster.engage_link = picked
-	return "결속 → %s" % _bs.pilot_label(picked)
+	return "결속 → %s" % _bs.pilot_label(picked)  # l10n-ignore
 
 
 func _effect_stun_next(picked: PilotData) -> String:
 	if picked == null:
-		return "강타 (대상 없음)"
+		return "강타 (대상 없음)"  # l10n-ignore
 	picked.stun_charge = true
-	return "강타 %s" % _bs.pilot_label(picked)
+	return "강타 %s" % _bs.pilot_label(picked)  # l10n-ignore
 
 
 func _effect_no_engage_phase(picked: PilotData) -> String:
 	if picked == null:
-		return "탈진 (대상 없음)"
+		return "탈진 (대상 없음)"  # l10n-ignore
 	picked.engage_locked = true
-	return "탈진 %s (이번 작전 단계)" % _bs.pilot_label(picked)
+	return "탈진 %s (이번 작전 단계)" % _bs.pilot_label(picked)  # l10n-ignore
 
 
 # ─── 단계 A → B → C 사슬 ────────────────────────────────────────────────────
@@ -5858,13 +5858,13 @@ func _effect_no_engage_phase(picked: PilotData) -> String:
 ## 확정돼 있다.
 func _effect_phase_b(caster: PilotData, is_player: bool) -> String:
 	if caster == null:
-		return "단계 B (시전자 없음)"
+		return "단계 B (시전자 없음)"  # l10n-ignore
 	var parts: Array = []
 	# 강화 [베타] — 다음 [단계 B] 사용 시 `MECH_PHASE_BOON_BETA_CHARGE`(const.csv) 충전. 예약은 여기서 소모된다.
 	if _bs.mech_skill != null and _bs.mech_skill.consume_phase_boon(
 			caster, MechSkillSystem.BOON_BETA):
 		_bs.mech_skill.add_charge(caster, MechSkillSystem.PHASE_BOON_BETA_CHARGE)
-		parts.append("강화 베타 토큰 +%d" % MechSkillSystem.PHASE_BOON_BETA_CHARGE)
+		parts.append("강화 베타 토큰 +%d" % MechSkillSystem.PHASE_BOON_BETA_CHARGE)  # l10n-ignore
 	var killed: int = 0
 	if _bs.engage_phase != null:
 		killed = _bs.engage_phase.last_engage_kills(caster)
@@ -5874,8 +5874,8 @@ func _effect_phase_b(caster: PilotData, is_player: bool) -> String:
 	var made: String = _effect_gen_card(next_id, [], caster, is_player, false)
 	if made != "":
 		parts.append(made)
-	parts.append("교전 처치 %d" % killed)
-	return "단계 B · " + ", ".join(parts)
+	parts.append("교전 처치 %d" % killed)  # l10n-ignore
+	return "단계 B · " + ", ".join(parts)  # l10n-ignore
 
 
 ## 단계 C — **AI / 폴백 경로 전용.** 플레이어의 3택은 `_process_pending_chain`
@@ -5883,7 +5883,7 @@ func _effect_phase_b(caster: PilotData, is_player: bool) -> String:
 ## 스킬 쪽 AI 가 활성화를 아예 하지 않는 것과 같은 1차 한계다.
 func _effect_phase_c_auto(caster: PilotData) -> String:
 	if caster == null:
-		return "강화 선택 (시전자 없음)"
+		return "강화 선택 (시전자 없음)"  # l10n-ignore
 	var parts: Array = []
 	var pay: String = _phase_c_payout(caster)
 	if pay != "":
@@ -5904,20 +5904,20 @@ func _phase_c_payout(caster: PilotData) -> String:
 		return ""
 	var gained: float = _bs.add_score(caster,
 			caster.score * MechSkillSystem.PHASE_BOON_GAMMA_RATE)
-	return "강화 감마 +%.2fk" % gained
+	return "강화 감마 +%.2fk" % gained  # l10n-ignore
 
 
 ## 고른 강화를 예약으로 옮긴다. 모달(플레이어)과 무작위 선택(AI)이 **같은 이
 ## 함수**로 모이므로 두 경로의 규칙이 갈라질 수 없다.
 func register_phase_boon(caster: PilotData, key: String) -> String:
 	if caster == null or key.is_empty() or _bs.mech_skill == null:
-		return "강화 (선택 없음)"
+		return "강화 (선택 없음)"  # l10n-ignore
 	_bs.mech_skill.set_phase_boon(caster, key)
 	for raw in MechSkillSystem.boon_defs():
 		var def: Dictionary = raw as Dictionary
 		if String(def["key"]) == key:
-			return "%s 예약" % String(def["name"])
-	return "강화 예약"
+			return "%s 예약" % String(def["name"])  # l10n-ignore
+	return "강화 예약"  # l10n-ignore
 
 
 ## 3택 모달에 세울 **표시용 카드** 세 장. 진짜 카드가 아니라 그리드에 세우기
@@ -5938,29 +5938,29 @@ func build_phase_boon_cards(caster: PilotData) -> Array:
 
 func _effect_dmg_taken(pct: int, picked: PilotData) -> String:
 	if picked == null:
-		return "받는 피해 (대상 없음)"
+		return "받는 피해 (대상 없음)"  # l10n-ignore
 	# 중첩되지 않는다 — 같은 카드를 두 장 써도 값이 그대로다.
 	picked.damage_taken_bonus = maxf(picked.damage_taken_bonus, float(pct) / 100.0)
-	return "받는 피해 +%d%% %s" % [pct, _bs.pilot_label(picked)]
+	return "받는 피해 +%d%% %s" % [pct, _bs.pilot_label(picked)]  # l10n-ignore
 
 
 ## 현상금 — 대상의 **성장치 N%** 를 값으로 찍는다. [확신] 이 이 값을 피해로
 ## 바꾼다. 중첩되지 않으므로 더 큰 쪽만 남는다.
 func _effect_bounty(pct: int, picked: PilotData) -> String:
 	if picked == null:
-		return "현상금 (대상 없음)"
+		return "현상금 (대상 없음)"  # l10n-ignore
 	picked.bounty = maxf(picked.bounty, picked.score * float(pct) / 100.0)
-	return "현상금 %.2fk %s" % [picked.bounty, _bs.pilot_label(picked)]
+	return "현상금 %.2fk %s" % [picked.bounty, _bs.pilot_label(picked)]  # l10n-ignore
 
 
 ## 매혹 — 대상이 버는 성장치를 그대로 복사해 간다. 적에게도 걸 수 있다.
 func _effect_growth_link(turns: int, caster: PilotData,
 		picked: PilotData) -> String:
 	if caster == null or picked == null:
-		return "매혹 (대상 없음)"
+		return "매혹 (대상 없음)"  # l10n-ignore
 	picked.growth_link_to = caster
 	picked.growth_link_expire_turn = _bs.turn_count + turns
-	return "매혹 %s (%d턴)" % [_bs.pilot_label(picked), turns]
+	return "매혹 %s (%d턴)" % [_bs.pilot_label(picked), turns]  # l10n-ignore
 
 
 ## 명상 — 손패에서 **이 카드보다 왼쪽**을 전부 버린다. 자리를 모르면(AI 경로)
@@ -5987,7 +5987,7 @@ func _effect_discard_left(is_player: bool) -> String:
 			_despawn_player_card_node(cd)
 	_last_discarded_count = victims.size()
 	_refresh_hand_after_bulk_change(is_player)
-	return "왼쪽 %d장 버리기" % victims.size()
+	return "왼쪽 %d장 버리기" % victims.size()  # l10n-ignore
 
 
 func _effect_draw_discarded(is_player: bool) -> String:
@@ -6000,7 +6000,7 @@ func _effect_draw_discarded(is_player: bool) -> String:
 			spawn_card_node(c)
 		drew += 1
 	_refresh_hand_after_bulk_change(is_player)
-	return "뽑기 %d" % drew
+	return "뽑기 %d" % drew  # l10n-ignore
 
 
 ## 처형 — 충전을 전부 태워 **최대 체력 N% 이하**인 적 또는 포탑을 즉사시킨다.
@@ -6008,10 +6008,10 @@ func _effect_draw_discarded(is_player: bool) -> String:
 func _effect_execute(pct: int, flags: Array, caster: PilotData,
 		picked: Variant) -> String:
 	if caster == null or _bs.mech_skill == null:
-		return "처형 (시전자 없음)"
+		return "처형 (시전자 없음)"  # l10n-ignore
 	var need: int = maxi(1, flag_int(flags, "charge", 5))
 	if _bs.mech_skill.charge_of(caster) < need:
-		return "처형 불발 (토큰 %d/%d)" % [
+		return "처형 불발 (토큰 %d/%d)" % [  # l10n-ignore
 				_bs.mech_skill.charge_of(caster), need]
 	var victim: Variant = picked
 	if victim == null:
@@ -6021,19 +6021,19 @@ func _effect_execute(pct: int, flags: Array, caster: PilotData,
 	if victim is PilotData:
 		var p := victim as PilotData
 		if not p.alive or float(p.hp) > float(p.max_hp) * float(pct) / 100.0:
-			return "처형 불발 (체력 초과)"
+			return "처형 불발 (체력 초과)"  # l10n-ignore
 		_bs.mech_skill.spend_charge(caster, need)
 		_bs.mark_pilot_dead(p, caster)
-		return "처형 %s" % _bs.pilot_label(p)
+		return "처형 %s" % _bs.pilot_label(p)  # l10n-ignore
 	if victim is TurretData:
 		var td := victim as TurretData
 		if not td.alive or float(td.hp) > float(td.max_hp) * float(pct) / 100.0:
-			return "처형 불발 (체력 초과)"
+			return "처형 불발 (체력 초과)"  # l10n-ignore
 		_bs.mech_skill.spend_charge(caster, need)
 		var log_lines: Array = []
 		_bs.sim_core.apply_card_turret_damage(td, td.hp, caster, log_lines)
-		return "포탑 처형 T%d %s" % [td.tier, _bs.LANE_NAMES[td.lane]]
-	return "처형 (대상 없음)"
+		return "포탑 처형 T%d %s" % [td.tier, _bs.LANE_NAMES[td.lane]]  # l10n-ignore
+	return "처형 (대상 없음)"  # l10n-ignore
 
 
 ## 확신 — 대상에게 찍힌 **현상금의 N%** 를 그대로 피해로 넣는다. 공격력과 무관한
@@ -6041,13 +6041,13 @@ func _effect_execute(pct: int, flags: Array, caster: PilotData,
 func _effect_attack_bounty(pct: int, caster: PilotData,
 		picked: PilotData) -> String:
 	if caster == null or picked == null or not picked.alive:
-		return "확신 (대상 없음)"
+		return "확신 (대상 없음)"  # l10n-ignore
 	if not _bs.sim_core.roll_hit(caster, picked):
 		if _bs.renderer != null:
 			_bs.renderer.spawn_pilot_popup(picked, "MISS",
 					BattleRenderer.POPUP_MISS_COLOR, 0.0)
 		_chain_hit = false
-		return "확신 빗나감"
+		return "확신 빗나감"  # l10n-ignore
 	# 현상금은 성장치(k) 단위라 피해로 쓰려면 점수 표기 단위로 되돌려야 한다.
 	var dmg: int = maxi(1, int(picked.bounty / MechSkillSystem.SCORE_COST_UNIT
 			* float(pct) / 100.0))
@@ -6060,7 +6060,7 @@ func _effect_attack_bounty(pct: int, caster: PilotData,
 	if picked.hp <= 0:
 		_bs.mark_pilot_dead(picked, caster)
 	_chain_hit = true
-	return "확신 %s -%d" % [_bs.pilot_label(picked), before - picked.hp]
+	return "확신 %s -%d" % [_bs.pilot_label(picked), before - picked.hp]  # l10n-ignore
 
 
 ## 주먹다짐 — 시전자와 대상이 **N번씩 서로** 때린다. 대상의 공격은 필중이고
@@ -6068,7 +6068,7 @@ func _effect_attack_bounty(pct: int, caster: PilotData,
 func _effect_mutual_attack(times: int, caster: PilotData,
 		picked: PilotData) -> String:
 	if caster == null or picked == null or not picked.alive:
-		return "주먹다짐 (대상 없음)"
+		return "주먹다짐 (대상 없음)"  # l10n-ignore
 	var out_dmg: int = 0
 	var in_dmg: int = 0
 	for _i in maxi(1, times):
@@ -6079,7 +6079,7 @@ func _effect_mutual_attack(times: int, caster: PilotData,
 		if not caster.alive:
 			break
 	_chain_hit = out_dmg > 0
-	return "주먹다짐 −%d / 자신 −%d" % [out_dmg, in_dmg]
+	return "주먹다짐 −%d / 자신 −%d" % [out_dmg, in_dmg]  # l10n-ignore
 
 
 ## 고통과 쾌감 — 전장의 **모든 적이** 시전자를 필중으로 한 대씩 친다. 받아 내는
@@ -6087,7 +6087,7 @@ func _effect_mutual_attack(times: int, caster: PilotData,
 ## 패시브와 짝이다.
 func _effect_taunt_all(caster: PilotData, enemy_team: int) -> String:
 	if caster == null or not caster.alive:
-		return "도발 (시전자 없음)"
+		return "도발 (시전자 없음)"  # l10n-ignore
 	var total: int = 0
 	for raw in _bs.pilots:
 		var p := raw as PilotData
@@ -6096,7 +6096,7 @@ func _effect_taunt_all(caster: PilotData, enemy_team: int) -> String:
 		total += _apply_attack_damage(caster, p, 1)
 		if not caster.alive:
 			break
-	return "도발 — 자신 −%d" % total
+	return "도발 — 자신 −%d" % total  # l10n-ignore
 
 
 # ─── 파일럿 카드 추가분 (성장 · 매복 · 방어 · 유틸리티) ──────────────────────
@@ -6108,7 +6108,7 @@ func _effect_self_cost(n: int) -> String:
 	if _current_card == null or n == 0:
 		return ""
 	_current_card.cost = maxi(0, _current_card.cost + n)
-	return "이 카드 비용 %+d" % n
+	return "이 카드 비용 %+d" % n  # l10n-ignore
 
 
 ## `token:N` — 지금 도는 카드 위에 토큰 N 을 얹는다([골드러시]). 충전 카드가
@@ -6117,41 +6117,41 @@ func _effect_token(n: int) -> String:
 	if _current_card == null or n == 0:
 		return ""
 	_current_card.charge = maxi(0, _current_card.charge + n)
-	return "토큰 %+d (%d)" % [n, _current_card.charge]
+	return "토큰 %+d (%d)" % [n, _current_card.charge]  # l10n-ignore
 
 
 ## `atk_pct:N` — 시전자의 공격력 배율을 **영구로** N% 올린다(누적).
 ## `bonus_atk_mult` 에 얹으므로 성장 재계산에 지워지지 않는다.
 func _effect_atk_pct(pct: int, caster: PilotData) -> String:
 	if caster == null:
-		return "공격력 (시전자 없음)"
+		return "공격력 (시전자 없음)"  # l10n-ignore
 	caster.bonus_atk_mult += float(pct) / 100.0
 	_log_persistent_fx(caster, PilotData.FX_ATK_PCT, float(pct) / 100.0)
 	_bs.refresh_growth_stats(caster)
-	return "%s 공격력 %+d%% (영구)" % [_bs.pilot_label(caster), pct]
+	return "%s 공격력 %+d%% (영구)" % [_bs.pilot_label(caster), pct]  # l10n-ignore
 
 
 ## `hp_pct:N` — 시전자의 최대 체력 배율을 **영구로** N% 올린다(누적). 늘어난
 ## 만큼 현재 체력도 함께 오른다(`refresh_growth_stats`).
 func _effect_hp_pct(pct: int, caster: PilotData) -> String:
 	if caster == null:
-		return "체력 (시전자 없음)"
+		return "체력 (시전자 없음)"  # l10n-ignore
 	caster.bonus_max_hp_mult += float(pct) / 100.0
 	_log_persistent_fx(caster, PilotData.FX_HP_PCT, float(pct) / 100.0)
 	_bs.refresh_growth_stats(caster)
-	return "%s 체력 %+d%% (영구)" % [_bs.pilot_label(caster), pct]
+	return "%s 체력 %+d%% (영구)" % [_bs.pilot_label(caster), pct]  # l10n-ignore
 
 
 ## `eva_buff:N|turns:T` — 시전자의 **전장 회피**에 N% 배율([소극적인 태세]).
 ## 라인전 스탯과 달리 명중은 건드리지 않는다. 다시 걸면 덮어쓴다.
 func _effect_eva_buff(pct: int, flags: Array, caster: PilotData) -> String:
 	if caster == null:
-		return "회피 (시전자 없음)"
+		return "회피 (시전자 없음)"  # l10n-ignore
 	var turns: int = flag_int(flags, "turns", 0)
 	caster.eva_card_mod = float(pct) / 100.0
 	_note_fx_src(caster, "eva")
 	caster.eva_card_expire_turn = (_bs.turn_count + turns) if turns > 0 else -1
-	return "%s 전장 회피 %+d%% (%d턴)" % [_bs.pilot_label(caster), pct, turns]
+	return "%s 전장 회피 %+d%% (%d턴)" % [_bs.pilot_label(caster), pct, turns]  # l10n-ignore
 
 
 ## `retreat_turret` — 시전자가 **가장 가까운 아군 포탑** 칸으로 물러난다. 자기
@@ -6159,18 +6159,18 @@ func _effect_eva_buff(pct: int, flags: Array, caster: PilotData) -> String:
 ## 위치 이탈로 귀환된다), 하나도 없으면 다른 레인, 그것도 없으면 본진이다.
 func _effect_retreat_turret(caster: PilotData) -> String:
 	if caster == null:
-		return "후퇴 (시전자 없음)"
+		return "후퇴 (시전자 없음)"  # l10n-ignore
 	if _bs.skill != null and _bs.skill.blocks_move(caster):
-		return "후퇴 (위치 고정)"
+		return "후퇴 (위치 고정)"  # l10n-ignore
 	var dest: Vector2i = nearest_own_turret_cell(caster)
 	if dest == caster.grid_pos:
-		return "후퇴 %s (제자리)" % _bs.pilot_label(caster)
+		return "후퇴 %s (제자리)" % _bs.pilot_label(caster)  # l10n-ignore
 	var orig := caster.grid_pos
 	caster.grid_pos = dest
 	caster.ambush_hold = false
 	_bs.blog.log_move(caster, orig, dest, "card-retreat")
 	_bs.anim_pilot_move(caster, orig)
-	return "후퇴 %s → (%d,%d)" % [_bs.pilot_label(caster), dest.x, dest.y]
+	return "후퇴 %s → (%d,%d)" % [_bs.pilot_label(caster), dest.x, dest.y]  # l10n-ignore
 
 
 func nearest_own_turret_cell(caster: PilotData) -> Vector2i:
@@ -6201,9 +6201,9 @@ func nearest_own_turret_cell(caster: PilotData) -> Vector2i:
 ## 그 파일럿을 건너뛴다.
 func _effect_ambush(caster: PilotData, picked: Variant) -> String:
 	if not (picked is Vector2i) or caster == null:
-		return "매복 (대상 없음)"
+		return "매복 (대상 없음)"  # l10n-ignore
 	if _bs.skill != null and _bs.skill.blocks_move(caster):
-		return "매복 (위치 고정)"
+		return "매복 (위치 고정)"  # l10n-ignore
 	var cell := picked as Vector2i
 	var orig := caster.grid_pos
 	if cell != orig:
@@ -6212,7 +6212,7 @@ func _effect_ambush(caster: PilotData, picked: Variant) -> String:
 		_bs.anim_pilot_move(caster, orig)
 	caster.ambush_hold = true
 	_note_fx_src(caster, "ambush")
-	return "매복 %s (%d,%d)" % [_bs.pilot_label(caster), cell.x, cell.y]
+	return "매복 %s (%d,%d)" % [_bs.pilot_label(caster), cell.x, cell.y]  # l10n-ignore
 
 
 ## `ambush_search:N` — 다음 작전 단계 진입 시 시전자의 교전 카드 N장을 덱에서
@@ -6223,7 +6223,7 @@ func _effect_ambush_search(n: int, caster: PilotData, is_player: bool) -> String
 	var list: Array = _bs.ambush_search_p if is_player else _bs.ambush_search_ai
 	list.append({"caster": caster, "n": n})
 	_note_reserve("ambush", is_player)
-	return "다음 작전 단계에 교전 카드 찾기 %d" % n
+	return "다음 작전 단계에 교전 카드 찾기 %d" % n  # l10n-ignore
 
 
 ## 교전 카드인가 — `engage` 절이나 `duel` 절을 가진 카드.
@@ -6238,7 +6238,7 @@ func is_engage_card(cd: CardData) -> bool:
 ## 있으므로 모달이 없다, `_effect_search_card` 와 같은 규칙).
 func _search_engage_cards(caster: PilotData, n: int, is_player: bool) -> String:
 	if caster == null or n <= 0:
-		return "교전 카드 찾기 (시전자 없음)"
+		return "교전 카드 찾기 (시전자 없음)"  # l10n-ignore
 	var deck: Array = _bs.player_deck if is_player else _bs.ai_deck
 	var taken: Array = []
 	for i in range(deck.size() - 1, -1, -1):
@@ -6252,8 +6252,8 @@ func _search_engage_cards(caster: PilotData, n: int, is_player: bool) -> String:
 		taken.append(cd.card_name)
 	update_deck_discard_labels()
 	if taken.is_empty():
-		return "%s 교전 카드 찾기 (덱에 없음)" % _bs.pilot_label(caster)
-	return "%s [%s] 찾기" % [_bs.pilot_label(caster), ", ".join(taken)]
+		return "%s 교전 카드 찾기 (덱에 없음)" % _bs.pilot_label(caster)  # l10n-ignore
+	return "%s [%s] 찾기" % [_bs.pilot_label(caster), ", ".join(taken)]  # l10n-ignore
 
 
 ## `retaliate:N` — 지정한 적이 시전자를 N번 친다([무모한 돌격]). 판정은 전장
@@ -6275,7 +6275,7 @@ func _effect_retaliate(times: int, caster: PilotData, picked: PilotData) -> Stri
 			_popup_on(caster, "MISS", BattleRenderer.POPUP_MISS_COLOR)
 		if _bs.renderer != null:
 			await _bs.get_tree().create_timer(_bs.ANIM_HIT_HOLD_SEC).timeout
-	return "반격 %d/%d 명중 — 자신 −%d" % [landed, maxi(1, times), dealt]
+	return "반격 %d/%d 명중 — 자신 −%d" % [landed, maxi(1, times), dealt]  # l10n-ignore
 
 
 ## `draw_next_phase:N` — 다음 작전 단계 시작 시 N장 뽑기([준비 태세]).
@@ -6287,7 +6287,7 @@ func _effect_draw_next_phase(n: int, is_player: bool) -> String:
 	else:
 		_bs.next_phase_draw_ai += n
 	_note_reserve("draw", is_player)
-	return "다음 작전 단계 뽑기 %d" % n
+	return "다음 작전 단계 뽑기 %d" % n  # l10n-ignore
 
 
 # ─── 손패 상주 파일럿 카드 (`hand_passive:<key>`) ────────────────────────────

@@ -46,7 +46,7 @@ func show_lines(lines: Array) -> void:
 	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.add_theme_constant_override("separation", int(LINE_GAP))
 	panel.add_child(col)
-	col.add_child(_mk_label("감독 특성", TITLE_FONT, TITLE_COLOR))
+	col.add_child(_mk_label(Loc.t(L.BATTLE_TRAIT_BANNER_TITLE), TITLE_FONT, TITLE_COLOR))
 	for raw in lines:
 		col.add_child(_mk_label(String(raw), LINE_FONT, LINE_COLOR))
 

@@ -1,5 +1,7 @@
 # Combat Modules
 
+표시 텍스트는 l10n key (`battle` 도메인) — this folder has none: its Korean strings are diagnostics (`_bs.blog`, recall / advance `log_lines` → `last_log`), marked `# l10n-ignore`.
+
 All scripts extend `Node` and are children of the root `BattleSim` node.
 Each module accesses shared state via `@onready var _bs: BattleSim = get_parent() as BattleSim`.
 

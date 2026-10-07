@@ -59,7 +59,6 @@ const GRAB_RADIUS_MULT: float = 1.35
 const BAND_H: float = 96.0
 const BTN_W: float = 440.0
 
-const HINT_TEXT: String = "정글러를 끌어다 시작할 정글 타일에 놓는다"
 const HINT_FONT: int = 30
 const HINT_COLOR := Color(0.86, 0.90, 0.98)
 
@@ -256,7 +255,7 @@ func _build() -> void:
 	# 띠는 비워진 손패 자리 한가운데다 — 전장 아래끝(우리 HQ 의 초상화가 타일
 	# 밑으로 내려오는 자리)과 아군 스트립 사이.
 	var band_y: float = _bs.BS_HAND_CENTER.y + Card.CARD_H * 0.5 - BAND_H * 0.5
-	_hint = UiHelpers.mk_label(_root, HINT_TEXT, HINT_FONT, HINT_COLOR,
+	_hint = UiHelpers.mk_label(_root, Loc.t(L.BATTLE_JUNGLE_START_HINT), HINT_FONT, HINT_COLOR,
 			Vector2(0.0, band_y + (BAND_H - 40.0) * 0.5), Vector2(vp.x, 40.0),
 			HORIZONTAL_ALIGNMENT_CENTER)
 	_hint.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
@@ -264,7 +263,7 @@ func _build() -> void:
 	_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	_confirm = Button.new()
-	_confirm.text = "전투 시작"
+	_confirm.text = Loc.t(L.BATTLE_JUNGLE_START_START)
 	_confirm.focus_mode = Control.FOCUS_NONE
 	_confirm.add_theme_font_size_override("font_size", 34)
 	_confirm.position = Vector2((vp.x - BTN_W) * 0.5, band_y)

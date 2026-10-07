@@ -1,6 +1,6 @@
 # Card Phase Module
 
-**텍스트는 l10n key — `Loc.t`.** Card name / description come from `CardData.name_key` · `description_key` (`card.pilot|mech.{id}.name|desc`); `[x]` references resolve by key (`CardData.ref_entries`), card identity is `CardData.card_uid()` (art, effect sources, sort tie-break), mech rows build via `CardData.from_mech_def`. Term rules: `data/l10n/src/glossary.csv`.
+**텍스트는 l10n key — `Loc.t`.** Card name / description come from `CardData.name_key` · `description_key` (`card.pilot|mech.{id}.name|desc`); `[x]` references resolve by key (`CardData.ref_entries`), card identity is `CardData.card_uid()` (art, effect sources, sort tie-break), mech rows build via `CardData.from_mech_def`. Term rules: `data/l10n/src/glossary.csv`. 표시 텍스트는 l10n key (`battle` 도메인: `battle.card_desc.*` `CardDescBox.TARGET_LABELS` values are keys, `battle.pile_viewer.*`, `battle.play_preview.*`, `battle.select.*`, `battle.card_phase.*`). Diagnostic strings (`_bs.blog` log lines, effect / activation result strings that only feed `BattleSim.last_log`, which renders nowhere) stay Korean and are marked `# l10n-ignore`.
 
 | File | class_name | Role |
 |---|---|---|

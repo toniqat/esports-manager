@@ -1,5 +1,7 @@
 # Gambit Phase Module
 
+표시 텍스트는 l10n key (`battle.jungle_start.*`).
+
 Owns the pre-opening (개시) stage (`BattlePhase.GAMBIT`). There are two files.
 
 | File | Role |

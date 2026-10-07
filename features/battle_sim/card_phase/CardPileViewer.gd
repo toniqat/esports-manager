@@ -114,7 +114,7 @@ func _build_ui() -> void:
 
 	var cards := _sorted_cards()
 	_title = Label.new()
-	_title.text = "%s — %d장" % [_pile_label(), cards.size()]
+	_title.text = Loc.t(L.BATTLE_PILE_VIEWER_TITLE, {"pile": _pile_label(), "n": cards.size()})
 	_title.add_theme_font_size_override("font_size", TITLE_FONT)
 	_title.add_theme_color_override("font_color", TITLE_COLOR)
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -130,7 +130,7 @@ func _build_ui() -> void:
 		_build_grid(cards, screen)
 
 	_btn_close = Button.new()
-	_btn_close.text = "닫기"
+	_btn_close.text = Loc.t(L.UI_BUTTON_CLOSE)
 	_btn_close.add_theme_font_size_override("font_size", 22)
 	_btn_close.size = Vector2(BTN_W, BTN_H)
 	_btn_close.position = Vector2(
@@ -142,7 +142,7 @@ func _build_ui() -> void:
 
 func _build_empty_notice(screen: Vector2) -> void:
 	var lbl := Label.new()
-	lbl.text = "비어 있음"
+	lbl.text = Loc.t(L.BATTLE_PILE_VIEWER_EMPTY)
 	lbl.add_theme_font_size_override("font_size", EMPTY_FONT)
 	lbl.add_theme_color_override("font_color", EMPTY_COLOR)
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -243,7 +243,7 @@ func _pile_array() -> Array:
 
 
 func _pile_label() -> String:
-	return "덱" if pile == Pile.DECK else "버린 카드"
+	return Loc.t(L.TERM_CARD_DECK) if pile == Pile.DECK else Loc.t(L.BATTLE_PILE_VIEWER_DISCARD)
 
 
 func _screen_size() -> Vector2:

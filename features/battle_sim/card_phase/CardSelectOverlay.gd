@@ -447,7 +447,7 @@ func _build_full_dim() -> void:
 
 
 func _build_buttons(is_discard: bool) -> void:
-	_btn_hide = _make_btn("숨김")
+	_btn_hide = _make_btn(Loc.t(L.BATTLE_SELECT_HIDE))
 	_btn_hide.position = Vector2(BTN_SIDE_MARGIN,
 			ScreenMetrics.bottom_y() - BTN_BOTTOM_GAP - BTN_H)
 	_btn_hide.pressed.connect(_on_hide_pressed)
@@ -463,7 +463,7 @@ func _build_buttons(is_discard: bool) -> void:
 	# target_count 장을 골라야 끝나고, 3택은 이미 나간 카드의 정산이라 무를 것이
 	# 없다. 둘 다 확인 버튼과 숨김만 놓는다.
 	if is_discard or mode == Mode.CHOICE:
-		_btn_confirm = _make_btn("확인")
+		_btn_confirm = _make_btn(Loc.t(L.UI_BUTTON_CONFIRM))
 		_btn_confirm.position = Vector2(right_x, top_y)
 		if mode == Mode.DISCARD:
 			_btn_confirm.pressed.connect(_commit_discard)
@@ -472,11 +472,11 @@ func _build_buttons(is_discard: bool) -> void:
 		_btn_confirm.disabled = true
 		_overlay_layer.add_child(_btn_confirm)
 	else:
-		_btn_cancel = _make_btn("보존 취소" if mode == Mode.PRESERVE else "찾기 취소")
+		_btn_cancel = _make_btn(Loc.t(L.BATTLE_SELECT_CANCEL_PRESERVE) if mode == Mode.PRESERVE else Loc.t(L.BATTLE_SELECT_CANCEL_SEARCH))
 		_btn_cancel.position = Vector2(right_x, top_y)
 		_btn_cancel.pressed.connect(_on_cancel_pressed)
 		_overlay_layer.add_child(_btn_cancel)
-		_btn_confirm = _make_btn("확인")
+		_btn_confirm = _make_btn(Loc.t(L.UI_BUTTON_CONFIRM))
 		_btn_confirm.position = Vector2(
 				right_x - CONFIRM_BTN_GAP - BTN_W, top_y)
 		if mode == Mode.PRESERVE:
@@ -662,7 +662,7 @@ func _refresh_visibility() -> void:
 
 func _refresh_hide_label() -> void:
 	if _btn_hide != null:
-		_btn_hide.text = "표시" if hidden_state else "숨김"
+		_btn_hide.text = Loc.t(L.BATTLE_SELECT_SHOW) if hidden_state else Loc.t(L.BATTLE_SELECT_HIDE)
 
 
 func _update_confirm_button() -> void:

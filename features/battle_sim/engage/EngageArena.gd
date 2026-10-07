@@ -198,10 +198,11 @@ const RES_DIM_COLOR := Color(0.0, 0.0, 0.0, 0.945)
 
 ## 결과 한 줄의 세 가지. 판정은 매니저가 하고(오브젝트 교전인지를 아는 것이
 ## 그쪽이다) 이 중 하나를 넘겨 받는다 — 문자열을 여기 두는 것은 그 글자에
-## 무슨 색을 입힐지가 이 화면의 일이기 때문이다.
-const RESULT_WIN: String     = "승리"
-const RESULT_LOSE: String    = "패배"
-const RESULT_NEUTRAL: String = "교전 결과"
+## 무슨 색을 입힐지가 이 화면의 일이기 때문이다. 값은 l10n key 다 — 비교는 key 로,
+## 화면에는 `show_dashboard` 가 번역해 찍는다.
+const RESULT_WIN: String     = L.BATTLE_ENGAGE_RESULT_WIN
+const RESULT_LOSE: String    = L.BATTLE_ENGAGE_RESULT_LOSE
+const RESULT_NEUTRAL: String = L.BATTLE_ENGAGE_RESULT_NEUTRAL
 const RESULT_WIN_COLOR     := Color(1.00, 0.90, 0.45)
 const RESULT_LOSE_COLOR    := Color(1.00, 0.48, 0.42)
 const RESULT_NEUTRAL_COLOR := Color(0.86, 0.88, 0.94)
@@ -398,7 +399,7 @@ func _build_ui(title_text: String) -> void:
 		var team_units: Array = _sim.units_of(t)
 		# 팀 이름은 그 팀 초상화 무리 **위**에 온다 — 좌우가 곧 팀이므로
 		# 라벨도 그 자리에 있어야 한다.
-		var hdr := _make_label("아군" if t == 0 else "적군", 24, TEAM_COLORS[t],
+		var hdr := _make_label(Loc.t(L.TERM_SIDE_ALLY) if t == 0 else Loc.t(L.TERM_SIDE_ENEMY), 24, TEAM_COLORS[t],
 				HORIZONTAL_ALIGNMENT_CENTER)
 		var group_w: float = _strip_group_width(team_units.size())
 		hdr.position = Vector2(
@@ -560,10 +561,11 @@ static func _clamp_cam_center(c: Vector2, zoom: float) -> Vector2:
 func _refresh_header() -> void:
 	if _round_lbl != null:
 		if _is_duel:
-			_round_lbl.text = "턴 %d" % _sim.round_index
+			_round_lbl.text = Loc.t(L.BATTLE_ENGAGE_ROUND, {"n": _sim.round_index})
 			_set_round_color(TIME_COLOR)
 		else:
-			_round_lbl.text = "턴 %d / %d" % [_sim.round_index, _sim.total_rounds]
+			_round_lbl.text = Loc.t(L.BATTLE_ENGAGE_ROUND_OF,
+					{"n": _sim.round_index, "total": _sim.total_rounds})
 			_set_round_color(
 					TIME_LOW if _sim.round_index >= _sim.total_rounds else TIME_COLOR)
 	if _phase_lbl == null or _preview:
@@ -571,12 +573,12 @@ func _refresh_header() -> void:
 	if _end_banner != "":
 		_phase_lbl.text = _end_banner
 	elif _sim.finished:
-		_phase_lbl.text = "교전 종료"
+		_phase_lbl.text = Loc.t(L.BATTLE_ENGAGE_OVER)
 	elif _sim.flow == TurnEngageSim.Flow.ROUND_START:
-		_phase_lbl.text = "턴 %d 시작" % _sim.round_index
+		_phase_lbl.text = Loc.t(L.BATTLE_ENGAGE_ROUND_START, {"n": _sim.round_index})
 	else:
 		var who: String = _sim.actor_label()
-		_phase_lbl.text = "" if who == "" else "%s 의 차례" % who
+		_phase_lbl.text = "" if who == "" else Loc.t(L.BATTLE_ENGAGE_ACTOR_TURN, {"name": who})
 
 
 ## 바뀔 때만 덮어쓴다 — `Label.text` 는 같은 값이면 스스로 넘기지만 테마
@@ -1047,7 +1049,7 @@ func _draw_roster_cell(c: CanvasItem, u: TurnEngageSim.EUnit, cx: float,
 # 총 성장치도 없앴다 — 여기서 묻는 것은 총액이 아니라 **이 교전의 몫**이고,
 # 총액은 전장 스트립과 파일럿 상세가 상시로 들고 있다.
 #
-# `result_text` 는 승리 / 패배 / 교전 결과 — 판정은 매니저가 한다(오브젝트
+# `result_text` 는 승리 / 패배 / 교전 결과의 key(`RESULT_*`) — 판정은 매니저가 한다(오브젝트
 # 교전인지, 그 판정을 누가 들고 있는지를 아는 것이 그쪽이다).
 func show_dashboard(result_text: String, on_confirm: Callable) -> void:
 	set_process(false)
@@ -1064,7 +1066,7 @@ func show_dashboard(result_text: String, on_confirm: Callable) -> void:
 	for raw in _headers:
 		(raw as Label).visible = false
 	if _title_lbl != null:
-		_title_lbl.text = result_text
+		_title_lbl.text = Loc.t(result_text)  # l10n-dynamic: battle.engage.result.*
 		_title_lbl.add_theme_color_override("font_color",
 				_result_color(result_text))
 	_measure_dealt_range()
@@ -1149,7 +1151,7 @@ func _build_result_labels() -> void:
 			var s: Dictionary = _sim.stats.get(u.pilot, {})
 			var kills: int = int(s.get("kills", 0))
 			if kills > 0 and h >= RES_KILL_H:
-				var kl := _make_label("처치 %d" % kills, 17,
+				var kl := _make_label(Loc.t(L.BATTLE_ENGAGE_KILLS, {"n": kills}), 17,
 						Color(1.0, 0.95, 0.70), HORIZONTAL_ALIGNMENT_CENTER)
 				kl.position = Vector2(cx - RES_BAR_W * 0.5,
 						RES_BAR_BOTTOM - RES_KILL_H)
@@ -1211,7 +1213,7 @@ func _growth_label(p: PilotData, cx: float) -> Control:
 ## 확인 — 성장 줄 밑에 한 칸 띄우고 놓는다.
 func _build_confirm_button(on_confirm: Callable) -> void:
 	var btn := Button.new()
-	btn.text = "확인"
+	btn.text = Loc.t(L.UI_BUTTON_CONFIRM)
 	btn.add_theme_font_size_override("font_size", 28)
 	btn.size = Vector2(RES_BTN_W, RES_BTN_H)
 	btn.position = Vector2((ScreenMetrics.vp_w() - RES_BTN_W) * 0.5, RES_BTN_Y)

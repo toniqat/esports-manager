@@ -208,7 +208,7 @@ func _apply_match_start_passives() -> void:
 				moved += 1
 		if moved > 0 and _bs.card_phase != null:
 			_bs.card_phase.update_deck_discard_labels()
-			_log(p, "게임 시작 — 카드 %d장을 버린 더미로" % moved)
+			_log(p, "게임 시작 — 카드 %d장을 버린 더미로" % moved)  # l10n-ignore
 
 
 # ─── 조회 ────────────────────────────────────────────────────────────────────
@@ -301,19 +301,21 @@ func progress(p: PilotData) -> float:
 func status_text(p: PilotData) -> String:
 	var st: Dictionary = states.get(p, {})
 	if st.is_empty():
-		return "스킬 없음"
+		return Loc.t(L.BATTLE_SKILL_STATUS_NONE)
 	var d: Dictionary = st["def"]
 	match skill_type(p):
 		TYPE_COOLDOWN:
 			var left: int = cooldown_left(p)
-			return "사용 가능" if left <= 0 else "재사용까지 %d턴" % left
+			return Loc.t(L.BATTLE_SKILL_STATUS_READY) if left <= 0 \
+					else Loc.t(L.BATTLE_SKILL_STATUS_COOLDOWN, {"n": left})
 		TYPE_CHARGE:
-			return "토큰 %d / %d · 사용에 토큰 %d" % [
-					int(st["charge"]), int(d["p2"]), int(d["p1"])]
+			return Loc.t(L.BATTLE_SKILL_STATUS_CHARGE, {"cur": int(st["charge"]),
+					"max": int(d["p2"]), "cost": int(d["p1"])})
 		_:
 			if int(d["p2"]) > 0:
-				return "패시브 · 토큰 %d / %d" % [int(st["charge"]), int(d["p2"])]
-			return "패시브 · 상시 적용"
+				return Loc.t(L.BATTLE_SKILL_STATUS_PASSIVE_CHARGE,
+						{"cur": int(st["charge"]), "max": int(d["p2"])})
+			return Loc.t(L.BATTLE_SKILL_STATUS_PASSIVE)
 
 
 ## 지금 이 파일럿의 스킬을 실제로 누를 수 있는가 — 화면 게이트까지 포함한다.
@@ -392,7 +394,7 @@ func _act_roam(p: PilotData) -> String:
 		return _grant_volatile(p, CARD_MOVE)
 	cheapest.cost = 0
 	_refresh_hand()
-	return "[%s] 비용 0" % cheapest.card_name
+	return "[%s] 비용 0" % cheapest.card_name  # l10n-ignore
 
 
 ## 위치 고정 — `SKILL_HOLD_TURNS`(const.csv) 턴 동안 성장 적립이 오르고 라인전이 내려가며, 그동안 이 파일럿은
@@ -401,7 +403,7 @@ func _act_roam(p: PilotData) -> String:
 func _act_hold_position(p: PilotData) -> String:
 	states[p]["hold_until"] = _bs.turn_count + HOLD_TURNS
 	_bs.refresh_growth_stats(p)
-	return "%d턴 간 위치 고정" % HOLD_TURNS
+	return "%d턴 간 위치 고정" % HOLD_TURNS  # l10n-ignore
 
 
 ## 작전 준비 — 이번 작전 단계의 모든 카드 비용 -1. `phase_cost_inc` 는
@@ -410,7 +412,7 @@ func _act_hold_position(p: PilotData) -> String:
 func _act_ops_prep(p: PilotData) -> String:
 	_bs.phase_cost_inc_p -= 1
 	_refresh_hand()
-	return "이번 작전 단계 모든 카드 비용 −1"
+	return "이번 작전 단계 모든 카드 비용 −1"  # l10n-ignore
 
 
 ## 계략 — 손패 한 장에 보존을 건다. 고르는 화면은 계획 중시(`preserve:N`)와
@@ -423,7 +425,7 @@ func _act_scheme(p: PilotData) -> String:
 		return ""
 	_bs.card_select_overlay.start_preserve(1,
 			_on_scheme_picked, _on_scheme_cancelled)
-	return "손 1장에 보존"
+	return "손 1장에 보존"  # l10n-ignore
 
 
 func _on_scheme_picked(picks: Array) -> void:
@@ -454,7 +456,7 @@ func _act_dragon_blessing(p: PilotData) -> String:
 			_bs.card_phase.spawn_card_node(cd)
 			drew += 1
 		_refresh_hand()
-	return "전략 점수 +%d · 뽑기 %d" % [BLESSING_STRATEGY, drew]
+	return "전략 점수 +%d · 뽑기 %d" % [BLESSING_STRATEGY, drew]  # l10n-ignore
 
 
 ## 격전 — 덱에서 **자기 것인** 전투 개시 카드를 한 장 끌어온다. 없으면 대신
@@ -476,7 +478,7 @@ func _act_fierce_battle(p: PilotData) -> String:
 	else:
 		_bs.player_hand.append(found)
 	_refresh_hand()
-	return "[%s] 뽑기" % found.card_name
+	return "[%s] 뽑기" % found.card_name  # l10n-ignore
 
 
 ## 전투 명령 — 이번 작전 단계 동안 전투 개시 카드가 싸지고 라운드가 하나 줄어든다.
@@ -486,7 +488,7 @@ func _act_battle_order(p: PilotData) -> String:
 	_bs.engage_discount_p += BATTLE_ORDER_DISCOUNT
 	_phase_round_delta[0] += BATTLE_ORDER_ROUNDS
 	_refresh_hand()
-	return "교전 카드 비용 −%d · 교전 턴 %+d" % [
+	return "교전 카드 비용 −%d · 교전 턴 %+d" % [  # l10n-ignore
 			BATTLE_ORDER_DISCOUNT, BATTLE_ORDER_ROUNDS]
 
 
@@ -494,7 +496,7 @@ func _act_battle_order(p: PilotData) -> String:
 ## 단계가 아니라 카드 한 장에 붙으므로 언제 쓸지가 곧 선택이다.
 func _act_siege(p: PilotData) -> String:
 	_next_engage_bonus[0] += SIEGE_ROUNDS
-	return "다음 교전 턴 +%d" % SIEGE_ROUNDS
+	return "다음 교전 턴 +%d" % SIEGE_ROUNDS  # l10n-ignore
 
 
 ## 스킬이 만들어 주는 손패 카드 한 장. `휘발성`을 덧붙여 안 쓰고 버려지면
@@ -511,7 +513,7 @@ func _grant_volatile(p: PilotData, card_id: int) -> String:
 			[CardData.KW_EXHAUST, CardData.KW_VOLATILE])
 	_bs.card_phase.add_card_to_hand(cd, true)
 	_refresh_hand()
-	return "[%s] 생성 (소멸 · 휘발성)" % cd.card_name
+	return "[%s] 생성 (소멸 · 휘발성)" % cd.card_name  # l10n-ignore
 
 
 ## `raw` 에 없는 키워드만 골라 `|` 로 이어 붙인다.
@@ -607,7 +609,7 @@ func _spawn_hot_hand(p: PilotData) -> void:
 	deck.append(cd)
 	deck.shuffle()
 	_bs.card_phase.update_deck_discard_labels()
-	_log(p, "[핫핸드] 를 덱에 생성")
+	_log(p, "[핫핸드] 를 덱에 생성")  # l10n-ignore
 
 
 ## 카드 한 장이 실제로 나갔을 때. 퍼포먼스가 이 박자로 충전한다.

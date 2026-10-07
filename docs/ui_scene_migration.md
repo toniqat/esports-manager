@@ -5,7 +5,37 @@
 작업 방식을 만든다. 이 문서는 다른 세션이 이어받기 위한 인수인계 문서다.
 
 > 이어받는 세션: 루트 `CLAUDE.md` → 이 문서 → 작업할 폴더의 `README.md` 순서로 읽는다.
-> 진행 상황이 바뀌면 §4 표와 §6 작업 목록을 갱신한다.
+> 진행 상황이 바뀌면 **§0 현황 요약**, §4 표, §6 작업 목록을 갱신한다. §1 ~ §2 · §7 은 진행 기록이다.
+
+---
+
+## 0. 현황 요약 (2026-10-07)
+
+### ✅ 완료
+- **아웃게임 UI 씬 전환 전부** — §4 #1 ~ #12 (팝업 · 시트 · 로비 5탭 · RunSetup · RunResult · Season 화면 · 훈련 ·
+  기자회견 · MatchFlow). 레이아웃 · 스타일 정본은 `.tscn`, 스크립트는 `%노드` 바인딩 + 데이터 + 시그널.
+- **공용 테마** `resources/OutgameTheme.tres` (T1) — 공용 변형 + **화면 전용 접두사 변형 34개** (T7, §3 규칙 7).
+  씬에 로컬 StyleBox 0개. 색이 데이터인 곳은 `OutgameTheme.variation_box()` 사본에 색만 넣는다.
+- **하단 바** 헬퍼 4갈래 → `Bar*Button` 변형 + `OutgameTheme.fit_bottom_bar` 1개.
+- **안전 영역** — 씬 기반 패턴 B/C (`docs/mobile_safe_area.md`), `MechDetailPanel` · `DraftDetailPanel` `%SafeArea`.
+- **도구** — 런타임 덤프 · 스크린샷 러너 `UiSceneDump` (T4), 규칙 문서화 (T2, 루트 `CLAUDE.md`).
+- **결정 끝난 것** — 모서리 반경은 변형 값(카드 18 · 바 7 · 세그먼트 12) 유지, `MechDetailPanel` 흰 테마,
+  `DraftDetailPanel` 오른쪽 패널은 `Card` · `SunkPanel`, 컬렉션 필터는 `SelectableTile` 쌍.
+
+### ⬜ 해야 할 일 (할 일이 정해진 것)
+| # | 할 일 | 담당 | 비고 |
+|---|---|---|---|
+| D1 | uid 없는 `.tscn` **55개** 에디터에서 열고 저장 | 사용자 | `match_flow/**` 13 · `meta/**` 29 · `season/` finance · league · mastery 11 · `scenes/RunSetup` · `RunResult`. 목록: `for f in $(git ls-files '*.tscn'); do head -1 "$f" \| grep -q 'uid="uid://' \|\| echo "$f"; done` |
+| D2 | **T6** — `editor_description` TODO 마킹 써 보기 | 사용자 → LLM | 사용자가 빈 노드 + `TODO: …` 마킹(§3 규칙 5) → LLM 이 `grep -rn 'editor_description = "TODO' --include=*.tscn` 로 찾아 구현 → TODO 문구 삭제 → 써 본 결과로 규칙 5 다듬기. 현재 마킹 0개 |
+
+### ❓ 남은 항목 (결정 필요 · 보류)
+| # | 항목 | 상태 |
+|---|---|---|
+| R1 | 데이터가 아닌 **글자색 override** 2개 — 주간 `%WeekLabel` (`RAIL_TEXT`, 제안 `WeekRailLabel`), 상점 "확률 보기" (`OnFillTextButton`) | 결정 필요 — 화면 변형으로 옮길지. 다른 색 override 는 코드가 덮는 상태 · 데이터 색 미리보기 |
+| R2 | **코드에 남은 공용 위젯** — `CollectionCell` · `ManagerUi.add_preset_chips` · `TraitPickerView` (컬렉션 · 감독 탭 · RunSetup), `IntelView` (MatchPrep · 리그 팀 상세 — `HubSheet` 본문에 절대 좌표 자식을 만드는 유일한 곳), `MessengerView` 말풍선, `BanPickOrderRow` | 결정 필요 — 아이템 씬으로 옮길지 |
+| R3 | `ScreenBackground` 변형 (화면 배경 `ColorRect` → 패널 변형) | 선택 — 하지 않아도 무방 |
+| R4 | §4 #13 BattleSim HUD (`HudBuilder` · `PilotDetailPanel` · `PilotStrip` · `MvpView` · `SkillPopup`) | ⏸ 보류 — 다크 UI, `_draw` 다수 |
+| R5 | 알려진 동작 차이 — `CenterContainer` 팝업(ShopPopup · ManagerTypePopup)은 안전 영역보다 길어지면 위아래로 넘침, RunResult 카드는 홀수 폭 태블릿에서 0.5px 왼쪽 | 현재 데이터로는 해당 없음 — 기록만 |
 
 ---
 
@@ -83,7 +113,7 @@ ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨�
   `HapticUi.kind(btn, HapticUi.up_kind)` + `down_kind_for(btn, HapticUi.down_kind)` 로 복구.
 - 컨테이너 레이아웃이면 기존의 "줄바꿈 Label 은 트리 밖에서 높이가 0" 문제가 사라진다
   (본문은 최소 높이만 주고 길면 카드가 늘어남).
-- 헤드리스/CLI 로 저장한 `.tscn` 에는 uid 가 안 붙는다. **에디터에서 한 번 열고 저장**하면 붙는다 (남은 목록 → §7 웨이브 3 남은 일 1).
+- 헤드리스/CLI 로 저장한 `.tscn` 에는 uid 가 안 붙는다. **에디터에서 한 번 열고 저장**하면 붙는다 (남은 목록 → §0 D1).
 - **임시 스타일 중복**: 버튼 · 카드 스타일박스를 `OutgameTheme` 값에서 복사해 씬에 넣었다.
   팔레트가 코드에서 바뀌면 이 씬은 안 따라간다 → §6 T1 (공용 Theme 리소스)로 해소됨.
 
@@ -164,7 +194,7 @@ ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨�
 
 ---
 
-## 6. 작업 목록 (다음 세션)
+## 6. 작업 목록
 
 - [x] **T0** `ConfirmPopup` 전환분 커밋.
 - [x] **T1 공용 Theme 리소스** (완료 — variation 목록 · 재생성 명령은 `resources/README.md`) — `resources/OutgameTheme.tres`(Theme) 를 만들고
@@ -179,9 +209,9 @@ ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨�
       결과는 절대 좌표 노드라 컨테이너로 재구성이 필요하므로 **참고용 초안**으로만 쓴다.
       작은 팝업은 손으로 옮기는 편이 낫다(시범에서 확인).
 - [x] **T5** §4 #7 ~ #12 화면 전환 (웨이브 3, §7). `docs/mobile_safe_area.md` 패턴 B/C 를 씬 기반으로 갱신 — 완료.
-      남은 일은 §7 "웨이브 3 종료 후".
+      남은 일은 §0.
 - [ ] **T6** `editor_description` TODO 마킹을 실제로 한 번 써 보고(사용자가 마킹 → LLM 구현) 절차 다듬기.
-      (2026-10-07 기준 씬에 TODO 마킹 0개 — 사용자 마킹 대기)
+      → §0 D2 (사용자 마킹 대기)
 - [x] **T7 화면 전용 변형** — 씬 22개의 로컬 StyleBox 35개 → 접두사 변형 34개(§3 규칙 7, §7 웨이브 4).
 
 ---
@@ -237,7 +267,7 @@ ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨�
 | #12 a | `BanPickController` UI | ✅ 머지 (`BanPickView` + 아이템 씬 5개, 2593→1634줄. 밴 · 픽 · 배치 결과와 BattleSim 핸드오프 동일, 시트 ~1px · 배치 블록 ~0.5px, 판 모서리 18) |
 | #12 b | `MechDetailPanel` · MatchPrep UI · `MatchCheatMenu` | ✅ 머지 (+ `MechMasteryRow` · `MechQuirkRow` · `MechCardCell` · `MatchPrepView` · `MatchCheatItem`. 기벽 없는 경우 diff 0, 기벽 줄은 실제 줄바꿈으로 아래 ~3px. 다크 모달 variation 미정) |
 | 끝 | `mobile_safe_area.md` 패턴 B/C 씬 기반으로 갱신 | ✅ |
-| 끝 | 새 `.tscn` 전부 에디터에서 열고 저장 (uid 부여) | 사용자 ⬜ |
+| 끝 | 새 `.tscn` 전부 에디터에서 열고 저장 (uid 부여) | 사용자 ⬜ → §0 D1 |
 | 끝 | 제안 variation 반영 — 사용자 결정: 모서리는 지금 모양 유지, `MechDetailPanel` 은 흰 테마로 | ✅ 1단계 `resources/` (Negative/Positive/LinkLabel · Bar*Button · BarSeparator · Accent/SurfaceChip · Selectable* 쌍 · `OutgameTheme.fit_bottom_bar`) → 2단계 meta · season · match_flow 병렬 머지. 하단 바 헬퍼 4갈래 → 1개 (로비 코드 바만 `add_bottom_bar`) |
 
 ### 웨이브 3 에서 제안된 theme variation — 결과
@@ -265,19 +295,11 @@ ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨�
 - `Lobby` · `RunSetup` · `RunResult` · `Season` · `MatchFlow` 헤드리스 실행 — error/warn 없음.
 - 통합 렌더(오케스트레이터): 로비 5탭 전환, Season 9개 화면 라우팅(HUB → PRESS → TRAINING → WEEK → LEAGUE →
   PLAYOFF → INTL → GAME_OVER → ENDING), MatchFlow PREP · BAN_PICK — 에러 없음, 화면 정상.
-- 남은 일:
-  1. **사용자** — 새 `.tscn` 에디터에서 열고 저장 (uid). 2026-10-07 재확인: 83 → **55개 남음** (`addons/` 제외 —
-     `match_flow/**` 13 · `meta/**` 29 · `season/` finance · league · mastery 11 · `scenes/RunSetup` · `RunResult`).
-     목록: `for f in $(git ls-files '*.tscn'); do head -1 "$f" | grep -q 'uid="uid://' || echo "$f"; done`
-  2. ~~위 variation 표 반영~~ ✅. ~~단일 화면 전용 스타일 로컬 유지~~ → 사용자 결정으로 웨이브 4 에서 화면 변형으로 분리 ✅.
-     ~~후속 후보: `CollectionTab` 필터 → `SelectableTile`, `DraftDetailPanel` `%SafeArea`~~ ✅ 웨이브 4.
-  3. 코드에 남은 공용 위젯: `CollectionCell` · `ManagerUi.add_preset_chips` · `TraitPickerView` (컬렉션 · 감독 탭 · RunSetup 공용),
-     `IntelView` (MatchPrep · 리그 팀 상세 — `HubSheet` 본문에 절대 좌표 자식을 만드는 유일한 곳), `MessengerView` 말풍선,
-     `BanPickOrderRow`. 아이템 씬으로 옮길지는 별도 작업 (⬜ 미결정).
-  4. ~~`HubSheet.gd` 머리 주석 · `%Body` `editor_description`~~ ✅ 이미 "리그 팀 상세만 해당" 으로 갱신돼 있음.
-  5. ~~`DraftDetailPanel` 안전 영역~~ ✅ 웨이브 4.
-  6. 병렬 에이전트 교훈: 스크래치패드와 `user://`(모든 worktree 공용) 를 같이 쓴다 — 에이전트마다 하위 폴더,
-     `Season.tscn` 실행은 `run_test.save` 를 자동 저장하므로 하네스는 메모리 데이터 + 백업/복원.
+- 남은 일 (당시) → 처리 결과: uid 저장은 §0 D1, 화면 전용 스타일 · 컬렉션 필터 · `DraftDetailPanel` 안전 영역은
+  웨이브 4 ✅, `HubSheet` 주석은 이미 갱신돼 있었음 ✅, 코드 공용 위젯은 §0 R2.
+- 교훈:
+  - 병렬 에이전트: 스크래치패드와 `user://`(모든 worktree 공용) 를 같이 쓴다 — 에이전트마다 하위 폴더,
+    `Season.tscn` 실행은 `run_test.save` 를 자동 저장하므로 하네스는 메모리 데이터 + 백업/복원.
 
 ### 웨이브 4 — 남은 일 정리 (2026-10-07, 단일 세션)
 | 작업 | 내용 | 검증 |
@@ -286,10 +308,7 @@ ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨�
 | `CollectionTab` 필터 | 코드 `flat_style` (r12, 테두리 2) → `SelectableTile` ↔ `SelectableTileOn` 변형 전환 (런 준비 · 밴픽 필터와 같은 모양, r8 · 선택 테두리 3) | 의도된 모양 변경 |
 | 화면 전용 변형 (T7) | 씬 22개 로컬 StyleBox 35개 → `OutgameTheme._add_screen_variations` 의 접두사 변형 34개, 공용 변형에서 파생 (§3 규칙 7). 데이터 색 6곳(밴픽 칸 · 초상 테두리, 편성 칸, 역할 배지, 단계 알약, 상점 배너)과 훈련 · 로비가 읽던 씬 스타일은 `variation_box()` 사본에 색만. 주간 요일 칩은 변형 전환 | 로비 4탭 · RunResult · RunSetup · 허브 · 밴픽 실화면 diff 0 (밴픽 타이머 영역은 원래 매 실행 다름). 씬 단독 렌더 23개 diff 0 — 예외는 코드가 런타임에 칠하는 미리보기 색(역할 배지 · 진영 테두리)뿐 |
 
-남은 것 (웨이브 4 이후):
-- ⬜ 데이터가 아닌 **글자색 override** — 주간 `%WeekLabel` (`RAIL_TEXT`, 제안명 `RailLabel`), 상점 "확률 보기" (`OnFillTextButton`).
-  StyleBox 가 아니라 이번 범위 밖. 나머지 색 override 는 상태 · 데이터 색의 미리보기(코드가 덮음).
-- ⬜ 위 "웨이브 3 종료 후" 1 (uid 55개, 사용자) · 3 (코드 공용 위젯) · §4 #13 BattleSim HUD (보류) · §6 T6 (TODO 마킹 대기).
+남은 것 → §0 (D1 · D2 · R1 ~ R5).
 
 > 웨이브 2 는 T1 머지 직후 시작 (T4 와 무관하므로 T4 진행 중에 병렬 착수).
 
@@ -299,5 +318,5 @@ ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨�
   1. ~~**사용자** — 새 `.tscn` 전부 에디터에서 열고 저장(uid)~~ ✅ 12개 전부 완료.
   2. ~~DraftDetailPanel 오른쪽 패널 모양 결정~~ ✅ 지금 모양 유지.
   3. ~~제안 variation 일괄 반영~~ ✅ (위 표).
-  4. 알려진 동작 차이: `CenterContainer` 로 가운데 정렬한 팝업(ShopPopup · ManagerTypePopup)은 안전 영역보다 길어지면 위아래로 넘침 (옛 코드는 위 고정). 현재 데이터로는 해당 없음.
+  4. 알려진 동작 차이(`CenterContainer` 팝업 넘침) → §0 R5.
   5. ~~DraftDetailPanel 안전 영역~~ ✅ 웨이브 4 (`%SafeArea`).

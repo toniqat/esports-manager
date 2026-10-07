@@ -1,6 +1,53 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=8 format=3]
 
-[ext_resource type="Script" path="res://features/meta/run_result/RunResultScreen.gd" id="1_result"]
+[ext_resource type="Script" uid="uid://bogtu0wxqfcc3" path="res://features/meta/run_result/RunResultScreen.gd" id="1_result"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="Script" uid="uid://c26kbfiu51p1a" path="res://resources/DragScroll.gd" id="3_drag"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+content_margin_left = 40.0
+content_margin_top = 28.0
+content_margin_right = 40.0
+content_margin_bottom = 40.0
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+shadow_color = Color(0.11, 0.11, 0.18, 0.1)
+shadow_size = 6
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_amber"]
+content_margin_left = 40.0
+content_margin_top = 28.0
+content_margin_right = 40.0
+content_margin_bottom = 40.0
+bg_color = Color(0.996, 0.929, 0.808, 1)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+shadow_color = Color(0.11, 0.11, 0.18, 0.1)
+shadow_size = 6
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="StyleBoxLine" id="StyleBoxLine_amber"]
+color = Color(0.961, 0.651, 0.137, 1)
+grow_begin = 0.0
+grow_end = 0.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_testchip"]
+bg_color = Color(0.996, 0.929, 0.808, 1)
+corner_radius_top_left = 21
+corner_radius_top_right = 21
+corner_radius_bottom_right = 21
+corner_radius_bottom_left = 21
 
 [node name="RunResult" type="Control"]
 layout_mode = 3
@@ -9,4 +56,514 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_theme")
 script = ExtResource("1_result")
+
+[node name="Background" type="ColorRect" parent="."]
+unique_name_in_owner = true
+editor_description = "Code extends it up under the notch (ScreenMetrics.extend_background) — the screen itself is indented to the safe top."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.96, 0.96, 0.968, 1)
+
+[node name="Header" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 120.0
+offset_bottom = 338.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="OutcomeTitle" type="Label" parent="Header"]
+unique_name_in_owner = true
+editor_description = "Colour is data: clear = ACCENT_TEXT, fail = NEGATIVE, abandon = TEXT_SUB (code)."
+custom_minimum_size = Vector2(0, 98)
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+theme_override_colors/font_color = Color(0.769, 0.521, 0.11, 1)
+theme_override_font_sizes/font_size = 64
+text = "런 클리어"
+horizontal_alignment = 1
+
+[node name="Rule" type="ColorRect" parent="Header"]
+custom_minimum_size = Vector2(80, 6)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+color = Color(0.961, 0.651, 0.137, 1)
+
+[node name="Gap" type="Control" parent="Header"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Subtitle" type="Label" parent="Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+text = "신생팀의 도전 · Nova Esports"
+horizontal_alignment = 1
+
+[node name="TestChip" type="Panel" parent="Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(380, 42)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_testchip")
+
+[node name="Text" type="Label" parent="Header/TestChip"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 20
+text = "테스트 런 — 프로필 미반영"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "Ends 16 above the bottom bar; code also lifts offset_bottom by the device's bottom inset. offset_right = scroll bar width with the bar space always reserved: the bar sits just off screen, so the body is always the full screen width (cards stay centred) — like the old code-built body."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 360.0
+offset_right = 8.0
+offset_bottom = -144.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 4
+
+[node name="DragScroll" type="Node" parent="Scroll"]
+script = ExtResource("3_drag")
+
+[node name="Body" type="MarginContainer" parent="Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/margin_bottom = 28
+
+[node name="Cards" type="VBoxContainer" parent="Scroll/Body"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 28
+
+[node name="TrueEndCard" type="PanelContainer" parent="Scroll/Body/Cards"]
+unique_name_in_owner = true
+editor_description = "M7 진엔딩 — shown only when result.true_endings is non-empty. Rows: RunResultTrueEndRow.tscn."
+custom_minimum_size = Vector2(920, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_amber")
+
+[node name="VBox" type="VBoxContainer" parent="Scroll/Body/Cards/TrueEndCard"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="Scroll/Body/Cards/TrueEndCard/VBox"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 24
+text = "진엔딩"
+
+[node name="Divider" type="HSeparator" parent="Scroll/Body/Cards/TrueEndCard/VBox"]
+layout_mode = 2
+theme_type_variation = &"Divider"
+theme_override_styles/separator = SubResource("StyleBoxLine_amber")
+
+[node name="Gap" type="Control" parent="Scroll/Body/Cards/TrueEndCard/VBox"]
+custom_minimum_size = Vector2(0, 11)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="TrueEndRows" type="VBoxContainer" parent="Scroll/Body/Cards/TrueEndCard/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="TraitCard" type="PanelContainer" parent="Scroll/Body/Cards"]
+unique_name_in_owner = true
+editor_description = "M8 새 특성 해금 — shown only when traits were unlocked. Rows: RunResultTraitRow.tscn."
+custom_minimum_size = Vector2(920, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_amber")
+
+[node name="VBox" type="VBoxContainer" parent="Scroll/Body/Cards/TraitCard"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="Scroll/Body/Cards/TraitCard/VBox"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 24
+text = "새 특성 해금"
+
+[node name="Divider" type="HSeparator" parent="Scroll/Body/Cards/TraitCard/VBox"]
+layout_mode = 2
+theme_type_variation = &"Divider"
+theme_override_styles/separator = SubResource("StyleBoxLine_amber")
+
+[node name="Gap" type="Control" parent="Scroll/Body/Cards/TraitCard/VBox"]
+custom_minimum_size = Vector2(0, 11)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="TraitNote" type="Label" parent="Scroll/Body/Cards/TraitCard/VBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 20
+text = "다음 런부터 감독 탭에서 장착할 수 있습니다"
+
+[node name="Gap2" type="Control" parent="Scroll/Body/Cards/TraitCard/VBox"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="TraitRows" type="VBoxContainer" parent="Scroll/Body/Cards/TraitCard/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="ProgressCard" type="PanelContainer" parent="Scroll/Body/Cards"]
+custom_minimum_size = Vector2(920, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="VBox" type="VBoxContainer" parent="Scroll/Body/Cards/ProgressCard"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="Scroll/Body/Cards/ProgressCard/VBox"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 24
+text = "진척"
+
+[node name="Divider" type="HSeparator" parent="Scroll/Body/Cards/ProgressCard/VBox"]
+layout_mode = 2
+theme_type_variation = &"Divider"
+
+[node name="Gap" type="Control" parent="Scroll/Body/Cards/ProgressCard/VBox"]
+custom_minimum_size = Vector2(0, 11)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ProgressRows" type="VBoxContainer" parent="Scroll/Body/Cards/ProgressCard/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="ScoreCard" type="PanelContainer" parent="Scroll/Body/Cards"]
+custom_minimum_size = Vector2(920, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="VBox" type="VBoxContainer" parent="Scroll/Body/Cards/ScoreCard"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="Scroll/Body/Cards/ScoreCard/VBox"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 24
+text = "점수"
+
+[node name="Divider" type="HSeparator" parent="Scroll/Body/Cards/ScoreCard/VBox"]
+layout_mode = 2
+theme_type_variation = &"Divider"
+
+[node name="Gap" type="Control" parent="Scroll/Body/Cards/ScoreCard/VBox"]
+custom_minimum_size = Vector2(0, 11)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ScoreRows" type="VBoxContainer" parent="Scroll/Body/Cards/ScoreCard/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Gap2" type="Control" parent="Scroll/Body/Cards/ScoreCard/VBox"]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Divider2" type="HSeparator" parent="Scroll/Body/Cards/ScoreCard/VBox"]
+layout_mode = 2
+theme_type_variation = &"Divider"
+
+[node name="Gap3" type="Control" parent="Scroll/Body/Cards/ScoreCard/VBox"]
+custom_minimum_size = Vector2(0, 15)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Total" type="Control" parent="Scroll/Body/Cards/ScoreCard/VBox"]
+custom_minimum_size = Vector2(0, 68)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="TotalLabel" type="Label" parent="Scroll/Body/Cards/ScoreCard/VBox/Total"]
+layout_mode = 0
+offset_right = 300.0
+offset_bottom = 56.0
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 28
+text = "합계"
+
+[node name="ScoreTotal" type="Label" parent="Scroll/Body/Cards/ScoreCard/VBox/Total"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -420.0
+offset_top = -6.0
+offset_bottom = 54.0
+grow_horizontal = 0
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 44
+text = "1840"
+horizontal_alignment = 2
+
+[node name="RewardCard" type="PanelContainer" parent="Scroll/Body/Cards"]
+custom_minimum_size = Vector2(920, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="VBox" type="VBoxContainer" parent="Scroll/Body/Cards/RewardCard"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="Scroll/Body/Cards/RewardCard/VBox"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 24
+text = "보상"
+
+[node name="Divider" type="HSeparator" parent="Scroll/Body/Cards/RewardCard/VBox"]
+layout_mode = 2
+theme_type_variation = &"Divider"
+
+[node name="Gap" type="Control" parent="Scroll/Body/Cards/RewardCard/VBox"]
+custom_minimum_size = Vector2(0, 11)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="RewardRows" type="VBoxContainer" parent="Scroll/Body/Cards/RewardCard/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="RewardNote" type="Label" parent="Scroll/Body/Cards/RewardCard/VBox"]
+unique_name_in_owner = true
+editor_description = "Test runs only."
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_type_variation = &"FaintLabel"
+text = "테스트 런이라 프로필에 더하지 않았습니다"
+
+[node name="GrowthCard" type="PanelContainer" parent="Scroll/Body/Cards"]
+unique_name_in_owner = true
+editor_description = "M10 선수 성장 — hidden when the result has no pilots. Rows: RunResultGrowthRow.tscn."
+custom_minimum_size = Vector2(920, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="VBox" type="VBoxContainer" parent="Scroll/Body/Cards/GrowthCard"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="Scroll/Body/Cards/GrowthCard/VBox"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 24
+text = "선수 성장"
+
+[node name="Divider" type="HSeparator" parent="Scroll/Body/Cards/GrowthCard/VBox"]
+layout_mode = 2
+theme_type_variation = &"Divider"
+
+[node name="Gap" type="Control" parent="Scroll/Body/Cards/GrowthCard/VBox"]
+custom_minimum_size = Vector2(0, 11)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="GrowthRows" type="VBoxContainer" parent="Scroll/Body/Cards/GrowthCard/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="AchievementCard" type="PanelContainer" parent="Scroll/Body/Cards"]
+editor_description = "Rows: RunResultPilotRow.tscn."
+custom_minimum_size = Vector2(920, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="VBox" type="VBoxContainer" parent="Scroll/Body/Cards/AchievementCard"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="Scroll/Body/Cards/AchievementCard/VBox"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 24
+text = "이번 런 업적"
+
+[node name="Divider" type="HSeparator" parent="Scroll/Body/Cards/AchievementCard/VBox"]
+layout_mode = 2
+theme_type_variation = &"Divider"
+
+[node name="Gap" type="Control" parent="Scroll/Body/Cards/AchievementCard/VBox"]
+custom_minimum_size = Vector2(0, 11)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="AchievementRows" type="VBoxContainer" parent="Scroll/Body/Cards/AchievementCard/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="AchievementEmpty" type="Control" parent="Scroll/Body/Cards/AchievementCard/VBox"]
+unique_name_in_owner = true
+editor_description = "Shown instead of the rows when the result has no pilots."
+custom_minimum_size = Vector2(0, 104)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Text" type="Label" parent="Scroll/Body/Cards/AchievementCard/VBox/AchievementEmpty"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 30.0
+offset_bottom = 70.0
+grow_horizontal = 2
+theme_type_variation = &"FaintLabel"
+theme_override_font_sizes/font_size = 24
+text = "기록된 선수가 없습니다"
+
+[node name="Empty" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "Shown instead of Header + Scroll when GameManager.last_run_result is empty (scene opened directly)."
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="Empty"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 120.0
+offset_bottom = 208.0
+grow_horizontal = 2
+theme_type_variation = &"HeadingLabel"
+theme_override_font_sizes/font_size = 64
+text = "런 정산"
+horizontal_alignment = 1
+
+[node name="Card" type="Panel" parent="Empty"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -460.0
+offset_top = 420.0
+offset_right = 460.0
+offset_bottom = 640.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="Text" type="Label" parent="Empty/Card"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 58.0
+offset_bottom = 102.0
+grow_horizontal = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 30
+text = "표시할 정산 결과가 없습니다"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Hint" type="Label" parent="Empty/Card"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 112.0
+offset_bottom = 146.0
+grow_horizontal = 2
+theme_type_variation = &"FaintLabel"
+text = "런이 끝나면 이 화면에 점수와 보상이 나옵니다"
+horizontal_alignment = 1
+
+[node name="BottomButton" type="Button" parent="."]
+unique_name_in_owner = true
+editor_description = "Full-width bottom action bar. Code restyles it (OutgameTheme.style_bottom_button: square corners, text lifted by the bottom inset) and stretches it down over the inset."
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -128.0
+grow_horizontal = 2
+grow_vertical = 0
+focus_mode = 0
+theme_type_variation = &"PrimaryButton"
+theme_override_font_sizes/font_size = 32
+text = "로비로"

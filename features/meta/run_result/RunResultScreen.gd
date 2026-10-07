@@ -1,7 +1,12 @@
 extends Control
 
 # 런 정산 화면 — `GameManager.last_run_result` 를 읽어 보여 준다.
-# 계약: docs/outgame_dev_plan.md §10.3. 계산은 `RunResult.gd`, 여기는 그리기만.
+# 계약: docs/outgame_dev_plan.md §10.3. 계산은 `RunResult.gd`, 여기는 채우기만.
+#
+# **레이아웃 · 스타일은 씬(`scenes/RunResult.tscn`)이 소유한다** (docs/ui_scene_migration.md §3).
+# 이 스크립트는 `%노드` 에 데이터를 넣고, 데이터 색을 칠하고, 반복 줄을 아이템 씬
+# (`RunResult*Row.tscn`)으로 채우고, 기기별 안전 영역 오프셋만 넣는다.
+# 씬에서 지운 노드는 의도된 삭제다 — 여기서 되살리지 않는다.
 #
 # 위에서부터: 결과 머리(클리어 / 실패 / 포기) · 시나리오와 팀 · (테스트 런 칩) →
 # 스크롤 본문 카드(진엔딩 · 새 특성 해금 · 진척 · 점수 내역 · 보상 · 선수 성장 ·
@@ -18,20 +23,11 @@ extends Control
 const LOBBY_SCENE: String = "res://scenes/Lobby.tscn"
 const RUN_SETUP_SCENE: String = "res://scenes/RunSetup.tscn"
 
-const CARD_X: float = 80.0
-const CARD_W: float = 920.0
-const CARD_PAD: float = 40.0
-const CARD_GAP: float = 28.0
-const SECTION_TITLE_H: float = 56.0
-const ROW_H: float = 48.0
-const PILOT_ROW_H: float = 104.0
-const PORTRAIT_D: float = 76.0
-const BODY_TOP: float = 360.0
-const TRUE_END_ROW_H: float = 184.0
-const TRUE_END_PORTRAIT_D: float = 128.0
-const TRAIT_ROW_H: float = 104.0
-const GROWTH_ROW_H: float = 88.0
-const GROWTH_PORTRAIT_D: float = 60.0
+const ROW_SCENE: PackedScene = preload("res://features/meta/run_result/RunResultRow.tscn")
+const TRUE_END_ROW_SCENE: PackedScene = preload("res://features/meta/run_result/RunResultTrueEndRow.tscn")
+const TRAIT_ROW_SCENE: PackedScene = preload("res://features/meta/run_result/RunResultTraitRow.tscn")
+const GROWTH_ROW_SCENE: PackedScene = preload("res://features/meta/run_result/RunResultGrowthRow.tscn")
+const PILOT_ROW_SCENE: PackedScene = preload("res://features/meta/run_result/RunResultPilotRow.tscn")
 
 const OUTCOME_TITLES: Dictionary = {
 	"clear":   "런 클리어",
@@ -42,51 +38,52 @@ const OUTCOME_TITLES: Dictionary = {
 @onready var _gm: Node = get_node("/root/GameManager")
 
 var _result: Dictionary = {}
-var _built: bool = false
+var _filled: bool = false
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_result = _gm.last_run_result
-	if not _built:
-		_build()
-		_built = true
+	if not _filled:
+		_fill()
+		_filled = true
 	if String(_result.get("outcome", "")) == RunResult.OUTCOME_CLEAR:
 		Haptics.play(Haptics.Kind.SUCCESS)
 
 
-# ── Build ────────────────────────────────────────────────────────────────────
-func _build() -> void:
+# ── Fill ─────────────────────────────────────────────────────────────────────
+func _fill() -> void:
+	_apply_safe_area()
+	var empty: bool = _result.is_empty()
+	%Empty.visible = empty
+	%Header.visible = not empty
+	%Scroll.visible = not empty
+	if not empty:
+		_fill_header()
+		_fill_body()
+	_fill_bottom_bar()
+
+
+## Pattern B (docs/mobile_safe_area.md): the whole screen moves down to the safe top,
+## only the background reaches back up under the notch; the scroll and the bar make
+## room for the bottom inset (the bar's colour field runs down over it).
+func _apply_safe_area() -> void:
 	ScreenMetrics.indent_to_safe_top(self)
-	OutgameTheme.add_background(self)
-	if _result.is_empty():
-		_build_empty()
-	else:
-		_build_header()
-		_build_body()
-	_build_bottom_bar()
+	ScreenMetrics.extend_background(%Background)
+	var below: float = maxf(0.0, ScreenMetrics.insets().w)
+	%Scroll.offset_bottom -= below
+	%BottomButton.offset_top -= below
 
 
-func _card_x() -> float:
-	return maxf(CARD_X, ScreenMetrics.center_x() - CARD_W * 0.5)
-
-
-func _build_header() -> void:
-	var vp_w: float = ScreenMetrics.vp_w()
+func _fill_header() -> void:
 	var outcome: String = String(_result.get("outcome", ""))
 	var color: Color = OutgameTheme.TEXT_SUB
 	if outcome == RunResult.OUTCOME_CLEAR:
 		color = OutgameTheme.ACCENT_TEXT
 	elif outcome == RunResult.OUTCOME_FAIL:
 		color = OutgameTheme.NEGATIVE
-	UiHelpers.mk_label(self, String(OUTCOME_TITLES.get(outcome, "런 종료")), 64, color,
-			Vector2(0, 120), Vector2(vp_w, 88), HORIZONTAL_ALIGNMENT_CENTER)
-	var rule := ColorRect.new()
-	rule.color = OutgameTheme.ACCENT
-	rule.position = Vector2(ScreenMetrics.center_x() - 40.0, 218)
-	rule.size = Vector2(80, 6)
-	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(rule)
+	var title: Label = %OutcomeTitle
+	title.text = String(OUTCOME_TITLES.get(outcome, "런 종료"))
+	title.add_theme_color_override("font_color", color)
 
 	var parts: Array = []
 	var scen: String = String(_result.get("scenario_name", ""))
@@ -95,75 +92,67 @@ func _build_header() -> void:
 		parts.append(scen)
 	if team != "":
 		parts.append(team)
-	UiHelpers.mk_label(self, " · ".join(PackedStringArray(parts)) if not parts.is_empty() else "—", 26,
-			OutgameTheme.TEXT, Vector2(0, 244), Vector2(vp_w, 38),
-			HORIZONTAL_ALIGNMENT_CENTER)
-	if bool(_result.get("test_run", false)):
-		var chip_w: float = 380.0
-		OutgameTheme.add_chip(self, "테스트 런 — 프로필 미반영",
-				Vector2(ScreenMetrics.center_x() - chip_w * 0.5, 296),
-				Vector2(chip_w, 42), OutgameTheme.ACCENT_DIM,
-				OutgameTheme.ACCENT_TEXT, 20)
+	%Subtitle.text = " · ".join(PackedStringArray(parts)) if not parts.is_empty() else "—"
+	%TestChip.visible = bool(_result.get("test_run", false))
 
 
-func _build_body() -> void:
-	var top: float = BODY_TOP
-	var h: float = OutgameTheme.bottom_bar_top() - 16.0 - top
-	var sv: Dictionary = OutgameTheme.add_vscroll(self, Vector2(0, top),
-			Vector2(ScreenMetrics.vp_w(), h))
-	var body: Control = sv["body"]
-	var y: float = 0.0
+func _fill_body() -> void:
 	# M7 — the true ending leads the body: it is the rarest thing a run can show.
-	if not (_result.get("true_endings", []) as Array).is_empty():
-		y = _build_true_ending_card(body, y) + CARD_GAP
+	_fill_true_ending_card()
 	# M8 — newly unlocked traits come next: they change what the next run can equip.
-	if not _new_trait_ids().is_empty():
-		y = _build_unlocked_traits_card(body, y) + CARD_GAP
-	y = _build_progress_card(body, y) + CARD_GAP
-	y = _build_score_card(body, y) + CARD_GAP
-	y = _build_reward_card(body, y) + CARD_GAP
-	if not (_result.get("pilots", []) as Array).is_empty():
-		y = _build_growth_card(body, y) + CARD_GAP
-	y = _build_achievement_card(body, y) + CARD_GAP
-	body.custom_minimum_size.y = y
+	_fill_unlocked_traits_card()
+	_fill_progress_card()
+	_fill_score_card()
+	_fill_reward_card()
+	_fill_growth_card()
+	_fill_achievement_card()
 
 
 ## True-ending section (M7): one row per pilot in `result.true_endings` —
 ## large ringed portrait, name, the promise line. Names come from `pilots`.
-func _build_true_ending_card(parent: Control, y: float) -> float:
+func _fill_true_ending_card() -> void:
 	var ids: Array = _result.get("true_endings", [])
+	%TrueEndCard.visible = not ids.is_empty()
 	var names: Dictionary = {}
 	for p in (_result.get("pilots", []) as Array):
 		names[int((p as Dictionary).get("id", -1))] = String((p as Dictionary).get("name", ""))
-	var card: Panel = OutgameTheme.add_card(parent, Vector2(_card_x(), y),
-			Vector2(CARD_W, SECTION_TITLE_H + CARD_PAD * 1.5 + ids.size() * TRUE_END_ROW_H),
-			24, OutgameTheme.ACCENT_DIM)
-	UiHelpers.mk_label(card, "진엔딩", 24, OutgameTheme.ACCENT_TEXT,
-			Vector2(CARD_PAD, CARD_PAD * 0.5 + 8.0), Vector2(CARD_W - CARD_PAD * 2.0, 34))
-	OutgameTheme.add_divider(card, Vector2(CARD_PAD, SECTION_TITLE_H + 8.0),
-			CARD_W - CARD_PAD * 2.0, OutgameTheme.ACCENT)
-	var ry: float = SECTION_TITLE_H + CARD_PAD * 0.5
+	var chip_text: String = "외출 %d회 · 약속을 지켰다" % ConstTable.int_of("TRUE_ENDING_OUTINGS")
 	for raw in ids:
 		var pid: int = int(raw)
 		var nm: String = String(names.get(pid, "#%d" % pid))
-		OutgameTheme.add_round_portrait(card, PilotImages.circle_for(pid),
-				Vector2(CARD_PAD, ry + (TRUE_END_ROW_H - TRUE_END_PORTRAIT_D) * 0.5),
-				TRUE_END_PORTRAIT_D, OutgameTheme.ACCENT)
-		var tx: float = CARD_PAD + TRUE_END_PORTRAIT_D + 28.0
-		var tw: float = CARD_W - tx - CARD_PAD
-		UiHelpers.mk_label(card, nm, 34, OutgameTheme.TEXT,
-				Vector2(tx, ry + 22.0), Vector2(tw, 44))
-		var l1 := UiHelpers.mk_label(card, "우승 트로피를 들고, %s 선수가 미뤄 둔 말을 꺼냈다." % nm,
-				22, OutgameTheme.TEXT_SUB, Vector2(tx, ry + 70.0), Vector2(tw, 60))
-		l1.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		OutgameTheme.add_chip(card, "외출 %d회 · 약속을 지켰다" % ConstTable.int_of("TRUE_ENDING_OUTINGS"),
-				Vector2(tx, ry + 128.0), Vector2(300, 36), OutgameTheme.SURFACE,
-				OutgameTheme.ACCENT_TEXT, 18)
-		ry += TRUE_END_ROW_H
-	return y + card.size.y
+		var row: Control = TRUE_END_ROW_SCENE.instantiate()
+		_portrait(row.get_node("%Portrait"), pid, OutgameTheme.ACCENT)
+		(row.get_node("%Name") as Label).text = nm
+		(row.get_node("%Line") as Label).text = "우승 트로피를 들고, %s 선수가 미뤄 둔 말을 꺼냈다." % nm
+		(row.get_node("%ChipText") as Label).text = chip_text
+		%TrueEndRows.add_child(row)
 
 
-func _build_progress_card(parent: Control, y: float) -> float:
+## Newly unlocked traits (M8) — amber card like the true ending: +/- chip, name,
+## filled-in description, rarity chip (`TraitUi.rarity_color`).
+func _fill_unlocked_traits_card() -> void:
+	var ids: Array = _new_trait_ids()
+	%TraitCard.visible = not ids.is_empty()
+	%TraitNote.text = "테스트 런 — 프로필에 지급하지 않았습니다" \
+			if bool(_result.get("test_run", false)) \
+			else "다음 런부터 감독 탭에서 장착할 수 있습니다"
+	for raw in ids:
+		var tid: int = int(raw)
+		var r: Dictionary = TraitSystem.row(tid)
+		var pos: bool = TraitSystem.is_positive(tid)
+		var row: Control = TRAIT_ROW_SCENE.instantiate()
+		var sign_chip: Panel = row.get_node("%Sign")
+		_paint_chip(sign_chip, OutgameTheme.POSITIVE if pos else OutgameTheme.NEGATIVE)
+		(row.get_node("%SignText") as Label).text = "+" if pos else "−"
+		(row.get_node("%Name") as Label).text = String(r.get("name", "#%d" % tid))
+		(row.get_node("%Desc") as Label).text = TraitSystem.desc_of(tid)
+		var rarity: int = int(r.get("rarity", 0))
+		_paint_chip(row.get_node("%Rarity"), TraitUi.rarity_color(rarity))
+		(row.get_node("%RarityText") as Label).text = TraitSystem.rarity_name(rarity)
+		%TraitRows.add_child(row)
+
+
+func _fill_progress_card() -> void:
 	var rows: Array = [
 		["도달 페이즈", _phase_name(int(_result.get("phase_reached", 0)))],
 		["끝낸 페이즈", "%d / %d" % [int(_result.get("phases_cleared", 0)),
@@ -171,14 +160,11 @@ func _build_progress_card(parent: Control, y: float) -> float:
 		["전적", "%d승 %d패" % [int(_result.get("wins", 0)), int(_result.get("losses", 0))]],
 		["대회 우승", "%d회" % int(_result.get("titles", 0))],
 	]
-	var card: Panel = _section_card(parent, y, "진척", rows.size())
-	for i in rows.size():
-		_row(card, SECTION_TITLE_H + CARD_PAD * 0.5 + i * ROW_H,
-				String(rows[i][0]), String(rows[i][1]), OutgameTheme.TEXT)
-	return y + card.size.y
+	for r in rows:
+		_add_row(%ProgressRows, String(r[0]), String(r[1]), OutgameTheme.TEXT)
 
 
-func _build_score_card(parent: Control, y: float) -> float:
+func _fill_score_card() -> void:
 	var bd: Dictionary = _result.get("breakdown", {})
 	var rows: Array = [
 		["끝낸 페이즈 × %d" % int(_result.get("phases_cleared", 0)), int(bd.get("phase", 0))],
@@ -187,29 +173,17 @@ func _build_score_card(parent: Control, y: float) -> float:
 		["클리어 보너스", int(bd.get("clear", 0))],
 		["특성 보너스 × %d" % int(_result.get("bonus_points", 0)), int(bd.get("bonus", 0))],
 	]
-	# 합계 줄은 구분선 + 큰 글씨라 한 줄 반을 쓴다.
-	var card: Panel = _section_card(parent, y, "점수", rows.size() + 2)
-	var ry: float = SECTION_TITLE_H + CARD_PAD * 0.5
 	for r in rows:
 		var v: int = int(r[1])
-		_row(card, ry, String(r[0]), "+%d" % v,
+		_add_row(%ScoreRows, String(r[0]), "+%d" % v,
 				OutgameTheme.TEXT if v > 0 else OutgameTheme.TEXT_FAINT)
-		ry += ROW_H
-	OutgameTheme.add_divider(card, Vector2(CARD_PAD, ry + 12.0), CARD_W - CARD_PAD * 2.0)
-	ry += 28.0
-	UiHelpers.mk_label(card, "합계", 28, OutgameTheme.TEXT,
-			Vector2(CARD_PAD, ry), Vector2(300, 56))
-	UiHelpers.mk_label(card, "%d" % int(_result.get("score", 0)), 44,
-			OutgameTheme.ACCENT_TEXT, Vector2(CARD_W * 0.5, ry - 6.0),
-			Vector2(CARD_W * 0.5 - CARD_PAD, 60), HORIZONTAL_ALIGNMENT_RIGHT)
-	return y + card.size.y
+	%ScoreTotal.text = "%d" % int(_result.get("score", 0))
 
 
 ## Rewards: both currencies, pass EXP (+ pass level change, overflow payout),
 ## manager EXP (+ level change and the removal points it grants). Level changes
 ## come from `profile_delta` only — a test run has none.
-func _build_reward_card(parent: Control, y: float) -> float:
-	var test_run: bool = bool(_result.get("test_run", false))
+func _fill_reward_card() -> void:
 	var delta: Dictionary = _profile_delta()
 	var cur: Dictionary = _result.get("currency", {})
 	var rows: Array = [
@@ -237,178 +211,91 @@ func _build_reward_card(parent: Control, y: float) -> float:
 	if mgr_up:
 		var pts: int = (mgr_to - mgr_from) * maxi(0, ConstTable.int_of("MANAGER_REMOVE_PER_LEVEL"))
 		rows.append(["새 제거 포인트 (감독 탭)", "+%d" % pts, OutgameTheme.ACCENT_TEXT])
-
-	var card: Panel = _section_card(parent, y, "보상", rows.size() + (1 if test_run else 0))
-	var ry: float = SECTION_TITLE_H + CARD_PAD * 0.5
 	for r in rows:
-		_row(card, ry, String(r[0]), String(r[1]), r[2] as Color)
-		ry += ROW_H
-	if test_run:
-		UiHelpers.mk_label(card, "테스트 런이라 프로필에 더하지 않았습니다", 22,
-				OutgameTheme.TEXT_FAINT, Vector2(CARD_PAD, ry),
-				Vector2(CARD_W - CARD_PAD * 2.0, ROW_H))
-	return y + card.size.y
+		_add_row(%RewardRows, String(r[0]), String(r[1]), r[2] as Color)
+	%RewardNote.visible = bool(_result.get("test_run", false))
 
 
 ## Pilot growth (M10): per pilot the run's pilot EXP (`pilot_exp`) and, when the
 ## profile raised it, the max-level change (`profile_delta.pilots`, amber chip).
-func _build_growth_card(parent: Control, y: float) -> float:
+func _fill_growth_card() -> void:
 	var pilots: Array = _result.get("pilots", [])
+	%GrowthCard.visible = not pilots.is_empty()
 	var pexp: Dictionary = _result.get("pilot_exp", {})
 	var pdelta: Dictionary = _profile_delta().get("pilots", {})
-	var card: Panel = OutgameTheme.add_card(parent, Vector2(_card_x(), y),
-			Vector2(CARD_W, SECTION_TITLE_H + CARD_PAD * 1.5 + pilots.size() * GROWTH_ROW_H), 24)
-	_section_title(card, "선수 성장")
-	var ry: float = SECTION_TITLE_H + CARD_PAD * 0.5
 	for p in pilots:
 		var pd: Dictionary = p
 		var pid: int = int(pd.get("id", -1))
-		OutgameTheme.add_round_portrait(card, PilotImages.circle_for(pid),
-				Vector2(CARD_PAD, ry + (GROWTH_ROW_H - GROWTH_PORTRAIT_D) * 0.5), GROWTH_PORTRAIT_D)
-		var tx: float = CARD_PAD + GROWTH_PORTRAIT_D + 20.0
-		UiHelpers.mk_label(card, String(pd.get("name", "")), 26, OutgameTheme.TEXT,
-				Vector2(tx, ry + 12.0), Vector2(360, 36))
-		UiHelpers.mk_label(card, "선수 EXP +%d" % int(pexp.get(str(pid), 0)), 20,
-				OutgameTheme.TEXT_SUB, Vector2(tx, ry + 48.0), Vector2(360, 28))
+		var row: Control = GROWTH_ROW_SCENE.instantiate()
+		_portrait(row.get_node("%Portrait"), pid)
+		(row.get_node("%Name") as Label).text = String(pd.get("name", ""))
+		(row.get_node("%Exp") as Label).text = "선수 EXP +%d" % int(pexp.get(str(pid), 0))
 		var d: Dictionary = pdelta.get(str(pid), {})
-		if int(d.get("to", 0)) > int(d.get("from", 0)):
-			var chip_w: float = 240.0
-			OutgameTheme.add_chip(card, "최대 Lv %d → %d" % [int(d["from"]), int(d["to"])],
-					Vector2(CARD_W - CARD_PAD - chip_w, ry + (GROWTH_ROW_H - 40.0) * 0.5),
-					Vector2(chip_w, 40), OutgameTheme.ACCENT_DIM, OutgameTheme.ACCENT_TEXT, 20)
-		ry += GROWTH_ROW_H
-	return y + card.size.y
+		var up: bool = int(d.get("to", 0)) > int(d.get("from", 0))
+		(row.get_node("%MaxLv") as Control).visible = up
+		if up:
+			(row.get_node("%MaxLvText") as Label).text = \
+					"최대 Lv %d → %d" % [int(d["from"]), int(d["to"])]
+		%GrowthRows.add_child(row)
 
 
-## Newly unlocked traits (M8) — amber card like the true ending: +/- chip, name,
-## filled-in description, rarity chip (`TraitUi.rarity_color`).
-func _build_unlocked_traits_card(parent: Control, y: float) -> float:
-	var ids: Array = _new_trait_ids()
-	var test_run: bool = bool(_result.get("test_run", false))
-	var note_h: float = 40.0
-	var card: Panel = OutgameTheme.add_card(parent, Vector2(_card_x(), y),
-			Vector2(CARD_W, SECTION_TITLE_H + CARD_PAD * 1.5 + note_h + ids.size() * TRAIT_ROW_H),
-			24, OutgameTheme.ACCENT_DIM)
-	UiHelpers.mk_label(card, "새 특성 해금", 24, OutgameTheme.ACCENT_TEXT,
-			Vector2(CARD_PAD, CARD_PAD * 0.5 + 8.0), Vector2(CARD_W - CARD_PAD * 2.0, 34))
-	OutgameTheme.add_divider(card, Vector2(CARD_PAD, SECTION_TITLE_H + 8.0),
-			CARD_W - CARD_PAD * 2.0, OutgameTheme.ACCENT)
-	var ry: float = SECTION_TITLE_H + CARD_PAD * 0.5
-	var note: String = "테스트 런 — 프로필에 지급하지 않았습니다" if test_run \
-			else "다음 런부터 감독 탭에서 장착할 수 있습니다"
-	UiHelpers.mk_label(card, note, 20, OutgameTheme.TEXT_SUB,
-			Vector2(CARD_PAD, ry), Vector2(CARD_W - CARD_PAD * 2.0, 30))
-	ry += note_h
-	for raw in ids:
-		var tid: int = int(raw)
-		var r: Dictionary = TraitSystem.row(tid)
-		var pos: bool = TraitSystem.is_positive(tid)
-		var sign_color: Color = OutgameTheme.POSITIVE if pos else OutgameTheme.NEGATIVE
-		var row_card: Panel = OutgameTheme.add_card(card, Vector2(CARD_PAD, ry + 6.0),
-				Vector2(CARD_W - CARD_PAD * 2.0, TRAIT_ROW_H - 12.0), 16)
-		var rw: float = row_card.size.x
-		OutgameTheme.add_chip(row_card, "+" if pos else "−", Vector2(20, 24), Vector2(44, 44),
-				sign_color, OutgameTheme.TEXT_ON_FILL, 26)
-		UiHelpers.mk_label(row_card, String(r.get("name", "#%d" % tid)), 28, OutgameTheme.TEXT,
-				Vector2(84, 8), Vector2(rw - 260, 38))
-		UiHelpers.mk_label(row_card, TraitSystem.desc_of(tid), 20, OutgameTheme.TEXT_SUB,
-				Vector2(84, 48), Vector2(rw - 260, 30))
-		TraitUi.add_rarity_chip(row_card, int(r.get("rarity", 0)),
-				Vector2(rw - 156, 26), Vector2(132, 40), 20)
-		ry += TRAIT_ROW_H
-	return y + card.size.y
-
-
-func _build_achievement_card(parent: Control, y: float) -> float:
+func _fill_achievement_card() -> void:
 	var pilots: Array = _result.get("pilots", [])
 	var ach: Dictionary = _result.get("achievements", {})
-	var rows_h: float = maxf(1.0, float(pilots.size())) * PILOT_ROW_H
-	var card: Panel = OutgameTheme.add_card(parent, Vector2(_card_x(), y),
-			Vector2(CARD_W, SECTION_TITLE_H + CARD_PAD * 1.5 + rows_h), 24)
-	_section_title(card, "이번 런 업적")
-	var ry: float = SECTION_TITLE_H + CARD_PAD * 0.5
-	if pilots.is_empty():
-		UiHelpers.mk_label(card, "기록된 선수가 없습니다", 24, OutgameTheme.TEXT_FAINT,
-				Vector2(CARD_PAD, ry + 30.0), Vector2(CARD_W - CARD_PAD * 2.0, 40))
-		return y + card.size.y
+	%AchievementEmpty.visible = pilots.is_empty()
 	for p in pilots:
 		var pd: Dictionary = p
 		var pid: int = int(pd.get("id", -1))
 		var a: Dictionary = ach.get(str(pid), {})
-		var tex: Texture2D = PilotImages.circle_for(pid)
-		OutgameTheme.add_round_portrait(card, tex,
-				Vector2(CARD_PAD, ry + (PILOT_ROW_H - PORTRAIT_D) * 0.5), PORTRAIT_D)
-		var tx: float = CARD_PAD + PORTRAIT_D + 24.0
-		UiHelpers.mk_label(card, String(pd.get("name", "")), 28, OutgameTheme.TEXT,
-				Vector2(tx, ry + 18.0), Vector2(360, 40))
+		var row: Control = PILOT_ROW_SCENE.instantiate()
+		_portrait(row.get_node("%Portrait"), pid)
+		(row.get_node("%Name") as Label).text = String(pd.get("name", ""))
 		var role: int = int(pd.get("role", -1))
-		var role_name: String = String(OutgameTheme.ROLE_NAMES[role]) \
+		(row.get_node("%Role") as Label).text = String(OutgameTheme.ROLE_NAMES[role]) \
 				if role >= 0 and role < OutgameTheme.ROLE_NAMES.size() else ""
-		UiHelpers.mk_label(card, role_name, 20, OutgameTheme.TEXT_SUB,
-				Vector2(tx, ry + 58.0), Vector2(360, 30))
 		var mvp_n: int = int(a.get("mvp", 0))
 		var pom_n: int = int(a.get("pom", 0))
-		var chip_w: float = 140.0
-		var cx: float = CARD_W - CARD_PAD - chip_w
-		_count_chip(card, "POM %d" % pom_n, pom_n > 0, Vector2(cx, ry + 32.0), chip_w)
-		_count_chip(card, "MVP %d" % mvp_n, mvp_n > 0,
-				Vector2(cx - chip_w - 16.0, ry + 32.0), chip_w)
-		ry += PILOT_ROW_H
-	return y + card.size.y
+		_count_chip(row.get_node("%Mvp"), row.get_node("%MvpText"), "MVP %d" % mvp_n, mvp_n > 0)
+		_count_chip(row.get_node("%Pom"), row.get_node("%PomText"), "POM %d" % pom_n, pom_n > 0)
+		%AchievementRows.add_child(row)
 
 
-func _build_empty() -> void:
-	var vp_w: float = ScreenMetrics.vp_w()
-	UiHelpers.mk_label(self, "런 정산", 64, OutgameTheme.TEXT,
-			Vector2(0, 120), Vector2(vp_w, 88), HORIZONTAL_ALIGNMENT_CENTER)
-	var card: Panel = OutgameTheme.add_card(self, Vector2(_card_x(), 420),
-			Vector2(CARD_W, 220), 24)
-	var l1 := UiHelpers.mk_label(card, "표시할 정산 결과가 없습니다", 30,
-			OutgameTheme.TEXT_SUB, Vector2(0, 58), Vector2(CARD_W, 44),
-			HORIZONTAL_ALIGNMENT_CENTER)
-	l1.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	UiHelpers.mk_label(card, "런이 끝나면 이 화면에 점수와 보상이 나옵니다", 22,
-			OutgameTheme.TEXT_FAINT, Vector2(0, 112), Vector2(CARD_W, 34),
-			HORIZONTAL_ALIGNMENT_CENTER)
-
-
-func _build_bottom_bar() -> void:
+func _fill_bottom_bar() -> void:
 	var to_new_run: bool = String(_result.get("outcome", "")) == RunResult.OUTCOME_ABANDON
-	var bar: Array = OutgameTheme.add_bottom_bar(self, [
-		{"text": "새 런" if to_new_run else "로비로", "style": "primary",
-				"font": 32, "weight": 1.0},
-	])
-	(bar[0] as Button).pressed.connect(_on_new_run_pressed if to_new_run else _on_lobby_pressed)
+	var btn: Button = %BottomButton
+	btn.text = "새 런" if to_new_run else "로비로"
+	# Square corners + text lifted above the bottom inset — device-dependent, so code.
+	OutgameTheme.style_bottom_button(btn, "primary", btn.get_theme_font_size("font_size"))
+	btn.pressed.connect(_on_new_run_pressed if to_new_run else _on_lobby_pressed)
 
 
-# ── 그리기 조각 ──────────────────────────────────────────────────────────────
-# 제목 + `row_count` 줄짜리 카드 한 장.
-func _section_card(parent: Control, y: float, title: String, row_count: int) -> Panel:
-	var card: Panel = OutgameTheme.add_card(parent, Vector2(_card_x(), y),
-			Vector2(CARD_W, SECTION_TITLE_H + CARD_PAD * 1.5 + row_count * ROW_H), 24)
-	_section_title(card, title)
-	return card
+# ── 채우기 조각 ──────────────────────────────────────────────────────────────
+func _add_row(rows: Container, label: String, value: String, value_color: Color) -> void:
+	var row: Control = ROW_SCENE.instantiate()
+	(row.get_node("%Label") as Label).text = label
+	var v: Label = row.get_node("%Value")
+	v.text = value
+	v.add_theme_color_override("font_color", value_color)
+	rows.add_child(row)
 
 
-func _section_title(card: Control, title: String) -> void:
-	UiHelpers.mk_label(card, title, 24, OutgameTheme.TEXT_SUB,
-			Vector2(CARD_PAD, CARD_PAD * 0.5 + 8.0), Vector2(CARD_W - CARD_PAD * 2.0, 34))
-	OutgameTheme.add_divider(card, Vector2(CARD_PAD, SECTION_TITLE_H + 8.0),
-			CARD_W - CARD_PAD * 2.0)
+## Round portrait drawn into a scene slot — the slot's width is the diameter.
+func _portrait(slot: Control, pid: int, ring: Variant = null) -> void:
+	OutgameTheme.add_round_portrait(slot, PilotImages.circle_for(pid), Vector2.ZERO,
+			slot.custom_minimum_size.x, ring)
 
 
-func _row(card: Control, ry: float, label: String, value: String, value_color: Color) -> void:
-	UiHelpers.mk_label(card, label, 24, OutgameTheme.TEXT_SUB,
-			Vector2(CARD_PAD, ry + 6.0), Vector2(CARD_W * 0.55, 36))
-	UiHelpers.mk_label(card, value, 26, value_color,
-			Vector2(CARD_W * 0.45, ry + 4.0), Vector2(CARD_W * 0.55 - CARD_PAD, 38),
-			HORIZONTAL_ALIGNMENT_RIGHT)
+## Pill fill for a chip whose colour is data (radius = half its height, like `add_chip`).
+func _paint_chip(chip: Panel, bg: Color) -> void:
+	chip.add_theme_stylebox_override("panel",
+			OutgameTheme.flat_style(bg, int((chip.offset_bottom - chip.offset_top) * 0.5)))
 
 
-func _count_chip(card: Control, text: String, lit: bool, pos: Vector2, w: float) -> void:
-	OutgameTheme.add_chip(card, text, pos, Vector2(w, 40),
-			OutgameTheme.ACCENT_DIM if lit else OutgameTheme.SURFACE_SUNK,
-			OutgameTheme.ACCENT_TEXT if lit else OutgameTheme.TEXT_FAINT, 20)
+func _count_chip(chip: Panel, text_label: Label, text: String, lit: bool) -> void:
+	_paint_chip(chip, OutgameTheme.ACCENT_DIM if lit else OutgameTheme.SURFACE_SUNK)
+	text_label.text = text
+	text_label.add_theme_color_override("font_color",
+			OutgameTheme.ACCENT_TEXT if lit else OutgameTheme.TEXT_FAINT)
 
 
 ## `result.profile_delta` — what settlement changed in the profile (empty for test runs).

@@ -7,7 +7,12 @@ Run-end settlement and its screen. Contract: `docs/outgame_dev_plan.md` §10.3
 | File | Class | Purpose |
 |---|---|---|
 | `RunResult.gd` | `class_name RunResult extends RefCounted` (static) | Settles the current run: score, rewards, achievements → profile, deletes the run file |
-| `RunResultScreen.gd` | `extends Control` (scene `scenes/RunResult.tscn`) | Draws `GameManager.last_run_result` |
+| `RunResultScreen.gd` | `extends Control` (root of `scenes/RunResult.tscn`) | Fills the scene from `GameManager.last_run_result` |
+| `RunResultRow.tscn` | item scene (no script) | One label · value line (진척 · 점수 · 보상 cards) |
+| `RunResultTrueEndRow.tscn` | item scene | One pilot of the 진엔딩 card |
+| `RunResultTraitRow.tscn` | item scene | One trait of the 새 특성 해금 card |
+| `RunResultGrowthRow.tscn` | item scene | One pilot of the 선수 성장 card |
+| `RunResultPilotRow.tscn` | item scene | One pilot of the 이번 런 업적 card |
 | `sim/RunSim.gd` + `sim/RunSim.tscn` | `extends Node` (dev tool, headless) | Run simulator for balancing the score / currency / EXP constants — see "Run simulator" below |
 
 ## RunResult.settle_current_run(outcome) -> Dictionary
@@ -51,10 +56,39 @@ Autoloads are fetched via `Engine.get_main_loop().root` (static class, no `@onre
   sets `achievements[pid].true_ending = true` for each.
 
 ## RunResultScreen
-White outgame theme, pattern B of `docs/mobile_safe_area.md` (`indent_to_safe_top` + `add_background`).
+White outgame theme, pattern B of `docs/mobile_safe_area.md`. **Layout and style live in
+`scenes/RunResult.tscn`** (`docs/ui_scene_migration.md` §3, theme `OutgameTheme.tres`); the script only
+binds `%` nodes, fills text, paints data colours, instantiates the row item scenes and applies the
+device insets. A node missing from the scene was deleted on purpose — do not re-create it in code.
+
+```
+RunResult (Control, full rect, theme = OutgameTheme.tres, script RunResultScreen.gd)
+├ %Background      ColorRect BG — code: ScreenMetrics.extend_background (up under the notch)
+├ %Header          VBox, top 120: %OutcomeTitle · Rule (amber 80×6) · Gap · %Subtitle · %TestChip
+├ %Scroll          ScrollContainer top 360 → 144 above the bottom (bar space reserved, offset_right 8 = bar off screen)
+│ ├ DragScroll
+│ └ Body (MarginContainer, bottom 28) └ Cards (VBox, separation 28) — each card 920 wide, centred
+│   ├ %TrueEndCard     amber · Title · Divider (amber) · %TrueEndRows   ← RunResultTrueEndRow
+│   ├ %TraitCard       amber · Title · Divider · %TraitNote · %TraitRows ← RunResultTraitRow
+│   ├ ProgressCard     %ProgressRows ← RunResultRow
+│   ├ ScoreCard        %ScoreRows ← RunResultRow · Divider · Total (합계 + %ScoreTotal)
+│   ├ RewardCard       %RewardRows ← RunResultRow · %RewardNote (test run)
+│   ├ %GrowthCard      %GrowthRows ← RunResultGrowthRow
+│   └ AchievementCard  %AchievementRows ← RunResultPilotRow · %AchievementEmpty
+├ %Empty           (hidden) "런 정산" title + empty-state card
+└ %BottomButton    full-width bottom bar button (PrimaryButton, font 32)
+```
+- Cards use local StyleBoxFlat sub_resources (white / amber, radius 24, padding 40 · top 28) — no
+  theme variation has that shape yet. Card heights come from the containers.
+- **Code owns**: texts; data colours (outcome title, row values, MVP / POM chips lit or not, trait
+  sign / rarity chip fills via `OutgameTheme.flat_style`); round portraits drawn into the rows'
+  `%Portrait` slots (`OutgameTheme.add_round_portrait`, diameter = slot `custom_minimum_size.x`);
+  card / chip visibility; safe area — `indent_to_safe_top(self)`, `%Scroll.offset_bottom` and
+  `%BottomButton.offset_top` lowered by the bottom inset, `OutgameTheme.style_bottom_button`
+  (square corners, text lifted above the inset).
 - Header: 런 클리어 (amber) / 런 실패 (red) / 런 포기 (grey), scenario · team, and a
   "테스트 런 — 프로필 미반영" chip when `test_run`.
-- Scroll body (`OutgameTheme.add_vscroll`, ends at `bottom_bar_top()`): when `true_endings` is
+- Scroll body (ends 16 above the bottom bar): when `true_endings` is
   non-empty a **진엔딩** card leads (amber-tinted; per pilot a large amber-ringed portrait, name,
   a closing line and an `외출 N회 · 약속을 지켰다` chip — N from `TRUE_ENDING_OUTINGS`), then cards 진척 (phase reached,
   W-L, titles) · 점수 (breakdown + total) · 보상 · 선수 성장 · 이번 런 업적
@@ -63,7 +97,7 @@ White outgame theme, pattern B of `docs/mobile_safe_area.md` (`indent_to_safe_to
   (`ProfileManager.apply_run_result`); a test run has none, so it shows computed values only:
   - **새 특성 해금** card (amber, right after 진엔딩): ids from `profile_delta.traits`, or for a
     test run `unlocked_traits` (with a "not granted" note). Per trait: +/− chip, name,
-    `TraitSystem.desc_of`, rarity chip coloured per rarity (`TraitUi.add_rarity_chip` — the card
+    `TraitSystem.desc_of`, rarity chip coloured per rarity (`TraitUi.rarity_color` — the card
     stays amber, the chip no longer is).
   - 점수: `특성 보너스 × <bonus_points>` row = `breakdown.bonus`.
   - 보상: `currency.outgame` · `currency.levelup` · `pass_exp` (+ `Lv a → b` from `profile_delta.pass`,

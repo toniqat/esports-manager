@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=131 format=3 uid="uid://co7tw5omdwmyd"]
+[gd_resource type="Theme" load_steps=133 format=3 uid="uid://co7tw5omdwmyd"]
 
 [sub_resource type="StyleBoxFlat" id="AccentChip_panel"]
 content_margin_left = 20.0
@@ -42,6 +42,13 @@ corner_radius_top_left = 5
 corner_radius_top_right = 5
 corner_radius_bottom_right = 5
 corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="BanPickOrderPip_panel"]
+bg_color = Color(0.929, 0.933, 0.945, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
 
 [sub_resource type="StyleBoxFlat" id="BanPickPortraitRim_panel"]
 bg_color = Color(0, 0, 0, 0)
@@ -516,6 +523,13 @@ corner_radius_top_left = 16
 corner_radius_top_right = 16
 corner_radius_bottom_right = 16
 corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="IntelAnalystNote_panel"]
+bg_color = Color(0.996, 0.929, 0.808, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
 
 [sub_resource type="StyleBoxFlat" id="LobbySurfaceBar_panel"]
 bg_color = Color(1, 1, 1, 1)
@@ -1553,6 +1567,8 @@ BanPickDragGhost/base_type = &"SunkPanel"
 BanPickDragGhost/styles/panel = SubResource("BanPickDragGhost_panel")
 BanPickMechSlotFrame/base_type = &"SunkPanel"
 BanPickMechSlotFrame/styles/panel = SubResource("BanPickMechSlotFrame_panel")
+BanPickOrderPip/base_type = &"SunkPanel"
+BanPickOrderPip/styles/panel = SubResource("BanPickOrderPip_panel")
 BanPickPortraitRim/base_type = &"SunkPanel"
 BanPickPortraitRim/styles/panel = SubResource("BanPickPortraitRim_panel")
 BanPickSheetCard/base_type = &"Card"
@@ -1671,6 +1687,8 @@ GhostButton/styles/pressed = SubResource("GhostButton_pressed")
 HeadingLabel/base_type = &"Label"
 HeadingLabel/colors/font_color = Color(0.11, 0.11, 0.122, 1)
 HeadingLabel/font_sizes/font_size = 52
+IntelAnalystNote/base_type = &"SunkPanel"
+IntelAnalystNote/styles/panel = SubResource("IntelAnalystNote_panel")
 LinkLabel/base_type = &"Label"
 LinkLabel/colors/font_color = Color(0.18, 0.4, 0.918, 1)
 LinkLabel/font_sizes/font_size = 22

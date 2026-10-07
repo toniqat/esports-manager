@@ -751,6 +751,12 @@ static func _add_screen_variations(th: Theme) -> void:
 	_add_derived(th, "BanPickSheetCard", &"Card", sheet)
 	_add_derived(th, "BanPickDragGhost", &"SunkPanel", flat_style(SURFACE_SUNK, 5, ACCENT, 3))
 
+	# 진행 순서 칸 — 칸 색 = 진영 · 상태(데이터), 캡슐 안쪽 모서리는 코드가 사본에서 각지게.
+	_add_derived(th, "BanPickOrderPip", &"SunkPanel", flat_style(SURFACE_SUNK, 6))
+
+	# match_flow/match_prep — 분석가 메모 (MatchPrep · 리그 팀 상세)
+	_add_derived(th, "IntelAnalystNote", &"SunkPanel", flat_style(ACCENT_DIM, 14))
+
 	# meta/manager — 감독 탭 프레스티지 리셋
 	_add_derived(th, "ManagerDangerCard", &"Card",
 			flat_style(SURFACE.lerp(NEGATIVE, 0.12), 16, NEGATIVE, 2))

@@ -41,7 +41,7 @@ IntelView (VBox, sep 0 — parent width, content height)
 ├ %Header (opponents only): HeaderRow (40, sep 14) ─ %TierChip (AccentChip, fits its text) / %TierText (20)
 │                           · %Need (CaptionLabel 18) ; HeaderGap 12
 ├ %NoAnalyst (manager owns analysis): Line (SubLabel 20, 30) · Gap 10
-├ %Note (delegated): Card (SunkPanel → proposed IntelAnalystNote) / Pad 20·12·20·10 / %Analyst (AccentLabel 20, 28)
+├ %Note (delegated): Card (IntelAnalystNote) / Pad 20·12·20·10 / %Analyst (AccentLabel 20, 28)
 │                    · 6 · %Lines (sep 3, BodyLabel 22 wrapped, one per note) · Tail 3 ; Gap 10
 ├ %Rows (sep 10) — IntelPilotRow ×5 (scene sample replaced at runtime)
 └ RowsTail 10
@@ -52,9 +52,8 @@ IntelPilotRow (MarginContainer): %Back (Card preview → code lead_bar_style(rol
 - Code-owned (data / state): role colour (card bar, role text, portrait ring), stat value font size and
   `BodyLabel` ↔ `FaintLabel`, tier chip fill below full (`SURFACE_SUNK` copy of the `AccentChip` box) and
   `AccentLabel` ↔ `BodyLabel`, which blocks / lines are visible.
-- Look vs. the old code-drawn version: the tier chip now fits its text (was `36 + 16 × length` wide), and
-  the analyst note card is grey `SunkPanel` until the proposed `IntelAnalystNote` variation (amber
-  `ACCENT_DIM`, radius 14) exists. Stat cells are whole-pixel widths (≤ 1px text shift).
+- Look vs. the old code-drawn version: the tier chip now fits its text (was `36 + 16 × length` wide), the
+  analyst note card is the `IntelAnalystNote` variation (amber `ACCENT_DIM`, radius 14, as before). Stat cells are whole-pixel widths (≤ 1px text shift).
 
 ## Reveal tiers
 `StaffSystem.analysis_tier(state)` (thresholds `ANALYSIS_TIER_1..3`, const.csv):

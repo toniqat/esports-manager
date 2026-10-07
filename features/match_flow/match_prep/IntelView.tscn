@@ -83,10 +83,10 @@ mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="Card" type="PanelContainer" parent="Note"]
-editor_description = "Analyst note card. Proposed screen variation IntelAnalystNote (base SunkPanel, ACCENT_DIM fill, radius 14); SunkPanel until it exists."
+editor_description = "Analyst note card (IntelAnalystNote — amber tint)."
 layout_mode = 2
 mouse_filter = 2
-theme_type_variation = &"SunkPanel"
+theme_type_variation = &"IntelAnalystNote"
 
 [node name="Pad" type="MarginContainer" parent="Note/Card"]
 layout_mode = 2

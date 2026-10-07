@@ -264,6 +264,19 @@ static func _add_screen_variations(th: Theme) -> void:
 	_add_derived_label(th, "MvpAllyLabel", &"BattleOutlinedLabel", ALLY)
 	_add_derived_label(th, "MvpEnemyLabel", &"BattleOutlinedLabel", ENEMY)
 
+	_add_hud_variations(th)
+	_add_pilot_detail_variations(th)
+
+
+## battle_sim/ui/HudBuilder · PilotStrip — 전투 HUD (`Hud*` · `PilotStrip*`).
+static func _add_hud_variations(_th: Theme) -> void:
+	pass
+
+
+## battle_sim/ui/PilotDetailPanel — 파일럿 상세 (`PilotDetail*`).
+static func _add_pilot_detail_variations(_th: Theme) -> void:
+	pass
+
 
 ## 테마 변형의 스타일박스 **사본** — 색이 데이터인 곳에서 코드가 색만 넣을 때.
 static func variation_box(variation: StringName, item: StringName = &"panel") -> StyleBoxFlat:

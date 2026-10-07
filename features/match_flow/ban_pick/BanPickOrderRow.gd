@@ -25,9 +25,6 @@ const PIP_H: float        = 12.0
 const PIP_ACTIVE_H: float = 26.0
 const PIP_ICON: float     = 20.0
 const PIP_GROW_SEC: float = 0.16
-## Cell corner radius — set on the copied `SunkPanel` box until the proposed `BanPickOrderPip`
-## variation exists (`README.md`).
-const PIP_RADIUS: int     = 6
 const PIP_PULSE_SEC: float   = 0.9
 const PIP_PULSE_DEPTH: float = 0.38
 const TURN_ARROW_GAP: float = 3.0
@@ -37,7 +34,7 @@ const ICON_BAN   := preload("res://resources/images/ui/banpick/ban_x.svg")
 const ICON_PICK  := preload("res://resources/images/ui/banpick/pick_v.svg")
 const SCENE_PATH: String = "res://features/match_flow/ban_pick/BanPickOrderRow.tscn"
 const PIP_SCENE: PackedScene = preload("res://features/match_flow/ban_pick/BanPickOrderPip.tscn")
-const PIP_VARIATION: StringName = &"SunkPanel"
+const PIP_VARIATION: StringName = &"BanPickOrderPip"
 
 var _seq: Array = []            # [[side, kind], …] — BanPickController.SEQUENCE
 var _side_colors: Dictionary = {}
@@ -96,7 +93,6 @@ func build(seq: Array, side_colors: Dictionary) -> void:
 	var n: int = seq.size()
 	for i in range(n):
 		var sty := OutgameTheme.variation_box(PIP_VARIATION)
-		OutgameTheme.set_corner_radius(sty, PIP_RADIUS)
 		# Only the capsule's outer corners are round — rounded inner corners would notch
 		# the joint and split it back into two.
 		var joined_left: bool = i > 0 and same_run(seq, i - 1, i)

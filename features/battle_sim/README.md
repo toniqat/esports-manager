@@ -90,7 +90,7 @@ _bs.renderer.queue_redraw()
 Responsibilities:
 - Declares all DB-driven config vars and **state vars** (pilots, turrets, neutral_zone_cells, game_phase, HUD refs, card state, `gambit_lanes`)
 - Holds `@onready` refs to all child modules
-- Public **coordinate helpers**: `cell_center(pos)`, `pilot_label(p)`, `role_stats_str(role)`
+- Public **coordinate helpers**: `cell_center(pos)`, `pilot_label(p)` (log id `T0` — never shown; on screen use `MvpView.display_name`), `role_stats_str(role)`
 - **Lifecycle**: `_ready()`, `_process(delta)`
   - `_ready` calls `_gambit.auto_assign_lanes()` then `_gambit.launch_battle()`.
     Inside it the battlefield is fully set up (`field_ready = true`), and **when entered from a match
@@ -537,7 +537,7 @@ visual transitions. All durations fit inside the 0.5s `AUTO_PLAY_INTERVAL`.
 | Recall — 복귀 (Return to Base) card | `CardPhaseManager._effect_recall_ally` | same `anim_pilot_recall(p, orig)` sequence |
 | Respawn (after death) | `SimulationCore.process_respawns` | `anim_pilot_respawn` → fade-in + descend at HQ only (skip phase 1); also clears any leftover death effect |
 | Death | `BattleSim.mark_pilot_dead` | `anim_pilot_death` → `ANIM_DEATH_HOLD_DUR` (1.0s) dimmed-in-place at the cell they fell on, then `ANIM_DEATH_FADE_DUR` (0.45s) fading out while rising `ANIM_DEATH_RISE_PX`, then off the field |
-| Attack card hit / miss | `CardPhaseManager._effect_attack` | `BattleRenderer.spawn_pilot_popup` → `-N` / `MISS` / `흡수` (Absorbed) floating over the target's marker |
+| Attack card hit / miss | `CardPhaseManager._effect_attack` | `BattleRenderer.spawn_pilot_popup` → `-N` / `MISS` (`battle.popup.miss`, English in every locale) / `흡수` (Absorbed) floating over the target's marker |
 | Turret hit | `SimulationCore` turret_dmg apply (`simulate_turn` + `_apply_card_damage`), survivors only | `anim_turret_hit(td)` → `ANIM_TURRET_HIT_DUR` (0.26s) of decaying horizontal jitter (`ANIM_TURRET_HIT_AMP_PX` 9px) plus an `ANIM_TURRET_HIT_TINT` red flash fading back to white |
 
 `BattleSim._process` runs `_advance_pilot_animations(delta)` **and**

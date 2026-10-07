@@ -10,7 +10,7 @@ const Validator = preload("res://addons/l10n_tool/core/validator.gd")
 
 ## validator 가 내는 코드 — scanner(E05x · W05x) 결과와 섞이지 않게 이것만 본다.
 const OWN_CODES := ["E003", "E004", "W003", "E010", "E011", "E012", "E013", "E031", "W031", "W032",
-	"E033", "E034", "E035", "E036", "W034", "W035", "E041", "E042", "W041", "E061", "W071", "W072", "E072", "E073"]
+	"E033", "E034", "E035", "E036", "W034", "W035", "E041", "E042", "W041", "E061", "W071", "W072", "E072", "E073", "E074"]
 
 
 func _open(t: TestKit, fixture: String) -> L10n:
@@ -50,7 +50,7 @@ func test_errors_fixture_detects_every_rule(t: TestKit) -> void:
 	var l: L10n = _open(t, "validator_errors")
 	var iss: Issues = l.cmd_validate("dev", false)
 	for code in ["E003", "W003", "E010", "E011", "E012", "E013", "E031", "W031", "W032", "E033", "E034",
-			"E035", "E036", "W034", "W035", "E041", "E042", "W041", "W071", "W072", "E072", "E073"]:
+			"E035", "E036", "W034", "W035", "E041", "E042", "W041", "W071", "W072", "E072", "E073", "E074"]:
 		t.ok(iss.has_code(code), "검출: " + code)
 	t.ok(not iss.has_code("E061"), "dev 에서는 E061 없음")
 	t.ok(not iss.has_code("E004"), "josa_tags 일치")
@@ -82,6 +82,10 @@ func test_errors_fixture_detects_every_rule(t: TestKit) -> void:
 	t.ok(_has(iss, "W072", "tx_K1M2N3P4Q6"), "W072 key 용어")
 	t.eq(iss.count_code("E072"), 2, "E072 값 함께 · 없는 key")
 	t.eq(iss.count_code("E073"), 2, "E073 중복 · 형식")
+	# match_<loc> regex: 턴 inside 어시스턴트 is not the term, 3턴 is
+	t.eq(iss.count_code("E074"), 1, "E074 bad regex")
+	t.ok(not _has(iss, "W072", "tx_M1N2P3Q4R5"), "match_ko skips word-internal 턴")
+	t.ok(_has(iss, "W072", "tx_M1N2P3Q4R6"), "match_ko still matches 3턴")
 	# 파일 · 줄
 	for it in iss.items:
 		if it["code"] == "E033":

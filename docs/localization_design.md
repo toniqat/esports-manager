@@ -52,10 +52,14 @@
 
 - **en 번역 검수 · approve** — 전 key 가 `draft`. 오너가 검수 후 `approve`.
 - **CI release 연동** — §15 아래 TODO (D13).
-- **용어집 경고 정리** — W071(데이터 원문의 `손패` · `드로우` · en `round`) · W072(번역에 표준 표기 누락). W072 일부는 부분 문자열 오탐(`어시스턴트` 안의 `턴`) — §13 끝의 `match_<loc>` 정규식 컬럼 확장 후보.
 - **진단 로그 문자열** — `_bs.last_log` · `blog.log_event` / `log_block` 로 가는 전투 결과 문장(약 215줄)은 화면에 안 나와 `# l10n-ignore`. 다시 화면에 띄우면 key 가 필요하다. `blog.*` 를 `scan.log_funcs` 에 넣는 것도 후보.
-- **스캐너가 못 잡는 영문 표시 텍스트** — 한글이 없어 고아로 안 잡힌다: 밴픽 · 메크 상세의 `ROLE_NAMES`(TANK …)와 약칭, 전투 `"MISS"` 팝업, `BattleSim.LANE_NAMES`(Left · Center · Right), `BattleSim.pilot_label`, `hud.victory.play_again`(ko 도 "Play Again"). `PilotDetailPanel._fx_short` 는 카드 이름 앞 두 글자를 잘라 en 에서 어색하다.
-- **사용처 없는 공유 key** — `ui.button.prev` (W056).
+- **English text the scanner cannot see** — a literal without Hangul is never an orphan, so new English-only
+  display strings must be keyed by hand.
+
+Done 2026-10-08: glossary warnings 0 (source `손패`/`드로우` fixed, `match_<loc>` regex column §4.5 · E074),
+ban/pick role tags → `match.ban_pick.role.*` (English caps in every locale, owner decision), `MISS` →
+`battle.popup.miss` (MISS in every locale), engage header name → player name + `battle.engage.lane.*`,
+`hud.victory.play_again` ko 다시 하기, `_fx_short` Latin initials, `ui.button.prev` deprecated.
 
 ## 0.7 공유 어휘 (이행 기반)
 
@@ -114,7 +118,8 @@
   `HomeTab` · `RunResultScreen` · `EndingView` · `GameOverView` · `BracketView` · `IntlBracketView` 는 각 feature 이행 때
   `GameEnums.phase_label(phase)` 로 바꾼다(표를 없앤다).
 - 특성 · 기벽 등급(`TraitSystem.RARITY_NAMES`, `QuirkSystem.GRADE_NAMES`)은 `GameEnums.rarity_label` 로 바꾼다.
-- 포지션 배지 글자(`GameEnums.POSITION_ABBREVS`, TOP · JGL …)는 번역하지 않는다.
+- 포지션 배지 글자(`GameEnums.POSITION_ABBREVS`, TOP · JGL …)는 번역하지 않는다. Same for the ban/pick role badge
+  `BanPickController.ROLE_INITIALS` (Tk · Fi …). Role tags (TANK …) are keys whose text is English in every locale.
 - `build`/`write_strings` 뒤 헤드리스로 씬을 돌려 확인할 때는 먼저 `godot --headless --path . --import` 로 `strings_*.csv`
   를 다시 임포트한다 — 안 하면 새 key 가 `tx_…` 그대로 보인다.
 
@@ -322,6 +327,7 @@ tx_Q9M2HX7ZK1,lobby.start_button,active,로비 시작 버튼,8,,새 시즌,,,
 | `forbidden_<loc>` |  | 쓰면 안 되는 표기, `\|` 구분 (예: ko `손패\|핸드`) |
 | `dnt` |  | `1` = 번역 금지 — 모든 언어에서 원문 표기 그대로 |
 | `note` |  | 정의 · 사용 예 |
+| `match_<loc>` |  | Regex (case-insensitive) that finds the term in `<loc>` text, replacing the substring rule for W072 and the index/dock term list — excludes word-internal hits (`(?<![가-힣])턴` skips 어시스턴트). Bad pattern = E074 |
 
 예시 — 현재 `data/README.md` cards 행에 흩어져 있는 표기 규칙을 그대로 옮긴다:
 
@@ -645,8 +651,9 @@ alias 패턴의 `*` 는 세그먼트 하나에 맞는다.
 | W072 | Warn | 원문에 용어가 있는데 번역문에 그 언어 표준 표기가 없음 (`dnt` 용어는 원문 표기) |
 | E072 | Error | 용어집 행에 `key` 와 언어 컬럼 값이 함께 있음 / `key` 가 존재하지 않음 |
 | E073 | Error | 용어집 `term_id` 중복 · 형식 위반 |
+| E074 | Error | 용어집 `match_<loc>` 정규식 컴파일 실패 |
 
-- 용어 매칭(W071 · W072)은 1차로 **부분 문자열 일치**로 한다. 한국어 조사 · 영어 복수형 때문에 오탐 · 누락이 생기면 용어집에 `match_<loc>` 정규식 컬럼을 추가하는 것으로 확장한다.
+- 용어 매칭(W071 · W072)은 1차로 **부분 문자열 일치**로 한다. Implemented extension: a glossary row's `match_<loc>` regex replaces the substring rule for standard-form presence (W072); forbidden forms (W071) stay substring.
 
 ---
 

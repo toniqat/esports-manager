@@ -19,6 +19,7 @@ const Issues = preload("res://addons/l10n_tool/core/issues.gd")
 const Keygen = preload("res://addons/l10n_tool/core/keygen.gd")
 const Hasher = preload("res://addons/l10n_tool/core/hasher.gd")
 const Catalog = preload("res://addons/l10n_tool/core/catalog.gd")
+const TermMatch = preload("res://addons/l10n_tool/core/term_match.gd")
 
 const KIND_LITERAL := "literal"
 const KIND_CONST := "const"
@@ -726,14 +727,15 @@ static func _check_catalog(ctx: ScanCtx) -> void:
 
 static func _build_index(ctx: ScanCtx) -> Dictionary:
 	var cfg: Config = ctx.cfg
-	# 용어집: [term_id, 원문 표기] — key 가 있으면 그 key 의 원문.
+	# Glossary: [term_id, source-locale TermMatch] — a keyed term uses that key's source text;
+	# a match_<source locale> regex wins over the substring rule.
 	var terms: Array = []
 	for g in ctx.cat.glossary_rows():
 		var gk: String = String(g.get("key", "")).strip_edges()
 		var term: String = ctx.cat.source_text(gk) if gk != "" else String(g.get(cfg.source_locale, ""))
 		term = term.strip_edges()
 		if term != "":
-			terms.append([String(g.get("term_id", "")), term])
+			terms.append([String(g.get("term_id", "")), TermMatch.for_row(g, cfg.source_locale, term)])
 	var keys: Dictionary = {}
 	for key in ctx.cat.entries.keys():
 		if String(key).is_empty():
@@ -746,7 +748,7 @@ static func _build_index(ctx: ScanCtx) -> Dictionary:
 			trs[loc] = {"text": td["text"], "status": td["status"], "stale": ctx.cat.is_stale(key, loc)}
 		var gl: Array = []
 		for t in terms:
-			if key != "" and src.contains(String(t[1])):
+			if key != "" and TermMatch.found(t[1], src):
 				gl.append(t[0])
 		keys[key] = {
 			"alias": e["alias"], "domain": e["domain"], "status": e["status"],

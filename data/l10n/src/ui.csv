@@ -3,7 +3,7 @@ tx_YE7AM14AWS,ui.button.confirm,active,공용 버튼 — 확인 (팝업 · 시�
 tx_GS4FN31BK4,ui.button.cancel,active,공용 버튼 — 취소,,,취소,Cancel,draft,19b2d19b
 tx_R1DMEF1S3E,ui.button.close,active,공용 버튼 — 닫기,,,닫기,Close,draft,94b7dba1
 tx_GNK4E0021C,ui.button.next,active,공용 버튼 — 다음 단계 / 다음 페이지,,,다음,Next,draft,854c76f3
-tx_MJ7K2HGT5F,ui.button.prev,active,공용 버튼 — 이전 단계 / 이전 페이지,,,이전,Previous,draft,dc03452e
+tx_MJ7K2HGT5F,ui.button.prev,deprecated,공용 버튼 — 이전 단계 / 이전 페이지,,,이전,Previous,draft,dc03452e
 tx_AT96DE2X15,ui.button.back,active,공용 버튼 — 뒤로(이전 화면),,,뒤로,Back,draft,8411beea
 tx_SJYVDFB5JD,ui.button.buy,active,공용 버튼 — 구매,,,구매,Buy,draft,6f2a161f
 tx_6H9P8NYD5D,ui.button.claim,active,공용 버튼 — 보상 수령,,,수령,Claim,draft,d18227b2

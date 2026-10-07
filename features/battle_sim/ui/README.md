@@ -856,8 +856,9 @@ cell. There are five ledger kinds — `growth_rate` (accrual %) / `max_hp` / `at
 kinds are printed as % via `FX_PCT_KINDS`, and the remainder cells are also built by the same
 rule from `bonus_atk_mult` / `bonus_max_hp_mult` minus the ledger (영혼 수확 (Soul Harvest)'s
 attack % is now visible).
-The key is `fx:src:<kind>|<card name>` and the abbreviation is the first two characters of
-the card name (excluding spaces: `용 보상` → `용보`). This side used to be lumped by attribute
+The key is `fx:src:<kind>|<card name>` and the abbreviation (`_fx_short`) is the first two characters of
+the card name (excluding spaces: `용 보상` → `용보`); an all-Latin name takes the initials of its first two
+words (`Dragon Reward` → `DR`, hyphens split words) or, for one word, its first two letters (`Duel` → `Du`). This side used to be lumped by attribute
 too, so **one `fx:perm` cell meant both [용 보상] (Dragon Reward) and [핫핸드] (Hot Hand)**,
 and [붉은 가루] (Red Powder) · [녹색 병] (Green Bottle), which live in `bonus_max_hp` /
 `bonus_atk_flat`, **weren't shown at all** — they are values living in separate fields so

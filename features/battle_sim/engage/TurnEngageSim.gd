@@ -1303,7 +1303,7 @@ func _strike_one(u: EUnit, target: EUnit, allow_extra: bool = true,
 	var a: PilotData = u.pilot
 	var d: PilotData = target.pilot
 	if randf() >= _hit_chance(a.engage_hit, d.engage_eva):
-		popups.append({"pos": target.pos, "text": "MISS",
+		popups.append({"pos": target.pos, "text": Loc.t(L.BATTLE_POPUP_MISS),
 				"color": Color(0.85, 0.85, 0.85)})
 		return
 
@@ -1421,7 +1421,7 @@ func _begin_turret_turn(t: ETurret) -> void:
 	})
 	# 포탑도 명중 판정을 굴린다 — hit 스탯이 없으므로 TURRET_HIT 를 쓴다.
 	if randf() >= _hit_chance(TURRET_HIT, victim.pilot.engage_eva):
-		popups.append({"pos": victim.pos, "text": "MISS",
+		popups.append({"pos": victim.pos, "text": Loc.t(L.BATTLE_POPUP_MISS),
 				"color": Color(0.85, 0.85, 0.85)})
 		return
 	var dealt := _apply_damage(victim.pilot, t.atk)
@@ -1494,15 +1494,25 @@ func matches(t0: Array, t1: Array, rounds: int) -> bool:
 	return true
 
 
+## Lane names for the turret header (lane_config.csv order: left · center · right · guerrilla).
+## `_bs.LANE_NAMES` is the untranslated data name and stays for logs.
+const LANE_LABELS: Array = [  # l10n-keys: battle.engage.lane.*
+	L.BATTLE_ENGAGE_LANE_LEFT, L.BATTLE_ENGAGE_LANE_CENTER, L.BATTLE_ENGAGE_LANE_RIGHT,
+	L.BATTLE_ENGAGE_LANE_JUNGLE,
+]
+
+
 ## 지금 무대에 나와 있는 행동자의 표시 이름. 렌더러가 헤더에 쓴다.
+## Pilots show the player's name (`MvpView.display_name`), not the log label `T0`.
 func actor_label() -> String:
 	if current_actor == null:
 		return ""
 	if current_actor is ETurret:
 		var t := current_actor as ETurret
+		var lane: int = clampi(t.data.lane, 0, LANE_LABELS.size() - 1)
 		return Loc.t(L.BATTLE_ENGAGE_TURRET_LABEL,
-				{"tier": t.data.tier, "lane": _bs.LANE_NAMES[t.data.lane]})
-	return _bs.pilot_label((current_actor as EUnit).pilot)
+				{"tier": t.data.tier, "lane": Loc.t(String(LANE_LABELS[lane]))})  # l10n-dynamic: battle.engage.lane.*
+	return MvpView.display_name(_bs, (current_actor as EUnit).pilot)
 
 
 func units_of(team: int) -> Array:

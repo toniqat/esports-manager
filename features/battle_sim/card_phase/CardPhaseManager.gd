@@ -4266,7 +4266,7 @@ func _effect_attack(n: int, flags: Array, caster: PilotData, enemy_team: int,
 				# 빗나감도 사건이다 — 다만 맞은 것과 헷갈리면 안 되므로 가장
 				# 약한 한 톡으로 "쐈지만 안 맞았다"만 말한다.
 				Haptics.play(Haptics.Kind.LIGHT)
-				_popup_on(victim_raw, "MISS", BattleRenderer.POPUP_MISS_COLOR)
+				_popup_on(victim_raw, Loc.t(L.BATTLE_POPUP_MISS), BattleRenderer.POPUP_MISS_COLOR)
 				if animated:
 					await _bs.get_tree().create_timer(_bs.ANIM_HIT_HOLD_SEC).timeout
 				continue
@@ -6044,7 +6044,7 @@ func _effect_attack_bounty(pct: int, caster: PilotData,
 		return "확신 (대상 없음)"  # l10n-ignore
 	if not _bs.sim_core.roll_hit(caster, picked):
 		if _bs.renderer != null:
-			_bs.renderer.spawn_pilot_popup(picked, "MISS",
+			_bs.renderer.spawn_pilot_popup(picked, Loc.t(L.BATTLE_POPUP_MISS),
 					BattleRenderer.POPUP_MISS_COLOR, 0.0)
 		_chain_hit = false
 		return "확신 빗나감"  # l10n-ignore
@@ -6272,7 +6272,7 @@ func _effect_retaliate(times: int, caster: PilotData, picked: PilotData) -> Stri
 			landed += 1
 			_popup_on(caster, "-%d" % d, BattleRenderer.POPUP_DAMAGE_COLOR)
 		else:
-			_popup_on(caster, "MISS", BattleRenderer.POPUP_MISS_COLOR)
+			_popup_on(caster, Loc.t(L.BATTLE_POPUP_MISS), BattleRenderer.POPUP_MISS_COLOR)
 		if _bs.renderer != null:
 			await _bs.get_tree().create_timer(_bs.ANIM_HIT_HOLD_SEC).timeout
 	return "반격 %d/%d 명중 — 자신 −%d" % [landed, maxi(1, times), dealt]  # l10n-ignore

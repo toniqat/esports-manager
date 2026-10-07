@@ -3,7 +3,7 @@ tx_S8GB2PQJET,hud.cost_donut.end_turn,active,player donut button (two lines),,,�
 tx_5R34V4TK24,hud.turn.player,active,turn banner,,,당신의 차례,Your Turn,draft,8137fcf4
 tx_Y3YPZRFYP0,hud.turn.enemy,active,turn banner,,,상대 차례,Enemy Turn,draft,8ed595bd
 tx_TMPV0HMGH4,hud.victory.next,active,result button (season),,,다음 →,Next →,draft,c5798c7d
-tx_562ABYGNTQ,hud.victory.play_again,active,result button (standalone run),,,Play Again,Play Again,draft,65a69337
+tx_562ABYGNTQ,hud.victory.play_again,active,result button (standalone run),,,다시 하기,Play Again,draft,5cf05525
 tx_DJ82GY9HFT,hud.kill_feed.lane.left,active,"turret lane, one letter",,,좌,L,draft,65c5e8e2
 tx_KQJ52RR8V2,hud.kill_feed.lane.mid,active,"turret lane, one letter",,,중,M,draft,43e88c0b
 tx_N708DPBCXW,hud.kill_feed.lane.right,active,"turret lane, one letter",,,우,R,draft,4118d67c

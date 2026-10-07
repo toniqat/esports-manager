@@ -15,6 +15,7 @@ const CsvIo = preload("res://addons/l10n_tool/core/csv_io.gd")
 const Keygen = preload("res://addons/l10n_tool/core/keygen.gd")
 const Hasher = preload("res://addons/l10n_tool/core/hasher.gd")
 const Tokens = preload("res://addons/l10n_tool/core/tokens.gd")
+const TermMatch = preload("res://addons/l10n_tool/core/term_match.gd")
 
 const MODE_RELEASE := "release"
 const JOSA_SCRIPT := "res://resources/StrategyIcon.gd"
@@ -41,6 +42,7 @@ const LEGEND := {
 	"E061": "(release) fallback 번역이 approved · 비-stale 아님",
 	"W071": "용어집 금지 표기", "W072": "용어 표준 표기 누락",
 	"E072": "용어집 key 와 언어 값 중복 / 없는 key", "E073": "용어집 term_id 중복 · 형식",
+	"E074": "용어집 match_<loc> 정규식 오류",
 }
 
 
@@ -264,7 +266,7 @@ static func _check_glossary(l, iss: Issues) -> void:
 	var gp: String = cfg.glossary_path()
 	var term_re := RegEx.create_from_string(TERM_ID_PATTERN)
 	var seen: Dictionary = {}
-	# 용어 하나 = {id, std: {loc: 표준 표기}, forbidden: {loc: [표기…]}}
+	# 용어 하나 = {id, std: {loc: 표준 표기}, forbidden: {loc: [표기…]}, match: {loc: TermMatch}}
 	var terms: Array = []
 	for g in rows:
 		var tid: String = String(g.get("term_id", ""))
@@ -301,7 +303,13 @@ static func _check_glossary(l, iss: Issues) -> void:
 		if dnt:
 			for loc in cfg.locales:
 				std[loc] = std[cfg.source_locale]
-		terms.append({"id": tid, "key": gkey, "std": std, "forbidden": forbidden})
+		var matchers: Dictionary = {}
+		for loc in cfg.locales:
+			var m: Dictionary = TermMatch.for_row(g, loc, std[loc])
+			if m["error"] != "":
+				iss.error("E074", "용어 %s 의 match_%s — %s" % [tid, loc, m["error"]], gp, ln)
+			matchers[loc] = m
+		terms.append({"id": tid, "key": gkey, "std": std, "forbidden": forbidden, "match": matchers})
 	_check_terms(l, iss, terms)
 
 
@@ -328,18 +336,19 @@ static func _check_terms(l, iss: Issues, terms: Array) -> void:
 			if key == term["key"]:
 				continue
 			var src_term: String = term["std"].get(src_loc, "")
-			if src_term.is_empty() or not _contains(texts[src_loc], src_term):
+			if src_term.is_empty() or not TermMatch.found(term["match"][src_loc], texts[src_loc]):
 				continue
 			for loc in cfg.target_locales():
 				var t: String = texts[loc]
 				var want: String = term["std"].get(loc, "")
 				if t.is_empty() or want.is_empty():
 					continue
-				if not _contains(t, want):
+				if not TermMatch.found(term["match"][loc], t):
 					iss.warn("W072", "원문에 용어 %s('%s')가 있는데 %s 번역에 '%s' 없음" % [term["id"], src_term, loc, want], f, ln, key)
 
 
-# 부분 문자열 일치, 대소문자 무시 (§13 — 1차는 부분 문자열).
+# Substring, case-insensitive — forbidden forms only. Standard forms go through TermMatch
+# (a match_<loc> regex wins over the substring rule).
 static func _contains(text: String, word: String) -> bool:
 	return text.findn(word) >= 0
 

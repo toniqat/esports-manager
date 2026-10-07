@@ -741,9 +741,10 @@ result screen for the growth points earned in this engage**.
   the player reads (counter · start banner · result log · card description) is "턴". Entering the
   last turn changes the colour to `TIME_LOW`. A duel has no budget, so just `턴 2`. The arena's
   default title also changed from "전투 개시" → **"교전"** (Engage).
-- **Turn indicator** (`_phase_lbl`, y 372) — `T0 의 차례` (T0's turn) / `턴 2 시작` (Turn 2
-  start), and after the end, the end-reason banner. `TurnEngageSim.actor_label()` builds the
-  string. **In preview mode `set_hint()` uses this slot** — on a screen where nobody has moved
+- **Turn indicator** (`_phase_lbl`, y 372) — `{name}의 차례` (player name via `MvpView.display_name`;
+  standalone = mech role + team) / `턴 2 시작` (Turn 2 start), and after the end, the end-reason banner.
+  `TurnEngageSim.actor_label()` builds the name — a turret is `포탑 T2 (중앙)` with the lane from
+  `TurnEngageSim.LANE_LABELS` (`battle.engage.lane.*`; `_bs.LANE_NAMES` / `pilot_label` are log-only). **In preview mode `set_hint()` uses this slot** — on a screen where nobody has moved
   yet, "whose turn is it now" is an unanswerable question.
 - **Round pips** (`_draw_round_pips`, y 350) — one pip per round, filled up to the rounds played.
   Beyond `ROUND_PIP_MAX` (8) the pips get thread-thin and actually stop reading, so it switches to

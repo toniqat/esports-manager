@@ -37,7 +37,12 @@ extends CanvasLayer
 
 const SCENE_PATH: String = "res://features/match_flow/ban_pick/UI_View_MechDetailPanel.tscn"
 
-const ROLE_NAMES: Array = ["TANK", "FIGHTER", "ASSASSIN", "SUPPORT", "SNIPER"]
+## Mech role tags (GameEnums.Role order) — English caps in every locale by design, but still
+## keys so a locale can override. Read through `role_tag()`.
+const ROLE_TAGS: Array = [  # l10n-keys: match.ban_pick.role.*
+	L.MATCH_BAN_PICK_ROLE_TANK, L.MATCH_BAN_PICK_ROLE_FIGHTER, L.MATCH_BAN_PICK_ROLE_ASSASSIN,
+	L.MATCH_BAN_PICK_ROLE_SUPPORT, L.MATCH_BAN_PICK_ROLE_SNIPER,
+]
 ## 역할 색은 팔레트가 소유한다(흰 바탕용) — `DraftDetailPanel` 과 같은 표.
 const ROLE_COLORS: Array = OutgameTheme.ROLE_COLORS
 
@@ -122,11 +127,18 @@ func _fill_art() -> void:
 	%ArtName.text = _mech.name
 
 
+## Role tag for mech role `r` ("TANK" …), "" out of range. Shared with BanPickController.
+static func role_tag(r: int) -> String:
+	if r < 0 or r >= ROLE_TAGS.size():
+		return ""
+	return Loc.t(String(ROLE_TAGS[r]))  # l10n-dynamic: match.ban_pick.role.*
+
+
 func _fill_header() -> void:
 	%Name.text = _mech.name
 	var r: int = int(_mech.role)
 	var sub: Label = %Sub
-	sub.text = String(ROLE_NAMES[r]) if r >= 0 and r < ROLE_NAMES.size() else "?"
+	sub.text = role_tag(r) if r >= 0 and r < ROLE_TAGS.size() else "?"
 	sub.add_theme_color_override("font_color",
 			ROLE_COLORS[r] if r >= 0 and r < ROLE_COLORS.size() else OutgameTheme.TEXT)
 

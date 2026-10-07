@@ -1,9 +1,11 @@
-term_id,key,ko,en,forbidden_ko,forbidden_en,dnt,note
-hand,,손,hand,손패|핸드,,,
-draw,,뽑기,draw,드로우,pull,,
-hand,,손바닥,palm,,,,중복 term_id
-Bad-Term,,엑스,ex,,,,형식 위반
-engage,tx_7KQ2M9XA4P,로켓,,,,,key 와 언어 값 함께
-ghost,tx_ZZZZZZZZZZ,,,,,,없는 key
-track,tx_Q9M2HX7ZK1,,,,,,key 를 따른다
-mvp,,MVP,,,,1,번역 금지
+term_id,key,ko,en,forbidden_ko,forbidden_en,dnt,note,match_ko
+hand,,손,hand,손패|핸드,,,,
+draw,,뽑기,draw,드로우,pull,,,
+hand,,손바닥,palm,,,,중복 term_id,
+Bad-Term,,엑스,ex,,,,형식 위반,
+engage,tx_7KQ2M9XA4P,로켓,,,,,key 와 언어 값 함께,
+ghost,tx_ZZZZZZZZZZ,,,,,,없는 key,
+track,tx_Q9M2HX7ZK1,,,,,,key 를 따른다,
+mvp,,MVP,,,,1,번역 금지,
+turn,,턴,turn,,,,,(?<![가-힣])턴
+bad_re,,엑스엑스,xx,,,,정규식 오류,([

@@ -234,7 +234,7 @@ static func excel_lock_for(file_path: String) -> String:
 	return ""
 
 
-## 용어집 행 목록 — [{term_id, key, <loc>…, forbidden_<loc>…, dnt, note, line}].
+## 용어집 행 목록 — [{term_id, key, <loc>…, forbidden_<loc>…, dnt, note, match_<loc>…, line}].
 func glossary_rows() -> Array:
 	var out: Array = []
 	if glossary == null or not glossary.ok():

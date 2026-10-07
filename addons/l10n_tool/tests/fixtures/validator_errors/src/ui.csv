@@ -13,3 +13,5 @@ tx_J1K2M3N4P8,ui.ref,active,,,,[없는카드] 사용,Use [Nothing],draft,98ebd0e
 tx_K1M2N3P4Q5,ui.mvp,active,,,,이번 MVP,This match's best,draft,084575b3
 tx_K1M2N3P4Q6,ui.track_hint,active,,,,추적 대상,Chase target,draft,3924a81d
 tx_H1J2K3M4N8,ui.jamo,active,,,,가 자모,,,
+tx_M1N2P3Q4R5,ui.assistant,active,,,,어시스턴트,Assistant,draft,800931db
+tx_M1N2P3Q4R6,ui.turns,active,,,,3턴 동안,for 3 beats,draft,aae7df7d

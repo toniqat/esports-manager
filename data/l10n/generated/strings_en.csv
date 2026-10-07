@@ -83,6 +83,11 @@ tx_ME11AGHCAW,Hand limit
 tx_4K4WMMM811,First card cost
 tx_AHZVW1863N,Strategy point boost
 tx_2ZDNTZRMY2,Strategy point boost · {delta} every {turns} turns
+tx_QSR7RXHSHW,MISS
+tx_VM0HAXEB2G,Left
+tx_01DT4571QV,Center
+tx_HA7CEQ5RTH,Right
+tx_AGCDAR9R10,Jungle
 tx_BNZABB803S,Training EXP +10%
 tx_1MD83CR2E7,All six stats +2
 tx_GAAZ5HPRXK,Salary −3
@@ -926,6 +931,11 @@ tx_1W81NVQ0EN,{mech} (main)
 tx_CYD6TW7EWM,Mech {id}
 tx_2D102EEXT5,Opponent · {team}
 tx_YRJDDXHF35,My Team · {team}
+tx_F90CBNJRXW,TANK
+tx_2A43E3P03W,FIGHTER
+tx_QFDE088804,ASSASSIN
+tx_46B6F94E0X,SUPPORT
+tx_WYAR6ATGZK,SNIPER
 tx_MR5VKS3AHG,Overload
 tx_C214C4GTV6,Deploy Reactive Armor
 tx_4AGJGY73MM,Pain and Pleasure
@@ -1876,7 +1886,7 @@ tx_KEVDQS5CGB,Basic Training
 tx_SN9RWDKSD9,Basic Training 2
 tx_ETXQNX2FF3,Shooting Drill
 tx_DYKR3KZW2R,Evasive Maneuvers
-tx_E8AJQ6WVHS,Close Combat
+tx_E8AJQ6WVHS,Close Engagement
 tx_Z2QHPPQ7QN,Reaction Drill
 tx_6PFR1BYJ2Q,Firepower Boost
 tx_RZMEH6PFCE,Endurance Training
@@ -1936,7 +1946,7 @@ tx_JMPJ6K47G9,Warm Leader
 tx_N2W6RZDRT6,Crisis Manager
 tx_785Z4KHTFM,Well-Informed
 tx_8S9EB13XAC,Negotiator
-tx_DC53B4M5PW,All-Round Manager
+tx_DC53B4M5PW,Versatile Manager
 tx_MFYESJ59SW,Facility Investor
 tx_VNR03SJKHJ,Early Initiative
 tx_4XZY5KHRZ5,Ready Hand
@@ -1965,7 +1975,7 @@ tx_ECBMZ4X60B,Facility upkeep {p1}%
 tx_V233CFRMZM,Opening strategy points +{p1}
 tx_PQ6389S0B6,First auto-draw +{p1} cards
 tx_3KQPNVDQG5,Max hand size +{p1}
-tx_M929F4HK8X,First card cost each tactics phase {p1}
+tx_M929F4HK8X,First card cost each operation phase {p1}
 tx_YFNHSQ5GJ5,Strategy points +{p1} every {p2} turns
 tx_9XWKFPH3A6,Weekly sponsor income {p1}%
 tx_T6TSR16X7E,Training EXP {p1}%
@@ -1976,7 +1986,7 @@ tx_YBHFJVCTQZ,Analysis reveal tier {p1}
 tx_53D7BPJQBK,Facility upkeep +{p1}%
 tx_FNN91QZ7T0,First auto-draw {p1} cards
 tx_6XQ3A0Q7JP,Max hand size {p1}
-tx_6HNYQXB6DT,First card cost each tactics phase +{p1}
+tx_6HNYQXB6DT,First card cost each operation phase +{p1}
 tx_BG2JBV86HB,You can equip up to {n} traits
 tx_F9NJXK31Y0,Unknown trait id {id}
 tx_W81J1DFTY1,You can't equip the same trait twice

@@ -1026,7 +1026,18 @@ func _append_residual_fx(out: Array) -> void:
 
 ## 썸네일에 찍히는 두 글자. 아이콘 에셋이 없으므로 약칭이 곧 아이콘이고,
 ## 온전한 이름은 눌러서 여는 정보 패널의 제목이 들고 있다.
+## Syllable scripts (ko) keep the first two characters; Latin names take word initials
+## ("Dragon Reward" → "DR") or, for one word, its first two letters ("Duel" → "Du") —
+## the first two Latin letters of a multi-word name read as noise.
 static func _fx_short(src: String) -> String:
+	var words: PackedStringArray = src.replace("-", " ").split(" ", false)
+	var latin: bool = not words.is_empty()
+	for i in src.length():
+		if src.unicode_at(i) > 0x24F:
+			latin = false
+			break
+	if latin and words.size() >= 2:
+		return (words[0].left(1) + words[1].left(1)).to_upper()
 	var compact: String = src.replace(" ", "")
 	return compact.substr(0, 2) if compact.length() >= 2 else compact
 

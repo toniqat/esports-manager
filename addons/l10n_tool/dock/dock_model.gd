@@ -8,6 +8,7 @@ extends RefCounted
 ## issues 항목. 행 하나 = catalog 엔트리 + 로케일별 상태 · stale + 용어 + 사용처.
 
 const Keygen = preload("res://addons/l10n_tool/core/keygen.gd")
+const TermMatch = preload("res://addons/l10n_tool/core/term_match.gd")
 
 const ST_NONE := "미착수"
 const ST_DRAFT := "draft"
@@ -230,16 +231,16 @@ func _build_terms() -> Array:
 				if loc != src and String(texts[loc]) == "":
 					texts[loc] = texts.get(src, "")
 		out.append({"term_id": String(g.get("term_id", "")), "key": gkey, "texts": texts,
-			"forbidden": forbidden, "dnt": dnt, "note": String(g.get("note", "")), "line": int(g.get("line", 0))})
+			"forbidden": forbidden, "dnt": dnt, "note": String(g.get("note", "")), "line": int(g.get("line", 0)),
+			"match": TermMatch.for_row(g, src, String(texts.get(src, "")).strip_edges())})
 	return out
 
 
-## 원문에 들어간 용어 term_id — 부분 문자열 일치(§13 1차 규칙).
+## Term ids found in the source text — TermMatch (match_<source locale> regex, else substring).
 func _match_terms(source: String) -> Array:
 	var out: Array = []
 	for t in _terms:
-		var term: String = String((t["texts"] as Dictionary).get(config.source_locale, ""))
-		if term != "" and source.contains(term):
+		if TermMatch.found(t["match"] as Dictionary, source):
 			out.append(t["term_id"])
 	return out
 

@@ -55,3 +55,8 @@ tx_1W81NVQ0EN,match.intel.mech_main,active,pilot main mech without mastery grade
 tx_CYD6TW7EWM,match.intel.mech_fallback,active,unknown mech id,,,메크 {id},Mech {id},draft,cebcdd50
 tx_2D102EEXT5,match.prep.enemy_title,active,prep screen section title,,,상대 팀 · {team},Opponent · {team},draft,a0309062
 tx_YRJDDXHF35,match.prep.own_title,active,prep screen section title,,,내 팀 · {team},My Team · {team},draft,e43e2214
+tx_F90CBNJRXW,match.ban_pick.role.tank,active,"Mech role tag on ban/pick filter tabs, sheet and mech detail — English caps in every locale by design",,,TANK,TANK,draft,db5987d0
+tx_2A43E3P03W,match.ban_pick.role.fighter,active,"Mech role tag on ban/pick filter tabs, sheet and mech detail — English caps in every locale by design",,,FIGHTER,FIGHTER,draft,81a84dc5
+tx_QFDE088804,match.ban_pick.role.assassin,active,"Mech role tag on ban/pick filter tabs, sheet and mech detail — English caps in every locale by design",,,ASSASSIN,ASSASSIN,draft,951d8ef2
+tx_46B6F94E0X,match.ban_pick.role.support,active,"Mech role tag on ban/pick filter tabs, sheet and mech detail — English caps in every locale by design",,,SUPPORT,SUPPORT,draft,0e5b114f
+tx_WYAR6ATGZK,match.ban_pick.role.sniper,active,"Mech role tag on ban/pick filter tabs, sheet and mech detail — English caps in every locale by design",,,SNIPER,SNIPER,draft,77a2ac8b

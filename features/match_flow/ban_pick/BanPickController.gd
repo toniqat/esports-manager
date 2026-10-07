@@ -106,7 +106,6 @@ const SEQUENCE: Array = [
 
 ## 한 팀의 슬롯 수 — 파일럿 초상화 · 메크 칸이 모두 이 수만큼 선다.
 const SLOT_COUNT: int = 5
-const ROLE_NAMES: Array = ["TANK", "FIGHTER", "ASSASSIN", "SUPPORT", "SNIPER"]
 ## 역할 배지에 찍는 두 글자. 격자 칸이 정사각이 되면서 역할군 이름을 통째로 적을
 ## 자리가 없어졌고, 애초에 그 자리는 **읽는 곳이 아니라 알아보는 곳**이다 —
 ## 색이 먼저 눈에 들어오고 글자는 그 색을 확인해 준다.
@@ -523,7 +522,7 @@ func _filter_tabs() -> Array:
 	var out: Array = [[-1, Loc.t(L.UI_WORD_ALL)]]
 	for role_raw in GameEnums.ROLE_DISPLAY_ORDER:
 		var role: int = int(role_raw)
-		out.append([role, String(ROLE_NAMES[role])])
+		out.append([role, MechDetailPanel.role_tag(role)])
 	return out
 
 
@@ -633,7 +632,9 @@ func _fill_sheet(m: MechData) -> void:
 
 	# ── 오른쪽: 이름 · 스탯 · 패시브 ──
 	v.sheet_name.text = m.name
-	var role_txt: String = String(ROLE_NAMES[m.role]) if m.role >= 0 and m.role < ROLE_NAMES.size() else "—"
+	var role_txt: String = MechDetailPanel.role_tag(m.role)
+	if role_txt == "":
+		role_txt = "—"
 	v.sheet_stats.text = Loc.t(L.MATCH_BAN_PICK_SHEET_STATS,
 			{"role": role_txt, "hp": m.hp, "atk": m.atk, "presence": m.presence})
 	var pas: Dictionary = _gm.mech_passive_def(m.id)

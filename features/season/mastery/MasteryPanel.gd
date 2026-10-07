@@ -152,8 +152,8 @@ func _fill_pilot_row(row: Panel, pd: PlayerData, delegated: bool, quirks_on: boo
 		var v: int = int(e["value"])
 		tops.append("%s %s %d" % [MechMastery.mech_name(int(e["mech_id"])),
 				MechMastery.tier_name(MechMastery.tier_of(v)), v])
-	row.get_node("%TopMechs").text = "%s  ·  숙련 상위  %s" % [
-			String(OutgameTheme.ROLE_NAMES[clampi(pd.role, 0, 4)]), "  ·  ".join(tops)]
+	(row.get_node("%Position") as PositionBadge).set_role(int(pd.role))
+	row.get_node("%TopMechs").text = "숙련 상위  %s" % "  ·  ".join(tops)
 
 	# Own-role mech chips — tap to set the research mech (tap the selected one to clear).
 	var mechs: Array = MechMastery.mechs_of_role(pd.role)

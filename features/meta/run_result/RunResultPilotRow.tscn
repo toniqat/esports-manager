@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://3rotkl165nuq"]
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+[ext_resource type="PackedScene" path="res://resources/PositionBadge.tscn" id="pos_badge"]
 
 [node name="RunResultPilotRow" type="Control"]
 editor_description = "One pilot of the 이번 런 업적 card (RunResultScreen). The screen draws the portrait into Portrait (diameter = its width) and paints the MVP / POM chips (lit when > 0 — data colours)."
@@ -15,7 +16,7 @@ theme = ExtResource("1_theme")
 [node name="Portrait" type="Control" parent="."]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(76, 76)
-layout_mode = 0
+anchors_preset = 0
 offset_top = 14.0
 offset_right = 76.0
 offset_bottom = 90.0
@@ -32,16 +33,13 @@ theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 28
 text = "Corin"
 
-[node name="Role" type="Label" parent="."]
+[node name="Role" parent="." instance=ExtResource("pos_badge")]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 100.0
-offset_top = 58.0
-offset_right = 460.0
-offset_bottom = 88.0
-theme_type_variation = &"CaptionLabel"
-theme_override_font_sizes/font_size = 20
-text = "암살"
+offset_top = 59.0
+offset_right = 150.0
+offset_bottom = 86.0
 
 [node name="Mvp" type="Panel" parent="."]
 unique_name_in_owner = true

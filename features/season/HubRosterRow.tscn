@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://dgsdeg4lhyxen"]
+[gd_scene load_steps=4 format=3 uid="uid://dgsdeg4lhyxen"]
 
 [ext_resource type="Script" path="res://features/season/HubRosterRow.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" path="res://resources/PositionBadge.tscn" id="pos_badge"]
 
 [node name="HubRosterRow" type="Panel"]
 custom_minimum_size = Vector2(0, 190)
@@ -32,13 +33,10 @@ offset_bottom = 176.0
 mouse_filter = 2
 theme_override_constants/separation = 0
 
-[node name="Role" type="Label" parent="Info"]
+[node name="Role" parent="Info" instance=ExtResource("pos_badge")]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
-theme_type_variation = &"CaptionLabel"
-theme_override_font_sizes/font_size = 20
-text = "탱커"
 
 [node name="Name" type="Label" parent="Info"]
 unique_name_in_owner = true

@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://bivoaqs4ajikx"]
+[gd_scene load_steps=4 format=3 uid="uid://bivoaqs4ajikx"]
 
 [ext_resource type="Script" uid="uid://dd8kyq887lb7r" path="res://features/meta/run_setup/DraftDetailPanel.gd" id="1_detail"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" path="res://resources/PositionBadge.tscn" id="3_badge"]
 
 [node name="DraftDetailPanel" type="CanvasLayer"]
 layer = 20
@@ -75,6 +76,7 @@ mouse_filter = 2
 unique_name_in_owner = true
 editor_description = "Top fixed at 150, bottom anchored 80 above the safe bottom. Its height caps the panel: max PanelBox height = Column height - separation - Close height (DraftDetailPanel._fit_panel); PanelBox + Close stack from the top; grows down only (top stays put)."
 layout_mode = 1
+anchors_preset = 9
 anchor_bottom = 1.0
 offset_left = 596.0
 offset_top = 150.0
@@ -141,16 +143,24 @@ theme_override_font_sizes/font_size = 40
 text = "파일럿 이름"
 clip_text = true
 
+[node name="Position" parent="Root/SafeArea/Column/PanelBox/Pad/Scroll/Body/Header" instance=ExtResource("3_badge")]
+unique_name_in_owner = true
+layout_mode = 0
+offset_top = 54.0
+offset_right = 50.0
+offset_bottom = 81.0
+
 [node name="Sub" type="Label" parent="Root/SafeArea/Column/PanelBox/Pad/Scroll/Body/Header"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
+offset_left = 62.0
 offset_top = 54.0
 offset_bottom = 82.0
 grow_horizontal = 2
 theme_type_variation = &"CaptionLabel"
-text = "탑 · TANK · 원소속 CNH"
+text = "원소속 CNH"
 clip_text = true
 
 [node name="BtRow" type="Control" parent="Root/SafeArea/Column/PanelBox/Pad/Scroll/Body"]

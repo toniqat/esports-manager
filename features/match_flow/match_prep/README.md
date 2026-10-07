@@ -46,7 +46,7 @@ IntelView (VBox, sep 0 — parent width, content height)
 ├ %Rows (sep 10) — IntelPilotRow ×5 (scene sample replaced at runtime)
 └ RowsTail 10
 IntelPilotRow (MarginContainer): %Back (Card preview → code lead_bar_style(role)) + Content VBox:
-  Top 100 (%Portrait 76 @18,14 · NameCol 108 → 40 % − 8: %Role/%Name/%Total · %Stats HBox 40 % → −14, six cells)
+  Top 100 (%Portrait 76 @18,14 · NameCol 108 → 40 % − 8: %Role (PositionBadge)/%Name/%Total · %Stats HBox 40 % → −14, six cells)
   · %MechLine 34 · %CardLine 34 · BasePad 4 · %ExtraPad 8 (when a line shows)
 ```
 - Code-owned (data / state): role colour (card bar, role text, portrait ring), stat value font size and

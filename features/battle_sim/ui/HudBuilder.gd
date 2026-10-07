@@ -783,8 +783,8 @@ func set_victory_mvp(p: PilotData, row: Dictionary) -> void:
 	portrait.texture = tex
 	portrait.visible = tex != null
 	(_victory_mvp_row.get_node("%MvpName") as Label).text = MvpView.display_name(_bs, p)
-	(_victory_mvp_row.get_node("%MvpKda") as Label).text = "%s · %s" % [
-			MvpView.role_label(p), MvpView.kda_text(row)]
+	(_victory_mvp_row.get_node("%MvpPosition") as PositionBadge).set_role(p.role)
+	(_victory_mvp_row.get_node("%MvpKda") as Label).text = MvpView.kda_text(row)
 
 
 func _bind_victory_panel(root: Node) -> void:

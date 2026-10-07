@@ -1,8 +1,8 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=4 format=3 uid="uid://18peqm35cgkn"]
 
-[ext_resource type="Script" path="res://features/meta/run_setup/DraftSlot.gd" id="1_slot"]
+[ext_resource type="Script" uid="uid://cbyfih3uq1tcl" path="res://features/meta/run_setup/DraftSlot.gd" id="1_slot"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
-[ext_resource type="PackedScene" path="res://features/meta/run_setup/RoleBadge.tscn" id="3_badge"]
+[ext_resource type="PackedScene" path="res://resources/PositionBadge.tscn" id="3_badge"]
 
 [node name="DraftSlot" type="VBoxContainer"]
 editor_description = "One of the 5 role-fixed pick slots (TeamDraftView %SlotRow). Height 538 = art 412 + info 126 (stepper 12 + 52, 6, salary 28, overall 28)."
@@ -61,13 +61,12 @@ offset_top = -20.0
 offset_bottom = 20.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
 theme_type_variation = &"FaintLabel"
 theme_override_font_sizes/font_size = 26
 text = "선택 없음"
 horizontal_alignment = 1
 
-[node name="RoleBadge" parent="Frame" instance=ExtResource("3_badge")]
+[node name="PositionBadge" parent="Frame" instance=ExtResource("3_badge")]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 11.0

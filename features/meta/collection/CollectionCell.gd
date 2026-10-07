@@ -7,7 +7,7 @@ extends Button
 #
 # **The layout is `CollectionCell.tscn`** (cell size, face mask, badge / pill / pip spots,
 # label variations). Build with `CollectionCell.create()` — `.new()` is an empty button.
-# Code fills data only: face texture, role badge (`RoleBadge.set_role`), rarity pill
+# Code fills data only: face texture, position badge (`PositionBadge.set_role`), rarity pill
 # (stars, colour, width), owned state (frame / name variation, dim face, which row shows)
 # and the pips (count = `RunRules.breakthrough_max()`, reached = `CollectionCellPipOn`).
 #
@@ -46,7 +46,7 @@ func _ready() -> void:
 func setup(p: PlayerData, max_level: int, breakthrough: int) -> void:
 	pilot = p
 	(%Face as TextureRect).texture = PilotImages.face_for(p.id)
-	(%RoleBadge as RoleBadge).set_role(int(p.role))
+	(%PositionBadge as PositionBadge).set_role(int(p.role))
 	set_rarity(%Rarity, %RarityText, p.rarity, 18)
 	refresh(max_level, breakthrough)
 

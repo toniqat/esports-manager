@@ -150,7 +150,7 @@ offset_bottom = 96.0
 grow_horizontal = 2
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 24
-text = "정글 · ASSASSIN · 원소속 SRT"
+text = "원소속 SRT"
 clip_text = true
 
 [node name="Chips" type="Control" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/Hero/Info"]

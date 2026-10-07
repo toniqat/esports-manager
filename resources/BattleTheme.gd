@@ -276,9 +276,6 @@ static func _add_screen_variations(th: Theme) -> void:
 	_add_derived(th, "MvpDimPanel", &"BattleDimPanel", box(DIM_DEEP, 0))
 	_add_derived_label(th, "MvpTitleLabel", &"BattleOutlinedLabel", TEXT_TITLE)
 	_add_derived_label(th, "MvpSubLabel", &"BattleOutlinedLabel", TEXT_SUB)
-	# 진영 줄 — 아군 / 상대는 코드가 변형 이름을 바꿔 고른다.
-	_add_derived_label(th, "MvpAllyLabel", &"BattleOutlinedLabel", ALLY)
-	_add_derived_label(th, "MvpEnemyLabel", &"BattleOutlinedLabel", ENEMY)
 
 	_add_hud_variations(th)
 	_add_pilot_detail_variations(th)

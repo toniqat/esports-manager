@@ -251,9 +251,7 @@ func _fill_achievement_card() -> void:
 		var row: Control = PILOT_ROW_SCENE.instantiate()
 		_portrait(row.get_node("%Portrait"), pid)
 		(row.get_node("%Name") as Label).text = String(pd.get("name", ""))
-		var role: int = int(pd.get("role", -1))
-		(row.get_node("%Role") as Label).text = String(OutgameTheme.ROLE_NAMES[role]) \
-				if role >= 0 and role < OutgameTheme.ROLE_NAMES.size() else ""
+		(row.get_node("%Role") as PositionBadge).set_role(int(pd.get("role", -1)))
 		var mvp_n: int = int(a.get("mvp", 0))
 		var pom_n: int = int(a.get("pom", 0))
 		_count_chip(row.get_node("%Mvp"), row.get_node("%MvpText"), "MVP %d" % mvp_n, mvp_n > 0)

@@ -21,13 +21,12 @@ const PHASE_ORDER: Array = [
 	GameEnums.SeasonPhase.REGULAR,
 	GameEnums.SeasonPhase.REGULAR_INTL,
 ]
-const ROLE_NAMES: Array = ["TANK", "FIGHTER", "ASSASSIN", "SUPPORT", "SNIPER"]
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 @onready var _gm: Node = get_node("/root/GameManager")
 
 var _phase_lines: Array = []   # 6 Labels (scene `%Recap`, PHASE_ORDER order)
-var _roster_lines: Array = []  # 5 Labels (scene `%Roster`, seat order)
+var _roster_lines: Array = []  # 5 rows (scene `%Roster`, seat order) — `Badge` (PositionBadge) + `Text`
 var _built: bool = false
 # 팀 이름을 읽는 매니저 — 실제 게임은 `_hub` 의 것을 매번 다시 읽는다(`_resolve_refs`).
 # 호스트가 없는 F6 미리보기만 직접 넣는다.
@@ -148,14 +147,14 @@ func _refresh_roster() -> void:
 	# 그 순서로 세워져 있다.
 	for seat in mini(5, _roster_lines.size()):
 		var r: int = int(GameEnums.ROLE_DISPLAY_ORDER[seat])
+		var line: Node = _roster_lines[seat]
+		(line.get_node("Badge") as PositionBadge).set_role(r)
 		if by_role.has(r):
 			var p: PlayerData = by_role[r]
 			var total: int = p.stat_total()
-			_roster_lines[seat].text = "%-9s  %-14s  TOTAL %d" % [
-				ROLE_NAMES[r], p.name, total,
-			]
+			(line.get_node("Text") as Label).text = "%-14s  TOTAL %d" % [p.name, total]
 		else:
-			_roster_lines[seat].text = "%s  —" % ROLE_NAMES[r]
+			(line.get_node("Text") as Label).text = "—"
 
 
 # 정산(프로필 반영 · run.save 삭제)은 SeasonHub 가 이 화면에 들어서며 이미 했다.

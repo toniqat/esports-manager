@@ -5,7 +5,7 @@ extends Button
 # 역할군 배지, 그리고 오른쪽 아래 샐러리 꼬리표가 전부다.**
 #
 # **모양의 정본은 `PilotThumb.tscn`** (칸 크기 · 얼굴 마스크 · 배지 / 체크 / 꼬리표 자리 ·
-# 스타일). 이 스크립트는 데이터만 넣는다 — 얼굴 텍스처, 역할 배지 색(`RoleBadge`),
+# 스타일). 이 스크립트는 데이터만 넣는다 — 얼굴 텍스처, 포지션 배지(`PositionBadge`),
 # 꼬리표 글자와 그 폭, 그리고 선택 상태에 따른 칸의 테마 변형(`_apply_style` —
 # `SelectableCardButton` / `SelectableCardButtonOn`, 모서리 `OutgameTheme.CARD_RADIUS`;
 # 얼굴 마스크 `ArtMask` 의 모서리는 그 반경 - 안쪽 여백 4 로 씬이 맞춘다).
@@ -79,7 +79,7 @@ func set_selected(sel: bool) -> void:
 
 func _refresh() -> void:
 	var face: TextureRect = %Face
-	var badge: RoleBadge = %RoleBadge
+	var badge: PositionBadge = %PositionBadge
 	if pilot == null:
 		face.texture = null
 		badge.visible = false
@@ -119,10 +119,10 @@ static func add_rounded_art(parent: Control, pos: Vector2, sz: Vector2,
 	return art
 
 
-## **역할군 배지**를 `parent` 의 `pos` 에 세운다 — `RoleBadge.tscn` 한 장. 컬렉션처럼
+## **포지션 배지**를 `parent` 의 `pos` 에 세운다 — `PositionBadge.tscn` 한 장. 컬렉션처럼
 ## 코드로 배치하는 자리용. 알 수 없는 역할이면 아무것도 안 세우고 null.
-static func add_role_badge(parent: Control, role: int, pos: Vector2) -> Panel:
-	var badge := RoleBadge.create()
+static func add_position_badge(parent: Control, role: int, pos: Vector2) -> PositionBadge:
+	var badge := PositionBadge.create()
 	if not badge.set_role(role):
 		badge.free()
 		return null

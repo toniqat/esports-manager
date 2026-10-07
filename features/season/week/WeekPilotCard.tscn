@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://bkd7mlj7nwksw"]
+[gd_scene load_steps=4 format=3 uid="uid://bkd7mlj7nwksw"]
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 [ext_resource type="PackedScene" uid="uid://b35sbgo83liyd" path="res://features/season/week/WeekStatCell.tscn" id="2_cell"]
+[ext_resource type="PackedScene" path="res://resources/PositionBadge.tscn" id="pos_badge"]
 
 [node name="WeekPilotCard" type="Panel"]
 editor_description = "One pilot's training result of the day. Code sets the role-colour lead bar (lead_bar_style), the height (148 + one quirk line each + 8) and fills %Stats with one WeekStatCell per stat."
@@ -33,15 +34,13 @@ theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 30
 text = "Evelyn"
 
-[node name="Role" type="Label" parent="."]
+[node name="Role" parent="." instance=ExtResource("pos_badge")]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 132.0
 offset_top = 74.0
-offset_right = 372.0
-offset_bottom = 102.0
-theme_type_variation = &"CaptionLabel"
-text = "탱커"
+offset_right = 182.0
+offset_bottom = 101.0
 
 [node name="Mastery" type="Label" parent="."]
 unique_name_in_owner = true

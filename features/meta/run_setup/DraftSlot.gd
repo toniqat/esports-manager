@@ -25,7 +25,7 @@ func _ready() -> void:
 
 ## 칸의 역할 — 배지는 **빈 칸에도 선다**(어느 역할의 자리인지를 말한다).
 func set_role(role: int) -> void:
-	(%RoleBadge as RoleBadge).set_role(role)
+	(%PositionBadge as PositionBadge).set_role(role)
 
 
 ## 빈 칸.

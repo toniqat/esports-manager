@@ -51,7 +51,7 @@ var _fielded: PlayerData = null   # what the sheet shows (max level + breakthrou
 var _status_text: String = ""
 var _status_ok: bool = false
 var _art: TextureRect = null
-var _badge: Panel = null
+var _badge: PositionBadge = null
 var _stat_chips: Array = []
 var _cards_w: float = -1.0        # width the `%Cards` panels were built for
 
@@ -144,15 +144,11 @@ func _fill_hero(owned: bool, max_lv: int, stage: int) -> void:
 	(_art.get_parent() as Control).modulate = Color.WHITE if owned else CollectionCell.UNOWNED_MODULATE
 	if _badge != null:
 		_badge.free()
-	_badge = PilotThumb.add_role_badge(%Bust, r, Vector2(10, 10))
+	_badge = PilotThumb.add_position_badge(%Bust, r, Vector2(10, 10))
 
 	%Name.text = _base.name
-	var seat: int = GameEnums.role_seat(r)
-	var lane: String = String(TeamDraft.SLOT_NAMES[seat]) if seat < 5 else "?"
-	# Same "lane · ROLE" words as `DraftDetailPanel` (the Korean role names repeat the lane).
-	var role_name: String = String(DraftDetailPanel.ROLE_NAMES[r]) if r >= 0 and r < 5 else "?"
-	%RoleLine.text = "%s · %s · 원소속 %s" % [lane, role_name, _team_short(_base.team_id)]
-	(%RoleLine as Label).add_theme_color_override("font_color", role_col.darkened(0.1))
+	# The position is the badge on the bust (`PositionBadge`) — this line only names the home team.
+	%RoleLine.text = "원소속 %s" % _team_short(_base.team_id)
 
 	# Chip row: rarity · 최대 Lv · 돌파 · 중복 (or 미보유).
 	var chips: Control = %Chips

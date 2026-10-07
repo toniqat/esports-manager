@@ -418,9 +418,7 @@ func _add_pilot_card(row_raw: Variant) -> void:
 	OutgameTheme.add_round_portrait(card.get_node("%Portrait"),
 			PilotImages.circle_for(int(row["pilot_id"])), Vector2.ZERO, PORTRAIT_D)
 	(card.get_node("%Name") as Label).text = String(row["name"])
-	var role_lbl: Label = card.get_node("%Role")
-	role_lbl.text = String(OutgameTheme.ROLE_NAMES[role])
-	role_lbl.add_theme_color_override("font_color", OutgameTheme.ROLE_COLORS[role])
+	(card.get_node("%Role") as PositionBadge).set_role(role)
 
 	# Mech mastery of the day (§14 T4, row key `mastery` = raw tile EXP).
 	var mastery_txt: String = _mastery_text(int(row["pilot_id"]), int(row.get("mastery", 0)))

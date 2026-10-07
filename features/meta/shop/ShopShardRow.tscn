@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://pcwkfqvsapbc"]
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+[ext_resource type="PackedScene" path="res://resources/PositionBadge.tscn" id="pos_badge"]
 
 [node name="ShopShardRow" type="Panel"]
 editor_description = "파편 상점 row (ShopTab). Outlined white panel = local style (no theme variation yet). Code fills the texts, the round portrait (drawn widget added into FaceSlot), the rarity chip colour and the button state."
@@ -14,7 +15,7 @@ theme_type_variation = &"ShopRowPanel"
 [node name="FaceSlot" type="Control" parent="."]
 unique_name_in_owner = true
 editor_description = "Round portrait (OutgameTheme.add_round_portrait, a _draw widget) is added here at runtime, diameter = this width."
-layout_mode = 0
+anchors_preset = 0
 offset_left = 20.0
 offset_top = 16.0
 offset_right = 120.0
@@ -55,15 +56,23 @@ text = "전설"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Status" type="Label" parent="."]
+[node name="Position" parent="." instance=ExtResource("pos_badge")]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 250.0
+offset_top = 75.0
+offset_right = 300.0
+offset_bottom = 102.0
+
+[node name="Status" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 310.0
 offset_top = 72.0
 offset_right = 550.0
 offset_bottom = 106.0
 theme_type_variation = &"CaptionLabel"
-text = "정글 · 미보유"
+text = "미보유"
 
 [node name="Buy" type="Button" parent="."]
 unique_name_in_owner = true
@@ -76,8 +85,8 @@ offset_top = 18.0
 offset_right = -20.0
 offset_bottom = 114.0
 grow_horizontal = 0
-mouse_filter = 1
 focus_mode = 0
+mouse_filter = 1
 theme_type_variation = &"PrimaryButton"
 theme_override_font_sizes/font_size = 24
 text = "영입

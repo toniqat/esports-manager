@@ -1,7 +1,8 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=6 format=3 uid="uid://cmdnvfq76w6m8"]
 
 [ext_resource type="Script" uid="uid://8t67bkti6jj2" path="res://features/battle_sim/ui/MvpView.gd" id="1_mvp"]
-[ext_resource type="Theme" uid="uid://d3sxdpvg3p880" path="res://resources/BattleTheme.tres" id="2_theme"]
+[ext_resource type="Theme" uid="uid://dmrfge5o5tftu" path="res://resources/BattleTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" path="res://resources/PositionBadge.tscn" id="pos_badge"]
 
 [sub_resource type="Gradient" id="Gradient_glow"]
 colors = PackedColorArray(1, 0.8, 0.3, 0.28, 1, 0.8, 0.3, 0)
@@ -59,6 +60,7 @@ horizontal_alignment = 1
 
 [node name="ArtArea" type="Control" parent="Root/SafeArea"]
 unique_name_in_owner = true
+editor_description = "전신 자리 — 제목 아래(170)부터 정보 판 위 10px 까지. 후광 높이 · 전신 크기는 코드가 이 칸 높이와 그림 비율로 맞춘다(_layout_art)."
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -68,7 +70,6 @@ offset_bottom = -530.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-editor_description = "전신 자리 — 제목 아래(170)부터 정보 판 위 10px 까지. 후광 높이 · 전신 크기는 코드가 이 칸 높이와 그림 비율로 맞춘다(_layout_art)."
 
 [node name="Glow" type="TextureRect" parent="Root/SafeArea/ArtArea"]
 unique_name_in_owner = true
@@ -162,18 +163,18 @@ text = "선수 이름"
 horizontal_alignment = 1
 clip_text = true
 
-[node name="Side" type="Label" parent="Root/SafeArea/Info"]
+[node name="Position" parent="Root/SafeArea/Info" instance=ExtResource("pos_badge")]
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_top = 100.0
-offset_bottom = 144.0
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -40.0
+offset_top = 102.0
+offset_right = 40.0
+offset_bottom = 142.0
 grow_horizontal = 2
-theme_type_variation = &"MvpAllyLabel"
-theme_override_font_sizes/font_size = 32
-text = "아군 · 미드"
-horizontal_alignment = 1
+text_size = 28
 
 [node name="Kda" type="Label" parent="Root/SafeArea/Info"]
 unique_name_in_owner = true

@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://cjpgo6qqt14js"]
+[gd_scene load_steps=4 format=3 uid="uid://cjpgo6qqt14js"]
 
 [ext_resource type="Script" uid="uid://bkqjaoo3ixaq6" path="res://features/season/EndingView.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" path="res://resources/PositionBadge.tscn" id="pos_badge"]
 
 [node name="EndingView" type="Control"]
 layout_mode = 3
@@ -145,40 +146,85 @@ grow_horizontal = 2
 mouse_filter = 2
 theme_override_constants/separation = 0
 
-[node name="Line0" type="Label" parent="Roster"]
+[node name="Line0" type="HBoxContainer" parent="Roster"]
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
-theme_type_variation = &"BodyLabel"
-theme_override_font_sizes/font_size = 22
-text = "TANK       Evelyn          TOTAL 514"
+theme_override_constants/separation = 14
 
-[node name="Line1" type="Label" parent="Roster"]
-custom_minimum_size = Vector2(0, 40)
+[node name="Badge" parent="Roster/Line0" instance=ExtResource("pos_badge")]
 layout_mode = 2
-theme_type_variation = &"BodyLabel"
-theme_override_font_sizes/font_size = 22
-text = "TANK       Evelyn          TOTAL 514"
+text_size = 18
 
-[node name="Line2" type="Label" parent="Roster"]
-custom_minimum_size = Vector2(0, 40)
+[node name="Text" type="Label" parent="Roster/Line0"]
 layout_mode = 2
+size_flags_horizontal = 3
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 22
-text = "TANK       Evelyn          TOTAL 514"
+text = "Evelyn          TOTAL 514"
 
-[node name="Line3" type="Label" parent="Roster"]
+[node name="Line1" type="HBoxContainer" parent="Roster"]
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
-theme_type_variation = &"BodyLabel"
-theme_override_font_sizes/font_size = 22
-text = "TANK       Evelyn          TOTAL 514"
+theme_override_constants/separation = 14
 
-[node name="Line4" type="Label" parent="Roster"]
-custom_minimum_size = Vector2(0, 40)
+[node name="Badge" parent="Roster/Line1" instance=ExtResource("pos_badge")]
 layout_mode = 2
+text_size = 18
+
+[node name="Text" type="Label" parent="Roster/Line1"]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 22
-text = "TANK       Evelyn          TOTAL 514"
+text = "Evelyn          TOTAL 514"
+
+[node name="Line2" type="HBoxContainer" parent="Roster"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Badge" parent="Roster/Line2" instance=ExtResource("pos_badge")]
+layout_mode = 2
+text_size = 18
+
+[node name="Text" type="Label" parent="Roster/Line2"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "Evelyn          TOTAL 514"
+
+[node name="Line3" type="HBoxContainer" parent="Roster"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Badge" parent="Roster/Line3" instance=ExtResource("pos_badge")]
+layout_mode = 2
+text_size = 18
+
+[node name="Text" type="Label" parent="Roster/Line3"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "Evelyn          TOTAL 514"
+
+[node name="Line4" type="HBoxContainer" parent="Roster"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Badge" parent="Roster/Line4" instance=ExtResource("pos_badge")]
+layout_mode = 2
+text_size = 18
+
+[node name="Text" type="Label" parent="Roster/Line4"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "Evelyn          TOTAL 514"
 
 [node name="SafeBottom" type="Control" parent="."]
 unique_name_in_owner = true

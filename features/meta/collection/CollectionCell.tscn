@@ -1,8 +1,8 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=4 format=3 uid="uid://cux6k5ap5n7g6"]
 
-[ext_resource type="Script" path="res://features/meta/collection/CollectionCell.gd" id="1_cell"]
+[ext_resource type="Script" uid="uid://b5fgdum4wtgsd" path="res://features/meta/collection/CollectionCell.gd" id="1_cell"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
-[ext_resource type="PackedScene" path="res://features/meta/run_setup/RoleBadge.tscn" id="3_badge"]
+[ext_resource type="PackedScene" path="res://resources/PositionBadge.tscn" id="3_badge"]
 
 [node name="CollectionCell" type="Button"]
 editor_description = "One cell of the 컬렉션 grid (CollectionTab %Grid), 240x330. Frame = variation by owned state (code, CollectionCell.FRAME_*). Owned: name + Lv + breakthrough pips. Unowned: dimmed face (ArtMask modulate), 미보유 pill, hint. Face, role badge, rarity stars / colour / width and the pip count are data → code. Mouse = Pass (the grid is a DragScroll)."
@@ -39,7 +39,7 @@ mouse_filter = 2
 expand_mode = 1
 stretch_mode = 6
 
-[node name="RoleBadge" parent="." instance=ExtResource("3_badge")]
+[node name="PositionBadge" parent="." instance=ExtResource("3_badge")]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 14.0
@@ -70,7 +70,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
 theme_type_variation = &"OnFillLabel"
 theme_override_font_sizes/font_size = 18
 text = "★★★"
@@ -96,7 +95,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
 theme_type_variation = &"OnFillLabel"
 text = "미보유"
 horizontal_alignment = 1
@@ -110,7 +108,6 @@ offset_left = 12.0
 offset_top = 240.0
 offset_right = 228.0
 offset_bottom = 276.0
-mouse_filter = 2
 theme_type_variation = &"BodyLabel"
 text = "Corin"
 clip_text = true
@@ -122,7 +119,6 @@ offset_left = 12.0
 offset_top = 280.0
 offset_right = 102.0
 offset_bottom = 314.0
-mouse_filter = 2
 theme_type_variation = &"AccentLabel"
 theme_override_font_sizes/font_size = 24
 text = "Lv 7"
@@ -156,7 +152,6 @@ offset_left = 12.0
 offset_top = 280.0
 offset_right = 228.0
 offset_bottom = 314.0
-mouse_filter = 2
 theme_type_variation = &"FaintLabel"
 theme_override_font_sizes/font_size = 20
 text = "상점에서 영입"

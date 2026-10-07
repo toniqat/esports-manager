@@ -12,7 +12,7 @@ Run-end settlement and its screen. Contract: `docs/outgame_dev_plan.md` §10.3
 | `RunResultTrueEndRow.tscn` | item scene | One pilot of the 진엔딩 card |
 | `RunResultTraitRow.tscn` | item scene | One trait of the 새 특성 해금 card |
 | `RunResultGrowthRow.tscn` | item scene | One pilot of the 선수 성장 card |
-| `RunResultPilotRow.tscn` | item scene | One pilot of the 이번 런 업적 card |
+| `RunResultPilotRow.tscn` | item scene | One pilot of the 이번 런 업적 card (`%Role` = `PositionBadge`) |
 | `sim/RunSim.gd` + `sim/RunSim.tscn` | `extends Node` (dev tool, headless) | Run simulator for balancing the score / currency / EXP constants — see "Run simulator" below |
 
 ## RunResult.settle_current_run(outcome) -> Dictionary

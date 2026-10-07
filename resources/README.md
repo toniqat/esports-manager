@@ -68,7 +68,7 @@ Shared enum definitions:
 - `DraftSide { BLUE, RED }` — ban/pick draft sides
 - **Position keys** `POS_TOP` / `POS_JUNGLE` / `POS_MID` / `POS_CARRY` / `POS_SUPPORT`
   (`"top"` …), `POSITION_KEYS` (lane order), `LANE_POSITIONS` (the four of `scope = lane`),
-  `POSITION_LABELS`, `position_key(role)` — the strings used by card `scope` and
+  `POSITION_LABELS`, `POSITION_ABBREVS` (`TOP` · `JGL` · `MID` · `ADC` · `SUP` — the `PositionBadge` text), `position_key(role)` — the strings used by card `scope` and
   `pilot_card_slots.position` (they are values humans type directly into CSV, so they are not enum values)
 
 **Besides the enums there is one more table — `ROLE_DISPLAY_ORDER`.**
@@ -850,7 +850,8 @@ The design principle is coloured cards on white paper. Three rules:
    lacks contrast. It is a separate literal because `darkened()` is not a constant expression in a
    `const` slot).
 3. Classification is done by the card's left colour bar (`lead_bar_style`) or card colour field (`CARD_TINTS`).
-   The five role colours (`ROLE_COLORS`) and role names (`ROLE_NAMES`) are also owned here —
+   The five role colours (`ROLE_COLORS`) and role names (`ROLE_NAMES` — only for mech-role prose now; a pilot's
+   position is always a `PositionBadge`) are also owned here —
    in `GameEnums.Role` order (not seat order).
 
 | Group | Exports |
@@ -964,7 +965,7 @@ theme variation too, built in `OutgameTheme._add_screen_variations()`:
 | `DraftSlotFrame` | SelectableCardButton | `DraftSlot` `Frame` (all button states) | fill / role border (`_set_frame_style`) |
 | `DraftSlotArtMask` · `PilotThumbArtMask` | SunkPanel | `ArtMask` (white AA mask for `clip_children`) | — |
 | `PilotThumbCheck` · `PilotThumbTag` | AccentChip · SurfaceChip | `PilotThumb` `Check` · `Tag` | — |
-| `RoleBadgePanel` | AccentChip | `RoleBadge` root | role fill (`set_role`) |
+| `PositionBadgePanel` | AccentChip | `PositionBadge` root (r8, 1px `POSITION_BADGE_EDGE`, padding `POSITION_BADGE_PAD_H` / `_V`) — shared widget in `resources/`, used on outgame and battle screens | role fill (`set_role`) |
 | `StepChipPanel` | AccentChip | `StepChip` root (pill) | state fill / border (`paint`) |
 | `TeamDraftGridBack` | Card | `TeamDraftView` `GridBack` | — |
 | `ShopRowPanel` | Card | `ShopCraftRow` · `ShopExchangeRow` · `ShopShardRow` roots | — |
@@ -1044,7 +1045,6 @@ only `font_color`):
 |---|---|---|---|
 | `MvpDimPanel` | BattleDimPanel | `MvpView` `Dim` (`DIM_DEEP`) | — |
 | `MvpTitleLabel` · `MvpSubLabel` | BattleOutlinedLabel | `MvpView` `Title` · `Metric` / `FallbackLabel` | — |
-| `MvpAllyLabel` · `MvpEnemyLabel` | BattleOutlinedLabel | `MvpView` `%Side` | switched by `open` (MVP's side) |
 | `HudClockLabel` | BattleOutlinedLabel | `BattleHud` `%TimeLabel` — `TEXT_CLOCK`, `FONT_SMALL`, outline `OUTLINE_SOFT` 4 | — |
 | `HudStripBackdrop` | BattleDimPanel | `BattleHud` `%EnemyStripBackdrop` · `%PlayerStripBackdrop` — `StyleBoxEmpty` (the strip backplates are invisible; the nodes stay as z-order / hide anchors) | — |
 | `HudTurnBar` | BattleDimPanel | `BattleHud` `%TurnBar` — `box(TURN_BAR[0], 0)`, AA off | `variation_box` copy, `bg_color` = `TURN_BAR[team]` |
@@ -1238,6 +1238,25 @@ it must run without BattleSim (used by the ban/pick bottom sheet · mech detail.
 The draft detail popup used it too, but that screen's candidate-card section was deleted)
 
 ---
+
+### PositionBadge.gd + PositionBadge.tscn (pilot position badge — every screen)
+`class_name PositionBadge extends PanelContainer`. **The one way a pilot's position is shown** — a colour pill with
+`TOP` / `JGL` / `MID` / `ADC` / `SUP` (`GameEnums.POSITION_ABBREVS`) in the role colour (`OutgameTheme.ROLE_COLORS`,
+darkened like the old role badge). Replaces the per-screen texts ("탱커" / "미드" / "TANK" / `Tk`) and the old
+`run_setup/RoleBadge`.
+
+- **Used by**: `PilotThumb` · `DraftSlot` · `CollectionCell` (top-left of the art), `CollectionDetailSheet`
+  (`PilotThumb.add_position_badge`), `DraftDetailPanel` header, `HubRosterRow`, `WeekPilotCard`,
+  `MasteryPilotRow`, `RunResultPilotRow`, `IntelPilotRow`, `ShopShardRow`, `EndingView` roster, BattleSim
+  `MvpView` and the victory panel's MVP row (`BattleHud.tscn` `%MvpPosition`).
+- **Look**: the root attaches `OutgameTheme.tres` itself, so the badge looks the same inside dark battle scenes;
+  variation `PositionBadgePanel`. Width = the widest of the five abbreviations at the current size, so text placed
+  after a badge starts at the same x on every row.
+- **API**: `create()`, `set_role(role) -> bool` (unknown role → hidden, false), static `abbrev(role)`,
+  `@export text_size` (set per placement in the host scene; scene default 18).
+- **Not badges** (prose, not a position label): card scope text (`CardData`), analyst sentences in
+  `OpponentIntel`, the "no art" slab text in `MvpView` / `PilotDetailPanel`, mech roles (ban/pick `TANK` / `Tk`,
+  `QuirkSystem` "탱커 메크"), battle log `pilot_label`.
 
 ### UiPreview.gd (dev — standalone-run (F6) dummy data for outgame UI scenes)
 

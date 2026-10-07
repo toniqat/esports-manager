@@ -7,7 +7,7 @@ Lobby `컬렉션` tab — owned pilots, levels, breakthroughs, level-up. Contrac
 | File | Class | Role |
 |---|---|---|
 | `CollectionTab.tscn` + `.gd` | `class_name CollectionTab extends Control` | The tab: summary card, role filter row, scrolling 4-column grid of the **25 named pilots**, opens the detail sheet. `bar_specs()` = `[]` (no action bar). **Layout lives in the `.tscn`** (style = `OutgameTheme.tres` variations); built with `CollectionTab.create()` (not `.new()`) by `LobbyScreen._make_tab`. |
-| `CollectionCell.tscn` + `.gd` | `class_name CollectionCell extends Button` | Item scene: one grid cell (240×330): `%ArtMask`/`%Face` + `%RoleBadge` (`RoleBadge.tscn`) + `%Rarity` pill, `%Name`, `%Level` + `%Pips` (template `%Pip` duplicated to `RunRules.breakthrough_max()`). Unowned = dimmed face, `%Unowned` pill, `%Hint`. `create()`; `setup(p, max_level, breakthrough)` / `refresh(...)`. Static helpers `rarity_color` / `add_rarity_pill` / `set_rarity` / `rarity_pill_w` shared with the sheet. F6 preview: owned Lv 7, 돌파 3 |
+| `CollectionCell.tscn` + `.gd` | `class_name CollectionCell extends Button` | Item scene: one grid cell (240×330): `%ArtMask`/`%Face` + `%PositionBadge` (`resources/PositionBadge.tscn`) + `%Rarity` pill, `%Name`, `%Level` + `%Pips` (template `%Pip` duplicated to `RunRules.breakthrough_max()`). Unowned = dimmed face, `%Unowned` pill, `%Hint`. `create()`; `setup(p, max_level, breakthrough)` / `refresh(...)`. Static helpers `rarity_color` / `add_rarity_pill` / `set_rarity` / `rarity_pill_w` shared with the sheet. F6 preview: owned Lv 7, 돌파 3 |
 | `CollectionDetailSheet.tscn` + `.gd` | `class_name CollectionDetailSheet extends CanvasLayer` | Pilot detail modal (layer 20) + the 레벨업 action. **Layout lives in the `.tscn`** (style = `OutgameTheme.tres` variations). `create()` (not `.new()`), signal `leveled_up(pilot_id, new_level)`, static `fielded_copy(base, max_level, stage)`. |
 | `CollectionStatChip.tscn` | — (no script) | Item scene: one 능력치 cell (`%Key` / `%Value` / `%Delta`), 7 instanced into `%StatGrid` once in `_ready`. |
 | `CollectionBreakthroughRow.tscn` | — (no script) | Item scene: one 돌파 stage (`%Disc`/`%Num`, `%Kind`, `%Desc`, `%State`), instanced per row on every fill. |
@@ -82,9 +82,9 @@ CollectionDetailSheet (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 
   `Control`s with a fixed minimum height and the labels placed by offsets inside — the VBox stacks the
   blocks, not the labels, so a label's font height never pushes the rows below.
 - **Code owns only data**: role-tinted bust plate, the rounded bust art (`PilotThumb.add_rounded_art`,
-  made once in `_ready`) + role badge, chip pills (sized to their text), EXP fill (`anchor_right` =
+  made once in `_ready`) + position badge (`PilotThumb.add_position_badge`; `%RoleLine` is only the home team), chip pills (sized to their text), EXP fill (`anchor_right` =
   ratio), stat-chip tints (`card_style(16, tint)`), 돌파 row / disc styles, colours with no variation
-  (role line, `POSITIVE` / `NEGATIVE` deltas and status, disc number), `AccentLabel` ↔ `CaptionLabel` /
+  (`POSITIVE` / `NEGATIVE` deltas and status, disc number), `AccentLabel` ↔ `CaptionLabel` /
   `BodyLabel` ↔ `SubLabel` swaps for reached / next rows, the `CardDescBox` panels, the safe-area offset.
 - Open / close = layer `visible`; nodes are reused. `open(p)` refills and scrolls to the top; 레벨업
   refills in place (scroll kept). Rows / cards are removed with `remove_child` + `queue_free` so the
@@ -112,8 +112,8 @@ CollectionDetailSheet (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 
   status line: not owned / max level (`RunRules.max_level()`) / not enough `levelup` currency.
 
 ## `CollectionCell.tscn`
-Fixed 240×330 item (absolute offsets inside the Button). Code fills data only: face texture, role
-badge (`RoleBadge.set_role`), rarity pill (`set_rarity`: stars, rarity colour on an `AccentChip` copy,
+Fixed 240×330 item (absolute offsets inside the Button). Code fills data only: face texture, position
+badge (`PositionBadge.set_role`), rarity pill (`set_rarity`: stars, rarity colour on an `AccentChip` copy,
 width = `rarity_pill_w`, right edge kept), owned state — frame variation `FRAME_OWNED` /
 `FRAME_UNOWNED`, `%Name` `BodyLabel` ↔ `SubLabel`, `%ArtMask` modulate `UNOWNED_MODULATE`, level row ↔
 hint — and the pips (`CollectionCellPipOn` = reached, `CollectionCellPip` = not).

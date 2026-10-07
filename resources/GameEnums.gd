@@ -56,6 +56,11 @@ const POSITION_LABELS: Dictionary = {
 	POS_TOP: "탑", POS_JUNGLE: "정글", POS_MID: "미드",
 	POS_CARRY: "원딜", POS_SUPPORT: "서폿",
 }
+## 포지션 배지(`PositionBadge`)의 영문 약칭 — 파일럿 포지션을 보여 주는 모든 화면이 이 글자를 쓴다.
+const POSITION_ABBREVS: Dictionary = {
+	POS_TOP: "TOP", POS_JUNGLE: "JGL", POS_MID: "MID",
+	POS_CARRY: "ADC", POS_SUPPORT: "SUP",
+}
 
 
 ## 역할 → 포지션 키. 범위 밖 역할은 빈 문자열.

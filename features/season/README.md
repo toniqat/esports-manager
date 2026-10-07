@@ -208,19 +208,19 @@ HubView (Control · HubView.gd)
 
 HubRosterRow (Panel 190 · HubRosterRow.gd)          HubManageCard (Panel · Card · HubManageCard.gd)
 ├ %Face TextureRect 160² (16,14)                     ├ VBox (20,14): %Title · %Value (34) · %Sub (20) · %Owner (Accent 18)
-├ Info VBox (190,14): %Role · %Name · %Total ·       ├ %Alert  red dot top-right
+├ Info VBox (190,14): %Role (PositionBadge) · %Name · %Total ·       ├ %Alert  red dot top-right
 │   Trust HBox ─ %TrustChip(%TrustText) · %TrustGauge(%TrustFill)   └ %Hit flat Button over the card → `pressed`
 └ %Stats HBox (right-anchored, 520) ─ Stat0..5 VBox (Key 18 · Value 32), PlayerData.STAT_KEYS order
 
 EndingView: %Background · Title "WORLD CHAMPION" (Accent 72) · Subtitle · RecapCaption ·
-  %Recap VBox (800 centred, y 390) ─ 6 lines × 40 · RosterCaption · %Roster VBox (y 720) ─ 5 lines × 40 ·
+  %Recap VBox (800 centred, y 390) ─ 6 lines × 40 · RosterCaption · %Roster VBox (y 720) ─ 5 rows × 40 (HBox: `Badge` PositionBadge · `Text`) ·
   %SafeBottom/%BottomBar ─ %Settle (BarPrimary 32)
 GameOverView: %Background · Title "GAME OVER" (NegativeLabel 80) · %Reason (Body 28) ·
   %Summary (Caption) · %SafeBottom/%BottomBar ─ %Settle (BarPrimary 32)
 ```
 
 - **Scene owns** layout, texts' sizes / variations, bar ratio, the five rows / three cards / line slots.
-- **Code owns** data, data colours (row lead bar + role name = role colour via `lead_bar_style`; trust chip /
+- **Code owns** data, data colours (row lead bar = role colour via `lead_bar_style`, `%Role` = `PositionBadge`; trust chip /
   fill = `trust_color`, fill width = `anchor_right`; recap line amber when won), safe-area offsets.
 - **Bottom bar in a scene**: the buttons are `Bar*` variations (square corners) and the separator is a
   `BarSeparator` Panel inside every button but the last. `OutgameTheme.fit_bottom_bar(%BottomBar, %SafeBottom)`

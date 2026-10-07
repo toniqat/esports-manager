@@ -21,6 +21,8 @@
 - **하단 바** 헬퍼 4갈래 → `Bar*Button` 변형 + `OutgameTheme.fit_bottom_bar` 1개.
 - **안전 영역** — 씬 기반 패턴 B/C (`docs/mobile_safe_area.md`), `MechDetailPanel` · `DraftDetailPanel` `%SafeArea`,
   ShopPopup · ManagerTypePopup 은 안전 영역보다 길면 카드 높이 제한 + 본문 스크롤.
+- **uid** (D1) — `.tscn` 136개 전부 uid 있음 · 중복 없음 (2026-10-07 확인). 새 씬을 CLI 로 쓰면 다시 확인:
+  `for f in $(git ls-files '*.tscn'); do head -1 "$f" | grep -q 'uid="uid://' || echo "$f"; done`
 - **도구** — 런타임 덤프 · 스크린샷 러너 `UiSceneDump` (T4), 규칙 문서화 (T2, 루트 `CLAUDE.md`).
 - **단독 실행 미리보기** (T8) — 스크립트 있는 씬은 에디터에서 열고 F6 으로 실행하면 더미 데이터가
   채워진다(`resources/UiPreview.gd`, §3 규칙 8). 스크립트 없는 아이템 씬은 씬에 박힌 샘플 문구로 확인.
@@ -30,8 +32,7 @@
 ### ⬜ 해야 할 일 (할 일이 정해진 것)
 | # | 할 일 | 담당 | 비고 |
 |---|---|---|---|
-| D1 | uid 없는 `.tscn` **87개** 에디터에서 열고 저장 | 사용자 | 웨이브 3 ~ 5 에서 CLI 로 쓴 씬 전부. 목록: `for f in $(git ls-files '*.tscn'); do head -1 "$f" \| grep -q 'uid="uid://' \|\| echo "$f"; done` |
-| D2 | **T6** — `editor_description` TODO 마킹 써 보기 | 사용자 → LLM | 사용자가 빈 노드 + `TODO: …` 마킹(§3 규칙 5) → LLM 이 `grep -rn 'editor_description = "TODO' --include=*.tscn` 로 찾아 구현 → TODO 문구 삭제 → 써 본 결과로 규칙 5 다듬기. 현재 마킹 0개 |
+| D2 | **T6** — `editor_description` TODO 마킹 써 보기 | 사용자 → LLM | 1회차 ✅ — `MvpView` `%Side` 에 "아군 표시 지우기 · 포지션을 전용 배지로, 모든 포지션 표기 대체" → `resources/PositionBadge` + 14곳 교체, TODO 0개. 남은 일: 써 본 결과로 규칙 5 다듬기 (아래 교훈) |
 
 ### 결정된 남은 항목 (2026-10-07, 웨이브 5 — §7)
 | # | 항목 | 결과 |
@@ -136,6 +137,9 @@ ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨�
    `TODO: <무엇을>` 을 적는다. `.tscn` 에 `editor_description = "TODO: ..."` 로 저장되므로
    LLM 은 `grep -rn 'editor_description = "TODO' --include=*.tscn` 으로 작업 목록을 얻고,
    그 노드의 위치 · 크기를 그대로 쓴다. 구현이 끝나면 TODO 문구를 지운다.
+   - D2 1회차에서 알게 된 것: TODO 가 그 노드 하나를 넘어 **화면 여러 곳**을 말할 수 있다("모든 … 대체") —
+     LLM 은 범위(어디까지가 같은 표기인지)를 먼저 사용자에게 확인한다. 마킹한 노드를 다른 노드로 바꾸면
+     TODO 도 같이 사라진다.
 6. 기기별로 달라지는 값(세이프 에어리어 인셋)만 코드가 넣는다 — 오프셋으로, 위치 계산이 아니라.
 7. **씬에 로컬 StyleBox(`theme_override_styles/*` sub_resource)를 두지 않는다** — 한 씬에서만 쓰는 모양도
    `OutgameTheme._add_screen_variations()` 의 **화면 전용 변형**으로 만든다. 이름 = `<쓰는 씬><역할>`
@@ -277,7 +281,7 @@ ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨�
 | #12 a | `BanPickController` UI | ✅ 머지 (`BanPickView` + 아이템 씬 5개, 2593→1634줄. 밴 · 픽 · 배치 결과와 BattleSim 핸드오프 동일, 시트 ~1px · 배치 블록 ~0.5px, 판 모서리 18) |
 | #12 b | `MechDetailPanel` · MatchPrep UI · `MatchCheatMenu` | ✅ 머지 (+ `MechMasteryRow` · `MechQuirkRow` · `MechCardCell` · `MatchPrepView` · `MatchCheatItem`. 기벽 없는 경우 diff 0, 기벽 줄은 실제 줄바꿈으로 아래 ~3px. 다크 모달 variation 미정) |
 | 끝 | `mobile_safe_area.md` 패턴 B/C 씬 기반으로 갱신 | ✅ |
-| 끝 | 새 `.tscn` 전부 에디터에서 열고 저장 (uid 부여) | 사용자 ⬜ → §0 D1 |
+| 끝 | 새 `.tscn` 전부 에디터에서 열고 저장 (uid 부여) | 사용자 ✅ (§0 D1 — 136개 전부 확인) |
 | 끝 | 제안 variation 반영 — 사용자 결정: 모서리는 지금 모양 유지, `MechDetailPanel` 은 흰 테마로 | ✅ 1단계 `resources/` (Negative/Positive/LinkLabel · Bar*Button · BarSeparator · Accent/SurfaceChip · Selectable* 쌍 · `OutgameTheme.fit_bottom_bar`) → 2단계 meta · season · match_flow 병렬 머지. 하단 바 헬퍼 4갈래 → 1개 (로비 코드 바만 `add_bottom_bar`) |
 
 ### 웨이브 3 에서 제안된 theme variation — 결과

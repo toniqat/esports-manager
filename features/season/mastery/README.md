@@ -73,7 +73,7 @@ All tuning numbers are `MASTERY_*` keys in `data/csv/const.csv` — none are wri
     ├ %Pilots (MasteryPilotRow, sep 16)
     └ Tail
   MasteryPilotRow (Panel · Card) → %Content (VBox, inset 18)
-    ├ Top (208)  %Portrait (round portrait added by code) · %Name · %Research · %TopMechs · %Chips (MasteryMechChip)
+    ├ Top (208)  %Portrait (round portrait added by code) · %Name · %Research · %Position (PositionBadge) · %TopMechs · %Chips (MasteryMechChip)
     └ %Quirks    Divider · Head (%Count · %Max) · %QuirkEmpty · %Lines (MasteryQuirkLine) · Tail
   ```
   Code owns: texts, delegated / quirk switching, research colour, chip variation (`PrimaryButton` = research

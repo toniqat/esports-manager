@@ -4,15 +4,15 @@ extends CanvasLayer
 # 경기 MVP 전용 뷰 — 경기가 끝나는 순간(`BattleSim.end_match`) 승패 결과 화면보다
 # **먼저** 뜨는 한 장. 이긴 팀 다섯 중 `RunStats.mvp_score` 최고 1명의 전신
 # 일러스트(`PilotImages.full_for` — 모브는 실루엣 컷으로 자동 전환)를 세우고,
-# 이름 · 진영 · 역할 · K/D/A · 핵심 지표 한 줄을 그 아래에 놓는다.
+# 이름 · 포지션 배지(`PositionBadge`) · K/D/A · 핵심 지표 한 줄을 그 아래에 놓는다.
 # "계속"(또는 잠깐 뒤 화면 아무 곳 탭) → `closed` → 기존 결과 화면.
 #
 # **레이아웃의 정본은 `MvpView.tscn` 이다.** 이 스크립트는 `%이름` 노드에 글 · 그림을
 # 넣고 시그널만 잇는다. 색 · 판은 `Root` 에 붙은 전투 테마(`resources/BattleTheme.tres`)의
 # 변형(`MvpDimPanel` · `MvpTitleLabel` · `BattleGoldPanel` · `BattleOutlinedLabel` ·
-# `MvpAllyLabel`/`MvpEnemyLabel` · `MvpSubLabel` · `BattleSlab` · `BattleGoldButton`)이 정한다.
+# `MvpSubLabel` · `BattleSlab` · `BattleGoldButton`)이 정한다. `%Position` 배지는 자기 모양을 들고 온다.
 # 코드가 정하는 것: 안전 영역(`%SafeArea` 위아래 오프셋 — 아래 버튼이 제스처 띠 위에
-# 선다, docs/mobile_safe_area.md), 진영 줄 변형(아군 / 상대), 전신 크기(그림 비율 ·
+# 선다, docs/mobile_safe_area.md), 포지션 배지 색 · 글자(`PositionBadge.set_role`), 전신 크기(그림 비율 ·
 # `%ArtArea` 높이 — `_layout_art`), 후광 색(`BattleTheme.GLOW`), 등장 연출.
 #
 # 쓰는 법:
@@ -64,10 +64,8 @@ func _ready() -> void:
 ## `bs` 가 null 이면(미리보기) 이름은 역할 + 팀 번호 대신 비어 있다.
 func open(bs: BattleSim, p: PilotData, row: Dictionary) -> void:
 	_fit_safe_area()
-	var ally: bool = p.team == 0
 	%Name.text = display_name(bs, p)
-	%Side.text = "%s · %s" % ["아군" if ally else "상대 팀", role_label(p)]
-	%Side.theme_type_variation = &"MvpAllyLabel" if ally else &"MvpEnemyLabel"
+	(%Position as PositionBadge).set_role(p.role)
 	%Kda.text = kda_text(row)
 	%Metric.text = metric_text(row)
 
@@ -151,11 +149,6 @@ static func display_name(bs: BattleSim, p: PilotData) -> String:
 	var role_name: String = String(bs.ROLE_FULL_NAMES[p.role]) \
 			if bs != null and p.role < bs.ROLE_FULL_NAMES.size() else "?"
 	return "%s %d" % [role_name, p.team]
-
-
-## 다섯 자리 이름(탑 · 정글 · 미드 · 원딜 · 서폿).
-static func role_label(p: PilotData) -> String:
-	return String(GameEnums.POSITION_LABELS.get(GameEnums.position_key(p.role), "?"))
 
 
 static func kda_text(row: Dictionary) -> String:

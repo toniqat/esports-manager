@@ -243,11 +243,10 @@ func _fill_shard() -> void:
 		(row.get_node("%Name") as Label).text = String(r["name"])
 		_paint_chip(row.get_node("%Chip"), rar_col)
 		(row.get_node("%ChipText") as Label).text = TraitSystem.rarity_name(int(r["rarity"]))
-		var role_txt: String = String(GameEnums.POSITION_LABELS.get(
-				GameEnums.position_key(int(r["role"])), ""))
+		(row.get_node("%Position") as PositionBadge).set_role(int(r["role"]))
 		var owned: bool = int(_pm.max_level_of(pid)) > 0
-		(row.get_node("%Status") as Label).text = role_txt + " · " + ("돌파 %d/%d" % [
-				int(_pm.breakthrough_of(pid)), RunRules.breakthrough_max()] if owned else "미보유")
+		(row.get_node("%Status") as Label).text = "돌파 %d/%d" % [
+				int(_pm.breakthrough_of(pid)), RunRules.breakthrough_max()] if owned else "미보유"
 		var why: String = ShopCatalog.shard_block_reason(_pm, pid)
 		var price: int = ShopCatalog.shard_price(pid)
 		var b: Button = row.get_node("%Buy")

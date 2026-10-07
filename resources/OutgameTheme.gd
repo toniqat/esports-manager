@@ -126,8 +126,11 @@ const SELECT_BORDER_ON:      int = 4   # 선택 카드 테두리
 const SELECT_TILE_RADIUS:    int = 8   # 작은 타일 · 필터 탭 · 격자 칸
 const SELECT_TILE_BORDER_ON: int = 3   # 선택 타일 테두리
 
-## 역할 배지 가장자리 (색면 위 옅은 검은 테두리, `RoleBadgePanel`).
-const ROLE_BADGE_EDGE: Color = Color(0, 0, 0, 0.18)
+## 포지션 배지 가장자리 (색면 위 옅은 검은 테두리, `PositionBadgePanel`).
+const POSITION_BADGE_EDGE: Color = Color(0, 0, 0, 0.18)
+## 포지션 배지 글자 좌우 / 위아래 여백.
+const POSITION_BADGE_PAD_H: float = 8.0
+const POSITION_BADGE_PAD_V: float = 1.0
 ## 주간 레일 요일 칩 반지름 (`WeekDayChip` · `WeekDayChipToday`).
 const WEEK_DAY_CHIP_RADIUS: int = 20
 
@@ -816,9 +819,13 @@ static func _add_screen_variations(th: Theme) -> void:
 	_add_derived(th, "PilotThumbArtMask", &"SunkPanel", _mask_box(14))
 	_add_derived(th, "PilotThumbCheck", &"AccentChip", flat_style(ACCENT, 20))
 	_add_derived(th, "PilotThumbTag", &"SurfaceChip", flat_style(RAIL, 17))
-	# 역할 배지 = 역할 색(데이터, `RoleBadge.set_role`) — 여기 색은 탱커 미리보기.
-	_add_derived(th, "RoleBadgePanel", &"AccentChip",
-			flat_style((ROLE_COLORS[0] as Color).darkened(0.15), 8, ROLE_BADGE_EDGE, 1))
+	# resources/PositionBadge — 포지션 배지 = 역할 색(데이터, `PositionBadge.set_role`) — 여기 색은 탑 미리보기.
+	var pos_badge := flat_style((ROLE_COLORS[0] as Color).darkened(0.15), 8, POSITION_BADGE_EDGE, 1)
+	pos_badge.content_margin_left = POSITION_BADGE_PAD_H
+	pos_badge.content_margin_right = POSITION_BADGE_PAD_H
+	pos_badge.content_margin_top = POSITION_BADGE_PAD_V
+	pos_badge.content_margin_bottom = POSITION_BADGE_PAD_V
+	_add_derived(th, "PositionBadgePanel", &"AccentChip", pos_badge)
 	# 단계 알약 = 상태 색(`StepChip.paint`) — 여기 색은 "지금 단계" 미리보기.
 	_add_derived(th, "StepChipPanel", &"AccentChip", flat_style(ACCENT, CHIP_RADIUS))
 	_add_derived(th, "TeamDraftGridBack", &"Card", flat_style(SURFACE, 12, BORDER, 2))

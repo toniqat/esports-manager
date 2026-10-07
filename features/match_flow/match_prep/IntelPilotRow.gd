@@ -40,8 +40,7 @@ func fill(row: Dictionary) -> void:
 
 	var shown: bool = bool(row["show_stats"])
 	var exact: bool = bool(row["exact"])
-	%Role.text = String(row["role_label"])
-	%Role.add_theme_color_override(&"font_color", role_col)
+	(%Role as PositionBadge).set_role(int(row["role"]))
 	%Name.text = String(row["name"])
 	%Total.text = "합계 %s" % row["total_text"]
 	%Total.theme_type_variation = &"CaptionLabel" if shown else &"FaintLabel"
@@ -85,7 +84,7 @@ func _fill_preview() -> void:
 	for i in keys.size():
 		stats.append({"label": keys[i], "text": str(vals[i]), "value": vals[i]})
 	fill({
-		"pilot_id": 2, "name": "Shunguang", "role": GameEnums.Role.ASSASSIN, "role_label": "미드",
+		"pilot_id": 2, "name": "Shunguang", "role": GameEnums.Role.ASSASSIN, "role_label": "정글",
 		"show_stats": true, "exact": true, "stats": stats, "total_text": "536",
 		"show_mechs": true, "mechs": [{"mech_id": 0, "name": "Headsman", "text": "Headsman 능숙"},
 				{"mech_id": 0, "name": "Reaper", "text": "Reaper 능숙"}],

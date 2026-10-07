@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=58 format=3 uid="uid://d3sxdpvg3p880"]
+[gd_resource type="Theme" load_steps=58 format=3 uid="uid://dmrfge5o5tftu"]
 
 [sub_resource type="StyleBoxFlat" id="BattleChipButton_focus"]
 content_margin_left = 0.0
@@ -850,12 +850,8 @@ HudVictoryDimPanel/styles/panel = SubResource("HudVictoryDimPanel_panel")
 HudVictoryKdaLabel/base_type = &"BattleSubLabel"
 HudVictoryKdaLabel/colors/font_color = Color(0.8, 0.84, 0.92, 1)
 HudVictoryKdaLabel/font_sizes/font_size = 26
-MvpAllyLabel/base_type = &"BattleOutlinedLabel"
-MvpAllyLabel/colors/font_color = Color(0.55, 0.8, 1, 1)
 MvpDimPanel/base_type = &"BattleDimPanel"
 MvpDimPanel/styles/panel = SubResource("MvpDimPanel_panel")
-MvpEnemyLabel/base_type = &"BattleOutlinedLabel"
-MvpEnemyLabel/colors/font_color = Color(1, 0.55, 0.55, 1)
 MvpSubLabel/base_type = &"BattleOutlinedLabel"
 MvpSubLabel/colors/font_color = Color(0.72, 0.78, 0.9, 1)
 MvpTitleLabel/base_type = &"BattleOutlinedLabel"

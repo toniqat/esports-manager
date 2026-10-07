@@ -50,11 +50,6 @@ extends CanvasLayer
 
 const SCENE_PATH: String = "res://features/meta/run_setup/DraftDetailPanel.tscn"
 
-const ROLE_NAMES: Array = ["TANK", "FIGHTER", "ASSASSIN", "SUPPORT", "SNIPER"]
-## 역할 색은 팔레트가 소유한다 — 화면마다 자기 배열을 들면 같은 역할이
-## 화면마다 다른 색으로 그려진다.
-const ROLE_COLORS: Array = OutgameTheme.ROLE_COLORS
-
 ## 칩 목록 — 선수 스탯 여섯에 "종합" 한 칸을 더한다(3열 × 세 줄 중
 ## 마지막 두 칸은 비운다). 글자는 짧은 쪽을 쓴다 — 칩 한 칸이 130px 남짓이라
 ## "전장 명중" 은 들어가지만 줄바꿈 없이 꽉 차서 값과 붙어 보인다.
@@ -158,14 +153,8 @@ func _fill_art() -> void:
 
 func _fill_header() -> void:
 	%Name.text = _pilot.name
-	var r: int = int(_pilot.role)
-	var role_name: String = String(ROLE_NAMES[r]) if r >= 0 and r < ROLE_NAMES.size() else "?"
-	var role_col: Color = ROLE_COLORS[r] if r >= 0 and r < ROLE_COLORS.size() else OutgameTheme.TEXT
-	var slot: int = TeamDraft.slot_of_role(r)
-	var slot_name: String = String(TeamDraft.SLOT_NAMES[slot]) if slot >= 0 else "?"
-	var sub: Label = %Sub
-	sub.text = "%s · %s · 원소속 %s" % [slot_name, role_name, _team_short(_pilot.team_id)]
-	sub.add_theme_color_override("font_color", role_col)
+	(%Position as PositionBadge).set_role(int(_pilot.role))
+	%Sub.text = "원소속 %s" % _team_short(_pilot.team_id)
 	# M10 — breakthrough stage. The copy handed in already carries it (stats, salary,
 	# swapped pilot card: `RunRules.apply_breakthrough` on the pool / run copies), so
 	# this chip only names *why* the numbers below differ from the base pilot.

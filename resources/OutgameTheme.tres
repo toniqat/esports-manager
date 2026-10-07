@@ -823,6 +823,22 @@ shadow_color = Color(0.11, 0.11, 0.18, 0.1)
 shadow_size = 6
 shadow_offset = Vector2(0, 3)
 
+[sub_resource type="StyleBoxFlat" id="PositionBadgePanel_panel"]
+content_margin_left = 8.0
+content_margin_top = 1.0
+content_margin_right = 8.0
+content_margin_bottom = 1.0
+bg_color = Color(0.15300001, 0.38335, 0.7633, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0, 0, 0, 0.18)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
 [sub_resource type="StyleBoxFlat" id="PrimaryButton_disabled"]
 content_margin_left = 18.0
 content_margin_top = 8.0
@@ -915,18 +931,6 @@ corner_radius_top_left = 7
 corner_radius_top_right = 7
 corner_radius_bottom_right = 7
 corner_radius_bottom_left = 7
-
-[sub_resource type="StyleBoxFlat" id="RoleBadgePanel_panel"]
-bg_color = Color(0.15300001, 0.38335, 0.7633, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0, 0, 0, 0.18)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
 
 [sub_resource type="StyleBoxLine" id="RunResultAccentDivider_separator"]
 color = Color(0.961, 0.651, 0.137, 1)
@@ -1972,6 +1976,8 @@ PopupCard/base_type = &"PanelContainer"
 PopupCard/styles/panel = SubResource("PopupCard_panel")
 PopupCardWide/base_type = &"PanelContainer"
 PopupCardWide/styles/panel = SubResource("PopupCardWide_panel")
+PositionBadgePanel/base_type = &"AccentChip"
+PositionBadgePanel/styles/panel = SubResource("PositionBadgePanel_panel")
 PositiveLabel/base_type = &"Label"
 PositiveLabel/colors/font_color = Color(0.13, 0.68, 0.38, 1)
 PositiveLabel/font_sizes/font_size = 22
@@ -1996,8 +2002,6 @@ ProgressTrack/styles/panel = SubResource("ProgressTrack_panel")
 RailLabel/base_type = &"Label"
 RailLabel/colors/font_color = Color(0.62, 0.62, 0.65, 1)
 RailLabel/font_sizes/font_size = 22
-RoleBadgePanel/base_type = &"AccentChip"
-RoleBadgePanel/styles/panel = SubResource("RoleBadgePanel_panel")
 RunResultAccentDivider/base_type = &"Divider"
 RunResultAccentDivider/styles/separator = SubResource("RunResultAccentDivider_separator")
 RunResultSectionCard/base_type = &"Card"

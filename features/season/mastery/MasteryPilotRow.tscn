@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3 uid="uid://c35ppxplceolt"]
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
-[ext_resource type="PackedScene" path="res://features/season/mastery/MasteryMechChip.tscn" id="3_chip"]
+[ext_resource type="PackedScene" uid="uid://j1d60u8juaj" path="res://features/season/mastery/MasteryMechChip.tscn" id="3_chip"]
 [ext_resource type="PackedScene" path="res://features/season/mastery/MasteryQuirkLine.tscn" id="4_quirk"]
+[ext_resource type="PackedScene" path="res://resources/PositionBadge.tscn" id="pos_badge"]
 
 [node name="MasteryPilotRow" type="Panel"]
 editor_description = "One pilot card of the 메크 연구 sheet (MasteryPanel): portrait · name · research mech · top mastery · own-role mech chips, then the quirk block. The card height follows %Content (+ CARD_PAD_V in MasteryPanel); research colour, chip variation, tier / grade colours are data."
@@ -35,9 +36,8 @@ mouse_filter = 2
 unique_name_in_owner = true
 editor_description = "Round portrait (OutgameTheme.add_round_portrait, a _draw widget) is added here at runtime."
 layout_mode = 1
-anchors_preset = -1
-offset_right = 76
-offset_bottom = 76
+offset_right = 76.0
+offset_bottom = 76.0
 mouse_filter = 2
 
 [node name="Name" type="Label" parent="Content/Top"]
@@ -45,11 +45,10 @@ unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 0.5
-offset_left = 92
-offset_top = -4
-offset_right = 92
-offset_bottom = 36
-mouse_filter = 2
+offset_left = 92.0
+offset_top = -4.0
+offset_right = 92.0
+offset_bottom = 36.0
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 30
 text = "Evelyn"
@@ -61,26 +60,32 @@ layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.5
 anchor_right = 1.0
-offset_bottom = 34
-mouse_filter = 2
+offset_bottom = 34.0
 theme_type_variation = &"AccentLabel"
 theme_override_font_sizes/font_size = 24
 text = "주 마감에 코치가 지정"
 horizontal_alignment = 2
 clip_text = true
 
+[node name="Position" parent="Content/Top" instance=ExtResource("pos_badge")]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 92.0
+offset_top = 41.0
+offset_right = 142.0
+offset_bottom = 68.0
+
 [node name="TopMechs" type="Label" parent="Content/Top"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
-offset_left = 92
-offset_top = 40
-offset_bottom = 70
-mouse_filter = 2
+offset_left = 152.0
+offset_top = 40.0
+offset_bottom = 70.0
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 20
-text = "탱커  ·  숙련 상위  Bastion 능숙 65  ·  Ironhide 능숙 65"
+text = "숙련 상위  Bastion 능숙 65  ·  Ironhide 능숙 65"
 clip_text = true
 
 [node name="Chips" type="HBoxContainer" parent="Content/Top"]
@@ -88,8 +93,8 @@ unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
-offset_top = 100
-offset_bottom = 192
+offset_top = 100.0
+offset_bottom = 192.0
 mouse_filter = 2
 theme_override_constants/separation = 10
 
@@ -123,9 +128,8 @@ unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 0.5
-offset_top = 3
-offset_bottom = 33
-mouse_filter = 2
+offset_top = 3.0
+offset_bottom = 33.0
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 22
 text = "기벽  2 / 2"
@@ -136,9 +140,8 @@ layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.5
 anchor_right = 1.0
-offset_top = 5
-offset_bottom = 33
-mouse_filter = 2
+offset_top = 5.0
+offset_bottom = 33.0
 theme_type_variation = &"FaintLabel"
 theme_override_font_sizes/font_size = 19
 text = "최대 5칸"
@@ -154,9 +157,8 @@ mouse_filter = 2
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
-offset_top = 8
-offset_bottom = 38
-mouse_filter = 2
+offset_top = 8.0
+offset_bottom = 38.0
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 20
 text = "없음 — 기벽 훈련 타일 · 메크 연구로 얻는다"

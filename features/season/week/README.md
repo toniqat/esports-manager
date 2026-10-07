@@ -13,7 +13,7 @@ The screen where the week passes **one day at a time, Monday to Sunday**. `Scree
 | `WeekEveningCard.tscn` | Item: 오늘 저녁 before the action (`%Limits` · `%Slots` of `WeekEveningSlot` · `%Interview` / `%Outing` / `%Pass`) |
 | `WeekEveningSlot.tscn` | Item: one pilot of the evening card (`%Highlight` · `%Portrait` · `%Name` · `%Trust` · `%Hit`) |
 | `WeekEveningDoneCard.tscn` | Item: 오늘 저녁 summary after the action (`%Portrait` · `%Head` · `%Line`) |
-| `WeekPilotCard.tscn` | Item: one pilot's training result (`%Portrait` · `%Name` · `%Role` · `%Mastery` · `%Stats` of `WeekStatCell` · `%QuirkDivider` · `%Quirks` with the `%QuirkLine` template) |
+| `WeekPilotCard.tscn` | Item: one pilot's training result (`%Portrait` · `%Name` · `%Role` (`PositionBadge`) · `%Mastery` · `%Stats` of `WeekStatCell` · `%QuirkDivider` · `%Quirks` with the `%QuirkLine` template) |
 | `WeekStatCell.tscn` | Item: one stat column (`%Short` / `%Value` / `%Result`) |
 
 **F6 preview** — run `WeekProgressView.tscn` alone and it fills dummy data (`resources/UiPreview.gd`):

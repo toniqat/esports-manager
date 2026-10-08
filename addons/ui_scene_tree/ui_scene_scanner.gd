@@ -228,6 +228,10 @@ func _link_code_children(scenes: Dictionary) -> void:
 		if not is_ui_scene(path):
 			continue  # 진입 씬은 코드가 만드는 게 아니라 화면 전환 대상이다
 		for gd in scenes[path]["code_refs"]:
+			# 제 스크립트가 경로를 가진 경우(팩토리, 같은 스크립트를 쓰는 변형 씬 목록)는 부모가 아니다.
+			# 변형끼리 서로를 자식으로 달면 완전 그래프가 되어 독 트리가 폭발한다(BaseMap 12장).
+			if scenes[path]["scripts"].has(gd):
+				continue
 			for owner_path in owners.get(gd, []):
 				var owner_info: Dictionary = scenes[owner_path]
 				if owner_path == path or owner_info["children"].has(path) or owner_info["code_children"].has(path):

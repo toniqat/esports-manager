@@ -77,6 +77,50 @@ func test_filters(t: TestKit) -> void:
 	t.eq(String(m.orphans()[0]["text"]), "새 시즌")
 
 
+func test_status_set_filter(t: TestKit) -> void:
+	var m: SheetModel = _model(t)
+	var both := PackedStringArray([SheetModel.ST_DRAFT, SheetModel.ST_APPROVED])
+	t.eq(_keys(m.search("", {"statuses": both})), [K_ROCKET, K_CONFIRM, K_HAND], "여러 상태 (OR)")
+	t.eq(_keys(m.search("", {"statuses": PackedStringArray([SheetModel.ST_NONE])})), [K_OLD, K_DRAW], "미착수만")
+	t.eq(_keys(m.search("", {"statuses": PackedStringArray()})), [], "고른 상태 없음 = 행 없음")
+	t.eq(m.search("", {}).size(), 5, "statuses 없음 = 조건 없음")
+
+
+func test_search_glossary(t: TestKit) -> void:
+	var m: SheetModel = _model(t)
+	var ids := func(terms: Array) -> Array:
+		var out: Array = []
+		for g in terms:
+			out.append(g["term_id"])
+		out.sort()
+		return out
+	t.eq(ids.call(m.search_glossary("")), ["confirm", "draw", "hand", "mech"], "빈 검색 = 전부")
+	t.eq(ids.call(m.search_glossary("드로우")), ["draw"], "금지 표기")
+	t.eq(ids.call(m.search_glossary("ui.confirm")), ["confirm"], "연결 key 의 alias")
+	t.eq(ids.call(m.search_glossary("번역 금지")), ["mech"], "note")
+	t.eq(ids.call(m.search_glossary("", {"statuses": PackedStringArray([SheetModel.ST_APPROVED])})), ["confirm"], "상태 = 연결 key 기준")
+	t.eq(ids.call(m.search_glossary("", {"statuses": PackedStringArray([SheetModel.ST_NONE])})), [], "key 없는 용어는 상태 필터에 안 걸린다")
+
+
+func test_tag_completions(t: TestKit) -> void:
+	var e: TextEdit = (load("res://addons/l10n_tool/sheet/tag_edit.gd") as GDScript).new()
+	e.set("tags", PackedStringArray(["count", "name"]))
+	e.set("offer_plural", true)
+	e.set("find_label", "FIND")
+	var labels := func(typed: String) -> Array:
+		var out: Array = []
+		for o in e.call("completions", typed):
+			out.append(o["label"])
+		return out
+	t.eq(labels.call(""), ["{count}", "{name}", "{plural:name|…}", "FIND"], "{ 만 = 전부 + 스트링 찾기")
+	t.eq(labels.call("n"), ["{name}", "FIND"], "앞부분 일치")
+	t.eq(labels.call("PL"), ["{plural:name|…}", "FIND"], "대소문자 무시")
+	t.eq(labels.call("plural:"), ["FIND"], "이미 다 친 항목은 뺀다")
+	t.eq(labels.call("tx_"), ["FIND"], "{tx_ = 스트링 찾기만")
+	t.eq(labels.call("tx_AB"), ["FIND"], "{tx_… 도 스트링 찾기만")
+	e.free()
+
+
 func test_detail(t: TestKit) -> void:
 	var m: SheetModel = _model(t)
 	m.set_issues([{"code": "W071", "level": "warn", "msg": "금지 표기 드로우", "file": "", "line": 0, "key": K_DRAW}])

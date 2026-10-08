@@ -88,9 +88,10 @@ func domains() -> PackedStringArray:
 # ── 검색 · 필터 ─────────────────────────────────────────────────────────
 
 ## query = 부분 문자열(대소문자 무시) — key · alias · 원문 · 모든 번역 · 용어 term_id.
-## filters: {domain, locale, locales, status(ST_*), stale, unused, glossary} — 빈 값 · false 는 조건 없음.
+## filters: {domain, locale, locales, status(ST_*), statuses, stale, unused, glossary}: 빈 값 · false 는 조건 없음.
 ## locale 을 주면 status · stale 은 그 로케일만, 아니면 status 는 아무 로케일, stale 은 어느 로케일이든.
 ## locales (PackedStringArray, sheet editor) = the same over several locales; wins over locale when non-empty.
+## statuses (PackedStringArray of ST_*, sheet editor) = any of them in those locales; given but empty = no row.
 func search(query: String, filters: Dictionary = {}) -> Array:
 	var q: String = query.strip_edges().to_lower()
 	var dom: String = String(filters.get("domain", ""))
@@ -100,6 +101,7 @@ func search(query: String, filters: Dictionary = {}) -> Array:
 	var unused_only: bool = bool(filters.get("unused", false))
 	var gloss_only: bool = bool(filters.get("glossary", false))
 	var gloss_keys: Dictionary = glossary_violation_keys() if gloss_only else {}
+	var sts: Variant = filters.get("statuses", null)
 	var locs: PackedStringArray = PackedStringArray([loc]) if loc != "" else target_locales()
 	var multi: PackedStringArray = PackedStringArray(filters.get("locales", PackedStringArray()))
 	if not multi.is_empty():
@@ -114,11 +116,40 @@ func search(query: String, filters: Dictionary = {}) -> Array:
 			continue
 		if stale_only and not _any_locale(r, locs, func(t: Dictionary) -> bool: return t["stale"]):
 			continue
+		if sts != null and not _has_status(r, locs, PackedStringArray(sts)):
+			continue
 		if unused_only and not is_unused(r):
 			continue
 		if gloss_only and not gloss_keys.has(r["key"]):
 			continue
 		out.append(r)
+	return out
+
+
+## Glossary tab search: query = substring (case-insensitive) of term_id · key · alias · each
+## language's text · forbidden forms · note. filters: {locales, statuses} as in `search`, judged on
+## the term's linked key; a term without a key never matches a statuses filter.
+func search_glossary(query: String, filters: Dictionary = {}) -> Array:
+	var q: String = query.strip_edges().to_lower()
+	var sts: Variant = filters.get("statuses", null)
+	var locs: PackedStringArray = PackedStringArray(filters.get("locales", PackedStringArray()))
+	if locs.is_empty():
+		locs = target_locales()
+	var out: Array = []
+	for g in _terms:
+		var r: Dictionary = row_of(String(g["key"]))
+		if q != "":
+			var hay: PackedStringArray = PackedStringArray([g["term_id"], g["key"], String(r.get("alias", "")), g["note"]])
+			for loc in g["texts"]:
+				hay.append(String(g["texts"][loc]))
+			for loc in g["forbidden"]:
+				hay.append(" ".join(g["forbidden"][loc]))
+			if not "
+".join(hay).to_lower().contains(q):
+				continue
+		if sts != null and (r.is_empty() or not _has_status(r, locs, PackedStringArray(sts))):
+			continue
+		out.append(g)
 	return out
 
 
@@ -346,6 +377,10 @@ func _make_row(e: Dictionary) -> Dictionary:
 		"file": String(e["file"]), "line": int(e["line"]), "source": src, "tr": trs, "glossary": terms,
 		"usages": (ix.get("usages", []) as Array).duplicate(), "haystack": "\n".join(hay).to_lower(),
 	}
+
+
+func _has_status(r: Dictionary, locs: PackedStringArray, sts: PackedStringArray) -> bool:
+	return _any_locale(r, locs, func(t: Dictionary) -> bool: return sts.has(String(t["status"])))
 
 
 func _any_locale(r: Dictionary, locs: PackedStringArray, pred: Callable) -> bool:

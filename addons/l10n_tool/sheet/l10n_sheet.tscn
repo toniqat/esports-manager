@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://addons/l10n_tool/sheet/l10n_sheet.gd" id="1_sheet"]
+[ext_resource type="Script" path="res://addons/l10n_tool/sheet/tag_edit.gd" id="2_tag"]
 
 [node name="L10nSheet" type="VBoxContainer"]
 anchors_preset = 15
@@ -21,29 +22,10 @@ layout_mode = 2
 size_flags_horizontal = 3
 text_overrun_behavior = 3
 
-[node name="AddRow" type="Button" parent="TopBar"]
+[node name="LocaleMenu" type="MenuButton" parent="TopBar"]
 unique_name_in_owner = true
 layout_mode = 2
-
-[node name="Reload" type="Button" parent="TopBar"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="Scan" type="Button" parent="TopBar"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="Validate" type="Button" parent="TopBar"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="Sync" type="Button" parent="TopBar"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="BuildDev" type="Button" parent="TopBar"]
-unique_name_in_owner = true
-layout_mode = 2
+flat = false
 
 [node name="Tabs" type="TabContainer" parent="."]
 unique_name_in_owner = true
@@ -61,7 +43,7 @@ layout_mode = 2
 
 [node name="Search" type="LineEdit" parent="Tabs/Keys/FilterBar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(260, 0)
+custom_minimum_size = Vector2(520, 0)
 layout_mode = 2
 clear_button_enabled = true
 
@@ -69,14 +51,10 @@ clear_button_enabled = true
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="LocaleMenu" type="MenuButton" parent="Tabs/Keys/FilterBar"]
+[node name="StatusMenu" type="MenuButton" parent="Tabs/Keys/FilterBar"]
 unique_name_in_owner = true
 layout_mode = 2
 flat = false
-
-[node name="StatusFilter" type="OptionButton" parent="Tabs/Keys/FilterBar"]
-unique_name_in_owner = true
-layout_mode = 2
 
 [node name="StaleOnly" type="CheckBox" parent="Tabs/Keys/FilterBar"]
 unique_name_in_owner = true
@@ -94,17 +72,46 @@ layout_mode = 2
 unique_name_in_owner = true
 layout_mode = 2
 
+[node name="Spacer" type="Control" parent="Tabs/Keys/FilterBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
 [node name="Approve" type="MenuButton" parent="Tabs/Keys/FilterBar"]
 unique_name_in_owner = true
 layout_mode = 2
 flat = false
 
-[node name="Split" type="VSplitContainer" parent="Tabs/Keys"]
+[node name="AddRow" type="Button" parent="Tabs/Keys/FilterBar"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Reload" type="Button" parent="Tabs/Keys/FilterBar"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Scan" type="Button" parent="Tabs/Keys/FilterBar"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Validate" type="Button" parent="Tabs/Keys/FilterBar"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Sync" type="Button" parent="Tabs/Keys/FilterBar"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="BuildDev" type="Button" parent="Tabs/Keys/FilterBar"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="KeysSplit" type="VSplitContainer" parent="Tabs/Keys"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
-split_offset = 420
+split_offset = 360
 
-[node name="Sheet" type="Tree" parent="Tabs/Keys/Split"]
+[node name="Sheet" type="Tree" parent="Tabs/Keys/KeysSplit"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
@@ -112,66 +119,221 @@ column_titles_visible = true
 allow_rmb_select = true
 hide_root = true
 
-[node name="Editor" type="HBoxContainer" parent="Tabs/Keys/Split"]
-custom_minimum_size = Vector2(0, 120)
+[node name="Dock" type="HBoxContainer" parent="Tabs/Keys/KeysSplit"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 200)
 layout_mode = 2
 
-[node name="Side" type="VBoxContainer" parent="Tabs/Keys/Split/Editor"]
-custom_minimum_size = Vector2(240, 0)
+[node name="DockScroll" type="ScrollContainer" parent="Tabs/Keys/KeysSplit/Dock"]
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_scroll_mode = 0
+
+[node name="DockForm" type="VBoxContainer" parent="Tabs/Keys/KeysSplit/Dock/DockScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="DockHead" type="HBoxContainer" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm"]
 layout_mode = 2
 
-[node name="CellInfo" type="Label" parent="Tabs/Keys/Split/Editor/Side"]
+[node name="DockTitle" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockHead"]
 unique_name_in_owner = true
 layout_mode = 2
-autowrap_mode = 3
+theme_type_variation = &"HeaderSmall"
 
-[node name="Apply" type="Button" parent="Tabs/Keys/Split/Editor/Side"]
+[node name="DockSub" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockHead"]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.6)
+layout_mode = 2
+size_flags_horizontal = 3
+text_overrun_behavior = 3
+
+[node name="DockGrid" type="GridContainer" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm"]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 2
+
+[node name="ExampleHead" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
 unique_name_in_owner = true
 layout_mode = 2
-disabled = true
+size_flags_vertical = 0
 
-[node name="Revert" type="Button" parent="Tabs/Keys/Split/Editor/Side"]
-unique_name_in_owner = true
-layout_mode = 2
-disabled = true
-
-[node name="CellEdit" type="TextEdit" parent="Tabs/Keys/Split/Editor"]
+[node name="ExampleEdit" type="TextEdit" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 editable = false
 wrap_mode = 1
+scroll_fit_content_height = true
 
-[node name="Usages" type="VBoxContainer" parent="Tabs/Keys/Split/Editor"]
-custom_minimum_size = Vector2(340, 0)
+[node name="SourceHead" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
+unique_name_in_owner = true
 layout_mode = 2
+size_flags_vertical = 0
 
-[node name="UsageTitle" type="Label" parent="Tabs/Keys/Split/Editor/Usages"]
+[node name="SourceEdit" type="TextEdit" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+editable = false
+wrap_mode = 1
+scroll_fit_content_height = true
+script = ExtResource("2_tag")
+
+[node name="TargetHeadRow" type="HBoxContainer" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="TargetDot" type="TextureRect" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid/TargetHeadRow"]
+unique_name_in_owner = true
+layout_mode = 2
+stretch_mode = 5
+
+[node name="TargetHead" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid/TargetHeadRow"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="UsageList" type="ItemList" parent="Tabs/Keys/Split/Editor/Usages"]
+[node name="TargetEdit" type="TextEdit" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_vertical = 3
+size_flags_horizontal = 3
+editable = false
+wrap_mode = 1
+scroll_fit_content_height = true
+script = ExtResource("2_tag")
 
-[node name="Glossary" type="VSplitContainer" parent="Tabs"]
+[node name="ContextLabel" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
+layout_mode = 2
+size_flags_vertical = 0
+text = "context"
+
+[node name="ContextEdit" type="TextEdit" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+editable = false
+wrap_mode = 1
+scroll_fit_content_height = true
+
+[node name="MaxLenLabel" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
+layout_mode = 2
+size_flags_vertical = 0
+text = "max_len"
+
+[node name="MaxLenEdit" type="LineEdit" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+editable = false
+
+[node name="NoteLabel" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
+layout_mode = 2
+size_flags_vertical = 0
+text = "note"
+
+[node name="NoteEdit" type="TextEdit" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+editable = false
+wrap_mode = 1
+scroll_fit_content_height = true
+
+[node name="DockInfo" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+
+[node name="UsageTitle" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="UsageList" type="ItemList" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm"]
+unique_name_in_owner = true
+layout_mode = 2
+auto_height = true
+
+[node name="DockButtons" type="VBoxContainer" parent="Tabs/Keys/KeysSplit/Dock"]
+layout_mode = 2
+
+[node name="Apply" type="Button" parent="Tabs/Keys/KeysSplit/Dock/DockButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+
+[node name="Revert" type="Button" parent="Tabs/Keys/KeysSplit/Dock/DockButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+
+[node name="Glossary" type="VBoxContainer" parent="Tabs"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 metadata/_tab_index = 1
 
-[node name="GlossaryTree" type="Tree" parent="Tabs/Glossary"]
+[node name="GlBar" type="HFlowContainer" parent="Tabs/Glossary"]
+layout_mode = 2
+
+[node name="GlSearch" type="LineEdit" parent="Tabs/Glossary/GlBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(520, 0)
+layout_mode = 2
+clear_button_enabled = true
+
+[node name="GlStatusMenu" type="MenuButton" parent="Tabs/Glossary/GlBar"]
+unique_name_in_owner = true
+layout_mode = 2
+flat = false
+
+[node name="GlCount" type="Label" parent="Tabs/Glossary/GlBar"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Spacer" type="Control" parent="Tabs/Glossary/GlBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="GlApprove" type="MenuButton" parent="Tabs/Glossary/GlBar"]
+unique_name_in_owner = true
+layout_mode = 2
+flat = false
+
+[node name="GlReload" type="Button" parent="Tabs/Glossary/GlBar"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="GlValidate" type="Button" parent="Tabs/Glossary/GlBar"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="GlBuildDev" type="Button" parent="Tabs/Glossary/GlBar"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="GlSplit" type="VSplitContainer" parent="Tabs/Glossary"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 360
+
+[node name="GlTop" type="HSplitContainer" parent="Tabs/Glossary/GlSplit"]
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 900
+
+[node name="GlossaryTree" type="Tree" parent="Tabs/Glossary/GlSplit/GlTop"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 160)
 layout_mode = 2
-size_flags_vertical = 3
+size_flags_horizontal = 3
 column_titles_visible = true
 hide_root = true
 
-[node name="GlossaryKeys" type="ItemList" parent="Tabs/Glossary"]
+[node name="GlossaryKeys" type="ItemList" parent="Tabs/Glossary/GlSplit/GlTop"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 120)
+custom_minimum_size = Vector2(260, 0)
 layout_mode = 2
 
 [node name="Orphans" type="VBoxContainer" parent="Tabs"]
@@ -180,10 +342,18 @@ visible = false
 layout_mode = 2
 metadata/_tab_index = 2
 
-[node name="OrphanTitle" type="Label" parent="Tabs/Orphans"]
+[node name="OrphanBar" type="HBoxContainer" parent="Tabs/Orphans"]
+layout_mode = 2
+
+[node name="OrphanTitle" type="Label" parent="Tabs/Orphans/OrphanBar"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 autowrap_mode = 3
+
+[node name="OrScan" type="Button" parent="Tabs/Orphans/OrphanBar"]
+unique_name_in_owner = true
+layout_mode = 2
 
 [node name="OrphanList" type="ItemList" parent="Tabs/Orphans"]
 unique_name_in_owner = true
@@ -232,17 +402,20 @@ visible = false
 layout_mode = 2
 metadata/_tab_index = 4
 
+[node name="LogBar" type="HBoxContainer" parent="Tabs/Log"]
+layout_mode = 2
+alignment = 2
+
+[node name="LogClear" type="Button" parent="Tabs/Log/LogBar"]
+unique_name_in_owner = true
+layout_mode = 2
+
 [node name="LogText" type="TextEdit" parent="Tabs/Log"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 editable = false
 wrap_mode = 1
-
-[node name="Status" type="Label" parent="."]
-unique_name_in_owner = true
-layout_mode = 2
-text_overrun_behavior = 3
 
 [node name="AddRowDialog" type="ConfirmationDialog" parent="."]
 unique_name_in_owner = true
@@ -296,6 +469,30 @@ size_flags_horizontal = 3
 unique_name_in_owner = true
 size = Vector2i(480, 260)
 dialog_autowrap = true
+
+[node name="KeyPicker" type="AcceptDialog" parent="."]
+unique_name_in_owner = true
+exclusive = false
+size = Vector2i(820, 460)
+
+[node name="KpBox" type="VBoxContainer" parent="KeyPicker"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 812.0
+offset_bottom = 411.0
+
+[node name="KpSearch" type="LineEdit" parent="KeyPicker/KpBox"]
+unique_name_in_owner = true
+layout_mode = 2
+clear_button_enabled = true
+
+[node name="KpTree" type="Tree" parent="KeyPicker/KpBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+columns = 4
+column_titles_visible = true
+hide_root = true
 
 [node name="RowMenu" type="PopupMenu" parent="."]
 unique_name_in_owner = true

@@ -1046,6 +1046,7 @@ theme variation too, built in `OutgameTheme._add_screen_variations()`:
 | `LobbySurfaceBar` · `LobbyToast` | Card · SurfaceChip | `Lobby` `StripBack` / `TabBarBack` · `Toast` | error toast = `NEGATIVE` copy |
 | `BanPickOrderPip` · `IntelAnalystNote` | SunkPanel · SunkPanel | `BanPickOrderPip` root (r6; side colour + capsule corners = code copy) · `IntelView` `Note/Card` (`ACCENT_DIM`, r14) | pip fill = side colour |
 | `MessengerBubbleNpc` · `MessengerBubbleMine` · `MessengerAnswerButton` · `MessengerNoteChipMuted` | Card · Card · GhostButton · AccentChip | `MessengerNpcBubble` / `MessengerPlayerBubble` `%Bubble` (r22, padding 0 — the scene's `Pad` pads) · `MessengerAnswerButton` (ghost + padding 22/17) · failed `MessengerNoteChip` | — |
+| `VnDialogueBubble` · `VnDialogueNamePlate` · `VnDialogueNamePlateMine` · `VnDialogueArtSlab` · `VnDialogueChoiceButton` | Card · AccentChip · AccentChip · SunkPanel · GhostButton | `UI_View_VnDialogue` `%Bubble` (r28, padding 0, the scene's `Pad` pads) · `%NamePlate` (pilot `ACCENT` / manager `RAIL`, r14 + padding), switched by `VnDialogueView._show_line` · `%Slab` (no-art placeholder) · `UI_Comp_VnChoiceButton` (ghost + padding) | (none) |
 
 Label colour overrides that are data (side / grade / day state colours) stay `theme_override_colors` set by code;
 the scene value is a preview.

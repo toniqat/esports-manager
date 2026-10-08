@@ -146,8 +146,9 @@ records and forwards taps. On a training day the list order is **incident → ev
   `면담 n/N · 외출 n/M`. Disabled buttons say why (`면담 (이번 주 끝)`, `외출 (신뢰 N↑)` with N =
   `TRUST_OUTING_MIN`). After the action the card collapses to a one-line
   summary with the effect notes. Pressing the bottom `확인` without choosing records a **pass**.
-* **Dialog overlay** — interview / outing / incident open a `MessengerView`
-  (`features/season/press/MessengerView.gd`) as the last child of this screen (`_overlay`); its
+* **Dialog overlay**: interview / outing open a `VnDialogueView` (visual-novel dialogue,
+  `features/season/mental/README.md`), an incident opens a `MessengerView`
+  (`features/season/press/MessengerView.gd`), as the last child of this screen (`_overlay`); its
   STOP root blocks the list and the bottom bar until it closes, then the screen `refresh()`es.
   An evening dialog left open by a reload (record with `choice = -1`) reopens itself with the same event.
 

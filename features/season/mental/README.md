@@ -12,6 +12,9 @@ and gets no `L` constant. Mod clauses write `source = "mental:<event id>"` (`MOD
 | `MentalSystem.gd` | `class_name MentalSystem` (static). State + flow: run init, week reset, weekly limits, evening action (interview / outing / pass), incident roll + resolve, press session + resolve, outing training-EXP penalty, true-ending pilots. Every entry point takes the `season_state` dictionary (no autoloads → headless-testable). |
 | `MentalEvents.gd` | `class_name MentalEvents` (static). `mental_events` + `mental_texts` tables (game.db) → parsed rows (texts as l10n keys); the `effects` / `cond` grammar; row selection (cond, manager type, weights); `apply_choice` (mental check + clauses + replies, keys / ids only); `outcome_view` · `note_texts` · `text` turn stored keys into display text (`Loc.t`, `{name}`). |
 | `StressSystem.gd` | `class_name StressSystem` (static). Stress (Darkest Dungeon style): run init, clamp, shaken (위축) ratio, mood multipliers, roster-copy `apply_to` (MatchFlow), `snapshot` → `match_ctx.stress`, `record_match` ← `pending_match.stress`, training-day roll, interview / outing relief, display helpers (`mood_label`, `line`). The in-match part is `features/battle_sim/stress/`. |
+| `VnDialogueView.gd` | `class_name VnDialogueView extends Control`: **visual-novel dialogue** for interviews and outings (full-body art, bottom speech bubble, dimmed centred choices, result panel). Drop-in for `MessengerView` on the week screen's evening dialog. See **VN dialogue (VnDialogueView)** below. |
+| `UI_View_VnDialogue.tscn` | Its scene (layout owner): header, `%Stage` art box, `%Bubble`, `%Dim`, `%Overlay` with `%ChoiceList` · `%ResultPanel` · `%Hint`. Create with `VnDialogueView.create()`. |
+| `UI_Comp_VnChoiceButton.tscn` | Item (no script): one answer button (`VnDialogueChoiceButton`, 880 wide, at least 112 tall, autowrap, centred). Code sets text + `pressed`. |
 | `PilotMods.gd` | `class_name PilotMods` (static, base). Temporary per-pilot stat mods `[{pilot_id, stat, delta, weeks_left, source}]`; `weeks_left = -1` lasts until the next own match. `apply_to` is only ever called on a **roster copy** (MatchFlow). |
 
 The dialogue UI is `features/season/press/MessengerView.gd` (shared with the press conference);
@@ -146,3 +149,108 @@ A note whose stat is `all` reads `training.stat.all` ("모든 파일럿 능력�
 `outing_unlocked` / `can_interview` / `can_outing` · `evening` / `evening_done` / `begin_evening(state, day, action, pid)` /
 `finish_evening(state, day, choice)` · `ensure_incident` / `incident_pending` / `incident_session` /
 `resolve_incident` · `press_session` / `resolve_press` · `session_view(state, session)` → `{kind, event, pilot_id, tag, lines, choices}` (translated text).
+
+## VN dialogue (VnDialogueView)
+
+Interviews and outings play as a **visual novel**: the pilot's full-body illustration in the
+centre, one line at a time in a speech bubble at the bottom, a tap advances. The press conference
+and incidents keep `MessengerView` (`features/season/press/`).
+
+```
+월요일 저녁 · 면담                  ← %Sub (caption)
+Evelyn                              ← %Title (heading)
+        ( full-body art )           ← %Art = PilotImages.full_for(pilot_id), %Slab if null
+┌[Evelyn]───────────────────────┐   ← %NamePlate: pilot amber / manager dark / hidden for narration
+│ 감독님, 잠깐 시간 괜찮으세요?   │   ← %Text, typed out; a tap while typing shows it whole
+└───────────────────────────────┘
+          화면을 눌러 계속           ← %Hint (above the dim)
+```
+
+(Mockup text: header "Monday evening · Interview", pilot "Evelyn", line "Coach, got a minute?",
+hint "Tap the screen to continue".)
+
+**API** (same signals / methods as `MessengerView`, only `open` differs):
+
+| Member | Meaning |
+|---|---|
+| `static create() -> VnDialogueView` | Instantiates `UI_View_VnDialogue.tscn` (never `.new()`) |
+| `open(sub: String, title: String, pilot_id: int, lines: Array, choices: Array, speaker: String = "") -> void` | Fresh dialogue. `pilot_id` picks the art (`-1` or no art → placeholder slab with the name). `speaker` = the pilot's name plate, `""` → `title` |
+| `signal choice_picked(idx: int)` | An answer was tapped. The owner applies it and calls `show_result` (same frame or later; the view waits) |
+| `show_result(outcome_view: Dictionary) -> void` | `MentalEvents.outcome_view(state, outcome)` → `{checked, ok, say, notes}` (display text) |
+| `signal closed` | The final tap on the result; the owner frees the view |
+| `is_open() -> bool` · `reveal_all() -> void` | Still running · jump to the choices (previews / harnesses) |
+| `@export outcome_hint` | Bottom hint key once the result shows (default `press.messenger.hint_close`) |
+
+**Flow**: lines (one per tap) → choices: `%Dim` fades in, `%ChoiceList` lists the answers
+vertically in the screen centre → `choice_picked` → the picked answer plays as a manager line,
+then the `say` replies (one per tap) → `%ResultPanel` over the dim: mental check verdict
+(`press.messenger.check_pass` / `check_fail`, only when `checked`) + one `MessengerNoteChip` per
+note (trust, stat mods, outing …) → tap → `closed`. No notes and no check → no panel, the next
+tap closes. No choices → the tap after the last line closes.
+
+**Line markers** (same grammar as above): plain = pilot (name plate = pilot name, amber
+`VnDialogueNamePlate`), `>text` = manager (name plate `term.person.manager`, dark
+`VnDialogueNamePlateMine`, the art dims to `ART_LISTEN_MODULATE`), `*text` = narration (no plate,
+`SubLabel` text), `@text` = tag (header only, skipped). Empty lines are skipped.
+
+**Input**: the root is STOP (blocks the week screen and its bottom bar) and reads taps on
+**release** in `gui_input`; every child but the answer buttons ignores the mouse. `_picked_frame`
+ignores the release of the answer tap. Presentation timings (`TYPE_CHARS_PER_SEC`, `FADE_SEC`) are
+script constants, like `MvpView`.
+
+**Safe area**: like `MessengerView` the view never indents itself (the week screen already sits on
+the safe top). Code extends `%Background` and `%Dim` into the notch band and lifts `%SafeArea` /
+`%Overlay` by the bottom inset, so the bubble and hint stay above the gesture zone.
+
+**Looks** (`OutgameTheme._add_screen_variations`, listed in `resources/README.md`):
+`VnDialogueBubble` (Card r28, padding 0, the scene's `Pad` pads), `VnDialogueNamePlate` ·
+`VnDialogueNamePlateMine` (AccentChip, `ACCENT` / `RAIL`), `VnDialogueArtSlab` (SunkPanel),
+`VnDialogueChoiceButton` (GhostButton + padding). Dim = shared `DimPanel`, result = `PopupCard`.
+
+**l10n**: new key `mental.ui.vn.result_title` (result panel title, scene text). Reused:
+`ui.button.tap_to_continue`, `press.messenger.pick_answer` / `hint_close` / `check_pass` /
+`check_fail`, `term.person.manager`. Scene placeholders the script overwrites are `auto_translate_mode = 2`.
+
+**F6 preview**: a real interview of an in-memory run (`UiPreview.ensure_run`, my first pilot,
+`MentalSystem.begin_evening`); picking an answer runs `finish_evening` and shows the real result.
+
+### Wiring (coordinator: `features/season/week/WeekProgressView.gd`)
+
+The evening dialog switches to `VnDialogueView`; incidents stay on `MessengerView`.
+
+```gdscript
+var _overlay: Control = null          # VnDialogueView (evening) / MessengerView (incident), null when closed
+
+func _open_overlay(kind: String, sub: String, title: String, pid: int, view: Dictionary) -> void:
+	_overlay_kind = kind
+	if kind == "evening":
+		var vn := VnDialogueView.create()
+		_overlay = vn
+		add_child(vn)
+		vn.choice_picked.connect(_on_overlay_choice)
+		vn.closed.connect(_on_overlay_closed)
+		vn.open(sub, title, pid, view["lines"], view["choices"])
+		return
+	var msg := MessengerView.create()
+	_overlay = msg
+	add_child(msg)
+	msg.choice_picked.connect(_on_overlay_choice)
+	msg.closed.connect(_on_overlay_closed)
+	msg.open(sub, title, PilotImages.circle_for(pid), view["lines"], view["choices"])
+
+
+func _on_overlay_choice(idx: int) -> void:
+	var s: Dictionary = _gm.season_state
+	var out: Dictionary
+	if _overlay_kind == "incident":
+		out = MentalSystem.resolve_incident(s, _day, idx)
+	else:
+		out = MentalSystem.finish_evening(s, _day, idx)
+	var ov: Dictionary = MentalEvents.outcome_view(s, out)
+	if _overlay is VnDialogueView:
+		(_overlay as VnDialogueView).show_result(ov)
+	elif _overlay is MessengerView:
+		(_overlay as MessengerView).show_result(ov)
+```
+`_on_overlay_closed` and the `_overlay != null` guards stay as they are. Also update the week
+README line that says the evening dialog is a `MessengerView`.

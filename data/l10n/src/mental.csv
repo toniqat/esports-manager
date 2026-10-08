@@ -248,3 +248,4 @@ tx_9M70CG3F4P,mental.ui.stress.mood.awaken,active,"스트레스 상태 - 경기 
 tx_526PWNR0KP,mental.ui.stress.mood.panic,active,"스트레스 상태 - 경기 중 시험 결과(-), 경기 끝까지",,,패닉,Panic,draft,c0a785ec
 tx_QZCW0ABV05,mental.ui.note.stress,active,멘탈 결과 칩 (MentalEvents.note_text),,,{name} 스트레스 {delta},{name} stress {delta},draft,e04dc6c2
 tx_29J1CQRVAJ,mental.ui.note.stress_all,active,멘탈 결과 칩,,,팀 전체 스트레스 {delta},Team stress {delta},draft,d5eaa849
+tx_TEE5MJ4DBZ,mental.ui.vn.result_title,active,"VnDialogueView (면담 · 외출 비주얼 노벨 대화) 결과 판 제목, 선택 뒤 신뢰 · 스트레스 칩 위",,,결과,Outcome,draft,71d855ac

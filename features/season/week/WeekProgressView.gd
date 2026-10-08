@@ -91,7 +91,7 @@ var _chip_labels: Array = []       # 7 Label (… /Chip/Letter)
 # M7 — evening / incident dialogs.
 var _sel_pid: int = -1                # pilot picked on the evening card
 var _sel_day: int = -1                # weekday `_sel_pid` belongs to
-var _overlay: MessengerView = null    # dialog on top of the screen, null when closed
+var _overlay: Control = null          # VnDialogueView (evening) / MessengerView (incident), null when closed
 var _overlay_kind: String = ""        # "evening" / "incident"
 
 
@@ -780,11 +780,21 @@ func _open_incident() -> void:
 
 func _open_overlay(kind: String, sub: String, title: String, pid: int, view: Dictionary) -> void:
 	_overlay_kind = kind
-	_overlay = MessengerView.create()
-	add_child(_overlay)
-	_overlay.choice_picked.connect(_on_overlay_choice)
-	_overlay.closed.connect(_on_overlay_closed)
-	_overlay.open(sub, title, PilotImages.circle_for(pid), view["lines"], view["choices"])
+	# Interviews / outings = visual-novel dialogue (`mental/VnDialogueView`); incidents stay messenger.
+	if kind == "evening":
+		var vn := VnDialogueView.create()
+		_overlay = vn
+		add_child(vn)
+		vn.choice_picked.connect(_on_overlay_choice)
+		vn.closed.connect(_on_overlay_closed)
+		vn.open(sub, title, pid, view["lines"], view["choices"])
+		return
+	var msg := MessengerView.create()
+	_overlay = msg
+	add_child(msg)
+	msg.choice_picked.connect(_on_overlay_choice)
+	msg.closed.connect(_on_overlay_closed)
+	msg.open(sub, title, PilotImages.circle_for(pid), view["lines"], view["choices"])
 
 
 func _on_overlay_choice(idx: int) -> void:
@@ -794,8 +804,11 @@ func _on_overlay_choice(idx: int) -> void:
 		out = MentalSystem.resolve_incident(s, _day, idx)
 	else:
 		out = MentalSystem.finish_evening(s, _day, idx)
-	if _overlay != null:
-		_overlay.show_result(MentalEvents.outcome_view(s, out))
+	var ov: Dictionary = MentalEvents.outcome_view(s, out)
+	if _overlay is VnDialogueView:
+		(_overlay as VnDialogueView).show_result(ov)
+	elif _overlay is MessengerView:
+		(_overlay as MessengerView).show_result(ov)
 
 
 func _on_overlay_closed() -> void:

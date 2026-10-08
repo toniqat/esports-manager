@@ -97,3 +97,65 @@ tx_7ZE1GEB58D,term.activity.training,active,주간 활동 — 훈련,,,훈련,Tr
 tx_BXYJXH1JEK,term.activity.press,active,주간 활동 — 기자회견,,,기자회견,Press Conference,draft,2b678a57
 tx_F28RBDEGBX,term.activity.interview,active,멘탈 활동 — 선수와 면담,,,면담,Meeting,draft,07083b5a
 tx_1AHEKW5X7X,term.activity.outing,active,멘탈 활동 — 팀 외출,,,외출,Outing,draft,9bd292b1
+tx_FV39P9GPAJ,term.stat.pilot,active,파일럿 능력치 여섯(전장 명중 … 체력 성장)의 통칭. 문장 중간 표기(en 소문자),,,파일럿 능력치,pilot stats,draft,9aacca12
+tx_CD7F656SAD,term.stat.manager,active,감독 능력치(훈련 · 전술 · 지식 · 분석 · 멘탈 · 관리)의 통칭. 문장 중간 표기(en 소문자),,,감독 능력치,manager stats,draft,7d40d4aa
+tx_70VZVPK01J,term.stat.mech,active,메크(기체) 기본 능력치의 통칭. 문장 중간 표기(en 소문자),,,기체 능력치,mech stats,draft,fe70f0f7
+tx_WEMGESKYB6,term.pilot.owned,active,보유 선수 제목. 컬렉션 탭 · 상점 선수 영입 보유 줄,,,보유 선수,Owned Players,draft,940d819a
+tx_T4AQ20H32S,term.skill_type.charge,active,skill type,,,충전식,Charge,draft,d4229706
+tx_4E9EYFHCMT,term.skill_type.passive,active,skill type,,,패시브,Passive,draft,70524aef
+tx_R5P3SNJTFY,term.skill_type.cooldown,active,파일럿 스킬 타입,,,쿨타임,Cooldown,draft,7da14b8b
+tx_X43BN649C3,term.currency.outgame,active,아웃게임 재화 이름. 상점 · 로비 재화 줄 · 런 결과 보상 줄,,,재화,Coins,draft,cacc3dae
+tx_CT27Z5QXZ6,term.currency.gacha_ticket_pilot,active,선수 뽑기권 이름. 상점 · 로비 재화 줄. 짧게,,,선수권,Player Ticket,draft,11dcea35
+tx_K2JE76Z638,term.currency.gacha_ticket_trait,active,특성 뽑기권 이름. 상점 · 로비 재화 줄. 짧게,,,특성권,Trait Ticket,draft,6f6a05c5
+tx_HY7DQNPK90,term.currency.trait_mat,active,ShopPopup.CURRENCY_LABELS - profile currency trait_mat,,,특성 재료,Trait Material,draft,56c35de7
+tx_95RWKDGXRT,term.currency.cosmetic,active,ShopPopup.CURRENCY_LABELS - profile currency cosmetic,,,치장 재화,Cosmetic Currency,draft,0ce08d4a
+tx_BZBSE52DHH,term.currency.premium,active,ShopPopup.CURRENCY_LABELS - profile currency premium,,,유료 재화,Premium Currency,draft,e9f94fb1
+tx_V9830054XS,term.currency.pilot_shard,active,선수 파편 재화 이름. 상점 · 컬렉션 탭 제목,,,선수 파편,Player Shards,draft,c9c8b3c4
+tx_RYDV3SGR93,term.manager_stat.training,active,감독 · 스태프 능력치 이름 (StaffSystem.STAT_LABELS),,,훈련,Training,draft,6c9264ab
+tx_9265Y1MCPW,term.manager_stat.tactics,active,감독 · 스태프 능력치 이름 (StaffSystem.STAT_LABELS),,,전술,Tactics,draft,de5da8ac
+tx_K3FRY03EQK,term.manager_stat.knowledge,active,감독 · 스태프 능력치 이름 (StaffSystem.STAT_LABELS),,,지식,Knowledge,draft,64f6bb4e
+tx_3P9850FA1G,term.manager_stat.mental,active,감독 · 스태프 능력치 이름 (StaffSystem.STAT_LABELS),,,멘탈,Mental,draft,48b4c861
+tx_Z1HJZ9M6K6,term.manager_stat.analysis,active,감독 · 스태프 능력치 이름 (StaffSystem.STAT_LABELS),,,분석,Analysis,draft,d5ce088d
+tx_SJJT6G3QTG,term.manager_stat.finance,active,감독 · 스태프 능력치 이름 (StaffSystem.STAT_LABELS),,,관리,Management,draft,c29fba5a
+tx_0RR59YT76D,term.stat.pilot_all,active,훈련 타일 고정 EXP 절이 여섯 스탯 전부일 때의 스탯 이름 — training.effect.flat 의 {stat},,,모든 {tx_FV39P9GPAJ},All {tx_FV39P9GPAJ},draft,cb1c426c
+tx_SVRFJDH55K,term.game.hand,active,"게임 용어 (용어집 hand). 문장 안 {tx_…} 참조용, en 은 문장 중간 소문자",,,손,hand,draft,df4db293
+tx_D0S7070T32,term.game.while_held,active,"게임 용어 (용어집 while_held). 문장 안 {tx_…} 참조용, en 은 문장 중간 소문자",,,소지 중,while held,draft,2e1bba3e
+tx_VPV5JM208F,term.game.search,active,"게임 용어 (용어집 search). 문장 안 {tx_…} 참조용, en 은 문장 중간 소문자",,,찾기,search,draft,68819ee9
+tx_DM7HJ301F1,term.game.discard_pile,active,"게임 용어 (용어집 discard_pile). 문장 안 {tx_…} 참조용, en 은 문장 중간 소문자",,,버린 더미,discard pile,draft,e48c4aec
+tx_6VVGYKXZSK,term.game.draw,active,"게임 용어 (용어집 draw). 문장 안 {tx_…} 참조용, en 은 문장 중간 소문자",,,뽑기,draw,draft,dac8a8de
+tx_F3A6GQEVFX,term.game.discard,active,"게임 용어 (용어집 discard). 문장 안 {tx_…} 참조용, en 은 문장 중간 소문자",,,버리기,discard,draft,6db5f96b
+tx_2T8RX9PWGV,term.game.operation_phase,active,"게임 용어 (용어집 operation_phase). 문장 안 {tx_…} 참조용, en 은 문장 중간 소문자",,,작전 단계,operation phase,draft,0feab836
+tx_F597JS5T37,term.game.strategy_points,active,"게임 용어 (용어집 strategy_points). 문장 안 {tx_…} 참조용, en 은 문장 중간 소문자",,,전략 점수,strategy points,draft,2e5ccf32
+tx_WBS95M3MNQ,term.game.growth_points,active,"게임 용어 (용어집 growth_points). 문장 안 {tx_…} 참조용, en 은 문장 중간 소문자",,,성장 점수,growth points,draft,1b59e596
+tx_9NMN77M8D7,term.game.cost,active,"게임 용어 (용어집 cost). 문장 안 {tx_…} 참조용, en 은 문장 중간 소문자",,,비용,cost,draft,5b4db159
+tx_XW85A9FY8B,term.game.caster,active,"게임 용어 (용어집 caster). 문장 안 {tx_…} 참조용, en 은 문장 중간 소문자",,,시전자,caster,draft,acf91834
+tx_TCBRJ43P81,term.game.sure_hit,active,"게임 용어 (용어집 sure_hit). 문장 안 {tx_…} 참조용, en 은 문장 중간 소문자",,,필중,sure-hit,draft,d464e3fd
+tx_QHPJ926D6F,term.unit.tile.one,active,수량 단위 tile 단수형. 복수 태그 {plural:n|one|other} 의 첫 형태. ko 는 단수 · 복수 같음,,,타일,tile,draft,5120e844
+tx_1KKRE8N775,term.unit.tile.other,active,수량 단위 tile 복수형. 복수 태그의 둘째 형태. ko 는 단수 · 복수 같음,,,타일,tiles,draft,5120e844
+tx_VD4SPQQEES,term.unit.card.one,active,수량 단위 card 단수형. 복수 태그 {plural:n|one|other} 의 첫 형태. ko 는 단수 · 복수 같음,,,장,card,draft,b2414937
+tx_5V4VYG9XPE,term.unit.card.other,active,수량 단위 card 복수형. 복수 태그의 둘째 형태. ko 는 단수 · 복수 같음,,,장,cards,draft,b2414937
+tx_H89Y7GFPWP,term.unit.turn.one,active,수량 단위 turn 단수형. 복수 태그 {plural:n|one|other} 의 첫 형태. ko 는 단수 · 복수 같음,,,턴,turn,draft,231438b9
+tx_3PES5W2PRP,term.unit.turn.other,active,수량 단위 turn 복수형. 복수 태그의 둘째 형태. ko 는 단수 · 복수 같음,,,턴,turns,draft,231438b9
+tx_JAYQJ6YQE0,term.unit.token.one,active,수량 단위 token 단수형. 복수 태그 {plural:n|one|other} 의 첫 형태. ko 는 단수 · 복수 같음,,,토큰,token,draft,243f5b79
+tx_BBFEFTT649,term.unit.token.other,active,수량 단위 token 복수형. 복수 태그의 둘째 형태. ko 는 단수 · 복수 같음,,,토큰,tokens,draft,243f5b79
+tx_ZDCE5BNZ0Y,term.unit.time.one,active,수량 단위 time 단수형. 복수 태그 {plural:n|one|other} 의 첫 형태. ko 는 단수 · 복수 같음,,,회,time,draft,2fc05c02
+tx_QH6X0ZHGPS,term.unit.time.other,active,수량 단위 time 복수형. 복수 태그의 둘째 형태. ko 는 단수 · 복수 같음,,,회,times,draft,2fc05c02
+tx_HZJA6JHW21,term.unit.week.one,active,수량 단위 week 단수형. 복수 태그 {plural:n|one|other} 의 첫 형태. ko 는 단수 · 복수 같음,,,주,week,draft,752244cf
+tx_RE3J5S0400,term.unit.week.other,active,수량 단위 week 복수형. 복수 태그의 둘째 형태. ko 는 단수 · 복수 같음,,,주,weeks,draft,752244cf
+tx_D35G0Z90KF,term.unit.point.one,active,수량 단위 point 단수형. 복수 태그의 첫 형태. ko 는 단수 · 복수 같음,,,포인트,point,draft,8a14132f
+tx_ARZ9Y1M2K8,term.unit.point.other,active,수량 단위 point 복수형. 복수 태그의 둘째 형태. ko 는 단수 · 복수 같음,,,포인트,points,draft,8a14132f
+tx_SBNQ8FZ5MA,term.unit.slot.one,active,수량 단위 slot 단수형. 복수 태그의 첫 형태. ko 는 단수 · 복수 같음,,,칸,slot,draft,479a1353
+tx_R3FWHSV8NN,term.unit.slot.other,active,수량 단위 slot 복수형. 복수 태그의 둘째 형태. ko 는 단수 · 복수 같음,,,칸,slots,draft,479a1353
+tx_3ZSF3DW62X,term.unit.player.one,active,수량 단위 player 단수형. 복수 태그의 첫 형태. ko 는 단수 · 복수 같음,,,선수,player,draft,c37450d6
+tx_3HRCFHPCM4,term.unit.player.other,active,수량 단위 player 복수형. 복수 태그의 둘째 형태. ko 는 단수 · 복수 같음,,,선수,players,draft,c37450d6
+tx_GW0QTR6A5N,term.unit.trait.one,active,수량 단위 trait 단수형. 복수 태그의 첫 형태. ko 는 단수 · 복수 같음,,,특성,trait,draft,93bfd478
+tx_BCYB93VHH3,term.unit.trait.other,active,수량 단위 trait 복수형. 복수 태그의 둘째 형태. ko 는 단수 · 복수 같음,,,특성,traits,draft,93bfd478
+tx_Z7GFC4Q1W1,term.unit.win.one,active,수량 단위 win 단수형. 복수 태그의 첫 형태. ko 는 단수 · 복수 같음,,,승,win,draft,3b1908b7
+tx_RJ2DDQAAYX,term.unit.win.other,active,수량 단위 win 복수형. 복수 태그의 둘째 형태. ko 는 단수 · 복수 같음,,,승,wins,draft,3b1908b7
+tx_ZGP8KW41CF,term.unit.outing.one,active,수량 단위 outing 단수형. 복수 태그의 첫 형태. ko 는 단수 · 복수 같음,,,외출,outing,draft,9bd292b1
+tx_5A9Y0AJYCD,term.unit.outing.other,active,수량 단위 outing 복수형. 복수 태그의 둘째 형태. ko 는 단수 · 복수 같음,,,외출,outings,draft,9bd292b1
+tx_3KCBX2EWCN,term.unit.team.one,active,수량 단위 team 단수형. 복수 태그의 첫 형태. ko 는 단수 · 복수 같음,,,팀,team,draft,90583011
+tx_ZBKRYJ8XE0,term.unit.team.other,active,수량 단위 team 복수형. 복수 태그의 둘째 형태. ko 는 단수 · 복수 같음,,,팀,teams,draft,90583011
+tx_JRJS1G2Q8Y,term.game.create,active,"게임 용어: 카드를 손 · 덱에 새로 만들기. 문장 안 {tx_…} 참조용, en 은 문장 중간 소문자",,,생성,create,draft,d1a2d3a2
+tx_82SYZ18YM0,term.unit.copy.one,active,수량 단위 copy 단수형 (카드 사본). 복수 태그의 첫 형태. ko 는 단수 · 복수 같음,,,장,copy,draft,b2414937
+tx_Z7T7JK8FYC,term.unit.copy.other,active,수량 단위 copy 복수형 (카드 사본). 복수 태그의 둘째 형태. ko 는 단수 · 복수 같음,,,장,copies,draft,b2414937

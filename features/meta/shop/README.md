@@ -7,6 +7,8 @@ free weekly pass. Contract: `docs/outgame_dev_plan.md` §12 (row E). Tab contrac
 표시 텍스트는 l10n key (`shop` 도메인 + 공유 `ui.*` · `term.*`) — rule messages (`Gacha.check`, `ShopCatalog`, `PassSystem.claim`)
 are returned already translated (`Loc.t`, never stored); rarity names via `GameEnums.rarity_label`. Scene nodes the scripts
 fill carry `auto_translate_mode = 2` (on the root of the fully code-filled item scenes); fixed captions are key literals.
+Currency names inside sentences are `{tx_…}` references to `term.currency.*` / `term.currency.levelup`
+(one place to rename a currency); the gacha 보유 선수 line uses `term.pilot.owned`.
 
 ## Files
 | File | Class | Role |
@@ -18,7 +20,7 @@ fill carry `auto_translate_mode = 2` (on the root of the fully code-filled item 
 | `UI_Comp_ShopRateChip.tscn` · `UI_Comp_ShopShardRow.tscn` · `UI_Comp_ShopCraftRow.tscn` · `UI_Comp_ShopExchangeRow.tscn` | *(no script)* | ShopTab items: banner rate pill · 파편 상점 row (`%PositionBadge_Position` = `PositionBadge`) · 특성 제작 row · 교환소 row, filled by `ShopTab` |
 | `PassTab.gd` · `UI_View_PassTab.tscn` | `class_name PassTab extends Control` | 패스 tab — header (week · reset countdown · level · exp bar) + 25 reward rows, action bar `모두 수령` |
 | `UI_Comp_PassRow.tscn` | *(no script)* | One pass level row (Lv chip · reward · `수령` button or status), filled by `PassTab` |
-| `ShopPopup.gd` · `UI_View_ShopPopup.tscn` | `class_name ShopPopup extends CanvasLayer` | Modal for both tabs: gacha / purchase **reveal** cards and the **rates** table — see **ShopPopup scene** below. Also owns `rarity_color` (delegates to `TraitUi.rarity_color` — one rarity palette for both pools), `currency_label` (`CURRENCY_LABELS` = l10n keys `shop.currency.*` · `term.currency.levelup`, translated on read), `wrap_label` |
+| `ShopPopup.gd` · `UI_View_ShopPopup.tscn` | `class_name ShopPopup extends CanvasLayer` | Modal for both tabs: gacha / purchase **reveal** cards and the **rates** table — see **ShopPopup scene** below. Also owns `rarity_color` (delegates to `TraitUi.rarity_color` — one rarity palette for both pools), `currency_label` (`CURRENCY_LABELS` = l10n keys `term.currency.*` · `term.currency.levelup`, translated on read), `wrap_label` |
 | `ShopRevealItem.gd` · `UI_Comp_ShopRevealItem.tscn` | `class_name ShopRevealItem extends Panel` | One reveal card (168 × 300 tile) — `show_result(e)` fills it and paints the rarity / result colours |
 | `UI_Comp_ShopRateRow.tscn` | *(no script)* | One rates-table row (divider · rarity chip · % · count · per-item %), filled by `ShopPopup.open_rates` |
 
@@ -131,7 +133,7 @@ PassTab (Control) ─ VBox
 - **특성 제작** — every trait; `traits.craft_cost` in `trait_mat` → `grant_trait`.
   `craft_cost = 0` = `제작 불가`; owned = `보유 중` (disabled — crafting it would only refund material).
 - **교환소** — `SHOP_LEVELUP_EXCHANGE_COST` outgame → `SHOP_LEVELUP_EXCHANGE_GAIN` levelup;
-  `SHOP_PILOT_TICKET_PREMIUM` / `SHOP_TRAIT_TICKET_PREMIUM` premium → 1 ticket; and a clearly
+  `SHOP_PILOT_TICKET_PREMIUM` / `SHOP_TRAIT_TICKET_PREMIUM` premium → `SHOP_TICKET_EXCHANGE_GAIN` tickets (`ticket_exchange_gain()`, shown as `{gain}` in the row text and the `shop.tab.toast_ticket` toast); and a clearly
   labelled **개발용** row "유료 재화 +`SHOP_DEV_PREMIUM_GRANT` (개발용)" (premium is a local
   number only, §12.0).
 - After any purchase: `save_profile()` once, `host.refresh_currency()`, `host.refresh_badges()`,
@@ -156,5 +158,5 @@ PassTab (Control) ─ VBox
 ## Const keys
 `GACHA_PILOT_PRICE` · `GACHA_TRAIT_PRICE` · `GACHA_MULTI_COUNT` · `GACHA_MULTI_DISCOUNT_PCT` ·
 `SHOP_SHARD_PRICE_R1..R4` · `SHOP_LEVELUP_EXCHANGE_COST` · `SHOP_LEVELUP_EXCHANGE_GAIN` ·
-`SHOP_PILOT_TICKET_PREMIUM` · `SHOP_TRAIT_TICKET_PREMIUM` · `SHOP_DEV_PREMIUM_GRANT`
+`SHOP_PILOT_TICKET_PREMIUM` · `SHOP_TRAIT_TICKET_PREMIUM` · `SHOP_TICKET_EXCHANGE_GAIN` · `SHOP_DEV_PREMIUM_GRANT`
 (+ read: `PASS_*`, `BREAKTHROUGH_MAX`, `SHARD_PER_EXTRA_DUPE`, `TRAIT_DUPE_MAT`).

@@ -52,7 +52,9 @@ const TARGET_LABELS := {  # l10n-keys: battle.card_desc.target.*
 
 ## 설명문 계산식 `{식|전투 밖 문구}` — 전투 중에는 식의 값, 밖에서는 "(문구)".
 ## 식이 읽는 이름: `charge` = 카드 위 토큰 수, `chain` = 시전 파일럿의 [영혼 포식]
-## 토큰 수(`MechSkillSystem.chain_rounds`). 예: `성장 +{charge*8|사용 횟수×8}%`.
+## 토큰 수(`MechSkillSystem.chain_rounds`). 예: `성장 +{charge*{growth}|충전 횟수×{growth}}%`.
+## 식 안의 계수는 리터럴 대신 자리표시자로 쓴다. `Loc.t` 가 효과 값(`CardData.effect_params`)과
+## const.csv 상수로 먼저 채우므로 이 함수에 올 때는 숫자다.
 ## 설명문의 `\n` 두 글자는 줄바꿈이다(CSV 한 칸에 줄을 나누지 않으려고).
 static var _formula_re: RegEx = null
 ## 전투 중에만 유효한 값 공급자 — `CardPhaseManager` 가 트리에 들어오면 걸고
@@ -256,7 +258,7 @@ static func _build_note_panel(title_text: String, note: String, width: float,
 ## 풀이 판 목록 `[{title, note, special, card, ref}, ...]` — 풀이가 있는 키워드가 먼저,
 ## 그다음 설명문에 나온 순서대로 특수 키워드. `[x]` 는 **표시 글자가 아니라 설명 key 의
 ## 참조 key**(`special_terms` = `CardData.ref_entries`)로 푼다: 특수 키워드면 풀이 한 줄
-## (`CardData.SPECIAL_NOTES`), 카드 이름이면 `card` 에 그 카드를 싣는다(찾지 못한 참조는
+## (`CardData.special_note`), 카드 이름이면 `card` 에 그 카드를 싣는다(찾지 못한 참조는
 ## 빠진다). 카드 이름이 자기 자신(같은 이름 key)이면 풀지 않는다(용어는 푼다 — [추적]).
 static func _keyword_notes(data: CardData) -> Array:
 	var out: Array = []
@@ -270,12 +272,31 @@ static func _keyword_notes(data: CardData) -> Array:
 		var sp: String = String(ref["special"])
 		if CardData.SPECIAL_NOTES.has(sp):
 			out.append({"title": String(ref["text"]),
-					"note": Loc.t(String(CardData.SPECIAL_NOTES[sp])),  # l10n-dynamic: keyword.*.note
+					"note": CardData.special_note(sp, special_note_params(sp)),
 					"special": true, "card": null, "ref": ref})
 		elif ref["card"] != null and String(ref["key"]) != data.name_key:
 			out.append({"title": String(ref["text"]), "note": "", "special": true,
 					"card": ref["card"], "ref": ref})
 	return out
+
+
+## 특수 키워드 풀이 중 수치를 그 키워드를 거는 카드의 `effect` 에서 읽는 것: 특수 키워드 id →
+## 메크 카드 id. 풀이 문장의 자리표시자는 그 카드의 `effect_params` 이름이다
+## ([목표] 풀이의 `{mark_target}` = [단계 A] 의 `mark_target:N`).
+const SPECIAL_NOTE_SOURCES: Dictionary = {"target": MechSkillSystem.CARD_PHASE_A}
+
+
+## `CardData.special_note` 에 넘길 자리표시자 값: `SPECIAL_NOTE_SOURCES` 카드의 효과 값.
+## 표에 없거나 오토로드가 없으면 빈 값.
+static func special_note_params(sp: String) -> Dictionary:
+	if not SPECIAL_NOTE_SOURCES.has(sp):
+		return {}
+	var tree := Engine.get_main_loop() as SceneTree
+	var gm: Node = tree.root.get_node_or_null("GameManager") if tree != null else null
+	if gm == null:
+		return {}
+	var def: Dictionary = gm.mech_card_def(int(SPECIAL_NOTE_SOURCES[sp]))
+	return CardData.from_mech_def(def).effect_params() if not def.is_empty() else {}
 
 
 ## 설명문의 `[x]` 참조(`CardData.ref_entries` 항목) — 나온 순서대로, 같은 key 는 한 번.
@@ -330,6 +351,9 @@ static func resolve_text(data: CardData, live: bool = true) -> String:
 	var in_battle: bool = live and live_vars.is_valid()
 	if in_battle:
 		vars.merge(live_vars.call(data) as Dictionary, true)
+	text = _resolve_live_plurals(text, vars, in_battle)
+	if text.find("{") < 0:
+		return text
 	var out: String = ""
 	var last: int = 0
 	for m in _formula_re.search_all(text):
@@ -344,6 +368,32 @@ static func resolve_text(data: CardData, live: bool = true) -> String:
 		out += shown
 		last = m.get_end()
 	return out + text.substr(last)
+
+
+## `Loc.t` 가 남긴 복수 태그 `{plural:식|단수|복수}` (값이 전투 중에만 정해지는 것: `charge`,
+## `charge+1`, `max(1, chain)`). 전투 중이면 식을 vars 로 풀어 형태를 고르고, 아니면 복수형
+## (설명문의 "(문구)" 쪽과 같이 읽힌다).
+static func _resolve_live_plurals(text: String, vars: Dictionary, in_battle: bool) -> String:
+	if text.find("{plural:") < 0:
+		return text
+	if _plural_re == null:
+		_plural_re = RegEx.create_from_string("\\{plural:([^{}|]+)((?:\\|[^{}|]*)+)\\}")
+	var out: String = ""
+	var last: int = 0
+	for m in _plural_re.search_all(text):
+		var n: float = NAN
+		if in_battle:
+			var expr := Expression.new()
+			if expr.parse(m.get_string(1), PackedStringArray(vars.keys())) == OK:
+				var v: Variant = expr.execute(vars.values(), null, false)
+				if not expr.has_execute_failed():
+					n = float(v)
+		out += text.substr(last, m.get_start() - last) + Loc.pick_plural(m.get_string(2).substr(1).split("|"), n)
+		last = m.get_end()
+	return out + text.substr(last)
+
+
+static var _plural_re: RegEx = null
 
 
 ## 카드가 겨누는 것 `{key, color, label}` — 속성 줄의 대상 항목과 설명문의 "대상"

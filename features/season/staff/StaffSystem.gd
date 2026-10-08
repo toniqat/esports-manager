@@ -22,9 +22,9 @@ extends RefCounted
 
 const STATS: Array = ["training", "tactics", "knowledge", "mental", "analysis", "finance"]
 ## Stat → l10n key. Values are keys — show them with `stat_label(stat)`, never raw.
-const STAT_LABELS: Dictionary = {  # l10n-keys: staff.stat.*
-	"training": L.STAFF_STAT_TRAINING, "tactics": L.STAFF_STAT_TACTICS, "knowledge": L.STAFF_STAT_KNOWLEDGE,
-	"mental": L.STAFF_STAT_MENTAL, "analysis": L.STAFF_STAT_ANALYSIS, "finance": L.STAFF_STAT_FINANCE,
+const STAT_LABELS: Dictionary = {  # l10n-keys: term.manager_stat.*
+	"training": L.TERM_MANAGER_STAT_TRAINING, "tactics": L.TERM_MANAGER_STAT_TACTICS, "knowledge": L.TERM_MANAGER_STAT_KNOWLEDGE,
+	"mental": L.TERM_MANAGER_STAT_MENTAL, "analysis": L.TERM_MANAGER_STAT_ANALYSIS, "finance": L.TERM_MANAGER_STAT_FINANCE,
 }
 const STAT_MIN: int = 1
 const STAT_MAX: int = 20
@@ -176,7 +176,7 @@ static func owner_name(state: Dictionary, stat: String) -> String:
 static func stat_label(stat: String) -> String:
 	if not STAT_LABELS.has(stat):
 		return "?"
-	return Loc.t(String(STAT_LABELS[stat]))  # l10n-dynamic: staff.stat.*
+	return Loc.t(String(STAT_LABELS[stat]))  # l10n-dynamic: term.manager_stat.*
 
 
 ## Display name of a staff job (`JOB_LABELS` keys), current locale. Unknown job → `term.person.staff`.

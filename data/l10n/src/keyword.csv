@@ -1,54 +1,54 @@
 key,alias,status,context,max_len,note,ko,en,en_status,en_hash
-tx_KXN7MDVXDA,keyword.track.name,active,특수 키워드 이름 — 설명문 [추적],,,추적,Track,draft,d35efa53
-tx_Q2YD01V4X9,keyword.track.note,active,특수 키워드 풀이 판,,,대상이 교전에 참여하면 시전자도 함께 참여한다,"When the target joins an engage, the caster joins too",draft,1474ba86
-tx_HPPDS4VKWD,keyword.reactive_armor.name,active,특수 키워드 이름 — 설명문 [반응 장갑],,,반응 장갑,Reactive Armor,draft,5818ee29
-tx_8224R3117V,keyword.reactive_armor.note,active,특수 키워드 풀이 판,,,공격당하면 그 피해를 90% 줄이고 1 사라진다. 전장을 떠나면 모두 사라진다,"When attacked, reduce that damage by 90% and lose 1. All of it is lost on leaving the battlefield",draft,d0d2380d
-tx_DG1DJNPNVF,keyword.target.name,active,특수 키워드 이름 — 설명문 [목표],,,목표,Mark,draft,2fbea43b
-tx_M9AXFZ0YJD,keyword.target.note,active,특수 키워드 풀이 판,,,시전자에게 받는 피해 +15%. 새 목표를 정하면 이전 목표는 풀린다,Damage taken from the caster +15%. Setting a new Mark releases the previous one,draft,f9f1c24f
-tx_WSY436KCVQ,keyword.bounty.name,active,특수 키워드 이름 — 설명문 [현상금],,,현상금,Bounty,draft,31c6ef6d
-tx_DYE6YP50R9,keyword.bounty.note,active,특수 키워드 풀이 판,,,대상의 성장 점수 일부를 값으로 매긴 표식. 확신 카드의 피해가 이 값에 비례한다,A mark valued at part of the target's growth points. Conviction's damage scales with this value,draft,9e25f73f
-tx_EQ77MGHTT1,keyword.stun.name,active,특수 키워드 이름 — 설명문 [기절],,,기절,Stun,draft,8d7ad8b7
+tx_KXN7MDVXDA,keyword.track.name,active,특수 키워드 이름 (설명문 [추적]),,,추적,Track,draft,d35efa53
+tx_Q2YD01V4X9,keyword.track.note,active,특수 키워드 풀이 판,,,대상이 교전에 참여하면 {tx_XW85A9FY8B}도 함께 참여한다,"When the target joins an engage, the {tx_XW85A9FY8B} joins too",draft,22811f3b
+tx_HPPDS4VKWD,keyword.reactive_armor.name,active,특수 키워드 이름 (설명문 [반응 장갑]),,,반응 장갑,Reactive Armor,draft,5818ee29
+tx_8224R3117V,keyword.reactive_armor.note,active,특수 키워드 풀이 판,,,공격당하면 그 피해를 {mech_reactive_armor_cut_pct}% 줄이고 1 사라진다. 전장을 떠나면 모두 사라진다,"When attacked, reduce that damage by {mech_reactive_armor_cut_pct}% and lose 1. All of it is lost on leaving the battlefield",draft,f4415df5
+tx_DG1DJNPNVF,keyword.target.name,active,특수 키워드 이름 (설명문 [목표]),,,목표,Mark,draft,2fbea43b
+tx_M9AXFZ0YJD,keyword.target.note,active,특수 키워드 풀이 판,,,{tx_XW85A9FY8B}에게 받는 피해 +{mark_target}%. 새 {tx_DG1DJNPNVF}{eul} 정하면 이전 {tx_DG1DJNPNVF}{eun} 풀린다,Damage taken from the {tx_XW85A9FY8B} +{mark_target}%. Setting a new {tx_DG1DJNPNVF} releases the previous one,draft,4043bc1f
+tx_WSY436KCVQ,keyword.bounty.name,active,특수 키워드 이름 (설명문 [현상금]),,,현상금,Bounty,draft,31c6ef6d
+tx_DYE6YP50R9,keyword.bounty.note,active,특수 키워드 풀이 판,,,대상의 {tx_WBS95M3MNQ} 일부를 값으로 매긴 표식. 확신 카드의 피해가 이 값에 비례한다,A mark valued at part of the target's {tx_WBS95M3MNQ}. Conviction's damage scales with this value,draft,985dd63c
+tx_EQ77MGHTT1,keyword.stun.name,active,특수 키워드 이름 (설명문 [기절]),,,기절,Stun,draft,8d7ad8b7
 tx_5Y0V13GVXR,keyword.stun.note,active,특수 키워드 풀이 판,,,교전에서 자기 차례 한 번을 건너뛴다,Skips its own action once in an engage,draft,cdf0879b
-tx_WAPNWFECJE,keyword.vulnerable.name,active,특수 키워드 이름 — 설명문 [취약],,,취약,Vulnerable,draft,bae7a9a6
-tx_GV1PNFZR9T,keyword.vulnerable.note,active,특수 키워드 풀이 판,,,1마다 받는 피해 +1%,Damage taken +1% per 1,draft,8bac936b
+tx_WAPNWFECJE,keyword.vulnerable.name,active,특수 키워드 이름 (설명문 [취약]),,,취약,Vulnerable,draft,bae7a9a6
+tx_GV1PNFZR9T,keyword.vulnerable.note,active,특수 키워드 풀이 판,,,1마다 받는 피해 +{mech_vulnerable_per_stack_pct}%,Damage taken +{mech_vulnerable_per_stack_pct}% per 1,draft,1c328a1b
 tx_D1T42QFP6V,keyword.exhaust.name,active,카드 키워드 줄 이름,,,소멸,Exhaust,draft,04bda422
 tx_A2PYQPKVJM,keyword.exhaust.note,active,카드 키워드 풀이,,,사용하면 이 게임에서 사라진다,Removed from this game when used,draft,55e4821c
 tx_SJ5QM4RPT6,keyword.preserve.name,active,카드 키워드 줄 이름,,,보존,Preserve,draft,70770442
 tx_EGQP5BBD6K,keyword.preserve.note,active,카드 키워드 풀이,,,버려지지 않는다,Is never discarded,draft,39fd250a
 tx_XT72XP34EJ,keyword.volatile.name,active,카드 키워드 줄 이름,,,휘발성,Volatile,draft,4dfe4919
-tx_SSYPBCVHEE,keyword.volatile.note,active,카드 키워드 풀이,,,버려지면 더미로 가지 않고 사라진다,"When discarded, vanishes instead of going to the pile",draft,54516c6a
+tx_SSYPBCVHEE,keyword.volatile.note,active,카드 키워드 풀이,,,버려지면 {tx_DM7HJ301F1}로 가지 않고 사라진다,"When discarded, vanishes instead of going to the {tx_DM7HJ301F1}",draft,0b22881a
 tx_HHR746K1D3,keyword.charge.name,active,카드 키워드 줄 이름,,,충전,Charge,draft,b03617ef
-tx_FGE0Q8F8K1,keyword.charge.note,active,카드 키워드 풀이 — {max} = 카드의 charge_max,,,손에 들어올 때마다 토큰 +1 (최대 {max}),Token +1 each time it enters your hand (max {max}),draft,3016bf4e
+tx_FGE0Q8F8K1,keyword.charge.note,active,카드 키워드 풀이. {max} = 카드의 charge_max,,,{tx_SVRFJDH55K}에 들어올 때마다 {tx_JAYQJ6YQE0} +{card_charge_hand_gain} (최대 {max}),+{card_charge_hand_gain} {plural:card_charge_hand_gain|{tx_JAYQJ6YQE0}|{tx_BBFEFTT649}} each time it enters your {tx_SVRFJDH55K} (max {max}),draft,9d6f9193
 tx_VDYX47TMCF,keyword.reposition.name,active,카드 키워드 줄 이름,,,재배치,Reposition,draft,b91c4e66
-tx_HN02EYXPVV,keyword.reposition.note,active,카드 키워드 풀이,,,사용 후 손 맨 왼쪽으로 돌아온다,Returns to the far left of your hand after use,draft,440f499b
-tx_6ABJNCRSQX,keyword.charge.label,active,카드 키워드 줄 — 충전 키워드 이름 + 상한. {max} = 카드의 charge_max,,,충전 {max},Charge {max},draft,3a021dee
-tx_AXYDKH476P,keyword.icon.strategy,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,전략 점수,strategy points,draft,2e5ccf32
-tx_A1TGA4X65Q,keyword.icon.cost,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,비용,cost,draft,5b4db159
-tx_XEB6RPJC05,keyword.icon.duration_suffix,active,"카드 설명문 지속시간 매칭 — 숫자 · (…) 바로 뒤의 턴 표기(StrategyIcon). 화면에 이 글자를 찍지 않는다. | 로 다른 표기, 숫자와 사이 공백 허용, 대소문자 무시",,,턴,turns|turn,draft,231438b9
-tx_9HV110GY44,keyword.icon.field_hit,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,전장 명중,battlefield hit,draft,65ea2fb9
-tx_G7GPVBZNB7,keyword.icon.field_eva,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,전장 회피,battlefield evasion,draft,04767ed2
-tx_02V7FBV672,keyword.icon.engage_hit,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,교전 명중,engage hit,draft,07a6c2b4
-tx_1Q25CTDX3T,keyword.icon.engage_eva,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,교전 회피,engage evasion,draft,4cca38cd
-tx_M62DQZ05XH,keyword.icon.pierce_attack,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,필중 공격,sure-hit attack,draft,46bf2054
-tx_CJFMY2DR98,keyword.icon.hold,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,소지 중,while held,draft,2e1bba3e
-tx_6BQ7XJWR21,keyword.icon.discard_pile,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,버린 더미,discard pile,draft,e48c4aec
-tx_H5PAQEGQXV,keyword.icon.shield,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,보호막,shield,draft,7f3c552f
-tx_HGRGYX99JV,keyword.icon.max_hp,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,최대 체력,max hp,draft,e36ea071
-tx_CM6RMDBSX5,keyword.icon.discarded,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,버린 후,discarded,draft,ad38fb9a
-tx_GN5YCE4A7K,keyword.icon.atk,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,공격력,atk,draft,50b8df8c
-tx_XJ2AJAVDJJ,keyword.icon.range,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,사거리,attack range,draft,c7c153e6
-tx_VK36455RKQ,keyword.icon.hp,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,체력,hp,draft,a45ea58e
-tx_2NZDVYC400,keyword.icon.growth,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,성장,growth,draft,705103b6
-tx_M7HE3QE7V3,keyword.icon.pierce,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,필중,sure-hit,draft,d464e3fd
-tx_M6K3475MK0,keyword.icon.attack,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,공격,attack,draft,2a9c189a
-tx_M3VS0RE5YB,keyword.icon.engage,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,교전,engage,draft,b6bf4b17
-tx_MD0WJ2YX9M,keyword.icon.move,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,이동,move,draft,c686d054
-tx_AKRYXE0W1T,keyword.icon.target,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,대상,target,draft,6bf537cb
-tx_SVFGB50VBG,keyword.icon.area,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,범위,range,draft,f6b7b470
-tx_SNRNKTSHYA,keyword.icon.draw,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,뽑기,draw,draft,dac8a8de
-tx_T31EZZ8PDE,keyword.icon.discard,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,버리기,discard,draft,6db5f96b
-tx_GVP8VGG5RB,keyword.icon.preserve,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,보존,preserve,draft,70770442
-tx_XVGC6KXT1R,keyword.icon.search,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,찾기,search,draft,68819ee9
-tx_YX872B2X4H,keyword.icon.create,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,생성,create,draft,d1a2d3a2
-tx_5D3XF18V32,keyword.icon.heal,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,회복,heal,draft,95ca12ad
-tx_PNFKKTFY12,keyword.icon.kill,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words) — 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,처치,kill|killed,draft,5e9c0f1a
+tx_HN02EYXPVV,keyword.reposition.note,active,카드 키워드 풀이,,,사용 후 {tx_SVRFJDH55K} 맨 왼쪽으로 돌아온다,Returns to the far left of your {tx_SVRFJDH55K} after use,draft,c95cb76d
+tx_6ABJNCRSQX,keyword.charge.label,active,카드 키워드 줄: 충전 키워드 이름 + 상한. {max} = 카드의 charge_max,,,충전 {max},Charge {max},draft,3a021dee
+tx_AXYDKH476P,keyword.icon.strategy,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,{tx_F597JS5T37},strategy points,draft,02236544
+tx_A1TGA4X65Q,keyword.icon.cost,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,{tx_9NMN77M8D7},cost,draft,054565aa
+tx_XEB6RPJC05,keyword.icon.duration_suffix,active,"카드 설명문 지속시간 매칭: 숫자 · (…) 바로 뒤의 턴 표기(StrategyIcon). 화면에 이 글자를 찍지 않는다. | 로 다른 표기, 숫자와 사이 공백 허용, 대소문자 무시",,,{tx_H89Y7GFPWP},turns|turn,draft,c460039d
+tx_9HV110GY44,keyword.icon.field_hit,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,{tx_ST46WS1MDQ},battlefield hit,draft,10541478
+tx_G7GPVBZNB7,keyword.icon.field_eva,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,{tx_45H5GEFYKX},battlefield evasion,draft,210391bf
+tx_02V7FBV672,keyword.icon.engage_hit,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,{tx_Z9BYFSRBZ5},engage hit,draft,aafb62a6
+tx_1Q25CTDX3T,keyword.icon.engage_eva,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,{tx_E81Q2HB2QS},engage evasion,draft,19c7eab7
+tx_M62DQZ05XH,keyword.icon.pierce_attack,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,{tx_TCBRJ43P81} 공격,sure-hit attack,draft,ff0d3831
+tx_CJFMY2DR98,keyword.icon.hold,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,{tx_D0S7070T32},while held,draft,3b0f96eb
+tx_6BQ7XJWR21,keyword.icon.discard_pile,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,{tx_DM7HJ301F1},discard pile,draft,fc0c716a
+tx_H5PAQEGQXV,keyword.icon.shield,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,{tx_M0NZA7QAV5},shield,draft,45cc5017
+tx_HGRGYX99JV,keyword.icon.max_hp,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,{tx_CT45F83FMW},max hp,draft,01eb0d02
+tx_CM6RMDBSX5,keyword.icon.discarded,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,버린 후,discarded,draft,ad38fb9a
+tx_GN5YCE4A7K,keyword.icon.atk,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,{tx_DM2CD6EQG8},atk,draft,7714da86
+tx_XJ2AJAVDJJ,keyword.icon.range,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,사거리,attack range,draft,c7c153e6
+tx_VK36455RKQ,keyword.icon.hp,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,{tx_0KSNX63V29},hp,draft,fb98fde6
+tx_2NZDVYC400,keyword.icon.growth,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,성장,growth,draft,705103b6
+tx_M7HE3QE7V3,keyword.icon.pierce,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,{tx_TCBRJ43P81},sure-hit,draft,672ac624
+tx_M6K3475MK0,keyword.icon.attack,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,공격,attack,draft,2a9c189a
+tx_M3VS0RE5YB,keyword.icon.engage,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,교전,engage,draft,b6bf4b17
+tx_MD0WJ2YX9M,keyword.icon.move,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,이동,move,draft,c686d054
+tx_AKRYXE0W1T,keyword.icon.target,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,대상,target,draft,6bf537cb
+tx_SVFGB50VBG,keyword.icon.area,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,범위,range,draft,f6b7b470
+tx_SNRNKTSHYA,keyword.icon.draw,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,{tx_6VVGYKXZSK},draw,draft,2412ee39
+tx_T31EZZ8PDE,keyword.icon.discard,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,{tx_F3A6GQEVFX},discard,draft,62154c52
+tx_GVP8VGG5RB,keyword.icon.preserve,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,보존,preserve,draft,70770442
+tx_XVGC6KXT1R,keyword.icon.search,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,{tx_VPV5JM208F},search,draft,84004e12
+tx_YX872B2X4H,keyword.icon.create,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,{tx_JRJS1G2Q8Y},create,draft,5d269ea6
+tx_5D3XF18V32,keyword.icon.heal,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,회복,heal,draft,95ca12ad
+tx_PNFKKTFY12,keyword.icon.kill,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,처치,kill|killed,draft,5e9c0f1a

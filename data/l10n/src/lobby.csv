@@ -1,19 +1,19 @@
 key,alias,status,context,max_len,note,ko,en,en_status,en_hash
 tx_DBE01WV863,lobby.home.title,active,로비 홈 탭 맨 위 게임 제목,,,ESPORTS MANAGER,ESPORTS MANAGER,draft,6808d8d2
 tx_C43HAK9QB4,lobby.home.section_run,active,로비 홈 탭 런 카드 위 섹션 제목,,,진행 중인 런,Run in Progress,draft,ccef8fc4
-tx_5WJB7HWPMA,lobby.home.live_chip,active,로비 홈 런 카드 칩 — 경기 도중 저장됨,,,경기 진행 중,Match in progress,draft,b3bcafa9
+tx_5WJB7HWPMA,lobby.home.live_chip,active,로비 홈 런 카드 칩: 경기 도중 저장됨,,,경기 진행 중,Match in progress,draft,b3bcafa9
 tx_8QB02J8X4E,lobby.home.empty_headline,active,로비 홈 빈 카드 제목,,,진행 중인 런이 없습니다,No run in progress,draft,9f5e6310
-tx_WGC1W057NT,lobby.home.empty_hint,active,로비 홈 빈 카드 안내 — '새 런' 은 lobby.home.new_run 버튼,,,아래 '새 런' 으로 시즌을 시작하세요,Tap 'New Run' below to start a season,draft,c42b1478
-tx_VCBJXS80JH,lobby.home.new_run,active,로비 홈 행동 바 버튼 / 런 결과 화면 하단 버튼 — 새 런 준비로,,,새 런,New Run,draft,2e6fc531
-tx_X0EYJ8K5SH,lobby.home.continue,active,로비 홈 행동 바 버튼 — 저장된 런 이어하기,,,이어하기,Continue,draft,4459ec31
-tx_B6XWT6321G,lobby.home.summary,active,로비 홈 요약 줄,,,감독 Lv{level} · 보유 선수 {pilots}명 · 특성 {traits}개,Manager Lv{level} · {pilots} players · {traits} traits,draft,34a641cd
+tx_WGC1W057NT,lobby.home.empty_hint,active,로비 홈 빈 카드 안내: '새 런' 은 lobby.home.new_run 버튼,,,아래 '{tx_VCBJXS80JH}' 으로 시즌을 시작하세요,Tap '{tx_VCBJXS80JH}' below to start a season,draft,9e4b3dbe
+tx_VCBJXS80JH,lobby.home.new_run,active,로비 홈 행동 바 버튼 / 런 결과 화면 하단 버튼: 새 런 준비로,,,새 런,New Run,draft,2e6fc531
+tx_X0EYJ8K5SH,lobby.home.continue,active,로비 홈 행동 바 버튼: 저장된 런 이어하기,,,이어하기,Continue,draft,4459ec31
+tx_B6XWT6321G,lobby.home.summary,active,로비 홈 요약 줄,,,{tx_PR6YFXCW5G} Lv{level} · {tx_WEMGESKYB6} {pilots}명 · 특성 {traits}개,Manager Lv{level} · {pilots} {plural:pilots|{tx_3ZSF3DW62X}|{tx_3HRCFHPCM4}} · {traits} {plural:traits|{tx_GW0QTR6A5N}|{tx_BCYB93VHH3}},draft,7c07a912
 tx_5065WMC273,lobby.home.date,active,로비 홈 런 카드 게임 날짜. weekday = 요일 약칭,,,{year}년 {month}월 {day}일 ({weekday}),"Year {year}, {month}/{day} ({weekday})",draft,3eb58269
 tx_5XHX4A8MQY,lobby.home.trophies,active,로비 홈 런 카드,,,우승 트로피 {n}개,Trophies: {n},draft,690565b3
-tx_2BHC8NJGZA,lobby.home.league_not_started,active,로비 홈 런 카드 — 순위가 없을 때,,,리그 미시작,League not started,draft,b2ed8d54
+tx_2BHC8NJGZA,lobby.home.league_not_started,active,로비 홈 런 카드: 순위가 없을 때,,,리그 미시작,League not started,draft,b2ed8d54
 tx_1W517T1FD5,lobby.home.league_rank,active,로비 홈 런 카드 순위 · 전적,,,현재 리그 {rank}위 ({win}승 {loss}패),League #{rank} ({win}W {loss}L),draft,86c0796e
 tx_8B4JM1Z2M6,lobby.home.saved_at,active,로비 홈 런 카드. time = 2026-10-07 12:34,,,마지막 저장 {time},Last saved {time},draft,4fb15e45
-tx_ZWP3Q5KXEX,lobby.home.load_failed,active,토스트 — 런 파일 읽기 실패,,,불러오기 실패: {error},Load failed: {error},draft,ecacaa7e
-tx_86MJJTCRG4,lobby.home.delete_failed,active,토스트 — 런 파일 삭제 실패,,,런 삭제 실패: {error},Couldn't delete run: {error},draft,25fa45b5
+tx_ZWP3Q5KXEX,lobby.home.load_failed,active,토스트: 런 파일 읽기 실패,,,불러오기 실패: {error},Load failed: {error},draft,ecacaa7e
+tx_86MJJTCRG4,lobby.home.delete_failed,active,토스트: 런 파일 삭제 실패,,,런 삭제 실패: {error},Couldn't delete run: {error},draft,25fa45b5
 tx_NZS1Y08KJK,lobby.home.abandon_title,active,런 포기 확인 팝업 제목,,,진행 중인 런을 포기할까요?,Abandon the current run?,draft,355a71b1
 tx_Y3AD9RSE4W,lobby.home.abandon_body,active,런 포기 확인 팝업 본문,,,지금까지의 진척으로 실패 정산하고 런을 끝냅니다.\n점수 · 재화 보상은 받지만 런은 되돌릴 수 없습니다.,"The run ends and is settled as a failure with your progress so far.\nYou still get score and currency rewards, but this can't be undone.",draft,77277c2f
 tx_58RJZ7FA5S,lobby.home.abandon_confirm,active,런 포기 확인 팝업 위험 버튼,,,포기하고 정산,Abandon & Settle,draft,c9af3340
@@ -21,18 +21,18 @@ tx_QFKVYHXZQ7,lobby.tab.home,active,로비 탭 바,,,홈,Home,draft,13a46f96
 tx_MRYQA72YTJ,lobby.tab.collection,active,로비 탭 바,,,컬렉션,Collection,draft,b0c43916
 tx_FM5AH7PT3F,lobby.tab.shop,active,로비 탭 바,,,상점,Shop,draft,9f66ded3
 tx_XCSB9YZRPT,lobby.tab.pass,active,로비 탭 바,,,패스,Pass,draft,d2014d28
-tx_3Z7X8EGGT2,lobby.currency.outgame,active,로비 위 재화 줄 칸 이름 — 아웃게임 재화. 짧게,,,재화,Coins,draft,cacc3dae
-tx_M0TVW5C5V0,lobby.currency.levelup,active,로비 재화 줄 — 레벨업 재화. 짧게,,,레벨업,Level-up,draft,e5f5d190
-tx_H3S5FP9V1B,lobby.currency.gacha_ticket_pilot,active,로비 재화 줄 — 선수 뽑기권. 짧게,,,선수권,Player Ticket,draft,11dcea35
-tx_QR44K4G430,lobby.currency.gacha_ticket_trait,active,로비 재화 줄 — 특성 뽑기권. 짧게,,,특성권,Trait Ticket,draft,6f6a05c5
-tx_A0BZZABE9N,lobby.currency.pilot_shard,active,로비 재화 줄 — 선수 파편. 짧게,,,파편,Shards,draft,928d17c8
+tx_3Z7X8EGGT2,lobby.currency.outgame,deprecated,로비 위 재화 줄 칸 이름: 아웃게임 재화. 짧게,,merged into shop.currency.outgame,재화,Coins,draft,cacc3dae
+tx_M0TVW5C5V0,lobby.currency.levelup,active,로비 재화 줄: 레벨업 재화. 짧게,,,레벨업,Level-up,draft,e5f5d190
+tx_H3S5FP9V1B,lobby.currency.gacha_ticket_pilot,deprecated,로비 재화 줄: 선수 뽑기권. 짧게,,merged into shop.currency.gacha_ticket_pilot,선수권,Player Ticket,draft,11dcea35
+tx_QR44K4G430,lobby.currency.gacha_ticket_trait,deprecated,로비 재화 줄: 특성 뽑기권. 짧게,,merged into shop.currency.gacha_ticket_trait,특성권,Trait Ticket,draft,6f6a05c5
+tx_A0BZZABE9N,lobby.currency.pilot_shard,active,로비 재화 줄: 선수 파편. 짧게,,,파편,Shards,draft,928d17c8
 tx_D3T88QT9G4,lobby.manager_type_save_failed,active,토스트,,,감독 유형 저장 실패: {error},Couldn't save manager type: {error},draft,aee0c393
 tx_Z7T7H6V81J,lobby.manager_type.title,active,감독 유형 팝업 제목 (첫 로비),,,감독 유형 선택,Choose Manager Type,draft,656b84e5
-tx_MC13K8N0V7,lobby.manager_type.title_prestige,active,감독 유형 팝업 제목 (프레스티지),,,프레스티지 — 감독 유형 재선택,Prestige — Choose Manager Type Again,draft,3602d148
-tx_M5J8SX6BBY,lobby.manager_type.sub,active,감독 유형 팝업 설명 (첫 로비),,,첫 런을 시작하기 전에 감독 유형을 고르세요. 스태프가 없는 영역은 감독 스탯으로 운영합니다.,Choose a manager type before your first run. Areas without staff run on the manager's stats.,draft,a75e98dd
+tx_MC13K8N0V7,lobby.manager_type.title_prestige,active,감독 유형 팝업 제목 (프레스티지),,,프레스티지: 감독 유형 재선택,Prestige: Choose Manager Type Again,draft,4110ba92
+tx_M5J8SX6BBY,lobby.manager_type.sub,active,감독 유형 팝업 설명 (첫 로비),,,첫 런을 시작하기 전에 감독 유형을 고르세요. 스태프가 없는 영역은 {tx_CD7F656SAD}로 운영합니다.,Choose a manager type before your first run. Areas without staff run on {tx_CD7F656SAD}.,draft,d331660b
 tx_R46BWWGHGJ,lobby.manager_type.sub_prestige,active,감독 유형 팝업 설명 (프레스티지),,,새 감독 유형을 고르면 프레스티지가 끝납니다. 같은 유형을 다시 골라도 됩니다.,Choosing a new manager type completes the prestige. You may pick the same type again.,draft,0f37a262
 tx_PWF07A5A7H,lobby.manager_type.note,active,감독 유형 팝업 주의 (첫 로비),,,이후 변경은 프레스티지로만 가능합니다.,"After this, it can only be changed through prestige.",draft,3521e219
-tx_JBCN4AT26F,lobby.manager_type.note_prestige,active,감독 유형 팝업 주의 (프레스티지),,,Lv1 · 스탯 제거가 초기화됩니다.,Level and stat removals reset to Lv1.,draft,dc8c756c
-tx_DQC9ZE38ES,lobby.manager_type.pick_prompt,active,감독 유형 팝업 확인 버튼 — 아직 고르지 않음,,,유형을 고르세요,Choose a type,draft,98e6e187
+tx_JBCN4AT26F,lobby.manager_type.note_prestige,active,감독 유형 팝업 주의 (프레스티지),,,감독 레벨과 {tx_CD7F656SAD} 제거가 초기화됩니다.,Manager level and manager stat removals are reset.,draft,171a7a8f
+tx_DQC9ZE38ES,lobby.manager_type.pick_prompt,active,감독 유형 팝업 확인 버튼: 아직 고르지 않음,,,유형을 고르세요,Choose a type,draft,98e6e187
 tx_XPFT0WY8DB,lobby.manager_type.start_as,active,감독 유형 팝업 확인 버튼. type = 감독 유형 이름(운영형),,,{type} 감독으로 시작,Start as {type},draft,b45abfd3
 tx_K1ZQ410BJ2,lobby.manager_type.prestige_as,active,감독 유형 팝업 확인 버튼 (프레스티지),,,{type} 감독으로 프레스티지,Prestige as {type},draft,a9ee2ed8

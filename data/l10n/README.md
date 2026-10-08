@@ -16,6 +16,9 @@
 
 ## 규칙 요약
 
+- 공유 낱말은 문장 안에 `{tx_KEY}` 로 참조한다(build 가 같은 로케일 텍스트로 펼침, 언어마다 선택). 합치기 · 참조는 주체와 뜻이 같을 때만(설계서 D18 · D19).
+- 바뀔 수 있는 수치는 문장에 적지 않는다: 카드 `{effect 이름}`, 튜닝 값 `{const_key 소문자}`(`_pct` · `_abs` · `_signed`), 데이터 값은 호출부 params(D20). 표시 텍스트에 em dash 금지(D21).
+- 원본 셀 일괄 수정은 CLI `edit <json>`, 번역 초안 일괄은 `set_tr`.
 - key 는 지어내지 않는다 — `new_key` · `new_keys`(일괄) / `extract` 로만 발급.
 - LLM 번역은 `draft` 까지. `approve` 는 오너 지시 시에만.
 - 작업 후 `build dev` → `generated/report.md` Error 0 확인.

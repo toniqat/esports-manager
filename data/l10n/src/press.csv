@@ -1,15 +1,15 @@
 key,alias,status,context,max_len,note,ko,en,en_status,en_hash
 tx_JJ1888Z56T,press.messenger.hint_close,active,MessengerView bottom hint after the outcome,,,화면을 눌러 닫기,Tap to close,draft,5eb9d8fd
-tx_82VAW6FK9Y,press.messenger.check_pass,active,MessengerView note chip,,,멘탈 판정 성공,Mental check passed,draft,9e738262
-tx_2QWW8CPTXR,press.messenger.check_fail,active,MessengerView note chip,,,멘탈 판정 실패,Mental check failed,draft,0ff1721e
+tx_82VAW6FK9Y,press.messenger.check_pass,active,MessengerView note chip,,,{tx_3P9850FA1G} 판정 성공,{tx_3P9850FA1G} check passed,draft,d8603202
+tx_2QWW8CPTXR,press.messenger.check_fail,active,MessengerView note chip,,,{tx_3P9850FA1G} 판정 실패,{tx_3P9850FA1G} check failed,draft,d99a7681
 tx_5V87JZGAVT,press.messenger.pick_answer,active,MessengerView bottom hint,,,답변을 고르세요,Choose your answer,draft,d0383329
 tx_VT90YHN4YW,press.conference.no_question,active,Press conference narration when no row was drawn,,,오늘은 질문이 없습니다.,No questions today.,draft,171b9618
 tx_M9QFMYB5Y8,press.conference.sub,active,Press conference subtitle,,,{phase} · {week}주차 · {outlet} 기자,{phase} · Week {week} · {outlet} reporter,draft,c2e555d0
 tx_BM3F8A8DQV,press.conference.default_outlet,active,Press outlet fallback,,,e스포츠,Esports,draft,564761e3
-tx_MC4YJKBSC1,press.preview.outlet,active,F6 preview outlet,,,e스포츠 데일리,Esports Daily,draft,635bba70
+tx_MC4YJKBSC1,press.preview.outlet,deprecated,F6 preview outlet,,,e스포츠 데일리,Esports Daily,draft,635bba70
 tx_A2A40ZTSPV,press.preview.reply,active,F6 preview reporter reply,,,좋습니다. 주말 경기 기대하겠습니다.,Great. We'll look forward to the weekend match.,draft,39dda9cd
-tx_7TV9CHPBCD,press.preview.note_trust,active,F6 preview effect chip,,,팀 신뢰 +3,Team trust +3,draft,abe69a60
-tx_PMZES297S0,press.preview.note_mental,active,F6 preview effect chip,,,감독 멘탈 +1 (2주),Manager mental +1 (2 wks),draft,0f652087
+tx_7TV9CHPBCD,press.preview.note_trust,deprecated,F6 preview effect chip,,,팀 신뢰 +3,Team trust +3,draft,abe69a60
+tx_PMZES297S0,press.preview.note_mental,deprecated,F6 preview effect chip,,,감독 멘탈 +1 (2주),Manager mental +1 (2 wks),draft,0f652087
 tx_RX2N12A2AY,press.preview.q1,active,F6 preview reporter line,,,주말 경기 상대가 만만치 않다는 평이 많습니다.,Many say this weekend's opponent is a tough one.,draft,9cf67255
 tx_C8YQ4ENXAX,press.preview.q2,active,F6 preview reporter line,,,"솔직히, 이길 자신 있으십니까?","Honestly, are you confident you can win?",draft,29623b67
 tx_0N9CGRDHQR,press.preview.narration,active,F6 preview narration,,,기자석이 잠시 조용해진다.,The press seats fall silent for a moment.,draft,b42fae34
@@ -19,4 +19,4 @@ tx_4VV2GXH1SC,press.preview.a1,active,F6 preview answer,,,저희 선수들을 �
 tx_CNG6CVP5YY,press.preview.a2,active,F6 preview answer,,,쉽지 않겠지만 준비한 게 있습니다.,"It won't be easy, but we've prepared something.",draft,010f3961
 tx_RRC4PCP2TY,press.preview.a3,active,F6 preview answer,,,질문이 좀 무례하시네요.,That's a rather rude question.,draft,ee2f5e5c
 tx_EE0N2F6MX7,press.preview.npc_long,active,F6 preview long reporter bubble,,,"솔직히, 이길 자신 있으십니까? 지난 시즌 맞대결 전적이 좋지 않았고, 상대 정글러의 폼이 절정이라는 분석이 지배적입니다.","Honestly, are you confident you can win? Your head-to-head record last season was poor, and most analysts say their jungler is at peak form.",draft,03d893e6
-tx_8GCQCKHZSB,press.preview.player_long,active,F6 preview long manager bubble,,,"쉽지 않겠지만 준비한 게 있습니다. 경기 날 보여 드리겠습니다, 기대하셔도 좋습니다.","It won't be easy, but we've prepared something. We'll show you on match day — you can look forward to it.",draft,4358b243
+tx_8GCQCKHZSB,press.preview.player_long,active,F6 preview long manager bubble,,,"쉽지 않겠지만 준비한 게 있습니다. 경기 날 보여 드리겠습니다, 기대하셔도 좋습니다.","It won't be easy, but we've prepared something. We'll show you on match day, so look forward to it.",draft,4358b243

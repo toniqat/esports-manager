@@ -6,7 +6,7 @@ extends RefCounted
 ## 파일 하나를 통째로 정규식 한 번(문자열 리터럴 · 주석 토큰)으로 훑고, 나머지 패턴
 ## (`tx_…` · `L.X` · 로그 호출 · `tr(`)은 그 토큰 범위와 비교해 판정한다 — 글자 단위
 ## 루프는 로그 호출의 괄호 짝 찾기에만 쓴다.
-##   usage kind : literal · const · data · dynamic
+##   usage kind : literal · const · data · dynamic · ref(다른 문장의 `{tx_…}` 참조, 원본 CSV 행)
 ##   orphans    : orphan_code · orphan_scene · preview_leak(+ keys = 그 번역문의 key 목록)
 ## 고아 검사 제외(D16): 주석, `scan.log_funcs` 호출 인자, `# l10n-ignore` 줄 · 그 주석이
 ## func 줄에 있으면 함수 전체, `scan.ignore_paths`, NodePath(`^"…"` · `$"…"`) ·
@@ -20,10 +20,12 @@ const Keygen = preload("res://addons/l10n_tool/core/keygen.gd")
 const Hasher = preload("res://addons/l10n_tool/core/hasher.gd")
 const Catalog = preload("res://addons/l10n_tool/core/catalog.gd")
 const TermMatch = preload("res://addons/l10n_tool/core/term_match.gd")
+const KeyRefs = preload("res://addons/l10n_tool/core/key_refs.gd")
 
 const KIND_LITERAL := "literal"
 const KIND_CONST := "const"
 const KIND_DATA := "data"
+const KIND_REF := "ref"
 const KIND_DYNAMIC := "dynamic"
 const KIND_ORPHAN_CODE := "orphan_code"
 const KIND_ORPHAN_SCENE := "orphan_scene"
@@ -128,6 +130,7 @@ static func scan(l) -> Dictionary:
 		elif f.ends_with(".tscn") or f.ends_with(".tres"):
 			_scan_scene(ctx, f, text, nl)
 	_scan_data(ctx)
+	_scan_key_refs(ctx)
 	_check_catalog(ctx)
 	return _build_index(ctx)
 
@@ -707,6 +710,20 @@ static func _scan_data(ctx: ScanCtx) -> void:
 			var v: String = t.get_cell_at(r, ci).strip_edges()
 			if v != "" and ctx.cat.has_key(v):
 				ctx.add_usage(v, p, t.row_lines[r], KIND_DATA)
+
+
+# 원본 문장(모든 로케일)의 `{tx_…}` 참조 = 참조된 key 의 사용처 (원본 CSV 행).
+static func _scan_key_refs(ctx: ScanCtx) -> void:
+	for e in ctx.cat.all_entries:
+		if e["status"] != Catalog.STATUS_ACTIVE:
+			continue
+		var texts := PackedStringArray([String(e["source"])])
+		for loc in ctx.cfg.target_locales():
+			texts.append(String((e["tr"] as Dictionary).get(loc, {}).get("text", "")))
+		for txt in texts:
+			for k in KeyRefs.keys_in(txt):
+				if ctx.cat.has_key(k):
+					ctx.add_usage(k, String(e["file"]), int(e["line"]), KIND_REF)
 
 
 # ── 카탈로그 전체: E055 · W056 ─────────────────────────────────────────────

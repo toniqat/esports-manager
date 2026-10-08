@@ -1003,7 +1003,7 @@ func _advance_order() -> void:
 		# 기절([강타]) — 이번 차례를 통째로 건너뛰고 남은 라운드가 하나 준다.
 		# 순서 배열에서 빼지는 않으므로 살아 있는 사람들의 상대 순서는 그대로다.
 		if _bs.mech_skill != null and _bs.mech_skill.consume_stun_turn(u.pilot):
-			popups.append({"pos": u.pos, "text": Loc.t(L.BATTLE_ENGAGE_POPUP_STUN),
+			popups.append({"pos": u.pos, "text": Loc.t(L.KEYWORD_STUN_NAME),
 					"color": Color(0.70, 0.85, 1.0)})
 			continue
 		var t := _pick_target(u)
@@ -1344,12 +1344,15 @@ func _strike_one(u: EUnit, target: EUnit, allow_extra: bool = true,
 		popups.append({"pos": target.pos, "text": "-%d" % dealt,
 				"color": Color(1.0, 0.45, 0.45)})
 	# 오버클럭(암살 P) — 교전 피해 직후 굴린다. 성공하면 **같은 대상에게**
-	# 한 번 더 때리고 충전 절반이 날아간다(소모는 질의 함수가 한다).
+	# `MechSkillSystem.OVERCLOCK_EXTRA_ATTACKS` 번 더 때리고 충전 절반이 날아간다(소모는 질의 함수가 한다).
 	if allow_extra and mech != null and target.is_active() \
 			and mech.overclock_extra_attack(a):
 		popups.append({"pos": u.pos, "text": Loc.t(L.BATTLE_ENGAGE_POPUP_OVERCLOCK),
 				"color": Color(0.65, 0.95, 1.0)})
-		_strike_one(u, target, false)
+		for _i in MechSkillSystem.OVERCLOCK_EXTRA_ATTACKS:
+			if not target.is_active():
+				break
+			_strike_one(u, target, false)
 
 
 # 넉백 — 공격자로부터 **멀어지는 그 방향 그대로** 민다. 사이드뷰 시절에는

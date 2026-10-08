@@ -65,9 +65,9 @@ const ICON_PX: float = 72.0
 const CLOCK_PX: float = 28.0
 
 ## 쿨타임은 글자 대신 시계 아이콘 + 턴 수(`%Cooldown`).
-const TYPE_LABEL := {  # l10n-keys: hud.skill.type.*
-	PilotSkillSystem.TYPE_CHARGE:   L.HUD_SKILL_TYPE_CHARGE,
-	PilotSkillSystem.TYPE_PASSIVE:  L.HUD_SKILL_TYPE_PASSIVE,
+const TYPE_LABEL := {  # l10n-keys: term.skill_type.*
+	PilotSkillSystem.TYPE_CHARGE:   L.TERM_SKILL_TYPE_CHARGE,
+	PilotSkillSystem.TYPE_PASSIVE:  L.TERM_SKILL_TYPE_PASSIVE,
 }
 
 ## 열기 / 닫기 — 위로 올라오며 페이드 인, 내려가며 페이드 아웃.
@@ -273,7 +273,7 @@ func _show(d: Dictionary, anchor: Vector2, strip_top: float) -> void:
 	var cooldown: bool = has_skill and stype == PilotSkillSystem.TYPE_COOLDOWN
 	var type_lbl: Label = _body.get_node("%Type")
 	type_lbl.visible = has_skill and not cooldown
-	type_lbl.text = Loc.t(String(TYPE_LABEL[stype])) if TYPE_LABEL.has(stype) else ""  # l10n-dynamic: hud.skill.type.*
+	type_lbl.text = Loc.t(String(TYPE_LABEL[stype])) if TYPE_LABEL.has(stype) else ""  # l10n-dynamic: term.skill_type.*
 	_body.get_node("%Cooldown").visible = cooldown
 	if cooldown:
 		_body.get_node("%Turns").text = str(int(d["cooldown_turns"]))

@@ -2,20 +2,20 @@ key,alias,status,context,max_len,note,ko,en,en_status,en_hash
 tx_ET86TTP31D,run_result.outcome.clear,active,런 결과 제목,,,런 클리어,Run Cleared,draft,90d5d955
 tx_02GQ3R71G2,run_result.outcome.fail,active,런 결과 제목,,,런 실패,Run Failed,draft,c886f0c7
 tx_ZPVTEEG9GC,run_result.outcome.abandon,active,런 결과 제목,,,런 포기,Run Abandoned,draft,34a78a0e
-tx_SR4J2S70Z7,run_result.outcome.ended,active,런 결과 제목 — 알 수 없는 결과,,,런 종료,Run Over,draft,518874d7
-tx_34H19JKNZ2,run_result.test_chip,active,런 결과 머리 칩,,,테스트 런 — 프로필 미반영,Test run — profile unchanged,draft,f7b540f9
+tx_SR4J2S70Z7,run_result.outcome.ended,active,런 결과 제목: 알 수 없는 결과,,,런 종료,Run Over,draft,518874d7
+tx_34H19JKNZ2,run_result.test_chip,active,런 결과 머리 칩,,,테스트 런 · 프로필 미반영,Test run · profile unchanged,draft,5ad95e66
 tx_N92BZJC4VE,run_result.true_end.title,active,런 결과 카드 제목,,,진엔딩,True Ending,draft,1d39f11b
-tx_BGD6ATN8E2,run_result.true_end.chip,active,런 결과 진엔딩 줄 칩,,,외출 {n}회 · 약속을 지켰다,{n} outings · Promise kept,draft,743c5418
+tx_BGD6ATN8E2,run_result.true_end.chip,active,런 결과 진엔딩 줄 칩,,,외출 {n}회 · 약속을 지켰다,{n} {plural:n|{tx_ZGP8KW41CF}|{tx_5A9Y0AJYCD}} · Promise kept,draft,743c5418
 tx_942J829JEX,run_result.true_end.line,active,런 결과 진엔딩 줄. name = 선수 이름,,,"우승 트로피를 들고, {name} 선수가 미뤄 둔 말을 꺼냈다.","Trophy in hand, {name} finally said what they'd been holding back.",draft,628ed470
 tx_9NBP27YSKH,run_result.trait.title,active,런 결과 카드 제목,,,새 특성 해금,New Traits Unlocked,draft,e22a9722
 tx_A8KZA62SX8,run_result.trait.note,active,런 결과 새 특성 카드 주석,,,다음 런부터 감독 탭에서 장착할 수 있습니다,Equip them from the Manager tab from your next run,draft,846a05b0
-tx_SQB3T3V911,run_result.trait.note_test,active,런 결과 새 특성 카드 주석 (테스트 런),,,테스트 런 — 프로필에 지급하지 않았습니다,Test run — not added to your profile,draft,4bb4c373
+tx_SQB3T3V911,run_result.trait.note_test,active,런 결과 새 특성 카드 주석 (테스트 런),,,테스트 런: 프로필에 지급하지 않았습니다,Test run: not added to your profile,draft,563eec34
 tx_QGD2NVYK77,run_result.progress.title,active,런 결과 카드 제목,,,진척,Progress,draft,3009b31b
 tx_W3EY6C4QFN,run_result.progress.phase_reached,active,런 결과 진척 줄,,,도달 페이즈,Phase Reached,draft,d6058179
 tx_EHJMQJG41X,run_result.progress.phases_cleared,active,런 결과 진척 줄,,,끝낸 페이즈,Phases Cleared,draft,10f5660e
 tx_PXZTGCX8MB,run_result.progress.record,active,런 결과 진척 줄,,,전적,Record,draft,f5e74d28
 tx_3MAEFQKB2P,run_result.progress.titles,active,런 결과 진척 줄,,,대회 우승,Titles,draft,098719a9
-tx_J14VFZ8J4S,run_result.progress.titles_value,active,런 결과 진척 줄 값 — 우승 횟수,,,{n}회,{n},draft,b1382eba
+tx_J14VFZ8J4S,run_result.progress.titles_value,active,런 결과 진척 줄 값: 우승 횟수,,,{n}회,{n},draft,b1382eba
 tx_5P10XTZ6PS,run_result.score.title,active,런 결과 카드 제목,,,점수,Score,draft,67d2cf6b
 tx_JBSDMB0A9F,run_result.score.total,active,런 결과 점수 합계 줄,,,합계,Total,draft,3dcb27ed
 tx_90402NFY5K,run_result.score.phases,active,런 결과 점수 줄,,,끝낸 페이즈 × {n},Phases cleared × {n},draft,ebf9d449
@@ -24,17 +24,17 @@ tx_RF0FQRX947,run_result.score.titles,active,런 결과 점수 줄,,,대회 우�
 tx_9AHQ3H3J1J,run_result.score.clear_bonus,active,런 결과 점수 줄,,,클리어 보너스,Clear Bonus,draft,eccf185f
 tx_5MP13PWYFM,run_result.score.trait_bonus,active,런 결과 점수 줄,,,특성 보너스 × {n},Trait bonus × {n},draft,fb4e41ac
 tx_RNSR0V2ZD7,run_result.reward.title,active,런 결과 카드 제목,,,보상,Rewards,draft,0c955cd0
-tx_PFPGKNBXJT,run_result.reward.note_test,active,런 결과 보상 카드 주석,,,테스트 런이라 프로필에 더하지 않았습니다,Test run — rewards not added to your profile,draft,8b79f66c
-tx_HF4PD2NVB3,run_result.reward.outgame,active,런 결과 보상 줄 — lobby.currency.outgame 과 같은 재화,,,아웃게임 재화,Coins,draft,a92c371b
+tx_PFPGKNBXJT,run_result.reward.note_test,active,런 결과 보상 카드 주석,,,테스트 런이라 프로필에 더하지 않았습니다,Test run: rewards not added to your profile,draft,8b79f66c
+tx_HF4PD2NVB3,run_result.reward.outgame,deprecated,런 결과 보상 줄: lobby.currency.outgame 과 같은 재화,,merged into shop.currency.outgame,아웃게임 재화,Coins,draft,a92c371b
 tx_Y1513M583R,run_result.reward.pass_exp,active,런 결과 보상 줄,,,주간 패스 EXP,Weekly Pass EXP,draft,085192b5
-tx_P70DJG0Y69,run_result.reward.pass_overflow,active,런 결과 보상 줄,,,패스 초과분 → 아웃게임 재화,Pass overflow → Coins,draft,a66ff934
+tx_P70DJG0Y69,run_result.reward.pass_overflow,active,런 결과 보상 줄,,,패스 초과분 → {tx_X43BN649C3},Pass overflow → {tx_X43BN649C3},draft,9f780b9e
 tx_4JW54W3MFD,run_result.reward.manager_exp,active,런 결과 보상 줄,,,감독 EXP,Manager EXP,draft,b352f04c
 tx_ERBNFWJ2H9,run_result.reward.remove_points,active,런 결과 보상 줄,,,새 제거 포인트 (감독 탭),New removal points (Manager tab),draft,8805ea53
 tx_36E6M38JM0,run_result.growth.title,active,런 결과 카드 제목,,,선수 성장,Player Growth,draft,ba3c10ab
 tx_6DXJDQC258,run_result.growth.exp,active,런 결과 선수 성장 줄,,,선수 EXP +{n},Player EXP +{n},draft,200aa9ff
 tx_RQ4SQ39BQ7,run_result.growth.max_lv,active,런 결과 선수 성장 칩,,,최대 Lv {from} → {to},Max Lv {from} → {to},draft,c784530e
 tx_RRX6FCNZ2Q,run_result.achievement.title,active,런 결과 카드 제목,,,이번 런 업적,Run Achievements,draft,00825a55
-tx_ZA35FTB9TG,run_result.achievement.empty,active,런 결과 업적 카드 — 비었을 때,,,기록된 선수가 없습니다,No players recorded,draft,6e4631c2
-tx_6DT1P5Z0AS,run_result.empty.title,active,런 결과 화면 — 결과가 없을 때 제목,,,런 정산,Run Settlement,draft,3be38df5
-tx_HG7GBCBDAD,run_result.empty.text,active,런 결과 화면 — 결과가 없을 때,,,표시할 정산 결과가 없습니다,No settlement to show,draft,a9a45637
-tx_84F8FGGM7Q,run_result.empty.hint,active,런 결과 화면 — 결과가 없을 때,,,런이 끝나면 이 화면에 점수와 보상이 나옵니다,Your score and rewards show up here when a run ends,draft,bc5fcb97
+tx_ZA35FTB9TG,run_result.achievement.empty,active,런 결과 업적 카드: 비었을 때,,,기록된 선수가 없습니다,No players recorded,draft,6e4631c2
+tx_6DT1P5Z0AS,run_result.empty.title,active,런 결과 화면: 결과가 없을 때 제목,,,런 정산,Run Settlement,draft,3be38df5
+tx_HG7GBCBDAD,run_result.empty.text,active,런 결과 화면: 결과가 없을 때,,,표시할 정산 결과가 없습니다,No settlement to show,draft,a9a45637
+tx_84F8FGGM7Q,run_result.empty.hint,active,런 결과 화면: 결과가 없을 때,,,런이 끝나면 이 화면에 점수와 보상이 나옵니다,Your score and rewards show up here when a run ends,draft,bc5fcb97

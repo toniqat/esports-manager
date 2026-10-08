@@ -485,7 +485,7 @@ static func pilot_name(state: Dictionary, pilot_id: int) -> String:
 
 static func stat_label(stat: String) -> String:
 	if stat == "all":
-		return Loc.t(L.MENTAL_UI_NOTE_ALL_STATS)
+		return Loc.t(L.TERM_STAT_PILOT_ALL)
 	var i: int = PlayerData.STAT_KEYS.find(stat)
 	return PlayerData.stat_label(i) if i >= 0 else stat
 

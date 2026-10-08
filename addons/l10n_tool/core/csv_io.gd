@@ -34,6 +34,7 @@ var _quoted: Array = []
 var _dirty: Dictionary = {}       # row → true
 var _header_dirty: bool = false
 var _header_quoted: Dictionary = {}
+var _removed: bool = false        # 행을 지웠다 (move_key). 저장이 필요하다
 
 
 ## 파일을 읽는다. 파일이 없으면 errors 에 E001 하나를 남긴 빈 표를 돌려준다.
@@ -206,7 +207,35 @@ func row_dict(row: int) -> Dictionary:
 
 
 func is_dirty() -> bool:
-	return _header_dirty or not _dirty.is_empty()
+	return _header_dirty or _removed or not _dirty.is_empty()
+
+
+## 행 하나를 지운다 (move_key 전용: key 를 다른 도메인 파일로 옮길 때만 — key 는 지우지 않는다).
+## 뒤 행 번호는 하나씩 당겨진다. 나머지 레코드의 원래 바이트는 그대로 저장된다.
+func remove_row(row: int) -> bool:
+	if row < 0 or row >= rows.size():
+		return false
+	for i in range(_records.size() - 1, -1, -1):
+		var rec: Dictionary = _records[i]
+		if rec["kind"] != "row":
+			continue
+		var ri: int = int(rec["row"])
+		if ri == row:
+			_records.remove_at(i)
+		elif ri > row:
+			rec["row"] = ri - 1
+	rows.remove_at(row)
+	row_lines.remove_at(row)
+	_quoted.remove_at(row)
+	var nd: Dictionary = {}
+	for k in _dirty.keys():
+		if int(k) < row:
+			nd[k] = true
+		elif int(k) > row:
+			nd[int(k) - 1] = true
+	_dirty = nd
+	_removed = true
+	return true
 
 
 ## 저장. 바뀐 것이 없으면 쓰지 않는다. 실패하면 오류 문자열, 성공하면 "".
@@ -247,6 +276,7 @@ func save() -> String:
 			rec["raw"] = _serialize(rows[int(rec["row"])], _quoted[int(rec["row"])]) if _dirty.has(int(rec["row"])) or String(rec["raw"]).is_empty() else rec["raw"]
 	_dirty.clear()
 	_header_dirty = false
+	_removed = false
 	_recount_lines()
 	return ""
 

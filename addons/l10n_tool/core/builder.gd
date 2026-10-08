@@ -11,6 +11,7 @@ extends RefCounted
 const Config = preload("res://addons/l10n_tool/core/config.gd")
 const Catalog = preload("res://addons/l10n_tool/core/catalog.gd")
 const CsvIo = preload("res://addons/l10n_tool/core/csv_io.gd")
+const KeyRefs = preload("res://addons/l10n_tool/core/key_refs.gd")
 
 const MODE_DEV := "dev"
 const MODE_RELEASE := "release"
@@ -103,7 +104,6 @@ static func translation_path(cfg: Config, loc: String) -> String:
 ## `strings_<loc>.csv` 본문 (§4.4 · §7.3). 빈 셀은 만들지 않는다.
 static func strings_csv(l, loc: String, mode: String) -> String:
 	var cat: Catalog = l.catalog
-	var is_source: bool = loc == cat.config.source_locale
 	var lines := PackedStringArray(["keys," + CsvIo.quote_cell(loc)])
 	var seen: Dictionary = {}
 	for e in cat.all_entries:
@@ -114,16 +114,8 @@ static func strings_csv(l, loc: String, mode: String) -> String:
 		var active: bool = e["status"] == Catalog.STATUS_ACTIVE
 		if mode == MODE_RELEASE and not active:
 			continue
-		var value: String = ""
-		if is_source:
-			value = String(e["source"])
-		else:
-			var t: Dictionary = (e["tr"] as Dictionary).get(loc, {})
-			var tr_text: String = String(t.get("text", ""))
-			if mode == MODE_DEV:
-				value = tr_text if not tr_text.is_empty() else String(e["source"])
-			elif String(t.get("status", "")) == Catalog.TR_APPROVED and not cat.is_stale(key, loc):
-				value = tr_text
+		# key 참조 `{tx_…}` 는 여기서 그 로케일 텍스트로 펼친다 (KeyRefs). 펼칠 수 없으면 행을 뺀다.
+		var value: String = KeyRefs.expand(cat, KeyRefs.raw_text(cat, key, loc, mode), loc, mode)
 		if value.is_empty():
 			continue
 		lines.append(CsvIo.quote_cell(key) + "," + CsvIo.quote_cell(value))

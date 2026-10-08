@@ -226,7 +226,8 @@ func _fill_header() -> void:
 	pb.theme_type_variation = &"PrimaryButton" if perr == "" else &"GhostButton"
 	pb.add_theme_font_size_override("font_size", 26 if perr == "" else 24)
 	pb.disabled = perr != ""
-	%Info.text = Loc.t(L.MANAGER_TAB_INFO, {"n": ConstTable.int_of("MANAGER_REMOVE_PER_LEVEL")})
+	%Info.text = Loc.t(L.MANAGER_TAB_INFO, {"n": ConstTable.int_of("MANAGER_REMOVE_PER_LEVEL"),
+			"gain": ManagerProgress.spec_per_removal()})
 
 
 func _fill_stats() -> void:
@@ -254,7 +255,8 @@ func _fill_stats() -> void:
 		# Breakdown items joined with the symbol separator " · " (a list, not a sentence).
 		var parts: PackedStringArray = [Loc.t(L.MANAGER_TAB_PART_TYPE, {"n": int(tstats[key])})]
 		if int(rm[key]) > 0:
-			parts.append(Loc.t(L.MANAGER_TAB_PART_REMOVED, {"n": int(rm[key])}))
+			parts.append(Loc.t(L.MANAGER_TAB_PART_REMOVED,
+					{"n": int(rm[key]) * ManagerProgress.remove_stat_drop()}))
 		if a > 0:
 			parts.append(Loc.t(L.MANAGER_TAB_PART_SPEC, {"n": a}))
 		row.get_node("%Parts").text = " · ".join(parts)
@@ -330,7 +332,9 @@ func _on_remove_pressed(stat: String) -> void:
 	var cur: int = int(ManagerProgress.base_stats(prof)[stat])
 	Haptics.play(Haptics.Kind.WARNING)
 	_host.open_confirm(Loc.t(L.MANAGER_TAB_REMOVE_TITLE, {"stat": label}),
-			Loc.t(L.MANAGER_TAB_REMOVE_BODY, {"stat": label, "from": cur, "to": cur - 1}),
+			Loc.t(L.MANAGER_TAB_REMOVE_BODY, {"stat": label, "from": cur,
+					"to": maxi(StaffSystem.STAT_MIN, cur - ManagerProgress.remove_stat_drop()),
+					"gain": ManagerProgress.spec_per_removal()}),
 			Loc.t(L.UI_BUTTON_CANCEL), Loc.t(L.UI_BUTTON_REMOVE), true, _apply_remove.bind(stat))
 
 
@@ -344,7 +348,8 @@ func _apply_remove(stat: String) -> void:
 		_host.show_toast(Loc.t(L.UI_ERROR_PROFILE_SAVE_FAILED, {"error": serr}), true)
 	else:
 		Haptics.play(Haptics.Kind.MEDIUM)
-		_host.show_toast(Loc.t(L.MANAGER_TAB_REMOVED_TOAST, {"stat": StaffSystem.stat_label(stat)}))
+		_host.show_toast(Loc.t(L.MANAGER_TAB_REMOVED_TOAST, {"stat": StaffSystem.stat_label(stat),
+				"drop": ManagerProgress.remove_stat_drop(), "gain": ManagerProgress.spec_per_removal()}))
 	_rebuild()
 
 
@@ -368,7 +373,8 @@ func _on_prestige_pressed() -> void:
 	if err != "":
 		_host.show_toast(err, true)
 		return
-	var rw: Dictionary = {"rewards": _reward_text()}
+	var rw: Dictionary = {"rewards": _reward_text(),
+			"presets": maxi(1, ConstTable.int_of("PRESTIGE_NEW_PRESETS"))}
 	var body: String = Loc.t(L.MANAGER_TAB_PRESTIGE_BODY_UNSAVED, rw) if _dirty \
 			else Loc.t(L.MANAGER_TAB_PRESTIGE_BODY, rw)
 	Haptics.play(Haptics.Kind.WARNING)

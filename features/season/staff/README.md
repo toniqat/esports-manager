@@ -3,6 +3,8 @@
 Contract: `docs/outgame_dev_plan.md` §11. Single entry point for every manager-stat read in a run.
 Display text is l10n keys (`staff` domain; shared `term.person.*` · `term.week.*`). `STAT_LABELS` / `JOB_LABELS` /
 `StaffPanel.DIRECT_TASKS` values are **keys** — show them with `StaffSystem.stat_label(stat)` / `job_label(job)`, never raw.
+The staff section title in `UI_View_StaffPanel.tscn` is `term.person.staff`. `term.manager_stat.*` (the six manager stat
+names) are also referenced as `{tx_…}` by finance specials, manager type descs and training / mastery lines.
 
 | File | Role |
 |---|---|

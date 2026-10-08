@@ -524,6 +524,8 @@ Contract: `docs/outgame_dev_plan.md` §10.1 / §10.3.
 
 ## Localization
 Display text is l10n keys (`season` domain; shared `ui.*` / `term.*` where the word is generic).
+EndingView and GameOverView share the settle button key `season.ending_view.settle`; win-loss records reference
+`term.record.win_loss`.
 Scene labels that the script fills carry `auto_translate_mode = 2` (placeholder text stays for WYSIWYG);
 fixed captions hold a key literal. Bracket slot names are `season.slot.*` — `TournamentManager.SLOT_LABELS` /
 `InternationalTournament.SLOT_LABELS` (`slot_label(i)` returns translated text) and the `BracketMatchBox.slot_title`

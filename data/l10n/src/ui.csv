@@ -39,3 +39,4 @@ tx_HEE9SJ62Q8,ui.run.unknown_scenario,active,런 시작 오류 (GameManager.star
 tx_VP8YTRQNQD,ui.run.preset_error,active,런 시작 오류 — {error} = 프리셋 검증 문장,,,감독 프리셋: {error},Manager preset: {error},draft,0b4ccdc6
 tx_GDG84BJV4A,ui.level_up.cannot_raise,active,선수 최대 레벨 올리기 실패 — 이미 최고 레벨,,,더 올릴 수 없습니다,Can't raise it any further,draft,b60d13e6
 tx_9AYQATFV5B,ui.level_up.not_enough,active,선수 최대 레벨 올리기 실패 — {n} = 필요한 재화,,,레벨업 재화가 부족합니다 ({n} 필요),Not enough level-up currency ({n} needed),draft,caf40789
+tx_07X2NJ1P4H,ui.word.or,active,두 낱말을 잇는 접속사. 문장 안 key 참조로 조합할 때 쓴다,,,또는,or,draft,46bed094

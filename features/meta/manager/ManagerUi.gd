@@ -40,7 +40,7 @@ static func add_stat_cells(parent: Control, pos: Vector2, width: float,
 				OutgameTheme.ACCENT_TEXT if spec > 0 else OutgameTheme.TEXT,
 				Vector2(0, 36), Vector2(cell_w - 8.0, 48), HORIZONTAL_ALIGNMENT_CENTER)
 		if spec > 0:
-			UiHelpers.mk_label(cell, Loc.t(L.MANAGER_STAT_SPEC_PART, {"n": spec}), 16, OutgameTheme.ACCENT_TEXT,
+			UiHelpers.mk_label(cell, Loc.t(L.MANAGER_TAB_PART_SPEC, {"n": spec}), 16, OutgameTheme.ACCENT_TEXT,
 					Vector2(0, 86), Vector2(cell_w - 8.0, 24), HORIZONTAL_ALIGNMENT_CENTER)
 	return STAT_CELL_H
 

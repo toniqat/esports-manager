@@ -30,13 +30,13 @@ tx_A735T32EGT,trait.4.desc,active,traits.csv desc (id=4),,,신뢰도가 오를 �
 tx_NJ8WFC7JTK,trait.5.desc,active,traits.csv desc (id=5),,,사건 발생 확률 {p1}%,Incident chance {p1}%,draft,89cdd359
 tx_QWR2NXFX5M,trait.6.desc,active,traits.csv desc (id=6),,,분석 공개 단계 +{p1},Analysis reveal tier +{p1},draft,c5906ca2
 tx_E9N9BW8Q0V,trait.7.desc,active,traits.csv desc (id=7),,,샐러리캡 +{p1},Salary cap +{p1},draft,389dd430
-tx_6RMF7057WW,trait.8.desc,active,traits.csv desc (id=8),,,감독 스탯 여섯 모두 +{p1},All six manager stats +{p1},draft,dff69600
+tx_6RMF7057WW,trait.8.desc,active,traits.csv desc (id=8),,,모든 {tx_CD7F656SAD} +{p1},All {tx_CD7F656SAD} +{p1},draft,0b6aed23
 tx_ECBMZ4X60B,trait.9.desc,active,traits.csv desc (id=9),,,시설 유지비 {p1}%,Facility upkeep {p1}%,draft,7ee5a0c1
-tx_V233CFRMZM,trait.10.desc,active,traits.csv desc (id=10),,,경기 개시 전략 포인트 +{p1},Opening strategy points +{p1},draft,29e04fb6
-tx_PQ6389S0B6,trait.11.desc,active,traits.csv desc (id=11),,,첫 자동 뽑기 +{p1}장,First auto-draw +{p1} cards,draft,bfab98ce
-tx_3KQPNVDQG5,trait.12.desc,active,traits.csv desc (id=12),,,손 상한 +{p1},Max hand size +{p1},draft,50e4390f
-tx_M929F4HK8X,trait.13.desc,active,traits.csv desc (id=13),,,작전 단계마다 첫 카드 비용 {p1},First card cost each operation phase {p1},draft,5dee252f
-tx_YFNHSQ5GJ5,trait.14.desc,active,traits.csv desc (id=14),,,{p2}턴마다 전략 포인트 +{p1},Strategy points +{p1} every {p2} turns,draft,7fb65b81
+tx_V233CFRMZM,trait.10.desc,active,traits.csv desc (id=10),,,경기 개시 {tx_F597JS5T37} +{p1},Opening {tx_F597JS5T37} +{p1},draft,b6a46044
+tx_PQ6389S0B6,trait.11.desc,active,traits.csv desc (id=11),,,첫 자동 {tx_6VVGYKXZSK} +{p1}장,First auto-{tx_6VVGYKXZSK} +{p1} {plural:p1|{tx_VD4SPQQEES}|{tx_5V4VYG9XPE}},draft,b6965d7e
+tx_3KQPNVDQG5,trait.12.desc,active,traits.csv desc (id=12),,,{tx_SVRFJDH55K} 상한 +{p1},Max {tx_SVRFJDH55K} size +{p1},draft,78e8a71f
+tx_M929F4HK8X,trait.13.desc,active,traits.csv desc (id=13),,,{tx_2T8RX9PWGV}마다 첫 카드 {tx_9NMN77M8D7} {p1},First card {tx_9NMN77M8D7} each {tx_2T8RX9PWGV} {p1},draft,f66a8d69
+tx_YFNHSQ5GJ5,trait.14.desc,active,traits.csv desc (id=14),,,{p2}{tx_H89Y7GFPWP}마다 {tx_F597JS5T37} +{p1},+{p1} {tx_F597JS5T37} every {p2} {plural:p2|{tx_H89Y7GFPWP}|{tx_3PES5W2PRP}},draft,b3a0bff8
 tx_9XWKFPH3A6,trait.15.desc,active,traits.csv desc (id=15),,,주간 스폰서 수입 {p1}%,Weekly sponsor income {p1}%,draft,fa366f42
 tx_T6TSR16X7E,trait.16.desc,active,traits.csv desc (id=16),,,훈련 EXP {p1}%,Training EXP {p1}%,draft,be9c0970
 tx_35AVVM2TZS,trait.17.desc,active,traits.csv desc (id=17),,,신뢰도가 오를 때 {p1} 덜,{p1} less whenever trust rises,draft,1991a624
@@ -44,10 +44,10 @@ tx_GTHGAFSFYH,trait.18.desc,active,traits.csv desc (id=18),,,사건 발생 확�
 tx_TR33VGFNSG,trait.19.desc,active,traits.csv desc (id=19),,,샐러리캡 {p1},Salary cap {p1},draft,3c349b7e
 tx_YBHFJVCTQZ,trait.20.desc,active,traits.csv desc (id=20),,,분석 공개 단계 {p1},Analysis reveal tier {p1},draft,7a74b570
 tx_53D7BPJQBK,trait.21.desc,active,traits.csv desc (id=21),,,시설 유지비 +{p1}%,Facility upkeep +{p1}%,draft,7dd1a6b6
-tx_FNN91QZ7T0,trait.22.desc,active,traits.csv desc (id=22),,,첫 자동 뽑기 {p1}장,First auto-draw {p1} cards,draft,3a2aad45
-tx_6XQ3A0Q7JP,trait.23.desc,active,traits.csv desc (id=23),,,손 상한 {p1},Max hand size {p1},draft,6e99c3c5
-tx_6HNYQXB6DT,trait.24.desc,active,traits.csv desc (id=24),,,작전 단계마다 첫 카드 비용 +{p1},First card cost each operation phase +{p1},draft,1aacaadf
-tx_BG2JBV86HB,trait.equip.too_many,active,특성 장착 검증 오류,,,특성은 {n}개까지 장착할 수 있습니다,You can equip up to {n} traits,draft,a8d38d26
+tx_FNN91QZ7T0,trait.22.desc,active,traits.csv desc (id=22),,,첫 자동 {tx_6VVGYKXZSK} {p1}장,First auto-{tx_6VVGYKXZSK} {p1} {plural:p1|{tx_VD4SPQQEES}|{tx_5V4VYG9XPE}},draft,8a59f697
+tx_6XQ3A0Q7JP,trait.23.desc,active,traits.csv desc (id=23),,,{tx_SVRFJDH55K} 상한 {p1},Max {tx_SVRFJDH55K} size {p1},draft,24965583
+tx_6HNYQXB6DT,trait.24.desc,active,traits.csv desc (id=24),,,{tx_2T8RX9PWGV}마다 첫 카드 {tx_9NMN77M8D7} +{p1},First card {tx_9NMN77M8D7} each {tx_2T8RX9PWGV} +{p1},draft,86e67dbe
+tx_BG2JBV86HB,trait.equip.too_many,active,특성 장착 검증 오류,,,특성은 {n}개까지 장착할 수 있습니다,You can equip up to {n} {plural:n|{tx_GW0QTR6A5N}|{tx_BCYB93VHH3}},draft,a8d38d26
 tx_F9NJXK31Y0,trait.equip.unknown,active,특성 장착 검증 오류,,,알 수 없는 특성 id {id},Unknown trait id {id},draft,da60e224
 tx_W81J1DFTY1,trait.equip.duplicate,active,특성 장착 검증 오류,,,같은 특성을 두 번 장착할 수 없습니다,You can't equip the same trait twice,draft,660c14a6
 tx_YEBKNRWZXC,trait.equip.not_owned,active,특성 장착 검증 오류. name = 특성 이름,,,보유하지 않은 특성입니다: {name},Trait not owned: {name},draft,cb21041a

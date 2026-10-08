@@ -132,7 +132,7 @@ func _bind() -> void:
 		cell.cell_tapped.connect(_on_cell_tapped)
 		_cells[p.id] = cell
 	if _load_error != "":
-		%LoadErrorText.text = Loc.t(L.COLLECTION_TAB_LOAD_ERROR, {"error": _load_error})
+		%LoadErrorText.text = Loc.t(L.RUN_SETUP_LOAD_FAILED, {"error": _load_error})
 		%LoadError.visible = true
 	_sheet = CollectionDetailSheet.create()
 	add_child(_sheet)

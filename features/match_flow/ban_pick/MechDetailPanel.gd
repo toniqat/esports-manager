@@ -191,7 +191,7 @@ func _fill_passive() -> void:
 	var kw: String = GameEnums.tags_text(String(pas.get("keyword", "")))
 	%PassiveKw.text = kw
 	%PassiveKw.visible = not kw.is_empty()
-	%PassiveDesc.text = Loc.t(String(pas.get("description_key", "")))  # l10n-dynamic: mech_passive.*.desc
+	%PassiveDesc.text = MechSkillSystem.passive_description(pas)
 
 
 ## 메크 카드 격자 — 인게임 파일럿 상세 패널(`battle_sim/ui/PilotDetailPanel`)의 카드

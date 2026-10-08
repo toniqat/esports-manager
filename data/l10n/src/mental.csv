@@ -179,56 +179,56 @@ tx_67TZA94HQ7,mental.x07.x07_c1,active,mental_texts.csv text (id=X07_C1),,,같�
 tx_1SRJTR5B7D,mental.x07.x07_c0_s0,active,mental_texts.csv text (id=X07_C0_S0),,,생각보다 괜찮은데요?,"Huh, this is better than I expected?",draft,e265be55
 tx_FRHG14RTK7,mental.x07.x07_c0_s1,active,mental_texts.csv text (id=X07_C0_S1),,,손에 안 맞아요…,It just doesn't feel right in my hands…,draft,57ac1b77
 tx_C38GZ3HXES,mental.x07.x07_c1_s0,active,mental_texts.csv text (id=X07_C1_S0),,,다행이다…!,"Phew, thank goodness…!",draft,96529752
-tx_TT907CKDT5,mental.p01.p01_l0,active,mental_texts.csv text (id=P01_L0),,,@리그 위클리,@League Weekly,draft,d3c6c89a
+tx_TT907CKDT5,mental.p01.p01_l0,active,mental_texts.csv text (id=P01_L0),,,@{tx_576HKVWRTP},@{tx_576HKVWRTP},draft,c2e15f2d
 tx_XFDVFZPHS6,mental.p01.p01_l1,active,mental_texts.csv text (id=P01_L1),,,이번 주도 시간 내주셔서 감사합니다 감독님.,"Thanks for making time for us again this week, Coach.",draft,b820bed0
 tx_9CJEG52Y0C,mental.p01.p01_l2,active,mental_texts.csv text (id=P01_L2),,,지난주 훈련 성과가 눈에 띄더군요. 이번 주 계획도 비슷하게 가시나요?,Last week's training results really stood out. Are you sticking with a similar plan this week?,draft,e0479957
 tx_XM7JSR27W1,mental.p01.p01_c0,active,mental_texts.csv text (id=P01_C0),,,계획대로 갑니다. 흔들릴 이유가 없죠.,We're going according to plan. No reason to waver.,draft,65f4b466
 tx_5C5XCDBQES,mental.p01.p01_c1,active,mental_texts.csv text (id=P01_C1),,,조금 바꿀 생각입니다. 아직 말씀드리긴 이르고요.,"I'm thinking of changing a few things. Too early to say, though.",draft,f86e8ac7
 tx_XJ9PE2ZZG4,mental.p01.p01_c2,active,mental_texts.csv text (id=P01_C2),,,그건 경기장에서 확인하시죠.,You'll see on the stage.,draft,ad60abb2
-tx_1XCTCK0BG9,mental.p02.p02_l0,active,mental_texts.csv text (id=P02_L0),,,@e스포츠 데일리,@Esports Daily,draft,12f39c75
+tx_1XCTCK0BG9,mental.p02.p02_l0,active,mental_texts.csv text (id=P02_L0),,,@{tx_J8VCATJ5GB},@{tx_J8VCATJ5GB},draft,7ed2c747
 tx_2NYB25EY7K,mental.p02.p02_l1,active,mental_texts.csv text (id=P02_L1),,,주말 경기 상대가 만만치 않다는 평이 많습니다.,Many say this weekend's opponent is a tough one.,draft,9cf67255
 tx_P4R0XZ2718,mental.p02.p02_l2,active,mental_texts.csv text (id=P02_L2),,,솔직히 이길 자신 있으십니까?,"Honestly, are you confident you can win?",draft,8d65c04a
 tx_NG79WN0VTX,mental.p02.p02_c0,active,mental_texts.csv text (id=P02_C0),,,저희 선수들을 믿습니다.,I believe in my players.,draft,803cea4f
 tx_G064BA75JD,mental.p02.p02_c1,active,mental_texts.csv text (id=P02_C1),,,쉽지 않겠지만 준비한 게 있습니다.,"It won't be easy, but we've prepared something.",draft,010f3961
 tx_ESGNJ1THF8,mental.p02.p02_c2,active,mental_texts.csv text (id=P02_C2),,,질문이 좀 무례하시네요.,That's a bit of a rude question.,draft,ee2f5e5c
-tx_HWJTJM0P5J,mental.p03.p03_l0,active,mental_texts.csv text (id=P03_L0),,,@게임 투데이,@Game Today,draft,a8dabe31
+tx_HWJTJM0P5J,mental.p03.p03_l0,active,mental_texts.csv text (id=P03_L0),,,@{tx_MH87R5EDPY},@{tx_MH87R5EDPY},draft,8291f7b3
 tx_Q6HE23RFQK,mental.p03.p03_l1,active,mental_texts.csv text (id=P03_L1),,,팀 분위기는 어떻습니까?,How's the mood in the team?,draft,2ad412d4
 tx_JDXZ98RCXA,mental.p03.p03_l2,active,mental_texts.csv text (id=P03_L2),,,불화설도 돌던데요.,There have been rumors of friction.,draft,6f14826e
 tx_TXD7P8XPHT,mental.p03.p03_c0,active,mental_texts.csv text (id=P03_C0),,,가족 같은 분위기입니다.,We're like a family.,draft,5ee3d21e
 tx_BRYRHNDA5X,mental.p03.p03_c1,active,mental_texts.csv text (id=P03_C1),,,경쟁은 있지만 건강한 경쟁입니다.,"There's competition, but it's healthy competition.",draft,12599370
 tx_34A2QNPWXP,mental.p03.p03_c2,active,mental_texts.csv text (id=P03_C2),,,근거 없는 소문엔 답하지 않겠습니다.,I won't respond to baseless rumors.,draft,26c26af1
-tx_CGYN4JCTT2,mental.p04.p04_l0,active,mental_texts.csv text (id=P04_L0),,,@e스포츠 데일리,@Esports Daily,draft,12f39c75
+tx_CGYN4JCTT2,mental.p04.p04_l0,active,mental_texts.csv text (id=P04_L0),,,@{tx_J8VCATJ5GB},@{tx_J8VCATJ5GB},draft,7ed2c747
 tx_8FK3WR9VTJ,mental.p04.p04_l1,active,mental_texts.csv text (id=P04_L1),,,지난 경기 패배 원인을 어떻게 보십니까?,What do you see as the cause of last match's loss?,draft,d7195e1b
 tx_PYPNQ9R39M,mental.p04.p04_c0,active,mental_texts.csv text (id=P04_C0),,,제 준비가 부족했습니다.,I didn't prepare enough.,draft,cc3c061c
 tx_RX6R6NM4D2,mental.p04.p04_c1,active,mental_texts.csv text (id=P04_C1),,,선수들 컨디션이 안 좋았습니다.,The players weren't in good shape.,draft,eff843f6
 tx_SGCC9FSCQ8,mental.p04.p04_c2,active,mental_texts.csv text (id=P04_C2),,,지나간 경기는 잊었습니다.,I've already forgotten about that match.,draft,f72ffc6e
-tx_3MNR87MKPW,mental.p05.p05_l0,active,mental_texts.csv text (id=P05_L0),,,@리그 위클리,@League Weekly,draft,d3c6c89a
+tx_3MNR87MKPW,mental.p05.p05_l0,active,mental_texts.csv text (id=P05_L0),,,@{tx_576HKVWRTP},@{tx_576HKVWRTP},draft,c2e15f2d
 tx_F7YY1EMPKY,mental.p05.p05_l1,active,mental_texts.csv text (id=P05_L1),,,지난 경기 MVP는 {name} 선수였습니다.,{name} was the MVP of the last match.,draft,66c9bdfc
 tx_NJA6D2HRNY,mental.p05.p05_l2,active,mental_texts.csv text (id=P05_L2),,,칭찬 한마디 부탁드립니다.,Any words of praise?,draft,c0abad78
 tx_HYT29E1S8S,mental.p05.p05_c0,active,mental_texts.csv text (id=P05_C0),,,{name}{eun} 우리 팀의 기둥입니다.,{name} is the backbone of this team.,draft,15db4958
 tx_BM3185ZSQ1,mental.p05.p05_c1,active,mental_texts.csv text (id=P05_C1),,,한 경기 잘한 걸로는 부족합니다.,One good match isn't enough.,draft,8029ee6e
 tx_KKXMBSZ9TF,mental.p05.p05_c2,active,mental_texts.csv text (id=P05_C2),,,MVP는 팀 전체가 받은 겁니다.,That MVP belongs to the whole team.,draft,f40ca29d
-tx_KPMDCCZTEP,mental.p06.p06_l0,active,mental_texts.csv text (id=P06_L0),,,@게임 투데이,@Game Today,draft,a8dabe31
+tx_KPMDCCZTEP,mental.p06.p06_l0,active,mental_texts.csv text (id=P06_L0),,,@{tx_MH87R5EDPY},@{tx_MH87R5EDPY},draft,8291f7b3
 tx_VZEFKAVWD5,mental.p06.p06_l1,active,mental_texts.csv text (id=P06_L1),,,{name} 선수 해외 이적설이 있습니다.,There are rumors {name} is transferring overseas.,draft,f6cb68ca
 tx_NTTQA5M8S6,mental.p06.p06_l2,active,mental_texts.csv text (id=P06_L2),,,사실입니까?,Is it true?,draft,9ce87ebf
 tx_FY61V7ASJW,mental.p06.p06_c0,active,mental_texts.csv text (id=P06_C0),,,{name}{eun} 우리와 끝까지 갑니다.,{name} is with us to the end.,draft,815f8940
 tx_56GD2322E9,mental.p06.p06_c1,active,mental_texts.csv text (id=P06_C1),,,선수 본인에게 물어보시죠.,Why don't you ask the player?,draft,a8927265
-tx_485X75BY3Y,mental.p07.p07_l0,active,mental_texts.csv text (id=P07_L0),,,@e스포츠 데일리,@Esports Daily,draft,12f39c75
+tx_485X75BY3Y,mental.p07.p07_l0,active,mental_texts.csv text (id=P07_L0),,,@{tx_J8VCATJ5GB},@{tx_J8VCATJ5GB},draft,7ed2c747
 tx_37K36AAVHZ,mental.p07.p07_l1,active,mental_texts.csv text (id=P07_L1),,,{name} 선수가 지난 경기에서 부진했다는 평입니다.,Word is {name} struggled in the last match.,draft,8895ed63
 tx_NQN9ZJV1P7,mental.p07.p07_l2,active,mental_texts.csv text (id=P07_L2),,,교체도 고려하십니까?,Are you considering a substitution?,draft,8eaee217
 tx_XSCYG02BFM,mental.p07.p07_c0,active,mental_texts.csv text (id=P07_C0),,,전혀요. {name}{eul} 믿습니다.,Not at all. I believe in {name}.,draft,bde8865d
 tx_6X445ZRXZA,mental.p07.p07_c1,active,mental_texts.csv text (id=P07_C1),,,컨디션을 보고 판단하겠습니다.,I'll decide based on their condition.,draft,5ea4399e
 tx_726TW3J3S4,mental.p07.p07_c2,active,mental_texts.csv text (id=P07_C2),,,부진은 사실이죠.,"They did struggle, that's a fact.",draft,b89a0135
-tx_E0Q8Z6JCQT,mental.p08.p08_l0,active,mental_texts.csv text (id=P08_L0),,,@리그 위클리,@League Weekly,draft,d3c6c89a
+tx_E0Q8Z6JCQT,mental.p08.p08_l0,active,mental_texts.csv text (id=P08_L0),,,@{tx_576HKVWRTP},@{tx_576HKVWRTP},draft,c2e15f2d
 tx_9XF9RAG5PG,mental.p08.p08_l1,active,mental_texts.csv text (id=P08_L1),,,팬들 사이에서 {name} 선수 비판 여론이 있습니다.,There's been criticism of {name} among the fans.,draft,01eb7c05
 tx_MX5X6YNRCS,mental.p08.p08_c0,active,mental_texts.csv text (id=P08_C0),,,비판은 제가 받겠습니다.,I'll take the criticism.,draft,83bd8af1
 tx_BKXFM7SK5R,mental.p08.p08_c1,active,mental_texts.csv text (id=P08_C1),,,선수가 이겨내야 할 몫입니다.,That's something the player has to overcome.,draft,5ab64b98
-tx_DDB911TYP5,mental.p09.p09_l0,active,mental_texts.csv text (id=P09_L0),,,@게임 투데이,@Game Today,draft,a8dabe31
+tx_DDB911TYP5,mental.p09.p09_l0,active,mental_texts.csv text (id=P09_L0),,,@{tx_MH87R5EDPY},@{tx_MH87R5EDPY},draft,8291f7b3
 tx_P165HV568A,mental.p09.p09_l1,active,mental_texts.csv text (id=P09_L1),,,감독님 특유의 운영이 화제입니다.,Your signature macro style is the talk of the scene.,draft,89fe21a1
 tx_N27PWATY28,mental.p09.p09_l2,active,mental_texts.csv text (id=P09_L2),,,비결이 뭡니까?,What's the secret?,draft,f3482de6
 tx_DW6DN62HG5,mental.p09.p09_c0,active,mental_texts.csv text (id=P09_C0),,,철저한 준비 그뿐입니다.,"Thorough preparation, that's all.",draft,65cc32a8
 tx_WS4YNKZZHP,mental.p09.p09_c1,active,mental_texts.csv text (id=P09_C1),,,선수들이 잘 따라 준 덕분입니다.,It's thanks to the players following through.,draft,2d9dc595
-tx_Y286QSY9AY,mental.p10.p10_l0,active,mental_texts.csv text (id=P10_L0),,,@e스포츠 데일리,@Esports Daily,draft,12f39c75
+tx_Y286QSY9AY,mental.p10.p10_l0,active,mental_texts.csv text (id=P10_L0),,,@{tx_J8VCATJ5GB},@{tx_J8VCATJ5GB},draft,7ed2c747
 tx_ZYQ2H6NSV5,mental.p10.p10_l1,active,mental_texts.csv text (id=P10_L1),,,현역 시절과 지금 중 언제가 더 떨립니까?,Which is more nerve-racking: your playing days or now?,draft,d4af55ba
 tx_S475S364V1,mental.p10.p10_c0,active,mental_texts.csv text (id=P10_C0),,,지금이요. 선수들 경기라서요.,Now. Because it's my players' match.,draft,f397c712
 tx_TRZ5H1B5JE,mental.p10.p10_c1,active,mental_texts.csv text (id=P10_C1),,,현역 때죠. 지금은 즐깁니다.,My playing days. Now I just enjoy it.,draft,f3d9f77a
@@ -238,6 +238,6 @@ tx_P1MZEZ4FJQ,mental.ui.note.pmod_all,active,멘탈 결과 칩,,,팀 전체 {sta
 tx_JCW2JPKMY8,mental.ui.note.smod,active,멘탈 결과 칩 — 감독 일시 능력치,,,감독 {stat} {delta} ({duration}),Manager {stat} {delta} ({duration}),draft,583e369c
 tx_8FVD7N2NZP,mental.ui.note.outing,active,멘탈 결과 칩,,,외출 {n}회째 · 다음 훈련일 EXP 감소,Outing #{n} · less EXP on the next training day,draft,63d8b28f
 tx_KAEPTP25DT,mental.ui.note.pilot,active,파일럿을 못 찾을 때 이름 자리,,,선수,Pilot,draft,c37450d6
-tx_WR6Q5QGMZ8,mental.ui.note.all_stats,active,일시 스탯 대상이 전부일 때,,,전 스탯,All stats,draft,9fa10fd0
+tx_WR6Q5QGMZ8,mental.ui.note.all_stats,deprecated,일시 스탯 대상이 전부일 때,,,전 스탯,All stats,draft,9fa10fd0
 tx_MD8BDCV48Q,mental.ui.note.until_match,active,일시 보정 기간 — 다음 경기까지,,,다음 경기까지,Until next match,draft,f93b6d08
 tx_D3NT6QFHKK,mental.ui.mod_source.incident,active,스태프 시트 일시 보정 출처 — 선수 사건,,,사건,Incident,draft,cc42d930

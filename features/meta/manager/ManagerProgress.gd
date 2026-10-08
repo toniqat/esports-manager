@@ -8,18 +8,19 @@ extends RefCounted
 # `ProfileManager.save_profile()` once per user action.
 #
 # Stat model (manager stats 1..`MANAGER_STAT_CAP`):
-#   base(stat)   = manager_types[type][stat] − removed[stat]           (≥ 1)
+#   base(stat)   = manager_types[type][stat] − removed[stat] × MANAGER_REMOVE_STAT_DROP  (≥ STAT_MIN)
 #   preset(stat) = base(stat) + preset.alloc[stat]                     (≤ MANAGER_STAT_CAP)
 # - Each level-up grants `MANAGER_REMOVE_PER_LEVEL` **removal points**.
-#   Spending one lowers a stat's base by 1 (not below 1) — **permanent until
-#   prestige** — and yields one **specialisation point**.
-# - Specialisation points = Σ removed. Each preset distributes them freely
+#   Spending one lowers a stat's base by `MANAGER_REMOVE_STAT_DROP` (not below STAT_MIN),
+#   **permanent until prestige**, and yields `MANAGER_SPEC_PER_REMOVAL`
+#   **specialisation points**.
+# - Specialisation points = Σ removed × MANAGER_SPEC_PER_REMOVAL. Each preset distributes them freely
 #   (`alloc`, any stat, add / take back at will between runs). Total stays constant —
 #   specialising moves points, it never creates them.
 # - Prestige (Lv `PRESTIGE_LEVEL`, no season limit): level 1, exp 0, removals cleared,
 #   type re-chosen, existing presets turn into `kind = "prestige"` (unusable until
-#   reset), one new normal preset is appended (up to `PRESET_MAX_COUNT`) and becomes
-#   active, `PRESTIGE_REWARD_*` currency is granted.
+#   reset), `PRESTIGE_NEW_PRESETS` new normal presets are appended (up to `PRESET_MAX_COUNT`),
+#   the last one becomes active, `PRESTIGE_REWARD_*` currency is granted.
 
 const KIND_NORMAL: String = "normal"
 const KIND_PRESTIGE: String = "prestige"
@@ -106,22 +107,33 @@ static func removal_points_left(profile: Dictionary) -> int:
 	return maxi(0, removal_points_total(profile) - used)
 
 
-## Specialisation points = Σ removed (the pool every preset distributes).
+## Base-stat drop per removal point spent (MANAGER_REMOVE_STAT_DROP, at least one).
+static func remove_stat_drop() -> int:
+	return maxi(1, ConstTable.int_of("MANAGER_REMOVE_STAT_DROP"))
+
+
+## Specialisation points gained per removal point spent (MANAGER_SPEC_PER_REMOVAL).
+static func spec_per_removal() -> int:
+	return maxi(0, ConstTable.int_of("MANAGER_SPEC_PER_REMOVAL"))
+
+
+## Specialisation points = Σ removed × `spec_per_removal()` (the pool every preset distributes).
 static func spec_points(profile: Dictionary) -> int:
 	var total: int = 0
 	var rm: Dictionary = removed(profile)
 	for s in rm.keys():
 		total += int(rm[s])
-	return total
+	return total * spec_per_removal()
 
 
-## type − removed, each ≥ STAT_MIN.
+## type − removed × `remove_stat_drop()`, each ≥ STAT_MIN.
 static func base_stats(profile: Dictionary) -> Dictionary:
 	var t: Dictionary = type_stats(int(_mgr(profile).get("type", 0)))
 	var rm: Dictionary = removed(profile)
+	var drop: int = remove_stat_drop()
 	var out: Dictionary = {}
 	for s in StaffSystem.STATS:
-		out[s] = maxi(StaffSystem.STAT_MIN, int(t[s]) - int(rm[s]))
+		out[s] = maxi(StaffSystem.STAT_MIN, int(t[s]) - int(rm[s]) * drop)
 	return out
 
 
@@ -132,13 +144,13 @@ static func can_remove(profile: Dictionary, stat: String) -> String:
 	if removal_points_left(profile) <= 0:
 		return Loc.t(L.MANAGER_PROGRESS_NO_REMOVAL)
 	if int(base_stats(profile)[stat]) <= StaffSystem.STAT_MIN:
-		return Loc.t(L.MANAGER_PROGRESS_STAT_AT_MIN)
+		return Loc.t(L.MANAGER_PROGRESS_STAT_AT_MIN, {"min": StaffSystem.STAT_MIN})
 	return ""
 
 
 ## Spends one removal point on `stat` (permanent until prestige). "" on success.
 ## Presets whose alloc pushed this stat to the cap stay valid (base drops, so the
-## preset value drops by 1).
+## preset value drops by `remove_stat_drop()`).
 static func remove_stat(profile: Dictionary, stat: String) -> String:
 	var err: String = can_remove(profile, stat)
 	if err != "":
@@ -271,8 +283,11 @@ static func prestige(profile: Dictionary, new_type: int) -> Dictionary:
 	var ps: Array = presets(profile)
 	for p in ps:
 		(p as Dictionary)["kind"] = KIND_PRESTIGE
-	if ps.size() < maxi(1, ConstTable.int_of("PRESET_MAX_COUNT")):
-		ps.append(new_preset())
+	var room: int = maxi(1, ConstTable.int_of("PRESET_MAX_COUNT")) - ps.size()
+	var add: int = mini(maxi(1, ConstTable.int_of("PRESTIGE_NEW_PRESETS")), room)
+	if add > 0:
+		for _i in add:
+			ps.append(new_preset())
 		profile["active_preset"] = ps.size() - 1
 	else:
 		# Full — the active preset is reset in place so the next run can start.

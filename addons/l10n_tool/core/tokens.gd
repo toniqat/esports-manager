@@ -10,7 +10,8 @@ static var _re_brace: RegEx = null
 static var _re_bracket: RegEx = null
 
 
-## 값 자리표시자 이름 — 등장 순서, 중복 제거.
+## 값 자리표시자 이름 — 등장 순서, 중복 제거. 복수 태그 `{plural:name|…}` 의 name 은 넣지 않는다
+## (ko 에는 복수 태그가 없고, name 이 카드 전투 값 · 식 · const 이름일 수 있어서).
 static func placeholders(text: String, josa_tags: Array) -> PackedStringArray:
 	var out := PackedStringArray()
 	for m in _brace().search_all(text):
@@ -19,6 +20,23 @@ static func placeholders(text: String, josa_tags: Array) -> PackedStringArray:
 			continue
 		out.append(nm)
 	return out
+
+
+## 복수 태그 `{plural:name|형태|형태…}` — [{name, forms: PackedStringArray}] 등장 순서.
+## 형태 안에 key 참조 `{tx_…}` 가 있어도 된다(한 겹까지). 이름은 식일 수 있다(카드 설명의
+## 전투 값 `charge+{attack_base}` · `max(1, chain)`, `CardDescBox` 가 고른다).
+static func plurals(text: String) -> Array:
+	var out: Array = []
+	if text.find("{plural:") < 0:
+		return out
+	if _re_plural == null:
+		_re_plural = RegEx.create_from_string("\\{plural:((?:[^{}|]|\\{[a-z][a-z0-9_]*\\})+)((?:\\|(?:[^{}|]|\\{[^{}]*\\})*)+)\\}")
+	for m in _re_plural.search_all(text):
+		out.append({"name": m.get_string(1), "forms": m.get_string(2).substr(1).split("|")})
+	return out
+
+
+static var _re_plural: RegEx = null
 
 
 ## 값 자리표시자 집합 비교용 — 정렬된 목록.

@@ -94,11 +94,16 @@ static func ticket_premium_price(pool: String) -> int:
 			else "SHOP_TRAIT_TICKET_PREMIUM"))
 
 
+## Tickets received per ticket purchase (SHOP_TICKET_EXCHANGE_GAIN, at least one).
+static func ticket_exchange_gain() -> int:
+	return maxi(1, ConstTable.int_of("SHOP_TICKET_EXCHANGE_GAIN"))
+
+
 static func buy_ticket(pm: Node, pool: String) -> String:
 	var price: int = ticket_premium_price(pool)
 	if not pm.spend_currency("premium", price):
 		return Loc.t(L.SHOP_CATALOG_NOT_ENOUGH_PREMIUM, {"n": price})
-	pm.add_currency(Gacha.ticket_key(pool), 1)
+	pm.add_currency(Gacha.ticket_key(pool), ticket_exchange_gain())
 	return ""
 
 

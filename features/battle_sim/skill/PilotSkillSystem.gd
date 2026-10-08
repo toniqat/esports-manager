@@ -118,6 +118,31 @@ static var OPPORTUNIST_ROUNDS: int = ConstTable.int_of("SKILL_OPPORTUNIST_ROUNDS
 ## 용의 가호 — 활성화 시의 전략 점수와 드로우 수.
 static var BLESSING_STRATEGY: int = ConstTable.int_of("SKILL_BLESSING_STRATEGY")
 static var BLESSING_DRAW: int = ConstTable.int_of("SKILL_BLESSING_DRAW")
+## 작전 준비: 이번 작전 단계 모든 카드 비용 감소량.
+static var OPS_PREP_DISCOUNT: int = ConstTable.int_of("SKILL_OPS_PREP_DISCOUNT")
+## 계략: 보존을 거는 손패 장수.
+static var SCHEME_CARDS: int = ConstTable.int_of("SKILL_SCHEME_CARDS")
+## 만능: 체력형이면 더하고 공격형이면 빼는 존재감.
+static var VERSATILE_PRESENCE: int = ConstTable.int_of("SKILL_VERSATILE_PRESENCE")
+## 사건 한 번에 얻는 충전(토큰). 스킬마다 따로 둔다.
+static var PERFORMANCE_CHARGE_GAIN: int = ConstTable.int_of("SKILL_PERFORMANCE_CHARGE_GAIN")
+static var ACCUMULATE_CHARGE_GAIN: int = ConstTable.int_of("SKILL_ACCUMULATE_CHARGE_GAIN")
+static var ROOKIE_CHARGE_GAIN: int = ConstTable.int_of("SKILL_ROOKIE_CHARGE_GAIN")
+static var SURGE_CHARGE_GAIN: int = ConstTable.int_of("SKILL_SURGE_CHARGE_GAIN")
+static var BLESSING_CHARGE_GAIN: int = ConstTable.int_of("SKILL_BLESSING_CHARGE_GAIN")
+static var ELATION_CHARGE_GAIN: int = ConstTable.int_of("SKILL_ELATION_CHARGE_GAIN")
+static var PLUNDERER_CHARGE_GAIN: int = ConstTable.int_of("SKILL_PLUNDERER_CHARGE_GAIN")
+static var SIEGE_CHARGE_GAIN: int = ConstTable.int_of("SKILL_SIEGE_CHARGE_GAIN")
+## 스킬이 만들어 주는 카드 장수(설명문 `{skill_…_cards}`).
+static var ROAM_CARDS: int = ConstTable.int_of("SKILL_ROAM_CARDS")
+static var RECALL_ORDER_CARDS: int = ConstTable.int_of("SKILL_RECALL_ORDER_CARDS")
+static var ELATION_CARDS: int = ConstTable.int_of("SKILL_ELATION_CARDS")
+static var PLUNDERER_CARDS: int = ConstTable.int_of("SKILL_PLUNDERER_CARDS")
+static var AGGRESSIVE_PUSH_CARDS: int = ConstTable.int_of("SKILL_AGGRESSIVE_PUSH_CARDS")
+static var ROOKIE_CARDS: int = ConstTable.int_of("SKILL_ROOKIE_CARDS")
+static var FIERCE_BATTLE_CARDS: int = ConstTable.int_of("SKILL_FIERCE_BATTLE_CARDS")
+## 격전: 덱에서 찾아오는 자기 교전 카드 장수.
+static var FIERCE_BATTLE_SEARCH: int = ConstTable.int_of("SKILL_FIERCE_BATTLE_SEARCH")
 # ─── 스킬이 만들어 주는 카드 (cards.csv id) ──────────────────────────────────
 # 전부 `pool = 0` 이라 스타터 덱에는 들어가지 않는다. 손패에 놓는 것들은
 # `휘발성`이 붙어 **안 쓰고 버려지면 그대로 사라진다** — 스킬은 카드를 주는
@@ -232,8 +257,28 @@ func skill_type(p: PilotData) -> String:
 
 
 func skill_description(p: PilotData) -> String:
-	var key: String = skill_description_key(p)
-	return Loc.t(key) if not key.is_empty() else ""  # l10n-dynamic: pilot_skill.*.desc
+	return description_of(def_for(p))
+
+
+## 스킬 행 하나의 설명문. 설명문의 수치는 글자로 적지 않는다: 튜닝 상수는 `{skill_…}`
+## (const.csv, `Loc.fill_consts`), 행의 `p1` · `p2` 와 그로부터 나오는 값은 여기서 채운다.
+## 스킬 설명을 보여 주는 화면은 모두 이 함수를 거친다(`Loc.t(description_key)` 를 직접 부르면
+## `{p1}` · `{p2}` 가 그대로 보인다).
+static func description_of(sdef: Dictionary) -> String:
+	var key: String = String(sdef.get("description_key", ""))
+	return Loc.t(key, description_params(sdef)) if not key.is_empty() else ""  # l10n-dynamic: pilot_skill.*.desc
+
+
+## 설명문 자리표시자 값: `{p1}` · `{p2}`(행 그대로)와 전리품 수집가의 `{loot_max_atk_pct}`
+## (모든 역할을 모았을 때의 공격력 가산 %).
+static func description_params(sdef: Dictionary) -> Dictionary:
+	var p1: int = int(sdef.get("p1", 0))
+	var p2: int = int(sdef.get("p2", 0))
+	var params: Dictionary = {"p1": p1, "p2": p2}
+	if String(sdef.get("key", "")) == KEY_LOOT_COLLECTOR:
+		params["loot_max_atk_pct"] = Loc.number_text(
+				(float(p2) * LOOT_ATK_PER_CHARGE + LOOT_ATK_FULL_BONUS) * 100.0)
+	return params
 
 
 ## 설명문 l10n key — `[x]` 참조(`CardData.ref_entries`)를 푸는 데 쓴다.
@@ -301,7 +346,7 @@ func progress(p: PilotData) -> float:
 func status_text(p: PilotData) -> String:
 	var st: Dictionary = states.get(p, {})
 	if st.is_empty():
-		return Loc.t(L.BATTLE_SKILL_STATUS_NONE)
+		return Loc.t(L.HUD_SKILL_NONE)
 	var d: Dictionary = st["def"]
 	match skill_type(p):
 		TYPE_COOLDOWN:
@@ -365,19 +410,19 @@ func _run_activation(p: PilotData) -> String:
 		KEY_HOLD_POSITION:   return _act_hold_position(p)
 		KEY_OPS_PREP:        return _act_ops_prep(p)
 		KEY_SCHEME:          return _act_scheme(p)
-		KEY_RECALL_ORDER:    return _grant_volatile(p, CARD_RECALL)
+		KEY_RECALL_ORDER:    return _grant_volatile(p, CARD_RECALL, RECALL_ORDER_CARDS)
 		KEY_DRAGON_BLESSING: return _act_dragon_blessing(p)
-		KEY_ELATION:         return _grant_volatile(p, CARD_ADRENALINE)
+		KEY_ELATION:         return _grant_volatile(p, CARD_ADRENALINE, ELATION_CARDS)
 		KEY_FIERCE_BATTLE:   return _act_fierce_battle(p)
 		KEY_BATTLE_ORDER:    return _act_battle_order(p)
-		KEY_PLUNDERER:       return _grant_volatile(p, CARD_STEAL)
+		KEY_PLUNDERER:       return _grant_volatile(p, CARD_STEAL, PLUNDERER_CARDS)
 		KEY_SIEGE:           return _act_siege(p)
-		KEY_AGGRESSIVE_PUSH: return _grant_volatile(p, CARD_ADVANCE)
+		KEY_AGGRESSIVE_PUSH: return _grant_volatile(p, CARD_ADVANCE, AGGRESSIVE_PUSH_CARDS)
 		_:                   return ""
 
 
 ## 배회 — 손패의 가장 싼 이동 카드를 0코로 만든다. 이동 카드가 없으면 대신
-## 휘발성 [이동] 한 장을 손에 쥐여 준다. 어느 쪽이든 "지금 움직일 수 있게 된다"가
+## 휘발성 [이동] `ROAM_CARDS` 장을 손에 쥐여 준다. 어느 쪽이든 "지금 움직일 수 있게 된다"가
 ## 스킬의 값이고, 미드가 로밍을 나가는 유일한 수단이다.
 func _act_roam(p: PilotData) -> String:
 	var cheapest: CardData = null
@@ -388,10 +433,10 @@ func _act_roam(p: PilotData) -> String:
 		if cheapest == null or cd.cost < cheapest.cost:
 			cheapest = cd
 	if cheapest == null:
-		return _grant_volatile(p, CARD_MOVE)
+		return _grant_volatile(p, CARD_MOVE, ROAM_CARDS)
 	if cheapest.cost <= 0:
 		# 이미 0코라 깎을 것이 없다 — 쿨타임만 먹고 끝나지 않도록 카드를 준다.
-		return _grant_volatile(p, CARD_MOVE)
+		return _grant_volatile(p, CARD_MOVE, ROAM_CARDS)
 	cheapest.cost = 0
 	_refresh_hand()
 	return "[%s] 비용 0" % cheapest.card_name  # l10n-ignore
@@ -406,16 +451,16 @@ func _act_hold_position(p: PilotData) -> String:
 	return "%d턴 간 위치 고정" % HOLD_TURNS  # l10n-ignore
 
 
-## 작전 준비 — 이번 작전 단계의 모든 카드 비용 -1. `phase_cost_inc` 는
+## 작전 준비: 이번 작전 단계의 모든 카드 비용을 `OPS_PREP_DISCOUNT` 만큼 깎는다. `phase_cost_inc` 는
 ## `BattleSim.effective_cost_for` 가 읽는 단계 세금이라 음수로 밀면 그대로
 ## 할인이 된다(0 미만으로는 안 내려간다 — 그쪽도 같은 함수가 막는다).
 func _act_ops_prep(p: PilotData) -> String:
-	_bs.phase_cost_inc_p -= 1
+	_bs.phase_cost_inc_p -= OPS_PREP_DISCOUNT
 	_refresh_hand()
-	return "이번 작전 단계 모든 카드 비용 −1"  # l10n-ignore
+	return "이번 작전 단계 모든 카드 비용 −%d" % OPS_PREP_DISCOUNT  # l10n-ignore
 
 
-## 계략 — 손패 한 장에 보존을 건다. 고르는 화면은 계획 중시(`preserve:N`)와
+## 계략: 손패 `SCHEME_CARDS` 장에 보존을 건다. 고르는 화면은 계획 중시(`preserve:N`)와
 ## 같은 손패 픽(중앙 구역에 끌어다 놓기)을 쓴다. **취소는 아무것도 소모하지 않는다** — 오버레이가
 ## 취소로 닫히면 `activate` 가 빈 문자열을 받아 쿨타임도 안 돈다.
 func _act_scheme(p: PilotData) -> String:
@@ -423,9 +468,9 @@ func _act_scheme(p: PilotData) -> String:
 		return ""
 	if _bs.card_select_overlay == null:
 		return ""
-	_bs.card_select_overlay.start_preserve(1,
+	_bs.card_select_overlay.start_preserve(SCHEME_CARDS,
 			_on_scheme_picked, _on_scheme_cancelled)
-	return "손 1장에 보존"  # l10n-ignore
+	return "손 %d장에 보존" % SCHEME_CARDS  # l10n-ignore
 
 
 func _on_scheme_picked(picks: Array) -> void:
@@ -459,26 +504,31 @@ func _act_dragon_blessing(p: PilotData) -> String:
 	return "전략 점수 +%d · 뽑기 %d" % [BLESSING_STRATEGY, drew]  # l10n-ignore
 
 
-## 격전 — 덱에서 **자기 것인** 전투 개시 카드를 한 장 끌어온다. 없으면 대신
-## 휘발성 [전투 개시] 를 만들어 준다. 정글러가 원할 때 싸움을 열 수 있게 하는
-## 것이 요점이라, 덱 사정 때문에 아무 일도 안 일어나서는 안 된다.
+## 격전: 덱에서 **자기 것인** 전투 개시 카드를 `FIERCE_BATTLE_SEARCH` 장까지 끌어온다.
+## 하나도 없으면 대신 휘발성 [전투 개시] `FIERCE_BATTLE_CARDS` 장을 만들어 준다. 정글러가
+## 원할 때 싸움을 열 수 있게 하는 것이 요점이라, 덱 사정 때문에 아무 일도 안 일어나서는 안 된다.
 func _act_fierce_battle(p: PilotData) -> String:
-	var found: CardData = null
+	var found: Array[CardData] = []
 	for raw in _bs.player_deck:
+		if found.size() >= FIERCE_BATTLE_SEARCH:
+			break
 		var cd := raw as CardData
 		if cd.owner_pilot == p and _has_clause(cd, ENGAGE_CLAUSE):
-			found = cd
-			break
-	if found == null:
-		return _grant_volatile(p, CARD_ENGAGE_START)
-	_bs.player_deck.erase(found)
+			found.append(cd)
+	if found.is_empty():
+		return _grant_volatile(p, CARD_ENGAGE_START, FIERCE_BATTLE_CARDS)
+	var names: PackedStringArray = []
+	for cd in found:
+		_bs.player_deck.erase(cd)
+		if _bs.card_phase != null:
+			_bs.card_phase.add_card_to_hand(cd, true)
+		else:
+			_bs.player_hand.append(cd)
+		names.append("[%s]" % cd.card_name)
 	if _bs.card_phase != null:
-		_bs.card_phase.add_card_to_hand(found, true)
 		_bs.card_phase.update_deck_discard_labels()
-	else:
-		_bs.player_hand.append(found)
 	_refresh_hand()
-	return "[%s] 뽑기" % found.card_name  # l10n-ignore
+	return "%s 뽑기" % " ".join(names)  # l10n-ignore
 
 
 ## 전투 명령 — 이번 작전 단계 동안 전투 개시 카드가 싸지고 라운드가 하나 줄어든다.
@@ -499,21 +549,28 @@ func _act_siege(p: PilotData) -> String:
 	return "다음 교전 턴 +%d" % SIEGE_ROUNDS  # l10n-ignore
 
 
-## 스킬이 만들어 주는 손패 카드 한 장. `휘발성`을 덧붙여 안 쓰고 버려지면
-## 사라지게 한다 — 그러지 않으면 스킬이 매번 덱을 한 장씩 불린다. 기록 문구의 카드
-## 이름은 만든 카드 자신의 이름이다(표시 이름을 따로 넘기지 않는다 — l10n).
-func _grant_volatile(p: PilotData, card_id: int) -> String:
+## 스킬이 만들어 주는 손패 카드 `count` 장(장수는 스킬마다 const.csv). `휘발성`을 덧붙여
+## 안 쓰고 버려지면 사라지게 한다. 그러지 않으면 스킬이 매번 덱을 불린다. 기록 문구의 카드
+## 이름은 만든 카드 자신의 이름이다(표시 이름을 따로 넘기지 않는다: l10n).
+func _grant_volatile(p: PilotData, card_id: int, count: int) -> String:
 	if _bs.card_phase == null:
 		return ""
-	var cd: CardData = _bs.card_phase.make_objective_card(card_id)
-	if cd == null:
+	var made: int = 0
+	var made_name: String = ""
+	for _i in count:
+		var cd: CardData = _bs.card_phase.make_objective_card(card_id)
+		if cd == null:
+			break
+		cd.owner_pilot = p
+		cd.keyword = _with_keywords(cd.keyword,
+				[CardData.KW_EXHAUST, CardData.KW_VOLATILE])
+		_bs.card_phase.add_card_to_hand(cd, true)
+		made_name = cd.card_name
+		made += 1
+	if made == 0:
 		return ""
-	cd.owner_pilot = p
-	cd.keyword = _with_keywords(cd.keyword,
-			[CardData.KW_EXHAUST, CardData.KW_VOLATILE])
-	_bs.card_phase.add_card_to_hand(cd, true)
 	_refresh_hand()
-	return "[%s] 생성 (소멸 · 휘발성)" % cd.card_name  # l10n-ignore
+	return "[%s] ×%d 생성 (소멸 · 휘발성)" % [made_name, made]  # l10n-ignore
 
 
 ## `raw` 에 없는 키워드만 골라 `|` 로 이어 붙인다.
@@ -572,7 +629,9 @@ func on_turn_advanced() -> void:
 			KEY_ACCUMULATE, KEY_ROOKIE:
 				var cap: int = int(st["def"]["p2"])
 				if int(st["charge"]) < cap:
-					st["charge"] = int(st["charge"]) + 1
+					var gain: int = ACCUMULATE_CHARGE_GAIN \
+							if _key_of(p) == KEY_ACCUMULATE else ROOKIE_CHARGE_GAIN
+					st["charge"] = mini(cap, int(st["charge"]) + gain)
 					dirty = true
 					if _key_of(p) == KEY_ACCUMULATE:
 						pass   # 성장 적립은 add_score 가 그때그때 읽는다
@@ -596,17 +655,18 @@ func on_turn_advanced() -> void:
 		skill_state_changed.emit()
 
 
-## 신예의 [핫핸드] — 손패가 아니라 **덱**에 섞어 넣는다. 손에 바로 꽂으면 매
-## `p2` 턴마다 손패가 한 장씩 밀려 상한 정리를 유발한다.
+## 신예의 [핫핸드] `ROOKIE_CARDS` 장. 손패가 아니라 **덱**에 섞어 넣는다. 손에 바로
+## 꽂으면 만충마다 손패가 밀려 상한 정리를 유발한다.
 func _spawn_hot_hand(p: PilotData) -> void:
 	if _bs.card_phase == null:
 		return
-	var cd: CardData = _bs.card_phase.make_objective_card(CARD_HOT_HAND)
-	if cd == null:
-		return
-	cd.owner_pilot = p
 	var deck: Array = _bs.player_deck if p.team == 0 else _bs.ai_deck
-	deck.append(cd)
+	for _i in ROOKIE_CARDS:
+		var cd: CardData = _bs.card_phase.make_objective_card(CARD_HOT_HAND)
+		if cd == null:
+			break
+		cd.owner_pilot = p
+		deck.append(cd)
 	deck.shuffle()
 	_bs.card_phase.update_deck_discard_labels()
 	_log(p, "[핫핸드] 를 덱에 생성")  # l10n-ignore
@@ -623,7 +683,7 @@ func on_card_played(cd: CardData, _is_player: bool) -> void:
 	var cap: int = int(st["def"]["p2"])
 	if int(st["charge"]) >= cap:
 		return
-	st["charge"] = int(st["charge"]) + 1
+	st["charge"] = mini(cap, int(st["charge"]) + PERFORMANCE_CHARGE_GAIN)
 	_bs.refresh_growth_stats(p)
 	skill_state_changed.emit()
 
@@ -635,7 +695,7 @@ func on_attack_hit(caster: PilotData) -> void:
 	var st: Dictionary = states[caster]
 	var cap: int = int(st["def"]["p2"])
 	if int(st["charge"]) < cap:
-		st["charge"] = int(st["charge"]) + 1
+		st["charge"] = mini(cap, int(st["charge"]) + SURGE_CHARGE_GAIN)
 		skill_state_changed.emit()
 
 
@@ -678,7 +738,7 @@ func on_kill(victim: PilotData, killer: PilotData) -> void:
 			KEY_HUNT_REWARD:
 				st["farm_until"] = _bs.turn_count + HUNT_REWARD_TURNS
 			KEY_PLUNDERER:
-				st["charge"] = mini(int(st["def"]["p2"]), int(st["charge"]) + 1)
+				st["charge"] = mini(int(st["def"]["p2"]), int(st["charge"]) + PLUNDERER_CHARGE_GAIN)
 			KEY_LOOT_COLLECTOR:
 				var roles: Dictionary = st["killed_roles"]
 				if not roles.has(victim.role) \
@@ -706,7 +766,7 @@ func on_turret_destroyed(killer: PilotData) -> void:
 	if killer == null or _key_of(killer) != KEY_SIEGE:
 		return
 	var st: Dictionary = states[killer]
-	st["charge"] = mini(int(st["def"]["p2"]), int(st["charge"]) + 1)
+	st["charge"] = mini(int(st["def"]["p2"]), int(st["charge"]) + SIEGE_CHARGE_GAIN)
 	skill_state_changed.emit()
 
 
@@ -717,7 +777,7 @@ func on_dragon_spawned() -> void:
 		if _key_of(p) != KEY_DRAGON_BLESSING:
 			continue
 		var st: Dictionary = states[p]
-		st["charge"] = mini(int(st["def"]["p2"]), int(st["charge"]) + 1)
+		st["charge"] = mini(int(st["def"]["p2"]), int(st["charge"]) + BLESSING_CHARGE_GAIN)
 	skill_state_changed.emit()
 
 
@@ -728,7 +788,7 @@ func on_objective_won(winner_team: int) -> void:
 		if p.team != winner_team or _key_of(p) != KEY_ELATION:
 			continue
 		var st: Dictionary = states[p]
-		st["charge"] = mini(int(st["def"]["p2"]), int(st["charge"]) + 1)
+		st["charge"] = mini(int(st["def"]["p2"]), int(st["charge"]) + ELATION_CHARGE_GAIN)
 	skill_state_changed.emit()
 
 
@@ -868,7 +928,7 @@ func lane_stat_add(p: PilotData) -> float:
 func presence_delta(p: PilotData) -> int:
 	if _key_of(p) != KEY_VERSATILE:
 		return 0
-	return 1 if _is_hp_archetype(p) else -1
+	return VERSATILE_PRESENCE if _is_hp_archetype(p) else -VERSATILE_PRESENCE
 
 
 ## 위치 고정이 걸린 파일럿은 이동 카드의 대상이 될 수 없다.

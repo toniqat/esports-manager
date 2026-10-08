@@ -288,10 +288,12 @@ func _fill_preview() -> void:
 	UiPreview.trace(closed)
 	choice_picked.connect(func(_idx: int) -> void:
 		show_outcome([Loc.t(L.PRESS_PREVIEW_REPLY)],
-				[Loc.t(L.PRESS_PREVIEW_NOTE_TRUST), Loc.t(L.PRESS_PREVIEW_NOTE_MENTAL)], 1))
+				[Loc.t(L.MENTAL_UI_NOTE_TRUST_ALL, {"delta": "+3"}),
+				Loc.t(L.MENTAL_UI_NOTE_SMOD, {"stat": StaffSystem.stat_label("mental"), "delta": "+1",
+						"duration": MentalEvents.duration(2)})], 1))
 	var sub: String = Loc.t(L.PRESS_CONFERENCE_SUB, {
 		"phase": GameEnums.phase_label(GameEnums.SeasonPhase.PRESEASON), "week": 3,
-		"outlet": Loc.t(L.PRESS_PREVIEW_OUTLET)})
+		"outlet": Loc.t(L.NAME_OUTLET_ESPORTS_DAILY)})
 	# Line prefixes are markup: `*` = narration, `>` = the manager's own line.
 	open(sub, Loc.t(L.TERM_ACTIVITY_PRESS), null, [
 		Loc.t(L.PRESS_PREVIEW_Q1),

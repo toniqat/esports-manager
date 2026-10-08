@@ -207,6 +207,30 @@ func set_field(key: String, column: String, value: String) -> String:
 	return ""
 
 
+## key 행을 다른 도메인 파일 끝으로 옮기고 alias 를 바꾼다 (key · 번역 · 상태 · 해시는 그대로).
+## 저장은 `save_all()`, 그 뒤 `reload()` 로 행 번호를 다시 맞춘다.
+func move_entry(key: String, new_alias: String) -> String:
+	var e: Dictionary = entry(key)
+	if e.is_empty():
+		return "없는 key: %s" % key
+	var src_domain: String = String(e["domain"])
+	var dst_domain: String = new_alias.get_slice(".", 0)
+	var src: CsvIo = tables[src_domain]
+	var r: int = int(e["row"])
+	var vals: Dictionary = src.row_dict(r)
+	vals["alias"] = new_alias
+	var dst: CsvIo = tables.get(dst_domain, null)
+	if dst == null:
+		dst = CsvIo.create(config.domain_path(dst_domain), config.domain_header())
+		tables[dst_domain] = dst
+	dst.append_row(vals)
+	if dst_domain != src_domain:
+		src.remove_row(r)
+	else:
+		return "같은 도메인 안에서는 rename_alias 를 쓴다"
+	return ""
+
+
 ## 바뀐 도메인 파일을 모두 저장. 오류들을 이어 붙여 돌려준다.
 func save_all() -> String:
 	var errs: PackedStringArray = PackedStringArray()

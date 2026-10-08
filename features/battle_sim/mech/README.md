@@ -1,6 +1,6 @@
 # `features/battle_sim/mech/` — Mech (메크) skills
 
-표시 텍스트는 l10n key (`battle.mech.boon.*`) — `BOON_KEYS` holds keys, `boon_defs()` returns `{key, name, desc}` translated at call time.
+표시 텍스트는 l10n key (`battle.mech.boon.*`) — `BOON_KEYS` holds keys, `boon_defs()` returns `{key, name, desc}` translated at call time. **Passive descriptions** (`mech_passive.{id}.desc`) carry no numbers: tuning values are `{mech_…}` const placeholders (filled by `Loc.t`), the row's `p1` / `p2` are `{p1}` / `{p2}`, so every screen shows them through the static `MechSkillSystem.passive_description(def)` (a bare `Loc.t(description_key)` leaves `{p1}` · `{p2}` visible).
 
 Owns the runtime state of the permanent abilities (passives) attached to the assigned **machine**
 and of the cards that machine brings into the deck (덱). It is a sibling module standing next to
@@ -77,7 +77,7 @@ The difference in card count is itself part of choosing a machine.
 
 | Keyword | Meaning | Notes |
 |---|---|---|
-| **Charge (충전)** `charge` | Charge +1 each time it enters the hand (cap `charge_max`); on use, all Charge is spent and it gets that much stronger | The strength is **the state of one card** (`CardData.charge`), so a single copy (`count`) suffices. It rises in two places, `add_card_to_hand` / `draw_card` (both `CardData.gain_charge()`), and burns in one, `_burn_charge(cd)` — it records the burned amount in `_charge_spent` (the effect chain runs over several frames, so by then `charge` is already 0). Cards that use it (cap = `charge_max`, mech_cards.csv): 미사일 (C) · 전장 강타 (I — Charge + 1 targets) · 약자 멸시 (R) |
+| **Charge (충전)** `charge` | Charge +`CARD_CHARGE_HAND_GAIN` (const.csv) each time it enters the hand (cap `charge_max`); on use, all Charge is spent and it gets that much stronger | The strength is **the state of one card** (`CardData.charge`), so a single copy (`count`) suffices. It rises in two places, `add_card_to_hand` / `draw_card` (both `CardData.gain_charge()`), and burns in one, `_burn_charge(cd)` — it records the burned amount in `_charge_spent` (the effect chain runs over several frames, so by then `charge` is already 0). Cards that use it (cap = `charge_max`, mech_cards.csv): 미사일 (C) · 전장 강타 (I: Charge + `|base:N` targets) · 약자 멸시 (R) |
 | **count** | Number of copies put in the deck when adopted | The six cards with `count = 0` (승전보 · 철거 · 처형 · 락온 · 고통과 쾌감 · 단계 B/C) only appear when another effect creates them. They are still written in the distribution table (`BattleSim.starter_cards`) — so the detail panel's mech tab doesn't show only half the machine |
 | **Cost -1** | Cannot be played — has its effect just by being in the hand | 캐시 (B) · 계시 (I) · 약자 멸시 (R) · 밸런스 (U). Cost cell shows `—`, covered by a slab, drag refused, **except it can be dragged during a discard pick**. The effect is a single `hand_passive:<key>` line, and the actual behaviour is read by `MechSkillSystem` scanning the hand. Different from cost 0 (playable for free) |
 | **Volatile** `volatile` | If discarded unused, it is removed instead of going to the discard pile | 철거 (F) · 락온 (J), and the temporary missiles made by 정밀 폭격. Combined with exhaust (소멸, disappears when used), it bloats the deck in neither direction |
@@ -226,9 +226,9 @@ Charge, Charge is **the condition of the effect**, not fuel for activation.
 The six without passives: **B(25) · K(18) · R(13) · S(20) · U(21) · W(15)** — they play with cards only.
 
 **Event hooks attached to cards** (`mech_cards.trigger`) are not passives but conditions under which
-that card comes into existence, so they live on the card side — `turret_kill_deck` (꿰뚫는 번개: 1
-copy into the deck each time an enemy turret is destroyed) · `death_hand` (공격 명령: 1 copy into
-hand each time someone dies). Whether a machine brings a hooked card is decided by the distribution
+that card comes into existence, so they live on the card side — `turret_kill_deck` (꿰뚫는 번개:
+`MECH_TURRET_KILL_DECK_CARDS` copies into the deck each time an enemy turret is destroyed) · `death_hand`
+(공격 명령: `MECH_DEATH_HAND_CARDS` copies into hand each time someone dies); both counts in const.csv. Whether a machine brings a hooked card is decided by the distribution
 table (`starter_cards`) — the answer is the same wherever it is now, hand/deck/pile (even if
 exhausted).
 
@@ -284,7 +284,7 @@ is also decided inside it — Charge rises in several places, so leaving it to c
 the condition check that many times. Two things currently react to the cap.
 
 - **처형 준비** (H) — one [처형] into hand (not created if already held)
-- **무념** (T) — burn all Charge for an area attack within range 1 (the only place a passive hits directly)
+- **무념** (T): burn all Charge for an area attack within range `MECH_ZEN_RANGE` (the only place a passive hits directly)
 
 ## What applies on the engage stage
 
@@ -332,7 +332,7 @@ A loop of three cards that create each other.
 ```
 [리부트] → search the deck for [단계 A]
 [단계 A] → [단계 B] into the deck + Mark (`mark_target:N`) on the chosen enemy
-[단계 B] → engage (`engage:N` rounds) around the marked enemy
+[단계 B] → engage (`engage:N` rounds) around the marked enemy (radius `|self_range:N`, written in the row so the description can name it)
              ├ if an enemy was downed → [단계 C] into the deck
              └ otherwise              → [단계 A] into the deck   (one more lap of the loop)
 [단계 C] → [단계 A] into the deck + choose 1 of 3 boons
@@ -373,6 +373,11 @@ them as `static var`s keeping the old const names. Values are not restated here 
 | `SCORE_COST_UNIT` | `MECH_SCORE_COST_UNIT` | Unit of `score_cost:N` (growth points per N) |
 | `PHASE_BOON_BETA_CHARGE` | `MECH_PHASE_BOON_BETA_CHARGE` | Charge that boon beta puts on [단계 B] |
 | `PHASE_BOON_GAMMA_RATE` | `MECH_PHASE_BOON_GAMMA_RATE` | Fraction of own growth points boon gamma earns at [단계 C] |
+| `ZEN_RANGE` | `MECH_ZEN_RANGE` | 무념 sweep range (tiles) |
+| `BULK_POWER_ATK` | `MECH_BULK_POWER_ATK` | 과적재: ATK gained per `p1` max HP |
+| `EXECUTION_CHARGE_GAIN` · `ZEN_CHARGE_GAIN` | `MECH_EXECUTION_CHARGE_GAIN` · `MECH_ZEN_CHARGE_GAIN` | Charge (token) gained per event |
+| `*_CARDS` | `MECH_PAIN_PLEASURE_CARDS` · `MECH_VICTORY_REPORT_CARDS` · `MECH_DEMOLITION_ORDER_CARDS` · `MECH_EXECUTION_CARDS` · `MECH_MISSILE_STOCK_CARDS` | Cards a passive creates per trigger (`_grant_card_to_hand` / `_grant_card_to_deck` take a `count`; card `trigger` hooks use `MECH_TURRET_KILL_DECK_CARDS` · `MECH_DEATH_HAND_CARDS`) |
+| `OVERCLOCK_EXTRA_ATTACKS` | `MECH_OVERCLOCK_EXTRA_ATTACKS` | Extra engage attacks per overclock proc (`TurnEngageSim._strike_one` loops) |
 
 Multipliers (what %) live in const.csv rather than in `mech_passives.csv` for the same reason as pilot skills: to avoid
 creating five or six number columns whose meaning differs per passive. The CSV's `p1` / `p2` are two

@@ -30,8 +30,12 @@ One row from the `cards` SQLite table, plus a few runtime fields:
   `KEYWORD_NOTES` = l10n key tables `L.KEYWORD_*`; Charge uses `keyword.charge.label` / `.note` with `{max}`). **Charge is the keyword; what Charge accumulates is tokens** (the `charge` field)
 - `SPECIAL_LABELS` / `SPECIAL_NOTES` — special keyword id → name / note l10n key (`[term]` in descriptions):
   track 추적 · reactive_armor 반응 장갑 · target 목표 (Mark) · bounty 현상금 · stun 기절 · vulnerable 취약.
+  `special_note(sp, params)` = the note text; numbers in notes are const.csv placeholders, or effect values the
+  caller passes (`CardDescBox.special_note_params`: [목표] reads `{mark_target}` from [단계 A]).
 - **l10n (text is keys — `Loc.t`)**: `name_key` / `description_key` (@export) hold the keys;
-  `card_name` / `description` are computed properties (`Loc.t(key)`; a hand-built card without keys
+  `card_name` / `description` are computed properties (`Loc.t(key)`; `description` passes `effect_params()`
+  so the text names effect values instead of repeating numbers (D20): clause `op:v|mod:w` → `{op}`, `{op_mod}`,
+  `{mod}` (first wins), plus `{<name>_abs}` for numbers; a hand-built card without keys
   shows the text given to `_init`). `from_def` (cards.csv) / `from_mech_def` (mech_cards.csv — always use
   it for mech rows). **Identity is never the name** (D3): `card_uid()` = `pilot:<id>` / `mech:<id>`
   (hand-built: `effect:<effect>`) — art (`CardImages`) and effect sources (`PilotData.fx_src` ·
@@ -743,7 +747,10 @@ Spec: `docs/localization_design.md` §10.2 · §10.3 · D4 · D11. `L` is the ge
 
 | API | Use |
 |---|---|
-| `t(key, params = {})` | `TranslationServer.translate(key)` → `{name}` placeholders from `params` (`String.format`; names not in `params` and josa tags stay) → literal `\n` → newline + josa via `StrategyIcon.resolve_josa`. Josa runs **after** substitution so it sees the filled name's final consonant. A key missing in both current and fallback locale comes back as the key itself |
+| `t(key, params = {})` | `TranslationServer.translate(key)` → `{name}` placeholders from `params` (`String.format`) → leftover names that are tuning constants filled by `fill_consts` (others and josa tags stay) → literal `\n` → newline + josa via `StrategyIcon.resolve_josa`. Josa runs **after** substitution so it sees the filled name's final consonant. A key missing in both current and fallback locale comes back as the key itself |
+| `resolve_plurals(s, params, keep_unknown)` · `pick_plural(forms, n)` · `plural_index(locale, n)` | D22: `{plural:name|one|other}` → form by `name`'s value (params, else const placeholder rule); runs before `String.format`. `t(key, params, keep_unknown_plurals = true)` leaves tags whose value is unknown (card descriptions: `CardDescBox` picks them from live battle values; `CardData.description` passes true). `plural_index` = per-locale rule table (en: 1 → 0; fr / pt: n < 2 → 0), extend it for 3+ form languages |
+| `fill_consts(s)` | D20: `{skill_hold_turns}` → `ConstTable` value of `SKILL_HOLD_TURNS`; name suffixes (combinable) `_pct` ×100, `_abs` absolute, `_signed` `+` on positive. Lets descriptions point at const.csv instead of repeating a number |
+| `number_text(v, signed = false)` | number for display text: integer without decimals, else up to 2 decimals |
 | `has(key)` | translation exists in the current or fallback locale |
 | `refs(key)` | `[x]` reference keys of a description key, in order of appearance — read once from `data/l10n/generated/refs.json` (D4) |
 | `set_locale(code)` | `TranslationServer.set_locale` (the caller reloads the scene — §10.4) |

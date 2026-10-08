@@ -1,6 +1,6 @@
 # features/battle_sim/skill — pilot skills
 
-**텍스트는 l10n key — `Loc.t`.** `skill_name` / `skill_description` translate the def's `name_key` · `description_key` (`pilot_skill.{id}.*`); `skill_description_key` feeds `CardData.ref_entries`. Granted volatile cards are logged with their own `card_name` (no hard-coded names). `status_text` → `battle.skill.status.*`; activation result strings are log-only (`# l10n-ignore`).
+**텍스트는 l10n key — `Loc.t`.** `skill_name` / `skill_description` translate the def's `name_key` · `description_key` (`pilot_skill.{id}.*`); `skill_description_key` feeds `CardData.ref_entries`. **Every screen that shows a skill description goes through `PilotSkillSystem.description_of(def)`** (static; `skill_description(p)` calls it): it passes `description_params(def)` = `{p1}` · `{p2}` (the row) and `{loot_max_atk_pct}` (전리품 수집가 all-roles total). A bare `Loc.t(description_key)` leaves `{p1}` · `{p2}` visible. Granted volatile cards are logged with their own `card_name` (no hard-coded names). `status_text` → `battle.skill.status.*` (no skill = `hud.skill.none`, shared with `SkillPopup`); activation result strings are log-only (`# l10n-ignore`).
 
 A **unique ability** attached to one player (선수). If cards (카드) are a shared resource handed out by
 mechs (메크) and pilots (파일럿), a skill is the one move only that player can make.
@@ -45,6 +45,12 @@ The table is `data/csv/pilot_skills.csv` (**25 rows**); the pairing is held by `
   `StrategyIcon.resolve_josa` resolves them together with `\n`; `fill_rich` · `measure_text` ·
   `rich_height` go through it automatically. **Showing a description in a plain `Label` leaves the
   tags visible** — always pass it through `resolve_josa`.
+- **No numbers in the text.** Tuning values are `{const_name}` placeholders filled by `Loc.t` from const.csv
+  (`{skill_hold_turns}`, `{skill_hold_growth_rate_signed_pct}`: suffixes `_pct` · `_abs` · `_signed`, see
+  `resources/Loc.gd`); the row's `p1` / `p2` are `{p1}` / `{p2}` (`description_of`). Kept as literal text:
+  the per-event token step "+1" and "1장" in 격전 (one card searched), which are structural, not tuned.
+- Shared words are key references in ko: `{tx_DM2CD6EQG8}` 공격력 · `{tx_CT45F83FMW}` 최대 체력 ·
+  `{tx_VP2WZCKCPR}` 존재감 (`term.combat.*`); en writes its own text.
 
 **Skills are bound to a lane** — they attach only to pilots of the same role, 5 per role.
 With only 25, **15 of the 40 players (mobs) have no skill** (`skill_id = -1`, `is_mob = 1`).
@@ -198,7 +204,7 @@ from turn `SKILL_LATE_GAME_TURN`.
 | Name | Type | Summary |
 |---|---|---|
 | 공성전 (Siege) | charge | Starts with full charges. +1 on turret destroyed. `p1` charges → next Start Battle card's rounds + `SKILL_SIEGE_ROUNDS` |
-| 만능 (All-Rounder) | passive | HP-type mech: presence +1 · max HP + `SKILL_VERSATILE_MULT`; attack-type: presence −1 · attack + `SKILL_VERSATILE_MULT` |
+| 만능 (All-Rounder) | passive | HP-type mech: presence + `SKILL_VERSATILE_PRESENCE` · max HP + `SKILL_VERSATILE_MULT`; attack-type: presence − `SKILL_VERSATILE_PRESENCE` · attack + `SKILL_VERSATILE_MULT` |
 | 원딜 사냥꾼 (ADC Hunter) | passive | The **first attack** of an engage always targets the enemy ADC, with attack + `SKILL_ADC_HUNTER_ATK` on that hit |
 | 공격적인 전진 (Aggressive Advance) | cooldown | Creates a volatile [전진] (Advance) |
 | 경쟁 심리 (Rivalry) | passive | Vs. the opponent's same-lane pilot: behind in growth points → accrual + `SKILL_RIVALRY_GROWTH` / behind in kills → attack + `SKILL_RIVALRY_ATK` / ahead in deaths → max HP + `SKILL_RIVALRY_HP` |
@@ -224,8 +230,8 @@ from turn `SKILL_LATE_GAME_TURN`.
 ### Support (서포터, SUPPORT)
 | Name | Type | Summary |
 |---|---|---|
-| 작전 준비 (Operation Prep) | cooldown | All card costs −1 this operation phase |
-| 계략 (Scheme) | cooldown | Grants keep (보존) to 1 card in hand (chosen like discard (버리기): drag it from the hand onto the central zone) |
+| 작전 준비 (Operation Prep) | cooldown | All card costs − `SKILL_OPS_PREP_DISCOUNT` this operation phase |
+| 계략 (Scheme) | cooldown | Grants keep (보존) to `SKILL_SCHEME_CARDS` card(s) in hand (chosen like discard (버리기): drag it from the hand onto the central zone) |
 | 복귀 명령 (Return Order) | cooldown | Creates a volatile [복귀] (Return to Base) |
 | 노련함 (Veteran) | passive | Hit + `SKILL_VETERAN_HIT_EARLY` · evasion + `SKILL_VETERAN_EVASION` (negative). Late game: hit + `SKILL_VETERAN_HIT_LATE` |
 | 용의 가호 (Dragon's Blessing) | charge | +1 when the Dragon (용) **spawns**. `p1` charge(s) → strategy points + `SKILL_BLESSING_STRATEGY`, draw `SKILL_BLESSING_DRAW` |
@@ -249,6 +255,13 @@ into the "튜닝 상수" (tuning constants) section of `PilotSkillSystem` as `st
 const names (e.g. `PilotSkillSystem.HOLD_TURNS` ← `SKILL_HOLD_TURNS`). They were kept out of
 `pilot_skills.csv` because that would create five or six number columns whose meaning differs per skill.
 Values themselves are not restated here — read const.csv.
+
+**Granted amounts are tuning values too.** The charge (token) gained per event is
+`SKILL_<NAME>_CHARGE_GAIN` (performance · accumulate · rookie · surge · blessing · elation · plunderer ·
+siege), the number of cards a skill creates is `SKILL_<NAME>_CARDS` (roam · recall_order · elation ·
+plunderer · aggressive_push · rookie · fierce_battle), and 격전's search count is
+`SKILL_FIERCE_BATTLE_SEARCH`. `_grant_volatile(p, card_id, count)` takes the count; charge gains are
+clamped to `p2`. Descriptions show them as `{skill_…_charge_gain}` / `{skill_…_cards}` with en plural tags.
 
 Two values were changed when porting from the original design sheet.
 * **퍼포먼스 (Performance)** — read literally, the sheet's per-charge bonus to "all pilot stats" was far

@@ -3,7 +3,8 @@
 Run-end settlement and its screen. Contract: `docs/outgame_dev_plan.md` §10.3
 (result shape), §10.4 (`run_stats` it reads), §4 (profile schema it writes).
 
-표시 텍스트는 l10n key (`run_result` 도메인 + 공유 `ui` · `term`, bottom `새 런` = `lobby.home.new_run`).
+표시 텍스트는 l10n key (`run_result` 도메인 + 공유 `ui` · `term`, bottom `새 런` = `lobby.home.new_run`,
+outgame reward row = `term.currency.outgame`).
 `OUTCOME_TITLES` values are keys. Script-filled scene nodes carry `auto_translate_mode = 2`.
 
 ## Files

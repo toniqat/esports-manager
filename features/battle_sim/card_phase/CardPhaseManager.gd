@@ -4156,7 +4156,7 @@ func _dispatch_single_effect(e: Dictionary, is_player: bool, caster: PilotData,
 		# 한다. 플레이어의 3택은 `_process_pending_chain` 이 이 디스패치보다
 		# **먼저** 가로채 모달을 열므로, 여기 오는 `phase_c` 는 AI(또는 오버레이
 		# 없는 폴백)뿐이고 그쪽은 무작위로 고른다.
-		"phase_b":         return _effect_phase_b(caster, is_player)
+		"phase_b":         return _effect_phase_b(caster, is_player, flags)
 		"phase_c":         return _effect_phase_c_auto(caster)
 		_: return ""
 
@@ -4222,7 +4222,7 @@ func _effect_strategy(is_player: bool, n: int) -> String:
 ## 메크 카드가 대상 집합을 아홉 가지로 넓혔다 — 플래그가 그 집합을 정한다.
 ##
 ##   |all           전장 내 모든 적 파일럿                 (천둥 폭풍)
-##   |random        무작위 적 파일럿 (스택 수만큼 뽑는다)  (전장 강타)
+##   |random        무작위 적 파일럿 (충전 수 + `|base:N` 만큼 뽑는다)  (전장 강타)
 ##   |self_range:N  시전자 기준 N칸 내 모든 적과 포탑      (테러 · 초고출력 …)
 ##   |area:N        지정 대상 기준 N칸 내 모든 적과 포탑   (정밀 폭격 · 파괴)
 ##   |around_target:N  같은 기하이되 **찍은 대상이 아군**    (공격 명령)
@@ -4383,9 +4383,9 @@ func _resolve_attack_victims(flags: Array, caster: PilotData, enemy_team: int,
 			return out
 		var picks: int = 1
 		if "charge" in flags:
-			# 전장 강타 — "소모한 충전 수 + 1 만큼 반복". 충전이 0 이어도 한 번은
+			# 전장 강타: "소모한 충전 수 + `|base:N` 만큼 반복"(기본 1). 충전이 0 이어도 한 번은
 			# 나가야 하므로 +1 은 상수항이지 보정이 아니다.
-			picks = maxi(1, _charge_spent + 1)
+			picks = maxi(1, _charge_spent + flag_int(flags, "base", 1))
 		for _i in picks:
 			out.append(bag[randi() % bag.size()])
 		return out
@@ -5066,13 +5066,13 @@ func _log_persistent_fx(target: PilotData, kind: String, amount: float) -> void:
 ##
 ## 두 가지가 얹혀 있다.
 ##
-## **(1) 무저항 2배.** 그 레인의 **전선**(= 양 팀 최전방 포탑 사이, 지정한 적
-## 포탑 칸부터 우리 최전방 포탑 칸까지)에 적 파일럿이 한 명도 없으면 피해가
-## 두 배다. 전령은 라인을 밀고 들어가는 사건이라, 막아설 사람이 아무도 없는
-## 라인과 다섯이 버티는 라인이 같은 값이면 "언제 어디에 쓸 것인가"라는 질문이
+## **(1) 무저항 배율.** 그 레인의 **전선**(= 양 팀 최전방 포탑 사이, 지정한 적
+## 포탑 칸부터 우리 최전방 포탑 칸까지)에 적 파일럿이 한 명도 없으면 피해에
+## `CARD_HERALD_UNOPPOSED_DMG_MULT`(const.csv) 를 곱한다. 전령은 라인을 밀고
+## 들어가는 사건이라, 막아설 사람이 아무도 없는 라인과 다섯이 버티는 라인이 같은 값이면 "언제 어디에 쓸 것인가"라는 질문이
 ## 사라진다. 판정은 `SimulationCore.front_line_cells` 하나를 지난다 — 전선
 ## 수입과 화면의 금색 테두리가 읽는 바로 그 집합이라, 눈에 보이는 구간과
-## 2배가 걸리는 구간이 어긋날 수 없다.
+## 배율이 걸리는 구간이 어긋날 수 없다.
 ##
 ## **(2) 레인 몫 분배.** 깎아 낸 체력만큼의 성장치를 **그 레인의 아군 라이너들이
 ## 균등하게** 나눠 받는다(우측 레인은 스나이퍼 · 서포터 둘이라 반씩). 전령은
@@ -5089,7 +5089,7 @@ func _effect_turret_damage(n: int, ally_team: int, caster: PilotData,
 	if not _bs.sim_core.outermost_enemy_turrets(ally_team).has(td):
 		return "포탑 피해 (최외곽 포탑 아님)"  # l10n-ignore
 	var unopposed: bool = _front_line_unopposed(td.lane, 1 - ally_team)
-	var dmg: int = n * 2 if unopposed else n
+	var dmg: int = n * HERALD_UNOPPOSED_DMG_MULT if unopposed else n
 	var before: int = td.hp
 	var log_lines: Array = []
 	_bs.sim_core.apply_card_turret_damage(td, dmg, caster, log_lines)
@@ -5097,7 +5097,7 @@ func _effect_turret_damage(n: int, ally_team: int, caster: PilotData,
 	var removed: int = maxi(0, before - td.hp)
 	var shared: String = _award_turret_damage_to_lane(td.lane, ally_team, removed)
 	_bs.renderer.queue_redraw()
-	var tag: String = " (무저항 ×2)" if unopposed else ""  # l10n-ignore
+	var tag: String = " (무저항 ×%d)" % HERALD_UNOPPOSED_DMG_MULT if unopposed else ""  # l10n-ignore
 	return "T%d %s 포탑 −%d%s%s" % [td.tier, _bs.LANE_NAMES[td.lane], dmg,  # l10n-ignore
 			tag, shared]
 
@@ -5591,9 +5591,10 @@ func _effect_growth_eff(pct: int, ally_team: int, caster: PilotData,
 ##   |per_hit   직전 공격의 명중 수만큼
 ##   |per_kill  직전 공격에서 눕힌 수만큼
 ##   |temp      만들어진 카드에 `소멸 · 휘발성`을 덧입힌다 (정밀 폭격의 미사일)
+##   |count:N   한 번에 만드는 장수 (기본 1). 위 반복 수와 곱한다
 func _effect_gen_card(card_id: int, flags: Array, caster: PilotData,
 		is_player: bool, to_hand: bool) -> String:
-	var times: int = maxi(0, _repeat_count(flags))
+	var times: int = maxi(0, _repeat_count(flags)) * maxi(1, flag_int(flags, "count", 1))
 	if times <= 0 or caster == null:
 		return ""
 	# 강화 [알파] — 다음 [단계 A] 가 만드는 [단계 B] 는 덱이 아니라 **핸드**로
@@ -5856,7 +5857,7 @@ func _effect_no_engage_phase(picked: PilotData) -> String:
 ## 단계 B — 바로 앞 `engage` 절의 결과가 다음 카드를 정한다. 그 절이 무대가
 ## 닫힐 때까지 기다리므로(`_effect_engage`) 여기 오는 시점에는 처치 수가 이미
 ## 확정돼 있다.
-func _effect_phase_b(caster: PilotData, is_player: bool) -> String:
+func _effect_phase_b(caster: PilotData, is_player: bool, flags: Array = []) -> String:
 	if caster == null:
 		return "단계 B (시전자 없음)"  # l10n-ignore
 	var parts: Array = []
@@ -5871,7 +5872,8 @@ func _effect_phase_b(caster: PilotData, is_player: bool) -> String:
 	var next_id: int = MechSkillSystem.CARD_PHASE_A
 	if killed > 0:
 		next_id = MechSkillSystem.CARD_PHASE_C
-	var made: String = _effect_gen_card(next_id, [], caster, is_player, false)
+	# `phase_b|count:N` 의 장수만 넘긴다(반복 플래그는 이 절에 없다).
+	var made: String = _effect_gen_card(next_id, flags, caster, is_player, false)
 	if made != "":
 		parts.append(made)
 	parts.append("교전 처치 %d" % killed)  # l10n-ignore
@@ -6301,6 +6303,8 @@ const HAND_CLEAR_MIND := "clear_mind"   # 맑은 정신 — 양 옆 카드 비�
 static var GOLD_RUSH_GROWTH_PER_TOKEN: float = ConstTable.num("CARD_GOLD_RUSH_GROWTH_PER_TOKEN")
 static var CONFIDENCE_HIT_BONUS: float = ConstTable.num("CARD_CONFIDENCE_HIT_BONUS")
 static var CLEAR_MIND_COST_CUT: int = ConstTable.int_of("CARD_CLEAR_MIND_COST_CUT")
+## [전령 제압] 무저항 피해 배율(`_effect_turret_damage`).
+static var HERALD_UNOPPOSED_DMG_MULT: int = ConstTable.int_of("CARD_HERALD_UNOPPOSED_DMG_MULT")
 
 
 func _is_hand_passive(cd: CardData, key: String) -> bool:

@@ -443,7 +443,7 @@ func effect_summary() -> String:
 					"scope": scope_label, "pct": "%+d" % (int(cl["pct"]) - 100)}))
 			continue
 		var stat_key: String = String(cl["stat"])
-		var stat_label: String = Loc.t(L.TRAINING_STAT_ALL)
+		var stat_label: String = Loc.t(L.TERM_STAT_PILOT_ALL)
 		if stat_key != "all":
 			var i: int = PlayerData.STAT_KEYS.find(stat_key)
 			if i >= 0:

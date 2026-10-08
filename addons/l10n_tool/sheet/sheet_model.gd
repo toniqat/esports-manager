@@ -9,6 +9,7 @@ extends RefCounted
 
 const Keygen = preload("res://addons/l10n_tool/core/keygen.gd")
 const TermMatch = preload("res://addons/l10n_tool/core/term_match.gd")
+const KeyRefs = preload("res://addons/l10n_tool/core/key_refs.gd")
 
 const ST_NONE := "미착수"
 const ST_DRAFT := "draft"
@@ -177,9 +178,11 @@ func detail_text(d: Dictionary) -> String:
 	lines.append("파일: %s:%d" % [d["file"], int(d["line"])])
 	lines.append("")
 	lines.append("[%s] %s" % [config.source_locale, d["source"]])
+	_append_expanded(lines, String(d["source"]), config.source_locale)
 	for loc in target_locales():
 		var t: Dictionary = (d["tr"] as Dictionary).get(loc, {})
 		lines.append("[%s] (%s) %s" % [loc, status_cell(t), String(t.get("text", ""))])
+		_append_expanded(lines, String(t.get("text", "")), loc)
 	if not (d["glossary"] as Array).is_empty():
 		lines.append("")
 		lines.append("용어: " + ", ".join(PackedStringArray(d["glossary"])))
@@ -188,6 +191,20 @@ func detail_text(d: Dictionary) -> String:
 		for it in d["issues"]:
 			lines.append("%s %s" % [it["code"], it["msg"]])
 	return "\n".join(lines)
+
+
+# key 참조 `{tx_…}` 가 있으면 참조 alias 와 build 가 펼칠 문장을 한 줄씩 붙인다.
+func _append_expanded(lines: PackedStringArray, text: String, loc: String) -> void:
+	var ks: PackedStringArray = KeyRefs.keys_in(text)
+	if ks.is_empty():
+		return
+	var names := PackedStringArray()
+	for k in ks:
+		var a: String = String(catalog.entry(k).get("alias", ""))
+		names.append("%s = %s" % [k, a if a != "" else "(없는 key)"])
+	lines.append("    참조: " + ", ".join(names))
+	var x: String = KeyRefs.expand(catalog, text, loc, "dev")
+	lines.append("    펼침: " + (x if x != "" else "(펼칠 수 없음)"))
 
 
 ## 목록 · 상세의 로케일 상태 칸 — "draft" · "approved · stale" · "미착수".

@@ -123,7 +123,8 @@ A "hard cut" (steps 3–4) lights the hub card alert and marks the history row �
 ## Special spending (특별 지출, §14 T6)
 The sink for surplus balance, and the low-budget tools M6 left for later. Rows live in
 `data/csv/finance_specials.csv` (`id, name_key, kind, cost, p1, p2, weeks, cond, desc_key` — l10n keys
-`finance.special.{id lower}.name/desc`). Display: `special_name(id)` / `special_desc(id)` / `special_names(ids)`.
+`finance.special.{id lower}.name/desc`). Display: `special_name(id)` / `special_desc(id)` / `special_names(ids)`. The desc text never writes a
+duration: `special_desc` fills `{weeks}` from the row's `weeks` column (manager stat names are key refs to `term.manager_stat.*`).
 A `coach_hire` writes `staff_mods.source = "finance:<id>"` (`MOD_SOURCE_PREFIX`); `mod_source_text(source)`
 turns it into the special's name for the staff sheet.
 Bought from the sheet, **paid from the balance at once** (not part of the week's `net`), effect for

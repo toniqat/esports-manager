@@ -5,6 +5,9 @@ Manager growth and presets between runs. Contract: `docs/outgame_dev_plan.md` §
 표시 텍스트는 l10n key (`manager` 도메인 + 공유 `ui.*` · `term.*`) — `ManagerProgress` error strings are returned
 already translated (`Loc.t`, never stored), stat names via `StaffSystem.stat_label`, trait rarity via
 `GameEnums.rarity_label`. Scene nodes the scripts fill carry `auto_translate_mode = 2`; fixed captions are key literals.
+Manager stats as a whole are `term.stat.manager` (key ref `{tx_…}` inside sentences, no "스탯"); one stat name is a ref to
+`term.manager_stat.*`. The `전문화 +n` part label is `manager.tab.part_spec` for both `ManagerTab` and `ManagerUi`;
+`manager.progress.stat_at_min` gets `{min}` = `StaffSystem.STAT_MIN`.
 
 ## Files
 | File | Class | Role |
@@ -31,10 +34,10 @@ to only print (`UiPreview.mute`).
 - Item scenes without a script (`ManagerPresetChip`, `TraitPickerSlot`, `TraitPickerRow`) show their sample text.
 
 ## Stat model
-`base = type − removed` (≥ 1, removals permanent until prestige), `preset = base + alloc` (≤ `MANAGER_STAT_CAP`).
-Each level-up = `MANAGER_REMOVE_PER_LEVEL` removal points; one removal = one specialisation point;
-`Σ alloc ≤ Σ removed` per preset. Prestige at `PRESTIGE_LEVEL`: level / exp / removals reset, type
-re-chosen, presets → `kind = "prestige"` (unusable until `reset_preset`), +1 normal preset (≤
+`base = type − removed × MANAGER_REMOVE_STAT_DROP` (≥ 1, removals permanent until prestige), `preset = base + alloc` (≤ `MANAGER_STAT_CAP`).
+Each level-up = `MANAGER_REMOVE_PER_LEVEL` removal points; one removal = `MANAGER_SPEC_PER_REMOVAL` specialisation points (`spec_per_removal()`; the drop is `remove_stat_drop()`, both passed to `manager.tab.info` / `remove_body` / `removed_toast` as `{gain}` / `{drop}`);
+`Σ alloc ≤ spec_points` per preset. Prestige at `PRESTIGE_LEVEL`: level / exp / removals reset, type
+re-chosen, presets → `kind = "prestige"` (unusable until `reset_preset`), `PRESTIGE_NEW_PRESETS` normal presets (`{presets}` in `manager.tab.prestige_body`) (≤
 `PRESET_MAX_COUNT`), `PRESTIGE_REWARD_*` currency. Mutators don't save — the screen calls `save_profile()`.
 
 ## Lobby `감독` tab (`ManagerTab`)

@@ -19,7 +19,7 @@ the save round-trips it through JSON, so every read goes through `int()` (`quirk
 `is_enabled(state)` is false outside a run → no bonus, every quirk UI hidden.
 
 ## Rules
-- **Slots**: start `QUIRK_SLOTS_START`, `add_slot` +1 up to `QUIRK_SLOTS_MAX`.
+- **Slots**: start `QUIRK_SLOTS_START`, `add_slot` adds `QUIRK_SLOT_GAIN` (`slot_gain()`) up to `QUIRK_SLOTS_MAX`; the slot-op text `training.quirk_op.slot` reads the same const as `{quirk_slot_gain}`.
 - **Gain** (`gain_random`): rolls one quirk into an empty slot ("forced equip"). No empty slot →
   `"full"`, nothing changes (reroll to replace). A pilot never holds the same quirk twice.
 - **Reroll** (`reroll`): every equipped quirk is redrawn; each slot avoids the quirk it replaces and

@@ -143,9 +143,41 @@ var card_name: String:
 ## 설명문(번역 · `\n` · 조사 처리 끝난 글). key 가 없으면 손으로 준 글자.
 var description: String:
 	get:
-		return Loc.t(description_key) if not description_key.is_empty() else _desc_text  # l10n-dynamic: card.*.*.desc
+		return Loc.t(description_key, effect_params(), true) if not description_key.is_empty() else _desc_text  # l10n-dynamic: card.*.*.desc
 	set(value):
 		_desc_text = value
+
+
+## 설명문 자리표시자 값. `effect` 의 수치를 문장에 적지 않고 이름으로 가리킨다.
+## 절 `op:v|mod:w|flag` 하나에서 `{op}` = v, `{op_mod}` = w, 그리고 앞선 절에 없던 이름이면
+## `{mod}` = w 도. 숫자 값마다 `{<이름>_abs}` (부호 없는 값)도 함께 준다.
+## 예: `retreat_turret;eva_buff:20|turns:10` → eva_buff 20 · eva_buff_turns 10 · turns 10.
+func effect_params() -> Dictionary:
+	var out: Dictionary = {}
+	for clause in effect.split(";", false):
+		var parts: PackedStringArray = clause.split("|", false)
+		if parts.is_empty():
+			continue
+		var head: PackedStringArray = parts[0].split(":", true, 1)
+		var op: String = head[0].strip_edges()
+		if head.size() > 1:
+			_put_param(out, op, head[1])
+		for i in range(1, parts.size()):
+			var kv: PackedStringArray = parts[i].split(":", true, 1)
+			if kv.size() < 2:
+				continue
+			_put_param(out, "%s_%s" % [op, kv[0].strip_edges()], kv[1])
+			if not out.has(kv[0].strip_edges()):
+				_put_param(out, kv[0].strip_edges(), kv[1])
+	return out
+
+
+static func _put_param(out: Dictionary, nm: String, raw: String) -> void:
+	var v: String = raw.strip_edges()
+	out[nm] = v
+	if v.is_valid_float():
+		out[nm + "_abs"] = Loc.number_text(absf(v.to_float()))
+
 # 시전자 제약(포지션 목록). 고정 파일럿 카드를 고를 때와 손패 시전자 판정이 읽는다.
 @export var scope: String = SCOPE_ANY
 # 1 = 파일럿 카드 후보, 0 = 제외(결투 · 오브젝트 보상 · 스킬 생성 카드).
@@ -253,13 +285,13 @@ func shows_tokens() -> bool:
 	return is_charge_card() or effect.contains("token:")
 
 
-## 이 카드가 손패에 들어왔다 — 충전 카드면 토큰을 하나 올린다(상한까지). 실제로
-## 올랐으면 true.
+## 이 카드가 손패에 들어왔다. 충전 카드면 토큰을 `CARD_CHARGE_HAND_GAIN`(const.csv)만큼
+## 올린다(상한까지). 실제로 올랐으면 true.
 func gain_charge() -> bool:
 	if not is_charge_card():
 		return false
 	var before: int = charge
-	charge = mini(charge + 1, maxi(1, charge_max))
+	charge = mini(charge + ConstTable.int_of("CARD_CHARGE_HAND_GAIN"), maxi(1, charge_max))
 	return charge != before
 
 
@@ -473,6 +505,15 @@ static func by_name_key(key: String) -> CardData:
 				break
 	_by_name_key[key] = cd
 	return cd
+
+
+## 특수 키워드 풀이 한 줄(현재 로케일). 튜닝 상수 자리표시자는 `Loc.t` 가 const.csv 로 채우고,
+## 카드 효과 값(`{mark_target}` 등)은 호출부가 `params` 로 준다(`CardDescBox.special_note_params`).
+## 표에 없는 id 는 빈 문자열.
+static func special_note(sp: String, params: Dictionary = {}) -> String:
+	if not SPECIAL_NOTES.has(sp):
+		return ""
+	return Loc.t(String(SPECIAL_NOTES[sp]), params)  # l10n-dynamic: keyword.*.note
 
 
 ## 특수 키워드 이름 key → 특수 키워드 id(`SPECIAL_LABELS` 의 키). 아니면 빈 문자열.

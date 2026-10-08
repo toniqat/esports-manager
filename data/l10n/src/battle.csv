@@ -1,89 +1,89 @@
 key,alias,status,context,max_len,note,ko,en,en_status,en_hash
 tx_ZXYEA8CBCF,battle.card_desc.target.enemy,active,CardDescBox attribute row: card target,,,적,Enemy,draft,a17b14a8
-tx_EB4H7Z27VT,battle.card_desc.target.ally,active,CardDescBox attribute row: card target,,,아군,Ally,draft,3843e8e4
-tx_17QG177S23,battle.card_desc.target.pilot,active,CardDescBox attribute row: card target,,,아군 또는 적,Ally or enemy,draft,ed8217fa
-tx_RCF4VQDV88,battle.card_desc.target.foe,active,CardDescBox attribute row: card target,,,적 또는 포탑,Enemy or turret,draft,b963306a
-tx_FH23GCJ7EG,battle.card_desc.target.location,active,CardDescBox attribute row: card target,,,타일,Tile,draft,5120e844
+tx_EB4H7Z27VT,battle.card_desc.target.ally,active,CardDescBox attribute row: card target,,,{tx_16H8JD32NR},{tx_16H8JD32NR},draft,457ec2f1
+tx_17QG177S23,battle.card_desc.target.pilot,active,CardDescBox attribute row: card target,,,{tx_EB4H7Z27VT} {tx_07X2NJ1P4H} {tx_ZXYEA8CBCF},Ally or enemy,draft,2179e05e
+tx_RCF4VQDV88,battle.card_desc.target.foe,active,CardDescBox attribute row: card target,,,{tx_ZXYEA8CBCF} {tx_07X2NJ1P4H} 포탑,Enemy or turret,draft,9b075bf5
+tx_FH23GCJ7EG,battle.card_desc.target.location,active,CardDescBox attribute row: card target,,,{tx_QHPJ926D6F},Tile,draft,adb80b01
 tx_9B4MN85VKK,battle.card_desc.target.turret_outer,active,CardDescBox attribute row: card target,,,최외곽 포탑,Outermost turret,draft,edc31bb9
-tx_59Y5SSGNTR,battle.card_desc.target.turret_any,active,CardDescBox attribute row: card target,,,적 포탑,Enemy turret,draft,e817913c
-tx_9W4J07SVG2,battle.card_desc.target.own_jungle,active,CardDescBox attribute row: card target,,,아군 정글 타일,Allied jungle tile,draft,976847a1
-tx_SPEVBRHFR6,battle.card_desc.target.enemy_jungle,active,CardDescBox attribute row: card target,,,적 정글 타일,Enemy jungle tile,draft,0654714c
-tx_TW91ZYM52K,battle.card_desc.target.jungle,active,CardDescBox attribute row: card target,,,정글 타일,Jungle tile,draft,f01d49f0
+tx_59Y5SSGNTR,battle.card_desc.target.turret_any,active,CardDescBox attribute row: card target,,,{tx_ZXYEA8CBCF} 포탑,Enemy turret,draft,e26ce842
+tx_9W4J07SVG2,battle.card_desc.target.own_jungle,active,CardDescBox attribute row: card target,,,{tx_EB4H7Z27VT} {tx_TW91ZYM52K},Allied jungle tile,draft,de912847
+tx_SPEVBRHFR6,battle.card_desc.target.enemy_jungle,active,CardDescBox attribute row: card target,,,{tx_ZXYEA8CBCF} {tx_TW91ZYM52K},Enemy jungle tile,draft,0072fa5f
+tx_TW91ZYM52K,battle.card_desc.target.jungle,active,CardDescBox attribute row: card target,,,{tx_AGCDAR9R10} {tx_FH23GCJ7EG},Jungle tile,draft,964f3faf
 tx_15JDB1FGX2,battle.card_desc.target.self,active,CardDescBox attribute row: card target,,,자신,Self,draft,e9f14025
 tx_SBYKWG1EES,battle.card_desc.range_global,active,CardDescBox attribute row: cast range when unlimited,,,전장,Global,draft,d1035752
-tx_X86PZPRSKR,battle.pile_viewer.title,active,CardPileViewer title; pile = deck / discard pile name,,,{pile} — {n}장,{pile} — {n} cards,draft,2c52d021
+tx_X86PZPRSKR,battle.pile_viewer.title,active,CardPileViewer title; pile = deck / discard pile name,,,{pile} ({n}장),{pile} ({n} {plural:n|{tx_VD4SPQQEES}|{tx_5V4VYG9XPE}}),draft,f87f3d81
 tx_WBQREDCZ9E,battle.pile_viewer.empty,active,CardPileViewer: pile has no cards,,,비어 있음,Empty,draft,ed3cbe32
-tx_1MA0RVZENK,battle.pile_viewer.discard,active,CardPileViewer pile name,,,버린 카드,Discard pile,draft,56855d01
-tx_R04J09DW7N,battle.play_preview.cost_cut,active,CardPlayPreview tag on deck pile: drawn cards get cheaper,,,비용 -{n},Cost -{n},draft,a1492d9d
-tx_2E72YD71KC,battle.play_preview.preserve,active,CardPlayPreview: number of hand cards to preserve,,,보존 {n},Preserve {n},draft,8f017af7
+tx_1MA0RVZENK,battle.pile_viewer.discard,active,CardPileViewer pile name,,,{tx_DM7HJ301F1},Discard pile,draft,fc0c716a
+tx_R04J09DW7N,battle.play_preview.cost_cut,active,CardPlayPreview tag on deck pile: drawn cards get cheaper,,,{tx_9NMN77M8D7} -{n},Cost -{n},draft,a4d30665
+tx_2E72YD71KC,battle.play_preview.preserve,active,CardPlayPreview: number of hand cards to preserve,,,{tx_SJ5QM4RPT6} {n},{tx_SJ5QM4RPT6} {n},draft,68fab35f
 tx_VHMMNFFYWY,battle.select.hide,active,CardSelectOverlay button: hide the overlay,,,숨김,Hide,draft,093ff103
 tx_T9F7BYCK53,battle.select.show,active,CardSelectOverlay button: show the overlay again,,,표시,Show,draft,a61d568e
-tx_K7ND1SRGXE,battle.select.cancel_preserve,active,CardSelectOverlay cancel button (preserve mode),,,보존 취소,Cancel preserve,draft,5d11e211
-tx_ZVPSKT5FFQ,battle.select.cancel_search,active,CardSelectOverlay cancel button (search mode),,,찾기 취소,Cancel search,draft,48aa692a
-tx_2S6X77XV46,battle.card_phase.drop_preserve,active,Hand drop zone label,,,여기에 놓아 보존,Drop here to preserve,draft,382bf432
-tx_30NPFP40NJ,battle.card_phase.drop_discard,active,Hand drop zone label,,,여기에 놓아 버리기,Drop here to discard,draft,4fd325b4
+tx_K7ND1SRGXE,battle.select.cancel_preserve,active,CardSelectOverlay cancel button (preserve mode),,,{tx_SJ5QM4RPT6} {tx_GS4FN31BK4},Cancel preserve,draft,f96c4a93
+tx_ZVPSKT5FFQ,battle.select.cancel_search,active,CardSelectOverlay cancel button (search mode),,,{tx_VPV5JM208F} {tx_GS4FN31BK4},Cancel search,draft,55302ac2
+tx_2S6X77XV46,battle.card_phase.drop_preserve,active,Hand drop zone label,,,여기에 놓아 {tx_SJ5QM4RPT6},Drop here to preserve,draft,08ea04cc
+tx_30NPFP40NJ,battle.card_phase.drop_discard,active,Hand drop zone label,,,여기에 놓아 {tx_F3A6GQEVFX},Drop here to discard,draft,697eb325
 tx_GGSW07BJY4,battle.card_phase.absorbed,active,Damage popup: hit fully absorbed by shield,,,흡수,Absorbed,draft,dd5cbcab
 tx_HDVZNSTZHC,battle.engage.title.engage,active,Engage stage / start confirm title,,,교전,Engage,draft,b6bf4b17
-tx_0967A3YSR1,battle.engage.title.engage_ai,active,Engage start confirm title when the AI played the card,,,교전 (AI),Engage (AI),draft,d2c0ded5
+tx_0967A3YSR1,battle.engage.title.engage_ai,active,Engage start confirm title when the AI played the card,,,{tx_HDVZNSTZHC} (AI),{tx_HDVZNSTZHC} (AI),draft,47a15fb8
 tx_3AHDMYE7KS,battle.engage.title.duel,active,Duel stage / start confirm title,,,결투,Duel,draft,8d92ddee
-tx_6GB005WWZR,battle.engage.title.duel_ai,active,Duel start confirm title when the AI played the card,,,결투 (AI),Duel (AI),draft,a1cd1f68
+tx_6GB005WWZR,battle.engage.title.duel_ai,active,Duel start confirm title when the AI played the card,,,{tx_3AHDMYE7KS} (AI),{tx_3AHDMYE7KS} (AI),draft,bff00fdb
 tx_5GXNMFJ98M,battle.engage.result.win,active,Engage result screen title,,,승리,Victory,draft,90e5e4d2
 tx_HW0K1DQR7J,battle.engage.result.lose,active,Engage result screen title,,,패배,Defeat,draft,e99c8bc0
-tx_3X3GHP6YPG,battle.engage.result.neutral,active,Engage result screen title (no winner),,,교전 결과,Engage Result,draft,8d11d81e
-tx_X9YH4WJVF4,battle.engage.round,active,Engage header round counter (duel),,,턴 {n},Turn {n},draft,b063bbf9
-tx_677Y9RF7M6,battle.engage.round_of,active,Engage header round counter,,,턴 {n} / {total},Turn {n} / {total},draft,fabf1d40
-tx_58VCZ43AB8,battle.engage.over,active,Engage header when finished,,,교전 종료,Engage over,draft,741c4fea
-tx_PBRWC7X4KR,battle.engage.round_start,active,Engage header at round start,,,턴 {n} 시작,Turn {n} begins,draft,c689187a
+tx_3X3GHP6YPG,battle.engage.result.neutral,active,Engage result screen title (no winner),,,{tx_HDVZNSTZHC} 결과,{tx_HDVZNSTZHC} Result,draft,9619063a
+tx_X9YH4WJVF4,battle.engage.round,active,Engage header round counter (duel),,,{tx_H89Y7GFPWP} {n},Turn {n},draft,6ca0ff6d
+tx_677Y9RF7M6,battle.engage.round_of,active,Engage header round counter,,,{tx_X9YH4WJVF4} / {total},{tx_X9YH4WJVF4} / {total},draft,021671a2
+tx_58VCZ43AB8,battle.engage.over,active,Engage header when finished,,,{tx_HDVZNSTZHC} 종료,{tx_HDVZNSTZHC} over,draft,f0714ce6
+tx_PBRWC7X4KR,battle.engage.round_start,active,Engage header at round start,,,{tx_X9YH4WJVF4} 시작,{tx_X9YH4WJVF4} begins,draft,55f46051
 tx_3PYG9VZV4Q,battle.engage.actor_turn,active,Engage header: who acts now,,,{name}의 차례,{name}'s turn,draft,0e5746e9
 tx_ZSKHJTZV6B,battle.engage.kills,active,Engage result per-pilot kill count,,,처치 {n},Kills {n},draft,52d108a5
-tx_25TCMGCZEF,battle.engage.hint_start_cancel,active,Engage start confirm hint,,,시작 위치 — 이대로 교전을 시작한다,Starting positions — the engage begins as shown,draft,6e701cf3
+tx_25TCMGCZEF,battle.engage.hint_start_cancel,active,Engage start confirm hint,,,{tx_RGYZZ6BFJ5}: 이대로 교전을 시작한다,{tx_RGYZZ6BFJ5}: the engage begins as shown,draft,62f20374
 tx_RGYZZ6BFJ5,battle.engage.hint_start,active,Engage start notice hint,,,시작 위치,Starting positions,draft,e6f61d09
-tx_DEJKT3AEGZ,battle.engage.over_both_wiped,active,Engage end banner,,,교전 종료 — 양측 전멸,Engage over — both sides wiped out,draft,dfe5e276
-tx_AP1NR7N7JF,battle.engage.over_enemy_wiped,active,Engage end banner,,,교전 종료 — 적군 전멸,Engage over — enemy wiped out,draft,504b8869
-tx_N96FRD4BSV,battle.engage.over_ally_wiped,active,Engage end banner,,,교전 종료 — 아군 전멸,Engage over — allies wiped out,draft,6039620c
-tx_0A0WCRAVBT,battle.engage.over_turns,active,Engage end banner,,,교전 종료 — {n}턴 완료,Engage over — {n} turns complete,draft,92ad5414
-tx_ZGTQ8FD03J,battle.engage.popup.prey,active,Engage popup: mech passive stack,,,약자 멸시 x{n},Prey on the Weak x{n},draft,c5399af2
-tx_H9SA47D3DE,battle.engage.popup.stun,active,Engage popup: unit skips its action,,,기절,Stun,draft,8d7ad8b7
-tx_PB324TP8B1,battle.engage.popup.stunned,active,Engage popup: unit got stunned,,,기절!,Stunned!,draft,bf5731d8
-tx_043E3Z38C6,battle.engage.popup.overclock,active,Engage popup: mech passive triggered,,,오버클럭,Overclock,draft,874f3dd2
-tx_SSD270N1SF,battle.engage.popup.indomitable,active,Engage popup: mech passive triggered,,,불굴!,Indomitable!,draft,730eb67b
+tx_DEJKT3AEGZ,battle.engage.over_both_wiped,active,Engage end banner,,,{tx_58VCZ43AB8}: 양측 전멸,{tx_58VCZ43AB8}: both sides wiped out,draft,74518a31
+tx_AP1NR7N7JF,battle.engage.over_enemy_wiped,active,Engage end banner,,,{tx_58VCZ43AB8}: {tx_4HQK9Q9T8J} 전멸,{tx_58VCZ43AB8}: enemy wiped out,draft,ab46a55a
+tx_N96FRD4BSV,battle.engage.over_ally_wiped,active,Engage end banner,,,{tx_58VCZ43AB8}: {tx_16H8JD32NR} 전멸,{tx_58VCZ43AB8}: allies wiped out,draft,81b5dfd3
+tx_0A0WCRAVBT,battle.engage.over_turns,active,Engage end banner,,,{tx_58VCZ43AB8}: {n}{tx_H89Y7GFPWP} 완료,{tx_58VCZ43AB8}: {n} {plural:n|{tx_H89Y7GFPWP}|{tx_3PES5W2PRP}} complete,draft,e22994b9
+tx_ZGTQ8FD03J,battle.engage.popup.prey,active,Engage popup: mech passive stack,,,{tx_17WNW2JVNR} x{n},{tx_17WNW2JVNR} x{n},draft,4b38e616
+tx_H9SA47D3DE,battle.engage.popup.stun,deprecated,Engage popup: unit skips its action,,,기절,Stun,draft,8d7ad8b7
+tx_PB324TP8B1,battle.engage.popup.stunned,active,Engage popup: unit got stunned,,,{tx_EQ77MGHTT1}!,Stunned!,draft,b8a7d87b
+tx_043E3Z38C6,battle.engage.popup.overclock,active,Engage popup: mech passive triggered,,,{tx_2E4NTSV8ET},{tx_2E4NTSV8ET},draft,59480663
+tx_SSD270N1SF,battle.engage.popup.indomitable,active,Engage popup: mech passive triggered,,,{tx_Y5NA1D3VMR}!,{tx_Y5NA1D3VMR}!,draft,d653ca18
 tx_FC0GG3J6N4,battle.engage.popup.turret_kill,active,Engage popup: damage that destroyed a turret,,,-{n}  포탑 처치,-{n}  Turret destroyed,draft,13f376c8
 tx_V589CQ8M6Z,battle.engage.turret_label,active,Engage header actor name for a turret,,,포탑 T{tier} ({lane}),Turret T{tier} ({lane}),draft,ad93a69f
 tx_JKTA5KTT90,battle.jungle_start.hint,active,Jungle start overlay hint,,,정글러를 끌어다 시작할 정글 타일에 놓는다,Drag the jungler onto the jungle tile to start from,draft,7a5d0d88
 tx_FNC5VVMV4R,battle.jungle_start.start,active,Jungle start overlay confirm button,,,전투 시작,Start Battle,draft,e630cdd1
 tx_RGBVH85TFC,battle.mech.boon.alpha.name,active,Stage C upgrade choice name,,,강화 · 알파,Upgrade · Alpha,draft,7956ee4b
-tx_16KSEBFD67,battle.mech.boon.alpha.desc,active,Stage C upgrade choice description,,,다음 [단계 A] 사용 시 [단계 B] 를 덱이 아닌 손에 생성,"Next time [Stage A] is used, create [Stage B] in hand instead of the deck",draft,d4bd6923
+tx_16KSEBFD67,battle.mech.boon.alpha.desc,active,Stage C upgrade choice description,,,다음 [단계 A] 사용 시 [단계 B] 를 {tx_SN7SJKAZQ2}이 아닌 {tx_SVRFJDH55K}에 {tx_JRJS1G2Q8Y},"Next time [Stage A] is used, create [Stage B] in {tx_SVRFJDH55K} instead of the deck",draft,4f0573b2
 tx_FYHMPX0G5Z,battle.mech.boon.beta.name,active,Stage C upgrade choice name,,,강화 · 베타,Upgrade · Beta,draft,15986c51
-tx_S2C1ARN50Z,battle.mech.boon.beta.desc,active,Stage C upgrade choice description,,,다음 [단계 B] 사용 시 토큰 +{n},"Next time [Stage B] is used, token +{n}",draft,2d30799d
+tx_S2C1ARN50Z,battle.mech.boon.beta.desc,active,Stage C upgrade choice description,,,다음 [단계 B] 사용 시 {tx_JAYQJ6YQE0} +{n},"Next time [Stage B] is used, gain {n} {plural:n|{tx_JAYQJ6YQE0}|{tx_BBFEFTT649}}",draft,d9586b43
 tx_MF1RG2XJA7,battle.mech.boon.gamma.name,active,Stage C upgrade choice name,,,강화 · 감마,Upgrade · Gamma,draft,b23664f5
-tx_VGZFV8N8KH,battle.mech.boon.gamma.desc,active,Stage C upgrade choice description,,,다음 [단계 C] 사용 시 성장 점수 +{pct}%,"Next time [Stage C] is used, growth points +{pct}%",draft,c878cbe1
+tx_VGZFV8N8KH,battle.mech.boon.gamma.desc,active,Stage C upgrade choice description,,,다음 [단계 C] 사용 시 {tx_WBS95M3MNQ} +{pct}%,"Next time [Stage C] is used, {tx_WBS95M3MNQ} +{pct}%",draft,2b9e4760
 tx_RCPH2TXG6X,battle.objective.herald,active,Objective name,,,전령,Herald,draft,41ff692a
 tx_XQ2PPDTRRR,battle.objective.dragon,active,Objective name,,,용,Dragon,draft,c8547479
-tx_3Y0ECJAAHT,battle.objective.unopposed_ally,active,Objective notice title; name = objective,,,{name} — 아군 무혈 획득,{name} — taken unopposed by allies,draft,8922c59f
-tx_EASJYYJ9SP,battle.objective.unopposed_enemy,active,Objective notice title; name = objective,,,{name} — 적군 무혈 획득,{name} — taken unopposed by the enemy,draft,c1a42445
-tx_30PGAN3RWM,battle.objective.join_prompt,active,Objective decision title; name = objective,,,{name} 등장 — 전투에 참여하시겠습니까?,{name} has appeared — join the fight?,draft,28ac8643
+tx_3Y0ECJAAHT,battle.objective.unopposed_ally,active,Objective notice title; name = objective,,,{name}: {tx_16H8JD32NR} 무혈 획득,{name}: taken unopposed by allies,draft,07dd7323
+tx_EASJYYJ9SP,battle.objective.unopposed_enemy,active,Objective notice title; name = objective,,,{name}: {tx_4HQK9Q9T8J} 무혈 획득,{name}: taken unopposed by the enemy,draft,d3cdd7b8
+tx_30PGAN3RWM,battle.objective.join_prompt,active,Objective decision title; name = objective,,,{name} 등장! 전투에 참여하시겠습니까?,{name} has appeared! Join the fight?,draft,1c871492
 tx_QWFB45AWP4,battle.objective.join,active,Objective decision button,,,참여,Join,draft,2f7784ba
 tx_3MA5JECS5S,battle.objective.skip,active,Objective decision button,,,미참여,Stay Out,draft,23ef4119
-tx_04ERNCHTGZ,battle.objective.reward_herald,active,Objective reward line,,,보상: [전령 제압] — 최외곽 적 포탑에 피해 {n},Reward: [Herald Subdued] — {n} damage to the outermost enemy turret,draft,79340440
+tx_04ERNCHTGZ,battle.objective.reward_herald,active,Objective reward line,,,보상: [전령 제압] (최외곽 적 포탑에 피해 {n}),Reward: [Herald Subdued] ({n} damage to the outermost enemy turret),draft,692b9bec
 tx_2YWT10DFT0,battle.objective.reward_dragon,active,Objective reward line,,,보상: [용 보상] ×{n} 를 덱에 추가,Reward: add [Dragon Reward] ×{n} to the deck,draft,b03a922a
 tx_VZSZS9D73E,battle.renderer.preview_kill,active,Attack preview over a marker: lethal damage,,,처치 -{n},Kill -{n},draft,8b6424f1
 tx_DX3WCA5MG9,battle.renderer.preview_hit,active,Attack preview: hit chance,,,명중 {pct}%,Hit {pct}%,draft,45a98f65
 tx_S5J84M5B8R,battle.renderer.preview_hit_repeat,active,"Attack preview: hit chance, repeating attack",,,명중 {pct}% · 연속,Hit {pct}% · Repeat,draft,22307f5a
-tx_5RVGY55A59,battle.renderer.preview_shield,active,Card preview over a marker,,,보호막 +{n},Shield +{n},draft,8ff8f203
-tx_W6X01DNJ5J,battle.skill.status.none,active,Pilot skill status line,,,스킬 없음,No skill,draft,54ea2947
+tx_5RVGY55A59,battle.renderer.preview_shield,active,Card preview over a marker,,,{tx_M0NZA7QAV5} +{n},{tx_M0NZA7QAV5} +{n},draft,13dfe4da
+tx_W6X01DNJ5J,battle.skill.status.none,deprecated,Pilot skill status line,,,스킬 없음,No skill,draft,54ea2947
 tx_R0FZ3M3V8B,battle.skill.status.ready,active,Pilot skill status line,,,사용 가능,Ready,draft,d4bbb3d8
-tx_2HPF0T6A3A,battle.skill.status.cooldown,active,Pilot skill status line,,,재사용까지 {n}턴,Ready in {n} turns,draft,77e96c1b
-tx_EAZD697HN6,battle.skill.status.charge,active,Pilot skill status line,,,토큰 {cur} / {max} · 사용에 토큰 {cost},Tokens {cur} / {max} · uses {cost},draft,85c411e0
-tx_DG5378RKCJ,battle.skill.status.passive_charge,active,Pilot skill status line,,,패시브 · 토큰 {cur} / {max},Passive · Tokens {cur} / {max},draft,08f22b02
-tx_R7WMPP0AXY,battle.skill.status.passive,active,Pilot skill status line,,,패시브 · 상시 적용,Passive · Always on,draft,40b56719
-tx_H9QM09GHQ8,battle.trait_banner.title,active,Battle start trait banner title,,,감독 특성,Manager Traits,draft,53f06b71
-tx_E684S0YNFT,battle.trait.label.open_cost,active,Trait fallback label (no table id),,,개시 전략 포인트,Opening strategy points,draft,91688a45
-tx_0SNGNNX6ME,battle.trait.label.first_draw,active,Trait fallback label (no table id),,,첫 자동 뽑기,First auto draw,draft,6970b9c3
-tx_ME11AGHCAW,battle.trait.label.hand_size,active,Trait fallback label (no table id),,,손 상한,Hand limit,draft,b3df326b
-tx_4K4WMMM811,battle.trait.label.first_card_cost,active,Trait fallback label (no table id),,,첫 카드 비용,First card cost,draft,9de75774
-tx_AHZVW1863N,battle.trait.label.cost_tick,active,Trait fallback label (no table id),,,전략 포인트 가속,Strategy point boost,draft,3b0020d4
-tx_2ZDNTZRMY2,battle.trait.cost_tick_line,active,Trait fallback banner line,,,전략 포인트 가속 · {turns}턴마다 {delta},Strategy point boost · {delta} every {turns} turns,draft,1803e481
-tx_QSR7RXHSHW,battle.popup.miss,active,Floating popup over a pilot when an attack misses — English caps in every locale by design,6,,MISS,MISS,draft,c3a5a328
+tx_2HPF0T6A3A,battle.skill.status.cooldown,active,Pilot skill status line,,,재사용까지 {n}{tx_H89Y7GFPWP},Ready in {n} {plural:n|{tx_H89Y7GFPWP}|{tx_3PES5W2PRP}},draft,163543f8
+tx_EAZD697HN6,battle.skill.status.charge,active,Pilot skill status line,,,{tx_JAYQJ6YQE0} {cur} / {max} · 사용에 {tx_JAYQJ6YQE0} {cost},Tokens {cur} / {max} · uses {cost} {plural:cost|{tx_JAYQJ6YQE0}|{tx_BBFEFTT649}},draft,5481ba6c
+tx_DG5378RKCJ,battle.skill.status.passive_charge,active,Pilot skill status line,,,{tx_4E9EYFHCMT} · {tx_JAYQJ6YQE0} {cur} / {max},{tx_4E9EYFHCMT} · Tokens {cur} / {max},draft,9245828b
+tx_R7WMPP0AXY,battle.skill.status.passive,active,Pilot skill status line,,,{tx_4E9EYFHCMT} · 상시 적용,{tx_4E9EYFHCMT} · Always on,draft,b1631e11
+tx_H9QM09GHQ8,battle.trait_banner.title,active,Battle start trait banner title,,,{tx_PR6YFXCW5G} 특성,{tx_PR6YFXCW5G} Traits,draft,34168bc0
+tx_E684S0YNFT,battle.trait.label.open_cost,active,Trait fallback label (no table id),,,개시 {tx_F597JS5T37},Opening {tx_F597JS5T37},draft,441c6842
+tx_0SNGNNX6ME,battle.trait.label.first_draw,active,Trait fallback label (no table id),,,첫 자동 {tx_6VVGYKXZSK},First auto {tx_6VVGYKXZSK},draft,cd33b362
+tx_ME11AGHCAW,battle.trait.label.hand_size,active,Trait fallback label (no table id),,,{tx_SVRFJDH55K} 상한,Hand limit,draft,4c7e4b68
+tx_4K4WMMM811,battle.trait.label.first_card_cost,active,Trait fallback label (no table id),,,첫 카드 {tx_9NMN77M8D7},First card {tx_9NMN77M8D7},draft,cdf2d628
+tx_AHZVW1863N,battle.trait.label.cost_tick,active,Trait fallback label (no table id),,,{tx_F597JS5T37} 가속,Strategy points boost,draft,aee73e90
+tx_2ZDNTZRMY2,battle.trait.cost_tick_line,active,Trait fallback banner line,,,{tx_AHZVW1863N} · {turns}{tx_H89Y7GFPWP}마다 {delta},{tx_AHZVW1863N} · {delta} every {turns} {plural:turns|{tx_H89Y7GFPWP}|{tx_3PES5W2PRP}},draft,f32afb08
+tx_QSR7RXHSHW,battle.popup.miss,active,Floating popup over a pilot when an attack misses (English caps in every locale by design),6,,MISS,MISS,draft,c3a5a328
 tx_VM0HAXEB2G,battle.engage.lane.left,active,Lane name inside battle.engage.turret_label (engage header),,,좌측,Left,draft,62653dc7
 tx_01DT4571QV,battle.engage.lane.center,active,Lane name inside battle.engage.turret_label (engage header),,,중앙,Center,draft,00d61f4e
 tx_HA7CEQ5RTH,battle.engage.lane.right,active,Lane name inside battle.engage.turret_label (engage header),,,우측,Right,draft,39c7aac0

@@ -1,6 +1,6 @@
 # Module: Engage (전투 개시, battle opening) — top-down (quarter-view) engage (round-based turns)
 
-표시 텍스트는 l10n key (`battle` 도메인: `battle.engage.*`). `EngageArena.RESULT_*` hold **keys** (compared as ids, translated by `show_dashboard`); `prompt_engage` / `EngageIntro.setup` take already-translated title / subtitle / button text, empty button text = `ui.button.confirm` / `cancel`. Diagnostic strings (`_bs.blog` log lines, effect / activation result strings that only feed `BattleSim.last_log`, which renders nowhere) stay Korean and are marked `# l10n-ignore`.
+표시 텍스트는 l10n key (`battle` 도메인: `battle.engage.*`; the stun popup uses `keyword.stun.name`). `EngageArena.RESULT_*` hold **keys** (compared as ids, translated by `show_dashboard`); `prompt_engage` / `EngageIntro.setup` take already-translated title / subtitle / button text, empty button text = `ui.button.confirm` / `cancel`. Diagnostic strings (`_bs.blog` log lines, effect / activation result strings that only feed `BattleSim.last_log`, which renders nowhere) stay Korean and are marked `# l10n-ignore`.
 
 ## Purpose
 A **turn-based engage (교전)** triggered by the `engage:N` / `duel` card effects. Unlike the
@@ -364,7 +364,7 @@ There are five hook points.
 | What | Where | Rule |
 |---|---|---|
 | **전탄 발사 (Full Barrage, ADC I)** | `_resolve_attack` | The target set for this one turn becomes **every enemy**. The cost (lowered attack) is already baked into Barrage's `atk` in `mechs.csv` |
-| **오버클럭 (Overclock, assassin P)** | `_strike_one` | Rolled right after damage; on success hits **the same target** once more. Called again with `allow_extra = false`, so an extra attack never spawns another extra attack |
+| **오버클럭 (Overclock, assassin P)** | `_strike_one` | Rolled right after damage; on success hits **the same target** `MechSkillSystem.OVERCLOCK_EXTRA_ATTACKS` more times (stops if the target drops). Called again with `allow_extra = false`, so an extra attack never spawns another extra attack |
 | **불굴 (Indomitable, support V)** | `_apply_damage` | Once per team member, cannot drop below 1 HP. **Turret fire goes through the same function** — hooking only pilot attacks would leave a hole where one turret shot kills |
 | **약자 멸시 (Contempt for the Weak, assassin R)** | `setup` → `_contempt_opening` | Before round 1, hits the lowest-HP enemy once per Charge at `ENGAGE_CONTEMPT_DMG_MULT` × attack. See the Target selection section above |
 | **Smash / stun ([강타] (Smash) card)** | `_strike_one` → `_advance_order` | An enemy hit by a loaded pilot **loses its whole next turn**. It is not removed from the order array; `_advance_order` skips it, so the relative order of the living is unchanged. `MechSkillSystem._stun_applied` blocks **the same enemy twice** — without it a single melee would keep one enemy asleep for the whole engage |

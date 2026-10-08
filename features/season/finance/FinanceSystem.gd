@@ -517,8 +517,12 @@ static func special_name(special_id: String) -> String:
 
 
 ## Display description of a special id (current locale). "" for an unknown id.
+## `{weeks}` in the text = the row's `weeks` column (no duration is written in the text).
 static func special_desc(special_id: String) -> String:
-	return Loc.t(String(special_row(special_id).get("desc_key", "")))  # l10n-dynamic: finance.special.*.desc
+	var r: Dictionary = special_row(special_id)
+	if r.is_empty():
+		return ""
+	return Loc.t(String(r.get("desc_key", "")), {"weeks": int(r.get("weeks", 0))})  # l10n-dynamic: finance.special.*.desc
 
 
 ## Ids → display names (history `special_buys` / `specials_expired` hold ids).

@@ -126,3 +126,6 @@ tx_93DNF2H8DK,name.staff.54,active,staff.csv name (id=54),,,차도현,Cha Do-hyu
 tx_H0RPTYH8T9,name.staff.55,active,staff.csv name (id=55),,,백하은,Baek Ha-eun,draft,4b14cc31
 tx_B0BMAWJ7W0,name.staff.56,active,staff.csv name (id=56),,,노승민,Noh Seung-min,draft,5c9d7cc1
 tx_1B1ZHR2JX6,name.staff.57,active,staff.csv name (id=57),,,하예린,Ha Ye-rin,draft,7063c02a
+tx_J8VCATJ5GB,name.outlet.esports_daily,active,언론사 이름(고유명사). 기자회견 이벤트 첫 줄 @태그 · 미리보기가 key 참조로 쓴다,,,e스포츠 데일리,Esports Daily,draft,635bba70
+tx_576HKVWRTP,name.outlet.league_weekly,active,언론사 이름(고유명사). 기자회견 이벤트 첫 줄 @태그가 key 참조로 쓴다,,,리그 위클리,League Weekly,draft,c669ab82
+tx_MH87R5EDPY,name.outlet.game_today,active,언론사 이름(고유명사). 기자회견 이벤트 첫 줄 @태그가 key 참조로 쓴다,,,게임 투데이,Game Today,draft,7f1ebfc6

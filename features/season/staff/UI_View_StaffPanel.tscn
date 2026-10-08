@@ -168,7 +168,7 @@ custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 28
-text = "tx_ZZ96FNYRG1"
+text = "tx_MPYSG5BX0Y"
 
 [node name="StaffSub" type="Label" parent="StaffSection"]
 auto_translate_mode = 2

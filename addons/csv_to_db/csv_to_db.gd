@@ -45,7 +45,7 @@ const SCHEMAS: Dictionary = {
 	# M8~M10 (특성 · 감독 성장 · 수집 경제) — 계약: docs/outgame_dev_plan.md §12
 	"traits":        {"req": ["id","key","name_key","rarity","polarity","bonus_cost","layer","p1","p2","unlock","default_owned","craft_cost","desc_key"], "pk": "id"},
 	"manager_levels": {"req": ["level","exp_required"], "pk": "level"},
-	"pilot_breakthrough": {"req": ["id","pilot_id","stage","kind","value","desc_key"], "pk": "id"},
+	"pilot_breakthrough": {"req": ["id","pilot_id","stage","kind","value"], "pk": "id"},
 	"gacha_rates":   {"req": ["id","pool","rarity","weight"], "pk": "id"},
 	"pass_rewards":  {"req": ["level","currency","amount"], "pk": "level"},
 	# §14 (기벽 · 재무 특별 지출) — 계약: docs/outgame_dev_plan.md §14
@@ -380,13 +380,13 @@ const TABLE_DEFS: Dictionary = {
 	# 선수 돌파 1..5 단계(선수별). `kind` stat_flat(여섯 스탯 +value) /
 	# salary_down(Lv1 샐러리 −value) / stat_growth(그 선수 훈련 EXP +value%) /
 	# card_swap(value = "칸:카드id", 0 부터 센 파일럿 카드 칸을 교체). 단계는 누적.
+	# 설명문은 kind 별 l10n 틀(`breakthrough.kind.*`)에 value 를 채운다.
 	"pilot_breakthrough": {
 		"id":       {"data_type": "int",  "primary_key": true, "not_null": true},
 		"pilot_id": {"data_type": "int",  "not_null": true},
 		"stage":    {"data_type": "int",  "not_null": true},
 		"kind":     {"data_type": "text", "not_null": true},
 		"value":    {"data_type": "text", "not_null": true},
-		"desc_key":     {"data_type": "text", "not_null": true},
 	},
 	# 가챠 등급 가중치 — `pool` pilot / trait.
 	"gacha_rates": {

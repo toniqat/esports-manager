@@ -195,7 +195,7 @@ func _fill_reward_card() -> void:
 	var delta: Dictionary = _profile_delta()
 	var cur: Dictionary = _result.get("currency", {})
 	var rows: Array = [
-		[Loc.t(L.RUN_RESULT_REWARD_OUTGAME), "+%d" % int(cur.get("outgame", 0)), OutgameTheme.POSITIVE],
+		[Loc.t(L.TERM_CURRENCY_OUTGAME), "+%d" % int(cur.get("outgame", 0)), OutgameTheme.POSITIVE],
 		[Loc.t(L.TERM_CURRENCY_LEVELUP), "+%d" % int(cur.get("levelup", 0)), OutgameTheme.POSITIVE],
 	]
 	var pass_d: Dictionary = delta.get("pass", {})

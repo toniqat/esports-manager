@@ -171,7 +171,7 @@ func _fill_gacha(pool: String) -> void:
 		for r in Gacha.named_pilots():
 			if int(_pm.max_level_of(int((r as Dictionary)["id"]))) > 0:
 				owned_named += 1
-		%OwnedLabel.text = Loc.t(L.SHOP_TAB_OWNED_PILOTS)
+		%OwnedLabel.text = Loc.t(L.TERM_PILOT_OWNED)
 		%OwnedValue.text = "%d / %d" % [owned_named, Gacha.named_pilots().size()]
 	else:
 		%OwnedLabel.text = Loc.t(L.SHOP_TAB_OWNED_TRAITS)
@@ -319,13 +319,15 @@ func _fill_exchange() -> void:
 		 "btn": Loc.t(L.UI_BUTTON_EXCHANGE), "ok": int(_pm.currency_of("outgame")) >= ShopCatalog.levelup_exchange_cost(),
 		 "cb": _on_exchange_levelup},
 		{"title": Loc.t(L.SHOP_TAB_EX_PILOT_TICKET_TITLE),
-		 "desc": Loc.t(L.SHOP_TAB_EX_PILOT_TICKET_DESC, {"cost": ShopCatalog.ticket_premium_price(Gacha.POOL_PILOT)}),
+		 "desc": Loc.t(L.SHOP_TAB_EX_PILOT_TICKET_DESC, {"cost": ShopCatalog.ticket_premium_price(Gacha.POOL_PILOT),
+				"gain": ShopCatalog.ticket_exchange_gain()}),
 		 "have": Loc.t(L.SHOP_TAB_EX_PILOT_TICKET_HAVE, {"premium": int(_pm.currency_of("premium")),
 				"tickets": int(_pm.currency_of("gacha_ticket_pilot"))}),
 		 "btn": Loc.t(L.UI_BUTTON_BUY), "ok": int(_pm.currency_of("premium")) >= ShopCatalog.ticket_premium_price(Gacha.POOL_PILOT),
 		 "cb": _on_buy_ticket.bind(Gacha.POOL_PILOT)},
 		{"title": Loc.t(L.SHOP_TAB_EX_TRAIT_TICKET_TITLE),
-		 "desc": Loc.t(L.SHOP_TAB_EX_TRAIT_TICKET_DESC, {"cost": ShopCatalog.ticket_premium_price(Gacha.POOL_TRAIT)}),
+		 "desc": Loc.t(L.SHOP_TAB_EX_TRAIT_TICKET_DESC, {"cost": ShopCatalog.ticket_premium_price(Gacha.POOL_TRAIT),
+				"gain": ShopCatalog.ticket_exchange_gain()}),
 		 "have": Loc.t(L.SHOP_TAB_EX_TRAIT_TICKET_HAVE, {"premium": int(_pm.currency_of("premium")),
 				"tickets": int(_pm.currency_of("gacha_ticket_trait"))}),
 		 "btn": Loc.t(L.UI_BUTTON_BUY), "ok": int(_pm.currency_of("premium")) >= ShopCatalog.ticket_premium_price(Gacha.POOL_TRAIT),
@@ -355,7 +357,8 @@ func _on_exchange_levelup() -> void:
 
 func _on_buy_ticket(pool: String) -> void:
 	_simple_action(ShopCatalog.buy_ticket(_pm, pool),
-			"%s +1" % ShopPopup.currency_label(Gacha.ticket_key(pool)))
+			Loc.t(L.SHOP_TAB_TOAST_TICKET, {"currency": ShopPopup.currency_label(Gacha.ticket_key(pool)),
+					"n": ShopCatalog.ticket_exchange_gain()}))
 
 
 func _on_dev_premium() -> void:

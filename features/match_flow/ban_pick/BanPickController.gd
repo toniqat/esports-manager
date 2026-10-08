@@ -647,7 +647,7 @@ func _fill_sheet(m: MechData) -> void:
 		if kw != "":
 			head += "   [%s]" % kw
 		v.sheet_passive_head.text = head
-		v.sheet_passive_desc.text = Loc.t(String(pas.get("description_key", "")))  # l10n-dynamic: mech_passive.*.desc
+		v.sheet_passive_desc.text = MechSkillSystem.passive_description(pas)
 
 	# ── 카드 셋 ── (오른쪽 칸에서 이어진다 — 왼쪽은 아트 한 장이 통째로 쓴다)
 	var defs: Array = _gm.mech_cards_for(m.id)

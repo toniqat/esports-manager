@@ -29,17 +29,16 @@ tx_ZDJ0NDN9G9,training.scope.day_next_all,active,훈련 타일 효과 범위 라
 tx_857EF7RCMM,training.scope.mate_left,active,훈련 타일 효과 범위 라벨 (TrainingTile.SCOPE_LABELS) — training.effect.* 의 {scope} 에 들어감 — 왼쪽 선수의 같은 요일,,,왼쪽 선수 같은 날,"left pilot, same day",draft,1914220b
 tx_BTPJVKAJ67,training.scope.mate_right,active,훈련 타일 효과 범위 라벨 (TrainingTile.SCOPE_LABELS) — training.effect.* 의 {scope} 에 들어감 — 오른쪽 선수의 같은 요일,,,오른쪽 선수 같은 날,"right pilot, same day",draft,198adba0
 tx_D88VQ1QDV7,training.scope.mate_all,active,훈련 타일 효과 범위 라벨 (TrainingTile.SCOPE_LABELS) — training.effect.* 의 {scope} 에 들어감 — 그 요일의 다른 선수 전부,,,같은 날 다른 선수,"other pilots, same day",draft,0352de98
-tx_693VGK3CSZ,training.quirk_op.gain,active,훈련 타일 기벽 절 quirk:gain 설명 (TrainingTile.QUIRK_OP_LABELS) — training.effect.quirk 의 {op},,,기벽 획득 — 남은 기벽 칸에 무작위 장착 (지식이 높을수록 고등급),"Gain quirk — fills an empty quirk slot at random (higher Knowledge, higher grade)",draft,be0d8576
-tx_6AGR4JDDA3,training.quirk_op.reroll,active,훈련 타일 기벽 절 quirk:reroll 설명 (TrainingTile.QUIRK_OP_LABELS) — training.effect.quirk 의 {op},,,기벽 재굴림 — 장착한 기벽을 전부 새로 뽑음,Reroll quirks — redraws every equipped quirk,draft,51182658
-tx_CP2SBG1V2R,training.quirk_op.slot,active,훈련 타일 기벽 절 quirk:slot 설명 (TrainingTile.QUIRK_OP_LABELS) — training.effect.quirk 의 {op},,,기벽 칸 +1,Quirk slot +1,draft,589745bd
+tx_693VGK3CSZ,training.quirk_op.gain,active,훈련 타일 기벽 절 quirk:gain 설명 (TrainingTile.QUIRK_OP_LABELS) — training.effect.quirk 의 {op},,,"기벽 획득 (남은 기벽 칸에 무작위 장착, {tx_K3FRY03EQK}{i} 높을수록 고등급)","Gain quirk (fills an empty quirk slot at random; higher {tx_K3FRY03EQK}, higher grade)",draft,f367fa18
+tx_6AGR4JDDA3,training.quirk_op.reroll,active,훈련 타일 기벽 절 quirk:reroll 설명 (TrainingTile.QUIRK_OP_LABELS) — training.effect.quirk 의 {op},,,기벽 재굴림 (장착한 기벽을 전부 새로 뽑음),Reroll quirks (redraws every equipped quirk),draft,d4c415dc
+tx_CP2SBG1V2R,training.quirk_op.slot,active,훈련 타일 기벽 절 quirk:slot 설명 (TrainingTile.QUIRK_OP_LABELS) — training.effect.quirk 의 {op},,,기벽 칸 +{quirk_slot_gain},Quirk {plural:quirk_slot_gain|{tx_SBNQ8FZ5MA}|{tx_R3FWHSV8NN}} +{quirk_slot_gain},draft,5cd3b520
 tx_7AYTNKWZ13,training.effect.mult,active,"훈련 타일 효과 한 줄 — 배율 절. {scope}=범위 라벨(training.scope.*), {pct}=부호 붙은 차이(+25)",,,{scope} 훈련 효과 {pct}%,{scope}: training effect {pct}%,draft,6a7c40bc
 tx_8M81KN05QP,training.effect.flat,active,"훈련 타일 효과 한 줄 — 고정 EXP 절. {scope}=범위 라벨, {stat}=스탯 이름, {amount}=부호 붙은 EXP(+4)",,,{scope} {stat} {amount},{scope}: {stat} {amount},draft,282e78ab
 tx_4FZGJ5J85K,training.effect.quirk,active,훈련 타일 효과 한 줄 — 기벽 절. {op}=training.quirk_op.* 설명,,,훈련한 선수: {op},Trained pilot: {op},draft,c184d27a
-tx_0RR59YT76D,training.stat.all,active,훈련 타일 고정 EXP 절이 여섯 스탯 전부일 때의 스탯 이름 — training.effect.flat 의 {stat},,,전 스탯,All stats,draft,9fa10fd0
 tx_M8FGBCRE85,training.exp.none,active,훈련 타일 팝오버 EXP 요약 — 스탯 EXP 를 주지 않는 타일,,,경험치 없음,No EXP,draft,871b05a8
-tx_HAH93PRWJJ,training.exp.quirk_day,active,훈련 타일 팝오버 EXP 요약 — 기벽 칸만 있는 타일,,,경험치 없음 — 그날은 기벽 훈련,No EXP — the day goes to quirk training,draft,4b7dfdd9
+tx_HAH93PRWJJ,training.exp.quirk_day,active,훈련 타일 팝오버 EXP 요약 — 기벽 칸만 있는 타일,,,{tx_M8FGBCRE85} (그날은 기벽 훈련),{tx_M8FGBCRE85} (the day goes to quirk training),draft,0b5c3bae
 tx_8C0EV0B2WT,training.exp.mastery,active,훈련 타일 팝오버 EXP 요약 — 숙련도 칸 하나가 주는 메크 숙련도 EXP {n},,,메크 숙련도 +{n} (연구 메크),Mech mastery +{n} (research mech),draft,87d6eff8
-tx_B7Y34DBG5A,training.exp.all,active,훈련 타일 팝오버 EXP 요약 — 여섯 스탯 모두 칸당 {n},,,전 스탯 +{n},All stats +{n},draft,00a3944e
+tx_B7Y34DBG5A,training.exp.all,active,훈련 타일 팝오버 EXP 요약 — 여섯 스탯 모두 칸당 {n},,,{tx_0RR59YT76D} +{n},{tx_0RR59YT76D} +{n},draft,03ac97f9
 tx_TC94WX8SJC,training.exp.stat,active,훈련 타일 팝오버 EXP 요약 — 스탯 하나의 칸당 EXP. {stat}=스탯 이름. 여러 개는 training.list_sep 로 이음,,,{stat} +{n},{stat} +{n},draft,604ec14d
 tx_8A7H4WFZ7K,training.list_sep,active,훈련 타일 요약에서 항목을 나열할 때 쓰는 구분자 (앞뒤 공백 포함),,," · ", · ,draft,d3dacf89
 tx_T4X3A068J1,training.training_view.title,active,UI_View_TrainingView.tscn SafeArea/Title text,,,일상 훈련 편성,Daily Training Plan,draft,64d4a45b
@@ -54,5 +53,5 @@ tx_9HK1CX3AS3,training.view.part_finance,active,TrainingView effect part,,,재�
 tx_DWEX5CKQ69,training.view.part_trait,active,TrainingView effect part,,,특성,Traits,draft,93bfd478
 tx_NCRNZK44YE,training.view.owner_staff,active,TrainingView staff line — covered by a coach,,,{stat}: {name} 코치 {value},{stat}: Coach {name} {value},draft,cbacbbb4
 tx_8V6MVWWBTF,training.view.owner_assistant,active,TrainingView staff line — covered by an assistant,,,{stat}: {name} 어시스턴트 {value},{stat}: Assistant {name} {value},draft,fdac3f3f
-tx_ME5MJKE2GD,training.view.lock_reason,active,Locked course grade,,,전술 {n} 필요,Needs Tactics {n},draft,bd13ca62
-tx_4X2JSX6BJA,training.view.lock_now,active,Popover lock line,,,{reason} (지금 전술 {n}),{reason} (Tactics now {n}),draft,569d7176
+tx_ME5MJKE2GD,training.view.lock_reason,active,Locked course grade,,,{tx_9265Y1MCPW} {n} 필요,Needs {tx_9265Y1MCPW} {n},draft,a2215ddf
+tx_4X2JSX6BJA,training.view.lock_now,active,Popover lock line,,,{reason} (지금 {tx_9265Y1MCPW} {n}),{reason} ({tx_9265Y1MCPW} now {n}),draft,54560b29

@@ -1,9 +1,9 @@
 key,alias,status,context,max_len,note,ko,en,en_status,en_hash
-tx_7NY5TT0SJT,team.0.desc,active,teams.csv desc (id=0),,,최상위 예산 — 전략 카드 운영과 선수 면담만 직접,Top budget — you only run strategy cards and player talks yourself,draft,891be56e
+tx_7NY5TT0SJT,team.0.desc,active,teams.csv desc (id=0),,,최상위 예산: 전략 카드 운영과 선수 {tx_F28RBDEGBX}만 직접,Top budget: you only run strategy cards and player talks yourself,draft,b8133200
 tx_0G5Q0GF81D,team.1.desc,active,teams.csv desc (id=1),,,상위 예산,High budget,draft,2e56dfa0
-tx_B761YRXYA9,team.2.desc,active,teams.csv desc (id=2),,,중상위 — 훈련 일정 편성 직접,Upper-mid budget — you set the training schedule yourself,draft,3acec83d
+tx_B761YRXYA9,team.2.desc,active,teams.csv desc (id=2),,,중상위: 훈련 일정 편성 직접,Upper-mid budget: you set the training schedule yourself,draft,800c191d
 tx_94KMS9GQH0,team.3.desc,active,teams.csv desc (id=3),,,중위,Mid budget,draft,0f65c952
-tx_G20TF9A18T,team.4.desc,active,teams.csv desc (id=4),,,중위 — 메크 숙련도 관리 직접,Mid budget — you manage mech mastery yourself,draft,3ea11241
-tx_5J2FWDTHHS,team.5.desc,active,teams.csv desc (id=5),,,중하위 — 상대 분석 해석 직접,Lower-mid budget — you interpret opponent analysis yourself,draft,7629da14
+tx_G20TF9A18T,team.4.desc,active,teams.csv desc (id=4),,,중위: {tx_D6PVFND3FB} 관리 직접,Mid budget: you manage mech mastery yourself,draft,8c7b7fb8
+tx_5J2FWDTHHS,team.5.desc,active,teams.csv desc (id=5),,,중하위: {tx_22VDY4GM0D} 해석 직접,Lower-mid budget: you interpret opponent analysis yourself,draft,78a7ef78
 tx_2B5FE3RAFT,team.6.desc,active,teams.csv desc (id=6),,,하위,Low budget,draft,c8f1111e
-tx_KRQHGMFDHP,team.7.desc,active,teams.csv desc (id=7),,,최하위 — 예산 배분 · 시설 · 연봉까지 직접,"Lowest budget — you handle budget allocation, facilities and salaries yourself",draft,d2c0fcaf
+tx_KRQHGMFDHP,team.7.desc,active,teams.csv desc (id=7),,,최하위: 예산 배분 · 시설 · 연봉까지 직접,"Lowest budget: you handle budget allocation, facilities and salaries yourself",draft,6e318d09

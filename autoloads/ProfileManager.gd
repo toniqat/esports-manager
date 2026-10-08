@@ -162,7 +162,7 @@ func add_pilot_exp(pilot_id: int, amount: int) -> Dictionary:
 	return {"from": from_lv, "to": to_lv}
 
 
-## M10 — 최대 레벨 +1 에 드는 레벨업 재화. 올릴 수 없으면 -1.
+## M10: 다음 최대 레벨에 드는 레벨업 재화. 올릴 수 없으면 -1.
 func level_up_cost(pilot_id: int) -> int:
 	var lv: int = max_level_of(pilot_id)
 	if lv <= 0 or lv >= RunRules.max_level():
@@ -170,7 +170,7 @@ func level_up_cost(pilot_id: int) -> int:
 	return RunRules.levelup_cost(lv + 1)
 
 
-## M10 — 레벨업 재화로 최대 레벨 +1. 성공이면 "".
+## M10: 레벨업 재화로 최대 레벨을 `PILOT_MAX_LEVEL_GAIN` 만큼 올린다(`RunRules.max_level()` 까지). 성공이면 "".
 func level_up_pilot(pilot_id: int) -> String:
 	var cost: int = level_up_cost(pilot_id)
 	if cost < 0:
@@ -178,7 +178,7 @@ func level_up_pilot(pilot_id: int) -> String:
 	if not spend_currency("levelup", cost):
 		return Loc.t(L.UI_LEVEL_UP_NOT_ENOUGH, {"n": cost})
 	var e: Dictionary = profile["collection"][str(pilot_id)]
-	e["max_level"] = int(e.get("max_level", 1)) + 1
+	e["max_level"] = mini(RunRules.max_level(), int(e.get("max_level", 1)) + ConstTable.int_of("PILOT_MAX_LEVEL_GAIN"))
 	return ""
 
 

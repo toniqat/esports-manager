@@ -5,7 +5,8 @@ theme (`OutgameTheme`), bottom action bar. Replaces the old 3-slot TitleScreen
 (save structure is now profile 1 + run 1 — `features/save_load/README.md`).
 
 표시 텍스트는 l10n key (`lobby` · `settings` 도메인 + 공유 `ui` · `term`). `TABS` / `CURRENCY_STRIP` `label`
-values are keys (`Loc.t` when drawn — other screens reading `CURRENCY_STRIP` must do the same). Scene nodes
+values are keys (the strip reuses `term.currency.{outgame,gacha_ticket_pilot,gacha_ticket_trait}`; only the
+shortened `lobby.currency.levelup` · `pilot_shard` captions are lobby keys) (`Loc.t` when drawn — other screens reading `CURRENCY_STRIP` must do the same). Scene nodes
 the scripts fill carry `auto_translate_mode = 2` (preview text stays); fixed captions hold key literals.
 
 ## Files
@@ -115,7 +116,7 @@ Lobby (Control, full rect, theme = OutgameTheme.tres, LobbyScreen.gd)
   `RunResult.SCENE_PATH`, whose `새 런` goes on to `RunSetup.tscn` (`../run_result/README.md`).
   Load fails (corrupt run) → warning, `delete_run()` and straight to a new run without settlement.
 - A summary line under the title: manager level · owned pilots · owned traits.
-- **`%SettingsButton`** (`GhostButton`, 150×60, font 24, key `settings.open_button`) — anchored top-right of the
+- **`%SettingsButton`** (`GhostButton`, 150×60, font 24, key `settings.title`, the popup's own title) — anchored top-right of the
   tab, 32 px from the right edge, y 12..72 (inside the top gap, beside the centred title). The tab already starts
   below the currency strip, which the host indents under the notch, so no extra safe-area code. Pressed →
   `_open_settings` (creates one `SettingsPopup` lazily as a child) → `locale_chosen(code)` →
@@ -133,7 +134,7 @@ than the current one was tapped — the popup hides itself, the opener saves + r
   (`CaptionLabel` 24) · Gap · `%Languages` (VBox sep 16; two preview `SettingsLanguageButton_Lang0/1`
   instances) · Gap · `Note` (`FaintLabel`, autowrap) · Gap · `%Close` (`GhostButton`, 112 high).
 - Static texts are **key literals in the scene** (`tx_…` — Control auto-translate, inherited/on); keys live in
-  `data/l10n/src/settings.csv` (`settings.*`).
+  `data/l10n/src/settings.csv` (`settings.*`); `%Close` uses the shared `ui.button.close`.
 - Code-owned: the language buttons (`_sync_languages` reuses the scene's previews / instantiates
   `UI_Comp_SettingsLanguageButton.tscn` / frees to match `L.LOCALES`); each button's text =
   `Loc.t(LOCALE_NAMES[code])` — **language names are endonyms** (`settings.locale.ko` = "한국어",

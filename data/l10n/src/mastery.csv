@@ -1,8 +1,8 @@
 key,alias,status,context,max_len,note,ko,en,en_status,en_hash
-tx_GYJVQGJEM9,mastery.mastery_pilot_row.text,active,UI_Comp_MasteryPilotRow.tscn Content/Quirks/QuirkEmpty/Text text,,,없음 — 기벽 훈련 타일 · 메크 연구로 얻는다,None — earned from quirk training tiles · mech research,draft,82eafabb
+tx_GYJVQGJEM9,mastery.mastery_pilot_row.text,active,UI_Comp_MasteryPilotRow.tscn Content/Quirks/QuirkEmpty/Text text,,,{tx_RQE8VZW0ST}. 기벽 훈련 타일 · 메크 연구로 얻는다,{tx_RQE8VZW0ST}. Earned from quirk training tiles · mech research,draft,83111679
 tx_WZDGTR97KE,mastery.mastery_panel.empty,active,UI_View_MasteryPanel.tscn Empty text,,,진행 중인 런이 없다,No run in progress,draft,8235c1d8
 tx_43FCJDADR5,mastery.mastery_panel.auto,active,UI_View_MasteryPanel.tscn Main/Auto text,,,코치에게 맡기기,Leave it to the coach,draft,52b663cf
-tx_S3TMQTME0B,mastery.mastery_panel.no_coach,active,UI_View_MasteryPanel.tscn Main/NoCoach text,,,메크 코치가 없다 — 선수마다 직접 연구 메크를 고른다,No mech coach — pick each pilot's research mech yourself,draft,2c670354
+tx_S3TMQTME0B,mastery.mastery_panel.no_coach,active,UI_View_MasteryPanel.tscn Main/NoCoach text,,,메크 코치가 없다. 선수마다 직접 연구 메크를 고른다,No mech coach. Pick each pilot's research mech yourself,draft,8360fb49
 tx_9795WB8ABE,mastery.tier.novice,active,메크 숙련 등급 0 (MechMastery.TIER_NAMES),,,미숙,Novice,draft,7e0825e6
 tx_A871893SYV,mastery.tier.average,active,메크 숙련 등급 1 (MechMastery.TIER_NAMES),,,보통,Average,draft,2179da2c
 tx_VBZCYYXC6P,mastery.tier.skilled,active,메크 숙련 등급 2 (MechMastery.TIER_NAMES),,,능숙,Skilled,draft,7516895b
@@ -11,16 +11,16 @@ tx_YN458RG799,mastery.hub.title,active,허브 관리 카드 · 시트 제목,,,�
 tx_ABCFSECHD1,mastery.hub.no_run,active,허브 메크 연구 카드 — 런 없음,,,런 밖,Outside a run,draft,6e7ba31a
 tx_DC141DPMTX,mastery.hub.weekly_gain,active,허브 메크 연구 카드 보조 줄,,,주간 연구 +{n},Weekly research +{n},draft,d8cc6d3c
 tx_1R29MF9ZRE,mastery.hub.coach_fills,active,허브 메크 연구 카드 보조 줄 — 위임,,,빈 자리는 코치가 채움,Coach fills empty slots,draft,bc9a7ab9
-tx_H26DNEN9EX,mastery.hub.missing,active,허브 메크 연구 카드 보조 줄,,,연구 메크 미지정 {n}명,{n} without a research mech,draft,2836cbdb
+tx_H26DNEN9EX,mastery.hub.missing,active,허브 메크 연구 카드 보조 줄,,,연구 메크 미지정 {n}명,{n} {plural:n|{tx_3ZSF3DW62X}|{tx_3HRCFHPCM4}} without a research mech,draft,2836cbdb
 tx_AYCQXCCH15,mastery.hub.assigned,active,허브 메크 연구 카드 값,,,{n} / {total} 지정,{n} / {total} assigned,draft,5fd60bf0
-tx_5XP7EXN0MZ,mastery.panel.head,active,메크 연구 시트 머리 줄,,,담당: {name}   ·   지식 {value},In charge: {name}   ·   Knowledge {value},draft,541a41ed
+tx_5XP7EXN0MZ,mastery.panel.head,active,메크 연구 시트 머리 줄,,,담당: {name}   ·   {tx_K3FRY03EQK} {value},In charge: {name}   ·   {tx_K3FRY03EQK} {value},draft,6a3f2aee
 tx_NPNPJYNJ78,mastery.panel.gain,active,메크 연구 시트 머리 줄 오른쪽,,,획득 배율 ×{mult},Gain multiplier ×{mult},draft,cfbe0c3e
-tx_AVASF1MNRA,mastery.panel.legend,active,등급별 스탯 보정 범례,,,등급 보정 (스탯 6종)   {tiers},Tier bonus (all 6 stats)   {tiers},draft,036b56ac
+tx_AVASF1MNRA,mastery.panel.legend,active,등급별 스탯 보정 범례,,,등급 보정 ({tx_0RR59YT76D})   {tiers},Tier bonus (all {tx_FV39P9GPAJ})   {tiers},draft,000508f4
 tx_9C36WN5CN9,mastery.panel.rules,active,숙련도 획득 규칙 줄,,,주 마감마다 연구 메크 +{research}  ·  경기에 탄 메크 +{match}  (배율 전),Research mech +{research} each week end  ·  mech played in a match +{match}  (before multiplier),draft,27f8e5f6
-tx_0R1EGAX9DP,mastery.panel.quirk_odds,active,기벽 획득 확률 줄 — {odds} = 등급별 확률,,,기벽 — 연구 메크가 있으면 주 마감 {pct}% 확률로 획득  ·  {odds},Quirks — {pct}% chance at week end with a research mech  ·  {odds},draft,f0e18172
+tx_0R1EGAX9DP,mastery.panel.quirk_odds,active,기벽 획득 확률 줄 — {odds} = 등급별 확률,,,기벽: 연구 메크가 있으면 주 마감 {pct}% 확률로 획득  ·  {odds},Quirks: {pct}% chance at week end with a research mech  ·  {odds},draft,1a9009f4
 tx_9YHCDH1Y7N,mastery.panel.research,active,파일럿 카드 — 연구 메크,,,연구: {mech},Research: {mech},draft,17d7288e
 tx_KVG9N478Y5,mastery.panel.research_coach,active,파일럿 카드 — 연구 메크 없음 (위임),,,주 마감에 코치가 지정,Coach assigns at week end,draft,0e26dd5b
 tx_1AFM6E35JF,mastery.panel.research_none,active,파일럿 카드 — 연구 메크 없음 (직접),,,연구 미지정,No research mech,draft,75f05099
 tx_PW12RBBJ9E,mastery.panel.top_mechs,active,파일럿 카드 — 숙련 상위 메크,,,숙련 상위  {list},Top mastery  {list},draft,8d5ee919
 tx_1D7T0ZQE77,mastery.panel.quirk_count,active,파일럿 카드 기벽 머리,,,기벽  {n} / {slots},Quirks  {n} / {slots},draft,72ca6059
-tx_D1SA7C6KSP,mastery.panel.quirk_max,active,파일럿 카드 기벽 최대 칸,,,최대 {n}칸,Max {n} slots,draft,3967c81f
+tx_D1SA7C6KSP,mastery.panel.quirk_max,active,파일럿 카드 기벽 최대 칸,,,최대 {n}칸,Max {n} {plural:n|{tx_SBNQ8FZ5MA}|{tx_R3FWHSV8NN}},draft,3967c81f

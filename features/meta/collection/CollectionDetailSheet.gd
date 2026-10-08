@@ -38,6 +38,11 @@ const SCENE_PATH: String = "res://features/meta/collection/UI_View_CollectionDet
 const STAT_CHIP_SCENE: PackedScene = preload("res://features/meta/collection/UI_Comp_CollectionStatChip.tscn")
 const BT_ROW_SCENE: PackedScene = preload("res://features/meta/collection/UI_Comp_CollectionBreakthroughRow.tscn")
 
+## Breakthrough line templates by kind (`{n}` = row value). `card_swap` is built in `_bt_desc`.
+const BT_DESC: Dictionary = {  # l10n-keys: breakthrough.kind.*
+	"stat_flat": L.BREAKTHROUGH_KIND_STAT_FLAT, "salary_down": L.BREAKTHROUGH_KIND_SALARY_DOWN,
+	"stat_growth": L.BREAKTHROUGH_KIND_STAT_GROWTH,
+}
 const BT_KIND_LABELS: Dictionary = {  # l10n-keys: collection.bt_kind.*
 	"stat_flat": L.COLLECTION_BT_KIND_STAT_FLAT, "salary_down": L.COLLECTION_BT_KIND_SALARY_DOWN,
 	"stat_growth": L.COLLECTION_BT_KIND_STAT_GROWTH, "card_swap": L.COLLECTION_BT_KIND_CARD_SWAP,
@@ -147,7 +152,7 @@ func _fill_hero(owned: bool, max_lv: int, stage: int) -> void:
 
 	%Name.text = _base.name
 	# The position is the badge on the bust (`PositionBadge`) — this line only names the home team.
-	%RoleLine.text = Loc.t(L.COLLECTION_DETAIL_HOME_TEAM, {"team": _team_short(_base.team_id)})
+	%RoleLine.text = Loc.t(L.RUN_SETUP_DRAFT_ORIGIN_TEAM, {"team": _team_short(_base.team_id)})
 
 	# Chip row: rarity · 최대 Lv · 돌파 · 중복 (or 미보유).
 	var chips: Control = %Chips
@@ -213,7 +218,7 @@ func _fill_stats(owned: bool) -> void:
 		var delta: int
 		var is_total: bool = i == PlayerData.STAT_KEYS.size()
 		if is_total:
-			key = Loc.t(L.COLLECTION_DETAIL_STAT_TOTAL)
+			key = Loc.t(L.RUN_SETUP_STAT_TOTAL)
 			val = _fielded.stat_total()
 			delta = val - _base.stat_total()
 		else:
@@ -271,14 +276,17 @@ func _fill_breakthrough(stage: int, owned: bool) -> void:
 		state.theme_type_variation = &"AccentLabel" if reached else &"CaptionLabel"
 
 
-## Table desc; a `card_swap` row also names the new card ("… → 카드명").
+## Breakthrough line from the kind template + `value`; a `card_swap` row also names the new
+## card ("… → 카드명"). Numbers come only from the data row, never from the text.
 func _bt_desc(r: Dictionary) -> String:
-	var d: String = Loc.t(String(r.get("desc_key", "")))  # l10n-dynamic: breakthrough.*.desc
-	if String(r["kind"]) != "card_swap":
-		return d
-	var parts: PackedStringArray = String(r["value"]).split(":")
+	var kind: String = String(r["kind"])
+	var v: String = String(r["value"])
+	if kind != "card_swap":
+		return Loc.t(String(BT_DESC[kind]), {"n": v}) if BT_DESC.has(kind) else v  # l10n-dynamic: breakthrough.kind.*
+	var parts: PackedStringArray = v.split(":")
 	if parts.size() != 2:
-		return d
+		return v
+	var d: String = Loc.t(L.BREAKTHROUGH_KIND_CARD_SWAP, {"slot": int(parts[0]) + 1})
 	var def: Dictionary = _gm.card_def(int(parts[1]))
 	if def.is_empty():
 		return d

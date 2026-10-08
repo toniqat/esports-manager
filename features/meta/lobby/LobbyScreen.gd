@@ -39,11 +39,11 @@ const TABS: Array = [    # l10n-keys: lobby.tab.*
 ]
 
 ## 재화 줄에 보이는 재화(순서대로). 나머지 재화는 상점 · 컬렉션 화면이 보인다. `label` = l10n key.
-const CURRENCY_STRIP: Array = [    # l10n-keys: lobby.currency.*
-	{"key": "outgame",            "label": L.LOBBY_CURRENCY_OUTGAME},
+const CURRENCY_STRIP: Array = [    # l10n-keys: lobby.currency.levelup lobby.currency.pilot_shard term.currency.outgame term.currency.gacha_ticket_pilot term.currency.gacha_ticket_trait
+	{"key": "outgame",            "label": L.TERM_CURRENCY_OUTGAME},
 	{"key": "levelup",            "label": L.LOBBY_CURRENCY_LEVELUP},
-	{"key": "gacha_ticket_pilot", "label": L.LOBBY_CURRENCY_GACHA_TICKET_PILOT},
-	{"key": "gacha_ticket_trait", "label": L.LOBBY_CURRENCY_GACHA_TICKET_TRAIT},
+	{"key": "gacha_ticket_pilot", "label": L.TERM_CURRENCY_GACHA_TICKET_PILOT},
+	{"key": "gacha_ticket_trait", "label": L.TERM_CURRENCY_GACHA_TICKET_TRAIT},
 	{"key": "pilot_shard",        "label": L.LOBBY_CURRENCY_PILOT_SHARD},
 ]
 
@@ -138,7 +138,7 @@ func _sync_currency_cells() -> void:
 	for i in cells.size():
 		var spec: Dictionary = CURRENCY_STRIP[i]
 		var cell: Node = cells[i]
-		(cell.get_node("%Caption") as Label).text = Loc.t(String(spec["label"]))  # l10n-dynamic: lobby.currency.*
+		(cell.get_node("%Caption") as Label).text = Loc.t(String(spec["label"]))  # l10n-dynamic: CURRENCY_STRIP labels
 		_currency_labels[String(spec["key"])] = cell.get_node("%Value")
 	refresh_currency()
 

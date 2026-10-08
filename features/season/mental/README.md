@@ -64,6 +64,7 @@ the evening card + incident card live on the week screen (`features/season/week/
 (D7): note dicts are `{type: trust|trust_all|pmod|pmod_all|smod|outing, pid?, stat?, delta?, weeks?, count?}`.
 `MentalEvents.outcome_view(state, outcome)` → `{checked, ok, chance, say: [String], notes: [String]}` for
 `MessengerView.show_result`; `MentalEvents.note_texts(state, notes)` for the week-screen summary chips.
+A note whose stat is `all` reads `training.stat.all` ("모든 파일럿 능력치", shared with the training tiles).
 `end_week` resets `week` / counters / `days` and shifts `fatigue`; `_week()` also resets when the key changes.
 
 ## `mental_events.csv` + `mental_texts.csv` grammar

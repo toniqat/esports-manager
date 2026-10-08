@@ -138,7 +138,7 @@ offset_top = 16.0
 offset_bottom = 46.0
 grow_horizontal = 0
 theme_type_variation = &"CaptionLabel"
-text = "tx_YEC6P2JRFH"
+text = "tx_V9830054XS"
 horizontal_alignment = 2
 
 [node name="Shards" type="Label" parent="VBox/Top/TopVBox/Summary/Pad/Content"]

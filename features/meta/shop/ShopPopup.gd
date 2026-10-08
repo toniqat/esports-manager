@@ -23,11 +23,11 @@ const RATE_ROW_SCENE: String = "res://features/meta/shop/UI_Comp_ShopRateRow.tsc
 const ITEM_COLS: int = 5
 
 ## Display-name keys of the eight profile currencies — show them with `currency_label`.
-const CURRENCY_LABELS: Dictionary = {  # l10n-keys: shop.currency.* term.currency.levelup
-	"outgame": L.SHOP_CURRENCY_OUTGAME, "levelup": L.TERM_CURRENCY_LEVELUP,
-	"gacha_ticket_pilot": L.SHOP_CURRENCY_GACHA_TICKET_PILOT, "gacha_ticket_trait": L.SHOP_CURRENCY_GACHA_TICKET_TRAIT,
-	"trait_mat": L.SHOP_CURRENCY_TRAIT_MAT, "cosmetic": L.SHOP_CURRENCY_COSMETIC,
-	"premium": L.SHOP_CURRENCY_PREMIUM, "pilot_shard": L.SHOP_CURRENCY_PILOT_SHARD,
+const CURRENCY_LABELS: Dictionary = {  # l10n-keys: term.currency.* term.currency.levelup
+	"outgame": L.TERM_CURRENCY_OUTGAME, "levelup": L.TERM_CURRENCY_LEVELUP,
+	"gacha_ticket_pilot": L.TERM_CURRENCY_GACHA_TICKET_PILOT, "gacha_ticket_trait": L.TERM_CURRENCY_GACHA_TICKET_TRAIT,
+	"trait_mat": L.TERM_CURRENCY_TRAIT_MAT, "cosmetic": L.TERM_CURRENCY_COSMETIC,
+	"premium": L.TERM_CURRENCY_PREMIUM, "pilot_shard": L.TERM_CURRENCY_PILOT_SHARD,
 }
 
 var _fit_queued: bool = false
@@ -71,7 +71,7 @@ static func wrap_label(l: Label, sz: Vector2) -> Label:
 static func currency_label(key: String) -> String:
 	if not CURRENCY_LABELS.has(key):
 		return key
-	return Loc.t(String(CURRENCY_LABELS[key]))  # l10n-dynamic: shop.currency.* term.currency.levelup
+	return Loc.t(String(CURRENCY_LABELS[key]))  # l10n-dynamic: term.currency.* term.currency.levelup
 
 
 func is_open() -> bool:

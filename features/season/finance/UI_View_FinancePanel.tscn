@@ -542,7 +542,7 @@ custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 22
-text = "tx_25RMDAJ5X7"
+text = "tx_BD4TNS9ZGD"
 
 [node name="History" type="VBoxContainer" parent="Main"]
 editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_history() · FinancePanel.gd _ready()"

@@ -11,9 +11,9 @@ tx_SPEVBRHFR6,적 정글 타일
 tx_TW91ZYM52K,정글 타일
 tx_15JDB1FGX2,자신
 tx_SBYKWG1EES,전장
-tx_X86PZPRSKR,{pile} — {n}장
+tx_X86PZPRSKR,{pile} ({n}장)
 tx_WBQREDCZ9E,비어 있음
-tx_1MA0RVZENK,버린 카드
+tx_1MA0RVZENK,버린 더미
 tx_R04J09DW7N,비용 -{n}
 tx_2E72YD71KC,보존 {n}
 tx_VHMMNFFYWY,숨김
@@ -36,12 +36,12 @@ tx_58VCZ43AB8,교전 종료
 tx_PBRWC7X4KR,턴 {n} 시작
 tx_3PYG9VZV4Q,{name}의 차례
 tx_ZSKHJTZV6B,처치 {n}
-tx_25TCMGCZEF,시작 위치 — 이대로 교전을 시작한다
+tx_25TCMGCZEF,시작 위치: 이대로 교전을 시작한다
 tx_RGYZZ6BFJ5,시작 위치
-tx_DEJKT3AEGZ,교전 종료 — 양측 전멸
-tx_AP1NR7N7JF,교전 종료 — 적군 전멸
-tx_N96FRD4BSV,교전 종료 — 아군 전멸
-tx_0A0WCRAVBT,교전 종료 — {n}턴 완료
+tx_DEJKT3AEGZ,교전 종료: 양측 전멸
+tx_AP1NR7N7JF,교전 종료: 적군 전멸
+tx_N96FRD4BSV,교전 종료: 아군 전멸
+tx_0A0WCRAVBT,교전 종료: {n}턴 완료
 tx_ZGTQ8FD03J,약자 멸시 x{n}
 tx_H9SA47D3DE,기절
 tx_PB324TP8B1,기절!
@@ -59,12 +59,12 @@ tx_MF1RG2XJA7,강화 · 감마
 tx_VGZFV8N8KH,다음 [단계 C] 사용 시 성장 점수 +{pct}%
 tx_RCPH2TXG6X,전령
 tx_XQ2PPDTRRR,용
-tx_3Y0ECJAAHT,{name} — 아군 무혈 획득
-tx_EASJYYJ9SP,{name} — 적군 무혈 획득
-tx_30PGAN3RWM,{name} 등장 — 전투에 참여하시겠습니까?
+tx_3Y0ECJAAHT,{name}: 아군 무혈 획득
+tx_EASJYYJ9SP,{name}: 적군 무혈 획득
+tx_30PGAN3RWM,{name} 등장! 전투에 참여하시겠습니까?
 tx_QWFB45AWP4,참여
 tx_3MA5JECS5S,미참여
-tx_04ERNCHTGZ,보상: [전령 제압] — 최외곽 적 포탑에 피해 {n}
+tx_04ERNCHTGZ,보상: [전령 제압] (최외곽 적 포탑에 피해 {n})
 tx_2YWT10DFT0,보상: [용 보상] ×{n} 를 덱에 추가
 tx_VZSZS9D73E,처치 -{n}
 tx_DX3WCA5MG9,명중 {pct}%
@@ -77,12 +77,12 @@ tx_EAZD697HN6,토큰 {cur} / {max} · 사용에 토큰 {cost}
 tx_DG5378RKCJ,패시브 · 토큰 {cur} / {max}
 tx_R7WMPP0AXY,패시브 · 상시 적용
 tx_H9QM09GHQ8,감독 특성
-tx_E684S0YNFT,개시 전략 포인트
+tx_E684S0YNFT,개시 전략 점수
 tx_0SNGNNX6ME,첫 자동 뽑기
 tx_ME11AGHCAW,손 상한
 tx_4K4WMMM811,첫 카드 비용
-tx_AHZVW1863N,전략 포인트 가속
-tx_2ZDNTZRMY2,전략 포인트 가속 · {turns}턴마다 {delta}
+tx_AHZVW1863N,전략 점수 가속
+tx_2ZDNTZRMY2,전략 점수 가속 · {turns}턴마다 {delta}
 tx_QSR7RXHSHW,MISS
 tx_VM0HAXEB2G,좌측
 tx_01DT4571QV,중앙
@@ -213,6 +213,10 @@ tx_80T8YAJNC7,샐러리 −3
 tx_4TJN6H88TJ,훈련 EXP +10%
 tx_5ZA10MPGFV,스탯 여섯 모두 +3
 tx_6RFSFX6W0Q,세 번째 파일럿 카드 교체
+tx_CT7HANNW9F,모든 파일럿 능력치 +{n}
+tx_WWXBFY3CCH,훈련 경험치 +{n}%
+tx_NGS28BKV7X,샐러리 -{n}
+tx_JA0XRDKBW0,{slot}번째 파일럿 카드 교체
 tx_5QJ40QYDDV,교전 개시
 tx_PEJVP7QE73,완벽한 기회
 tx_A2X2F9VGZJ,결투
@@ -256,49 +260,49 @@ tx_8830YJ0Y2M,무모한 돌격
 tx_559D68SDYX,자신감
 tx_H4X8Y1CT0H,맑은 정신
 tx_4RNAZ0XM3Z,준비 태세
-tx_39VBTD21YR,3턴 간 교전 — 범위 내 모두 참여
-tx_V2PKK7NWT2,4턴 간 교전 — 범위 내 모두 참여
-tx_EC3YQQ5Z38,대상과 한 명이 처치될 때까지 교전 (최대 10턴)
-tx_408F44KGGS,이동. 다음 교전 카드 비용 -1
-tx_NXCKS533Z5,이동. 이 게임 동안 비용 +1
+tx_39VBTD21YR,{engage}턴 간 교전. 범위 내 모두 참여
+tx_V2PKK7NWT2,{engage}턴 간 교전. 범위 내 모두 참여
+tx_EC3YQQ5Z38,대상과 한 명이 처치될 때까지 교전 (최대 {engage_duel_max_rounds}턴)
+tx_408F44KGGS,이동. 다음 교전 카드 비용 -{cost_reduce_engage}
+tx_NXCKS533Z5,이동. 이 게임 동안 비용 +{self_cost}
 tx_ER4EDPVYGB,공격
 tx_RVEDFKNMDP,필중 공격
 tx_D517G4R707,공격. 명중 시 이 카드 효과를 반복
-tx_G0C3P5140E,전진 1
-tx_W35E68ZQBW,"뽑기 2장, 버리기 2장"
-tx_SGE785HBXQ,"뽑기 1장, 전략 점수 +1"
-tx_6YQZCE1XNJ,찾기 1장
-tx_QRCN458YD0,뽑기 2장
-tx_2QKZF6AP0E,이번 작전 단계에서 뽑는 카드 비용 -1
-tx_Q0E6A1NV2N,손의 모든 카드 비용 -1
-tx_K66VVKXS4N,전략 점수 +4. 다음 작전 단계 시작 시 전략 점수 -2
-tx_5N1FY5QTXY,"사용 후, 이번 작전 단계에서 적을 처치했다면 전략 점수 +4"
+tx_G0C3P5140E,전진 {advance}
+tx_W35E68ZQBW,"뽑기 {draw}장, 버리기 {discard}장"
+tx_SGE785HBXQ,"뽑기 {draw}장, 전략 점수 +{strategy}"
+tx_6YQZCE1XNJ,찾기 {search}장
+tx_QRCN458YD0,뽑기 {draw}장
+tx_2QKZF6AP0E,이번 작전 단계에서 뽑는 카드 비용 -{cost_reduce_draw_phase}
+tx_Q0E6A1NV2N,손의 모든 카드 비용 -{cost_reduce_hand}
+tx_K66VVKXS4N,전략 점수 +{strategy}. 다음 작전 단계 시작 시 전략 점수 -{strategy_next_phase_abs}
+tx_5N1FY5QTXY,"사용 후, 이번 작전 단계에서 적을 처치했다면 전략 점수 +{strategy_on_kill}"
 tx_VTBGJF968E,대상을 본진으로 귀환
-tx_3BNP4XNPK9,대상 체력 20%의 보호막 부여
-tx_4FMSTMSTRG,대상 타일에 남은 성장 포인트를 가로챈다
-tx_232ZDZ7E24,"가장 가까운 아군 포탑으로 이동. 10턴 동안 전장 회피 +20%, 성장 +10%"
-tx_TCT401KX2S,10턴 동안 라인전 스탯 +10%
-tx_P5PQ376FBE,손을 전부 버리기. 버린 수만큼 뽑기
-tx_F7AA153FS9,손을 전부 버리기. 다음 작전 단계까지 아군 전원 성장 +25%. 작전 단계 종료
-tx_M1Z6RYGV59,손의 카드 2장을 다음 작전 단계까지 보존
-tx_38HZVJYJCF,"손 오른쪽 3장 버리기, 뽑기 5장"
-tx_8H6EH36EGS,"다른 파일럿 카드 모두 버린 후, 뽑기 +4\n버린 카드 1장마다 전략 점수 +1"
+tx_3BNP4XNPK9,대상 체력 {shield_pct}%의 보호막 부여
+tx_4FMSTMSTRG,대상 타일에 남은 성장 점수{eul} 가로챈다
+tx_232ZDZ7E24,"가장 가까운 아군 포탑으로 이동. {eva_buff_turns}턴 동안 전장 회피 +{eva_buff}%, 성장 +{growth}%"
+tx_TCT401KX2S,{lane_stat_turns}턴 동안 라인전 능력치 +{lane_stat}%
+tx_P5PQ376FBE,손{eul} 전부 버리기. 버린 수만큼 뽑기
+tx_F7AA153FS9,손{eul} 전부 버리기. 다음 작전 단계까지 아군 전원 성장 +{growth_until_phase}%. 작전 단계 종료
+tx_M1Z6RYGV59,손의 카드 {preserve}장을 다음 작전 단계까지 보존
+tx_38HZVJYJCF,"손 오른쪽 {discard_right}장 버리기, 뽑기 {draw}장"
+tx_8H6EH36EGS,"다른 파일럿 카드 모두 버린 후, 뽑기 +{draw}\n버린 카드 1장마다 전략 점수 +{strategy_each}"
 tx_2NQ79Z541T,이동
-tx_5S3Y4PZWTS,지정한 최외곽 적 포탑에 피해 8. 그 레인 전선에 적이 한 명도 없으면 피해 2배. 입힌 피해만큼의 성장 점수를 그 레인 아군이 나눠 받는다
-tx_078XVRBVH0,"뽑기 1장, 대상의 성장 효율 +5%"
-tx_J9JA1A653S,"뽑기 1장, 이 파일럿의 성장 적립 +5%"
+tx_5S3Y4PZWTS,지정한 최외곽 적 포탑에 피해 {turret_damage}. 그 레인 전선에 적이 한 명도 없으면 피해 {card_herald_unopposed_dmg_mult}배. 입힌 피해만큼의 성장 점수{eul} 그 레인 아군이 나눠 받는다
+tx_078XVRBVH0,"뽑기 {draw}장, 대상의 성장 효율 +{growth_perm}%"
+tx_J9JA1A653S,"뽑기 {draw}장, 이 파일럿의 성장 적립 +{growth_perm}%"
 tx_VYBKRVFG20,이동
-tx_88Z8A3NC37,"소지 중: 성장 +{charge*8|사용 횟수×8}%\n사용: 이 게임 동안 비용 +1, 소지 중 성장 +8%"
-tx_M56XC3K4QE,"공격력 +5%, 성장 +7%"
-tx_TF7GKXEQ30,"공격력 +5%, 체력 +5%. 뽑기 1장"
-tx_PPCM4J5N6A,5턴 동안 성장 +15%. 작전 단계 중 손에 들어오면 그 작전 단계 동안 비용 0
-tx_Z818WEC9V2,토큰을 모두 소모해 5턴 동안 성장 +{charge*10|충전 횟수×10}%
-tx_R0XZSX92HN,2턴 간 교전 — 대상 범위 내 모두 참여
-tx_TMRSQNE9TF,이동해 다음 작전 단계까지 그 자리에 머문다. 다음 작전 단계에 시전자의 교전 카드 찾기 1장
-tx_ZHFXJ9NS53,공격 2회. 대상이 시전자를 2회 공격
-tx_XPV2PXPJM8,소지 중: 전장 명중 +15%
-tx_697BZYWAQZ,소지 중: 양 옆 카드 비용 -1
-tx_5SCQTRV4MR,"다음 작전 단계 시작 시 전략 점수 +3, 뽑기 3장"
+tx_88Z8A3NC37,"소지 중: 성장 +{charge*{card_gold_rush_growth_per_token_pct}|토큰 수×{card_gold_rush_growth_per_token_pct}}%\n사용: 이 게임 동안 비용 +{self_cost}, 토큰 +{token}"
+tx_M56XC3K4QE,"공격력 +{atk_pct}%, 성장 +{growth_perm}%"
+tx_TF7GKXEQ30,"공격력 +{atk_pct}%, 체력 +{hp_pct}%. 뽑기 {draw}장"
+tx_PPCM4J5N6A,{growth_turns}턴 동안 성장 +{growth}%. 작전 단계 중 손에 들어오면 그 작전 단계 동안 비용 0
+tx_Z818WEC9V2,토큰{eul} 모두 소모해 {growth_turns}턴 동안 성장 +{charge*{growth}|충전 횟수×{growth}}%
+tx_R0XZSX92HN,{engage}턴 간 교전. 대상 범위 내 모두 참여
+tx_TMRSQNE9TF,이동해 다음 작전 단계까지 그 자리에 머문다. 다음 작전 단계에 시전자의 교전 카드 찾기 {ambush_search}장
+tx_ZHFXJ9NS53,공격 {attack}회. 대상이 시전자{eul} {retaliate}회 공격
+tx_XPV2PXPJM8,소지 중: 전장 명중 +{card_confidence_hit_bonus_pct}%
+tx_697BZYWAQZ,소지 중: 양 옆 카드 비용 -{card_clear_mind_cost_cut}
+tx_5SCQTRV4MR,"다음 작전 단계 시작 시 전략 점수 +{strategy_next_phase}, 뽑기 {draw_next_phase}장"
 tx_PVJBQ802WT,천둥 폭풍
 tx_8HP8T7ZWJH,천공의 일격
 tx_KQRS8C28PV,꿰뚫는 번개
@@ -365,68 +369,68 @@ tx_Y7VQ3CF1M8,확신
 tx_VADKXBYWKY,사형 선고
 tx_JNPQN78JF0,전장 내 모든 적 공격
 tx_2EM7FR668Z,공격
-tx_8J7JZK60VJ,아군 HQ 부터 대상 포탑 타일까지 모든 적과 포탑 공격. 적 포탑 파괴 시마다 덱에 1장 생성
-tx_688W5MT4FK,소지 중: 아무 카드나 사용할 때마다 시전자가 보유한 성장 점수의 4%만큼 성장 점수 획득
-tx_G8M4271EMY,버린 더미에서 찾기 1장
-tx_V7VRGW4E2A,"공격. 명중 시 전략 점수 +2, [캐시] 찾기"
-tx_EBV4NATSF5,토큰을 모두 소모해 대상 타일의 모든 적 공격 {charge|충전 횟수}회
-tx_SMQK1K7KVW,[미사일] 찾기 2장
-tx_2HPG2AS40R,대상 범위 내 모든 적과 포탑 공격. 명중한 만큼 손에 소멸·휘발성 [미사일] 생성
-tx_6X4HNDCZ2C,토큰을 모두 소모해 전장 내 무작위 적 공격 {charge+1|충전 횟수+1}회
+tx_8J7JZK60VJ,아군 HQ 부터 대상 포탑 타일까지 모든 적과 포탑 공격. 적 포탑 파괴 시마다 덱에 {mech_turret_kill_deck_cards}장 생성
+tx_688W5MT4FK,소지 중: 아무 카드나 사용할 때마다 시전자{i} 보유한 성장 점수의 {mech_cash_rate_pct}%만큼 성장 점수 획득
+tx_G8M4271EMY,버린 더미에서 찾기 {search_discard}장
+tx_V7VRGW4E2A,"공격. 명중 시 전략 점수 +{strategy}, [캐시] 찾기 {search_card_count}장"
+tx_EBV4NATSF5,토큰{eul} 모두 소모해 대상 타일의 모든 적 공격 {charge|충전 횟수}회
+tx_SMQK1K7KVW,[미사일] 찾기 {search_card_count}장
+tx_2HPG2AS40R,대상 범위 내 모든 적과 포탑 공격. 명중 1회마다 손에 소멸·휘발성 [미사일] {gen_hand_count}장 생성
+tx_6X4HNDCZ2C,토큰{eul} 모두 소모해 전장 내 무작위 적 공격 {charge+{attack_base}|충전 횟수+{attack_base}}회
 tx_YWSFNSENS1,소지 중: 적이 카드로 피해를 입을 때마다 그 적을 공격 (이 카드로 인한 피해 제외)
-tx_Z2YW81TPE6,시전자가 교전에 참여할 때 대상도 함께 참여
+tx_Z2YW81TPE6,시전자{i} 교전에 참여할 때 대상도 함께 참여
 tx_C4VPQGSWCK,이번 작전 단계 동안 이 메크가 피해를 입힌 적 모두 공격
-tx_448B4T57NE,범위 내 모든 적 공격. 1회 이상 명중 시 손에 [락온] 생성
-tx_EPR6SV4YCM,대상 범위 내 모든 적 공격. 1회 이상 명중 시 손에 [락온] 생성
-tx_FH052PHKSD,"뽑기 3장, 전략 점수 +2"
-tx_NVNVNRV9CV,대상의 타일로 이동. 3턴 간 교전
+tx_448B4T57NE,범위 내 모든 적 공격. 1회 이상 명중 시 손에 [락온] {gen_hand_count}장 생성
+tx_EPR6SV4YCM,대상 범위 내 모든 적 공격. 1회 이상 명중 시 손에 [락온] {gen_hand_count}장 생성
+tx_FH052PHKSD,"뽑기 {draw}장, 전략 점수 +{strategy}"
+tx_NVNVNRV9CV,대상의 타일로 이동. {engage}턴 간 교전
 tx_DA9WK7H4XT,이동
 tx_NNZJRNHF9P,공격
-tx_CGVRKSDCVG,4턴 간 교전 — 범위 내 모두 참여. 교전에서 생존할 시 처치한 적 수만큼 손에 [철거] 생성
-tx_GNVN8SF4TQ,밀기 2. 도중에 적이 없을 경우 추가 밀기 1
-tx_YQZZ1NX7CW,토큰 5 미만일 때 이 카드 제거. 토큰을 모두 소모해 최대 체력 25% 이하인 대상 처치
-tx_A7SQ01XZXJ,"공격. 명중 시 뽑기 1장, 토큰 +1"
-tx_49DTSHJHEX,이동. 이후 범위 내 모든 적 또는 포탑 공격 — 명중한 수만큼 토큰 +1
-tx_2V3BT9STT6,공격 2회
+tx_CGVRKSDCVG,{engage}턴 간 교전. 범위 내 모두 참여. 교전에서 생존할 시 처치한 적 1명마다 손에 [철거] {gen_hand_count}장 생성
+tx_GNVN8SF4TQ,밀기 {push}. 도중에 적이 없을 경우 추가 밀기 {push_bonus_clear}
+tx_YQZZ1NX7CW,토큰 {execute_charge} 미만일 때 이 카드 제거. 토큰{eul} 모두 소모해 최대 체력 {execute}% 이하인 대상 처치
+tx_A7SQ01XZXJ,"공격. 명중 시 뽑기 {draw}장, 토큰 +{charge}"
+tx_49DTSHJHEX,이동. 이후 범위 내 모든 적 또는 포탑 공격. 명중 1회마다 토큰 +{charge}
+tx_2V3BT9STT6,공격 {attack}회
 tx_DKVGQXAXNA,"대상과 {max(1, chain)|영혼 포식 명중 수}턴 간 교전"
-tx_WTZJ53SNH7,범위 내 모든 적 공격. 명중한 횟수마다 토큰 +1 및 시전자 체력 10% 회복. 토큰 수만큼 [전쟁의 사슬] 의 교전 턴이 증가
-tx_YPM1FF88MR,최대 체력 +20
-tx_D33QNEYP5R,공격. 명중 시 15턴 간 [추적]
-tx_4DX9VJS0JB,대상의 타일로 이동. 3턴 간 교전
-tx_QTKR6R244D,대상 최대 체력의 30% 회복 및 [반응 장갑] 1 부여
-tx_B49ZJVCFRB,범위 내 모든 적 및 포탑 필중 공격. 명중한 수만큼 자신에게 [반응 장갑] 1 부여
-tx_0RC6TG6RCS,5턴 간 교전 — 범위 내 모두 참여
-tx_9H6E53W0EW,대상과 자신이 2회씩 서로 공격. 대상의 공격은 필중
-tx_AX7SP29R5Z,전장 내 모든 적이 시전자를 필중 공격. 전략 점수 +4
-tx_4RPBKVD2TC,4턴 간 교전 — 범위 내 모두 참여
-tx_YT04HJAVXS,토큰 +50. [단계 A] 찾기
-tx_K2W48C2P3K,덱에 [단계 B] 생성. 대상에게 [목표] 부여
-tx_JCFDKSCVXT,"[목표]가 부여된 적 주변 1칸 이내 3턴 간 교전. 교전에서 적이 처치되면 덱에 [단계 C] 생성, 아니면 [단계 A] 생성"
-tx_5198GDXGZX,덱에 [단계 A] 생성. 강화 하나 선택 — 알파: 다음 [단계 A] 사용 시 덱이 아닌 손에 [단계 B] 생성 / 베타: 다음 [단계 B] 사용 시 토큰 +100 / 감마: 다음 [단계 C] 사용 시 성장 점수 +10%
-tx_R3NMXP56CN,소지 중: 교전 시작 시 토큰을 모두 소모해 체력이 가장 적은 적을 공격력 50%로 공격 {charge|충전 횟수}회
-tx_BCN9HQ1Y7D,[약자 멸시] 찾기. 이동. 이후 3턴 간 교전 — 범위 내 모두 참여
+tx_WTZJ53SNH7,범위 내 모든 적 공격. 명중 1회마다 토큰 +{charge} 및 시전자 체력 {heal_pct}% 회복. 토큰 수만큼 [전쟁의 사슬]의 교전 턴{i} 증가
+tx_YPM1FF88MR,최대 체력 +{max_hp}
+tx_D33QNEYP5R,공격. 명중 시 {track}턴 간 [추적]
+tx_4DX9VJS0JB,대상의 타일로 이동. {engage}턴 간 교전
+tx_QTKR6R244D,대상 최대 체력의 {heal_pct}% 회복 및 [반응 장갑] {reactive_armor} 부여
+tx_B49ZJVCFRB,범위 내 모든 적 및 포탑 필중 공격. 명중 1회마다 자신에게 [반응 장갑] {reactive_armor} 부여
+tx_0RC6TG6RCS,{engage}턴 간 교전. 범위 내 모두 참여
+tx_9H6E53W0EW,대상과 자신이 {mutual_attack}회씩 서로 공격. 대상의 공격은 필중
+tx_AX7SP29R5Z,전장 내 모든 적이 시전자{eul} 필중 공격. 전략 점수 +{strategy}
+tx_4RPBKVD2TC,{engage}턴 간 교전. 범위 내 모두 참여
+tx_YT04HJAVXS,토큰 +{charge}. [단계 A] 찾기 {search_card_count}장
+tx_K2W48C2P3K,덱에 [단계 B] {gen_deck_count}장 생성. 대상에게 [목표] 부여
+tx_JCFDKSCVXT,"[목표]가 부여된 적 주변 {engage_self_range}칸 이내 {engage}턴 간 교전. 교전에서 적이 처치되면 덱에 [단계 C] {phase_b_count}장 생성, 아니면 [단계 A] {phase_b_count}장 생성"
+tx_5198GDXGZX,덱에 [단계 A] {gen_deck_count}장 생성. 강화 하나 선택\n알파: 다음 [단계 A] 사용 시 덱{i} 아닌 손에 [단계 B] 생성\n베타: 다음 [단계 B] 사용 시 토큰 +{mech_phase_boon_beta_charge}\n감마: 다음 [단계 C] 사용 시 성장 점수 +{mech_phase_boon_gamma_rate_pct}%
+tx_R3NMXP56CN,소지 중: 교전 시작 시 토큰{eul} 모두 소모해 체력{i} 가장 적은 적을 공격력 {engage_contempt_dmg_mult_pct}%로 공격 {charge|충전 횟수}회
+tx_BCN9HQ1Y7D,[약자 멸시] 찾기 {search_card_count}장. 이동. 이후 {engage}턴 간 교전. 범위 내 모두 참여
 tx_8FMSQ09F35,이동. 이후 범위 내 모든 적 공격
 tx_FRGPH6CYX7,손에서 이 카드보다 왼쪽의 모든 카드 버리기. 버린 수만큼 뽑기
-tx_HBEZ5EBKC0,"손의 가장 오른쪽 카드 2장 버리기, 뽑기 2장. 대상 공격 — 대상 위치로 이동하며 이번 작전 단계가 끝나면 이전 위치로 복귀"
-tx_FVZW5PXN3H,손의 가장 오른쪽 카드 2장 버리기. 이번 작전 단계에서 피해를 입힌 적들을 다시 공격
-tx_HP6SF4N2PN,대상 1칸 이동
-tx_PKYA2BZD4J,범위 내 모든 적을 시전자 타일로 이동. 4턴 간 교전 — 시전자 주변 1칸 모두 참여
-tx_52YX26E4KK,5턴 동안 대상이 얻는 성장 점수와 동일한 성장 점수 획득
-tx_77KHMP4PZV,아군 또는 적이 처치될 때마다 이 카드를 손에 생성. 대상 체력 30% 회복 및 대상 범위 내 모든 적 공격
-tx_ZS7CFWQ0VS,버리기 1장. 덱에 [공격 명령] 생성
-tx_FYQ04QVGFD,"공격. 명중 시 대상 범위 내 3턴 간 교전, 빗나갈 시 전략 점수 +4"
-tx_71ZZ55QRCS,대상에게 시전자 공격력의 200% 보호막 부여
-tx_GC8TZWVVQ1,전장 내 모든 아군에게 시전자 공격력의 200% 보호막 부여
+tx_HBEZ5EBKC0,"손의 가장 오른쪽 카드 {discard_right}장 버리기, 뽑기 {draw}장. 대상 위치로 이동해 대상 공격. 이번 작전 단계{i} 끝나면 이전 위치로 복귀"
+tx_FVZW5PXN3H,손의 가장 오른쪽 카드 {discard_right}장 버리기. 이번 작전 단계에서 피해를 입힌 적들을 다시 공격
+tx_HP6SF4N2PN,대상 {move_target}칸 이동
+tx_PKYA2BZD4J,범위 내 모든 적을 시전자 타일로 이동. {engage}턴 간 교전. 시전자 주변 {engage_self_range}칸 모두 참여
+tx_52YX26E4KK,{growth_link}턴 동안 대상이 얻는 성장 점수{wa} 동일한 성장 점수 획득
+tx_77KHMP4PZV,아군 또는 적이 처치될 때마다 이 카드를 손에 {mech_death_hand_cards}장 생성. 대상 체력 {heal_pct}% 회복 및 대상 범위 내 모든 적 공격
+tx_ZS7CFWQ0VS,버리기 {discard}장. 덱에 [공격 명령] {gen_deck_count}장 생성
+tx_FYQ04QVGFD,"공격. 명중 시 대상 범위 내 {engage}턴 간 교전, 빗나갈 시 전략 점수 +{strategy}"
+tx_71ZZ55QRCS,대상에게 시전자 공격력의 {shield_atk}% 보호막 부여
+tx_GC8TZWVVQ1,전장 내 모든 아군에게 시전자 공격력의 {shield_atk}% 보호막 부여
 tx_JCJTQREPN3,대상이 다음 교전에서 적에게 피해를 주면 그 적을 [기절]. 한 교전 내에 같은 적에게 두 번 이상 적용되지 않음
 tx_3EM1YTK1F0,공격. 명중 시 대상은 이번 작전 단계 동안 교전 참여 불가
-tx_HNMHMDJQAW,버린 더미에서 뽑기 3장. 이번 작전 단계 동안 해당 카드들 비용 -1
-tx_P31PSDYTQK,소지 중: 이 메크의 다른 카드가 성장 점수를 소모하지 않음
-tx_XW6K7VHSXD,시전자의 성장 점수 100 소모 및 대상이 전장 이탈까지 성장 효율 +20%
-tx_3X4DE25KTY,시전자의 성장 점수 100 소모 및 대상 최대 체력 +20
-tx_EPJQNJA7F7,시전자의 성장 점수 100 소모 및 대상 공격력 +2
-tx_RHE0637Z32,"대상은 전장 이탈까지 받는 피해 +25%, 대상의 성장 점수 10%만큼 [현상금] 지정. 중첩되지 않음"
-tx_70N6FJ3FJ0,공격 — 대상의 [현상금] 2%만큼 피해
-tx_1MFHFCFRJE,대상을 시전자의 타일로 이동. 3턴 간 교전 — 범위 내 모두 참여
+tx_HNMHMDJQAW,버린 더미에서 뽑기 {draw_discard}장. 이번 작전 단계 동안 해당 카드들 비용 -{draw_discard_cost_reduce}
+tx_P31PSDYTQK,소지 중: 이 메크의 다른 카드가 성장 점수{eul} 소모하지 않음
+tx_XW6K7VHSXD,시전자의 성장 점수 {score_cost} 소모 및 대상이 전장 이탈까지 성장 효율 +{growth_eff}%
+tx_3X4DE25KTY,시전자의 성장 점수 {score_cost} 소모 및 대상 최대 체력 +{max_hp}
+tx_EPJQNJA7F7,시전자의 성장 점수 {score_cost} 소모 및 대상 공격력 +{atk_add}
+tx_RHE0637Z32,"대상은 전장 이탈까지 받는 피해 +{dmg_taken}%, 대상의 성장 점수 {bounty}%만큼 [현상금] 지정. 중첩되지 않음"
+tx_70N6FJ3FJ0,공격. 대상의 [현상금] {attack_bounty}%만큼 피해
+tx_1MFHFCFRJE,대상을 시전자의 타일로 이동. {engage}턴 간 교전. 범위 내 모두 참여
 tx_XJ3733JBC4,능력치
 tx_YD2EQQHJ2J,샐러리
 tx_DWRZXTZQ0S,성장
@@ -447,10 +451,10 @@ tx_6GEAQ9MXY6,다음
 tx_HSQ15CV8Y2,파일럿 카드 · 돌파로 교체됨
 tx_XACDTDAQPV,미보유 선수는 레벨업할 수 없습니다
 tx_BJC1VNRZ53,최대 레벨입니다 (Lv {level})
-tx_BVZ98DQNCY,레벨업 재화가 부족합니다 ({cost} 필요 · 보유 {have})
-tx_KQ3ABKZKS0,레벨업 재화 {have} 보유 · 최대 레벨 +1 = 런에서 고를 수 있는 레벨 +1
+tx_BVZ98DQNCY,레벨업 재화{i} 부족합니다 ({cost} 필요 · 보유 {have})
+tx_KQ3ABKZKS0,레벨업 재화 {have} 보유 · 최대 레벨 +{pilot_max_level_gain} = 런에서 고를 수 있는 레벨 +{pilot_max_level_gain}
 tx_92R8M8EJTT,레벨업  ·  {cost}
-tx_97RM66T6H0,Lv {level} — 저장 실패: {error}
+tx_97RM66T6H0,Lv {level} · 저장 실패: {error}
 tx_8R6YZ1P81K,최대 레벨 Lv {level} 달성
 tx_2AGPWN10YF,아직 보유하지 않은 선수입니다.\n상점의 선수 가챠나 파편 확정 구매로 영입합니다.
 tx_5MS4DQRXJH,선수 데이터를 읽지 못했습니다: {error}
@@ -459,9 +463,8 @@ tx_0QNPGM6VF5,상점에서 영입
 tx_6K04AA443J,선수 EXP
 tx_JEPJHXHB1A,훈련 EXP 보너스 (돌파)
 tx_FN1RTFB39A,초록 숫자 = Lv1 · 돌파 전 대비
-tx_E8MWC8R25R,돌파 — 중복 영입마다 한 단계
+tx_E8MWC8R25R,돌파: 중복 영입마다 한 단계
 tx_MJR84KHMPT,돌파 표 없음
-tx_WEMGESKYB6,보유 선수
 tx_YEC6P2JRFH,선수 파편
 tx_H1V09QCXSD,단기 훈련 코치
 tx_E731FZHB4R,전술 컨설턴트
@@ -476,26 +479,26 @@ tx_4X4R7Q6VE3,성과 연동 스폰서
 tx_CR5B3MEQ0F,지역 스폰서 계약
 tx_CNAP5S2H1J,유지보수 연기
 tx_56NJTYE5NP,연봉 재협상
-tx_D5VD2D1QSZ,외부 훈련 코치와 2주 단기 계약 — 감독의 훈련 스탯이 오른다
-tx_781QQNNW5K,전술 컨설턴트를 2주 초빙 — 감독의 전술 스탯이 오른다
-tx_C5S13WVDT1,메크 연구원을 2주 초빙 — 감독의 지식 스탯이 오른다
-tx_F73ZGB2PTV,외부 분석관과 2주 계약 — 감독의 분석 스탯이 오른다
-tx_2CC1KKTKKB,스포츠 심리 상담사를 2주 초빙 — 감독의 멘탈 스탯이 오른다
-tx_DA86MFNRT5,재무 자문과 3주 계약 — 감독의 관리 스탯이 올라 수입 · 유지비가 나아진다
-tx_RTR0ZTKS94,한 주 동안 숙소를 빌려 훈련에만 집중한다
-tx_KHZNSXNXC1,2주 해외 전지훈련 — 시설이 갖춰진 팀만 꾸릴 수 있다
-tx_86FED5D6GK,대형 광고 캠페인 — 큰돈이 들지만 4주 동안 스폰서 수입이 오른다
+tx_D5VD2D1QSZ,외부 훈련 코치와 {weeks}주 단기 계약. 감독의 훈련 능력치가 오른다
+tx_781QQNNW5K,전술 컨설턴트를 {weeks}주 초빙. 감독의 전술 능력치가 오른다
+tx_C5S13WVDT1,메크 연구원을 {weeks}주 초빙. 감독의 지식 능력치가 오른다
+tx_F73ZGB2PTV,외부 분석관과 {weeks}주 계약. 감독의 분석 능력치가 오른다
+tx_2CC1KKTKKB,스포츠 심리 상담사를 {weeks}주 초빙. 감독의 멘탈 능력치가 오른다
+tx_DA86MFNRT5,재무 자문과 {weeks}주 계약. 감독의 관리 능력치가 올라 수입 · 유지비가 나아진다
+tx_RTR0ZTKS94,{weeks}주 동안 숙소를 빌려 훈련에만 집중한다
+tx_KHZNSXNXC1,{weeks}주 해외 전지훈련. 시설이 갖춰진 팀만 꾸릴 수 있다
+tx_86FED5D6GK,대형 광고 캠페인. 큰돈이 들지만 {weeks}주 동안 스폰서 수입이 오른다
 tx_XAR8PQMZNV,지난 주 전승한 팀에게만 들어오는 성과 연동 스폰서 계약
-tx_3N2P9M4E9W,저예산 팀용 지역 스폰서 — 수입이 늘지만 홍보 일정이 훈련 시간을 조금 잡아먹는다
-tx_AXEKA79XKE,잔고가 바닥일 때 시설 유지보수를 2주 미룬다 — 유지비가 없지만 사건이 잦아진다
-tx_MB49GSHBFN,잔고가 바닥일 때 스태프 연봉을 3주 깎는다 — 사기가 떨어져 훈련 효율이 준다
+tx_3N2P9M4E9W,저예산 팀용 지역 스폰서. 수입이 늘지만 홍보 일정이 훈련 시간을 조금 잡아먹는다
+tx_AXEKA79XKE,잔고가 바닥일 때 시설 유지보수를 {weeks}주 미룬다. 유지비가 없지만 사건이 잦아진다
+tx_MB49GSHBFN,잔고가 바닥일 때 스태프 연봉을 {weeks}주 깎는다. 사기가 떨어져 훈련 효율이 준다
 tx_1HENHSWBBV,삭감
 tx_511JE6DQB1,한 번 더 눌러 확정
 tx_J4YTK7VVDS,진행 중인 런이 없습니다
 tx_Z3Y66BXDFR,잔고
 tx_FG04N4WSYY,시설 적립금
 tx_DM158Y7SJ6,지난 주 정산
-tx_M06VBCHAA0,아직 정산 기록이 없습니다 — 일요일 주 마감에 정산됩니다
+tx_M06VBCHAA0,아직 정산 기록이 없습니다. 일요일 주 마감에 정산됩니다
 tx_MXXEN4NZT8,순수지
 tx_SQF813637S,흑자 배분
 tx_JFNB4YBFQ3,특별 지출
@@ -508,18 +511,18 @@ tx_FWWJNTNYP8,훈련 · 복지 지원 중단
 tx_BVZ04VJAS3,시설 적립금 {amount} 전용
 tx_XTVPW36TS4,시설 Lv{from} → Lv{to} 강등 (미납 {amount})
 tx_C839D4YFV0,훈련 지원 삭감 {weeks}주 (훈련 EXP −{pct}%)
-tx_HQQ1QK18GW,재무 적자 {net} · 긴급 삭감 {n}건 — 재무 카드 확인
+tx_HQQ1QK18GW,재무 적자 {net} · 긴급 삭감 {n}건. 재무 카드 확인
 tx_4RHZPMT3BW,재무 정산 {net} · 잔고 {balance}
 tx_VZWSGDJMJA,특별 지출 {amount}
 tx_BJG2P5WWYS,만료: {names}
 tx_1PAC25VTPQ,자금 부족
 tx_5MQ91AQVZZ,알 수 없는 항목
-tx_4YVAEG0ECQ,진행 중 — {weeks}주 남음
+tx_4YVAEG0ECQ,진행 중 ({weeks}주 남음)
 tx_WPMNRYDWSD,동시 진행 최대 {n}건
 tx_D7GGSYDVRX,담당 {name} 쪽이 더 높아 효과 없음
 tx_RTHA5YAC79,스태프 연봉이 없어 효과 없음
 tx_P3Y8G1KRE6,유지비가 없어 효과 없음
-tx_9QH0GWP11D,잔고 부족 — {amount} 필요
+tx_9QH0GWP11D,잔고 부족 ({amount} 필요)
 tx_X1R51424TJ,조건 오류
 tx_748T0JD0MH,시설 Lv{n} 이상 필요
 tx_CEHH3QBFTP,시설 Lv{n} 이하 팀 전용
@@ -538,11 +541,11 @@ tx_MPW438S5J7,첫 정산 전
 tx_Q52XWB8S4X,지난 주 {net}
 tx_MKKQ4Z5M2Y,지난 주 {net} · 삭감
 tx_JH732MWHD3,재무 · 시설
-tx_QGCKXQ941D,담당: 감독 — 흑자 배분을 직접 정합니다
-tx_7QKSR4PVYS,담당: {name} — 흑자를 자동으로 배분합니다
+tx_QGCKXQ941D,담당: 감독. 흑자 배분을 직접 정합니다
+tx_7QKSR4PVYS,담당: {name}. 흑자를 자동으로 배분합니다
 tx_C696EEJ9Z1,"이번 주 예상 수지 {net}  (수입 {income} · 지출 {expense}, 보너스 포함)"
-tx_6FBWWWX3V2,잔고가 한 주 고정 지출({amount})보다 적습니다 — 적자가 나면 강제 삭감
-tx_QBK71YGSAE,훈련 지원 삭감 중 — {weeks}주 남음 (훈련 EXP −{pct}%)
+tx_6FBWWWX3V2,잔고가 한 주 고정 지출({amount})보다 적습니다. 적자가 나면 강제 삭감
+tx_QBK71YGSAE,훈련 지원 삭감 중: {weeks}주 남음 (훈련 EXP −{pct}%)
 tx_GZYPKCSGMH,성적 보너스 ({win}승 {loss}패)
 tx_P32YKYKYRT,스태프 연봉
 tx_00XQNCZFRD,→ 잔고 적립 {reserve} · 훈련 {training} · 시설 적립 {facility} · 복지 {welfare}
@@ -550,22 +553,22 @@ tx_A2CBRDMBY4,삭감 · {cut}
 tx_EBDF62NZNS,특별 지출 −{amount} (구매 즉시 잔고에서 차감 · {names})
 tx_BA5XCYYSAC,특별 지출 만료 · {names}
 tx_25PKBYA5Q3,"흑자의 {pct}%는 잔고에 남고, 나머지를 세 곳에 나눕니다. 효과는 다음 한 주."
-tx_YMK6HF0KET,{name} 담당 — 자동 균등 배분 (무난하지만 최적은 아닙니다)
+tx_YMK6HF0KET,{name} 담당. 자동 균등 배분 (무난하지만 최적은 아닙니다)
 tx_PDF6M4TMFX,다음 주 훈련 EXP 최대 +{pct}% (주 {amount} 지출에서 최대)
 tx_J9HW9G18D4,업그레이드 자금으로 모읍니다 · 적자 때 비상금
-tx_4DNE40K656,최고 레벨 — 적자 때 비상금으로만 쓰입니다
+tx_4DNE40K656,최고 레벨. 적자 때 비상금으로만 쓰입니다
 tx_2Y4X334GGR,다음 주 사건 확률 최대 −{pct}% (주 {amount} 지출에서 최대)
 tx_5CEBKKHSAS,이번 주 적용 중: 훈련 EXP +{training}% · 사건 확률 −{welfare}%
 tx_2HH94J6ARY,시설  Lv {level} / {max}
 tx_CPW59P2CKT,지금  {effects}
 tx_KWW448S0GH,다음  {effects}
 tx_SAXP078SDD,훈련 ×{train} · 숙련도 ×{mastery} · 사건 ×{incident} · 수입 ×{income} · 유지비 {upkeep}
-tx_YN9S7WB6S4,"비용 {cost} — 시설 적립금 먼저, 모자라면 잔고 (가용 {available})"
+tx_YN9S7WB6S4,"비용 {cost}: 시설 적립금 먼저, 모자라면 잔고 (가용 {available})"
 tx_JTTYE38FPY,시설 업그레이드 → Lv {level}
 tx_63XDT8NVFN,한 번 더 눌러 확정 (−{cost})
-tx_XHH41J8S28,자금 부족 — {amount} 필요
+tx_XHH41J8S28,자금 부족 ({amount} 필요)
 tx_SBD8ZAF5DC,잔고에서 바로 냅니다 · 효과는 정해진 주 수 동안 (동시 {n}건까지)
-tx_S2XBTE0K8X,진행 중 · {name} — {effect} · {weeks}주 남음
+tx_S2XBTE0K8X,진행 중 · {name}: {effect} · {weeks}주 남음
 tx_MVMJCRNWYR,{effect} · {weeks}주
 tx_JQ9XJ51YJ0,구매  {price}
 tx_N87J4KZFF1,계약  무료
@@ -574,7 +577,8 @@ tx_6DZQQSQ3VE,스폰서 수입 (시설 ×{facility})
 tx_1ZGSEKD4JD,스폰서 수입 (시설 ×{facility} · 보정 ×{mult})
 tx_VGMAD0GE7N,시설 유지비
 tx_5ATMNYAZ8A,시설 유지비 (보정 ×{mult})
-tx_S8GB2PQJET,턴\n넘기기
+tx_S8GB2PQJET,"턴
+넘기기"
 tx_5R34V4TK24,당신의 차례
 tx_Y3YPZRFYP0,상대 차례
 tx_TMPV0HMGH4,다음 →
@@ -595,14 +599,12 @@ tx_0D83B3BXPJ,다음 {n}
 tx_AXVQDH455A,다음 뽑기 {n}
 tx_K2TW9E6P0S,처치 +{n}
 tx_PZ3FF17CJS,찾기 {n}
-tx_T4AQ20H32S,충전식
-tx_4E9EYFHCMT,패시브
 tx_QTZR66E1TH,스킬 없음
 tx_D6RF6A0BB1,초상화 없음
 tx_R7705DVY0V,메크 미배정
 tx_YW85GRB6H1,부활까지 {n}턴
 tx_QYZSXYDBGH,라인
-tx_48PKBPN65P,라인전 스탯
+tx_48PKBPN65P,라인전 능력치
 tx_YR9NHRBBHY,회피
 tx_Q7B8HCWAYY,전장 회피 (카드)
 tx_2955G7QSVP,매복
@@ -664,7 +666,7 @@ tx_B8MQ74WDJZ,전장 명중 판정에만 곱해진다. 교전 무대는 자기 �
 tx_1Z076S4PF9,성장이 아니라 성장치 적립에 곱해진다. 안전한 파밍과 완벽한 마무리가 같은 칸을 쓴다.
 tx_3PBASH0HTY,카드가 얹은 임시 가산분. 성장 재계산에 지워지지 않는다.
 tx_9GBQDV90TD,피해를 체력보다 먼저 먹는다. 본진 복귀 시 사라진다.
-tx_XCY75J2M5N,"기체 스탯이 파일럿의 기본값이 되고, 거기서 성장이 붙는다."
+tx_XCY75J2M5N,"기체 능력치{i} 파일럿의 기본값이 되고, 거기서 성장이 붙는다."
 tx_8WZGVJ6X01,MVP
 tx_RZN79649QG,MATCH MVP
 tx_TWDEFMDMTZ,인게임
@@ -673,23 +675,23 @@ tx_840PD89SBP,메크
 tx_KXN7MDVXDA,추적
 tx_Q2YD01V4X9,대상이 교전에 참여하면 시전자도 함께 참여한다
 tx_HPPDS4VKWD,반응 장갑
-tx_8224R3117V,공격당하면 그 피해를 90% 줄이고 1 사라진다. 전장을 떠나면 모두 사라진다
+tx_8224R3117V,공격당하면 그 피해를 {mech_reactive_armor_cut_pct}% 줄이고 1 사라진다. 전장을 떠나면 모두 사라진다
 tx_DG1DJNPNVF,목표
-tx_M9AXFZ0YJD,시전자에게 받는 피해 +15%. 새 목표를 정하면 이전 목표는 풀린다
+tx_M9AXFZ0YJD,시전자에게 받는 피해 +{mark_target}%. 새 목표{eul} 정하면 이전 목표{eun} 풀린다
 tx_WSY436KCVQ,현상금
 tx_DYE6YP50R9,대상의 성장 점수 일부를 값으로 매긴 표식. 확신 카드의 피해가 이 값에 비례한다
 tx_EQ77MGHTT1,기절
 tx_5Y0V13GVXR,교전에서 자기 차례 한 번을 건너뛴다
 tx_WAPNWFECJE,취약
-tx_GV1PNFZR9T,1마다 받는 피해 +1%
+tx_GV1PNFZR9T,1마다 받는 피해 +{mech_vulnerable_per_stack_pct}%
 tx_D1T42QFP6V,소멸
 tx_A2PYQPKVJM,사용하면 이 게임에서 사라진다
 tx_SJ5QM4RPT6,보존
 tx_EGQP5BBD6K,버려지지 않는다
 tx_XT72XP34EJ,휘발성
-tx_SSYPBCVHEE,버려지면 더미로 가지 않고 사라진다
+tx_SSYPBCVHEE,버려지면 버린 더미로 가지 않고 사라진다
 tx_HHR746K1D3,충전
-tx_FGE0Q8F8K1,손에 들어올 때마다 토큰 +1 (최대 {max})
+tx_FGE0Q8F8K1,손에 들어올 때마다 토큰 +{card_charge_hand_gain} (최대 {max})
 tx_VDYX47TMCF,재배치
 tx_HN02EYXPVV,사용 후 손 맨 왼쪽으로 돌아온다
 tx_6ABJNCRSQX,충전 {max}
@@ -752,18 +754,18 @@ tx_QR44K4G430,특성권
 tx_A0BZZABE9N,파편
 tx_D3T88QT9G4,감독 유형 저장 실패: {error}
 tx_Z7T7H6V81J,감독 유형 선택
-tx_MC13K8N0V7,프레스티지 — 감독 유형 재선택
-tx_M5J8SX6BBY,첫 런을 시작하기 전에 감독 유형을 고르세요. 스태프가 없는 영역은 감독 스탯으로 운영합니다.
+tx_MC13K8N0V7,프레스티지: 감독 유형 재선택
+tx_M5J8SX6BBY,첫 런을 시작하기 전에 감독 유형을 고르세요. 스태프가 없는 영역은 감독 능력치로 운영합니다.
 tx_R46BWWGHGJ,새 감독 유형을 고르면 프레스티지가 끝납니다. 같은 유형을 다시 골라도 됩니다.
 tx_PWF07A5A7H,이후 변경은 프레스티지로만 가능합니다.
-tx_JBCN4AT26F,Lv1 · 스탯 제거가 초기화됩니다.
+tx_JBCN4AT26F,감독 레벨과 감독 능력치 제거가 초기화됩니다.
 tx_DQC9ZE38ES,유형을 고르세요
 tx_XPFT0WY8DB,{type} 감독으로 시작
 tx_K1ZQ410BJ2,{type} 감독으로 프레스티지
 tx_J99WKD5PN8,운영형
 tx_KQSXCRDMQT,실전형
-tx_T2Z72WAY5Q,조직 운영에 밝은 감독 — 관리 · 멘탈 쪽으로 조금 기운 고른 분배
-tx_PVYTSHGS8N,현장 출신 감독 — 훈련 · 지식 쪽으로 조금 기운 고른 분배
+tx_T2Z72WAY5Q,조직 운영에 밝은 감독. 관리 · 멘탈 쪽으로 조금 기운 고른 분배
+tx_PVYTSHGS8N,현장 출신 감독. 훈련 · 지식 쪽으로 조금 기운 고른 분배
 tx_BGMWN33W4F,프리셋 {n}
 tx_4T5M5K3V6Y,재설정 필요
 tx_CQAMS06S3H,● 사용 중
@@ -782,34 +784,34 @@ tx_KH3QMFGTYE,감독이 직접 관리해 흑자 {n}주 (한 런)
 tx_CN4XCZ8HA8,런 {n}회 완료
 tx_YFW3R69TW6,{team} 팀으로 한 페이즈 이상 마치기
 tx_TFTZTARDWX,보너스 점수 {n} 이상으로 한 페이즈 이상 마치기
-tx_W3RT98C0SS,알 수 없는 스탯
+tx_W3RT98C0SS,알 수 없는 감독 능력치
 tx_TA4GEJM732,제거 포인트가 없습니다
-tx_MWVEPEZET8,1 인 스탯은 낮출 수 없습니다
+tx_MWVEPEZET8,감독 능력치{eun} {min} 아래로 낮출 수 없습니다
 tx_T1BFS0GSGZ,더 뺄 전문화 포인트가 없습니다
 tx_W7C3ZRF4RR,남은 전문화 포인트가 없습니다
-tx_DA5HH0PHWQ,스탯 상한 {cap}
+tx_DA5HH0PHWQ,감독 능력치 상한 {cap}
 tx_BKV964Z3VV,프리셋이 없습니다
-tx_Q8H1F03VCP,프레스티지 프리셋 — 지금 포인트로 재설정해야 쓸 수 있습니다
+tx_Q8H1F03VCP,프레스티지 프리셋. 지금 포인트로 재설정해야 쓸 수 있습니다
 tx_58W8XQG7XP,전문화 포인트 초과 ({used} / {total})
 tx_HYK8X0Y1FR,전문화 포인트가 음수입니다
-tx_Y4C38QBE7Z,{stat} 스탯 상한 {cap} 초과
+tx_Y4C38QBE7Z,{stat} 능력치 상한 {cap} 초과
 tx_SM2J7D8VWD,감독 Lv{level} 부터 프레스티지할 수 있습니다
 tx_1TPBDD4JDD,아직 잠긴 특성입니다
-tx_HQVBRC7GPZ,장착 칸이 가득 찼습니다 ({n}칸) — 하나를 빼고 고르세요
+tx_HQVBRC7GPZ,장착 칸이 가득 찼습니다 ({n}칸). 하나를 빼고 고르세요
 tx_6ZMPGY904G,이 프리셋 사용
 tx_G60RQZ2M86,사용 중
 tx_PBX5T726N6,저장 후 사용
 tx_VP2K42B9Z4,저장
 tx_WM0N1FR8F2,저장됨
-tx_PW7CEB3PC4,저장할 수 없습니다 — {error}
-tx_5N2ANQY6KC,사용할 수 없습니다 — {error}
-tx_2AS2JFBWZ3,{preset} — 다음 런에 사용합니다
+tx_PW7CEB3PC4,저장할 수 없습니다: {error}
+tx_5N2ANQY6KC,사용할 수 없습니다: {error}
+tx_2AS2JFBWZ3,{preset}: 다음 런에 사용합니다
 tx_E078H6ENKH,{preset} 저장됨
 tx_E63PYF62MR,{type} 감독
 tx_JRKT78EBDX,프레스티지 {n}회
 tx_N88PJGGH8P,프레스티지
 tx_P6CE6V2BZ8,Lv{level} 프레스티지
-tx_G63N72TB77,레벨업마다 제거 포인트 {n} · 스탯 하나를 영구히 낮추면 전문화 포인트 1
+tx_G63N72TB77,레벨업마다 제거 포인트 {n} · 감독 능력치 하나를 영구히 낮추면 전문화 포인트 {gain}
 tx_R5JTRZW8YZ,제거 포인트 {n}
 tx_3D2K7Z42ST,전문화 포인트 {used} / {total}
 tx_W2GGDAXSS9,최종 = 유형 − 제거 + 전문화 · 상한 {cap}
@@ -820,18 +822,18 @@ tx_N00VCXQP2R,저장하지 않은 변경이 있습니다
 tx_PC4VC518EH,{from} 의 변경을 버리고 {to} 로 넘어갈까요?
 tx_KGQJMSCC5A,버리고 이동
 tx_RK53KKTVV9,프레스티지 프리셋은 재설정한 뒤에 고칠 수 있습니다
-tx_E7VHX9Q864,보너스 점수가 0 미만 — 이대로는 저장할 수 없습니다
-tx_VXPQ8NAT9G,{stat} 스탯을 낮출까요?
-tx_BG6S0NCNW3,제거 포인트 1을 써서 {stat} 기본값을 {from} → {to} 로 영구히 낮춥니다(모든 프리셋).\n대신 전문화 포인트 1을 얻습니다.\n프레스티지 전까지 되돌릴 수 없습니다.
-tx_7WYGFMVN1R,{stat} −1 — 전문화 포인트 +1
-tx_KXJ7B4DMZ8,{preset} 재설정됨 — 전문화 포인트를 다시 나누세요
+tx_E7VHX9Q864,보너스 점수가 0 미만. 이대로는 저장할 수 없습니다
+tx_VXPQ8NAT9G,{stat} 능력치를 낮출까요?
+tx_BG6S0NCNW3,제거 포인트 1을 써서 {stat} 기본값을 {from} → {to} 로 영구히 낮춥니다(모든 프리셋).\n대신 전문화 포인트를 {gain} 얻습니다.\n프레스티지 전까지 되돌릴 수 없습니다.
+tx_7WYGFMVN1R,"{stat} −{drop}, 전문화 포인트 +{gain}"
+tx_KXJ7B4DMZ8,{preset} 재설정됨. 전문화 포인트를 다시 나누세요
 tx_7521E3DYNY,프레스티지할까요?
-tx_CZ8J9C4GP0,"Lv1 로 돌아가고 스탯 제거가 풀리며, 감독 유형을 다시 고릅니다.\n기존 프리셋은 재설정 후 사용 · 새 프리셋 +1.\n보상: {rewards}"
-tx_9T0XXJTV5D,"Lv1 로 돌아가고 스탯 제거가 풀리며, 감독 유형을 다시 고릅니다.\n기존 프리셋은 재설정 후 사용 · 새 프리셋 +1.\n보상: {rewards}\n(저장하지 않은 프리셋 변경은 버려집니다)"
+tx_CZ8J9C4GP0,"Lv1 로 돌아가고 감독 능력치 제거가 풀리며, 감독 유형을 다시 고릅니다.\n기존 프리셋은 재설정 후 사용 · 새 프리셋 +{presets}.\n보상: {rewards}"
+tx_9T0XXJTV5D,"Lv1 로 돌아가고 감독 능력치 제거가 풀리며, 감독 유형을 다시 고릅니다.\n기존 프리셋은 재설정 후 사용 · 새 프리셋 +{presets}.\n보상: {rewards}\n(저장하지 않은 프리셋 변경은 버려집니다)"
 tx_BMK6ZN3V5X,유형 고르기
-tx_P896WEQNY0,프레스티지 완료 — {rewards}
+tx_P896WEQNY0,프레스티지 완료: {rewards}
 tx_XHV95P4ZR7,장착 {n} / {max}
-tx_C89E7AZ489,보유 특성 {n} — 눌러서 장착 / 해제
+tx_C89E7AZ489,보유 특성 {n} (눌러서 장착 / 해제)
 tx_N8R29A5R8G,잠긴 특성 {n}
 tx_Q7PEKJNA02,부정 특성 제공 +{gain} · 긍정 특성 소모 −{cost}
 tx_5BMYK6AN8W,0 미만이면 저장 · 사용할 수 없습니다
@@ -846,14 +848,14 @@ tx_TK0RD2JPFF,장착 중
 tx_G048A7DZEH,빈 칸
 tx_CT0XBF6ME9,특성
 tx_0TVPZHMHDQ,보너스 점수
-tx_JNX31TB32C,프리셋 — 전문화 분배 + 특성
-tx_96VG8VVT6V,프레스티지 프리셋 — 재설정해야 쓸 수 있습니다
+tx_JNX31TB32C,프리셋: 전문화 분배 + 특성
+tx_96VG8VVT6V,프레스티지 프리셋. 재설정해야 쓸 수 있습니다
 tx_JXE6K3B8JS,"전문화 분배가 비워지고, 특성은 그대로 남습니다"
-tx_BG420X1TPQ,감독 스탯
-tx_GYJVQGJEM9,없음 — 기벽 훈련 타일 · 메크 연구로 얻는다
+tx_BG420X1TPQ,감독 능력치
+tx_GYJVQGJEM9,없음. 기벽 훈련 타일 · 메크 연구로 얻는다
 tx_WZDGTR97KE,진행 중인 런이 없다
 tx_43FCJDADR5,코치에게 맡기기
-tx_S3TMQTME0B,메크 코치가 없다 — 선수마다 직접 연구 메크를 고른다
+tx_S3TMQTME0B,메크 코치가 없다. 선수마다 직접 연구 메크를 고른다
 tx_9795WB8ABE,미숙
 tx_A871893SYV,보통
 tx_VBZCYYXC6P,능숙
@@ -866,9 +868,9 @@ tx_H26DNEN9EX,연구 메크 미지정 {n}명
 tx_AYCQXCCH15,{n} / {total} 지정
 tx_5XP7EXN0MZ,담당: {name}   ·   지식 {value}
 tx_NPNPJYNJ78,획득 배율 ×{mult}
-tx_AVASF1MNRA,등급 보정 (스탯 6종)   {tiers}
+tx_AVASF1MNRA,등급 보정 (모든 파일럿 능력치)   {tiers}
 tx_9C36WN5CN9,주 마감마다 연구 메크 +{research}  ·  경기에 탄 메크 +{match}  (배율 전)
-tx_0R1EGAX9DP,기벽 — 연구 메크가 있으면 주 마감 {pct}% 확률로 획득  ·  {odds}
+tx_0R1EGAX9DP,기벽: 연구 메크가 있으면 주 마감 {pct}% 확률로 획득  ·  {odds}
 tx_9YHCDH1Y7N,연구: {mech}
 tx_KVG9N478Y5,주 마감에 코치가 지정
 tx_1AFM6E35JF,연구 미지정
@@ -882,24 +884,24 @@ tx_M08KQVQN65,패시브 없음
 tx_MJJHA43Q8J,이 기체에는 고유 카드가 없다
 tx_XVKPY5NPC4,게임 시작
 tx_B3TD0XDDBT,기체 능력치
-tx_3R8J1QNVYD,숙련도 (등급 보정 = 스탯 6종)
+tx_3R8J1QNVYD,숙련도 (등급 보정 = 모든 파일럿 능력치)
 tx_1R98FHMXSQ,장착한 기벽 없음
 tx_PY288FR27W,메크 패시브
 tx_DKVRHA76D6,이 기체에는 패시브가 없다
 tx_FKR497Q4GS,이 기체에는 고유 카드가 없다
 tx_KCV1PKAM59,이 기체를 배정받은 파일럿은 아래 카드를 장수만큼 덱에 넣는다.
 tx_MFVJR117B3,주력 메크
-tx_5A4VYR9MJQ,분석 담당 없음 — 데이터만 보입니다. 해석은 감독이 직접.
+tx_5A4VYR9MJQ,분석 담당 없음: 데이터만 보이고 해석은 감독이 직접 합니다.
 tx_VGK1FJEFJY,경기 준비
 tx_HQ94NZJ6WP,경기 시작
 tx_5AJE6SAZ26,상대
 tx_GPNME2ADWA,기벽 {n}
 tx_2C7Y2JDD7V,{role}   ·   HP {hp}   ·   ATK {atk}   ·   존재감 {presence}
 tx_S32JTGTHEG,메크 카드  {n}종   ·   카드를 누르면 설명
-tx_J3FQW65YX4,{name}  {tier} {value}  (스탯 {bonus})
-tx_GKJ2J8BS4G,{name}  {tier} {value}  (스탯 {bonus} · 기벽 +{quirk})
-tx_ZFKRFPCAS2,분석가 추천 밴 — {pilot} 의 주력
-tx_ZKEE3G9T6P,상대 예상 픽 — {pilot}
+tx_J3FQW65YX4,{name}  {tier} {value}  (파일럿 능력치 {bonus})
+tx_GKJ2J8BS4G,{name}  {tier} {value}  (파일럿 능력치 {bonus} · 기벽 +{quirk})
+tx_ZFKRFPCAS2,분석가 추천 밴: {pilot} 의 주력
+tx_ZKEE3G9T6P,상대 예상 픽: {pilot}
 tx_15SXME7CFS,생성 전용
 tx_WCXP7CPSKQ,밴 확정
 tx_ZEXW72B4FP,픽 확정
@@ -912,7 +914,7 @@ tx_SSCFWKVHRS,내 차례 밴
 tx_EGTM3JJJMY,내 차례 픽
 tx_D141ZC4RBA,상대 차례 밴
 tx_NAM5AY7ESD,상대 차례 픽
-tx_JFNQCJHJWF,기벽 — {pilot}  {count} / {slots}  (스탯 +{total})
+tx_JFNQCJHJWF,기벽 · {pilot}  {count} / {slots}  (파일럿 능력치 +{total})
 tx_HJGDFGJ4TM,{effect}  (조건 미충족)
 tx_5YCR7YFGNT,합계 {total}
 tx_7A1FMDGC3E,정보 없음
@@ -920,13 +922,13 @@ tx_4Y7CG5R478,분석 {tier}단계 · {label}
 tx_4P15WEPRM6,내 분석 {have} · 다음 단계 {need} 필요
 tx_CHAJA53SVW,분석 · {who}
 tx_4GMKW7SCDD,이름 · 역할
-tx_Q605SZ346S,스탯 대략
-tx_D20PGJE2CX,스탯 · 주력 메크
+tx_Q605SZ346S,대략적인 파일럿 능력치
+tx_D20PGJE2CX,파일럿 능력치 · 주력 메크
 tx_AR1MKMRGM3,전부 공개
 tx_SCRCRND2B5,자료가 부족해 상대 전력을 읽기 어렵습니다.
-tx_54201ZNSN2,경계 대상: {role} {name} — {stat} 수치가 가장 높습니다.
-tx_Y52NPQTAB1,추천 밴: {mech} — {pilot}의 주력 메크입니다.
-tx_8F1HRN6A8N,약한 고리: {role} {name} — 그 라인을 노려 볼 만합니다.
+tx_54201ZNSN2,경계 대상: {role} {name}. {stat} 수치가 가장 높습니다.
+tx_Y52NPQTAB1,추천 밴: {mech}. {pilot}의 주력 메크입니다.
+tx_8F1HRN6A8N,약한 고리: {role} {name}. 그 라인을 노려 볼 만합니다.
 tx_1W81NVQ0EN,{mech} 주력
 tx_CYD6TW7EWM,메크 {id}
 tx_2D102EEXT5,상대 팀 · {team}
@@ -951,21 +953,21 @@ tx_Z6MVYR47TV,취약 각인
 tx_TXJ30QM4CZ,미사일 적재
 tx_F0QY3T3051,전탄 발사
 tx_PJ1NF26FT4,조준 보정
-tx_FMKZ4AXNYJ,최대 체력 10 마다 공격력 +1
-tx_5D0P0RCSAY,교전 시 자신에게 [반응 장갑] 2 부여. 반응 장갑: 공격 당할 시 90% 피해 감소 및 이 효과 1회 제거
-tx_1VX47RFC55,피해를 받거나 줄 때 그 20% 만큼 최대 체력 증가. 자신의 레인 포탑을 파괴할 때마다 덱에 [고통과 쾌감] 생성
-tx_6KZJ3QWJ75,용 또는 전령 싸움에서 승리 시 손에 [승전보] 1장 생성
-tx_PE2EVQDEA5,용 또는 전령 싸움에서 승리 시 손에 [철거] 1장 생성
-tx_BNYYR6W86Q,적 처치 또는 포탑 파괴 시 토큰 +1 (최대 5). 최대 토큰일 때 손에 [처형] 생성
-tx_PHQRA5X740,전장에서 카드 공격을 명중하거나 교전에서 적에게 피해를 줄 때마다 공격력 +1% 및 최대 체력 +5
-tx_CPZSE06A20,게임 시작 시 토큰 +20 (최대 100). 교전 중 적에게 피해를 줄 때 토큰 1개마다 1% 확률로 1회 더 공격 및 토큰 절반 소모
-tx_TX22RY527N,카드를 사용하거나 버릴 때마다 토큰 +1 (최대 6). 최대 토큰 시 토큰을 모두 소모해 사거리 1 내 모든 적 공격
-tx_9J4RSF40T1,이 메크의 보호막을 받은 아군이 전장에서 적에게 피해를 줄 때마다 이 메크가 그 적을 공격
-tx_JWM1NSSZC2,교전 시 모든 아군이 한 번에 한해 공격 받아도 체력 1 이하로 내려가지 않음
-tx_D3R65NAFJ7,이번 작전 단계 동안 공격 명중 시마다 대상에게 취약 10 부여. 취약: 1마다 받는 피해 1% 증가
-tx_5SM31D1TN4,자신 레인의 포탑이 파괴될 때마다 덱에 [미사일] 1장 생성
-tx_EZ2X9YFAAV,교전 중 공격이 모든 적을 대상으로 함 (이 메크의 공격력은 다른 원딜 메크의 절반)
-tx_8F16MH3WCH,전장 공격 명중 시 공격력 +1
+tx_FMKZ4AXNYJ,최대 체력 {p1} 마다 공격력 +{mech_bulk_power_atk}
+tx_5D0P0RCSAY,교전 시 자신에게 [반응 장갑] {p1} 부여. 반응 장갑: 공격 당할 시 {mech_reactive_armor_cut_pct}% 피해 감소 및 이 효과 1회 제거
+tx_1VX47RFC55,피해를 받거나 줄 때 그 {p1}% 만큼 최대 체력 증가. 자신의 레인 포탑을 파괴할 때마다 덱에 [고통과 쾌감] {mech_pain_pleasure_cards}장 생성
+tx_6KZJ3QWJ75,용 또는 전령 싸움에서 승리 시 손에 [승전보] {mech_victory_report_cards}장 생성
+tx_PE2EVQDEA5,용 또는 전령 싸움에서 승리 시 손에 [철거] {mech_demolition_order_cards}장 생성
+tx_BNYYR6W86Q,적 처치 또는 포탑 파괴 시 토큰 +{mech_execution_charge_gain} (최대 {p2}). 최대 토큰일 때 손에 [처형] {mech_execution_cards}장 생성
+tx_PHQRA5X740,전장에서 카드 공격을 명중하거나 교전에서 적에게 피해를 줄 때마다 공격력 +{p1}% 및 최대 체력 +{p2}
+tx_CPZSE06A20,게임 시작 시 토큰 +{p1} (최대 {p2}). 교전 중 적에게 피해를 줄 때 토큰 1개마다 {mech_overclock_proc_per_charge_pct}% 확률로 {mech_overclock_extra_attacks}회 더 공격 및 토큰 절반 소모
+tx_TX22RY527N,카드를 사용하거나 버릴 때마다 토큰 +{mech_zen_charge_gain} (최대 {p2}). 최대 토큰 시 토큰을 모두 소모해 {mech_zen_range}타일 안의 모든 적 공격
+tx_9J4RSF40T1,이 메크의 보호막{eul} 받은 아군{i} 전장에서 적에게 피해를 줄 때마다 이 메크가 그 적을 공격
+tx_JWM1NSSZC2,교전 시 모든 아군{i} 한 번에 한해 공격 받아도 체력 1 이하로 내려가지 않음
+tx_D3R65NAFJ7,이번 작전 단계 동안 공격 명중 시마다 대상에게 취약 {p1} 부여. 취약: 1마다 받는 피해 {mech_vulnerable_per_stack_pct}% 증가
+tx_5SM31D1TN4,자신 레인의 포탑이 파괴될 때마다 덱에 [미사일] {mech_missile_stock_cards}장 생성
+tx_EZ2X9YFAAV,교전 중 공격이 모든 적을 대상으로 함 (이 메크의 공격력{eun} 다른 원딜 메크의 절반)
+tx_8F16MH3WCH,전장 공격 명중 시 공격력 +{p1}
 tx_6B0387STJ7,요즘 훈련이 조금 버거워요.
 tx_AM70RNN3NK,감독님은 어떻게 생각하세요?
 tx_1B2FTBE9GG,잘하고 있어. 조금만 더 버티자.
@@ -1335,6 +1337,9 @@ tx_93DNF2H8DK,차도현
 tx_H0RPTYH8T9,백하은
 tx_B0BMAWJ7W0,노승민
 tx_1B1ZHR2JX6,하예린
+tx_J8VCATJ5GB,e스포츠 데일리
+tx_576HKVWRTP,리그 위클리
+tx_MH87R5EDPY,게임 투데이
 tx_9ZFPBR8QPR,배회
 tx_C4W31AM5G6,위치 고정
 tx_KDQGE48ZGV,퍼포먼스
@@ -1360,31 +1365,43 @@ tx_JX8C8KDANY,만능
 tx_W6M5TMHY7G,원딜 사냥꾼
 tx_574WAHRC6Y,공격적인 전진
 tx_ZHKC92QRTJ,경쟁 심리
-tx_TCDPZKRX9M,"활성화: 손에 있는 가장 낮은 비용의 이동 카드의 비용을 0으로 감소. 손에 이동 카드가 없을 시, 휘발성 [이동]{eul} 손에 생성"
-tx_01QXXQC4VE,"활성화: 20턴 간 성장 적립 +20%, 라인전 -20%, 이동 카드 사용 불가, 오브젝트 참여 불가"
-tx_M9HDA7991Z,이 선수의 카드 사용 시마다 토큰 +1 (최대 25)\n토큰마다 이 파일럿의 모든 능력치 +2%. 전투 이탈 시 토큰 -10
-tx_SBZ2RGCFC4,"교전 중 상대 진영 파일럿을 처치했다면, 해당 교전의 턴이 일시적으로 1 증가"
-tx_HCG34G4447,매 턴 토큰 +1 (최대 100)\n토큰 수마다 성장 적립 +1%
-tx_QW0WRK5W71,활성화: 이번 작전 단계 동안 모든 카드 비용 -1
-tx_QR155GH2K5,활성화: 손의 카드 중 1장에 보존 부여
-tx_57FEQZSD9W,활성화: 휘발성 [복귀]{eul} 손에 생성
-tx_84VS0JAK7A,"전장 명중률 +10%, 전장 회피율 -5%\n게임 50턴부터 대신 전장 명중률 +20%, 전장 회피율 -5%"
-tx_MBAK27KBCX,"용 오브젝트 등장 시 토큰 +1 (최대 1)\n활성화: 토큰 1개를 소모하여 전략 점수 +3, 뽑기 2장"
-tx_8CE3SCE28Y,적 처치 관여 시 15턴 간 성장 적립 +25%
-tx_4M0MCHFQTA,"가하는 피해 +10%, 받는 피해 +10%\n게임 50턴부터 대신 가하는 피해 +20%, 받는 피해 +20%"
-tx_C9RZZHW1KH,게임 시작: 이 선수의 카드를 모두 버린 카드 더미로 이동\n게임 50턴부터 라인전 능력치 +20%
-tx_AYBPPVM8XW,매 턴 토큰 +1 (최대 15)\n최대 토큰 시 [핫핸드]{eul} 덱에 생성. 전투 이탈 시 토큰 초기화
-tx_9GG6D1MMYT,이 선수의 공격 카드 명중 시마다 토큰 +1 (최대 4)\n토큰 수마다 전장 명중률 +5%. 작전 단계가 종료되면 토큰 초기화
-tx_MGSQQPTAMH,"용, 전령 교전에서 승리 시 토큰 +1 (최대 3)\n활성화: 토큰 1개를 소모하여 [아드레날린]{eul} 손에 생성"
-tx_N9H0VY8ZYD,"활성화: 자신의 교전 카드 찾기 1장. 덱에 교전 카드가 없을 시, 휘발성 [교전 개시]{eul} 손에 생성"
-tx_F6ZPD3B8SJ,"활성화: 이번 작전 단계 동안 교전 카드 비용 -3, 교전 턴 -1"
-tx_X3DDB1ERMS,적 처치 관여 시 토큰 +1 (최대 2)\n활성화: 토큰 1개를 소모하여 휘발성 [약탈]{eul} 손에 생성
-tx_1Y0CR9P495,적 파일럿 종류마다 처치 관여 시 공격력 +6% (최대 5)\n최대 토큰 시 추가로 공격력 +10% (최대 공격력 +40%)
-tx_NVABXT94CT,토큰 5개로 시작. 포탑 파괴 시 토큰 +1 (최대 5)\n활성화: 토큰 5개를 소모하여 다음 교전 카드의 교전 턴 +3
-tx_ARWJETFT72,"체력형 메크일 시 존재감 +1, 최대 체력 +20%\n공격형 메크일 시 존재감 -1, 공격력 +20%"
-tx_A2VY834WBK,"교전 참여 시, 적 원딜 파일럿이 있을 경우 첫 공격은 반드시 적 원딜 파일럿을 공격 및 공격력 +20%"
-tx_BVQZZBG33F,활성화: 휘발성 [전진]{eul} 손에 생성
-tx_KR207W6TG7,상대 같은 레인 파일럿과 비교하여 — 성장치 열세: 성장 적립 +10%\n처치 열세: 공격력 +10%\n죽음 우세: 최대 체력 +10%
+tx_TCDPZKRX9M,"활성화: 손에 있는 가장 낮은 비용의 이동 카드의 비용을 0으로 감소. 손에 이동 카드가 없을 시, 휘발성 [이동] {skill_roam_cards}장을 손에 생성"
+tx_01QXXQC4VE,"활성화: {skill_hold_turns}턴 간 성장 적립 {skill_hold_growth_rate_signed_pct}%, 라인전 {skill_hold_lane_stat_signed_pct}%, 이동 카드 사용 불가, 오브젝트 참여 불가"
+tx_M9HDA7991Z,"이 선수의 카드 사용 시마다 토큰 +{skill_performance_charge_gain} (최대 {p2})
+토큰마다 모든 파일럿 능력치 {skill_performance_per_charge_signed_pct}%. 전투 이탈 시 토큰 -{skill_performance_death_loss}"
+tx_SBZ2RGCFC4,"교전 중 상대 진영 파일럿을 처치했다면, 해당 교전의 턴이 일시적으로 {skill_opportunist_rounds} 증가"
+tx_HCG34G4447,"매 턴 토큰 +{skill_accumulate_charge_gain} (최대 {p2})
+토큰마다 성장 적립 {skill_accumulate_per_charge_signed_pct}%"
+tx_QW0WRK5W71,활성화: 이번 작전 단계 동안 모든 카드 비용 -{skill_ops_prep_discount}
+tx_QR155GH2K5,활성화: 손의 카드 중 {skill_scheme_cards}장에 보존 부여
+tx_57FEQZSD9W,활성화: 휘발성 [복귀] {skill_recall_order_cards}장을 손에 생성
+tx_84VS0JAK7A,"전장 명중률 {skill_veteran_hit_early_signed_pct}%, 전장 회피율 {skill_veteran_evasion_signed_pct}%
+게임 {skill_late_game_turn}턴부터 대신 전장 명중률 {skill_veteran_hit_late_signed_pct}%, 전장 회피율 {skill_veteran_evasion_signed_pct}%"
+tx_MBAK27KBCX,"용 오브젝트 등장 시 토큰 +{skill_blessing_charge_gain} (최대 {p2})
+활성화: 토큰 {p1}개를 소모하여 전략 점수 +{skill_blessing_strategy}, 뽑기 {skill_blessing_draw}장"
+tx_8CE3SCE28Y,적 처치 관여 시 {skill_hunt_reward_turns}턴 간 성장 적립 {skill_hunt_reward_rate_signed_pct}%
+tx_4M0MCHFQTA,"가하는 피해 {skill_cannon_early_signed_pct}%, 받는 피해 {skill_cannon_early_signed_pct}%
+게임 {skill_late_game_turn}턴부터 대신 가하는 피해 {skill_cannon_late_signed_pct}%, 받는 피해 {skill_cannon_late_signed_pct}%"
+tx_C9RZZHW1KH,"게임 시작: 이 선수의 카드를 모두 버린 더미로 이동
+게임 {skill_late_game_turn}턴부터 라인전 능력치 {skill_backbone_lane_stat_signed_pct}%"
+tx_AYBPPVM8XW,"매 턴 토큰 +{skill_rookie_charge_gain} (최대 {p2})
+최대 토큰 시 [핫핸드] {skill_rookie_cards}장을 덱에 생성. 전투 이탈 시 토큰 초기화"
+tx_9GG6D1MMYT,"이 선수의 공격 카드 명중 시마다 토큰 +{skill_surge_charge_gain} (최대 {p2})
+토큰마다 전장 명중률 {skill_surge_hit_per_charge_signed_pct}%. 작전 단계가 종료되면 토큰 초기화"
+tx_MGSQQPTAMH,"용, 전령 교전에서 승리 시 토큰 +{skill_elation_charge_gain} (최대 {p2})
+활성화: 토큰 {p1}개를 소모하여 [아드레날린] {skill_elation_cards}장을 손에 생성"
+tx_N9H0VY8ZYD,"활성화: 자신의 교전 카드 찾기 {skill_fierce_battle_search}장. 덱에 교전 카드가 없을 시, 휘발성 [교전 개시] {skill_fierce_battle_cards}장을 손에 생성"
+tx_F6ZPD3B8SJ,"활성화: 이번 작전 단계 동안 교전 카드 비용 -{skill_battle_order_discount}, 교전 턴 {skill_battle_order_rounds_signed}"
+tx_X3DDB1ERMS,"적 처치 관여 시 토큰 +{skill_plunderer_charge_gain} (최대 {p2})
+활성화: 토큰 {p1}개를 소모하여 휘발성 [약탈] {skill_plunderer_cards}장을 손에 생성"
+tx_1Y0CR9P495,"적 파일럿 종류마다 처치 관여 시 공격력 {skill_loot_atk_per_charge_signed_pct}% (최대 {p2})
+최대 토큰 시 추가로 공격력 {skill_loot_atk_full_bonus_signed_pct}% (최대 공격력 +{loot_max_atk_pct}%)"
+tx_NVABXT94CT,"토큰 {p2}개로 시작. 포탑 파괴 시 토큰 +{skill_siege_charge_gain} (최대 {p2})
+활성화: 토큰 {p1}개를 소모하여 다음 교전 카드의 교전 턴 +{skill_siege_rounds}"
+tx_ARWJETFT72,"체력형 메크일 시 존재감 +{skill_versatile_presence}, 최대 체력 {skill_versatile_mult_signed_pct}%\n공격형 메크일 시 존재감 -{skill_versatile_presence}, 공격력 {skill_versatile_mult_signed_pct}%"
+tx_A2VY834WBK,"교전 참여 시, 적 원딜 파일럿이 있을 경우 첫 공격은 반드시 적 원딜 파일럿을 공격 및 공격력 {skill_adc_hunter_atk_signed_pct}%"
+tx_BVQZZBG33F,활성화: 휘발성 [전진] {skill_aggressive_push_cards}장을 손에 생성
+tx_KR207W6TG7,상대 같은 레인 파일럿과 비교하여:\n성장치 열세: 성장 적립 {skill_rivalry_growth_signed_pct}%\n처치 열세: 공격력 {skill_rivalry_atk_signed_pct}%\n죽음 우세: 최대 체력 {skill_rivalry_hp_signed_pct}%
 tx_JJ1888Z56T,화면을 눌러 닫기
 tx_82VAW6FK9Y,멘탈 판정 성공
 tx_2QWW8CPTXR,멘탈 판정 실패
@@ -1451,13 +1468,13 @@ tx_ET86TTP31D,런 클리어
 tx_02GQ3R71G2,런 실패
 tx_ZPVTEEG9GC,런 포기
 tx_SR4J2S70Z7,런 종료
-tx_34H19JKNZ2,테스트 런 — 프로필 미반영
+tx_34H19JKNZ2,테스트 런 · 프로필 미반영
 tx_N92BZJC4VE,진엔딩
 tx_BGD6ATN8E2,외출 {n}회 · 약속을 지켰다
 tx_942J829JEX,"우승 트로피를 들고, {name} 선수가 미뤄 둔 말을 꺼냈다."
 tx_9NBP27YSKH,새 특성 해금
 tx_A8KZA62SX8,다음 런부터 감독 탭에서 장착할 수 있습니다
-tx_SQB3T3V911,테스트 런 — 프로필에 지급하지 않았습니다
+tx_SQB3T3V911,테스트 런: 프로필에 지급하지 않았습니다
 tx_QGD2NVYK77,진척
 tx_W3EY6C4QFN,도달 페이즈
 tx_EHJMQJG41X,끝낸 페이즈
@@ -1475,7 +1492,7 @@ tx_RNSR0V2ZD7,보상
 tx_PFPGKNBXJT,테스트 런이라 프로필에 더하지 않았습니다
 tx_HF4PD2NVB3,아웃게임 재화
 tx_Y1513M583R,주간 패스 EXP
-tx_P70DJG0Y69,패스 초과분 → 아웃게임 재화
+tx_P70DJG0Y69,패스 초과분 → 재화
 tx_4JW54W3MFD,감독 EXP
 tx_ERBNFWJ2H9,새 제거 포인트 (감독 탭)
 tx_36E6M38JM0,선수 성장
@@ -1491,8 +1508,8 @@ tx_FB3QP9CS50,팀
 tx_D251BAN217,편성
 tx_5RQNNDMCG6,선수 데이터를 읽지 못했습니다: {error}
 tx_RCC5BQZPBZ,샐러리캡 {n}
-tx_21QQ3H8S23,시나리오가 샐러리캡을 정합니다 — 다섯 선수의 샐러리 합이 캡을 넘으면 시작할 수 없습니다.
-tx_ZSHG5Y0W8Y,예산이 높을수록 쉽습니다 — 스태프가 많아 직접 해야 하는 일이 적습니다.
+tx_21QQ3H8S23,시나리오가 샐러리캡을 정합니다. 다섯 선수의 샐러리 합이 캡을 넘으면 시작할 수 없습니다.
+tx_ZSHG5Y0W8Y,예산이 높을수록 쉽습니다. 스태프가 많아 직접 해야 하는 일이 적습니다.
 tx_XVN27323X5,예산 {n}
 tx_8V1SPJW32G,시설 Lv {n}
 tx_MY16P7N64F,직접 해야 하는 일
@@ -1503,36 +1520,35 @@ tx_NW5AR6YPWN,훈련 EXP +{pct}%
 tx_ZNZXB9SW7Z,선수 능력치
 tx_A42YCZ0NFD,파일럿 스킬
 tx_1M14YHFYQV,고유 스킬 없음 (이름 없는 선수)
-tx_R5P3SNJTFY,쿨타임
 tx_341YBT1HWQ,충전식
 tx_R41SZAKCGV,패시브
 tx_8XPMQAH2H0,선택 없음
 tx_M4CGTEQHBN,샐러리 {n}
 tx_86NEDS5QYC,종합 {n}
-tx_EYBMMZBQNA,프레스티지 프리셋 — 로비 감독 탭에서 재설정하세요
+tx_EYBMMZBQNA,프레스티지 프리셋: 로비 감독 탭에서 재설정하세요
 tx_S0XJ51Y6E7,{type} 감독 · Lv {level}
-tx_B12S7EKBRM,특성 보정 전체 {value}
+tx_B12S7EKBRM,특성 보정: 모든 감독 능력치 {value}
 tx_N2RJ811ABT,전문화는 로비 감독 탭에서
 tx_Z2NY1CZZ5J,{preset} · 보너스 점수 {bonus} · 특성을 바꾸면 이 프리셋에 바로 저장됩니다
-tx_TJYP45JCHW,선수 {pilots}명 — 팀 {teams} × 역할 {roles} 와 맞지 않습니다
+tx_TJYP45JCHW,선수 {pilots}명: 팀 {teams} × 역할 {roles} 와 맞지 않습니다
 tx_1DJR2GT179,알 수 없는 역할 {role} (선수 {id})
 tx_YV2Y3QZY4S,내 선수 중 리그 명단에 없는 id 가 있습니다
 tx_0PAP63X1Y1,역할 {role} 에 내 선수가 {n}명입니다 (1명이어야 함)
-tx_NC5BF9FXM3,역할 {role} 의 남은 선수 {n}명 — AI 팀 {teams}개와 맞지 않습니다
+tx_NC5BF9FXM3,역할 {role} 의 남은 선수 {n}명이 AI 팀 {teams}개와 맞지 않습니다
 tx_42EJTTYFX4,{scenario} · 샐러리캡
 tx_8HD5KTG0WT,{scenario} · 샐러리캡 (특성 {adj})
 tx_4HM99WN4PS,시작 실패: {error}
-tx_EN0H79ACA8,샐러리캡 초과 ({total} / {cap}) — 레벨을 내리거나 다른 선수를 고르세요
-tx_PYSFH9VR8V,포지션마다 1명씩 — {n} / {max}명
-tx_Z7WZT1J6Q7,편성 완료 — 남은 샐러리 {n}
+tx_EN0H79ACA8,샐러리캡 초과 ({total} / {cap}). 레벨을 내리거나 다른 선수를 고르세요
+tx_PYSFH9VR8V,포지션마다 1명씩: {n} / {max}명
+tx_Z7WZT1J6Q7,편성 완료 · 남은 샐러리 {n}
 tx_RQV5HNW8TV,편성 완료
 tx_N58C8KX6P1,게임 시작
 tx_WMF4H900Y6,루키 리그
 tx_WHEYGN2VQZ,슈퍼 리그
-tx_FHYTT6JZHE,샐러리캡이 낮다 — 비싼 선수는 두세 명이 한계.
-tx_4H2VGDNYW7,샐러리캡이 높다 — 레벨을 올린 선수로 채울 수 있다.
+tx_FHYTT6JZHE,샐러리캡이 낮다. 비싼 선수는 두세 명이 한계.
+tx_4H2VGDNYW7,샐러리캡이 높다. 레벨을 올린 선수로 채울 수 있다.
 tx_NSX2CBE8GV,WORLD CHAMPION
-tx_5WW618WEKX,캠페인 완주 — 정규시즌 국제대회 우승!
+tx_5WW618WEKX,캠페인 완주! 정규시즌 국제대회 우승!
 tx_YD9QSBBE5R,── 캠페인 기록 ──
 tx_6ZE7NQMPBZ,── 최종 로스터 ──
 tx_43PE998B9Y,정산
@@ -1557,38 +1573,38 @@ tx_KPSWBTWZA0,선수를 고르고 오늘 저녁 할 일을 정하세요 (하루 
 tx_B7PQ84TQD5,패스
 tx_G02WWMW0B6,현재 페이즈: {phase}
 tx_QBXEZYQKN7,{phase} · {week}주차
-tx_G2CRZNPFG8,플레이오프 진입! — 4강 매치 대기 중
+tx_G2CRZNPFG8,플레이오프 진입! 4강 매치 대기 중
 tx_1Q5D5H8MKG,플레이오프 종료
 tx_SN5F4S50QE,우승: {team}
 tx_AKWBHWXQKP,우리 팀 우승!
-tx_9FQ300Q5NC,국제대회 진입! — 8팀 토너먼트
-tx_8MBQAK3YCS,국제대회 우승! — 우리 팀이 챔피언입니다
+tx_9FQ300Q5NC,국제대회 진입! 8팀 토너먼트
+tx_8MBQAK3YCS,국제대회 우승! 우리 팀이 챔피언입니다
 tx_64YSN9ZDR8,페이즈 진입: {phase}
 tx_KMTPJRSHS8,{week} / {max}주차
-tx_X85R7MCQ0K,이번 주 경기: {slot} — vs {team}
+tx_X85R7MCQ0K,이번 주 경기: {slot} · vs {team}
 tx_X1ZR4PHHXN,이번 주 경기: vs {team}
 tx_0JANWJ7HMM,이번 주 경기 없음
 tx_DAGRD2AVXH,플레이오프
 tx_1ABQDHR4ZF,리그 순위
 tx_QQV79NETS2,담당: {name}
 tx_7T45Q9QVT8,신뢰 {n}
-tx_KZRN3TT8CK,우승 — {team}
-tx_7CKXJ6SNJY,우승 — {team} ★
+tx_KZRN3TT8CK,우승: {team}
+tx_7CKXJ6SNJY,우승: {team} ★
 tx_BK6M8XCBA6,{phase} {slot}에서 탈락했습니다.
 tx_44WZH96TAR,{phase}에서 우승하지 못했습니다.
 tx_75WBMWK3YQ,{phase} 플레이오프 {slot}에서 탈락했습니다.
 tx_G91QZKMCGS,{phase} 플레이오프에서 우승하지 못했습니다.
 tx_G2TKVCGN91,{phase} 플레이오프 진출에 실패했습니다.
-tx_0CPR1H6FJX,최종 순위 {rank}위 — {win}승 {loss}패
-tx_36VP9BEFGS,캠페인 우승 {n}회 — 캠페인 종료
+tx_0CPR1H6FJX,최종 순위 {rank}위 ({win}승 {loss}패)
+tx_36VP9BEFGS,캠페인 우승 {n}회. 캠페인 종료
 tx_GA7T767F1Z,다음 경기 없음
-tx_GE4R14G0HE,다음 경기: {week}주차 {day} — vs {team}
+tx_GE4R14G0HE,다음 경기: {week}주차 {day} · vs {team}
 tx_TESCZQ8CKB,{rank}위 · {win}승 {loss}패
 tx_PK7CX8K2WS,{rank}위 · {win}승 {loss}패  · 내 팀
 tx_NK31W4V7FT,{win}승 {loss}패  · 내 팀
 tx_DET3QJHZGK,단계: {stage}
 tx_09XMB9SGJS,플레이어 경기 없음 / 종료됨
-tx_KXMPKY0FJ4,다음 매치: {slot} — {week}주차 vs {team}
+tx_KXMPKY0FJ4,다음 매치: {slot} · {week}주차 vs {team}
 tx_TK9A1AK7XE,8강 진행 중
 tx_QC6GN1KKC4,4강 진행 중
 tx_EVYVY83XJ6,결승 진행 중
@@ -1603,7 +1619,7 @@ tx_TRMS5ZZQY6,결승
 tx_NCAC0FXRKV,{year}년 {month}월
 tx_1K2R63NYA9,훈련 기록이 없습니다
 tx_Q5HXG4JY2G,일정 없음
-tx_77T88FPPVZ,{day} — 예정된 경기 없음
+tx_77T88FPPVZ,{day}: 예정된 경기 없음
 tx_N3T6WKR43W,승
 tx_E1RYA0YP6M,패
 tx_ZM7B38RP90,예정
@@ -1618,7 +1634,7 @@ tx_BKSSGAQEKK,기벽 칸이 가득 차 획득하지 못했습니다
 tx_0HWTY9MN62,기벽 재굴림 · {from} → {to}
 tx_4WNY7FEE6D,재굴림할 기벽이 없습니다
 tx_YFPQYV0C4S,기벽 칸 +1
-tx_0QN35YWVZQ,기벽 칸 +1 ({n}칸)
+tx_0QN35YWVZQ,기벽 칸 +{quirk_slot_gain} ({n}칸)
 tx_ABWK6EAGAM,기벽 칸이 이미 최대입니다
 tx_FZ9J5EYXJH,기벽
 tx_55ZT5D24ZK,기벽 #{id}
@@ -1629,12 +1645,12 @@ tx_R4XWZFXHFD,신뢰 {trust} · 외출 {outings}
 tx_G9WWN59WGH,외출 (이번 주 끝)
 tx_QYSSXAFB3S,외출 (신뢰 {n}↑)
 tx_0TJBQGEP0N,면담 (이번 주 끝)
-tx_M4WBEB9G7X,오늘 저녁 — 쉬었습니다
-tx_H8MV6KQN83,오늘 저녁 — {name} 면담
-tx_57AQ53NMQX,오늘 저녁 — {name} 외출
+tx_M4WBEB9G7X,오늘 저녁: 쉬었습니다
+tx_H8MV6KQN83,오늘 저녁: {name} 면담
+tx_57AQ53NMQX,오늘 저녁: {name} 외출
 tx_QQ30F9E2AN,내일을 위해 일찍 쉬었다
 tx_YN104ZWYY7,변화 없음
-tx_335GAVH4SP,사건 — {tag} · {name}
+tx_335GAVH4SP,사건: {tag} · {name}
 tx_YVD35CHCCQ,눌러서 대응하기
 tx_PZ5E6THG9A,큰 탈 없이 지나갔다
 tx_F19CKTWEZY,{day} 저녁 · 면담
@@ -1656,29 +1672,22 @@ tx_GP4MCK7RMY,이미 수령했습니다
 tx_VXNZHCEFAY,보상이 없는 단계입니다
 tx_51N87FRW51,판매하지 않는 선수입니다
 tx_2ZE844KZN9,돌파 완료
-tx_8Z4YRYH43A,선수 파편이 부족합니다 ({n} 필요)
+tx_8Z4YRYH43A,선수 파편{i} 부족합니다 ({n} 필요)
 tx_F242JS261M,제작 불가
 tx_TB3J7HQJGN,보유 중
-tx_9ZR3EBJ3SJ,특성 재료가 부족합니다 ({n} 필요)
-tx_T7H4Y5BKRY,유료 재화가 부족합니다 ({n} 필요)
+tx_9ZR3EBJ3SJ,특성 재료{i} 부족합니다 ({n} 필요)
+tx_T7H4Y5BKRY,유료 재화{i} 부족합니다 ({n} 필요)
 tx_XTX35YZZ5C,모두 수령
 tx_6ZYFMH4WG9,받을 보상이 없습니다
 tx_VD3QJHNXCW,{n}개 수령 · {rewards}
 tx_H1GFQQ83Y3,Lv {level} 보상 · {currency} +{amount}
 tx_2XPR1E8GP5,{week} · 초기화까지 {time}
-tx_ZQZY2WVPR2,"런을 마치면 런 점수만큼 패스 EXP 를 얻습니다. Lv {max} 를 넘긴 EXP 는 아웃게임 재화로 바뀝니다. 보상은 직접 수령해야 하며, 매주 월요일 0시(기기 시각)에 초기화됩니다."
+tx_ZQZY2WVPR2,"런을 마치면 런 점수만큼 패스 EXP 를 얻습니다. Lv {max} 를 넘긴 EXP 는 재화로 바뀝니다. 보상은 직접 수령해야 하며, 매주 월요일 0시(기기 시각)에 초기화됩니다."
 tx_5NS864BVSS,{d}일 {h}시간
 tx_GZ735QTDWP,{h}시간 {m}분
 tx_JXF877Y58D,수령 완료
-tx_X43BN649C3,재화
-tx_CT27Z5QXZ6,선수권
-tx_K2JE76Z638,특성권
-tx_HY7DQNPK90,특성 재료
-tx_95RWKDGXRT,치장 재화
-tx_BZBSE52DHH,유료 재화
-tx_V9830054XS,선수 파편
-tx_Z70PR5PYNY,"대상이 없는 등급이 뽑히면 가장 가까운 등급에서 뽑습니다. 중복 선수는 돌파, 돌파를 다 채운 뒤엔 선수 파편이 됩니다."
-tx_5DHTBBFC6B,대상이 없는 등급이 뽑히면 가장 가까운 등급에서 뽑습니다. 이미 가진 특성은 특성 재료가 됩니다.
+tx_Z70PR5PYNY,"대상이 없는 등급이 뽑히면 가장 가까운 등급에서 뽑습니다. 중복 선수는 돌파, 돌파를 다 채운 뒤엔 선수 파편{i} 됩니다."
+tx_5DHTBBFC6B,대상이 없는 등급이 뽑히면 가장 가까운 등급에서 뽑습니다. 이미 가진 특성은 특성 재료{i} 됩니다.
 tx_ZFYE3A1TJR,선수 영입 확률
 tx_DZEWNGHZ0V,특성 연구 확률
 tx_G2YS4ZSTZT,NEW
@@ -1715,10 +1724,10 @@ tx_ZKH36Y2DHV,레벨업 재화 교환
 tx_0JRJXF2REY,재화 {cost} → 레벨업 재화 {gain}
 tx_C9WWYJXBJX,보유 재화 {coins} · 레벨업 재화 {levelup}
 tx_E51NFE2PBP,선수권 구매
-tx_31B82ZYQSQ,유료 재화 {cost} → 선수권 1장
+tx_31B82ZYQSQ,유료 재화 {cost} → 선수권 {gain}장
 tx_QNHGVNK6CC,보유 유료 재화 {premium} · 선수권 {tickets}
 tx_N2B0Y4ARHX,특성권 구매
-tx_AB22WAZYYC,유료 재화 {cost} → 특성권 1장
+tx_AB22WAZYYC,유료 재화 {cost} → 특성권 {gain}장
 tx_MCFZFZ092Q,보유 유료 재화 {premium} · 특성권 {tickets}
 tx_1EC5FAP3S1,유료 재화 +{n} (개발용)
 tx_ZEBPJPHXNM,유료 재화는 지금 기기 안의 숫자일 뿐입니다 (결제 없음).
@@ -1736,6 +1745,7 @@ tx_84MYVJ17GD,특성 제작
 tx_NW50K9HBCE,교환소
 tx_33WRAHQJKW,확률 보기
 tx_G4RY3DMSCT,개발용
+tx_68ZA6FCJGY,{currency} +{n}
 tx_6C29X8HMEF,능력치
 tx_E7KJ6CX53P,유효값 = 감독(보정 포함) · 어시스턴트 · 전담 스태프 중 최댓값
 tx_JZ767X3S8Y,일시 보정
@@ -1743,14 +1753,8 @@ tx_7JFZR0GGGZ,걸린 보정 없음
 tx_ZZYKV0Z49P,장착 특성
 tx_74QWFN3PWB,장착한 특성 없음
 tx_ZZ96FNYRG1,스태프
-tx_CD2TKKXHA1,고용된 스태프 없음 — 모든 영역을 감독이 맡습니다
+tx_CD2TKKXHA1,고용된 스태프 없음. 모든 영역을 감독이 맡습니다
 tx_98DBCCX28N,직접 해야 하는 일
-tx_RYDV3SGR93,훈련
-tx_9265Y1MCPW,전술
-tx_K3FRY03EQK,지식
-tx_3P9850FA1G,멘탈
-tx_Z1HJZ9M6K6,분석
-tx_SJJT6G3QTG,관리
 tx_NAVZGR46XF,어시스턴트 매니저
 tx_MTHR7V5Z65,훈련 코치
 tx_8P1HK13HA1,전술 코치
@@ -1758,7 +1762,7 @@ tx_TZ9S2MMWFR,메크 코치
 tx_V1DKE84TKG,분석가
 tx_FHY5SA834Z,예산 관리자
 tx_BA7WKSR7T3,훈련판 편성을 직접 짭니다
-tx_HJ5140D8ZV,전술 연구 — 훈련 등급 해금을 감독 값으로 엽니다
+tx_HJ5140D8ZV,전술 연구: 훈련 등급 해금을 감독 값으로 엽니다
 tx_9S0ZQ6TATW,메크 연구 지정을 직접 합니다
 tx_E5FXATCCK9,선수 사건 대응을 감독 값으로 처리합니다
 tx_XXHPJERZWS,상대 분석 자료를 직접 해석합니다
@@ -1774,16 +1778,16 @@ tx_QF5YDBZ2X4,{stat} {delta} · 남은 {weeks}주 · {source}
 tx_TZARXTP3WC,보너스 점수 {points} · 장착 {n}/{max}
 tx_XS9W0R9CKV,주급 합계 {amount}
 tx_SXR6V4JTZA,주급 {amount}
-tx_ZVYS7H40JE,· {stat} — {task} (감독 {value})
-tx_A4NC7JYWQD,· 면담 · 외출 — 언제나 감독이 직접 (멘탈 {value})
-tx_7NY5TT0SJT,최상위 예산 — 전략 카드 운영과 선수 면담만 직접
+tx_ZVYS7H40JE,· {stat}: {task} (감독 {value})
+tx_A4NC7JYWQD,· 면담 · 외출: 언제나 감독이 직접 (멘탈 {value})
+tx_7NY5TT0SJT,최상위 예산: 전략 카드 운영과 선수 면담만 직접
 tx_0G5Q0GF81D,상위 예산
-tx_B761YRXYA9,중상위 — 훈련 일정 편성 직접
+tx_B761YRXYA9,중상위: 훈련 일정 편성 직접
 tx_94KMS9GQH0,중위
-tx_G20TF9A18T,중위 — 메크 숙련도 관리 직접
-tx_5J2FWDTHHS,중하위 — 상대 분석 해석 직접
+tx_G20TF9A18T,중위: 메크 숙련도 관리 직접
+tx_5J2FWDTHHS,중하위: 상대 분석 해석 직접
 tx_2B5FE3RAFT,하위
-tx_KRQHGMFDHP,최하위 — 예산 배분 · 시설 · 연봉까지 직접
+tx_KRQHGMFDHP,최하위: 예산 배분 · 시설 · 연봉까지 직접
 tx_WGVRW01FAK,탑
 tx_AEVV05C031,정글
 tx_AJHRSFRY14,미드
@@ -1882,6 +1886,68 @@ tx_7ZE1GEB58D,훈련
 tx_BXYJXH1JEK,기자회견
 tx_F28RBDEGBX,면담
 tx_1AHEKW5X7X,외출
+tx_FV39P9GPAJ,파일럿 능력치
+tx_CD7F656SAD,감독 능력치
+tx_70VZVPK01J,기체 능력치
+tx_WEMGESKYB6,보유 선수
+tx_T4AQ20H32S,충전식
+tx_4E9EYFHCMT,패시브
+tx_R5P3SNJTFY,쿨타임
+tx_X43BN649C3,재화
+tx_CT27Z5QXZ6,선수권
+tx_K2JE76Z638,특성권
+tx_HY7DQNPK90,특성 재료
+tx_95RWKDGXRT,치장 재화
+tx_BZBSE52DHH,유료 재화
+tx_V9830054XS,선수 파편
+tx_RYDV3SGR93,훈련
+tx_9265Y1MCPW,전술
+tx_K3FRY03EQK,지식
+tx_3P9850FA1G,멘탈
+tx_Z1HJZ9M6K6,분석
+tx_SJJT6G3QTG,관리
+tx_0RR59YT76D,모든 파일럿 능력치
+tx_SVRFJDH55K,손
+tx_D0S7070T32,소지 중
+tx_VPV5JM208F,찾기
+tx_DM7HJ301F1,버린 더미
+tx_6VVGYKXZSK,뽑기
+tx_F3A6GQEVFX,버리기
+tx_2T8RX9PWGV,작전 단계
+tx_F597JS5T37,전략 점수
+tx_WBS95M3MNQ,성장 점수
+tx_9NMN77M8D7,비용
+tx_XW85A9FY8B,시전자
+tx_TCBRJ43P81,필중
+tx_QHPJ926D6F,타일
+tx_1KKRE8N775,타일
+tx_VD4SPQQEES,장
+tx_5V4VYG9XPE,장
+tx_H89Y7GFPWP,턴
+tx_3PES5W2PRP,턴
+tx_JAYQJ6YQE0,토큰
+tx_BBFEFTT649,토큰
+tx_ZDCE5BNZ0Y,회
+tx_QH6X0ZHGPS,회
+tx_HZJA6JHW21,주
+tx_RE3J5S0400,주
+tx_D35G0Z90KF,포인트
+tx_ARZ9Y1M2K8,포인트
+tx_SBNQ8FZ5MA,칸
+tx_R3FWHSV8NN,칸
+tx_3ZSF3DW62X,선수
+tx_3HRCFHPCM4,선수
+tx_GW0QTR6A5N,특성
+tx_BCYB93VHH3,특성
+tx_Z7GFC4Q1W1,승
+tx_RJ2DDQAAYX,승
+tx_ZGP8KW41CF,외출
+tx_5A9Y0AJYCD,외출
+tx_3KCBX2EWCN,팀
+tx_ZBKRYJ8XE0,팀
+tx_JRJS1G2Q8Y,생성
+tx_82SYZ18YM0,장
+tx_Z7T7JK8FYC,장
 tx_KEVDQS5CGB,기초 훈련
 tx_SN9RWDKSD9,기초 훈련 2
 tx_ETXQNX2FF3,사격 훈련
@@ -1912,17 +1978,16 @@ tx_ZDJ0NDN9G9,남은 날 전부
 tx_857EF7RCMM,왼쪽 선수 같은 날
 tx_BTPJVKAJ67,오른쪽 선수 같은 날
 tx_D88VQ1QDV7,같은 날 다른 선수
-tx_693VGK3CSZ,기벽 획득 — 남은 기벽 칸에 무작위 장착 (지식이 높을수록 고등급)
-tx_6AGR4JDDA3,기벽 재굴림 — 장착한 기벽을 전부 새로 뽑음
-tx_CP2SBG1V2R,기벽 칸 +1
+tx_693VGK3CSZ,"기벽 획득 (남은 기벽 칸에 무작위 장착, 지식{i} 높을수록 고등급)"
+tx_6AGR4JDDA3,기벽 재굴림 (장착한 기벽을 전부 새로 뽑음)
+tx_CP2SBG1V2R,기벽 칸 +{quirk_slot_gain}
 tx_7AYTNKWZ13,{scope} 훈련 효과 {pct}%
 tx_8M81KN05QP,{scope} {stat} {amount}
 tx_4FZGJ5J85K,훈련한 선수: {op}
-tx_0RR59YT76D,전 스탯
 tx_M8FGBCRE85,경험치 없음
-tx_HAH93PRWJJ,경험치 없음 — 그날은 기벽 훈련
+tx_HAH93PRWJJ,경험치 없음 (그날은 기벽 훈련)
 tx_8C0EV0B2WT,메크 숙련도 +{n} (연구 메크)
-tx_B7Y34DBG5A,전 스탯 +{n}
+tx_B7Y34DBG5A,모든 파일럿 능력치 +{n}
 tx_TC94WX8SJC,{stat} +{n}
 tx_8A7H4WFZ7K, · 
 tx_T4X3A068J1,일상 훈련 편성
@@ -1970,13 +2035,13 @@ tx_A735T32EGT,신뢰도가 오를 때 +{p1} 더
 tx_NJ8WFC7JTK,사건 발생 확률 {p1}%
 tx_QWR2NXFX5M,분석 공개 단계 +{p1}
 tx_E9N9BW8Q0V,샐러리캡 +{p1}
-tx_6RMF7057WW,감독 스탯 여섯 모두 +{p1}
+tx_6RMF7057WW,모든 감독 능력치 +{p1}
 tx_ECBMZ4X60B,시설 유지비 {p1}%
-tx_V233CFRMZM,경기 개시 전략 포인트 +{p1}
+tx_V233CFRMZM,경기 개시 전략 점수 +{p1}
 tx_PQ6389S0B6,첫 자동 뽑기 +{p1}장
 tx_3KQPNVDQG5,손 상한 +{p1}
 tx_M929F4HK8X,작전 단계마다 첫 카드 비용 {p1}
-tx_YFNHSQ5GJ5,{p2}턴마다 전략 포인트 +{p1}
+tx_YFNHSQ5GJ5,{p2}턴마다 전략 점수 +{p1}
 tx_9XWKFPH3A6,주간 스폰서 수입 {p1}%
 tx_T6TSR16X7E,훈련 EXP {p1}%
 tx_35AVVM2TZS,신뢰도가 오를 때 {p1} 덜
@@ -2032,3 +2097,4 @@ tx_HEE9SJ62Q8,알 수 없는 시나리오 id {id}
 tx_VP8YTRQNQD,감독 프리셋: {error}
 tx_GDG84BJV4A,더 올릴 수 없습니다
 tx_9AYQATFV5B,레벨업 재화가 부족합니다 ({n} 필요)
+tx_07X2NJ1P4H,또는

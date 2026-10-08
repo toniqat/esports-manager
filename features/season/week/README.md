@@ -120,9 +120,10 @@ Two optional extras (§14 T4):
   the mech is the research mech, or the coach's fallback pick when none is set (`_mastery_text`).
 * **Quirk events** — the row's `quirk: [{kind, result, id?, from?, to?}]` (T1, missing = none) adds
   one line per event under a divider and the card grows by `QUIRK_LINE_H` each (`_add_pilot_card`
-  sets the item's minimum height): `기벽 획득 · <name>` / `기벽 재굴림 · a, b → c, d` (amber), `기벽 칸 +1 (n칸)`
+  sets the item's minimum height): `기벽 획득 · <name>` / `기벽 재굴림 · a, b → c, d` (amber), `기벽 칸 +QUIRK_SLOT_GAIN (n칸)`
   (green); no-op results (`full` / `none` / `max`) are faint lines. Names come from
-  `QuirkSystem.row(id).name`, falling back to `기벽 #id` (`_quirk_lines` / `_quirk_name`).
+  `QuirkSystem.row(id).name`, falling back to `기벽 #id` (`_quirk_lines` / `_quirk_name`). A gained slot reuses
+  the training tile label `training.quirk_op.slot`.
 
 ### Match card
 

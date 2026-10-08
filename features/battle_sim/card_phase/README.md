@@ -20,6 +20,34 @@
 Rules that `description` in `cards.csv` · `mech_cards.csv` follows. Icons attach automatically from
 words (`StrategyIcon._tokens`), so **write by the rules and the icons follow.**
 
+- **No numbers in the text.** A value from the card's `effect` column is a placeholder named by
+  `CardData.effect_params()` (clause `op:v|mod:w` gives `{op}`, `{op_mod}`, `{mod}` and `{<name>_abs}`):
+  "{engage}턴 간 교전", "뽑기 {draw}장", "{eva_buff_turns}턴 동안 … +{eva_buff}%", "[미사일] 찾기 {search_card_count}장".
+  A value that lives in code is a const.csv row, written `{<const_key lower>}` with the `Loc` suffixes
+  `_pct` · `_abs` · `_signed` ("최대 {engage_duel_max_rounds}턴", "+{card_confidence_hit_bonus_pct}%",
+  "피해 {card_herald_unopposed_dmg_mult}배"). If a number the text needs is only a code default, add it to
+  the effect instead (card 39 carries `|self_range:1` so the text can say `{engage_self_range}칸`). Fixed
+  design counts stay words ("1회 이상 명중", "양 옆 카드", "버린 카드 1장마다").
+- **Granted amounts are placeholders too** (owner rule: "+1 토큰", "1장 생성" could become 5 or 2).
+  Card-making clauses carry `|count:N` (default 1): `gen_hand` / `gen_deck` / `phase_b` multiply their
+  repeat count (`|per_hit` · `|per_kill`) by it and `search_card` searches N, so the text says
+  "[락온] {gen_hand_count}장 생성", "[단계 C] {phase_b_count}장 생성". 전장 강타 picks `charge + |base:N`
+  targets (`{attack_base}`). Trigger cards read const.csv (`MECH_TURRET_KILL_DECK_CARDS`,
+  `MECH_DEATH_HAND_CARDS`) and the charge keyword's hand-entry gain is `CARD_CHARGE_HAND_GAIN`.
+- **Plural and glossary words** (design doc §5): en writes `{plural:<name>|{tx_…one}|{tx_…other}}` after every
+  count (`term.unit.card/turn/token/time/tile`); ko references the `.one` key for 턴 · 토큰 · 타일 and the
+  `term.game.*` key for 손 · 소지 중 · 찾기 · 뽑기 · 버리기 · 버린 더미 · 작전 단계 · 전략 점수 · 성장 점수 · 비용 ·
+  시전자 · 필중 · 생성. A count that only exists at run time uses a tag whose name is the
+  same expression as the formula (`{plural:charge+{attack_base}|…}`, `{plural:max(1, chain)|…}`): `CardData.description`
+  calls `Loc.t(…, keep_unknown_plurals = true)`, and `resolve_text` picks the form from the live vars
+  (`_resolve_live_plurals`; outside battle it shows the plural, matching the "(phrase)" fallback).
+- **Shared words are key refs in ko** (`{tx_KEY}`, expanded by l10n build): 공격력 · 체력 · 최대 체력 · 보호막
+  (`term.combat.*`), 전장 명중 · 전장 회피 (`term.stat.*`), 또는 (`ui.word.or`), 덱 (`term.card.deck`),
+  keyword names (소멸 · 휘발성). en writes its own words. Two cards with the same text keep their own
+  keys and never reference each other.
+- **No em dash.** Split with a period, a colon or `
+`.
+
 - **Don't repeat what the attribute row says** — no preambles like "사거리 N 내 적 지정 —" /
   "전장 내 적 지정". Effects around the caster · target are **"범위 내 모든 적"** (all enemies in range;
   the radius is the attribute row's area value). "대상" used as a reference word (대상의 타일로 · 대상 체력) stays.
@@ -29,8 +57,8 @@ words (`StrategyIcon._tokens`), so **write by the rules and the icons follow.**
   if the effect is `own_jungle`, "적 정글 타일" (red) for `steal_camp`, "정글 타일" for `ambush`,
   otherwise "타일" (grey). An instant card whose clauses are all `|self` (몸집 불리기) has target
   "자신" (self). The attribute row states the target tile, so the text just says "이동".
-- **HP**: "체력" · "최대 체력" both get the heart icon. Write changes as "최대 체력 +20" ·
-  "공격력 +2" (not "20 증가").
+- **HP**: "체력" · "최대 체력" both get the heart icon. Write changes as "최대 체력 +{max_hp}" ·
+  "공격력 +{atk_add}" (not "N 증가").
 - **Cost**: "비용 +1" · "비용 -1" · "비용 0" (word first, number after).
 - **Attack**: once = "공격", several = "공격 2회". Sure hit is always the single unit
   **"필중 공격"** (one sure-hit icon).
@@ -52,7 +80,10 @@ words (`StrategyIcon._tokens`), so **write by the rules and the icons follow.**
     `CardData.ref_entries(data.description_key)` — the description key's reference keys from
     `data/l10n/generated/refs.json` (`Loc.refs`), each `{key, text, special, card}`.
   - **Effect terms** — a `keyword` domain ref (`keyword.<id>.name`, `CardData.SPECIAL_LABELS` /
-    `SPECIAL_NOTES`: track · reactive_armor · target · bounty · stun · vulnerable). A one-line note panel.
+    `SPECIAL_NOTES`: track · reactive_armor · target · bounty · stun · vulnerable). A one-line note panel
+    (`CardData.special_note`). Numbers in a note are const.csv placeholders, or, when the value belongs to the
+    card that applies the term, that card's effect placeholder: `CardDescBox.SPECIAL_NOTE_SOURCES` maps
+    `target` to [단계 A] and `special_note_params` passes its `effect_params()` (`{mark_target}`).
     A dedicated icon (`KeywordIcon.SPECIAL_ICONS`, keyed by id) precedes the term in the text · the panel
     title · the note line. For a new term, add `keyword.<id>.name` / `.note` keys (`new_key`), both tables
     (and `SPECIAL_ICONS` if it has an icon) and wrap it as `[term]` in the text.
@@ -69,7 +100,8 @@ words (`StrategyIcon._tokens`), so **write by the rules and the icons follow.**
   hand, so there is no value). Expression names are `charge` (tokens on the card) and `chain` (the
   casting pilot's [영혼 포식] tokens, `CardPhaseManager.desc_live_vars`). In the phrase, use a word that
   fits the effect instead of "토큰" (사용 횟수 · 충전 횟수).
-  Example: `소지 중: 성장 +{charge*8|사용 횟수×8}%`.
+  A factor inside the formula is a placeholder too; `Loc.t` fills it before `resolve_text` runs.
+  Example: `소지 중: 성장 +{charge*{card_gold_rush_growth_per_token_pct}|사용 횟수×{card_gold_rush_growth_per_token_pct}}%`.
 
 ## CardPhaseManager.gd
 `extends Node` — child of BattleSim.
@@ -1136,8 +1168,9 @@ stacking for the whole game (`_burn_charge` burns only charge cards).
   manager rather than the card because `charge` is already 0 at that point (the effect chain
   runs over several frames because of overlays).
 - The effect-side flag is **`|charge`**. `attack:N|area:N|charge` (미사일) hits each target
-  as many times as the charge, and `attack:N|random|charge` (전장 강타) picks **charge + 1**
-  random targets (the +1 is a constant term, so it fires once even at 0 charge).
+  as many times as the charge, and `attack:N|random|charge|base:B` (전장 강타) picks **charge + B**
+  random targets (B defaults to 1 and the result is at least 1, so it fires even at 0 charge).
+- Hand entry adds `CARD_CHARGE_HAND_GAIN` (const.csv) per entry, up to `charge_max`.
 - On screen it is `Card.refresh_charge_badge()` — the `N/M` badge at the card's **bottom right**
   (`CardData.shows_tokens()` — charge cards show `토큰/상한` (tokens/cap), 골드러시 shows the token count only).
   The top right is used by the caster portrait ribbon, the top left by the cost ribbon.
@@ -1499,7 +1532,7 @@ The DB column is a `;`-separated chain of clauses. Each clause is
 | `growth:N\|turns:T` | yes | 신중한 예산 · 성장 가속 · 소극적인 태세 — sets the caster's growth (성장) **gain multiplier** to `1 + N/100`. It is a multiple of the growth rate, not an amount added to the rate itself (+N% scales the per-turn rate by `1 + N/100`). Expiry is checked every turn by `SimulationCore.tick_growth_and_expiries`. With **`\|charge`**, N is multiplied by **the number of tokens burned** (성장 가속: its `growth` N per token; with 0 tokens nothing happens). It is an effect that overwrites one slot, so the later one wins. |
 | `growth_until_phase:N` | yes | 완벽한 마무리 — raises the growth gain multiplier of **every member of the caster's team** to `1 + N/100` and sets `growth_until_phase`. `_apply_phase_entry_carryovers` clears it when that team enters its next operation phase. Uses the same field as `growth:N`, so the later one wins. |
 | `growth_perm:N` | yes | [용 보상] — **permanently accumulates** N%p onto the growth accrual multiplier of **one designated allied pilot**. No expiry, no removal. It does not go into the `growth_rate_mult` used by the two clauses above (a slot they overwrite) but into a separate field `PilotData.growth_rate_bonus` — in the slot, eating the Dragon (용) several times would stop at a single Dragon's worth and a single laning card afterwards would wipe it. This clause is the **only** source of Dragon growth (the old `OBJ_DRAGON_GROWTH_PCT` game_config key was deleted). The final multiplier is combined in `BattleSim.add_score` as `growth_rate_mult + growth_rate_bonus`. **A card with no picked target applies it to the caster itself** — [핫핸드] is that case (an untargeted `instant` card, so `picked` is always null). The display reads the **per-card ledger** (`PilotData.persistent_fx`), not the total slot — see the *Persistent-effect ledger* section below. **Player**: PILOT mode (`target=ally`, unlimited `cast_range` — no caster, so the whole battlefield). **AI**: random ally. |
-| `turret_damage:N` | yes | [전령 제압] — N damage to the turret on the picked cell **with no hit roll**. Valid targets are `compute_turret_damage_targets` → `SimulationCore.outermost_enemy_turrets(team)`: only **the first living enemy turret met when scanning each lane T1 → T2** (no sniping inner turrets; in a lane whose T1 has fallen, T2 inherits the spot so there is still somewhere to use it late game). Application reuses `SimulationCore.apply_card_turret_damage` → the battlefield's `_apply_card_damage` as-is, so the shake FX · kill log · `Building` node release · jungle gain on T1 destruction happen in one place only. **Doubled if unopposed**: if there is not a single enemy pilot on that lane's front line (전선) (`SimulationCore.front_line_cells` — between both teams' front-most turrets, the same set as the gold outline on screen), damage is doubled. The Herald (전령) is an event of pushing into a lane, so if an undefended lane and a lane held by five were worth the same, "when and where to use it" would vanish. **Growth points (성장치) are split evenly among allies in that lane** (`_award_turret_damage_to_lane`; the right lane has two, sniper · supporter, so half each) — the Herald is a team reward with no caster, so the usual attribution path (`apply_card_turret_damage` → `score_turret_damage(attacker, …)`) reaches no one, and the ones who held that lane while pushing own the siege. Value per point is `SCORE_TURRET_FULL / TURRET_HP`, the same as a turret ground down on foot. **Player**: LOCATION mode. **AI**: random valid cell. |
+| `turret_damage:N` | yes | [전령 제압] — N damage to the turret on the picked cell **with no hit roll**. Valid targets are `compute_turret_damage_targets` → `SimulationCore.outermost_enemy_turrets(team)`: only **the first living enemy turret met when scanning each lane T1 → T2** (no sniping inner turrets; in a lane whose T1 has fallen, T2 inherits the spot so there is still somewhere to use it late game). Application reuses `SimulationCore.apply_card_turret_damage` → the battlefield's `_apply_card_damage` as-is, so the shake FX · kill log · `Building` node release · jungle gain on T1 destruction happen in one place only. **Unopposed multiplier**: if there is not a single enemy pilot on that lane's front line (전선) (`SimulationCore.front_line_cells` — between both teams' front-most turrets, the same set as the gold outline on screen), damage is multiplied by `CARD_HERALD_UNOPPOSED_DMG_MULT` (const.csv, `HERALD_UNOPPOSED_DMG_MULT`). The Herald (전령) is an event of pushing into a lane, so if an undefended lane and a lane held by five were worth the same, "when and where to use it" would vanish. **Growth points (성장치) are split evenly among allies in that lane** (`_award_turret_damage_to_lane`; the right lane has two, sniper · supporter, so half each) — the Herald is a team reward with no caster, so the usual attribution path (`apply_card_turret_damage` → `score_turret_damage(attacker, …)`) reaches no one, and the ones who held that lane while pushing own the siege. Value per point is `SCORE_TURRET_FULL / TURRET_HP`, the same as a turret ground down on foot. **Player**: LOCATION mode. **AI**: random valid cell. |
 | `discard_hand` | yes | First clause of 완벽한 마무리 — discard the whole hand. **Ignores** keep (보존). |
 | `discard_hand_draw` | yes | 재고 — discard the whole hand and draw again **as many as were discarded**. Hand size stays the same, only its contents change (if deck + discard run dry, only as many as could be drawn). |
 | `discard_right:N` | yes | 과감한 정리 — discard N cards from the **right** of the hand (the most recently entered side). `hand.pop_back()` × N. |

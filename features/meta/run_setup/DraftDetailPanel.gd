@@ -206,7 +206,7 @@ func _fill_skill() -> void:
 		meta += " · " + kw
 	%SkillMeta.text = meta
 	var desc_key: String = String(sk.get("description_key", ""))
-	_rich_paragraph(%SkillDesc, Loc.t(desc_key), CardData.ref_entries(desc_key))  # l10n-dynamic: pilot_skill.*.desc
+	_rich_paragraph(%SkillDesc, PilotSkillSystem.description_of(sk), CardData.ref_entries(desc_key))
 
 
 ## 이 선수의 고정 파일럿 카드 3장 — 설명판을 위에서부터 쌓는다(`%Cards` 간격).

@@ -106,13 +106,19 @@ static func reroll(state: Dictionary, pilot_id: int) -> Dictionary:
 	return {"result": "reroll", "from": from, "to": to}
 
 
-## +1 slot up to QUIRK_SLOTS_MAX. Returns `{result: "slot"|"max", slots}`.
+## Slots added per slot-op training (QUIRK_SLOT_GAIN, at least one).
+static func slot_gain() -> int:
+	return maxi(1, ConstTable.int_of("QUIRK_SLOT_GAIN"))
+
+
+## +`slot_gain()` slots, capped at QUIRK_SLOTS_MAX. Returns `{result: "slot"|"max", slots}`.
 static func add_slot(state: Dictionary, pilot_id: int) -> Dictionary:
 	var n: int = slots_of(state, pilot_id)
 	if not is_enabled(state) or not _has_entry(state, pilot_id) or n >= max_slots():
 		return {"result": "max", "slots": n}
-	_store(state, pilot_id, n + 1, quirks_of(state, pilot_id))
-	return {"result": "slot", "slots": n + 1}
+	var to: int = mini(n + slot_gain(), max_slots())
+	_store(state, pilot_id, to, quirks_of(state, pilot_id))
+	return {"result": "slot", "slots": to}
 
 
 ## Total per-stat bonus `{stat_key: int}` for the pilot riding `pd.assigned_mech`

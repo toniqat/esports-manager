@@ -32,6 +32,7 @@ const USAGE := """L10n 명령 (godot --headless --path . --script res://addons/l
   sync
   approve <locale> <key|alias>...        (오너 지시 시에만)
   rename_alias <old> <new>
+  move_key <key|alias> <new alias>       (다른 도메인 파일로 옮김: key · 번역 유지, 코드 L 상수 치환. 공유 낱말을 term/ui 로 올릴 때)
   scan
   validate [dev|release] [--fix-preview-leak]
   build [dev|release]
@@ -42,6 +43,9 @@ const USAGE := """L10n 명령 (godot --headless --path . --script res://addons/l
                                          (씬 · 리소스 고아 값 → key 발급 + 값 치환, 경로 = 파일 또는 폴더)
   extract code [경로...] [--out=<json>]   (코드 고아 리터럴 작업 목록, 기본 generated/extract_code.json)
   set_tr <locale> <json 경로>            (번역 초안 일괄: {"key 또는 alias": "번역", …} → draft)
+  edit <json 경로>                       (셀 일괄 수정: [{"key": key 또는 alias, "column": ko|en|context|max_len|note|status, "value"}, …]
+                                          원문을 고치면 번역은 stale, 같은 key 의 원문 → 번역 순으로 적으면 번역은 새 해시의 draft.
+                                          status = active | deprecated. 하나라도 틀리면 아무것도 안 바꿈)
 옵션: --config=<res://…/config.json> (기본 res://data/l10n/config.json)"""
 
 var config: Config
@@ -102,7 +106,8 @@ const EDIT_META_COLS := ["context", "max_len", "note"]
 ## hash, cleared text clears status · hash) or EDIT_META_COLS (max_len = "" or a positive int).
 ## Re-reads the sources first so a write never overwrites other edits on disk, checks every edit
 ## and Excel lock up front — any failure writes nothing. Returns an error string.
-func cmd_edit(edits: Array) -> String:
+## `status` (active / deprecated) is accepted only from the headless `edit` command.
+func cmd_edit(edits: Array, allow_status: bool = false) -> String:
 	reload()
 	var targets: PackedStringArray = config.target_locales()
 	var checked: Array = []
@@ -113,8 +118,11 @@ func cmd_edit(edits: Array) -> String:
 		var e: Dictionary = catalog.entry(key)
 		if e.is_empty():
 			return "없는 key: %s" % key
-		if column != config.source_locale and not targets.has(column) and not EDIT_META_COLS.has(column):
+		var is_status: bool = allow_status and column == "status"
+		if column != config.source_locale and not targets.has(column) and not EDIT_META_COLS.has(column) and not is_status:
 			return "편집할 수 없는 컬럼: %s" % column
+		if is_status and value != Catalog.STATUS_ACTIVE and value != Catalog.STATUS_DEPRECATED:
+			return "status 는 active / deprecated: %s (%s)" % [value, key]
 		if column == "max_len" and value != "" and not (value.is_valid_int() and value.to_int() > 0):
 			return "max_len 은 비우거나 양의 정수: %s (%s)" % [value, key]
 		var lock: String = Catalog.excel_lock_for(String(e["file"]))
@@ -128,7 +136,8 @@ func cmd_edit(edits: Array) -> String:
 		var value: String = c[2]
 		var err: String = ""
 		if targets.has(column):
-			if value == catalog.text(key, column):
+			# 같은 값이어도 stale 이면 다시 쓴다 (같은 묶음에서 원문을 고친 뒤 번역을 그대로 확인할 때).
+			if value == catalog.text(key, column) and not catalog.is_stale(key, column):
 				continue
 			err = catalog.set_translation(key, column, value)
 		else:
@@ -354,6 +363,23 @@ func cmd_set_translations(locale: String, json_path: String) -> String:
 	return ""
 
 
+## 헤드리스 `edit <json>`: [{key(또는 alias), column, value}] 를 key 로 풀어 `cmd_edit`(status 허용).
+func cmd_edit_json(json_path: String) -> String:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(json_path))
+	if typeof(parsed) != TYPE_ARRAY:
+		return "JSON 배열이 아님: %s" % json_path
+	reload()
+	var edits: Array = []
+	for it in parsed:
+		if typeof(it) != TYPE_DICTIONARY:
+			return "항목이 객체가 아님: %s" % str(it)
+		var key: String = resolve_key(String((it as Dictionary).get("key", "")))
+		if key == "":
+			return "없는 key/alias: %s" % str(it.get("key", ""))
+		edits.append({"key": key, "column": String(it.get("column", "")), "value": String(it.get("value", ""))})
+	return cmd_edit(edits, true)
+
+
 ## refs.json 본문 — 설명 key → [참조 key…] (D4). builder 가 쓴다.
 func resolve_refs(into: Issues = null) -> Dictionary:
 	return Refs.resolve(catalog, into)
@@ -401,6 +427,14 @@ static func run_cli(raw_args: PackedStringArray) -> int:
 				print(USAGE)
 				return 2
 			return 0 if l.cmd_approve(rest[0], rest.slice(1)) == "" else 1
+		"move_key":
+			if rest.size() != 2:
+				print(USAGE)
+				return 2
+			var merr: String = StatusOps.move_key(l, rest[0], rest[1])
+			if merr != "":
+				l.info("move_key 실패: " + merr)
+			return 0 if merr == "" else 1
 		"rename_alias":
 			return 0 if rest.size() == 2 and l.cmd_rename_alias(rest[0], rest[1]) == "" else 1
 		"scan":
@@ -439,6 +473,14 @@ static func run_cli(raw_args: PackedStringArray) -> int:
 			return 0 if werr == "" else 1
 		"extract":
 			return 0 if l.cmd_extract(rest) == "" else 1
+		"edit":
+			if rest.size() != 1:
+				print(USAGE)
+				return 2
+			var eerr: String = l.cmd_edit_json(resolve_path(rest[0]))
+			if eerr != "":
+				l.info("edit 실패, 아무것도 바꾸지 않음: " + eerr)
+			return 0 if eerr == "" else 1
 		"set_tr":
 			if rest.size() != 2:
 				print(USAGE)

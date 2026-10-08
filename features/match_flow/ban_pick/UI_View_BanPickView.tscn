@@ -294,7 +294,7 @@ offset_bottom = 36.0
 grow_horizontal = 0
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 18
-text = "tx_6Z915A6SVE"
+text = "tx_VDJKS7MNHE"
 horizontal_alignment = 2
 clip_text = true
 
@@ -647,7 +647,7 @@ offset_bottom = 332.0
 grow_horizontal = 2
 theme_type_variation = &"FaintLabel"
 theme_override_font_sizes/font_size = 20
-text = "tx_MJJHA43Q8J"
+text = "tx_FKR497Q4GS"
 
 [node name="SheetMastery" type="VBoxContainer" parent="SafeArea/Band/Pane/Sheet"]
 auto_translate_mode = 2

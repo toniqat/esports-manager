@@ -148,4 +148,6 @@ Reporter portrait: still the microphone drawn by `MessengerReporterGlyph` (`%Gly
 ## Localization
 Display text is l10n keys (`press` domain). `MessengerView.outcome_hint` is a key (default
 `press.messenger.hint_close`; the press screen sets `ui.button.tap_to_continue` in its scene), translated when shown.
-The F6 preview dialogue is `press.preview.*`. Question / answer texts come from `mental_texts.csv` (`mental` domain).
+The F6 preview dialogue is `press.preview.*`; its result chips reuse `mental.ui.note.*` with dummy params.
+Outlet names are `name.outlet.*` (one key per outlet); the event `@` lines in `mental_texts.csv` reference them
+(`@{tx_…}`), so an outlet is renamed in one place. Question / answer texts come from `mental_texts.csv` (`mental` domain).

@@ -522,7 +522,7 @@ static func _quirk_lines(events_raw: Variant) -> Array:
 					out.append([Loc.t(L.SEASON_WEEK_QUIRK_NO_REROLL), OutgameTheme.TEXT_FAINT])
 			"slot":
 				if result == "slot":
-					var txt: String = Loc.t(L.SEASON_WEEK_QUIRK_SLOT)
+					var txt: String = Loc.t(L.TRAINING_QUIRK_OP_SLOT)
 					if e.has("to"):
 						txt = Loc.t(L.SEASON_WEEK_QUIRK_SLOT_TO, {"n": int(e["to"])})
 					out.append([txt, OutgameTheme.POSITIVE])

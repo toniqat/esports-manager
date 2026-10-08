@@ -4,6 +4,8 @@
 `PlayerData.stat_label(i)`, the 돌파 kind table `BT_KIND_LABELS` holds keys (`collection.bt_kind.*`), the card_swap
 breakthrough row names the new card with `Loc.t(card_def.name_key)`. Scene nodes the script fills carry
 `auto_translate_mode = 2` (dummy text stays for WYSIWYG); fixed captions are key literals.
+Shared with other screens: origin team / stat total / load error reuse `run_setup.draft.origin_team` ·
+`run_setup.stat_total` · `run_setup.load_failed`; the shard section title is `term.currency.pilot_shard`.
 
 Lobby `컬렉션` tab — owned pilots, levels, breakthroughs, level-up. Contract:
 `docs/outgame_dev_plan.md` §12 (work D); tab contract: `features/meta/lobby/LobbyScreen.gd` header.
@@ -107,7 +109,7 @@ CollectionDetailSheet (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 
   back, so the bar can sit at 0); salary at the shown level; `훈련 EXP 보너스` when
   `train_bonus_pct ≠ 0`.
 - 능력치: six stats + 종합 (4 columns), each with the delta vs the Lv1 / stage-0 base (green).
-- 돌파 table: `RunRules.breakthrough_rows` (desc = `Loc.t(desc_key)`, `breakthrough.{id}.desc`) — 5 rows, reached = amber row + `달성`, next = `다음`;
+- 돌파 table: `RunRules.breakthrough_rows` (desc = kind template `breakthrough.kind.<kind>` filled from the row `value` in `_bt_desc`; `card_swap` = slot + new card name) — 5 rows, reached = amber row + `달성`, next = `다음`;
   `card_swap` rows append `→ <card name>` (`GameManager.card_def`).
 - 파일럿 카드: `GameManager.pilot_card_ids_for(fielded)` as light `CardDescBox`es; the title says
   `돌파로 교체됨` only when a swap actually changed the list.

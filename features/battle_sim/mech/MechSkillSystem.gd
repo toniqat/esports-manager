@@ -57,6 +57,9 @@ const TRIGGER_TURRET_KILL_DECK := "turret_kill_deck"
 ## 바뀌면서 "처치가 곧 명령"이라는 카드의 문장을 카드 자체를 주는 쪽으로 옮겼다 —
 ## 충전은 손패 진입에서 오고, 이 카드는 `소멸` 이라 쓰면 사라진다.
 const TRIGGER_DEATH_HAND := "death_hand"
+## 훅 한 번에 만드는 장수(설명문 `{mech_turret_kill_deck_cards}` · `{mech_death_hand_cards}`).
+static var TURRET_KILL_DECK_CARDS: int = ConstTable.int_of("MECH_TURRET_KILL_DECK_CARDS")
+static var DEATH_HAND_CARDS: int = ConstTable.int_of("MECH_DEATH_HAND_CARDS")
 
 # ─── 핸드 상주 카드 (`hand_passive:<key>`) ───────────────────────────────────
 # 비용 -1 이라 낼 수 없고, **손패에 있는 것만으로** 일하는 네 장이다. 절이
@@ -98,6 +101,21 @@ static var SCORE_COST_UNIT: float = ConstTable.num("MECH_SCORE_COST_UNIT")
 static var PHASE_BOON_BETA_CHARGE: int = ConstTable.int_of("MECH_PHASE_BOON_BETA_CHARGE")
 ## 단계 C 의 강화 [감마] — 다음 [단계 C] 를 낼 때 버는 자기 성장치 비율.
 static var PHASE_BOON_GAMMA_RATE: float = ConstTable.num("MECH_PHASE_BOON_GAMMA_RATE")
+## 무념: 최대 충전 시 모든 적을 치는 사거리(칸).
+static var ZEN_RANGE: int = ConstTable.int_of("MECH_ZEN_RANGE")
+## 과적재: 최대 체력 `p1` 마다 얻는 공격력.
+static var BULK_POWER_ATK: int = ConstTable.int_of("MECH_BULK_POWER_ATK")
+## 사건 한 번에 얻는 충전(토큰).
+static var EXECUTION_CHARGE_GAIN: int = ConstTable.int_of("MECH_EXECUTION_CHARGE_GAIN")
+static var ZEN_CHARGE_GAIN: int = ConstTable.int_of("MECH_ZEN_CHARGE_GAIN")
+## 패시브가 만들어 주는 카드 장수(설명문 `{mech_…_cards}`).
+static var PAIN_PLEASURE_CARDS: int = ConstTable.int_of("MECH_PAIN_PLEASURE_CARDS")
+static var VICTORY_REPORT_CARDS: int = ConstTable.int_of("MECH_VICTORY_REPORT_CARDS")
+static var DEMOLITION_ORDER_CARDS: int = ConstTable.int_of("MECH_DEMOLITION_ORDER_CARDS")
+static var EXECUTION_CARDS: int = ConstTable.int_of("MECH_EXECUTION_CARDS")
+static var MISSILE_STOCK_CARDS: int = ConstTable.int_of("MECH_MISSILE_STOCK_CARDS")
+## 오버클럭: 발동 한 번에 더 하는 교전 공격 횟수.
+static var OVERCLOCK_EXTRA_ATTACKS: int = ConstTable.int_of("MECH_OVERCLOCK_EXTRA_ATTACKS")
 # ─── 단계 C 의 강화 3택 ──────────────────────────────────────────────────────
 # [단계 C] 를 낼 때 하나를 고르고, 그 다음 한 번에만 쓰인다. 세 값이 서로 다른
 # 카드에 걸리므로(알파 = 단계 A, 베타 = 단계 B, 감마 = 단계 C) 파일럿당 하나만
@@ -189,6 +207,17 @@ func has_passive(p: PilotData, key: String) -> bool:
 	return passive_key(p) == key
 
 
+## 패시브 행 하나(`GameManager.mech_passive_def`)의 설명문. 수치는 글자로 적지 않는다:
+## 튜닝 상수는 `{mech_…}`(const.csv, `Loc.fill_consts`), 행의 `p1` · `p2` 는 여기서 채운다.
+## 패시브 설명을 보여 주는 화면은 모두 이 함수를 거친다(`Loc.t(description_key)` 를 직접
+## 부르면 `{p1}` · `{p2}` 가 그대로 보인다).
+static func passive_description(def: Dictionary) -> String:
+	var key: String = String(def.get("description_key", ""))
+	if key.is_empty():
+		return ""
+	return Loc.t(key, {"p1": int(def.get("p1", 0)), "p2": int(def.get("p2", 0))})  # l10n-dynamic: mech_passive.*.desc
+
+
 func _param(p: PilotData, which: String, fallback: int) -> int:
 	var def: Dictionary = passive_def(p)
 	if def.is_empty():
@@ -237,12 +266,12 @@ func spend_charge(p: PilotData, n: int) -> bool:
 func _on_charge_full(p: PilotData) -> void:
 	match passive_key(p):
 		KEY_EXECUTION_CHARGE:
-			# 처형 준비 — 핸드에 [처형] 한 장. 이미 들고 있으면 더 만들지
+			# 처형 준비: 핸드에 [처형] `EXECUTION_CARDS` 장. 이미 들고 있으면 더 만들지
 			# 않는다(보존 키워드라 안 버려지고 쌓이기만 한다).
 			if not _hand_has_card(p, CARD_EXECUTE):
-				_grant_card_to_hand(p, CARD_EXECUTE)
+				_grant_card_to_hand(p, CARD_EXECUTE, EXECUTION_CARDS)
 		KEY_ZEN_CHARGE:
-			# 무념 — 충전을 전부 태워 사거리 1 내 모든 적을 친다. 카드가 아니라
+			# 무념: 충전을 전부 태워 사거리 `ZEN_RANGE` 안의 모든 적을 친다. 카드가 아니라
 			# 패시브가 직접 때리는 유일한 자리다.
 			spend_charge(p, max_charge_of(p))
 			_zen_sweep(p)
@@ -256,13 +285,13 @@ func atk_mult(_p: PilotData) -> float:
 	return 1.0
 
 
-## 과적재(탱커 E) — **최대 체력 `p1` 마다 공격력 +1.** 체력에서 파생되는 값이라
+## 과적재(탱커 E): **최대 체력 `p1` 마다 공격력 `BULK_POWER_ATK`.** 체력에서 파생되는 값이라
 ## 최대 체력이 확정된 뒤에 더해져야 하고, 그래서 배율이 아니라 가산으로 돌려준다.
 func bulk_power_atk(p: PilotData, final_max_hp: int) -> int:
 	if not has_passive(p, KEY_BULK_POWER):
 		return 0
 	var per: int = maxi(1, _param(p, "p1", 10))
-	return int(final_max_hp / per)
+	return int(final_max_hp / per) * BULK_POWER_ATK
 
 
 ## `victim` 이 `attacker` 에게 받는 피해에 곱해지는 배율. 셋이 합쳐진다 —
@@ -346,7 +375,7 @@ func on_card_played(cd: CardData, is_player: bool) -> void:
 	var caster: PilotData = cd.owner_pilot
 	# 무념(암살 T) — 카드를 **쓰든 버리든** 충전이 오른다.
 	if caster != null and has_passive(caster, KEY_ZEN_CHARGE):
-		add_charge(caster, 1)
+		add_charge(caster, ZEN_CHARGE_GAIN)
 	# 캐시(원딜 B) — 손패에 [캐시] 를 들고 있는 파일럿은 아무 카드나 나갈 때마다
 	# 자기 성장치의 `CASH_RATE` 를 번다. 카드를 **낸 사람**이 아니라 캐시를 **들고 있는
 	# 사람**이 버는 것이라 손패 전체를 훑는다.
@@ -358,7 +387,7 @@ func on_card_discarded(cd: CardData, _is_player: bool) -> void:
 	if cd == null or cd.owner_pilot == null:
 		return
 	if has_passive(cd.owner_pilot, KEY_ZEN_CHARGE):
-		add_charge(cd.owner_pilot, 1)
+		add_charge(cd.owner_pilot, ZEN_CHARGE_GAIN)
 
 
 ## **카드 공격**이 한 대 명중했다. 전장 자동 교전은 부르지 않는다 — 취약 각인도
@@ -415,7 +444,7 @@ func on_damage_taken(victim: PilotData, amount: int) -> void:
 ## 누가 쓰러졌다. `BattleSim.mark_pilot_dead` 가 파일럿 스킬 바로 뒤에 부른다.
 func on_kill(victim: PilotData, killer: PilotData) -> void:
 	if killer != null and has_passive(killer, KEY_EXECUTION_CHARGE):
-		add_charge(killer, 1)
+		add_charge(killer, EXECUTION_CHARGE_GAIN)
 	# [공격 명령] — 아군이든 적이든 누가 죽으면 그 카드의 스택이 오른다.
 	_grant_death_cards()
 	# 쓰러진 파일럿에게 걸려 있던 지속 상태는 전장을 떠나며 함께 걷힌다.
@@ -427,10 +456,11 @@ func on_kill(victim: PilotData, killer: PilotData) -> void:
 ## `killer` 는 철거한 쪽, `td` 는 무너진 포탑이다.
 func on_turret_destroyed(killer: PilotData, td: TurretData = null) -> void:
 	if killer != null and has_passive(killer, KEY_EXECUTION_CHARGE):
-		add_charge(killer, 1)
+		add_charge(killer, EXECUTION_CHARGE_GAIN)
 	# 꿰뚫는 번개 — 적 포탑이 무너질 때마다 그 팀 덱에 한 장.
 	if killer != null:
-		_grant_trigger_cards(killer.team, TRIGGER_TURRET_KILL_DECK, CARD_PIERCING_BOLT)
+		_grant_trigger_cards(killer.team, TRIGGER_TURRET_KILL_DECK, CARD_PIERCING_BOLT,
+				TURRET_KILL_DECK_CARDS)
 	if td == null:
 		return
 	for raw in _bs.pilots:
@@ -440,13 +470,13 @@ func on_turret_destroyed(killer: PilotData, td: TurretData = null) -> void:
 		match passive_key(p):
 			KEY_MISSILE_STOCK:
 				# 미사일 적재(원딜 C) — **자신 레인의** 포탑이라면 어느 팀
-				# 것이든 무너질 때마다 덱에 [미사일] 한 장. 밀리는 쪽도
+				# 것이든 무너질 때마다 덱에 [미사일] `MISSILE_STOCK_CARDS` 장. 밀리는 쪽도
 				# 미는 쪽도 탄약이 는다.
-				_grant_card_to_deck(p, CARD_MISSILE)
+				_grant_card_to_deck(p, CARD_MISSILE, MISSILE_STOCK_CARDS)
 			KEY_PAIN_PLEASURE:
 				# 고통과 쾌감(탱커 N) — 자기 레인 포탑을 **자기가** 부쉈을 때만.
 				if p == killer:
-					_grant_card_to_deck(p, CARD_PAIN_PLEASURE)
+					_grant_card_to_deck(p, CARD_PAIN_PLEASURE, PAIN_PLEASURE_CARDS)
 
 
 ## 용 / 전령 싸움을 한 팀이 가져갔다. `ObjectiveSystem` 이 정산 직후 부른다.
@@ -456,8 +486,8 @@ func on_objective_win(team: int) -> void:
 		if p.team != team:
 			continue
 		match passive_key(p):
-			KEY_VICTORY_REPORT:  _grant_card_to_hand(p, CARD_VICTORY)
-			KEY_DEMOLITION_ORDER: _grant_card_to_hand(p, CARD_DEMOLISH)
+			KEY_VICTORY_REPORT:  _grant_card_to_hand(p, CARD_VICTORY, VICTORY_REPORT_CARDS)
+			KEY_DEMOLITION_ORDER: _grant_card_to_hand(p, CARD_DEMOLISH, DEMOLITION_ORDER_CARDS)
 
 
 ## 교전 무대가 열렸다. 참가자 명단이 확정된 직후 `EngagePhaseManager` 가 부른다.
@@ -773,37 +803,41 @@ func _hand_has_card(p: PilotData, card_id: int) -> bool:
 	return false
 
 
-func _grant_card_to_hand(p: PilotData, card_id: int) -> void:
+## `count` 장을 손패에 만든다(패시브가 주는 장수는 const.csv, 카드 훅은 한 장씩).
+func _grant_card_to_hand(p: PilotData, card_id: int, count: int = 1) -> void:
 	if _bs.card_phase == null:
 		return
-	var cd: CardData = _bs.card_phase.make_mech_card_by_id(card_id, p)
-	if cd == null:
-		return
-	_bs.card_phase.add_card_to_hand(cd, p.team == 0)
+	for _i in count:
+		var cd: CardData = _bs.card_phase.make_mech_card_by_id(card_id, p)
+		if cd == null:
+			return
+		_bs.card_phase.add_card_to_hand(cd, p.team == 0)
 
 
-func _grant_card_to_deck(p: PilotData, card_id: int) -> void:
+## `count` 장을 덱에 섞어 넣는다(장수 규칙은 `_grant_card_to_hand` 와 같다).
+func _grant_card_to_deck(p: PilotData, card_id: int, count: int = 1) -> void:
 	if _bs.card_phase == null:
-		return
-	var cd: CardData = _bs.card_phase.make_mech_card_by_id(card_id, p)
-	if cd == null:
 		return
 	var deck: Array = _bs.player_deck if p.team == 0 else _bs.ai_deck
-	deck.append(cd)
+	for _i in count:
+		var cd: CardData = _bs.card_phase.make_mech_card_by_id(card_id, p)
+		if cd == null:
+			break
+		deck.append(cd)
 	deck.shuffle()
 	_bs.card_phase.update_deck_discard_labels()
 
 
 ## `trigger` 훅이 걸린 카드를 **그 카드를 실제로 들고 있는 파일럿에게만** 준다.
 ## 훅은 카드에 붙어 있으므로, 그 카드를 가진 사람이 팀에 없으면 아무 일도 없다.
-func _grant_trigger_cards(team: int, trigger: String, card_id: int) -> void:
+func _grant_trigger_cards(team: int, trigger: String, card_id: int, count: int) -> void:
 	for raw in _bs.pilots:
 		var p := raw as PilotData
 		if p.team != team:
 			continue
 		if not _owns_trigger_card(p, trigger):
 			continue
-		_grant_card_to_deck(p, card_id)
+		_grant_card_to_deck(p, card_id, count)
 
 
 ## 이 파일럿의 기체가 그 훅을 단 카드를 들고 오는가. 배분 표(`starter_cards`)를
@@ -828,7 +862,7 @@ func _grant_death_cards() -> void:
 			continue
 		var cid: int = _trigger_card_id(p, TRIGGER_DEATH_HAND)
 		if cid >= 0:
-			_grant_card_to_hand(p, cid)
+			_grant_card_to_hand(p, cid, DEATH_HAND_CARDS)
 
 
 ## 이 파일럿의 기체가 들고 오는 카드 중 그 훅을 단 카드의 id. 없으면 -1.
@@ -849,7 +883,7 @@ func _soul_harvest_gain(p: PilotData) -> void:
 	_bs.refresh_growth_stats(p)
 
 
-## 무념(암살 T) 최대 충전 — 사거리 1 내 모든 적을 한 번씩 친다.
+## 무념(암살 T) 최대 충전: 사거리 `ZEN_RANGE` 안의 모든 적을 한 번씩 친다.
 func _zen_sweep(p: PilotData) -> void:
 	if _bs.card_phase == null or not p.alive:
 		return
@@ -857,6 +891,6 @@ func _zen_sweep(p: PilotData) -> void:
 		var t := raw as PilotData
 		if not t.alive or t.team == p.team:
 			continue
-		if _bs.hex_grid.hex_distance(p.grid_pos, t.grid_pos) > 1:
+		if _bs.hex_grid.hex_distance(p.grid_pos, t.grid_pos) > ZEN_RANGE:
 			continue
 		_bs.card_phase.deal_simple_attack(p, t, 1)

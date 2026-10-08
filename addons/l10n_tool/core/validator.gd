@@ -16,6 +16,7 @@ const Keygen = preload("res://addons/l10n_tool/core/keygen.gd")
 const Hasher = preload("res://addons/l10n_tool/core/hasher.gd")
 const Tokens = preload("res://addons/l10n_tool/core/tokens.gd")
 const TermMatch = preload("res://addons/l10n_tool/core/term_match.gd")
+const KeyRefs = preload("res://addons/l10n_tool/core/key_refs.gd")
 
 const MODE_RELEASE := "release"
 const JOSA_SCRIPT := "res://resources/StrategyIcon.gd"
@@ -33,7 +34,8 @@ const LEGEND := {
 	"E013": "L 상수 이름 충돌",
 	"E031": "approved 인데 해시 없음", "W031": "stale 번역", "W032": "번역 없이 status 만 있음",
 	"E033": "값 자리표시자 집합 불일치", "E034": "카드 참조 [x] 불일치", "E035": "원문 외 로케일에 조사 태그",
-	"E036": "참조 이름 중복", "W034": "BBCode 태그 짝 불일치", "W035": "max_len 초과",
+	"E036": "참조 이름 중복",
+	"E037": "key 참조 {tx_…} 가 없는 key", "E038": "key 참조 {tx_…} 가 deprecated", "E039": "key 참조 순환", "E040": "복수 태그 {plural:…} 형식 · 형태 수", "W034": "BBCode 태그 짝 불일치", "W035": "max_len 초과",
 	"E041": "data_columns 셀이 없는 key", "E042": "data_columns key 의 alias 가 규칙과 다름",
 	"W041": "data_columns 의 CSV · 컬럼이 아직 없음 (이행 전)",
 	"E051": "없는 L 상수", "W052": "씬 고아 텍스트", "E052": "씬 고아 텍스트",
@@ -52,6 +54,8 @@ static func validate(l, mode: String) -> void:
 	_check_josa_tags(l, iss)
 	_check_format(l, iss)
 	_check_translations(l, iss)
+	KeyRefs.check(l.catalog, iss)
+	_check_plurals(l, iss)
 	l.resolve_refs(iss)
 	_check_data_columns(l, iss)
 	_check_glossary(l, iss)
@@ -156,7 +160,8 @@ static func _check_translations(l, iss: Issues) -> void:
 		var ln: int = int(e["line"])
 		var src: String = e["source"]
 		var src_hash: String = Hasher.hash_text(src)
-		var src_ph: PackedStringArray = Tokens.placeholder_set(src, josa)
+		# 자리표시자는 key 참조를 펼친 문장으로 판정한다 (참조는 언어마다 선택 사항).
+		var src_ph: PackedStringArray = Tokens.placeholder_set(KeyRefs.expand(l.catalog, src, cfg.source_locale, "dev"), josa)
 		var src_bb: Array = _bb_sorted(src, bb)
 		var max_len: int = -1
 		var ml: String = String(e["max_len"]).strip_edges()
@@ -181,8 +186,9 @@ static func _check_translations(l, iss: Issues) -> void:
 			if h != src_hash:
 				var why: String = "해시 없음 — sync 필요" if h.is_empty() else "원문이 바뀜"
 				iss.warn("W031", "%s 번역 stale (%s)" % [loc, why], f, ln, key)
-			var ph: PackedStringArray = Tokens.placeholder_set(t, josa)
-			if ph != src_ph:
+			var t_exp: String = KeyRefs.expand(l.catalog, t, loc, "dev")
+			var ph: PackedStringArray = Tokens.placeholder_set(t_exp, josa)
+			if t_exp != "" and ph != src_ph:
 				iss.error("E033", "%s 자리표시자 %s ≠ 원문 %s" % [loc, str(ph), str(src_ph)], f, ln, key)
 			var jt: PackedStringArray = Tokens.josa(t, josa)
 			if not jt.is_empty():
@@ -210,6 +216,29 @@ static func _bb_balanced(text: String, bb: Array) -> bool:
 		else:
 			stack.append(tag)
 	return stack.is_empty()
+
+
+# ── 복수 태그: E040 (active 만) ──────────────────────────────────────────
+# `{plural:name|…}` 는 로케일 규칙표(`Loc.plural_index`)의 형태 수만큼 형태를 가져야 한다.
+# 지금은 모든 로케일이 one · other 두 형태. 닫히지 않은 태그도 E040.
+const PLURAL_FORMS := 2
+
+static func _check_plurals(l, iss: Issues) -> void:
+	var cfg: Config = l.config
+	for e in l.catalog.all_entries:
+		if e["status"] != Catalog.STATUS_ACTIVE:
+			continue
+		var texts: Dictionary = {cfg.source_locale: String(e["source"])}
+		for loc in cfg.target_locales():
+			texts[loc] = String(e["tr"][loc]["text"])
+		for loc in texts.keys():
+			var t: String = texts[loc]
+			var found: Array = Tokens.plurals(t)
+			if t.count("{plural:") != found.size():
+				iss.error("E040", "%s 복수 태그 형식 오류 (`{plural:이름|단수|복수}`)" % loc, String(e["file"]), int(e["line"]), String(e["key"]))
+			for p in found:
+				if (p["forms"] as PackedStringArray).size() != PLURAL_FORMS:
+					iss.error("E040", "%s 복수 태그 {plural:%s} 형태 %d개 (필요 %d)" % [loc, p["name"], (p["forms"] as PackedStringArray).size(), PLURAL_FORMS], String(e["file"]), int(e["line"]), String(e["key"]))
 
 
 # ── 데이터 테이블: E041 · E042 · W041 ─────────────────────────────────────
@@ -322,9 +351,9 @@ static func _check_terms(l, iss: Issues, terms: Array) -> void:
 		var key: String = e["key"]
 		var f: String = e["file"]
 		var ln: int = int(e["line"])
-		var texts: Dictionary = {src_loc: String(e["source"])}
+		var texts: Dictionary = {src_loc: _expanded(l, String(e["source"]), src_loc)}
 		for loc in cfg.target_locales():
-			texts[loc] = String(e["tr"][loc]["text"])
+			texts[loc] = _expanded(l, String(e["tr"][loc]["text"]), loc)
 		for term in terms:
 			for loc in texts.keys():
 				var t: String = texts[loc]
@@ -349,6 +378,29 @@ static func _check_terms(l, iss: Issues, terms: Array) -> void:
 
 # Substring, case-insensitive — forbidden forms only. Standard forms go through TermMatch
 # (a match_<loc> regex wins over the substring rule).
+# 용어 검사용 문장: key 참조를 펼치고(펼칠 수 없으면 원래 문장. 그 오류는 E037 ~ E039),
+# 값 자리표시자 · 조사 태그 `{name}` 는 지운다 (`{skill_opportunist_rounds}` 의 "round" 오탐 방지).
+static func _expanded(l, text: String, loc: String) -> String:
+	var x: String = KeyRefs.expand(l.catalog, text, loc, "dev")
+	if x == "" and text != "":
+		x = text
+	if x.find("{") < 0:
+		return x
+	if _re_name_token == null:
+		_re_name_token = RegEx.create_from_string("\\{[a-z][a-z0-9_]*\\}")
+	x = _re_name_token.sub(x, " ", true)
+	# 복수 태그 이름(`{plural:skill_siege_rounds|…}`)도 낱말이 아니다. 형태만 남긴다.
+	if _re_plural_name == null:
+		_re_plural_name = RegEx.create_from_string("\\{plural:[a-z][a-z0-9_]*")
+	return _re_plural_name.sub(x, "{", true)
+
+
+static var _re_plural_name: RegEx = null
+
+
+static var _re_name_token: RegEx = null
+
+
 static func _contains(text: String, word: String) -> bool:
 	return text.findn(word) >= 0
 

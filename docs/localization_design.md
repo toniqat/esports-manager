@@ -44,6 +44,12 @@
 | D15 | 중복 텍스트 | 데이터 행마다 별도 key. 중복 · E036 후보는 보고서로 |
 | D16 | 고아 검사 제외 | 로그 함수(`print` · `printerr` · `push_warning` · `push_error` · `assert`) 인자, 주석, `scan.ignore_paths`(디버그 · 치트 · 덤프). 나머지는 전부 검사 |
 | D17 | 카드 도메인 | 파일럿 · 메크 카드를 **하나의 `card` 도메인**으로: `card.pilot.{id}.name` · `card.mech.{id}.name` |
+| D18 | key 참조 (2026-10-08) | 문장 안에 다른 key 를 `{tx_KEY}` 로 넣어 공유 낱말을 다시 쓴다(§5). build 가 같은 로케일 텍스트로 펼친다. **언어마다 선택**: ko 는 조합하고, 관사 · 성 · 격 · 대소문자가 안 맞는 언어는 참조 없이 직접 쓴다(참조 짝은 검사하지 않음) |
+| D19 | 합치는 기준 (2026-10-08) | 글자가 같아도 **주체와 뜻이 같을 때만** 합치거나 참조한다. 서로 다른 카드 · 스킬처럼 주체가 다르면 같은 문구여도 key 를 따로 두고 서로 참조하지 않는다(밸런스로 한쪽 문구가 바뀌어도 다른 쪽이 안 바뀌게). 동음이의(카드 이름 교환 / 버튼 교환, 포지션 원딜 / 메크 역할 원딜)는 따로 |
+| D20 | 수치 (2026-10-08) | 바뀔 수 있는 수치는 문장에 적지 않는다. 카드 = `effect` 값(`CardData.effect_params`), 튜닝 값 = const.csv 자리표시자(§10.2), 데이터 행 값 = 호출부 params. 돌파는 행마다 key 대신 kind 별 틀 `breakthrough.kind.*` + `value` (D15 예외, `pilot_breakthrough.desc_key` 컬럼 제거) |
+| D22 | 복수형 (2026-10-08) | 수량 명사는 복수 태그 `{plural:이름|단수|복수}` 로 쓴다(§5). 단위 낱말은 `term.unit.<단위>.{one,other}` 공유 key 쌍(ko 는 둘 다 같은 말). 형태 수는 로케일 규칙표 `Loc.plural_index` 를 따른다(지금 2형태, 3형태 이상 언어는 규칙표와 태그를 늘린다) |
+| D23 | 공유 낱말 · 부여량 (2026-10-08) | 여러 곳에서 쓰는 낱말은 공유 key(`term.*` · `ui.*` · `name.*`)로 둔다. 기능 도메인에 있던 것은 `move_key` 로 옮긴다(key 그대로, 코드 L 상수만 바뀜). 용어집 용어는 `term.game.*` key 와 연결. 카드 · 스킬 · 시스템이 주거나 만들거나 더하는 양(토큰 +N, N장 생성, 칸 +N)은 항상 변수(effect · p1/p2 · const.csv)로 두고 문장은 자리표시자로 쓴다 |
+| D21 | 표기 (2026-10-08) | 표시 텍스트에 em dash 를 쓰지 않는다. "스탯" 대신 주체별 공유 낱말 `term.stat.{pilot,manager,mech}` (파일럿 · 감독 · 기체 능력치) |
 
 ## 0.6 남은 일 (2차 이행 후)
 
@@ -103,7 +109,12 @@ ban/pick role tags → `match.ban_pick.role.*` (English caps in every locale, ow
 `term.week.count` "{n}주" · `term.record.win_loss` "{win}승 {loss}패" · `term.person.{manager,staff}` 감독 · 스태프 ·
 `term.card.{pilot_card,mech_card,deck}` 파일럿 카드 · 메크 카드 · 덱 ·
 `term.activity.{training,press,interview,outing}` 훈련 · 기자회견 · 면담 · 외출.
-단독 낱말로 쓸 때만 이 key 를 쓴다 — 문장 안에 든 같은 낱말은 그 문장의 key 하나로 쓴다(§6.1).
+`term.stat.{pilot,manager,mech}` 파일럿 능력치 · 감독 능력치 · 기체 능력치(D21, en 은 문장 중간 소문자) ·
+`ui.word.or` 또는 · `term.stat.pilot_all` 모든 파일럿 능력치 · `term.manager_stat.*` 감독 능력치 이름(훈련 · 전술 …) ·
+`term.currency.*` 재화 이름 · `term.skill_type.{charge,passive,cooldown}` · `term.pilot.owned` 보유 선수 ·
+`term.game.*` 용어집 게임 용어(손 · 찾기 · 작전 단계 · 전략 점수 · 비용 …, 용어집 `key` 로 연결) ·
+`term.unit.<tile|card|turn|token|time|week>.{one,other}` 복수 태그용 단위 쌍 · `name.outlet.*` 매체 이름.
+단독 낱말로 쓸 때는 이 key 를 코드에서 쓰고, 문장 안에 든 같은 뜻의 낱말은 그 문장에 `{tx_KEY}` 참조로 넣는다(D18 · §5).
 
 ### `keyword.icon.*` — 설명문 아이콘 낱말 (표시하지 않는 매칭 표)
 
@@ -356,6 +367,11 @@ engage,tx_7ZKD3M1QWE,,,,,,교전 — 표시 문자열의 key 를 따른다
 | **카드 참조** | `[카드 이름]` (괄호 안이 `bbcode_tags` 가 아님) | 원문의 `[x]` 는 `ref_domains` 의 원문 이름 중 하나여야 하고, 번역문에는 **같은 key 의 그 언어 이름**이 `[ ]` 로 들어가야 한다 | E034 |
 | **줄바꿈** | 리터럴 `\n` | 자유 | — |
 
+- **key 참조** (D18) `{tx_XXXXXXXXXX}`: build 가 그 key 의 **같은 로케일** 텍스트로 펼친다(중첩 가능). 언어마다 선택이라 원문과 번역의 참조 짝은 보지 않는다. 대상은 active key(E037 없는 key · E038 deprecated · E039 순환). dev 는 번역이 없으면 원문으로 펼치고, release 는 approved · 비-stale 번역이 없으면 그 행을 빼서 폴백에 맡긴다(한 문장에 두 언어가 섞이지 않게). 원본 CSV 에는 key 로 적고, L10n 편집기 상세에 참조 alias 와 펼친 문장이 보인다. 참조된 key 는 사용처(kind `ref`)로 기록된다.
+- **복수 태그** (D22) `{plural:name|단수|복수}`: 런타임 `Loc.t` 가 `name` 값(params, 카드 effect 값, 또는 const 자리표시자 이름)으로 형태를 고른다(`Loc.plural_index`: 1 이면 첫 형태, fr · pt 는 0 · 1 이 첫 형태). 형태 안에는 key 참조를 쓸 수 있다(`{plural:draw|{tx_card.one}|{tx_card.other}}`, build 가 펼침). 태그 이름은 값 자리표시자로 세지 않는다(ko 에는 태그가 없다). 카드 설명에서는 이름이 전투 중에만 정해지는 값이나 식이어도 된다(`{plural:charge+{attack_base}|time|times}`, `max(1, chain)`): `Loc.t(…, keep_unknown_plurals = true)` 가 태그를 남기고 `CardDescBox.resolve_text` 가 전투 값으로 고른다(전투 밖이면 복수형). 형식 · 형태 수 오류는 E040. ko 는 복수가 없어 태그 없이 `.one` key 를 참조한다.
+- E033 · 용어집 검사는 key 참조를 **펼친 문장**으로 판정한다. ko 가 `모든 {tx_X} +{n}` 이고 en 이 참조 없이 `All pilot stats +{n}` 이어도 통과한다.
+- 참조된 key 를 고쳐도 참조하는 문장의 번역은 stale 이 되지 않는다(각 로케일이 자기 텍스트로 펼치므로). en 이 참조 없이 직접 쓴 문장은 참조 대상이 바뀌면 손으로 맞춘다.
+- 다국어 주의: 낱말 조합(`{적} {또는} {아군}`)은 유럽어에서 관사 · 성 · 격 · 대소문자 때문에 그대로 옮겨지지 않는다. `term.*` 의 en 은 대부분 단독 라벨용 Title Case 다. 문장 중간에 끼울 공유 낱말(`term.stat.*`, `ui.word.or`)은 en 을 문장 중간 소문자 표기로 둔다.
 - 값 자리표시자에 들어갈 이름 · 숫자에 조사가 붙으면 ko 원문은 `{name}{i}` 처럼 태그를 쓴다. 다른 언어는 태그 없이 문장을 짠다.
 - 카드 참조는 이름 문자열로 남긴다(Excel 에서 읽히도록). 검증기가 이름 → key 를 역으로 찾아 번역 쌍을 맞춘다. 원문 이름이 둘 이상의 key 와 같으면 E036.
 - BBCode 는 현재 데이터에 없다. 쓰게 되면 원문과 번역의 태그 짝이 맞아야 한다(W034).
@@ -537,8 +553,10 @@ alias 패턴의 `*` 는 세그먼트 하나에 맞는다.
 모든 코드 텍스트가 거치는 단일 경로:
 
 1. `TranslationServer.translate(key)`
-2. `params` 로 값 자리표시자 치환 (`String.format`)
-3. `\n` 리터럴 → 개행, 조사 태그 처리 (`StrategyIcon.resolve_josa` — 원문 로케일이 아니면 태그가 없으므로 그대로 통과)
+2. 복수 태그 `{plural:…}` 를 고른다 (`Loc.resolve_plurals`, D22). 태그 안 이름이 값으로 바뀌기 전에 한다
+3. `params` 로 값 자리표시자 치환 (`String.format`)
+4. 남은 자리표시자 중 **튜닝 상수 이름**인 것을 const.csv 값으로 (`Loc.fill_consts`, D20): `{skill_hold_turns}` = `SKILL_HOLD_TURNS`. 이름 끝 꾸밈(겹쳐 쓸 수 있음) `_pct` ×100 · `_abs` 절댓값 · `_signed` 양수에 `+`. 상수가 아닌 이름(조사 태그 등)은 남긴다. 수 표기는 `Loc.number_text`(정수면 소수점 없이)
+5. `\n` 리터럴 → 개행, 조사 태그 처리 (`StrategyIcon.resolve_josa` — 원문 로케일이 아니면 태그가 없으므로 그대로 통과)
 
 조사는 자리표시자를 채운 **뒤에** 처리해야 이름 받침을 볼 수 있다. 현재 `resolve_josa` 를 직접 부르는 곳은 `Loc.t` 로 바꾼다.
 
@@ -649,6 +667,10 @@ alias 변경(`rename_alias`) · status(active/deprecated)는 편집 대상이 �
 | E034 | Error | 카드 참조 `[x]` 가 참조 도메인 이름에 없음 / 번역문의 참조가 그 key 의 번역 이름과 다름 |
 | E035 | Error | 원문 외 로케일에 조사 태그 |
 | E036 | Error | 참조 도메인에 같은 원문 이름의 key 가 둘 이상 |
+| E037 | Error | key 참조 `{tx_…}` 가 없는 key |
+| E038 | Error | active 문장의 key 참조가 deprecated key |
+| E039 | Error | key 참조 순환 |
+| E040 | Error | 복수 태그 형식 오류 · 형태 수가 규칙표와 다름 |
 | W034 | Warn | BBCode 태그 짝 불일치 |
 | W035 | Warn | `max_len` 초과 (로케일별) |
 | E041 | Error | `data_columns` 셀이 존재하지 않는 key |

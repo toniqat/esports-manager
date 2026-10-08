@@ -14,7 +14,7 @@ extends RefCounted
 
 static var _scenarios: Array = []
 static var _levels: Dictionary = {}       # int level → {stat_bonus, salary_bonus, levelup_cost, exp_required}
-static var _breakthrough: Dictionary = {} # int pilot_id → Array[{stage, kind, value, desc_key}] by stage
+static var _breakthrough: Dictionary = {} # int pilot_id → Array[{stage, kind, value}] by stage
 static var _teams: Array = []
 static var _loaded: bool = false
 
@@ -151,7 +151,8 @@ static func breakthrough_max() -> int:
 	return maxi(0, ConstTable.int_of("BREAKTHROUGH_MAX"))
 
 
-## `[{stage, kind, value: String, desc_key}]` (`desc_key` = l10n key `breakthrough.*.desc`) of one pilot, stage order (empty for mobs).
+## `[{stage, kind, value: String}]` of one pilot, stage order (empty for mobs). Display text =
+## `breakthrough.kind.<kind>` filled from `value` (`CollectionDetailSheet._bt_desc`).
 static func breakthrough_rows(pilot_id: int) -> Array:
 	_ensure_loaded()
 	return _breakthrough.get(pilot_id, [])
@@ -278,7 +279,7 @@ static func _ensure_loaded() -> void:
 			var list: Array = _breakthrough.get(pid, [])
 			list.append({
 				"stage": int(row["stage"]), "kind": String(row["kind"]),
-				"value": String(row["value"]), "desc_key": String(row["desc_key"]),
+				"value": String(row["value"]),
 			})
 			_breakthrough[pid] = list
 	db.query("SELECT * FROM teams ORDER BY id")

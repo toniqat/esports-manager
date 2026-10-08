@@ -182,7 +182,7 @@ func validate(pilot_ids: Array) -> String:
 ## 화면에서 읽히지 않는다.
 static func skill_type_label(t: String) -> String:
 	match t:
-		"cooldown": return Loc.t(L.RUN_SETUP_SKILL_TYPE_COOLDOWN)
-		"charge":   return Loc.t(L.RUN_SETUP_SKILL_TYPE_CHARGE)
-		"passive":  return Loc.t(L.RUN_SETUP_SKILL_TYPE_PASSIVE)
+		"cooldown": return Loc.t(L.TERM_SKILL_TYPE_COOLDOWN)
+		"charge":   return Loc.t(L.TERM_SKILL_TYPE_CHARGE)
+		"passive":  return Loc.t(L.TERM_SKILL_TYPE_PASSIVE)
 	return t

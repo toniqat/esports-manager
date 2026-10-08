@@ -249,6 +249,52 @@ static func rename_alias(l, old_alias: String, new_alias: String) -> String:
 	return String(res["error"])
 
 
+## `move_key`: key 를 다른 도메인 파일로 옮기며 alias 를 바꾼다 (공유 낱말을 `term` · `ui` 로 올릴 때).
+## key 가 그대로라 다른 문장의 `{tx_…}` 참조 · 씬의 `tx_…` 값 · 데이터 셀은 손댈 필요가 없고,
+## 코드의 `L.<OLD>` 만 `L.<NEW>` 로 바꾼다. 검사는 rename_alias 와 같다(데이터 alias 불가).
+static func move_key(l, key_or_alias: String, new_alias: String) -> String:
+	var cat: Catalog = l.catalog
+	var cfg: Config = l.config
+	var key: String = key_or_alias if cat.has_key(key_or_alias) else cat.key_of_alias(key_or_alias)
+	if key.is_empty():
+		return "없는 key/alias: %s" % key_or_alias
+	var old_alias: String = String(cat.entry(key)["alias"])
+	var src_domain: String = String(cat.entry(key)["domain"])
+	var dst_domain: String = new_alias.get_slice(".", 0)
+	if dst_domain == src_domain:
+		return rename_alias(l, old_alias, new_alias)
+	if cfg.is_data_alias(old_alias) or cfg.is_data_alias(new_alias):
+		return "데이터 테이블 alias 는 옮길 수 없음: %s → %s" % [old_alias, new_alias]
+	if not cat.tables.has(dst_domain):
+		return "없는 도메인 파일: %s" % dst_domain
+	if not Catalog.is_valid_alias(new_alias, dst_domain):
+		return "alias 형식 위반: %s" % new_alias
+	if cat.by_alias.has(new_alias):
+		return "이미 있는 alias: %s (%s)" % [new_alias, cat.by_alias[new_alias]]
+	var new_const: String = Config.const_name(new_alias)
+	if Builder.RESERVED_CONSTS.has(new_const):
+		return "예약된 L 상수 이름: %s" % new_const
+	for a in cat.by_alias.keys():
+		if a != old_alias and Config.const_name(a) == new_const and not cfg.is_data_alias(a):
+			return "L 상수 이름 충돌: %s (%s)" % [new_const, a]
+	for d in [src_domain, dst_domain]:
+		var lock: String = Catalog.excel_lock_for(cfg.domain_path(d))
+		if lock != "":
+			return "Excel 잠금 파일이 있다. 파일을 닫고 다시: %s" % lock
+	var err: String = cat.move_entry(key, new_alias)
+	if err == "":
+		err = cat.save_all()
+	cat.reload()
+	if err != "":
+		return err
+	err = Builder.write_l_gd(l)
+	if err != "":
+		return err
+	var res: Dictionary = replace_const_in_code(cfg, Config.const_name(old_alias), new_const)
+	l.info("move_key: %s → %s (%s), 코드 %d개 파일 · %d곳 치환" % [old_alias, new_alias, key, int(res["files"]), int(res["count"])])
+	return String(res["error"])
+
+
 ## 스캔 루트의 `.gd` 에서 `L.<old>` → `L.<new>` (앞뒤가 식별자 글자가 아닐 때만).
 ## 돌려주는 값 {files, count, error}.
 static func replace_const_in_code(cfg: Config, old_const: String, new_const: String) -> Dictionary:

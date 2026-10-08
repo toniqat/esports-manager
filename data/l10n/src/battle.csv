@@ -36,7 +36,7 @@ tx_58VCZ43AB8,battle.engage.over,active,Engage header when finished,,,{tx_HDVZNS
 tx_PBRWC7X4KR,battle.engage.round_start,active,Engage header at round start,,,{tx_X9YH4WJVF4} 시작,{tx_X9YH4WJVF4} begins,draft,55f46051
 tx_3PYG9VZV4Q,battle.engage.actor_turn,active,Engage header: who acts now,,,{name}의 차례,{name}'s turn,draft,0e5746e9
 tx_ZSKHJTZV6B,battle.engage.kills,active,Engage result per-pilot kill count,,,처치 {n},Kills {n},draft,52d108a5
-tx_25TCMGCZEF,battle.engage.hint_start_cancel,active,Engage start confirm hint,,,{tx_RGYZZ6BFJ5}: 이대로 교전을 시작한다,{tx_RGYZZ6BFJ5}: the engage begins as shown,draft,62f20374
+tx_25TCMGCZEF,battle.engage.hint_start_cancel,active,Engage start confirm hint,,,{tx_RGYZZ6BFJ5}: 이대로 {tx_9Z3YXBGMTT}을 시작한다,{tx_RGYZZ6BFJ5}: the engage begins as shown,draft,1d49b3e7
 tx_RGYZZ6BFJ5,battle.engage.hint_start,active,Engage start notice hint,,,시작 위치,Starting positions,draft,e6f61d09
 tx_DEJKT3AEGZ,battle.engage.over_both_wiped,active,Engage end banner,,,{tx_58VCZ43AB8}: 양측 전멸,{tx_58VCZ43AB8}: both sides wiped out,draft,74518a31
 tx_AP1NR7N7JF,battle.engage.over_enemy_wiped,active,Engage end banner,,,{tx_58VCZ43AB8}: {tx_4HQK9Q9T8J} 전멸,{tx_58VCZ43AB8}: enemy wiped out,draft,ab46a55a

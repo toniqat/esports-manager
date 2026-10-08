@@ -8,7 +8,7 @@ discard,tx_F3A6GQEVFX,,,,,,손에서 버린 더미로 — 버리기 1장,
 turn,tx_H89Y7GFPWP,,,라운드,round,,교전 길이 · 지속시간 단위 — 3턴 간 교전,(?<![가-힣])턴
 token,tx_JAYQJ6YQE0,,,,,,카드 · 스킬 위에 쌓이는 수. 충전 키워드가 채운다,
 operation_phase,tx_2T8RX9PWGV,,,,,,카드를 내는 단계,
-engage,,교전,engage,,,,파일럿끼리 붙는 라운드제 전투 — 교전 카드 · 교전 턴,
+engage,tx_9Z3YXBGMTT,,,,,,파일럿끼리 붙는 라운드제 전투 — 교전 카드 · 교전 턴,
 strategy_points,tx_F597JS5T37,,,,,,카드 비용을 내는 팀 자원,
 growth_points,tx_WBS95M3MNQ,,,,,,파일럿의 성장 통화,
 cost,tx_9NMN77M8D7,,,,,,카드 비용 — 비용 +1 · 비용 -1 · 비용 0 (낱말 먼저),

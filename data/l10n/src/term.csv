@@ -43,10 +43,10 @@ tx_FCMSTM5MAK,term.stat.engage_hit.short,active,파일럿 스탯 약칭 — 좁�
 tx_SN9QJ1JZF0,term.stat.engage_eva.short,active,파일럿 스탯 약칭 — 좁은 칸 (PlayerData.stat_short),5,,교회,E.Eva,draft,05de2536
 tx_RNKSXJ1BRC,term.stat.atk_growth.short,active,파일럿 스탯 약칭 — 좁은 칸 (PlayerData.stat_short),5,,공성,A.Gr,draft,678fce8d
 tx_VQ5EQRK722,term.stat.hp_growth.short,active,파일럿 스탯 약칭 — 좁은 칸 (PlayerData.stat_short),5,,체성,H.Gr,draft,b9092d47
-tx_NP797WYRHS,term.stat.field_hit.note,active,파일럿 스탯 한 줄 설명 (PlayerData.stat_note),,,전장 교전과 공격 카드의 명중 판정에 쓰인다. 상대 전장 회피와의 비가 확률을 정한다.,Used for hit checks of battlefield engages and attack cards. The ratio to the opponent's Battlefield Evasion sets the chance.,draft,4fc77414
+tx_NP797WYRHS,term.stat.field_hit.note,active,파일럿 스탯 한 줄 설명 (PlayerData.stat_note),,,전장 {tx_9Z3YXBGMTT}과 공격 카드의 명중 판정에 쓰인다. 상대 전장 회피와의 비가 확률을 정한다.,Used for hit checks of battlefield engages and attack cards. The ratio to the opponent's Battlefield Evasion sets the chance.,draft,03772301
 tx_ZXHHD0P38E,term.stat.field_eva.note,active,파일럿 스탯 한 줄 설명 (PlayerData.stat_note),,,전장에서 맞을 확률을 낮춘다. 상대 전장 명중과의 비가 확률을 정한다.,Lowers the chance of being hit on the battlefield. The ratio to the opponent's Battlefield Hit sets the chance.,draft,9c7d3667
-tx_X87R5A0F2R,term.stat.engage_hit.note,active,파일럿 스탯 한 줄 설명 (PlayerData.stat_note),,,교전 무대에서만 읽는 명중. 전장 명중과 따로 산다.,Hit used only on the engage stage. Separate from Battlefield Hit.,draft,232a5a5d
-tx_09KVNQHFWR,term.stat.engage_eva.note,active,파일럿 스탯 한 줄 설명 (PlayerData.stat_note),,,교전 무대에서만 읽는 회피. 전장 회피와 따로 산다.,Evasion used only on the engage stage. Separate from Battlefield Evasion.,draft,65fba7a9
+tx_X87R5A0F2R,term.stat.engage_hit.note,active,파일럿 스탯 한 줄 설명 (PlayerData.stat_note),,,{tx_9Z3YXBGMTT} 무대에서만 읽는 명중. 전장 명중과 따로 산다.,Hit used only on the engage stage. Separate from Battlefield Hit.,draft,c76d62a0
+tx_09KVNQHFWR,term.stat.engage_eva.note,active,파일럿 스탯 한 줄 설명 (PlayerData.stat_note),,,{tx_9Z3YXBGMTT} 무대에서만 읽는 회피. 전장 회피와 따로 산다.,Evasion used only on the engage stage. Separate from Battlefield Evasion.,draft,09bb2816
 tx_W8S8Z4NAEW,term.stat.atk_growth.note,active,파일럿 스탯 한 줄 설명 (PlayerData.stat_note),,,성장치가 공격력으로 바뀌는 기울기. 기준치에서 ×1.0 이고 상한이 없다.,"How fast growth turns into ATK. ×1.0 at the baseline, with no cap.",draft,756803bd
 tx_C4S174WKKD,term.stat.hp_growth.note,active,파일럿 스탯 한 줄 설명 (PlayerData.stat_note),,,성장치가 최대 체력으로 바뀌는 기울기. 기준치에서 ×1.0 이고 상한이 없다.,"How fast growth turns into Max HP. ×1.0 at the baseline, with no cap.",draft,c9bcb2b3
 tx_2EY9076J9H,term.card_cat.growth,active,카드 분류 (CardData.category_name),,,성장,Growth,draft,705103b6
@@ -170,3 +170,4 @@ tx_DG1DJNPNVF,term.keyword.target,active,특수 키워드 이름 (설명문 [목
 tx_WSY436KCVQ,term.keyword.bounty,active,특수 키워드 이름 (설명문 [현상금]),,,현상금,Bounty,draft,31c6ef6d
 tx_EQ77MGHTT1,term.keyword.stun,active,특수 키워드 이름 (설명문 [기절]),,,기절,Stun,draft,8d7ad8b7
 tx_WAPNWFECJE,term.keyword.vulnerable,active,특수 키워드 이름 (설명문 [취약]),,,취약,Vulnerable,draft,bae7a9a6
+tx_9Z3YXBGMTT,term.game.engage,active,"게임 용어 (용어집 engage). 문장 안 {tx_…} 참조용, en 은 문장 중간 소문자",,,교전,engage,draft,b6bf4b17

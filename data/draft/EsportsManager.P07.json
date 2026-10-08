@@ -1,0 +1,141 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "cf7e86de-96ad-5c28-998d-c0b53150c5a9": {
+      "id": "cf7e86de-96ad-5c28-998d-c0b53150c5a9",
+      "name": "P07",
+      "start": "9ada8c30-074b-5971-999b-59055e5170ac",
+      "end": "95b4fe5a-a74f-598e-9d09-1eecface679d",
+      "nodes": {
+        "9ada8c30-074b-5971-999b-59055e5170ac": {
+          "localId": 1,
+          "type": "Start",
+          "next": "c996b790-b1a4-5fbd-899c-b2a64c3a0330"
+        },
+        "95b4fe5a-a74f-598e-9d09-1eecface679d": {
+          "localId": 2,
+          "type": "End"
+        },
+        "c996b790-b1a4-5fbd-899c-b2a64c3a0330": {
+          "localId": 3,
+          "memoIds": [
+            "405fb1f3-c255-5a78-8fa5-f3ec4fcc394b"
+          ],
+          "type": "Dialog",
+          "speaker": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{tx_J8VCATJ5GB}"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "{tx_J8VCATJ5GB}"
+                }
+              ]
+            }
+          },
+          "next": "b6b5044a-0fa9-56c2-9966-a3958356a77b"
+        },
+        "b6b5044a-0fa9-56c2-9966-a3958356a77b": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{name} 선수가 지난 경기에서 부진했다는 평입니다."
+            },
+            {
+              "kind": "text",
+              "text": "교체도 고려하십니까?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Word is {name} struggled in the last match."
+                },
+                {
+                  "kind": "text",
+                  "text": "Are you considering a substitution?"
+                }
+              ]
+            }
+          },
+          "next": "77a921cb-4f1d-5d74-95c9-5dcaa37b85ec"
+        },
+        "405fb1f3-c255-5a78-8fa5-f3ec4fcc394b": {
+          "localId": 5,
+          "attrs": {
+            "kind": "press",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "mention=worst",
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "기자회견 이벤트 설정",
+          "attachedTo": "c996b790-b1a4-5fbd-899c-b2a64c3a0330"
+        },
+        "77a921cb-4f1d-5d74-95c9-5dcaa37b85ec": {
+          "localId": 6,
+          "type": "Select",
+          "options": [
+            {
+              "id": "f815b9c8-f640-5e0b-ac59-c295149d1c99",
+              "text": "전혀요. {name}{eul} 믿습니다.",
+              "next": "95b4fe5a-a74f-598e-9d09-1eecface679d",
+              "attrs": {
+                "effects": "ok>trust:+5;ng>trust:+2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Not at all. I believe in {name}."
+                }
+              }
+            },
+            {
+              "id": "f42a9b97-625c-51f7-a995-bd55b143a40c",
+              "text": "컨디션을 보고 판단하겠습니다.",
+              "next": "95b4fe5a-a74f-598e-9d09-1eecface679d",
+              "attrs": {
+                "effects": "trust:+1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "I'll decide based on their condition."
+                }
+              }
+            },
+            {
+              "id": "97078c07-5c99-5ff8-b948-6793ffdd88f2",
+              "text": "부진은 사실이죠.",
+              "next": "95b4fe5a-a74f-598e-9d09-1eecface679d",
+              "attrs": {
+                "effects": "trust:-4;smod:mental:+1:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "They did struggle, that's a fact."
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

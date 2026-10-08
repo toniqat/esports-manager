@@ -1,0 +1,127 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "e5db9378-709c-54c0-8565-976222278fb0": {
+      "id": "e5db9378-709c-54c0-8565-976222278fb0",
+      "name": "P09",
+      "start": "4df5a075-f17f-57fe-9858-29f388eb6043",
+      "end": "2a6a6921-0f8b-54ae-ab63-18dcee807fb6",
+      "nodes": {
+        "4df5a075-f17f-57fe-9858-29f388eb6043": {
+          "localId": 1,
+          "type": "Start",
+          "next": "17a318c7-6ef1-5059-9388-1234c9b83eb5"
+        },
+        "2a6a6921-0f8b-54ae-ab63-18dcee807fb6": {
+          "localId": 2,
+          "type": "End"
+        },
+        "17a318c7-6ef1-5059-9388-1234c9b83eb5": {
+          "localId": 3,
+          "memoIds": [
+            "9cbd6ef6-ca15-5eb9-8566-ba042720ddad"
+          ],
+          "type": "Dialog",
+          "speaker": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{tx_MH87R5EDPY}"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "{tx_MH87R5EDPY}"
+                }
+              ]
+            }
+          },
+          "next": "f6bdf048-70a8-5cf8-a050-ce712acc80c5"
+        },
+        "f6bdf048-70a8-5cf8-a050-ce712acc80c5": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "감독님 특유의 운영이 화제입니다."
+            },
+            {
+              "kind": "text",
+              "text": "비결이 뭡니까?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Your signature macro style is the talk of the scene."
+                },
+                {
+                  "kind": "text",
+                  "text": "What's the secret?"
+                }
+              ]
+            }
+          },
+          "next": "3b0f08a3-56c0-5c0f-8f6c-c4ac0c472ca9"
+        },
+        "9cbd6ef6-ca15-5eb9-8566-ba042720ddad": {
+          "localId": 5,
+          "attrs": {
+            "kind": "press",
+            "manager_type": 0,
+            "stage": 0,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "기자회견 이벤트 설정",
+          "attachedTo": "17a318c7-6ef1-5059-9388-1234c9b83eb5"
+        },
+        "3b0f08a3-56c0-5c0f-8f6c-c4ac0c472ca9": {
+          "localId": 6,
+          "type": "Select",
+          "options": [
+            {
+              "id": "e46f7ad6-257b-5b4b-9c33-b4ec6a8ff720",
+              "text": "철저한 준비 그뿐입니다.",
+              "next": "2a6a6921-0f8b-54ae-ab63-18dcee807fb6",
+              "attrs": {
+                "effects": "smod:tactics:+1:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Thorough preparation, that's all."
+                }
+              }
+            },
+            {
+              "id": "60a020b2-c4a2-549b-aae1-1a568904b31a",
+              "text": "선수들이 잘 따라 준 덕분입니다.",
+              "next": "2a6a6921-0f8b-54ae-ab63-18dcee807fb6",
+              "attrs": {
+                "effects": "trust_all:+2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "It's thanks to the players following through."
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,314 @@
+{
+  "id": "acb9e62b-9406-5069-89a3-91d9167b119b",
+  "name": "O2",
+  "parentNodeId": null,
+  "folderId": "54b93644-5a81-5faa-b7b8-0e101235b24a",
+  "defaultAttrs": {
+    "speakerWikiTargetId": "dd665e10-0059-53d3-a1c2-b806960e315d"
+  },
+  "sharedAttributes": {
+    "Comment": [
+      {
+        "id": "fce7d994-4251-5502-9fee-8a6c7df0eb95",
+        "name": "kind",
+        "type": "enum",
+        "enumValues": [
+          "interview",
+          "outing",
+          "incident",
+          "press",
+          "talk",
+          "talk_pair"
+        ],
+        "default": "",
+        "description": "이벤트 종류"
+      },
+      {
+        "id": "d9c9b87f-e511-5d0e-8b18-ba17f6e64bb1",
+        "name": "manager_type",
+        "type": "integer",
+        "default": -1,
+        "description": "-1 공통 · 0 운영형 · 1 실전형"
+      },
+      {
+        "id": "738856bf-0f64-5995-a11c-7f76f9355632",
+        "name": "stage",
+        "type": "integer",
+        "default": 0,
+        "description": "외출 단계 (1..N), 그 밖 0"
+      },
+      {
+        "id": "bbf17a2b-4f95-57b5-bf63-ed17c3116330",
+        "name": "cond",
+        "type": "text",
+        "default": "",
+        "description": "조건 (; 로 이음) — features/season/mental/README.md"
+      },
+      {
+        "id": "57ce2993-f468-56b7-81a4-79d427272462",
+        "name": "weight",
+        "type": "integer",
+        "default": 1,
+        "description": "뽑기 가중치"
+      }
+    ],
+    "Select": [
+      {
+        "id": "d48d9f76-ce3b-5925-8d52-e96a370d4acd",
+        "name": "effects",
+        "type": "text",
+        "default": "",
+        "description": "선택지 효과 절 (; 로 이음, ok> / ng> 판정 게이트)"
+      }
+    ],
+    "Dialog": [
+      {
+        "id": "beee2a4c-3b3d-5522-99eb-7ace977d50ec",
+        "name": "branch",
+        "type": "enum",
+        "enumValues": [
+          "ok",
+          "ng"
+        ],
+        "default": "",
+        "description": "답 뒤 대사만: 판정 성공(ok) / 실패(ng) 때만. 비우면 항상"
+      }
+    ]
+  },
+  "labels": [],
+  "nodes": [
+    {
+      "id": "47cc227c-5492-521f-909c-afff20665654",
+      "type": "Start",
+      "name": "Start",
+      "localId": 1,
+      "x": 40,
+      "y": 40
+    },
+    {
+      "id": "ad677e12-6c80-579d-9317-b9f6c7400c00",
+      "type": "End",
+      "name": "End",
+      "localId": 2,
+      "x": 1540,
+      "y": 40
+    },
+    {
+      "id": "2b254aa3-aa1b-5785-b062-caab3174504d",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 3,
+      "x": 340,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": null,
+      "content": "{name} 선수와 한강을 걸었다.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "You walked along the Han River with {name}.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "596d6bf2-2d0c-58a4-950c-5d7e8e4d31f7",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 4,
+      "x": 640,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "바람 좋다…\n사실 프로 되기 전엔 여기 자주 왔어요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Nice breeze…\nActually, I used to come here a lot before I went pro.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "9e99485f-0894-5690-9f83-ceae2a86f2a1",
+      "type": "Comment",
+      "name": "Comment",
+      "localId": 5,
+      "x": 340,
+      "y": -220,
+      "color": "#64748b",
+      "text": "외출 이벤트 설정",
+      "width": 260,
+      "height": 110,
+      "attachments": [
+        {
+          "nodeId": "2b254aa3-aa1b-5785-b062-caab3174504d"
+        }
+      ],
+      "sharedValues": {
+        "fce7d994-4251-5502-9fee-8a6c7df0eb95": "outing",
+        "d9c9b87f-e511-5d0e-8b18-ba17f6e64bb1": -1,
+        "738856bf-0f64-5995-a11c-7f76f9355632": 2,
+        "bbf17a2b-4f95-57b5-bf63-ed17c3116330": "",
+        "57ce2993-f468-56b7-81a4-79d427272462": 1
+      }
+    },
+    {
+      "id": "03eb1b19-bbbf-5b14-90fe-15a71f750520",
+      "type": "Select",
+      "name": "Select",
+      "localId": 6,
+      "x": 940,
+      "y": 40,
+      "color": "#64748b",
+      "options": [
+        {
+          "id": "24172621-089a-5f3f-94ee-b70d10e191e3",
+          "text": "그때 무슨 생각 했어?",
+          "sharedValues": {
+            "d48d9f76-ce3b-5925-8d52-e96a370d4acd": "trust:+6;pmod:all:+1:-1"
+          }
+        },
+        {
+          "id": "c20d7e87-9fcc-5b1f-b8f3-9e92dc7b82c8",
+          "text": "지금은 어때?",
+          "sharedValues": {
+            "d48d9f76-ce3b-5925-8d52-e96a370d4acd": "trust:+5;pmod:all:+1:-1"
+          }
+        }
+      ],
+      "translations": {
+        "opt:24172621-089a-5f3f-94ee-b70d10e191e3": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "What were you thinking about back then?",
+            "status": "progress"
+          }
+        },
+        "opt:c20d7e87-9fcc-5b1f-b8f3-9e92dc7b82c8": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "And how about now?",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "c472d0f4-4bd0-5eaf-9304-9b035728e3d3",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 7,
+      "x": 1240,
+      "y": -90.0,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "언젠가 무대에 서고 싶다… 그거요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "That I wanted to stand on that stage someday… that's all.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "3fa811d8-efdd-5cda-889f-2edb8c1e84d6",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 8,
+      "x": 1240,
+      "y": 170.0,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "지금은… 좋아요. 진짜로.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Now… I'm happy. For real.",
+            "status": "progress"
+          }
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "0ef60bfe-a2f9-5945-b883-b86f55cc0754",
+      "source": "47cc227c-5492-521f-909c-afff20665654",
+      "target": "2b254aa3-aa1b-5785-b062-caab3174504d",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "6f9de431-085b-5dbd-b085-ded4e7542b90",
+      "source": "2b254aa3-aa1b-5785-b062-caab3174504d",
+      "target": "596d6bf2-2d0c-58a4-950c-5d7e8e4d31f7",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "1930d5bd-dab5-5d28-8794-662fb4ca7e9a",
+      "source": "596d6bf2-2d0c-58a4-950c-5d7e8e4d31f7",
+      "target": "03eb1b19-bbbf-5b14-90fe-15a71f750520",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "52518ede-5436-50fe-baa8-72fe15c0ad66",
+      "source": "03eb1b19-bbbf-5b14-90fe-15a71f750520",
+      "target": "c472d0f4-4bd0-5eaf-9304-9b035728e3d3",
+      "sourcePort": "opt:24172621-089a-5f3f-94ee-b70d10e191e3",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "674f141d-c774-58ad-ac66-becb409a0160",
+      "source": "c472d0f4-4bd0-5eaf-9304-9b035728e3d3",
+      "target": "ad677e12-6c80-579d-9317-b9f6c7400c00",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "15bad112-421c-5976-b230-cc3f8b53445e",
+      "source": "03eb1b19-bbbf-5b14-90fe-15a71f750520",
+      "target": "3fa811d8-efdd-5cda-889f-2edb8c1e84d6",
+      "sourcePort": "opt:c20d7e87-9fcc-5b1f-b8f3-9e92dc7b82c8",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "1768a111-3795-589d-a652-1fc0c97d664d",
+      "source": "3fa811d8-efdd-5cda-889f-2edb8c1e84d6",
+      "target": "ad677e12-6c80-579d-9317-b9f6c7400c00",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    }
+  ],
+  "nextLocalId": 9
+}

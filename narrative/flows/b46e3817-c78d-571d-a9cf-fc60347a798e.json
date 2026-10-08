@@ -1,0 +1,274 @@
+{
+  "id": "b46e3817-c78d-571d-a9cf-fc60347a798e",
+  "name": "P02",
+  "parentNodeId": null,
+  "folderId": "ec57a5a5-b671-5d6b-8bed-630ed5f29af7",
+  "defaultAttrs": {
+    "speakerWikiTargetId": "dd665e10-0059-53d3-a1c2-b806960e315d"
+  },
+  "sharedAttributes": {
+    "Comment": [
+      {
+        "id": "059bb049-f3ad-5da3-8e58-92bda2ac76c8",
+        "name": "kind",
+        "type": "enum",
+        "enumValues": [
+          "interview",
+          "outing",
+          "incident",
+          "press",
+          "talk",
+          "talk_pair"
+        ],
+        "default": "",
+        "description": "이벤트 종류"
+      },
+      {
+        "id": "903966ef-11f5-54c5-b0a7-cc1955fc6542",
+        "name": "manager_type",
+        "type": "integer",
+        "default": -1,
+        "description": "-1 공통 · 0 운영형 · 1 실전형"
+      },
+      {
+        "id": "aa069ef6-058c-5cab-9e3e-e7adf71f18d2",
+        "name": "stage",
+        "type": "integer",
+        "default": 0,
+        "description": "외출 단계 (1..N), 그 밖 0"
+      },
+      {
+        "id": "95467517-5a54-5e27-964f-09f5f5c0c2ba",
+        "name": "cond",
+        "type": "text",
+        "default": "",
+        "description": "조건 (; 로 이음) — features/season/mental/README.md"
+      },
+      {
+        "id": "ade02e4b-b81e-56f0-bfc3-3841cb126a78",
+        "name": "weight",
+        "type": "integer",
+        "default": 1,
+        "description": "뽑기 가중치"
+      }
+    ],
+    "Select": [
+      {
+        "id": "43ccfc95-76c4-568c-bf0d-7c472e0d6f9e",
+        "name": "effects",
+        "type": "text",
+        "default": "",
+        "description": "선택지 효과 절 (; 로 이음, ok> / ng> 판정 게이트)"
+      }
+    ],
+    "Dialog": [
+      {
+        "id": "739ae189-3e08-51b7-a0b7-6bb354a18c40",
+        "name": "branch",
+        "type": "enum",
+        "enumValues": [
+          "ok",
+          "ng"
+        ],
+        "default": "",
+        "description": "답 뒤 대사만: 판정 성공(ok) / 실패(ng) 때만. 비우면 항상"
+      }
+    ]
+  },
+  "labels": [],
+  "nodes": [
+    {
+      "id": "d5161727-3c52-5c2a-8782-9670c997c6f4",
+      "type": "Start",
+      "name": "Start",
+      "localId": 1,
+      "x": 40,
+      "y": 40
+    },
+    {
+      "id": "9002bc67-52f5-512c-8b2f-4e64f809efd5",
+      "type": "End",
+      "name": "End",
+      "localId": 2,
+      "x": 1240,
+      "y": 40
+    },
+    {
+      "id": "07520806-750b-5539-a8a8-4a2553ea7f17",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 3,
+      "x": 340,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+      "content": "{tx_J8VCATJ5GB}",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "{tx_J8VCATJ5GB}",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "bdb3a223-974b-5f93-8a81-6214ecb2ef84",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 4,
+      "x": 640,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+      "content": "주말 경기 상대가 만만치 않다는 평이 많습니다.\n솔직히 이길 자신 있으십니까?",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Many say this weekend's opponent is a tough one.\nHonestly, are you confident you can win?",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "c7ed926b-fd99-5785-86a5-e69464bf4350",
+      "type": "Comment",
+      "name": "Comment",
+      "localId": 5,
+      "x": 340,
+      "y": -220,
+      "color": "#64748b",
+      "text": "기자회견 이벤트 설정",
+      "width": 260,
+      "height": 110,
+      "attachments": [
+        {
+          "nodeId": "07520806-750b-5539-a8a8-4a2553ea7f17"
+        }
+      ],
+      "sharedValues": {
+        "059bb049-f3ad-5da3-8e58-92bda2ac76c8": "press",
+        "903966ef-11f5-54c5-b0a7-cc1955fc6542": -1,
+        "aa069ef6-058c-5cab-9e3e-e7adf71f18d2": 0,
+        "95467517-5a54-5e27-964f-09f5f5c0c2ba": "",
+        "ade02e4b-b81e-56f0-bfc3-3841cb126a78": 1
+      }
+    },
+    {
+      "id": "58203384-6f60-5de7-8197-0d521946adb9",
+      "type": "Select",
+      "name": "Select",
+      "localId": 6,
+      "x": 940,
+      "y": 40,
+      "color": "#64748b",
+      "options": [
+        {
+          "id": "c6dba375-de64-5073-9815-fb97b9f5c180",
+          "text": "저희 선수들을 믿습니다.",
+          "sharedValues": {
+            "43ccfc95-76c4-568c-bf0d-7c472e0d6f9e": "trust_all:+2"
+          }
+        },
+        {
+          "id": "56b9985e-6b58-5ba7-b7d3-bc402ce5be00",
+          "text": "쉽지 않겠지만 준비한 게 있습니다.",
+          "sharedValues": {
+            "43ccfc95-76c4-568c-bf0d-7c472e0d6f9e": "smod:tactics:+1:1"
+          }
+        },
+        {
+          "id": "2a550cc6-33ef-5b22-8f9c-39fa517940c2",
+          "text": "질문이 좀 무례하시네요.",
+          "sharedValues": {
+            "43ccfc95-76c4-568c-bf0d-7c472e0d6f9e": "trust_all:+1;smod:mental:-1:1"
+          }
+        }
+      ],
+      "translations": {
+        "opt:c6dba375-de64-5073-9815-fb97b9f5c180": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "I believe in my players.",
+            "status": "progress"
+          }
+        },
+        "opt:56b9985e-6b58-5ba7-b7d3-bc402ce5be00": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "It won't be easy, but we've prepared something.",
+            "status": "progress"
+          }
+        },
+        "opt:2a550cc6-33ef-5b22-8f9c-39fa517940c2": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "That's a bit of a rude question.",
+            "status": "progress"
+          }
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "9ea303e9-0475-5711-8d4f-a0f73d1ea52e",
+      "source": "d5161727-3c52-5c2a-8782-9670c997c6f4",
+      "target": "07520806-750b-5539-a8a8-4a2553ea7f17",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "c85742fa-d4a2-5b0b-9634-4adfee95a8bf",
+      "source": "07520806-750b-5539-a8a8-4a2553ea7f17",
+      "target": "bdb3a223-974b-5f93-8a81-6214ecb2ef84",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "2879e44e-fa90-5602-975b-d7a54aabd999",
+      "source": "bdb3a223-974b-5f93-8a81-6214ecb2ef84",
+      "target": "58203384-6f60-5de7-8197-0d521946adb9",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "bf9a1d63-559f-527c-a06d-301ea0ce626a",
+      "source": "58203384-6f60-5de7-8197-0d521946adb9",
+      "target": "9002bc67-52f5-512c-8b2f-4e64f809efd5",
+      "sourcePort": "opt:c6dba375-de64-5073-9815-fb97b9f5c180",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "994736f0-42f6-5b3d-aa57-6d7c331c30f9",
+      "source": "58203384-6f60-5de7-8197-0d521946adb9",
+      "target": "9002bc67-52f5-512c-8b2f-4e64f809efd5",
+      "sourcePort": "opt:56b9985e-6b58-5ba7-b7d3-bc402ce5be00",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "ab3864a2-3b68-5dff-98d9-e02015a7bec7",
+      "source": "58203384-6f60-5de7-8197-0d521946adb9",
+      "target": "9002bc67-52f5-512c-8b2f-4e64f809efd5",
+      "sourcePort": "opt:2a550cc6-33ef-5b22-8f9c-39fa517940c2",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    }
+  ],
+  "nextLocalId": 7
+}

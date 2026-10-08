@@ -1,0 +1,345 @@
+{
+  "id": "3c796950-80a2-50de-b9a5-ba45998973ab",
+  "name": "O3",
+  "parentNodeId": null,
+  "folderId": "54b93644-5a81-5faa-b7b8-0e101235b24a",
+  "defaultAttrs": {
+    "speakerWikiTargetId": "dd665e10-0059-53d3-a1c2-b806960e315d"
+  },
+  "sharedAttributes": {
+    "Comment": [
+      {
+        "id": "5ceafda2-5e8a-544c-8e5e-413367bcd3fc",
+        "name": "kind",
+        "type": "enum",
+        "enumValues": [
+          "interview",
+          "outing",
+          "incident",
+          "press",
+          "talk",
+          "talk_pair"
+        ],
+        "default": "",
+        "description": "이벤트 종류"
+      },
+      {
+        "id": "810c1482-9fd3-5d06-bfdf-e414590f9b62",
+        "name": "manager_type",
+        "type": "integer",
+        "default": -1,
+        "description": "-1 공통 · 0 운영형 · 1 실전형"
+      },
+      {
+        "id": "6f5e79e6-f5d3-5ba5-92c4-7202a5340c9c",
+        "name": "stage",
+        "type": "integer",
+        "default": 0,
+        "description": "외출 단계 (1..N), 그 밖 0"
+      },
+      {
+        "id": "441d785a-0f52-5bd6-90b6-897ed15b15b0",
+        "name": "cond",
+        "type": "text",
+        "default": "",
+        "description": "조건 (; 로 이음) — features/season/mental/README.md"
+      },
+      {
+        "id": "6558101a-d7aa-5d3e-8aaf-f75a1222d158",
+        "name": "weight",
+        "type": "integer",
+        "default": 1,
+        "description": "뽑기 가중치"
+      }
+    ],
+    "Select": [
+      {
+        "id": "92977d51-aec7-5698-8895-1da7fb7b47c3",
+        "name": "effects",
+        "type": "text",
+        "default": "",
+        "description": "선택지 효과 절 (; 로 이음, ok> / ng> 판정 게이트)"
+      }
+    ],
+    "Dialog": [
+      {
+        "id": "c22bda6f-e869-5a87-8209-6bf5bed1c24e",
+        "name": "branch",
+        "type": "enum",
+        "enumValues": [
+          "ok",
+          "ng"
+        ],
+        "default": "",
+        "description": "답 뒤 대사만: 판정 성공(ok) / 실패(ng) 때만. 비우면 항상"
+      }
+    ]
+  },
+  "labels": [],
+  "nodes": [
+    {
+      "id": "afbb36c9-194d-5ded-b3c9-db2513566d4f",
+      "type": "Start",
+      "name": "Start",
+      "localId": 1,
+      "x": 40,
+      "y": 40
+    },
+    {
+      "id": "a02893b0-95c4-57a6-9275-8afd0c963001",
+      "type": "End",
+      "name": "End",
+      "localId": 2,
+      "x": 1840,
+      "y": 40
+    },
+    {
+      "id": "8cb36831-655e-52c4-b8da-f6a9e932f043",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 3,
+      "x": 340,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": null,
+      "content": "{name} 선수가 고른 작은 영화관.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "A small theater {name} picked out.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "2addab5d-30d4-58f4-9042-3fc7e6f345e0",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 4,
+      "x": 640,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "이 영화 꼭 같이 보고 싶었어요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "I really wanted to watch this movie with you.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "1fbdcb6d-8c56-5dc6-bd34-62e82b5ded7e",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 5,
+      "x": 940,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": null,
+      "content": "영화가 끝나고 한참 말이 없다.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "After the movie, neither of you says anything for a while.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "29fb05bb-ac05-541b-9ee6-3bbfb2dcff70",
+      "type": "Comment",
+      "name": "Comment",
+      "localId": 6,
+      "x": 340,
+      "y": -220,
+      "color": "#64748b",
+      "text": "외출 이벤트 설정",
+      "width": 260,
+      "height": 110,
+      "attachments": [
+        {
+          "nodeId": "8cb36831-655e-52c4-b8da-f6a9e932f043"
+        }
+      ],
+      "sharedValues": {
+        "5ceafda2-5e8a-544c-8e5e-413367bcd3fc": "outing",
+        "810c1482-9fd3-5d06-bfdf-e414590f9b62": -1,
+        "6f5e79e6-f5d3-5ba5-92c4-7202a5340c9c": 3,
+        "441d785a-0f52-5bd6-90b6-897ed15b15b0": "",
+        "6558101a-d7aa-5d3e-8aaf-f75a1222d158": 1
+      }
+    },
+    {
+      "id": "a0e6820c-f673-5b7f-a66a-7eca7dc343b9",
+      "type": "Select",
+      "name": "Select",
+      "localId": 7,
+      "x": 1240,
+      "y": 40,
+      "color": "#64748b",
+      "options": [
+        {
+          "id": "5436aa15-753d-5d21-9c6c-72bb3863a444",
+          "text": "좋은 영화였다.",
+          "sharedValues": {
+            "92977d51-aec7-5698-8895-1da7fb7b47c3": "trust:+6;pmod:all:+2:-1"
+          }
+        },
+        {
+          "id": "61a4e8c2-324c-55c5-aa19-2a2ae5e4aad5",
+          "text": "너 울었지?",
+          "sharedValues": {
+            "92977d51-aec7-5698-8895-1da7fb7b47c3": "trust:+7;pmod:all:+2:-1"
+          }
+        }
+      ],
+      "translations": {
+        "opt:5436aa15-753d-5d21-9c6c-72bb3863a444": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "That was a good movie.",
+            "status": "progress"
+          }
+        },
+        "opt:61a4e8c2-324c-55c5-aa19-2a2ae5e4aad5": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "You cried, didn't you?",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "c0c7cce1-64f1-5347-9d62-f63291412968",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 8,
+      "x": 1540,
+      "y": -90.0,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "그쵸? 감독님 취향일 줄 알았어요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Right? I knew it'd be your kind of movie.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "89971020-ced0-5227-8451-136d7925c28a",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 9,
+      "x": 1540,
+      "y": 170.0,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "아, 아니거든요!",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Wh-what? No, I didn't!",
+            "status": "progress"
+          }
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "b578e5dd-f492-5e48-b4b8-4904a8c1a2d4",
+      "source": "afbb36c9-194d-5ded-b3c9-db2513566d4f",
+      "target": "8cb36831-655e-52c4-b8da-f6a9e932f043",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "9de5bc99-de00-52e9-82e1-70e581f153b7",
+      "source": "8cb36831-655e-52c4-b8da-f6a9e932f043",
+      "target": "2addab5d-30d4-58f4-9042-3fc7e6f345e0",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "79e74ed7-5420-5275-87d5-20d3d68e6556",
+      "source": "2addab5d-30d4-58f4-9042-3fc7e6f345e0",
+      "target": "1fbdcb6d-8c56-5dc6-bd34-62e82b5ded7e",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "61607025-0405-5fcc-ace9-66e0dd10e2e9",
+      "source": "1fbdcb6d-8c56-5dc6-bd34-62e82b5ded7e",
+      "target": "a0e6820c-f673-5b7f-a66a-7eca7dc343b9",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "bbe81b73-371c-558f-a8ca-8171788168fd",
+      "source": "a0e6820c-f673-5b7f-a66a-7eca7dc343b9",
+      "target": "c0c7cce1-64f1-5347-9d62-f63291412968",
+      "sourcePort": "opt:5436aa15-753d-5d21-9c6c-72bb3863a444",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "a00f6f72-13c1-5ce1-b4ef-8579ffe979e5",
+      "source": "c0c7cce1-64f1-5347-9d62-f63291412968",
+      "target": "a02893b0-95c4-57a6-9275-8afd0c963001",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "cc9e5f6d-d1c7-508d-9699-2a69f54f250a",
+      "source": "a0e6820c-f673-5b7f-a66a-7eca7dc343b9",
+      "target": "89971020-ced0-5227-8451-136d7925c28a",
+      "sourcePort": "opt:61a4e8c2-324c-55c5-aa19-2a2ae5e4aad5",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "45329eeb-b397-5fee-9b2a-a3b534055e04",
+      "source": "89971020-ced0-5227-8451-136d7925c28a",
+      "target": "a02893b0-95c4-57a6-9275-8afd0c963001",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    }
+  ],
+  "nextLocalId": 10
+}

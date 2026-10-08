@@ -35,6 +35,8 @@ const SCENES: Array = [
 ]
 
 const SPOT_NEUTRAL: String = "W"
+## Growth spot (colours A / P share it); also a valid `facility` value.
+const SPOT_GROWTH: String = "G"
 const SPOT_DORM: String = "Dorm"
 const SPOT_ENTRANCE: String = "Entrance"
 
@@ -66,6 +68,12 @@ static func create(map_id: int) -> BaseMap:
 ## Spot of a training colour symbol ("" = no tile → neutral).
 static func spot_of_color(symbol: String) -> String:
 	return String(COLOR_SPOTS.get(symbol, SPOT_NEUTRAL))
+
+
+## Spot of a training facility (`TrainingBoard.day_groups` / week log row `facility`): an
+## authored spot name (`training_tiles.csv` `facility`: H E C D G M Q W) or a colour symbol.
+static func spot_of_facility(facility: String) -> String:
+	return SPOT_GROWTH if facility == SPOT_GROWTH else spot_of_color(facility)
 
 
 func _ready() -> void:

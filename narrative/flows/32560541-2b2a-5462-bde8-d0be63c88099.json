@@ -1,0 +1,252 @@
+{
+  "id": "32560541-2b2a-5462-bde8-d0be63c88099",
+  "name": "P10",
+  "parentNodeId": null,
+  "folderId": "ec57a5a5-b671-5d6b-8bed-630ed5f29af7",
+  "defaultAttrs": {
+    "speakerWikiTargetId": "dd665e10-0059-53d3-a1c2-b806960e315d"
+  },
+  "sharedAttributes": {
+    "Comment": [
+      {
+        "id": "5c273750-86ad-51a9-8dd4-c1466f9474df",
+        "name": "kind",
+        "type": "enum",
+        "enumValues": [
+          "interview",
+          "outing",
+          "incident",
+          "press",
+          "talk",
+          "talk_pair"
+        ],
+        "default": "",
+        "description": "이벤트 종류"
+      },
+      {
+        "id": "fd9f1e95-7705-5d8b-87d1-4184bd0dc236",
+        "name": "manager_type",
+        "type": "integer",
+        "default": -1,
+        "description": "-1 공통 · 0 운영형 · 1 실전형"
+      },
+      {
+        "id": "13b2ec01-8429-5e8e-a42c-cb750632526c",
+        "name": "stage",
+        "type": "integer",
+        "default": 0,
+        "description": "외출 단계 (1..N), 그 밖 0"
+      },
+      {
+        "id": "0fa47d54-3cba-5944-b305-c2f8936f748f",
+        "name": "cond",
+        "type": "text",
+        "default": "",
+        "description": "조건 (; 로 이음) — features/season/mental/README.md"
+      },
+      {
+        "id": "2377eaa8-55b5-5d6f-b3e8-a31ac55f7baf",
+        "name": "weight",
+        "type": "integer",
+        "default": 1,
+        "description": "뽑기 가중치"
+      }
+    ],
+    "Select": [
+      {
+        "id": "95365503-12cb-51cc-b18c-cd5ed7a28364",
+        "name": "effects",
+        "type": "text",
+        "default": "",
+        "description": "선택지 효과 절 (; 로 이음, ok> / ng> 판정 게이트)"
+      }
+    ],
+    "Dialog": [
+      {
+        "id": "960cdc04-eedc-59c5-aa79-0b86618afd2d",
+        "name": "branch",
+        "type": "enum",
+        "enumValues": [
+          "ok",
+          "ng"
+        ],
+        "default": "",
+        "description": "답 뒤 대사만: 판정 성공(ok) / 실패(ng) 때만. 비우면 항상"
+      }
+    ]
+  },
+  "labels": [],
+  "nodes": [
+    {
+      "id": "68dd826c-f6a5-54b4-8b86-934cd7c610c2",
+      "type": "Start",
+      "name": "Start",
+      "localId": 1,
+      "x": 40,
+      "y": 40
+    },
+    {
+      "id": "f9f7822b-6a10-5696-8e4f-a50734ea19f7",
+      "type": "End",
+      "name": "End",
+      "localId": 2,
+      "x": 1240,
+      "y": 40
+    },
+    {
+      "id": "06ab1b73-a471-5ab3-ac74-55d66cadcf65",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 3,
+      "x": 340,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+      "content": "{tx_J8VCATJ5GB}",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "{tx_J8VCATJ5GB}",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "6c917c74-d323-5870-9670-1f94e01ce09d",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 4,
+      "x": 640,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+      "content": "현역 시절과 지금 중 언제가 더 떨립니까?",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Which is more nerve-racking: your playing days or now?",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "738167c9-f544-5a76-87fa-3bea1fac3d2f",
+      "type": "Comment",
+      "name": "Comment",
+      "localId": 5,
+      "x": 340,
+      "y": -220,
+      "color": "#64748b",
+      "text": "기자회견 이벤트 설정",
+      "width": 260,
+      "height": 110,
+      "attachments": [
+        {
+          "nodeId": "06ab1b73-a471-5ab3-ac74-55d66cadcf65"
+        }
+      ],
+      "sharedValues": {
+        "5c273750-86ad-51a9-8dd4-c1466f9474df": "press",
+        "fd9f1e95-7705-5d8b-87d1-4184bd0dc236": 1,
+        "13b2ec01-8429-5e8e-a42c-cb750632526c": 0,
+        "0fa47d54-3cba-5944-b305-c2f8936f748f": "",
+        "2377eaa8-55b5-5d6f-b3e8-a31ac55f7baf": 1
+      }
+    },
+    {
+      "id": "8e9b5d37-129e-5cbb-aeef-640bcf0590a7",
+      "type": "Select",
+      "name": "Select",
+      "localId": 6,
+      "x": 940,
+      "y": 40,
+      "color": "#64748b",
+      "options": [
+        {
+          "id": "39d895a3-e666-5d14-85cf-6af9f081eae5",
+          "text": "지금이요. 선수들 경기라서요.",
+          "sharedValues": {
+            "95365503-12cb-51cc-b18c-cd5ed7a28364": "trust_all:+2"
+          }
+        },
+        {
+          "id": "22e26988-b88f-5534-a134-01827108665b",
+          "text": "현역 때죠. 지금은 즐깁니다.",
+          "sharedValues": {
+            "95365503-12cb-51cc-b18c-cd5ed7a28364": "smod:mental:+1:1"
+          }
+        }
+      ],
+      "translations": {
+        "opt:39d895a3-e666-5d14-85cf-6af9f081eae5": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Now. Because it's my players' match.",
+            "status": "progress"
+          }
+        },
+        "opt:22e26988-b88f-5534-a134-01827108665b": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "My playing days. Now I just enjoy it.",
+            "status": "progress"
+          }
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "97ff3cd8-0cb4-52da-bfab-92d6c44125c0",
+      "source": "68dd826c-f6a5-54b4-8b86-934cd7c610c2",
+      "target": "06ab1b73-a471-5ab3-ac74-55d66cadcf65",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "620c81fc-2dca-5f1c-bbea-5e4674eb76d8",
+      "source": "06ab1b73-a471-5ab3-ac74-55d66cadcf65",
+      "target": "6c917c74-d323-5870-9670-1f94e01ce09d",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "10322f42-6287-56ce-9ed6-8dc0d7309f37",
+      "source": "6c917c74-d323-5870-9670-1f94e01ce09d",
+      "target": "8e9b5d37-129e-5cbb-aeef-640bcf0590a7",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "d5086170-3c74-5e2e-a69b-8694bd4613cd",
+      "source": "8e9b5d37-129e-5cbb-aeef-640bcf0590a7",
+      "target": "f9f7822b-6a10-5696-8e4f-a50734ea19f7",
+      "sourcePort": "opt:39d895a3-e666-5d14-85cf-6af9f081eae5",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "f0a293bc-1c52-5259-895a-e8940b923be0",
+      "source": "8e9b5d37-129e-5cbb-aeef-640bcf0590a7",
+      "target": "f9f7822b-6a10-5696-8e4f-a50734ea19f7",
+      "sourcePort": "opt:22e26988-b88f-5534-a134-01827108665b",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    }
+  ],
+  "nextLocalId": 7
+}

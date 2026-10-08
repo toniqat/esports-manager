@@ -198,6 +198,9 @@ var per_cell_mastery: int = 0
 var clauses: Array = []
 ## Quirk ops of the `quirk:<op>` clauses (`QUIRK_OPS` order, no duplicates).
 var quirk_ops: Array = []
+## Facility (base-map spot name: H E C D G M Q W) where this course is held, from the
+## optional `facility` column. "" = the spot of the colour of the course's first cell that day.
+var facility: String = ""
 
 
 ## CSV / DB 한 행을 타일 하나로. **static 인 것이 요점이다** — 인벤토리 목록,
@@ -210,6 +213,7 @@ static func from_def(def: Dictionary) -> TrainingTile:
 	t._parse_shape(String(def.get("shape", "W")))
 	t._parse_exp(String(def.get("exp", "")))
 	t._parse_effect(String(def.get("effect", "")))
+	t.facility    = String(def.get("facility", "")).strip_edges().to_upper()
 	return t
 
 

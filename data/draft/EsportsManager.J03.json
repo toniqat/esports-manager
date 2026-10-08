@@ -1,0 +1,192 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "8923529f-e7ca-5f99-a1b2-8634a9047e29": {
+      "id": "8923529f-e7ca-5f99-a1b2-8634a9047e29",
+      "name": "J03",
+      "start": "6bebdab1-506e-5178-99bd-a7e1b77130c2",
+      "end": "d27c43f2-0925-5cdb-a8f3-bae0d3e40957",
+      "nodes": {
+        "6bebdab1-506e-5178-99bd-a7e1b77130c2": {
+          "localId": 1,
+          "type": "Start",
+          "next": "3185eb00-e496-5372-9204-7ccdde8ebb0a"
+        },
+        "d27c43f2-0925-5cdb-a8f3-bae0d3e40957": {
+          "localId": 2,
+          "type": "End"
+        },
+        "3185eb00-e496-5372-9204-7ccdde8ebb0a": {
+          "localId": 3,
+          "memoIds": [
+            "e534787b-dcea-5180-93fb-4618f84f1700"
+          ],
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{name2}{i} 지친 {name}의 어깨를 두드린다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "{name2} pats a worn-out {name} on the shoulder."
+                }
+              ]
+            }
+          },
+          "next": "ee9ec806-a04d-5883-8134-a5e2ade5acfe"
+        },
+        "ee9ec806-a04d-5883-8134-a5e2ade5acfe": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "6b1de2e5-536b-5673-b2c0-0f81cf838865",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "얘 오늘 무리했어요. 좀 쉬게 해 주세요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "They overdid it today. Please let them rest."
+                }
+              ]
+            }
+          },
+          "next": "b7a88166-f169-5ce5-bfd0-bf1ed07d7081"
+        },
+        "e534787b-dcea-5180-93fb-4618f84f1700": {
+          "localId": 5,
+          "attrs": {
+            "kind": "talk_pair",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "stress>=60",
+            "weight": 3
+          },
+          "type": "Comment",
+          "text": "합동 훈련 이벤트 설정",
+          "attachedTo": "3185eb00-e496-5372-9204-7ccdde8ebb0a"
+        },
+        "b7a88166-f169-5ce5-bfd0-bf1ed07d7081": {
+          "localId": 6,
+          "type": "Select",
+          "options": [
+            {
+              "id": "98dee445-1638-5d25-b895-e0bb278cfa48",
+              "text": "둘 다 오늘은 일찍 들어가.",
+              "next": "201f452c-cc73-5477-91a9-d083bf9dd05f",
+              "attrs": {
+                "effects": "stress:-6;trust:+1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Both of you, head in early today."
+                }
+              }
+            },
+            {
+              "id": "ffa76364-60b0-54aa-adfd-435517757d50",
+              "text": "{name2}, 네가 오늘 좀 챙겨 줘.",
+              "next": "0321bdf3-8b49-5f22-ba1e-1742ab20a860",
+              "attrs": {
+                "effects": "ok>stress:-4;ok>trust:+2;ng>stress:+3"
+              },
+              "i18n": {
+                "En": {
+                  "text": "{name2}, look after them today."
+                }
+              }
+            }
+          ]
+        },
+        "201f452c-cc73-5477-91a9-d083bf9dd05f": {
+          "localId": 7,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…고마워요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "...Thank you."
+                }
+              ]
+            }
+          },
+          "next": "d27c43f2-0925-5cdb-a8f3-bae0d3e40957"
+        },
+        "0321bdf3-8b49-5f22-ba1e-1742ab20a860": {
+          "localId": 8,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "6b1de2e5-536b-5673-b2c0-0f81cf838865",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "맡겨 주세요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Leave it to me."
+                }
+              ]
+            }
+          },
+          "next": "faad89a2-bcd3-5932-a616-2ca1f53c36b8"
+        },
+        "faad89a2-bcd3-5932-a616-2ca1f53c36b8": {
+          "localId": 9,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "6b1de2e5-536b-5673-b2c0-0f81cf838865",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "저도 사실 좀 힘든데요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Honestly I'm a bit worn out too."
+                }
+              ]
+            }
+          },
+          "next": "d27c43f2-0925-5cdb-a8f3-bae0d3e40957"
+        }
+      }
+    }
+  }
+}

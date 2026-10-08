@@ -1,0 +1,213 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "b9e9ca12-e531-53c2-9c36-90e84eb3b765": {
+      "id": "b9e9ca12-e531-53c2-9c36-90e84eb3b765",
+      "name": "X07",
+      "start": "8440c2ee-237b-5f9e-97ef-a4dc65ed1875",
+      "end": "6ccfc265-e160-5fa2-9562-cede9f98a318",
+      "nodes": {
+        "8440c2ee-237b-5f9e-97ef-a4dc65ed1875": {
+          "localId": 1,
+          "type": "Start",
+          "next": "65d7ff0e-9cec-5788-ba8b-2426557fe9bd"
+        },
+        "6ccfc265-e160-5fa2-9562-cede9f98a318": {
+          "localId": 2,
+          "type": "End"
+        },
+        "65d7ff0e-9cec-5788-ba8b-2426557fe9bd": {
+          "localId": 3,
+          "memoIds": [
+            "98fec7ec-ea82-5309-b08d-45cb71d144a8"
+          ],
+          "type": "Dialog",
+          "speaker": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "장비 고장"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Gear Failure"
+                }
+              ]
+            }
+          },
+          "next": "ed7f23f9-9763-578e-8617-7f453de4243f"
+        },
+        "ed7f23f9-9763-578e-8617-7f453de4243f": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "경기용 장비가 연습 도중 먹통이 됐다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "The match gear died in the middle of practice."
+                }
+              ]
+            }
+          },
+          "next": "58070539-9693-5929-8313-b1f011692fbf"
+        },
+        "58070539-9693-5929-8313-b1f011692fbf": {
+          "localId": 5,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "손에 익은 거라 바꾸기 싫은데…"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "I'm used to this one, I don't want to switch…"
+                }
+              ]
+            }
+          },
+          "next": "a9b52136-fc2b-56f1-982c-0ee5090e6b28"
+        },
+        "98fec7ec-ea82-5309-b08d-45cb71d144a8": {
+          "localId": 6,
+          "attrs": {
+            "kind": "incident",
+            "manager_type": -1,
+            "stage": 0,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "사건 이벤트 설정",
+          "attachedTo": "65d7ff0e-9cec-5788-ba8b-2426557fe9bd"
+        },
+        "a9b52136-fc2b-56f1-982c-0ee5090e6b28": {
+          "localId": 7,
+          "type": "Select",
+          "options": [
+            {
+              "id": "b87a48ee-2060-51a8-86e0-0e6585084191",
+              "text": "새 장비로 바로 적응하자.",
+              "next": "dc176c37-afd4-5082-9ead-e797fabf2290",
+              "attrs": {
+                "effects": "ok>pmod:engage_hit:+1:1;ng>pmod:engage_hit:-3:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Let's get used to new gear right away."
+                }
+              }
+            },
+            {
+              "id": "5e5fe29a-f614-540e-8e56-4b5d07c5843b",
+              "text": "같은 모델 급히 구해 보자.",
+              "next": "db06bd65-16b8-518d-abeb-c0ad27fa90d7",
+              "attrs": {
+                "effects": "trust:+3;smod:finance:-1:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Let's rush-order the same model."
+                }
+              }
+            }
+          ]
+        },
+        "dc176c37-afd4-5082-9ead-e797fabf2290": {
+          "localId": 8,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "생각보다 괜찮은데요?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Huh, this is better than I expected?"
+                }
+              ]
+            }
+          },
+          "next": "1d6d84d7-0913-55dc-a37b-2c517e5dd880"
+        },
+        "1d6d84d7-0913-55dc-a37b-2c517e5dd880": {
+          "localId": 9,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "손에 안 맞아요…"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "It just doesn't feel right in my hands…"
+                }
+              ]
+            }
+          },
+          "next": "6ccfc265-e160-5fa2-9562-cede9f98a318"
+        },
+        "db06bd65-16b8-518d-abeb-c0ad27fa90d7": {
+          "localId": 10,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "다행이다…!"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Phew, thank goodness…!"
+                }
+              ]
+            }
+          },
+          "next": "6ccfc265-e160-5fa2-9562-cede9f98a318"
+        }
+      }
+    }
+  }
+}

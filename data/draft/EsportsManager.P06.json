@@ -1,0 +1,128 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "123a8511-4347-5b20-a054-6e2b7de95ac3": {
+      "id": "123a8511-4347-5b20-a054-6e2b7de95ac3",
+      "name": "P06",
+      "start": "04a1b7f9-c41e-5ce2-bcf6-14261f80193b",
+      "end": "65f3159f-e8eb-5301-b7ca-81a536bdd974",
+      "nodes": {
+        "04a1b7f9-c41e-5ce2-bcf6-14261f80193b": {
+          "localId": 1,
+          "type": "Start",
+          "next": "3066d17d-4c33-5628-9b1b-1bb90f39edff"
+        },
+        "65f3159f-e8eb-5301-b7ca-81a536bdd974": {
+          "localId": 2,
+          "type": "End"
+        },
+        "3066d17d-4c33-5628-9b1b-1bb90f39edff": {
+          "localId": 3,
+          "memoIds": [
+            "442dc090-e100-5c8e-8a88-ac227a223104"
+          ],
+          "type": "Dialog",
+          "speaker": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{tx_MH87R5EDPY}"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "{tx_MH87R5EDPY}"
+                }
+              ]
+            }
+          },
+          "next": "53b43908-cfc1-5be8-bb0f-2ede3bcfff7e"
+        },
+        "53b43908-cfc1-5be8-bb0f-2ede3bcfff7e": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{name} 선수 해외 이적설이 있습니다."
+            },
+            {
+              "kind": "text",
+              "text": "사실입니까?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "There are rumors {name} is transferring overseas."
+                },
+                {
+                  "kind": "text",
+                  "text": "Is it true?"
+                }
+              ]
+            }
+          },
+          "next": "5cfffbae-811e-5ab4-b557-47d06fc0928c"
+        },
+        "442dc090-e100-5c8e-8a88-ac227a223104": {
+          "localId": 5,
+          "attrs": {
+            "kind": "press",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "mention=mvp",
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "기자회견 이벤트 설정",
+          "attachedTo": "3066d17d-4c33-5628-9b1b-1bb90f39edff"
+        },
+        "5cfffbae-811e-5ab4-b557-47d06fc0928c": {
+          "localId": 6,
+          "type": "Select",
+          "options": [
+            {
+              "id": "673273cc-c629-584a-8ce5-857e585968cf",
+              "text": "{name}{eun} 우리와 끝까지 갑니다.",
+              "next": "65f3159f-e8eb-5301-b7ca-81a536bdd974",
+              "attrs": {
+                "effects": "trust:+5"
+              },
+              "i18n": {
+                "En": {
+                  "text": "{name} is with us to the end."
+                }
+              }
+            },
+            {
+              "id": "3d3f9777-c2a4-55c9-b430-ef96b15014f4",
+              "text": "선수 본인에게 물어보시죠.",
+              "next": "65f3159f-e8eb-5301-b7ca-81a536bdd974",
+              "attrs": {
+                "effects": "trust:-2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Why don't you ask the player?"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

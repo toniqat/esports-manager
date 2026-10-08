@@ -1,0 +1,248 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "d2a3feb6-11a4-54ac-8a61-ba6369a54d2a": {
+      "id": "d2a3feb6-11a4-54ac-8a61-ba6369a54d2a",
+      "name": "X06",
+      "start": "2032eb7f-3b8c-5347-9bc1-ce3afb51e973",
+      "end": "d336647d-7dfa-574f-9229-24242ed8530b",
+      "nodes": {
+        "2032eb7f-3b8c-5347-9bc1-ce3afb51e973": {
+          "localId": 1,
+          "type": "Start",
+          "next": "b83d4411-5b04-5389-b980-231391aa0db9"
+        },
+        "d336647d-7dfa-574f-9229-24242ed8530b": {
+          "localId": 2,
+          "type": "End"
+        },
+        "b83d4411-5b04-5389-b980-231391aa0db9": {
+          "localId": 3,
+          "memoIds": [
+            "7ef26a4c-467e-5385-9bae-c7d0dd7bef85"
+          ],
+          "type": "Dialog",
+          "speaker": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "지각"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Late"
+                }
+              ]
+            }
+          },
+          "next": "8e2eb8f2-f145-543e-8965-b71d68a6fc7e"
+        },
+        "8e2eb8f2-f145-543e-8965-b71d68a6fc7e": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{name} 선수가 오전 훈련에 한 시간 늦었다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "{name} was an hour late to morning practice."
+                }
+              ]
+            }
+          },
+          "next": "3dc6e59b-3abe-5a1e-95cd-3d04bca8328c"
+        },
+        "3dc6e59b-3abe-5a1e-95cd-3d04bca8328c": {
+          "localId": 5,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "죄송해요! 알람을 못 들었어요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "I'm sorry! I didn't hear my alarm."
+                }
+              ]
+            }
+          },
+          "next": "1cb3984c-29ed-5cda-94bb-ff97c0b6cc6f"
+        },
+        "7ef26a4c-467e-5385-9bae-c7d0dd7bef85": {
+          "localId": 6,
+          "attrs": {
+            "kind": "incident",
+            "manager_type": -1,
+            "stage": 0,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "사건 이벤트 설정",
+          "attachedTo": "b83d4411-5b04-5389-b980-231391aa0db9"
+        },
+        "1cb3984c-29ed-5cda-94bb-ff97c0b6cc6f": {
+          "localId": 7,
+          "type": "Select",
+          "options": [
+            {
+              "id": "0aa349f1-c3c5-512a-9b84-444a938f9b7a",
+              "text": "벌금이야. 규칙은 규칙.",
+              "next": "40d04fba-88fd-5c25-81d9-a222d07d60b0",
+              "attrs": {
+                "effects": "trust_all:+1;trust:-2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "That's a fine. Rules are rules."
+                }
+              }
+            },
+            {
+              "id": "906c231c-6a68-57b6-8a99-c418f5f15cca",
+              "text": "다음부턴 조심해.",
+              "next": "bef14e27-68b9-541e-9040-552d4de3c0b8",
+              "attrs": {
+                "effects": "trust:+2;trust_all:-1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Be careful next time."
+                }
+              }
+            },
+            {
+              "id": "124b2f9d-ecdc-5c05-b074-77325c2f563e",
+              "text": "무슨 일 있었어?",
+              "next": "3c4c7627-0ffe-5781-9e6f-47c9982d8e56",
+              "attrs": {
+                "effects": "ok>trust:+4;ng>trust:+1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Did something happen?"
+                }
+              }
+            }
+          ]
+        },
+        "40d04fba-88fd-5c25-81d9-a222d07d60b0": {
+          "localId": 8,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…네. 내겠습니다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "…Okay. I'll pay it."
+                }
+              ]
+            }
+          },
+          "next": "d336647d-7dfa-574f-9229-24242ed8530b"
+        },
+        "bef14e27-68b9-541e-9040-552d4de3c0b8": {
+          "localId": 9,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "감사합니다!"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Thank you!"
+                }
+              ]
+            }
+          },
+          "next": "d336647d-7dfa-574f-9229-24242ed8530b"
+        },
+        "3c4c7627-0ffe-5781-9e6f-47c9982d8e56": {
+          "localId": 10,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "사실 요즘 잠을 잘 못 자요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Actually, I haven't been sleeping well lately."
+                }
+              ]
+            }
+          },
+          "next": "41470b9d-0787-58e9-9482-349908a35dd5"
+        },
+        "41470b9d-0787-58e9-9482-349908a35dd5": {
+          "localId": 11,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "그냥 늦잠이에요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "I just overslept."
+                }
+              ]
+            }
+          },
+          "next": "d336647d-7dfa-574f-9229-24242ed8530b"
+        }
+      }
+    }
+  }
+}

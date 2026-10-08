@@ -20,8 +20,12 @@ extends Control
 #
 # Line grammar (mental_texts.csv line marker, first char after translation): plain = the
 # pilot (name plate = the pilot's name), `>text` = the manager (manager name plate, the
-# illustration dims), `*text` = narration (no name plate), `@text` = tag (header only,
-# skipped here).
+# illustration dims), `*text` = narration (no name plate), `&text` = the partner of a
+# joint-training talk (the art switches to the partner, partner name plate), `@text` = tag
+# (header only, skipped here).
+#
+# Choices may carry a preview line (`previews`, `MentalEvents.preview_text`: check chance +
+# effect directions) shown under each answer.
 #
 # Drop-in for `MessengerView` on the week screen's evening dialog: same signals, same
 # `show_result` / `is_open` / `reveal_all`, `open` takes a pilot id instead of a portrait.
@@ -55,6 +59,10 @@ enum Stage { LINES, CHOICES, REPLY, WAIT, OUTCOME, DONE }
 var _speaker: String = ""
 var _lines: Array = []
 var _choices: Array = []
+var _previews: Array = []
+var _pilot_tex: Texture2D = null
+var _partner_tex: Texture2D = null
+var _partner_name: String = ""
 var _queue: Array = []               # lines still to show in this stage (LINES / REPLY)
 var _stage: int = Stage.DONE
 var _result_ready: bool = false
@@ -101,18 +109,20 @@ func _ready() -> void:
 # ── API ──────────────────────────────────────────────────────────────────────
 ## Start a fresh dialogue. `pilot_id` = the pilot on stage (`PilotImages.full_for`; no art or
 ## `-1` → placeholder slab). `speaker` = the pilot's name plate ("" → `title`).
+## `previews[i]` = the preview line under answer i ("" = none). `partner_id` / `partner_name` =
+## the second pilot of a joint-training talk, who speaks the `&` lines.
 func open(sub: String, title: String, pilot_id: int, lines: Array, choices: Array,
-		speaker: String = "") -> void:
+		speaker: String = "", previews: Array = [], partner_id: int = -1, partner_name: String = "") -> void:
 	_sub_lbl.text = sub
 	_title_lbl.text = title
 	_speaker = speaker if not speaker.is_empty() else title
-	var tex: Texture2D = PilotImages.full_for(pilot_id) if pilot_id >= 0 else null
-	_art.texture = tex
-	_art.visible = tex != null
-	_slab.visible = tex == null
-	_slab_lbl.text = _speaker
+	_pilot_tex = PilotImages.full_for(pilot_id) if pilot_id >= 0 else null
+	_partner_tex = PilotImages.full_for(partner_id) if partner_id >= 0 else null
+	_partner_name = partner_name
+	_show_art(_pilot_tex, _speaker)
 	_lines = lines.duplicate()
 	_choices = choices.duplicate()
+	_previews = previews.duplicate()
 	_queue = _lines.duplicate()
 	_result_ready = false
 	_verdict = 0
@@ -193,10 +203,14 @@ func _show_choices() -> void:
 		return
 	_stage = Stage.CHOICES
 	for i in _choices.size():
-		var b: Button = CHOICE_SCENE.instantiate()
+		var item: Control = CHOICE_SCENE.instantiate()
+		var b: Button = item.get_node("%Button")
 		b.text = String(_choices[i])
 		b.pressed.connect(_on_choice_pressed.bind(i))
-		_choice_list.add_child(b)
+		var preview: Label = item.get_node("%Preview")
+		preview.text = String(_previews[i]) if i < _previews.size() else ""
+		preview.visible = not preview.text.is_empty()
+		_choice_list.add_child(item)
 	_fade_in(_dim)
 	_fade_in(_choice_list)
 	_refresh_hint()
@@ -258,10 +272,24 @@ func _show_line(text: String) -> void:
 	elif text.begins_with("*"):
 		_plate.visible = false
 		_set_text(text.substr(1).strip_edges(), &"SubLabel")
+	elif text.begins_with("&"):
+		_show_art(_partner_tex, _partner_name)
+		_set_plate(_partner_name, &"VnDialogueNamePlate")
+		_set_text(text.substr(1).strip_edges(), &"BodyLabel")
 	else:
+		_show_art(_pilot_tex, _speaker)
 		_set_plate(_speaker, &"VnDialogueNamePlate")
 		_set_text(text, &"BodyLabel")
 	_tint_art(ART_LISTEN_MODULATE if listening else Color.WHITE)
+
+
+## The illustration on stage (the pilot, or the partner while the partner speaks); no art →
+## the placeholder slab with `who`.
+func _show_art(tex: Texture2D, who: String) -> void:
+	_art.texture = tex
+	_art.visible = tex != null
+	_slab.visible = tex == null
+	_slab_lbl.text = who
 
 
 func _set_plate(who: String, variation: StringName) -> void:
@@ -382,4 +410,4 @@ func _fill_preview() -> void:  # l10n-ignore
 	choice_picked.connect(func(idx: int) -> void:
 		show_result(MentalEvents.outcome_view(s, MentalSystem.finish_evening(s, day, idx))))
 	open(Loc.t(L.TERM_ACTIVITY_INTERVIEW), MentalEvents.pilot_name(s, pid), pid,
-			view["lines"], view["choices"])
+			view["lines"], view["choices"], "", view["previews"])

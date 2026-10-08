@@ -1,0 +1,192 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "9a5b331b-2abf-53f4-8645-a80050b168d2": {
+      "id": "9a5b331b-2abf-53f4-8645-a80050b168d2",
+      "name": "T02",
+      "start": "4c53d39d-fc6a-5c5c-8d17-0bc21017cfbc",
+      "end": "7ca13bdc-54cf-5c3e-95be-34e17f3aa047",
+      "nodes": {
+        "4c53d39d-fc6a-5c5c-8d17-0bc21017cfbc": {
+          "localId": 1,
+          "type": "Start",
+          "next": "5993fd9f-fdda-5250-8960-f8675a03b48c"
+        },
+        "7ca13bdc-54cf-5c3e-95be-34e17f3aa047": {
+          "localId": 2,
+          "type": "End"
+        },
+        "5993fd9f-fdda-5250-8960-f8675a03b48c": {
+          "localId": 3,
+          "memoIds": [
+            "b992eb6e-8550-51d3-ab02-298151772e1a"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "감독님! 오늘 확실히 늘었어요. 느낌이 와요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Coach! I definitely got better today. I can feel it."
+                }
+              ]
+            }
+          },
+          "next": "87dc7a98-e536-5e1a-91ed-7152da419d52"
+        },
+        "87dc7a98-e536-5e1a-91ed-7152da419d52": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "23f70dcf-de2b-50ea-a210-97bcdd22d3a0",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "나도 봤어. 움직임이 달라졌더라."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "I saw it too. Your movement was different."
+                }
+              ]
+            }
+          },
+          "next": "0b2a9c6a-d531-5281-9478-ff6d6dfc0f03"
+        },
+        "b992eb6e-8550-51d3-ab02-298151772e1a": {
+          "localId": 5,
+          "attrs": {
+            "kind": "talk",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "ups>=1",
+            "weight": 2
+          },
+          "type": "Comment",
+          "text": "오전 만남 이벤트 설정",
+          "attachedTo": "5993fd9f-fdda-5250-8960-f8675a03b48c"
+        },
+        "0b2a9c6a-d531-5281-9478-ff6d6dfc0f03": {
+          "localId": 6,
+          "type": "Select",
+          "options": [
+            {
+              "id": "8d19af50-4ab9-577c-99ae-e8188b86488c",
+              "text": "이 감각 잊지 말고 계속 가자.",
+              "next": "bc0e43ee-77fd-5b6b-afb4-6e4357b54ab2",
+              "attrs": {
+                "effects": "trust:+3;pmod:all:+1:-1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Hold on to that feeling and keep going."
+                }
+              }
+            },
+            {
+              "id": "8757299d-bf67-51b0-8b65-a6402c2c6f97",
+              "text": "들뜨지 마. 아직 갈 길이 멀어.",
+              "next": "73ae489c-167f-572b-8c58-7cd2a58834ed",
+              "attrs": {
+                "effects": "ok>pmod:all:+2:-1;ng>trust:-2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Don't get carried away. There's a long way to go."
+                }
+              }
+            }
+          ]
+        },
+        "bc0e43ee-77fd-5b6b-afb4-6e4357b54ab2": {
+          "localId": 7,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네! 내일도 이렇게만 하면 좋겠어요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Yes! I hope tomorrow goes just like this."
+                }
+              ]
+            }
+          },
+          "next": "7ca13bdc-54cf-5c3e-95be-34e17f3aa047"
+        },
+        "73ae489c-167f-572b-8c58-7cd2a58834ed": {
+          "localId": 8,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…맞아요. 정신 차릴게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "...You're right. I'll stay focused."
+                }
+              ]
+            }
+          },
+          "next": "120b8a39-3301-5aa0-a1bc-57605c95bd1b"
+        },
+        "120b8a39-3301-5aa0-a1bc-57605c95bd1b": {
+          "localId": 9,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "칭찬 한 번 듣기가 이렇게 어렵네요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Getting one compliment out of you is so hard."
+                }
+              ]
+            }
+          },
+          "next": "7ca13bdc-54cf-5c3e-95be-34e17f3aa047"
+        }
+      }
+    }
+  }
+}

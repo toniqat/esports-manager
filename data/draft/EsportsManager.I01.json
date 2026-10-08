@@ -1,0 +1,240 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "ff3f8e93-b486-53b8-8f8e-26b29b5a3c0d": {
+      "id": "ff3f8e93-b486-53b8-8f8e-26b29b5a3c0d",
+      "name": "I01",
+      "start": "9ef8ccb8-f5e6-52bb-b662-bbcff21e928f",
+      "end": "74f66078-d9ab-598a-9d20-26a1bc8bc457",
+      "nodes": {
+        "9ef8ccb8-f5e6-52bb-b662-bbcff21e928f": {
+          "localId": 1,
+          "type": "Start",
+          "next": "38cc5a51-854f-5527-85fa-1c8c4fd867e7"
+        },
+        "74f66078-d9ab-598a-9d20-26a1bc8bc457": {
+          "localId": 2,
+          "type": "End"
+        },
+        "38cc5a51-854f-5527-85fa-1c8c4fd867e7": {
+          "localId": 3,
+          "memoIds": [
+            "d785f589-52a3-5b7f-9e74-a8e77acd0ffe"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "요즘 훈련이 조금 버거워요."
+            },
+            {
+              "kind": "text",
+              "text": "감독님은 어떻게 생각하세요?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Training's been kind of rough lately."
+                },
+                {
+                  "kind": "text",
+                  "text": "What do you think, Coach?"
+                }
+              ]
+            }
+          },
+          "next": "cdf95302-9c1b-5ef8-a374-d5086f8c7b54"
+        },
+        "d785f589-52a3-5b7f-9e74-a8e77acd0ffe": {
+          "localId": 4,
+          "attrs": {
+            "kind": "interview",
+            "manager_type": -1,
+            "stage": 0,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "면담 이벤트 설정",
+          "attachedTo": "38cc5a51-854f-5527-85fa-1c8c4fd867e7"
+        },
+        "cdf95302-9c1b-5ef8-a374-d5086f8c7b54": {
+          "localId": 5,
+          "type": "Select",
+          "options": [
+            {
+              "id": "6b469569-fe92-5cc1-b13e-f18243785ff6",
+              "text": "잘하고 있어. 조금만 더 버티자.",
+              "next": "d660e2a5-cab8-5b7c-8e1f-922aaa09a9eb",
+              "attrs": {
+                "effects": "ok>trust:+5;ng>trust:+1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "You're doing great. Just hang in a bit longer."
+                }
+              }
+            },
+            {
+              "id": "81139970-3ac2-5b6d-b7cd-95ab55e8a661",
+              "text": "힘들면 강도를 조절해 줄게.",
+              "next": "2bdfe81f-5c66-589a-af92-1b50ede84648",
+              "attrs": {
+                "effects": "trust:+4"
+              },
+              "i18n": {
+                "En": {
+                  "text": "If it's too much, I'll ease up the intensity."
+                }
+              }
+            },
+            {
+              "id": "f80a8cea-1251-55b5-badc-81063352209a",
+              "text": "프로라면 견뎌야지.",
+              "next": "d83c2783-b044-5b21-a9f8-c4b1f6cbdf94",
+              "attrs": {
+                "effects": "ok>trust:+2;ng>trust:-3"
+              },
+              "i18n": {
+                "En": {
+                  "text": "A pro should be able to take it."
+                }
+              }
+            }
+          ]
+        },
+        "d660e2a5-cab8-5b7c-8e1f-922aaa09a9eb": {
+          "localId": 6,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네… 감독님 말 믿고 버텨 볼게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Okay… I'll trust you and push through."
+                }
+              ]
+            }
+          },
+          "next": "4c8077f9-79c8-5c31-a18e-4125921f4cd1"
+        },
+        "4c8077f9-79c8-5c31-a18e-4125921f4cd1": {
+          "localId": 7,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "말은 쉽죠."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Easy for you to say."
+                }
+              ]
+            }
+          },
+          "next": "74f66078-d9ab-598a-9d20-26a1bc8bc457"
+        },
+        "2bdfe81f-5c66-589a-af92-1b50ede84648": {
+          "localId": 8,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "정말요? 그럼 조금 숨 돌릴 수 있겠네요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Really? Then I can finally catch my breath."
+                }
+              ]
+            }
+          },
+          "next": "74f66078-d9ab-598a-9d20-26a1bc8bc457"
+        },
+        "d83c2783-b044-5b21-a9f8-c4b1f6cbdf94": {
+          "localId": 9,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…맞는 말이에요. 더 해 볼게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "…You're right. I'll keep at it."
+                }
+              ]
+            }
+          },
+          "next": "2a347d8f-1604-51f6-85b9-3a622ee373ec"
+        },
+        "2a347d8f-1604-51f6-85b9-3a622ee373ec": {
+          "localId": 10,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "알겠습니다. (표정이 굳는다)"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Understood. (Their face hardens.)"
+                }
+              ]
+            }
+          },
+          "next": "74f66078-d9ab-598a-9d20-26a1bc8bc457"
+        }
+      }
+    }
+  }
+}

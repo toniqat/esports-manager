@@ -111,7 +111,7 @@ tx_5GDZXY0QSR,season.week.sub_incident,active,Messenger overlay subtitle,,,{day}
 tx_CPW05B0HB9,season.week.stage.morning,active,"WeekProgressView bottom bar stage slot (training day, before the afternoon)",,,오전,Morning,draft,99c4e647
 tx_XXVBB9VYQX,season.week.stage.afternoon,active,WeekProgressView bottom bar stage slot · afternoon card head,,,오후,Afternoon,draft,d2cf9622
 tx_7YZ50G3EBF,season.week.map_hint.morning,active,"WeekProgressView caption above the base map, morning before settlement",,,오전 훈련 · 다음을 누르면 오늘 훈련을 정산합니다,Morning training · Press Next to settle today's training,draft,df4d0750
-tx_AWKX6T199K,season.week.map_hint.result,active,"WeekProgressView caption above the base map, morning after settlement",,,오전 훈련 결과 · 잠시 후 오후로 넘어갑니다 (다음 = 건너뛰기),Morning training results · the afternoon starts shortly (Next = skip),draft,44abbb52
+tx_AWKX6T199K,season.week.map_hint.result,active,"WeekProgressView caption above the base map, morning after settlement",,,오전 훈련 결과 · 잠시 후 오전 만남으로 넘어갑니다 (다음 = 건너뛰기),Morning training results · The morning talk starts shortly (Next = skip),draft,8c9ae9ad
 tx_CXNA4K157Z,season.week.map_hint.afternoon,active,"WeekProgressView caption above the base map, afternoon before the action",,,오후 · 선수를 눌러 면담이나 외출을 요청하세요,Afternoon · Tap a player to ask for a meeting or an outing,draft,c15f313e
 tx_7KR285R4ES,season.week.map_hint.afternoon_done,active,"WeekProgressView caption above the base map, afternoon after the action",,,오늘 오후 일정을 마쳤습니다,This afternoon is done,draft,393639c4
 tx_5W9RGVB4BS,season.week.map.exp,active,Base map pilot chip after training: EXP earned when no stat point rose,,,EXP +{n},EXP +{n},draft,51d97854
@@ -137,3 +137,18 @@ tx_K1AJHH3AP3,season.pilot_detail.quirks_none,active,SeasonPilotDetail: quirk se
 tx_PJXWJ5R6J6,season.pilot_detail.research_title,active,SeasonPilotDetail sheet section title: this week's research mech,,,메크 연구,Mech research,draft,a27ab83a
 tx_X988TMMPYD,season.pilot_detail.research,active,"SeasonPilotDetail: research mech, its mastery tier and value",,,{mech} · {tier} ({value} / {max}),{mech} · {tier} ({value} / {max}),draft,979471d5
 tx_H106HT101H,season.pilot_detail.research_none,active,SeasonPilotDetail: no research mech set,,,이번 주 연구 메크 미지정,No research mech this week,draft,25e8911b
+tx_DY69B79HB4,season.week.stage.evening,active,"WeekProgressView bottom bar stage slot (training day, evening incident)",,,저녁,Evening,draft,05a95a7c
+tx_FM9P3DRASG,season.week.map_hint.talk,active,"WeekProgressView caption above the base map, morning talk before the meeting",,,오전 · 선수를 눌러 훈련 소감을 들어 보세요,Morning · Tap a player to hear how training went,draft,f41ce24c
+tx_N36SF54RT7,season.week.map_hint.talk_done,active,"WeekProgressView caption above the base map, morning after the talk",,,오전 만남을 마쳤습니다 · 다음을 누르면 오후로 넘어갑니다,Morning talk done · Next moves on to the afternoon,draft,93949b8b
+tx_CY41J8M14Z,season.week.map_hint.evening,active,"WeekProgressView caption above the base map, evening with an incident",,,저녁 · 사건이 일어났습니다,Evening · Something happened,draft,ff343bbb
+tx_114TEDYXKT,season.week.talk_card.head,active,"Morning talk card head (scene text, UI_Comp_WeekTalkCard)",,,오전 만남,Morning talk,draft,73b4f33e
+tx_SJMNVE78AH,season.week.talk_pick,active,"Morning talk card hint, no pilot selected",,,지도에서 훈련 소감을 들을 선수를 누르세요 (오전 한 번),Tap a player on the map to hear how training went (once a morning),draft,391d8d77
+tx_1SN8VDP0S4,season.week.talk_none,active,"Morning talk card hint, nobody can be met",,,오늘 오전에는 만날 수 있는 선수가 없습니다,No one to talk to this morning,draft,2e6f3cac
+tx_G18Q9X83C8,season.week.talk_button,active,Morning talk card button,,,만남,Talk,draft,2036fe09
+tx_7FRMF2A3ZK,season.week.talk_with,active,Morning talk card line under the picked pilot: who trained with them (both come to the talk),,,합동 훈련 · {name}{wa} 함께,Joint training · with {name},draft,edd6560f
+tx_0ZK5QSV26D,season.week.talk_solo,active,Morning talk card line under the picked pilot (no joint training),,,신뢰 {trust},Trust {trust},draft,29c151a6
+tx_Y30YG2P1AK,season.week.talk_done,active,Morning talk done card head,,,오전: {name} 만남,Morning: Talk with {name},draft,b1c5af30
+tx_5Y82DHJ5DX,season.week.talk_done_pair,active,"Morning talk done card head, joint training pair",,,오전: {name} · {name2} 만남,Morning: Talk with {name} and {name2},draft,2e303f79
+tx_444WVNHT09,season.week.sub_talk,active,"Dialogue overlay subtitle, morning talk",,,{day} 오전 · 훈련 소감,{day} morning · After training,draft,399ad258
+tx_V0SAHDNET7,season.week.skip_talk.title,active,Confirm popup title: Next pressed while a morning talk is still possible,,,오전 만남을 건너뛸까요?,Skip the morning talk?,draft,a8cb8bb3
+tx_H3RGAX8ZG6,season.week.skip_talk.body,active,Confirm popup body: Next pressed while a morning talk is still possible,,,아직 선수를 만나 훈련 소감을 들을 수 있습니다. 이대로 오후로 넘어갈까요?,You can still meet a player about today's training. Move on to the afternoon anyway?,draft,0aac4ef9

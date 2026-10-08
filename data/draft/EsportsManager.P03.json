@@ -1,0 +1,140 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "e790e169-3068-5839-a21c-c7556d043436": {
+      "id": "e790e169-3068-5839-a21c-c7556d043436",
+      "name": "P03",
+      "start": "0b8ccda9-d242-5eaa-b99d-27fb97bc346a",
+      "end": "13ad6e83-98c7-5a0b-8943-9d3611f8655b",
+      "nodes": {
+        "0b8ccda9-d242-5eaa-b99d-27fb97bc346a": {
+          "localId": 1,
+          "type": "Start",
+          "next": "1cdba7a1-8ee6-5a3f-ad40-69445382ddc5"
+        },
+        "13ad6e83-98c7-5a0b-8943-9d3611f8655b": {
+          "localId": 2,
+          "type": "End"
+        },
+        "1cdba7a1-8ee6-5a3f-ad40-69445382ddc5": {
+          "localId": 3,
+          "memoIds": [
+            "f0432218-5ded-5560-84c9-64b02fd2bcf2"
+          ],
+          "type": "Dialog",
+          "speaker": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{tx_MH87R5EDPY}"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "{tx_MH87R5EDPY}"
+                }
+              ]
+            }
+          },
+          "next": "8a391be0-ccbc-587b-9412-3500aef25266"
+        },
+        "8a391be0-ccbc-587b-9412-3500aef25266": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "팀 분위기는 어떻습니까?"
+            },
+            {
+              "kind": "text",
+              "text": "불화설도 돌던데요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "How's the mood in the team?"
+                },
+                {
+                  "kind": "text",
+                  "text": "There have been rumors of friction."
+                }
+              ]
+            }
+          },
+          "next": "3f4c10e7-50b3-58b9-8d91-0e0bdd9bb5ee"
+        },
+        "f0432218-5ded-5560-84c9-64b02fd2bcf2": {
+          "localId": 5,
+          "attrs": {
+            "kind": "press",
+            "manager_type": -1,
+            "stage": 0,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "기자회견 이벤트 설정",
+          "attachedTo": "1cdba7a1-8ee6-5a3f-ad40-69445382ddc5"
+        },
+        "3f4c10e7-50b3-58b9-8d91-0e0bdd9bb5ee": {
+          "localId": 6,
+          "type": "Select",
+          "options": [
+            {
+              "id": "03e78d2f-cb24-5a06-bd97-028712dbe687",
+              "text": "가족 같은 분위기입니다.",
+              "next": "13ad6e83-98c7-5a0b-8943-9d3611f8655b",
+              "attrs": {
+                "effects": "ok>trust_all:+2;ng>trust_all:-1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "We're like a family."
+                }
+              }
+            },
+            {
+              "id": "9d9084fc-03e2-54d5-afb4-acadf732f0ef",
+              "text": "경쟁은 있지만 건강한 경쟁입니다.",
+              "next": "13ad6e83-98c7-5a0b-8943-9d3611f8655b",
+              "attrs": {
+                "effects": "trust_all:+1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "There's competition, but it's healthy competition."
+                }
+              }
+            },
+            {
+              "id": "0ffc3ec1-6694-59d5-8399-592d2b0972da",
+              "text": "근거 없는 소문엔 답하지 않겠습니다.",
+              "next": "13ad6e83-98c7-5a0b-8943-9d3611f8655b",
+              "attrs": {
+                "effects": "smod:mental:+1:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "I won't respond to baseless rumors."
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

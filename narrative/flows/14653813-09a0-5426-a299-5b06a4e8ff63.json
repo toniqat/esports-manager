@@ -1,0 +1,351 @@
+{
+  "id": "14653813-09a0-5426-a299-5b06a4e8ff63",
+  "name": "J02",
+  "parentNodeId": null,
+  "folderId": "a72769bf-05db-521e-a181-18bf95eaf65f",
+  "defaultAttrs": {
+    "speakerWikiTargetId": "dd665e10-0059-53d3-a1c2-b806960e315d"
+  },
+  "sharedAttributes": {
+    "Comment": [
+      {
+        "id": "2659f9c8-a1c3-530f-a3b5-5e34eff7c97d",
+        "name": "kind",
+        "type": "enum",
+        "enumValues": [
+          "interview",
+          "outing",
+          "incident",
+          "press",
+          "talk",
+          "talk_pair"
+        ],
+        "default": "",
+        "description": "이벤트 종류"
+      },
+      {
+        "id": "991980a9-390b-5430-8f45-878b0c749292",
+        "name": "manager_type",
+        "type": "integer",
+        "default": -1,
+        "description": "-1 공통 · 0 운영형 · 1 실전형"
+      },
+      {
+        "id": "ffd321eb-9886-55a3-8f95-f5eb6f27c3d0",
+        "name": "stage",
+        "type": "integer",
+        "default": 0,
+        "description": "외출 단계 (1..N), 그 밖 0"
+      },
+      {
+        "id": "8775d8be-e470-5599-9dbb-3dec72939c40",
+        "name": "cond",
+        "type": "text",
+        "default": "",
+        "description": "조건 (; 로 이음) — features/season/mental/README.md"
+      },
+      {
+        "id": "801eabee-4cc3-509b-991e-4f1108611107",
+        "name": "weight",
+        "type": "integer",
+        "default": 1,
+        "description": "뽑기 가중치"
+      }
+    ],
+    "Select": [
+      {
+        "id": "8feec493-2df3-55c3-91f6-540b69a34a49",
+        "name": "effects",
+        "type": "text",
+        "default": "",
+        "description": "선택지 효과 절 (; 로 이음, ok> / ng> 판정 게이트)"
+      }
+    ],
+    "Dialog": [
+      {
+        "id": "cbbc0651-8be3-51a9-9d67-9721420a63a4",
+        "name": "branch",
+        "type": "enum",
+        "enumValues": [
+          "ok",
+          "ng"
+        ],
+        "default": "",
+        "description": "답 뒤 대사만: 판정 성공(ok) / 실패(ng) 때만. 비우면 항상"
+      }
+    ]
+  },
+  "labels": [],
+  "nodes": [
+    {
+      "id": "183a02cd-90d6-5f15-b84d-7b486d1e87b4",
+      "type": "Start",
+      "name": "Start",
+      "localId": 1,
+      "x": 40,
+      "y": 40
+    },
+    {
+      "id": "60042c83-577a-5258-9f81-ec97030d4888",
+      "type": "End",
+      "name": "End",
+      "localId": 2,
+      "x": 1840,
+      "y": 40
+    },
+    {
+      "id": "51e63ff1-ba0e-51eb-b77b-8fd49e56d67c",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 3,
+      "x": 340,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "6b1de2e5-536b-5673-b2c0-0f81cf838865",
+      "content": "감독님, {name} 오늘 진짜 많이 늘었어요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Coach, {name} got a lot better today.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "e474ffbc-f89f-5876-8821-d0eec704a64c",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 4,
+      "x": 640,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "야, 그런 말을 왜 네가 해.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Hey, why are you the one saying that.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "9f531018-0c1e-52fd-b921-c7b066c7717b",
+      "type": "Comment",
+      "name": "Comment",
+      "localId": 5,
+      "x": 340,
+      "y": -220,
+      "color": "#64748b",
+      "text": "합동 훈련 이벤트 설정",
+      "width": 260,
+      "height": 110,
+      "attachments": [
+        {
+          "nodeId": "51e63ff1-ba0e-51eb-b77b-8fd49e56d67c"
+        }
+      ],
+      "sharedValues": {
+        "2659f9c8-a1c3-530f-a3b5-5e34eff7c97d": "talk_pair",
+        "991980a9-390b-5430-8f45-878b0c749292": -1,
+        "ffd321eb-9886-55a3-8f95-f5eb6f27c3d0": 0,
+        "8775d8be-e470-5599-9dbb-3dec72939c40": "ups>=1",
+        "801eabee-4cc3-509b-991e-4f1108611107": 2
+      }
+    },
+    {
+      "id": "ca2d6333-e803-54af-ac12-8f2af995dbb2",
+      "type": "Select",
+      "name": "Select",
+      "localId": 6,
+      "x": 940,
+      "y": 40,
+      "color": "#64748b",
+      "options": [
+        {
+          "id": "71d18ee8-3a60-5e87-bdce-ae9b50b6de1e",
+          "text": "서로 끌어 주는 게 보기 좋다.",
+          "sharedValues": {
+            "8feec493-2df3-55c3-91f6-540b69a34a49": "trust:+3"
+          }
+        },
+        {
+          "id": "ab50e01e-0b41-5ef3-8254-2e2ecbda3f8b",
+          "text": "{name2}, 너도 질 수 없겠는데?",
+          "sharedValues": {
+            "8feec493-2df3-55c3-91f6-540b69a34a49": "ok>pmod:all:+1:-1;ng>stress:+3"
+          }
+        }
+      ],
+      "translations": {
+        "opt:71d18ee8-3a60-5e87-bdce-ae9b50b6de1e": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "It's good to see you pulling each other up.",
+            "status": "progress"
+          }
+        },
+        "opt:ab50e01e-0b41-5ef3-8254-2e2ecbda3f8b": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "{name2}, you can't fall behind either, right?",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "d7675e25-3c7e-57ea-9382-c9f1ac54a60a",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 7,
+      "x": 1240,
+      "y": -90.0,
+      "color": "#64748b",
+      "speakerId": "6b1de2e5-536b-5673-b2c0-0f81cf838865",
+      "content": "헤헤, 팀이니까요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Hehe, we're a team.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "e7e4bb9b-0892-5832-b5b2-c6e1dba36cf0",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 8,
+      "x": 1240,
+      "y": 170.0,
+      "color": "#64748b",
+      "speakerId": "6b1de2e5-536b-5673-b2c0-0f81cf838865",
+      "content": "당연하죠. 내일은 제 차례예요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Of course. Tomorrow's my turn.",
+            "status": "progress"
+          }
+        }
+      },
+      "sharedValues": {
+        "cbbc0651-8be3-51a9-9d67-9721420a63a4": "ok"
+      }
+    },
+    {
+      "id": "001c5f18-6d2f-5f9e-8285-38c08d5cfb78",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 9,
+      "x": 1540,
+      "y": 170.0,
+      "color": "#64748b",
+      "speakerId": "6b1de2e5-536b-5673-b2c0-0f81cf838865",
+      "content": "…그런 말 하시면 부담돼요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "...Saying that puts pressure on me.",
+            "status": "progress"
+          }
+        }
+      },
+      "sharedValues": {
+        "cbbc0651-8be3-51a9-9d67-9721420a63a4": "ng"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "2f54ef01-1256-557d-a47a-d216ce358990",
+      "source": "183a02cd-90d6-5f15-b84d-7b486d1e87b4",
+      "target": "51e63ff1-ba0e-51eb-b77b-8fd49e56d67c",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "cedc0c37-7f98-5a98-88a1-47951d8a334b",
+      "source": "51e63ff1-ba0e-51eb-b77b-8fd49e56d67c",
+      "target": "e474ffbc-f89f-5876-8821-d0eec704a64c",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "a3d4da3e-cfc4-5564-b3f4-a5e3bbe2ef94",
+      "source": "e474ffbc-f89f-5876-8821-d0eec704a64c",
+      "target": "ca2d6333-e803-54af-ac12-8f2af995dbb2",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "94563849-e65b-59fc-8c7f-b2bf6f3109e0",
+      "source": "ca2d6333-e803-54af-ac12-8f2af995dbb2",
+      "target": "d7675e25-3c7e-57ea-9382-c9f1ac54a60a",
+      "sourcePort": "opt:71d18ee8-3a60-5e87-bdce-ae9b50b6de1e",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "0d73464e-2af0-5bb5-a9a5-e5629c7db6b7",
+      "source": "d7675e25-3c7e-57ea-9382-c9f1ac54a60a",
+      "target": "60042c83-577a-5258-9f81-ec97030d4888",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "9d256102-4397-570a-b9c7-7dc9a257bc66",
+      "source": "ca2d6333-e803-54af-ac12-8f2af995dbb2",
+      "target": "e7e4bb9b-0892-5832-b5b2-c6e1dba36cf0",
+      "sourcePort": "opt:ab50e01e-0b41-5ef3-8254-2e2ecbda3f8b",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "6811f2fe-3293-5d6f-ad6a-7a9327e0506b",
+      "source": "e7e4bb9b-0892-5832-b5b2-c6e1dba36cf0",
+      "target": "001c5f18-6d2f-5f9e-8285-38c08d5cfb78",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "79ce35f3-55ec-53bb-a0f4-adc77975d20e",
+      "source": "001c5f18-6d2f-5f9e-8285-38c08d5cfb78",
+      "target": "60042c83-577a-5258-9f81-ec97030d4888",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    }
+  ],
+  "nextLocalId": 10
+}

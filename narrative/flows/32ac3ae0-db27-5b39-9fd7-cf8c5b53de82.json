@@ -1,0 +1,320 @@
+{
+  "id": "32ac3ae0-db27-5b39-9fd7-cf8c5b53de82",
+  "name": "I09",
+  "parentNodeId": null,
+  "folderId": "62f147df-5140-56b2-86d0-23bce19a7bf5",
+  "defaultAttrs": {
+    "speakerWikiTargetId": "dd665e10-0059-53d3-a1c2-b806960e315d"
+  },
+  "sharedAttributes": {
+    "Comment": [
+      {
+        "id": "2694b65d-9611-59b7-8341-97784950ae2a",
+        "name": "kind",
+        "type": "enum",
+        "enumValues": [
+          "interview",
+          "outing",
+          "incident",
+          "press",
+          "talk",
+          "talk_pair"
+        ],
+        "default": "",
+        "description": "이벤트 종류"
+      },
+      {
+        "id": "df29030d-580f-5414-9ac3-e365982cda09",
+        "name": "manager_type",
+        "type": "integer",
+        "default": -1,
+        "description": "-1 공통 · 0 운영형 · 1 실전형"
+      },
+      {
+        "id": "9f4dab77-e4ed-58b7-aec2-7c4da142d65a",
+        "name": "stage",
+        "type": "integer",
+        "default": 0,
+        "description": "외출 단계 (1..N), 그 밖 0"
+      },
+      {
+        "id": "054a263c-20f6-5148-aac7-8398ba19bee0",
+        "name": "cond",
+        "type": "text",
+        "default": "",
+        "description": "조건 (; 로 이음) — features/season/mental/README.md"
+      },
+      {
+        "id": "d6c3a675-da2f-5784-8212-eadebb6976b0",
+        "name": "weight",
+        "type": "integer",
+        "default": 1,
+        "description": "뽑기 가중치"
+      }
+    ],
+    "Select": [
+      {
+        "id": "abf81eeb-b71d-522d-9d25-b322188d8f2f",
+        "name": "effects",
+        "type": "text",
+        "default": "",
+        "description": "선택지 효과 절 (; 로 이음, ok> / ng> 판정 게이트)"
+      }
+    ],
+    "Dialog": [
+      {
+        "id": "11c2de6c-cbb6-5baf-bfa3-6f03e6eb3689",
+        "name": "branch",
+        "type": "enum",
+        "enumValues": [
+          "ok",
+          "ng"
+        ],
+        "default": "",
+        "description": "답 뒤 대사만: 판정 성공(ok) / 실패(ng) 때만. 비우면 항상"
+      }
+    ]
+  },
+  "labels": [],
+  "nodes": [
+    {
+      "id": "e9bbbe32-da3d-56ce-8459-f879cf1ef0e6",
+      "type": "Start",
+      "name": "Start",
+      "localId": 1,
+      "x": 40,
+      "y": 40
+    },
+    {
+      "id": "5fcf6000-6110-59c7-ac3c-c2478b6759f9",
+      "type": "End",
+      "name": "End",
+      "localId": 2,
+      "x": 1540,
+      "y": 40
+    },
+    {
+      "id": "b99f9950-0065-51a8-827f-869236771f3b",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 3,
+      "x": 340,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "감독님 현역 때 얘기 해 주세요!\n그때도 이렇게 연습했어요?",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Tell me about your pro days, Coach!\nDid you practice this hard back then?",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "3aca8b8c-abe9-5912-907a-873ce19121df",
+      "type": "Comment",
+      "name": "Comment",
+      "localId": 4,
+      "x": 340,
+      "y": -220,
+      "color": "#64748b",
+      "text": "면담 이벤트 설정",
+      "width": 260,
+      "height": 110,
+      "attachments": [
+        {
+          "nodeId": "b99f9950-0065-51a8-827f-869236771f3b"
+        }
+      ],
+      "sharedValues": {
+        "2694b65d-9611-59b7-8341-97784950ae2a": "interview",
+        "df29030d-580f-5414-9ac3-e365982cda09": 1,
+        "9f4dab77-e4ed-58b7-aec2-7c4da142d65a": 0,
+        "054a263c-20f6-5148-aac7-8398ba19bee0": "",
+        "d6c3a675-da2f-5784-8212-eadebb6976b0": 1
+      }
+    },
+    {
+      "id": "5b5600db-871c-5214-889e-f7d8996329bf",
+      "type": "Select",
+      "name": "Select",
+      "localId": 5,
+      "x": 640,
+      "y": 40,
+      "color": "#64748b",
+      "options": [
+        {
+          "id": "009fe875-e4e6-57d5-9596-fd4bf9a3fc6c",
+          "text": "더 했지. 하루 열네 시간.",
+          "sharedValues": {
+            "abf81eeb-b71d-522d-9d25-b322188d8f2f": "ok>trust:+5;ng>trust:+1"
+          }
+        },
+        {
+          "id": "4841c90a-90c7-5ec1-99d5-c93af83e4920",
+          "text": "그땐 몰랐어. 너희는 나보다 낫다.",
+          "sharedValues": {
+            "abf81eeb-b71d-522d-9d25-b322188d8f2f": "trust:+5"
+          }
+        }
+      ],
+      "translations": {
+        "opt:009fe875-e4e6-57d5-9596-fd4bf9a3fc6c": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Harder. Fourteen hours a day.",
+            "status": "progress"
+          }
+        },
+        "opt:4841c90a-90c7-5ec1-99d5-c93af83e4920": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "I didn't know any better back then. You're all better than I was.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "6fa70033-f72c-5b60-8382-184738a0c948",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 6,
+      "x": 940,
+      "y": -90.0,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "와… 저도 질 수 없죠!",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Whoa… then I can't lose either!",
+            "status": "progress"
+          }
+        }
+      },
+      "sharedValues": {
+        "11c2de6c-cbb6-5baf-bfa3-6f03e6eb3689": "ok"
+      }
+    },
+    {
+      "id": "1b56da13-52ca-50fd-8765-fe6e74532cab",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 7,
+      "x": 1240,
+      "y": -90.0,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "그건 좀 무리 아닌가요…",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Isn't that a bit much…?",
+            "status": "progress"
+          }
+        }
+      },
+      "sharedValues": {
+        "11c2de6c-cbb6-5baf-bfa3-6f03e6eb3689": "ng"
+      }
+    },
+    {
+      "id": "326a3232-d7bb-5a0f-aec4-c1d818057e3e",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 8,
+      "x": 940,
+      "y": 170.0,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "감독님이 그렇게 말해 주니까 힘나요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Hearing you say that really fires me up.",
+            "status": "progress"
+          }
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "3d606e49-ba73-5c5f-8da5-4e63423f66c4",
+      "source": "e9bbbe32-da3d-56ce-8459-f879cf1ef0e6",
+      "target": "b99f9950-0065-51a8-827f-869236771f3b",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "97bcfba1-bb82-5a0c-bd33-080b60d64f34",
+      "source": "b99f9950-0065-51a8-827f-869236771f3b",
+      "target": "5b5600db-871c-5214-889e-f7d8996329bf",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "2f6bad51-cccc-55c4-a395-d94f310a62f6",
+      "source": "5b5600db-871c-5214-889e-f7d8996329bf",
+      "target": "6fa70033-f72c-5b60-8382-184738a0c948",
+      "sourcePort": "opt:009fe875-e4e6-57d5-9596-fd4bf9a3fc6c",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "6352214e-9856-5684-91a6-87d139cd7612",
+      "source": "6fa70033-f72c-5b60-8382-184738a0c948",
+      "target": "1b56da13-52ca-50fd-8765-fe6e74532cab",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "dc1e4dff-2c28-53b4-b1ef-7d7efccf342f",
+      "source": "1b56da13-52ca-50fd-8765-fe6e74532cab",
+      "target": "5fcf6000-6110-59c7-ac3c-c2478b6759f9",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "8c3959d2-35fb-5f12-b994-04b2317aeed5",
+      "source": "5b5600db-871c-5214-889e-f7d8996329bf",
+      "target": "326a3232-d7bb-5a0f-aec4-c1d818057e3e",
+      "sourcePort": "opt:4841c90a-90c7-5ec1-99d5-c93af83e4920",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "5e7826a5-fd94-56ed-9035-968d7db268a7",
+      "source": "326a3232-d7bb-5a0f-aec4-c1d818057e3e",
+      "target": "5fcf6000-6110-59c7-ac3c-c2478b6759f9",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    }
+  ],
+  "nextLocalId": 9
+}

@@ -1,0 +1,142 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "0f7bdf4d-ae55-5104-a8e8-59c91df27188": {
+      "id": "0f7bdf4d-ae55-5104-a8e8-59c91df27188",
+      "name": "T07",
+      "start": "8c11af0f-1f61-5b36-9720-3ed8f780d2ef",
+      "end": "14e2f6eb-cd76-5362-af98-5cc531d523cd",
+      "nodes": {
+        "8c11af0f-1f61-5b36-9720-3ed8f780d2ef": {
+          "localId": 1,
+          "type": "Start",
+          "next": "05311de4-2c96-566c-90c7-405526a437e0"
+        },
+        "14e2f6eb-cd76-5362-af98-5cc531d523cd": {
+          "localId": 2,
+          "type": "End"
+        },
+        "05311de4-2c96-566c-90c7-405526a437e0": {
+          "localId": 3,
+          "memoIds": [
+            "93b3e0ea-c10c-5878-b3f6-59b018f8e826"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "메크랑 조금씩 호흡이 맞아 가는 것 같아요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "I think the mech and I are slowly getting in sync."
+                }
+              ]
+            }
+          },
+          "next": "eb8bc931-18a8-5264-9200-ec541e4f4469"
+        },
+        "93b3e0ea-c10c-5878-b3f6-59b018f8e826": {
+          "localId": 4,
+          "attrs": {
+            "kind": "talk",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "train=M",
+            "weight": 2
+          },
+          "type": "Comment",
+          "text": "오전 만남 이벤트 설정",
+          "attachedTo": "05311de4-2c96-566c-90c7-405526a437e0"
+        },
+        "eb8bc931-18a8-5264-9200-ec541e4f4469": {
+          "localId": 5,
+          "type": "Select",
+          "options": [
+            {
+              "id": "7cd2ac08-3698-59b2-876c-86753bf77cbb",
+              "text": "좋아. 그 메크로 다음 경기 준비하자.",
+              "next": "53cd2626-31d7-5d23-b704-3cb98374b726",
+              "attrs": {
+                "effects": "trust:+3"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Good. Let's prepare the next match with that mech."
+                }
+              }
+            },
+            {
+              "id": "82cee4e6-c19e-5791-bef3-645cce483c00",
+              "text": "한 메크에 너무 매이지는 마.",
+              "next": "c3857727-beb1-5fe0-957f-ddfbbd3ae62b",
+              "attrs": {
+                "effects": "stress:-2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Don't get too tied to one mech."
+                }
+              }
+            }
+          ]
+        },
+        "53cd2626-31d7-5d23-b704-3cb98374b726": {
+          "localId": 6,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네! 기대해 주세요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Yes! Look forward to it."
+                }
+              ]
+            }
+          },
+          "next": "14e2f6eb-cd76-5362-af98-5cc531d523cd"
+        },
+        "c3857727-beb1-5fe0-957f-ddfbbd3ae62b": {
+          "localId": 7,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "알겠어요. 다른 것도 만져 볼게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Got it. I'll try the others too."
+                }
+              ]
+            }
+          },
+          "next": "14e2f6eb-cd76-5362-af98-5cc531d523cd"
+        }
+      }
+    }
+  }
+}

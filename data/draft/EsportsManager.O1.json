@@ -1,0 +1,171 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "1dc314cf-bb13-56cb-bed6-ab4375a2cbb9": {
+      "id": "1dc314cf-bb13-56cb-bed6-ab4375a2cbb9",
+      "name": "O1",
+      "start": "f84cab90-2c18-5d08-bb23-c6a7db356fb0",
+      "end": "5479dbbd-dcda-5fda-b2ad-58eee0eb30cf",
+      "nodes": {
+        "f84cab90-2c18-5d08-bb23-c6a7db356fb0": {
+          "localId": 1,
+          "type": "Start",
+          "next": "12c03095-c1de-5d69-b814-97c51d0af9ea"
+        },
+        "5479dbbd-dcda-5fda-b2ad-58eee0eb30cf": {
+          "localId": 2,
+          "type": "End"
+        },
+        "12c03095-c1de-5d69-b814-97c51d0af9ea": {
+          "localId": 3,
+          "memoIds": [
+            "673a5537-6ad1-59d1-acad-42088d1db1bc"
+          ],
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{name} 선수와 숙소 앞 분식집에 갔다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "You went to the snack bar outside the dorm with {name}."
+                }
+              ]
+            }
+          },
+          "next": "9213593a-97af-54cc-92ce-0a53b585c7b1"
+        },
+        "9213593a-97af-54cc-92ce-0a53b585c7b1": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "여기 떡볶이 진짜 맛있어요."
+            },
+            {
+              "kind": "text",
+              "text": "감독님이랑 밖에서 밥 먹는 거 처음이에요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "The tteokbokki here is seriously good."
+                },
+                {
+                  "kind": "text",
+                  "text": "This is the first time I've eaten out with you, Coach."
+                }
+              ]
+            }
+          },
+          "next": "51b10eeb-992a-5453-9338-f39d1f26819a"
+        },
+        "673a5537-6ad1-59d1-acad-42088d1db1bc": {
+          "localId": 5,
+          "attrs": {
+            "kind": "outing",
+            "manager_type": -1,
+            "stage": 1,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "외출 이벤트 설정",
+          "attachedTo": "12c03095-c1de-5d69-b814-97c51d0af9ea"
+        },
+        "51b10eeb-992a-5453-9338-f39d1f26819a": {
+          "localId": 6,
+          "type": "Select",
+          "options": [
+            {
+              "id": "d39437ac-4a25-53a6-91a1-b88d445db7f8",
+              "text": "자주 오자.",
+              "next": "129b0d31-face-5b2c-be26-a40af7403fc6",
+              "attrs": {
+                "effects": "trust:+5;pmod:all:+1:-1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Let's come here more often."
+                }
+              }
+            },
+            {
+              "id": "0aea5607-3a42-5d94-8235-a6414630fb97",
+              "text": "맛있게 먹어. 오늘은 내가 산다.",
+              "next": "0a14ee55-22f5-581f-89c2-eec055356418",
+              "attrs": {
+                "effects": "trust:+4;pmod:all:+1:-1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Enjoy. It's on me tonight."
+                }
+              }
+            }
+          ]
+        },
+        "129b0d31-face-5b2c-be26-a40af7403fc6": {
+          "localId": 7,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "정말요? 약속이에요!"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Really? That's a promise!"
+                }
+              ]
+            }
+          },
+          "next": "5479dbbd-dcda-5fda-b2ad-58eee0eb30cf"
+        },
+        "0a14ee55-22f5-581f-89c2-eec055356418": {
+          "localId": 8,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "잘 먹겠습니다!"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Thanks for the meal!"
+                }
+              ]
+            }
+          },
+          "next": "5479dbbd-dcda-5fda-b2ad-58eee0eb30cf"
+        }
+      }
+    }
+  }
+}

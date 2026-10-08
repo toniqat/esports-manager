@@ -20,16 +20,21 @@ extends Control
 # 레일의 **지금 요일 한 칸만 앰버로 채워진다** — 지나온 날은 흰 글자, 남은 날은
 # 흐린 글자다.
 #
-# ── 훈련일 (월~금) = 오전 → 오후 ──────────────────────────────────────────────
-# 훈련일은 세 단계(`_stage`)로 흐르고, 단계는 **기록에서 읽는다** (따로 저장하지 않는다):
-#   MORNING   `week_day_log` 에 그날이 없다. 맵에서 선수가 그날 훈련 칸 색의 자리에 서 있고,
+# ── 훈련일 (월~금) = 오전 → 오후 → 저녁 ───────────────────────────────────────
+# 훈련일은 다섯 단계(`_stage`)로 흐르고, 단계는 **기록에서 읽는다** (따로 저장하지 않는다):
+#   MORNING   `week_day_log` 에 그날이 없다. 맵에서 선수가 그날 훈련 시설 자리에 서 있고,
 #             초상화 위 말풍선이 그 시간의 훈련 이름을 말한다.
 #             "다음" = `TrainingBoard.apply_day_training` 으로 정산 → 결과를 `week_day_log[day]` 에.
-#   RESULT    정산됐고 오후가 아직이다. 그날 결과(능력치 · 스트레스 · 숙련 · 기벽)가 초상화 위에서
-#             떠올라 흐려진다(`_play_result_fx`). 연출이 끝나면 스스로 `AfternoonAway.begin`
-#             (숙소 휴식 · 혼자 외출을 한 번 굴려 기록) → 오후. "다음" = 연출을 건너뛴다.
+#   RESULT    정산됐고 오전 만남이 아직 열리지 않았다. 그날 결과(능력치 · 스트레스 · 숙련 · 기벽)가
+#             초상화 위에서 떠올라 흐려진다(`_play_result_fx`). 연출이 끝나면 스스로
+#             `MentalSystem.begin_morning` → 오전 만남. "다음" = 연출을 건너뛴다.
+#   TALK      오전 만남(훈련 소감): 선수 하나를 눌러 만난다 (외출 없음). 합동 훈련(같은 타일)이면
+#             함께 훈련한 선수도 같이 온다. "다음" = 오후 (`AfternoonAway.begin`; 아직 만날 수
+#             있으면 경고 팝업).
 #   AFTERNOON 오후 기록이 있다. 면담 · 외출할 수 있는 선수만 밝고, 누르면 오후 카드에서 고른다.
-#             "다음" = 다음 날 (아직 할 수 있는데 안 했으면 경고 팝업 → 확인하면 패스로 기록).
+#             "다음" = 저녁 (아직 할 수 있으면 경고 → 패스로 기록) — `MentalSystem.begin_dusk` 가
+#             사건을 굴리고, 사건이 없으면 바로 다음 날.
+#   EVENING   저녁 사건(선수가 아니라 팀에 일어나는 일, 저절로 열린다). "다음" = 다음 날.
 # **이미 정산된 날은 다시 정산하지 않는다** — 경기를 치르고 같은 요일로 돌아와도,
 # 불러오기를 해도 같은 기록을 다시 그린다.
 #
@@ -50,6 +55,7 @@ const MATCH_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Com
 const NOTE_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekNoteCard.tscn")
 const AFTERNOON_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekAfternoonCard.tscn")
 const AFTERNOON_DONE_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekAfternoonDoneCard.tscn")
+const TALK_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekTalkCard.tscn")
 const INCIDENT_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekIncidentCard.tscn")
 const MAP_SECTION_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekMapSection.tscn")
 const MAP_PILOT_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekMapPilot.tscn")
@@ -57,7 +63,7 @@ const MAP_PILOT_SCENE: PackedScene = preload("res://features/season/week/UI_Comp
 const STAT_KEYS: Array   = PlayerData.STAT_KEYS
 
 ## Training-day half, read from the records (`_stage`).
-enum Stage { OFF, MORNING, RESULT, AFTERNOON }
+enum Stage { OFF, MORNING, RESULT, TALK, AFTERNOON, EVENING }
 
 # ── 데이터에 따라 바뀌는 치수 (나머지 배치는 씬) ──
 const MATCH_CARD_H: float = 168.0    # the player's match card (others: OTHER_MATCH_H)
@@ -100,11 +106,12 @@ var _chip_panels: Array = []       # 7 Panel (scene: %Days/Day*/Chip)
 var _chip_labels: Array = []       # 7 Label (… /Chip/Letter)
 
 # M7 — afternoon / incident dialogs.
-var _sel_pid: int = -1                # pilot picked on the map this afternoon (-1 = none)
+var _sel_pid: int = -1                # pilot picked on the map this morning / afternoon (-1 = none)
 var _sel_day: int = -1                # weekday `_sel_pid` belongs to
-var _overlay: VnDialogueView = null   # evening / incident dialogue, null when closed
-var _overlay_kind: String = ""        # "evening" / "incident"
-var _skip_popup: ConfirmPopup = null  # "skip the afternoon?" warning, made on first use
+var _sel_stage: int = Stage.OFF       # stage `_sel_pid` was picked in (a new half drops it)
+var _overlay: VnDialogueView = null   # talk / afternoon / incident dialogue, null when closed
+var _overlay_kind: String = ""        # "talk" / "evening" / "incident"
+var _skip_popup: ConfirmPopup = null  # "skip the morning talk / afternoon?" warning, made on first use
 
 var _pilot_cards: Array = []          # SeasonPilotCard x5 (scene %PilotRow, seat order)
 var _tokens: Dictionary = {}          # pilot id -> map token of the current list build
@@ -157,8 +164,6 @@ func refresh() -> void:
 		return
 	_day = clampi(int(_gm.season_state.get("week_day", 0)), 0,
 			CalendarSystem.DAYS_PER_WEEK - 1)
-	# M7 — the incident roll happens once per weekday (recorded, seeded).
-	MentalSystem.ensure_incident(_gm.season_state, _day)
 	_refresh_rail()
 	_refresh_header()
 	_rebuild_list()
@@ -166,27 +171,34 @@ func refresh() -> void:
 	_refresh_action_button()
 	if _stage() == Stage.RESULT and _fx_day != _day:
 		_play_result_fx()
-	# An unresolved incident (or an afternoon dialog left open by a reload) opens
+	# An unresolved incident (or a talk / afternoon dialog left open by a reload) opens
 	# by itself — the day cannot be confirmed past it.
 	if _overlay == null:
 		if MentalSystem.incident_pending(_gm.season_state, _day):
 			_open_incident.call_deferred()
+		elif _talk_open():
+			_open_talk_session.call_deferred(MentalSystem.begin_talk(_gm.season_state, _day, -1))
 		elif _evening_open():
 			_open_evening_session.call_deferred(MentalSystem.begin_evening(
 					_gm.season_state, _day, "", -1))
 
 
 ## Where the training day stands — read from the records, never stored on its own:
-## no `week_day_log[day]` = MORNING, settled without an afternoon record = RESULT,
-## afternoon rolled (`AfternoonAway.started`) = AFTERNOON. Match days = OFF.
+## no `week_day_log[day]` = MORNING, settled without a talk record = RESULT, talk record
+## (`MentalSystem.morning_started`) = TALK, afternoon rolled (`AfternoonAway.started`) =
+## AFTERNOON, evening marked (`MentalSystem.dusk_started`) = EVENING. Match days = OFF.
+## Old saves reach the afternoon without a talk record: the morning talk is simply skipped.
 func _stage() -> int:
 	if not CalendarSystem.is_training_day(_day):
 		return Stage.OFF
+	var s: Dictionary = _gm.season_state
 	if not _week_log().has(_day):
 		return Stage.MORNING
-	if not AfternoonAway.started(_gm.season_state, _day):
-		return Stage.RESULT
-	return Stage.AFTERNOON
+	if AfternoonAway.started(s, _day):
+		return Stage.EVENING if MentalSystem.dusk_started(s, _day) else Stage.AFTERNOON
+	if MentalSystem.morning_started(s, _day):
+		return Stage.TALK
+	return Stage.RESULT
 
 
 ## 그날 훈련을 정산한다 (오전의 "다음"). **기록이 이미 있으면 아무것도 하지 않는다** —
@@ -209,10 +221,24 @@ func _board() -> TrainingBoard:
 	return get_node_or_null("PreviewBoard") as TrainingBoard
 
 
-## 오후로 넘어간다 (결과의 "다음"): 혼자 외출(스트레스가 높은 선수) → 아니면 숙소 휴식을
-## 선수마다 한 번 굴린다. `AfternoonAway` 가 기록하고, 다시 불러도 그 기록을 돌려준다.
+## 오후로 넘어간다 (오전 만남의 "다음"): 만나지 않았으면 패스로 기록하고, 혼자 외출(스트레스가
+## 높은 선수) → 아니면 숙소 휴식을 선수마다 한 번 굴린다. `AfternoonAway` 가 기록하고, 다시
+## 불러도 그 기록을 돌려준다.
 func _begin_afternoon() -> void:
+	MentalSystem.pass_talk(_gm.season_state, _day)
 	AfternoonAway.begin(_gm.season_state, _day)
+
+
+## 저녁으로 넘어간다 (오후의 "다음"): 오후 행동이 없었으면 패스로 기록하고 사건을 한 번 굴린다.
+## 사건이 없으면 저녁에 멈출 일이 없으므로 바로 다음 날로.
+func _begin_evening() -> void:
+	var s: Dictionary = _gm.season_state
+	if not MentalSystem.evening_done(s, _day):
+		MentalSystem.begin_evening(s, _day, MentalSystem.ACTION_PASS, -1)
+	if MentalSystem.begin_dusk(s, _day).is_empty():
+		_leave_day()
+		return
+	refresh()
 
 
 func _week_log() -> Dictionary:
@@ -295,7 +321,9 @@ func _rebuild_list() -> void:
 		# Base map (pinned), then what the player still has to decide: the afternoon
 		# card first (its buttons must not fall below the fold), then the incident.
 		_add_map_section(stage)
-		if stage == Stage.AFTERNOON:
+		if stage == Stage.TALK:
+			_add_talk_card()
+		elif stage == Stage.AFTERNOON:
 			_add_afternoon_card()
 		_add_incident_card()
 		# The day's training results are shown on the map (rising texts) and in the
@@ -337,9 +365,14 @@ func _add_map_section(stage: int) -> void:
 	var hint: String = Loc.t(L.SEASON_WEEK_MAP_HINT_MORNING)
 	if stage == Stage.RESULT:
 		hint = Loc.t(L.SEASON_WEEK_MAP_HINT_RESULT)
+	elif stage == Stage.TALK:
+		hint = Loc.t(L.SEASON_WEEK_MAP_HINT_TALK_DONE if MentalSystem.talk_done(s, _day)
+				else L.SEASON_WEEK_MAP_HINT_TALK)
 	elif stage == Stage.AFTERNOON:
 		hint = Loc.t(L.SEASON_WEEK_MAP_HINT_AFTERNOON_DONE if MentalSystem.evening_done(s, _day)
 				else L.SEASON_WEEK_MAP_HINT_AFTERNOON)
+	elif stage == Stage.EVENING:
+		hint = Loc.t(L.SEASON_WEEK_MAP_HINT_EVENING)
 	(section.get_node("%Hint") as Label).text = hint
 
 	var map: BaseMap = BaseMap.create(RunRules.team_map_id(int(s.get("player_team_id", 0))))
@@ -353,14 +386,16 @@ func _add_map_section(stage: int) -> void:
 		rows_by_pid[int(row["pilot_id"])] = row
 	var colors: Dictionary = {}
 	var names: Dictionary = {}
+	var groups: Dictionary = {}
 	var board: TrainingBoard = _board()
 	if board != null:
 		colors = board.day_colors(_day)
 		names = board.day_tile_names(_day)
+		groups = board.day_groups(_day)
 
-	if stage == Stage.AFTERNOON and (_sel_day != _day
-			or not AfternoonAway.can_request(s, _day, _sel_pid)):
+	if _sel_day != _day or _sel_stage != stage or not _can_pick(stage, _sel_pid):
 		_sel_day = _day
+		_sel_stage = stage
 		_sel_pid = -1
 
 	_tokens.clear()
@@ -369,12 +404,16 @@ func _add_map_section(stage: int) -> void:
 		var pid: int = int(raw_pid)
 		var row: Dictionary = rows_by_pid.get(pid, {})
 		var color: String = String(row.get("color", ""))
+		var facility: String = String(row.get("facility", ""))
 		var pd: PlayerData = MentalEvents.pilot_of(s, pid)
 		var seat: int = GameEnums.role_seat(pd.role) if pd != null else -1
 		if row.is_empty():
 			color = String(colors.get(seat, ""))
-		var spot: String = BaseMap.spot_of_color(color)
-		var away: String = AfternoonAway.away_of(s, _day, pid) if stage == Stage.AFTERNOON else ""
+			facility = String((groups.get(seat, {}) as Dictionary).get("facility", ""))
+		# The training's facility (joint training = one shared spot), else its colour's spot.
+		var spot: String = BaseMap.spot_of_facility(facility if facility != "" else color)
+		var away: String = AfternoonAway.away_of(s, _day, pid) \
+				if stage == Stage.AFTERNOON or stage == Stage.EVENING else ""
 		if away == AfternoonAway.AWAY_DORM:
 			spot = BaseMap.SPOT_DORM
 		elif away == AfternoonAway.AWAY_SELF_OUTING:
@@ -394,7 +433,7 @@ func _add_map_token(map: BaseMap, stage: int, pid: int, course: String, away: St
 	var s: Dictionary = _gm.season_state
 	var token: Control = MAP_PILOT_SCENE.instantiate() as Control
 	map.add_token(token)
-	var picked: bool = stage == Stage.AFTERNOON and pid == _sel_pid
+	var picked: bool = (stage == Stage.TALK or stage == Stage.AFTERNOON) and pid == _sel_pid
 	OutgameTheme.add_round_portrait(token.get_node("%Portrait"), PilotImages.circle_for(pid),
 			Vector2.ZERO, MAP_PORTRAIT_D, OutgameTheme.ACCENT if picked else OutgameTheme.SURFACE)
 	var bubble_on: bool = stage == Stage.MORNING and course != ""
@@ -406,20 +445,44 @@ func _add_map_token(map: BaseMap, stage: int, pid: int, course: String, away: St
 	away_chip.visible = false
 	var hit: Button = token.get_node("%Hit")
 	hit.disabled = true
-	if stage == Stage.AFTERNOON:
+	if stage == Stage.TALK:
+		var can_talk: bool = MentalSystem.can_talk(s, _day, pid)
+		hit.disabled = not can_talk
+		if can_talk:
+			hit.pressed.connect(_on_map_pilot_picked.bind(pid))
+		elif MentalSystem.talk_done(s, _day) and not _in_talk(pid):
+			token.modulate = MAP_DIM
+	elif stage == Stage.AFTERNOON or stage == Stage.EVENING:
 		if away == AfternoonAway.AWAY_DORM:
 			away_lbl.text = Loc.t(L.SEASON_WEEK_MAP_DORM)
 			away_chip.visible = true
 		elif away == AfternoonAway.AWAY_SELF_OUTING:
 			away_lbl.text = Loc.t(L.SEASON_WEEK_MAP_SELF_OUTING)
 			away_chip.visible = true
-		var can: bool = AfternoonAway.can_request(s, _day, pid)
+		var can: bool = stage == Stage.AFTERNOON and AfternoonAway.can_request(s, _day, pid)
 		hit.disabled = not can
 		if can:
 			hit.pressed.connect(_on_map_pilot_picked.bind(pid))
-		else:
+		elif stage == Stage.AFTERNOON:
 			token.modulate = MAP_DIM
 	return token
+
+
+## `pid` may be picked on the map in `stage` (morning talk / afternoon action).
+func _can_pick(stage: int, pid: int) -> bool:
+	if pid < 0:
+		return false
+	if stage == Stage.TALK:
+		return MentalSystem.can_talk(_gm.season_state, _day, pid)
+	if stage == Stage.AFTERNOON:
+		return AfternoonAway.can_request(_gm.season_state, _day, pid)
+	return false
+
+
+## `pid` took part in this morning's talk (the met pilot or the joint-training partner).
+func _in_talk(pid: int) -> bool:
+	var t: Dictionary = MentalSystem.talk(_gm.season_state, _day)
+	return int(t.get("pilot_id", -1)) == pid or int(t.get("partner_id", -1)) == pid
 
 
 # ── 훈련 결과 연출 (RESULT) ──────────────────────────────────────────────────
@@ -473,12 +536,12 @@ func _on_result_fx_timeout(day: int) -> void:
 		_finish_result_fx()
 
 
-## End of the result FX (or Next pressed during it): roll the afternoon and redraw.
+## End of the result FX (or Next pressed during it): open the morning talk and redraw.
 func _finish_result_fx() -> void:
 	_fx_day = -1
 	if _stage() != Stage.RESULT:
 		return
-	_begin_afternoon()
+	MentalSystem.begin_morning(_gm.season_state, _day)
 	refresh()
 
 
@@ -543,7 +606,7 @@ func _day_stress_delta(pid: int) -> int:
 			total += int((raw as Dictionary).get("stress", 0))
 	total += AfternoonAway.relief_of(s, _day, pid)
 	var rec: Dictionary = MentalSystem.day_record(s, _day)
-	for k in ["incident", "evening"]:
+	for k in ["talk", "incident", "evening"]:
 		var outcome: Dictionary = (rec.get(k, {}) as Dictionary).get("outcome", {})
 		for n_raw in (outcome.get("notes", []) as Array):
 			var n: Dictionary = n_raw
@@ -563,6 +626,7 @@ func _on_map_pilot_picked(pid: int) -> void:
 		return
 	_sel_pid = pid
 	_sel_day = _day
+	_sel_stage = _stage()
 	_rebuild_list()
 
 
@@ -777,8 +841,12 @@ func _refresh_action_button() -> void:
 		return
 	var stage: int = _stage()
 	_stage_btn.visible = stage != Stage.OFF
-	_stage_btn.text = Loc.t(L.SEASON_WEEK_STAGE_AFTERNOON if stage == Stage.AFTERNOON
-			else L.SEASON_WEEK_STAGE_MORNING)
+	var stage_key: String = L.SEASON_WEEK_STAGE_MORNING
+	if stage == Stage.AFTERNOON:
+		stage_key = L.SEASON_WEEK_STAGE_AFTERNOON
+	elif stage == Stage.EVENING:
+		stage_key = L.SEASON_WEEK_STAGE_EVENING
+	_stage_btn.text = Loc.t(stage_key)  # l10n-dynamic: season.week.stage.*
 	if _hub != null and _hub.has_player_match_on_day(_day):
 		_action_btn.text = Loc.t(L.SEASON_WEEK_BTN_START_MATCH)
 		# 하단 바의 칸이라 **바 변형끼리만 갈아입는다** — `DarkButton` 이면 모서리가
@@ -810,13 +878,31 @@ func _on_action_pressed() -> void:
 			# Skip the rest of the result FX.
 			_finish_result_fx()
 			return
+		Stage.TALK:
+			# Moving on while a morning talk is still possible asks first.
+			if _any_talk():
+				_open_skip_popup(Stage.TALK)
+				return
+			_begin_afternoon()
+			refresh()
+			return
 		Stage.AFTERNOON:
 			# Moving on while an interview / outing is still possible asks first.
 			if not MentalSystem.evening_done(_gm.season_state, _day) \
 					and AfternoonAway.any_request(_gm.season_state, _day):
-				_open_skip_popup()
+				_open_skip_popup(Stage.AFTERNOON)
 				return
+			_begin_evening()
+			return
 	_leave_day()
+
+
+## Some pilot can still be met this morning (the skip warning).
+func _any_talk() -> bool:
+	for pid in MentalSystem.my_pilot_ids(_gm.season_state):
+		if MentalSystem.can_talk(_gm.season_state, _day, int(pid)):
+			return true
+	return false
 
 
 ## Off to the next day (or the match). An unused afternoon is recorded as a pass.
@@ -832,13 +918,27 @@ func _leave_day() -> void:
 	_hub.on_week_day_confirmed()
 
 
-func _open_skip_popup() -> void:
+## Skip warning for the morning talk (`Stage.TALK`) or the afternoon (`Stage.AFTERNOON`).
+func _open_skip_popup(stage: int) -> void:
 	if _skip_popup == null:
 		_skip_popup = ConfirmPopup.create()
 		add_child(_skip_popup)
-		_skip_popup.confirmed.connect(_leave_day)
-	_skip_popup.open(Loc.t(L.SEASON_WEEK_SKIP_TITLE), Loc.t(L.SEASON_WEEK_SKIP_BODY),
-			Loc.t(L.UI_BUTTON_CANCEL), Loc.t(L.SEASON_WEEK_SKIP_CONFIRM))
+		_skip_popup.confirmed.connect(_on_skip_confirmed)
+	if stage == Stage.TALK:
+		_skip_popup.open(Loc.t(L.SEASON_WEEK_SKIP_TALK_TITLE), Loc.t(L.SEASON_WEEK_SKIP_TALK_BODY),
+				Loc.t(L.UI_BUTTON_CANCEL), Loc.t(L.SEASON_WEEK_SKIP_CONFIRM))
+	else:
+		_skip_popup.open(Loc.t(L.SEASON_WEEK_SKIP_TITLE), Loc.t(L.SEASON_WEEK_SKIP_BODY),
+				Loc.t(L.UI_BUTTON_CANCEL), Loc.t(L.SEASON_WEEK_SKIP_CONFIRM))
+
+
+func _on_skip_confirmed() -> void:
+	match _stage():
+		Stage.TALK:
+			_begin_afternoon()
+			refresh()
+		Stage.AFTERNOON:
+			_begin_evening()
 
 
 # ── 오후 · 사건 (M7) ──────────────────────────────────────────────────────────
@@ -922,6 +1022,83 @@ func _add_afternoon_done_card(e: Dictionary) -> void:
 	var notes: Array = MentalEvents.note_texts(s, (e.get("outcome", {}) as Dictionary).get("notes", []))
 	line_lbl.text = " · ".join(PackedStringArray(notes)) if not notes.is_empty() \
 			else Loc.t(L.SEASON_WEEK_RESTED_LINE if action == MentalSystem.ACTION_PASS else L.SEASON_WEEK_NO_CHANGE)
+
+
+# ── 오전 만남 (훈련 소감) ─────────────────────────────────────────────────────
+## The morning talk was started but not answered (e.g. the game was reloaded).
+func _talk_open() -> bool:
+	if not CalendarSystem.is_training_day(_day):
+		return false
+	var t: Dictionary = MentalSystem.talk(_gm.season_state, _day)
+	return String(t.get("action", "")) == MentalSystem.ACTION_TALK and int(t.get("choice", -1)) < 0
+
+
+func _add_talk_card() -> void:
+	var s: Dictionary = _gm.season_state
+	var t: Dictionary = MentalSystem.talk(s, _day)
+	if MentalSystem.talk_done(s, _day):
+		_add_talk_done_card(t)
+		return
+	var card: Control = _add_item(TALK_CARD_SCENE)
+	var picked: bool = _sel_day == _day and _sel_pid >= 0
+	var pilot: Control = card.get_node("%Pilot")
+	var hint: Label = card.get_node("%Hint")
+	pilot.visible = picked
+	hint.visible = not picked
+	hint.text = Loc.t(L.SEASON_WEEK_TALK_PICK if _any_talk() else L.SEASON_WEEK_TALK_NONE)
+	if picked:
+		OutgameTheme.add_round_portrait(card.get_node("%Portrait"), PilotImages.circle_for(_sel_pid),
+				Vector2.ZERO, EVE_PORTRAIT_D, OutgameTheme.ACCENT)
+		(card.get_node("%Name") as Label).text = MentalEvents.pilot_name(s, _sel_pid)
+		var with_lbl: Label = card.get_node("%With")
+		var partner: int = MentalSystem.talk_partner(s, _day, _sel_pid)
+		if partner >= 0:
+			with_lbl.text = Loc.t(L.SEASON_WEEK_TALK_WITH, {"name": MentalEvents.pilot_name(s, partner)})
+			with_lbl.theme_type_variation = &"AccentLabel"
+		else:
+			with_lbl.text = Loc.t(L.SEASON_WEEK_TALK_SOLO, {"trust": MentalSystem.trust(s, _sel_pid)})
+	var btn: Button = card.get_node("%Talk")
+	btn.disabled = not picked
+	btn.pressed.connect(_on_talk_pressed)
+
+
+func _add_talk_done_card(t: Dictionary) -> void:
+	var s: Dictionary = _gm.season_state
+	var pid: int = int(t.get("pilot_id", -1))
+	var partner: int = int(t.get("partner_id", -1))
+	var card: Control = _add_item(AFTERNOON_DONE_SCENE)
+	OutgameTheme.add_round_portrait(card.get_node("%Portrait"), PilotImages.circle_for(pid),
+			Vector2.ZERO, EVE_PORTRAIT_D)
+	var head: String = Loc.t(L.SEASON_WEEK_TALK_DONE, {"name": MentalEvents.pilot_name(s, pid)})
+	if partner >= 0:
+		head = Loc.t(L.SEASON_WEEK_TALK_DONE_PAIR, {"name": MentalEvents.pilot_name(s, pid),
+				"name2": MentalEvents.pilot_name(s, partner)})
+	(card.get_node("%Head") as Label).text = head
+	var notes: Array = MentalEvents.note_texts(s, (t.get("outcome", {}) as Dictionary).get("notes", []))
+	(card.get_node("%Line") as Label).text = " · ".join(PackedStringArray(notes)) if not notes.is_empty() \
+			else Loc.t(L.SEASON_WEEK_NO_CHANGE)
+
+
+func _on_talk_pressed() -> void:
+	if _overlay != null or _sel_pid < 0:
+		return
+	var session: Dictionary = MentalSystem.begin_talk(_gm.season_state, _day, _sel_pid)
+	if session.is_empty():
+		_rebuild_list()
+		return
+	_open_talk_session(session)
+
+
+func _open_talk_session(session: Dictionary) -> void:
+	if _overlay != null or session.is_empty():
+		return
+	var s: Dictionary = _gm.season_state
+	var view: Dictionary = MentalSystem.session_view(s, session)
+	if view.is_empty():
+		return
+	var pid: int = int(view["pilot_id"])
+	_open_overlay("talk", Loc.t(L.SEASON_WEEK_SUB_TALK, {"day": OutgameTheme.day_name(_day)}),
+			MentalEvents.pilot_name(s, pid), pid, view)
 
 
 ## The day's incident: resolved → summary; pending → a tap target that reopens it.
@@ -1011,7 +1188,9 @@ func _open_overlay(kind: String, sub: String, title: String, pid: int, view: Dic
 	add_child(vn)
 	vn.choice_picked.connect(_on_overlay_choice)
 	vn.closed.connect(_on_overlay_closed)
-	vn.open(sub, title, pid, view["lines"], view["choices"], speaker)
+	var partner: int = int(view.get("partner_id", -1))
+	vn.open(sub, title, pid, view["lines"], view["choices"], speaker, view.get("previews", []),
+			partner, MentalEvents.pilot_name(_gm.season_state, partner) if partner >= 0 else "")
 
 
 func _on_overlay_choice(idx: int) -> void:
@@ -1019,6 +1198,8 @@ func _on_overlay_choice(idx: int) -> void:
 	var out: Dictionary
 	if _overlay_kind == "incident":
 		out = MentalSystem.resolve_incident(s, _day, idx)
+	elif _overlay_kind == "talk":
+		out = MentalSystem.finish_talk(s, _day, idx)
 	else:
 		out = MentalSystem.finish_evening(s, _day, idx)
 	if _overlay != null:
@@ -1053,10 +1234,8 @@ func _fill_preview() -> void:
 	var day_log: Dictionary = _week_log()
 	for d in day + 1:
 		day_log[d] = board.apply_day_training(d)
-	MentalSystem.ensure_incident(s, day)
-	if MentalSystem.incident_pending(s, day):
-		MentalSystem.resolve_incident(s, day, 0)
 	_day = day
+	MentalSystem.begin_morning(s, day)
 	_begin_afternoon()
 	for pid in _my_pilots_in_seat_order():
 		if AfternoonAway.can_request(s, day, int(pid)):

@@ -1,0 +1,248 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "bd1ccd02-650b-5d73-be27-f0c405f7923a": {
+      "id": "bd1ccd02-650b-5d73-be27-f0c405f7923a",
+      "name": "X03",
+      "start": "d71ca188-6233-57b4-90dd-5d4325d1c3ce",
+      "end": "d6c0d561-8913-59b1-968a-231510a5a8d2",
+      "nodes": {
+        "d71ca188-6233-57b4-90dd-5d4325d1c3ce": {
+          "localId": 1,
+          "type": "Start",
+          "next": "16a074ce-ead3-5134-adc7-dab0f734c2ec"
+        },
+        "d6c0d561-8913-59b1-968a-231510a5a8d2": {
+          "localId": 2,
+          "type": "End"
+        },
+        "16a074ce-ead3-5134-adc7-dab0f734c2ec": {
+          "localId": 3,
+          "memoIds": [
+            "0a94785d-5caf-51b4-af45-587480d01580"
+          ],
+          "type": "Dialog",
+          "speaker": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "갈등"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Conflict"
+                }
+              ]
+            }
+          },
+          "next": "22146565-b23c-5e28-a250-0b66eff36107"
+        },
+        "22146565-b23c-5e28-a250-0b66eff36107": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "연습실에서 언성이 높아졌다. 한가운데 {name} 선수가 있다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Voices are raised in the practice room. {name} is right in the middle of it."
+                }
+              ]
+            }
+          },
+          "next": "bc3af653-6e97-5dd3-92c7-44c637934c75"
+        },
+        "bc3af653-6e97-5dd3-92c7-44c637934c75": {
+          "localId": 5,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "제 콜을 아무도 안 들어요!"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Nobody listens to my calls!"
+                }
+              ]
+            }
+          },
+          "next": "231b9af9-87cf-53b7-a525-5934f81b9d38"
+        },
+        "0a94785d-5caf-51b4-af45-587480d01580": {
+          "localId": 6,
+          "attrs": {
+            "kind": "incident",
+            "manager_type": -1,
+            "stage": 0,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "사건 이벤트 설정",
+          "attachedTo": "16a074ce-ead3-5134-adc7-dab0f734c2ec"
+        },
+        "231b9af9-87cf-53b7-a525-5934f81b9d38": {
+          "localId": 7,
+          "type": "Select",
+          "options": [
+            {
+              "id": "fb232a44-baf6-5a7e-a43e-341081eec49b",
+              "text": "다 같이 앉아서 얘기하자.",
+              "next": "e7d1dd40-4226-5c09-81dd-7f351e523044",
+              "attrs": {
+                "effects": "ok>trust_all:+2;ng>trust_all:-1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Let's all sit down and talk this out."
+                }
+              }
+            },
+            {
+              "id": "54ee2a62-bdf7-573d-98ab-1fe6589c19ee",
+              "text": "{name} 말이 맞아. 콜은 따르자.",
+              "next": "62714ae7-9ddc-5e85-86d1-6cca4bada0c7",
+              "attrs": {
+                "effects": "trust:+4;trust_all:-2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "{name} is right. Follow the calls."
+                }
+              }
+            },
+            {
+              "id": "89710d9c-c525-5ec1-8453-0a64319d0a48",
+              "text": "둘 다 그만. 연습이나 해.",
+              "next": "1a1213e6-f4e2-57d2-a69b-b7a0c3736afa",
+              "attrs": {
+                "effects": "trust:-3;pmod_all:all:-1:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Both of you, knock it off. Just practice."
+                }
+              }
+            }
+          ]
+        },
+        "e7d1dd40-4226-5c09-81dd-7f351e523044": {
+          "localId": 8,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…알겠어요. 얘기해 볼게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "…Fine. I'll try talking."
+                }
+              ]
+            }
+          },
+          "next": "f4420268-17bb-59ac-a218-0fb50b9169bb"
+        },
+        "f4420268-17bb-59ac-a218-0fb50b9169bb": {
+          "localId": 9,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "얘기해도 똑같을 거예요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Talking won't change anything."
+                }
+              ]
+            }
+          },
+          "next": "d6c0d561-8913-59b1-968a-231510a5a8d2"
+        },
+        "62714ae7-9ddc-5e85-86d1-6cca4bada0c7": {
+          "localId": 10,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "감사합니다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Thank you."
+                }
+              ]
+            }
+          },
+          "next": "d6c0d561-8913-59b1-968a-231510a5a8d2"
+        },
+        "1a1213e6-f4e2-57d2-a69b-b7a0c3736afa": {
+          "localId": 11,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "(문이 쾅 닫힌다)"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "(A door slams.)"
+                }
+              ]
+            }
+          },
+          "next": "d6c0d561-8913-59b1-968a-231510a5a8d2"
+        }
+      }
+    }
+  }
+}

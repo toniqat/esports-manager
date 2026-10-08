@@ -31,3 +31,13 @@ P07,press,-1,0,mention=worst,ok>trust:+5;ng>trust:+2|trust:+1|trust:-4;smod:ment
 P08,press,-1,0,mention=worst,trust:+4;smod:mental:-1:1|ok>trust:+1;ng>trust:-2,1
 P09,press,0,0,,smod:tactics:+1:1|trust_all:+2,1
 P10,press,1,0,,trust_all:+2|smod:mental:+1:1,1
+T01,talk,-1,0,,trust:+2;stress:-3|ok>trust:+3;ok>pmod:all:+1:-1;ng>stress:+4,1
+T02,talk,-1,0,ups>=1,trust:+3;pmod:all:+1:-1|ok>pmod:all:+2:-1;ng>trust:-2,2
+T03,talk,-1,0,ups<1,ok>trust:+3;ok>stress:-5;ng>stress:+3|trust:+4|trust:-2,2
+T04,talk,-1,0,stress>=60,stress:-8;trust:+2|ok>trust:+2;ok>pmod:all:+1:-1;ng>stress:+6;ng>trust:-3,3
+T05,talk,-1,0,"train=H,E",trust:+2;stress:-2|ok>pmod:field_hit:+1:-1;ng>stress:+2,2
+T06,talk,-1,0,"train=C,D",trust:+2;stress:-3|ok>pmod:engage_hit:+1:-1;ok>trust:+1;ng>stress:+2,2
+T07,talk,-1,0,train=M,trust:+3|stress:-2,2
+J01,talk_pair,-1,0,,trust:+2;stress:-3|ok>pmod:all:+1:-1;ng>stress:+3,1
+J02,talk_pair,-1,0,ups>=1,trust:+3|ok>pmod:all:+1:-1;ng>stress:+3,2
+J03,talk_pair,-1,0,stress>=60,stress:-6;trust:+1|ok>stress:-4;ok>trust:+2;ng>stress:+3,3

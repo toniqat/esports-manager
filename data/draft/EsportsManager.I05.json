@@ -1,0 +1,255 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "68c8d263-fccd-5a76-aff2-7d57fdae032e": {
+      "id": "68c8d263-fccd-5a76-aff2-7d57fdae032e",
+      "name": "I05",
+      "start": "845994db-1862-59c4-9850-282a711e37cb",
+      "end": "94f3302d-3022-537a-aeff-10c03c58c25e",
+      "nodes": {
+        "845994db-1862-59c4-9850-282a711e37cb": {
+          "localId": 1,
+          "type": "Start",
+          "next": "f1ca89e4-7455-5d04-86dd-c8ce7210db45"
+        },
+        "94f3302d-3022-537a-aeff-10c03c58c25e": {
+          "localId": 2,
+          "type": "End"
+        },
+        "f1ca89e4-7455-5d04-86dd-c8ce7210db45": {
+          "localId": 3,
+          "memoIds": [
+            "640bb08d-3788-5644-98b8-d404f33599d9"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…부르셨어요?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "…You called for me?"
+                }
+              ]
+            }
+          },
+          "next": "3fb4f422-e7d2-5c33-9035-2f39e25d1443"
+        },
+        "3fb4f422-e7d2-5c33-9035-2f39e25d1443": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{name} 선수가 시선을 피한다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "{name} avoids your eyes."
+                }
+              ]
+            }
+          },
+          "next": "7e87eb91-0693-5bfd-97ae-df4fe58efbba"
+        },
+        "640bb08d-3788-5644-98b8-d404f33599d9": {
+          "localId": 5,
+          "attrs": {
+            "kind": "interview",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "trust<25",
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "면담 이벤트 설정",
+          "attachedTo": "f1ca89e4-7455-5d04-86dd-c8ce7210db45"
+        },
+        "7e87eb91-0693-5bfd-97ae-df4fe58efbba": {
+          "localId": 6,
+          "type": "Select",
+          "options": [
+            {
+              "id": "d88cf4f9-bbcf-5ae3-a9ae-400dd6b17808",
+              "text": "요즘 어떻게 지내나 해서.",
+              "next": "ca78f9e9-fd36-55ab-a2ab-abfba95cd714",
+              "attrs": {
+                "effects": "trust:+3"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Just checking how you've been."
+                }
+              }
+            },
+            {
+              "id": "a0645ab8-edec-51eb-a635-4fa18035fc7a",
+              "text": "내가 뭐 서운하게 한 거 있어?",
+              "next": "2c117184-5486-59ff-a52c-078265a93cc1",
+              "attrs": {
+                "effects": "ok>trust:+7"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Did I do something to upset you?"
+                }
+              }
+            },
+            {
+              "id": "512e87a0-c013-58da-98b9-a11ec3c6746d",
+              "text": "훈련 태도가 좀 아쉬워.",
+              "next": "1c82d304-5a96-59e6-9c78-9ddae4459aac",
+              "attrs": {
+                "effects": "ok>trust:+1;ng>trust:-4"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Your attitude in practice has been a bit off."
+                }
+              }
+            }
+          ]
+        },
+        "ca78f9e9-fd36-55ab-a2ab-abfba95cd714": {
+          "localId": 7,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "그냥 그래요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Same as always."
+                }
+              ]
+            }
+          },
+          "next": "94f3302d-3022-537a-aeff-10c03c58c25e"
+        },
+        "2c117184-5486-59ff-a52c-078265a93cc1": {
+          "localId": 8,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…사실 좀 있었어요. 말해도 돼요?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "…Actually, there was something. Can I tell you?"
+                }
+              ]
+            }
+          },
+          "next": "64b8da61-c397-543f-98fc-b8cf207f8fcb"
+        },
+        "64b8da61-c397-543f-98fc-b8cf207f8fcb": {
+          "localId": 9,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "없어요. 괜찮아요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "No. I'm fine."
+                }
+              ]
+            }
+          },
+          "next": "94f3302d-3022-537a-aeff-10c03c58c25e"
+        },
+        "1c82d304-5a96-59e6-9c78-9ddae4459aac": {
+          "localId": 10,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…고칠게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "…I'll fix it."
+                }
+              ]
+            }
+          },
+          "next": "5000be2c-ffad-5902-8cbf-78bb00c7f70d"
+        },
+        "5000be2c-ffad-5902-8cbf-78bb00c7f70d": {
+          "localId": 11,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "(대답이 없다)"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "(No answer.)"
+                }
+              ]
+            }
+          },
+          "next": "94f3302d-3022-537a-aeff-10c03c58c25e"
+        }
+      }
+    }
+  }
+}

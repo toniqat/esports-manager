@@ -1,0 +1,34 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "languages": [
+    "En"
+  ],
+  "entry": "ff3f8e93-b486-53b8-8f8e-26b29b5a3c0d",
+  "flows": {},
+  "speakers": {
+    "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a": {
+      "name": "선수"
+    },
+    "44bb4f52-930b-5cd4-be80-ddcdf2abc781": {
+      "name": "태그"
+    },
+    "84ab847b-1bad-5351-8718-5cf62bff28a4": {
+      "name": "기자"
+    },
+    "6b1de2e5-536b-5673-b2c0-0f81cf838865": {
+      "name": "파트너"
+    },
+    "23f70dcf-de2b-50ea-a210-97bcdd22d3a0": {
+      "name": "감독"
+    }
+  },
+  "scripts": {
+    "vars": [],
+    "funcs": []
+  }
+}

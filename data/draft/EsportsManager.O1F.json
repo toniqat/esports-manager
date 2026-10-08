@@ -1,0 +1,185 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "bb4130c8-16fa-527e-a513-173d50b05522": {
+      "id": "bb4130c8-16fa-527e-a513-173d50b05522",
+      "name": "O1F",
+      "start": "35133c9e-b0b6-598e-823f-8199483a2c0e",
+      "end": "5b81fef7-3072-58d0-8e39-c6512f4523a7",
+      "nodes": {
+        "35133c9e-b0b6-598e-823f-8199483a2c0e": {
+          "localId": 1,
+          "type": "Start",
+          "next": "064b95c7-06a4-5583-bba5-ef2996a724c9"
+        },
+        "5b81fef7-3072-58d0-8e39-c6512f4523a7": {
+          "localId": 2,
+          "type": "End"
+        },
+        "064b95c7-06a4-5583-bba5-ef2996a724c9": {
+          "localId": 3,
+          "memoIds": [
+            "42fed33f-397a-51e3-9004-bdf4b1b01221"
+          ],
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{name} 선수와 오락실에 갔다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "You went to the arcade with {name}."
+                }
+              ]
+            }
+          },
+          "next": "084eed26-89cc-5ac5-81f0-c7f11799d694"
+        },
+        "084eed26-89cc-5ac5-81f0-c7f11799d694": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "감독님 현역 때 실력 보여 주세요!"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Show me what you had back in your pro days, Coach!"
+                }
+              ]
+            }
+          },
+          "next": "ed24f1d3-9ce7-5c7d-a219-714727b58a2a"
+        },
+        "ed24f1d3-9ce7-5c7d-a219-714727b58a2a": {
+          "localId": 5,
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "결과는 아슬아슬한 감독님 승."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "The result: a razor-thin win for the coach."
+                }
+              ]
+            }
+          },
+          "next": "0146f735-3a5f-5f3b-9445-6eb999bb749a"
+        },
+        "42fed33f-397a-51e3-9004-bdf4b1b01221": {
+          "localId": 6,
+          "attrs": {
+            "kind": "outing",
+            "manager_type": 1,
+            "stage": 1,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "외출 이벤트 설정",
+          "attachedTo": "064b95c7-06a4-5583-bba5-ef2996a724c9"
+        },
+        "0146f735-3a5f-5f3b-9445-6eb999bb749a": {
+          "localId": 7,
+          "type": "Select",
+          "options": [
+            {
+              "id": "0a06ca21-815a-57ff-9ebe-0120effdc8c5",
+              "text": "아직 안 죽었지?",
+              "next": "1bbabbf7-70ea-53ae-a823-6989773154e5",
+              "attrs": {
+                "effects": "trust:+5;pmod:all:+1:-1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Still got it, huh?"
+                }
+              }
+            },
+            {
+              "id": "9e82bc12-22a0-592f-900e-4473b3246550",
+              "text": "봐준 거야. 다음엔 진짜로 해.",
+              "next": "c8b7d5b4-8792-5b91-98dc-d399bec994a9",
+              "attrs": {
+                "effects": "trust:+6;pmod:all:+1:-1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "I went easy on you. Next time, for real."
+                }
+              }
+            }
+          ]
+        },
+        "1bbabbf7-70ea-53ae-a823-6989773154e5": {
+          "localId": 8,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "인정이요. 진짜 잘하시네요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Respect. You're actually really good."
+                }
+              ]
+            }
+          },
+          "next": "5b81fef7-3072-58d0-8e39-c6512f4523a7"
+        },
+        "c8b7d5b4-8792-5b91-98dc-d399bec994a9": {
+          "localId": 9,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "다음엔 제가 이겨요!"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Next time I'm winning!"
+                }
+              ]
+            }
+          },
+          "next": "5b81fef7-3072-58d0-8e39-c6512f4523a7"
+        }
+      }
+    }
+  }
+}

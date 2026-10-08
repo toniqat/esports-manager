@@ -57,7 +57,7 @@ Read the README of every row your task touches. Indented rows are submodules —
 | ↳ `calendar/` | Week clock, weekdays / match days, phase transitions | `features/season/calendar/README.md` |
 | ↳ `press/` | Press conference messenger screen | `features/season/press/README.md` |
 | ↳ `training/` | Daily training tile board, coach auto-arrange | `features/season/training/README.md` |
-| ↳ `week/` | 시간 경과 screen (day rail, morning / afternoon, day cards) | `features/season/week/README.md` |
+| ↳ `week/` | 시간 경과 screen (day rail, morning → talk → afternoon → evening, day cards) | `features/season/week/README.md` |
 | ↳ `week/base_map/` | Team base map widget (`BaseMap`) + one scene per map (art, spot markers), `teams.csv` `map_id` | `features/season/week/base_map/README.md` |
 | ↳ `league/` | `LeagueManager`, standings view | `features/season/league/README.md` |
 | ↳ `run_stats/` | Match MVP metric, phase POM | `features/season/run_stats/README.md` |
@@ -65,7 +65,7 @@ Read the README of every row your task touches. Indented rows are submodules —
 | ↳ `mastery/` | Mech mastery, 메크 연구 card | `features/season/mastery/README.md` |
 | ↳ `quirk/` | 기벽 — run-only pilot passives | `features/season/quirk/README.md` |
 | ↳ `finance/` | Weekly budget, facilities, allocation, special spending | `features/season/finance/README.md` |
-| ↳ `mental/` | Trust, stress (`StressSystem`), interviews, outings, incidents, `PilotMods` | `features/season/mental/README.md` |
+| ↳ `mental/` | Trust, stress (`StressSystem`), morning talk (훈련 소감 · 합동 훈련 pair), interviews, outings, evening incidents, choice preview, `PilotMods` — event data authored in `narrative/` (Draft) | `features/season/mental/README.md` |
 | `features/match_flow/` | PREP → BAN_PICK → BattleSim handoff (`match_ctx`), cheat menu | `features/match_flow/README.md` |
 | ↳ `match_prep/` | Opponent intel / analysis tiers | `features/match_flow/match_prep/README.md` |
 | ↳ `ban_pick/` | Ban / pick, mech assignment, `MechDetailPanel` | `features/match_flow/ban_pick/README.md` |
@@ -82,6 +82,8 @@ Read the README of every row your task touches. Indented rows are submodules —
 | ↳ `gambit/` · `debug/` | Pre-battle setup, jungle start · `BattleLogger` | `gambit/README.md`, `debug/README.md` |
 | ↳ `buildings/` · `data/` | `@tool` Building / Waypoint nodes · `DataLoader`, `FieldLoader` | *(no README — see `features/battle_sim/README.md`)* |
 | `ios/plugins/` · `build/` | iOS native plugins · downloaded `.ipa` | `ios/plugins/README.md`, `build/README.md` |
+| `narrative/` | **Draft project** (open in Draft, `D:/Projects/Draft`): source of every mental event text / rule — convention, kinds, speakers | `narrative/README.md` |
+| `addons/draft_import/` | Draft runtime JSON (`data/draft/`) → `mental_events.csv` · `mental_texts.csv` · l10n `mental.<event>.<id>`; Project → Tools → **Draft: Import mental events** / headless `cli.gd` | `addons/draft_import/README.md` |
 | `addons/l10n_tool/` | L10n tool: Project → Tools → L10n (build · validate · scan), **L10n editor = main screen `L10n` tab** (key sheet · glossary · orphan texts · scene preview · log), headless CLI · tests | `addons/l10n_tool/README.md` |
 | `addons/ui_scene_tree/` | Editor dock "UI 트리": `scenes/*` · `UI_View` → `UI_Comp` tree (instanced + code-created), TODO · node counts per scene; headless `assign_uids_cli.gd` (uid for text-written `.tscn`) | `addons/ui_scene_tree/README.md` |
 | `addons/godot_mcp/` | MCP editor plugin — **do not modify** | — |

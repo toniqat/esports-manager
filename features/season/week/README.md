@@ -14,7 +14,8 @@ The screen where the week passes **one day at a time, Monday to Sunday**. `Scree
 | `UI_Comp_WeekNoteCard.tscn` | Item: one-line placeholder card (`%Text`) |
 | `UI_Comp_WeekIncidentCard.tscn` | Item: the day's incident (`%Portrait` slot · `%Head` · `%Line` · `%Hit`) |
 | `UI_Comp_WeekAfternoonCard.tscn` | Item: 오후 before the action (`%Hint` (no pick) · `%Pilot` (`%Portrait` · `%Name` · `%Trust`) · `%Interview` / `%Outing`) |
-| `UI_Comp_WeekAfternoonDoneCard.tscn` | Item: 오후 summary after the action (`%Portrait` · `%Head` · `%Line`) |
+| `UI_Comp_WeekAfternoonDoneCard.tscn` | Item: 오후 summary after the action (`%Portrait` · `%Head` · `%Line`); also the morning talk's summary |
+| `UI_Comp_WeekTalkCard.tscn` | Item: 오전 만남 before the talk (`%Hint` (no pick) · `%Pilot` (`%Portrait` · `%Name` · `%With` = joint-training partner or trust) · `%Talk`) |
 | *(shared)* `../UI_Comp_SeasonPilotCard.tscn` | The five pilot cards of `%PilotRow` (`features/season/README.md` "Pilot card · detail sheet") |
 
 The per-pilot training result cards (`WeekPilotCard` + `WeekStatCell`, six short-named stat columns) were deleted
@@ -114,19 +115,21 @@ meeting / outing, `다음` = Next.)
 
 | Weekday | What happens |
 |---|---|
-| 월~금 (Mon–Fri) | **Training days**, split into 오전 (morning) and 오후 (afternoon), see "Training day: morning → afternoon". The morning's Next runs `TrainingBoard.apply_day_training(day)`, which settles that row of the board and actually raises player stats. |
+| 월~금 (Mon–Fri) | **Training days**: 오전 (training, then the morning talk) → 오후 (afternoon) → 저녁 (evening incident), see "Training day: morning → afternoon → evening". The morning's Next runs `TrainingBoard.apply_day_training(day)`, which settles that row of the board and actually raises player stats. |
 | 토 · 일 (Sat · Sun) | **Match days (경기일)** (`CalendarSystem.MATCH_DAYS` — Sat = match day 0, Sun = match day 1). That day's scheduled matches show up as cards. |
 
-### Training day: morning → afternoon (base map)
+### Training day: morning → afternoon → evening (base map)
 
-A training day runs in three stages (`WeekProgressView.Stage`). The stage is **read from the records**, not
+A training day runs in five stages (`WeekProgressView.Stage`). The stage is **read from the records**, not
 stored on its own (`_stage`), so re-entering the day (after a match, after a reload) lands on the same stage:
 
 | Stage | Record | Map | Next (다음) |
 |---|---|---|---|
-| `MORNING` | no `week_day_log[day]` | each pilot on the spot of **that day's training colour** (`TrainingBoard.day_colors`; no tile = basic course = neutral `W`); a **speech bubble** over the portrait names the training (`TrainingBoard.day_tile_names`) | settles the day (`_settle_day` → `apply_day_training`) |
-| `RESULT` | `week_day_log[day]` set, no afternoon record | same spots, no bubble; **result FX** (`_play_result_fx`): per pilot, lines rise out of the portrait top and fade (`FX_RISE` / `FX_TIME`, `FX_STAGGER` between lines, `FX_PILOT_STAGGER` between pilots): stat ups by **full name** (`전장 명중 +1`, else `EXP +N`), `스트레스 ±N`, mech mastery, quirk events; the bottom cards' stress change pops (`pulse_note`). When the FX ends the afternoon **starts by itself** (`_finish_result_fx` → `AfternoonAway.begin`) | skips the rest of the FX (same `_finish_result_fx`) |
-| `AFTERNOON` | `AfternoonAway.started` | resting pilots on `Dorm`, pilots out alone on `Entrance`; anyone who cannot be asked is dimmed and not tappable (`AfternoonAway.can_request`) | next day (`on_week_day_confirmed`); while an action is still possible (`AfternoonAway.any_request`) a **warning** `ConfirmPopup` asks first, confirm = pass |
+| `MORNING` | no `week_day_log[day]` | each pilot on the spot of **that day's training facility** (`TrainingBoard.day_groups` `facility` → `BaseMap.spot_of_facility`: the tile's `facility` column, else the colour of its first cell that day, so a joint-training group shares one spot; no tile = basic course = neutral `W`); a **speech bubble** over the portrait names the training (`TrainingBoard.day_tile_names`) | settles the day (`_settle_day` → `apply_day_training`) |
+| `RESULT` | `week_day_log[day]` set, no talk record | same spots, no bubble; **result FX** (`_play_result_fx`): per pilot, lines rise out of the portrait top and fade (`FX_RISE` / `FX_TIME`, `FX_STAGGER` between lines, `FX_PILOT_STAGGER` between pilots): stat ups by **full name** (`전장 명중 +1`, else `EXP +N`), `스트레스 ±N`, mech mastery, quirk events; the bottom cards' stress change pops (`pulse_note`). When the FX ends the morning talk **opens by itself** (`_finish_result_fx` → `MentalSystem.begin_morning`) | skips the rest of the FX (same `_finish_result_fx`) |
+| `TALK` | `MentalSystem.morning_started`, no afternoon record | same spots; pilots that can be met are tappable (`MentalSystem.can_talk`), after the talk everyone but the met pair is dimmed. Pick one → `%Talk` on the talk card → morning talk dialog (joint training: the partner comes along) | afternoon (`_begin_afternoon`: `pass_talk` + `AfternoonAway.begin`); while a talk is still possible a **warning** asks first |
+| `AFTERNOON` | `AfternoonAway.started`, no `dusk` | resting pilots on `Dorm`, pilots out alone on `Entrance`; anyone who cannot be asked is dimmed and not tappable (`AfternoonAway.can_request`) | evening (`_begin_evening`: pass if unused, `MentalSystem.begin_dusk` rolls the incident; **no incident = straight to the next day**); while an action is still possible (`AfternoonAway.any_request`) a **warning** `ConfirmPopup` asks first, confirm = pass |
+| `EVENING` | `MentalSystem.dusk_started` | afternoon positions, nobody tappable; the incident opens by itself | next day (`on_week_day_confirmed`) |
 
 * **Map**: the team's base map (`RunRules.team_map_id(player_team_id)` = `teams.csv` `map_id` → `BaseMap.create`),
   pinned in `%MapPin` above the scrolling list. Spots per colour group and the fan-out of tokens sharing a spot: `base_map/README.md`.
@@ -138,7 +141,9 @@ stored on its own (`_stage`), so re-entering the day (after a match, after a rel
 * **Afternoon away states** (rules and record: `features/season/mental/README.md` "Afternoon away states"):
   a stressed pilot may go out alone, otherwise any pilot may stay in the dorm by chance (rolled once, recorded).
   An empty training cell is the basic course, not a rest.
-* The bottom bar's left slot names the half (`오전` for `MORNING` / `RESULT`, `오후` for `AFTERNOON`).
+* The bottom bar's left slot names the half (`오전` for `MORNING` / `RESULT` / `TALK`, `오후` for `AFTERNOON`, `저녁` for `EVENING`).
+* Old saves that reached the afternoon before the morning talk existed simply skip it (`_stage` checks the
+  afternoon record first). The map pick (`_sel_pid`) is dropped when the stage changes (`_sel_stage`).
 
 ### Training results
 
@@ -155,12 +160,15 @@ Lists every match of that match day, with **the player's match on top** in a dar
 otherwise the league schedule (`_matches_on_day`). The status cell is `예정` (Scheduled) /
 `승` (Win) / `패` (Loss) / `<팀> 승` (<team> wins).
 
-### Mon–Fri: incident card + 오후 (afternoon) card (M7)
+### Mon–Fri: 오전 만남 (talk) card + 오후 (afternoon) card + incident card (M7)
 
 Rules and state are in `features/season/mental/README.md` (`MentalSystem`); this screen only draws
-records and forwards taps. On a training day the list order is **(pinned map) → afternoon → incident**.
+records and forwards taps. On a training day the list order is **(pinned map) → talk / afternoon → incident**.
 
-* **Incident** — `refresh()` calls `MentalSystem.ensure_incident(state, day)` (rolled once per weekday,
+* **오전 만남** (`TALK` only): tap a pilot on the map, then `만남` on the talk card. `%With` names the joint-training
+  partner who comes along (`MentalSystem.talk_partner`, amber) or shows trust. After the talk the card collapses to a
+  summary (`AfternoonDoneCard`). A talk left open by a reload reopens itself (`_talk_open`).
+* **Incident** — rolled when the evening starts (`_begin_evening` → `MentalSystem.begin_dusk`, once per weekday,
   seeded). A pending incident opens its dialog **by itself** (`_open_incident`, deferred); the card (red lead
   bar) shows `사건: <name> · <pilot>` and either `눌러서 대응하기` (reopens the dialog) or the effect notes once resolved.
 * **오후** (`AFTERNOON` only): tap an available pilot on the map (amber ring), then `면담` / `외출` on the
@@ -199,7 +207,7 @@ There are three pieces of week-progress state (all in `season_state`, all saved)
 All three are cleared by `TrainingBoard.reset_week_progress()`, which runs in two places:
 **training confirm** (`SeasonHub.on_training_confirmed`) and **week end** (`reset_for_new_week`).
 
-The M7 afternoon action, the incident and the afternoon away states follow the same rule with their own
+The M7 morning talk, the afternoon action, the incident and the afternoon away states follow the same rule with their own
 record, `season_state.mental.days["<day>"]` (`MentalSystem`; `AfternoonAway` keeps `afternoon` there): the
 incident and the away states are rolled once and the afternoon dialog's event is stored before it opens, so
 re-entering the weekday (after a match, after load) redraws from the record and never rerolls or re-applies.
@@ -219,7 +227,8 @@ day's league must still run, so the next standings shown match the date.
 ## Localization
 Display text is l10n keys (`season` domain, `season.week.*` · `season.week_*` scene keys; the map / afternoon
 keys are `season.week.stage.*` · `season.week.map_hint.*` · `season.week.map.*` · `season.week.afternoon_*` ·
-`season.week.skip.*` · `season.week.sub_*_pm`). Bubble texts are training tile names (data). Deprecated 2026-10:
+`season.week.skip.*` · `season.week.skip_talk.*` · `season.week.talk_*` · `season.week.talk_card.head` (scene) ·
+`season.week.sub_talk` · `season.week.sub_*_pm`). Bubble texts are training tile names (data). Deprecated 2026-10:
 `season.week.evening_limits` · `season.week.interview_week_done` · `season.week.outing_week_done` (weekly limits removed),
 `mental.ui.stress.day` (old training card). Item scenes whose every label is code-filled set
 `auto_translate_mode = 2` on their root; `UI_View_WeekProgressView.tscn` and `UI_Comp_WeekAfternoonCard.tscn` set it

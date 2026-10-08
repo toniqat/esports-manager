@@ -1,0 +1,140 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "2aabd533-c1f6-56ab-b142-b768fd9ea98a": {
+      "id": "2aabd533-c1f6-56ab-b142-b768fd9ea98a",
+      "name": "P01",
+      "start": "08db5493-588b-5324-b84b-365280b838fa",
+      "end": "a9e88e21-1848-5972-8a18-236ea090b63e",
+      "nodes": {
+        "08db5493-588b-5324-b84b-365280b838fa": {
+          "localId": 1,
+          "type": "Start",
+          "next": "34ddec37-0381-5d99-8b50-1f98e36d0a4f"
+        },
+        "a9e88e21-1848-5972-8a18-236ea090b63e": {
+          "localId": 2,
+          "type": "End"
+        },
+        "34ddec37-0381-5d99-8b50-1f98e36d0a4f": {
+          "localId": 3,
+          "memoIds": [
+            "f80320e9-6c3c-5356-86d7-92da237e9d83"
+          ],
+          "type": "Dialog",
+          "speaker": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{tx_576HKVWRTP}"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "{tx_576HKVWRTP}"
+                }
+              ]
+            }
+          },
+          "next": "592a0427-6909-5986-9657-f2ded33dd654"
+        },
+        "592a0427-6909-5986-9657-f2ded33dd654": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "이번 주도 시간 내주셔서 감사합니다 감독님."
+            },
+            {
+              "kind": "text",
+              "text": "지난주 훈련 성과가 눈에 띄더군요. 이번 주 계획도 비슷하게 가시나요?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Thanks for making time for us again this week, Coach."
+                },
+                {
+                  "kind": "text",
+                  "text": "Last week's training results really stood out. Are you sticking with a similar plan this week?"
+                }
+              ]
+            }
+          },
+          "next": "925bcac0-27f3-5855-8d1f-04b8caef8c52"
+        },
+        "f80320e9-6c3c-5356-86d7-92da237e9d83": {
+          "localId": 5,
+          "attrs": {
+            "kind": "press",
+            "manager_type": -1,
+            "stage": 0,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "기자회견 이벤트 설정",
+          "attachedTo": "34ddec37-0381-5d99-8b50-1f98e36d0a4f"
+        },
+        "925bcac0-27f3-5855-8d1f-04b8caef8c52": {
+          "localId": 6,
+          "type": "Select",
+          "options": [
+            {
+              "id": "31f88eeb-4c25-5bda-972b-52827023bdc6",
+              "text": "계획대로 갑니다. 흔들릴 이유가 없죠.",
+              "next": "a9e88e21-1848-5972-8a18-236ea090b63e",
+              "attrs": {
+                "effects": "trust_all:+1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "We're going according to plan. No reason to waver."
+                }
+              }
+            },
+            {
+              "id": "9ae77b83-f6c9-57fa-b37f-4a6934834197",
+              "text": "조금 바꿀 생각입니다. 아직 말씀드리긴 이르고요.",
+              "next": "a9e88e21-1848-5972-8a18-236ea090b63e",
+              "attrs": {
+                "effects": "smod:tactics:+1:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "I'm thinking of changing a few things. Too early to say, though."
+                }
+              }
+            },
+            {
+              "id": "8eb54e9e-c8a1-5620-8577-5ce8814f2916",
+              "text": "그건 경기장에서 확인하시죠.",
+              "next": "a9e88e21-1848-5972-8a18-236ea090b63e",
+              "attrs": {
+                "effects": "ok>smod:mental:+1:1;ng>trust_all:-1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "You'll see on the stage."
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,213 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "423910c7-fd47-52c9-bd22-0f07a05ed567": {
+      "id": "423910c7-fd47-52c9-bd22-0f07a05ed567",
+      "name": "T01",
+      "start": "c35c3409-df88-57d7-b0cd-e57029ccd1d5",
+      "end": "0d8748c5-0b52-5ff1-b2c4-7d23e6f847b9",
+      "nodes": {
+        "c35c3409-df88-57d7-b0cd-e57029ccd1d5": {
+          "localId": 1,
+          "type": "Start",
+          "next": "5e3fd52c-eaf2-5eb7-8da8-f080ae3dd303"
+        },
+        "0d8748c5-0b52-5ff1-b2c4-7d23e6f847b9": {
+          "localId": 2,
+          "type": "End"
+        },
+        "5e3fd52c-eaf2-5eb7-8da8-f080ae3dd303": {
+          "localId": 3,
+          "memoIds": [
+            "189c933f-a372-58f4-b9be-6dbad149d927"
+          ],
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "훈련이 끝난 연습실. {name}{i} 땀을 닦고 있다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "The practice room after training. {name} is wiping off sweat."
+                }
+              ]
+            }
+          },
+          "next": "5e90edfc-45f6-5949-a353-d207b51d745b"
+        },
+        "5e90edfc-45f6-5949-a353-d207b51d745b": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "23f70dcf-de2b-50ea-a210-97bcdd22d3a0",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "오늘 훈련 어땠어?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "How was training today?"
+                }
+              ]
+            }
+          },
+          "next": "a83cd92d-85d7-5feb-a4a4-947f2d796a77"
+        },
+        "a83cd92d-85d7-5feb-a4a4-947f2d796a77": {
+          "localId": 5,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "그럭저럭이요. 손은 좀 풀린 것 같아요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "So-so. I think my hands loosened up a bit."
+                }
+              ]
+            }
+          },
+          "next": "eb6750f6-f7bb-5a8d-8c54-5e8c7385786c"
+        },
+        "189c933f-a372-58f4-b9be-6dbad149d927": {
+          "localId": 6,
+          "attrs": {
+            "kind": "talk",
+            "manager_type": -1,
+            "stage": 0,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "오전 만남 이벤트 설정",
+          "attachedTo": "5e3fd52c-eaf2-5eb7-8da8-f080ae3dd303"
+        },
+        "eb6750f6-f7bb-5a8d-8c54-5e8c7385786c": {
+          "localId": 7,
+          "type": "Select",
+          "options": [
+            {
+              "id": "3d6c7745-70ae-527d-85ef-0a7f935e861a",
+              "text": "그 정도면 충분해. 오늘은 푹 쉬어.",
+              "next": "981dc6b8-d911-51e9-88d6-641ec05c8207",
+              "attrs": {
+                "effects": "trust:+2;stress:-3"
+              },
+              "i18n": {
+                "En": {
+                  "text": "That's enough. Get some proper rest today."
+                }
+              }
+            },
+            {
+              "id": "5dacc8de-5304-5ec0-a136-8a65da2ebdd1",
+              "text": "내일은 조금 더 몰아붙여 보자.",
+              "next": "ab39dac5-3cf4-5765-a171-f296a8715c2f",
+              "attrs": {
+                "effects": "ok>trust:+3;ok>pmod:all:+1:-1;ng>stress:+4"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Let's push a little harder tomorrow."
+                }
+              }
+            }
+          ]
+        },
+        "981dc6b8-d911-51e9-88d6-641ec05c8207": {
+          "localId": 8,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네, 감사합니다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Okay, thank you."
+                }
+              ]
+            }
+          },
+          "next": "0d8748c5-0b52-5ff1-b2c4-7d23e6f847b9"
+        },
+        "ab39dac5-3cf4-5765-a171-f296a8715c2f": {
+          "localId": 9,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "좋아요. 저도 그렇게 생각했어요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Sounds good. I was thinking the same."
+                }
+              ]
+            }
+          },
+          "next": "6d2be166-0c7a-582a-a648-91d66111d3a4"
+        },
+        "6d2be166-0c7a-582a-a648-91d66111d3a4": {
+          "localId": 10,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…네. 해 볼게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "...Okay. I'll try."
+                }
+              ]
+            }
+          },
+          "next": "0d8748c5-0b52-5ff1-b2c4-7d23e6f847b9"
+        }
+      }
+    }
+  }
+}

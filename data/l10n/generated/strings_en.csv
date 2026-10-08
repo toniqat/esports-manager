@@ -1085,6 +1085,90 @@ tx_526PWNR0KP,Panic
 tx_QZCW0ABV05,{name} stress {delta}
 tx_29J1CQRVAJ,Team stress {delta}
 tx_TEE5MJ4DBZ,Outcome
+tx_AM6AWHMZNN,Talk
+tx_GN6EV5KMJW,Trust
+tx_ZJV1EWSDKB,Team trust
+tx_WP4YVNHEXE,Stress
+tx_DK2F035X3X,Team stress
+tx_E2B5S6JFYF,Team {stat}
+tx_SKMQAZGV2H,Manager {stat}
+tx_7PE8CY1VEZ,{n}% success
+tx_ZZBATP37TZ,Pass: {ok} / Fail: {ng}
+tx_TBZX94B3A2,No change
+tx_6SB7G8MVN8,{label}↑
+tx_81K8K91474,{label}↓
+tx_S8ES8XZVQW,*The practice room after training. {name} is wiping off sweat.
+tx_HZD9GEBAFR,>How was training today?
+tx_JCYC1AH2PJ,So-so. I think my hands loosened up a bit.
+tx_Q9YFDEBKEB,That's enough. Get some proper rest today.
+tx_2N3YJZ35JE,"Okay, thank you."
+tx_QB4HRY15VT,Let's push a little harder tomorrow.
+tx_3SGPCS4PH7,Sounds good. I was thinking the same.
+tx_VHN1WB5A51,...Okay. I'll try.
+tx_K5VBACMYA6,Coach! I definitely got better today. I can feel it.
+tx_N6YYBSQVNW,>I saw it too. Your movement was different.
+tx_N5QDJ60X29,Hold on to that feeling and keep going.
+tx_GD23ZN691V,Yes! I hope tomorrow goes just like this.
+tx_KFS8EYBM2S,Don't get carried away. There's a long way to go.
+tx_QEGB0VN5RN,...You're right. I'll stay focused.
+tx_6M3WK1BPQ7,Getting one compliment out of you is so hard.
+tx_4KWGRVMPY7,"I worked hard, but it feels like I'm going nowhere."
+tx_2HDMG1DP5V,*There's no strength in {name}'s voice.
+tx_477HCE2FAM,It's adding up. Results come later.
+tx_4VN11ASBVB,...I'll trust you on that.
+tx_HZNATQZ1CX,You say that every time.
+tx_A5T23BNT2A,Let's change the approach. I'll think it through with you.
+tx_RCX7XH5K8Z,Really? Then please review the footage with me tomorrow.
+tx_Z8MB9KF08A,Everyone goes through it. Let's move on.
+tx_JC2AQW8AQY,...Okay.
+tx_N7107F7D7V,"*{name} sits leaning back in the chair, eyes closed."
+tx_9VXQ2QF36S,"Sorry, just let me stay like this a little."
+tx_917HH9H1WZ,It's fine. Let's call it a day.
+tx_H36TXHFQZM,"...Thank you, Coach."
+tx_A8JD1Y65T8,I know it's hard. Hang in there a little longer.
+tx_0YD282NYP9,Yes... I'll hang in there.
+tx_EJC5368844,I'm really at my limit right now.
+tx_BAYBGG9GXB,"Field drills are always the same routes, it gets a bit dull."
+tx_5QSXAD063Q,">It has to get dull enough to stick, so you don't waver in a real match."
+tx_BXZCFAW6WC,Want to mix in some unusual routes tomorrow?
+tx_ABFXSK7HQW,"Oh, that sounds fun!"
+tx_76TZMERTWR,Basics matter most. Keep it as is.
+tx_J6X8H3B6XM,Got it. I'll nail the basics first.
+tx_GWHTZXTMSG,Yeah... right.
+tx_BVNGQAPE5M,"Engage drills today, I kept reacting half a beat late."
+tx_AYR197YTGB,"From where I stood, your decisions were good."
+tx_1REM87SYVD,Really? That's a bit of a relief.
+tx_SZZMXPKBNK,Let's work out together why you were late.
+tx_5ZZNYB9SWV,"Ah, I was keeping my view too narrow."
+tx_KW9J0DQDVA,Hmm... I'm not sure.
+tx_R3MVV1G5SF,I think the mech and I are slowly getting in sync.
+tx_A12V1SD0SJ,Good. Let's prepare the next match with that mech.
+tx_DPDH4ANAAJ,Yes! Look forward to it.
+tx_BW2BFWH5DB,Don't get too tied to one mech.
+tx_TJXC15EBX7,Got it. I'll try the others too.
+tx_ZBR2EQPS3P,"*Fresh from joint training, {name} and {name2} come over together."
+tx_E374T7GFQE,"I synced up with {name2} today, and it went pretty well."
+tx_B3Y6KVD3P4,&Thanks to me backing you up.
+tx_JSS4MQMY4M,You both did well. Keep that rhythm.
+tx_XRKVPSK4AQ,Hear that? Even the coach approves.
+tx_WVJSTQ255R,&Next time I'll take the lead.
+tx_MYB8WF6EK7,Not there yet. Sync up once more tomorrow.
+tx_G1N62SEW01,"&Okay, we'll sync up even more tomorrow."
+tx_0GQVTQE3JH,...The two of us again?
+tx_Y4JXF85288,"&Coach, {name} got a lot better today."
+tx_SNKVZFV76G,"Hey, why are you the one saying that."
+tx_W4YN7289MW,It's good to see you pulling each other up.
+tx_6D889HY8Y6,"&Hehe, we're a team."
+tx_07GNRSBJ25,"{name2}, you can't fall behind either, right?"
+tx_KPKZRRRESZ,&Of course. Tomorrow's my turn.
+tx_70XK0PA7YX,&...Saying that puts pressure on me.
+tx_2B3W0B1ZD4,*{name2} pats a worn-out {name} on the shoulder.
+tx_RRF14JXZYA,&They overdid it today. Please let them rest.
+tx_9N7B7PCZ5N,"Both of you, head in early today."
+tx_2XVW6DND6C,...Thank you.
+tx_T0XXC81CWK,"{name2}, look after them today."
+tx_6GSWJZY616,&Leave it to me.
+tx_94NECDHB76,&Honestly I'm a bit worn out too.
 tx_6RHXR0K8TD,Nekomata
 tx_KCKAPV8M44,Yuzuha
 tx_1TSM3CVTC7,Corin
@@ -1534,7 +1618,7 @@ tx_5GDZXY0QSR,{day} · Incident · {name}
 tx_CPW05B0HB9,Morning
 tx_XXVBB9VYQX,Afternoon
 tx_7YZ50G3EBF,Morning training · Press Next to settle today's training
-tx_AWKX6T199K,Morning training results · the afternoon starts shortly (Next = skip)
+tx_AWKX6T199K,Morning training results · The morning talk starts shortly (Next = skip)
 tx_CXNA4K157Z,Afternoon · Tap a player to ask for a meeting or an outing
 tx_7KR285R4ES,This afternoon is done
 tx_5W9RGVB4BS,EXP +{n}
@@ -1560,6 +1644,21 @@ tx_K1AJHH3AP3,No quirks equipped
 tx_PJXWJ5R6J6,Mech research
 tx_X988TMMPYD,{mech} · {tier} ({value} / {max})
 tx_H106HT101H,No research mech this week
+tx_DY69B79HB4,Evening
+tx_FM9P3DRASG,Morning · Tap a player to hear how training went
+tx_N36SF54RT7,Morning talk done · Next moves on to the afternoon
+tx_CY41J8M14Z,Evening · Something happened
+tx_114TEDYXKT,Morning talk
+tx_SJMNVE78AH,Tap a player on the map to hear how training went (once a morning)
+tx_1SN8VDP0S4,No one to talk to this morning
+tx_G18Q9X83C8,Talk
+tx_7FRMF2A3ZK,Joint training · with {name}
+tx_0ZK5QSV26D,Trust {trust}
+tx_Y30YG2P1AK,Morning: Talk with {name}
+tx_5Y82DHJ5DX,Morning: Talk with {name} and {name2}
+tx_444WVNHT09,{day} morning · After training
+tx_V0SAHDNET7,Skip the morning talk?
+tx_H3RGAX8ZG6,You can still meet a player about today's training. Move on to the afternoon anyway?
 tx_EVS2K4Z4YF,Settings
 tx_4S0H7A92KR,Settings
 tx_EB8R7HBW32,Language

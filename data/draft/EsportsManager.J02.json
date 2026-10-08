@@ -1,0 +1,192 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "14653813-09a0-5426-a299-5b06a4e8ff63": {
+      "id": "14653813-09a0-5426-a299-5b06a4e8ff63",
+      "name": "J02",
+      "start": "183a02cd-90d6-5f15-b84d-7b486d1e87b4",
+      "end": "60042c83-577a-5258-9f81-ec97030d4888",
+      "nodes": {
+        "183a02cd-90d6-5f15-b84d-7b486d1e87b4": {
+          "localId": 1,
+          "type": "Start",
+          "next": "51e63ff1-ba0e-51eb-b77b-8fd49e56d67c"
+        },
+        "60042c83-577a-5258-9f81-ec97030d4888": {
+          "localId": 2,
+          "type": "End"
+        },
+        "51e63ff1-ba0e-51eb-b77b-8fd49e56d67c": {
+          "localId": 3,
+          "memoIds": [
+            "9f531018-0c1e-52fd-b921-c7b066c7717b"
+          ],
+          "type": "Dialog",
+          "speaker": "6b1de2e5-536b-5673-b2c0-0f81cf838865",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "감독님, {name} 오늘 진짜 많이 늘었어요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Coach, {name} got a lot better today."
+                }
+              ]
+            }
+          },
+          "next": "e474ffbc-f89f-5876-8821-d0eec704a64c"
+        },
+        "e474ffbc-f89f-5876-8821-d0eec704a64c": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "야, 그런 말을 왜 네가 해."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Hey, why are you the one saying that."
+                }
+              ]
+            }
+          },
+          "next": "ca2d6333-e803-54af-ac12-8f2af995dbb2"
+        },
+        "9f531018-0c1e-52fd-b921-c7b066c7717b": {
+          "localId": 5,
+          "attrs": {
+            "kind": "talk_pair",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "ups>=1",
+            "weight": 2
+          },
+          "type": "Comment",
+          "text": "합동 훈련 이벤트 설정",
+          "attachedTo": "51e63ff1-ba0e-51eb-b77b-8fd49e56d67c"
+        },
+        "ca2d6333-e803-54af-ac12-8f2af995dbb2": {
+          "localId": 6,
+          "type": "Select",
+          "options": [
+            {
+              "id": "71d18ee8-3a60-5e87-bdce-ae9b50b6de1e",
+              "text": "서로 끌어 주는 게 보기 좋다.",
+              "next": "d7675e25-3c7e-57ea-9382-c9f1ac54a60a",
+              "attrs": {
+                "effects": "trust:+3"
+              },
+              "i18n": {
+                "En": {
+                  "text": "It's good to see you pulling each other up."
+                }
+              }
+            },
+            {
+              "id": "ab50e01e-0b41-5ef3-8254-2e2ecbda3f8b",
+              "text": "{name2}, 너도 질 수 없겠는데?",
+              "next": "e7e4bb9b-0892-5832-b5b2-c6e1dba36cf0",
+              "attrs": {
+                "effects": "ok>pmod:all:+1:-1;ng>stress:+3"
+              },
+              "i18n": {
+                "En": {
+                  "text": "{name2}, you can't fall behind either, right?"
+                }
+              }
+            }
+          ]
+        },
+        "d7675e25-3c7e-57ea-9382-c9f1ac54a60a": {
+          "localId": 7,
+          "type": "Dialog",
+          "speaker": "6b1de2e5-536b-5673-b2c0-0f81cf838865",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "헤헤, 팀이니까요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Hehe, we're a team."
+                }
+              ]
+            }
+          },
+          "next": "60042c83-577a-5258-9f81-ec97030d4888"
+        },
+        "e7e4bb9b-0892-5832-b5b2-c6e1dba36cf0": {
+          "localId": 8,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "6b1de2e5-536b-5673-b2c0-0f81cf838865",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "당연하죠. 내일은 제 차례예요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Of course. Tomorrow's my turn."
+                }
+              ]
+            }
+          },
+          "next": "001c5f18-6d2f-5f9e-8285-38c08d5cfb78"
+        },
+        "001c5f18-6d2f-5f9e-8285-38c08d5cfb78": {
+          "localId": 9,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "6b1de2e5-536b-5673-b2c0-0f81cf838865",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…그런 말 하시면 부담돼요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "...Saying that puts pressure on me."
+                }
+              ]
+            }
+          },
+          "next": "60042c83-577a-5258-9f81-ec97030d4888"
+        }
+      }
+    }
+  }
+}

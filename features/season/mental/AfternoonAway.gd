@@ -78,7 +78,8 @@ static func relief_of(state: Dictionary, day: int, pilot_id: int) -> int:
 ## The pilot is around this afternoon and the day's action is not used yet (an
 ## interview is always possible; there are no weekly count limits).
 static func can_request(state: Dictionary, day: int, pilot_id: int) -> bool:
-	if not started(state, day) or MentalSystem.evening_done(state, day):
+	if not started(state, day) or MentalSystem.evening_done(state, day) \
+			or MentalSystem.dusk_started(state, day):
 		return false
 	return away_of(state, day, pilot_id) == ""
 

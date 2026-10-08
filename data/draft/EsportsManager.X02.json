@@ -1,0 +1,304 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "557c48bf-159a-58b9-ad61-8cf22aa40d5b": {
+      "id": "557c48bf-159a-58b9-ad61-8cf22aa40d5b",
+      "name": "X02",
+      "start": "34316c9f-3ba8-5854-998c-aa488c3e26b8",
+      "end": "9fa6eb7e-6f8a-5f49-965f-ac82daffb286",
+      "nodes": {
+        "34316c9f-3ba8-5854-998c-aa488c3e26b8": {
+          "localId": 1,
+          "type": "Start",
+          "next": "0bc460c3-4e9a-573d-9e20-87a6139cb830"
+        },
+        "9fa6eb7e-6f8a-5f49-965f-ac82daffb286": {
+          "localId": 2,
+          "type": "End"
+        },
+        "0bc460c3-4e9a-573d-9e20-87a6139cb830": {
+          "localId": 3,
+          "memoIds": [
+            "4ee776dd-6ca0-5248-9d80-0e48f4e96f15"
+          ],
+          "type": "Dialog",
+          "speaker": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "슬럼프"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Slump"
+                }
+              ]
+            }
+          },
+          "next": "83107de1-24e4-53d0-8069-f703913a9b32"
+        },
+        "83107de1-24e4-53d0-8069-f703913a9b32": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{name} 선수의 연습 경기 성적이 며칠째 바닥이다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "{name}'s scrim results have been rock bottom for days."
+                }
+              ]
+            }
+          },
+          "next": "16a08fc8-f0e4-586f-bc28-6d1770c40754"
+        },
+        "16a08fc8-f0e4-586f-bc28-6d1770c40754": {
+          "localId": 5,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…뭘 해도 안 돼요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "…Nothing I do works."
+                }
+              ]
+            }
+          },
+          "next": "bed1f89c-73e6-50fc-a1be-4b39ce08d35d"
+        },
+        "4ee776dd-6ca0-5248-9d80-0e48f4e96f15": {
+          "localId": 6,
+          "attrs": {
+            "kind": "incident",
+            "manager_type": -1,
+            "stage": 0,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "사건 이벤트 설정",
+          "attachedTo": "0bc460c3-4e9a-573d-9e20-87a6139cb830"
+        },
+        "bed1f89c-73e6-50fc-a1be-4b39ce08d35d": {
+          "localId": 7,
+          "type": "Select",
+          "options": [
+            {
+              "id": "a61c718c-9383-5e91-9860-5f607bcfad65",
+              "text": "며칠 기본기만 하자.",
+              "next": "387f17a6-3e68-5ed8-85a3-2f004d8b3b50",
+              "attrs": {
+                "effects": "ok>pmod:field_hit:+2:2;ok>trust:+2;ng>pmod:field_hit:-2:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Let's just do fundamentals for a few days."
+                }
+              }
+            },
+            {
+              "id": "cd2caaea-6280-5d24-b468-e86754cceb89",
+              "text": "하던 대로 해. 곧 돌아와.",
+              "next": "db9efd4f-aec8-5a82-88ff-b0c3fe89b496",
+              "attrs": {
+                "effects": "ok>trust:+3;ng>pmod:all:-2:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Keep doing what you do. It'll come back."
+                }
+              }
+            },
+            {
+              "id": "a217c1e3-ee40-50f4-a56d-26e7e9ac416c",
+              "text": "자리 경쟁 붙일 수도 있어.",
+              "next": "ed6a6b70-8a0f-5d0f-8f66-feeca3b658f5",
+              "attrs": {
+                "effects": "chk:-20;ok>pmod:all:+2:1;ng>trust:-6;ng>pmod:all:-2:2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "I might open up your spot for competition."
+                }
+              }
+            }
+          ]
+        },
+        "387f17a6-3e68-5ed8-85a3-2f004d8b3b50": {
+          "localId": 8,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "기본기부터… 해 볼게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Back to basics… I'll try."
+                }
+              ]
+            }
+          },
+          "next": "b46b8403-829c-5b70-a1b9-96950333d9e3"
+        },
+        "b46b8403-829c-5b70-a1b9-96950333d9e3": {
+          "localId": 9,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "그래도 안 되면요?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "And if that doesn't work either?"
+                }
+              ]
+            }
+          },
+          "next": "9fa6eb7e-6f8a-5f49-965f-ac82daffb286"
+        },
+        "db9efd4f-aec8-5a82-88ff-b0c3fe89b496": {
+          "localId": 10,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네 믿어 볼게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Okay. I'll trust you."
+                }
+              ]
+            }
+          },
+          "next": "71ffe07e-ce5d-50a7-809b-21523eb0a7c9"
+        },
+        "71ffe07e-ce5d-50a7-809b-21523eb0a7c9": {
+          "localId": 11,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "…"
+                }
+              ]
+            }
+          },
+          "next": "9fa6eb7e-6f8a-5f49-965f-ac82daffb286"
+        },
+        "ed6a6b70-8a0f-5d0f-8f66-feeca3b658f5": {
+          "localId": 12,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…지지 않을 거예요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "…I'm not going to lose."
+                }
+              ]
+            }
+          },
+          "next": "f9c3702d-1ce9-592b-8109-19830a07caa9"
+        },
+        "f9c3702d-1ce9-592b-8109-19830a07caa9": {
+          "localId": 13,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "그렇게까지 말씀하셔야 해요?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Did you really have to go that far?"
+                }
+              ]
+            }
+          },
+          "next": "9fa6eb7e-6f8a-5f49-965f-ac82daffb286"
+        }
+      }
+    }
+  }
+}

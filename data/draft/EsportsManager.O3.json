@@ -1,0 +1,185 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "3c796950-80a2-50de-b9a5-ba45998973ab": {
+      "id": "3c796950-80a2-50de-b9a5-ba45998973ab",
+      "name": "O3",
+      "start": "afbb36c9-194d-5ded-b3c9-db2513566d4f",
+      "end": "a02893b0-95c4-57a6-9275-8afd0c963001",
+      "nodes": {
+        "afbb36c9-194d-5ded-b3c9-db2513566d4f": {
+          "localId": 1,
+          "type": "Start",
+          "next": "8cb36831-655e-52c4-b8da-f6a9e932f043"
+        },
+        "a02893b0-95c4-57a6-9275-8afd0c963001": {
+          "localId": 2,
+          "type": "End"
+        },
+        "8cb36831-655e-52c4-b8da-f6a9e932f043": {
+          "localId": 3,
+          "memoIds": [
+            "29fb05bb-ac05-541b-9ee6-3bbfb2dcff70"
+          ],
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{name} 선수가 고른 작은 영화관."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "A small theater {name} picked out."
+                }
+              ]
+            }
+          },
+          "next": "2addab5d-30d4-58f4-9042-3fc7e6f345e0"
+        },
+        "2addab5d-30d4-58f4-9042-3fc7e6f345e0": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "이 영화 꼭 같이 보고 싶었어요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "I really wanted to watch this movie with you."
+                }
+              ]
+            }
+          },
+          "next": "1fbdcb6d-8c56-5dc6-bd34-62e82b5ded7e"
+        },
+        "1fbdcb6d-8c56-5dc6-bd34-62e82b5ded7e": {
+          "localId": 5,
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "영화가 끝나고 한참 말이 없다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "After the movie, neither of you says anything for a while."
+                }
+              ]
+            }
+          },
+          "next": "a0e6820c-f673-5b7f-a66a-7eca7dc343b9"
+        },
+        "29fb05bb-ac05-541b-9ee6-3bbfb2dcff70": {
+          "localId": 6,
+          "attrs": {
+            "kind": "outing",
+            "manager_type": -1,
+            "stage": 3,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "외출 이벤트 설정",
+          "attachedTo": "8cb36831-655e-52c4-b8da-f6a9e932f043"
+        },
+        "a0e6820c-f673-5b7f-a66a-7eca7dc343b9": {
+          "localId": 7,
+          "type": "Select",
+          "options": [
+            {
+              "id": "5436aa15-753d-5d21-9c6c-72bb3863a444",
+              "text": "좋은 영화였다.",
+              "next": "c0c7cce1-64f1-5347-9d62-f63291412968",
+              "attrs": {
+                "effects": "trust:+6;pmod:all:+2:-1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "That was a good movie."
+                }
+              }
+            },
+            {
+              "id": "61a4e8c2-324c-55c5-aa19-2a2ae5e4aad5",
+              "text": "너 울었지?",
+              "next": "89971020-ced0-5227-8451-136d7925c28a",
+              "attrs": {
+                "effects": "trust:+7;pmod:all:+2:-1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "You cried, didn't you?"
+                }
+              }
+            }
+          ]
+        },
+        "c0c7cce1-64f1-5347-9d62-f63291412968": {
+          "localId": 8,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "그쵸? 감독님 취향일 줄 알았어요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Right? I knew it'd be your kind of movie."
+                }
+              ]
+            }
+          },
+          "next": "a02893b0-95c4-57a6-9275-8afd0c963001"
+        },
+        "89971020-ced0-5227-8451-136d7925c28a": {
+          "localId": 9,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "아, 아니거든요!"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Wh-what? No, I didn't!"
+                }
+              ]
+            }
+          },
+          "next": "a02893b0-95c4-57a6-9275-8afd0c963001"
+        }
+      }
+    }
+  }
+}

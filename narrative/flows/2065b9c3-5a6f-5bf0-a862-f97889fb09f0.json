@@ -1,0 +1,252 @@
+{
+  "id": "2065b9c3-5a6f-5bf0-a862-f97889fb09f0",
+  "name": "P08",
+  "parentNodeId": null,
+  "folderId": "ec57a5a5-b671-5d6b-8bed-630ed5f29af7",
+  "defaultAttrs": {
+    "speakerWikiTargetId": "dd665e10-0059-53d3-a1c2-b806960e315d"
+  },
+  "sharedAttributes": {
+    "Comment": [
+      {
+        "id": "5421fec4-0412-5a2e-a5c3-c5d12211db1e",
+        "name": "kind",
+        "type": "enum",
+        "enumValues": [
+          "interview",
+          "outing",
+          "incident",
+          "press",
+          "talk",
+          "talk_pair"
+        ],
+        "default": "",
+        "description": "이벤트 종류"
+      },
+      {
+        "id": "b2274dda-3324-54f0-b644-afba57d2ce01",
+        "name": "manager_type",
+        "type": "integer",
+        "default": -1,
+        "description": "-1 공통 · 0 운영형 · 1 실전형"
+      },
+      {
+        "id": "27e6b885-01ff-57f9-ba46-2ee448d658d5",
+        "name": "stage",
+        "type": "integer",
+        "default": 0,
+        "description": "외출 단계 (1..N), 그 밖 0"
+      },
+      {
+        "id": "25a8ec40-357f-53e4-ab4d-e5fd5bd8cd80",
+        "name": "cond",
+        "type": "text",
+        "default": "",
+        "description": "조건 (; 로 이음) — features/season/mental/README.md"
+      },
+      {
+        "id": "45b850bf-47a5-5250-9d1d-97adb51a173e",
+        "name": "weight",
+        "type": "integer",
+        "default": 1,
+        "description": "뽑기 가중치"
+      }
+    ],
+    "Select": [
+      {
+        "id": "fdf4a4c5-6ea2-5d0f-8587-02951ff39db2",
+        "name": "effects",
+        "type": "text",
+        "default": "",
+        "description": "선택지 효과 절 (; 로 이음, ok> / ng> 판정 게이트)"
+      }
+    ],
+    "Dialog": [
+      {
+        "id": "739c2d4f-987f-591f-9c44-5909d3c0dfda",
+        "name": "branch",
+        "type": "enum",
+        "enumValues": [
+          "ok",
+          "ng"
+        ],
+        "default": "",
+        "description": "답 뒤 대사만: 판정 성공(ok) / 실패(ng) 때만. 비우면 항상"
+      }
+    ]
+  },
+  "labels": [],
+  "nodes": [
+    {
+      "id": "6c94e4f6-99d3-5dd9-af40-ce4f5deb9712",
+      "type": "Start",
+      "name": "Start",
+      "localId": 1,
+      "x": 40,
+      "y": 40
+    },
+    {
+      "id": "59413438-5868-5360-9a19-6791c8eca939",
+      "type": "End",
+      "name": "End",
+      "localId": 2,
+      "x": 1240,
+      "y": 40
+    },
+    {
+      "id": "7fe9ea49-c6f0-58dd-85d2-eeac6cba5882",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 3,
+      "x": 340,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+      "content": "{tx_576HKVWRTP}",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "{tx_576HKVWRTP}",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "372a3894-b842-5d95-bdde-0cc379c4dbe3",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 4,
+      "x": 640,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+      "content": "팬들 사이에서 {name} 선수 비판 여론이 있습니다.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "There's been criticism of {name} among the fans.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "e3028026-1c96-5d3e-bc6b-d07651ce070c",
+      "type": "Comment",
+      "name": "Comment",
+      "localId": 5,
+      "x": 340,
+      "y": -220,
+      "color": "#64748b",
+      "text": "기자회견 이벤트 설정",
+      "width": 260,
+      "height": 110,
+      "attachments": [
+        {
+          "nodeId": "7fe9ea49-c6f0-58dd-85d2-eeac6cba5882"
+        }
+      ],
+      "sharedValues": {
+        "5421fec4-0412-5a2e-a5c3-c5d12211db1e": "press",
+        "b2274dda-3324-54f0-b644-afba57d2ce01": -1,
+        "27e6b885-01ff-57f9-ba46-2ee448d658d5": 0,
+        "25a8ec40-357f-53e4-ab4d-e5fd5bd8cd80": "mention=worst",
+        "45b850bf-47a5-5250-9d1d-97adb51a173e": 1
+      }
+    },
+    {
+      "id": "330ae8e4-ddb8-5874-9fd3-648b699ab65b",
+      "type": "Select",
+      "name": "Select",
+      "localId": 6,
+      "x": 940,
+      "y": 40,
+      "color": "#64748b",
+      "options": [
+        {
+          "id": "76f74b28-ccf2-52f3-9546-5b757200c4a4",
+          "text": "비판은 제가 받겠습니다.",
+          "sharedValues": {
+            "fdf4a4c5-6ea2-5d0f-8587-02951ff39db2": "trust:+4;smod:mental:-1:1"
+          }
+        },
+        {
+          "id": "3d10ec60-784d-5d86-b9e4-8082e578f797",
+          "text": "선수가 이겨내야 할 몫입니다.",
+          "sharedValues": {
+            "fdf4a4c5-6ea2-5d0f-8587-02951ff39db2": "ok>trust:+1;ng>trust:-2"
+          }
+        }
+      ],
+      "translations": {
+        "opt:76f74b28-ccf2-52f3-9546-5b757200c4a4": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "I'll take the criticism.",
+            "status": "progress"
+          }
+        },
+        "opt:3d10ec60-784d-5d86-b9e4-8082e578f797": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "That's something the player has to overcome.",
+            "status": "progress"
+          }
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "f4281548-366f-5a30-bcd0-0e5231ca5fd2",
+      "source": "6c94e4f6-99d3-5dd9-af40-ce4f5deb9712",
+      "target": "7fe9ea49-c6f0-58dd-85d2-eeac6cba5882",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "d38aea37-41bb-5a1c-96cc-033bad682b22",
+      "source": "7fe9ea49-c6f0-58dd-85d2-eeac6cba5882",
+      "target": "372a3894-b842-5d95-bdde-0cc379c4dbe3",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "984707ac-a5e4-5902-bcec-61a718544210",
+      "source": "372a3894-b842-5d95-bdde-0cc379c4dbe3",
+      "target": "330ae8e4-ddb8-5874-9fd3-648b699ab65b",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "b3122c07-90cb-57c4-b266-d718be209923",
+      "source": "330ae8e4-ddb8-5874-9fd3-648b699ab65b",
+      "target": "59413438-5868-5360-9a19-6791c8eca939",
+      "sourcePort": "opt:76f74b28-ccf2-52f3-9546-5b757200c4a4",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "caae5ac3-87ea-5511-8e65-54eb6f58e52b",
+      "source": "330ae8e4-ddb8-5874-9fd3-648b699ab65b",
+      "target": "59413438-5868-5360-9a19-6791c8eca939",
+      "sourcePort": "opt:3d10ec60-784d-5d86-b9e4-8082e578f797",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    }
+  ],
+  "nextLocalId": 7
+}

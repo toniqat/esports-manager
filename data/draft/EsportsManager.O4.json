@@ -1,0 +1,185 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "4c7cd3d7-760c-5d71-8208-1717e7860173": {
+      "id": "4c7cd3d7-760c-5d71-8208-1717e7860173",
+      "name": "O4",
+      "start": "bb236ff1-0060-5c54-8f6d-9da146043842",
+      "end": "44c3c0e4-d51e-593c-ac9e-0f59005573e5",
+      "nodes": {
+        "bb236ff1-0060-5c54-8f6d-9da146043842": {
+          "localId": 1,
+          "type": "Start",
+          "next": "0b451a3d-543b-58d9-8dfe-65adc660d0f2"
+        },
+        "44c3c0e4-d51e-593c-ac9e-0f59005573e5": {
+          "localId": 2,
+          "type": "End"
+        },
+        "0b451a3d-543b-58d9-8dfe-65adc660d0f2": {
+          "localId": 3,
+          "memoIds": [
+            "17b6d68c-ff48-5db0-afb1-26fcdcb4b480"
+          ],
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{name} 선수의 고향 근처 바닷가."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "A beach near {name}'s hometown."
+                }
+              ]
+            }
+          },
+          "next": "cf791832-a76d-5ad3-94bc-614f034b9c4c"
+        },
+        "cf791832-a76d-5ad3-94bc-614f034b9c4c": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "여기서 처음 게임 시작했어요. 저 PC방이요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "This is where I started gaming. That PC bang right there."
+                }
+              ]
+            }
+          },
+          "next": "3c249939-0f6d-5394-8d0b-7febe36db202"
+        },
+        "3c249939-0f6d-5394-8d0b-7febe36db202": {
+          "localId": 5,
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "간판은 낡았지만 불은 켜져 있다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "The sign is worn out, but the lights are still on."
+                }
+              ]
+            }
+          },
+          "next": "6eaf778a-4251-5d3a-96c3-b57b83f85056"
+        },
+        "17b6d68c-ff48-5db0-afb1-26fcdcb4b480": {
+          "localId": 6,
+          "attrs": {
+            "kind": "outing",
+            "manager_type": -1,
+            "stage": 4,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "외출 이벤트 설정",
+          "attachedTo": "0b451a3d-543b-58d9-8dfe-65adc660d0f2"
+        },
+        "6eaf778a-4251-5d3a-96c3-b57b83f85056": {
+          "localId": 7,
+          "type": "Select",
+          "options": [
+            {
+              "id": "7f107e2d-846e-5ee1-8924-e7a51aed17f8",
+              "text": "여기서부터 여기까지 왔구나.",
+              "next": "c85d8456-e8ff-5ed6-be7e-c31b5cb34c4f",
+              "attrs": {
+                "effects": "trust:+7;pmod:all:+2:-1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "So this is where it all started."
+                }
+              }
+            },
+            {
+              "id": "b9906927-baec-5efb-b4e7-964374e95b26",
+              "text": "들어가 볼까?",
+              "next": "78684ad1-2ed2-55a0-be2a-7df2a54c7044",
+              "attrs": {
+                "effects": "trust:+7;pmod:all:+2:-1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Want to go in?"
+                }
+              }
+            }
+          ]
+        },
+        "c85d8456-e8ff-5ed6-be7e-c31b5cb34c4f": {
+          "localId": 8,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네. 감독님 덕분이에요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Yeah. All thanks to you, Coach."
+                }
+              ]
+            }
+          },
+          "next": "44c3c0e4-d51e-593c-ac9e-0f59005573e5"
+        },
+        "78684ad1-2ed2-55a0-be2a-7df2a54c7044": {
+          "localId": 9,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "진짜요? 사장님 놀라시겠다!"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "For real? The owner's going to freak out!"
+                }
+              ]
+            }
+          },
+          "next": "44c3c0e4-d51e-593c-ac9e-0f59005573e5"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,252 @@
+{
+  "id": "e5db9378-709c-54c0-8565-976222278fb0",
+  "name": "P09",
+  "parentNodeId": null,
+  "folderId": "ec57a5a5-b671-5d6b-8bed-630ed5f29af7",
+  "defaultAttrs": {
+    "speakerWikiTargetId": "dd665e10-0059-53d3-a1c2-b806960e315d"
+  },
+  "sharedAttributes": {
+    "Comment": [
+      {
+        "id": "a925c86a-19f1-54a4-ac7c-ea352a6b15f3",
+        "name": "kind",
+        "type": "enum",
+        "enumValues": [
+          "interview",
+          "outing",
+          "incident",
+          "press",
+          "talk",
+          "talk_pair"
+        ],
+        "default": "",
+        "description": "이벤트 종류"
+      },
+      {
+        "id": "ca3f8798-c20f-5e33-ad92-7e6c7954b4fa",
+        "name": "manager_type",
+        "type": "integer",
+        "default": -1,
+        "description": "-1 공통 · 0 운영형 · 1 실전형"
+      },
+      {
+        "id": "f3277320-67bf-548d-a302-dcdd05703e57",
+        "name": "stage",
+        "type": "integer",
+        "default": 0,
+        "description": "외출 단계 (1..N), 그 밖 0"
+      },
+      {
+        "id": "baf866bc-2f22-54e6-ad61-d4fa63bd189f",
+        "name": "cond",
+        "type": "text",
+        "default": "",
+        "description": "조건 (; 로 이음) — features/season/mental/README.md"
+      },
+      {
+        "id": "a4ee1dc7-1fe2-5f27-83ef-e8e8a0551551",
+        "name": "weight",
+        "type": "integer",
+        "default": 1,
+        "description": "뽑기 가중치"
+      }
+    ],
+    "Select": [
+      {
+        "id": "0eca373d-e7a7-5812-ba8e-07bf37c40a8a",
+        "name": "effects",
+        "type": "text",
+        "default": "",
+        "description": "선택지 효과 절 (; 로 이음, ok> / ng> 판정 게이트)"
+      }
+    ],
+    "Dialog": [
+      {
+        "id": "35fcdfcd-e662-5837-b3c2-d704ecbf7025",
+        "name": "branch",
+        "type": "enum",
+        "enumValues": [
+          "ok",
+          "ng"
+        ],
+        "default": "",
+        "description": "답 뒤 대사만: 판정 성공(ok) / 실패(ng) 때만. 비우면 항상"
+      }
+    ]
+  },
+  "labels": [],
+  "nodes": [
+    {
+      "id": "4df5a075-f17f-57fe-9858-29f388eb6043",
+      "type": "Start",
+      "name": "Start",
+      "localId": 1,
+      "x": 40,
+      "y": 40
+    },
+    {
+      "id": "2a6a6921-0f8b-54ae-ab63-18dcee807fb6",
+      "type": "End",
+      "name": "End",
+      "localId": 2,
+      "x": 1240,
+      "y": 40
+    },
+    {
+      "id": "17a318c7-6ef1-5059-9388-1234c9b83eb5",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 3,
+      "x": 340,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+      "content": "{tx_MH87R5EDPY}",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "{tx_MH87R5EDPY}",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "f6bdf048-70a8-5cf8-a050-ce712acc80c5",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 4,
+      "x": 640,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+      "content": "감독님 특유의 운영이 화제입니다.\n비결이 뭡니까?",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Your signature macro style is the talk of the scene.\nWhat's the secret?",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "9cbd6ef6-ca15-5eb9-8566-ba042720ddad",
+      "type": "Comment",
+      "name": "Comment",
+      "localId": 5,
+      "x": 340,
+      "y": -220,
+      "color": "#64748b",
+      "text": "기자회견 이벤트 설정",
+      "width": 260,
+      "height": 110,
+      "attachments": [
+        {
+          "nodeId": "17a318c7-6ef1-5059-9388-1234c9b83eb5"
+        }
+      ],
+      "sharedValues": {
+        "a925c86a-19f1-54a4-ac7c-ea352a6b15f3": "press",
+        "ca3f8798-c20f-5e33-ad92-7e6c7954b4fa": 0,
+        "f3277320-67bf-548d-a302-dcdd05703e57": 0,
+        "baf866bc-2f22-54e6-ad61-d4fa63bd189f": "",
+        "a4ee1dc7-1fe2-5f27-83ef-e8e8a0551551": 1
+      }
+    },
+    {
+      "id": "3b0f08a3-56c0-5c0f-8f6c-c4ac0c472ca9",
+      "type": "Select",
+      "name": "Select",
+      "localId": 6,
+      "x": 940,
+      "y": 40,
+      "color": "#64748b",
+      "options": [
+        {
+          "id": "e46f7ad6-257b-5b4b-9c33-b4ec6a8ff720",
+          "text": "철저한 준비 그뿐입니다.",
+          "sharedValues": {
+            "0eca373d-e7a7-5812-ba8e-07bf37c40a8a": "smod:tactics:+1:1"
+          }
+        },
+        {
+          "id": "60a020b2-c4a2-549b-aae1-1a568904b31a",
+          "text": "선수들이 잘 따라 준 덕분입니다.",
+          "sharedValues": {
+            "0eca373d-e7a7-5812-ba8e-07bf37c40a8a": "trust_all:+2"
+          }
+        }
+      ],
+      "translations": {
+        "opt:e46f7ad6-257b-5b4b-9c33-b4ec6a8ff720": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Thorough preparation, that's all.",
+            "status": "progress"
+          }
+        },
+        "opt:60a020b2-c4a2-549b-aae1-1a568904b31a": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "It's thanks to the players following through.",
+            "status": "progress"
+          }
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "adc8f944-c29b-5128-8de8-cc1051ca2162",
+      "source": "4df5a075-f17f-57fe-9858-29f388eb6043",
+      "target": "17a318c7-6ef1-5059-9388-1234c9b83eb5",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "3fdcf626-af92-5712-89b5-beba3a63662e",
+      "source": "17a318c7-6ef1-5059-9388-1234c9b83eb5",
+      "target": "f6bdf048-70a8-5cf8-a050-ce712acc80c5",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "0ed3b54d-ef14-5994-8856-d22fddd021cb",
+      "source": "f6bdf048-70a8-5cf8-a050-ce712acc80c5",
+      "target": "3b0f08a3-56c0-5c0f-8f6c-c4ac0c472ca9",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "2c5f4cf0-600d-57af-8966-2603ae3507bb",
+      "source": "3b0f08a3-56c0-5c0f-8f6c-c4ac0c472ca9",
+      "target": "2a6a6921-0f8b-54ae-ab63-18dcee807fb6",
+      "sourcePort": "opt:e46f7ad6-257b-5b4b-9c33-b4ec6a8ff720",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "517eba72-ab3d-59ef-a713-b29ea7ab1bb0",
+      "source": "3b0f08a3-56c0-5c0f-8f6c-c4ac0c472ca9",
+      "target": "2a6a6921-0f8b-54ae-ab63-18dcee807fb6",
+      "sourcePort": "opt:60a020b2-c4a2-549b-aae1-1a568904b31a",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    }
+  ],
+  "nextLocalId": 7
+}

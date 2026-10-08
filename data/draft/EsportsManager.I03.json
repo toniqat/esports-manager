@@ -1,0 +1,226 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "1d2dc55e-e1ac-5852-9051-9410f5c5e8e2": {
+      "id": "1d2dc55e-e1ac-5852-9051-9410f5c5e8e2",
+      "name": "I03",
+      "start": "bcffd5c9-fe7e-5a4a-bbe7-6abdb9d9102a",
+      "end": "958fc40f-b338-5819-bf9c-12fad66c61be",
+      "nodes": {
+        "bcffd5c9-fe7e-5a4a-bbe7-6abdb9d9102a": {
+          "localId": 1,
+          "type": "Start",
+          "next": "2196d9ad-3f78-5f2b-9b06-74381b452b0d"
+        },
+        "958fc40f-b338-5819-bf9c-12fad66c61be": {
+          "localId": 2,
+          "type": "End"
+        },
+        "2196d9ad-3f78-5f2b-9b06-74381b452b0d": {
+          "localId": 3,
+          "memoIds": [
+            "ce7eaa06-c2b7-5fe1-a374-af85b9dc7e8a"
+          ],
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{name} 선수가 숙소 거실에 혼자 앉아 창밖을 보고 있다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "{name} is sitting alone in the dorm living room, staring out the window."
+                }
+              ]
+            }
+          },
+          "next": "fa08952c-8187-58ea-b247-84decac056e6"
+        },
+        "fa08952c-8187-58ea-b247-84decac056e6": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "요즘 좀 생각이 많아서요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "I've just had a lot on my mind lately."
+                }
+              ]
+            }
+          },
+          "next": "477e32f2-d0b6-5af1-8c19-90491d066437"
+        },
+        "ce7eaa06-c2b7-5fe1-a374-af85b9dc7e8a": {
+          "localId": 5,
+          "attrs": {
+            "kind": "interview",
+            "manager_type": -1,
+            "stage": 0,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "면담 이벤트 설정",
+          "attachedTo": "2196d9ad-3f78-5f2b-9b06-74381b452b0d"
+        },
+        "477e32f2-d0b6-5af1-8c19-90491d066437": {
+          "localId": 6,
+          "type": "Select",
+          "options": [
+            {
+              "id": "d1087154-782b-529f-9333-199d66800c93",
+              "text": "무슨 일 있어? 천천히 말해 봐.",
+              "next": "83ae2a06-4f76-5722-96ec-c7c88c75898f",
+              "attrs": {
+                "effects": "ok>trust:+6;ng>trust:+2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Something wrong? Take your time."
+                }
+              }
+            },
+            {
+              "id": "9ee8f7c6-3867-521e-a235-7918332b9e75",
+              "text": "컨디션 관리도 실력이야.",
+              "next": "36da7a55-9a7e-57f1-9ef6-0ea073d23071",
+              "attrs": {
+                "effects": "trust:-1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Managing your condition is part of the job."
+                }
+              }
+            },
+            {
+              "id": "729109ed-2cd1-57d4-9e6e-92d578797b13",
+              "text": "내일 얘기하자. 오늘은 쉬어.",
+              "next": "8ef0d8c5-9481-5b1c-b03d-603536c38cbb",
+              "attrs": {
+                "effects": "trust:+2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Let's talk tomorrow. Get some rest tonight."
+                }
+              }
+            }
+          ]
+        },
+        "83ae2a06-4f76-5722-96ec-c7c88c75898f": {
+          "localId": 7,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "들어 주셔서 감사해요. 한결 낫네요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Thanks for listening. I feel a lot better."
+                }
+              ]
+            }
+          },
+          "next": "8fa1d384-aa59-5074-8069-899ce3b94f7c"
+        },
+        "8fa1d384-aa59-5074-8069-899ce3b94f7c": {
+          "localId": 8,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "아니에요. 그냥 피곤한가 봐요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "It's nothing. I guess I'm just tired."
+                }
+              ]
+            }
+          },
+          "next": "958fc40f-b338-5819-bf9c-12fad66c61be"
+        },
+        "36da7a55-9a7e-57f1-9ef6-0ea073d23071": {
+          "localId": 9,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네. 알고 있어요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Yeah. I know."
+                }
+              ]
+            }
+          },
+          "next": "958fc40f-b338-5819-bf9c-12fad66c61be"
+        },
+        "8ef0d8c5-9481-5b1c-b03d-603536c38cbb": {
+          "localId": 10,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네 감독님. 푹 잘게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Got it, Coach. I'll get a good night's sleep."
+                }
+              ]
+            }
+          },
+          "next": "958fc40f-b338-5819-bf9c-12fad66c61be"
+        }
+      }
+    }
+  }
+}

@@ -277,6 +277,8 @@ const TABLE_DEFS: Dictionary = {
 		"shape":       {"data_type": "text", "not_null": true},
 		"exp":         {"data_type": "text", "not_null": true},
 		"effect":      {"data_type": "text", "not_null": true},
+		# Facility (base-map spot H E C D G M Q W) — optional, "" = the course's first cell colour.
+		"facility":    {"data_type": "text", "not_null": false},
 	},
 	"scenarios": {
 		"id":         {"data_type": "int",  "primary_key": true, "not_null": true},

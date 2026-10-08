@@ -1,0 +1,227 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "c304a304-53bd-5cc3-a55c-a89674f20f24": {
+      "id": "c304a304-53bd-5cc3-a55c-a89674f20f24",
+      "name": "T03",
+      "start": "0babefea-5550-5179-82f4-5d895d694ffe",
+      "end": "7f1adc94-3cec-53cc-8b8f-a532e3f2989e",
+      "nodes": {
+        "0babefea-5550-5179-82f4-5d895d694ffe": {
+          "localId": 1,
+          "type": "Start",
+          "next": "2f1f93c5-91f5-54ad-9874-148184b43c0e"
+        },
+        "7f1adc94-3cec-53cc-8b8f-a532e3f2989e": {
+          "localId": 2,
+          "type": "End"
+        },
+        "2f1f93c5-91f5-54ad-9874-148184b43c0e": {
+          "localId": 3,
+          "memoIds": [
+            "99eb6453-5eaf-5a1f-8be0-3b703306c692"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "열심히 했는데 제자리걸음인 것 같아요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "I worked hard, but it feels like I'm going nowhere."
+                }
+              ]
+            }
+          },
+          "next": "c9c356cb-e458-557c-b769-f17cf1d559d6"
+        },
+        "c9c356cb-e458-557c-b769-f17cf1d559d6": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{name}의 목소리에 힘이 없다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "There's no strength in {name}'s voice."
+                }
+              ]
+            }
+          },
+          "next": "4753f212-0621-5212-beb0-660db1ca16e6"
+        },
+        "99eb6453-5eaf-5a1f-8be0-3b703306c692": {
+          "localId": 5,
+          "attrs": {
+            "kind": "talk",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "ups<1",
+            "weight": 2
+          },
+          "type": "Comment",
+          "text": "오전 만남 이벤트 설정",
+          "attachedTo": "2f1f93c5-91f5-54ad-9874-148184b43c0e"
+        },
+        "4753f212-0621-5212-beb0-660db1ca16e6": {
+          "localId": 6,
+          "type": "Select",
+          "options": [
+            {
+              "id": "a463ede6-f981-5459-95f0-62f24bb07529",
+              "text": "쌓이고 있는 거야. 결과는 나중에 와.",
+              "next": "bf75dec0-9d13-588a-916b-a1a11e0f8baa",
+              "attrs": {
+                "effects": "ok>trust:+3;ok>stress:-5;ng>stress:+3"
+              },
+              "i18n": {
+                "En": {
+                  "text": "It's adding up. Results come later."
+                }
+              }
+            },
+            {
+              "id": "7f6d92c6-50f5-5b85-abba-dc16d7dcafad",
+              "text": "방법을 바꿔 보자. 같이 고민해 줄게.",
+              "next": "16e1c392-60d2-5b6d-910b-dc1b0c3f7def",
+              "attrs": {
+                "effects": "trust:+4"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Let's change the approach. I'll think it through with you."
+                }
+              }
+            },
+            {
+              "id": "3fc741e4-3ec1-51fc-b87d-8b0ad3836288",
+              "text": "다들 그래. 넘어가자.",
+              "next": "727d5044-d433-5ae9-8291-19131512d8cf",
+              "attrs": {
+                "effects": "trust:-2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Everyone goes through it. Let's move on."
+                }
+              }
+            }
+          ]
+        },
+        "bf75dec0-9d13-588a-916b-a1a11e0f8baa": {
+          "localId": 7,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…그 말 믿어 볼게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "...I'll trust you on that."
+                }
+              ]
+            }
+          },
+          "next": "5732db9c-678f-54df-8c97-bb92dcac3f46"
+        },
+        "5732db9c-678f-54df-8c97-bb92dcac3f46": {
+          "localId": 8,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "그 말, 매번 하시잖아요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "You say that every time."
+                }
+              ]
+            }
+          },
+          "next": "7f1adc94-3cec-53cc-8b8f-a532e3f2989e"
+        },
+        "16e1c392-60d2-5b6d-910b-dc1b0c3f7def": {
+          "localId": 9,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "정말요? 그럼 내일 영상 같이 봐 주세요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Really? Then please review the footage with me tomorrow."
+                }
+              ]
+            }
+          },
+          "next": "7f1adc94-3cec-53cc-8b8f-a532e3f2989e"
+        },
+        "727d5044-d433-5ae9-8291-19131512d8cf": {
+          "localId": 10,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…네."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "...Okay."
+                }
+              ]
+            }
+          },
+          "next": "7f1adc94-3cec-53cc-8b8f-a532e3f2989e"
+        }
+      }
+    }
+  }
+}

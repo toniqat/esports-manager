@@ -1,0 +1,212 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "1bc85607-9a7f-5a9e-a2b7-ac4cf60c2e9f": {
+      "id": "1bc85607-9a7f-5a9e-a2b7-ac4cf60c2e9f",
+      "name": "I02",
+      "start": "6dec37a4-9ffc-5f46-98a4-ddbe6291a11b",
+      "end": "8a9915ff-a496-5b7b-baee-5dc6e3487398",
+      "nodes": {
+        "6dec37a4-9ffc-5f46-98a4-ddbe6291a11b": {
+          "localId": 1,
+          "type": "Start",
+          "next": "7cde12eb-d389-56b4-bf9f-94058dbfa1ac"
+        },
+        "8a9915ff-a496-5b7b-baee-5dc6e3487398": {
+          "localId": 2,
+          "type": "End"
+        },
+        "7cde12eb-d389-56b4-bf9f-94058dbfa1ac": {
+          "localId": 3,
+          "memoIds": [
+            "6000e424-1b24-59c9-93d0-07234cca1f44"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "감독님 혹시 시간 괜찮으세요?"
+            },
+            {
+              "kind": "text",
+              "text": "지난 경기 제 플레이 어땠는지 궁금해서요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Coach, do you have a minute?"
+                },
+                {
+                  "kind": "text",
+                  "text": "I wanted to know how I played last match."
+                }
+              ]
+            }
+          },
+          "next": "f2264c03-482c-5c4b-9f01-76c3e4eda288"
+        },
+        "6000e424-1b24-59c9-93d0-07234cca1f44": {
+          "localId": 4,
+          "attrs": {
+            "kind": "interview",
+            "manager_type": -1,
+            "stage": 0,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "면담 이벤트 설정",
+          "attachedTo": "7cde12eb-d389-56b4-bf9f-94058dbfa1ac"
+        },
+        "f2264c03-482c-5c4b-9f01-76c3e4eda288": {
+          "localId": 5,
+          "type": "Select",
+          "options": [
+            {
+              "id": "7463f431-edcd-5f0f-a0fc-ec07dab2838e",
+              "text": "침착했어. 그대로만 가자.",
+              "next": "f2f4ff71-dec7-5d37-b3b6-4e0b32bb18b7",
+              "attrs": {
+                "effects": "trust:+3"
+              },
+              "i18n": {
+                "En": {
+                  "text": "You were composed. Keep it up."
+                }
+              }
+            },
+            {
+              "id": "6bf23fdd-03cb-5b4f-8109-cacc1dfda609",
+              "text": "몇 군데 아쉬웠어. 같이 영상 보자.",
+              "next": "d0098040-089a-546f-a2ad-e34851a91772",
+              "attrs": {
+                "effects": "ok>trust:+6;ng>trust:+1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "A few spots could be better. Let's watch the VOD together."
+                }
+              }
+            },
+            {
+              "id": "5eafc901-abcc-5fcd-9cf9-fbd3722b6c5c",
+              "text": "결과로 말하면 되지.",
+              "next": "def38b81-7393-5b76-aae3-3bc3f73036c2",
+              "attrs": {
+                "effects": "trust:-2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Let your results do the talking."
+                }
+              }
+            }
+          ]
+        },
+        "f2f4ff71-dec7-5d37-b3b6-4e0b32bb18b7": {
+          "localId": 6,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "다행이다. 계속 그렇게 해 볼게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Phew. I'll keep doing it that way."
+                }
+              ]
+            }
+          },
+          "next": "8a9915ff-a496-5b7b-baee-5dc6e3487398"
+        },
+        "d0098040-089a-546f-a2ad-e34851a91772": {
+          "localId": 7,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "같이 봐 주시는 거예요? 좋아요!"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "You'll watch it with me? Awesome!"
+                }
+              ]
+            }
+          },
+          "next": "87073241-e1e1-592a-a53c-a3348f46030c"
+        },
+        "87073241-e1e1-592a-a53c-a3348f46030c": {
+          "localId": 8,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네… 지적만 듣는 건 좀 힘드네요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Okay… just getting criticized is kind of hard."
+                }
+              ]
+            }
+          },
+          "next": "8a9915ff-a496-5b7b-baee-5dc6e3487398"
+        },
+        "def38b81-7393-5b76-aae3-3bc3f73036c2": {
+          "localId": 9,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…네."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "…Okay."
+                }
+              ]
+            }
+          },
+          "next": "8a9915ff-a496-5b7b-baee-5dc6e3487398"
+        }
+      }
+    }
+  }
+}

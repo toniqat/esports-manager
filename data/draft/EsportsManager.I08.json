@@ -1,0 +1,149 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "bc92c237-8454-5d17-ad47-f52a14c21847": {
+      "id": "bc92c237-8454-5d17-ad47-f52a14c21847",
+      "name": "I08",
+      "start": "3b7755dd-53f3-5401-93c7-3ebfb5c44e33",
+      "end": "41e81599-1bd9-5f38-afce-b12212954546",
+      "nodes": {
+        "3b7755dd-53f3-5401-93c7-3ebfb5c44e33": {
+          "localId": 1,
+          "type": "Start",
+          "next": "aaaa5b36-1e7e-5717-b34a-93ddc74348c4"
+        },
+        "41e81599-1bd9-5f38-afce-b12212954546": {
+          "localId": 2,
+          "type": "End"
+        },
+        "aaaa5b36-1e7e-5717-b34a-93ddc74348c4": {
+          "localId": 3,
+          "memoIds": [
+            "3f243c3c-ae4f-514e-bd22-3fcf9f041245"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "감독님은 항상 차분하시네요."
+            },
+            {
+              "kind": "text",
+              "text": "저도 그렇게 되고 싶어요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "You're always so calm, Coach."
+                },
+                {
+                  "kind": "text",
+                  "text": "I want to be like that too."
+                }
+              ]
+            }
+          },
+          "next": "9f70e8e0-0d1a-55a3-943a-743c872151c7"
+        },
+        "3f243c3c-ae4f-514e-bd22-3fcf9f041245": {
+          "localId": 4,
+          "attrs": {
+            "kind": "interview",
+            "manager_type": 0,
+            "stage": 0,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "면담 이벤트 설정",
+          "attachedTo": "aaaa5b36-1e7e-5717-b34a-93ddc74348c4"
+        },
+        "9f70e8e0-0d1a-55a3-943a-743c872151c7": {
+          "localId": 5,
+          "type": "Select",
+          "options": [
+            {
+              "id": "aa3e97a2-34f7-5397-948d-6211f9dc59c0",
+              "text": "루틴을 지키면 돼. 같이 짜 볼까?",
+              "next": "7136561c-04ee-55a2-b271-978845500bdb",
+              "attrs": {
+                "effects": "trust:+4;pmod:field_eva:+1:2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Just stick to a routine. Want to build one together?"
+                }
+              }
+            },
+            {
+              "id": "f6b09ef2-c42a-531f-bf1d-904e2c797479",
+              "text": "나도 속으론 떨려.",
+              "next": "b033aa53-3293-5891-b6a4-bab353e91d5f",
+              "attrs": {
+                "effects": "trust:+5"
+              },
+              "i18n": {
+                "En": {
+                  "text": "I'm nervous inside too."
+                }
+              }
+            }
+          ]
+        },
+        "7136561c-04ee-55a2-b271-978845500bdb": {
+          "localId": 6,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "루틴이요? 좋아요 해 볼게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "A routine? Sounds good, I'll give it a shot."
+                }
+              ]
+            }
+          },
+          "next": "41e81599-1bd9-5f38-afce-b12212954546"
+        },
+        "b033aa53-3293-5891-b6a4-bab353e91d5f": {
+          "localId": 7,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "감독님도요? 의외네요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "You too? That's surprising."
+                }
+              ]
+            }
+          },
+          "next": "41e81599-1bd9-5f38-afce-b12212954546"
+        }
+      }
+    }
+  }
+}

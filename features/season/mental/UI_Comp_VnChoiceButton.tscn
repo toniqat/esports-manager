@@ -2,15 +2,35 @@
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
-[node name="VnChoiceButton" type="Button"]
+[node name="VnChoiceButton" type="VBoxContainer"]
 auto_translate_mode = 2
-editor_description = "One answer choice in VnDialogueView's %ChoiceList (centred over the dim, fixed width, at least 112 tall, grows with wrapped text). Code sets the text and connects pressed."
-custom_minimum_size = Vector2(880, 112)
+editor_description = "One answer choice in VnDialogueView's %ChoiceList (centred over the dim, fixed width): the answer button and, under it, the preview line (check chance + effect directions). Code sets both texts and connects %Button pressed."
+custom_minimum_size = Vector2(880, 0)
 offset_right = 880.0
-offset_bottom = 112.0
+offset_bottom = 150.0
 size_flags_horizontal = 4
-focus_mode = 0
+mouse_filter = 2
 theme = ExtResource("1_theme")
+theme_override_constants/separation = 6
+
+[node name="Button" type="Button" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VnDialogueView.gd _show_choices
+The answer (at least 112 tall, grows with wrapped text)."
+custom_minimum_size = Vector2(880, 112)
+layout_mode = 2
+focus_mode = 0
 theme_type_variation = &"VnDialogueChoiceButton"
 text = "쉽지 않겠지만 준비한 게 있습니다."
+autowrap_mode = 3
+
+[node name="Preview" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VnDialogueView.gd _show_choices
+Preview under the answer: mental check chance and effect directions (MentalEvents.preview_text). Hidden when empty."
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"OnFillLabel"
+text = "62% · 신뢰↑ · 스트레스↓"
+horizontal_alignment = 1
 autowrap_mode = 3

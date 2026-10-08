@@ -1,0 +1,170 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "051968ef-6411-5fe1-af14-f98da1a56c73": {
+      "id": "051968ef-6411-5fe1-af14-f98da1a56c73",
+      "name": "T06",
+      "start": "f09449e9-5dc9-5cf2-a439-d68b5f263a3d",
+      "end": "489968da-8533-5a6a-b62e-aaeeb5885216",
+      "nodes": {
+        "f09449e9-5dc9-5cf2-a439-d68b5f263a3d": {
+          "localId": 1,
+          "type": "Start",
+          "next": "cf1b462d-6b27-5e30-9c9c-7eef0bbf4fdd"
+        },
+        "489968da-8533-5a6a-b62e-aaeeb5885216": {
+          "localId": 2,
+          "type": "End"
+        },
+        "cf1b462d-6b27-5e30-9c9c-7eef0bbf4fdd": {
+          "localId": 3,
+          "memoIds": [
+            "0a161466-fcba-5048-96d3-453b1426b46b"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "교전 훈련, 오늘은 반응이 계속 반 박자 늦었어요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Engage drills today, I kept reacting half a beat late."
+                }
+              ]
+            }
+          },
+          "next": "ae00e368-31c0-5b10-946a-3a4e1b499fac"
+        },
+        "0a161466-fcba-5048-96d3-453b1426b46b": {
+          "localId": 4,
+          "attrs": {
+            "kind": "talk",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "train=C,D",
+            "weight": 2
+          },
+          "type": "Comment",
+          "text": "오전 만남 이벤트 설정",
+          "attachedTo": "cf1b462d-6b27-5e30-9c9c-7eef0bbf4fdd"
+        },
+        "ae00e368-31c0-5b10-946a-3a4e1b499fac": {
+          "localId": 5,
+          "type": "Select",
+          "options": [
+            {
+              "id": "852b4231-9e76-5982-9c5a-70d82f7f2a63",
+              "text": "내가 보기엔 판단은 좋았어.",
+              "next": "913cba8c-d006-53f1-8216-69c2eb9ded54",
+              "attrs": {
+                "effects": "trust:+2;stress:-3"
+              },
+              "i18n": {
+                "En": {
+                  "text": "From where I stood, your decisions were good."
+                }
+              }
+            },
+            {
+              "id": "b73f9ef3-fac8-5cc5-a294-bff756c8354d",
+              "text": "늦은 이유를 같이 짚어 보자.",
+              "next": "99476b54-2e73-52ec-a2c2-ede5b1c503cf",
+              "attrs": {
+                "effects": "ok>pmod:engage_hit:+1:-1;ok>trust:+1;ng>stress:+2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Let's work out together why you were late."
+                }
+              }
+            }
+          ]
+        },
+        "913cba8c-d006-53f1-8216-69c2eb9ded54": {
+          "localId": 6,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "그래요? 조금 안심이 되네요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Really? That's a bit of a relief."
+                }
+              ]
+            }
+          },
+          "next": "489968da-8533-5a6a-b62e-aaeeb5885216"
+        },
+        "99476b54-2e73-52ec-a2c2-ede5b1c503cf": {
+          "localId": 7,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "아, 시야를 너무 좁게 봤던 거군요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Ah, I was keeping my view too narrow."
+                }
+              ]
+            }
+          },
+          "next": "fb2d9e3b-e7a8-5064-8b33-5de1e3286f2a"
+        },
+        "fb2d9e3b-e7a8-5064-8b33-5de1e3286f2a": {
+          "localId": 8,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "음… 잘 모르겠어요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Hmm... I'm not sure."
+                }
+              ]
+            }
+          },
+          "next": "489968da-8533-5a6a-b62e-aaeeb5885216"
+        }
+      }
+    }
+  }
+}

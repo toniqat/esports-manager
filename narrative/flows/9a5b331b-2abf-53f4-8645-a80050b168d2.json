@@ -1,0 +1,351 @@
+{
+  "id": "9a5b331b-2abf-53f4-8645-a80050b168d2",
+  "name": "T02",
+  "parentNodeId": null,
+  "folderId": "c90d4e07-90a2-5500-b1ec-a1bac9edaf2a",
+  "defaultAttrs": {
+    "speakerWikiTargetId": "dd665e10-0059-53d3-a1c2-b806960e315d"
+  },
+  "sharedAttributes": {
+    "Comment": [
+      {
+        "id": "b394601c-7a00-5531-95e7-975cf63f1d20",
+        "name": "kind",
+        "type": "enum",
+        "enumValues": [
+          "interview",
+          "outing",
+          "incident",
+          "press",
+          "talk",
+          "talk_pair"
+        ],
+        "default": "",
+        "description": "이벤트 종류"
+      },
+      {
+        "id": "4de92a9a-ad6d-5d1a-a3e1-a8c8e23af6b9",
+        "name": "manager_type",
+        "type": "integer",
+        "default": -1,
+        "description": "-1 공통 · 0 운영형 · 1 실전형"
+      },
+      {
+        "id": "a669b71f-2828-5827-957c-6123119792ce",
+        "name": "stage",
+        "type": "integer",
+        "default": 0,
+        "description": "외출 단계 (1..N), 그 밖 0"
+      },
+      {
+        "id": "72a27a59-bf4a-50f6-8093-f16566f1092b",
+        "name": "cond",
+        "type": "text",
+        "default": "",
+        "description": "조건 (; 로 이음) — features/season/mental/README.md"
+      },
+      {
+        "id": "65e58623-081e-5c3d-82ef-6d5a377455ff",
+        "name": "weight",
+        "type": "integer",
+        "default": 1,
+        "description": "뽑기 가중치"
+      }
+    ],
+    "Select": [
+      {
+        "id": "a32af032-8386-5680-9f52-d9eec9a20d93",
+        "name": "effects",
+        "type": "text",
+        "default": "",
+        "description": "선택지 효과 절 (; 로 이음, ok> / ng> 판정 게이트)"
+      }
+    ],
+    "Dialog": [
+      {
+        "id": "a1f512b0-1301-5e9e-871e-fbd1b1426009",
+        "name": "branch",
+        "type": "enum",
+        "enumValues": [
+          "ok",
+          "ng"
+        ],
+        "default": "",
+        "description": "답 뒤 대사만: 판정 성공(ok) / 실패(ng) 때만. 비우면 항상"
+      }
+    ]
+  },
+  "labels": [],
+  "nodes": [
+    {
+      "id": "4c53d39d-fc6a-5c5c-8d17-0bc21017cfbc",
+      "type": "Start",
+      "name": "Start",
+      "localId": 1,
+      "x": 40,
+      "y": 40
+    },
+    {
+      "id": "7ca13bdc-54cf-5c3e-95be-34e17f3aa047",
+      "type": "End",
+      "name": "End",
+      "localId": 2,
+      "x": 1840,
+      "y": 40
+    },
+    {
+      "id": "5993fd9f-fdda-5250-8960-f8675a03b48c",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 3,
+      "x": 340,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "감독님! 오늘 확실히 늘었어요. 느낌이 와요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Coach! I definitely got better today. I can feel it.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "87dc7a98-e536-5e1a-91ed-7152da419d52",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 4,
+      "x": 640,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "23f70dcf-de2b-50ea-a210-97bcdd22d3a0",
+      "content": "나도 봤어. 움직임이 달라졌더라.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "I saw it too. Your movement was different.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "b992eb6e-8550-51d3-ab02-298151772e1a",
+      "type": "Comment",
+      "name": "Comment",
+      "localId": 5,
+      "x": 340,
+      "y": -220,
+      "color": "#64748b",
+      "text": "오전 만남 이벤트 설정",
+      "width": 260,
+      "height": 110,
+      "attachments": [
+        {
+          "nodeId": "5993fd9f-fdda-5250-8960-f8675a03b48c"
+        }
+      ],
+      "sharedValues": {
+        "b394601c-7a00-5531-95e7-975cf63f1d20": "talk",
+        "4de92a9a-ad6d-5d1a-a3e1-a8c8e23af6b9": -1,
+        "a669b71f-2828-5827-957c-6123119792ce": 0,
+        "72a27a59-bf4a-50f6-8093-f16566f1092b": "ups>=1",
+        "65e58623-081e-5c3d-82ef-6d5a377455ff": 2
+      }
+    },
+    {
+      "id": "0b2a9c6a-d531-5281-9478-ff6d6dfc0f03",
+      "type": "Select",
+      "name": "Select",
+      "localId": 6,
+      "x": 940,
+      "y": 40,
+      "color": "#64748b",
+      "options": [
+        {
+          "id": "8d19af50-4ab9-577c-99ae-e8188b86488c",
+          "text": "이 감각 잊지 말고 계속 가자.",
+          "sharedValues": {
+            "a32af032-8386-5680-9f52-d9eec9a20d93": "trust:+3;pmod:all:+1:-1"
+          }
+        },
+        {
+          "id": "8757299d-bf67-51b0-8b65-a6402c2c6f97",
+          "text": "들뜨지 마. 아직 갈 길이 멀어.",
+          "sharedValues": {
+            "a32af032-8386-5680-9f52-d9eec9a20d93": "ok>pmod:all:+2:-1;ng>trust:-2"
+          }
+        }
+      ],
+      "translations": {
+        "opt:8d19af50-4ab9-577c-99ae-e8188b86488c": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Hold on to that feeling and keep going.",
+            "status": "progress"
+          }
+        },
+        "opt:8757299d-bf67-51b0-8b65-a6402c2c6f97": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Don't get carried away. There's a long way to go.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "bc0e43ee-77fd-5b6b-afb4-6e4357b54ab2",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 7,
+      "x": 1240,
+      "y": -90.0,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "네! 내일도 이렇게만 하면 좋겠어요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Yes! I hope tomorrow goes just like this.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "73ae489c-167f-572b-8c58-7cd2a58834ed",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 8,
+      "x": 1240,
+      "y": 170.0,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "…맞아요. 정신 차릴게요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "...You're right. I'll stay focused.",
+            "status": "progress"
+          }
+        }
+      },
+      "sharedValues": {
+        "a1f512b0-1301-5e9e-871e-fbd1b1426009": "ok"
+      }
+    },
+    {
+      "id": "120b8a39-3301-5aa0-a1bc-57605c95bd1b",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 9,
+      "x": 1540,
+      "y": 170.0,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "칭찬 한 번 듣기가 이렇게 어렵네요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Getting one compliment out of you is so hard.",
+            "status": "progress"
+          }
+        }
+      },
+      "sharedValues": {
+        "a1f512b0-1301-5e9e-871e-fbd1b1426009": "ng"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "3896293c-d8b0-5b3b-90a1-6ad4e079e997",
+      "source": "4c53d39d-fc6a-5c5c-8d17-0bc21017cfbc",
+      "target": "5993fd9f-fdda-5250-8960-f8675a03b48c",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "b95a44d5-f120-5bd0-9648-ac648d2afa97",
+      "source": "5993fd9f-fdda-5250-8960-f8675a03b48c",
+      "target": "87dc7a98-e536-5e1a-91ed-7152da419d52",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "08d755ea-851e-5e03-8e85-034391177bdd",
+      "source": "87dc7a98-e536-5e1a-91ed-7152da419d52",
+      "target": "0b2a9c6a-d531-5281-9478-ff6d6dfc0f03",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "a193319b-aabe-55fa-ba1e-fec8337220a0",
+      "source": "0b2a9c6a-d531-5281-9478-ff6d6dfc0f03",
+      "target": "bc0e43ee-77fd-5b6b-afb4-6e4357b54ab2",
+      "sourcePort": "opt:8d19af50-4ab9-577c-99ae-e8188b86488c",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "794cd4ff-ece5-5dc6-8a48-26c9d9d3a9b9",
+      "source": "bc0e43ee-77fd-5b6b-afb4-6e4357b54ab2",
+      "target": "7ca13bdc-54cf-5c3e-95be-34e17f3aa047",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "044e6611-10c7-51ad-917b-7ca5c5ab16f0",
+      "source": "0b2a9c6a-d531-5281-9478-ff6d6dfc0f03",
+      "target": "73ae489c-167f-572b-8c58-7cd2a58834ed",
+      "sourcePort": "opt:8757299d-bf67-51b0-8b65-a6402c2c6f97",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "9f0d1285-4291-52c5-9984-a57bb4e1918a",
+      "source": "73ae489c-167f-572b-8c58-7cd2a58834ed",
+      "target": "120b8a39-3301-5aa0-a1bc-57605c95bd1b",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "5cf8c0a0-13ac-58b5-9a36-62c59770f0a5",
+      "source": "120b8a39-3301-5aa0-a1bc-57605c95bd1b",
+      "target": "7ca13bdc-54cf-5c3e-95be-34e17f3aa047",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    }
+  ],
+  "nextLocalId": 10
+}

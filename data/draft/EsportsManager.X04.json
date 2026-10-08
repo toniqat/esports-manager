@@ -1,0 +1,213 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "47eb0d54-4fe2-5760-945d-da7025ac3d6d": {
+      "id": "47eb0d54-4fe2-5760-945d-da7025ac3d6d",
+      "name": "X04",
+      "start": "d76c2333-ddfb-54b9-b726-bf7124593c7c",
+      "end": "991dbca3-3311-5a32-9374-a2cc26bfc83c",
+      "nodes": {
+        "d76c2333-ddfb-54b9-b726-bf7124593c7c": {
+          "localId": 1,
+          "type": "Start",
+          "next": "0fa80a59-7eca-5f28-a48a-49c2e0c3fe9e"
+        },
+        "991dbca3-3311-5a32-9374-a2cc26bfc83c": {
+          "localId": 2,
+          "type": "End"
+        },
+        "0fa80a59-7eca-5f28-a48a-49c2e0c3fe9e": {
+          "localId": 3,
+          "memoIds": [
+            "b1db8ad0-d43f-5d6a-8f94-13d45a36272a"
+          ],
+          "type": "Dialog",
+          "speaker": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "향수병"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Homesick"
+                }
+              ]
+            }
+          },
+          "next": "769b5055-e560-578e-8b1e-d8dfed2701e7"
+        },
+        "769b5055-e560-578e-8b1e-d8dfed2701e7": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{name} 선수가 밤늦게 가족과 통화하며 울고 있었다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "{name} was crying on the phone with family late at night."
+                }
+              ]
+            }
+          },
+          "next": "ed47f189-cb53-5744-aca3-b24e17bd62a3"
+        },
+        "ed47f189-cb53-5744-aca3-b24e17bd62a3": {
+          "localId": 5,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "집에 한 번만 다녀오면 안 될까요?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Could I go home just once?"
+                }
+              ]
+            }
+          },
+          "next": "8566ea48-e1d4-5f64-9b5e-6fb5cafecf7f"
+        },
+        "b1db8ad0-d43f-5d6a-8f94-13d45a36272a": {
+          "localId": 6,
+          "attrs": {
+            "kind": "incident",
+            "manager_type": -1,
+            "stage": 0,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "사건 이벤트 설정",
+          "attachedTo": "0fa80a59-7eca-5f28-a48a-49c2e0c3fe9e"
+        },
+        "8566ea48-e1d4-5f64-9b5e-6fb5cafecf7f": {
+          "localId": 7,
+          "type": "Select",
+          "options": [
+            {
+              "id": "307827a6-a05e-5c3b-9482-470f0c7f2bce",
+              "text": "하루 다녀와. 훈련은 걱정 마.",
+              "next": "64ba76b0-660f-5ac0-9a69-0c5d1cf15d88",
+              "attrs": {
+                "effects": "trust:+6;pmod:all:-1:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Go for a day. Don't worry about practice."
+                }
+              }
+            },
+            {
+              "id": "7bde67f6-1f14-56f5-a85f-1916f64a4cb7",
+              "text": "시즌 끝나고 꼭 보내 줄게.",
+              "next": "c4bcfe70-e2d9-5867-a989-62210cf3b74d",
+              "attrs": {
+                "effects": "ok>trust:+2;ng>trust:-3"
+              },
+              "i18n": {
+                "En": {
+                  "text": "I'll make sure you go once the season's over."
+                }
+              }
+            }
+          ]
+        },
+        "64ba76b0-660f-5ac0-9a69-0c5d1cf15d88": {
+          "localId": 8,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "고마워요 감독님!"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Thank you, Coach!"
+                }
+              ]
+            }
+          },
+          "next": "991dbca3-3311-5a32-9374-a2cc26bfc83c"
+        },
+        "c4bcfe70-e2d9-5867-a989-62210cf3b74d": {
+          "localId": 9,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…네. 약속이에요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "…Okay. That's a promise."
+                }
+              ]
+            }
+          },
+          "next": "052fe39f-78b9-5ffe-9b2c-45cd2ae6201d"
+        },
+        "052fe39f-78b9-5ffe-9b2c-45cd2ae6201d": {
+          "localId": 10,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "알겠어요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Got it."
+                }
+              ]
+            }
+          },
+          "next": "991dbca3-3311-5a32-9374-a2cc26bfc83c"
+        }
+      }
+    }
+  }
+}

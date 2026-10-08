@@ -1,0 +1,140 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "b46e3817-c78d-571d-a9cf-fc60347a798e": {
+      "id": "b46e3817-c78d-571d-a9cf-fc60347a798e",
+      "name": "P02",
+      "start": "d5161727-3c52-5c2a-8782-9670c997c6f4",
+      "end": "9002bc67-52f5-512c-8b2f-4e64f809efd5",
+      "nodes": {
+        "d5161727-3c52-5c2a-8782-9670c997c6f4": {
+          "localId": 1,
+          "type": "Start",
+          "next": "07520806-750b-5539-a8a8-4a2553ea7f17"
+        },
+        "9002bc67-52f5-512c-8b2f-4e64f809efd5": {
+          "localId": 2,
+          "type": "End"
+        },
+        "07520806-750b-5539-a8a8-4a2553ea7f17": {
+          "localId": 3,
+          "memoIds": [
+            "c7ed926b-fd99-5785-86a5-e69464bf4350"
+          ],
+          "type": "Dialog",
+          "speaker": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{tx_J8VCATJ5GB}"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "{tx_J8VCATJ5GB}"
+                }
+              ]
+            }
+          },
+          "next": "bdb3a223-974b-5f93-8a81-6214ecb2ef84"
+        },
+        "bdb3a223-974b-5f93-8a81-6214ecb2ef84": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "주말 경기 상대가 만만치 않다는 평이 많습니다."
+            },
+            {
+              "kind": "text",
+              "text": "솔직히 이길 자신 있으십니까?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Many say this weekend's opponent is a tough one."
+                },
+                {
+                  "kind": "text",
+                  "text": "Honestly, are you confident you can win?"
+                }
+              ]
+            }
+          },
+          "next": "58203384-6f60-5de7-8197-0d521946adb9"
+        },
+        "c7ed926b-fd99-5785-86a5-e69464bf4350": {
+          "localId": 5,
+          "attrs": {
+            "kind": "press",
+            "manager_type": -1,
+            "stage": 0,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "기자회견 이벤트 설정",
+          "attachedTo": "07520806-750b-5539-a8a8-4a2553ea7f17"
+        },
+        "58203384-6f60-5de7-8197-0d521946adb9": {
+          "localId": 6,
+          "type": "Select",
+          "options": [
+            {
+              "id": "c6dba375-de64-5073-9815-fb97b9f5c180",
+              "text": "저희 선수들을 믿습니다.",
+              "next": "9002bc67-52f5-512c-8b2f-4e64f809efd5",
+              "attrs": {
+                "effects": "trust_all:+2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "I believe in my players."
+                }
+              }
+            },
+            {
+              "id": "56b9985e-6b58-5ba7-b7d3-bc402ce5be00",
+              "text": "쉽지 않겠지만 준비한 게 있습니다.",
+              "next": "9002bc67-52f5-512c-8b2f-4e64f809efd5",
+              "attrs": {
+                "effects": "smod:tactics:+1:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "It won't be easy, but we've prepared something."
+                }
+              }
+            },
+            {
+              "id": "2a550cc6-33ef-5b22-8f9c-39fa517940c2",
+              "text": "질문이 좀 무례하시네요.",
+              "next": "9002bc67-52f5-512c-8b2f-4e64f809efd5",
+              "attrs": {
+                "effects": "trust_all:+1;smod:mental:-1:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "That's a bit of a rude question."
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

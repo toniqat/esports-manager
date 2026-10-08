@@ -1085,6 +1085,90 @@ tx_526PWNR0KP,패닉
 tx_QZCW0ABV05,{name} 스트레스 {delta}
 tx_29J1CQRVAJ,팀 전체 스트레스 {delta}
 tx_TEE5MJ4DBZ,결과
+tx_AM6AWHMZNN,만남
+tx_GN6EV5KMJW,신뢰
+tx_ZJV1EWSDKB,팀 신뢰
+tx_WP4YVNHEXE,스트레스
+tx_DK2F035X3X,팀 스트레스
+tx_E2B5S6JFYF,팀 {stat}
+tx_SKMQAZGV2H,감독 {stat}
+tx_7PE8CY1VEZ,성공 {n}%
+tx_ZZBATP37TZ,성공: {ok} / 실패: {ng}
+tx_TBZX94B3A2,변화 없음
+tx_6SB7G8MVN8,{label}↑
+tx_81K8K91474,{label}↓
+tx_S8ES8XZVQW,*훈련이 끝난 연습실. {name}{i} 땀을 닦고 있다.
+tx_HZD9GEBAFR,>오늘 훈련 어땠어?
+tx_JCYC1AH2PJ,그럭저럭이요. 손은 좀 풀린 것 같아요.
+tx_Q9YFDEBKEB,그 정도면 충분해. 오늘은 푹 쉬어.
+tx_2N3YJZ35JE,"네, 감사합니다."
+tx_QB4HRY15VT,내일은 조금 더 몰아붙여 보자.
+tx_3SGPCS4PH7,좋아요. 저도 그렇게 생각했어요.
+tx_VHN1WB5A51,…네. 해 볼게요.
+tx_K5VBACMYA6,감독님! 오늘 확실히 늘었어요. 느낌이 와요.
+tx_N6YYBSQVNW,>나도 봤어. 움직임이 달라졌더라.
+tx_N5QDJ60X29,이 감각 잊지 말고 계속 가자.
+tx_GD23ZN691V,네! 내일도 이렇게만 하면 좋겠어요.
+tx_KFS8EYBM2S,들뜨지 마. 아직 갈 길이 멀어.
+tx_QEGB0VN5RN,…맞아요. 정신 차릴게요.
+tx_6M3WK1BPQ7,칭찬 한 번 듣기가 이렇게 어렵네요.
+tx_4KWGRVMPY7,열심히 했는데 제자리걸음인 것 같아요.
+tx_2HDMG1DP5V,*{name}의 목소리에 힘이 없다.
+tx_477HCE2FAM,쌓이고 있는 거야. 결과는 나중에 와.
+tx_4VN11ASBVB,…그 말 믿어 볼게요.
+tx_HZNATQZ1CX,"그 말, 매번 하시잖아요."
+tx_A5T23BNT2A,방법을 바꿔 보자. 같이 고민해 줄게.
+tx_RCX7XH5K8Z,정말요? 그럼 내일 영상 같이 봐 주세요.
+tx_Z8MB9KF08A,다들 그래. 넘어가자.
+tx_JC2AQW8AQY,…네.
+tx_N7107F7D7V,*{name}{i} 의자에 등을 기댄 채 눈을 감고 있다.
+tx_9VXQ2QF36S,"죄송해요, 조금만 이러고 있을게요."
+tx_917HH9H1WZ,괜찮아. 오늘은 여기까지 하자.
+tx_H36TXHFQZM,"…고마워요, 감독님."
+tx_A8JD1Y65T8,힘든 거 알아. 그래도 조금만 더 버텨.
+tx_0YD282NYP9,네… 버틸게요.
+tx_EJC5368844,저 지금 진짜 한계예요.
+tx_BAYBGG9GXB,전장 훈련은 늘 같은 동선이라 좀 지루해요.
+tx_5QSXAD063Q,>지루한 게 몸에 배야 실전에서 안 흔들려.
+tx_BXZCFAW6WC,내일은 변칙 동선도 섞어 볼까?
+tx_ABFXSK7HQW,"오, 그거 재밌겠네요!"
+tx_76TZMERTWR,기본이 제일 중요해. 그대로 가자.
+tx_J6X8H3B6XM,알겠어요. 기본부터 확실히 할게요.
+tx_GWHTZXTMSG,네… 그렇죠.
+tx_BVNGQAPE5M,"교전 훈련, 오늘은 반응이 계속 반 박자 늦었어요."
+tx_AYR197YTGB,내가 보기엔 판단은 좋았어.
+tx_1REM87SYVD,그래요? 조금 안심이 되네요.
+tx_SZZMXPKBNK,늦은 이유를 같이 짚어 보자.
+tx_5ZZNYB9SWV,"아, 시야를 너무 좁게 봤던 거군요."
+tx_KW9J0DQDVA,음… 잘 모르겠어요.
+tx_R3MVV1G5SF,메크랑 조금씩 호흡이 맞아 가는 것 같아요.
+tx_A12V1SD0SJ,좋아. 그 메크로 다음 경기 준비하자.
+tx_DPDH4ANAAJ,네! 기대해 주세요.
+tx_BW2BFWH5DB,한 메크에 너무 매이지는 마.
+tx_TJXC15EBX7,알겠어요. 다른 것도 만져 볼게요.
+tx_ZBR2EQPS3P,*합동 훈련을 마친 {name}{wa} {name2}{i} 함께 다가온다.
+tx_E374T7GFQE,오늘 {name2}랑 합 맞춰 봤는데 꽤 괜찮았어요.
+tx_B3Y6KVD3P4,&제가 받쳐 준 덕분이죠.
+tx_JSS4MQMY4M,둘 다 잘했어. 그 호흡 그대로 가자.
+tx_XRKVPSK4AQ,들었지? 감독님도 인정하셨어.
+tx_WVJSTQ255R,&다음엔 내가 앞에 설게.
+tx_MYB8WF6EK7,아직 부족해. 내일 한 번 더 맞춰 봐.
+tx_G1N62SEW01,"&좋아요, 내일은 더 맞춰 볼게요."
+tx_0GQVTQE3JH,…둘이 또요?
+tx_Y4JXF85288,"&감독님, {name} 오늘 진짜 많이 늘었어요."
+tx_SNKVZFV76G,"야, 그런 말을 왜 네가 해."
+tx_W4YN7289MW,서로 끌어 주는 게 보기 좋다.
+tx_6D889HY8Y6,"&헤헤, 팀이니까요."
+tx_07GNRSBJ25,"{name2}, 너도 질 수 없겠는데?"
+tx_KPKZRRRESZ,&당연하죠. 내일은 제 차례예요.
+tx_70XK0PA7YX,&…그런 말 하시면 부담돼요.
+tx_2B3W0B1ZD4,*{name2}{i} 지친 {name}의 어깨를 두드린다.
+tx_RRF14JXZYA,&얘 오늘 무리했어요. 좀 쉬게 해 주세요.
+tx_9N7B7PCZ5N,둘 다 오늘은 일찍 들어가.
+tx_2XVW6DND6C,…고마워요.
+tx_T0XXC81CWK,"{name2}, 네가 오늘 좀 챙겨 줘."
+tx_6GSWJZY616,&맡겨 주세요.
+tx_94NECDHB76,&저도 사실 좀 힘든데요.
 tx_6RHXR0K8TD,Nekomata
 tx_KCKAPV8M44,Yuzuha
 tx_1TSM3CVTC7,Corin
@@ -1534,7 +1618,7 @@ tx_5GDZXY0QSR,{day} · 사건 발생 · {name}
 tx_CPW05B0HB9,오전
 tx_XXVBB9VYQX,오후
 tx_7YZ50G3EBF,오전 훈련 · 다음을 누르면 오늘 훈련을 정산합니다
-tx_AWKX6T199K,오전 훈련 결과 · 잠시 후 오후로 넘어갑니다 (다음 = 건너뛰기)
+tx_AWKX6T199K,오전 훈련 결과 · 잠시 후 오전 만남으로 넘어갑니다 (다음 = 건너뛰기)
 tx_CXNA4K157Z,오후 · 선수를 눌러 면담이나 외출을 요청하세요
 tx_7KR285R4ES,오늘 오후 일정을 마쳤습니다
 tx_5W9RGVB4BS,EXP +{n}
@@ -1560,6 +1644,21 @@ tx_K1AJHH3AP3,장착한 기벽 없음
 tx_PJXWJ5R6J6,메크 연구
 tx_X988TMMPYD,{mech} · {tier} ({value} / {max})
 tx_H106HT101H,이번 주 연구 메크 미지정
+tx_DY69B79HB4,저녁
+tx_FM9P3DRASG,오전 · 선수를 눌러 훈련 소감을 들어 보세요
+tx_N36SF54RT7,오전 만남을 마쳤습니다 · 다음을 누르면 오후로 넘어갑니다
+tx_CY41J8M14Z,저녁 · 사건이 일어났습니다
+tx_114TEDYXKT,오전 만남
+tx_SJMNVE78AH,지도에서 훈련 소감을 들을 선수를 누르세요 (오전 한 번)
+tx_1SN8VDP0S4,오늘 오전에는 만날 수 있는 선수가 없습니다
+tx_G18Q9X83C8,만남
+tx_7FRMF2A3ZK,합동 훈련 · {name}{wa} 함께
+tx_0ZK5QSV26D,신뢰 {trust}
+tx_Y30YG2P1AK,오전: {name} 만남
+tx_5Y82DHJ5DX,오전: {name} · {name2} 만남
+tx_444WVNHT09,{day} 오전 · 훈련 소감
+tx_V0SAHDNET7,오전 만남을 건너뛸까요?
+tx_H3RGAX8ZG6,아직 선수를 만나 훈련 소감을 들을 수 있습니다. 이대로 오후로 넘어갈까요?
 tx_EVS2K4Z4YF,설정
 tx_4S0H7A92KR,설정
 tx_EB8R7HBW32,언어

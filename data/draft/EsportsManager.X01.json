@@ -1,0 +1,213 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "cdf888ca-1f68-5100-84cd-9c3221776f9d": {
+      "id": "cdf888ca-1f68-5100-84cd-9c3221776f9d",
+      "name": "X01",
+      "start": "a7cca63e-6eb0-5053-b856-bc47a7b9fe98",
+      "end": "dc6ffe49-0969-5ca9-969a-8c885d8d76b4",
+      "nodes": {
+        "a7cca63e-6eb0-5053-b856-bc47a7b9fe98": {
+          "localId": 1,
+          "type": "Start",
+          "next": "5d874410-fc45-55ae-83ec-6848de5963b9"
+        },
+        "dc6ffe49-0969-5ca9-969a-8c885d8d76b4": {
+          "localId": 2,
+          "type": "End"
+        },
+        "5d874410-fc45-55ae-83ec-6848de5963b9": {
+          "localId": 3,
+          "memoIds": [
+            "6e664ff5-5611-5188-8502-64c66dc5d3a3"
+          ],
+          "type": "Dialog",
+          "speaker": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "부상"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Injury"
+                }
+              ]
+            }
+          },
+          "next": "381c17a8-fb59-5249-897c-475fbb02f1ed"
+        },
+        "381c17a8-fb59-5249-897c-475fbb02f1ed": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "훈련 중 {name} 선수가 손목을 붙잡았다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "During practice, {name} grabbed their wrist."
+                }
+              ]
+            }
+          },
+          "next": "003be174-6f98-51db-8086-0a471ae0f4e3"
+        },
+        "003be174-6f98-51db-8086-0a471ae0f4e3": {
+          "localId": 5,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "괜찮아요… 조금 시큰한 정도예요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "I'm fine… it's just a little sore."
+                }
+              ]
+            }
+          },
+          "next": "304575c4-1a64-569f-9fc6-0cd6d07c32dd"
+        },
+        "6e664ff5-5611-5188-8502-64c66dc5d3a3": {
+          "localId": 6,
+          "attrs": {
+            "kind": "incident",
+            "manager_type": -1,
+            "stage": 0,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "사건 이벤트 설정",
+          "attachedTo": "5d874410-fc45-55ae-83ec-6848de5963b9"
+        },
+        "304575c4-1a64-569f-9fc6-0cd6d07c32dd": {
+          "localId": 7,
+          "type": "Select",
+          "options": [
+            {
+              "id": "9968e459-8593-5b88-9118-1e1e72b3f107",
+              "text": "바로 병원 가자. 훈련은 쉬어.",
+              "next": "5217f591-d161-55cf-9aa4-32e981169c69",
+              "attrs": {
+                "effects": "trust:+3;pmod:all:-2:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "We're going to the hospital now. Skip practice."
+                }
+              }
+            },
+            {
+              "id": "29ae6ec7-11fe-566a-8c85-7802029e49bf",
+              "text": "테이핑하고 오늘만 버티자.",
+              "next": "f5089858-5491-514c-baa9-91dd7aa44a9e",
+              "attrs": {
+                "effects": "ok>pmod:all:-1:1;ng>pmod:all:-4:2;ng>trust:-3"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Tape it up and get through today."
+                }
+              }
+            }
+          ]
+        },
+        "5217f591-d161-55cf-9aa4-32e981169c69": {
+          "localId": 8,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네… 빨리 나을게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Okay… I'll heal up fast."
+                }
+              ]
+            }
+          },
+          "next": "dc6ffe49-0969-5ca9-969a-8c885d8d76b4"
+        },
+        "f5089858-5491-514c-baa9-91dd7aa44a9e": {
+          "localId": 9,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "생각보다 괜찮네요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Huh, it's better than I thought."
+                }
+              ]
+            }
+          },
+          "next": "a3252cb7-15ad-5de7-ad3d-62c51e9e5166"
+        },
+        "a3252cb7-15ad-5de7-ad3d-62c51e9e5166": {
+          "localId": 10,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "악… 더 아파졌어요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Ow… it hurts even more now."
+                }
+              ]
+            }
+          },
+          "next": "dc6ffe49-0969-5ca9-969a-8c885d8d76b4"
+        }
+      }
+    }
+  }
+}

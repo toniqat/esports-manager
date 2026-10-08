@@ -1,0 +1,177 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "32ac3ae0-db27-5b39-9fd7-cf8c5b53de82": {
+      "id": "32ac3ae0-db27-5b39-9fd7-cf8c5b53de82",
+      "name": "I09",
+      "start": "e9bbbe32-da3d-56ce-8459-f879cf1ef0e6",
+      "end": "5fcf6000-6110-59c7-ac3c-c2478b6759f9",
+      "nodes": {
+        "e9bbbe32-da3d-56ce-8459-f879cf1ef0e6": {
+          "localId": 1,
+          "type": "Start",
+          "next": "b99f9950-0065-51a8-827f-869236771f3b"
+        },
+        "5fcf6000-6110-59c7-ac3c-c2478b6759f9": {
+          "localId": 2,
+          "type": "End"
+        },
+        "b99f9950-0065-51a8-827f-869236771f3b": {
+          "localId": 3,
+          "memoIds": [
+            "3aca8b8c-abe9-5912-907a-873ce19121df"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "감독님 현역 때 얘기 해 주세요!"
+            },
+            {
+              "kind": "text",
+              "text": "그때도 이렇게 연습했어요?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Tell me about your pro days, Coach!"
+                },
+                {
+                  "kind": "text",
+                  "text": "Did you practice this hard back then?"
+                }
+              ]
+            }
+          },
+          "next": "5b5600db-871c-5214-889e-f7d8996329bf"
+        },
+        "3aca8b8c-abe9-5912-907a-873ce19121df": {
+          "localId": 4,
+          "attrs": {
+            "kind": "interview",
+            "manager_type": 1,
+            "stage": 0,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "면담 이벤트 설정",
+          "attachedTo": "b99f9950-0065-51a8-827f-869236771f3b"
+        },
+        "5b5600db-871c-5214-889e-f7d8996329bf": {
+          "localId": 5,
+          "type": "Select",
+          "options": [
+            {
+              "id": "009fe875-e4e6-57d5-9596-fd4bf9a3fc6c",
+              "text": "더 했지. 하루 열네 시간.",
+              "next": "6fa70033-f72c-5b60-8382-184738a0c948",
+              "attrs": {
+                "effects": "ok>trust:+5;ng>trust:+1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Harder. Fourteen hours a day."
+                }
+              }
+            },
+            {
+              "id": "4841c90a-90c7-5ec1-99d5-c93af83e4920",
+              "text": "그땐 몰랐어. 너희는 나보다 낫다.",
+              "next": "326a3232-d7bb-5a0f-aec4-c1d818057e3e",
+              "attrs": {
+                "effects": "trust:+5"
+              },
+              "i18n": {
+                "En": {
+                  "text": "I didn't know any better back then. You're all better than I was."
+                }
+              }
+            }
+          ]
+        },
+        "6fa70033-f72c-5b60-8382-184738a0c948": {
+          "localId": 6,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "와… 저도 질 수 없죠!"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Whoa… then I can't lose either!"
+                }
+              ]
+            }
+          },
+          "next": "1b56da13-52ca-50fd-8765-fe6e74532cab"
+        },
+        "1b56da13-52ca-50fd-8765-fe6e74532cab": {
+          "localId": 7,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "그건 좀 무리 아닌가요…"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Isn't that a bit much…?"
+                }
+              ]
+            }
+          },
+          "next": "5fcf6000-6110-59c7-ac3c-c2478b6759f9"
+        },
+        "326a3232-d7bb-5a0f-aec4-c1d818057e3e": {
+          "localId": 8,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "감독님이 그렇게 말해 주니까 힘나요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Hearing you say that really fires me up."
+                }
+              ]
+            }
+          },
+          "next": "5fcf6000-6110-59c7-ac3c-c2478b6759f9"
+        }
+      }
+    }
+  }
+}

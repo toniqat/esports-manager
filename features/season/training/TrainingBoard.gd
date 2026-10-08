@@ -548,6 +548,7 @@ func apply_day_training(day: int) -> Array:
 	var pilots: Array = player_pilots_by_seat()
 	var carry: Dictionary = exp_carry()
 	var colors: Dictionary = day_colors(day)
+	var groups: Dictionary = day_groups(day)
 	var rows: Array = []
 	for seat in COLS:
 		var p: PlayerData = pilots[seat]
@@ -587,6 +588,10 @@ func apply_day_training(day: int) -> Array:
 			# Colour symbol of the cell; an empty cell is the basic course's colour.
 			# The week screen's base map stands the pilot on that colour's spot.
 			"color": String(colors.get(seat, filler_color())),
+			# Placed tile the cell belongs to (-1 = basic course) and its facility: pilots in
+			# the same group trained together (joint training, mental `talk_pair`).
+			"group": int((groups.get(seat, {}) as Dictionary).get("group", -1)),
+			"facility": String((groups.get(seat, {}) as Dictionary).get("facility", "")),
 		})
 	return rows
 
@@ -613,6 +618,31 @@ func day_colors(day: int) -> Dictionary:
 			var c: Vector2i = t.cells[i]
 			if oy + c.y == day and i < t.cell_colors.size():
 				out[ox + c.x] = String(t.cell_colors[i])
+	return out
+
+
+## Placed tile of each seat on row `day`: `{seat: {group, facility}}` — `group` = the
+## board entry index (seats sharing it train **together** that day: joint training),
+## `facility` = the tile's `facility` column, else the colour symbol of the tile's first
+## cell on that row (so a joint group shares one spot). Seats on the basic course are missing.
+func day_groups(day: int) -> Dictionary:
+	var out: Dictionary = {}
+	var entries: Array = board()
+	for i in entries.size():
+		var e: Dictionary = entries[i]
+		var t: TrainingTile = tile(String(e.get("tile", "")))
+		if t == null:
+			continue
+		var ox: int = int(e.get("x", 0))
+		var oy: int = int(e.get("y", 0))
+		var lead: String = t.facility
+		for k in t.cells.size():
+			var c: Vector2i = t.cells[k]
+			if oy + c.y != day:
+				continue
+			if lead == "" and k < t.cell_colors.size():
+				lead = String(t.cell_colors[k])
+			out[ox + c.x] = {"group": i, "facility": lead}
 	return out
 
 

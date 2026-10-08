@@ -2,6 +2,9 @@
 
 Contract: `docs/outgame_dev_plan.md` §11. State `season_state.trust` / `stress` / `outings` / `mental` / `pilot_mods`.
 Tuning lives in `data/csv/const.csv` (`TRUST_*`, `STRESS_*`, `MENTAL_*`, `TRUE_ENDING_*`) — no values here.
+**Event data is authored in Draft** (`narrative/`, convention in `narrative/README.md`) and imported by
+`addons/draft_import/` into `mental_events.csv` / `mental_texts.csv` / `data/l10n/src/mental.csv` (`mental.<event>.<id>`
+rows) — do not hand-edit those any more, the next import overwrites them.
 Event texts are l10n keys (`mental_texts.csv` → domain `mental`, D6). Display text is l10n keys (`mental` domain): code
 keys use **4-segment** aliases `mental.ui.*` — a 3-segment `mental.x.y` matches the data rule `mental.{event_id}.{id}`
 and gets no `L` constant. Mod clauses write `source = "mental:<event id>"` (`MOD_SOURCE_PREFIX`, an id — D7);
@@ -14,7 +17,7 @@ and gets no `L` constant. Mod clauses write `source = "mental:<event id>"` (`MOD
 | `StressSystem.gd` | `class_name StressSystem` (static). Stress (Darkest Dungeon style): run init, clamp, shaken (위축) ratio, mood multipliers, roster-copy `apply_to` (MatchFlow), `snapshot` → `match_ctx.stress`, `record_match` ← `pending_match.stress`, training-day roll, interview / outing relief, display helpers (`mood_label`, `line`). The in-match part is `features/battle_sim/stress/`. |
 | `VnDialogueView.gd` | `class_name VnDialogueView extends Control`: **visual-novel dialogue** for interviews, outings and incidents (full-body art, bottom speech bubble, dimmed centred choices, result panel). Drop-in for `MessengerView` on the week screen's evening dialog. See **VN dialogue (VnDialogueView)** below. |
 | `UI_View_VnDialogue.tscn` | Its scene (layout owner): header, `%Stage` art box, `%Bubble`, `%Dim`, `%Overlay` with `%ChoiceList` · `%ResultPanel` · `%Hint`. Create with `VnDialogueView.create()`. |
-| `UI_Comp_VnChoiceButton.tscn` | Item (no script): one answer button (`VnDialogueChoiceButton`, 880 wide, at least 112 tall, autowrap, centred). Code sets text + `pressed`. |
+| `UI_Comp_VnChoiceButton.tscn` | Item (no script): one answer — `%Button` (`VnDialogueChoiceButton`, 880 wide, at least 112 tall, autowrap) + `%Preview` line under it (check chance + effect directions). Code sets both texts + `pressed`. |
 | `AfternoonAway.gd` | `class_name AfternoonAway` (static). Afternoon away states of a training day: stress self outing, else a chance of dorm rest, rolled once and recorded in `mental.days["<day>"].afternoon`; `started` · `begin` · `away_of` · `relief_of` · `can_request` · `any_request`. See "Afternoon away states". |
 | `PilotMods.gd` | `class_name PilotMods` (static, base). Temporary per-pilot stat mods `[{pilot_id, stat, delta, weeks_left, source}]`; `weeks_left = -1` lasts until the next own match. `apply_to` is only ever called on a **roster copy** (MatchFlow). |
 
@@ -24,8 +27,17 @@ Interview / outing / incident dialogues use `VnDialogueView`; the press conferen
 ## Rules
 - **Trust** `{"<pid>": int}` for my 5 pilots, clamped `[TRUST_MIN, TRUST_MAX]`, starts at `TRUST_START`.
   It affects **only** outing unlock (`TRUST_OUTING_MIN`) and the true ending — no match stat effect.
-- **Evening** (Mon–Fri, one action per day): interview / outing / pass. Leaving the day without
-  choosing records a pass. Manager-only — staff never interview or go out.
+- **A training day** (Mon–Fri) has three halves after the morning training (`features/season/week/README.md`):
+  **morning talk** (one pilot, no outing) → **afternoon** (interview / outing) → **evening** (forced incident).
+- **Morning talk** (훈련 소감, one per morning, record `days["<day>"].talk`): opened by `begin_morning` when the
+  training result FX ends; `begin_talk(state, day, pid)` / `finish_talk(state, day, choice)` / `pass_talk` (Next
+  without a talk). A pilot who trained in the **same placed tile** that day (week log row `group`, joint training)
+  comes along (`talk_partner`, one mate drawn when several): a `talk_pair` row is drawn first (cond on the picked
+  pilot), else a `talk` row. In a pair talk every single-pilot clause (`trust` · `stress` · `pmod`,
+  `MentalEvents.SINGLE_CLAUSES`) hits **both** pilots, and both get `STRESS_TALK_RELIEF`. Checks use the manager's
+  own mental. `can_talk`: the morning is open, the afternoon has not started, no talk yet.
+- **Afternoon** (Mon–Fri, one action per day; the record keeps its old name `evening`): interview / outing / pass.
+  Leaving the afternoon without choosing records a pass. Manager-only — staff never interview or go out.
   - **No weekly count limits** (removed 2026-10): an interview is always possible; the only cap is
     one action per afternoon.
   - Outing: only with a pilot at trust ≥ `TRUST_OUTING_MIN`.
@@ -34,7 +46,9 @@ Interview / outing / incident dialogues use `VnDialogueView`; the press conferen
     (`training_exp_mult(state, pid, day)`; `TrainingBoard` (M3) multiplies it; a Friday outing
     hits next Monday — `end_week` carries it over).
   - Interview / outing checks are judged with the manager's own mental.
-- **Incidents** roll once per Mon–Fri when the week screen first shows that day:
+- **Incidents** roll once per Mon–Fri when that day's **evening** starts (`begin_dusk`, marker
+  `days["<day>"].dusk = true`; the week screen calls it on the afternoon's Next and skips the evening when nothing
+  happens):
   chance `MENTAL_INCIDENT_CHANCE × FinanceSystem.incident_mult(state) × TraitSystem.run_pct_mult(state, "incident_pct")`,
   target = a random pilot of mine.
   A pending incident opens its dialog by itself and must be answered; checks use
@@ -58,7 +72,7 @@ Interview / outing / incident dialogues use `VnDialogueView`; the press conferen
 - **Rises**: each training day (every pilot trains; an empty cell is the basic course), `STRESS_TRAIN_MIN..MAX` (seeded per run · week · day ·
   pilot, `TrainingBoard.apply_day_training` row key `stress`; the training result itself is unchanged), and each
   death in a match, `STRESS_DEATH_MIN..MAX` (BattleSim, written back at match end).
-- **Falls**: a finished interview / outing relieves `STRESS_INTERVIEW_RELIEF` / `STRESS_OUTING_RELIEF` (note
+- **Falls**: a finished interview / outing / morning talk relieves `STRESS_INTERVIEW_RELIEF` / `STRESS_OUTING_RELIEF` / `STRESS_TALK_RELIEF` (pair talk: both pilots; `StressSystem.relief_amount`) (note
   `{type: stress}` in the outcome), plus any `stress:` / `stress_all:` clause of the chosen answer. No natural decay.
 - **Shaken (위축)**: stress ≥ `STRESS_THRESHOLD` outside a match. The 6 pilot stats drop by one
   `STRESS_SHAKEN_STAT_PER_STEP` per full `STRESS_SHAKEN_STEP` over the threshold (the maximum stress is the
@@ -102,13 +116,17 @@ after the morning settlement), some of my pilots are away and cannot be asked fo
   # (old saves may still carry "interviews_used" / "outings_used": ignored, no longer written)
   "days": {"<day 0..4>": {
       "evening":  {action: "interview"|"outing"|"pass", pilot_id, event, choice (-1 = open), outcome{}},
-      "incident": {} (rolled, none) | {event, pilot_id, choice (-1 = pending), outcome{}}
+      "incident": {} (rolled, none) | {event, pilot_id, choice (-1 = pending), outcome{}},
+      "talk":     {} (morning open, nothing chosen) | {action: "talk"|"pass", pilot_id, partner_id (-1 = alone),
+                  event, choice (-1 = open), outcome{}},
+      "dusk":     true once the evening started (the incident is rolled then),
+      "afternoon": {...}  (AfternoonAway, below)
   }},
   "fatigue": {"<pid>": day},        # training day whose EXP is cut (≥5 = next week, shifted by end_week)
   "press": {week, event, pilot_id, choice, outcome{}},
 }
 ```
-`outcome` = `{checked, ok, chance, pilot_id, say: [text_key], notes: [note dict]}` — **no display text is saved**
+`outcome` = `{checked, ok, chance, pilot_id, partner_id, say: [text_key], notes: [note dict]}` — **no display text is saved**
 (D7): note dicts are `{type: trust|trust_all|stress|stress_all|pmod|pmod_all|smod|outing, pid?, stat?, delta?, weeks?, count?}`.
 `MentalEvents.outcome_view(state, outcome)` → `{checked, ok, chance, say: [String], notes: [String]}` for
 `MessengerView.show_result`; `MentalEvents.note_texts(state, notes)` for the week-screen summary chips.
@@ -121,17 +139,19 @@ A note whose stat is `all` reads `training.stat.all` ("모든 파일럿 능력�
 `text_key` = l10n key (domain `mental`, alias `mental.<event>.<id>`; edit the Korean in
 `data/l10n/src/mental.csv`, not here). Ids: `<event>_L<seq>` · `<event>_C<choice>` · `<event>_C<choice>_S<seq>`.
 
-- `kind` — `interview` / `outing` / `incident` / `press`.
+- `kind` — `interview` / `outing` / `incident` / `press` / `talk` (morning talk) / `talk_pair` (morning talk with
+  the joint-training partner).
 - `manager_type` — -1 any, 0 운영형 (m), 1 실전형 (f). Rows for the other type never appear;
   rows for the run's type weigh × `MENTAL_TYPE_WEIGHT_MULT`. Outings pick **strictly** by stage:
   a typed row for the stage beats the generic one.
 - `stage` — outing number 1..N (`outings + 1`; past the last written stage the highest repeats), else 0.
 - `weight` — draw weight (int ≥ 0).
 - text slot `line` (by `seq`) — the text's first char is its marker: plain = the other side (left
-  bubble with portrait), `>text` = manager (right bubble), `*text` = centred narration, `@text` = tag
+  bubble with portrait), `>text` = manager (right bubble), `*text` = centred narration, `&text` = the
+  `talk_pair` partner, `@text` = tag
   (press outlet / incident name, used in headers, not drawn as a bubble — `MentalSystem.session_view`
-  reads it after translation, so **translations keep the marker**). `{name}` → target pilot name in
-  every slot (`Loc.t(key, {"name": …})`, josa tags like `{name}{eun}` resolve after it).
+  reads it after translation, so **translations keep the marker**). `{name}` → target pilot name,
+  `{name2}` → the `talk_pair` partner, in every slot (`Loc.t(key, {"name": …})`, josa tags like `{name}{eun}` resolve after it).
 - text slot `choice` — manager answer `choice` (0-based; 2–3 per event).
 - text slot `say` — reply line (left bubble) after answer `choice`, in `seq` order; `branch` `ok` / `ng` =
   only on a passed / failed check (like the clause gates), empty = always. A gated reply makes the
@@ -163,15 +183,31 @@ A note whose stat is `all` reads `training.stat.all` ("모든 파일럿 능력�
 | `week>=N` / `week<N` | `phase_week` |
 | `last=win` / `last=loss` | last own match result (`run_stats.matches`) |
 | `mention=mvp` / `mention=worst` | press only — picks the target (last match MVP if mine / my lowest MVP metric); row skipped when none |
+| `train=X` / `train=X,Y` | the target's training cell colour today (week log row `color`; basic course = `W`) is one of them (`MentalEvents.today_row`, day = `season_state.week_day`) |
+| `ups>=N` / `ups<N` | stat points the target gained in today's training |
+| `stress>=N` / `stress<N` | the target's current stress |
 
 - **Trait `trust_gain`** (M8): `add_trust` adjusts only a rise — `max(0, delta + Σp1)` — so a
   rise never becomes a loss; drops pass through untouched.
 
+## Choice preview (확률 + 방향)
+Every answer of an interview / outing / incident / morning talk shows a preview line under its button
+(`session_view(...).previews[i]`): the mental check chance when the answer rolls one (judge = `judge_for(kind)`:
+staff cover for incidents, else the manager's mental) and the **direction** of each effect, never the number:
+`성공 58% · 신뢰↑` or, when pass and fail differ, `성공 58% · 성공: 신뢰↑ / 실패: 신뢰↓`.
+`MentalEvents.choice_preview(state, row, idx, judge)` sums the clause deltas per label for the passed and the failed
+world (`preview_label`: 신뢰 · 팀 신뢰 · 스트레스 · 팀 스트레스 · stat name · 팀 <stat> · 감독 <stat>), `preview_text`
+formats them (keys `mental.ui.preview.*`). The activity's own stress relief is the same for every answer and is left
+out. The press conference (`MessengerView`) shows no preview yet.
+
 ## API (static, `state` = `season_state`)
 `init_run` · `end_week` · `training_exp_mult(state, pid, day)` · `trust` · `outings` · `add_trust` ·
 `true_ending_pilots` · `my_pilot_ids` · `outing_unlocked` / `can_outing` · `evening` / `evening_done` / `begin_evening(state, day, action, pid)` /
-`finish_evening(state, day, choice)` · `ensure_incident` / `incident_pending` / `incident_session` /
-`resolve_incident` · `press_session` / `resolve_press` · `session_view(state, session)` → `{kind, event, pilot_id, tag, lines, choices}` (translated text).
+`finish_evening(state, day, choice)` · `begin_morning` / `morning_started` / `talk` / `talk_done` / `can_talk` /
+`talk_partner` / `begin_talk(state, day, pid)` / `finish_talk(state, day, choice)` / `pass_talk` · `begin_dusk` /
+`dusk_started` · `ensure_incident` / `incident_pending` / `incident_session` /
+`resolve_incident` · `press_session` / `resolve_press` · `judge_for(state, kind)` ·
+`session_view(state, session)` → `{kind, event, pilot_id, partner_id, tag, lines, choices, previews}` (translated text).
 
 ## VN dialogue (VnDialogueView)
 
@@ -197,7 +233,7 @@ hint "Tap the screen to continue".)
 | Member | Meaning |
 |---|---|
 | `static create() -> VnDialogueView` | Instantiates `UI_View_VnDialogue.tscn` (never `.new()`) |
-| `open(sub: String, title: String, pilot_id: int, lines: Array, choices: Array, speaker: String = "") -> void` | Fresh dialogue. `pilot_id` picks the art (`-1` or no art → placeholder slab with the name). `speaker` = the pilot's name plate, `""` → `title` |
+| `open(sub: String, title: String, pilot_id: int, lines: Array, choices: Array, speaker: String = "", previews: Array = [], partner_id: int = -1, partner_name: String = "") -> void` | Fresh dialogue. `pilot_id` picks the art (`-1` or no art → placeholder slab with the name). `speaker` = the pilot's name plate, `""` → `title`. `previews[i]` = the line under answer i. `partner_*` = the joint-training partner who speaks the `&` lines |
 | `signal choice_picked(idx: int)` | An answer was tapped. The owner applies it and calls `show_result` (same frame or later; the view waits) |
 | `show_result(outcome_view: Dictionary) -> void` | `MentalEvents.outcome_view(state, outcome)` → `{checked, ok, say, notes}` (display text) |
 | `signal closed` | The final tap on the result; the owner frees the view |
@@ -211,7 +247,11 @@ then the `say` replies (one per tap) → `%ResultPanel` over the dim: mental che
 note (trust, stat mods, outing …) → tap → `closed`. No notes and no check → no panel, the next
 tap closes. No choices → the tap after the last line closes.
 
-**Line markers** (same grammar as above): plain = pilot (name plate = pilot name, amber
+**Choices**: `UI_Comp_VnChoiceButton.tscn` is a VBox — `%Button` (the answer) and `%Preview` under it
+(`OnFillLabel`, hidden when empty).
+
+**Line markers** (same grammar as above): `&text` = the partner (the art switches to the partner's, partner name
+plate; the next plain line switches back); plain = pilot (name plate = pilot name, amber
 `VnDialogueNamePlate`), `>text` = manager (name plate `term.person.manager`, dark
 `VnDialogueNamePlateMine`, the art dims to `ART_LISTEN_MODULATE`), `*text` = narration (no plate,
 `SubLabel` text), `@text` = tag (header only, skipped). Empty lines are skipped.
@@ -239,7 +279,8 @@ the safe top). Code extends `%Background` and `%Dim` into the notch band and lif
 
 ### Wiring (coordinator: `features/season/week/WeekProgressView.gd`)
 
-`_overlay: VnDialogueView` serves both the afternoon dialog and the incident. `_open_overlay(kind, sub, title,
+`_overlay: VnDialogueView` serves the morning talk, the afternoon dialog and the incident (`_overlay_kind`
+`talk` / `evening` / `incident`). `_open_overlay(kind, sub, title,
 pid, view, speaker = "")`: evening → title = pilot name; incident → title = the event's `@tag`, `speaker` = pilot
 name (sub `season.week.sub_incident`). `_on_overlay_choice` resolves by `_overlay_kind`
 (`resolve_incident` / `finish_evening`) and calls `show_result(MentalEvents.outcome_view(state, out))`.

@@ -128,9 +128,20 @@ static func on_training_day(state: Dictionary, pilot_id: int, day: int) -> int:
 ## Base relief of a finished interview / outing (`MentalSystem.finish_evening`).
 ## Returns the delta applied (≤ 0).
 static func relieve(state: Dictionary, pilot_id: int, action: String) -> int:
-	var key: String = "STRESS_OUTING_RELIEF" if action == MentalSystem.ACTION_OUTING \
-			else "STRESS_INTERVIEW_RELIEF"
-	return add(state, pilot_id, -ConstTable.int_of(key))
+	return add(state, pilot_id, -relief_amount(action))
+
+
+## Base stress relief of a finished action or event kind (≥ 0): outing / interview / morning
+## talk (`STRESS_*_RELIEF`); incidents and press conferences relieve nothing.
+static func relief_amount(action: String) -> int:
+	match action:
+		MentalSystem.ACTION_OUTING, MentalEvents.KIND_OUTING:
+			return ConstTable.int_of("STRESS_OUTING_RELIEF")
+		MentalSystem.ACTION_INTERVIEW, MentalEvents.KIND_INTERVIEW:
+			return ConstTable.int_of("STRESS_INTERVIEW_RELIEF")
+		MentalSystem.ACTION_TALK, MentalEvents.KIND_TALK_PAIR:
+			return ConstTable.int_of("STRESS_TALK_RELIEF")
+	return 0
 
 
 # ── Display ──────────────────────────────────────────────────────────────────

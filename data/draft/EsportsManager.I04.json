@@ -1,0 +1,150 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "84f9944c-a3f8-5a55-b2ec-d55b23b6fb5d": {
+      "id": "84f9944c-a3f8-5a55-b2ec-d55b23b6fb5d",
+      "name": "I04",
+      "start": "b55fe24d-ad66-527a-8291-2e0088cadfa4",
+      "end": "9ce603c5-fbaa-59f7-8d59-cafb3d12b412",
+      "nodes": {
+        "b55fe24d-ad66-527a-8291-2e0088cadfa4": {
+          "localId": 1,
+          "type": "Start",
+          "next": "7982a467-a580-595d-947e-e8a2b54c2693"
+        },
+        "9ce603c5-fbaa-59f7-8d59-cafb3d12b412": {
+          "localId": 2,
+          "type": "End"
+        },
+        "7982a467-a580-595d-947e-e8a2b54c2693": {
+          "localId": 3,
+          "memoIds": [
+            "1c7286aa-56a5-5416-b1f7-ab9ad36d2c58"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "감독님한테만 하는 말인데요."
+            },
+            {
+              "kind": "text",
+              "text": "저 이번 시즌에 꼭 우승하고 싶어요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "This stays between us, okay?"
+                },
+                {
+                  "kind": "text",
+                  "text": "I really want to win it all this season."
+                }
+              ]
+            }
+          },
+          "next": "ed04c082-a847-5af8-bfca-ac691242805b"
+        },
+        "1c7286aa-56a5-5416-b1f7-ab9ad36d2c58": {
+          "localId": 4,
+          "attrs": {
+            "kind": "interview",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "trust>=40",
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "면담 이벤트 설정",
+          "attachedTo": "7982a467-a580-595d-947e-e8a2b54c2693"
+        },
+        "ed04c082-a847-5af8-bfca-ac691242805b": {
+          "localId": 5,
+          "type": "Select",
+          "options": [
+            {
+              "id": "e3813bdd-bf5a-5da3-95dc-f52e846bd3c7",
+              "text": "같이 하자. 나도 같은 마음이야.",
+              "next": "b6aa7d90-db64-5423-8226-62adba8bd34d",
+              "attrs": {
+                "effects": "trust:+5;pmod:all:+1:-1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Let's do it together. I feel the same way."
+                }
+              }
+            },
+            {
+              "id": "405204fb-9b44-5151-b71f-b57ef0c9e42e",
+              "text": "욕심은 좋지만 하나씩 가자.",
+              "next": "f0a007ab-e213-5e3a-85dd-760875b2bee0",
+              "attrs": {
+                "effects": "trust:+3"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Ambition's good, but one step at a time."
+                }
+              }
+            }
+          ]
+        },
+        "b6aa7d90-db64-5423-8226-62adba8bd34d": {
+          "localId": 6,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "좋아요. 다음 경기 보여 드릴게요!"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Great. I'll show you next match!"
+                }
+              ]
+            }
+          },
+          "next": "9ce603c5-fbaa-59f7-8d59-cafb3d12b412"
+        },
+        "f0a007ab-e213-5e3a-85dd-760875b2bee0": {
+          "localId": 7,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "하나씩… 네 그럴게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "One step at a time… got it."
+                }
+              ]
+            }
+          },
+          "next": "9ce603c5-fbaa-59f7-8d59-cafb3d12b412"
+        }
+      }
+    }
+  }
+}

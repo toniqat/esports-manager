@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 12,
+  "id": "bb7c7573-e105-59a2-a405-2a98c8e4fc21",
+  "name": "EsportsManager",
+  "description": "EsportsManager 멘탈 이벤트 (면담 · 외출 · 사건 · 기자회견 · 오전 만남). 규약: README.md",
+  "createdAt": "2026-10-08T00:00:00.000Z",
+  "updatedAt": "2026-10-08T00:00:00.000Z",
+  "folders": {
+    "62f147df-5140-56b2-86d0-23bce19a7bf5": {
+      "id": "62f147df-5140-56b2-86d0-23bce19a7bf5",
+      "name": "면담",
+      "parentId": null
+    },
+    "54b93644-5a81-5faa-b7b8-0e101235b24a": {
+      "id": "54b93644-5a81-5faa-b7b8-0e101235b24a",
+      "name": "외출",
+      "parentId": null
+    },
+    "106b7d59-e201-5b20-a9bb-5b7d3e4240c2": {
+      "id": "106b7d59-e201-5b20-a9bb-5b7d3e4240c2",
+      "name": "사건",
+      "parentId": null
+    },
+    "ec57a5a5-b671-5d6b-8bed-630ed5f29af7": {
+      "id": "ec57a5a5-b671-5d6b-8bed-630ed5f29af7",
+      "name": "기자회견",
+      "parentId": null
+    },
+    "c90d4e07-90a2-5500-b1ec-a1bac9edaf2a": {
+      "id": "c90d4e07-90a2-5500-b1ec-a1bac9edaf2a",
+      "name": "오전 만남",
+      "parentId": null
+    },
+    "a72769bf-05db-521e-a181-18bf95eaf65f": {
+      "id": "a72769bf-05db-521e-a181-18bf95eaf65f",
+      "name": "합동 훈련",
+      "parentId": null
+    }
+  },
+  "scripts": {},
+  "wikiCategories": {
+    "dd665e10-0059-53d3-a1c2-b806960e315d": {
+      "id": "dd665e10-0059-53d3-a1c2-b806960e315d",
+      "name": "인물",
+      "icon": "User",
+      "attributes": []
+    }
+  },
+  "wikiEntries": {
+    "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a": {
+      "id": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "name": "선수",
+      "categoryId": "dd665e10-0059-53d3-a1c2-b806960e315d",
+      "parentId": null,
+      "isCategory": false,
+      "attributes": [],
+      "values": {},
+      "notes": "대상 선수 ({name}). 면담 · 외출 · 사건 · 만남의 상대"
+    },
+    "6b1de2e5-536b-5673-b2c0-0f81cf838865": {
+      "id": "6b1de2e5-536b-5673-b2c0-0f81cf838865",
+      "name": "파트너",
+      "categoryId": "dd665e10-0059-53d3-a1c2-b806960e315d",
+      "parentId": null,
+      "isCategory": false,
+      "attributes": [],
+      "values": {},
+      "notes": "합동 훈련 상대 ({name2}). talk_pair 만"
+    },
+    "23f70dcf-de2b-50ea-a210-97bcdd22d3a0": {
+      "id": "23f70dcf-de2b-50ea-a210-97bcdd22d3a0",
+      "name": "감독",
+      "categoryId": "dd665e10-0059-53d3-a1c2-b806960e315d",
+      "parentId": null,
+      "isCategory": false,
+      "attributes": [],
+      "values": {},
+      "notes": "플레이어 (감독)"
+    },
+    "84ab847b-1bad-5351-8718-5cf62bff28a4": {
+      "id": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+      "name": "기자",
+      "categoryId": "dd665e10-0059-53d3-a1c2-b806960e315d",
+      "parentId": null,
+      "isCategory": false,
+      "attributes": [],
+      "values": {},
+      "notes": "기자회견의 질문자"
+    },
+    "44bb4f52-930b-5cd4-be80-ddcdf2abc781": {
+      "id": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+      "name": "태그",
+      "categoryId": "dd665e10-0059-53d3-a1c2-b806960e315d",
+      "parentId": null,
+      "isCategory": false,
+      "attributes": [],
+      "values": {},
+      "notes": "머리글 태그 (매체 이름 · 사건 이름). 말풍선으로 나오지 않는다"
+    }
+  },
+  "entryFlowId": "ff3f8e93-b486-53b8-8f8e-26b29b5a3c0d",
+  "localization": {
+    "languages": [
+      {
+        "id": "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4",
+        "name": "English",
+        "iso": "En",
+        "sourceLangId": null
+      }
+    ],
+    "source": {
+      "name": "Korean",
+      "iso": "Ko"
+    }
+  },
+  "exportPresets": [
+    {
+      "id": "998b1edf-fdde-57de-81cc-633a45e478cc",
+      "name": "EsportsManager 런타임",
+      "kind": "runtime",
+      "container": "json",
+      "engine": "godot",
+      "scope": [],
+      "godot": {
+        "projectDir": "D:\\Projects\\Godot Project\\esports-manager",
+        "dataDir": "data/draft"
+      },
+      "autoSync": true
+    }
+  ]
+}

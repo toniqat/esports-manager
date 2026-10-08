@@ -1,0 +1,120 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "2065b9c3-5a6f-5bf0-a862-f97889fb09f0": {
+      "id": "2065b9c3-5a6f-5bf0-a862-f97889fb09f0",
+      "name": "P08",
+      "start": "6c94e4f6-99d3-5dd9-af40-ce4f5deb9712",
+      "end": "59413438-5868-5360-9a19-6791c8eca939",
+      "nodes": {
+        "6c94e4f6-99d3-5dd9-af40-ce4f5deb9712": {
+          "localId": 1,
+          "type": "Start",
+          "next": "7fe9ea49-c6f0-58dd-85d2-eeac6cba5882"
+        },
+        "59413438-5868-5360-9a19-6791c8eca939": {
+          "localId": 2,
+          "type": "End"
+        },
+        "7fe9ea49-c6f0-58dd-85d2-eeac6cba5882": {
+          "localId": 3,
+          "memoIds": [
+            "e3028026-1c96-5d3e-bc6b-d07651ce070c"
+          ],
+          "type": "Dialog",
+          "speaker": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{tx_576HKVWRTP}"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "{tx_576HKVWRTP}"
+                }
+              ]
+            }
+          },
+          "next": "372a3894-b842-5d95-bdde-0cc379c4dbe3"
+        },
+        "372a3894-b842-5d95-bdde-0cc379c4dbe3": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "팬들 사이에서 {name} 선수 비판 여론이 있습니다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "There's been criticism of {name} among the fans."
+                }
+              ]
+            }
+          },
+          "next": "330ae8e4-ddb8-5874-9fd3-648b699ab65b"
+        },
+        "e3028026-1c96-5d3e-bc6b-d07651ce070c": {
+          "localId": 5,
+          "attrs": {
+            "kind": "press",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "mention=worst",
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "기자회견 이벤트 설정",
+          "attachedTo": "7fe9ea49-c6f0-58dd-85d2-eeac6cba5882"
+        },
+        "330ae8e4-ddb8-5874-9fd3-648b699ab65b": {
+          "localId": 6,
+          "type": "Select",
+          "options": [
+            {
+              "id": "76f74b28-ccf2-52f3-9546-5b757200c4a4",
+              "text": "비판은 제가 받겠습니다.",
+              "next": "59413438-5868-5360-9a19-6791c8eca939",
+              "attrs": {
+                "effects": "trust:+4;smod:mental:-1:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "I'll take the criticism."
+                }
+              }
+            },
+            {
+              "id": "3d10ec60-784d-5d86-b9e4-8082e578f797",
+              "text": "선수가 이겨내야 할 몫입니다.",
+              "next": "59413438-5868-5360-9a19-6791c8eca939",
+              "attrs": {
+                "effects": "ok>trust:+1;ng>trust:-2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "That's something the player has to overcome."
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

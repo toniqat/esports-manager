@@ -1,0 +1,274 @@
+{
+  "id": "61c758b8-c3f3-5882-9442-73ea89939c22",
+  "name": "P05",
+  "parentNodeId": null,
+  "folderId": "ec57a5a5-b671-5d6b-8bed-630ed5f29af7",
+  "defaultAttrs": {
+    "speakerWikiTargetId": "dd665e10-0059-53d3-a1c2-b806960e315d"
+  },
+  "sharedAttributes": {
+    "Comment": [
+      {
+        "id": "e7de2a36-44c4-52a3-ac02-c511de32239e",
+        "name": "kind",
+        "type": "enum",
+        "enumValues": [
+          "interview",
+          "outing",
+          "incident",
+          "press",
+          "talk",
+          "talk_pair"
+        ],
+        "default": "",
+        "description": "이벤트 종류"
+      },
+      {
+        "id": "c4d2c14e-0068-5051-8fe9-3617645e42a2",
+        "name": "manager_type",
+        "type": "integer",
+        "default": -1,
+        "description": "-1 공통 · 0 운영형 · 1 실전형"
+      },
+      {
+        "id": "d4868a58-c5d9-5b27-bd30-76ce032811dc",
+        "name": "stage",
+        "type": "integer",
+        "default": 0,
+        "description": "외출 단계 (1..N), 그 밖 0"
+      },
+      {
+        "id": "bb5ec7a4-340b-51db-b5f4-7a1893919e8b",
+        "name": "cond",
+        "type": "text",
+        "default": "",
+        "description": "조건 (; 로 이음) — features/season/mental/README.md"
+      },
+      {
+        "id": "fda04f2b-1fcc-5d28-b480-ae328bf1ce7c",
+        "name": "weight",
+        "type": "integer",
+        "default": 1,
+        "description": "뽑기 가중치"
+      }
+    ],
+    "Select": [
+      {
+        "id": "0da657e7-da84-5f68-8973-b2fd3ec2867f",
+        "name": "effects",
+        "type": "text",
+        "default": "",
+        "description": "선택지 효과 절 (; 로 이음, ok> / ng> 판정 게이트)"
+      }
+    ],
+    "Dialog": [
+      {
+        "id": "f0a5f32f-e445-54f6-b11a-d402b698b115",
+        "name": "branch",
+        "type": "enum",
+        "enumValues": [
+          "ok",
+          "ng"
+        ],
+        "default": "",
+        "description": "답 뒤 대사만: 판정 성공(ok) / 실패(ng) 때만. 비우면 항상"
+      }
+    ]
+  },
+  "labels": [],
+  "nodes": [
+    {
+      "id": "8aa3b3ac-94a7-57d3-8c02-6f30ea945ee9",
+      "type": "Start",
+      "name": "Start",
+      "localId": 1,
+      "x": 40,
+      "y": 40
+    },
+    {
+      "id": "db293ef3-80a6-5be7-a045-a52ed098d301",
+      "type": "End",
+      "name": "End",
+      "localId": 2,
+      "x": 1240,
+      "y": 40
+    },
+    {
+      "id": "1bc36ddc-0fb0-593e-9c24-b9d094b997a3",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 3,
+      "x": 340,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+      "content": "{tx_576HKVWRTP}",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "{tx_576HKVWRTP}",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "d774e1b8-5b6d-54c3-b60b-48879bc88209",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 4,
+      "x": 640,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+      "content": "지난 경기 MVP는 {name} 선수였습니다.\n칭찬 한마디 부탁드립니다.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "{name} was the MVP of the last match.\nAny words of praise?",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "b556ccd2-5f3e-528c-8a5b-c711bdb77069",
+      "type": "Comment",
+      "name": "Comment",
+      "localId": 5,
+      "x": 340,
+      "y": -220,
+      "color": "#64748b",
+      "text": "기자회견 이벤트 설정",
+      "width": 260,
+      "height": 110,
+      "attachments": [
+        {
+          "nodeId": "1bc36ddc-0fb0-593e-9c24-b9d094b997a3"
+        }
+      ],
+      "sharedValues": {
+        "e7de2a36-44c4-52a3-ac02-c511de32239e": "press",
+        "c4d2c14e-0068-5051-8fe9-3617645e42a2": -1,
+        "d4868a58-c5d9-5b27-bd30-76ce032811dc": 0,
+        "bb5ec7a4-340b-51db-b5f4-7a1893919e8b": "mention=mvp",
+        "fda04f2b-1fcc-5d28-b480-ae328bf1ce7c": 1
+      }
+    },
+    {
+      "id": "930eb108-da12-55f1-ab64-2618517efc8c",
+      "type": "Select",
+      "name": "Select",
+      "localId": 6,
+      "x": 940,
+      "y": 40,
+      "color": "#64748b",
+      "options": [
+        {
+          "id": "2bdfa326-05ce-5ac8-904d-90e7bd30c422",
+          "text": "{name}{eun} 우리 팀의 기둥입니다.",
+          "sharedValues": {
+            "0da657e7-da84-5f68-8973-b2fd3ec2867f": "trust:+4"
+          }
+        },
+        {
+          "id": "f031f4ee-efd8-5e1d-b2ee-f2cc732596f9",
+          "text": "한 경기 잘한 걸로는 부족합니다.",
+          "sharedValues": {
+            "0da657e7-da84-5f68-8973-b2fd3ec2867f": "ok>trust:+1;ng>trust:-3"
+          }
+        },
+        {
+          "id": "2480ac8b-c2a7-55a3-b75e-eba1cef87fba",
+          "text": "MVP는 팀 전체가 받은 겁니다.",
+          "sharedValues": {
+            "0da657e7-da84-5f68-8973-b2fd3ec2867f": "trust:-1;trust_all:+1"
+          }
+        }
+      ],
+      "translations": {
+        "opt:2bdfa326-05ce-5ac8-904d-90e7bd30c422": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "{name} is the backbone of this team.",
+            "status": "progress"
+          }
+        },
+        "opt:f031f4ee-efd8-5e1d-b2ee-f2cc732596f9": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "One good match isn't enough.",
+            "status": "progress"
+          }
+        },
+        "opt:2480ac8b-c2a7-55a3-b75e-eba1cef87fba": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "That MVP belongs to the whole team.",
+            "status": "progress"
+          }
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "7e974734-04da-5d11-8773-9fc3304177de",
+      "source": "8aa3b3ac-94a7-57d3-8c02-6f30ea945ee9",
+      "target": "1bc36ddc-0fb0-593e-9c24-b9d094b997a3",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "eca0a896-075b-5b50-856d-e3f7f7040e9a",
+      "source": "1bc36ddc-0fb0-593e-9c24-b9d094b997a3",
+      "target": "d774e1b8-5b6d-54c3-b60b-48879bc88209",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "4f59b89f-101f-5b40-a80a-054da777c9e6",
+      "source": "d774e1b8-5b6d-54c3-b60b-48879bc88209",
+      "target": "930eb108-da12-55f1-ab64-2618517efc8c",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "406355a0-0b1d-5444-9086-3289596fd6e0",
+      "source": "930eb108-da12-55f1-ab64-2618517efc8c",
+      "target": "db293ef3-80a6-5be7-a045-a52ed098d301",
+      "sourcePort": "opt:2bdfa326-05ce-5ac8-904d-90e7bd30c422",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "79fac3aa-8214-5ee9-91a4-be2f184a283f",
+      "source": "930eb108-da12-55f1-ab64-2618517efc8c",
+      "target": "db293ef3-80a6-5be7-a045-a52ed098d301",
+      "sourcePort": "opt:f031f4ee-efd8-5e1d-b2ee-f2cc732596f9",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "9562e856-392b-5442-a6e5-f2940c999bed",
+      "source": "930eb108-da12-55f1-ab64-2618517efc8c",
+      "target": "db293ef3-80a6-5be7-a045-a52ed098d301",
+      "sourcePort": "opt:2480ac8b-c2a7-55a3-b75e-eba1cef87fba",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    }
+  ],
+  "nextLocalId": 7
+}

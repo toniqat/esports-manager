@@ -1,0 +1,171 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "79272640-e8ea-58ef-abc4-b6087eeb1516": {
+      "id": "79272640-e8ea-58ef-abc4-b6087eeb1516",
+      "name": "O5",
+      "start": "6b1a33c3-bfd6-5a1e-9bcc-8a017702fca4",
+      "end": "833719c1-32c5-5907-8ad9-b278c175c427",
+      "nodes": {
+        "6b1a33c3-bfd6-5a1e-9bcc-8a017702fca4": {
+          "localId": 1,
+          "type": "Start",
+          "next": "527083a2-6fa3-5c1b-b233-efc610f83594"
+        },
+        "833719c1-32c5-5907-8ad9-b278c175c427": {
+          "localId": 2,
+          "type": "End"
+        },
+        "527083a2-6fa3-5c1b-b233-efc610f83594": {
+          "localId": 3,
+          "memoIds": [
+            "56e30d62-c617-57db-a312-337c8240fe7f"
+          ],
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "늦은 밤 옥상. {name} 선수가 먼저 와 있었다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "The rooftop, late at night. {name} got there first."
+                }
+              ]
+            }
+          },
+          "next": "bb821739-07a2-52a3-be21-67490125aeb6"
+        },
+        "bb821739-07a2-52a3-be21-67490125aeb6": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "감독님. 저 이번 시즌 끝나면 꼭 하고 싶은 말이 있어요."
+            },
+            {
+              "kind": "text",
+              "text": "…지금 말하면 반칙이니까 우승하고 할게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Coach. There's something I really want to tell you when this season's over."
+                },
+                {
+                  "kind": "text",
+                  "text": "…Saying it now would be cheating, so I'll tell you after we win."
+                }
+              ]
+            }
+          },
+          "next": "06d84c12-5e1e-5398-bbf6-85c72bb9707f"
+        },
+        "56e30d62-c617-57db-a312-337c8240fe7f": {
+          "localId": 5,
+          "attrs": {
+            "kind": "outing",
+            "manager_type": -1,
+            "stage": 5,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "외출 이벤트 설정",
+          "attachedTo": "527083a2-6fa3-5c1b-b233-efc610f83594"
+        },
+        "06d84c12-5e1e-5398-bbf6-85c72bb9707f": {
+          "localId": 6,
+          "type": "Select",
+          "options": [
+            {
+              "id": "ee4b3935-0e42-529c-9370-c1140013ac2e",
+              "text": "그럼 꼭 우승해야겠네.",
+              "next": "d43eab2b-18c7-5b73-8d16-2ff966bc1a54",
+              "attrs": {
+                "effects": "trust:+8;pmod:all:+2:-1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Then we'd better win."
+                }
+              }
+            },
+            {
+              "id": "d9bb47f6-30ed-5555-bed5-98c923e60797",
+              "text": "기다릴게.",
+              "next": "01ea888f-6b24-578f-b83e-15f7c403aa33",
+              "attrs": {
+                "effects": "trust:+8;pmod:all:+2:-1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "I'll be waiting."
+                }
+              }
+            }
+          ]
+        },
+        "d43eab2b-18c7-5b73-8d16-2ff966bc1a54": {
+          "localId": 7,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "약속이에요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "It's a promise."
+                }
+              ]
+            }
+          },
+          "next": "833719c1-32c5-5907-8ad9-b278c175c427"
+        },
+        "01ea888f-6b24-578f-b83e-15f7c403aa33": {
+          "localId": 8,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네. 꼭이요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Yeah. For sure."
+                }
+              ]
+            }
+          },
+          "next": "833719c1-32c5-5907-8ad9-b278c175c427"
+        }
+      }
+    }
+  }
+}

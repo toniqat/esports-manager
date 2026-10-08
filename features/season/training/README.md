@@ -58,6 +58,7 @@ every clause would become a lie each time the board is rotated.
 | `shape` | Colour string with rows separated by `/`. **One row = one day, one character = one player.** `W`=1 cell, `WW`=two on the same weekday, `W/W`=one player for two days, `CC/DD`=two × two days, `WWWWW`=one day for all five |
 | `exp` | `stat:value` joined by `\|`. `all:N` = all six stats. **Value given per cell**, so an n-cell tile gives n times. `mastery:N` = mech-mastery EXP per mastery (`M`) cell (see "Mastery tiles") |
 | `effect` | Clauses joined by `;` |
+| `facility` | Optional base-map spot where the course is held (`H E C D G M Q W`, `features/season/week/base_map/README.md`). Empty = the colour of the course's first cell on that day. Every pilot in one placed tile on a day stands there (joint training) |
 
 **There is no `description` column.** There used to be one, and the info popover printed it
 verbatim, but those sentences were hand-transcriptions of the `effect` clauses, so editing a clause's
@@ -155,7 +156,9 @@ week-progress screen (`features/season/week/`) started asking "what happened tha
 weekday, settlement was split per day too.
 
 It returns the row list that screen reads — in seat order,
-`Array[{pilot_id, role, seat, before, after, ups, exp, carry, mastery, quirk, stress, color}]` (no name — saved in the run file; screens use `GameManager.pilot_name(pilot_id)`, l10n D7)
+`Array[{pilot_id, role, seat, before, after, ups, exp, carry, mastery, quirk, stress, color, group, facility}]`
+(`group` = board entry index of the cell's tile, -1 = basic course — pilots sharing it **trained together**
+that day, the morning talk's `talk_pair`; `facility` = `day_groups(day)`, the week map's spot) (no name — saved in the run file; screens use `GameManager.pilot_name(pilot_id)`, l10n D7)
 (`mastery` = mech-mastery EXP handed to `MechMastery.add_training_exp` that day, M3;
 `quirk` = quirk ops run on that pilot that day, `[{kind, result, id?, from?, to?, slots?}]`, empty
 array when none — see "Quirk tiles";

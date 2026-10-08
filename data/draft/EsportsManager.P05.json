@@ -1,0 +1,141 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "61c758b8-c3f3-5882-9442-73ea89939c22": {
+      "id": "61c758b8-c3f3-5882-9442-73ea89939c22",
+      "name": "P05",
+      "start": "8aa3b3ac-94a7-57d3-8c02-6f30ea945ee9",
+      "end": "db293ef3-80a6-5be7-a045-a52ed098d301",
+      "nodes": {
+        "8aa3b3ac-94a7-57d3-8c02-6f30ea945ee9": {
+          "localId": 1,
+          "type": "Start",
+          "next": "1bc36ddc-0fb0-593e-9c24-b9d094b997a3"
+        },
+        "db293ef3-80a6-5be7-a045-a52ed098d301": {
+          "localId": 2,
+          "type": "End"
+        },
+        "1bc36ddc-0fb0-593e-9c24-b9d094b997a3": {
+          "localId": 3,
+          "memoIds": [
+            "b556ccd2-5f3e-528c-8a5b-c711bdb77069"
+          ],
+          "type": "Dialog",
+          "speaker": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{tx_576HKVWRTP}"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "{tx_576HKVWRTP}"
+                }
+              ]
+            }
+          },
+          "next": "d774e1b8-5b6d-54c3-b60b-48879bc88209"
+        },
+        "d774e1b8-5b6d-54c3-b60b-48879bc88209": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "지난 경기 MVP는 {name} 선수였습니다."
+            },
+            {
+              "kind": "text",
+              "text": "칭찬 한마디 부탁드립니다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "{name} was the MVP of the last match."
+                },
+                {
+                  "kind": "text",
+                  "text": "Any words of praise?"
+                }
+              ]
+            }
+          },
+          "next": "930eb108-da12-55f1-ab64-2618517efc8c"
+        },
+        "b556ccd2-5f3e-528c-8a5b-c711bdb77069": {
+          "localId": 5,
+          "attrs": {
+            "kind": "press",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "mention=mvp",
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "기자회견 이벤트 설정",
+          "attachedTo": "1bc36ddc-0fb0-593e-9c24-b9d094b997a3"
+        },
+        "930eb108-da12-55f1-ab64-2618517efc8c": {
+          "localId": 6,
+          "type": "Select",
+          "options": [
+            {
+              "id": "2bdfa326-05ce-5ac8-904d-90e7bd30c422",
+              "text": "{name}{eun} 우리 팀의 기둥입니다.",
+              "next": "db293ef3-80a6-5be7-a045-a52ed098d301",
+              "attrs": {
+                "effects": "trust:+4"
+              },
+              "i18n": {
+                "En": {
+                  "text": "{name} is the backbone of this team."
+                }
+              }
+            },
+            {
+              "id": "f031f4ee-efd8-5e1d-b2ee-f2cc732596f9",
+              "text": "한 경기 잘한 걸로는 부족합니다.",
+              "next": "db293ef3-80a6-5be7-a045-a52ed098d301",
+              "attrs": {
+                "effects": "ok>trust:+1;ng>trust:-3"
+              },
+              "i18n": {
+                "En": {
+                  "text": "One good match isn't enough."
+                }
+              }
+            },
+            {
+              "id": "2480ac8b-c2a7-55a3-b75e-eba1cef87fba",
+              "text": "MVP는 팀 전체가 받은 겁니다.",
+              "next": "db293ef3-80a6-5be7-a045-a52ed098d301",
+              "attrs": {
+                "effects": "trust:-1;trust_all:+1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "That MVP belongs to the whole team."
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

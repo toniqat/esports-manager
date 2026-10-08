@@ -1,0 +1,171 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "acb9e62b-9406-5069-89a3-91d9167b119b": {
+      "id": "acb9e62b-9406-5069-89a3-91d9167b119b",
+      "name": "O2",
+      "start": "47cc227c-5492-521f-909c-afff20665654",
+      "end": "ad677e12-6c80-579d-9317-b9f6c7400c00",
+      "nodes": {
+        "47cc227c-5492-521f-909c-afff20665654": {
+          "localId": 1,
+          "type": "Start",
+          "next": "2b254aa3-aa1b-5785-b062-caab3174504d"
+        },
+        "ad677e12-6c80-579d-9317-b9f6c7400c00": {
+          "localId": 2,
+          "type": "End"
+        },
+        "2b254aa3-aa1b-5785-b062-caab3174504d": {
+          "localId": 3,
+          "memoIds": [
+            "9e99485f-0894-5690-9f83-ceae2a86f2a1"
+          ],
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{name} 선수와 한강을 걸었다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "You walked along the Han River with {name}."
+                }
+              ]
+            }
+          },
+          "next": "596d6bf2-2d0c-58a4-950c-5d7e8e4d31f7"
+        },
+        "596d6bf2-2d0c-58a4-950c-5d7e8e4d31f7": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "바람 좋다…"
+            },
+            {
+              "kind": "text",
+              "text": "사실 프로 되기 전엔 여기 자주 왔어요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Nice breeze…"
+                },
+                {
+                  "kind": "text",
+                  "text": "Actually, I used to come here a lot before I went pro."
+                }
+              ]
+            }
+          },
+          "next": "03eb1b19-bbbf-5b14-90fe-15a71f750520"
+        },
+        "9e99485f-0894-5690-9f83-ceae2a86f2a1": {
+          "localId": 5,
+          "attrs": {
+            "kind": "outing",
+            "manager_type": -1,
+            "stage": 2,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "외출 이벤트 설정",
+          "attachedTo": "2b254aa3-aa1b-5785-b062-caab3174504d"
+        },
+        "03eb1b19-bbbf-5b14-90fe-15a71f750520": {
+          "localId": 6,
+          "type": "Select",
+          "options": [
+            {
+              "id": "24172621-089a-5f3f-94ee-b70d10e191e3",
+              "text": "그때 무슨 생각 했어?",
+              "next": "c472d0f4-4bd0-5eaf-9304-9b035728e3d3",
+              "attrs": {
+                "effects": "trust:+6;pmod:all:+1:-1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "What were you thinking about back then?"
+                }
+              }
+            },
+            {
+              "id": "c20d7e87-9fcc-5b1f-b8f3-9e92dc7b82c8",
+              "text": "지금은 어때?",
+              "next": "3fa811d8-efdd-5cda-889f-2edb8c1e84d6",
+              "attrs": {
+                "effects": "trust:+5;pmod:all:+1:-1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "And how about now?"
+                }
+              }
+            }
+          ]
+        },
+        "c472d0f4-4bd0-5eaf-9304-9b035728e3d3": {
+          "localId": 7,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "언젠가 무대에 서고 싶다… 그거요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "That I wanted to stand on that stage someday… that's all."
+                }
+              ]
+            }
+          },
+          "next": "ad677e12-6c80-579d-9317-b9f6c7400c00"
+        },
+        "3fa811d8-efdd-5cda-889f-2edb8c1e84d6": {
+          "localId": 8,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "지금은… 좋아요. 진짜로."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Now… I'm happy. For real."
+                }
+              ]
+            }
+          },
+          "next": "ad677e12-6c80-579d-9317-b9f6c7400c00"
+        }
+      }
+    }
+  }
+}

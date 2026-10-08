@@ -6,6 +6,7 @@ extends RefCounted
 # Its texts are `mental_texts` rows (l10n keys) by `event_id`:
 #   slot `line`   — in `seq` order. Text marker: plain = the other side speaks (left
 #                   bubble), `>text` = the manager (right bubble), `*text` = narration,
+#                   `&text` = the partner of a joint-training talk (`talk_pair`),
 #                   `@text` = tag (press outlet / incident name), not shown as a bubble.
 #   slot `choice` — manager answer `choice` (0-based).
 #   slot `say`    — reply line after answer `choice`; `branch` ok / ng = only on a
@@ -16,7 +17,8 @@ extends RefCounted
 #             mental check (an entry with any gated clause **or a gated say** rolls a check).
 #   cond    — `;`-joined tokens that must all hold for the row to be drawn.
 # `{name}` in any text is filled with the target pilot's name at display time
-# (`Loc.t(key, {"name": …})`). Outcomes keep **keys / ids only** (they are saved).
+# (`Loc.t(key, {"name": …, "name2": …})`, `{name2}` = the `talk_pair` partner).
+# Outcomes keep **keys / ids only** (they are saved).
 #
 # Pure static helpers over a `season_state` dictionary — no autoloads.
 
@@ -24,6 +26,12 @@ const KIND_INTERVIEW: String = "interview"
 const KIND_OUTING: String = "outing"
 const KIND_INCIDENT: String = "incident"
 const KIND_PRESS: String = "press"
+## Morning talk right after training (훈련 소감) and its joint-training variant: the
+## picked pilot and the pilot who trained in the same tile that day both appear, and
+## every single-pilot clause (`trust` · `stress` · `pmod`) applies to **both**.
+const KIND_TALK: String = "talk"
+const KIND_TALK_PAIR: String = "talk_pair"
+const KINDS: Array = [KIND_INTERVIEW, KIND_OUTING, KIND_INCIDENT, KIND_PRESS, KIND_TALK, KIND_TALK_PAIR]
 
 ## `staff_mods` / `pilot_mods` `source` written by an event clause: `mental:<event id>` —
 ## an id, not text (D7). `mod_source_text` turns it into the event kind's label.
@@ -33,10 +41,12 @@ const KIND_LABELS: Dictionary = {
 	KIND_OUTING: L.TERM_ACTIVITY_OUTING,
 	KIND_INCIDENT: L.MENTAL_UI_MOD_SOURCE_INCIDENT,
 	KIND_PRESS: L.TERM_ACTIVITY_PRESS,
+	KIND_TALK: L.MENTAL_UI_MOD_SOURCE_TALK,
+	KIND_TALK_PAIR: L.MENTAL_UI_MOD_SOURCE_TALK,
 }
 
 ## Cond keys (clause types are listed in `parse_clause` and the README).
-const COND_KEYS: Array = ["trust", "outings", "role", "last", "mention", "week"]
+const COND_KEYS: Array = ["trust", "outings", "role", "last", "mention", "week", "train", "ups", "stress"]
 
 static var _rows: Array = []            # parsed rows, CSV order
 static var _by_id: Dictionary = {}      # id → parsed row
@@ -190,7 +200,7 @@ static func lint() -> Array:
 	for r_raw in all_rows():
 		var r: Dictionary = r_raw
 		var id: String = String(r["id"])
-		if not (String(r["kind"]) in [KIND_INTERVIEW, KIND_OUTING, KIND_INCIDENT, KIND_PRESS]):
+		if not (String(r["kind"]) in KINDS):
 			errs.append("%s: unknown kind '%s'" % [id, r["kind"]])
 		if (r["choices"] as Array).is_empty():
 			errs.append("%s: no choices" % id)
@@ -241,9 +251,47 @@ static func cond_ok(state: Dictionary, r: Dictionary, pilot_id: int) -> bool:
 					return false
 			"mention":
 				pass
+			"train":
+				# Colour symbol of the pilot's cell today (`week_day_log` row `color`, the
+				# basic course's colour for an empty cell); `train=H,E` = any of them.
+				var row: Dictionary = today_row(state, pilot_id)
+				if row.is_empty() or not (String(row.get("color", "")) in value.split(",", false)):
+					return false
+			"ups":
+				# Stat points the pilot gained in today's training.
+				var row2: Dictionary = today_row(state, pilot_id)
+				if row2.is_empty() or not _cmp(today_ups(row2), String(c["op"]), int(value)):
+					return false
+			"stress":
+				if pilot_id < 0 or not _cmp(StressSystem.value(state, pilot_id), String(c["op"]), int(value)):
+					return false
 			_:
 				return false
 	return true
+
+
+## That pilot's training row of the current weekday (`season_state.week_day` →
+## `week_day_log[day]`), or {} before the day is settled.
+static func today_row(state: Dictionary, pilot_id: int) -> Dictionary:
+	if pilot_id < 0:
+		return {}
+	var log: Dictionary = state.get("week_day_log", {})
+	var day: int = int(state.get("week_day", -1))
+	var rows: Variant = log.get(day, log.get(str(day), []))
+	if not (rows is Array):
+		return {}
+	for raw in (rows as Array):
+		if raw is Dictionary and int((raw as Dictionary).get("pilot_id", -1)) == pilot_id:
+			return raw
+	return {}
+
+
+## Total stat points raised in a training row (`ups`).
+static func today_ups(row: Dictionary) -> int:
+	var total: int = 0
+	for v in (row.get("ups", {}) as Dictionary).values():
+		total += int(v)
+	return total
 
 
 ## The `mention=<mvp|worst>` token of a row, or "".
@@ -334,6 +382,7 @@ static func check_chance(judge: int, adjust: int) -> int:
 
 ## Apply choice `idx` of row `r` to `state` for target `pilot_id`.
 ## `judge` = the mental value the check uses, `roll_seed` makes the check deterministic.
+## `partner_id` (joint-training talk) also receives every single-pilot clause.
 ## → `{checked, ok, chance, pilot_id, say: [text_key], notes: [note dict]}` — saved as is,
 ## so **keys / ids only**; `outcome_view` turns it into display text.
 ## Note dicts: `{type: trust, pid, delta}` · `{type: trust_all, delta}` ·
@@ -341,7 +390,7 @@ static func check_chance(judge: int, adjust: int) -> int:
 ## `{type: pmod, pid, stat, delta, weeks}` · `{type: pmod_all, stat, delta, weeks}` ·
 ## `{type: smod, stat, delta, weeks}` · `{type: outing, count}` (added by MentalSystem).
 static func apply_choice(state: Dictionary, r: Dictionary, idx: int, pilot_id: int,
-		judge: int, roll_seed: int) -> Dictionary:
+		judge: int, roll_seed: int, partner_id: int = -1) -> Dictionary:
 	var effects: Array = r["effects"]
 	var clauses: Array = effects[idx] if idx >= 0 and idx < effects.size() else []
 	var all_says: Array = r.get("says", [])
@@ -364,7 +413,7 @@ static func apply_choice(state: Dictionary, r: Dictionary, idx: int, pilot_id: i
 		rng.seed = roll_seed
 		ok = rng.randi_range(1, 100) <= chance
 	var out: Dictionary = {"checked": checked, "ok": ok, "chance": chance, "pilot_id": pilot_id,
-			"say": [], "notes": []}
+			"partner_id": partner_id, "say": [], "notes": []}
 	for s_raw in says:
 		var s: Dictionary = s_raw
 		if _gate_passes(String(s["branch"]), ok):
@@ -373,7 +422,102 @@ static func apply_choice(state: Dictionary, r: Dictionary, idx: int, pilot_id: i
 		var c: Dictionary = c_raw
 		if _gate_passes(String(c["gate"]), ok):
 			_apply_clause(state, r, c, pilot_id, out)
+			if partner_id >= 0 and partner_id != pilot_id and SINGLE_CLAUSES.has(String(c["type"])):
+				_apply_clause(state, r, c, partner_id, out)
 	return out
+
+
+## Clause types that hit one pilot (the target, and the partner of a joint talk).
+const SINGLE_CLAUSES: Array = ["trust", "stress", "pmod"]
+
+
+# ── Choice preview (chance + direction) ──────────────────────────────────────
+## What answer `idx` of row `r` may do, before it is picked: `{checked, chance, ok: {label: sign},
+## ng: {label: sign}}` — `ok` / `ng` = the summed direction (+1 / -1) of each effect label when
+## the check passes / fails (identical when the entry has no check). `judge` as in
+## `apply_choice`; `base` = extra always-on deltas `{label: delta}` (the talk / interview /
+## outing stress relief). Numbers stay hidden: only the direction is shown.
+static func choice_preview(state: Dictionary, r: Dictionary, idx: int, judge: int,
+		base: Dictionary = {}) -> Dictionary:
+	var effects: Array = r.get("effects", [])
+	var clauses: Array = effects[idx] if idx >= 0 and idx < effects.size() else []
+	var all_says: Array = r.get("says", [])
+	var says: Array = all_says[idx] if idx >= 0 and idx < all_says.size() else []
+	var checked: bool = false
+	var adjust: int = 0
+	for c in clauses:
+		if String((c as Dictionary)["gate"]) != "":
+			checked = true
+		if String((c as Dictionary)["type"]) == "chk":
+			adjust += int((c as Dictionary)["delta"])
+	for sv in says:
+		if String((sv as Dictionary)["branch"]) != "":
+			checked = true
+	var sums: Dictionary = {"ok": base.duplicate(), "ng": base.duplicate()}
+	for c_raw in clauses:
+		var c: Dictionary = c_raw
+		var label: String = preview_label(c)
+		if label == "":
+			continue
+		for world in ["ok", "ng"]:
+			if _gate_passes(String(c["gate"]), world == "ok"):
+				var w: Dictionary = sums[world]
+				w[label] = int(w.get(label, 0)) + int(c["delta"])
+	var out: Dictionary = {"checked": checked, "chance": check_chance(judge, adjust) if checked else -1}
+	for world in ["ok", "ng"]:
+		var signs: Dictionary = {}
+		for label in (sums[world] as Dictionary).keys():
+			var d: int = int((sums[world] as Dictionary)[label])
+			if d != 0:
+				signs[label] = signi(d)
+		out[world] = signs
+	return out
+
+
+## Display label of a clause's effect for the preview ("" = not shown: `chk`, invalid).
+static func preview_label(c: Dictionary) -> String:
+	match String(c.get("type", "")):
+		"trust":
+			return Loc.t(L.MENTAL_UI_PREVIEW_TRUST)
+		"trust_all":
+			return Loc.t(L.MENTAL_UI_PREVIEW_TRUST_ALL)
+		"stress":
+			return Loc.t(L.MENTAL_UI_PREVIEW_STRESS)
+		"stress_all":
+			return Loc.t(L.MENTAL_UI_PREVIEW_STRESS_ALL)
+		"pmod":
+			return stat_label(String(c.get("stat", "")))
+		"pmod_all":
+			return Loc.t(L.MENTAL_UI_PREVIEW_STAT_ALL, {"stat": stat_label(String(c.get("stat", "")))})
+		"smod":
+			return Loc.t(L.MENTAL_UI_PREVIEW_SMOD, {"stat": StaffSystem.stat_label(String(c.get("stat", "")))})
+	return ""
+
+
+## `choice_preview` → one line: `62% · 신뢰↑ · 스트레스↓`, or, when the check's two
+## outcomes differ, `62% · 성공: 신뢰↑ / 실패: 신뢰↓`. "" when the answer changes nothing.
+static func preview_text(p: Dictionary) -> String:
+	var ok_txt: String = _signs_text(p.get("ok", {}))
+	var ng_txt: String = _signs_text(p.get("ng", {}))
+	var parts: PackedStringArray = PackedStringArray()
+	if bool(p.get("checked", false)):
+		parts.append(Loc.t(L.MENTAL_UI_PREVIEW_CHANCE, {"n": int(p.get("chance", 0))}))
+	if ok_txt == ng_txt:
+		if ok_txt != "":
+			parts.append(ok_txt)
+	else:
+		parts.append(Loc.t(L.MENTAL_UI_PREVIEW_SPLIT, {
+			"ok": ok_txt if ok_txt != "" else Loc.t(L.MENTAL_UI_PREVIEW_NONE),
+			"ng": ng_txt if ng_txt != "" else Loc.t(L.MENTAL_UI_PREVIEW_NONE)}))
+	return " · ".join(parts)
+
+
+static func _signs_text(signs: Dictionary) -> String:
+	var parts: PackedStringArray = PackedStringArray()
+	for label in signs.keys():
+		parts.append(Loc.t(L.MENTAL_UI_PREVIEW_UP if int(signs[label]) > 0 else L.MENTAL_UI_PREVIEW_DOWN,
+				{"label": String(label)}))
+	return " ".join(parts)
 
 
 static func _gate_passes(gate: String, ok: bool) -> bool:
@@ -422,9 +566,10 @@ static func _apply_clause(state: Dictionary, r: Dictionary, c: Dictionary,
 ## for `MessengerView.show_result`. `{name}` = the outcome's target pilot.
 static func outcome_view(state: Dictionary, outcome: Dictionary) -> Dictionary:
 	var pid: int = int(outcome.get("pilot_id", -1))
+	var partner: int = int(outcome.get("partner_id", -1))
 	var say: Array = []
 	for k in (outcome.get("say", []) as Array):
-		say.append(text(state, String(k), pid))
+		say.append(text(state, String(k), pid, partner))
 	return {"checked": bool(outcome.get("checked", false)), "ok": bool(outcome.get("ok", false)),
 			"chance": int(outcome.get("chance", -1)), "say": say,
 			"notes": note_texts(state, outcome.get("notes", []))}
@@ -478,9 +623,11 @@ static func mod_source_text(source: String) -> String:
 
 
 # ── Text helpers ─────────────────────────────────────────────────────────────
-## One `mental_texts` key → display text with `{name}` = that pilot (marker kept).
-static func text(state: Dictionary, key: String, pilot_id: int) -> String:
-	return Loc.t(key, {"name": pilot_name(state, pilot_id)})  # l10n-dynamic: mental.*.*
+## One `mental_texts` key → display text with `{name}` = that pilot, `{name2}` = the
+## joint-training partner (marker kept).
+static func text(state: Dictionary, key: String, pilot_id: int, partner_id: int = -1) -> String:
+	var params: Dictionary = {"name": pilot_name(state, pilot_id), "name2": pilot_name(state, partner_id)}
+	return Loc.t(key, params)  # l10n-dynamic: mental.*.*
 
 
 static func pilot_of(state: Dictionary, pilot_id: int) -> PlayerData:

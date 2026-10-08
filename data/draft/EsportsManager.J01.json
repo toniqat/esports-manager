@@ -1,0 +1,235 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "59dc43b1-e476-55fb-9338-dd685ae32b0a": {
+      "id": "59dc43b1-e476-55fb-9338-dd685ae32b0a",
+      "name": "J01",
+      "start": "36f2bffe-f7b4-59ca-8fb9-b35c5cae108c",
+      "end": "de4dc6a4-d5a6-508e-8205-73483421bd56",
+      "nodes": {
+        "36f2bffe-f7b4-59ca-8fb9-b35c5cae108c": {
+          "localId": 1,
+          "type": "Start",
+          "next": "a9c66e93-08d9-50e7-8416-d96a7c928c4e"
+        },
+        "de4dc6a4-d5a6-508e-8205-73483421bd56": {
+          "localId": 2,
+          "type": "End"
+        },
+        "a9c66e93-08d9-50e7-8416-d96a7c928c4e": {
+          "localId": 3,
+          "memoIds": [
+            "7c2a7cd1-0c8f-5d68-8de2-21c60f36c91a"
+          ],
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "합동 훈련을 마친 {name}{wa} {name2}{i} 함께 다가온다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Fresh from joint training, {name} and {name2} come over together."
+                }
+              ]
+            }
+          },
+          "next": "cd29c942-cfcd-51d0-b70b-23505e779d8b"
+        },
+        "cd29c942-cfcd-51d0-b70b-23505e779d8b": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "오늘 {name2}랑 합 맞춰 봤는데 꽤 괜찮았어요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "I synced up with {name2} today, and it went pretty well."
+                }
+              ]
+            }
+          },
+          "next": "ee7b3eb2-278d-503c-a8a9-5a0e82e68f10"
+        },
+        "ee7b3eb2-278d-503c-a8a9-5a0e82e68f10": {
+          "localId": 5,
+          "type": "Dialog",
+          "speaker": "6b1de2e5-536b-5673-b2c0-0f81cf838865",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "제가 받쳐 준 덕분이죠."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Thanks to me backing you up."
+                }
+              ]
+            }
+          },
+          "next": "f499d9cc-3303-5912-bdd6-f42c4a4b6a9b"
+        },
+        "7c2a7cd1-0c8f-5d68-8de2-21c60f36c91a": {
+          "localId": 6,
+          "attrs": {
+            "kind": "talk_pair",
+            "manager_type": -1,
+            "stage": 0,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "합동 훈련 이벤트 설정",
+          "attachedTo": "a9c66e93-08d9-50e7-8416-d96a7c928c4e"
+        },
+        "f499d9cc-3303-5912-bdd6-f42c4a4b6a9b": {
+          "localId": 7,
+          "type": "Select",
+          "options": [
+            {
+              "id": "9cd8da8d-02f3-5390-8263-b1236fba61a8",
+              "text": "둘 다 잘했어. 그 호흡 그대로 가자.",
+              "next": "d5e74958-f2d8-5a45-bc5f-6a8c16c7c69d",
+              "attrs": {
+                "effects": "trust:+2;stress:-3"
+              },
+              "i18n": {
+                "En": {
+                  "text": "You both did well. Keep that rhythm."
+                }
+              }
+            },
+            {
+              "id": "3f9fc79c-fac8-56f9-8b45-e7ae82cf4e51",
+              "text": "아직 부족해. 내일 한 번 더 맞춰 봐.",
+              "next": "1d843546-a051-5eff-becb-26605db6edc3",
+              "attrs": {
+                "effects": "ok>pmod:all:+1:-1;ng>stress:+3"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Not there yet. Sync up once more tomorrow."
+                }
+              }
+            }
+          ]
+        },
+        "d5e74958-f2d8-5a45-bc5f-6a8c16c7c69d": {
+          "localId": 8,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "들었지? 감독님도 인정하셨어."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Hear that? Even the coach approves."
+                }
+              ]
+            }
+          },
+          "next": "15040e6e-5cd7-5c05-a2ef-eab992567a20"
+        },
+        "15040e6e-5cd7-5c05-a2ef-eab992567a20": {
+          "localId": 9,
+          "type": "Dialog",
+          "speaker": "6b1de2e5-536b-5673-b2c0-0f81cf838865",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "다음엔 내가 앞에 설게."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Next time I'll take the lead."
+                }
+              ]
+            }
+          },
+          "next": "de4dc6a4-d5a6-508e-8205-73483421bd56"
+        },
+        "1d843546-a051-5eff-becb-26605db6edc3": {
+          "localId": 10,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "6b1de2e5-536b-5673-b2c0-0f81cf838865",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "좋아요, 내일은 더 맞춰 볼게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Okay, we'll sync up even more tomorrow."
+                }
+              ]
+            }
+          },
+          "next": "caaaafe9-fe5f-587e-8451-cbb8d9e090f2"
+        },
+        "caaaafe9-fe5f-587e-8451-cbb8d9e090f2": {
+          "localId": 11,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…둘이 또요?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "...The two of us again?"
+                }
+              ]
+            }
+          },
+          "next": "de4dc6a4-d5a6-508e-8205-73483421bd56"
+        }
+      }
+    }
+  }
+}

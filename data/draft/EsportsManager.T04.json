@@ -1,0 +1,192 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "2cc69821-b21f-5a82-83dd-a5b7d5dd1a7b": {
+      "id": "2cc69821-b21f-5a82-83dd-a5b7d5dd1a7b",
+      "name": "T04",
+      "start": "2d074659-a44e-562a-b8bb-96eb80085382",
+      "end": "e0ec2737-1615-537e-82fd-7eba058bc362",
+      "nodes": {
+        "2d074659-a44e-562a-b8bb-96eb80085382": {
+          "localId": 1,
+          "type": "Start",
+          "next": "d37db4de-9223-5ceb-8dec-011b55338192"
+        },
+        "e0ec2737-1615-537e-82fd-7eba058bc362": {
+          "localId": 2,
+          "type": "End"
+        },
+        "d37db4de-9223-5ceb-8dec-011b55338192": {
+          "localId": 3,
+          "memoIds": [
+            "211d1734-cb5f-5d15-9fbf-b4299e6843ae"
+          ],
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{name}{i} 의자에 등을 기댄 채 눈을 감고 있다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "{name} sits leaning back in the chair, eyes closed."
+                }
+              ]
+            }
+          },
+          "next": "ea9b62a9-2d9c-51ec-ae9a-c707e6ce5149"
+        },
+        "ea9b62a9-2d9c-51ec-ae9a-c707e6ce5149": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "죄송해요, 조금만 이러고 있을게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Sorry, just let me stay like this a little."
+                }
+              ]
+            }
+          },
+          "next": "6603b5eb-50fe-51e5-8be9-c9fdd1edf45a"
+        },
+        "211d1734-cb5f-5d15-9fbf-b4299e6843ae": {
+          "localId": 5,
+          "attrs": {
+            "kind": "talk",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "stress>=60",
+            "weight": 3
+          },
+          "type": "Comment",
+          "text": "오전 만남 이벤트 설정",
+          "attachedTo": "d37db4de-9223-5ceb-8dec-011b55338192"
+        },
+        "6603b5eb-50fe-51e5-8be9-c9fdd1edf45a": {
+          "localId": 6,
+          "type": "Select",
+          "options": [
+            {
+              "id": "5293a01a-e79f-5728-ba4f-3b2c8d9305c6",
+              "text": "괜찮아. 오늘은 여기까지 하자.",
+              "next": "7f529b7b-f673-547a-8bde-11e5422bf7a5",
+              "attrs": {
+                "effects": "stress:-8;trust:+2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "It's fine. Let's call it a day."
+                }
+              }
+            },
+            {
+              "id": "cf7bf1be-56a2-5aa7-a421-6ad0c670846b",
+              "text": "힘든 거 알아. 그래도 조금만 더 버텨.",
+              "next": "d24d4ef5-3d04-5554-bc32-bb49d8f5d5a7",
+              "attrs": {
+                "effects": "ok>trust:+2;ok>pmod:all:+1:-1;ng>stress:+6;ng>trust:-3"
+              },
+              "i18n": {
+                "En": {
+                  "text": "I know it's hard. Hang in there a little longer."
+                }
+              }
+            }
+          ]
+        },
+        "7f529b7b-f673-547a-8bde-11e5422bf7a5": {
+          "localId": 7,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…고마워요, 감독님."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "...Thank you, Coach."
+                }
+              ]
+            }
+          },
+          "next": "e0ec2737-1615-537e-82fd-7eba058bc362"
+        },
+        "d24d4ef5-3d04-5554-bc32-bb49d8f5d5a7": {
+          "localId": 8,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네… 버틸게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Yes... I'll hang in there."
+                }
+              ]
+            }
+          },
+          "next": "968f94b0-5f02-5fb3-a23c-02368f28cd74"
+        },
+        "968f94b0-5f02-5fb3-a23c-02368f28cd74": {
+          "localId": 9,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "저 지금 진짜 한계예요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "I'm really at my limit right now."
+                }
+              ]
+            }
+          },
+          "next": "e0ec2737-1615-537e-82fd-7eba058bc362"
+        }
+      }
+    }
+  }
+}

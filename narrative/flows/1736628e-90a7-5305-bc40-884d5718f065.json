@@ -1,0 +1,274 @@
+{
+  "id": "1736628e-90a7-5305-bc40-884d5718f065",
+  "name": "P04",
+  "parentNodeId": null,
+  "folderId": "ec57a5a5-b671-5d6b-8bed-630ed5f29af7",
+  "defaultAttrs": {
+    "speakerWikiTargetId": "dd665e10-0059-53d3-a1c2-b806960e315d"
+  },
+  "sharedAttributes": {
+    "Comment": [
+      {
+        "id": "17074dbc-d112-5187-a7a9-39c6837e226d",
+        "name": "kind",
+        "type": "enum",
+        "enumValues": [
+          "interview",
+          "outing",
+          "incident",
+          "press",
+          "talk",
+          "talk_pair"
+        ],
+        "default": "",
+        "description": "이벤트 종류"
+      },
+      {
+        "id": "44680ece-1a95-5143-9b45-f517d8cb2e01",
+        "name": "manager_type",
+        "type": "integer",
+        "default": -1,
+        "description": "-1 공통 · 0 운영형 · 1 실전형"
+      },
+      {
+        "id": "fec76f76-eb4a-5a9d-b56d-a9ccf969f999",
+        "name": "stage",
+        "type": "integer",
+        "default": 0,
+        "description": "외출 단계 (1..N), 그 밖 0"
+      },
+      {
+        "id": "84d44021-15f5-5210-96c4-bfe3ab834ce3",
+        "name": "cond",
+        "type": "text",
+        "default": "",
+        "description": "조건 (; 로 이음) — features/season/mental/README.md"
+      },
+      {
+        "id": "346060f7-596f-500c-90ba-7b6e6adfb5e2",
+        "name": "weight",
+        "type": "integer",
+        "default": 1,
+        "description": "뽑기 가중치"
+      }
+    ],
+    "Select": [
+      {
+        "id": "7428e65f-aae7-5dc3-b7d6-18a43d34e22f",
+        "name": "effects",
+        "type": "text",
+        "default": "",
+        "description": "선택지 효과 절 (; 로 이음, ok> / ng> 판정 게이트)"
+      }
+    ],
+    "Dialog": [
+      {
+        "id": "fe0556ce-b631-55f0-837b-2a6b49be09fa",
+        "name": "branch",
+        "type": "enum",
+        "enumValues": [
+          "ok",
+          "ng"
+        ],
+        "default": "",
+        "description": "답 뒤 대사만: 판정 성공(ok) / 실패(ng) 때만. 비우면 항상"
+      }
+    ]
+  },
+  "labels": [],
+  "nodes": [
+    {
+      "id": "10d5b59c-709e-5842-bc22-5672d498eaa5",
+      "type": "Start",
+      "name": "Start",
+      "localId": 1,
+      "x": 40,
+      "y": 40
+    },
+    {
+      "id": "5dc0cad2-a655-514c-980c-6f347b47f8d2",
+      "type": "End",
+      "name": "End",
+      "localId": 2,
+      "x": 1240,
+      "y": 40
+    },
+    {
+      "id": "48a7cfe8-7677-55e6-b6f3-3c8f54c6e130",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 3,
+      "x": 340,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+      "content": "{tx_J8VCATJ5GB}",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "{tx_J8VCATJ5GB}",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "e0183364-9aa1-5429-ac02-34a0547184db",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 4,
+      "x": 640,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+      "content": "지난 경기 패배 원인을 어떻게 보십니까?",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "What do you see as the cause of last match's loss?",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "454eae32-ca60-5d9e-b026-e8c6672d7338",
+      "type": "Comment",
+      "name": "Comment",
+      "localId": 5,
+      "x": 340,
+      "y": -220,
+      "color": "#64748b",
+      "text": "기자회견 이벤트 설정",
+      "width": 260,
+      "height": 110,
+      "attachments": [
+        {
+          "nodeId": "48a7cfe8-7677-55e6-b6f3-3c8f54c6e130"
+        }
+      ],
+      "sharedValues": {
+        "17074dbc-d112-5187-a7a9-39c6837e226d": "press",
+        "44680ece-1a95-5143-9b45-f517d8cb2e01": -1,
+        "fec76f76-eb4a-5a9d-b56d-a9ccf969f999": 0,
+        "84d44021-15f5-5210-96c4-bfe3ab834ce3": "last=loss",
+        "346060f7-596f-500c-90ba-7b6e6adfb5e2": 1
+      }
+    },
+    {
+      "id": "34e80e45-ab90-5416-b682-e1bdcfec0c8c",
+      "type": "Select",
+      "name": "Select",
+      "localId": 6,
+      "x": 940,
+      "y": 40,
+      "color": "#64748b",
+      "options": [
+        {
+          "id": "eb0f446f-044a-5520-8d18-c5b6548300ea",
+          "text": "제 준비가 부족했습니다.",
+          "sharedValues": {
+            "7428e65f-aae7-5dc3-b7d6-18a43d34e22f": "trust_all:+2;smod:mental:-1:1"
+          }
+        },
+        {
+          "id": "d44448dc-2096-50c3-b805-2f96a88faebf",
+          "text": "선수들 컨디션이 안 좋았습니다.",
+          "sharedValues": {
+            "7428e65f-aae7-5dc3-b7d6-18a43d34e22f": "trust_all:-2"
+          }
+        },
+        {
+          "id": "603d1baf-f549-5dd3-b4f7-ffb93c5b804b",
+          "text": "지나간 경기는 잊었습니다.",
+          "sharedValues": {
+            "7428e65f-aae7-5dc3-b7d6-18a43d34e22f": "ok>smod:mental:+1:1;ng>trust_all:-1"
+          }
+        }
+      ],
+      "translations": {
+        "opt:eb0f446f-044a-5520-8d18-c5b6548300ea": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "I didn't prepare enough.",
+            "status": "progress"
+          }
+        },
+        "opt:d44448dc-2096-50c3-b805-2f96a88faebf": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "The players weren't in good shape.",
+            "status": "progress"
+          }
+        },
+        "opt:603d1baf-f549-5dd3-b4f7-ffb93c5b804b": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "I've already forgotten about that match.",
+            "status": "progress"
+          }
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "262623c8-45c2-5235-8e4f-f09296edac42",
+      "source": "10d5b59c-709e-5842-bc22-5672d498eaa5",
+      "target": "48a7cfe8-7677-55e6-b6f3-3c8f54c6e130",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "f01be799-3842-5d31-b09a-94e05ac6947c",
+      "source": "48a7cfe8-7677-55e6-b6f3-3c8f54c6e130",
+      "target": "e0183364-9aa1-5429-ac02-34a0547184db",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "57d7efc9-7e49-5c06-b524-4a2ba79d8cbc",
+      "source": "e0183364-9aa1-5429-ac02-34a0547184db",
+      "target": "34e80e45-ab90-5416-b682-e1bdcfec0c8c",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "74f9c22c-3a9b-589f-9a51-419c380673dc",
+      "source": "34e80e45-ab90-5416-b682-e1bdcfec0c8c",
+      "target": "5dc0cad2-a655-514c-980c-6f347b47f8d2",
+      "sourcePort": "opt:eb0f446f-044a-5520-8d18-c5b6548300ea",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "ba549b31-b8ab-52c8-a53a-f4c2f1461d23",
+      "source": "34e80e45-ab90-5416-b682-e1bdcfec0c8c",
+      "target": "5dc0cad2-a655-514c-980c-6f347b47f8d2",
+      "sourcePort": "opt:d44448dc-2096-50c3-b805-2f96a88faebf",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "0a80dcad-563b-5023-ad20-264c81ae3bc1",
+      "source": "34e80e45-ab90-5416-b682-e1bdcfec0c8c",
+      "target": "5dc0cad2-a655-514c-980c-6f347b47f8d2",
+      "sourcePort": "opt:603d1baf-f549-5dd3-b4f7-ffb93c5b804b",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    }
+  ],
+  "nextLocalId": 7
+}

@@ -1,0 +1,119 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "32560541-2b2a-5462-bde8-d0be63c88099": {
+      "id": "32560541-2b2a-5462-bde8-d0be63c88099",
+      "name": "P10",
+      "start": "68dd826c-f6a5-54b4-8b86-934cd7c610c2",
+      "end": "f9f7822b-6a10-5696-8e4f-a50734ea19f7",
+      "nodes": {
+        "68dd826c-f6a5-54b4-8b86-934cd7c610c2": {
+          "localId": 1,
+          "type": "Start",
+          "next": "06ab1b73-a471-5ab3-ac74-55d66cadcf65"
+        },
+        "f9f7822b-6a10-5696-8e4f-a50734ea19f7": {
+          "localId": 2,
+          "type": "End"
+        },
+        "06ab1b73-a471-5ab3-ac74-55d66cadcf65": {
+          "localId": 3,
+          "memoIds": [
+            "738167c9-f544-5a76-87fa-3bea1fac3d2f"
+          ],
+          "type": "Dialog",
+          "speaker": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{tx_J8VCATJ5GB}"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "{tx_J8VCATJ5GB}"
+                }
+              ]
+            }
+          },
+          "next": "6c917c74-d323-5870-9670-1f94e01ce09d"
+        },
+        "6c917c74-d323-5870-9670-1f94e01ce09d": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "현역 시절과 지금 중 언제가 더 떨립니까?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Which is more nerve-racking: your playing days or now?"
+                }
+              ]
+            }
+          },
+          "next": "8e9b5d37-129e-5cbb-aeef-640bcf0590a7"
+        },
+        "738167c9-f544-5a76-87fa-3bea1fac3d2f": {
+          "localId": 5,
+          "attrs": {
+            "kind": "press",
+            "manager_type": 1,
+            "stage": 0,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "기자회견 이벤트 설정",
+          "attachedTo": "06ab1b73-a471-5ab3-ac74-55d66cadcf65"
+        },
+        "8e9b5d37-129e-5cbb-aeef-640bcf0590a7": {
+          "localId": 6,
+          "type": "Select",
+          "options": [
+            {
+              "id": "39d895a3-e666-5d14-85cf-6af9f081eae5",
+              "text": "지금이요. 선수들 경기라서요.",
+              "next": "f9f7822b-6a10-5696-8e4f-a50734ea19f7",
+              "attrs": {
+                "effects": "trust_all:+2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Now. Because it's my players' match."
+                }
+              }
+            },
+            {
+              "id": "22e26988-b88f-5534-a134-01827108665b",
+              "text": "현역 때죠. 지금은 즐깁니다.",
+              "next": "f9f7822b-6a10-5696-8e4f-a50734ea19f7",
+              "attrs": {
+                "effects": "smod:mental:+1:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "My playing days. Now I just enjoy it."
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

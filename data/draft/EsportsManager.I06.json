@@ -1,0 +1,178 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "11103006-7308-5abd-8394-59b09f260700": {
+      "id": "11103006-7308-5abd-8394-59b09f260700",
+      "name": "I06",
+      "start": "cff7b81e-f4cd-56c5-b946-cde18ab1cd84",
+      "end": "343c7f22-ed69-5f95-89b4-8eb5e28c9fb6",
+      "nodes": {
+        "cff7b81e-f4cd-56c5-b946-cde18ab1cd84": {
+          "localId": 1,
+          "type": "Start",
+          "next": "9635bda9-9196-5416-ae06-b8783e21c2b1"
+        },
+        "343c7f22-ed69-5f95-89b4-8eb5e28c9fb6": {
+          "localId": 2,
+          "type": "End"
+        },
+        "9635bda9-9196-5416-ae06-b8783e21c2b1": {
+          "localId": 3,
+          "memoIds": [
+            "99e457bd-d6ee-55ff-b90c-cf81e50bb3d6"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "어제 경기는… 제 탓이에요."
+            },
+            {
+              "kind": "text",
+              "text": "제가 한타를 망쳤어요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Yesterday's match… that was on me."
+                },
+                {
+                  "kind": "text",
+                  "text": "I threw the teamfight."
+                }
+              ]
+            }
+          },
+          "next": "18608b21-3e72-5aab-b1ec-a47a205c557e"
+        },
+        "99e457bd-d6ee-55ff-b90c-cf81e50bb3d6": {
+          "localId": 4,
+          "attrs": {
+            "kind": "interview",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "last=loss",
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "면담 이벤트 설정",
+          "attachedTo": "9635bda9-9196-5416-ae06-b8783e21c2b1"
+        },
+        "18608b21-3e72-5aab-b1ec-a47a205c557e": {
+          "localId": 5,
+          "type": "Select",
+          "options": [
+            {
+              "id": "235a2940-39a2-5ef9-84e9-75e593e76ac4",
+              "text": "팀 경기야. 혼자 짊어지지 마.",
+              "next": "69c19afe-4c6d-58b1-89a8-baeefa988e33",
+              "attrs": {
+                "effects": "ok>trust:+6;ng>trust:+2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "It's a team game. Don't carry it alone."
+                }
+              }
+            },
+            {
+              "id": "77f0a8e2-8dc1-5969-918a-9bb60a8b02b0",
+              "text": "그래서 다음엔 어떻게 할 건데?",
+              "next": "fd994885-c634-5797-8a8b-64c3f19566f7",
+              "attrs": {
+                "effects": "trust:+2;pmod:engage_hit:+2:-1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "So what are you going to do next time?"
+                }
+              }
+            }
+          ]
+        },
+        "69c19afe-4c6d-58b1-89a8-baeefa988e33": {
+          "localId": 6,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "감독님… 고마워요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Coach… thank you."
+                }
+              ]
+            }
+          },
+          "next": "a1fdc8a6-9ec6-5106-9316-d2472e521858"
+        },
+        "a1fdc8a6-9ec6-5106-9316-d2472e521858": {
+          "localId": 7,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "그래도 제 잘못인걸요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Still, it was my fault."
+                }
+              ]
+            }
+          },
+          "next": "343c7f22-ed69-5f95-89b4-8eb5e28c9fb6"
+        },
+        "fd994885-c634-5797-8a8b-64c3f19566f7": {
+          "localId": 8,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "교전 각을 다시 볼게요. 다음엔 안 놓쳐요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "I'll rework my engage angles. I won't miss it next time."
+                }
+              ]
+            }
+          },
+          "next": "343c7f22-ed69-5f95-89b4-8eb5e28c9fb6"
+        }
+      }
+    }
+  }
+}

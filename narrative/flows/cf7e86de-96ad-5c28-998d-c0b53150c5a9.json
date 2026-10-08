@@ -1,0 +1,274 @@
+{
+  "id": "cf7e86de-96ad-5c28-998d-c0b53150c5a9",
+  "name": "P07",
+  "parentNodeId": null,
+  "folderId": "ec57a5a5-b671-5d6b-8bed-630ed5f29af7",
+  "defaultAttrs": {
+    "speakerWikiTargetId": "dd665e10-0059-53d3-a1c2-b806960e315d"
+  },
+  "sharedAttributes": {
+    "Comment": [
+      {
+        "id": "c8ff4dec-15b4-5984-8098-619587f8089c",
+        "name": "kind",
+        "type": "enum",
+        "enumValues": [
+          "interview",
+          "outing",
+          "incident",
+          "press",
+          "talk",
+          "talk_pair"
+        ],
+        "default": "",
+        "description": "이벤트 종류"
+      },
+      {
+        "id": "218f7ed1-d9b0-5a6b-b053-5993d5b9cb77",
+        "name": "manager_type",
+        "type": "integer",
+        "default": -1,
+        "description": "-1 공통 · 0 운영형 · 1 실전형"
+      },
+      {
+        "id": "2a31b276-aa6a-54d4-9854-de898c991081",
+        "name": "stage",
+        "type": "integer",
+        "default": 0,
+        "description": "외출 단계 (1..N), 그 밖 0"
+      },
+      {
+        "id": "f06f679a-3628-5ed3-b1e0-4da26c5b785a",
+        "name": "cond",
+        "type": "text",
+        "default": "",
+        "description": "조건 (; 로 이음) — features/season/mental/README.md"
+      },
+      {
+        "id": "a3154787-97f5-5dab-9ae2-7fb838b85a6d",
+        "name": "weight",
+        "type": "integer",
+        "default": 1,
+        "description": "뽑기 가중치"
+      }
+    ],
+    "Select": [
+      {
+        "id": "cba11362-07c4-56ad-977b-728d5c21b90a",
+        "name": "effects",
+        "type": "text",
+        "default": "",
+        "description": "선택지 효과 절 (; 로 이음, ok> / ng> 판정 게이트)"
+      }
+    ],
+    "Dialog": [
+      {
+        "id": "6afd2f9f-a52a-589b-b680-a7e4dbedc795",
+        "name": "branch",
+        "type": "enum",
+        "enumValues": [
+          "ok",
+          "ng"
+        ],
+        "default": "",
+        "description": "답 뒤 대사만: 판정 성공(ok) / 실패(ng) 때만. 비우면 항상"
+      }
+    ]
+  },
+  "labels": [],
+  "nodes": [
+    {
+      "id": "9ada8c30-074b-5971-999b-59055e5170ac",
+      "type": "Start",
+      "name": "Start",
+      "localId": 1,
+      "x": 40,
+      "y": 40
+    },
+    {
+      "id": "95b4fe5a-a74f-598e-9d09-1eecface679d",
+      "type": "End",
+      "name": "End",
+      "localId": 2,
+      "x": 1240,
+      "y": 40
+    },
+    {
+      "id": "c996b790-b1a4-5fbd-899c-b2a64c3a0330",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 3,
+      "x": 340,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+      "content": "{tx_J8VCATJ5GB}",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "{tx_J8VCATJ5GB}",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "b6b5044a-0fa9-56c2-9966-a3958356a77b",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 4,
+      "x": 640,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+      "content": "{name} 선수가 지난 경기에서 부진했다는 평입니다.\n교체도 고려하십니까?",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Word is {name} struggled in the last match.\nAre you considering a substitution?",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "405fb1f3-c255-5a78-8fa5-f3ec4fcc394b",
+      "type": "Comment",
+      "name": "Comment",
+      "localId": 5,
+      "x": 340,
+      "y": -220,
+      "color": "#64748b",
+      "text": "기자회견 이벤트 설정",
+      "width": 260,
+      "height": 110,
+      "attachments": [
+        {
+          "nodeId": "c996b790-b1a4-5fbd-899c-b2a64c3a0330"
+        }
+      ],
+      "sharedValues": {
+        "c8ff4dec-15b4-5984-8098-619587f8089c": "press",
+        "218f7ed1-d9b0-5a6b-b053-5993d5b9cb77": -1,
+        "2a31b276-aa6a-54d4-9854-de898c991081": 0,
+        "f06f679a-3628-5ed3-b1e0-4da26c5b785a": "mention=worst",
+        "a3154787-97f5-5dab-9ae2-7fb838b85a6d": 1
+      }
+    },
+    {
+      "id": "77a921cb-4f1d-5d74-95c9-5dcaa37b85ec",
+      "type": "Select",
+      "name": "Select",
+      "localId": 6,
+      "x": 940,
+      "y": 40,
+      "color": "#64748b",
+      "options": [
+        {
+          "id": "f815b9c8-f640-5e0b-ac59-c295149d1c99",
+          "text": "전혀요. {name}{eul} 믿습니다.",
+          "sharedValues": {
+            "cba11362-07c4-56ad-977b-728d5c21b90a": "ok>trust:+5;ng>trust:+2"
+          }
+        },
+        {
+          "id": "f42a9b97-625c-51f7-a995-bd55b143a40c",
+          "text": "컨디션을 보고 판단하겠습니다.",
+          "sharedValues": {
+            "cba11362-07c4-56ad-977b-728d5c21b90a": "trust:+1"
+          }
+        },
+        {
+          "id": "97078c07-5c99-5ff8-b948-6793ffdd88f2",
+          "text": "부진은 사실이죠.",
+          "sharedValues": {
+            "cba11362-07c4-56ad-977b-728d5c21b90a": "trust:-4;smod:mental:+1:1"
+          }
+        }
+      ],
+      "translations": {
+        "opt:f815b9c8-f640-5e0b-ac59-c295149d1c99": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Not at all. I believe in {name}.",
+            "status": "progress"
+          }
+        },
+        "opt:f42a9b97-625c-51f7-a995-bd55b143a40c": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "I'll decide based on their condition.",
+            "status": "progress"
+          }
+        },
+        "opt:97078c07-5c99-5ff8-b948-6793ffdd88f2": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "They did struggle, that's a fact.",
+            "status": "progress"
+          }
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e2a9db4d-a426-5c83-9b58-971cd0b1d86e",
+      "source": "9ada8c30-074b-5971-999b-59055e5170ac",
+      "target": "c996b790-b1a4-5fbd-899c-b2a64c3a0330",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "a67d8d52-df98-5635-90cc-be3ff30e9698",
+      "source": "c996b790-b1a4-5fbd-899c-b2a64c3a0330",
+      "target": "b6b5044a-0fa9-56c2-9966-a3958356a77b",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "3c809a22-fa8d-5081-bc39-e6b673bcc45b",
+      "source": "b6b5044a-0fa9-56c2-9966-a3958356a77b",
+      "target": "77a921cb-4f1d-5d74-95c9-5dcaa37b85ec",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "c48dce5a-0a70-5fa8-bdbd-686964fe430f",
+      "source": "77a921cb-4f1d-5d74-95c9-5dcaa37b85ec",
+      "target": "95b4fe5a-a74f-598e-9d09-1eecface679d",
+      "sourcePort": "opt:f815b9c8-f640-5e0b-ac59-c295149d1c99",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "9cc8821c-b8d2-5233-8a06-faf28fff103a",
+      "source": "77a921cb-4f1d-5d74-95c9-5dcaa37b85ec",
+      "target": "95b4fe5a-a74f-598e-9d09-1eecface679d",
+      "sourcePort": "opt:f42a9b97-625c-51f7-a995-bd55b143a40c",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "23132bc1-cdd5-5b1d-a1c2-eb2b262e29cb",
+      "source": "77a921cb-4f1d-5d74-95c9-5dcaa37b85ec",
+      "target": "95b4fe5a-a74f-598e-9d09-1eecface679d",
+      "sourcePort": "opt:97078c07-5c99-5ff8-b948-6793ffdd88f2",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    }
+  ],
+  "nextLocalId": 7
+}

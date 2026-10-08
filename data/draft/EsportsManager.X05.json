@@ -1,0 +1,276 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "2a42ba8f-f442-503f-b2cc-59890b9e9d8f": {
+      "id": "2a42ba8f-f442-503f-b2cc-59890b9e9d8f",
+      "name": "X05",
+      "start": "797d65e2-a585-56fe-9808-ec421f5887f3",
+      "end": "1253bd92-92c6-506f-88e7-20e8b4d8b4b2",
+      "nodes": {
+        "797d65e2-a585-56fe-9808-ec421f5887f3": {
+          "localId": 1,
+          "type": "Start",
+          "next": "85d4a4b9-7578-54db-88b1-a6bb954913b8"
+        },
+        "1253bd92-92c6-506f-88e7-20e8b4d8b4b2": {
+          "localId": 2,
+          "type": "End"
+        },
+        "85d4a4b9-7578-54db-88b1-a6bb954913b8": {
+          "localId": 3,
+          "memoIds": [
+            "997fb892-3fb6-5982-94e8-3705080e6166"
+          ],
+          "type": "Dialog",
+          "speaker": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "악플"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Hate Comments"
+                }
+              ]
+            }
+          },
+          "next": "e4d980ff-eff0-5339-83fe-f482ce75c7e7"
+        },
+        "e4d980ff-eff0-5339-83fe-f482ce75c7e7": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "커뮤니티에 {name} 선수를 겨냥한 글이 쏟아졌다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "The community boards are flooded with posts targeting {name}."
+                }
+              ]
+            }
+          },
+          "next": "f55034f1-157d-5195-81a8-93d22f2e1010"
+        },
+        "f55034f1-157d-5195-81a8-93d22f2e1010": {
+          "localId": 5,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "신경 안 써요. …안 쓰려고요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "I don't care. …I'm trying not to."
+                }
+              ]
+            }
+          },
+          "next": "71849509-7e34-5c71-aaf9-132a90055b94"
+        },
+        "997fb892-3fb6-5982-94e8-3705080e6166": {
+          "localId": 6,
+          "attrs": {
+            "kind": "incident",
+            "manager_type": -1,
+            "stage": 0,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "사건 이벤트 설정",
+          "attachedTo": "85d4a4b9-7578-54db-88b1-a6bb954913b8"
+        },
+        "71849509-7e34-5c71-aaf9-132a90055b94": {
+          "localId": 7,
+          "type": "Select",
+          "options": [
+            {
+              "id": "18413525-4a03-57b7-861a-7bed201bb0ce",
+              "text": "휴대폰은 당분간 내가 맡아 둘게.",
+              "next": "5d2045ee-d01d-5601-beb8-cd2f72757e9e",
+              "attrs": {
+                "effects": "ok>trust:+4;ng>trust:-1;ng>pmod:all:-1:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "I'll hold on to your phone for a while."
+                }
+              }
+            },
+            {
+              "id": "6d3f8969-ede7-5429-98f2-f76d1a18a2a2",
+              "text": "팀 공식 입장 내자.",
+              "next": "f3598512-944f-5800-8b74-b2d9ec8eb8bd",
+              "attrs": {
+                "effects": "trust:+3;trust_all:+1;smod:mental:-1:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Let's put out an official team statement."
+                }
+              }
+            },
+            {
+              "id": "5d1dbc21-89e9-5354-bb2c-b5b863bc493e",
+              "text": "실력으로 보여 주면 돼.",
+              "next": "83f9802c-6fac-529d-a1fb-154bfbc6caa8",
+              "attrs": {
+                "effects": "ok>pmod:all:+1:-1;ng>pmod:all:-2:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Just prove them wrong with your play."
+                }
+              }
+            }
+          ]
+        },
+        "5d2045ee-d01d-5601-beb8-cd2f72757e9e": {
+          "localId": 8,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "오히려 편하네요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Honestly, that's kind of a relief."
+                }
+              ]
+            }
+          },
+          "next": "1f95e147-5344-56ca-a886-b882f2f0ef46"
+        },
+        "1f95e147-5344-56ca-a886-b882f2f0ef46": {
+          "localId": 9,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "답답해요…"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "This is so frustrating…"
+                }
+              ]
+            }
+          },
+          "next": "1253bd92-92c6-506f-88e7-20e8b4d8b4b2"
+        },
+        "f3598512-944f-5800-8b74-b2d9ec8eb8bd": {
+          "localId": 10,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "감독님이 막아 주시는 거예요?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "You're going to stand up for me?"
+                }
+              ]
+            }
+          },
+          "next": "1253bd92-92c6-506f-88e7-20e8b4d8b4b2"
+        },
+        "83f9802c-6fac-529d-a1fb-154bfbc6caa8": {
+          "localId": 11,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "두고 보세요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Just watch me."
+                }
+              ]
+            }
+          },
+          "next": "d42dfa34-099e-55b2-8e85-456aea40d202"
+        },
+        "d42dfa34-099e-55b2-8e85-456aea40d202": {
+          "localId": 12,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "그게 쉬우면 이러겠어요?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "If it were that easy, I wouldn't be like this."
+                }
+              ]
+            }
+          },
+          "next": "1253bd92-92c6-506f-88e7-20e8b4d8b4b2"
+        }
+      }
+    }
+  }
+}

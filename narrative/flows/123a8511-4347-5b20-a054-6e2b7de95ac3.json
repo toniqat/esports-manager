@@ -1,0 +1,252 @@
+{
+  "id": "123a8511-4347-5b20-a054-6e2b7de95ac3",
+  "name": "P06",
+  "parentNodeId": null,
+  "folderId": "ec57a5a5-b671-5d6b-8bed-630ed5f29af7",
+  "defaultAttrs": {
+    "speakerWikiTargetId": "dd665e10-0059-53d3-a1c2-b806960e315d"
+  },
+  "sharedAttributes": {
+    "Comment": [
+      {
+        "id": "941d7401-3fc3-552b-9ff1-1b6951f2c37d",
+        "name": "kind",
+        "type": "enum",
+        "enumValues": [
+          "interview",
+          "outing",
+          "incident",
+          "press",
+          "talk",
+          "talk_pair"
+        ],
+        "default": "",
+        "description": "이벤트 종류"
+      },
+      {
+        "id": "64f4cf9a-5003-5a88-882b-1ed36feabf45",
+        "name": "manager_type",
+        "type": "integer",
+        "default": -1,
+        "description": "-1 공통 · 0 운영형 · 1 실전형"
+      },
+      {
+        "id": "66485c04-20cc-56f3-b13b-0fc7a7527573",
+        "name": "stage",
+        "type": "integer",
+        "default": 0,
+        "description": "외출 단계 (1..N), 그 밖 0"
+      },
+      {
+        "id": "a5a66158-0755-5e0a-88d7-7494c7925cad",
+        "name": "cond",
+        "type": "text",
+        "default": "",
+        "description": "조건 (; 로 이음) — features/season/mental/README.md"
+      },
+      {
+        "id": "2aa5dc10-a507-5676-bbcb-6e93d23ff1bf",
+        "name": "weight",
+        "type": "integer",
+        "default": 1,
+        "description": "뽑기 가중치"
+      }
+    ],
+    "Select": [
+      {
+        "id": "ce746bf4-b839-5578-86bb-516295023613",
+        "name": "effects",
+        "type": "text",
+        "default": "",
+        "description": "선택지 효과 절 (; 로 이음, ok> / ng> 판정 게이트)"
+      }
+    ],
+    "Dialog": [
+      {
+        "id": "d3873216-2a86-570e-a669-6d57580a3e30",
+        "name": "branch",
+        "type": "enum",
+        "enumValues": [
+          "ok",
+          "ng"
+        ],
+        "default": "",
+        "description": "답 뒤 대사만: 판정 성공(ok) / 실패(ng) 때만. 비우면 항상"
+      }
+    ]
+  },
+  "labels": [],
+  "nodes": [
+    {
+      "id": "04a1b7f9-c41e-5ce2-bcf6-14261f80193b",
+      "type": "Start",
+      "name": "Start",
+      "localId": 1,
+      "x": 40,
+      "y": 40
+    },
+    {
+      "id": "65f3159f-e8eb-5301-b7ca-81a536bdd974",
+      "type": "End",
+      "name": "End",
+      "localId": 2,
+      "x": 1240,
+      "y": 40
+    },
+    {
+      "id": "3066d17d-4c33-5628-9b1b-1bb90f39edff",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 3,
+      "x": 340,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+      "content": "{tx_MH87R5EDPY}",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "{tx_MH87R5EDPY}",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "53b43908-cfc1-5be8-bb0f-2ede3bcfff7e",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 4,
+      "x": 640,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+      "content": "{name} 선수 해외 이적설이 있습니다.\n사실입니까?",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "There are rumors {name} is transferring overseas.\nIs it true?",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "442dc090-e100-5c8e-8a88-ac227a223104",
+      "type": "Comment",
+      "name": "Comment",
+      "localId": 5,
+      "x": 340,
+      "y": -220,
+      "color": "#64748b",
+      "text": "기자회견 이벤트 설정",
+      "width": 260,
+      "height": 110,
+      "attachments": [
+        {
+          "nodeId": "3066d17d-4c33-5628-9b1b-1bb90f39edff"
+        }
+      ],
+      "sharedValues": {
+        "941d7401-3fc3-552b-9ff1-1b6951f2c37d": "press",
+        "64f4cf9a-5003-5a88-882b-1ed36feabf45": -1,
+        "66485c04-20cc-56f3-b13b-0fc7a7527573": 0,
+        "a5a66158-0755-5e0a-88d7-7494c7925cad": "mention=mvp",
+        "2aa5dc10-a507-5676-bbcb-6e93d23ff1bf": 1
+      }
+    },
+    {
+      "id": "5cfffbae-811e-5ab4-b557-47d06fc0928c",
+      "type": "Select",
+      "name": "Select",
+      "localId": 6,
+      "x": 940,
+      "y": 40,
+      "color": "#64748b",
+      "options": [
+        {
+          "id": "673273cc-c629-584a-8ce5-857e585968cf",
+          "text": "{name}{eun} 우리와 끝까지 갑니다.",
+          "sharedValues": {
+            "ce746bf4-b839-5578-86bb-516295023613": "trust:+5"
+          }
+        },
+        {
+          "id": "3d3f9777-c2a4-55c9-b430-ef96b15014f4",
+          "text": "선수 본인에게 물어보시죠.",
+          "sharedValues": {
+            "ce746bf4-b839-5578-86bb-516295023613": "trust:-2"
+          }
+        }
+      ],
+      "translations": {
+        "opt:673273cc-c629-584a-8ce5-857e585968cf": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "{name} is with us to the end.",
+            "status": "progress"
+          }
+        },
+        "opt:3d3f9777-c2a4-55c9-b430-ef96b15014f4": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Why don't you ask the player?",
+            "status": "progress"
+          }
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "92c970b3-9af4-532f-85d1-b5d24a95cfb4",
+      "source": "04a1b7f9-c41e-5ce2-bcf6-14261f80193b",
+      "target": "3066d17d-4c33-5628-9b1b-1bb90f39edff",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "8183cdd1-3578-5fbc-8073-f9310a52a71f",
+      "source": "3066d17d-4c33-5628-9b1b-1bb90f39edff",
+      "target": "53b43908-cfc1-5be8-bb0f-2ede3bcfff7e",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "8cf0006e-3b35-5c5c-8005-8772023aa671",
+      "source": "53b43908-cfc1-5be8-bb0f-2ede3bcfff7e",
+      "target": "5cfffbae-811e-5ab4-b557-47d06fc0928c",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "c4014022-6299-544c-83ab-b159333d562b",
+      "source": "5cfffbae-811e-5ab4-b557-47d06fc0928c",
+      "target": "65f3159f-e8eb-5301-b7ca-81a536bdd974",
+      "sourcePort": "opt:673273cc-c629-584a-8ce5-857e585968cf",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "1a451d3d-6408-5071-b8a9-d126d0d88d2e",
+      "source": "5cfffbae-811e-5ab4-b557-47d06fc0928c",
+      "target": "65f3159f-e8eb-5301-b7ca-81a536bdd974",
+      "sourcePort": "opt:3d3f9777-c2a4-55c9-b430-ef96b15014f4",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    }
+  ],
+  "nextLocalId": 7
+}

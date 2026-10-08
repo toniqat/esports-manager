@@ -1,0 +1,178 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "cf89dfdc-96b2-55e7-9531-597e843ab7c7": {
+      "id": "cf89dfdc-96b2-55e7-9531-597e843ab7c7",
+      "name": "I07",
+      "start": "b2266336-f3fd-537f-9b4e-535bd3412702",
+      "end": "805b4152-1374-508b-9d81-486b73679a09",
+      "nodes": {
+        "b2266336-f3fd-537f-9b4e-535bd3412702": {
+          "localId": 1,
+          "type": "Start",
+          "next": "14277d05-17b7-5f53-8855-52ca9c0f8348"
+        },
+        "805b4152-1374-508b-9d81-486b73679a09": {
+          "localId": 2,
+          "type": "End"
+        },
+        "14277d05-17b7-5f53-8855-52ca9c0f8348": {
+          "localId": 3,
+          "memoIds": [
+            "41fa507b-e84e-57e4-981d-5da39ced475f"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "지난 경기 이겼잖아요!"
+            },
+            {
+              "kind": "text",
+              "text": "오늘 저녁은 좀 쉬어도 돼요?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "We won last match!"
+                },
+                {
+                  "kind": "text",
+                  "text": "Can we take it easy tonight?"
+                }
+              ]
+            }
+          },
+          "next": "e950badc-a1fe-5961-91c4-8a5a9b721fae"
+        },
+        "41fa507b-e84e-57e4-981d-5da39ced475f": {
+          "localId": 4,
+          "attrs": {
+            "kind": "interview",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "last=win",
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "면담 이벤트 설정",
+          "attachedTo": "14277d05-17b7-5f53-8855-52ca9c0f8348"
+        },
+        "e950badc-a1fe-5961-91c4-8a5a9b721fae": {
+          "localId": 5,
+          "type": "Select",
+          "options": [
+            {
+              "id": "8bed5f5e-99be-506e-a8f0-c860dac36a12",
+              "text": "오늘은 쉬자. 잘했어.",
+              "next": "d6a84033-0cf8-5b98-b124-9557280099cc",
+              "attrs": {
+                "effects": "trust:+4"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Take the night off. Well played."
+                }
+              }
+            },
+            {
+              "id": "eba52c47-c948-5322-9728-82672e1fb5c8",
+              "text": "이길 때 더 다져야지.",
+              "next": "8164fc64-b296-502f-9375-731014c58433",
+              "attrs": {
+                "effects": "ok>trust:+2;ng>trust:-2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Winning is when you tighten things up."
+                }
+              }
+            }
+          ]
+        },
+        "d6a84033-0cf8-5b98-b124-9557280099cc": {
+          "localId": 6,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "역시 감독님!"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "That's our coach!"
+                }
+              ]
+            }
+          },
+          "next": "805b4152-1374-508b-9d81-486b73679a09"
+        },
+        "8164fc64-b296-502f-9375-731014c58433": {
+          "localId": 7,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…맞아요. 복기부터 할게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "…Fair. I'll start with the review."
+                }
+              ]
+            }
+          },
+          "next": "70167339-dcd8-5daa-a6a2-341753ac498c"
+        },
+        "70167339-dcd8-5daa-a6a2-341753ac498c": {
+          "localId": 8,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "이겨도 쉬지를 못하네…"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Can't even rest after a win…"
+                }
+              ]
+            }
+          },
+          "next": "805b4152-1374-508b-9d81-486b73679a09"
+        }
+      }
+    }
+  }
+}

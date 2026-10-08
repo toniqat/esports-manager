@@ -1,0 +1,192 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "54f36d6e-951f-5e98-a1b5-3ea30a345644": {
+      "id": "54f36d6e-951f-5e98-a1b5-3ea30a345644",
+      "name": "T05",
+      "start": "29c7b2b2-24ca-5407-b4b7-1e025b0bc12e",
+      "end": "9dae5320-c393-53e7-aca2-78cf49b18f75",
+      "nodes": {
+        "29c7b2b2-24ca-5407-b4b7-1e025b0bc12e": {
+          "localId": 1,
+          "type": "Start",
+          "next": "9bbab6fb-f27b-5c9d-ae59-7fd0ad414fdc"
+        },
+        "9dae5320-c393-53e7-aca2-78cf49b18f75": {
+          "localId": 2,
+          "type": "End"
+        },
+        "9bbab6fb-f27b-5c9d-ae59-7fd0ad414fdc": {
+          "localId": 3,
+          "memoIds": [
+            "a8253f98-b8a5-57e1-b866-40f72e962b70"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "전장 훈련은 늘 같은 동선이라 좀 지루해요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Field drills are always the same routes, it gets a bit dull."
+                }
+              ]
+            }
+          },
+          "next": "7f8643f2-fb32-506a-8a5b-8281f07c5f3f"
+        },
+        "7f8643f2-fb32-506a-8a5b-8281f07c5f3f": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "23f70dcf-de2b-50ea-a210-97bcdd22d3a0",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "지루한 게 몸에 배야 실전에서 안 흔들려."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "It has to get dull enough to stick, so you don't waver in a real match."
+                }
+              ]
+            }
+          },
+          "next": "e88d33b8-1fbf-5567-af78-85a6b73884e3"
+        },
+        "a8253f98-b8a5-57e1-b866-40f72e962b70": {
+          "localId": 5,
+          "attrs": {
+            "kind": "talk",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "train=H,E",
+            "weight": 2
+          },
+          "type": "Comment",
+          "text": "오전 만남 이벤트 설정",
+          "attachedTo": "9bbab6fb-f27b-5c9d-ae59-7fd0ad414fdc"
+        },
+        "e88d33b8-1fbf-5567-af78-85a6b73884e3": {
+          "localId": 6,
+          "type": "Select",
+          "options": [
+            {
+              "id": "dbcdab4a-0173-5869-a963-d4aa7a62ceda",
+              "text": "내일은 변칙 동선도 섞어 볼까?",
+              "next": "b6ee2fa0-5419-51ac-8271-61480c248332",
+              "attrs": {
+                "effects": "trust:+2;stress:-2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Want to mix in some unusual routes tomorrow?"
+                }
+              }
+            },
+            {
+              "id": "da7c11e8-e8c8-58b8-a172-95dace634f6f",
+              "text": "기본이 제일 중요해. 그대로 가자.",
+              "next": "b1621709-a7b0-5152-8631-4c28c2987ad3",
+              "attrs": {
+                "effects": "ok>pmod:field_hit:+1:-1;ng>stress:+2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Basics matter most. Keep it as is."
+                }
+              }
+            }
+          ]
+        },
+        "b6ee2fa0-5419-51ac-8271-61480c248332": {
+          "localId": 7,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "오, 그거 재밌겠네요!"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Oh, that sounds fun!"
+                }
+              ]
+            }
+          },
+          "next": "9dae5320-c393-53e7-aca2-78cf49b18f75"
+        },
+        "b1621709-a7b0-5152-8631-4c28c2987ad3": {
+          "localId": 8,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "알겠어요. 기본부터 확실히 할게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Got it. I'll nail the basics first."
+                }
+              ]
+            }
+          },
+          "next": "7106ca3f-7e37-5aad-8b08-04ee164162a9"
+        },
+        "7106ca3f-7e37-5aad-8b08-04ee164162a9": {
+          "localId": 9,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네… 그렇죠."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Yeah... right."
+                }
+              ]
+            }
+          },
+          "next": "9dae5320-c393-53e7-aca2-78cf49b18f75"
+        }
+      }
+    }
+  }
+}

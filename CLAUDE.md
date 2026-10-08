@@ -57,7 +57,8 @@ Read the README of every row your task touches. Indented rows are submodules —
 | ↳ `calendar/` | Week clock, weekdays / match days, phase transitions | `features/season/calendar/README.md` |
 | ↳ `press/` | Press conference messenger screen | `features/season/press/README.md` |
 | ↳ `training/` | Daily training tile board, coach auto-arrange | `features/season/training/README.md` |
-| ↳ `week/` | 시간 경과 screen (day rail, day cards) | `features/season/week/README.md` |
+| ↳ `week/` | 시간 경과 screen (day rail, morning / afternoon, day cards) | `features/season/week/README.md` |
+| ↳ `week/base_map/` | Team base map widget (`BaseMap`) + one scene per map (art, spot markers), `teams.csv` `map_id` | `features/season/week/base_map/README.md` |
 | ↳ `league/` | `LeagueManager`, standings view | `features/season/league/README.md` |
 | ↳ `run_stats/` | Match MVP metric, phase POM | `features/season/run_stats/README.md` |
 | ↳ `staff/` | Manager · staff stats, cover rule, hub manage cards (`HubSheet`) | `features/season/staff/README.md` |

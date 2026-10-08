@@ -404,6 +404,13 @@ static func _week(state: Dictionary) -> Dictionary:
 	return m
 
 
+## That weekday's record dictionary `mental.days["<day>"]` (created empty when missing,
+## reset with the week). Other mental helpers keep their own sub-records in it
+## (`AfternoonAway` → `afternoon`).
+static func day_record(state: Dictionary, day: int) -> Dictionary:
+	return _day(state, day)
+
+
 static func _day(state: Dictionary, day: int) -> Dictionary:
 	var days: Dictionary = _week(state)["days"]
 	var k: String = str(day)

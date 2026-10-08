@@ -2,9 +2,9 @@
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
-[node name="WeekEveningDoneCard" type="Panel"]
+[node name="WeekAfternoonDoneCard" type="Panel"]
 auto_translate_mode = 2
-editor_description = "오늘 저녁 after the action — one-line summary + effect notes. Without a pilot (pass) code hides %Portrait and moves the text to x 28."
+editor_description = "오후 after the action: one-line summary + effect notes. Without a pilot (pass) code hides %Portrait and moves the text to x 28."
 custom_minimum_size = Vector2(1000, 150)
 offset_right = 1000.0
 offset_bottom = 150.0
@@ -14,7 +14,7 @@ theme_type_variation = &"Card"
 
 [node name="Portrait" type="Control" parent="."]
 unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — WeekProgressView.gd
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_afternoon_done_card()
 Slot for the round portrait — code adds the drawn OutgameTheme.add_round_portrait widget here."
 anchors_preset = 0
 offset_left = 24.0
@@ -24,7 +24,7 @@ offset_bottom = 117.0
 mouse_filter = 2
 
 [node name="Head" type="Label" parent="."]
-editor_description = "[필수] 지우면 오류 — WeekProgressView.gd"
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_afternoon_done_card()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 10
@@ -36,10 +36,10 @@ offset_bottom = 70.0
 grow_horizontal = 2
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 28
-text = "오늘 저녁 — Evelyn 면담"
+text = "오후: Evelyn 면담"
 
 [node name="Line" type="Label" parent="."]
-editor_description = "[필수] 지우면 오류 — WeekProgressView.gd"
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_afternoon_done_card()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 10

@@ -1,0 +1,173 @@
+class_name BaseMap
+extends Control
+
+# ── Team base map (팀 부지 맵) ───────────────────────────────────────────────
+# One scene per map (`UI_Comp_BaseMap_<Name>.tscn`), all with this script:
+#
+#   BaseMap_<Name> (Control DESIGN_SIZE, mouse Ignore)
+#   ├ %Art     TextureRect, the map art (resources/images/base_map/)
+#   ├ Spots    Control ─ Spot_H · Spot_E · Spot_C · Spot_D · Spot_G · Spot_M · Spot_Q ·
+#   │                    Spot_W · Spot_Dorm · Spot_Entrance  (Marker2D, drag them in the editor)
+#   └ %Tokens  Control, code adds the pilot tokens here
+#
+# A training colour group has one spot (`COLOR_SPOTS`, the colour table of
+# `features/season/training/README.md`); `Dorm` and `Entrance` are the afternoon
+# away spots. Which map a team uses is data (`teams.csv` `map_id` → `SCENES`).
+# Tokens that share a spot are fanned out in rows (`place_tokens`) so they never
+# overlap, and every token is kept inside the map rect.
+
+const DESIGN_SIZE: Vector2 = Vector2(1000, 634)
+
+## `map_id` → scene. The order is the image numbering in `resources/images/base_map/`.
+const SCENES: Array = [
+	"res://features/season/week/base_map/UI_Comp_BaseMap_SchaleOffice.tscn",
+	"res://features/season/week/base_map/UI_Comp_BaseMap_SchaleDorm.tscn",
+	"res://features/season/week/base_map/UI_Comp_BaseMap_Gehenna.tscn",
+	"res://features/season/week/base_map/UI_Comp_BaseMap_Abydos.tscn",
+	"res://features/season/week/base_map/UI_Comp_BaseMap_Millennium.tscn",
+	"res://features/season/week/base_map/UI_Comp_BaseMap_Trinity.tscn",
+	"res://features/season/week/base_map/UI_Comp_BaseMap_RedWinter.tscn",
+	"res://features/season/week/base_map/UI_Comp_BaseMap_Hyakkiyako.tscn",
+	"res://features/season/week/base_map/UI_Comp_BaseMap_DuShiratori.tscn",
+	"res://features/season/week/base_map/UI_Comp_BaseMap_Shanhaijing.tscn",
+	"res://features/season/week/base_map/UI_Comp_BaseMap_Haruhabara.tscn",
+	"res://features/season/week/base_map/UI_Comp_BaseMap_WildHunt.tscn",
+]
+
+const SPOT_NEUTRAL: String = "W"
+const SPOT_DORM: String = "Dorm"
+const SPOT_ENTRANCE: String = "Entrance"
+
+## Training tile colour symbol → spot. Growth A / P share `G`; the amplifier's black
+## self cell `K` and "no tile" (basic course) stand on the neutral spot.
+const COLOR_SPOTS: Dictionary = {
+	"H": "H", "E": "E", "C": "C", "D": "D", "A": "G", "P": "G",
+	"M": "M", "Q": "Q", "W": "W", "K": "W",
+}
+
+## Fan-out of tokens sharing a spot: column / row step and tokens per row. The step is
+## also a token's footprint: tokens on nearby spots are pushed apart until their
+## footprints no longer overlap (`_separate`, at most `SEPARATE_PASSES` passes).
+const TOKEN_STEP: Vector2 = Vector2(130, 160)
+const TOKENS_PER_ROW: int = 3
+const SEPARATE_PASSES: int = 32
+
+const _PREVIEW_TOKEN: String = "res://features/season/week/UI_Comp_WeekMapPilot.tscn"
+
+@onready var _tokens: Control = %Tokens
+
+
+## Instantiates the map scene of `map_id` (clamped into `SCENES`).
+static func create(map_id: int) -> BaseMap:
+	var idx: int = clampi(map_id, 0, SCENES.size() - 1)
+	return (load(String(SCENES[idx])) as PackedScene).instantiate() as BaseMap
+
+
+## Spot of a training colour symbol ("" = no tile → neutral).
+static func spot_of_color(symbol: String) -> String:
+	return String(COLOR_SPOTS.get(symbol, SPOT_NEUTRAL))
+
+
+func _ready() -> void:
+	if UiPreview.is_standalone(self):
+		_fill_preview()
+
+
+## Map-local point of a spot. A missing marker falls back to the neutral spot, then
+## to the map centre.
+func spot_point(spot: String) -> Vector2:
+	var m: Node2D = get_node_or_null("Spots/Spot_" + spot) as Node2D
+	if m == null:
+		m = get_node_or_null("Spots/Spot_" + SPOT_NEUTRAL) as Node2D
+	if m == null:
+		return size * 0.5
+	return m.position
+
+
+func clear_tokens() -> void:
+	for c in _tokens.get_children():
+		_tokens.remove_child(c)
+		c.queue_free()
+
+
+## Adds `node` to the token layer (call `place_tokens` once all are in).
+func add_token(node: Control) -> void:
+	_tokens.add_child(node)
+
+
+## Places tokens on their spots. `entries` = `[{node: Control, spot: String, anchor: Vector2}]`,
+## `anchor` = the token-local point that stands on the spot (the portrait centre).
+## Tokens sharing a spot fan out in rows of `TOKENS_PER_ROW`, centred on the spot,
+## in `entries` order; tokens of nearby spots are then pushed apart (`_separate`), and
+## every token is clamped inside the map rect.
+func place_tokens(entries: Array) -> void:
+	var groups: Dictionary = {}
+	var order: Array = []
+	for raw in entries:
+		var e: Dictionary = raw
+		var spot: String = String(e.get("spot", SPOT_NEUTRAL))
+		if not groups.has(spot):
+			groups[spot] = []
+			order.append(spot)
+		(groups[spot] as Array).append(e)
+	var area: Vector2 = size if size.x > 0.0 else DESIGN_SIZE
+	var nodes: Array = []
+	for spot in order:
+		var group: Array = groups[spot]
+		var base: Vector2 = spot_point(String(spot))
+		for k in group.size():
+			var e2: Dictionary = group[k]
+			var node: Control = e2["node"]
+			var row: int = floori(float(k) / float(TOKENS_PER_ROW))
+			var col: int = k % TOKENS_PER_ROW
+			var in_row: int = mini(TOKENS_PER_ROW, group.size() - row * TOKENS_PER_ROW)
+			var off := Vector2((float(col) - float(in_row - 1) * 0.5) * TOKEN_STEP.x,
+					float(row) * TOKEN_STEP.y)
+			var at: Vector2 = base + off - (e2.get("anchor", Vector2.ZERO) as Vector2)
+			node.position = at.clamp(Vector2.ZERO, (area - node.size).max(Vector2.ZERO))
+			nodes.append(node)
+	_separate(nodes, area)
+
+
+## Pushes overlapping token footprints (`TOKEN_STEP`, centred on each token) apart along
+## the axis of least overlap, half each, clamped inside `area`. Tokens fanned out on one
+## spot already sit a footprint apart, so this only moves tokens of nearby spots.
+static func _separate(nodes: Array, area: Vector2) -> void:
+	for _pass in SEPARATE_PASSES:
+		var moved: bool = false
+		for i in nodes.size():
+			for j in range(i + 1, nodes.size()):
+				var a: Control = nodes[i]
+				var b: Control = nodes[j]
+				var d: Vector2 = (b.position + b.size * 0.5) - (a.position + a.size * 0.5)
+				var over := Vector2(TOKEN_STEP.x - absf(d.x), TOKEN_STEP.y - absf(d.y))
+				if over.x <= 0.0 or over.y <= 0.0:
+					continue
+				var push := Vector2.ZERO
+				if over.x <= over.y:
+					push.x = over.x * 0.5 * (1.0 if d.x >= 0.0 else -1.0)
+				else:
+					push.y = over.y * 0.5 * (1.0 if d.y >= 0.0 else -1.0)
+				a.position = (a.position - push).clamp(Vector2.ZERO, (area - a.size).max(Vector2.ZERO))
+				b.position = (b.position + push).clamp(Vector2.ZERO, (area - b.size).max(Vector2.ZERO))
+				moved = true
+		if not moved:
+			return
+
+
+## F6 preview: one token per spot named after it (spot check), plus two more on the
+## neutral spot to show the fan-out.
+func _fill_preview() -> void:
+	UiPreview.stage(self)
+	var scene: PackedScene = load(_PREVIEW_TOKEN) as PackedScene
+	var entries: Array = []
+	var spots: Array = ["H", "E", "C", "D", "G", "M", "Q", "W", "W", "W", SPOT_DORM, SPOT_ENTRANCE]
+	for spot in spots:
+		var tok: Control = scene.instantiate() as Control
+		add_token(tok)
+		(tok.get_node("%Name") as Label).text = String(spot)
+		(tok.get_node("%Gain") as Control).visible = false
+		(tok.get_node("%Stress") as Control).visible = false
+		var hold: Control = tok.get_node("%Portrait")
+		entries.append({"node": tok, "spot": spot, "anchor": hold.position + hold.size * 0.5})
+	place_tokens(entries)

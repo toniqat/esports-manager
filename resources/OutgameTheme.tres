@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=152 format=3 uid="uid://co7tw5omdwmyd"]
+[gd_resource type="Theme" load_steps=151 format=3 uid="uid://co7tw5omdwmyd"]
 
 [sub_resource type="StyleBoxFlat" id="AccentChip_panel"]
 content_margin_left = 20.0
@@ -1748,13 +1748,6 @@ corner_radius_top_right = 20
 corner_radius_bottom_right = 20
 corner_radius_bottom_left = 20
 
-[sub_resource type="StyleBoxFlat" id="WeekEveningHighlight_panel"]
-bg_color = Color(0.996, 0.929, 0.808, 1)
-corner_radius_top_left = 16
-corner_radius_top_right = 16
-corner_radius_bottom_right = 16
-corner_radius_bottom_left = 16
-
 [sub_resource type="StyleBoxFlat" id="WeekRail_panel"]
 bg_color = Color(0.11, 0.11, 0.122, 1)
 corner_radius_top_left = 48
@@ -2173,7 +2166,5 @@ WeekDayChip/base_type = &"AccentChip"
 WeekDayChip/styles/panel = SubResource("WeekDayChip_panel")
 WeekDayChipToday/base_type = &"AccentChip"
 WeekDayChipToday/styles/panel = SubResource("WeekDayChipToday_panel")
-WeekEveningHighlight/base_type = &"SunkPanel"
-WeekEveningHighlight/styles/panel = SubResource("WeekEveningHighlight_panel")
 WeekRail/base_type = &"SunkPanel"
 WeekRail/styles/panel = SubResource("WeekRail_panel")

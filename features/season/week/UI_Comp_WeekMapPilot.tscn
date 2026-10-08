@@ -1,0 +1,83 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+
+[node name="WeekMapPilot" type="Control"]
+auto_translate_mode = 2
+editor_description = "One of my pilots on the base map (BaseMap %Tokens). The portrait centre stands on the spot; the chip under it shows the name, then after the morning settlement the day's stat ups (%Gain) and stress change (%Stress). Code dims the whole token (modulate) when the pilot cannot be asked this afternoon."
+custom_minimum_size = Vector2(136, 160)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 136.0
+offset_bottom = 160.0
+mouse_filter = 2
+theme = ExtResource("1_theme")
+
+[node name="Portrait" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token() · BaseMap.gd _fill_preview()
+Slot for the round portrait (code draws OutgameTheme.add_round_portrait here). Its centre is the token's anchor on the spot."
+anchors_preset = 0
+offset_left = 26.0
+offset_right = 110.0
+offset_bottom = 84.0
+mouse_filter = 2
+
+[node name="Chip" type="PanelContainer" parent="."]
+editor_description = "Name / result chip, centred under the portrait; grows with its lines."
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_top = 88.0
+offset_bottom = 88.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"SurfaceChip"
+
+[node name="Lines" type="VBoxContainer" parent="Chip"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Name" type="Label" parent="Chip/Lines"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token() · BaseMap.gd _fill_preview()
+Pilot name, or the afternoon away state (혼자 외출 / 숙소 휴식)."
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 18
+text = "Evelyn"
+horizontal_alignment = 1
+
+[node name="Gain" type="Label" parent="Chip/Lines"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token() · BaseMap.gd _fill_preview()
+Stat points gained that day (short names), or the EXP earned when none rose. Shown after the morning settlement only."
+layout_mode = 2
+theme_type_variation = &"PositiveLabel"
+theme_override_font_sizes/font_size = 17
+text = "전명+1 교회+1"
+horizontal_alignment = 1
+
+[node name="Stress" type="Label" parent="Chip/Lines"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token() · BaseMap.gd _fill_preview()
+Stress change of the day (row key stress). Shown after the morning settlement only."
+layout_mode = 2
+theme_type_variation = &"NegativeLabel"
+theme_override_font_sizes/font_size = 16
+text = "스트레스 +6"
+horizontal_alignment = 1
+
+[node name="Hit" type="Button" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token()
+Tap target over the portrait (afternoon: pick this pilot). Code disables it for pilots that cannot be asked."
+layout_mode = 0
+offset_left = 26.0
+offset_right = 110.0
+offset_bottom = 84.0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+flat = true

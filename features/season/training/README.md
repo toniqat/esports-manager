@@ -18,7 +18,7 @@ too** — the only place that needs weekday names is the **week-progress screen 
 | File | Role |
 |---|---|
 | `TrainingTile.gd` | `class_name TrainingTile` — one CSV row = one tile. **Grammar parsing lives only here** (shape · colour · EXP · mastery · effect clauses · quirk ops). Also owns the colour table · grade table and the **staff-stat lookups** (grade unlock from tactics, per-grade placement limit and EXP multiplier from training — see "Manager / staff stats" below). |
-| `TrainingBoard.gd` | `class_name TrainingBoard` — headless board. Staff stats (`training_stat` / `tactics_stat` / `limit_of` / `is_unlocked` / `can_take_more`), placement checks (`can_place` / `place` / `remove_at`), settlement (`cell_exp` / `exp_mult_table` / `compute_gains` / `compute_day_gains`), mastery (`cell_mastery` / `compute_mastery`), quirk ops (`day_quirk_ops`), **weekday application** (`apply_day_training`), preview (`projected_stats`), auto-arrange (`auto_arrange`), week-progress reset (`reset_week_progress`). The `TrainingBoard` node in Season.tscn. |
+| `TrainingBoard.gd` | `class_name TrainingBoard` — headless board. Staff stats (`training_stat` / `tactics_stat` / `limit_of` / `is_unlocked` / `can_take_more`), placement checks (`can_place` / `place` / `remove_at`), settlement (`cell_exp` / `exp_mult_table` / `compute_gains` / `compute_day_gains`), mastery (`cell_mastery` / `compute_mastery`), quirk ops (`day_quirk_ops`), per-day cell colours (`day_colors`, read by the week screen's base map), **weekday application** (`apply_day_training`), preview (`projected_stats`), auto-arrange (`auto_arrange`), week-progress reset (`reset_week_progress`). The `TrainingBoard` node in Season.tscn. |
 | `TrainingView.gd` · `UI_View_TrainingView.tscn` | Planning screen — staff line + 5 portraits + 5×5 board + horizontally scrolling course cards + bottom bar ("판 비우기" · "코치 추천" · "훈련 확정"). Drag & drop. **The frame is the scene** (see "Scene tree" below); the script binds `%` nodes, fills data, applies the safe-area insets, and owns the drawn board + drag & drop. Created with `TrainingView.create()` (`SeasonHub._ensure_training_view`). Layout · reading conventions are in "Screen layout" below. |
 | `UI_Comp_TrainingThumb.tscn` | One portrait column header (frame · face · per-pilot `EXP ×r` chip). No script — `TrainingView._bind_thumbs` sets the role border colour; five instances sit in `UI_View_TrainingView.tscn`. |
 | `TrainingCourseCard.gd` · `.tscn` | `class_name TrainingCourseCard` — one course card of the inventory row (grade band · cap · shape well · name · lock chip). `fill(tile, cap, grade_locked, locked, lock_reason)`, `set_selected(selected, locked)`; the shape miniature is drawn into `%Mini` (`_draw_mini`). |
@@ -155,18 +155,21 @@ week-progress screen (`features/season/week/`) started asking "what happened tha
 weekday, settlement was split per day too.
 
 It returns the row list that screen reads — in seat order,
-`Array[{pilot_id, role, seat, before, after, ups, exp, carry, mastery, quirk, stress}]` (no name — saved in the run file; screens use `GameManager.pilot_name(pilot_id)`, l10n D7)
+`Array[{pilot_id, role, seat, before, after, ups, exp, carry, mastery, quirk, stress, color}]` (no name — saved in the run file; screens use `GameManager.pilot_name(pilot_id)`, l10n D7)
 (`mastery` = mech-mastery EXP handed to `MechMastery.add_training_exp` that day, M3;
 `quirk` = quirk ops run on that pilot that day, `[{kind, result, id?, from?, to?, slots?}]`, empty
 array when none — see "Quirk tiles";
 `stress` = stress that pilot gained that day, `StressSystem.on_training_day`, only when the pilot has a tile
-on that day's row, else 0 — `features/season/mental/README.md` "Stress").
+on that day's row, else 0 — `features/season/mental/README.md` "Stress";
+`color` = the colour symbol of that pilot's placed cell that day (`day_colors(day)`, "" = no tile / basic course):
+the week screen stands the pilot on that colour's spot of the team base map, and "" means the pilot rests in the
+dorm that afternoon, `features/season/week/README.md`).
 `ups` is the points actually gained that day, `exp` the EXP earned that day, `carry` the remainder
 left in the bank after settlement (the screen shows "until the next point" as `carry/EXP_PER_POINT`).
 
 The guard against applying twice is **on the screen side** — it stores the result in
 `season_state["week_day_log"][day]` and doesn't call again if one exists
-(`WeekProgressView._settle_day_if_needed`). There really is a path that returns to the same weekday
+(`WeekProgressView._settle_day`, run by the morning's Next on the week screen). There really is a path that returns to the same weekday
 after playing a match.
 
 ## Screen layout

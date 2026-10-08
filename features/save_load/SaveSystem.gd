@@ -184,6 +184,7 @@ static func _serialize_season_state(s: Dictionary) -> Dictionary:
 		"finance":           (s.get("finance", {}) as Dictionary).duplicate(true),
 		"trust":             (s.get("trust", {}) as Dictionary).duplicate(true),
 		"outings":           (s.get("outings", {}) as Dictionary).duplicate(true),
+		"stress":            (s.get("stress", {}) as Dictionary).duplicate(true),
 		"mental":            (s.get("mental", {}) as Dictionary).duplicate(true),
 	}
 
@@ -231,6 +232,7 @@ static func _deserialize_season_state(s: Dictionary) -> Dictionary:
 		"finance":           (s.get("finance", {}) as Dictionary).duplicate(true),
 		"trust":             (s.get("trust", {}) as Dictionary).duplicate(true),
 		"outings":           (s.get("outings", {}) as Dictionary).duplicate(true),
+		"stress":            (s.get("stress", {}) as Dictionary).duplicate(true),
 		"mental":            (s.get("mental", {}) as Dictionary).duplicate(true),
 	}
 

@@ -128,11 +128,27 @@ func test_tag_completions(t: TestKit) -> void:
 	t.eq(labels.call("term_d"), ["term_draw  뽑기", "TERM"], "낱말 앞부분 일치")
 	var picked: Array = e.call("completions", "term_h")
 	t.eq(picked[0].get("key", ""), "tx_SVRFJDH55K", "낱말 = 연결 key")
-	# 이름 행(offer_refs = false): 태그만, 용어집 · 스트링 찾기 없음
-	e.set("offer_refs", false)
-	t.eq(labels.call(""), ["{count}", "{name}", "{plural:name|…}"], "이름 = 참조 항목 없음")
-	t.eq(labels.call("term_"), [], "이름 = 용어집 낱말 없음")
-	t.eq(labels.call("tx_"), [], "이름 = 스트링 찾기 없음")
+	# { 밖: 친 낱말 = 그 칸 언어의 용어집 낱말 앞부분 (한글 1자 · 그 밖 2자, 낱말 경계)
+	e.set("terms", [
+		{"id": "hand", "key": "tx_SVRFJDH55K", "text": "손", "texts": {"ko": "손", "en": "hand"}},
+		{"id": "draw", "key": "tx_6VVGYKXZSK", "text": "뽑기", "texts": {"ko": "뽑기", "en": "draw"}},
+		{"id": "armor", "key": "tx_HPPDS4VKWD", "text": "반응 장갑", "texts": {"ko": "반응 장갑", "en": "Reactive Armor"}}])
+	e.set("term_locale", "ko")
+	var words := func(before: String) -> Array:
+		var out: Array = []
+		for o in e.call("word_completions", before):
+			out.append([o["label"], o["key"], o["replace"]])
+		return out
+	t.eq(words.call("카드를 뽑"), [["뽑기  term_draw", "tx_6VVGYKXZSK", 1]], "한글 1자")
+	t.eq(words.call("카드를 뽑기"), [["뽑기  term_draw", "tx_6VVGYKXZSK", 2]], "다 친 낱말도 key 참조로")
+	t.eq(words.call("오른손"), [], "낱말 중간은 아님")
+	t.eq(words.call("{tx_ABCDEFGHJK}뽑"), [["뽑기  term_draw", "tx_6VVGYKXZSK", 1]], "태그 뒤는 경계")
+	t.eq(words.call("대상에게 반응 장"), [["반응 장갑  term_armor", "tx_HPPDS4VKWD", 4]], "여러 낱말 용어")
+	t.eq(words.call("뽑기 "), [], "지나간 낱말은 아님")
+	e.set("term_locale", "en")
+	t.eq(words.call("then d"), [], "영문 1자는 아직")
+	t.eq(words.call("then DR"), [["draw  term_draw", "tx_6VVGYKXZSK", 2]], "영문 2자 · 대소문자 무시")
+	t.eq(words.call("gain reactive ar"), [["Reactive Armor  term_armor", "tx_HPPDS4VKWD", 11]], "그 칸 언어 표기")
 	e.free()
 
 

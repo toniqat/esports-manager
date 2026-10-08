@@ -35,6 +35,8 @@ const Keygen = preload("res://addons/l10n_tool/core/keygen.gd")
 ## Usage tooltip code preview: lines per file, characters per line.
 const PREVIEW_LINES := 4
 const PREVIEW_COLS := 110
+## Sync Data work per editor frame (ms): the progress window redraws between slices.
+const SYNC_FRAME_MS := 30
 
 ## Column kinds. KIND_INFO = read-only glossary columns (term_id · forbidden · dnt · note).
 const KIND_KEY := "key"
@@ -167,6 +169,10 @@ L.gd · strings 는 Build Data 때 반영된다.",
 		"added": "행 추가: %s = %s. 원문을 입력하세요",
 		"over_len": "max_len %d 초과: %d자",
 		"sync_data_done": "Sync Data: 해시 · draft %d개 · key %d개 · 고아 텍스트 %d개 · Error %d · Warn %d (로그 탭)",
+		"sync_stage_sync": "원본 번역 해시 기록 중…",
+		"sync_stage_scan": "사용처 스캔 중…",
+		"sync_stage_check": "규칙 검증 중…",
+		"sync_stage_write": "index.json · report.md 쓰는 중…",
 		"usages": "사용처",
 		"usages_of": "사용처 %d곳",
 		"source_item": "원본: %s",
@@ -308,6 +314,10 @@ Admin: approve too",
 		"added": "Row added: %s = %s. Type the source text",
 		"over_len": "over max_len %d: %d chars",
 		"sync_data_done": "Sync Data: %d hashes · drafts, %d keys, %d orphan texts, %d errors, %d warnings (Log tab)",
+		"sync_stage_sync": "Recording translation hashes…",
+		"sync_stage_scan": "Scanning usages…",
+		"sync_stage_check": "Checking rules…",
+		"sync_stage_write": "Writing index.json · report.md…",
 		"usages": "Usages",
 		"usages_of": "%d usages",
 		"source_item": "Source: %s",
@@ -433,6 +443,9 @@ Admin: approve too",
 @onready var _key_picker: AcceptDialog = %KeyPicker
 @onready var _kp_search: LineEdit = %KpSearch
 @onready var _kp_tree: Tree = %KpTree
+@onready var _sync_dialog: Window = %SyncDialog
+@onready var _sync_stage: Label = %SyncStage
+@onready var _sync_bar: ProgressBar = %SyncBar
 
 var _plugin: EditorPlugin
 var _l: L10n
@@ -483,6 +496,8 @@ var _menu_key: String = ""
 var _menu_usages: Array = []
 ## Usage → screen map (lazy, see _screens_of) and file line cache for previews.
 var _screen_map: RefCounted = null
+## Sync Data is running (its button is ignored until the job ends).
+var _syncing: bool = false
 var _lines_cache: Dictionary = {}
 ## File the open popup is about, and its extra buttons (rebuilt per popup).
 var _open_file: String = ""
@@ -710,7 +725,7 @@ func _load() -> void:
 		var terms: Array = []
 		for g in _model.glossary_terms():
 			if String(g["key"]) != "":
-				terms.append({"id": g["term_id"], "key": g["key"], "text": (g["texts"] as Dictionary).get(_l.config.source_locale, "")})
+				terms.append({"id": g["term_id"], "key": g["key"], "text": (g["texts"] as Dictionary).get(_l.config.source_locale, ""), "texts": g["texts"]})
 		for e in [_source_edit, _target_edit]:
 			e.key_prefix = _l.config.key_prefix
 			e.terms = terms
@@ -1217,10 +1232,8 @@ func _show_dock(force: bool = false) -> void:
 	_source_edit.offer_plural = false
 	_target_edit.tags = ph
 	_target_edit.offer_plural = true
-	# Names (alias `….name`) are plain text: no key references / glossary words (E043).
-	var refs_ok: bool = not KeyRefs.is_name_alias(String(r["alias"]))
-	_source_edit.offer_refs = refs_ok
-	_target_edit.offer_refs = refs_ok
+	_source_edit.term_locale = _l.config.source_locale
+	_target_edit.term_locale = target
 	_update_dock_live()
 
 
@@ -1838,12 +1851,30 @@ func _on_visibility_changed() -> void:
 
 ## Sync Data = sync (edit modes only: it writes hashes into the sources) → scan + checks →
 ## index.json · report.md → reload from disk. Check results stay for the glossary filter · dock.
+## Runs in slices (`L10n.sync_data_job`, SYNC_FRAME_MS of work per frame) under the modal
+## SyncDialog (stage + progress bar, no close) so the editor keeps drawing.
 func _on_sync_data_pressed() -> void:
-	if not _ready_model():
+	if _syncing or not _ready_model():
 		return
+	_syncing = true
 	_screen_map = null
 	var start: int = _l.output.size()
-	var n: int = _l.cmd_sync_data(_can_edit())
+	var job = _l.sync_data_job(_can_edit())
+	_sync_bar.value = 0.0
+	_sync_stage.text = _tr("sync_stage_" + job.stage())
+	_sync_dialog.popup_centered()
+	await get_tree().process_frame
+	var done: bool = false
+	while not done:
+		var t0: int = Time.get_ticks_msec()
+		while not done and Time.get_ticks_msec() - t0 < SYNC_FRAME_MS:
+			done = job.step()
+		_sync_bar.value = job.progress() * 100.0
+		_sync_stage.text = _tr("sync_stage_" + job.stage())
+		await get_tree().process_frame
+	_sync_dialog.hide()
+	_syncing = false
+	var n: int = int(job.result)
 	_append_log(_l.output.slice(start))
 	_model.set_issues(_l.issues.items)
 	var idx: Dictionary = _l.index

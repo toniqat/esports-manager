@@ -518,3 +518,33 @@ unique_name_in_owner = true
 unique_name_in_owner = true
 size = Vector2i(560, 200)
 dialog_autowrap = true
+
+[node name="SyncDialog" type="Window" parent="."]
+unique_name_in_owner = true
+title = "Sync Data"
+size = Vector2i(440, 96)
+visible = false
+wrap_controls = true
+transient = true
+exclusive = true
+unresizable = true
+
+[node name="SyncBox" type="VBoxContainer" parent="SyncDialog"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SyncStage" type="Label" parent="SyncDialog/SyncBox"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="SyncBar" type="ProgressBar" parent="SyncDialog/SyncBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(416, 0)
+layout_mode = 2

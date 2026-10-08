@@ -538,7 +538,7 @@ tx_1201TH9NT4,Higher presence makes you more likely to be targeted during an eng
 tx_MP25TF18FJ,"Permanent bonus left by this card. It never expires or wears off, and stacks if the card is played again."
 tx_N34BKW73WF,"Built up by the mech passive, not a card. With no card to name it after, it is grouped in one slot."
 tx_B8MQ74WDJZ,Applies only to battlefield hit checks. The engage stage uses its own odds.
-tx_1Z076S4PF9,"Multiplies growth point gain, not growth. Safe Farming and Perfect Finish share this slot."
+tx_1Z076S4PF9,"Multiplies growth point gain, not growth. Other growth rate effects and Perfect Finish share this slot."
 tx_3PBASH0HTY,Temporary bonus from a card. Not cleared when growth is recalculated.
 tx_9GBQDV90TD,Absorbs damage before HP. Lost on returning to base.
 tx_XCY75J2M5N,"The mech stats become the pilot's base values, and growth builds on them."

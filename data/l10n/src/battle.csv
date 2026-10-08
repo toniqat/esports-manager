@@ -52,11 +52,11 @@ tx_V589CQ8M6Z,battle.engage.turret_label,active,Engage header actor name for a t
 tx_JKTA5KTT90,battle.jungle_start.hint,active,Jungle start overlay hint,,,정글러를 끌어다 시작할 정글 타일에 놓는다,Drag the jungler onto the jungle tile to start from,draft,7a5d0d88
 tx_FNC5VVMV4R,battle.jungle_start.start,active,Jungle start overlay confirm button,,,전투 시작,Start Battle,draft,e630cdd1
 tx_RGBVH85TFC,battle.mech.boon.alpha.name,active,Stage C upgrade choice name,,,강화 · 알파,Upgrade · Alpha,draft,7956ee4b
-tx_16KSEBFD67,battle.mech.boon.alpha.desc,active,Stage C upgrade choice description,,,다음 [단계 A] 사용 시 [단계 B] 를 {tx_SN7SJKAZQ2}이 아닌 {tx_SVRFJDH55K}에 {tx_JRJS1G2Q8Y},"Next time [Stage A] is used, create [Stage B] in {tx_SVRFJDH55K} instead of the deck",draft,4f0573b2
+tx_16KSEBFD67,battle.mech.boon.alpha.desc,active,Stage C upgrade choice description,,,다음 [{tx_ZEH286E1N2}] 사용 시 [{tx_87G2EA5213}] 를 {tx_SN7SJKAZQ2}이 아닌 {tx_SVRFJDH55K}에 {tx_JRJS1G2Q8Y},"Next time [{tx_ZEH286E1N2}] is used, create [{tx_87G2EA5213}] in {tx_SVRFJDH55K} instead of the deck",draft,093d23f8
 tx_FYHMPX0G5Z,battle.mech.boon.beta.name,active,Stage C upgrade choice name,,,강화 · 베타,Upgrade · Beta,draft,15986c51
-tx_S2C1ARN50Z,battle.mech.boon.beta.desc,active,Stage C upgrade choice description,,,다음 [단계 B] 사용 시 {tx_JAYQJ6YQE0} +{n},"Next time [Stage B] is used, gain {n} {plural:n|{tx_JAYQJ6YQE0}|{tx_BBFEFTT649}}",draft,d9586b43
+tx_S2C1ARN50Z,battle.mech.boon.beta.desc,active,Stage C upgrade choice description,,,다음 [{tx_87G2EA5213}] 사용 시 {tx_JAYQJ6YQE0} +{n},"Next time [{tx_87G2EA5213}] is used, gain {n} {plural:n|{tx_JAYQJ6YQE0}|{tx_BBFEFTT649}}",draft,bd88cf15
 tx_MF1RG2XJA7,battle.mech.boon.gamma.name,active,Stage C upgrade choice name,,,강화 · 감마,Upgrade · Gamma,draft,b23664f5
-tx_VGZFV8N8KH,battle.mech.boon.gamma.desc,active,Stage C upgrade choice description,,,다음 [단계 C] 사용 시 {tx_WBS95M3MNQ} +{pct}%,"Next time [Stage C] is used, {tx_WBS95M3MNQ} +{pct}%",draft,2b9e4760
+tx_VGZFV8N8KH,battle.mech.boon.gamma.desc,active,Stage C upgrade choice description,,,다음 [{tx_M1BAEN8BYC}] 사용 시 {tx_WBS95M3MNQ} +{pct}%,"Next time [{tx_M1BAEN8BYC}] is used, {tx_WBS95M3MNQ} +{pct}%",draft,307ba376
 tx_RCPH2TXG6X,battle.objective.herald,active,Objective name,,,전령,Herald,draft,41ff692a
 tx_XQ2PPDTRRR,battle.objective.dragon,active,Objective name,,,용,Dragon,draft,c8547479
 tx_3Y0ECJAAHT,battle.objective.unopposed_ally,active,Objective notice title; name = objective,,,{name}: {tx_16H8JD32NR} 무혈 획득,{name}: taken unopposed by allies,draft,07dd7323
@@ -64,8 +64,8 @@ tx_EASJYYJ9SP,battle.objective.unopposed_enemy,active,Objective notice title; na
 tx_30PGAN3RWM,battle.objective.join_prompt,active,Objective decision title; name = objective,,,{name} 등장! 전투에 참여하시겠습니까?,{name} has appeared! Join the fight?,draft,1c871492
 tx_QWFB45AWP4,battle.objective.join,active,Objective decision button,,,참여,Join,draft,2f7784ba
 tx_3MA5JECS5S,battle.objective.skip,active,Objective decision button,,,미참여,Stay Out,draft,23ef4119
-tx_04ERNCHTGZ,battle.objective.reward_herald,active,Objective reward line,,,보상: [전령 제압] (최외곽 적 포탑에 피해 {n}),Reward: [Herald Subdued] ({n} damage to the outermost enemy turret),draft,692b9bec
-tx_2YWT10DFT0,battle.objective.reward_dragon,active,Objective reward line,,,보상: [용 보상] ×{n} 를 덱에 추가,Reward: add [Dragon Reward] ×{n} to the deck,draft,b03a922a
+tx_04ERNCHTGZ,battle.objective.reward_herald,active,Objective reward line,,,보상: [{tx_3KCFBW35Y2}] (최외곽 적 포탑에 피해 {n}),Reward: [{tx_3KCFBW35Y2}] ({n} damage to the outermost enemy turret),draft,059fe785
+tx_2YWT10DFT0,battle.objective.reward_dragon,active,Objective reward line,,,보상: [{tx_P0VTR51XGE}] ×{n} 를 덱에 추가,Reward: add [{tx_P0VTR51XGE}] ×{n} to the deck,draft,7d5265fd
 tx_VZSZS9D73E,battle.renderer.preview_kill,active,Attack preview over a marker: lethal damage,,,처치 -{n},Kill -{n},draft,8b6424f1
 tx_DX3WCA5MG9,battle.renderer.preview_hit,active,Attack preview: hit chance,,,명중 {pct}%,Hit {pct}%,draft,45a98f65
 tx_S5J84M5B8R,battle.renderer.preview_hit_repeat,active,"Attack preview: hit chance, repeating attack",,,명중 {pct}% · 연속,Hit {pct}% · Repeat,draft,22307f5a

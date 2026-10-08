@@ -72,6 +72,8 @@ class ScanCtx:
 	var re_log: RegEx = null
 	var re_scene: RegEx = null
 	var ignore_paths: PackedStringArray = PackedStringArray()
+	## 스캔할 파일 (begin 이 채운다)
+	var files: PackedStringArray = PackedStringArray()
 	## L 상수 이름 → key (데이터 alias 제외)
 	var const_map: Dictionary = {}
 	## [[alias, key]…] — 동적 패턴 매칭용
@@ -118,17 +120,33 @@ class ScanCtx:
 
 ## index.json 본문(§9.4)을 돌려주고, 사용처 규칙 위반은 l.issues 에 담는다.
 static func scan(l) -> Dictionary:
+	var ctx: ScanCtx = begin(l)
+	for f in ctx.files:
+		scan_file(ctx, f)
+	return finish(ctx)
+
+
+## 나눠 돌리는 스캔 (편집기 진행 창): begin → `ctx.files` 마다 scan_file → finish = scan(l).
+static func begin(l) -> ScanCtx:
 	var ctx: ScanCtx = _make_ctx(l)
-	for f in _collect_files(l.config):
-		var text: String = FileAccess.get_file_as_string(f)
-		if text.is_empty():
-			continue
-		var nl: PackedInt32Array = _newlines(text)
-		_scan_literal(ctx, f, text, nl)
-		if f.ends_with(".gd"):
-			_scan_gd(ctx, f, text, nl)
-		elif f.ends_with(".tscn") or f.ends_with(".tres"):
-			_scan_scene(ctx, f, text, nl)
+	ctx.files = _collect_files(l.config)
+	return ctx
+
+
+static func scan_file(ctx: ScanCtx, f: String) -> void:
+	var text: String = FileAccess.get_file_as_string(f)
+	if text.is_empty():
+		return
+	var nl: PackedInt32Array = _newlines(text)
+	_scan_literal(ctx, f, text, nl)
+	if f.ends_with(".gd"):
+		_scan_gd(ctx, f, text, nl)
+	elif f.ends_with(".tscn") or f.ends_with(".tres"):
+		_scan_scene(ctx, f, text, nl)
+
+
+## 데이터 · key 참조 · 카탈로그 규칙 → index.json 본문.
+static func finish(ctx: ScanCtx) -> Dictionary:
 	_scan_data(ctx)
 	_scan_key_refs(ctx)
 	_check_catalog(ctx)

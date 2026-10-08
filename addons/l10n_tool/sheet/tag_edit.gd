@@ -9,6 +9,11 @@ extends TextEdit
 # glossary". Up / Down move, Enter / Tab pick, Esc closes, click picks. The two find items emit
 # find_string_requested / find_term_requested; the sheet opens the modeless key picker (all keys /
 # glossary terms) and calls insert_key_ref.
+# Outside `{`, the text left of the caret is matched against the glossary words of this field's
+# language (`term_locale`): when it ends with the start of a word (from 1 Hangul / 2 other
+# characters, at a word boundary) the list offers that word; picking it replaces the typed part
+# with the word's key reference `{tx_…}`. Multi-word terms keep matching across the space.
+# Enter / Tab pick from either list; Shift+Enter always inserts a line break.
 # The list is our own top-level Tree (never focused, two columns so the find icon sits at the right):
 # CodeEdit's built-in completion is only requested by the script editor, and it draws inside the
 # field, so a one-line field clips it.
@@ -25,20 +30,21 @@ const TERM_PREFIX := "term_"
 var tags: PackedStringArray = PackedStringArray()
 ## Offer `{plural:` (target languages).
 var offer_plural: bool = false
-## Offer key references: glossary words and "find string" / "find in glossary". Off for name
-## rows (alias `….name`): names are plain text (E043).
-var offer_refs: bool = true
 ## Display text of the "find string" / "find in glossary" items (UI language).
 var find_label: String = "{tx_} Find string"
 var find_term_label: String = "{term_} Find in glossary"
 var key_prefix: String = "tx_"
 var find_icon: Texture2D = null
-## Glossary words linked to a key, set by the sheet: [{id (term_id), key, text (source)}].
+## Glossary words linked to a key, set by the sheet: [{id (term_id), key, text (source),
+## texts ({locale: text})}].
 var terms: Array = []
+## Language of this field's text: picks the glossary word form for typed-word completion.
+var term_locale: String = ""
 
 var _list: Tree = null
 ## Options shown in the list: [{label, insert, find}]; find = "" · "key" · "term"; a glossary
-## word also has `key` (inserted as `{key}`).
+## word also has `key` (inserted as `{key}`), a typed-word match also `replace` (characters left
+## of the caret it replaces).
 var _shown: Array = []
 var _items: Array = []
 var _sel: int = 0
@@ -98,12 +104,6 @@ func completions(typed: String) -> Array:
 	var t: String = typed.to_lower()
 	var out: Array = []
 	var find_term: Dictionary = {"label": find_term_label, "insert": "", "find": "term"}
-	if not offer_refs:
-		for o in _tag_options():
-			var ins0: String = String(o["insert"]).to_lower()
-			if ins0.begins_with(t) and ins0 != t:
-				out.append(o)
-		return out
 	if t.begins_with(TERM_PREFIX):
 		for g in terms:
 			var term_tag: String = TERM_PREFIX + String(g["id"])
@@ -122,12 +122,42 @@ func completions(typed: String) -> Array:
 	return out
 
 
+## Glossary words whose start the text left of the caret ends with (see the header): longest
+## match per word, at a word boundary, from 1 Hangul / 2 other characters. Case-insensitive.
+func word_completions(before: String) -> Array:
+	var low: String = before.to_lower()
+	var out: Array = []
+	for g in terms:
+		var w: String = String((g.get("texts", {}) as Dictionary).get(term_locale, g.get("text", ""))).strip_edges()
+		for n in range(mini(w.length(), before.length()), 0, -1):
+			var part: String = w.left(n)
+			if not low.ends_with(part.to_lower()):
+				continue
+			var start: int = before.length() - n
+			if n < (1 if _is_hangul(part.unicode_at(0)) else 2):
+				break
+			if start > 0 and _is_word_char(before.unicode_at(start - 1)):
+				continue
+			out.append({"label": "%s  %s%s" % [w, TERM_PREFIX, g["id"]], "insert": "", "find": "", "key": g["key"], "replace": n})
+			break
+	return out
+
+
+static func _is_hangul(c: int) -> bool:
+	return (c >= 0xAC00 and c <= 0xD7A3) or (c >= 0x3131 and c <= 0x318E)
+
+
+static func _is_word_char(c: int) -> bool:
+	return _is_hangul(c) or (c >= 0x30 and c <= 0x39) or (c >= 0x41 and c <= 0x5A) or (c >= 0x61 and c <= 0x7A) or c == 0x5F or c > 0x7F
+
+
 func _update_list() -> void:
-	var b: int = open_brace()
-	if not has_focus() or not editable or b < 0:
+	if not has_focus() or not editable:
 		_close_list()
 		return
-	_shown = completions(get_line(get_caret_line()).substr(b + 1, get_caret_column() - b - 1))
+	var b: int = open_brace()
+	var line: String = get_line(get_caret_line()).left(get_caret_column())
+	_shown = completions(line.substr(b + 1)) if b >= 0 else word_completions(line)
 	if _shown.is_empty():
 		_close_list()
 		return
@@ -176,10 +206,17 @@ func _close_list() -> void:
 
 
 func _gui_input(event: InputEvent) -> void:
-	if _list == null or not _list.visible:
-		return
 	var k: InputEventKey = event as InputEventKey
 	if k == null or not k.pressed or k.ctrl_pressed or k.alt_pressed:
+		return
+	if k.shift_pressed and (k.keycode == KEY_ENTER or k.keycode == KEY_KP_ENTER):
+		if editable:
+			_close_list()
+			insert_text_at_caret("
+")
+		accept_event()
+		return
+	if _list == null or not _list.visible:
 		return
 	match k.keycode:
 		KEY_UP:
@@ -206,7 +243,9 @@ func _pick(index: int) -> void:
 		"term":
 			find_term_requested.emit(self)
 		_:
-			if o.has("key"):
+			if o.has("replace"):
+				_replace_before_caret(int(o["replace"]), "{%s}" % o["key"])
+			elif o.has("key"):
 				_replace_open_tag("{%s}" % o["key"], true)
 			else:
 				_replace_open_tag(String(o["insert"]), false)
@@ -226,5 +265,16 @@ func _replace_open_tag(text: String, with_brace: bool) -> void:
 	if b >= 0:
 		select(line, b if with_brace else b + 1, line, col)
 		delete_selection()
+	insert_text_at_caret(text)
+	end_complex_operation()
+
+
+## Replaces the `count` characters left of the caret (a typed glossary word) with `text`.
+func _replace_before_caret(count: int, text: String) -> void:
+	var line: int = get_caret_line()
+	var col: int = get_caret_column()
+	begin_complex_operation()
+	select(line, maxi(col - count, 0), line, col)
+	delete_selection()
 	insert_text_at_caret(text)
 	end_complex_operation()

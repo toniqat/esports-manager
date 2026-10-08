@@ -193,8 +193,21 @@ func test_refs_resolve(t: TestKit) -> void:
 	var iss: Issues = Issues.new()
 	var refs: Dictionary = l.resolve_refs(iss)
 	t.eq(refs, {"tx_B3PZ8RW1MC": ["tx_C4RT8NW2HJ"]})
-	t.eq(iss.items.size(), 0, "E034/E036 없음: " + str(iss.items))
+	t.eq(iss.error_count(), 0, "E034/E036 없음: " + str(iss.items))
+	t.eq(iss.count_code("W036"), 2, "이름으로 적은 참조 = W036 (ko · en)")
+	# key 참조 [{tx_…}] → 같은 결과, 경고 없음
+	l.catalog.set_field("tx_B3PZ8RW1MC", "ko", "공격. 명중 시 +{p1}, [{tx_C4RT8NW2HJ}] 찾기")
+	l.catalog.set_translation("tx_B3PZ8RW1MC", "en", "Attack. On hit +{p1}, search [{tx_C4RT8NW2HJ}]")
+	iss = Issues.new()
+	t.eq(l.resolve_refs(iss), {"tx_B3PZ8RW1MC": ["tx_C4RT8NW2HJ"]}, "key 참조")
+	t.eq(iss.items.size(), 0, "key 참조는 문제 없음: " + str(iss.items))
+	# 참조 대상(ref_aliases)이 아닌 key → E034
+	l.catalog.set_field("tx_B3PZ8RW1MC", "ko", "[{tx_D5MN0P1Q2R}] 찾기")
+	iss = Issues.new()
+	l.resolve_refs(iss)
+	t.ok(iss.has_code("E034"), "참조 대상 아님")
 	# 번역 참조 불일치 → E034
+	l.catalog.set_field("tx_B3PZ8RW1MC", "ko", "공격. 명중 시 +{p1}, [{tx_C4RT8NW2HJ}] 찾기")
 	l.catalog.set_translation("tx_B3PZ8RW1MC", "en", "Attack, search [Stash]")
 	iss = Issues.new()
 	l.resolve_refs(iss)

@@ -1,4 +1,4 @@
 key,alias,status,context,max_len,note,ko,en,en_status,en_hash
 tx_7KQ2M9XA4P,card.pilot.6.name,active,카드 이름,12,,로켓 펀치,Rocket Punch,approved,2794e837
-tx_B3PZ8RW1MC,card.pilot.6.desc,active,카드 설명,,,"공격. 명중 시 +{p1}, [캐시] 찾기","Attack. On hit +{p1}, search [Cache]",approved,5cdd79c3
+tx_B3PZ8RW1MC,card.pilot.6.desc,active,카드 설명,,,"공격. 명중 시 +{p1}, [{tx_C4RT8NW2HJ}] 찾기","Attack. On hit +{p1}, search [{tx_C4RT8NW2HJ}]",approved,a08706a1
 tx_C4RT8NW2HJ,card.pilot.7.name,active,카드 이름,,,캐시,Cache,approved,33ff59f3

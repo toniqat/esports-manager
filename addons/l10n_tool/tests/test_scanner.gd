@@ -134,3 +134,26 @@ func test_preview_leak_and_fix(t: TestKit) -> void:
 	t.eq(_issue_lines(l, "E057"), ["proj/sub/Screen.tscn:19"], "고친 뒤 모호한 것만 남음")
 	t.eq(_usages(l, "tx_K3M4N5P6Q7"), ["proj/sub/Screen.tscn:6:literal", "proj/sub/Screen.tscn:9:literal"])
 	t.eq(Scanner.fix_preview_leak(l), 0, "두 번째는 없음")
+
+
+func test_sync_data_job_matches_validate(t: TestKit) -> void:
+	var l: L10n = _open(t)
+	l.cmd_validate("dev", false)
+	var want_index: Dictionary = l.index
+	var want_items: Array = l.issues.items.duplicate(true)
+	var job = l.sync_data_job(false)
+	var stages: Array = []
+	var last: float = 0.0
+	var monotonic: bool = true
+	while not job.step():
+		if stages.is_empty() or stages[-1] != job.stage():
+			stages.append(job.stage())
+		monotonic = monotonic and job.progress() >= last
+		last = job.progress()
+	t.eq(stages, ["scan", "check", "write"], "단계 차례 (읽기 전용 = sync 없음)")
+	t.ok(monotonic, "진행률은 줄지 않는다")
+	t.eq(job.progress(), 1.0, "끝 = 100%")
+	t.eq(job.result, 0, "sync 없음 = 0")
+	t.eq(l.index, want_index, "index = cmd_validate 와 같다")
+	t.eq(l.issues.items, want_items, "검증 결과 = cmd_validate 와 같다")
+	t.ok(FileAccess.file_exists(l.config.gen_dir.path_join("index.json")), "index.json 기록")

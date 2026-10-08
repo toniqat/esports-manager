@@ -33,9 +33,9 @@ const LEGEND := {
 	"E010": "key 형식 위반", "E011": "key 중복", "E012": "alias 형식 · 도메인 · 중복",
 	"E013": "L 상수 이름 충돌",
 	"E031": "approved 인데 해시 없음", "W031": "stale 번역", "W032": "번역 없이 status 만 있음",
-	"E033": "값 자리표시자 집합 불일치", "E034": "카드 참조 [x] 불일치", "E035": "원문 외 로케일에 조사 태그",
-	"E036": "참조 이름 중복",
-	"E037": "key 참조 {tx_…} 가 없는 key", "E038": "key 참조 {tx_…} 가 deprecated", "E039": "key 참조 순환", "E040": "복수 태그 {plural:…} 형식 · 형태 수", "E043": "이름 key 에 key 참조 {tx_…} (용어집 낱말 포함)", "W034": "BBCode 태그 짝 불일치", "W035": "max_len 초과",
+	"E033": "값 자리표시자 집합 불일치", "E034": "참조 [x] 불일치 · 참조 대상 아님", "E035": "원문 외 로케일에 조사 태그",
+	"E036": "참조 이름 중복", "W036": "참조 [x] 를 이름으로 적음 ([{tx_…}] 로)",
+	"E037": "key 참조 {tx_…} 가 없는 key", "E038": "key 참조 {tx_…} 가 deprecated", "E039": "key 참조 순환", "E040": "복수 태그 {plural:…} 형식 · 형태 수", "W034": "BBCode 태그 짝 불일치", "W035": "max_len 초과",
 	"E041": "data_columns 셀이 없는 key", "E042": "data_columns key 의 alias 가 규칙과 다름",
 	"W041": "data_columns 의 CSV · 컬럼이 아직 없음 (이행 전)",
 	"E051": "없는 L 상수", "W052": "씬 고아 텍스트", "E052": "씬 고아 텍스트",
@@ -50,17 +50,26 @@ const LEGEND := {
 
 ## l = core/l10n.gd 인스턴스. l.catalog · l.config 를 읽고 l.issues 에 담는다.
 static func validate(l, mode: String) -> void:
+	for c in checks(l, mode):
+		(c as Callable).call()
+
+
+## 규칙 묶음을 하나씩 부를 수 있게 (편집기 진행 창). 차례대로 다 부르면 validate(l, mode).
+static func checks(l, mode: String) -> Array:
 	var iss: Issues = l.issues
-	_check_josa_tags(l, iss)
-	_check_format(l, iss)
-	_check_translations(l, iss)
-	KeyRefs.check(l.catalog, iss)
-	_check_plurals(l, iss)
-	l.resolve_refs(iss)
-	_check_data_columns(l, iss)
-	_check_glossary(l, iss)
+	var out: Array = [
+		_check_josa_tags.bind(l, iss),
+		_check_format.bind(l, iss),
+		_check_translations.bind(l, iss),
+		KeyRefs.check.bind(l.catalog, iss),
+		_check_plurals.bind(l, iss),
+		l.resolve_refs.bind(iss),
+		_check_data_columns.bind(l, iss),
+		_check_glossary.bind(l, iss),
+	]
 	if mode == MODE_RELEASE:
-		_check_release(l, iss)
+		out.append(_check_release.bind(l, iss))
+	return out
 
 
 # ── E004 ────────────────────────────────────────────────────────────────

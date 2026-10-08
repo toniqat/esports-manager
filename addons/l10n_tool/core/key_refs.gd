@@ -81,18 +81,15 @@ static func expand(cat: Catalog, text: String, loc: String, mode: String, _stack
 	return out + text.substr(pos)
 
 
-## E037 · E038 · E039: 원문과 모든 번역문의 참조를 검사한다. E043: 이름 key(alias 마지막
-## 세그먼트 `name`)는 참조를 쓰지 않는다(용어집 낱말도 key 참조로 들어가므로 같이 막힌다).
+## E037 · E038 · E039: 원문과 모든 번역문의 참조를 검사한다. 이름 key 도 참조를 쓸 수 있다
+## (어느 key 가 이름인지 도구는 모른다. 이름에 태그를 넣지 않는 것은 LLM 작업 규칙, 설계서 §5).
 static func check(cat: Catalog, iss: Issues) -> void:
 	for e in cat.all_entries:
 		var key: String = String(e["key"])
 		var texts: Array = [[cat.config.source_locale, String(e["source"])]]
 		for loc in cat.config.target_locales():
 			texts.append([loc, String((e["tr"] as Dictionary).get(loc, {}).get("text", ""))])
-		var is_name: bool = is_name_alias(String(e["alias"]))
 		for pair in texts:
-			if is_name and not keys_in(String(pair[1])).is_empty():
-				iss.error("E043", "%s 이름 텍스트에 key 참조 (%s): 이름은 그대로 적는다" % [pair[0], e["alias"]], String(e["file"]), int(e["line"]), key)
 			for k in keys_in(String(pair[1])):
 				var target: Dictionary = cat.entry(k)
 				if target.is_empty():
@@ -101,11 +98,6 @@ static func check(cat: Catalog, iss: Issues) -> void:
 					iss.error("E038", "%s 텍스트의 참조 {%s} (%s) 가 deprecated" % [pair[0], k, target["alias"]], String(e["file"]), int(e["line"]), key)
 		if _in_cycle(cat, key, [key]):
 			iss.error("E039", "참조 순환 (%s)" % e["alias"], String(e["file"]), int(e["line"]), key)
-
-
-## 이름 key 인가 (alias 마지막 세그먼트가 `name`: 카드 · 스킬 · 특성 · 기벽 … 이름).
-static func is_name_alias(alias: String) -> bool:
-	return alias.get_slice(".", alias.get_slice_count(".") - 1) == "name"
 
 
 # key 에서 출발한 참조(모든 로케일 텍스트)가 출발점으로 돌아오는가.

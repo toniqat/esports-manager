@@ -19,6 +19,7 @@ const Scanner = preload("res://addons/l10n_tool/core/scanner.gd")
 const Builder = preload("res://addons/l10n_tool/core/builder.gd")
 const StatusOps = preload("res://addons/l10n_tool/core/status_ops.gd")
 const Extractor = preload("res://addons/l10n_tool/core/extractor.gd")
+const StepJob = preload("res://addons/l10n_tool/core/step_job.gd")
 
 const MODE_DEV := "dev"
 const MODE_RELEASE := "release"
@@ -256,12 +257,51 @@ func cmd_build(mode: String = MODE_DEV) -> int:
 ## L10n 편집기 Sync Data: (write_sources 면) sync → 스캔 + 검증 → index.json · report.md.
 ## write_sources = false(읽기 전용 모드)는 원본 CSV 를 쓰지 않는다. 돌려주는 값: sync 로 갱신한 셀 수.
 func cmd_sync_data(write_sources: bool) -> int:
-	var n: int = cmd_sync() if write_sources else 0
-	cmd_validate(MODE_DEV)
-	var err: String = Scanner.write_index(self, index)
-	if err != "":
-		info("index.json 쓰기 실패: " + err)
-	return n
+	return int(sync_data_job(write_sources).run_all())
+
+
+## cmd_sync_data 를 단계로 나눈 작업 (편집기 진행 창): sync → scan(파일마다) → check(규칙 묶음마다)
+## → write(report.md · index.json). 단계 id 가 진행 창 문구가 된다. result = sync 로 갱신한 셀 수.
+func sync_data_job(write_sources: bool) -> StepJob:
+	var job := StepJob.new()
+	job.result = 0
+	var st: Dictionary = {}
+	if write_sources:
+		job.add("sync", 1.0, func(j: StepJob) -> float:
+			j.result = cmd_sync()
+			return 1.0)
+	job.add("scan", 6.0, func(_j: StepJob) -> float:
+		if not st.has("ctx"):
+			reload()
+			st["ctx"] = Scanner.begin(self)
+			st["file"] = 0
+		var files: PackedStringArray = st["ctx"].files
+		var i: int = int(st["file"])
+		if i < files.size():
+			Scanner.scan_file(st["ctx"], files[i])
+			st["file"] = i + 1
+			return float(i + 1) / float(files.size() + 1)
+		index = Scanner.finish(st["ctx"])
+		return 1.0)
+	job.add("check", 3.0, func(_j: StepJob) -> float:
+		if not st.has("checks"):
+			st["checks"] = Validator.checks(self, MODE_DEV)
+			st["check"] = 0
+		var cs: Array = st["checks"]
+		var c: int = int(st["check"])
+		(cs[c] as Callable).call()
+		st["check"] = c + 1
+		return float(c + 1) / float(cs.size()))
+	job.add("write", 0.5, func(_j: StepJob) -> float:
+		var err: String = Validator.write_report(self, MODE_DEV)
+		if err != "":
+			info("report.md 쓰기 실패: " + err)
+		_print_summary("validate " + MODE_DEV)
+		err = Scanner.write_index(self, index)
+		if err != "":
+			info("index.json 쓰기 실패: " + err)
+		return 1.0)
+	return job
 
 
 ## `new_keys` — key 일괄 발급 (StatusOps.new_keys). json = 항목 배열. out_path 가 있으면

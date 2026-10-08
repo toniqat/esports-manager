@@ -10,7 +10,7 @@ const Validator = preload("res://addons/l10n_tool/core/validator.gd")
 
 ## validator 가 내는 코드 — scanner(E05x · W05x) 결과와 섞이지 않게 이것만 본다.
 const OWN_CODES := ["E003", "E004", "W003", "E010", "E011", "E012", "E013", "E031", "W031", "W032",
-	"E033", "E034", "E035", "E036", "W034", "W035", "E041", "E042", "W041", "E061", "W071", "W072", "E072", "E073", "E074"]
+	"E033", "E034", "E035", "E036", "W036", "W034", "W035", "E041", "E042", "W041", "E061", "W071", "W072", "E072", "E073", "E074"]
 
 
 func _open(t: TestKit, fixture: String) -> L10n:
@@ -50,7 +50,7 @@ func test_errors_fixture_detects_every_rule(t: TestKit) -> void:
 	var l: L10n = _open(t, "validator_errors")
 	var iss: Issues = l.cmd_validate("dev", false)
 	for code in ["E003", "W003", "E010", "E011", "E012", "E013", "E031", "W031", "W032", "E033", "E034",
-			"E035", "E036", "W034", "W035", "E041", "E042", "W041", "W071", "W072", "E072", "E073", "E074"]:
+			"E035", "E036", "W036", "W034", "W035", "E041", "E042", "W041", "W071", "W072", "E072", "E073", "E074"]:
 		t.ok(iss.has_code(code), "검출: " + code)
 	t.ok(not iss.has_code("E061"), "dev 에서는 E061 없음")
 	t.ok(not iss.has_code("E004"), "josa_tags 일치")
@@ -72,6 +72,7 @@ func test_errors_fixture_detects_every_rule(t: TestKit) -> void:
 	t.eq(iss.count_code("W035"), 2, "W035 ko · en")
 	t.ok(_has(iss, "W003", "tx_H1J2K3M4N8"), "W003")
 	t.ok(_has(iss, "E034", "tx_J1K2M3N4P8"), "E034")
+	t.ok(_has(iss, "W036", "tx_B3PZ8RW1MC"), "W036 이름으로 적은 참조")
 	t.ok(_has(iss, "E041", "tx_ZZZZZZZZZZ"), "E041")
 	t.ok(_has(iss, "E042", "tx_7KQ2M9XA4P"), "E042")
 	t.eq(iss.count_code("W041"), 2, "W041 파일 없음 · 컬럼 없음")

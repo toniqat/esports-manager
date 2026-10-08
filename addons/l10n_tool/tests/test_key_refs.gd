@@ -109,13 +109,11 @@ func test_move_key(t: TestKit) -> void:
 	t.eq(l.catalog.entry("tx_A0000000B3").get("alias", ""), "ui.josa", "뒤 행 번호 당김 후에도 다시 읽기 정상")
 
 
-func test_e043_name_without_refs(t: TestKit) -> void:
+func test_name_key_may_have_refs(t: TestKit) -> void:
+	# 도구는 어느 key 가 이름인지 모른다: 이름 alias 여도 참조를 막지 않는다(예전 E043 삭제).
 	var l: L10n = _open(t)
-	t.ok(KeyRefs.is_name_alias("card.pilot.6.name"), "마지막 세그먼트 name")
-	t.ok(not KeyRefs.is_name_alias("card.pilot.6.desc") and not KeyRefs.is_name_alias("ui.name_only"), "name 이 아닌 alias")
-	var bad: String = String(l.cmd_new_key("ui", "ui.boss.name", "{tx_A0000000A1} 대장")["key"])
-	var ok_key: String = String(l.cmd_new_key("ui", "ui.boss.title", "{tx_A0000000A1} 대장")["key"])
+	var k: String = String(l.cmd_new_key("ui", "ui.boss.name", "{tx_A0000000A1} 대장")["key"])
 	var iss: Issues = Issues.new()
 	KeyRefs.check(l.catalog, iss)
-	t.eq(_keys_with(iss, "E043"), [bad], "이름 key 의 참조만 E043")
-	t.ok(not _keys_with(iss, "E043").has(ok_key), "이름이 아니면 참조 허용")
+	t.ok(not _keys_with(iss, "E037").has(k) and not _keys_with(iss, "E038").has(k), "이름 key 의 참조도 정상 참조")
+	t.eq(KeyRefs.expand(l.catalog, l.catalog.source_text(k), "ko", "dev"), "적 대장", "펼침")

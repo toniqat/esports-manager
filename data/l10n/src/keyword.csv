@@ -2,7 +2,7 @@ key,alias,status,context,max_len,note,ko,en,en_status,en_hash
 tx_Q2YD01V4X9,keyword.track.note,active,특수 키워드 풀이 판,,,대상이 교전에 참여하면 {tx_XW85A9FY8B}도 함께 참여한다,"When the target joins an engage, the {tx_XW85A9FY8B} joins too",draft,22811f3b
 tx_8224R3117V,keyword.reactive_armor.note,active,특수 키워드 풀이 판,,,공격당하면 그 피해를 {mech_reactive_armor_cut_pct}% 줄이고 1 사라진다. 전장을 떠나면 모두 사라진다,"When attacked, reduce that damage by {mech_reactive_armor_cut_pct}% and lose 1. All of it is lost on leaving the battlefield",draft,f4415df5
 tx_M9AXFZ0YJD,keyword.target.note,active,특수 키워드 풀이 판,,,{tx_XW85A9FY8B}에게 받는 피해 +{mark_target}%. 새 {tx_DG1DJNPNVF}{eul} 정하면 이전 {tx_DG1DJNPNVF}{eun} 풀린다,Damage taken from the {tx_XW85A9FY8B} +{mark_target}%. Setting a new {tx_DG1DJNPNVF} releases the previous one,draft,4043bc1f
-tx_DYE6YP50R9,keyword.bounty.note,active,특수 키워드 풀이 판,,,대상의 {tx_WBS95M3MNQ} 일부를 값으로 매긴 표식. 확신 카드의 피해가 이 값에 비례한다,A mark valued at part of the target's {tx_WBS95M3MNQ}. Conviction's damage scales with this value,draft,985dd63c
+tx_DYE6YP50R9,keyword.bounty.note,active,특수 키워드 풀이 판,,,대상의 {tx_WBS95M3MNQ} 일부를 값으로 매긴 표식. {tx_Y7VQ3CF1M8} 카드의 피해가 이 값에 비례한다,A mark valued at part of the target's {tx_WBS95M3MNQ}. {tx_Y7VQ3CF1M8}'s damage scales with this value,draft,5dad38d9
 tx_5Y0V13GVXR,keyword.stun.note,active,특수 키워드 풀이 판,,,교전에서 자기 차례 한 번을 건너뛴다,Skips its own action once in an engage,draft,cdf0879b
 tx_GV1PNFZR9T,keyword.vulnerable.note,active,특수 키워드 풀이 판,,,1마다 받는 피해 +{mech_vulnerable_per_stack_pct}%,Damage taken +{mech_vulnerable_per_stack_pct}% per 1,draft,1c328a1b
 tx_A2PYQPKVJM,keyword.exhaust.note,active,카드 키워드 풀이,,,사용하면 이 게임에서 사라진다,Removed from this game when used,draft,55e4821c

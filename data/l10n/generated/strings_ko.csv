@@ -1531,6 +1531,26 @@ tx_PZ5E6THG9A,큰 탈 없이 지나갔다
 tx_F19CKTWEZY,{day} 저녁 · 면담
 tx_8EXSPR79YJ,{day} 저녁 · 외출 {n}회째
 tx_5GDZXY0QSR,{day} · 사건 발생 · {name}
+tx_CPW05B0HB9,오전
+tx_XXVBB9VYQX,오후
+tx_7YZ50G3EBF,오전 훈련 · 다음을 누르면 오늘 훈련을 정산합니다
+tx_AWKX6T199K,오전 훈련 결과 · 다음을 누르면 오후로 넘어갑니다
+tx_CXNA4K157Z,오후 · 선수를 눌러 면담이나 외출을 요청하세요
+tx_7KR285R4ES,오늘 오후 일정을 마쳤습니다
+tx_5W9RGVB4BS,EXP +{n}
+tx_TCFF8QQBA3,스트레스 {delta}
+tx_B7175RYNW5,혼자 외출
+tx_0WX5FQG1PV,숙소 휴식
+tx_MAPMDX9DJ0,지도에서 면담 · 외출할 선수를 누르세요 (하루 한 번)
+tx_ME49NDMB1F,오늘 오후에는 할 수 있는 면담 · 외출이 없습니다
+tx_NRH0Z789MC,오후: 쉬었습니다
+tx_JT4H7JX5BF,오후: {name} 면담
+tx_F8B4DZ53XB,오후: {name} 외출
+tx_TB0M24CVNM,{day} 오후 · 면담
+tx_7PKEPM8SGK,{day} 오후 · 외출 {n}회째
+tx_G3FNS00AWW,오후 일정을 건너뛸까요?
+tx_BVDJ9Q0CSD,아직 면담이나 외출을 할 수 있습니다. 이대로 넘어가면 오늘 오후는 쉰 것으로 처리됩니다.
+tx_CGHZDAMEAR,건너뛰기
 tx_EVS2K4Z4YF,설정
 tx_4S0H7A92KR,설정
 tx_EB8R7HBW32,언어

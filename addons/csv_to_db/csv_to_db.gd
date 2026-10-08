@@ -29,7 +29,7 @@ const SCHEMAS: Dictionary = {
 	"mechs":       {"req": ["id","name_key","role","hp","atk","presence"],          "pk": "id"},
 	"mech_passives": {"req": ["id","mech_id","key","name_key","p1","p2","keyword","description_key"], "pk": "id"},
 	"mech_cards":    {"req": ["id","mech_id","name_key","count","cost","cast_method","target","cast_range","area","keyword","charge_max","effect","trigger","description_key"], "pk": "id"},
-	"teams":       {"req": ["id","name_key","short_name_key","budget","facility_level","staff_ids","manual_areas","desc_key"], "pk": "id"},
+	"teams":       {"req": ["id","name_key","short_name_key","budget","facility_level","staff_ids","manual_areas","desc_key","map_id"], "pk": "id"},
 	"intl_teams":   {"req": ["id","name_key","short_name_key"],                         "pk": "id"},
 	"intl_players": {"req": ["id","team_id","name_key","role","field_hit","field_eva","engage_hit","engage_eva","atk_growth","hp_growth","pilot_cards","main_mechs"], "pk": "id"},
 	"pilot_card_slots": {"req": ["position","slot1","slot2","slot3"], "pk": "position"},
@@ -234,6 +234,8 @@ const TABLE_DEFS: Dictionary = {
 		# 팀의 초기 스태프 — `staff.id` 를 `|` 로(M3). 빈 칸 = 스태프 없음.
 		"staff_ids":      {"data_type": "text", "not_null": true},
 		"desc_key":           {"data_type": "text", "not_null": true},
+		# 팀 부지 맵: `BaseMap.SCENES` 인덱스 (시간 경과 화면, features/season/week/base_map/).
+		"map_id":         {"data_type": "int",  "not_null": true},
 	},
 	"intl_teams": {
 		"id":         {"data_type": "int",  "primary_key": true, "not_null": true},

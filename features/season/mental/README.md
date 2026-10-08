@@ -15,6 +15,7 @@ and gets no `L` constant. Mod clauses write `source = "mental:<event id>"` (`MOD
 | `VnDialogueView.gd` | `class_name VnDialogueView extends Control`: **visual-novel dialogue** for interviews and outings (full-body art, bottom speech bubble, dimmed centred choices, result panel). Drop-in for `MessengerView` on the week screen's evening dialog. See **VN dialogue (VnDialogueView)** below. |
 | `UI_View_VnDialogue.tscn` | Its scene (layout owner): header, `%Stage` art box, `%Bubble`, `%Dim`, `%Overlay` with `%ChoiceList` · `%ResultPanel` · `%Hint`. Create with `VnDialogueView.create()`. |
 | `UI_Comp_VnChoiceButton.tscn` | Item (no script): one answer button (`VnDialogueChoiceButton`, 880 wide, at least 112 tall, autowrap, centred). Code sets text + `pressed`. |
+| `AfternoonAway.gd` | `class_name AfternoonAway` (static). Afternoon away states of a training day: dorm rest (no tile that day) and stress self outing, rolled once and recorded in `mental.days["<day>"].afternoon`; `started` · `begin` · `away_of` · `relief_of` · `can_request` · `any_request`. See "Afternoon away states". |
 | `PilotMods.gd` | `class_name PilotMods` (static, base). Temporary per-pilot stat mods `[{pilot_id, stat, delta, weeks_left, source}]`; `weeks_left = -1` lasts until the next own match. `apply_to` is only ever called on a **roster copy** (MatchFlow). |
 
 The dialogue UI is `features/season/press/MessengerView.gd` (shared with the press conference);
@@ -70,6 +71,28 @@ the evening card + incident card live on the week screen (`features/season/week/
 - Display: hub roster row (`HubRosterRow` stress line), week training card (`%Stress`, value + that day's delta),
   battle strip / detail panel (`stress/README.md`). Keys `mental.ui.stress.*` (value, day, mood names).
   Shared words for stress / moods are not in `term.*` yet (only the base owner adds there).
+
+## Afternoon away states
+The week screen splits each Mon–Fri into morning (training) and afternoon (the evening action, now shown as
+오후). When the afternoon starts (`AfternoonAway.begin(state, day, resting)`, called by the week screen's Next
+after the morning settlement), some of my pilots are away and cannot be asked for an interview / outing:
+- **Dorm (숙소 휴식)**: a pilot with no tile on that day's row of the training board (`resting`, from the
+  settled rows' `color` = ""). No roll, no stress change.
+- **Self outing (혼자 외출)**: every other pilot with stress ≥ `STRESS_SELF_OUTING_MIN` rolls
+  `STRESS_SELF_OUTING_CHANCE`; on a hit the pilot goes out alone and stress drops by `STRESS_SELF_OUTING_RELIEF`
+  (`StressSystem.add`, the applied delta is recorded).
+- **Determinism**: one roll per pilot, seeded from `hash([run_seed, week_key, day, "self_outing", pid])`, and the
+  whole result is recorded before it is shown. `begin` on a day that already has a record returns it untouched,
+  so re-entering the day or reloading never rerolls or relieves twice.
+- **Record**: `mental.days["<day>"].afternoon = {"away": {"<pid>": "dorm"|"self_outing"}, "relief": {"<pid>": int}}`
+  (string keys; read values with `int()` / `String()`). It sits in the weekday record (`MentalSystem.day_record`,
+  public accessor of `_day`), so `end_week` / a new week key clears it with the rest. Old saves have no
+  `afternoon` key: that day simply has not reached the afternoon yet.
+- **Who can be asked** (`can_request(state, day, pid)`): the afternoon has started, the day's evening action is
+  not done, the pilot is not away, and `can_interview` or `can_outing(pid)` holds. `any_request` = some pilot can
+  (the week screen warns before Next skips the afternoon). The interview / outing itself is the unchanged
+  evening flow (`begin_evening` / `finish_evening`, record key `evening`).
+- Spots on the team base map (dorm / entrance): `features/season/week/base_map/README.md`.
 
 ## `season_state.mental` shape (string keys; numbers may load back as floats — always `int()`)
 ```

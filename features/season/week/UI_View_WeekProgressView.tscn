@@ -361,7 +361,7 @@ horizontal_scroll_mode = 0
 [node name="List" type="VBoxContainer" parent="SafeArea/Scroll"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _list_body
-Code fills this with item scenes (WeekMatchCard · WeekNoteCard · WeekIncidentCard · WeekEveningCard · WeekEveningDoneCard · WeekPilotCard); separation = the gap between cards. Its width is pinned to the scroll's width (cards run under the scroll bar, as before)."
+Code fills this with item scenes (WeekMapSection · WeekMatchCard · WeekNoteCard · WeekIncidentCard · WeekAfternoonCard · WeekAfternoonDoneCard · WeekPilotCard); separation = the gap between cards. Its width is pinned to the scroll's width (cards run under the scroll bar, as before)."
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
@@ -374,11 +374,10 @@ Zero-height end marker kept last: the separation before it leaves one card gap u
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Action" type="Button" parent="SafeArea"]
-auto_translate_mode = 2
+[node name="Bar" type="HBoxContainer" parent="SafeArea"]
 unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _action_btn
-Bottom action bar (one full-width slot). Code switches its variation per day (BarPrimaryButton 확인 / 주 마감 →, BarDarkButton 경기 시작) and adds the bottom inset (OutgameTheme.fit_bottom_bar / fit_bar_button — colour runs under the inset, text stays above it)."
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _fit_safe_area()
+Bottom action bar: %Stage (1) : %Action (2), primary at the right. Code adds the bottom inset (OutgameTheme.fit_bottom_bar). On a match day %Stage is hidden and %Action takes the full width."
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
@@ -387,6 +386,42 @@ anchor_bottom = 1.0
 offset_top = -128.0
 grow_horizontal = 2
 grow_vertical = 0
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Stage" type="Button" parent="SafeArea/Bar"]
+auto_translate_mode = 2
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _stage_btn
+Training day half (오전 / 오후), a label in the bar (mouse Ignore, never pressed). Hidden on match days."
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+mouse_filter = 2
+theme_type_variation = &"BarGhostButton"
+theme_override_font_sizes/font_size = 28
+text = "오전"
+
+[node name="Sep" type="Panel" parent="SafeArea/Bar/Stage"]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -2.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"BarSeparator"
+
+[node name="Action" type="Button" parent="SafeArea/Bar"]
+auto_translate_mode = 2
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _action_btn
+Primary bar slot. Training day: 다음 (morning: settle the day, result: to the afternoon, afternoon: next day, with a warning while an action is still possible). Match day: 확인 / 주 마감 → (BarPrimaryButton) or 경기 시작 (BarDarkButton); code re-fits the inset after switching (fit_bar_button)."
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
 focus_mode = 0
 theme_type_variation = &"BarPrimaryButton"
-text = "확인"
+text = "다음"

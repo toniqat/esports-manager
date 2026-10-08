@@ -1531,6 +1531,26 @@ tx_PZ5E6THG9A,It passed without much trouble
 tx_F19CKTWEZY,{day} evening · Meeting
 tx_8EXSPR79YJ,{day} evening · Outing #{n}
 tx_5GDZXY0QSR,{day} · Incident · {name}
+tx_CPW05B0HB9,Morning
+tx_XXVBB9VYQX,Afternoon
+tx_7YZ50G3EBF,Morning training · Press Next to settle today's training
+tx_AWKX6T199K,Morning training results · Press Next for the afternoon
+tx_CXNA4K157Z,Afternoon · Tap a player to ask for a meeting or an outing
+tx_7KR285R4ES,This afternoon is done
+tx_5W9RGVB4BS,EXP +{n}
+tx_TCFF8QQBA3,Stress {delta}
+tx_B7175RYNW5,Out alone
+tx_0WX5FQG1PV,Resting in dorm
+tx_MAPMDX9DJ0,Tap a player on the map for a meeting or an outing (once per day)
+tx_ME49NDMB1F,No meeting or outing is possible this afternoon
+tx_NRH0Z789MC,Afternoon: Rested
+tx_JT4H7JX5BF,Afternoon: Meeting with {name}
+tx_F8B4DZ53XB,Afternoon: Outing with {name}
+tx_TB0M24CVNM,{day} afternoon · Meeting
+tx_7PKEPM8SGK,{day} afternoon · Outing #{n}
+tx_G3FNS00AWW,Skip this afternoon?
+tx_BVDJ9Q0CSD,"A meeting or an outing is still possible. If you move on now, this afternoon counts as rest."
+tx_CGHZDAMEAR,Skip
 tx_EVS2K4Z4YF,Settings
 tx_4S0H7A92KR,Settings
 tx_EB8R7HBW32,Language

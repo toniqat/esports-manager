@@ -538,6 +538,11 @@ and even accounting for hover 1.2× and the detail panel, 3× is enough (the 108
 only bloating the pck). The pictures themselves are **wide landscapes** while the frame is close to 2:1, so
 `STRETCH_KEEP_ASPECT_COVERED` fills the middle.
 
+### Team base map art (`resources/images/base_map/`)
+Twelve area maps for the week screen's team base map (`features/season/week/base_map/`), loaded straight
+by the map scenes (no lookup class). **Prototype placeholders (Blue Archive / Nexon art): replace before any
+public release.** Sources and naming: `resources/images/base_map/README.md`.
+
 ### SkillImages.gd
 `class_name SkillImages`, extends `RefCounted`, static only. **Pilot skill icon
 lookup** — same role as `CardImages` / `MechImages`.
@@ -1041,7 +1046,7 @@ theme variation too, built in `OutgameTheme._add_screen_variations()`:
 | `TrainingCourseShapeWell` · `TrainingCourseLockChip` | SunkPanel · SurfaceChip | `TrainingCourseCard` `Well` · `LockChip` | — |
 | `TrainingCoursePopoverFrame` | PopupCard | `TrainingCoursePopover` root | grade border (`fill`) |
 | `TrainingThumbFrame` · `TrainingThumbExpChip` | Card · AccentChip | `TrainingThumb` root · `ExpChip` | role border, ± fill (`TrainingView`) |
-| `WeekEveningHighlight` · `WeekRail` | SunkPanel | `WeekEveningSlot` `Highlight` · `WeekProgressView` `Rail` | — |
+| `WeekRail` | SunkPanel | `WeekProgressView` `Rail` (the old `WeekEveningHighlight` went with the evening slot scene) | — |
 | `WeekDayChip` · `WeekDayChipToday` | AccentChip | `WeekProgressView` day `Chip`s (`WEEK_DAY_CHIP_RADIUS`) | variation switched by `_refresh_rail` |
 | `LobbySurfaceBar` · `LobbyToast` | Card · SurfaceChip | `Lobby` `StripBack` / `TabBarBack` · `Toast` | error toast = `NEGATIVE` copy |
 | `BanPickOrderPip` · `IntelAnalystNote` | SunkPanel · SunkPanel | `BanPickOrderPip` root (r6; side colour + capsule corners = code copy) · `IntelView` `Note/Card` (`ACCENT_DIM`, r14) | pip fill = side colour |

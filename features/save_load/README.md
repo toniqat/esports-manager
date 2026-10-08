@@ -148,6 +148,9 @@ Resource-typed entries:
     Both the outer keys and inner values become strings / floats after JSON, so
     `_exp_carry_in` casts both back to int — otherwise `total / EXP_PER_POINT` stops being
     integer division and the remainder silently disappears.
+- `stress` (`{"<pid>": int}`, `features/season/mental/README.md` "Stress") round-trips as-is next to
+  `trust` / `outings` / `mental` (string keys; readers wrap values in `int()`). It was missing from the
+  save list at first, so a reload reset every pilot's stress to 0.
 - `pending_match` round-trips as-is. Non-null between match-day dispatch
   and `_consume_pending_match_result` (always paired with `match_resume`
   except briefly during post-match save where both are null).

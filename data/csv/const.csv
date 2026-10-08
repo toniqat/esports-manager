@@ -279,3 +279,6 @@ STRESS_SHAKEN_STEP,2,StressSystem.gd,위축 — 기준치를 이 값만큼 넘�
 STRESS_SHAKEN_STAT_PER_STEP,0.01,StressSystem.gd,위축 — 한 단계당 파일럿 능력치 여섯 감소 비율 (비율)
 STRESS_INTERVIEW_RELIEF,10,MentalSystem.gd,면담을 마친 선수의 스트레스 기본 감소 — 선택지의 stress 절과 별도 (점)
 STRESS_OUTING_RELIEF,25,MentalSystem.gd,외출을 마친 선수의 스트레스 기본 감소 — 선택지의 stress 절과 별도 (점)
+STRESS_SELF_OUTING_MIN,60,AfternoonAway.gd,오후 혼자 외출 - 스트레스가 이 값 이상인 선수만 굴린다 (점)
+STRESS_SELF_OUTING_CHANCE,0.3,AfternoonAway.gd,오후 혼자 외출 - 월~금 오후마다 대상 선수가 혼자 외출할 확률 (확률)
+STRESS_SELF_OUTING_RELIEF,8,AfternoonAway.gd,오후 혼자 외출 - 혼자 외출한 선수의 스트레스 감소 (점)

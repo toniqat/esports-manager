@@ -12,53 +12,51 @@ extends Control
 #     프리시즌 · 3주차              1년 12월   ← 머리글 (요일 · 날짜)
 #     수요일                              5
 #    ─────────────────────────────────────
-#     [ 파일럿 카드 ]  ← 그날 훈련 결과        ← 세로 스크롤
-#     [ 파일럿 카드 ]
-#           [        확인        ]            ← 다음 날로
-#
-# 예전에는 레일이 **왼쪽 세로 기둥**이었다.
-# 그러면 화면 폭 1080 에서 152px 가 레일 몫으로 빠져 카드의 스탯 여섯 칸이
-# 좁아졌고, 요일이 위에서 아래로 흐르는 것은 달력을 읽는 방향(왼쪽 → 오른쪽)과
-# 어긋났다.
+#     [ 팀 부지 맵 + 선수 토큰 ]              ← 훈련일: 목록 첫 항목
+#     [ 사건 · 오후 카드 · 훈련 결과 카드 ]    ← 세로 스크롤
+#    [ 오전 / 오후 ][        다음        ]    ← 하단 바
 #
 # 레일의 **지금 요일 한 칸만 앰버로 채워진다** — 지나온 날은 흰 글자, 남은 날은
-# 흐린 글자다. 그 한 칸이 이 화면이 답하는 유일한 질문("지금 며칠인가")이라
-# 다른 강조를 두지 않는다.
+# 흐린 글자다.
 #
-# ── 요일이 하는 일 ──────────────────────────────────────────────────────────
-# **월~금**은 훈련일이다. 그 요일에 처음 닿을 때 `TrainingBoard.apply_day_training`
-# 이 판의 그 줄을 정산해 선수 스탯을 실제로 올리고, 결과 줄 목록을
-# `season_state["week_day_log"][day]` 에 적는다. **이미 적혀 있으면 다시
-# 정산하지 않는다** — 경기를 치르고 같은 요일로 돌아와도 훈련이 두 번 먹으면 안 된다.
+# ── 훈련일 (월~금) = 오전 → 오후 ──────────────────────────────────────────────
+# 훈련일은 세 단계(`_stage`)로 흐르고, 단계는 **기록에서 읽는다** (따로 저장하지 않는다):
+#   MORNING   `week_day_log` 에 그날이 없다. 맵에서 선수가 그날 훈련 칸 색의 자리에 서 있다.
+#             "다음" = `TrainingBoard.apply_day_training` 으로 정산 → 결과를 `week_day_log[day]` 에.
+#   RESULT    정산됐고 오후가 아직이다. 토큰 아래에 그날 오른 능력치 · 스트레스.
+#             "다음" = `AfternoonAway.begin` (숙소 휴식 · 혼자 외출을 한 번 굴려 기록) → 오후.
+#   AFTERNOON 오후 기록이 있다. 면담 · 외출할 수 있는 선수만 밝고, 누르면 오후 카드에서 고른다.
+#             "다음" = 다음 날 (아직 할 수 있는데 안 했으면 경고 팝업 → 확인하면 패스로 기록).
+# **이미 정산된 날은 다시 정산하지 않는다** — 경기를 치르고 같은 요일로 돌아와도,
+# 불러오기를 해도 같은 기록을 다시 그린다.
 #
 # **토·일**은 경기일이다(`CalendarSystem.MATCH_DAYS`). 그날 플레이어 경기가
-# 배정돼 있으면 아래 버튼이 "확인" 대신 **"경기 시작"** 이 되고, 그것을 누르면
-# MatchFlow 로 넘어간다. 경기를 마치고 순위표에서 확인을 누르면 같은 요일로
-# 돌아오는데, 그때는 그 경기가 `played` 라 버튼이 다시 "확인"이 된다.
+# 배정돼 있으면 아래 버튼이 **"경기 시작"** 이 되고, 그것을 누르면 MatchFlow 로 넘어간다.
 #
 # ── 씬 ──────────────────────────────────────────────────────────────────────
 # **배치 · 스타일은 `UI_View_WeekProgressView.tscn` 이 갖는다** (레일 · 머리글 · 구분선 ·
-# 스크롤 · 하단 버튼). 목록의 카드는 아이템 씬(`WeekMatchCard` · `WeekNoteCard` ·
-# `WeekIncidentCard` · `WeekEveningCard`(+ `WeekEveningSlot`) · `WeekEveningDoneCard` ·
-# `WeekPilotCard`(+ `WeekStatCell`))을 `%List`(VBox, 간격 = 카드 사이)에 붙인다.
+# 스크롤 · 하단 바). 목록의 카드는 아이템 씬(`WeekMapSection`(+ `BaseMap` · `WeekMapPilot`) ·
+# `WeekMatchCard` · `WeekNoteCard` · `WeekIncidentCard` · `WeekAfternoonCard` ·
+# `WeekAfternoonDoneCard` · `WeekPilotCard`(+ `WeekStatCell`))을 `%List` 에 붙인다.
 # 이 스크립트는 `%` 노드에 데이터를 넣고, 데이터에 따라 바뀌는 색(역할 띠 · 오늘 칩 ·
-# 내 경기 카드 · 상승/하락)과 기기 인셋만 코드로 넣는다. 생성은 `create()`.
-#
-# 배치 규약은 다른 시즌 화면과 같다: 화면째 `indent_to_safe_top` 으로 내리고
-# 배경만 `extend_background` 로 노치 자리까지 늘린다. `%SafeArea` 의 아래는 아래
-# 인셋만큼 올리고(= `safe_h()`), 하단 버튼은 그 인셋 밑까지 색면을 늘린다.
+# 내 경기 카드 · 상승/하락 · 오후에 못 부르는 선수의 흐림)과 기기 인셋만 코드로 넣는다.
+# 생성은 `create()`.
 
 const SCENE_PATH: String = "res://features/season/week/UI_View_WeekProgressView.tscn"
 const MATCH_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekMatchCard.tscn")
 const NOTE_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekNoteCard.tscn")
 const PILOT_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekPilotCard.tscn")
 const STAT_CELL_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekStatCell.tscn")
-const EVENING_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekEveningCard.tscn")
-const EVENING_SLOT_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekEveningSlot.tscn")
-const EVENING_DONE_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekEveningDoneCard.tscn")
+const AFTERNOON_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekAfternoonCard.tscn")
+const AFTERNOON_DONE_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekAfternoonDoneCard.tscn")
 const INCIDENT_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekIncidentCard.tscn")
+const MAP_SECTION_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekMapSection.tscn")
+const MAP_PILOT_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekMapPilot.tscn")
 
 const STAT_KEYS: Array   = PlayerData.STAT_KEYS
+
+## Training-day half, read from the records (`_stage`).
+enum Stage { OFF, MORNING, RESULT, AFTERNOON }
 
 # ── 데이터에 따라 바뀌는 치수 (나머지 배치는 씬) ──
 const CARD_H: float      = 148.0     # training card without quirk lines
@@ -67,7 +65,11 @@ const OTHER_MATCH_H: float = 96.0
 const PORTRAIT_D: float  = 88.0
 const QUIRK_LINE_H: float = 34.0     # one quirk event line under a training card
 const EVE_PORTRAIT_D: float = 84.0
-const DONE_TEXT_X_NO_PORTRAIT: float = 28.0   # evening summary without a pilot (pass)
+const MAP_PORTRAIT_D: float = 84.0
+const MAP_GAIN_STATS: int = 2        # stat ups listed on a map chip before "…"
+const DONE_TEXT_X_NO_PORTRAIT: float = 28.0   # afternoon summary without a pilot (pass)
+## Afternoon token of a pilot that cannot be asked (away, or no action left).
+const MAP_DIM: Color = Color(1, 1, 1, 0.45)
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 @onready var _gm: Node = get_node("/root/GameManager")
@@ -80,6 +82,7 @@ const DONE_TEXT_X_NO_PORTRAIT: float = 28.0   # evening summary without a pilot 
 @onready var _list_scroll: ScrollContainer = %Scroll
 @onready var _list_body: VBoxContainer = %List
 @onready var _list_end: Control = %ListEnd
+@onready var _stage_btn: Button = %Stage
 @onready var _action_btn: Button = %Action
 
 var _built: bool = false
@@ -88,11 +91,12 @@ var _day: int = 0
 var _chip_panels: Array = []       # 7 Panel (scene: %Days/Day*/Chip)
 var _chip_labels: Array = []       # 7 Label (… /Chip/Letter)
 
-# M7 — evening / incident dialogs.
-var _sel_pid: int = -1                # pilot picked on the evening card
+# M7 — afternoon / incident dialogs.
+var _sel_pid: int = -1                # pilot picked on the map this afternoon (-1 = none)
 var _sel_day: int = -1                # weekday `_sel_pid` belongs to
 var _overlay: Control = null          # VnDialogueView (evening) / MessengerView (incident), null when closed
 var _overlay_kind: String = ""        # "evening" / "incident"
+var _skip_popup: ConfirmPopup = null  # "skip the afternoon?" warning, made on first use
 
 
 ## Instantiates the scene. `WeekProgressView.new()` is an empty Control — don't use it.
@@ -129,7 +133,7 @@ func ensure_view() -> void:
 func _fit_safe_area() -> void:
 	ScreenMetrics.indent_to_safe_top(self)
 	ScreenMetrics.extend_background(%Background)
-	OutgameTheme.fit_bottom_bar(_action_btn, %SafeArea)
+	OutgameTheme.fit_bottom_bar(%Bar, %SafeArea)
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────
@@ -138,14 +142,13 @@ func refresh() -> void:
 		return
 	_day = clampi(int(_gm.season_state.get("week_day", 0)), 0,
 			CalendarSystem.DAYS_PER_WEEK - 1)
-	_settle_day_if_needed()
 	# M7 — the incident roll happens once per weekday (recorded, seeded).
 	MentalSystem.ensure_incident(_gm.season_state, _day)
 	_refresh_rail()
 	_refresh_header()
 	_rebuild_list()
 	_refresh_action_button()
-	# An unresolved incident (or an evening dialog left open by a reload) opens
+	# An unresolved incident (or an afternoon dialog left open by a reload) opens
 	# by itself — the day cannot be confirmed past it.
 	if _overlay == null:
 		if MentalSystem.incident_pending(_gm.season_state, _day):
@@ -155,22 +158,48 @@ func refresh() -> void:
 					_gm.season_state, _day, "", -1))
 
 
-## 훈련일에 처음 닿았으면 그날 훈련을 정산한다. **기록이 이미 있으면 아무것도
-## 하지 않는다** — 경기를 치르고 같은 요일로 돌아오는 경로가 실제로 있고,
-## 거기서 다시 정산하면 훈련이 두 번 먹는다.
-func _settle_day_if_needed() -> void:
+## Where the training day stands — read from the records, never stored on its own:
+## no `week_day_log[day]` = MORNING, settled without an afternoon record = RESULT,
+## afternoon rolled (`AfternoonAway.started`) = AFTERNOON. Match days = OFF.
+func _stage() -> int:
+	if not CalendarSystem.is_training_day(_day):
+		return Stage.OFF
+	if not _week_log().has(_day):
+		return Stage.MORNING
+	if not AfternoonAway.started(_gm.season_state, _day):
+		return Stage.RESULT
+	return Stage.AFTERNOON
+
+
+## 그날 훈련을 정산한다 (오전의 "다음"). **기록이 이미 있으면 아무것도 하지 않는다** —
+## 경기를 치르고 같은 요일로 돌아오는 경로가 실제로 있고, 거기서 다시 정산하면 훈련이
+## 두 번 먹는다.
+func _settle_day() -> void:
 	if not CalendarSystem.is_training_day(_day):
 		return
 	var log: Dictionary = _week_log()
 	if log.has(_day):
 		return
-	var board: TrainingBoard = null
+	var board: TrainingBoard = _board()
+	log[_day] = board.apply_day_training(_day) if board != null else []
+
+
+## The training board: the hub's, or the F6 preview's own child.
+func _board() -> TrainingBoard:
 	if _hub != null:
-		board = _hub.get_node_or_null("TrainingBoard") as TrainingBoard
-	if board == null:
-		log[_day] = []
-		return
-	log[_day] = board.apply_day_training(_day)
+		return _hub.get_node_or_null("TrainingBoard") as TrainingBoard
+	return get_node_or_null("PreviewBoard") as TrainingBoard
+
+
+## 오후로 넘어간다 (결과의 "다음"): 그날 칸이 없는 선수는 숙소, 스트레스가 높은 선수는
+## 혼자 외출을 한 번 굴린다 — `AfternoonAway` 가 기록하고, 다시 불러도 그 기록을 돌려준다.
+func _begin_afternoon() -> void:
+	var resting: Array = []
+	for raw in (_week_log().get(_day, []) as Array):
+		var row: Dictionary = raw
+		if String(row.get("color", "")) == "":
+			resting.append(int(row["pilot_id"]))
+	AfternoonAway.begin(_gm.season_state, _day, resting)
 
 
 func _week_log() -> Dictionary:
@@ -242,17 +271,21 @@ func _rebuild_list() -> void:
 	if md >= 0:
 		_add_match_cards(md)
 
-	if CalendarSystem.is_training_day(_day):
-		# M7 — the day's incident (if any) and the evening action sit above
-		# the training results: they are what the player still has to decide.
+	var stage: int = _stage()
+	if stage != Stage.OFF:
+		# Base map first (where everyone is), then what the player still has to
+		# decide (incident, afternoon), then the day's training results.
+		_add_map_section(stage)
 		_add_incident_card()
-		_add_evening_card()
-		var rows: Array = _week_log().get(_day, [])
-		if rows.is_empty():
-			_add_note_card(Loc.t(L.SEASON_WEEK_NO_TRAINING_LOG))
-		else:
-			for i in rows.size():
-				_add_pilot_card(rows[i])
+		if stage == Stage.AFTERNOON:
+			_add_afternoon_card()
+		if stage != Stage.MORNING:
+			var rows: Array = _week_log().get(_day, [])
+			if rows.is_empty():
+				_add_note_card(Loc.t(L.SEASON_WEEK_NO_TRAINING_LOG))
+			else:
+				for i in rows.size():
+					_add_pilot_card(rows[i])
 	elif md >= 0:
 		pass   # 주말 — 경기 카드가 이미 그 자리를 답했다
 	else:
@@ -269,6 +302,127 @@ func _add_item(scene: PackedScene) -> Control:
 	var item: Control = scene.instantiate() as Control
 	_list_body.add_child(item)
 	return item
+
+
+# ── 팀 부지 맵 ───────────────────────────────────────────────────────────────
+## The team's base map with my five pilots. Morning / result: each stands on the
+## spot of that day's training colour (`BaseMap.spot_of_color`). Afternoon: a pilot
+## resting goes to the dorm, one out alone to the entrance (both dimmed), and a
+## pilot that cannot be asked any more is dimmed on its spot.
+func _add_map_section(stage: int) -> void:
+	var s: Dictionary = _gm.season_state
+	var section: Control = _add_item(MAP_SECTION_SCENE)
+	var hint: String = Loc.t(L.SEASON_WEEK_MAP_HINT_MORNING)
+	if stage == Stage.RESULT:
+		hint = Loc.t(L.SEASON_WEEK_MAP_HINT_RESULT)
+	elif stage == Stage.AFTERNOON:
+		hint = Loc.t(L.SEASON_WEEK_MAP_HINT_AFTERNOON_DONE if MentalSystem.evening_done(s, _day)
+				else L.SEASON_WEEK_MAP_HINT_AFTERNOON)
+	(section.get_node("%Hint") as Label).text = hint
+
+	var map: BaseMap = BaseMap.create(RunRules.team_map_id(int(s.get("player_team_id", 0))))
+	map.name = "BaseMap_Team"
+	(section.get_node("%MapHolder") as Control).add_child(map)
+	map.size = BaseMap.DESIGN_SIZE
+
+	var rows_by_pid: Dictionary = {}
+	for raw in (_week_log().get(_day, []) as Array):
+		var row: Dictionary = raw
+		rows_by_pid[int(row["pilot_id"])] = row
+	var colors: Dictionary = {}
+	var board: TrainingBoard = _board()
+	if board != null:
+		colors = board.day_colors(_day)
+
+	if stage == Stage.AFTERNOON and (_sel_day != _day
+			or not AfternoonAway.can_request(s, _day, _sel_pid)):
+		_sel_day = _day
+		_sel_pid = -1
+
+	var entries: Array = []
+	for raw_pid in _my_pilots_in_seat_order():
+		var pid: int = int(raw_pid)
+		var row: Dictionary = rows_by_pid.get(pid, {})
+		var color: String = String(row.get("color", ""))
+		if row.is_empty():
+			var pd: PlayerData = MentalEvents.pilot_of(s, pid)
+			if pd != null:
+				color = String(colors.get(GameEnums.role_seat(pd.role), ""))
+		var spot: String = BaseMap.spot_of_color(color)
+		var away: String = AfternoonAway.away_of(s, _day, pid) if stage == Stage.AFTERNOON else ""
+		if away == AfternoonAway.AWAY_DORM:
+			spot = BaseMap.SPOT_DORM
+		elif away == AfternoonAway.AWAY_SELF_OUTING:
+			spot = BaseMap.SPOT_ENTRANCE
+		var token: Control = _add_map_token(map, stage, pid, row, away)
+		var hold: Control = token.get_node("%Portrait")
+		entries.append({"node": token, "spot": spot, "anchor": hold.position + hold.size * 0.5})
+	map.place_tokens(entries)
+
+
+## One pilot token on the map (`UI_Comp_WeekMapPilot.tscn`).
+func _add_map_token(map: BaseMap, stage: int, pid: int, row: Dictionary, away: String) -> Control:
+	var s: Dictionary = _gm.season_state
+	var token: Control = MAP_PILOT_SCENE.instantiate() as Control
+	map.add_token(token)
+	var picked: bool = stage == Stage.AFTERNOON and pid == _sel_pid
+	OutgameTheme.add_round_portrait(token.get_node("%Portrait"), PilotImages.circle_for(pid),
+			Vector2.ZERO, MAP_PORTRAIT_D, OutgameTheme.ACCENT if picked else OutgameTheme.SURFACE)
+	var name_lbl: Label = token.get_node("%Name")
+	var gain: Label = token.get_node("%Gain")
+	var stress: Label = token.get_node("%Stress")
+	var hit: Button = token.get_node("%Hit")
+	name_lbl.text = MentalEvents.pilot_name(s, pid)
+	gain.visible = false
+	stress.visible = false
+	hit.disabled = true
+	if stage == Stage.RESULT and not row.is_empty():
+		gain.text = _gain_text(row)
+		gain.visible = true
+		stress.text = Loc.t(L.SEASON_WEEK_MAP_STRESS, {"delta": "%+d" % int(row.get("stress", 0))})
+		stress.visible = true
+	elif stage == Stage.AFTERNOON:
+		if away == AfternoonAway.AWAY_DORM:
+			name_lbl.text = Loc.t(L.SEASON_WEEK_MAP_DORM)
+		elif away == AfternoonAway.AWAY_SELF_OUTING:
+			name_lbl.text = Loc.t(L.SEASON_WEEK_MAP_SELF_OUTING)
+		var can: bool = AfternoonAway.can_request(s, _day, pid)
+		hit.disabled = not can
+		if can:
+			hit.pressed.connect(_on_map_pilot_picked.bind(pid))
+		else:
+			token.modulate = MAP_DIM
+	return token
+
+
+## "전명+1 교회+1" — the stats that rose that day (at most `MAP_GAIN_STATS`, then "…"),
+## or "EXP +N" (all EXP earned) when no point rose.
+static func _gain_text(row: Dictionary) -> String:
+	var ups: Dictionary = row.get("ups", {})
+	var parts: Array = []
+	var more: bool = false
+	for i in STAT_KEYS.size():
+		var up: int = int(ups.get(String(STAT_KEYS[i]), 0))
+		if up == 0:
+			continue
+		if parts.size() >= MAP_GAIN_STATS:
+			more = true
+			break
+		parts.append("%s%+d" % [PlayerData.stat_short(i), up])
+	if parts.is_empty():
+		var total: int = 0
+		for v in (row.get("exp", {}) as Dictionary).values():
+			total += int(v)
+		return Loc.t(L.SEASON_WEEK_MAP_EXP, {"n": total})
+	return " ".join(PackedStringArray(parts)) + (" …" if more else "")
+
+
+func _on_map_pilot_picked(pid: int) -> void:
+	if _overlay != null:
+		return
+	_sel_pid = pid
+	_sel_day = _day
+	_rebuild_list()
 
 
 ## 이번 주 그 경기일의 경기들. 플레이어 경기가 맨 위, 나머지는 그 아래로.
@@ -562,18 +716,25 @@ func _add_note_card(text: String) -> void:
 	(card.get_node("%Text") as Label).text = text
 
 
-# ── 아래 버튼 ────────────────────────────────────────────────────────────────
+# ── 아래 바 ──────────────────────────────────────────────────────────────────
 func _refresh_action_button() -> void:
 	if _action_btn == null:
 		return
+	var stage: int = _stage()
+	_stage_btn.visible = stage != Stage.OFF
+	_stage_btn.text = Loc.t(L.SEASON_WEEK_STAGE_AFTERNOON if stage == Stage.AFTERNOON
+			else L.SEASON_WEEK_STAGE_MORNING)
 	if _hub != null and _hub.has_player_match_on_day(_day):
 		_action_btn.text = Loc.t(L.SEASON_WEEK_BTN_START_MATCH)
 		# 하단 바의 칸이라 **바 변형끼리만 갈아입는다** — `DarkButton` 이면 모서리가
 		# 도로 둥글어져 이 칸만 화면에서 떠오른다. 갈아입은 뒤 인셋 몫을 다시 얹는다.
 		_set_action_kind(&"BarDarkButton")
 		return
-	_action_btn.text = Loc.t(L.SEASON_WEEK_BTN_END_WEEK if _day >= CalendarSystem.DAYS_PER_WEEK - 1
-			else L.UI_BUTTON_CONFIRM)
+	if stage != Stage.OFF:
+		_action_btn.text = Loc.t(L.UI_BUTTON_NEXT)
+	else:
+		_action_btn.text = Loc.t(L.SEASON_WEEK_BTN_END_WEEK if _day >= CalendarSystem.DAYS_PER_WEEK - 1
+				else L.UI_BUTTON_CONFIRM)
 	_set_action_kind(&"BarPrimaryButton")
 
 
@@ -583,25 +744,55 @@ func _set_action_kind(variation: StringName) -> void:
 
 
 func _on_action_pressed() -> void:
-	if _hub == null or _overlay != null:
+	if _overlay != null or (_skip_popup != null and _skip_popup.is_open()):
+		return
+	match _stage():
+		Stage.MORNING:
+			_settle_day()
+			refresh()
+			return
+		Stage.RESULT:
+			_begin_afternoon()
+			refresh()
+			return
+		Stage.AFTERNOON:
+			# Moving on while an interview / outing is still possible asks first.
+			if not MentalSystem.evening_done(_gm.season_state, _day) \
+					and AfternoonAway.any_request(_gm.season_state, _day):
+				_open_skip_popup()
+				return
+	_leave_day()
+
+
+## Off to the next day (or the match). An unused afternoon is recorded as a pass.
+func _leave_day() -> void:
+	if _hub == null:
 		return
 	if _hub.has_player_match_on_day(_day):
 		_hub.on_week_day_match_start()
 		return
-	# Leaving a weekday without choosing = the evening was passed.
 	if CalendarSystem.is_training_day(_day) \
 			and not MentalSystem.evening_done(_gm.season_state, _day):
 		MentalSystem.begin_evening(_gm.season_state, _day, MentalSystem.ACTION_PASS, -1)
 	_hub.on_week_day_confirmed()
 
 
-# ── 오늘 저녁 · 사건 (M7) ─────────────────────────────────────────────────────
-# One evening action per Mon–Fri: interview / outing / pass. The card picks a
-# pilot (portrait row) and an action; the dialog itself is a `MessengerView`
-# overlay. State, limits and idempotency live in `MentalSystem` — this screen
-# only draws records and forwards taps.
+func _open_skip_popup() -> void:
+	if _skip_popup == null:
+		_skip_popup = ConfirmPopup.create()
+		add_child(_skip_popup)
+		_skip_popup.confirmed.connect(_leave_day)
+	_skip_popup.open(Loc.t(L.SEASON_WEEK_SKIP_TITLE), Loc.t(L.SEASON_WEEK_SKIP_BODY),
+			Loc.t(L.UI_BUTTON_CANCEL), Loc.t(L.SEASON_WEEK_SKIP_CONFIRM))
 
-## The evening dialog was started but not answered (e.g. the game was reloaded).
+
+# ── 오후 · 사건 (M7) ──────────────────────────────────────────────────────────
+# One afternoon action per Mon–Fri: interview / outing (or pass by moving on). The
+# map picks a pilot, the afternoon card picks the action; the dialog itself is an
+# overlay. State, limits and idempotency live in `MentalSystem` (the record keeps
+# its old name `evening`) — this screen only draws records and forwards taps.
+
+## The afternoon dialog was started but not answered (e.g. the game was reloaded).
 func _evening_open() -> bool:
 	if not CalendarSystem.is_training_day(_day):
 		return false
@@ -610,67 +801,58 @@ func _evening_open() -> bool:
 			and int(e.get("choice", -1)) < 0
 
 
-func _add_evening_card() -> void:
+func _add_afternoon_card() -> void:
 	var s: Dictionary = _gm.season_state
-	var e: Dictionary = MentalSystem.evening(s, _day)
 	if MentalSystem.evening_done(s, _day):
-		_add_evening_done_card(e)
+		_add_afternoon_done_card(MentalSystem.evening(s, _day))
 		return
 
-	var mine: Array = _my_pilots_in_seat_order()
-	if _sel_day != _day or not mine.has(_sel_pid):
-		_sel_day = _day
-		_sel_pid = int(mine[0]) if not mine.is_empty() else -1
-
-	var card: Control = _add_item(EVENING_CARD_SCENE)
+	var card: Control = _add_item(AFTERNOON_CARD_SCENE)
 	(card.get_node("%Limits") as Label).text = Loc.t(L.SEASON_WEEK_EVENING_LIMITS, {
 		"iv": MentalSystem.interviews_left(s), "iv_max": MentalSystem.interviews_per_week(s),
 		"out": MentalSystem.outings_left(s), "out_max": ConstTable.int_of("MENTAL_OUTINGS_PER_WEEK")})
 
-	# Pilot row — tap to select. Trust in amber once the outing is unlocked.
-	var slots: Array = _ensure_children(card.get_node("%Slots"), EVENING_SLOT_SCENE, mine.size())
-	for i in mine.size():
-		var pid: int = int(mine[i])
-		var slot: Control = slots[i]
-		var picked: bool = pid == _sel_pid
-		(slot.get_node("%Highlight") as Control).visible = picked
-		OutgameTheme.add_round_portrait(slot.get_node("%Portrait"), PilotImages.circle_for(pid),
-				Vector2.ZERO, EVE_PORTRAIT_D,
-				OutgameTheme.ACCENT if picked else OutgameTheme.BORDER)
-		(slot.get_node("%Name") as Label).text = MentalEvents.pilot_name(s, pid)
-		var trust: Label = slot.get_node("%Trust")
+	var picked: bool = _sel_day == _day and _sel_pid >= 0
+	var pilot: Control = card.get_node("%Pilot")
+	var hint: Label = card.get_node("%Hint")
+	pilot.visible = picked
+	hint.visible = not picked
+	hint.text = Loc.t(L.SEASON_WEEK_AFTERNOON_PICK if AfternoonAway.any_request(s, _day)
+			else L.SEASON_WEEK_AFTERNOON_NONE)
+	if picked:
+		OutgameTheme.add_round_portrait(card.get_node("%Portrait"), PilotImages.circle_for(_sel_pid),
+				Vector2.ZERO, EVE_PORTRAIT_D, OutgameTheme.ACCENT)
+		(card.get_node("%Name") as Label).text = MentalEvents.pilot_name(s, _sel_pid)
+		var trust: Label = card.get_node("%Trust")
 		trust.text = Loc.t(L.SEASON_WEEK_SLOT_TRUST,
-				{"trust": MentalSystem.trust(s, pid), "outings": MentalSystem.outings(s, pid)})
-		if MentalSystem.outing_unlocked(s, pid):
-			trust.add_theme_color_override("font_color", OutgameTheme.ACCENT_TEXT)
-		(slot.get_node("%Hit") as Button).pressed.connect(_on_evening_pilot_picked.bind(pid))
+				{"trust": MentalSystem.trust(s, _sel_pid), "outings": MentalSystem.outings(s, _sel_pid)})
+		if MentalSystem.outing_unlocked(s, _sel_pid):
+			trust.theme_type_variation = &"AccentLabel"
 
 	# Actions. Disabled buttons say why on their own label.
-	var can_iv: bool = MentalSystem.can_interview(s) and _sel_pid >= 0
-	var can_out: bool = MentalSystem.can_outing(s, _sel_pid) and _sel_pid >= 0
+	var can_iv: bool = MentalSystem.can_interview(s) and picked
+	var can_out: bool = picked and MentalSystem.can_outing(s, _sel_pid)
 	var out_text: String = Loc.t(L.TERM_ACTIVITY_OUTING)
 	if MentalSystem.outings_left(s) <= 0:
 		out_text = Loc.t(L.SEASON_WEEK_OUTING_WEEK_DONE)
-	elif not MentalSystem.outing_unlocked(s, _sel_pid):
+	elif picked and not MentalSystem.outing_unlocked(s, _sel_pid):
 		out_text = Loc.t(L.SEASON_WEEK_OUTING_NEED_TRUST, {"n": ConstTable.int_of("TRUST_OUTING_MIN")})
 	var interview: Button = card.get_node("%Interview")
 	interview.text = Loc.t(L.TERM_ACTIVITY_INTERVIEW if MentalSystem.can_interview(s)
 			else L.SEASON_WEEK_INTERVIEW_WEEK_DONE)
 	interview.disabled = not can_iv
-	interview.pressed.connect(_on_evening_action.bind(MentalSystem.ACTION_INTERVIEW))
+	interview.pressed.connect(_on_afternoon_action.bind(MentalSystem.ACTION_INTERVIEW))
 	var outing: Button = card.get_node("%Outing")
 	outing.text = out_text
 	outing.disabled = not can_out
-	outing.pressed.connect(_on_evening_action.bind(MentalSystem.ACTION_OUTING))
-	(card.get_node("%Pass") as Button).pressed.connect(
-			_on_evening_action.bind(MentalSystem.ACTION_PASS))
+	outing.pressed.connect(_on_afternoon_action.bind(MentalSystem.ACTION_OUTING))
 
 
-func _add_evening_done_card(e: Dictionary) -> void:
+func _add_afternoon_done_card(e: Dictionary) -> void:
 	var s: Dictionary = _gm.season_state
 	var action: String = String(e.get("action", MentalSystem.ACTION_PASS))
 	var pid: int = int(e.get("pilot_id", -1))
-	var card: Control = _add_item(EVENING_DONE_SCENE)
+	var card: Control = _add_item(AFTERNOON_DONE_SCENE)
 	var portrait: Control = card.get_node("%Portrait")
 	var head_lbl: Label = card.get_node("%Head")
 	var line_lbl: Label = card.get_node("%Line")
@@ -682,11 +864,11 @@ func _add_evening_done_card(e: Dictionary) -> void:
 		# No pilot (pass) — the text moves left onto the portrait's spot.
 		head_lbl.offset_left = DONE_TEXT_X_NO_PORTRAIT
 		line_lbl.offset_left = DONE_TEXT_X_NO_PORTRAIT
-	var head: String = Loc.t(L.SEASON_WEEK_EVENING_RESTED)
+	var head: String = Loc.t(L.SEASON_WEEK_AFTERNOON_RESTED)
 	if action == MentalSystem.ACTION_INTERVIEW:
-		head = Loc.t(L.SEASON_WEEK_EVENING_INTERVIEW, {"name": MentalEvents.pilot_name(s, pid)})
+		head = Loc.t(L.SEASON_WEEK_AFTERNOON_INTERVIEW, {"name": MentalEvents.pilot_name(s, pid)})
 	elif action == MentalSystem.ACTION_OUTING:
-		head = Loc.t(L.SEASON_WEEK_EVENING_OUTING, {"name": MentalEvents.pilot_name(s, pid)})
+		head = Loc.t(L.SEASON_WEEK_AFTERNOON_OUTING, {"name": MentalEvents.pilot_name(s, pid)})
 	head_lbl.text = head
 	var notes: Array = MentalEvents.note_texts(s, (e.get("outcome", {}) as Dictionary).get("notes", []))
 	line_lbl.text = " · ".join(PackedStringArray(notes)) if not notes.is_empty() \
@@ -733,19 +915,11 @@ func _my_pilots_in_seat_order() -> Array:
 	return ids
 
 
-func _on_evening_pilot_picked(pid: int) -> void:
-	if _overlay != null:
-		return
-	_sel_pid = pid
-	_sel_day = _day
-	_rebuild_list()
-
-
-func _on_evening_action(action: String) -> void:
-	if _overlay != null:
+func _on_afternoon_action(action: String) -> void:
+	if _overlay != null or _sel_pid < 0:
 		return
 	var session: Dictionary = MentalSystem.begin_evening(_gm.season_state, _day, action, _sel_pid)
-	if action == MentalSystem.ACTION_PASS or session.is_empty():
+	if session.is_empty():
 		_rebuild_list()
 		return
 	_open_evening_session(session)
@@ -759,9 +933,9 @@ func _open_evening_session(session: Dictionary) -> void:
 	if view.is_empty():
 		return
 	var pid: int = int(view["pilot_id"])
-	var sub: String = Loc.t(L.SEASON_WEEK_SUB_INTERVIEW, {"day": OutgameTheme.day_name(_day)})
+	var sub: String = Loc.t(L.SEASON_WEEK_SUB_INTERVIEW_PM, {"day": OutgameTheme.day_name(_day)})
 	if String(view["kind"]) == MentalEvents.KIND_OUTING:
-		sub = Loc.t(L.SEASON_WEEK_SUB_OUTING, {"day": OutgameTheme.day_name(_day),
+		sub = Loc.t(L.SEASON_WEEK_SUB_OUTING_PM, {"day": OutgameTheme.day_name(_day),
 				"n": MentalSystem.outings(s, pid) + 1})
 	_open_overlay("evening", sub, MentalEvents.pilot_name(s, pid), pid, view)
 
@@ -819,10 +993,11 @@ func _on_overlay_closed() -> void:
 	refresh()
 
 
-## F6 단독 실행 미리보기 — 메모리 런의 **수요일**(`resources/UiPreview.gd`). 미리보기 전용
-## `TrainingBoard` 에 코치 추천 판을 깔고 월~수를 정산해 두고(호스트가 없으면 이 화면은
-## 정산하지 않는다), 그날 사건이 나면 첫 답으로 풀어 둔다 — 덮개 없이 사건 요약 · 오늘 저녁 ·
-## 파일럿 훈련 카드가 보이게. "확인"은 호스트(`SeasonHub`)가 없어 아무 일도 안 한다.
+## F6 단독 실행 미리보기 — 메모리 런의 **수요일 오후**(`resources/UiPreview.gd`). 미리보기 전용
+## `TrainingBoard`(`PreviewBoard`)에 코치 추천 판을 깔고 월~수를 정산한 뒤 수요일 오후를 연다
+## (호스트가 없으면 `_board()` 가 이 판을 쓴다). 그날 사건이 나면 첫 답으로 풀어 두고,
+## 면담 · 외출할 수 있는 첫 선수를 골라 둔다 — 덮개 없이 맵 · 오후 카드 · 훈련 카드가 보이게.
+## "다음"은 호스트(`SeasonHub`)가 없어 날을 넘기지 않는다.
 func _fill_preview() -> void:
 	UiPreview.stage(self)
 	var gm: Node = UiPreview.ensure_run()
@@ -841,3 +1016,10 @@ func _fill_preview() -> void:
 	MentalSystem.ensure_incident(s, day)
 	if MentalSystem.incident_pending(s, day):
 		MentalSystem.resolve_incident(s, day, 0)
+	_day = day
+	_begin_afternoon()
+	for pid in _my_pilots_in_seat_order():
+		if AfternoonAway.can_request(s, day, int(pid)):
+			_sel_pid = int(pid)
+			_sel_day = day
+			break

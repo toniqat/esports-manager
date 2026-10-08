@@ -884,7 +884,6 @@ static func _add_screen_variations(th: Theme) -> void:
 	_add_derived(th, "TrainingThumbExpChip", &"AccentChip", flat_style(POSITIVE, 14))
 
 	# season/week — 시간 경과
-	_add_derived(th, "WeekEveningHighlight", &"SunkPanel", flat_style(ACCENT_DIM, 16))
 	_add_derived(th, "WeekRail", &"SunkPanel", flat_style(RAIL, 48))
 	_add_derived(th, "WeekDayChip", &"AccentChip", flat_style(Color(0, 0, 0, 0), WEEK_DAY_CHIP_RADIUS))
 	_add_derived(th, "WeekDayChipToday", &"AccentChip", flat_style(ACCENT, WEEK_DAY_CHIP_RADIUS))

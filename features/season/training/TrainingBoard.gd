@@ -548,6 +548,7 @@ func apply_day_training(day: int) -> Array:
 	var pilots: Array = player_pilots_by_seat()
 	var carry: Dictionary = exp_carry()
 	var occ: Dictionary = occupancy()
+	var colors: Dictionary = day_colors(day)
 	var rows: Array = []
 	for seat in COLS:
 		var p: PlayerData = pilots[seat]
@@ -584,8 +585,30 @@ func apply_day_training(day: int) -> Array:
 			# Training result is fixed; only a pilot with a tile that day gains stress.
 			"stress": StressSystem.on_training_day(_gm.season_state, int(p.id), day) \
 					if occ.has(Vector2i(seat, day)) else 0,
+			# Colour symbol of the placed cell ("" = no tile, basic course): the week
+			# screen's base map stands the pilot on that colour's spot.
+			"color": String(colors.get(seat, "")),
 		})
 	return rows
+
+
+## Colour symbol (`TrainingTile.cell_colors`) of each placed cell on row `day`,
+## `{seat: String}`; seats without a tile that day are missing (they get the basic
+## course). The week screen reads it before the day is settled (morning spots).
+func day_colors(day: int) -> Dictionary:
+	var out: Dictionary = {}
+	for e_raw in board():
+		var e: Dictionary = e_raw
+		var t: TrainingTile = tile(String(e.get("tile", "")))
+		if t == null:
+			continue
+		var ox: int = int(e.get("x", 0))
+		var oy: int = int(e.get("y", 0))
+		for i in t.cells.size():
+			var c: Vector2i = t.cells[i]
+			if oy + c.y == day and i < t.cell_colors.size():
+				out[ox + c.x] = String(t.cell_colors[i])
+	return out
 
 
 # ── Quirk tiles (§14, T1) ────────────────────────────────────────────────────

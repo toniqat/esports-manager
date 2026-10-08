@@ -65,6 +65,11 @@ static func team_short_name(team_id: int) -> String:
 	return str(team_id) if key.is_empty() else Loc.t(key)  # l10n-dynamic: name.team.*.short
 
 
+## 팀 부지 맵 id (`teams.csv` `map_id` → `BaseMap.SCENES` 인덱스). 없는 팀 = 0.
+static func team_map_id(team_id: int) -> int:
+	return int(_team_package(team_id).get("map_id", 0))
+
+
 static func _team_package(team_id: int) -> Dictionary:
 	for raw in team_packages():
 		if int((raw as Dictionary).get("id", -1)) == team_id:
@@ -294,6 +299,7 @@ static func _ensure_loaded() -> void:
 			"facility_level": int(row.get("facility_level", 0)),
 			"manual_areas": areas,
 			"desc_key": String(row.get("desc_key", "")),
+			"map_id": int(row.get("map_id", 0)),
 		})
 	db.close_db()
 

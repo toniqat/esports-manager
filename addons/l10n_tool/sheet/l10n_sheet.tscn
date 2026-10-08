@@ -16,6 +16,10 @@ script = ExtResource("1_sheet")
 [node name="TopBar" type="HBoxContainer" parent="."]
 layout_mode = 2
 
+[node name="EditMode" type="OptionButton" parent="TopBar"]
+unique_name_in_owner = true
+layout_mode = 2
+
 [node name="Hint" type="Label" parent="TopBar"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -26,6 +30,14 @@ text_overrun_behavior = 3
 unique_name_in_owner = true
 layout_mode = 2
 flat = false
+
+[node name="SyncData" type="Button" parent="TopBar"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="BuildData" type="Button" parent="TopBar"]
+unique_name_in_owner = true
+layout_mode = 2
 
 [node name="Tabs" type="TabContainer" parent="."]
 unique_name_in_owner = true
@@ -56,15 +68,7 @@ unique_name_in_owner = true
 layout_mode = 2
 flat = false
 
-[node name="StaleOnly" type="CheckBox" parent="Tabs/Keys/FilterBar"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="UnusedOnly" type="CheckBox" parent="Tabs/Keys/FilterBar"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="GlossaryOnly" type="CheckBox" parent="Tabs/Keys/FilterBar"]
+[node name="FilterMenu" type="MenuButton" parent="Tabs/Keys/FilterBar"]
 unique_name_in_owner = true
 layout_mode = 2
 
@@ -79,31 +83,17 @@ size_flags_horizontal = 3
 [node name="Approve" type="MenuButton" parent="Tabs/Keys/FilterBar"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_type_variation = &"Button"
 flat = false
 
 [node name="AddRow" type="Button" parent="Tabs/Keys/FilterBar"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="Reload" type="Button" parent="Tabs/Keys/FilterBar"]
+[node name="RemoveRow" type="Button" parent="Tabs/Keys/FilterBar"]
 unique_name_in_owner = true
 layout_mode = 2
-
-[node name="Scan" type="Button" parent="Tabs/Keys/FilterBar"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="Validate" type="Button" parent="Tabs/Keys/FilterBar"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="Sync" type="Button" parent="Tabs/Keys/FilterBar"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="BuildDev" type="Button" parent="Tabs/Keys/FilterBar"]
-unique_name_in_owner = true
-layout_mode = 2
+disabled = true
 
 [node name="KeysSplit" type="VSplitContainer" parent="Tabs/Keys"]
 unique_name_in_owner = true
@@ -124,41 +114,47 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 200)
 layout_mode = 2
 
-[node name="DockScroll" type="ScrollContainer" parent="Tabs/Keys/KeysSplit/Dock"]
-layout_mode = 2
-size_flags_horizontal = 3
-horizontal_scroll_mode = 0
-
-[node name="DockForm" type="VBoxContainer" parent="Tabs/Keys/KeysSplit/Dock/DockScroll"]
+[node name="DockMain" type="VBoxContainer" parent="Tabs/Keys/KeysSplit/Dock"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="DockHead" type="HBoxContainer" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm"]
+[node name="DockHead" type="HBoxContainer" parent="Tabs/Keys/KeysSplit/Dock/DockMain"]
 layout_mode = 2
 
-[node name="DockTitle" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockHead"]
+[node name="DockTitle" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockHead"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"HeaderSmall"
 
-[node name="DockSub" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockHead"]
+[node name="DockSub" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockHead"]
 unique_name_in_owner = true
 modulate = Color(1, 1, 1, 0.6)
 layout_mode = 2
 size_flags_horizontal = 3
 text_overrun_behavior = 3
 
-[node name="DockGrid" type="GridContainer" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm"]
+[node name="DockScroll" type="ScrollContainer" parent="Tabs/Keys/KeysSplit/Dock/DockMain"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_horizontal = 3
+horizontal_scroll_mode = 0
+
+[node name="DockForm" type="VBoxContainer" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="DockGrid" type="GridContainer" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockScroll/DockForm"]
 layout_mode = 2
 size_flags_horizontal = 3
 columns = 2
 
-[node name="ExampleHead" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
+[node name="ExampleHead" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockScroll/DockForm/DockGrid"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="ExampleEdit" type="TextEdit" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
+[node name="ExampleEdit" type="TextEdit" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockScroll/DockForm/DockGrid"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -166,12 +162,12 @@ editable = false
 wrap_mode = 1
 scroll_fit_content_height = true
 
-[node name="SourceHead" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
+[node name="SourceHead" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockScroll/DockForm/DockGrid"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="SourceEdit" type="TextEdit" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
+[node name="SourceEdit" type="TextEdit" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockScroll/DockForm/DockGrid"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -180,20 +176,20 @@ wrap_mode = 1
 scroll_fit_content_height = true
 script = ExtResource("2_tag")
 
-[node name="TargetHeadRow" type="HBoxContainer" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
+[node name="TargetHeadRow" type="HBoxContainer" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockScroll/DockForm/DockGrid"]
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="TargetDot" type="TextureRect" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid/TargetHeadRow"]
+[node name="TargetDot" type="TextureRect" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockScroll/DockForm/DockGrid/TargetHeadRow"]
 unique_name_in_owner = true
 layout_mode = 2
 stretch_mode = 5
 
-[node name="TargetHead" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid/TargetHeadRow"]
+[node name="TargetHead" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockScroll/DockForm/DockGrid/TargetHeadRow"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="TargetEdit" type="TextEdit" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
+[node name="TargetEdit" type="TextEdit" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockScroll/DockForm/DockGrid"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -202,12 +198,12 @@ wrap_mode = 1
 scroll_fit_content_height = true
 script = ExtResource("2_tag")
 
-[node name="ContextLabel" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
+[node name="ContextLabel" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockScroll/DockForm/DockGrid"]
 layout_mode = 2
 size_flags_vertical = 0
 text = "context"
 
-[node name="ContextEdit" type="TextEdit" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
+[node name="ContextEdit" type="TextEdit" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockScroll/DockForm/DockGrid"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -215,24 +211,24 @@ editable = false
 wrap_mode = 1
 scroll_fit_content_height = true
 
-[node name="MaxLenLabel" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
+[node name="MaxLenLabel" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockScroll/DockForm/DockGrid"]
 layout_mode = 2
 size_flags_vertical = 0
 text = "max_len"
 
-[node name="MaxLenEdit" type="LineEdit" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
+[node name="MaxLenEdit" type="LineEdit" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockScroll/DockForm/DockGrid"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(80, 0)
 layout_mode = 2
 size_flags_horizontal = 0
 editable = false
 
-[node name="NoteLabel" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
+[node name="NoteLabel" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockScroll/DockForm/DockGrid"]
 layout_mode = 2
 size_flags_vertical = 0
 text = "note"
 
-[node name="NoteEdit" type="TextEdit" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm/DockGrid"]
+[node name="NoteEdit" type="TextEdit" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockScroll/DockForm/DockGrid"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -240,19 +236,47 @@ editable = false
 wrap_mode = 1
 scroll_fit_content_height = true
 
-[node name="DockInfo" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm"]
+[node name="DockInfo" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockScroll/DockForm"]
 unique_name_in_owner = true
 layout_mode = 2
 autowrap_mode = 3
 
-[node name="UsageTitle" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm"]
+[node name="GlKeysTitle" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockScroll/DockForm"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="GlKeysMargin" type="MarginContainer" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockScroll/DockForm"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_right = 24
+
+[node name="GlossaryKeys" type="Tree" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockScroll/DockForm/GlKeysMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+columns = 2
+column_titles_visible = true
+scroll_horizontal_enabled = false
+scroll_vertical_enabled = false
+hide_root = true
+
+[node name="UsageTitle" type="Label" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockScroll/DockForm"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="UsageList" type="ItemList" parent="Tabs/Keys/KeysSplit/Dock/DockScroll/DockForm"]
+[node name="UsageMargin" type="MarginContainer" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockScroll/DockForm"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_right = 24
+
+[node name="UsageTree" type="Tree" parent="Tabs/Keys/KeysSplit/Dock/DockMain/DockScroll/DockForm/UsageMargin"]
 unique_name_in_owner = true
 layout_mode = 2
-auto_height = true
+scroll_horizontal_enabled = false
+scroll_vertical_enabled = false
+hide_root = true
 
 [node name="DockButtons" type="VBoxContainer" parent="Tabs/Keys/KeysSplit/Dock"]
 layout_mode = 2
@@ -298,19 +322,8 @@ size_flags_horizontal = 3
 [node name="GlApprove" type="MenuButton" parent="Tabs/Glossary/GlBar"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_type_variation = &"Button"
 flat = false
-
-[node name="GlReload" type="Button" parent="Tabs/Glossary/GlBar"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="GlValidate" type="Button" parent="Tabs/Glossary/GlBar"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="GlBuildDev" type="Button" parent="Tabs/Glossary/GlBar"]
-unique_name_in_owner = true
-layout_mode = 2
 
 [node name="GlSplit" type="VSplitContainer" parent="Tabs/Glossary"]
 unique_name_in_owner = true
@@ -318,23 +331,13 @@ layout_mode = 2
 size_flags_vertical = 3
 split_offset = 360
 
-[node name="GlTop" type="HSplitContainer" parent="Tabs/Glossary/GlSplit"]
-layout_mode = 2
-size_flags_vertical = 3
-split_offset = 900
-
-[node name="GlossaryTree" type="Tree" parent="Tabs/Glossary/GlSplit/GlTop"]
+[node name="GlossaryTree" type="Tree" parent="Tabs/Glossary/GlSplit"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 160)
 layout_mode = 2
 size_flags_horizontal = 3
 column_titles_visible = true
 hide_root = true
-
-[node name="GlossaryKeys" type="ItemList" parent="Tabs/Glossary/GlSplit/GlTop"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(260, 0)
-layout_mode = 2
 
 [node name="Orphans" type="VBoxContainer" parent="Tabs"]
 unique_name_in_owner = true
@@ -350,10 +353,6 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 autowrap_mode = 3
-
-[node name="OrScan" type="Button" parent="Tabs/Orphans/OrphanBar"]
-unique_name_in_owner = true
-layout_mode = 2
 
 [node name="OrphanList" type="ItemList" parent="Tabs/Orphans"]
 unique_name_in_owner = true
@@ -419,51 +418,69 @@ wrap_mode = 1
 
 [node name="AddRowDialog" type="ConfirmationDialog" parent="."]
 unique_name_in_owner = true
-size = Vector2i(460, 220)
+size = Vector2i(560, 480)
 
-[node name="Grid" type="GridContainer" parent="AddRowDialog"]
+[node name="ArBox" type="VBoxContainer" parent="AddRowDialog"]
 offset_left = 8.0
 offset_top = 8.0
-offset_right = 452.0
-offset_bottom = 171.0
+offset_right = 552.0
+offset_bottom = 431.0
+
+[node name="ArGrid" type="GridContainer" parent="AddRowDialog/ArBox"]
+layout_mode = 2
 columns = 2
 
-[node name="DomainLabel" type="Label" parent="AddRowDialog/Grid"]
+[node name="KeyLabel" type="Label" parent="AddRowDialog/ArBox/ArGrid"]
 layout_mode = 2
-text = "domain"
+text = "key"
 
-[node name="ArDomain" type="LineEdit" parent="AddRowDialog/Grid"]
+[node name="ArKey" type="LineEdit" parent="AddRowDialog/ArBox/ArGrid"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-placeholder_text = "ui"
+editable = false
 
-[node name="AliasLabel" type="Label" parent="AddRowDialog/Grid"]
+[node name="AliasLabel" type="Label" parent="AddRowDialog/ArBox/ArGrid"]
 layout_mode = 2
 text = "alias"
 
-[node name="ArAlias" type="LineEdit" parent="AddRowDialog/Grid"]
+[node name="ArAlias" type="LineEdit" parent="AddRowDialog/ArBox/ArGrid"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="TextLabel" type="Label" parent="AddRowDialog/Grid"]
+[node name="ArPreview" type="Label" parent="AddRowDialog/ArBox"]
 unique_name_in_owner = true
 layout_mode = 2
+text_overrun_behavior = 3
 
-[node name="ArText" type="LineEdit" parent="AddRowDialog/Grid"]
+[node name="ArDomains" type="Tree" parent="AddRowDialog/ArBox"]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_vertical = 3
+hide_root = true
 
-[node name="ContextLabel" type="Label" parent="AddRowDialog/Grid"]
-layout_mode = 2
-text = "context"
-
-[node name="ArContext" type="LineEdit" parent="AddRowDialog/Grid"]
+[node name="RemoveRowDialog" type="ConfirmationDialog" parent="."]
 unique_name_in_owner = true
+size = Vector2i(560, 360)
+
+[node name="RrBox" type="VBoxContainer" parent="RemoveRowDialog"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 552.0
+offset_bottom = 311.0
+
+[node name="RrBody" type="Label" parent="RemoveRowDialog/RrBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(520, 0)
 layout_mode = 2
-size_flags_horizontal = 3
+autowrap_mode = 3
+
+[node name="RrUsages" type="ItemList" parent="RemoveRowDialog/RrBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 160)
+layout_mode = 2
+size_flags_vertical = 3
 
 [node name="ApproveDialog" type="ConfirmationDialog" parent="."]
 unique_name_in_owner = true

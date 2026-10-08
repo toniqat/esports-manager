@@ -97,256 +97,6 @@ const BATTLE_TRAIT_LABEL_FIRST_DRAW := "tx_0SNGNNX6ME"
 const BATTLE_TRAIT_LABEL_HAND_SIZE := "tx_ME11AGHCAW"
 const BATTLE_TRAIT_LABEL_OPEN_COST := "tx_E684S0YNFT"
 const BATTLE_TRAIT_BANNER_TITLE := "tx_H9QM09GHQ8"
-## @deprecated
-const BREAKTHROUGH_1_DESC := "tx_BNZABB803S"
-## @deprecated
-const BREAKTHROUGH_10_DESC := "tx_D4KC8DCARF"
-## @deprecated
-const BREAKTHROUGH_100_DESC := "tx_HX1CQ1HXX4"
-## @deprecated
-const BREAKTHROUGH_101_DESC := "tx_P8M4917H4N"
-## @deprecated
-const BREAKTHROUGH_102_DESC := "tx_JGFBDHNZBQ"
-## @deprecated
-const BREAKTHROUGH_103_DESC := "tx_CERCCST1T7"
-## @deprecated
-const BREAKTHROUGH_104_DESC := "tx_B5HCSW6PE1"
-## @deprecated
-const BREAKTHROUGH_105_DESC := "tx_269D8R68GZ"
-## @deprecated
-const BREAKTHROUGH_106_DESC := "tx_MMDJ2K4B9W"
-## @deprecated
-const BREAKTHROUGH_107_DESC := "tx_MP556W6XF3"
-## @deprecated
-const BREAKTHROUGH_108_DESC := "tx_PQQZSZ8Q73"
-## @deprecated
-const BREAKTHROUGH_109_DESC := "tx_C8MAJ18BAJ"
-## @deprecated
-const BREAKTHROUGH_11_DESC := "tx_GT9HFB45QN"
-## @deprecated
-const BREAKTHROUGH_110_DESC := "tx_KBMT1VW6FW"
-## @deprecated
-const BREAKTHROUGH_111_DESC := "tx_Z38V855Z3K"
-## @deprecated
-const BREAKTHROUGH_112_DESC := "tx_7V4R2TCJTV"
-## @deprecated
-const BREAKTHROUGH_113_DESC := "tx_TW2WB4MQM1"
-## @deprecated
-const BREAKTHROUGH_114_DESC := "tx_ZH3SMVBXS7"
-## @deprecated
-const BREAKTHROUGH_115_DESC := "tx_PEN5KX72BJ"
-## @deprecated
-const BREAKTHROUGH_116_DESC := "tx_KTQJAFXBR3"
-## @deprecated
-const BREAKTHROUGH_117_DESC := "tx_T517J0YFBT"
-## @deprecated
-const BREAKTHROUGH_118_DESC := "tx_ZVBHG47DG8"
-## @deprecated
-const BREAKTHROUGH_119_DESC := "tx_8DZ1FRJKR9"
-## @deprecated
-const BREAKTHROUGH_12_DESC := "tx_M8A5SD7XZ3"
-## @deprecated
-const BREAKTHROUGH_120_DESC := "tx_6NK8H5RP05"
-## @deprecated
-const BREAKTHROUGH_121_DESC := "tx_MZFRJYQWE1"
-## @deprecated
-const BREAKTHROUGH_122_DESC := "tx_80T8YAJNC7"
-## @deprecated
-const BREAKTHROUGH_123_DESC := "tx_4TJN6H88TJ"
-## @deprecated
-const BREAKTHROUGH_124_DESC := "tx_5ZA10MPGFV"
-## @deprecated
-const BREAKTHROUGH_125_DESC := "tx_6RFSFX6W0Q"
-## @deprecated
-const BREAKTHROUGH_13_DESC := "tx_4Y1G7QJK1Z"
-## @deprecated
-const BREAKTHROUGH_14_DESC := "tx_399JVH6XZT"
-## @deprecated
-const BREAKTHROUGH_15_DESC := "tx_YGX2TFQQYH"
-## @deprecated
-const BREAKTHROUGH_16_DESC := "tx_7ZEA11MNKZ"
-## @deprecated
-const BREAKTHROUGH_17_DESC := "tx_2CCK1642TV"
-## @deprecated
-const BREAKTHROUGH_18_DESC := "tx_023MAMQFJM"
-## @deprecated
-const BREAKTHROUGH_19_DESC := "tx_7TVXP69D87"
-## @deprecated
-const BREAKTHROUGH_2_DESC := "tx_1MD83CR2E7"
-## @deprecated
-const BREAKTHROUGH_20_DESC := "tx_4RNYT0N3CH"
-## @deprecated
-const BREAKTHROUGH_21_DESC := "tx_5BF8Z6EHXT"
-## @deprecated
-const BREAKTHROUGH_22_DESC := "tx_21ZNBHDDA9"
-## @deprecated
-const BREAKTHROUGH_23_DESC := "tx_7SWB7DDK3Z"
-## @deprecated
-const BREAKTHROUGH_24_DESC := "tx_8EVV1RF8PZ"
-## @deprecated
-const BREAKTHROUGH_25_DESC := "tx_JVWTBF2K0R"
-## @deprecated
-const BREAKTHROUGH_26_DESC := "tx_HJZ5969XXZ"
-## @deprecated
-const BREAKTHROUGH_27_DESC := "tx_CVZVESYVCH"
-## @deprecated
-const BREAKTHROUGH_28_DESC := "tx_KGRDD7JXC5"
-## @deprecated
-const BREAKTHROUGH_29_DESC := "tx_TEBE2JYYJN"
-## @deprecated
-const BREAKTHROUGH_3_DESC := "tx_GAAZ5HPRXK"
-## @deprecated
-const BREAKTHROUGH_30_DESC := "tx_8MHCZAZAKX"
-## @deprecated
-const BREAKTHROUGH_31_DESC := "tx_NFVG32TTEF"
-## @deprecated
-const BREAKTHROUGH_32_DESC := "tx_CAJN34RZBJ"
-## @deprecated
-const BREAKTHROUGH_33_DESC := "tx_7J08XRWG0F"
-## @deprecated
-const BREAKTHROUGH_34_DESC := "tx_6N1XE4GWWG"
-## @deprecated
-const BREAKTHROUGH_35_DESC := "tx_7BR5YWJB5H"
-## @deprecated
-const BREAKTHROUGH_36_DESC := "tx_PRQSCMCRNY"
-## @deprecated
-const BREAKTHROUGH_37_DESC := "tx_S31T2RG0MG"
-## @deprecated
-const BREAKTHROUGH_38_DESC := "tx_322156HE7Q"
-## @deprecated
-const BREAKTHROUGH_39_DESC := "tx_MNCGV8CS0Y"
-## @deprecated
-const BREAKTHROUGH_4_DESC := "tx_BVZGPFX010"
-## @deprecated
-const BREAKTHROUGH_40_DESC := "tx_50EWAPEMJJ"
-## @deprecated
-const BREAKTHROUGH_41_DESC := "tx_92MFB1DXG3"
-## @deprecated
-const BREAKTHROUGH_42_DESC := "tx_41DRR06M4H"
-## @deprecated
-const BREAKTHROUGH_43_DESC := "tx_F2W8F1NGFA"
-## @deprecated
-const BREAKTHROUGH_44_DESC := "tx_V3F0Y42H76"
-## @deprecated
-const BREAKTHROUGH_45_DESC := "tx_YXN1V1K761"
-## @deprecated
-const BREAKTHROUGH_46_DESC := "tx_388H7SWZK1"
-## @deprecated
-const BREAKTHROUGH_47_DESC := "tx_XPVB9FWBK0"
-## @deprecated
-const BREAKTHROUGH_48_DESC := "tx_RNXFV4X5KX"
-## @deprecated
-const BREAKTHROUGH_49_DESC := "tx_7CRNFMK6CS"
-## @deprecated
-const BREAKTHROUGH_5_DESC := "tx_E279KXEN3F"
-## @deprecated
-const BREAKTHROUGH_50_DESC := "tx_K579866TJR"
-## @deprecated
-const BREAKTHROUGH_51_DESC := "tx_3X9FH1EK8J"
-## @deprecated
-const BREAKTHROUGH_52_DESC := "tx_E51RC55DZ9"
-## @deprecated
-const BREAKTHROUGH_53_DESC := "tx_YVV18TPYRZ"
-## @deprecated
-const BREAKTHROUGH_54_DESC := "tx_DV3NNY745M"
-## @deprecated
-const BREAKTHROUGH_55_DESC := "tx_GVDGB5WNC2"
-## @deprecated
-const BREAKTHROUGH_56_DESC := "tx_V7X9DPN1EH"
-## @deprecated
-const BREAKTHROUGH_57_DESC := "tx_NM0GHWJZ8W"
-## @deprecated
-const BREAKTHROUGH_58_DESC := "tx_DHXCRK6FMS"
-## @deprecated
-const BREAKTHROUGH_59_DESC := "tx_00N8BJ2VN0"
-## @deprecated
-const BREAKTHROUGH_6_DESC := "tx_7CTR6HNEPK"
-## @deprecated
-const BREAKTHROUGH_60_DESC := "tx_X272J64Z3W"
-## @deprecated
-const BREAKTHROUGH_61_DESC := "tx_JJXX24EEPG"
-## @deprecated
-const BREAKTHROUGH_62_DESC := "tx_SWE7TCQCTP"
-## @deprecated
-const BREAKTHROUGH_63_DESC := "tx_FEKKT2CP0Q"
-## @deprecated
-const BREAKTHROUGH_64_DESC := "tx_V0E3SB00NR"
-## @deprecated
-const BREAKTHROUGH_65_DESC := "tx_FB9D3PSJKH"
-## @deprecated
-const BREAKTHROUGH_66_DESC := "tx_TS3WCTPP83"
-## @deprecated
-const BREAKTHROUGH_67_DESC := "tx_2N79N56WDN"
-## @deprecated
-const BREAKTHROUGH_68_DESC := "tx_MJHGQXF8PV"
-## @deprecated
-const BREAKTHROUGH_69_DESC := "tx_FN2Q9FNGMK"
-## @deprecated
-const BREAKTHROUGH_7_DESC := "tx_PGK3M1V0NR"
-## @deprecated
-const BREAKTHROUGH_70_DESC := "tx_GNBJJYQYZ8"
-## @deprecated
-const BREAKTHROUGH_71_DESC := "tx_HJVYAAEZHZ"
-## @deprecated
-const BREAKTHROUGH_72_DESC := "tx_HH71MM2NTA"
-## @deprecated
-const BREAKTHROUGH_73_DESC := "tx_G4T169KT2D"
-## @deprecated
-const BREAKTHROUGH_74_DESC := "tx_CJG38SZ85R"
-## @deprecated
-const BREAKTHROUGH_75_DESC := "tx_Z5XWZ1NV04"
-## @deprecated
-const BREAKTHROUGH_76_DESC := "tx_GWMX9TG5YQ"
-## @deprecated
-const BREAKTHROUGH_77_DESC := "tx_3GZRG4SWEX"
-## @deprecated
-const BREAKTHROUGH_78_DESC := "tx_0R8DM81BVE"
-## @deprecated
-const BREAKTHROUGH_79_DESC := "tx_Q60ERV02ZN"
-## @deprecated
-const BREAKTHROUGH_8_DESC := "tx_YNYE5T30WE"
-## @deprecated
-const BREAKTHROUGH_80_DESC := "tx_VPWDG7GND8"
-## @deprecated
-const BREAKTHROUGH_81_DESC := "tx_AC3ZD0GF06"
-## @deprecated
-const BREAKTHROUGH_82_DESC := "tx_N3428YR5TT"
-## @deprecated
-const BREAKTHROUGH_83_DESC := "tx_QK167M9MCZ"
-## @deprecated
-const BREAKTHROUGH_84_DESC := "tx_A22ERBKP73"
-## @deprecated
-const BREAKTHROUGH_85_DESC := "tx_Y7PPHPJX74"
-## @deprecated
-const BREAKTHROUGH_86_DESC := "tx_75SZR88ZGX"
-## @deprecated
-const BREAKTHROUGH_87_DESC := "tx_SF5MS1F892"
-## @deprecated
-const BREAKTHROUGH_88_DESC := "tx_FTK3BPDA9J"
-## @deprecated
-const BREAKTHROUGH_89_DESC := "tx_ZJFQ26M3Q5"
-## @deprecated
-const BREAKTHROUGH_9_DESC := "tx_QPC5HYT8G5"
-## @deprecated
-const BREAKTHROUGH_90_DESC := "tx_2HYAZASV6Y"
-## @deprecated
-const BREAKTHROUGH_91_DESC := "tx_RQH494K67C"
-## @deprecated
-const BREAKTHROUGH_92_DESC := "tx_8MSMBN1B11"
-## @deprecated
-const BREAKTHROUGH_93_DESC := "tx_73T413BY02"
-## @deprecated
-const BREAKTHROUGH_94_DESC := "tx_1D9B9ZB8D3"
-## @deprecated
-const BREAKTHROUGH_95_DESC := "tx_4NBQ8AZQPG"
-## @deprecated
-const BREAKTHROUGH_96_DESC := "tx_1CVD44CTD1"
-## @deprecated
-const BREAKTHROUGH_97_DESC := "tx_436PNZ5BZP"
-## @deprecated
-const BREAKTHROUGH_98_DESC := "tx_CCEY2AA8QH"
-## @deprecated
-const BREAKTHROUGH_99_DESC := "tx_DQVFDVZ1SY"
 const BREAKTHROUGH_KIND_CARD_SWAP := "tx_JA0XRDKBW0"
 const BREAKTHROUGH_KIND_SALARY_DOWN := "tx_NGS28BKV7X"
 const BREAKTHROUGH_KIND_STAT_FLAT := "tx_CT7HANNW9F"
@@ -570,12 +320,9 @@ const HUD_TURN_ENEMY := "tx_Y3YPZRFYP0"
 const HUD_TURN_PLAYER := "tx_5R34V4TK24"
 const HUD_VICTORY_NEXT := "tx_TMPV0HMGH4"
 const HUD_VICTORY_PLAY_AGAIN := "tx_562ABYGNTQ"
-const KEYWORD_BOUNTY_NAME := "tx_WSY436KCVQ"
 const KEYWORD_BOUNTY_NOTE := "tx_DYE6YP50R9"
 const KEYWORD_CHARGE_LABEL := "tx_6ABJNCRSQX"
-const KEYWORD_CHARGE_NAME := "tx_HHR746K1D3"
 const KEYWORD_CHARGE_NOTE := "tx_FGE0Q8F8K1"
-const KEYWORD_EXHAUST_NAME := "tx_D1T42QFP6V"
 const KEYWORD_EXHAUST_NOTE := "tx_A2PYQPKVJM"
 const KEYWORD_ICON_AREA := "tx_SVFGB50VBG"
 const KEYWORD_ICON_ATK := "tx_GN5YCE4A7K"
@@ -607,21 +354,14 @@ const KEYWORD_ICON_SEARCH := "tx_XVGC6KXT1R"
 const KEYWORD_ICON_SHIELD := "tx_H5PAQEGQXV"
 const KEYWORD_ICON_STRATEGY := "tx_AXYDKH476P"
 const KEYWORD_ICON_TARGET := "tx_AKRYXE0W1T"
-const KEYWORD_PRESERVE_NAME := "tx_SJ5QM4RPT6"
 const KEYWORD_PRESERVE_NOTE := "tx_EGQP5BBD6K"
-const KEYWORD_REACTIVE_ARMOR_NAME := "tx_HPPDS4VKWD"
+const KEYWORD_REACTIVE_ARMOR_DATA := "tx_EXXXM6Y0N1"
 const KEYWORD_REACTIVE_ARMOR_NOTE := "tx_8224R3117V"
-const KEYWORD_REPOSITION_NAME := "tx_VDYX47TMCF"
 const KEYWORD_REPOSITION_NOTE := "tx_HN02EYXPVV"
-const KEYWORD_STUN_NAME := "tx_EQ77MGHTT1"
 const KEYWORD_STUN_NOTE := "tx_5Y0V13GVXR"
-const KEYWORD_TARGET_NAME := "tx_DG1DJNPNVF"
 const KEYWORD_TARGET_NOTE := "tx_M9AXFZ0YJD"
-const KEYWORD_TRACK_NAME := "tx_KXN7MDVXDA"
 const KEYWORD_TRACK_NOTE := "tx_Q2YD01V4X9"
-const KEYWORD_VOLATILE_NAME := "tx_XT72XP34EJ"
 const KEYWORD_VOLATILE_NOTE := "tx_SSYPBCVHEE"
-const KEYWORD_VULNERABLE_NAME := "tx_WAPNWFECJE"
 const KEYWORD_VULNERABLE_NOTE := "tx_GV1PNFZR9T"
 ## @deprecated
 const LOBBY_CURRENCY_GACHA_TICKET_PILOT := "tx_H3S5FP9V1B"
@@ -1261,6 +1001,17 @@ const TERM_GAME_SEARCH := "tx_VPV5JM208F"
 const TERM_GAME_STRATEGY_POINTS := "tx_F597JS5T37"
 const TERM_GAME_SURE_HIT := "tx_TCBRJ43P81"
 const TERM_GAME_WHILE_HELD := "tx_D0S7070T32"
+const TERM_KEYWORD_BOUNTY := "tx_WSY436KCVQ"
+const TERM_KEYWORD_CHARGE := "tx_HHR746K1D3"
+const TERM_KEYWORD_EXHAUST := "tx_D1T42QFP6V"
+const TERM_KEYWORD_PRESERVE := "tx_SJ5QM4RPT6"
+const TERM_KEYWORD_REACTIVE_ARMOR := "tx_HPPDS4VKWD"
+const TERM_KEYWORD_REPOSITION := "tx_VDYX47TMCF"
+const TERM_KEYWORD_STUN := "tx_EQ77MGHTT1"
+const TERM_KEYWORD_TARGET := "tx_DG1DJNPNVF"
+const TERM_KEYWORD_TRACK := "tx_KXN7MDVXDA"
+const TERM_KEYWORD_VOLATILE := "tx_XT72XP34EJ"
+const TERM_KEYWORD_VULNERABLE := "tx_WAPNWFECJE"
 const TERM_MANAGER_STAT_ANALYSIS := "tx_Z1HJZ9M6K6"
 const TERM_MANAGER_STAT_FINANCE := "tx_SJJT6G3QTG"
 const TERM_MANAGER_STAT_KNOWLEDGE := "tx_K3FRY03EQK"

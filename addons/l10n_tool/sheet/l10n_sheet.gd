@@ -1,23 +1,28 @@
 @tool
 extends VBoxContainer
 
-# L10n editor — the "L10n" main screen tab (next to 2D · 3D · Script), the tool's only UI.
-# Top bar: the language menu (target columns of the Keys and Glossary tables). Tabs, each with its
-# own filter / action bar: Keys (read-only sheet: one row per key: key · alias · source · one
-# column per target language with a status dot, plus context · max_len · note when languages are
-# picked; header click = sort), Glossary (terms with their linked key's texts and status dots),
+# L10n editor: the "L10n" main screen tab (next to 2D · 3D · Script), the tool's only UI.
+# Top bar: edit mode (read only · edit content · admin; always opens read only), the language
+# menu (target columns of the Keys and Glossary tables), Sync Data (sync → scan + checks →
+# index.json · report.md → reload; read only skips the sync write) and Build Data. Tabs, each
+# with its own filter / action bar: Keys (read-only sheet: one row per key: key · alias · source ·
+# one column per target language with a status dot, plus context · max_len · note when languages
+# are picked; header click = sort; filter menu = changed · unused · glossary violations; Ctrl+C =
+# the selected cell's text), Glossary (terms with their linked key's texts and status dots),
 # Orphan texts, Scene preview (the edited scene's key texts in a locale: read-only, row click
 # selects the node) and Log (output of every command). Clicking a cell tints its row and fills the
 # bottom dock (shared by Keys and Glossary, moved between them) with that row: source + target
 # language (the clicked language) + read-only example (key references expanded) + context ·
-# max_len · note: the only place edits happen. `{` in the source / target field opens tag
-# completion (tag_edit.gd); "find string" opens the key picker. Layout lives in l10n_sheet.tscn;
-# UI text follows the editor language (ko, else en: `TEXTS`); search · filters · rows · glossary ·
-# preview rows come from sheet_model.gd; every write goes through the facade (`cmd_edit` ·
-# `cmd_new_key` · `cmd_approve`, re-read from disk → write → save). build dev stays a button.
-# Usages (generated/index.json, refreshed by the scan button) show in the dock list and the
-# row's right-click menu: .gd → script line, .tscn → open scene, .tres → resource, anything else
-# (data CSVs) and the key's own source CSV row → external editor at that line.
+# max_len · note: the only place edits happen (edit modes only). `{` in the source / target field
+# opens tag completion (tag_edit.gd, `{term_` = glossary words); "find string" / "find in
+# glossary" open the key picker. Layout lives in l10n_sheet.tscn; UI text follows the editor
+# language (ko, else en: `TEXTS`); search · filters · rows · glossary · preview rows come from
+# sheet_model.gd; every write goes through the facade (`cmd_edit` · `cmd_new_key` · `cmd_approve`
+# (admin), re-read from disk → write → save).
+# Usages (generated/index.json, refreshed by Sync Data) show in the dock tree and the row's
+# right-click menu, each file followed by the screen scenes it ends up in: .gd → script line,
+# .tscn → open scene, .tres → resource, anything else (data CSVs) and the key's own source CSV
+# row → external editor at that line.
 # Inactive until plugin.gd calls `setup(plugin)`.
 
 const L10n = preload("res://addons/l10n_tool/core/l10n.gd")
@@ -26,6 +31,7 @@ const ScreenMap = preload("res://addons/l10n_tool/sheet/screen_map.gd")
 const TagEdit = preload("res://addons/l10n_tool/sheet/tag_edit.gd")
 const KeyRefs = preload("res://addons/l10n_tool/core/key_refs.gd")
 const Tokens = preload("res://addons/l10n_tool/core/tokens.gd")
+const Keygen = preload("res://addons/l10n_tool/core/keygen.gd")
 ## Usage tooltip code preview: lines per file, characters per line.
 const PREVIEW_LINES := 4
 const PREVIEW_COLS := 110
@@ -47,14 +53,22 @@ const STATUS_COLORS := {
 }
 const MENU_ALL_ID := 0
 ## Editor icons per button, first one the editor theme has wins.
-const BUTTON_ICONS := {"AddRow": ["Add"], "Reload": ["Reload"], "Scan": ["Search"], "Validate": ["ImportCheck", "StatusSuccess"],
-	"Sync": ["Loop", "RotateRight"], "BuildDev": ["Tools", "Play"], "PreviewRefresh": ["Reload"],
-	"GlReload": ["Reload"], "GlValidate": ["ImportCheck", "StatusSuccess"], "GlBuildDev": ["Tools", "Play"],
-	"OrScan": ["Search"], "LogClear": ["Clear", "Remove"]}
+const BUTTON_ICONS := {"AddRow": ["Add"], "RemoveRow": ["Remove"], "SyncData": ["Reload", "Loop"], "BuildData": ["Tools", "Play"],
+	"PreviewRefresh": ["Reload"], "LogClear": ["Clear", "Remove"], "Apply": ["ImportCheck", "StatusSuccess"],
+	"Revert": ["UndoRedo", "RotateLeft", "Reload"], "Approve": ["ImportCheck", "StatusSuccess"],
+	"GlApprove": ["ImportCheck", "StatusSuccess"], "FilterMenu": ["AnimationFilter", "Filter", "Search"]}
 ## Filter fields: magnifier on the right like the FileSystem dock's "Filter Files".
 const SEARCH_FIELDS := ["Search", "GlSearch", "KpSearch"]
 ## Approve menu ids.
 enum { APPROVE_SELECTED, APPROVE_VISIBLE }
+## Edit modes (EditMode option id = value). Read-only writes nothing to the sources; content edit =
+## everything but approve; admin = approve too. The editor always opens read-only.
+enum { MODE_READ, MODE_EDIT, MODE_ADMIN }
+const MODE_TEXTS := ["edit_read", "edit_content", "edit_admin"]
+## Keys filter menu: id = index, value = SheetModel.search filter name.
+const FILTER_CHOICES := ["stale", "unused", "glossary"]
+const FILTER_TEXTS := ["stale_only", "unused_only", "glossary_only"]
+const FILTER_TIPS := ["stale_tip", "unused_tip", "glossary_tip"]
 ## Tab order in the scene and their TEXTS ids.
 const TAB_TEXTS := ["tab_keys", "tab_glossary", "tab_orphans", "tab_preview", "tab_log"]
 const TAB_KEYS := 0
@@ -69,6 +83,9 @@ const PICKER_MAX := 300
 enum { MENU_COPY_KEY, MENU_COPY_ALIAS, MENU_OPEN_SOURCE, MENU_COPY_SOURCE }
 const MENU_USAGE_BASE := 100
 const USAGE_SOURCE := "source"
+## Row menu: screen rows (the scene a usage file ends up in) indented under their file.
+const USAGE_SCREEN := "screen"
+const SCREEN_INDENT := "      └ "
 ## Environment the external editor must not inherit (see _open_external).
 const CHILD_ENV_STRIP := ["ELECTRON_RUN_AS_NODE"]
 ## UI text per editor language.
@@ -90,44 +107,70 @@ const TEXTS := {
 		"stale_only": "변경된 항목만 표시",
 		"stale_tip": "원문이 바뀐 뒤 아직 고치지 않은 번역만",
 		"add_tip": "행 추가 — key 발급 → <domain>.csv 끝에 행 추가",
-		"reload_tip": "다시 읽기 — 원본 CSV",
-		"build_tip": "build dev — sync → 검증 → 생성물(generated/). 저장한 내용을 게임에 반영",
-		"apply": "적용 (Ctrl+Enter)",
+		"remove_tip": "행 제거: 선택한 key 의 행을 원본 CSV 에서 지운다 (확인 창이 뜬다)",
+		"remove_pick": "행 제거: 지울 행을 먼저 선택",
+		"remove_title": "행 제거",
+		"remove_ok": "제거",
+		"remove_body": "%s  ·  %s
+
+이 key 의 행을 %s 에서 지운다. 번역 · 상태도 함께 사라진다(되돌리기 = git).
+L.gd · strings 는 Build Data 때 반영된다.",
+		"remove_used": "사용처 %d곳이 이 key 를 쓴다. 지우면 코드 · 씬 · 데이터 · 다른 문장의 참조가 깨진다 (더블클릭 = 이동):",
+		"remove_unused": "사용처 없음.",
+		"remove_no_index": "사용처 정보 없음: Sync Data 로 먼저 확인하는 것을 권한다.",
+		"remove_glossary": "용어집 %s (glossary.csv:%d) 가 이 key 에 연결됨",
+		"removed": "행 제거: %s (%s)",
+		"remove_failed": "행 제거 실패: %s",
+		"build_tip": "Build Data",
+		"sync_tip": "Sync Data",
+		"apply": "적용",
+		"apply_tip": "적용 (Ctrl+Enter)",
 		"revert": "되돌리기",
-		"dock_pick": "행을 고르세요: 원문 · 번역 · context 는 여기서 고친다 (표는 읽기 전용)",
+		"dock_pick": "행을 선택해서 편집",
+		"edit_read": "읽기 전용",
+		"edit_content": "내용 수정",
+		"edit_admin": "관리자",
+		"edit_mode_tip": "읽기 전용: 보기만 (Sync Data 는 원본을 쓰지 않는다)
+내용 수정: 원문 · 번역 · context 수정, 행 추가, Build Data
+관리자: 승인까지",
+		"filters_on": "사용 중: %s",
+		"filter_tip": "목록 필터: 여러 개 고르면 모두 만족하는 행만",
+		"find_term": "{term_} 용어집에서 찾기",
+		"kp_term_title": "용어집 찾기: 더블클릭 · Enter 로 넣기",
 		"source": "%s (원문)",
 		"no_target": "번역 언어 없음",
 		"example": "예시",
-		"example_tip": "%s 번역에서 key 참조 {tx_…} 를 펼친 문장 (읽기 전용)",
+		"example_tip": "%s 텍스트에서 key 참조 {tx_…} 를 펼친 문장 (읽기 전용, 마지막으로 고르거나 고친 언어)",
 		"example_bad": "(펼칠 수 없음: 없는 key 참조 또는 순환)",
 		"example_empty": "(번역 없음)",
 		"len": "%d / %d자",
-		"find_string": "스트링 찾기…",
+		"find_string": "{tx_} 스트링 찾기",
 		"kp_title": "스트링 찾기: 더블클릭 · Enter 로 넣기",
 		"kp_ok": "넣기",
 		"kp_more": "… %d개 더: 검색어를 좁히세요",
 		"term_no_key": "%s: key 에 연결되지 않은 용어 (glossary.csv:%d 에서 직접 고친다)",
+		"usages_menu": "사용처 %d곳",
 		"log_clear": "로그 지우기",
 		"add_title": "행 추가 (new_key)",
 		"add_ok": "추가",
-		"text_label": "원문",
-		"alias_ph": "ui.button.confirm (첫 세그먼트 = domain)",
-		"context_ph": "어디에 쓰는 문구인지 (번역가용)",
-		"saved": "%s · %s 저장 — build dev 로 게임에 반영",
+		"alias_ph": "이름 (아래 도메인 트리에서 고른 곳에 붙는다)",
+		"ar_preview": "alias: %s",
+		"ar_pick_domain": "아래 트리에서 도메인을 고르세요",
+		"ar_new_row": "(새 행)",
+		"saved": "%s · %s 저장: Build Data 로 게임에 반영",
 		"save_failed": "저장 실패: %s",
 		"cfg_failed": "config.json 을 읽지 못했다 — data/l10n/config.json 확인",
-		"load_errors": "원본 읽기 오류 %d개 — validate 후 로그 탭 확인",
-		"build_ok": "build dev 완료 — Warn %d (generated/report.md)",
-		"build_fail": "build dev 실패 — Error %d, 생성물을 쓰지 않았다 (generated/report.md)",
+		"load_errors": "원본 읽기 오류 %d개: Sync Data 후 로그 탭 확인",
+		"build_ok": "Build Data 완료: Warn %d (generated/report.md)",
+		"build_fail": "Build Data 실패: Error %d, 생성물을 쓰지 않았다 (generated/report.md)",
 		"add_failed": "행 추가 실패: %s",
-		"added": "행 추가: %s = %s — 번역 칸을 채우세요",
+		"added": "행 추가: %s = %s. 원문을 입력하세요",
 		"over_len": "max_len %d 초과: %d자",
-		"scan_tip": "사용처 다시 찾기 — scan → generated/index.json",
-		"scan_done": "scan 완료 — key %d개, 고아 텍스트 %d개",
-		"usages": "사용처 — 더블클릭으로 이동",
-		"usages_of": "사용처 %d곳 — 더블클릭으로 이동",
+		"sync_data_done": "Sync Data: 해시 · draft %d개 · key %d개 · 고아 텍스트 %d개 · Error %d · Warn %d (로그 탭)",
+		"usages": "사용처",
+		"usages_of": "사용처 %d곳",
 		"source_item": "원본: %s",
-		"no_usage_data": "사용처 정보 없음 — 돋보기(scan) 버튼",
+		"no_usage_data": "사용처 정보 없음: Sync Data 버튼",
 		"no_usages": "사용처 없음",
 		"copy_key": "key 복사",
 		"copy_alias": "alias 복사",
@@ -145,14 +188,13 @@ const TEXTS := {
 		"tab_orphans": "고아 텍스트",
 		"tab_preview": "씬 미리보기",
 		"tab_log": "로그",
-		"validate_tip": "validate — 원본 · 사용처 검증 + generated/report.md (결과는 로그 탭)",
-		"sync_tip": "sync — 해시가 빈 번역에 현재 원문 해시 · draft 기록",
 		"unused_only": "미사용만",
 		"unused_tip": "active 인데 코드 · 씬 어디에서도 안 쓰는 key (scan 필요)",
 		"glossary_only": "용어집 위반만",
-		"glossary_tip": "용어집 규칙(W071 · W072)에 걸린 key — 처음 켜면 validate 를 돌린다",
+		"glossary_tip": "용어집 규칙(W071 · W072)에 걸린 key: 처음 켜면 검증을 돌린다",
 		"approve": "승인…",
 		"approve_tip": "번역을 approved 로 — 오너 전용 (확인 창이 뜬다)",
+		"approve_locked": "승인은 관리자 모드에서만",
 		"approve_selected": "선택한 칸 승인",
 		"approve_visible": "보이는 행 모두 승인",
 		"approve_title": "approve — 오너 전용",
@@ -162,16 +204,18 @@ const TEXTS := {
 		"approve_none": "승인할 번역이 없다 (비었거나 이미 approved)",
 		"approve_done": "approve %s: %d개",
 		"cmd_done": "%s: Error %d · Warn %d — 자세한 내용은 로그 탭",
-		"sync_done": "sync: %d개 번역에 해시 · draft 기록",
-		"no_usage_hint": "사용처 정보 없음 — 돋보기(scan) 버튼",
+		"no_usage_hint": "사용처 정보 없음: Sync Data 버튼",
 		"issues": "검증: %s",
 		"terms": "용어: %s",
 		"forbidden": "금지",
-		"glossary_keys_tip": "원문에 이 용어가 들어간 key — 더블클릭하면 키 탭에서 연다",
+		"glossary_keys_tip": "원문에 이 용어가 들어간 key: 더블클릭하면 키 탭에서 연다",
+		"glossary_keys": "이 용어가 들어간 key %d개",
+		"col_key": "키",
+		"col_source": "원문",
 		"glossary_no_keys": "이 용어가 들어간 key 없음",
 		"orphan_title": "key 가 아닌 표시 텍스트 (scan 결과) — 더블클릭으로 이동",
 		"no_orphans": "고아 텍스트 없음",
-		"no_index": "사용처 정보 없음 — 돋보기(scan) 버튼",
+		"no_index": "사용처 정보 없음: Sync Data 버튼",
 		"preview_refresh": "새로 고침",
 		"preview_note": "편집 중인 씬의 key 를 고른 언어 번역문으로 보여 준다 — 씬은 수정하지 않는다. 행 클릭 = 노드 선택",
 		"preview_no_scene": "열린 씬 없음",
@@ -181,7 +225,7 @@ const TEXTS := {
 		"col_node": "노드",
 		"col_prop": "속성",
 		"open_title": "파일을 열 수 없음",
-		"open_missing": "파일이 없다:\n%s\n\n사용처 정보가 오래됐을 수 있다 — 돋보기(scan) 버튼으로 다시 찾기.",
+		"open_missing": "파일이 없다:\n%s\n\n사용처 정보가 오래됐을 수 있다: Sync Data 버튼으로 다시 찾기.",
 		"open_no_editor": "연결된 외부 편집기가 없다:\n%s\n\nEditor Settings → Text Editor → External → Exec Path 에 VS Code 등을 지정하면 그 줄로 바로 열린다.",
 		"open_launch_failed": "외부 편집기를 실행하지 못했다:\n%s\n\n파일: %s\nEditor Settings → Text Editor → External → Exec Path 를 확인.",
 		"copy_path": "경로 복사",
@@ -204,44 +248,70 @@ const TEXTS := {
 		"stale_only": "Show changed only",
 		"stale_tip": "Only translations not updated since the source text changed",
 		"add_tip": "Add row — issue a key, append to <domain>.csv",
-		"reload_tip": "Reload the source CSVs",
-		"build_tip": "build dev — sync → validate → generated/. Applies saved edits to the game",
-		"apply": "Apply (Ctrl+Enter)",
+		"remove_tip": "Remove row: delete the selected key's row from its source CSV (asks first)",
+		"remove_pick": "Remove row: select a row first",
+		"remove_title": "Remove row",
+		"remove_ok": "Remove",
+		"remove_body": "%s  ·  %s
+
+Deletes this key's row from %s, translations and statuses included (undo = git).
+L.gd · strings follow on Build Data.",
+		"remove_used": "%d usages use this key. Removing it breaks those code · scene · data · key references (double-click = go):",
+		"remove_unused": "No usages.",
+		"remove_no_index": "No usage data: run Sync Data first to check.",
+		"remove_glossary": "Glossary term %s (glossary.csv:%d) links to this key",
+		"removed": "Row removed: %s (%s)",
+		"remove_failed": "Remove row failed: %s",
+		"build_tip": "Build Data",
+		"sync_tip": "Sync Data",
+		"apply": "Apply",
+		"apply_tip": "Apply (Ctrl+Enter)",
 		"revert": "Revert",
-		"dock_pick": "Pick a row: source · translation · context are edited here (the table is read-only)",
+		"dock_pick": "Select a row to edit",
+		"edit_read": "Read only",
+		"edit_content": "Edit content",
+		"edit_admin": "Admin",
+		"edit_mode_tip": "Read only: view (Sync Data writes no source)
+Edit content: source · translation · context edits, add row, Build Data
+Admin: approve too",
+		"filters_on": "On: %s",
+		"filter_tip": "List filters: rows must match every one picked",
+		"find_term": "{term_} Find in glossary",
+		"kp_term_title": "Find in glossary: double-click or Enter to insert",
 		"source": "%s (source)",
 		"no_target": "No target language",
 		"example": "Example",
-		"example_tip": "The %s translation with key references {tx_…} expanded (read-only)",
+		"example_tip": "The %s text with key references {tx_…} expanded (read-only, last picked or edited language)",
 		"example_bad": "(cannot expand: unknown key reference or a cycle)",
 		"example_empty": "(no translation)",
 		"len": "%d / %d chars",
-		"find_string": "Find string…",
+		"find_string": "{tx_} Find string",
 		"kp_title": "Find string: double-click or Enter to insert",
 		"kp_ok": "Insert",
 		"kp_more": "… %d more: narrow the filter",
 		"term_no_key": "%s: term not linked to a key (edit glossary.csv:%d directly)",
+		"usages_menu": "%d usages",
 		"log_clear": "Clear log",
 		"add_title": "Add row (new_key)",
 		"add_ok": "Add",
-		"text_label": "Source",
-		"alias_ph": "ui.button.confirm (first segment = domain)",
-		"context_ph": "Where the text is used (for translators)",
-		"saved": "%s · %s saved — run build dev to apply in game",
+		"alias_ph": "Name (appended to the domain picked below)",
+		"ar_preview": "alias: %s",
+		"ar_pick_domain": "Pick a domain in the tree below",
+		"ar_new_row": "(new row)",
+		"saved": "%s · %s saved: run Build Data to apply in game",
 		"save_failed": "Save failed: %s",
 		"cfg_failed": "Could not read config.json — check data/l10n/config.json",
-		"load_errors": "%d source read errors — run validate (Log tab)",
-		"build_ok": "build dev done — %d warnings (generated/report.md)",
-		"build_fail": "build dev failed — %d errors, nothing generated (generated/report.md)",
+		"load_errors": "%d source read errors: run Sync Data (Log tab)",
+		"build_ok": "Build Data done: %d warnings (generated/report.md)",
+		"build_fail": "Build Data failed: %d errors, nothing generated (generated/report.md)",
 		"add_failed": "Add row failed: %s",
-		"added": "Row added: %s = %s — fill in the translations",
+		"added": "Row added: %s = %s. Type the source text",
 		"over_len": "over max_len %d: %d chars",
-		"scan_tip": "Find usages again — scan → generated/index.json",
-		"scan_done": "scan done — %d keys, %d orphan texts",
-		"usages": "Usages — double-click to open",
-		"usages_of": "%d usages — double-click to open",
+		"sync_data_done": "Sync Data: %d hashes · drafts, %d keys, %d orphan texts, %d errors, %d warnings (Log tab)",
+		"usages": "Usages",
+		"usages_of": "%d usages",
 		"source_item": "Source: %s",
-		"no_usage_data": "No usage data — press the search (scan) button",
+		"no_usage_data": "No usage data: press Sync Data",
 		"no_usages": "No usages",
 		"copy_key": "Copy key",
 		"copy_alias": "Copy alias",
@@ -259,14 +329,13 @@ const TEXTS := {
 		"tab_orphans": "Orphan texts",
 		"tab_preview": "Scene preview",
 		"tab_log": "Log",
-		"validate_tip": "validate — check sources · usages + generated/report.md (results in the Log tab)",
-		"sync_tip": "sync — stamp the current source hash · draft on translations with no hash",
 		"unused_only": "Unused only",
 		"unused_tip": "Active keys used nowhere in code or scenes (needs scan)",
 		"glossary_only": "Glossary violations",
-		"glossary_tip": "Keys breaking glossary rules (W071 · W072) — runs validate the first time",
+		"glossary_tip": "Keys breaking glossary rules (W071 · W072): runs the checks the first time",
 		"approve": "Approve…",
 		"approve_tip": "Mark translations approved — owner only (asks to confirm)",
+		"approve_locked": "Approve is available in Admin mode only",
 		"approve_selected": "Approve selected cell",
 		"approve_visible": "Approve all visible rows",
 		"approve_title": "approve — owner only",
@@ -276,16 +345,18 @@ const TEXTS := {
 		"approve_none": "Nothing to approve (empty or already approved)",
 		"approve_done": "approve %s: %d",
 		"cmd_done": "%s: %d errors · %d warnings — see the Log tab",
-		"sync_done": "sync: hash · draft stamped on %d translations",
-		"no_usage_hint": "No usage data — press the search (scan) button",
+		"no_usage_hint": "No usage data: press Sync Data",
 		"issues": "Checks: %s",
 		"terms": "Terms: %s",
 		"forbidden": "Forbidden",
-		"glossary_keys_tip": "Keys whose source contains this term — double-click to open in Keys",
+		"glossary_keys_tip": "Keys whose source contains this term: double-click to open in Keys",
+		"glossary_keys": "%d keys with this term",
+		"col_key": "Key",
+		"col_source": "Source",
 		"glossary_no_keys": "No key uses this term",
 		"orphan_title": "Display text that is not a key (scan result) — double-click to open",
 		"no_orphans": "No orphan texts",
-		"no_index": "No usage data — press the search (scan) button",
+		"no_index": "No usage data: press Sync Data",
 		"preview_refresh": "Refresh",
 		"preview_note": "Shows the edited scene's keys in the chosen language — the scene is never modified. Click a row to select the node",
 		"preview_no_scene": "No scene open",
@@ -295,7 +366,7 @@ const TEXTS := {
 		"col_node": "Node",
 		"col_prop": "Property",
 		"open_title": "Cannot open file",
-		"open_missing": "File not found:\n%s\n\nUsage data may be out of date — press the search (scan) button.",
+		"open_missing": "File not found:\n%s\n\nUsage data may be out of date: press Sync Data.",
 		"open_no_editor": "No external editor is set:\n%s\n\nSet Editor Settings → Text Editor → External → Exec Path (e.g. VS Code) to open files at the line.",
 		"open_launch_failed": "Could not launch the external editor:\n%s\n\nFile: %s\nCheck Editor Settings → Text Editor → External → Exec Path.",
 		"copy_path": "Copy path",
@@ -307,7 +378,8 @@ const TEXTS := {
 @onready var _domain: OptionButton = %Domain
 @onready var _locale_menu: MenuButton = %LocaleMenu
 @onready var _status_menu: MenuButton = %StatusMenu
-@onready var _stale_only: CheckBox = %StaleOnly
+@onready var _filter_menu: MenuButton = %FilterMenu
+@onready var _edit_mode: OptionButton = %EditMode
 @onready var _count: Label = %Count
 @onready var _sheet: Tree = %Sheet
 @onready var _dock: Control = %Dock
@@ -327,18 +399,20 @@ const TEXTS := {
 @onready var _apply: Button = %Apply
 @onready var _revert: Button = %Revert
 @onready var _add_row_dialog: ConfirmationDialog = %AddRowDialog
-@onready var _ar_domain: LineEdit = %ArDomain
+@onready var _ar_key: LineEdit = %ArKey
 @onready var _ar_alias: LineEdit = %ArAlias
-@onready var _ar_text: LineEdit = %ArText
-@onready var _ar_context: LineEdit = %ArContext
+@onready var _ar_preview: Label = %ArPreview
+@onready var _ar_domains: Tree = %ArDomains
+@onready var _remove_row: Button = %RemoveRow
+@onready var _remove_row_dialog: ConfirmationDialog = %RemoveRowDialog
+@onready var _rr_body: Label = %RrBody
+@onready var _rr_usages: ItemList = %RrUsages
 @onready var _usage_title: Label = %UsageTitle
-@onready var _usage_list: ItemList = %UsageList
+@onready var _usage_tree: Tree = %UsageTree
 @onready var _row_menu: PopupMenu = %RowMenu
 @onready var _open_dialog: AcceptDialog = %OpenDialog
 @onready var _hint: Label = %Hint
 @onready var _tabs: TabContainer = %Tabs
-@onready var _unused_only: CheckBox = %UnusedOnly
-@onready var _glossary_only: CheckBox = %GlossaryOnly
 @onready var _approve: MenuButton = %Approve
 @onready var _approve_dialog: ConfirmationDialog = %ApproveDialog
 @onready var _gl_search: LineEdit = %GlSearch
@@ -346,7 +420,10 @@ const TEXTS := {
 @onready var _gl_count: Label = %GlCount
 @onready var _gl_approve: MenuButton = %GlApprove
 @onready var _glossary_tree: Tree = %GlossaryTree
-@onready var _glossary_keys: ItemList = %GlossaryKeys
+@onready var _glossary_keys: Tree = %GlossaryKeys
+@onready var _gl_keys_title: Label = %GlKeysTitle
+@onready var _gl_keys_margin: Control = %GlKeysMargin
+@onready var _dock_scroll: ScrollContainer = %DockScroll
 @onready var _orphan_list: ItemList = %OrphanList
 @onready var _preview_page: Control = %Preview
 @onready var _preview_locale: OptionButton = %PreviewLocale
@@ -367,6 +444,10 @@ var _sel_locales: PackedStringArray = PackedStringArray()
 ## Picked statuses per table (STATUS_CHOICES order); all of them = no status filter.
 var _sel_statuses: PackedStringArray = PackedStringArray(STATUS_CHOICES)
 var _gl_statuses: PackedStringArray = PackedStringArray(STATUS_CHOICES)
+## Picked Keys filters (FILTER_CHOICES names).
+var _sel_filters: PackedStringArray = PackedStringArray()
+## Edit mode (MODE_*): read-only until the user picks another.
+var _mode: int = MODE_READ
 ## Column layouts: [{kind, column (csv column / locale), title}]: rebuilt on load / language pick.
 var _cols: Array = []
 var _gcols: Array = []
@@ -376,7 +457,8 @@ var _sel_column: String = ""
 ## Glossary tab selection by term_id + column name.
 var _gl_term: String = ""
 var _gl_column: String = ""
-## Header-click sort per table: {column, desc}; column "" = file order.
+## Header-click sort per table: {column, desc}; column "" = file order. Clicks cycle
+## ascending → descending → off.
 var _sort: Dictionary = {"keys": {"column": "", "desc": false}, "glossary": {"column": "", "desc": false}}
 ## Tinted row per table (a TreeItem: freed by the next redraw, checked before use).
 var _tinted: Dictionary = {}
@@ -384,8 +466,17 @@ var _tinted: Dictionary = {}
 var _dock_key: String = ""
 var _target_loc: String = ""
 var _dock_loaded: Dictionary = {}
-## Field the key picker inserts into.
+## Language the example shows: the last picked or edited one (source or target).
+var _example_loc: String = ""
+## True while _show_dock / _clear_dock fill the fields (their text_changed is not an edit).
+var _filling: bool = false
+## Add row: the key issued for the pending row (shown in the table until the dialog closes).
+var _pending_key: String = ""
+## Remove row: the key the confirm dialog will delete.
+var _remove_key: String = ""
+## Field the key picker inserts into, and whether it lists glossary terms instead of every key.
 var _kp_edit: TagEdit = null
+var _kp_terms: bool = false
 var _dots: Dictionary = {}
 ## Key the row menu was opened on, and its usages (menu id - MENU_USAGE_BASE).
 var _menu_key: String = ""
@@ -401,6 +492,8 @@ var _approve_locale: String = ""
 var _approve_keys: PackedStringArray = PackedStringArray()
 ## The scene preview needs redrawing (scene switched while the tab was hidden).
 var _preview_dirty: bool = true
+## The Keys table's hover look is off (mouse over a blank padding / pending row).
+var _hover_off: bool = false
 
 
 ## plugin.gd calls this before adding the sheet to the main screen.
@@ -414,19 +507,14 @@ func _ready() -> void:
 	_lang = _editor_lang()
 	_apply_texts()
 	%AddRow.pressed.connect(_on_add_row_pressed)
-	%Sync.pressed.connect(_on_sync_pressed)
-	for node_name in ["Reload", "GlReload"]:
-		_button(node_name).pressed.connect(_on_reload_pressed)
-	for node_name in ["BuildDev", "GlBuildDev"]:
-		_button(node_name).pressed.connect(_on_build_pressed)
-	for node_name in ["Scan", "OrScan"]:
-		_button(node_name).pressed.connect(_on_scan_pressed)
-	for node_name in ["Validate", "GlValidate"]:
-		_button(node_name).pressed.connect(_on_validate_pressed)
+	_remove_row.pressed.connect(_on_remove_row_pressed)
+	_remove_row_dialog.confirmed.connect(_on_remove_row_confirmed)
+	_rr_usages.item_activated.connect(_on_rr_usage_activated)
+	%SyncData.pressed.connect(_on_sync_data_pressed)
+	%BuildData.pressed.connect(_on_build_pressed)
 	%LogClear.pressed.connect(func() -> void: _log_text.text = "")
 	%PreviewRefresh.pressed.connect(_refresh_preview)
-	_unused_only.toggled.connect(func(_on: bool) -> void: _refresh_list())
-	_glossary_only.toggled.connect(_on_glossary_only_toggled)
+	_edit_mode.item_selected.connect(func(i: int) -> void: _set_mode(_edit_mode.get_item_id(i)))
 	for mb in [_approve, _gl_approve]:
 		(mb as MenuButton).get_popup().id_pressed.connect(_on_approve_menu_id)
 	_approve_dialog.confirmed.connect(_on_approve_confirmed)
@@ -434,25 +522,33 @@ func _ready() -> void:
 	_glossary_tree.cell_selected.connect(_on_glossary_selected)
 	_glossary_tree.column_title_clicked.connect(func(c: int, _b: int) -> void: _on_title_clicked("glossary", c))
 	_glossary_tree.item_activated.connect(_focus_dock_field)
+	_glossary_tree.gui_input.connect(_on_table_input.bind(_glossary_tree))
 	_glossary_keys.item_activated.connect(_on_glossary_key_activated)
+	# The dock tables fit their rows and do not scroll: the wheel over them scrolls the dock.
+	for dt in [_glossary_keys, _usage_tree]:
+		(dt as Tree).gui_input.connect(_on_dock_table_input.bind(dt))
 	_gl_search.text_changed.connect(func(_s: String) -> void: _refresh_glossary())
 	_orphan_list.item_activated.connect(_on_orphan_activated)
 	_tabs.tab_changed.connect(_on_tab_changed)
 	_preview_locale.item_selected.connect(func(_i: int) -> void: _refresh_preview())
 	_preview_tree.item_selected.connect(_on_preview_selected)
-	_usage_list.item_activated.connect(_on_usage_activated)
+	_usage_tree.item_activated.connect(_on_usage_activated)
+	_usage_tree.item_collapsed.connect(func(_it: TreeItem) -> void: _fit_usage_tree.call_deferred())
 	_sheet.select_mode = Tree.SELECT_SINGLE
 	_sheet.cell_selected.connect(_on_cell_selected)
 	_sheet.item_mouse_selected.connect(_on_sheet_mouse_selected)
 	_sheet.column_title_clicked.connect(func(c: int, _b: int) -> void: _on_title_clicked("keys", c))
 	_sheet.item_activated.connect(_focus_dock_field)
+	_sheet.gui_input.connect(_on_table_input.bind(_sheet))
+	_sheet.gui_input.connect(_on_sheet_hover)
+	_sheet.mouse_exited.connect(_set_sheet_hover.bind(true))
 	_row_menu.id_pressed.connect(_on_row_menu_id)
 	_open_dialog.custom_action.connect(_on_open_dialog_action)
 	_search.text_changed.connect(func(_s: String) -> void: _refresh_list())
 	_domain.item_selected.connect(func(_i: int) -> void: _refresh_list())
-	_stale_only.toggled.connect(func(_on: bool) -> void: _refresh_list())
-	for mb in [_locale_menu, _status_menu, _gl_status_menu]:
+	for mb in [_locale_menu, _status_menu, _gl_status_menu, _filter_menu]:
 		(mb as MenuButton).get_popup().hide_on_checkable_item_selection = false
+	_filter_menu.get_popup().id_pressed.connect(_on_filter_menu_id)
 	_locale_menu.get_popup().id_pressed.connect(_on_locale_menu_id)
 	_status_menu.get_popup().id_pressed.connect(func(id: int) -> void: _on_status_menu_id(false, id))
 	_gl_status_menu.get_popup().id_pressed.connect(func(id: int) -> void: _on_status_menu_id(true, id))
@@ -460,8 +556,10 @@ func _ready() -> void:
 	_revert.pressed.connect(_show_dock.bind(true))
 	for e in [_source_edit, _target_edit]:
 		e.gui_input.connect(_on_dock_input)
-		e.text_changed.connect(_update_dock_live)
-		e.find_string_requested.connect(_open_key_picker)
+		e.text_changed.connect(_on_example_field.bind(e))
+		e.focus_entered.connect(_on_example_field.bind(e))
+		e.find_string_requested.connect(_open_key_picker.bind(false))
+		e.find_term_requested.connect(_open_key_picker.bind(true))
 	for le in [_context_edit, _max_len_edit, _note_edit]:
 		le.gui_input.connect(_on_dock_input)
 	for te in [_context_edit, _note_edit]:
@@ -472,6 +570,11 @@ func _ready() -> void:
 	_kp_search.text_changed.connect(func(_s: String) -> void: _refresh_key_picker())
 	_kp_tree.item_activated.connect(_on_key_picker_activated)
 	_add_row_dialog.confirmed.connect(_on_add_row_confirmed)
+	_add_row_dialog.canceled.connect(_on_add_row_canceled)
+	_add_row_dialog.register_text_enter(_ar_alias)
+	_ar_alias.text_changed.connect(func(_s: String) -> void: _update_ar_preview())
+	_ar_domains.item_selected.connect(_update_ar_preview)
+	_sheet.resized.connect(_pad_sheet)
 	visibility_changed.connect(_on_visibility_changed)
 
 
@@ -500,38 +603,32 @@ func _apply_texts() -> void:
 	_locale_menu.tooltip_text = _tr("langs_tip")
 	_status_menu.tooltip_text = _tr("status_tip")
 	_gl_status_menu.tooltip_text = _tr("status_tip")
-	_stale_only.text = _tr("stale_only")
-	_stale_only.tooltip_text = _tr("stale_tip")
+	_filter_menu.tooltip_text = _tr("filter_tip")
+	_fill_filter_menu()
+	_edit_mode.clear()
+	for m in MODE_TEXTS.size():
+		_edit_mode.add_item(_tr(MODE_TEXTS[m]), m)
+	_edit_mode.select(_edit_mode.get_item_index(_mode))
+	_edit_mode.tooltip_text = _tr("edit_mode_tip")
 	%AddRow.tooltip_text = _tr("add_tip")
-	for node_name in ["Reload", "GlReload"]:
-		_button(node_name).tooltip_text = _tr("reload_tip")
-	for node_name in ["BuildDev", "GlBuildDev"]:
-		_button(node_name).tooltip_text = _tr("build_tip")
-	for node_name in ["Scan", "OrScan"]:
-		_button(node_name).tooltip_text = _tr("scan_tip")
-	for node_name in ["Validate", "GlValidate"]:
-		_button(node_name).tooltip_text = _tr("validate_tip")
-	%Sync.tooltip_text = _tr("sync_tip")
+	%BuildData.tooltip_text = _tr("build_tip")
+	%SyncData.tooltip_text = _tr("sync_tip")
 	%LogClear.tooltip_text = _tr("log_clear")
 	_apply.text = _tr("apply")
+	_apply.tooltip_text = _tr("apply_tip")
 	_revert.text = _tr("revert")
 	_example_edit.placeholder_text = _tr("example_empty")
 	_add_row_dialog.title = _tr("add_title")
 	_add_row_dialog.ok_button_text = _tr("add_ok")
-	(%TextLabel as Label).text = _tr("text_label")
+	_remove_row_dialog.title = _tr("remove_title")
+	_remove_row_dialog.ok_button_text = _tr("remove_ok")
 	_ar_alias.placeholder_text = _tr("alias_ph")
-	_ar_context.placeholder_text = _tr("context_ph")
 	_key_picker.title = _tr("kp_title")
 	_key_picker.ok_button_text = _tr("kp_ok")
 	for i in TAB_TEXTS.size():
 		_tabs.set_tab_title(i, _tr(TAB_TEXTS[i]))
-	_unused_only.text = _tr("unused_only")
-	_unused_only.tooltip_text = _tr("unused_tip")
-	_glossary_only.text = _tr("glossary_only")
-	_glossary_only.tooltip_text = _tr("glossary_tip")
 	for mb in [_approve, _gl_approve]:
 		(mb as MenuButton).text = _tr("approve")
-		(mb as MenuButton).tooltip_text = _tr("approve_tip")
 		var apm: PopupMenu = (mb as MenuButton).get_popup()
 		apm.clear()
 		apm.add_item(_tr("approve_selected"), APPROVE_SELECTED)
@@ -544,6 +641,8 @@ func _apply_texts() -> void:
 	(%PreviewNote as Label).text = _tr("preview_note")
 	for e in [_source_edit, _target_edit]:
 		e.find_label = _tr("find_string")
+		e.find_term_label = _tr("find_term")
+	_apply_mode()
 	if Engine.is_editor_hint():
 		var ed_theme: Theme = EditorInterface.get_editor_theme()
 		for node_name in BUTTON_ICONS:
@@ -608,8 +707,13 @@ func _load() -> void:
 			if _sel_locales.has(loc):
 				keep.append(loc)
 		_sel_locales = keep
+		var terms: Array = []
+		for g in _model.glossary_terms():
+			if String(g["key"]) != "":
+				terms.append({"id": g["term_id"], "key": g["key"], "text": (g["texts"] as Dictionary).get(_l.config.source_locale, "")})
 		for e in [_source_edit, _target_edit]:
 			e.key_prefix = _l.config.key_prefix
+			e.terms = terms
 	_build_columns()
 	_fill_options()
 	_refresh_all()
@@ -748,6 +852,82 @@ func _fill_status_menu(mb: MenuButton, sel: PackedStringArray) -> void:
 		mb.text = _tr("statuses") % ", ".join(names)
 
 
+## Filter menu: one check item per filter. The button is an icon; while any filter is on it gets
+## an accent background and the tooltip lists the filters in use.
+func _fill_filter_menu() -> void:
+	var pm: PopupMenu = _filter_menu.get_popup()
+	pm.clear()
+	var on: PackedStringArray = PackedStringArray()
+	for i in FILTER_CHOICES.size():
+		pm.add_check_item(_tr(FILTER_TEXTS[i]), i)
+		pm.set_item_checked(i, _sel_filters.has(FILTER_CHOICES[i]))
+		pm.set_item_tooltip(i, _tr(FILTER_TIPS[i]))
+		if _sel_filters.has(FILTER_CHOICES[i]):
+			on.append(_tr(FILTER_TEXTS[i]))
+	_filter_menu.tooltip_text = _tr("filter_tip") + ("" if on.is_empty() else "\n" + _tr("filters_on") % ", ".join(on))
+	for sb_name in [&"normal", &"hover", &"pressed", &"focus"]:
+		_filter_menu.remove_theme_stylebox_override(sb_name)
+	_filter_menu.flat = on.is_empty()
+	if not on.is_empty():
+		var accent: Color = get_theme_color(&"accent_color", &"Editor") if Engine.is_editor_hint() else Color(0.44, 0.73, 0.98)
+		for sb_name in [&"normal", &"hover", &"pressed"]:
+			var sb := StyleBoxFlat.new()
+			sb.bg_color = Color(accent, 0.45 if sb_name == &"normal" else 0.6)
+			sb.set_corner_radius_all(3)
+			sb.set_content_margin_all(4)
+			_filter_menu.add_theme_stylebox_override(sb_name, sb)
+
+
+## Filter menu click: toggles one filter. The glossary filter needs check results: the first time
+## it is ticked the checks run (they redraw the list).
+func _on_filter_menu_id(id: int) -> void:
+	if id < 0 or id >= FILTER_CHOICES.size():
+		return
+	var f: String = FILTER_CHOICES[id]
+	if _sel_filters.has(f):
+		_sel_filters.remove_at(_sel_filters.find(f))
+	else:
+		_sel_filters.append(f)
+	_fill_filter_menu()
+	if f == "glossary" and _sel_filters.has(f) and _model != null and not _model.validated:
+		_run_checks()
+		return
+	_refresh_list()
+
+
+# ── edit mode ───────────────────────────────────────────────────────────
+
+func _can_edit() -> bool:
+	return _mode != MODE_READ
+
+
+func _set_mode(mode: int) -> void:
+	if mode == _mode:
+		return
+	_mode = mode
+	_apply_mode()
+	_show_dock(true)
+
+
+## Shows / enables what the mode allows: approve = admin (shown dimmed otherwise), add · remove
+## row · Build Data = edit modes; the dock fields follow in _show_dock.
+func _apply_mode() -> void:
+	for mb in [_approve, _gl_approve]:
+		(mb as MenuButton).disabled = _mode != MODE_ADMIN
+		(mb as MenuButton).tooltip_text = _tr("approve_tip") if _mode == MODE_ADMIN else _tr("approve_locked")
+	(%AddRow as Button).visible = _can_edit()
+	_remove_row.visible = _can_edit()
+	_update_remove_row()
+	(%BuildData as Button).disabled = not _can_edit()
+
+
+## Remove row is enabled only while a Keys row is selected (dimmed otherwise).
+func _update_remove_row() -> void:
+	var has_row: bool = _sel_key != "" and _model != null and not _model.row_of(_sel_key).is_empty()
+	_remove_row.disabled = not (_can_edit() and has_row)
+	_remove_row.tooltip_text = _tr("remove_tip") if has_row else _tr("remove_pick")
+
+
 ## The status filter for search: null when every status is picked (no condition).
 static func _status_filter(sel: PackedStringArray) -> Variant:
 	return null if sel.size() == STATUS_CHOICES.size() else sel
@@ -794,14 +974,16 @@ func _sort_rows(rows: Array, which: String, cols: Array, value: Callable) -> voi
 		return c > 0 if desc else c < 0)
 
 
-## Header click: sort by that column, again = reverse.
+## Header click: sort by that column; clicking it again cycles ascending → descending → off.
 func _on_title_clicked(which: String, col: int) -> void:
 	var cols: Array = _cols if which == "keys" else _gcols
 	if col < 0 or col >= cols.size():
 		return
 	var st: Dictionary = _sort[which]
 	if st["column"] == cols[col]["column"]:
-		st["desc"] = not st["desc"]
+		if st["desc"]:
+			st["column"] = ""
+		st["desc"] = not st["desc"] and st["column"] != ""
 	else:
 		st["column"] = cols[col]["column"]
 		st["desc"] = false
@@ -835,13 +1017,9 @@ func _refresh_list() -> void:
 		return
 	_setup_columns(_sheet, _cols, "keys")
 	var root: TreeItem = _sheet.create_item()
-	var filters: Dictionary = {
-		"domain": _selected_meta(_domain),
-		"locales": _shown_targets(),
-		"stale": _stale_only.button_pressed,
-		"unused": _unused_only.button_pressed,
-		"glossary": _glossary_only.button_pressed,
-	}
+	var filters: Dictionary = {"domain": _selected_meta(_domain), "locales": _shown_targets()}
+	for f in FILTER_CHOICES:
+		filters[f] = _sel_filters.has(f)
 	var sts: Variant = _status_filter(_sel_statuses)
 	if sts != null:
 		filters["statuses"] = sts
@@ -854,15 +1032,66 @@ func _refresh_list() -> void:
 		if r["key"] == _sel_key:
 			sel_item = it
 	_count.text = "%d / %d" % [res.size(), _model.rows.size()]
+	if _pending_key != "":
+		_add_pending_item()
+	_pad_sheet()
 	var sel_col: int = _col_index(_sel_column)
 	if sel_item != null and sel_col >= 0:
 		sel_item.select(sel_col)
 		_tint_row("keys", _sheet, sel_item, sel_col)
-		_sheet.scroll_to_item(sel_item)
+		_sheet.scroll_to_item(sel_item, true)
 	else:
 		_sel_key = ""
 		_sel_column = ""
 	_show_dock()
+
+
+## Height of one table row (font or icon, plus the tree's row gap).
+func _tree_row_height(tree: Tree) -> float:
+	var font: Font = tree.get_theme_font(&"font")
+	var h: float = font.get_height(tree.get_theme_font_size(&"font_size"))
+	if Engine.is_editor_hint():
+		h = maxf(h, 16 * EditorInterface.get_editor_scale())
+	return h + tree.get_theme_constant(&"v_separation") + 2
+
+
+## Empty rows under the last key so the last row (a new one) can scroll up to the middle.
+## Padding rows have no metadata and cannot be selected.
+func _pad_sheet() -> void:
+	var root: TreeItem = _sheet.get_root()
+	if root == null:
+		return
+	var last: TreeItem = root.get_child(root.get_child_count() - 1) if root.get_child_count() > 0 else null
+	while last != null and last.get_metadata(0) == null:
+		root.remove_child(last)
+		last.free()
+		last = root.get_child(root.get_child_count() - 1) if root.get_child_count() > 0 else null
+	var n: int = floori(_sheet.size.y / _tree_row_height(_sheet) / 2.0)
+	for i in n:
+		var it: TreeItem = _sheet.create_item(root)
+		for c in _sheet.columns:
+			it.set_selectable(c, false)
+
+
+## The add-row placeholder (key issued, alias still being typed): last real row, tinted.
+func _add_pending_item() -> TreeItem:
+	var root: TreeItem = _sheet.get_root()
+	var idx: int = 0
+	while idx < root.get_child_count() and root.get_child(idx).get_metadata(0) != null:
+		idx += 1
+	var it: TreeItem = _sheet.create_item(root, idx)
+	it.set_metadata(0, "")
+	var tint: Color = get_theme_color(&"accent_color", &"Editor")
+	tint.a = ROW_TINT_ALPHA * 2
+	for c in _sheet.columns:
+		it.set_selectable(c, false)
+		it.set_custom_bg_color(c, tint)
+		match String(_cols[c]["kind"]) if c < _cols.size() else "":
+			KIND_KEY:
+				it.set_text(c, _pending_key)
+			KIND_ALIAS:
+				it.set_text(c, _tr("ar_new_row"))
+	return it
 
 
 func _fill_item(it: TreeItem, r: Dictionary) -> void:
@@ -939,6 +1168,7 @@ func _resolve_target() -> String:
 ## Fills the dock with the selected row. Unless force, unsaved edits of the same row · language
 ## are kept (a filter redraw does not wipe them); Revert and Apply force.
 func _show_dock(force: bool = false) -> void:
+	_update_remove_row()
 	if _model == null or _l == null or not _l.ok():
 		_clear_dock("")
 		return
@@ -952,7 +1182,14 @@ func _show_dock(force: bool = false) -> void:
 		_clear_dock(msg)
 		return
 	var target: String = _resolve_target()
+	# Example language follows the clicked cell: source column → source, a language → that one.
+	var col: String = _dock_column()
+	if col == _l.config.source_locale:
+		_example_loc = col
+	elif col == target or _example_loc != _l.config.source_locale:
+		_example_loc = target
 	if not force and key == _dock_key and target == _target_loc and not _dock_edits().is_empty():
+		_update_dock_live()
 		return
 	_dock_key = key
 	_target_loc = target
@@ -962,13 +1199,16 @@ func _show_dock(force: bool = false) -> void:
 	var src: String = String(r["source"])
 	var tgt: String = String(((r["tr"] as Dictionary).get(target, {}) as Dictionary).get("text", "")) if target != "" else ""
 	_dock_loaded = {"source": src, "target": tgt, "context": String(r["context"]), "max_len": String(r["max_len"]), "note": String(r["note"])}
-	_set_field(_source_edit, src, true)
-	_set_field(_target_edit, tgt, target != "")
+	var can: bool = _can_edit()
+	_filling = true
+	_set_field(_source_edit, src, can)
+	_set_field(_target_edit, tgt, can and target != "")
+	_filling = false
 	_context_edit.text = _dock_loaded["context"]
 	_max_len_edit.text = _dock_loaded["max_len"]
 	_note_edit.text = _dock_loaded["note"]
 	for le in [_context_edit, _max_len_edit, _note_edit]:
-		le.editable = true
+		le.editable = can
 	var ph: PackedStringArray = Tokens.placeholders(src, _l.config.josa_tags)
 	var src_tags: PackedStringArray = ph.duplicate()
 	for t in _l.config.josa_tags:
@@ -977,6 +1217,10 @@ func _show_dock(force: bool = false) -> void:
 	_source_edit.offer_plural = false
 	_target_edit.tags = ph
 	_target_edit.offer_plural = true
+	# Names (alias `….name`) are plain text: no key references / glossary words (E043).
+	var refs_ok: bool = not KeyRefs.is_name_alias(String(r["alias"]))
+	_source_edit.offer_refs = refs_ok
+	_target_edit.offer_refs = refs_ok
 	_update_dock_live()
 
 
@@ -988,8 +1232,10 @@ func _clear_dock(msg: String) -> void:
 	_dock_sub.text = ""
 	_dock_info.text = ""
 	_dock_info.visible = false
+	_filling = true
 	_set_field(_source_edit, "", false)
 	_set_field(_target_edit, "", false)
+	_filling = false
 	_example_edit.text = ""
 	for le in [_context_edit, _max_len_edit, _note_edit]:
 		le.text = ""
@@ -1018,19 +1264,19 @@ func _update_dock_live() -> void:
 	if _target_loc == "":
 		_target_dot.texture = null
 		_target_head.text = _tr("no_target")
-		_example_head.text = ""
-		_example_edit.text = ""
 	else:
 		var st: String = _status_of((r["tr"] as Dictionary).get(_target_loc, {}))
 		_target_dot.texture = _dot(st)
 		_target_dot.tooltip_text = _tr(st)
 		_set_head(_target_head, _target_loc, _target_edit.text, max_len)
 		_target_head.tooltip_text = _tr(st)
-		_example_head.text = _tr("example")
-		_example_head.tooltip_text = _tr("example_tip") % _target_loc
-		var text: String = _target_edit.text
-		var shown: String = KeyRefs.expand(_l.catalog, text, _target_loc, "dev")
-		_example_edit.text = shown if shown != "" or text == "" else _tr("example_bad")
+	# The example shows the last picked / edited language (source or target).
+	var ex_loc: String = _l.config.source_locale if _example_loc == _l.config.source_locale or _target_loc == "" else _target_loc
+	var text: String = _source_edit.text if ex_loc == _l.config.source_locale else _target_edit.text
+	_example_head.text = "%s · %s" % [_tr("example"), ex_loc]
+	_example_head.tooltip_text = _tr("example_tip") % ex_loc
+	var shown: String = KeyRefs.expand(_l.catalog, text, ex_loc, "dev")
+	_example_edit.text = shown if shown != "" or text == "" else _tr("example_bad")
 	var parts: PackedStringArray = PackedStringArray()
 	if not (r["glossary"] as Array).is_empty():
 		parts.append(_tr("terms") % ", ".join(PackedStringArray(r["glossary"])))
@@ -1044,6 +1290,15 @@ func _update_dock_live() -> void:
 	var dirty: bool = not _dock_edits().is_empty()
 	_apply.disabled = not dirty
 	_revert.disabled = not dirty
+
+
+## Typing in / focusing the source or target field makes the example follow that language.
+func _on_example_field(e: TagEdit) -> void:
+	if _l == null or not _l.ok():
+		return
+	if not _filling:
+		_example_loc = _l.config.source_locale if e == _source_edit else _target_loc
+	_update_dock_live()
 
 
 ## Field head (left column): language, plus "n / max" on a second line when max_len is set
@@ -1075,7 +1330,7 @@ func _dock_edits() -> Array:
 
 func _on_apply_pressed() -> void:
 	var edits: Array = _dock_edits()
-	if edits.is_empty() or not _ready_model():
+	if edits.is_empty() or not _can_edit() or not _ready_model():
 		return
 	var key: String = _dock_key
 	var err: String = _l.cmd_edit(edits)
@@ -1102,6 +1357,56 @@ func _on_dock_input(event: InputEvent) -> void:
 		_on_apply_pressed()
 
 
+## Ctrl+C on the Keys / Glossary table copies the selected cell's full text.
+## Blank rows (padding under the table, the pending add row) show no hover: Tree has no per-item
+## hover flag, so the hover styleboxes are blanked while the mouse is over one.
+func _on_sheet_hover(event: InputEvent) -> void:
+	var mm: InputEventMouseMotion = event as InputEventMouseMotion
+	if mm == null:
+		return
+	var it: TreeItem = _sheet.get_item_at_position(mm.position)
+	_set_sheet_hover(it == null or (it.get_metadata(0) is String and String(it.get_metadata(0)) != ""))
+
+
+func _set_sheet_hover(on: bool) -> void:
+	if on != _hover_off:
+		return
+	_hover_off = not on
+	for sb_name in [&"hovered", &"hovered_dimmed"]:
+		if on:
+			_sheet.remove_theme_stylebox_override(sb_name)
+		else:
+			_sheet.add_theme_stylebox_override(sb_name, StyleBoxEmpty.new())
+	for c_name in [&"font_hovered_color", &"font_hovered_dimmed_color"]:
+		if on:
+			_sheet.remove_theme_color_override(c_name)
+		else:
+			_sheet.add_theme_color_override(c_name, _sheet.get_theme_color(&"font_color"))
+
+
+func _on_table_input(event: InputEvent, tree: Tree) -> void:
+	var k: InputEventKey = event as InputEventKey
+	if k == null or not k.pressed or k.echo or k.keycode != KEY_C or not k.is_command_or_control_pressed() or k.shift_pressed:
+		return
+	var it: TreeItem = tree.get_selected()
+	var col: int = tree.get_selected_column()
+	if it == null or col < 0 or _model == null:
+		return
+	var text: String = ""
+	if tree == _sheet:
+		var r: Dictionary = _model.row_of(String(it.get_metadata(0)))
+		if r.is_empty() or col >= _cols.size():
+			return
+		text = _cell_value(r, col)
+	else:
+		var g: Dictionary = _term(String(it.get_metadata(0)))
+		if g.is_empty() or col >= _gcols.size():
+			return
+		text = _gl_value(g, col)
+	tree.accept_event()
+	_copy(text)
+
+
 ## Double-click a cell → its dock field (source column → source, anything else → target).
 func _focus_dock_field() -> void:
 	if _dock_column() == _l.config.source_locale:
@@ -1112,8 +1417,11 @@ func _focus_dock_field() -> void:
 
 # ── key picker ("find string" from tag completion) ─────────────────────
 
-func _open_key_picker(edit: TagEdit) -> void:
+## terms = list glossary terms (their linked keys) instead of every key.
+func _open_key_picker(edit: TagEdit, terms: bool) -> void:
 	_kp_edit = edit
+	_kp_terms = terms
+	_key_picker.title = _tr("kp_term_title" if terms else "kp_title")
 	_kp_search.text = ""
 	_refresh_key_picker()
 	_key_picker.popup_centered()
@@ -1125,7 +1433,7 @@ func _refresh_key_picker() -> void:
 	if _model == null or _l == null or not _l.ok():
 		return
 	var loc: String = _target_loc if _target_loc != "" else _l.config.source_locale
-	var titles: Array = ["key", "alias", _tr("source") % _l.config.source_locale, loc]
+	var titles: Array = ["term_id" if _kp_terms else "key", "alias", _tr("source") % _l.config.source_locale, loc]
 	_kp_tree.columns = titles.size()
 	for c in titles.size():
 		_kp_tree.set_column_title(c, titles[c])
@@ -1134,7 +1442,7 @@ func _refresh_key_picker() -> void:
 		_kp_tree.set_column_expand(c, c >= 2)
 		_kp_tree.set_column_custom_minimum_width(c, 130 if c == 0 else (220 if c == 1 else 160))
 	var root: TreeItem = _kp_tree.create_item()
-	var res: Array = _model.search(_kp_search.text)
+	var res: Array = _term_rows(_kp_search.text) if _kp_terms else _model.search(_kp_search.text)
 	var first: TreeItem = null
 	for i in res.size():
 		if i == PICKER_MAX:
@@ -1144,7 +1452,8 @@ func _refresh_key_picker() -> void:
 			break
 		var r: Dictionary = res[i]
 		var it: TreeItem = _kp_tree.create_item(root)
-		it.set_text(0, r["key"])
+		it.set_text(0, String(r.get("term_id", r["key"])))
+		it.set_tooltip_text(0, r["key"])
 		it.set_text(1, r["alias"])
 		it.set_text(2, String(r["source"]).replace("\n", " "))
 		var t: String = String(r["source"]) if loc == _l.config.source_locale else String(((r["tr"] as Dictionary).get(loc, {}) as Dictionary).get("text", ""))
@@ -1164,6 +1473,26 @@ func _on_key_picked() -> void:
 		_kp_edit.insert_key_ref(key)
 
 
+## Key rows of the glossary terms linked to a key, each with its term_id, matching the query
+## (term_id · key · alias · texts, case-insensitive), glossary order.
+func _term_rows(query: String) -> Array:
+	var q: String = query.strip_edges().to_lower()
+	var out: Array = []
+	for g in _model.glossary_terms():
+		var r: Dictionary = _model.row_of(String(g["key"]))
+		if r.is_empty():
+			continue
+		var hay: PackedStringArray = PackedStringArray([g["term_id"], r["key"], r["alias"], r["source"]])
+		for loc in (r["tr"] as Dictionary):
+			hay.append(String(((r["tr"] as Dictionary)[loc] as Dictionary).get("text", "")))
+		if q != "" and " ".join(hay).to_lower().find(q) < 0:
+			continue
+		var row: Dictionary = r.duplicate()
+		row["term_id"] = g["term_id"]
+		out.append(row)
+	return out
+
+
 func _on_key_picker_activated() -> void:
 	_on_key_picked()
 	_key_picker.hide()
@@ -1171,38 +1500,96 @@ func _on_key_picker_activated() -> void:
 
 ## Bottom usage list: the key's source CSV row first, then index.json usages.
 func _show_usages(r: Dictionary) -> void:
-	_usage_list.clear()
+	_usage_tree.clear()
 	_usage_title.text = _tr("usages")
+	var root: TreeItem = _usage_tree.create_item()
 	if r.is_empty():
+		_fit_usage_tree()
 		return
 	var src: Dictionary = _source_usage(r)
-	var i: int = _usage_list.add_item(_tr("source_item") % String(src["file"]).get_file(), _file_icon(src["file"]))
-	_usage_list.set_item_tooltip(i, String(src["file"]))
-	_usage_list.set_item_metadata(i, src)
+	_usage_row(root, _tr("source_item") % String(src["file"]).get_file(), _file_icon(src["file"]), String(src["file"]), src)
 	if not _model.has_usage_data():
-		_usage_list.add_item(_tr("no_usage_data"), null, false)
+		_usage_row(root, _tr("no_usage_data"), null, "", null)
+		_fit_usage_tree()
 		return
-	var files: Array = _usage_files(r["usages"])
+	var files: Array = _usage_files(r["usages"], String(r["file"]))
 	_usage_title.text = _tr("usages_of") % files.size()
 	if files.is_empty():
-		_usage_list.add_item(_tr("no_usages"), null, false)
-	for u in files:
-		i = _usage_list.add_item(_usage_label(u), _file_icon(u["file"]))
-		_usage_list.set_item_tooltip(i, _usage_tip(u, r))
-		_usage_list.set_item_metadata(i, u)
+		_usage_row(root, _tr("no_usages"), null, "", null)
+	for e in _usage_entries(files, r):
+		var it: TreeItem = _usage_row(root, e["label"], e["icon"], e["tip"], e["usage"])
+		for c in e["screens"]:
+			_usage_row(it, c["label"], c["icon"], c["tip"], c["usage"])
+		it.collapsed = true
+	_fit_usage_tree()
+
+
+## One usage tree row; usage null = a plain note (not selectable).
+func _usage_row(parent: TreeItem, label: String, icon: Texture2D, tip: String, usage: Variant) -> TreeItem:
+	var it: TreeItem = _usage_tree.create_item(parent)
+	it.set_text(0, label)
+	if icon != null:
+		it.set_icon(0, icon)
+	it.set_tooltip_text(0, tip)
+	it.set_metadata(0, usage)
+	it.set_selectable(0, usage != null)
+	return it
+
+
+func _fit_usage_tree() -> void:
+	_fit_dock_tree(_usage_tree)
+
+
+## Dock tables have no scroll of their own (the dock scrolls): height = visible rows (+ titles).
+func _fit_dock_tree(tree: Tree) -> void:
+	var rows: int = 1 if tree.column_titles_visible else 0
+	var it: TreeItem = tree.get_root().get_next_visible() if tree.get_root() != null else null
+	while it != null:
+		rows += 1
+		it = it.get_next_visible()
+	var font: Font = tree.get_theme_font(&"font")
+	var row_h: float = font.get_height(tree.get_theme_font_size(&"font_size")) + tree.get_theme_constant(&"v_separation")
+	if Engine.is_editor_hint():
+		row_h = maxf(row_h, 16 * EditorInterface.get_editor_scale() + tree.get_theme_constant(&"v_separation"))
+	var panel: StyleBox = tree.get_theme_stylebox(&"panel")
+	tree.custom_minimum_size.y = rows * (row_h + 2) + (panel.get_minimum_size().y if panel != null else 0.0) + 4
+
+
+## Wheel over a dock table scrolls the dock (the table itself never scrolls).
+func _on_dock_table_input(event: InputEvent, tree: Tree) -> void:
+	var mb: InputEventMouseButton = event as InputEventMouseButton
+	if mb == null or not mb.pressed or (mb.button_index != MOUSE_BUTTON_WHEEL_UP and mb.button_index != MOUSE_BUTTON_WHEEL_DOWN):
+		return
+	var bar: VScrollBar = _dock_scroll.get_v_scroll_bar()
+	var step: float = bar.page / 8.0 * (mb.factor if mb.factor > 0.0 else 1.0)
+	bar.value += -step if mb.button_index == MOUSE_BUTTON_WHEEL_UP else step
+	tree.accept_event()
 
 
 static func _source_usage(r: Dictionary) -> Dictionary:
 	return {"kind": USAGE_SOURCE, "file": String(r["file"]), "line": int(r["line"])}
 
 
-## Usage list / menu label: "File.gd · BattleSim, MatchFlow" (screens from ScreenMap).
-func _usage_label(u: Dictionary) -> String:
-	var f: String = String(u["file"])
-	var names: PackedStringArray = PackedStringArray()
-	for h in _screens_of(f):
-		names.append(String(h["screen"]))
-	return f.get_file() if names.is_empty() else "%s  ·  %s" % [f.get_file(), ", ".join(names)]
+## Usage rows: each usage file with the screen scenes it ends up in (ScreenMap) as child rows
+## that open the scene (the dock tree shows them folded, the row menu indented).
+## [{label, icon, tip, usage, screens: [{label, icon, tip, usage}]}].
+func _usage_entries(files: Array, r: Dictionary) -> Array:
+	var out: Array = []
+	for u in files:
+		var f: String = String(u["file"])
+		var screens: Array = []
+		for h in _screens_of(f):
+			var scene: String = String(h["path"])
+			if scene == f:
+				continue
+			var chain: PackedStringArray = PackedStringArray()
+			for c in h["chain"]:
+				chain.append(String(c).get_file())
+			screens.append({"label": scene.get_file(), "icon": _file_icon(scene),
+				"tip": "%s\n%s" % [scene, _tr("screen_line") % [h["screen"], " › ".join(chain)]],
+				"usage": {"kind": USAGE_SCREEN, "file": scene, "line": 0}})
+		out.append({"label": f.get_file(), "icon": _file_icon(f), "tip": _usage_tip(u, r), "usage": u, "screens": screens})
+	return out
 
 
 ## Usage tooltip: path · screens with the chain that leads there · each place in the file (code
@@ -1267,9 +1654,10 @@ static func _use_external_editor() -> bool:
 	return es.has_setting("text_editor/external/use_external_editor") and bool(es.get_setting("text_editor/external/use_external_editor"))
 
 
-## One usage per file (its first line) — the list shows file names, not lines.
-static func _usage_files(usages: Array) -> Array:
-	var seen: Dictionary = {}
+## One usage per file (its first line): the list shows file names, not lines. The key's own
+## source CSV (source_file) is left out: it already has its "원본" row.
+static func _usage_files(usages: Array, source_file: String) -> Array:
+	var seen: Dictionary = {source_file: true}
 	var out: Array = []
 	for u in usages:
 		var f: String = String(u.get("file", ""))
@@ -1284,12 +1672,11 @@ func _file_icon(path: String) -> Texture2D:
 	if not Engine.is_editor_hint():
 		return null
 	var ed_theme: Theme = EditorInterface.get_editor_theme()
-	# CSVs sit under .gdignore (never imported) so the filesystem has no type for them:
-	# l10n sources get the translation icon, data tables a grid icon.
+	# CSVs sit under .gdignore (never imported) so the filesystem has no type for them: every
+	# CSV (l10n source or data table) gets the green grid icon.
 	var names: Array = [EditorInterface.get_resource_filesystem().get_file_type(path)]
 	if path.get_extension().to_lower() == "csv":
-		var l10n_src: bool = _l != null and _l.ok() and path.begins_with(_l.config.src_dir)
-		names = ["Translation", "TextFile"] if l10n_src else ["GridContainer", "Grid", "TextFile"]
+		names = ["GridContainer", "Grid", "TextFile"]
 	names.append("File")
 	for icon_name in names:
 		if icon_name != "" and ed_theme.has_icon(icon_name, &"EditorIcons"):
@@ -1427,7 +1814,7 @@ func _find_item(key: String) -> TreeItem:
 		return null
 	var it: TreeItem = root.get_first_child()
 	while it != null:
-		if String(it.get_metadata(0)) == key:
+		if it.get_metadata(0) is String and String(it.get_metadata(0)) == key and key != "":
 			return it
 		it = it.get_next()
 	return null
@@ -1449,24 +1836,26 @@ func _on_visibility_changed() -> void:
 		_load()
 
 
-func _on_reload_pressed() -> void:
-	_screen_map = null
-	_load()
-
-
-func _on_scan_pressed() -> void:
+## Sync Data = sync (edit modes only: it writes hashes into the sources) → scan + checks →
+## index.json · report.md → reload from disk. Check results stay for the glossary filter · dock.
+func _on_sync_data_pressed() -> void:
 	if not _ready_model():
 		return
 	_screen_map = null
 	var start: int = _l.output.size()
-	var idx: Dictionary = _l.cmd_scan()
+	var n: int = _l.cmd_sync_data(_can_edit())
 	_append_log(_l.output.slice(start))
+	_model.set_issues(_l.issues.items)
+	var idx: Dictionary = _l.index
+	var errors: int = _l.issues.error_count()
+	var warns: int = _l.issues.warn_count()
 	_load()
-	_set_status(_tr("scan_done") % [(idx.get("keys", {}) as Dictionary).size(), (idx.get("orphans", []) as Array).size()], false)
+	_set_status(_tr("sync_data_done") % [n, (idx.get("keys", {}) as Dictionary).size(), (idx.get("orphans", []) as Array).size(), errors, warns], errors > 0)
 
 
-func _on_usage_activated(index: int) -> void:
-	var u: Variant = _usage_list.get_item_metadata(index)
+func _on_usage_activated() -> void:
+	var it: TreeItem = _usage_tree.get_selected()
+	var u: Variant = it.get_metadata(0) if it != null else null
 	if u is Dictionary:
 		_go_usage(u)
 
@@ -1476,7 +1865,7 @@ func _on_sheet_mouse_selected(mouse_pos: Vector2, mouse_button_index: int) -> vo
 	if mouse_button_index != MOUSE_BUTTON_RIGHT:
 		return
 	var it: TreeItem = _sheet.get_selected()
-	if it == null or _model == null:
+	if it == null or _model == null or not (it.get_metadata(0) is String) or String(it.get_metadata(0)) == "":
 		return
 	_on_cell_selected()
 	_menu_key = String(it.get_metadata(0))
@@ -1489,12 +1878,15 @@ func _on_sheet_mouse_selected(mouse_pos: Vector2, mouse_button_index: int) -> vo
 	_row_menu.add_item(_tr("copy_source"), MENU_COPY_SOURCE)
 	_row_menu.set_item_icon(_row_menu.get_item_index(MENU_OPEN_SOURCE), _file_icon(r["file"]))
 	_row_menu.set_item_tooltip(_row_menu.get_item_index(MENU_OPEN_SOURCE), String(r["file"]))
-	_menu_usages = _usage_files(r.get("usages", []) as Array)
-	_row_menu.add_separator(_tr("usages_of") % _menu_usages.size() if _model.has_usage_data() else _tr("no_usage_data"))
-	for i in _menu_usages.size():
-		var f: String = String(_menu_usages[i]["file"])
-		_row_menu.add_icon_item(_file_icon(f), _usage_label(_menu_usages[i]), MENU_USAGE_BASE + i)
-		_row_menu.set_item_tooltip(_row_menu.get_item_index(MENU_USAGE_BASE + i), _usage_tip(_menu_usages[i], r))
+	var files: Array = _usage_files(r.get("usages", []) as Array, String(r["file"]))
+	_row_menu.add_separator(_tr("usages_menu") % files.size() if _model.has_usage_data() else _tr("no_usage_data"))
+	_menu_usages = []
+	for e in _usage_entries(files, r):
+		for row in [e] + (e["screens"] as Array):
+			var id: int = MENU_USAGE_BASE + _menu_usages.size()
+			_menu_usages.append(row["usage"])
+			_row_menu.add_icon_item(row["icon"], (SCREEN_INDENT if row != e else "") + String(row["label"]), id)
+			_row_menu.set_item_tooltip(_row_menu.get_item_index(id), row["tip"])
 	_row_menu.reset_size()
 	_row_menu.popup(Rect2i(Vector2i(_sheet.get_screen_position() + mouse_pos), Vector2i.ZERO))
 
@@ -1559,7 +1951,7 @@ func _on_status_menu_id(glossary: bool, id: int) -> void:
 
 func _on_cell_selected() -> void:
 	var it: TreeItem = _sheet.get_selected()
-	if it == null:
+	if it == null or not (it.get_metadata(0) is String) or String(it.get_metadata(0)) == "":
 		return
 	var col: int = _sheet.get_selected_column()
 	_sel_key = String(it.get_metadata(0))
@@ -1569,7 +1961,7 @@ func _on_cell_selected() -> void:
 
 
 func _on_build_pressed() -> void:
-	if not _ready_model():
+	if not _can_edit() or not _ready_model():
 		return
 	var start: int = _l.output.size()
 	var errors: int = _l.cmd_build(L10n.MODE_DEV)
@@ -1585,39 +1977,185 @@ func _on_build_pressed() -> void:
 		_set_status(_tr("build_fail") % errors, true)
 
 
+## Add row: issues a key, shows it as a pending row at the end of the table (scrolled to the
+## middle), then asks for the alias: pick a domain node in the tree, type the name.
 func _on_add_row_pressed() -> void:
-	var dom: String = _selected_meta(_domain)
-	if dom != "":
-		_ar_domain.text = dom
-		if _ar_alias.text == "":
-			_ar_alias.text = dom + "."
+	if not _can_edit() or not _ready_model():
+		return
+	_l.reload()
+	_pending_key = Keygen.generate(_l.config.key_prefix, _l.catalog.key_set())
+	var root: TreeItem = _sheet.get_root()
+	if root == null:
+		return
+	var it: TreeItem = _add_pending_item()
+	_pad_sheet()
+	_sheet.scroll_to_item(it, true)
+	_ar_key.text = _pending_key
+	_ar_alias.text = ""
+	var pre: String = ""
+	var sel: Dictionary = _model.row_of(_sel_key) if _sel_key != "" else {}
+	if not sel.is_empty() and not _l.config.is_data_alias(String(sel["alias"])):
+		var segs: PackedStringArray = String(sel["alias"]).split(".")
+		pre = ".".join(segs.slice(0, segs.size() - 1))
+	elif _selected_meta(_domain) != "":
+		pre = _selected_meta(_domain)
+	_fill_domain_tree(pre)
+	_update_ar_preview()
 	_add_row_dialog.popup_centered()
 	_ar_alias.grab_focus()
-	_ar_alias.caret_column = _ar_alias.text.length()
+
+
+## Alias prefixes as a tree: every domain file + every prefix of a (non-data) alias without its
+## last segment. pre = the node to select (its parents unfolded); everything else folded.
+func _fill_domain_tree(pre: String) -> void:
+	_ar_domains.clear()
+	var root: TreeItem = _ar_domains.create_item()
+	var prefixes: Dictionary = {}
+	for d in _model.domains():
+		prefixes[String(d)] = true
+	for r in _model.rows:
+		var alias: String = String(r["alias"])
+		if _l.config.is_data_alias(alias):
+			continue
+		var segs: PackedStringArray = alias.split(".")
+		for n in range(1, segs.size()):
+			prefixes[".".join(segs.slice(0, n))] = true
+	var paths: Array = prefixes.keys()
+	paths.sort()
+	var items: Dictionary = {}
+	for path in paths:
+		var cut_at: int = String(path).rfind(".")
+		var parent_path: String = String(path).left(cut_at) if cut_at >= 0 else ""
+		var parent: TreeItem = items.get(parent_path, root)
+		var it: TreeItem = _ar_domains.create_item(parent)
+		it.set_text(0, String(path).substr(cut_at + 1))
+		it.set_tooltip_text(0, path)
+		it.set_metadata(0, path)
+		it.collapsed = true
+		items[path] = it
+	var target: TreeItem = items.get(pre, null)
+	if target != null:
+		var p: TreeItem = target.get_parent()
+		while p != null and p != root:
+			p.collapsed = false
+			p = p.get_parent()
+		target.select(0)
+		_ar_domains.scroll_to_item.call_deferred(target, true)
+
+
+## The alias being built: picked domain node + "." + typed name.
+func _ar_full_alias() -> String:
+	var name_part: String = _ar_alias.text.strip_edges().trim_prefix(".")
+	var it: TreeItem = _ar_domains.get_selected()
+	var pre: String = String(it.get_metadata(0)) if it != null else ""
+	if pre == "":
+		return name_part
+	return pre + ("." + name_part if name_part != "" else ".")
+
+
+func _update_ar_preview() -> void:
+	var it: TreeItem = _ar_domains.get_selected()
+	_ar_preview.text = _tr("ar_preview") % _ar_full_alias() if it != null else _tr("ar_pick_domain")
 
 
 func _on_add_row_confirmed() -> void:
-	if not _ready_model():
+	if not _can_edit() or not _ready_model() or _pending_key == "":
 		return
 	_l.reload()
-	var res: Dictionary = _l.cmd_new_key(_ar_domain.text.strip_edges(), _ar_alias.text.strip_edges(), _ar_text.text, _ar_context.text)
+	var alias: String = _ar_full_alias()
+	var res: Dictionary = _l.cmd_new_key(alias.get_slice(".", 0), alias, "", "", _pending_key)
 	if String(res["error"]) != "":
 		_set_status(_tr("add_failed") % String(res["error"]), true)
+		_add_row_dialog.popup_centered.call_deferred()
+		_ar_alias.grab_focus.call_deferred()
 		return
-	_ar_alias.text = ""
-	_ar_text.text = ""
-	_ar_context.text = ""
+	_pending_key = ""
 	_model.rebuild()
 	_fill_options()
-	_search.text = ""
 	_sel_key = String(res["key"])
-	var targets: PackedStringArray = _shown_targets()
-	_sel_column = targets[0] if not targets.is_empty() else _l.config.source_locale
+	_sel_column = _l.config.source_locale
+	_search.text = ""
 	_refresh_list()
-	_set_status(_tr("added") % [_model.row_of(_sel_key).get("alias", ""), _sel_key], false)
+	if _find_item(_sel_key) == null:
+		# Filters hide the new (empty) row: show everything.
+		_select_by_meta(_domain, "")
+		_sel_statuses = PackedStringArray(STATUS_CHOICES)
+		_sel_filters = PackedStringArray()
+		_fill_status_menu(_status_menu, _sel_statuses)
+		_fill_filter_menu()
+		_refresh_list()
+	_set_status(_tr("added") % [alias, _sel_key], false)
+	_source_edit.grab_focus.call_deferred()
 
 
-func _on_validate_pressed() -> void:
+func _on_add_row_canceled() -> void:
+	_pending_key = ""
+	_refresh_list()
+
+
+## Remove row: confirm dialog with the key's usages (every line but its own source row) and the
+## glossary terms linked to it; double-click a usage = go there (closes the dialog).
+func _on_remove_row_pressed() -> void:
+	if not _can_edit() or not _ready_model():
+		return
+	var r: Dictionary = _model.row_of(_sel_key) if _sel_key != "" else {}
+	if r.is_empty():
+		return
+	_remove_key = _sel_key
+	var body: PackedStringArray = PackedStringArray([_tr("remove_body") % [r["key"], r["alias"], String(r["file"]).get_file()], ""])
+	_rr_usages.clear()
+	for g in _model.glossary_terms():
+		if String(g["key"]) == _remove_key:
+			_rr_usages.add_item(_tr("remove_glossary") % [g["term_id"], int(g["line"])], null, false)
+	var n: int = 0
+	if _model.has_usage_data():
+		for u in r["usages"]:
+			var f: String = String(u.get("file", ""))
+			var line: int = int(u.get("line", 0))
+			if f == String(r["file"]) and line == int(r["line"]):
+				continue
+			var i: int = _rr_usages.add_item("%s:%d  (%s)" % [f.get_file(), line, String(u.get("kind", ""))], _file_icon(f))
+			_rr_usages.set_item_tooltip(i, "%s:%d" % [f, line])
+			_rr_usages.set_item_metadata(i, u)
+			n += 1
+		body.append(_tr("remove_used") % n if n > 0 else _tr("remove_unused"))
+	else:
+		body.append(_tr("remove_no_index"))
+	_rr_body.text = "
+".join(body)
+	_rr_usages.visible = _rr_usages.item_count > 0
+	_remove_row_dialog.popup_centered()
+
+
+func _on_rr_usage_activated(index: int) -> void:
+	var u: Variant = _rr_usages.get_item_metadata(index)
+	if u is Dictionary:
+		_remove_row_dialog.hide()
+		_go_usage(u)
+
+
+func _on_remove_row_confirmed() -> void:
+	if not _can_edit() or not _ready_model() or _remove_key == "":
+		return
+	var key: String = _remove_key
+	var alias: String = String(_model.row_of(key).get("alias", ""))
+	_remove_key = ""
+	var start: int = _l.output.size()
+	var err: String = _l.cmd_remove_key(key)
+	_append_log(_l.output.slice(start))
+	if err != "":
+		_set_status(_tr("remove_failed") % err, true)
+		return
+	_model.rebuild()
+	_fill_options()
+	if _sel_key == key:
+		_sel_key = ""
+	_refresh_all()
+	_set_status(_tr("removed") % [key, alias], false)
+
+
+## Scan + checks without writing the sources (the glossary filter's first use).
+func _run_checks() -> void:
 	if not _ready_model():
 		return
 	var start: int = _l.output.size()
@@ -1628,26 +2166,6 @@ func _on_validate_pressed() -> void:
 	_model.rebuild()
 	_refresh_all()
 	_set_status(_tr("cmd_done") % ["validate", _l.issues.error_count(), _l.issues.warn_count()], _l.issues.error_count() > 0)
-
-
-func _on_sync_pressed() -> void:
-	if not _ready_model():
-		return
-	var start: int = _l.output.size()
-	var n: int = _l.cmd_sync()
-	_append_log(_l.output.slice(start))
-	_model.rebuild()
-	_refresh_list()
-	_refresh_glossary()
-	_set_status(_tr("sync_done") % n, false)
-
-
-## The glossary filter needs validate results — run it the first time the box is ticked.
-func _on_glossary_only_toggled(on: bool) -> void:
-	if on and _model != null and not _model.validated:
-		_on_validate_pressed()
-		return
-	_refresh_list()
 
 
 # ── approve (owner only) ────────────────────────────────────────────────
@@ -1673,7 +2191,7 @@ func _approvable(rows: Array, loc: String) -> PackedStringArray:
 ## Approve menu of the Keys or Glossary bar: selected = the dock's row, visible = the rows listed
 ## in the current table (glossary: the terms' linked keys).
 func _on_approve_menu_id(id: int) -> void:
-	if not _ready_model():
+	if _mode != MODE_ADMIN or not _ready_model():
 		return
 	var loc: String = _approve_target_locale()
 	if loc == "":
@@ -1700,7 +2218,7 @@ func _on_approve_menu_id(id: int) -> void:
 
 
 func _on_approve_confirmed() -> void:
-	if not _ready_model() or _approve_keys.is_empty():
+	if _mode != MODE_ADMIN or not _ready_model() or _approve_keys.is_empty():
 		return
 	var start: int = _l.output.size()
 	var err: String = _l.cmd_approve(_approve_locale, _approve_keys)
@@ -1721,7 +2239,9 @@ func _current_rows() -> Array:
 	var root: TreeItem = _sheet.get_root()
 	var it: TreeItem = root.get_first_child() if root != null else null
 	while it != null:
-		out.append(_model.row_of(String(it.get_metadata(0))))
+		var r: Dictionary = _model.row_of(String(it.get_metadata(0))) if it.get_metadata(0) is String else {}
+		if not r.is_empty():
+			out.append(r)
 		it = it.get_next()
 	return out
 
@@ -1832,23 +2352,43 @@ func _on_glossary_selected() -> void:
 	_show_dock()
 
 
-## Side list: keys whose source contains the selected term.
+## Dock table (Glossary tab, above the usages): keys whose source contains the selected term.
 func _fill_glossary_keys() -> void:
 	_glossary_keys.clear()
-	if _model == null or _gl_term == "":
+	var shown: bool = _tabs.current_tab == TAB_GLOSSARY and _model != null and _gl_term != ""
+	_gl_keys_title.visible = shown
+	_gl_keys_margin.visible = shown
+	if not shown:
 		return
+	_glossary_keys.set_column_title(0, _tr("col_key"))
+	_glossary_keys.set_column_title(1, _tr("col_source"))
+	_glossary_keys.set_column_expand(0, false)
+	_glossary_keys.set_column_custom_minimum_width(0, 320)
+	var root: TreeItem = _glossary_keys.create_item()
 	var keys: Array = _model.keys_with_term(_gl_term)
+	_gl_keys_title.text = _tr("glossary_keys") % keys.size()
 	if keys.is_empty():
-		_glossary_keys.add_item(_tr("glossary_no_keys"), null, false)
+		var none: TreeItem = _glossary_keys.create_item(root)
+		none.set_text(0, _tr("glossary_no_keys"))
+		none.set_selectable(0, false)
+		none.set_selectable(1, false)
 	for k in keys:
 		var r: Dictionary = _model.row_of(k)
-		var i: int = _glossary_keys.add_item("%s  —  %s" % [r["alias"], r["source"]])
-		_glossary_keys.set_item_metadata(i, k)
+		var it: TreeItem = _glossary_keys.create_item(root)
+		it.set_text(0, String(r["alias"]))
+		it.set_tooltip_text(0, "%s
+%s" % [k, r["alias"]])
+		it.set_text(1, String(r["source"]).replace("
+", " ⏎ "))
+		it.set_tooltip_text(1, String(r["source"]))
+		it.set_metadata(0, k)
+	_fit_dock_tree(_glossary_keys)
 
 
 ## Glossary key double-click → that key in the Keys tab.
-func _on_glossary_key_activated(index: int) -> void:
-	var k: Variant = _glossary_keys.get_item_metadata(index)
+func _on_glossary_key_activated() -> void:
+	var it: TreeItem = _glossary_keys.get_selected()
+	var k: Variant = it.get_metadata(0) if it != null else null
 	if k is String:
 		_focus_key(k)
 
@@ -1895,6 +2435,7 @@ func _on_tab_changed(tab: int) -> void:
 		var host: Control = %KeysSplit if tab == TAB_KEYS else %GlSplit
 		if _dock.get_parent() != host:
 			_dock.reparent(host, false)
+		_fill_glossary_keys()
 		_show_dock(true)
 	if _preview_dirty and _is_preview_shown():
 		_refresh_preview()

@@ -120,6 +120,11 @@ func test_catalog_load_and_new_key(t: TestKit) -> void:
 	t.eq(tab.get_cell(0, "ko"), "새 시즌")
 	t.eq(l.cmd_new_key("lobby", "lobby.start_button", "x")["error"] != "", true, "alias 중복 거부")
 	t.eq(l.cmd_new_key("lobby", "ui.bad", "x")["error"] != "", true, "첫 세그먼트 ≠ domain 거부")
+	# 미리 발급한 key (편집기 행 추가 창): 그대로 쓰고, 형식 위반 · 이미 있는 key 는 거부
+	var pre: String = Keygen.generate(l.config.key_prefix, l.catalog.key_set())
+	t.eq(l.cmd_new_key("lobby", "lobby.preset_key", "", "", pre)["key"], pre, "미리 발급한 key")
+	t.ok(l.cmd_new_key("lobby", "lobby.preset_again", "", "", pre)["error"] != "", "이미 있는 key 거부")
+	t.ok(l.cmd_new_key("lobby", "lobby.preset_bad", "", "", "tx_bad")["error"] != "", "형식 위반 key 거부")
 	# set_translation → draft + 해시
 	t.eq(l.catalog.set_translation(res["key"], "en", "New Season"), "")
 	t.eq(l.catalog.save_all(), "")
@@ -166,6 +171,21 @@ func test_cmd_edit(t: TestKit) -> void:
 	t.eq(CsvIo.load_file(dir.path_join("src/card.csv")).get_cell(2, "context"), "외부 수정", "외부 수정 보존")
 
 
+func test_cmd_remove_key(t: TestKit) -> void:
+	var dir: String = t.copy_fixture("basic")
+	var l: L10n = L10n.open(dir.path_join("config.json"))
+	l.echo = false
+	var key: String = "tx_7KQ2M9XA4P"
+	var rows_before: int = CsvIo.load_file(dir.path_join("src/card.csv")).row_count()
+	t.eq(l.cmd_remove_key(key), "")
+	t.ok(not l.catalog.has_key(key), "카탈로그에서 빠짐")
+	var tab: CsvIo = CsvIo.load_file(dir.path_join("src/card.csv"))
+	t.eq(tab.row_count(), rows_before - 1, "디스크에서 행 하나 빠짐")
+	t.eq(tab.find_row("key", key), -1)
+	t.eq(l.catalog.text("tx_C4RT8NW2HJ", "en"), "Cache", "다른 행 그대로")
+	t.ok(l.cmd_remove_key(key) != "", "없는 key 거부")
+
+
 func test_refs_resolve(t: TestKit) -> void:
 	var dir: String = t.copy_fixture("basic")
 	var l: L10n = L10n.open(dir.path_join("config.json"))
@@ -184,6 +204,22 @@ func test_refs_resolve(t: TestKit) -> void:
 	iss = Issues.new()
 	l.resolve_refs(iss)
 	t.ok(iss.has_code("E036"), "이름 중복")
+
+
+func test_ref_aliases(t: TestKit) -> void:
+	var dir: String = t.copy_fixture("basic")
+	var cfg: Config = Config.load_from(dir.path_join("config.json"))
+	# 예전 ref_domains = ["card", "keyword"] → <domain>.**.name
+	t.eq(cfg.ref_aliases, PackedStringArray(["card.**.name", "keyword.**.name"]))
+	t.eq(cfg.ref_rank("card.pilot.6.name"), 0)
+	t.eq(cfg.ref_rank("keyword.track.name"), 1)
+	t.eq(cfg.ref_rank("card.pilot.6.desc"), -1)
+	t.eq(cfg.ref_rank("keyword.name"), -1, "** 는 세그먼트 하나 이상")
+	cfg.ref_aliases = PackedStringArray(["term.keyword.*"])
+	cfg._ref_res = [RegEx.create_from_string("^" + Config.ref_pattern_regex("term.keyword.*") + "$")]
+	t.eq(cfg.ref_rank("term.keyword.exhaust"), 0)
+	t.eq(cfg.ref_rank("term.keyword.exhaust.note"), -1, "* 는 세그먼트 하나")
+	t.eq(cfg.ref_rank("term.keywordx.exhaust"), -1)
 
 
 func test_expand_alias(t: TestKit) -> void:

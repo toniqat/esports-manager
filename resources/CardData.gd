@@ -55,10 +55,10 @@ const KW_CHARGE := "charge"
 const KW_REPOSITION := "reposition"
 
 ## 키워드 → 화면 이름 l10n key. 설명판 · 상세 패널이 같은 표를 읽는다(`keyword_label`).
-const KEYWORD_LABELS: Dictionary = {  # l10n-keys: keyword.*.name
-	KW_EXHAUST: L.KEYWORD_EXHAUST_NAME, KW_PRESERVE: L.KEYWORD_PRESERVE_NAME,
-	KW_VOLATILE: L.KEYWORD_VOLATILE_NAME, KW_CHARGE: L.KEYWORD_CHARGE_NAME,
-	KW_REPOSITION: L.KEYWORD_REPOSITION_NAME,
+const KEYWORD_LABELS: Dictionary = {  # l10n-keys: term.keyword.*
+	KW_EXHAUST: L.TERM_KEYWORD_EXHAUST, KW_PRESERVE: L.TERM_KEYWORD_PRESERVE,
+	KW_VOLATILE: L.TERM_KEYWORD_VOLATILE, KW_CHARGE: L.TERM_KEYWORD_CHARGE,
+	KW_REPOSITION: L.TERM_KEYWORD_REPOSITION,
 }
 ## 키워드 한 줄 풀이 l10n key. 충전은 상한(`{max}`)이 카드마다 달라 `keyword_note` 가 채운다.
 const KEYWORD_NOTES: Dictionary = {  # l10n-keys: keyword.*.note
@@ -73,10 +73,10 @@ const KEYWORD_NOTES: Dictionary = {  # l10n-keys: keyword.*.note
 ## 아니라 참조 key** 로 정한다 — 설명 key 의 `Loc.refs()`(`ref_entries`). 참조가 `card`
 ## 도메인이면 카드 이름이고, 풀이 판 대신 그 카드의 설명판(비용 · 이름 · 설명)을 세운다.
 ## 값 = 특수 키워드 id(`KeywordIcon.SPECIAL_ICONS` 의 키).
-const SPECIAL_LABELS: Dictionary = {  # l10n-keys: keyword.*.name
-	"track": L.KEYWORD_TRACK_NAME, "reactive_armor": L.KEYWORD_REACTIVE_ARMOR_NAME,
-	"target": L.KEYWORD_TARGET_NAME, "bounty": L.KEYWORD_BOUNTY_NAME,
-	"stun": L.KEYWORD_STUN_NAME, "vulnerable": L.KEYWORD_VULNERABLE_NAME,
+const SPECIAL_LABELS: Dictionary = {  # l10n-keys: term.keyword.*
+	"track": L.TERM_KEYWORD_TRACK, "reactive_armor": L.TERM_KEYWORD_REACTIVE_ARMOR,
+	"target": L.TERM_KEYWORD_TARGET, "bounty": L.TERM_KEYWORD_BOUNTY,
+	"stun": L.TERM_KEYWORD_STUN, "vulnerable": L.TERM_KEYWORD_VULNERABLE,
 }
 const SPECIAL_NOTES: Dictionary = {  # l10n-keys: keyword.*.note
 	"track": L.KEYWORD_TRACK_NOTE, "reactive_armor": L.KEYWORD_REACTIVE_ARMOR_NOTE,
@@ -249,7 +249,7 @@ func keyword_label(kw: String) -> String:
 		return Loc.t(L.KEYWORD_CHARGE_LABEL, {"max": maxi(1, charge_max)})
 	if not KEYWORD_LABELS.has(kw):
 		return kw
-	return Loc.t(String(KEYWORD_LABELS[kw]))  # l10n-dynamic: keyword.*.name
+	return Loc.t(String(KEYWORD_LABELS[kw]))  # l10n-dynamic: term.keyword.*
 
 
 ## 키워드 하나의 한 줄 풀이. 표에 없는 키워드는 빈 문자열.
@@ -525,7 +525,7 @@ static func special_id_of(key: String) -> String:
 
 
 ## 설명 key 의 `[x]` 참조 — 원문 등장 순서대로 `{key, text, special, card}`.
-##   `key`     참조 key (`card` · `keyword` 도메인의 이름 key)
+##   `key`     참조 key (카드 이름 `card.*.*.name` · 키워드 이름 `term.keyword.*`)
 ##   `text`    그 key 의 현재 로케일 글자 — 설명문 `[ ]` 안에 찍힌 글자와 같다(E034)
 ##   `special` 특수 키워드 id(아니면 빈 문자열)
 ##   `card`    카드 이름 참조면 그 카드(`by_name_key`), 아니면 null
@@ -538,7 +538,7 @@ static func ref_entries(text_key: String) -> Array:
 		var sp: String = special_id_of(rk)
 		out.append({
 			"key": rk,
-			"text": Loc.t(rk),  # l10n-dynamic: card.*.*.name keyword.*.name
+			"text": Loc.t(rk),  # l10n-dynamic: card.*.*.name term.keyword.*
 			"special": sp,
 			"card": by_name_key(rk) if sp.is_empty() else null,
 		})

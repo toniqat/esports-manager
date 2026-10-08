@@ -1,25 +1,14 @@
 key,alias,status,context,max_len,note,ko,en,en_status,en_hash
-tx_KXN7MDVXDA,keyword.track.name,active,특수 키워드 이름 (설명문 [추적]),,,추적,Track,draft,d35efa53
 tx_Q2YD01V4X9,keyword.track.note,active,특수 키워드 풀이 판,,,대상이 교전에 참여하면 {tx_XW85A9FY8B}도 함께 참여한다,"When the target joins an engage, the {tx_XW85A9FY8B} joins too",draft,22811f3b
-tx_HPPDS4VKWD,keyword.reactive_armor.name,active,특수 키워드 이름 (설명문 [반응 장갑]),,,반응 장갑,Reactive Armor,draft,5818ee29
 tx_8224R3117V,keyword.reactive_armor.note,active,특수 키워드 풀이 판,,,공격당하면 그 피해를 {mech_reactive_armor_cut_pct}% 줄이고 1 사라진다. 전장을 떠나면 모두 사라진다,"When attacked, reduce that damage by {mech_reactive_armor_cut_pct}% and lose 1. All of it is lost on leaving the battlefield",draft,f4415df5
-tx_DG1DJNPNVF,keyword.target.name,active,특수 키워드 이름 (설명문 [목표]),,,목표,Mark,draft,2fbea43b
 tx_M9AXFZ0YJD,keyword.target.note,active,특수 키워드 풀이 판,,,{tx_XW85A9FY8B}에게 받는 피해 +{mark_target}%. 새 {tx_DG1DJNPNVF}{eul} 정하면 이전 {tx_DG1DJNPNVF}{eun} 풀린다,Damage taken from the {tx_XW85A9FY8B} +{mark_target}%. Setting a new {tx_DG1DJNPNVF} releases the previous one,draft,4043bc1f
-tx_WSY436KCVQ,keyword.bounty.name,active,특수 키워드 이름 (설명문 [현상금]),,,현상금,Bounty,draft,31c6ef6d
 tx_DYE6YP50R9,keyword.bounty.note,active,특수 키워드 풀이 판,,,대상의 {tx_WBS95M3MNQ} 일부를 값으로 매긴 표식. 확신 카드의 피해가 이 값에 비례한다,A mark valued at part of the target's {tx_WBS95M3MNQ}. Conviction's damage scales with this value,draft,985dd63c
-tx_EQ77MGHTT1,keyword.stun.name,active,특수 키워드 이름 (설명문 [기절]),,,기절,Stun,draft,8d7ad8b7
 tx_5Y0V13GVXR,keyword.stun.note,active,특수 키워드 풀이 판,,,교전에서 자기 차례 한 번을 건너뛴다,Skips its own action once in an engage,draft,cdf0879b
-tx_WAPNWFECJE,keyword.vulnerable.name,active,특수 키워드 이름 (설명문 [취약]),,,취약,Vulnerable,draft,bae7a9a6
 tx_GV1PNFZR9T,keyword.vulnerable.note,active,특수 키워드 풀이 판,,,1마다 받는 피해 +{mech_vulnerable_per_stack_pct}%,Damage taken +{mech_vulnerable_per_stack_pct}% per 1,draft,1c328a1b
-tx_D1T42QFP6V,keyword.exhaust.name,active,카드 키워드 줄 이름,,,소멸,Exhaust,draft,04bda422
 tx_A2PYQPKVJM,keyword.exhaust.note,active,카드 키워드 풀이,,,사용하면 이 게임에서 사라진다,Removed from this game when used,draft,55e4821c
-tx_SJ5QM4RPT6,keyword.preserve.name,active,카드 키워드 줄 이름,,,보존,Preserve,draft,70770442
 tx_EGQP5BBD6K,keyword.preserve.note,active,카드 키워드 풀이,,,버려지지 않는다,Is never discarded,draft,39fd250a
-tx_XT72XP34EJ,keyword.volatile.name,active,카드 키워드 줄 이름,,,휘발성,Volatile,draft,4dfe4919
 tx_SSYPBCVHEE,keyword.volatile.note,active,카드 키워드 풀이,,,버려지면 {tx_DM7HJ301F1}로 가지 않고 사라진다,"When discarded, vanishes instead of going to the {tx_DM7HJ301F1}",draft,0b22881a
-tx_HHR746K1D3,keyword.charge.name,active,카드 키워드 줄 이름,,,충전,Charge,draft,b03617ef
 tx_FGE0Q8F8K1,keyword.charge.note,active,카드 키워드 풀이. {max} = 카드의 charge_max,,,{tx_SVRFJDH55K}에 들어올 때마다 {tx_JAYQJ6YQE0} +{card_charge_hand_gain} (최대 {max}),+{card_charge_hand_gain} {plural:card_charge_hand_gain|{tx_JAYQJ6YQE0}|{tx_BBFEFTT649}} each time it enters your {tx_SVRFJDH55K} (max {max}),draft,9d6f9193
-tx_VDYX47TMCF,keyword.reposition.name,active,카드 키워드 줄 이름,,,재배치,Reposition,draft,b91c4e66
 tx_HN02EYXPVV,keyword.reposition.note,active,카드 키워드 풀이,,,사용 후 {tx_SVRFJDH55K} 맨 왼쪽으로 돌아온다,Returns to the far left of your {tx_SVRFJDH55K} after use,draft,c95cb76d
 tx_6ABJNCRSQX,keyword.charge.label,active,카드 키워드 줄: 충전 키워드 이름 + 상한. {max} = 카드의 charge_max,,,충전 {max},Charge {max},draft,3a021dee
 tx_AXYDKH476P,keyword.icon.strategy,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,{tx_F597JS5T37},strategy points,draft,02236544
@@ -52,3 +41,4 @@ tx_XVGC6KXT1R,keyword.icon.search,active,"카드 설명문 아이콘 낱말 매�
 tx_YX872B2X4H,keyword.icon.create,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,{tx_JRJS1G2Q8Y},create,draft,5d269ea6
 tx_5D3XF18V32,keyword.icon.heal,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,회복,heal,draft,95ca12ad
 tx_PNFKKTFY12,keyword.icon.kill,active,"카드 설명문 아이콘 낱말 매칭(KeywordIcon.words). 화면에 이 글자를 찍지 않는다. 그 언어 설명문의 표기와 같아야 한다. | 로 다른 표기를 나열, 대소문자 무시, 라틴 글자는 낱말 경계",,,처치,kill|killed,draft,5e9c0f1a
+tx_EXXXM6Y0N1,keyword.reactive_armor.data,active,,,,,,,

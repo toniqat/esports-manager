@@ -107,3 +107,15 @@ func test_move_key(t: TestKit) -> void:
 	t.ok(Builder.strings_csv(l, "ko", "dev").contains("tx_A0000000A5,모든 파일럿 능력치 +{n}\n"), "참조는 key 라 그대로 펼쳐짐")
 	l.reload()
 	t.eq(l.catalog.entry("tx_A0000000B3").get("alias", ""), "ui.josa", "뒤 행 번호 당김 후에도 다시 읽기 정상")
+
+
+func test_e043_name_without_refs(t: TestKit) -> void:
+	var l: L10n = _open(t)
+	t.ok(KeyRefs.is_name_alias("card.pilot.6.name"), "마지막 세그먼트 name")
+	t.ok(not KeyRefs.is_name_alias("card.pilot.6.desc") and not KeyRefs.is_name_alias("ui.name_only"), "name 이 아닌 alias")
+	var bad: String = String(l.cmd_new_key("ui", "ui.boss.name", "{tx_A0000000A1} 대장")["key"])
+	var ok_key: String = String(l.cmd_new_key("ui", "ui.boss.title", "{tx_A0000000A1} 대장")["key"])
+	var iss: Issues = Issues.new()
+	KeyRefs.check(l.catalog, iss)
+	t.eq(_keys_with(iss, "E043"), [bad], "이름 key 의 참조만 E043")
+	t.ok(not _keys_with(iss, "E043").has(ok_key), "이름이 아니면 참조 허용")

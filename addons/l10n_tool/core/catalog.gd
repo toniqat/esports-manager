@@ -152,7 +152,8 @@ func const_map() -> Dictionary:
 ## `new_key` (§7.1): key 발급 → `<domain>.csv` 끝에 active 행 추가 → 저장.
 ## 돌려주는 값 {key, error}. 같은 alias 가 있으면 오류. do_save = false 면 저장을 미루고
 ## (일괄 추출) 나중에 `save_all()`.
-func add_entry(domain: String, alias: String, source: String, context: String = "", max_len: String = "", note: String = "", do_save: bool = true) -> Dictionary:
+## preset_key = a key issued beforehand (the sheet shows it in its add-row dialog); "" = issue one now.
+func add_entry(domain: String, alias: String, source: String, context: String = "", max_len: String = "", note: String = "", do_save: bool = true, preset_key: String = "") -> Dictionary:
 	if not is_valid_alias(alias, domain):
 		return {"key": "", "error": "alias 형식 위반 또는 첫 세그먼트 ≠ domain: %s (domain=%s)" % [alias, domain]}
 	if by_alias.has(alias):
@@ -160,7 +161,11 @@ func add_entry(domain: String, alias: String, source: String, context: String = 
 	var lock: String = excel_lock_for(config.domain_path(domain))
 	if lock != "":
 		return {"key": "", "error": "Excel 잠금 파일이 있다 — 파일을 닫고 다시: %s" % lock}
-	var key: String = Keygen.generate(config.key_prefix, key_set())
+	var key: String = preset_key
+	if key != "" and (not Keygen.is_valid(key, config.key_prefix) or key_set().has(key)):
+		return {"key": "", "error": "쓸 수 없는 key: %s (형식 위반 또는 이미 있음)" % key}
+	if key == "":
+		key = Keygen.generate(config.key_prefix, key_set())
 	if key == "":
 		return {"key": "", "error": "key 발급 실패"}
 	var t: CsvIo = tables.get(domain, null)
@@ -228,6 +233,17 @@ func move_entry(key: String, new_alias: String) -> String:
 		src.remove_row(r)
 	else:
 		return "같은 도메인 안에서는 rename_alias 를 쓴다"
+	return ""
+
+
+## key 행을 원본에서 지운다 (L10n 편집기의 행 제거). 저장은 `save_all()`, 그 뒤 `reload()`.
+func remove_entry(key: String) -> String:
+	var e: Dictionary = entry(key)
+	if e.is_empty():
+		return "없는 key: %s" % key
+	var t: CsvIo = tables.get(String(e["domain"]), null)
+	if t == null or not t.remove_row(int(e["row"])):
+		return "행을 지우지 못함: %s" % key
 	return ""
 
 

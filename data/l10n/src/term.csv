@@ -159,3 +159,14 @@ tx_ZBKRYJ8XE0,term.unit.team.other,active,수량 단위 team 복수형. 복수 �
 tx_JRJS1G2Q8Y,term.game.create,active,"게임 용어: 카드를 손 · 덱에 새로 만들기. 문장 안 {tx_…} 참조용, en 은 문장 중간 소문자",,,생성,create,draft,d1a2d3a2
 tx_82SYZ18YM0,term.unit.copy.one,active,수량 단위 copy 단수형 (카드 사본). 복수 태그의 첫 형태. ko 는 단수 · 복수 같음,,,장,copy,draft,b2414937
 tx_Z7T7JK8FYC,term.unit.copy.other,active,수량 단위 copy 복수형 (카드 사본). 복수 태그의 둘째 형태. ko 는 단수 · 복수 같음,,,장,copies,draft,b2414937
+tx_D1T42QFP6V,term.keyword.exhaust,active,카드 키워드 줄 이름,,,소멸,Exhaust,draft,04bda422
+tx_SJ5QM4RPT6,term.keyword.preserve,active,카드 키워드 줄 이름,,,보존,Preserve,draft,70770442
+tx_XT72XP34EJ,term.keyword.volatile,active,카드 키워드 줄 이름,,,휘발성,Volatile,draft,4dfe4919
+tx_HHR746K1D3,term.keyword.charge,active,카드 키워드 줄 이름,,,충전,Charge,draft,b03617ef
+tx_VDYX47TMCF,term.keyword.reposition,active,카드 키워드 줄 이름,,,재배치,Reposition,draft,b91c4e66
+tx_KXN7MDVXDA,term.keyword.track,active,특수 키워드 이름 (설명문 [추적]),,,추적,Track,draft,d35efa53
+tx_HPPDS4VKWD,term.keyword.reactive_armor,active,특수 키워드 이름 (설명문 [반응 장갑]),,,반응 장갑,Reactive Armor,draft,5818ee29
+tx_DG1DJNPNVF,term.keyword.target,active,특수 키워드 이름 (설명문 [목표]),,,목표,Mark,draft,2fbea43b
+tx_WSY436KCVQ,term.keyword.bounty,active,특수 키워드 이름 (설명문 [현상금]),,,현상금,Bounty,draft,31c6ef6d
+tx_EQ77MGHTT1,term.keyword.stun,active,특수 키워드 이름 (설명문 [기절]),,,기절,Stun,draft,8d7ad8b7
+tx_WAPNWFECJE,term.keyword.vulnerable,active,특수 키워드 이름 (설명문 [취약]),,,취약,Vulnerable,draft,bae7a9a6

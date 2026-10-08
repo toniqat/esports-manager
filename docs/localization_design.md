@@ -28,7 +28,7 @@
 | # | 항목 | 결정 |
 |---|---|---|
 | D1 | 1차 범위 | §15 1~6단계(도구) + §14 1순위 **데이터 CSV 이행**. 씬 · 코드 리터럴 이행(§14 2~6)은 다음 회차 |
-| D2 | `[x]` 참조 | 특수 키워드(추적 · 반응 장갑 · 목표 · 현상금 · 기절 · 취약)와 카드 키워드(소멸 · 보존 …)는 `keyword` 도메인. `ref_domains = ["card", "keyword"]`. pilot_skill · mech_passive 설명문도 E034 검증 대상 |
+| D2 | `[x]` 참조 | 특수 키워드(추적 · 반응 장갑 · 목표 · 현상금 · 기절 · 취약)와 카드 키워드(소멸 · 보존 …)의 이름은 용어집 낱말이라 `term.keyword.<id>`(풀이는 `keyword.<id>.note`). 참조 대상 = alias 패턴 `ref_aliases = ["card.**.name", "term.keyword.*"]` (`*` = 세그먼트 하나, `**` = 하나 이상, 앞 패턴 우선; 예전 `ref_domains` 는 `<domain>.**.name` 으로 읽는다). pilot_skill · mech_passive 설명문도 E034 검증 대상 |
 | D3 | 이름 조회 | `card_by_name` · `card_costs_by_name` 같은 **표시 이름 조회는 id/key 기반으로 전면 교체** |
 | D4 | 참조 해석 | `build` 가 `generated/refs.json`(문자열 key → 참조 key 목록, 등장 순서)을 만든다. 런타임은 텍스트 매칭 없이 key → (테이블, id) 로 찾는다. 커밋 대상 |
 | D5 | data/csv 임포트 | `data/csv/.gdignore`. 기존 `*.translation` · `*.csv.import` 삭제 |
@@ -227,7 +227,7 @@ res://
   "strict": { "orphans": "warn" },
   "tokens": {
     "josa_tags": ["eul", "eun", "i", "wa"],
-    "ref_domains": ["card", "keyword"],
+    "ref_aliases": ["card.**.name", "term.keyword.*"],
     "bbcode_tags": ["b", "i", "u", "s", "color", "font_size", "url", "img", "center"]
   },
   "scan": {
@@ -266,7 +266,7 @@ res://
 - `Crypto.generate_random_bytes()` 로 50비트 이상을 만든다.
 - 발급 시 모든 원본의 기존 key(deprecated 포함)와 중복을 검사한다.
 - 접두사 `tx_` 는 스캔에서 오탐 없이 key 를 찾기 위한 것이다. 바꾸지 않는다.
-- 발급된 key 는 **삭제 · 재사용하지 않는다.** 쓰지 않으면 `deprecated` 로 둔다.
+- 발급된 key 는 **재사용하지 않는다.** 쓰지 않으면 `deprecated` 로 두고, 지울 때는 L10n 편집기의 행 제거(`cmd_remove_key`, 사용처 경고 확인 뒤)로만 지운다.
 
 ### 3.2 alias 형식
 
@@ -364,7 +364,7 @@ engage,tx_7ZKD3M1QWE,,,,,,교전 — 표시 문자열의 key 를 따른다
 |---|---|---|---|
 | **값 자리표시자** | `{name}` · `{p1}` (`{` + 소문자 식별자 + `}`, 조사 태그 이름 제외) | 원문과 모든 번역의 **집합이 같아야** 한다. 순서는 자유 | E033 |
 | **조사 태그** | `{eul}` `{eun}` `{i}` `{wa}` | **원문 로케일(ko)에만** 허용. 런타임에 `StrategyIcon.resolve_josa` 가 처리 | E035 |
-| **카드 참조** | `[카드 이름]` (괄호 안이 `bbcode_tags` 가 아님) | 원문의 `[x]` 는 `ref_domains` 의 원문 이름 중 하나여야 하고, 번역문에는 **같은 key 의 그 언어 이름**이 `[ ]` 로 들어가야 한다 | E034 |
+| **카드 참조** | `[카드 이름]` (괄호 안이 `bbcode_tags` 가 아님) | 원문의 `[x]` 는 `ref_aliases` 대상의 원문 이름 중 하나여야 하고, 번역문에는 **같은 key 의 그 언어 이름**이 `[ ]` 로 들어가야 한다 | E034 |
 | **줄바꿈** | 리터럴 `\n` | 자유 | — |
 
 - **key 참조** (D18) `{tx_XXXXXXXXXX}`: build 가 그 key 의 **같은 로케일** 텍스트로 펼친다(중첩 가능). 언어마다 선택이라 원문과 번역의 참조 짝은 보지 않는다. 대상은 active key(E037 없는 key · E038 deprecated · E039 순환). dev 는 번역이 없으면 원문으로 펼치고, release 는 approved · 비-stale 번역이 없으면 그 행을 빼서 폴백에 맡긴다(한 문장에 두 언어가 섞이지 않게). 원본 CSV 에는 key 로 적고, L10n 편집기 상세에 참조 alias 와 펼친 문장이 보인다. 참조된 key 는 사용처(kind `ref`)로 기록된다.
@@ -437,7 +437,7 @@ engage,tx_7ZKD3M1QWE,,,,,,교전 — 표시 문자열의 key 를 따른다
 
    - 상수 이름 = alias 대문자, `.` → `_`. 겹치면 E013. deprecated 는 `## @deprecated` 주석을 붙여 남긴다.
    - 데이터 테이블 alias(`data_columns`)는 코드가 상수로 부르지 않으므로 상수를 만들지 않는다.
-3. **`refs.json`** — 설명문 `[x]` 참조 해석 결과 (D4). `{ "<문자열 key>": ["<참조 key>", …] }` — 원문의 `[x]` 등장 순서. `ref_domains` 의 key 만 들어간다. 커밋한다.
+3. **`refs.json`** — 설명문 `[x]` 참조 해석 결과 (D4). `{ "<문자열 key>": ["<참조 key>", …] }` — 원문의 `[x]` 등장 순서. `ref_aliases` 대상 key 만 들어간다. 커밋한다.
 4. **`index.json`** — §9.4. 5. **`report.md`** — §13.
 
 ### 7.3 빌드 모드별 포함 조건
@@ -609,7 +609,9 @@ alias 패턴의 `*` 는 세그먼트 하나에 맞는다.
 에디터 메인 화면 `L10n` 탭(UI 는 에디터 언어 ko / en). 한 행 = key, 열 = alias · 원문 · 언어별 번역(상태 = 셀 앞 색 점:
 미착수 빨강 · draft 노랑 · approved 초록 · stale 주황). "모든 언어" 는 번역 열만, 언어를 고르면("언어: en") 그 열 +
 context · max_len · note — 스프레드시트처럼 셀을 바로 고친다. 쓰기는 파사드 `cmd_edit` 하나(디스크 재읽기 → 전부 검사 → 저장, §12 와 같은 Excel 잠금 규칙).
-번역 수정은 draft(§0.5 — approve 는 키 탭 `승인…` 메뉴, 오너만), 원문 수정은 번역을 stale 로 만든다. 저장만 하고 `build dev` 는 따로.
+번역 수정은 draft(§0.5 — approve 는 키 탭 `승인…` 메뉴, 오너만), 원문 수정은 번역을 stale 로 만든다. 저장만 하고 반영(Build Data = `build dev`)은 따로.
+맨 위 편집 모드(열 때마다 읽기 전용): 읽기 전용 = 보기만 · 내용 수정 = 승인 빼고 전부 · 관리자 = `승인…` 까지. Sync Data = sync · scan · validate 를 한 번에(읽기 전용이면 sync 쓰기 없이).
+행 제거 = 키 탭 행 추가 오른쪽 버튼(행을 고른 동안만 활성): 경고 창에 사용처 · 연결된 용어집 용어를 보여 주고 확인하면 `cmd_remove_key`.
 alias 변경(`rename_alias`) · status(active/deprecated)는 편집 대상이 아니다.
 사용처(`index.json`)는 아래 목록 · 행 우클릭 메뉴로 이동한다 — 코드 줄 · 씬은 Godot 안, 데이터 · 원본 CSV 는 외부 편집기의 그 줄.
 사용처마다 그 파일이 나오는 게임 화면(`screen_map.gd`)과 사용 줄 미리보기를 보여 준다. 게임 화면에서 거꾸로 찾을 땐
@@ -671,6 +673,7 @@ alias 변경(`rename_alias`) · status(active/deprecated)는 편집 대상이 �
 | E038 | Error | active 문장의 key 참조가 deprecated key |
 | E039 | Error | key 참조 순환 |
 | E040 | Error | 복수 태그 형식 오류 · 형태 수가 규칙표와 다름 |
+| E043 | Error | 이름 key(alias 마지막 세그먼트 `name`: 카드 · 스킬 · 패시브 · 특성 · 기벽 …)에 key 참조 `{tx_…}` (용어집 낱말 포함). 이름은 그대로 적는다 |
 | W034 | Warn | BBCode 태그 짝 불일치 |
 | W035 | Warn | `max_len` 초과 (로케일별) |
 | E041 | Error | `data_columns` 셀이 존재하지 않는 key |

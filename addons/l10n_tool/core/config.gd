@@ -23,7 +23,10 @@ var fallback_locale: String = "en"
 var key_prefix: String = "tx_"
 var strict_orphans: String = "warn"
 var josa_tags: Array = []
-var ref_domains: Array = []
+## 설명문 `[이름]` 참조 대상 alias 패턴 (`*` = 세그먼트 하나, `**` = 하나 이상), 앞 패턴이 우선.
+## 없으면 예전 `ref_domains` 를 `<domain>.**.name` 으로 바꿔 쓴다.
+var ref_aliases: PackedStringArray = PackedStringArray()
+var _ref_res: Array = []
 var bbcode_tags: Array = []
 ## scan 섹션 원본 그대로 (roots, include_ext, exclude_dirs, scene_text_props,
 ## log_funcs, ignore_paths).
@@ -56,7 +59,13 @@ static func load_from(config_path: String = DEFAULT_PATH) -> Config:
 	c.strict_orphans = String((parsed.get("strict", {}) as Dictionary).get("orphans", "warn"))
 	var tok: Dictionary = parsed.get("tokens", {})
 	c.josa_tags = tok.get("josa_tags", [])
-	c.ref_domains = tok.get("ref_domains", [])
+	if tok.has("ref_aliases"):
+		c.ref_aliases = PackedStringArray(tok["ref_aliases"])
+	else:
+		for d in tok.get("ref_domains", []):
+			c.ref_aliases.append("%s.**.name" % d)
+	for pat in c.ref_aliases:
+		c._ref_res.append(RegEx.create_from_string("^" + ref_pattern_regex(pat) + "$"))
 	c.bbcode_tags = tok.get("bbcode_tags", [])
 	c.scan = parsed.get("scan", {})
 	c.data_columns = parsed.get("data_columns", [])
@@ -64,6 +73,28 @@ static func load_from(config_path: String = DEFAULT_PATH) -> Config:
 		var d: String = String(parsed["data_csv_dir"])
 		c.data_csv_dir = d if d.begins_with("res://") else c.base_dir.path_join(d)
 	return c
+
+
+## alias 패턴 → 정규식 본문: `**` = 세그먼트 하나 이상, `*` = 세그먼트 하나, 나머지는 글자 그대로
+## (alias 는 `[a-z0-9_]` 세그먼트라 따로 이스케이프할 글자가 없다).
+static func ref_pattern_regex(pat: String) -> String:
+	var parts: PackedStringArray = PackedStringArray()
+	for seg in pat.split("."):
+		if seg == "**":
+			parts.append("[^.]+(?:[.][^.]+)*")
+		elif seg == "*":
+			parts.append("[^.]+")
+		else:
+			parts.append(seg)
+	return "[.]".join(parts)
+
+
+## 설명문 `[이름]` 참조 대상이면 그 패턴 순번(우선순위), 아니면 -1.
+func ref_rank(alias: String) -> int:
+	for i in _ref_res.size():
+		if (_ref_res[i] as RegEx).search(alias) != null:
+			return i
+	return -1
 
 
 ## 원문 외 로케일 — 번역 컬럼 묶음(`<loc>` · `<loc>_status` · `<loc>_hash`)이 있는 것.

@@ -6,7 +6,7 @@
   "strict": { "orphans": "error" },
   "tokens": {
     "josa_tags": ["eul", "eun", "i", "wa"],
-    "ref_domains": ["card", "keyword"],
+    "ref_aliases": ["card.**.name", "term.keyword.*"],
     "bbcode_tags": ["b", "i", "u", "s", "color", "font_size", "url", "img", "center"]
   },
   "scan": {

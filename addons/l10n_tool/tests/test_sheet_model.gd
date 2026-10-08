@@ -118,6 +118,21 @@ func test_tag_completions(t: TestKit) -> void:
 	t.eq(labels.call("plural:"), ["FIND"], "이미 다 친 항목은 뺀다")
 	t.eq(labels.call("tx_"), ["FIND"], "{tx_ = 스트링 찾기만")
 	t.eq(labels.call("tx_AB"), ["FIND"], "{tx_… 도 스트링 찾기만")
+	# 용어집 낱말: {term_ 뒤로는 낱말 + 용어집 찾기, 고르면 key 참조
+	e.set("terms", [{"id": "hand", "key": "tx_SVRFJDH55K", "text": "손"}, {"id": "draw", "key": "tx_6VVGYKXZSK", "text": "뽑기"}])
+	e.set("find_term_label", "TERM")
+	t.eq(labels.call(""), ["{count}", "{name}", "{plural:name|…}", "TERM", "FIND"], "{ 만 = 용어집에서 찾기도")
+	t.eq(labels.call("te"), ["TERM", "FIND"], "term_ 앞부분")
+	t.eq(labels.call("n"), ["{name}", "FIND"], "term_ 이 될 수 없으면 용어집 찾기 없음")
+	t.eq(labels.call("term_"), ["term_hand  손", "term_draw  뽑기", "TERM"], "{term_ = 낱말 + 용어집 찾기")
+	t.eq(labels.call("term_d"), ["term_draw  뽑기", "TERM"], "낱말 앞부분 일치")
+	var picked: Array = e.call("completions", "term_h")
+	t.eq(picked[0].get("key", ""), "tx_SVRFJDH55K", "낱말 = 연결 key")
+	# 이름 행(offer_refs = false): 태그만, 용어집 · 스트링 찾기 없음
+	e.set("offer_refs", false)
+	t.eq(labels.call(""), ["{count}", "{name}", "{plural:name|…}"], "이름 = 참조 항목 없음")
+	t.eq(labels.call("term_"), [], "이름 = 용어집 낱말 없음")
+	t.eq(labels.call("tx_"), [], "이름 = 스트링 찾기 없음")
 	e.free()
 
 

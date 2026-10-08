@@ -88,8 +88,9 @@ func reload() -> void:
 
 # ── 명령 ────────────────────────────────────────────────────────────────
 
-func cmd_new_key(domain: String, alias: String, text: String, context: String = "") -> Dictionary:
-	var res: Dictionary = catalog.add_entry(domain, alias, text, context)
+## key = a key issued beforehand (Keygen); "" = issue one.
+func cmd_new_key(domain: String, alias: String, text: String, context: String = "", key: String = "") -> Dictionary:
+	var res: Dictionary = catalog.add_entry(domain, alias, text, context, "", "", true, key)
 	if res["error"] != "":
 		info("new_key 실패: " + String(res["error"]))
 	else:
@@ -153,6 +154,26 @@ func cmd_edit(edits: Array, allow_status: bool = false) -> String:
 		catalog.reload()
 		return serr
 	info("edit: %d칸 저장" % n)
+	return ""
+
+
+## `remove_key`: the sheet editor's row delete. Re-reads the sources, checks the Excel lock,
+## removes the key's row and saves. L.gd · strings follow on the next build. Returns an error string.
+func cmd_remove_key(key: String) -> String:
+	reload()
+	var e: Dictionary = catalog.entry(key)
+	if e.is_empty():
+		return "없는 key: %s" % key
+	var lock: String = Catalog.excel_lock_for(String(e["file"]))
+	if lock != "":
+		return "Excel 잠금 파일이 있다. 파일을 닫고 다시: %s" % lock
+	var err: String = catalog.remove_entry(key)
+	if err == "":
+		err = catalog.save_all()
+	catalog.reload()
+	if err != "":
+		return err
+	info("remove_key: %s (%s) 삭제" % [key, String(e["alias"])])
 	return ""
 
 
@@ -230,6 +251,17 @@ func cmd_build(mode: String = MODE_DEV) -> int:
 		info("report.md 쓰기 실패: " + werr)
 	info("build %s: %s" % [mode, "완료" if errors == 0 else "실패"])
 	return errors
+
+
+## L10n 편집기 Sync Data: (write_sources 면) sync → 스캔 + 검증 → index.json · report.md.
+## write_sources = false(읽기 전용 모드)는 원본 CSV 를 쓰지 않는다. 돌려주는 값: sync 로 갱신한 셀 수.
+func cmd_sync_data(write_sources: bool) -> int:
+	var n: int = cmd_sync() if write_sources else 0
+	cmd_validate(MODE_DEV)
+	var err: String = Scanner.write_index(self, index)
+	if err != "":
+		info("index.json 쓰기 실패: " + err)
+	return n
 
 
 ## `new_keys` — key 일괄 발급 (StatusOps.new_keys). json = 항목 배열. out_path 가 있으면

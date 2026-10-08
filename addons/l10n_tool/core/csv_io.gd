@@ -210,7 +210,7 @@ func is_dirty() -> bool:
 	return _header_dirty or _removed or not _dirty.is_empty()
 
 
-## 행 하나를 지운다 (move_key 전용: key 를 다른 도메인 파일로 옮길 때만 — key 는 지우지 않는다).
+## 행 하나를 지운다 (move_key 의 옮기기 · L10n 편집기의 행 제거).
 ## 뒤 행 번호는 하나씩 당겨진다. 나머지 레코드의 원래 바이트는 그대로 저장된다.
 func remove_row(row: int) -> bool:
 	if row < 0 or row >= rows.size():

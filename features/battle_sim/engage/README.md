@@ -1,6 +1,6 @@
 # Module: Engage (전투 개시, battle opening) — top-down (quarter-view) engage (round-based turns)
 
-표시 텍스트는 l10n key (`battle` 도메인: `battle.engage.*`; the stun popup uses `keyword.stun.name`). `EngageArena.RESULT_*` hold **keys** (compared as ids, translated by `show_dashboard`); `prompt_engage` / `EngageIntro.setup` take already-translated title / subtitle / button text, empty button text = `ui.button.confirm` / `cancel`. Diagnostic strings (`_bs.blog` log lines, effect / activation result strings that only feed `BattleSim.last_log`, which renders nowhere) stay Korean and are marked `# l10n-ignore`.
+표시 텍스트는 l10n key (`battle` 도메인: `battle.engage.*`; the stun popup uses `term.keyword.stun`). `EngageArena.RESULT_*` hold **keys** (compared as ids, translated by `show_dashboard`); `prompt_engage` / `EngageIntro.setup` take already-translated title / subtitle / button text, empty button text = `ui.button.confirm` / `cancel`. Diagnostic strings (`_bs.blog` log lines, effect / activation result strings that only feed `BattleSim.last_log`, which renders nowhere) stay Korean and are marked `# l10n-ignore`.
 
 ## Purpose
 A **turn-based engage (교전)** triggered by the `engage:N` / `duel` card effects. Unlike the

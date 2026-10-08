@@ -1003,7 +1003,7 @@ func _advance_order() -> void:
 		# 기절([강타]) — 이번 차례를 통째로 건너뛰고 남은 라운드가 하나 준다.
 		# 순서 배열에서 빼지는 않으므로 살아 있는 사람들의 상대 순서는 그대로다.
 		if _bs.mech_skill != null and _bs.mech_skill.consume_stun_turn(u.pilot):
-			popups.append({"pos": u.pos, "text": Loc.t(L.KEYWORD_STUN_NAME),
+			popups.append({"pos": u.pos, "text": Loc.t(L.TERM_KEYWORD_STUN),
 					"color": Color(0.70, 0.85, 1.0)})
 			continue
 		var t := _pick_target(u)

@@ -433,7 +433,7 @@ static func _duplicates(texts: Dictionary) -> Array:
 	return out
 
 
-## [[이름, [`alias` (key)…]]] — ref_domains 의 `*.name` 원문이 같은 key 가 둘 이상 (E036).
+## [[이름, [`alias` (key)…]]]: ref_aliases 대상 원문이 같은 key 가 둘 이상 (E036).
 static func _e036_candidates(cat: Catalog) -> Array:
 	var idx: Dictionary = Refs.name_index(cat)
 	var names: Array = idx.keys()
@@ -478,7 +478,7 @@ static func _write_report(cfg: Config, rep: Dictionary, dups: Array, e036: Array
 	md.append("")
 	md.append("## E036 후보 (%d)" % e036.size())
 	md.append("")
-	md.append("참조 도메인(%s)의 `*.name` 원문이 같아 설명문 `[이름]` 참조가 모호하다. 이름을 바꾸거나 오너가 정한다." % ", ".join(PackedStringArray(cfg.ref_domains)))
+	md.append("참조 대상(%s)의 원문이 같아 설명문 `[이름]` 참조가 모호하다. 이름을 바꾸거나 오너가 정한다." % ", ".join(cfg.ref_aliases))
 	md.append("")
 	for c in e036:
 		md.append("- \"%s\": %s" % [c[0], ", ".join(PackedStringArray(c[1]))])

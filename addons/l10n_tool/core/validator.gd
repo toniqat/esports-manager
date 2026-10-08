@@ -35,7 +35,7 @@ const LEGEND := {
 	"E031": "approved 인데 해시 없음", "W031": "stale 번역", "W032": "번역 없이 status 만 있음",
 	"E033": "값 자리표시자 집합 불일치", "E034": "카드 참조 [x] 불일치", "E035": "원문 외 로케일에 조사 태그",
 	"E036": "참조 이름 중복",
-	"E037": "key 참조 {tx_…} 가 없는 key", "E038": "key 참조 {tx_…} 가 deprecated", "E039": "key 참조 순환", "E040": "복수 태그 {plural:…} 형식 · 형태 수", "W034": "BBCode 태그 짝 불일치", "W035": "max_len 초과",
+	"E037": "key 참조 {tx_…} 가 없는 key", "E038": "key 참조 {tx_…} 가 deprecated", "E039": "key 참조 순환", "E040": "복수 태그 {plural:…} 형식 · 형태 수", "E043": "이름 key 에 key 참조 {tx_…} (용어집 낱말 포함)", "W034": "BBCode 태그 짝 불일치", "W035": "max_len 초과",
 	"E041": "data_columns 셀이 없는 key", "E042": "data_columns key 의 alias 가 규칙과 다름",
 	"W041": "data_columns 의 CSV · 컬럼이 아직 없음 (이행 전)",
 	"E051": "없는 L 상수", "W052": "씬 고아 텍스트", "E052": "씬 고아 텍스트",

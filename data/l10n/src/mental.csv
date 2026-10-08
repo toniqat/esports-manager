@@ -241,3 +241,4 @@ tx_KAEPTP25DT,mental.ui.note.pilot,active,파일럿을 못 찾을 때 이름 자
 tx_WR6Q5QGMZ8,mental.ui.note.all_stats,deprecated,일시 스탯 대상이 전부일 때,,,전 스탯,All stats,draft,9fa10fd0
 tx_MD8BDCV48Q,mental.ui.note.until_match,active,일시 보정 기간 — 다음 경기까지,,,다음 경기까지,Until next match,draft,f93b6d08
 tx_D3NT6QFHKK,mental.ui.mod_source.incident,active,스태프 시트 일시 보정 출처 — 선수 사건,,,사건,Incident,draft,cc42d930
+tx_TEE5MJ4DBZ,mental.ui.vn.result_title,active,"VnDialogueView (면담 · 외출 비주얼 노벨 대화) 결과 판 제목, 선택 뒤 신뢰 · 스트레스 칩 위",,,결과,Outcome,draft,71d855ac

@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=152 format=3 uid="uid://co7tw5omdwmyd"]
+[gd_resource type="Theme" load_steps=162 format=3 uid="uid://co7tw5omdwmyd"]
 
 [sub_resource type="StyleBoxFlat" id="AccentChip_panel"]
 content_margin_left = 20.0
@@ -1734,6 +1734,150 @@ corner_radius_top_right = 14
 corner_radius_bottom_right = 14
 corner_radius_bottom_left = 14
 
+[sub_resource type="StyleBoxFlat" id="VnDialogueArtSlab_panel"]
+bg_color = Color(0.929, 0.933, 0.945, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+
+[sub_resource type="StyleBoxFlat" id="VnDialogueBubble_panel"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+shadow_color = Color(0.11, 0.11, 0.18, 0.1)
+shadow_size = 6
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="StyleBoxFlat" id="VnDialogueChoiceButton_disabled"]
+content_margin_left = 28.0
+content_margin_top = 24.0
+content_margin_right = 28.0
+content_margin_bottom = 24.0
+bg_color = Color(0.929, 0.933, 0.945, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="VnDialogueChoiceButton_focus"]
+content_margin_left = 28.0
+content_margin_top = 24.0
+content_margin_right = 28.0
+content_margin_bottom = 24.0
+bg_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="VnDialogueChoiceButton_hover"]
+content_margin_left = 28.0
+content_margin_top = 24.0
+content_margin_right = 28.0
+content_margin_bottom = 24.0
+bg_color = Color(0.929, 0.933, 0.945, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="VnDialogueChoiceButton_hover_pressed"]
+content_margin_left = 28.0
+content_margin_top = 24.0
+content_margin_right = 28.0
+content_margin_bottom = 24.0
+bg_color = Color(0.78, 0.784, 0.808, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="VnDialogueChoiceButton_normal"]
+content_margin_left = 28.0
+content_margin_top = 24.0
+content_margin_right = 28.0
+content_margin_bottom = 24.0
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="VnDialogueChoiceButton_pressed"]
+content_margin_left = 28.0
+content_margin_top = 24.0
+content_margin_right = 28.0
+content_margin_bottom = 24.0
+bg_color = Color(0.78, 0.784, 0.808, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="VnDialogueNamePlate_panel"]
+content_margin_left = 20.0
+content_margin_top = 6.0
+content_margin_right = 20.0
+content_margin_bottom = 6.0
+bg_color = Color(0.961, 0.651, 0.137, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="VnDialogueNamePlateMine_panel"]
+content_margin_left = 20.0
+content_margin_top = 6.0
+content_margin_right = 20.0
+content_margin_bottom = 6.0
+bg_color = Color(0.11, 0.11, 0.122, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
 [sub_resource type="StyleBoxFlat" id="WeekDayChip_panel"]
 bg_color = Color(0, 0, 0, 0)
 corner_radius_top_left = 20
@@ -2169,6 +2313,21 @@ TraitPickerSlotOver/styles/hover = SubResource("TraitPickerSlotOver_disabled")
 TraitPickerSlotOver/styles/hover_pressed = SubResource("TraitPickerSlotOver_disabled")
 TraitPickerSlotOver/styles/normal = SubResource("TraitPickerSlotOver_disabled")
 TraitPickerSlotOver/styles/pressed = SubResource("TraitPickerSlotOver_disabled")
+VnDialogueArtSlab/base_type = &"SunkPanel"
+VnDialogueArtSlab/styles/panel = SubResource("VnDialogueArtSlab_panel")
+VnDialogueBubble/base_type = &"Card"
+VnDialogueBubble/styles/panel = SubResource("VnDialogueBubble_panel")
+VnDialogueChoiceButton/base_type = &"GhostButton"
+VnDialogueChoiceButton/styles/disabled = SubResource("VnDialogueChoiceButton_disabled")
+VnDialogueChoiceButton/styles/focus = SubResource("VnDialogueChoiceButton_focus")
+VnDialogueChoiceButton/styles/hover = SubResource("VnDialogueChoiceButton_hover")
+VnDialogueChoiceButton/styles/hover_pressed = SubResource("VnDialogueChoiceButton_hover_pressed")
+VnDialogueChoiceButton/styles/normal = SubResource("VnDialogueChoiceButton_normal")
+VnDialogueChoiceButton/styles/pressed = SubResource("VnDialogueChoiceButton_pressed")
+VnDialogueNamePlate/base_type = &"AccentChip"
+VnDialogueNamePlate/styles/panel = SubResource("VnDialogueNamePlate_panel")
+VnDialogueNamePlateMine/base_type = &"AccentChip"
+VnDialogueNamePlateMine/styles/panel = SubResource("VnDialogueNamePlateMine_panel")
 WeekDayChip/base_type = &"AccentChip"
 WeekDayChip/styles/panel = SubResource("WeekDayChip_panel")
 WeekDayChipToday/base_type = &"AccentChip"

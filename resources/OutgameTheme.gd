@@ -907,6 +907,29 @@ static func _add_screen_variations(th: Theme) -> void:
 		b.content_margin_bottom = 17.0
 		th.set_stylebox(n, &"MessengerAnswerButton", b)
 
+	# season/mental: 면담 · 외출 비주얼 노벨 대화 (말풍선 안쪽 여백은 씬의 `Pad` MarginContainer)
+	var vn_bubble := card_style(28)
+	vn_bubble.set_content_margin_all(0.0)
+	_add_derived(th, "VnDialogueBubble", &"Card", vn_bubble)
+	var vn_plate := flat_style(ACCENT, 14)
+	vn_plate.content_margin_left = 20.0
+	vn_plate.content_margin_right = 20.0
+	vn_plate.content_margin_top = 6.0
+	vn_plate.content_margin_bottom = 6.0
+	_add_derived(th, "VnDialogueNamePlate", &"AccentChip", vn_plate)
+	var vn_plate_mine: StyleBoxFlat = vn_plate.duplicate()
+	vn_plate_mine.bg_color = RAIL
+	_add_derived(th, "VnDialogueNamePlateMine", &"AccentChip", vn_plate_mine)
+	_add_derived(th, "VnDialogueArtSlab", &"SunkPanel", flat_style(SURFACE_SUNK, 24, BORDER))
+	th.set_type_variation(&"VnDialogueChoiceButton", &"GhostButton")
+	for n in BUTTON_STATES:
+		var c: StyleBox = (ghost[n] as StyleBox).duplicate()
+		c.content_margin_left = 28.0
+		c.content_margin_right = 28.0
+		c.content_margin_top = 24.0
+		c.content_margin_bottom = 24.0
+		th.set_stylebox(n, &"VnDialogueChoiceButton", c)
+
 	# meta/lobby — 로비
 	_add_derived(th, "LobbySurfaceBar", &"Card", flat_style(SURFACE, 0))
 	_add_derived(th, "LobbyToast", &"SurfaceChip", flat_style(RAIL, 34))

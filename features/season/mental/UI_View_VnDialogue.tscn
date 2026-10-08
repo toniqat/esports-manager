@@ -1,0 +1,300 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://features/season/mental/VnDialogueView.gd" id="1_vn"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="VnDialogue" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_vn")
+
+[node name="Background" type="Panel" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VnDialogueView.gd _ready()
+Screen paper (OutgameTheme.BG). Code extends its top into the notch band (ScreenMetrics.extend_background)."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"ScreenBackground"
+
+[node name="SafeArea" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VnDialogueView.gd _ready()
+Full rect; code lifts its bottom by the device's bottom inset (the owning screen already sits on the safe top). Holds the header, the illustration and the speech bubble (all under the dim)."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Sub" type="Label" parent="SafeArea"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류: VnDialogueView.gd _sub_lbl"
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 40.0
+offset_top = 36.0
+offset_right = -40.0
+offset_bottom = 66.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 24
+text = "월요일 저녁 · 면담"
+clip_text = true
+
+[node name="Title" type="Label" parent="SafeArea"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류: VnDialogueView.gd _title_lbl"
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 40.0
+offset_top = 72.0
+offset_right = -40.0
+offset_bottom = 134.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"HeadingLabel"
+text = "선수 이름"
+
+[node name="Stage" type="Control" parent="SafeArea"]
+editor_description = "Illustration area: below the header down to the speech bubble's lower half (the bubble covers the legs). The art keeps its aspect, centred in this box."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 150.0
+offset_bottom = -200.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Art" type="TextureRect" parent="SafeArea/Stage"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VnDialogueView.gd _art
+Full-body illustration (PilotImages.full_for). Code sets the texture and tints it while the manager speaks."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Slab" type="PanelContainer" parent="SafeArea/Stage"]
+unique_name_in_owner = true
+visible = false
+editor_description = "[필수] 지우면 오류: VnDialogueView.gd _slab
+Placeholder when the pilot has no full-body art (shown instead of %Art)."
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -220.0
+offset_top = 40.0
+offset_right = 220.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"VnDialogueArtSlab"
+
+[node name="SlabLabel" type="Label" parent="SafeArea/Stage/Slab"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류: VnDialogueView.gd _slab_lbl (the speaker's name)"
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"TitleLabel"
+text = "선수 이름"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Bubble" type="PanelContainer" parent="SafeArea"]
+editor_description = "Speech bubble at the bottom. Anchored to the bottom and grows UP when the text wraps past its height."
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 32.0
+offset_top = -420.0
+offset_right = -32.0
+offset_bottom = -96.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_type_variation = &"VnDialogueBubble"
+
+[node name="Pad" type="MarginContainer" parent="SafeArea/Bubble"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 40
+
+[node name="Column" type="VBoxContainer" parent="SafeArea/Bubble/Pad"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="NamePlate" type="PanelContainer" parent="SafeArea/Bubble/Pad/Column"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VnDialogueView.gd _plate
+Name plate: pilot = VnDialogueNamePlate (amber), manager = VnDialogueNamePlateMine (dark), hidden for narration. Code switches the variation."
+layout_mode = 2
+size_flags_horizontal = 0
+mouse_filter = 2
+theme_type_variation = &"VnDialogueNamePlate"
+
+[node name="Speaker" type="Label" parent="SafeArea/Bubble/Pad/Column/NamePlate"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류: VnDialogueView.gd _speaker_lbl"
+layout_mode = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 28
+text = "선수 이름"
+
+[node name="Text" type="Label" parent="SafeArea/Bubble/Pad/Column"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류: VnDialogueView.gd _text_lbl
+The current line. BodyLabel for speech, SubLabel for narration (code switches the variation); typed out by code (visible_characters)."
+layout_mode = 2
+size_flags_vertical = 3
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 34
+text = "감독님, 잠깐 시간 괜찮으세요?"
+autowrap_mode = 3
+
+[node name="Dim" type="Panel" parent="."]
+unique_name_in_owner = true
+visible = false
+editor_description = "[필수] 지우면 오류: VnDialogueView.gd _dim
+Modal dim under the choices / result panel. Code extends its top into the notch band and shows it."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"DimPanel"
+
+[node name="Overlay" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VnDialogueView.gd _ready()
+Full rect above the dim; code lifts its bottom by the device's bottom inset like %SafeArea."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="ChoiceList" type="VBoxContainer" parent="Overlay"]
+unique_name_in_owner = true
+visible = false
+editor_description = "[필수] 지우면 오류: VnDialogueView.gd _choice_list
+Answers listed vertically in the screen centre over the dim; code adds one VnChoiceButton per choice. Grows both ways from the centre."
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -440.0
+offset_top = -180.0
+offset_right = 440.0
+offset_bottom = 180.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="ResultPanel" type="PanelContainer" parent="Overlay"]
+unique_name_in_owner = true
+visible = false
+editor_description = "[필수] 지우면 오류: VnDialogueView.gd _result_panel
+Result over the dim after the replies: mental check verdict + effect chips (MessengerNoteChip). Grows both ways from the centre."
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -420.0
+offset_top = -140.0
+offset_right = 420.0
+offset_bottom = 140.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"PopupCard"
+
+[node name="Column" type="VBoxContainer" parent="Overlay/ResultPanel"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 18
+alignment = 1
+
+[node name="ResultTitle" type="Label" parent="Overlay/ResultPanel/Column"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+text = "tx_TEE5MJ4DBZ"
+horizontal_alignment = 1
+
+[node name="Verdict" type="VBoxContainer" parent="Overlay/ResultPanel/Column"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VnDialogueView.gd _verdict_box
+Mental check verdict chip (only when the answer rolled a check)."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Notes" type="VBoxContainer" parent="Overlay/ResultPanel/Column"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VnDialogueView.gd _notes_box
+Effect chips (trust, stat mods, outing ...), one MessengerNoteChip per note."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Hint" type="Label" parent="Overlay"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류: VnDialogueView.gd _hint_lbl
+Above the dim so it stays readable while choosing."
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -50.0
+offset_bottom = -22.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"FaintLabel"
+text = "화면을 눌러 계속"
+horizontal_alignment = 1

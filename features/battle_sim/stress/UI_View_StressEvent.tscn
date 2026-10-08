@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://ca8ltvnu8btsv"]
 
 [ext_resource type="Script" path="res://features/battle_sim/stress/StressEventView.gd" id="1_view"]
 [ext_resource type="Theme" uid="uid://dmrfge5o5tftu" path="res://resources/BattleTheme.tres" id="2_theme"]

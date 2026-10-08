@@ -83,7 +83,7 @@ Read the README of every row your task touches. Indented rows are submodules —
 | ↳ `buildings/` · `data/` | `@tool` Building / Waypoint nodes · `DataLoader`, `FieldLoader` | *(no README — see `features/battle_sim/README.md`)* |
 | `ios/plugins/` · `build/` | iOS native plugins · downloaded `.ipa` | `ios/plugins/README.md`, `build/README.md` |
 | `addons/l10n_tool/` | L10n tool: Project → Tools → L10n (build · validate · scan), **L10n editor = main screen `L10n` tab** (key sheet · glossary · orphan texts · scene preview · log), headless CLI · tests | `addons/l10n_tool/README.md` |
-| `addons/ui_scene_tree/` | Editor dock "UI 트리": `scenes/*` · `UI_View` → `UI_Comp` tree (instanced + code-created), TODO · node counts per scene | `addons/ui_scene_tree/README.md` |
+| `addons/ui_scene_tree/` | Editor dock "UI 트리": `scenes/*` · `UI_View` → `UI_Comp` tree (instanced + code-created), TODO · node counts per scene; headless `assign_uids_cli.gd` (uid for text-written `.tscn`) | `addons/ui_scene_tree/README.md` |
 | `addons/godot_mcp/` | MCP editor plugin — **do not modify** | — |
 
 ### Docs (`docs/`)
@@ -137,5 +137,7 @@ Read the README of every row your task touches. Indented rows are submodules —
 1. Read this file → pick the folder rows → read those READMEs (parent + submodule).
 2. Change code only inside the owning folder(s); update their README afterwards.
 3. CSV tables / columns changed → **Project → Tools → Rebuild game.db** (`data/README.md`).
+   New `.tscn` written as text → `godot --headless --path . -s res://addons/ui_scene_tree/assign_uids_cli.gd`
+   (adds the header uid without opening the editor, `addons/ui_scene_tree/README.md`), then `--import`.
 4. UI placed / moved → check `docs/mobile_safe_area.md` (the bottom gesture zone eats touches).
 5. iOS CI build run → download the `.ipa` into `build/` (short SHA in the name), delete stale ones.

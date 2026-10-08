@@ -12,14 +12,14 @@ and gets no `L` constant. Mod clauses write `source = "mental:<event id>"` (`MOD
 | `MentalSystem.gd` | `class_name MentalSystem` (static). State + flow: run init, week reset, weekly limits, evening action (interview / outing / pass), incident roll + resolve, press session + resolve, outing training-EXP penalty, true-ending pilots. Every entry point takes the `season_state` dictionary (no autoloads → headless-testable). |
 | `MentalEvents.gd` | `class_name MentalEvents` (static). `mental_events` + `mental_texts` tables (game.db) → parsed rows (texts as l10n keys); the `effects` / `cond` grammar; row selection (cond, manager type, weights); `apply_choice` (mental check + clauses + replies, keys / ids only); `outcome_view` · `note_texts` · `text` turn stored keys into display text (`Loc.t`, `{name}`). |
 | `StressSystem.gd` | `class_name StressSystem` (static). Stress (Darkest Dungeon style): run init, clamp, shaken (위축) ratio, mood multipliers, roster-copy `apply_to` (MatchFlow), `snapshot` → `match_ctx.stress`, `record_match` ← `pending_match.stress`, training-day roll, interview / outing relief, display helpers (`mood_label`, `line`). The in-match part is `features/battle_sim/stress/`. |
-| `VnDialogueView.gd` | `class_name VnDialogueView extends Control`: **visual-novel dialogue** for interviews and outings (full-body art, bottom speech bubble, dimmed centred choices, result panel). Drop-in for `MessengerView` on the week screen's evening dialog. See **VN dialogue (VnDialogueView)** below. |
+| `VnDialogueView.gd` | `class_name VnDialogueView extends Control`: **visual-novel dialogue** for interviews, outings and incidents (full-body art, bottom speech bubble, dimmed centred choices, result panel). Drop-in for `MessengerView` on the week screen's evening dialog. See **VN dialogue (VnDialogueView)** below. |
 | `UI_View_VnDialogue.tscn` | Its scene (layout owner): header, `%Stage` art box, `%Bubble`, `%Dim`, `%Overlay` with `%ChoiceList` · `%ResultPanel` · `%Hint`. Create with `VnDialogueView.create()`. |
 | `UI_Comp_VnChoiceButton.tscn` | Item (no script): one answer button (`VnDialogueChoiceButton`, 880 wide, at least 112 tall, autowrap, centred). Code sets text + `pressed`. |
 | `AfternoonAway.gd` | `class_name AfternoonAway` (static). Afternoon away states of a training day: stress self outing, else a chance of dorm rest, rolled once and recorded in `mental.days["<day>"].afternoon`; `started` · `begin` · `away_of` · `relief_of` · `can_request` · `any_request`. See "Afternoon away states". |
 | `PilotMods.gd` | `class_name PilotMods` (static, base). Temporary per-pilot stat mods `[{pilot_id, stat, delta, weeks_left, source}]`; `weeks_left = -1` lasts until the next own match. `apply_to` is only ever called on a **roster copy** (MatchFlow). |
 
-The dialogue UI is `features/season/press/MessengerView.gd` (shared with the press conference);
-the evening card + incident card live on the week screen (`features/season/week/`).
+Interview / outing / incident dialogues use `VnDialogueView`; the press conference keeps
+`features/season/press/MessengerView.gd`. The evening card + incident card live on the week screen (`features/season/week/`).
 
 ## Rules
 - **Trust** `{"<pid>": int}` for my 5 pilots, clamped `[TRUST_MIN, TRUST_MAX]`, starts at `TRUST_START`.
@@ -175,9 +175,9 @@ A note whose stat is `all` reads `training.stat.all` ("모든 파일럿 능력�
 
 ## VN dialogue (VnDialogueView)
 
-Interviews and outings play as a **visual novel**: the pilot's full-body illustration in the
+Interviews, outings and incidents play as a **visual novel**: the pilot's full-body illustration in the
 centre, one line at a time in a speech bubble at the bottom, a tap advances. The press conference
-and incidents keep `MessengerView` (`features/season/press/`).
+keeps `MessengerView` (`features/season/press/`).
 
 ```
 월요일 저녁 · 면담                  ← %Sub (caption)
@@ -239,41 +239,7 @@ the safe top). Code extends `%Background` and `%Dim` into the notch band and lif
 
 ### Wiring (coordinator: `features/season/week/WeekProgressView.gd`)
 
-The evening dialog switches to `VnDialogueView`; incidents stay on `MessengerView`.
-
-```gdscript
-var _overlay: Control = null          # VnDialogueView (evening) / MessengerView (incident), null when closed
-
-func _open_overlay(kind: String, sub: String, title: String, pid: int, view: Dictionary) -> void:
-	_overlay_kind = kind
-	if kind == "evening":
-		var vn := VnDialogueView.create()
-		_overlay = vn
-		add_child(vn)
-		vn.choice_picked.connect(_on_overlay_choice)
-		vn.closed.connect(_on_overlay_closed)
-		vn.open(sub, title, pid, view["lines"], view["choices"])
-		return
-	var msg := MessengerView.create()
-	_overlay = msg
-	add_child(msg)
-	msg.choice_picked.connect(_on_overlay_choice)
-	msg.closed.connect(_on_overlay_closed)
-	msg.open(sub, title, PilotImages.circle_for(pid), view["lines"], view["choices"])
-
-
-func _on_overlay_choice(idx: int) -> void:
-	var s: Dictionary = _gm.season_state
-	var out: Dictionary
-	if _overlay_kind == "incident":
-		out = MentalSystem.resolve_incident(s, _day, idx)
-	else:
-		out = MentalSystem.finish_evening(s, _day, idx)
-	var ov: Dictionary = MentalEvents.outcome_view(s, out)
-	if _overlay is VnDialogueView:
-		(_overlay as VnDialogueView).show_result(ov)
-	elif _overlay is MessengerView:
-		(_overlay as MessengerView).show_result(ov)
-```
-`_on_overlay_closed` and the `_overlay != null` guards stay as they are. Also update the week
-README line that says the evening dialog is a `MessengerView`.
+`_overlay: VnDialogueView` serves both the afternoon dialog and the incident. `_open_overlay(kind, sub, title,
+pid, view, speaker = "")`: evening → title = pilot name; incident → title = the event's `@tag`, `speaker` = pilot
+name (sub `season.week.sub_incident`). `_on_overlay_choice` resolves by `_overlay_kind`
+(`resolve_incident` / `finish_evening`) and calls `show_result(MentalEvents.outcome_view(state, out))`.

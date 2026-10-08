@@ -169,8 +169,8 @@ records and forwards taps. On a training day the list order is **(pinned map) â†
   to pick (or that nothing is possible today). After the action the card collapses to a one-line summary with the effect notes.
   Pressing Next without an action records a **pass** (after the warning when an action was still possible).
   The record keeps its old name `evening` (`MentalSystem.begin_evening` / `finish_evening`), so saves stay compatible.
-* **Dialog overlay**: interview / outing open a `VnDialogueView` (visual-novel dialogue,
-  `features/season/mental/README.md`), an incident opens a `MessengerView` (`features/season/press/`), as the
+* **Dialog overlay**: interview / outing / incident open a `VnDialogueView` (visual-novel dialogue,
+  `features/season/mental/README.md`; an incident's title is its `@tag`, the name plate the pilot), as the
   last child of this screen (`_overlay`, opened only through `_open_overlay`); its STOP root blocks the list and the bottom bar until it
   closes, then the screen `refresh()`es. An afternoon dialog left open by a reload (record with `choice = -1`)
   reopens itself with the same event.

@@ -102,7 +102,7 @@ var _chip_labels: Array = []       # 7 Label (… /Chip/Letter)
 # M7 — afternoon / incident dialogs.
 var _sel_pid: int = -1                # pilot picked on the map this afternoon (-1 = none)
 var _sel_day: int = -1                # weekday `_sel_pid` belongs to
-var _overlay: Control = null          # VnDialogueView (evening) / MessengerView (incident), null when closed
+var _overlay: VnDialogueView = null   # evening / incident dialogue, null when closed
 var _overlay_kind: String = ""        # "evening" / "incident"
 var _skip_popup: ConfirmPopup = null  # "skip the afternoon?" warning, made on first use
 
@@ -998,26 +998,20 @@ func _open_incident() -> void:
 		return
 	var pid: int = int(view["pilot_id"])
 	_open_overlay("incident", Loc.t(L.SEASON_WEEK_SUB_INCIDENT, {"day": OutgameTheme.day_name(_day),
-			"name": MentalEvents.pilot_name(s, pid)}), String(view["tag"]), pid, view)
+			"name": MentalEvents.pilot_name(s, pid)}), String(view["tag"]), pid, view,
+			MentalEvents.pilot_name(s, pid))
 
 
-func _open_overlay(kind: String, sub: String, title: String, pid: int, view: Dictionary) -> void:
+func _open_overlay(kind: String, sub: String, title: String, pid: int, view: Dictionary,
+		speaker: String = "") -> void:
 	_overlay_kind = kind
-	# Interviews / outings = visual-novel dialogue (`mental/VnDialogueView`); incidents stay messenger.
-	if kind == "evening":
-		var vn := VnDialogueView.create()
-		_overlay = vn
-		add_child(vn)
-		vn.choice_picked.connect(_on_overlay_choice)
-		vn.closed.connect(_on_overlay_closed)
-		vn.open(sub, title, pid, view["lines"], view["choices"])
-		return
-	var msg := MessengerView.create()
-	_overlay = msg
-	add_child(msg)
-	msg.choice_picked.connect(_on_overlay_choice)
-	msg.closed.connect(_on_overlay_closed)
-	msg.open(sub, title, PilotImages.circle_for(pid), view["lines"], view["choices"])
+	# Interviews / outings / incidents = visual-novel dialogue (`mental/VnDialogueView`).
+	var vn := VnDialogueView.create()
+	_overlay = vn
+	add_child(vn)
+	vn.choice_picked.connect(_on_overlay_choice)
+	vn.closed.connect(_on_overlay_closed)
+	vn.open(sub, title, pid, view["lines"], view["choices"], speaker)
 
 
 func _on_overlay_choice(idx: int) -> void:
@@ -1027,11 +1021,8 @@ func _on_overlay_choice(idx: int) -> void:
 		out = MentalSystem.resolve_incident(s, _day, idx)
 	else:
 		out = MentalSystem.finish_evening(s, _day, idx)
-	var ov: Dictionary = MentalEvents.outcome_view(s, out)
-	if _overlay is VnDialogueView:
-		(_overlay as VnDialogueView).show_result(ov)
-	elif _overlay is MessengerView:
-		(_overlay as MessengerView).show_result(ov)
+	if _overlay != null:
+		_overlay.show_result(MentalEvents.outcome_view(s, out))
 
 
 func _on_overlay_closed() -> void:

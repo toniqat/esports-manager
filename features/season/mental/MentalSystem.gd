@@ -29,6 +29,7 @@ static func init_run(state: Dictionary) -> void:
 	state["trust"] = trust_d
 	state["outings"] = outing_d
 	state["mental"] = _fresh_mental()
+	StressSystem.init_run(state)
 
 
 ## Week end (`SeasonHub._end_week`, before the calendar moves) — weekly limits
@@ -195,6 +196,10 @@ static func finish_evening(state: Dictionary, day: int, choice: int) -> Dictiona
 	var judge: int = StaffSystem.manager_value(state, "mental")
 	var out: Dictionary = MentalEvents.apply_choice(state, r, choice, pid, judge,
 			_seed(state, day, "evening_check", choice))
+	# Base stress relief of the talk / outing itself, on top of the row's `stress:` clauses.
+	var relief: int = StressSystem.relieve(state, pid, String(e["action"]))
+	if relief != 0:
+		(out["notes"] as Array).append({"type": "stress", "pid": pid, "delta": relief})
 	var w: Dictionary = _week(state)
 	if String(e["action"]) == ACTION_INTERVIEW:
 		w["interviews_used"] = int(w.get("interviews_used", 0)) + 1

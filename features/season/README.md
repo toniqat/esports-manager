@@ -209,7 +209,7 @@ HubView (Control · HubView.gd)
 HubRosterRow (Panel 190 · HubRosterRow.gd)          HubManageCard (Panel · Card · HubManageCard.gd)
 ├ %Face TextureRect 160² (16,14)                     ├ VBox (20,14): %Title · %Value (34) · %Sub (20) · %Owner (Accent 18)
 ├ Info VBox (190,14): %PositionBadge_Role (PositionBadge) · %Name · %Total ·       ├ %Alert  red dot top-right
-│   Trust HBox ─ %TrustChip(%TrustText) · %TrustGauge(%TrustFill)   └ %Hit flat Button over the card → `pressed`
+│   Trust HBox ─ %TrustChip(%TrustText) · %TrustGauge(%TrustFill) · %StressText   └ %Hit flat Button over the card → `pressed`
 └ %Stats HBox (right-anchored, 520) ─ Stat0..5 VBox (Key 18 · Value 32), PlayerData.STAT_KEYS order
 
 EndingView: %Background · Title "WORLD CHAMPION" (Accent 72) · Subtitle · RecapCaption ·

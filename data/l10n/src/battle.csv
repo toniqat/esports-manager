@@ -88,3 +88,6 @@ tx_VM0HAXEB2G,battle.engage.lane.left,active,Lane name inside battle.engage.turr
 tx_01DT4571QV,battle.engage.lane.center,active,Lane name inside battle.engage.turret_label (engage header),,,중앙,Center,draft,00d61f4e
 tx_HA7CEQ5RTH,battle.engage.lane.right,active,Lane name inside battle.engage.turret_label (engage header),,,우측,Right,draft,39c7aac0
 tx_AGCDAR9R10,battle.engage.lane.jungle,active,Lane name inside battle.engage.turret_label (engage header),,,정글,Jungle,draft,4d3cf640
+tx_Y5RE05FJEQ,battle.stress.toast,active,스트레스 시험 연출 상단 토스트 (StressEventView),,,{name}{i} 시험받고 있습니다...,{name} is being tested...,draft,d9f1cedd
+tx_M6HJ1AQ1K2,battle.stress.effect.awaken,active,스트레스 시험 결과 각성 아래 한 줄,,,경기 동안 {tx_FV39P9GPAJ} +{stress_awaken_stat_pct}%,{tx_FV39P9GPAJ} +{stress_awaken_stat_pct}% for this match,draft,c097a25e
+tx_40RE35Z609,battle.stress.effect.panic,active,스트레스 시험 결과 패닉 아래 한 줄,,,경기 동안 {tx_FV39P9GPAJ} -{stress_panic_stat_pct}%,{tx_FV39P9GPAJ} -{stress_panic_stat_pct}% for this match,draft,eebc3f78

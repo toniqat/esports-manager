@@ -1,7 +1,7 @@
 class_name HubRosterRow
 extends Panel
 
-# One roster row of `HubView` (face · position badge · name · TOTAL · trust chip + gauge · stat strip).
+# One roster row of `HubView` (face · position badge · name · TOTAL · trust chip + gauge · stress · stat strip).
 #
 # **Layout lives in `UI_Comp_HubRosterRow.tscn`** (fixed 190 tall, width from the hub's body column).
 # This script only fills `%` nodes and paints the data-driven colours, none of which are theme
@@ -32,11 +32,13 @@ func set_role(role: int) -> void:
 				PlayerData.stat_short(s)
 
 
-## Fills the row with `p` (null = empty seat). `trust` / `trust_max` are only read when `p` is set.
-func show_pilot(p: PlayerData, trust: int = 0, trust_max: int = 1) -> void:
+## Fills the row with `p` (null = empty seat). `trust` / `trust_max` / `stress` are only read when
+## `p` is set; `stress` < 0 hides the stress line.
+func show_pilot(p: PlayerData, trust: int = 0, trust_max: int = 1, stress: int = -1) -> void:
 	var cols: Array = %Stats.get_children()
 	%TrustChip.visible = p != null
 	%TrustGauge.visible = p != null
+	%StressText.visible = p != null and stress >= 0
 	if p == null:
 		%Name.text = "—"
 		%Total.text = ""
@@ -57,6 +59,12 @@ func show_pilot(p: PlayerData, trust: int = 0, trust_max: int = 1) -> void:
 	var chip: Panel = %TrustChip
 	chip.add_theme_stylebox_override("panel",
 			OutgameTheme.flat_style(col, int(chip.custom_minimum_size.y * 0.5)))
+	# Stress: "스트레스 N" / "스트레스 N · 위축" — shaken switches to the negative colour.
+	if stress >= 0:
+		var mood: int = StressSystem.Mood.SHAKEN if StressSystem.is_over(stress) else StressSystem.Mood.NONE
+		%StressText.text = StressSystem.line(stress, mood)
+		%StressText.theme_type_variation = &"NegativeLabel" if mood != StressSystem.Mood.NONE \
+				else &"CaptionLabel"
 	var fill: Panel = %TrustFill
 	fill.anchor_right = clampf(float(trust) / maxf(1.0, float(trust_max)), 0.0, 1.0)
 	fill.add_theme_stylebox_override("panel",
@@ -71,4 +79,4 @@ func _fill_preview() -> void:
 	set_role(role)
 	var p := PlayerData.new(2, "tx_1TSM3CVTC7", role, 0, 80, 85, 82, 80, 81, 82)
 	var t_max: int = ConstTable.int_of("TRUST_MAX")
-	show_pilot(p, int(float(t_max) * 0.6), t_max)
+	show_pilot(p, int(float(t_max) * 0.6), t_max, ConstTable.int_of("STRESS_THRESHOLD") + 20)

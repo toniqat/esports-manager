@@ -1,0 +1,173 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://features/battle_sim/stress/StressEventView.gd" id="1_view"]
+[ext_resource type="Theme" uid="uid://dmrfge5o5tftu" path="res://resources/BattleTheme.tres" id="2_theme"]
+
+[node name="StressEventView" type="CanvasLayer"]
+layer = 55
+script = ExtResource("1_view")
+
+[node name="Root" type="Control" parent="."]
+editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — StressEventView.gd _ready()
+화면 전체가 탭을 받는다(결과 뒤 TAP_ARM_SEC 부터). 연출 중 뒤의 전장 · 손패 입력을 막는다."
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+
+[node name="Dim" type="Panel" parent="Root"]
+editor_description = "[필수] 지우면 오류 — StressEventView.gd open()
+토스트 구간은 반투명, 전신이 떠오를 때 끝까지 짙어진다(코드가 modulate 로)."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"BattleDimPanel"
+
+[node name="SafeArea" type="Control" parent="Root"]
+editor_description = "[필수] 지우면 오류 — StressEventView.gd _fit_safe_area()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Toast" type="PanelContainer" parent="Root/SafeArea"]
+editor_description = "[필수] 지우면 오류 — StressEventView.gd open()
+중앙 상단 토스트 — 안전 영역 위끝에서 40px 아래."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -440.0
+offset_top = 40.0
+offset_right = 440.0
+offset_bottom = 130.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"BattlePanel"
+
+[node name="ToastText" type="Label" parent="Root/SafeArea/Toast"]
+editor_description = "[필수] 지우면 오류 — StressEventView.gd open()"
+unique_name_in_owner = true
+auto_translate_mode = 2
+layout_mode = 2
+theme_type_variation = &"BattleValueLabel"
+text = "Evelyn is being tested..."
+horizontal_alignment = 1
+vertical_alignment = 1
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="ArtArea" type="Control" parent="Root/SafeArea"]
+editor_description = "[필수] 지우면 오류 — StressEventView.gd _layout_art() · _ready()
+전신 자리 — 토스트 아래(160)부터 결과 칸 위(−360)까지. 전신 크기는 코드가 이 칸 높이와 그림 비율로 맞춘다."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 160.0
+offset_bottom = -360.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="ArtHolder" type="Control" parent="Root/SafeArea/ArtArea"]
+editor_description = "[필수] 지우면 오류 — StressEventView.gd open()
+떠오르는 연출의 움직이는 판(코드가 position.y · modulate 를 tween)."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Art" type="TextureRect" parent="Root/SafeArea/ArtArea/ArtHolder"]
+editor_description = "[필수] 지우면 오류 — StressEventView.gd open() · _layout_art() · _reveal()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -1100.0
+offset_right = 300.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ResultBox" type="VBoxContainer" parent="Root/SafeArea"]
+editor_description = "[필수] 지우면 오류 — StressEventView.gd open() · _reveal()
+결과 글자 + 효과 한 줄. 결과 순간 튀어나온다(코드가 scale · modulate 를 tween)."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = -350.0
+offset_right = -40.0
+offset_bottom = -130.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+alignment = 1
+
+[node name="Result" type="Label" parent="Root/SafeArea/ResultBox"]
+editor_description = "[필수] 지우면 오류 — StressEventView.gd open()
+변형은 코드가 결과에 따라 StressEventAwakenLabel / StressEventPanicLabel 로 바꾼다."
+unique_name_in_owner = true
+auto_translate_mode = 2
+layout_mode = 2
+theme_type_variation = &"StressEventPanicLabel"
+theme_override_font_sizes/font_size = 110
+text = "PANIC"
+horizontal_alignment = 1
+
+[node name="Effect" type="Label" parent="Root/SafeArea/ResultBox"]
+editor_description = "[필수] 지우면 오류 — StressEventView.gd open()
+변형은 코드가 BattlePositiveLabel / BattleNegativeLabel 로 바꾼다."
+unique_name_in_owner = true
+auto_translate_mode = 2
+layout_mode = 2
+theme_type_variation = &"BattleNegativeLabel"
+theme_override_font_sizes/font_size = 32
+text = "pilot stats -30%"
+horizontal_alignment = 1
+
+[node name="Hint" type="Label" parent="Root/SafeArea"]
+editor_description = "[필수] 지우면 오류 — StressEventView.gd open() · _arm()
+탭을 받기 시작하면 나타난다."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -110.0
+offset_bottom = -50.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_type_variation = &"BattleSubLabel"
+text = "tx_1CXXKQSFYQ"
+horizontal_alignment = 1
+vertical_alignment = 1

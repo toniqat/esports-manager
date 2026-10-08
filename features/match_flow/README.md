@@ -229,7 +229,10 @@ Once mechs are assigned — `_on_ban_pick_finished` (before the post-ban-pick au
    (`features/season/mastery/README.md`).
 3. `QuirkSystem.apply_to(state, copy)` — my pilots' quirk stat bonuses with the assigned mech
    (opponents have none; `features/season/quirk/README.md`).
-4. `pending_match.assigned_mechs = {"<pilot_id>": mech_id}` for both teams (10 entries) —
+4. `StressSystem.apply_to(state, copy)` — **last**: my shaken pilots (stress ≥ threshold) lose a share of all six
+   stats (`features/season/mental/README.md` "Stress"); then `match_ctx.stress = StressSystem.snapshot(state)`
+   for BattleSim's stress module (`features/battle_sim/stress/README.md`).
+5. `pending_match.assigned_mechs = {"<pilot_id>": mech_id}` for both teams (10 entries) —
    `SeasonHub` hands it to `MechMastery.record_match` when the result is consumed.
 
 Standalone MatchFlow (no active season) skips all of them; BattleSim never knows mastery or quirks exist.

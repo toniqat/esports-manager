@@ -1122,6 +1122,8 @@ only `font_color`):
 | `PilotStripScoreLabel` | BattleOutlinedLabel | `PilotStripCell` `%Score` — `TEXT_SCORE`, 20, outline black α 0.6, 3 | — |
 | `PilotStripDeadLabel` | BattleOutlinedLabel | `PilotStripCell` `%Dead` — `DEAD`, 53 (= disc diameter × 0.42) | — |
 | `PilotDetailStatPlate` | BattlePanel | `PilotDetailView` StatPanel — top corners square (the active tab sits on it) | — |
+| `StressEventAwakenLabel` · `StressEventPanicLabel` | BattleOutlinedLabel | `StressEventView` `%Result` — `STRESS_AWAKEN` / `STRESS_PANIC` | code switches by mood |
+| `StressMoodAwakenLabel` · `StressMoodPanicLabel` · `StressMoodShakenLabel` | BattleOutlinedLabel | `PilotStripCell` `%Mood`, `PilotDetailView` `%Stress` — `STRESS_*`, `FONT_BODY`, outline 4 | code switches by mood (`StressEvents.mood_variation`) |
 | `PilotDetailArtSlab` | BattleSlab | `PilotDetailArt` `%Slab` — "no art yet" (`ART_SLAB_BG`, 3px `ART_SLAB_BORDER`, top corners `ART_SLAB_RADIUS`) | shown when the texture is missing |
 | `PilotDetailFxBand` | BattleDimPanel | `PilotDetailFxThumb` `%Band` — value band under card art (`FX_VALUE_BAND`, bottom corners `FX_RADIUS` − 3) | — |
 | `PilotDetailMenuPanel` | BattlePopup | `PilotDetailInfoMenu` — `BattleTheme.desc_box()` (the dark card description box; `CardDescBox.panel_style(false)` returns the same), padding 20 / 16 | — |

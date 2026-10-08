@@ -46,6 +46,21 @@ offset_top = 74.0
 offset_right = 182.0
 offset_bottom = 101.0
 
+[node name="Stress" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _add_pilot_card()
+스트레스 N (+오늘) — right of the position badge; code switches CaptionLabel / NegativeLabel (shaken)."
+layout_mode = 0
+offset_left = 192.0
+offset_top = 74.0
+offset_right = 382.0
+offset_bottom = 101.0
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 18
+text = "Stress 45 (+7)"
+vertical_alignment = 1
+clip_text = true
+
 [node name="Mastery" type="Label" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _add_pilot_card()

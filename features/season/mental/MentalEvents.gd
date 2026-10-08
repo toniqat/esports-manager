@@ -140,7 +140,7 @@ static func parse_clause(text: String) -> Dictionary:
 	var rest: String = body.substr(colon + 1)
 	var args: PackedStringArray = rest.split(":")
 	match kind:
-		"trust", "trust_all", "chk":
+		"trust", "trust_all", "stress", "stress_all", "chk":
 			if args.size() != 1 or not _is_int(args[0]):
 				return bad
 			return {"gate": gate, "type": kind, "delta": _to_int(args[0])}
@@ -337,6 +337,7 @@ static func check_chance(judge: int, adjust: int) -> int:
 ## → `{checked, ok, chance, pilot_id, say: [text_key], notes: [note dict]}` — saved as is,
 ## so **keys / ids only**; `outcome_view` turns it into display text.
 ## Note dicts: `{type: trust, pid, delta}` · `{type: trust_all, delta}` ·
+## `{type: stress, pid, delta}` · `{type: stress_all, delta}` ·
 ## `{type: pmod, pid, stat, delta, weeks}` · `{type: pmod_all, stat, delta, weeks}` ·
 ## `{type: smod, stat, delta, weeks}` · `{type: outing, count}` (added by MentalSystem).
 static func apply_choice(state: Dictionary, r: Dictionary, idx: int, pilot_id: int,
@@ -392,6 +393,14 @@ static func _apply_clause(state: Dictionary, r: Dictionary, c: Dictionary,
 			for pid in MentalSystem.my_pilot_ids(state):
 				MentalSystem.add_trust(state, int(pid), int(c["delta"]))
 			notes.append({"type": "trust_all", "delta": int(c["delta"])})
+		"stress":
+			if pilot_id >= 0:
+				var sd: int = StressSystem.add(state, pilot_id, int(c["delta"]))
+				notes.append({"type": "stress", "pid": pilot_id, "delta": sd})
+		"stress_all":
+			for pid in MentalSystem.my_pilot_ids(state):
+				StressSystem.add(state, int(pid), int(c["delta"]))
+			notes.append({"type": "stress_all", "delta": int(c["delta"])})
 		"pmod":
 			if pilot_id >= 0:
 				PilotMods.add(state, pilot_id, String(c["stat"]), int(c["delta"]), int(c["weeks"]), source)
@@ -440,6 +449,11 @@ static func note_text(state: Dictionary, n: Dictionary) -> String:
 					{"name": pilot_name(state, int(n.get("pid", -1))), "delta": _signed(delta)})
 		"trust_all":
 			return Loc.t(L.MENTAL_UI_NOTE_TRUST_ALL, {"delta": _signed(delta)})
+		"stress":
+			return Loc.t(L.MENTAL_UI_NOTE_STRESS,
+					{"name": pilot_name(state, int(n.get("pid", -1))), "delta": _signed(delta)})
+		"stress_all":
+			return Loc.t(L.MENTAL_UI_NOTE_STRESS_ALL, {"delta": _signed(delta)})
 		"pmod":
 			return "%s %s %s (%s)" % [pilot_name(state, int(n.get("pid", -1))),
 					stat_label(stat), _signed(delta), duration(weeks)]

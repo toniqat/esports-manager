@@ -114,6 +114,7 @@ func _bind_cell(cell: Control, idx: int) -> Dictionary:
 		"bust": bust, "mat": mat, "dead": cell.get_node("%Dead"),
 		"pill": cell.get_node("%Pill"), "score": cell.get_node("%Score"), "btn": btn,
 		"badge": cell.get_node("%Badge"),
+		"mood": cell.get_node("%Mood"),
 		# 스킬 말풍선 화살표가 가리킬 점 — 머리 위끝 가운데(셀 로컬).
 		"head": bust.position + Vector2(r, 0.0),
 	}
@@ -260,6 +261,7 @@ static func _set_cell_visible(cell: Dictionary, on: bool) -> void:
 	(cell["score"] as Label).visible = on
 	if not on:
 		(cell["dead"] as Label).visible = false
+		(cell["mood"] as Label).visible = false
 		if cell["badge"] != null:
 			(cell["badge"] as SkillBadge).visible = false
 
@@ -280,6 +282,14 @@ func _apply_cell(cell: Dictionary, p: PilotData) -> void:
 
 	(cell["score"] as Label).text = fmt_strip_score(p.score)
 	_apply_skill_state(cell, p)
+	# 스트레스 상태(위축 · 각성 · 패닉) — 내 파일럿에게만 있다.
+	var mood_lbl := cell["mood"] as Label
+	var mood: int = _bs.stress.mood_of(p) if _bs != null and _bs.stress != null \
+			else StressSystem.Mood.NONE
+	mood_lbl.visible = mood != StressSystem.Mood.NONE
+	if mood_lbl.visible:
+		mood_lbl.text = StressSystem.mood_label(mood)
+		mood_lbl.theme_type_variation = StressEvents.mood_variation(mood)
 
 
 ## 스트립 탭의 성장치 표기 — 소수 한 자리(`9.9k`), **10k 이상은 정수**(`12k`).

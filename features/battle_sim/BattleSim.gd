@@ -426,6 +426,9 @@ var ai_card_player: AiCardPlayer = null
 # `CardPhaseManager.do_battle_turn` 하나뿐이다. `objective/README.md` 참고.
 # lazy-add in _ready().
 var objective: ObjectiveSystem = null
+## 경기 중 스트레스 — 사망마다 오르고, 처음 기준치를 넘은 내 파일럿을 시험(각성 / 패닉)한다.
+## 연출이 떠 있는 동안 시뮬레이션을 붙잡는다. lazy-add in _ready() (`stress/README.md`).
+var stress: StressEvents = null
 # 전투 행동 로거 — 모든 좌표 변화 / 교전 / 카드 사용을 콘솔 + user:// 파일에
 # 남기고, 턴 경계에서 적 파일럿 간 교차(cross-over)를 자동 감지한다.
 # `debug/BattleLogger.gd` 참고. lazy-add in _ready() after pilots spawn.
@@ -590,6 +593,11 @@ func _ready() -> void:
 	mech_skill.name = "MechSkillSystem"
 	add_child(mech_skill)
 	mech_skill.init_for_match()
+	# 스트레스 — 파일럿 스폰 뒤라야 내 다섯의 페르소나(`player_data_for`)를 찾는다.
+	stress = StressEvents.new()
+	stress.name = "StressEvents"
+	add_child(stress)
+	stress.init_for_match()
 
 
 func _on_data_load_failed(reason: String) -> void:
@@ -746,7 +754,7 @@ func _ai_turn_active() -> bool:
 
 
 ## **BATTLE 안에서 시뮬레이션을 붙잡고 있는 것이 있는가.** `game_phase` 를 바꾸지
-## 않은 채 턴을 멈추는 사유가 셋이다.
+## 않은 채 턴을 멈추는 사유가 넷이다.
 ##
 ##   • 상대 차례 — `CardPhaseManager._run_ai_turn` 이 BATTLE 안에서 돈다.
 ##   • 상세 패널 — 자동 진행 중에도 스트립 / 전장 초상 꾹 누르기로 열 수 있고,
@@ -754,6 +762,7 @@ func _ai_turn_active() -> bool:
 ##   • 오브젝트 — 참여 / 미참여 결정 창이 떠 있는 동안은 아직 BATTLE 이다
 ##     (뒤이어 열리는 교전 무대는 `game_phase = ENGAGE` 로도 막히지만, 그 앞의
 ##     결정 구간은 이 가드만이 막는다).
+##   • 스트레스 시험 — 각성 / 패닉 연출이 끝날 때까지(`stress/StressEvents.gd`).
 ##
 ## 자동 틱과 MM:SS 시계가 같은 답을 읽어야 화면의 시간과 실제 턴이 어긋나지
 ## 않는다.
@@ -761,6 +770,8 @@ func _battle_tick_held() -> bool:
 	if _ai_turn_active():
 		return true
 	if pilot_detail != null and pilot_detail.is_active():
+		return true
+	if stress != null and stress.is_busy():
 		return true
 	return objective != null and objective.is_busy()
 
@@ -860,6 +871,8 @@ func mark_pilot_dead(p: PilotData, killer: PilotData = null) -> void:
 		mech_skill.on_kill(p, killer)
 	_award_kill_bounty(p.team)
 	_payout_kill_bounty(p, killer)
+	if stress != null:
+		stress.on_death(p)
 
 
 ## 처치 한 건의 명단 `[막타, 어시스트 배열]`. 막타(`killer`)를 앞에 세우고, 같은
@@ -1813,6 +1826,11 @@ func end_match(winner_side: int) -> void:
 		pm["pilot_stats"] = rows
 		pm["mvp_pilot_id"] = int((rows[mvp_idx] as Dictionary)["pilot_id"]) \
 				if mvp_idx >= 0 else -1
+		if stress != null:
+			pm["stress"] = stress.final_values()
+	# 결과가 났으니 남은 스트레스 연출은 버린다(능력치가 더는 의미가 없다).
+	if stress != null:
+		stress.abort()
 	var mvp: PilotData = pilots[mvp_idx] as PilotData if mvp_idx >= 0 else null
 	var mvp_row: Dictionary = rows[mvp_idx] as Dictionary if mvp_idx >= 0 else {}
 	hud.set_victory_mvp(mvp, mvp_row)

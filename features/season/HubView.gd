@@ -289,7 +289,8 @@ func _refresh_roster() -> void:
 			row.show_pilot(null)
 			continue
 		var p: PlayerData = by_role[r]
-		row.show_pilot(p, MentalSystem.trust(_gm.season_state, p.id), t_max)
+		row.show_pilot(p, MentalSystem.trust(_gm.season_state, p.id), t_max,
+				StressSystem.value(_gm.season_state, p.id))
 
 
 # ── Button handlers ──────────────────────────────────────────────────────────

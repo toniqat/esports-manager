@@ -421,6 +421,14 @@ func _add_pilot_card(row_raw: Variant) -> void:
 	ml.text = mastery_txt
 	ml.visible = mastery_txt != ""
 
+	# Stress — current value + what that day's training added (row key `stress`).
+	# Shaken (≥ threshold) reads in the negative colour.
+	var pid: int = int(row["pilot_id"])
+	var stress_now: int = StressSystem.value(_gm.season_state, pid)
+	var sl: Label = card.get_node("%Stress")
+	sl.text = Loc.t(L.MENTAL_UI_STRESS_DAY, {"n": stress_now, "delta": "%+d" % int(row.get("stress", 0))})
+	sl.theme_type_variation = &"NegativeLabel" if StressSystem.is_over(stress_now) else &"CaptionLabel"
+
 	# 스탯 여섯 칸 — 이름 / 지금 값 / 이번 날의 결과.
 	#
 	# 아래 줄은 **오른 포인트가 있으면 `+N`, 없으면 `모인/TRAINING_EXP_PER_POINT`**

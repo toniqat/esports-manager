@@ -683,6 +683,22 @@ func _fill_header() -> void:
 	(_view.get_node("%Name") as Label).text = pd.name if pd != null else _bs.pilot_label(_pilot)
 	(_view.get_node("%Mech") as Label).text = mech.name if mech != null \
 			else Loc.t(L.HUD_PILOT_DETAIL_NO_MECH)
+	_fill_stress()
+
+
+## 머리 셋째 줄 — "스트레스 N · 상태". 스트레스가 있는 파일럿(내 다섯)만, 아니면 줄을 숨긴다.
+## 상태가 있으면 글자색이 상태색(`StressEvents.mood_variation`), 없으면 보조 글자.
+func _fill_stress() -> void:
+	var box: Control = _view.get_node("%StressBox")
+	var has: bool = _bs.stress != null and _bs.stress.has_stress(_pilot)
+	box.visible = has
+	if not has:
+		return
+	var mood: int = _bs.stress.mood_of(_pilot)
+	var lbl: Label = _view.get_node("%Stress")
+	lbl.text = StressSystem.line(_bs.stress.stress_of(_pilot), mood)
+	lbl.theme_type_variation = StressEvents.mood_variation(mood) \
+			if mood != StressSystem.Mood.NONE else &"BattleSubLabel"
 
 # ─── 스탯 칩 ─────────────────────────────────────────────────────────────────
 ## 이 탭이 보여 줄 스탯 줄 목록. 줄 하나 = `[[key, 이름], …]`(칸 1개 = 전폭,

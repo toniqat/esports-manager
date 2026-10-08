@@ -1,7 +1,7 @@
-# mental/ — trust · interviews · outings · incidents · press · true ending (M7)
+# mental/ — trust · stress · interviews · outings · incidents · press · true ending (M7)
 
-Contract: `docs/outgame_dev_plan.md` §11. State `season_state.trust` / `outings` / `mental` / `pilot_mods`.
-Tuning lives in `data/csv/const.csv` (`TRUST_*`, `MENTAL_*`, `TRUE_ENDING_*`) — no values here.
+Contract: `docs/outgame_dev_plan.md` §11. State `season_state.trust` / `stress` / `outings` / `mental` / `pilot_mods`.
+Tuning lives in `data/csv/const.csv` (`TRUST_*`, `STRESS_*`, `MENTAL_*`, `TRUE_ENDING_*`) — no values here.
 Event texts are l10n keys (`mental_texts.csv` → domain `mental`, D6). Display text is l10n keys (`mental` domain): code
 keys use **4-segment** aliases `mental.ui.*` — a 3-segment `mental.x.y` matches the data rule `mental.{event_id}.{id}`
 and gets no `L` constant. Mod clauses write `source = "mental:<event id>"` (`MOD_SOURCE_PREFIX`, an id — D7);
@@ -11,6 +11,7 @@ and gets no `L` constant. Mod clauses write `source = "mental:<event id>"` (`MOD
 |---|---|
 | `MentalSystem.gd` | `class_name MentalSystem` (static). State + flow: run init, week reset, weekly limits, evening action (interview / outing / pass), incident roll + resolve, press session + resolve, outing training-EXP penalty, true-ending pilots. Every entry point takes the `season_state` dictionary (no autoloads → headless-testable). |
 | `MentalEvents.gd` | `class_name MentalEvents` (static). `mental_events` + `mental_texts` tables (game.db) → parsed rows (texts as l10n keys); the `effects` / `cond` grammar; row selection (cond, manager type, weights); `apply_choice` (mental check + clauses + replies, keys / ids only); `outcome_view` · `note_texts` · `text` turn stored keys into display text (`Loc.t`, `{name}`). |
+| `StressSystem.gd` | `class_name StressSystem` (static). Stress (Darkest Dungeon style): run init, clamp, shaken (위축) ratio, mood multipliers, roster-copy `apply_to` (MatchFlow), `snapshot` → `match_ctx.stress`, `record_match` ← `pending_match.stress`, training-day roll, interview / outing relief, display helpers (`mood_label`, `line`). The in-match part is `features/battle_sim/stress/`. |
 | `PilotMods.gd` | `class_name PilotMods` (static, base). Temporary per-pilot stat mods `[{pilot_id, stat, delta, weeks_left, source}]`; `weeks_left = -1` lasts until the next own match. `apply_to` is only ever called on a **roster copy** (MatchFlow). |
 
 The dialogue UI is `features/season/press/MessengerView.gd` (shared with the press conference);
@@ -47,6 +48,26 @@ the evening card + incident card live on the week screen (`features/season/week/
   once — `finish_evening` / `resolve_incident` / `resolve_press` return the stored outcome on a
   second call. Re-entering a weekday (after a Sat match, after load) redraws from the record.
 
+## Stress
+`season_state.stress = {"<pid>": int}` for my 5 pilots, clamped `[0, STRESS_MAX]`, starts at `STRESS_START`
+(old saves without the key read 0).
+- **Rises**: each training day a pilot has a tile on the board, `STRESS_TRAIN_MIN..MAX` (seeded per run · week · day ·
+  pilot, `TrainingBoard.apply_day_training` row key `stress`; the training result itself is unchanged), and each
+  death in a match, `STRESS_DEATH_MIN..MAX` (BattleSim, written back at match end).
+- **Falls**: a finished interview / outing relieves `STRESS_INTERVIEW_RELIEF` / `STRESS_OUTING_RELIEF` (note
+  `{type: stress}` in the outcome), plus any `stress:` / `stress_all:` clause of the chosen answer. No natural decay.
+- **Shaken (위축)**: stress ≥ `STRESS_THRESHOLD` outside a match. The 6 pilot stats drop by one
+  `STRESS_SHAKEN_STAT_PER_STEP` per full `STRESS_SHAKEN_STEP` over the threshold (the maximum stress is the
+  largest drop). Applied **last** in `MatchFlow._finalize_rosters` on the roster copy; persists across matches
+  until stress falls under the threshold.
+- **Test (각성 / 패닉)**: a pilot that enters a match **below** the threshold and crosses it there is tested once:
+  `STRESS_AWAKEN_CHANCE` awaken (stats × (1 + `STRESS_AWAKEN_STAT`)), else panic (× (1 − `STRESS_PANIC_STAT`)),
+  until the match ends. A shaken pilot is never tested, and a tested pilot is not shaken in that match
+  (the roster copy was built before the match). See `features/battle_sim/stress/README.md`.
+- Display: hub roster row (`HubRosterRow` stress line), week training card (`%Stress`, value + that day's delta),
+  battle strip / detail panel (`stress/README.md`). Keys `mental.ui.stress.*` (value, day, mood names).
+  Shared words for stress / moods are not in `term.*` yet (only the base owner adds there).
+
 ## `season_state.mental` shape (string keys; numbers may load back as floats — always `int()`)
 ```
 {
@@ -61,7 +82,7 @@ the evening card + incident card live on the week screen (`features/season/week/
 }
 ```
 `outcome` = `{checked, ok, chance, pilot_id, say: [text_key], notes: [note dict]}` — **no display text is saved**
-(D7): note dicts are `{type: trust|trust_all|pmod|pmod_all|smod|outing, pid?, stat?, delta?, weeks?, count?}`.
+(D7): note dicts are `{type: trust|trust_all|stress|stress_all|pmod|pmod_all|smod|outing, pid?, stat?, delta?, weeks?, count?}`.
 `MentalEvents.outcome_view(state, outcome)` → `{checked, ok, chance, say: [String], notes: [String]}` for
 `MessengerView.show_result`; `MentalEvents.note_texts(state, notes)` for the week-screen summary chips.
 A note whose stat is `all` reads `training.stat.all` ("모든 파일럿 능력치", shared with the training tiles).
@@ -95,6 +116,8 @@ A note whose stat is `all` reads `training.stat.all` ("모든 파일럿 능력�
 |---|---|
 | `trust:+N` | target pilot trust ± N |
 | `trust_all:+N` | all my 5 pilots' trust ± N |
+| `stress:+N` | target pilot stress ± N (`StressSystem.add`, clamped) |
+| `stress_all:+N` | all my 5 pilots' stress ± N |
 | `pmod:<stat\|all>:<delta>:<weeks>` | target pilot temporary stat mod (`PilotMods.add`); `weeks = -1` = until next own match |
 | `pmod_all:<stat\|all>:<delta>:<weeks>` | same for all my pilots |
 | `smod:<stat>:<delta>:<weeks>` | temporary manager-stat mod (`StaffSystem.add_mod`, `stat` ∈ `StaffSystem.STATS`, weeks > 0) |

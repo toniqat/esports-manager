@@ -148,6 +148,9 @@ func run_ai_plays() -> void:
 		# otherwise the next AI play stomps the open arena.
 		if _bs.engage_phase.is_active():
 			await _bs.engage_phase.engage_finished
+		# 이 카드(또는 그 교전)의 사망이 스트레스 시험을 열었다면 연출이 끝날 때까지.
+		if _bs.stress != null:
+			await _bs.stress.wait_idle()
 		# 완벽한 마무리 — 그 카드의 `end_phase` 절이 이 루프를 끝낸다. 아레나를
 		# 기다린 **뒤**에 확인하는 것이 중요하다: 먼저 끊으면 카드가 연 교전이
 		# 화면에 뜬 채로 상대 차례가 닫힌다.

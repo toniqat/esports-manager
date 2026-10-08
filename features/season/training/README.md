@@ -155,10 +155,12 @@ week-progress screen (`features/season/week/`) started asking "what happened tha
 weekday, settlement was split per day too.
 
 It returns the row list that screen reads — in seat order,
-`Array[{pilot_id, role, seat, before, after, ups, exp, carry, mastery, quirk}]` (no name — saved in the run file; screens use `GameManager.pilot_name(pilot_id)`, l10n D7)
+`Array[{pilot_id, role, seat, before, after, ups, exp, carry, mastery, quirk, stress}]` (no name — saved in the run file; screens use `GameManager.pilot_name(pilot_id)`, l10n D7)
 (`mastery` = mech-mastery EXP handed to `MechMastery.add_training_exp` that day, M3;
 `quirk` = quirk ops run on that pilot that day, `[{kind, result, id?, from?, to?, slots?}]`, empty
-array when none — see "Quirk tiles").
+array when none — see "Quirk tiles";
+`stress` = stress that pilot gained that day, `StressSystem.on_training_day`, only when the pilot has a tile
+on that day's row, else 0 — `features/season/mental/README.md` "Stress").
 `ups` is the points actually gained that day, `exp` the EXP earned that day, `carry` the remainder
 left in the bank after settlement (the screen shows "until the next point" as `carry/EXP_PER_POINT`).
 

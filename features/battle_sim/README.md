@@ -26,6 +26,7 @@ On `_ready()`, BattleSim reads `GameManager.match_ctx`:
 | `enemy_roster[i].assigned_mech` / stats | same, for team 1 |
 | `jungle_start_dir` | PilotData.jungle_start_pref on the player-team assassin |
 | `player_side` | `BattleSim.blue_team` via `seed_side_costs()` — the blue side gets the strategy-point head start + first turn |
+| `stress` | `{"<pid>": int}` my pilots' stress at kickoff → `StressEvents.init_for_match` (`stress/README.md`). Shaken stats are already on `player_roster` |
 | `traits` | `[{id, key, p1, p2}]` — manager in-game traits, **my team only** → `TraitHooks` (`trait/README.md`). Empty / ignored when `active = false` → no change |
 | `active = false` | Triggers fallback to ROLE_STATS (no MatchFlow ran); the side also falls back to player = blue |
 
@@ -38,6 +39,7 @@ runs write nothing):
 |---|---|
 | `winner_side` | 0 = my team (team 0), 1 = opponent |
 | `pilot_stats` | 10 rows in `pilots` order (0..4 = my team): `{"pilot_id", "side", "role", "k", "d", "a", "dmg", "taken", "care"}` — `pilot_id` = `PlayerData.id` (falls back to `PilotData.pilot_id`), `role` = `GameEnums.Role`. Contract: `docs/outgame_dev_plan.md` §10.4; how each number is counted: `combat/README.md` "Match stats" |
+| `stress` | `{"<pid>": int}` my pilots' stress at match end (`StressEvents.final_values`) → `StressSystem.record_match` |
 | `mvp_pilot_id` | winning team's best `RunStats.mvp_score(row)` (`features/season/run_stats/README.md`), -1 if none |
 
 Then the **MVP view** opens, and its "계속" opens the existing result panel (now with an MVP
@@ -74,6 +76,7 @@ And accesses shared state via `_bs.pilots`, `_bs.turn_count`, etc.
 | ObjectiveRewardPopup | Node | `ui/ObjectiveRewardPopup.gd` | Objective reward preview — tapping a timer in the top panel shows the real card that objective grants. **Does not hold the battlefield.** Lazily added in `_ready()`. |
 | PilotSkillSystem | Node | `skill/PilotSkillSystem.gd` | **Pilot skills** — a unique ability attached to each player (cooldown / charge-based / passive). State · activation · event hooks · passive queries. Lazily added in `_ready()` **after** `build_starter_decks()` (it finds partners in the roster, and backbone passives touch the deck). See `skill/README.md` |
 | MechSkillSystem | Node | `mech/MechSkillSystem.gd` | **Mech skills** — 15 passives attached to the assigned **mech** and the persistent states its mech cards leave (vulnerable · reactive armour · target · tracking · bounty · bond · exhaustion …). Built at the end of `_ready()` right next to pilot skills (same precondition — roster + deck must already exist). Passive modifiers go out **only through query functions**; the computation happens where it always did. See `mech/README.md` (includes the 21-mech list · clause grammar) |
+| StressEvents | Node | `stress/StressEvents.gd` | **In-match stress** — deaths raise my pilots' stress; the first crossing of the threshold opens an awaken / panic test (`StressEventView`) and holds the sim until it closes (`_battle_tick_held`, engage steps, AI turn). Added at the end of `_ready()` (needs spawned pilots). See `stress/README.md` |
 | BattleLogger   | Node | `debug/BattleLogger.gd`    | Full action log (console + `user://battle_logs/`) and enemy cross-over detector. Lazily added in `_ready()` after pilots spawn; reachable as `_bs.blog`. |
 
 Cross-module calls go through `_bs`:

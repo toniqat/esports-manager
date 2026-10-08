@@ -64,7 +64,7 @@ Read the README of every row your task touches. Indented rows are submodules —
 | ↳ `mastery/` | Mech mastery, 메크 연구 card | `features/season/mastery/README.md` |
 | ↳ `quirk/` | 기벽 — run-only pilot passives | `features/season/quirk/README.md` |
 | ↳ `finance/` | Weekly budget, facilities, allocation, special spending | `features/season/finance/README.md` |
-| ↳ `mental/` | Trust, interviews, outings, incidents, `PilotMods` | `features/season/mental/README.md` |
+| ↳ `mental/` | Trust, stress (`StressSystem`), interviews, outings, incidents, `PilotMods` | `features/season/mental/README.md` |
 | `features/match_flow/` | PREP → BAN_PICK → BattleSim handoff (`match_ctx`), cheat menu | `features/match_flow/README.md` |
 | ↳ `match_prep/` | Opponent intel / analysis tiers | `features/match_flow/match_prep/README.md` |
 | ↳ `ban_pick/` | Ban / pick, mech assignment, `MechDetailPanel` | `features/match_flow/ban_pick/README.md` |
@@ -77,6 +77,7 @@ Read the README of every row your task touches. Indented rows are submodules —
 | ↳ `objective/` | Herald / Dragon objectives | `features/battle_sim/objective/README.md` |
 | ↳ `skill/` · `mech/` | Pilot skills · mech passives | `features/battle_sim/skill/README.md`, `mech/README.md` |
 | ↳ `trait/` | Manager in-game trait hooks | `features/battle_sim/trait/README.md` |
+| ↳ `stress/` | In-match stress, awaken / panic test (rules in `season/mental/`) | `features/battle_sim/stress/README.md` |
 | ↳ `gambit/` · `debug/` | Pre-battle setup, jungle start · `BattleLogger` | `gambit/README.md`, `debug/README.md` |
 | ↳ `buildings/` · `data/` | `@tool` Building / Waypoint nodes · `DataLoader`, `FieldLoader` | *(no README — see `features/battle_sim/README.md`)* |
 | `ios/plugins/` · `build/` | iOS native plugins · downloaded `.ipa` | `ios/plugins/README.md`, `build/README.md` |

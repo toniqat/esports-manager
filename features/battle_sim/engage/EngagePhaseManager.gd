@@ -357,6 +357,9 @@ func _begin(caster: PilotData, t0: Array, t1: Array, duel: bool,
 func _process(delta: float) -> void:
 	if not _active or _sim == null:
 		return
+	# 스트레스 시험 연출 중 — 무대는 그 자리에 멈춘다(`BattleSim.stress`).
+	if _bs.stress != null and _bs.stress.is_busy():
+		return
 	# 종료 유예 중 — 전투는 멈춘 채 잔여 연출만 흐른다.
 	if _hold_left >= 0.0:
 		_sim.step_afterglow(delta)
@@ -374,6 +377,10 @@ func _process(delta: float) -> void:
 		_sim.step(FIXED_DT)
 		_accum -= FIXED_DT
 		steps += 1
+		# 이 스텝의 사망이 시험을 열었다 — 다음 스텝은 연출이 끝난 뒤.
+		if _bs.stress != null and _bs.stress.is_busy():
+			_accum = 0.0
+			return
 	if _sim.finished:
 		_begin_end_hold()
 

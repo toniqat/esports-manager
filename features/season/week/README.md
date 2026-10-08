@@ -13,7 +13,7 @@ The screen where the week passes **one day at a time, Monday to Sunday**. `Scree
 | `UI_Comp_WeekEveningCard.tscn` | Item: 오늘 저녁 before the action (`%Limits` · `%Slots` of `WeekEveningSlot` · `%Interview` / `%Outing` / `%Pass`) |
 | `UI_Comp_WeekEveningSlot.tscn` | Item: one pilot of the evening card (`%Highlight` · `%Portrait` · `%Name` · `%Trust` · `%Hit`) |
 | `UI_Comp_WeekEveningDoneCard.tscn` | Item: 오늘 저녁 summary after the action (`%Portrait` · `%Head` · `%Line`) |
-| `UI_Comp_WeekPilotCard.tscn` | Item: one pilot's training result (`%Portrait` · `%Name` · `%PositionBadge_Role` (`PositionBadge`) · `%Mastery` · `%Stats` of `WeekStatCell` · `%QuirkDivider` · `%Quirks` with the `%QuirkLine` template) |
+| `UI_Comp_WeekPilotCard.tscn` | Item: one pilot's training result (`%Portrait` · `%Name` · `%PositionBadge_Role` (`PositionBadge`) · `%Stress` (stress now + that day's training delta, `NegativeLabel` when shaken) · `%Mastery` · `%Stats` of `WeekStatCell` · `%QuirkDivider` · `%Quirks` with the `%QuirkLine` template) |
 | `UI_Comp_WeekStatCell.tscn` | Item: one stat column (`%Short` / `%Value` / `%Result`) |
 
 **F6 preview** — run `UI_View_WeekProgressView.tscn` alone and it fills dummy data (`resources/UiPreview.gd`):

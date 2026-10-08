@@ -109,6 +109,19 @@ grow_vertical = 2
 mouse_filter = 2
 theme_type_variation = &"ProgressFill"
 
+[node name="StressText" type="Label" parent="Info/Trust"]
+editor_description = "[필수] 지우면 오류 — HubRosterRow.gd show_pilot()
+Stress line (StressSystem.line); code switches CaptionLabel / NegativeLabel (shaken) and hides it when no stress is passed."
+unique_name_in_owner = true
+auto_translate_mode = 2
+custom_minimum_size = Vector2(260, 36)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"CaptionLabel"
+text = "Stress 120 · Shaken"
+vertical_alignment = 1
+clip_text = true
+
 [node name="Stats" type="HBoxContainer" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — HubRosterRow.gd set_role() · HubRosterRow.gd show_pilot()

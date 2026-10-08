@@ -638,6 +638,7 @@ func _consume_pending_match_result() -> bool:
 	MechMastery.record_match(s, pm as Dictionary)
 	FinanceSystem.record_match(s, pm as Dictionary, winner_side == 0)
 	PilotMods.consume_match(s)
+	StressSystem.record_match(s, pm as Dictionary)
 
 	if source == "playoff":
 		_apply_playoff_result(idx, winner_team_id)

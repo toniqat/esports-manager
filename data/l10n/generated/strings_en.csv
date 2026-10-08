@@ -88,6 +88,9 @@ tx_VM0HAXEB2G,Left
 tx_01DT4571QV,Center
 tx_HA7CEQ5RTH,Right
 tx_AGCDAR9R10,Jungle
+tx_Y5RE05FJEQ,{name} is being tested...
+tx_M6HJ1AQ1K2,pilot stats +{stress_awaken_stat_pct}% for this match
+tx_40RE35Z609,pilot stats -{stress_panic_stat_pct}% for this match
 tx_CT7HANNW9F,All pilot stats +{n}
 tx_WWXBFY3CCH,Training EXP +{n}%
 tx_NGS28BKV7X,Salary -{n}
@@ -1074,6 +1077,13 @@ tx_KAEPTP25DT,Pilot
 tx_WR6Q5QGMZ8,All stats
 tx_MD8BDCV48Q,Until next match
 tx_D3NT6QFHKK,Incident
+tx_4HBPFE2YRG,Stress {n}
+tx_FVCD1WTE8P,Stress {n} ({delta})
+tx_4ANBP6M80F,Shaken
+tx_9M70CG3F4P,Awakened
+tx_526PWNR0KP,Panic
+tx_QZCW0ABV05,{name} stress {delta}
+tx_29J1CQRVAJ,Team stress {delta}
 tx_6RHXR0K8TD,Nekomata
 tx_KCKAPV8M44,Yuzuha
 tx_1TSM3CVTC7,Corin

@@ -93,6 +93,10 @@ const ENEMY:    Color = Color(1.00, 0.55, 0.55)   # 상대 팀 (글자)
 const POSITIVE: Color = Color(0.45, 0.90, 0.55)   # 기본값 대비 + (칸 보너스)
 const NEGATIVE: Color = Color(0.98, 0.42, 0.42)   # 기본값 대비 −
 const DEAD:     Color = Color(1.00, 0.55, 0.50)   # 스트립 부활까지 남은 턴
+## 스트레스 상태 (`StressSystem.Mood`) — 각성 = 금색, 패닉 = 빨강, 위축 = 보라.
+const STRESS_AWAKEN: Color = Color(1.00, 0.80, 0.30)
+const STRESS_PANIC:  Color = Color(0.98, 0.42, 0.42)
+const STRESS_SHAKEN: Color = Color(0.72, 0.58, 1.00)
 
 # ── 진영 면 (인덱스 = team, 0 아군 · 1 상대) ─────────────────────────────────
 const TEAM_DISC:  Array = [Color(0.17, 0.32, 0.58), Color(0.58, 0.21, 0.18)]   # 스트립 원 · 성장치 탭
@@ -279,6 +283,21 @@ static func _add_screen_variations(th: Theme) -> void:
 
 	_add_hud_variations(th)
 	_add_pilot_detail_variations(th)
+	_add_stress_variations(th)
+
+
+## battle_sim/stress/StressEventView · ui/PilotStrip · ui/PilotDetailPanel — 스트레스 상태 글자.
+## 상태가 데이터라 코드가 변형 이름을 바꿔 끼운다(`StressEventView.mood_variation`).
+static func _add_stress_variations(th: Theme) -> void:
+	# 시험 결과 — 전신 위에 뜨는 큰 글자.
+	_add_derived_label(th, "StressEventAwakenLabel", &"BattleOutlinedLabel", STRESS_AWAKEN)
+	_add_derived_label(th, "StressEventPanicLabel", &"BattleOutlinedLabel", STRESS_PANIC)
+	# 스트립 칸 위 / 상세 패널 머리 — 상태 한 낱말.
+	for pair in [["StressMoodAwakenLabel", STRESS_AWAKEN], ["StressMoodPanicLabel", STRESS_PANIC],
+			["StressMoodShakenLabel", STRESS_SHAKEN]]:
+		_add_derived_label(th, String(pair[0]), &"BattleOutlinedLabel", pair[1] as Color)
+		th.set_font_size(&"font_size", String(pair[0]), FONT_BODY)
+		th.set_constant(&"outline_size", String(pair[0]), 4)
 
 
 ## battle_sim/ui/HudBuilder · PilotStrip — 전투 HUD (`Hud*` · `PilotStrip*`).

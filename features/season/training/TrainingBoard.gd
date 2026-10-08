@@ -547,6 +547,7 @@ func apply_day_training(day: int) -> Array:
 	var quirk_ops: Dictionary = day_quirk_ops(day)
 	var pilots: Array = player_pilots_by_seat()
 	var carry: Dictionary = exp_carry()
+	var occ: Dictionary = occupancy()
 	var rows: Array = []
 	for seat in COLS:
 		var p: PlayerData = pilots[seat]
@@ -580,6 +581,9 @@ func apply_day_training(day: int) -> Array:
 			"ups": ups, "exp": exp, "carry": pocket.duplicate(),
 			"mastery": mastery_exp,
 			"quirk": _apply_quirk_ops(int(p.id), quirk_ops.get(seat, [])),
+			# Training result is fixed; only a pilot with a tile that day gains stress.
+			"stress": StressSystem.on_training_day(_gm.season_state, int(p.id), day) \
+					if occ.has(Vector2i(seat, day)) else 0,
 		})
 	return rows
 

@@ -88,6 +88,9 @@ tx_VM0HAXEB2G,좌측
 tx_01DT4571QV,중앙
 tx_HA7CEQ5RTH,우측
 tx_AGCDAR9R10,정글
+tx_Y5RE05FJEQ,{name}{i} 시험받고 있습니다...
+tx_M6HJ1AQ1K2,경기 동안 파일럿 능력치 +{stress_awaken_stat_pct}%
+tx_40RE35Z609,경기 동안 파일럿 능력치 -{stress_panic_stat_pct}%
 tx_CT7HANNW9F,모든 파일럿 능력치 +{n}
 tx_WWXBFY3CCH,훈련 경험치 +{n}%
 tx_NGS28BKV7X,샐러리 -{n}
@@ -1074,6 +1077,13 @@ tx_KAEPTP25DT,선수
 tx_WR6Q5QGMZ8,전 스탯
 tx_MD8BDCV48Q,다음 경기까지
 tx_D3NT6QFHKK,사건
+tx_4HBPFE2YRG,스트레스 {n}
+tx_FVCD1WTE8P,스트레스 {n} ({delta})
+tx_4ANBP6M80F,위축
+tx_9M70CG3F4P,각성
+tx_526PWNR0KP,패닉
+tx_QZCW0ABV05,{name} 스트레스 {delta}
+tx_29J1CQRVAJ,팀 전체 스트레스 {delta}
 tx_6RHXR0K8TD,Nekomata
 tx_KCKAPV8M44,Yuzuha
 tx_1TSM3CVTC7,Corin

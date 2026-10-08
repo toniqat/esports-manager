@@ -298,8 +298,9 @@ func _resume_at_launch(resume: Dictionary) -> void:
 
 
 ## After mech assignment (fresh or resumed): add the run's temporary pilot mods
-## (`PilotMods.apply_to`) and the mech mastery bonus (`MechMastery.apply_to`) to
-## the roster **copies**, then write `pending_match.assigned_mechs`
+## (`PilotMods.apply_to`), the mech mastery bonus (`MechMastery.apply_to`), quirks and
+## the shaken stress drop (`StressSystem.apply_to`) to the roster **copies**, put the
+## stress snapshot in `match_ctx.stress`, then write `pending_match.assigned_mechs`
 ## (`{"<pilot_id>": mech_id}`, both teams) for `MechMastery.record_match`.
 ## Standalone MatchFlow (no active season) leaves the rosters as they are.
 ## Runs once — the resume path and the fresh path never both reach here.
@@ -319,8 +320,12 @@ func _finalize_rosters(p_roster: Array, e_roster: Array) -> void:
 			PilotMods.apply_to(s, pd)
 			MechMastery.apply_to(s, pd)
 			QuirkSystem.apply_to(s, pd)
+			# Last: shaken (위축) scales the stats the mods above already moved.
+			StressSystem.apply_to(s, pd)
 			if pd.assigned_mech != null:
 				assigned[str(pd.id)] = pd.assigned_mech.id
+	# BattleSim's stress module starts from these values (`stress/README.md`).
+	gm.match_ctx["stress"] = StressSystem.snapshot(s)
 	var pm = s.get("pending_match", null)
 	if typeof(pm) == TYPE_DICTIONARY:
 		(pm as Dictionary)["assigned_mechs"] = assigned

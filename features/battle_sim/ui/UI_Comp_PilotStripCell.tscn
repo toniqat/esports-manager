@@ -101,6 +101,21 @@ offset_bottom = 201.0312
 mouse_filter = 2
 script = ExtResource("2_badge")
 
+[node name="Mood" type="Label" parent="Holder"]
+editor_description = "[필수] 지우면 오류 — PilotStrip.gd _bind_cell() · _apply_cell()
+스트레스 상태 한 낱말(위축 · 각성 · 패닉) — 원 위. 아군에게만, 상태가 없으면 숨는다. 변형은 코드가 상태에 따라 StressMood*Label 로 바꾼다."
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+offset_top = 6.0
+offset_right = 151.52
+offset_bottom = 38.0
+mouse_filter = 2
+theme_type_variation = &"StressMoodPanicLabel"
+text = "PANIC"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="Hit" type="Button" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — PilotStrip.gd _bind_cell()

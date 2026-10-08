@@ -41,7 +41,9 @@ WeekProgressView (Control, full rect, PASS, theme OutgameTheme.tres)
   ├ %Phase (CaptionLabel 24) · %Title (HeadingLabel 54)        ← left header
   ├ %DateSmall (CaptionLabel 24) · %DateBig (HeadingLabel 58)  ← right header, anchored right
   ├ Divider     y 346
-  ├ %Scroll     x 40 … −40, y 372 … −152 (= bar top − 24), anchors_preset −1 (grows right only)
+  ├ %MapPin     x 40 … −40, y 372 … 1052, hidden by default: fixed slot for the base map (WeekMapSection) on training days
+  ├ %Scroll     x 40 … −40, y 372 … −152 (= bar top − 24), anchors_preset −1 (grows right only);
+  │             on training days code moves its top to %MapPin's bottom + the list gap, so the map never scrolls
   │ └ %List     VBox, separation 14 (card gap) — item scenes + %ListEnd (kept last = gap under the last card)
   └ %Bar        HBox bottom bar, y −128 … 0 — code: `OutgameTheme.fit_bottom_bar(%Bar, %SafeArea)`
     ├ %Stage    BarGhostButton 28, ratio 1, mouse Ignore (a label: 오전 / 오후) + `BarSeparator`; hidden on match days
@@ -79,7 +81,7 @@ WeekProgressView (Control, full rect, PASS, theme OutgameTheme.tres)
   금요일                                5
  ──────────────────────────────────────────
   오후 · 선수를 눌러 면담이나 외출을 요청하세요
-  [  team base map, five pilot tokens   ]   ← vertical scroll (map = first item)
+  [  team base map, five pilot tokens   ]   ← pinned (%MapPin), does not scroll
   ▌(○) 오후            면담 2/2 · 외출 1/1
   ▌(○) Evelyn      전명 전회 교명 …
  [  오후  ][            다음            ]
@@ -101,7 +103,7 @@ meeting / outing, stat abbreviations such as 전명 / 전회 / 교명, `다음` 
   (`season_state.year/month/day`) (`_date_of_day`; it can cross a month, so it goes through
   `CalendarSystem.DAYS_IN_MONTH`).
 * **Body** — the card list, vertical scroll (`%Scroll`, drag-scrolled by `DragScroll.attach` in `_ready`).
-  On a training day the first item is the team base map.
+  On a training day the team base map sits pinned above it (`%MapPin`) and the list starts under the map.
 * **Bottom bar**: training day: `오전` / `오후` (stage label, left) + `다음` (Next, amber, right). Match day:
   the label is hidden and the button takes the full width: `확인` (OK), on Sunday `주 마감 →` (End of
   week); if the player still has a match that day, **`경기 시작`** (Start match) (dark fill, "you are
@@ -126,11 +128,12 @@ stored on its own (`_stage`), so re-entering the day (after a match, after a rel
 | `AFTERNOON` | `AfternoonAway.started` | resting pilots on `Dorm`, pilots out alone on `Entrance`; anyone who cannot be asked is dimmed and not tappable (`AfternoonAway.can_request`) | next day (`on_week_day_confirmed`); while an action is still possible (`AfternoonAway.any_request`) a **warning** `ConfirmPopup` asks first, confirm = pass |
 
 * **Map**: the team's base map (`RunRules.team_map_id(player_team_id)` = `teams.csv` `map_id` → `BaseMap.create`),
-  first item of the list. Spots per colour group and the fan-out of tokens sharing a spot: `base_map/README.md`.
+  pinned in `%MapPin` above the scrolling list. Spots per colour group and the fan-out of tokens sharing a spot: `base_map/README.md`.
   The caption above it (`%Hint`) says what Next does in this stage.
 * **Pilot cards**: after the settlement (`RESULT`, `AFTERNOON`) the detailed training cards follow (below).
 * **Afternoon away states** (rules and record: `features/season/mental/README.md` "Afternoon away states"):
-  a pilot with no tile that day rests in the dorm; a stressed pilot may go out alone (rolled once, recorded).
+  a stressed pilot may go out alone, otherwise any pilot may stay in the dorm by chance (rolled once, recorded).
+  An empty training cell is the basic course, not a rest.
 * The bottom bar's left slot names the half (`오전` for `MORNING` / `RESULT`, `오후` for `AFTERNOON`).
 
 ### Training card
@@ -202,7 +205,7 @@ There are three pieces of week-progress state (all in `season_state`, all saved)
 | Key | Meaning |
 |---|---|
 | `week_day` | The weekday currently shown, 0..6. **-1 means the week has not been opened yet** — the hub · press conference (기자회견) · training plan stretch is all -1, and that value decides whether the standings' "확인" returns to the week or to the hub (`SeasonHub.on_standings_confirmed`). |
-| `week_day_log` | `day(int) → Array[row]` (rows keep `pilot_id` only — the pilot card name is `GameManager.pilot_name(pilot_id)`; row key `color` = that day's cell colour, "" = no tile). Integer keys, so on load it goes through `_int_keyed_dict_in` — otherwise `log[3]` returns an empty array forever and the same weekday's training is applied twice. |
+| `week_day_log` | `day(int) → Array[row]` (rows keep `pilot_id` only — the pilot card name is `GameManager.pilot_name(pilot_id)`; row key `color` = that day's cell colour, an empty cell = the basic course's colour). Integer keys, so on load it goes through `_int_keyed_dict_in` — otherwise `log[3]` returns an empty array forever and the same weekday's training is applied twice. |
 | `training_exp_carry` | The leftover-EXP bank. See the `TrainingBoard` entry. |
 
 All three are cleared by `TrainingBoard.reset_week_progress()`, which runs in two places:

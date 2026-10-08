@@ -35,8 +35,8 @@ extends Control
 #
 # ── 씬 ──────────────────────────────────────────────────────────────────────
 # **배치 · 스타일은 `UI_View_WeekProgressView.tscn` 이 갖는다** (레일 · 머리글 · 구분선 ·
-# 스크롤 · 하단 바). 목록의 카드는 아이템 씬(`WeekMapSection`(+ `BaseMap` · `WeekMapPilot`) ·
-# `WeekMatchCard` · `WeekNoteCard` · `WeekIncidentCard` · `WeekAfternoonCard` ·
+# 스크롤 · 하단 바). 훈련일의 맵(`WeekMapSection`(+ `BaseMap` · `WeekMapPilot`))은 스크롤 위에
+# 고정된 `%MapPin` 에, 목록의 카드는 아이템 씬(`WeekMatchCard` · `WeekNoteCard` · `WeekIncidentCard` · `WeekAfternoonCard` ·
 # `WeekAfternoonDoneCard` · `WeekPilotCard`(+ `WeekStatCell`))을 `%List` 에 붙인다.
 # 이 스크립트는 `%` 노드에 데이터를 넣고, 데이터에 따라 바뀌는 색(역할 띠 · 오늘 칩 ·
 # 내 경기 카드 · 상승/하락 · 오후에 못 부르는 선수의 흐림)과 기기 인셋만 코드로 넣는다.
@@ -82,6 +82,9 @@ const MAP_DIM: Color = Color(1, 1, 1, 0.45)
 @onready var _list_scroll: ScrollContainer = %Scroll
 @onready var _list_body: VBoxContainer = %List
 @onready var _list_end: Control = %ListEnd
+@onready var _map_pin: Control = %MapPin
+## The scroll's top as authored (no map). On training days it moves under `%MapPin`.
+@onready var _scroll_top: float = _list_scroll.offset_top
 @onready var _stage_btn: Button = %Stage
 @onready var _action_btn: Button = %Action
 
@@ -191,15 +194,10 @@ func _board() -> TrainingBoard:
 	return get_node_or_null("PreviewBoard") as TrainingBoard
 
 
-## 오후로 넘어간다 (결과의 "다음"): 그날 칸이 없는 선수는 숙소, 스트레스가 높은 선수는
-## 혼자 외출을 한 번 굴린다 — `AfternoonAway` 가 기록하고, 다시 불러도 그 기록을 돌려준다.
+## 오후로 넘어간다 (결과의 "다음"): 혼자 외출(스트레스가 높은 선수) → 아니면 숙소 휴식을
+## 선수마다 한 번 굴린다. `AfternoonAway` 가 기록하고, 다시 불러도 그 기록을 돌려준다.
 func _begin_afternoon() -> void:
-	var resting: Array = []
-	for raw in (_week_log().get(_day, []) as Array):
-		var row: Dictionary = raw
-		if String(row.get("color", "")) == "":
-			resting.append(int(row["pilot_id"]))
-	AfternoonAway.begin(_gm.season_state, _day, resting)
+	AfternoonAway.begin(_gm.season_state, _day)
 
 
 func _week_log() -> Dictionary:
@@ -260,6 +258,12 @@ func _rebuild_list() -> void:
 			continue
 		_list_body.remove_child(c)
 		c.queue_free()
+	for c in _map_pin.get_children():
+		_map_pin.remove_child(c)
+		c.queue_free()
+	# No map (match days): the list starts where the scene puts it.
+	_map_pin.visible = false
+	_list_scroll.offset_top = _scroll_top
 	# The cards keep the scroll's anchored width (as the code-built list did) — the VBox
 	# would otherwise shrink by the bar's width. Measured from the anchors, not from
 	# `size`: an overflowing scroll grows by its bar, and reading that back would widen
@@ -311,7 +315,13 @@ func _add_item(scene: PackedScene) -> Control:
 ## pilot that cannot be asked any more is dimmed on its spot.
 func _add_map_section(stage: int) -> void:
 	var s: Dictionary = _gm.season_state
-	var section: Control = _add_item(MAP_SECTION_SCENE)
+	# Pinned above the scroll (`%MapPin`), so the map stays while the cards scroll;
+	# the list starts one card gap under it.
+	var section: Control = MAP_SECTION_SCENE.instantiate() as Control
+	_map_pin.add_child(section)
+	_map_pin.visible = true
+	_list_scroll.offset_top = _map_pin.offset_bottom \
+			+ float(_list_body.get_theme_constant("separation"))
 	var hint: String = Loc.t(L.SEASON_WEEK_MAP_HINT_MORNING)
 	if stage == Stage.RESULT:
 		hint = Loc.t(L.SEASON_WEEK_MAP_HINT_RESULT)

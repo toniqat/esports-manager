@@ -282,3 +282,4 @@ STRESS_OUTING_RELIEF,25,MentalSystem.gd,외출을 마친 선수의 스트레스 
 STRESS_SELF_OUTING_MIN,60,AfternoonAway.gd,오후 혼자 외출 - 스트레스가 이 값 이상인 선수만 굴린다 (점)
 STRESS_SELF_OUTING_CHANCE,0.3,AfternoonAway.gd,오후 혼자 외출 - 월~금 오후마다 대상 선수가 혼자 외출할 확률 (확률)
 STRESS_SELF_OUTING_RELIEF,8,AfternoonAway.gd,오후 혼자 외출 - 혼자 외출한 선수의 스트레스 감소 (점)
+AFTERNOON_DORM_CHANCE,0.15,AfternoonAway.gd,오후 숙소 휴식 - 혼자 외출하지 않은 선수가 월~금 오후마다 숙소에 머물러 면담 · 외출이 안 될 확률 (확률)

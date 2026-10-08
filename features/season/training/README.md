@@ -159,11 +159,11 @@ It returns the row list that screen reads — in seat order,
 (`mastery` = mech-mastery EXP handed to `MechMastery.add_training_exp` that day, M3;
 `quirk` = quirk ops run on that pilot that day, `[{kind, result, id?, from?, to?, slots?}]`, empty
 array when none — see "Quirk tiles";
-`stress` = stress that pilot gained that day, `StressSystem.on_training_day`, only when the pilot has a tile
-on that day's row, else 0 — `features/season/mental/README.md` "Stress";
-`color` = the colour symbol of that pilot's placed cell that day (`day_colors(day)`, "" = no tile / basic course):
-the week screen stands the pilot on that colour's spot of the team base map, and "" means the pilot rests in the
-dorm that afternoon, `features/season/week/README.md`).
+`stress` = stress that pilot gained that day, `StressSystem.on_training_day` (every pilot, an empty cell is the
+basic course), `features/season/mental/README.md` "Stress";
+`color` = the colour symbol of that pilot's cell that day (`day_colors(day)`; an empty cell gives the basic
+course's colour, `filler_color()`): the week screen stands the pilot on that colour's spot of the team base map,
+`features/season/week/README.md`).
 `ups` is the points actually gained that day, `exp` the EXP earned that day, `carry` the remainder
 left in the bank after settlement (the screen shows "until the next point" as `carry/EXP_PER_POINT`).
 

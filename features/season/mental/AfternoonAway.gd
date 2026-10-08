@@ -5,10 +5,10 @@ extends RefCounted
 # When a training day turns to the afternoon (week screen, after the morning
 # settlement), some of my pilots are not around for an interview / outing:
 #
-#   • dorm (숙소 휴식): the pilot had no tile on that day's row of the training
-#     board (the caller passes them in `resting`).
-#   • self outing (혼자 외출): a pilot with stress ≥ STRESS_SELF_OUTING_MIN rolls
-#     STRESS_SELF_OUTING_CHANCE to go out alone; stress drops by STRESS_SELF_OUTING_RELIEF.
+#   1. self outing (혼자 외출): a pilot with stress ≥ STRESS_SELF_OUTING_MIN rolls
+#      STRESS_SELF_OUTING_CHANCE to go out alone; stress drops by STRESS_SELF_OUTING_RELIEF.
+#   2. otherwise dorm (숙소 휴식): every pilot rolls AFTERNOON_DORM_CHANCE to stay in the
+#      dorm (no stress change). An empty training cell does not matter (it is the basic course).
 #
 # Rolled **once** per weekday and recorded before it is shown, seeded from
 # run seed + week + day + pilot (like `MentalSystem`), so re-entering the day or
@@ -28,10 +28,9 @@ static func started(state: Dictionary, day: int) -> bool:
 	return MentalSystem.day_record(state, day).get(_KEY, null) is Dictionary
 
 
-## Start the afternoon of `day`: roll once and record. `resting` = my pilots with no
-## tile on that day's row (they rest in the dorm, no roll). A second call returns the
+## Start the afternoon of `day`: roll once and record. A second call returns the
 ## stored record untouched. Not a training day → {}.
-static func begin(state: Dictionary, day: int, resting: Array) -> Dictionary:
+static func begin(state: Dictionary, day: int) -> Dictionary:
 	if not CalendarSystem.is_training_day(day):
 		return {}
 	var rec: Dictionary = MentalSystem.day_record(state, day)
@@ -41,19 +40,20 @@ static func begin(state: Dictionary, day: int, resting: Array) -> Dictionary:
 	var relief: Dictionary = {}
 	var min_stress: int = ConstTable.int_of("STRESS_SELF_OUTING_MIN")
 	var chance: float = ConstTable.num("STRESS_SELF_OUTING_CHANCE")
+	var dorm_chance: float = ConstTable.num("AFTERNOON_DORM_CHANCE")
 	for raw in MentalSystem.my_pilot_ids(state):
 		var pid: int = int(raw)
-		if resting.has(pid):
-			away[str(pid)] = AWAY_DORM
-			continue
-		if StressSystem.value(state, pid) < min_stress:
-			continue
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash([int(state.get("run_seed", 0)), MentalSystem.week_key(state), day,
-				"self_outing", pid])
-		if rng.randf() < chance:
+				"afternoon_away", pid])
+		# Two draws in a fixed order, whatever the stress, so one result never shifts the other.
+		var out_roll: float = rng.randf()
+		var dorm_roll: float = rng.randf()
+		if StressSystem.value(state, pid) >= min_stress and out_roll < chance:
 			away[str(pid)] = AWAY_SELF_OUTING
 			relief[str(pid)] = StressSystem.add(state, pid, -ConstTable.int_of("STRESS_SELF_OUTING_RELIEF"))
+		elif dorm_roll < dorm_chance:
+			away[str(pid)] = AWAY_DORM
 	var out: Dictionary = {"away": away, "relief": relief}
 	rec[_KEY] = out
 	return out

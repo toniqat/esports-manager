@@ -547,7 +547,6 @@ func apply_day_training(day: int) -> Array:
 	var quirk_ops: Dictionary = day_quirk_ops(day)
 	var pilots: Array = player_pilots_by_seat()
 	var carry: Dictionary = exp_carry()
-	var occ: Dictionary = occupancy()
 	var colors: Dictionary = day_colors(day)
 	var rows: Array = []
 	for seat in COLS:
@@ -582,14 +581,20 @@ func apply_day_training(day: int) -> Array:
 			"ups": ups, "exp": exp, "carry": pocket.duplicate(),
 			"mastery": mastery_exp,
 			"quirk": _apply_quirk_ops(int(p.id), quirk_ops.get(seat, [])),
-			# Training result is fixed; only a pilot with a tile that day gains stress.
-			"stress": StressSystem.on_training_day(_gm.season_state, int(p.id), day) \
-					if occ.has(Vector2i(seat, day)) else 0,
-			# Colour symbol of the placed cell ("" = no tile, basic course): the week
-			# screen's base map stands the pilot on that colour's spot.
-			"color": String(colors.get(seat, "")),
+			# Training result is fixed; every pilot trains (an empty cell = the basic
+			# course), so every pilot gains stress.
+			"stress": StressSystem.on_training_day(_gm.season_state, int(p.id), day),
+			# Colour symbol of the cell; an empty cell is the basic course's colour.
+			# The week screen's base map stands the pilot on that colour's spot.
+			"color": String(colors.get(seat, filler_color())),
 		})
 	return rows
+
+
+## Colour symbol of the basic course (`FILLER_TILE_ID`) that fills empty cells.
+func filler_color() -> String:
+	var t: TrainingTile = tile(FILLER_TILE_ID)
+	return String(t.cell_colors[0]) if t != null and not t.cell_colors.is_empty() else ""
 
 
 ## Colour symbol (`TrainingTile.cell_colors`) of each placed cell on row `day`,

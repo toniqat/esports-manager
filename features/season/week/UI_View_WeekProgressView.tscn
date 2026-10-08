@@ -343,6 +343,21 @@ grow_horizontal = 2
 mouse_filter = 2
 theme_type_variation = &"Divider"
 
+[node name="MapPin" type="Control" parent="SafeArea"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _rebuild_list() · _add_map_section()
+Fixed slot for the team base map (WeekMapSection, 1000 x 680) on training days, so it does not scroll. Code shows it and moves %Scroll's top to this slot's bottom + the list gap; on match days it is hidden and %Scroll keeps its authored top."
+visible = false
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 40.0
+offset_top = 372.0
+offset_right = -40.0
+offset_bottom = 1052.0
+grow_horizontal = 2
+mouse_filter = 2
+
 [node name="Scroll" type="ScrollContainer" parent="SafeArea"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _list_scroll

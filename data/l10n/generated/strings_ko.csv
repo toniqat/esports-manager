@@ -1534,7 +1534,7 @@ tx_5GDZXY0QSR,{day} · 사건 발생 · {name}
 tx_CPW05B0HB9,오전
 tx_XXVBB9VYQX,오후
 tx_7YZ50G3EBF,오전 훈련 · 다음을 누르면 오늘 훈련을 정산합니다
-tx_AWKX6T199K,오전 훈련 결과 · 다음을 누르면 오후로 넘어갑니다
+tx_AWKX6T199K,오전 훈련 결과 · 잠시 후 오후로 넘어갑니다 (다음 = 건너뛰기)
 tx_CXNA4K157Z,오후 · 선수를 눌러 면담이나 외출을 요청하세요
 tx_7KR285R4ES,오늘 오후 일정을 마쳤습니다
 tx_5W9RGVB4BS,EXP +{n}
@@ -1551,6 +1551,15 @@ tx_7PKEPM8SGK,{day} 오후 · 외출 {n}회째
 tx_G3FNS00AWW,오후 일정을 건너뛸까요?
 tx_BVDJ9Q0CSD,아직 면담이나 외출을 할 수 있습니다. 이대로 넘어가면 오늘 오후는 쉰 것으로 처리됩니다.
 tx_CGHZDAMEAR,건너뛰기
+tx_C3T5QMKS85,능력치
+tx_1EN72EY6WJ,종합 {n}
+tx_ETEBEXQ310,신뢰도 {n} / {max}
+tx_S8N31JKDV7,외출 {n}회
+tx_BW7K6B2QKP,기벽
+tx_K1AJHH3AP3,장착한 기벽 없음
+tx_PJXWJ5R6J6,메크 연구
+tx_X988TMMPYD,{mech} · {tier} ({value} / {max})
+tx_H106HT101H,이번 주 연구 메크 미지정
 tx_EVS2K4Z4YF,설정
 tx_4S0H7A92KR,설정
 tx_EB8R7HBW32,언어

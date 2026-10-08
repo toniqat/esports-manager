@@ -44,15 +44,12 @@ var name: String:
 const STAT_KEYS: Array = [
 	"field_hit", "field_eva", "engage_hit", "engage_eva", "atk_growth", "hp_growth",
 ]
-## 이름 · 약칭 · 한 줄 설명의 l10n key — `STAT_KEYS` 와 같은 순서. 화면은 표를 직접
-## 읽지 않고 `stat_label(i)` · `stat_short(i)` · `stat_note(i)` 로 번역된 글자를 받는다.
+## 이름 · 한 줄 설명의 l10n key — `STAT_KEYS` 와 같은 순서. 화면은 표를 직접
+## 읽지 않고 `stat_label(i)` · `stat_note(i)` 로 번역된 글자를 받는다. 약칭은 쓰지 않는다
+## ("전명" 대신 "전장 명중") — 좁은 칸도 이름 전체를 적는다.
 const STAT_LABELS: Array = [  # l10n-keys: term.stat.*.name
 	L.TERM_STAT_FIELD_HIT_NAME, L.TERM_STAT_FIELD_EVA_NAME, L.TERM_STAT_ENGAGE_HIT_NAME,
 	L.TERM_STAT_ENGAGE_EVA_NAME, L.TERM_STAT_ATK_GROWTH_NAME, L.TERM_STAT_HP_GROWTH_NAME,
-]
-const STAT_SHORT: Array = [  # l10n-keys: term.stat.*.short
-	L.TERM_STAT_FIELD_HIT_SHORT, L.TERM_STAT_FIELD_EVA_SHORT, L.TERM_STAT_ENGAGE_HIT_SHORT,
-	L.TERM_STAT_ENGAGE_EVA_SHORT, L.TERM_STAT_ATK_GROWTH_SHORT, L.TERM_STAT_HP_GROWTH_SHORT,
 ]
 ## 한 줄 설명. 숫자만으로는 "그래서 무엇을 가르는 값인가"가 안 나오는 자리
 ## (파일럿 상세 패널 · 훈련 결과 · 드래프트 팝업)가 함께 읽는다.
@@ -67,13 +64,6 @@ static func stat_label(i: int) -> String:
 	if i < 0 or i >= STAT_LABELS.size():
 		return ""
 	return Loc.t(String(STAT_LABELS[i]))  # l10n-dynamic: term.stat.*.name
-
-
-## 스탯 `i` 의 약칭(좁은 칸) — 현재 로케일. 범위 밖은 "".
-static func stat_short(i: int) -> String:
-	if i < 0 or i >= STAT_SHORT.size():
-		return ""
-	return Loc.t(String(STAT_SHORT[i]))  # l10n-dynamic: term.stat.*.short
 
 
 ## 스탯 `i` 의 한 줄 설명 — 현재 로케일. 범위 밖은 "".

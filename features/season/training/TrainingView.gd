@@ -21,7 +21,7 @@ extends Control
 #      **그 자리가 곧 판의 열 번호**다. 인게임 스트립과 **같은 가로 초상화**
 #      (`PilotImages.eye_for`, 480×200 밴드)를 쓰고 이름 · 역할 글자는 없다 —
 #      이 줄이 답하는 질문은 "이 열이 누구의 훈련인가" 하나뿐이라 얼굴이
-#      그 답이고 테두리 색이 역할이다. **누를 수 없다**(순수한 열 머리글).
+#      그 답이고 테두리 색이 역할이다. 누르면 그 선수의 상세 시트(`SeasonPilotDetail`).
 #   2. **5×5 훈련판** — 열이 선수, 행이 하루. **칸도 요일 글자도 그리지
 #      않는다**: 바탕은 선수마다 세로 줄 하나뿐이고, 그 위에 **모서리가 둥근**
 #      코스 타일이 앉는다. 여러 칸 타일의 안쪽 경계는 이음매의 **가운데
@@ -218,8 +218,8 @@ func _bind() -> void:
 	(%ConfirmButton as Button).pressed.connect(_on_confirm_pressed)
 
 
-## 열 머리글 다섯. **누를 수 없고 글자도 없다** — 얼굴이 누구인지를, 테두리
-## 색이 역할을 말한다. 인게임 파일럿 스트립과 같은 가로 초상화라 전장에서
+## 열 머리글 다섯. **글자가 없다** — 얼굴이 누구인지를, 테두리 색이 역할을 말한다.
+## 누르면 그 선수의 상세 시트(`SeasonPilotDetail`). 인게임 파일럿 스트립과 같은 가로 초상화라 전장에서
 ## 보던 얼굴과 여기 얼굴이 같은 컷이다. 테두리 색만 코드가 넣는다(역할 = 데이터).
 func _bind_thumbs() -> void:
 	var row: Control = %Thumbs
@@ -231,6 +231,7 @@ func _bind_thumbs() -> void:
 		sty.border_color = Color(role_col.r, role_col.g, role_col.b, 0.85)
 		thumb.add_theme_stylebox_override(&"panel", sty)
 		_thumb_faces.append(thumb.get_node("%Face"))
+		(thumb.get_node("%Hit") as Button).pressed.connect(_on_thumb_pressed.bind(seat))
 		var chip: Panel = thumb.get_node("%ExpChip")
 		if _exp_chip_base == null:
 			_exp_chip_base = OutgameTheme.variation_box(&"TrainingThumbExpChip")
@@ -387,6 +388,12 @@ func _refresh_thumbs() -> void:
 		var p: PlayerData = pilots[seat]
 		(_thumb_faces[seat] as TextureRect).texture = \
 				null if p == null else PilotImages.eye_for(p.id)
+
+
+func _on_thumb_pressed(seat: int) -> void:
+	var p: PlayerData = _pilots()[seat]
+	if p != null:
+		SeasonPilotDetail.open(self, p.id)
 
 
 func _pilots() -> Array:

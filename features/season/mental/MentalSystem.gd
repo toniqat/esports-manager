@@ -5,7 +5,7 @@ extends RefCounted
 # Contract: `docs/outgame_dev_plan.md` §11. State lives in `season_state`:
 #   trust   {"<pid>": int}   my 5 pilots, [TRUST_MIN, TRUST_MAX]
 #   outings {"<pid>": int}   outings taken this run (true ending counter)
-#   mental  {week, interviews_used, outings_used, days{"<day>": {...}}, fatigue{}, press{}}
+#   mental  {week, days{"<day>": {...}}, fatigue{}, press{}}
 # Full shape in `features/season/mental/README.md`. All keys are strings and numbers
 # may come back as floats after save/load — every read goes through int().
 #
@@ -32,8 +32,8 @@ static func init_run(state: Dictionary) -> void:
 	StressSystem.init_run(state)
 
 
-## Week end (`SeasonHub._end_week`, before the calendar moves) — weekly limits
-## reset; a Friday outing's fatigue moves on to next Monday.
+## Week end (`SeasonHub._end_week`, before the calendar moves) — the weekday
+## records reset; a Friday outing's fatigue moves on to next Monday.
 static func end_week(state: Dictionary) -> void:
 	var m: Dictionary = _mental(state)
 	var kept: Dictionary = {}
@@ -44,8 +44,6 @@ static func end_week(state: Dictionary) -> void:
 			kept[str(k)] = d - CalendarSystem.TRAINING_DAYS
 	m["fatigue"] = kept
 	m["week"] = ""
-	m["interviews_used"] = 0
-	m["outings_used"] = 0
 	m["days"] = {}
 
 
@@ -108,34 +106,15 @@ static func add_trust(state: Dictionary, pilot_id: int, delta: int) -> int:
 	return after - before
 
 
-# ── Weekly limits ────────────────────────────────────────────────────────────
-## Interviews allowed per week — scales with the manager's own mental
-## (`StaffSystem.manager_value`; staff never interview).
-static func interviews_per_week(state: Dictionary) -> int:
-	var mental_v: int = StaffSystem.manager_value(state, "mental")
-	var per: int = maxi(1, ConstTable.int_of("MENTAL_INTERVIEWS_PER_STAT"))
-	return clampi(ConstTable.int_of("MENTAL_INTERVIEWS_BASE") + floori(float(mental_v) / float(per)),
-			0, ConstTable.int_of("MENTAL_INTERVIEWS_MAX"))
-
-
-static func interviews_left(state: Dictionary) -> int:
-	return maxi(0, interviews_per_week(state) - int(_week(state).get("interviews_used", 0)))
-
-
-static func outings_left(state: Dictionary) -> int:
-	return maxi(0, ConstTable.int_of("MENTAL_OUTINGS_PER_WEEK") - int(_week(state).get("outings_used", 0)))
-
-
+# ── Action gates ─────────────────────────────────────────────────────────────
+# No weekly count limits: an interview is always possible, an outing once the
+# pilot's trust reaches `TRUST_OUTING_MIN`. The only cap is one action per afternoon.
 static func outing_unlocked(state: Dictionary, pilot_id: int) -> bool:
 	return trust(state, pilot_id) >= ConstTable.int_of("TRUST_OUTING_MIN")
 
 
-static func can_interview(state: Dictionary) -> bool:
-	return interviews_left(state) > 0
-
-
 static func can_outing(state: Dictionary, pilot_id: int) -> bool:
-	return outings_left(state) > 0 and outing_unlocked(state, pilot_id)
+	return outing_unlocked(state, pilot_id)
 
 
 # ── Evening (one action per Mon–Fri) ─────────────────────────────────────────
@@ -151,7 +130,7 @@ static func evening_done(state: Dictionary, day: int) -> bool:
 
 
 ## Start the evening action. Returns a session (`session_view` draws it) or {}
-## when refused (limits, already used, pass). Re-calling on a day whose dialog
+## when refused (trust gate, already used, pass). Re-calling on a day whose dialog
 ## is still open returns the same session (same event).
 static func begin_evening(state: Dictionary, day: int, action: String, pilot_id: int) -> Dictionary:
 	if not CalendarSystem.is_training_day(day):
@@ -169,8 +148,6 @@ static func begin_evening(state: Dictionary, day: int, action: String, pilot_id:
 		return {}
 	var r: Dictionary = {}
 	if action == ACTION_INTERVIEW:
-		if not can_interview(state):
-			return {}
 		r = _draw(state, MentalEvents.KIND_INTERVIEW, pilot_id, _seed(state, day, "interview", pilot_id))
 	elif action == ACTION_OUTING:
 		if not can_outing(state, pilot_id):
@@ -200,11 +177,7 @@ static func finish_evening(state: Dictionary, day: int, choice: int) -> Dictiona
 	var relief: int = StressSystem.relieve(state, pid, String(e["action"]))
 	if relief != 0:
 		(out["notes"] as Array).append({"type": "stress", "pid": pid, "delta": relief})
-	var w: Dictionary = _week(state)
-	if String(e["action"]) == ACTION_INTERVIEW:
-		w["interviews_used"] = int(w.get("interviews_used", 0)) + 1
-	else:
-		w["outings_used"] = int(w.get("outings_used", 0)) + 1
+	if String(e["action"]) == ACTION_OUTING:
 		var o: Dictionary = state.get("outings", {})
 		o[str(pid)] = outings(state, pid) + 1
 		state["outings"] = o
@@ -378,8 +351,7 @@ static func week_key(state: Dictionary) -> String:
 
 
 static func _fresh_mental() -> Dictionary:
-	return {"week": "", "interviews_used": 0, "outings_used": 0, "days": {},
-			"fatigue": {}, "press": {}}
+	return {"week": "", "days": {}, "fatigue": {}, "press": {}}
 
 
 static func _mental(state: Dictionary) -> Dictionary:
@@ -396,8 +368,6 @@ static func _week(state: Dictionary) -> Dictionary:
 	var key: String = week_key(state)
 	if String(m.get("week", "")) != key:
 		m["week"] = key
-		m["interviews_used"] = 0
-		m["outings_used"] = 0
 		m["days"] = {}
 	if not (m.get("days", null) is Dictionary):
 		m["days"] = {}

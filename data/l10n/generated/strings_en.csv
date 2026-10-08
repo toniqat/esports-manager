@@ -1534,7 +1534,7 @@ tx_5GDZXY0QSR,{day} · Incident · {name}
 tx_CPW05B0HB9,Morning
 tx_XXVBB9VYQX,Afternoon
 tx_7YZ50G3EBF,Morning training · Press Next to settle today's training
-tx_AWKX6T199K,Morning training results · Press Next for the afternoon
+tx_AWKX6T199K,Morning training results · the afternoon starts shortly (Next = skip)
 tx_CXNA4K157Z,Afternoon · Tap a player to ask for a meeting or an outing
 tx_7KR285R4ES,This afternoon is done
 tx_5W9RGVB4BS,EXP +{n}
@@ -1551,6 +1551,15 @@ tx_7PKEPM8SGK,{day} afternoon · Outing #{n}
 tx_G3FNS00AWW,Skip this afternoon?
 tx_BVDJ9Q0CSD,"A meeting or an outing is still possible. If you move on now, this afternoon counts as rest."
 tx_CGHZDAMEAR,Skip
+tx_C3T5QMKS85,Stats
+tx_1EN72EY6WJ,Total {n}
+tx_ETEBEXQ310,Trust {n} / {max}
+tx_S8N31JKDV7,{n} {plural:n|outing|outings}
+tx_BW7K6B2QKP,Quirks
+tx_K1AJHH3AP3,No quirks equipped
+tx_PJXWJ5R6J6,Mech research
+tx_X988TMMPYD,{mech} · {tier} ({value} / {max})
+tx_H106HT101H,No research mech this week
 tx_EVS2K4Z4YF,Settings
 tx_4S0H7A92KR,Settings
 tx_EB8R7HBW32,Language

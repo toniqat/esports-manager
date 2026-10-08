@@ -1,0 +1,140 @@
+[gd_scene load_steps=5 format=3 uid="uid://crhnccjwqx1as"]
+
+[ext_resource type="Script" path="res://features/season/SeasonPilotCard.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" uid="uid://cuvnx8d6v5ou0" path="res://resources/UI_Comp_PositionBadge.tscn" id="3_badge"]
+[ext_resource type="Script" path="res://features/season/TrustRing.gd" id="4_ring"]
+
+[node name="SeasonPilotCard" type="Panel"]
+auto_translate_mode = 2
+editor_description = "Small vertical pilot card (season hub roster row · week screen bottom row, five in seat order). Width comes from the row (expand), height fixed here. Badge on top, portrait in the trust ring with the trust pill at its bottom-right, stress line, emphasised note line. Tap = pressed(pilot_id) → SeasonPilotDetail."
+custom_minimum_size = Vector2(0, 256)
+offset_right = 190.0
+offset_bottom = 256.0
+mouse_filter = 2
+theme = ExtResource("2_theme")
+theme_type_variation = &"Card"
+script = ExtResource("1_script")
+
+[node name="BadgeSlot" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 12.0
+offset_bottom = 42.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="PositionBadge_Role" parent="BadgeSlot" instance=ExtResource("3_badge")]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty()"
+layout_mode = 2
+
+[node name="Ring" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty()
+TrustRing: track + arc of trust / TRUST_MAX (colour = trust band, code)."
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -70.0
+offset_top = 50.0
+offset_right = 70.0
+offset_bottom = 190.0
+grow_horizontal = 2
+mouse_filter = 2
+script = ExtResource("4_ring")
+
+[node name="Portrait" type="Control" parent="Ring"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd _draw_portrait()
+Slot for the round portrait (code draws OutgameTheme.add_round_portrait here, diameter = this slot's width), inset inside the ring."
+anchors_preset = 0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 128.0
+offset_bottom = 128.0
+mouse_filter = 2
+
+[node name="TrustPill" type="Panel" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty()
+Trust number pill at the portrait's bottom-right; code paints it in the trust band colour (radius = half the height)."
+custom_minimum_size = Vector2(56, 34)
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = 22.0
+offset_top = 158.0
+offset_right = 78.0
+offset_bottom = 192.0
+mouse_filter = 2
+theme_type_variation = &"ProgressFill"
+
+[node name="TrustText" type="Label" parent="TrustPill"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot()"
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 22
+text = "42"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Stress" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty()
+Stress now; code switches CaptionLabel / NegativeLabel (shaken)."
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 6.0
+offset_top = 196.0
+offset_right = -6.0
+offset_bottom = 222.0
+grow_horizontal = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 20
+text = "Stress 42"
+horizontal_alignment = 1
+clip_text = true
+
+[node name="StressNote" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd set_note() · pulse_note()
+Emphasised line: hub = mood when shaken; week = that day's stress change (code picks the label variation)."
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 6.0
+offset_top = 220.0
+offset_right = -6.0
+offset_bottom = 252.0
+grow_horizontal = 2
+theme_type_variation = &"NegativeLabel"
+theme_override_font_sizes/font_size = 28
+text = "+6"
+horizontal_alignment = 1
+vertical_alignment = 1
+clip_text = true
+
+[node name="Hit" type="Button" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd _ready() · set_tappable()
+Tap target over the whole card → pressed(pilot_id)."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+flat = true

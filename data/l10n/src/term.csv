@@ -37,12 +37,12 @@ tx_Z9BYFSRBZ5,term.stat.engage_hit.name,active,파일럿 스탯 이름 (PlayerDa
 tx_E81Q2HB2QS,term.stat.engage_eva.name,active,파일럿 스탯 이름 (PlayerData.stat_label),,,교전 회피,Engage Evasion,draft,4cca38cd
 tx_NZ8J811NK6,term.stat.atk_growth.name,active,파일럿 스탯 이름 (PlayerData.stat_label),,,공격 성장,ATK Growth,draft,d7c6c633
 tx_9SGTNE082E,term.stat.hp_growth.name,active,파일럿 스탯 이름 (PlayerData.stat_label),,,체력 성장,HP Growth,draft,3a298f8a
-tx_1M94DFD405,term.stat.field_hit.short,active,파일럿 스탯 약칭 — 좁은 칸 (PlayerData.stat_short),5,,전명,B.Hit,draft,c507731e
-tx_FYFAJ8GC5N,term.stat.field_eva.short,active,파일럿 스탯 약칭 — 좁은 칸 (PlayerData.stat_short),5,,전회,B.Eva,draft,2791ba74
-tx_FCMSTM5MAK,term.stat.engage_hit.short,active,파일럿 스탯 약칭 — 좁은 칸 (PlayerData.stat_short),5,,교명,E.Hit,draft,e11d8fd7
-tx_SN9QJ1JZF0,term.stat.engage_eva.short,active,파일럿 스탯 약칭 — 좁은 칸 (PlayerData.stat_short),5,,교회,E.Eva,draft,05de2536
-tx_RNKSXJ1BRC,term.stat.atk_growth.short,active,파일럿 스탯 약칭 — 좁은 칸 (PlayerData.stat_short),5,,공성,A.Gr,draft,678fce8d
-tx_VQ5EQRK722,term.stat.hp_growth.short,active,파일럿 스탯 약칭 — 좁은 칸 (PlayerData.stat_short),5,,체성,H.Gr,draft,b9092d47
+tx_1M94DFD405,term.stat.field_hit.short,deprecated,파일럿 스탯 약칭 — 좁은 칸 (PlayerData.stat_short),5,,전명,B.Hit,draft,c507731e
+tx_FYFAJ8GC5N,term.stat.field_eva.short,deprecated,파일럿 스탯 약칭 — 좁은 칸 (PlayerData.stat_short),5,,전회,B.Eva,draft,2791ba74
+tx_FCMSTM5MAK,term.stat.engage_hit.short,deprecated,파일럿 스탯 약칭 — 좁은 칸 (PlayerData.stat_short),5,,교명,E.Hit,draft,e11d8fd7
+tx_SN9QJ1JZF0,term.stat.engage_eva.short,deprecated,파일럿 스탯 약칭 — 좁은 칸 (PlayerData.stat_short),5,,교회,E.Eva,draft,05de2536
+tx_RNKSXJ1BRC,term.stat.atk_growth.short,deprecated,파일럿 스탯 약칭 — 좁은 칸 (PlayerData.stat_short),5,,공성,A.Gr,draft,678fce8d
+tx_VQ5EQRK722,term.stat.hp_growth.short,deprecated,파일럿 스탯 약칭 — 좁은 칸 (PlayerData.stat_short),5,,체성,H.Gr,draft,b9092d47
 tx_NP797WYRHS,term.stat.field_hit.note,active,파일럿 스탯 한 줄 설명 (PlayerData.stat_note),,,전장 {tx_9Z3YXBGMTT}과 공격 카드의 명중 판정에 쓰인다. 상대 전장 회피와의 비가 확률을 정한다.,Used for hit checks of battlefield engages and attack cards. The ratio to the opponent's Battlefield Evasion sets the chance.,draft,03772301
 tx_ZXHHD0P38E,term.stat.field_eva.note,active,파일럿 스탯 한 줄 설명 (PlayerData.stat_note),,,전장에서 맞을 확률을 낮춘다. 상대 전장 명중과의 비가 확률을 정한다.,Lowers the chance of being hit on the battlefield. The ratio to the opponent's Battlefield Hit sets the chance.,draft,9c7d3667
 tx_X87R5A0F2R,term.stat.engage_hit.note,active,파일럿 스탯 한 줄 설명 (PlayerData.stat_note),,,{tx_9Z3YXBGMTT} 무대에서만 읽는 명중. 전장 명중과 따로 산다.,Hit used only on the engage stage. Separate from Battlefield Hit.,draft,c76d62a0

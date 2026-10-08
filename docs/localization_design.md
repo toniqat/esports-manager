@@ -84,7 +84,7 @@ ban/pick role tags → `match.ban_pick.role.*` (English caps in every locale, ow
 | `GameEnums.phase_label(phase: int) -> String` | 시즌 페이즈 이름 "프리시즌 국제대회" (모르는 값 "—") — 네 화면의 `PHASE_NAMES` 표 대신 | `term.phase.{preseason,preseason_intl,midseason,midseason_intl,regular,regular_intl}` |
 | `GameEnums.rarity_label(tier: int) -> String` | 등급 0..4 일반 · 고급 · 희귀 · 영웅 · 전설 (양끝으로 자름). 기벽 3단(일반 · 희귀 · 영웅)은 0 · 2 · 3 으로 옮겨 부른다 | `term.rarity.{common,uncommon,rare,epic,legendary}` |
 | `GameEnums.tag_label(tag_id: String)` · `GameEnums.tags_text(raw: String) -> String` | 스킬 · 패시브 성향 태그 — `keyword` 셀(`engage\|strategy`) → "교전, 전략 점수" | `term.tag.*` |
-| `PlayerData.stat_label(i: int)` · `stat_short(i)` · `stat_note(i)` | 스탯 여섯(`STAT_KEYS` 순) 이름 · 약칭 · 한 줄 설명 (범위 밖 "") | `term.stat.<stat_key>.{name,short,note}` |
+| `PlayerData.stat_label(i: int)` · `stat_note(i)` | 스탯 여섯(`STAT_KEYS` 순) 이름 · 한 줄 설명 (범위 밖 ""). 약칭은 쓰지 않는다 (`term.stat.*.short` deprecated) | `term.stat.<stat_key>.{name,note}` |
 | `OutgameTheme.role_name(i: int)` | 메크 역할군 탱커 · 격투 · 암살 · 서폿 · 원딜 (`GameEnums.Role` 순) | `term.mech_role.{tank,fighter,assassin,support,sniper}` |
 | `OutgameTheme.day_letter(i: int)` · `day_name(i)` | 요일 월(0) … 일(6) — 약칭 "월" / 이름 "월요일" (범위 밖 "") | `term.day.short.*` · `term.day.long.*` (`mon` … `sun`) |
 | `CardData.category_label(cat: String)` (static) | 카드 분류 하나 "성장" (모르는 id 그대로). 카드 한 장의 목록은 인스턴스 `categories_text()` | `term.card_cat.*` |

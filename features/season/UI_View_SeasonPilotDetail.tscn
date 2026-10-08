@@ -1,0 +1,388 @@
+[gd_scene load_steps=4 format=3 uid="uid://kjgk0iv1c7iq"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+[ext_resource type="Script" path="res://features/season/SeasonPilotDetail.gd" id="2_script"]
+[ext_resource type="PackedScene" path="res://features/season/UI_Comp_SeasonPilotCard.tscn" id="3_card"]
+
+[node name="SeasonPilotDetail" type="VBoxContainer"]
+editor_description = "Pilot detail sheet body (SeasonPilotDetail.open → HubSheet body, title = pilot name). Top-wide, 16 short of the body width (scroll-bar room); the sheet's scroll height follows this node's height. Stat names are full names (no short forms)."
+anchors_preset = 10
+anchor_right = 1.0
+offset_right = -16.0
+grow_horizontal = 2
+mouse_filter = 2
+theme = ExtResource("1_theme")
+theme_override_constants/separation = 0
+script = ExtResource("2_script")
+
+[node name="Head" type="HBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 28
+
+[node name="SeasonPilotCard_Head" parent="Head" instance=ExtResource("3_card")]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — SeasonPilotDetail.gd _bind()
+The same card as the hub / week row, not tappable here."
+custom_minimum_size = Vector2(200, 256)
+layout_mode = 2
+
+[node name="Info" type="VBoxContainer" parent="Head"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="Total" type="Label" parent="Head/Info"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — SeasonPilotDetail.gd _bind()"
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 34
+text = "Total 514"
+
+[node name="Trust" type="Label" parent="Head/Info"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — SeasonPilotDetail.gd _bind()
+Colour = trust band (code)."
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+text = "Trust 42 / 100"
+
+[node name="Outings" type="Label" parent="Head/Info"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — SeasonPilotDetail.gd _bind()"
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+text = "2 outings"
+
+[node name="Mood" type="Label" parent="Head/Info"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — SeasonPilotDetail.gd _bind()
+Stress line (StressSystem.line); NegativeLabel when shaken (code)."
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+text = "Stress 42"
+
+[node name="GapStats" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="StatsTitle" type="Label" parent="."]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 28
+text = "tx_C3T5QMKS85"
+vertical_alignment = 1
+
+[node name="Stats" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — SeasonPilotDetail.gd _fill_stats()
+One row per PlayerData.STAT_KEYS entry, in order (code fills by index)."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="Stat0" type="VBoxContainer" parent="Stats"]
+editor_description = "[필수] 경로로 참조 — Line/Name · Line/Value · Note 이름 · 부모 유지 — SeasonPilotDetail.gd _fill_stats()"
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Line" type="HBoxContainer" parent="Stats/Stat0"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Name" type="Label" parent="Stats/Stat0/Line"]
+auto_translate_mode = 2
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 26
+text = "Battlefield Hit"
+vertical_alignment = 1
+
+[node name="Value" type="Label" parent="Stats/Stat0/Line"]
+auto_translate_mode = 2
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 30
+text = "85"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Note" type="Label" parent="Stats/Stat0"]
+auto_translate_mode = 2
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 18
+text = "Used for hit checks of battlefield engages and attack cards."
+autowrap_mode = 3
+
+[node name="Stat1" type="VBoxContainer" parent="Stats"]
+editor_description = "[필수] 경로로 참조 — Line/Name · Line/Value · Note 이름 · 부모 유지 — SeasonPilotDetail.gd _fill_stats()"
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Line" type="HBoxContainer" parent="Stats/Stat1"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Name" type="Label" parent="Stats/Stat1/Line"]
+auto_translate_mode = 2
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 26
+text = "Battlefield Hit"
+vertical_alignment = 1
+
+[node name="Value" type="Label" parent="Stats/Stat1/Line"]
+auto_translate_mode = 2
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 30
+text = "85"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Note" type="Label" parent="Stats/Stat1"]
+auto_translate_mode = 2
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 18
+text = "Used for hit checks of battlefield engages and attack cards."
+autowrap_mode = 3
+
+[node name="Stat2" type="VBoxContainer" parent="Stats"]
+editor_description = "[필수] 경로로 참조 — Line/Name · Line/Value · Note 이름 · 부모 유지 — SeasonPilotDetail.gd _fill_stats()"
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Line" type="HBoxContainer" parent="Stats/Stat2"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Name" type="Label" parent="Stats/Stat2/Line"]
+auto_translate_mode = 2
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 26
+text = "Battlefield Hit"
+vertical_alignment = 1
+
+[node name="Value" type="Label" parent="Stats/Stat2/Line"]
+auto_translate_mode = 2
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 30
+text = "85"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Note" type="Label" parent="Stats/Stat2"]
+auto_translate_mode = 2
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 18
+text = "Used for hit checks of battlefield engages and attack cards."
+autowrap_mode = 3
+
+[node name="Stat3" type="VBoxContainer" parent="Stats"]
+editor_description = "[필수] 경로로 참조 — Line/Name · Line/Value · Note 이름 · 부모 유지 — SeasonPilotDetail.gd _fill_stats()"
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Line" type="HBoxContainer" parent="Stats/Stat3"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Name" type="Label" parent="Stats/Stat3/Line"]
+auto_translate_mode = 2
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 26
+text = "Battlefield Hit"
+vertical_alignment = 1
+
+[node name="Value" type="Label" parent="Stats/Stat3/Line"]
+auto_translate_mode = 2
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 30
+text = "85"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Note" type="Label" parent="Stats/Stat3"]
+auto_translate_mode = 2
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 18
+text = "Used for hit checks of battlefield engages and attack cards."
+autowrap_mode = 3
+
+[node name="Stat4" type="VBoxContainer" parent="Stats"]
+editor_description = "[필수] 경로로 참조 — Line/Name · Line/Value · Note 이름 · 부모 유지 — SeasonPilotDetail.gd _fill_stats()"
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Line" type="HBoxContainer" parent="Stats/Stat4"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Name" type="Label" parent="Stats/Stat4/Line"]
+auto_translate_mode = 2
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 26
+text = "Battlefield Hit"
+vertical_alignment = 1
+
+[node name="Value" type="Label" parent="Stats/Stat4/Line"]
+auto_translate_mode = 2
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 30
+text = "85"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Note" type="Label" parent="Stats/Stat4"]
+auto_translate_mode = 2
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 18
+text = "Used for hit checks of battlefield engages and attack cards."
+autowrap_mode = 3
+
+[node name="Stat5" type="VBoxContainer" parent="Stats"]
+editor_description = "[필수] 경로로 참조 — Line/Name · Line/Value · Note 이름 · 부모 유지 — SeasonPilotDetail.gd _fill_stats()"
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Line" type="HBoxContainer" parent="Stats/Stat5"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Name" type="Label" parent="Stats/Stat5/Line"]
+auto_translate_mode = 2
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 26
+text = "Battlefield Hit"
+vertical_alignment = 1
+
+[node name="Value" type="Label" parent="Stats/Stat5/Line"]
+auto_translate_mode = 2
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 30
+text = "85"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Note" type="Label" parent="Stats/Stat5"]
+auto_translate_mode = 2
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 18
+text = "Used for hit checks of battlefield engages and attack cards."
+autowrap_mode = 3
+
+[node name="GapQuirks" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="QuirksTitle" type="Label" parent="."]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 28
+text = "tx_BW7K6B2QKP"
+vertical_alignment = 1
+
+[node name="QuirksEmpty" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — SeasonPilotDetail.gd _fill_quirks()"
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_type_variation = &"FaintLabel"
+text = "tx_K1AJHH3AP3"
+
+[node name="Quirks" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — SeasonPilotDetail.gd _fill_quirks()
+One duplicate of %QuirkLine per equipped quirk (name · effect, grade colour)."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="QuirkLine" type="Label" parent="Quirks"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — SeasonPilotDetail.gd _fill_quirks()
+Hidden template; code duplicates it per quirk."
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "Sharpshooter · Battlefield Hit +3"
+autowrap_mode = 3
+
+[node name="GapResearch" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ResearchTitle" type="Label" parent="."]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 28
+text = "tx_PJXWJ5R6J6"
+vertical_alignment = 1
+
+[node name="Research" type="Label" parent="."]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — SeasonPilotDetail.gd _fill_research()
+Research mech · tier (value / max), tier colour; FaintLabel when none."
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "Headsman · Skilled (520 / 1000)"
+autowrap_mode = 3
+
+[node name="Tail" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+mouse_filter = 2

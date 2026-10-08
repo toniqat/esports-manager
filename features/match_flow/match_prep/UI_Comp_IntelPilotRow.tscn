@@ -113,7 +113,7 @@ offset_top = 18.0
 offset_bottom = 40.0
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 16
-text = "전명"
+text = "전장 명중"
 horizontal_alignment = 1
 clip_text = true
 
@@ -144,7 +144,7 @@ offset_top = 18.0
 offset_bottom = 40.0
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 16
-text = "전회"
+text = "전장 회피"
 horizontal_alignment = 1
 clip_text = true
 
@@ -175,7 +175,7 @@ offset_top = 18.0
 offset_bottom = 40.0
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 16
-text = "교명"
+text = "교전 명중"
 horizontal_alignment = 1
 clip_text = true
 
@@ -206,7 +206,7 @@ offset_top = 18.0
 offset_bottom = 40.0
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 16
-text = "교회"
+text = "교전 회피"
 horizontal_alignment = 1
 clip_text = true
 
@@ -237,7 +237,7 @@ offset_top = 18.0
 offset_bottom = 40.0
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 16
-text = "공성"
+text = "공격 성장"
 horizontal_alignment = 1
 clip_text = true
 
@@ -268,7 +268,7 @@ offset_top = 18.0
 offset_bottom = 40.0
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 16
-text = "체성"
+text = "체력 성장"
 horizontal_alignment = 1
 clip_text = true
 

@@ -4,12 +4,12 @@
 
 [node name="WeekMapPilot" type="Control"]
 auto_translate_mode = 2
-editor_description = "One of my pilots on the base map (BaseMap %Tokens). The portrait centre stands on the spot; the chip under it shows the name, then after the morning settlement the day's stat ups (%Gain) and stress change (%Stress). Code dims the whole token (modulate) when the pilot cannot be asked this afternoon."
-custom_minimum_size = Vector2(136, 160)
+editor_description = "One of my pilots on the base map (BaseMap %Tokens). The portrait centre stands on the spot. No name under the portrait. Morning: a speech bubble over the portrait names that day's training (%Bubble). After Next the day's results rise out of the portrait top and fade (%Floats, duplicates of %FloatLine). Afternoon: %Away names an away state (혼자 외출 / 숙소 휴식); code dims the whole token (modulate) when the pilot cannot be asked."
+custom_minimum_size = Vector2(136, 120)
 layout_mode = 3
 anchors_preset = 0
 offset_right = 136.0
-offset_bottom = 160.0
+offset_bottom = 120.0
 mouse_filter = 2
 theme = ExtResource("1_theme")
 
@@ -23,8 +23,49 @@ offset_right = 110.0
 offset_bottom = 84.0
 mouse_filter = 2
 
-[node name="Chip" type="PanelContainer" parent="."]
-editor_description = "Name / result chip, centred under the portrait; grows with its lines."
+[node name="BubbleTail" type="Node2D" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token()
+Bubble pointer under %Bubble (border + fill triangles); shown / hidden with it."
+position = Vector2(68, -12)
+
+[node name="Edge" type="Polygon2D" parent="BubbleTail"]
+color = Color(0.780, 0.784, 0.808, 1)
+polygon = PackedVector2Array(-10, -2, 10, -2, 0, 10)
+
+[node name="Fill" type="Polygon2D" parent="BubbleTail"]
+color = Color(1, 1, 1, 1)
+polygon = PackedVector2Array(-7, -3, 7, -3, 0, 6)
+
+[node name="Bubble" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token()
+Speech bubble over the portrait (WeekMapBubble): the training this pilot does this morning. Centred on the portrait, grows up and sideways with the text."
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_top = -48.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_type_variation = &"WeekMapBubble"
+
+[node name="BubbleText" type="Label" parent="Bubble"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token()"
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 18
+text = "Basic Course"
+horizontal_alignment = 1
+
+[node name="Away" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token()
+Afternoon away-state chip under the portrait (혼자 외출 / 숙소 휴식); hidden otherwise."
+visible = false
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
@@ -35,39 +76,45 @@ grow_horizontal = 2
 mouse_filter = 2
 theme_type_variation = &"SurfaceChip"
 
-[node name="Lines" type="VBoxContainer" parent="Chip"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 0
-
-[node name="Name" type="Label" parent="Chip/Lines"]
+[node name="Name" type="Label" parent="Away"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token() · BaseMap.gd _fill_preview()
-Pilot name, or the afternoon away state (혼자 외출 / 숙소 휴식)."
+Away-state text (or the spot name in the BaseMap preview)."
 layout_mode = 2
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 18
-text = "Evelyn"
+text = "Dorm"
 horizontal_alignment = 1
 
-[node name="Gain" type="Label" parent="Chip/Lines"]
+[node name="Floats" type="Control" parent="."]
 unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token() · BaseMap.gd _fill_preview()
-Stat points gained that day (short names), or the EXP earned when none rose. Shown after the morning settlement only."
-layout_mode = 2
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _play_result_fx()
+Origin of the rising result texts: the portrait's top edge, token-wide. Code adds duplicates of %FloatLine here and tweens them up while they fade."
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = -40.0
+offset_top = -6.0
+offset_right = 40.0
+offset_bottom = -6.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="FloatLine" type="Label" parent="Floats"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _play_result_fx()
+Hidden template of one rising result line (stat / stress / mastery / quirk); code sets text + colour."
+visible = false
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = -30.0
+grow_horizontal = 2
 theme_type_variation = &"PositiveLabel"
-theme_override_font_sizes/font_size = 17
-text = "전명+1 교회+1"
-horizontal_alignment = 1
-
-[node name="Stress" type="Label" parent="Chip/Lines"]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token() · BaseMap.gd _fill_preview()
-Stress change of the day (row key stress). Shown after the morning settlement only."
-layout_mode = 2
-theme_type_variation = &"NegativeLabel"
-theme_override_font_sizes/font_size = 16
-text = "스트레스 +6"
+theme_override_colors/font_outline_color = Color(1, 1, 1, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 22
+text = "Battlefield Hit +1"
 horizontal_alignment = 1
 
 [node name="Hit" type="Button" parent="."]

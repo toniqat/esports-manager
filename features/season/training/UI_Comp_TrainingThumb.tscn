@@ -4,7 +4,7 @@
 
 [node name="TrainingThumb" type="Panel"]
 auto_translate_mode = 2
-editor_description = "One column header of the training board (TrainingView %Thumbs). Border colour = the seat's role colour (code duplicates ThumbFrame and sets border_color). Not tappable."
+editor_description = "One column header of the training board (TrainingView %Thumbs). Border colour = the seat's role colour (code duplicates ThumbFrame and sets border_color). Tap (%Hit) = pilot detail sheet (SeasonPilotDetail)."
 clip_contents = true
 custom_minimum_size = Vector2(170, 70.83334)
 offset_right = 170.0
@@ -63,3 +63,17 @@ theme_override_font_sizes/font_size = 17
 text = "EXP ×1.10"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="Hit" type="Button" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingView.gd _bind_thumbs()
+Tap target over the whole header → that seat's pilot detail sheet."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+flat = true

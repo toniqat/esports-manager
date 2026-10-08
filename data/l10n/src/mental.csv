@@ -242,7 +242,7 @@ tx_WR6Q5QGMZ8,mental.ui.note.all_stats,deprecated,일시 스탯 대상이 전부
 tx_MD8BDCV48Q,mental.ui.note.until_match,active,일시 보정 기간 — 다음 경기까지,,,다음 경기까지,Until next match,draft,f93b6d08
 tx_D3NT6QFHKK,mental.ui.mod_source.incident,active,스태프 시트 일시 보정 출처 — 선수 사건,,,사건,Incident,draft,cc42d930
 tx_4HBPFE2YRG,mental.ui.stress.value,active,스트레스 수치 한 줄 (StressSystem.line) - 허브 로스터 · 전투 상세 패널,,,스트레스 {n},Stress {n},draft,7e718034
-tx_FVCD1WTE8P,mental.ui.stress.day,active,시간 경과 훈련 카드 - 현재 스트레스와 그날 훈련으로 오른 양,,,스트레스 {n} ({delta}),Stress {n} ({delta}),draft,6666779c
+tx_FVCD1WTE8P,mental.ui.stress.day,deprecated,시간 경과 훈련 카드 - 현재 스트레스와 그날 훈련으로 오른 양,,,스트레스 {n} ({delta}),Stress {n} ({delta}),draft,6666779c
 tx_4ANBP6M80F,mental.ui.stress.mood.shaken,active,"스트레스 상태 - 기준치 이상, 경기 밖에서도 유지 (StressSystem.mood_label)",,,위축,Shaken,draft,cf81feec
 tx_9M70CG3F4P,mental.ui.stress.mood.awaken,active,"스트레스 상태 - 경기 중 시험 결과(+), 경기 끝까지",,,각성,Awakened,draft,a2d1ab7b
 tx_526PWNR0KP,mental.ui.stress.mood.panic,active,"스트레스 상태 - 경기 중 시험 결과(-), 경기 끝까지",,,패닉,Panic,draft,c0a785ec

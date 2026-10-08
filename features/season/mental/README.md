@@ -26,9 +26,9 @@ the evening card + incident card live on the week screen (`features/season/week/
   It affects **only** outing unlock (`TRUST_OUTING_MIN`) and the true ending — no match stat effect.
 - **Evening** (Mon–Fri, one action per day): interview / outing / pass. Leaving the day without
   choosing records a pass. Manager-only — staff never interview or go out.
-  - Interviews per week = `MENTAL_INTERVIEWS_BASE + manager mental / MENTAL_INTERVIEWS_PER_STAT`
-    (capped `MENTAL_INTERVIEWS_MAX`), manager mental = `StaffSystem.manager_value(state, "mental")`.
-  - Outing: `MENTAL_OUTINGS_PER_WEEK` per week, only with a pilot at trust ≥ `TRUST_OUTING_MIN`.
+  - **No weekly count limits** (removed 2026-10): an interview is always possible; the only cap is
+    one action per afternoon.
+  - Outing: only with a pilot at trust ≥ `TRUST_OUTING_MIN`.
     Effects: the row's clauses (trust +, `pmod:all:+N:-1` until next match) + `outings[pid] += 1` +
     **next training day** EXP × `MENTAL_OUTING_EXP_MULT` for that pilot
     (`training_exp_mult(state, pid, day)`; `TrainingBoard` (M3) multiplies it; a Friday outing
@@ -68,8 +68,8 @@ the evening card + incident card live on the week screen (`features/season/week/
   `STRESS_AWAKEN_CHANCE` awaken (stats × (1 + `STRESS_AWAKEN_STAT`)), else panic (× (1 − `STRESS_PANIC_STAT`)),
   until the match ends. A shaken pilot is never tested, and a tested pilot is not shaken in that match
   (the roster copy was built before the match). See `features/battle_sim/stress/README.md`.
-- Display: hub roster row (`HubRosterRow` stress line), week training card (`%Stress`, value + that day's delta),
-  battle strip / detail panel (`stress/README.md`). Keys `mental.ui.stress.*` (value, day, mood names).
+- Display: `SeasonPilotCard` (hub roster · week bottom row: stress line + mood / that day's delta), `SeasonPilotDetail` sheet,
+  battle strip / detail panel (`stress/README.md`). Keys `mental.ui.stress.*` (value, mood names; `day` deprecated).
   Shared words for stress / moods are not in `term.*` yet (only the base owner adds there).
 
 ## Afternoon away states
@@ -90,7 +90,7 @@ after the morning settlement), some of my pilots are away and cannot be asked fo
   public accessor of `_day`), so `end_week` / a new week key clears it with the rest. Old saves have no
   `afternoon` key: that day simply has not reached the afternoon yet.
 - **Who can be asked** (`can_request(state, day, pid)`): the afternoon has started, the day's evening action is
-  not done, the pilot is not away, and `can_interview` or `can_outing(pid)` holds. `any_request` = some pilot can
+  not done and the pilot is not away (an interview is always possible). `any_request` = some pilot can
   (the week screen warns before Next skips the afternoon). The interview / outing itself is the unchanged
   evening flow (`begin_evening` / `finish_evening`, record key `evening`).
 - Spots on the team base map (dorm / entrance): `features/season/week/base_map/README.md`.
@@ -99,7 +99,7 @@ after the morning settlement), some of my pilots are away and cannot be asked fo
 ```
 {
   "week": "<phase>-<phase_week>",   # week the fields below belong to ("" after end_week)
-  "interviews_used": int, "outings_used": int,
+  # (old saves may still carry "interviews_used" / "outings_used": ignored, no longer written)
   "days": {"<day 0..4>": {
       "evening":  {action: "interview"|"outing"|"pass", pilot_id, event, choice (-1 = open), outcome{}},
       "incident": {} (rolled, none) | {event, pilot_id, choice (-1 = pending), outcome{}}
@@ -169,8 +169,7 @@ A note whose stat is `all` reads `training.stat.all` ("모든 파일럿 능력�
 
 ## API (static, `state` = `season_state`)
 `init_run` · `end_week` · `training_exp_mult(state, pid, day)` · `trust` · `outings` · `add_trust` ·
-`true_ending_pilots` · `my_pilot_ids` · `interviews_per_week` / `interviews_left` / `outings_left` /
-`outing_unlocked` / `can_interview` / `can_outing` · `evening` / `evening_done` / `begin_evening(state, day, action, pid)` /
+`true_ending_pilots` · `my_pilot_ids` · `outing_unlocked` / `can_outing` · `evening` / `evening_done` / `begin_evening(state, day, action, pid)` /
 `finish_evening(state, day, choice)` · `ensure_incident` / `incident_pending` / `incident_session` /
 `resolve_incident` · `press_session` / `resolve_press` · `session_view(state, session)` → `{kind, event, pilot_id, tag, lines, choices}` (translated text).
 

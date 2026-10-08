@@ -81,7 +81,7 @@ func _fill_preview() -> void:  # l10n-ignore
 	var vals: Array = [90, 90, 92, 88, 90, 86]
 	var stats: Array = []
 	for i in vals.size():
-		stats.append({"label": PlayerData.stat_short(i), "text": str(vals[i]), "value": vals[i]})
+		stats.append({"label": PlayerData.stat_label(i), "text": str(vals[i]), "value": vals[i]})
 	fill({
 		"pilot_id": 2, "name": "Shunguang", "role": GameEnums.Role.ASSASSIN,
 		"role_label": GameEnums.role_position_label(GameEnums.Role.ASSASSIN),

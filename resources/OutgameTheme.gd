@@ -887,6 +887,13 @@ static func _add_screen_variations(th: Theme) -> void:
 	_add_derived(th, "WeekRail", &"SunkPanel", flat_style(RAIL, 48))
 	_add_derived(th, "WeekDayChip", &"AccentChip", flat_style(Color(0, 0, 0, 0), WEEK_DAY_CHIP_RADIUS))
 	_add_derived(th, "WeekDayChipToday", &"AccentChip", flat_style(ACCENT, WEEK_DAY_CHIP_RADIUS))
+	# 맵 토큰 위 말풍선 (오전: 그 시간의 훈련 이름)
+	var bubble := flat_style(SURFACE, 14, BORDER_STRONG, 2)
+	bubble.content_margin_left = 12.0
+	bubble.content_margin_right = 12.0
+	bubble.content_margin_top = 3.0
+	bubble.content_margin_bottom = 3.0
+	_add_derived(th, "WeekMapBubble", &"SurfaceChip", bubble)
 
 	# season/press — 기자회견 메신저 (말풍선 안쪽 여백은 씬의 `Pad` MarginContainer)
 	var npc := flat_style(SURFACE, 22, BORDER)

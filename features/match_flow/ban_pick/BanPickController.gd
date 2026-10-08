@@ -391,7 +391,7 @@ func _quirk_rows(side: int, mech_id: int, seat: int) -> Dictionary:
 		if r.is_empty():
 			continue
 		rows.append({"name": QuirkSystem.name_of(int(id)), "grade": int(r["grade"]),
-				"effect": QuirkSystem.effect_text(int(id), true),
+				"effect": QuirkSystem.effect_text(int(id)),
 				"active": QuirkSystem.cond_holds(s, pd, mech_id, String(r["cond"]))})
 	return {"pilot": pd.name, "slots": QuirkSystem.slots_of(s, pd.id),
 			"total": QuirkSystem.bonus_total(s, pd, mech_id), "rows": rows}

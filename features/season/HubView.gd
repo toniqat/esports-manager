@@ -6,7 +6,7 @@ extends Control
 # roster, with two action buttons: "이번 주 시작" (route to TRAINING) and a
 # context-sensitive standings button (INTL → playoff → league).
 #
-# **Layout lives in `UI_View_HubView.tscn`** (header labels, five `HubRosterRow` instances, the
+# **Layout lives in `UI_View_HubView.tscn`** (header labels, five `SeasonPilotCard` instances, the
 # `HubManageCard` row, toast, bottom bar). This script binds `%` nodes, fills data, wires
 # signals and applies the device safe-area offsets (pattern B, `docs/mobile_safe_area.md`):
 # the whole screen is lowered to the safe top, the background stretched back up, and the
@@ -21,7 +21,7 @@ var _phase_lbl: Label
 var _week_lbl: Label
 var _next_match_lbl: Label
 var _toast_lbl: Label
-var _roster_rows: Array = []    # HubRosterRow, seat order
+var _roster_cards: Array = []   # SeasonPilotCard, seat order (tap = SeasonPilotDetail)
 var _manage_cards: Array = []   # HubManageCard, `_manage_panels()` order
 var _start_btn: Button
 var _standings_btn: Button
@@ -65,12 +65,12 @@ func _bind() -> void:
 	_toast_lbl = %Toast
 	_toast_lbl.text = ""
 
-	# 줄 순서는 **역할 열거값 순서가 아니라 화면 순서**다(탑 · 정글 · 미드 ·
-	# 원딜 · 서폿) — `GameEnums.ROLE_DISPLAY_ORDER`. 씬의 줄도 자리 순서로 서 있어
-	# `_refresh_roster` 가 같은 표로 되읽는다.
-	_roster_rows = %Roster.get_children()
-	for seat in _roster_rows.size():
-		(_roster_rows[seat] as HubRosterRow).set_role(int(GameEnums.ROLE_DISPLAY_ORDER[seat]))
+	# 카드 순서는 **역할 열거값 순서가 아니라 화면 순서**다(탑 · 정글 · 미드 ·
+	# 원딜 · 서폿) — `GameEnums.ROLE_DISPLAY_ORDER`. 씬의 카드도 자리 순서로 서 있어
+	# `_refresh_roster` 가 같은 표로 되읽는다. 카드를 누르면 선수 상세 시트.
+	_roster_cards = %Roster.get_children()
+	for c in _roster_cards:
+		(c as SeasonPilotCard).pressed.connect(_on_pilot_pressed)
 
 	_manage_cards = %Manage.get_children()
 	for i in _manage_cards.size():
@@ -281,16 +281,21 @@ func _refresh_roster() -> void:
 		var p := raw as PlayerData
 		if p.team_id == pid:
 			by_role[int(p.role)] = p
-	var t_max: int = ConstTable.int_of("TRUST_MAX")
-	for seat in _roster_rows.size():
+	for seat in _roster_cards.size():
 		var r: int = int(GameEnums.ROLE_DISPLAY_ORDER[seat])
-		var row: HubRosterRow = _roster_rows[seat]
+		var card: SeasonPilotCard = _roster_cards[seat]
 		if not by_role.has(r):
-			row.show_pilot(null)
+			card.show_empty(r)
 			continue
 		var p: PlayerData = by_role[r]
-		row.show_pilot(p, MentalSystem.trust(_gm.season_state, p.id), t_max,
+		card.show_pilot(p.id, r, MentalSystem.trust(_gm.season_state, p.id),
 				StressSystem.value(_gm.season_state, p.id))
+
+
+func _on_pilot_pressed(pilot_id: int) -> void:
+	var sheet: HubSheet = SeasonPilotDetail.open(self, pilot_id)
+	if sheet != null:
+		sheet.closed.connect(refresh)
 
 
 # ── Button handlers ──────────────────────────────────────────────────────────

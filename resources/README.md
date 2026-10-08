@@ -4,7 +4,7 @@ Shared data definitions used across features.
 
 **Display text is l10n keys** (`ui` · `term` · `keyword` domains). Shared vocabulary helpers live here —
 `GameEnums.position_label` / `role_position_label` / `phase_label` / `rarity_label` / `tags_text`,
-`PlayerData.stat_label` / `stat_short` / `stat_note`, `OutgameTheme.role_name` / `day_letter` / `day_name`,
+`PlayerData.stat_label` / `stat_note`, `OutgameTheme.role_name` / `day_letter` / `day_name`,
 `CardData.category_label(cat)`; the label tables (`POSITION_LABELS`, `PHASE_LABELS`, `STAT_*`, `ROLE_NAMES`,
 `DAY_*`, `CATEGORY_LABELS`, …) hold `L.` keys, so **never print a table value directly** — call the helper.
 Full list: `docs/localization_design.md` §0.7.
@@ -277,9 +277,10 @@ Out-game player persona consumed by MatchFlow / BattleSim:
 - **6 player (선수) stats** — `field_hit` battlefield hit / `field_eva` battlefield evasion /
   `engage_hit` engage hit / `engage_eva` engage evasion / `atk_growth` attack growth coefficient /
   `hp_growth` HP growth coefficient. **Floor `STAT_MIN` (const.csv `PLAYER_STAT_MIN`), no cap** (weekly training pushes them past 100).
-  The tables are the four `STAT_KEYS` / `STAT_LABELS` / `STAT_SHORT` / `STAT_NOTES` (the last three hold
-  l10n keys `term.stat.*.name|short|note`), and every screen reads them — text through
-  `stat_label(i)` / `stat_short(i)` / `stat_note(i)` (current locale, "" out of range). Power totals are `stat_total()` / `stat_avg()`; growth coefficient → multiplier conversion is
+  The tables are the three `STAT_KEYS` / `STAT_LABELS` / `STAT_NOTES` (the last two hold
+  l10n keys `term.stat.*.name|note`), and every screen reads them — text through
+  `stat_label(i)` / `stat_note(i)` (current locale, "" out of range). **No short forms** ("전명" →
+  "전장 명중" everywhere; `stat_short` and `term.stat.*.short` were removed / deprecated 2026-10). Power totals are `stat_total()` / `stat_avg()`; growth coefficient → multiplier conversion is
   `static growth_mult(v)` = `v / GROWTH_STAT_BASE` (const.csv `PLAYER_GROWTH_STAT_BASE`). The old 5 stats (`laning` /
   `mechanics` / `gamesense` / `teamfight` / `mental`) were deleted
 - `assigned_mech: MechData` — written by the assignment step of the ban/pick screen (`ban_pick/BanPickController._finish`). Previously this was the job of `AssignController`, which was a separate screen
@@ -1048,6 +1049,7 @@ theme variation too, built in `OutgameTheme._add_screen_variations()`:
 | `TrainingThumbFrame` · `TrainingThumbExpChip` | Card · AccentChip | `TrainingThumb` root · `ExpChip` | role border, ± fill (`TrainingView`) |
 | `WeekRail` | SunkPanel | `WeekProgressView` `Rail` (the old `WeekEveningHighlight` went with the evening slot scene) | — |
 | `WeekDayChip` · `WeekDayChipToday` | AccentChip | `WeekProgressView` day `Chip`s (`WEEK_DAY_CHIP_RADIUS`) | variation switched by `_refresh_rail` |
+| `WeekMapBubble` | SurfaceChip | `WeekMapPilot` `%Bubble` (morning speech bubble over a map token: white, `BORDER_STRONG` 2px, radius 14) | scene-set |
 | `LobbySurfaceBar` · `LobbyToast` | Card · SurfaceChip | `Lobby` `StripBack` / `TabBarBack` · `Toast` | error toast = `NEGATIVE` copy |
 | `BanPickOrderPip` · `IntelAnalystNote` | SunkPanel · SunkPanel | `BanPickOrderPip` root (r6; side colour + capsule corners = code copy) · `IntelView` `Note/Card` (`ACCENT_DIM`, r14) | pip fill = side colour |
 | `MessengerBubbleNpc` · `MessengerBubbleMine` · `MessengerAnswerButton` · `MessengerNoteChipMuted` | Card · Card · GhostButton · AccentChip | `MessengerNpcBubble` / `MessengerPlayerBubble` `%Bubble` (r22, padding 0 — the scene's `Pad` pads) · `MessengerAnswerButton` (ghost + padding 22/17) · failed `MessengerNoteChip` | — |
@@ -1321,7 +1323,7 @@ darkened like the old role badge). Replaces the per-screen texts ("탱커" / "�
 `run_setup/RoleBadge`.
 
 - **Used by**: `PilotThumb` · `DraftSlot` · `CollectionCell` (top-left of the art), `CollectionDetailSheet`
-  (`PilotThumb.add_position_badge`), `DraftDetailPanel` header, `HubRosterRow`, `WeekPilotCard`,
+  (`PilotThumb.add_position_badge`), `DraftDetailPanel` header, `SeasonPilotCard` (hub · week),
   `MasteryPilotRow`, `RunResultPilotRow`, `IntelPilotRow`, `ShopShardRow`, `EndingView` roster, BattleSim
   `MvpView` and the victory panel's MVP row (`UI_View_BattleHud.tscn` `%PositionBadge_MvpPosition`).
 - **Look**: the root attaches `OutgameTheme.tres` itself, so the badge looks the same inside dark battle scenes;

@@ -166,8 +166,9 @@ func _fill_preview() -> void:
 		var tok: Control = scene.instantiate() as Control
 		add_token(tok)
 		(tok.get_node("%Name") as Label).text = String(spot)
-		(tok.get_node("%Gain") as Control).visible = false
-		(tok.get_node("%Stress") as Control).visible = false
+		(tok.get_node("%Away") as Control).visible = true
+		(tok.get_node("%Bubble") as Control).visible = false
+		(tok.get_node("%BubbleTail") as CanvasItem).visible = false
 		var hold: Control = tok.get_node("%Portrait")
 		entries.append({"node": tok, "spot": spot, "anchor": hold.position + hold.size * 0.5})
 	place_tokens(entries)

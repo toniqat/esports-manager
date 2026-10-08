@@ -229,14 +229,13 @@ static func grade_color(grade: int) -> Color:
 	return GRADE_COLORS[clampi(grade, 0, GRADE_COUNT - 1)]
 
 
-## "전장 명중 +3 · 교전 회피 +2" — `short` uses `PlayerData.STAT_SHORT`.
-static func stats_text(stats: Dictionary, short: bool = false) -> String:
+## "전장 명중 +3 · 교전 회피 +2" — always the full stat names (no short forms).
+static func stats_text(stats: Dictionary) -> String:
 	var parts: Array = []
 	for i in PlayerData.STAT_KEYS.size():
 		var k: String = String(PlayerData.STAT_KEYS[i])
 		if stats.has(k) and int(stats[k]) != 0:
-			var label: String = PlayerData.stat_short(i) if short else PlayerData.stat_label(i)
-			parts.append("%s %+d" % [label, int(stats[k])])
+			parts.append("%s %+d" % [PlayerData.stat_label(i), int(stats[k])])
 	return " · ".join(parts)
 
 
@@ -264,16 +263,16 @@ static func cond_text(cond: String) -> String:
 
 
 ## One-line effect: "전장 명중 +3" or "공격 성장 +3 / 주력 메크 탑승 시 전장 명중 +4 · …".
-static func effect_text(id: int, short: bool = false) -> String:
+static func effect_text(id: int) -> String:
 	var r: Dictionary = row(id)
 	if r.is_empty():
 		return ""
-	var base: String = stats_text(r["stats"], short)
+	var base: String = stats_text(r["stats"])
 	var c: String = String(r["cond"])
 	if c.strip_edges() == "":
 		return base
 	var extra: String = Loc.t(L.QUIRK_EFFECT_COND,
-			{"cond": cond_text(c), "stats": stats_text(r["cond_stats"], short)})
+			{"cond": cond_text(c), "stats": stats_text(r["cond_stats"])})
 	return extra if base == "" else "%s / %s" % [base, extra]
 
 

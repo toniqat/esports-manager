@@ -75,14 +75,12 @@ static func relief_of(state: Dictionary, day: int, pilot_id: int) -> int:
 	return int(((r as Dictionary).get("relief", {}) as Dictionary).get(str(pilot_id), 0))
 
 
-## The pilot is around this afternoon and an interview or an outing with them is
-## still allowed (weekly limits, trust unlock, the day's action not used yet).
+## The pilot is around this afternoon and the day's action is not used yet (an
+## interview is always possible; there are no weekly count limits).
 static func can_request(state: Dictionary, day: int, pilot_id: int) -> bool:
 	if not started(state, day) or MentalSystem.evening_done(state, day):
 		return false
-	if away_of(state, day, pilot_id) != "":
-		return false
-	return MentalSystem.can_interview(state) or MentalSystem.can_outing(state, pilot_id)
+	return away_of(state, day, pilot_id) == ""
 
 
 ## Some pilot can still be asked this afternoon (the week screen's skip warning).

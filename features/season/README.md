@@ -132,7 +132,9 @@ and exposes intent methods on the hub. Pattern mirrors `BattleSim`:
 | Node                     | Script                                       | Purpose                                                          |
 |---|---|---|
 | CalendarSystem           | `calendar/CalendarSystem.gd`                 | `advance_week()` — rolls 7 days, bumps `phase_week`, transitions phase. Emits `week_advanced`, `phase_changed`. |
-| HubView                  | `HubView.gd` + `.tscn`                       | Simplified hub — phase/week counter + roster + "이번 주 시작" (Start this week) + 순위 (standings) buttons. Each roster row also shows the pilot's **trust** (`MentalSystem.trust`): chip `신뢰 N` + thin gauge (N / `TRUST_MAX`) under `TOTAL`, coloured by band (`HubView.trust_color`: grey < `TRUST_OUTING_MIN`, green from there, amber past halfway to `TRUST_MAX`). Scene-built — see "HubView · EndingView · GameOverView" below. |
+| HubView                  | `HubView.gd` + `.tscn`                       | Simplified hub — phase/week counter + roster + "이번 주 시작" (Start this week) + 순위 (standings) buttons. The roster is **five small vertical `SeasonPilotCard`s side by side** (seat order): badge, portrait in a **trust ring** (trust / `TRUST_MAX`, band colour `HubView.trust_color`: grey < `TRUST_OUTING_MIN`, green from there, amber past halfway to `TRUST_MAX`) with the trust number at its bottom-right, stress line + mood. Tap = `SeasonPilotDetail` sheet. Stats live in that sheet, not on the card. Scene-built — see "HubView · EndingView · GameOverView" below. |
+| *(item)* SeasonPilotCard | `SeasonPilotCard.gd` + `UI_Comp_SeasonPilotCard.tscn` · `TrustRing.gd` | Shared small pilot card (hub roster, week screen bottom row): see "Pilot card · detail sheet" below. |
+| *(overlay)* SeasonPilotDetail | `SeasonPilotDetail.gd` + `UI_View_SeasonPilotDetail.tscn` | Pilot detail `HubSheet` body, opened by tapping a pilot portrait / card anywhere in a run (hub, week screen, training board headers). See below. |
 | PressConferenceView      | `press/PressConferenceView.gd` + `.tscn`     | **Press conference** — the messenger screen right before the week starts (`.tscn` = one `MessengerView` instance; `create()`). `press/README.md` |
 | TrainingBoard            | `training/TrainingBoard.gd`                  | **Daily training (일상 훈련) tile board (타일판)** — 5 columns (players) × 5 rows (one per day; weekdays are not written on screen). Placement checks + settlement (`cell_exp` / `compute_day_gains`) + **weekday application** (`apply_day_training(day)`) + leftover-EXP bank. `training/README.md` |
 | TrainingView             | `training/TrainingView.gd` + `.tscn`         | Schedule editor; "훈련 확정" calls `SeasonHub.on_training_confirmed` — it does not settle the board but **opens the week** (puts the weekday cursor on Monday). |
@@ -154,7 +156,7 @@ plus preview-only manager children, since `_hub` is null standalone:
 normally come from the host) · `HubSheet` = own-team detail (a `LeagueTeamDetail` body) · `EndingView` = all six titles won ·
 `GameOverView` = preseason playoff final lost · `BracketView` = SFs done, final pending ·
 `IntlBracketView` = preseason INTL, QFs done, SFs pending. Item scenes use hand-written values:
-`HubRosterRow` (Corin, trust past half) · `HubManageCard` (finance, alert dot) · `BracketMatchBox`
+`SeasonPilotCard` (Corin, trust past half, shaken) · `SeasonPilotDetail` (my first pilot of the in-memory run) · `HubManageCard` (finance, alert dot) · `BracketMatchBox`
 / `IntlMatchBox` (own team won). `정산` / `확인` / hub buttons only print (no settlement, no scene change).
 `EndingView` / `GameOverView` keep their managers in `_league` / `_intl` / `_tournament` (re-read from
 `_hub` every refresh; the preview sets them directly).
@@ -200,17 +202,17 @@ HubView (Control · HubView.gd)
 ├ %Phase (Caption 24) · Title "시즌 허브" (Heading) · %Week (Sub, right-anchored) · %NextMatch (Accent 24)
 ├ RosterCaption "내 팀 로스터" (Caption 24)           ← header labels: absolute offsets
 ├ Body VBox (x 30..−30, y 240, sep 12)
-│ ├ %Roster VBox (sep 12) ─ HubRosterRow_Row0..4  HubRosterRow instances, seat order (ROLE_DISPLAY_ORDER)
+│ ├ %Roster HBox (sep 12) ─ SeasonPilotCard_Pilot0..4  SeasonPilotCard instances (expand), seat order (ROLE_DISPLAY_ORDER)
+│ ├ GapManage (12)
 │ └ %Manage HBox (sep 16, 176) ─ HubManageCard_Card0..2  HubManageCard instances, `_manage_panels()` order
 └ %SafeBottom   full rect; code lifts its bottom by the bottom inset
   ├ %Toast      Accent label, 40 above the bar
   └ %BottomBar  HBox, 128 tall, sep 0 ─ %Standings (BarGhost 32, ratio 1, + Sep BarSeparator) · %Start (BarPrimary, ratio 2)
 
-HubRosterRow (Panel 190 · HubRosterRow.gd)          HubManageCard (Panel · Card · HubManageCard.gd)
-├ %Face TextureRect 160² (16,14)                     ├ VBox (20,14): %Title · %Value (34) · %Sub (20) · %Owner (Accent 18)
-├ Info VBox (190,14): %PositionBadge_Role (PositionBadge) · %Name · %Total ·       ├ %Alert  red dot top-right
-│   Trust HBox ─ %TrustChip(%TrustText) · %TrustGauge(%TrustFill) · %StressText   └ %Hit flat Button over the card → `pressed`
-└ %Stats HBox (right-anchored, 520) ─ Stat0..5 VBox (Key 18 · Value 32), PlayerData.STAT_KEYS order
+HubManageCard (Panel · Card · HubManageCard.gd)
+├ VBox (20,14): %Title · %Value (34) · %Sub (20) · %Owner (Accent 18)
+├ %Alert  red dot top-right
+└ %Hit flat Button over the card → `pressed`
 
 EndingView: %Background · Title "WORLD CHAMPION" (Accent 72) · Subtitle · RecapCaption ·
   %Recap VBox (800 centred, y 390) ─ 6 lines × 40 · RosterCaption · %Roster VBox (y 720) ─ 5 rows × 40 (HBox: `Badge` PositionBadge · `Text`) ·
@@ -220,14 +222,39 @@ GameOverView: %Background · Title "GAME OVER" (NegativeLabel 80) · %Reason (Bo
 ```
 
 - **Scene owns** layout, texts' sizes / variations, bar ratio, the five rows / three cards / line slots.
-- **Code owns** data, data colours (row lead bar = role colour via `lead_bar_style`, `%PositionBadge_Role` = `PositionBadge`; trust chip /
-  fill = `trust_color`, fill width = `anchor_right`; recap line amber when won), safe-area offsets.
+- **Code owns** data, data colours (pilot cards: see below; recap line amber when won), safe-area offsets.
+  The old `HubRosterRow` (horizontal row with face · name · TOTAL · trust gauge · six short stat columns) was deleted.
 - **Bottom bar in a scene**: the buttons are `Bar*` variations (square corners) and the separator is a
   `BarSeparator` Panel inside every button but the last. `OutgameTheme.fit_bottom_bar(%BottomBar, %SafeBottom)`
   adds only the device inset: `%SafeBottom.offset_bottom = −inset`, `%BottomBar.offset_bottom = +inset` (colour
   fill reaches the viewport bottom) and each button's `content_margin_bottom += inset` (text stays above the
   safe line) — `resources/README.md` "Bottom action bar".
 - Manage cards use the `Card` variation (radius 18; the old code card was 16).
+
+### Pilot card · detail sheet (`SeasonPilotCard` · `SeasonPilotDetail`)
+Every in-run screen that shows my five pilots as a group uses the same small vertical card, and **tapping a
+pilot portrait opens the detail sheet** (hub roster, week screen bottom row, training board column headers).
+Stat names are always written in full (`PlayerData.stat_label`: "전장 명중", never "전명").
+
+```
+SeasonPilotCard (Panel · Card, min h 256, width from the row · SeasonPilotCard.gd)
+├ BadgeSlot CenterContainer (y 12..42) ─ %PositionBadge_Role (PositionBadge)
+├ %Ring (TrustRing, 140², centred, y 50) ─ %Portrait slot 116² inside (code: add_round_portrait)
+├ %TrustPill (ProgressFill 56×34, portrait bottom-right) ─ %TrustText (OnFill 22)
+├ %Stress (Caption 20, y 196)        "스트레스 N", NegativeLabel when shaken
+├ %StressNote (28, y 220)            emphasised line: hub = mood when shaken; week = the day's stress change
+└ %Hit flat Button over the card → pressed(pilot_id)
+
+SeasonPilotDetail (VBox, HubSheet body, title = pilot name · SeasonPilotDetail.gd)
+├ Head HBox ─ %SeasonPilotCard_Head (same card, not tappable) · Info VBox: %Total · %Trust · %Outings · %Mood
+├ StatsTitle · %Stats ─ Stat0..5 (Line: Name (Body 26) · Value (Title 30)) + Note (Caption 18, stat_note)
+├ QuirksTitle · %QuirksEmpty · %Quirks ─ %QuirkLine template ("name · effect", grade colour)
+└ ResearchTitle · %Research (research mech · tier (value / max), tier colour) · Tail
+```
+
+- API: `SeasonPilotCard.show_pilot(pid, role, trust, stress)` / `show_empty(role)` / `set_note(text, variation)` /
+  `pulse_note()` / `set_tappable(on)`; `SeasonPilotDetail.open(host, pilot_id) -> HubSheet` (null for an unknown id).
+- `TrustRing` (`@tool` `_draw` widget): `width` (scene), `ratio` · `color` (code). Track = `SURFACE_SUNK`, arc from 12 o'clock.
 
 ## Phase week budget (CalendarSystem.PHASE_WEEKS)
 | Phase           | League weeks | Playoff weeks | Total |

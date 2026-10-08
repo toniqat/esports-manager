@@ -155,7 +155,7 @@ static func _row_for(state: Dictionary, p: PlayerData, tier: int) -> Dictionary:
 	for i in PlayerData.STAT_KEYS.size():
 		var v: int = int(p.get(String(PlayerData.STAT_KEYS[i])))
 		total += v
-		var cell: Dictionary = {"label": PlayerData.stat_short(i), "text": "?", "value": -1}
+		var cell: Dictionary = {"label": PlayerData.stat_label(i), "text": "?", "value": -1}
 		if tier >= TIER_MECHS:
 			cell["text"] = "%d" % v
 			cell["value"] = v

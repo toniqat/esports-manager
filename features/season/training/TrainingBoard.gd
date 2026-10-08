@@ -616,6 +616,28 @@ func day_colors(day: int) -> Dictionary:
 	return out
 
 
+## Display name of the training each seat does on row `day`, `{seat: String}` for every
+## seat `0..COLS-1` — the placed tile's name, or the basic course (`FILLER_TILE_ID`) for an
+## empty cell. The week screen shows it in the morning bubble over each pilot on the map.
+func day_tile_names(day: int) -> Dictionary:
+	var out: Dictionary = {}
+	for e_raw in board():
+		var e: Dictionary = e_raw
+		var t: TrainingTile = tile(String(e.get("tile", "")))
+		if t == null:
+			continue
+		var ox: int = int(e.get("x", 0))
+		var oy: int = int(e.get("y", 0))
+		for c in t.cells:
+			if oy + (c as Vector2i).y == day:
+				out[ox + (c as Vector2i).x] = t.tile_name
+	var filler: TrainingTile = tile(FILLER_TILE_ID)
+	for seat in COLS:
+		if not out.has(seat):
+			out[seat] = filler.tile_name if filler != null else ""
+	return out
+
+
 # ── Quirk tiles (§14, T1) ────────────────────────────────────────────────────
 ## Quirk ops of the `Q` cells settled on `day`, `{seat: [op]}` in
 ## `TrainingTile.QUIRK_OPS` order. A seat has one cell per day, so each pilot

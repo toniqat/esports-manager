@@ -53,7 +53,7 @@ Read the README of every row your task touches. Indented rows are submodules —
 | ↳ `manager/` | Manager levels, specialisation, presets, prestige, 감독 tab | `features/meta/manager/README.md` |
 | ↳ `collection/` | 컬렉션 tab: pilot levels, breakthroughs | `features/meta/collection/README.md` |
 | ↳ `shop/` | 상점 / 패스 tabs: gacha, shards, crafting, `PassSystem` | `features/meta/shop/README.md` |
-| `features/season/` | In-run campaign: `SeasonHub` orchestrator, `HubView`, handoffs, playoff / INTL brackets (`tournament/`) | `features/season/README.md` |
+| `features/season/` | In-run campaign: `SeasonHub` orchestrator, `HubView`, pilot card · detail sheet (`SeasonPilotCard` · `SeasonPilotDetail`), handoffs, playoff / INTL brackets (`tournament/`) | `features/season/README.md` |
 | ↳ `calendar/` | Week clock, weekdays / match days, phase transitions | `features/season/calendar/README.md` |
 | ↳ `press/` | Press conference messenger screen | `features/season/press/README.md` |
 | ↳ `training/` | Daily training tile board, coach auto-arrange | `features/season/training/README.md` |

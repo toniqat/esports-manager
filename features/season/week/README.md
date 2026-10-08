@@ -9,14 +9,16 @@ The screen where the week passes **one day at a time, Monday to Sunday**. `Scree
 | `UI_View_WeekProgressView.tscn` | The screen layout (tree below) |
 | `base_map/` | `BaseMap` widget + one `UI_Comp_BaseMap_<Name>.tscn` per team base map (art + spot markers). See `base_map/README.md` |
 | `UI_Comp_WeekMapSection.tscn` | Item (training day, first): `%Hint` caption (what Next does now) + `%MapHolder` (CenterContainer) that receives the team's `BaseMap` |
-| `UI_Comp_WeekMapPilot.tscn` | One pilot token on the map (`%Portrait` slot · chip with `%Name` / `%Gain` / `%Stress` · `%Hit`) |
+| `UI_Comp_WeekMapPilot.tscn` | One pilot token on the map (`%Portrait` slot · morning speech bubble `%Bubble` / `%BubbleText` + `%BubbleTail` · afternoon away chip `%Away` / `%Name` · rising result texts `%Floats` with the `%FloatLine` template · `%Hit`). No name under the portrait |
 | `UI_Comp_WeekMatchCard.tscn` | Item: one match of the match day (`%Tag` · `%Title` · `%Status` · `%Hint`) |
 | `UI_Comp_WeekNoteCard.tscn` | Item: one-line placeholder card (`%Text`) |
 | `UI_Comp_WeekIncidentCard.tscn` | Item: the day's incident (`%Portrait` slot · `%Head` · `%Line` · `%Hit`) |
-| `UI_Comp_WeekAfternoonCard.tscn` | Item: 오후 before the action (`%Limits` · `%Hint` (no pick) · `%Pilot` (`%Portrait` · `%Name` · `%Trust`) · `%Interview` / `%Outing`) |
+| `UI_Comp_WeekAfternoonCard.tscn` | Item: 오후 before the action (`%Hint` (no pick) · `%Pilot` (`%Portrait` · `%Name` · `%Trust`) · `%Interview` / `%Outing`) |
 | `UI_Comp_WeekAfternoonDoneCard.tscn` | Item: 오후 summary after the action (`%Portrait` · `%Head` · `%Line`) |
-| `UI_Comp_WeekPilotCard.tscn` | Item: one pilot's training result (`%Portrait` · `%Name` · `%PositionBadge_Role` (`PositionBadge`) · `%Stress` (stress now + that day's training delta, `NegativeLabel` when shaken) · `%Mastery` · `%Stats` of `WeekStatCell` · `%QuirkDivider` · `%Quirks` with the `%QuirkLine` template) |
-| `UI_Comp_WeekStatCell.tscn` | Item: one stat column (`%Short` / `%Value` / `%Result`) |
+| *(shared)* `../UI_Comp_SeasonPilotCard.tscn` | The five pilot cards of `%PilotRow` (`features/season/README.md` "Pilot card · detail sheet") |
+
+The per-pilot training result cards (`WeekPilotCard` + `WeekStatCell`, six short-named stat columns) were deleted
+(2026-10): the day's results now rise over the map portraits and the stress change sits on the bottom cards.
 
 The old evening card (`WeekEveningCard` with five `WeekEveningSlot` portraits and a `패스` button) was replaced by
 the map + afternoon card; the slot scene and its `WeekEveningHighlight` variation were deleted.
@@ -42,9 +44,10 @@ WeekProgressView (Control, full rect, PASS, theme OutgameTheme.tres)
   ├ %DateSmall (CaptionLabel 24) · %DateBig (HeadingLabel 58)  ← right header, anchored right
   ├ Divider     y 346
   ├ %MapPin     x 40 … −40, y 372 … 1052, hidden by default: fixed slot for the base map (WeekMapSection) on training days
-  ├ %Scroll     x 40 … −40, y 372 … −152 (= bar top − 24), anchors_preset −1 (grows right only);
+  ├ %Scroll     x 40 … −40, y 372 … −422 (= %PilotRow top − 14), anchors_preset −1 (grows right only);
   │             on training days code moves its top to %MapPin's bottom + the list gap, so the map never scrolls
   │ └ %List     VBox, separation 14 (card gap) — item scenes + %ListEnd (kept last = gap under the last card)
+  ├ %PilotRow   HBox sep 12, x 40 … −40, y −408 … −152: SeasonPilotCard_Pilot0..4 (seat order), **always shown**
   └ %Bar        HBox bottom bar, y −128 … 0 — code: `OutgameTheme.fit_bottom_bar(%Bar, %SafeArea)`
     ├ %Stage    BarGhostButton 28, ratio 1, mouse Ignore (a label: 오전 / 오후) + `BarSeparator`; hidden on match days
     └ %Action   BarPrimaryButton, ratio 2 (다음 / 확인 / 주 마감 →); `BarDarkButton` for 경기 시작 + `fit_bar_button`
@@ -56,15 +59,13 @@ WeekProgressView (Control, full rect, PASS, theme OutgameTheme.tres)
 * **Code owns** (data / device dependent): which chip is today (variation switch
   `WeekDayChip` ↔ `WeekDayChipToday`) and the day-letter colours,
   the lead bars (role colour, incident = `NEGATIVE`) and the player's dark match card
-  (`card_style(…, RAIL)`), status / role / trust / result colours, card heights (match 168 / 96,
-  training 148 + quirk lines), the round portraits (drawn into the `%Portrait` slots with
+  (`card_style(…, RAIL)`), status / role / trust / result colours, card heights (match 168 / 96), the round portraits (drawn into the `%Portrait` slots with
   `OutgameTheme.add_round_portrait`; a picked afternoon pilot gets an `ACCENT` ring), the dim of a token whose
   pilot cannot be asked (`MAP_DIM` modulate), which base map scene is instanced (team data), where the tokens
   stand (`BaseMap.place_tokens`), the bottom-bar variation switch and the safe-area insets. Fixed colours
-  are variations: `WeekPilotCard` `%Mastery` `LinkLabel` 18; a pending incident's `%Line` switches to
+  are variations: a pending incident's `%Line` switches to
   `NegativeLabel` (size 21 kept); the afternoon card's `%Trust` switches to `AccentLabel` once the outing is unlocked.
-* Item counts: `%Stats` ships sample cells (6) for the editor; code adds or hides cells to match the data
-  (`_ensure_children`). Quirk lines are duplicates of the hidden `%QuirkLine` template.
+* Rising result lines are duplicates of each token's hidden `%FloatLine` template.
 * `%List` is pinned to the scroll's **anchored** width (cards run under the scroll bar, as the
   code-built list did). Read from the anchors, not `size` — an overflowing scroll grows by its bar.
 * Card roots are `Panel`s using the `Card` variation (the variation is defined for
@@ -82,14 +83,14 @@ WeekProgressView (Control, full rect, PASS, theme OutgameTheme.tres)
  ──────────────────────────────────────────
   오후 · 선수를 눌러 면담이나 외출을 요청하세요
   [  team base map, five pilot tokens   ]   ← pinned (%MapPin), does not scroll
-  ▌(○) 오후            면담 2/2 · 외출 1/1
-  ▌(○) Evelyn      전명 전회 교명 …
+  ▌(○) 오후                                  ← afternoon card, then incident (scroll)
+  [TOP][JGL][MID][ADC][SUP]                  ← %PilotRow: five pilot cards, always shown
  [  오후  ][            다음            ]
 ```
 
 (Mockup uses in-game Korean text: `1주` = Week 1, 월화수목금토일 = Mon–Sun, "프리시즌 · 3주차" =
 Preseason · Week 3, "1년 12월" = Year 1, December, "금요일" = Friday, 오후 = afternoon, 면담 / 외출 =
-meeting / outing, stat abbreviations such as 전명 / 전회 / 교명, `다음` = Next.)
+meeting / outing, `다음` = Next.)
 
 * **Top horizontal rail** — on a dark pill spanning the full screen width, `N주` (Week N) at the
   left end, then seven weekday (요일) chips spaced evenly **left → right**. **Only the current
@@ -123,42 +124,29 @@ stored on its own (`_stage`), so re-entering the day (after a match, after a rel
 
 | Stage | Record | Map | Next (다음) |
 |---|---|---|---|
-| `MORNING` | no `week_day_log[day]` | each pilot on the spot of **that day's training colour** (`TrainingBoard.day_colors`; no tile = basic course = neutral `W`) | settles the day (`_settle_day` → `apply_day_training`) |
-| `RESULT` | `week_day_log[day]` set, no afternoon record | same spots; each chip adds the stat ups (`전명+1 교회+1`, up to `MAP_GAIN_STATS`, else `EXP +N`) and `스트레스 ±N` (row key `stress`) | starts the afternoon (`AfternoonAway.begin`, resting = rows whose `color` is "") |
+| `MORNING` | no `week_day_log[day]` | each pilot on the spot of **that day's training colour** (`TrainingBoard.day_colors`; no tile = basic course = neutral `W`); a **speech bubble** over the portrait names the training (`TrainingBoard.day_tile_names`) | settles the day (`_settle_day` → `apply_day_training`) |
+| `RESULT` | `week_day_log[day]` set, no afternoon record | same spots, no bubble; **result FX** (`_play_result_fx`): per pilot, lines rise out of the portrait top and fade (`FX_RISE` / `FX_TIME`, `FX_STAGGER` between lines, `FX_PILOT_STAGGER` between pilots): stat ups by **full name** (`전장 명중 +1`, else `EXP +N`), `스트레스 ±N`, mech mastery, quirk events; the bottom cards' stress change pops (`pulse_note`). When the FX ends the afternoon **starts by itself** (`_finish_result_fx` → `AfternoonAway.begin`) | skips the rest of the FX (same `_finish_result_fx`) |
 | `AFTERNOON` | `AfternoonAway.started` | resting pilots on `Dorm`, pilots out alone on `Entrance`; anyone who cannot be asked is dimmed and not tappable (`AfternoonAway.can_request`) | next day (`on_week_day_confirmed`); while an action is still possible (`AfternoonAway.any_request`) a **warning** `ConfirmPopup` asks first, confirm = pass |
 
 * **Map**: the team's base map (`RunRules.team_map_id(player_team_id)` = `teams.csv` `map_id` → `BaseMap.create`),
   pinned in `%MapPin` above the scrolling list. Spots per colour group and the fan-out of tokens sharing a spot: `base_map/README.md`.
   The caption above it (`%Hint`) says what Next does in this stage.
-* **Pilot cards**: after the settlement (`RESULT`, `AFTERNOON`) the detailed training cards follow (below).
+* **Bottom pilot cards** (`%PilotRow`, every day, both halves): `SeasonPilotCard` × 5 in seat order; the note line is
+  **the day's stress change** (`_day_stress_delta` = training row `stress` + self-outing relief + `stress` notes of the
+  day's incident / afternoon outcomes), red `+N` / green `-N`, hidden at 0. Tap = `SeasonPilotDetail` sheet.
+* A reload between the settlement and the afternoon lands on `RESULT`: the FX plays again, then the afternoon starts.
 * **Afternoon away states** (rules and record: `features/season/mental/README.md` "Afternoon away states"):
   a stressed pilot may go out alone, otherwise any pilot may stay in the dorm by chance (rolled once, recorded).
   An empty training cell is the basic course, not a rest.
 * The bottom bar's left slot names the half (`오전` for `MORNING` / `RESULT`, `오후` for `AFTERNOON`).
 
-### Training card
+### Training results
 
-One card per player (선수). On the left a role-colour strip (`OutgameTheme.lead_bar_style`), a
-round portrait, name · role; on the right six stats, each in three lines:
-`name / current value / today's result`.
-
-The third line is **`+N` (green) if points were gained, otherwise `carry/EXP_PER_POINT`** (EXP accumulated toward
-the next point; `EXP_PER_POINT` = const.csv `TRAINING_EXP_PER_POINT`). On a board with only basic courses, daily EXP falls short of `EXP_PER_POINT`,
-so a points-only line would show `—` Mon–Thu and everything would rise at once on Friday — then for four days this screen would have no answer to the question it must answer every day,
-"what improved today?".
-
-Two optional extras (§14 T4):
-
-* **Mastery** — under name · role, `숙련 +N · <mech>` (blue) when the row's `mastery` (raw tile EXP)
-  is > 0. `N` is what actually reached the research mech — the same steps as
-  `MechMastery.add_training_exp` (× `MASTERY_TRAIN_SCALE`, then `gain_preview`'s multipliers);
-  the mech is the research mech, or the coach's fallback pick when none is set (`_mastery_text`).
-* **Quirk events** — the row's `quirk: [{kind, result, id?, from?, to?}]` (T1, missing = none) adds
-  one line per event under a divider and the card grows by `QUIRK_LINE_H` each (`_add_pilot_card`
-  sets the item's minimum height): `기벽 획득 · <name>` / `기벽 재굴림 · a, b → c, d` (amber), `기벽 칸 +QUIRK_SLOT_GAIN (n칸)`
-  (green); no-op results (`full` / `none` / `max`) are faint lines. Names come from
-  `QuirkSystem.row(id).name`, falling back to `기벽 #id` (`_quirk_lines` / `_quirk_name`). A gained slot reuses
-  the training tile label `training.quirk_op.slot`.
+No per-pilot result cards any more (see the file table). What the old card showed now lives in the RESULT FX
+lines (`_result_lines`): stat points that rose (full stat names), else the EXP earned; the stress change;
+mech mastery (`숙련 +N · <mech>`, the same steps as `MechMastery.add_training_exp`, `_mastery_text`); quirk
+events (`_quirk_lines`: gain / reroll amber, slot green, no-op results faint). Current stat values are in the
+pilot detail sheet (tap a bottom card).
 
 ### Match card
 
@@ -170,15 +158,15 @@ otherwise the league schedule (`_matches_on_day`). The status cell is `예정` (
 ### Mon–Fri: incident card + 오후 (afternoon) card (M7)
 
 Rules and state are in `features/season/mental/README.md` (`MentalSystem`); this screen only draws
-records and forwards taps. On a training day the list order is **map → incident → afternoon → training cards**.
+records and forwards taps. On a training day the list order is **(pinned map) → afternoon → incident**.
 
 * **Incident** — `refresh()` calls `MentalSystem.ensure_incident(state, day)` (rolled once per weekday,
   seeded). A pending incident opens its dialog **by itself** (`_open_incident`, deferred); the card (red lead
   bar) shows `사건: <name> · <pilot>` and either `눌러서 대응하기` (reopens the dialog) or the effect notes once resolved.
 * **오후** (`AFTERNOON` only): tap an available pilot on the map (amber ring), then `면담` / `외출` on the
-  afternoon card. The header shows the remaining weekly `면담 n/N · 외출 n/M`. Without a pick the card says how
-  to pick (or that nothing is possible today). Disabled buttons say why (`면담 (이번 주 끝)`, `외출 (신뢰 N↑)` with
-  N = `TRUST_OUTING_MIN`). After the action the card collapses to a one-line summary with the effect notes.
+  afternoon card. **No weekly count limits** (removed 2026-10): an interview is always possible, an outing needs
+  trust ≥ `TRUST_OUTING_MIN` (the disabled button reads `외출 (신뢰 N↑)`). Without a pick the card says how
+  to pick (or that nothing is possible today). After the action the card collapses to a one-line summary with the effect notes.
   Pressing Next without an action records a **pass** (after the warning when an action was still possible).
   The record keeps its old name `evening` (`MentalSystem.begin_evening` / `finish_evening`), so saves stay compatible.
 * **Dialog overlay**: interview / outing open a `VnDialogueView` (visual-novel dialogue,
@@ -231,7 +219,9 @@ day's league must still run, so the next standings shown match the date.
 ## Localization
 Display text is l10n keys (`season` domain, `season.week.*` · `season.week_*` scene keys; the map / afternoon
 keys are `season.week.stage.*` · `season.week.map_hint.*` · `season.week.map.*` · `season.week.afternoon_*` ·
-`season.week.skip.*` · `season.week.sub_*_pm`). Item scenes whose every label is code-filled set
+`season.week.skip.*` · `season.week.sub_*_pm`). Bubble texts are training tile names (data). Deprecated 2026-10:
+`season.week.evening_limits` · `season.week.interview_week_done` · `season.week.outing_week_done` (weekly limits removed),
+`mental.ui.stress.day` (old training card). Item scenes whose every label is code-filled set
 `auto_translate_mode = 2` on their root; `UI_View_WeekProgressView.tscn` and `UI_Comp_WeekAfternoonCard.tscn` set it
 per label (the afternoon card's head is a key, and it is instanced under the screen, so the screen root must not
 disable translation). The old `season.week_evening_card.*` · `season.week.evening_*` · `season.week.sub_interview` /

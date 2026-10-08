@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=161 format=3 uid="uid://co7tw5omdwmyd"]
+[gd_resource type="Theme" load_steps=162 format=3 uid="uid://co7tw5omdwmyd"]
 
 [sub_resource type="StyleBoxFlat" id="AccentChip_panel"]
 content_margin_left = 20.0
@@ -1892,6 +1892,22 @@ corner_radius_top_right = 20
 corner_radius_bottom_right = 20
 corner_radius_bottom_left = 20
 
+[sub_resource type="StyleBoxFlat" id="WeekMapBubble_panel"]
+content_margin_left = 12.0
+content_margin_top = 3.0
+content_margin_right = 12.0
+content_margin_bottom = 3.0
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78, 0.784, 0.808, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
 [sub_resource type="StyleBoxFlat" id="WeekRail_panel"]
 bg_color = Color(0.11, 0.11, 0.122, 1)
 corner_radius_top_left = 48
@@ -2325,5 +2341,7 @@ WeekDayChip/base_type = &"AccentChip"
 WeekDayChip/styles/panel = SubResource("WeekDayChip_panel")
 WeekDayChipToday/base_type = &"AccentChip"
 WeekDayChipToday/styles/panel = SubResource("WeekDayChipToday_panel")
+WeekMapBubble/base_type = &"SurfaceChip"
+WeekMapBubble/styles/panel = SubResource("WeekMapBubble_panel")
 WeekRail/base_type = &"SunkPanel"
 WeekRail/styles/panel = SubResource("WeekRail_panel")

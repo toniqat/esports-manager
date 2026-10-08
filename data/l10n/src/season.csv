@@ -39,7 +39,7 @@ tx_0JANWJ7HMM,season.hub.no_match,active,HubView next match,,,이번 주 경기 
 tx_DAGRD2AVXH,season.hub.btn_playoff,active,HubView standings button while playoffs run,,,플레이오프,Playoffs,draft,4651993c
 tx_1ABQDHR4ZF,season.hub.btn_standings,active,HubView standings button,,,리그 순위,Standings,draft,97f5b49e
 tx_QQV79NETS2,season.hub_card.owner,active,HubManageCard owner line,,,담당: {name},In charge: {name},draft,1a5438b5
-tx_7T45Q9QVT8,season.hub_roster.trust,active,HubRosterRow trust chip,,,신뢰 {n},Trust {n},draft,5e831137
+tx_7T45Q9QVT8,season.hub_roster.trust,deprecated,HubRosterRow trust chip,,,신뢰 {n},Trust {n},draft,5e831137
 tx_KZRN3TT8CK,season.ending.champion,active,EndingView recap line,,,우승: {team},Champion: {team},draft,1c117285
 tx_7CKXJ6SNJY,season.ending.champion_mine,active,"EndingView recap line, my team",,,{tx_KZRN3TT8CK} ★,{tx_KZRN3TT8CK} ★,draft,81f9f304
 tx_BK6M8XCBA6,season.game_over.intl_lost_at,active,GameOverView reason; slot = bracket slot name,,,{phase} {slot}에서 탈락했습니다.,Eliminated in {slot} of the {phase}.,draft,4dacd92a
@@ -92,11 +92,11 @@ tx_FZ9J5EYXJH,season.week.quirk_generic,active,Quirk name fallback,,,기벽,Quir
 tx_55ZT5D24ZK,season.week.quirk_unknown,active,Quirk name fallback (no table row),,,기벽 #{id},Quirk #{id},draft,aa348be9
 tx_0H7MR6XZ5Q,season.week.btn_start_match,active,WeekProgressView bottom button,,,경기 시작,Start Match,draft,dfb0f596
 tx_QBJC7HSWEH,season.week.btn_end_week,active,WeekProgressView bottom button,,,주 마감 →,End Week →,draft,db903e37
-tx_BG13VH48VC,season.week.evening_limits,active,Evening card weekly limits,,,면담 {iv}/{iv_max} · 외출 {out}/{out_max},Meetings {iv}/{iv_max} · Outings {out}/{out_max},draft,118364ac
+tx_BG13VH48VC,season.week.evening_limits,deprecated,Evening card weekly limits,,,면담 {iv}/{iv_max} · 외출 {out}/{out_max},Meetings {iv}/{iv_max} · Outings {out}/{out_max},draft,118364ac
 tx_R4XWZFXHFD,season.week.slot_trust,active,Evening card pilot slot,,,신뢰 {trust} · 외출 {outings},Trust {trust} · Outings {outings},draft,ca47eadd
-tx_G9WWN59WGH,season.week.outing_week_done,active,"Evening card button, disabled",,,외출 (이번 주 끝),Outing (used up),draft,34877dad
+tx_G9WWN59WGH,season.week.outing_week_done,deprecated,"Evening card button, disabled",,,외출 (이번 주 끝),Outing (used up),draft,34877dad
 tx_QYSSXAFB3S,season.week.outing_need_trust,active,"Evening card button, disabled",,,외출 (신뢰 {n}↑),Outing (Trust {n}+),draft,5f7c5a3d
-tx_0TJBQGEP0N,season.week.interview_week_done,active,"Evening card button, disabled",,,면담 (이번 주 끝),Meeting (used up),draft,c8709aca
+tx_0TJBQGEP0N,season.week.interview_week_done,deprecated,"Evening card button, disabled",,,면담 (이번 주 끝),Meeting (used up),draft,c8709aca
 tx_M4WBEB9G7X,season.week.evening_rested,deprecated,Evening done card head,,,{tx_191AFE0BN2}: 쉬었습니다,This evening: Rested,draft,a35579f8
 tx_H8MV6KQN83,season.week.evening_interview,deprecated,Evening done card head,,,{tx_191AFE0BN2}: {name} 면담,This evening: Meeting with {name},draft,b7a72631
 tx_57AQ53NMQX,season.week.evening_outing,deprecated,Evening done card head,,,{tx_191AFE0BN2}: {name} 외출,This evening: Outing with {name},draft,34780958
@@ -111,7 +111,7 @@ tx_5GDZXY0QSR,season.week.sub_incident,active,Messenger overlay subtitle,,,{day}
 tx_CPW05B0HB9,season.week.stage.morning,active,"WeekProgressView bottom bar stage slot (training day, before the afternoon)",,,오전,Morning,draft,99c4e647
 tx_XXVBB9VYQX,season.week.stage.afternoon,active,WeekProgressView bottom bar stage slot · afternoon card head,,,오후,Afternoon,draft,d2cf9622
 tx_7YZ50G3EBF,season.week.map_hint.morning,active,"WeekProgressView caption above the base map, morning before settlement",,,오전 훈련 · 다음을 누르면 오늘 훈련을 정산합니다,Morning training · Press Next to settle today's training,draft,df4d0750
-tx_AWKX6T199K,season.week.map_hint.result,active,"WeekProgressView caption above the base map, morning after settlement",,,오전 훈련 결과 · 다음을 누르면 오후로 넘어갑니다,Morning training results · Press Next for the afternoon,draft,d8b8eac4
+tx_AWKX6T199K,season.week.map_hint.result,active,"WeekProgressView caption above the base map, morning after settlement",,,오전 훈련 결과 · 잠시 후 오후로 넘어갑니다 (다음 = 건너뛰기),Morning training results · the afternoon starts shortly (Next = skip),draft,44abbb52
 tx_CXNA4K157Z,season.week.map_hint.afternoon,active,"WeekProgressView caption above the base map, afternoon before the action",,,오후 · 선수를 눌러 면담이나 외출을 요청하세요,Afternoon · Tap a player to ask for a meeting or an outing,draft,c15f313e
 tx_7KR285R4ES,season.week.map_hint.afternoon_done,active,"WeekProgressView caption above the base map, afternoon after the action",,,오늘 오후 일정을 마쳤습니다,This afternoon is done,draft,393639c4
 tx_5W9RGVB4BS,season.week.map.exp,active,Base map pilot chip after training: EXP earned when no stat point rose,,,EXP +{n},EXP +{n},draft,51d97854
@@ -128,3 +128,12 @@ tx_7PKEPM8SGK,season.week.sub_outing_pm,active,Dialogue overlay subtitle,,,{day}
 tx_G3FNS00AWW,season.week.skip.title,active,Confirm popup title: Next pressed while a meeting or outing is still possible,,,오후 일정을 건너뛸까요?,Skip this afternoon?,draft,df78343a
 tx_BVDJ9Q0CSD,season.week.skip.body,active,Confirm popup body: Next pressed while a meeting or outing is still possible,,,아직 면담이나 외출을 할 수 있습니다. 이대로 넘어가면 오늘 오후는 쉰 것으로 처리됩니다.,"A meeting or an outing is still possible. If you move on now, this afternoon counts as rest.",draft,a2d4a76e
 tx_CGHZDAMEAR,season.week.skip.confirm,active,Confirm popup confirm button: skip the afternoon,,,건너뛰기,Skip,draft,88130ab9
+tx_C3T5QMKS85,season.pilot_detail.stats,active,SeasonPilotDetail sheet section title: the pilot's six stats,,,능력치,Stats,draft,9e9117d0
+tx_1EN72EY6WJ,season.pilot_detail.total,active,SeasonPilotDetail head: sum of the six stats,,,종합 {n},Total {n},draft,7cf12880
+tx_ETEBEXQ310,season.pilot_detail.trust,active,SeasonPilotDetail head: trust now / max,,,신뢰도 {n} / {max},Trust {n} / {max},draft,360450d7
+tx_S8N31JKDV7,season.pilot_detail.outings,active,SeasonPilotDetail head: outings with this pilot so far this run,,,외출 {n}회,{n} {plural:n|{tx_ZGP8KW41CF}|{tx_5A9Y0AJYCD}},draft,fd1075fb
+tx_BW7K6B2QKP,season.pilot_detail.quirks,active,SeasonPilotDetail sheet section title: equipped quirks,,,기벽,Quirks,draft,df890c72
+tx_K1AJHH3AP3,season.pilot_detail.quirks_none,active,SeasonPilotDetail: quirk section when the pilot has none,,,장착한 기벽 없음,No quirks equipped,draft,47075c35
+tx_PJXWJ5R6J6,season.pilot_detail.research_title,active,SeasonPilotDetail sheet section title: this week's research mech,,,메크 연구,Mech research,draft,a27ab83a
+tx_X988TMMPYD,season.pilot_detail.research,active,"SeasonPilotDetail: research mech, its mastery tier and value",,,{mech} · {tier} ({value} / {max}),{mech} · {tier} ({value} / {max}),draft,979471d5
+tx_H106HT101H,season.pilot_detail.research_none,active,SeasonPilotDetail: no research mech set,,,이번 주 연구 메크 미지정,No research mech this week,draft,25e8911b

@@ -1110,6 +1110,9 @@ theme variation too, built in `OutgameTheme._add_screen_variations()`:
 | `WeekRail` | SunkPanel | `WeekProgressView` `Rail` (the old `WeekEveningHighlight` went with the evening slot scene) | — |
 | `WeekDayChip` · `WeekDayChipToday` | AccentChip | `WeekProgressView` day `Chip`s (`WEEK_DAY_CHIP_RADIUS`) | variation switched by `_refresh_rail` |
 | `WeekMapBubble` | SurfaceChip | `WeekMapPilot` `%Bubble` (morning speech bubble over a map token: white, `BORDER_STRONG` 2px, radius 14) | scene-set |
+| `PilotGaugePanel` · `PilotGaugeMask` | DimPanel | `PilotGauge` root (white, `BORDER_STRONG` 1px, r 12) · its `%Mask` (black 0.62, r 12) | scene-set (mask shown by code) |
+| `WeekMapPilotMask` | DimPanel | `WeekMapPilot` `%Mask`: black 0.62 circle (r 42) over the portrait of a pilot who cannot be picked | scene-set (shown by code) |
+| `VisitMenuBubble` | PopupCard | `VisitMenu` `%Bubble`: the visit menu speech bubble (white, `BORDER_STRONG` 2px, r 28, shadow, padding 32 / 28; the scene's `%Tail` polygons use the same colours) | scene-set |
 | `LobbySurfaceBar` · `LobbyToast` | Card · SurfaceChip | `Lobby` `StripBack` / `TabBarBack` · `Toast` | error toast = `NEGATIVE` copy |
 | `PhaseIntroBackdrop` | ScreenBackground | `PhaseIntro` `Backdrop` (full-screen `RAIL`, no radius) | — |
 | `BanPickOrderPip` · `IntelAnalystNote` | SunkPanel · SunkPanel | `BanPickOrderPip` root (r6; side colour + capsule corners = code copy) · `IntelView` `Note/Card` (`ACCENT_DIM`, r14) | pip fill = side colour |

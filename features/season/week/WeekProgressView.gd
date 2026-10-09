@@ -88,8 +88,10 @@ const FX_TAIL: float = 0.25
 ## Start offset between pilots (seat order), so neighbouring tokens' texts sit at different heights.
 const FX_PILOT_STAGGER: float = 0.2
 const DONE_TEXT_X_NO_PORTRAIT: float = 28.0   # afternoon summary without a pilot (pass)
-## Afternoon token of a pilot that cannot be asked (away, or no action left).
-const MAP_DIM: Color = Color(1, 1, 1, 0.45)
+## The picked map token (morning talk pick / afternoon visit open) is drawn this much larger,
+## around its centre. A token that cannot be picked gets the black masks instead
+## (`_token_dimmed`; `%Mask` + each gauge's `set_dimmed`).
+const MAP_PICKED_SCALE: float = 1.2
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 @onready var _gm: Node = get_node("/root/GameManager")
@@ -123,7 +125,6 @@ var _overlay_kind: String = ""        # "talk" / "evening" / "limit_break" / "in
 var _overlay_pid: int = -1            # the dialogue's pilot (limit break answers by pilot)
 var _visit_menu: VisitMenu = null     # afternoon visit popup (pick / menu / courses / result)
 var _awaken_view: Node = null         # §15 C AwakeningView while it is open
-var _token_spots: Dictionary = {}     # pilot id -> base-map spot of the current build
 var _skip_popup: ConfirmPopup = null  # "skip the morning talk / afternoon?" warning, made on first use
 
 var _pilot_cards: Array = []          # SeasonPilotCard x5 (scene %PilotRow, seat order)
@@ -494,7 +495,6 @@ func _add_map_section(stage: int) -> void:
 		_sel_pid = -1
 
 	_tokens.clear()
-	_token_spots.clear()
 	var entries: Array = []
 	for raw_pid in _my_pilots_in_seat_order():
 		var pid: int = int(raw_pid)
@@ -518,7 +518,6 @@ func _add_map_section(stage: int) -> void:
 			spot = BaseMap.SPOT_ENTRANCE
 		var token: Control = _add_map_token(map, stage, pid, String(names.get(seat, "")), away)
 		_tokens[pid] = token
-		_token_spots[pid] = spot
 		var hold: Control = token.get_node("%Portrait")
 		entries.append({"node": token, "spot": spot, "anchor": hold.position + hold.size * 0.5})
 	map.place_tokens(entries)
@@ -534,15 +533,24 @@ func _stadium_spot(stage: int) -> String:
 
 ## One pilot token on the map (`UI_Comp_WeekMapPilot.tscn`). No name under the portrait:
 ## the morning shows a speech bubble with the training `course` this pilot does now, the
-## afternoon an away chip (혼자 외출 / 숙소 휴식) and dims pilots that cannot be asked. The
-## RESULT stage's rising texts are added later by `_play_result_fx`.
+## afternoon an away chip (혼자 외출 / 숙소 휴식). Under the portrait three gauge panels
+## (stress · trust · awakening, `PilotGauge`). A pilot that cannot be picked is covered by the
+## black masks (`_token_dimmed`); the picked one (`_token_picked`) is scaled up around its
+## centre and drawn over the others. The RESULT stage's rising texts are added later by
+## `_play_result_fx`.
 func _add_map_token(map: BaseMap, stage: int, pid: int, course: String, away: String) -> Control:
 	var s: Dictionary = _gm.season_state
 	var token: Control = MAP_PILOT_SCENE.instantiate() as Control
 	map.add_token(token)
-	var picked: bool = (stage == Stage.TALK or stage == Stage.AFTERNOON) and pid == _sel_pid
+	var picked: bool = _token_picked(stage, pid)
 	OutgameTheme.add_round_portrait(token.get_node("%Portrait"), PilotImages.circle_for(pid),
 			Vector2.ZERO, MAP_PORTRAIT_D, OutgameTheme.ACCENT if picked else OutgameTheme.SURFACE)
+	var stress_g: PilotGauge = token.get_node("%PilotGauge_Stress")
+	var trust_g: PilotGauge = token.get_node("%PilotGauge_Trust")
+	var awaken_g: PilotGauge = token.get_node("%PilotGauge_Awaken")
+	stress_g.show_stress(StressSystem.value(s, pid))
+	trust_g.show_trust(MentalSystem.trust(s, pid))
+	awaken_g.show_awakening(Awakening.gauge(s, pid), Awakening.threshold())
 	var bubble_on: bool = stage == Stage.MORNING and course != ""
 	(token.get_node("%Bubble") as Control).visible = bubble_on
 	(token.get_node("%BubbleTail") as CanvasItem).visible = bubble_on
@@ -550,29 +558,57 @@ func _add_map_token(map: BaseMap, stage: int, pid: int, course: String, away: St
 	var away_chip: Control = token.get_node("%Away")
 	var away_lbl: Label = token.get_node("%Name")
 	away_chip.visible = false
-	var hit: Button = token.get_node("%Hit")
-	hit.disabled = true
-	if stage == Stage.TALK:
-		var can_talk: bool = MentalSystem.can_talk(s, _day, pid)
-		hit.disabled = not can_talk
-		if can_talk:
-			hit.pressed.connect(_on_map_pilot_picked.bind(pid))
-		elif MentalSystem.talk_done(s, _day) and not _in_talk(pid):
-			token.modulate = MAP_DIM
-	elif stage == Stage.AFTERNOON or stage == Stage.EVENING:
+	if stage == Stage.AFTERNOON or stage == Stage.EVENING:
 		if away == AfternoonAway.AWAY_DORM:
 			away_lbl.text = Loc.t(L.SEASON_WEEK_MAP_DORM)
 			away_chip.visible = true
 		elif away == AfternoonAway.AWAY_SELF_OUTING:
 			away_lbl.text = Loc.t(L.SEASON_WEEK_MAP_SELF_OUTING)
 			away_chip.visible = true
-		var can: bool = stage == Stage.AFTERNOON and AfternoonAway.can_request(s, _day, pid)
-		hit.disabled = not can
-		if can:
-			hit.pressed.connect(_on_map_pilot_picked.bind(pid))
-		elif stage == Stage.AFTERNOON:
-			token.modulate = MAP_DIM
+	var hit: Button = token.get_node("%Hit")
+	var can: bool = _can_pick(stage, pid)
+	hit.disabled = not can
+	if can:
+		hit.pressed.connect(_on_map_pilot_picked.bind(pid))
+	var dim: bool = _token_dimmed(stage, pid)
+	(token.get_node("%Mask") as Control).visible = dim
+	for g in [stress_g, trust_g, awaken_g]:
+		(g as PilotGauge).set_dimmed(dim)
+	if picked:
+		token.pivot_offset = token.size * 0.5
+		token.scale = Vector2.ONE * MAP_PICKED_SCALE
+		token.z_index = 1
 	return token
+
+
+## The token of `pid` is the picked one: the morning talk's pick (until the talk is used) or
+## the pilot whose afternoon visit is open (menu / courses / result).
+func _token_picked(stage: int, pid: int) -> bool:
+	var s: Dictionary = _gm.season_state
+	if stage == Stage.TALK:
+		return pid == _sel_pid and MentalSystem.can_talk(s, _day, pid)
+	if stage == Stage.AFTERNOON:
+		return pid >= 0 and pid == MentalSystem.visit_open(s, _day)
+	return false
+
+
+## Black mask over a token: in the talk / afternoon / evening stages every pilot that cannot
+## be picked, except the one whose meeting is under way — so once the morning talk or the
+## afternoon visit is used, and all evening, every token is dark.
+func _token_dimmed(stage: int, pid: int) -> bool:
+	var s: Dictionary = _gm.season_state
+	if stage == Stage.TALK:
+		if MentalSystem.talk_done(s, _day):
+			return true
+		return not MentalSystem.can_talk(s, _day, pid) and not _in_talk(pid)
+	if stage == Stage.AFTERNOON:
+		if MentalSystem.evening_done(s, _day):
+			return true
+		var e: Dictionary = MentalSystem.evening(s, _day)
+		if not e.is_empty() and int(e.get("pilot_id", -1)) == pid:
+			return false
+		return not AfternoonAway.can_request(s, _day, pid)
+	return stage == Stage.EVENING
 
 
 ## `pid` may be picked on the map in `stage` (morning talk / afternoon action).
@@ -726,22 +762,12 @@ func _on_pilot_card_pressed(pid: int) -> void:
 	SeasonPilotDetail.open(self, pid)
 
 
-## Map tap. Morning talk: pick the pilot (the talk card asks). Afternoon: visit — when
-## other pilots who can be visited stand on the same spot, the popup asks who first.
+## Map tap. Morning talk: pick the pilot (the talk card asks). Afternoon: visit the tapped
+## pilot straight away (tokens never overlap, so there is no "who?" picker).
 func _on_map_pilot_picked(pid: int) -> void:
 	if _busy():
 		return
 	if _stage() == Stage.AFTERNOON:
-		var same: Array = []
-		for raw in _my_pilots_in_seat_order():
-			var other: int = int(raw)
-			if String(_token_spots.get(other, "")) == String(_token_spots.get(pid, "")) \
-					and AfternoonAway.can_request(_gm.season_state, _day, other):
-				same.append(other)
-		if same.size() >= 2:
-			_visit_menu = _make_visit_menu()
-			_visit_menu.open_picker(_gm.season_state, same)
-			return
 		_start_visit(pid)
 		return
 	_sel_pid = pid
@@ -1248,14 +1274,13 @@ func _my_pilots_in_seat_order() -> Array:
 
 
 # ── Afternoon visit (방문, §15 D) ─────────────────────────────────────────────
-# Tap a pilot → (picker when several stand on the spot) → the visit is recorded
-# (`MentalSystem.begin_visit`, saved) → `VisitMenu`: 집중 훈련 (courses → result) /
+# Tap a pilot → the visit is recorded (`MentalSystem.begin_visit`, saved) → `VisitMenu`, a
+# speech bubble over that pilot's (scaled-up) token: 집중 훈련 (courses → result) /
 # 이야기 (story dialogue) / 외출 (outing dialogue). A reload with the menu open reopens it.
 
 func _make_visit_menu() -> VisitMenu:
 	var menu := VisitMenu.create()
 	add_child(menu)
-	menu.pilot_picked.connect(_on_visit_pilot_picked)
 	menu.option_picked.connect(_on_visit_option)
 	menu.course_picked.connect(_on_visit_course)
 	menu.closed.connect(_on_visit_closed)
@@ -1273,11 +1298,15 @@ func _start_visit(pid: int) -> void:
 	_open_visit_menu(pid)
 
 
+## Opens (or refills) the menu bubble for `pid`, pointing at that pilot's map token.
 func _open_visit_menu(pid: int) -> void:
 	if _visit_menu == null:
 		if _busy():
 			return
 		_visit_menu = _make_visit_menu()
+	var token: Control = _tokens.get(pid, null)
+	if token != null:
+		_visit_menu.point_at(token.get_node("%Portrait"), token)
 	_visit_menu.open_menu(_gm.season_state, pid, _day)
 
 
@@ -1285,10 +1314,6 @@ func _close_visit_menu() -> void:
 	if _visit_menu != null:
 		_visit_menu.queue_free()
 		_visit_menu = null
-
-
-func _on_visit_pilot_picked(pid: int) -> void:
-	_start_visit(pid)
 
 
 func _on_visit_option(option: String) -> void:
@@ -1322,7 +1347,7 @@ func _on_visit_course(id: String) -> void:
 		_visit_menu.show_result(s, MentalEvents.note_texts(s, out.get("notes", [])))
 
 
-## Picker cancelled (nothing recorded) or the focus result confirmed.
+## The focus result confirmed.
 func _on_visit_closed() -> void:
 	_close_visit_menu()
 	refresh()

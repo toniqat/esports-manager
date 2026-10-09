@@ -974,6 +974,24 @@ static func _add_screen_variations(th: Theme) -> void:
 	_add_derived(th, "LobbySurfaceBar", &"Card", flat_style(SURFACE, 0))
 	_add_derived(th, "LobbyToast", &"SurfaceChip", flat_style(RAIL, 34))
 
+	# --- B week UI rework ---
+	# season — stat gauge panels under the week-map pilot tokens (`UI_Comp_PilotGauge`) and
+	# the black masks over a token whose pilot cannot be picked (portrait circle = r 42).
+	_add_derived(th, "PilotGaugePanel", &"DimPanel", flat_style(SURFACE, 12, BORDER_STRONG, 1))
+	_add_derived(th, "PilotGaugeMask", &"DimPanel", flat_style(Color(0, 0, 0, 0.62), 12))
+	_add_derived(th, "WeekMapPilotMask", &"DimPanel", flat_style(Color(0, 0, 0, 0.62), 42))
+	# season/week — the afternoon visit menu as a speech bubble over the picked token
+	# (`UI_View_VisitMenu`; the tail polygons in the scene use the same SURFACE / BORDER_STRONG).
+	var visit := flat_style(SURFACE, 28, BORDER_STRONG, 2)
+	visit.shadow_color = Color(SHADOW, 0.22)
+	visit.shadow_size = 14
+	visit.shadow_offset = Vector2(0, 4)
+	visit.content_margin_left = 32.0
+	visit.content_margin_right = 32.0
+	visit.content_margin_top = 28.0
+	visit.content_margin_bottom = 28.0
+	_add_derived(th, "VisitMenuBubble", &"PopupCard", visit)
+
 
 ## 둥근 그림 마스크(`clip_children` 부모가 그리는 흰 판).
 static func _mask_box(radius: int) -> StyleBoxFlat:

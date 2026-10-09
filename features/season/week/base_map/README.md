@@ -48,8 +48,8 @@ BaseMap_<Name> (Control DESIGN_SIZE, mouse Ignore, script BaseMap.gd)
   `P` HP share it) · `M` mastery · `Q` quirk · `W` neutral (`W`, the amplifier's black `K`, and a cell with no
   tile = basic course). `Dorm` / `Entrance` are the afternoon away spots (resting / out alone,
   `features/season/mental/README.md` "Afternoon away states").
-* **No overlap**: tokens sharing a spot fan out in rows of `TOKENS_PER_ROW`, a `TOKEN_STEP` apart, centred on
-  the spot. Tokens of different spots that land too close are pushed apart along the axis of least overlap
+* **No overlap**: tokens sharing a spot fan out in rows of `TOKENS_PER_ROW`, a `TOKEN_STEP` (160 × 160; the
+  token is 152 × 152 = portrait + three gauge panels) apart, centred on the spot. Tokens of different spots that land too close are pushed apart along the axis of least overlap
   (`_separate`, `TOKEN_STEP` = footprint), then everything is clamped inside the map. So spots may sit near
   each other; tokens simply step aside.
 * Spot positions were first placed by eye on plausible buildings of each picture; tune them in the editor.

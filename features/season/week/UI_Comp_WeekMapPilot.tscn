@@ -1,15 +1,16 @@
-[gd_scene load_steps=2 format=3 uid="uid://c6jfpb15ilrih"]
+[gd_scene load_steps=3 format=3 uid="uid://c6jfpb15ilrih"]
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+[ext_resource type="PackedScene" path="res://features/season/UI_Comp_PilotGauge.tscn" id="2_gauge"]
 
 [node name="WeekMapPilot" type="Control"]
 auto_translate_mode = 2
-editor_description = "One of my pilots on the base map (BaseMap %Tokens). The portrait centre stands on the spot. No name under the portrait. Morning: a speech bubble over the portrait names that day's training (%Bubble). After Next the day's results rise out of the portrait top and fade (%Floats, duplicates of %FloatLine). Afternoon: %Away names an away state (혼자 외출 / 숙소 휴식); code dims the whole token (modulate) when the pilot cannot be asked."
-custom_minimum_size = Vector2(136, 120)
+editor_description = "One of my pilots on the base map (BaseMap %Tokens). The portrait centre stands on the spot. No name under the portrait. Morning: a speech bubble over the portrait names that day's training (%Bubble). After Next the day's results rise out of the portrait top and fade (%Floats, duplicates of %FloatLine). Under the portrait three stat panels (%Gauges: stress · trust · awakening). Afternoon: %Away (over the portrait) names an away state (혼자 외출 / 숙소 휴식). A pilot who cannot be picked gets the black masks (%Mask + each gauge's own); the picked one is scaled up (code, pivot = centre)."
+custom_minimum_size = Vector2(152, 152)
 layout_mode = 3
 anchors_preset = 0
-offset_right = 136.0
-offset_bottom = 120.0
+offset_right = 152.0
+offset_bottom = 152.0
 mouse_filter = 2
 theme = ExtResource("1_theme")
 
@@ -18,16 +19,57 @@ unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token() · BaseMap.gd _fill_preview()
 Slot for the round portrait (code draws OutgameTheme.add_round_portrait here). Its centre is the token's anchor on the spot."
 anchors_preset = 0
-offset_left = 26.0
-offset_right = 110.0
+offset_left = 34.0
+offset_right = 118.0
 offset_bottom = 84.0
 mouse_filter = 2
+
+[node name="Gauges" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token()
+Three stat panels under the portrait (UI_Comp_PilotGauge): stress · trust · awakening."
+layout_mode = 0
+offset_top = 88.0
+offset_right = 152.0
+offset_bottom = 152.0
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="PilotGauge_Stress" parent="Gauges" instance=ExtResource("2_gauge")]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token()
+Stress: band-coloured icon, ring = 0..100 + overflow lap to STRESS_MAX, value under it."
+layout_mode = 2
+
+[node name="PilotGauge_Trust" parent="Gauges" instance=ExtResource("2_gauge")]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token()
+Trust: pink heart with the level inside, ring = progress inside the level."
+layout_mode = 2
+
+[node name="PilotGauge_Awaken" parent="Gauges" instance=ExtResource("2_gauge")]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token()
+Awakening: orange bulb, ring = gauge / threshold."
+layout_mode = 2
+
+[node name="Mask" type="Panel" parent="."]
+unique_name_in_owner = true
+visible = false
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token()
+Black circle over the portrait when the pilot cannot be picked (the gauges dim themselves)."
+layout_mode = 0
+offset_left = 34.0
+offset_right = 118.0
+offset_bottom = 84.0
+mouse_filter = 2
+theme_type_variation = &"WeekMapPilotMask"
 
 [node name="BubbleTail" type="Node2D" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token()
 Bubble pointer under %Bubble (border + fill triangles); shown / hidden with it."
-position = Vector2(68, -12)
+position = Vector2(76, -12)
 
 [node name="Edge" type="Polygon2D" parent="BubbleTail"]
 color = Color(0.780, 0.784, 0.808, 1)
@@ -64,15 +106,16 @@ horizontal_alignment = 1
 [node name="Away" type="PanelContainer" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token()
-Afternoon away-state chip under the portrait (혼자 외출 / 숙소 휴식); hidden otherwise."
+Afternoon away-state chip over the portrait top (혼자 외출 / 숙소 휴식) — the gauges sit under the portrait; hidden otherwise."
 visible = false
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_top = 88.0
-offset_bottom = 88.0
+offset_top = -6.0
+offset_bottom = -6.0
 grow_horizontal = 2
+grow_vertical = 0
 mouse_filter = 2
 theme_type_variation = &"SurfaceChip"
 
@@ -120,11 +163,10 @@ horizontal_alignment = 1
 [node name="Hit" type="Button" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token()
-Tap target over the portrait (afternoon: pick this pilot). Code disables it for pilots that cannot be asked."
+Tap target over the portrait and gauges (morning talk / afternoon: pick this pilot). Code disables it for pilots that cannot be asked."
 layout_mode = 0
-offset_left = 26.0
-offset_right = 110.0
-offset_bottom = 84.0
+offset_right = 152.0
+offset_bottom = 152.0
 focus_mode = 0
 mouse_default_cursor_shape = 2
 flat = true

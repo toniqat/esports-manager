@@ -13,14 +13,14 @@ The weekend carries the week's one player match: **Saturday morning** = stadium 
 | `UI_View_WeekProgressView.tscn` | The screen layout (tree below) |
 | `base_map/` | `BaseMap` widget + one `UI_Comp_BaseMap_<Name>.tscn` per team base map (art + spot markers) + the weekend `UI_Comp_BaseMap_Stadium.tscn`. See `base_map/README.md` |
 | `UI_Comp_WeekMapSection.tscn` | Item (training day, first): `%Hint` caption (what Next does now) + `%MapHolder` (CenterContainer) that receives the team's `BaseMap`. On the team map (not the stadium) `_add_map_section` also puts the §16 facility research bubbles, **read-only** (`ResearchBubble.populate(map, state, false)`, under the pilot tokens; `facility/README.md` "UI") |
-| `UI_Comp_WeekMapPilot.tscn` | One pilot token on the map (`%Portrait` slot · morning speech bubble `%Bubble` / `%BubbleText` + `%BubbleTail` · afternoon away chip `%Away` / `%Name` · rising result texts `%Floats` with the `%FloatLine` template · `%Hit`). No name under the portrait |
+| `UI_Comp_WeekMapPilot.tscn` | One pilot token on the map, 152 × 152 (`%Portrait` slot 84 · `%Gauges` = three `PilotGauge` panels under it: `%PilotGauge_Stress` / `%PilotGauge_Trust` / `%PilotGauge_Awaken` (`features/season/README.md` "Pilot gauge") · `%Mask` black circle over the portrait · morning speech bubble `%Bubble` / `%BubbleText` + `%BubbleTail` · afternoon away chip `%Away` / `%Name` over the portrait top · rising result texts `%Floats` with the `%FloatLine` template · `%Hit` over the whole token). No name, no role badge |
 | `UI_Comp_WeekMatchCard.tscn` | Item: one match of the match day (`%Tag` · `%Title` · `%Status` · `%Hint`) |
 | `UI_Comp_WeekNoteCard.tscn` | Item: one-line placeholder card (`%Text`) |
 | `UI_Comp_WeekIncidentCard.tscn` | Item: the day's incident (`%Portrait` slot · `%Head` · `%Line` · `%Hit`) |
 | `UI_Comp_WeekAfternoonCard.tscn` | Item: 오후 before the visit (`%Hint` = how to visit / nobody can be visited · `%Coach` = coach points left / weekly grant) |
-| `VisitMenu.gd` | `class_name VisitMenu extends CanvasLayer` — the afternoon **visit (방문)** popup, four pages: pick (2+ pilots on the tapped spot) → menu (집중 훈련 / 이야기 / 외출) → courses → result. Draws and emits only (`pilot_picked` · `option_picked` · `course_picked` · `closed`); `create()`, `open_picker` / `open_menu` / `show_courses` / `show_result`. F6 preview = the menu of my first pilot (focus opens the live courses page) |
-| `UI_View_VisitMenu.tscn` | Its scene (layer 20): `%Dim` (cancels the pick page only) · `DimRect` · `%SafeArea` → `PopupCard`: `%Header` (`%Portrait` · `%Name` · `%PilotLine` · `%Coach`) · `%Caption` · `%PickList` · `%Options` (`%Focus` / `%Story` / `%Outing` `SelectableCardButton`s with title + note) · `%Courses` · `%Result` (`%ResultLine` template) · `%Buttons` (`%Back` · `%Confirm`) |
-| `UI_Comp_VisitPilotRow.tscn` · `UI_Comp_VisitCourseRow.tscn` | Items of the popup (no script): one pilot of the picker (`%Portrait` · `%Name` · `%Line`) · one focus course (`%Name` · `%Stats` · `%Cost` · `%Reason`; picked = `SelectableCardButtonOn`) |
+| `VisitMenu.gd` | `class_name VisitMenu extends CanvasLayer` — the afternoon **visit (방문)** menu as a **speech bubble over the visited pilot's token**, three pages: menu (집중 훈련 / 이야기 / 외출) → courses → result. `point_at(portrait, token)` gives the target; `_place_bubble` (every frame while open, only on change) puts the bubble above the portrait with the tail down, else under the token with the tail flipped up, else on the roomier side clamped into the safe area (tail hidden if it would cover the token); x centred on the token, clamped into the safe area. Draws and emits only (`option_picked` · `course_picked` · `closed`); `create()`, `point_at` / `open_menu` / `show_courses` / `show_result`. F6 preview = the menu of my first pilot, centred, no tail |
+| `UI_View_VisitMenu.tscn` | Its scene (layer 20): `Root` full rect STOP (swallows other taps, no dim) → `%Bubble` (`VisitMenuBubble`, 840 wide): VBox sep 16 — `%Header` (`%Portrait` 80 · `%Name` · `%PilotLine` · `%Coach`) · `%Caption` · `%Options` (`%Focus` / `%Story` / `%Outing` `SelectableCardButton`s 104 high with title + note) · `%Courses` · `%Result` (`%ResultLine` template) · `%Buttons` (`%Back` · `%Confirm`); `%Tail` (Node2D, `Edge` + `Fill` triangles) |
+| `UI_Comp_VisitCourseRow.tscn` | Item of the menu (no script): one focus course, 96 high (`%Name` · `%Stats` · `%Cost` · `%Reason`; picked = `SelectableCardButtonOn`) |
 | `UI_Comp_WeekAfternoonDoneCard.tscn` | Item: 오후 summary after the action (`%Portrait` · `%Head` · `%Line`); also the morning talk's summary |
 | `UI_Comp_WeekTalkCard.tscn` | Item: 오전 만남 before the talk (`%Hint` (no pick) · `%Pilot` (`%Portrait` · `%Name` · `%With` = joint-training partner or trust) · `%Talk`) |
 | *(shared)* `../UI_Comp_SeasonPilotCard.tscn` | The five pilot cards of `%PilotRow` (`features/season/README.md` "Pilot card · detail sheet") |
@@ -68,8 +68,9 @@ WeekProgressView (Control, full rect, PASS, theme OutgameTheme.tres)
   `WeekDayChip` ↔ `WeekDayChipToday`) and the day-letter colours,
   the lead bars (role colour, incident = `NEGATIVE`) and the player's dark match card
   (`card_style(…, RAIL)`), status / role / trust / result colours, card heights (match 168 / 96), the round portraits (drawn into the `%Portrait` slots with
-  `OutgameTheme.add_round_portrait`; a picked afternoon pilot gets an `ACCENT` ring), the dim of a token whose
-  pilot cannot be asked (`MAP_DIM` modulate), which base map scene is instanced (team data), where the tokens
+  `OutgameTheme.add_round_portrait`; the picked token gets an `ACCENT` ring and is scaled `MAP_PICKED_SCALE` 1.2 around its
+  centre, drawn over the others), the gauge values, the black masks of a token whose pilot cannot be picked
+  (`_token_dimmed`: `%Mask` + `PilotGauge.set_dimmed`), which base map scene is instanced (team data), where the tokens
   stand (`BaseMap.place_tokens`), the bottom-bar variation switch and the safe-area insets. Fixed colours
   are variations: a pending incident's `%Line` switches to
   `NegativeLabel` (size 21 kept); the afternoon card's `%Trust` switches to `AccentLabel` once the outing is unlocked.
@@ -136,9 +137,9 @@ stored on its own (`_stage`), so re-entering the day (after a match, after a rel
 |---|---|---|---|
 | `MORNING` | no `week_day_log[day]` | each pilot on the spot of **that day's training facility** (`TrainingBoard.day_groups` `facility` → `BaseMap.spot_of_facility`: the tile's `facility` column, else the colour of its first cell that day, so a joint-training group shares one spot; no tile = basic course = neutral `W`); a **speech bubble** over the portrait names the training (`TrainingBoard.day_tile_names`) | settles the day (`_settle_day` → `apply_day_training`) |
 | `RESULT` | `week_day_log[day]` set, no talk record | same spots, no bubble; **result FX** (`_play_result_fx`): per pilot, lines rise out of the portrait top and fade (`FX_RISE` / `FX_TIME`, `FX_STAGGER` between lines, `FX_PILOT_STAGGER` between pilots): stat ups by **full name** (`전장 명중 +1`, else `EXP +N`), `스트레스 ±N`, quirk events; the bottom cards' stress change pops (`pulse_note`). When the FX ends the morning talk **opens by itself** (`_finish_result_fx` → `MentalSystem.begin_morning`) | skips the rest of the FX (same `_finish_result_fx`) |
-| `TALK` | `MentalSystem.morning_started`, no afternoon record | same spots; pilots that can be met are tappable (`MentalSystem.can_talk`), after the talk everyone but the met pair is dimmed. Pick one → `%Talk` on the talk card → morning talk dialog (joint training: the partner comes along) | afternoon (`_begin_afternoon`: `pass_talk` + `AfternoonAway.begin`); while a talk is still possible a **warning** asks first |
-| `AFTERNOON` | `AfternoonAway.started`, no `dusk` | resting pilots on `Dorm`, pilots out alone on `Entrance`; anyone who cannot be visited is dimmed and not tappable (`AfternoonAway.can_request`). Tap = visit (`VisitMenu`) | evening (`_begin_evening`: pass if unused, `MentalSystem.begin_dusk` rolls the incident; **no incident and no limit-break event = straight to the next day**, except Sunday, which stops on its evening for "주 마감 →"); while a visit is still possible (`AfternoonAway.any_request`) a **warning** `ConfirmPopup` asks first, confirm = pass |
-| `EVENING` | `MentalSystem.dusk_started` | afternoon positions, nobody tappable; the limit-break event (§15 B) then the incident open by themselves | next day (`on_week_day_confirmed`) |
+| `TALK` | `MentalSystem.morning_started`, no afternoon record | same spots; pilots that can be met are tappable (`MentalSystem.can_talk`), the picked one is scaled up; once the talk is used **every** token is masked black. Pick one → `%Talk` on the talk card → morning talk dialog (joint training: the partner comes along) | afternoon (`_begin_afternoon`: `pass_talk` + `AfternoonAway.begin`); while a talk is still possible a **warning** asks first |
+| `AFTERNOON` | `AfternoonAway.started`, no `dusk` | resting pilots on `Dorm`, pilots out alone on `Entrance`; anyone who cannot be visited is masked black and not tappable (`AfternoonAway.can_request`), except the pilot whose visit is under way (scaled up). Tap = visit (`VisitMenu`); once the visit is used every token is masked | evening (`_begin_evening`: pass if unused, `MentalSystem.begin_dusk` rolls the incident; **no incident and no limit-break event = straight to the next day**, except Sunday, which stops on its evening for "주 마감 →"); while a visit is still possible (`AfternoonAway.any_request`) a **warning** `ConfirmPopup` asks first, confirm = pass |
+| `EVENING` | `MentalSystem.dusk_started` | afternoon positions, nobody tappable, every token masked; the limit-break event (§15 B) then the incident open by themselves | next day (`on_week_day_confirmed`) |
 
 * **Map**: the team's base map (`RunRules.team_map_id(player_team_id)` = `teams.csv` `map_id` → `BaseMap.create`),
   pinned in `%MapPin` above the scrolling list. Spots per colour group and the fan-out of tokens sharing a spot: `base_map/README.md`.
@@ -215,10 +216,9 @@ records and forwards taps. On a training day the list order is **(pinned map) �
 
 ### Afternoon visit (방문, §15 D)
 Rules and records: `features/season/mental/README.md` "Afternoon visit (방문)".
-1. Tap a pilot on the base map. When other pilots who can be visited stand on the **same spot** (`_token_spots`),
-   `VisitMenu.open_picker` asks who (Cancel / the dim = nothing recorded).
+1. Tap a pilot on the base map — always that pilot (tokens never overlap, there is no picker).
 2. `_start_visit` → `MentalSystem.begin_visit` records the visit **before** the menu opens, saves (`visit`), and the
-   menu page shows 집중 훈련 (greyed out when the points are short) / 이야기 (what today's story is about) /
+   menu bubble (pointing at the scaled-up token) shows 집중 훈련 (greyed out when the points are short) / 이야기 (what today's story is about) /
    외출 (greyed out under `TRUST_OUTING_LEVEL`, the note says why). There is no way out of the menu but an option.
 3. 집중 훈련 → courses page (pick a row, then the confirm button) → `MentalSystem.finish_focus` → result page
    (the note texts) → 확인 → redraw. 이야기 / 외출 → `begin_evening` → the VN dialogue.

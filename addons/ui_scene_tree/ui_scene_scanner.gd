@@ -66,8 +66,13 @@ func _collect(dir_path: String, tscn_files: PackedStringArray, gd_files: PackedS
 				gd_files.append(dir_path.path_join(file))
 	for sub in dir.get_directories():
 		var sub_path: String = dir_path.path_join(sub)
-		if not SKIP_DIRS.has(sub_path):
-			_collect(sub_path, tscn_files, gd_files)
+		# Same rule as the editor's filesystem: dot-dirs and `.gdignore` dirs are not project
+		# files. Windows doesn't hide dot-dirs, so without this `.claude/worktrees/` (whole
+		# repo copies) was scanned — 1920 scenes, ~90 s main-thread freeze at editor start.
+		if sub.begins_with(".") or SKIP_DIRS.has(sub_path) \
+				or FileAccess.file_exists(sub_path.path_join(".gdignore")):
+			continue
+		_collect(sub_path, tscn_files, gd_files)
 
 
 func _read_scene(path: String) -> Dictionary:

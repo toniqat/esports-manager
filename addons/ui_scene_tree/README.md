@@ -9,7 +9,7 @@
 | `plugin.cfg` · `plugin.gd` | EditorPlugin 껍데기 — 독을 `DOCK_SLOT_LEFT_UR` 에 붙이고, 씬 저장 · 파일시스템 변경을 독의 `request_refresh()` 에 연결 |
 | `ui_scene_tree_dock.gd` | 독 화면 — 필터 · TODO만 토글 · 다시 읽기, 3열 `Tree`(헤더 없음), 우클릭 메뉴, 펼침 상태 기억 (갱신은 0.4초 디바운스) |
 | `assign_uids_cli.gd` | 헤드리스 도구: 헤더에 uid 가 없는 `.tscn` 첫 줄에 `ResourceUID.create_id()` uid 를 넣는다 (아래 "uid 채우기") |
-| `ui_scene_scanner.gd` | 스캔 로직 (순수 RefCounted, 헤드리스 가능) — `.tscn` · `.gd` 텍스트를 직접 파싱 (`addons/` · `build/` · `ios/` 제외) |
+| `ui_scene_scanner.gd` | 스캔 로직 (순수 RefCounted, 헤드리스 가능) — `.tscn` · `.gd` 텍스트를 직접 파싱 (`addons/` · `build/` · `ios/`, `.` 폴더 · `.gdignore` 폴더 제외 — `.claude/worktrees/` 를 훑으면 에디터 시작이 ~90초 멈춘다) |
 
 ## 화면
 - **루트** = 진입 씬 `scenes/*.tscn` (▶ 아이콘) → `UI_View_*` 전부. 그 아래:

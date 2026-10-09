@@ -1,0 +1,3 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_J3Y69RGNTH,research_intel.in_scout.name,active,research.csv name_key (id=in_scout),,,상대 분석,Opponent Analysis,draft,ab5b3f50
+tx_F4XDP3C9Q9,research_intel.in_scout.desc,active,research.csv desc_key (id=in_scout),,,고른 팀의 분석 단계를 한 단계 올립니다.,Raises the analysis rank of the chosen team by one.,draft,57450f3f

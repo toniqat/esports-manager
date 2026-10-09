@@ -1,0 +1,27 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_PEVX1H1CBW,facility.def.train_field.name,active,facility_defs.csv name_key (id=train_field),,,전장 훈련장,Field Training Hall,draft,7de2e51b
+tx_H3VDTFBMSH,facility.def.train_field.desc,active,facility_defs.csv desc_key (id=train_field),,,사격 훈련과 회피 기동 코스를 연구합니다.,Researches shooting and evasive manoeuvre courses.,draft,b9760475
+tx_382D838KHX,facility.def.train_engage.name,active,facility_defs.csv name_key (id=train_engage),,,교전 훈련장,Engage Training Hall,draft,1d2874f1
+tx_G0KF5BMTXF,facility.def.train_engage.desc,active,facility_defs.csv desc_key (id=train_engage),,,근접 교전과 반응 훈련 코스를 연구합니다.,Researches engage close-combat and reaction courses.,draft,a0a0f540
+tx_2C4KQ890GE,facility.def.train_growth.name,active,facility_defs.csv name_key (id=train_growth),,,체력 단련실,Conditioning Room,draft,1ed81775
+tx_41K54C3WY5,facility.def.train_growth.desc,active,facility_defs.csv desc_key (id=train_growth),,,"화력 증강과 내구 단련, 기초 코스를 연구합니다.","Researches firepower, endurance and basic courses.",draft,a82056c0
+tx_D7AH9HVCJS,facility.def.intel.name,active,facility_defs.csv name_key (id=intel),,,전력 분석실,Analysis Room,draft,e1c45644
+tx_RQMSXEYBE3,facility.def.intel.desc,active,facility_defs.csv desc_key (id=intel),,,리그 상대 팀을 분석합니다.,Analyses rival teams in your league.,draft,59f976bd
+tx_RCNVE21CH2,facility.def.mech_lab.name,active,facility_defs.csv name_key (id=mech_lab),,,메크 연구소,Mech Lab,draft,d7201957
+tx_VPSJW87NRZ,facility.def.mech_lab.desc,active,facility_defs.csv desc_key (id=mech_lab),,,메크를 연구해 선수들의 숙련도를 올립니다.,Studies a mech to raise your pilots' mastery.,draft,6eb48ceb
+tx_N14277K1J3,facility.def.front.name,active,facility_defs.csv name_key (id=front),,,프론트,Front Office,draft,1dd9a778
+tx_E5DWVGPFPB,facility.def.front.desc,active,facility_defs.csv desc_key (id=front),,,구단 경영을 연구합니다. 다른 시설은 프론트 레벨을 넘을 수 없습니다.,Researches club management. No other facility may exceed its level.,draft,bb393864
+tx_1NR41VEH2P,facility.def.personnel.name,active,facility_defs.csv name_key (id=personnel),,,인력 개발실,Personnel Office,draft,cce360cc
+tx_YZB146N3AB,facility.def.personnel.desc,active,facility_defs.csv desc_key (id=personnel),,,새 스태프 후보를 찾습니다.,Looks for new staff candidates.,draft,64502efd
+tx_RKQKPT7PAA,facility.block.unknown_facility,active,FacilitySystem / ResearchSystem,,,알 수 없는 시설입니다,Unknown facility,draft,660d99bd
+tx_W0B4MCSN5H,facility.block.front_cap,active,FacilitySystem / ResearchSystem,,,프론트 레벨(Lv{level})보다 높일 수 없습니다,Cannot exceed the front office level (Lv{level}),draft,01de07c1
+tx_68CD3GE4VG,facility.block.need_expand,active,FacilitySystem / ResearchSystem,,,경영 확장 연구를 먼저 마쳐야 합니다 (Lv{level}),Finish the expansion research first (Lv{level}),draft,c212d604
+tx_3QK260W7GE,facility.block.manager_slots,active,FacilitySystem / ResearchSystem,,,감독 자리가 모두 찼습니다 ({used}/{max}),All manager slots are in use ({used}/{max}),draft,c06a2647
+tx_WJT54F271R,facility.block.unknown_person,active,FacilitySystem / ResearchSystem,,,배치할 수 없는 인원입니다,This person cannot be assigned,draft,a848000d
+tx_CVCJVWEBR6,facility.research.block.week_running,active,FacilitySystem / ResearchSystem,,,연구는 주를 시작하기 전 허브에서만 고를 수 있습니다,Research can only be chosen at the hub before the week starts,draft,95917c63
+tx_VDTHMREEKN,facility.research.block.unknown,active,FacilitySystem / ResearchSystem,,,알 수 없는 연구입니다,Unknown research,draft,12d25f77
+tx_7NKJAKWHJ2,facility.research.block.min_level,active,FacilitySystem / ResearchSystem,,,시설 Lv{level} 필요,Requires facility Lv{level},draft,ce4456f4
+tx_3YBGXY1Z32,facility.research.block.done,active,FacilitySystem / ResearchSystem,,,이미 마친 연구입니다,Already researched,draft,106384f3
+tx_DKSM7YDJDC,facility.research.block.need_target,active,FacilitySystem / ResearchSystem,,,연구 대상을 고르세요,Choose a research target,draft,b88c6716
+tx_YQ3ES89ZDM,facility.research.block.bad_target,active,FacilitySystem / ResearchSystem,,,고를 수 없는 대상입니다,This target cannot be chosen,draft,9221c782
+tx_S4FXFA48S2,facility.toast.research_done,active,FacilitySystem / ResearchSystem,,,{facility}: {research} 연구 완료,{facility}: {research} research complete,draft,b3580e4a

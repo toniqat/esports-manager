@@ -1,0 +1,13 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_M9XAM000XY,research_front.budget_cut.name,active,research.csv name_key (id=budget_cut),,,운영비 절감,Cost Cutting,draft,b91e2791
+tx_E124ZY8HS9,research_front.budget_cut.desc,active,research.csv desc_key (id=budget_cut),,,시설 유지비를 영구히 줄입니다.,Permanently lowers facility upkeep.,draft,a4b05d06
+tx_GCWN9S4V5Q,research_front.boost.name,active,research.csv name_key (id=boost),,,연구 집중 지원,Research Push,draft,1a383756
+tx_Z1QWCYFAHY,research_front.boost.desc,active,research.csv desc_key (id=boost),,,한동안 모든 연구 속도를 높입니다.,Speeds up every research for a while.,draft,fe54137e
+tx_YFMN5YNFH3,research_front.expand_2.name,active,research.csv name_key (id=expand_2),,,경영 확장 II,Expansion II,draft,7abdde9e
+tx_S8HGTFVMRK,research_front.expand_2.desc,active,research.csv desc_key (id=expand_2),,,프론트를 다음 레벨로 올릴 수 있게 됩니다.,Allows the front office to be upgraded to the next level.,draft,f604aa37
+tx_7BQZW5HG48,research_front.expand_3.name,active,research.csv name_key (id=expand_3),,,경영 확장 III,Expansion III,draft,bcc06fcd
+tx_FXR2KCPM22,research_front.expand_3.desc,active,research.csv desc_key (id=expand_3),,,프론트를 다음 레벨로 올릴 수 있게 됩니다.,Allows the front office to be upgraded to the next level.,draft,f604aa37
+tx_953AFG1NSB,research_front.expand_4.name,active,research.csv name_key (id=expand_4),,,경영 확장 IV,Expansion IV,draft,8cc171ad
+tx_JJ4Q8NRN3P,research_front.expand_4.desc,active,research.csv desc_key (id=expand_4),,,프론트를 다음 레벨로 올릴 수 있게 됩니다.,Allows the front office to be upgraded to the next level.,draft,f604aa37
+tx_7PGDSPA8CZ,research_front.expand_5.name,active,research.csv name_key (id=expand_5),,,경영 확장 V,Expansion V,draft,8e92b6aa
+tx_48F9CPJCFJ,research_front.expand_5.desc,active,research.csv desc_key (id=expand_5),,,프론트를 다음 레벨로 올릴 수 있게 됩니다.,Allows the front office to be upgraded to the next level.,draft,f604aa37

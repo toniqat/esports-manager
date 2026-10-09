@@ -590,6 +590,32 @@ tx_BBXCHB19XW,보유한 선수가 없습니다. 상점에서 선수를 영입하
 tx_S7KK5JW0WZ,랭크업  ·  {cost}
 tx_6G7WNMXNPM,레벨업 재화 {have} 보유 · 레벨 상한 Lv {cap}
 tx_DQSPN4WRKQ,승급석 {have} 보유 · 랭크업하면 Lv 0 부터 다시 오릅니다
+tx_PEVX1H1CBW,전장 훈련장
+tx_H3VDTFBMSH,사격 훈련과 회피 기동 코스를 연구합니다.
+tx_382D838KHX,교전 훈련장
+tx_G0KF5BMTXF,근접 교전과 반응 훈련 코스를 연구합니다.
+tx_2C4KQ890GE,체력 단련실
+tx_41K54C3WY5,"화력 증강과 내구 단련, 기초 코스를 연구합니다."
+tx_D7AH9HVCJS,전력 분석실
+tx_RQMSXEYBE3,리그 상대 팀을 분석합니다.
+tx_RCNVE21CH2,메크 연구소
+tx_VPSJW87NRZ,메크를 연구해 선수들의 숙련도를 올립니다.
+tx_N14277K1J3,프론트
+tx_E5DWVGPFPB,구단 경영을 연구합니다. 다른 시설은 프론트 레벨을 넘을 수 없습니다.
+tx_1NR41VEH2P,인력 개발실
+tx_YZB146N3AB,새 스태프 후보를 찾습니다.
+tx_RKQKPT7PAA,알 수 없는 시설입니다
+tx_W0B4MCSN5H,프론트 레벨(Lv{level})보다 높일 수 없습니다
+tx_68CD3GE4VG,경영 확장 연구를 먼저 마쳐야 합니다 (Lv{level})
+tx_3QK260W7GE,감독 자리가 모두 찼습니다 ({used}/{max})
+tx_WJT54F271R,배치할 수 없는 인원입니다
+tx_CVCJVWEBR6,연구는 주를 시작하기 전 허브에서만 고를 수 있습니다
+tx_VDTHMREEKN,알 수 없는 연구입니다
+tx_7NKJAKWHJ2,시설 Lv{level} 필요
+tx_3YBGXY1Z32,이미 마친 연구입니다
+tx_DKSM7YDJDC,연구 대상을 고르세요
+tx_YQ3ES89ZDM,고를 수 없는 대상입니다
+tx_S4FXFA48S2,{facility}: {research} 연구 완료
 tx_H1V09QCXSD,단기 훈련 코치
 tx_E731FZHB4R,전술 컨설턴트
 tx_8SZM4HBC56,메크 연구원 초빙
@@ -1931,6 +1957,48 @@ tx_N5C2E6FQ2F,자기 역할군 메크 탑승
 tx_VXEP932PHS,{role} 메크 탑승
 tx_9PKMC5PHJG,숙련도 {tier} 이상
 tx_63B5AMR6Y6,{cond} 시 {stats}
+tx_M9XAM000XY,운영비 절감
+tx_E124ZY8HS9,시설 유지비를 영구히 줄입니다.
+tx_GCWN9S4V5Q,연구 집중 지원
+tx_Z1QWCYFAHY,한동안 모든 연구 속도를 높입니다.
+tx_YFMN5YNFH3,경영 확장 II
+tx_S8HGTFVMRK,프론트를 다음 레벨로 올릴 수 있게 됩니다.
+tx_7BQZW5HG48,경영 확장 III
+tx_FXR2KCPM22,프론트를 다음 레벨로 올릴 수 있게 됩니다.
+tx_953AFG1NSB,경영 확장 IV
+tx_JJ4Q8NRN3P,프론트를 다음 레벨로 올릴 수 있게 됩니다.
+tx_7PGDSPA8CZ,경영 확장 V
+tx_48F9CPJCFJ,프론트를 다음 레벨로 올릴 수 있게 됩니다.
+tx_J3Y69RGNTH,상대 분석
+tx_F4XDP3C9Q9,고른 팀의 분석 단계를 한 단계 올립니다.
+tx_1B74EM9AMW,메크 연구
+tx_KHARDPAGQ1,고른 메크의 숙련도를 내 선수 모두가 얻습니다.
+tx_40KE8V9E9S,스태프 스카우트
+tx_SKS0NQX6X5,영입할 수 있는 스태프 후보를 찾습니다.
+tx_C3D9TTX7RM,사격 훈련 I
+tx_288T6NSM51,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_CRDZVM594S,사격 훈련 II
+tx_5H1AF87EJ5,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_Y0VAD18VWY,회피 기동 I
+tx_AQV0FTJB5W,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_S5BDGF3H6V,회피 기동 II
+tx_NSEM58XZBZ,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_0GVRJWFGHF,근접 교전 I
+tx_Q60T3VWG6B,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_37MDDPRG9Z,근접 교전 II
+tx_Y1MJ5HPDYA,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_H4PZBD0H2F,반응 훈련 I
+tx_VF9GDD44PJ,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_8PWMARC1YD,반응 훈련 II
+tx_EQKVF3XHRB,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_DES565NJBB,화력 증강 I
+tx_7BWPQE649G,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_C8K89H4B51,내구 단련 I
+tx_F85JHZN635,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_W35EV2FTR7,기초 훈련 II
+tx_QDYMDSS6VG,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_2BQGFBTYKJ,기벽 발굴
+tx_W546ZD811X,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
 tx_ET86TTP31D,런 클리어
 tx_02GQ3R71G2,런 실패
 tx_ZPVTEEG9GC,런 포기

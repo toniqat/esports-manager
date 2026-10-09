@@ -121,6 +121,11 @@ and `TrainingResultView` were deleted when the week started flowing one day at a
 
 Rules of the calendar (one round per week, 36-week campaign): `calendar/README.md`.
 
+**Week end (`_end_week`) order**: AI leftovers → `FinanceSystem.settle_week` (toast) →
+**`ResearchSystem.tick_week`** (§16 research gauges, one toast per completion) → `MechMastery.settle_week` →
+`MentalSystem.end_week` → stale `pending_match` dropped → `StaffSystem.decay_mods` · `PilotMods.decay_week` →
+`CalendarSystem.advance_week` → board reset → HUB. Facilities · research: `facility/README.md`.
+
 ## Architecture
 `SeasonHub.gd` is a thin orchestrator (`class_name SeasonHub extends Control`).
 Each child module reads/writes shared state via `GameManager.season_state`

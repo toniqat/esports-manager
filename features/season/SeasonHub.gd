@@ -554,6 +554,9 @@ func _end_week() -> void:
 	var fin: Dictionary = FinanceSystem.settle_week(s)
 	if String(fin.get("toast", "")) != "":
 		hub_toasts.append(String(fin["toast"]))
+	# §16 — research gauges of every seated facility; completions become HUB toasts.
+	for t in ResearchSystem.tick_week(s):
+		hub_toasts.append(String(t))
 	MechMastery.settle_week(s)
 	MentalSystem.end_week(s)
 	# A match that never got a result (stale Saturday picks) does not outlive its week.

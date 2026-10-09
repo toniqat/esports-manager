@@ -590,6 +590,32 @@ tx_BBXCHB19XW,You don't own any players yet. Recruit them in the shop.
 tx_S7KK5JW0WZ,Rank Up  ·  {cost}
 tx_6G7WNMXNPM,{have} Level-up Currency owned · level cap Lv {cap}
 tx_DQSPN4WRKQ,{have} Rank Stone owned · ranking up resets the level to Lv 0
+tx_PEVX1H1CBW,Field Training Hall
+tx_H3VDTFBMSH,Researches shooting and evasive manoeuvre courses.
+tx_382D838KHX,Engage Training Hall
+tx_G0KF5BMTXF,Researches engage close-combat and reaction courses.
+tx_2C4KQ890GE,Conditioning Room
+tx_41K54C3WY5,"Researches firepower, endurance and basic courses."
+tx_D7AH9HVCJS,Analysis Room
+tx_RQMSXEYBE3,Analyses rival teams in your league.
+tx_RCNVE21CH2,Mech Lab
+tx_VPSJW87NRZ,Studies a mech to raise your pilots' mastery.
+tx_N14277K1J3,Front Office
+tx_E5DWVGPFPB,Researches club management. No other facility may exceed its level.
+tx_1NR41VEH2P,Personnel Office
+tx_YZB146N3AB,Looks for new staff candidates.
+tx_RKQKPT7PAA,Unknown facility
+tx_W0B4MCSN5H,Cannot exceed the front office level (Lv{level})
+tx_68CD3GE4VG,Finish the expansion research first (Lv{level})
+tx_3QK260W7GE,All manager slots are in use ({used}/{max})
+tx_WJT54F271R,This person cannot be assigned
+tx_CVCJVWEBR6,Research can only be chosen at the hub before the week starts
+tx_VDTHMREEKN,Unknown research
+tx_7NKJAKWHJ2,Requires facility Lv{level}
+tx_3YBGXY1Z32,Already researched
+tx_DKSM7YDJDC,Choose a research target
+tx_YQ3ES89ZDM,This target cannot be chosen
+tx_S4FXFA48S2,{facility}: {research} research complete
 tx_H1V09QCXSD,Short-Term Training Coach
 tx_E731FZHB4R,Tactics Consultant
 tx_8SZM4HBC56,Guest Mech Researcher
@@ -1931,6 +1957,48 @@ tx_N5C2E6FQ2F,riding an own-role mech
 tx_VXEP932PHS,riding a {role} mech
 tx_9PKMC5PHJG,mastery {tier} or higher
 tx_63B5AMR6Y6,{stats} while {cond}
+tx_M9XAM000XY,Cost Cutting
+tx_E124ZY8HS9,Permanently lowers facility upkeep.
+tx_GCWN9S4V5Q,Research Push
+tx_Z1QWCYFAHY,Speeds up every research for a while.
+tx_YFMN5YNFH3,Expansion II
+tx_S8HGTFVMRK,Allows the front office to be upgraded to the next level.
+tx_7BQZW5HG48,Expansion III
+tx_FXR2KCPM22,Allows the front office to be upgraded to the next level.
+tx_953AFG1NSB,Expansion IV
+tx_JJ4Q8NRN3P,Allows the front office to be upgraded to the next level.
+tx_7PGDSPA8CZ,Expansion V
+tx_48F9CPJCFJ,Allows the front office to be upgraded to the next level.
+tx_J3Y69RGNTH,Opponent Analysis
+tx_F4XDP3C9Q9,Raises the analysis rank of the chosen team by one.
+tx_1B74EM9AMW,Mech Study
+tx_KHARDPAGQ1,All your pilots gain mastery on the chosen mech.
+tx_40KE8V9E9S,Staff Scouting
+tx_SKS0NQX6X5,Finds staff candidates you can hire.
+tx_C3D9TTX7RM,Shooting Drill I
+tx_288T6NSM51,"On completion, adds one copy of this training course."
+tx_CRDZVM594S,Shooting Drill II
+tx_5H1AF87EJ5,"On completion, adds one copy of this training course."
+tx_Y0VAD18VWY,Evasive Manoeuvres I
+tx_AQV0FTJB5W,"On completion, adds one copy of this training course."
+tx_S5BDGF3H6V,Evasive Manoeuvres II
+tx_NSEM58XZBZ,"On completion, adds one copy of this training course."
+tx_0GVRJWFGHF,Close Engagement I
+tx_Q60T3VWG6B,"On completion, adds one copy of this training course."
+tx_37MDDPRG9Z,Close Engagement II
+tx_Y1MJ5HPDYA,"On completion, adds one copy of this training course."
+tx_H4PZBD0H2F,Reaction Drill I
+tx_VF9GDD44PJ,"On completion, adds one copy of this training course."
+tx_8PWMARC1YD,Reaction Drill II
+tx_EQKVF3XHRB,"On completion, adds one copy of this training course."
+tx_DES565NJBB,Firepower Boost I
+tx_7BWPQE649G,"On completion, adds one copy of this training course."
+tx_C8K89H4B51,Endurance Drill I
+tx_F85JHZN635,"On completion, adds one copy of this training course."
+tx_W35EV2FTR7,Basic Training II
+tx_QDYMDSS6VG,"On completion, adds one copy of this training course."
+tx_2BQGFBTYKJ,Quirk Discovery
+tx_W546ZD811X,"On completion, adds one copy of this training course."
 tx_ET86TTP31D,Run Cleared
 tx_02GQ3R71G2,Run Failed
 tx_ZPVTEEG9GC,Run Abandoned

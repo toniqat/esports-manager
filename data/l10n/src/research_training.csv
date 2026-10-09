@@ -1,0 +1,25 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_C3D9TTX7RM,research_training.tr_h1.name,active,research.csv name_key (id=tr_h1),,,사격 훈련 I,Shooting Drill I,draft,7f46124a
+tx_288T6NSM51,research_training.tr_h1.desc,active,research.csv desc_key (id=tr_h1),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_CRDZVM594S,research_training.tr_h2.name,active,research.csv name_key (id=tr_h2),,,사격 훈련 II,Shooting Drill II,draft,25044bca
+tx_5H1AF87EJ5,research_training.tr_h2.desc,active,research.csv desc_key (id=tr_h2),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_Y0VAD18VWY,research_training.tr_e1.name,active,research.csv name_key (id=tr_e1),,,회피 기동 I,Evasive Manoeuvres I,draft,d3199dd3
+tx_AQV0FTJB5W,research_training.tr_e1.desc,active,research.csv desc_key (id=tr_e1),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_S5BDGF3H6V,research_training.tr_e2.name,active,research.csv name_key (id=tr_e2),,,회피 기동 II,Evasive Manoeuvres II,draft,9bf1d31a
+tx_NSEM58XZBZ,research_training.tr_e2.desc,active,research.csv desc_key (id=tr_e2),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_0GVRJWFGHF,research_training.tr_c1.name,active,research.csv name_key (id=tr_c1),,,근접 교전 I,Close Engagement I,draft,956d0b32
+tx_Q60T3VWG6B,research_training.tr_c1.desc,active,research.csv desc_key (id=tr_c1),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_37MDDPRG9Z,research_training.tr_c2.name,active,research.csv name_key (id=tr_c2),,,근접 교전 II,Close Engagement II,draft,5a75b3ad
+tx_Y1MJ5HPDYA,research_training.tr_c2.desc,active,research.csv desc_key (id=tr_c2),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_H4PZBD0H2F,research_training.tr_d1.name,active,research.csv name_key (id=tr_d1),,,반응 훈련 I,Reaction Drill I,draft,c7b8d8e1
+tx_VF9GDD44PJ,research_training.tr_d1.desc,active,research.csv desc_key (id=tr_d1),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_8PWMARC1YD,research_training.tr_d2.name,active,research.csv name_key (id=tr_d2),,,반응 훈련 II,Reaction Drill II,draft,a3d19095
+tx_EQKVF3XHRB,research_training.tr_d2.desc,active,research.csv desc_key (id=tr_d2),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_DES565NJBB,research_training.tr_a1.name,active,research.csv name_key (id=tr_a1),,,화력 증강 I,Firepower Boost I,draft,6709e8dd
+tx_7BWPQE649G,research_training.tr_a1.desc,active,research.csv desc_key (id=tr_a1),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_C8K89H4B51,research_training.tr_p1.name,active,research.csv name_key (id=tr_p1),,,내구 단련 I,Endurance Drill I,draft,d2c88466
+tx_F85JHZN635,research_training.tr_p1.desc,active,research.csv desc_key (id=tr_p1),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_W35EV2FTR7,research_training.tr_b2.name,active,research.csv name_key (id=tr_b2),,,기초 훈련 II,Basic Training II,draft,d81c210e
+tx_QDYMDSS6VG,research_training.tr_b2.desc,active,research.csv desc_key (id=tr_b2),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_2BQGFBTYKJ,research_training.tr_q1.name,active,research.csv name_key (id=tr_q1),,,기벽 발굴,Quirk Discovery,draft,62ee7efe
+tx_W546ZD811X,research_training.tr_q1.desc,active,research.csv desc_key (id=tr_q1),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1

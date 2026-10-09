@@ -102,6 +102,8 @@ static func load_run() -> String:
 	gm.season_state = _deserialize_season_state(ss)
 	# Old week format (two league rounds on Sat · Sun) → one Sunday match per week.
 	CalendarSystem.migrate_weekly_format(gm.season_state)
+	# Pre-§16 run (one facility level in `finance`) → seven facilities, staff seated.
+	FacilitySystem.migrate(gm.season_state)
 	return ""
 
 
@@ -202,6 +204,12 @@ static func _serialize_season_state(s: Dictionary) -> Dictionary:
 		"loadouts":          (s.get("loadouts", {}) as Dictionary).duplicate(true),
 		# §15 B — run-only training level / limit break (string keys only).
 		"training_level":    (s.get("training_level", {}) as Dictionary).duplicate(true),
+		# §16 facilities · research (string keys, `int()` reads). Missing in an old run →
+		# empty here, rebuilt by `FacilitySystem.migrate` in `load_run`.
+		"facilities":        (s.get("facilities", {}) as Dictionary).duplicate(true),
+		"research":          (s.get("research", {}) as Dictionary).duplicate(true),
+		"intel_rank":        (s.get("intel_rank", {}) as Dictionary).duplicate(true),
+		"scout":             (s.get("scout", {}) as Dictionary).duplicate(true),
 	}
 
 
@@ -265,6 +273,12 @@ static func _deserialize_season_state(s: Dictionary) -> Dictionary:
 		"loadouts":          (s.get("loadouts", {}) as Dictionary).duplicate(true),
 		# §15 B — run-only training level / limit break (string keys only).
 		"training_level":    (s.get("training_level", {}) as Dictionary).duplicate(true),
+		# §16 facilities · research (string keys, `int()` reads). Missing in an old run →
+		# empty here, rebuilt by `FacilitySystem.migrate` in `load_run`.
+		"facilities":        (s.get("facilities", {}) as Dictionary).duplicate(true),
+		"research":          (s.get("research", {}) as Dictionary).duplicate(true),
+		"intel_rank":        (s.get("intel_rank", {}) as Dictionary).duplicate(true),
+		"scout":             (s.get("scout", {}) as Dictionary).duplicate(true),
 	}
 
 

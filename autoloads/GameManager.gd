@@ -146,6 +146,13 @@ var season_state: Dictionary = {
 	"trust": {},
 	"outings": {},
 	"mental": {},
+	# §16 facilities · research — shapes owned by `FacilitySystem` / `ResearchSystem`
+	# (`features/season/facility/README.md`): `{fid: {level, occupant}}`,
+	# `{active, points, done, boosts}`, `{"<team_id>": 0..3}`, `{candidates, week}`.
+	"facilities": {},
+	"research": {},
+	"intel_rank": {},
+	"scout": {},
 }
 
 
@@ -189,6 +196,10 @@ func reset_season_state() -> void:
 		"trust": {},
 		"outings": {},
 		"mental": {},
+		"facilities": {},
+		"research": {},
+		"intel_rank": {},
+		"scout": {},
 	}
 
 
@@ -307,6 +318,8 @@ func start_run(run_setup: Dictionary) -> String:
 	MechMastery.init_run(season_state)
 	QuirkSystem.init_run(season_state)
 	FinanceSystem.init_run(season_state, team_id)
+	# §16 — facility levels (team package), staff seated by job, research / intel / scout reset.
+	FacilitySystem.init_run(season_state, team_id)
 	MentalSystem.init_run(season_state)
 	# §15 — training level, awakening gauge, card loadouts (after the rank / card setup above).
 	TrainingLevel.init_run(season_state)

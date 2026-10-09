@@ -1,0 +1,3 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_1B74EM9AMW,research_mech.mech_study.name,active,research.csv name_key (id=mech_study),,,메크 연구,Mech Study,draft,a27ab83a
+tx_KHARDPAGQ1,research_mech.mech_study.desc,active,research.csv desc_key (id=mech_study),,,고른 메크의 숙련도를 내 선수 모두가 얻습니다.,All your pilots gain mastery on the chosen mech.,draft,23e1a61c

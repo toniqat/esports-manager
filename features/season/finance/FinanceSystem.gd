@@ -20,6 +20,11 @@ extends RefCounted
 # special spending (`finance_specials.csv`, `FSPEC_*`) buys timed effects that
 # fold into the same multipliers (`specials`, decremented by `settle_week`).
 #
+# §16: the single facility level became the **front's** level (`FacilitySystem`,
+# `season_state.facilities.front.level`); `facility_level` / `upgrade_*` below read and
+# upgrade the front, and `facilities.csv` effects keep applying at that level. Other
+# facilities upgrade through `FacilitySystem.upgrade` (paid by `pay_upgrade`).
+#
 # All numbers are tuning values in `const.csv` (`FINANCE_*`) and
 # `facilities.csv`. Saved state goes through JSON, so every read is `int()` /
 # `float()`-wrapped.
@@ -54,13 +59,12 @@ static var _loaded: bool = false
 
 
 # ── Run lifecycle ────────────────────────────────────────────────────────────
-## Once at run start (`GameManager.start_run`) — starting balance, facility
-## level from the team package, default allocation.
+## Once at run start (`GameManager.start_run`) — starting balance, sponsor base
+## from the team package, default allocation. Facility levels: `FacilitySystem.init_run`.
 static func init_run(state: Dictionary, team_id: int) -> void:
 	var pkg: Dictionary = _team_package(team_id)
 	state["finance"] = {
 		"balance": maxi(0, ConstTable.int_of("FINANCE_START_BALANCE")),
-		"facility_level": clampi(int(pkg.get("facility_level", 1)), 1, max_level()),
 		"facility_fund": 0,
 		"sponsor_base": int(pkg.get("budget", 0)),
 		"alloc": DEFAULT_ALLOC.duplicate(),
@@ -185,7 +189,7 @@ static func settle_week(state: Dictionary) -> Dictionary:
 
 	f["balance"] = balance_now
 	f["facility_fund"] = fund
-	f["facility_level"] = lvl
+	FacilitySystem.set_level(state, FacilitySystem.FRONT, lvl)
 	f["penalty_weeks"] = penalty
 	f["effects"] = {
 		"training_pct": _spend_effect(int(spent["training"]),
@@ -245,9 +249,9 @@ static func balance(state: Dictionary) -> int:
 	return int((state.get("finance", {}) as Dictionary).get("balance", 0))
 
 
-## Current facility level 1..5. 1 when there is no run state.
+## Current facility level = the front's level (§16). 1 when there is no run state.
 static func facility_level(state: Dictionary) -> int:
-	return clampi(int((state.get("finance", {}) as Dictionary).get("facility_level", 1)), 1, max_level())
+	return FacilitySystem.level(state, FacilitySystem.FRONT)
 
 
 static func facility_fund(state: Dictionary) -> int:
@@ -454,12 +458,9 @@ static func max_level() -> int:
 	return _max_level
 
 
-## Cost of going from the current level to the next; 0 at max level.
+## Cost of the front's next level; 0 at max level (`FacilitySystem.upgrade_cost`).
 static func upgrade_cost(state: Dictionary) -> int:
-	var lvl: int = facility_level(state)
-	if lvl >= max_level():
-		return 0
-	return int(facility_row(lvl).get("upgrade_cost", 0))
+	return FacilitySystem.upgrade_cost(state, FacilitySystem.FRONT)
 
 
 ## Money an upgrade may use — facility fund first, then the balance.
@@ -467,29 +468,25 @@ static func upgrade_funds(state: Dictionary) -> int:
 	return facility_fund(state) + balance(state)
 
 
-## "" when the upgrade is possible, otherwise the reason (current locale).
+## "" when the front upgrade is possible, otherwise the reason (current locale) —
+## incl. the §16 expansion-research gate (`FacilitySystem.upgrade_block_reason`).
 static func upgrade_block_reason(state: Dictionary) -> String:
-	if facility_level(state) >= max_level():
-		return Loc.t(L.UI_WORD_MAX_LEVEL)
-	if upgrade_funds(state) < upgrade_cost(state):
-		return Loc.t(L.FINANCE_BLOCK_NO_FUNDS)
-	return ""
+	return FacilitySystem.upgrade_block_reason(state, FacilitySystem.FRONT)
 
 
-## Upgrades one level, paying from the facility fund first, then the balance.
-## Returns "" on success or the reason it was refused.
+## Upgrades the front one level (`FacilitySystem.upgrade`). "" on success or the reason.
 static func upgrade_facility(state: Dictionary) -> String:
-	var why: String = upgrade_block_reason(state)
-	if why != "":
-		return why
+	return FacilitySystem.upgrade(state, FacilitySystem.FRONT)
+
+
+## Pays a facility upgrade: facility fund first, then the balance (never below 0).
+## Callers check `upgrade_funds` first (`FacilitySystem.upgrade_block_reason`).
+static func pay_upgrade(state: Dictionary, cost: int) -> void:
 	var f: Dictionary = _fin(state)
-	var cost: int = upgrade_cost(state)
 	var fund: int = facility_fund(state)
-	var from_fund: int = mini(fund, cost)
+	var from_fund: int = mini(fund, maxi(0, cost))
 	f["facility_fund"] = fund - from_fund
-	f["balance"] = balance(state) - (cost - from_fund)
-	f["facility_level"] = facility_level(state) + 1
-	return ""
+	f["balance"] = maxi(0, balance(state) - (maxi(0, cost) - from_fund))
 
 
 # ── Special spending (§14 T6) ────────────────────────────────────────────────

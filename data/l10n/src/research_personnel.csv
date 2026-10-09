@@ -1,0 +1,3 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_40KE8V9E9S,research_personnel.scout.name,active,research.csv name_key (id=scout),,,스태프 스카우트,Staff Scouting,draft,4d047d51
+tx_SKS0NQX6X5,research_personnel.scout.desc,active,research.csv desc_key (id=scout),,,영입할 수 있는 스태프 후보를 찾습니다.,Finds staff candidates you can hire.,draft,4193f5dc

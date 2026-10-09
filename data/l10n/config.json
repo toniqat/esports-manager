@@ -55,6 +55,10 @@
     { "csv": "scenarios.csv", "id": "id", "column": "name_key", "domain": "scenario", "alias": "scenario.{id}.name" },
     { "csv": "scenarios.csv", "id": "id", "column": "desc_key", "domain": "scenario", "alias": "scenario.{id}.desc" },
     { "csv": "training_tiles.csv", "id": "id", "column": "name_key", "domain": "training", "alias": "training.tile.{id}.name" },
-    { "csv": "mental_texts.csv", "id": "id", "column": "text_key", "domain": "mental", "alias": "mental.{event_id}.{id}" }
+    { "csv": "mental_texts.csv", "id": "id", "column": "text_key", "domain": "mental", "alias": "mental.{event_id}.{id}" },
+    { "csv": "facility_defs.csv", "id": "id", "column": "name_key", "domain": "facility", "alias": "facility.def.{id}.name" },
+    { "csv": "facility_defs.csv", "id": "id", "column": "desc_key", "domain": "facility", "alias": "facility.def.{id}.desc" },
+    { "csv": "research.csv", "id": "id", "column": "name_key", "domain": "research_training", "alias": "research_{kind}.{id}.name" },
+    { "csv": "research.csv", "id": "id", "column": "desc_key", "domain": "research_training", "alias": "research_{kind}.{id}.desc" }
   ]
 }

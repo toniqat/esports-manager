@@ -3,18 +3,22 @@ extends RefCounted
 
 # ── Manager · staff effective stats (M3) — the single entry point inside a run ──
 # Every read of a manager stat goes through `effective(state, stat)`
-# (`docs/outgame_dev_plan.md` §2.3 · §11).
+# (`docs/outgame_dev_plan.md` §2.3 · §11 · §16).
 #
-#   effective(stat) = max(manager[stat] + temporary mods, assistant[stat], dedicated staff[stat])
+# §16 — the cover rule is **facility occupants** (`FacilitySystem`): each stat is read from
+# the occupant of the facility(ies) mapped to it (`facility_defs.csv` `stat`):
 #
-# - Regular staff: **one per field** (`JOB_STAT`). The assistant manager is one per
-#   team and covers several stats at once. Only the manager and the assistant fill
-#   several gaps at the same time.
-# - Mental is the exception: interviews · outings read `manager_value(state, "mental")`
-#   (manager only); only incidents read `effective_for_incident` (highest mental of anyone).
-# - When `owner(state, stat)` is not "manager" the area is **delegated** — the basis
-#   for the screens' auto buttons (training auto-arrange · research auto-assign ·
-#   analysis interpretation · budget auto-split), see `is_delegated`.
+#   effective(stat) = max over the stat's facilities of the occupant's value
+#                     (manager → manager[stat] + temporary mods, staff → their stat,
+#                      nobody → STAT_MIN)
+#
+# - `tactics` has no facility → the manager's value (an unused stat, kept harmless).
+# - Mental is still the exception for interviews · outings: they read
+#   `manager_value(state, "mental")`; incidents read `effective_for_incident` (highest
+#   mental of anyone on the team, seated or not).
+# - `owner` = who supplies the best value: "manager" / "assistant" / "staff" / "none"
+#   (no occupant). `is_delegated` = staff or assistant supplies it — the basis for the
+#   screens' auto buttons (training auto-arrange · analysis interpretation · budget auto-split).
 #
 # Input is always the `season_state` dictionary (no autoload dependency — so it can
 # be unit-checked headlessly). `snapshot_for_run` freezes the snapshot into
@@ -29,7 +33,8 @@ const STAT_LABELS: Dictionary = {  # l10n-keys: term.manager_stat.*
 const STAT_MIN: int = 1
 const STAT_MAX: int = 20
 
-## Regular staff job → the stat it covers. The assistant is not here — it has all stats.
+## Regular staff job → its specialty stat. §16: a label only — any staff may sit in any
+## facility (`FacilitySystem.JOB_FACILITY` is the run-start seat). The assistant has all stats.
 const JOB_STAT: Dictionary = {
 	"coach_training": "training",
 	"coach_tactics": "tactics",
@@ -51,6 +56,10 @@ const JOB_LABELS: Dictionary = {  # l10n-keys: staff.job.*
 const OWNER_MANAGER: String = "manager"
 const OWNER_ASSISTANT: String = "assistant"
 const OWNER_STAFF: String = "staff"
+## §16 — nobody sits in any facility of the stat (value = STAT_MIN).
+const OWNER_NONE: String = "none"
+# Tie-break order of `_best` — the delegated side wins.
+const _OWNER_RANK: Dictionary = {"none": 0, "manager": 1, "assistant": 2, "staff": 3}
 
 static var _types: Array = []          # manager_types rows
 static var _staff: Dictionary = {}     # int id → staff row {id, name_key, job, stats{}, salary}
@@ -145,12 +154,12 @@ static func assistant(state: Dictionary) -> Dictionary:
 	return {}
 
 
-## The dedicated regular staff for this stat (one per field; empty when none).
+## The staff member (any job, incl. the assistant) whose seat supplies this stat's
+## effective value (§16 — best occupant); empty when the manager / nobody supplies it.
 static func staff_for(state: Dictionary, stat: String) -> Dictionary:
-	for raw in _run_staff(state):
-		var e: Dictionary = raw
-		if String(JOB_STAT.get(String(e.get("job", "")), "")) == stat:
-			return e
+	var b: Dictionary = _best(state, stat)
+	if String(b["owner"]) == OWNER_STAFF or String(b["owner"]) == OWNER_ASSISTANT:
+		return b["who"]
 	return {}
 
 
@@ -158,17 +167,21 @@ static func effective(state: Dictionary, stat: String) -> int:
 	return int(_best(state, stat)["value"])
 
 
-## Who covers this stat — "manager" / "assistant" / "staff". Ties go
-## staff → assistant → manager (the delegated side wins: same result, less hands-on work).
+## Who covers this stat — "manager" / "assistant" / "staff" / "none" (§16: the best
+## occupant of the stat's facilities). Ties go staff → assistant → manager (the
+## delegated side wins: same result, less hands-on work).
 static func owner(state: Dictionary, stat: String) -> String:
 	return String(_best(state, stat)["owner"])
 
 
-## Display name of whoever covers it (`term.person.manager` for the manager).
+## Display name of whoever covers it (`term.person.manager` for the manager,
+## `ui.word.none` when nobody is seated).
 static func owner_name(state: Dictionary, stat: String) -> String:
 	var b: Dictionary = _best(state, stat)
 	if String(b["owner"]) == OWNER_MANAGER:
 		return Loc.t(L.TERM_PERSON_MANAGER)
+	if String(b["owner"]) == OWNER_NONE:
+		return Loc.t(L.UI_WORD_NONE)
 	return staff_name(b["who"] as Dictionary)
 
 
@@ -205,9 +218,11 @@ static func staff_name(e: Dictionary) -> String:
 	return Loc.t(key)  # l10n-dynamic: name.staff.*
 
 
-## Is the area delegated — whether screens show their auto button.
+## Is the area delegated — staff (or the assistant) supplies it, not the manager and
+## not an empty seat. Whether screens show their auto button.
 static func is_delegated(state: Dictionary, stat: String) -> bool:
-	return owner(state, stat) != OWNER_MANAGER
+	var o: String = owner(state, stat)
+	return o == OWNER_STAFF or o == OWNER_ASSISTANT
 
 
 ## Incident-handling mental — max of manager (with mods), assistant and **any** staff mental.
@@ -226,6 +241,8 @@ static func weekly_salary_total(state: Dictionary) -> int:
 	return total
 
 
+## **Deprecated (§16)** — replaced by the per-team analysis rank (`IntelResearch.rank`);
+## agent E removes it with its callers. Kept compiling until then.
 ## Analysis reveal tier 0..3 — how many `ANALYSIS_TIER_1..3` (const.csv) thresholds are met.
 ## 0 = name · role, 1 = + rough stats, 2 = + top-mastery mechs, 3 = + pilot cards.
 ## M8 — the `analysis_tier` traits shift the result (clamped 0..3).
@@ -299,19 +316,30 @@ static func _run_staff(state: Dictionary) -> Array:
 	return (state.get("run_setup", {}) as Dictionary).get("staff", [])
 
 
-# {value, owner, who} — ties are taken staff → assistant → manager.
+# {value, owner, who, fid} — §16: the best occupant over the stat's facilities.
+# Ties are taken staff → assistant → manager (`_OWNER_RANK`). A stat with no
+# facility (`tactics`) is the manager's own value.
 static func _best(state: Dictionary, stat: String) -> Dictionary:
-	var best: Dictionary = {"value": manager_value(state, stat), "owner": OWNER_MANAGER, "who": {}}
-	var asst: Dictionary = assistant(state)
-	if not asst.is_empty():
-		var av: int = int((asst.get("stats", {}) as Dictionary).get(stat, 0))
-		if av >= int(best["value"]):
-			best = {"value": av, "owner": OWNER_ASSISTANT, "who": asst}
-	var st: Dictionary = staff_for(state, stat)
-	if not st.is_empty():
-		var sv: int = int((st.get("stats", {}) as Dictionary).get(stat, 0))
-		if sv >= int(best["value"]):
-			best = {"value": sv, "owner": OWNER_STAFF, "who": st}
+	var fids: Array = FacilitySystem.facilities_for_stat(stat)
+	if fids.is_empty():
+		return {"value": manager_value(state, stat), "owner": OWNER_MANAGER, "who": {}, "fid": ""}
+	var best: Dictionary = {"value": STAT_MIN, "owner": OWNER_NONE, "who": {}, "fid": ""}
+	for raw in fids:
+		var fid: String = String(raw)
+		var occ: String = FacilitySystem.occupant(state, fid)
+		if occ == FacilitySystem.OCC_NONE:
+			continue
+		var v: int = FacilitySystem.stat_value(state, fid)
+		var who: Dictionary = {}
+		var o: String = OWNER_MANAGER
+		if occ != FacilitySystem.OCC_MANAGER:
+			who = FacilitySystem.run_staff(state, int(occ)) if occ.is_valid_int() else {}
+			if who.is_empty():
+				continue
+			o = OWNER_ASSISTANT if String(who.get("job", "")) == JOB_ASSISTANT else OWNER_STAFF
+		if v > int(best["value"]) or (v == int(best["value"])
+				and int(_OWNER_RANK[o]) > int(_OWNER_RANK[String(best["owner"])])):
+			best = {"value": v, "owner": o, "who": who, "fid": fid}
 	return best
 
 

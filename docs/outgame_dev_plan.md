@@ -905,3 +905,53 @@ Shared, edit in place but minimally: `SeasonPilotCard` / `SeasonPilotDetail` (B 
 gauge + presets — separate rows), `data/l10n/src/*.csv` (own domain rows; generated files are rebuilt after merge),
 `data/csv/const.csv` (append only). **Never commit** `data/game.db`, `data/l10n/generated/*`, `*.translation`,
 `mental_events.csv` / `mental_texts.csv` / `data/draft/*` (regenerated after merge).
+
+## 16. Facilities · Research — §16 contract (2026-10-09, parallel work)
+
+API, state shape, gauge formula and l10n domains: **`features/season/facility/README.md`** (frozen by the base
+commit). Decisions confirmed with the owner — do not re-litigate:
+
+1. **Seven facilities per team**, all built from the start: `train_field` (전장 훈련장, H/E courses) · `train_engage`
+   (교전 훈련장, C/D) · `train_growth` (체력 단련실, A/P + basic / quirk / misc) · `intel` (전력 분석실) · `mech_lab`
+   (메크 연구소) · `front` (프론트) · `personnel` (인력 개발실). A facility researches only while someone sits in it.
+2. **Assignment**: at most one occupant per facility (a staff id or the manager). The manager has `MANAGER_SLOTS`
+   seats (one per facility); any staff may sit anywhere (job = specialty label); one seat per staff.
+3. **Cover rule replaced**: `StaffSystem.effective(stat)` = max over the stat's facilities of the occupant's value
+   (manager incl. `staff_mods`; empty → `STAT_MIN`); `is_delegated` = staff supplies it; `tactics` = manager;
+   incidents keep `effective_for_incident`. Multipliers keep their formulas.
+4. **Research gauge**: chosen / changed only at HUB (week start); at week end (after the finance settlement) every
+   seated facility with an active research gains `RESEARCH_BASE_POINTS × level_mult × stat_mult × boost_mult`; a row
+   costs `weeks × RESEARCH_BASE_POINTS`. Progress is kept per research + target (switching pauses). Completion →
+   kind `on_complete`, HUB toast, idle (or repeat for repeatable rows). Facilities progress in parallel.
+5. **Levels** 1..`FACILITY_LEVEL_MAX`, bought with money (fund, then balance). No facility above the front's level;
+   the front levels up only after its `경영 확장` (`expand_<n>`) research for that level. Run start: every facility =
+   team `facility_level`, staff seated by job, manager seats empty.
+6. **Training research**: completion = `TrainingCourses.grant(state, tile, 1)`; `min_level` unlocks higher grades.
+7. **Opponent research**: per-team rank 0..3 (all start 0, own team 3), +1 per completion, replaces
+   `StaffSystem.analysis_tier`; the analyst note shows when the intel occupant is staff.
+8. **Mech research**: target mech → every pilot of mine gains `MASTERY_GAIN_LAB`; the per-pilot weekly research,
+   its hub card and the `M` training tiles are removed; the research-quirk roll moves to lab completion.
+9. **Front research**: `budget_cut` (permanent upkeep −%), `boost` (all research +% for `FRONT_BOOST_WEEKS` ≥ 3),
+   `expand_<n>`. The old `finance.facility_level` is the front's level; upkeep = sum over facilities (F balances).
+10. **Personnel research**: `scout` → `SCOUT_BASE + level × SCOUT_PER_LEVEL` candidates from the `staff.csv` pool
+    (not on any team / not hired); hire one or pass; staff can be dismissed (unseated first).
+11. **Map UI**: seven `Spot_Fac_*` markers on every team map; the HUB shows the team map with a bubble per facility
+    (research icon masked to a circle as a radial progress bar, % under it); tap → facility sheet (level + upgrade,
+    occupant picker, research list with progress / weeks / target picker, kind body). The week map shows the bubbles
+    read-only.
+12. **Training board UI**: weekday labels (월~금) left of each row + an equal right gutter (board stays centred).
+
+### 16.1 Ownership (base commit, then agents in parallel worktrees)
+| Agent | Owns |
+|---|---|
+| base | `features/season/facility/FacilitySystem.gd` · `ResearchSystem.gd` (frozen), `facility_defs.csv`, `research.csv` schema, `StaffSystem` cover rule, `FinanceSystem` front bridge, save keys, `_end_week` hook, l10n `facility` |
+| A training-board-labels | `TrainingView.gd` layout parts, `UI_View_TrainingView.tscn`, training README "Screen layout" |
+| B facility-ui | `facility/FacilitySheet*`, `ResearchBubble*`, `UI_Comp_Research*`, `HubView.gd` + scene (hub map, 메크 연구 card removed), week map bubble overlay, `week/base_map/*` (`Spot_Fac_*` on all maps); l10n `facility_ui` |
+| C training-research | `research/TrainingResearch.gd`, training rows, `TrainingBoard` / `TrainingTile` / `TrainingCourses`, `training_tiles.csv` (M-tile removal); l10n `research_training` |
+| D mech-research | `research/MechResearch.gd`, mech rows, `features/season/mastery/*`, `features/season/quirk/` research roll; l10n `research_mech` |
+| E intel-research | `research/IntelResearch.gd`, intel rows, `features/match_flow/match_prep/*`, `analysis_tier` removal + callers, league team detail tier; l10n `research_intel` |
+| F front-finance | `research/FrontResearch.gd`, front rows, `features/season/finance/*` (per-facility upkeep / cost, budget cut, boosts); l10n `research_front` |
+| G personnel-staff | `research/PersonnelResearch.gd`, personnel rows, `staff/StaffPanel*`, `StaffSystem` hire / dismiss helpers; l10n `research_personnel` |
+
+Shared files: `data/csv/const.csv` and `research.csv` append-only (line-union merge); never commit `data/game.db`,
+`data/l10n/generated/*`, `*.translation` (rebuilt once after the merge).

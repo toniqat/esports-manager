@@ -169,6 +169,11 @@ Resource-typed entries:
 - `training_level` (§15 B, `features/season/training/README.md` "Training level · limit break") round-trips
   as-is (string keys; `TrainingLevel` / `LimitBreak` read every number through `int()`). A run saved before
   §15 has none — `TrainingLevel.ensure` creates Lv1 entries on first read.
+- `facilities` · `research` · `intel_rank` · `scout` (§16, `features/season/facility/README.md`) round-trip as-is
+  (string keys). `load_run` then calls `FacilitySystem.migrate`: for a §16 save it only fills missing keys and
+  turns the JSON floats back into ints (levels, points, done counts, boosts, ranks); for a run saved **before**
+  §16 (no `facilities`) it builds the seven facilities at the old `finance.facility_level` (key dropped) and seats
+  the run staff by job, as at run start (manager slots empty). Every `FacilitySystem` read also migrates lazily.
 - `pending_match` round-trips as-is. Non-null from the Saturday "경기 준비" (`split: true`) through
   `_consume_pending_match_result` on Sunday. After the Saturday ban/pick it carries **`picks`** — the
   LAUNCH snapshot (shape of `match_resume` below) — with `match_resume` null; Sunday copies `picks`

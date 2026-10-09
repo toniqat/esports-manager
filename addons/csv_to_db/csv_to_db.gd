@@ -52,6 +52,9 @@ const SCHEMAS: Dictionary = {
 	# §14 (기벽 · 재무 특별 지출) — 계약: docs/outgame_dev_plan.md §14
 	"quirks":        {"req": ["id","name_key","grade","stats","cond","cond_stats","weight","desc_key"], "pk": "id"},
 	"finance_specials": {"req": ["id","name_key","kind","cost","p1","p2","weeks","cond","desc_key"], "pk": "id"},
+	# §16 facilities · research — contract: docs/outgame_dev_plan.md §16, features/season/facility/README.md
+	"facility_defs": {"req": ["id","kind","name_key","desc_key","stat","spot","icon","cost_pct"], "pk": "id"},
+	"research":      {"req": ["id","facility","kind","name_key","desc_key","weeks","min_level","repeatable","p1","p2","icon"], "pk": "id"},
 }
 
 # SQLite column definitions per table
@@ -459,6 +462,31 @@ const TABLE_DEFS: Dictionary = {
 		"weeks": {"data_type": "int",  "not_null": true},
 		"cond":  {"data_type": "text", "not_null": true},
 		"desc_key":  {"data_type": "text", "not_null": true},
+	},
+	# §16 — seven facilities per team (`FacilitySystem`); `cost_pct` = % of facilities.csv upgrade_cost.
+	"facility_defs": {
+		"id":       {"data_type": "text", "primary_key": true, "not_null": true},
+		"kind":     {"data_type": "text", "not_null": true},
+		"name_key": {"data_type": "text", "not_null": true},
+		"desc_key": {"data_type": "text", "not_null": true},
+		"stat":     {"data_type": "text", "not_null": true},
+		"spot":     {"data_type": "text", "not_null": true},
+		"icon":     {"data_type": "text", "not_null": true},
+		"cost_pct": {"data_type": "int",  "not_null": true},
+	},
+	# §16 — research rows per facility (`ResearchSystem`); p1 / p2 meaning per kind (facility/README.md).
+	"research": {
+		"id":         {"data_type": "text", "primary_key": true, "not_null": true},
+		"facility":   {"data_type": "text", "not_null": true},
+		"kind":       {"data_type": "text", "not_null": true},
+		"name_key":   {"data_type": "text", "not_null": true},
+		"desc_key":   {"data_type": "text", "not_null": true},
+		"weeks":      {"data_type": "int",  "not_null": true},
+		"min_level":  {"data_type": "int",  "not_null": true},
+		"repeatable": {"data_type": "int",  "not_null": true},
+		"p1":         {"data_type": "text", "not_null": true},
+		"p2":         {"data_type": "text", "not_null": true},
+		"icon":       {"data_type": "text", "not_null": true},
 	},
 }
 

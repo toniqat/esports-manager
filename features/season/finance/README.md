@@ -15,7 +15,7 @@ Display text is l10n keys (`finance` domain; shared `ui.*` / `term.*`) — saved
 ## Entry points (called by base-owned code)
 | Caller | Call |
 |---|---|
-| `GameManager.start_run` | `init_run(state, team_id)` — balance `FINANCE_START_BALANCE`, facility level = team package `facility_level`, `sponsor_base` = `teams.budget`, default manual allocation. |
+| `GameManager.start_run` | `init_run(state, team_id)` — balance `FINANCE_START_BALANCE`, `sponsor_base` = `teams.budget`, default manual allocation. Facility levels are set right after by `FacilitySystem.init_run` (§16). |
 | `SeasonHub._consume_pending_match_result` | `record_match(state, pm, won)` — adds `FINANCE_MATCH_WIN` / `FINANCE_MATCH_LOSS` (× `FINANCE_TOURNAMENT_MULT` when `pm.source` is not `league`) to the week bonus. Guarded by `pm.finance_recorded`. |
 | `SeasonHub._end_week` (first, before the calendar) | `settle_week(state)` → week summary; its `toast` is shown on the next HUB. |
 | `TrainingBoard` / `MechMastery` / `MentalSystem` | `training_exp_mult` / `mastery_mult` / `incident_mult`. |
@@ -27,7 +27,7 @@ missing keys (pre-M6 save) is re-initialised lazily by `_fin`, keeping what was 
 | Key | Type | Meaning |
 |---|---|---|
 | `balance` | int ≥ 0 | Cash. **Never negative.** (fixed key) |
-| `facility_level` | int 1..max | Current facility level (`facilities.csv`). (fixed key) |
+| ~~`facility_level`~~ | — | **Removed (§16)** — the level is now the front's, `season_state.facilities.front.level` (`FacilitySystem`); `FacilitySystem.migrate` moves an old save's value into every facility and drops this key. Read it with `FinanceSystem.facility_level(state)`. |
 | `facility_fund` | int ≥ 0 | Money earmarked for the next upgrade (facility allocation). |
 | `sponsor_base` | int | Weekly sponsor income = `teams.budget`, snapshotted at run start. |
 | `alloc` | `{training, facility, welfare}` int % | The manager's **manual** split (sum 100). Ignored while finance is delegated. |
@@ -106,6 +106,13 @@ A "hard cut" (steps 3–4) lights the hub card alert and marks the history row �
 - Steppers instead of `HSlider`: the sheet body sits under `DragScroll`, which swallows horizontal drags.
 
 ## Facilities
+**§16 — the single facility is now the front (`프론트`)** of seven facilities (`features/season/facility/README.md`).
+`facility_level` / `upgrade_cost` / `upgrade_block_reason` / `upgrade_facility` keep their signatures and act on the
+front through `FacilitySystem`; the front upgrade additionally needs its `expand` research for the target level, and
+the bankruptcy downgrade lowers the front (which clamps every other facility to it). Other facilities upgrade with
+`FacilitySystem.upgrade(state, fid)` (cost = `upgrade_cost × facility_defs.cost_pct / 100`), paid by
+`FinanceSystem.pay_upgrade(state, cost)` (fund first, then balance). Upkeep still uses the front's row only —
+per-facility upkeep / budget cut is agent F's §16 task.
 - Effects per level (`facilities.csv`, percent, 100 = neutral): `train_exp_pct`, `mastery_pct`,
   `incident_pct`, `income_pct`; weekly `upkeep`; `upgrade_cost` = cost to reach the next level (0 at max).
 - **Upgrade** from the sheet (two-step button: press → 「한 번 더 눌러 확정」 → press). Paid from

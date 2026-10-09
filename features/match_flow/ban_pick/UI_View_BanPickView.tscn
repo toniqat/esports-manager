@@ -566,6 +566,18 @@ theme_type_variation = &"FaintLabel"
 theme_override_font_sizes/font_size = 24
 text = "tx_M08KQVQN65"
 
+[node name="SheetPassiveIcon" type="Control" parent="SafeArea/Band/Pane/Sheet"]
+editor_description = "[필수] 지우면 오류 — BanPickView.gd sheet_passive_icon
+패시브 아이콘 타일 자리 — 코드가 SkillImages.make_mech_icon_tile 을 여기에 붙인다(이 칸 크기)."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 0
+offset_left = 324.0
+offset_top = 113.0
+offset_right = 360.0
+offset_bottom = 149.0
+mouse_filter = 2
+
 [node name="SheetPassiveHead" type="Label" parent="SafeArea/Band/Pane/Sheet"]
 auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — BanPickView.gd sheet_passive_head"
@@ -573,14 +585,14 @@ unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 324.0
+offset_left = 370.0
 offset_top = 114.0
 offset_right = -20.0
 offset_bottom = 148.0
 grow_horizontal = 2
 theme_type_variation = &"AccentLabel"
 theme_override_font_sizes/font_size = 26
-text = "◆ 고통과 쾌감   [성장, 포탑 파괴]"
+text = "고통과 쾌감   [성장, 포탑 파괴]"
 clip_text = true
 
 [node name="SheetPassiveDesc" type="Label" parent="SafeArea/Band/Pane/Sheet"]

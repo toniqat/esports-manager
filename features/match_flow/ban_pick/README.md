@@ -49,7 +49,7 @@ BanPickView (Control full rect, theme = OutgameTheme.tres)
 │ │   ├ Content         VBox (33 / 8 inset): %BanPickOrderRow_OrderRow(UI_Comp_BanPickOrderRow.tscn instance, 64) · %Tabs(58: Tab0-5 `SelectableTile`, font 20) · 10 · %Scroll/%Grid
 │ │   ├ %SheetDim       dims the pane only
 │ │   └ %Sheet          bottom sheet (bottom = grid bottom, height from fit_pane): SheetArt(+Placeholder) ·
-│ │                     SheetName · SheetStats · SheetNoPassive / SheetPassiveHead · SheetPassiveDesc ·
+│ │                     SheetName · SheetStats · SheetNoPassive / %SheetPassiveIcon (36² passive icon tile) · SheetPassiveHead · SheetPassiveDesc ·
 │ │                     SheetCardsHeader · %SheetCardRow · SheetNoCards · SheetMastery(SheetRider · SheetIntel) ·
 │ │                     SheetButtons(SheetClose · SheetConfirm)
 │ ├ %StartButton        assign-step bottom bar (`BarPrimaryButton`, 128 tall; inset from OutgameTheme.fit_bottom_bar)
@@ -382,7 +382,7 @@ MechDetailPanel (CanvasLayer 20)
     │   StatsTitle `SubLabel` 24 · Stats (3 `SunkPanel` chips at thirds: Key `CaptionLabel` 19 · %HpValue %AtkValue %PresenceValue `BodyLabel` 34)
     │   %MasteryBlock (title + %MasteryRows ← UI_Comp_MechMasteryRow.tscn)
     │   %QuirkBlock (%QuirkTitle · %QuirkEmpty · %QuirkRows ← UI_Comp_MechQuirkRow.tscn)
-    │   PassiveTitle · %NoPassive | %PassiveBox (%PassiveName `AccentLabel` 30 · %PassiveKw `CaptionLabel` 19 · %PassiveDesc `BodyLabel` 21)
+    │   PassiveTitle · %NoPassive | %PassiveBox (PassiveRow 80: %PassiveTile 64² at (14, 4) ← `SkillImages.make_mech_icon_tile` · %PassiveName `AccentLabel` 30 · %PassiveKw `CaptionLabel` 19 at x 94 — same row as DraftDetailPanel's skill row; then %PassiveDesc `BodyLabel` 21)
     │   CardsTitle · %NoCards | %CardsBox (note `CaptionLabel` 18 · %CardGrid 3 cols ← UI_Comp_MechCardCell.tscn)
     └ %Close (`GhostButton`, 84 tall, bottom anchored to the safe bottom −80)
 ```

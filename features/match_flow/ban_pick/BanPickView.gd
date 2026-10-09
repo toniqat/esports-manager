@@ -58,6 +58,7 @@ var sheet_art_placeholder: ColorRect = null
 var sheet_name: Label = null
 var sheet_stats: Label = null
 var sheet_no_passive: Label = null
+var sheet_passive_icon: Control = null
 var sheet_passive_head: Label = null
 var sheet_passive_desc: Label = null
 var sheet_cards_header: Label = null
@@ -103,6 +104,7 @@ func _ready() -> void:
 	sheet_name = %SheetName
 	sheet_stats = %SheetStats
 	sheet_no_passive = %SheetNoPassive
+	sheet_passive_icon = %SheetPassiveIcon
 	sheet_passive_head = %SheetPassiveHead
 	sheet_passive_desc = %SheetPassiveDesc
 	sheet_cards_header = %SheetCardsHeader

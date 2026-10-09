@@ -126,6 +126,8 @@ const SHEET_CARD_SCALE: float = 0.9
 ## 설명판 윗끝의 하한(시트 안쪽 여백 = 씬의 `SheetName` 윗여백).
 const SHEET_PAD: float        = 20.0
 const SHEET_DESC_GAP: float   = 8.0
+## 시트 패시브 아이콘 타일(36px)의 그림자 — 큰 타일의 14px 를 크기에 맞춰 줄인 값.
+const SHEET_PASSIVE_SHADOW_PX: float = 6.0
 
 ## 배정 단계에서 메크 칸을 끌기 시작하는 문턱(px). 이보다 덜 움직인 것은 탭이지
 ## 드래그가 아니다 — 손가락은 언제나 조금씩 떨린다. 문턱을 못 넘긴 탭은
@@ -649,11 +651,20 @@ func _fill_sheet(m: MechData) -> void:
 			{"role": role_txt, "hp": m.hp, "atk": m.atk, "presence": m.presence})
 	var pas: Dictionary = _gm.mech_passive_def(m.id)
 	v.sheet_no_passive.visible = pas.is_empty()
+	v.sheet_passive_icon.visible = not pas.is_empty()
 	v.sheet_passive_head.visible = not pas.is_empty()
 	v.sheet_passive_desc.visible = not pas.is_empty()
+	for c in v.sheet_passive_icon.get_children():
+		v.sheet_passive_icon.remove_child(c)
+		c.queue_free()
 	if not pas.is_empty():
+		# 패시브 아이콘 타일 — `MechDetailPanel` 의 패시브 타일과 같은 색(크기 = 씬 칸).
+		v.sheet_passive_icon.add_child(SkillImages.make_mech_icon_tile(
+				String(pas.get("key", "")), v.sheet_passive_icon.size.x,
+				MechDetailPanel.PASSIVE_TILE_BG, MechDetailPanel.PASSIVE_TILE_ICON,
+				MechDetailPanel.PASSIVE_TILE_SHADOW, SHEET_PASSIVE_SHADOW_PX))
 		var kw: String = GameEnums.tags_text(String(pas.get("keyword", "")))
-		var head: String = "◆ %s" % Loc.t(String(pas["name_key"]))  # l10n-dynamic: mech_passive.*.name
+		var head: String = Loc.t(String(pas["name_key"]))  # l10n-dynamic: mech_passive.*.name
 		if kw != "":
 			head += "   [%s]" % kw
 		v.sheet_passive_head.text = head

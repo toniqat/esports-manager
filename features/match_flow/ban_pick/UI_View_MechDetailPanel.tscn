@@ -395,24 +395,51 @@ layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 0
 
-[node name="PassiveName" type="Label" parent="Root/SafeArea/Scroll/Body/PassiveBox"]
+[node name="PassiveRow" type="Control" parent="Root/SafeArea/Scroll/Body/PassiveBox"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="PassiveTile" type="Control" parent="Root/SafeArea/Scroll/Body/PassiveBox/PassiveRow"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_passive()
+패시브 아이콘 타일 자리 — 코드가 SkillImages.make_mech_icon_tile 을 여기에 붙인다(DraftDetailPanel 의 SkillTile 과 같은 자리 · 크기). 왼쪽 14px 는 그림자가 스크롤 경계에 잘리지 않게 띄운 것."
+anchors_preset = 0
+offset_left = 14.0
+offset_top = 4.0
+offset_right = 78.0
+offset_bottom = 68.0
+mouse_filter = 2
+
+[node name="PassiveName" type="Label" parent="Root/SafeArea/Scroll/Body/PassiveBox/PassiveRow"]
 editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_passive()"
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 42)
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 94.0
+offset_top = 3.0
+offset_bottom = 43.0
+grow_horizontal = 2
 theme_type_variation = &"AccentLabel"
 theme_override_font_sizes/font_size = 30
 text = "패시브 이름"
 clip_text = true
 
-[node name="PassiveKw" type="Label" parent="Root/SafeArea/Scroll/Body/PassiveBox"]
+[node name="PassiveKw" type="Label" parent="Root/SafeArea/Scroll/Body/PassiveBox/PassiveRow"]
 editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_passive()"
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 28)
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 94.0
+offset_top = 43.0
+offset_bottom = 69.0
+grow_horizontal = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 19
 text = "키워드"
+clip_text = true
 
 [node name="PassiveDesc" type="Label" parent="Root/SafeArea/Scroll/Body/PassiveBox"]
 editor_description = "[필수] 지우면 오류 — MechDetailPanel.gd _fill_passive()"

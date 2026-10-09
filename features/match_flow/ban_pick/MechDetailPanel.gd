@@ -49,6 +49,13 @@ const ROLE_COLORS: Array = OutgameTheme.ROLE_COLORS
 ## 카드를 누르면 뜨는 설명판(흰 판, `light`)의 폭 — 받침(`Backdrop`) 폭과 같다.
 const DESC_W: float = 460.0
 
+## 패시브 아이콘 타일(`SkillImages.make_mech_icon_tile`) — `DraftDetailPanel` 의 스킬
+## 타일과 같은 색 · 그림자다(두 팝업이 한 벌로 읽혀야 한다). 크기는 씬의 `%PassiveTile`.
+const PASSIVE_TILE_BG := OutgameTheme.RAIL
+const PASSIVE_TILE_ICON := OutgameTheme.ACCENT
+const PASSIVE_TILE_SHADOW := Color(0.11, 0.11, 0.18, 0.28)
+const PASSIVE_TILE_SHADOW_PX: float = 14.0
+
 var _mech: MechData = null
 ## 누른 카드의 설명판(`CardDescBox`) — 카드 앞면에 설명문이 없으므로 그 글은
 ## 카드를 누르면 카드 **위쪽**에 뜨는 이 판이 든다. 같은 카드를 다시 누르면 닫힌다.
@@ -185,8 +192,13 @@ func _fill_passive() -> void:
 	# 성질이므로 한 줄로 말해 준다(`%NoPassive`).
 	%NoPassive.visible = pas.is_empty()
 	%PassiveBox.visible = not pas.is_empty()
+	_clear(%PassiveTile)
 	if pas.is_empty():
 		return
+	var tile_slot: Control = %PassiveTile
+	tile_slot.add_child(SkillImages.make_mech_icon_tile(String(pas.get("key", "")),
+			tile_slot.size.x, PASSIVE_TILE_BG, PASSIVE_TILE_ICON, PASSIVE_TILE_SHADOW,
+			PASSIVE_TILE_SHADOW_PX))
 	%PassiveName.text = Loc.t(String(pas.get("name_key", "")))  # l10n-dynamic: mech_passive.*.name
 	var kw: String = GameEnums.tags_text(String(pas.get("keyword", "")))
 	%PassiveKw.text = kw

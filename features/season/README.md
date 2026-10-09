@@ -396,7 +396,7 @@ The lobby run card shows a "경기 진행 중" (Match in progress) chip when `me
 ## SeasonHub screen routing
 `SeasonHub._route()` toggles child controls based on `current_screen`.
 Lazy view builders cache the instance after first creation.
-- `Screen.HUB` → simplified HubView. Calls `LeagueManager.ensure_phase_scheduled()`
+- `Screen.HUB` → simplified HubView (+ the phase start title card on a phase's first HUB, `calendar/PhaseIntro`). Calls `LeagueManager.ensure_phase_scheduled()`
   + `TournamentManager.ensure_active()` + `InternationalTournament.ensure_active()`
   to handle save-loads landing on tournament weeks.
 - `Screen.PRESS` → `PressConferenceView` (opens this week's conference every time; Sunday afternoon).

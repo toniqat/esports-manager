@@ -1,0 +1,119 @@
+[gd_scene load_steps=3 format=3 uid="uid://mqy4kuhlla4g"]
+
+[ext_resource type="Script" path="res://features/season/calendar/PhaseIntro.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="PhaseIntro" type="CanvasLayer"]
+layer = 30
+script = ExtResource("1_script")
+
+[node name="Root" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — PhaseIntro.gd _ready() · _animate()
+Phase start title card over the hub (SeasonHub._maybe_phase_intro): fades in, holds, fades out (or a tap skips). Code animates modulate / the accent line width only."
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+
+[node name="Backdrop" type="Panel" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"PhaseIntroBackdrop"
+
+[node name="Tap" type="Button" parent="Root"]
+editor_description = "[필수] 지우면 오류 — PhaseIntro.gd _ready()
+Full-screen tap = skip."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+flat = true
+
+[node name="Center" type="VBoxContainer" parent="Root"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — PhaseIntro.gd _animate()"
+layout_mode = 1
+anchors_preset = 14
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = 40.0
+offset_top = -180.0
+offset_right = -40.0
+offset_bottom = 180.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 18
+alignment = 1
+
+[node name="Step" type="Label" parent="Root/Center"]
+auto_translate_mode = 2
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — PhaseIntro.gd show_phase()"
+layout_mode = 2
+theme_type_variation = &"RailLabel"
+theme_override_font_sizes/font_size = 30
+text = "캠페인 1 / 6"
+horizontal_alignment = 1
+
+[node name="Title" type="Label" parent="Root/Center"]
+auto_translate_mode = 2
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — PhaseIntro.gd show_phase()"
+layout_mode = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 104
+text = "프리시즌"
+horizontal_alignment = 1
+
+[node name="Line" type="Panel" parent="Root/Center"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — PhaseIntro.gd _animate()
+Amber accent line; code grows its width from 0."
+custom_minimum_size = Vector2(360, 8)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_type_variation = &"ProgressFill"
+
+[node name="Sub" type="Label" parent="Root/Center"]
+auto_translate_mode = 2
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — PhaseIntro.gd show_phase()
+League weeks · playoff weeks, or the tournament's weeks."
+layout_mode = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 34
+text = "리그 7주 · 플레이오프 2주"
+horizontal_alignment = 1
+
+[node name="Hint" type="Label" parent="Root"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — PhaseIntro.gd _fit_safe_area()"
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -200.0
+offset_bottom = -150.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_type_variation = &"RailLabel"
+theme_override_font_sizes/font_size = 26
+text = "tx_1CXXKQSFYQ"
+horizontal_alignment = 1

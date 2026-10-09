@@ -1111,6 +1111,7 @@ theme variation too, built in `OutgameTheme._add_screen_variations()`:
 | `WeekDayChip` · `WeekDayChipToday` | AccentChip | `WeekProgressView` day `Chip`s (`WEEK_DAY_CHIP_RADIUS`) | variation switched by `_refresh_rail` |
 | `WeekMapBubble` | SurfaceChip | `WeekMapPilot` `%Bubble` (morning speech bubble over a map token: white, `BORDER_STRONG` 2px, radius 14) | scene-set |
 | `LobbySurfaceBar` · `LobbyToast` | Card · SurfaceChip | `Lobby` `StripBack` / `TabBarBack` · `Toast` | error toast = `NEGATIVE` copy |
+| `PhaseIntroBackdrop` | ScreenBackground | `PhaseIntro` `Backdrop` (full-screen `RAIL`, no radius) | — |
 | `BanPickOrderPip` · `IntelAnalystNote` | SunkPanel · SunkPanel | `BanPickOrderPip` root (r6; side colour + capsule corners = code copy) · `IntelView` `Note/Card` (`ACCENT_DIM`, r14) | pip fill = side colour |
 | `MatchPrepPilotCard` · `MatchPrepCardInner` · `MatchPrepWarnChip` · `MatchPrepMechChip` | Card · Card · AccentChip · SunkPanel | `UI_Comp_MatchPrepPilotCard` root (card look, no padding) · its embedded `SeasonPilotCard` (`StyleBoxEmpty` — no second card) · `%Warn` `경계 대상` (`NEGATIVE`, pill, padding 10/2) · `MechChip*` (`SURFACE_SUNK`, r8, padding 4/2) | — |
 | `MessengerBubbleNpc` · `MessengerBubbleMine` · `MessengerAnswerButton` · `MessengerNoteChipMuted` | Card · Card · GhostButton · AccentChip | `MessengerNpcBubble` / `MessengerPlayerBubble` `%Bubble` (r22, padding 0 — the scene's `Pad` pads) · `MessengerAnswerButton` (ghost + padding 22/17) · failed `MessengerNoteChip` | — |

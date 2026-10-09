@@ -209,6 +209,8 @@ static func _serialize_season_state(s: Dictionary) -> Dictionary:
 		"research":          (s.get("research", {}) as Dictionary).duplicate(true),
 		"intel_rank":        (s.get("intel_rank", {}) as Dictionary).duplicate(true),
 		"scout":             (s.get("scout", {}) as Dictionary).duplicate(true),
+		# Phase whose start title card was shown (`calendar/PhaseIntro`); -1 = none yet.
+		"phase_intro_seen":  int(s.get("phase_intro_seen", -1)),
 	}
 
 
@@ -277,6 +279,8 @@ static func _deserialize_season_state(s: Dictionary) -> Dictionary:
 		"research":          (s.get("research", {}) as Dictionary).duplicate(true),
 		"intel_rank":        (s.get("intel_rank", {}) as Dictionary).duplicate(true),
 		"scout":             (s.get("scout", {}) as Dictionary).duplicate(true),
+		# Phase whose start title card was shown (`calendar/PhaseIntro`); -1 = none yet.
+		"phase_intro_seen":  int(s.get("phase_intro_seen", -1)),
 	}
 
 

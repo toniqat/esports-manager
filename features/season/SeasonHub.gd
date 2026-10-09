@@ -192,10 +192,22 @@ func _show_hub() -> void:
 		if not hub_toasts.is_empty():
 			_hub_view.show_toast(String(hub_toasts.back()))
 			hub_toasts.clear()
+	_maybe_phase_intro()
 	# 자동 저장 1번 — 런 시작 후. 런 준비(`RunSetupScreen` → `start_run`)든
 	# 에디터 직접 실행(`init_season`)이든 새 런의 첫 HUB 에서 한 번.
 	if run_start:
 		autosave("run_start")
+
+
+## The first HUB of every phase opens with that phase's title card (`calendar/PhaseIntro`)
+## over the hub, which then fades away. `phase_intro_seen` (saved) = the last phase shown.
+func _maybe_phase_intro() -> void:
+	var s: Dictionary = _gm.season_state
+	var phase: int = int(s.get("current_phase", -1))
+	if phase < 0 or int(s.get("phase_intro_seen", -1)) == phase:
+		return
+	s["phase_intro_seen"] = phase
+	PhaseIntro.play(self, phase)
 
 
 ## First-time HUB entry (post-run-start) seeds the PRESEASON schedule. Idempotent

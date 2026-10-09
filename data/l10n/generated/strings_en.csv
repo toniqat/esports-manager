@@ -2366,6 +2366,9 @@ tx_64BZGJ4BTM,Afternoon: Talk with {name}
 tx_VTXA6YGJ8E,Coach points {n} / {max} this week
 tx_HSPG16C381,{day} afternoon · Talk
 tx_5CGB20BWXX,{day} evening · Limit break
+tx_5N8MET0QZT,Campaign {n} / {total}
+tx_09VTB4JWBH,League {league} weeks · Playoffs {playoff} weeks
+tx_TQT1N3PWTS,International tournament · {weeks} weeks
 tx_EVS2K4Z4YF,Settings
 tx_4S0H7A92KR,Settings
 tx_EB8R7HBW32,Language

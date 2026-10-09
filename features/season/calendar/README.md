@@ -16,6 +16,15 @@ Drives the **week-by-week** clock that frames the entire campaign.
 - Month/year roll-over and SeasonPhase transitions are owned here:
   PRESEASON → PRESEASON_INTL → MIDSEASON → ... → REGULAR_INTL.
 
+## Phase start title card (`PhaseIntro.gd` + `UI_View_PhaseIntro.tscn`)
+The first HUB of every phase (run start included) opens with a dark full-screen card over the hub:
+`캠페인 n / 6` · the phase name (`GameEnums.phase_label`) · amber line · `리그 n주 · 플레이오프 n주`
+(`LEAGUE_WEEKS` / `PHASE_WEEKS`) or `국제대회 토너먼트 n주`, hint `화면을 눌러 계속`. Fade in → hold `HOLD` s →
+fade out → frees itself, revealing the hub; a tap skips to the fade out. `SeasonHub._maybe_phase_intro` (end of
+`_show_hub`) plays it when `season_state.phase_intro_seen != current_phase` and stores the phase (saved; -1 =
+none yet, an old save shows the current phase's card once). Backdrop = screen variation `PhaseIntroBackdrop`.
+Text: `season.phase_intro.*`. F6 = the 미드시즌 card, static.
+
 ## Signals
 - `week_advanced(new_date)` — fires every `advance_week()` call. Listened
   to by TournamentManager + InternationalTournament for bracket bootstrap,

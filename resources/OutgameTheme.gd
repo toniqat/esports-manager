@@ -967,6 +967,9 @@ static func _add_screen_variations(th: Theme) -> void:
 		c.content_margin_bottom = 24.0
 		th.set_stylebox(n, &"VnDialogueChoiceButton", c)
 
+	# season/calendar — 페이즈 시작 타이틀 카드 (`UI_View_PhaseIntro`): 화면 전체를 덮는 어두운 판.
+	_add_derived(th, "PhaseIntroBackdrop", &"ScreenBackground", flat_style(RAIL, 0))
+
 	# meta/lobby — 로비
 	_add_derived(th, "LobbySurfaceBar", &"Card", flat_style(SURFACE, 0))
 	_add_derived(th, "LobbyToast", &"SurfaceChip", flat_style(RAIL, 34))

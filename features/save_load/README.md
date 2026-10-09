@@ -169,6 +169,7 @@ Resource-typed entries:
 - `training_level` (§15 B, `features/season/training/README.md` "Training level · limit break") round-trips
   as-is (string keys; `TrainingLevel` / `LimitBreak` read every number through `int()`). A run saved before
   §15 has none — `TrainingLevel.ensure` creates Lv1 entries on first read.
+- `phase_intro_seen` (int, default -1) — the last phase whose title card was shown (`season/calendar/PhaseIntro`)
 - `facilities` · `research` · `intel_rank` · `scout` (§16, `features/season/facility/README.md`) round-trip as-is
   (string keys). `load_run` then calls `FacilitySystem.migrate`: for a §16 save it only fills missing keys and
   turns the JSON floats back into ints (levels, points, done counts, boosts, ranks); for a run saved **before**

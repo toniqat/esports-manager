@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=163 format=3 uid="uid://co7tw5omdwmyd"]
+[gd_resource type="Theme" load_steps=164 format=3 uid="uid://co7tw5omdwmyd"]
 
 [sub_resource type="StyleBoxFlat" id="AccentChip_panel"]
 content_margin_left = 20.0
@@ -775,6 +775,9 @@ corner_radius_top_left = 999
 corner_radius_top_right = 999
 corner_radius_bottom_right = 999
 corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="PhaseIntroBackdrop_panel"]
+bg_color = Color(0.11, 0.11, 0.122, 1)
 
 [sub_resource type="StyleBoxFlat" id="PilotThumbArtMask_panel"]
 bg_color = Color(1, 1, 1, 1)
@@ -2127,6 +2130,8 @@ OnFillTextButton/colors/font_focus_color = Color(1, 1, 1, 1)
 OnFillTextButton/colors/font_hover_color = Color(1, 1, 1, 1)
 OnFillTextButton/colors/font_hover_pressed_color = Color(1, 1, 1, 1)
 OnFillTextButton/colors/font_pressed_color = Color(1, 1, 1, 1)
+PhaseIntroBackdrop/base_type = &"ScreenBackground"
+PhaseIntroBackdrop/styles/panel = SubResource("PhaseIntroBackdrop_panel")
 PilotThumbArtMask/base_type = &"SunkPanel"
 PilotThumbArtMask/styles/panel = SubResource("PilotThumbArtMask_panel")
 PilotThumbCheck/base_type = &"AccentChip"

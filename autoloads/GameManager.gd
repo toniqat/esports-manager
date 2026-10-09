@@ -146,11 +146,13 @@ var season_state: Dictionary = {
 	"mental": {},
 	# §16 facilities · research — shapes owned by `FacilitySystem` / `ResearchSystem`
 	# (`features/season/facility/README.md`): `{fid: {level, occupant}}`,
-	# `{active, points, done, boosts}`, `{"<team_id>": 0..3}`, `{candidates, week}`.
+	# `{active, points, done}`, `{"<team_id>": 0..3}`, `{candidates, week}`; `phase_intro_seen` =
+	# the last phase whose title card was shown (`calendar/PhaseIntro`).
 	"facilities": {},
 	"research": {},
 	"intel_rank": {},
 	"scout": {},
+	"phase_intro_seen": -1,
 }
 
 
@@ -197,6 +199,7 @@ func reset_season_state() -> void:
 		"research": {},
 		"intel_rank": {},
 		"scout": {},
+		"phase_intro_seen": -1,
 	}
 
 

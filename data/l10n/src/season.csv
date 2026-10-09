@@ -164,3 +164,6 @@ tx_64BZGJ4BTM,season.week.afternoon_story,active,Afternoon done card head (visit
 tx_VTXA6YGJ8E,season.week.afternoon_coach,active,Afternoon card line: coach points left this week / the weekly grant,,,코치 포인트 {n} / 주간 {max},Coach points {n} / {max} this week,draft,d6eee030
 tx_HSPG16C381,season.week.sub_story_pm,active,Dialogue overlay subtitle (visit: story),,,{day} 오후 · 이야기,{day} afternoon · Talk,draft,3a12059a
 tx_5CGB20BWXX,season.week.sub_limit_break,active,"Dialogue overlay subtitle (limit-break event, before the incident)",,,{day} 저녁 · 한계돌파,{day} evening · Limit break,draft,20cd613f
+tx_5N8MET0QZT,season.phase_intro.step,active,"PhaseIntro title card, stage counter above the phase name",,,캠페인 {n} / {total},Campaign {n} / {total},draft,ba0c94a2
+tx_09VTB4JWBH,season.phase_intro.league,active,PhaseIntro subtitle for a league phase,,,리그 {league}주 · 플레이오프 {playoff}주,League {league} weeks · Playoffs {playoff} weeks,draft,2a969df6
+tx_TQT1N3PWTS,season.phase_intro.intl,active,PhaseIntro subtitle for an international phase,,,국제대회 토너먼트 {weeks}주,International tournament · {weeks} weeks,draft,86a0c739
